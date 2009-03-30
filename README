@@ -1,0 +1,71 @@
+
+$Id$
+
+To create a branch or a tag: copy the entire "trunk" subdirectory to
+an appropriately-named subdirectory at the same level.
+
+Subdirectories:
+
+docs/     Generated docs from source code
+examples/ Stand-alone applications that use the library
+src/      Library source code
+
+Instructions for library users:
+
+Build the library:
+0. Need to have g++ installed (may also need autoconf, automake and libtool).
+1. $ ./configure
+   This will setup the build files.
+   An alternate would be:
+   $ ./configure --prefix=$PWD
+   (See "make install" further down for the reason).
+2. $ make
+   Build the library.
+   Library will be in src/. Applications in src/ and examples/. This may be
+   sufficient for most users.
+3. $ make install
+   Library in /usr/lib/. Applications in /usr/bin/. This can be changed
+   in step (1) by selecting an alternate location. If you reconfigure,
+   make sure you run "make clean" before running "make".
+4. $ make uninstall
+   Removes the files installed in bin/ and lib/.
+5. $ make clean
+   Removes the results of compilation from src/ and examples/.
+
+Documentation:
+0. Need to have doxygen installed.
+1. $ cd docs
+2. If you see docs/html/index.html and docs/refman.pdf, your docs have
+   already been built and you can ignore the rest of the steps. Otherwise:
+   $ make
+   This will create the folders docs/html and docs/latex.
+   docs/html: HTML documentation. See index.html.
+   docs/latex: Tex-based documentation. See refman.tex.
+     If you have latex installed:
+     a. $ cd latex
+     b. $ make
+        This will create refman.dvi.
+     c. $ make pdf
+        This will create refman.pdf (using ps2pdf).
+3. $ make clean
+   Removes docs/ and html/.
+
+Maintainers:
+You will need autoconf, automake and libtool to build the configure script
+from configure.ac and relevant Makefiles from Makefile.am. Once you have
+these packages:
+1. You should have autogen.sh in this folder.
+2. $ ./autogen.sh
+   This will create the configure script and Makefiles.
+3. $ ./configure --prefix=$PWD
+4. $ make
+   This will compile the sources in src/ and examples/. It will also
+   create applications in src/ and examples/.
+5. $ make install
+   This will install the Mdd library in lib/ and applications from src/
+   and examples/ in bin/.
+6. $ make uninstall
+   Removes the files installed in bin/ and lib/.
+7. $ make clean
+   Removes the results of compilation from src/ and examples/.
+
