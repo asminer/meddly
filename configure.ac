@@ -5,16 +5,13 @@
 
 AC_PREREQ(2.60)
 AC_INIT([meddly], [0.2], [junaid@cs.iastate.edu])
-# AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE
 AM_CONFIG_HEADER(config.h)
 AC_CONFIG_SRCDIR([include/mddlib.h])
-# AC_CONFIG_HEADER([config.h])
 
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
-# AC_PROG_LIBTOOL
 AM_PROG_LIBTOOL
 
 # Checks for libraries.
