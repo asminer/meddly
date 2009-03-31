@@ -6,6 +6,11 @@
 
 lib_LTLIBRARIES = libmddlib3.la
 
+revision.h:
+	./BuildRevNo
+
+BUILT_SOURCES = revision.h
+
 libmddlib3_la_SOURCES = \
 	../include/mddexpert.h \
 	../include/mddlib.h \

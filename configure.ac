@@ -3,7 +3,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.61)
+AC_PREREQ(2.60)
 AC_INIT([meddly], [0.2], [junaid@cs.iastate.edu])
 # AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE

@@ -25,6 +25,8 @@
 #include "../src/operation_ext.h"
 #include "../src/compute_cache.h"
 
+#include "config.h"
+#include "revision.h"
 
 // ------------------ compute_manager --------------------------
 compute_manager::compute_manager() {}
@@ -69,9 +71,17 @@ compute_manager* MDDLIB_getComputeManager()
 
 const char* MDDLIB_getLibraryInfo(int what)
 {
+  static char* title = 0;
   switch (what) {
     case 0:
-      return "MDD Library Version 0.1.332 (32-bit and 64-bit compatible)";
+      if (!title) {
+        title = new char[80];
+        snprintf(title, 80, 
+          "%s version %s.%d (32-bit and 64-bit compatible)", 
+          PACKAGE_NAME, VERSION, REVISION_NUMBER
+        );
+      }
+      return title;
 
     case 1:
       return "Copyright (C) 2009, Andrew Miner and Junaid Babar.";
