@@ -41,7 +41,7 @@
 #if 0
 #include "defines.h"
 #else
-#include "../include/mddexpert.h"
+#include "../include/meddly_expert.h"
 #endif
 
 #include "mdd_hash.h"
@@ -188,7 +188,7 @@ class node_manager : public expert_forest {
     // ------------- inherited from expert_forest ---------------------------
 
   public:
-    /// Refer to mddlib.h
+    /// Refer to meddly.h
     forest::error createEdgeForVar(int vh, bool primedLevel, dd_edge& result);
     forest::error createEdgeForVar(int vh, bool primedLevel,
        bool* terms, dd_edge& a);

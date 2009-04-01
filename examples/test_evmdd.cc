@@ -30,8 +30,8 @@
 
 #include <iostream>
 
-// mddexpert.h include mddlib.h
-#include "../include/mddexpert.h"
+// meddly_expert.h include meddly.h
+#include "../include/meddly_expert.h"
 
 // Only include this file if referring to operations that are not
 // available via the mddlib interface. 
@@ -64,7 +64,7 @@ op_info* getOp(forest* f, compute_manager::op_code op)
   static const int nForests = 3;
   static forest* forests[nForests];
   static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MDDLIB_getComputeManager());
+    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
   assert(ecm != 0);
   assert(f != 0);
 
@@ -85,7 +85,7 @@ op_info* getOp(forest* f, operation* op)
   static const int nForests = 3;
   static forest* forests[nForests];
   static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MDDLIB_getComputeManager());
+    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
   assert(ecm != 0);
   assert(f != 0);
   assert(op != 0);
@@ -108,7 +108,7 @@ dd_edge test_evmdd(forest* evmdd, compute_manager::op_code opCode,
   // C = A op B
 
   static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MDDLIB_getComputeManager());
+    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
   assert(ecm != 0);
 
   dd_edge A(evmdd);
@@ -144,7 +144,7 @@ bool test_conversion(dd_edge& A, dd_edge& B)
   static const int nForests = 2;
   static forest* forests[nForests];
   static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MDDLIB_getComputeManager());
+    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
   assert(ecm != 0);
 
   forests[0] = A.getForest();
@@ -222,7 +222,7 @@ int main(int argc, char *argv[])
   }
 
   // Create a domain
-  domain *d = MDDLIB_createDomain();
+  domain *d = MEDDLY_createDomain();
   assert(d != 0);
   assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVariables));
 
@@ -265,7 +265,7 @@ int main(int argc, char *argv[])
 
   printf("Peak Nodes in MDD: %d\n", evmdd->getPeakNumNodes());
   printf("Nodes in compute table: %d\n",
-      (MDDLIB_getComputeManager())->getNumCacheEntries());
+      (MEDDLY_getComputeManager())->getNumCacheEntries());
 
   // Convert evmdd to mdd
   forest* mdd =

@@ -47,13 +47,13 @@ class mdd_node_manager : public node_manager {
     mdd_node_manager(domain *d);
     ~mdd_node_manager();
 
-    // Refer to mddlib.h
+    // Refer to meddly.h
     virtual error createEdge(const int* const* vlist, int N, dd_edge &e);
     virtual error createEdge(bool val, dd_edge &e);
     virtual error evaluate(const dd_edge &f, const int* vlist, bool &term)
       const;
     
-    // Refer to mddexpert.h
+    // Refer to meddly_expert.h
     virtual int reduceNode(int p);
 
   protected:
@@ -67,12 +67,12 @@ class mdd_node_manager : public node_manager {
 
   public:
 
-    // Refer to mddexpert.h
+    // Refer to meddly_expert.h
     // The following will either abort or return an error since they are not
     // applicable to this forest.
     virtual void normalizeAndReduceNode(int& p, int& ev);
 
-    // Refer to mddlib.h
+    // Refer to meddly.h
     // The following will either abort or return an error since they are not
     // applicable to this forest.
     virtual error createEdge(const int* const* vlist, const int* terms, int N,
@@ -106,14 +106,14 @@ class mtmdd_node_manager : public node_manager {
     mtmdd_node_manager(domain *d, forest::range_type t);
     ~mtmdd_node_manager();
 
-    // Refer to mddlib.h
+    // Refer to meddly.h
     virtual error createEdge(const int* const* vlist, const int* terms, int N,
         dd_edge &e);
     virtual error createEdge(int val, dd_edge &e);
     virtual error evaluate(const dd_edge &f, const int* vlist, int &term)
       const;
     
-    // Refer to mddexpert.h
+    // Refer to meddly_expert.h
     virtual int reduceNode(int p);
 
   protected:
@@ -127,12 +127,12 @@ class mtmdd_node_manager : public node_manager {
 
   public:
 
-    // Refer to mddexpert.h
+    // Refer to meddly_expert.h
     // The following will either abort or return an error since they are not
     // applicable to this forest.
     virtual void normalizeAndReduceNode(int& p, int& ev);
 
-    // Refer to mddlib.h
+    // Refer to meddly.h
     // The following will either abort or return an error since they are not
     // applicable to this forest.
 
@@ -167,14 +167,14 @@ class mxd_node_manager : public node_manager {
     mxd_node_manager(domain *d);
     ~mxd_node_manager();
 
-    // Refer to mddlib.h
+    // Refer to meddly.h
     virtual error createEdge(const int* const* vlist, const int* const* vplist,
         int N, dd_edge& e);
     virtual error createEdge(bool val, dd_edge &e);
     virtual error evaluate(const dd_edge& f, const int* vlist,
         const int* vplist, bool &term) const;
 
-    // Refer to mddexpert.h
+    // Refer to meddly_expert.h
     virtual int reduceNode(int p);
 
   protected:
@@ -196,12 +196,12 @@ class mxd_node_manager : public node_manager {
 
   public:
 
-    // Refer to mddexpert.h
+    // Refer to meddly_expert.h
     // The following will either abort or return an error since they are not
     // applicable to this forest.
     virtual void normalizeAndReduceNode(int& p, int& ev);
 
-    // Refer to mddlib.h
+    // Refer to meddly.h
     // The following will either abort or return an error since they are not
     // applicable to this forest.
 
@@ -236,7 +236,7 @@ class mtmxd_node_manager : public node_manager {
     mtmxd_node_manager(domain *d, forest::range_type t);
     ~mtmxd_node_manager();
 
-    // Refer to mddlib.h
+    // Refer to meddly.h
     error createEdge(const int* const* vlist, const int* const* vplist,
         const int* terms, int N, dd_edge& e);
     error createEdge(const int* const* vlist, const int* const* vplist,
@@ -250,7 +250,7 @@ class mtmxd_node_manager : public node_manager {
     error evaluate(const dd_edge& f, const int* vlist, const int* vplist,
         float &term) const;
 
-    // Refer to mddexpert.h
+    // Refer to meddly_expert.h
     virtual int reduceNode(int p);
 
   protected:
@@ -277,12 +277,12 @@ class mtmxd_node_manager : public node_manager {
 
   public:
 
-    // Refer to mddexpert.h
+    // Refer to meddly_expert.h
     // The following will either abort or return an error since they are not
     // applicable to this forest.
     virtual void normalizeAndReduceNode(int& p, int& ev);
 
-    // Refer to mddlib.h
+    // Refer to meddly.h
     // The following will either abort or return an error since they are not
     // applicable to this forest.
 
@@ -312,14 +312,14 @@ class evmdd_node_manager : public node_manager {
     evmdd_node_manager(domain *d, range_type t);
     ~evmdd_node_manager();
 
-    // Refer to mddlib.h
+    // Refer to meddly.h
     virtual error createEdge(const int* const* vlist, const int* terms, int N,
         dd_edge &e);
     virtual error createEdge(int val, dd_edge &e);
     virtual error evaluate(const dd_edge &f, const int* vlist, int &term)
       const;
 
-    // Refer to mddexpert.h
+    // Refer to meddly_expert.h
     virtual void normalizeAndReduceNode(int& p, int& ev);
 
   protected:
@@ -343,12 +343,12 @@ class evmdd_node_manager : public node_manager {
 
   public:
 
-      // Refer to mddexpert.h
+      // Refer to meddly_expert.h
       // The following will either abort or return an error since they are not
       // applicable to this forest.
       virtual int reduceNode(int p);
 
-      // Refer to mddlib.h:
+      // Refer to meddly.h:
       // The following will either abort or return an error since they are not
       // applicable to this forest.
 

@@ -1665,7 +1665,7 @@ bool node_manager::garbageCollect() {
     printf("Zombie nodes: %d\n", zombie_nodes);
 #endif
     // remove the stale nodes entries from caches
-    smart_cast<expert_compute_manager *>(MDDLIB_getComputeManager())->
+    smart_cast<expert_compute_manager *>(MEDDLY_getComputeManager())->
       removeStales();
 #ifdef DEBUG_GC
     printf("Zombie nodes: %d\n", zombie_nodes);
@@ -1687,7 +1687,7 @@ bool node_manager::garbageCollect() {
       fprintf(stderr, "Active: %d, Orphan: %d\n", active_nodes, orphan_nodes);
 #endif
       // remove the stale nodes entries from caches
-      smart_cast<expert_compute_manager *>(MDDLIB_getComputeManager())->
+      smart_cast<expert_compute_manager *>(MEDDLY_getComputeManager())->
         removeStales();
     } while (isTimeToGc());
 
@@ -1722,7 +1722,7 @@ bool node_manager::garbageCollect() {
         active_nodes, zombie_nodes, orphan_nodes);
 #endif
     // remove the stale nodes entries from caches
-    smart_cast<expert_compute_manager *>(MDDLIB_getComputeManager())->
+    smart_cast<expert_compute_manager *>(MEDDLY_getComputeManager())->
       removeStales();
     assert(zombie_nodes == 0);
     nodeDeletionPolicy = forest::OPTIMISTIC_DELETION;
@@ -1768,7 +1768,7 @@ void node_manager::removeZombies(int max_zombies) {
     }
 #endif
     // remove the stale nodes entries from caches
-    smart_cast<expert_compute_manager *>(MDDLIB_getComputeManager())->
+    smart_cast<expert_compute_manager *>(MEDDLY_getComputeManager())->
       removeStales();
 #if 0
     if (zombie_nodes > 0) {

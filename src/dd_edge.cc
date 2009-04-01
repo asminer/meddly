@@ -21,7 +21,7 @@
 
 
 
-#include "../include/mddexpert.h"
+#include "../include/meddly_expert.h"
 
 
 // Constructor.
@@ -103,12 +103,12 @@ dd_edge& dd_edge::operator+=(const dd_edge& e)
       ? compute_manager::UNION
       : compute_manager::PLUS;
     opPlus =
-      smart_cast<expert_compute_manager*>(MDDLIB_getComputeManager())->
+      smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
       getOpInfo(opCode, forests, nOperands);
     assert(opPlus != 0);
   }
   assert(e.parent == parent);
-  smart_cast<expert_compute_manager*>(MDDLIB_getComputeManager())->
+  smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
     apply(opPlus, *this, e, *this);
   return *this;
 }
@@ -125,12 +125,12 @@ dd_edge& dd_edge::operator*=(const dd_edge& e)
       ? compute_manager::INTERSECTION
       : compute_manager::MULTIPLY;
     opStar =
-      smart_cast<expert_compute_manager*>(MDDLIB_getComputeManager())->
+      smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
       getOpInfo(opCode, forests, nOperands);
     assert(opStar != 0);
   }
   assert(e.parent == parent);
-  smart_cast<expert_compute_manager*>(MDDLIB_getComputeManager())->
+  smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
     apply(opStar, *this, e, *this);
   return *this;
 }
@@ -147,12 +147,12 @@ dd_edge& dd_edge::operator-=(const dd_edge& e)
       ? compute_manager::DIFFERENCE
       : compute_manager::MINUS;
     opMinus =
-      smart_cast<expert_compute_manager*>(MDDLIB_getComputeManager())->
+      smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
       getOpInfo(opCode, forests, nOperands);
     assert(opMinus != 0);
   }
   assert(e.parent == parent);
-  smart_cast<expert_compute_manager*>(MDDLIB_getComputeManager())->
+  smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
     apply(opMinus, *this, e, *this);
   return *this;
 }
@@ -166,11 +166,11 @@ dd_edge& dd_edge::operator/=(const dd_edge& e)
     forest* forests[nOperands] = {parent, parent, parent};
     assert(parent->getRangeType() != forest::BOOLEAN);
     opDivide =
-      smart_cast<expert_compute_manager*>(MDDLIB_getComputeManager())->
+      smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
       getOpInfo(compute_manager::DIVIDE, forests, nOperands);
   }
   assert(e.parent == parent);
-  smart_cast<expert_compute_manager*>(MDDLIB_getComputeManager())->
+  smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
     apply(opDivide, *this, e, *this);
   return *this;
 }

@@ -21,7 +21,7 @@
 
 
 
-#include "../include/mddexpert.h"
+#include "../include/meddly_expert.h"
 
 operation::operation(int n, int m, const char *desc)
 : name(desc),

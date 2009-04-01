@@ -7,7 +7,7 @@ AC_PREREQ(2.60)
 AC_INIT([meddly], [0.2], [junaid@cs.iastate.edu])
 AM_INIT_AUTOMAKE
 AM_CONFIG_HEADER(config.h)
-AC_CONFIG_SRCDIR([include/mddlib.h])
+AC_CONFIG_SRCDIR([include/meddly.h])
 
 # Checks for programs.
 AC_PROG_CXX

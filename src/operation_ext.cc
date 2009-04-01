@@ -3555,7 +3555,7 @@ int mdd_post_image::compute(op_info* owner, int mdd, int mxd)
   const int nOperands = 3;
   forest* forests[nOperands] = {owner->f[0], owner->f[0], owner->f[0]};
   op_info* unionOp = 
-    smart_cast<expert_compute_manager*>(MDDLIB_getComputeManager())->
+    smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
     getOpInfo(compute_manager::UNION, forests, nOperands);
   assert(unionOp != 0);
   return compute(owner, unionOp, mdd, mxd);
@@ -3659,7 +3659,7 @@ void mdd_post_image::expandMxdHelper (op_info* owner, op_info* unionOp,
   expert_forest* mxdNm = getExpertForest(owner, 1);
 #if 0
   expert_compute_manager* cm = 
-    smart_cast<expert_compute_manager*>(MDDLIB_getComputeManager());
+    smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
 #endif
 
   mdd_union* unionOpPtr = smart_cast<mdd_union*>(unionOp->op);
@@ -3906,7 +3906,7 @@ int mdd_reachability_bfs::compute(op_info* owner, int mdd, int mxd)
   const int nOperands = 3;
   forest* forests[nOperands] = {owner->f[0], owner->f[0], owner->f[0]};
   expert_compute_manager* ecm = 
-    smart_cast<expert_compute_manager*>(MDDLIB_getComputeManager());
+    smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
   assert(ecm != 0);
   op_info* unionOp =
     ecm->getOpInfo(compute_manager::UNION, forests, nOperands);
@@ -3992,7 +3992,7 @@ vector<int> split(expert_forest* f, int mxd)
   DCASSERT(f != 0);
 
   expert_compute_manager* ecm =
-    smart_cast<expert_compute_manager*>(MDDLIB_getComputeManager());
+    smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
   const int nForests = 3;
   forest* forests[nForests] = {f, f, f};
   op_info* intersectionOp = ecm->getOpInfo(compute_manager::INTERSECTION,

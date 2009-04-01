@@ -37,7 +37,7 @@
 #ifndef COMPUTE_CACHE_H
 #define COMPUTE_CACHE_H
 
-#include "../include/mddexpert.h"
+#include "../include/meddly_expert.h"
 
 #include "../src/hash.h"
 #include "../src/fixed_size_hash.h"

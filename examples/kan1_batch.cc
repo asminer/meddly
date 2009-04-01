@@ -92,7 +92,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "../include/mddlib.h"
+#include "../include/meddly.h"
 
 
 const int N = 5; // number of machines + 1
@@ -249,7 +249,7 @@ int main(int argc, char* argv[])
   int i;
 
   // Create a domain
-  domain *d = MDDLIB_createDomain();
+  domain *d = MEDDLY_createDomain();
   assert(d != NULL);
 
   // Set up the state variables.
@@ -305,7 +305,7 @@ int main(int argc, char* argv[])
   nsf.show(stdout, 2);
 #endif
 
-  compute_manager* cm = MDDLIB_getComputeManager();
+  compute_manager* cm = MEDDLY_getComputeManager();
   dd_edge reachableStates(initialStates);
   dd_edge prevReachableStates(mdd);
   dd_edge postImage(mdd);

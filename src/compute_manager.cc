@@ -21,7 +21,7 @@
 
 
 
-#include "../include/mddexpert.h"
+#include "../include/meddly_expert.h"
 #include "../src/operation_ext.h"
 #include "../src/compute_cache.h"
 
@@ -62,14 +62,14 @@ compute_manager::getErrorCodeName(compute_manager::error e)
 }
 
 
-compute_manager* MDDLIB_getComputeManager()
+compute_manager* MEDDLY_getComputeManager()
 {
   static expert_compute_manager* ecm = new expert_compute_manager();
   return ecm;
 }
 
 
-const char* MDDLIB_getLibraryInfo(int what)
+const char* MEDDLY_getLibraryInfo(int what)
 {
   static char* title = 0;
   switch (what) {

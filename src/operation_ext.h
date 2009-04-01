@@ -24,7 +24,7 @@
 #ifndef OPERATION_EXTENSIONS_H
 #define OPERATION_EXTENSIONS_H
 
-#include "../include/mddexpert.h"
+#include "../include/meddly_expert.h"
 
 
 /** MDD element-wise operations

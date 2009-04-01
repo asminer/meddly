@@ -59,14 +59,14 @@
 //
 
 #include <iostream>
-#include "../include/mddlib.h"
+#include "../include/meddly.h"
 
 int main(int argv, char *argc[])
 {
-  std::cout << MDDLIB_getLibraryInfo();
+  std::cout << MEDDLY_getLibraryInfo();
 
   // Create a domain
-  domain* d = MDDLIB_createDomain();
+  domain* d = MEDDLY_createDomain();
   assert(d != 0);
 
   // We have three variables A, B and C.
@@ -143,7 +143,7 @@ int main(int argv, char *argc[])
   // 1. Get a handle to the compute manager (through which operations
   //    are performed).
   // 2. Call compute manager with the operation code for UNION
-  compute_manager* cm = MDDLIB_getComputeManager();
+  compute_manager* cm = MEDDLY_getComputeManager();
   assert(cm != 0);
 
   // do all = union(first, second)

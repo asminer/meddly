@@ -12,8 +12,8 @@ revision.h:
 BUILT_SOURCES = revision.h
 
 libmddlib3_la_SOURCES = \
-	../include/mddexpert.h \
-	../include/mddlib.h \
+	../include/meddly_expert.h \
+	../include/meddly.h \
 	dd_edge.cc \
 	domain.cc \
 	forest.cc \

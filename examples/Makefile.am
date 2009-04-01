@@ -4,7 +4,8 @@
 
 ## compile library
 
-bin_PROGRAMS = \
+## bin_PROGRAMS = \
+noinst_PROGRAMS = \
 testmddlib \
 graphs_to_mdds \
 test_union_mdd \

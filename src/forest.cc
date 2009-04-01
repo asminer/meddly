@@ -23,8 +23,8 @@
 
 // TODO: Testing
 
-#include "../include/mddlib.h"
-#include "../include/mddexpert.h"
+#include "../include/meddly.h"
+#include "../include/meddly_expert.h"
 
 // **************************** forest *********************************
 

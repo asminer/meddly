@@ -32,7 +32,7 @@
 
 #include <iostream>
 
-#include "../include/mddlib.h"
+#include "../include/meddly.h"
 #include "../src/operation_ext.h"
 #include "../src/timer.h"
 
@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     bounds[i] = variableBound;
 
   // Create a domain
-  domain *d = MDDLIB_createDomain();
+  domain *d = MEDDLY_createDomain();
   assert(d != 0);
   assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVariables));
 

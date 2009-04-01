@@ -37,7 +37,7 @@ not visible to the SI.
 Operations:
 Only visible to the EI.
 An expert-user may wish to define a custom operation. In which case, he/she
-can inherit from an appropriate derived class of operation (see mddexpert.h
+can inherit from an appropriate derived class of operation (see meddly_expert.h
 for examples of derived classes). In general, the expert-user will need
 to over-ride the correct compute() and checkTerminals() functions from the
 operation class they derive their new operation from.

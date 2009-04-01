@@ -25,7 +25,7 @@
 // TODO: Finish the advanced functions in expert_domain.
 
 
-#include "../include/mddexpert.h"
+#include "../include/meddly_expert.h"
 #include "../src/mdds_ext.h"
 
 
@@ -55,7 +55,7 @@ const char* domain::getErrorCodeName(domain::error e)
   }
 }
 
-domain* MDDLIB_createDomain()
+domain* MEDDLY_createDomain()
 {
   return new expert_domain();
 }

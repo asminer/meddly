@@ -20,7 +20,7 @@
 */
 
 
-/*! \file mddlib.h 
+/*! \file meddly.h 
 
     MDD library interface.
     
@@ -33,12 +33,12 @@
     General naming principles:
     Class names are of the form class_name.
     Method names are of the form verbObjectDetails.
-    Global functions have names prefixed with "MDDLIB_".
+    Global functions have names prefixed with "MEDDLY_".
 
 */
 
-#ifndef MDDLIB_H
-#define MDDLIB_H
+#ifndef MEDDLY_H
+#define MEDDLY_H
 
 #include <cstdio>
 #include <cassert>
@@ -66,7 +66,7 @@ class op_info;
             4: String with library features
             Anything else: null string.
 */
-const char* MDDLIB_getLibraryInfo(int what = 0);
+const char* MEDDLY_getLibraryInfo(int what = 0);
 
 
 // ******************************************************************
@@ -818,7 +818,7 @@ class domain {
 /** Front-end function to create a domain.
     This is required because domain is an abstract class.
 */
-domain* MDDLIB_createDomain();
+domain* MEDDLY_createDomain();
 
 
 // ******************************************************************
@@ -1248,7 +1248,7 @@ class compute_manager {
     Do we ever instantiate multiple compute_managers, or is one enough?
     One should suffice. Multiple calls will return the same compute_manager.
 */
-compute_manager* MDDLIB_getComputeManager();
+compute_manager* MEDDLY_getComputeManager();
 
 
 

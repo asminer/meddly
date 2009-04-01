@@ -88,7 +88,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "../include/mddexpert.h"
+#include "../include/meddly_expert.h"
 #include "../src/timer.h"
 
 int* initializeLevelBounds(int nLevels)
@@ -310,7 +310,7 @@ int main(int argc, char *argv[])
   int *bounds = initializeLevelBounds(nLevels);
 
   expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MDDLIB_getComputeManager());
+    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
   assert(ecm != 0);
 
   if (cacheSize > 0) {
@@ -321,7 +321,7 @@ int main(int argc, char *argv[])
   }
 
   // Create a domain
-  domain *d = MDDLIB_createDomain();
+  domain *d = MEDDLY_createDomain();
   assert(d != NULL);
 
   // Set up the state variables.

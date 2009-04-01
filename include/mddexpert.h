@@ -20,13 +20,13 @@
 */
 
 
-/*! \file mddexpert.h
+/*! \file meddly_expert.h
 
     Low-level MDD library interface.
 
     This interface is for "expert" users who want to define new
     operations, or for library developers to define the built-in operations.
-    Casual users probably only need the interface provided by "mddlib.h".
+    Casual users probably only need the interface provided by "meddly.h".
 
     The first part of the interface describes the expert interface and the
     second part contains implementations of virtual functions in the interface.
@@ -37,7 +37,7 @@
 
 #include <map>
 #include "../src/defines.h"
-#include "../include/mddlib.h"
+#include "../include/meddly.h"
 
 // TODO: An expert must be able to code Apply and Saturate using the expert
 // interface

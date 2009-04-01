@@ -30,7 +30,7 @@
 //TODO: test union, intersection (optimize), diff (optimize)
 
 #include <iostream>
-#include "../include/mddlib.h"
+#include "../include/meddly.h"
 #include "../src/timer.h"
 
 
@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
 #endif
   }
 
-  compute_manager* cm = MDDLIB_getComputeManager();
+  compute_manager* cm = MEDDLY_getComputeManager();
   assert(cm != 0);
   bool chaining = false;
   unsigned cacheSize = 262144u;
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
       cm->setHashTablePolicy(chaining, cacheSize));
 
   // Create a domain
-  domain *d = MDDLIB_createDomain();
+  domain *d = MEDDLY_createDomain();
   assert(d != 0);
   assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVariables));
 
@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
 
   printf("Peak Nodes in MDD: %d\n", states->getPeakNumNodes());
   printf("Nodes in compute table: %d\n",
-      (MDDLIB_getComputeManager())->getNumCacheEntries());
+      (MEDDLY_getComputeManager())->getNumCacheEntries());
 
 #if 0
   printf("\n\nForest Info:\n");

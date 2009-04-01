@@ -30,8 +30,8 @@
 
 #include <iostream>
 
-// mddexpert.h include mddlib.h
-#include "../include/mddexpert.h"
+// meddly_expert.h include meddly.h
+#include "../include/meddly_expert.h"
 
 // Only include this file if referring to operations that are not
 // available via the mddlib interface. 
@@ -69,7 +69,7 @@ op_info* getOp(forest* f, compute_manager::op_code op)
   static const int nForests = 3;
   static forest* forests[nForests];
   static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MDDLIB_getComputeManager());
+    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
   assert(ecm != 0);
   assert(f != 0);
 
@@ -90,7 +90,7 @@ op_info* getOp(forest* f, operation* op)
   static const int nForests = 3;
   static forest* forests[nForests];
   static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MDDLIB_getComputeManager());
+    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
   assert(ecm != 0);
   assert(f != 0);
   assert(op != 0);
@@ -161,7 +161,7 @@ dd_edge doPlus(forest* mtmxd, int** from, int** to, element_type* terms, int N)
 
   // Expert compute manager necessary to call apply(op_info*, ....)
   expert_compute_manager* ecm =
-    static_cast<expert_compute_manager*>(MDDLIB_getComputeManager());
+    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
 
   dd_edge result(mtmxd);
   dd_edge temp(mtmxd);
@@ -191,7 +191,7 @@ dd_edge test_mtmxd(forest* mtmxd, compute_manager::op_code opCode,
   // C = A op B
 
   static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MDDLIB_getComputeManager());
+    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
   assert(ecm != 0);
 
   dd_edge A(mtmxd);
@@ -222,7 +222,7 @@ bool test_conversion(dd_edge& A, dd_edge& B)
 {
   return
     (compute_manager::SUCCESS ==
-     MDDLIB_getComputeManager()->apply(compute_manager::COPY, A, B))
+     MEDDLY_getComputeManager()->apply(compute_manager::COPY, A, B))
     ? true
     : false;
 }
@@ -296,7 +296,7 @@ int main(int argc, char *argv[])
   }
 
   // Create a domain
-  domain *d = MDDLIB_createDomain();
+  domain *d = MEDDLY_createDomain();
   assert(d != 0);
   assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVariables));
 
@@ -344,7 +344,7 @@ int main(int argc, char *argv[])
 
   printf("Peak Nodes in MXD: %d\n", mtmxd->getPeakNumNodes());
   printf("Nodes in compute table: %d\n",
-      (MDDLIB_getComputeManager())->getNumCacheEntries());
+      (MEDDLY_getComputeManager())->getNumCacheEntries());
 
   // Convert mtmxd to mxd
   forest* mxd =
