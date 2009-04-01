@@ -32,8 +32,8 @@
     second part contains implementations of virtual functions in the interface.
 */
 
-#ifndef MDDEXPERT_H
-#define MDDEXPERT_H
+#ifndef MEDDLY_EXPERT_H
+#define MEDDLY_EXPERT_H
 
 #include <map>
 #include "../src/defines.h"
