@@ -4,14 +4,14 @@
 
 ## compile library
 
-lib_LTLIBRARIES = libmddlib3.la
+lib_LTLIBRARIES = libmeddly.la
 
 revision.h:
 	./BuildRevNo
 
 BUILT_SOURCES = revision.h
 
-libmddlib3_la_SOURCES = \
+libmeddly_la_SOURCES = \
 	../include/meddly_expert.h \
 	../include/meddly.h \
 	dd_edge.cc \
@@ -43,6 +43,6 @@ CXXFLAGS += -Wall
 ## CXXFLAGS += -DDEVELOPMENT_CODE
 ## CXXFLAGS += -DDIFF_SAT
 ## CXXFLAGS += -O2
-## CXXFLAGS += -O3
+CXXFLAGS += -O3
 ## CXXFLAGS += -m64
 

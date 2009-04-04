@@ -97,6 +97,10 @@ class compute_cache {
     */
     void removeStales();
 
+    /** Removes all cached entries.
+    */
+    void clear();
+
     /** Get the number of entries in the cache.
         @return     The number of entries in the cache.
     */

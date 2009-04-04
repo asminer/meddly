@@ -127,6 +127,10 @@ class fixed_size_hash_table {
       free(table);
     }
 
+    inline unsigned getMemoryUsage() const {
+      return table_size * sizeof(int);
+    }
+
     inline unsigned getSize() const {
       return table_size;
     }
@@ -138,10 +142,11 @@ class fixed_size_hash_table {
      */
 
     void show(FILE *s, bool verbose = false) const {
-      fprintf(s, "  Number of slots:    %d\n", getSize());
-      fprintf(s, "  Number of entries:  %d\n", getEntriesCount());
+      char filler[] = "\t";
+      fprintf(s, "%sNumber of slots:        %d\n", filler, getSize());
+      fprintf(s, "%sNumber of entries:      %d\n", filler, getEntriesCount());
       if (verbose) {
-        // fprintf(s, "%s :\n", __func__);
+        fprintf(s, "Hash table entries:\n");
         for (unsigned i = 0; i < getSize(); i++) {
           fprintf(s, "[%d] : ", i);
           if (table[i] != nodes->getNull()) {
@@ -266,7 +271,34 @@ class fixed_size_hash_table {
       buildFromList(front);
     }
 
-    
+
+    /// Go through the hash table and remove all entries
+    inline void clear() {
+      for (unsigned i = 0; i < getSize(); i++) {
+        if (table[i] != nodes->getNull()) {
+          nodes->uncacheNode(table[i]);
+          table[i] = nodes->getNull();
+        }
+      }
+
+      num_entries = 0;
+#if START_AT_MAX_SIZE
+      table_size = max_table_size;
+#else
+      table_size = min_table_size;
+#endif
+      max_load_size = unsigned(table_size * max_load_factor);
+      min_load_size = unsigned(table_size * min_load_factor);
+
+      table = (int*) realloc(table, sizeof(int) * getSize());
+      assert(NULL != table);
+      int *end = table + getSize();
+      for (int* curr = table; curr < end; curr++) {
+        *curr = nodes->getNull();
+      }
+    }
+
+
     /// Go through the hash table and remove all stale entries
     inline unsigned removeStaleEntries(bool shrinkable = true) {
       // return 0;

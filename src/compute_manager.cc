@@ -232,6 +232,12 @@ void expert_compute_manager::removeStales()
 }
 
 
+void expert_compute_manager::clearComputeTable()
+{
+  if (cc != 0) cc->clear();
+}
+
+
 void expert_compute_manager::addBuiltinOp(const builtin_op_key& key,
   const operation* op, const forest* const* forests, int n)
 {

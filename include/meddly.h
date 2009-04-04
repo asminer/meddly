@@ -243,6 +243,13 @@ class forest {
     */
     virtual error setCompactionThreshold(unsigned p) = 0;
 
+    /** Force garbage collection.
+        All disconnected nodes in this forest are discarded along with any
+        compute table entries that may include them.
+        @return     An apprpropriate error code.
+    */
+    virtual error garbageCollect() = 0;
+
     /** Compact the memory for all variables in this forest.
         This is not the same as garbage collection.
         @return     An apprpropriate error code.
@@ -1151,6 +1158,10 @@ class compute_manager {
   public:
     compute_manager();
     virtual ~compute_manager();
+
+    /** Removes all cached computation results from the compute table.
+    */
+    virtual void clearComputeTable() = 0;
 
     /** Change the type of hash table being used for the compute cache.
         The compute cache by default uses a hash table with chaining (i.e. a

@@ -36,7 +36,7 @@
 
 #define ENABLE_GC 1
 #define DEBUG_GC
-#define ALT_ORPHAN_GC
+// #define ALT_ORPHAN_GC
 #define ENABLE_CACHE_COUNTING 0
 #define ENABLE_IN_COUNTING 0
 
@@ -62,12 +62,14 @@ node_manager::node_manager(domain *d, bool rel, range_type t,
   a_size = add_size;
   address = (mdd_node_data *) malloc(a_size * sizeof(mdd_node_data));
   assert(NULL != address);
+  updateMemoryAllocated(a_size * sizeof(mdd_node_data));
   memset(address, 0, a_size * sizeof(mdd_node_data));
   a_last = peak_nodes = a_unused = 0;
   
   l_size = l_add_size;
   level = (mdd_level_data *) malloc(l_size * sizeof(mdd_level_data));
   assert(NULL != level);
+  updateMemoryAllocated(l_size * sizeof(mdd_level_data));
   memset(level, 0, l_size * sizeof(mdd_level_data));
 
   unique = new mdd_hash_table<node_manager> (this);
@@ -93,7 +95,7 @@ node_manager::node_manager(domain *d, bool rel, range_type t,
 #if 0
   setCompactionThreshold(50);
 #else
-  setCompactionThreshold(20);
+  setCompactionThreshold(40);
 #endif
 
   // set level sizes
@@ -248,8 +250,10 @@ int* node_manager::getTerminalNodes(int n)
   // use the array that comes with object (saves having to alloc/dealloc)
   if (dptrsSize < n) {
     // array not large enough, expand
+    updateMemoryAllocated((n - dptrsSize) * sizeof(int));
     dptrsSize = n;
     dptrs = (int *) realloc(dptrs, dptrsSize * sizeof(int));
+    DCASSERT(NULL != dptrs);
   }
 
   // store the terminals in the corresponding indexes
@@ -282,8 +286,10 @@ int* node_manager::getTerminalNodes(int n, bool* terms)
   // use the array that comes with object (saves having to alloc/dealloc)
   if (dptrsSize < n) {
     // array not large enough, expand
+    updateMemoryAllocated((n - dptrsSize) * sizeof(int));
     dptrsSize = n;
     dptrs = (int *) realloc(dptrs, dptrsSize * sizeof(int));
+    DCASSERT(NULL != dptrs);
   }
   // fill array with terminal nodes
   for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(terms[i]);
@@ -299,8 +305,10 @@ int* node_manager::getTerminalNodes(int n, int* terms)
   // use the array that comes with object (saves having to alloc/dealloc)
   if (dptrsSize < n) {
     // array not large enough, expand
+    updateMemoryAllocated((n - dptrsSize) * sizeof(int));
     dptrsSize = n;
     dptrs = (int *) realloc(dptrs, dptrsSize * sizeof(int));
+    DCASSERT(NULL != dptrs);
   }
   // fill array with terminal nodes
   for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(terms[i]);
@@ -316,8 +324,10 @@ int* node_manager::getTerminalNodes(int n, float* terms)
   // use the array that comes with object (saves having to alloc/dealloc)
   if (dptrsSize < n) {
     // array not large enough, expand
+    updateMemoryAllocated((n - dptrsSize) * sizeof(int));
     dptrsSize = n;
     dptrs = (int *) realloc(dptrs, dptrsSize * sizeof(int));
+    DCASSERT(NULL != dptrs);
   }
   // fill array with terminal nodes
   for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(terms[i]);
@@ -455,6 +465,7 @@ int node_manager::setLevelBoundAndHeight(int k, int sz, int h)
       fprintf(stderr, "Memory allocation error while allocating new level.\n");
       exit(1);
     }
+    updateMemoryAllocated((l_size - old_l_size) * sizeof(mdd_level_data));
     // wipe new level data
     memset(level + old_l_size, 0,
         (l_size - old_l_size) * sizeof(mdd_level_data));
@@ -467,8 +478,9 @@ int node_manager::setLevelBoundAndHeight(int k, int sz, int h)
   
   level[mapped_k].size = add_size;
   level[mapped_k].data = (int *) malloc(level[mapped_k].size * sizeof(int));
-  assert(NULL != level[mapped_k].data);
+  DCASSERT(NULL != level[mapped_k].data);
   if (level[mapped_k].data == NULL) return -1;
+  updateMemoryAllocated(level[mapped_k].size * sizeof(int));
   memset(level[mapped_k].data, 0, level[mapped_k].size * sizeof(int));
   level[mapped_k].holes_top = level[mapped_k].holes_bottom =
     level[mapped_k].hole_slots =
@@ -1041,7 +1053,7 @@ void node_manager::compactLevel(int k)
   }
 
   if (0 < level[p_level].temp_nodes) return;   // Temp nodes; do not compact
-#if 1
+#if 0
   printf("%s: level %d\n", __func__, k);
 #endif
 
@@ -1153,6 +1165,22 @@ void node_manager::compactLevel(int k)
   num_compactions++;
   level[p_level].num_compactions++;
   level[p_level].compactLevel = false;
+
+  if (level[p_level].size > add_size &&
+      level[p_level].last < level[p_level].size/2) {
+    int new_size = level[p_level].size/2;
+    while (new_size > add_size && new_size > level[p_level].last * 3)
+    { new_size /= 2; }
+    updateMemoryAllocated((new_size - level[p_level].size) * sizeof(int));
+    level[p_level].data = (int *)
+      realloc(level[p_level].data, new_size * sizeof(int));
+    assert(NULL != level[p_level].data);
+    level[p_level].size = new_size;
+#ifdef MEMORY_TRACE
+    printf("Reduced data[] by a factor of 2. New size: %d, Last: %d.\n",
+        level[p_level].size, level[p_level].last);
+#endif
+  }
 
 #if 0
   printf("After compaction:\n");
@@ -1474,7 +1502,7 @@ void node_manager::deleteTempNode(int p)
   }
   // reclaim node id
   freeNode(p);
-  // compactLevel(k);
+
   if (level[mapLevel(k)].compactLevel) compactLevel(k);
 
 #if 0
@@ -1496,6 +1524,7 @@ void node_manager::deleteNode(int p)
 #endif
 
   int* foo = getNodeAddress(p);
+  int k = getNodeLevel(p);
 
   // remove from unique table
   assert(unique->find(p) == p);
@@ -1555,6 +1584,8 @@ void node_manager::deleteNode(int p)
 
   // recycle the index
   freeNode(p);
+
+  if (level[mapLevel(k)].compactLevel) compactLevel(k);
 
 #if 0
   validateIncounts();
@@ -1643,7 +1674,14 @@ void node_manager::zombifyNode(int p)
 
 #endif  // zombifyNode
 
-bool node_manager::garbageCollect() {
+
+forest::error node_manager::garbageCollect() {
+  gc();
+  return forest::SUCCESS;
+}
+
+
+bool node_manager::gc() {
 #if ENABLE_GC
   // change isStale such that all nodes with (incount == 0)
   // are considered to be stale
@@ -1651,7 +1689,6 @@ bool node_manager::garbageCollect() {
 
   performing_gc = true;
 
-  bool saved_gc_state = enable_garbageCollection;
   bool freed_some = false;
   nodes_activated_since_gc = 0;
 
@@ -1677,6 +1714,7 @@ bool node_manager::garbageCollect() {
     int org_orphan_nodes = orphan_nodes;
     int reps = 0;
 
+    bool saved_gc_state = enable_garbageCollection;
     enable_garbageCollection = true;
 
     do {
@@ -1805,12 +1843,10 @@ int node_manager::getFreeNode(int k)
         new_a_size * sizeof(mdd_node_data));
     // assert(NULL != temp);
     if (NULL == temp) {
-      // garbage collect and re-try
-      // if (garbageCollect()) return getFreeNode(k);
-      // garbage collection didn't free up any nodes
       fprintf(stderr, "Memory allocation error while allocating MDD nodes.\n");
       exit(1);
     }
+    updateMemoryAllocated((new_a_size - a_size) * sizeof(mdd_node_data));
     address = temp;
     memset(address + a_size, 0, (new_a_size - a_size) * sizeof(mdd_node_data));
     a_size = new_a_size;
@@ -1857,6 +1893,16 @@ void node_manager::freeNode(int p)
     // special case
     address[p].offset = 0;
     a_last--;
+    if (a_size > add_size && a_last < a_size/2) {
+      address = (mdd_node_data *)
+          realloc(address, a_size/2 * sizeof(mdd_node_data));
+      assert(NULL != address);
+      a_size /= 2;
+      updateMemoryAllocated(-a_size * sizeof(mdd_node_data));
+#ifdef MEMORY_TRACE
+      printf("Reduced node[] by a factor of 2. New size: %d.\n", a_size);
+#endif
+    }
   } else {
     address[p].offset = -a_unused;
     a_unused = p;
@@ -2085,16 +2131,6 @@ int node_manager::getHole(int k, int slots, bool search_holes)
     printf("Expand level %d: old size=%d", p_level, level[p_level].size);
 #endif
     // not enough space, extend
-    // if (isTimeToGc()) {
-    //   garbageCollect();
-    // }
-    // else {
-    //   compactLevel(k);
-    // }
-    if (level[p_level].last + slots < level[p_level].size) {
-      DCASSERT(0 == level[p_level].hole_slots);
-      return getHole(k, slots, false);
-    }
     int *old_data = level[p_level].data;
     int old_size = level[p_level].size;
     while (level[p_level].last + slots >= level[p_level].size) {
@@ -2114,14 +2150,11 @@ int node_manager::getHole(int k, int slots, bool search_holes)
       // garbage collect and try again
       level[p_level].data = old_data;
       level[p_level].size = old_size;
-      // if (garbageCollect()) {
-      //   return getHole(k, slots, true);
-      // }
-      // garbage collection didn't free up any nodes
       reportMemoryUsage(stdout);
       fprintf(stderr, "Memory allocation error while expand MDD level.\n");
       exit(1);
     } else {
+      updateMemoryAllocated((level[p_level].size - old_size) * sizeof(int));
       memset(level[p_level].data + old_size, 0,
           (level[p_level].size - old_size) * sizeof(int));
     }
@@ -2163,10 +2196,26 @@ void node_manager::makeHole(int k, int addr, int slots)
   }
   
   // if addr is the last hole, absorb into free part of array
+  assert(addr + slots - 1 <= level[mapped_k].last);
   if (addr+slots-1 == level[mapped_k].last) {
     level[mapped_k].last -= slots;
     level[mapped_k].hole_slots -= slots;
     curr_slots -= slots;
+    if (level[mapped_k].size > add_size &&
+        level[mapped_k].last < level[mapped_k].size/2) {
+      int new_size = level[mapped_k].size/2;
+      while (new_size > add_size && new_size > level[mapped_k].last * 3)
+      { new_size /= 2; }
+      updateMemoryAllocated((new_size - level[mapped_k].size) * sizeof(int));
+      level[mapped_k].data = (int *)
+        realloc(level[mapped_k].data, new_size * sizeof(int));
+      assert(NULL != level[mapped_k].data);
+      level[mapped_k].size = new_size;
+#ifdef MEMORY_TRACE
+      printf("Reduced data[] by a factor of 2. New size: %d, Last: %d.\n",
+          level[mapped_k].size, level[mapped_k].last);
+#endif
+    }
 #ifdef MEMORY_TRACE
     cout << "Level " << k << ", Made Last Hole " << addr << "\n";
     dumpInternal(stdout);
@@ -2195,8 +2244,8 @@ void node_manager::makeHole(int k, int addr, int slots)
 }
 
 void node_manager::reportMemoryUsage(FILE * s, const char filler) {
-  fprintf(s, "%cPeak Nodes:\t\t%d\n", filler, getPeakNumNodes());
-  fprintf(s, "%cActive Nodes:\t\t%d\n", filler, getCurrentNumNodes());
+  fprintf(s, "%cPeak Nodes:             %d\n", filler, getPeakNumNodes());
+  fprintf(s, "%cActive Nodes:           %d\n", filler, getCurrentNumNodes());
 #if 0
   unsigned count = 0;
   for (int i = 1; i <= a_last; ++i) if (isActiveNode(i)) ++count;
@@ -2207,19 +2256,21 @@ void node_manager::reportMemoryUsage(FILE * s, const char filler) {
   fprintf(s, "%c%cOrphan Nodes:\t\t%d\n", filler, filler,
       getOrphanNodeCount());
 #endif
-  fprintf(s, "%cReclaimed Nodes:\t%d\n", filler, reclaimed_nodes);
-  fprintf(s, "%cPeak Memory Usage:\t%d\n", filler, getPeakMemoryUsed());
-  fprintf(s, "%cCurrent Memory Usage:\t%d\n", filler,
+  fprintf(s, "%cReclaimed Nodes:        %d\n", filler, reclaimed_nodes);
+  fprintf(s, "%cMem Used:               %d\n", filler,
       getCurrentMemoryUsed());
-#if 0
-  fprintf(s, "%cPeak Memory Allocated:\t%d\n",
-      filler, getPeakMemoryAllocated());
-  fprintf(s, "%cCurrent Memory Allocated:\t%d\n", filler,
+  fprintf(s, "%cPeak Mem Used:          %d\n", filler, getPeakMemoryUsed());
+  fprintf(s, "%cMem Allocated:          %d\n", filler,
       getCurrentMemoryAllocated());
+  fprintf(s, "%cPeak Mem Allocated:     %d\n",
+      filler, getPeakMemoryAllocated());
+  fprintf(s, "%cUnique Tbl Mem Used:    %d\n", filler,
+      getUniqueTableMemoryUsed());
+  fprintf(s, "%cCompactions:            %d\n", filler, getCompactionsCount());
+#if 0
   fprintf(s, "%cHole Memory Usage:\t%d\n", filler, getHoleMemoryUsage());
   fprintf(s, "%cMax Hole Chain:\t%d\n", filler, getMaxHoleChain());
   fprintf(s, "%cCompactions:\t\t%d\n", filler, getCompactionsCount());
-  fprintf(s, "%cCache Usage:\t\t%d\n", filler, getUniqueTableMemoryUsed());
   // compareCacheCounts();
 #endif
 }
@@ -2334,6 +2385,7 @@ int node_manager::getCompactionsCount() const { return num_compactions; }
 
 int node_manager::getCurrentMemoryUsed() const { 
   int sum = 0;
-  for(int i=0; i<l_size; i++) sum += level[i].last;
+  for(int i=0; i<l_size; i++) sum += level[i].last - level[i].hole_slots;
   return sum * sizeof(int); 
 }
+

@@ -796,6 +796,7 @@ class expert_compute_manager : public compute_manager {
     expert_compute_manager();
     virtual ~expert_compute_manager();
 
+    virtual void clearComputeTable();
     virtual error setHashTablePolicy(bool chaining, unsigned size = 16777216u);
     virtual void showComputeTable(FILE* strm) const;
     virtual int getNumCacheEntries() const;

@@ -242,6 +242,7 @@ class node_manager : public expert_forest {
     unsigned getCompactionThreshold() const;
     forest::error setCompactionThreshold(unsigned p);
     forest::error compactMemory();
+    forest::error garbageCollect();
 
     // *************** override expert_forest class -- done ***************
 
@@ -372,7 +373,7 @@ class node_manager : public expert_forest {
     void compactLevel(int k);
 
     /// garbage collect
-    bool garbageCollect();
+    bool gc();
     bool isTimeToGc();
 
     // zombify node p
@@ -679,7 +680,7 @@ inline int node_manager::createTempNode(int k, int sz, bool clear)
 {
   DCASSERT(k != 0);
 
-  if (isTimeToGc()) { garbageCollect(); }
+  if (isTimeToGc()) { gc(); }
 
   CHECK_RANGE(1, mapLevel(k), l_size);
   DCASSERT(level[mapLevel(k)].data != NULL);
@@ -998,6 +999,9 @@ inline int node_manager::getPeakMemoryUsed() const {
 inline void node_manager::updateMemoryAllocated(int bytes) {
   curr_mem_alloc += bytes;
   if (curr_mem_alloc > max_mem_alloc) max_mem_alloc = curr_mem_alloc;
+#if 0
+  printf("%p: Curr: %d, Peak: %d\n", this, curr_mem_alloc, max_mem_alloc);
+#endif
 }
 
 /// number of levels in the current mdd
@@ -1134,16 +1138,16 @@ inline forest::error node_manager::compactMemory() {
 }
 
 inline int node_manager::getCurrentMemoryAllocated() const {
-  return getCurrentMemoryUsed() + getUniqueTableMemoryUsed();
+  return curr_mem_alloc;
 }
 
 inline int node_manager::getPeakMemoryAllocated() const {
-  return getPeakMemoryUsed() + getUniqueTableMemoryUsed();
+  return max_mem_alloc;
 }
 
 inline void node_manager::showInfo(FILE* strm) {
-  // showAll(strm);
-  fprintf(strm, "MDD stats:\n");
+  //showAll(strm);
+  fprintf(strm, "DD stats:\n");
   reportMemoryUsage(strm, '\t');
 }
 

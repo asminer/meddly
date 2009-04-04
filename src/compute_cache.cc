@@ -82,6 +82,7 @@ bool compute_cache::setPolicy(bool chaining, unsigned maxSize)
   if (lastData > -1) return false;
 
   // delete existing hash tables
+  clear();
   if (fsht != 0) { delete fsht; fsht = 0; }
   if (ht != 0) { delete ht; ht = 0; }
 
@@ -105,13 +106,20 @@ void compute_cache::show(FILE* s, int h) const
 
 void compute_cache::show(FILE *s, bool verbose) const
 { 
-  fprintf(s, "  Number of slots:  %d\n", nodeCount);
-  fprintf(s, "  Memory usage:     %d\n",
-      dataCount * sizeof(int) + nodeCount * sizeof(cache_entry));
-  fprintf(s, "    Nodes[]:        %d\n", nodeCount * sizeof(cache_entry));
-  fprintf(s, "    Data[]:         %d\n", dataCount * sizeof(int));
-  fprintf(s, "  Pings:            %d\n", pings);
-  fprintf(s, "  Hits:             %d\n", hits);
+  char filler[] = "\t";
+  fprintf(s, "%sNumber of slots:\t%d\n", filler, nodeCount);
+  fprintf(s, "%sMemory usage:   \t%d\n", filler,
+      dataCount * sizeof(int) +
+      nodeCount * sizeof(cache_entry) +
+      (ht == 0? 0: ht->getMemoryUsage()) +
+      (fsht == 0? 0: fsht->getMemoryUsage()));
+  if (verbose) {
+    fprintf(s, "%s  Nodes[]:      \t%d\n",
+        filler, nodeCount * sizeof(cache_entry));
+    fprintf(s, "%s  Data[]:       \t%d\n", filler, dataCount * sizeof(int));
+  }
+  fprintf(s, "%sPings:          \t%d\n", filler, pings);
+  fprintf(s, "%sHits:           \t%d\n", filler, hits);
   fprintf(s, "Internal hash table info:\n");
   assert(ht == 0 || fsht == 0);
   if (ht != 0) ht->show(s, verbose);
@@ -153,6 +161,13 @@ void compute_cache::removeStales()
   assert(ht != 0 || fsht != 0);
   if (ht) ht->removeStaleEntries();
   if (fsht) fsht->removeStaleEntries();
+}
+
+void compute_cache::clear()
+{
+  assert(ht != 0 || fsht != 0);
+  if (ht) ht->clear();
+  if (fsht) fsht->clear();
 }
 
 int compute_cache::getNumEntries() const

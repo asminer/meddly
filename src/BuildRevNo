@@ -6,7 +6,7 @@
 # Builds the revision number.
 #
 
-rev=`svn info | awk '/Revision/{print $2}'`
+rev=`svn info | awk '/Revision/{print $2}' | head -n1`
 if [ -z "$rev" ]; then
   if [ -e revision.h ]; then
     printf "Leaving old revision number\n"

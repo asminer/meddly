@@ -84,6 +84,7 @@
   Exceptions?
 */
 
+#include <iostream>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -444,8 +445,40 @@ int main(int argc, char *argv[])
   reachableStates.show(stdout, 1);
 #endif
 
+#if 0
+  printf("\nCompute table info:\n");
+  ecm->showComputeTable(stdout);
+#endif
+
+  printf("\nMDD forest info:\n");
   mdd->showInfo(stdout);
-  printf("Cache entries: %d\n", ecm->getNumCacheEntries());
+  printf("\nMXD forest info:\n");
+  mxd->showInfo(stdout);
+  printf("\nCompute table info:\n");
+  ecm->showComputeTable(stdout);
+
+  start.note_time();
+#if 1
+  printf("\nClearing compute table... ");
+  ecm->clearComputeTable();
+  printf("done.\n");
+#else
+  printf("\nForcing garbage collection on MDD forest... ");
+  mdd->garbageCollect();
+  mxd->garbageCollect();
+  printf("done.\n");
+#endif
+
+  start.note_time();
+  printf("Time interval: %.4e seconds\n",
+      start.get_last_interval()/1000000.0);
+
+  printf("\nMDD forest info:\n");
+  mdd->showInfo(stdout);
+  printf("\nMXD forest info:\n");
+  mxd->showInfo(stdout);
+  printf("\nCompute table info:\n");
+  ecm->showComputeTable(stdout);
 
   // Cleanup
   delete d;

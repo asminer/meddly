@@ -161,6 +161,7 @@ class hash_table {
     }
     inline unsigned getSizeBy4() const { return sizeBy4; }
     inline unsigned getSize() const { return size; }
+    inline unsigned getMemoryUsage() const { return size * sizeof(int); }
     inline unsigned getMaxSize() const { return maxTableSize;}
     inline unsigned getMinSize() const { return minTableSize; }
     inline unsigned getEntriesCount() const { return nEntries; }
@@ -170,11 +171,12 @@ class hash_table {
        */
 
     void show(FILE *s, bool verbose = false) const {
-      fprintf(s, "  Number of slots:    %d\n", getSize());
-      fprintf(s, "  Number of entries:  %d\n", getEntriesCount());
+      char filler[] = "\t";
+      fprintf(s, "%sNumber of slots:        %d\n", filler, getSize());
+      fprintf(s, "%sNumber of entries:      %d\n", filler, getEntriesCount());
 #ifdef CHAIN_LENGTH_INFO
-      fprintf(s, "  Chains:\n"); 
-      fprintf(s, "     Depth    Count\n"); 
+      fprintf(s, "%sChains:\n", filler); 
+      fprintf(s, "%s   Depth    Count\n", filler); 
       // compute chain distribution
       std::vector<unsigned> chains;
       for (unsigned i = 0; i < getSize(); i++) {
@@ -189,11 +191,11 @@ class hash_table {
       }
       for (unsigned i = 0u; i < chains.size(); i++)
       {
-        fprintf(s, "     %d       %d\n", i, chains[i]); 
+        fprintf(s, "%s   %d       %d\n", filler, i, chains[i]); 
       }
 #endif
       if (verbose) {
-        // fprintf(s, "%s :\n", __func__);
+        fprintf(s, "Hash table entries:\n");
         for (unsigned i = 0; i < getSize(); i++) {
           fprintf(s, "[%d] : ", i);
           for (int index = table[i];
@@ -307,6 +309,37 @@ class hash_table {
 
       return table[h];
     }
+
+    /// Go through the hash table and remove all entries
+    inline void clear() {
+      int temp;
+      for (unsigned i = 0; i < getSize(); i++) {
+        while (table[i] != nodes->getNull()) {
+          temp = table[i];
+          table[i] = nodes->getNext(table[i]);
+          nodes->uncacheNode(temp);
+        }
+      }
+
+      nEntries = 0;
+      setSize(getMinSize());
+
+      table = (int*) realloc(table, sizeof(int) * getSize());
+      assert(NULL != table);
+      int *end = table + getSize();
+      for (int* curr = table; curr < end; curr++) {
+        *curr = nodes->getNull();
+      }
+
+#ifdef MAX_DEPTH
+      depth = (int*) realloc(depth, sizeof(int) * getSize());
+      assert(NULL != depth);
+      memset(depth, 0, sizeof(int) * getSize());
+#endif
+
+      noMem = false;
+    }
+
 
     /// Go through the hash table and remove all stale entries
     /// If shrinkable is true, it will reduce the size of the

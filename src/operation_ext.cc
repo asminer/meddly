@@ -3922,8 +3922,10 @@ int mdd_reachability_bfs::compute(op_info* owner, int mdd, int mxd)
 #if 1
   expert_forest* mxdNm = getExpertForest(owner, 1);
   dd_edge nsf(mxdNm);
+  mxdNm->linkNode(mxd);
   nsf.set(mxd, 0, mxdNm->getNodeLevel(mxd));
   dd_edge reachableStates(mddNm);
+  mddNm->linkNode(mdd);
   reachableStates.set(mdd, 0, mddNm->getNodeLevel(mdd));
   dd_edge prevReachableStates(mddNm);
   dd_edge postImage(mddNm);
@@ -4190,6 +4192,14 @@ mtmdd_multiply::~mtmdd_multiply() {}
 bool
 mtmdd_multiply::checkTerminals(op_info* op, int a, int b, int& c)
 {
+  DCASSERT(getExpertForest(op, 0)->getTerminalNode(int(0)) == 0);
+  DCASSERT(getExpertForest(op, 0)->getTerminalNode(float(0)) == 0);
+
+  if (a == 0 || b == 0) {
+    c = 0;
+    return true;
+  }
+
   if (getExpertForest(op, 0)->isTerminalNode(a) &&
       getExpertForest(op, 0)->isTerminalNode(b)) {
     if (getExpertForest(op, 0)->getRangeType() ==
@@ -4231,6 +4241,22 @@ mtmdd_minus::~mtmdd_minus() {}
 bool
 mtmdd_minus::checkTerminals(op_info* op, int a, int b, int& c)
 {
+  DCASSERT(getExpertForest(op, 0)->getTerminalNode(int(0)) == 0);
+  DCASSERT(getExpertForest(op, 0)->getTerminalNode(float(0)) == 0);
+
+  if (a == b) {
+    c = 0;
+    return true;
+  }
+
+  // TODO: if (a == 0) c = negate(b)
+
+  if (b == 0) {
+    c = a;
+    getExpertForest(op, 0)->linkNode(c);
+    return true;
+  }
+
   if (getExpertForest(op, 0)->isTerminalNode(a) &&
       getExpertForest(op, 0)->isTerminalNode(b)) {
     if (getExpertForest(op, 0)->getRangeType() ==
@@ -4272,6 +4298,17 @@ mtmdd_plus::~mtmdd_plus() {}
 bool
 mtmdd_plus::checkTerminals(op_info* op, int a, int b, int& c)
 {
+  DCASSERT(getExpertForest(op, 0)->getTerminalNode(int(0)) == 0);
+  DCASSERT(getExpertForest(op, 0)->getTerminalNode(float(0)) == 0);
+
+#if 1
+  if (a == 0 || b == 0) {
+    c = a + b;
+    getExpertForest(op, 0)->linkNode(c);
+    return true;
+  }
+#endif
+
   if (getExpertForest(op, 0)->isTerminalNode(a) &&
       getExpertForest(op, 0)->isTerminalNode(b)) {
     if (getExpertForest(op, 0)->getRangeType() ==
@@ -6059,6 +6096,14 @@ mtmxd_multiply::~mtmxd_multiply() {}
 bool
 mtmxd_multiply::checkTerminals(op_info* op, int a, int b, int& c)
 {
+  DCASSERT(getExpertForest(op, 0)->getTerminalNode(int(0)) == 0);
+  DCASSERT(getExpertForest(op, 0)->getTerminalNode(float(0)) == 0);
+
+  if (a == 0 || b == 0) {
+    c = 0;
+    return true;
+  }
+
   if (getExpertForest(op, 0)->isTerminalNode(a) &&
       getExpertForest(op, 0)->isTerminalNode(b)) {
     if (getExpertForest(op, 0)->getRangeType() == forest::INTEGER) {
@@ -6098,6 +6143,22 @@ mtmxd_minus::~mtmxd_minus() {}
 bool
 mtmxd_minus::checkTerminals(op_info* op, int a, int b, int& c)
 {
+  DCASSERT(getExpertForest(op, 0)->getTerminalNode(int(0)) == 0);
+  DCASSERT(getExpertForest(op, 0)->getTerminalNode(float(0)) == 0);
+
+  if (a == b) {
+    c = 0;
+    return true;
+  }
+
+  // TODO: if (a == 0) c = negate(b)
+
+  if (b == 0) {
+    c = a;
+    getExpertForest(op, 0)->linkNode(c);
+    return true;
+  }
+
   if (getExpertForest(op, 0)->isTerminalNode(a) &&
       getExpertForest(op, 0)->isTerminalNode(b)) {
     if (getExpertForest(op, 0)->getRangeType() == forest::INTEGER) {
@@ -6137,6 +6198,17 @@ mtmxd_plus::~mtmxd_plus() {}
 bool
 mtmxd_plus::checkTerminals(op_info* op, int a, int b, int& c)
 {
+  DCASSERT(getExpertForest(op, 0)->getTerminalNode(int(0)) == 0);
+  DCASSERT(getExpertForest(op, 0)->getTerminalNode(float(0)) == 0);
+
+#if 1
+  if (a == 0 || b == 0) {
+    c = a + b;
+    getExpertForest(op, 0)->linkNode(c);
+    return true;
+  }
+#endif
+
   if (getExpertForest(op, 0)->isTerminalNode(a) &&
       getExpertForest(op, 0)->isTerminalNode(b)) {
     if (getExpertForest(op, 0)->getRangeType() == forest::INTEGER) {
