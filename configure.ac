@@ -3,7 +3,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.60)
+## AC_PREREQ(2.60)
+AC_PREREQ(2.59)
 AC_INIT([meddly], [0.2], [junaid@cs.iastate.edu])
 AM_INIT_AUTOMAKE
 AM_CONFIG_HEADER(config.h)
@@ -27,7 +28,7 @@ AC_C_INLINE
 AC_TYPE_PID_T
 AC_TYPE_SIZE_T
 AC_HEADER_TIME
-AC_TYPE_UINT32_T
+## AC_TYPE_UINT32_T
 
 # Checks for library functions.
 AC_FUNC_FORK
