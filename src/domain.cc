@@ -165,7 +165,7 @@ void expert_domain::showInfo(FILE* strm)
   fprintf(strm, "Domain info:\n");
   fprintf(strm, "  #variables: %d\n", nVars);
   fprintf(strm, "  Variables listed in height-order (ascending):\n");
-  fprintf(strm, "    height\\tthandle\t\tbound\n");
+  fprintf(strm, "    height\t\thandle\t\tbound\n");
   for (int i = 1; i < nVars + 1; ++i) {
     fprintf(strm, "    %d\t\t%d\t\t%d\n",
             i, heightsToLevelsMap[i], levelBounds[heightsToLevelsMap[i]]);

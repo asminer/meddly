@@ -71,7 +71,7 @@
 #define AGGRESIVE_GC 0
 
 #define MAX_DEPTH 4
-#define EXPANSION_FACTOR 1.25
+#define EXPANSION_FACTOR 2
 
 //#define DEBUG_SIZE
 
@@ -443,7 +443,7 @@ class hash_table {
       if (newSize > maxTableSize) newSize = maxTableSize;
 #ifdef DEBUG_HASH_EXPAND_H
       printf("%s: Enlarging table...\n", __func__);
-      printf("\told nEntries = %d, new nEntries = %d", os, length);
+      printf(" nEntries = %d", length);
       printf(", new size = %d\n", newSize);
 #endif
       int *temp = (int*) realloc(table, sizeof(int) * newSize);

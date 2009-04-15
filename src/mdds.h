@@ -51,6 +51,8 @@
 
 #define TRACK_ZOMBIES 0
 
+using namespace std;
+
 /// Entities that use node_manager should inherit and implement the following
 /// functions which will enable the node_manager to remove nodes that have
 /// gone stale (zombie nodes).

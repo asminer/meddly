@@ -139,7 +139,7 @@ mdd_apply_operation::findResult(op_info* owner, int a, int b, int& c)
     key[0] = a; key[1] = b;
   }
 
-  const int* cacheEntry = owner->cc->find(owner, smart_cast<const int*>(key));
+  const int* cacheEntry = owner->cc->find(owner, const_cast<const int*>(key));
 
   if (cacheEntry == 0) return false;
   c = cacheEntry[2];
@@ -207,7 +207,7 @@ mdd_apply_operation::saveResult(op_info* owner, int a, int b, int c)
   getExpertForest(owner, 1)->cacheNode(cacheEntry[1]);
   getExpertForest(owner, 2)->cacheNode(cacheEntry[2]);
 
-  owner->cc->add(owner, smart_cast<const int*>(cacheEntry));
+  owner->cc->add(owner, const_cast<const int*>(cacheEntry));
 
 #else
 
@@ -2548,7 +2548,7 @@ mxd_alt_apply_operation::findResult(op_info* owner,
     key[1] = a; key[2] = b;
   }
 
-  const int* cacheEntry = owner->cc->find(owner, smart_cast<const int*>(key));
+  const int* cacheEntry = owner->cc->find(owner, const_cast<const int*>(key));
 
   if (cacheEntry == 0) return false;
   c = cacheEntry[3];
@@ -2588,7 +2588,7 @@ mxd_alt_apply_operation::saveResult(op_info* owner, int k, int a, int b, int c)
   getExpertForest(owner, 1)->cacheNode(cacheEntry[2]);
   getExpertForest(owner, 2)->cacheNode(cacheEntry[3]);
 
-  owner->cc->add(owner, smart_cast<const int*>(cacheEntry));
+  owner->cc->add(owner, const_cast<const int*>(cacheEntry));
 }
 
 
@@ -3469,7 +3469,7 @@ mdd_mxd_image_operation::findResult(op_info* owner, int a, int b, int& c)
   // create cache entry
   key[0] = a; key[1] = b;
 
-  const int* cacheEntry = owner->cc->find(owner, smart_cast<const int*>(key));
+  const int* cacheEntry = owner->cc->find(owner, const_cast<const int*>(key));
 
   if (cacheEntry == 0) return false;
   c = cacheEntry[2];
@@ -3496,7 +3496,7 @@ mdd_mxd_image_operation::saveResult(op_info* owner, int a, int b, int c)
   getExpertForest(owner, 1)->cacheNode(cacheEntry[1]);
   getExpertForest(owner, 2)->cacheNode(cacheEntry[2]);
 
-  owner->cc->add(owner, smart_cast<const int*>(cacheEntry));
+  owner->cc->add(owner, const_cast<const int*>(cacheEntry));
 }
 #endif
 
@@ -3881,7 +3881,302 @@ int mdd_post_image::sparseSparse (op_info* owner, op_info* unionOp,
 // ------------------------------------------------------------------
 
 
-// ---------------------- MDD Post-Image Operation -------------------
+// ---------------------- MDD Pre-Image Operation -------------------
+
+
+mdd_pre_image* mdd_pre_image::getInstance()
+{
+  static mdd_pre_image instance("MDD Pre-Image");
+  return &instance;
+}
+
+
+mdd_pre_image::mdd_pre_image(const char *name)
+: mdd_post_image(name)
+{ }
+
+
+mdd_pre_image::~mdd_pre_image() {}
+
+
+int mdd_pre_image::compute(op_info* owner, op_info* unionOp, int mdd, int mxd)
+{
+  // result[j] += pre_image(mdd[i], mxd[j][i])
+
+  // termination conditions
+  if (mxd == 0 || mdd == 0) return 0;
+
+  // skipped level means identity matrix
+  if (mxd == -1) {
+    getExpertForest(owner, 0)->linkNode(mdd);
+    return mdd;
+  }
+
+  // check the cache
+  int result = 0;
+  if (findResult(owner, mdd, mxd, result)) {
+#ifdef POST_CACHE_HIT
+    printf("%s: cache hit (%d, %d, %d)\n", __func__, mdd, mxd, result);
+#endif
+    return result;
+  }
+
+  expert_forest* mddNm = getExpertForest(owner, 0);
+  expert_forest* mxdNm = getExpertForest(owner, 1);
+
+  // check if mxd and mdd are at the same level
+  int mddLevel = mddNm->getNodeLevel(mdd);
+  int mxdLevel = mxdNm->getNodeLevel(mxd);
+
+  if (mddLevel < mxdLevel) {
+    // expand mxd
+    result = expandMxd(owner, unionOp, mdd, mxd);
+  } else if (mddLevel > mxdLevel) {
+    // expand mdd
+    result = expandMdd(owner, unionOp, mdd, mxd);
+  } else {
+    // same level
+    DCASSERT(mddNm->getNodeLevel(mdd) == mxdNm->getNodeLevel(mxd));
+    result = expand(owner, unionOp, mdd, mxd);
+  } // same level
+
+  DCASSERT(mddNm->isReducedNode(result));
+
+  // save result in compute cache and return it
+  saveResult(owner, mdd, mxd, result);
+  return result;
+}
+
+
+int mdd_pre_image::expandMxdByOneLevel(op_info* owner, op_info* unionOp,
+  int mdd, int iMxd)
+{
+  // result += pre_image(mdd, iMxd[j])
+
+  if (iMxd == 0) return 0;
+
+  expert_forest* mddNm = getExpertForest(owner, 0);
+  expert_forest* mxdNm = getExpertForest(owner, 1);
+
+  mdd_union* unionOpPtr = smart_cast<mdd_union*>(unionOp->op);
+  DCASSERT(unionOpPtr != 0);
+
+  DCASSERT(!mxdNm->isTerminalNode(iMxd));
+
+  int result = 0;
+  int tempResult = 0;
+  if (mxdNm->isFullNode(iMxd)) {
+    int iMxdSize = mxdNm->getFullNodeSize(iMxd);
+    for (int j = 0; j < iMxdSize; j++) {
+      int ijMxd = mxdNm->getFullNodeDownPtr(iMxd, j);
+      if (ijMxd == 0) continue;
+      int jResult = compute(owner, unionOp, mdd, ijMxd);
+      if (jResult == 0) continue;
+      tempResult = result;
+      result = unionOpPtr->compute(unionOp, result, jResult);
+      mddNm->unlinkNode(jResult);
+      mddNm->unlinkNode(tempResult);
+    }
+  } else {
+    // iMxd is a sparse node
+    int iMxdSize = mxdNm->getSparseNodeSize(iMxd);
+    for (int j = 0; j < iMxdSize; j++) {
+      int jResult = compute(owner, unionOp, mdd,
+          mxdNm->getSparseNodeDownPtr(iMxd, j));
+      if (jResult == 0) continue;
+      tempResult = result;
+      result = unionOpPtr->compute(unionOp, result, jResult);
+      mddNm->unlinkNode(jResult);
+      mddNm->unlinkNode(tempResult);
+    }
+  }
+
+  return result;
+}
+
+int mdd_pre_image::expandMxd (op_info* owner, op_info* unionOp,
+  int mdd, int mxd)
+{
+  // result[j] += pre_image(mdd[i], mxd[j][i])
+  // becomes
+  // result[j] += pre_image(mdd, mxd[j][i])
+  expert_forest* mddNm = getExpertForest(owner, 0);
+  expert_forest* mxdNm = getExpertForest(owner, 1);
+
+  // create new node
+  int result = 0;
+  if (mxdNm->isFullNode(mxd)) {
+    // full mxd node
+    int mxdSize = mxdNm->getFullNodeSize(mxd);
+    result = mddNm->createTempNode(mxdNm->getNodeLevel(mxd), mxdSize, false);
+    for (int i = 0; i < mxdSize; i++) {
+      int tempResult = expandMxdByOneLevel(owner, unionOp, mdd,
+          mxdNm->getFullNodeDownPtr(mxd, i));
+      mddNm->setDownPtrWoUnlink(result, i, tempResult);
+      mddNm->unlinkNode(tempResult);
+    } // for mxdSize
+  } else {
+    // sparse mxd node
+    int mxdSize = mxdNm->getSparseNodeSize(mxd);
+    result = mddNm->createTempNode(mxdNm->getNodeLevel(mxd),
+        mxdNm->getSparseNodeIndex(mxd, mxdSize-1) + 1);
+    for (int i = 0; i < mxdSize; i++) {
+      int tempResult = expandMxdByOneLevel(owner, unionOp, mdd,
+          mxdNm->getSparseNodeDownPtr(mxd, i));
+      mddNm->setDownPtrWoUnlink(result, mxdNm->getSparseNodeIndex(mxd, i),
+          tempResult);
+      mddNm->unlinkNode(tempResult);
+    } // for mxdSize
+  }
+  return mddNm->reduceNode(result);
+}
+
+
+int mdd_pre_image::expand(op_info* owner, op_info* unionOp, int mdd, int mxd)
+{
+  // result[j] += pre_image(mdd[i], mxd[j][i])
+  expert_forest* mddNm = getExpertForest(owner, 0);
+  expert_forest* mxdNm = getExpertForest(owner, 1);
+
+  // create new node
+  int result = 0;
+  if (mxdNm->isFullNode(mxd)) {
+    // full mxd node
+    int mxdSize = mxdNm->getFullNodeSize(mxd);
+    result = mddNm->createTempNode(mxdNm->getNodeLevel(mxd), mxdSize, false);
+    for (int i = 0; i < mxdSize; i++) {
+      int tempResult = expandByOneLevel(owner, unionOp, mdd,
+          mxdNm->getFullNodeDownPtr(mxd, i));
+      mddNm->setDownPtrWoUnlink(result, i, tempResult);
+      mddNm->unlinkNode(tempResult);
+    } // for mxdSize
+  } else {
+    // sparse mxd node
+    int mxdSize = mxdNm->getSparseNodeSize(mxd);
+    result = mddNm->createTempNode(mxdNm->getNodeLevel(mxd),
+        mxdNm->getSparseNodeIndex(mxd, mxdSize - 1) + 1);
+    for (int i = 0; i < mxdSize; i++) {
+      int tempResult = expandByOneLevel(owner, unionOp, mdd,
+          mxdNm->getSparseNodeDownPtr(mxd, i));
+      mddNm->setDownPtrWoUnlink(result, mxdNm->getSparseNodeIndex(mxd, i),
+          tempResult);
+      mddNm->unlinkNode(tempResult);
+    } // for mxdSize
+  }
+  return mddNm->reduceNode(result);
+}
+
+
+int mdd_pre_image::expandByOneLevel(op_info* owner, op_info* unionOp,
+  int mdd, int iMxd)
+{
+  // result += pre_image(mdd[j], iMxd[j])
+
+  if (iMxd == 0) return 0;
+
+  expert_forest* mddNm = getExpertForest(owner, 0);
+  expert_forest* mxdNm = getExpertForest(owner, 1);
+
+  mdd_union* unionOpPtr = smart_cast<mdd_union*>(unionOp->op);
+  DCASSERT(unionOpPtr != 0);
+
+  DCASSERT(!mxdNm->isTerminalNode(iMxd));
+
+  int result = 0;
+  int tempResult = 0;
+  if (mxdNm->isFullNode(iMxd)) {
+    if (mddNm->isFullNode(mdd)) {
+      int minSize =
+        MIN(mddNm->getFullNodeSize(mdd), mxdNm->getFullNodeSize(iMxd));
+      for (int j = 0; j < minSize; j++) {
+        int ijMxd = mxdNm->getFullNodeDownPtr(iMxd, j);
+        int jMdd = mddNm->getFullNodeDownPtr(mdd, j);
+        if (ijMxd == 0 || jMdd == 0) continue;
+        int jResult = compute(owner, unionOp, jMdd, ijMxd);
+        if (jResult == 0) continue;
+        tempResult = result;
+        result = unionOpPtr->compute(unionOp, result, jResult);
+        mddNm->unlinkNode(jResult);
+        mddNm->unlinkNode(tempResult);
+      }
+    } // mdd is a full node
+    else {
+      DCASSERT(mddNm->isSparseNode(mdd));
+      int iMxdSize = mxdNm->getFullNodeSize(iMxd);
+      int mddSize = mddNm->getSparseNodeSize(mdd);
+      for (int j = 0; j < mddSize; j++) {
+        int jIndex = mddNm->getSparseNodeIndex(mdd, j);
+        if (jIndex >= iMxdSize) break;
+        int ijMxd = mxdNm->getFullNodeDownPtr(iMxd, jIndex);
+        if (ijMxd == 0) continue;
+        int jMdd = mddNm->getSparseNodeDownPtr(mdd, j);
+        int jResult = compute(owner, unionOp, jMdd, ijMxd);
+        if (jResult == 0) continue;
+        tempResult = result;
+        result = unionOpPtr->compute(unionOp, result, jResult);
+        mddNm->unlinkNode(jResult);
+        mddNm->unlinkNode(tempResult);
+      }
+    } // mdd is a sparse node
+  } // iMxd is a full node
+  else {
+    DCASSERT(mxdNm->isSparseNode(iMxd));
+    if (mddNm->isFullNode(mdd)) {
+      int iMxdSize = mxdNm->getSparseNodeSize(iMxd);
+      int mddSize = mddNm->getFullNodeSize(mdd);
+      for (int j = 0; j < iMxdSize; j++) {
+        int jIndex = mxdNm->getSparseNodeIndex(iMxd, j);
+        if (jIndex >= mddSize) break;
+        int jMdd = mddNm->getFullNodeDownPtr(mdd, jIndex);
+        if (jMdd == 0) continue;
+        int ijMxd = mxdNm->getSparseNodeDownPtr(iMxd, j);
+        int jResult = compute(owner, unionOp, jMdd, ijMxd);
+        if (jResult == 0) continue;
+        tempResult = result;
+        result = unionOpPtr->compute(unionOp, result, jResult);
+        mddNm->unlinkNode(jResult);
+        mddNm->unlinkNode(tempResult);
+      }
+    } // mdd is a full node
+    else {
+      DCASSERT(mddNm->isSparseNode(mdd));
+      int iMxdLargestIndex = mxdNm->getSparseNodeIndex(iMxd,
+        mxdNm->getSparseNodeSize(iMxd) - 1);
+      int mddSize = mddNm->getSparseNodeSize(mdd);
+      // k: traverses iMxd, j: traverses mdd
+      int j = 0;
+      int k = 0;
+      int iMxdIndex = mxdNm->getSparseNodeIndex(iMxd, k);
+      for ( ; j < mddSize; ) {
+        int mddIndex = mddNm->getSparseNodeIndex(mdd, j);
+        if (mddIndex > iMxdLargestIndex) break;
+        while (iMxdIndex < mddIndex) {
+          DCASSERT((k+1) < mxdNm->getSparseNodeSize(iMxd));
+          iMxdIndex = mxdNm->getSparseNodeIndex(iMxd, ++k);
+        }
+        if (mddIndex < iMxdIndex) { ++j; continue; }
+        DCASSERT(mddIndex == iMxdIndex);
+        int jResult = compute(owner, unionOp,
+            mddNm->getSparseNodeDownPtr(mdd, j),
+            mxdNm->getSparseNodeDownPtr(iMxd, k));
+        ++j; ++k;
+        if (jResult == 0) continue;
+        tempResult = result;
+        result = unionOpPtr->compute(unionOp, result, jResult);
+        mddNm->unlinkNode(jResult);
+        mddNm->unlinkNode(tempResult);
+      }
+    } // mdd is a sparse node
+  } // iMxd is a sparse node
+
+  return result;
+}
+
+
+// ------------------------------------------------------------------
+
+
+// ---------------------- MDD Traditional Reachability -------------------
 
 
 mdd_reachability_bfs* mdd_reachability_bfs::getInstance()
@@ -5395,7 +5690,7 @@ conversion_operation::findResult(op_info* owner, int a, int& b)
   // create cache entry
   key[0] = a;
 
-  const int* cacheEntry = owner->cc->find(owner, smart_cast<const int*>(key));
+  const int* cacheEntry = owner->cc->find(owner, const_cast<const int*>(key));
 
   if (cacheEntry == 0) return false;
   b = cacheEntry[1];
@@ -5421,7 +5716,7 @@ conversion_operation::saveResult(op_info* owner, int a, int b)
   getExpertForest(owner, 0)->cacheNode(cacheEntry[0]);
   getExpertForest(owner, 1)->cacheNode(cacheEntry[1]);
 
-  owner->cc->add(owner, smart_cast<const int*>(cacheEntry));
+  owner->cc->add(owner, const_cast<const int*>(cacheEntry));
 }
 
 
@@ -5825,7 +6120,7 @@ mtmdd_to_evmdd::findResult(op_info* owner, int a, int& b, int& ev)
   // create cache entry
   key[0] = a;
 
-  const int* cacheEntry = owner->cc->find(owner, smart_cast<const int*>(key));
+  const int* cacheEntry = owner->cc->find(owner, const_cast<const int*>(key));
 
   if (cacheEntry == 0) return false;
   b = cacheEntry[1];
@@ -5842,7 +6137,7 @@ mtmdd_to_evmdd::findResult(op_info* owner, int a, int& b, float& ev)
   // create cache entry
   key[0] = a;
 
-  const int* cacheEntry = owner->cc->find(owner, smart_cast<const int*>(key));
+  const int* cacheEntry = owner->cc->find(owner, const_cast<const int*>(key));
 
   if (cacheEntry == 0) return false;
   b = cacheEntry[1];
@@ -5863,7 +6158,7 @@ mtmdd_to_evmdd::saveResult(op_info* owner, int a, int b, int c)
   getExpertForest(owner, 0)->cacheNode(a);
   getExpertForest(owner, 1)->cacheNode(b);
 
-  owner->cc->add(owner, smart_cast<const int*>(cacheEntry));
+  owner->cc->add(owner, const_cast<const int*>(cacheEntry));
 }
 
 
@@ -5878,7 +6173,7 @@ mtmdd_to_evmdd::saveResult(op_info* owner, int a, int b, float c)
   getExpertForest(owner, 0)->cacheNode(a);
   getExpertForest(owner, 1)->cacheNode(b);
 
-  owner->cc->add(owner, smart_cast<const int*>(cacheEntry));
+  owner->cc->add(owner, const_cast<const int*>(cacheEntry));
 }
 
 
@@ -6609,5 +6904,6 @@ mtmxd_equal::checkTerminals(op_info* op, int a, int b, int& c)
   }
   return false;
 }
+
 
 

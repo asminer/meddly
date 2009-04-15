@@ -47,8 +47,13 @@ compute_cache::compute_cache()
   memset(data, 0, dataCount * sizeof(int));
   
   // create new hash table
+#if 0
   ht = new hash_table<compute_cache>(this);
   fsht = 0;
+#else
+  ht = new hash_table<compute_cache>(this, 262144*4);
+  fsht = 0;
+#endif
 }
 
 

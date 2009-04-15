@@ -511,15 +511,49 @@ class mdd_post_image : public mdd_mxd_image_operation {
     mdd_post_image& operator=(const mdd_post_image& copy);
     virtual ~mdd_post_image();
 
-    int compute(op_info* owner, op_info* unionOp, int mdd, int mxd);
-    int fullFull (op_info* owner, op_info* unionOp, int mdd, int mxd);
-    int fullSparse (op_info* owner, op_info* unionOp, int mdd, int mxd);
-    int sparseFull (op_info* owner, op_info* unionOp, int mdd, int mxd);
-    int sparseSparse (op_info* owner, op_info* unionOp, int mdd, int mxd);
-    int expandMdd (op_info* owner, op_info* unionOp, int mdd, int mxd);
-    int expandMxd (op_info* owner, op_info* unionOp, int mdd, int mxd);
-    void expandMxdHelper (op_info* owner, op_info* unionOp,
+    virtual int compute(op_info* owner, op_info* unionOp, int mdd, int mxd);
+    virtual int fullFull(op_info* owner, op_info* unionOp, int mdd, int mxd);
+    virtual int fullSparse(op_info* owner, op_info* unionOp, int mdd, int mxd);
+    virtual int sparseFull(op_info* owner, op_info* unionOp, int mdd, int mxd);
+    virtual int sparseSparse(op_info* owner, op_info* unionOp,
+        int mdd, int mxd);
+    virtual int expandMdd(op_info* owner, op_info* unionOp, int mdd, int mxd);
+    virtual int expandMxd(op_info* owner, op_info* unionOp, int mdd, int mxd);
+    virtual void expandMxdHelper (op_info* owner, op_info* unionOp,
         int mdd, int iMxd, int result);
+};
+
+
+class mdd_pre_image : public mdd_post_image {
+  public:
+    static mdd_pre_image* getInstance();
+
+  protected:
+    mdd_pre_image(const char* name);
+    mdd_pre_image(const mdd_pre_image& copy);
+    mdd_pre_image& operator=(const mdd_pre_image& copy);
+    virtual ~mdd_pre_image();
+
+    virtual int compute(op_info* owner, op_info* unionOp, int mdd, int mxd);
+
+    virtual int expandMxd (op_info* owner, op_info* unionOp, int mdd, int mxd);
+    virtual int expandMxdByOneLevel(op_info* owner, op_info* unionOp,
+        int mdd, int iMxd); 
+
+    virtual int expand(op_info* owner, op_info* unionOp, int mdd, int mxd);
+    virtual int expandByOneLevel(op_info* owner, op_info* unionOp,
+        int mdd, int iMxd);
+
+    // No need for mdd_pre_image::expandMdd()
+    // since we are reusing mdd_post_image::expandMdd()
+    // This works correctly because when a mxd level is skipped
+    // due to an identity reduced node:
+    // result[j] += pre_image(mdd[i], mxd[j][i])
+    // is only valid when i == j (those are the only non-zero entries for
+    // an identity reduced node).
+    // Therefore, the above becomes
+    // result[i] += pre_image(mdd[i], mxd[i][i])
+    // which is the same expansion used in mdd_post_image::expandMdd().
 };
 
 

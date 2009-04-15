@@ -351,7 +351,8 @@ op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
             return &(builtinOpEntries->find(key)->second);
           case PRE_IMAGE:
             // Mdd Pre-Image
-            assert(false);
+            addBuiltinOp(key, mdd_pre_image::getInstance(), forests, N);
+            return &(builtinOpEntries->find(key)->second);
           case REACHABLE_STATES_DFS:
             // Mdd Reachable states using saturation-based algorithm
             assert(false);

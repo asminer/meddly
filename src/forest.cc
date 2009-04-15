@@ -144,7 +144,7 @@ void expert_forest::unregisterEdge(dd_edge& e) {
 }
 
 
-#if INLINED_REALS
+#ifdef INLINED_REALS
 
 #else
 

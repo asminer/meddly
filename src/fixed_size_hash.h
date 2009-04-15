@@ -68,7 +68,7 @@
 #define AGGRESIVE_GC 0
 #define START_AT_MAX_SIZE 0
 
-#define EXPANSION_FACTOR 1.25       // new_size = old_size * 1.25
+#define EXP_FACTOR 1.25       // new_size = old_size * 1.25
 
 template <typename MANAGER>
 class fixed_size_hash_table {
@@ -231,8 +231,8 @@ class fixed_size_hash_table {
       int front = convertToList(length);
 
       // expand hash table
-#ifdef EXPANSION_FACTOR
-      table_size = int(table_size * float(EXPANSION_FACTOR));
+#ifdef EXP_FACTOR
+      table_size = int(table_size * float(EXP_FACTOR));
 #else
       table_size *= 2;
 #endif

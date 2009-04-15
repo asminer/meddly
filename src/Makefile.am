@@ -46,3 +46,5 @@ CXXFLAGS += -Wall
 CXXFLAGS += -O3
 ## CXXFLAGS += -m64
 
+include_HEADERS = ../include/meddly.h
+

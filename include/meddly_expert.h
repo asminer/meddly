@@ -1488,7 +1488,7 @@ int expert_forest::getTerminalNode(int integerValue) const
 
 #define INLINED_REALS 1 // Inlining getReal and getTerminalNode(float)
 
-#if INLINED_REALS
+#ifdef INLINED_REALS
 // Warning: Optimizing (-O2) with inlined functions with gcc vers 4.1.3
 //          produced errors in output. Assembly output showed incorrect
 //          sequence of operations that caused errors. This does not occur
@@ -1552,7 +1552,7 @@ int expert_forest::getLevelSize(int lh) const {
 inline
 int expert_forest::getNodeLevel(int p) const
 {
-#if DEBUG_MDD_H
+#ifdef DEBUG_MDD_H
   printf("%s: p: %d\n", __func__, p);
 #endif
   DCASSERT(isActiveNode(p) || isZombieNode(p));
@@ -1571,7 +1571,7 @@ int expert_forest::getNodeHeight(int p) const
 inline
 bool expert_forest::isFullNode(int p) const
 {
-#if DEBUG_MDD_H
+#ifdef DEBUG_MDD_H
   printf("%s: p: %d, size: %d\n", __func__, p, getInternalNodeSize(p));
 #endif
   DCASSERT(isActiveNode(p) && !isTerminalNode(p));
@@ -1582,7 +1582,7 @@ bool expert_forest::isFullNode(int p) const
 inline
 bool expert_forest::isSparseNode(int p) const
 {
-#if DEBUG_MDD_H
+#ifdef DEBUG_MDD_H
   printf("%s: p: %d, size: %d\n", __func__, p, getInternalNodeSize(p));
 #endif
   DCASSERT(isActiveNode(p) && !isTerminalNode(p));
@@ -1593,7 +1593,7 @@ bool expert_forest::isSparseNode(int p) const
 inline
 int expert_forest::getFullNodeSize(int p) const
 {
-#if DEBUG_MDD_H
+#ifdef DEBUG_MDD_H
   printf("%s: p: %d\n", __func__, p);
 #endif
   DCASSERT(isFullNode(p));
@@ -1604,7 +1604,7 @@ int expert_forest::getFullNodeSize(int p) const
 inline
 int expert_forest::getSparseNodeSize(int p) const
 {
-#if DEBUG_MDD_H
+#ifdef DEBUG_MDD_H
 printf("%s: p: %d\n", __func__, p);
 #endif
   DCASSERT(isSparseNode(p));
@@ -1712,9 +1712,9 @@ void expert_forest::linkNode(int p)
   // increase incount and return
   ++getInCount(p);
 
-#if TRACK_DELETIONS
-  cout << "\t+Node " << p << " count now " << *(getNodeAddress(p)) << "\n";
-  cout.flush();
+#ifdef TRACK_DELETIONS
+  fprintf(stdout, "\t+Node %d count now %d\n", p, getInCount(p));
+  fflush(stdout);
 #endif
 }  
 
@@ -1732,9 +1732,9 @@ void expert_forest::unlinkNode(int p)
   // decrement incoming count
   --getInCount(p);
 
-#if TRACK_DELETIONS
-  cout << "\t-Node " << p << " count now " << getInCount(p) << "\n";
-  cout.flush();
+#ifdef TRACK_DELETIONS
+  fprintf(stdout, "\t-Node %d count now %d\n", p, getInCount(p));
+  fflush(stdout);
 #endif
 
   if (getInCount(p) == 0) handleNewOrphanNode(p);
@@ -1749,10 +1749,9 @@ void expert_forest::cacheNode(int p)
   if (isTerminalNode(p)) return;
   DCASSERT(isReducedNode(p));
   getCacheCount(p)++;
-#if TRACK_CACHECOUNT
-  cout << "+Node " << p << " is in " << getCacheCount(p)
-    << " caches\n";
-  cout.flush();
+#ifdef TRACK_CACHECOUNT
+  fprintf(stdout, "\t+Node %d is in %d caches\n", p, getCacheCount(p));
+  fflush(stdout);
 #endif
 }
 
@@ -1776,9 +1775,9 @@ void expert_forest::uncacheNode(int p)
 
   DCASSERT(getCacheCount(p) > 0);
   getCacheCount(p)--;
-#if TRACK_CACHECOUNT
-  cout << "-Node " << p << " is in " << getCacheCount(p) << " caches\n";
-  cout.flush();
+#ifdef TRACK_CACHECOUNT
+  fprintf(stdout, "\t-Node %d is in %d caches\n", p, getCacheCount(p));
+  fflush(stdout);
 #endif
 
   if (getCacheCount(p) == 0 && getInCount(p) == 0) {
