@@ -6907,3 +6907,227 @@ mtmxd_equal::checkTerminals(op_info* op, int a, int b, int& c)
 
 
 
+// ---------------------- MTMDD Post-Image Operation -------------------
+
+
+mtmdd_post_image* mtmdd_post_image::getInstance()
+{
+  static mtmdd_post_image instance("MTMDD Post-Image");
+  return &instance;
+}
+
+
+mtmdd_post_image::mtmdd_post_image(const char *name)
+: mdd_post_image(name)
+{ }
+
+
+mtmdd_post_image::~mtmdd_post_image() {}
+
+
+compute_manager::error
+mtmdd_post_image::typeCheck(const op_info* owner)
+{
+  // op1 == MTMDD, op2 == MTMXD, op3 = MTMDD
+  if (owner == 0)
+    return compute_manager::UNKNOWN_OPERATION;
+  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nForests != 3)
+    return compute_manager::WRONG_NUMBER;
+  if (owner->f[0] == owner->f[1] || owner->f[0] != owner->f[2])
+    return compute_manager::FOREST_MISMATCH;
+  if (!getExpertForest(owner, 0)->isMtMdd() ||
+      !getExpertForest(owner, 1)->isMtMxd())
+    return compute_manager::TYPE_MISMATCH;
+  return compute_manager::SUCCESS;
+}
+
+
+int mtmdd_post_image::compute(op_info* owner, int mdd, int mxd)
+{
+  DCASSERT(owner->nForests == 3 && owner->f[0] == owner->f[2]);
+  const int nOperands = 3;
+  forest* forests[nOperands] = {owner->f[0], owner->f[0], owner->f[0]};
+  op_info* plusOp = 
+    smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
+    getOpInfo(compute_manager::PLUS, forests, nOperands);
+  assert(plusOp != 0);
+  return compute(owner, plusOp, mdd, mxd);
+}
+
+
+// HERE: Test this
+// TODO: Test
+int mtmdd_post_image::compute(op_info* owner, op_info* plusOp, int mdd, int mxd)
+{
+  // termination conditions
+  if (mxd == 0 || mdd == 0) return 0;
+
+  expert_forest* mddNm = getExpertForest(owner, 0);
+  expert_forest* mxdNm = getExpertForest(owner, 1);
+
+#if 0
+  // skipped level means identity matrix
+  if (mxd == -1) {
+    getExpertForest(owner, 0)->linkNode(mdd);
+    return mdd;
+  }
+#else
+  if (mddNm->isTerminalNode(mdd) && mxdNm->isTerminalNode(mxd)) {
+    return mxd;
+  }
+#endif
+
+  // check the cache
+  int result = 0;
+  if (findResult(owner, mdd, mxd, result)) {
+#ifdef POST_CACHE_HIT
+    printf("%s: cache hit (%d, %d, %d)\n", __func__, mdd, mxd, result);
+#endif
+    return result;
+  }
+
+  // check if mxd and mdd are at the same level
+  int mddLevel = mddNm->getNodeLevel(mdd);
+  int mxdLevel = mxdNm->getNodeLevel(mxd);
+
+  if (mddLevel < mxdLevel) {
+    // expand mxd
+    result = expandMxd(owner, plusOp, mdd, mxd);
+  } else if (mddLevel > mxdLevel) {
+    // expand mdd
+    result = expandMdd(owner, plusOp, mdd, mxd);
+  } else {
+    // same level
+    DCASSERT(mddNm->getNodeLevel(mdd) == mxdNm->getNodeLevel(mxd));
+    if (mddNm->isFullNode(mdd)) {
+      if (mxdNm->isFullNode(mxd))
+        result = fullFull(owner, plusOp, mdd, mxd);
+      else
+        result = fullSparse(owner, plusOp, mdd, mxd);
+    } else {
+      if (mxdNm->isFullNode(mxd))
+        result = sparseFull(owner, plusOp, mdd, mxd);
+      else
+        result = sparseSparse(owner, plusOp, mdd, mxd);
+    }
+  } // same level
+
+  DCASSERT(mddNm->isReducedNode(result));
+
+  // save result in compute cache and return it
+  saveResult(owner, mdd, mxd, result);
+  return result;
+}
+
+
+// ------------------------------------------------------------------
+
+
+// ---------------------- MTMDD Pre-Image Operation -------------------
+
+
+mtmdd_pre_image* mtmdd_pre_image::getInstance()
+{
+  static mtmdd_pre_image instance("MTMDD Pre-Image");
+  return &instance;
+}
+
+
+mtmdd_pre_image::mtmdd_pre_image(const char *name)
+: mdd_pre_image(name)
+{ }
+
+
+mtmdd_pre_image::~mtmdd_pre_image() {}
+
+
+compute_manager::error
+mtmdd_pre_image::typeCheck(const op_info* owner)
+{
+  // op1 == MTMDD, op2 == MTMXD, op3 = MTMDD
+  if (owner == 0)
+    return compute_manager::UNKNOWN_OPERATION;
+  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nForests != 3)
+    return compute_manager::WRONG_NUMBER;
+  if (owner->f[0] == owner->f[1] || owner->f[0] != owner->f[2])
+    return compute_manager::FOREST_MISMATCH;
+  if (!getExpertForest(owner, 0)->isMtMdd() ||
+      !getExpertForest(owner, 1)->isMtMxd())
+    return compute_manager::TYPE_MISMATCH;
+  return compute_manager::SUCCESS;
+}
+
+
+int mtmdd_pre_image::compute(op_info* owner, int mdd, int mxd)
+{
+  DCASSERT(owner->nForests == 3 && owner->f[0] == owner->f[2]);
+  const int nOperands = 3;
+  forest* forests[nOperands] = {owner->f[0], owner->f[0], owner->f[0]};
+  op_info* plusOp = 
+    smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
+    getOpInfo(compute_manager::PLUS, forests, nOperands);
+  assert(plusOp != 0);
+  return compute(owner, plusOp, mdd, mxd);
+}
+
+
+int mtmdd_pre_image::compute(op_info* owner, op_info* plusOp, int mdd, int mxd)
+{
+  // result[j] += pre_image(mdd[i], mxd[j][i])
+
+  // termination conditions
+  if (mxd == 0 || mdd == 0) return 0;
+
+  expert_forest* mddNm = getExpertForest(owner, 0);
+  expert_forest* mxdNm = getExpertForest(owner, 1);
+
+#if 0
+  // skipped level means identity matrix
+  if (mxd == -1) {
+    getExpertForest(owner, 0)->linkNode(mdd);
+    return mdd;
+  }
+#else
+  if (mddNm->isTerminalNode(mdd) && mxdNm->isTerminalNode(mxd)) {
+    return mxd;
+  }
+#endif
+
+  // check the cache
+  int result = 0;
+  if (findResult(owner, mdd, mxd, result)) {
+#ifdef POST_CACHE_HIT
+    printf("%s: cache hit (%d, %d, %d)\n", __func__, mdd, mxd, result);
+#endif
+    return result;
+  }
+
+  // check if mxd and mdd are at the same level
+  int mddLevel = mddNm->getNodeLevel(mdd);
+  int mxdLevel = mxdNm->getNodeLevel(mxd);
+
+  if (mddLevel < mxdLevel) {
+    // expand mxd
+    result = expandMxd(owner, plusOp, mdd, mxd);
+  } else if (mddLevel > mxdLevel) {
+    // expand mdd
+    result = expandMdd(owner, plusOp, mdd, mxd);
+  } else {
+    // same level
+    DCASSERT(mddNm->getNodeLevel(mdd) == mxdNm->getNodeLevel(mxd));
+    result = expand(owner, plusOp, mdd, mxd);
+  } // same level
+
+  DCASSERT(mddNm->isReducedNode(result));
+
+  // save result in compute cache and return it
+  saveResult(owner, mdd, mxd, result);
+  return result;
+}
+
+
+

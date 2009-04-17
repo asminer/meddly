@@ -1093,6 +1093,39 @@ class mtmdd_to_evmdd : public operation {
     virtual void saveResult(op_info* owner, int a, int b, float ev);
 };
 
+
+class mtmdd_post_image : public mdd_post_image {
+  public:
+    static mtmdd_post_image* getInstance();
+    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual int compute(op_info* owner, int a, int b);
+
+  protected:
+    mtmdd_post_image(const char* name);
+    mtmdd_post_image(const mtmdd_post_image& copy);
+    mtmdd_post_image& operator=(const mtmdd_post_image& copy);
+    virtual ~mtmdd_post_image();
+
+    virtual int compute(op_info* owner, op_info* plusOp, int mdd, int mxd);
+};
+
+
+class mtmdd_pre_image : public mdd_pre_image {
+  public:
+    static mtmdd_pre_image* getInstance();
+    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual int compute(op_info* owner, int a, int b);
+
+  protected:
+    mtmdd_pre_image(const char* name);
+    mtmdd_pre_image(const mtmdd_pre_image& copy);
+    mtmdd_pre_image& operator=(const mtmdd_pre_image& copy);
+    virtual ~mtmdd_pre_image();
+
+    virtual int compute(op_info* owner, op_info* plusOp, int mdd, int mxd);
+};
+
+
 #endif
 
 

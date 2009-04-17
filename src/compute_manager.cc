@@ -392,62 +392,89 @@ op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
     }
     else if (smart_cast<const expert_forest* const>(forests[0])->isMtMdd()) {
 
-      if (smart_cast<const expert_forest* const>(forests[1])->isMtMdd() &&
-          smart_cast<const expert_forest* const>(forests[2])->isMtMdd()) {
-        // MTMDD binary operation
-        switch (op) {
-          case MIN:
-            // MtMdd min
-            addBuiltinOp(key, mtmdd_min::getInstance(), forests, N);
+      if (smart_cast<const expert_forest* const>(forests[1])->isMtMdd()) {
+
+        if (smart_cast<const expert_forest* const>(forests[2])->isMtMdd()) {
+          // MTMDD binary operation
+          switch (op) {
+            case MIN:
+              // MtMdd min
+              addBuiltinOp(key, mtmdd_min::getInstance(), forests, N);
+              return &(builtinOpEntries->find(key)->second);
+            case MAX:
+              // MtMdd max
+              addBuiltinOp(key, mtmdd_max::getInstance(), forests, N);
+              return &(builtinOpEntries->find(key)->second);
+            case PLUS:
+              // MtMdd plus
+              addBuiltinOp(key, mtmdd_plus::getInstance(), forests, N);
+              return &(builtinOpEntries->find(key)->second);
+            case MINUS:
+              // MtMdd minus
+              addBuiltinOp(key, mtmdd_minus::getInstance(), forests, N);
+              return &(builtinOpEntries->find(key)->second);
+            case MULTIPLY:
+              // MtMdd multiply
+              addBuiltinOp(key, mtmdd_multiply::getInstance(), forests, N);
+              return &(builtinOpEntries->find(key)->second);
+            case DIVIDE:
+              // MtMdd divide
+              addBuiltinOp(key, mtmdd_divide::getInstance(), forests, N);
+              return &(builtinOpEntries->find(key)->second);
+            case EQUAL:
+              // MtMdd ==
+              addBuiltinOp(key, mtmdd_equal::getInstance(), forests, N);
+              return &(builtinOpEntries->find(key)->second);
+            case NOT_EQUAL:
+              // MtMdd !=
+              addBuiltinOp(key, mtmdd_not_equal::getInstance(), forests, N);
+              return &(builtinOpEntries->find(key)->second);
+            case LESS_THAN:
+              // MtMdd <
+              addBuiltinOp(key, mtmdd_less_than::getInstance(), forests, N);
+              return &(builtinOpEntries->find(key)->second);
+            case LESS_THAN_EQUAL:
+              // MtMdd <=
+              addBuiltinOp(key, mtmdd_less_than_equal::getInstance(), forests, N);
+              return &(builtinOpEntries->find(key)->second);
+            case GREATER_THAN:
+              // MtMdd >
+              addBuiltinOp(key, mtmdd_greater_than::getInstance(), forests, N);
+              return &(builtinOpEntries->find(key)->second);
+            case GREATER_THAN_EQUAL:
+              // MtMdd >=
+              addBuiltinOp(key, mtmdd_greater_than_equal::getInstance(),
+                  forests, N);
+              return &(builtinOpEntries->find(key)->second);
+            default:
+              break;
+          }
+        }
+      } // MTMDD binary operations
+      else if (smart_cast<const expert_forest* const>(forests[1])->isMtMxd()) {
+
+        if (smart_cast<const expert_forest* const>(forests[2])->isMtMdd()) {
+          // MTMDD-MTMXD image operation
+          switch (op) {
+          case POST_IMAGE:
+            // MtMdd Post-Image
+            addBuiltinOp(key, mtmdd_post_image::getInstance(), forests, N);
             return &(builtinOpEntries->find(key)->second);
-          case MAX:
-            // MtMdd max
-            addBuiltinOp(key, mtmdd_max::getInstance(), forests, N);
+          case PRE_IMAGE:
+            // MtMdd Pre-Image
+            addBuiltinOp(key, mtmdd_pre_image::getInstance(), forests, N);
             return &(builtinOpEntries->find(key)->second);
-          case PLUS:
-            // MtMdd plus
-            addBuiltinOp(key, mtmdd_plus::getInstance(), forests, N);
-            return &(builtinOpEntries->find(key)->second);
-          case MINUS:
-            // MtMdd minus
-            addBuiltinOp(key, mtmdd_minus::getInstance(), forests, N);
-            return &(builtinOpEntries->find(key)->second);
-          case MULTIPLY:
-            // MtMdd multiply
-            addBuiltinOp(key, mtmdd_multiply::getInstance(), forests, N);
-            return &(builtinOpEntries->find(key)->second);
-          case DIVIDE:
-            // MtMdd divide
-            addBuiltinOp(key, mtmdd_divide::getInstance(), forests, N);
-            return &(builtinOpEntries->find(key)->second);
-          case EQUAL:
-            // MtMdd ==
-            addBuiltinOp(key, mtmdd_equal::getInstance(), forests, N);
-            return &(builtinOpEntries->find(key)->second);
-          case NOT_EQUAL:
-            // MtMdd !=
-            addBuiltinOp(key, mtmdd_not_equal::getInstance(), forests, N);
-            return &(builtinOpEntries->find(key)->second);
-          case LESS_THAN:
-            // MtMdd <
-            addBuiltinOp(key, mtmdd_less_than::getInstance(), forests, N);
-            return &(builtinOpEntries->find(key)->second);
-          case LESS_THAN_EQUAL:
-            // MtMdd <=
-            addBuiltinOp(key, mtmdd_less_than_equal::getInstance(), forests, N);
-            return &(builtinOpEntries->find(key)->second);
-          case GREATER_THAN:
-            // MtMdd >
-            addBuiltinOp(key, mtmdd_greater_than::getInstance(), forests, N);
-            return &(builtinOpEntries->find(key)->second);
-          case GREATER_THAN_EQUAL:
-            // MtMdd >=
-            addBuiltinOp(key, mtmdd_greater_than_equal::getInstance(),
-                forests, N);
-            return &(builtinOpEntries->find(key)->second);
+          case REACHABLE_STATES_DFS:
+            // MtMdd Reachable states using saturation-based algorithm
+            assert(false);
+          case REACHABLE_STATES_BFS:
+            // MtMdd Reachable states using traditional breadth-first algorithm
+            assert(false);
           default:
             break;
-        }
+          }
+        } // MTMDD-MTMXD image operation
+
       }
 
     }
