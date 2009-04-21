@@ -70,7 +70,7 @@
                                     //    this MUST be 1 for pessimistic caches
 #define AGGRESIVE_GC 0
 
-#define MAX_DEPTH 4
+#define MAX_DEPTH 2
 #define EXPANSION_FACTOR 2
 
 //#define DEBUG_SIZE
@@ -278,36 +278,70 @@ class hash_table {
       CHECK_RANGE(0, h, getSize());
 
       // insert at head of list
+
+#ifndef MAX_DEPTH
       nodes->setNext(key, table[h]);
       table[h] = key;
       nEntries++;
-
-#ifdef MAX_DEPTH
-      depth[h]++;
-      if (depth[h] > int(MAX_DEPTH)) {
+#else
+      nodes->setNext(key, nodes->getNull());
+      // Two situations:
+      // MAX_DEPTH reached: remove tail, insert at tail
+      // MAX_DEPTH not reached: insert at tail
+      DCASSERT(depth[h] <= MAX_DEPTH);
+      if (depth[h] == int(MAX_DEPTH)) {
         DCASSERT(int(MAX_DEPTH) > 0);
-        DCASSERT(depth[h] > 1);
+        DCASSERT(depth[h] > 0);
         // find last entry
-        // there are at least 2 entries in this list
-        DCASSERT(table[h] != nodes->getNull());
-        int prev = table[h];
-        int curr = nodes->getNext(prev);
-        int next = nodes->getNext(curr);
-        while (next != nodes->getNull()) {
-          prev = curr;
-          curr = next;
-          next = nodes->getNext(curr);
-        }
-        // last node is in curr; remove it from cache
-        nodes->uncacheNode(curr);
-        nodes->setNext(prev, next);
-        nEntries--;
-        depth[h]--;
+        // there is at least 1 entry in this list
+        // remove the last entry from cache
+        // insert at tail
+#if MAX_DEPTH == 1
+        nodes->uncacheNode(table[h]);
+        table[h] = key;
+#elif MAX_DEPTH == 2
+        nodes->uncacheNode(nodes->getNext(table[h]));
+        nodes->setNext(table[h], key);
+#elif MAX_DEPTH == 3
+        int prev = nodes->getNext(table[h]);
+        nodes->uncacheNode(nodes->getNext(prev));
+        nodes->setNext(prev, key);
+#elif MAX_DEPTH == 4
+        int prev = nodes->getNext(nodes->getNext(table[h]));
+        nodes->uncacheNode(nodes->getNext(prev));
+        nodes->setNext(prev, key);
+#else
+        assert(false);
+        int prev = nodes->getNext(nodes->getNext(nodes->getNext(table[h])));
+        for (int i = MAX_DEPTH - 5; i > 0; i--)
+          prev = nodes->getNext(prev);
+        nodes->uncacheNode(nodes->getNext(prev));
+        nodes->setNext(prev, key);
+#endif
+        // nEntries and depth[h] remain the same
         discarded++;
+      } else {
+        // insert at tail
+        DCASSERT(depth[h] < int(MAX_DEPTH));
+        switch (depth[h]) {
+          case 0:
+            table[h] = key;
+            break;
+          case 1:
+            nodes->setNext(table[h], key);
+            break;
+          default:
+            int last = nodes->getNext(table[h]);
+            for (int i = depth[h] - 2; i > 0; i--)
+              last = nodes->getNext(last);
+            nodes->setNext(last, key);
+        }
+        nEntries++;
+        depth[h]++;
       }
 #endif
 
-      return table[h];
+      return key;
     }
 
     /// Go through the hash table and remove all entries

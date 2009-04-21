@@ -606,9 +606,14 @@ class mtmdd_apply_operation : public mdd_apply_operation {
 };
 
 
+#if 0
 class mtmdd_plus : public mtmdd_apply_operation {
+#else
+class mtmdd_plus : public mdd_union {
+#endif
   public:
     static mtmdd_plus* getInstance();
+    virtual compute_manager::error typeCheck(const op_info* owner);
 
   protected:
     mtmdd_plus(const char* name);

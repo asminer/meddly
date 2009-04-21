@@ -24,7 +24,8 @@
 #include "../src/operation_ext.h"
 #include "../src/compute_cache.h"
 
-#define IGNORE_TERMS 0
+//#define IGNORE_TERMS 0
+//#define IGNORE_INCOUNT 2
 
 inline expert_forest* getExpertForest(op_info* op, int index) {
   return smart_cast<expert_forest*>(op->f[index]);
@@ -125,7 +126,7 @@ mdd_apply_operation::findResult(op_info* owner, int a, int b, int& c)
 
   static int key[2];
 
-#if IGNORE_TERMS
+#ifdef IGNORE_TERMS
   if (getExpertForest(owner, 0)->isTerminalNode(a) ||
       getExpertForest(owner, 1)->isTerminalNode(b))
     return false;
@@ -148,7 +149,7 @@ mdd_apply_operation::findResult(op_info* owner, int a, int b, int& c)
 
 #else
 
-#if IGNORE_TERMS
+#ifdef IGNORE_TERMS
   if (getExpertForest(owner, 0)->isTerminalNode(a) ||
       getExpertForest(owner, 1)->isTerminalNode(b))
     return false;
@@ -182,9 +183,17 @@ mdd_apply_operation::saveResult(op_info* owner, int a, int b, int c)
 
   static int cacheEntry[3];
 
-#if IGNORE_TERMS
+#ifdef IGNORE_TERMS
   if (getExpertForest(owner, 0)->isTerminalNode(a) ||
       getExpertForest(owner, 1)->isTerminalNode(b))
+    return;
+#endif
+
+#ifdef IGNORE_INCOUNT
+  if ((!getExpertForest(owner, 0)->isTerminalNode(a) &&
+        getExpertForest(owner, 0)->getInCount(a) < IGNORE_INCOUNT) &&
+      (!getExpertForest(owner, 0)->isTerminalNode(b) &&
+       getExpertForest(owner, 0)->getInCount(b) < IGNORE_INCOUNT))
     return;
 #endif
 
@@ -211,9 +220,17 @@ mdd_apply_operation::saveResult(op_info* owner, int a, int b, int c)
 
 #else
 
-#if IGNORE_TERMS
+#ifdef IGNORE_TERMS
   if (getExpertForest(owner, 0)->isTerminalNode(a) ||
       getExpertForest(owner, 1)->isTerminalNode(b))
+    return;
+#endif
+
+#ifdef IGNORE_INCOUNT
+  if ((!getExpertForest(owner, 0)->isTerminalNode(a) &&
+        getExpertForest(owner, 0)->getInCount(a) < IGNORE_INCOUNT) &&
+      (!getExpertForest(owner, 0)->isTerminalNode(b) &&
+       getExpertForest(owner, 0)->getInCount(b) < IGNORE_INCOUNT))
     return;
 #endif
 
@@ -849,39 +866,18 @@ mdd_union::~mdd_union() {}
 bool
 mdd_union::checkTerminals(op_info* op, int a, int b, int& c)
 {
-#if 0
-  if (a == b) {
-    c = a;
-    getExpertForest(op, 0)->linkNode(c);
-    return true;
-  }
-  if (a * b == 0) {
-    // either a or b == 0
-#ifdef DEVELOPMENT_CODE
-    if (a != 0 && b != 0) {
-      fprintf(stderr, "a: %d, b: %d, a*b: %d\n", a, b, a*b);
-      exit(1);
-    }
-#endif
+#if 1
+  if (a == 0 || b == 0 || a == b) {
     c = a | b;
-    DCASSERT(a == c || b == c);
     getExpertForest(op, 0)->linkNode(c);
     return true;
   }
-  else if ((a | b) < 0) {
-    // a == -1 || b == -1
-#ifdef DEVELOPMENT_CODE
-    if (a != -1 && b != -1) {
-      fprintf(stderr, "a: %d, b: %d, a|b: %d\n", a, b, a | b);
-      exit(1);
-    }
-#endif
-    // either a or b == -1 (note: a == b == -1 already handled)
+  if (a == -1 || b == -1) {
     c = -1;
     return true;
   }
-  return false;
 
+  return false;
 #else
   if (-1 == a) {
     c = -1;
@@ -1065,20 +1061,23 @@ int mdd_union::compute(op_info* owner, int a, int b)
   const int aLevel = expertForest->getNodeLevel(a);
   const int bLevel = expertForest->getNodeLevel(b);
 
-  int resultLevel = aLevel > bLevel? aLevel: bLevel;
-  int resultSize = expertForest->getLevelSize(resultLevel);
-  result = expertForest->createTempNode(resultLevel, resultSize, false);
-
-  if (aLevel < resultLevel) {
-    // expand b
-    // result[i] = a op b[i]
-    // commutative, use expandA(b, a) instead of expandB(a, b)
-    expandA(owner, expertForest, b, a, result, resultSize);
-  }
-  else if (bLevel < resultLevel) {
-    // expand a
-    // result[i] = a[i] op b
-    expandA(owner, expertForest, a, b, result, resultSize);
+  if (aLevel != bLevel) {
+    if (aLevel < bLevel) {
+      // expand b
+      // result[i] = a op b[i]
+      // commutative, use expandA(b, a) instead of expandB(a, b)
+      int resultSize = expertForest->getLevelSize(bLevel);
+      result = expertForest->createTempNode(bLevel, resultSize, false);
+      expandA(owner, expertForest, b, a, result, resultSize);
+    }
+    else {
+      DCASSERT(bLevel < aLevel);
+      // expand a
+      // result[i] = a[i] op b
+      int resultSize = expertForest->getLevelSize(aLevel);
+      result = expertForest->createTempNode(aLevel, resultSize, false);
+      expandA(owner, expertForest, a, b, result, resultSize);
+    }
   }
   else {
     DCASSERT(aLevel == bLevel);
@@ -1087,10 +1086,19 @@ int mdd_union::compute(op_info* owner, int a, int b)
 
     if (expertForest->isFullNode(a)) {
       if (expertForest->isFullNode(b)) {
+        int resultSize = MAX(
+            expertForest->getFullNodeSize(a),
+            expertForest->getFullNodeSize(b));
+        result = expertForest->createTempNode(aLevel, resultSize, false);
         fullFull(owner, expertForest, a, b, result, resultSize);
       }
       else {
         DCASSERT(expertForest->isSparseNode(b));
+        int resultSize = MAX(
+            expertForest->getFullNodeSize(a),
+            (expertForest->getSparseNodeIndex(b,
+              expertForest->getSparseNodeSize(b)-1) + 1));
+        result = expertForest->createTempNode(aLevel, resultSize, false);
         fullSparse(owner, expertForest, a, b, result, resultSize);
       }
     }
@@ -1098,10 +1106,21 @@ int mdd_union::compute(op_info* owner, int a, int b)
       DCASSERT(expertForest->isSparseNode(a));
       if (expertForest->isFullNode(b)) {
         // commutative, use fullSparse(b, a) instead of sparseFull(a, b)
+        int resultSize = MAX(
+            (expertForest->getSparseNodeIndex(a,
+              expertForest->getSparseNodeSize(a)-1) + 1),
+            expertForest->getFullNodeSize(b));
+        result = expertForest->createTempNode(aLevel, resultSize, false);
         fullSparse(owner, expertForest, b, a, result, resultSize);
       }
       else {
         DCASSERT(expertForest->isSparseNode(b));
+        int resultSize = MAX(
+            (expertForest->getSparseNodeIndex(a,
+              expertForest->getSparseNodeSize(a)-1) + 1),
+            (expertForest->getSparseNodeIndex(b,
+              expertForest->getSparseNodeSize(b)-1) + 1));
+        result = expertForest->createTempNode(aLevel, resultSize, false);
         sparseSparse(owner, expertForest, a, b, result, resultSize);
       }
     }
@@ -1129,8 +1148,12 @@ void mdd_union::expandA(op_info* owner, expert_forest* expertForest,
     DCASSERT(aSize <= resultSize);
     for (int i = 0; i < aSize; ++i)
     {
-      int tempResult = compute(owner,
-          expertForest->getFullNodeDownPtr(a, i), b);
+      int aI = expertForest->getFullNodeDownPtr(a, i);
+      if (aI == 0) {
+        expertForest->setDownPtrWoUnlink(result, i, b);
+        continue;
+      }
+      int tempResult = compute(owner, aI, b);
       expertForest->setDownPtrWoUnlink(result, i, tempResult);
       expertForest->unlinkNode(tempResult);
     }
@@ -1300,9 +1323,8 @@ void mdd_union::sparseSparse (op_info* owner, expert_forest* mddNm,
       else {
         // i == aIndexIndex && i != bIndexIndex
         // result[i] = union(a[aIndex], 0)
-        tempResult = compute(owner, mddNm->getSparseNodeDownPtr(a, aIndex), 0);
-        mddNm->setDownPtrWoUnlink(result, i, tempResult);
-        mddNm->unlinkNode(tempResult);
+        mddNm->setDownPtrWoUnlink(result, i,
+            mddNm->getSparseNodeDownPtr(a, aIndex));
         ++aIndex;
         if (aIndex < aSize) aIndexIndex = mddNm->getSparseNodeIndex(a, aIndex);
       }
@@ -1311,9 +1333,8 @@ void mdd_union::sparseSparse (op_info* owner, expert_forest* mddNm,
       if (i == bIndexIndex) {
         // i == bIndexIndex && i != aIndexIndex
         // result[i] = union(0, b[bIndex])
-        tempResult = compute(owner, 0, mddNm->getSparseNodeDownPtr(b, bIndex));
-        mddNm->setDownPtrWoUnlink(result, i, tempResult);
-        mddNm->unlinkNode(tempResult);
+        mddNm->setDownPtrWoUnlink(result, i,
+            mddNm->getSparseNodeDownPtr(b, bIndex));
         ++bIndex;
         if (bIndex < bSize) bIndexIndex = mddNm->getSparseNodeIndex(b, bIndex);
       }
@@ -1568,27 +1589,29 @@ int mdd_intersection::compute(op_info* owner, int a, int b)
   const int aLevel = expertForest->getNodeLevel(a);
   const int bLevel = expertForest->getNodeLevel(b);
 
-  int resultLevel = aLevel > bLevel? aLevel: bLevel;
-  int resultSize = expertForest->getLevelSize(resultLevel);
-  result = expertForest->createTempNode(resultLevel, resultSize);
-
-#ifdef DEVELOPMENT_CODE
-  // needs all downpointers to be initialized to zero
-  for (int i = 0; i < resultSize; ++i)
-  {
-    assert(expertForest->getFullNodeDownPtr(result, i) == 0);
-  }
-#endif
-
-  if (aLevel < resultLevel) {
-    // expand b
-    // result[i] = a op b[i]
-    expandB(owner, expertForest, a, b, result, resultSize);
-  }
-  else if (bLevel < resultLevel) {
-    // expand a
-    // result[i] = a[i] op b
-    expandA(owner, expertForest, a, b, result, resultSize);
+  if (aLevel != bLevel) {
+    if (aLevel < bLevel) {
+      // expand b
+      // result[i] = a op b[i]
+      // commutative, use expandA(b, a) instead of expandB(a, b)
+      int resultSize = expertForest->isFullNode(b)?
+        expertForest->getFullNodeSize(b):
+        (expertForest->getSparseNodeIndex(b,
+          expertForest->getSparseNodeSize(b)-1) + 1);
+      result = expertForest->createTempNode(bLevel, resultSize);
+      expandA(owner, expertForest, b, a, result, resultSize);
+    }
+    else {
+      DCASSERT(bLevel < aLevel);
+      // expand a
+      // result[i] = a[i] op b
+      int resultSize = expertForest->isFullNode(a)?
+        expertForest->getFullNodeSize(a):
+        (expertForest->getSparseNodeIndex(a,
+          expertForest->getSparseNodeSize(a)-1) + 1);
+      result = expertForest->createTempNode(aLevel, resultSize);
+      expandA(owner, expertForest, a, b, result, resultSize);
+    }
   }
   else {
     DCASSERT(aLevel == bLevel);
@@ -1597,20 +1620,41 @@ int mdd_intersection::compute(op_info* owner, int a, int b)
 
     if (expertForest->isFullNode(a)) {
       if (expertForest->isFullNode(b)) {
+        int resultSize = MIN(
+            expertForest->getFullNodeSize(a),
+            expertForest->getFullNodeSize(b));
+        result = expertForest->createTempNode(aLevel, resultSize);
         fullFull(owner, expertForest, a, b, result, resultSize);
       }
       else {
         DCASSERT(expertForest->isSparseNode(b));
+        int resultSize = MIN(
+            expertForest->getFullNodeSize(a),
+            (expertForest->getSparseNodeIndex(b,
+              expertForest->getSparseNodeSize(b)-1) + 1));
+        result = expertForest->createTempNode(aLevel, resultSize);
         fullSparse(owner, expertForest, a, b, result, resultSize);
       }
     }
     else {
       DCASSERT(expertForest->isSparseNode(a));
       if (expertForest->isFullNode(b)) {
-        sparseFull(owner, expertForest, a, b, result, resultSize);
+        // commutative, use fullSparse(b, a) instead of sparseFull(a, b)
+        int resultSize = MIN(
+            (expertForest->getSparseNodeIndex(a,
+              expertForest->getSparseNodeSize(a)-1) + 1),
+            expertForest->getFullNodeSize(b));
+        result = expertForest->createTempNode(aLevel, resultSize);
+        fullSparse(owner, expertForest, b, a, result, resultSize);
       }
       else {
         DCASSERT(expertForest->isSparseNode(b));
+        int resultSize = MIN(
+            (expertForest->getSparseNodeIndex(a,
+              expertForest->getSparseNodeSize(a)-1) + 1),
+            (expertForest->getSparseNodeIndex(b,
+              expertForest->getSparseNodeSize(b)-1) + 1));
+        result = expertForest->createTempNode(aLevel, resultSize);
         sparseSparse(owner, expertForest, a, b, result, resultSize);
       }
     }
@@ -2533,7 +2577,7 @@ mxd_alt_apply_operation::findResult(op_info* owner,
 {
   static int key[3];
 
-#if IGNORE_TERMS
+#ifdef IGNORE_TERMS
   if (getExpertForest(owner, 0)->isTerminalNode(a) ||
       getExpertForest(owner, 1)->isTerminalNode(b))
     return false;
@@ -2562,9 +2606,17 @@ mxd_alt_apply_operation::saveResult(op_info* owner, int k, int a, int b, int c)
 {
   static int cacheEntry[4];
 
-#if IGNORE_TERMS
+#ifdef IGNORE_TERMS
   if (getExpertForest(owner, 0)->isTerminalNode(a) ||
       getExpertForest(owner, 1)->isTerminalNode(b))
+    return;
+#endif
+
+#ifdef IGNORE_INCOUNT
+  if ((!getExpertForest(owner, 0)->isTerminalNode(a) &&
+        getExpertForest(owner, 0)->getInCount(a) < IGNORE_INCOUNT) &&
+      (!getExpertForest(owner, 0)->isTerminalNode(b) &&
+       getExpertForest(owner, 0)->getInCount(b) < IGNORE_INCOUNT))
     return;
 #endif
 
@@ -4582,11 +4634,6 @@ mtmdd_plus* mtmdd_plus::getInstance()
 }
 
 
-mtmdd_plus::mtmdd_plus(const char *name)
-: mtmdd_apply_operation(name, true)
-{ }
-
-
 mtmdd_plus::~mtmdd_plus() {}
 
 
@@ -4598,7 +4645,7 @@ mtmdd_plus::checkTerminals(op_info* op, int a, int b, int& c)
 
 #if 1
   if (a == 0 || b == 0) {
-    c = a + b;
+    c = a | b;
     getExpertForest(op, 0)->linkNode(c);
     return true;
   }
@@ -4624,6 +4671,43 @@ mtmdd_plus::checkTerminals(op_info* op, int a, int b, int& c)
   return false;
 }
 
+#if 0
+
+mtmdd_plus::mtmdd_plus(const char *name)
+: mtmdd_apply_operation(name, true)
+{ }
+
+
+#else
+
+compute_manager::error
+mtmdd_plus::typeCheck(const op_info* owner)
+{
+  if (owner == 0)
+    return compute_manager::UNKNOWN_OPERATION;
+  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nForests != 3)
+    return compute_manager::WRONG_NUMBER;
+  if (owner->f[0] != owner->f[1] || owner->f[0] != owner->f[2])
+    return compute_manager::FOREST_MISMATCH;
+  if (owner->f[0]->isForRelations() ||
+      owner->f[0]->getRangeType() == forest::BOOLEAN ||
+      // the above allows MTMDDs with INTEGERs and REALs
+      // the line below allows only INTEGERs
+      // owner->f[0]->getRangeType() != forest::INTEGER ||
+      owner->f[0]->getEdgeLabeling() != forest::MULTI_TERMINAL)
+    return compute_manager::TYPE_MISMATCH;
+  return compute_manager::SUCCESS;
+}
+
+
+mtmdd_plus::mtmdd_plus(const char *name)
+: mdd_union(name)
+{ }
+
+
+#endif
 
 // ----------------------- MTMDD Min ----------------------------
 
@@ -5704,6 +5788,12 @@ conversion_operation::saveResult(op_info* owner, int a, int b)
 {
   static int cacheEntry[2];
 
+#ifdef IGNORE_INCOUNT
+  if (!getExpertForest(owner, 0)->isTerminalNode(a) &&
+      getExpertForest(owner, 0)->getInCount(a) < IGNORE_INCOUNT)
+    return;
+#endif
+
   // create cache entry
   cacheEntry[0] = a; cacheEntry[1] = b;
 
@@ -6152,6 +6242,12 @@ mtmdd_to_evmdd::saveResult(op_info* owner, int a, int b, int c)
 {
   static int cacheEntry[2];
 
+#ifdef IGNORE_INCOUNT
+  if (!getExpertForest(owner, 0)->isTerminalNode(a) &&
+      getExpertForest(owner, 0)->getInCount(a) < IGNORE_INCOUNT)
+    return;
+#endif
+
   // create cache entry
   cacheEntry[0] = a; cacheEntry[1] = b; cacheEntry[2] = c;
 
@@ -6166,6 +6262,12 @@ void
 mtmdd_to_evmdd::saveResult(op_info* owner, int a, int b, float c)
 {
   static int cacheEntry[2];
+
+#ifdef IGNORE_INCOUNT
+  if (!getExpertForest(owner, 0)->isTerminalNode(a) &&
+      getExpertForest(owner, 0)->getInCount(a) < IGNORE_INCOUNT)
+    return;
+#endif
 
   // create cache entry
   cacheEntry[0] = a; cacheEntry[1] = b; cacheEntry[2] = stuffIntoInt(c);

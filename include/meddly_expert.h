@@ -233,6 +233,9 @@ class expert_forest : public forest {
     /// is removed from a cache.
     void uncacheNode(int node);
 
+    int& getInCount(int node) const;
+    int& getCacheCount(int node) const;
+
     /// Display the contents of node
     virtual void showNode(FILE* s, int node, int verbose = 0) const = 0;
     virtual void showNodeGraph(FILE* s, int node) const = 0;
@@ -261,9 +264,6 @@ class expert_forest : public forest {
 
     bool isActiveNode(int node) const;
     bool isZombieNode(int node) const;
-
-    int& getInCount(int node) const;
-    int& getCacheCount(int node) const;
 
     bool isPessimistic() const;
 
