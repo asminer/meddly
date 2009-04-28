@@ -4539,8 +4539,6 @@ mtmdd_multiply::~mtmdd_multiply() {}
 bool
 mtmdd_multiply::checkTerminals(op_info* op, int a, int b, int& c)
 {
-  DCASSERT(getExpertForest(op, 0)->getTerminalNode(int(0)) == 0);
-  DCASSERT(getExpertForest(op, 0)->getTerminalNode(float(0)) == 0);
 
   if (a == 0 || b == 0) {
     c = 0;
@@ -4588,8 +4586,6 @@ mtmdd_minus::~mtmdd_minus() {}
 bool
 mtmdd_minus::checkTerminals(op_info* op, int a, int b, int& c)
 {
-  DCASSERT(getExpertForest(op, 0)->getTerminalNode(int(0)) == 0);
-  DCASSERT(getExpertForest(op, 0)->getTerminalNode(float(0)) == 0);
 
   if (a == b) {
     c = 0;
@@ -4640,8 +4636,6 @@ mtmdd_plus::~mtmdd_plus() {}
 bool
 mtmdd_plus::checkTerminals(op_info* op, int a, int b, int& c)
 {
-  DCASSERT(getExpertForest(op, 0)->getTerminalNode(int(0)) == 0);
-  DCASSERT(getExpertForest(op, 0)->getTerminalNode(float(0)) == 0);
 
 #if 1
   if (a == 0 || b == 0) {
@@ -6493,9 +6487,6 @@ mtmxd_multiply::~mtmxd_multiply() {}
 bool
 mtmxd_multiply::checkTerminals(op_info* op, int a, int b, int& c)
 {
-  DCASSERT(getExpertForest(op, 0)->getTerminalNode(int(0)) == 0);
-  DCASSERT(getExpertForest(op, 0)->getTerminalNode(float(0)) == 0);
-
   if (a == 0 || b == 0) {
     c = 0;
     return true;
@@ -6540,9 +6531,6 @@ mtmxd_minus::~mtmxd_minus() {}
 bool
 mtmxd_minus::checkTerminals(op_info* op, int a, int b, int& c)
 {
-  DCASSERT(getExpertForest(op, 0)->getTerminalNode(int(0)) == 0);
-  DCASSERT(getExpertForest(op, 0)->getTerminalNode(float(0)) == 0);
-
   if (a == b) {
     c = 0;
     return true;
@@ -6595,9 +6583,6 @@ mtmxd_plus::~mtmxd_plus() {}
 bool
 mtmxd_plus::checkTerminals(op_info* op, int a, int b, int& c)
 {
-  DCASSERT(getExpertForest(op, 0)->getTerminalNode(int(0)) == 0);
-  DCASSERT(getExpertForest(op, 0)->getTerminalNode(float(0)) == 0);
-
 #if 1
   if (a == 0 || b == 0) {
     c = a + b;

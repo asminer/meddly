@@ -28,37 +28,15 @@
 //       mdds (done), mxd, evmdd, mtmdd
 
 #include "mdds_ext.h"
+#include <algorithm>
 
 
-#if 0
-bool isMtmdd(const expert_forest* f)
-{
-  return !f->isForRelations() &&
-         f->getRangeType() == forest::INTEGER &&
-         f->getEdgeLabeling() == forest::MULTI_TERMINAL;
-}
+//#define DEBUG_SORT_MATRIX
+//#define DEBUG_SORT_BUILD
 
-bool isMdd(const expert_forest* f)
-{
-  return !f->isForRelations() &&
-         f->getRangeType() == forest::BOOLEAN &&
-         f->getEdgeLabeling() == forest::MULTI_TERMINAL;
-}
-
-bool isMxd(const expert_forest* f)
-{
-  return f->isForRelations() &&
-         f->getRangeType() == forest::BOOLEAN &&
-         f->getEdgeLabeling() == forest::MULTI_TERMINAL;
-}
-
-bool isEvmdd(const expert_forest* f)
-{
-  return !f->isForRelations() &&
-         f->getRangeType() == forest::INTEGER &&
-         f->getEdgeLabeling() == forest::EVPLUS;
-}
-#endif
+// N = domain->getNumVars() + 1
+void sortVector(int** indexes, int* terms, int N, int nVars);
+void sortMatrix(int** indexes, int** pindexes, int* terms, int N, int nVars);
 
 
 // ********************************** MTMDDs **********************************
@@ -1178,7 +1156,7 @@ int mtmxd_node_manager::reduceNode(int p)
 
 int mtmxd_node_manager::createNode(int k, int index, int dptr)
 {
-  DCASSERT(index >= 0 && isValidNodeIndex(dptr));
+  DCASSERT(index >= 0 && index < getLevelSize(k) && isValidNodeIndex(dptr));
 
   if (dptr == 0) return 0;
 
@@ -1274,11 +1252,22 @@ void mtmxd_node_manager::createEdge(const int* v, const int* vp, int term,
   DCASSERT(isTerminalNode(term));
   int curr = term;
   int prev = curr;
-  for (int i=1; i<h_sz; i++) {
+#if 1
+  const int* end = h2l_map + h_sz;
+  for (++h2l_map; h2l_map != end; ++h2l_map)
+  {
+    prev = curr;
+    curr = createNode(*h2l_map, v[*h2l_map], vp[*h2l_map], prev);
+    unlinkNode(prev);
+  }
+#else
+  for (int i = 1; i < h_sz; ++i)
+  {
     prev = curr;
     curr = createNode(h2l_map[i], v[h2l_map[i]], vp[h2l_map[i]], prev);
     unlinkNode(prev);
   }
+#endif
   e.set(curr, 0, getNodeLevel(curr));
 }
 
@@ -1312,6 +1301,7 @@ forest::error mtmxd_node_manager::createEdge(const int* const* vlist,
   if (vlist == 0 || vplist == 0 || terms == 0 || N <= 0)
     return forest::INVALID_VARIABLE;
 
+#ifndef SORT_BUILD
   createEdge(vlist[0], vplist[0], getTerminalNode(terms[0]), e);
   if (N > 1) {
     dd_edge curr(this);
@@ -1320,10 +1310,185 @@ forest::error mtmxd_node_manager::createEdge(const int* const* vlist,
       e += curr;
     }
   }
+#else
+  if (N < 2) {
+    createEdge(vlist[0], vplist[0], getTerminalNode(terms[0]), e);
+  } else {
+    // check for special cases
+    bool specialCasesFound = false;
+    for (int i = 0; i < N; i++)
+    {
+      int* curr = (int*)vlist[i];
+      int* end = curr + expertDomain->getNumVariables() + 1;
+      for ( ; curr != end; ) { if (*curr++ < 0) break; }
+      if (curr != end) { specialCasesFound = true; break; }
 
+      curr = (int*)vplist[i];
+      end = curr + expertDomain->getNumVariables() + 1;
+      for ( ; curr != end; ) { if (*curr++ < 0) break; }
+      if (curr != end) { specialCasesFound = true; break; }
+    }
+
+    if (specialCasesFound) {
+#if 0
+      assert(N > 1);
+      createEdge(vlist[0], vplist[0], getTerminalNode(terms[0]), e);
+      dd_edge curr(this);
+      for (int i=1; i<N; i++) {
+        createEdge(vlist[i], vplist[i], getTerminalNode(terms[i]), curr);
+        e += curr;
+      }
+#else
+      // populate curr[]
+      vector<dd_edge*> curr(N, (dd_edge*)0);
+      for (vector<dd_edge*>::iterator iter = curr.begin();
+          iter != curr.end(); ++iter, ++vlist, ++vplist, ++terms)
+      {
+        *iter = new dd_edge(this);
+        createEdge(*vlist, *vplist, getTerminalNode(*terms), *(*iter));
+      }
+
+      // Iteratively halve curr[] by combining adjacent locations.
+      // When curr is of size 1 curr[0] gives the result
+
+      for (vector<dd_edge*> next; curr.size() > 1; curr = next)
+      {
+        // build next[] and then update curr[]
+        next.resize((curr.size()+1)/2, (dd_edge*)0);
+
+        vector<dd_edge*>::iterator currIter = curr.begin();
+        vector<dd_edge*>::iterator nextIter = next.begin();
+        for ( ; currIter != curr.end(); currIter += 2, ++nextIter)
+        {
+          *nextIter = *currIter;
+        }
+
+        currIter = curr.begin() + 1;
+        nextIter = next.begin();
+        for ( ; currIter != curr.end(); currIter += 2, ++nextIter)
+        {
+          *(*nextIter) += *(*currIter);
+          delete *currIter;
+        }
+      }
+      assert(curr.size() == 1);
+      e = *(curr[0]);
+      delete curr[0];
+#endif
+    }
+    else {
+      int* list[N];
+      int* plist[N];
+      int tlist[N];
+      memcpy(list, vlist, N * sizeof(int*));
+      memcpy(plist, vplist, N * sizeof(int*));
+      int* curr = tlist;
+      const float* currTerm = terms;
+      for (int* last = tlist + N; curr != last; ++curr, ++currTerm)
+        *curr = getTerminalNode(*currTerm);
+      sortMatrix(list, plist, tlist, N, getDomain()->getNumVariables() + 1);
+
+      int result = 
+        sortBuild(list, plist, tlist, getDomain()->getNumVariables(), 0, N);
+      e.set(result, 0, getNodeLevel(result));
+
+      memset(list, 0, N * sizeof(int*));
+      memset(plist, 0, N * sizeof(int*));
+    }
+  }
+#endif
   return forest::SUCCESS;
 }
 
+#ifdef SORT_BUILD
+int mtmxd_node_manager::sortBuild(int** list, int** plist, int* tlist,
+    int height, int begin, int end)
+{
+  // [begin, end)
+
+  // terminal condition
+  if (height == 0)
+  {
+    assert(begin + 1 == end);
+    return tlist[begin];
+  }
+
+  int** currList = 0;
+  int nextHeight = 0;
+  int level = 0;
+  int absLevel = 0;
+
+  if (height > 0) {
+    currList = list;
+    nextHeight = -height;
+    level = expertDomain->getVariableWithHeight(height);
+  } else {
+    currList = plist;
+    nextHeight = -height-1;
+    level = -(expertDomain->getVariableWithHeight(-height));
+  }
+  absLevel = level < 0? -level: level;
+
+  vector<int> nodes;
+  int currBegin = begin;
+  int currEnd = currBegin;
+  for ( ; currEnd < end; currBegin = currEnd) 
+  {
+    int currIndex = currList[currBegin][absLevel];
+    assert(currIndex >= 0);
+    for (currEnd = currBegin + 1;
+        currEnd < end && currIndex == currList[currEnd][absLevel];
+        ++currEnd);
+    // found new range
+    // to be "unioned" and assigned to result[currIndex]
+#ifdef DEBUG_SORT_BUILD
+    printf("level: %d, currIndex: %d, currBegin: %d, currEnd: %d\n",
+        level, currIndex, currBegin, currEnd);
+    fflush(stdout);
+#endif
+    int node = sortBuild(list, plist, tlist, nextHeight, currBegin, currEnd);
+#ifdef DEBUG_SORT_BUILD
+    printf("level: %d, currIndex: %d, currBegin: %d, currEnd: %d\n",
+        level, currIndex, currBegin, currEnd);
+    fflush(stdout);
+#endif
+    nodes.push_back(currIndex);
+    nodes.push_back(node);
+  }
+
+  assert(nodes.size() >= 2);
+  if (nodes.size() == 2) {
+    // single entry: store directly as sparse
+    // TODO: this should be able to accept many more cases
+    int result = createNode(level, nodes[0], nodes[1]);
+    unlinkNode(nodes[1]);
+    return result;
+  }
+  // full node
+  int size = nodes[nodes.size() - 2] + 1;
+  int result = createTempNode(level, size);
+  for (vector<int>::iterator iter = nodes.begin();
+      iter != nodes.end(); iter += 2)
+  {
+    if (getDownPtr(result, *iter) != 0) {
+      for (unsigned i = 0u; i < nodes.size(); i+=2)
+      {
+        printf("%d:%d ", nodes[i], nodes[i+1]);
+      }
+      printf("\n");
+      for (int i = begin; i < end; i++)
+      {
+        printf("%d:%d ", i, currList[i][absLevel]);
+      }
+      printf("\n");
+      exit(1);
+    }
+    setDownPtrWoUnlink(result, *iter, *(iter+1));
+    unlinkNode(*(iter+1));
+  }
+  return reduceNode(result);
+}
+#endif
 
 int mtmxd_node_manager::createEdge(int dptr)
 {
@@ -2297,6 +2462,7 @@ void mdd_node_manager::createEdge(const int* v, int term, dd_edge& e)
   // construct the edge bottom-up
   const int* h2l_map = expertDomain->getHeightsToLevelsMap();
   int h_sz = expertDomain->getNumVariables() + 1;
+
   int result = term;
   int curr = 0;
   for (int i=1; i<h_sz; i++) {
@@ -2314,6 +2480,7 @@ forest::error mdd_node_manager::createEdge(const int* const* vlist, int N,
   if (e.getForest() != this) return forest::INVALID_OPERATION;
   if (vlist == 0 || N <= 0) return forest::INVALID_VARIABLE;
 
+#ifndef SORT_BUILD
   int trueNode = getTerminalNode(true);
   createEdge(vlist[0], trueNode, e);
   if (N > 1) {
@@ -2323,9 +2490,169 @@ forest::error mdd_node_manager::createEdge(const int* const* vlist, int N,
       e += curr;
     }
   }
+#else
 
+  if (N < 2) {
+    createEdge(vlist[0], getTerminalNode(true), e);
+  }
+  else {
+    // check for special cases
+    bool specialCasesFound = false;
+    for (int i = 0; i < N && !specialCasesFound; i++)
+    {
+      int* curr = (int*)vlist[i];
+      int* end = curr + expertDomain->getNumVariables() + 1;
+      for ( ; curr != end; )
+      {
+        if (*curr++ < 0) {
+          specialCasesFound = true;
+          break;
+        }
+      }
+    }
+
+    if (specialCasesFound) {
+      // build using "standard" procedure
+      int trueNode = getTerminalNode(true);
+#if 0
+      assert(N > 1);
+      createEdge(vlist[0], trueNode, e);
+      dd_edge curr(this);
+      for (int i=1; i<N; i++) {
+        createEdge(vlist[i], trueNode, curr);
+        e += curr;
+      }
+#else
+      // populate curr[]
+      vector<dd_edge*> curr(N, (dd_edge*)0);
+      for (vector<dd_edge*>::iterator iter = curr.begin();
+          iter != curr.end(); ++iter, ++vlist)
+      {
+        *iter = new dd_edge(this);
+        createEdge(*vlist, trueNode, *(*iter));
+      }
+
+      // Iteratively halve curr[] by combining adjacent locations.
+      // When curr is of size 1 curr[0] gives the result
+
+      for (vector<dd_edge*> next; curr.size() > 1; curr = next)
+      {
+        // build next[] and then update curr[]
+        next.resize((curr.size()+1)/2, (dd_edge*)0);
+
+        vector<dd_edge*>::iterator currIter = curr.begin();
+        vector<dd_edge*>::iterator nextIter = next.begin();
+        for ( ; currIter != curr.end(); currIter += 2, ++nextIter)
+        {
+          *nextIter = *currIter;
+        }
+
+        currIter = curr.begin() + 1;
+        nextIter = next.begin();
+        for ( ; currIter != curr.end(); currIter += 2, ++nextIter)
+        {
+          *(*nextIter) += *(*currIter);
+          delete *currIter;
+        }
+      }
+      assert(curr.size() == 1);
+      e = *(curr[0]);
+      delete curr[0];
+#endif
+    }
+    else {
+      // build using sort-based procedure
+      int* list[N];
+      memcpy(list, vlist, N * sizeof(int*));
+      sortVector(list, 0, N, getDomain()->getNumVariables() + 1);
+
+      int result = sortBuild(list, getDomain()->getNumVariables(), 0, N);
+      e.set(result, 0, getNodeLevel(result));
+
+      memset(list, 0, N * sizeof(int*));
+    }
+  }
+#endif
   return forest::SUCCESS;
 }
+
+
+#ifdef SORT_BUILD
+int mdd_node_manager::sortBuild(int** list, int height, int begin, int end)
+{
+  // [begin, end)
+
+  // terminal condition
+  if (height == 0)
+  {
+    assert(begin + 1 == end);
+    return getTerminalNode(true);
+  }
+
+  int** currList = list;
+  int nextHeight = height - 1;
+  int level = expertDomain->getVariableWithHeight(height);
+
+  vector<int> nodes;
+  int currBegin = begin;
+  int currEnd = currBegin;
+  for ( ; currEnd < end; currBegin = currEnd) 
+  {
+    int currIndex = currList[currBegin][level];
+    assert(currIndex >= 0);
+    for (currEnd = currBegin + 1;
+        currEnd < end && currIndex == currList[currEnd][level];
+        ++currEnd);
+    // found new range
+    // to be "unioned" and assigned to result[currIndex]
+#ifdef DEBUG_SORT_BUILD
+    printf("level: %d, currIndex: %d, currBegin: %d, currEnd: %d\n",
+        level, currIndex, currBegin, currEnd);
+    fflush(stdout);
+#endif
+    int node = sortBuild(list, nextHeight, currBegin, currEnd);
+#ifdef DEBUG_SORT_BUILD
+    printf("level: %d, currIndex: %d, currBegin: %d, currEnd: %d\n",
+        level, currIndex, currBegin, currEnd);
+    fflush(stdout);
+#endif
+    nodes.push_back(currIndex);
+    nodes.push_back(node);
+  }
+
+  assert(nodes.size() >= 2);
+  if (nodes.size() == 2) {
+    // single entry: store directly as sparse
+    // TODO: this should be able to accept many more cases
+    int result = createNode(level, nodes[0], nodes[1]);
+    unlinkNode(nodes[1]);
+    return result;
+  }
+  // full node
+  int size = nodes[nodes.size() - 2] + 1;
+  int result = createTempNode(level, size);
+  for (vector<int>::iterator iter = nodes.begin();
+      iter != nodes.end(); iter += 2)
+  {
+    if (getDownPtr(result, *iter) != 0) {
+      for (unsigned i = 0u; i < nodes.size(); i+=2)
+      {
+        printf("%d:%d ", nodes[i], nodes[i+1]);
+      }
+      printf("\n");
+      for (int i = begin; i < end; i++)
+      {
+        printf("%d:%d ", i, currList[i][level]);
+      }
+      printf("\n");
+      exit(1);
+    }
+    setDownPtrWoUnlink(result, *iter, *(iter+1));
+    unlinkNode(*(iter+1));
+  }
+  return reduceNode(result);
+}
+#endif
 
 
 forest::error mdd_node_manager::createEdge(bool term, dd_edge& e)
@@ -2456,4 +2783,303 @@ forest::error mdd_node_manager::evaluate(const dd_edge& f, const int* vlist,
   return forest::INVALID_OPERATION;
 }
 
+
+// ********************************** Utils **********************************
+
+class vector_sorter {
+  public:
+    vector_sorter(int* indexes, int terms, int *loc, int *size)
+    : pri(indexes), sec(terms), ptr(loc), sz(size) {}
+    int getPtr() const { return *ptr; }
+    int getSize() const { return *sz; }
+    int* pri;
+    int sec;
+    int* ptr;
+    int* sz;
+};
+
+bool cmpVector(const vector_sorter *a, const vector_sorter *b)
+{
+  return (a->getPtr() == INT_MAX)? 
+    // compare sec
+    a->sec < b->sec:
+    // compare pri[ptr]
+    a->pri[a->getPtr()] < b->pri[a->getPtr()];
+}
+
+void print(FILE* out, const vector_sorter* a)
+{
+  assert(a != 0 && a->pri != 0);
+  fprintf(out, "[%d", a->pri[0]);
+  for (int i = 1; i < a->getSize(); ++i)
+  {
+    fprintf(out, " %d", a->pri[i]);
+  }
+  fprintf(out, ": %d]", a->sec);
+}
+
+#if 0
+void sortArray(int** indexes, int* terms, int N, int nVars)
+{
+  // build objects
+  int ptr = 0;
+  int sz = nVars;
+
+  // ptr and sz are passed to all objs via pointers.
+  // any changes to ptr and sz are visible to the objs.
+
+  vector<vector_sorter*> objs(N);
+  if (terms == 0) {
+    for (vector<vector_sorter*>::iterator iter = objs.begin();
+        iter != objs.end(); ++iter, ++indexes)
+    {
+      *iter = new vector_sorter(*indexes, 1, &ptr, &sz);
+    }
+  }
+  else {
+    for (vector<vector_sorter*>::iterator iter = objs.begin();
+        iter != objs.end(); ++iter, ++indexes, ++terms)
+    {
+      *iter = new vector_sorter(*indexes, *terms, &ptr, &sz);
+    }
+  }
+
+  // if no terms then do not sort them
+  ptr = (terms == 0? 0: INT_MAX);
+  std::stable_sort(objs.begin(), objs.end(), cmpVector);
+
+  for (vector<vector_sorter*>::iterator iter = objs.begin();
+      iter != objs.end(); ++iter)
+  {
+    fprintf(stdout, "[%d]: ", iter - objs.begin());
+    print(stdout, *iter);
+    fprintf(stdout, "\n");
+  }
+
+  for (vector<vector_sorter*>::iterator iter = objs.begin();
+      iter != objs.end(); ++iter)
+  {
+    delete *iter;
+  }
+}
+#endif
+
+void sortVector(int** indexes, int* terms, int N, int nVars)
+{
+  // build objects
+  int ptr = 0;
+  int sz = nVars;
+
+  // ptr and sz are passed to all objs via pointers.
+  // any changes to ptr and sz are visible to the objs.
+
+  vector<vector_sorter*> objs(N);
+  if (terms == 0) {
+    int** levelA = indexes;
+    for (vector<vector_sorter*>::iterator iter = objs.begin();
+        iter != objs.end(); ++iter, ++levelA)
+    {
+      *iter = new vector_sorter(*levelA, 1, &ptr, &sz);
+    }
+  }
+  else {
+    int** levelA = indexes;
+    int* levelT = terms;
+    for (vector<vector_sorter*>::iterator iter = objs.begin();
+        iter != objs.end(); ++iter, ++levelA, ++levelT)
+    {
+      *iter = new vector_sorter(*levelA, *levelT, &ptr, &sz);
+    }
+  }
+
+#ifdef DEBUG_SORT_MATRIX
+  for (vector<vector_sorter*>::iterator iter = objs.begin();
+      iter != objs.end(); ++iter)
+  {
+    fprintf(stdout, "[%d]: ", iter - objs.begin());
+    print(stdout, *iter);
+    fprintf(stdout, "\n");
+  }
+  fprintf(stdout, "\n");
+#endif
+
+  // if no terms then do not sort them
+  if (terms != 0) {
+    ptr = INT_MAX;
+    std::stable_sort(objs.begin(), objs.end(), cmpVector);
+  }
+
+  // index 0 is ignored
+  for (ptr = 1; ptr != nVars; ptr++)
+  {
+    std::stable_sort(objs.begin(), objs.end(), cmpVector);
+  }
+
+#ifdef DEBUG_SORT_MATRIX
+  fprintf(stdout, "\n");
+  for (vector<vector_sorter*>::iterator iter = objs.begin();
+      iter != objs.end(); ++iter)
+  {
+    fprintf(stdout, "[%d]: ", iter - objs.begin());
+    print(stdout, *iter);
+    fprintf(stdout, "\n");
+  }
+#endif
+
+  if (terms == 0) {
+    for (vector<vector_sorter*>::iterator iter = objs.begin();
+        iter != objs.end(); ++iter, ++indexes)
+    {
+      *indexes = (*iter)->pri;
+    }
+  } else {
+    for (vector<vector_sorter*>::iterator iter = objs.begin();
+        iter != objs.end(); ++iter, ++indexes, ++terms)
+    {
+      *indexes = (*iter)->pri;
+      *terms = (*iter)->sec;
+    }
+  }
+
+  for (vector<vector_sorter*>::iterator iter = objs.begin();
+      iter != objs.end(); ++iter)
+  {
+    delete *iter;
+  }
+  // exit(1);
+}
+
+
+
+class matrix_sorter {
+  public:
+    matrix_sorter(int* indexes, int* pindexes, int terms, int *loc, int *size)
+    : pri(indexes), ppri(pindexes), sec(terms), ptr(loc), sz(size) {}
+    int getPtr() const { return *ptr; }
+    int getSize() const { return *sz; }
+    int* pri;
+    int* ppri;
+    int sec;
+    int* ptr;
+    int* sz;
+};
+
+bool cmpMatrix(const matrix_sorter *a, const matrix_sorter *b)
+{
+  return (a->getPtr() == INT_MAX)? 
+    // compare sec
+    a->sec < b->sec:
+    // compare pri[ptr]
+    (a->getPtr() < 0)?
+      // prime
+      a->ppri[-(a->getPtr())] < b->ppri[-(a->getPtr())]:
+      // unprime
+      a->pri[a->getPtr()] < b->pri[a->getPtr()];
+}
+
+void print(FILE* out, const matrix_sorter* a)
+{
+  assert(a != 0 && a->pri != 0 && a->ppri != 0);
+  fprintf(out, "[%d", a->pri[0]);
+  for (int i = 1; i < a->getSize(); ++i)
+  {
+    fprintf(out, " %d", a->pri[i]);
+  }
+  fprintf(out, " -> %d", a->ppri[0]);
+  for (int i = 1; i < a->getSize(); ++i)
+  {
+    fprintf(out, " %d", a->ppri[i]);
+  }
+  fprintf(out, ": %d]", a->sec);
+}
+
+void sortMatrix(int** indexes, int** pindexes, int* terms, int N, int nVars)
+{
+  // build objects
+  int ptr = 0;
+  int sz = nVars;
+
+  // ptr and sz are passed to all objs via pointers.
+  // any changes to ptr and sz are visible to the objs.
+
+  vector<matrix_sorter*> objs(N);
+  if (terms == 0) {
+    int** levelA = indexes;
+    int** levelB = pindexes;
+    for (vector<matrix_sorter*>::iterator iter = objs.begin();
+        iter != objs.end(); ++iter, ++levelA, ++levelB)
+    {
+      *iter = new matrix_sorter(*levelA, *levelB, 1, &ptr, &sz);
+    }
+  }
+  else {
+    int** levelA = indexes;
+    int** levelB = pindexes;
+    int* levelT = terms;
+    for (vector<matrix_sorter*>::iterator iter = objs.begin();
+        iter != objs.end(); ++iter, ++levelA, ++levelB, ++levelT)
+    {
+      *iter = new matrix_sorter(*levelA, *levelB, *levelT, &ptr, &sz);
+    }
+  }
+
+#ifdef DEBUG_SORT_MATRIX
+  for (vector<matrix_sorter*>::iterator iter = objs.begin();
+      iter != objs.end(); ++iter)
+  {
+    fprintf(stdout, "[%d]: ", iter - objs.begin());
+    print(stdout, *iter);
+    fprintf(stdout, "\n");
+  }
+  fprintf(stdout, "\n");
+#endif
+
+  // if no terms then do not sort them
+  if (terms != 0) {
+    ptr = INT_MAX;
+    std::stable_sort(objs.begin(), objs.end(), cmpMatrix);
+  }
+
+  // index 0 is ignored
+  ptr = -1;
+  do {
+    std::stable_sort(objs.begin(), objs.end(), cmpMatrix);
+    ptr = (ptr < 0)? -ptr: -ptr-1;
+  } while (-ptr != nVars);
+
+#ifdef DEBUG_SORT_MATRIX
+  fprintf(stdout, "\n");
+  for (vector<matrix_sorter*>::iterator iter = objs.begin();
+      iter != objs.end(); ++iter)
+  {
+    fprintf(stdout, "[%d]: ", iter - objs.begin());
+    print(stdout, *iter);
+    fprintf(stdout, "\n");
+  }
+#endif
+
+  if (terms == 0) {
+    for (vector<matrix_sorter*>::iterator iter = objs.begin();
+        iter != objs.end(); ++iter, ++indexes, ++pindexes)
+    {
+      *indexes = (*iter)->pri;
+      *pindexes = (*iter)->ppri;
+    }
+  } else {
+    for (vector<matrix_sorter*>::iterator iter = objs.begin();
+        iter != objs.end(); ++iter, ++indexes, ++pindexes, ++terms)
+    {
+      *indexes = (*iter)->pri;
+      *pindexes = (*iter)->ppri;
+      *terms = (*iter)->sec;
+    }
+  }
+
+  for (vector<matrix_sorter*>::iterator iter = objs.begin();
+      iter != objs.end(); ++iter)
+  {
+    delete *iter;
+  }
+  // exit(1);
+}
 

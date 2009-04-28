@@ -40,6 +40,7 @@
 
 #include "mdds.h"
 
+#define SORT_BUILD
 
 class mdd_node_manager : public node_manager {
   public:
@@ -64,6 +65,10 @@ class mdd_node_manager : public node_manager {
     // Create a node, at level k, whose ith index points to dptr.
     // If i is -1, all indices of the node will point to dptr.
     int createNode(int k, int i, int dptr);
+
+#ifdef SORT_BUILD
+    int sortBuild(int** list, int height, int begin, int end);
+#endif
 
   public:
 
@@ -274,6 +279,11 @@ class mtmxd_node_manager : public node_manager {
     // 0 <= i < level bound
     // Used by createNode(k, i, j, dptr)
     int createNode(int k, int i, int dptr);
+
+#ifdef SORT_BUILD
+    int sortBuild(int** list, int** plist, int* tlist,
+        int height, int begin, int end);
+#endif
 
   public:
 

@@ -93,6 +93,7 @@ template <class T> inline int SIGN(T X) { return (X<0) ? -1 : POSITIVE(X); }
 */
 
 #ifdef DEVELOPMENT_CODE
+#if 0
 #define DEBUG_HASH_H
 #define DEBUG_HASH_EXPAND_H
 #define DEBUG_MDD_HASH_H
@@ -102,6 +103,7 @@ template <class T> inline int SIGN(T X) { return (X<0) ? -1 : POSITIVE(X); }
 #define TRACK_DELETIONS
 #define TRACE_REDUCE
 #define MEMORY_TRACE
+#endif
 #endif
 
 #ifdef DEVELOPMENT_CODE

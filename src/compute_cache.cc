@@ -51,8 +51,13 @@ compute_cache::compute_cache()
   ht = new hash_table<compute_cache>(this);
   fsht = 0;
 #else
+#if 1
   ht = new hash_table<compute_cache>(this, 262144*4);
   fsht = 0;
+#else
+  ht = 0;
+  fsht = new fixed_size_hash_table<compute_cache>(this, 262144*4);
+#endif
 #endif
 }
 
