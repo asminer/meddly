@@ -2037,6 +2037,9 @@ int node_manager::getHole(int k, int slots, bool search_holes)
   DCASSERT(0 < (slots - min_node_size) + 1);
   CHECK_RANGE(0, p_level, l_size);
 
+  curr_slots += slots;
+  if (max_slots < curr_slots) max_slots = curr_slots;
+
 #ifdef DEBUG_MDD_SET
   printf("%s: p_level: %d, slots: %d\n", __func__, p_level, slots);
   fflush(stdout);
@@ -2161,8 +2164,6 @@ int node_manager::getHole(int k, int slots, bool search_holes)
   }
   int h = level[p_level].last + 1;
   level[p_level].last += slots;
-  curr_slots += slots;
-  if (max_slots < curr_slots) max_slots = curr_slots;
   // level[p_level].max_slots = MAX(level[p_level].max_slots, level[p_level].last);
   return h;
 }
@@ -2175,6 +2176,9 @@ void node_manager::makeHole(int k, int addr, int slots)
 #ifdef MEMORY_TRACE
   cout << "Calling makeHole(" << k << ", " << addr << ", " << slots << ")\n";
 #endif
+
+  curr_slots -= slots;
+
   int* data = level[mapped_k].data;
   level[mapped_k].hole_slots += slots;
   data[addr] = data[addr+slots-1] = -slots;
@@ -2200,7 +2204,6 @@ void node_manager::makeHole(int k, int addr, int slots)
   if (addr+slots-1 == level[mapped_k].last) {
     level[mapped_k].last -= slots;
     level[mapped_k].hole_slots -= slots;
-    curr_slots -= slots;
     if (level[mapped_k].size > add_size &&
         level[mapped_k].last < level[mapped_k].size/2) {
       int new_size = level[mapped_k].size/2;
@@ -2384,8 +2387,12 @@ int node_manager::getMaxHoleChain() const { return max_hole_chain; }
 int node_manager::getCompactionsCount() const { return num_compactions; }
 
 int node_manager::getCurrentMemoryUsed() const { 
+#if 0
   int sum = 0;
   for(int i=0; i<l_size; i++) sum += level[i].last - level[i].hole_slots;
   return sum * sizeof(int); 
+#else
+  return curr_slots * sizeof(int);
+#endif
 }
 
