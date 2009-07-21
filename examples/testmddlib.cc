@@ -30,6 +30,7 @@
 
 #include <iostream>
 #include "../include/meddly.h"
+#include <stdlib.h>
 
 /**
  * Model: A simple service counter

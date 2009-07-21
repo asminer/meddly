@@ -43,6 +43,7 @@
 #include <cassert>
 #include <cstring>
 #include <cstdio>
+#include <limits.h>
 
 // Macro to handle extern "C"
 #ifdef __cplusplus
