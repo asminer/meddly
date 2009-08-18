@@ -696,9 +696,13 @@ class forest {
 
     /** Display all active (i.e., connected) nodes in the forest.
         This is primarily for aid in debugging.
-        @param  strm    File stream to write to.
+        @param  strm      File stream to write to.
+        @param  verbosity How much information to display.
+                          0 : just statistics.
+                          1 : all forest nodes + statistics.
+                          2 : internal forest + statistics.
     */
-    virtual void showInfo(FILE* strm) = 0;
+    virtual void showInfo(FILE* strm, int verbosity=0) = 0;
 };
 
 

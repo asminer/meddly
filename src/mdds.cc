@@ -620,7 +620,7 @@ void node_manager::dump(FILE *s) const
   int nwidth = digits(a_last);
   for (int p=0; p<=a_last; p++) {
     fprintf(s, "%*d\t", nwidth, p);
-    showNode(s, p);
+    showNode(s, p, 1);
     fprintf(s, "\n");
     fflush(s);
   }
@@ -908,15 +908,17 @@ void node_manager::showNode(FILE *s, int p, int verbose) const
   int l_width = digits(l_size);
 #endif
   int* data = level[l].data;
-  fprintf(s, "node: %d", p);
   if (verbose) {
     fprintf(s, " level: %d", ABS(unmapLevel(l)));
     if (getNodeLevel(p) < 0)
       fprintf(s, "'");
     else
       fprintf(s, " ");
+    fprintf(s, " in: %d", data[a]);
+    fprintf(s, " cc: %d", address[p].cache_count);
+  } else {
+    fprintf(s, "node: %d", p);
   }
-  if (verbose) fprintf(s, " in: %d", data[a]);
   if (isSparseNode(p)) {
     // sparse
     if (verbose)
@@ -2373,7 +2375,11 @@ void node_manager::validateIncounts()
 void node_manager::showLevel(FILE *s, int k) const {
   dumpInternalLevel(s, k);
 }
-void node_manager::showAll(FILE *s) const { dumpInternal(s); }
+void node_manager::showAll(FILE *s, int verb) const { 
+  if (0==verb)  return;
+  if (1==verb)  dump(s);
+  else          dumpInternal(s); 
+}
 
 void node_manager::show(FILE *s, int h) const { fprintf(s, "%d", h); }
 

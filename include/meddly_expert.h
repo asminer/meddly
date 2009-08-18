@@ -504,7 +504,7 @@ class expert_forest : public forest {
         const int* vplist, int &term) const = 0;
     virtual error evaluate(const dd_edge& f, const int* vlist,
         const int* vplist, float &term) const = 0;
-    virtual void showInfo(FILE* strm) = 0;
+    virtual void showInfo(FILE* strm, int verbosity=0) = 0;
 
 #endif
 

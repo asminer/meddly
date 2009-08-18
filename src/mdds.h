@@ -226,7 +226,7 @@ class node_manager : public expert_forest {
 
     void showNode(FILE *s, int p, int verbose = 0) const;
     void showNodeGraph(FILE *s, int p) const;
-    void showInfo(FILE* strm);
+    void showInfo(FILE* strm, int verbosity);
     double getCardinality(int p) const;
     // double getCardinality(int p, int level, map<int, double>& visited) const;
 
@@ -296,7 +296,7 @@ class node_manager : public expert_forest {
     int buildQuasiReducedNodeAtLevel(int k, int p);
 
     void showLevel(FILE *s, int k) const;
-    void showAll(FILE *s) const;
+    void showAll(FILE *s, int verb) const;
 
     void showNode(int p) const;
     void showAll() const;
@@ -1147,8 +1147,8 @@ inline int node_manager::getPeakMemoryAllocated() const {
   return max_mem_alloc;
 }
 
-inline void node_manager::showInfo(FILE* strm) {
-  //showAll(strm);
+inline void node_manager::showInfo(FILE* strm, int verbosity) {
+  showAll(strm, verbosity);
   fprintf(strm, "DD stats:\n");
   reportMemoryUsage(strm, '\t');
 }
