@@ -31,6 +31,7 @@
 #include <queue>  // for showNodeGraph
 #include <vector> // for showNodeGraph
 #include <set>
+#include <stdint.h>
 
 #define DONT_USE_FULL 0
 
