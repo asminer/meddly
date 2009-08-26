@@ -31,7 +31,9 @@
 #include <queue>  // for showNodeGraph
 #include <vector> // for showNodeGraph
 #include <set>
+#ifdef HAVE_STDINT_H
 #include <stdint.h>
+#endif
 
 #define DONT_USE_FULL 0
 
