@@ -904,6 +904,10 @@ void node_manager::showNode(FILE *s, int p, int verbose) const
     fprintf(s, "DELETED");
     return;
   }
+  if (isZombieNode(p)) {
+    fprintf(s, "Zombie cc: %d", -address[p].cache_count);
+    return;
+  }
   int a = getNodeOffset(p);
   int l = getNodeLevelMapping(p);
 #if 0
