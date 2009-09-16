@@ -42,6 +42,8 @@
 #include "../src/hash.h"
 #include "../src/fixed_size_hash.h"
 // const int maxEntries = 262144 * 2;
+#define RECYCLED_LIST
+
 
 class compute_cache {
   public:
@@ -208,6 +210,7 @@ class compute_cache {
     int lastData;                       // last used index in array data
     int recycledNodes;                  // -1 indicates no recycled nodes
     recycled_list* recycledFront;
+    std::vector<int> holes;
     fixed_size_hash_table<compute_cache>* fsht;
     hash_table<compute_cache>* ht;
     unsigned hits;
@@ -521,10 +524,16 @@ bool compute_cache::isFreeNode(const cache_entry& n) const
 inline
 void compute_cache::recycleNode(int h)
 {
-#if 1
+  int nodeSize = nodes[h].owner->op->getCacheEntryLength();
+
+#ifdef RECYCLED_LIST
+
+  // Holes stored in a list of lists, where each list contains nodes of
+  // a certain size
+
   // find correct list
   recycled_list* curr = recycledFront;
-  while(curr != NULL && curr->size != nodes[h].owner->op->getCacheEntryLength())
+  while(curr != NULL && curr->size != nodeSize)
   {
     curr = curr->next;
   }
@@ -533,24 +542,40 @@ void compute_cache::recycleNode(int h)
   if (curr == NULL) {
     // create a new recycled list for nodes of this size
     curr = (recycled_list *) malloc(sizeof(recycled_list));
-    curr->size = nodes[h].owner->op->getCacheEntryLength();
+    curr->size = nodeSize;
     curr->next = recycledFront;
     recycledFront = curr;
     curr->front = -1;
   }
 
   // add node to front of corresponding list
-  // memset(getDataAddress(nodes[h]), 0,
-  //    nodes[h].owner->op->getCacheEntryLengthInBytes());
   nodes[h].owner = 0;
   nodes[h].next = curr->front;
   curr->front = h;
+
+#else
+
+  // Holes stored in a vector of lists, where each list contains nodes of a
+  // certain size. The index of the vector gives the size of the nodes in
+  // the corresponding list.
+  
+  // enlarge vector if necessary
+  if (int(holes.size()) <= nodeSize) {
+    holes.resize(nodeSize + 1, -1);
+  }
+
+  // add node to front of corresponding list
+  nodes[h].owner = 0;
+  nodes[h].next = holes[nodeSize];
+  holes[nodeSize] = h;
+
 #endif
 }
 
 inline
 int compute_cache::getRecycledNode(int size)
 {
+#ifdef RECYCLED_LIST
   if (recycledFront != NULL) {
     recycled_list* curr = recycledFront;
     while (curr != NULL && curr->size != size) { curr = curr->next; }
@@ -563,6 +588,14 @@ int compute_cache::getRecycledNode(int size)
     }
   }
   return -1;                        // did not find recycled node
+#else
+  if (int(holes.size()) <= size) return -1;
+  if (holes[size] == -1) return -1;
+  int node = holes[size];
+  holes[size] = nodes[node].next;
+  nodes[node].next = getNull();
+  return node;
+#endif
 }
 
 inline
