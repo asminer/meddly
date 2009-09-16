@@ -43,7 +43,8 @@
 #include <cassert>
 #include <cstring>
 #include <cstdio>
-#include <limits.h>
+#include <limits>
+
 
 // Macro to handle extern "C"
 #ifdef __cplusplus
@@ -56,7 +57,10 @@
 
 // Handy Constants
 
-const int INF = INT_MAX;
+const int INF = std::numeric_limits<int>::max();
+const float NAN = std::numeric_limits<float>::quiet_NaN();
+inline bool isNan(float t) { return t != t; }
+inline bool isNan(int t) { return t != t; }
 
 // Handy Macros
 
@@ -66,15 +70,10 @@ template <class T> inline T MAX(T X,T Y) { return ((X>Y)?X:Y); }
 template <class T> inline T MIN(T X,T Y) { return ((X<Y)?X:Y); }
 /// Standard ABS "macro".
 template <class T> inline T ABS(T X) { return ((X<0)?(-X):(X)); }
-
 /// SWAP "macro".
 template <class T> inline void SWAP(T &x, T &y) { T tmp=x; x=y; y=tmp; }
-
 /// POSITIVE "macro".
-template <class T> inline bool POSITIVE(T X) { return (X>0) ? 1 : 0; }
-
-/// SIGN "macro".
-template <class T> inline int SIGN(T X) { return (X<0) ? -1 : POSITIVE(X); }
+template <class T> inline bool POSITIVE(T X) { return (X>0) ? true : false; }
 
 /*
 
@@ -138,6 +137,38 @@ template <class T> inline int SIGN(T X) { return (X<0) ? -1 : POSITIVE(X); }
 #else
 #define smart_cast	static_cast
 #endif
+
+inline float* toFloat(int* i) { return (float *)i; }
+inline int*   toInt(float* f) { return (int *)f;   }
+
+inline float toFloat(int a)
+{
+  DCASSERT(sizeof(float) == sizeof(int));
+#if 0
+  static float val = 0;
+  static int sizeOfFloat = sizeof(float);
+  memcpy(&val, &a, sizeOfFloat);
+  return val;
+#else
+  union { int i; float f; } n = {a};
+  return n.f;
+#endif
+}
+
+inline int toInt(float a)
+{
+#if 0
+  DCASSERT(sizeof(float) == sizeof(int));
+  static int val = 0;
+  static int sizeOfInt = sizeof(int);
+  memcpy(&val, &a, sizeOfInt);
+  return val;
+#else
+  union { float f; int i; } n = {a};
+  return n.i;
+#endif
+}
+
 
 #endif
 
