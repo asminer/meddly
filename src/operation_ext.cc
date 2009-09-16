@@ -35,21 +35,6 @@ inline const expert_forest* getExpertForest(const op_info* op, int index) {
   return smart_cast<const expert_forest*>(op->f[index]);
 }
 
-inline float stuffIntoFloat(int a)
-{
-  static float val = 0;
-  memcpy(&val, &a, sizeof(float));
-  return val;
-}
-
-inline int stuffIntoInt(float a)
-{
-  static int val = 0;
-  memcpy(&val, &a, sizeof(int));
-  return val;
-}
-
-
 mdd_apply_operation::mdd_apply_operation(const char *name, bool commutative)
 : operation(2, 1, name), commutative(commutative) {}
 
@@ -6189,7 +6174,7 @@ mtmdd_to_evmdd::showEntry(const op_info* owner, FILE* strm,
   DCASSERT(owner->nForests == 2);
   if (getExpertForest(owner, 1)->getRangeType() == forest::REAL) {
     fprintf(strm, "[%s %d %d %f]",
-        owner->op->getName(), data[0], data[1], stuffIntoFloat(data[2]));
+        owner->op->getName(), data[0], data[1], toFloat(data[2]));
   } else {
     fprintf(strm, "[%s %d %d %d]", owner->op->getName(),
         data[0], data[1], data[2]);
@@ -6225,7 +6210,7 @@ mtmdd_to_evmdd::findResult(op_info* owner, int a, int& b, float& ev)
 
   if (cacheEntry == 0) return false;
   b = cacheEntry[1];
-  ev = stuffIntoFloat(cacheEntry[2]);
+  ev = toFloat(cacheEntry[2]);
   getExpertForest(owner, 1)->linkNode(b);
   return true;
 }
@@ -6264,7 +6249,7 @@ mtmdd_to_evmdd::saveResult(op_info* owner, int a, int b, float c)
 #endif
 
   // create cache entry
-  cacheEntry[0] = a; cacheEntry[1] = b; cacheEntry[2] = stuffIntoInt(c);
+  cacheEntry[0] = a; cacheEntry[1] = b; cacheEntry[2] = toInt(c);
 
   getExpertForest(owner, 0)->cacheNode(a);
   getExpertForest(owner, 1)->cacheNode(b);
