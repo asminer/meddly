@@ -120,6 +120,7 @@ class expert_forest : public forest {
 
     /// Reduce and finalize an node with an incoming edge value
     virtual void normalizeAndReduceNode(int& node, int& ev) = 0;
+    virtual void normalizeAndReduceNode(int& node, float& ev) = 0;
     // In mdds_ext.h
 
     /// Has the node been reduced
@@ -200,12 +201,14 @@ class expert_forest : public forest {
     /// Note 2: Non-reduced nodes are always Full nodes regardless of the
     ///         forest's node storage policy.
     void setEdgeValue(int node, int index, int edge);
+    void setEdgeValue(int node, int index, float edge);
 
     /// Get the node pointed to at the given index -- only for Full nodes
     int getFullNodeDownPtr(int node, int index) const;
 
     /// Get the edge value for the given index -- only for Full nodes
-    int getFullNodeEdgeValue(int node, int index) const;
+    void getFullNodeEdgeValue(int node, int index, int& ev) const;
+    void getFullNodeEdgeValue(int node, int index, float& ev) const;
 
     /// Get the real index at the given index -- only for Sparse nodes
     int getSparseNodeIndex(int node, int index) const;
@@ -214,7 +217,8 @@ class expert_forest : public forest {
     int getSparseNodeDownPtr(int node, int index) const;
 
     /// Get the edge value at the given index -- only for Sparse nodes
-    int getSparseNodeEdgeValue(int node, int index) const;
+    void getSparseNodeEdgeValue(int node, int index, int& ev) const;
+    void getSparseNodeEdgeValue(int node, int index, float& ev) const;
 
     /// Increase the link count to this node. Call this when another node is
     /// made to point (down-pointer) to this node.
@@ -1507,10 +1511,14 @@ float expert_forest::getReal(int term) const
   return *(float*)((void*)&(term <<= 1));
 #else
   if (term == 0) return 0.0;
-  float ret;
   term <<= 1;
+#if 1
+  float ret;
   memcpy(&ret, &term, sizeof(float));
   return ret;
+#else
+  return toFloat(term);
+#endif
 #endif
 }
 
@@ -1523,10 +1531,14 @@ int expert_forest::getTerminalNode(float a) const
   return (a == 0.0)? 0: (*((int*)((void*)&a)) >> 1) | 0x80000000;
 #else
   if (a == 0.0) return 0;
+#if 1
   int node;
   memcpy(&node, &a, sizeof(int));
   // printf("%x\n", node);
   return (node >> 1) | 0x80000000;
+#else
+  return (toInt(a) >> 1) | 0x80000000;
+#endif
 #endif
 }
 
@@ -1652,6 +1664,16 @@ void expert_forest::setEdgeValue(int node, int index, int ev)
 
 
 inline
+void expert_forest::setEdgeValue(int node, int index, float ev)
+{
+  DCASSERT(!isReducedNode(node));
+  DCASSERT(isFullNode(node));
+  CHECK_RANGE(0, index, getFullNodeSize(node));
+  *(getNodeAddress(node) + 3 + getFullNodeSize(node) + index) = toInt(ev);
+}
+
+
+inline
 int expert_forest::getFullNodeDownPtr(int p, int i) const
 {
   DCASSERT(isFullNode(p));
@@ -1679,20 +1701,39 @@ int expert_forest::getSparseNodeIndex(int p, int i) const
 
 
 inline
-int expert_forest::getFullNodeEdgeValue(int node, int index) const
+void expert_forest::getFullNodeEdgeValue(int node, int index, int& ev) const
 {
   DCASSERT(isFullNode(node));
   CHECK_RANGE(0, index, getFullNodeSize(node));
-  return *(getNodeAddress(node) + 3 + getFullNodeSize(node) + index);
+  ev = *(getNodeAddress(node) + 3 + getFullNodeSize(node) + index);
 }
 
 
 inline
-int expert_forest::getSparseNodeEdgeValue(int node, int index) const
+void expert_forest::getSparseNodeEdgeValue(int node, int index, int& ev) const
 {
   DCASSERT(isSparseNode(node));
   CHECK_RANGE(0, index, getSparseNodeSize(node));
-  return *(getNodeAddress(node) + 3 + (getSparseNodeSize(node) * 2) + index);
+  ev = *(getNodeAddress(node) + 3 + (getSparseNodeSize(node) * 2) + index);
+}
+
+
+inline
+void expert_forest::getFullNodeEdgeValue(int node, int index, float& ev) const
+{
+  DCASSERT(isFullNode(node));
+  CHECK_RANGE(0, index, getFullNodeSize(node));
+  ev = toFloat(*(getNodeAddress(node) + 3 + getFullNodeSize(node) + index));
+}
+
+
+inline
+void expert_forest::getSparseNodeEdgeValue(int node, int index, float& ev) const
+{
+  DCASSERT(isSparseNode(node));
+  CHECK_RANGE(0, index, getSparseNodeSize(node));
+  ev = toFloat(*(getNodeAddress(node) + 3 +
+        (getSparseNodeSize(node) * 2) + index));
 }
 
 
