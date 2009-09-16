@@ -45,6 +45,9 @@
 
 #define DEBUG_DELETE_NM 0
 
+//#define MERGE_RIGHT
+//#define MERGE_LEFT
+
 const int add_size = 1024;
 const int l_add_size = 24;
 
@@ -933,8 +936,9 @@ void node_manager::showNode(FILE *s, int p, int verbose) const
     fprintf(s, " down: (");
     for (int z=0; z<getSparseNodeSize(p); z++) {
       if (z) fprintf(s, ", ");
-      if (edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES) {
-        int e = getSparseNodeEdgeValue(p, z);
+      if (edgeLabel == forest::EVPLUS) {
+        int e = 0;
+        getSparseNodeEdgeValue(p, z, e);
         if (e == INF) {
           fprintf(s, "%d:INF:%d",
               getSparseNodeIndex(p, z),
@@ -945,6 +949,13 @@ void node_manager::showNode(FILE *s, int p, int verbose) const
               e,
               getSparseNodeDownPtr(p, z));
         }
+      } else if (edgeLabel == forest::EVTIMES) {
+        float e = 0;
+        getSparseNodeEdgeValue(p, z, e);
+        fprintf(s, "%d:%f:%d",
+            getSparseNodeIndex(p, z),
+            e,
+            getSparseNodeDownPtr(p, z));
       } else {
         if (isTerminalNode(getSparseNodeDownPtr(p, z))) {
           fprintf(s, "%d:", getSparseNodeIndex(p, z));
@@ -973,8 +984,9 @@ void node_manager::showNode(FILE *s, int p, int verbose) const
     fprintf(s, " down: [");
     for (int i=0; i<getFullNodeSize(p); i++) {
       if (i) fprintf(s, "|");
-      if (edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES) {
-        int e = getFullNodeEdgeValue(p, i);
+      if (edgeLabel == forest::EVPLUS) {
+        int e = 0;
+        getFullNodeEdgeValue(p, i, e);
         if  (e == INF) {
           fprintf(s, "INF:%d",
               getFullNodeDownPtr(p, i));
@@ -982,6 +994,11 @@ void node_manager::showNode(FILE *s, int p, int verbose) const
           fprintf(s, "%d:%d", e,
               getFullNodeDownPtr(p, i));
         }
+      } else if (edgeLabel == forest::EVTIMES) {
+        float e = 0;
+        getFullNodeEdgeValue(p, i, e);
+        fprintf(s, "%f:%d", e,
+            getFullNodeDownPtr(p, i));
       } else {
         if (isTerminalNode(getFullNodeDownPtr(p, i))) {
           if (getRangeType() == forest::REAL) {
@@ -1942,18 +1959,14 @@ void node_manager::gridInsert(int k, int p_offset)
     l_info->holes_top = p_offset;
     return;
   }
-  int chain = 0;
   int above = l_info->holes_bottom;
   int below = 0;
   while (l_data[p_offset] < l_data[above]) {
     below = above;
     above = l_data[below + 1];
-    chain++;
     DCASSERT(l_data[above + 2] == below);
     DCASSERT(above);  
   }
-  l_info->max_hole_chain = MAX(l_info->max_hole_chain, chain);
-  max_hole_chain = MAX(max_hole_chain, chain);
   if (l_data[p_offset] == l_data[above]) {
     // Found, add this to chain
     // making a non-index hole
@@ -2194,10 +2207,9 @@ void node_manager::makeHole(int k, int addr, int slots)
 
   if (!areHolesRecycled()) return;
 
-  bool control_flag = true;
-  bool enable_merging = (slots < getLevelSize(k)) || control_flag;
   // Check for a hole to the left
-  if (enable_merging && data[addr-1] < 0) {
+#ifdef MERGE_LEFT
+  if (data[addr-1] < 0) {
     // Merge!
     int lefthole = addr + data[addr-1];
     DCASSERT(data[lefthole] == data[addr-1]);
@@ -2207,24 +2219,25 @@ void node_manager::makeHole(int k, int addr, int slots)
     addr = lefthole;
     data[addr] = data[addr+slots-1] = -slots;
   }
-  
+#endif
+
   // if addr is the last hole, absorb into free part of array
-  assert(addr + slots - 1 <= level[mapped_k].last);
+  DCASSERT(addr + slots - 1 <= level[mapped_k].last);
   if (addr+slots-1 == level[mapped_k].last) {
     level[mapped_k].last -= slots;
     level[mapped_k].hole_slots -= slots;
     if (level[mapped_k].size > add_size &&
-        level[mapped_k].last < level[mapped_k].size/2) {
+        (level[mapped_k].last + 1) < level[mapped_k].size/2) {
       int new_size = level[mapped_k].size/2;
-      while (new_size > add_size && new_size > level[mapped_k].last * 3)
-      { new_size /= 2; }
+      while (new_size > (level[mapped_k].last + 1) * 2) new_size /= 2;
+      if (new_size < add_size) new_size = add_size;
       updateMemoryAllocated((new_size - level[mapped_k].size) * sizeof(int));
       level[mapped_k].data = (int *)
         realloc(level[mapped_k].data, new_size * sizeof(int));
       assert(NULL != level[mapped_k].data);
       level[mapped_k].size = new_size;
 #ifdef MEMORY_TRACE
-      printf("Reduced data[] by a factor of 2. New size: %d, Last: %d.\n",
+      printf("Reduced data[]. New size: %d, Last: %d.\n",
           level[mapped_k].size, level[mapped_k].last);
 #endif
     }
@@ -2235,9 +2248,9 @@ void node_manager::makeHole(int k, int addr, int slots)
     return;
   }
 
-  enable_merging = (slots < getLevelSize(k)) || control_flag;
+#ifdef MERGE_RIGHT
   // Check for a hole to the right
-  if (enable_merging && data[addr+slots]<0) {
+  if (data[addr+slots]<0) {
     // Merge!
     int righthole = addr+slots;
     if (data[righthole+1] == non_index_hole) midRemove(k, righthole);
@@ -2245,6 +2258,7 @@ void node_manager::makeHole(int k, int addr, int slots)
     slots += (-data[righthole]);
     data[addr] = data[addr+slots-1] = -slots;
   }
+#endif
 
   // Add hole to grid
   gridInsert(k, addr); 
@@ -2284,6 +2298,39 @@ void node_manager::reportMemoryUsage(FILE * s, const char filler) {
   fprintf(s, "%cMax Hole Chain:\t%d\n", filler, getMaxHoleChain());
   fprintf(s, "%cCompactions:\t\t%d\n", filler, getCompactionsCount());
   // compareCacheCounts();
+#endif
+
+#if 1
+  // Print hole-recyling info
+  // Compute chain lengths
+  std::map<int, int> chainLengths;
+
+  for (int currLevel = 0; currLevel < l_size; currLevel++)
+  {
+    if (level[currLevel].hole_slots == 0) continue;
+    int currHoleChain = level[currLevel].holes_bottom;
+    while (currHoleChain != 0)
+    {
+      int currHoleOffset = currHoleChain;
+      // count the number of holes in this chain
+      int count = 0;
+      for (count = 0; currHoleOffset != 0; count++)
+      {
+        currHoleOffset = level[currLevel].data[currHoleOffset + 3];
+      }
+      int currHoleSize = -level[currLevel].data[currHoleChain];
+      chainLengths[currHoleSize] += count;
+      // on to the next chain (above) for this level
+      currHoleChain = level[currLevel].data[currHoleChain + 1];
+    }
+  }
+
+  fprintf(s, "Hole Chains (size, count):\n");
+  for (std::map<int, int>::iterator iter = chainLengths.begin();
+    iter != chainLengths.end(); ++iter)
+  {
+    fprintf(s, "\t%d: %d\n", iter->first, iter->second);
+  }
 #endif
 }
 

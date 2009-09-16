@@ -267,7 +267,6 @@ class node_manager : public expert_forest {
     const int* getSparseNodeDownPtrs(int p) const;
     int getSparseNodeLargestIndex(int p) const;
 
-    void setDownPtrWoUnlink(int p, int i, int value);
     void setAllDownPtrs(int p, int value);
     void setAllDownPtrsWoUnlink(int p, int value);
     void initDownPtrs(int p);
@@ -276,16 +275,14 @@ class node_manager : public expert_forest {
     int* getFullNodeEdgeValues(int p);
     const int* getFullNodeEdgeValuesReadOnly(int p) const;
     const int* getSparseNodeEdgeValues(int p) const;
-    void initEdgeValues(int p);
     void setAllEdgeValues(int p, int value);
+    void setAllEdgeValues(int p, float fvalue);
 
     // p: node
     // i: the ith downpointer.
     // note: for sparse nodes this may not be the same as the ith index pointer.
     int getDownPtr(int p, int i) const;
     int getDownPtrAfterIndex(int p, int i, int &index) const;
-    void getDownAndEdgeValueAfterIndex
-      (int p, int i, int &index, int& down, int& edge) const;
 
     int getMddLevelMaxBound(int k) const;
     int getMxdLevelMaxBound(int k) const;
@@ -438,7 +435,7 @@ class node_manager : public expert_forest {
     // Pointer to expert_domain
     expert_domain* expertDomain;
 
-  private:
+  protected:
     // Special next values
     static const int temp_node = -5;
     static const int non_index_hole = -2;
@@ -563,6 +560,10 @@ inline void node_manager::handleNewOrphanNode(int p) {
   } else {
     orphan_nodes++;
   }
+
+  if (getOrphanNodeCount() > 100000)
+    smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())
+      ->removeStales();
 }
 
 inline void node_manager::deleteOrphanNode(int p) {
@@ -599,36 +600,6 @@ inline int node_manager::getDownPtrAfterIndex(int p, int i, int &index)
   }
 }
 
-inline void node_manager::getDownAndEdgeValueAfterIndex
-  (int p, int i, int &index, int& down, int& edge) const {
-  DCASSERT(edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES);
-  DCASSERT(isActiveNode(p));
-  DCASSERT(i >= 0);
-  assert(!isTerminalNode(p));
-  DCASSERT(i < getLevelSize(getNodeLevel(p)));
-  if (isFullNode(p)) {
-    // full or trunc-full node
-    // full or trunc-full node, but i lies after the last non-zero downpointer
-    // index = i;
-    if (i < getFullNodeSize(p)) {
-      down = getFullNodeDownPtr(p, i);
-      edge = getFullNodeEdgeValue(p, i);
-      return;
-    }
-  } else {
-    // sparse node
-    // binary search to find the index ptr corresponding to i
-    int stop = getSparseNodeSize(p);
-    while (index < stop && i > getSparseNodeIndex(p, index)) index++;
-    if (index < stop && i == getSparseNodeIndex(p, index)) {
-      down = getSparseNodeDownPtr(p, index);
-      edge = getSparseNodeEdgeValue(p, index);
-      return;
-    }
-  }
-  down = 0;
-  edge = INF;
-}
 
 inline int node_manager::getDownPtr(int p, int i) const {
   DCASSERT(isActiveNode(p));
@@ -697,46 +668,24 @@ inline int node_manager::createTempNode(int k, int sz, bool clear)
 #endif
 
   // fill in the location with p's address info
-  if (getEdgeLabeling() == forest::MULTI_TERMINAL) {
-    address[p].level = k;
-    address[p].offset = getHole(k, 4 + sz, true);
-    address[p].cache_count = 0;
+  DCASSERT(getEdgeLabeling() == forest::MULTI_TERMINAL);
+  address[p].level = k;
+  address[p].offset = getHole(k, 4 + sz, true);
+  address[p].cache_count = 0;
 
 #ifdef DEBUG_MDD_SET
-    printf("%s: offset: %d\n", __func__, address[p].offset);
-    fflush(stdout);
+  printf("%s: offset: %d\n", __func__, address[p].offset);
+  fflush(stdout);
 #endif
 
-    int* foo = level[mapLevel(k)].data + address[p].offset;
-    foo[0] = 1;                   // #incoming
-    foo[1] = temp_node;
-    foo[2] = sz;                  // size
-    foo[3 + sz] = p;              // pointer to this node in the address array
+  int* foo = level[mapLevel(k)].data + address[p].offset;
+  foo[0] = 1;                   // #incoming
+  foo[1] = temp_node;
+  foo[2] = sz;                  // size
+  foo[3 + sz] = p;              // pointer to this node in the address array
 
-    // initialize
-    if (clear) initDownPtrs(p);
-  } else {
-    address[p].level = k;
-    address[p].offset = getHole(k, 4 + 2 * sz, true);
-    address[p].cache_count = 0;
-
-#ifdef DEBUG_MDD_SET
-    printf("%s: offset: %d\n", __func__, address[p].offset);
-    fflush(stdout);
-#endif
-
-    int* foo = level[mapLevel(k)].data + address[p].offset;
-    foo[0] = 1;                   // #incoming
-    foo[1] = temp_node;
-    foo[2] = sz;                  // size
-    foo[3 + sz + sz] = p;         // pointer to this node in the address array
-
-    // initialize
-    if (clear) {
-      initDownPtrs(p);
-      initEdgeValues(p);
-    }
-  }
+  // initialize
+  if (clear) initDownPtrs(p);
 
 #ifdef TRACK_DELETIONS
   cout << "Creating node " << p << "\n";
@@ -845,14 +794,6 @@ inline int node_manager::getSparseNodeLargestIndex(int p) const {
   return getSparseNodeIndex(p, getSparseNodeSize(p) - 1);
 }
 
-inline void node_manager::setDownPtrWoUnlink(int p, int i, int value) {
-  DCASSERT(!isReducedNode(p));
-  DCASSERT(isFullNode(p));
-  DCASSERT(isReducedNode(value));
-  // linkNode to new node
-  *(getNodeAddress(p) + 3 + i) = sharedCopy(value);
-}
-
 inline void node_manager::setAllDownPtrs(int p, int value) {
   DCASSERT(!isReducedNode(p));
   DCASSERT(isFullNode(p));
@@ -888,30 +829,23 @@ inline void node_manager::initDownPtrs(int p) {
   memset(getFullNodeDownPtrs(p), 0, sizeof(int) * getFullNodeSize(p));
 }
 
-inline void node_manager::initEdgeValues(int p) {
-  DCASSERT(edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES);
-  DCASSERT(!isReducedNode(p));
-  DCASSERT(isFullNode(p));
-  int *edgeptr = getFullNodeEdgeValues(p);
-  int *last = edgeptr + getFullNodeSize(p);
-#ifdef ALT_EVMDD
-  if (edgeLabel == forest::EVPLUS) {
-    for ( ; edgeptr != last; ++edgeptr) *edgeptr = 0;
-  } else {
-    DCASSERT(edgeLabel == forest::EVTIMES);
-    for ( ; edgeptr != last; ++edgeptr) *edgeptr = 1;
-  }
-#else
-  for ( ; edgeptr != last; ++edgeptr) *edgeptr = INF;
-#endif
-}
-
 inline void node_manager::setAllEdgeValues(int p, int value) {
   DCASSERT(edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES);
   DCASSERT(!isReducedNode(p));
   DCASSERT(isFullNode(p));
   int *edgeptr = getFullNodeEdgeValues(p);
   int *last = edgeptr + getFullNodeSize(p);
+  for ( ; edgeptr != last; ++edgeptr) *edgeptr = value;
+}
+
+
+inline void node_manager::setAllEdgeValues(int p, float fvalue) {
+  DCASSERT(edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES);
+  DCASSERT(!isReducedNode(p));
+  DCASSERT(isFullNode(p));
+  int *edgeptr = getFullNodeEdgeValues(p);
+  int *last = edgeptr + getFullNodeSize(p);
+  int value = toInt(fvalue);
   for ( ; edgeptr != last; ++edgeptr) *edgeptr = value;
 }
 
