@@ -199,9 +199,9 @@ forest* expert_domain::createForest(bool rel, forest::range_type t,
         f = new mtmdd_node_manager(this, t);
       }
     } else if (e == forest::EVPLUS) {
-      if (t == forest::INTEGER || t == forest::REAL) {
-        f = new evmdd_node_manager(this, t);
-      }
+      f = new evplusmdd_node_manager(this);
+    } else if (e == forest::EVTIMES) {
+      f = new evtimesmdd_node_manager(this);
     }
   }
 

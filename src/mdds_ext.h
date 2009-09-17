@@ -76,6 +76,7 @@ class mdd_node_manager : public node_manager {
     // The following will either abort or return an error since they are not
     // applicable to this forest.
     virtual void normalizeAndReduceNode(int& p, int& ev);
+    virtual void normalizeAndReduceNode(int& p, float& ev);
 
     // Refer to meddly.h
     // The following will either abort or return an error since they are not
@@ -136,6 +137,7 @@ class mtmdd_node_manager : public node_manager {
     // The following will either abort or return an error since they are not
     // applicable to this forest.
     virtual void normalizeAndReduceNode(int& p, int& ev);
+    virtual void normalizeAndReduceNode(int& p, float& ev);
 
     // Refer to meddly.h
     // The following will either abort or return an error since they are not
@@ -205,6 +207,7 @@ class mxd_node_manager : public node_manager {
     // The following will either abort or return an error since they are not
     // applicable to this forest.
     virtual void normalizeAndReduceNode(int& p, int& ev);
+    virtual void normalizeAndReduceNode(int& p, float& ev);
 
     // Refer to meddly.h
     // The following will either abort or return an error since they are not
@@ -291,6 +294,7 @@ class mtmxd_node_manager : public node_manager {
     // The following will either abort or return an error since they are not
     // applicable to this forest.
     virtual void normalizeAndReduceNode(int& p, int& ev);
+    virtual void normalizeAndReduceNode(int& p, float& ev);
 
     // Refer to meddly.h
     // The following will either abort or return an error since they are not
@@ -319,8 +323,14 @@ class mtmxd_node_manager : public node_manager {
 
 class evmdd_node_manager : public node_manager {
   public:
-    evmdd_node_manager(domain *d, range_type t);
+    evmdd_node_manager(domain *d, forest::edge_labeling el);
     ~evmdd_node_manager();
+
+    virtual int doOp(int a, int b) const = 0;
+    virtual float doOp(float a, float b) const = 0;
+    virtual int getDefaultEdgeValue() const = 0;
+    virtual int getIdentityEdgeValue() const = 0;
+    virtual void initEdgeValues(int p) = 0;
 
     // Refer to meddly.h
     virtual error createEdge(const int* const* vlist, const int* terms, int N,
@@ -328,9 +338,8 @@ class evmdd_node_manager : public node_manager {
     virtual error createEdge(int val, dd_edge &e);
     virtual error evaluate(const dd_edge &f, const int* vlist, int &term)
       const;
-
-    // Refer to meddly_expert.h
-    virtual void normalizeAndReduceNode(int& p, int& ev);
+    virtual error evaluate(const dd_edge &f, const int* vlist, float &term)
+      const;
 
   protected:
 
@@ -339,50 +348,85 @@ class evmdd_node_manager : public node_manager {
     // and store it in curr.
     void createEdge(const int* vlist, int term, dd_edge &e);
 
+    int createTempNode(int k, int sz, bool clear = true);
+
     // Create a node, at level k, whose ith index points to dptr with an
     // edge value ev. If i is -1, all indices of the node will point to dptr
     // with an edge value ev.
-    void createNode(int k, int i, int dptr, int ev, int& res, int& resEv);
+    //void createNode(int k, int i, int dptr, int ev, int& res, int& resEv);
+
+    template <class T>
+    void createNode(int k, int index, int dptr, T ev, int& res, T& resEv);
 
     // Create a sparse node, at level k, whose ith index points to dptr with
     // edge value ev.
     // 0 <= i < level bound.
     // Used by createNode(k, i, dptr, ev, res, resEv).
-    void createSparseNode(int k, int i, int dptr, int ev,
-        int& res, int& resEv);
+    //void createSparseNode(int k, int i, int dptr, int ev, int& res, int& resEv);
+
+    template<class T>
+    void createSparseNode(int k, int index, int dptr, T ev, int& res, T& resEv);
 
   public:
 
-      // Refer to meddly_expert.h
-      // The following will either abort or return an error since they are not
-      // applicable to this forest.
-      virtual int reduceNode(int p);
+    // Refer to meddly_expert.h
+    // The following will either abort or return an error since they are not
+    // applicable to this forest.
+    virtual int reduceNode(int p);
 
-      // Refer to meddly.h:
-      // The following will either abort or return an error since they are not
-      // applicable to this forest.
+    // Refer to meddly.h:
+    // The following will either abort or return an error since they are not
+    // applicable to this forest.
 
-      virtual error createEdge(const int* const* vlist, int N, dd_edge &e);
-      virtual error createEdge(const int* const* vlist, const float* terms,
-          int N, dd_edge &e);
-      virtual error createEdge(const int* const* vlist, const int* const* vplist,
-          int N, dd_edge &e);
-      virtual error createEdge(const int* const* vlist, const int* const* vplist,
-          const int* terms, int N, dd_edge &e);
-      virtual error createEdge(const int* const* vlist, const int* const* vplist, 
-          const float* terms, int N, dd_edge &e);
-      virtual error createEdge(bool val, dd_edge &e);
-      virtual error createEdge(float val, dd_edge &e);
-      virtual error evaluate(const dd_edge &f, const int* vlist, bool &term)
-        const;
-      virtual error evaluate(const dd_edge &f, const int* vlist, float &term)
-        const;
-      virtual error evaluate(const dd_edge& f, const int* vlist,
-          const int* vplist, bool &term) const;
-      virtual error evaluate(const dd_edge& f, const int* vlist,
-          const int* vplist, int &term) const;
-      virtual error evaluate(const dd_edge& f, const int* vlist,
-          const int* vplist, float &term) const;
+    virtual error createEdge(const int* const* vlist, int N, dd_edge &e);
+    virtual error createEdge(const int* const* vlist, const float* terms,
+        int N, dd_edge &e);
+    virtual error createEdge(const int* const* vlist, const int* const* vplist,
+        int N, dd_edge &e);
+    virtual error createEdge(const int* const* vlist, const int* const* vplist,
+        const int* terms, int N, dd_edge &e);
+    virtual error createEdge(const int* const* vlist, const int* const* vplist, 
+        const float* terms, int N, dd_edge &e);
+    virtual error createEdge(bool val, dd_edge &e);
+    virtual error createEdge(float val, dd_edge &e);
+    virtual error evaluate(const dd_edge &f, const int* vlist, bool &term)
+      const;
+    virtual error evaluate(const dd_edge& f, const int* vlist,
+        const int* vplist, bool &term) const;
+    virtual error evaluate(const dd_edge& f, const int* vlist,
+        const int* vplist, int &term) const;
+    virtual error evaluate(const dd_edge& f, const int* vlist,
+        const int* vplist, float &term) const;
+};
+
+
+class evplusmdd_node_manager : public evmdd_node_manager {
+  public:
+    evplusmdd_node_manager(domain *d);
+    ~evplusmdd_node_manager();
+
+    virtual int doOp(int a, int b) const;
+    virtual float doOp(float a, float b) const;
+    virtual int getDefaultEdgeValue() const;
+    virtual int getIdentityEdgeValue() const;
+    virtual void initEdgeValues(int p);
+    virtual void normalizeAndReduceNode(int& p, int& ev);
+    virtual void normalizeAndReduceNode(int& p, float& ev) { }
+};
+
+
+class evtimesmdd_node_manager : public evmdd_node_manager {
+  public:
+    evtimesmdd_node_manager(domain *d);
+    ~evtimesmdd_node_manager();
+    
+    virtual int doOp(int a, int b) const;
+    virtual float doOp(float a, float b) const;
+    virtual int getDefaultEdgeValue() const;
+    virtual int getIdentityEdgeValue() const;
+    virtual void initEdgeValues(int p);
+    virtual void normalizeAndReduceNode(int& p, int& ev) { }
+    virtual void normalizeAndReduceNode(int& p, float& ev);
 };
 
 
@@ -409,9 +453,183 @@ class evmdd_node_manager : public node_manager {
 
 
 
-
-
 // ------------------------ Inline methods -----------------------------------
+
+inline
+int evplusmdd_node_manager::doOp(int a, int b) const
+{
+  return a + b;
+}
+
+inline
+int evtimesmdd_node_manager::doOp(int a, int b) const
+{
+  return a * b;
+}
+
+inline
+float evplusmdd_node_manager::doOp(float a, float b) const
+{
+  return a + b;
+}
+
+inline
+float evtimesmdd_node_manager::doOp(float a, float b) const
+{
+  return a * b;
+}
+
+inline
+int evplusmdd_node_manager::getDefaultEdgeValue() const
+{
+  return INF;
+}
+
+inline
+int evtimesmdd_node_manager::getDefaultEdgeValue() const
+{
+  static int intNan = toInt(NAN);
+  return intNan;
+}
+
+inline
+int evtimesmdd_node_manager::getIdentityEdgeValue() const
+{
+  return toInt(1.0);
+}
+
+inline
+int evplusmdd_node_manager::getIdentityEdgeValue() const
+{
+  return 0;
+}
+
+
+template<class T>
+void evmdd_node_manager::createNode(int k, int index, int dptr, T ev,
+    int& res, T& resEv)
+{
+  DCASSERT(dptr >= -1 && ev >= 0);
+  DCASSERT(index >= -1);
+
+  if (index == -1) {
+    // if all edge values are the same for a evmdd node, it is
+    // equivalent to say that they are all 0 (since we subtract the minimum
+    // anyway).
+    if (reductionRule == forest::FULLY_REDUCED) {
+      res = sharedCopy(dptr);
+      resEv = ev;
+      return;
+    }
+    res = createTempNodeMaxSize(k, false);
+    setAllDownPtrsWoUnlink(res, dptr);
+    setAllEdgeValues(res, ev);
+    normalizeAndReduceNode(res, resEv);
+    return;
+  }
+
+  // a single downpointer points to dptr
+
+#if 0
+
+  res = createTempNode(k, index + 1);
+  setDownPtrWoUnlink(res, index, dptr);
+  setEdgeValue(res, index, ev);
+  resEv = 0;
+  normalizeAndReduceNode(res, resEv);
+
+#else
+
+  if (nodeStorage == FULL_STORAGE ||
+      (nodeStorage == FULL_OR_SPARSE_STORAGE && index < 2)) {
+    // Build a full node
+    res = createTempNode(k, index + 1);
+    setDownPtrWoUnlink(res, index, dptr);
+    setEdgeValue(res, index, ev);
+    normalizeAndReduceNode(res, resEv);
+  }
+  else {
+    DCASSERT (nodeStorage == SPARSE_STORAGE ||
+        (nodeStorage == FULL_OR_SPARSE_STORAGE && index >= 2));
+    // Build a sparse node
+    createSparseNode(k, index, dptr, ev, res, resEv);
+    // res, resEv set by createSparseNode(..); do not call normalizeAndReduce
+  }
+
+#endif
+
+}
+
+
+template<class T>
+void evmdd_node_manager::createSparseNode(int k, int index,
+    int dptr, T ev, int& res, T& resEv)
+{
+  DCASSERT(k != 0);
+
+  if (isTimeToGc()) { garbageCollect(); }
+
+  DCASSERT(isValidLevel(k));
+  CHECK_RANGE(0, index, getLevelSize(k));
+
+  // get a location in address[] to store the node
+  int p = getFreeNode(k);
+
+#ifdef DEBUG_MDD_SET
+  printf("%s: k: %d, index: %d, new p: %d\n", __func__, k, index, p);
+  fflush(stdout);
+#endif
+
+  // fill in the location with p's address info
+  address[p].level = k;
+  address[p].offset = getHole(k, 7 /*4 + 3*/, true);
+  address[p].cache_count = 0;
+
+#ifdef DEBUG_MDD_SET
+  printf("%s: offset: %d\n", __func__, address[p].offset);
+  fflush(stdout);
+#endif
+
+  int* foo = level[mapLevel(k)].data + address[p].offset;
+  foo[0] = 1;                     // #incoming
+  foo[1] = getTempNodeId();
+  foo[2] = -1;                    // size
+  foo[3] = index;                 // index
+  foo[4] = sharedCopy(dptr);      // downpointer
+  foo[5] = getIdentityEdgeValue();// this is the only ev, set resEv = ev
+  foo[6] = p;                     // pointer to this node in the address array
+
+  resEv = ev;
+
+#ifdef TRACK_DELETIONS
+  cout << "Creating node " << p << "\n";
+  cout.flush();
+#endif
+
+  incrNodesActivatedSinceGc();
+
+  // search in unique table
+  int q = find(p);
+  if (getNull() == q) {
+    // no duplicate found; insert into unique table
+    insert(p);
+    DCASSERT(getCacheCount(p) == 0);
+    DCASSERT(find(p) == p);
+    res = p;
+  }
+  else {
+    // duplicate found; discard this node and return the duplicate
+    unlinkNode(dptr);
+    // code from deleteTempNode(p) adapted to work here
+    {
+      makeHole(k, getNodeOffset(p), 7);
+      freeNode(p);
+      if (level[mapLevel(k)].compactLevel) compactLevel(k);
+    }
+    res = sharedCopy(q);
+  }
+}
+
 
 
 #endif
