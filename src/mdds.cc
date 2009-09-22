@@ -522,6 +522,18 @@ void node_manager::setHoleRecycling(bool policy)
 
 node_manager::~node_manager()
 {
+  // unlink all active nodes
+  int topLevel = d->getTopVariable();
+  for (int i = 0; i <= a_last; i++) {
+    if (isActiveNode(i) && !isTerminalNode(i) &&
+        getNodeLevel(i) == topLevel && getInCount(i) > 0) {
+      // delete all top level nodes; the rest will get deleted consequently
+      if (getInCount(i) > 1) getInCount(i) = 1;
+      unlinkNode(i);
+    }
+  }
+  gc();
+
   if (dptrsSize > 0) {
     free(dptrs);
     dptrsSize = 0;

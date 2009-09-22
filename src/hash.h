@@ -148,6 +148,7 @@ class hash_table {
     }
 
     inline void setSize(unsigned sz) {
+      DCASSERT(sz > 0);
       size = sz;
 #ifdef MAX_DEPTH
       sizeBy4 = int(sz * int(MAX_DEPTH) * 0.7f);
@@ -519,6 +520,7 @@ class hash_table {
         newSize = newSize >> 1;
       }
       newSize = newSize << 1;  // otherwise list won't fit
+      if (newSize < getMinSize()) newSize = getMinSize();
 #if 0
       fprintf(stdout, "to size %d.", newSize);
       fflush(stdout);
