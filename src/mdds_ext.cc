@@ -29,7 +29,7 @@
 
 #include "mdds_ext.h"
 #include <algorithm>
-
+#include <limits.h>
 
 //#define DEBUG_SORT_MATRIX
 //#define DEBUG_SORT_BUILD

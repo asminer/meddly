@@ -24,6 +24,9 @@
 //
 // TODO: HERE: go through every function in mdds.h and mdds.cc
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "mdds.h"
 
@@ -34,6 +37,7 @@
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
 #endif
+#include <limits.h>
 
 #define DONT_USE_FULL 0
 
