@@ -355,7 +355,8 @@ op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
             return &(builtinOpEntries->find(key)->second);
           case REACHABLE_STATES_DFS:
             // Mdd Reachable states using saturation-based algorithm
-            assert(false);
+            addBuiltinOp(key, mdd_reachability_dfs::getInstance(), forests, N);
+            return &(builtinOpEntries->find(key)->second);
           case REACHABLE_STATES_BFS:
             // Mdd Reachable states using traditional breadth-first algorithm
             addBuiltinOp(key, mdd_reachability_bfs::getInstance(), forests, N);

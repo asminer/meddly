@@ -26,6 +26,8 @@
 
 #include "../include/meddly_expert.h"
 
+#include <vector>
+
 
 /** MDD element-wise operations
 
@@ -162,11 +164,11 @@ class mxd_apply_operation : public mdd_apply_operation {
     virtual ~mxd_apply_operation();
 
     virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual int compute(op_info* owner, int a, int b);
 
   protected:
     /// To be implemented by derived classes
     virtual bool checkTerminals(op_info* op, int a, int b, int& c) = 0;
-    virtual int compute(op_info* owner, int a, int b);
 
     virtual void expandA(op_info* owner, int a, int b,
         expert_forest* expertForest,
@@ -583,7 +585,36 @@ class mdd_reachability_dfs : public mdd_mxd_image_operation {
     mdd_reachability_dfs& operator=(const mdd_reachability_dfs& copy);
     virtual ~mdd_reachability_dfs();
 
-    void splitMxd(int mxd, int** splitMxds);
+    void initialize(op_info* owner);
+    void clear();
+
+    void splitMxd(int mxd);
+    int saturate(int mdd);
+    void saturateHelper(int& mdd);
+    int recFire(int mdd, int mxd);
+
+  private:
+    op_info*       owner;         // pointer to dfs reachability operation
+    expert_forest* ddf;           // MDD forest
+    expert_forest* xdf;           // MXD forest
+    expert_domain* ed;            // domain
+    expert_compute_manager* ecm;  // compute manager
+
+    // Next-state function is split and stored here (see Saturation algorithm).
+    std::vector<int> splits;
+
+    // scratch.size () == number of variable handles in the domain
+    // scratch[level_handle].size() == level_bound(level_handle)
+    std::vector< std::vector<int> > scratch;
+    std::vector< std::vector<bool> > curr, next;
+
+    op_info*          mddUnionOp;
+    op_info*          mxdIntersectionOp;
+    op_info*          mxdDifferenceOp;
+
+    mdd_union*        mddUnion;
+    mxd_intersection* mxdIntersection;
+    mxd_difference*   mxdDifference;
 };
 
 

@@ -431,11 +431,12 @@ class node_manager : public expert_forest {
 
     // get the id used to indicate temporary nodes
     int getTempNodeId() const;
+    
+    double cardinality(int p, int k, std::map<int, double>& visited) const;
 
     // Pointer to expert_domain
     expert_domain* expertDomain;
 
-  protected:
     // Special next values
     static const int temp_node = -5;
     static const int non_index_hole = -2;

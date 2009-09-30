@@ -21,7 +21,7 @@
 
 
 
-// TODO: Completed implementing ALL functions in mdds_ext.h"
+// TODO: Completed implementing ALL functions in mdds_ext.h
 // TODO: need to call node_manager:: functions?
 //
 // TODO: Test createNode variant to build a sparse node for:

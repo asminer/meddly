@@ -55,11 +55,6 @@
 const int add_size = 1024;
 const int l_add_size = 24;
 
-#if 0
-double cardinality(const node_manager* const nm, int p, int k,
-    std::map<int, double>& visited);
-#endif
-
 node_manager::node_manager(domain *d, bool rel, range_type t,
   edge_labeling ev, reduction_rule r, node_storage s, node_deletion_policy nd)
 : expert_forest(d, rel, t, ev, r, s, nd)
@@ -127,7 +122,9 @@ int node_manager::buildLevelNodeHelper(int lh, int* dptrs, int sz)
   DCASSERT(dptrs != 0);
   DCASSERT(sz > 0);
 
-  int node = 0;
+  const int* h2lMap = expertDomain->getHeightsToLevelsMap();
+  const int absLh = (lh < 0)? -lh: lh;
+  int nodeHeight = expertDomain->getVariableHeight(absLh);
 
   if (isForRelations()) {
     // build from bottom up
@@ -136,9 +133,9 @@ int node_manager::buildLevelNodeHelper(int lh, int* dptrs, int sz)
     //      dptrs[j] = node at level i with all downpointers to prev dptrs[j]
     //      do for primed first and then unprimed
 
-    const int absLh = (lh < 0)? -lh: lh;
-    for (int i = 1; i < absLh; ++i)
+    for (int height = 1; height < nodeHeight; ++height)
     {
+      int i = h2lMap[height];
       for (int j = 0; j < sz; ++j)
       {
         // primed
@@ -176,8 +173,9 @@ int node_manager::buildLevelNodeHelper(int lh, int* dptrs, int sz)
     //    for j = 0 to sz
     //      dptrs[j] = node at level i with all downpointers to prev dptrs[j]
 
-    for (int i = 1; i < lh; ++i)
+    for (int height = 1; height < nodeHeight; ++height)
     {
+      int i = h2lMap[height];
       for (int j = 0; j < sz; ++j)
       {
         int temp = createTempNodeMaxSize(i, false);
@@ -189,7 +187,7 @@ int node_manager::buildLevelNodeHelper(int lh, int* dptrs, int sz)
   }
 
   // Now, deal with lh level
-  node = createTempNode(lh, sz, false);
+  int node = createTempNode(lh, sz, false);
   int* curr = getFullNodeDownPtrs(node);
   int* stop = curr + getFullNodeSize(node);
   // no need to link/unlink nodes since we pass the link
@@ -201,17 +199,18 @@ int node_manager::buildLevelNodeHelper(int lh, int* dptrs, int sz)
   if (isForRelations()) {
     // build additional node at lh level if necessary
     if (lh < 0) {
-      // build unprimed node at level ABS(lh) (same as -lh since lh < 0)
-      int temp = createTempNodeMaxSize(-lh, false);
+      // build unprimed node at level ABS(lh)
+      int temp = createTempNodeMaxSize(absLh, false);
       setAllDownPtrsWoUnlink(temp, node);
       unlinkNode(node);
       node = reduceNode(temp);
     }
 
     // build primed and unprimed nodes for levels lh+1 to topLevel
-    int topLevel = d->getTopVariable();
-    for (int i = ABS(lh) + 1; i <= topLevel; ++i)
+    int topHeight = d->getNumVariables();
+    for (int height = nodeHeight + 1; height <= topHeight; ++height)
     {
+      int i = h2lMap[height];
       // primed
       int temp = createTempNodeMaxSize(-i, false);
       setAllDownPtrsWoUnlink(temp, node);
@@ -227,10 +226,11 @@ int node_manager::buildLevelNodeHelper(int lh, int* dptrs, int sz)
   }
   else if (getReductionRule() == forest::QUASI_REDUCED) {
     DCASSERT(!isForRelations());
-    // build nodes for levels lh+1 to topLevel
-    int topLevel = d->getTopVariable();
-    for (int i = ABS(lh) + 1; i <= topLevel; ++i)
+    // build nodes for levels above lh
+    int topHeight = d->getNumVariables();
+    for (int height = nodeHeight + 1; height <= topHeight; ++height)
     {
+      int i = h2lMap[height];
       int temp = createTempNodeMaxSize(i, false);
       setAllDownPtrsWoUnlink(temp, node);
       unlinkNode(node);
@@ -755,66 +755,16 @@ void node_manager::dumpInternalLevel(FILE *s, int k) const
   DCASSERT(a == ((l_info->last)+1));
 }
 
-double cardinality(const node_manager* const nm, int p, int k,
-    std::map<int, double>& visited)
+double node_manager::cardinality(int p, int ht, std::map<int, double>& visited)
+const
 {
-  int pLevel = nm->getNodeLevel(p);
-  // fprintf(stderr, "p: %d, k: %d, pLevel: %d\n", p, k, pLevel);
-  DCASSERT(pLevel <= k);
+  int pHeight = getNodeHeight(p);
+  DCASSERT(pHeight <= ht);
 
-  if (pLevel < k)
-    return nm->getLevelSize(k) * cardinality(nm, p, k-1, visited);
-
-  if (nm->isTerminalNode(p)) {
-    return p == 0? 0: 1;
+  if (pHeight < ht) {
+    int k = expertDomain->getVariableWithHeight(ht);
+    return getLevelSize(k) * cardinality(p, ht - 1, visited);
   }
-
-  // check in cache
-  std::map<int, double>::iterator curr = visited.find(p);
-  if (curr != visited.end())
-    return curr->second;
-
-  // not found in cache; compute by exanding
-  double result = 0;
-  if (nm->isFullNode(p)) {
-    const int sz = nm->getFullNodeSize(p);
-    for (int i = 0; i < sz; ++i)
-      result += cardinality(nm, nm->getFullNodeDownPtr(p, i), k-1, visited);
-  }
-  else {
-    const int sz = nm->getSparseNodeSize(p);
-    for (int i = 0; i < sz; ++i)
-      result += cardinality(nm, nm->getSparseNodeDownPtr(p, i), k-1, visited);
-  }
-
-  // save result and return
-  visited[p] = result;
-  // fprintf(stderr, "p: %d, k: %d, pLevel: %d, card: %f\n",
-  //    p, k, pLevel, result);
-  return result;
-}
-
-double node_manager::getCardinality(int node) const
-{
-  if (!(isMdd() || isMtMdd())) return 0;
-  std::map<int, double> visited;
-#if 0
-  return getCardinality(node, d->getTopVariable(), visited);
-#else
-  return cardinality(this, node, d->getTopVariable(), visited);
-#endif
-}
-
-#if 0
-double node_manager::getCardinality(int p, int k, std::map<int, double>& visited)
-  const
-{
-  int pLevel = getNodeLevel(p);
-  // fprintf(stderr, "p: %d, k: %d, pLevel: %d\n", p, k, pLevel);
-  DCASSERT(pLevel <= k);
-
-  if (pLevel < k)
-    return getLevelSize(k) * getCardinality(p, k-1, visited);
 
   if (isTerminalNode(p)) {
     return p == 0? 0: 1;
@@ -830,21 +780,25 @@ double node_manager::getCardinality(int p, int k, std::map<int, double>& visited
   if (isFullNode(p)) {
     const int sz = getFullNodeSize(p);
     for (int i = 0; i < sz; ++i)
-      result += getCardinality(getFullNodeDownPtr(p, i), k-1, visited);
+      result += cardinality(getFullNodeDownPtr(p, i), ht - 1, visited);
   }
   else {
     const int sz = getSparseNodeSize(p);
     for (int i = 0; i < sz; ++i)
-      result += getCardinality(getSparseNodeDownPtr(p, i), k-1, visited);
+      result += cardinality(getSparseNodeDownPtr(p, i), ht - 1, visited);
   }
 
   // save result and return
   visited[p] = result;
-  // fprintf(stderr, "p: %d, k: %d, pLevel: %d, card: %f\n",
-  //    p, k, pLevel, result);
   return result;
 }
-#endif
+
+double node_manager::getCardinality(int node) const
+{
+  if (!(isMdd() || isMtMdd())) return 0;
+  std::map<int, double> visited;
+  return cardinality(node, d->getNumVariables(), visited);
+}
 
 void node_manager::showNodeGraph(FILE *s, int p) const
 {
