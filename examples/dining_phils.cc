@@ -389,7 +389,10 @@ int main(int argc, char *argv[])
 #if 1
 
   timer start;
-  ecm->apply(compute_manager::REACHABLE_STATES_BFS,
+  ecm->apply(
+      dfs?
+      compute_manager::REACHABLE_STATES_DFS:
+      compute_manager::REACHABLE_STATES_BFS,
       reachableStates, nsf, reachableStates);
   start.note_time();
   printf("Time interval: %.4e seconds\n",
@@ -450,6 +453,8 @@ int main(int argc, char *argv[])
   ecm->showComputeTable(stdout);
 #endif
 
+#if 0
+
   printf("\nMDD forest info:\n");
   mdd->showInfo(stdout);
   printf("\nMXD forest info:\n");
@@ -458,6 +463,8 @@ int main(int argc, char *argv[])
   ecm->showComputeTable(stdout);
 
   start.note_time();
+
+
 #if 1
   printf("\nClearing compute table... ");
   ecm->clearComputeTable();
@@ -479,6 +486,8 @@ int main(int argc, char *argv[])
   mxd->showInfo(stdout);
   printf("\nCompute table info:\n");
   ecm->showComputeTable(stdout);
+
+#endif
 
   // Cleanup
   delete d;
