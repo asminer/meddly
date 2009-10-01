@@ -199,6 +199,9 @@ class node_manager : public expert_forest {
     forest::error createEdgeForVar(int vh, bool primedLevel,
        float* terms, dd_edge& a);
 
+    forest::error createSubMatrix(const bool* const* vlist,
+        const bool* const* vplist, const dd_edge a, dd_edge& b);
+
     /// Create a temporary node -- a node that can be modified by the user
     int createTempNode(int lh, int size, bool clear = true);
 

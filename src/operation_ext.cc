@@ -3369,11 +3369,6 @@ mxd_union::~mxd_union() {}
 bool
 mxd_union::checkTerminals(op_info* op, int a, int b, int& c)
 {
-  if (-1 == a || -1 == b) {
-    c = -1;
-    return true;
-  }
-
   if (0 == a) {
     c = b;
     getExpertForest(op, 0)->linkNode(c);
@@ -3424,18 +3419,7 @@ mxd_intersection::checkTerminals(op_info* op, int a, int b, int& c)
     return true;
   }
 
-  if (-1 == a) {
-    c = b;
-    getExpertForest(op, 0)->linkNode(c);
-    return true;
-  }
-
-  if (-1 == b) {
-    c = a;
-    getExpertForest(op, 0)->linkNode(c);
-    return true;
-  }
-
+  // this comparison also covers a == b == -1
   if (a == b) {
     c = a;
     getExpertForest(op, 0)->linkNode(c);
@@ -3469,7 +3453,7 @@ mxd_difference::~mxd_difference() {}
 bool
 mxd_difference::checkTerminals(op_info* op, int a, int b, int& c)
 {
-  if (a == b || 0 == a || -1 == b) {
+  if (a == b || 0 == a) {
     c = 0;
     return true;
   }

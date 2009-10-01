@@ -325,6 +325,22 @@ class forest {
     */
     virtual error createEdgeForVar(int vh, bool primedLevel, dd_edge& a) = 0;
 
+
+    /** Create an edge representing the subset of a Matrix Diagram.
+
+        size(vlist) == number of variables in the forest + 1 (for terminals)
+        size(vlist[i]) == size (i.e. bound) of variable i
+        size(vlist) == size(vplist)
+        size(vlist[i]) == size(vplist[i])
+        If vlist[i][j] is true, that index is included in the mask
+        If vlist[i][j] is false, that index is excluded from the mask.
+        
+        TODO: write a better description (an example might also help).
+    */
+    virtual error createSubMatrix(const bool* const* vlist,
+        const bool* const* vplist, const dd_edge a, dd_edge& b) = 0;
+
+
     /** Create an edge such that
         f(v_1, ..., vh=i, ..., v_n) = terms[i] for 0 <= i < size(vh).
 

@@ -265,6 +265,87 @@ void usage()
 }
 
 
+// Test Pre-Image
+dd_edge testPreImage(const dd_edge& mdd, const dd_edge& mxd)
+{
+  dd_edge preImage(mdd.getForest());
+  compute_manager* cm = MEDDLY_getComputeManager();
+  assert(compute_manager::SUCCESS ==
+      cm->apply(compute_manager::PRE_IMAGE, mdd, mxd, preImage));
+
+#if 1
+  preImage.show(stdout, 3);
+#else
+  preImage.show(stdout, 1);
+#endif
+
+  return preImage;
+}
+
+
+// Test Post-Image
+dd_edge testPostImage(const dd_edge& mdd, const dd_edge& mxd)
+{
+  dd_edge postImage(mdd.getForest());
+  compute_manager* cm = MEDDLY_getComputeManager();
+  assert(compute_manager::SUCCESS ==
+      cm->apply(compute_manager::POST_IMAGE, mdd, mxd, postImage));
+
+#if 1
+  postImage.show(stdout, 3);
+#else
+  postImage.show(stdout, 1);
+#endif
+
+  return postImage;
+}
+
+
+// Test SubMatrix
+dd_edge testSubMatrix(int* bounds, int nLevels, const dd_edge& nsf)
+{
+  bool** vlist = (bool **) malloc((nLevels + 1) * sizeof(bool *));
+  bool** vplist = (bool **) malloc((nLevels + 1) * sizeof(bool *));
+  for (int i = 0; i <= nLevels; i++)
+  {
+    int levelSize = (i == 0)? 2: bounds[i - 1];
+    unsigned arraySize = levelSize * sizeof(bool);
+    vlist[i] = (bool *) malloc(arraySize);
+    vplist[i] = (bool *) malloc(arraySize);
+    memset(vlist[i], 0, arraySize);
+    memset(vplist[i], 0, arraySize);
+  }
+  for (int i = 1; i <= nLevels; i++)
+  {
+    int levelSize = bounds[i - 1];
+    for (int j = 0; j < levelSize - 1; j++)
+    {
+      vlist[i][j] = true;
+      vplist[i][j] = true;
+    }
+  }
+
+#if 1
+  nsf.show(stdout, 3);
+#else
+  nsf.show(stdout, 1);
+#endif
+
+  forest* mxd = nsf.getForest();
+  dd_edge subMatrix(mxd);
+  assert(forest::SUCCESS ==
+    mxd->createSubMatrix(vlist, vplist, nsf, subMatrix));
+
+#if 1
+  subMatrix.show(stdout, 3);
+#else
+  subMatrix.show(stdout, 1);
+#endif
+
+  return subMatrix;
+}
+
+
 int main(int argc, char *argv[])
 {
   int nPhilosophers = 0; // number of philosophers
@@ -487,6 +568,17 @@ int main(int argc, char *argv[])
   printf("\nCompute table info:\n");
   ecm->showComputeTable(stdout);
 
+#endif
+
+#if 0
+  // Test Pre-Image
+  dd_edge preImage = testPreImage(initialStates, nsf);
+
+  // Test Post-Image
+  dd_edge postImage = testPostImage(initialStates, nsf);
+
+  // Test SubMatrix
+  dd_edge subMatrix = testSubMatrix(bounds, nLevels, nsf);
 #endif
 
   // Cleanup

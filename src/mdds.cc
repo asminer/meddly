@@ -396,6 +396,52 @@ forest::error node_manager::createEdgeForVar(int vh, bool primedLevel,
 }
 
 
+forest::error node_manager::createSubMatrix(const bool* const* vlist,
+    const bool* const* vplist, const dd_edge a, dd_edge& b)
+{
+  if (a.getForest() != this) return forest::INVALID_OPERATION;
+  if (b.getForest() != this) return forest::INVALID_OPERATION;
+  if (!isMxd()) return forest::INVALID_OPERATION;
+
+  // Build Mask: go bottom up
+  // When mask for level i is done, create node at level i+1 (higher)
+  // such that all downpointers with vlist[i+1]==1 point to mask.
+  int mask = getTerminalNode(true);
+  int nVars = expertDomain->getNumVariables();
+  for (int height = 1; height <= nVars; height++)
+  {
+    int level = expertDomain->getVariableWithHeight(height);
+    
+    // create node at prime level
+    int nodeSize = expertDomain->getVariableBound(level);
+    int node = createTempNode(-level, nodeSize, false);
+    for (int i = 0; i < nodeSize; i++)
+    {
+      setDownPtrWoUnlink(node, i, (vplist[level][i]? mask: 0));
+    }
+    unlinkNode(mask);
+    mask = reduceNode(node);
+
+    // create node at unprime level
+    node = createTempNode(level, nodeSize, false);
+    for (int i = 0; i < nodeSize; i++)
+    {
+      setDownPtrWoUnlink(node, i, (vlist[level][i]? mask: 0));
+    }
+    unlinkNode(mask);
+    mask = reduceNode(node);
+  }
+
+  b.set(mask, 0, getNodeLevel(mask));
+#if 0
+  b.show(stdout, 3);
+#endif
+  b *= a;
+
+  return forest::SUCCESS;
+}
+
+
 forest::error node_manager::createEdgeForVar(int vh, bool primedLevel,
     int* terms, dd_edge& result)
 {
