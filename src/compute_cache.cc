@@ -118,15 +118,15 @@ void compute_cache::show(FILE *s, bool verbose) const
 { 
   char filler[] = "\t";
   fprintf(s, "%sNumber of slots:\t%d\n", filler, nodeCount);
-  fprintf(s, "%sMemory usage:   \t%lu\n", filler,
+  fprintf(s, "%sMemory usage:   \t%u\n", filler,
       dataCount * sizeof(int) +
       nodeCount * sizeof(cache_entry) +
       (ht == 0? 0: ht->getMemoryUsage()) +
       (fsht == 0? 0: fsht->getMemoryUsage()));
   if (verbose) {
-    fprintf(s, "%s  Nodes[]:      \t%lu\n",
+    fprintf(s, "%s  Nodes[]:      \t%u\n",
         filler, nodeCount * sizeof(cache_entry));
-    fprintf(s, "%s  Data[]:       \t%lu\n", filler, dataCount * sizeof(int));
+    fprintf(s, "%s  Data[]:       \t%u\n", filler, dataCount * sizeof(int));
   }
   fprintf(s, "%sPings:          \t%d\n", filler, pings);
   fprintf(s, "%sHits:           \t%d\n", filler, hits);

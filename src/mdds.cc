@@ -801,6 +801,65 @@ void node_manager::dumpInternalLevel(FILE *s, int k) const
   DCASSERT(a == ((l_info->last)+1));
 }
 
+double node_manager::cardinalityForRelations(int p, int ht, bool primeLevel,
+    std::map<int, double>& visited) const
+{
+  if (p == 0) return 0;
+  if (ht == 0) {
+    assert(isTerminalNode(p));
+    return 1;
+  }
+
+  int pHeight = getNodeHeight(p);
+  assert(pHeight >= 0);
+
+  if (pHeight < ht) {
+    // p is lower than ht
+    if (primeLevel) {
+      // ht is a prime level
+      assert(p == 0);
+      return 0;
+    }
+    else {
+      // ht is a un-prime level
+      int k = expertDomain->getVariableWithHeight(ht);
+      return getLevelSize(k) *
+        cardinalityForRelations(p, ht - 1, false, visited);
+    }
+  }
+
+  assert(pHeight == ht);
+  int k = expertDomain->getVariableWithHeight(ht);
+  assert((primeLevel && (getNodeLevel(p) == -k)) ||
+      (!primeLevel && getNodeLevel(p) == k));
+
+  // check in cache
+  std::map<int, double>::iterator curr = visited.find(p);
+  if (curr != visited.end())
+    return curr->second;
+
+  // not found in cache; compute by expanding
+  int nextHeight = (primeLevel)? ht - 1: ht;
+  bool nextPrimeLevel = !primeLevel;
+  double result = 0;
+  if (isFullNode(p)) {
+    const int sz = getFullNodeSize(p);
+    for (int i = 0; i < sz; ++i)
+      result += cardinalityForRelations(getFullNodeDownPtr(p, i),
+          nextHeight, nextPrimeLevel, visited);
+  }
+  else {
+    const int sz = getSparseNodeSize(p);
+    for (int i = 0; i < sz; ++i)
+      result += cardinalityForRelations(getSparseNodeDownPtr(p, i),
+          nextHeight, nextPrimeLevel, visited);
+  }
+
+  // save result and return
+  visited[p] = result;
+  return result;
+}
+
 double node_manager::cardinality(int p, int ht, std::map<int, double>& visited)
 const
 {
@@ -821,7 +880,7 @@ const
   if (curr != visited.end())
     return curr->second;
 
-  // not found in cache; compute by exanding
+  // not found in cache; compute by expanding
   double result = 0;
   if (isFullNode(p)) {
     const int sz = getFullNodeSize(p);
@@ -841,9 +900,13 @@ const
 
 double node_manager::getCardinality(int node) const
 {
-  if (!(isMdd() || isMtMdd())) return 0;
   std::map<int, double> visited;
-  return cardinality(node, d->getNumVariables(), visited);
+  if (isMdd() || isMtMdd())
+    return cardinality(node, d->getNumVariables(), visited);
+  else if (isMxd() || isMtMdd())
+    return cardinalityForRelations(node, d->getNumVariables(), false, visited);
+  else
+    return 0;
 }
 
 void node_manager::showNodeGraph(FILE *s, int p) const

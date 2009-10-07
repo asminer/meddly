@@ -434,8 +434,16 @@ class node_manager : public expert_forest {
 
     // get the id used to indicate temporary nodes
     int getTempNodeId() const;
-    
+
+    // Cardinality for Mdds and MtMdds
+    // k is the height (>= 0)
     double cardinality(int p, int k, std::map<int, double>& visited) const;
+
+    // Cardinality for Mxds and MtMxds
+    // k is height (always >=0). k combined with primeLevel indicates
+    // the current primed or unprimed level.
+    double cardinalityForRelations(int p, int k, bool primeLevel,
+        std::map<int, double>& visited) const;
 
     // Pointer to expert_domain
     expert_domain* expertDomain;

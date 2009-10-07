@@ -1026,9 +1026,10 @@ class dd_edge {
 
     /** Display the edge information.
         This is primarily for aid in debugging.
+        Note that cardinality only works for MDDs, MTMDDs, MXDs and MTMXDs.
         @param  strm      File stream to write to.
         @param  verbosity 0: default
-                          1: default + cardinality (only for MDDs)
+                          1: default + cardinality
                           2: default + displays graph rooted at this node.
                           3: default + cardinality + graph.
     */
