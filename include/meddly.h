@@ -1148,7 +1148,10 @@ class compute_manager {
       PRE_IMAGE,
       POST_IMAGE,
       REACHABLE_STATES_DFS,
-      REACHABLE_STATES_BFS
+      REACHABLE_STATES_BFS,
+
+      /// Convert MDD to EV+MDD index set
+      CONVERT_TO_INDEX_SET
 
       // there will be many more codes...
     };

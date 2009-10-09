@@ -274,45 +274,60 @@ op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
   // add new built-in op entry
   if (N == 2) {
     // unary operations
-    if (smart_cast<const expert_forest* const>(forests[0])->isMdd() &&
-        smart_cast<const expert_forest* const>(forests[1])->isMtMdd() &&
-        op == compute_manager::COPY) {
-      // MDD to MTMDD
-      // terminal true == 1, terminal false == 0
-      addBuiltinOp(key, mdd_to_mtmdd::getInstance(), forests, N);
-      return &(builtinOpEntries->find(key)->second);
-    }
-    if (smart_cast<const expert_forest* const>(forests[0])->isMtMdd() &&
-        op == compute_manager::COPY) {
-      if (smart_cast<const expert_forest* const>(forests[1])->isMdd()) {
-        // MTMDD to MDD
-        // terminal 0 == false, !0 == true
-        addBuiltinOp(key, mtmdd_to_mdd::getInstance(), forests, N);
-        return &(builtinOpEntries->find(key)->second);
+    if (smart_cast<const expert_forest* const>(forests[0])->isMdd()) {
+      if (smart_cast<const expert_forest* const>(forests[1])->isEvplusMdd()) {
+        if (op == compute_manager::CONVERT_TO_INDEX_SET) {
+          // MDD to index set represented using EV+MDD
+          addBuiltinOp(key, mdd_to_evplusmdd_index_set::getInstance(),
+              forests, N);
+          return &(builtinOpEntries->find(key)->second);
+        }
       }
-      if (forests[1]->getEdgeLabeling() == forest::EVPLUS ||
-          forests[1]->getEdgeLabeling() == forest::EVTIMES) {
-        // MTMDD to EVMDD (works for both EVPLUS and EVTIMES)
-        // terminal 0 == false, !0 == true
-        addBuiltinOp(key, mtmdd_to_evmdd::getInstance(), forests, N);
+      else if (smart_cast<const expert_forest* const>(forests[1])->isMtMdd()) {
+        if (op == compute_manager::COPY) {
+        // MDD to MTMDD
+        // terminal true == 1, terminal false == 0
+        addBuiltinOp(key, mdd_to_mtmdd::getInstance(), forests, N);
         return &(builtinOpEntries->find(key)->second);
+        }
       }
     }
-    if (smart_cast<const expert_forest* const>(forests[0])->isMxd() &&
-        smart_cast<const expert_forest* const>(forests[1])->isMtMxd() &&
-        op == compute_manager::COPY) {
-      // MXD to MTMXD
-      // terminal true == 1, terminal false == 0
-      addBuiltinOp(key, mxd_to_mtmxd::getInstance(), forests, N);
-      return &(builtinOpEntries->find(key)->second);
+    else if (smart_cast<const expert_forest* const>(forests[0])->isMtMdd()) {
+      if (op == compute_manager::COPY) {
+        if (smart_cast<const expert_forest* const>(forests[1])->isMdd()) {
+          // MTMDD to MDD
+          // terminal 0 == false, !0 == true
+          addBuiltinOp(key, mtmdd_to_mdd::getInstance(), forests, N);
+          return &(builtinOpEntries->find(key)->second);
+        }
+        else if (forests[1]->getEdgeLabeling() == forest::EVPLUS ||
+            forests[1]->getEdgeLabeling() == forest::EVTIMES) {
+          // MTMDD to EVMDD (works for both EVPLUS and EVTIMES)
+          // terminal 0 == false, !0 == true
+          addBuiltinOp(key, mtmdd_to_evmdd::getInstance(), forests, N);
+          return &(builtinOpEntries->find(key)->second);
+        }
+      }
     }
-    if (smart_cast<const expert_forest* const>(forests[0])->isMtMxd() &&
-        smart_cast<const expert_forest* const>(forests[1])->isMxd() &&
-        op == compute_manager::COPY) {
-      // MTMXD to MXD
-      // terminal 0 == false, !0 == true
-      addBuiltinOp(key, mtmxd_to_mxd::getInstance(), forests, N);
-      return &(builtinOpEntries->find(key)->second);
+    else if (smart_cast<const expert_forest* const>(forests[0])->isMxd()) {
+      if (smart_cast<const expert_forest* const>(forests[1])->isMtMxd()) {
+        if (op == compute_manager::COPY) {
+          // MXD to MTMXD
+          // terminal true == 1, terminal false == 0
+          addBuiltinOp(key, mxd_to_mtmxd::getInstance(), forests, N);
+          return &(builtinOpEntries->find(key)->second);
+        }
+      }
+    }
+    else if (smart_cast<const expert_forest* const>(forests[0])->isMtMxd()) {
+      if (smart_cast<const expert_forest* const>(forests[1])->isMxd()) {
+        if (op == compute_manager::COPY) {
+          // MTMXD to MXD
+          // terminal 0 == false, !0 == true
+          addBuiltinOp(key, mtmxd_to_mxd::getInstance(), forests, N);
+          return &(builtinOpEntries->find(key)->second);
+        }
+      }
     }
   }
   else if (N == 3) {
@@ -365,7 +380,6 @@ op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
             break;
         }
       }
-
     }
     else if (smart_cast<const expert_forest* const>(forests[0])->isMxd()) {
 

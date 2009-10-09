@@ -265,6 +265,21 @@ void usage()
 }
 
 
+// Test Index Set
+void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
+{
+  compute_manager* cm = MEDDLY_getComputeManager();
+  assert(compute_manager::SUCCESS ==
+      cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mdd, indexSet));
+
+#if 1
+  indexSet.show(stdout, 3);
+#else
+  indexSet.show(stdout, 1);
+#endif
+}
+
+
 // Test Pre-Image
 dd_edge testPreImage(const dd_edge& mdd, const dd_edge& mxd)
 {
@@ -579,6 +594,15 @@ int main(int argc, char *argv[])
 
   // Test SubMatrix
   dd_edge subMatrix = testSubMatrix(bounds, nLevels, nsf);
+
+  // Create a EV+MDD forest in this domain (to store index set)
+  forest* evplusmdd =
+    d->createForest(false, forest::INTEGER, forest::EVPLUS);
+  assert(evplusmdd != NULL);
+
+  // Test Convert MDD to Index Set EV+MDD
+  dd_edge indexSet(evplusmdd);
+  testIndexSet(reachableStates, indexSet);
 #endif
 
   // Cleanup
