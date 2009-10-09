@@ -7368,6 +7368,174 @@ void mtmdd_to_evmdd::compute(op_info* owner, int a, int& b, int &bev)
 }
 
 
+// -------------------- Convert MDD to EV+MDD ------------------
+
+
+mdd_to_evplusmdd_index_set* mdd_to_evplusmdd_index_set::getInstance()
+{
+  static mdd_to_evplusmdd_index_set instance("Convert MDD to EV+MDD");
+  return &instance;
+}
+
+
+mdd_to_evplusmdd_index_set::mdd_to_evplusmdd_index_set(const char *name)
+: mtmdd_to_evmdd(name)
+{ }
+
+
+mdd_to_evplusmdd_index_set::~mdd_to_evplusmdd_index_set() {}
+
+
+compute_manager::error
+mdd_to_evplusmdd_index_set::typeCheck(const op_info* owner)
+{
+  if (owner == 0)
+    return compute_manager::UNKNOWN_OPERATION;
+  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nForests != 2)
+    return compute_manager::WRONG_NUMBER;
+  if (owner->f[0]->getDomain() != owner->f[1]->getDomain())
+    return compute_manager::TYPE_MISMATCH;
+  if (!getExpertForest(owner, 0)->isMdd())
+    return compute_manager::TYPE_MISMATCH;
+  if (!getExpertForest(owner, 1)->isEvplusMdd())
+    return compute_manager::TYPE_MISMATCH;
+  return compute_manager::SUCCESS;
+}
+
+
+compute_manager::error
+mdd_to_evplusmdd_index_set::compute(op_info* owner,
+    const dd_edge& a, dd_edge& b)
+{
+  if (owner == 0) return compute_manager::TYPE_MISMATCH;
+  int result = 0;
+  int ev = 0;
+  int nVars = owner->f[0]->getDomain()->getNumVariables();
+  compute(owner, a.getNode(), nVars, result, ev);
+  // note that ev will be equal to the cardinality of the ev+mdd;
+  // but we do not use that number here.
+  b.set(result, 0, getExpertForest(owner, 1)->getNodeLevel(result));
+  return compute_manager::SUCCESS;
+}
+
+
+void mdd_to_evplusmdd_index_set::compute(op_info* owner,
+    int a, int height, int& b, int& bev)
+{
+  DCASSERT(getExpertForest(owner, 1)->getTerminalNode(false) == 0);
+  DCASSERT(getExpertForest(owner, 0)->getTerminalNode(true) == -1);
+  DCASSERT(getExpertForest(owner, 0)->getTerminalNode(false) == 0);
+
+  b = 0; bev = INF;
+
+  // Deal with terminals
+  if (a == 0) return;
+  if (height == 0) {
+    DCASSERT(getExpertForest(owner, 0)->getTerminalNode(true) == a);
+    b = getExpertForest(owner, 1)->getTerminalNode(true);
+    bev = 1;
+    return;
+  }
+
+  expert_forest* mddf = getExpertForest(owner, 0);
+  expert_forest* evmddf = getExpertForest(owner, 1);
+  DCASSERT(mddf->getDomain() == evmddf->getDomain());
+  expert_domain* d = smart_cast<expert_domain*>(mddf->useDomain());
+
+  int aHeight = mddf->getNodeHeight(a);
+  DCASSERT(aHeight <= height);
+
+  // Search compute table
+  if (aHeight == height) {
+    if (findResult(owner, a, b, bev)) return;
+  }
+
+  // Create node at appropriate height
+  const int resultLevel = d->getVariableWithHeight(height);
+  const int resultSize = d->getVariableBound(resultLevel);
+  int result = evmddf->createTempNode(resultLevel, resultSize, true);
+
+  // Total counts all the paths leading from result
+  int total = 0;
+
+  if (aHeight < height) {
+    int node = 0;
+    int ev = INF;
+    compute(owner, a, height - 1, node, ev);
+    // ev gives the cardinality of node
+
+    // Set the down-pointers and edge-values
+    // Down-pointers are the same for all indexes
+    // Edge-value at index i is ev*i
+    if (node != 0) {
+      for (int i = 0; i < resultSize; i++)
+      {
+        evmddf->setDownPtrWoUnlink(result, i, node);
+        // edge-value indicates the number of paths from all the previous
+        // down-pointers
+        evmddf->setEdgeValue(result, i, total);
+        // update the number of paths
+        total += ev;
+      }
+      evmddf->unlinkNode(node);
+    }
+  } // aHeight < height
+  else {
+    // create node at level corresponding to variable 'aHeight'
+    // note that aHeight == height
+    
+    if (mddf->isFullNode(a)) {
+      // a is full (or truncated-full)
+      int aSize = mddf->getFullNodeSize(a);
+      for (int i = 0; i < aSize; i++)
+      {
+        int node = 0;
+        int ev = INF;
+        compute(owner, mddf->getFullNodeDownPtr(a, i), height - 1, node, ev);
+        if (node == 0) continue;
+
+        evmddf->setDownPtrWoUnlink(result, i, node);
+        // edge-value indicates the number of paths from all the previous
+        // down-pointers
+        evmddf->setEdgeValue(result, i, total);
+        evmddf->unlinkNode(node);
+        // update the number of paths
+        total += ev;
+      }
+    } // a is full
+    else {
+      // a is sparse
+      int aNnz = mddf->getSparseNodeSize(a);
+      for (int i = 0; i < aNnz; i++)
+      {
+        int node = 0;
+        int ev = INF;
+        compute(owner, mddf->getSparseNodeDownPtr(a, i), height - 1, node, ev);
+        if (node == 0) continue;
+
+        int index = mddf->getSparseNodeIndex(a, i);
+        evmddf->setDownPtrWoUnlink(result, index, node);
+        // edge-value indicates the number of paths from all the previous
+        // down-pointers
+        evmddf->setEdgeValue(result, index, total);
+        evmddf->unlinkNode(node);
+        // update the number of paths
+        total += ev;
+      }
+    } // a is sparse
+  } // aHeight == height
+
+  // Save result in compute cache and return it
+  b = result;
+  evmddf->normalizeAndReduceNode(b, bev);
+  DCASSERT((b == 0 && bev == INF) || (b != 0 && bev == 0));
+  bev = total;
+  saveResult(owner, a, b, bev);
+}
+
+
 // ----------------------- MTMXD Apply operation ----------------------
 
 

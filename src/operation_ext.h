@@ -1130,6 +1130,24 @@ class mtmdd_to_evmdd : public operation {
 };
 
 
+class mdd_to_evplusmdd_index_set : public mtmdd_to_evmdd {
+  public:
+    static mdd_to_evplusmdd_index_set* getInstance();
+    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual compute_manager::error compute(op_info* owner,
+        const dd_edge& a, dd_edge& b);
+
+  protected:
+    mdd_to_evplusmdd_index_set(const char* name);
+    mdd_to_evplusmdd_index_set(const mdd_to_evplusmdd_index_set& copy);
+    mdd_to_evplusmdd_index_set& operator=(const
+        mdd_to_evplusmdd_index_set& copy);
+    ~mdd_to_evplusmdd_index_set();
+
+    virtual void compute(op_info* owner, int a, int height, int& b, int& bev);
+};
+
+
 class mtmdd_post_image : public mdd_post_image {
   public:
     static mtmdd_post_image* getInstance();
