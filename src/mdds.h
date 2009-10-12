@@ -202,8 +202,10 @@ class node_manager : public expert_forest {
     forest::error createSubMatrix(const bool* const* vlist,
         const bool* const* vplist, const dd_edge a, dd_edge& b);
 
+    virtual forest::error getElement(const dd_edge& a, int index, int* e);
+
     /// Create a temporary node -- a node that can be modified by the user
-    int createTempNode(int lh, int size, bool clear = true);
+    virtual int createTempNode(int lh, int size, bool clear = true);
 
     /// Apply reduction rule to the temporary node and finalize it. Once
     /// a node is reduced, its contents cannot be modified.
@@ -503,6 +505,10 @@ class node_manager : public expert_forest {
 
     // Garbage collection in progress
     bool performing_gc;
+
+    // Deleting terminal nodes (used in isStale() -- this enables
+    // the removal of compute cache entries which refer to terminal nodes)
+    bool delete_terminal_nodes;
 
     /// Uniqueness table
     mdd_hash_table <node_manager> *unique;
@@ -885,13 +891,11 @@ inline void node_manager::setNext(int h, int n) {
 inline bool node_manager::isStale(int h) const {
 #if 1
   return
-    (isTerminalNode(h)?
-     false:
-     (isPessimistic()?
-      isZombieNode(h):
-      (enable_garbageCollection && getInCount(h) == 0)
-     )
-    );
+    isTerminalNode(h)?
+      delete_terminal_nodes:
+      isPessimistic()?
+        isZombieNode(h):
+        (enable_garbageCollection && getInCount(h) == 0);
 #else
   return isTerminalNode(p)? false: isZombieNode(h);
 #endif

@@ -26,6 +26,7 @@
 
 //#define IGNORE_TERMS 0
 //#define IGNORE_INCOUNT 2
+//#define DEBUG_DFS
 
 inline expert_forest* getExpertForest(op_info* op, int index) {
   return smart_cast<expert_forest*>(op->f[index]);
@@ -4325,7 +4326,7 @@ int mdd_reachability_dfs::compute(op_info* owner, int mdd, int mxd)
 
   // Depth-first reachability analysis (Saturation)
 
-#if DEBUG_DFS
+#ifdef DEBUG_DFS
   printf("Consolidated Next-State Function:\n");
   xdf->showNodeGraph(stdout, mxd);
   printf("\n");
@@ -4339,7 +4340,7 @@ int mdd_reachability_dfs::compute(op_info* owner, int mdd, int mxd)
   // The nsf is stored into the vector splits
   splitMxd(mxd);
 
-#if DEBUG_DFS
+#ifdef DEBUG_DFS
   printf("Split Next-State Function:\n");
   for (int i = splits.size() - 1; i >= 0; i--)
   {
@@ -4453,8 +4454,8 @@ void mdd_reachability_dfs::splitMxd(int mxd)
 #if 1
   DCASSERT(xdf != 0);
 
-  int trueNode = xdf->getTerminalNode(true);
   int falseNode = xdf->getTerminalNode(false);
+  int trueNode = xdf->getTerminalNode(true);
 
   // find intersection for all mxd[i][i]
   // -- if mxd is smaller than max level size, then some mxd[i] is zero,
@@ -4496,6 +4497,7 @@ void mdd_reachability_dfs::splitMxd(int mxd)
       if (mxdSize == xdf->getLevelSize(level)) {
         // for all i, mxd[i] != 0
         intersection = trueNode;
+        bool first = true;
         for (int i = 0; i < mxdSize && intersection != falseNode; ++i)
         {
           mxdI = xdf->getFullNodeDownPtr(mxd, i);
@@ -4556,10 +4558,21 @@ void mdd_reachability_dfs::splitMxd(int mxd)
             }
           }
 
-          int temp = mxdIntersection->compute(mxdIntersectionOp,
-              intersection, mxdII);
-          xdf->unlinkNode(intersection);
-          intersection = temp;
+          if (!first) {
+            int temp = mxdIntersection->compute(mxdIntersectionOp,
+                intersection, mxdII);
+            xdf->unlinkNode(intersection);
+            intersection = temp;
+          } else {
+            first = false;
+            xdf->linkNode(mxdII);
+            xdf->unlinkNode(intersection);
+            intersection = mxdII;
+          }
+
+#ifdef DEBUG_DFS
+          printf("intersection: %d\n", intersection);
+#endif
         }
       }
     }
@@ -4593,7 +4606,7 @@ void mdd_reachability_dfs::splitMxd(int mxd)
 
 int mdd_reachability_dfs::saturate(int mdd)
 {
-#if DEBUG_DFS
+#ifdef DEBUG_DFS
   printf("mdd: %d\n", mdd);
 #endif
 
@@ -4611,7 +4624,7 @@ int mdd_reachability_dfs::saturate(int mdd)
   int k = ddf->getNodeLevel(mdd);      // level
   int sz = ddf->getLevelSize(k);       // size
 
-#if DEBUG_DFS
+#ifdef DEBUG_DFS
   printf("mdd: %d, level: %d, size: %d\n", mdd, k, sz);
 #endif
 
@@ -4648,7 +4661,7 @@ int mdd_reachability_dfs::saturate(int mdd)
   }
   
   // call saturateHelper for n
-#if DEBUG_DFS
+#ifdef DEBUG_DFS
   printf("Calling saturate: level %d\n", k);
 #endif
   saturateHelper(n);
@@ -4656,7 +4669,7 @@ int mdd_reachability_dfs::saturate(int mdd)
   // reduce and return
   n = ddf->reduceNode(n);
 
-#if DEBUG_DFS
+#ifdef DEBUG_DFS
   ddf->showNodeGraph(stdout, n);
 #endif
 
@@ -7178,7 +7191,7 @@ mtmdd_to_evmdd::findResult(op_info* owner, int a, int& b, float& ev)
 void
 mtmdd_to_evmdd::saveResult(op_info* owner, int a, int b, int c)
 {
-  static int cacheEntry[2];
+  static int cacheEntry[3];
 
 #ifdef IGNORE_INCOUNT
   if (!getExpertForest(owner, 0)->isTerminalNode(a) &&
@@ -7199,7 +7212,7 @@ mtmdd_to_evmdd::saveResult(op_info* owner, int a, int b, int c)
 void
 mtmdd_to_evmdd::saveResult(op_info* owner, int a, int b, float c)
 {
-  static int cacheEntry[2];
+  static int cacheEntry[3];
 
 #ifdef IGNORE_INCOUNT
   if (!getExpertForest(owner, 0)->isTerminalNode(a) &&

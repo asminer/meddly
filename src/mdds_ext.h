@@ -405,6 +405,9 @@ class evplusmdd_node_manager : public evmdd_node_manager {
     evplusmdd_node_manager(domain *d);
     ~evplusmdd_node_manager();
 
+    virtual forest::error getElement(const dd_edge& a, int index, int* e);
+    virtual forest::error getElement(int a, int index, int* e);
+
     virtual int doOp(int a, int b) const;
     virtual float doOp(float a, float b) const;
     virtual int getDefaultEdgeValue() const;

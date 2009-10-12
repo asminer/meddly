@@ -341,6 +341,14 @@ class forest {
         const bool* const* vplist, const dd_edge a, dd_edge& b) = 0;
 
 
+    /** Returns element \a e at index \a i from an Index Set EV+MDD.
+    
+        size(e) = number of variables in the forest + 1 (for terminals).
+        TODO: complete this description
+    */
+    virtual error getElement(const dd_edge& a, int index, int* e) = 0;
+
+
     /** Create an edge such that
         f(v_1, ..., vh=i, ..., v_n) = terms[i] for 0 <= i < size(vh).
 
@@ -912,6 +920,11 @@ class dd_edge {
     */
     int getLevel() const;
 
+    /** Get node cardinality.
+        @return         the cardinality of the node.
+    */
+    int getCardinality() const;
+
     /** Modifies the dd_edge fields.
         The dd_edge is cleared (it will still belong to the same forest),
         and the dd_edge data is filled with the data provided.
@@ -1351,7 +1364,6 @@ inline int dd_edge::getLevel() const
   return level;
 }
 
-
 inline void dd_edge::setIndex(int index)
 {
   this->index = index;
@@ -1361,6 +1373,15 @@ inline int dd_edge::getIndex() const
 {
   return index;
 }
+
+// Clear the contents of this edge (it will still belong to the same forest)
+inline void dd_edge::clear()
+{
+// TBD: is this an "always" assert, or "debugging only" assert?
+  assert(index != -1);
+  set(0, 0, 0);
+}
+
 
 // Check for equality.
 inline bool dd_edge::operator==(const dd_edge& e) const
@@ -1375,15 +1396,6 @@ inline bool dd_edge::operator==(const dd_edge& e) const
 inline bool dd_edge::operator!=(const dd_edge& e) const
 {
   return !(*this == e);
-}
-
-
-// Clear the contents of this edge (it will still belong to the same forest)
-inline void dd_edge::clear()
-{
-// TBD: is this an "always" assert, or "debugging only" assert?
-  assert(index != -1);
-  set(0, 0, 0);
 }
 
 

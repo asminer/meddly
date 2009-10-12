@@ -71,7 +71,7 @@ expert_forest::expert_forest(domain *d, bool rel, range_type t,
 }
 
 
-expert_forest::~expert_forest() {
+void expert_forest::unregisterDDEdges() {
   // Go through the list of valid edges (value > 0), and set
   // the e.index to -1 (indicating unregistered edge).
 
@@ -79,9 +79,27 @@ expert_forest::~expert_forest() {
   for (unsigned i = 0; i < firstFree; ++i) {
     if (edge[i].edge != 0) {
       DCASSERT(edge[i].nextHole == -1);
+      int node = edge[i].edge->getNode();
+      unlinkNode(node);
       edge[i].edge->setIndex(-1);
     }
   }
+
+  // firstHole < 0 indicates no holes.
+  for (unsigned i = 0; i < firstFree; ++i) {
+    edge[i].nextHole = -1;
+    edge[i].edge = 0;
+  }
+  firstHole = -1;
+  firstFree = 0;
+}
+
+
+expert_forest::~expert_forest() {
+  // Go through the list of valid edges (value > 0), and set
+  // the e.index to -1 (indicating unregistered edge).
+  // unregisterDDEdges();
+  // No need to call this from here -- ~node_manager() calls it.
 
   // Delete the array.
   free(edge);

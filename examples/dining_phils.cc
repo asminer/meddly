@@ -603,6 +603,19 @@ int main(int argc, char *argv[])
   // Test Convert MDD to Index Set EV+MDD
   dd_edge indexSet(evplusmdd);
   testIndexSet(reachableStates, indexSet);
+  int* element = (int *) malloc((nLevels + 1) * sizeof(int));
+
+  int cardinality = indexSet.getCardinality();
+  for (int index = 0; index < cardinality; index++)
+  {
+    assert(forest::SUCCESS == evplusmdd->getElement(indexSet, index, element));
+    printf("Element at index %d: [ ", index);
+    for (int i = nLevels; i > 0; i--)
+    {
+      printf("%d ", element[i]);
+    }
+    printf("]\n");
+  }
 #endif
 
   // Cleanup

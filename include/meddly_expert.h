@@ -258,6 +258,8 @@ class expert_forest : public forest {
 
   protected:
 
+    void unregisterDDEdges();
+
     int getInternalNodeSize(int node) const;
     int* getNodeAddress(int node) const;
     int* getAddress(int k, int offset) const;

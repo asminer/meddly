@@ -216,7 +216,7 @@ compute_manager::error expert_compute_manager::setHashTablePolicy(
 
 void expert_compute_manager::showComputeTable(FILE* strm) const
 {
-  if (cc != 0) cc->show(strm);
+  if (cc != 0) cc->show(strm, true);
 }
 
 

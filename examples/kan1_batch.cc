@@ -102,7 +102,6 @@ int sizes[N-1] = { 4, 4, 4, 4 };
 dd_edge MakeLocalTransitions(int machine, forest* mxd)
 {
   dd_edge nsf(mxd);
-  dd_edge temp(mxd);
 
   int from[N];
   int to[N];
@@ -121,7 +120,7 @@ dd_edge MakeLocalTransitions(int machine, forest* mxd)
     from[machine] = 0; to[machine] = 1;
 
     // add it to nsf
-    temp.clear();
+    dd_edge temp(mxd);
     mxd->createEdge(reinterpret_cast<int**>(&addrFrom),
         reinterpret_cast<int**>(&addrTo), 1, temp);
     nsf += temp;
@@ -136,7 +135,7 @@ dd_edge MakeLocalTransitions(int machine, forest* mxd)
     from[machine] = 1; to[machine] = 2;
 
     // add it to nsf
-    temp.clear();
+    dd_edge temp(mxd);
     mxd->createEdge(reinterpret_cast<int**>(&addrFrom),
         reinterpret_cast<int**>(&addrTo), 1, temp);
     nsf += temp;
@@ -151,7 +150,7 @@ dd_edge MakeLocalTransitions(int machine, forest* mxd)
     from[machine] = 2; to[machine] = 1;
 
     // add it to nsf
-    temp.clear();
+    dd_edge temp(mxd);
     mxd->createEdge(reinterpret_cast<int**>(&addrFrom),
         reinterpret_cast<int**>(&addrTo), 1, temp);
     nsf += temp;
@@ -166,7 +165,7 @@ dd_edge MakeLocalTransitions(int machine, forest* mxd)
     from[machine] = 1; to[machine] = 3;
 
     // add it to nsf
-    temp.clear();
+    dd_edge temp(mxd);
     mxd->createEdge(reinterpret_cast<int**>(&addrFrom),
         reinterpret_cast<int**>(&addrTo), 1, temp);
     nsf += temp;
@@ -181,7 +180,7 @@ dd_edge MakeLocalTransitions(int machine, forest* mxd)
     from[machine] = 3; to[machine] = 0;
 
     // add it to nsf
-    temp.clear();
+    dd_edge temp(mxd);
     mxd->createEdge(reinterpret_cast<int**>(&addrFrom),
         reinterpret_cast<int**>(&addrTo), 1, temp);
     nsf += temp;
@@ -222,6 +221,13 @@ dd_edge MakeSynch23_4(forest* mxd)
       reinterpret_cast<int**>(&addrTo), 1, nsf);
 
   return nsf;
+}
+
+void getIndexSet(const dd_edge& mdd, dd_edge& indexSet)
+{
+  compute_manager* cm = MEDDLY_getComputeManager();
+  assert(compute_manager::SUCCESS ==
+      cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mdd, indexSet));
 }
 
 int main(int argc, char* argv[])
@@ -305,106 +311,32 @@ int main(int argc, char* argv[])
   nsf.show(stdout, 2);
 #endif
 
-  compute_manager* cm = MEDDLY_getComputeManager();
-  dd_edge reachableStates(initialStates);
-  dd_edge prevReachableStates(mdd);
-  dd_edge postImage(mdd);
+  dd_edge reachableStates(mdd);
+  assert(compute_manager::SUCCESS ==
+      MEDDLY_getComputeManager()->apply(compute_manager::REACHABLE_STATES_BFS,
+      initialStates, nsf, reachableStates));
+  // reachableStates.show(stdout, 3);
 
-  while(prevReachableStates != reachableStates)
+  // Create a EV+MDD forest in this domain (to store index set)
+  forest* evplusmdd = d->createForest(false, forest::INTEGER, forest::EVPLUS);
+  assert(evplusmdd != NULL);
+
+  // Convert MDD to Index Set EV+MDD and print the states
+  dd_edge indexSet(evplusmdd);
+  getIndexSet(reachableStates, indexSet);
+  int* element = (int *) malloc(N * sizeof(int));
+
+  int cardinality = indexSet.getCardinality();
+  for (int index = 0; index < cardinality; index++)
   {
-    prevReachableStates = reachableStates;
-    // printf("\nPost-Image (mdd:%d, mxd:%d): ",
-    //    reachableStates.getNode(), nsf.getNode());
-    cm->apply(compute_manager::POST_IMAGE, reachableStates, nsf, postImage);
-    // printf("%d\n", postImage.getNode());
-    // postImage.show(stdout, 2);
-    // printf("\nUnion (mdd:%d, mdd:%d): ",
-    //    reachableStates.getNode(), postImage.getNode());
-    cm->apply(compute_manager::UNION, reachableStates, postImage,
-        reachableStates);
-    // printf("%d\n", reachableStates.getNode());
+    assert(forest::SUCCESS == evplusmdd->getElement(indexSet, index, element));
+    printf("Element at index %d: [ ", index);
+    for (int i = N - 1; i > 0; i--)
+    {
+      printf("%d ", element[i]);
+    }
+    printf("]\n");
   }
-  reachableStates.show(stdout, 3);
-
-#if 0
-  // Image operations
-  printf("\nInitial State: ");
-  ShowDDEdge(stdout, initial);
-  dd_edge *curr = NULL;
-  if (dfs) {
-    vector<dd_edge *> *xd = NULL;
-    assert(SUCCESS == SplitMxd(nsf, xd));
-    assert(SUCCESS == Saturate(initial, xd, curr));
-  } else {
-    Saturate(initial, nsf, curr);
-  }
-
-  printf("\nStates reachable from Initial State: ");
-  ShowDDEdge(stdout, curr);
-
-  // Number of reachable states
-  printf("\nCounting reachable nodes... ");
-  fflush(stdout);
-  double card = Cardinality(curr);
-  printf("done\n");
-  printf("# of reachable states: %1.3e\n", card);
-  fflush(stdout);
-
-  if (make_gifs) {
-    const char gif[] = "gif";
-    const char filename[] = "kan1_batch_image";
-    CreateDDEdgePic(filename, gif, curr);
-    printf("Wrote reachable states to %s.%s\n", filename, gif);
-
-    const char filename2[] = "kan1_batch_nsf";
-    CreateDDEdgePic(filename2, gif, nsf);
-    printf("Wrote reachable states to %s.%s\n", filename2, gif);
-  }
-
-  /*
-  // Check if the reachable set is correct
-  bool found = false;
-  error_code ec = SUCCESS;
-  int v[N];
-
-  v[variables[0]]=0;
-  v[variables[4]]=1; v[variables[3]]=0; v[variables[2]]=0; v[variables[1]]=1;
-  printf("\nLooking for 1,0,0,1... ");
-  ec = EvaluateVectorBool(curr, v, N, found);
-  DCASSERT(ec == SUCCESS);
-  if (found) { printf("found\n"); } else { printf("not found\n"); }
-
-  v[variables[4]]=1; v[variables[3]]=1; v[variables[2]]=0; v[variables[1]]=1;
-  printf("\nLooking for 1,1,0,1... ");
-  ec = EvaluateVectorBool(curr, v, N, found);
-  DCASSERT(ec == SUCCESS);
-  if (found) { printf("found\n"); } else { printf("not found\n"); }
-
-  v[variables[4]]=1; v[variables[3]]=1; v[variables[2]]=1; v[variables[1]]=1;
-  printf("\nLooking for 1,1,1,1... ");
-  ec = EvaluateVectorBool(curr, v, N, found);
-  DCASSERT(ec == SUCCESS);
-  if (found) { printf("found\n"); } else { printf("not found\n"); }
-  */
-
-  DestroyForest(states);
-  if (INVALID_FOREST != states) {
-    fprintf(stderr, "Couldn't destroy forest of states\n");
-    return 1;
-  } else {
-    fprintf(stderr, "Destroyed forest of states\n");
-  }
-
-  DestroyForest(relation);
-  if (INVALID_FOREST != relation) {
-    fprintf(stderr, "Couldn't destroy forest of relations\n");
-    return 1;
-  } else {
-    fprintf(stderr, "Destroyed forest of relations\n");
-  }
-
-  DestroyDomain(d);
-#endif
 
   // Cleanup
   delete d;

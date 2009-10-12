@@ -42,7 +42,7 @@
 #define DONT_USE_FULL 0
 
 #define ENABLE_GC 1
-#define DEBUG_GC
+// #define DEBUG_GC
 // #define ALT_ORPHAN_GC
 #define ENABLE_CACHE_COUNTING 0
 #define ENABLE_IN_COUNTING 0
@@ -84,6 +84,7 @@ node_manager::node_manager(domain *d, bool rel, range_type t,
   // default policies
   performing_gc = false;
   nodes_activated_since_gc = 0;
+  delete_terminal_nodes = false;
 #if 0
   enable_garbageCollection = false;  // default
 #else
@@ -442,6 +443,13 @@ forest::error node_manager::createSubMatrix(const bool* const* vlist,
 }
 
 
+forest::error node_manager::getElement(const dd_edge& a,
+    int index, int* e)
+{
+  return forest::INVALID_OPERATION;
+}
+
+
 forest::error node_manager::createEdgeForVar(int vh, bool primedLevel,
     int* terms, dd_edge& result)
 {
@@ -572,17 +580,19 @@ void node_manager::setHoleRecycling(bool policy)
 
 node_manager::~node_manager()
 {
-  // unlink all active nodes
-  int topLevel = d->getTopVariable();
-  for (int i = 0; i <= a_last; i++) {
-    if (isActiveNode(i) && !isTerminalNode(i) &&
-        getNodeLevel(i) == topLevel && getInCount(i) > 0) {
-      // delete all top level nodes; the rest will get deleted consequently
-      if (getInCount(i) > 1) getInCount(i) = 1;
-      unlinkNode(i);
-    }
-  }
+  // setting delete_terminal_nodes will ensure that all nodes in compute
+  // tables are removed during garbage collection.
+  delete_terminal_nodes = true;
+  // unlink all nodes that the user has a link to
+  unregisterDDEdges();
+  // remove all disconnected nodes
   gc();
+  assert(active_nodes == 0);
+
+#if 0
+  printf("%p: active %d, zombie %d, orphan %d\n",
+        this, active_nodes, zombie_nodes, orphan_nodes);
+#endif
 
   if (dptrsSize > 0) {
     free(dptrs);
@@ -901,7 +911,7 @@ const
 double node_manager::getCardinality(int node) const
 {
   std::map<int, double> visited;
-  if (isMdd() || isMtMdd())
+  if (isMdd() || isMtMdd() || isEvplusMdd())
     return cardinality(node, d->getNumVariables(), visited);
   else if (isMxd() || isMtMdd())
     return cardinalityForRelations(node, d->getNumVariables(), false, visited);

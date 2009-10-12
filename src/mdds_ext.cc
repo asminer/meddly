@@ -1723,6 +1723,59 @@ int evmdd_node_manager::createTempNode(int k, int sz, bool clear)
 }
 
 
+forest::error evplusmdd_node_manager::getElement(int a, int index, int* e)
+{
+  if (a == 0) return forest::INVALID_VARIABLE;
+  if (a == -1) return forest::SUCCESS;
+
+  int down = 0;
+  int downIndex = -1;
+  int ev = 0;
+
+  if (isFullNode(a)) {
+    int aSize = getFullNodeSize(a);
+    for (int i = aSize - 1; i >= 0; i--)
+    {
+      getFullNodeEdgeValue(a, i, ev);
+      if (index >= ev) {
+        down = getFullNodeDownPtr(a, i);
+        downIndex = i;
+        break;
+      }
+    }
+  }
+  else {
+    DCASSERT(isSparseNode(a));
+    int aNnz = getSparseNodeSize(a);
+    for (int i = aNnz - 1; i >= 0; i--)
+    {
+      getSparseNodeEdgeValue(a, i, ev);
+      if (index >= ev) {
+        down = getSparseNodeDownPtr(a, i);
+        downIndex = getSparseNodeIndex(a, i);
+        break;
+      }
+    }
+  }
+
+  DCASSERT(downIndex >= 0);
+  int aLevel = getNodeLevel(a);
+  DCASSERT(aLevel >= 0);
+  e[aLevel] = downIndex;
+  return getElement(down, index - ev, e);
+}
+
+
+forest::error evplusmdd_node_manager::getElement(const dd_edge& a,
+    int index, int* e)
+{
+  assert(e != 0);
+  e[0] = 0;
+  if (index < 0) return forest::INVALID_VARIABLE;
+  return getElement(a.getNode(), index, e);
+}
+
+
 #if 0
 void evplusmdd_node_manager::createNode(int k, int index, int dptr, int ev,
     int& res, int& resEv)
