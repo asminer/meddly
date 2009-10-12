@@ -92,9 +92,9 @@ void dd_edge::set(int n, int v, int l)
 }
 
 
-int dd_edge::getCardinality() const
+double dd_edge::getCardinality() const
 {
-  return int(smart_cast<expert_forest*>(parent)->getCardinality(node));
+  return smart_cast<expert_forest*>(parent)->getCardinality(node);
 }
 
 // Operator +=

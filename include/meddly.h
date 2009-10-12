@@ -923,7 +923,7 @@ class dd_edge {
     /** Get node cardinality.
         @return         the cardinality of the node.
     */
-    int getCardinality() const;
+    double getCardinality() const;
 
     /** Modifies the dd_edge fields.
         The dd_edge is cleared (it will still belong to the same forest),

@@ -594,6 +594,7 @@ int main(int argc, char *argv[])
 
   // Test SubMatrix
   dd_edge subMatrix = testSubMatrix(bounds, nLevels, nsf);
+#endif
 
   // Create a EV+MDD forest in this domain (to store index set)
   forest* evplusmdd =
@@ -605,8 +606,8 @@ int main(int argc, char *argv[])
   testIndexSet(reachableStates, indexSet);
   int* element = (int *) malloc((nLevels + 1) * sizeof(int));
 
-  int cardinality = indexSet.getCardinality();
-  for (int index = 0; index < cardinality; index++)
+  double cardinality = indexSet.getCardinality();
+  for (int index = 0; index < int(cardinality); index++)
   {
     assert(forest::SUCCESS == evplusmdd->getElement(indexSet, index, element));
     printf("Element at index %d: [ ", index);
@@ -616,7 +617,6 @@ int main(int argc, char *argv[])
     }
     printf("]\n");
   }
-#endif
 
   // Cleanup
   delete d;

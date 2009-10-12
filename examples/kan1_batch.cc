@@ -326,8 +326,8 @@ int main(int argc, char* argv[])
   getIndexSet(reachableStates, indexSet);
   int* element = (int *) malloc(N * sizeof(int));
 
-  int cardinality = indexSet.getCardinality();
-  for (int index = 0; index < cardinality; index++)
+  double cardinality = indexSet.getCardinality();
+  for (int index = 0; index < int(cardinality); index++)
   {
     assert(forest::SUCCESS == evplusmdd->getElement(indexSet, index, element));
     printf("Element at index %d: [ ", index);
