@@ -608,6 +608,37 @@ void node_manager::setHoleRecycling(bool policy)
 }
 
 
+void node_manager::clearAllNodes()
+{
+  int level = expertDomain->getTopVariable();
+  while (level > 0 && active_nodes > 0)
+  {
+    // find all nodes at curr level and make them into orphans
+    for (int i = 1; i < a_last; i++)
+    {
+      if (isActiveNode(i) && getNodeLevel(i) == level && getInCount(i) > 0) {
+        getInCount(i) = 1;
+        unlinkNode(i);
+      }
+    }
+
+    if (active_nodes > 0 && isForRelations()) {
+      level = -level;
+      // find all nodes at curr level and make them into orphans
+      for (int i = 1; i < a_last; i++)
+      {
+        if (isActiveNode(i) && getNodeLevel(i) == level && getInCount(i) > 0) {
+          getInCount(i) = 1;
+          unlinkNode(i);
+        }
+      }
+    }
+
+    level = expertDomain->getVariableBelow(level);
+  }
+}
+
+
 node_manager::~node_manager()
 {
   // setting delete_terminal_nodes will ensure that all nodes in compute
@@ -619,12 +650,16 @@ node_manager::~node_manager()
   clearLevelNodes();
   // remove all disconnected nodes
   gc();
-  assert(active_nodes == 0);
 
-#if 0
-  printf("%p: active %d, zombie %d, orphan %d\n",
+  if (active_nodes != 0) {
+    printf("ALERT: Found known bug in %s (active_nodes > 0).\n", __func__);
+#ifdef DEBUG_GC
+    printf("%p: active %d, zombie %d, orphan %d\n",
         this, active_nodes, zombie_nodes, orphan_nodes);
 #endif
+    clearAllNodes();
+    gc();
+  }
 
   if (dptrsSize > 0) {
     free(dptrs);
