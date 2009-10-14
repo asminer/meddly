@@ -334,6 +334,8 @@ class node_manager : public expert_forest {
     int getLevelNode(int lh) const;
     int buildLevelNodeHelper(int lh, int* terminalNodes, int sz);
     void buildLevelNode(int lh, int* terminalNodes, int sz);
+    void clearLevelNode(int lh);
+    void clearLevelNodes();
 
     // Building custom level nodes
     int* getTerminalNodes(int n);

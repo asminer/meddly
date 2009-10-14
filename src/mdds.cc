@@ -256,6 +256,36 @@ void node_manager::buildLevelNode(int lh, int* dptrs, int sz)
 }
 
 
+void node_manager::clearLevelNode(int lh)
+{
+  unlinkNode(level[mapLevel(lh)].levelNode);
+  level[mapLevel(lh)].levelNode = 0;
+}
+
+
+void node_manager::clearLevelNodes()
+{
+  // for each level, unlink the level node
+  if (isForRelations()) {
+    for (int i = expertDomain->getTopVariable(); i > 0;
+        i = expertDomain->getVariableBelow(i))
+    {
+      clearLevelNode(i);
+      clearLevelNode(-i);
+    }
+  }
+  else {
+    for (int i = expertDomain->getTopVariable(); i > 0;
+        i = expertDomain->getVariableBelow(i))
+    {
+      clearLevelNode(i);
+    }
+  }
+}
+
+
+
+
 int* node_manager::getTerminalNodes(int n)
 {
   // use the array that comes with object (saves having to alloc/dealloc)
@@ -585,6 +615,8 @@ node_manager::~node_manager()
   delete_terminal_nodes = true;
   // unlink all nodes that the user has a link to
   unregisterDDEdges();
+  // unlink all nodes that are being stored at the respective levels
+  clearLevelNodes();
   // remove all disconnected nodes
   gc();
   assert(active_nodes == 0);
