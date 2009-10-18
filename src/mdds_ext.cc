@@ -768,39 +768,38 @@ int mxd_node_manager::createNode(int k, int index1, int index2, int dptr)
   DCASSERT(reductionRule == forest::IDENTITY_REDUCED);
 
   DCASSERT((index1 >= 0 && index2 >= 0) ||
-           (index1 >= -2 && index2 >= -2 && index1 == index2));
+      (index1 >= -1 && index2 >= -1) ||
+      (index1 >= -2 && index2 >= -2 && index1 == index2));
 
 
   if (index1 == -2) {
     // "don't change"
+    DCASSERT(index2 == -2);
     return sharedCopy(dptr);
-  } else if (index1 == -1) {
+  }
+
+  int p = 0;
+  if (index2 == -1) {
     // represents "don't care"
-    // assume index2 == -1
-    int p = createTempNodeMaxSize(-k, false);
+    p = createTempNodeMaxSize(-k, false);
     setAllDownPtrsWoUnlink(p, dptr);
     p = reduceNode(p);
-    int curr = createTempNodeMaxSize(k, false);
-    setAllDownPtrsWoUnlink(curr, p);
-    unlinkNode(p);
-    return reduceNode(curr);
   } else {
-    // normal case: build -k level node, build +k level node
-#if 0
-    int p = createTempNode(-k, index2 + 1);
-    setDownPtrWoUnlink(p, index2, dptr);
-    p = reduceNode(p);
-    int curr = createTempNode(k, index1 + 1);
-    setDownPtrWoUnlink(curr, index1, p);
-    unlinkNode(p);
-    return reduceNode(curr);
-#else
-    int p = createNode(-k, index2, dptr);
-    int curr = createNode(k, index1, p);
-    unlinkNode(p);
-    return curr;
-#endif
+    p = createNode(-k, index2, dptr);
   }
+
+  int curr = 0;
+  if (index1 == -1) {
+    // represents "don't care"
+    curr = createTempNodeMaxSize(k, false);
+    setAllDownPtrsWoUnlink(curr, p);
+    curr = reduceNode(curr);
+  } else {
+    curr = createNode(k, index1, p);
+  }
+
+  unlinkNode(p);
+  return curr;
 }
 
 
@@ -1219,39 +1218,38 @@ int mtmxd_node_manager::createNode(int k, int index1, int index2, int dptr)
   DCASSERT(reductionRule == forest::IDENTITY_REDUCED);
 
   DCASSERT((index1 >= 0 && index2 >= 0) ||
-           (index1 >= -2 && index2 >= -2 && index1 == index2));
+      (index1 >= -1 && index2 >= -1) ||
+      (index1 >= -2 && index2 >= -2 && index1 == index2));
+
 
 
   if (index1 == -2) {
     // "don't change"
     return sharedCopy(dptr);
-  } else if (index1 == -1) {
+  }
+
+  int p = 0;
+  if (index2 == -1) {
     // represents "don't care"
-    // assume index2 == -1
-    int p = createTempNodeMaxSize(-k, false);
+    p = createTempNodeMaxSize(-k, false);
     setAllDownPtrsWoUnlink(p, dptr);
     p = reduceNode(p);
-    int curr = createTempNodeMaxSize(k, false);
-    setAllDownPtrsWoUnlink(curr, p);
-    unlinkNode(p);
-    return reduceNode(curr);
   } else {
-    // normal case: build -k level node, build +k level node
-#if 0
-    int p = createTempNode(-k, index2 + 1);
-    setDownPtrWoUnlink(p, index2, dptr);
-    p = reduceNode(p);
-    int curr = createTempNode(k, index1 + 1);
-    setDownPtrWoUnlink(curr, index1, p);
-    unlinkNode(p);
-    return reduceNode(curr);
-#else
-    int p = createNode(-k, index2, dptr);
-    int curr = createNode(k, index1, p);
-    unlinkNode(p);
-    return curr;
-#endif
+    p = createNode(-k, index2, dptr);
   }
+
+  int curr = 0;
+  if (index1 == -1) {
+    // represents "don't care"
+    curr = createTempNodeMaxSize(k, false);
+    setAllDownPtrsWoUnlink(curr, p);
+    curr = reduceNode(curr);
+  } else {
+    curr = createNode(k, index1, p);
+  }
+
+  unlinkNode(p);
+  return curr;
 }
 
 

@@ -26,7 +26,7 @@
 
 //#define IGNORE_TERMS 0
 //#define IGNORE_INCOUNT 2
-//#define DEBUG_DFS
+#define DEBUG_DFS
 
 inline expert_forest* getExpertForest(op_info* op, int index) {
   return smart_cast<expert_forest*>(op->f[index]);
@@ -4352,6 +4352,7 @@ int mdd_reachability_dfs::compute(op_info* owner, int mdd, int mxd)
   fflush(stdout);
 #endif
 
+#if 1
   // Saturate the node
   int result = saturate(mdd);
 
@@ -4359,6 +4360,10 @@ int mdd_reachability_dfs::compute(op_info* owner, int mdd, int mxd)
   clear();
 
   return result;
+#else
+  clear();
+  return 0;
+#endif
 }
 
 
@@ -4571,7 +4576,8 @@ void mdd_reachability_dfs::splitMxd(int mxd)
           }
 
 #ifdef DEBUG_DFS
-          printf("intersection: %d\n", intersection);
+          printf("intersection: %d level: %d\n",
+              intersection, xdf->getNodeLevel(intersection));
 #endif
         }
       }
@@ -5088,39 +5094,7 @@ int mdd_reachability_dfs::recFire(int mdd, int mxd)
     }
   } else {
     DCASSERT(mxdHeight == mddHeight);
-    // DCASSERT(mxdLevel == mddLevel);
 
-#if 0
-    int mdd_i, mxd_i, mxd_i_j;
-    int mdd_index = 0;
-    int mxd_index = 0;
-    int jIndex = 0;
-    for (int i=0; i<newSize; i++) {
-      mdd_i = ddf->get_down_ptr_after_index(mdd, i, mdd_index);
-      if (mdd_i == 0) continue;
-      mxd_i = xdf->get_down_ptr_after_index(mxd, i, mxd_index);
-      if (mxd_i == 0) continue;
-      jIndex = 0;
-      for (j=0; j<newSize; j++) {  // newSize is the max level size
-        mxd_i_j = xdf->get_down_ptr_after_index(mxd_i, j, jIndex);
-        DCASSERT(xdf->isReducedNode(mxd_i_j));
-        if (mxd_i_j == 0) continue;
-        f = recFire(mdd_i, mxd_i_j);
-        if (f == 0) continue;
-        DCASSERT(ddf->isReducedNode(f));
-        DCASSERT(ddf->isReducedNode(d_ptr[j]));
-        u = ops->apply_op(union_op, f, d_ptr[j]);
-        DCASSERT(ddf->isReducedNode(u));
-        ddf->unlink(f);
-        if (u != d_ptr[j]) {
-          ddf->unlink(d_ptr[j]);
-          d_ptr[j] = u;
-        } else {
-          ddf->unlink(u);
-        }
-      } // for j < newSize
-    } // for mdd_i_ptr
-#else
     if (ddf->isFullNode(mdd)) {
       int mddSize = ddf->getFullNodeSize(mdd);
       if (xdf->isFullNode(mxd)) {
@@ -5379,7 +5353,6 @@ int mdd_reachability_dfs::recFire(int mdd, int mxd)
         }
       }
     }
-#endif
   }
 
   int newNode0 = ddf->getFullNodeDownPtr(newNode, 0);
