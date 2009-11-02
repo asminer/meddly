@@ -26,7 +26,7 @@
 
 //#define IGNORE_TERMS 0
 //#define IGNORE_INCOUNT 2
-#define DEBUG_DFS
+//#define DEBUG_DFS
 
 inline expert_forest* getExpertForest(op_info* op, int index) {
   return smart_cast<expert_forest*>(op->f[index]);
@@ -4243,13 +4243,13 @@ int mdd_reachability_bfs::compute(op_info* owner, int mdd, int mxd)
   mddNm->linkNode(mdd);
   reachableStates.set(mdd, 0, mddNm->getNodeLevel(mdd));
   dd_edge prevReachableStates(mddNm);
-  dd_edge postImage(mddNm);
 
   while(prevReachableStates != reachableStates)
   {
     prevReachableStates = reachableStates;
     // printf("\nPost-Image (mdd:%d, mxd:%d): ",
     //    reachableStates.getNode(), nsf.getNode());
+    dd_edge postImage(mddNm);
     ecm->apply(postImageOp, reachableStates, nsf, postImage);
     // printf("%d\n", postImage.getNode());
     // postImage.show(stdout, 2);
@@ -4259,7 +4259,7 @@ int mdd_reachability_bfs::compute(op_info* owner, int mdd, int mxd)
     // printf("%d\n", reachableStates.getNode());
   }
 
-  int result = postImage.getNode();
+  int result = reachableStates.getNode();
   mddNm->linkNode(result);
 #else
 
@@ -4273,15 +4273,15 @@ int mdd_reachability_bfs::compute(op_info* owner, int mdd, int mxd)
   int reachableStates = mdd;
   int prevReachableStates = 0;
   int postImage = mdd;
-  int prevPostImage = 0;
 
   mddNm->linkNode(reachableStates);
   mddNm->linkNode(postImage);
 
   do {
-    prevPostImage = postImage;
+    int prevPostImage = postImage;
     postImage = postImageOpPtr->compute(postImageOp, postImage, nsf);
     mddNm->unlinkNode(prevPostImage);
+
     prevReachableStates = reachableStates;
     reachableStates = unionOpPtr->compute(unionOp, reachableStates, postImage);
     mddNm->unlinkNode(prevReachableStates);
@@ -4684,6 +4684,7 @@ int mdd_reachability_dfs::saturate(int mdd)
 
 
 #if 1
+
 
 void mdd_reachability_dfs::saturateHelper(int &mdd)
 {

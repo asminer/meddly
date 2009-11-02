@@ -61,10 +61,8 @@
 	Ids.
 */
 
-#define SATURATE 1
-#define NO_CHOICE 1
-#define COUNT_TIME 1
-#define COUNT_STATES 1
+#define SATURATE
+#define NSF_CARDINALITY
 
 #define REORDER_CUBE 0
 #define FACED_ORDERING 0
@@ -72,27 +70,22 @@
 #define FROM_TO 0
 
 #include <iostream>
-#include <sys/time.h>
-#include <sys/resource.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <vector>
 
-#if 1
-#include <domain.h>
-#include <forest.h>
-#include <dd_edge.h>
-#include <ophandle.h>
-#else
-#include "../src/domain.h"
-#include "../src/forest.h"
-#include "../src/dd_edge.h"
-#include "../src/ophandle.h"
-#endif
+#include "../include/meddly_expert.h"
+#include "../src/timer.h"
+
+using namespace std;
 
 typedef enum {F, B, L, R, U, D} face;
 typedef enum {CW, CCW, FLIP} direction;
 
-level *variables = NULL;
-int *sizes = NULL;
-int *initst = NULL;
+// level *variables = NULL;
+int* sizes = NULL;
+int** initst = NULL;
 
 // Number of variables of each type
 const int type1 = 6;
@@ -106,16 +99,12 @@ const int num_levels = type2 + type3;
 domain *d;
 
 // Forest storing the next state function
-forest_hndl relation;
+// forest_hndl relation;
+forest* relation;
 
 // Forest storing the set of states
-forest_hndl states;
-
-// Edge representing the initial set of states
-dd_edge *initial;
-
-// Edge representing the next state function
-dd_edge *nsf;
+// forest_hndl states;
+forest* states;
 
 static int comp_type[] =
   {0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3};
@@ -137,10 +126,10 @@ static int order[] =
 // almost 1 week, 1.65 GB
 //{0, 2, 1, 0, 3, 6, 5, 4, 8, 7, 10, 9, 11, 14, 13, 12, 17, 16, 15, 19, 18};
 //2 F , f, Ff {422,643 : 7,406,322}
-//{0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+{0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 //1, F , f, Ff {422,643 : 7,406,322} -- running -F -lFURLBDfurlbd (on gypsy)
 // almost 1 day, 2.5 GB
-{0, 2, 1, 0, 3, 6, 5, 4, 8, 7, 10, 9, 11, 14, 13, 12, 15, 16, 17, 18, 19};
+//{0, 2, 1, 0, 3, 6, 5, 4, 8, 7, 10, 9, 11, 14, 13, 12, 15, 16, 17, 18, 19};
 //Andy's PN
 //{0, 0, 1, 2, 3, 5, 7, 9, 11, 4, 6, 10, 8, 13, 12, 15, 14, 17, 16, 19, 18};
 // best: 1, 2, 3,...
@@ -275,30 +264,34 @@ void Init()
 {
   assert(num_levels == (type2 + type3));
 
+#if 0
   // store for level handles
   variables = (level *) malloc((num_levels + 1) * sizeof(level));
   assert(variables != NULL);
   memset(variables, 0, (num_levels + 1) * sizeof(level));
-  
+#endif 
+
   // node size for each level
-  sizes = (int *) malloc((num_levels + 1) * sizeof(int));
+  sizes = (int *) malloc(num_levels * sizeof(int));
   assert(sizes != NULL);
   
   assert(num_levels == 20);
-  sizes[0] = 0;
-  for (int i = 1; i < (num_levels + 1); i++) {
-    sizes[i] = getLevelSize(i);
+  for (int i = 0; i < num_levels; i++) {
+    sizes[i] = getLevelSize(i+1);
     fprintf(stderr, "sizes[%d] = %d\n", i, sizes[i]);
   }
   fflush(stderr);
 
   // sets of states
-  initst = (int *) malloc((num_levels + 1) * sizeof(int));
+  initst = (int**) malloc(1 * sizeof(int*));
   assert(initst != NULL);
+  initst[0] = (int *) malloc((num_levels + 1) * sizeof(int));
+  assert(initst[0] != NULL);
   // all start at state 0
-  memset(initst, 0, (num_levels + 1) * sizeof(int));
+  memset(initst[0], 0, (num_levels + 1) * sizeof(int));
 }
 
+#if 0
 void CheckVars()
 {
   // Sanity check
@@ -310,34 +303,54 @@ void CheckVars()
       exit(1);
     }
 }
+#else
+void CheckVars(domain *d)
+{
+  // Make sure that the level handles are the same as the level heights.
+  // If this is not the case, the program needs to be modified to be
+  // more flexible.
+  int nVars = d->getNumVariables();
+  int currHeight = nVars;
+  int topVar = d->getTopVariable();
+  while (topVar > 0)
+  {
+    if (topVar != currHeight) {
+      // complain
+      exit(1);
+    }
+    topVar = d->getVariableBelow(topVar);
+    currHeight--;
+  }
+}
+#endif
 
 void SetIntArray(int p[], const int p_size, const int c)
 {
   for (int i=0; i<p_size; i++) p[i] = c;
 }
 
-dd_edge* DoMoveHelper(int a3, int b3, int c3, int d3,
+dd_edge DoMoveHelper(int a3, int b3, int c3, int d3,
     int a1, int b1, int c1, int d1);
-dd_edge* DoFlipHelper(int a3, int b3, int c3, int d3,
+dd_edge DoFlipHelper(int a3, int b3, int c3, int d3,
     int a1, int b1, int c1, int d1);
-dd_edge* DoMove(face f, direction d);
+dd_edge DoMove(face f, direction d);
 
-dd_edge* Front(direction dir);
-dd_edge* Back(direction dir);
-dd_edge* Left(direction dir);
-dd_edge* Right(direction dir);
-dd_edge* Up(direction dir);
-dd_edge* Down(direction dir);
+dd_edge Front(direction dir);
+dd_edge Back(direction dir);
+dd_edge Left(direction dir);
+dd_edge Right(direction dir);
+dd_edge Up(direction dir);
+dd_edge Down(direction dir);
 
-dd_edge* Front(direction dir) { return DoMove(F, dir); }
-dd_edge* Back(direction dir) { return DoMove(B, dir); }
-dd_edge* Left(direction dir) { return DoMove(L, dir); }
-dd_edge* Right(direction dir) { return DoMove(R, dir); }
-dd_edge* Up(direction dir) { return DoMove(U, dir); }
-dd_edge* Down(direction dir) { return DoMove(D, dir); }
+dd_edge Front(direction dir) { return DoMove(F, dir); }
+dd_edge Back(direction dir) { return DoMove(B, dir); }
+dd_edge Left(direction dir) { return DoMove(L, dir); }
+dd_edge Right(direction dir) { return DoMove(R, dir); }
+dd_edge Up(direction dir) { return DoMove(U, dir); }
+dd_edge Down(direction dir) { return DoMove(D, dir); }
 
-dd_edge* DoMove(face f, direction d) {
-  dd_edge* result = NULL;
+dd_edge DoMove(face f, direction d) {
+  dd_edge result(relation);
 #if FROM_TO
   if (d != FLIP) { d = (d == CW)? CCW: CW; }
 #endif
@@ -401,7 +414,9 @@ dd_edge* DoMove(face f, direction d) {
 }
 
 
-dd_edge* DoMoveHelper(
+#if 0
+// Original
+dd_edge DoMoveHelper(
   int type3_a,
   int type2_a,
   int type3_b,
@@ -462,23 +477,13 @@ dd_edge* DoMoveHelper(
     AddMatrixElement(temp13, to, from, sz, true);
 #endif
   }
+  from[variables[d3]] = -1;
+  to[variables[a3]] = -1;
 
   dd_edge *e13 = CreateEdge(temp13);
 
   // create node at level 14
   dd_tempedge *temp14 = CreateTempEdge(relation, NULL);
-
-  // Set all levels (except term) to don't care
-  SetIntArray(from + 1, sz - 1, -2);
-  SetIntArray(to + 1, sz - 1, -2);
-  from[variables[a3]] = -1; to[variables[a3]] = -1;
-  from[variables[b3]] = -1; to[variables[b3]] = -1;
-  from[variables[c3]] = -1; to[variables[c3]] = -1;
-  from[variables[d3]] = -1; to[variables[d3]] = -1;
-  from[variables[a2]] = -1; to[variables[a2]] = -1;
-  from[variables[b2]] = -1; to[variables[b2]] = -1;
-  from[variables[c2]] = -1; to[variables[c2]] = -1;
-  from[variables[d2]] = -1; to[variables[d2]] = -1;
 
   for (int i=0; i<type3; i++) {
     from[variables[a3]] = i;
@@ -489,23 +494,13 @@ dd_edge* DoMoveHelper(
     AddMatrixElement(temp14, to, from, sz, true);
 #endif
   }
+  from[variables[a3]] = -1;
+  to[variables[b3]] = -1;
 
   dd_edge *e14 = CreateEdge(temp14);
 
   // create node at level 15
   dd_tempedge *temp15 = CreateTempEdge(relation, NULL);
-
-  // Set all levels (except term) to don't care
-  SetIntArray(from + 1, sz - 1, -2);
-  SetIntArray(to + 1, sz - 1, -2);
-  from[variables[a3]] = -1; to[variables[a3]] = -1;
-  from[variables[b3]] = -1; to[variables[b3]] = -1;
-  from[variables[c3]] = -1; to[variables[c3]] = -1;
-  from[variables[d3]] = -1; to[variables[d3]] = -1;
-  from[variables[a2]] = -1; to[variables[a2]] = -1;
-  from[variables[b2]] = -1; to[variables[b2]] = -1;
-  from[variables[c2]] = -1; to[variables[c2]] = -1;
-  from[variables[d2]] = -1; to[variables[d2]] = -1;
 
   for (int i=0; i<type3; i++) {
     from[variables[b3]] = i;
@@ -516,23 +511,13 @@ dd_edge* DoMoveHelper(
     AddMatrixElement(temp15, to, from, sz, true);
 #endif
   }
+  from[variables[b3]] = -1;
+  to[variables[c3]] = -1;
 
   dd_edge *e15 = CreateEdge(temp15);
 
   // create node at level 16
   dd_tempedge *temp16 = CreateTempEdge(relation, NULL);
-
-  // Set all levels (except term) to don't care
-  SetIntArray(from + 1, sz - 1, -2);
-  SetIntArray(to + 1, sz - 1, -2);
-  from[variables[a3]] = -1; to[variables[a3]] = -1;
-  from[variables[b3]] = -1; to[variables[b3]] = -1;
-  from[variables[c3]] = -1; to[variables[c3]] = -1;
-  from[variables[d3]] = -1; to[variables[d3]] = -1;
-  from[variables[a2]] = -1; to[variables[a2]] = -1;
-  from[variables[b2]] = -1; to[variables[b2]] = -1;
-  from[variables[c2]] = -1; to[variables[c2]] = -1;
-  from[variables[d2]] = -1; to[variables[d2]] = -1;
 
   for (int i=0; i<type3; i++) {
     from[variables[c3]] = i;
@@ -543,23 +528,13 @@ dd_edge* DoMoveHelper(
     AddMatrixElement(temp16, to, from, sz, true);
 #endif
   }
+  from[variables[c3]] = -1;
+  to[variables[d3]] = -1;
 
   dd_edge *e16 = CreateEdge(temp16);
   
   // create node at level 1
   dd_tempedge *temp1 = CreateTempEdge(relation, NULL);
-
-  // Set all levels (except term) to don't care
-  SetIntArray(from + 1, sz - 1, -2);
-  SetIntArray(to + 1, sz - 1, -2);
-  from[variables[a3]] = -1; to[variables[a3]] = -1;
-  from[variables[b3]] = -1; to[variables[b3]] = -1;
-  from[variables[c3]] = -1; to[variables[c3]] = -1;
-  from[variables[d3]] = -1; to[variables[d3]] = -1;
-  from[variables[a2]] = -1; to[variables[a2]] = -1;
-  from[variables[b2]] = -1; to[variables[b2]] = -1;
-  from[variables[c2]] = -1; to[variables[c2]] = -1;
-  from[variables[d2]] = -1; to[variables[d2]] = -1;
 
   for (int i=0; i<type2; i++) {
     from[variables[d2]] = i;
@@ -570,23 +545,13 @@ dd_edge* DoMoveHelper(
     AddMatrixElement(temp1, to, from, sz, true);
 #endif
   }
+  from[variables[d2]] = -1;
+  to[variables[a2]] = -1;
 
   dd_edge *e1 = CreateEdge(temp1);
 
   // create node at level 2
   dd_tempedge *temp2 = CreateTempEdge(relation, NULL);
-
-  // Set all levels (except term) to don't care
-  SetIntArray(from + 1, sz - 1, -2);
-  SetIntArray(to + 1, sz - 1, -2);
-  from[variables[a3]] = -1; to[variables[a3]] = -1;
-  from[variables[b3]] = -1; to[variables[b3]] = -1;
-  from[variables[c3]] = -1; to[variables[c3]] = -1;
-  from[variables[d3]] = -1; to[variables[d3]] = -1;
-  from[variables[a2]] = -1; to[variables[a2]] = -1;
-  from[variables[b2]] = -1; to[variables[b2]] = -1;
-  from[variables[c2]] = -1; to[variables[c2]] = -1;
-  from[variables[d2]] = -1; to[variables[d2]] = -1;
 
   for (int i=0; i<type2; i++) {
     from[variables[a2]] = i;
@@ -597,23 +562,13 @@ dd_edge* DoMoveHelper(
     AddMatrixElement(temp2, to, from, sz, true);
 #endif
   }
+  from[variables[a2]] = -1;
+  to[variables[b2]] = -1;
 
   dd_edge *e2 = CreateEdge(temp2);
 
   // create node at level 3
   dd_tempedge *temp3 = CreateTempEdge(relation, NULL);
-
-  // Set all levels (except term) to don't care
-  SetIntArray(from + 1, sz - 1, -2);
-  SetIntArray(to + 1, sz - 1, -2);
-  from[variables[a3]] = -1; to[variables[a3]] = -1;
-  from[variables[b3]] = -1; to[variables[b3]] = -1;
-  from[variables[c3]] = -1; to[variables[c3]] = -1;
-  from[variables[d3]] = -1; to[variables[d3]] = -1;
-  from[variables[a2]] = -1; to[variables[a2]] = -1;
-  from[variables[b2]] = -1; to[variables[b2]] = -1;
-  from[variables[c2]] = -1; to[variables[c2]] = -1;
-  from[variables[d2]] = -1; to[variables[d2]] = -1;
 
   for (int i=0; i<type2; i++) {
     from[variables[b2]] = i;
@@ -624,23 +579,13 @@ dd_edge* DoMoveHelper(
     AddMatrixElement(temp3, to, from, sz, true);
 #endif
   }
+  from[variables[b2]] = -1;
+  to[variables[c2]] = -1;
 
   dd_edge *e3 = CreateEdge(temp3);
   
   // create node at level 4
   dd_tempedge *temp4 = CreateTempEdge(relation, NULL);
-
-  // Set all levels (except term) to don't care
-  SetIntArray(from + 1, sz - 1, -2);
-  SetIntArray(to + 1, sz - 1, -2);
-  from[variables[a3]] = -1; to[variables[a3]] = -1;
-  from[variables[b3]] = -1; to[variables[b3]] = -1;
-  from[variables[c3]] = -1; to[variables[c3]] = -1;
-  from[variables[d3]] = -1; to[variables[d3]] = -1;
-  from[variables[a2]] = -1; to[variables[a2]] = -1;
-  from[variables[b2]] = -1; to[variables[b2]] = -1;
-  from[variables[c2]] = -1; to[variables[c2]] = -1;
-  from[variables[d2]] = -1; to[variables[d2]] = -1;
 
   for (int i=0; i<type2; i++) {
     from[variables[c2]] = i;
@@ -651,6 +596,8 @@ dd_edge* DoMoveHelper(
     AddMatrixElement(temp4, to, from, sz, true);
 #endif
   }
+  from[variables[c2]] = -1;
+  to[variables[d2]] = -1;
 
   dd_edge *e4 = CreateEdge(temp4);
   // ShowDDEdge(stderr, e4);
@@ -675,8 +622,220 @@ dd_edge* DoMoveHelper(
   return result;
 }
 
+#else
 
-dd_edge* DoFlipHelper(
+// Modified
+dd_edge DoMoveHelper(
+  int type3_a,
+  int type2_a,
+  int type3_b,
+  int type2_b,
+  int type3_c,
+  int type2_c,
+  int type3_d,
+  int type2_d
+  )
+{
+  // transform to levels
+  int a2 = get_component_level(2, type2_a);
+  int b2 = get_component_level(2, type2_b);
+  int c2 = get_component_level(2, type2_c);
+  int d2 = get_component_level(2, type2_d);
+  int a3 = get_component_level(3, type3_a);
+  int b3 = get_component_level(3, type3_b);
+  int c3 = get_component_level(3, type3_c);
+  int d3 = get_component_level(3, type3_d);
+
+  fprintf(stderr, "type2_a, a2 = %d, %d\n", type2_a, a2);
+  fprintf(stderr, "type2_b, b2 = %d, %d\n", type2_b, b2);
+  fprintf(stderr, "type2_c, c2 = %d, %d\n", type2_c, c2);
+  fprintf(stderr, "type2_d, d2 = %d, %d\n", type2_d, d2);
+  fprintf(stderr, "type3_a, a3 = %d, %d\n", type3_a, a3);
+  fprintf(stderr, "type3_b, b3 = %d, %d\n", type3_b, b3);
+  fprintf(stderr, "type3_c, c3 = %d, %d\n", type3_c, c3);
+  fprintf(stderr, "type3_d, d3 = %d, %d\n", type3_d, d3);
+
+  // face is ordered like this:
+  // type3, type2, type3, type2, type3, type2, type3, type2
+
+  const int sz = num_levels + 1;
+
+  // Adding all the elements in one go
+  //
+  // 4 type 2 additions = 4 * 12 = 48
+  // 4 type 3 additions = 4 * 8 = 32
+  // total additions = 4 * 12 + 4 * 8 = 4 * 20 = 80
+  //
+  int nElements = 4 * type2 + 4 * type3;
+  assert(nElements == 80);
+  int** from = (int**) malloc(nElements * sizeof(int *));
+  int** to = (int**) malloc(nElements * sizeof(int *));
+  for (int i = 0; i < nElements; i++)
+  {
+    // allocate elements
+    from[i] = (int*) malloc(sz * sizeof(int));
+    to[i] = (int*) malloc(sz * sizeof(int));
+
+    // initialize elements
+    from[i][0] = 0;
+    to[i][0] = 0;
+    SetIntArray(from[i] + 1, sz - 1, -2);
+    SetIntArray(to[i] + 1, sz - 1, -2);
+    from[i][a3] = -1; to[i][a3] = -1;
+    from[i][b3] = -1; to[i][b3] = -1;
+    from[i][c3] = -1; to[i][c3] = -1;
+    from[i][d3] = -1; to[i][d3] = -1;
+    from[i][a2] = -1; to[i][a2] = -1;
+    from[i][b2] = -1; to[i][b2] = -1;
+    from[i][c2] = -1; to[i][c2] = -1;
+    from[i][d2] = -1; to[i][d2] = -1;
+  }
+
+
+  int currElement = 0;
+
+  // a3' <- d3
+
+  for (int i = 0; i < type3; i++)
+  {
+    from[currElement][d3] = i;
+    to[currElement][a3] = i;
+    currElement++;
+  }
+
+  // b3' <- a3
+
+  for (int i = 0; i < type3; i++)
+  {
+    from[currElement][a3] = i;
+    to[currElement][b3] = i;
+    currElement++;
+  }
+
+  // c3' <- b3
+
+  for (int i = 0; i < type3; i++)
+  {
+    from[currElement][b3] = i;
+    to[currElement][c3] = i;
+    currElement++;
+  }
+
+  // d3' <- c3
+
+  for (int i = 0; i < type3; i++)
+  {
+    from[currElement][c3] = i;
+    to[currElement][d3] = i;
+    currElement++;
+  }
+
+
+  // a2' <- d2
+
+  for (int i = 0; i < type2; i++)
+  {
+    from[currElement][d2] = i;
+    to[currElement][a2] = i;
+    currElement++;
+  }
+
+  // b2' <- a2
+
+  for (int i = 0; i < type2; i++)
+  {
+    from[currElement][a2] = i;
+    to[currElement][b2] = i;
+    currElement++;
+  }
+
+  // c2' <- b2
+
+  for (int i = 0; i < type2; i++)
+  {
+    from[currElement][b2] = i;
+    to[currElement][c2] = i;
+    currElement++;
+  }
+
+  // d2' <- c2
+
+  for (int i = 0; i < type2; i++)
+  {
+    from[currElement][c2] = i;
+    to[currElement][d2] = i;
+    currElement++;
+  }
+
+
+  // compute result = union elements to create an mxd for each component
+  // and then intersect the mxds.
+
+#if FROM_TO
+  
+#else
+  int** swapper = from;
+  from = to;
+  to = swapper;
+#endif
+
+  dd_edge result(relation);
+  int offset = 0;
+
+  // a3' <- d3
+  {
+    dd_edge temp(relation);
+    assert(forest::SUCCESS == relation->createEdge(from + offset,
+          to + offset, type3, temp));
+    result = temp;
+    offset += type3;
+  }
+
+  // b3' <- a3
+  // c3' <- b3
+  // d3' <- c3
+  for (int i = 0; i < 3; i++)
+  {
+    dd_edge temp(relation);
+    assert(forest::SUCCESS == relation->createEdge(from + offset,
+          to + offset, type3, temp));
+    result *= temp;
+    offset += type3;
+  }
+
+  // a2' <- d2
+  // b2' <- a2
+  // c2' <- b2
+  // d2' <- c2
+  for (int i = 0; i < 4; i++)
+  {
+    dd_edge temp(relation);
+    assert(forest::SUCCESS == relation->createEdge(from + offset,
+          to + offset, type2, temp));
+    result *= temp;
+    offset += type2;
+  }
+
+  assert(offset == nElements);
+
+  // delete arrays
+  for (int i = 0; i < nElements; i++)
+  {
+    delete from[i];
+    delete to[i];
+  }
+  delete from;
+  delete to;
+  
+  return result;
+}
+
+#endif
+
+
+#if 0
+
+dd_edge DoFlipHelper(
   int type3_a,
   int type2_a,
   int type3_b,
@@ -852,6 +1011,217 @@ dd_edge* DoFlipHelper(
   return result;
 }
 
+#else
+
+// Modified
+dd_edge DoFlipHelper(
+  int type3_a,
+  int type2_a,
+  int type3_b,
+  int type2_b,
+  int type3_c,
+  int type2_c,
+  int type3_d,
+  int type2_d
+  )
+{
+  // transform to levels
+  int a2 = get_component_level(2, type2_a);
+  int b2 = get_component_level(2, type2_b);
+  int c2 = get_component_level(2, type2_c);
+  int d2 = get_component_level(2, type2_d);
+  int a3 = get_component_level(3, type3_a);
+  int b3 = get_component_level(3, type3_b);
+  int c3 = get_component_level(3, type3_c);
+  int d3 = get_component_level(3, type3_d);
+
+  fprintf(stderr, "type2_a, a2 = %d, %d\n", type2_a, a2);
+  fprintf(stderr, "type2_b, b2 = %d, %d\n", type2_b, b2);
+  fprintf(stderr, "type2_c, c2 = %d, %d\n", type2_c, c2);
+  fprintf(stderr, "type2_d, d2 = %d, %d\n", type2_d, d2);
+  fprintf(stderr, "type3_a, a3 = %d, %d\n", type3_a, a3);
+  fprintf(stderr, "type3_b, b3 = %d, %d\n", type3_b, b3);
+  fprintf(stderr, "type3_c, c3 = %d, %d\n", type3_c, c3);
+  fprintf(stderr, "type3_d, d3 = %d, %d\n", type3_d, d3);
+
+  // face is ordered like this:
+  // type3, type2, type3, type2, type3, type2, type3, type2
+
+  const int sz = num_levels + 1;
+
+  // Adding all the elements in one go
+  //
+  // 4 type 2 additions = 4 * 12 = 48
+  // 4 type 3 additions = 4 * 8 = 32
+  // total additions = 4 * 12 + 4 * 8 = 4 * 20 = 80
+  //
+  int nElements = 4 * type2 + 4 * type3;
+  assert(nElements == 80);
+  int** from = (int**) malloc(nElements * sizeof(int *));
+  int** to = (int**) malloc(nElements * sizeof(int *));
+  for (int i = 0; i < nElements; i++)
+  {
+    // allocate elements
+    from[i] = (int*) malloc(sz * sizeof(int));
+    to[i] = (int*) malloc(sz * sizeof(int));
+
+    // initialize elements
+    from[i][0] = 0;
+    to[i][0] = 0;
+    SetIntArray(from[i] + 1, sz - 1, -2);
+    SetIntArray(to[i] + 1, sz - 1, -2);
+    from[i][a3] = -1; to[i][a3] = -1;
+    from[i][b3] = -1; to[i][b3] = -1;
+    from[i][c3] = -1; to[i][c3] = -1;
+    from[i][d3] = -1; to[i][d3] = -1;
+    from[i][a2] = -1; to[i][a2] = -1;
+    from[i][b2] = -1; to[i][b2] = -1;
+    from[i][c2] = -1; to[i][c2] = -1;
+    from[i][d2] = -1; to[i][d2] = -1;
+  }
+
+
+  int currElement = 0;
+
+  // a3' <- c3
+
+  for (int i = 0; i < type3; i++)
+  {
+    from[currElement][c3] = i;
+    to[currElement][a3] = i;
+    currElement++;
+  }
+
+  // b3' <- d3
+
+  for (int i = 0; i < type3; i++)
+  {
+    from[currElement][d3] = i;
+    to[currElement][b3] = i;
+    currElement++;
+  }
+
+  // c3' <- a3
+
+  for (int i = 0; i < type3; i++)
+  {
+    from[currElement][a3] = i;
+    to[currElement][c3] = i;
+    currElement++;
+  }
+
+  // d3' <- b3
+
+  for (int i = 0; i < type3; i++)
+  {
+    from[currElement][b3] = i;
+    to[currElement][d3] = i;
+    currElement++;
+  }
+
+
+  // a2' <- c2
+
+  for (int i = 0; i < type2; i++)
+  {
+    from[currElement][c2] = i;
+    to[currElement][a2] = i;
+    currElement++;
+  }
+
+  // b2' <- d2
+
+  for (int i = 0; i < type2; i++)
+  {
+    from[currElement][d2] = i;
+    to[currElement][b2] = i;
+    currElement++;
+  }
+
+  // c2' <- a2
+
+  for (int i = 0; i < type2; i++)
+  {
+    from[currElement][a2] = i;
+    to[currElement][c2] = i;
+    currElement++;
+  }
+
+  // d2' <- b2
+
+  for (int i = 0; i < type2; i++)
+  {
+    from[currElement][b2] = i;
+    to[currElement][d2] = i;
+    currElement++;
+  }
+
+
+  // compute result = union elements to create an mxd for each component
+  // and then intersect the mxds.
+
+#if FROM_TO
+  
+#else
+  int** swapper = from;
+  from = to;
+  to = swapper;
+#endif
+
+  dd_edge result(relation);
+  int offset = 0;
+
+  // a3' <- c3
+  {
+    dd_edge temp(relation);
+    assert(forest::SUCCESS == relation->createEdge(from + offset,
+          to + offset, type3, temp));
+    result = temp;
+    offset += type3;
+  }
+
+  // b3' <- d3
+  // c3' <- a3
+  // d3' <- b3
+  for (int i = 0; i < 3; i++)
+  {
+    dd_edge temp(relation);
+    assert(forest::SUCCESS == relation->createEdge(from + offset,
+          to + offset, type3, temp));
+    result *= temp;
+    offset += type3;
+  }
+
+  // a2' <- c2
+  // b2' <- d2
+  // c2' <- a2
+  // d2' <- b2
+  for (int i = 0; i < 4; i++)
+  {
+    dd_edge temp(relation);
+    assert(forest::SUCCESS == relation->createEdge(from + offset,
+          to + offset, type2, temp));
+    result *= temp;
+    offset += type2;
+  }
+
+  assert(offset == nElements);
+
+  // delete arrays
+  for (int i = 0; i < nElements; i++)
+  {
+    delete from[i];
+    delete to[i];
+  }
+  delete from;
+  delete to;
+  
+  return result;
+}
+
+
+#endif
+
 
 const char* face_to_string(face f){
   switch(f) {
@@ -947,14 +1317,6 @@ int main(int argc, char *argv[])
               break;
           }
         }
-      } else if (strncmp(cmd, "-m", 2) == 0) {
-        int mem_total = strtol(&cmd[2], NULL, 10);
-        if (mem_total < 1 || mem_total > 100*1024) { // 10 GB!
-          usage();
-          exit(1);
-        }
-        // set up memory available
-        InitMemoryManager(mem_total*1024*1024);
       }
       else {
         usage();
@@ -967,79 +1329,81 @@ int main(int argc, char *argv[])
   SetUpArrays();
   Init();
 
+  // Set hash table to be a chained hash table with a
+  // maximum of 16 million entries (default)
+  assert(compute_manager::SUCCESS ==
+      MEDDLY_getComputeManager()->setHashTablePolicy(false, 1024*1024));
+
   // Set up the state variables, as described earlier
-  d = CreateDomain(num_levels, sizes, variables);
+  d = MEDDLY_createDomain();
   if (NULL == d) {
     fprintf(stderr, "Couldn't create domain\n");
     return 1;
   }
-  CheckVars();
+  assert(domain::SUCCESS == d->createVariablesBottomUp(sizes, num_levels));
+  CheckVars(d);
+
+  int topVar = d->getTopVariable();
+  int height = d->getNumVariables();
+  while (topVar > 0)
+  {
+    printf("height %d, level %d, size %d\n", height, topVar,
+        static_cast<expert_domain*>(d)->getVariableBound(topVar));
+    topVar = d->getVariableBelow(topVar);
+    height--;
+  }
 
   // Create forests
-#if 1
-  // states = CreateForest(d, MDD, false, forest::QUASI_REDUCED, FULL_OR_SPARSE_STORAGE);
-  states = CreateForest(d, MDD, false, forest::FULLY_REDUCED, FULL_OR_SPARSE_STORAGE);
-  relation = CreateForest(d, MXD, false, forest::IDENTITY_REDUCED, FULL_OR_SPARSE_STORAGE);
-  // relation = CreateForest(d, MXD, false, forest::QUASI_REDUCED, FULL_OR_SPARSE_STORAGE);
-#else
-  states = CreateForest(d, MDD, false, forest::FULLY_REDUCED, FULL_STORAGE);
-  relation = CreateForest(d, MXD, false, forest::IDENTITY_REDUCED, FULL_STORAGE);
-#endif
+  states = d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  relation = d->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
 
-  if (INVALID_FOREST == states) {
+  if (NULL == states) {
     fprintf(stderr, "Couldn't create forest of states\n");
     return 1;
   } else {
     fprintf(stderr, "Created forest of states\n");
   }
-  if (INVALID_FOREST == relation) {
+  if (NULL == relation) {
     fprintf(stderr, "Couldn't create forest of relations\n");
     return 1;
   } else {
     fprintf(stderr, "Created forest of relations\n");
   }
 
+  // states->setNodeDeletion(forest::OPTIMISTIC_DELETION);
+  // states->setNodeDeletion(forest::PESSIMISTIC_DELETION);
+  // states->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
+  states->setNodeStorage(forest::FULL_STORAGE);
+  // states->setReductionRule(forest::FULLY_REDUCED);
+  // states->setReductionRule(forest::QUASI_REDUCED);
+
+  // relation->setNodeDeletion(forest::OPTIMISTIC_DELETION);
+  // relation->setNodeDeletion(forest::PESSIMISTIC_DELETION);
+  // relation->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
+  relation->setNodeStorage(forest::FULL_STORAGE);
+  // relation->setReductionRule(forest::IDENTITY_REDUCED);
+
   // Build set of initial states
+
   for (int j = 0; j < type2; j++) {
-    initst[variables[get_component_level(2, j)]] = j;
+    initst[0][get_component_level(2, j)] = j;
   }
   for (int j = 0; j < type3; j++) {
-    initst[variables[get_component_level(3, j)]] = j;
+    initst[0][get_component_level(3, j)] = j;
   }
-  initst[0] = 0;
-  initial = CreateVectorElement(states, initst, num_levels + 1, true); 
+  initst[0][0] = 0;
 
-  dd_edge *curr = NULL;
-
-  if (NULL==initial) {
-    fprintf(stderr, "Couldn't create set of initial states\n");
-    return 1;
-  } else {
-    fprintf(stderr, "Created set of initial states\n");
-#if 0
-    fprintf(stderr, "Initial state: ");
-    ShowDDEdge(stderr, initial);
-    exit(0);
-#endif
-  }
+  dd_edge initial(states);
+  assert(forest::SUCCESS == states->createEdge(initst, 1, initial));
 
   // Build transitions
   const int num_moves = 6;
-  dd_edge* move[num_moves][2];
+  dd_edge zero(relation);
+  vector<dd_edge> m(2, zero);
+  vector< vector<dd_edge> > move(num_moves, m);
+  // dd_edge move[num_moves][2];
 
   if (no_choice) {
-    move[F][CW] = NULL;
-    move[B][CW] = NULL;
-    move[L][CW] = NULL;
-    move[R][CW] = NULL;
-    move[U][CW] = NULL;
-    move[D][CW] = NULL;
-    move[F][CCW] = NULL;
-    move[B][CCW] = NULL;
-    move[L][CCW] = NULL;
-    move[R][CCW] = NULL;
-    move[U][CCW] = NULL;
-    move[D][CCW] = NULL;
   } else {
     move[F][CW] = Front(CW);
     move[B][CW] = Back(CW);
@@ -1056,358 +1420,210 @@ int main(int argc, char *argv[])
   }
 
   // Build overall next-state function
-  if(no_choice) {
-    nsf = NULL;
+  dd_edge nsf(relation);
+
+  timer buildNSF;
+
+  if (no_choice) {
 
     if (enable_F) {
       move[F][CW] = Front(CW);
-      if (nsf == NULL) {
-        nsf = move[F][CW];
-      } else {
-        assert(SUCCESS == 
-            ApplyBinary(OP_UNION, nsf, move[F][CW], nsf));
-      }
+      nsf += move[F][CW];
       fprintf(stderr, "Union f-cw: ");
       fflush(stderr);
     }
 
     if (enable_U) {
       move[U][CW] = Up(CW);
-      if (nsf == NULL) {
-        nsf = move[U][CW];
-      } else {
-        assert(SUCCESS == 
-            ApplyBinary(OP_UNION, nsf, move[U][CW], nsf));
-      }
+      nsf += move[U][CW];
       fprintf(stderr, "Union u-cw: ");
       fflush(stderr);
     }
 
     if (enable_R) {
       move[R][CW] = Right(CW);
-      if (nsf == NULL) {
-        nsf = move[R][CW];
-      } else {
-        assert(SUCCESS == 
-            ApplyBinary(OP_UNION, nsf, move[R][CW], nsf));
-      }
+      nsf += move[R][CW];
       fprintf(stderr, "Union r-cw: ");
       fflush(stderr);
     }
 
     if (enable_L) {
       move[L][CW] = Left(CW);
-      if (nsf == NULL) {
-        nsf = move[L][CW];
-      } else {
-        assert(SUCCESS == 
-            ApplyBinary(OP_UNION, nsf, move[L][CW], nsf));
-      }
+      nsf += move[L][CW];
       fprintf(stderr, "Union l-cw: ");
       fflush(stderr);
     }
 
     if (enable_B) {
       move[B][CW] = Back(CW);
-      if (nsf == NULL) {
-        nsf = move[B][CW];
-      } else {
-        assert(SUCCESS == 
-            ApplyBinary(OP_UNION, nsf, move[B][CW], nsf));
-      }
+      nsf += move[B][CW];
       fprintf(stderr, "Union b-cw: ");
       fflush(stderr);
     }
 
     if (enable_D) {
       move[D][CW] = Down(CW);
-      if (nsf == NULL) {
-        nsf = move[D][CW];
-      } else {
-        assert(SUCCESS == 
-            ApplyBinary(OP_UNION, nsf, move[D][CW], nsf));
-      }
+      nsf += move[D][CW];
       fprintf(stderr, "Union d-cw: ");
       fflush(stderr);
     }
 
     direction dir = (flip)? FLIP: CCW;
-    dd_edge *nsf1 = NULL;
+    dd_edge nsf1(relation);
     if (enable_f) {
       move[F][CCW] = Front(dir);
-      if (nsf1 == NULL) {
-        nsf1 = move[F][CCW];
-      } else {
-        assert(SUCCESS == 
-            ApplyBinary(OP_UNION, nsf1, move[F][CCW], nsf1));
-      }
+      nsf1 += move[F][CCW];
       fprintf(stderr, "Union f-ccw: ");
       fflush(stderr);
     }
 
     if (enable_u) {
       move[U][CCW] = Up(dir);
-      if (nsf1 == NULL) {
-        nsf1 = move[U][CCW];
-      } else {
-        assert(SUCCESS == 
-            ApplyBinary(OP_UNION, nsf1, move[U][CCW], nsf1));
-      }
+      nsf1 += move[U][CCW];
       fprintf(stderr, "Union u-ccw: ");
       fflush(stderr);
     }
 
     if (enable_r) {
       move[R][CCW] = Right(dir);
-      if (nsf1 == NULL) {
-        nsf1 = move[R][CCW];
-      } else {
-        assert(SUCCESS == 
-            ApplyBinary(OP_UNION, nsf1, move[R][CCW], nsf1));
-      }
+      nsf1 += move[R][CCW];
       fprintf(stderr, "Union r-ccw: ");
       fflush(stderr);
     }
 
     if (enable_l) {
       move[L][CCW] = Left(dir);
-      if (nsf1 == NULL) {
-        nsf1 = move[L][CCW];
-      } else {
-        assert(SUCCESS == 
-            ApplyBinary(OP_UNION, nsf1, move[L][CCW], nsf1));
-      }
+      nsf1 += move[L][CCW];
       fprintf(stderr, "Union l-ccw: ");
       fflush(stderr);
     }
 
     if (enable_b) {
       move[B][CCW] = Back(dir);
-      if (nsf1 == NULL) {
-        nsf1 = move[B][CCW];
-      } else {
-        assert(SUCCESS == 
-            ApplyBinary(OP_UNION, nsf1, move[B][CCW], nsf1));
-      }
+      nsf1 += move[B][CCW];
       fprintf(stderr, "Union b-ccw: ");
       fflush(stderr);
     }
 
     if (enable_d) {
       move[D][CCW] = Down(dir);
-      if (nsf1 == NULL) {
-        nsf1 = move[D][CCW];
-      } else {
-        assert(SUCCESS == 
-            ApplyBinary(OP_UNION, nsf1, move[D][CCW], nsf1));
-      }
+      nsf1 += move[D][CCW];
       fprintf(stderr, "Union d-ccw: ");
       fflush(stderr);
     }
 
-    if (nsf1 != NULL) {
-      if (nsf != NULL) {
-      assert(SUCCESS == ApplyBinary(OP_UNION, nsf, nsf1, nsf));
-      } else {
-        nsf = nsf1;
-      }
-    }
+    nsf += nsf1;
+    nsf1.clear();
 
     if (union_flip) {
-      dd_edge *nsf2 = NULL;
+      dd_edge nsf2(relation);
       dir = FLIP;
       if (enable_f || enable_F) {
         move[F][CCW] = Front(dir);
-        if (nsf2 == NULL) {
-          nsf2 = move[F][CCW];
-        } else {
-          assert(SUCCESS == 
-              ApplyBinary(OP_UNION, nsf2, move[F][CCW], nsf2));
-        }
+        nsf2 += move[F][CCW];
         fprintf(stderr, "Union f-ccw: ");
         fflush(stderr);
       }
 
       if (enable_u || enable_U) {
         move[U][CCW] = Up(dir);
-        if (nsf2 == NULL) {
-          nsf2 = move[U][CCW];
-        } else {
-          assert(SUCCESS == 
-              ApplyBinary(OP_UNION, nsf2, move[U][CCW], nsf2));
-        }
+        nsf2 += move[U][CCW];
         fprintf(stderr, "Union u-ccw: ");
         fflush(stderr);
       }
 
       if (enable_r || enable_R) {
         move[R][CCW] = Right(dir);
-        if (nsf2 == NULL) {
-          nsf2 = move[R][CCW];
-        } else {
-          assert(SUCCESS == 
-              ApplyBinary(OP_UNION, nsf2, move[R][CCW], nsf2));
-        }
+        nsf2 += move[R][CCW];
         fprintf(stderr, "Union r-ccw: ");
         fflush(stderr);
       }
 
       if (enable_l || enable_L) {
         move[L][CCW] = Left(dir);
-        if (nsf2 == NULL) {
-          nsf2 = move[L][CCW];
-        } else {
-          assert(SUCCESS == 
-              ApplyBinary(OP_UNION, nsf2, move[L][CCW], nsf2));
-        }
+        nsf2 += move[L][CCW];
         fprintf(stderr, "Union l-ccw: ");
         fflush(stderr);
       }
 
       if (enable_b || enable_B) {
         move[B][CCW] = Back(dir);
-        if (nsf2 == NULL) {
-          nsf2 = move[B][CCW];
-        } else {
-          assert(SUCCESS == 
-              ApplyBinary(OP_UNION, nsf2, move[B][CCW], nsf2));
-        }
+        nsf2 += move[B][CCW];
         fprintf(stderr, "Union b-ccw: ");
         fflush(stderr);
       }
 
       if (enable_d || enable_D) {
         move[D][CCW] = Down(dir);
-        if (nsf2 == NULL) {
-          nsf2 = move[D][CCW];
-        } else {
-          assert(SUCCESS == 
-              ApplyBinary(OP_UNION, nsf2, move[D][CCW], nsf2));
-        }
+        nsf2 += move[D][CCW];
         fprintf(stderr, "Union d-ccw: ");
         fflush(stderr);
       }
 
-      if (nsf2 != NULL) {
-        if (nsf != NULL) {
-          assert(SUCCESS == ApplyBinary(OP_UNION, nsf, nsf2, nsf));
-        } else {
-          nsf = nsf2;
-        }
-      }
+      nsf += nsf2;
     }
 
-    if (NULL == nsf) {
-      fprintf(stderr, "Couldn't create next-state function\n");
-      return 1;
-    } else {
-      fprintf(stderr, "Created next-state function\n");
-      double count = NodeCount(nsf);
-      assert (count != -1);
-      fprintf(stderr, "# of nodes in next-state function: %1.6e\n", count);
-      fflush(stderr);
-#if 1
-      double wt_count = WeightedNodeCount(nsf);
-      fprintf(stderr, "Weighed node count in next-state function: %1.6e\n", wt_count);
-      assert (count > 0);
-      double wt = wt_count/count;
-      fprintf(stderr, "Avg. node weight in next-state function: %1.6e\n", wt);
-      fflush(stderr);
-#endif
-    }
-    fflush(stderr);
+    fprintf(stderr, "Created next-state function\n");
   }
+
+  buildNSF.note_time();
+  fprintf(stderr,
+      "\nTime for constructing initial states and nsf: %.4e seconds\n",
+      buildNSF.get_last_interval()/1000000.0);
+
+#ifdef NSF_CARDINALITY
+  fprintf(stderr, "# of nodes in next-state function: %1.6e\n",
+      nsf.getCardinality());
+#endif
+  fflush(stderr);
 
 #ifdef INTERMEDIATE_PRINT
   fprintf(stderr, "Initial states: ");
-  ShowDDEdge(stderr, initial);
+  initial.show(stderr, 3);
   fprintf(stderr, "\nTransition relation nodes\n");
   for (int i = 0; i < num_moves; i++) {
     fprintf(stderr, "Move %d, CW: ", i);
-    ShowDDEdge(stderr, move[i][0]);
+    move[i][0].show(stderr, 3);
     fprintf(stderr, "\n"); 
     fprintf(stderr, "Move %d, CCW: ", i);
-    ShowDDEdge(stderr, move[i][1]);
+    move[i][1].show(stderr, 3);
     fprintf(stderr, "\n"); 
   }
   fprintf(stderr, "Overall transition relation: ");
-  ShowDDEdge(stderr, nsf);
+  nsf.show(stderr, 3);
   fprintf(stderr, "\n"); 
 #endif
 
-  double card = 0;
-
 #ifdef SATURATE
 
-#ifdef COUNT_TIME
-  struct rusage start, stop;
-  assert(getrusage(RUSAGE_SELF, &start) == 0);
-#endif
-
   if (no_choice) {
-#if 0
-    Saturate(initial, nsf, curr);
-#else
-    vector<dd_edge *> *xd = NULL;
-    fprintf(stderr, "SplitMxd... ");
-    fflush(stderr);
-    assert(SUCCESS == SplitMxd(nsf, xd));
-    fprintf(stderr, "done.\n");
-#if 1
-    for (unsigned i = 0; i < (*xd).size(); i++) {
-      assert((*xd)[i] != NULL);
-      double count = NodeCount((*xd)[i]);
-      assert (count != -1);
-      fprintf(stderr, "# of nodes in next-state function: %1.6e\n", count);
-#if 0
-      double wt_count = WeightedNodeCount((*xd)[i]);
-      fprintf(stderr,
-          "Weighed node count in next-state function: %1.6e\n",
-          wt_count);
-      assert (count > 0);
-      double wt = wt_count/count;
-      fprintf(stderr,
-          "Avg. node weight in next-state function: %1.6e\n",
-          wt);
-#endif
-      fflush(stderr);
-    }
-#endif
-#ifdef COUNT_TIME
-    assert(getrusage(RUSAGE_SELF, &start) == 0);
-#endif
+    // assert(false);
+    dd_edge reachableStates(initial);
+    initial.show(stderr, 3);
     fprintf(stderr, "Started DFS Saturate...\n");
     fflush(stderr);
-    assert(SUCCESS == Saturate(initial, xd, curr));
+    timer start;
+    assert(compute_manager::SUCCESS ==
+        MEDDLY_getComputeManager()->apply(
+          compute_manager::REACHABLE_STATES_DFS,
+          reachableStates, nsf, reachableStates));
+    start.note_time();
     fprintf(stderr, "  completed DFS Saturate.\n");
     fflush(stderr);
-    /*
-       double count = NodeCount(curr);
-       fprintf(stderr, "# of nodes in reachability set: %d\n", count);
-       fflush(stderr);
-     */
-#endif
+    fprintf(stderr, "Time for constructing reachability set: %.4e seconds\n",
+        start.get_last_interval()/1000000.0);
+    fprintf(stderr, "# of reachable states: %1.6e\n",
+        reachableStates.getCardinality());
   } else {
     int choice = 0;
     char dummy;
-    curr = initial;
-    card = Cardinality(curr);
-    int count[] = {0,0,0,0,0,0};
-    dd_edge *edges[num_moves];
-    double ecard[num_moves];
+    dd_edge curr(states);
+    vector<dd_edge> edges(num_moves, curr);
+    vector<int> count(num_moves, 0);
+    vector<double> ecard(num_moves, 0);
 
-    vector<dd_edge *>* xd[num_moves][2];
-    for (int i = 0; i < num_moves; i++) {
-      xd[i][0] = NULL;
-      xd[i][1] = NULL;
-      assert(SUCCESS == SplitMxd(move[i][0], xd[i][0]));
-      assert(xd[i][0] != NULL);
-      assert(SUCCESS == SplitMxd(move[i][1], xd[i][1]));
-      assert(xd[i][1] != NULL);
-      edges[i] = CopyEdge(curr);
-      ecard[i] = card;
-    }
-    fprintf(stderr, "# of reachable states: %1.6e\n", card);
+    curr = initial;
+    double card = curr.getCardinality();
 
     while (true) {
       fprintf(stderr, "\n\nSaturate using...\n");
@@ -1427,34 +1643,34 @@ int main(int argc, char *argv[])
 
       if (choice >= 0 && choice < (num_moves * 2)) {
         double old_card = ecard[choice % num_moves];
-        // Saturate(curr, move[choice % num_moves][choice / num_moves], curr);
-#if 0
-        Saturate(curr, move[choice % num_moves][choice / num_moves],
-            edges[choice % num_moves]);
-#else
-        assert(SUCCESS == Saturate(curr, xd[choice%num_moves][choice/num_moves],
+        assert(compute_manager::SUCCESS ==
+            MEDDLY_getComputeManager()->apply(
+              compute_manager::REACHABLE_STATES_BFS,
+              curr, move[choice % num_moves][choice / num_moves],
               edges[choice % num_moves]));
-#endif
         // card = Cardinality(curr);
-        ecard[choice % num_moves] = Cardinality(edges[choice % num_moves]);
+        ecard[choice % num_moves] = edges[choice % num_moves].getCardinality();
         fprintf(stderr, "# of reachable states: %1.6e\n",
             ecard[choice % num_moves]);
         if (ecard[choice % num_moves] > old_card) count[choice%num_moves]++;
         fprintf(stderr, "Moves: [%d, %d, %d, %d, %d, %d]\n",
             count[0], count[1], count[2], count[3], count[4], count[5]);
       } else if (choice == 12) {
-        nsf = NULL;
+        nsf.clear();
         fprintf(stderr, "Forming NSF (Union of all moves)...\n");
-        assert(SUCCESS ==
-            ApplyBinary(OP_UNION, move[0][CW], move[1][CW], nsf));
-        for (int i = 2; i < num_moves; i++) {
-          assert(SUCCESS == ApplyBinary(OP_UNION, nsf, move[i][CW], nsf));
+        nsf = move[0][CW];
+        for (int i = 1; i < num_moves; i++)
+        {
+          nsf += move[i][CW];
         }
         fprintf(stderr, "  done.\n");
         fprintf(stderr, "Performing BFS...\n");
-        Saturate(curr, nsf, curr);
+        assert(compute_manager::SUCCESS ==
+            MEDDLY_getComputeManager()->apply(
+              compute_manager::REACHABLE_STATES_BFS,
+              curr, nsf, curr));
         fprintf(stderr, "  done.\n");
-        card = Cardinality(curr);
+        card = curr.getCardinality();
         fprintf(stderr, "# of reachable states: %1.6e\n", card);
         break;
       } else if (choice == 13) {
@@ -1463,109 +1679,25 @@ int main(int argc, char *argv[])
       } else if (choice == 14) {
         // sum all
         for (int i = 0; i < num_moves; i++) {
-          assert(SUCCESS == ApplyBinary(OP_UNION, curr, edges[i], curr));
+          curr += edges[i];
         }
-        card = Cardinality(curr);
+        card = curr.getCardinality();
         fprintf(stderr, "# of reachable states: %1.6e\n", card);
         for (int i = 0; i < num_moves; i++) {
-          ReleaseEdge(edges[i]);
-          edges[i] = CopyEdge(curr);
+          edges[i] = curr;
           ecard[i] = card;
         }
       } else if (choice == 15) {
         for (int i = 0; i < num_moves; i++) {
-          ShowDDEdge(stderr, edges[i]);
+          edges[i].show(stderr, 3);
         }
       }
     }
   }
 
-#ifdef COUNT_TIME
-  assert(getrusage(RUSAGE_SELF, &stop) == 0);
-
-  // stop.ru_utime - start.ru_utime
-  suseconds_t u_sat_time =
-    (stop.ru_utime.tv_sec * 1000000 + stop.ru_utime.tv_usec) -
-    (start.ru_utime.tv_sec * 1000000 + start.ru_utime.tv_usec);
-  suseconds_t s_sat_time =
-    (stop.ru_stime.tv_sec * 1000000 + stop.ru_stime.tv_usec) -
-    (start.ru_stime.tv_sec * 1000000 + start.ru_stime.tv_usec);
-
-  fprintf(stderr, "\nTime for constructing initial states and nsf:\n");
-  fprintf(stderr, "  %ld.%ld sec user, %ld.%ld sec system\n",
-      (long int)start.ru_utime.tv_sec, (long int)start.ru_utime.tv_usec,
-      (long int)start.ru_stime.tv_sec, (long int)start.ru_stime.tv_usec);
-
-  fprintf(stderr, "\nTime for constructing reachability set:\n");
-  fprintf(stderr, "  %06f sec user, %06f system\n",
-      u_sat_time/1000000.0, s_sat_time/1000000.0);
-#endif  // COUNT_TIME
-
 #endif  // SATURATE
 
-#ifdef COUNT_STATES
-  card = Cardinality(curr);
-  fprintf(stderr, "\n# of reachable states: %1.12e\n", card);
-  // fprintf(stderr, "\n# of reachable states: %s\n", ll_to_pa(card));
-#endif
-
-#ifdef MEM_USAGE
-  fprintf(stderr, "\nPeak memory usage: %d\n", stop.ru_maxrss);
-  fprintf(stderr, "\nIntegral shared memory usage: %d\n", stop.ru_ixrss);
-#endif
-
-  const char *fn[] = {"reachable", "initial", "nsf", "gif"};
-  if (make_gifs) {
-    CreateDDEdgePic(fn[1], fn[3], initial);
-    printf("Wrote initial states to %s.%s\n", fn[1], fn[3]);
-    CreateDDEdgePic(fn[2], fn[3], nsf);
-    printf("Wrote next-state function to %s.%s\n", fn[2], fn[3]);
-    CreateDDEdgePic(fn[0], fn[3], curr);
-    printf("Wrote reachable states to %s.%s\n", fn[0], fn[3]);
-  } else if (pretty_print) {
-    fprintf(stderr, "\nInitial States: ");
-    ShowDDEdge(stderr, initial);
-    fprintf(stderr, "\n");
-    fprintf(stderr, "\nNext-State Function: ");
-    ShowDDEdge(stderr, nsf);
-    fprintf(stderr, "\n");
-    fprintf(stderr, "\nReachable States: ");
-    ShowDDEdge(stderr, curr);
-    fprintf(stderr, "\n");
-  }
-
-#if 0
-  ReleaseEdge(move[F][CW]);
-  ReleaseEdge(move[U][CW]);
-  ReleaseEdge(move[R][CW]);
-  ReleaseEdge(move[L][CW]);
-  ReleaseEdge(move[B][CW]);
-  ReleaseEdge(move[D][CW]);
-  ReleaseEdge(move[F][CCW]);
-  ReleaseEdge(move[B][CCW]);
-  ReleaseEdge(move[L][CCW]);
-  ReleaseEdge(move[R][CCW]);
-  ReleaseEdge(move[U][CCW]);
-  ReleaseEdge(move[D][CCW]);
-#endif
-
-  DestroyForest(states, true);
-  if (INVALID_FOREST != states) {
-    fprintf(stderr, "Couldn't destroy forest of states\n");
-    return 1;
-  } else {
-    fprintf(stderr, "Destroyed forest of states\n");
-  }
-
-  DestroyForest(relation, true);
-  if (INVALID_FOREST != relation) {
-    fprintf(stderr, "Couldn't destroy forest of relations\n");
-    return 1;
-  } else {
-    fprintf(stderr, "Destroyed forest of relations\n");
-  }
-
-  DestroyDomain(d);
+  delete d;
 
   fprintf(stderr, "\n\nDONE\n");
   return 0;

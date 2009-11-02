@@ -168,9 +168,14 @@ void compute_cache::expandData()
 
 void compute_cache::removeStales()
 {
-  assert(ht != 0 || fsht != 0);
-  if (ht) ht->removeStaleEntries();
-  if (fsht) fsht->removeStaleEntries();
+  static bool removingStales = false;
+  if (!removingStales) {
+    removingStales = true;
+    assert(ht != 0 || fsht != 0);
+    if (ht) ht->removeStaleEntries();
+    if (fsht) fsht->removeStaleEntries();
+    removingStales = false;
+  }
 }
 
 void compute_cache::clear()

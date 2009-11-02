@@ -13,7 +13,8 @@ test_mtmdd \
 test_mtmxd \
 build_expression \
 kan1_batch \
-dining_phils
+dining_phils \
+rubiks_cube
 
 CXXFLAGS = 
 CXXFLAGS += -Wall
@@ -50,3 +51,6 @@ kan1_batch_LDADD = ../src/libmeddly.la
 
 dining_phils_SOURCES = dining_phils.cc
 dining_phils_LDADD = ../src/libmeddly.la
+
+rubiks_cube_SOURCES = rubiks_cube.cc
+rubiks_cube_LDADD = ../src/libmeddly.la
