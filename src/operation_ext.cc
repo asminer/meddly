@@ -4564,8 +4564,8 @@ void mdd_reachability_dfs::splitMxd(int mxd)
           }
 
           if (!first) {
-            int temp = mxdIntersection->compute(mxdIntersectionOp,
-                intersection, mxdII);
+            int temp = getMxdIntersection(intersection, mxdII);
+            //mxdIntersection->compute(mxdIntersectionOp, intersection, mxdII);
             xdf->unlinkNode(intersection);
             intersection = temp;
           } else {
@@ -4589,8 +4589,8 @@ void mdd_reachability_dfs::splitMxd(int mxd)
         xdf->getNodeLevel(mxd) > xdf->getNodeLevel(intersection));
 
     if (intersection != falseNode) {
-      splits[level] = 
-        mxdDifference->compute(mxdDifferenceOp, mxd, intersection);
+      splits[level] = getMxdDifference(mxd, intersection);
+        // mxdDifference->compute(mxdDifferenceOp, mxd, intersection);
     } else {
       splits[level] = mxd;
       xdf->linkNode(mxd);
@@ -4683,10 +4683,192 @@ int mdd_reachability_dfs::saturate(int mdd)
 }
 
 
+int mdd_reachability_dfs::getMddUnion(int a, int b)
+{
+  return mddUnion->compute(mddUnionOp, a, b);
+}
+
+int mdd_reachability_dfs::getMxdIntersection(int a, int b)
+{
+  return mxdIntersection->compute(mxdIntersectionOp, a, b);
+}
+
+int mdd_reachability_dfs::getMxdDifference(int a, int b)
+{
+  return mxdDifference->compute(mxdDifferenceOp, a, b);
+}
+
 #if 1
 
+void mdd_reachability_dfs::saturateHelperUnPrimeFull(int mdd, int mxd)
+{
+  DCASSERT(xdf->isFullNode(mxd));
+  DCASSERT(ddf->isFullNode(mdd));
 
-void mdd_reachability_dfs::saturateHelper(int &mdd)
+  int mddSize = ddf->getFullNodeSize(mdd);
+  int mxdSize = xdf->getFullNodeSize(mxd);
+  int minSize = MIN(mddSize, mxdSize);
+
+  std::vector<bool> enabled(mddSize, true);
+  bool repeat = true;
+
+  while (repeat)
+  {
+    std::vector<bool> next(mddSize, false);
+    for (int i = 0; i < minSize; i++)
+    {
+      if (!enabled[i]) continue;
+
+      int mxdI = xdf->getFullNodeDownPtr(mxd, i);
+      if (mxdI == 0) continue;
+
+      if (xdf->isFullNode(mxdI)) {
+        // mxdI is truncated-full
+        saturateHelperPrimeFull(mdd, i, mxdI, next);
+      }
+      else {
+        // mxdI is sparse
+        saturateHelperPrimeSparse(mdd, i, mxdI, next);
+      }
+    }
+
+    repeat = false;
+    for (int i = 0; i < mddSize; i++)
+    {
+      if (next[i]) {
+        enabled = next;
+        repeat = true;
+        break;
+      }
+    }
+  } // while(repeat)
+}
+
+
+void mdd_reachability_dfs::saturateHelperUnPrimeSparse(int mdd, int mxd)
+{
+  DCASSERT(xdf->isSparseNode(mxd));
+  DCASSERT(ddf->isFullNode(mdd));
+
+  int mddSize = ddf->getFullNodeSize(mdd);
+  int mxdNnz = xdf->getSparseNodeSize(mxd);
+
+  // mdd must of the max size for this level
+  DCASSERT(mddSize == ddf->getLevelSize(ddf->getNodeLevel(mdd)));
+
+  std::vector<bool> enabled(mddSize, true);
+  bool repeat = true;
+
+  while (repeat)
+  {
+    std::vector<bool> next(mddSize, false);
+
+    for (int index = 0; index < mxdNnz; index++)
+    {
+      int i = xdf->getSparseNodeIndex(mxd, index);
+      
+      if (!enabled[i]) continue;
+
+      int mxdI = xdf->getSparseNodeDownPtr(mxd, index);
+
+      if (xdf->isFullNode(mxdI)) {
+        // mxdI is truncated-full
+        saturateHelperPrimeFull(mdd, i, mxdI, next);
+      }
+      else {
+        // mxdI is sparse
+        saturateHelperPrimeSparse(mdd, i, mxdI, next);
+      }
+    }
+
+    repeat = false;
+    for (int i = 0; i < mddSize; i++)
+    {
+      if (next[i]) {
+        enabled = next;
+        repeat = true;
+        break;
+      }
+    }
+  } // while(repeat)
+}
+
+
+void mdd_reachability_dfs::saturateHelperPrimeFull(int mdd, int i,
+    int mxdI, std::vector<bool>& next)
+{
+  DCASSERT(ddf->isFullNode(mdd));
+  DCASSERT(!ddf->isReducedNode(mdd));
+  DCASSERT(!xdf->isTerminalNode(mxdI));
+  DCASSERT(xdf->isFullNode(mxdI));
+  // Note: it does not matter if mddI is sparse or full since we do not expand
+  // it here.
+
+  int mddI = ddf->getFullNodeDownPtr(mdd, i);
+  if (mddI == 0) return;
+
+  int mxdISize = xdf->getFullNodeSize(mxdI);
+  for (int j = 0; j < mxdISize; j++)
+  {
+    int mxdIJ = xdf->getFullNodeDownPtr(mxdI, j);
+    if (mxdIJ == 0) continue;
+
+    int f = recFire(mddI, mxdIJ);
+    if (f == 0) continue;
+
+    int mddJ = ddf->getFullNodeDownPtr(mdd, j);
+    int u = getMddUnion(f, mddJ);
+    ddf->unlinkNode(f);
+
+    if (u != mddJ) {
+      ddf->setDownPtr(mdd, j, u);
+      if (i == j) mddI = u;
+      next[j] = true;
+    }
+    ddf->unlinkNode(u);
+  }
+}
+
+
+void mdd_reachability_dfs::saturateHelperPrimeSparse(int mdd, int i,
+    int mxdI, std::vector<bool>& next)
+{
+  DCASSERT(ddf->isFullNode(mdd));
+  DCASSERT(!ddf->isReducedNode(mdd));
+  DCASSERT(!xdf->isTerminalNode(mxdI));
+  DCASSERT(xdf->isSparseNode(mxdI));
+  // Note: it doesi not matter if mddI is sparse or full since we do not expand
+  // it here.
+
+  int mddI = ddf->getFullNodeDownPtr(mdd, i);
+  if (mddI == 0) return;
+
+  int mxdINnz = xdf->getSparseNodeSize(mxdI);
+  for (int j = 0; j < mxdINnz; j++)
+  {
+    int jDown = xdf->getSparseNodeDownPtr(mxdI, j);
+    int jIndex = xdf->getSparseNodeIndex(mxdI, j);
+
+    int f = recFire(mddI, jDown);
+    if (f == 0) continue;
+
+    int mddJIndex = ddf->getFullNodeDownPtr(mdd, jIndex);
+    int u = getMddUnion(f, mddJIndex);
+    ddf->unlinkNode(f);
+
+    if (u != mddJIndex) {
+      ddf->setDownPtr(mdd, jIndex, u);
+      if (i == jIndex) mddI = u;
+      next[jIndex] = true;
+    }
+    ddf->unlinkNode(u);
+  }
+}
+
+
+#if 0
+
+void mdd_reachability_dfs::saturateHelper(int mdd)
 {
   // ============== BUG ===============
   DCASSERT(ddf->getTerminalNode(false) == 0);
@@ -4694,6 +4876,8 @@ void mdd_reachability_dfs::saturateHelper(int &mdd)
 
   DCASSERT(!ddf->isReducedNode(mdd));
   DCASSERT(ddf->isFullNode(mdd));
+  DCASSERT(ddf->getLevelSize(ddf->getNodeLevel(mdd)) ==
+      ddf->getFullNodeSize(mdd));
 
   int mddLevel = ddf->getNodeLevel(mdd);
   int mxd = splits[mddLevel];
@@ -4928,6 +5112,34 @@ void mdd_reachability_dfs::saturateHelper(int &mdd)
   } // mxd is sparse
 }
 
+#else
+
+void mdd_reachability_dfs::saturateHelper(int mdd)
+{
+  // ============== BUG ===============
+  DCASSERT(ddf->getTerminalNode(false) == 0);
+  DCASSERT(ddf->getTerminalNode(true) == -1);
+
+  DCASSERT(!ddf->isReducedNode(mdd));
+  DCASSERT(ddf->isFullNode(mdd));
+  DCASSERT(ddf->getLevelSize(ddf->getNodeLevel(mdd)) ==
+      ddf->getFullNodeSize(mdd));
+
+  int mddLevel = ddf->getNodeLevel(mdd);
+  int mxd = splits[mddLevel];
+  if (mxd == 0) return;
+
+  if (xdf->isFullNode(mxd))
+    saturateHelperUnPrimeFull(mdd, mxd);
+  else
+    saturateHelperUnPrimeSparse(mdd, mxd);
+}
+
+
+#endif
+
+
+#if 0
 
 int mdd_reachability_dfs::recFire(int mdd, int mxd)
 {
@@ -5373,6 +5585,298 @@ int mdd_reachability_dfs::recFire(int mdd, int mxd)
   return 0;
 #endif
 }
+
+#else
+
+
+int mdd_reachability_dfs::recFire(int mdd, int mxd)
+{
+  if (xdf->isTerminalNode(mxd)) {
+    if (mxd == 0)
+      return 0;
+    ddf->linkNode(mdd);
+    return mdd;
+  }
+
+  // POSSIBLE BUG
+  // when mdd == -1 && mxd is not a terminal, should this recursion stop?
+  if (ddf->isTerminalNode(mdd)) {
+    return mdd;
+  }
+
+  int result = 0;
+  if (findResult(owner, mdd, mxd, result)) {
+    return result;
+  }
+
+  int mddHeight = ddf->getNodeHeight(mdd);
+  int mxdHeight = xdf->getNodeHeight(mxd);
+
+  if (mddHeight < mxdHeight) {
+    int resultLevel = xdf->getNodeLevel(mxd);
+    result = ddf->createTempNodeMaxSize(resultLevel, true);
+    recFireExpandMxd(mdd, mxd, result);
+  }
+  else if (mddHeight > mxdHeight) {
+    int resultLevel = ddf->getNodeLevel(mdd);
+    result = ddf->createTempNodeMaxSize(resultLevel, true);
+    recFireExpandMdd(mdd, mxd, result);
+  }
+  else {
+    // mddHeight == mxdHeight
+    int resultLevel = ddf->getNodeLevel(mdd);
+    result = ddf->createTempNodeMaxSize(resultLevel, true);
+
+    // check for full/sparse and call appropriate function
+    if (ddf->isFullNode(mdd))
+      if (xdf->isFullNode(mxd))
+        recFireFF(mdd, mxd, result);
+      else
+        recFireFS(mdd, mxd, result);
+    else
+      if (xdf->isFullNode(mxd))
+        recFireSF(mdd, mxd, result);
+      else
+        recFireSS(mdd, mxd, result);
+  }
+
+  int resultSize = ddf->getFullNodeSize(result);
+  int result0 = ddf->getFullNodeDownPtr(result, 0);
+  int i = 0;
+  if (ddf->isTerminalNode(result0)) {
+    for (i = 1;
+        i < resultSize && result0 == ddf->getFullNodeDownPtr(result, i); ++i);
+  }
+  if (i != resultSize) {
+    saturateHelper(result);
+  }
+
+  result = ddf->reduceNode(result);
+  saveResult(owner, mdd, mxd, result);
+  return result;
+}
+
+
+void mdd_reachability_dfs::recFireExpandMdd(int mdd, int mxd, int result)
+{
+  DCASSERT(ddf->isFullNode(result));
+  DCASSERT(!ddf->isReducedNode(result));
+
+  if (ddf->isFullNode(mdd)) {
+    int mddSize = ddf->getFullNodeSize(mdd);
+    for (int i = 0; i < mddSize; i++)
+    {
+      int mddI = ddf->getFullNodeDownPtr(mdd, i);
+      if (mddI != 0) {
+        int f = recFire(mddI, mxd);
+        if (f != 0) {
+          // this corresponds to mxd[i][i] so add it to result[i]
+          // but result[i] is 0 before now, so set result[i] to f.
+          ddf->setDownPtr(result, i, f);
+        }
+        ddf->unlinkNode(f);
+      }
+    }
+  }
+  else {
+    DCASSERT(ddf->isSparseNode(mdd));
+    int mddNnz = ddf->getSparseNodeSize(mdd);
+    for (int i = 0; i < mddNnz; i++)
+    {
+      int mddI = ddf->getSparseNodeDownPtr(mdd, i);
+      int f = recFire(mddI, mxd);
+      if (f != 0) {
+        // this corresponds to mxd[i][i] so add it to result[i]
+        // but result[i] is 0 before now, so set result[i] to f.
+        ddf->setDownPtr(result, ddf->getSparseNodeIndex(mdd, i), f);
+      }
+      ddf->unlinkNode(f);
+    }
+  }
+}
+
+
+void mdd_reachability_dfs::recFireExpandMxd(int mdd, int mxd, int result)
+{
+  DCASSERT(ddf->isFullNode(result));
+  DCASSERT(!ddf->isReducedNode(result));
+
+  if (xdf->isFullNode(mxd)) {
+    int mxdSize = xdf->getFullNodeSize(mxd);
+    for (int i = 0; i < mxdSize; i++)
+    {
+      int mxdI = xdf->getFullNodeDownPtr(mxd, i);
+      if (mxdI != 0) {
+        DCASSERT(!xdf->isTerminalNode(mxdI));
+        recFirePrime(mdd, mxdI, result);
+      }
+    }
+  }
+  else {
+    DCASSERT(xdf->isSparseNode(mxd));
+
+    int mxdNnz = xdf->getSparseNodeSize(mxd);
+    for (int i = 0; i < mxdNnz; i++)
+    {
+      int mxdI = xdf->getSparseNodeDownPtr(mxd, i);
+      DCASSERT(!xdf->isTerminalNode(mxdI));
+      recFirePrime(mdd, mxdI, result);
+    }
+  }
+}
+
+
+void mdd_reachability_dfs::recFireFF(int mdd, int mxd, int result)
+{
+  DCASSERT(ddf->isFullNode(mdd));
+  DCASSERT(xdf->isFullNode(mxd));
+  DCASSERT(ddf->isFullNode(result));
+  DCASSERT(!ddf->isReducedNode(result));
+
+  int min = MIN(ddf->getFullNodeSize(mdd), xdf->getFullNodeSize(mxd));
+  for (int i = 0; i < min; i++)
+  {
+    int mddI = ddf->getFullNodeDownPtr(mdd, i);
+    int mxdI = xdf->getFullNodeDownPtr(mxd, i);
+    if (mddI != 0 && mxdI != 0) {
+      DCASSERT(!xdf->isTerminalNode(mxdI));
+      recFirePrime(mddI, mxdI, result);
+    }
+  }
+}
+
+
+void mdd_reachability_dfs::recFireFS(int mdd, int mxd, int result)
+{
+  DCASSERT(ddf->isFullNode(mdd));
+  DCASSERT(xdf->isSparseNode(mxd));
+  DCASSERT(ddf->isFullNode(result));
+  DCASSERT(!ddf->isReducedNode(result));
+
+  // go through the sparse node since it will have fewer entries
+  int mddSize = ddf->getFullNodeSize(mdd);
+  int mxdNnz = xdf->getSparseNodeSize(mxd);
+  for (int i = 0; i < mxdNnz; i++)
+  {
+    int index = xdf->getSparseNodeIndex(mxd, i);
+    if (index >= mddSize) break;
+
+    int mxdI = xdf->getSparseNodeDownPtr(mxd, i);
+    int mddI = ddf->getFullNodeDownPtr(mdd, index);
+
+    if (mddI != 0) {
+      DCASSERT(!xdf->isTerminalNode(mxdI));
+      recFirePrime(mddI, mxdI, result);
+    }
+  }
+}
+
+
+void mdd_reachability_dfs::recFireSF(int mdd, int mxd, int result)
+{
+  DCASSERT(ddf->isSparseNode(mdd));
+  DCASSERT(xdf->isFullNode(mxd));
+  DCASSERT(ddf->isFullNode(result));
+  DCASSERT(!ddf->isReducedNode(result));
+
+  // go through the sparse node since it will have fewer entries
+  int mxdSize = xdf->getFullNodeSize(mxd);
+  int mddNnz = ddf->getSparseNodeSize(mdd);
+  for (int i = 0; i < mddNnz; i++)
+  {
+    int index = ddf->getSparseNodeIndex(mdd, i);
+    if (index >= mxdSize) break;
+
+    int mddI = ddf->getSparseNodeDownPtr(mdd, i);
+    int mxdI = xdf->getFullNodeDownPtr(mxd, index);
+
+    if (mxdI != 0) {
+      DCASSERT(!xdf->isTerminalNode(mxdI));
+      recFirePrime(mddI, mxdI, result);
+    }
+  }
+}
+
+
+void mdd_reachability_dfs::recFireSS(int mdd, int mxd, int result)
+{
+  DCASSERT(ddf->isSparseNode(mdd));
+  DCASSERT(xdf->isSparseNode(mxd));
+  DCASSERT(ddf->isFullNode(result));
+  DCASSERT(!ddf->isReducedNode(result));
+
+  int mddNnz = ddf->getSparseNodeSize(mdd);
+  int mxdNnz = xdf->getSparseNodeSize(mxd);
+
+  // i refers to mxd index and j refers to mdd index
+  int i = 0; int j = 0;
+  for ( ; i < mxdNnz && j < mddNnz; )
+  {
+    int mxdIndex = xdf->getSparseNodeIndex(mxd, i);
+    int mddIndex = ddf->getSparseNodeIndex(mdd, j);
+    if (mddIndex < mxdIndex) {
+      j++;
+    }
+    else if (mddIndex > mxdIndex) {
+      i++;
+    }
+    else {
+      // mddIndex == mxdIndex
+      // index(mdd, j) == index(mxd, i)
+      int mxdI = xdf->getSparseNodeDownPtr(mxd, i);
+      int mddI = ddf->getSparseNodeDownPtr(mdd, j);
+
+      DCASSERT(!xdf->isTerminalNode(mxdI));
+      recFirePrime(mddI, mxdI, result);
+
+      i++; j++;
+    }
+  }
+}
+
+
+void mdd_reachability_dfs::recFirePrime(int mddI, int mxdI, int result)
+{
+  DCASSERT(ddf->isFullNode(result));
+  DCASSERT(!ddf->isReducedNode(result));
+
+  if (xdf->isFullNode(mxdI)) {
+    int mxdISize = xdf->getFullNodeSize(mxdI);
+    for (int j = 0; j < mxdISize; j++)
+    {
+      int mxdIJ = xdf->getFullNodeDownPtr(mxdI, j);
+      if (mxdIJ != 0) {
+        int f = recFire(mddI, mxdIJ);
+        if (f != 0) {
+          // update result[j]
+          int u = getMddUnion(ddf->getFullNodeDownPtr(result, j), f);
+          ddf->setDownPtr(result, j, u);
+          ddf->unlinkNode(u);
+        }
+        ddf->unlinkNode(f);
+      }
+    }
+  }
+  else {
+    DCASSERT(xdf->isSparseNode(mxdI));
+    int mxdINnz = xdf->getSparseNodeSize(mxdI);
+    for (int j = 0; j < mxdINnz; j++)
+    {
+      int mxdIJ = xdf->getSparseNodeDownPtr(mxdI, j);
+      int f = recFire(mddI, mxdIJ);
+      if (f != 0) {
+        // update result[mxdIJIndex]
+        int mxdIJIndex = xdf->getSparseNodeIndex(mxdI, j);
+        int u = getMddUnion(ddf->getFullNodeDownPtr(result, mxdIJIndex), f);
+        ddf->setDownPtr(result, mxdIJIndex, u);
+        ddf->unlinkNode(u);
+      }
+      ddf->unlinkNode(f);
+    }
+  }
+}
+
+#endif
 
 #endif
 

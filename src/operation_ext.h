@@ -590,8 +590,27 @@ class mdd_reachability_dfs : public mdd_mxd_image_operation {
 
     void splitMxd(int mxd);
     int saturate(int mdd);
-    void saturateHelper(int& mdd);
+    void saturateHelper(int mdd);
     int recFire(int mdd, int mxd);
+
+    void saturateHelperUnPrimeFull(int mdd, int mxd);
+    void saturateHelperUnPrimeSparse(int mdd, int mxd);
+    void saturateHelperPrimeFull(int mdd, int i, int mxdI,
+      std::vector<bool>& next);
+    void saturateHelperPrimeSparse(int mdd, int i, int mxdI,
+      std::vector<bool>& next);
+
+    void recFireExpandMdd(int mdd, int mxd, int result);
+    void recFireExpandMxd(int mdd, int mxd, int result);
+    void recFireFF(int mdd, int mxd, int result);
+    void recFireFS(int mdd, int mxd, int result);
+    void recFireSF(int mdd, int mxd, int result);
+    void recFireSS(int mdd, int mxd, int result);
+    void recFirePrime(int mdd, int mxd, int result);
+
+    int getMddUnion(int a, int b);
+    int getMxdIntersection(int a, int b);
+    int getMxdDifference(int a, int b);
 
   private:
     op_info*       owner;         // pointer to dfs reachability operation

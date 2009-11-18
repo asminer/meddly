@@ -368,6 +368,7 @@ int main(int argc, char *argv[])
   bool dfs = false;
   int cacheSize = 0;
   bool chaining = true;
+  bool printReachableStates = false;
   if (argc > 1) {
     assert(argc > 1 && argc < 6);
     if (argc > 1) {
@@ -386,6 +387,7 @@ int main(int argc, char *argv[])
           }
         }
         else if (strncmp(cmd, "-dfs", 5) == 0) dfs = true;
+        else if (strncmp(cmd, "-print", 7) == 0) printReachableStates = true;
         else if (strncmp(cmd, "-n", 2) == 0) {
           nPhilosophers = strtol(&cmd[2], NULL, 10);
         } else {
@@ -596,26 +598,29 @@ int main(int argc, char *argv[])
   dd_edge subMatrix = testSubMatrix(bounds, nLevels, nsf);
 #endif
 
-  // Create a EV+MDD forest in this domain (to store index set)
-  forest* evplusmdd =
-    d->createForest(false, forest::INTEGER, forest::EVPLUS);
-  assert(evplusmdd != NULL);
 
-  // Test Convert MDD to Index Set EV+MDD
-  dd_edge indexSet(evplusmdd);
-  testIndexSet(reachableStates, indexSet);
-  int* element = (int *) malloc((nLevels + 1) * sizeof(int));
+  if (printReachableStates) {
+    // Create a EV+MDD forest in this domain (to store index set)
+    forest* evplusmdd =
+      d->createForest(false, forest::INTEGER, forest::EVPLUS);
+    assert(evplusmdd != NULL);
 
-  double cardinality = indexSet.getCardinality();
-  for (int index = 0; index < int(cardinality); index++)
-  {
-    assert(forest::SUCCESS == evplusmdd->getElement(indexSet, index, element));
-    printf("Element at index %d: [ ", index);
-    for (int i = nLevels; i > 0; i--)
+    // Test Convert MDD to Index Set EV+MDD
+    dd_edge indexSet(evplusmdd);
+    testIndexSet(reachableStates, indexSet);
+    int* element = (int *) malloc((nLevels + 1) * sizeof(int));
+
+    double cardinality = indexSet.getCardinality();
+    for (int index = 0; index < int(cardinality); index++)
     {
-      printf("%d ", element[i]);
+      assert(forest::SUCCESS == evplusmdd->getElement(indexSet, index, element));
+      printf("Element at index %d: [ ", index);
+      for (int i = nLevels; i > 0; i--)
+      {
+        printf("%d ", element[i]);
+      }
+      printf("]\n");
     }
-    printf("]\n");
   }
 
   // Cleanup

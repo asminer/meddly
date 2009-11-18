@@ -1373,14 +1373,14 @@ int main(int argc, char *argv[])
   // states->setNodeDeletion(forest::OPTIMISTIC_DELETION);
   // states->setNodeDeletion(forest::PESSIMISTIC_DELETION);
   // states->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
-  states->setNodeStorage(forest::FULL_STORAGE);
+  // states->setNodeStorage(forest::FULL_STORAGE);
   // states->setReductionRule(forest::FULLY_REDUCED);
   // states->setReductionRule(forest::QUASI_REDUCED);
 
   // relation->setNodeDeletion(forest::OPTIMISTIC_DELETION);
   // relation->setNodeDeletion(forest::PESSIMISTIC_DELETION);
   // relation->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
-  relation->setNodeStorage(forest::FULL_STORAGE);
+  // relation->setNodeStorage(forest::FULL_STORAGE);
   // relation->setReductionRule(forest::IDENTITY_REDUCED);
 
   // Build set of initial states
