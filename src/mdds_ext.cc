@@ -1661,9 +1661,6 @@ evmdd_node_manager::evmdd_node_manager(domain *d, forest::edge_labeling el)
       el, forest::FULLY_REDUCED,
       forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION)
 {
-#ifdef ALT_EVMDD
-  assert(false);
-#endif
 }
 
 
@@ -2066,7 +2063,7 @@ forest::error evmdd_node_manager::evaluate(const dd_edge &f,
   int node = f.getNode();
   const int* h2l_map = expertDomain->getHeightsToLevelsMap();
 
-  term = f.getValue();
+  f.getEdgeValue(term);
   while (!isTerminalNode(node)) {
     int ev = getDefaultEdgeValue();
     int n = 0;
@@ -2204,11 +2201,7 @@ void evplusmdd_node_manager::normalizeAndReduceNode(int& p, int& ev)
   DCASSERT(isActiveNode(p));
 
   if (isReducedNode(p)) {
-#ifdef ALT_EVMDD
-    if (p == 0) ev = 0;
-#else
     if (p == 0) ev = INF;
-#endif
     return;
   }
 
@@ -2232,38 +2225,16 @@ void evplusmdd_node_manager::normalizeAndReduceNode(int& p, int& ev)
   for (int i=0; i<size; i++) {
     assert(isReducedNode(dptr[i]));
     assert(getNodeHeight(dptr[i]) < node_height);
-#ifdef ALT_EVMDD
-#else
     assert((dptr[i] == 0 && eptr[i] == INF) ||
         (dptr[i] != 0 && eptr[i] != INF));
-#endif
   }
 #endif
 
   // quick scan: is this node zero?
-  // ALT_EVMDD: truncated index means:
-  //     EVPLUS: going to 0 with edge-value 0
-  //     EVTIMES: going to 0 with edge-value 1
   // find min for normalizing later
   int nnz = 0;
   int truncsize = 0;
 
-#ifdef ALT_EVMDD
-  DCASSERT(getEdgeLabeling() == forest::EVPLUS);
-  int min = eptr[0];
-  int nz = 0;
-  // find min
-  for (int i = 0; i < size; i++) {
-    if (eptr[i] == 0) nz++;
-    if (eptr[i] < min) min = eptr[i];
-  }
-  // normalize
-  /* HERE */
-  if (min != 0) {
-    if 
-  }
-  truncsize++;
-#else
   int min = INF;
   for (int i = 0; i < size; i++) {
     if (0 != dptr[i]) {
@@ -2274,7 +2245,6 @@ void evplusmdd_node_manager::normalizeAndReduceNode(int& p, int& ev)
     }
   }
   truncsize++;
-#endif
 
   if (0 == nnz) {
     // duplicate of 0
@@ -2491,9 +2461,19 @@ evtimesmdd_node_manager::~evtimesmdd_node_manager()
 void evtimesmdd_node_manager::initEdgeValues(int p) {
   DCASSERT(!isReducedNode(p));
   DCASSERT(isFullNode(p));
+
+  DCASSERT(sizeof(int) == sizeof(float));
+
+#if 0
   int *edgeptr = getFullNodeEdgeValues(p);
   int *last = edgeptr + getFullNodeSize(p);
   for ( ; edgeptr != last; ++edgeptr) *edgeptr = toInt(NAN);
+#else
+  int *edgeptr = getFullNodeEdgeValues(p);
+  float *fptr = (float *)edgeptr;
+  float *end = fptr + getFullNodeSize(p);
+  for ( ; fptr != end; ++fptr) *fptr = NAN;
+#endif
 }
 
 void evtimesmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
@@ -2516,6 +2496,7 @@ void evtimesmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
   const int size = getFullNodeSize(p);
   int *dptr = getFullNodeDownPtrs(p);
   int *eptr = getFullNodeEdgeValues(p);
+  float *fptr = (float *)eptr;
   const int node_level = getNodeLevel(p);
 
   decrTempNodeCount(node_level);
@@ -2525,8 +2506,8 @@ void evtimesmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
   for (int i=0; i<size; i++) {
     assert(isReducedNode(dptr[i]));
     assert(getNodeHeight(dptr[i]) < node_height);
-    assert((dptr[i] == 0 && isNan(eptr[i])) ||
-        (dptr[i] != 0 && !isNan(eptr[i]) && toFloat(eptr[i]) >= 0.0));
+    assert((dptr[i] == 0 && isNan(fptr[i])) ||
+        (dptr[i] != 0 && !isNan(fptr[i]) && fptr[i] >= 0.0));
   }
 #endif
 
@@ -2540,7 +2521,7 @@ void evtimesmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
     if (0 != dptr[i]) {
       nnz++;
       truncsize = i;
-      if (toFloat(eptr[i]) > max) { max = toFloat(eptr[i]); }
+      if (fptr[i] > max) { max = fptr[i]; }
     }
   }
   truncsize++;
@@ -2556,11 +2537,11 @@ void evtimesmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
     return;
   }
 
-  // normalize -- all eptr[i] should be between 0 and 1 (or NAN)
+  // normalize -- all fptr[i] should be between 0 and 1 (or NAN)
   if (max != 0.0) {
     for (int i = 0; i < size; i++) {
       if (0 != dptr[i]) {
-        eptr[i] = toInt(toFloat(eptr[i])/max);
+        fptr[i] /= max;
       }
     }
   }

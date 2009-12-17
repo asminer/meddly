@@ -23,16 +23,8 @@
 
 #include "../include/meddly_expert.h"
 
-operation::operation(int n, int m, const char *desc)
-: name(desc),
-  keyLength(n),
-  ansLength(m)
-{
-  cacheEntryLength = keyLength + ansLength;
-  keyLengthInBytes = keyLength * sizeof(int);
-  ansLengthInBytes = ansLength * sizeof(int);
-  cacheEntryLengthInBytes = keyLengthInBytes + ansLengthInBytes;
-}
+operation::operation()
+{ }
 
 
 operation::~operation() {}

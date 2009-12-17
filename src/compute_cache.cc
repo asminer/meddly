@@ -45,20 +45,14 @@ compute_cache::compute_cache()
   data = (int *) malloc(dataCount * sizeof(int));
   assert(data != NULL);
   memset(data, 0, dataCount * sizeof(int));
-  
+
   // create new hash table
-#if 0
-  ht = new hash_table<compute_cache>(this);
-  fsht = 0;
+#ifdef USE_CHAINED_HASH_TABLE
+  ht = new chained_hash_table<compute_cache>(this, 262144*4);
 #else
-#if 1
   ht = new hash_table<compute_cache>(this, 262144*4);
+#endif
   fsht = 0;
-#else
-  ht = 0;
-  fsht = new fixed_size_hash_table<compute_cache>(this, 262144*4);
-#endif
-#endif
 }
 
 
@@ -98,7 +92,11 @@ bool compute_cache::setPolicy(bool chaining, unsigned maxSize)
 
   if (chaining) {
     // create hash table with chaining
+#ifdef USE_CHAINED_HASH_TABLE
+    ht = new chained_hash_table<compute_cache>(this, maxSize);
+#else
     ht = new hash_table<compute_cache>(this, maxSize);
+#endif
   }
   else {
     // create hash table with no chaining

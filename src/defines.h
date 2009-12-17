@@ -143,30 +143,14 @@ inline int*   toInt(float* f) { return (int *)f;   }
 
 inline float toFloat(int a)
 {
-  DCASSERT(sizeof(float) == sizeof(int));
-#if 0
-  static float val = 0;
-  static int sizeOfFloat = sizeof(float);
-  memcpy(&val, &a, sizeOfFloat);
-  return val;
-#else
   union { int i; float f; } n = {a};
   return n.f;
-#endif
 }
 
 inline int toInt(float a)
 {
-#if 0
-  DCASSERT(sizeof(float) == sizeof(int));
-  static int val = 0;
-  static int sizeOfInt = sizeof(int);
-  memcpy(&val, &a, sizeOfInt);
-  return val;
-#else
   union { float f; int i; } n = {a};
   return n.i;
-#endif
 }
 
 

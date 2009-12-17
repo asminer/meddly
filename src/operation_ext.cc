@@ -36,13 +36,17 @@ inline const expert_forest* getExpertForest(const op_info* op, int index) {
   return smart_cast<const expert_forest*>(op->f[index]);
 }
 
-mdd_apply_operation::mdd_apply_operation(const char *name, bool commutative)
-: operation(2, 1, name), commutative(commutative) {}
+mdd_apply_operation::
+mdd_apply_operation()
+{}
 
-mdd_apply_operation::~mdd_apply_operation() {}
+mdd_apply_operation::
+~mdd_apply_operation()
+{}
 
 compute_manager::error
-mdd_apply_operation::typeCheck(const op_info* owner)
+mdd_apply_operation::
+typeCheck(const op_info* owner)
 {
   if (owner == 0)
     return compute_manager::UNKNOWN_OPERATION;
@@ -52,15 +56,14 @@ mdd_apply_operation::typeCheck(const op_info* owner)
     return compute_manager::WRONG_NUMBER;
   if (owner->f[0] != owner->f[1] || owner->f[0] != owner->f[2])
     return compute_manager::FOREST_MISMATCH;
-  if (owner->f[0]->isForRelations() ||
-      owner->f[0]->getRangeType() != forest::BOOLEAN ||
-      owner->f[0]->getEdgeLabeling() != forest::MULTI_TERMINAL)
+  if (!getExpertForest(owner, 0)->isMdd())
     return compute_manager::TYPE_MISMATCH;
   return compute_manager::SUCCESS;
 }
 
 
-bool mdd_apply_operation::isEntryStale(const op_info* owner, const int* data)
+bool mdd_apply_operation::
+isEntryStale(const op_info* owner, const int* data)
 {
   // data[] is of size owner.nForests
   // data[i] <--> forest[i]
@@ -74,7 +77,8 @@ bool mdd_apply_operation::isEntryStale(const op_info* owner, const int* data)
 
 
 void
-mdd_apply_operation::discardEntry(op_info* owner, const int* data)
+mdd_apply_operation::
+discardEntry(op_info* owner, const int* data)
 {
   // data[] is of size owner.nForests
   // data[i] <--> forest[i]
@@ -87,15 +91,15 @@ mdd_apply_operation::discardEntry(op_info* owner, const int* data)
 
 
 void
-mdd_apply_operation::showEntry(const op_info* owner, FILE* strm,
+mdd_apply_operation::
+showEntry(const op_info* owner, FILE* strm,
   const int* data) const
 {
-  // TODO:
   // data[] is of size owner.nForests
   // data[i] <--> forest[i]
   // call showNode for each forest[i] and data[i]
   DCASSERT(owner->nForests == 3);
-  fprintf(strm, "[%s %d %d %d]",
+  fprintf(strm, "[%s(%d, %d): %d]",
       owner->op->getName(), data[0], data[1], data[2]);
 #if 0
   getExpertForest(owner, 0)->showNode(strm, data[0]);
@@ -106,20 +110,13 @@ mdd_apply_operation::showEntry(const op_info* owner, FILE* strm,
 
 
 bool
-mdd_apply_operation::findResult(op_info* owner, int a, int b, int& c)
+mdd_apply_operation::
+findResult(op_info* owner, int a, int b, int& c)
 {
-#if 1
-
   static int key[2];
 
-#ifdef IGNORE_TERMS
-  if (getExpertForest(owner, 0)->isTerminalNode(a) ||
-      getExpertForest(owner, 1)->isTerminalNode(b))
-    return false;
-#endif
-
   // create cache entry
-  if (commutative && a > b) {
+  if (isCommutative() && a > b) {
     // sort the entry in ascending order
     key[0] = b; key[1] = a;
   } else {
@@ -132,59 +129,17 @@ mdd_apply_operation::findResult(op_info* owner, int a, int b, int& c)
   c = cacheEntry[2];
   getExpertForest(owner, 2)->linkNode(c);
   return true;
-
-#else
-
-#ifdef IGNORE_TERMS
-  if (getExpertForest(owner, 0)->isTerminalNode(a) ||
-      getExpertForest(owner, 1)->isTerminalNode(b))
-    return false;
-#endif
-
-  // create cache entry
-
-  if (commutative && a > b) {
-    if (owner->cc->find(owner, b, a, c)) {
-      getExpertForest(owner, 2)->linkNode(c);
-      return true;
-    }
-    return false;
-  }
-  else {
-    if (owner->cc->find(owner, a, b, c)) {
-      getExpertForest(owner, 2)->linkNode(c);
-      return true;
-    }
-    return false;
-  }
-
-#endif
 }
 
 
 void
-mdd_apply_operation::saveResult(op_info* owner, int a, int b, int c)
+mdd_apply_operation::
+saveResult(op_info* owner, int a, int b, int c)
 {
-#if 1
-
   static int cacheEntry[3];
 
-#ifdef IGNORE_TERMS
-  if (getExpertForest(owner, 0)->isTerminalNode(a) ||
-      getExpertForest(owner, 1)->isTerminalNode(b))
-    return;
-#endif
-
-#ifdef IGNORE_INCOUNT
-  if ((!getExpertForest(owner, 0)->isTerminalNode(a) &&
-        getExpertForest(owner, 0)->getInCount(a) < IGNORE_INCOUNT) &&
-      (!getExpertForest(owner, 1)->isTerminalNode(b) &&
-       getExpertForest(owner, 1)->getInCount(b) < IGNORE_INCOUNT))
-    return;
-#endif
-
   // create cache entry
-  if (commutative && a > b) {
+  if (isCommutative() && a > b) {
     // sort the entry in ascending order
     cacheEntry[0] = b; cacheEntry[1] = a;
   } else {
@@ -192,51 +147,17 @@ mdd_apply_operation::saveResult(op_info* owner, int a, int b, int c)
   }
   cacheEntry[2] = c;
 
-#if 0
-#ifdef DEVELOPMENT_CODE
-  assert(!findResult(owner, cacheEntry[0], cacheEntry[1], cacheEntry[2]));
-#endif
-#endif
-
   getExpertForest(owner, 0)->cacheNode(cacheEntry[0]);
   getExpertForest(owner, 1)->cacheNode(cacheEntry[1]);
   getExpertForest(owner, 2)->cacheNode(cacheEntry[2]);
 
   owner->cc->add(owner, const_cast<const int*>(cacheEntry));
-
-#else
-
-#ifdef IGNORE_TERMS
-  if (getExpertForest(owner, 0)->isTerminalNode(a) ||
-      getExpertForest(owner, 1)->isTerminalNode(b))
-    return;
-#endif
-
-#ifdef IGNORE_INCOUNT
-  if ((!getExpertForest(owner, 0)->isTerminalNode(a) &&
-        getExpertForest(owner, 0)->getInCount(a) < IGNORE_INCOUNT) &&
-      (!getExpertForest(owner, 1)->isTerminalNode(b) &&
-       getExpertForest(owner, 1)->getInCount(b) < IGNORE_INCOUNT))
-    return;
-#endif
-
-  // create cache entry
-
-  getExpertForest(owner, 0)->cacheNode(a);
-  getExpertForest(owner, 1)->cacheNode(b);
-  getExpertForest(owner, 2)->cacheNode(c);
-
-  if (commutative && a > b)
-    owner->cc->add(owner, b, a, c);
-  else
-    owner->cc->add(owner, a, b, c);
-
-#endif
 }
 
 
 compute_manager::error
-mdd_apply_operation::compute(op_info* owner, dd_edge** operands)
+mdd_apply_operation::
+compute(op_info* owner, dd_edge** operands)
 {
   if (operands == 0) return compute_manager::TYPE_MISMATCH;
   // compute(owner, dd_edge, dd_edge, dd_edge) checks for owner == 0
@@ -244,14 +165,15 @@ mdd_apply_operation::compute(op_info* owner, dd_edge** operands)
 }
 
 compute_manager::error
-mdd_apply_operation::compute(op_info* owner, const dd_edge& a, dd_edge& b)
+mdd_apply_operation::
+compute(op_info* owner, const dd_edge& a, dd_edge& b)
 {
   return compute_manager::TYPE_MISMATCH;
 }
 
 compute_manager::error
-mdd_apply_operation::compute(op_info* owner, const dd_edge& a,
-    const dd_edge& b, dd_edge& c)
+mdd_apply_operation::
+compute(op_info* owner, const dd_edge& a, const dd_edge& b, dd_edge& c)
 {
   if (owner == 0) return compute_manager::TYPE_MISMATCH;
   int result = compute(owner, a.getNode(), b.getNode());
@@ -260,7 +182,9 @@ mdd_apply_operation::compute(op_info* owner, const dd_edge& a,
 }
 
 
-void mdd_apply_operation::expandA(op_info* owner, expert_forest* expertForest,
+void
+mdd_apply_operation::
+expandA(op_info* owner, expert_forest* expertForest,
   int a, int b, int result, int resultSize)
 {
   // fill in result node and return
@@ -317,7 +241,9 @@ void mdd_apply_operation::expandA(op_info* owner, expert_forest* expertForest,
 }
 
 
-void mdd_apply_operation::expandB(op_info* owner, expert_forest* expertForest,
+void
+mdd_apply_operation::
+expandB(op_info* owner, expert_forest* expertForest,
   int a, int b, int result, int resultSize)
 {
   // fill in result node and return
@@ -374,137 +300,11 @@ void mdd_apply_operation::expandB(op_info* owner, expert_forest* expertForest,
 }
 
 
-#if 0
-
-// Two-step compute
-// - result[i] = a[i]
-// - result[i] = result[i] op b[i]
-// This makes for a simpler but less efficient implementation.
-int mdd_apply_operation::compute(op_info* owner, int a, int b)
-{
-  int result = 0;
-  if (checkTerminals(owner, a, b, result))
-    return result;
-  if (findResult(owner, a, b, result))
-    return result;
-
-  // expand nodes
-  // 0. initialize result
-  // 1. copy node a to node result
-  // 2. do operation between contents of result and node b
-
-  // 0. initialize result
-  const int aLevel = getExpertForest(owner, 0)->getNodeLevel(a);
-  const int bLevel = getExpertForest(owner, 1)->getNodeLevel(b);
-
-  int resultLevel = aLevel > bLevel? aLevel: bLevel;
-  int resultSize = getExpertForest(owner, 2)->getLevelSize(resultLevel);
-  result = getExpertForest(owner, 2)->createTempNode(resultLevel, resultSize);
-
-  // 1. copy node a to node result
-  if (aLevel < resultLevel) {
-    // all down pointers of result point to node a
-    for (int i = 0; i < resultSize; ++i)
-      getExpertForest(owner, 2)->setDownPtr(result, i, a);
-  }
-  else if (getExpertForest(owner, 0)->isFullNode(a)) {
-    // a is a full-node
-    const int aSize = getExpertForest(owner, 0)->getFullNodeSize(a);
-    DCASSERT(aSize <= resultSize);
-    for (int i = 0; i < aSize; ++i)
-      getExpertForest(owner, 2)->setDownPtr(result, i,
-          getExpertForest(owner, 0)->getFullNodeDownPtr(a, i));
-  }
-  else {
-    // a is a sparse-node
-    const int aSize =
-      getExpertForest(owner, 0)->getSparseNodeSize(a);
-    for (int i = 0; i < aSize; ++i)
-      getExpertForest(owner, 2)->setDownPtr(result,
-          getExpertForest(owner, 0)->getSparseNodeIndex(a, i),
-          getExpertForest(owner, 0)->getSparseNodeDownPtr(a, i));
-  }
-
-  // 2. do operation between contents of result and node b
-  if (bLevel < resultLevel) {
-    for (int i = 0; i < resultSize; ++i)
-    {
-      int tempResult = compute(owner,
-          getExpertForest(owner, 2)->getFullNodeDownPtr(result, i), b);
-      getExpertForest(owner, 2)->setDownPtr(result, i, tempResult);
-      getExpertForest(owner, 2)->unlinkNode(tempResult);
-    }
-  }
-  else if (getExpertForest(owner, 1)->isFullNode(b)) {
-    // b is a full-node
-    const int bSize = getExpertForest(owner, 1)->getFullNodeSize(b);
-    DCASSERT(bSize <= resultSize);
-    for (int i = 0; i < bSize; ++i)
-    {
-      int tempResult = compute(owner,
-          getExpertForest(owner, 2)->getFullNodeDownPtr(result, i),
-          getExpertForest(owner, 1)->getFullNodeDownPtr(b, i));
-      getExpertForest(owner, 2)->setDownPtr(result, i, tempResult);
-      getExpertForest(owner, 2)->unlinkNode(tempResult);
-    }
-    for (int i = bSize; i < resultSize; ++i)
-    {
-      int tempResult = compute(owner,
-          getExpertForest(owner, 2)->getFullNodeDownPtr(result, i), 0);
-      getExpertForest(owner, 2)->setDownPtr(result, i, tempResult);
-      getExpertForest(owner, 2)->unlinkNode(tempResult);
-    }
-  }
-  else {
-    // b is a sparse-node
-    const int bSize = getExpertForest(owner, 1)->getSparseNodeSize(b);
-    DCASSERT(getExpertForest(owner, 1)->getSparseNodeIndex(b, bSize - 1) <=
-        resultSize);
-    // j goes through every index (like a full-node index pointer)
-    int j = 0;
-    for (int i = 0; i < bSize; ++i, ++j)
-    {
-      // sparse-nodes skip indices which represent downpointer 0
-      // call compute of those skipped indices
-      for (int index = getExpertForest(owner, 1)->getSparseNodeIndex(b, i);
-          j < index; ++j)
-      {
-        int tempResult = compute(owner,
-            getExpertForest(owner, 2)->getFullNodeDownPtr(result, j), 0);
-        getExpertForest(owner, 2)->setDownPtr(result, j, tempResult);
-        getExpertForest(owner, 2)->unlinkNode(tempResult);
-      }
-      // done with skipped indices; deal with the next sparse node index
-      DCASSERT(j == getExpertForest(owner, 1)->getSparseNodeIndex(b, i));
-      int tempResult = compute(owner,
-          getExpertForest(owner, 2)->getFullNodeDownPtr(result, j),
-          getExpertForest(owner, 1)->getSparseNodeDownPtr(b, i));
-      getExpertForest(owner, 2)->setDownPtr(result, j, tempResult);
-      getExpertForest(owner, 2)->unlinkNode(tempResult);
-    }
-    DCASSERT(j ==
-        getExpertForest(owner, 1)->getSparseNodeIndex(b, bSize - 1) + 1);
-    for ( ; j < resultSize; ++j)
-    {
-      int tempResult = compute(owner,
-          getExpertForest(owner, 2)->getFullNodeDownPtr(result, j), 0);
-      getExpertForest(owner, 2)->setDownPtr(result, j, tempResult);
-      getExpertForest(owner, 2)->unlinkNode(tempResult);
-    }
-  }
-
-  // save result in compute cache and return it
-  result = getExpertForest(owner, 2)->reduceNode(result);
-  saveResult(owner, a, b, result);
-  return result;
-}
-
-#else
-
 // Single-step compute
 // result[i] = a[i] op b[i]
-
-int mdd_apply_operation::compute(op_info* owner, int a, int b)
+int
+mdd_apply_operation::
+compute(op_info* owner, int a, int b)
 {
   int result = 0;
   expert_forest* expertForest = getExpertForest(owner, 0);
@@ -524,6 +324,9 @@ int mdd_apply_operation::compute(op_info* owner, int a, int b)
 
   int resultLevel = aLevel > bLevel? aLevel: bLevel;
   int resultSize = expertForest->getLevelSize(resultLevel);
+
+#if 0
+
   result = expertForest->createTempNode(resultLevel, resultSize, false);
 
   if (aLevel < resultLevel) {
@@ -562,16 +365,100 @@ int mdd_apply_operation::compute(op_info* owner, int a, int b)
     }
   }
 
+#else
+
+  // Three vectors: operands a and b, and result c
+  std::vector<int> A(resultSize, 0);
+  std::vector<int> B(resultSize, 0);
+  std::vector<int> C(resultSize, 0);
+
+  if (aLevel < resultLevel) {
+    // expand b
+    // result[i] = a op b[i]
+    int aZero = compute(owner, a, 0);
+    expertForest->getDownPtrs(b, B);
+    std::vector<int>::iterator iterB = B.begin();
+    std::vector<int>::iterator iterC = C.begin();
+    for ( ; iterB != B.end(); iterB++, iterC++)
+    {
+      if (*iterB == 0) {
+        *iterC = aZero;
+        expertForest->linkNode(aZero);
+      } else {
+        *iterC = compute(owner, a, *iterB);
+      }
+    }
+    expertForest->unlinkNode(aZero);
+  }
+  else if (bLevel < resultLevel) {
+    // expand a
+    // result[i] = a[i] op b
+    int zeroB = compute(owner, 0, b);
+
+    expertForest->getDownPtrs(a, A);
+    std::vector<int>::iterator iterA = A.begin();
+    std::vector<int>::iterator iterC = C.begin();
+    for ( ; iterA != A.end(); iterA++, iterC++)
+    {
+      if (*iterA == 0) {
+        *iterC = zeroB;
+        expertForest->linkNode(zeroB);
+      } else {
+        *iterC = compute(owner, *iterA, b);
+      }
+    }
+    expertForest->unlinkNode(zeroB);
+  }
+  else {
+    // expand both a and b
+    // result[i] = a[i] op b[i]
+    int zeroZero = compute(owner, 0, 0);
+
+    expertForest->getDownPtrs(a, A);
+    expertForest->getDownPtrs(b, B);
+    std::vector<int>::iterator iterA = A.begin();
+    std::vector<int>::iterator iterB = B.begin();
+    std::vector<int>::iterator iterC = C.begin();
+    for ( ; iterA != A.end(); iterA++, iterB++, iterC++)
+    {
+      if (*iterA == 0 && *iterB == 0) {
+        *iterC = zeroZero;
+        expertForest->linkNode(zeroZero);
+      } else {
+        *iterC = compute(owner, *iterA, *iterB); 
+      }
+    }
+
+    expertForest->unlinkNode(zeroZero);
+  }
+
+  result = expertForest->createTempNode(resultLevel, C);
+
+#endif
+
   // save result in compute cache and return it
+
+#if 0
+  printf("reduce(%d): ", result);
   result = expertForest->reduceNode(result);
+  printf("%d  [", result);
+  for (unsigned i = 0; i < C.size(); i++ )
+  {
+    printf("%d ", C[i]);
+  }
+  printf("]\n");
+#else
+  result = expertForest->reduceNode(result);
+#endif
+
   saveResult(owner, a, b, result);
   return result;
 }
 
-#endif
 
-
-void mdd_apply_operation::fullFull (op_info* owner, expert_forest* mddNm,
+void
+mdd_apply_operation::
+fullFull (op_info* owner, expert_forest* mddNm,
   int a, int b, int result, int resultSize)
 {
   DCASSERT(mddNm->isFullNode(a));
@@ -613,7 +500,9 @@ void mdd_apply_operation::fullFull (op_info* owner, expert_forest* mddNm,
 }
 
 
-void mdd_apply_operation::sparseSparse (op_info* owner, expert_forest* mddNm,
+void
+mdd_apply_operation::
+sparseSparse (op_info* owner, expert_forest* mddNm,
   int a, int b, int result, int resultSize)
 {
   DCASSERT(mddNm->isSparseNode(a));
@@ -697,7 +586,9 @@ void mdd_apply_operation::sparseSparse (op_info* owner, expert_forest* mddNm,
 }
 
 
-void mdd_apply_operation::fullSparse (op_info* owner, expert_forest* mddNm,
+void
+mdd_apply_operation::
+fullSparse (op_info* owner, expert_forest* mddNm,
   int a, int b, int result, int resultSize)
 {
   DCASSERT(mddNm->isFullNode(a));
@@ -764,7 +655,9 @@ void mdd_apply_operation::fullSparse (op_info* owner, expert_forest* mddNm,
 }
 
 
-void mdd_apply_operation::sparseFull (op_info* owner, expert_forest* mddNm,
+void
+mdd_apply_operation::
+sparseFull (op_info* owner, expert_forest* mddNm,
   int a, int b, int result, int resultSize)
 {
   DCASSERT(mddNm->isSparseNode(a));
@@ -834,27 +727,36 @@ void mdd_apply_operation::sparseFull (op_info* owner, expert_forest* mddNm,
 // ----------------------- MDD Union --------------------------------
 
 
-mdd_union* mdd_union::getInstance()
+mdd_union*
+mdd_union::
+getInstance()
 {
-  static mdd_union instance("MDD Union");
+  static mdd_union instance;
   return &instance;
 }
 
 
-mdd_union::mdd_union(const char *name)
-: mdd_apply_operation(name, true)
+mdd_union::
+mdd_union()
 { }
 
 
-mdd_union::~mdd_union() {}
+mdd_union::
+~mdd_union()
+{ }
 
 
 bool
-mdd_union::checkTerminals(op_info* op, int a, int b, int& c)
+mdd_union::
+checkTerminals(op_info* op, int a, int b, int& c)
 {
-#if 1
-  if (a == 0 || b == 0 || a == b) {
-    c = a | b;
+  if (a == 0 || a == b) {
+    c = b;
+    getExpertForest(op, 0)->linkNode(c);
+    return true;
+  }
+  if (b == 0) {
+    c = a;
     getExpertForest(op, 0)->linkNode(c);
     return true;
   }
@@ -864,164 +766,11 @@ mdd_union::checkTerminals(op_info* op, int a, int b, int& c)
   }
 
   return false;
-#else
-  if (-1 == a) {
-    c = -1;
-    return true;
-  }
-
-  if (-1 == b) {
-    c = -1;
-    return true;
-  }
-
-  if (0 == a) {
-    c = b;
-    getExpertForest(op, 0)->linkNode(c);
-    return true;
-  }
-
-  if (0 == b) {
-    c = a;
-    getExpertForest(op, 0)->linkNode(c);
-    return true;
-  }
-
-  if (a == b) {
-    c = a;
-    getExpertForest(op, 0)->linkNode(c);
-    return true;
-  }
-
-  return false;
-#endif
 }
 
-#if 1
-
-// BUG!! in single-step compute
 
 #if 0
-
-// Two-step compute
-// - result[i] = a[i]
-// - result[i] = result[i] union b[i]
-// This makes for a simpler but less efficient implementation.
-
-int mdd_union::compute(op_info* owner, int a, int b)
-{
-  // std::cerr << "2-step mdd_union.\n";
-  int result = 0;
-  expert_forest* expertForest = getExpertForest(owner, 0);
-  
-  // check terminals
-  if (checkTerminals(owner, a, b, result))
-    return result;
-
-  // check cache for result
-  if (findResult(owner, a, b, result))
-    return result;
-  
-  // expand nodes
-  // 0. initialize result
-  // 1. copy node a to node result
-  // 2. do operation between contents of result and node b
-
-  // 0. initialize result
-  const int aLevel = expertForest->getNodeLevel(a);
-  const int bLevel = expertForest->getNodeLevel(b);
-
-  int resultLevel = aLevel > bLevel? aLevel: bLevel;
-  int resultSize = expertForest->getLevelSize(resultLevel);
-  result = expertForest->createTempNode(resultLevel, resultSize, false);
-
-  // 1. copy node a to node result
-  if (aLevel < resultLevel) {
-    // all down pointers of result point to node a
-    for (int i = 0; i < resultSize; ++i)
-      expertForest->setDownPtrWoUnlink(result, i, a);
-  }
-  else if (expertForest->isFullNode(a)) {
-    // a is a full-node
-    const int aSize = expertForest->getFullNodeSize(a);
-    DCASSERT(aSize <= resultSize);
-    for (int i = 0; i < aSize; ++i)
-      expertForest->setDownPtrWoUnlink(result,
-          i, expertForest->getFullNodeDownPtr(a, i));
-    for (int i = aSize; i < resultSize; ++i)
-      expertForest->setDownPtrWoUnlink(result, i, 0);
-  }
-  else {
-    // a is a sparse-node
-    const int aSize = expertForest->getSparseNodeSize(a);
-    const int lastIndex = expertForest->getSparseNodeIndex(a, aSize - 1);
-    int i = 0;  // for traversing sparse node indices
-    int index = expertForest->getSparseNodeIndex(a, i);
-    int j = 0;
-    for ( ; j < lastIndex; ++j) {
-      if (j == index) {
-        expertForest->setDownPtrWoUnlink(result, j,
-            expertForest->getSparseNodeDownPtr(a, i));
-        ++i;
-        index = expertForest->getSparseNodeIndex(a, i);
-      }
-      else {
-        expertForest->setDownPtrWoUnlink(result, j, 0);
-      }
-    }
-    // deal with last index
-    DCASSERT(j == lastIndex);
-    expertForest->setDownPtrWoUnlink(result, j,
-        expertForest->getSparseNodeDownPtr(a, i));
-    for (++j; j < resultSize; ++j)
-      expertForest->setDownPtrWoUnlink(result, j, 0);
-  }
-
-  // 2. do operation between contents of result and node b
-  if (bLevel < resultLevel) {
-    for (int i = 0; i < resultSize; ++i)
-    {
-      int tempResult =
-        compute(owner, expertForest->getFullNodeDownPtr(result, i), b);
-      expertForest->setDownPtr(result, i, tempResult);
-      expertForest->unlinkNode(tempResult);
-    }
-  }
-  else if (expertForest->isFullNode(b)) {
-    // b is a full-node
-    const int bSize = expertForest->getFullNodeSize(b);
-    DCASSERT(bSize <= resultSize);
-    for (int i = 0; i < bSize; ++i)
-    {
-      int tempResult = compute(owner,
-          expertForest->getFullNodeDownPtr(result, i),
-          expertForest->getFullNodeDownPtr(b, i));
-      expertForest->setDownPtr(result, i, tempResult);
-      expertForest->unlinkNode(tempResult);
-    }
-  }
-  else {
-    // b is a sparse-node
-    const int bSize = expertForest->getSparseNodeSize(b);
-    DCASSERT(expertForest->getSparseNodeIndex(b, bSize - 1) <= resultSize);
-    for (int i = 0; i < bSize; ++i)
-    {
-      int index = expertForest->getSparseNodeIndex(b, i);
-      int tempResult = compute(owner,
-          expertForest->getFullNodeDownPtr(result, index),
-          expertForest->getSparseNodeDownPtr(b, i));
-      expertForest->setDownPtr(result, index, tempResult);
-      expertForest->unlinkNode(tempResult);
-    }
-  }
-
-  // save result in compute cache and return it
-  result = expertForest->reduceNode(result);
-  saveResult(owner, a, b, result);
-  return result;
-}
-
-#else
+#if 0
 
 // BUG!!
 
@@ -1118,10 +867,6 @@ int mdd_union::compute(op_info* owner, int a, int b)
   return result;
 }
 
-#endif
-
-
-#if 1
 
 void mdd_union::expandA(op_info* owner, expert_forest* expertForest,
   int a, int b, int result, int resultSize)
@@ -1391,9 +1136,115 @@ void mdd_union::fullSparse (op_info* owner, expert_forest* mddNm,
   }
 }
 
+#else
 
+// Alternate single-step compute
+
+int
+mdd_union::
+compute(op_info* owner, int a, int b)
+{
+  int result = 0;
+  expert_forest* expertForest = getExpertForest(owner, 0);
+  if (checkTerminals(owner, a, b, result))
+    return result;
+  if (findResult(owner, a, b, result))
+    return result;
+
+  // 0. initialize result
+  // 1. if a is at a lower level than b, expand b
+  //    else if b is at a lower level than a, expand a
+  //    else expand both
+
+  // 0. initialize result
+  const int aLevel = expertForest->getNodeLevel(a);
+  const int bLevel = expertForest->getNodeLevel(b);
+
+  int resultLevel = aLevel > bLevel? aLevel: bLevel;
+
+  // Three vectors: operands a and b, and result c
+  if (aLevel < resultLevel) {
+    // expand b
+    // result[i] = a op b[i]
+    std::vector<int> B;
+    expertForest->getDownPtrs(b, B);
+    std::vector<int> C(B.size(), 0);
+
+    std::vector<int>::iterator iterB = B.begin();
+    std::vector<int>::iterator iterC = C.begin();
+
+    for ( ; iterB != B.end(); )
+    {
+      *iterC++ = compute(owner, a, *iterB++);
+    }
+    result = expertForest->createTempNode(resultLevel, C);
+  }
+  else if (bLevel < resultLevel) {
+    // expand a
+    // result[i] = a[i] op b
+    std::vector<int> A();
+    expertForest->getDownPtrs(a, A);
+    std::vector<int> C(A.size(), 0);
+
+    std::vector<int>::iterator iterA = A.begin();
+    std::vector<int>::iterator iterC = C.begin();
+    for ( ; iterA != A.end(); )
+    {
+        *iterC++ = compute(owner, *iterA++, b);
+    }
+    result = expertForest->createTempNode(resultLevel, C);
+  }
+  else {
+    // expand both a and b
+    // result[i] = a[i] op b[i]
+    std::vector<int> A, B;
+    expertForest->getDownPtrs(a, A);
+    expertForest->getDownPtrs(b, B);
+    int min = MIN(A.size(), B.size());
+    std::vector<int> C(MAX(A.size(), B.size()), 0);
+
+    std::vector<int>::iterator iterA = A.begin();
+    std::vector<int>::iterator iterB = B.begin();
+    std::vector<int>::iterator iterC = C.begin();
+    for (int i = 0; i < min; i++)
+    {
+      *iterC++ = compute(owner, *iterA++, *iterB++); 
+    }
+    while (iterA != A.end())
+    {
+      expertForest->linkNode(*iterA);
+      *iterC++ = *iterA++;
+    }
+    while (iterB != B.end())
+    {
+      expertForest->linkNode(*iterB);
+      *iterC++ = *iterB++;
+    }
+    result = expertForest->createTempNode(resultLevel, C);
+  }
+
+
+  // save result in compute cache and return it
+
+#if 0
+  printf("reduce(%d): ", result);
+  result = expertForest->reduceNode(result);
+  printf("%d  [", result);
+  for (unsigned i = 0; i < C.size(); i++ )
+  {
+    printf("%d ", C[i]);
+  }
+  printf("]\n");
+#else
+  result = expertForest->reduceNode(result);
 #endif
 
+  saveResult(owner, a, b, result);
+  return result;
+}
+
+
+#endif
 #endif
 
 
@@ -1405,13 +1256,12 @@ void mdd_union::fullSparse (op_info* owner, expert_forest* mddNm,
 
 mdd_intersection* mdd_intersection::getInstance()
 {
-  static mdd_intersection instance("MDD Intersection");
+  static mdd_intersection instance;
   return &instance;
 }
 
 
-mdd_intersection::mdd_intersection(const char *name)
-: mdd_apply_operation(name, true)
+mdd_intersection::mdd_intersection()
 { }
 
 
@@ -1426,7 +1276,7 @@ mdd_intersection::checkTerminals(op_info* op, int a, int b, int& c)
     return true;
   }
 
-  if (-1 == a) {
+  if (-1 == a || a == b) {
     c = b;
     getExpertForest(op, 0)->linkNode(c);
     return true;
@@ -1438,17 +1288,11 @@ mdd_intersection::checkTerminals(op_info* op, int a, int b, int& c)
     return true;
   }
 
-  if (a == b) {
-    c = a;
-    getExpertForest(op, 0)->linkNode(c);
-    return true;
-  }
-
   return false;
 }
 
 
-#if 1
+#if 0
 
 #if 0
 
@@ -1811,13 +1655,12 @@ void mdd_intersection::sparseFull (op_info* owner, expert_forest* mddNm,
 
 mdd_difference* mdd_difference::getInstance()
 {
-  static mdd_difference instance("MDD Difference");
+  static mdd_difference instance;
   return &instance;
 }
 
 
-mdd_difference::mdd_difference(const char *name)
-: mdd_apply_operation(name, false)
+mdd_difference::mdd_difference()
 { }
 
 
@@ -1847,8 +1690,8 @@ mdd_difference::checkTerminals(op_info* op, int a, int b, int& c)
 // ------------------------- mxd_apply_operation --------------------
 
 
-mxd_apply_operation::mxd_apply_operation(const char *name, bool commutative)
-: mdd_apply_operation(name, commutative) {}
+mxd_apply_operation::mxd_apply_operation()
+{}
 
 
 mxd_apply_operation::~mxd_apply_operation() {}
@@ -2491,8 +2334,10 @@ void mxd_apply_operation::expandB(op_info* owner, int a, int b,
 // ------------------------- mxd_alt_apply_operation --------------------
 
 
-mxd_alt_apply_operation::mxd_alt_apply_operation(const char *name,
-    bool commutative) : operation(3, 1, name), commutative(commutative) {}
+mxd_alt_apply_operation::mxd_alt_apply_operation()
+{ }
+
+// HERE ---- fixing so that no values are stored in class operation
 
 
 mxd_alt_apply_operation::~mxd_alt_apply_operation() {}
@@ -2571,7 +2416,7 @@ mxd_alt_apply_operation::findResult(op_info* owner,
 
   // create cache entry
   key[0] = k;
-  if (commutative && a > b) {
+  if (isCommutative() && a > b) {
     // sort the entry in ascending order
     key[1] = b; key[2] = a;
   } else {
@@ -2608,7 +2453,7 @@ mxd_alt_apply_operation::saveResult(op_info* owner, int k, int a, int b, int c)
 
   // create cache entry
   cacheEntry[0] = k;
-  if (commutative && a > b) {
+  if (isCommutative() && a > b) {
     // sort the entry in ascending order
     cacheEntry[1] = b; cacheEntry[2] = a;
   } else {
@@ -3354,13 +3199,12 @@ void mxd_alt_apply_operation::expandB(op_info* owner, int a, int b,
 
 mxd_union* mxd_union::getInstance()
 {
-  static mxd_union instance("MXD Union");
+  static mxd_union instance;
   return &instance;
 }
 
 
-mxd_union::mxd_union(const char *name)
-: mxd_apply_operation(name, true)
+mxd_union::mxd_union()
 { }
 
 
@@ -3399,13 +3243,12 @@ mxd_union::checkTerminals(op_info* op, int a, int b, int& c)
 
 mxd_intersection* mxd_intersection::getInstance()
 {
-  static mxd_intersection instance("MXD Intersection");
+  static mxd_intersection instance;
   return &instance;
 }
 
 
-mxd_intersection::mxd_intersection(const char *name)
-: mxd_apply_operation(name, true)
+mxd_intersection::mxd_intersection()
 { }
 
 
@@ -3438,13 +3281,12 @@ mxd_intersection::checkTerminals(op_info* op, int a, int b, int& c)
 
 mxd_difference* mxd_difference::getInstance()
 {
-  static mxd_difference instance("MXD Difference");
+  static mxd_difference instance;
   return &instance;
 }
 
 
-mxd_difference::mxd_difference(const char *name)
-: mxd_apply_operation(name, false)
+mxd_difference::mxd_difference()
 { }
 
 
@@ -3474,9 +3316,8 @@ mxd_difference::checkTerminals(op_info* op, int a, int b, int& c)
 // ---------------------- MDD MXD Image Operation -------------------
 
 
-mdd_mxd_image_operation::mdd_mxd_image_operation(const char* name)
-: mdd_apply_operation(name, false) {}
-
+mdd_mxd_image_operation::mdd_mxd_image_operation()
+{ }
 
 mdd_mxd_image_operation::~mdd_mxd_image_operation() {}
 
@@ -3556,13 +3397,12 @@ mdd_mxd_image_operation::typeCheck(const op_info* owner)
 
 mdd_post_image* mdd_post_image::getInstance()
 {
-  static mdd_post_image instance("MDD Post-Image");
+  static mdd_post_image instance;
   return &instance;
 }
 
 
-mdd_post_image::mdd_post_image(const char *name)
-: mdd_mxd_image_operation(name)
+mdd_post_image::mdd_post_image()
 { }
 
 
@@ -3906,13 +3746,12 @@ int mdd_post_image::sparseSparse (op_info* owner, op_info* unionOp,
 
 mdd_pre_image* mdd_pre_image::getInstance()
 {
-  static mdd_pre_image instance("MDD Pre-Image");
+  static mdd_pre_image instance;
   return &instance;
 }
 
 
-mdd_pre_image::mdd_pre_image(const char *name)
-: mdd_post_image(name)
+mdd_pre_image::mdd_pre_image()
 { }
 
 
@@ -4201,13 +4040,12 @@ int mdd_pre_image::expandByOneLevel(op_info* owner, op_info* unionOp,
 
 mdd_reachability_bfs* mdd_reachability_bfs::getInstance()
 {
-  static mdd_reachability_bfs instance("MDD Reachability BFS");
+  static mdd_reachability_bfs instance;
   return &instance;
 }
 
 
-mdd_reachability_bfs::mdd_reachability_bfs(const char *name)
-: mdd_mxd_image_operation(name)
+mdd_reachability_bfs::mdd_reachability_bfs()
 { }
 
 
@@ -4304,13 +4142,12 @@ int mdd_reachability_bfs::compute(op_info* owner, int mdd, int mxd)
 
 mdd_reachability_dfs* mdd_reachability_dfs::getInstance()
 {
-  static mdd_reachability_dfs instance("MDD Reachability DFS");
+  static mdd_reachability_dfs instance;
   return &instance;
 }
 
 
-mdd_reachability_dfs::mdd_reachability_dfs(const char *name)
-: mdd_mxd_image_operation(name)
+mdd_reachability_dfs::mdd_reachability_dfs()
 { }
 
 
@@ -4609,6 +4446,7 @@ void mdd_reachability_dfs::splitMxd(int mxd)
 #endif
 }
 
+#ifdef ALT_SATURATE_HELPER
 
 int mdd_reachability_dfs::saturate(int mdd)
 {
@@ -4682,23 +4520,6 @@ int mdd_reachability_dfs::saturate(int mdd)
   return n;
 }
 
-
-int mdd_reachability_dfs::getMddUnion(int a, int b)
-{
-  return mddUnion->compute(mddUnionOp, a, b);
-}
-
-int mdd_reachability_dfs::getMxdIntersection(int a, int b)
-{
-  return mxdIntersection->compute(mxdIntersectionOp, a, b);
-}
-
-int mdd_reachability_dfs::getMxdDifference(int a, int b)
-{
-  return mxdDifference->compute(mxdDifferenceOp, a, b);
-}
-
-#if 1
 
 void mdd_reachability_dfs::saturateHelperUnPrimeFull(int mdd, int mxd)
 {
@@ -5878,14 +5699,222 @@ void mdd_reachability_dfs::recFirePrime(int mddI, int mxdI, int result)
 
 #endif
 
+#else
+
+
+int mdd_reachability_dfs::saturate(int mdd)
+{
+#ifdef DEBUG_DFS
+  printf("mdd: %d\n", mdd);
 #endif
+
+  // how does saturateHelper get called?
+  // bottom-up i.e. call helper on children before calling helper for parent
+
+  DCASSERT(ddf->isReducedNode(mdd));
+
+  // terminal condition for recursion
+  if (ddf->isTerminalNode(mdd)) return mdd;
+
+  int k = ddf->getNodeLevel(mdd);      // level
+  int sz = ddf->getLevelSize(k);       // size
+
+#ifdef DEBUG_DFS
+  printf("mdd: %d, level: %d, size: %d\n", mdd, k, sz);
+#endif
+
+  std::vector<int> node(sz, 0);
+  std::vector<int> mddDptrs;
+  ddf->getDownPtrs(mdd, mddDptrs);
+
+  std::vector<int>::iterator nodeIter = node.begin();
+  std::vector<int>::iterator mddIter = mddDptrs.begin();
+  for ( ; mddIter != mddDptrs.end(); ++nodeIter, ++mddIter)
+  {
+    if (*mddIter != 0) *nodeIter = saturate(*mddIter);
+  }
+  
+  // call saturateHelper for n
+#ifdef DEBUG_DFS
+  printf("Calling saturate: level %d\n", k);
+#endif
+  saturateHelper(k, node);
+
+  // reduce and return
+  int n = ddf->createTempNode(k, node);
+  n = ddf->reduceNode(n);
+
+#ifdef DEBUG_DFS
+  ddf->showNodeGraph(stdout, n);
+#endif
+
+  return n;
+}
+
+
+void mdd_reachability_dfs::saturateHelper(int mddLevel, std::vector<int>& mdd)
+{
+  DCASSERT(unsigned(ddf->getLevelSize(mddLevel)) == mdd.size());
+
+  int mxd = splits[mddLevel];
+  if (xdf->isTerminalNode(mxd)) return;
+
+  std::vector<int> mxdDptrs;
+  if (!xdf->getDownPtrs(mxd, mxdDptrs)) return;
+
+  std::vector<bool> curr(mdd.size(), false);
+  std::vector<bool> next(mdd.size(), true);
+  bool repeat = true;
+
+  while (repeat)
+  {
+    curr = next;
+    fill(next.begin(), next.end(), false);
+    repeat = false;
+
+    // for each mxd[i1 != 0
+    for (unsigned i = 0u; i < mxdDptrs.size(); i++)
+    {
+      if (mxdDptrs[i] == 0 || mdd[i] == 0 || !curr[i]) continue;
+      DCASSERT(!xdf->isTerminalNode(mxdDptrs[i]));
+
+      std::vector<int> mxdIDptrs;
+      xdf->getDownPtrs(mxdDptrs[i], mxdIDptrs);
+
+      // for each mxd[i][j] != 0
+      for (unsigned j = 0u; j < mxdIDptrs.size(); j++)
+      {
+        if (mxdIDptrs[j] == 0) continue;
+        int f = recFire(mdd[i], mxdIDptrs[j]);
+        if (f == 0) continue;
+        int u = getMddUnion(mdd[j], f);
+        ddf->unlinkNode(f);
+        if (u != mdd[j]) {
+          // update mdd[j] and mark for next iteration
+          ddf->unlinkNode(mdd[j]);
+          mdd[j] = u;
+          if (j > i) {
+            curr[j] = true;
+          } else {
+            next[j] = true;
+            repeat = true;
+          }
+        } else {
+          ddf->unlinkNode(u);
+        }
+      }
+    }
+  }
+}
+
+
+int mdd_reachability_dfs::recFire(int mdd, int mxd)
+{
+  DCASSERT(ddf->isReducedNode(mdd));
+  DCASSERT(xdf->isReducedNode(mxd));
+
+  if (mxd == -1) {
+    ddf->linkNode(mdd);
+    return mdd;
+  }
+  if (mxd == 0 || mdd == 0) return 0;
+
+  int result = 0;
+  if (findResult(owner, mdd, mxd, result)) {
+    return result;
+  }
+
+  int mxdHeight = xdf->getNodeHeight(mxd);
+  int mddHeight = ddf->getNodeHeight(mdd);
+  int nodeHeight = MAX(mxdHeight, mddHeight);
+  int nodeLevel = ed->getVariableWithHeight(nodeHeight);
+  int newSize = ddf->getLevelSize(nodeLevel);
+  std::vector<int> node(newSize, 0);
+
+  if (mxdHeight < mddHeight) {
+    std::vector<int> mddDptrs;
+    ddf->getDownPtrs(mdd, mddDptrs);
+    for (unsigned i = 0; i < mddDptrs.size(); i++)
+    {
+      if (mddDptrs[i] != 0) node[i] = recFire(mddDptrs[i], mxd);
+    }
+  } else if (mxdHeight > mddHeight) {
+    std::vector<int> mxdDptrs;
+    xdf->getDownPtrs(mxd, mxdDptrs);
+    for (unsigned i = 0; i < mxdDptrs.size(); i++)
+    {
+      if (mxdDptrs[i] == 0) continue;
+      std::vector<int> mxdIDptrs;
+      xdf->getDownPtrs(mxdDptrs[i], mxdIDptrs);
+      for (unsigned j = 0; j < mxdIDptrs.size(); j++)
+      {
+        if (mxdIDptrs[j] == 0) continue;
+        int f = recFire(mdd, mxdIDptrs[j]);
+        if (f == 0) continue;
+        int u = getMddUnion(node[j], f);
+        ddf->unlinkNode(f);
+        ddf->unlinkNode(node[j]);
+        node[j] = u;
+      }
+    }
+  } else {
+    DCASSERT(mxdHeight == mddHeight);
+    std::vector<int> mddDptrs;
+    std::vector<int> mxdDptrs;
+    ddf->getDownPtrs(mdd, mddDptrs);
+    xdf->getDownPtrs(mxd, mxdDptrs);
+    unsigned min = MIN(mddDptrs.size(), mxdDptrs.size());
+    for (unsigned i = 0; i < min; i++)
+    {
+      if (mxdDptrs[i] == 0 || mddDptrs[i] == 0) continue;
+      std::vector<int> mxdIDptrs;
+      xdf->getDownPtrs(mxdDptrs[i], mxdIDptrs);
+      for (unsigned j = 0; j < mxdIDptrs.size(); j++)
+      {
+        if (mxdIDptrs[j] == 0) continue;
+        int f = recFire(mddDptrs[i], mxdIDptrs[j]);
+        if (f == 0) continue;
+        int u = getMddUnion(node[j], f);
+        ddf->unlinkNode(f);
+        ddf->unlinkNode(node[j]);
+        node[j] = u;
+      }
+    }
+  }
+
+  unsigned i = 0u;
+  for ( ; i < node.size() && node[i] == 0; i++);
+  if (i != node.size()) saturateHelper(nodeLevel, node);
+  int n = ddf->createTempNode(nodeLevel, node);
+
+  result = ddf->reduceNode(n);
+  saveResult(owner, mdd, mxd, result);
+  return result;
+}
+
+#endif
+
+
+int mdd_reachability_dfs::getMddUnion(int a, int b)
+{
+  return mddUnion->compute(mddUnionOp, a, b);
+}
+
+int mdd_reachability_dfs::getMxdIntersection(int a, int b)
+{
+  return mxdIntersection->compute(mxdIntersectionOp, a, b);
+}
+
+int mdd_reachability_dfs::getMxdDifference(int a, int b)
+{
+  return mxdDifference->compute(mxdDifferenceOp, a, b);
+}
 
 
 // ----------------------- MTMDD Apply operation ----------------------
 
 
-mtmdd_apply_operation::mtmdd_apply_operation(const char *name, bool comm)
-: mdd_apply_operation(name, comm)
+mtmdd_apply_operation::mtmdd_apply_operation()
 { }
 
 mtmdd_apply_operation::~mtmdd_apply_operation() {}
@@ -5917,13 +5946,12 @@ mtmdd_apply_operation::typeCheck(const op_info* owner)
 
 mtmdd_divide* mtmdd_divide::getInstance()
 {
-  static mtmdd_divide instance("MTMDD Divide");
+  static mtmdd_divide instance;
   return &instance;
 }
 
 
-mtmdd_divide::mtmdd_divide(const char *name)
-: mtmdd_apply_operation(name, false)
+mtmdd_divide::mtmdd_divide()
 { }
 
 
@@ -5958,13 +5986,12 @@ mtmdd_divide::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmdd_multiply* mtmdd_multiply::getInstance()
 {
-  static mtmdd_multiply instance("MTMDD Multiply");
+  static mtmdd_multiply instance;
   return &instance;
 }
 
 
-mtmdd_multiply::mtmdd_multiply(const char *name)
-: mtmdd_apply_operation(name, true)
+mtmdd_multiply::mtmdd_multiply()
 { }
 
 
@@ -6005,13 +6032,12 @@ mtmdd_multiply::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmdd_minus* mtmdd_minus::getInstance()
 {
-  static mtmdd_minus instance("MTMDD Minus");
+  static mtmdd_minus instance;
   return &instance;
 }
 
 
-mtmdd_minus::mtmdd_minus(const char *name)
-: mtmdd_apply_operation(name, false)
+mtmdd_minus::mtmdd_minus()
 { }
 
 
@@ -6060,7 +6086,7 @@ mtmdd_minus::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmdd_plus* mtmdd_plus::getInstance()
 {
-  static mtmdd_plus instance("MTMDD Plus");
+  static mtmdd_plus instance;
   return &instance;
 }
 
@@ -6102,8 +6128,7 @@ mtmdd_plus::checkTerminals(op_info* op, int a, int b, int& c)
 
 #if 0
 
-mtmdd_plus::mtmdd_plus(const char *name)
-: mtmdd_apply_operation(name, true)
+mtmdd_plus::mtmdd_plus()
 { }
 
 
@@ -6131,8 +6156,7 @@ mtmdd_plus::typeCheck(const op_info* owner)
 }
 
 
-mtmdd_plus::mtmdd_plus(const char *name)
-: mdd_union(name)
+mtmdd_plus::mtmdd_plus()
 { }
 
 
@@ -6143,13 +6167,12 @@ mtmdd_plus::mtmdd_plus(const char *name)
 
 mtmdd_min* mtmdd_min::getInstance()
 {
-  static mtmdd_min instance("MTMDD Min");
+  static mtmdd_min instance;
   return &instance;
 }
 
 
-mtmdd_min::mtmdd_min(const char *name)
-: mtmdd_apply_operation(name, true)
+mtmdd_min::mtmdd_min()
 { }
 
 
@@ -6182,13 +6205,12 @@ mtmdd_min::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmdd_max* mtmdd_max::getInstance()
 {
-  static mtmdd_max instance("MTMDD Max");
+  static mtmdd_max instance;
   return &instance;
 }
 
 
-mtmdd_max::mtmdd_max(const char *name)
-: mtmdd_apply_operation(name, true)
+mtmdd_max::mtmdd_max()
 { }
 
 
@@ -6229,13 +6251,12 @@ mtmdd_max::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmdd_or_min* mtmdd_or_min::getInstance()
 {
-  static mtmdd_or_min instance("MTMDD Or-Min");
+  static mtmdd_or_min instance;
   return &instance;
 }
 
 
-mtmdd_or_min::mtmdd_or_min(const char *name)
-: mtmdd_apply_operation(name, true)
+mtmdd_or_min::mtmdd_or_min()
 { }
 
 
@@ -6288,13 +6309,12 @@ mtmdd_or_min::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmdd_or_max* mtmdd_or_max::getInstance()
 {
-  static mtmdd_or_max instance("MTMDD Or-Max");
+  static mtmdd_or_max instance;
   return &instance;
 }
 
 
-mtmdd_or_max::mtmdd_or_max(const char *name)
-: mtmdd_apply_operation(name, true)
+mtmdd_or_max::mtmdd_or_max()
 { }
 
 
@@ -6346,13 +6366,12 @@ mtmdd_or_max::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmdd_and_min* mtmdd_and_min::getInstance()
 {
-  static mtmdd_and_min instance("MTMDD And-Min");
+  static mtmdd_and_min instance;
   return &instance;
 }
 
 
-mtmdd_and_min::mtmdd_and_min(const char *name)
-: mtmdd_apply_operation(name, true)
+mtmdd_and_min::mtmdd_and_min()
 { }
 
 
@@ -6398,13 +6417,12 @@ mtmdd_and_min::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmdd_and_max* mtmdd_and_max::getInstance()
 {
-  static mtmdd_and_max instance("MTMDD And-Max");
+  static mtmdd_and_max instance;
   return &instance;
 }
 
 
-mtmdd_and_max::mtmdd_and_max(const char *name)
-: mtmdd_apply_operation(name, true)
+mtmdd_and_max::mtmdd_and_max()
 { }
 
 
@@ -6450,13 +6468,12 @@ mtmdd_and_max::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmdd_less_than* mtmdd_less_than::getInstance()
 {
-  static mtmdd_less_than instance("MTMDD Less-Than");
+  static mtmdd_less_than instance;
   return &instance;
 }
 
 
-mtmdd_less_than::mtmdd_less_than(const char *name)
-: mtmdd_apply_operation(name, false)
+mtmdd_less_than::mtmdd_less_than()
 { }
 
 
@@ -6492,13 +6509,12 @@ mtmdd_less_than::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmdd_less_than_equal* mtmdd_less_than_equal::getInstance()
 {
-  static mtmdd_less_than_equal instance("MTMDD Less-Than-Or-Equal-To");
+  static mtmdd_less_than_equal instance;
   return &instance;
 }
 
 
-mtmdd_less_than_equal::mtmdd_less_than_equal(const char *name)
-: mtmdd_apply_operation(name, false)
+mtmdd_less_than_equal::mtmdd_less_than_equal()
 { }
 
 
@@ -6534,13 +6550,12 @@ mtmdd_less_than_equal::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmdd_greater_than* mtmdd_greater_than::getInstance()
 {
-  static mtmdd_greater_than instance("MTMDD Greater-Than");
+  static mtmdd_greater_than instance;
   return &instance;
 }
 
 
-mtmdd_greater_than::mtmdd_greater_than(const char *name)
-: mtmdd_apply_operation(name, false)
+mtmdd_greater_than::mtmdd_greater_than()
 { }
 
 
@@ -6576,13 +6591,12 @@ mtmdd_greater_than::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmdd_greater_than_equal* mtmdd_greater_than_equal::getInstance()
 {
-  static mtmdd_greater_than_equal instance("MTMDD Greater-Than-Or-Equal-To");
+  static mtmdd_greater_than_equal instance;
   return &instance;
 }
 
 
-mtmdd_greater_than_equal::mtmdd_greater_than_equal(const char *name)
-: mtmdd_apply_operation(name, false)
+mtmdd_greater_than_equal::mtmdd_greater_than_equal()
 { }
 
 
@@ -6618,13 +6632,12 @@ mtmdd_greater_than_equal::checkTerminals(op_info* op,
 
 mtmdd_equal* mtmdd_equal::getInstance()
 {
-  static mtmdd_equal instance("MTMDD Equal-To");
+  static mtmdd_equal instance;
   return &instance;
 }
 
 
-mtmdd_equal::mtmdd_equal(const char *name)
-: mtmdd_apply_operation(name, true)
+mtmdd_equal::mtmdd_equal()
 { }
 
 
@@ -6653,13 +6666,12 @@ mtmdd_equal::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmdd_not_equal* mtmdd_not_equal::getInstance()
 {
-  static mtmdd_not_equal instance("MTMDD Not-Equal-To");
+  static mtmdd_not_equal instance;
   return &instance;
 }
 
 
-mtmdd_not_equal::mtmdd_not_equal(const char *name)
-: mtmdd_apply_operation(name, true)
+mtmdd_not_equal::mtmdd_not_equal()
 { }
 
 
@@ -6686,9 +6698,8 @@ mtmdd_not_equal::checkTerminals(op_info* op, int a, int b, int& c)
 // ----------------------- MTMDD-To-MDD Apply operation ----------------------
 
 
-mtmdd_to_mdd_apply_operation::mtmdd_to_mdd_apply_operation(const char *name,
-    bool comm)
-: mtmdd_apply_operation(name, comm), scratch(0)
+mtmdd_to_mdd_apply_operation::mtmdd_to_mdd_apply_operation()
+: scratch(0)
 { }
 
 
@@ -6924,13 +6935,12 @@ int mtmdd_to_mdd_apply_operation::computeHelper(op_info* owner, int a, int b)
 
 mtmdd_to_mdd_less_than* mtmdd_to_mdd_less_than::getInstance()
 {
-  static mtmdd_to_mdd_less_than instance("MTMDD-MDD Less-Than");
+  static mtmdd_to_mdd_less_than instance;
   return &instance;
 }
 
 
-mtmdd_to_mdd_less_than::mtmdd_to_mdd_less_than(const char *name)
-: mtmdd_to_mdd_apply_operation(name, false)
+mtmdd_to_mdd_less_than::mtmdd_to_mdd_less_than()
 { }
 
 
@@ -6961,13 +6971,12 @@ mtmdd_to_mdd_less_than::checkTerminals(op_info* op, int a, int b, int& c)
 mtmdd_to_mdd_less_than_equal* mtmdd_to_mdd_less_than_equal::getInstance()
 {
   static mtmdd_to_mdd_less_than_equal
-    instance("MTMDD-MDD Less-Than-Or-Equal-To");
+    instance;
   return &instance;
 }
 
 
-mtmdd_to_mdd_less_than_equal::mtmdd_to_mdd_less_than_equal(const char *name)
-: mtmdd_to_mdd_apply_operation(name, false)
+mtmdd_to_mdd_less_than_equal::mtmdd_to_mdd_less_than_equal()
 { }
 
 
@@ -6997,13 +7006,12 @@ mtmdd_to_mdd_less_than_equal::checkTerminals(op_info* op,
 
 mtmdd_to_mdd_greater_than* mtmdd_to_mdd_greater_than::getInstance()
 {
-  static mtmdd_to_mdd_greater_than instance("MTMDD-MDD Greater-Than");
+  static mtmdd_to_mdd_greater_than instance;
   return &instance;
 }
 
 
-mtmdd_to_mdd_greater_than::mtmdd_to_mdd_greater_than(const char *name)
-: mtmdd_to_mdd_apply_operation(name, false)
+mtmdd_to_mdd_greater_than::mtmdd_to_mdd_greater_than()
 { }
 
 
@@ -7036,14 +7044,13 @@ mtmdd_to_mdd_greater_than_equal*
 mtmdd_to_mdd_greater_than_equal::getInstance()
 {
   static mtmdd_to_mdd_greater_than_equal
-    instance("MTMDD-MDD Greater-Than-Or-Equal-To");
+    instance;
   return &instance;
 }
 
 
 mtmdd_to_mdd_greater_than_equal
-::mtmdd_to_mdd_greater_than_equal(const char *name)
-: mtmdd_to_mdd_apply_operation(name, false)
+::mtmdd_to_mdd_greater_than_equal()
 { }
 
 
@@ -7074,13 +7081,12 @@ mtmdd_to_mdd_greater_than_equal::checkTerminals(op_info* op,
 
 mtmdd_to_mdd_equal* mtmdd_to_mdd_equal::getInstance()
 {
-  static mtmdd_to_mdd_equal instance("MTMDD-MDD Equal-To");
+  static mtmdd_to_mdd_equal instance;
   return &instance;
 }
 
 
-mtmdd_to_mdd_equal::mtmdd_to_mdd_equal(const char *name)
-: mtmdd_to_mdd_apply_operation(name, true)
+mtmdd_to_mdd_equal::mtmdd_to_mdd_equal()
 { }
 
 
@@ -7103,13 +7109,12 @@ return false;
 
 mtmdd_to_mdd_not_equal* mtmdd_to_mdd_not_equal::getInstance()
 {
-  static mtmdd_to_mdd_not_equal instance("MTMDD-MDD Not-Equal-To");
+  static mtmdd_to_mdd_not_equal instance;
   return &instance;
 }
 
 
-mtmdd_to_mdd_not_equal::mtmdd_to_mdd_not_equal(const char *name)
-: mtmdd_to_mdd_apply_operation(name, true)
+mtmdd_to_mdd_not_equal::mtmdd_to_mdd_not_equal()
 { }
 
 
@@ -7130,8 +7135,7 @@ bool mtmdd_to_mdd_not_equal::checkTerminals(op_info* op, int a, int b, int& c)
 // -------------------- Conversion operations ------------------
 
 
-conversion_operation::conversion_operation(const char *name)
-: operation(1, 1, name)
+conversion_operation::conversion_operation()
 {}
 
 conversion_operation::~conversion_operation()
@@ -7351,13 +7355,12 @@ int conversion_operation::compute(op_info* owner, int a)
 
 mtmdd_to_mdd* mtmdd_to_mdd::getInstance()
 {
-  static mtmdd_to_mdd instance("Convert MTMDD to MDD");
+  static mtmdd_to_mdd instance;
   return &instance;
 }
 
 
-mtmdd_to_mdd::mtmdd_to_mdd(const char *name)
-: conversion_operation(name)
+mtmdd_to_mdd::mtmdd_to_mdd()
 { }
 
 
@@ -7402,13 +7405,12 @@ bool mtmdd_to_mdd::checkTerminals(op_info* op, int a, int& b)
 
 mdd_to_mtmdd* mdd_to_mtmdd::getInstance()
 {
-  static mdd_to_mtmdd instance("Convert MDD to MTMDD");
+  static mdd_to_mtmdd instance;
   return &instance;
 }
 
 
-mdd_to_mtmdd::mdd_to_mtmdd(const char *name)
-: conversion_operation(name)
+mdd_to_mtmdd::mdd_to_mtmdd()
 { }
 
 
@@ -7454,13 +7456,12 @@ bool mdd_to_mtmdd::checkTerminals(op_info* op, int a, int& b)
 
 mtmxd_to_mxd* mtmxd_to_mxd::getInstance()
 {
-  static mtmxd_to_mxd instance("Convert MTMXD to MXD");
+  static mtmxd_to_mxd instance;
   return &instance;
 }
 
 
-mtmxd_to_mxd::mtmxd_to_mxd(const char *name)
-: conversion_operation(name)
+mtmxd_to_mxd::mtmxd_to_mxd()
 { }
 
 
@@ -7505,13 +7506,12 @@ bool mtmxd_to_mxd::checkTerminals(op_info* op, int a, int& b)
 
 mxd_to_mtmxd* mxd_to_mtmxd::getInstance()
 {
-  static mxd_to_mtmxd instance("Convert MXD to MTMXD");
+  static mxd_to_mtmxd instance;
   return &instance;
 }
 
 
-mxd_to_mtmxd::mxd_to_mtmxd(const char *name)
-: conversion_operation(name)
+mxd_to_mtmxd::mxd_to_mtmxd()
 { }
 
 
@@ -7557,13 +7557,12 @@ bool mxd_to_mtmxd::checkTerminals(op_info* op, int a, int& b)
 
 mtmdd_to_evmdd* mtmdd_to_evmdd::getInstance()
 {
-  static mtmdd_to_evmdd instance("Convert MTMDD to EVMDD");
+  static mtmdd_to_evmdd instance;
   return &instance;
 }
 
 
-mtmdd_to_evmdd::mtmdd_to_evmdd(const char *name)
-: operation(1, 2, name)
+mtmdd_to_evmdd::mtmdd_to_evmdd()
 { }
 
 
@@ -7864,13 +7863,12 @@ void mtmdd_to_evmdd::compute(op_info* owner, int a, int& b, int &bev)
 
 mdd_to_evplusmdd_index_set* mdd_to_evplusmdd_index_set::getInstance()
 {
-  static mdd_to_evplusmdd_index_set instance("Convert MDD to EV+MDD");
+  static mdd_to_evplusmdd_index_set instance;
   return &instance;
 }
 
 
-mdd_to_evplusmdd_index_set::mdd_to_evplusmdd_index_set(const char *name)
-: mtmdd_to_evmdd(name)
+mdd_to_evplusmdd_index_set::mdd_to_evplusmdd_index_set()
 { }
 
 
@@ -8030,8 +8028,7 @@ void mdd_to_evplusmdd_index_set::compute(op_info* owner,
 // ----------------------- MTMXD Apply operation ----------------------
 
 
-mtmxd_apply_operation::mtmxd_apply_operation(const char *name, bool comm)
-: mxd_apply_operation(name, comm)
+mtmxd_apply_operation::mtmxd_apply_operation()
 { }
 
 mtmxd_apply_operation::~mtmxd_apply_operation() {}
@@ -8074,13 +8071,12 @@ mtmxd_apply_operation::typeCheck(const op_info* owner)
 
 mtmxd_multiply* mtmxd_multiply::getInstance()
 {
-  static mtmxd_multiply instance("MTMXD Multiply");
+  static mtmxd_multiply instance;
   return &instance;
 }
 
 
-mtmxd_multiply::mtmxd_multiply(const char *name)
-: mtmxd_apply_operation(name, true)
+mtmxd_multiply::mtmxd_multiply()
 { }
 
 
@@ -8118,13 +8114,12 @@ mtmxd_multiply::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmxd_minus* mtmxd_minus::getInstance()
 {
-  static mtmxd_minus instance("MTMXD Minus");
+  static mtmxd_minus instance;
   return &instance;
 }
 
 
-mtmxd_minus::mtmxd_minus(const char *name)
-: mtmxd_apply_operation(name, false)
+mtmxd_minus::mtmxd_minus()
 { }
 
 
@@ -8170,13 +8165,12 @@ mtmxd_minus::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmxd_plus* mtmxd_plus::getInstance()
 {
-  static mtmxd_plus instance("MTMXD Plus");
+  static mtmxd_plus instance;
   return &instance;
 }
 
 
-mtmxd_plus::mtmxd_plus(const char *name)
-: mtmxd_apply_operation(name, true)
+mtmxd_plus::mtmxd_plus()
 { }
 
 
@@ -8218,13 +8212,12 @@ mtmxd_plus::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmxd_min* mtmxd_min::getInstance()
 {
-  static mtmxd_min instance("MTMXD Min");
+  static mtmxd_min instance;
   return &instance;
 }
 
 
-mtmxd_min::mtmxd_min(const char *name)
-: mtmxd_apply_operation(name, true)
+mtmxd_min::mtmxd_min()
 { }
 
 
@@ -8255,13 +8248,12 @@ mtmxd_min::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmxd_max* mtmxd_max::getInstance()
 {
-  static mtmxd_max instance("MTMXD Max");
+  static mtmxd_max instance;
   return &instance;
 }
 
 
-mtmxd_max::mtmxd_max(const char *name)
-: mtmxd_apply_operation(name, true)
+mtmxd_max::mtmxd_max()
 { }
 
 
@@ -8300,13 +8292,12 @@ mtmxd_max::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmxd_less_than* mtmxd_less_than::getInstance()
 {
-  static mtmxd_less_than instance("MTMXD Less-Than");
+  static mtmxd_less_than instance;
   return &instance;
 }
 
 
-mtmxd_less_than::mtmxd_less_than(const char *name)
-: mtmxd_apply_operation(name, false)
+mtmxd_less_than::mtmxd_less_than()
 { }
 
 
@@ -8340,13 +8331,12 @@ mtmxd_less_than::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmxd_greater_than* mtmxd_greater_than::getInstance()
 {
-  static mtmxd_greater_than instance("MTMXD Greater-Than");
+  static mtmxd_greater_than instance;
   return &instance;
 }
 
 
-mtmxd_greater_than::mtmxd_greater_than(const char *name)
-: mtmxd_apply_operation(name, false)
+mtmxd_greater_than::mtmxd_greater_than()
 { }
 
 
@@ -8380,13 +8370,12 @@ mtmxd_greater_than::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmxd_not_equal* mtmxd_not_equal::getInstance()
 {
-  static mtmxd_not_equal instance("MTMXD Not-Equal-To");
+  static mtmxd_not_equal instance;
   return &instance;
 }
 
 
-mtmxd_not_equal::mtmxd_not_equal(const char *name)
-: mtmxd_apply_operation(name, true)
+mtmxd_not_equal::mtmxd_not_equal()
 { }
 
 
@@ -8414,8 +8403,7 @@ mtmxd_not_equal::checkTerminals(op_info* op, int a, int b, int& c)
 
 
 mtmxd_alt_apply_operation::
-mtmxd_alt_apply_operation(const char *name, bool comm)
-: mxd_alt_apply_operation(name, comm)
+mtmxd_alt_apply_operation()
 { }
 
 mtmxd_alt_apply_operation::~mtmxd_alt_apply_operation() {}
@@ -8447,13 +8435,12 @@ mtmxd_alt_apply_operation::typeCheck(const op_info* owner)
 
 mtmxd_divide* mtmxd_divide::getInstance()
 {
-  static mtmxd_divide instance("MTMXD Divide");
+  static mtmxd_divide instance;
   return &instance;
 }
 
 
-mtmxd_divide::mtmxd_divide(const char *name)
-: mtmxd_alt_apply_operation(name, false)
+mtmxd_divide::mtmxd_divide()
 { }
 
 
@@ -8486,13 +8473,12 @@ mtmxd_divide::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmxd_less_than_equal* mtmxd_less_than_equal::getInstance()
 {
-  static mtmxd_less_than_equal instance("MTMXD Less-Than-Or-Equal-To");
+  static mtmxd_less_than_equal instance;
   return &instance;
 }
 
 
-mtmxd_less_than_equal::mtmxd_less_than_equal(const char *name)
-: mtmxd_alt_apply_operation(name, false)
+mtmxd_less_than_equal::mtmxd_less_than_equal()
 { }
 
 
@@ -8526,13 +8512,12 @@ mtmxd_less_than_equal::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmxd_greater_than_equal* mtmxd_greater_than_equal::getInstance()
 {
-  static mtmxd_greater_than_equal instance("MTMXD Greater-Than-Or-Equal-To");
+  static mtmxd_greater_than_equal instance;
   return &instance;
 }
 
 
-mtmxd_greater_than_equal::mtmxd_greater_than_equal(const char *name)
-: mtmxd_alt_apply_operation(name, false)
+mtmxd_greater_than_equal::mtmxd_greater_than_equal()
 { }
 
 
@@ -8566,13 +8551,12 @@ mtmxd_greater_than_equal::checkTerminals(op_info* op,
 
 mtmxd_equal* mtmxd_equal::getInstance()
 {
-  static mtmxd_equal instance("MTMXD Equal-To");
+  static mtmxd_equal instance;
   return &instance;
 }
 
 
-mtmxd_equal::mtmxd_equal(const char *name)
-: mtmxd_alt_apply_operation(name, true)
+mtmxd_equal::mtmxd_equal()
 { }
 
 
@@ -8602,13 +8586,12 @@ mtmxd_equal::checkTerminals(op_info* op, int a, int b, int& c)
 
 mtmdd_post_image* mtmdd_post_image::getInstance()
 {
-  static mtmdd_post_image instance("MTMDD Post-Image");
+  static mtmdd_post_image instance;
   return &instance;
 }
 
 
-mtmdd_post_image::mtmdd_post_image(const char *name)
-: mdd_post_image(name)
+mtmdd_post_image::mtmdd_post_image()
 { }
 
 
@@ -8720,13 +8703,12 @@ int mtmdd_post_image::compute(op_info* owner, op_info* plusOp, int mdd, int mxd)
 
 mtmdd_pre_image* mtmdd_pre_image::getInstance()
 {
-  static mtmdd_pre_image instance("MTMDD Pre-Image");
+  static mtmdd_pre_image instance;
   return &instance;
 }
 
 
-mtmdd_pre_image::mtmdd_pre_image(const char *name)
-: mdd_pre_image(name)
+mtmdd_pre_image::mtmdd_pre_image()
 { }
 
 
@@ -8820,4 +8802,88 @@ int mtmdd_pre_image::compute(op_info* owner, op_info* plusOp, int mdd, int mxd)
 }
 
 
+
+// ------------------------------------------------------------------
+
+
+// ---------------------- EVMDD Operations -------------------------
+
+
+
+evmdd_apply_operation::
+evmdd_apply_operation()
+{
+}
+
+
+evmdd_apply_operation::
+~evmdd_apply_operation()
+{ }
+
+compute_manager::error
+evmdd_apply_operation::
+typeCheck(const op_info* owner)
+{ return compute_manager::NOT_IMPLEMENTED; }
+
+
+bool
+evmdd_apply_operation::
+isEntryStale(const op_info* owner, const int* entryData)
+{ return false; }
+
+
+void
+evmdd_apply_operation::
+discardEntry(op_info* owner, const int* entryData)
+{ }
+
+
+void
+evmdd_apply_operation::
+showEntry(const op_info* owner, FILE* strm,
+    const int *entryData) const
+{ }
+
+
+// Calls compute(op_info*, dd_edge, dd_edge, dd_edge)
+compute_manager::error
+evmdd_apply_operation::
+compute(op_info* owner, dd_edge** operands)
+{ return compute_manager::NOT_IMPLEMENTED; }
+
+
+// Returns an error
+compute_manager::error
+evmdd_apply_operation::
+compute(op_info* owner, const dd_edge& a,
+    dd_edge& b)
+{ return compute_manager::NOT_IMPLEMENTED; }
+
+
+// Implements APPLY operation -- calls checkTerminals to compute
+// result for terminal nodes.
+compute_manager::error
+evmdd_apply_operation::
+compute(op_info* owner, const dd_edge& a,
+    const dd_edge& b, dd_edge& c)
+{ return compute_manager::NOT_IMPLEMENTED; }
+
+
+/// To be implemented by derived classes
+bool
+evmdd_apply_operation::
+checkTerminals(op_info* op, int a, int aev, int b, int bev, int& c, int& cev)
+{ return false; }
+
+
+bool
+evmdd_apply_operation::
+findResult(op_info* owner, int a, int b, int& c)
+{ return false; }
+
+
+void
+evmdd_apply_operation::
+saveResult(op_info* owner, int a, int b, int c)
+{ assert(false); }
 

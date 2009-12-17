@@ -207,6 +207,12 @@ class node_manager : public expert_forest {
     /// Create a temporary node -- a node that can be modified by the user
     virtual int createTempNode(int lh, int size, bool clear = true);
 
+    /// Create a temporary node with the given downpointers. Note that
+    /// downPointers[i] corresponds to the downpointer at index i.
+    /// IMPORTANT: The incounts for the downpointers are not incremented.
+    /// The returned value is the handle for the temporary node.
+    virtual int createTempNode(int lh, std::vector<int>& downPointers);
+
     /// Apply reduction rule to the temporary node and finalize it. Once
     /// a node is reduced, its contents cannot be modified.
     virtual int reduceNode(int node) = 0;
@@ -217,6 +223,11 @@ class node_manager : public expert_forest {
     virtual void normalizeAndReduceNode(int& node, int& ev) = 0;
     // Dummy version available here.
     // In mdds_ext.h
+
+    // Copy the downpointers into dptrs where dptrs[i] corresponds
+    // to the downpointer at index i. For sparse nodes,
+    // dptrs[index(i)] corresponds to the downpointer at index i.
+    virtual bool getDownPtrs(int node, std::vector<int>& dptrs) const;
 
     /// Has the node been reduced
     bool isReducedNode(int node) const;
@@ -582,9 +593,11 @@ inline void node_manager::handleNewOrphanNode(int p) {
     orphan_nodes++;
   }
 
+#if 0
   if (getOrphanNodeCount() > 100000)
     smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())
       ->removeStales();
+#endif
 }
 
 inline void node_manager::deleteOrphanNode(int p) {
@@ -720,6 +733,21 @@ inline int node_manager::createTempNode(int k, int sz, bool clear)
 }
 
 
+inline
+int
+node_manager::createTempNode(int lh, std::vector<int>& downPointers)
+{
+  int tempNode = createTempNode(lh, downPointers.size(), false);
+  int* dptrs = getFullNodeDownPtrs(tempNode);
+  std::vector<int>::iterator iter = downPointers.begin();
+  while (iter != downPointers.end())
+  {
+    *dptrs++ = *iter++;
+  }
+  return tempNode;
+}
+
+
 // TODO: HERE: should we move these next few inlines up to mddinternal?
 inline bool node_manager::areHolesRecycled() const {
   return holeRecycling;
@@ -768,6 +796,39 @@ inline int node_manager::getLargestIndex(int p) const {
 }
 
 // Dealing with entries
+
+inline
+bool node_manager::getDownPtrs(int p, std::vector<int>& dptrs) const {
+  if (!isActiveNode(p) || isTerminalNode(p) || !isReducedNode(p))
+    return false;
+
+  if (isFullNode(p)) {
+    int size = getFullNodeSize(p);
+    if (dptrs.size() < unsigned(size))
+      dptrs.resize(size, 0);
+    const int* ptrs = getFullNodeDownPtrsReadOnly(p);
+    const int* end = ptrs + size;
+    std::vector<int>::iterator iter = dptrs.begin();
+    while (ptrs != end)
+    {
+      *iter++ = *ptrs++;
+    }
+  }
+  else {
+    int nnz = getSparseNodeSize(p);
+    int size = getLargestIndex(p) + 1;
+    if (dptrs.size() < unsigned(size))
+      dptrs.resize(size, 0);
+    const int* ptrs = getSparseNodeDownPtrs(p);
+    const int* index = getSparseNodeIndexes(p);
+    const int* end = ptrs + nnz;
+    while (ptrs != end)
+    {
+      dptrs[*index++] = *ptrs++;
+    }
+  }
+  return true;
+}
 
 // full node: entries start in the 4th slot (location 3, counting from 0)
 inline int* node_manager::getFullNodeDownPtrs(int p) {

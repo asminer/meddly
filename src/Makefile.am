@@ -30,6 +30,7 @@ libmeddly_la_SOURCES = \
 	defines.h \
 	hash.h \
 	fixed_size_hash.h \
+	chained_hash.h \
 	mdd_hash.h \
 	timer.h
 

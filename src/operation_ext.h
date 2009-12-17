@@ -25,8 +25,10 @@
 #define OPERATION_EXTENSIONS_H
 
 #include "../include/meddly_expert.h"
-
 #include <vector>
+
+
+//#define ALT_SATURATE_HELPER
 
 
 /** MDD element-wise operations
@@ -35,8 +37,17 @@
 */
 class mdd_apply_operation : public operation {
   public:
-    mdd_apply_operation(const char *name, bool commutative);
+    mdd_apply_operation();
     virtual ~mdd_apply_operation();
+
+    virtual const char* getName() const { return "Mdd Apply"; }
+    virtual int getKeyLength() const { return 2; }
+    virtual int getAnsLength() const { return 1; }
+    virtual int getCacheEntryLength() const { return 3; }
+
+    virtual int getKeyLengthInBytes() const { return 8; }
+    virtual int getAnsLengthInBytes() const { return 4; }
+    virtual int getCacheEntryLengthInBytes() const { return 12; }
 
     virtual compute_manager::error typeCheck(const op_info* owner);
     virtual bool isEntryStale(const op_info* owner, const int* entryData);
@@ -51,18 +62,28 @@ class mdd_apply_operation : public operation {
     virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
         dd_edge& b);
 
-    // Implements APPLY operation -- calls checkTerminals to compute
-    // result for terminal nodes.
+    // Calls compute(op_info*, int, int) and stores result in c.
     virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
         const dd_edge& b, dd_edge& c);
 
+    // Implements APPLY. Returns the result of (a op b).
+    // Calls checkTerminals() for termination condition of recursion.
     virtual int compute(op_info* owner, int a, int b);
 
   protected:
-    /// To be implemented by derived classes
+    // If terminal condition is reached, returns true and the result in c.
     virtual bool checkTerminals(op_info* op, int a, int b, int& c) = 0;
 
+    // Returns true if the operation is commutative (i.e. A op B == B op A)
+    virtual bool isCommutative() const = 0;
+
+    // Searches the compute table for (a op b). If the result is found,
+    // returns true and the result via c (c's incount is incremented by 1).
+    // Otherwise, returns false.
     virtual bool findResult(op_info* owner, int a, int b, int& c);
+
+    // Stores the tuple (a op b == c) in the compute table.
+    // Cachecounts for a, b, and c are incremented by 1.
     virtual void saveResult(op_info* owner, int a, int b, int c);
 
     virtual void expandA(op_info* owner, expert_forest* expertForest,
@@ -77,26 +98,28 @@ class mdd_apply_operation : public operation {
         int a, int b, int result, int resultSize);
     virtual void sparseSparse(op_info* owner, expert_forest* expertForest,
         int a, int b, int result, int resultSize);
-
-  private:
-    bool commutative;
 };
 
 
 class mdd_union : public mdd_apply_operation {
   public:
     static mdd_union* getInstance();
+#if 0
     virtual int compute(op_info* owner, int a, int b);
+#endif
+
+    virtual const char* getName() const { return "Mdd Union"; }
+    virtual bool isCommutative() const { return true; }
 
   protected:
-    mdd_union(const char* name);
+    mdd_union();
     mdd_union(const mdd_union& copy);
     mdd_union& operator=(const mdd_union& copy);
     ~mdd_union();
 
     virtual bool checkTerminals(op_info* op, int a, int b, int& c);
 
-#if 1
+#if 0
     virtual void expandA(op_info* owner, expert_forest* expertForest,
         int a, int b, int result, int resultSize);
     // use expandA(b, a) instead of expandB(a, b)
@@ -114,16 +137,21 @@ class mdd_union : public mdd_apply_operation {
 class mdd_intersection : public mdd_apply_operation {
   public:
     static mdd_intersection* getInstance();
+#if 0
     virtual int compute(op_info* owner, int a, int b);
+#endif
+
+    virtual const char* getName() const { return "Mdd Intersection"; }
+    virtual bool isCommutative() const { return true; }
 
   protected:
-    mdd_intersection(const char* name);
+    mdd_intersection();
     mdd_intersection(const mdd_intersection& copy);
     mdd_intersection& operator=(const mdd_intersection& copy);
     ~mdd_intersection();
 
     virtual bool checkTerminals(op_info* op, int a, int b, int& c);
-#if 1
+#if 0
     virtual void expandA(op_info* owner, expert_forest* expertForest,
         int a, int b, int result, int resultSize);
     virtual void expandB(op_info* owner, expert_forest* expertForest,
@@ -144,8 +172,11 @@ class mdd_difference : public mdd_apply_operation {
   public:
     static mdd_difference* getInstance();
 
+    virtual const char* getName() const { return "Mdd Difference"; }
+    virtual bool isCommutative() const { return false; }
+
   protected:
-    mdd_difference(const char* name);
+    mdd_difference();
     mdd_difference(const mdd_difference& copy);
     mdd_difference& operator=(const mdd_difference& copy);
     ~mdd_difference();
@@ -160,11 +191,12 @@ class mdd_difference : public mdd_apply_operation {
 
 class mxd_apply_operation : public mdd_apply_operation {
   public:
-    mxd_apply_operation(const char *name, bool commutative);
+    mxd_apply_operation();
     virtual ~mxd_apply_operation();
 
     virtual compute_manager::error typeCheck(const op_info* owner);
     virtual int compute(op_info* owner, int a, int b);
+    virtual const char* getName() const { return "Mxd Apply"; }
 
   protected:
     /// To be implemented by derived classes
@@ -187,8 +219,17 @@ class mxd_apply_operation : public mdd_apply_operation {
 
 class mxd_alt_apply_operation : public operation {
   public:
-    mxd_alt_apply_operation(const char *name, bool commutative);
+    mxd_alt_apply_operation();
     virtual ~mxd_alt_apply_operation();
+    virtual const char* getName() const { return "Mxd Alternative Apply"; }
+
+    virtual int getKeyLength() const { return 3; }
+    virtual int getAnsLength() const { return 1; }
+    virtual int getCacheEntryLength() const { return 4; }
+
+    virtual int getKeyLengthInBytes() const { return 12; }
+    virtual int getAnsLengthInBytes() const { return 4; }
+    virtual int getCacheEntryLengthInBytes() const { return 16; }
 
     virtual compute_manager::error typeCheck(const op_info* owner);
     virtual bool isEntryStale(const op_info* owner, const int* entryData);
@@ -214,6 +255,9 @@ class mxd_alt_apply_operation : public operation {
     /// To be implemented by derived classes
     virtual bool checkTerminals(op_info* op, int a, int b, int& c) = 0;
 
+    // Returns true if the operation is commutative (i.e. A op B == B op A)
+    virtual bool isCommutative() const = 0;
+
     virtual bool findResult(op_info* owner, int k, int a, int b, int& c);
     virtual void saveResult(op_info* owner, int k, int a, int b, int c);
 
@@ -232,18 +276,17 @@ class mxd_alt_apply_operation : public operation {
     virtual void singleExpandB(op_info* owner, int a, int b,
         expert_forest* expertForest,
         int result, int resultLevel, int resultSize);
-
-  private:
-    bool commutative;
 };
 
 
 class mxd_union : public mxd_apply_operation {
   public:
     static mxd_union* getInstance();
+    virtual const char* getName() const { return "Mxd Union"; }
+    virtual bool isCommutative() const { return true; }
 
   protected:
-    mxd_union(const char* name);
+    mxd_union();
     mxd_union(const mxd_union& copy);
     mxd_union& operator=(const mxd_union& copy);
     ~mxd_union();
@@ -255,9 +298,11 @@ class mxd_union : public mxd_apply_operation {
 class mxd_intersection : public mxd_apply_operation {
   public:
     static mxd_intersection* getInstance();
+    virtual const char* getName() const { return "Mxd Intersection"; }
+    virtual bool isCommutative() const { return true; }
 
   protected:
-    mxd_intersection(const char* name);
+    mxd_intersection();
     mxd_intersection(const mxd_intersection& copy);
     mxd_intersection& operator=(const mxd_intersection& copy);
     ~mxd_intersection();
@@ -269,9 +314,11 @@ class mxd_intersection : public mxd_apply_operation {
 class mxd_difference : public mxd_apply_operation {
   public:
     static mxd_difference* getInstance();
+    virtual const char* getName() const { return "Mxd Difference"; }
+    virtual bool isCommutative() const { return false; }
 
   protected:
-    mxd_difference(const char* name);
+    mxd_difference();
     mxd_difference(const mxd_difference& copy);
     mxd_difference& operator=(const mxd_difference& copy);
     ~mxd_difference();
@@ -282,6 +329,8 @@ class mxd_difference : public mxd_apply_operation {
 
 // ------------------------ MTMXD Apply operations ---------------------------
 
+// HERE --------
+
 /** MTXDD element-wise operations
 
     Abstract class for element-wise MTMXD operations.
@@ -289,9 +338,11 @@ class mxd_difference : public mxd_apply_operation {
 // TODO: TEST
 class mtmxd_apply_operation : public mxd_apply_operation {
   public:
-    mtmxd_apply_operation(const char *name, bool commutative);
+    mtmxd_apply_operation();
     virtual ~mtmxd_apply_operation();
     virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual const char* getName() const { return "MtMxd Apply"; }
+
   protected:
     /// To be implemented by derived classes
     virtual bool checkTerminals(op_info* op, int a, int b, int& c) = 0;
@@ -301,9 +352,11 @@ class mtmxd_apply_operation : public mxd_apply_operation {
 class mtmxd_plus : public mtmxd_apply_operation {
   public:
     static mtmxd_plus* getInstance();
+    virtual const char* getName() const { return "MtMxd Plus"; }
+    virtual bool isCommutative() const { return true; }
 
   protected:
-    mtmxd_plus(const char* name);
+    mtmxd_plus();
     mtmxd_plus(const mtmxd_plus& copy);
     mtmxd_plus& operator=(const mtmxd_plus& copy);
     ~mtmxd_plus();
@@ -315,9 +368,11 @@ class mtmxd_plus : public mtmxd_apply_operation {
 class mtmxd_minus : public mtmxd_apply_operation {
   public:
     static mtmxd_minus* getInstance();
+    virtual const char* getName() const { return "MtMxd Minus"; }
+    virtual bool isCommutative() const { return false; }
 
   protected:
-    mtmxd_minus(const char* name);
+    mtmxd_minus();
     mtmxd_minus(const mtmxd_minus& copy);
     mtmxd_minus& operator=(const mtmxd_minus& copy);
     ~mtmxd_minus();
@@ -329,9 +384,11 @@ class mtmxd_minus : public mtmxd_apply_operation {
 class mtmxd_multiply : public mtmxd_apply_operation {
   public:
     static mtmxd_multiply* getInstance();
+    virtual const char* getName() const { return "MtMxd Multiply"; }
+    virtual bool isCommutative() const { return true; }
 
   protected:
-    mtmxd_multiply(const char* name);
+    mtmxd_multiply();
     mtmxd_multiply(const mtmxd_multiply& copy);
     mtmxd_multiply& operator=(const mtmxd_multiply& copy);
     ~mtmxd_multiply();
@@ -343,9 +400,11 @@ class mtmxd_multiply : public mtmxd_apply_operation {
 class mtmxd_min : public mtmxd_apply_operation {
   public:
     static mtmxd_min* getInstance();
+    virtual const char* getName() const { return "MtMxd Min"; }
+    virtual bool isCommutative() const { return true; }
 
   protected:
-    mtmxd_min(const char* name);
+    mtmxd_min();
     mtmxd_min(const mtmxd_min& copy);
     mtmxd_min& operator=(const mtmxd_min& copy);
     ~mtmxd_min();
@@ -357,9 +416,11 @@ class mtmxd_min : public mtmxd_apply_operation {
 class mtmxd_max : public mtmxd_apply_operation {
   public:
     static mtmxd_max* getInstance();
+    virtual const char* getName() const { return "MtMxd Max"; }
+    virtual bool isCommutative() const { return true; }
 
   protected:
-    mtmxd_max(const char* name);
+    mtmxd_max();
     mtmxd_max(const mtmxd_max& copy);
     mtmxd_max& operator=(const mtmxd_max& copy);
     ~mtmxd_max();
@@ -371,9 +432,11 @@ class mtmxd_max : public mtmxd_apply_operation {
 class mtmxd_not_equal : public mtmxd_apply_operation {
   public:
     static mtmxd_not_equal* getInstance();
+    virtual const char* getName() const { return "MtMxd Not-Equal"; }
+    virtual bool isCommutative() const { return true; }
 
   protected:
-    mtmxd_not_equal(const char* name);
+    mtmxd_not_equal();
     mtmxd_not_equal(const mtmxd_not_equal& copy);
     mtmxd_not_equal& operator=(const mtmxd_not_equal& copy);
     ~mtmxd_not_equal();
@@ -385,9 +448,11 @@ class mtmxd_not_equal : public mtmxd_apply_operation {
 class mtmxd_less_than : public mtmxd_apply_operation {
   public:
     static mtmxd_less_than* getInstance();
+    virtual const char* getName() const { return "MtMxd Less-Than"; }
+    virtual bool isCommutative() const { return false; }
 
   protected:
-    mtmxd_less_than(const char* name);
+    mtmxd_less_than();
     mtmxd_less_than(const mtmxd_less_than& copy);
     mtmxd_less_than& operator=(const mtmxd_less_than& copy);
     ~mtmxd_less_than();
@@ -399,9 +464,11 @@ class mtmxd_less_than : public mtmxd_apply_operation {
 class mtmxd_greater_than : public mtmxd_apply_operation {
   public:
     static mtmxd_greater_than* getInstance();
+    virtual const char* getName() const { return "MtMxd Greater-Than"; }
+    virtual bool isCommutative() const { return false; }
 
   protected:
-    mtmxd_greater_than(const char* name);
+    mtmxd_greater_than();
     mtmxd_greater_than(const mtmxd_greater_than& copy);
     mtmxd_greater_than& operator=(const mtmxd_greater_than& copy);
     ~mtmxd_greater_than();
@@ -414,9 +481,10 @@ class mtmxd_greater_than : public mtmxd_apply_operation {
 // with op(0,0)!=0 (such as /, <=, >=, ==)
 class mtmxd_alt_apply_operation : public mxd_alt_apply_operation {
   public:
-    mtmxd_alt_apply_operation(const char *name, bool commutative);
+    mtmxd_alt_apply_operation();
     virtual ~mtmxd_alt_apply_operation();
     virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual const char* getName() const { return "MtMxd Alternative Apply"; }
   protected:
     virtual bool checkTerminals(op_info* op, int a, int b, int& c) = 0;
 };
@@ -425,9 +493,11 @@ class mtmxd_alt_apply_operation : public mxd_alt_apply_operation {
 class mtmxd_divide : public mtmxd_alt_apply_operation {
   public:
     static mtmxd_divide* getInstance();
+    virtual const char* getName() const { return "MtMxd Divide"; }
+    virtual bool isCommutative() const { return false; }
 
   protected:
-    mtmxd_divide(const char* name);
+    mtmxd_divide();
     mtmxd_divide(const mtmxd_divide& copy);
     mtmxd_divide& operator=(const mtmxd_divide& copy);
     ~mtmxd_divide();
@@ -439,9 +509,11 @@ class mtmxd_divide : public mtmxd_alt_apply_operation {
 class mtmxd_less_than_equal : public mtmxd_alt_apply_operation {
   public:
     static mtmxd_less_than_equal* getInstance();
+    virtual const char* getName() const { return "MtMxd Less-Than-Or-Equal"; }
+    virtual bool isCommutative() const { return false; }
 
   protected:
-    mtmxd_less_than_equal(const char* name);
+    mtmxd_less_than_equal();
     mtmxd_less_than_equal(const mtmxd_less_than_equal& copy);
     mtmxd_less_than_equal& operator=(const mtmxd_less_than_equal& copy);
     ~mtmxd_less_than_equal();
@@ -453,9 +525,13 @@ class mtmxd_less_than_equal : public mtmxd_alt_apply_operation {
 class mtmxd_greater_than_equal : public mtmxd_alt_apply_operation {
   public:
     static mtmxd_greater_than_equal* getInstance();
+    virtual const char* getName() const {
+      return "MtMxd Greater-Than-Or-Equal";
+    }
+    virtual bool isCommutative() const { return false; }
 
   protected:
-    mtmxd_greater_than_equal(const char* name);
+    mtmxd_greater_than_equal();
     mtmxd_greater_than_equal(const mtmxd_greater_than_equal& copy);
     mtmxd_greater_than_equal& operator=(const mtmxd_greater_than_equal& copy);
     ~mtmxd_greater_than_equal();
@@ -467,9 +543,11 @@ class mtmxd_greater_than_equal : public mtmxd_alt_apply_operation {
 class mtmxd_equal : public mtmxd_alt_apply_operation {
   public:
     static mtmxd_equal* getInstance();
+    virtual const char* getName() const { return "MtMxd Equal"; }
+    virtual bool isCommutative() const { return true; }
 
   protected:
-    mtmxd_equal(const char* name);
+    mtmxd_equal();
     mtmxd_equal(const mtmxd_equal& copy);
     mtmxd_equal& operator=(const mtmxd_equal& copy);
     ~mtmxd_equal();
@@ -483,10 +561,12 @@ class mtmxd_equal : public mtmxd_alt_apply_operation {
 
 class mdd_mxd_image_operation : public mdd_apply_operation {
   public:
-    mdd_mxd_image_operation(const char *name);
+    mdd_mxd_image_operation();
     virtual ~mdd_mxd_image_operation();
 
     virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual const char* getName() const { return "Mdd-Mxd Image Operation"; }
+    virtual bool isCommutative() const { return false; }
 
     virtual int compute(op_info* owner, int a, int b) = 0;
 
@@ -506,9 +586,11 @@ class mdd_post_image : public mdd_mxd_image_operation {
   public:
     static mdd_post_image* getInstance();
     virtual int compute(op_info* owner, int a, int b);
+    virtual const char* getName() const { return "Mdd-Mxd Post Image"; }
+    virtual bool isCommutative() const { return false; }
 
   protected:
-    mdd_post_image(const char* name);
+    mdd_post_image();
     mdd_post_image(const mdd_post_image& copy);
     mdd_post_image& operator=(const mdd_post_image& copy);
     virtual ~mdd_post_image();
@@ -529,9 +611,11 @@ class mdd_post_image : public mdd_mxd_image_operation {
 class mdd_pre_image : public mdd_post_image {
   public:
     static mdd_pre_image* getInstance();
+    virtual const char* getName() const { return "Mdd-Mxd Pre Image"; }
+    virtual bool isCommutative() const { return false; }
 
   protected:
-    mdd_pre_image(const char* name);
+    mdd_pre_image();
     mdd_pre_image(const mdd_pre_image& copy);
     mdd_pre_image& operator=(const mdd_pre_image& copy);
     virtual ~mdd_pre_image();
@@ -564,9 +648,11 @@ class mdd_reachability_bfs : public mdd_mxd_image_operation {
   public:
     static mdd_reachability_bfs* getInstance();
     int compute(op_info* owner, int a, int b);
+    virtual const char* getName() const { return "Mdd-Mxd Reachability BFS"; }
+    virtual bool isCommutative() const { return false; }
 
   protected:
-    mdd_reachability_bfs(const char* name);
+    mdd_reachability_bfs();
     mdd_reachability_bfs(const mdd_reachability_bfs& copy);
     mdd_reachability_bfs& operator=(const mdd_reachability_bfs& copy);
     virtual ~mdd_reachability_bfs();
@@ -578,9 +664,11 @@ class mdd_reachability_dfs : public mdd_mxd_image_operation {
   public:
     static mdd_reachability_dfs* getInstance();
     int compute(op_info* owner, int a, int b);
+    virtual const char* getName() const { return "Mdd-Mxd Reachability DFS"; }
+    virtual bool isCommutative() const { return false; }
 
   protected:
-    mdd_reachability_dfs(const char* name);
+    mdd_reachability_dfs();
     mdd_reachability_dfs(const mdd_reachability_dfs& copy);
     mdd_reachability_dfs& operator=(const mdd_reachability_dfs& copy);
     virtual ~mdd_reachability_dfs();
@@ -590,9 +678,9 @@ class mdd_reachability_dfs : public mdd_mxd_image_operation {
 
     void splitMxd(int mxd);
     int saturate(int mdd);
-    void saturateHelper(int mdd);
     int recFire(int mdd, int mxd);
-
+#ifdef ALT_SATURATE_HELPER
+    void saturateHelper(int mdd);
     void saturateHelperUnPrimeFull(int mdd, int mxd);
     void saturateHelperUnPrimeSparse(int mdd, int mxd);
     void saturateHelperPrimeFull(int mdd, int i, int mxdI,
@@ -607,6 +695,9 @@ class mdd_reachability_dfs : public mdd_mxd_image_operation {
     void recFireSF(int mdd, int mxd, int result);
     void recFireSS(int mdd, int mxd, int result);
     void recFirePrime(int mdd, int mxd, int result);
+#else
+    void saturateHelper(int mddLevel, std::vector<int>& mdd);
+#endif
 
     int getMddUnion(int a, int b);
     int getMxdIntersection(int a, int b);
@@ -645,10 +736,11 @@ class mdd_reachability_dfs : public mdd_mxd_image_operation {
 */
 class mtmdd_apply_operation : public mdd_apply_operation {
   public:
-    mtmdd_apply_operation(const char *name, bool commutative);
+    mtmdd_apply_operation();
     virtual ~mtmdd_apply_operation();
 
     virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual const char* getName() const { return "MtMdd Apply"; }
 
   protected:
     /// To be implemented by derived classes
@@ -664,9 +756,11 @@ class mtmdd_plus : public mdd_union {
   public:
     static mtmdd_plus* getInstance();
     virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual const char* getName() const { return "MtMdd Plus"; }
+    virtual bool isCommutative() const { return true; }
 
   protected:
-    mtmdd_plus(const char* name);
+    mtmdd_plus();
     mtmdd_plus(const mtmdd_plus& copy);
     mtmdd_plus& operator=(const mtmdd_plus& copy);
     ~mtmdd_plus();
@@ -678,9 +772,11 @@ class mtmdd_plus : public mdd_union {
 class mtmdd_minus : public mtmdd_apply_operation {
   public:
     static mtmdd_minus* getInstance();
+    virtual const char* getName() const { return "MtMdd Minus"; }
+    virtual bool isCommutative() const { return false; }
 
   protected:
-    mtmdd_minus(const char* name);
+    mtmdd_minus();
     mtmdd_minus(const mtmdd_minus& copy);
     mtmdd_minus& operator=(const mtmdd_minus& copy);
     ~mtmdd_minus();
@@ -692,9 +788,12 @@ class mtmdd_minus : public mtmdd_apply_operation {
 class mtmdd_multiply : public mtmdd_apply_operation {
   public:
     static mtmdd_multiply* getInstance();
+    virtual const char* getName() const { return "MtMdd Multiply"; }
+    virtual bool isCommutative() const { return true; }
+
 
   protected:
-    mtmdd_multiply(const char* name);
+    mtmdd_multiply();
     mtmdd_multiply(const mtmdd_multiply& copy);
     mtmdd_multiply& operator=(const mtmdd_multiply& copy);
     ~mtmdd_multiply();
@@ -706,9 +805,11 @@ class mtmdd_multiply : public mtmdd_apply_operation {
 class mtmdd_divide : public mtmdd_apply_operation {
   public:
     static mtmdd_divide* getInstance();
+    virtual const char* getName() const { return "MtMdd Divide"; }
+    virtual bool isCommutative() const { return false; }
 
   protected:
-    mtmdd_divide(const char* name);
+    mtmdd_divide();
     mtmdd_divide(const mtmdd_divide& copy);
     mtmdd_divide& operator=(const mtmdd_divide& copy);
     ~mtmdd_divide();
@@ -720,9 +821,11 @@ class mtmdd_divide : public mtmdd_apply_operation {
 class mtmdd_min : public mtmdd_apply_operation {
   public:
     static mtmdd_min* getInstance();
+    virtual const char* getName() const { return "MtMdd Min"; }
+    virtual bool isCommutative() const { return true; }
 
   protected:
-    mtmdd_min(const char* name);
+    mtmdd_min();
     mtmdd_min(const mtmdd_min& copy);
     mtmdd_min& operator=(const mtmdd_min& copy);
     ~mtmdd_min();
@@ -734,9 +837,11 @@ class mtmdd_min : public mtmdd_apply_operation {
 class mtmdd_max : public mtmdd_apply_operation {
   public:
     static mtmdd_max* getInstance();
+    virtual const char* getName() const { return "MtMdd Max"; }
+    virtual bool isCommutative() const { return true; }
 
   protected:
-    mtmdd_max(const char* name);
+    mtmdd_max();
     mtmdd_max(const mtmdd_max& copy);
     mtmdd_max& operator=(const mtmdd_max& copy);
     ~mtmdd_max();
@@ -748,9 +853,11 @@ class mtmdd_max : public mtmdd_apply_operation {
 class mtmdd_or_min : public mtmdd_apply_operation {
   public:
     static mtmdd_or_min* getInstance();
+    virtual const char* getName() const { return "MtMdd Or-Min"; }
+    virtual bool isCommutative() const { return true; }
 
   protected:
-    mtmdd_or_min(const char* name);
+    mtmdd_or_min();
     mtmdd_or_min(const mtmdd_or_min& copy);
     mtmdd_or_min& operator=(const mtmdd_or_min& copy);
     ~mtmdd_or_min();
@@ -762,9 +869,11 @@ class mtmdd_or_min : public mtmdd_apply_operation {
 class mtmdd_or_max : public mtmdd_apply_operation {
   public:
     static mtmdd_or_max* getInstance();
+    virtual const char* getName() const { return "MtMdd Or-Max"; }
+    virtual bool isCommutative() const { return true; }
 
   protected:
-    mtmdd_or_max(const char* name);
+    mtmdd_or_max();
     mtmdd_or_max(const mtmdd_or_max& copy);
     mtmdd_or_max& operator=(const mtmdd_or_max& copy);
     ~mtmdd_or_max();
@@ -776,9 +885,11 @@ class mtmdd_or_max : public mtmdd_apply_operation {
 class mtmdd_and_min : public mtmdd_apply_operation {
   public:
     static mtmdd_and_min* getInstance();
+    virtual const char* getName() const { return "MtMdd And-Min"; }
+    virtual bool isCommutative() const { return true; }
 
   protected:
-    mtmdd_and_min(const char* name);
+    mtmdd_and_min();
     mtmdd_and_min(const mtmdd_and_min& copy);
     mtmdd_and_min& operator=(const mtmdd_and_min& copy);
     ~mtmdd_and_min();
@@ -790,9 +901,11 @@ class mtmdd_and_min : public mtmdd_apply_operation {
 class mtmdd_and_max : public mtmdd_apply_operation {
   public:
     static mtmdd_and_max* getInstance();
+    virtual const char* getName() const { return "MtMdd And-Max"; }
+    virtual bool isCommutative() const { return true; }
 
   protected:
-    mtmdd_and_max(const char* name);
+    mtmdd_and_max();
     mtmdd_and_max(const mtmdd_and_max& copy);
     mtmdd_and_max& operator=(const mtmdd_and_max& copy);
     ~mtmdd_and_max();
@@ -804,9 +917,11 @@ class mtmdd_and_max : public mtmdd_apply_operation {
 class mtmdd_less_than : public mtmdd_apply_operation {
   public:
     static mtmdd_less_than* getInstance();
+    virtual const char* getName() const { return "MtMdd Less-Than"; }
+    virtual bool isCommutative() const { return false; }
 
   protected:
-    mtmdd_less_than(const char* name);
+    mtmdd_less_than();
     mtmdd_less_than(const mtmdd_less_than& copy);
     mtmdd_less_than& operator=(const mtmdd_less_than& copy);
     ~mtmdd_less_than();
@@ -818,9 +933,11 @@ class mtmdd_less_than : public mtmdd_apply_operation {
 class mtmdd_less_than_equal : public mtmdd_apply_operation {
   public:
     static mtmdd_less_than_equal* getInstance();
+    virtual const char* getName() const { return "MtMdd Less-Than-Or-Equal"; }
+    virtual bool isCommutative() const { return false; }
 
   protected:
-    mtmdd_less_than_equal(const char* name);
+    mtmdd_less_than_equal();
     mtmdd_less_than_equal(const mtmdd_less_than_equal& copy);
     mtmdd_less_than_equal& operator=(const mtmdd_less_than_equal& copy);
     ~mtmdd_less_than_equal();
@@ -832,9 +949,11 @@ class mtmdd_less_than_equal : public mtmdd_apply_operation {
 class mtmdd_greater_than : public mtmdd_apply_operation {
   public:
     static mtmdd_greater_than* getInstance();
+    virtual const char* getName() const { return "MtMdd Greater-Than"; }
+    virtual bool isCommutative() const { return false; }
 
   protected:
-    mtmdd_greater_than(const char* name);
+    mtmdd_greater_than();
     mtmdd_greater_than(const mtmdd_greater_than& copy);
     mtmdd_greater_than& operator=(const mtmdd_greater_than& copy);
     ~mtmdd_greater_than();
@@ -846,9 +965,13 @@ class mtmdd_greater_than : public mtmdd_apply_operation {
 class mtmdd_greater_than_equal : public mtmdd_apply_operation {
   public:
     static mtmdd_greater_than_equal* getInstance();
+    virtual const char* getName() const {
+      return "MtMdd Greater-Than-Or-Equal";
+    }
+    virtual bool isCommutative() const { return false; }
 
   protected:
-    mtmdd_greater_than_equal(const char* name);
+    mtmdd_greater_than_equal();
     mtmdd_greater_than_equal(const mtmdd_greater_than_equal& copy);
     mtmdd_greater_than_equal& operator=(const mtmdd_greater_than_equal& copy);
     ~mtmdd_greater_than_equal();
@@ -860,9 +983,11 @@ class mtmdd_greater_than_equal : public mtmdd_apply_operation {
 class mtmdd_equal : public mtmdd_apply_operation {
   public:
     static mtmdd_equal* getInstance();
+    virtual const char* getName() const { return "MtMdd Equal"; }
+    virtual bool isCommutative() const { return true; }
 
   protected:
-    mtmdd_equal(const char* name);
+    mtmdd_equal();
     mtmdd_equal(const mtmdd_equal& copy);
     mtmdd_equal& operator=(const mtmdd_equal& copy);
     ~mtmdd_equal();
@@ -874,9 +999,11 @@ class mtmdd_equal : public mtmdd_apply_operation {
 class mtmdd_not_equal : public mtmdd_apply_operation {
   public:
     static mtmdd_not_equal* getInstance();
+    virtual const char* getName() const { return "MtMdd Not-Equal"; }
+    virtual bool isCommutative() const { return true; }
 
   protected:
-    mtmdd_not_equal(const char* name);
+    mtmdd_not_equal();
     mtmdd_not_equal(const mtmdd_not_equal& copy);
     mtmdd_not_equal& operator=(const mtmdd_not_equal& copy);
     ~mtmdd_not_equal();
@@ -893,8 +1020,9 @@ class mtmdd_not_equal : public mtmdd_apply_operation {
 */
 class mtmdd_to_mdd_apply_operation : public mtmdd_apply_operation {
   public:
-    mtmdd_to_mdd_apply_operation(const char *name, bool commutative);
+    mtmdd_to_mdd_apply_operation();
     virtual ~mtmdd_to_mdd_apply_operation();
+    virtual const char* getName() const { return "MtMdd To Mdd Apply"; }
 
     virtual compute_manager::error typeCheck(const op_info* owner);
     virtual int compute(op_info* owner, int a, int b);
@@ -930,9 +1058,11 @@ class mtmdd_to_mdd_apply_operation : public mtmdd_apply_operation {
 class mtmdd_to_mdd_less_than : public mtmdd_to_mdd_apply_operation {
   public:
     static mtmdd_to_mdd_less_than* getInstance();
+    virtual const char* getName() const { return "MtMdd To Mdd Less-Than"; }
+    virtual bool isCommutative() const { return false; }
 
   protected:
-    mtmdd_to_mdd_less_than(const char* name);
+    mtmdd_to_mdd_less_than();
     mtmdd_to_mdd_less_than(const mtmdd_to_mdd_less_than& copy);
     mtmdd_to_mdd_less_than& operator=(const mtmdd_to_mdd_less_than& copy);
     ~mtmdd_to_mdd_less_than();
@@ -944,9 +1074,13 @@ class mtmdd_to_mdd_less_than : public mtmdd_to_mdd_apply_operation {
 class mtmdd_to_mdd_less_than_equal : public mtmdd_to_mdd_apply_operation {
   public:
     static mtmdd_to_mdd_less_than_equal* getInstance();
+    virtual const char* getName() const {
+      return "MtMdd To Mdd Less-Than-Or-Equal";
+    }
+    virtual bool isCommutative() const { return false; }
 
   protected:
-    mtmdd_to_mdd_less_than_equal(const char* name);
+    mtmdd_to_mdd_less_than_equal();
     mtmdd_to_mdd_less_than_equal(const mtmdd_to_mdd_less_than_equal& copy);
     mtmdd_to_mdd_less_than_equal&
       operator=(const mtmdd_to_mdd_less_than_equal& copy);
@@ -959,9 +1093,11 @@ class mtmdd_to_mdd_less_than_equal : public mtmdd_to_mdd_apply_operation {
 class mtmdd_to_mdd_greater_than : public mtmdd_to_mdd_apply_operation {
   public:
     static mtmdd_to_mdd_greater_than* getInstance();
+    virtual const char* getName() const { return "MtMdd To Mdd Greater-Than"; }
+    virtual bool isCommutative() const { return false; }
 
   protected:
-    mtmdd_to_mdd_greater_than(const char* name);
+    mtmdd_to_mdd_greater_than();
     mtmdd_to_mdd_greater_than(const mtmdd_to_mdd_greater_than& copy);
     mtmdd_to_mdd_greater_than&
       operator=(const mtmdd_to_mdd_greater_than& copy);
@@ -974,9 +1110,13 @@ class mtmdd_to_mdd_greater_than : public mtmdd_to_mdd_apply_operation {
 class mtmdd_to_mdd_greater_than_equal : public mtmdd_to_mdd_apply_operation {
   public:
     static mtmdd_to_mdd_greater_than_equal* getInstance();
+    virtual const char* getName() const {
+      return "MtMdd To Mdd Greater-Than-Or-Equal";
+    }
+    virtual bool isCommutative() const { return false; }
 
   protected:
-    mtmdd_to_mdd_greater_than_equal(const char* name);
+    mtmdd_to_mdd_greater_than_equal();
     mtmdd_to_mdd_greater_than_equal(
         const mtmdd_to_mdd_greater_than_equal& copy);
     mtmdd_to_mdd_greater_than_equal&
@@ -990,9 +1130,11 @@ class mtmdd_to_mdd_greater_than_equal : public mtmdd_to_mdd_apply_operation {
 class mtmdd_to_mdd_equal : public mtmdd_to_mdd_apply_operation {
   public:
     static mtmdd_to_mdd_equal* getInstance();
+    virtual const char* getName() const { return "MtMdd To Mdd Equal"; }
+    virtual bool isCommutative() const { return true; }
 
   protected:
-    mtmdd_to_mdd_equal(const char* name);
+    mtmdd_to_mdd_equal();
     mtmdd_to_mdd_equal(const mtmdd_to_mdd_equal& copy);
     mtmdd_to_mdd_equal& operator=(const mtmdd_to_mdd_equal& copy);
     ~mtmdd_to_mdd_equal();
@@ -1004,9 +1146,11 @@ class mtmdd_to_mdd_equal : public mtmdd_to_mdd_apply_operation {
 class mtmdd_to_mdd_not_equal : public mtmdd_to_mdd_apply_operation {
   public:
     static mtmdd_to_mdd_not_equal* getInstance();
+    virtual const char* getName() const { return "MtMdd To Mdd Not-Equal"; }
+    virtual bool isCommutative() const { return true; }
 
   protected:
-    mtmdd_to_mdd_not_equal(const char* name);
+    mtmdd_to_mdd_not_equal();
     mtmdd_to_mdd_not_equal(const mtmdd_to_mdd_not_equal& copy);
     mtmdd_to_mdd_not_equal& operator=(const mtmdd_to_mdd_not_equal& copy);
     ~mtmdd_to_mdd_not_equal();
@@ -1023,8 +1167,18 @@ class mtmdd_to_mdd_not_equal : public mtmdd_to_mdd_apply_operation {
 */
 class conversion_operation : public operation {
   public:
-    conversion_operation(const char *name);
+    conversion_operation();
     virtual ~conversion_operation();
+
+    virtual const char* getName() const { return "Conversion operation"; }
+
+    virtual int getKeyLength() const { return 1; }
+    virtual int getAnsLength() const { return 1; }
+    virtual int getCacheEntryLength() const { return 2; }
+
+    virtual int getKeyLengthInBytes() const { return 4; }
+    virtual int getAnsLengthInBytes() const { return 4; }
+    virtual int getCacheEntryLengthInBytes() const { return 8; }
 
     virtual compute_manager::error typeCheck(const op_info* owner);
     virtual bool isEntryStale(const op_info* owner, const int* entryData);
@@ -1059,9 +1213,10 @@ class mtmdd_to_mdd : public conversion_operation {
   public:
     static mtmdd_to_mdd* getInstance();
     virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual const char* getName() const { return "Convert MtMdd to Mdd"; }
 
   protected:
-    mtmdd_to_mdd(const char* name);
+    mtmdd_to_mdd();
     mtmdd_to_mdd(const mtmdd_to_mdd& copy);
     mtmdd_to_mdd& operator=(const mtmdd_to_mdd& copy);
     ~mtmdd_to_mdd();
@@ -1073,9 +1228,10 @@ class mdd_to_mtmdd : public conversion_operation {
   public:
     static mdd_to_mtmdd* getInstance();
     virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual const char* getName() const { return "Convert Mdd to MtMdd"; }
 
   protected:
-    mdd_to_mtmdd(const char* name);
+    mdd_to_mtmdd();
     mdd_to_mtmdd(const mdd_to_mtmdd& copy);
     mdd_to_mtmdd& operator=(const mdd_to_mtmdd& copy);
     ~mdd_to_mtmdd();
@@ -1087,9 +1243,10 @@ class mtmxd_to_mxd : public conversion_operation {
   public:
     static mtmxd_to_mxd* getInstance();
     virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual const char* getName() const { return "Convert MtMxd to Mxd"; }
 
   protected:
-    mtmxd_to_mxd(const char* name);
+    mtmxd_to_mxd();
     mtmxd_to_mxd(const mtmxd_to_mxd& copy);
     mtmxd_to_mxd& operator=(const mtmxd_to_mxd& copy);
     ~mtmxd_to_mxd();
@@ -1101,9 +1258,10 @@ class mxd_to_mtmxd : public conversion_operation {
   public:
     static mxd_to_mtmxd* getInstance();
     virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual const char* getName() const { return "Convert Mxd to MtMxd"; }
 
   protected:
-    mxd_to_mtmxd(const char* name);
+    mxd_to_mtmxd();
     mxd_to_mtmxd(const mxd_to_mtmxd& copy);
     mxd_to_mtmxd& operator=(const mxd_to_mtmxd& copy);
     ~mxd_to_mtmxd();
@@ -1115,6 +1273,16 @@ class mxd_to_mtmxd : public conversion_operation {
 class mtmdd_to_evmdd : public operation {
   public:
     static mtmdd_to_evmdd* getInstance();
+
+    virtual const char* getName() const { return "Convert MtMdd to EvMdd"; }
+
+    virtual int getKeyLength() const { return 1; }
+    virtual int getAnsLength() const { return 2; }
+    virtual int getCacheEntryLength() const { return 3; }
+
+    virtual int getKeyLengthInBytes() const { return 4; }
+    virtual int getAnsLengthInBytes() const { return 8; }
+    virtual int getCacheEntryLengthInBytes() const { return 12; }
 
     virtual compute_manager::error typeCheck(const op_info* owner);
     virtual bool isEntryStale(const op_info* owner, const int* entryData);
@@ -1132,7 +1300,7 @@ class mtmdd_to_evmdd : public operation {
         const dd_edge& b, dd_edge& c);
 
   protected:
-    mtmdd_to_evmdd(const char* name);
+    mtmdd_to_evmdd();
     mtmdd_to_evmdd(const mtmdd_to_evmdd& copy);
     mtmdd_to_evmdd& operator=(const mtmdd_to_evmdd& copy);
     ~mtmdd_to_evmdd();
@@ -1152,12 +1320,13 @@ class mtmdd_to_evmdd : public operation {
 class mdd_to_evplusmdd_index_set : public mtmdd_to_evmdd {
   public:
     static mdd_to_evplusmdd_index_set* getInstance();
+    virtual const char* getName() const { return "Convert Mdd to Index Set"; }
     virtual compute_manager::error typeCheck(const op_info* owner);
     virtual compute_manager::error compute(op_info* owner,
         const dd_edge& a, dd_edge& b);
 
   protected:
-    mdd_to_evplusmdd_index_set(const char* name);
+    mdd_to_evplusmdd_index_set();
     mdd_to_evplusmdd_index_set(const mdd_to_evplusmdd_index_set& copy);
     mdd_to_evplusmdd_index_set& operator=(const
         mdd_to_evplusmdd_index_set& copy);
@@ -1170,11 +1339,12 @@ class mdd_to_evplusmdd_index_set : public mtmdd_to_evmdd {
 class mtmdd_post_image : public mdd_post_image {
   public:
     static mtmdd_post_image* getInstance();
+    virtual const char* getName() const { return "MtMdd Post-Image"; }
     virtual compute_manager::error typeCheck(const op_info* owner);
     virtual int compute(op_info* owner, int a, int b);
 
   protected:
-    mtmdd_post_image(const char* name);
+    mtmdd_post_image();
     mtmdd_post_image(const mtmdd_post_image& copy);
     mtmdd_post_image& operator=(const mtmdd_post_image& copy);
     virtual ~mtmdd_post_image();
@@ -1186,11 +1356,12 @@ class mtmdd_post_image : public mdd_post_image {
 class mtmdd_pre_image : public mdd_pre_image {
   public:
     static mtmdd_pre_image* getInstance();
+    virtual const char* getName() const { return "MtMdd Pre-Image"; }
     virtual compute_manager::error typeCheck(const op_info* owner);
     virtual int compute(op_info* owner, int a, int b);
 
   protected:
-    mtmdd_pre_image(const char* name);
+    mtmdd_pre_image();
     mtmdd_pre_image(const mtmdd_pre_image& copy);
     mtmdd_pre_image& operator=(const mtmdd_pre_image& copy);
     virtual ~mtmdd_pre_image();
@@ -1198,6 +1369,51 @@ class mtmdd_pre_image : public mdd_pre_image {
     virtual int compute(op_info* owner, op_info* plusOp, int mdd, int mxd);
 };
 
+
+class evmdd_apply_operation : public operation {
+  public:
+    evmdd_apply_operation();
+    virtual ~evmdd_apply_operation();
+
+    virtual const char* getName() const { return "EVMDD Apply"; }
+
+    virtual int getKeyLength() const { return 4; }
+    virtual int getAnsLength() const { return 2; }
+    virtual int getCacheEntryLength() const { return 6; }
+
+    virtual int getKeyLengthInBytes() const { return 16; }
+    virtual int getAnsLengthInBytes() const { return 8; }
+    virtual int getCacheEntryLengthInBytes() const { return 24; }
+
+    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual bool isEntryStale(const op_info* owner, const int* entryData);
+    virtual void discardEntry(op_info* owner, const int* entryData);
+    virtual void showEntry(const op_info* owner, FILE* strm,
+        const int *entryData) const;
+
+    // Calls compute(op_info*, dd_edge, dd_edge, dd_edge)
+    virtual compute_manager::error compute(op_info* owner, dd_edge** operands);
+
+    // Returns an error
+    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+        dd_edge& b);
+
+    // Implements APPLY operation -- calls checkTerminals to compute
+    // result for terminal nodes.
+    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+        const dd_edge& b, dd_edge& c);
+
+  protected:
+    /// To be implemented by derived classes
+    virtual bool checkTerminals(op_info* op, int a, int aev, int b, int bev,
+        int& c, int& cev) = 0;
+
+    // Returns true if the operation is commutative (i.e. A op B == B op A)
+    virtual bool isCommutative() const = 0;
+
+    virtual bool findResult(op_info* owner, int a, int b, int& c);
+    virtual void saveResult(op_info* owner, int a, int b, int c);
+};
 
 #endif
 

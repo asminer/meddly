@@ -126,10 +126,10 @@ static int order[] =
 // almost 1 week, 1.65 GB
 //{0, 2, 1, 0, 3, 6, 5, 4, 8, 7, 10, 9, 11, 14, 13, 12, 17, 16, 15, 19, 18};
 //2 F , f, Ff {422,643 : 7,406,322}
-{0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+//{0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 //1, F , f, Ff {422,643 : 7,406,322} -- running -F -lFURLBDfurlbd (on gypsy)
 // almost 1 day, 2.5 GB
-//{0, 2, 1, 0, 3, 6, 5, 4, 8, 7, 10, 9, 11, 14, 13, 12, 15, 16, 17, 18, 19};
+{0, 2, 1, 0, 3, 6, 5, 4, 8, 7, 10, 9, 11, 14, 13, 12, 15, 16, 17, 18, 19};
 //Andy's PN
 //{0, 0, 1, 2, 3, 5, 7, 9, 11, 4, 6, 10, 8, 13, 12, 15, 14, 17, 16, 19, 18};
 // best: 1, 2, 3,...
@@ -1331,8 +1331,10 @@ int main(int argc, char *argv[])
 
   // Set hash table to be a chained hash table with a
   // maximum of 16 million entries (default)
+  bool chaining = false;
+  int hashTableSize = 16 * 1024 * 1024;
   assert(compute_manager::SUCCESS ==
-      MEDDLY_getComputeManager()->setHashTablePolicy(false, 1024*1024));
+      MEDDLY_getComputeManager()->setHashTablePolicy(chaining, hashTableSize));
 
   // Set up the state variables, as described earlier
   d = MEDDLY_createDomain();

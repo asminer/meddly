@@ -910,10 +910,13 @@ class dd_edge {
     */
     int getNode() const;
 
-    /** Get this dd_edge's edge value (only valid for edge-valued MDDs)
+    /** Get this dd_edge's edge value (only valid for edge-valued MDDs).
+        Note: EV+MDDs use Integer edge-values while EV*MDDs use
+        Real edge-value, so use the appropriate method.
         @return         edge value (if applicable).
     */
-    int getValue() const;
+    void getEdgeValue(int& edgeValue) const;
+    void getEdgeValue(float& edgeValue) const;
 
     /** Get this dd_edge's level handle.
         @return         the level handle.
@@ -934,6 +937,7 @@ class dd_edge {
         @param  level   level handle.
     */
     void set(int node, int value, int level);
+    void set(int node, float value, int level);
 
     /** Assignment operator.
         @param  e       dd_edge to copy.
@@ -1353,9 +1357,16 @@ inline int dd_edge::getNode() const
 }
 
 
-inline int dd_edge::getValue() const
+inline void dd_edge::getEdgeValue(int& ev) const
 {
-  return value;
+  ev = value;
+}
+
+
+inline void dd_edge::getEdgeValue(float& ev) const
+{
+  union { float f; int i; } u = {value};
+  ev = u.f;
 }
 
 

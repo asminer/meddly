@@ -36,6 +36,7 @@
 #define MEDDLY_EXPERT_H
 
 #include <map>
+#include <vector>
 #include "../src/defines.h"
 #include "../include/meddly.h"
 
@@ -109,6 +110,12 @@ class expert_forest : public forest {
     /// Create a temporary node with the maximum size allowed for this level.
     /// If \a clear is true, downpointers are initialized to 0.
     int createTempNodeMaxSize(int lh, bool clear = true);
+
+    /// Create a temporary node with the given downpointers. Note that
+    /// downPointers[i] corresponds to the downpointer at index i.
+    /// IMPORTANT: The incounts for the downpointers are not incremented.
+    /// The returned value is the handle for the temporary node.
+    virtual int createTempNode(int lh, std::vector<int>& downPointers) = 0;
 
     /// The maximum size (number of indices) a node at this level can have
     int getLevelSize(int lh) const;
@@ -205,6 +212,14 @@ class expert_forest : public forest {
 
     /// Get the node pointed to at the given index -- only for Full nodes
     int getFullNodeDownPtr(int node, int index) const;
+
+    /// Get the nodes pointed to by this node (works with Full or Sparse nodes.
+    /// The vector downPointers is increased in size if necessary (but
+    /// never reduced in size).
+    /// Returns false is operation is not possible. Possible reasons are:
+    /// node does not exist; node is a terminal; or node has not been reduced.
+    virtual bool getDownPtrs(int node, std::vector<int>& downPointers) const
+      = 0;
 
     /// Get the edge value for the given index -- only for Full nodes
     void getFullNodeEdgeValue(int node, int index, int& ev) const;
@@ -711,34 +726,31 @@ class operation {
 
   public:
 
-    operation(int keyLength, int ansLength, const char *name);
+    operation();
+    // int keyLength, int ansLength, const char *name);
 
     virtual ~operation();
 
     /// Operation description
-    const char* getName() const;
+    virtual const char* getName() const = 0;
 
     /// Number of ints that make up the key (usually the operands).
-    int getKeyLength() const;
+    virtual int getKeyLength() const = 0;
 
     /// Number of ints that make up the answer (usually the results).
-    int getAnsLength() const;
+    virtual int getAnsLength() const = 0;
 
     /// Number of ints that make up the entire record (key + answer)
-    int getCacheEntryLength() const;
+    virtual int getCacheEntryLength() const = 0;
 
     /// keyLength * sizeof(int) -- for speed store this with object
-    int getKeyLengthInBytes() const;
+    virtual int getKeyLengthInBytes() const = 0;
 
     /// ansLength * sizeof(int) -- for speed store this with object
-    int getAnsLengthInBytes() const;
+    virtual int getAnsLengthInBytes() const = 0;
 
     /// cacheEntryLength * sizeof(int) -- for speed store this with object
-    int getCacheEntryLengthInBytes() const;
-
-    // ***********************************************************************
-    // *    Functions to be implemented by expert-user and derived classes   *
-    // ***********************************************************************
+    virtual int getCacheEntryLengthInBytes() const = 0;
 
     /// Checks if this operation is compatible with the forests in owner.
     virtual compute_manager::error typeCheck(const op_info* owner) = 0;
@@ -775,7 +787,7 @@ class operation {
     // ******************************************************************
 
   private:
-
+#if 0
     const char *name;         // description of operation
     int keyLength;            // number of input args
     int ansLength;            // number of output args
@@ -783,6 +795,7 @@ class operation {
     int keyLengthInBytes;
     int ansLengthInBytes;
     int cacheEntryLengthInBytes;
+#endif
 };
 
 
@@ -1314,6 +1327,7 @@ inline const int* expert_domain::getLevelBounds() const
 // **************************** operation *************************************
 
 
+#if 0
 // Operation description
 inline const char* operation::getName() const
 {
@@ -1362,6 +1376,7 @@ inline int operation::getCacheEntryLengthInBytes() const
   return cacheEntryLengthInBytes;
 }
 
+#endif
 
 // **************************** expert_forest *********************************
 

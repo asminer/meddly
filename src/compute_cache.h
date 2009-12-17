@@ -41,8 +41,11 @@
 
 #include "../src/hash.h"
 #include "../src/fixed_size_hash.h"
+#include "../src/chained_hash.h"
+
 // const int maxEntries = 262144 * 2;
 #define RECYCLED_LIST
+#define USE_CHAINED_HASH_TABLE
 
 
 class compute_cache {
@@ -212,7 +215,11 @@ class compute_cache {
     recycled_list* recycledFront;
     std::vector<int> holes;
     fixed_size_hash_table<compute_cache>* fsht;
+#ifdef USE_CHAINED_HASH_TABLE
+    chained_hash_table<compute_cache>* ht;
+#else
     hash_table<compute_cache>* ht;
+#endif
     unsigned hits;
     unsigned pings;
 };

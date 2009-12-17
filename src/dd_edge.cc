@@ -92,6 +92,15 @@ void dd_edge::set(int n, int v, int l)
 }
 
 
+void dd_edge::set(int n, float v, int l)
+{
+  smart_cast<expert_forest*>(parent)->unlinkNode(node);
+  node = n;
+  value = toInt(v);
+  level = l;
+}
+
+
 double dd_edge::getCardinality() const
 {
   return smart_cast<expert_forest*>(parent)->getCardinality(node);
