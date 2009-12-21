@@ -3075,8 +3075,8 @@ findFirstValue(const dd_edge& f, int* vlist) const
           }
         }
       } else {
-        node = getSparseNodeDownPtr(node, 0);
         vlist[currLevel] = getSparseNodeIndex(node, 0);
+        node = getSparseNodeDownPtr(node, 0);
       }
     }
     currLevel = expertDomain->getVariableBelow(currLevel);
