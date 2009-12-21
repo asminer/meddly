@@ -1718,321 +1718,6 @@ int evmdd_node_manager::createTempNode(int k, int sz, bool clear)
 }
 
 
-#if 0
-void evplusmdd_node_manager::createNode(int k, int index, int dptr, int ev,
-    int& res, int& resEv)
-{
-  DCASSERT(dptr >= -1 && ev >= 0);
-  DCASSERT(index >= -1);
-
-  if (index == -1) {
-    // if all edge values are the same for a evmdd node, it is
-    // equivalent to say that they are all 0 (since we subtract the minimum
-    // anyway).
-    if (reductionRule == forest::FULLY_REDUCED) {
-      res = sharedCopy(dptr);
-      resEv = ev;
-      return;
-    }
-    res = createTempNodeMaxSize(k, false);
-    setAllDownPtrsWoUnlink(res, dptr);
-    setAllEdgeValues(res, ev);
-    normalizeAndReduceNode(res, resEv);
-    return;
-  }
-
-  // a single downpointer points to dptr
-
-#if 0
-
-  res = createTempNode(k, index + 1);
-  setDownPtrWoUnlink(res, index, dptr);
-  setEdgeValue(res, index, ev);
-  resEv = 0;
-  normalizeAndReduceNode(res, resEv);
-
-#else
-
-  if (nodeStorage == FULL_STORAGE ||
-      (nodeStorage == FULL_OR_SPARSE_STORAGE && index < 2)) {
-    // Build a full node
-    res = createTempNode(k, index + 1);
-    setDownPtrWoUnlink(res, index, dptr);
-    setEdgeValue(res, index, ev);
-    normalizeAndReduceNode(res, resEv);
-  }
-  else {
-    DCASSERT (nodeStorage == SPARSE_STORAGE ||
-        (nodeStorage == FULL_OR_SPARSE_STORAGE && index >= 2));
-    // Build a sparse node
-    createSparseNode(k, index, dptr, ev, res, resEv);
-    // res, resEv set by createSparseNode(..); do not call normalizeAndReduce
-  }
-
-#endif
-
-}
-
-
-void evtimesmdd_node_manager::createNode(int k, int index, int dptr, float ev,
-    int& res, float& resEv)
-{
-  DCASSERT(dptr >= -1 && ev >= 0);
-  DCASSERT(index >= -1);
-
-  if (index == -1) {
-    // if all edge values are the same for a evmdd node, it is
-    // equivalent to say that they are all 1 (since we divide by the
-    // maximum anyway).
-    if (reductionRule == forest::FULLY_REDUCED) {
-      res = sharedCopy(dptr);
-      resEv = ev;
-      return;
-    }
-    res = createTempNodeMaxSize(k, false);
-    setAllDownPtrsWoUnlink(res, dptr);
-    setAllEdgeValues(res, ev);
-    normalizeAndReduceNode(res, resEv);
-    return;
-  }
-
-  // a single downpointer points to dptr
-
-#if 0
-
-  res = createTempNode(k, index + 1);
-  setDownPtrWoUnlink(res, index, dptr);
-  setEdgeValue(res, index, ev);
-  resEv = 0;
-  normalizeAndReduceNode(res, resEv);
-
-#else
-
-  if (nodeStorage == FULL_STORAGE ||
-      (nodeStorage == FULL_OR_SPARSE_STORAGE && index < 2)) {
-    // Build a full node
-    res = createTempNode(k, index + 1);
-    setDownPtrWoUnlink(res, index, dptr);
-    setEdgeValue(res, index, ev);
-    normalizeAndReduceNode(res, resEv);
-  }
-  else {
-    DCASSERT (nodeStorage == SPARSE_STORAGE ||
-        (nodeStorage == FULL_OR_SPARSE_STORAGE && index >= 2));
-    // Build a sparse node
-    createSparseNode(k, index, dptr, ev, res, resEv);
-    // res, resEv set by createSparseNode(..); do not call normalizeAndReduce
-  }
-
-#endif
-
-}
-#endif
-
-
-#if 0
-void evplusmdd_node_manager::createSparseNode(int k, int index,
-    int dptr, int ev, int& res, int& resEv)
-{
-  DCASSERT(k != 0);
-
-  if (isTimeToGc()) { garbageCollect(); }
-
-  DCASSERT(isValidLevel(k));
-  CHECK_RANGE(0, index, getLevelSize(k));
-
-  // get a location in address[] to store the node
-  int p = getFreeNode(k);
-
-#ifdef DEBUG_MDD_SET
-  printf("%s: k: %d, index: %d, new p: %d\n", __func__, k, index, p);
-  fflush(stdout);
-#endif
-
-  // fill in the location with p's address info
-  address[p].level = k;
-  address[p].offset = getHole(k, 7 /*4 + 3*/, true);
-  address[p].cache_count = 0;
-
-#ifdef DEBUG_MDD_SET
-  printf("%s: offset: %d\n", __func__, address[p].offset);
-  fflush(stdout);
-#endif
-
-  int* foo = level[mapLevel(k)].data + address[p].offset;
-  foo[0] = 1;                   // #incoming
-  foo[1] = getTempNodeId();
-  foo[2] = -1;                  // size
-  foo[3] = index;               // index
-  foo[4] = sharedCopy(dptr);    // downpointer
-  foo[5] = 0;                   // this is the only ev, has to be zero
-                                // set resEv = ev
-  foo[6] = p;                   // pointer to this node in the address array
-
-  resEv = ev;
-
-#ifdef TRACK_DELETIONS
-  cout << "Creating node " << p << "\n";
-  cout.flush();
-#endif
-
-  incrNodesActivatedSinceGc();
-
-  // search in unique table
-  int q = find(p);
-  if (getNull() == q) {
-    // no duplicate found; insert into unique table
-    insert(p);
-    DCASSERT(getCacheCount(p) == 0);
-    DCASSERT(find(p) == p);
-    res = p;
-  }
-  else {
-    // duplicate found; discard this node and return the duplicate
-    unlinkNode(dptr);
-    // code from deleteTempNode(p) adapted to work here
-    {
-      makeHole(k, getNodeOffset(p), 7);
-      freeNode(p);
-      if (level[mapLevel(k)].compactLevel) compactLevel(k);
-    }
-    res = sharedCopy(q);
-  }
-}
-
-
-void evtimesmdd_node_manager::createSparseNode(int k, int index,
-    int dptr, float ev, int& res, float& resEv)
-{
-  DCASSERT(k != 0);
-
-  if (isTimeToGc()) { garbageCollect(); }
-
-  DCASSERT(isValidLevel(k));
-  CHECK_RANGE(0, index, getLevelSize(k));
-
-  // get a location in address[] to store the node
-  int p = getFreeNode(k);
-
-#ifdef DEBUG_MDD_SET
-  printf("%s: k: %d, index: %d, new p: %d\n", __func__, k, index, p);
-  fflush(stdout);
-#endif
-
-  // fill in the location with p's address info
-  address[p].level = k;
-  address[p].offset = getHole(k, 7 /*4 + 3*/, true);
-  address[p].cache_count = 0;
-
-#ifdef DEBUG_MDD_SET
-  printf("%s: offset: %d\n", __func__, address[p].offset);
-  fflush(stdout);
-#endif
-
-  int* foo = level[mapLevel(k)].data + address[p].offset;
-  foo[0] = 1;                   // #incoming
-  foo[1] = getTempNodeId();
-  foo[2] = -1;                  // size
-  foo[3] = index;               // index
-  foo[4] = sharedCopy(dptr);    // downpointer
-  foo[5] = toInt(1.0);          // this is the only ev, has to be 1
-                                // set resEv = ev
-  foo[6] = p;                   // pointer to this node in the address array
-
-  resEv = ev;
-
-#ifdef TRACK_DELETIONS
-  cout << "Creating node " << p << "\n";
-  cout.flush();
-#endif
-
-  incrNodesActivatedSinceGc();
-
-  // search in unique table
-  int q = find(p);
-  if (getNull() == q) {
-    // no duplicate found; insert into unique table
-    insert(p);
-    DCASSERT(getCacheCount(p) == 0);
-    DCASSERT(find(p) == p);
-    res = p;
-  }
-  else {
-    // duplicate found; discard this node and return the duplicate
-    unlinkNode(dptr);
-    // code from deleteTempNode(p) adapted to work here
-    {
-      makeHole(k, getNodeOffset(p), 7);
-      freeNode(p);
-      if (level[mapLevel(k)].compactLevel) compactLevel(k);
-    }
-    res = sharedCopy(q);
-  }
-}
-#endif
-
-void evmdd_node_manager::createEdge(const int* v, int term, dd_edge &e)
-{
-  // construct the edge bottom-up
-  const int* h2l_map = expertDomain->getHeightsToLevelsMap();
-  int h_sz = expertDomain->getNumVariables() + 1;
-  int prev = getTerminalNode(false);
-  int prevEv = 0;
-  int curr = getTerminalNode(true);
-  int currEv = term;
-  for (int i=1; i<h_sz; i++) {
-    prev = curr;
-    prevEv = currEv;
-    createNode(h2l_map[i], v[h2l_map[i]], prev, prevEv, curr, currEv);
-    unlinkNode(prev);
-  }
-  e.set(curr, currEv, getNodeLevel(curr));
-}
-
-forest::error evmdd_node_manager::createEdge(const int* const* vlist,
-    const int* terms, int N, dd_edge &e)
-{
-  if (e.getForest() != this) return forest::INVALID_OPERATION;
-  if (vlist == 0 || terms == 0 || N <= 0) return forest::INVALID_VARIABLE;
-
-  createEdge(vlist[0], terms[0], e);
-  dd_edge curr(this);
-  for (int i=1; i<N; i++) {
-    createEdge(vlist[i], terms[i], curr);
-    e += curr;
-  }
-
-  return forest::SUCCESS;
-}
-
-
-forest::error evmdd_node_manager::createEdge(int term, dd_edge &e)
-{
-  if (e.getForest() != this) return forest::INVALID_OPERATION;
-  if (!isTerminalNode(term)) return forest::INVALID_VARIABLE;
-
-  if (reductionRule == forest::FULLY_REDUCED) {
-    e.set(getTerminalNode(true), term, domain::TERMINALS);
-    return forest::SUCCESS;
-  }
-
-  // construct the edge bottom-up
-  const int* h2l_map = expertDomain->getHeightsToLevelsMap();
-  int h_sz = expertDomain->getNumVariables() + 1;
-  int prev = getTerminalNode(false);
-  int prevEv = 0;
-  int curr = getTerminalNode(true);
-  int currEv = term;
-  for (int i=1; i<h_sz; i++) {
-    prev = curr;
-    prevEv = currEv;
-    createNode(h2l_map[i], -1, prev, prevEv, curr, currEv);
-    unlinkNode(prev);
-  }
-  e.set(curr, currEv, getNodeLevel(curr));
-  return forest::SUCCESS;
-}
-
 // returns index with a[]; -1 if not found
 int binarySearch(const int* a, int sz, int find)
 {
@@ -2052,49 +1737,36 @@ int binarySearch(const int* a, int sz, int find)
 }
 
 
-forest::error evmdd_node_manager::evaluate(const dd_edge &f,
-    const int* vlist, int &term) const
-{
-  if (f.getForest() != this) return forest::INVALID_OPERATION;
-  if (vlist == 0) return forest::INVALID_VARIABLE;
-
-  // assumption: vlist does not contain any special values (-1, -2, etc).
-  // vlist contains a single element.
-  int node = f.getNode();
-  const int* h2l_map = expertDomain->getHeightsToLevelsMap();
-
-  f.getEdgeValue(term);
-  while (!isTerminalNode(node)) {
-    int ev = getDefaultEdgeValue();
-    int n = 0;
-    if (isFullNode(node)) {
-      int index = vlist[h2l_map[getNodeHeight(node)]];
-      if (index < getFullNodeSize(node)) {
-        getFullNodeEdgeValue(node, index, ev);
-        n = getFullNodeDownPtr(node, index);
-      }
-    } else {
-      // find the index
-      // binary search
-      int index = binarySearch(getSparseNodeIndexes(node),
-          getSparseNodeSize(node), vlist[h2l_map[getNodeHeight(node)]]);
-      if (index != -1 ) {
-        getSparseNodeEdgeValue(node, index, ev);
-        n = getSparseNodeDownPtr(node, index);
-      }
-    }
-    term = (n == 0)? ev: doOp(term, ev);
-    node = n;
-  }
-  return forest::SUCCESS;
-}
-
-
 int evmdd_node_manager::reduceNode(int p)
 {
   assert(false);
   return 0;
 }
+
+
+forest::error
+evmdd_node_manager::
+createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e)
+{
+  return forest::INVALID_OPERATION;
+}
+
+
+forest::error
+evmdd_node_manager::
+createEdge(int val, dd_edge &e)
+{
+  return forest::INVALID_OPERATION;
+}
+
+
+forest::error
+evmdd_node_manager::
+evaluate(const dd_edge &f, const int* vlist, int &term) const
+{
+  return forest::INVALID_OPERATION;
+}
+
 
 
 forest::error evmdd_node_manager::createEdge(const int* const* vlist, int N,
@@ -2195,6 +1867,52 @@ void evplusmdd_node_manager::initEdgeValues(int p) {
   int *last = edgeptr + getFullNodeSize(p);
   for ( ; edgeptr != last; ++edgeptr) *edgeptr = INF;
 }
+
+
+// Similar to getDownPtrs() but for EV+MDDs
+bool evplusmdd_node_manager::getDownPtrsAndEdgeValues(int p,
+    std::vector<int>& dptrs, std::vector<int>& evs) const
+{
+  if (!isActiveNode(p) || isTerminalNode(p) || !isReducedNode(p))
+    return false;
+
+  if (isFullNode(p)) {
+    int size = getFullNodeSize(p);
+    if (dptrs.size() < unsigned(size)) {
+      dptrs.resize(size, 0);
+      evs.resize(size, INF);
+    }
+    const int* ptrs = getFullNodeDownPtrsReadOnly(p);
+    const int* end = ptrs + size;
+    const int* evptrs = getFullNodeEdgeValuesReadOnly(p);
+    std::vector<int>::iterator iter = dptrs.begin();
+    std::vector<int>::iterator eviter = evs.begin();
+    while (ptrs != end)
+    {
+      *iter++ = *ptrs++;
+      *eviter++ = *evptrs++;
+    }
+  }
+  else {
+    int nnz = getSparseNodeSize(p);
+    int size = getLargestIndex(p) + 1;
+    if (dptrs.size() < unsigned(size)) {
+      dptrs.resize(size, 0);
+      evs.resize(size, INF);
+    }
+    const int* ptrs = getSparseNodeDownPtrs(p);
+    const int* index = getSparseNodeIndexes(p);
+    const int* evptrs = getSparseNodeEdgeValues(p);
+    const int* end = ptrs + nnz;
+    while (ptrs != end)
+    {
+      evs[*index] = *evptrs++;
+      dptrs[*index++] = *ptrs++;
+    }
+  }
+  return true;
+}
+
 
 void evplusmdd_node_manager::normalizeAndReduceNode(int& p, int& ev)
 {
@@ -2449,6 +2167,50 @@ forest::error evplusmdd_node_manager::getElement(const dd_edge& a,
 }
 
 
+forest::error
+evplusmdd_node_manager::
+createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e)
+{
+  return createEdgeInternal(vlist, terms, N, e);
+}
+
+
+forest::error
+evplusmdd_node_manager::
+createEdge(int val, dd_edge &e)
+{
+  return createEdgeInternal(val, e);
+}
+
+
+forest::error
+evplusmdd_node_manager::
+evaluate(const dd_edge &f, const int* vlist, int &term) const
+{
+  return evaluateInternal(f, vlist, term);
+}
+
+
+int
+evplusmdd_node_manager::
+createTempNode(int lh, std::vector<int>& downPointers,
+    std::vector<int>& edgeValues)
+{
+  int tempNode =
+    evmdd_node_manager::createTempNode(lh, downPointers.size(), false);
+  int* dptrs = getFullNodeDownPtrs(tempNode);
+  int* evs = getFullNodeEdgeValues(tempNode);
+  std::vector<int>::iterator dpiter = downPointers.begin();
+  std::vector<int>::iterator eviter = edgeValues.begin();
+  while (dpiter != downPointers.end())
+  {
+    *dptrs++ = *dpiter++;
+    *evs++ = *eviter++;
+  }
+  return tempNode;
+}
+
+
 // ********************************* EV*MDDs ********************************** 
 
 evtimesmdd_node_manager::evtimesmdd_node_manager(domain *d)
@@ -2475,6 +2237,52 @@ void evtimesmdd_node_manager::initEdgeValues(int p) {
   for ( ; fptr != end; ++fptr) *fptr = NAN;
 #endif
 }
+
+
+// Similar to getDownPtrs() but for EV*MDDs
+bool evtimesmdd_node_manager::getDownPtrsAndEdgeValues(int p,
+    std::vector<int>& dptrs, std::vector<float>& evs) const
+{
+  if (!isActiveNode(p) || isTerminalNode(p) || !isReducedNode(p))
+    return false;
+
+  if (isFullNode(p)) {
+    int size = getFullNodeSize(p);
+    if (dptrs.size() < unsigned(size)) {
+      dptrs.resize(size, 0);
+      evs.resize(size, NAN);
+    }
+    const int* ptrs = getFullNodeDownPtrsReadOnly(p);
+    const int* end = ptrs + size;
+    const float* evptrs = (const float *)(getFullNodeEdgeValuesReadOnly(p));
+    std::vector<int>::iterator iter = dptrs.begin();
+    std::vector<float>::iterator eviter = evs.begin();
+    while (ptrs != end)
+    {
+      *iter++ = *ptrs++;
+      *eviter++ = *evptrs++;
+    }
+  }
+  else {
+    int nnz = getSparseNodeSize(p);
+    int size = getLargestIndex(p) + 1;
+    if (dptrs.size() < unsigned(size)) {
+      dptrs.resize(size, 0);
+      evs.resize(size, INF);
+    }
+    const int* ptrs = getSparseNodeDownPtrs(p);
+    const int* index = getSparseNodeIndexes(p);
+    const float* evptrs = (const float *)(getSparseNodeEdgeValues(p));
+    const int* end = ptrs + nnz;
+    while (ptrs != end)
+    {
+      evs[*index] = *evptrs++;
+      dptrs[*index++] = *ptrs++;
+    }
+  }
+  return true;
+}
+
 
 void evtimesmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
 {
@@ -2677,6 +2485,51 @@ void evtimesmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
 #endif
 
   return;
+}
+
+
+forest::error
+evtimesmdd_node_manager::
+createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
+{
+  return createEdgeInternal(vlist, terms, N, e);
+}
+
+
+forest::error
+evtimesmdd_node_manager::
+createEdge(float val, dd_edge &e)
+{
+  return createEdgeInternal(val, e);
+}
+
+
+forest::error
+evtimesmdd_node_manager::
+evaluate(const dd_edge &f, const int* vlist, float &term) const
+{
+  return evaluateInternal(f, vlist, term);
+}
+
+
+int
+evtimesmdd_node_manager::
+createTempNode(int lh, std::vector<int>& downPointers,
+    std::vector<float>& edgeValues)
+{
+  int tempNode =
+    evmdd_node_manager::createTempNode(lh, downPointers.size(), false);
+  int* dptrs = getFullNodeDownPtrs(tempNode);
+  int* ievs = getFullNodeEdgeValues(tempNode);
+  float* evs = (float *)ievs;
+  std::vector<int>::iterator dpiter = downPointers.begin();
+  std::vector<float>::iterator eviter = edgeValues.begin();
+  while (dpiter != downPointers.end())
+  {
+    *dptrs++ = *dpiter++;
+    *evs++ = *eviter++;
+  }
+  return tempNode;
 }
 
 
@@ -3186,6 +3039,52 @@ forest::error mdd_node_manager::evaluate(const dd_edge &f, const int* vlist,
   term = getBoolean(node);
   return forest::SUCCESS;
 }
+
+
+forest::error
+mdd_node_manager::
+findFirstValue(const dd_edge& f, int* vlist) const
+{
+  // assumption: vlist does not contain any special values (-1, -2, etc).
+  // vlist contains a single element.
+  // vlist is based on level handles.
+  int node = f.getNode();
+  if (node == 0) return forest::INVALID_ASSIGNMENT;
+
+  int currLevel = expertDomain->getTopVariable();
+  DCASSERT(currLevel != domain::TERMINALS);
+  while (currLevel != domain::TERMINALS)
+  {
+    DCASSERT(node != 0);
+    if (currLevel != getNodeLevel(node)) {
+      // currLevel is "higher" than node, and has been skipped.
+      // Since this is a mdd, reduced nodes enable all paths at the
+      // skipped level.
+      vlist[currLevel] = 0;   // picking the first index
+    } else {
+      // find a valid path at this level
+      if (isFullNode(node)) {
+        int size = getFullNodeSize(node);
+        for (int i = 0; i < size; i++)
+        {
+          int n = getFullNodeDownPtr(node, i);
+          if (n != 0) {
+            node = n;
+            vlist[currLevel] = i;
+            break;
+          }
+        }
+      } else {
+        node = getSparseNodeDownPtr(node, 0);
+        vlist[currLevel] = getSparseNodeIndex(node, 0);
+      }
+    }
+    currLevel = expertDomain->getVariableBelow(currLevel);
+  }
+
+  return forest::SUCCESS;
+}
+
 
 
 void mdd_node_manager::normalizeAndReduceNode(int& p, int& ev)

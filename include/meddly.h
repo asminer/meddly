@@ -718,6 +718,17 @@ class forest {
     virtual error evaluate(const dd_edge& f, const int* vlist,
         const int* vplist, float &term) const = 0;
 
+
+    /** Returns a state from the MDD represented by \a f.
+        @param  f       Edge.
+        @param  vlist   Output parameter used to return a state from \a f.
+        @return         INVALID_OPERATION if forest is not a MDD.
+                        SUCCESS if a state is found,
+                        INVALID_ASSIGNMENT otherwise.
+    */
+    virtual error findFirstValue(const dd_edge& f, int* vlist) const = 0;
+
+
     /** Display all active (i.e., connected) nodes in the forest.
         This is primarily for aid in debugging.
         @param  strm      File stream to write to.

@@ -1385,11 +1385,8 @@ class evmdd_apply_operation : public operation {
     virtual int getAnsLengthInBytes() const { return 8; }
     virtual int getCacheEntryLengthInBytes() const { return 24; }
 
-    virtual compute_manager::error typeCheck(const op_info* owner);
     virtual bool isEntryStale(const op_info* owner, const int* entryData);
     virtual void discardEntry(op_info* owner, const int* entryData);
-    virtual void showEntry(const op_info* owner, FILE* strm,
-        const int *entryData) const;
 
     // Calls compute(op_info*, dd_edge, dd_edge, dd_edge)
     virtual compute_manager::error compute(op_info* owner, dd_edge** operands);
@@ -1401,7 +1398,28 @@ class evmdd_apply_operation : public operation {
     // Implements APPLY operation -- calls checkTerminals to compute
     // result for terminal nodes.
     virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+        const dd_edge& b, dd_edge& c) = 0;
+};
+
+
+class evplusmdd_apply_operation : public evmdd_apply_operation {
+  public:
+    evplusmdd_apply_operation();
+    virtual ~evplusmdd_apply_operation();
+
+    virtual const char* getName() const { return "EV+MDD Apply"; }
+
+    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void showEntry(const op_info* owner, FILE* strm,
+        const int *entryData) const;
+
+    // Implements APPLY operation -- calls checkTerminals to compute
+    // result for terminal nodes.
+    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
         const dd_edge& b, dd_edge& c);
+
+    virtual compute_manager::error compute(op_info* owner, int a, int aev,
+        int b, int bev, int& c, int& cev);
 
   protected:
     /// To be implemented by derived classes
@@ -1411,9 +1429,142 @@ class evmdd_apply_operation : public operation {
     // Returns true if the operation is commutative (i.e. A op B == B op A)
     virtual bool isCommutative() const = 0;
 
-    virtual bool findResult(op_info* owner, int a, int b, int& c);
-    virtual void saveResult(op_info* owner, int a, int b, int c);
+    virtual bool findResult(op_info* owner, int a, int aev,
+        int b, int bev, int& c, int& cev);
+    virtual void saveResult(op_info* owner, int a, int aev,
+        int b, int bev, int c, int cev);
 };
+
+
+class evtimesmdd_apply_operation : public evmdd_apply_operation {
+  public:
+    evtimesmdd_apply_operation();
+    virtual ~evtimesmdd_apply_operation();
+
+    virtual const char* getName() const { return "EV*MDD Apply"; }
+
+    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void showEntry(const op_info* owner, FILE* strm,
+        const int *entryData) const;
+
+    // Implements APPLY operation -- calls checkTerminals to compute
+    // result for terminal nodes.
+    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+        const dd_edge& b, dd_edge& c);
+
+    virtual compute_manager::error compute(op_info* owner, int a, float aev,
+        int b, float bev, int& c, float& cev);
+
+  protected:
+    /// To be implemented by derived classes
+    virtual bool checkTerminals(op_info* op, int a, float aev, int b, float bev,
+        int& c, float& cev) = 0;
+
+    // Returns true if the operation is commutative (i.e. A op B == B op A)
+    virtual bool isCommutative() const = 0;
+
+    virtual bool findResult(op_info* owner, int a, float aev,
+        int b, float bev, int& c, float& cev);
+    virtual void saveResult(op_info* owner, int a, float aev,
+        int b, float bev, int c, float cev);
+};
+
+
+class evplusmdd_plus : public evplusmdd_apply_operation {
+  public:
+    virtual const char* getName() const { return "EV+MDD Plus"; }
+    virtual bool isCommutative() const { return true; }
+    virtual bool checkTerminals(op_info* op, int a, int aev, int b, int bev,
+        int& c, int& cev);
+    static evplusmdd_plus* getInstance();
+
+  protected:
+    evplusmdd_plus() {}
+    evplusmdd_plus(const evplusmdd_plus& copy);
+    evplusmdd_plus& operator=(const evplusmdd_plus& copy);
+    virtual ~evplusmdd_plus() {}
+};
+
+
+class evplusmdd_multiply : public evplusmdd_apply_operation {
+  public:
+    virtual const char* getName() const { return "EV+MDD Multiply"; }
+    virtual bool isCommutative() const { return true; }
+    virtual bool checkTerminals(op_info* op, int a, int aev, int b, int bev,
+        int& c, int& cev);
+    static evplusmdd_multiply* getInstance();
+
+  protected:
+    evplusmdd_multiply() {}
+    evplusmdd_multiply(const evplusmdd_multiply& copy);
+    evplusmdd_multiply& operator=(const evplusmdd_multiply& copy);
+    virtual ~evplusmdd_multiply() {}
+};
+
+
+class evplusmdd_minus : public evplusmdd_apply_operation {
+  public:
+    virtual const char* getName() const { return "EV+MDD Minus"; }
+    virtual bool isCommutative() const { return false; }
+    virtual bool checkTerminals(op_info* op, int a, int aev, int b, int bev,
+        int& c, int& cev);
+    static evplusmdd_minus* getInstance();
+
+  protected:
+    evplusmdd_minus() {}
+    evplusmdd_minus(const evplusmdd_minus& copy);
+    evplusmdd_minus& operator=(const evplusmdd_minus& copy);
+    virtual ~evplusmdd_minus() {}
+};
+
+
+class evtimesmdd_plus : public evtimesmdd_apply_operation {
+  public:
+    virtual const char* getName() const { return "EV*MDD Plus"; }
+    virtual bool isCommutative() const { return true; }
+    virtual bool checkTerminals(op_info* op, int a, float aev, int b, float bev,
+        int& c, float& cev);
+    static evtimesmdd_plus* getInstance();
+
+  protected:
+    evtimesmdd_plus() {}
+    evtimesmdd_plus(const evtimesmdd_plus& copy);
+    evtimesmdd_plus& operator=(const evtimesmdd_plus& copy);
+    virtual ~evtimesmdd_plus() {}
+};
+
+
+class evtimesmdd_multiply : public evtimesmdd_apply_operation {
+  public:
+    virtual const char* getName() const { return "EV*MDD Multiply"; }
+    virtual bool isCommutative() const { return true; }
+    virtual bool checkTerminals(op_info* op, int a, float aev, int b, float bev,
+        int& c, float& cev);
+    static evtimesmdd_multiply* getInstance();
+
+  protected:
+    evtimesmdd_multiply() {}
+    evtimesmdd_multiply(const evtimesmdd_multiply& copy);
+    evtimesmdd_multiply& operator=(const evtimesmdd_multiply& copy);
+    virtual ~evtimesmdd_multiply() {}
+};
+
+
+class evtimesmdd_minus : public evtimesmdd_apply_operation {
+  public:
+    virtual const char* getName() const { return "EV*MDD Minus"; }
+    virtual bool isCommutative() const { return false; }
+    virtual bool checkTerminals(op_info* op, int a, float aev, int b, float bev,
+        int& c, float& cev);
+    static evtimesmdd_minus* getInstance();
+
+  protected:
+    evtimesmdd_minus() {}
+    evtimesmdd_minus(const evtimesmdd_minus& copy);
+    evtimesmdd_minus& operator=(const evtimesmdd_minus& copy);
+    virtual ~evtimesmdd_minus() {}
+};
+
 
 #endif
 

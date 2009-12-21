@@ -124,6 +124,7 @@ dd_edge test_evmdd(forest* evmdd, compute_manager::op_code opCode,
         terms + half, nElements - half, B));
 
   op_info* op = getOp(evmdd, opCode);
+  assert(op != NULL);
   assert(compute_manager::SUCCESS == ecm->apply(op, A, B, C));
 
   if (verbose > 0) {
@@ -136,26 +137,6 @@ dd_edge test_evmdd(forest* evmdd, compute_manager::op_code opCode,
   }
 
   return C;
-}
-
-
-bool test_conversion(dd_edge& A, dd_edge& B)
-{
-  static const int nForests = 2;
-  static forest* forests[nForests];
-  static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
-  assert(ecm != 0);
-
-  forests[0] = A.getForest();
-  forests[1] = B.getForest();
-  op_info* op = ecm->getOpInfo(compute_manager::COPY, forests, nForests);
-  if (op == 0) {
-    fprintf(stderr, "Conversion operation not found\n");
-    return false;
-  }
-
-  return compute_manager::SUCCESS == ecm->apply(op, A, B)? true: false;
 }
 
 
@@ -228,11 +209,9 @@ int main(int argc, char *argv[])
 
   // Create a MTMDD forest in this domain
 #if USE_REALS
-  forest* evmdd =
-    d->createForest(false, forest::REAL, forest::EVPLUS);
+  forest* evmdd = d->createForest(false, forest::REAL, forest::EVTIMES);
 #else
-  forest* evmdd =
-    d->createForest(false, forest::INTEGER, forest::EVPLUS);
+  forest* evmdd = d->createForest(false, forest::INTEGER, forest::EVPLUS);
 #endif
   assert(evmdd != 0);
 
@@ -266,23 +245,6 @@ int main(int argc, char *argv[])
   printf("Peak Nodes in MDD: %d\n", evmdd->getPeakNumNodes());
   printf("Nodes in compute table: %d\n",
       (MEDDLY_getComputeManager())->getNumCacheEntries());
-
-  // Convert evmdd to mdd
-  forest* mdd =
-    d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL);
-
-  dd_edge toMdd(mdd);
-  printf("\n\nConversion MTMDD to MDD: ");
-
-  if (test_conversion(result, toMdd)) {
-    printf("Success!\n");
-    if (verbose > 0) {
-      printf("toMdd: ");
-      if (verbose > 1) toMdd.show(stdout, 3); else toMdd.show(stdout, 2);
-    }
-  } else {
-    printf("Fail!\n");
-  }
 
   if (verbose > 1) {
     printf("\n\nForest Info:\n");

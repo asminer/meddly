@@ -204,6 +204,8 @@ class node_manager : public expert_forest {
 
     virtual forest::error getElement(const dd_edge& a, int index, int* e);
 
+    virtual forest::error findFirstValue(const dd_edge& f, int* vlist) const;
+
     /// Create a temporary node -- a node that can be modified by the user
     virtual int createTempNode(int lh, int size, bool clear = true);
 
@@ -212,6 +214,15 @@ class node_manager : public expert_forest {
     /// IMPORTANT: The incounts for the downpointers are not incremented.
     /// The returned value is the handle for the temporary node.
     virtual int createTempNode(int lh, std::vector<int>& downPointers);
+
+    /// Same as createTempNode(int, vector<int>) except this is for EV+MDDs.
+    virtual int createTempNode(int lh, std::vector<int>& downPointers,
+        std::vector<int>& edgeValues) { return 0; }
+
+    /// Same as createTempNode(int, vector<int>) except this is for EV*MDDs.
+    virtual int createTempNode(int lh, std::vector<int>& downPointers,
+        std::vector<float>& edgeValues) { return 0; }
+
 
     /// Apply reduction rule to the temporary node and finalize it. Once
     /// a node is reduced, its contents cannot be modified.
@@ -228,6 +239,16 @@ class node_manager : public expert_forest {
     // to the downpointer at index i. For sparse nodes,
     // dptrs[index(i)] corresponds to the downpointer at index i.
     virtual bool getDownPtrs(int node, std::vector<int>& dptrs) const;
+
+    // Similar to getDownPtrs() but for EV+MDDs
+    virtual bool getDownPtrsAndEdgeValues(int node,
+        std::vector<int>& dptrs, std::vector<int>& evs) const
+    { return false; }
+
+    // Similar to getDownPtrs() but for EV*MDDs
+    virtual bool getDownPtrsAndEdgeValues(int node,
+        std::vector<int>& dptrs, std::vector<float>& evs) const
+    { return false; }
 
     /// Has the node been reduced
     bool isReducedNode(int node) const;
@@ -1175,6 +1196,12 @@ inline int node_manager::getLevelNode(int k) const {
 
 inline bool node_manager::isValidVariable(int vh) const {
   return expertDomain->getVariableHeight(vh) != -1;
+}
+
+inline forest::error
+node_manager::findFirstValue(const dd_edge& f, int* vlist) const
+{
+  return forest::INVALID_OPERATION;
 }
 
 #endif

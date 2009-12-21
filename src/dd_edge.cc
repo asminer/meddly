@@ -106,6 +106,7 @@ double dd_edge::getCardinality() const
   return smart_cast<expert_forest*>(parent)->getCardinality(node);
 }
 
+//
 // Operator +=
 dd_edge& dd_edge::operator+=(const dd_edge& e)
 {
@@ -113,7 +114,8 @@ dd_edge& dd_edge::operator+=(const dd_edge& e)
     const int nOperands = 3;
     forest* forests[nOperands] = {parent, parent, parent};
     compute_manager::op_code opCode =
-      (parent->getRangeType() == forest::BOOLEAN)
+      (parent->getRangeType() == forest::BOOLEAN &&
+        parent->getEdgeLabeling() == forest::MULTI_TERMINAL)
       ? compute_manager::UNION
       : compute_manager::PLUS;
     opPlus =
@@ -135,7 +137,8 @@ dd_edge& dd_edge::operator*=(const dd_edge& e)
     const int nOperands = 3;
     forest* forests[nOperands] = {parent, parent, parent};
     compute_manager::op_code opCode =
-      (parent->getRangeType() == forest::BOOLEAN)
+      (parent->getRangeType() == forest::BOOLEAN &&
+        parent->getEdgeLabeling() == forest::MULTI_TERMINAL)
       ? compute_manager::INTERSECTION
       : compute_manager::MULTIPLY;
     opStar =
@@ -157,7 +160,8 @@ dd_edge& dd_edge::operator-=(const dd_edge& e)
     const int nOperands = 3;
     forest* forests[nOperands] = {parent, parent, parent};
     compute_manager::op_code opCode =
-      (parent->getRangeType() == forest::BOOLEAN)
+      (parent->getRangeType() == forest::BOOLEAN &&
+        parent->getEdgeLabeling() == forest::MULTI_TERMINAL)
       ? compute_manager::DIFFERENCE
       : compute_manager::MINUS;
     opMinus =
@@ -178,7 +182,8 @@ dd_edge& dd_edge::operator/=(const dd_edge& e)
   if (opDivide == 0) {
     const int nOperands = 3;
     forest* forests[nOperands] = {parent, parent, parent};
-    assert(parent->getRangeType() != forest::BOOLEAN);
+    assert(!(parent->getRangeType() == forest::BOOLEAN &&
+        parent->getEdgeLabeling() == forest::MULTI_TERMINAL));
     opDivide =
       smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
       getOpInfo(compute_manager::DIVIDE, forests, nOperands);

@@ -11,6 +11,7 @@ graphs_to_mdds \
 test_union_mdd \
 test_mtmdd \
 test_mtmxd \
+test_evmdd \
 build_expression \
 kan1_batch \
 dining_phils \
@@ -54,3 +55,6 @@ dining_phils_LDADD = ../src/libmeddly.la
 
 rubiks_cube_SOURCES = rubiks_cube.cc
 rubiks_cube_LDADD = ../src/libmeddly.la
+
+test_evmdd_SOURCES = test_evmdd.cc
+test_evmdd_LDADD = ../src/libmeddly.la

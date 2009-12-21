@@ -8812,78 +8812,773 @@ int mtmdd_pre_image::compute(op_info* owner, op_info* plusOp, int mdd, int mxd)
 
 evmdd_apply_operation::
 evmdd_apply_operation()
-{
-}
+{ }
 
 
 evmdd_apply_operation::
 ~evmdd_apply_operation()
 { }
 
-compute_manager::error
-evmdd_apply_operation::
-typeCheck(const op_info* owner)
-{ return compute_manager::NOT_IMPLEMENTED; }
-
 
 bool
 evmdd_apply_operation::
-isEntryStale(const op_info* owner, const int* entryData)
-{ return false; }
+isEntryStale(const op_info* owner, const int* data)
+{
+  // data[] is of size owner.nForests * 2
+  // data[2i] and data[2i+1] <--> forest[i]
+  // call isStale for each forest[i] and data[2i]
+  DCASSERT(owner->nForests == 3);
+  return 
+    getExpertForest(owner, 0)->isStale(data[0]) ||
+    getExpertForest(owner, 1)->isStale(data[2]) ||
+    getExpertForest(owner, 2)->isStale(data[4]);
+}
 
 
 void
 evmdd_apply_operation::
-discardEntry(op_info* owner, const int* entryData)
-{ }
-
-
-void
-evmdd_apply_operation::
-showEntry(const op_info* owner, FILE* strm,
-    const int *entryData) const
-{ }
+discardEntry(op_info* owner, const int* data)
+{
+  // data[] is of size owner.nForests * 2
+  // data[2i] and data[2i+1] <--> forest[i]
+  // call uncacheNode for each forest[i] and data[2i]
+  DCASSERT(owner->nForests == 3);
+  getExpertForest(owner, 0)->uncacheNode(data[0]);
+  getExpertForest(owner, 1)->uncacheNode(data[2]);
+  getExpertForest(owner, 2)->uncacheNode(data[4]);
+}
 
 
 // Calls compute(op_info*, dd_edge, dd_edge, dd_edge)
 compute_manager::error
 evmdd_apply_operation::
 compute(op_info* owner, dd_edge** operands)
-{ return compute_manager::NOT_IMPLEMENTED; }
+{
+  if (operands == 0) return compute_manager::TYPE_MISMATCH;
+  // compute(owner, dd_edge, dd_edge, dd_edge) checks for owner == 0
+  return compute(owner, *operands[0], *operands[1], *operands[2]);
+}
 
 
 // Returns an error
 compute_manager::error
 evmdd_apply_operation::
-compute(op_info* owner, const dd_edge& a,
-    dd_edge& b)
-{ return compute_manager::NOT_IMPLEMENTED; }
+compute(op_info* owner, const dd_edge& a, dd_edge& b)
+{
+  return compute_manager::TYPE_MISMATCH;
+}
+
+
+
+// ---------------------- EV+MDD Operations -------------------------
+
+
+
+evplusmdd_apply_operation::
+evplusmdd_apply_operation()
+{ }
+
+
+evplusmdd_apply_operation::
+~evplusmdd_apply_operation()
+{ }
+
+
+void
+evplusmdd_apply_operation::
+showEntry(const op_info* owner, FILE* strm, const int *data) const
+{
+  // data[] is of size owner.nForests * 2
+  // data[2i] and data[2i+1] <--> forest[i]
+  DCASSERT(owner->nForests == 3);
+  fprintf(strm, "[%s(%d:%d, %d:%d): %d:%d]",
+      owner->op->getName(),
+      data[0], data[1], data[2], data[3], data[4], data[5]);
+}
+
+
+compute_manager::error
+evplusmdd_apply_operation::
+typeCheck(const op_info* owner)
+{
+  // op1 == EV+MDD, op2 == EV+MDD, op3 = EV+MDD
+  if (owner == 0)
+    return compute_manager::UNKNOWN_OPERATION;
+  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nForests != 3)
+    return compute_manager::WRONG_NUMBER;
+  if (owner->f[0] != owner->f[1] || owner->f[0] != owner->f[2])
+    return compute_manager::FOREST_MISMATCH;
+  if (!getExpertForest(owner, 0)->isEvplusMdd())
+    return compute_manager::TYPE_MISMATCH;
+  return compute_manager::SUCCESS;
+}
+
+
+bool
+evplusmdd_apply_operation::
+findResult(op_info* owner, int a, int aev, int b, int bev, int& c, int& cev)
+{
+  static int key[4];
+
+  // create cache entry
+  if (isCommutative() && a > b) {
+    // sort the entry in ascending order
+    key[0] = b; key[2] = a;
+    key[1] = bev; key[3] = aev;
+  } else {
+    key[0] = a; key[2] = b;
+    key[1] = aev; key[3] = bev;
+  }
+
+  const int* cacheEntry = owner->cc->find(owner, const_cast<const int*>(key));
+
+  if (cacheEntry == 0) return false;
+  c = cacheEntry[4];
+  cev = cacheEntry[5];
+  getExpertForest(owner, 2)->linkNode(c);
+  return true;
+}
+
+
+void
+evplusmdd_apply_operation::
+saveResult(op_info* owner, int a, int aev, int b, int bev, int c, int cev)
+{
+  static int cacheEntry[6];
+
+  getExpertForest(owner, 0)->cacheNode(a);
+  getExpertForest(owner, 1)->cacheNode(b);
+  getExpertForest(owner, 2)->cacheNode(c);
+
+  // create cache entry
+  if (isCommutative() && a > b) {
+    // sort the entry in ascending order
+    cacheEntry[0] = b; cacheEntry[2] = a;
+    cacheEntry[1] = bev; cacheEntry[3] = aev;
+  } else {
+    cacheEntry[0] = a; cacheEntry[2] = b;
+    cacheEntry[1] = aev; cacheEntry[3] = bev;
+  }
+  cacheEntry[4] = c;
+  cacheEntry[5] = cev;
+
+  owner->cc->add(owner, const_cast<const int*>(cacheEntry));
+}
 
 
 // Implements APPLY operation -- calls checkTerminals to compute
 // result for terminal nodes.
 compute_manager::error
-evmdd_apply_operation::
-compute(op_info* owner, const dd_edge& a,
-    const dd_edge& b, dd_edge& c)
-{ return compute_manager::NOT_IMPLEMENTED; }
+evplusmdd_apply_operation::
+compute(op_info* owner, const dd_edge& a, const dd_edge& b, dd_edge& c)
+{
+  if (owner == 0) return compute_manager::TYPE_MISMATCH;
+  int result = 0;
+  int ev = 0;
+  int aev = 0;
+  int bev = 0;
+  a.getEdgeValue(aev);
+  b.getEdgeValue(bev);
+  compute(owner, a.getNode(), aev, b.getNode(), bev, result, ev);
+  c.set(result, ev, getExpertForest(owner, 1)->getNodeLevel(result));
+  return compute_manager::SUCCESS;
+}
 
 
-/// To be implemented by derived classes
-bool
-evmdd_apply_operation::
-checkTerminals(op_info* op, int a, int aev, int b, int bev, int& c, int& cev)
-{ return false; }
+compute_manager::error
+evplusmdd_apply_operation::
+compute(op_info* owner, int a, int aev, int b, int bev, int& c, int& cev)
+{
+  DCASSERT(owner->f[0] == owner->f[1] && owner->f[1] == owner->f[2]);
+
+  if (checkTerminals(owner, a, aev, b, bev, c, cev))
+    return compute_manager::SUCCESS;
+  if (findResult(owner, a, aev, b, bev, c, cev))
+    return compute_manager::SUCCESS;
+
+  // 0. initialize result
+  // 1. if a is at a lower level than b, expand b
+  //    else if b is at a lower level than a, expand a
+  //    else expand both
+
+  // 0. initialize result
+  expert_forest* expertForest = getExpertForest(owner, 0);
+  const int aLevel = expertForest->getNodeLevel(a);
+  const int bLevel = expertForest->getNodeLevel(b);
+
+  int resultLevel = aLevel > bLevel? aLevel: bLevel;
+  int resultSize = expertForest->getLevelSize(resultLevel);
+
+  // Three vectors: operands a and b, and result c
+
+  if (aLevel < resultLevel) {
+    // expand b
+    // result[i] = a op b[i]
+    std::vector<int> B(resultSize, 0);
+    std::vector<int> C(resultSize, 0);
+    std::vector<int> Bev(resultSize, INF);
+    std::vector<int> Cev(resultSize, INF);
+
+    int aZero, aZeroev;
+    compute(owner, a, aev, 0, INF, aZero, aZeroev);
+
+    expertForest->getDownPtrsAndEdgeValues(b, B, Bev);
+    std::vector<int>::iterator iterB = B.begin();
+    std::vector<int>::iterator iterC = C.begin();
+    std::vector<int>::iterator iterBev = Bev.begin();
+    std::vector<int>::iterator iterCev = Cev.begin();
+    for ( ; iterB != B.end(); iterB++, iterC++, iterBev++, iterCev++)
+    {
+      if (*iterB == 0) {
+        *iterC = aZero;
+        expertForest->linkNode(aZero);
+        *iterCev = aZeroev;
+      } else {
+        compute(owner, a, aev, *iterB, *iterBev + bev, *iterC, *iterCev);
+      }
+    }
+    expertForest->unlinkNode(aZero);
+    c = expertForest->createTempNode(resultLevel, C, Cev);
+  }
+  else if (bLevel < resultLevel) {
+    // expand a
+    // result[i] = a[i] op b
+    std::vector<int> A(resultSize, 0);
+    std::vector<int> C(resultSize, 0);
+    std::vector<int> Aev(resultSize, INF);
+    std::vector<int> Cev(resultSize, INF);
+
+    int zeroB, zeroBev;
+    compute(owner, 0, INF, b, bev, zeroB, zeroBev);
+
+    expertForest->getDownPtrsAndEdgeValues(a, A, Aev);
+    std::vector<int>::iterator iterA = A.begin();
+    std::vector<int>::iterator iterC = C.begin();
+    std::vector<int>::iterator iterAev = Aev.begin();
+    std::vector<int>::iterator iterCev = Cev.begin();
+    for ( ; iterA != A.end(); iterA++, iterC++, iterAev++, iterCev++)
+    {
+      if (*iterA == 0) {
+        *iterC = zeroB;
+        expertForest->linkNode(zeroB);
+        *iterCev = zeroBev;
+      } else {
+        compute(owner, *iterA, *iterAev + aev, b, bev, *iterC, *iterCev);
+      }
+    }
+    expertForest->unlinkNode(zeroB);
+    c = expertForest->createTempNode(resultLevel, C, Cev);
+  }
+  else {
+    // expand both a and b
+    // result[i] = a[i] op b[i]
+    std::vector<int> A(resultSize, 0);
+    std::vector<int> B(resultSize, 0);
+    std::vector<int> C(resultSize, 0);
+    std::vector<int> Aev(resultSize, INF);
+    std::vector<int> Bev(resultSize, INF);
+    std::vector<int> Cev(resultSize, INF);
+
+    int zeroZero, zeroZeroEv;
+    compute(owner, 0, INF, 0, INF, zeroZero, zeroZeroEv);
+
+    expertForest->getDownPtrsAndEdgeValues(a, A, Aev);
+    expertForest->getDownPtrsAndEdgeValues(b, B, Bev);
+    std::vector<int>::iterator iterA = A.begin();
+    std::vector<int>::iterator iterB = B.begin();
+    std::vector<int>::iterator iterC = C.begin();
+    std::vector<int>::iterator iterAev = Aev.begin();
+    std::vector<int>::iterator iterBev = Bev.begin();
+    std::vector<int>::iterator iterCev = Cev.begin();
+    for ( ; iterA != A.end();
+        iterA++, iterB++, iterC++, iterAev++, iterBev++, iterCev++)
+    {
+      if (*iterA == 0) {
+        if (*iterB == 0) {
+          *iterC = zeroZero;
+          expertForest->linkNode(zeroZero);
+          *iterCev = zeroZeroEv;
+        } else {
+          compute(owner, 0, INF, *iterB, *iterBev + bev, *iterC, *iterCev);
+        }
+      } else if (*iterB == 0) {
+        compute(owner, *iterA, *iterAev + aev, 0, INF, *iterC, *iterCev);
+      } else {
+        compute(owner, *iterA, *iterAev + aev, *iterB, *iterBev + bev,
+            *iterC, *iterCev);
+      }
+    }
+
+    expertForest->unlinkNode(zeroZero);
+    c = expertForest->createTempNode(resultLevel, C, Cev);
+  }
+
+  // save result in compute cache and return it
+
+#if 0
+  printf("reduce(%d): ", result);
+  result = expertForest->reduceNode(result);
+  printf("%d  [", result);
+  for (unsigned i = 0; i < C.size(); i++ )
+  {
+    printf("%d ", C[i]);
+  }
+  printf("]\n");
+#else
+  expertForest->normalizeAndReduceNode(c, cev);
+#endif
+
+  saveResult(owner, a, aev, b, bev, c, cev);
+  return compute_manager::SUCCESS;
+}
 
 
-bool
-evmdd_apply_operation::
-findResult(op_info* owner, int a, int b, int& c)
-{ return false; }
+// ---------------------- EV*MDD Operations -------------------------
+
+
+
+evtimesmdd_apply_operation::
+evtimesmdd_apply_operation()
+{ }
+
+
+evtimesmdd_apply_operation::
+~evtimesmdd_apply_operation()
+{ }
 
 
 void
-evmdd_apply_operation::
-saveResult(op_info* owner, int a, int b, int c)
-{ assert(false); }
+evtimesmdd_apply_operation::
+showEntry(const op_info* owner, FILE* strm, const int *data) const
+{
+  // data[] is of size owner.nForests * 2
+  // data[2i] and data[2i+1] <--> forest[i]
+  DCASSERT(owner->nForests == 3);
+  fprintf(strm, "[%s(%d:%f, %d:%f): %d:%f]",
+      owner->op->getName(),
+      data[0], toFloat(data[1]), data[2], toFloat(data[3]),
+      data[4], toFloat(data[5]));
+}
+
+
+compute_manager::error
+evtimesmdd_apply_operation::
+typeCheck(const op_info* owner)
+{
+  // op1 == EV+MDD, op2 == EV+MDD, op3 = EV+MDD
+  if (owner == 0)
+    return compute_manager::UNKNOWN_OPERATION;
+  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nForests != 3)
+    return compute_manager::WRONG_NUMBER;
+  if (owner->f[0] != owner->f[1] || owner->f[0] != owner->f[2])
+    return compute_manager::FOREST_MISMATCH;
+  if (!getExpertForest(owner, 0)->isEvtimesMdd())
+    return compute_manager::TYPE_MISMATCH;
+  return compute_manager::SUCCESS;
+}
+
+
+bool
+evtimesmdd_apply_operation::
+findResult(op_info* owner, int a, float aev, int b, float bev,
+    int& c, float& cev)
+{
+  static int key[4];
+
+  // create cache entry
+  if (isCommutative() && a > b) {
+    // sort the entry in ascending order
+    key[0] = b; key[2] = a;
+    key[1] = toInt(bev); key[3] = toInt(aev);
+  } else {
+    key[0] = a; key[2] = b;
+    key[1] = toInt(aev); key[3] = toInt(bev);
+  }
+
+  const int* cacheEntry = owner->cc->find(owner, const_cast<const int*>(key));
+
+  if (cacheEntry == 0) return false;
+  c = cacheEntry[4];
+  cev = toFloat(cacheEntry[5]);
+  getExpertForest(owner, 2)->linkNode(c);
+  return true;
+}
+
+
+void
+evtimesmdd_apply_operation::
+saveResult(op_info* owner, int a, float aev, int b, float bev, int c, float cev)
+{
+  static int cacheEntry[6];
+
+  getExpertForest(owner, 0)->cacheNode(a);
+  getExpertForest(owner, 1)->cacheNode(b);
+  getExpertForest(owner, 2)->cacheNode(c);
+
+  // create cache entry
+  if (isCommutative() && a > b) {
+    // sort the entry in ascending order
+    cacheEntry[0] = b; cacheEntry[2] = a;
+    cacheEntry[1] = toInt(bev); cacheEntry[3] = toInt(aev);
+  } else {
+    cacheEntry[0] = a; cacheEntry[2] = b;
+    cacheEntry[1] = toInt(aev); cacheEntry[3] = toInt(bev);
+  }
+  cacheEntry[4] = c;
+  cacheEntry[5] = toInt(cev);
+
+  owner->cc->add(owner, const_cast<const int*>(cacheEntry));
+}
+
+
+// Implements APPLY operation -- calls checkTerminals to compute
+// result for terminal nodes.
+compute_manager::error
+evtimesmdd_apply_operation::
+compute(op_info* owner, const dd_edge& a, const dd_edge& b, dd_edge& c)
+{
+  if (owner == 0) return compute_manager::TYPE_MISMATCH;
+  int result = 0;
+  float ev = 0;
+  float aev = 0;
+  float bev = 0;
+  a.getEdgeValue(aev);
+  b.getEdgeValue(bev);
+  compute(owner, a.getNode(), aev, b.getNode(), bev, result, ev);
+  c.set(result, ev, getExpertForest(owner, 1)->getNodeLevel(result));
+  return compute_manager::SUCCESS;
+}
+
+
+compute_manager::error
+evtimesmdd_apply_operation::
+compute(op_info* owner, int a, float aev, int b, float bev, int& c, float& cev)
+{
+  DCASSERT(owner->f[0] == owner->f[1] && owner->f[1] == owner->f[2]);
+
+  if (checkTerminals(owner, a, aev, b, bev, c, cev))
+    return compute_manager::SUCCESS;
+  if (findResult(owner, a, aev, b, bev, c, cev))
+    return compute_manager::SUCCESS;
+
+  // 0. initialize result
+  // 1. if a is at a lower level than b, expand b
+  //    else if b is at a lower level than a, expand a
+  //    else expand both
+
+  // 0. initialize result
+  expert_forest* expertForest = getExpertForest(owner, 0);
+  const int aLevel = expertForest->getNodeLevel(a);
+  const int bLevel = expertForest->getNodeLevel(b);
+
+  int resultLevel = aLevel > bLevel? aLevel: bLevel;
+  int resultSize = expertForest->getLevelSize(resultLevel);
+
+  // Three vectors: operands a and b, and result c
+
+  if (aLevel < resultLevel) {
+    // expand b
+    // result[i] = a op b[i]
+    std::vector<int> B(resultSize, 0);
+    std::vector<int> C(resultSize, 0);
+    std::vector<float> Bev(resultSize, NAN);
+    std::vector<float> Cev(resultSize, NAN);
+
+    int aZero;
+    float aZeroev;
+    compute(owner, a, aev, 0, NAN, aZero, aZeroev);
+
+    expertForest->getDownPtrsAndEdgeValues(b, B, Bev);
+    std::vector<int>::iterator iterB = B.begin();
+    std::vector<int>::iterator iterC = C.begin();
+    std::vector<float>::iterator iterBev = Bev.begin();
+    std::vector<float>::iterator iterCev = Cev.begin();
+    for ( ; iterB != B.end(); iterB++, iterC++, iterBev++, iterCev++)
+    {
+      if (*iterB == 0) {
+        *iterC = aZero;
+        expertForest->linkNode(aZero);
+        *iterCev = aZeroev;
+      } else {
+        compute(owner, a, aev, *iterB, *iterBev + bev, *iterC, *iterCev);
+      }
+    }
+    expertForest->unlinkNode(aZero);
+    c = expertForest->createTempNode(resultLevel, C, Cev);
+  }
+  else if (bLevel < resultLevel) {
+    // expand a
+    // result[i] = a[i] op b
+    std::vector<int> A(resultSize, 0);
+    std::vector<int> C(resultSize, 0);
+    std::vector<float> Aev(resultSize, NAN);
+    std::vector<float> Cev(resultSize, NAN);
+
+    int zeroB;
+    float zeroBev;
+    compute(owner, 0, NAN, b, bev, zeroB, zeroBev);
+
+    expertForest->getDownPtrsAndEdgeValues(a, A, Aev);
+    std::vector<int>::iterator iterA = A.begin();
+    std::vector<int>::iterator iterC = C.begin();
+    std::vector<float>::iterator iterAev = Aev.begin();
+    std::vector<float>::iterator iterCev = Cev.begin();
+    for ( ; iterA != A.end(); iterA++, iterC++, iterAev++, iterCev++)
+    {
+      if (*iterA == 0) {
+        *iterC = zeroB;
+        expertForest->linkNode(zeroB);
+        *iterCev = zeroBev;
+      } else {
+        compute(owner, *iterA, *iterAev + aev, b, bev, *iterC, *iterCev);
+      }
+    }
+    expertForest->unlinkNode(zeroB);
+    c = expertForest->createTempNode(resultLevel, C, Cev);
+  }
+  else {
+    // expand both a and b
+    // result[i] = a[i] op b[i]
+    std::vector<int> A(resultSize, 0);
+    std::vector<int> B(resultSize, 0);
+    std::vector<int> C(resultSize, 0);
+    std::vector<float> Aev(resultSize, NAN);
+    std::vector<float> Bev(resultSize, NAN);
+    std::vector<float> Cev(resultSize, NAN);
+
+    int zeroZero;
+    float zeroZeroEv;
+    compute(owner, 0, NAN, 0, NAN, zeroZero, zeroZeroEv);
+
+    expertForest->getDownPtrsAndEdgeValues(a, A, Aev);
+    expertForest->getDownPtrsAndEdgeValues(b, B, Bev);
+    std::vector<int>::iterator iterA = A.begin();
+    std::vector<int>::iterator iterB = B.begin();
+    std::vector<int>::iterator iterC = C.begin();
+    std::vector<float>::iterator iterAev = Aev.begin();
+    std::vector<float>::iterator iterBev = Bev.begin();
+    std::vector<float>::iterator iterCev = Cev.begin();
+    for ( ; iterA != A.end();
+        iterA++, iterB++, iterC++, iterAev++, iterBev++, iterCev++)
+    {
+      if (*iterA == 0) {
+        if (*iterB == 0) {
+          *iterC = zeroZero;
+          expertForest->linkNode(zeroZero);
+          *iterCev = zeroZeroEv;
+        } else {
+          compute(owner, 0, NAN, *iterB, *iterBev + bev, *iterC, *iterCev);
+        }
+      } else if (*iterB == 0) {
+        compute(owner, *iterA, *iterAev + aev, 0, NAN, *iterC, *iterCev);
+      } else {
+        compute(owner, *iterA, *iterAev + aev, *iterB, *iterBev + bev,
+            *iterC, *iterCev);
+      }
+    }
+
+    expertForest->unlinkNode(zeroZero);
+    c = expertForest->createTempNode(resultLevel, C, Cev);
+  }
+
+  // save result in compute cache and return it
+
+#if 0
+  printf("reduce(%d): ", result);
+  result = expertForest->reduceNode(result);
+  printf("%d  [", result);
+  for (unsigned i = 0; i < C.size(); i++ )
+  {
+    printf("%d ", C[i]);
+  }
+  printf("]\n");
+#else
+  expertForest->normalizeAndReduceNode(c, cev);
+#endif
+
+  saveResult(owner, a, aev, b, bev, c, cev);
+  return compute_manager::SUCCESS;
+}
+
+
+evplusmdd_plus*
+evplusmdd_plus::
+getInstance()
+{
+  static evplusmdd_plus instance;
+  return &instance;
+}
+
+
+bool
+evplusmdd_plus::
+checkTerminals(op_info* op, int a, int aev, int b, int bev, int& c, int& cev)
+{
+  if (a == 0) {
+    c = b; cev = bev;
+    getExpertForest(op, 1)->linkNode(b);
+    return true;
+  }
+  if (b == 0) {
+    c = a; cev = aev;
+    getExpertForest(op, 0)->linkNode(a);
+    return true;
+  }
+  if (a == -1 && b == -1) {
+    c = -1; cev = aev + bev;
+    return true;
+  }
+  return false;
+}
+
+
+evplusmdd_multiply*
+evplusmdd_multiply::
+getInstance()
+{
+  static evplusmdd_multiply instance;
+  return &instance;
+}
+
+
+bool
+evplusmdd_multiply::
+checkTerminals(op_info* op, int a, int aev, int b, int bev, int& c, int& cev)
+{
+  if (a == 0 || b == 0) {
+    c = 0; cev = INF;
+    return true;
+  }
+  if (a == -1 && b == -1) {
+    c = -1; cev = aev * bev;
+    return true;
+  }
+  return false;
+}
+
+
+evplusmdd_minus*
+evplusmdd_minus::
+getInstance()
+{
+  static evplusmdd_minus instance;
+  return &instance;
+}
+
+
+bool
+evplusmdd_minus::
+checkTerminals(op_info* op, int a, int aev, int b, int bev, int& c, int& cev)
+{
+  if (a == 0) {
+    c = b; cev = -bev;
+    getExpertForest(op, 1)->linkNode(b);
+    return true;
+  }
+  if (b == 0) {
+    c = a; cev = aev;
+    getExpertForest(op, 0)->linkNode(a);
+    return true;
+  }
+  if (a == -1 && b == -1) {
+    c = -1; cev = aev - bev;
+    return true;
+  }
+  return false;
+}
+
+
+evtimesmdd_plus*
+evtimesmdd_plus::
+getInstance()
+{
+  static evtimesmdd_plus instance;
+  return &instance;
+}
+
+
+bool
+evtimesmdd_plus::
+checkTerminals(op_info* op, int a, float aev, int b, float bev,
+    int& c, float& cev)
+{
+  if (a == 0) {
+    c = b; cev = bev;
+    getExpertForest(op, 1)->linkNode(b);
+    return true;
+  }
+  if (b == 0) {
+    c = a; cev = aev;
+    getExpertForest(op, 0)->linkNode(a);
+    return true;
+  }
+  if (a == -1 && b == -1) {
+    c = -1; cev = aev + bev;
+    return true;
+  }
+  return false;
+}
+
+
+evtimesmdd_multiply*
+evtimesmdd_multiply::
+getInstance()
+{
+  static evtimesmdd_multiply instance;
+  return &instance;
+}
+
+
+bool
+evtimesmdd_multiply::
+checkTerminals(op_info* op, int a, float aev, int b, float bev,
+    int& c, float& cev)
+{
+  if (a == 0 || b == 0) {
+    c = 0; cev = NAN;
+    return true;
+  }
+  if (a == -1 && b == -1) {
+    c = -1; cev = aev * bev;
+    return true;
+  }
+  return false;
+}
+
+
+evtimesmdd_minus*
+evtimesmdd_minus::
+getInstance()
+{
+  static evtimesmdd_minus instance;
+  return &instance;
+}
+
+
+bool
+evtimesmdd_minus::
+checkTerminals(op_info* op, int a, float aev, int b, float bev,
+    int& c, float& cev)
+{
+  if (a == 0) {
+    c = b; cev = -bev;
+    getExpertForest(op, 1)->linkNode(b);
+    return true;
+  }
+  if (b == 0) {
+    c = a; cev = aev;
+    getExpertForest(op, 0)->linkNode(a);
+    return true;
+  }
+  if (a == -1 && b == -1) {
+    c = -1; cev = aev - bev;
+    return true;
+  }
+  return false;
+}
+
 

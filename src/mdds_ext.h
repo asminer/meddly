@@ -53,6 +53,7 @@ class mdd_node_manager : public node_manager {
     virtual error createEdge(bool val, dd_edge &e);
     virtual error evaluate(const dd_edge &f, const int* vlist, bool &term)
       const;
+    virtual error findFirstValue(const dd_edge& f, int* vlist) const;
     
     // Refer to meddly_expert.h
     virtual int reduceNode(int p);
@@ -321,40 +322,46 @@ class mtmxd_node_manager : public node_manager {
 };
 
 
+int binarySearch(const int* a, int sz, int find);
+
 class evmdd_node_manager : public node_manager {
   public:
     evmdd_node_manager(domain *d, forest::edge_labeling el);
     ~evmdd_node_manager();
 
-    virtual int doOp(int a, int b) const = 0;
-    virtual float doOp(float a, float b) const = 0;
-    virtual int getDefaultEdgeValue() const = 0;
-    virtual int getIdentityEdgeValue() const = 0;
+    virtual void getDefaultEdgeValue(int& n) const { n = INF; }
+    virtual void getIdentityEdgeValue(int& n) const { n = 0; }
+    virtual void getDefaultEdgeValue(float& n) const { n = NAN; }
+    virtual void getIdentityEdgeValue(float& n) const { n = 1; }
+
     virtual void initEdgeValues(int p) = 0;
 
-    // Refer to meddly.h
-    virtual error createEdge(const int* const* vlist, const int* terms, int N,
-        dd_edge &e);
-    virtual error createEdge(int val, dd_edge &e);
-    virtual error evaluate(const dd_edge &f, const int* vlist, int &term)
-      const;
-    virtual error evaluate(const dd_edge &f, const int* vlist, float &term)
-      const;
-
   protected:
+
+    virtual int createTempNode(int k, int sz, bool clear = true);
+
+    virtual int doOp(int a, int b) const = 0;
+    virtual float doOp(float a, float b) const = 0;
 
     // Create edge representing vlist[], ending in a terminal value term
     // (or you could think of it as a vector with an edge-value equal to term),
     // and store it in curr.
-    void createEdge(const int* vlist, int term, dd_edge &e);
+    template <class T>
+    void createEdgeInternal(const int* vlist, T term, dd_edge &e);
 
-    int createTempNode(int k, int sz, bool clear = true);
+    // Similar to above except that all paths lead to term.
+    template <class T>
+    forest::error createEdgeInternal(T term, dd_edge &e);
+
+    // This create a EVMDD from a collection of edges (represented 
+    // as vectors).
+    template <class T>
+    forest::error createEdgeInternal(const int* const* vlist,
+        const T* terms, int N, dd_edge &e);
 
     // Create a node, at level k, whose ith index points to dptr with an
     // edge value ev. If i is -1, all indices of the node will point to dptr
     // with an edge value ev.
-    //void createNode(int k, int i, int dptr, int ev, int& res, int& resEv);
-
     template <class T>
     void createNode(int k, int index, int dptr, T ev, int& res, T& resEv);
 
@@ -362,10 +369,18 @@ class evmdd_node_manager : public node_manager {
     // edge value ev.
     // 0 <= i < level bound.
     // Used by createNode(k, i, dptr, ev, res, resEv).
-    //void createSparseNode(int k, int i, int dptr, int ev, int& res, int& resEv);
-
     template<class T>
-    void createSparseNode(int k, int index, int dptr, T ev, int& res, T& resEv);
+    void createSparseNode(int k, int index, int dptr, T ev,
+        int& res, T& resEv);
+
+    // If the element represented by vlist exists, return the value
+    // corresponding to it.
+    template <class T>
+    forest::error evaluateInternal(const dd_edge &f, const int* vlist,
+        T &term) const;
+
+    virtual void normalizeAndReduceNode(int& p, int& ev) = 0;
+    virtual void normalizeAndReduceNode(int& p, float& ev) = 0;
 
   public:
 
@@ -378,17 +393,26 @@ class evmdd_node_manager : public node_manager {
     // The following will either abort or return an error since they are not
     // applicable to this forest.
 
-    virtual error createEdge(const int* const* vlist, int N, dd_edge &e);
+    virtual error createEdge(const int* const* vlist, const int* terms,
+        int N, dd_edge &e);
+    virtual error createEdge(int val, dd_edge &e);
+    virtual error evaluate(const dd_edge &f, const int* vlist, int &term)
+      const;
+
     virtual error createEdge(const int* const* vlist, const float* terms,
         int N, dd_edge &e);
+    virtual error createEdge(float val, dd_edge &e);
+    virtual error evaluate(const dd_edge &f, const int* vlist, float &term)
+      const;
+
+    virtual error createEdge(const int* const* vlist, int N, dd_edge &e);
     virtual error createEdge(const int* const* vlist, const int* const* vplist,
         int N, dd_edge &e);
     virtual error createEdge(const int* const* vlist, const int* const* vplist,
         const int* terms, int N, dd_edge &e);
-    virtual error createEdge(const int* const* vlist, const int* const* vplist, 
+    virtual error createEdge(const int* const* vlist, const int* const* vplist,
         const float* terms, int N, dd_edge &e);
     virtual error createEdge(bool val, dd_edge &e);
-    virtual error createEdge(float val, dd_edge &e);
     virtual error evaluate(const dd_edge &f, const int* vlist, bool &term)
       const;
     virtual error evaluate(const dd_edge& f, const int* vlist,
@@ -405,14 +429,26 @@ class evplusmdd_node_manager : public evmdd_node_manager {
     evplusmdd_node_manager(domain *d);
     ~evplusmdd_node_manager();
 
+    virtual int createTempNode(int lh, std::vector<int>& downPointers,
+        std::vector<int>& edgeValues);
+
+    virtual error createEdge(const int* const* vlist, const int* terms,
+        int N, dd_edge &e);
+    virtual error createEdge(int val, dd_edge &e);
+    virtual error evaluate(const dd_edge &f, const int* vlist, int &term)
+      const;
+
     virtual forest::error getElement(const dd_edge& a, int index, int* e);
     virtual forest::error getElement(int a, int index, int* e);
 
-    virtual int doOp(int a, int b) const;
-    virtual float doOp(float a, float b) const;
-    virtual int getDefaultEdgeValue() const;
-    virtual int getIdentityEdgeValue() const;
+    virtual int doOp(int a, int b) const { return a + b; }
+    virtual float doOp(float a, float b) const {
+      assert(false); return a + b;
+    }
+
     virtual void initEdgeValues(int p);
+    virtual bool getDownPtrsAndEdgeValues(int node,
+        std::vector<int>& dptrs, std::vector<int>& evs) const;
     virtual void normalizeAndReduceNode(int& p, int& ev);
     virtual void normalizeAndReduceNode(int& p, float& ev) { }
 };
@@ -423,11 +459,21 @@ class evtimesmdd_node_manager : public evmdd_node_manager {
     evtimesmdd_node_manager(domain *d);
     ~evtimesmdd_node_manager();
     
-    virtual int doOp(int a, int b) const;
-    virtual float doOp(float a, float b) const;
-    virtual int getDefaultEdgeValue() const;
-    virtual int getIdentityEdgeValue() const;
+    virtual int createTempNode(int lh, std::vector<int>& downPointers,
+        std::vector<float>& edgeValues);
+
+    virtual error createEdge(const int* const* vlist, const float* terms,
+        int N, dd_edge &e);
+    virtual error createEdge(float val, dd_edge &e);
+    virtual error evaluate(const dd_edge &f, const int* vlist, float &term)
+      const;
+
+    virtual int doOp(int a, int b) const { assert(false); return a * b; }
+    virtual float doOp(float a, float b) const { return a * b; }
+
     virtual void initEdgeValues(int p);
+    virtual bool getDownPtrsAndEdgeValues(int node,
+        std::vector<int>& dptrs, std::vector<float>& evs) const;
     virtual void normalizeAndReduceNode(int& p, int& ev) { }
     virtual void normalizeAndReduceNode(int& p, float& ev);
 };
@@ -458,57 +504,74 @@ class evtimesmdd_node_manager : public evmdd_node_manager {
 
 // ------------------------ Inline methods -----------------------------------
 
-inline
-int evplusmdd_node_manager::doOp(int a, int b) const
+template <class T>
+forest::error
+evmdd_node_manager::createEdgeInternal(T term, dd_edge &e)
 {
-  return a + b;
-}
+  if (e.getForest() != this) return forest::INVALID_OPERATION;
 
-inline
-int evtimesmdd_node_manager::doOp(int a, int b) const
-{
-  return a * b;
-}
-
-inline
-float evplusmdd_node_manager::doOp(float a, float b) const
-{
-  return a + b;
-}
-
-inline
-float evtimesmdd_node_manager::doOp(float a, float b) const
-{
-  return a * b;
-}
-
-inline
-int evplusmdd_node_manager::getDefaultEdgeValue() const
-{
-  return INF;
-}
-
-inline
-int evtimesmdd_node_manager::getDefaultEdgeValue() const
-{
-  static int intNan = toInt(NAN);
-  return intNan;
-}
-
-inline
-int evtimesmdd_node_manager::getIdentityEdgeValue() const
-{
-  return toInt(1.0);
-}
-
-inline
-int evplusmdd_node_manager::getIdentityEdgeValue() const
-{
-  return 0;
+  if (reductionRule == forest::FULLY_REDUCED) {
+    e.set(getTerminalNode(true), term, domain::TERMINALS);
+  } else {
+    // construct the edge bottom-up
+    const int* h2l_map = expertDomain->getHeightsToLevelsMap();
+    int h_sz = expertDomain->getNumVariables() + 1;
+    int prev = getTerminalNode(false);
+    T prevEv = 0;
+    int curr = getTerminalNode(true);
+    T currEv = term;
+    for (int i=1; i<h_sz; i++) {
+      prev = curr;
+      prevEv = currEv;
+      createNode(h2l_map[i], -1, prev, prevEv, curr, currEv);
+      unlinkNode(prev);
+    }
+    e.set(curr, currEv, getNodeLevel(curr));
+  }
+  return forest::SUCCESS;
 }
 
 
-template<class T>
+template <class T>
+forest::error
+evmdd_node_manager::createEdgeInternal(const int* const* vlist,
+    const T* terms, int N, dd_edge &e)
+{
+  if (e.getForest() != this) return forest::INVALID_OPERATION;
+  if (vlist == 0 || terms == 0 || N <= 0) return forest::INVALID_VARIABLE;
+
+  createEdgeInternal(vlist[0], terms[0], e);
+  dd_edge curr(this);
+  for (int i=1; i<N; i++) {
+    createEdgeInternal(vlist[i], terms[i], curr);
+    e += curr;
+  }
+
+  return forest::SUCCESS;
+}
+
+
+template <class T>
+void
+evmdd_node_manager::createEdgeInternal(const int* v, T term, dd_edge &e)
+{
+  // construct the edge bottom-up
+  const int* h2l_map = expertDomain->getHeightsToLevelsMap();
+  int h_sz = expertDomain->getNumVariables() + 1;
+  int prev = getTerminalNode(false);
+  T prevEv = 0;
+  int curr = getTerminalNode(true);
+  T currEv = term;
+  for (int i=1; i<h_sz; i++) {
+    prev = curr;
+    prevEv = currEv;
+    createNode(h2l_map[i], v[h2l_map[i]], prev, prevEv, curr, currEv);
+    unlinkNode(prev);
+  }
+  e.set(curr, currEv, getNodeLevel(curr));
+}
+
+template <class T>
 void evmdd_node_manager::createNode(int k, int index, int dptr, T ev,
     int& res, T& resEv)
 {
@@ -532,17 +595,6 @@ void evmdd_node_manager::createNode(int k, int index, int dptr, T ev,
   }
 
   // a single downpointer points to dptr
-
-#if 0
-
-  res = createTempNode(k, index + 1);
-  setDownPtrWoUnlink(res, index, dptr);
-  setEdgeValue(res, index, ev);
-  resEv = 0;
-  normalizeAndReduceNode(res, resEv);
-
-#else
-
   if (nodeStorage == FULL_STORAGE ||
       (nodeStorage == FULL_OR_SPARSE_STORAGE && index < 2)) {
     // Build a full node
@@ -558,13 +610,10 @@ void evmdd_node_manager::createNode(int k, int index, int dptr, T ev,
     createSparseNode(k, index, dptr, ev, res, resEv);
     // res, resEv set by createSparseNode(..); do not call normalizeAndReduce
   }
-
-#endif
-
 }
 
 
-template<class T>
+template <class T>
 void evmdd_node_manager::createSparseNode(int k, int index,
     int dptr, T ev, int& res, T& resEv)
 {
@@ -599,7 +648,7 @@ void evmdd_node_manager::createSparseNode(int k, int index,
   foo[2] = -1;                    // size
   foo[3] = index;                 // index
   foo[4] = sharedCopy(dptr);      // downpointer
-  foo[5] = getIdentityEdgeValue();// this is the only ev, set resEv = ev
+  getIdentityEdgeValue(foo[5]);   // this is the only ev, set resEv = ev
   foo[6] = p;                     // pointer to this node in the address array
 
   resEv = ev;
@@ -631,6 +680,46 @@ void evmdd_node_manager::createSparseNode(int k, int index,
     }
     res = sharedCopy(q);
   }
+}
+
+
+template <class T>
+forest::error evmdd_node_manager::evaluateInternal(const dd_edge &f,
+    const int* vlist, T &term) const
+{
+  if (f.getForest() != this) return forest::INVALID_OPERATION;
+  if (vlist == 0) return forest::INVALID_VARIABLE;
+
+  // assumption: vlist does not contain any special values (-1, -2, etc).
+  // vlist contains a single element.
+  int node = f.getNode();
+  const int* h2l_map = expertDomain->getHeightsToLevelsMap();
+
+  f.getEdgeValue(term);
+  while (!isTerminalNode(node)) {
+    T ev;
+    getDefaultEdgeValue(ev);
+    int n = 0;
+    if (isFullNode(node)) {
+      int index = vlist[h2l_map[getNodeHeight(node)]];
+      if (index < getFullNodeSize(node)) {
+        getFullNodeEdgeValue(node, index, ev);
+        n = getFullNodeDownPtr(node, index);
+      }
+    } else {
+      // find the index
+      // binary search
+      int index = binarySearch(getSparseNodeIndexes(node),
+          getSparseNodeSize(node), vlist[h2l_map[getNodeHeight(node)]]);
+      if (index != -1 ) {
+        getSparseNodeEdgeValue(node, index, ev);
+        n = getSparseNodeDownPtr(node, index);
+      }
+    }
+    term = (n == 0)? ev: doOp(term, ev);
+    node = n;
+  }
+  return forest::SUCCESS;
 }
 
 

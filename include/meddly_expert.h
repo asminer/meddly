@@ -117,6 +117,14 @@ class expert_forest : public forest {
     /// The returned value is the handle for the temporary node.
     virtual int createTempNode(int lh, std::vector<int>& downPointers) = 0;
 
+    /// Same as createTempNode(int, vector<int>) except this is for EV+MDDs.
+    virtual int createTempNode(int lh, std::vector<int>& downPointers,
+        std::vector<int>& edgeValues) = 0;
+
+    /// Same as createTempNode(int, vector<int>) except this is for EV*MDDs.
+    virtual int createTempNode(int lh, std::vector<int>& downPointers,
+        std::vector<float>& edgeValues) = 0;
+
     /// The maximum size (number of indices) a node at this level can have
     int getLevelSize(int lh) const;
 
@@ -219,7 +227,21 @@ class expert_forest : public forest {
     /// Returns false is operation is not possible. Possible reasons are:
     /// node does not exist; node is a terminal; or node has not been reduced.
     virtual bool getDownPtrs(int node, std::vector<int>& downPointers) const
-      = 0;
+        = 0;
+
+    /// Similar to getDownPtrs() except for EV+MDDs.
+    /// If successful (return value true), the vectors hold the
+    /// downpointers and edge-values.
+    virtual bool getDownPtrsAndEdgeValues(int node,
+        std::vector<int>& downPointers, std::vector<int>& edgeValues) const
+        = 0;
+
+    /// Similar to getDownPtrs() except for EV*MDDs.
+    /// If successful (return value true), the vectors hold the
+    /// downpointers and edge-values.
+    virtual bool getDownPtrsAndEdgeValues(int node,
+        std::vector<int>& downPointers, std::vector<float>& edgeValues) const
+        = 0;
 
     /// Get the edge value for the given index -- only for Full nodes
     void getFullNodeEdgeValue(int node, int index, int& ev) const;
