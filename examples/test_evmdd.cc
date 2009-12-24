@@ -43,7 +43,7 @@
 // Timer class
 #include "../src/timer.h"
 
-#define USE_REALS 0
+#define USE_REALS 1
 
 #if USE_REALS
   typedef float element_type;
@@ -134,6 +134,7 @@ dd_edge test_evmdd(forest* evmdd, compute_manager::op_code opCode,
     B.show(stdout, 2);
     printf("\n\nC: ");
     C.show(stdout, 2);
+    printf("\n\n");
   }
 
   return C;

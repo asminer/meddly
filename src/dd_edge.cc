@@ -83,6 +83,12 @@ dd_edge& dd_edge::operator=(const dd_edge& e)
 }
 
 
+void dd_edge::getEdgeValue(float& ev) const
+{
+  ev = toFloat(value);
+}
+
+
 void dd_edge::set(int n, int v, int l)
 {
   smart_cast<expert_forest*>(parent)->unlinkNode(node);
@@ -215,7 +221,14 @@ void dd_edge::show(FILE* strm, int verbosity) const
   else {
     fprintf(strm, "node: %d, ", node);
   }
-  fprintf(strm, "value: %d, level: %d)\n", value, level);
+  if (eParent->getEdgeLabeling() == forest::EVTIMES) {
+    // fprintf(strm, "value: %f, level: %d)\n", toFloat(value), level);
+    float ev = 0;
+    getEdgeValue(ev);
+    fprintf(strm, "value: %f, level: %d)\n", ev, level);
+  } else {
+    fprintf(strm, "value: %d, level: %d)\n", value, level);
+  }
   if (verbosity == 2 || verbosity == 3) {
     fprintf(strm, "MDD rooted at this node:\n");
     smart_cast<expert_forest*>(parent)->showNodeGraph(strm, node);

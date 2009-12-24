@@ -9304,7 +9304,7 @@ compute(op_info* owner, int a, float aev, int b, float bev, int& c, float& cev)
         expertForest->linkNode(aZero);
         *iterCev = aZeroev;
       } else {
-        compute(owner, a, aev, *iterB, *iterBev + bev, *iterC, *iterCev);
+        compute(owner, a, aev, *iterB, *iterBev * bev, *iterC, *iterCev);
       }
     }
     expertForest->unlinkNode(aZero);
@@ -9334,7 +9334,7 @@ compute(op_info* owner, int a, float aev, int b, float bev, int& c, float& cev)
         expertForest->linkNode(zeroB);
         *iterCev = zeroBev;
       } else {
-        compute(owner, *iterA, *iterAev + aev, b, bev, *iterC, *iterCev);
+        compute(owner, *iterA, *iterAev * aev, b, bev, *iterC, *iterCev);
       }
     }
     expertForest->unlinkNode(zeroB);
@@ -9371,12 +9371,12 @@ compute(op_info* owner, int a, float aev, int b, float bev, int& c, float& cev)
           expertForest->linkNode(zeroZero);
           *iterCev = zeroZeroEv;
         } else {
-          compute(owner, 0, NAN, *iterB, *iterBev + bev, *iterC, *iterCev);
+          compute(owner, 0, NAN, *iterB, *iterBev * bev, *iterC, *iterCev);
         }
       } else if (*iterB == 0) {
-        compute(owner, *iterA, *iterAev + aev, 0, NAN, *iterC, *iterCev);
+        compute(owner, *iterA, *iterAev * aev, 0, NAN, *iterC, *iterCev);
       } else {
-        compute(owner, *iterA, *iterAev + aev, *iterB, *iterBev + bev,
+        compute(owner, *iterA, *iterAev * aev, *iterB, *iterBev * bev,
             *iterC, *iterCev);
       }
     }
@@ -9388,14 +9388,27 @@ compute(op_info* owner, int a, float aev, int b, float bev, int& c, float& cev)
   // save result in compute cache and return it
 
 #if 0
-  printf("reduce(%d): ", result);
-  result = expertForest->reduceNode(result);
-  printf("%d  [", result);
-  for (unsigned i = 0; i < C.size(); i++ )
-  {
-    printf("%d ", C[i]);
+  int size = resultSize;
+  float tempev = 0;
+  printf("reduce(%d):\n", c);
+  printf("  before %d:%f: [", c, cev);
+  for (int i = 0; i < size; i++ ) {
+    expertForest->getFullNodeEdgeValue(c, i, tempev);
+    printf("%d:%0.6f ",
+        expertForest->getFullNodeDownPtr(c, i), tempev);
   }
   printf("]\n");
+
+  expertForest->normalizeAndReduceNode(c, cev);
+
+  std::vector<int> C(resultSize, 0);
+  std::vector<float> Cev(resultSize, NAN);
+  expertForest->getDownPtrsAndEdgeValues(c, C, Cev);
+  printf("  after %d:%f: [", c, cev);
+  for (unsigned i = 0; i < C.size(); i++ ) {
+    printf("%d:%0.6f ", C[i], Cev[i]);
+  }
+  printf("]\n\n");
 #else
   expertForest->normalizeAndReduceNode(c, cev);
 #endif

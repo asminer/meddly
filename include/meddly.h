@@ -726,7 +726,19 @@ class forest {
                         SUCCESS if a state is found,
                         INVALID_ASSIGNMENT otherwise.
     */
-    virtual error findFirstValue(const dd_edge& f, int* vlist) const = 0;
+    virtual error findFirstElement(const dd_edge& f, int* vlist) const = 0;
+
+
+    /** Returns a transition from the MXD represented by \a f.
+        @param  f       Edge.
+        @param  vlist   Output parameter used to return a transition from \a f.
+        @param  vplist  Output parameter used to return a transition from \a f.
+        @return         INVALID_OPERATION if forest is not a MXD.
+                        SUCCESS if a transition is found,
+                        INVALID_ASSIGNMENT otherwise.
+    */
+    virtual error findFirstElement(const dd_edge& f, int* vlist, int* vplist)
+        const = 0;
 
 
     /** Display all active (i.e., connected) nodes in the forest.
@@ -1371,13 +1383,6 @@ inline int dd_edge::getNode() const
 inline void dd_edge::getEdgeValue(int& ev) const
 {
   ev = value;
-}
-
-
-inline void dd_edge::getEdgeValue(float& ev) const
-{
-  union { float f; int i; } u = {value};
-  ev = u.f;
 }
 
 

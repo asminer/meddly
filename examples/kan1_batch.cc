@@ -338,13 +338,13 @@ int main(int argc, char* argv[])
     printf("]\n");
   }
 
-  // Test findFirstValue()
+  // Test findFirstElement()
   int** elements = &element;
   cardinality = reachableStates.getCardinality();
   for (int index = 0; index < cardinality; index++)
   {
     memset(element, 0, N * sizeof(int));
-    assert(forest::SUCCESS == mdd->findFirstValue(reachableStates, element));
+    assert(forest::SUCCESS == mdd->findFirstElement(reachableStates, element));
     printf("Element at index %d: [ ", index);
     for (int i = N - 1; i > 0; i--)
     {

@@ -879,6 +879,74 @@ forest::error mxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
 }
 
 
+forest::error
+mxd_node_manager::
+findFirstElement(const dd_edge& f, int* vlist, int* vplist) const
+{
+  // assumption: vlist does not contain any special values (-1, -2, etc).
+  // vlist contains a single element.
+  // vlist is based on level handles.
+  int node = f.getNode();
+  if (node == 0) return forest::INVALID_ASSIGNMENT;
+
+  int currLevel = expertDomain->getTopVariable();
+  DCASSERT(currLevel != domain::TERMINALS);
+  while (currLevel != domain::TERMINALS)
+  {
+    DCASSERT(node != 0);
+    DCASSERT(isUnprimedNode(node));
+    if (currLevel != getNodeLevel(node)) {
+      // currLevel is "higher" than node, and has been skipped.
+      // Since this is a mxd, reduced nodes enable "don't change" paths
+      // at the skipped level.
+      vlist[currLevel] = 0;   // picking the first index
+      vplist[currLevel] = 0;
+    } else {
+      // find a valid path at this unprime level
+      if (isFullNode(node)) {
+        int size = getFullNodeSize(node);
+        for (int i = 0; i < size; i++)
+        {
+          int n = getFullNodeDownPtr(node, i);
+          if (n != 0) {
+            node = n;
+            vlist[currLevel] = i;
+            break;
+          }
+        }
+      } else {
+        vlist[currLevel] = getSparseNodeIndex(node, 0);
+        node = getSparseNodeDownPtr(node, 0);
+      }
+      
+      DCASSERT(!isTerminalNode(node));
+      // can't be -1 because that violates MXD properties
+      // can't be 0 because node cannot be set to 0 in the above construct.
+      DCASSERT(isPrimedNode(node));
+      // find a valid path at this prime level
+      if (isFullNode(node)) {
+        int size = getFullNodeSize(node);
+        for (int i = 0; i < size; i++)
+        {
+          int n = getFullNodeDownPtr(node, i);
+          if (n != 0) {
+            node = n;
+            vplist[currLevel] = i;
+            break;
+          }
+        }
+      } else {
+        vplist[currLevel] = getSparseNodeIndex(node, 0);
+        node = getSparseNodeDownPtr(node, 0);
+      }
+    }
+    currLevel = expertDomain->getVariableBelow(currLevel);
+  }
+
+  return forest::SUCCESS;
+}
+
+
 void mxd_node_manager::normalizeAndReduceNode(int& p, int& ev)
 {
   assert(false);
@@ -3043,7 +3111,7 @@ forest::error mdd_node_manager::evaluate(const dd_edge &f, const int* vlist,
 
 forest::error
 mdd_node_manager::
-findFirstValue(const dd_edge& f, int* vlist) const
+findFirstElement(const dd_edge& f, int* vlist) const
 {
   // assumption: vlist does not contain any special values (-1, -2, etc).
   // vlist contains a single element.

@@ -53,7 +53,7 @@ class mdd_node_manager : public node_manager {
     virtual error createEdge(bool val, dd_edge &e);
     virtual error evaluate(const dd_edge &f, const int* vlist, bool &term)
       const;
-    virtual error findFirstValue(const dd_edge& f, int* vlist) const;
+    virtual error findFirstElement(const dd_edge& f, int* vlist) const;
     
     // Refer to meddly_expert.h
     virtual int reduceNode(int p);
@@ -181,6 +181,8 @@ class mxd_node_manager : public node_manager {
     virtual error createEdge(bool val, dd_edge &e);
     virtual error evaluate(const dd_edge& f, const int* vlist,
         const int* vplist, bool &term) const;
+    virtual error findFirstElement(const dd_edge& f, int* vlist,
+        int* vplist) const;
 
     // Refer to meddly_expert.h
     virtual int reduceNode(int p);

@@ -204,7 +204,9 @@ class node_manager : public expert_forest {
 
     virtual forest::error getElement(const dd_edge& a, int index, int* e);
 
-    virtual forest::error findFirstValue(const dd_edge& f, int* vlist) const;
+    virtual forest::error findFirstElement(const dd_edge& f, int* vlist) const;
+    virtual forest::error findFirstElement(const dd_edge& f, int* vlist,
+        int* vplist) const;
 
     /// Create a temporary node -- a node that can be modified by the user
     virtual int createTempNode(int lh, int size, bool clear = true);
@@ -325,8 +327,8 @@ class node_manager : public expert_forest {
     int getMxdLevelMaxBound(int k) const;
     int getLevelMaxBound(int k) const;
 
-    bool isPrimedNode(int p);
-    bool isUnprimedNode(int p);
+    bool isPrimedNode(int p) const;
+    bool isUnprimedNode(int p) const;
     int buildQuasiReducedNodeAtLevel(int k, int p);
 
     void showLevel(FILE *s, int k) const;
@@ -953,10 +955,10 @@ inline void node_manager::setAllEdgeValues(int p, float fvalue) {
 }
 
 
-inline bool node_manager::isPrimedNode(int p) {
+inline bool node_manager::isPrimedNode(int p) const {
   return (getNodeLevel(p) < 0);
 }
-inline bool node_manager::isUnprimedNode(int p) {
+inline bool node_manager::isUnprimedNode(int p) const {
   return (getNodeLevel(p) > 0);
 }
 
@@ -1199,7 +1201,13 @@ inline bool node_manager::isValidVariable(int vh) const {
 }
 
 inline forest::error
-node_manager::findFirstValue(const dd_edge& f, int* vlist) const
+node_manager::findFirstElement(const dd_edge& f, int* vlist) const
+{
+  return forest::INVALID_OPERATION;
+}
+
+inline forest::error
+node_manager::findFirstElement(const dd_edge& f, int* vlist, int* vplist) const
 {
   return forest::INVALID_OPERATION;
 }
