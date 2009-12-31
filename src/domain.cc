@@ -25,6 +25,7 @@
 // TODO: Finish the advanced functions in expert_domain.
 
 
+#include "../include/meddly.h"
 #include "../include/meddly_expert.h"
 #include "../src/mdds_ext.h"
 

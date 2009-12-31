@@ -38,6 +38,10 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
+// Meddly
+#include <../include/meddly.h>
+#include <../include/meddly_expert.h>
+
 // Things that everyone will need
 #include <cstdlib>
 #include <cassert>
@@ -92,42 +96,13 @@ template <class T> inline bool POSITIVE(T X) { return (X>0) ? true : false; }
 
 */
 
-#ifdef DEVELOPMENT_CODE
-#if 0
+#ifdef DEBUG_PRINTS_ON
 #define DEBUG_HASH_H
 #define DEBUG_HASH_EXPAND_H
 #define DEBUG_MDD_HASH_H
 #define DEBUG_MDD_HASH_EXPAND_H
-#define DEBUG_MDD_H
-#define DEBUG_MDD_SET
-#define TRACK_DELETIONS
 #define TRACE_REDUCE
 #define MEMORY_TRACE
-#endif
-#endif
-
-#ifdef DEVELOPMENT_CODE
-#define MEM_TRACE_ON
-#define RANGE_CHECK_ON
-#define DCASSERTS_ON
-#endif
-
-// Use this for assertions that you always check for
-#define ASSERT(X) assert(X)
-
-// Use this for assertions that will fail only when your
-// code is wrong.  Handy for debugging.
-#ifdef DCASSERTS_ON 
-#define DCASSERT(X) assert(X)
-#else
-#define DCASSERT(X)
-#endif
-
-// Also useful for debugging.
-#ifdef RANGE_CHECK_ON
-#define CHECK_RANGE(MIN, VALUE, MAX)  {ASSERT(VALUE<MAX);ASSERT(VALUE>=MIN);}
-#else
-#define CHECK_RANGE(MIN, VALUE, MAX)
 #endif
 
 // Safe typecasting for development code;  fast casting otherwise
@@ -137,22 +112,6 @@ template <class T> inline bool POSITIVE(T X) { return (X>0) ? true : false; }
 #else
 #define smart_cast	static_cast
 #endif
-
-inline float* toFloat(int* i) { return (float *)i; }
-inline int*   toInt(float* f) { return (int *)f;   }
-
-inline float toFloat(int a)
-{
-  union { int i; float f; } n = {a};
-  return n.f;
-}
-
-inline int toInt(float a)
-{
-  union { float f; int i; } n = {a};
-  return n.i;
-}
-
 
 #endif
 

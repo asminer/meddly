@@ -38,18 +38,8 @@
 #include <vector>
 //#include <map>  // for getCardinality()
 
-#if 0
-#include "defines.h"
-#else
-#include "../include/meddly_expert.h"
-#endif
-
-#include "mdd_hash.h"
-
-// evmdds have only one terminal 0
-// #define ALT_EVMDD
-
-#define TRACK_ZOMBIES 0
+#include "../src/defines.h"
+#include "../src/mdd_hash.h"
 
 using namespace std;
 
@@ -719,7 +709,7 @@ inline int node_manager::createTempNode(int k, int sz, bool clear)
   // get a location in address[] to store the node
   int p = getFreeNode(k);
 
-#ifdef DEBUG_MDD_SET
+#ifdef DEBUG_MDD_H
   printf("%s: k: %d, sz: %d, new p: %d\n", __func__, k, sz, p);
   fflush(stdout);
 #endif
@@ -730,7 +720,7 @@ inline int node_manager::createTempNode(int k, int sz, bool clear)
   address[p].offset = getHole(k, 4 + sz, true);
   address[p].cache_count = 0;
 
-#ifdef DEBUG_MDD_SET
+#ifdef DEBUG_MDD_H
   printf("%s: offset: %d\n", __func__, address[p].offset);
   fflush(stdout);
 #endif

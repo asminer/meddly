@@ -2218,18 +2218,8 @@ int node_manager::getHole(int k, int slots, bool search_holes)
   curr_slots += slots;
   if (max_slots < curr_slots) max_slots = curr_slots;
 
-#ifdef DEBUG_MDD_SET
+#ifdef DEBUG_MDD_H
   printf("%s: p_level: %d, slots: %d\n", __func__, p_level, slots);
-  fflush(stdout);
-#endif
-
-#if 0
-  // Do compaction here
-  if (doesLevelNeedCompaction(k)) compactLevel(k);
-#endif
-
-#ifdef DEBUG_MDD_SET
-  printf("%s: done compacting\n", __func__);
   fflush(stdout);
 #endif
 

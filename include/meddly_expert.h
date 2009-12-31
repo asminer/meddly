@@ -30,6 +30,9 @@
 
     The first part of the interface describes the expert interface and the
     second part contains implementations of virtual functions in the interface.
+
+    IMPORTANT: meddly.h must be included before including this file.
+    TODO: Operations are not thread-safe.
 */
 
 #ifndef MEDDLY_EXPERT_H
@@ -37,21 +40,47 @@
 
 #include <map>
 #include <vector>
-#include "../src/defines.h"
-#include "../include/meddly.h"
 
-// TODO: An expert must be able to code Apply and Saturate using the expert
-// interface
-// TODO: Operations are not thread-safe.
+
+// Flags for development version only. Significant reduction in performance.
+#ifdef DEVELOPMENT_CODE
+#define RANGE_CHECK_ON
+#define DCASSERTS_ON
+//#define DEBUG_PRINTS_ON
+#ifdef DEBUG_PRINTS_ON
+#define DEBUG_MDD_H
+#define TRACK_DELETIONS
+#define TRACK_CACHECOUNT
+#endif
+#endif
+
+// Use this for assertions that will fail only when your
+// code is wrong.  Handy for debugging.
+#ifdef DCASSERTS_ON 
+#define DCASSERT(X) assert(X)
+#else
+#define DCASSERT(X)
+#endif
+
+#ifdef RANGE_CHECK_ON
+#define CHECK_RANGE(MIN, VALUE, MAX)  {assert(VALUE<MAX);assert(VALUE>=MIN);}
+#else
+#define CHECK_RANGE(MIN, VALUE, MAX)
+#endif
+
+// Functions for reinterpreting an int to a float and vice-versa
+inline float  toFloat(int a) { union { int i; float f; } n = {a}; return n.f; }
+inline int    toInt(float a) { union { float f; int i; } n = {a}; return n.i; }
+
 
 // Forward declarations
 class operation;
 class compute_cache;
 
-class expert_forest : public forest {
 
+class expert_forest : public forest
+{
   public:
-
     /** Constructor.
       @param  d     domain to which this forest belongs to.
       @param  rel   does this forest represent a relation.
@@ -100,12 +129,9 @@ class expert_forest : public forest {
     /// Sets the node deletion policy for this forest.
     forest::error setNodeDeletion(forest::node_deletion_policy np);
 
-    // virtual int createNode(int lh) = 0;
-
     /// Create a temporary node -- a node that can be modified by the user.
     /// If \a clear is true, downpointers are initialized to 0.
     virtual int createTempNode(int lh, int size, bool clear = true) = 0;
-    // In mdds.h
 
     /// Create a temporary node with the maximum size allowed for this level.
     /// If \a clear is true, downpointers are initialized to 0.
@@ -131,16 +157,13 @@ class expert_forest : public forest {
     /// Apply reduction rule to the temporary node and finalize it. Once
     /// a node is reduced, its contents cannot be modified.
     virtual int reduceNode(int node) = 0;
-    // In mdds_ext.h
 
     /// Reduce and finalize an node with an incoming edge value
     virtual void normalizeAndReduceNode(int& node, int& ev) = 0;
     virtual void normalizeAndReduceNode(int& node, float& ev) = 0;
-    // In mdds_ext.h
 
     /// Has the node been reduced
     virtual bool isReducedNode(int node) const = 0;
-    // In mdds.h
 
     /// Is this a full or truncated-full node?
     /// A full node of size 6
@@ -274,23 +297,54 @@ class expert_forest : public forest {
     /// is removed from a cache.
     void uncacheNode(int node);
 
+    /// Returns the in-count for a node. This indicates the number of MDD
+    /// nodes that link to this node. A node is never deleted when its
+    /// in-count is more than zero.
+    /// Note that a reference to the in-count is returned. Therefore, the
+    /// in-count of the node can be modified by modifying the reference.
     int& getInCount(int node) const;
+
+    /// Returns the cache-count for a node. This indicates the number of
+    /// compute cache entries that link to this node.
+    /// Note that a reference to the cache-count is returned. Therefore, the
+    /// cache-count of the node can be modified by modifying the reference.
     int& getCacheCount(int node) const;
+
+    /// A node can be discarded once it goes stale. Whether a node is
+    /// considered stale depends on the forest's deletion policy.
+    /// Optimistic deletion: A node is said to be stale only when both the
+    ///   in-count and cache-count are zero.
+    /// Pessimistic deletion: A node is said to be stale when the in-count
+    ///  is zero regardless of the cache-count.
+    virtual bool isStale(int node) const = 0;
+
+    /// Returns the cardinality of the node. Cardinality is the number of
+    /// paths in the graph rooted at this node that end in a valid terminal.
+    /// Paths that end at the terminal Zero (or False) are not counted.
+    virtual double getCardinality(int node) const = 0;
 
     /// Display the contents of node
     virtual void showNode(FILE* s, int node, int verbose = 0) const = 0;
     virtual void showNodeGraph(FILE* s, int node) const = 0;
-    virtual double getCardinality(int node) const = 0;
 
-    /// A node can be discarded once it goes stale; i.e. no other node or
-    /// entity refers to it.
-    virtual bool isStale(int node) const = 0;
-
+    /// Is this forest an MDD?
     bool isMdd() const;
+
+    /// Is this forest an Multi-Terminal MDD?
     bool isMtMdd() const;
+
+    /// Is this forest an Matrix Diagram?
     bool isMxd() const;
+
+    /// Is this forest an Multi-terminal Matrix Diagram?
     bool isMtMxd() const;
+
+    /// Is this forest an EV+ MDD? In EV+, edge-valued are summed
+    /// as we move down a path in the MDD.
     bool isEvplusMdd() const;
+
+    /// Is this forest an EV* MDD? In EV*, edge-valued are multiplied
+    /// as we move down a path in the MDD.
     bool isEvtimesMdd() const;
 
   protected:
@@ -1596,7 +1650,7 @@ int expert_forest::getLevelSize(int lh) const {
 #if 0
   return level[mapLevel(lh)].bound;
 #else
-  return static_cast<expert_domain*>(d)->getVariableBound(ABS(lh));
+  return static_cast<expert_domain*>(d)->getVariableBound((lh < 0? -lh: lh));
 #endif
 }
 

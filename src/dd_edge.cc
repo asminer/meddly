@@ -21,7 +21,7 @@
 
 
 
-#include "../include/meddly_expert.h"
+#include "defines.h"
 
 
 // Constructor.

@@ -89,6 +89,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "../include/meddly.h"
 #include "../include/meddly_expert.h"
 #include "../src/timer.h"
 

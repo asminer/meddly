@@ -34,7 +34,7 @@
 #ifndef TIMERS_H
 #define TIMERS_H
 
-#include "defines.h"
+#include "../src/defines.h"
 #include <sys/time.h>
 #include <time.h>
 

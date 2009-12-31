@@ -23,8 +23,7 @@
 
 // TODO: Testing
 
-#include "../include/meddly.h"
-#include "../include/meddly_expert.h"
+#include "../src/defines.h"
 
 // **************************** forest *********************************
 

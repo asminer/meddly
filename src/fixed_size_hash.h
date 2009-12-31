@@ -62,6 +62,7 @@
 
 #include <sys/time.h>
 #include <sys/resource.h>
+#include "../src/defines.h"
 
 #define CHECK_STALES_BEFORE_EQUAL 1
 #define ENABLE_STALE_CHECKING 1

@@ -1748,7 +1748,7 @@ int evmdd_node_manager::createTempNode(int k, int sz, bool clear)
   // get a location in address[] to store the node
   int p = getFreeNode(k);
 
-#ifdef DEBUG_MDD_SET
+#ifdef DEBUG_MDD_H
   printf("%s: k: %d, sz: %d, new p: %d\n", __func__, k, sz, p);
   fflush(stdout);
 #endif
@@ -1757,7 +1757,7 @@ int evmdd_node_manager::createTempNode(int k, int sz, bool clear)
   address[p].offset = getHole(k, 4 + 2 * sz, true);
   address[p].cache_count = 0;
 
-#ifdef DEBUG_MDD_SET
+#ifdef DEBUG_MDD_H
   printf("%s: offset: %d\n", __func__, address[p].offset);
   fflush(stdout);
 #endif

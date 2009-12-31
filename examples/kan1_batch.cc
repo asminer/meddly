@@ -93,6 +93,7 @@
 #include <cstring>
 
 #include "../include/meddly.h"
+#include "../include/meddly_expert.h"
 
 
 const int N = 5; // number of machines + 1

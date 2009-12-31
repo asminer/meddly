@@ -629,7 +629,7 @@ void evmdd_node_manager::createSparseNode(int k, int index,
   // get a location in address[] to store the node
   int p = getFreeNode(k);
 
-#ifdef DEBUG_MDD_SET
+#ifdef DEBUG_MDD_H
   printf("%s: k: %d, index: %d, new p: %d\n", __func__, k, index, p);
   fflush(stdout);
 #endif
@@ -639,7 +639,7 @@ void evmdd_node_manager::createSparseNode(int k, int index,
   address[p].offset = getHole(k, 7 /*4 + 3*/, true);
   address[p].cache_count = 0;
 
-#ifdef DEBUG_MDD_SET
+#ifdef DEBUG_MDD_H
   printf("%s: offset: %d\n", __func__, address[p].offset);
   fflush(stdout);
 #endif

@@ -30,7 +30,7 @@
 
 #include <iostream>
 
-// meddly_expert.h include meddly.h
+#include "../include/meddly.h"
 #include "../include/meddly_expert.h"
 
 // Only include this file if referring to operations that are not
