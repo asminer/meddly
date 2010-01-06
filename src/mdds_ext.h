@@ -542,6 +542,21 @@ evmdd_node_manager::createEdgeInternal(const int* const* vlist,
   if (e.getForest() != this) return forest::INVALID_OPERATION;
   if (vlist == 0 || terms == 0 || N <= 0) return forest::INVALID_VARIABLE;
 
+  // check if the vlist contains valid indexes
+  for (int i = 0; i < N; i++)
+  {
+    const int* h2l_map = expertDomain->getHeightsToLevelsMap();
+    int currHeight = expertDomain->getNumVariables();
+    int currLevel = h2l_map[currHeight];
+    while (currHeight > 0)
+    {
+      if (vlist[i][currLevel] >= getLevelSize(currLevel))
+        return forest::INVALID_VARIABLE;
+      currHeight--;
+      currLevel = h2l_map[currHeight];
+    }
+  }
+
   createEdgeInternal(vlist[0], terms[0], e);
   dd_edge curr(this);
   for (int i=1; i<N; i++) {

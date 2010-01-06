@@ -1370,6 +1370,79 @@ class mtmdd_pre_image : public mdd_pre_image {
 };
 
 
+#if 0
+// Reachability via "saturation" algorithm
+class mtmdd_reachability_dfs : public mdd_reachability_dfs {
+  public:
+    static mtmdd_reachability_dfs* getInstance();
+    int compute(op_info* owner, int a, int b);
+    virtual const char* getName() const { return "Mdd-Mxd Reachability DFS"; }
+    virtual bool isCommutative() const { return false; }
+
+  protected:
+    mtmdd_reachability_dfs();
+    mtmdd_reachability_dfs(const mtmdd_reachability_dfs& copy);
+    mtmdd_reachability_dfs& operator=(const mtmdd_reachability_dfs& copy);
+    virtual ~mtmdd_reachability_dfs();
+
+    void initialize(op_info* owner);
+    void clear();
+
+    void splitMxd(int mxd);
+    int saturate(int mdd);
+    int recFire(int mdd, int mxd);
+#ifdef ALT_SATURATE_HELPER
+    void saturateHelper(int mdd);
+    void saturateHelperUnPrimeFull(int mdd, int mxd);
+    void saturateHelperUnPrimeSparse(int mdd, int mxd);
+    void saturateHelperPrimeFull(int mdd, int i, int mxdI,
+      std::vector<bool>& next);
+    void saturateHelperPrimeSparse(int mdd, int i, int mxdI,
+      std::vector<bool>& next);
+
+    void recFireExpandMdd(int mdd, int mxd, int result);
+    void recFireExpandMxd(int mdd, int mxd, int result);
+    void recFireFF(int mdd, int mxd, int result);
+    void recFireFS(int mdd, int mxd, int result);
+    void recFireSF(int mdd, int mxd, int result);
+    void recFireSS(int mdd, int mxd, int result);
+    void recFirePrime(int mdd, int mxd, int result);
+#else
+    void saturateHelper(int mddLevel, std::vector<int>& mdd);
+#endif
+
+    int getMddUnion(int a, int b);
+    int getMxdIntersection(int a, int b);
+    int getMxdDifference(int a, int b);
+
+  private:
+    op_info*       owner;         // pointer to dfs reachability operation
+    expert_forest* ddf;           // MDD forest
+    expert_forest* xdf;           // MXD forest
+    expert_domain* ed;            // domain
+    expert_compute_manager* ecm;  // compute manager
+
+    // Next-state function is split and stored here (see Saturation algorithm).
+    std::vector<int> splits;
+
+    // scratch.size () == number of variable handles in the domain
+    // scratch[level_handle].size() == level_bound(level_handle)
+    std::vector< std::vector<int> > scratch;
+    std::vector< std::vector<bool> > curr, next;
+
+    op_info*          mddUnionOp;
+    op_info*          mxdIntersectionOp;
+    op_info*          mxdDifferenceOp;
+
+    mdd_union*        mddUnion;
+    mxd_intersection* mxdIntersection;
+    mxd_difference*   mxdDifference;
+};
+#endif
+
+
+// --------------------------- EVMDD operations ------------------------------
+
 class evmdd_apply_operation : public operation {
   public:
     evmdd_apply_operation();

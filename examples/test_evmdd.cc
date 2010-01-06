@@ -29,21 +29,20 @@
  */
 
 #include <iostream>
-
 #include "../include/meddly.h"
-#include "../include/meddly_expert.h"
 
-// Only include this file if referring to operations that are not
-// available via the mddlib interface. 
-// 
-// Also, include this file if you would like to create a custom
-// operation by deriving one of the existing operations.
-#include "../src/operation_ext.h"
+// #define USE_EXPERT_INTERFACE
+#ifdef USE_EXPERT_INTERFACE
+#include "../include/meddly_expert.h"
+#endif
 
 // Timer class
+// #define USE_TIMER
+#ifdef USE_TIMER
 #include "../src/timer.h"
+#endif
 
-#define USE_REALS 1
+#define USE_REALS 0
 
 #if USE_REALS
   typedef float element_type;
@@ -54,6 +53,8 @@
 
 // verbose: 0: minimum, 2: maximum
 const int verbose = 1;
+
+#ifdef USE_EXPERT_INTERFACE
 
 // Given a forest and an op_code returns the corresponding op_info.
 // 
@@ -96,6 +97,7 @@ op_info* getOp(forest* f, operation* op)
   return ecm->getOpInfo(op, forests, nForests);
 }
 
+#endif
 
 // Tests a evmdd operation on the elements provided.
 // This function assumes that each element[i] represents
@@ -107,8 +109,12 @@ dd_edge test_evmdd(forest* evmdd, compute_manager::op_code opCode,
   // B = second nElements/2 elements combined using +.
   // C = A op B
 
+#ifdef USE_EXPERT_INTERFACE
   static expert_compute_manager* ecm = 
     static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+#else
+  static compute_manager* ecm = MEDDLY_getComputeManager();
+#endif
   assert(ecm != 0);
 
   dd_edge A(evmdd);
@@ -123,9 +129,13 @@ dd_edge test_evmdd(forest* evmdd, compute_manager::op_code opCode,
       evmdd->createEdge(element + half,
         terms + half, nElements - half, B));
 
+#ifdef USE_EXPERT_INTERFACE
   op_info* op = getOp(evmdd, opCode);
   assert(op != NULL);
   assert(compute_manager::SUCCESS == ecm->apply(op, A, B, C));
+#else
+  assert(compute_manager::SUCCESS == ecm->apply(opCode, A, B, C));
+#endif
 
   if (verbose > 0) {
     printf("A: ");
@@ -236,12 +246,16 @@ int main(int argc, char *argv[])
   assert(forest::SUCCESS ==
       evmdd->setNodeDeletion(forest::OPTIMISTIC_DELETION));
 
+#ifdef USE_TIMER
   timer start;
   start.note_time();
+#endif
   dd_edge result = test_evmdd(evmdd, compute_manager::PLUS,
       element, terms, nElements);
+#ifdef USE_TIME
   printf("Time interval: %.4e seconds\n",
       start.get_last_interval()/1000000.0);
+#endif
 
   printf("Peak Nodes in MDD: %d\n", evmdd->getPeakNumNodes());
   printf("Nodes in compute table: %d\n",
