@@ -1797,7 +1797,7 @@ int binarySearch(const int* a, int sz, int find)
     if (*mid == find) return (mid - a);
     if (*mid < find) {
       if (mid == begin) {
-        DCASSERT(begin == end + 1);
+        DCASSERT(begin + 1 == end);
         // find > *mid ==> find > *begin
         // therefore, compare with *end and quit
         // simply advance begin (loop will terminate)
