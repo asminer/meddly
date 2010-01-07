@@ -1796,7 +1796,15 @@ int binarySearch(const int* a, int sz, int find)
     const int* mid = begin + (end - begin) / 2;
     if (*mid == find) return (mid - a);
     if (*mid < find) {
-      begin = mid;
+      if (mid == begin) {
+        DCASSERT(begin == end + 1);
+        // find > *mid ==> find > *begin
+        // therefore, compare with *end and quit
+        // simply advance begin (loop will terminate)
+        begin++;
+      } else {
+        begin = mid;
+      }
     } else {
       end = mid;
     }
