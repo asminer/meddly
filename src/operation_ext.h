@@ -673,37 +673,36 @@ class mdd_reachability_dfs : public mdd_mxd_image_operation {
     mdd_reachability_dfs& operator=(const mdd_reachability_dfs& copy);
     virtual ~mdd_reachability_dfs();
 
-    void initialize(op_info* owner);
-    void clear();
+    virtual void initialize(op_info* owner);
+    virtual void clear();
 
-    void splitMxd(int mxd);
-    int saturate(int mdd);
-    int recFire(int mdd, int mxd);
+    virtual void splitMxd(int mxd);
+    virtual int saturate(int mdd);
+    virtual int recFire(int mdd, int mxd);
 #ifdef ALT_SATURATE_HELPER
-    void saturateHelper(int mdd);
-    void saturateHelperUnPrimeFull(int mdd, int mxd);
-    void saturateHelperUnPrimeSparse(int mdd, int mxd);
-    void saturateHelperPrimeFull(int mdd, int i, int mxdI,
+    virtual void saturateHelper(int mdd);
+    virtual void saturateHelperUnPrimeFull(int mdd, int mxd);
+    virtual void saturateHelperUnPrimeSparse(int mdd, int mxd);
+    virtual void saturateHelperPrimeFull(int mdd, int i, int mxdI,
       std::vector<bool>& next);
-    void saturateHelperPrimeSparse(int mdd, int i, int mxdI,
+    virtual void saturateHelperPrimeSparse(int mdd, int i, int mxdI,
       std::vector<bool>& next);
 
-    void recFireExpandMdd(int mdd, int mxd, int result);
-    void recFireExpandMxd(int mdd, int mxd, int result);
-    void recFireFF(int mdd, int mxd, int result);
-    void recFireFS(int mdd, int mxd, int result);
-    void recFireSF(int mdd, int mxd, int result);
-    void recFireSS(int mdd, int mxd, int result);
-    void recFirePrime(int mdd, int mxd, int result);
+    virtual void recFireExpandMdd(int mdd, int mxd, int result);
+    virtual void recFireExpandMxd(int mdd, int mxd, int result);
+    virtual void recFireFF(int mdd, int mxd, int result);
+    virtual void recFireFS(int mdd, int mxd, int result);
+    virtual void recFireSF(int mdd, int mxd, int result);
+    virtual void recFireSS(int mdd, int mxd, int result);
+    virtual void recFirePrime(int mdd, int mxd, int result);
 #else
-    void saturateHelper(int mddLevel, std::vector<int>& mdd);
+    virtual void saturateHelper(int mddLevel, std::vector<int>& mdd);
 #endif
 
-    int getMddUnion(int a, int b);
-    int getMxdIntersection(int a, int b);
-    int getMxdDifference(int a, int b);
+    virtual int getMddUnion(int a, int b);
+    virtual int getMxdIntersection(int a, int b);
+    virtual int getMxdDifference(int a, int b);
 
-  private:
     op_info*       owner;         // pointer to dfs reachability operation
     expert_forest* ddf;           // MDD forest
     expert_forest* xdf;           // MXD forest
@@ -1391,25 +1390,7 @@ class mtmdd_reachability_dfs : public mdd_reachability_dfs {
     void splitMxd(int mxd);
     int saturate(int mdd);
     int recFire(int mdd, int mxd);
-#ifdef ALT_SATURATE_HELPER
-    void saturateHelper(int mdd);
-    void saturateHelperUnPrimeFull(int mdd, int mxd);
-    void saturateHelperUnPrimeSparse(int mdd, int mxd);
-    void saturateHelperPrimeFull(int mdd, int i, int mxdI,
-      std::vector<bool>& next);
-    void saturateHelperPrimeSparse(int mdd, int i, int mxdI,
-      std::vector<bool>& next);
-
-    void recFireExpandMdd(int mdd, int mxd, int result);
-    void recFireExpandMxd(int mdd, int mxd, int result);
-    void recFireFF(int mdd, int mxd, int result);
-    void recFireFS(int mdd, int mxd, int result);
-    void recFireSF(int mdd, int mxd, int result);
-    void recFireSS(int mdd, int mxd, int result);
-    void recFirePrime(int mdd, int mxd, int result);
-#else
     void saturateHelper(int mddLevel, std::vector<int>& mdd);
-#endif
 
     int getMddUnion(int a, int b);
     int getMxdIntersection(int a, int b);
@@ -1545,11 +1526,13 @@ class evtimesmdd_apply_operation : public evmdd_apply_operation {
 
 class evplusmdd_plus : public evplusmdd_apply_operation {
   public:
+    static evplusmdd_plus* getInstance();
     virtual const char* getName() const { return "EV+MDD Plus"; }
     virtual bool isCommutative() const { return true; }
     virtual bool checkTerminals(op_info* op, int a, int aev, int b, int bev,
         int& c, int& cev);
-    static evplusmdd_plus* getInstance();
+    virtual compute_manager::error compute(op_info* owner, int a, int aev,
+        int b, int bev, int& c, int& cev);
 
   protected:
     evplusmdd_plus() {}

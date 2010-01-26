@@ -4374,9 +4374,10 @@ void mdd_reachability_dfs::splitMxd(int mxd)
                   int mid = (start + stop) / 2;
                   int midIndex = xdf->getSparseNodeIndex(mxdI, mid);
                   if (midIndex < i) {
-                    start = mid;
-                  } else 
+                    start = (mid == start)? mid + 1: mid;
+                  } else {
                     stop = mid;
+                  }
                 }
 
                 assert(start == stop);
@@ -9449,6 +9450,406 @@ checkTerminals(op_info* op, int a, int aev, int b, int bev, int& c, int& cev)
 }
 
 
+#if 1
+
+compute_manager::error
+evplusmdd_plus::
+compute(op_info* owner, int a, int aev, int b, int bev, int& c, int& cev)
+{
+#if 1
+  DCASSERT(owner->f[0] == owner->f[1] && owner->f[1] == owner->f[2]);
+
+  if (checkTerminals(owner, a, aev, b, bev, c, cev))
+    return compute_manager::SUCCESS;
+  if (findResult(owner, a, aev, b, bev, c, cev))
+    return compute_manager::SUCCESS;
+
+  // 0. initialize result
+  // 1. if a is at a lower level than b, expand b
+  //    else if b is at a lower level than a, expand a
+  //    else expand both
+
+  // 0. initialize result
+  expert_forest* expertForest = getExpertForest(owner, 0);
+  const int aLevel = expertForest->getNodeLevel(a);
+  const int bLevel = expertForest->getNodeLevel(b);
+  int resultLevel = aLevel > bLevel? aLevel: bLevel;
+
+  // Three vectors: operands a and b, and result c
+
+  if (aLevel < resultLevel) {
+    // expand b
+    // result[i] = a op b[i]
+    int aZero, aZeroev;
+    compute(owner, a, aev, 0, INF, aZero, aZeroev);
+
+    std::vector<int> B, Bev;
+    expertForest->getDownPtrsAndEdgeValues(b, B, Bev);
+
+    std::vector<int> C(B.size(), 0);
+    std::vector<int> Cev(B.size(), INF);
+
+    std::vector<int>::iterator iterB = B.begin();
+    std::vector<int>::iterator iterC = C.begin();
+    std::vector<int>::iterator iterBev = Bev.begin();
+    std::vector<int>::iterator iterCev = Cev.begin();
+    for ( ; iterB != B.end(); iterB++, iterC++, iterBev++, iterCev++)
+    {
+      if (*iterB == 0) {
+        *iterC = aZero;
+        expertForest->linkNode(aZero);
+        *iterCev = aZeroev;
+      } else {
+        compute(owner, a, aev, *iterB, *iterBev + bev, *iterC, *iterCev);
+      }
+    }
+    expertForest->unlinkNode(aZero);
+    c = expertForest->createTempNode(resultLevel, C, Cev);
+  }
+  else if (bLevel < resultLevel) {
+    // expand a
+    // result[i] = a[i] op b
+    int zeroB, zeroBev;
+    compute(owner, 0, INF, b, bev, zeroB, zeroBev);
+
+    std::vector<int> A, Aev;
+    expertForest->getDownPtrsAndEdgeValues(a, A, Aev);
+
+    std::vector<int> C(A.size(), 0);
+    std::vector<int> Cev(A.size(), INF);
+
+    std::vector<int>::iterator iterA = A.begin();
+    std::vector<int>::iterator iterC = C.begin();
+    std::vector<int>::iterator iterAev = Aev.begin();
+    std::vector<int>::iterator iterCev = Cev.begin();
+    for ( ; iterA != A.end(); iterA++, iterC++, iterAev++, iterCev++)
+    {
+      if (*iterA == 0) {
+        *iterC = zeroB;
+        expertForest->linkNode(zeroB);
+        *iterCev = zeroBev;
+      } else {
+        compute(owner, *iterA, *iterAev + aev, b, bev, *iterC, *iterCev);
+      }
+    }
+    expertForest->unlinkNode(zeroB);
+    c = expertForest->createTempNode(resultLevel, C, Cev);
+  }
+  else {
+    // expand both a and b
+    // result[i] = a[i] op b[i]
+    int zeroZero, zeroZeroEv;
+    compute(owner, 0, INF, 0, INF, zeroZero, zeroZeroEv);
+
+    std::vector<int> A, Aev, B, Bev;
+    expertForest->getDownPtrsAndEdgeValues(a, A, Aev);
+    expertForest->getDownPtrsAndEdgeValues(b, B, Bev);
+
+    int resultSize = MAX(A.size(), B.size());
+    std::vector<int> C(resultSize, 0);
+    std::vector<int> Cev(resultSize, INF);
+
+    std::vector<int>::iterator iterA = A.begin();
+    std::vector<int>::iterator iterB = B.begin();
+    std::vector<int>::iterator iterC = C.begin();
+    std::vector<int>::iterator iterAev = Aev.begin();
+    std::vector<int>::iterator iterBev = Bev.begin();
+    std::vector<int>::iterator iterCev = Cev.begin();
+
+    for ( ; iterA != A.end() && iterB != B.end();
+        iterA++, iterB++, iterC++, iterAev++, iterBev++, iterCev++)
+    {
+      if (*iterA == 0) {
+        if (*iterB == 0) {
+          *iterC = zeroZero;
+          expertForest->linkNode(zeroZero);
+          *iterCev = zeroZeroEv;
+        } else {
+          compute(owner, 0, INF, *iterB, *iterBev + bev, *iterC, *iterCev);
+        }
+      } else if (*iterB == 0) {
+        compute(owner, *iterA, *iterAev + aev, 0, INF, *iterC, *iterCev);
+      } else {
+        compute(owner, *iterA, *iterAev + aev, *iterB, *iterBev + bev,
+            *iterC, *iterCev);
+      }
+    }
+    for ( ; iterA != A.end(); iterA++, iterC++, iterAev++, iterCev++)
+    {
+      // C[i] = A[i], Cev[i] = Aev[i] + aev
+      if (*iterA == 0) {
+        *iterC = zeroZero;
+        expertForest->linkNode(zeroZero);
+        *iterCev = zeroZeroEv;
+      } else {
+        compute(owner, *iterA, *iterAev + aev, 0, INF, *iterC, *iterCev);
+      }
+    }
+    for ( ; iterB != B.end(); iterB++, iterC++, iterBev++, iterCev++)
+    {
+      // C[i] = B[i], Cev[i] = Bev[i] + bev
+      if (*iterB == 0) {
+        *iterC = zeroZero;
+        expertForest->linkNode(zeroZero);
+        *iterCev = zeroZeroEv;
+      } else {
+        compute(owner, 0, INF, *iterB, *iterBev + bev, *iterC, *iterCev);
+      }
+    }
+
+
+    expertForest->unlinkNode(zeroZero);
+    c = expertForest->createTempNode(resultLevel, C, Cev);
+  }
+
+  // save result in compute cache and return it
+
+#if 0
+  printf("reduce(%d): ", result);
+  result = expertForest->reduceNode(result);
+  printf("%d  [", result);
+  for (unsigned i = 0; i < C.size(); i++ )
+  {
+    printf("%d ", C[i]);
+  }
+  printf("]\n");
+#else
+  expertForest->normalizeAndReduceNode(c, cev);
+#endif
+
+  saveResult(owner, a, aev, b, bev, c, cev);
+  return compute_manager::SUCCESS;
+#else
+  return evplusmdd_apply_operation::compute(owner, a, aev, b, bev, c, cev);
+#endif
+}
+
+#else
+
+compute_manager::error
+evplusmdd_plus::
+compute(op_info* owner, int a, int aev, int b, int bev, int& c, int& cev)
+{
+  DCASSERT(owner->f[0] == owner->f[1] && owner->f[1] == owner->f[2]);
+
+  if (checkTerminals(owner, a, aev, b, bev, c, cev))
+    return compute_manager::SUCCESS;
+  if (findResult(owner, a, aev, b, bev, c, cev))
+    return compute_manager::SUCCESS;
+
+  // 0. initialize result
+  // 1. if a is at a lower level than b, expand b
+  //    else if b is at a lower level than a, expand a
+  //    else expand both
+
+  // 0. initialize result
+  expert_forest* expertForest = getExpertForest(owner, 0);
+  int aLevel = expertForest->getNodeLevel(a);
+  int bLevel = expertForest->getNodeLevel(b);
+  int resultLevel = aLevel > bLevel? aLevel: bLevel;
+
+  // Three vectors: operands a and b, and result c
+
+  if (aLevel < resultLevel || bLevel < resultLevel) {
+    if (bLevel < resultLevel) {
+      // commutative operation; so swap and solve as (aLevel < resultLevel)
+      SWAP(a, b);
+      SWAP(aev, bev);
+      SWAP(aLevel, bLevel);
+    }
+    DCASSERT(aLevel < resultLevel);
+
+#if 1
+    std::vector<int> B, Bev;
+    expertForest->getDownPtrsAndEdgeValues(b, B, Bev);
+    std::vector<int> C(expertForest->getLevelSize(resultLevel), a);
+    // note: linknode is to be done later on
+    std::vector<int> Cev(C.size(), aev);
+
+    std::vector<int>::iterator iterB = B.begin();
+    std::vector<int>::iterator iterC = C.begin();
+    std::vector<int>::iterator iterBev = Bev.begin();
+    std::vector<int>::iterator iterCev = Cev.begin();
+    int noChangeCount = 0;
+    for ( ; iterB != B.end(); iterB++, iterC++, iterBev++, iterCev++)
+    {
+      if (*iterB == 0) {
+        noChangeCount++;
+      } else {
+        compute(owner, a, aev, *iterB, *iterBev + bev, *iterC, *iterCev);
+      }
+    }
+    // update in-count for the rest of the nodes in C[]
+    expertForest->getInCount(a) += (noChangeCount + C.size() - B.size());
+    c = expertForest->createTempNode(resultLevel, C, Cev);
+#else
+    std::vector<int> C(expertForest->getLevelSize(resultLevel), a);
+    // note: linknode is to be done later on
+    std::vector<int> Cev(C.size(), aev);
+
+    if (expertForest->isFullNode(b)) {
+      int sz = expertForest->getFullNodeSize(b);
+      int nnz = 0;
+      for (int i = 0; i < sz; i++)
+      {
+        int dptr = expertForest->getFullNodeDownPtr(b, i);
+        if (dptr != 0) {
+          nnz++;
+          int ev = INF;
+          expertForest->getFullNodeEdgeValue(b, i, ev);
+          compute(owner, a, aev, dptr, ev + bev, C[i], Cev[i]);
+        }
+      }
+      expertForest->getInCount(a) += (C.size() - nnz);
+    }
+    else {
+      DCASSERT(expertForest->isSparseNode(b));
+      int nnz = expertForest->getSparseNodeSize(b);
+      for (int i = 0; i < nnz; i++)
+      {
+        int dptr = expertForest->getSparseNodeDownPtr(b, i);
+        int index = expertForest->getSparseNodeIndex(b, i);
+        int ev = INF;
+        expertForest->getSparseNodeEdgeValue(b, i, ev);
+        compute(owner, a, aev, dptr, ev + bev, C[index], Cev[index]);
+      }
+      expertForest->getInCount(a) += (C.size() - nnz);
+    }
+    c = expertForest->createTempNode(resultLevel, C, Cev);
+#endif
+  }
+  else {
+    // expand both a and b
+    // result[i] = a[i] op b[i]
+#if 1
+    std::vector<int> A, Aev, B, Bev;
+    expertForest->getDownPtrsAndEdgeValues(a, A, Aev);
+    expertForest->getDownPtrsAndEdgeValues(b, B, Bev);
+
+    std::vector<int> *X, *Xev, *Y, *Yev;
+    int x, y, xev, yev;
+    if (B.size() > A.size()) {
+      X = &B; Xev = &Bev; x = b; xev = bev;
+      Y = &A; Yev = &Aev; y = a; yev = aev;
+    } else {
+      X = &A; Xev = &Aev; x = a; xev = aev;
+      Y = &B; Yev = &Bev; y = b; yev = bev;
+    }
+
+    // result in X. Add Y to it.
+    std::vector<int>::iterator iterX = (*X).begin();
+    std::vector<int>::iterator iterY = (*Y).begin();
+    std::vector<int>::iterator iterXev = (*Xev).begin();
+    std::vector<int>::iterator iterYev = (*Yev).begin();
+
+    for ( ; iterY != (*Y).end(); iterY++, iterX++, iterYev++, iterXev++)
+    {
+      if (*iterX == 0) {
+        // if *iterY == 0, do nothing as *iterX is already 0
+        if (*iterY != 0) {
+          *iterX = *iterY;
+          *iterXev = *iterYev + yev;
+          expertForest->linkNode(*iterX);
+        }
+      } else {
+        if (*iterY == 0) {
+          *iterXev += xev;
+          expertForest->linkNode(*iterX);
+        } else {
+          compute(owner, *iterX, *iterXev + xev, *iterY, *iterYev + yev,
+              *iterX, *iterXev);
+        }
+      }
+    }
+    for ( ; iterX != (*X).end(); iterX++)
+    {
+      if (*iterX != 0) {
+        *iterXev += xev;
+        expertForest->linkNode(*iterX);
+      }
+    }
+
+    c = expertForest->createTempNode(resultLevel, *X, *Xev);
+#else
+    std::vector<int> A, Aev;
+    expertForest->getDownPtrsAndEdgeValues(a, A, Aev);
+
+    if (expertForest->isFullNode(b)) {
+      int sz = expertForest->getFullNodeSize(b);
+      if (int(A.size()) < sz) { A.resize(sz, 0); Aev.resize(sz, INF); }
+      for (int i = 0; i < sz; i++)
+      {
+        int dptr = expertForest->getFullNodeDownPtr(b, i);
+        if (dptr == 0) {
+          if (A[i] != 0) {
+            expertForest->linkNode(A[i]);
+            Aev[i] += aev;
+          }
+        }
+        else {
+          int ev = INF;
+          expertForest->getFullNodeEdgeValue(b, i, ev);
+          compute(owner, A[i], Aev[i] + aev, dptr, ev + bev, A[i], Aev[i]);
+        }
+      }
+      for (int i = int(A.size()) - 1; i >= sz; i--)
+      {
+        if (A[i] != 0) {
+          expertForest->linkNode(A[i]);
+          Aev[i] += aev;
+        }
+      }
+    }
+    else {
+      DCASSERT(expertForest->isSparseNode(b));
+      for (int i = int(A.size()) - 1; i >= 0; i--)
+      {
+        if (A[i] != 0) {
+          expertForest->linkNode(A[i]);
+          Aev[i] += aev;
+        }
+      }
+      int nnz = expertForest->getSparseNodeSize(b);
+      int sz = expertForest->getSparseNodeIndex(b, nnz - 1) + 1;
+      if (int(A.size()) < sz) { A.resize(sz, 0); Aev.resize(sz, INF); }
+      for (int i = 0; i < nnz; i++)
+      {
+        int dptr = expertForest->getSparseNodeDownPtr(b, i);
+        int ev = INF;
+        expertForest->getSparseNodeEdgeValue(b, i, ev);
+        int index = expertForest->getSparseNodeIndex(b, i);
+        int temp = A[index];
+        compute(owner, A[index], Aev[index], dptr, ev + bev,
+          A[index], Aev[index]);
+        if (temp != 0) expertForest->unlinkNode(temp);
+      }
+    }
+    c = expertForest->createTempNode(resultLevel, A, Aev);
+#endif
+  }
+
+  // save result in compute cache and return it
+
+#if 0
+  printf("reduce(%d): ", result);
+  result = expertForest->reduceNode(result);
+  printf("%d  [", result);
+  for (unsigned i = 0; i < C.size(); i++ )
+  {
+    printf("%d ", C[i]);
+  }
+  printf("]\n");
+#else
+  expertForest->normalizeAndReduceNode(c, cev);
+#endif
+
+  saveResult(owner, a, aev, b, bev, c, cev);
+  return compute_manager::SUCCESS;
+}
+
+#endif
+
+
 evplusmdd_multiply*
 evplusmdd_multiply::
 getInstance()
@@ -9595,3 +9996,555 @@ checkTerminals(op_info* op, int a, float aev, int b, float bev,
 }
 
 
+#if 0
+
+// ---------------------- MTMDD Saturation-based Reachability -----------------
+
+
+mtmdd_reachability_dfs* mtmdd_reachability_dfs::getInstance()
+{
+  static mtmdd_reachability_dfs instance;
+  return &instance;
+}
+
+
+mtmdd_reachability_dfs::mtmdd_reachability_dfs()
+{ }
+
+
+mtmdd_reachability_dfs::~mtmdd_reachability_dfs() {}
+
+
+int mtmdd_reachability_dfs::compute(op_info* owner, int mtmdd, int mtmxd)
+{
+  DCASSERT(owner->nForests == 3 && owner->f[0] == owner->f[2]);
+
+  // Initialize class members and helper operations
+  initialize(owner);
+
+  // Depth-first reachability analysis (Saturation)
+
+#ifdef DEBUG_DFS
+  printf("Consolidated Next-State Function:\n");
+  xdf->showNodeGraph(stdout, mtmxd);
+  printf("\n");
+
+  printf("Initial State:\n");
+  ddf->showNodeGraph(stdout, mtmdd);
+  printf("\n");
+#endif
+
+  // Split the next-state function: each level has its own next-state function
+  // The nsf is stored into the vector splits
+  splitMxd(mtmxd);
+
+#ifdef DEBUG_DFS
+  printf("Split Next-State Function:\n");
+  for (int i = splits.size() - 1; i >= 0; i--)
+  {
+    printf("Level %d, Node %d\n", i, splits[i]);
+    xdf->showNodeGraph(stdout, splits[i]);
+    printf("\n");
+  }
+
+  fflush(stdout);
+#endif
+
+  // Saturate the node
+  int result = saturate(mtmdd);
+
+  // clear pointers to dd nodes, class members and operation pointers
+  clear();
+
+  return result;
+}
+
+
+void mtmdd_reachability_dfs::initialize(op_info* o)
+{
+  // set up aliases
+  owner = o;
+  ecm = smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+  assert(ecm != 0);
+  ddf = getExpertForest(owner, 0);
+  assert(ddf != 0);
+  xdf = getExpertForest(owner, 1);
+  assert(xdf != 0);
+  DCASSERT(ddf->getDomain() == xdf->getDomain());
+  ed = smart_cast<expert_domain*>(ddf->useDomain());
+  assert(ed != 0);
+
+  // set up mtmdd operation: union
+  const int nOperands = 3;
+  forest* forests[nOperands] = {owner->f[0], owner->f[0], owner->f[0]};
+
+  mtmddUnionOp = ecm->getOpInfo(compute_manager::PLUS, forests, nOperands);
+  assert(mtmddUnionOp != 0);
+  mtmddUnion = smart_cast<mtmdd_union*>(mtmddUnionOp->op);
+  assert(mtmddUnion != 0);
+
+  // set up mtmxd operations: intersection and difference
+  forests[0] = owner->f[1]; forests[1] = owner->f[1]; forests[2] = owner->f[1];
+
+  // Equivalent of MDD Intersection is MTMDD Min
+  mtmxdIntersectionOp =
+    ecm->getOpInfo(compute_manager::MIN, forests, nOperands);
+  assert(mtmxdIntersectionOp != 0);
+  mtmxdIntersection = smart_cast<mtmxd_intersection*>(mtmxdIntersectionOp->op);
+  assert(mtmxdIntersection != 0);
+
+  mtmxdDifferenceOp =
+    ecm->getOpInfo(compute_manager::MINUS, forests, nOperands);
+  assert(mtmxdDifferenceOp != 0);
+  mtmxdDifference = smart_cast<mtmxd_difference*>(mtmxdDifferenceOp->op);
+  assert(mtmxdDifference != 0);
+
+  // Intialize the scratch 2-D vector (i.e. make it the correct size)
+  int nLevels = ed->getTopVariable() + 1;
+  scratch.clear();
+  scratch.resize(nLevels);
+  for (unsigned height = ed->getNumVariables(); height > 0; --height)
+  {
+    int lh = ed->getVariableWithHeight(height);
+    int sz = ed->getVariableBound(lh);
+    scratch[lh].resize(sz, 0);
+  }
+
+  // Initialize the splits vector
+  splits.resize(nLevels, 0);
+
+  // Initialize the boolean 2-D vectors
+  curr.resize(nLevels);
+  for (int i = 0; i < nLevels; ++i)
+  {
+    curr[i].resize(scratch[i].size(), false);
+  }
+  next = curr;
+}
+
+
+void mtmdd_reachability_dfs::clear()
+{
+  // clear pointer to dd nodes
+  for (unsigned i = 0u; i < splits.size(); i++) xdf->unlinkNode(splits[i]);
+
+  // clear class members and pointers to operations
+  splits.clear();
+  scratch.clear();
+  curr.clear();
+  next.clear();
+  owner = 0;
+  ecm = 0;
+  ddf = 0;
+  xdf = 0;
+  ed = 0;
+  mtmddUnionOp = 0;
+  mtmxdIntersectionOp = 0;
+  mtmxdDifferenceOp = 0;
+  mtmddUnion = 0;
+  mtmxdIntersection = 0;
+  mtmxdDifference = 0;
+}
+
+
+// split is used to split a mtmxd for the saturation algorithm
+void mtmdd_reachability_dfs::splitMxd(int mtmxd)
+{
+  DCASSERT(xdf != 0);
+
+  int zeroNode;
+  if (xdf->getRangeType() == forest::REAL) {
+    zeroNode = xdf->getTerminalNode(0.0);
+  } else {
+    zeroNode = xdf->getTerminalNode(0);
+  }
+
+  // find intersection for all mtmxd[i][i]
+  // -- if mtmxd is smaller than max level size, then some mtmxd[i] is zero,
+  //    therefore intersection is 0.
+  //    -- if node is sparse, then there is some mtmxd[i] = 0,
+  //       therefore intersection is 0.
+  //    -- if node is full, if size < max level size, intersection is 0.
+  // 
+  // if intersection == 0, add mtmxd to level_mtmxd[level], return.
+  // otherwise, 
+  // -- create mtmxdSize nodes at primed level with a copy of corresponding
+  //    mtmxd[i].
+  // -- for each new_mtmxd[i][i],
+  //    -- mtmxd[i][i] = mtmxd[i][i] - intersection 
+  // -- set new_mtmxd[i] after reducing the primed level nodes
+  //    note that new_mtmxd will never be 0 since mtmxd is not an identity node
+  //
+  // add new_mtmxd to level_mtmxd[level]
+  // 
+  // repeat the above for intersection
+  //
+  int level = 0;
+  int intersection = zeroNode;
+  int mtmxdSize = 0;
+  int mtmxdI = zeroNode;
+
+  xdf->linkNode(mtmxd);
+
+  while (!xdf->isTerminalNode(mtmxd)) {
+    level = xdf->getNodeLevel(mtmxd);
+    DCASSERT(level > 0); // we only deal with unprimed levels
+
+    // Find intersection for all mtmxd[i][i]
+    // Note: only do this if mtmxd is a full node; when it is sparse, some
+    // mtmxd[i] is 0 therefore the intersection will always be 0 (zeroNode).
+    intersection = zeroNode;
+    if (xdf->isFullNode(mtmxd)) {
+      mtmxdSize = xdf->getFullNodeSize(mtmxd);
+      if (mtmxdSize == xdf->getLevelSize(level)) {
+        // for all i, mtmxd[i] != 0
+        intersection = zeroNode;
+        bool first = true;
+        for (int i = 0; i < mtmxdSize; ++i)
+        {
+          mtmxdI = xdf->getFullNodeDownPtr(mtmxd, i);
+
+          // If any mtmxd[i] is a terminal (according to Identity Reduced rules)
+          // it must be node 0, and mtmxd[i][i] is also 0. Therefore,
+          // the intersection is 0. So check for this condition, and break
+          // out of the loop it true.
+
+          // if mtmxdI is a terminal node it must be a 0 (zeroNode)
+          DCASSERT((xdf->isTerminalNode(mtmxdI) && mtmxdI == zeroNode) ||
+              !xdf->isTerminalNode(mtmxdI));
+
+          int mtmxdII = zeroNode;
+
+          if (!xdf->isTerminalNode(mtmxdI)) {
+            if (xdf->isFullNode(mtmxdI)) {
+              if (xdf->getFullNodeSize(mtmxdI) > i)
+                mtmxdII = xdf->getFullNodeDownPtr(mtmxdI, i);
+            } else {
+              DCASSERT(xdf->isSparseNode(mtmxdI));
+              // search for ith index
+              int found = -1;
+              int mtmxdINnz = xdf->getSparseNodeSize(mtmxdI);
+
+              if (mtmxdINnz > 8) {
+                // binary search
+                int start = 0;
+                int stop = mtmxdINnz - 1;
+
+                while (start < stop) {
+                  int mid = (start + stop) / 2;
+                  int midIndex = xdf->getSparseNodeIndex(mtmxdI, mid);
+                  if (midIndex < i) {
+                    start = (mid == start)? mid + 1: mid;
+                  } else {
+                    stop = mid;
+                  }
+                }
+
+                assert(start == stop);
+                if (xdf->getSparseNodeIndex(mtmxdI, start) == i) {
+                  found = start;
+                }
+              }
+              else {
+                // linear search
+                for (int j = 0; j < mtmxdINnz; ++j)
+                {
+                  if (xdf->getSparseNodeIndex(mtmxdI, j) == i) {
+                    found = j;
+                    break;
+                  }
+                }
+              }
+
+              if (found != -1)
+                mtmxdII = xdf->getSparseNodeDownPtr(mtmxdI, found);
+            }
+          }
+
+          if (!first) {
+            int temp = getMxdIntersection(intersection, mtmxdII);
+            xdf->unlinkNode(intersection);
+            intersection = temp;
+          } else {
+            first = false;
+            xdf->linkNode(mtmxdII);
+            xdf->unlinkNode(intersection);
+            intersection = mtmxdII;
+          }
+#ifdef DEBUG_DFS
+          printf("intersection: %d level: %d\n",
+              intersection, xdf->getNodeLevel(intersection));
+#endif
+          if (intersection == zeroNode) break;
+        }
+      }
+    }
+
+    DCASSERT(splits[level] == zeroNode);
+
+    DCASSERT(intersection == zeroNode ||
+        xdf->getNodeLevel(mtmxd) > xdf->getNodeLevel(intersection));
+
+    if (intersection != zeroNode) {
+      splits[level] = getMxdDifference(mtmxd, intersection);
+        // mtmxdDifference->compute(mtmxdDifferenceOp, mtmxd, intersection);
+    } else {
+      splits[level] = mtmxd;
+      xdf->linkNode(mtmxd);
+    }
+
+    // intersection becomes the mtmxd for the next iteration
+    xdf->unlinkNode(mtmxd);
+    mtmxd = intersection;
+  }
+
+  DCASSERT(xdf->isTerminalNode(mtmxd));
+  xdf->unlinkNode(mtmxd);
+}
+
+
+int mtmdd_reachability_dfs::saturate(int mtmdd)
+{
+#ifdef DEBUG_DFS
+  printf("mtmdd: %d\n", mtmdd);
+#endif
+
+  // how does saturateHelper get called?
+  // bottom-up i.e. call helper on children before calling helper for parent
+
+  DCASSERT(ddf->isReducedNode(mtmdd));
+
+  // terminal condition for recursion
+  if (ddf->isTerminalNode(mtmdd)) return mtmdd;
+
+  int k = ddf->getNodeLevel(mtmdd);   // level
+  int sz = ddf->getLevelSize(k);      // size
+
+#ifdef DEBUG_DFS
+  printf("mtmdd: %d, level: %d, size: %d\n", mtmdd, k, sz);
+#endif
+
+  std::vector<int> node(sz, 0);
+  std::vector<int> mtmddDptrs;
+  ddf->getDownPtrs(mtmdd, mtmddDptrs);
+
+  int zeroNode = (ddf->getRangeType() == forest::REAL)?
+      ddf->getTerminalNode(0.0): ddf->getTerminalNode(0);
+
+  std::vector<int>::iterator nodeIter = node.begin();
+  std::vector<int>::iterator mtmddIter = mtmddDptrs.begin();
+  for ( ; mtmddIter != mtmddDptrs.end(); ++nodeIter, ++mtmddIter)
+  {
+    if (*mtmddIter != zeroNode) *nodeIter = saturate(*mtmddIter);
+  }
+  
+  // call saturateHelper for n
+#ifdef DEBUG_DFS
+  printf("Calling saturate: level %d\n", k);
+#endif
+  saturateHelper(k, node);
+
+  // reduce and return
+  int n = ddf->createTempNode(k, node);
+  n = ddf->reduceNode(n);
+
+#ifdef DEBUG_DFS
+  ddf->showNodeGraph(stdout, n);
+#endif
+
+  return n;
+}
+
+
+void mtmdd_reachability_dfs::replaceTerminalNode(int mtmdd, int term)
+{
+  DCASSERT(0 == (ddf->getRangeType() == forest::REAL?
+    ddf->getTerminalNode(0.0): ddf->getTerminalNode(0)));
+  DCASSERT(mtmdd != 0);
+
+  if (ddf->isTerminalNode(mtmdd)) return term;
+
+  std::vector<int> dptrs;
+  ddf->getDownPtrs(mtmdd, dptrs);
+  for (unsigned i = 0; i < dptrs.size(); i++)
+  {
+    if (dptrs[i] != 0) dptrs[i] = replaceTerminalNode(dptrs[i], term);
+  }
+  int result = ddf->createTempNode(ddf->getNodeLevel(mtmdd), dptrs);
+  return ddf->reduceNode(result);
+}
+
+
+void mtmdd_reachability_dfs::saturateHelper(int mtmddLevel,
+    std::vector<int>& mtmdd)
+{
+  DCASSERT(unsigned(ddf->getLevelSize(mtmddLevel)) == mtmdd.size());
+  DCASSERT(0 == (ddf->getRangeType() == forest::REAL?
+    ddf->getTerminalNode(0.0): ddf->getTerminalNode(0)));
+
+  int mtmxd = splits[mtmddLevel];
+  if (xdf->isTerminalNode(mtmxd)) {
+    if (mtmxd == 0) return;
+
+    // states don't change but the terminal values will change to mtmxd
+    for (unsigned i = 0u; i < mtmdd.size(); i++)
+    {
+      if (mtmdd[i] != 0) {
+        int temp = replaceTerminalNode(mtmdd[i], mtmxd);
+        ddf->unlinkNode(mtmdd[i]);
+        mtmdd[i] = temp;
+      }
+    }
+    return;
+  }
+  
+  std::vector<int> mtmxdDptrs;
+  if (!xdf->getDownPtrs(mtmxd, mtmxdDptrs)) return;
+
+  std::vector<bool> curr(mtmdd.size(), false);
+  std::vector<bool> next(mtmdd.size(), true);
+  bool repeat = true;
+
+  while (repeat)
+  {
+    curr = next;
+    fill(next.begin(), next.end(), false);
+    repeat = false;
+
+    // for each mtmxd[i1 != 0
+    for (unsigned i = 0u; i < mtmxdDptrs.size(); i++)
+    {
+      if (mtmxdDptrs[i] == 0 || mtmdd[i] == 0 || !curr[i]) continue;
+      DCASSERT(!xdf->isTerminalNode(mtmxdDptrs[i]));
+
+      std::vector<int> mtmxdIDptrs;
+      xdf->getDownPtrs(mtmxdDptrs[i], mtmxdIDptrs);
+
+      // for each mtmxd[i][j] != 0
+      for (unsigned j = 0u; j < mtmxdIDptrs.size(); j++)
+      {
+        if (mtmxdIDptrs[j] == 0) continue;
+        int f = recFire(mtmdd[i], mtmxdIDptrs[j]);
+        if (f == 0) continue;
+        int u = getMddUnion(mtmdd[j], f);
+        ddf->unlinkNode(f);
+        if (u != mtmdd[j]) {
+          // update mtmdd[j] and mark for next iteration
+          ddf->unlinkNode(mtmdd[j]);
+          mtmdd[j] = u;
+          if (j > i) {
+            curr[j] = true;
+          } else {
+            next[j] = true;
+            repeat = true;
+          }
+        } else {
+          ddf->unlinkNode(u);
+        }
+      }
+    }
+  }
+}
+
+
+int mtmdd_reachability_dfs::recFire(int mtmdd, int mtmxd)
+{
+  DCASSERT(ddf->isReducedNode(mtmdd));
+  DCASSERT(xdf->isReducedNode(mtmxd));
+
+  if (mtmxd == -1) {
+    ddf->linkNode(mtmdd);
+    return mtmdd;
+  }
+  if (mtmxd == 0 || mtmdd == 0) return 0;
+
+  int result = 0;
+  if (findResult(owner, mtmdd, mtmxd, result)) {
+    return result;
+  }
+
+  int mtmxdHeight = xdf->getNodeHeight(mtmxd);
+  int mtmddHeight = ddf->getNodeHeight(mtmdd);
+  int nodeHeight = MAX(mtmxdHeight, mtmddHeight);
+  int nodeLevel = ed->getVariableWithHeight(nodeHeight);
+  int newSize = ddf->getLevelSize(nodeLevel);
+  std::vector<int> node(newSize, 0);
+
+  if (mtmxdHeight < mtmddHeight) {
+    std::vector<int> mtmddDptrs;
+    ddf->getDownPtrs(mtmdd, mtmddDptrs);
+    for (unsigned i = 0; i < mtmddDptrs.size(); i++)
+    {
+      if (mtmddDptrs[i] != 0) node[i] = recFire(mtmddDptrs[i], mtmxd);
+    }
+  } else if (mtmxdHeight > mtmddHeight) {
+    std::vector<int> mtmxdDptrs;
+    xdf->getDownPtrs(mtmxd, mtmxdDptrs);
+    for (unsigned i = 0; i < mtmxdDptrs.size(); i++)
+    {
+      if (mtmxdDptrs[i] == 0) continue;
+      std::vector<int> mtmxdIDptrs;
+      xdf->getDownPtrs(mtmxdDptrs[i], mtmxdIDptrs);
+      for (unsigned j = 0; j < mtmxdIDptrs.size(); j++)
+      {
+        if (mtmxdIDptrs[j] == 0) continue;
+        int f = recFire(mtmdd, mtmxdIDptrs[j]);
+        if (f == 0) continue;
+        int u = getMddUnion(node[j], f);
+        ddf->unlinkNode(f);
+        ddf->unlinkNode(node[j]);
+        node[j] = u;
+      }
+    }
+  } else {
+    DCASSERT(mtmxdHeight == mtmddHeight);
+    std::vector<int> mtmddDptrs;
+    std::vector<int> mtmxdDptrs;
+    ddf->getDownPtrs(mtmdd, mtmddDptrs);
+    xdf->getDownPtrs(mtmxd, mtmxdDptrs);
+    unsigned min = MIN(mtmddDptrs.size(), mtmxdDptrs.size());
+    for (unsigned i = 0; i < min; i++)
+    {
+      if (mtmxdDptrs[i] == 0 || mtmddDptrs[i] == 0) continue;
+      std::vector<int> mtmxdIDptrs;
+      xdf->getDownPtrs(mtmxdDptrs[i], mtmxdIDptrs);
+      for (unsigned j = 0; j < mtmxdIDptrs.size(); j++)
+      {
+        if (mtmxdIDptrs[j] == 0) continue;
+        int f = recFire(mtmddDptrs[i], mtmxdIDptrs[j]);
+        if (f == 0) continue;
+        int u = getMddUnion(node[j], f);
+        ddf->unlinkNode(f);
+        ddf->unlinkNode(node[j]);
+        node[j] = u;
+      }
+    }
+  }
+
+  unsigned i = 0u;
+  for ( ; i < node.size() && node[i] == 0; i++);
+  if (i != node.size()) saturateHelper(nodeLevel, node);
+  int n = ddf->createTempNode(nodeLevel, node);
+
+  result = ddf->reduceNode(n);
+  saveResult(owner, mtmdd, mtmxd, result);
+  return result;
+}
+
+
+int mtmdd_reachability_dfs::getMddUnion(int a, int b)
+{
+  return mtmddUnion->compute(mtmddUnionOp, a, b);
+}
+
+int mtmdd_reachability_dfs::getMxdIntersection(int a, int b)
+{
+  return mtmxdIntersection->compute(mtmxdIntersectionOp, a, b);
+}
+
+int mtmdd_reachability_dfs::getMxdDifference(int a, int b)
+{
+  return mtmxdDifference->compute(mtmxdDifferenceOp, a, b);
+}
+
+#endif

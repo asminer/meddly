@@ -34,10 +34,6 @@
 //#define DEBUG_SORT_MATRIX
 //#define DEBUG_SORT_BUILD
 
-// N = domain->getNumVars() + 1
-void sortVector(int** indexes, int* terms, int N, int nVars);
-void sortMatrix(int** indexes, int** pindexes, int* terms, int N, int nVars);
-
 
 // ********************************** MTMDDs **********************************
 
@@ -1487,8 +1483,9 @@ int mtmxd_node_manager::sortBuild(int** list, int** plist, int* tlist,
   // terminal condition
   if (height == 0)
   {
-    assert(begin + 1 == end);
-    return tlist[begin];
+    int result = tlist[begin++];
+    while (begin != end) { result += tlist[begin++]; }
+    return result;
   }
 
   int** currList = 0;
@@ -3006,7 +3003,6 @@ int mdd_node_manager::sortBuild(int** list, int height, int begin, int end)
   // terminal condition
   if (height == 0)
   {
-    assert(begin + 1 == end);
     return getTerminalNode(true);
   }
 
@@ -3376,11 +3372,14 @@ void sortVector(int** indexes, int* terms, int N, int nVars)
   fprintf(stdout, "\n");
 #endif
 
+  // no need to sort terms
+#if 0
   // if no terms then do not sort them
   if (terms != 0) {
     ptr = INT_MAX;
     std::stable_sort(objs.begin(), objs.end(), cmpVector);
   }
+#endif
 
   // index 0 is ignored
   for (ptr = 1; ptr != nVars; ptr++)

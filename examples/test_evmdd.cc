@@ -37,11 +37,11 @@
 #endif
 
 // Timer class
-// #define USE_TIMER
-#ifdef USE_TIMER
 #include "../src/timer.h"
-#endif
 
+#define USE_SEQUENTIAL_PLUS 0
+#define USE_RANDOM_GENERATOR_BOUND 0
+#define USE_SERIAL_TERMS 0
 #define USE_REALS 0
 
 #if USE_REALS
@@ -52,7 +52,7 @@
 
 
 // verbose: 0: minimum, 2: maximum
-const int verbose = 1;
+const int verbose = 0;
 
 #ifdef USE_EXPERT_INTERFACE
 
@@ -151,6 +151,48 @@ dd_edge test_evmdd(forest* evmdd, compute_manager::op_code opCode,
 }
 
 
+dd_edge test_evmdd_plus(forest* evmdd,
+    int** element, element_type* terms, int nElements)
+{
+  // Adds all elements sequentially
+
+  dd_edge A(evmdd);
+  dd_edge B(evmdd);
+
+  for (int i = 0; i < nElements; i++)
+  {
+    if (verbose > 0) printf("element %d...", i);
+    assert(forest::SUCCESS == evmdd->createEdge(&element[i], &terms[i], 1, A));
+    B += A;
+    if (verbose > 0) {
+      printf(" done.\n");
+      A.show(stdout, 2);
+    }
+  }
+
+  return B;
+}
+
+
+void printElements(int** elements, element_type* terms, int nElements,
+    int nVariables)
+{
+  // print elements
+  for (int i = 0; i < nElements; ++i)
+  {
+    printf("Element %d: [%d", i, elements[i][0]);
+    for (int j = 1; j <= nVariables; ++j)
+    {
+      printf(" %d", elements[i][j]);
+    }
+#if USE_REALS
+    printf(": %f]\n", terms[i]);
+#else
+    printf(": %d]\n", terms[i]);
+#endif
+  }
+}
+
 void printUsage(FILE *outputStream)
 {
   fprintf(outputStream,
@@ -186,6 +228,13 @@ int main(int argc, char *argv[])
   printf("#variables: %d, variable bound: %d, #elements: %d\n",
       nVariables, variableBound, nElements);
 
+#ifdef USE_RANDOM_GENERATOR_BOUND
+  int randomGeneratorBound = 0;
+  printf("Enter random generator bound (<= variable bound): ");
+  scanf("%d", &randomGeneratorBound);
+  assert(randomGeneratorBound <= variableBound);
+#endif
+
   // create the elements randomly
   int** element = (int **) malloc(nElements * sizeof(int *));
   element_type* terms =
@@ -197,11 +246,31 @@ int main(int argc, char *argv[])
     element[i][0] = 0;
     for (int j = nVariables; j > 0; --j)
     {
+#ifdef USE_RANDOM_GENERATOR_BOUND
+      element[i][j] =
+        int(float(randomGeneratorBound) * random() / (RAND_MAX + 1.0));
+      assert(element[i][j] >= 0 && element[i][j] < randomGeneratorBound);
+#else
       element[i][j] = int(float(variableBound) * random() / (RAND_MAX + 1.0));
       assert(element[i][j] >= 0 && element[i][j] < variableBound);
+#endif
     }
+  }
+
+  for (int i = 0; i < nElements; ++i)
+  {
+#ifdef USE_SERIAL_TERMS
+    // terms[i] = i + 1;
+    terms[i] = i;
+#else
+#ifdef USE_RANDOM_GENERATOR_BOUND
+    terms[i] =
+      element_type(float(randomGeneratorBound) * random() / (RAND_MAX + 1.0));
+#else
     terms[i] =
       element_type(float(variableBound) * random() / (RAND_MAX + 1.0));
+#endif
+#endif
   }
 
   // initialize the variable bounds array to provide to the domain
@@ -227,44 +296,138 @@ int main(int argc, char *argv[])
   assert(evmdd != 0);
 
   // print elements
-  for (int i = 0; i < nElements; ++i)
-  {
-    printf("Element %d: [%d", i, element[i][0]);
-    for (int j = 1; j <= nVariables; ++j)
-    {
-      printf(" %d", element[i][j]);
-    }
-#if USE_REALS
-    printf(": %f]\n", terms[i]);
-#else
-    printf(": %d]\n", terms[i]);
-#endif
+  if (verbose > 0) {
+    printElements(element, terms, nElements, nVariables);
   }
 
   assert(forest::SUCCESS ==
       evmdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
   assert(forest::SUCCESS ==
-      evmdd->setNodeDeletion(forest::OPTIMISTIC_DELETION));
+      evmdd->setNodeDeletion(forest::PESSIMISTIC_DELETION));
 
-#ifdef USE_TIMER
   timer start;
   start.note_time();
-#endif
+
+#if 0
+#ifndef USE_SEQUENTIAL_PLUS
   dd_edge result = test_evmdd(evmdd, compute_manager::PLUS,
       element, terms, nElements);
-#ifdef USE_TIME
+#else
+  dd_edge result = test_evmdd_plus(evmdd, element, terms, nElements);
+#endif
+#else
+  start.note_time();
+  dd_edge result(evmdd);
+  assert(forest::SUCCESS ==
+      evmdd->createEdge(element, terms, nElements, result));
+  start.note_time();
+  printf("Batch Addition:\n");
+  if (verbose > 0) result.show(stdout, 2);
+
   printf("Time interval: %.4e seconds\n",
       start.get_last_interval()/1000000.0);
+
+  // print elements
+  if (verbose > 0) {
+    printElements(element, terms, nElements, nVariables);
+  }
+
+  start.note_time();
+  dd_edge result1 = test_evmdd_plus(evmdd, element, terms, nElements);
+  start.note_time();
+  printf("Sequential Addition:\n");
+  if (verbose > 0) result1.show(stdout, 2);
+
+  printf("Time interval: %.4e seconds\n",
+      start.get_last_interval()/1000000.0);
+
+  if (result == result1) {
+    printf("Batch Addition == Sequential Addition!\n");
+  } else {
+    printf("Batch Addition != Sequential Addition!\n");
+  }
 #endif
 
+  start.note_time();
+  printf("Time interval: %.4e seconds\n",
+      start.get_last_interval()/1000000.0);
+
   printf("Peak Nodes in MDD: %d\n", evmdd->getPeakNumNodes());
-  printf("Nodes in compute table: %d\n",
+  printf("Entries in compute table: %d\n",
       (MEDDLY_getComputeManager())->getNumCacheEntries());
 
   if (verbose > 1) {
     printf("\n\nForest Info:\n");
     evmdd->showInfo(stdout);
   }
+
+#if 0
+  printf("EVMDD: ");
+  result.show(stdout, 2);
+#endif
+
+  // Build equivalent MDD
+  delete evmdd;
+
+#ifdef TEST_INDEX_SET
+
+  forest* mdd = d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  assert(mdd != 0);
+
+  assert(forest::SUCCESS ==
+      mdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
+  assert(forest::SUCCESS ==
+      mdd->setNodeDeletion(forest::PESSIMISTIC_DELETION));
+
+  start.note_time();
+  printf("Building equivalent MDD...\n");
+  dd_edge mddResult(mdd);
+  assert(forest::SUCCESS == mdd->createEdge(element, nElements, mddResult));
+  start.note_time();
+  printf("Time interval: %.4e seconds\n",
+      start.get_last_interval()/1000000.0);
+
+  printf("MDD: ");
+  mddResult.show(stdout, 2);
+
+  printf("Peak Nodes in MDD: %d\n", mdd->getPeakNumNodes());
+  printf("Entries in compute table: %d\n",
+      (MEDDLY_getComputeManager())->getNumCacheEntries());
+
+  // Create a EV+MDD forest in this domain (to store index set)
+  forest* evplusmdd = d->createForest(false, forest::INTEGER, forest::EVPLUS);
+  assert(evplusmdd != NULL);
+
+  // Convert MDD to Index Set EV+MDD and print the states
+  dd_edge indexSet(evplusmdd);
+  compute_manager* cm = MEDDLY_getComputeManager();
+  assert(compute_manager::SUCCESS ==
+      cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mddResult, indexSet));
+
+#if 0
+  int* elements = (int *) malloc((nVariables + 1) * sizeof(int));
+  double cardinality = indexSet.getCardinality();
+  for (int index = 0; index < int(cardinality); index++)
+  {
+    assert(forest::SUCCESS == evplusmdd->getElement(indexSet, index, elements));
+    printf("Element at index %d: [ ", index);
+    for (int i = nVariables; i > 0; i--)
+    {
+      printf("%d ", elements[i]);
+    }
+    printf("]\n");
+  }
+  free(elements);
+#endif
+
+  printf("Index Set: ");
+  indexSet.show(stdout, 2);
+
+  printf("Peak Nodes in Index Set: %d\n", evplusmdd->getPeakNumNodes());
+  printf("Entries in compute table: %d\n",
+      (MEDDLY_getComputeManager())->getNumCacheEntries());
+
+#endif
 
   // Cleanup; in this case simply delete the domain
   delete d;
