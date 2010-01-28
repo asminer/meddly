@@ -836,6 +836,8 @@ forest::error mxd_node_manager::createEdge(const int* const* vlist,
 
 forest::error mxd_node_manager::createEdge(bool val, dd_edge &e)
 {
+  if (e.getForest() != this) return forest::INVALID_OPERATION;
+
   if (!val) {
     e.set(getTerminalNode(false), 0, domain::TERMINALS);
   }
@@ -3075,25 +3077,30 @@ int mdd_node_manager::sortBuild(int** list, int height, int begin, int end)
 forest::error mdd_node_manager::createEdge(bool term, dd_edge& e)
 {
   if (e.getForest() != this) return forest::INVALID_OPERATION;
-  if (term == false) return forest::INVALID_VARIABLE;
 
-  if (reductionRule == forest::FULLY_REDUCED) {
-    e.set(getTerminalNode(true), 0, domain::TERMINALS);
-    return forest::SUCCESS;
+  if (!term) {
+    e.set(getTerminalNode(false), 0, domain::TERMINALS);
   }
-
-  // construct the edge bottom-up
-  const int* h2l_map = expertDomain->getHeightsToLevelsMap();
-  int h_sz = expertDomain->getNumVariables() + 1;
-  int result = getTerminalNode(true);
-  int curr = getTerminalNode(false);
-  for (int i=1; i<h_sz; i++) {
-    curr = createTempNodeMaxSize(h2l_map[i], false);
-    setAllDownPtrsWoUnlink(curr, result);
-    unlinkNode(result);
-    result = reduceNode(curr);
+  else {
+    DCASSERT(term);
+    if (reductionRule == forest::FULLY_REDUCED) {
+      e.set(getTerminalNode(true), 0, domain::TERMINALS);
+    }
+    else {
+      // construct the edge bottom-up
+      const int* h2l_map = expertDomain->getHeightsToLevelsMap();
+      int h_sz = expertDomain->getNumVariables() + 1;
+      int result = getTerminalNode(true);
+      int curr = getTerminalNode(false);
+      for (int i=1; i<h_sz; i++) {
+        curr = createTempNodeMaxSize(h2l_map[i], false);
+        setAllDownPtrsWoUnlink(curr, result);
+        unlinkNode(result);
+        result = reduceNode(curr);
+      }
+      e.set(result, 0, getNodeLevel(result));
+    }
   }
-  e.set(result, 0, getNodeLevel(result));
   return forest::SUCCESS;
 }
 
