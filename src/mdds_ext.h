@@ -375,9 +375,20 @@ class evmdd_node_manager : public node_manager {
     // edge value ev.
     // 0 <= i < level bound.
     // Used by createNode(k, i, dptr, ev, res, resEv).
-    template<class T>
+    template<typename T>
     void createSparseNode(int k, int index, int dptr, T ev,
         int& res, T& resEv);
+
+    // Create a reduced node, at level k such that ith non-zero edge is
+    // represented by {index[i], dptr[i] and ev[i]}.
+
+    virtual void createNode(int lh, std::vector<int>& index,
+        std::vector<int>& dptr, std::vector<int>& ev,
+        int& result, int& resultEv) { }
+
+    virtual void createNode(int lh, std::vector<int>& index,
+        std::vector<int>& dptr, std::vector<float>& ev,
+        int& result, float& resultEv) { }
 
     // If the element represented by vlist exists, return the value
     // corresponding to it.
@@ -454,6 +465,10 @@ class evplusmdd_node_manager : public evmdd_node_manager {
     virtual int createTempNode(int lh, std::vector<int>& downPointers,
         std::vector<int>& edgeValues);
 
+    virtual void createNode(int lh, std::vector<int>& index,
+        std::vector<int>& dptr, std::vector<int>& ev,
+        int& result, int& resultEv);
+
     virtual error createEdge(const int* const* vlist, const int* terms,
         int N, dd_edge &e);
     virtual error createEdge(int val, dd_edge &e);
@@ -483,6 +498,10 @@ class evtimesmdd_node_manager : public evmdd_node_manager {
     
     virtual int createTempNode(int lh, std::vector<int>& downPointers,
         std::vector<float>& edgeValues);
+
+    virtual void createNode(int lh, std::vector<int>& index,
+        std::vector<int>& dptr, std::vector<float>& ev,
+        int& result, float& resultEv);
 
     virtual error createEdge(const int* const* vlist, const float* terms,
         int N, dd_edge &e);
@@ -662,7 +681,8 @@ evmdd_node_manager::createEdgeInternal(const int* v, T term, dd_edge &e)
   const int* h2l_map = expertDomain->getHeightsToLevelsMap();
   int h_sz = expertDomain->getNumVariables() + 1;
   int prev = getTerminalNode(false);
-  T prevEv = 0;
+  T prevEv;
+  getIdentityEdgeValue(prevEv);
   int curr = getTerminalNode(true);
   T currEv = term;
   for (int i=1; i<h_sz; i++) {
@@ -751,7 +771,9 @@ void evmdd_node_manager::createSparseNode(int k, int index,
   foo[2] = -1;                    // size
   foo[3] = index;                 // index
   foo[4] = sharedCopy(dptr);      // downpointer
-  getIdentityEdgeValue(foo[5]);   // this is the only ev, set resEv = ev
+  T identEv;
+  getIdentityEdgeValue(identEv);
+  foo[5] = toInt(identEv);        // this is the only ev, set resEv = ev
   foo[6] = p;                     // pointer to this node in the address array
 
   resEv = ev;
@@ -1069,6 +1091,7 @@ void evmdd_node_manager::sortBuild(int** list, T* tList,
 
   DCASSERT(dptrs.size() > 0);
 
+#if 0
   if (dptrs.size() == 1) {
     createNode(level, indices[0], dptrs[0], edgeValues[0], node, edgeValue);
     unlinkNode(dptrs[0]);
@@ -1088,6 +1111,9 @@ void evmdd_node_manager::sortBuild(int** list, T* tList,
     unlinkNode(*dptrIter++);
   }
   normalizeAndReduceNode(node, edgeValue);
+#else
+  createNode(level, indices, dptrs, edgeValues, node, edgeValue);
+#endif
 }
 
 #endif

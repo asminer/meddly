@@ -34,6 +34,9 @@
 //#define DEBUG_SORT_MATRIX
 //#define DEBUG_SORT_BUILD
 
+template <typename T>
+class bucket { public: int dp; T ev; };
+
 
 // ********************************** MTMDDs **********************************
 
@@ -2286,6 +2289,228 @@ createTempNode(int lh, std::vector<int>& downPointers,
 }
 
 
+void
+evplusmdd_node_manager::
+createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
+    std::vector<int>& ev, int& result, int& resultEv)
+{
+#ifdef DEVELOPMENT_CODE
+  // Sanity checks:
+  // -  index[i] should be in the range [0, levelSize).
+  // -  dptr[i] should be a reduced node at a level "below" lh.
+  // -  edge-value of INF is reserved for edges pointing to terminal 0.
+  const int nodeHeight = expertDomain->getVariableHeight(lh);
+  for (unsigned i = 0; i < dptr.size(); i++)
+  {
+    CHECK_RANGE(0, index[i], getLevelSize(lh));
+    assert(dptr[i] != 0 && ev[i] != INF);
+    assert(isReducedNode(dptr[i]));
+    assert(getNodeHeight(dptr[i]) < nodeHeight);
+  }
+#endif
+
+  if (index.size() == 0) {
+    result = 0; resultEv = INF;
+    return;
+  }
+
+  if (isTimeToGc()) { garbageCollect(); }
+
+  incrNodesActivatedSinceGc();
+
+  // Compute minimum edge-value for normalization
+  int minEv = INF;
+  for (vector<int>::iterator iter = ev.begin(); iter != ev.end(); iter++)
+  {
+    if (*iter < minEv) minEv = *iter;
+  }
+
+  // Normalize edge-values
+  for (vector<int>::iterator iter = ev.begin(); iter != ev.end(); iter++)
+  {
+    *iter -= minEv;
+  }
+
+  // ResultEv = minimum edge-value
+  resultEv = minEv;
+
+  // Check for possible reductions
+  if (int(index.size()) == getLevelSize(lh) &&
+      reductionRule == forest::FULLY_REDUCED) {
+    // Check for fully-reduced: same dptr[i] and ev[i] == 0
+    bool reducible = true;
+    if (ev[0] == 0) {
+      for (vector<int>::iterator iter = ev.begin(); iter != ev.end(); )
+      {
+        if (*iter++ != ev[0]) { reducible = false; break; }
+      }
+      if (reducible) {
+        for (vector<int>::iterator iter = dptr.begin(); iter != dptr.end(); )
+        {
+          if (*iter++ != dptr[0]) { reducible = false; break; }
+        }
+        if (reducible) {
+          // Reduce to dptr[0] and resultEv
+          // Unlink all dptr[i], i = 1 to size - 1
+          for (vector<int>::iterator iter = dptr.begin() + 1;
+              iter != dptr.end(); )
+          {
+            unlinkNode(*iter++);
+          }
+          result = dptr[0];
+          return;
+        }
+      }
+    }
+  }
+
+  // Check if result node will be full or sparse.
+  // For that you need to go through the indexes and find the largest index.
+  int largestIndex = -1;
+  bool sorted = true;
+  for (vector<int>::iterator iter = index.begin(); iter != index.end(); iter++)
+  {
+    if (*iter > largestIndex) {
+      largestIndex = *iter;
+    }
+    else {
+      sorted = false;
+    }
+  }
+
+  int fullNodeSize = (largestIndex + 1) * 2 + 4;
+  int sparseNodeSize = index.size() * 3 + 4;
+  int minNodeSize = MIN(fullNodeSize, sparseNodeSize);
+
+  // Get a logical address for result (an index in address[]).
+  result = getFreeNode(lh);
+
+  // Fill in address[result].
+  address[result].level = lh;
+  address[result].offset = getHole(lh, minNodeSize, true);
+  address[result].cache_count = 0;
+
+  // Start filling in the actual node data
+  int* nodeData = level[mapLevel(lh)].data + address[result].offset;
+  nodeData[0] = 1;                      // in-count (# incoming pointers)
+  nodeData[1] = getTempNodeId();
+  nodeData[minNodeSize - 1] = result;   // pointer back to address[result]
+
+  std::vector<int>::iterator inIter = index.begin();
+  std::vector<int>::iterator dpIter = dptr.begin();
+  std::vector<int>::iterator evIter = ev.begin();
+
+  if (minNodeSize == fullNodeSize) {
+    // Create full node
+    // Size is +ve for full-nodes and -ve for sparse nodes.
+    nodeData[2] = largestIndex + 1;
+    int* resultDp = &nodeData[3];
+    int* resultEvs = resultDp + nodeData[2];
+    int* last = resultEvs + nodeData[2];
+
+    if (sorted) {
+      int currIndex = 0;
+      while (inIter != index.end())
+      {
+        if (currIndex == *inIter) {
+          *resultDp++ = *dpIter++;
+          *resultEvs++ = *evIter++;
+          inIter++;
+        } else {
+          *resultDp++ = 0;
+          *resultEvs++ = INF;
+        }
+        currIndex++;
+      }
+      while (resultEvs != last)
+      {
+        *resultDp++ = 0;
+        *resultEvs++ = INF;
+      }
+    }
+    else {
+      // Initialize node data
+      for (int* curr = resultDp; curr != resultEvs; ) { *curr++ = 0; }
+      for (int* curr = resultEvs; curr != last; ) { *curr++ = INF; }
+
+      while (inIter != index.end())
+      {
+        resultDp[*inIter] = *dpIter++;
+        resultEvs[*inIter++] = *evIter++;
+      }
+    }
+  } else {
+    // Create sparse node
+    // Size is +ve for full-nodes and -ve for sparse nodes.
+    nodeData[2] = -index.size();
+
+    if (!sorted) {
+      // Radix sort:
+      // (1) Find larget index and fix number of buckets
+      // (2) Insert into buckets (based on index)
+      // (3) Convert from buckets to sorted vector
+      vector< bucket<int> > sorter(largestIndex + 1);
+
+      while (inIter != index.end())
+      {
+        bucket<int>& curr = sorter[*inIter++];
+        curr.dp = *dpIter++;
+        curr.ev = *evIter++;
+      }
+
+      inIter = index.begin();
+      dpIter = dptr.begin();
+      evIter = ev.begin();
+      for (vector< bucket<int> >::iterator iter = sorter.begin();
+          iter != sorter.end(); iter++)
+      {
+        if (iter->dp != 0) {
+          *inIter++ = iter - sorter.begin();
+          *dpIter++ = iter->dp;
+          *evIter++ = iter->ev;
+        }
+      }
+    }
+
+    int* resultIn = &nodeData[3];
+    int* resultDp = resultIn - nodeData[2];
+    int* resultEvs = resultDp - nodeData[2];
+
+    inIter = index.begin();
+    dpIter = dptr.begin();
+    evIter = ev.begin();
+    while (dpIter != dptr.end())
+    {
+      *resultIn++ = *inIter++;
+      *resultDp++ = *dpIter++;
+      *resultEvs++ = *evIter++;
+    }
+  }
+
+  // Search in unique table
+  int found = find(result);
+  if (getNull() == found) {
+    // No duplicate found; insert into unique table
+    insert(result);
+    DCASSERT(getCacheCount(result) == 0);
+    DCASSERT(find(result) == result);
+  }
+  else {
+    // Duplicate found; unlink all dptr[] and return the duplicate
+    for (dpIter = dptr.begin(); dpIter != dptr.end(); )
+    {
+      unlinkNode(*dpIter++);
+    }
+    // Code from deleteTempNode(result) adapted to work here
+    {
+      makeHole(lh, getNodeOffset(result), minNodeSize);
+      freeNode(result);
+      if (level[mapLevel(lh)].compactLevel) compactLevel(lh);
+    }
+    result = sharedCopy(found);
+  }
+}
+
 // ********************************* EV*MDDs ********************************** 
 
 evtimesmdd_node_manager::evtimesmdd_node_manager(domain *d)
@@ -2343,7 +2568,9 @@ bool evtimesmdd_node_manager::getDownPtrsAndEdgeValues(int p,
     int size = getLargestIndex(p) + 1;
     if (dptrs.size() < unsigned(size)) {
       dptrs.resize(size, 0);
-      evs.resize(size, INF);
+      float dev;
+      getDefaultEdgeValue(dev);
+      evs.resize(size, dev);
     }
     const int* ptrs = getSparseNodeDownPtrs(p);
     const int* index = getSparseNodeIndexes(p);
@@ -2605,6 +2832,230 @@ createTempNode(int lh, std::vector<int>& downPointers,
     *evs++ = *eviter++;
   }
   return tempNode;
+}
+
+
+void
+evtimesmdd_node_manager::
+createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
+    std::vector<float>& ev, int& result, float& resultEv)
+{
+#ifdef DEVELOPMENT_CODE
+  // Sanity checks:
+  // -  index[i] should be in the range [0, levelSize).
+  // -  dptr[i] should be a reduced node at a level "below" lh.
+  // -  edge-value of NAN is reserved for edges pointing to terminal 0.
+  const int nodeHeight = expertDomain->getVariableHeight(lh);
+  for (unsigned i = 0; i < dptr.size(); i++)
+  {
+    CHECK_RANGE(0, index[i], getLevelSize(lh));
+    assert(dptr[i] != 0 && !isNan(ev[i]));
+    assert(isReducedNode(dptr[i]));
+    assert(getNodeHeight(dptr[i]) < nodeHeight);
+  }
+#endif
+
+  if (index.size() == 0) {
+    result = 0; resultEv = NAN;
+    return;
+  }
+
+  if (isTimeToGc()) { garbageCollect(); }
+
+  incrNodesActivatedSinceGc();
+
+  // Compute minimum edge-value for normalization
+  float maxEv = 0.0;
+  for (vector<float>::iterator iter = ev.begin(); iter != ev.end(); iter++)
+  {
+    if (*iter > maxEv) maxEv = *iter;
+  }
+
+  // Normalize edge-values
+  for (vector<float>::iterator iter = ev.begin(); iter != ev.end(); iter++)
+  {
+    *iter /= maxEv;
+  }
+
+  // ResultEv = minimum edge-value
+  resultEv = maxEv;
+
+  // Check for possible reductions
+  if (int(index.size()) == getLevelSize(lh) &&
+      reductionRule == forest::FULLY_REDUCED) {
+    // Check for fully-reduced: same dptr[i] and ev[i] == 0.0
+    bool reducible = true;
+    if (ev[0] == 0.0) {
+      for (vector<float>::iterator iter = ev.begin(); iter != ev.end(); )
+      {
+        if (*iter++ != ev[0]) { reducible = false; break; }
+      }
+      if (reducible) {
+        for (vector<int>::iterator iter = dptr.begin(); iter != dptr.end(); )
+        {
+          if (*iter++ != dptr[0]) { reducible = false; break; }
+        }
+        if (reducible) {
+          // Reduce to dptr[0] and resultEv
+          // Unlink all dptr[i], i = 1 to size - 1
+          for (vector<int>::iterator iter = dptr.begin() + 1;
+              iter != dptr.end(); )
+          {
+            unlinkNode(*iter++);
+          }
+          result = dptr[0];
+          return;
+        }
+      }
+    }
+  }
+
+  // Check if result node will be full or sparse.
+  // For that you need to go through the indexes and find the largest index.
+  int largestIndex = -1;
+  bool sorted = true;
+  for (vector<int>::iterator iter = index.begin(); iter != index.end(); iter++)
+  {
+    if (*iter > largestIndex) {
+      largestIndex = *iter;
+    }
+    else {
+      sorted = false;
+    }
+  }
+
+  int fullNodeSize = (largestIndex + 1) * 2 + 4;
+  int sparseNodeSize = index.size() * 3 + 4;
+  int minNodeSize = MIN(fullNodeSize, sparseNodeSize);
+
+  // Get a logical address for result (an index in address[]).
+  result = getFreeNode(lh);
+
+  // Fill in address[result].
+  address[result].level = lh;
+  address[result].offset = getHole(lh, minNodeSize, true);
+  address[result].cache_count = 0;
+
+  // Start filling in the actual node data
+  int* nodeData = level[mapLevel(lh)].data + address[result].offset;
+  nodeData[0] = 1;                      // in-count (# incoming pointers)
+  nodeData[1] = getTempNodeId();
+  nodeData[minNodeSize - 1] = result;   // pointer back to address[result]
+
+  std::vector<int>::iterator inIter = index.begin();
+  std::vector<int>::iterator dpIter = dptr.begin();
+  std::vector<float>::iterator evIter = ev.begin();
+
+  if (minNodeSize == fullNodeSize) {
+    // Create full node
+    // Size is +ve for full-nodes and -ve for sparse nodes.
+    nodeData[2] = largestIndex + 1;
+    int* resultDp = &nodeData[3];
+    float* resultEvs = (float*)(resultDp + nodeData[2]);
+    float* last = resultEvs + nodeData[2];
+    int* lastDp = (int*)resultEvs;
+
+    if (sorted) {
+      int currIndex = 0;
+      while (inIter != index.end())
+      {
+        if (currIndex == *inIter) {
+          *resultDp++ = *dpIter++;
+          *resultEvs++ = *evIter++;
+          inIter++;
+        } else {
+          *resultDp++ = 0;
+          *resultEvs++ = NAN;;
+        }
+        currIndex++;
+      }
+      while (resultEvs != last)
+      {
+        *resultDp++ = 0;
+        *resultEvs++ = NAN;
+      }
+    }
+    else {
+      // Initialize node data
+      for (int* curr = resultDp; curr != lastDp; ) { *curr++ = 0; }
+      for (float* curr = resultEvs; curr != last; ) { *curr++ = NAN; }
+
+      while (inIter != index.end())
+      {
+        resultDp[*inIter] = *dpIter++;
+        resultEvs[*inIter++] = *evIter++;
+      }
+    }
+  } else {
+    // Create sparse node
+    // Size is +ve for full-nodes and -ve for sparse nodes.
+    nodeData[2] = -index.size();
+
+    if (!sorted) {
+      // Radix sort:
+      // (1) Find larget index and fix number of buckets
+      // (2) Insert into buckets (based on index)
+      // (3) Convert from buckets to sorted vector
+      vector< bucket<float> > sorter(largestIndex + 1);
+
+      while (inIter != index.end())
+      {
+        bucket<float>& curr = sorter[*inIter++];
+        curr.dp = *dpIter++;
+        curr.ev = *evIter++;
+      }
+
+      inIter = index.begin();
+      dpIter = dptr.begin();
+      evIter = ev.begin();
+      for (vector< bucket<float> >::iterator iter = sorter.begin();
+          iter != sorter.end(); iter++)
+      {
+        if (iter->dp != 0) {
+          *inIter++ = iter - sorter.begin();
+          *dpIter++ = iter->dp;
+          *evIter++ = iter->ev;
+        }
+      }
+    }
+
+    int* resultIn = &nodeData[3];
+    int* resultDp = resultIn - nodeData[2];
+    float* resultEvs = (float*)(resultDp - nodeData[2]);
+
+    inIter = index.begin();
+    dpIter = dptr.begin();
+    evIter = ev.begin();
+    while (dpIter != dptr.end())
+    {
+      *resultIn++ = *inIter++;
+      *resultDp++ = *dpIter++;
+      *resultEvs++ = *evIter++;
+    }
+  }
+
+  // Search in unique table
+  int found = find(result);
+  if (getNull() == found) {
+    // No duplicate found; insert into unique table
+    insert(result);
+    DCASSERT(getCacheCount(result) == 0);
+    DCASSERT(find(result) == result);
+  }
+  else {
+    // Duplicate found; unlink all dptr[] and return the duplicate
+    for (dpIter = dptr.begin(); dpIter != dptr.end(); )
+    {
+      unlinkNode(*dpIter++);
+    }
+    // Code from deleteTempNode(result) adapted to work here
+    {
+      makeHole(lh, getNodeOffset(result), minNodeSize);
+      freeNode(result);
+      if (level[mapLevel(lh)].compactLevel) compactLevel(lh);
+    }
+    result = sharedCopy(found);
+  }
 }
 
 
