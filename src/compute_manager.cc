@@ -638,39 +638,41 @@ op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
 #if 0
           case DIVIDE:
             // Ev*Mdd divide
-            addBuiltinOp(key, evplusmdd_divide::getInstance(), forests, N);
+            addBuiltinOp(key, evtimesmdd_divide::getInstance(), forests, N);
             return &(builtinOpEntries->find(key)->second);
           case MIN:
             // Ev*Mdd min
-            addBuiltinOp(key, evplusmdd_min::getInstance(), forests, N);
+            addBuiltinOp(key, evtimesmdd_min::getInstance(), forests, N);
             return &(builtinOpEntries->find(key)->second);
           case MAX:
             // Ev*Mdd max
-            addBuiltinOp(key, evplusmdd_max::getInstance(), forests, N);
+            addBuiltinOp(key, evtimesmdd_max::getInstance(), forests, N);
             return &(builtinOpEntries->find(key)->second);
+#endif
           case EQUAL:
             // Ev*Mdd ==
-            addBuiltinOp(key, evplusmdd_equal::getInstance(), forests, N);
+            addBuiltinOp(key, evtimesmdd_equal::getInstance(), forests, N);
             return &(builtinOpEntries->find(key)->second);
+#if 0
           case NOT_EQUAL:
             // Ev*Mdd !=
-            addBuiltinOp(key, evplusmdd_not_equal::getInstance(), forests, N);
+            addBuiltinOp(key, evtimesmdd_not_equal::getInstance(), forests, N);
             return &(builtinOpEntries->find(key)->second);
           case LESS_THAN:
             // Ev*Mdd <
-            addBuiltinOp(key, evplusmdd_less_than::getInstance(), forests, N);
+            addBuiltinOp(key, evtimesmdd_less_than::getInstance(), forests, N);
             return &(builtinOpEntries->find(key)->second);
           case LESS_THAN_EQUAL:
             // Ev*Mdd <=
-            addBuiltinOp(key, evplusmdd_less_than_equal::getInstance(), forests, N);
+            addBuiltinOp(key, evtimesmdd_less_than_equal::getInstance(), forests, N);
             return &(builtinOpEntries->find(key)->second);
           case GREATER_THAN:
             // Ev*Mdd >
-            addBuiltinOp(key, evplusmdd_greater_than::getInstance(), forests, N);
+            addBuiltinOp(key, evtimesmdd_greater_than::getInstance(), forests, N);
             return &(builtinOpEntries->find(key)->second);
           case GREATER_THAN_EQUAL:
             // Ev*Mdd >=
-            addBuiltinOp(key, evplusmdd_greater_than_equal::getInstance(),
+            addBuiltinOp(key, evtimesmdd_greater_than_equal::getInstance(),
                 forests, N);
             return &(builtinOpEntries->find(key)->second);
 #endif

@@ -9996,6 +9996,36 @@ checkTerminals(op_info* op, int a, float aev, int b, float bev,
 }
 
 
+evtimesmdd_equal*
+evtimesmdd_equal::
+getInstance()
+{
+  static evtimesmdd_equal instance;
+  return &instance;
+}
+
+
+bool
+evtimesmdd_equal::
+checkTerminals(op_info* op, int a, float aev, int b, float bev,
+    int& c, float& cev)
+{
+  if (getExpertForest(op, 0)->isTerminalNode(a) &&
+      getExpertForest(op, 1)->isTerminalNode(b)) {
+    if (a == b && ((aev == bev) || (isNan(aev) && isNan(bev)))) {
+      c = -1;
+      cev = 1.0;
+    } else {
+      c = 0;
+      cev = NAN;
+    }
+    return true;
+  }
+
+  return false;
+}
+
+
 #if 0
 
 // ---------------------- MTMDD Saturation-based Reachability -----------------

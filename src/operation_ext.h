@@ -1622,6 +1622,22 @@ class evtimesmdd_minus : public evtimesmdd_apply_operation {
 };
 
 
+class evtimesmdd_equal : public evtimesmdd_apply_operation {
+  public:
+    virtual const char* getName() const { return "EV*MDD Equal"; }
+    virtual bool isCommutative() const { return true; }
+    virtual bool checkTerminals(op_info* op, int a, float aev, int b, float bev,
+        int& c, float& cev);
+    static evtimesmdd_equal* getInstance();
+
+  protected:
+    evtimesmdd_equal() {}
+    evtimesmdd_equal(const evtimesmdd_equal& copy);
+    evtimesmdd_equal& operator=(const evtimesmdd_equal& copy);
+    virtual ~evtimesmdd_equal() {}
+};
+
+
 #endif
 
 

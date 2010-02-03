@@ -42,7 +42,7 @@
 #define USE_SEQUENTIAL_PLUS 0
 #define USE_RANDOM_GENERATOR_BOUND 0
 #define USE_SERIAL_TERMS 0
-#define USE_REALS 0
+#define USE_REALS 1
 
 #if USE_REALS
   typedef float element_type;
@@ -345,6 +345,11 @@ int main(int argc, char *argv[])
     printf("Batch Addition == Sequential Addition!\n");
   } else {
     printf("Batch Addition != Sequential Addition!\n");
+    dd_edge result2 = result1;
+    assert(compute_manager::SUCCESS ==
+        MEDDLY_getComputeManager()->apply(compute_manager::EQUAL,
+        result, result1, result2));
+    result2.show(stdout, 2);
   }
 #endif
 

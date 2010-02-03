@@ -421,7 +421,6 @@ forest::error node_manager::createEdgeForVar(int vh, bool primedLevel,
   int *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
   int node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
 
-  linkNode(node);
   result.set(node, 0, getNodeLevel(node));
   return forest::SUCCESS;
 }
@@ -496,7 +495,6 @@ forest::error node_manager::createEdgeForVar(int vh, bool primedLevel,
   int *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
   int node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
 
-  linkNode(node);
   result.set(node, 0, getNodeLevel(node));
   return forest::SUCCESS;
 }
@@ -518,7 +516,6 @@ forest::error node_manager::createEdgeForVar(int vh, bool primedLevel,
   int *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
   int node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
 
-  linkNode(node);
   result.set(node, 0, getNodeLevel(node));
   return forest::SUCCESS;
 }
@@ -1564,80 +1561,92 @@ bool node_manager::equals(int h1, int h2) const
   int sz2 = ptr2[2];
   ptr1 += 3;
   ptr2 += 3;
-  if (sz1<0 && sz2<0) {
-    // both sparse
-    if (sz1 != sz2) return false;
-    if (edgeLabel == forest::MULTI_TERMINAL) {
-      return 0==memcmp(ptr1, ptr2, -2*sz1*sizeof(int));
-    } else {
-      return 0==memcmp(ptr1, ptr2, -3*sz1*sizeof(int));
-    }
-  }
-  if (sz1>0 && sz2>0) {
-    // both full
-    int ms = MIN(sz1, sz2);
-    if (memcmp(ptr1, ptr2, ms*sizeof(int))) return false;
-    // tails must be zero.  Only one loop will go.
-    for (int i=ms; i<sz1; i++)
-      if (ptr1[i]) return false; 
-    for (int i=ms; i<sz2; i++)
-      if (ptr2[i]) return false;
-    if (edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES) {
-      // check edge-values
-      if (memcmp(ptr1+sz1, ptr2+sz2, ms*sizeof(int))) return false;
-    }
-    return true;
-  }
-  if (sz1>0) {
-    // node1 is full, node2 is sparse
-    int* down2 = ptr2 - sz2;
-    int i = 0;
-    if (edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES) {
-      int* edge2 = down2 - sz2;
-      for (int z=0; z<-sz2; z++) {
-        for (; i<ptr2[z]; i++)  // node1 must be zeroes in between
-          if (ptr1[i]) return false;
-        if (ptr1[i] != down2[z]) return false;
-        if (ptr1[i+sz1] != edge2[z]) return false;
-        i++;
-      }
-    } else {
-      for (int z=0; z<-sz2; z++) {
-        for (; i<ptr2[z]; i++)  // node1 must be zeroes in between
-          if (ptr1[i]) return false;
-        if (ptr1[i] != down2[z]) return false;
-        i++;
+  if (sz1 < 0) {
+    if (sz2 < 0) {
+      // both sparse
+      if (sz1 != sz2) return false;
+      if (edgeLabel == forest::MULTI_TERMINAL) {
+        return 0 == memcmp(ptr1, ptr2, -2 * sz1 * sizeof(int));
+      } else {
+        DCASSERT(edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES);
+        return 0 == memcmp(ptr1, ptr2, -3 * sz1 * sizeof(int));
       }
     }
-    // tail of node1
-    for (; i<sz1; i++)
-      if (ptr1[i]) return false;
-    return true;
-  }
-  // node2 is full, node1 is sparse
-  int* down1 = ptr1 - sz1;
-  int i = 0;
-  if (edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES) {
-    int* edge1 = down1 - sz1;
-    for (int z=0; z<-sz1; z++) {
-      for (; i<ptr1[z]; i++)  // node2 must be zeroes in between
+    else {
+      DCASSERT(sz2 > 0);
+      // node2 is full, node1 is sparse
+      int* down1 = ptr1 - sz1;
+      int i = 0;
+      if (edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES) {
+        int* edge1 = down1 - sz1;
+        int* edge2 = ptr2 + sz2;
+        for (int z=0; z<-sz1; z++) {
+          for (; i<ptr1[z] && i<sz2; i++)  // node2 must be zeroes in between
+            if (ptr2[i]) return false;
+          if (ptr2[i] != down1[z]) return false;
+          if (edge2[i] != edge1[z]) return false;
+          i++;
+        }
+      } else {
+        for (int z=0; z<-sz1; z++) {
+          for (; i<ptr1[z] && i<sz2; i++)  // node2 must be zeroes in between
+            if (ptr2[i]) return false;
+          if (ptr2[i] != down1[z]) return false;
+          i++;
+        }
+      }
+      // tail of node2
+      for (; i<sz2; i++)
         if (ptr2[i]) return false;
-      if (ptr2[i] != down1[z]) return false;
-      if (ptr2[i+sz2] != edge1[z]) return false;
-      i++;
-    }
-  } else {
-    for (int z=0; z<-sz1; z++) {
-      for (; i<ptr1[z]; i++)  // node2 must be zeroes in between
-        if (ptr2[i]) return false;
-      if (ptr2[i] != down1[z]) return false;
-      i++;
+      return true;
     }
   }
-  // tail of node2
-  for (; i<sz2; i++)
-    if (ptr2[i]) return false;
-  return true;
+  else {
+    DCASSERT(sz1 > 0);
+    if (sz2 < 0) {
+      // node1 is full, node2 is sparse
+      int* down2 = ptr2 - sz2;
+      int i = 0;
+      if (edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES) {
+        int* edge1 = ptr1 + sz1;
+        int* edge2 = down2 - sz2;
+        for (int z=0; z<-sz2; z++) {
+          for (; i<ptr2[z] && i<sz1; i++)  // node1 must be zeroes in between
+            if (ptr1[i]) return false;
+          if (ptr1[i] != down2[z]) return false;
+          if (edge1[i] != edge2[z]) return false;
+          i++;
+        }
+      } else {
+        for (int z=0; z<-sz2; z++) {
+          for (; i<ptr2[z] && i<sz1; i++)  // node1 must be zeroes in between
+            if (ptr1[i]) return false;
+          if (ptr1[i] != down2[z]) return false;
+          i++;
+        }
+      }
+      // tail of node1
+      for (; i<sz1; i++)
+        if (ptr1[i]) return false;
+      return true;
+    }
+    else {
+      DCASSERT(sz2 > 0);
+      // both full
+      int ms = MIN(sz1, sz2);
+      if (memcmp(ptr1, ptr2, ms * sizeof(int))) return false;
+      // tails must be zero.  Only one loop will go.
+      for (int i = ms; i < sz1; i++)
+        if (ptr1[i]) return false; 
+      for (int i = ms; i < sz2; i++)
+        if (ptr2[i]) return false;
+      if (edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES) {
+        // check edge-values
+        if (memcmp(ptr1 + sz1, ptr2 + sz2, ms * sizeof(int))) return false;
+      }
+      return true;
+    }
+  }
 }
 
 // ------------------------------------------------------------------
