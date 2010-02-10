@@ -962,6 +962,46 @@ class dd_edge {
     void set(int node, int value, int level);
     void set(int node, float value, int level);
 
+    class iterator {
+      public:
+        ~iterator();
+        iterator(const iterator& iter);
+        iterator& operator=(const iterator& iter);
+        void operator--();
+        void operator++();
+        bool operator!=(const iterator& iter) const;
+        bool operator==(const iterator& iter) const;
+        const int* getAssignments() const;
+        const int* getPrimedAssignments() const;
+
+      private:
+        friend class dd_edge;
+        iterator(dd_edge* parent, bool begin);
+        void incrNonRelation();
+
+        dd_edge*  e;
+        unsigned  size;
+        int*      element;
+        int*      nodes;
+        int*      pelement;
+        int*      pnodes;
+    };
+
+    typedef iterator const_iterator;
+
+    /** Returns an iterator to the first element of the dd_edge.
+        The iterator can be used to visit the elements in the DD in
+        lexicographic order.
+        @return         an iterator pointing to the first element.
+    */
+    const_iterator begin();
+
+    /** Returns an iterator just past the last element of the dd_edge.
+        This iterator represents the end of the list of elements.
+        @return         an iterator just past the last element.
+    */
+    const_iterator end();
+
     /** Assignment operator.
         @param  e       dd_edge to copy.
         @return         the new dd_edge.
@@ -1077,6 +1117,7 @@ class dd_edge {
 
   private:
     friend class expert_forest;
+    friend class iterator;
 
     void setIndex(int index);
     int getIndex() const;
@@ -1091,6 +1132,12 @@ class dd_edge {
     op_info* opStar;
     op_info* opMinus;
     op_info* opDivide;
+
+    void updateIterators();
+
+    bool            updateNeeded;
+    const_iterator* beginIterator;
+    const_iterator* endIterator;
 };
 
 
@@ -1407,6 +1454,7 @@ inline void dd_edge::clear()
 // TBD: is this an "always" assert, or "debugging only" assert?
   assert(index != -1);
   set(0, 0, 0);
+  updateNeeded = true;
 }
 
 

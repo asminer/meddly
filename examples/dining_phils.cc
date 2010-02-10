@@ -624,6 +624,90 @@ int main(int argc, char *argv[])
     }
   }
 
+  if (true) {
+    start.note_time();
+    unsigned counter = 0;
+    dd_edge::const_iterator iter = reachableStates.begin();
+    for (dd_edge::const_iterator iter = reachableStates.begin(),
+        endIter = reachableStates.end(); iter != endIter; ++iter, ++counter)
+    {
+      const int* element = iter.getAssignments();
+#if 0
+      printf("%d: [", counter);
+      for (int i = N - 1; i > 0; --i)
+      {
+        printf("%d ", element[i]);
+      }
+      printf("]\n");
+#endif
+    }
+    start.note_time();
+    printf("Iterator traversal time (%0.4e elements): %0.4e seconds\n",
+        double(counter), start.get_last_interval()/double(1000000.0));
+  }
+
+  if (false) {
+    // Test findFirstElement()
+    int* element = (int *) malloc((nLevels + 1) * sizeof(int));
+    int** elements = &element;
+    dd_edge rsCopy(reachableStates);
+    start.note_time();
+    double cardinality = rsCopy.getCardinality();
+    for (int index = 0; index < cardinality; index++)
+    {
+      // memset(element, 0, (nLevels + 1) * sizeof(int));
+      assert(forest::SUCCESS == mdd->findFirstElement(rsCopy, element));
+#if 0
+      printf("Element at index %d: [ ", index);
+      for (int i = N - 1; i > 0; i--)
+      {
+        printf("%d ", element[i]);
+      }
+      printf("]\n");
+#endif
+      dd_edge temp(mdd);
+      mdd->createEdge(elements, 1, temp);
+      rsCopy -= temp;
+    }
+    start.note_time();
+    printf("findFirstElement traversal time (%0.4e elements): %0.4e seconds\n",
+        cardinality, start.get_last_interval()/double(1000000.0));
+    free(element);
+  }
+
+  if (true) {
+    // Create a EV+MDD forest in this domain (to store index set)
+    forest* evplusmdd = d->createForest(false, forest::INTEGER, forest::EVPLUS);
+    assert(evplusmdd != NULL);
+
+    // Convert MDD to Index Set EV+MDD and print the states
+    int* element = (int *) malloc((nLevels + 1) * sizeof(int));
+    dd_edge indexSet(evplusmdd);
+    start.note_time();
+    compute_manager* cm = MEDDLY_getComputeManager();
+    assert(compute_manager::SUCCESS ==
+        cm->apply(compute_manager::CONVERT_TO_INDEX_SET, reachableStates,
+        indexSet));
+    double cardinality = indexSet.getCardinality();
+    for (int index = 0, card = int(cardinality); index < card; index++)
+    {
+      assert(forest::SUCCESS ==
+          evplusmdd->getElement(indexSet, index, element));
+#if 0
+      printf("Element at index %d: [ ", index);
+      for (int i = N - 1; i > 0; i--)
+      {
+        printf("%d ", element[i]);
+      }
+      printf("]\n");
+#endif
+    }
+    start.note_time();
+    printf("Index Set traversal time (%0.4e elements): %0.4e seconds\n",
+        cardinality, start.get_last_interval()/double(1000000.0));
+    free(element);
+  }
+
   // Cleanup
   delete d;
 

@@ -1567,9 +1567,19 @@ bool node_manager::equals(int h1, int h2) const
       if (sz1 != sz2) return false;
       if (edgeLabel == forest::MULTI_TERMINAL) {
         return 0 == memcmp(ptr1, ptr2, -2 * sz1 * sizeof(int));
-      } else {
-        DCASSERT(edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES);
+      } else if (edgeLabel == forest::EVPLUS) {
         return 0 == memcmp(ptr1, ptr2, -3 * sz1 * sizeof(int));
+      } else {
+        DCASSERT(edgeLabel == forest::EVTIMES);
+        if (0 != memcmp(ptr1, ptr2, -2 * sz1 * sizeof(int))) return false;
+        ptr1 -= 2 * sz1;
+        ptr2 -= 2 * sz1;
+        int* last = ptr1 - sz1;
+        for ( ; ptr1 != last; )
+        {
+          if (!isAlmostEqual(*ptr1++, *ptr2++)) return false;
+        }
+        return true;
       }
     }
     else {
@@ -1577,7 +1587,7 @@ bool node_manager::equals(int h1, int h2) const
       // node2 is full, node1 is sparse
       int* down1 = ptr1 - sz1;
       int i = 0;
-      if (edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES) {
+      if (edgeLabel == forest::EVPLUS) {
         int* edge1 = down1 - sz1;
         int* edge2 = ptr2 + sz2;
         for (int z=0; z<-sz1; z++) {
@@ -1585,6 +1595,16 @@ bool node_manager::equals(int h1, int h2) const
             if (ptr2[i]) return false;
           if (ptr2[i] != down1[z]) return false;
           if (edge2[i] != edge1[z]) return false;
+          i++;
+        }
+      } else if (edgeLabel == forest::EVTIMES) {
+        int* edge1 = down1 - sz1;
+        int* edge2 = ptr2 + sz2;
+        for (int z=0; z<-sz1; z++) {
+          for (; i<ptr1[z] && i<sz2; i++)  // node2 must be zeroes in between
+            if (ptr2[i]) return false;
+          if (ptr2[i] != down1[z]) return false;
+          if (!isAlmostEqual(edge2[i], edge1[z])) return false;
           i++;
         }
       } else {
@@ -1607,7 +1627,7 @@ bool node_manager::equals(int h1, int h2) const
       // node1 is full, node2 is sparse
       int* down2 = ptr2 - sz2;
       int i = 0;
-      if (edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES) {
+      if (edgeLabel == forest::EVPLUS) {
         int* edge1 = ptr1 + sz1;
         int* edge2 = down2 - sz2;
         for (int z=0; z<-sz2; z++) {
@@ -1615,6 +1635,16 @@ bool node_manager::equals(int h1, int h2) const
             if (ptr1[i]) return false;
           if (ptr1[i] != down2[z]) return false;
           if (edge1[i] != edge2[z]) return false;
+          i++;
+        }
+      } else if (edgeLabel == forest::EVTIMES) {
+        int* edge1 = ptr1 + sz1;
+        int* edge2 = down2 - sz2;
+        for (int z=0; z<-sz2; z++) {
+          for (; i<ptr2[z] && i<sz1; i++)  // node1 must be zeroes in between
+            if (ptr1[i]) return false;
+          if (ptr1[i] != down2[z]) return false;
+          if (!isAlmostEqual(edge1[i], edge2[z])) return false;
           i++;
         }
       } else {
@@ -1640,9 +1670,18 @@ bool node_manager::equals(int h1, int h2) const
         if (ptr1[i]) return false; 
       for (int i = ms; i < sz2; i++)
         if (ptr2[i]) return false;
-      if (edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES) {
+      if (edgeLabel == forest::EVPLUS) {
         // check edge-values
         if (memcmp(ptr1 + sz1, ptr2 + sz2, ms * sizeof(int))) return false;
+      } else if (edgeLabel == forest::EVTIMES) {
+        // check edge-values
+        ptr1 += sz1;
+        ptr2 += sz2;
+        int* last = ptr1 + ms;
+        for ( ; ptr1 != last; )
+        {
+          if(!isAlmostEqual(*ptr1++, *ptr2++)) return false;
+        }
       }
       return true;
     }
