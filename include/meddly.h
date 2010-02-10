@@ -964,6 +964,7 @@ class dd_edge {
 
     class iterator {
       public:
+        iterator();
         ~iterator();
         iterator(const iterator& iter);
         iterator& operator=(const iterator& iter);

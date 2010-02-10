@@ -302,10 +302,17 @@ void dd_edge::updateIterators()
 }
 
 
+dd_edge::iterator::iterator()
+: e(0), size(0), element(0), nodes(0), pelement(0), pnodes(0)
+{ }
+
+
 dd_edge::iterator::iterator(dd_edge* e, bool begin)
-: e(e), size(e->parent->getDomain()->getNumVariables() + 1),
-  element(0), nodes(0), pelement(0), pnodes(0)
+: e(e), size(0), element(0), nodes(0), pelement(0), pnodes(0)
 {
+  if (e == 0) return;
+  
+  size = e->parent->getDomain()->getNumVariables() + 1;
   element = (int*) malloc(size * sizeof(int));
   nodes = (int*) malloc(size * sizeof(int));
   memset(element, 0, size * sizeof(int));
@@ -343,10 +350,12 @@ dd_edge::iterator::iterator(dd_edge* e, bool begin)
 
 dd_edge::iterator::~iterator()
 {
-  free(element);
-  free(nodes);
-  if (pelement != 0) free(pelement);
-  if (pnodes != 0) free (pnodes);
+  if (e != 0) {
+    free(element);
+    free(nodes);
+    if (pelement != 0) free(pelement);
+    if (pnodes != 0) free (pnodes);
+  }
 }
 
 
@@ -354,16 +363,18 @@ dd_edge::iterator::iterator(const iterator& iter)
 : e(iter.e), size(iter.size),
   element(0), nodes(0), pelement(0), pnodes(0)
 {
-  element = (int*) malloc(size * sizeof(int));
-  nodes = (int*) malloc(size * sizeof(int));
-  memcpy(element, iter.element, size * sizeof(int));
-  memcpy(nodes, iter.nodes, size * sizeof(int));
+  if (e != 0) {
+    element = (int*) malloc(size * sizeof(int));
+    nodes = (int*) malloc(size * sizeof(int));
+    memcpy(element, iter.element, size * sizeof(int));
+    memcpy(nodes, iter.nodes, size * sizeof(int));
 
-  if (e->parent->isForRelations()) {
-    pelement = (int*) malloc(size * sizeof(int));
-    pnodes = (int*) malloc(size * sizeof(int));
-    memcpy(pelement, iter.pelement, size * sizeof(int));
-    memcpy(pnodes, iter.pnodes, size * sizeof(int));
+    if (e->parent->isForRelations()) {
+      pelement = (int*) malloc(size * sizeof(int));
+      pnodes = (int*) malloc(size * sizeof(int));
+      memcpy(pelement, iter.pelement, size * sizeof(int));
+      memcpy(pnodes, iter.pnodes, size * sizeof(int));
+    }
   }
 }
 
@@ -371,25 +382,31 @@ dd_edge::iterator::iterator(const iterator& iter)
 dd_edge::iterator& dd_edge::iterator::operator=(const iterator& iter)
 {
   if (this != &iter) {
-    e = iter.e;
+    if (iter.e == 0) {
+      e = 0;
+      size = 0;
+      element = nodes = pelement = pnodes = 0;
+    } else {
+      e = iter.e;
 
-    if (size != iter.size) {
-      element = (int*) realloc(element, iter.size * sizeof(int));
-      nodes = (int*) realloc(nodes, iter.size * sizeof(int));
-    }
-    memcpy(element, iter.element, iter.size * sizeof(int));
-    memcpy(nodes, iter.nodes, iter.size * sizeof(int));
-
-    if (e->parent->isForRelations()) {
-      if (pelement == 0 || size != iter.size) {
-        pelement = (int*) realloc(pelement, iter.size * sizeof(int));
-        pnodes = (int*) realloc(pnodes, iter.size * sizeof(int));
+      if (size != iter.size) {
+        element = (int*) realloc(element, iter.size * sizeof(int));
+        nodes = (int*) realloc(nodes, iter.size * sizeof(int));
       }
-      memcpy(pelement, iter.pelement, iter.size * sizeof(int));
-      memcpy(pnodes, iter.pnodes, iter.size * sizeof(int));
-    }
+      memcpy(element, iter.element, iter.size * sizeof(int));
+      memcpy(nodes, iter.nodes, iter.size * sizeof(int));
 
-    size = iter.size;
+      if (e->parent->isForRelations()) {
+        if (pelement == 0 || size != iter.size) {
+          pelement = (int*) realloc(pelement, iter.size * sizeof(int));
+          pnodes = (int*) realloc(pnodes, iter.size * sizeof(int));
+        }
+        memcpy(pelement, iter.pelement, iter.size * sizeof(int));
+        memcpy(pnodes, iter.pnodes, iter.size * sizeof(int));
+      }
+
+      size = iter.size;
+    }
   }
   return *this;
 }
@@ -399,6 +416,9 @@ void dd_edge::iterator::operator--()
 {
   // find prev
   // set element to prev
+
+  if (e == 0) return;
+  if (e->node == 0) return;
 
   if (nodes[0] == 0) {
     // reached end, find last element in dd_edge
@@ -412,6 +432,7 @@ void dd_edge::iterator::operator--()
 
 void dd_edge::iterator::incrNonRelation()
 {
+  DCASSERT(e != 0);
   DCASSERT(e->node != 0);
 
   expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
@@ -545,6 +566,7 @@ void dd_edge::iterator::operator++()
   // find next
   // set element to next
 
+  if (e == 0) return;
   if (e->node == 0) return;
   if (e->parent->isForRelations()) { assert(false); }
   incrNonRelation();
@@ -553,21 +575,23 @@ void dd_edge::iterator::operator++()
 
 bool dd_edge::iterator::operator!=(const iterator& iter) const
 {
-  DCASSERT((e != iter.e) || (nodes.size() == iter.nodes.size()));
+  DCASSERT((e != iter.e) || (size == iter.size));
 
   // if terminals are different, return true.
   // else if terminals are 0, return false.
   // else return (element != iter.element)
-  return (e != iter.e)
+  return e == 0
           ? true
-          : (nodes[0] != iter.nodes[0])
+          : e != iter.e
             ? true
-            : (nodes[0] == 0)
-              ? false
-              : e->parent->isForRelations()
-                ? (0 != memcmp(element, iter.element, size) ||
-                  0 != memcmp(pelement, iter.pelement, size))
-                : 0 != memcmp(element, iter.element, size);
+            : (nodes[0] != iter.nodes[0])
+              ? true
+              : (nodes[0] == 0)
+                ? false
+                : e->parent->isForRelations()
+                  ? (0 != memcmp(element, iter.element, size) ||
+                    0 != memcmp(pelement, iter.pelement, size))
+                  : 0 != memcmp(element, iter.element, size);
 }
 
 
@@ -585,11 +609,15 @@ bool dd_edge::iterator::operator==(const iterator& iter) const
 
 const int* dd_edge::iterator::getAssignments() const
 {
-  return element;
+  return e == 0
+          ? 0
+          : nodes[0] == 0? 0: element;
 }
 
 
 const int* dd_edge::iterator::getPrimedAssignments() const
 {
-  return e->parent->isForRelations()? pelement: 0;
+  return e == 0
+          ? 0
+          : nodes[0] == 0? 0: e->parent->isForRelations()? pelement: 0;
 }

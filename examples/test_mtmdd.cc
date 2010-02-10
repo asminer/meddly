@@ -286,6 +286,7 @@ int main(int argc, char *argv[])
   printf("Nodes in compute table: %d\n",
       (MEDDLY_getComputeManager())->getNumCacheEntries());
 
+#if 0
   // Convert mtmdd to mdd
   forest* mdd =
     d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL);
@@ -337,6 +338,27 @@ int main(int argc, char *argv[])
   mtmdd->showInfo(stdout);
   printf("\n\nEVMDD Forest Info:\n");
   evmdd->showInfo(stdout);
+#endif
+
+  if (true) {
+    dd_edge reachableStates(result);
+    start.note_time();
+    unsigned counter = 0;
+    for (dd_edge::const_iterator iter = reachableStates.begin(),
+        endIter = reachableStates.end(); iter != endIter; ++iter, ++counter)
+    {
+      const int* element = iter.getAssignments();
+      const int* curr = element + nVariables;
+      const int* end = element - 1;
+      printf("%d: [%d", counter, *curr--);
+      while (curr != end) { printf(" %d", *curr--); }
+      printf("]\n");
+    }
+    start.note_time();
+    printf("Iterator traversal time (%0.4e elements): %0.4e seconds\n",
+        double(counter), start.get_last_interval()/double(1000000.0));
+    printf("Cardinality: %0.4e\n", reachableStates.getCardinality());
+  }
 
   // Cleanup; in this case simply delete the domain
   delete d;

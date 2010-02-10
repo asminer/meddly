@@ -373,6 +373,39 @@ int main(int argc, char *argv[])
   result.show(stdout, 2);
 #endif
 
+  if (true) {
+    dd_edge reachableStates(result);
+    start.note_time();
+    unsigned counter = 0;
+    for (dd_edge::const_iterator iter = reachableStates.begin(),
+        endIter = reachableStates.end(); iter != endIter; ++iter, ++counter)
+    {
+      const int* element = iter.getAssignments();
+      const int* curr = element + nVariables;
+      const int* end = element - 1;
+      printf("%d: [%d", counter, *curr--);
+      while (curr != end) { printf(" %d", *curr--); }
+      printf("]\n");
+    }
+    start.note_time();
+    printf("Iterator traversal time (%0.4e elements): %0.4e seconds\n",
+        double(counter), start.get_last_interval()/double(1000000.0));
+    printf("Cardinality: %0.4e\n", reachableStates.getCardinality());
+    if (true) {
+      dd_edge::const_iterator iter = reachableStates.end();
+      ++iter;
+      const int* element = iter.getAssignments();
+      if (element != 0) {
+        const int* curr = element + nVariables;
+        const int* end = element - 1;
+        printf("%d: [%d", counter, *curr--);
+        while (curr != end) { printf(" %d", *curr--); }
+        printf("]\n");
+      }
+    }
+  }
+
+
   // Build equivalent MDD
   delete evmdd;
 

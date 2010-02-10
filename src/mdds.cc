@@ -975,7 +975,7 @@ const
 double node_manager::getCardinality(int node) const
 {
   std::map<int, double> visited;
-  if (isMdd() || isMtMdd() || isEvplusMdd())
+  if (isMdd() || isMtMdd() || isEvplusMdd() || isEvtimesMdd())
     return cardinality(node, d->getNumVariables(), visited);
   else if (isMxd() || isMtMxd())
     return cardinalityForRelations(node, d->getNumVariables(), false, visited);

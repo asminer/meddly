@@ -627,7 +627,6 @@ int main(int argc, char *argv[])
   if (true) {
     start.note_time();
     unsigned counter = 0;
-    dd_edge::const_iterator iter = reachableStates.begin();
     for (dd_edge::const_iterator iter = reachableStates.begin(),
         endIter = reachableStates.end(); iter != endIter; ++iter, ++counter)
     {
