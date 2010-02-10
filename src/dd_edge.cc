@@ -382,30 +382,30 @@ dd_edge::iterator::iterator(const iterator& iter)
 dd_edge::iterator& dd_edge::iterator::operator=(const iterator& iter)
 {
   if (this != &iter) {
-    if (iter.e == 0) {
+    if (e != 0) {
+      free(element);
+      free(nodes);
+      if (pelement != 0) free(pelement);
+      if (pnodes != 0) free(pnodes);
       e = 0;
       size = 0;
       element = nodes = pelement = pnodes = 0;
-    } else {
+    }
+    if (iter.e != 0) {
       e = iter.e;
+      size = iter.size;
 
-      if (size != iter.size) {
-        element = (int*) realloc(element, iter.size * sizeof(int));
-        nodes = (int*) realloc(nodes, iter.size * sizeof(int));
-      }
-      memcpy(element, iter.element, iter.size * sizeof(int));
-      memcpy(nodes, iter.nodes, iter.size * sizeof(int));
+      element = (int*) malloc(size * sizeof(int));
+      nodes = (int*) malloc(size * sizeof(int));
+      memcpy(element, iter.element, size * sizeof(int));
+      memcpy(nodes, iter.nodes, size * sizeof(int));
 
       if (e->parent->isForRelations()) {
-        if (pelement == 0 || size != iter.size) {
-          pelement = (int*) realloc(pelement, iter.size * sizeof(int));
-          pnodes = (int*) realloc(pnodes, iter.size * sizeof(int));
-        }
-        memcpy(pelement, iter.pelement, iter.size * sizeof(int));
-        memcpy(pnodes, iter.pnodes, iter.size * sizeof(int));
+        pelement = (int*) malloc(size * sizeof(int));
+        pnodes = (int*) malloc(size * sizeof(int));
+        memcpy(pelement, iter.pelement, size * sizeof(int));
+        memcpy(pnodes, iter.pnodes, size * sizeof(int));
       }
-
-      size = iter.size;
     }
   }
   return *this;
