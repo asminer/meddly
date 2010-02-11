@@ -340,24 +340,43 @@ int main(int argc, char* argv[])
   }
 
   // Test findFirstElement()
-  int** elements = &element;
-  cardinality = reachableStates.getCardinality();
-  for (int index = 0; index < cardinality; index++)
-  {
-    memset(element, 0, N * sizeof(int));
-    assert(forest::SUCCESS == mdd->findFirstElement(reachableStates, element));
-    printf("Element at index %d: [ ", index);
-    for (int i = N - 1; i > 0; i--)
+  if (true) {
+    int** elements = &element;
+    dd_edge rsCopy(reachableStates);
+    cardinality = rsCopy.getCardinality();
+    for (int index = 0; index < cardinality; index++)
     {
-      printf("%d ", element[i]);
+      memset(element, 0, N * sizeof(int));
+      assert(forest::SUCCESS ==
+          mdd->findFirstElement(rsCopy, element));
+      printf("Element at index %d: [ ", index);
+      for (int i = N - 1; i > 0; i--)
+      {
+        printf("%d ", element[i]);
+      }
+      printf("]\n");
+      dd_edge temp(mdd);
+      mdd->createEdge(elements, 1, temp);
+      rsCopy -= temp;
     }
-    printf("]\n");
-    dd_edge temp(mdd);
-    mdd->createEdge(elements, 1, temp);
-    reachableStates -= temp;
   }
-
   free(element);
+
+  if (true) {
+    unsigned counter = 0;
+    for (dd_edge::const_iterator iter = reachableStates.begin(),
+        endIter = reachableStates.end(); iter != endIter; ++iter, ++counter)
+    {
+      const int* element = iter.getAssignments();
+      const int* curr = element + N - 1;
+      const int* end = element - 1;
+      printf("%d: [%d", counter, *curr--);
+      while (curr != end) { printf(" %d", *curr--); }
+      printf("]\n");
+    }
+    printf("Iterator traversal: %0.4e elements\n", double(counter));
+    printf("Cardinality: %0.4e\n", reachableStates.getCardinality());
+  }
 
   // Cleanup
   delete d;

@@ -442,11 +442,13 @@ void dd_edge::iterator::incrNonRelation()
 
   if (nodes[0] == 0) {
     memset(nodes, 0, size * sizeof(int));
+    nodes[f->getNodeLevel(e->node)] = e->node;
   }
   else {
     // Start from the bottom level and see if you can find the next
     // valid edge. Move up a level if no more edges exist from this level.
 
+    int lastSkipped = e->node;
     currLevel = d->getVariableAbove(domain::TERMINALS);
     bool found = false;
 
@@ -459,6 +461,7 @@ void dd_edge::iterator::incrNonRelation()
         if (element[currLevel] + 1 < f->getLevelSize(currLevel)) {
           // index is available, use it and break out of loop
           element[currLevel]++;
+          nodes[f->getNodeLevel(lastSkipped)] = lastSkipped;
           found = true;
           break;
         }
@@ -507,6 +510,7 @@ void dd_edge::iterator::incrNonRelation()
         }
       }
       // no new path from current level so reset nodes[currLevel]
+      if (nodes[currLevel] != 0) lastSkipped = nodes[currLevel];
       nodes[currLevel] = 0;
       element[currLevel] = 0;
       currLevel = d->getVariableAbove(currLevel);
@@ -522,8 +526,6 @@ void dd_edge::iterator::incrNonRelation()
     // select the first path starting from level below currLevel
     currLevel = d->getVariableBelow(currLevel);
   }
-
-  nodes[f->getNodeLevel(e->node)] = e->node;
 
   // select the first path starting at currLevel
   for ( ; currLevel != domain::TERMINALS;
