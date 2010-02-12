@@ -208,6 +208,10 @@ class mxd_node_manager : public node_manager {
     // Used by createNode(k, i, j, dptr)
     int createNode(int k, int i, int dptr);
 
+#ifdef SORT_BUILD
+    int sortBuild(int** list, int** plist, int height, int begin, int end);
+#endif
+
   public:
 
     // Refer to meddly_expert.h

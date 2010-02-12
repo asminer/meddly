@@ -824,18 +824,147 @@ forest::error mxd_node_manager::createEdge(const int* const* vlist,
   if (e.getForest() != this) return forest::INVALID_OPERATION;
   if (vlist == 0 || vplist == 0 || N <= 0) return forest::INVALID_VARIABLE;
 
+#ifndef SORT_BUILD
   createEdge(vlist[0], vplist[0], e);
   if (N > 1) {
     dd_edge curr(this);
-    for (int i=1; i<N; i++) {
+    for (int i=1; i<N; ++i) {
       createEdge(vlist[i], vplist[i], curr);
       e += curr;
     }
   }
+#else
+  if (N < 2) {
+    createEdge(vlist[0], vplist[0], e);
+  } else {
+    // check for special cases
+    bool specialCasesFound = false;
+    for (int i = 0; i < N; i++)
+    {
+      int* curr = (int*)vlist[i];
+      int* end = curr + expertDomain->getNumVariables() + 1;
+      for ( ; curr != end; ) { if (*curr++ < 0) break; }
+      if (curr != end) { specialCasesFound = true; break; }
 
+      curr = (int*)vplist[i];
+      end = curr + expertDomain->getNumVariables() + 1;
+      for ( ; curr != end; ) { if (*curr++ < 0) break; }
+      if (curr != end) { specialCasesFound = true; break; }
+    }
+
+    if (specialCasesFound) {
+      assert(N > 1);
+      createEdge(vlist[0], vplist[0], e);
+      dd_edge curr(this);
+      for (int i=1; i<N; ++i) {
+        createEdge(vlist[i], vplist[i], curr);
+        e += curr;
+      }
+    }
+    else {
+      int* list[N];
+      int* plist[N];
+      memcpy(list, vlist, N * sizeof(int*));
+      memcpy(plist, vplist, N * sizeof(int*));
+      sortMatrix(list, plist, 0, N, getDomain()->getNumVariables() + 1);
+
+      int result = 
+        sortBuild(list, plist, getDomain()->getNumVariables(), 0, N);
+      e.set(result, 0, getNodeLevel(result));
+    }
+  }
+#endif
   return forest::SUCCESS;
 }
 
+#ifdef SORT_BUILD
+int mxd_node_manager::sortBuild(int** list, int** plist,
+    int height, int begin, int end)
+{
+  // [begin, end)
+
+  // terminal condition
+  if (height == 0)
+  {
+    return getTerminalNode(true);
+  }
+
+  int** currList = 0;
+  int nextHeight = 0;
+  int level = 0;
+  int absLevel = 0;
+
+  if (height > 0) {
+    currList = list;
+    nextHeight = -height;
+    level = expertDomain->getVariableWithHeight(height);
+  } else {
+    currList = plist;
+    nextHeight = -height-1;
+    level = -(expertDomain->getVariableWithHeight(-height));
+  }
+  absLevel = level < 0? -level: level;
+
+  vector<int> nodes;
+  int currBegin = begin;
+  int currEnd = currBegin;
+  for ( ; currEnd < end; currBegin = currEnd) 
+  {
+    int currIndex = currList[currBegin][absLevel];
+    assert(currIndex >= 0);
+    for (currEnd = currBegin + 1;
+        currEnd < end && currIndex == currList[currEnd][absLevel];
+        ++currEnd);
+    // found new range
+    // to be "unioned" and assigned to result[currIndex]
+#ifdef DEBUG_SORT_BUILD
+    printf("level: %d, currIndex: %d, currBegin: %d, currEnd: %d\n",
+        level, currIndex, currBegin, currEnd);
+    fflush(stdout);
+#endif
+    int node = sortBuild(list, plist, nextHeight, currBegin, currEnd);
+#ifdef DEBUG_SORT_BUILD
+    printf("level: %d, currIndex: %d, currBegin: %d, currEnd: %d\n",
+        level, currIndex, currBegin, currEnd);
+    fflush(stdout);
+#endif
+    nodes.push_back(currIndex);
+    nodes.push_back(node);
+  }
+
+  assert(nodes.size() >= 2);
+  if (nodes.size() == 2) {
+    // single entry: store directly as sparse
+    // TODO: this should be able to accept many more cases
+    int result = createNode(level, nodes[0], nodes[1]);
+    unlinkNode(nodes[1]);
+    return result;
+  }
+  // full node
+  int size = nodes[nodes.size() - 2] + 1;
+  int result = createTempNode(level, size);
+  for (vector<int>::iterator iter = nodes.begin();
+      iter != nodes.end(); iter += 2)
+  {
+    if (getDownPtr(result, *iter) != 0) {
+      for (unsigned i = 0u; i < nodes.size(); i+=2)
+      {
+        printf("%d:%d ", nodes[i], nodes[i+1]);
+      }
+      printf("\n");
+      for (int i = begin; i < end; i++)
+      {
+        printf("%d:%d ", i, currList[i][absLevel]);
+      }
+      printf("\n");
+      exit(1);
+    }
+    setDownPtrWoUnlink(result, *iter, *(iter+1));
+    unlinkNode(*(iter+1));
+  }
+  return reduceNode(result);
+}
+#endif
 
 forest::error mxd_node_manager::createEdge(bool val, dd_edge &e)
 {
