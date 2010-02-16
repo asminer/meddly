@@ -133,6 +133,16 @@ double dd_edge::getCardinality() const
   return smart_cast<expert_forest*>(parent)->getCardinality(node);
 }
 
+unsigned dd_edge::getNodeCount() const
+{
+  return smart_cast<expert_forest*>(parent)->getNodeCount(node);
+}
+
+unsigned dd_edge::getEdgeCount() const
+{
+  return smart_cast<expert_forest*>(parent)->getEdgeCount(node);
+}
+
 //
 // Operator +=
 dd_edge& dd_edge::operator+=(const dd_edge& e)

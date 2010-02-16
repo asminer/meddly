@@ -323,6 +323,14 @@ class expert_forest : public forest
     /// Paths that end at the terminal Zero (or False) are not counted.
     virtual double getCardinality(int node) const = 0;
 
+    /// Returns the node count for this node. The node count is the number
+    /// of unique nodes in the decision diagram represented by this node.
+    virtual unsigned getNodeCount(int node) const = 0;
+
+    /// Returns the edge count for this node. The edge count is the number
+    /// of unique edges in the decision diagram represented by this node.
+    virtual unsigned getEdgeCount(int node) const = 0;
+
     /// Display the contents of node
     virtual void showNode(FILE* s, int node, int verbose = 0) const = 0;
     virtual void showNodeGraph(FILE* s, int node) const = 0;

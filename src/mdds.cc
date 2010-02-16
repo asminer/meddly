@@ -983,6 +983,102 @@ double node_manager::getCardinality(int node) const
     return 0;
 }
 
+unsigned node_manager::getNodeCount(int p) const
+{
+  std::set<int> discovered;
+  std::queue<int> toExpand;
+
+  toExpand.push(p);
+  discovered.insert(p);
+
+  // expand the front of toExpand;
+  // add newly discovered ones to discovered and toExpand
+
+  while (!toExpand.empty()) {
+    int p = toExpand.front();
+    toExpand.pop();
+    if (isTerminalNode(p)) continue;
+    // expand
+    if (isFullNode(p)) {
+      const int sz = getFullNodeSize(p);
+      for (int i = 0; i < sz; ++i)
+      {
+        int temp = getFullNodeDownPtr(p, i);
+        // insert into discovered and toExpand if new
+        if (discovered.find(temp) == discovered.end()) {
+          toExpand.push(temp);
+          discovered.insert(temp);
+        }
+      }
+    }
+    else {
+      const int sz = getSparseNodeSize(p);
+      for (int i = 0; i < sz; ++i)
+      {
+        int temp = getSparseNodeDownPtr(p, i);
+        // insert into discovered and toExpand if new
+        if (discovered.find(temp) == discovered.end()) {
+          toExpand.push(temp);
+          discovered.insert(temp);
+        }
+      }
+    }
+  }
+
+  return discovered.size();
+}
+
+
+unsigned node_manager::getEdgeCount(int p) const
+{
+  std::set<int> discovered;
+  std::queue<int> toExpand;
+
+  toExpand.push(p);
+  discovered.insert(p);
+
+  unsigned count = 0;
+
+  // expand the front of toExpand;
+  // add newly discovered ones to discovered and toExpand
+
+  while (!toExpand.empty()) {
+    int p = toExpand.front();
+    toExpand.pop();
+    if (isTerminalNode(p)) continue;
+    // expand
+    if (isFullNode(p)) {
+      const int sz = getFullNodeSize(p);
+      for (int i = 0; i < sz; ++i)
+      {
+        int temp = getFullNodeDownPtr(p, i);
+        if (temp != 0) count++;
+        // insert into discovered and toExpand if new
+        if (discovered.find(temp) == discovered.end()) {
+          toExpand.push(temp);
+          discovered.insert(temp);
+        }
+      }
+    }
+    else {
+      const int sz = getSparseNodeSize(p);
+      for (int i = 0; i < sz; ++i)
+      {
+        int temp = getSparseNodeDownPtr(p, i);
+        if (temp != 0) count++;
+        // insert into discovered and toExpand if new
+        if (discovered.find(temp) == discovered.end()) {
+          toExpand.push(temp);
+          discovered.insert(temp);
+        }
+      }
+    }
+  }
+
+  return count;
+}
+
+
 void node_manager::showNodeGraph(FILE *s, int p) const
 {
   std::vector< std::set<int> >

@@ -326,6 +326,8 @@ int main(int argc, char *argv[])
 
   printf("Time interval: %.4e seconds\n",
       start.get_last_interval()/1000000.0);
+  printf("#Nodes: %d\n", result.getNodeCount());
+  printf("#Edges: %d\n", result.getEdgeCount());
 
   // print elements
   if (verbose > 0) {
@@ -349,7 +351,7 @@ int main(int argc, char *argv[])
     dd_edge result2 = result1;
     assert(compute_manager::SUCCESS ==
         MEDDLY_getComputeManager()->apply(compute_manager::EQUAL,
-        result, result1, result2));
+          result, result1, result2));
     result2.show(stdout, 2);
 #endif
   }

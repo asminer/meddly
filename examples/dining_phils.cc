@@ -496,6 +496,8 @@ int main(int argc, char *argv[])
   start.note_time();
   printf("Time interval: %.4e seconds\n",
       start.get_last_interval()/1000000.0);
+  printf("#Nodes: %d\n", reachableStates.getNodeCount());
+  printf("#Edges: %d\n", reachableStates.getEdgeCount());
 
 #else
 
