@@ -66,7 +66,8 @@ domain* MEDDLY_createDomain()
 
 expert_domain::expert_domain()
 : nForests(0), forests(0), szForests(0),
-  nVars(0), levelBounds(0), allocatedLevels(0), topLevel(0),
+  nVars(0), levelBounds(0), pLevelBounds(0),
+  allocatedLevels(0), topLevel(0),
   levelsToHeightsMap(0), heightsToLevelsMap(0)
 {}
 
@@ -83,6 +84,7 @@ expert_domain::~expert_domain()
   
   // free arrays
   free(levelBounds);
+  free(pLevelBounds);
   free(levelsToHeightsMap);
   free(heightsToLevelsMap);
 }
@@ -108,30 +110,41 @@ domain::error expert_domain::createVariablesBottomUp(const int* bounds, int N)
     return domain::INSUFFICIENT_MEMORY;
   }
 
+  pLevelBounds = (int *) malloc(allocatedLevels * sizeof(int));
+  if (pLevelBounds == 0) {
+    free(levelBounds);
+    return domain::INSUFFICIENT_MEMORY;
+  }
+
   levelsToHeightsMap = (int *) malloc(allocatedLevels * sizeof(int));
   if (levelsToHeightsMap == 0) {
     free(levelBounds);
+    free(pLevelBounds);
     return domain::INSUFFICIENT_MEMORY;
   }
   
   heightsToLevelsMap = (int *) malloc(allocatedLevels * sizeof(int));
   if (heightsToLevelsMap == 0) {
     free(levelBounds);
+    free(pLevelBounds);
     free(levelsToHeightsMap);
     return domain::INSUFFICIENT_MEMORY;
   }
 
   levelBounds[0] = 0;
+  pLevelBounds[0] = 0;
   levelsToHeightsMap[0] = 0;
   heightsToLevelsMap[0] = 0;
   for (int i = 1; i < N + 1; ++i) {
     levelBounds[i] = bounds[i-1];
+    pLevelBounds[i] = bounds[i-1];
     levelsToHeightsMap[i] = i;
     heightsToLevelsMap[i] = i;
   }
   // identify invalid levels with -1
   for (int i = N + 1; i < allocatedLevels; ++i) {
     levelBounds[i] = -1;
+    pLevelBounds[i] = -1;
     levelsToHeightsMap[i] = -1;
     heightsToLevelsMap[i] = -1;
   }
@@ -166,10 +179,11 @@ void expert_domain::showInfo(FILE* strm)
   fprintf(strm, "Domain info:\n");
   fprintf(strm, "  #variables: %d\n", nVars);
   fprintf(strm, "  Variables listed in height-order (ascending):\n");
-  fprintf(strm, "    height\t\thandle\t\tbound\n");
+  fprintf(strm, "    height\t\thandle\t\tbound\t\tprime-bound\n");
   for (int i = 1; i < nVars + 1; ++i) {
-    fprintf(strm, "    %d\t\t%d\t\t%d\n",
-            i, heightsToLevelsMap[i], levelBounds[heightsToLevelsMap[i]]);
+    int level = heightsToLevelsMap[i];
+    fprintf(strm, "    %d\t\t%d\t\t%d\t\t%d\n",
+            i, heightsToLevelsMap[i], levelBounds[level], pLevelBounds[level]);
   }
   // call showNodes for each of the forests in this domain.
   for (int i = 0; i < szForests; i++) {
@@ -283,12 +297,15 @@ int expert_domain::findVariableBound(int vh) const
   // TODO: not implemented
   printf("expert_domain::findVariableBound() not implemented;");
   printf(" use getVariableBound().\n");
-  return getVariableBound(vh);
+  return getVariableBound(vh, false);
 }
 
-domain::error expert_domain::enlargeVariableBound(int vh, int b)
+domain::error expert_domain::enlargeVariableBound(int vh, bool prime, int b)
 {
-  // delete registered forests
+  // if !prime, expand both prime and unprime
+  // else expand only prime
+
+#if 0
   for (int i = 0; i < szForests; ++i)
   {
     if (forests[i] != 0) {
@@ -296,10 +313,15 @@ domain::error expert_domain::enlargeVariableBound(int vh, int b)
         return domain::NOT_IMPLEMENTED;
     }
   }
+#endif
 
-  if (getVariableBound(vh) == -1) return domain::NOT_IMPLEMENTED;
+  if (getVariableBound(vh, false) == -1) return domain::NOT_IMPLEMENTED;
 
-  if (levelBounds[vh] < b) levelBounds[vh] = b;
+  if (prime) {
+  } else {
+    if (levelBounds[vh] < b) levelBounds[vh] = b;
+    if (pLevelBounds[vh] < b) pLevelBounds[vh] = b;
+  }
   return domain::SUCCESS;
 }
 

@@ -797,33 +797,48 @@ class domain {
       INVALID_BOUND
     };
 
-  public:
-    /// Constructor, creates an empty domain.
-    domain();
-    /// Destructor.
-    virtual ~domain();
-
-    /** Produce a human-readable name for an error code.
-        @param  e   Error code.
-        @return     A string that describes the error, suitable for printing.
-    */
-    static const char* getErrorCodeName(error e);
-
-    /// Current number of variables.
-    virtual int getNumVariables() const = 0;
-    /// Number of forests currently associated with this domain.
-    virtual int getNumForests() const = 0;
-
     /** Create all variables at once, from the bottom up.
         Requires the domain to be "empty" (containing no variables or forests).
         When successful, variable handle \a N will refer to the top-most 
         variable, and variable handle 1 will refer to the bottom-most variable.
-        @param  bounds  Current variable bounds.
+
+        @param  bounds  variable bounds.
                         bounds[i-1] gives the bound for variable i.
         @param  N       Number of variables.
         @return         An appropriate error code.
     */
     virtual error createVariablesBottomUp(const int* bounds, int N) = 0;
+
+    /** Create a forest in this domain.
+        Conceptually, a forest is a structure used to represent a
+        collection of functions over a common domain. For simplicity
+        (although it is a slight abuse of notation) a forest may represent
+        "vectors" or "sets" over a domain, or "matrices" or "relations".
+        In case of matrices / relations, the forest uses primed and unprimed
+        versions of every variable in the domain. 
+
+        @param  rel     Is this a relation / matrix, versus a set / vector.
+        @param  t       Range type of the functions, namely,
+                        booleans, integers, or reals.
+        @param  ev      Edge labeling mechanism, i.e., should this be a
+                        Multi-terminal decision diagram forest,
+                        edge-valued with plus/times decision diagram forest.
+        @return 0       if an error occurs, a new forest otherwise.
+    */
+    virtual forest* createForest(bool rel, forest::range_type t,
+        forest::edge_labeling ev) = 0;
+
+    /// Get the number of variables in this domain.
+    virtual int getNumVariables() const = 0;
+
+    /** Get the specified bound of a variable.
+      @param  vh      Variable handle.
+      @param  prime   If prime is true, get the bound for the primed variable.
+      @return         The bound set for variable \a vh.
+                      If \a vh is TERMINALS, returns 0.
+                      If \a vh is invalid, returns -1.
+     */
+    virtual int getVariableBound(int vh, bool prime = false) const = 0;
 
     /** Get the topmost variable.
         @return         The variable handle for the top-most variable.
@@ -846,31 +861,27 @@ class domain {
     */
     virtual int getVariableBelow(int vh) const = 0;
 
+    /// Get the number of forests associated with this domain.
+    virtual int getNumForests() const = 0;
+
     /** Display lots of information about the domain.
         This is primarily for aid in debugging.
         @param  strm    File stream to write to.
     */
     virtual void showInfo(FILE* strm) = 0;
 
-    /** Create a forest in this domain.
-        Conceptually, a forest is a structure used to represent a
-        collection of functions over a common domain. For simplicity
-        (although it is a slight abuse of notation) a forest may represent
-        "vectors" or "sets" over a domain, or "matrices" or "relations".
-        In case of matrices / relations, the forest uses primed and unprimed
-        versions of every variable in the domain. 
-
-        @param  rel     Is this a relation / matrix, versus a set / vector.
-        @param  t       Range type of the functions, namely,
-                        booleans, integers, or reals.
-        @param  ev      Edge labeling mechanism, i.e., should this be a
-                        Multi-terminal decision diagram forest,
-                        edge-valued with plus/times decision diagram forest.
-        @return 0       if an error occurs, a new forest otherwise.
+    /** Produce a human-readable name for an error code.
+        @param  e   Error code.
+        @return     A string that describes the error, suitable for printing.
     */
-    virtual forest* createForest(bool rel, forest::range_type t,
-        forest::edge_labeling ev) = 0;
+    static const char* getErrorCodeName(error e);
 
+    /// Destructor.
+    virtual ~domain();
+
+  protected:
+    /// Constructor, creates an empty domain.
+    domain();
 };
 
 /** Front-end function to create a domain.
@@ -991,6 +1002,7 @@ class dd_edge {
         friend class dd_edge;
         iterator(dd_edge* parent, bool begin);
         void incrNonRelation();
+        void incrRelation();
 
         dd_edge*  e;
         unsigned  size;

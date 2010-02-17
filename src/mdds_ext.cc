@@ -238,7 +238,7 @@ int mtmdd_node_manager::createNode(int k, int index, int dptr)
   if (index > -1 && getLevelSize(k) <= index) {
     //printf("level: %d, curr size: %d, index: %d, ",
     //k, getLevelSize(k), index);
-    expertDomain->enlargeVariableBound(k, index + 1);
+    expertDomain->enlargeVariableBound(k, false, index + 1);
     //printf("new size: %d\n", getLevelSize(k));
   }
 #endif
@@ -3388,7 +3388,7 @@ int mdd_node_manager::createNode(int k, int index, int dptr)
   if (index > -1 && getLevelSize(k) <= index) {
     //printf("level: %d, curr size: %d, index: %d, ",
     //k, getLevelSize(k), index);
-    expertDomain->enlargeVariableBound(k, index + 1);
+    expertDomain->enlargeVariableBound(k, false, index + 1);
     //printf("new size: %d\n", getLevelSize(k));
   }
 #endif

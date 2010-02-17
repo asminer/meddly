@@ -376,6 +376,27 @@ int main(int argc, char* argv[])
     }
     printf("Iterator traversal: %0.4e elements\n", double(counter));
     printf("Cardinality: %0.4e\n", reachableStates.getCardinality());
+    counter = 0;
+    for (dd_edge::const_iterator iter = nsf.begin(),
+        endIter = nsf.end(); iter != endIter; ++iter, ++counter)
+    {
+      const int* element = iter.getAssignments();
+      const int* pelement = iter.getPrimedAssignments();
+      assert(element != 0 && pelement != 0);
+
+      const int* curr = element + N - 1;
+      const int* end = element - 1;
+      printf("%d: [%d", counter, *curr--);
+      while (curr != end) { printf(" %d", *curr--); }
+
+      curr = pelement + N - 1;
+      end = pelement - 1;
+      printf("] --> [%d", *curr--);
+      while (curr != end) { printf(" %d", *curr--); }
+      printf("]\n");
+    }
+    printf("Iterator traversal: %0.4e elements\n", double(counter));
+    printf("Cardinality: %0.4e\n", nsf.getCardinality());
   }
 
   // Cleanup

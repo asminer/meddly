@@ -633,14 +633,6 @@ class expert_domain : public domain {
      */
     error createVariablesTopDown(const int* bounds, int N);
 
-    /** Get the specified bound of a variable.
-      @param  vh      Variable handle.
-      @return         The bound set for variable \a vh.
-                      If \a vh is TERMINALS, returns 0.
-                      If \a vh is invalid, returns -1.
-     */
-    int getVariableBound(int vh) const;
-
     /** Add a new variable with bound 1.
       Can be used when the domain already has forests, in which case
       all forests are modified as appropriate.
@@ -702,11 +694,14 @@ class expert_domain : public domain {
       This could modify all nodes in all forests, depending on the
       choice of reduction rule.
       @param  vh      Variable handle.
+      @param  prime   If prime is true, enlarge the bound for
+                      the primed variable only, otherwise both
+                      the primed and unprimed are enlarged.
       @param  b       New bound, if less than the current bound
                       an error code is returned.
       @return         An appropriate error code.
      */
-    error enlargeVariableBound(int vh, int b);
+    error enlargeVariableBound(int vh, bool prime, int b);
 
     /** Shrink the possible values for a variable.
       This could modify all nodes in all forests, depending on the
@@ -760,6 +755,7 @@ class expert_domain : public domain {
     virtual int getNumForests() const;
     virtual int getNumVariables() const;
     virtual error createVariablesBottomUp(const int* bounds, int N);
+    virtual int getVariableBound(int vh, bool prime = false) const;
     virtual int getTopVariable() const;
     virtual int getVariableAbove(int vh) const;
     virtual int getVariableBelow(int vh) const;
@@ -777,6 +773,7 @@ class expert_domain : public domain {
     int nVars;
 
     int* levelBounds;
+    int* pLevelBounds;
     int allocatedLevels;
     int topLevel;
 
@@ -1368,11 +1365,13 @@ inline int expert_domain::getVariableBelow(int vh) const
 }
 
 
-inline int expert_domain::getVariableBound(int vh) const
+inline int expert_domain::getVariableBound(int vh, bool prime) const
 {
-  return (vh < 0 || vh >= allocatedLevels)?
-            -1:
-            levelBounds[vh];
+  return (vh < 0 || vh >= allocatedLevels)
+            ? -1
+            : prime
+              ? pLevelBounds[vh]
+              : levelBounds[vh];
 }
 
 
@@ -1655,11 +1654,11 @@ inline
 int expert_forest::getLevelSize(int lh) const {
   DCASSERT(isValidLevel(lh));
   DCASSERT(lh == 0 || level[mapLevel(lh)].data != NULL);
-#if 0
-  return level[mapLevel(lh)].bound;
-#else
-  return static_cast<expert_domain*>(d)->getVariableBound((lh < 0? -lh: lh));
-#endif
+  if (lh < 0) {
+    return static_cast<expert_domain*>(d)->getVariableBound(-lh, true);
+  } else {
+    return static_cast<expert_domain*>(d)->getVariableBound(lh, false);
+  }
 }
 
 inline
