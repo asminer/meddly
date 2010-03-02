@@ -45,71 +45,18 @@
 void sortVector(int** indexes, int* terms, int N, int nVars);
 void sortMatrix(int** indexes, int** pindexes, int* terms, int N, int nVars);
 
+int binarySearch(const int* a, int sz, int find);
 
-class mdd_node_manager : public node_manager {
-  public:
+template <typename T>
+T handleMultipleTerminalValues(T* tList, int begin, int end);
+template <>
+bool handleMultipleTerminalValues(bool* tList, int begin, int end);
 
-    mdd_node_manager(domain *d);
-    ~mdd_node_manager();
-
-    // Refer to meddly.h
-    virtual error createEdge(const int* const* vlist, int N, dd_edge &e);
-    virtual error createEdge(bool val, dd_edge &e);
-    virtual error evaluate(const dd_edge &f, const int* vlist, bool &term)
-      const;
-    virtual error findFirstElement(const dd_edge& f, int* vlist) const;
-    
-    // Refer to meddly_expert.h
-    virtual int reduceNode(int p);
-
-  protected:
-
-    // Create edge representing f(vlist[]) = term and store it in curr.
-    void createEdge(const int* vlist, int term, dd_edge& e);
-
-    // Create a node, at level k, whose ith index points to dptr.
-    // If i is -1, all indices of the node will point to dptr.
-    int createNode(int k, int i, int dptr);
-
-#ifdef SORT_BUILD
-    int sortBuild(int** list, int height, int begin, int end);
-#endif
-
-  public:
-
-    // Refer to meddly_expert.h
-    // The following will either abort or return an error since they are not
-    // applicable to this forest.
-    virtual void normalizeAndReduceNode(int& p, int& ev);
-    virtual void normalizeAndReduceNode(int& p, float& ev);
-
-    // Refer to meddly.h
-    // The following will either abort or return an error since they are not
-    // applicable to this forest.
-    virtual error createEdge(const int* const* vlist, const int* terms, int N,
-        dd_edge &e);
-    virtual error createEdge(const int* const* vlist, const float* terms,
-        int N, dd_edge &e);
-    virtual error createEdge(const int* const* vlist, const int* const* vplist,
-        int N, dd_edge &e);
-    virtual error createEdge(const int* const* vlist, const int* const* vplist,
-        const int* terms, int N, dd_edge &e);
-    virtual error createEdge(const int* const* vlist, const int* const* vplist, 
-        const float* terms, int N, dd_edge &e);
-    virtual error createEdge(int val, dd_edge &e);
-    virtual error createEdge(float val, dd_edge &e);
-    virtual error evaluate(const dd_edge &f, const int* vlist, int &term)
-      const;
-    virtual error evaluate(const dd_edge &f, const int* vlist, float &term)
-      const;
-    virtual error evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, bool &term) const;
-    virtual error evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, int &term) const;
-    virtual error evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, float &term) const;
-};
-
+/*
+TODO: modifying mtmxd_node_manager to work like mtmdd_node_manager; and
+mxd_node_manager to work like mdd_node_manager.
+TODO: adding real-valued terminals to mtmdd_node_manager.
+*/
 
 class mtmdd_node_manager : public node_manager {
   public:
@@ -117,17 +64,56 @@ class mtmdd_node_manager : public node_manager {
     mtmdd_node_manager(domain *d, forest::range_type t);
     ~mtmdd_node_manager();
 
-    // Refer to meddly.h
     virtual error createEdge(const int* const* vlist, const int* terms, int N,
         dd_edge &e);
+    virtual error createEdge(const int* const* vlist, const float* terms,
+        int N, dd_edge &e);
+
     virtual error createEdge(int val, dd_edge &e);
+    virtual error createEdge(float val, dd_edge &e);
+
     virtual error evaluate(const dd_edge &f, const int* vlist, int &term)
       const;
-    
-    // Refer to meddly_expert.h
+    virtual error evaluate(const dd_edge &f, const int* vlist, float &term)
+      const;
+
+    virtual error findFirstElement(const dd_edge& f, int* vlist) const;
+
     virtual int reduceNode(int p);
 
+    // The following will either abort or return an error since they are not
+    // applicable to this forest.
+    virtual void normalizeAndReduceNode(int& p, int& ev);
+    virtual void normalizeAndReduceNode(int& p, float& ev);
+    virtual error createEdge(const int* const* vlist, int N, dd_edge &e);
+    virtual error createEdge(const int* const* vlist, const int* const* vplist,
+        int N, dd_edge &e);
+    virtual error createEdge(const int* const* vlist, const int* const* vplist,
+        const int* terms, int N, dd_edge &e);
+    virtual error createEdge(const int* const* vlist, const int* const* vplist, 
+        const float* terms, int N, dd_edge &e);
+    virtual error createEdge(bool val, dd_edge &e);
+    virtual error evaluate(const dd_edge &f, const int* vlist, bool &term)
+      const;
+    virtual error evaluate(const dd_edge& f, const int* vlist,
+        const int* vplist, bool &term) const;
+    virtual error evaluate(const dd_edge& f, const int* vlist,
+        const int* vplist, int &term) const;
+    virtual error evaluate(const dd_edge& f, const int* vlist,
+        const int* vplist, float &term) const;
+
   protected:
+
+    // Used by derived classes for initialization
+    mtmdd_node_manager(domain *d, bool relation, forest::range_type t,
+        forest::edge_labeling e, forest::reduction_rule r,
+        forest::node_storage s, forest::node_deletion_policy dp);
+
+    // This create a MTMDD from a collection of edges (represented 
+    // as vectors).
+    template <typename T>
+    forest::error createEdgeInternal(const int* const* vlist,
+        const T* terms, int N, dd_edge &e);
 
     // Create edge representing f(vlist[]) = term and store it in curr.
     void createEdge(const int* vlist, int term, dd_edge& e);
@@ -136,115 +122,58 @@ class mtmdd_node_manager : public node_manager {
     // If i is -1, all indices of the node will point to dptr.
     int createNode(int k, int i, int dptr);
 
-  public:
+    // Create a node at level k, such that dptr[i] is the downpointer
+    // corresponding to index[i].
+    // Important note: no node linking performed because the links
+    // are "transferred" from the dptr vector.
+    int createNode(int lh, std::vector<int>& index, std::vector<int>& dptr);
 
-    // Refer to meddly_expert.h
-    // The following will either abort or return an error since they are not
-    // applicable to this forest.
-    virtual void normalizeAndReduceNode(int& p, int& ev);
-    virtual void normalizeAndReduceNode(int& p, float& ev);
+    // Creates an edge representing the terminal node given by
+    // terminalNode.
+    // Note: terminalNode is usually a terminal value converted into
+    // the equivalent node representation. This makes this method useful
+    // for createEdge(int, e) or (float, e) or (bool, e) as long as the
+    // terminal value can be converted into an equivalent node.
+    error createEdgeHelper(int terminalNode, dd_edge& e);
 
-    // Refer to meddly.h
-    // The following will either abort or return an error since they are not
-    // applicable to this forest.
+    // Get the terminal node at the bottom of the edge with root n
+    // and vlist representing the indexes for the levels.
+    // Used by evaluate()
+    int getTerminalNodeForEdge(int n, const int* vlist) const;
 
-    virtual error createEdge(const int* const* vlist, int N, dd_edge &e);
-    virtual error createEdge(const int* const* vlist, const float* terms,
-        int N, dd_edge &e);
-    virtual error createEdge(const int* const* vlist, const int* const* vplist,
-        int N, dd_edge &e);
-    virtual error createEdge(const int* const* vlist, const int* const* vplist,
-        const int* terms, int N, dd_edge &e);
-    virtual error createEdge(const int* const* vlist, const int* const* vplist, 
-        const float* terms, int N, dd_edge &e);
-    virtual error createEdge(bool val, dd_edge &e);
-    virtual error createEdge(float val, dd_edge &e);
-    virtual error evaluate(const dd_edge &f, const int* vlist, bool &term)
-      const;
-    virtual error evaluate(const dd_edge &f, const int* vlist, float &term)
-      const;
-    virtual error evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, bool &term) const;
-    virtual error evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, int &term) const;
-    virtual error evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, float &term) const;
+    template <typename T>
+    int sortBuild(int** list, T* tList, int height, int begin, int end);
+
 };
 
 
-class mxd_node_manager : public node_manager {
-  // TODO: mxds can only be forest::IDENTITY_REDUCED
+class mdd_node_manager : public mtmdd_node_manager {
   public:
 
-    mxd_node_manager(domain *d);
-    ~mxd_node_manager();
+    mdd_node_manager(domain *d);
+    ~mdd_node_manager();
+
+    using mtmdd_node_manager::createEdge;
+    using mtmdd_node_manager::evaluate;
 
     // Refer to meddly.h
-    virtual error createEdge(const int* const* vlist, const int* const* vplist,
-        int N, dd_edge& e);
-    virtual error createEdge(bool val, dd_edge &e);
-    virtual error evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, bool &term) const;
-    virtual error findFirstElement(const dd_edge& f, int* vlist,
-        int* vplist) const;
-
-    // Refer to meddly_expert.h
-    virtual int reduceNode(int p);
-
-  protected:
-  
-    // Create edge representing vlist[] and store it in curr.
-    void createEdge(const int* vlist, const int* vplist, dd_edge& e);
-
-    // Create a node n, at level -k, whose jth index points to dptr.
-    // Create a node m, at level +k, whose ith index points to n.
-    // If i or j is -1, all indices of n will point to dptr and all of m will
-    //    point to n.
-    // If i or j is -2, simply returns dptr.
-    int createNode(int k, int i, int j, int dptr);
-
-    // Create a node, at level k, whose ith index points to dptr.
-    // 0 <= i < level bound
-    // Used by createNode(k, i, j, dptr)
-    int createNode(int k, int i, int dptr);
-
-#ifdef SORT_BUILD
-    int sortBuild(int** list, int** plist, int height, int begin, int end);
-#endif
-
-  public:
-
-    // Refer to meddly_expert.h
-    // The following will either abort or return an error since they are not
-    // applicable to this forest.
-    virtual void normalizeAndReduceNode(int& p, int& ev);
-    virtual void normalizeAndReduceNode(int& p, float& ev);
-
-    // Refer to meddly.h
-    // The following will either abort or return an error since they are not
-    // applicable to this forest.
-
     virtual error createEdge(const int* const* vlist, int N, dd_edge &e);
+    virtual error createEdge(bool val, dd_edge &e);
+    virtual error evaluate(const dd_edge &f, const int* vlist, bool &term)
+      const;
+
+    // The following will either abort or return an error since they are not
+    // applicable to this forest.
     virtual error createEdge(const int* const* vlist, const int* terms, int N,
         dd_edge &e);
     virtual error createEdge(const int* const* vlist, const float* terms,
         int N, dd_edge &e);
-    virtual error createEdge(const int* const* vlist, const int* const* vplist,
-        const int* terms, int N, dd_edge &e);
-    virtual error createEdge(const int* const* vlist, const int* const* vplist, 
-        const float* terms, int N, dd_edge &e);
     virtual error createEdge(int val, dd_edge &e);
     virtual error createEdge(float val, dd_edge &e);
-    virtual error evaluate(const dd_edge &f, const int* vlist, bool &term)
-      const;
     virtual error evaluate(const dd_edge &f, const int* vlist, int &term)
       const;
     virtual error evaluate(const dd_edge &f, const int* vlist, float &term)
       const;
-    virtual error evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, int &term) const;
-    virtual error evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, float &term) const;
 };
 
 
@@ -269,35 +198,12 @@ class mtmxd_node_manager : public node_manager {
     error evaluate(const dd_edge& f, const int* vlist, const int* vplist,
         float &term) const;
 
-    // Refer to meddly_expert.h
+    virtual error findFirstElement(const dd_edge& f, int* vlist, int* vplist)
+        const;
+
     virtual int reduceNode(int p);
-
-  protected:
-
-    // Creates an edge representing v[] vp[] = terminal node (not value),
-    // and stores it in e.
-    void createEdge(const int* v, const int* vp, int termNode, dd_edge& e);
-
-    // Creates a top-level node representing {-1, -1, ..., -1} = terminal node
-    // (not value), and returns it (returned node is already linked to.
-    int createEdge(int termNode);
-
-    // Create a node n, at level -k, whose jth index points to dptr.
-    // Create a node m, at level +k, whose ith index points to n.
-    // If i or j is -1, all indices of n will point to dptr and all of m will
-    //    point to n.
-    // If i or j is -2, simply returns dptr.
-    int createNode(int k, int i, int j, int dptr);
-
-    // Create a node, at level k, whose ith index points to dptr.
-    // 0 <= i < level bound
-    // Used by createNode(k, i, j, dptr)
-    int createNode(int k, int i, int dptr);
-
-#ifdef SORT_BUILD
-    int sortBuild(int** list, int** plist, int* tlist,
-        int height, int begin, int end);
-#endif
+    
+    bool singleNonZeroAt(int p, int val, int index) const;
 
   public:
 
@@ -329,10 +235,83 @@ class mtmxd_node_manager : public node_manager {
       const;
     virtual error evaluate(const dd_edge& f, const int* vlist,
         const int* vplist, bool &term) const;
+
+  protected:
+
+    // Used by derived classes for initialization
+    mtmxd_node_manager(domain *d, bool relation, forest::range_type t,
+        forest::edge_labeling e, forest::reduction_rule r,
+        forest::node_storage s, forest::node_deletion_policy dp);
+
+    // This create a MTMXD from a collection of edges (represented 
+    // as vectors vlist and vplist).
+    template <typename T>
+    forest::error createEdgeInternal(const int* const* vlist,
+        const int* const* vplist, const T* terms, int N, dd_edge &e);
+
+    // Creates an edge representing v[] vp[] = terminal node (not value),
+    // and stores it in e.
+    void createEdge(const int* v, const int* vp, int termNode, dd_edge& e);
+
+    // Creates a top-level node representing {-1, -1, ..., -1} = terminal node
+    // (not value), and returns it (returned node is already linked to.
+    int createEdge(int termNode);
+
+    // Create a node n, at level -k, whose jth index points to dptr.
+    // Create a node m, at level +k, whose ith index points to n.
+    // If i or j is -1, all indices of n will point to dptr and all of m will
+    //    point to n.
+    // If i or j is -2, simply returns dptr.
+    int createNode(int k, int i, int j, int dptr);
+
+    // Create a node, at level k, whose ith index points to dptr.
+    // 0 <= i < level bound
+    // Used by createNode(k, i, j, dptr)
+    int createNode(int k, int i, int dptr);
+
+    // Get the terminal node at the bottom of the edge with root n
+    // and vlist and vplist representing the indexes for the levels.
+    // Used by evaluate()
+    int getTerminalNodeForEdge(int n, const int* vlist, const int* vplist)
+        const;
+
+    template <typename T>
+    int sortBuild(int** unpList, int** pList, T* tList,
+        int height, int begin, int end);
 };
 
 
-int binarySearch(const int* a, int sz, int find);
+class mxd_node_manager : public mtmxd_node_manager {
+  // TODO: mxds can only be forest::IDENTITY_REDUCED
+  public:
+
+    mxd_node_manager(domain *d);
+    ~mxd_node_manager();
+
+    using mtmxd_node_manager::createEdge;
+    using mtmxd_node_manager::evaluate;
+
+    // Refer to meddly.h
+    virtual error createEdge(const int* const* vlist, const int* const* vplist,
+        int N, dd_edge& e);
+    virtual error createEdge(bool val, dd_edge &e);
+    virtual error evaluate(const dd_edge& f, const int* vlist,
+        const int* vplist, bool &term) const;
+
+    // The following will either abort or return an error since they are not
+    // applicable to this forest.
+    virtual error createEdge(const int* const* vlist, const int* const* vplist,
+        const int* terms, int N, dd_edge &e);
+    virtual error createEdge(const int* const* vlist, const int* const* vplist,
+        const float* terms, int N, dd_edge &e);
+    virtual error createEdge(int val, dd_edge &e);
+    virtual error createEdge(float val, dd_edge &e);
+    virtual error evaluate(const dd_edge &f, const int* vlist,
+        const int* vplist, int &term) const;
+    virtual error evaluate(const dd_edge &f, const int* vlist,
+        const int* vplist, float &term) const;
+};
+
 
 class evmdd_node_manager : public node_manager {
   public:
@@ -406,15 +385,9 @@ class evmdd_node_manager : public node_manager {
     // begin and end indicate the range of elements within the lists
     // that are to be added.
     // The sum of these edges is returned via node and edgeValue.
-#if 1
     template <typename T>
     void sortBuild(int** list, T* tList, int height, int begin, int end,
         int& node, T& edgeValue);
-#else
-    template <typename T>
-    void sortBuild(vector<int*>& list, vector<T>& tList, int height,
-        int& node, T& edgeValue);
-#endif
 
     virtual void normalizeAndReduceNode(int& p, int& ev) = 0;
     virtual void normalizeAndReduceNode(int& p, float& ev) = 0;
@@ -582,14 +555,11 @@ forest::error
 evmdd_node_manager::createEdgeInternal(const int* const* vlist,
     const T* terms, int N, dd_edge &e)
 {
-
-  // TODO: modifying this to make buffered updates to the EVMDD
-  // TODO: test modifications
-
   if (e.getForest() != this) return forest::INVALID_OPERATION;
   if (vlist == 0 || terms == 0 || N <= 0) return forest::INVALID_VARIABLE;
 
   // check if the vlist contains valid indexes
+  bool specialCasesFound = false;
   for (int i = 0; i < N; i++)
   {
     const int* h2l_map = expertDomain->getHeightsToLevelsMap();
@@ -599,20 +569,11 @@ evmdd_node_manager::createEdgeInternal(const int* const* vlist,
     {
       if (vlist[i][currLevel] >= getLevelSize(currLevel))
         return forest::INVALID_VARIABLE;
+      if (vlist[i][currLevel] < 0) specialCasesFound = true;
       currHeight--;
       currLevel = h2l_map[currHeight];
     }
   }
-
-#ifndef SORT_BUILD
-  // build using "standard" procedure
-  createEdgeInternal(vlist[0], terms[0], e);
-  dd_edge curr(this);
-  for (int i=1; i<N; i++) {
-    createEdgeInternal(vlist[i], terms[i], curr);
-    e += curr;
-  }
-#else
 
   if (N < 2) {
     createEdgeInternal(vlist[0], terms[0], e);
@@ -644,20 +605,6 @@ evmdd_node_manager::createEdgeInternal(const int* const* vlist,
     }
     else {
       // build using sort-based procedure
-#if 0
-      int* list[N];
-      memcpy(list, vlist, N * sizeof(int*));
-      int intList[N];
-      memcpy(intList, terms, N * sizeof(int));
-      // int* intList = (int*)terms;
-      sortVector(list, intList, N, getDomain()->getNumVariables() + 1);
-      int node;
-      T ev;
-      int* temp = (int*)intList;
-      T* tList = (T*)temp;
-      sortBuild(list, tList, getDomain()->getNumVariables(), 0, N, node, ev);
-      e.set(node, ev, getNodeLevel(node));
-#else
       // put terms into vlist[i][0]
       int* list[N];
       memcpy(list, vlist, N * sizeof(int*));
@@ -669,10 +616,8 @@ evmdd_node_manager::createEdgeInternal(const int* const* vlist,
       T ev;
       sortBuild(list, tList, getDomain()->getNumVariables(), 0, N, node, ev);
       e.set(node, ev, getNodeLevel(node));
-#endif
     }
   }
-#endif
   return forest::SUCCESS;
 }
 
@@ -852,111 +797,22 @@ forest::error evmdd_node_manager::evaluateInternal(const dd_edge &f,
 }
 
 
-#ifdef SORT_BUILD
+template <typename T>
+void evmdd_node_manager::sortBuild(int** list, T* tList,
+    int height, int begin, int end, int& node, T& edgeValue)
+{
+  // [begin, end)
 
+  // terminal condition
+  if (height == 0)
+  {
+    node = -1;
 #if 0
-
-template <typename T>
-void evmdd_node_manager::sortBuild(int** list, T* tList,
-    int height, int begin, int end, int& node, T& edgeValue)
-{
-  // [begin, end)
-
-  // terminal condition
-  if (height == 0)
-  {
-    node = -1;
     edgeValue = tList[begin++];
     while (begin != end) { edgeValue += tList[begin++]; }
-    return;
-  }
-
-  int** currList = list;
-  int nextHeight = height - 1;
-  int level = expertDomain->getVariableWithHeight(height);
-
-  vector<int> indices;
-  vector<int> dptrs;
-  vector<T> edgeValues;
-  int currBegin = begin;
-  int currEnd = currBegin;
-  for ( ; currEnd < end; currBegin = currEnd) 
-  {
-    int currIndex = currList[currBegin][level];
-    assert(currIndex >= 0);
-    for (currEnd = currBegin + 1;
-        currEnd < end && currIndex == currList[currEnd][level];
-        ++currEnd);
-    // found new range
-    // to be "unioned" and assigned to node[currIndex]
-#ifdef DEBUG_SORT_BUILD
-    printf("level: %d, currIndex: %d, currBegin: %d, currEnd: %d\n",
-        level, currIndex, currBegin, currEnd);
-    fflush(stdout);
-#endif
-    int n;
-    T ev;
-    sortBuild(list, tList, nextHeight, currBegin, currEnd, n, ev);
-#ifdef DEBUG_SORT_BUILD
-    printf("level: %d, currIndex: %d, currBegin: %d, currEnd: %d\n",
-        level, currIndex, currBegin, currEnd);
-    fflush(stdout);
-#endif
-    indices.push_back(currIndex);
-    dptrs.push_back(n);
-    edgeValues.push_back(ev);
-  }
-
-  assert(dptrs.size() >= 1);
-  if (dptrs.size() == 1) {
-    // single entry: store directly as sparse
-    // TODO: this should be able to accept many more cases
-    createNode(level, indices[0], dptrs[0], edgeValues[0], node, edgeValue);
-    unlinkNode(dptrs[0]);
-    return;
-  }
-  // full node
-  int size = indices[indices.size() - 1] + 1;
-  node = createTempNode(level, size);
-  vector<int>::iterator indexIter = indices.begin();
-  vector<int>::iterator dptrIter = dptrs.begin();
-  typename vector<T>::iterator evIter = edgeValues.begin();
-  for ( ; indexIter != indices.end(); indexIter++, dptrIter++, evIter++)
-  {
-    if (getDownPtr(node, *indexIter) != 0) {
-      for (unsigned i = 0u; i < dptrs.size(); i++)
-      {
-        printf("%d:%d ", indices[i], dptrs[i+1]);
-      }
-      printf("\n");
-      for (int i = begin; i < end; i++)
-      {
-        printf("%d:%d ", i, currList[i][level]);
-      }
-      printf("\n");
-      exit(1);
-    }
-    setDownPtrWoUnlink(node, *indexIter, *dptrIter);
-    setEdgeValue(node, *indexIter, *evIter);
-    unlinkNode(*dptrIter);
-  }
-  normalizeAndReduceNode(node, edgeValue);
-}
-
 #else
-
-template <typename T>
-void evmdd_node_manager::sortBuild(int** list, T* tList,
-    int height, int begin, int end, int& node, T& edgeValue)
-{
-  // [begin, end)
-
-  // terminal condition
-  if (height == 0)
-  {
-    node = -1;
-    edgeValue = tList[begin++];
-    while (begin != end) { edgeValue += tList[begin++]; }
+    edgeValue = handleMultipleTerminalValues(tList, begin, end);
+#endif
     return;
   }
 
@@ -1094,35 +950,509 @@ void evmdd_node_manager::sortBuild(int** list, T* tList,
   // build node from indices, dptrs and edgeValues
 
   DCASSERT(dptrs.size() > 0);
-
-#if 0
-  if (dptrs.size() == 1) {
-    createNode(level, indices[0], dptrs[0], edgeValues[0], node, edgeValue);
-    unlinkNode(dptrs[0]);
-    return;
-  }
-
-  // build full node
-  int size = indices[indices.size() - 1] + 1;
-  node = createTempNode(level, size);
-  vector<int>::iterator indexIter = indices.begin();
-  vector<int>::iterator dptrIter = dptrs.begin();
-  typename vector<T>::iterator evIter = edgeValues.begin();
-  for ( ; indexIter != indices.end(); )
-  {
-    setDownPtrWoUnlink(node, *indexIter, *dptrIter);
-    setEdgeValue(node, *indexIter++, *evIter++);
-    unlinkNode(*dptrIter++);
-  }
-  normalizeAndReduceNode(node, edgeValue);
-#else
   createNode(level, indices, dptrs, edgeValues, node, edgeValue);
-#endif
 }
 
-#endif
 
-#endif
+template <typename T>
+forest::error
+mtmdd_node_manager::createEdgeInternal(const int* const* vlist,
+    const T* terms, int N, dd_edge &e)
+{
+  // check if the vlist contains valid indexes
+  bool specialCasesFound = false;
+  for (int i = 0; i < N; i++)
+  {
+    const int* h2l_map = expertDomain->getHeightsToLevelsMap();
+    int currHeight = expertDomain->getNumVariables();
+    int currLevel = h2l_map[currHeight];
+    while (currHeight > 0)
+    {
+      int bound = vlist[i][currLevel] + 1;
+      if (bound >= getLevelSize(currLevel))
+        expertDomain->enlargeVariableBound(currLevel, false, bound);
+      else if (bound < 0)
+        specialCasesFound = true;
+      currHeight--;
+      currLevel = h2l_map[currHeight];
+    }
+  }
+
+  if (N == 1 || specialCasesFound) {
+    // build using "standard" procedure
+    createEdge(vlist[0], getTerminalNode(terms[0]), e);
+    if (N > 1) {
+      dd_edge curr(this);
+      for (int i=1; i<N; i++) {
+        createEdge(vlist[i], getTerminalNode(terms[i]), curr);
+        e += curr;
+      }
+    }
+  }
+  else {
+    // build using sort-based procedure
+    // put terms into vlist[i][0]
+    int* list[N];
+    memcpy(list, vlist, N * sizeof(int*));
+
+    int result = 0;
+    if (terms == 0) {
+      result =
+        sortBuild(list, (T*)0, getDomain()->getNumVariables(), 0, N);
+    } else {
+      T tList[N];
+      memcpy((void*)tList, (void*)terms, N * sizeof(T));
+      result =
+        sortBuild(list, tList, getDomain()->getNumVariables(), 0, N);
+    }
+
+    e.set(result, 0, getNodeLevel(result));
+  }
+
+  return forest::SUCCESS;
+}
+
+
+template <typename T>
+int mtmdd_node_manager::sortBuild(int** list, T* tList,
+    int height, int begin, int end)
+{
+  // [begin, end)
+
+  // terminal condition
+  if (height == 0)
+  {
+    return getTerminalNode(handleMultipleTerminalValues(tList, begin, end));
+  }
+
+  int N = end - begin;
+  int level = expertDomain->getVariableWithHeight(height);
+  int nextHeight = height - 1;
+
+  if (N == 1) {
+    // nothing to sort; just build a node starting at this level
+    int n = sortBuild(list, tList, nextHeight, begin, end);
+    int index = list[begin][level];
+    int result = createNode(level, index, n);
+    unlinkNode(n);
+    return result;
+  }
+
+  // do radix sort for this level
+  int levelSize = 0;
+  vector<int> count(1, 0);
+
+  // Curly braces here to limit the scope of the vectors defined within.
+  // Without limiting the scope, memory usage will increase significantly
+  // -- especially if there are a lot of variables in the domain.
+  if (tList != 0) {
+    vector<int*> sortedList(N, (int*)0);
+    vector<T> sortedtList(N, 0);
+
+    // determine size for count[]
+    levelSize = 0;
+    for (int i = begin; i < end; i++) {
+      int index = list[i][level];
+      if (index > levelSize) { levelSize = index; }
+    }
+    // levelSize refers to the maximum index found so far,
+    // add 1 to convert to maximum size.
+    levelSize++;
+    // an extra space is needed at the end for the radix sort algorithm
+    count.resize(levelSize+1, 0);
+
+    // go through list and count the number of entries in each "bucket"
+    for (int i = begin; i < end; i++) { count[list[i][level]]++; }
+
+    // find starting index for each "bucket" in sorted lists
+    // levelSize == number of buckets
+    vector<int>::iterator last = count.begin() + levelSize;
+    for (vector<int>::iterator iter = count.begin(); iter != last; iter++)
+    {
+      *(iter+1) += *iter;
+      (*iter)--;
+    }
+    (*last)--;
+
+    // insert into correct positions in sorted lists
+    // go from last to first to preserve order
+    int** listPtr = list + end - 1;
+    int** firstListPtr = list + begin - 1;
+    T* tListPtr = tList + end - 1;
+    for ( ; listPtr != firstListPtr; )
+    {
+      // getting index and get count[] ready for next insert
+      int index = count[(*listPtr)[level]]--;
+      // insert at index
+      sortedList[index] = *listPtr--;
+      sortedtList[index] = *tListPtr--;
+    }
+
+    // write sorted lists to the original lists
+    listPtr = list + begin;
+    tListPtr = tList + begin;
+    vector<int*>::iterator sortedListIter = sortedList.begin();
+    typename vector<T>::iterator sortedtListIter = sortedtList.begin();
+    for ( ; sortedListIter != sortedList.end(); )
+    {
+      *listPtr++ = *sortedListIter++;
+      *tListPtr++ = *sortedtListIter++;
+    }
+  }
+  else {
+    // same as tList != 0, except that there is no tList to deal with
+
+    vector<int*> sortedList(N, (int*)0);
+
+    // determine size for count[]
+    levelSize = 0;
+    for (int i = begin; i < end; i++) {
+      int index = list[i][level];
+      if (index > levelSize) { levelSize = index; }
+    }
+    // levelSize refers to the maximum index found so far,
+    // add 1 to convert to maximum size.
+    levelSize++;
+    // an extra space is needed at the end for the radix sort algorithm
+    count.resize(levelSize+1, 0);
+
+    // go through list and count the number of entries in each "bucket"
+    for (int i = begin; i < end; i++) { count[list[i][level]]++; }
+
+    // find starting index for each "bucket" in sorted lists
+    // levelSize == number of buckets
+    vector<int>::iterator last = count.begin() + levelSize;
+    for (vector<int>::iterator iter = count.begin(); iter != last; iter++)
+    {
+      *(iter+1) += *iter;
+      (*iter)--;
+    }
+    (*last)--;
+
+    // insert into correct positions in sorted lists
+    // go from last to first to preserve order
+    int** listPtr = list + end - 1;
+    int** firstListPtr = list + begin - 1;
+    for ( ; listPtr != firstListPtr; )
+    {
+      // getting index and get count[] ready for next insert
+      int index = count[(*listPtr)[level]]--;
+      // insert at index
+      sortedList[index] = *listPtr--;
+    }
+
+    // write sorted lists to the original lists
+    listPtr = list + begin;
+    for (vector<int*>::iterator sortedListIter = sortedList.begin();
+        sortedListIter != sortedList.end(); )
+    {
+      *listPtr++ = *sortedListIter++;
+    }
+  }
+
+  // after insertion, range for bucket[i] is [count[i]+1, count[i+1]+1)
+
+  // call sortBuild for each index and store result as (index, node).
+  vector<int> indices;
+  vector<int> dptrs;
+  for (int i = 0; i < levelSize; i++)
+  {
+    if (count[i+1] > count[i]) {
+      int n = sortBuild(list, tList, nextHeight, begin + count[i] + 1,
+          begin + count[i+1] + 1);
+      indices.push_back(i);
+      dptrs.push_back(n);
+    }
+  }
+
+  // build node from indices, dptrs and edgeValues
+
+  DCASSERT(dptrs.size() > 0);
+
+  return createNode(level, indices, dptrs);
+}
+
+
+template <typename T>
+forest::error
+mtmxd_node_manager::createEdgeInternal(const int* const* vlist,
+    const int* const* vplist, const T* terms, int N, dd_edge &e)
+{
+  // check if the vlist contains valid indexes
+  bool specialCasesFound = false;
+  for (int i = 0; i < N; i++)
+  {
+    for (int currLevel = expertDomain->getTopVariable();
+        currLevel != domain::TERMINALS;
+        currLevel = expertDomain->getVariableBelow(currLevel))
+    {
+      // unprimed level
+      int bound = vlist[i][currLevel] + 1;
+      if (bound >= expertDomain->getVariableBound(currLevel, false))
+        expertDomain->enlargeVariableBound(currLevel, false, bound);
+      else if (bound < 0)
+        specialCasesFound = true;
+      // primed level
+      bound = vplist[i][currLevel] + 1;
+      if (bound >= expertDomain->getVariableBound(currLevel, true))
+        expertDomain->enlargeVariableBound(currLevel, true, bound);
+      else if (bound < 0)
+        specialCasesFound = true;
+    }
+  }
+
+  if (N == 1 || specialCasesFound) {
+    // build using "standard" procedure
+    createEdge(vlist[0], vplist[0], getTerminalNode(terms[0]), e);
+    if (N > 1) {
+      dd_edge curr(this);
+      for (int i=1; i<N; i++) {
+        createEdge(vlist[i], vplist[i], getTerminalNode(terms[i]), curr);
+        e += curr;
+      }
+    }
+  }
+  else {
+    // build using sort-based procedure
+    // put terms into vlist[i][0]
+    int* list[N];
+    memcpy(list, vlist, N * sizeof(int*));
+    int* pList[N];
+    memcpy(pList, vplist, N * sizeof(int*));
+    int result = 0;
+    if (terms == 0) {
+      result =
+        sortBuild(list, pList, (T*)0, getDomain()->getNumVariables(), 0, N);
+    } else {
+      T tList[N];
+      memcpy((void*)tList, (void*)terms, N * sizeof(T));
+      result =
+        sortBuild(list, pList, tList, getDomain()->getNumVariables(), 0, N);
+    }
+    e.set(result, 0, getNodeLevel(result));
+  }
+
+  return forest::SUCCESS;
+}
+
+
+template <typename T>
+int mtmxd_node_manager::sortBuild(int** unpList, int** pList, T* tList,
+    int height, int begin, int end)
+{
+  // [begin, end)
+
+  // terminal condition
+  if (height == 0)
+  {
+    return getTerminalNode(handleMultipleTerminalValues(tList, begin, end));
+  }
+
+  int N = end - begin;
+  int** list = 0;
+  int** otherList = 0;
+  int nextHeight = 0;
+  int level = 0;
+  if (height > 0) {
+    list = unpList;
+    otherList = pList;
+    nextHeight = -height;
+    level = expertDomain->getVariableWithHeight(height);
+  } else {
+    list = pList;
+    otherList = unpList;
+    nextHeight = -height-1;
+    level = -(expertDomain->getVariableWithHeight(-height));
+  }
+  int absLevel = level < 0? -level: level;
+
+  if (N == 1) {
+    // nothing to sort; just build a node starting at this level
+    int n = sortBuild(unpList, pList, tList, nextHeight, begin, end);
+    int index = list[begin][absLevel];
+    int result = createNode(level, index, n);
+    unlinkNode(n);
+    return result;
+  }
+
+  // do radix sort for this level
+  int levelSize = 0;
+  vector<int> count(1, 0);
+
+  // Curly braces here to limit the scope of the vectors defined within.
+  // Without limiting the scope, memory usage will increase significantly
+  // -- especially if there are a lot of variables in the domain.
+  if (tList != 0) {
+    vector<int*> sortedList(N, (int*)0);
+    vector<int*> sortedOtherList(N, (int*)0);
+    vector<T> sortedtList(N, 0);
+
+    // determine size for count[]
+    levelSize = 0;
+    for (int i = begin; i < end; i++) {
+      int index = list[i][level];
+      if (index > levelSize) { levelSize = index; }
+    }
+    // levelSize refers to the maximum index found so far,
+    // add 1 to convert to maximum size.
+    levelSize++;
+    // an extra space is needed at the end for the radix sort algorithm
+    count.resize(levelSize+1, 0);
+
+    // go through list and count the number of entries in each "bucket"
+    for (int i = begin; i < end; i++) { count[list[i][level]]++; }
+
+    // find starting index for each "bucket" in sorted lists
+    // levelSize == number of buckets
+    vector<int>::iterator last = count.begin() + levelSize;
+    for (vector<int>::iterator iter = count.begin(); iter != last; iter++)
+    {
+      *(iter+1) += *iter;
+      (*iter)--;
+    }
+    (*last)--;
+
+    // insert into correct positions in sorted lists
+    // go from last to first to preserve order
+    int** listPtr = list + end - 1;
+    int** firstListPtr = list + begin - 1;
+    int** otherListPtr = otherList + end - 1;
+    T* tListPtr = tList + end - 1;
+    for ( ; listPtr != firstListPtr; )
+    {
+      // getting index and get count[] ready for next insert
+      int index = count[(*listPtr)[level]]--;
+      // insert at index
+      sortedList[index] = *listPtr--;
+      sortedOtherList[index] = *otherListPtr--;
+      sortedtList[index] = *tListPtr--;
+    }
+
+    // write sorted lists to the original lists
+    listPtr = list + begin;
+    otherListPtr = otherList + begin;
+    tListPtr = tList + begin;
+    vector<int*>::iterator sortedListIter = sortedList.begin();
+    vector<int*>::iterator sortedOtherListIter = sortedOtherList.begin();
+    typename vector<T>::iterator sortedtListIter = sortedtList.begin();
+    for ( ; sortedListIter != sortedList.end(); )
+    {
+      *listPtr++ = *sortedListIter++;
+      *otherListPtr++ = *sortedOtherListIter++;
+      *tListPtr++ = *sortedtListIter++;
+    }
+  }
+  else {
+    // same as tList != 0, except that there is no tList to deal with
+
+    vector<int*> sortedList(N, (int*)0);
+    vector<int*> sortedOtherList(N, (int*)0);
+
+    // determine size for count[]
+    levelSize = 0;
+    for (int i = begin; i < end; i++) {
+      int index = list[i][level];
+      if (index > levelSize) { levelSize = index; }
+    }
+    // levelSize refers to the maximum index found so far,
+    // add 1 to convert to maximum size.
+    levelSize++;
+    // an extra space is needed at the end for the radix sort algorithm
+    count.resize(levelSize+1, 0);
+
+    // go through list and count the number of entries in each "bucket"
+    for (int i = begin; i < end; i++) { count[list[i][level]]++; }
+
+    // find starting index for each "bucket" in sorted lists
+    // levelSize == number of buckets
+    vector<int>::iterator last = count.begin() + levelSize;
+    for (vector<int>::iterator iter = count.begin(); iter != last; iter++)
+    {
+      *(iter+1) += *iter;
+      (*iter)--;
+    }
+    (*last)--;
+
+    // insert into correct positions in sorted lists
+    // go from last to first to preserve order
+    int** listPtr = list + end - 1;
+    int** firstListPtr = list + begin - 1;
+    int** otherListPtr = otherList + end - 1;
+    for ( ; listPtr != firstListPtr; )
+    {
+      // getting index and get count[] ready for next insert
+      int index = count[(*listPtr)[level]]--;
+      // insert at index
+      sortedList[index] = *listPtr--;
+      sortedOtherList[index] = *otherListPtr--;
+    }
+
+    // write sorted lists to the original lists
+    listPtr = list + begin;
+    otherListPtr = otherList + begin;
+    vector<int*>::iterator sortedListIter = sortedList.begin();
+    vector<int*>::iterator sortedOtherListIter = sortedOtherList.begin();
+    for ( ; sortedListIter != sortedList.end(); )
+    {
+      *listPtr++ = *sortedListIter++;
+      *otherListPtr++ = *sortedOtherListIter++;
+    }
+  }
+
+  // after insertion, range for bucket[i] is [count[i]+1, count[i+1]+1)
+
+  // call sortBuild for each index and store result as (index, node).
+  vector<int> indices;
+  vector<int> dptrs;
+  for (int i = 0; i < levelSize; i++)
+  {
+    if (count[i+1] > count[i]) {
+      int n = sortBuild(unpList, pList, tList, nextHeight,
+          begin + count[i] + 1, begin + count[i+1] + 1);
+      indices.push_back(i);
+      dptrs.push_back(n);
+    }
+  }
+
+  // build node from indices, dptrs and edgeValues
+
+  DCASSERT(dptrs.size() > 0);
+
+  int largestIndex = indices[indices.size()-1];
+  int result = createTempNode(level, largestIndex+1, true);
+  int* ptr = getFullNodeDownPtrs(result);
+
+  for (vector<int>::iterator iIter = indices.begin(), dIter = dptrs.begin();
+      iIter != indices.end(); )
+  {
+    // no need to for any linking because the links are "transferred"
+    // from the vector
+    ptr[*iIter++] = *dIter++;
+  }
+
+  return reduceNode(result);
+}
+
+
+template <typename T>
+inline
+T handleMultipleTerminalValues(T* tList, int begin, int end)
+{
+  DCASSERT(begin < end);
+  T result = tList[begin++];
+  while (begin != end) result += tList[begin++];
+  return result;
+}
+
+
+template <>
+inline
+bool handleMultipleTerminalValues(bool* tList, int begin, int end)
+{
+  DCASSERT(begin < end);
+  return true;
+}
+
 
 #endif
 

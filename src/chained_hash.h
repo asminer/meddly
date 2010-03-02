@@ -239,6 +239,44 @@ class chained_hash_table {
       nEntries--;
     }
 
+    /// If table contains key, remove it and return it; otherwise return
+    /// getNull(). Note that the key in this case represents a logical
+    /// node address -- the contents of the node are not investigated
+    /// to determine equality.
+    inline int remove(int key) {
+      CHECK_RANGE(0, nodes->hash(key, table.size()), table.size());
+      int& head = table[nodes->hash(key, table.size())];
+      int result = nodes->getNull();
+
+      if (head != nodes->getNull()) {
+        if (head == key) {
+          int next = nodes->getNext(head);
+          nodes->uncacheNode(head);
+          head = next;
+          nEntries--;
+          result = key;
+        }
+        else {
+          for (int prev = head, curr = nodes->getNext(head),
+              end = nodes->getNull(); curr != end; )
+          {
+            if (curr == key) {
+              nodes->setNext(prev, nodes->getNext(curr));
+              nodes->uncacheNode(curr);
+              nEntries--;
+              result = key;
+              break;
+            }
+            prev = curr;
+            curr = nodes->getNext(curr);
+          }
+        }
+      }
+
+      return result;
+    }
+
+
     /// Insert new entry without expanding the hash table
     inline int insertWithoutExpand(int key) {
       // find hash slot

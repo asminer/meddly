@@ -164,17 +164,45 @@ void compute_cache::expandData()
 }
 
 
-void compute_cache::removeStales()
+void compute_cache::removeStales(op_info* owner)
 {
   static bool removingStales = false;
   if (!removingStales) {
-    removingStales = true;
     assert(ht != 0 || fsht != 0);
-    if (ht) ht->removeStaleEntries();
-    if (fsht) fsht->removeStaleEntries();
-    removingStales = false;
+    if (owner) {
+      // for each entry belonging to owner, call isStale() and if necessary
+      // hash-table's remove() (which will call uncacheNode() and which
+      // in-turn will call discardEntry()).
+      if (ht) {
+        cache_entry* end = nodes + lastNode + 1;
+        for (cache_entry* current = nodes; current != end; ++current)
+        {
+          DCASSERT(!removingStales);
+          if (current->owner == owner &&
+              owner->op->isEntryStale(owner, getDataAddress(*current)))
+            ht->remove(current - nodes);
+        }
+      }
+      if (fsht) {
+        cache_entry* end = nodes + lastNode + 1;
+        for (cache_entry* current = nodes; current != end; ++current)
+        {
+          DCASSERT(!removingStales);
+          if (current->owner == owner &&
+              owner->op->isEntryStale(owner, getDataAddress(*current)))
+            fsht->remove(current - nodes);
+        }
+      }
+    }
+    else {
+      removingStales = true;
+      if (ht) ht->removeStaleEntries();
+      if (fsht) fsht->removeStaleEntries();
+      removingStales = false;
+    }
   }
 }
+
 
 void compute_cache::clear()
 {

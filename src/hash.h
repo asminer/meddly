@@ -649,39 +649,48 @@ class hash_table {
     }
 
 
-    /** If table contains key, remove it and return it.
-        Otherwise, return getNull()
+    /** If table contains key, remove it and return it; otherwise return
+        getNull(). Note that the key in this case represents a logical
+        node address -- the contents of the node are not investigated
+        to determine equality.
     */
     inline int remove(int key) {
       unsigned h = nodes->hash(key, getSize());
       CHECK_RANGE(0, h, getSize());
-      if (table[h] == nodes->getNull()) return nodes->getNull();
-      int ptr = nodes->getNext(table[h]);
-      if (table[h] == key) {
-        nodes->uncacheNode(table[h]);
-        table[h] = ptr;
-        nEntries--;
-#ifdef MAX_DEPTH
-        depth[h]--;
-#endif
-        return key;
-      }
-      int prev = table[h];
-      assert (ptr == nodes->getNext(prev));
-      while (ptr != nodes->getNull()) {
-        if (ptr == key) {
-          nodes->setNext(prev, nodes->getNext(ptr));
-          nodes->uncacheNode(ptr);
+      int& head = table[h];
+
+      int result = nodes->getNull();
+
+      if (head != nodes->getNull()) {
+        if (head == key) {
+          int next = nodes->getNext(head);
+          nodes->uncacheNode(head);
+          head = next;
           nEntries--;
-#ifdef MAX_DEPTH
-          depth[h]--;
-#endif
-          return key;
+          result = key;
         }
-        prev = ptr;
-        ptr = nodes->getNext(ptr);
+        else {
+          for (int prev = head, curr = nodes->getNext(head),
+              end = nodes->getNull(); curr != end; )
+          {
+            if (curr == key) {
+              nodes->setNext(prev, nodes->getNext(curr));
+              nodes->uncacheNode(curr);
+              nEntries--;
+              result = key;
+              break;
+            }
+            prev = curr;
+            curr = nodes->getNext(curr);
+          }
+        }
       }
-      return nodes->getNull();
+
+#ifdef MAX_DEPTH
+      if (result != nodes->getNull()) depth[h]--;
+#endif
+
+      return result;
     }
 
 

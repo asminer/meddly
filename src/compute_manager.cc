@@ -226,9 +226,9 @@ int expert_compute_manager::getNumCacheEntries() const
 }
 
 
-void expert_compute_manager::removeStales()
+void expert_compute_manager::removeStales(op_info* op)
 {
-  if (cc != 0) cc->removeStales();
+  if (cc != 0) cc->removeStales(op);
 }
 
 

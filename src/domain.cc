@@ -318,6 +318,7 @@ domain::error expert_domain::enlargeVariableBound(int vh, bool prime, int b)
   if (getVariableBound(vh, false) == -1) return domain::NOT_IMPLEMENTED;
 
   if (prime) {
+    if (pLevelBounds[vh] < b) pLevelBounds[vh] = b;
   } else {
     if (levelBounds[vh] < b) levelBounds[vh] = b;
     if (pLevelBounds[vh] < b) pLevelBounds[vh] = b;

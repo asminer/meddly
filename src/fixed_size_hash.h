@@ -363,31 +363,29 @@ class fixed_size_hash_table {
     }
 
 
-#if 0
-    /** If table contains key, remove it and return it i.e., the exact key.
-     *  Otherwise, return getNull().
-     */
+    /** If table contains key, remove it and return it; otherwise return
+        getNull(). Note that the key in this case represents a logical
+        node address -- the contents of the node are not investigated
+        to determine equality.
+    */
     inline int remove(int key) {
-      assert(false);
+#ifdef DEVELOPMENT_CODE
       unsigned h = nodes->hash(key, getSize());
       CHECK_RANGE(0, h, getSize());
-      if (table[h] == nodes->getNull()) {
-        return nodes->getNull();
-      } else if (nodes->equals(key, table[h])) {
-        // found; remove
-        nodes->uncacheNode(table[h]);
-        table[h] = nodes->getNull();
+      int& head = table[h];
+#else
+      int& head = table[nodes->hash(key, getSize())];
+#endif
+
+      if (head != nodes->getNull() && head == key) {
+        nodes->uncacheNode(head);
+        head = nodes->getNull();
         num_entries--;
-        return table[h];
-      } else {
-      if (nodes->isStale(table[h])) {
-        nodes->uncacheNode(table[h]);
-        table[h] = nodes->getNull();
-        num_entries--;
+        return key;
       }
+
       return nodes->getNull();
     }
-#endif
 
 
     /** If table contains key, do nothing.

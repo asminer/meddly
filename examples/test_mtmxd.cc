@@ -346,6 +346,7 @@ int main(int argc, char *argv[])
   printf("Nodes in compute table: %d\n",
       (MEDDLY_getComputeManager())->getNumCacheEntries());
 
+#if 0
   // Convert mtmxd to mxd
   forest* mxd =
     d->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
@@ -367,6 +368,7 @@ int main(int argc, char *argv[])
     printf("\n\nForest Info:\n");
     mtmxd->showInfo(stdout);
   }
+#endif
 
   // Cleanup; in this case simply delete the domain
   delete d;

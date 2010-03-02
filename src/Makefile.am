@@ -39,12 +39,12 @@ libmeddly_la_SOURCES = \
 CXXFLAGS = 
 CXXFLAGS += -Wall
 ## CXXFLAGS += -g
-## CXXFLAGS += -ggdb
+CXXFLAGS += -ggdb
 ## CXXFLAGS += -pg
-## CXXFLAGS += -DDEVELOPMENT_CODE
+CXXFLAGS += -DDEVELOPMENT_CODE
 ## CXXFLAGS += -DDIFF_SAT
 ## CXXFLAGS += -O2
-CXXFLAGS += -O3
+## CXXFLAGS += -O3
 ## CXXFLAGS += -m64
 
 include_HEADERS = ../include/meddly.h ../include/meddly_expert.h

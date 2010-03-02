@@ -900,13 +900,21 @@ class expert_compute_manager : public compute_manager {
     virtual error setHashTablePolicy(bool chaining, unsigned size = 16777216u);
     virtual void showComputeTable(FILE* strm) const;
     virtual int getNumCacheEntries() const;
-    virtual void removeStales();
 
-    virtual const char* getOperationName(compute_manager::op_code op) const;
-    virtual compute_manager::error apply(compute_manager::op_code op,
-        const dd_edge &a, dd_edge &b);
-    virtual compute_manager::error apply(compute_manager::op_code op,
-        const dd_edge &a, const dd_edge &b, dd_edge &c);
+    /** Removes all the stale entries in the compute table that belong to
+        the specified operation handle. Note that an operation handle
+        is assigned to each distinct tuple {operation code, forests[]}.
+
+        If op is 0, ALL the stale entries in the compute table are removed.
+
+        @param  op    Operation handle.
+    */
+    virtual void removeStales(op_info* op = 0);
+
+    virtual const char* getOperationName(op_code op) const;
+    virtual error apply(op_code op, const dd_edge &a, dd_edge &b);
+    virtual error apply(op_code op, const dd_edge &a, const dd_edge &b,
+        dd_edge &c);
 
     /** Same as apply(op_code, dd_edge&, dd_edge&, dd_edge&) except with
         op_info.
@@ -918,10 +926,9 @@ class expert_compute_manager : public compute_manager {
         the compute_manager needs to search for the concrete handle just
         once (when calling getOpInfo(op_code,...)).
     */
-    virtual compute_manager::error apply(op_info* op, const dd_edge &a,
-        const dd_edge &b, dd_edge &c);
-    virtual compute_manager::error apply(op_info* op, const dd_edge &a,
-        dd_edge &b);
+    virtual error apply(op_info* op, const dd_edge &a, const dd_edge &b,
+        dd_edge &c);
+    virtual error apply(op_info* op, const dd_edge &a, dd_edge &b);
 
     /** Obtain a concrete handle to the built-in operation.
         If a built-in operation is going to be called repeatedly for the
@@ -934,16 +941,13 @@ class expert_compute_manager : public compute_manager {
         @param  N     size of f[].
         @return       A concrete-handle to the given operation.
     */
-    virtual op_info* getOpInfo(compute_manager::op_code op,
-        const forest* const* f, int N);
-    virtual op_info* getOpInfo(const operation* op,
-        const forest* const* f, int N);
+    virtual op_info* getOpInfo(op_code op, const forest* const* f, int N);
+    virtual op_info* getOpInfo(const operation* op, const forest* const* f,
+        int N);
 
 #if 0
-    virtual compute_manager::error apply(compute_manager::op_code op,
-        const dd_edge &a, int &c);
-    virtual compute_manager::error apply(compute_manager::op_code op,
-        const dd_edge &a, float &c);
+    virtual error apply(op_code op, const dd_edge &a, int &c);
+    virtual error apply(op_code op, const dd_edge &a, float &c);
 #endif
 
   private:

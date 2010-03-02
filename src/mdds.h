@@ -441,8 +441,6 @@ class node_manager : public expert_forest {
     // remove an index hole from the hole grid
     void indexRemove(int k, int p_offset);
 
-    bool singleNonZeroAt(int p, int val, int index) const;
-
   protected:
   
     // modify temp nodes count for level k as well as the global count
@@ -1076,27 +1074,6 @@ inline void node_manager::midRemove(int k, int p_offset) {
   level[p_level].data[left + 3] = right;
   if (right) level[p_level].data[right + 2] = left;
 }
-
-inline bool node_manager::singleNonZeroAt(int p, int val, int index) const {
-  DCASSERT(isActiveNode(p));
-  DCASSERT(!isTerminalNode(p));
-  DCASSERT(!isZombieNode(p));
-  DCASSERT(val != 0);
-  if (isFullNode(p)) {
-    const int* dptr = getFullNodeDownPtrsReadOnly(p);
-    const int sz = getFullNodeSize(p);
-    if (index >= sz || dptr[index] != val) return false;
-    int i = 0;
-    for ( ; i < index; ++i) { if (dptr[i] != 0) return false; }
-    for (i = index + 1 ; i < sz; ++i) { if (dptr[i] != 0) return false; }
-  } else {
-    if (getSparseNodeSize(p) != 1) return false;
-    if (getSparseNodeIndex(p, 0) != index) return false;
-    if (getSparseNodeDownPtr(p, 0) != val) return false;
-  }
-  return true;
-}
-
 
 inline void node_manager::incrTempNodeCount(int k) {
   level[mapLevel(k)].temp_nodes++;

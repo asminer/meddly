@@ -98,8 +98,13 @@ class compute_cache {
         Scans the cache for entries that are no longer valid (i.e. they are
         stale) and removes them. This can be a time-consuming process
         (proportional to the number of cached entries).
+        If owner is non-null, all stale entries associated with a particular
+        operation are removed.
+        @param  owner op_info of the operation whose stale entries are
+                      to be removed from the cache. If owner is null,
+                      all the stale entries in the cache are removed.
     */
-    void removeStales();
+    void removeStales(op_info* op = 0);
 
     /** Removes all cached entries.
     */
