@@ -241,8 +241,9 @@ int mtmdd_node_manager::reduceNode(int p)
     // check for possible reductions
     int temp = 0;
     if (checkForReductions(this, p, nnz, temp)) {
+      linkNode(temp);
       deleteTempNode(p);
-      return sharedCopy(temp);
+      return temp;
     }
   }
 
@@ -828,8 +829,9 @@ int mtmxd_node_manager::reduceNode(int p)
   // check for possible reductions
   int temp = 0;
   if (checkForReductions(this, p, nnz, temp)) {
+    linkNode(temp);
     deleteTempNode(p);
-    return sharedCopy(temp);
+    return temp;
   }
 
   // check unique table
