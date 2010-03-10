@@ -330,6 +330,10 @@ int main(int argc, char *argv[])
 #endif
   }
 
+#if 1
+  assert(forest::SUCCESS ==
+      mtmxd->setReductionRule(forest::FULLY_REDUCED));
+#endif
   assert(forest::SUCCESS ==
       mtmxd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
   assert(forest::SUCCESS ==
@@ -337,14 +341,47 @@ int main(int argc, char *argv[])
 
   timer start;
   start.note_time();
+#if 1
   dd_edge result = test_mtmxd(mtmxd, compute_manager::EQUAL,
       from, to, terms, nElements);
+#else
+  dd_edge result(mtmxd);
+  assert(forest::SUCCESS ==
+      mtmxd->createEdge(from, to, terms, nElements, result));
+#endif
   printf("Time interval: %.4e seconds\n",
       start.get_last_interval()/1000000.0);
 
   printf("Peak Nodes in MXD: %d\n", mtmxd->getPeakNumNodes());
   printf("Nodes in compute table: %d\n",
       (MEDDLY_getComputeManager())->getNumCacheEntries());
+
+  result.show(stdout, 3);
+
+  // Use iterator to display elements
+  if (true) {
+    unsigned counter = 0;
+    for (dd_edge::const_iterator iter = result.begin(),
+        endIter = result.end(); iter != endIter; ++iter, ++counter)
+    {
+      const int* element = iter.getAssignments();
+      const int* pelement = iter.getPrimedAssignments();
+      assert(element != 0 && pelement != 0);
+
+      const int* curr = element + nVariables;
+      const int* end = element - 1;
+      printf("%d: [%d", counter, *curr--);
+      while (curr != end) { printf(" %d", *curr--); }
+
+      curr = pelement + nVariables;
+      end = pelement - 1;
+      printf("] --> [%d", *curr--);
+      while (curr != end) { printf(" %d", *curr--); }
+      printf("]\n");
+    }
+    printf("Iterator traversal: %0.4e elements\n", double(counter));
+    printf("Cardinality: %0.4e\n", result.getCardinality());
+  }
 
 #if 0
   // Convert mtmxd to mxd

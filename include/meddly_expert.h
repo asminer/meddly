@@ -2016,10 +2016,10 @@ forest::error expert_forest::setReductionRule(reduction_rule r)
     return forest::SUCCESS;
   if (getCurrentNumNodes() > 0)
     return forest::INVALID_OPERATION;
-  // IDENTITY cannot be changed
-  if (reductionRule == forest::IDENTITY_REDUCED)
+  if (!isForRelations() && r == forest::IDENTITY_REDUCED) {
+    // cannot have IDENTITY reduced for non-relation forests.
     return forest::INVALID_OPERATION;
-  // since no nodes have been added; QUASI and FULLY can switched around
+  }
   reductionRule = r;
   return forest::SUCCESS;
 }

@@ -787,7 +787,7 @@ bool mtmxd_node_manager::singleNonZeroAt(int p, int val, int index) const
 int mtmxd_node_manager::reduceNode(int p)
 {
   DCASSERT(isActiveNode(p));
-  assert(reductionRule == forest::IDENTITY_REDUCED);
+  // assert(reductionRule == forest::IDENTITY_REDUCED);
 
   if (isReducedNode(p)) return p; 
 
@@ -979,41 +979,88 @@ int mtmxd_node_manager::createNode(int k, int index, int dptr)
 
 int mtmxd_node_manager::createNode(int k, int index1, int index2, int dptr)
 {
-  DCASSERT(reductionRule == forest::IDENTITY_REDUCED);
-
   DCASSERT((index1 >= 0 && index2 >= 0) ||
       (index1 >= -1 && index2 >= -1) ||
       (index1 >= -2 && index2 >= -2 && index1 == index2));
 
+  int result = 0;
 
+  if (reductionRule == forest::IDENTITY_REDUCED) {
 
-  if (index1 == -2) {
+    if (index1 == -2) {
+      // "don't change"
+      result = sharedCopy(dptr);
+    }
+    else {
+      int p = 0;
+      if (index2 == -1) {
+        // represents "don't care"
+        p = createTempNodeMaxSize(-k, false);
+        setAllDownPtrsWoUnlink(p, dptr);
+        p = reduceNode(p);
+      } else {
+        p = createNode(-k, index2, dptr);
+      }
+      if (index1 == -1) {
+        // represents "don't care"
+        result = createTempNodeMaxSize(k, false);
+        setAllDownPtrsWoUnlink(result, p);
+        result = reduceNode(result);
+      } else {
+        result = createNode(k, index1, p);
+      }
+      unlinkNode(p);
+    }
+
+  }
+  else if (index1 == -2) {
+
     // "don't change"
-    return sharedCopy(dptr);
+    DCASSERT(reductionRule == forest::QUASI_REDUCED ||
+        reductionRule == forest::FULLY_REDUCED);
+    int sz = getLevelSize(k);
+    result = createTempNode(k, sz, false);
+    int* unprimedDptrs = getFullNodeDownPtrs(result);
+    for (int i = 0; i != sz; ++i)
+    {
+      unprimedDptrs[i] = createNode(-k, i, dptr);
+    }
+    result = reduceNode(result);
+
+  }
+  else if (reductionRule == forest::QUASI_REDUCED) {
+
+    int p = 0;
+    if (index2 == -1) {
+      // represents "don't care"
+      p = createTempNodeMaxSize(-k, false);
+      setAllDownPtrsWoUnlink(p, dptr);
+      p = reduceNode(p);
+    } else {
+      p = createNode(-k, index2, dptr);
+    }
+    if (index1 == -1) {
+      // represents "don't care"
+      result = createTempNodeMaxSize(k, false);
+      setAllDownPtrsWoUnlink(result, p);
+      result = reduceNode(result);
+    } else {
+      result = createNode(k, index1, p);
+    }
+    unlinkNode(p);
+
+  }
+  else {
+
+    // deal with "don't care" for primed level
+    int p = index2 == -1? sharedCopy(dptr): createNode(-k, index2, dptr);
+    // deal with "don't care" for unprimed level
+    result = index1 == -1? sharedCopy(p): createNode(k, index1, p);
+    unlinkNode(p);
+
   }
 
-  int p = 0;
-  if (index2 == -1) {
-    // represents "don't care"
-    p = createTempNodeMaxSize(-k, false);
-    setAllDownPtrsWoUnlink(p, dptr);
-    p = reduceNode(p);
-  } else {
-    p = createNode(-k, index2, dptr);
-  }
-
-  int curr = 0;
-  if (index1 == -1) {
-    // represents "don't care"
-    curr = createTempNodeMaxSize(k, false);
-    setAllDownPtrsWoUnlink(curr, p);
-    curr = reduceNode(curr);
-  } else {
-    curr = createNode(k, index1, p);
-  }
-
-  unlinkNode(p);
-  return curr;
+  return result;
 }
 
 
@@ -1060,7 +1107,9 @@ forest::error mtmxd_node_manager::createEdge(const int* const* vlist,
 int mtmxd_node_manager::createEdge(int dptr)
 {
   DCASSERT(isTerminalNode(dptr));
-  if (dptr == 0) return dptr;
+  if (dptr == 0) return 0;
+
+  if (reductionRule == forest::FULLY_REDUCED) return sharedCopy(dptr);
 
   // construct the edge bottom-up
   const int* h2l_map = expertDomain->getHeightsToLevelsMap();
@@ -1103,10 +1152,48 @@ int mtmxd_node_manager::getTerminalNodeForEdge(int n, const int* vlist,
 {
   // assumption: vlist and vplist do not contain any special values
   // (-1, -2, etc). vlist and vplist contain a single element.
-  while (!isTerminalNode(n)) {
-    n = isPrimedNode(n)
-          ? getDownPtr(n, vplist[-getNodeLevel(n)])
-          : getDownPtr(n, vlist[getNodeLevel(n)]);
+
+  if (reductionRule == forest::IDENTITY_REDUCED) {
+
+    while (!isTerminalNode(n)) {
+      int nLevel = getNodeLevel(n);
+      if (nLevel < 0) {
+        // Primed Node
+        int next = getDownPtr(n, vplist[-nLevel]);
+        DCASSERT(isTerminalNode(next) || isUnprimedNode(next));
+        int currHeight = getNodeHeight(n) - 1;
+        int nextHeight = getNodeHeight(next);
+        if (nextHeight < currHeight) {
+          // skipped levels
+          for ( ; nextHeight != currHeight; --currHeight)
+          {
+            int currLevel = expertDomain->getVariableWithHeight(currHeight);
+            DCASSERT(currLevel != -1);
+            if (vlist[currLevel] != vplist[currLevel]) {
+              next = 0;
+              break;
+            }
+          }
+        }
+        n = next;
+      }
+      else {
+        // Unprimed Node
+        DCASSERT(getDownPtr(n, vlist[nLevel]) == 0
+            || -nLevel == getNodeLevel(getDownPtr(n, vlist[nLevel])));
+        n = getDownPtr(n, vlist[nLevel]);
+      }
+    }
+
+  }
+  else {
+
+    while (!isTerminalNode(n)) {
+      n = isPrimedNode(n)
+        ? getDownPtr(n, vplist[-getNodeLevel(n)])
+        : getDownPtr(n, vlist[getNodeLevel(n)]);
+    }
+
   }
   return n;
 }
@@ -1223,57 +1310,112 @@ forest::error mtmxd_node_manager::findFirstElement(const dd_edge& f,
   int node = f.getNode();
   if (node == 0) return forest::INVALID_ASSIGNMENT;
 
-  for (int currLevel = expertDomain->getTopVariable();
-      currLevel != domain::TERMINALS;
-      currLevel = expertDomain->getVariableBelow(currLevel))
-  {
-    DCASSERT(node != 0);
-    DCASSERT(isUnprimedNode(node));
-    if (currLevel != getNodeLevel(node)) {
-      // currLevel is "higher" than node, and has been skipped.
-      // Since this is a mxd, reduced nodes enable "don't change" paths
-      // at the skipped level.
-      vlist[currLevel] = 0;   // picking the first index
-      vplist[currLevel] = 0;
-    } else {
-      // find a valid path at this unprime level
-      if (isFullNode(node)) {
-        int size = getFullNodeSize(node);
-        for (int i = 0; i < size; i++)
-        {
-          int n = getFullNodeDownPtr(node, i);
-          if (n != 0) {
-            node = n;
-            vlist[currLevel] = i;
-            break;
-          }
-        }
+  if (forest::IDENTITY_REDUCED == reductionRule) {
+
+    for (int currLevel = expertDomain->getTopVariable();
+        currLevel != domain::TERMINALS;
+        currLevel = expertDomain->getVariableBelow(currLevel))
+    {
+      DCASSERT(node != 0);
+      DCASSERT(isUnprimedNode(node));
+      if (currLevel != getNodeLevel(node)) {
+        // currLevel is "higher" than node, and has been skipped.
+        // Since this is a mxd, reduced nodes enable "don't change" paths
+        // at the skipped level.
+        vlist[currLevel] = 0;   // picking the first index
+        vplist[currLevel] = 0;
       } else {
-        vlist[currLevel] = getSparseNodeIndex(node, 0);
-        node = getSparseNodeDownPtr(node, 0);
-      }
-      
-      DCASSERT(!isTerminalNode(node));
-      // can't be -1 because that violates MXD properties
-      // can't be 0 because node cannot be set to 0 in the above construct.
-      DCASSERT(isPrimedNode(node));
-      // find a valid path at this prime level
-      if (isFullNode(node)) {
-        int size = getFullNodeSize(node);
-        for (int i = 0; i < size; i++)
-        {
-          int n = getFullNodeDownPtr(node, i);
-          if (n != 0) {
-            node = n;
-            vplist[currLevel] = i;
-            break;
+        // find a valid path at this unprime level
+        if (isFullNode(node)) {
+          int size = getFullNodeSize(node);
+          for (int i = 0; i < size; i++)
+          {
+            int n = getFullNodeDownPtr(node, i);
+            if (n != 0) {
+              node = n;
+              vlist[currLevel] = i;
+              break;
+            }
           }
+        } else {
+          vlist[currLevel] = getSparseNodeIndex(node, 0);
+          node = getSparseNodeDownPtr(node, 0);
         }
-      } else {
-        vplist[currLevel] = getSparseNodeIndex(node, 0);
-        node = getSparseNodeDownPtr(node, 0);
+
+        DCASSERT(!isTerminalNode(node));
+        // can't be -1 because that violates MXD properties
+        // can't be 0 because node cannot be set to 0 in the above construct.
+        DCASSERT(isPrimedNode(node));
+        // find a valid path at this prime level
+        if (isFullNode(node)) {
+          int size = getFullNodeSize(node);
+          for (int i = 0; i < size; i++)
+          {
+            int n = getFullNodeDownPtr(node, i);
+            if (n != 0) {
+              node = n;
+              vplist[currLevel] = i;
+              break;
+            }
+          }
+        } else {
+          vplist[currLevel] = getSparseNodeIndex(node, 0);
+          node = getSparseNodeDownPtr(node, 0);
+        }
       }
     }
+
+  }
+  else {
+
+    // !IDENTITY_REDUCED
+    for (int currLevel = expertDomain->getTopVariable();
+        currLevel != domain::TERMINALS; )
+    {
+      DCASSERT(node != 0);
+      if (currLevel != getNodeLevel(node)) {
+        // currLevel been skipped. !IDENTITY_REDUCED ==> reduced nodes
+        // enable all paths at the skipped level. Pick the first index.
+        if (currLevel < 0) {
+          vplist[-currLevel] = 0;
+        } else {
+          vlist[currLevel] = 0;
+        }
+      } else {
+        // find a valid path at this level
+        if (isFullNode(node)) {
+          int size = getFullNodeSize(node);
+          for (int i = 0; i < size; i++)
+          {
+            int n = getFullNodeDownPtr(node, i);
+            if (n != 0) {
+              node = n;
+              if (currLevel < 0) {
+                vplist[-currLevel] = i;
+              } else {
+                vlist[currLevel] = i;
+              }
+              break;
+            }
+          }
+          // Note: since n is not an empty node the for loop is
+          // guaranteed to overwrite "node".
+        } else {
+          if (currLevel < 0) {
+            vplist[-currLevel] = getSparseNodeIndex(node, 0);
+          } else {
+            vlist[currLevel] = getSparseNodeIndex(node, 0);
+          }
+          node = getSparseNodeDownPtr(node, 0);
+        }
+      }
+      // Set next level
+      currLevel = currLevel < 0
+                    ? expertDomain->getVariableBelow(-currLevel)
+                    : -currLevel;
+    }
+
+
   }
 
   return forest::SUCCESS;

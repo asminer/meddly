@@ -1003,6 +1003,7 @@ class dd_edge {
         iterator(dd_edge* parent, bool begin);
         void incrNonRelation();
         void incrRelation();
+        void incrNonIdentRelation();
 
         dd_edge*  e;
         unsigned  size;

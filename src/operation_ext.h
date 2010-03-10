@@ -202,6 +202,9 @@ class mxd_apply_operation : public mdd_apply_operation {
     /// To be implemented by derived classes
     virtual bool checkTerminals(op_info* op, int a, int b, int& c) = 0;
 
+    virtual int computeIdent(op_info* owner, int a, int b);
+    virtual int computeNonIdent(op_info* owner, int a, int b);
+
     virtual void expandA(op_info* owner, int a, int b,
         expert_forest* expertForest,
         int result, int resultLevel, int resultSize);
@@ -254,6 +257,9 @@ class mxd_alt_apply_operation : public operation {
   protected:
     /// To be implemented by derived classes
     virtual bool checkTerminals(op_info* op, int a, int b, int& c) = 0;
+
+    virtual int computeIdent(op_info* owner, int level, int a, int b);
+    virtual int computeNonIdent(op_info* owner, int level, int a, int b);
 
     // Returns true if the operation is commutative (i.e. A op B == B op A)
     virtual bool isCommutative() const = 0;

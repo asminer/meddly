@@ -893,13 +893,13 @@ inline void node_manager::setAllDownPtrs(int p, int value) {
   DCASSERT(isFullNode(p));
   DCASSERT(isReducedNode(value));
   int* curr = getFullNodeDownPtrs(p);
-  int* stop = curr + getFullNodeSize(p);
-  int temp = 0;
-  for (; curr != stop; ++curr) {
-    temp = *curr;
-    *curr = sharedCopy(value);
-    unlinkNode(temp);
+  int size = getFullNodeSize(p);
+  for (int* end = curr + size; curr != end; )
+  {
+    unlinkNode(*curr);
+    *curr++ = value;
   }
+  getInCount(p) += size;
 }
 
 inline void node_manager::setAllDownPtrsWoUnlink(int p, int value) {
@@ -911,10 +911,12 @@ inline void node_manager::setAllDownPtrsWoUnlink(int p, int value) {
     return;
   }
   int* curr = getFullNodeDownPtrs(p);
-  int* stop = curr + getFullNodeSize(p);
-  for (; curr != stop; ++curr) {
-    *curr = sharedCopy(value);
+  int size = getFullNodeSize(p);
+  for (int* end = curr + size; curr != end; )
+  {
+    *curr++ = value;
   }
+  getInCount(p) += size;
 }
 
 inline void node_manager::initDownPtrs(int p) {

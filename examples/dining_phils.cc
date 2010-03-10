@@ -633,6 +633,7 @@ int main(int argc, char *argv[])
         endIter = reachableStates.end(); iter != endIter; ++iter, ++counter)
     {
       const int* element = iter.getAssignments();
+      assert(element != 0);
 #if 0
       printf("%d: [", counter);
       for (int i = N - 1; i > 0; --i)

@@ -980,12 +980,25 @@ mtmdd_node_manager::createEdgeInternal(const int* const* vlist,
 
   if (N == 1 || specialCasesFound) {
     // build using "standard" procedure
-    createEdge(vlist[0], getTerminalNode(terms[0]), e);
-    if (N > 1) {
-      dd_edge curr(this);
-      for (int i=1; i<N; i++) {
-        createEdge(vlist[i], getTerminalNode(terms[i]), curr);
-        e += curr;
+    if (terms == 0) {
+      int trueNode = getTerminalNode(true);
+      createEdge(vlist[0], trueNode, e);
+      if (N > 1) {
+        dd_edge curr(this);
+        for (int i=1; i<N; i++) {
+          createEdge(vlist[i], trueNode, curr);
+          e += curr;
+        }
+      }
+    }
+    else {
+      createEdge(vlist[0], getTerminalNode(terms[0]), e);
+      if (N > 1) {
+        dd_edge curr(this);
+        for (int i=1; i<N; i++) {
+          createEdge(vlist[i], getTerminalNode(terms[i]), curr);
+          e += curr;
+        }
       }
     }
   }
@@ -1203,12 +1216,25 @@ mtmxd_node_manager::createEdgeInternal(const int* const* vlist,
 
   if (N == 1 || specialCasesFound) {
     // build using "standard" procedure
-    createEdge(vlist[0], vplist[0], getTerminalNode(terms[0]), e);
-    if (N > 1) {
-      dd_edge curr(this);
-      for (int i=1; i<N; i++) {
-        createEdge(vlist[i], vplist[i], getTerminalNode(terms[i]), curr);
-        e += curr;
+    if (terms == 0) {
+      int trueNode = getTerminalNode(true);
+      createEdge(vlist[0], vplist[0], trueNode, e);
+      if (N > 1) {
+        dd_edge curr(this);
+        for (int i=1; i<N; i++) {
+          createEdge(vlist[i], vplist[i], trueNode, curr);
+          e += curr;
+        }
+      }
+    }
+    else {
+      createEdge(vlist[0], vplist[0], getTerminalNode(terms[0]), e);
+      if (N > 1) {
+        dd_edge curr(this);
+        for (int i=1; i<N; i++) {
+          createEdge(vlist[i], vplist[i], getTerminalNode(terms[i]), curr);
+          e += curr;
+        }
       }
     }
   }

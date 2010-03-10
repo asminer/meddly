@@ -96,6 +96,9 @@
 #include "../include/meddly_expert.h"
 
 
+const bool testFindFirstElement = false;
+const bool testMTMXDIterator = false;
+
 const int N = 5; // number of machines + 1
 int sizes[N-1] = { 4, 4, 4, 4 };
 
@@ -340,7 +343,7 @@ int main(int argc, char* argv[])
   }
 
   // Test findFirstElement()
-  if (true) {
+  if (testFindFirstElement) {
     int** elements = &element;
     dd_edge rsCopy(reachableStates);
     cardinality = rsCopy.getCardinality();
@@ -362,7 +365,7 @@ int main(int argc, char* argv[])
   }
   free(element);
 
-  if (true) {
+  if (testMTMXDIterator) {
     unsigned counter = 0;
     for (dd_edge::const_iterator iter = reachableStates.begin(),
         endIter = reachableStates.end(); iter != endIter; ++iter, ++counter)

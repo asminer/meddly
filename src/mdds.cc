@@ -888,17 +888,28 @@ double node_manager::cardinalityForRelations(int p, int ht, bool primeLevel,
   assert(pHeight >= 0);
 
   if (pHeight < ht) {
-    // p is lower than ht
-    if (primeLevel) {
-      // ht is a prime level
-      assert(p == 0);
-      return 0;
+    if (getReductionRule() == forest::IDENTITY_REDUCED) {
+      // p is lower than ht
+      if (primeLevel) {
+        // ht is a prime level
+        assert(p == 0);
+        return 0;
+      }
+      else {
+        // ht is a un-prime level
+        int k = expertDomain->getVariableWithHeight(ht);
+        int levelSize = expertDomain->getVariableBound(k, primeLevel);
+        return levelSize *
+          cardinalityForRelations(p, ht - 1, false, visited);
+      }
     }
     else {
-      // ht is a un-prime level
+      // p is lower than ht
       int k = expertDomain->getVariableWithHeight(ht);
-      return getLevelSize(k) *
-        cardinalityForRelations(p, ht - 1, false, visited);
+      int levelSize = expertDomain->getVariableBound(k, primeLevel);
+      int nextHeight = primeLevel? ht - 1: ht;
+      return levelSize *
+          cardinalityForRelations(p, nextHeight, !primeLevel, visited);
     }
   }
 

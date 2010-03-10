@@ -573,13 +573,16 @@ void dd_edge::iterator::incrNonRelation()
 }
 
 
-void dd_edge::iterator::incrRelation()
+void dd_edge::iterator::incrNonIdentRelation()
 {
   DCASSERT(e != 0);
   DCASSERT(e->node != 0);
 
   expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
+
+  DCASSERT(f->getReductionRule() == forest::FULLY_REDUCED
+      || f->getReductionRule() == forest::QUASI_REDUCED);
 
   int currLevel = d->getTopVariable();
   bool isCurrLevelPrime = false;
@@ -598,7 +601,191 @@ void dd_edge::iterator::incrRelation()
     // Start from the bottom level and see if you can find the next
     // valid edge. Move up a level if no more edges exist from this level.
 
-    assert(f->getReductionRule() == forest::IDENTITY_REDUCED);
+    int lastSkipped = e->node;
+    currLevel = d->getVariableAbove(domain::TERMINALS);
+    isCurrLevelPrime = true;
+    bool found = false;
+
+    while (currLevel != -1)
+    {
+      int node = isCurrLevelPrime? pnodes[currLevel]: nodes[currLevel];
+      int& currElement = isCurrLevelPrime?
+          pelement[currLevel]: element[currLevel];
+      if (node == 0) {
+        // level was skipped previously
+        // see if next index is available, otherwise move up one level.
+        if (currElement + 1 <
+            d->getVariableBound(currLevel, isCurrLevelPrime)) {
+          // index is available, use it and break out of loop
+          currElement++;
+          node = lastSkipped;
+          found = true;
+        }
+      }
+      else if (f->isFullNode(node)) {
+        // find next valid index
+        int i = 1 + (isCurrLevelPrime? pelement[currLevel]: element[currLevel]);
+        int j = f->getFullNodeSize(node);
+        for ( ; i < j; ++i)
+        {
+          if (f->getFullNodeDownPtr(node, i) != 0) {
+            // found new path
+            currElement = i;
+            node = f->getFullNodeDownPtr(node, i);
+            found = true;
+            break;
+          }
+        }
+      }
+      else {
+        DCASSERT(f->isSparseNode(node));
+        // find sparse index corresponding to element[currLevel]
+        int begin = 0;
+        int end = f->getSparseNodeSize(node);
+        int searchFor =
+            isCurrLevelPrime? pelement[currLevel]: element[currLevel];
+        if (searchFor < f->getSparseNodeIndex(node, end-1)) {
+          while (begin + 1 < end) {
+            int mid = (begin + end) / 2;
+            DCASSERT(mid > begin && mid < end);
+            if (f->getSparseNodeIndex(node, mid) > searchFor) {
+              end = mid;
+            } else {
+              begin = mid;
+            }
+          }
+          // range is [begin, end), therefore
+          DCASSERT(f->getSparseNodeIndex(node, begin) == searchFor);
+          DCASSERT(begin + 1 < f->getSparseNodeSize(node));
+          currElement = f->getSparseNodeIndex(node, begin + 1);
+          node = f->getSparseNodeDownPtr(node, begin + 1);
+          found = true;
+        }
+      }
+
+      if (found) {
+        int nodeLevel = f->getNodeLevel(node);
+        if (nodeLevel < 0) {
+          pnodes[-nodeLevel] = node;
+        } else {
+          nodes[nodeLevel] = node;
+        }
+        break;
+      }
+
+      // no new path from current level so reset nodes[currLevel]
+      currElement = 0;
+      if (isCurrLevelPrime) {
+        if (pnodes[currLevel] != 0) {
+          lastSkipped = pnodes[currLevel];
+          pnodes[currLevel] = 0;
+        }
+        isCurrLevelPrime = false;
+      } else {
+        if (nodes[currLevel] != 0) {
+          lastSkipped = nodes[currLevel];
+          nodes[currLevel] = 0;
+        }
+        currLevel = d->getVariableAbove(currLevel);
+        isCurrLevelPrime = true;
+      }
+    }
+
+    if (!found) {
+      // no more paths
+      nodes[0] = 0;
+      return;
+    }
+
+    // found new path
+    // select the first path starting from level below currLevel
+    if (isCurrLevelPrime) {
+      isCurrLevelPrime = false;
+      currLevel = d->getVariableBelow(currLevel);
+    } else {
+      isCurrLevelPrime = true;
+    }
+  }
+
+  // select the first path starting at currLevel
+  for ( ; currLevel != domain::TERMINALS; )
+  {
+    int node = isCurrLevelPrime? pnodes[currLevel]: nodes[currLevel];
+    int& currElement = isCurrLevelPrime
+        ? pelement[currLevel]: element[currLevel];
+    if (node == 0) {
+      currElement = 0;
+    } else {
+      int n = -1;
+      int index = -1;
+      if (f->isFullNode(node)) {
+        for (int i = 0, j = f->getFullNodeSize(node); i < j; ++i)
+        {
+          n = f->getFullNodeDownPtr(node, i);
+          if (n != 0) { index = i; break; }
+        }
+      } else {
+        DCASSERT(f->isSparseNode(node));
+        index = f->getSparseNodeIndex(node, 0);
+        n = f->getSparseNodeDownPtr(node, 0);
+      }
+      DCASSERT(index != -1);
+      currElement = index;
+      int nodeLevel = f->getNodeLevel(n);
+      if (nodeLevel < 0) {
+        pnodes[-nodeLevel] = n;
+      } else {
+        nodes[nodeLevel] = n;
+      }
+    }
+
+    if (isCurrLevelPrime) {
+      isCurrLevelPrime = false;
+      currLevel = d->getVariableBelow(currLevel);
+    } else {
+      isCurrLevelPrime = true;
+    }
+  }
+  assert(nodes[0] != 0);
+#ifdef DEBUG_ITER_BEGIN
+  printf("nodes[]: [");
+  for (int i = size - 1; i > 0; --i)
+  {
+    printf("%d ", nodes[i]);
+  }
+  printf("]\n");
+#endif
+}
+
+
+void dd_edge::iterator::incrRelation()
+{
+  DCASSERT(e != 0);
+  DCASSERT(e->node != 0);
+
+  expert_forest* f = smart_cast<expert_forest*>(e->parent);
+  if (f->getReductionRule() != forest::IDENTITY_REDUCED) {
+    incrNonIdentRelation();
+    return;
+  }
+
+  expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
+  int currLevel = d->getTopVariable();
+  bool isCurrLevelPrime = false;
+
+  if (nodes[0] == 0) {
+    memset(nodes, 0, size * sizeof(int));
+    memset(pnodes, 0, size * sizeof(int));
+    int nodeLevel = f->getNodeLevel(e->node);
+    if (nodeLevel < 0) {
+      pnodes[-nodeLevel] = e->node;
+    } else {
+      nodes[nodeLevel] = e->node;
+    }
+  }
+  else {
+    // Start from the bottom level and see if you can find the next
+    // valid edge. Move up a level if no more edges exist from this level.
 
     int lastSkipped = e->node;
     currLevel = d->getVariableAbove(domain::TERMINALS);
