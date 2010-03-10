@@ -1316,7 +1316,7 @@ int mtmxd_node_manager::sortBuild(int** unpList, int** pList, T* tList,
     // determine size for count[]
     levelSize = 0;
     for (int i = begin; i < end; i++) {
-      int index = list[i][level];
+      int index = list[i][absLevel];
       if (index > levelSize) { levelSize = index; }
     }
     // levelSize refers to the maximum index found so far,
@@ -1326,7 +1326,7 @@ int mtmxd_node_manager::sortBuild(int** unpList, int** pList, T* tList,
     count.resize(levelSize+1, 0);
 
     // go through list and count the number of entries in each "bucket"
-    for (int i = begin; i < end; i++) { count[list[i][level]]++; }
+    for (int i = begin; i < end; i++) { count[list[i][absLevel]]++; }
 
     // find starting index for each "bucket" in sorted lists
     // levelSize == number of buckets
@@ -1347,7 +1347,7 @@ int mtmxd_node_manager::sortBuild(int** unpList, int** pList, T* tList,
     for ( ; listPtr != firstListPtr; )
     {
       // getting index and get count[] ready for next insert
-      int index = count[(*listPtr)[level]]--;
+      int index = count[(*listPtr)[absLevel]]--;
       // insert at index
       sortedList[index] = *listPtr--;
       sortedOtherList[index] = *otherListPtr--;
@@ -1377,7 +1377,7 @@ int mtmxd_node_manager::sortBuild(int** unpList, int** pList, T* tList,
     // determine size for count[]
     levelSize = 0;
     for (int i = begin; i < end; i++) {
-      int index = list[i][level];
+      int index = list[i][absLevel];
       if (index > levelSize) { levelSize = index; }
     }
     // levelSize refers to the maximum index found so far,
@@ -1387,7 +1387,7 @@ int mtmxd_node_manager::sortBuild(int** unpList, int** pList, T* tList,
     count.resize(levelSize+1, 0);
 
     // go through list and count the number of entries in each "bucket"
-    for (int i = begin; i < end; i++) { count[list[i][level]]++; }
+    for (int i = begin; i < end; i++) { count[list[i][absLevel]]++; }
 
     // find starting index for each "bucket" in sorted lists
     // levelSize == number of buckets
@@ -1407,7 +1407,7 @@ int mtmxd_node_manager::sortBuild(int** unpList, int** pList, T* tList,
     for ( ; listPtr != firstListPtr; )
     {
       // getting index and get count[] ready for next insert
-      int index = count[(*listPtr)[level]]--;
+      int index = count[(*listPtr)[absLevel]]--;
       // insert at index
       sortedList[index] = *listPtr--;
       sortedOtherList[index] = *otherListPtr--;
