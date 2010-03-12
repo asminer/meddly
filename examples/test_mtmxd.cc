@@ -311,6 +311,7 @@ int main(int argc, char *argv[])
   assert(mtmxd != 0);
 
   // print elements
+#if 0
   for (int i = 0; i < nElements; ++i)
   {
     printf("Element %d: [%d", i, from[i][0]);
@@ -329,6 +330,7 @@ int main(int argc, char *argv[])
     printf(": %d]\n", terms[i]);
 #endif
   }
+#endif
 
 #if 1
   assert(forest::SUCCESS ==
@@ -349,6 +351,7 @@ int main(int argc, char *argv[])
   assert(forest::SUCCESS ==
       mtmxd->createEdge(from, to, terms, nElements, result));
 #endif
+  start.note_time();
   printf("Time interval: %.4e seconds\n",
       start.get_last_interval()/1000000.0);
 
@@ -356,10 +359,10 @@ int main(int argc, char *argv[])
   printf("Nodes in compute table: %d\n",
       (MEDDLY_getComputeManager())->getNumCacheEntries());
 
-  result.show(stdout, 3);
+  result.show(stdout, 1);
 
   // Use iterator to display elements
-  if (true) {
+  if (false) {
     unsigned counter = 0;
     for (dd_edge::const_iterator iter = result.begin(),
         endIter = result.end(); iter != endIter; ++iter, ++counter)

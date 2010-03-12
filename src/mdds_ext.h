@@ -1397,11 +1397,10 @@ mtmxd_node_manager::createEdgeInternal(const int* const* vlist,
     int* pList[N];
     int nVars = expertDomain->getNumVariables();
 
-    vector<int> temp(N);
-    tempUnprimedDptrs.resize(nVars+1, temp);
-    tempPrimedDptrs.resize(nVars+1, temp);
-    tempUnprimedIndices.resize(nVars+1, temp);
-    tempPrimedIndices.resize(nVars+1, temp);
+    tempUnprimedDptrs.resize(nVars+1);
+    tempPrimedDptrs.resize(nVars+1);
+    tempUnprimedIndices.resize(nVars+1);
+    tempPrimedIndices.resize(nVars+1);
 
     if (terms == 0) {
       int** listIter = list;
@@ -1687,23 +1686,34 @@ int mtmxd_node_manager::sortedBuild(int** unpList, int** pList, T* tList,
   vector<int>& dptrs =
     height > 0? tempUnprimedDptrs[height]: tempPrimedDptrs[-height];
 
-  DCASSERT(indices.size() >= unsigned(end - begin));
-  DCASSERT(dptrs.size() >= unsigned(end - begin));
-
-#if 0
   vector<int>::iterator indicesIter = indices.begin();
   vector<int>::iterator dptrsIter = dptrs.begin();
 
-  for (int i = begin; i < end; )
+  int i = begin;
+
+  for ( ; i < end && indicesIter != indices.end(); )
   {
     int start = i++;
     int currIndex = list[start][absLevel];
     // find all the elements with the same index as currIndex.
     while (i < end && list[i][absLevel] == currIndex) ++i;
-    DCASSERT(indicesIter != indices.end());
-    DCASSERT(dptrsIter != dptrs.end());
     *indicesIter++ = currIndex;
     *dptrsIter++ = sortedBuild(unpList, pList, tList, nextHeight, start, i);
+  }
+
+  if (i < end) {
+    // indices and dptrs need to expand
+    for ( ; i < end; )
+    {
+      int start = i++;
+      int currIndex = list[start][absLevel];
+      // find all the elements with the same index as currIndex.
+      while (i < end && list[i][absLevel] == currIndex) ++i;
+      indices.push_back(currIndex);
+      dptrs.push_back(sortedBuild(unpList, pList, tList, nextHeight, start, i));
+    }
+    indicesIter = indices.begin() + indices.size();
+    dptrsIter = dptrs.begin() + dptrs.size();
   }
 
   // build node from indices and dptrs.
@@ -1719,31 +1729,6 @@ int mtmxd_node_manager::sortedBuild(int** unpList, int** pList, T* tList,
     // from the vector
     ptr[*--indicesIter] = *--dptrsIter;
   }
-#else
-  unsigned indexCount = 0;
-  for (int i = begin; i < end; )
-  {
-    int start = i++;
-    int currIndex = list[start][absLevel];
-    // find all the elements with the same index as currIndex.
-    while (i < end && list[i][absLevel] == currIndex) ++i;
-    indices[indexCount] = currIndex;
-    dptrs[indexCount] =
-      sortedBuild(unpList, pList, tList, nextHeight, start, i);
-    indexCount++;
-  }
-  DCASSERT(indexCount > 0);
-
-  int result = createTempNode(level, 1 + indices[indexCount-1], true);
-  int* ptr = getFullNodeDownPtrs(result);
-
-  for (unsigned i = 0; i < indexCount; i++)
-  {
-    // no need to for any linking because the links are "transferred"
-    // from the vector
-    ptr[indices[i]] = dptrs[i];
-  }
-#endif
 
   return reduceNode(result);
 }
