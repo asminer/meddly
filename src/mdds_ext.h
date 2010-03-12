@@ -287,117 +287,12 @@ class mtmxd_node_manager : public node_manager {
         const;
 
     template <typename T>
+    int sort(int** list, int** otherList, T* tList,
+        int absLevel, int begin, int end);
+
+    template <typename T>
     int sortBuild(int** unpList, int** pList, T* tList,
         int height, int begin, int end);
-
-    // Assumes that the lists are sorted in ascending order of indices.
-    template <typename T>
-    int sortedBuild(int** unpList, int** pList, T* tList,
-        int height, int begin, int end);
-
-    private:
-
-    vector< vector<int> > tempUnprimedIndices;
-    vector< vector<int> > tempUnprimedDptrs;
-    vector< vector<int> > tempPrimedIndices;
-    vector< vector<int> > tempPrimedDptrs;
-
-    class sorter {
-      public:
-        sorter() : unprimed(0), primed(0) {}
-
-        const vector<unsigned>& sort(const int* const* unprimed,
-            const int* const* primed, unsigned N, unsigned sz) {
-          this->unprimed = unprimed;
-          this->primed = primed;
-          if (result.size() != N) { result.resize(N); scratch.resize(N); }
-          for (unsigned i = 0; i < N; i++) result[i] = i;
-          mergeSort(0, N, sz);
-          return result;
-        }
-
-        bool isGreaterThan(unsigned a, unsigned b, unsigned sz) {
-          DCASSERT(sz > 0);
-          --sz;
-          const int* aUnprimed = unprimed[a] + sz;
-          const int* aPrimed = primed[a] + sz;
-          const int* bUnprimed = unprimed[b] + sz;
-          const int* bPrimed = primed[b] + sz;
-          bool comparingPrimedLevel = false;
-          for (unsigned i = sz; i > 0; --i) {
-            if (comparingPrimedLevel) {
-              if (*aPrimed < *bPrimed) return false;
-              if (*aPrimed > *bPrimed) return true;
-              --aPrimed; --bPrimed;
-              comparingPrimedLevel = false;
-            } else {
-              if (*aUnprimed < *bUnprimed) return false;
-              if (*aUnprimed > *bUnprimed) return true;
-              --aUnprimed; --bUnprimed;
-              comparingPrimedLevel = true;
-            }
-          }
-          return false;
-        }
-
-        void mergeSort(unsigned start, unsigned end, unsigned sz) {
-#if 0
-          printf("Ordering: start: %d, end: %d\n", start, end);
-#endif
-          DCASSERT(end > start);
-          unsigned N = end - start;
-          if (N == 1) return;
-
-          // perform merge-sort on subsets.
-          unsigned mid = start + N/2;
-          mergeSort(start, mid, sz);
-          mergeSort(mid, end, sz);
-
-          // copy subset results to scratch
-          vector<unsigned>::iterator currResult = result.begin() + start;
-          vector<unsigned>::iterator currScratch = scratch.begin() + start;
-          for (vector<unsigned>::iterator stop = currResult + end;
-              currResult != stop; ) { *currScratch++ = *currResult++; }
-
-          // merge the subsets
-          currResult = result.begin() + start;
-          vector<unsigned>::iterator currA = scratch.begin() + start;
-          vector<unsigned>::iterator aEnd = scratch.begin() + mid;
-          vector<unsigned>::iterator currB = aEnd;
-          vector<unsigned>::iterator bEnd = scratch.begin() + end;
-
-          while (true) {
-            // compare the top of each queue
-            DCASSERT(currA != aEnd && currB != bEnd);
-            if (isGreaterThan(*currA, *currB, sz)) {
-              // add B to result
-              *currResult++ = *currB++;
-              if (currB == bEnd) break;
-            } else {
-              // add A to result
-              *currResult++ = *currA++;
-              if (currA == aEnd) break;
-            }
-          }
-          while (currA != aEnd) { *currResult++ = *currA++; }
-          while (currB != bEnd) { *currResult++ = *currB++; }
-          DCASSERT(currResult - result.begin() == int(end));
-#if 0
-          printf("Order (start: %d, end: %d): [%d", start, end, result[0]);
-          for (unsigned i = 1; i < result.size(); i++)
-          {
-            printf(" %d", result[i]);
-          }
-          printf("]\n");
-#endif
-        }
-
-      private:
-        vector<unsigned> result;
-        vector<unsigned> scratch;
-        const int* const* unprimed;
-        const int* const* primed;
-    };
 };
 
 
@@ -1360,7 +1255,6 @@ mtmxd_node_manager::createEdgeInternal(const int* const* vlist,
   }
   else {
     int result = 0;
-#if 0
     // build using sort-based procedure
     // put terms into vlist[i][0]
     int* list[N];
@@ -1376,66 +1270,6 @@ mtmxd_node_manager::createEdgeInternal(const int* const* vlist,
       result =
         sortBuild(list, pList, tList, getDomain()->getNumVariables(), 0, N);
     }
-#else
-    // sort and then build
-    sorter s;
-    // getNumVariables() does not count TERMINALS as a level.
-    const vector<unsigned>& sortedOrder = s.sort(vlist, vplist, unsigned(N),
-      unsigned(expertDomain->getNumVariables() + 1));
-    DCASSERT(sortedOrder.size() == unsigned(N));
-
-#if 0
-    printf("Order: [%d", sortedOrder[0]);
-    for (unsigned i = 1; i < sortedOrder.size(); i++)
-    {
-      printf(" %d", sortedOrder[i]);
-    }
-    printf("]\n");
-#endif
-
-    int* list[N];
-    int* pList[N];
-    int nVars = expertDomain->getNumVariables();
-
-    tempUnprimedDptrs.resize(nVars+1);
-    tempPrimedDptrs.resize(nVars+1);
-    tempUnprimedIndices.resize(nVars+1);
-    tempPrimedIndices.resize(nVars+1);
-
-    if (terms == 0) {
-      int** listIter = list;
-      int** plistIter = pList;
-      for (vector<unsigned>::const_iterator iter = sortedOrder.begin(),
-          end = sortedOrder.end(); iter != end; )
-      {
-        *listIter++ = (int*)vlist[*iter];
-        *plistIter++ = (int*)vplist[*iter++];
-      }
-      result =
-        sortedBuild(list, pList, (T*)0, nVars, 0, N);
-    } else {
-      T tList[N];
-      int** listIter = list;
-      int** plistIter = pList;
-      T* tlistIter = tList;
-      for (vector<unsigned>::const_iterator iter = sortedOrder.begin(),
-          end = sortedOrder.end(); iter != end; )
-      {
-        unsigned index = *iter++;
-        *listIter++ = (int*)vlist[index];
-        *plistIter++ = (int*)vplist[index];
-        *tlistIter++ = terms[index];
-      }
-      result =
-        sortedBuild(list, pList, tList, nVars, 0, N);
-    }
-
-    tempUnprimedDptrs.clear();
-    tempPrimedDptrs.clear();
-    tempUnprimedIndices.clear();
-    tempPrimedIndices.clear();
-
-#endif
     e.set(result, 0, getNodeLevel(result));
   }
 
@@ -1444,58 +1278,24 @@ mtmxd_node_manager::createEdgeInternal(const int* const* vlist,
 
 
 template <typename T>
-int mtmxd_node_manager::sortBuild(int** unpList, int** pList, T* tList,
-    int height, int begin, int end)
+int mtmxd_node_manager::sort(int** list, int** otherList, T* tList,
+    int absLevel, int begin, int end)
 {
-  // [begin, end)
-
-  // terminal condition
-  if (height == 0)
-  {
-    return getTerminalNode(handleMultipleTerminalValues(tList, begin, end));
-  }
-
   int N = end - begin;
-  int** list = 0;
-  int** otherList = 0;
-  int nextHeight = 0;
-  int level = 0;
-  if (height > 0) {
-    list = unpList;
-    otherList = pList;
-    nextHeight = -height;
-    level = expertDomain->getVariableWithHeight(height);
-  } else {
-    list = pList;
-    otherList = unpList;
-    nextHeight = -height-1;
-    level = -(expertDomain->getVariableWithHeight(-height));
-  }
-  int absLevel = level < 0? -level: level;
-
-  if (N == 1) {
-    // nothing to sort; just build a node starting at this level
-    int n = sortBuild(unpList, pList, tList, nextHeight, begin, end);
-    int index = list[begin][absLevel];
-    int result = createNode(level, index, n);
-    unlinkNode(n);
-    return result;
-  }
-
-  // do radix sort for this level
   int levelSize = 0;
-  vector<int> count(1, 0);
-
-  // Curly braces here to limit the scope of the vectors defined within.
-  // Without limiting the scope, memory usage will increase significantly
-  // -- especially if there are a lot of variables in the domain.
   if (tList != 0) {
-    vector<int*> sortedList(N, (int*)0);
-    vector<int*> sortedOtherList(N, (int*)0);
-    vector<T> sortedtList(N, 0);
+    static vector<int*> sortedList;
+    static vector<int*> sortedOtherList;
+    static vector<T> sortedtList;
+    static vector<int> count;
+
+    if (int(sortedList.size()) < N) {
+      sortedList.resize(N);
+      sortedOtherList.resize(N);
+      sortedtList.resize(N);
+    }
 
     // determine size for count[]
-    levelSize = 0;
     for (int i = begin; i < end; i++) {
       int index = list[i][absLevel];
       if (index > levelSize) { levelSize = index; }
@@ -1504,7 +1304,10 @@ int mtmxd_node_manager::sortBuild(int** unpList, int** pList, T* tList,
     // add 1 to convert to maximum size.
     levelSize++;
     // an extra space is needed at the end for the radix sort algorithm
-    count.resize(levelSize+1, 0);
+    if (int(count.size()) < 1 + levelSize) {
+      count.resize(levelSize + 1);
+    }
+    fill_n(count.begin(), 1 + levelSize, 0);
 
     // go through list and count the number of entries in each "bucket"
     for (int i = begin; i < end; i++) { count[list[i][absLevel]]++; }
@@ -1540,9 +1343,10 @@ int mtmxd_node_manager::sortBuild(int** unpList, int** pList, T* tList,
     otherListPtr = otherList + begin;
     tListPtr = tList + begin;
     vector<int*>::iterator sortedListIter = sortedList.begin();
+    vector<int*>::iterator sortedListEnd = sortedList.begin() + N;
     vector<int*>::iterator sortedOtherListIter = sortedOtherList.begin();
     typename vector<T>::iterator sortedtListIter = sortedtList.begin();
-    for ( ; sortedListIter != sortedList.end(); )
+    for ( ; sortedListIter != sortedListEnd; )
     {
       *listPtr++ = *sortedListIter++;
       *otherListPtr++ = *sortedOtherListIter++;
@@ -1552,11 +1356,16 @@ int mtmxd_node_manager::sortBuild(int** unpList, int** pList, T* tList,
   else {
     // same as tList != 0, except that there is no tList to deal with
 
-    vector<int*> sortedList(N, (int*)0);
-    vector<int*> sortedOtherList(N, (int*)0);
+    static vector<int*> sortedList;
+    static vector<int*> sortedOtherList;
+    static vector<int> count;
+
+    if (int(sortedList.size()) < N) {
+      sortedList.resize(N);
+      sortedOtherList.resize(N);
+    }
 
     // determine size for count[]
-    levelSize = 0;
     for (int i = begin; i < end; i++) {
       int index = list[i][absLevel];
       if (index > levelSize) { levelSize = index; }
@@ -1565,7 +1374,10 @@ int mtmxd_node_manager::sortBuild(int** unpList, int** pList, T* tList,
     // add 1 to convert to maximum size.
     levelSize++;
     // an extra space is needed at the end for the radix sort algorithm
-    count.resize(levelSize+1, 0);
+    if (int(count.size()) < 1 + levelSize) {
+      count.resize(levelSize + 1);
+    }
+    fill_n(count.begin(), 1 + levelSize, 0);
 
     // go through list and count the number of entries in each "bucket"
     for (int i = begin; i < end; i++) { count[list[i][absLevel]]++; }
@@ -1598,136 +1410,79 @@ int mtmxd_node_manager::sortBuild(int** unpList, int** pList, T* tList,
     listPtr = list + begin;
     otherListPtr = otherList + begin;
     vector<int*>::iterator sortedListIter = sortedList.begin();
+    vector<int*>::iterator sortedListEnd = sortedList.begin() + N;
     vector<int*>::iterator sortedOtherListIter = sortedOtherList.begin();
-    for ( ; sortedListIter != sortedList.end(); )
+    for ( ; sortedListIter != sortedListEnd; )
     {
       *listPtr++ = *sortedListIter++;
       *otherListPtr++ = *sortedOtherListIter++;
     }
   }
-
-  // after insertion, range for bucket[i] is [count[i]+1, count[i+1]+1)
-
-  // call sortBuild for each index and store result as (index, node).
-  vector<int> indices;
-  vector<int> dptrs;
-  for (int i = 0; i < levelSize; i++)
-  {
-    if (count[i+1] > count[i]) {
-      int n = sortBuild(unpList, pList, tList, nextHeight,
-          begin + count[i] + 1, begin + count[i+1] + 1);
-      indices.push_back(i);
-      dptrs.push_back(n);
-    }
-  }
-
-  // build node from indices, dptrs and edgeValues
-
-  DCASSERT(dptrs.size() > 0);
-
-  int largestIndex = indices[indices.size()-1];
-  int result = createTempNode(level, largestIndex+1, true);
-  int* ptr = getFullNodeDownPtrs(result);
-
-  for (vector<int>::iterator iIter = indices.begin(), dIter = dptrs.begin();
-      iIter != indices.end(); )
-  {
-    // no need to for any linking because the links are "transferred"
-    // from the vector
-    ptr[*iIter++] = *dIter++;
-  }
-
-  return reduceNode(result);
+  return levelSize;
 }
 
-
 template <typename T>
-int mtmxd_node_manager::sortedBuild(int** unpList, int** pList, T* tList,
+int mtmxd_node_manager::sortBuild(int** unpList, int** pList, T* tList,
     int height, int begin, int end)
 {
   // [begin, end)
 
   // terminal condition
-  if (height == 0)
-  {
+  if (height == 0) {
     return getTerminalNode(handleMultipleTerminalValues(tList, begin, end));
   }
 
   if (begin + 1 == end) {
-    // nothing to sort; just build a node starting at this level
-    int term = sortedBuild(unpList, pList, tList, 0, begin, end);
-    int result = createNode(unpList[begin], pList[begin], term,
+    return createNode(unpList[begin], pList[begin],
+        getTerminalNode(handleMultipleTerminalValues(tList, begin, end)),
         ABS(height), height < 0);
-    unlinkNode(term);
-    return result;
   }
 
   int** list = 0;
+  int** otherList = 0;
   int nextHeight = 0;
   int level = 0;
   if (height > 0) {
     list = unpList;
+    otherList = pList;
     nextHeight = -height;
     level = expertDomain->getVariableWithHeight(height);
   } else {
     list = pList;
+    otherList = unpList;
     nextHeight = -height-1;
     level = -(expertDomain->getVariableWithHeight(-height));
   }
-  int absLevel = ABS(level);
+  int absLevel = level < 0? -level: level;
 
-  DCASSERT(tempUnprimedDptrs.size() > unsigned(ABS(height)));
-  DCASSERT(tempUnprimedIndices.size() > unsigned(ABS(height)));
-  DCASSERT(tempPrimedDptrs.size() > unsigned(ABS(height)));
-  DCASSERT(tempPrimedIndices.size() > unsigned(ABS(height)));
+  int levelSize = sort(list, otherList, tList, absLevel, begin, end);
 
-  vector<int>& indices =
-    height > 0? tempUnprimedIndices[height]: tempPrimedIndices[-height];
-  vector<int>& dptrs =
-    height > 0? tempUnprimedDptrs[height]: tempPrimedDptrs[-height];
-
-  vector<int>::iterator indicesIter = indices.begin();
-  vector<int>::iterator dptrsIter = dptrs.begin();
-
-  int i = begin;
-
-  for ( ; i < end && indicesIter != indices.end(); )
+#ifdef DEVELOPMENT_CODE
+  // find largest index
+  int largestIndex = list[begin][absLevel];
+  for (int i = begin + 1; i < end; )
   {
-    int start = i++;
-    int currIndex = list[start][absLevel];
-    // find all the elements with the same index as currIndex.
-    while (i < end && list[i][absLevel] == currIndex) ++i;
-    *indicesIter++ = currIndex;
-    *dptrsIter++ = sortedBuild(unpList, pList, tList, nextHeight, start, i);
+    DCASSERT(largestIndex <= list[i][absLevel]);
+    largestIndex = list[i][absLevel];
+    // skip the elements with the same index at this level
+    for (++i; i < end && list[i][absLevel] == largestIndex; ++i);
   }
-
-  if (i < end) {
-    // indices and dptrs need to expand
-    for ( ; i < end; )
-    {
-      int start = i++;
-      int currIndex = list[start][absLevel];
-      // find all the elements with the same index as currIndex.
-      while (i < end && list[i][absLevel] == currIndex) ++i;
-      indices.push_back(currIndex);
-      dptrs.push_back(sortedBuild(unpList, pList, tList, nextHeight, start, i));
-    }
-    indicesIter = indices.begin() + indices.size();
-    dptrsIter = dptrs.begin() + dptrs.size();
+  if (largestIndex + 1 != levelSize) {
+    printf("largest index: %d, levelSize: %d\n", largestIndex, levelSize);
+    assert(false);
   }
+#endif
 
-  // build node from indices and dptrs.
-
-  DCASSERT(indicesIter != indices.begin());
-
-  int result = createTempNode(level, 1 + *(indicesIter - 1), true);
+  // build node
+  int result = createTempNode(level, levelSize, true);
   int* ptr = getFullNodeDownPtrs(result);
-
-  while (indicesIter != indices.begin())
+  for (int i = begin; i < end; )
   {
-    // no need to for any linking because the links are "transferred"
-    // from the vector
-    ptr[*--indicesIter] = *--dptrsIter;
+    int index = list[i][absLevel];
+    int start = i++;
+    // skip the elements with the same index at this level
+    for ( ; i < end && list[i][absLevel] == index; ++i);
+    ptr[index] = sortBuild(unpList, pList, tList, nextHeight, start, i);
   }
 
   return reduceNode(result);
