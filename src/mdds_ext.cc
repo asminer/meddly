@@ -1066,21 +1066,50 @@ int mtmxd_node_manager::createNode(int k, int index1, int index2, int dptr)
 }
 
 
-void mtmxd_node_manager::createEdge(const int* v, const int* vp, int term,
-    dd_edge& e)
+int mtmxd_node_manager::createNode(const int* v, const int* vp, int term,
+    int startAtHeight, bool primedLevel)
 {
   // construct the edge bottom-up
   const int* h2l_map = expertDomain->getHeightsToLevelsMap();
-  int h_sz = expertDomain->getNumVariables() + 1;
   DCASSERT(isTerminalNode(term));
-  const int* end = h2l_map + h_sz;
+  const int* end = h2l_map + startAtHeight;
   for (++h2l_map; h2l_map != end; ++h2l_map)
   {
     int prev = term;
     term = createNode(*h2l_map, v[*h2l_map], vp[*h2l_map], term);
     unlinkNode(prev);
   }
+
+  // deal with height == startAtHeight
+  // handle primed level first
+  if (primedLevel) {
+    // only primed level to be handled at this height
+    int prev = term;
+    term = createNode(-(*h2l_map), vp[*h2l_map], term);
+    unlinkNode(prev);
+  } else {
+    // both primed and unprimed levels to be handled at this height
+    int prev = term;
+    term = createNode(*h2l_map, v[*h2l_map], vp[*h2l_map], term);
+    unlinkNode(prev);
+  }
+
+  return term;
+}
+
+
+void mtmxd_node_manager::createEdge(const int* v, const int* vp, int term,
+    int startAtHeight, bool primedLevel, dd_edge& e)
+{
+  term = createNode(v, vp, term, startAtHeight, primedLevel);
   e.set(term, 0, getNodeLevel(term));
+}
+
+
+void mtmxd_node_manager::createEdge(const int* v, const int* vp, int term,
+    dd_edge& e)
+{
+  createEdge(v, vp, term, expertDomain->getNumVariables(), false, e);
 }
 
 

@@ -829,6 +829,9 @@ class domain {
         forest::edge_labeling ev) = 0;
 
     /// Get the number of variables in this domain.
+    /// Note that TERMINALS is not counted as a level.
+    /// So, if the domain has N variables in it (excluding the
+    /// TERMINAL level which is always present), N is returned.
     virtual int getNumVariables() const = 0;
 
     /** Get the specified bound of a variable.

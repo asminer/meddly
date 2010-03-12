@@ -341,7 +341,7 @@ int main(int argc, char *argv[])
 
   timer start;
   start.note_time();
-#if 1
+#if 0
   dd_edge result = test_mtmxd(mtmxd, compute_manager::EQUAL,
       from, to, terms, nElements);
 #else

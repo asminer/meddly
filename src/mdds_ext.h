@@ -176,7 +176,6 @@ class mdd_node_manager : public mtmdd_node_manager {
       const;
 };
 
-
 class mtmxd_node_manager : public node_manager {
   // TODO: mtmxds can only be forest::IDENTITY_REDUCED
   public:
@@ -253,9 +252,21 @@ class mtmxd_node_manager : public node_manager {
     // and stores it in e.
     void createEdge(const int* v, const int* vp, int termNode, dd_edge& e);
 
+    // Starting at height given by {startAtHeight, primedLevel},
+    // creates an edge representing v[] vp[] = terminal node (not value),
+    // and stores it in e.
+    void createEdge(const int* v, const int* vp, int termNode,
+        int startAtHeight, bool primedLevel, dd_edge& e);
+
     // Creates a top-level node representing {-1, -1, ..., -1} = terminal node
     // (not value), and returns it (returned node is already linked to.
     int createEdge(int termNode);
+
+    // Starting at height given by {startAtHeight, primedLevel},
+    // creates a node representing v[] vp[] = terminal node (not value)
+    // and returns it. Used by createEdge().
+    int createNode(const int* v, const int* vp, int termNode,
+        int startAtHeight, bool primedLevel);
 
     // Create a node n, at level -k, whose jth index points to dptr.
     // Create a node m, at level +k, whose ith index points to n.
@@ -278,6 +289,115 @@ class mtmxd_node_manager : public node_manager {
     template <typename T>
     int sortBuild(int** unpList, int** pList, T* tList,
         int height, int begin, int end);
+
+    // Assumes that the lists are sorted in ascending order of indices.
+    template <typename T>
+    int sortedBuild(int** unpList, int** pList, T* tList,
+        int height, int begin, int end);
+
+    private:
+
+    vector< vector<int> > tempUnprimedIndices;
+    vector< vector<int> > tempUnprimedDptrs;
+    vector< vector<int> > tempPrimedIndices;
+    vector< vector<int> > tempPrimedDptrs;
+
+    class sorter {
+      public:
+        sorter() : unprimed(0), primed(0) {}
+
+        const vector<unsigned>& sort(const int* const* unprimed,
+            const int* const* primed, unsigned N, unsigned sz) {
+          this->unprimed = unprimed;
+          this->primed = primed;
+          if (result.size() != N) { result.resize(N); scratch.resize(N); }
+          for (unsigned i = 0; i < N; i++) result[i] = i;
+          mergeSort(0, N, sz);
+          return result;
+        }
+
+        bool isGreaterThan(unsigned a, unsigned b, unsigned sz) {
+          DCASSERT(sz > 0);
+          --sz;
+          const int* aUnprimed = unprimed[a] + sz;
+          const int* aPrimed = primed[a] + sz;
+          const int* bUnprimed = unprimed[b] + sz;
+          const int* bPrimed = primed[b] + sz;
+          bool comparingPrimedLevel = false;
+          for (unsigned i = sz; i > 0; --i) {
+            if (comparingPrimedLevel) {
+              if (*aPrimed < *bPrimed) return false;
+              if (*aPrimed > *bPrimed) return true;
+              --aPrimed; --bPrimed;
+              comparingPrimedLevel = false;
+            } else {
+              if (*aUnprimed < *bUnprimed) return false;
+              if (*aUnprimed > *bUnprimed) return true;
+              --aUnprimed; --bUnprimed;
+              comparingPrimedLevel = true;
+            }
+          }
+          return false;
+        }
+
+        void mergeSort(unsigned start, unsigned end, unsigned sz) {
+#if 1
+          printf("Ordering: start: %d, end: %d\n", start, end);
+#endif
+          DCASSERT(end > start);
+          unsigned N = end - start;
+          if (N == 1) return;
+
+          // perform merge-sort on subsets.
+          unsigned mid = start + N/2;
+          mergeSort(start, mid, sz);
+          mergeSort(mid, end, sz);
+
+          // copy subset results to scratch
+          vector<unsigned>::iterator currResult = result.begin() + start;
+          vector<unsigned>::iterator currScratch = scratch.begin() + start;
+          for (vector<unsigned>::iterator stop = currResult + end;
+              currResult != stop; ) { *currScratch++ = *currResult++; }
+
+          // merge the subsets
+          currResult = result.begin() + start;
+          vector<unsigned>::iterator currA = scratch.begin() + start;
+          vector<unsigned>::iterator aEnd = scratch.begin() + mid;
+          vector<unsigned>::iterator currB = aEnd;
+          vector<unsigned>::iterator bEnd = scratch.begin() + end;
+
+          while (true) {
+            // compare the top of each queue
+            DCASSERT(currA != aEnd && currB != bEnd);
+            if (isGreaterThan(*currA, *currB, sz)) {
+              // add B to result
+              *currResult++ = *currB++;
+              if (currB == bEnd) break;
+            } else {
+              // add A to result
+              *currResult++ = *currA++;
+              if (currA == aEnd) break;
+            }
+          }
+          while (currA != aEnd) { *currResult++ = *currA++; }
+          while (currB != bEnd) { *currResult++ = *currB++; }
+          DCASSERT(currResult - result.begin() == int(end));
+#if 1
+          printf("Order (start: %d, end: %d): [%d", start, end, result[0]);
+          for (unsigned i = 1; i < result.size(); i++)
+          {
+            printf(" %d", result[i]);
+          }
+          printf("]\n");
+#endif
+        }
+
+      private:
+        vector<unsigned> result;
+        vector<unsigned> scratch;
+        const int* const* unprimed;
+        const int* const* primed;
+    };
 };
 
 
@@ -1239,13 +1359,14 @@ mtmxd_node_manager::createEdgeInternal(const int* const* vlist,
     }
   }
   else {
+    int result = 0;
+#if 0
     // build using sort-based procedure
     // put terms into vlist[i][0]
     int* list[N];
     memcpy(list, vlist, N * sizeof(int*));
     int* pList[N];
     memcpy(pList, vplist, N * sizeof(int*));
-    int result = 0;
     if (terms == 0) {
       result =
         sortBuild(list, pList, (T*)0, getDomain()->getNumVariables(), 0, N);
@@ -1255,6 +1376,67 @@ mtmxd_node_manager::createEdgeInternal(const int* const* vlist,
       result =
         sortBuild(list, pList, tList, getDomain()->getNumVariables(), 0, N);
     }
+#else
+    // sort and then build
+    sorter s;
+    // getNumVariables() does not count TERMINALS as a level.
+    const vector<unsigned>& sortedOrder = s.sort(vlist, vplist, unsigned(N),
+      unsigned(expertDomain->getNumVariables() + 1));
+    DCASSERT(sortedOrder.size() == unsigned(N));
+
+#if 1
+    printf("Order: [%d", sortedOrder[0]);
+    for (unsigned i = 1; i < sortedOrder.size(); i++)
+    {
+      printf(" %d", sortedOrder[i]);
+    }
+    printf("]\n");
+#endif
+
+    int* list[N];
+    int* pList[N];
+    int nVars = expertDomain->getNumVariables();
+
+    vector<int> temp(N);
+    tempUnprimedDptrs.resize(nVars+1, temp);
+    tempPrimedDptrs.resize(nVars+1, temp);
+    tempUnprimedIndices.resize(nVars+1, temp);
+    tempPrimedIndices.resize(nVars+1, temp);
+
+    if (terms == 0) {
+      int** listIter = list;
+      int** plistIter = pList;
+      for (vector<unsigned>::const_iterator iter = sortedOrder.begin(),
+          end = sortedOrder.end(); iter != end; )
+      {
+        *listIter++ = (int*)vlist[*iter];
+        *plistIter++ = (int*)vplist[*iter++];
+      }
+      result =
+        sortedBuild(list, pList, (T*)0, nVars, 0, N);
+    } else {
+      T tList[N];
+      int** listIter = list;
+      int** plistIter = pList;
+      T* tlistIter = tList;
+      for (vector<unsigned>::const_iterator iter = sortedOrder.begin(),
+          end = sortedOrder.end(); iter != end; )
+      {
+        unsigned index = *iter++;
+        *listIter++ = (int*)vlist[index];
+        *plistIter++ = (int*)vplist[index];
+        *tlistIter++ = terms[index];
+      }
+      result =
+        sortedBuild(list, pList, tList, nVars, 0, N);
+    }
+
+    tempUnprimedDptrs.clear();
+    tempPrimedDptrs.clear();
+    tempUnprimedIndices.clear();
+    tempPrimedIndices.clear();
+
+#endif
     e.set(result, 0, getNodeLevel(result));
   }
 
@@ -1455,6 +1637,113 @@ int mtmxd_node_manager::sortBuild(int** unpList, int** pList, T* tList,
     // from the vector
     ptr[*iIter++] = *dIter++;
   }
+
+  return reduceNode(result);
+}
+
+
+template <typename T>
+int mtmxd_node_manager::sortedBuild(int** unpList, int** pList, T* tList,
+    int height, int begin, int end)
+{
+  // [begin, end)
+
+  // terminal condition
+  if (height == 0)
+  {
+    return getTerminalNode(handleMultipleTerminalValues(tList, begin, end));
+  }
+
+  if (begin + 1 == end) {
+    // nothing to sort; just build a node starting at this level
+    int term = sortedBuild(unpList, pList, tList, 0, begin, end);
+    int result = createNode(unpList[begin], pList[begin], term,
+        ABS(height), height < 0);
+    unlinkNode(term);
+    return result;
+  }
+
+  int** list = 0;
+  int nextHeight = 0;
+  int level = 0;
+  if (height > 0) {
+    list = unpList;
+    nextHeight = -height;
+    level = expertDomain->getVariableWithHeight(height);
+  } else {
+    list = pList;
+    nextHeight = -height-1;
+    level = -(expertDomain->getVariableWithHeight(-height));
+  }
+  int absLevel = ABS(level);
+
+  DCASSERT(tempUnprimedDptrs.size() > unsigned(ABS(height)));
+  DCASSERT(tempUnprimedIndices.size() > unsigned(ABS(height)));
+  DCASSERT(tempPrimedDptrs.size() > unsigned(ABS(height)));
+  DCASSERT(tempPrimedIndices.size() > unsigned(ABS(height)));
+
+  vector<int>& indices =
+    height > 0? tempUnprimedIndices[height]: tempPrimedIndices[-height];
+  vector<int>& dptrs =
+    height > 0? tempUnprimedDptrs[height]: tempPrimedDptrs[-height];
+
+  DCASSERT(indices.size() >= unsigned(end - begin));
+  DCASSERT(dptrs.size() >= unsigned(end - begin));
+
+#if 0
+  vector<int>::iterator indicesIter = indices.begin();
+  vector<int>::iterator dptrsIter = dptrs.begin();
+
+  for (int i = begin; i < end; )
+  {
+    int start = i++;
+    int currIndex = list[start][absLevel];
+    // find all the elements with the same index as currIndex.
+    while (i < end && list[i][absLevel] == currIndex) ++i;
+    DCASSERT(indicesIter != indices.end());
+    DCASSERT(dptrsIter != dptrs.end());
+    *indicesIter++ = currIndex;
+    *dptrsIter++ = sortedBuild(unpList, pList, tList, nextHeight, start, i);
+  }
+
+  // build node from indices and dptrs.
+
+  DCASSERT(indicesIter != indices.begin());
+
+  int result = createTempNode(level, 1 + *(indicesIter - 1), true);
+  int* ptr = getFullNodeDownPtrs(result);
+
+  while (indicesIter != indices.begin())
+  {
+    // no need to for any linking because the links are "transferred"
+    // from the vector
+    ptr[*--indicesIter] = *--dptrsIter;
+  }
+#else
+  unsigned indexCount = 0;
+  for (int i = begin; i < end; )
+  {
+    int start = i++;
+    int currIndex = list[start][absLevel];
+    // find all the elements with the same index as currIndex.
+    while (i < end && list[i][absLevel] == currIndex) ++i;
+    indices[indexCount] = currIndex;
+    dptrs[indexCount] =
+      sortedBuild(unpList, pList, tList, nextHeight, start, i);
+    indexCount++;
+  }
+  DCASSERT(indexCount > 0);
+
+  int result = createTempNode(level, 1 + indices[indexCount-1], true);
+  int* ptr = getFullNodeDownPtrs(result);
+
+  for (unsigned i = 0; i < indexCount; i++)
+  {
+    // no need to for any linking because the links are "transferred"
+    // from the vector
+    ptr[indices[i]] = dptrs[i];
+  }
+#endif
 
   return reduceNode(result);
 }
