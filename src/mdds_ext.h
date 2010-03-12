@@ -341,7 +341,7 @@ class mtmxd_node_manager : public node_manager {
         }
 
         void mergeSort(unsigned start, unsigned end, unsigned sz) {
-#if 1
+#if 0
           printf("Ordering: start: %d, end: %d\n", start, end);
 #endif
           DCASSERT(end > start);
@@ -382,7 +382,7 @@ class mtmxd_node_manager : public node_manager {
           while (currA != aEnd) { *currResult++ = *currA++; }
           while (currB != bEnd) { *currResult++ = *currB++; }
           DCASSERT(currResult - result.begin() == int(end));
-#if 1
+#if 0
           printf("Order (start: %d, end: %d): [%d", start, end, result[0]);
           for (unsigned i = 1; i < result.size(); i++)
           {
@@ -1384,7 +1384,7 @@ mtmxd_node_manager::createEdgeInternal(const int* const* vlist,
       unsigned(expertDomain->getNumVariables() + 1));
     DCASSERT(sortedOrder.size() == unsigned(N));
 
-#if 1
+#if 0
     printf("Order: [%d", sortedOrder[0]);
     for (unsigned i = 1; i < sortedOrder.size(); i++)
     {
