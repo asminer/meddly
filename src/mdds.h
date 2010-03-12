@@ -899,24 +899,20 @@ inline void node_manager::setAllDownPtrs(int p, int value) {
     unlinkNode(*curr);
     *curr++ = value;
   }
-  getInCount(p) += size;
+  if (!isTerminalNode(value)) getInCount(value) += size;
 }
 
 inline void node_manager::setAllDownPtrsWoUnlink(int p, int value) {
   DCASSERT(!isReducedNode(p));
   DCASSERT(isFullNode(p));
   DCASSERT(isReducedNode(value));
-  if (value == 0) {
-    initDownPtrs(p);
-    return;
-  }
   int* curr = getFullNodeDownPtrs(p);
   int size = getFullNodeSize(p);
   for (int* end = curr + size; curr != end; )
   {
     *curr++ = value;
   }
-  getInCount(p) += size;
+  if (!isTerminalNode(value)) getInCount(value) += size;
 }
 
 inline void node_manager::initDownPtrs(int p) {

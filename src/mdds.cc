@@ -134,36 +134,38 @@ int node_manager::buildLevelNodeHelper(int lh, int* dptrs, int sz)
     //      dptrs[j] = node at level i with all downpointers to prev dptrs[j]
     //      do for primed first and then unprimed
 
-    for (int height = 1; height < nodeHeight; ++height)
-    {
-      int i = h2lMap[height];
-      for (int j = 0; j < sz; ++j)
+    if (getReductionRule() != forest::FULLY_REDUCED) {
+      for (int height = 1; height < nodeHeight; ++height)
       {
-        // primed
-        int temp = createTempNodeMaxSize(-i, false);
-        setAllDownPtrsWoUnlink(temp, dptrs[j]);
-        unlinkNode(dptrs[j]);
-        dptrs[j] = reduceNode(temp);
-        // unprimed
-        temp = createTempNodeMaxSize(i, false);
-        setAllDownPtrsWoUnlink(temp, dptrs[j]);
-        unlinkNode(dptrs[j]);
-        dptrs[j] = reduceNode(temp);
+        int i = h2lMap[height];
+        for (int j = 0; j < sz; ++j)
+        {
+          // primed
+          int temp = createTempNodeMaxSize(-i, false);
+          setAllDownPtrsWoUnlink(temp, dptrs[j]);
+          unlinkNode(dptrs[j]);
+          dptrs[j] = reduceNode(temp);
+          // unprimed
+          temp = createTempNodeMaxSize(i, false);
+          setAllDownPtrsWoUnlink(temp, dptrs[j]);
+          unlinkNode(dptrs[j]);
+          dptrs[j] = reduceNode(temp);
+        }
       }
-    }
 
-    // Finally, deal with lh level
-    // if lh is unprimed, need to create nodes at primed level
+      // Finally, deal with lh level
+      // if lh is unprimed, need to create nodes at primed level
 
-    if (lh > 0) {
-      // create nodes at level -lh
-      for (int j = 0; j < sz; ++j)
-      {
-        // primed
-        int temp = createTempNodeMaxSize(-lh, false);
-        setAllDownPtrsWoUnlink(temp, dptrs[j]);
-        unlinkNode(dptrs[j]);
-        dptrs[j] = reduceNode(temp);
+      if (lh > 0) {
+        // create nodes at level -lh
+        for (int j = 0; j < sz; ++j)
+        {
+          // primed
+          int temp = createTempNodeMaxSize(-lh, false);
+          setAllDownPtrsWoUnlink(temp, dptrs[j]);
+          unlinkNode(dptrs[j]);
+          dptrs[j] = reduceNode(temp);
+        }
       }
     }
   }
@@ -198,30 +200,32 @@ int node_manager::buildLevelNodeHelper(int lh, int* dptrs, int sz)
 
   // now build the levels above this node
   if (isForRelations()) {
-    // build additional node at lh level if necessary
-    if (lh < 0) {
-      // build unprimed node at level ABS(lh)
-      int temp = createTempNodeMaxSize(absLh, false);
-      setAllDownPtrsWoUnlink(temp, node);
-      unlinkNode(node);
-      node = reduceNode(temp);
-    }
+    if (getReductionRule() != forest::FULLY_REDUCED) {
+      // build additional node at lh level if necessary
+      if (lh < 0) {
+        // build unprimed node at level ABS(lh)
+        int temp = createTempNodeMaxSize(absLh, false);
+        setAllDownPtrsWoUnlink(temp, node);
+        unlinkNode(node);
+        node = reduceNode(temp);
+      }
 
-    // build primed and unprimed nodes for levels lh+1 to topLevel
-    int topHeight = d->getNumVariables();
-    for (int height = nodeHeight + 1; height <= topHeight; ++height)
-    {
-      int i = h2lMap[height];
-      // primed
-      int temp = createTempNodeMaxSize(-i, false);
-      setAllDownPtrsWoUnlink(temp, node);
-      unlinkNode(node);
-      node = reduceNode(temp);
-      // unprimed
-      temp = createTempNodeMaxSize(i, false);
-      setAllDownPtrsWoUnlink(temp, node);
-      unlinkNode(node);
-      node = reduceNode(temp);
+      // build primed and unprimed nodes for levels lh+1 to topLevel
+      int topHeight = d->getNumVariables();
+      for (int height = nodeHeight + 1; height <= topHeight; ++height)
+      {
+        int i = h2lMap[height];
+        // primed
+        int temp = createTempNodeMaxSize(-i, false);
+        setAllDownPtrsWoUnlink(temp, node);
+        unlinkNode(node);
+        node = reduceNode(temp);
+        // unprimed
+        temp = createTempNodeMaxSize(i, false);
+        setAllDownPtrsWoUnlink(temp, node);
+        unlinkNode(node);
+        node = reduceNode(temp);
+      }
     }
     // done building node for Relations
   }
