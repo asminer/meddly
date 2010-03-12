@@ -102,7 +102,8 @@ class chained_hash_table {
 
     void show(FILE *s, bool verbose = false) const {
       char filler[] = "\t";
-      fprintf(s, "%sNumber of slots:        %d\n", filler, table.size());
+      fprintf(s, "%sNumber of slots:        %lu\n",
+          filler, (unsigned long)(table.size()));
       fprintf(s, "%sNumber of entries:      %d\n", filler, nEntries);
 #ifdef CHAIN_LENGTH_INFO
       fprintf(s, "%sChains:\n", filler); 
