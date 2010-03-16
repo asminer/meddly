@@ -198,10 +198,10 @@ class mtmxd_node_manager : public node_manager {
         float &term) const;
 
     virtual error findFirstElement(const dd_edge& f, int* vlist, int* vplist)
-        const;
+      const;
 
     virtual int reduceNode(int p);
-    
+
     bool singleNonZeroAt(int p, int val, int index) const;
 
   public:
@@ -245,8 +245,8 @@ class mtmxd_node_manager : public node_manager {
     // This create a MTMXD from a collection of edges (represented 
     // as vectors vlist and vplist).
     template <typename T>
-    forest::error createEdgeInternal(const int* const* vlist,
-        const int* const* vplist, const T* terms, int N, dd_edge &e);
+      forest::error createEdgeInternal(const int* const* vlist,
+          const int* const* vplist, const T* terms, int N, dd_edge &e);
 
     // Creates an edge representing v[] vp[] = terminal node (not value),
     // and stores it in e.
@@ -284,15 +284,21 @@ class mtmxd_node_manager : public node_manager {
     // and vlist and vplist representing the indexes for the levels.
     // Used by evaluate()
     int getTerminalNodeForEdge(int n, const int* vlist, const int* vplist)
-        const;
+      const;
 
     template <typename T>
-    int sort(int** list, int** otherList, T* tList,
-        int absLevel, int begin, int end);
+      int sort(int** list, int** otherList, T* tList,
+          int absLevel, int begin, int end);
 
     template <typename T>
-    int sortBuild(int** unpList, int** pList, T* tList,
-        int height, int begin, int end);
+      int sortBuild(int** unpList, int** pList, T* tList,
+          int height, int begin, int end);
+
+    void addToTree(int* unp, int* p, int terminalNode);
+    int convertTreeToMtMxd();
+    int convertToMtMxd(int addr, int height);
+
+    int root;
 };
 
 
@@ -582,56 +588,39 @@ evmdd_node_manager::createEdgeInternal(const int* const* vlist,
     int currLevel = h2l_map[currHeight];
     while (currHeight > 0)
     {
-      if (vlist[i][currLevel] >= getLevelSize(currLevel))
-        return forest::INVALID_VARIABLE;
-      if (vlist[i][currLevel] < 0) specialCasesFound = true;
+      int bound = vlist[i][currLevel] + 1;
+      if (bound >= getLevelSize(currLevel))
+        expertDomain->enlargeVariableBound(currLevel, false, bound);
+      else if (bound < 0)
+        specialCasesFound = true;
       currHeight--;
       currLevel = h2l_map[currHeight];
     }
   }
 
-  if (N < 2) {
+  if (N == 1 || specialCasesFound) {
     createEdgeInternal(vlist[0], terms[0], e);
-  }
-  else {
-    // check for special cases
-    bool specialCasesFound = false;
-    for (int i = 0; i < N && !specialCasesFound; i++)
-    {
-      int* curr = (int*)vlist[i];
-      int* end = curr + expertDomain->getNumVariables() + 1;
-      for ( ; curr != end; )
-      {
-        if (*curr++ < 0) {
-          specialCasesFound = true;
-          break;
-        }
-      }
-    }
-
-    if (specialCasesFound) {
-      // build using "standard" procedure
-      createEdgeInternal(vlist[0], terms[0], e);
+    if (N > 1) {
       dd_edge curr(this);
       for (int i=1; i<N; i++) {
         createEdgeInternal(vlist[i], terms[i], curr);
         e += curr;
       }
     }
-    else {
-      // build using sort-based procedure
-      // put terms into vlist[i][0]
-      int* list[N];
-      memcpy(list, vlist, N * sizeof(int*));
-      int intList[N];
-      memcpy(intList, terms, N * sizeof(int));
-      int* temp = (int*)intList;
-      T* tList = (T*)temp;
-      int node;
-      T ev;
-      sortBuild(list, tList, getDomain()->getNumVariables(), 0, N, node, ev);
-      e.set(node, ev, getNodeLevel(node));
-    }
+  }
+  else {
+    // build using sort-based procedure
+    // put terms into vlist[i][0]
+    int* list[N];
+    memcpy(list, vlist, N * sizeof(int*));
+    int intList[N];
+    memcpy(intList, terms, N * sizeof(int));
+    int* temp = (int*)intList;
+    T* tList = (T*)temp;
+    int node;
+    T ev;
+    sortBuild(list, tList, getDomain()->getNumVariables(), 0, N, node, ev);
+    e.set(node, ev, getNodeLevel(node));
   }
   return forest::SUCCESS;
 }
@@ -1254,6 +1243,7 @@ mtmxd_node_manager::createEdgeInternal(const int* const* vlist,
     }
   }
   else {
+#if 1
     int result = 0;
     // build using sort-based procedure
     // put terms into vlist[i][0]
@@ -1270,6 +1260,22 @@ mtmxd_node_manager::createEdgeInternal(const int* const* vlist,
       result =
         sortBuild(list, pList, tList, getDomain()->getNumVariables(), 0, N);
     }
+#else
+    if (terms == 0) {
+      int terminalNode = getTerminalNode(
+          handleMultipleTerminalValues((T*)0, 0, N));
+      for (int i = 0; i < N; ++i)
+      {
+        addToTree((int*)vlist[i], (int*)vplist[i], terminalNode);
+      }
+    } else {
+      for (int i = 0; i < N; ++i)
+      {
+        addToTree((int*)vlist[i], (int*)vplist[i], getTerminalNode(terms[i]));
+      }
+    }
+    int result = convertTreeToMtMxd();
+#endif
     e.set(result, 0, getNodeLevel(result));
   }
 
@@ -1281,145 +1287,139 @@ template <typename T>
 int mtmxd_node_manager::sort(int** list, int** otherList, T* tList,
     int absLevel, int begin, int end)
 {
+  DCASSERT(tList != 0);
+
+  static vector<int*> sortedList;
+  static vector<int*> sortedOtherList;
+  static vector<T> sortedtList;
+  static vector<int> count;
+
   int N = end - begin;
   int levelSize = 0;
-  if (tList != 0) {
-    static vector<int*> sortedList;
-    static vector<int*> sortedOtherList;
-    static vector<T> sortedtList;
-    static vector<int> count;
 
-    if (int(sortedList.size()) < N) {
-      sortedList.resize(N);
-      sortedOtherList.resize(N);
-      sortedtList.resize(N);
-    }
-
-    // determine size for count[]
-    for (int i = begin; i < end; i++) {
-      int index = list[i][absLevel];
-      if (index > levelSize) { levelSize = index; }
-    }
-    // levelSize refers to the maximum index found so far,
-    // add 1 to convert to maximum size.
-    levelSize++;
-    // an extra space is needed at the end for the radix sort algorithm
-    if (int(count.size()) < 1 + levelSize) {
-      count.resize(levelSize + 1);
-    }
-    fill_n(count.begin(), 1 + levelSize, 0);
-
-    // go through list and count the number of entries in each "bucket"
-    for (int i = begin; i < end; i++) { count[list[i][absLevel]]++; }
-
-    // find starting index for each "bucket" in sorted lists
-    // levelSize == number of buckets
-    vector<int>::iterator last = count.begin() + levelSize;
-    for (vector<int>::iterator iter = count.begin(); iter != last; iter++)
-    {
-      *(iter+1) += *iter;
-      (*iter)--;
-    }
-    (*last)--;
-
-    // insert into correct positions in sorted lists
-    // go from last to first to preserve order
-    int** listPtr = list + end - 1;
-    int** firstListPtr = list + begin - 1;
-    int** otherListPtr = otherList + end - 1;
-    T* tListPtr = tList + end - 1;
-    for ( ; listPtr != firstListPtr; )
-    {
-      // getting index and get count[] ready for next insert
-      int index = count[(*listPtr)[absLevel]]--;
-      // insert at index
-      sortedList[index] = *listPtr--;
-      sortedOtherList[index] = *otherListPtr--;
-      sortedtList[index] = *tListPtr--;
-    }
-
-    // write sorted lists to the original lists
-    listPtr = list + begin;
-    otherListPtr = otherList + begin;
-    tListPtr = tList + begin;
-    vector<int*>::iterator sortedListIter = sortedList.begin();
-    vector<int*>::iterator sortedListEnd = sortedList.begin() + N;
-    vector<int*>::iterator sortedOtherListIter = sortedOtherList.begin();
-    typename vector<T>::iterator sortedtListIter = sortedtList.begin();
-    for ( ; sortedListIter != sortedListEnd; )
-    {
-      *listPtr++ = *sortedListIter++;
-      *otherListPtr++ = *sortedOtherListIter++;
-      *tListPtr++ = *sortedtListIter++;
-    }
+  if (int(sortedList.size()) < N) {
+    sortedList.resize(N);
+    sortedOtherList.resize(N);
+    sortedtList.resize(N);
   }
-  else {
-    // same as tList != 0, except that there is no tList to deal with
 
-    static vector<int*> sortedList;
-    static vector<int*> sortedOtherList;
-    static vector<int> count;
-
-    if (int(sortedList.size()) < N) {
-      sortedList.resize(N);
-      sortedOtherList.resize(N);
-    }
-
-    // determine size for count[]
-    for (int i = begin; i < end; i++) {
-      int index = list[i][absLevel];
-      if (index > levelSize) { levelSize = index; }
-    }
-    // levelSize refers to the maximum index found so far,
-    // add 1 to convert to maximum size.
-    levelSize++;
-    // an extra space is needed at the end for the radix sort algorithm
-    if (int(count.size()) < 1 + levelSize) {
-      count.resize(levelSize + 1);
-    }
-    fill_n(count.begin(), 1 + levelSize, 0);
-
-    // go through list and count the number of entries in each "bucket"
-    for (int i = begin; i < end; i++) { count[list[i][absLevel]]++; }
-
-    // find starting index for each "bucket" in sorted lists
-    // levelSize == number of buckets
-    vector<int>::iterator last = count.begin() + levelSize;
-    for (vector<int>::iterator iter = count.begin(); iter != last; iter++)
-    {
-      *(iter+1) += *iter;
-      (*iter)--;
-    }
-    (*last)--;
-
-    // insert into correct positions in sorted lists
-    // go from last to first to preserve order
-    int** listPtr = list + end - 1;
-    int** firstListPtr = list + begin - 1;
-    int** otherListPtr = otherList + end - 1;
-    for ( ; listPtr != firstListPtr; )
-    {
-      // getting index and get count[] ready for next insert
-      int index = count[(*listPtr)[absLevel]]--;
-      // insert at index
-      sortedList[index] = *listPtr--;
-      sortedOtherList[index] = *otherListPtr--;
-    }
-
-    // write sorted lists to the original lists
-    listPtr = list + begin;
-    otherListPtr = otherList + begin;
-    vector<int*>::iterator sortedListIter = sortedList.begin();
-    vector<int*>::iterator sortedListEnd = sortedList.begin() + N;
-    vector<int*>::iterator sortedOtherListIter = sortedOtherList.begin();
-    for ( ; sortedListIter != sortedListEnd; )
-    {
-      *listPtr++ = *sortedListIter++;
-      *otherListPtr++ = *sortedOtherListIter++;
-    }
+  // determine size for count[]
+  for (int i = begin; i < end; i++) {
+    int index = list[i][absLevel];
+    if (index > levelSize) { levelSize = index; }
   }
+  // levelSize refers to the maximum index found so far,
+  // add 1 to convert to maximum size.
+  levelSize++;
+  // an extra space is needed at the end for the radix sort algorithm
+  if (int(count.size()) < 1 + levelSize) {
+    count.resize(levelSize + 1);
+  }
+  fill_n(count.begin(), 1 + levelSize, 0);
+
+  // go through list and count the number of entries in each "bucket"
+  for (int i = begin; i < end; i++) { count[list[i][absLevel]]++; }
+
+  // find starting index for each "bucket" in sorted lists
+  // levelSize == number of buckets
+  vector<int>::iterator last = count.begin() + levelSize;
+  for (vector<int>::iterator iter = count.begin(); iter != last; ++iter)
+  {
+    *(iter+1) += *iter;
+    --*iter;
+  }
+  --*last;
+
+  // insert into correct positions in sorted lists
+  // go from last to first to preserve order
+  int** listPtr = list + end - 1;
+  int** firstListPtr = list + begin - 1;
+  int** otherListPtr = otherList + end - 1;
+  T* tListPtr = tList + end - 1;
+  for ( ; listPtr != firstListPtr; )
+  {
+    // getting index and get count[] ready for next insert
+    int index = count[(*listPtr)[absLevel]]--;
+    // insert at index
+    sortedList[index] = *listPtr--;
+    sortedOtherList[index] = *otherListPtr--;
+    sortedtList[index] = *tListPtr--;
+  }
+
+  // write sorted lists to the original lists
+  memcpy(list + begin, &sortedList[0], N * sizeof(int*));
+  memcpy(otherList + begin, &sortedOtherList[0], N * sizeof(int*));
+  memcpy(tList + begin, &sortedtList[0], N * sizeof(T));
   return levelSize;
 }
+
+
+template <>
+inline
+int mtmxd_node_manager::sort(int** list, int** otherList, bool* tList,
+    int absLevel, int begin, int end)
+{
+  int N = end - begin;
+  int levelSize = 0;
+
+  // same as tList != 0, except that there is no tList to deal with
+
+  static vector<int*> sortedList;
+  static vector<int*> sortedOtherList;
+  static vector<int> count;
+
+  if (int(sortedList.size()) < N) {
+    sortedList.resize(N);
+    sortedOtherList.resize(N);
+  }
+
+  // determine size for count[]
+  for (int i = begin; i < end; i++) {
+    int index = list[i][absLevel];
+    if (index > levelSize) { levelSize = index; }
+  }
+  // levelSize refers to the maximum index found so far,
+  // add 1 to convert to maximum size.
+  levelSize++;
+  // an extra space is needed at the end for the radix sort algorithm
+  if (int(count.size()) < 1 + levelSize) {
+    count.resize(levelSize + 1);
+  }
+  fill_n(count.begin(), 1 + levelSize, 0);
+
+  // go through list and count the number of entries in each "bucket"
+  for (int i = begin; i < end; i++) { count[list[i][absLevel]]++; }
+
+  // find starting index for each "bucket" in sorted lists
+  // levelSize == number of buckets
+  vector<int>::iterator last = count.begin() + levelSize;
+  for (vector<int>::iterator iter = count.begin(); iter != last; ++iter)
+  {
+    *(iter+1) += *iter;
+    --*iter;
+  }
+  --*last;
+
+  // insert into correct positions in sorted lists
+  // go from last to first to preserve order
+  int** listPtr = list + end - 1;
+  int** firstListPtr = list + begin - 1;
+  int** otherListPtr = otherList + end - 1;
+  for ( ; listPtr != firstListPtr; )
+  {
+    // getting index and get count[] ready for next insert
+    int index = count[(*listPtr)[absLevel]]--;
+    // insert at index
+    sortedList[index] = *listPtr--;
+    sortedOtherList[index] = *otherListPtr--;
+  }
+
+  // write sorted lists to the original lists
+  memcpy(list + begin, &sortedList[0], N * sizeof(int*));
+  memcpy(otherList + begin, &sortedOtherList[0], N * sizeof(int*));
+  return levelSize;
+}
+
 
 template <typename T>
 int mtmxd_node_manager::sortBuild(int** unpList, int** pList, T* tList,
@@ -1486,6 +1486,163 @@ int mtmxd_node_manager::sortBuild(int** unpList, int** pList, T* tList,
   }
 
   return reduceNode(result);
+}
+
+
+inline
+int mtmxd_node_manager::convertToMtMxd(int addr, int height)
+{
+  DCASSERT(height != 0);
+
+  int level = height > 0
+    ? expertDomain->getVariableWithHeight(height)
+    : -expertDomain->getVariableWithHeight(-height);
+  int* ptr = getAddress(level, addr);
+  DCASSERT(ptr[0] >= 5);
+
+  // find largest index
+  int largestIndex = -1;
+  for (int* i = ptr + 1 + *ptr, *begin = ptr + 1; i != begin; )
+  {
+    --i;
+    if (*i != 0) { largestIndex = i - begin; break; }
+  }
+
+  DCASSERT(largestIndex != -1);
+
+  // build node at this level
+  int result = createTempNode(level, largestIndex + 1, false);
+  int* resultPtr = getFullNodeDownPtrs(result);
+
+  // there is a chance that creating the temp node at the same level
+  // will invalidate ptr[], so reset this pointer.
+  ptr = getAddress(level, addr);
+
+  // non-terminal case: build children
+  if (height != -1) {
+    int nextHeight = height > 0? -height: -height-1;
+    for (int* i = ptr + 1, *end = i + largestIndex + 1; i != end; ++i)
+    {
+      *resultPtr++ = (0 == *i? 0: convertToMtMxd(*i, nextHeight));
+    }
+  } else {
+    for (int* i = ptr + 1, *end = i + largestIndex + 1; i != end; )
+    {
+      *resultPtr++ = *i++;
+    }
+  }
+
+  makeHole(level, addr, *ptr + 1);
+
+  return reduceNode(result);
+}
+
+
+inline
+int mtmxd_node_manager::convertTreeToMtMxd()
+{
+  int result =
+    root == 0
+    ? 0
+    : convertToMtMxd(root, expertDomain->getNumVariables());
+  root = 0;
+  return result;
+}
+
+
+inline
+void mtmxd_node_manager::addToTree(int* unpList, int* pList, int terminalNode)
+{
+  if (terminalNode == 0) return;
+
+  // Tree starts at root. root stores an offset which together with
+  // the root level (usually the top variable in the domain),
+  // represents a unique address.
+  // All "nodes" store offsets to their "downpointers", except for
+  // the nodes at level -1 (i.e. the first primed level above terminals).
+  // The nodes at level -1 store the actual terminal nodes.
+
+  // getHole() will not accept a hole size smaller than 5.
+  const int minNodeSize = 5;
+
+  const int* h2lMap = expertDomain->getHeightsToLevelsMap();
+  int currHeight = expertDomain->getNumVariables();
+  int currLevel = h2lMap[currHeight];
+
+  if (root == 0) {
+    root = getHole(currLevel, minNodeSize + 1, true);
+    int* nodePtr = getAddress(currLevel, root);
+    *nodePtr = minNodeSize;
+    memset(nodePtr + 1, 0, *nodePtr * sizeof(int));
+  }
+
+  int* currNode = &root;
+  while (true) {
+    DCASSERT(*currNode != 0);
+
+    // unprimed level
+    int currIndex = unpList[currLevel];
+    int* ptr = getAddress(currLevel, *currNode);
+    // expand currNode if necessary
+    if (*ptr <= currIndex) {
+      DCASSERT(currIndex + 2 >= minNodeSize);
+      int newSize =
+        MIN( MAX( currIndex + 1, *ptr * 2 ) , getLevelSize(currLevel) );
+      int temp = getHole(currLevel, newSize + 1, true);
+      int* tempPtr = getAddress(currLevel, temp);
+      *tempPtr = newSize;
+      ptr = getAddress(currLevel, *currNode);
+      memcpy(tempPtr + 1, ptr + 1, *ptr * sizeof(int));
+      memset(tempPtr + 1 + *ptr, 0, (*tempPtr - *ptr) * sizeof(int));
+      makeHole(currLevel, *currNode, *ptr + 1);
+      *currNode = temp;
+      ptr = tempPtr;
+    }
+    // create a new branch if necessary
+    if (ptr[currIndex + 1] == 0) {
+      ptr[currIndex + 1] = getHole(-currLevel, minNodeSize + 1, true);
+      int* nodePtr = getAddress(-currLevel, ptr[currIndex + 1]);
+      *nodePtr = minNodeSize;
+      memset(nodePtr + 1, 0, *nodePtr * sizeof(int));
+    }
+    currNode = ptr + 1 + currIndex;
+
+    DCASSERT(*currNode != 0);
+    // primed level
+    currIndex = pList[currLevel];
+    ptr = getAddress(-currLevel, *currNode);
+    // expand currNode if necessary
+    if (*ptr <= currIndex) {
+      DCASSERT(currIndex +2 >= minNodeSize);
+      int newSize =
+        MIN( MAX( currIndex + 1, *ptr * 2 ) , getLevelSize(-currLevel) );
+      int temp = getHole(-currLevel, newSize + 1, true);
+      int* tempPtr = getAddress(-currLevel, temp);
+      *tempPtr = newSize;
+      ptr = getAddress(-currLevel, *currNode);
+      memcpy(tempPtr + 1, ptr + 1, *ptr * sizeof(int));
+      memset(tempPtr + 1 + *ptr, 0, (*tempPtr - *ptr) * sizeof(int));
+      makeHole(-currLevel, *currNode, *ptr + 1);
+      *currNode = temp;
+      ptr = tempPtr;
+    }
+    // deal with terminal case (height == -1, i.e. first level
+    // above the terminal nodes).
+    if (currHeight == 1) {
+      // store the terminals and exit
+      ptr[1 + currIndex] = terminalNode;
+      break;
+    }
+    // create a new branch if necessary
+    currLevel = h2lMap[--currHeight];
+    if (ptr[currIndex + 1] == 0) {
+      ptr[currIndex + 1] = getHole(currLevel, minNodeSize + 1, true);
+      int* nodePtr = getAddress(currLevel, ptr[currIndex + 1]);
+      *nodePtr = minNodeSize;
+      memset(nodePtr + 1, 0, *nodePtr * sizeof(int));
+    }
+    currNode = ptr + 1 + currIndex;
+  }
 }
 
 

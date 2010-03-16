@@ -748,7 +748,7 @@ mtmxd_node_manager::mtmxd_node_manager(domain *d, forest::range_type t)
 : node_manager(d, true, t,
       forest::MULTI_TERMINAL, forest::IDENTITY_REDUCED,
       forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION)
-{ }
+{ root = 0; }
 
 
 mtmxd_node_manager::mtmxd_node_manager(domain *d,
