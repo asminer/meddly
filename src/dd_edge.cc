@@ -138,9 +138,9 @@ unsigned dd_edge::getNodeCount() const
   return smart_cast<expert_forest*>(parent)->getNodeCount(node);
 }
 
-unsigned dd_edge::getEdgeCount() const
+unsigned dd_edge::getEdgeCount(bool countZeroes) const
 {
-  return smart_cast<expert_forest*>(parent)->getEdgeCount(node);
+  return smart_cast<expert_forest*>(parent)->getEdgeCount(node, countZeroes);
 }
 
 //

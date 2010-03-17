@@ -329,7 +329,7 @@ class expert_forest : public forest
 
     /// Returns the edge count for this node. The edge count is the number
     /// of unique edges in the decision diagram represented by this node.
-    virtual unsigned getEdgeCount(int node) const = 0;
+    virtual unsigned getEdgeCount(int node, bool countZeroes) const = 0;
 
     /// Display the contents of node
     virtual void showNode(FILE* s, int node, int verbose = 0) const = 0;

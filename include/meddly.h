@@ -972,10 +972,15 @@ class dd_edge {
     unsigned getNodeCount() const;
 
     /** Counts the number of unique edges in this decision diagram.
+        @param  countZeroes
+                        if true, the stored zero edges are also counted
+                        (sparse nodes do not store zero edges, so this
+                        does not effect them; truncated nodes do store
+                        some zero edges, so those edges will be counted).
         @return         the number of unique edges starting at the root node
                         of this dd_edge.
     */
-    unsigned getEdgeCount() const;
+    unsigned getEdgeCount(bool countZeroes = false) const;
 
     /** Modifies the dd_edge fields.
         The dd_edge is cleared (it will still belong to the same forest),

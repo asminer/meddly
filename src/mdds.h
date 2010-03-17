@@ -258,7 +258,7 @@ class node_manager : public expert_forest {
     void showInfo(FILE* strm, int verbosity);
     double getCardinality(int p) const;
     unsigned getNodeCount(int p) const;
-    unsigned getEdgeCount(int p) const;
+    unsigned getEdgeCount(int p, bool countZeroes) const;
 
     int getCurrentNumNodes() const;
     int getCurrentMemoryUsed() const;

@@ -1044,7 +1044,7 @@ unsigned node_manager::getNodeCount(int p) const
 }
 
 
-unsigned node_manager::getEdgeCount(int p) const
+unsigned node_manager::getEdgeCount(int p, bool countZeroes) const
 {
   std::set<int> discovered;
   std::queue<int> toExpand;
@@ -1067,7 +1067,8 @@ unsigned node_manager::getEdgeCount(int p) const
       for (int i = 0; i < sz; ++i)
       {
         int temp = getFullNodeDownPtr(p, i);
-        if (temp != 0) count++;
+        if (countZeroes) count++;
+        else if (temp != 0) count++;
         // insert into discovered and toExpand if new
         if (discovered.find(temp) == discovered.end()) {
           toExpand.push(temp);
@@ -1080,7 +1081,8 @@ unsigned node_manager::getEdgeCount(int p) const
       for (int i = 0; i < sz; ++i)
       {
         int temp = getSparseNodeDownPtr(p, i);
-        if (temp != 0) count++;
+        if (countZeroes) count++;
+        else if (temp != 0) count++;
         // insert into discovered and toExpand if new
         if (discovered.find(temp) == discovered.end()) {
           toExpand.push(temp);
