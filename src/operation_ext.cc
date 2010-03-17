@@ -1960,6 +1960,7 @@ void mxd_apply_operation::singleExpandA(op_info* owner, int a, int b,
 
   if (expertForest->isFullNode(a)) {
     const int aSize = expertForest->getFullNodeSize(a);
+    DCASSERT(aSize <= resultSize);
     int i = 0;
     for ( ; i < aSize; ++i)
     {
@@ -1982,9 +1983,11 @@ void mxd_apply_operation::singleExpandA(op_info* owner, int a, int b,
       for (int index = expertForest->getSparseNodeIndex(a, aIndex);
           i < index; ++i)
       {
+        DCASSERT(i < resultSize);
         expertForest->setDownPtr(result, i, zeroB);
       }
       DCASSERT(i == expertForest->getSparseNodeIndex(a, aIndex));
+      DCASSERT(i < resultSize);
       int tempResult =
         computeIdent(owner, expertForest->getSparseNodeDownPtr(a, aIndex), b);
       expertForest->setDownPtr(result, i, tempResult);
@@ -2012,6 +2015,7 @@ void mxd_apply_operation::singleExpandB(op_info* owner, int a, int b,
 
   if (expertForest->isFullNode(b)) {
     const int bSize = expertForest->getFullNodeSize(b);
+    DCASSERT(bSize <= resultSize);
     int i = 0;
     for ( ; i < bSize; ++i)
     {
@@ -2034,9 +2038,11 @@ void mxd_apply_operation::singleExpandB(op_info* owner, int a, int b,
       for (int index = expertForest->getSparseNodeIndex(b, bIndex);
           i < index; ++i)
       {
+        DCASSERT(i < resultSize);
         expertForest->setDownPtr(result, i, aZero);
       }
       DCASSERT(i == expertForest->getSparseNodeIndex(b, bIndex));
+      DCASSERT(i < resultSize);
       int tempResult =
         computeIdent(owner, a, expertForest->getSparseNodeDownPtr(b, bIndex));
       expertForest->setDownPtr(result, i, tempResult);
@@ -2068,14 +2074,17 @@ void mxd_apply_operation::expandA(op_info* owner, int a, int b,
   int zeroOpZero = computeIdent(owner, 0, 0);
   int zeroOpB = computeIdent(owner, 0, b);
 
+  int pResultSize = expertForest->getLevelSize(-resultLevel);
+
   if (expertForest->isFullNode(a)) {
     const int aSize = expertForest->getFullNodeSize(a);
+    DCASSERT(aSize <= resultSize);
     for (int i = 0; i < aSize; ++i)
     {
       int iA = expertForest->getFullNodeDownPtr(a, i);
-      int iResult = expertForest->createTempNode(-resultLevel, resultSize);
+      int iResult = expertForest->createTempNode(-resultLevel, pResultSize);
       if (iA == 0) {
-        for (int j = 0; j < resultSize; ++j)
+        for (int j = 0; j < pResultSize; ++j)
           expertForest->setDownPtr(iResult, j, (i == j)? zeroOpB: zeroOpZero);
       }
       else if (expertForest->isFullNode(iA)) {
@@ -2095,7 +2104,7 @@ void mxd_apply_operation::expandA(op_info* owner, int a, int b,
             expertForest->unlinkNode(tempResult);
           }
         }
-        for (int j = iASize; j < resultSize; ++j)
+        for (int j = iASize; j < pResultSize; ++j)
         {
           expertForest->setDownPtr(iResult, j, (i == j)? zeroOpB: zeroOpZero);
         }
@@ -2124,7 +2133,7 @@ void mxd_apply_operation::expandA(op_info* owner, int a, int b,
           expertForest->unlinkNode(tempResult);
         }
         DCASSERT(j == expertForest->getSparseNodeIndex(iA, iASize - 1) + 1);
-        for ( ; j < resultSize; ++j)
+        for ( ; j < pResultSize; ++j)
         {
           expertForest->setDownPtr(iResult, j, (i == j)? zeroOpB: zeroOpZero);
         }
@@ -2136,8 +2145,8 @@ void mxd_apply_operation::expandA(op_info* owner, int a, int b,
     // TODO: can optimize when zeroOpZero == zeroOpB == 0
     for (int i = aSize; i < resultSize; ++i)
     {
-      int iResult = expertForest->createTempNode(-resultLevel, resultSize);
-      for (int j = 0; j < resultSize; ++j)
+      int iResult = expertForest->createTempNode(-resultLevel, pResultSize);
+      for (int j = 0; j < pResultSize; ++j)
         expertForest->setDownPtr(iResult, j, (i == j)? zeroOpB: zeroOpZero);
       iResult = expertForest->reduceNode(iResult);
       expertForest->setDownPtr(result, i, iResult);
@@ -2147,14 +2156,15 @@ void mxd_apply_operation::expandA(op_info* owner, int a, int b,
   else {
     DCASSERT(expertForest->isSparseNode(a));
     const int aSize = expertForest->getSparseNodeSize(a);
+    DCASSERT(expertForest->getSparseNodeIndex(a, aSize-1) < resultSize);
     int i = 0;
     for (int aIndex = 0; aIndex < aSize; ++aIndex, ++i)
     {
       for (int index = expertForest->getSparseNodeIndex(a, aIndex);
           i < index; ++i)
       {
-        int iResult = expertForest->createTempNode(-resultLevel, resultSize);
-        for (int j = 0; j < resultSize; ++j)
+        int iResult = expertForest->createTempNode(-resultLevel, pResultSize);
+        for (int j = 0; j < pResultSize; ++j)
           expertForest->setDownPtr(iResult, j, (i == j)? zeroOpB: zeroOpZero);
         iResult = expertForest->reduceNode(iResult);
         expertForest->setDownPtr(result, i, iResult);
@@ -2163,7 +2173,7 @@ void mxd_apply_operation::expandA(op_info* owner, int a, int b,
 
       DCASSERT(i == expertForest->getSparseNodeIndex(a, aIndex));
       int iA = expertForest->getSparseNodeDownPtr(a, aIndex);
-      int iResult = expertForest->createTempNode(-resultLevel, resultSize);
+      int iResult = expertForest->createTempNode(-resultLevel, pResultSize);
       DCASSERT(iA != 0 && iA != -1);
       if (expertForest->isFullNode(iA)) {
         const int iASize = expertForest->getFullNodeSize(iA);
@@ -2182,7 +2192,7 @@ void mxd_apply_operation::expandA(op_info* owner, int a, int b,
             expertForest->unlinkNode(tempResult);
           }
         }
-        for (int j = iASize; j < resultSize; ++j)
+        for (int j = iASize; j < pResultSize; ++j)
         {
           expertForest->setDownPtr(iResult, j, (i == j)? zeroOpB: zeroOpZero);
         }
@@ -2211,7 +2221,7 @@ void mxd_apply_operation::expandA(op_info* owner, int a, int b,
           expertForest->unlinkNode(tempResult);
         }
         DCASSERT(j == expertForest->getSparseNodeIndex(iA, iASize - 1) + 1);
-        for ( ; j < resultSize; ++j)
+        for ( ; j < pResultSize; ++j)
         {
           expertForest->setDownPtr(iResult, j, (i == j)? zeroOpB: zeroOpZero);
         }
@@ -2225,8 +2235,8 @@ void mxd_apply_operation::expandA(op_info* owner, int a, int b,
     DCASSERT(i == expertForest->getSparseNodeIndex(a, aSize - 1) + 1);
     for ( ; i < resultSize; ++i)
     {
-      int iResult = expertForest->createTempNode(-resultLevel, resultSize);
-      for (int j = 0; j < resultSize; ++j)
+      int iResult = expertForest->createTempNode(-resultLevel, pResultSize);
+      for (int j = 0; j < pResultSize; ++j)
         expertForest->setDownPtr(iResult, j, (i == j)? zeroOpB: zeroOpZero);
       iResult = expertForest->reduceNode(iResult);
       expertForest->setDownPtr(result, i, iResult);
@@ -2255,14 +2265,17 @@ void mxd_apply_operation::expandB(op_info* owner, int a, int b,
   int zeroOpZero = computeIdent(owner, 0, 0);
   int aOpZero = computeIdent(owner, a, 0);
 
+  int pResultSize = expertForest->getLevelSize(-resultLevel);
+
   if (expertForest->isFullNode(b)) {
     const int bSize = expertForest->getFullNodeSize(b);
+    DCASSERT(bSize <= resultSize);
     for (int i = 0; i < bSize; ++i)
     {
       int iB = expertForest->getFullNodeDownPtr(b, i);
-      int iResult = expertForest->createTempNode(-resultLevel, resultSize);
+      int iResult = expertForest->createTempNode(-resultLevel, pResultSize);
       if (iB == 0) {
-        for (int j = 0; j < resultSize; ++j)
+        for (int j = 0; j < pResultSize; ++j)
           expertForest->setDownPtr(iResult, j, (i == j)? aOpZero: zeroOpZero);
       }
       else if (expertForest->isFullNode(iB)) {
@@ -2282,7 +2295,7 @@ void mxd_apply_operation::expandB(op_info* owner, int a, int b,
             expertForest->unlinkNode(tempResult);
           }
         }
-        for (int j = iBSize; j < resultSize; ++j)
+        for (int j = iBSize; j < pResultSize; ++j)
         {
           expertForest->setDownPtr(iResult, j, (i == j)? aOpZero: zeroOpZero);
         }
@@ -2311,7 +2324,7 @@ void mxd_apply_operation::expandB(op_info* owner, int a, int b,
           expertForest->unlinkNode(tempResult);
         }
         DCASSERT(j == expertForest->getSparseNodeIndex(iB, iBSize - 1) + 1);
-        for ( ; j < resultSize; ++j)
+        for ( ; j < pResultSize; ++j)
         {
           expertForest->setDownPtr(iResult, j, (i == j)? aOpZero: zeroOpZero);
         }
@@ -2323,8 +2336,8 @@ void mxd_apply_operation::expandB(op_info* owner, int a, int b,
     // TODO: can optimize when zeroOpZero == aOpZero == 0
     for (int i = bSize; i < resultSize; ++i)
     {
-      int iResult = expertForest->createTempNode(-resultLevel, resultSize);
-      for (int j = 0; j < resultSize; ++j)
+      int iResult = expertForest->createTempNode(-resultLevel, pResultSize);
+      for (int j = 0; j < pResultSize; ++j)
         expertForest->setDownPtr(iResult, j, (i == j)? aOpZero: zeroOpZero);
       iResult = expertForest->reduceNode(iResult);
       expertForest->setDownPtr(result, i, iResult);
@@ -2340,8 +2353,8 @@ void mxd_apply_operation::expandB(op_info* owner, int a, int b,
       for (int index = expertForest->getSparseNodeIndex(b, bIndex);
           i < index; ++i)
       {
-        int iResult = expertForest->createTempNode(-resultLevel, resultSize);
-        for (int j = 0; j < resultSize; ++j)
+        int iResult = expertForest->createTempNode(-resultLevel, pResultSize);
+        for (int j = 0; j < pResultSize; ++j)
           expertForest->setDownPtr(iResult, j, (i == j)? aOpZero: zeroOpZero);
         iResult = expertForest->reduceNode(iResult);
         expertForest->setDownPtr(result, i, iResult);
@@ -2350,7 +2363,7 @@ void mxd_apply_operation::expandB(op_info* owner, int a, int b,
 
       DCASSERT(i == expertForest->getSparseNodeIndex(b, bIndex));
       int iB = expertForest->getSparseNodeDownPtr(b, bIndex);
-      int iResult = expertForest->createTempNode(-resultLevel, resultSize);
+      int iResult = expertForest->createTempNode(-resultLevel, pResultSize);
       DCASSERT(iB != 0 && iB != -1);
       if (expertForest->isFullNode(iB)) {
         const int iBSize = expertForest->getFullNodeSize(iB);
@@ -2369,7 +2382,7 @@ void mxd_apply_operation::expandB(op_info* owner, int a, int b,
             expertForest->unlinkNode(tempResult);
           }
         }
-        for (int j = iBSize; j < resultSize; ++j)
+        for (int j = iBSize; j < pResultSize; ++j)
         {
           expertForest->setDownPtr(iResult, j, (i == j)? aOpZero: zeroOpZero);
         }
@@ -2398,12 +2411,13 @@ void mxd_apply_operation::expandB(op_info* owner, int a, int b,
           expertForest->unlinkNode(tempResult);
         }
         DCASSERT(j == expertForest->getSparseNodeIndex(iB, iBSize - 1) + 1);
-        for ( ; j < resultSize; ++j)
+        for ( ; j < pResultSize; ++j)
         {
           expertForest->setDownPtr(iResult, j, (i == j)? aOpZero: zeroOpZero);
         }
       }
       iResult = expertForest->reduceNode(iResult);
+      DCASSERT(i < resultSize);
       expertForest->setDownPtr(result, i, iResult);
       expertForest->unlinkNode(iResult);
     }
@@ -2412,8 +2426,8 @@ void mxd_apply_operation::expandB(op_info* owner, int a, int b,
     DCASSERT(i == expertForest->getSparseNodeIndex(b, bSize - 1) + 1);
     for ( ; i < resultSize; ++i)
     {
-      int iResult = expertForest->createTempNode(-resultLevel, resultSize);
-      for (int j = 0; j < resultSize; ++j)
+      int iResult = expertForest->createTempNode(-resultLevel, pResultSize);
+      for (int j = 0; j < pResultSize; ++j)
         expertForest->setDownPtr(iResult, j, (i == j)? aOpZero: zeroOpZero);
       iResult = expertForest->reduceNode(iResult);
       expertForest->setDownPtr(result, i, iResult);
@@ -2880,11 +2894,13 @@ void mxd_alt_apply_operation::expandSkippedLevel(op_info* owner,
     // both a and b are below result
     int zeroZeroAtOneLevelBelow = computeIdent(owner, resultLevel-1, 0, 0);
     int aBAtOneLevelBelow = computeIdent(owner, resultLevel-1, a, b);
+    int pResultSize = expertForest->getLevelSize(-resultLevel);
+
     for (int i = 0; i < resultSize; ++i)
     {
       // create primed node at -resultLevel
-      int p = expertForest->createTempNode(-resultLevel, resultSize, false);
-      for (int j = 0; j < resultSize; ++j)
+      int p = expertForest->createTempNode(-resultLevel, pResultSize, false);
+      for (int j = 0; j < pResultSize; ++j)
       {
         // create unprimed node at resultLevel-1
         expertForest->setDownPtrWoUnlink(p, j,
@@ -3033,15 +3049,17 @@ void mxd_alt_apply_operation::expandA(op_info* owner, int a, int b,
   int zeroOpZero = computeIdent(owner, resultLevel-1, 0, 0);
   int zeroOpB = computeIdent(owner, resultLevel-1, 0, b);
 
+  int pResultSize = expertForest->getLevelSize(-resultLevel);
+
   if (expertForest->isFullNode(a)) {
     const int aSize = expertForest->getFullNodeSize(a);
     for (int i = 0; i < aSize; ++i)
     {
       int iA = expertForest->getFullNodeDownPtr(a, i);
       int iResult =
-        expertForest->createTempNode(-resultLevel, resultSize, false);
+        expertForest->createTempNode(-resultLevel, pResultSize, false);
       if (iA == 0) {
-        for (int j = 0; j < resultSize; ++j)
+        for (int j = 0; j < pResultSize; ++j)
           expertForest->setDownPtrWoUnlink(iResult, j,
               i == j? zeroOpB: zeroOpZero);
       }
@@ -3063,7 +3081,7 @@ void mxd_alt_apply_operation::expandA(op_info* owner, int a, int b,
             expertForest->unlinkNode(tempResult);
           }
         }
-        for (int j = iASize; j < resultSize; ++j)
+        for (int j = iASize; j < pResultSize; ++j)
         {
           expertForest->setDownPtrWoUnlink(iResult, j,
               i == j? zeroOpB: zeroOpZero);
@@ -3094,7 +3112,7 @@ void mxd_alt_apply_operation::expandA(op_info* owner, int a, int b,
           expertForest->unlinkNode(tempResult);
         }
         DCASSERT(j == expertForest->getSparseNodeIndex(iA, iASize - 1) + 1);
-        for ( ; j < resultSize; ++j)
+        for ( ; j < pResultSize; ++j)
         {
           expertForest->setDownPtrWoUnlink(iResult, j,
               i == j? zeroOpB: zeroOpZero);
@@ -3108,8 +3126,8 @@ void mxd_alt_apply_operation::expandA(op_info* owner, int a, int b,
     for (int i = aSize; i < resultSize; ++i)
     {
       int iResult =
-        expertForest->createTempNode(-resultLevel, resultSize, false);
-      for (int j = 0; j < resultSize; ++j)
+        expertForest->createTempNode(-resultLevel, pResultSize, false);
+      for (int j = 0; j < pResultSize; ++j)
         expertForest->setDownPtrWoUnlink(iResult, j,
             i == j? zeroOpB: zeroOpZero);
       iResult = expertForest->reduceNode(iResult);
@@ -3127,8 +3145,8 @@ void mxd_alt_apply_operation::expandA(op_info* owner, int a, int b,
           i < index; ++i)
       {
         int iResult =
-          expertForest->createTempNode(-resultLevel, resultSize, false);
-        for (int j = 0; j < resultSize; ++j)
+          expertForest->createTempNode(-resultLevel, pResultSize, false);
+        for (int j = 0; j < pResultSize; ++j)
           expertForest->setDownPtrWoUnlink(iResult, j,
               i == j? zeroOpB: zeroOpZero);
         iResult = expertForest->reduceNode(iResult);
@@ -3139,7 +3157,7 @@ void mxd_alt_apply_operation::expandA(op_info* owner, int a, int b,
       DCASSERT(i == expertForest->getSparseNodeIndex(a, aIndex));
       int iA = expertForest->getSparseNodeDownPtr(a, aIndex);
       int iResult =
-        expertForest->createTempNode(-resultLevel, resultSize, false);
+        expertForest->createTempNode(-resultLevel, pResultSize, false);
       DCASSERT(iA != 0 && iA != -1);
       if (expertForest->isFullNode(iA)) {
         const int iASize = expertForest->getFullNodeSize(iA);
@@ -3158,7 +3176,7 @@ void mxd_alt_apply_operation::expandA(op_info* owner, int a, int b,
             expertForest->unlinkNode(tempResult);
           }
         }
-        for (int j = iASize; j < resultSize; ++j)
+        for (int j = iASize; j < pResultSize; ++j)
         {
           expertForest->setDownPtrWoUnlink(iResult, j,
               i == j? zeroOpB: zeroOpZero);
@@ -3189,7 +3207,7 @@ void mxd_alt_apply_operation::expandA(op_info* owner, int a, int b,
           expertForest->unlinkNode(tempResult);
         }
         DCASSERT(j == expertForest->getSparseNodeIndex(iA, iASize - 1) + 1);
-        for ( ; j < resultSize; ++j)
+        for ( ; j < pResultSize; ++j)
         {
           expertForest->setDownPtrWoUnlink(iResult, j,
               i == j? zeroOpB: zeroOpZero);
@@ -3205,8 +3223,8 @@ void mxd_alt_apply_operation::expandA(op_info* owner, int a, int b,
     for ( ; i < resultSize; ++i)
     {
       int iResult =
-        expertForest->createTempNode(-resultLevel, resultSize, false);
-      for (int j = 0; j < resultSize; ++j)
+        expertForest->createTempNode(-resultLevel, pResultSize, false);
+      for (int j = 0; j < pResultSize; ++j)
         expertForest->setDownPtrWoUnlink(iResult, j,
             i == j? zeroOpB: zeroOpZero);
       iResult = expertForest->reduceNode(iResult);
@@ -3237,15 +3255,17 @@ void mxd_alt_apply_operation::expandB(op_info* owner, int a, int b,
   int zeroOpZero = computeIdent(owner, resultLevel-1, 0, 0);
   int aOpZero = computeIdent(owner, resultLevel-1, a, 0);
 
+  int pResultSize = expertForest->getLevelSize(-resultLevel);
+
   if (expertForest->isFullNode(b)) {
     const int bSize = expertForest->getFullNodeSize(b);
     for (int i = 0; i < bSize; ++i)
     {
       int iB = expertForest->getFullNodeDownPtr(b, i);
       int iResult =
-        expertForest->createTempNode(-resultLevel, resultSize, false);
+        expertForest->createTempNode(-resultLevel, pResultSize, false);
       if (iB == 0) {
-        for (int j = 0; j < resultSize; ++j)
+        for (int j = 0; j < pResultSize; ++j)
           expertForest->setDownPtrWoUnlink(iResult, j,
               i == j? aOpZero: zeroOpZero);
       }
@@ -3267,7 +3287,7 @@ void mxd_alt_apply_operation::expandB(op_info* owner, int a, int b,
             expertForest->unlinkNode(tempResult);
           }
         }
-        for (int j = iBSize; j < resultSize; ++j)
+        for (int j = iBSize; j < pResultSize; ++j)
         {
           expertForest->setDownPtrWoUnlink(iResult, j,
               i == j? aOpZero: zeroOpZero);
@@ -3298,7 +3318,7 @@ void mxd_alt_apply_operation::expandB(op_info* owner, int a, int b,
           expertForest->unlinkNode(tempResult);
         }
         DCASSERT(j == expertForest->getSparseNodeIndex(iB, iBSize - 1) + 1);
-        for ( ; j < resultSize; ++j)
+        for ( ; j < pResultSize; ++j)
         {
           expertForest->setDownPtrWoUnlink(iResult, j,
               i == j? aOpZero: zeroOpZero);
@@ -3312,8 +3332,8 @@ void mxd_alt_apply_operation::expandB(op_info* owner, int a, int b,
     for (int i = bSize; i < resultSize; ++i)
     {
       int iResult =
-        expertForest->createTempNode(-resultLevel, resultSize, false);
-      for (int j = 0; j < resultSize; ++j)
+        expertForest->createTempNode(-resultLevel, pResultSize, false);
+      for (int j = 0; j < pResultSize; ++j)
         expertForest->setDownPtrWoUnlink(iResult, j,
             i == j? aOpZero: zeroOpZero);
       iResult = expertForest->reduceNode(iResult);
@@ -3331,8 +3351,8 @@ void mxd_alt_apply_operation::expandB(op_info* owner, int a, int b,
           i < index; ++i)
       {
         int iResult =
-          expertForest->createTempNode(-resultLevel, resultSize, false);
-        for (int j = 0; j < resultSize; ++j)
+          expertForest->createTempNode(-resultLevel, pResultSize, false);
+        for (int j = 0; j < pResultSize; ++j)
           expertForest->setDownPtrWoUnlink(iResult, j,
               i == j? aOpZero: zeroOpZero);
         iResult = expertForest->reduceNode(iResult);
@@ -3343,7 +3363,7 @@ void mxd_alt_apply_operation::expandB(op_info* owner, int a, int b,
       DCASSERT(i == expertForest->getSparseNodeIndex(b, bIndex));
       int iB = expertForest->getSparseNodeDownPtr(b, bIndex);
       int iResult =
-        expertForest->createTempNode(-resultLevel, resultSize, false);
+        expertForest->createTempNode(-resultLevel, pResultSize, false);
       DCASSERT(iB != 0 && iB != -1);
       if (expertForest->isFullNode(iB)) {
         const int iBSize = expertForest->getFullNodeSize(iB);
@@ -3363,7 +3383,7 @@ void mxd_alt_apply_operation::expandB(op_info* owner, int a, int b,
             expertForest->unlinkNode(tempResult);
           }
         }
-        for (int j = iBSize; j < resultSize; ++j)
+        for (int j = iBSize; j < pResultSize; ++j)
         {
           expertForest->setDownPtrWoUnlink(iResult, j,
               i == j? aOpZero: zeroOpZero);
@@ -3394,7 +3414,7 @@ void mxd_alt_apply_operation::expandB(op_info* owner, int a, int b,
           expertForest->unlinkNode(tempResult);
         }
         DCASSERT(j == expertForest->getSparseNodeIndex(iB, iBSize - 1) + 1);
-        for ( ; j < resultSize; ++j)
+        for ( ; j < pResultSize; ++j)
         {
           expertForest->setDownPtrWoUnlink(iResult, j,
               i == j? aOpZero: zeroOpZero);
@@ -3410,8 +3430,8 @@ void mxd_alt_apply_operation::expandB(op_info* owner, int a, int b,
     for ( ; i < resultSize; ++i)
     {
       int iResult =
-        expertForest->createTempNode(-resultLevel, resultSize, false);
-      for (int j = 0; j < resultSize; ++j)
+        expertForest->createTempNode(-resultLevel, pResultSize, false);
+      for (int j = 0; j < pResultSize; ++j)
         expertForest->setDownPtrWoUnlink(iResult, j,
             i == j? aOpZero: zeroOpZero);
       iResult = expertForest->reduceNode(iResult);

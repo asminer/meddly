@@ -650,7 +650,7 @@ inline int node_manager::getDownPtrAfterIndex(int p, int i, int &index)
 inline int node_manager::getDownPtr(int p, int i) const {
   DCASSERT(isActiveNode(p));
   if (isTerminalNode(p)) return p;
-  CHECK_RANGE(0, i, getLevelSize(getNodeLevel(p)));
+  DCASSERT(i >= 0);
   if (isFullNode(p)) {
     // full or trunc-full node
     if (getFullNodeSize(p) > i) return getFullNodeDownPtr(p, i);
