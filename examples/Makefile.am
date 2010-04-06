@@ -15,7 +15,8 @@ test_evmdd \
 build_expression \
 kan1_batch \
 dining_phils \
-rubiks_cube
+rubiks_cube \
+nqueens
 
 CXXFLAGS = 
 CXXFLAGS += -Wall
@@ -58,3 +59,7 @@ rubiks_cube_LDADD = ../src/libmeddly.la
 
 test_evmdd_SOURCES = test_evmdd.cc
 test_evmdd_LDADD = ../src/libmeddly.la
+
+nqueens_SOURCES = nqueens.cc
+nqueens_LDADD = ../src/libmeddly.la
+

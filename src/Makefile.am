@@ -6,10 +6,14 @@
 
 lib_LTLIBRARIES = libmeddly.la
 
+_revision:
+	./BuildRevNo
+
 revision.h:
 	./BuildRevNo
 
-BUILT_SOURCES = revision.h
+BUILT_SOURCES = _revision revision.h 
+CLEANFILES = revision.h
 
 libmeddly_la_SOURCES = \
 	../include/meddly_expert.h \
