@@ -19,12 +19,12 @@ rubiks_cube \
 nqueens \
 queen_cover
 
-CXXFLAGS = 
+## CXXFLAGS = 
 CXXFLAGS += -Wall
 ## CXXFLAGS += -g
-CXXFLAGS += -ggdb
+# CXXFLAGS += -ggdb
 ## CXXFLAGS += -pg
-CXXFLAGS += -DDEVELOPMENT_CODE
+# CXXFLAGS += -DDEVELOPMENT_CODE
 ## CXXFLAGS += -DDIFF_SAT
 ## CXXFLAGS += -O2
 ## CXXFLAGS += -O3

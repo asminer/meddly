@@ -40,12 +40,12 @@ libmeddly_la_SOURCES = \
 
 ## compile apps
 
-CXXFLAGS = 
+## CXXFLAGS = 
 CXXFLAGS += -Wall
 ## CXXFLAGS += -g
-CXXFLAGS += -ggdb
+# CXXFLAGS += -ggdb
 ## CXXFLAGS += -pg
-CXXFLAGS += -DDEVELOPMENT_CODE
+# CXXFLAGS += -DDEVELOPMENT_CODE
 ## CXXFLAGS += -DDIFF_SAT
 ## CXXFLAGS += -O2
 ## CXXFLAGS += -O3

@@ -22,6 +22,8 @@ You will need g++, autoconf, automake and libtool.
 
 1. $ ./configure
    This will setup the build files.
+   Can be used to set various compile options; 
+   see "Configuration Options" below.
    An alternate would be:
    $ ./configure --prefix=$PWD
    (See "make install" further down for reasons).
@@ -64,4 +66,22 @@ Build the documentation:
 
 3. $ make clean
    Removes docs/ and html/.
+
+
+Configuration Options
+---------------------
+Several environment variables may be set before running configure.
+For example, to build a 64-bit version of the library:
+
+$ CXXFLAGS="-m64 -O3"
+$ LDFLAGS="-m64 -O3"
+$ export CXXFLAGS LDFLAGS
+$ ./configure
+
+To build a debuggable version of the library:
+
+$ CPPFLAGS="-DDEVELOPMENT_CODE"
+$ CXXFLAGS="-ggdb"
+$ export CPPFLAGS CXXFLAGS
+$ ./configure
 
