@@ -184,6 +184,8 @@ int main()
   scanf("%d", &N);
   if (N<1) return 0;
 
+  printf("\nDetermining queen covers for %dx%d chessboard.\n", N, N);
+
   forest* f = buildQueenForest();
 
   dd_edge num_queens(f);
@@ -198,6 +200,7 @@ int main()
     );
   } // for i,j
 
+  // "By-hand" compute tables for queen in col, diag
   qic = new dd_edge*[N];
   for (int i=0; i<N; i++) qic[i] = 0;
   qidp = new dd_edge*[2*N-1];
@@ -205,43 +208,74 @@ int main()
   for (int i=0; i<2*N-1; i++) {
     qidp[i] = qidm[i] = 0;
   }
-  
-  dd_edge** rowcov = new dd_edge*[N];
-  
-  for (int i=0; i<N; i++) {
-    printf("Building constraint for row %2d\n", i+1);
-    rowcov[i] = new dd_edge(f);
-    assert(
-      forest::SUCCESS == f->createEdge(int(1), *rowcov[i])
-    );
-    for (int j=0; j<N; j++) {
-      dd_edge col(f);
-      queenInCol(f, j, col);
-      dd_edge dgp(f);
-      queenInDiagP(f, i+j, dgp);
-      dd_edge dgm(f);
-      queenInDiagM(f, i-j, dgm);
-      // "OR" these together
-      assert(compute_manager::SUCCESS == 
-          CM->apply(compute_manager::MAX, col, dgp, col)
-      );
-      assert(compute_manager::SUCCESS == 
-          CM->apply(compute_manager::MAX, col, dgm, col)
-      );
-      // "AND" with this row
-      assert(compute_manager::SUCCESS == 
-          CM->apply(compute_manager::MULTIPLY, *rowcov[i], col, *rowcov[i])
-      );
-    } // for j
-    // "OR" with "queen in this row"
-    dd_edge qir(f);
-    queenInRow(f, i, qir);
-    assert(compute_manager::SUCCESS ==
-        CM->apply(compute_manager::MAX, *rowcov[i], qir, *rowcov[i])
-    );
-  } // for i
 
-  // Cleanup before we do the tough part
+  dd_edge solutions(f);
+
+  int q;
+  for (q=1; q<=N; q++) {
+
+    printf("\nTrying to cover with %d queens\n", q);
+
+    // Build all possible placements of q queens:
+    dd_edge qqueens(f);
+    assert(
+      forest::SUCCESS == f->createEdge(q, qqueens)
+    );
+    assert(compute_manager::SUCCESS ==
+        CM->apply(compute_manager::EQUAL, qqueens, num_queens, qqueens)
+    );
+    solutions = qqueens;
+
+    printf("\tAdding constraints by row\n\t\t");
+    for (int i=0; i<N; i++) {
+      printf("%d", N-i);
+      fflush(stdout);
+      dd_edge rowcov = qqueens;
+      dd_edge qir(f);
+      queenInRow(f, i, qir);
+      for (int j=0; j<N; j++) {
+        dd_edge col(f);
+        queenInCol(f, j, col);
+        dd_edge dgp(f);
+        queenInDiagP(f, i+j, dgp);
+        dd_edge dgm(f);
+        queenInDiagM(f, i-j, dgm);
+        // "OR" together the possible attackers for this square
+        assert(compute_manager::SUCCESS == 
+            CM->apply(compute_manager::MAX, col, dgp, col)
+        );
+        assert(compute_manager::SUCCESS == 
+            CM->apply(compute_manager::MAX, col, dgm, col)
+        );
+        assert(compute_manager::SUCCESS == 
+            CM->apply(compute_manager::MAX, col, qir, col)
+        );
+        // "AND" with this row
+        assert(compute_manager::SUCCESS == 
+            CM->apply(compute_manager::MULTIPLY, rowcov, col, rowcov)
+        );
+      } // for j
+      printf(", ");
+      fflush(stdout);
+      // "AND" directly with set of covers
+      assert(compute_manager::SUCCESS == 
+          CM->apply(compute_manager::MULTIPLY, solutions, rowcov, solutions)
+      );
+    } // for i
+
+    printf("\n");
+
+    // Any solutions?
+    if (0==solutions.getNode()) {
+      printf("\tNo solutions\n");
+      continue;
+    } else {
+      printf("\tSuccess\n");
+      break;
+    }
+  } // for q
+
+  // Cleanup
   for (int i=0; i<N; i++) delete qic[i];
   for (int i=0; i<2*N-1; i++) {
     delete qidp[i];
@@ -250,45 +284,6 @@ int main()
   delete[] qic;
   delete[] qidp;
   delete[] qidm;
-
-  dd_edge solutions(f);
-  int q;
-  for (q=1; q<=N; q++) {
-    printf("\nTrying to cover with %d queens\n", q);
-
-    // Build all possible placements of q queens:
-    assert(
-      forest::SUCCESS == f->createEdge(q, solutions)
-    );
-    assert(compute_manager::SUCCESS ==
-        CM->apply(compute_manager::EQUAL, solutions, num_queens, solutions)
-    );
-
-    // Now constrain to those that are covers
-    fprintf(stderr, "\tCombining constraints\n\t\t");
-    for (int i=0; i<N; i++) {
-      fprintf(stderr, "%d ", N-i);
-      assert(compute_manager::SUCCESS ==
-        CM->apply(compute_manager::MULTIPLY, solutions, *rowcov[i], solutions)
-      );
-    } // for i
-    fprintf(stderr, "\n");
-
-    // Any solutions?
-    if (0==solutions.getNode()) {
-      printf("\tNo solutions\n");
-      continue;
-    }
-
-    printf("\tSuccess\n");
-    break;
-  } // for q
-
-  // Cleanup
-  for (int i=0; i<N; i++) {
-    delete rowcov[i];
-  }
-  delete[] rowcov;
 
   printf("Forest stats:\n");
   printf("\t%d current nodes\n", f->getCurrentNumNodes());

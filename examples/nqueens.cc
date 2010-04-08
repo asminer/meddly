@@ -102,7 +102,7 @@ void intersect(dd_edge** A, int L)
 void intersect(dd_edge** A, int L)
 {
   while (L>1) {
-    fprintf(stderr, "\t%2d terms to combine ", L);
+    printf("\t%2d terms to combine ", L);
     // combine adjacent pairs
     for (int i=0; i<L; i+=2) {
       if (A[i] && A[i+1]) {
@@ -112,7 +112,8 @@ void intersect(dd_edge** A, int L)
         );
         delete A[i+1];
         A[i+1] = 0;
-        fprintf(stderr, ".");
+        printf(".");
+        fflush(stdout);
       }
     } // for i
     fprintf(stderr, "\n");
