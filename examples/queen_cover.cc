@@ -1,5 +1,5 @@
 
-// $Id:$
+// $Id$
 
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
@@ -253,7 +253,7 @@ int main()
 
   dd_edge solutions(f);
   int q;
-  for (q=1; q<N; q++) {
+  for (q=1; q<=N; q++) {
     printf("\nTrying to cover with %d queens\n", q);
 
     // Build all possible placements of q queens:
@@ -308,7 +308,7 @@ int main()
   dd_edge::const_iterator endIt = solutions.end();
   if (first != endIt) {
     const int* minterm = first.getAssignments();
-    printf("One solution:\n\t");
+    printf("first solution:\n\t");
     for (int i=0; i<N; i++) for (int j=0; j<N; j++) {
       if (minterm[ijmap(i,j)]) {
         printf("(%d, %d) ", i+1, j+1);
