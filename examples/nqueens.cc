@@ -34,6 +34,7 @@
 #include <cstdio>
 
 #include "../include/meddly.h"
+#include "../src/timer.h"
 
 int N;
 int* scratch;
@@ -42,7 +43,7 @@ compute_manager* CM;
 void printmem(long m)
 {
   if (m<1024) {
-    printf("%d bytes", m);
+    printf("%ld bytes", m);
     return;
   }
   double approx = m;
@@ -155,6 +156,7 @@ bool createQueenNodes(forest* f, int q, dd_edge &col, dd_edge &cp, dd_edge &cm)
 
 int main()
 {
+  timer watch;
   CM = MEDDLY_getComputeManager();
   assert(CM);
   printf("Using %s\n", MEDDLY_getLibraryInfo(0));
@@ -163,6 +165,7 @@ int main()
   if (N<1) return 0;
   scratch = new int[N+1];
   
+  watch.note_time();
   printf("Initializing domain and forest\n");
 
   for (int i=0; i<N; i++) {
@@ -236,6 +239,9 @@ int main()
   intersect(constr, N);
   assert(constr[0]);
   dd_edge solutions = *constr[0];
+  watch.note_time();
+
+  printf("Elapsed time: %lf seconds\n", watch.get_last_interval()/1000000.0);
 
   printf("Cleanup\n");
   for (int i=0; i<N; i++) {

@@ -93,6 +93,32 @@
 #include "../include/meddly_expert.h"
 #include "../src/timer.h"
 
+void printmem(long m)
+{
+  if (m<1024) {
+    printf("%ld bytes", m);
+    return;
+  }
+  double approx = m;
+  approx /= 1024;
+  if (approx < 1024) {
+    printf("%3.2lf Kbytes", approx);
+    return;
+  }
+  approx /= 1024;
+  if (approx < 1024) {
+    printf("%3.2lf Mbytes", approx);
+    return;
+  }
+  approx /= 1024;
+  if (approx < 1024) {
+    printf("%3.2lf Gbytes", approx);
+    return;
+  }
+  approx /= 1024;
+  printf("%3.2lf Tbytes", approx);
+}
+
 int* initializeLevelBounds(int nLevels)
 {
   // set bounds (node size) for each level
@@ -364,6 +390,7 @@ dd_edge testSubMatrix(int* bounds, int nLevels, const dd_edge& nsf)
 
 int main(int argc, char *argv[])
 {
+  timer start;
   int nPhilosophers = 0; // number of philosophers
   bool pessimistic = false;
   bool dfs = false;
@@ -420,6 +447,8 @@ int main(int argc, char *argv[])
     assert(compute_manager::SUCCESS == ecm->setHashTablePolicy(chaining));
   }
 
+  printf("Initiailzing forests\n");
+
   // Create a domain
   domain *d = MEDDLY_createDomain();
   assert(d != NULL);
@@ -467,6 +496,10 @@ int main(int argc, char *argv[])
   assert(forest::SUCCESS == mdd->createEdge(
         reinterpret_cast<int**>(addrInitSt), 1, initialStates));
 
+  printf("Building next-state function for %d dining philosophers\n", 
+          nPhilosophers);
+  start.note_time();
+
   // Create a matrix diagram to represent the next-state function
   // Next-State function is computed by performing a union of next-state
   // functions that each represent how a philosopher's state can change.
@@ -474,6 +507,22 @@ int main(int argc, char *argv[])
   for (int i = 0; i < nPhilosophers; i++) {
     nsf += MakeSynchP_Forks(i, nPhilosophers, mxd);
   }
+  start.note_time();
+  printf("Next-state function construction took %.4e seconds\n",
+          start.get_last_interval()/1000000.0);
+
+  // Show stats for nsf construction
+
+  printf("MxD stats:\n");
+  printf("\t%d current nodes\n", mxd->getCurrentNumNodes());
+  printf("\t%d peak nodes\n", mxd->getPeakNumNodes());
+  printf("\t");
+  printmem(mxd->getCurrentMemoryUsed());
+  printf(" current memory\n\t");
+  printmem(mxd->getPeakMemoryUsed());
+  printf(" peak memory\n");
+  
+  fflush(stdout);
 
 #if 0
   printf("Initial states:\n");
@@ -485,21 +534,31 @@ int main(int argc, char *argv[])
 
   dd_edge reachableStates(initialStates);
 
+
 #if 1
 
-  timer start;
+  printf("Building reachability set using %s\n", 
+    dfs
+    ? "saturation"
+    : "traditional iteration"
+  );
+  start.note_time();
   ecm->apply(
       dfs?
       compute_manager::REACHABLE_STATES_DFS:
       compute_manager::REACHABLE_STATES_BFS,
       reachableStates, nsf, reachableStates);
   start.note_time();
-  printf("Time interval: %.4e seconds\n",
-      start.get_last_interval()/1000000.0);
+  printf("Reachability set construction took %.4e seconds\n",
+          start.get_last_interval()/1000000.0);
+  fflush(stdout);
   printf("#Nodes: %d\n", reachableStates.getNodeCount());
   printf("#Edges: %d\n", reachableStates.getEdgeCount());
 
 #else
+
+  printf("Building reachability set\n");
+  start.note_time();
 
   // set up aliases
   // traditional reachability analysis:
@@ -524,8 +583,6 @@ int main(int argc, char *argv[])
   dd_edge prevReachableStates(mdd);
   dd_edge postImage(mdd);
 
-  timer start;
-
   ecm->apply(postImageOp, reachableStates, nsf, postImage);
   prevReachableStates = reachableStates;
   ecm->apply(unionOp, reachableStates, postImage, reachableStates);
@@ -542,6 +599,18 @@ int main(int argc, char *argv[])
       start.get_last_interval()/1000000.0);
 
 #endif
+
+  // Show stats for rs construction
+
+  printf("MDD stats:\n");
+  printf("\t%d current nodes\n", mdd->getCurrentNumNodes());
+  printf("\t%d peak nodes\n", mdd->getPeakNumNodes());
+  printf("\t");
+  printmem(mdd->getCurrentMemoryUsed());
+  printf(" current memory\n\t");
+  printmem(mdd->getPeakMemoryUsed());
+  printf(" peak memory\n");
+  
 
 #if 0   // determine verbosity of output
   reachableStates.show(stdout, 2);
@@ -626,7 +695,7 @@ int main(int argc, char *argv[])
     }
   }
 
-  if (true) {
+  if (false) {
     start.note_time();
     unsigned counter = 0;
     for (dd_edge::const_iterator iter = reachableStates.begin(),
@@ -677,7 +746,7 @@ int main(int argc, char *argv[])
     free(element);
   }
 
-  if (true) {
+  if (false) {
     // Create a EV+MDD forest in this domain (to store index set)
     forest* evplusmdd = d->createForest(false, forest::INTEGER, forest::EVPLUS);
     assert(evplusmdd != NULL);
