@@ -29,10 +29,16 @@
 */
 
 #include <cstdio>
+#include <cstdlib>
+
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <unistd.h>
 
 #include "../include/meddly.h"
 
 int N;
+FILE* outfile;
 
 compute_manager* CM;
 
@@ -40,10 +46,32 @@ dd_edge** qic;
 dd_edge** qidp;
 dd_edge** qidm;
 
+
+class timer {
+  double start_time;
+protected:
+  inline double Time() const {
+    rusage r;
+    getrusage(RUSAGE_SELF, &r);
+    return r.ru_utime.tv_sec + r.ru_utime.tv_usec / 1000000.0;
+  }
+public:
+  timer() { 
+    reset();
+  }
+  void reset() { 
+    start_time = Time(); 
+  }
+  double elapsed() const {
+    return Time() - start_time;
+  }
+};
+
+
 void printmem(long m)
 {
   if (m<1024) {
-    printf("%d bytes", m);
+    printf("%ld bytes", m);
     return;
   }
   double approx = m;
@@ -175,15 +203,38 @@ void queenInDiagM(forest* f, int d, dd_edge &e)
   qidm[d+N-1] = new dd_edge(e);
 }
 
-int main()
+bool processArgs(int argc, const char** argv)
 {
+  if (argc<2) return false;
+  if (argc>3) return false;
+  N = atoi(argv[1]); 
+  if (N<1) return false;
+  if (argc>2) {
+    outfile = fopen(argv[2], "w");
+    if (0==outfile) {
+      printf("Couldn't open %s for writing, no solutions will be written\n", argv[2]);
+    }
+  } else {
+    outfile = 0;
+  }
+  return true;
+}
+
+int usage(const char* who)
+{
+  printf("Usage: %s N <outfile>\n\n\t        N:  board dimension\n", who);
+  printf("\t<outfile>: if specified, we write all solutions to this file\n\n");
+  return 1;
+}
+
+int main(int argc, const char** argv)
+{
+  if (!processArgs(argc, argv)) return usage(argv[0]);
   CM = MEDDLY_getComputeManager();
   assert(CM);
   printf("Using %s\n", MEDDLY_getLibraryInfo(0));
-  printf("Queen cover for NxN chessboard.  Enter the value for N:\n");
-  scanf("%d", &N);
-  if (N<1) return 0;
 
+  timer stopwatch;
   printf("\nDetermining queen covers for %dx%d chessboard.\n", N, N);
 
   forest* f = buildQueenForest();
@@ -285,9 +336,10 @@ int main()
   delete[] qidp;
   delete[] qidm;
 
+  printf("\n%lg seconds CPU time elapsed\n", stopwatch.elapsed());
   printf("Forest stats:\n");
-  printf("\t%d current nodes\n", f->getCurrentNumNodes());
-  printf("\t%d peak nodes\n", f->getPeakNumNodes());
+  printf("\t%ld current nodes\n", f->getCurrentNumNodes());
+  printf("\t%ld peak nodes\n", f->getPeakNumNodes());
   printf("\t");
   printmem(f->getCurrentMemoryUsed());
   printf(" current memory\n\t");
@@ -298,18 +350,26 @@ int main()
   printf("\nFor a %dx%d chessboard, ", N, N);
   printf("there are %lg covers with %d queens\n\n", c, q);
 
-  // show one of the solutions
-  dd_edge::const_iterator first = solutions.begin();
+  if (!outfile) return 0;
+
+
+  printf("Writing solutions to file %s\n", argv[2]);
+  
+  fprintf(outfile, "%d # Board dimension\n\n", N);
+  // show the solutions
+  dd_edge::const_iterator iter = solutions.begin();
   dd_edge::const_iterator endIt = solutions.end();
-  if (first != endIt) {
-    const int* minterm = first.getAssignments();
-    printf("first solution:\n\t");
+  long counter;
+  for (counter = 1; iter != endIt; ++iter, ++counter) {
+    fprintf(outfile, "solution %5ld:  ", counter);
+    const int* minterm = iter.getAssignments();
     for (int i=0; i<N; i++) for (int j=0; j<N; j++) {
       if (minterm[ijmap(i,j)]) {
-        printf("(%d, %d) ", i+1, j+1);
+        fprintf(outfile, "(%2d, %2d) ", i+1, j+1);
       }
     }
-    printf("\n");
-  }
+    fprintf(outfile, "\n");
+  } // for iter
+  fprintf(outfile, "\n");
   return 0;
 }

@@ -220,7 +220,7 @@ void expert_compute_manager::showComputeTable(FILE* strm) const
 }
 
 
-int expert_compute_manager::getNumCacheEntries() const
+long expert_compute_manager::getNumCacheEntries() const
 {
   return (cc == 0)? 0: cc->getNumEntries();
 }

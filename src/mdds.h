@@ -52,7 +52,7 @@ class node_manager_user {
     node_manager_user() {}
     virtual ~node_manager_user() {}
     virtual bool removeStaleEntries() {return false;}
-    virtual int getEntriesCount() const {return 0;}
+    virtual long getEntriesCount() const {return 0;}
     virtual void getCacheCounts(unsigned count[], unsigned sz) const {}
     virtual unsigned getCacheCount(int p) const {return 0;}
 };
@@ -260,12 +260,12 @@ class node_manager : public expert_forest {
     unsigned getNodeCount(int p) const;
     unsigned getEdgeCount(int p, bool countZeroes) const;
 
-    int getCurrentNumNodes() const;
-    int getCurrentMemoryUsed() const;
-    int getCurrentMemoryAllocated() const;
-    int getPeakNumNodes() const;
-    int getPeakMemoryUsed() const;
-    int getPeakMemoryAllocated() const;
+    long getCurrentNumNodes() const;
+    long getCurrentMemoryUsed() const;
+    long getCurrentMemoryAllocated() const;
+    long getPeakNumNodes() const;
+    long getPeakMemoryUsed() const;
+    long getPeakMemoryAllocated() const;
 
     // Compaction threshold is a percentage value.
     // To set compaction threshold to 45%, call setCompactionThreshold(45).
@@ -386,12 +386,12 @@ class node_manager : public expert_forest {
     int setLevelBoundsAndHeights();
     int setLevelBoundAndHeight(int k, int sz, int h);
 
-    int getUniqueTableMemoryUsed() const;
-    int getTempNodeCount() const;
-    int getZombieNodeCount() const;
-    int getOrphanNodeCount() const;
-    void updateMemoryAllocated(int bytes);
-    int getHoleMemoryUsage() const;
+    long getUniqueTableMemoryUsed() const;
+    long getTempNodeCount() const;
+    long getZombieNodeCount() const;
+    long getOrphanNodeCount() const;
+    void updateMemoryAllocated(long bytes);
+    long getHoleMemoryUsage() const;
 
     int getMaxHoleChain() const;
     int getCompactionsCount() const;
@@ -506,22 +506,22 @@ class node_manager : public expert_forest {
     // performance stats
 
     /// For peak memory.
-    int max_slots;
+    long max_slots;
     /// Also for peak memory.
-    int curr_slots;
+    long curr_slots;
     /// Number of alive nodes.
-    int active_nodes;
+    long active_nodes;
     /// Largest traversed height of holes grid
     int max_hole_chain;
     /// Number of zombie nodes
-    int zombie_nodes;
+    long zombie_nodes;
     /// These are just like zombies but they have not been zombified --
     /// exist only in non-pessimistic caches
-    int orphan_nodes;
+    long orphan_nodes;
     /// Number of temporary nodes -- nodes that have not been reduced
-    int temp_nodes;
+    long temp_nodes;
     /// Number reclaimed nodes
-    int reclaimed_nodes;
+    long reclaimed_nodes;
     /// Total number of compactions
     int num_compactions;
     /// Switch to turn on garbage collection; should be turned off when done
@@ -539,8 +539,8 @@ class node_manager : public expert_forest {
     /// Uniqueness table
     mdd_hash_table <node_manager> *unique;
 
-    int curr_mem_alloc;
-    int max_mem_alloc;
+    long curr_mem_alloc;
+    long max_mem_alloc;
 
     bool counting;
 
@@ -990,29 +990,29 @@ inline bool node_manager::isDeletedNode(int p) const {
   return !(isActiveNode(p) || isZombieNode(p));
 }
 
-inline int node_manager::getUniqueTableMemoryUsed() const {
+inline long node_manager::getUniqueTableMemoryUsed() const {
   return (unique->getSize() * sizeof(int));
 }
-inline int node_manager::getPeakNumNodes() const {
+inline long node_manager::getPeakNumNodes() const {
   return peak_nodes;    // terminal nodes not included
 }
-inline int node_manager::getCurrentNumNodes() const {
+inline long node_manager::getCurrentNumNodes() const {
 #if 1
   return active_nodes; // excludes terminal nodes
 #else
   return active_nodes - orphan_nodes - temp_nodes;
 #endif
 }
-inline int node_manager::getTempNodeCount() const {
+inline long node_manager::getTempNodeCount() const {
   return temp_nodes;
 }
-inline int node_manager::getZombieNodeCount() const {
+inline long node_manager::getZombieNodeCount() const {
   return zombie_nodes;
 }
-inline int node_manager::getOrphanNodeCount() const {
+inline long node_manager::getOrphanNodeCount() const {
   return orphan_nodes;
 }
-inline int node_manager::getPeakMemoryUsed() const {
+inline long node_manager::getPeakMemoryUsed() const {
 #if 0
   int sum = 0;
   for (int i = 0; i < l_size; i++) sum += level[i].max_slots;
@@ -1022,7 +1022,7 @@ inline int node_manager::getPeakMemoryUsed() const {
 #endif
 }
 
-inline void node_manager::updateMemoryAllocated(int bytes) {
+inline void node_manager::updateMemoryAllocated(long bytes) {
   curr_mem_alloc += bytes;
   if (curr_mem_alloc > max_mem_alloc) max_mem_alloc = curr_mem_alloc;
 #if 0
@@ -1142,11 +1142,11 @@ inline forest::error node_manager::compactMemory() {
   return forest::SUCCESS;
 }
 
-inline int node_manager::getCurrentMemoryAllocated() const {
+inline long node_manager::getCurrentMemoryAllocated() const {
   return curr_mem_alloc;
 }
 
-inline int node_manager::getPeakMemoryAllocated() const {
+inline long node_manager::getPeakMemoryAllocated() const {
   return max_mem_alloc;
 }
 

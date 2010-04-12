@@ -282,8 +282,8 @@ int main(int argc, char *argv[])
   printf("Time interval: %.4e seconds\n",
       start.get_last_interval()/1000000.0);
 
-  printf("Peak Nodes in MDD: %d\n", mtmdd->getPeakNumNodes());
-  printf("Nodes in compute table: %d\n",
+  printf("Peak Nodes in MDD: %ld\n", mtmdd->getPeakNumNodes());
+  printf("Nodes in compute table: %ld\n",
       (MEDDLY_getComputeManager())->getNumCacheEntries());
 
 #if 0

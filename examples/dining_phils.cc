@@ -514,8 +514,8 @@ int main(int argc, char *argv[])
   // Show stats for nsf construction
 
   printf("MxD stats:\n");
-  printf("\t%d current nodes\n", mxd->getCurrentNumNodes());
-  printf("\t%d peak nodes\n", mxd->getPeakNumNodes());
+  printf("\t%ld current nodes\n", mxd->getCurrentNumNodes());
+  printf("\t%ld peak nodes\n", mxd->getPeakNumNodes());
   printf("\t");
   printmem(mxd->getCurrentMemoryUsed());
   printf(" current memory\n\t");
@@ -603,8 +603,8 @@ int main(int argc, char *argv[])
   // Show stats for rs construction
 
   printf("MDD stats:\n");
-  printf("\t%d current nodes\n", mdd->getCurrentNumNodes());
-  printf("\t%d peak nodes\n", mdd->getPeakNumNodes());
+  printf("\t%ld current nodes\n", mdd->getCurrentNumNodes());
+  printf("\t%ld peak nodes\n", mdd->getPeakNumNodes());
   printf("\t");
   printmem(mdd->getCurrentMemoryUsed());
   printf(" current memory\n\t");

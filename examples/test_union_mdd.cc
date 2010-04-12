@@ -152,8 +152,8 @@ int main(int argc, char *argv[])
   initial_state.show(stdout, 2);
 #endif
 
-  printf("Peak Nodes in MDD: %d\n", states->getPeakNumNodes());
-  printf("Nodes in compute table: %d\n",
+  printf("Peak Nodes in MDD: %ld\n", states->getPeakNumNodes());
+  printf("Nodes in compute table: %ld\n",
       (MEDDLY_getComputeManager())->getNumCacheEntries());
 
 #if 0

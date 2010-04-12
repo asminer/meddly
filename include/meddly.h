@@ -260,21 +260,21 @@ class forest {
         @return     The current number of nodes, not counting deleted or
                     marked for deletion nodes.
     */
-    virtual int getCurrentNumNodes() const = 0;
+    virtual long getCurrentNumNodes() const = 0;
 
     /** Get the current total memory used by the forest.
         This should be equal to summing getMemoryUsedForVariable()
         over all variables.
         @return     Current memory used by the forest.
     */
-    virtual int getCurrentMemoryUsed() const = 0;
+    virtual long getCurrentMemoryUsed() const = 0;
 
     /** Get the current total memory allocated by the forest.
         This should be equal to summing getMemoryAllocatedForVariable()
         over all variables.
         @return     Current total memory allocated by the forest.
     */
-    virtual int getCurrentMemoryAllocated() const = 0;
+    virtual long getCurrentMemoryAllocated() const = 0;
 
     /** Get the peak number of nodes in the forest, at all levels.
         This will be at least as large as calling getNumNodes() after
@@ -282,17 +282,17 @@ class forest {
         @return     The peak number of nodes that existed at one time,
                     in the forest.
     */
-    virtual int getPeakNumNodes() const = 0;
+    virtual long getPeakNumNodes() const = 0;
 
     /** Get the peak memory used by the forest.
         @return     Peak total memory used by the forest.
     */
-    virtual int getPeakMemoryUsed() const = 0;
+    virtual long getPeakMemoryUsed() const = 0;
 
     /** Get the peak memory allocated by the forest.
         @return     Peak memory allocated by the forest.
     */
-    virtual int getPeakMemoryAllocated() const = 0;
+    virtual long getPeakMemoryAllocated() const = 0;
 
 
     /** Create an edge such that
@@ -1395,7 +1395,7 @@ class compute_manager {
     /** Get the number of entries in the compute table.
         @return       The number of entries in the compute table.
     */
-    virtual int getNumCacheEntries() const = 0;
+    virtual long getNumCacheEntries() const = 0;
 };
 
 /** Function to build and initialize a compute manager.

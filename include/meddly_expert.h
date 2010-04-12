@@ -576,12 +576,12 @@ class expert_forest : public forest
     virtual error setCompactionThreshold(unsigned p) = 0;
     virtual error compactMemory() = 0;
 
-    virtual int getCurrentNumNodes() const = 0;
-    virtual int getCurrentMemoryUsed() const = 0;
-    virtual int getCurrentMemoryAllocated() const = 0;
-    virtual int getPeakNumNodes() const = 0;
-    virtual int getPeakMemoryUsed() const = 0;
-    virtual int getPeakMemoryAllocated() const = 0;
+    virtual long getCurrentNumNodes() const = 0;
+    virtual long getCurrentMemoryUsed() const = 0;
+    virtual long getCurrentMemoryAllocated() const = 0;
+    virtual long getPeakNumNodes() const = 0;
+    virtual long getPeakMemoryUsed() const = 0;
+    virtual long getPeakMemoryAllocated() const = 0;
 
     virtual error createEdge(const int* const* vlist, int N, dd_edge &e) = 0;
     virtual error createEdge(const int* const* vlist, const int* terms, int N,
@@ -899,7 +899,7 @@ class expert_compute_manager : public compute_manager {
     virtual void clearComputeTable();
     virtual error setHashTablePolicy(bool chaining, unsigned size = 16777216u);
     virtual void showComputeTable(FILE* strm) const;
-    virtual int getNumCacheEntries() const;
+    virtual long getNumCacheEntries() const;
 
     /** Removes all the stale entries in the compute table that belong to
         the specified operation handle. Note that an operation handle

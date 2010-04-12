@@ -355,8 +355,8 @@ int main(int argc, char *argv[])
   printf("Time interval: %.4e seconds\n",
       start.get_last_interval()/1000000.0);
 
-  printf("Peak Nodes in MXD: %d\n", mtmxd->getPeakNumNodes());
-  printf("Nodes in compute table: %d\n",
+  printf("Peak Nodes in MXD: %ld\n", mtmxd->getPeakNumNodes());
+  printf("Nodes in compute table: %ld\n",
       (MEDDLY_getComputeManager())->getNumCacheEntries());
 
   result.show(stdout, 1);

@@ -259,8 +259,8 @@ int main()
 
   printf("Set of solutions requires %d nodes\n", solutions.getNodeCount());
   printf("Forest stats:\n");
-  printf("\t%d current nodes\n", f->getCurrentNumNodes());
-  printf("\t%d peak nodes\n", f->getPeakNumNodes());
+  printf("\t%ld current nodes\n", f->getCurrentNumNodes());
+  printf("\t%ld peak nodes\n", f->getPeakNumNodes());
   printf("\t");
   printmem(f->getCurrentMemoryUsed());
   printf(" current memory\n\t");

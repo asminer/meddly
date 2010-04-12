@@ -655,7 +655,7 @@ node_manager::~node_manager()
   if (active_nodes != 0) {
     printf("ALERT: Found known bug in %s (active_nodes > 0).\n", __func__);
 #ifdef DEBUG_GC
-    printf("%p: active %d, zombie %d, orphan %d\n",
+    printf("%p: active %ld, zombie %ld, orphan %ld\n",
         this, active_nodes, zombie_nodes, orphan_nodes);
 #endif
     clearAllNodes();
@@ -2042,13 +2042,13 @@ bool node_manager::gc() {
 
   if (isPessimistic()) {
 #ifdef DEBUG_GC
-    printf("Zombie nodes: %d\n", zombie_nodes);
+    printf("Zombie nodes: %ld\n", zombie_nodes);
 #endif
     // remove the stale nodes entries from caches
     smart_cast<expert_compute_manager *>(MEDDLY_getComputeManager())->
       removeStales();
 #ifdef DEBUG_GC
-    printf("Zombie nodes: %d\n", zombie_nodes);
+    printf("Zombie nodes: %ld\n", zombie_nodes);
 #endif
     assert(zombie_nodes == 0);
     freed_some = true;
@@ -2084,7 +2084,7 @@ bool node_manager::gc() {
 #else
 
 #ifdef DEBUG_GC
-    fprintf(stderr, "Active: %d, Zombie: %d, Orphan: %d\n",
+    fprintf(stderr, "Active: %ld, Zombie: %ld, Orphan: %ld\n",
         active_nodes, zombie_nodes, orphan_nodes);
 #endif
 
@@ -2099,7 +2099,7 @@ bool node_manager::gc() {
       }
     }
 #ifdef DEBUG_GC
-    fprintf(stderr, "Active: %d, Zombie: %d, Orphan: %d\n",
+    fprintf(stderr, "Active: %ld, Zombie: %ld, Orphan: %ld\n",
         active_nodes, zombie_nodes, orphan_nodes);
 #endif
     // remove the stale nodes entries from caches
@@ -2577,8 +2577,8 @@ void node_manager::makeHole(int k, int addr, int slots)
 }
 
 void node_manager::reportMemoryUsage(FILE * s, const char filler) {
-  fprintf(s, "%cPeak Nodes:             %d\n", filler, getPeakNumNodes());
-  fprintf(s, "%cActive Nodes:           %d\n", filler, getCurrentNumNodes());
+  fprintf(s, "%cPeak Nodes:             %ld\n", filler, getPeakNumNodes());
+  fprintf(s, "%cActive Nodes:           %ld\n", filler, getCurrentNumNodes());
 #if 0
   unsigned count = 0;
   for (int i = 1; i <= a_last; ++i) if (isActiveNode(i)) ++count;
@@ -2589,15 +2589,15 @@ void node_manager::reportMemoryUsage(FILE * s, const char filler) {
   fprintf(s, "%c%cOrphan Nodes:\t\t%d\n", filler, filler,
       getOrphanNodeCount());
 #endif
-  fprintf(s, "%cReclaimed Nodes:        %d\n", filler, reclaimed_nodes);
-  fprintf(s, "%cMem Used:               %d\n", filler,
+  fprintf(s, "%cReclaimed Nodes:        %ld\n", filler, reclaimed_nodes);
+  fprintf(s, "%cMem Used:               %ld\n", filler,
       getCurrentMemoryUsed());
-  fprintf(s, "%cPeak Mem Used:          %d\n", filler, getPeakMemoryUsed());
-  fprintf(s, "%cMem Allocated:          %d\n", filler,
+  fprintf(s, "%cPeak Mem Used:          %ld\n", filler, getPeakMemoryUsed());
+  fprintf(s, "%cMem Allocated:          %ld\n", filler,
       getCurrentMemoryAllocated());
-  fprintf(s, "%cPeak Mem Allocated:     %d\n",
+  fprintf(s, "%cPeak Mem Allocated:     %ld\n",
       filler, getPeakMemoryAllocated());
-  fprintf(s, "%cUnique Tbl Mem Used:    %d\n", filler,
+  fprintf(s, "%cUnique Tbl Mem Used:    %ld\n", filler,
       getUniqueTableMemoryUsed());
   fprintf(s, "%cCompactions:            %d\n", filler, getCompactionsCount());
 #if 0
@@ -2744,8 +2744,8 @@ void node_manager::showAll(FILE *s, int verb) const {
 
 void node_manager::show(FILE *s, int h) const { fprintf(s, "%d", h); }
 
-int node_manager::getHoleMemoryUsage() const {
-  int sum = 0;
+long node_manager::getHoleMemoryUsage() const {
+  long sum = 0;
   for(int i=0; i<l_size; i++) sum += level[i].hole_slots;
   return sum * sizeof(int); 
 }
@@ -2753,7 +2753,7 @@ int node_manager::getHoleMemoryUsage() const {
 int node_manager::getMaxHoleChain() const { return max_hole_chain; }
 int node_manager::getCompactionsCount() const { return num_compactions; }
 
-int node_manager::getCurrentMemoryUsed() const { 
+long node_manager::getCurrentMemoryUsed() const { 
 #if 0
   int sum = 0;
   for(int i=0; i<l_size; i++) sum += level[i].last - level[i].hole_slots;
