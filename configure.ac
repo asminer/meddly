@@ -40,7 +40,21 @@ AC_TYPE_SIGNAL
 AC_FUNC_STRTOD
 AC_CHECK_FUNCS([gettimeofday memmove memset strtol])
 
+# Check for GMP
+
+AC_ARG_WITH([gmp],
+  [AS_HELP_STRING([--without-gmp], [disable support for gmp])],
+  [],
+  [with_gmp=yes])
+LIBGMP=
+AS_IF([test "x$with_gmp" != xno],
+  [AC_CHECK_LIB([gmp], [mpz_init], [], 
+    [AC_MSG_FAILURE([gmp test failed (--without-gmp to disable)])],
+    [])])
+
 AC_CONFIG_FILES([Makefile
                  examples/Makefile
                  src/Makefile])
+
 AC_OUTPUT
+

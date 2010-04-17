@@ -71,7 +71,14 @@ Build the documentation:
 Configuration Options
 ---------------------
 Several environment variables may be set before running configure.
-For example, to build a 64-bit version of the library:
+For example, to build an optimized version of the library:
+
+$ CXXFLAGS="-O3"
+$ LDFLAGS="-O3"
+$ export CXXFLAGS LDFLAGS
+$ ./configure
+
+To build an optimized, 64-bit version of the library:
 
 $ CXXFLAGS="-m64 -O3"
 $ LDFLAGS="-m64 -O3"
