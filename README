@@ -92,3 +92,13 @@ $ CXXFLAGS="-ggdb"
 $ export CPPFLAGS CXXFLAGS
 $ ./configure
 
+To set the location of the gmp library, by hand:
+
+$ LDFLAGS="-L/path-to-gmp"
+$ export LDFLAGS
+$ ./configure
+
+To disable gmp support in Meddly:
+
+$ ./configure --without-gmp
+

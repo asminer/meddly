@@ -48,7 +48,7 @@ AC_ARG_WITH([gmp],
   [with_gmp=yes])
 LIBGMP=
 AS_IF([test "x$with_gmp" != xno],
-  [AC_CHECK_LIB([gmp], [mpz_init], [], 
+  [AC_CHECK_LIB([gmp], [__gmpz_init], [], 
     [AC_MSG_FAILURE([gmp test failed (--without-gmp to disable)])],
     [])])
 
