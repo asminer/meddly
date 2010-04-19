@@ -25,6 +25,13 @@
 // TODO: Finish the advanced functions in expert_domain.
 
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+#ifdef HAVE_LIBGMP
+#include <gmp.h>
+#endif
+
 #include "../include/meddly.h"
 #include "../include/meddly_expert.h"
 #include "../src/mdds_ext.h"

@@ -21,11 +21,17 @@
 
 
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+#ifdef HAVE_LIBGMP
+#include <gmp.h>
+#endif
+
 #include "../src/defines.h"
 #include "../src/operation_ext.h"
 #include "../src/compute_cache.h"
 
-#include "config.h"
 #include "revision.h"
 
 // ------------------ compute_manager --------------------------
@@ -150,15 +156,39 @@ const char* expert_compute_manager::getOperationName(
   }
 }
 
-
-compute_manager::error expert_compute_manager::apply(op_info* owner,
-    const dd_edge &a, dd_edge &b)
+template <class TYPE>
+inline compute_manager::error
+unary_apply(op_info* owner, const dd_edge &a, TYPE &b)
 {
   // type check
   compute_manager::error err = owner->op->typeCheck(owner);
   return err != compute_manager::SUCCESS?
     err:
     owner->op->compute(owner, a, b);
+}
+
+compute_manager::error expert_compute_manager::apply(op_info* owner,
+    const dd_edge &a, dd_edge &b)
+{
+  return unary_apply(owner, a, b);
+}
+
+compute_manager::error expert_compute_manager::apply(op_info* owner,
+    const dd_edge &a, long &b)
+{
+  return unary_apply(owner, a, b);
+}
+
+compute_manager::error expert_compute_manager::apply(op_info* owner,
+    const dd_edge &a, double &b)
+{
+  return unary_apply(owner, a, b);
+}
+
+compute_manager::error expert_compute_manager::apply(op_info* owner,
+    const dd_edge &a, mpz_t &b)
+{
+  return unary_apply(owner, a, b);
 }
 
 
@@ -186,6 +216,35 @@ compute_manager::error expert_compute_manager::apply(
     apply(opInfo, a, b);
 }
 
+template <class TYPE>
+inline compute_manager::error 
+unary_apply(expert_compute_manager* CM, compute_manager::op_code op, 
+            const dd_edge &a, TYPE &b)
+{
+  forest* f = a.getForest();
+  op_info* opInfo = CM->getOpInfo(op, &f, 1);
+  return opInfo == 0?
+    compute_manager::UNKNOWN_OPERATION:
+    CM->apply(opInfo, a, b);
+}
+
+compute_manager::error expert_compute_manager::apply(
+    compute_manager::op_code op, const dd_edge &a, long &b)
+{
+  return unary_apply(this, op, a, b);
+}
+
+compute_manager::error expert_compute_manager::apply(
+    compute_manager::op_code op, const dd_edge &a, double &b)
+{
+  return unary_apply(this, op, a, b);
+}
+
+compute_manager::error expert_compute_manager::apply(
+    compute_manager::op_code op, const dd_edge &a, mpz_t &b)
+{
+  return unary_apply(this, op, a, b);
+}
 
 compute_manager::error expert_compute_manager::apply(
     compute_manager::op_code op, const dd_edge &a, const dd_edge &b,

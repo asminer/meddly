@@ -23,6 +23,13 @@
 
 // TODO: Testing
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+#ifdef HAVE_LIBGMP
+#include <gmp.h>
+#endif
+
 #include "../src/defines.h"
 
 // **************************** forest *********************************

@@ -74,15 +74,13 @@ Several environment variables may be set before running configure.
 For example, to build an optimized version of the library:
 
 $ CXXFLAGS="-O3"
-$ LDFLAGS="-O3"
-$ export CXXFLAGS LDFLAGS
+$ export CXXFLAGS 
 $ ./configure
 
 To build an optimized, 64-bit version of the library:
 
 $ CXXFLAGS="-m64 -O3"
-$ LDFLAGS="-m64 -O3"
-$ export CXXFLAGS LDFLAGS
+$ export CXXFLAGS
 $ ./configure
 
 To build a debuggable version of the library:
@@ -92,9 +90,11 @@ $ CXXFLAGS="-ggdb"
 $ export CPPFLAGS CXXFLAGS
 $ ./configure
 
-To set the location of the gmp library, by hand:
+To set the location of the gmp library, by hand 
+(only necessary if ./configure fails to find it):
 
-$ LDFLAGS="-L/path-to-gmp"
+$ CPPFLAGS="-I/path-to-gmp-header"
+$ LDFLAGS="-L/path-to-gmp-lib"
 $ export LDFLAGS
 $ ./configure
 

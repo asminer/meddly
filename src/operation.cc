@@ -20,8 +20,15 @@
 */
 
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+#ifdef HAVE_LIBGMP
+#include <gmp.h>
+#endif
 
 #include "../src/defines.h"
+#include "../include/meddly_expert.h"
 
 operation::operation()
 { }
@@ -30,4 +37,29 @@ operation::operation()
 operation::~operation() {}
 
 
+// Defaults
+
+compute_manager::error 
+operation::compute(op_info* cc, const dd_edge& a, dd_edge& b)
+{
+  return compute_manager::TYPE_MISMATCH;
+}
+
+compute_manager::error 
+operation::compute(op_info* cc, const dd_edge& a, long& b)
+{
+  return compute_manager::TYPE_MISMATCH;
+}
+
+compute_manager::error 
+operation::compute(op_info* cc, const dd_edge& a, double& b)
+{
+  return compute_manager::TYPE_MISMATCH;
+}
+
+compute_manager::error 
+operation::compute(op_info* cc, const dd_edge& a, mpz_t &b)
+{
+  return compute_manager::TYPE_MISMATCH;
+}
 

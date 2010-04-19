@@ -48,6 +48,9 @@ class domain;
 class dd_edge;
 class op_info;
 
+#ifndef __GMP_H__
+class mpz_t;
+#endif
 
 // ******************************************************************
 // *                                                                *
@@ -1346,6 +1349,35 @@ class compute_manager {
     */
     virtual error apply(op_code op, const dd_edge &a, dd_edge &c) = 0;
 
+    /** Apply a unary operator.
+        For operators whose result is an integer.
+        @param  op    Operator handle.
+        @param  a     Operand.
+        @param  c     Output parameter: the result, where \a c = \a op \a a.
+        @return       An appropriate error code.
+    */
+    virtual error apply(op_code op, const dd_edge &a, long &c) = 0;
+
+    /** Apply a unary operator.
+        For operators whose result is a real.
+        @param  op    Operator handle.
+        @param  a     Operand.
+        @param  c     Output parameter: the result, where \a c = \a op \a a.
+        @return       An appropriate error code.
+    */
+    virtual error apply(op_code op, const dd_edge &a, double &c) = 0;
+
+    /** Apply a unary operator.
+        For operators whose result is an arbitrary-precision integer
+        (as supplied by the GNU MP library).
+        @param  op    Operator handle.
+        @param  a     Operand.
+        @param  c     Output parameter: the result, where \a c = \a op \a a.
+        @return       An appropriate error code.
+    */
+    virtual error apply(op_code op, const dd_edge &a, mpz_t &c) = 0;
+
+
     /** Apply a binary operator.
         \a a, \a b and \a c are not required to be in the same forest,
         but they must have the same domain. The result will be in the
@@ -1364,27 +1396,6 @@ class compute_manager {
     virtual error apply(op_code op, const dd_edge &a, const dd_edge &b,
         dd_edge &c) = 0;
 
-#if 0
-    /** Apply a unary operator.
-        The result is an integer (e.g., "cardinality").
-        @param  op    Operator handle.
-        @param  a     Operand.
-        @param  c     Output parameter: the result, where \a c = \a op \a a.
-        @return       An appropriate error code.
-    */
-    virtual error apply(op_code op, const dd_edge &a, int &c) = 0;
-
-    /** Apply a unary operator.
-        The result is a real (e.g., "approximate cardinality").
-        @param  op    Operator handle.
-        @param  a     Operand.
-        @param  c     Output parameter: the result, where \a c = \a op \a a.
-        @return       An appropriate error code.
-    */
-    virtual error apply(op_code op, const dd_edge &a, float &c) = 0;
-
-    // TBD: apply where the result is a GMP integer.
-#endif
 
     /** Display compute table information.
         This is primarily for aid in debugging.

@@ -858,7 +858,22 @@ class operation {
     /// Compute the result of this operation on \a a and store the result in
     /// \a b.
     virtual compute_manager::error compute(op_info* cc, const dd_edge& a,
-      dd_edge& b) = 0;
+      dd_edge& b);
+
+    /// Compute the result of this operation on \a a and store the result in
+    /// \a b.
+    virtual compute_manager::error compute(op_info* cc, const dd_edge& a,
+      long& b);
+
+    /// Compute the result of this operation on \a a and store the result in
+    /// \a b.
+    virtual compute_manager::error compute(op_info* cc, const dd_edge& a,
+      double& b);
+
+    /// Compute the result of this operation on \a a and store the result in
+    /// \a b.
+    virtual compute_manager::error compute(op_info* cc, const dd_edge& a,
+      mpz_t &b);
 
     /// Compute the result of this operation on \a a and \a b and store the
     /// result in \a c.
@@ -913,6 +928,10 @@ class expert_compute_manager : public compute_manager {
 
     virtual const char* getOperationName(op_code op) const;
     virtual error apply(op_code op, const dd_edge &a, dd_edge &b);
+    virtual error apply(op_code op, const dd_edge &a, long &c);
+    virtual error apply(op_code op, const dd_edge &a, double &c);
+    virtual error apply(op_code op, const dd_edge &a, mpz_t &c);
+
     virtual error apply(op_code op, const dd_edge &a, const dd_edge &b,
         dd_edge &c);
 
@@ -929,6 +948,9 @@ class expert_compute_manager : public compute_manager {
     virtual error apply(op_info* op, const dd_edge &a, const dd_edge &b,
         dd_edge &c);
     virtual error apply(op_info* op, const dd_edge &a, dd_edge &b);
+    virtual error apply(op_info* op, const dd_edge &a, long &b);
+    virtual error apply(op_info* op, const dd_edge &a, double &b);
+    virtual error apply(op_info* op, const dd_edge &a, mpz_t &b);
 
     /** Obtain a concrete handle to the built-in operation.
         If a built-in operation is going to be called repeatedly for the
@@ -944,11 +966,6 @@ class expert_compute_manager : public compute_manager {
     virtual op_info* getOpInfo(op_code op, const forest* const* f, int N);
     virtual op_info* getOpInfo(const operation* op, const forest* const* f,
         int N);
-
-#if 0
-    virtual error apply(op_code op, const dd_edge &a, int &c);
-    virtual error apply(op_code op, const dd_edge &a, float &c);
-#endif
 
   private:
 
