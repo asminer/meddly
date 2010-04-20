@@ -33,8 +33,8 @@
 
 #include <cstdio>
 
-#include "../include/meddly.h"
-#include "../src/timer.h"
+#include "meddly.h"
+#include "timer.h"
 
 int N;
 int* scratch;

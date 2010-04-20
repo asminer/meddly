@@ -75,9 +75,9 @@
 #include <cstring>
 #include <vector>
 
-#include "../include/meddly.h"
-#include "../include/meddly_expert.h"
-#include "../src/timer.h"
+#include "meddly.h"
+#include "meddly_expert.h"
+#include "timer.h"
 
 using namespace std;
 

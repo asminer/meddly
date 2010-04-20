@@ -29,7 +29,7 @@
 
 
 #include <iostream>
-#include "../include/meddly.h"
+#include <meddly.h>
 #include <stdlib.h>
 
 /**

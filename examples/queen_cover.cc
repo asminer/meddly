@@ -35,7 +35,7 @@
 #include <sys/resource.h>
 #include <unistd.h>
 
-#include "../include/meddly.h"
+#include "meddly.h"
 
 int N;
 FILE* outfile;

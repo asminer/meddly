@@ -30,18 +30,18 @@
 
 #include <iostream>
 
-#include "../include/meddly.h"
-#include "../include/meddly_expert.h"
+#include "meddly.h"
+#include "meddly_expert.h"
 
 // Only include this file if referring to operations that are not
 // available via the mddlib interface. 
 // 
 // Also, include this file if you would like to create a custom
 // operation by deriving one of the existing operations.
-#include "../src/operation_ext.h"
+#include "operation_ext.h"
 
 // Timer class
-#include "../src/timer.h"
+#include "timer.h"
 
 #define USE_REALS 0
 

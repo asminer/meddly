@@ -37,10 +37,10 @@
 #ifndef COMPUTE_CACHE_H
 #define COMPUTE_CACHE_H
 
-#include "../src/defines.h"
-#include "../src/hash.h"
-#include "../src/fixed_size_hash.h"
-#include "../src/chained_hash.h"
+#include "defines.h"
+#include "hash.h"
+#include "fixed_size_hash.h"
+#include "chained_hash.h"
 
 // const int maxEntries = 262144 * 2;
 #define RECYCLED_LIST

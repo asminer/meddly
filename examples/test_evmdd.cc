@@ -29,15 +29,15 @@
  */
 
 #include <iostream>
-#include "../include/meddly.h"
+#include "meddly.h"
 
 // #define USE_EXPERT_INTERFACE
 #ifdef USE_EXPERT_INTERFACE
-#include "../include/meddly_expert.h"
+#include "meddly_expert.h"
 #endif
 
 // Timer class
-#include "../src/timer.h"
+#include "timer.h"
 
 #define USE_SEQUENTIAL_PLUS 0
 #define USE_RANDOM_GENERATOR_BOUND 0

@@ -33,9 +33,9 @@
 #include <iostream>
 #include <vector>
 
-#include "../include/meddly.h"
-#include "../src/operation_ext.h"
-#include "../src/timer.h"
+#include "meddly.h"
+#include "operation_ext.h"
+#include "timer.h"
 
 #define USE_REALS 1
 

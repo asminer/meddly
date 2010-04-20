@@ -24,14 +24,8 @@
 //
 // TODO: HERE: go through every function in mdds.h and mdds.cc
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-#ifdef HAVE_LIBGMP
-#include <gmp.h>
-#endif
 
-
+#include "defines.h"
 #include "mdds.h"
 
 #include <map>    // for getCardinality()

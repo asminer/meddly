@@ -8,7 +8,7 @@ AC_PREREQ(2.59)
 AC_INIT([meddly], [0.2], [junaid@cs.iastate.edu])
 AM_INIT_AUTOMAKE
 AM_CONFIG_HEADER(config.h)
-AC_CONFIG_SRCDIR([include/meddly.h])
+AC_CONFIG_SRCDIR([src/meddly.h])
 
 # Checks for programs.
 AC_PROG_CXX
@@ -54,7 +54,8 @@ AS_IF([test "x$with_gmp" != xno],
 
 AC_CONFIG_FILES([Makefile
                  examples/Makefile
-                 src/Makefile])
+                 src/Makefile
+                 src/operations/Makefile])
 
 AC_OUTPUT
 

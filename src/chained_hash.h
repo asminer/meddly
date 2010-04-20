@@ -60,7 +60,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <vector>
-#include "../src/defines.h"
+#include "defines.h"
 
 const unsigned  minTableSize = 1024u;
 const unsigned maxLoadFactor = 4u;  // i.e. nEntries / tableSize < 10

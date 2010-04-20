@@ -38,8 +38,8 @@
 #include <vector>
 //#include <map>  // for getCardinality()
 
-#include "../src/defines.h"
-#include "../src/mdd_hash.h"
+#include "defines.h"
+#include "mdd_hash.h"
 
 using namespace std;
 

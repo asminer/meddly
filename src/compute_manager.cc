@@ -21,16 +21,9 @@
 
 
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-#ifdef HAVE_LIBGMP
-#include <gmp.h>
-#endif
-
-#include "../src/defines.h"
-#include "../src/operation_ext.h"
-#include "../src/compute_cache.h"
+#include "defines.h"
+#include "operations/operation_ext.h"
+#include "compute_cache.h"
 
 #include "revision.h"
 

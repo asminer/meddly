@@ -19,19 +19,11 @@ rubiks_cube \
 nqueens \
 queen_cover
 
-## CXXFLAGS = 
-CXXFLAGS += -Wall
-## CXXFLAGS += -g
-# CXXFLAGS += -ggdb
-## CXXFLAGS += -pg
-# CXXFLAGS += -DDEVELOPMENT_CODE
-## CXXFLAGS += -DDIFF_SAT
-## CXXFLAGS += -O2
-## CXXFLAGS += -O3
-## CXXFLAGS += -m64
+AM_CPPFLAGS = -I../src -I../src/operations
+AM_CXXFLAGS = -Wall
 
 ## testmddlib_SOURCES = `$(CXX) testmddlib.cc -MM`
-testmddlib_SOURCES = testmddlib.cc
+testmddlib_SOURCES = testmddlib.cc 
 testmddlib_LDADD = ../src/libmeddly.la
 
 graphs_to_mdds_SOURCES = graphs_to_mdds.cc

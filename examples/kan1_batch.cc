@@ -92,8 +92,8 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "../include/meddly.h"
-#include "../include/meddly_expert.h"
+#include "meddly.h"
+#include "meddly_expert.h"
 
 
 const bool testFindFirstElement = false;

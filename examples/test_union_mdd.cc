@@ -30,8 +30,8 @@
 //TODO: test union, intersection (optimize), diff (optimize)
 
 #include <iostream>
-#include "../include/meddly.h"
-#include "../src/timer.h"
+#include "meddly.h"
+#include "timer.h"
 
 
 void printUsage(FILE *outputStream)

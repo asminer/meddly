@@ -20,14 +20,7 @@
 */
 
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-#ifdef HAVE_LIBGMP
-#include <gmp.h>
-#endif
-
-#include "../src/compute_cache.h"
+#include "compute_cache.h"
 
 
 const float expansionFactor = 1.25;

@@ -52,7 +52,7 @@
 
 #include <sys/time.h>
 #include <sys/resource.h>
-#include "../src/defines.h"
+#include "defines.h"
 
 #define ALT_HASH_CALL 1
 

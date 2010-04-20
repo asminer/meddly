@@ -20,13 +20,7 @@
 */
 
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-#ifdef HAVE_LIBGMP
-#include <gmp.h>
-#endif
-
+#include "defines.h"
 #include "mdds_ext.h"
 #include <algorithm>
 #include <limits.h>

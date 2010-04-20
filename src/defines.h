@@ -38,9 +38,13 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 // Meddly
-#include <../include/meddly.h>
-#include <../include/meddly_expert.h>
+#include "meddly.h"
+#include "meddly_expert.h"
 
 // Things that everyone will need
 #include <cstdlib>

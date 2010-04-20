@@ -59,7 +59,7 @@
 
 #include <sys/time.h>
 #include <sys/resource.h>
-#include "../src/defines.h"
+#include "defines.h"
 
 #define CHAIN_LENGTH_INFO
 #ifdef CHAIN_LENGTH_INFO

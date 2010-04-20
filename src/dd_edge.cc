@@ -21,13 +21,6 @@
 
 
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-#ifdef HAVE_LIBGMP
-#include <gmp.h>
-#endif
-
 #include "defines.h"
 
 // #define DEBUG_ITER_BEGIN

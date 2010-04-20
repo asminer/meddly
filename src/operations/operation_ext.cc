@@ -20,15 +20,8 @@
 */
 
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-#ifdef HAVE_LIBGMP
-#include <gmp.h>
-#endif
-
-#include "../src/operation_ext.h"
-#include "../src/compute_cache.h"
+#include "operation_ext.h"
+#include "../compute_cache.h"
 
 //#define IGNORE_TERMS 0
 //#define IGNORE_INCOUNT 2

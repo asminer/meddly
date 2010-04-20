@@ -89,9 +89,9 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "../include/meddly.h"
-#include "../include/meddly_expert.h"
-#include "../src/timer.h"
+#include "meddly.h"
+#include "meddly_expert.h"
+#include "timer.h"
 
 void printmem(long m)
 {
