@@ -67,16 +67,16 @@ const int verbose = 1;
 op_info* getOp(forest* f, compute_manager::op_code op)
 {
   static const int nForests = 3;
-  static forest* forests[nForests];
+  static op_param plist[nForests];
   static expert_compute_manager* ecm = 
     static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
   assert(ecm != 0);
   assert(f != 0);
 
-  forests[0] = f;
-  forests[1] = f;
-  forests[2] = f;
-  return ecm->getOpInfo(op, forests, nForests);
+  plist[0].set(f);
+  plist[1].set(f);
+  plist[2].set(f);
+  return ecm->getOpInfo(op, plist, nForests);
 }
 
 
@@ -88,17 +88,17 @@ op_info* getOp(forest* f, compute_manager::op_code op)
 op_info* getOp(forest* f, operation* op)
 {
   static const int nForests = 3;
-  static forest* forests[nForests];
+  static op_param plist[nForests];
   static expert_compute_manager* ecm = 
     static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
   assert(ecm != 0);
   assert(f != 0);
   assert(op != 0);
 
-  forests[0] = f;
-  forests[1] = f;
-  forests[2] = f;
-  return ecm->getOpInfo(op, forests, nForests);
+  plist[0].set(f);
+  plist[1].set(f);
+  plist[2].set(f);
+  return ecm->getOpInfo(op, plist, nForests);
 }
 
 

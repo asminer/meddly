@@ -28,11 +28,13 @@
 //#define DEBUG_DFS
 
 inline expert_forest* getExpertForest(op_info* op, int index) {
-  return smart_cast<expert_forest*>(op->f[index]);
+  return op->p[index].getForest();
+  // return smart_cast<expert_forest*>(op->f[index]);
 }
 
 inline const expert_forest* getExpertForest(const op_info* op, int index) {
-  return smart_cast<const expert_forest*>(op->f[index]);
+  return op->p[index].readForest();
+  // return smart_cast<const expert_forest*>(op->f[index]);
 }
 
 mdd_apply_operation::
@@ -49,11 +51,13 @@ typeCheck(const op_info* owner)
 {
   if (owner == 0)
     return compute_manager::UNKNOWN_OPERATION;
-  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+  if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
     return compute_manager::TYPE_MISMATCH;
-  if (owner->nForests != 3)
+  if (!owner->areAllForests())
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nParams != 3)
     return compute_manager::WRONG_NUMBER;
-  if (owner->f[0] != owner->f[1] || owner->f[0] != owner->f[2])
+  if (owner->p[0] != owner->p[1] || owner->p[0] != owner->p[2])
     return compute_manager::FOREST_MISMATCH;
   if (!getExpertForest(owner, 0)->isMdd())
     return compute_manager::TYPE_MISMATCH;
@@ -64,10 +68,10 @@ typeCheck(const op_info* owner)
 bool mdd_apply_operation::
 isEntryStale(const op_info* owner, const int* data)
 {
-  // data[] is of size owner.nForests
+  // data[] is of size owner.nParams
   // data[i] <--> forest[i]
   // call isStale for each forest[i] and data[i]
-  DCASSERT(owner->nForests == 3);
+  DCASSERT(owner->nParams == 3);
   return 
     getExpertForest(owner, 0)->isStale(data[0]) ||
     getExpertForest(owner, 1)->isStale(data[1]) ||
@@ -79,10 +83,10 @@ void
 mdd_apply_operation::
 discardEntry(op_info* owner, const int* data)
 {
-  // data[] is of size owner.nForests
+  // data[] is of size owner.nParams
   // data[i] <--> forest[i]
   // call uncacheNode for each forest[i] and data[i]
-  DCASSERT(owner->nForests == 3);
+  DCASSERT(owner->nParams == 3);
   getExpertForest(owner, 0)->uncacheNode(data[0]);
   getExpertForest(owner, 1)->uncacheNode(data[1]);
   getExpertForest(owner, 2)->uncacheNode(data[2]);
@@ -94,10 +98,10 @@ mdd_apply_operation::
 showEntry(const op_info* owner, FILE* strm,
   const int* data) const
 {
-  // data[] is of size owner.nForests
+  // data[] is of size owner.nParams
   // data[i] <--> forest[i]
   // call showNode for each forest[i] and data[i]
-  DCASSERT(owner->nForests == 3);
+  DCASSERT(owner->nParams == 3);
   fprintf(strm, "[%s(%d, %d): %d]",
       owner->op->getName(), data[0], data[1], data[2]);
 #if 0
@@ -780,7 +784,7 @@ int mdd_union::compute(op_info* owner, int a, int b)
 {
   // std::cerr << "1-step mdd_union.\n";
   int result = 0;
-  expert_forest* expertForest = smart_cast<expert_forest*>(owner->f[0]);
+  expert_forest* expertForest = smart_cast<expert_forest*>(owner->p[0]);
   if (checkTerminals(owner, a, b, result))
     return result;
   if (findResult(owner, a, b, result))
@@ -1403,7 +1407,7 @@ int mdd_intersection::compute(op_info* owner, int a, int b)
 {
   // std::cerr << "1-step mdd_intersection.\n";
   int result = 0;
-  expert_forest* expertForest = smart_cast<expert_forest*>(owner->f[0]);
+  expert_forest* expertForest = smart_cast<expert_forest*>(owner->p[0]);
   if (checkTerminals(owner, a, b, result))
     return result;
   if (findResult(owner, a, b, result))
@@ -1701,22 +1705,24 @@ mxd_apply_operation::typeCheck(const op_info* owner)
 {
   if (owner == 0)
     return compute_manager::UNKNOWN_OPERATION;
-  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+  if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
     return compute_manager::TYPE_MISMATCH;
-  if (owner->nForests != 3)
+  if (!owner->areAllForests())
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nParams != 3)
     return compute_manager::WRONG_NUMBER;
-  if (owner->f[0] != owner->f[1] || owner->f[0] != owner->f[2])
+  if (owner->p[0] != owner->p[1] || owner->p[0] != owner->p[2])
     return compute_manager::FOREST_MISMATCH;
-  if (!(owner->f[0]->isForRelations()) ||
-      owner->f[0]->getRangeType() != forest::BOOLEAN ||
-      owner->f[0]->getEdgeLabeling() != forest::MULTI_TERMINAL)
+  if (!owner->p[0].isMxd() ||
+      !owner->p[0].isBoolForest() ||
+      !owner->p[0].isMT())
     return compute_manager::TYPE_MISMATCH;
   return compute_manager::SUCCESS;
 }
 
 
 int mxd_apply_operation::compute(op_info* owner, int a, int b) {
-  return smart_cast<expert_forest*>(owner->f[0])->getReductionRule() ==
+  return owner->p[0].readForest()->getReductionRule() ==
       forest::IDENTITY_REDUCED
       ? computeIdent(owner, a, b)
       : computeNonIdent(owner, a, b);
@@ -1725,7 +1731,7 @@ int mxd_apply_operation::compute(op_info* owner, int a, int b) {
 
 int mxd_apply_operation::computeNonIdent(op_info* owner, int a, int b)
 {
-  expert_forest* expertForest = smart_cast<expert_forest*>(owner->f[0]);
+  expert_forest* expertForest = owner->p[0].getForest();
 
   DCASSERT(expertForest->getReductionRule() != forest::IDENTITY_REDUCED);
 
@@ -1823,7 +1829,7 @@ int mxd_apply_operation::computeIdent(op_info* owner, int a, int b)
   // it is at a higher level), expand the primed nodes also).
 
   int result = 0;
-  expert_forest* expertForest = smart_cast<expert_forest*>(owner->f[0]);
+  expert_forest* expertForest = owner->p[0].getForest();
   if (checkTerminals(owner, a, b, result))
     return result;
   if (findResult(owner, a, b, result))
@@ -2456,15 +2462,17 @@ mxd_alt_apply_operation::typeCheck(const op_info* owner)
 {
   if (owner == 0)
     return compute_manager::UNKNOWN_OPERATION;
-  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+  if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
     return compute_manager::TYPE_MISMATCH;
-  if (owner->nForests != 3)
+  if (!owner->areAllForests())
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nParams != 3)
     return compute_manager::WRONG_NUMBER;
-  if (owner->f[0] != owner->f[1] || owner->f[0] != owner->f[2])
+  if (owner->p[0] != owner->p[1] || owner->p[0] != owner->p[2])
     return compute_manager::FOREST_MISMATCH;
-  if (!(owner->f[0]->isForRelations()) ||
-      owner->f[0]->getRangeType() != forest::BOOLEAN ||
-      owner->f[0]->getEdgeLabeling() != forest::MULTI_TERMINAL)
+  if (!(owner->p[0].isMxd()) ||
+      !owner->p[0].isBoolForest() ||
+      !owner->p[0].isMT())
     return compute_manager::TYPE_MISMATCH;
   return compute_manager::SUCCESS;
 }
@@ -2473,10 +2481,10 @@ mxd_alt_apply_operation::typeCheck(const op_info* owner)
 bool mxd_alt_apply_operation::isEntryStale(const op_info* owner,
     const int* data)
 {
-  // data[] is of size owner.nForests + 1
+  // data[] is of size owner.nParams + 1
   // data[0] is level
   // data[i] <--> forest[i-1]
-  DCASSERT(owner->nForests == 3);
+  DCASSERT(owner->nParams == 3);
   return 
     getExpertForest(owner, 0)->isStale(data[1]) ||
     getExpertForest(owner, 1)->isStale(data[2]) ||
@@ -2487,10 +2495,10 @@ bool mxd_alt_apply_operation::isEntryStale(const op_info* owner,
 void
 mxd_alt_apply_operation::discardEntry(op_info* owner, const int* data)
 {
-  // data[] is of size owner.nForests + 1
+  // data[] is of size owner.nParams + 1
   // data[0] is level
   // data[i] <--> forest[i-1]
-  DCASSERT(owner->nForests == 3);
+  DCASSERT(owner->nParams == 3);
   getExpertForest(owner, 0)->uncacheNode(data[1]);
   getExpertForest(owner, 1)->uncacheNode(data[2]);
   getExpertForest(owner, 2)->uncacheNode(data[3]);
@@ -2501,10 +2509,10 @@ void
 mxd_alt_apply_operation::showEntry(const op_info* owner, FILE* strm,
   const int* data) const
 {
-  // data[] is of size owner.nForests + 1
+  // data[] is of size owner.nParams + 1
   // data[0] is level
   // data[i] <--> forest[i-1]
-  DCASSERT(owner->nForests == 3);
+  DCASSERT(owner->nParams == 3);
   fprintf(strm, "[%s %d %d %d %d]",
       owner->op->getName(), data[0], data[1], data[2], data[3]);
 }
@@ -2603,7 +2611,7 @@ mxd_alt_apply_operation::compute(op_info* owner, const dd_edge& a,
 {
   if (owner == 0) return compute_manager::TYPE_MISMATCH;
   int result = compute(owner,
-      owner->f[0]->getDomain()->getTopVariable(), a.getNode(), b.getNode());
+      owner->p[0].getDomain()->getTopVariable(), a.getNode(), b.getNode());
   c.set(result, 0, getExpertForest(owner, 2)->getNodeLevel(result));
   return compute_manager::SUCCESS;
 }
@@ -2612,7 +2620,7 @@ mxd_alt_apply_operation::compute(op_info* owner, const dd_edge& a,
 int mxd_alt_apply_operation::compute(op_info* owner, int resultLevel,
     int a, int b)
 {
-  return smart_cast<expert_forest*>(owner->f[0])->getReductionRule() ==
+  return owner->p[0].readForest()->getReductionRule() ==
       forest::IDENTITY_REDUCED
       ? computeIdent(owner, resultLevel, a, b)
       : computeNonIdent(owner, resultLevel, a, b);
@@ -2622,7 +2630,7 @@ int mxd_alt_apply_operation::compute(op_info* owner, int resultLevel,
 int mxd_alt_apply_operation::computeNonIdent(op_info* owner,
     int resultLevel, int a, int b)
 {
-  expert_forest* expertForest = smart_cast<expert_forest*>(owner->f[0]);
+  expert_forest* expertForest = owner->p[0].getForest();
 
   DCASSERT(expertForest->getReductionRule() != forest::IDENTITY_REDUCED);
 
@@ -2747,7 +2755,7 @@ int mxd_alt_apply_operation::computeIdent(op_info* owner, int resultLevel,
   // This is to ensure correctness for operations where op(0, 0) != 0.
 
   int result = 0;
-  expert_forest* expertForest = smart_cast<expert_forest*>(owner->f[0]);
+  expert_forest* expertForest = owner->p[0].getForest();
 
   DCASSERT(expertForest->getReductionRule() == forest::IDENTITY_REDUCED);
 
@@ -3628,11 +3636,13 @@ mdd_mxd_image_operation::typeCheck(const op_info* owner)
   // op1 == MDD, op2 == MXD, op3 = MDD
   if (owner == 0)
     return compute_manager::UNKNOWN_OPERATION;
-  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+  if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
     return compute_manager::TYPE_MISMATCH;
-  if (owner->nForests != 3)
+  if (!owner->areAllForests())
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nParams != 3)
     return compute_manager::WRONG_NUMBER;
-  if (owner->f[0] == owner->f[1] || owner->f[0] != owner->f[2])
+  if (owner->p[0] == owner->p[1] || owner->p[0] != owner->p[2])
     return compute_manager::FOREST_MISMATCH;
   if (!getExpertForest(owner, 0)->isMdd() ||
       !getExpertForest(owner, 1)->isMxd())
@@ -3663,12 +3673,12 @@ mdd_post_image::~mdd_post_image() {}
 
 int mdd_post_image::compute(op_info* owner, int mdd, int mxd)
 {
-  DCASSERT(owner->nForests == 3 && owner->f[0] == owner->f[2]);
+  DCASSERT(owner->nParams == 3 && owner->p[0] == owner->p[2]);
   const int nOperands = 3;
-  forest* forests[nOperands] = {owner->f[0], owner->f[0], owner->f[0]};
+  op_param plist[nOperands] = {owner->p[0], owner->p[0], owner->p[0]};
   op_info* unionOp = 
     smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
-    getOpInfo(compute_manager::UNION, forests, nOperands);
+    getOpInfo(compute_manager::UNION, plist, nOperands);
   assert(unionOp != 0);
 
 #if 0
@@ -4315,18 +4325,18 @@ mdd_reachability_bfs::~mdd_reachability_bfs() {}
 int mdd_reachability_bfs::compute(op_info* owner, int mdd, int mxd)
 {
   // set up aliases
-  DCASSERT(owner->nForests == 3 && owner->f[0] == owner->f[2]);
+  DCASSERT(owner->nParams == 3 && owner->p[0] == owner->p[2]);
   const int nOperands = 3;
-  forest* forests[nOperands] = {owner->f[0], owner->f[0], owner->f[0]};
+  op_param plist[nOperands] = {owner->p[0], owner->p[0], owner->p[0]};
   expert_compute_manager* ecm = 
     smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
   assert(ecm != 0);
   op_info* unionOp =
-    ecm->getOpInfo(compute_manager::UNION, forests, nOperands);
+    ecm->getOpInfo(compute_manager::UNION, plist, nOperands);
   assert(unionOp != 0);
-  forests[1] = owner->f[1];
+  plist[1] = owner->p[1];
   op_info* postImageOp =
-    ecm->getOpInfo(compute_manager::POST_IMAGE, forests, nOperands);
+    ecm->getOpInfo(compute_manager::POST_IMAGE, plist, nOperands);
   assert(postImageOp != 0);
   expert_forest* mddNm = getExpertForest(owner, 0);
 
@@ -4416,7 +4426,7 @@ mdd_reachability_dfs::~mdd_reachability_dfs() {}
 
 int mdd_reachability_dfs::compute(op_info* owner, int mdd, int mxd)
 {
-  DCASSERT(owner->nForests == 3 && owner->f[0] == owner->f[2]);
+  DCASSERT(owner->nParams == 3 && owner->p[0] == owner->p[2]);
 
   // Initialize class members and helper operations
   initialize(owner);
@@ -4480,24 +4490,24 @@ void mdd_reachability_dfs::initialize(op_info* o)
 
   // set up mdd operation: union
   const int nOperands = 3;
-  forest* forests[nOperands] = {owner->f[0], owner->f[0], owner->f[0]};
+  op_param plist[nOperands] = {owner->p[0], owner->p[0], owner->p[0]};
 
-  mddUnionOp = ecm->getOpInfo(compute_manager::UNION, forests, nOperands);
+  mddUnionOp = ecm->getOpInfo(compute_manager::UNION, plist, nOperands);
   assert(mddUnionOp != 0);
   mddUnion = smart_cast<mdd_union*>(mddUnionOp->op);
   assert(mddUnion != 0);
 
   // set up mxd operations: intersection and difference
-  forests[0] = owner->f[1]; forests[1] = owner->f[1]; forests[2] = owner->f[1];
+  plist[0] = owner->p[1]; plist[1] = owner->p[1]; plist[2] = owner->p[1];
 
   mxdIntersectionOp =
-    ecm->getOpInfo(compute_manager::INTERSECTION, forests, nOperands);
+    ecm->getOpInfo(compute_manager::INTERSECTION, plist, nOperands);
   assert(mxdIntersectionOp != 0);
   mxdIntersection = smart_cast<mxd_intersection*>(mxdIntersectionOp->op);
   assert(mxdIntersection != 0);
 
   mxdDifferenceOp =
-    ecm->getOpInfo(compute_manager::DIFFERENCE, forests, nOperands);
+    ecm->getOpInfo(compute_manager::DIFFERENCE, plist, nOperands);
   assert(mxdDifferenceOp != 0);
   mxdDifference = smart_cast<mxd_difference*>(mxdDifferenceOp->op);
   assert(mxdDifference != 0);
@@ -6185,18 +6195,20 @@ mtmdd_apply_operation::typeCheck(const op_info* owner)
 {
   if (owner == 0)
     return compute_manager::UNKNOWN_OPERATION;
-  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+  if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
     return compute_manager::TYPE_MISMATCH;
-  if (owner->nForests != 3)
+  if (!owner->areAllForests())
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nParams != 3)
     return compute_manager::WRONG_NUMBER;
-  if (owner->f[0] != owner->f[1] || owner->f[0] != owner->f[2])
+  if (owner->p[0] != owner->p[1] || owner->p[0] != owner->p[2])
     return compute_manager::FOREST_MISMATCH;
-  if (owner->f[0]->isForRelations() ||
-      owner->f[0]->getRangeType() == forest::BOOLEAN ||
+  if (owner->p[0].isMxd() ||
+      owner->p[0].isBoolForest() ||
       // the above allows MTMDDs with INTEGERs and REALs
       // the line below allows only INTEGERs
       // owner->f[0]->getRangeType() != forest::INTEGER ||
-      owner->f[0]->getEdgeLabeling() != forest::MULTI_TERMINAL)
+      !owner->p[0].isMT())
     return compute_manager::TYPE_MISMATCH;
   return compute_manager::SUCCESS;
 }
@@ -6400,18 +6412,20 @@ mtmdd_plus::typeCheck(const op_info* owner)
 {
   if (owner == 0)
     return compute_manager::UNKNOWN_OPERATION;
-  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+  if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
     return compute_manager::TYPE_MISMATCH;
-  if (owner->nForests != 3)
+  if (!owner->areAllForests())
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nParams != 3)
     return compute_manager::WRONG_NUMBER;
-  if (owner->f[0] != owner->f[1] || owner->f[0] != owner->f[2])
+  if (owner->p[0] != owner->p[1] || owner->p[0] != owner->p[2])
     return compute_manager::FOREST_MISMATCH;
-  if (owner->f[0]->isForRelations() ||
-      owner->f[0]->getRangeType() == forest::BOOLEAN ||
+  if (owner->p[0].isMxd() ||
+      owner->p[0].isBoolForest() ||
       // the above allows MTMDDs with INTEGERs and REALs
       // the line below allows only INTEGERs
       // owner->f[0]->getRangeType() != forest::INTEGER ||
-      owner->f[0]->getEdgeLabeling() != forest::MULTI_TERMINAL)
+      !owner->p[0].isMT())
     return compute_manager::TYPE_MISMATCH;
   return compute_manager::SUCCESS;
 }
@@ -7062,11 +7076,13 @@ mtmdd_to_mdd_apply_operation::typeCheck(const op_info* owner)
 {
   if (owner == 0)
     return compute_manager::UNKNOWN_OPERATION;
-  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+  if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
     return compute_manager::TYPE_MISMATCH;
-  if (owner->nForests != 3)
+  if (!owner->areAllForests())
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nParams != 3)
     return compute_manager::WRONG_NUMBER;
-  if (owner->f[0] != owner->f[1])
+  if (owner->p[0] != owner->p[1])
     return compute_manager::FOREST_MISMATCH;
   if (!getExpertForest(owner, 0)->isMtMdd() ||
       !getExpertForest(owner, 2)->isMdd())
@@ -7083,7 +7099,7 @@ mtmdd_to_mdd_apply_operation::typeCheck(const op_info* owner)
 // This makes for a simpler but less efficient implementation.
 int mtmdd_to_mdd_apply_operation::compute(op_info* owner, int a, int b)
 {
-  initScratch(smart_cast<const expert_domain*>(owner->f[0]->getDomain()));
+  initScratch(smart_cast<const expert_domain*>(owner->p[0].getDomain()));
   return computeHelper(owner, a, b);
 }
 
@@ -7407,13 +7423,15 @@ conversion_operation::typeCheck(const op_info* owner)
 {
   if (owner == 0)
     return compute_manager::UNKNOWN_OPERATION;
-  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+  if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
     return compute_manager::TYPE_MISMATCH;
-  if (owner->nForests != 2)
+  if (!owner->areAllForests())
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nParams != 2)
     return compute_manager::WRONG_NUMBER;
   // No assumption about what kind of forests these are, but they
   // have to be forests in the same domain
-  if (owner->f[0]->getDomain() != owner->f[1]->getDomain())
+  if (owner->p[0].getDomain() != owner->p[1].getDomain())
     return compute_manager::TYPE_MISMATCH;
   return compute_manager::SUCCESS;
 }
@@ -7421,10 +7439,10 @@ conversion_operation::typeCheck(const op_info* owner)
 
 bool conversion_operation::isEntryStale(const op_info* owner, const int* data)
 {
-  // data[] is of size owner.nForests
+  // data[] is of size owner.nParams
   // data[i] <--> forest[i]
   // call isStale for each forest[i] and data[i]
-  DCASSERT(owner->nForests == 2);
+  DCASSERT(owner->nParams == 2);
   return 
     getExpertForest(owner, 0)->isStale(data[0]) ||
     getExpertForest(owner, 1)->isStale(data[1]);
@@ -7434,10 +7452,10 @@ bool conversion_operation::isEntryStale(const op_info* owner, const int* data)
 void
 conversion_operation::discardEntry(op_info* owner, const int* data)
 {
-  // data[] is of size owner.nForests
+  // data[] is of size owner.nParams
   // data[i] <--> forest[i]
   // call uncacheNode for each forest[i] and data[i]
-  DCASSERT(owner->nForests == 2);
+  DCASSERT(owner->nParams == 2);
   getExpertForest(owner, 0)->uncacheNode(data[0]);
   getExpertForest(owner, 1)->uncacheNode(data[1]);
 }
@@ -7448,10 +7466,10 @@ conversion_operation::showEntry(const op_info* owner, FILE* strm,
   const int* data) const
 {
   // TODO:
-  // data[] is of size owner.nForests
+  // data[] is of size owner.nParams
   // data[i] <--> forest[i]
   // call showNode for each forest[i] and data[i]
-  DCASSERT(owner->nForests == 2);
+  DCASSERT(owner->nParams == 2);
   fprintf(strm, "[%s %d %d]",
       owner->op->getName(), data[0], data[1]);
 #if 0
@@ -7633,11 +7651,13 @@ mtmdd_to_mdd::typeCheck(const op_info* owner)
 {
   if (owner == 0)
     return compute_manager::UNKNOWN_OPERATION;
-  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+  if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
     return compute_manager::TYPE_MISMATCH;
-  if (owner->nForests != 2)
+  if (!owner->areAllForests())
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nParams != 2)
     return compute_manager::WRONG_NUMBER;
-  if (owner->f[0]->getDomain() != owner->f[1]->getDomain())
+  if (owner->p[0].getDomain() != owner->p[1].getDomain())
     return compute_manager::TYPE_MISMATCH;
   if (!getExpertForest(owner, 0)->isMtMdd())
     return compute_manager::TYPE_MISMATCH;
@@ -7683,11 +7703,13 @@ mdd_to_mtmdd::typeCheck(const op_info* owner)
 {
   if (owner == 0)
     return compute_manager::UNKNOWN_OPERATION;
-  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+  if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
     return compute_manager::TYPE_MISMATCH;
-  if (owner->nForests != 2)
+  if (!owner->areAllForests())
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nParams != 2)
     return compute_manager::WRONG_NUMBER;
-  if (owner->f[0]->getDomain() != owner->f[1]->getDomain())
+  if (owner->p[0].getDomain() != owner->p[1].getDomain())
     return compute_manager::TYPE_MISMATCH;
   if (!getExpertForest(owner, 0)->isMdd())
     return compute_manager::TYPE_MISMATCH;
@@ -7734,11 +7756,13 @@ mtmxd_to_mxd::typeCheck(const op_info* owner)
 {
   if (owner == 0)
     return compute_manager::UNKNOWN_OPERATION;
-  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+  if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
     return compute_manager::TYPE_MISMATCH;
-  if (owner->nForests != 2)
+  if (!owner->areAllForests())
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nParams != 2)
     return compute_manager::WRONG_NUMBER;
-  if (owner->f[0]->getDomain() != owner->f[1]->getDomain())
+  if (owner->p[0].getDomain() != owner->p[1].getDomain())
     return compute_manager::TYPE_MISMATCH;
   if (!getExpertForest(owner, 0)->isMtMxd())
     return compute_manager::TYPE_MISMATCH;
@@ -7784,11 +7808,13 @@ mxd_to_mtmxd::typeCheck(const op_info* owner)
 {
   if (owner == 0)
     return compute_manager::UNKNOWN_OPERATION;
-  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+  if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
     return compute_manager::TYPE_MISMATCH;
-  if (owner->nForests != 2)
+  if (!owner->areAllForests())
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nParams != 2)
     return compute_manager::WRONG_NUMBER;
-  if (owner->f[0]->getDomain() != owner->f[1]->getDomain())
+  if (owner->p[0].getDomain() != owner->p[1].getDomain())
     return compute_manager::TYPE_MISMATCH;
   if (!getExpertForest(owner, 0)->isMxd())
     return compute_manager::TYPE_MISMATCH;
@@ -7835,15 +7861,17 @@ mtmdd_to_evmdd::typeCheck(const op_info* owner)
 {
   if (owner == 0)
     return compute_manager::UNKNOWN_OPERATION;
-  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+  if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
     return compute_manager::TYPE_MISMATCH;
-  if (owner->nForests != 2)
+  if (!owner->areAllForests())
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nParams != 2)
     return compute_manager::WRONG_NUMBER;
-  if (owner->f[0]->getDomain() != owner->f[1]->getDomain())
+  if (owner->p[0].getDomain() != owner->p[1].getDomain())
     return compute_manager::TYPE_MISMATCH;
   if (!getExpertForest(owner, 0)->isMtMdd())
     return compute_manager::TYPE_MISMATCH;
-  if (owner->f[1]->getEdgeLabeling() == forest::MULTI_TERMINAL)
+  if (owner->p[1].isMT())
     // !MULTI_TERMINAL is same as EV+ or EV*
     return compute_manager::TYPE_MISMATCH;
   return compute_manager::SUCCESS;
@@ -7852,10 +7880,10 @@ mtmdd_to_evmdd::typeCheck(const op_info* owner)
 
 bool mtmdd_to_evmdd::isEntryStale(const op_info* owner, const int* data)
 {
-  // data[] is of size owner.nForests + 1 (last int is edge value)
+  // data[] is of size owner.nParams + 1 (last int is edge value)
   // data[i] <--> forest[i]
   // call isStale for each forest[i] and data[i]
-  DCASSERT(owner->nForests == 2);
+  DCASSERT(owner->nParams == 2);
   return 
     getExpertForest(owner, 0)->isStale(data[0]) ||
     getExpertForest(owner, 1)->isStale(data[1]);
@@ -7865,10 +7893,10 @@ bool mtmdd_to_evmdd::isEntryStale(const op_info* owner, const int* data)
 void
 mtmdd_to_evmdd::discardEntry(op_info* owner, const int* data)
 {
-  // data[] is of size owner.nForests + 1 (last int is edge value)
+  // data[] is of size owner.nParams + 1 (last int is edge value)
   // data[i] <--> forest[i]
   // call uncacheNode for each forest[i] and data[i]
-  DCASSERT(owner->nForests == 2);
+  DCASSERT(owner->nParams == 2);
   getExpertForest(owner, 0)->uncacheNode(data[0]);
   getExpertForest(owner, 1)->uncacheNode(data[1]);
 }
@@ -7878,10 +7906,10 @@ void
 mtmdd_to_evmdd::showEntry(const op_info* owner, FILE* strm,
   const int* data) const
 {
-  // data[] is of size owner.nForests + 1 (last int is edge value)
+  // data[] is of size owner.nParams + 1 (last int is edge value)
   // data[i] <--> forest[i]
   // call showNode for each forest[i] and data[i]
-  DCASSERT(owner->nForests == 2);
+  DCASSERT(owner->nParams == 2);
   if (getExpertForest(owner, 1)->getRangeType() == forest::REAL) {
     fprintf(strm, "[%s %d %d %f]",
         owner->op->getName(), data[0], data[1], toFloat(data[2]));
@@ -8141,11 +8169,13 @@ mdd_to_evplusmdd_index_set::typeCheck(const op_info* owner)
 {
   if (owner == 0)
     return compute_manager::UNKNOWN_OPERATION;
-  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+  if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
     return compute_manager::TYPE_MISMATCH;
-  if (owner->nForests != 2)
+  if (!owner->areAllForests())
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nParams != 2)
     return compute_manager::WRONG_NUMBER;
-  if (owner->f[0]->getDomain() != owner->f[1]->getDomain())
+  if (owner->p[0].getDomain() != owner->p[1].getDomain())
     return compute_manager::TYPE_MISMATCH;
   if (!getExpertForest(owner, 0)->isMdd())
     return compute_manager::TYPE_MISMATCH;
@@ -8162,7 +8192,7 @@ mdd_to_evplusmdd_index_set::compute(op_info* owner,
   if (owner == 0) return compute_manager::TYPE_MISMATCH;
   int result = 0;
   int ev = 0;
-  int nVars = owner->f[0]->getDomain()->getNumVariables();
+  int nVars = owner->p[0].getDomain()->getNumVariables();
   compute(owner, a.getNode(), nVars, result, ev);
   // note that ev will be equal to the cardinality of the ev+mdd;
   // but we do not use that number here.
@@ -8299,18 +8329,20 @@ mtmxd_apply_operation::typeCheck(const op_info* owner)
 {
   if (owner == 0)
     return compute_manager::UNKNOWN_OPERATION;
-  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+  if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
     return compute_manager::TYPE_MISMATCH;
-  if (owner->nForests != 3)
+  if (!owner->areAllForests())
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nParams != 3)
     return compute_manager::WRONG_NUMBER;
-  if (owner->f[0] != owner->f[1] || owner->f[0] != owner->f[2])
+  if (owner->p[0] != owner->p[1] || owner->p[0] != owner->p[2])
     return compute_manager::FOREST_MISMATCH;
-  if (!(owner->f[0]->isForRelations()) ||
-      owner->f[0]->getRangeType() == forest::BOOLEAN ||
+  if (!(owner->p[0].isMxd()) ||
+      owner->p[0].isBoolForest() ||
       // the above allows MTMXDs with INTEGERs and REALs
       // the line below allows only INTEGERs
       // owner->f[0]->getRangeType() != forest::INTEGER ||
-      owner->f[0]->getEdgeLabeling() != forest::MULTI_TERMINAL)
+      !owner->p[0].isMT())
     return compute_manager::TYPE_MISMATCH;
   // mtmxd_apply_operation::compute() works correctly only with
   // operations that return 0 when operating on 0s. For example,
@@ -8674,18 +8706,20 @@ mtmxd_alt_apply_operation::typeCheck(const op_info* owner)
 {
   if (owner == 0)
     return compute_manager::UNKNOWN_OPERATION;
-  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+  if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
     return compute_manager::TYPE_MISMATCH;
-  if (owner->nForests != 3)
+  if (!owner->areAllForests())
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nParams != 3)
     return compute_manager::WRONG_NUMBER;
-  if (owner->f[0] != owner->f[1] || owner->f[0] != owner->f[2])
+  if (owner->p[0] != owner->p[1] || owner->p[0] != owner->p[2])
     return compute_manager::FOREST_MISMATCH;
-  if (!(owner->f[0]->isForRelations()) ||
-      owner->f[0]->getRangeType() == forest::BOOLEAN ||
+  if (!(owner->p[0].isMxd()) ||
+      owner->p[0].isBoolForest() ||
       // the above allows MTMXDs with INTEGERs and REALs
       // the line below allows only INTEGERs
       // owner->f[0]->getRangeType() != forest::INTEGER ||
-      owner->f[0]->getEdgeLabeling() != forest::MULTI_TERMINAL)
+      !owner->p[0].isMT())
     return compute_manager::TYPE_MISMATCH;
   return compute_manager::SUCCESS;
 }
@@ -8865,11 +8899,13 @@ mtmdd_post_image::typeCheck(const op_info* owner)
   // op1 == MTMDD, op2 == MTMXD, op3 = MTMDD
   if (owner == 0)
     return compute_manager::UNKNOWN_OPERATION;
-  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+  if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
     return compute_manager::TYPE_MISMATCH;
-  if (owner->nForests != 3)
+  if (!owner->areAllForests())
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nParams != 3)
     return compute_manager::WRONG_NUMBER;
-  if (owner->f[0] == owner->f[1] || owner->f[0] != owner->f[2])
+  if (owner->p[0] == owner->p[1] || owner->p[0] != owner->p[2])
     return compute_manager::FOREST_MISMATCH;
   if (!getExpertForest(owner, 0)->isMtMdd() ||
       !getExpertForest(owner, 1)->isMtMxd())
@@ -8880,12 +8916,12 @@ mtmdd_post_image::typeCheck(const op_info* owner)
 
 int mtmdd_post_image::compute(op_info* owner, int mdd, int mxd)
 {
-  DCASSERT(owner->nForests == 3 && owner->f[0] == owner->f[2]);
+  DCASSERT(owner->nParams == 3 && owner->p[0] == owner->p[2]);
   const int nOperands = 3;
-  forest* forests[nOperands] = {owner->f[0], owner->f[0], owner->f[0]};
+  op_param plist[nOperands] = {owner->p[0], owner->p[0], owner->p[0]};
   op_info* plusOp = 
     smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
-    getOpInfo(compute_manager::PLUS, forests, nOperands);
+    getOpInfo(compute_manager::PLUS, plist, nOperands);
   assert(plusOp != 0);
   return compute(owner, plusOp, mdd, mxd);
 }
@@ -8982,11 +9018,13 @@ mtmdd_pre_image::typeCheck(const op_info* owner)
   // op1 == MTMDD, op2 == MTMXD, op3 = MTMDD
   if (owner == 0)
     return compute_manager::UNKNOWN_OPERATION;
-  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+  if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
     return compute_manager::TYPE_MISMATCH;
-  if (owner->nForests != 3)
+  if (!owner->areAllForests())
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nParams != 3)
     return compute_manager::WRONG_NUMBER;
-  if (owner->f[0] == owner->f[1] || owner->f[0] != owner->f[2])
+  if (owner->p[0] == owner->p[1] || owner->p[0] != owner->p[2])
     return compute_manager::FOREST_MISMATCH;
   if (!getExpertForest(owner, 0)->isMtMdd() ||
       !getExpertForest(owner, 1)->isMtMxd())
@@ -8997,12 +9035,12 @@ mtmdd_pre_image::typeCheck(const op_info* owner)
 
 int mtmdd_pre_image::compute(op_info* owner, int mdd, int mxd)
 {
-  DCASSERT(owner->nForests == 3 && owner->f[0] == owner->f[2]);
+  DCASSERT(owner->nParams == 3 && owner->p[0] == owner->p[2]);
   const int nOperands = 3;
-  forest* forests[nOperands] = {owner->f[0], owner->f[0], owner->f[0]};
+  op_param plist[nOperands] = {owner->p[0], owner->p[0], owner->p[0]};
   op_info* plusOp = 
     smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
-    getOpInfo(compute_manager::PLUS, forests, nOperands);
+    getOpInfo(compute_manager::PLUS, plist, nOperands);
   assert(plusOp != 0);
   return compute(owner, plusOp, mdd, mxd);
 }
@@ -9085,10 +9123,10 @@ bool
 evmdd_apply_operation::
 isEntryStale(const op_info* owner, const int* data)
 {
-  // data[] is of size owner.nForests * 2
+  // data[] is of size owner.nParams * 2
   // data[2i] and data[2i+1] <--> forest[i]
   // call isStale for each forest[i] and data[2i]
-  DCASSERT(owner->nForests == 3);
+  DCASSERT(owner->nParams == 3);
   return 
     getExpertForest(owner, 0)->isStale(data[0]) ||
     getExpertForest(owner, 1)->isStale(data[2]) ||
@@ -9100,10 +9138,10 @@ void
 evmdd_apply_operation::
 discardEntry(op_info* owner, const int* data)
 {
-  // data[] is of size owner.nForests * 2
+  // data[] is of size owner.nParams * 2
   // data[2i] and data[2i+1] <--> forest[i]
   // call uncacheNode for each forest[i] and data[2i]
-  DCASSERT(owner->nForests == 3);
+  DCASSERT(owner->nParams == 3);
   getExpertForest(owner, 0)->uncacheNode(data[0]);
   getExpertForest(owner, 1)->uncacheNode(data[2]);
   getExpertForest(owner, 2)->uncacheNode(data[4]);
@@ -9149,9 +9187,9 @@ void
 evplusmdd_apply_operation::
 showEntry(const op_info* owner, FILE* strm, const int *data) const
 {
-  // data[] is of size owner.nForests * 2
+  // data[] is of size owner.nParams * 2
   // data[2i] and data[2i+1] <--> forest[i]
-  DCASSERT(owner->nForests == 3);
+  DCASSERT(owner->nParams == 3);
   fprintf(strm, "[%s(%d:%d, %d:%d): %d:%d]",
       owner->op->getName(),
       data[0], data[1], data[2], data[3], data[4], data[5]);
@@ -9165,11 +9203,13 @@ typeCheck(const op_info* owner)
   // op1 == EV+MDD, op2 == EV+MDD, op3 = EV+MDD
   if (owner == 0)
     return compute_manager::UNKNOWN_OPERATION;
-  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+  if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
     return compute_manager::TYPE_MISMATCH;
-  if (owner->nForests != 3)
+  if (!owner->areAllForests())
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nParams != 3)
     return compute_manager::WRONG_NUMBER;
-  if (owner->f[0] != owner->f[1] || owner->f[0] != owner->f[2])
+  if (owner->p[0] != owner->p[1] || owner->p[0] != owner->p[2])
     return compute_manager::FOREST_MISMATCH;
   if (!getExpertForest(owner, 0)->isEvplusMdd())
     return compute_manager::TYPE_MISMATCH;
@@ -9252,7 +9292,7 @@ compute_manager::error
 evplusmdd_apply_operation::
 compute(op_info* owner, int a, int aev, int b, int bev, int& c, int& cev)
 {
-  DCASSERT(owner->f[0] == owner->f[1] && owner->f[1] == owner->f[2]);
+  DCASSERT(owner->p[0] == owner->p[1] && owner->p[1] == owner->p[2]);
 
   if (checkTerminals(owner, a, aev, b, bev, c, cev))
     return compute_manager::SUCCESS;
@@ -9414,9 +9454,9 @@ void
 evtimesmdd_apply_operation::
 showEntry(const op_info* owner, FILE* strm, const int *data) const
 {
-  // data[] is of size owner.nForests * 2
+  // data[] is of size owner.nParams * 2
   // data[2i] and data[2i+1] <--> forest[i]
-  DCASSERT(owner->nForests == 3);
+  DCASSERT(owner->nParams == 3);
   fprintf(strm, "[%s(%d:%f, %d:%f): %d:%f]",
       owner->op->getName(),
       data[0], toFloat(data[1]), data[2], toFloat(data[3]),
@@ -9431,11 +9471,13 @@ typeCheck(const op_info* owner)
   // op1 == EV+MDD, op2 == EV+MDD, op3 = EV+MDD
   if (owner == 0)
     return compute_manager::UNKNOWN_OPERATION;
-  if (owner->op == 0 || owner->f == 0 || owner->cc == 0)
+  if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
     return compute_manager::TYPE_MISMATCH;
-  if (owner->nForests != 3)
+  if (!owner->areAllForests())
+    return compute_manager::TYPE_MISMATCH;
+  if (owner->nParams != 3)
     return compute_manager::WRONG_NUMBER;
-  if (owner->f[0] != owner->f[1] || owner->f[0] != owner->f[2])
+  if (owner->p[0] != owner->p[1] || owner->p[0] != owner->p[2])
     return compute_manager::FOREST_MISMATCH;
   if (!getExpertForest(owner, 0)->isEvtimesMdd())
     return compute_manager::TYPE_MISMATCH;
@@ -9519,7 +9561,7 @@ compute_manager::error
 evtimesmdd_apply_operation::
 compute(op_info* owner, int a, float aev, int b, float bev, int& c, float& cev)
 {
-  DCASSERT(owner->f[0] == owner->f[1] && owner->f[1] == owner->f[2]);
+  DCASSERT(owner->p[0] == owner->p[1] && owner->p[1] == owner->p[2]);
 
   if (checkTerminals(owner, a, aev, b, bev, c, cev))
     return compute_manager::SUCCESS;
@@ -9717,7 +9759,7 @@ evplusmdd_plus::
 compute(op_info* owner, int a, int aev, int b, int bev, int& c, int& cev)
 {
 #if 1
-  DCASSERT(owner->f[0] == owner->f[1] && owner->f[1] == owner->f[2]);
+  DCASSERT(owner->p[0] == owner->p[1] && owner->p[1] == owner->p[2]);
 
   if (checkTerminals(owner, a, aev, b, bev, c, cev))
     return compute_manager::SUCCESS;
@@ -9890,7 +9932,7 @@ compute_manager::error
 evplusmdd_plus::
 compute(op_info* owner, int a, int aev, int b, int bev, int& c, int& cev)
 {
-  DCASSERT(owner->f[0] == owner->f[1] && owner->f[1] == owner->f[2]);
+  DCASSERT(owner->p[0] == owner->p[1] && owner->p[1] == owner->p[2]);
 
   if (checkTerminals(owner, a, aev, b, bev, c, cev))
     return compute_manager::SUCCESS;
@@ -10307,7 +10349,7 @@ mtmdd_reachability_dfs::~mtmdd_reachability_dfs() {}
 
 int mtmdd_reachability_dfs::compute(op_info* owner, int mtmdd, int mtmxd)
 {
-  DCASSERT(owner->nForests == 3 && owner->f[0] == owner->f[2]);
+  DCASSERT(owner->nParams == 3 && owner->p[0] == owner->p[2]);
 
   // Initialize class members and helper operations
   initialize(owner);
@@ -10366,7 +10408,7 @@ void mtmdd_reachability_dfs::initialize(op_info* o)
 
   // set up mtmdd operation: union
   const int nOperands = 3;
-  forest* forests[nOperands] = {owner->f[0], owner->f[0], owner->f[0]};
+  forest* forests[nOperands] = {owner->p[0], owner->p[0], owner->p[0]};
 
   mtmddUnionOp = ecm->getOpInfo(compute_manager::PLUS, forests, nOperands);
   assert(mtmddUnionOp != 0);
@@ -10374,7 +10416,7 @@ void mtmdd_reachability_dfs::initialize(op_info* o)
   assert(mtmddUnion != 0);
 
   // set up mtmxd operations: intersection and difference
-  forests[0] = owner->f[1]; forests[1] = owner->f[1]; forests[2] = owner->f[1];
+  forests[0] = owner->p[1]; forests[1] = owner->p[1]; forests[2] = owner->p[1];
 
   // Equivalent of MDD Intersection is MTMDD Min
   mtmxdIntersectionOp =

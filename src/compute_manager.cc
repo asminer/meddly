@@ -83,7 +83,7 @@ const char* MEDDLY_getLibraryInfo(int what)
       return title;
 
     case 1:
-      return "Copyright (C) 2009, Andrew Miner and Junaid Babar.";
+      return "Copyright (C) 2009, Iowa State University Research Foundation, Inc.";
 
     case 2:
       return "Released under the GNU Lesser General Public License, version 3";
@@ -196,29 +196,24 @@ compute_manager::error expert_compute_manager::apply(op_info* owner,
 }
 
 
-compute_manager::error expert_compute_manager::apply(
-    compute_manager::op_code op, const dd_edge &a, dd_edge &b)
-{
-  static const int nForests = 2;
-  static forest* forests[nForests];
-  forests[0] = a.getForest();
-  forests[1] = b.getForest();
-  op_info* opInfo = getOpInfo(op, forests, nForests);
-  return opInfo == 0?
-    compute_manager::UNKNOWN_OPERATION:
-    apply(opInfo, a, b);
-}
-
 template <class TYPE>
 inline compute_manager::error 
 unary_apply(expert_compute_manager* CM, compute_manager::op_code op, 
             const dd_edge &a, TYPE &b)
 {
-  forest* f = a.getForest();
-  op_info* opInfo = CM->getOpInfo(op, &f, 1);
+  static op_param plist[2];
+  plist[0].set(a);
+  plist[1].set(b);
+  op_info* opInfo = CM->getOpInfo(op, plist, 2);
   return opInfo == 0?
     compute_manager::UNKNOWN_OPERATION:
     CM->apply(opInfo, a, b);
+}
+
+compute_manager::error expert_compute_manager::apply(
+    compute_manager::op_code op, const dd_edge &a, dd_edge &b)
+{
+  return unary_apply(this, op, a, b);
 }
 
 compute_manager::error expert_compute_manager::apply(
@@ -244,11 +239,11 @@ compute_manager::error expert_compute_manager::apply(
     dd_edge &c)
 {
   static const int nForests = 3;
-  static forest* forests[nForests];
-  forests[0] = a.getForest();
-  forests[1] = b.getForest();
-  forests[2] = c.getForest();
-  op_info* opInfo = getOpInfo(op, forests, nForests);
+  static op_param plist[nForests];
+  plist[0].set(a);
+  plist[1].set(b);
+  plist[2].set(c);
+  op_info* opInfo = getOpInfo(op, plist, nForests);
   return opInfo == 0?
     compute_manager::UNKNOWN_OPERATION:
     apply(opInfo, a, b, c);
@@ -291,9 +286,9 @@ void expert_compute_manager::clearComputeTable()
 
 
 void expert_compute_manager::addBuiltinOp(const builtin_op_key& key,
-  const operation* op, const forest* const* forests, int n)
+  const operation* op, const op_param* plist, int n)
 {
-  op_info entry(const_cast<operation*>(op), const_cast<forest**>(forests),
+  op_info entry(const_cast<operation*>(op), const_cast<op_param*>(plist),
       n, cc);
   (*builtinOpEntries)[key] = entry;
 #ifdef DEVELOPMENT_CODE
@@ -316,70 +311,71 @@ void expert_compute_manager::addBuiltinOp(const builtin_op_key& key,
 
 
 op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
-    const forest* const* forests, int N)
+    const op_param* const plist, int N)
 {
   // search in built-in op entries
-  builtin_op_key key(op, forests, N);
+  builtin_op_key key(op, plist, N);
   std::map<builtin_op_key, op_info>::iterator itr = builtinOpEntries->find(key);
   if (itr != builtinOpEntries->end()) return &(itr->second);
 
-  const expert_forest* const f0 =
-      smart_cast<const expert_forest* const>(forests[0]);
+  const expert_forest* const f0 = plist[0].readForest();
+  const expert_forest* const f1 = plist[1].readForest();
+  const expert_forest* const f2 = plist[2].readForest();
 
   // add new built-in op entry
   if (N == 2) {
     // unary operations
     if (f0->isMdd()) {
-      if (smart_cast<const expert_forest* const>(forests[1])->isEvplusMdd()) {
+      if (f1->isEvplusMdd()) {
         if (op == compute_manager::CONVERT_TO_INDEX_SET) {
           // MDD to index set represented using EV+MDD
           addBuiltinOp(key, mdd_to_evplusmdd_index_set::getInstance(),
-              forests, N);
+              plist, N);
           return &(builtinOpEntries->find(key)->second);
         }
       }
-      else if (smart_cast<const expert_forest* const>(forests[1])->isMtMdd()) {
+      else if (f1->isMtMdd()) {
         if (op == compute_manager::COPY) {
         // MDD to MTMDD
         // terminal true == 1, terminal false == 0
-        addBuiltinOp(key, mdd_to_mtmdd::getInstance(), forests, N);
+        addBuiltinOp(key, mdd_to_mtmdd::getInstance(), plist, N);
         return &(builtinOpEntries->find(key)->second);
         }
       }
     }
     else if (f0->isMtMdd()) {
       if (op == compute_manager::COPY) {
-        if (smart_cast<const expert_forest* const>(forests[1])->isMdd()) {
+        if (f1->isMdd()) {
           // MTMDD to MDD
           // terminal 0 == false, !0 == true
-          addBuiltinOp(key, mtmdd_to_mdd::getInstance(), forests, N);
+          addBuiltinOp(key, mtmdd_to_mdd::getInstance(), plist, N);
           return &(builtinOpEntries->find(key)->second);
         }
-        else if (forests[1]->getEdgeLabeling() == forest::EVPLUS ||
-            forests[1]->getEdgeLabeling() == forest::EVTIMES) {
+        else if (f1->getEdgeLabeling() == forest::EVPLUS ||
+            f1->getEdgeLabeling() == forest::EVTIMES) {
           // MTMDD to EVMDD (works for both EVPLUS and EVTIMES)
           // terminal 0 == false, !0 == true
-          addBuiltinOp(key, mtmdd_to_evmdd::getInstance(), forests, N);
+          addBuiltinOp(key, mtmdd_to_evmdd::getInstance(), plist, N);
           return &(builtinOpEntries->find(key)->second);
         }
       }
     }
     else if (f0->isMxd()) {
-      if (smart_cast<const expert_forest* const>(forests[1])->isMtMxd()) {
+      if (f1->isMtMxd()) {
         if (op == compute_manager::COPY) {
           // MXD to MTMXD
           // terminal true == 1, terminal false == 0
-          addBuiltinOp(key, mxd_to_mtmxd::getInstance(), forests, N);
+          addBuiltinOp(key, mxd_to_mtmxd::getInstance(), plist, N);
           return &(builtinOpEntries->find(key)->second);
         }
       }
     }
     else if (f0->isMtMxd()) {
-      if (smart_cast<const expert_forest* const>(forests[1])->isMxd()) {
+      if (f1->isMxd()) {
         if (op == compute_manager::COPY) {
           // MTMXD to MXD
           // terminal 0 == false, !0 == true
-          addBuiltinOp(key, mtmxd_to_mxd::getInstance(), forests, N);
+          addBuiltinOp(key, mtmxd_to_mxd::getInstance(), plist, N);
           return &(builtinOpEntries->find(key)->second);
         }
       }
@@ -388,46 +384,46 @@ op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
   else if (N == 3) {
     // binary operations
     if (f0->isMdd()) {
-      if (smart_cast<const expert_forest* const>(forests[1])->isMdd() &&
-          smart_cast<const expert_forest* const>(forests[2])->isMdd()) {
+      if (f1->isMdd() &&
+          f2->isMdd()) {
         // MDD binary operation
         switch (op) {
           case UNION:
             // Mdd union
-            addBuiltinOp(key, mdd_union::getInstance(), forests, N);
+            addBuiltinOp(key, mdd_union::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case INTERSECTION:
             // Mdd intersection
-            addBuiltinOp(key, mdd_intersection::getInstance(), forests, N);
+            addBuiltinOp(key, mdd_intersection::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case DIFFERENCE:
             // Mdd difference
-            addBuiltinOp(key, mdd_difference::getInstance(), forests, N);
+            addBuiltinOp(key, mdd_difference::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           default:
             break;
         }
       }
 
-      if (smart_cast<const expert_forest* const>(forests[1])->isMxd() &&
-          smart_cast<const expert_forest* const>(forests[2])->isMdd()) {
+      if (f1->isMxd() &&
+          f2->isMdd()) {
         // MDD MXD image operations
         switch (op) {
           case POST_IMAGE:
             // Mdd Post-Image
-            addBuiltinOp(key, mdd_post_image::getInstance(), forests, N);
+            addBuiltinOp(key, mdd_post_image::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case PRE_IMAGE:
             // Mdd Pre-Image
-            addBuiltinOp(key, mdd_pre_image::getInstance(), forests, N);
+            addBuiltinOp(key, mdd_pre_image::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case REACHABLE_STATES_DFS:
             // Mdd Reachable states using saturation-based algorithm
-            addBuiltinOp(key, mdd_reachability_dfs::getInstance(), forests, N);
+            addBuiltinOp(key, mdd_reachability_dfs::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case REACHABLE_STATES_BFS:
             // Mdd Reachable states using traditional breadth-first algorithm
-            addBuiltinOp(key, mdd_reachability_bfs::getInstance(), forests, N);
+            addBuiltinOp(key, mdd_reachability_bfs::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           default:
             break;
@@ -436,21 +432,21 @@ op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
     }
     else if (f0->isMxd()) {
 
-      if (smart_cast<const expert_forest* const>(forests[1])->isMxd() &&
-          smart_cast<const expert_forest* const>(forests[2])->isMxd()) {
+      if (f1->isMxd() &&
+          f2->isMxd()) {
         // MXD binary operation
         switch (op) {
           case UNION:
             // Mxd union
-            addBuiltinOp(key, mxd_union::getInstance(), forests, N);
+            addBuiltinOp(key, mxd_union::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case INTERSECTION:
             // Mxd intersection
-            addBuiltinOp(key, mxd_intersection::getInstance(), forests, N);
+            addBuiltinOp(key, mxd_intersection::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case DIFFERENCE:
             // Mxd difference
-            addBuiltinOp(key, mxd_difference::getInstance(), forests, N);
+            addBuiltinOp(key, mxd_difference::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           default:
             break;
@@ -460,77 +456,77 @@ op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
     }
     else if (f0->isMtMdd()) {
 
-      if (smart_cast<const expert_forest* const>(forests[1])->isMtMdd()) {
+      if (f1->isMtMdd()) {
 
-        if (smart_cast<const expert_forest* const>(forests[2])->isMtMdd()) {
+        if (f2->isMtMdd()) {
           // MTMDD binary operation
           switch (op) {
             case MIN:
               // MtMdd min
-              addBuiltinOp(key, mtmdd_min::getInstance(), forests, N);
+              addBuiltinOp(key, mtmdd_min::getInstance(), plist, N);
               return &(builtinOpEntries->find(key)->second);
             case MAX:
               // MtMdd max
-              addBuiltinOp(key, mtmdd_max::getInstance(), forests, N);
+              addBuiltinOp(key, mtmdd_max::getInstance(), plist, N);
               return &(builtinOpEntries->find(key)->second);
             case PLUS:
               // MtMdd plus
-              addBuiltinOp(key, mtmdd_plus::getInstance(), forests, N);
+              addBuiltinOp(key, mtmdd_plus::getInstance(), plist, N);
               return &(builtinOpEntries->find(key)->second);
             case MINUS:
               // MtMdd minus
-              addBuiltinOp(key, mtmdd_minus::getInstance(), forests, N);
+              addBuiltinOp(key, mtmdd_minus::getInstance(), plist, N);
               return &(builtinOpEntries->find(key)->second);
             case MULTIPLY:
               // MtMdd multiply
-              addBuiltinOp(key, mtmdd_multiply::getInstance(), forests, N);
+              addBuiltinOp(key, mtmdd_multiply::getInstance(), plist, N);
               return &(builtinOpEntries->find(key)->second);
             case DIVIDE:
               // MtMdd divide
-              addBuiltinOp(key, mtmdd_divide::getInstance(), forests, N);
+              addBuiltinOp(key, mtmdd_divide::getInstance(), plist, N);
               return &(builtinOpEntries->find(key)->second);
             case EQUAL:
               // MtMdd ==
-              addBuiltinOp(key, mtmdd_equal::getInstance(), forests, N);
+              addBuiltinOp(key, mtmdd_equal::getInstance(), plist, N);
               return &(builtinOpEntries->find(key)->second);
             case NOT_EQUAL:
               // MtMdd !=
-              addBuiltinOp(key, mtmdd_not_equal::getInstance(), forests, N);
+              addBuiltinOp(key, mtmdd_not_equal::getInstance(), plist, N);
               return &(builtinOpEntries->find(key)->second);
             case LESS_THAN:
               // MtMdd <
-              addBuiltinOp(key, mtmdd_less_than::getInstance(), forests, N);
+              addBuiltinOp(key, mtmdd_less_than::getInstance(), plist, N);
               return &(builtinOpEntries->find(key)->second);
             case LESS_THAN_EQUAL:
               // MtMdd <=
-              addBuiltinOp(key, mtmdd_less_than_equal::getInstance(), forests, N);
+              addBuiltinOp(key, mtmdd_less_than_equal::getInstance(), plist, N);
               return &(builtinOpEntries->find(key)->second);
             case GREATER_THAN:
               // MtMdd >
-              addBuiltinOp(key, mtmdd_greater_than::getInstance(), forests, N);
+              addBuiltinOp(key, mtmdd_greater_than::getInstance(), plist, N);
               return &(builtinOpEntries->find(key)->second);
             case GREATER_THAN_EQUAL:
               // MtMdd >=
               addBuiltinOp(key, mtmdd_greater_than_equal::getInstance(),
-                  forests, N);
+                  plist, N);
               return &(builtinOpEntries->find(key)->second);
             default:
               break;
           }
         }
       } // MTMDD binary operations
-      else if (smart_cast<const expert_forest* const>(forests[1])->isMtMxd()) {
+      else if (f1->isMtMxd()) {
 
-        if (smart_cast<const expert_forest* const>(forests[2])->isMtMdd()) {
+        if (f2->isMtMdd()) {
           // MTMDD-MTMXD image operation
           switch (op) {
           case POST_IMAGE:
             // MtMdd Post-Image
-            addBuiltinOp(key, mtmdd_post_image::getInstance(), forests, N);
+            addBuiltinOp(key, mtmdd_post_image::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case PRE_IMAGE:
             // MtMdd Pre-Image
-            addBuiltinOp(key, mtmdd_pre_image::getInstance(), forests, N);
+            addBuiltinOp(key, mtmdd_pre_image::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case REACHABLE_STATES_DFS:
             // MtMdd Reachable states using saturation-based algorithm
@@ -548,58 +544,58 @@ op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
     }
     else if (f0->isMtMxd()) {
 
-      if (smart_cast<const expert_forest* const>(forests[1])->isMtMxd() &&
-          smart_cast<const expert_forest* const>(forests[2])->isMtMxd()) {
+      if (f1->isMtMxd() &&
+          f2->isMtMxd()) {
         // MTMXD binary operation
         switch (op) {
           case MIN:
             // MtMxd min
-            addBuiltinOp(key, mtmxd_min::getInstance(), forests, N);
+            addBuiltinOp(key, mtmxd_min::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case MAX:
             // MtMxd max
-            addBuiltinOp(key, mtmxd_max::getInstance(), forests, N);
+            addBuiltinOp(key, mtmxd_max::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case PLUS:
             // MtMxd plus
-            addBuiltinOp(key, mtmxd_plus::getInstance(), forests, N);
+            addBuiltinOp(key, mtmxd_plus::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case MINUS:
             // MtMxd minus
-            addBuiltinOp(key, mtmxd_minus::getInstance(), forests, N);
+            addBuiltinOp(key, mtmxd_minus::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case MULTIPLY:
             // MtMxd multiply
-            addBuiltinOp(key, mtmxd_multiply::getInstance(), forests, N);
+            addBuiltinOp(key, mtmxd_multiply::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case DIVIDE:
             // MtMxd divide
-            addBuiltinOp(key, mtmxd_divide::getInstance(), forests, N);
+            addBuiltinOp(key, mtmxd_divide::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case EQUAL:
             // MtMxd ==
-            addBuiltinOp(key, mtmxd_equal::getInstance(), forests, N);
+            addBuiltinOp(key, mtmxd_equal::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case NOT_EQUAL:
             // MtMxd !=
-            addBuiltinOp(key, mtmxd_not_equal::getInstance(), forests, N);
+            addBuiltinOp(key, mtmxd_not_equal::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case LESS_THAN:
             // MtMxd <
-            addBuiltinOp(key, mtmxd_less_than::getInstance(), forests, N);
+            addBuiltinOp(key, mtmxd_less_than::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case LESS_THAN_EQUAL:
             // MtMxd <=
-            addBuiltinOp(key, mtmxd_less_than_equal::getInstance(), forests, N);
+            addBuiltinOp(key, mtmxd_less_than_equal::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case GREATER_THAN:
             // MtMxd >
-            addBuiltinOp(key, mtmxd_greater_than::getInstance(), forests, N);
+            addBuiltinOp(key, mtmxd_greater_than::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case GREATER_THAN_EQUAL:
             // MtMxd >=
             addBuiltinOp(key, mtmxd_greater_than_equal::getInstance(),
-                forests, N);
+                plist, N);
             return &(builtinOpEntries->find(key)->second);
           default:
             break;
@@ -608,60 +604,60 @@ op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
 
     }
     else if (f0->isEvplusMdd()) {
-      if (smart_cast<const expert_forest* const>(forests[1])->isEvplusMdd() &&
-          smart_cast<const expert_forest* const>(forests[2])->isEvplusMdd()) {
+      if (f1->isEvplusMdd() &&
+          f2->isEvplusMdd()) {
 
         // EV+MDD binary operation
         switch (op) {
           case PLUS:
             // Ev+Mdd plus
-            addBuiltinOp(key, evplusmdd_plus::getInstance(), forests, N);
+            addBuiltinOp(key, evplusmdd_plus::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case MINUS:
             // Ev+Mdd minus
-            addBuiltinOp(key, evplusmdd_minus::getInstance(), forests, N);
+            addBuiltinOp(key, evplusmdd_minus::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case MULTIPLY:
             // Ev+Mdd multiply
-            addBuiltinOp(key, evplusmdd_multiply::getInstance(), forests, N);
+            addBuiltinOp(key, evplusmdd_multiply::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
 #if 0
           case DIVIDE:
             // Ev+Mdd divide
-            addBuiltinOp(key, evplusmdd_divide::getInstance(), forests, N);
+            addBuiltinOp(key, evplusmdd_divide::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case MIN:
             // Ev+Mdd min
-            addBuiltinOp(key, evplusmdd_min::getInstance(), forests, N);
+            addBuiltinOp(key, evplusmdd_min::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case MAX:
             // Ev+Mdd max
-            addBuiltinOp(key, evplusmdd_max::getInstance(), forests, N);
+            addBuiltinOp(key, evplusmdd_max::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case EQUAL:
             // Ev+Mdd ==
-            addBuiltinOp(key, evplusmdd_equal::getInstance(), forests, N);
+            addBuiltinOp(key, evplusmdd_equal::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case NOT_EQUAL:
             // Ev+Mdd !=
-            addBuiltinOp(key, evplusmdd_not_equal::getInstance(), forests, N);
+            addBuiltinOp(key, evplusmdd_not_equal::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case LESS_THAN:
             // Ev+Mdd <
-            addBuiltinOp(key, evplusmdd_less_than::getInstance(), forests, N);
+            addBuiltinOp(key, evplusmdd_less_than::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case LESS_THAN_EQUAL:
             // Ev+Mdd <=
-            addBuiltinOp(key, evplusmdd_less_than_equal::getInstance(), forests, N);
+            addBuiltinOp(key, evplusmdd_less_than_equal::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case GREATER_THAN:
             // MtMdd >
-            addBuiltinOp(key, evplusmdd_greater_than::getInstance(), forests, N);
+            addBuiltinOp(key, evplusmdd_greater_than::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case GREATER_THAN_EQUAL:
             // MtMdd >=
             addBuiltinOp(key, evplusmdd_greater_than_equal::getInstance(),
-                forests, N);
+                plist, N);
             return &(builtinOpEntries->find(key)->second);
 #endif
           default:
@@ -670,62 +666,62 @@ op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
       }
     }
     else if (f0->isEvtimesMdd()) {
-      if (smart_cast<const expert_forest* const>(forests[1])->isEvtimesMdd() &&
-          smart_cast<const expert_forest* const>(forests[2])->isEvtimesMdd()) {
+      if (f1->isEvtimesMdd() &&
+          f2->isEvtimesMdd()) {
 
         // EV*MDD binary operation
         switch (op) {
           case PLUS:
             // Ev*Mdd plus
-            addBuiltinOp(key, evtimesmdd_plus::getInstance(), forests, N);
+            addBuiltinOp(key, evtimesmdd_plus::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case MINUS:
             // Ev*Mdd minus
-            addBuiltinOp(key, evtimesmdd_minus::getInstance(), forests, N);
+            addBuiltinOp(key, evtimesmdd_minus::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case MULTIPLY:
             // Ev*Mdd multiply
-            addBuiltinOp(key, evtimesmdd_multiply::getInstance(), forests, N);
+            addBuiltinOp(key, evtimesmdd_multiply::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
 #if 0
           case DIVIDE:
             // Ev*Mdd divide
-            addBuiltinOp(key, evtimesmdd_divide::getInstance(), forests, N);
+            addBuiltinOp(key, evtimesmdd_divide::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case MIN:
             // Ev*Mdd min
-            addBuiltinOp(key, evtimesmdd_min::getInstance(), forests, N);
+            addBuiltinOp(key, evtimesmdd_min::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case MAX:
             // Ev*Mdd max
-            addBuiltinOp(key, evtimesmdd_max::getInstance(), forests, N);
+            addBuiltinOp(key, evtimesmdd_max::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
 #endif
           case EQUAL:
             // Ev*Mdd ==
-            addBuiltinOp(key, evtimesmdd_equal::getInstance(), forests, N);
+            addBuiltinOp(key, evtimesmdd_equal::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
 #if 0
           case NOT_EQUAL:
             // Ev*Mdd !=
-            addBuiltinOp(key, evtimesmdd_not_equal::getInstance(), forests, N);
+            addBuiltinOp(key, evtimesmdd_not_equal::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case LESS_THAN:
             // Ev*Mdd <
-            addBuiltinOp(key, evtimesmdd_less_than::getInstance(), forests, N);
+            addBuiltinOp(key, evtimesmdd_less_than::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case LESS_THAN_EQUAL:
             // Ev*Mdd <=
-            addBuiltinOp(key, evtimesmdd_less_than_equal::getInstance(), forests, N);
+            addBuiltinOp(key, evtimesmdd_less_than_equal::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case GREATER_THAN:
             // Ev*Mdd >
-            addBuiltinOp(key, evtimesmdd_greater_than::getInstance(), forests, N);
+            addBuiltinOp(key, evtimesmdd_greater_than::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case GREATER_THAN_EQUAL:
             // Ev*Mdd >=
             addBuiltinOp(key, evtimesmdd_greater_than_equal::getInstance(),
-                forests, N);
+                plist, N);
             return &(builtinOpEntries->find(key)->second);
 #endif
           default:
@@ -739,15 +735,15 @@ op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
 
 
 op_info* expert_compute_manager::getOpInfo(const operation* op,
-    const forest* const* forests, int N)
+    const op_param* const plist, int N)
 {
   // search in custom op entries
-  custom_op_key key(op, forests, N);
+  custom_op_key key(op, plist, N);
   std::map<custom_op_key, op_info>::iterator itr = customOpEntries->find(key);
   if (itr == customOpEntries->end()) {
     // add new entry
-    op_info entry(const_cast<operation*>(op), const_cast<forest**>(forests),
-        N, cc);
+    op_info entry(const_cast<operation*>(op), 
+        const_cast<op_param*>(plist), N, cc);
     (*customOpEntries)[key] = entry;
     itr = customOpEntries->find(key);
 #ifdef DEVELOPMENT_CODE

@@ -895,6 +895,91 @@ class operation {
 };
 
 
+/** Operation parameter class.
+
+    Parameter information, either a forest or a value.
+*/
+class op_param {
+  public:
+    enum type {
+      FOREST    = 0,
+      BOOLEAN   = 1,
+      INTEGER   = 2,
+      REAL      = 3,
+      HUGEINT   = 4
+    };
+  public:
+    op_param();
+    op_param(const op_param& p);
+
+    void set(const dd_edge&);
+    void set(forest*);
+    void set(long);
+    void set(double);
+    void set(mpz_t &);
+
+    type getType() const;
+    bool isForest() const;
+    expert_forest* getForest();
+    const expert_forest* readForest() const;
+    void print(FILE* s) const;
+    bool operator==(const op_param& a) const;
+    bool operator!=(const op_param& a) const;
+    bool operator<(const op_param& a) const;
+    bool operator>(const op_param& a) const;
+    // for convenience
+    bool isMxd() const;
+    bool isMdd() const;
+    bool isMT() const;
+    bool isEVPlus() const;
+    bool isEVTimes() const;
+    bool isBoolForest() const;
+    bool isIntForest() const;
+    bool isRealForest() const;
+    const domain* getDomain() const;
+  private:
+    expert_forest* f;
+    type my_type;
+}; // param class
+
+
+/** Operation Info class.
+
+    Each operation is uniquely identified by its operation pointer combined
+    with the data it operates on. The data it operates on is determined
+    by the forest(s) it belongs to.
+
+    Forests, operations and compute caches are designed so that they are
+    loosely-coupled. A forest does not need to know the operations that are
+    based on it. But, an operation needs to know its forests as well as where
+    to store its computations. A compute cache does not need to know what
+    its cache entries mean but it does need someone (in this case operation)
+    to decide (during garbage collection) if a cache entry should be retained
+    in the cache or discarded.
+
+    op_info stores the tuple {operation*, forest**, nForests, compute_cache*}
+    to help with the above interactions.
+*/
+class op_info {
+  public:
+    op_info();
+    ~op_info();
+    op_info(operation *oper, op_param* plist, int n, compute_cache* cache);
+    op_info(const op_info& a);
+    op_info& operator=(const op_info& a);
+    bool operator==(const op_info& a) const;
+    void print(FILE* strm) const;
+    bool areAllForests() const;
+
+    operation* op;
+    op_param* p;
+    int nParams;
+    compute_cache* cc;
+};
+
+
+
+
 
 /** Expert Compute Manager class.
 
@@ -963,14 +1048,15 @@ class expert_compute_manager : public compute_manager {
         @param  N     size of f[].
         @return       A concrete-handle to the given operation.
     */
-    virtual op_info* getOpInfo(op_code op, const forest* const* f, int N);
-    virtual op_info* getOpInfo(const operation* op, const forest* const* f,
+    virtual op_info* getOpInfo(op_code op, const op_param* const plist,
         int N);
+    virtual op_info* getOpInfo(const operation* op, 
+        const op_param* const p, int N);
 
   private:
 
     void addBuiltinOp(const builtin_op_key& key, const operation* op,
-        const forest* const* forests, int n); 
+        const op_param* plist, int n); 
 
     // compute cache
     compute_cache* cc;
@@ -980,42 +1066,6 @@ class expert_compute_manager : public compute_manager {
     std::map<builtin_op_key, op_info>* builtinOpEntries;
     std::map<custom_op_key, op_info>* customOpEntries;
 };
-
-
-/** Operation Info class.
-
-    Each operation is uniquely identified by its operation pointer combined
-    with the data it operates on. The data it operates on is determined
-    by the forest(s) it belongs to.
-
-    Forests, operations and compute caches are designed so that they are
-    loosely-coupled. A forest does not need to know the operations that are
-    based on it. But, an operation needs to know its forests as well as where
-    to store its computations. A compute cache does not need to know what
-    its cache entries mean but it does need someone (in this case operation)
-    to decide (during garbage collection) if a cache entry should be retained
-    in the cache or discarded.
-
-    op_info stores the tuple {operation*, forest**, nForests, compute_cache*}
-    to help with the above interactions.
-*/
-class op_info {
-  public:
-    op_info();
-    ~op_info();
-    op_info(operation *oper, forest** forests, int n, compute_cache* cache);
-    op_info(const op_info& a);
-    op_info& operator=(const op_info& a);
-    bool operator==(const op_info& a) const;
-    void print(FILE* strm) const;
-
-    operation* op;
-    forest** f;
-    int nForests;
-    compute_cache* cc;
-};
-
-
 
 
 
@@ -1068,7 +1118,7 @@ class op_info {
 
 class builtin_op_key {
   public:
-    builtin_op_key(compute_manager::op_code op, const forest* const* f, int n);
+    builtin_op_key(compute_manager::op_code op, const op_param* const p, int n);
     ~builtin_op_key();
     builtin_op_key(const builtin_op_key& a);
     builtin_op_key& operator=(const builtin_op_key& a);
@@ -1079,14 +1129,14 @@ class builtin_op_key {
 
   private:
     compute_manager::op_code opCode;
-    forest** forests;
-    int nForests;
+    op_param* plist;
+    int nParams;
 };
 
 
 class custom_op_key {
   public:
-    custom_op_key(const operation* op, const forest* const* f, int n);
+    custom_op_key(const operation* op, const op_param* const p, int n);
     ~custom_op_key();
     custom_op_key(const custom_op_key& a);
     custom_op_key& operator=(const custom_op_key& a);
@@ -1097,8 +1147,8 @@ class custom_op_key {
 
   private:
     operation* op;
-    forest** forests;
-    int nForests;
+    op_param* plist;
+    int nParams;
 };
 
 
@@ -1107,35 +1157,217 @@ class custom_op_key {
 // *         Implementation details -- not meant for the casual user!         *
 // ****************************************************************************
 
+// ---------------------- op_param ------------------------
+
+inline
+op_param::op_param()
+{
+  f = 0;
+  my_type = FOREST;
+}
+
+inline
+op_param::op_param(const op_param& p)
+{
+  f = p.f;
+  my_type = p.my_type;
+}
+
+inline
+void op_param::set(const dd_edge &e)
+{
+  f = (expert_forest*)(e.getForest());
+  my_type = FOREST;
+}
+
+inline
+void op_param::set(forest* _f)
+{
+  f = (expert_forest*)(_f);
+  my_type = FOREST;
+}
+
+inline
+void op_param::set(long)
+{
+  f = 0;
+  my_type = INTEGER;
+}
+
+inline
+void op_param::set(double)
+{
+  f = 0;
+  my_type = REAL;
+}
+
+inline
+void op_param::set(mpz_t &)
+{
+  f = 0;
+  my_type = HUGEINT;
+}
+
+inline 
+op_param::type op_param::getType() const 
+{ 
+  return my_type; 
+}
+
+inline
+bool op_param::isForest() const
+{
+  return f;
+}
+
+inline
+expert_forest* op_param::getForest() 
+{ 
+  return f; 
+}
+
+inline
+const expert_forest* op_param::readForest() const 
+{ 
+  return f; 
+}
+
+inline
+void op_param::print(FILE* s) const
+{
+  switch (my_type) {
+    case INTEGER :
+        fprintf(s, "INT");
+        return;
+    
+    case REAL :
+        fprintf(s, "REAL");
+        return;
+
+    case HUGEINT :
+        fprintf(s, "MPZ");
+        return;
+
+    case FOREST:
+        fprintf(s, "FOREST %p", f);
+        return;
+
+    default:
+        fprintf(s, "Unknown param");
+  }
+}
+
+inline
+bool op_param::operator==(const op_param& p) const
+{
+  return (f == p.f) && (my_type == p.my_type);
+}
+
+inline
+bool op_param::operator!=(const op_param& p) const
+{
+  return (f != p.f) || (my_type != p.my_type);
+}
+
+inline
+bool op_param::operator<(const op_param& p) const
+{
+  if (my_type < p.my_type) return true;
+  if (my_type > p.my_type) return false;
+  return f < p.f;
+}
+
+inline
+bool op_param::operator>(const op_param& p) const
+{
+  if (my_type > p.my_type) return true;
+  if (my_type < p.my_type) return false;
+  return f > p.f;
+}
+
+inline
+bool op_param::isMxd() const
+{
+  return f->isForRelations();
+}
+
+inline
+bool op_param::isMdd() const
+{
+  return !f->isForRelations();
+}
+
+inline
+bool op_param::isMT() const
+{
+  return f->getEdgeLabeling() == forest::MULTI_TERMINAL;
+}
+
+inline
+bool op_param::isEVPlus() const
+{
+  return f->getEdgeLabeling() == forest::EVPLUS;
+}
+
+inline
+bool op_param::isEVTimes() const
+{
+  return f->getEdgeLabeling() == forest::EVTIMES;
+}
+
+inline
+bool op_param::isBoolForest() const
+{
+  return f->getRangeType() == forest::BOOLEAN;
+}
+
+inline
+bool op_param::isIntForest() const
+{
+  return f->getRangeType() == forest::INTEGER;
+}
+
+inline
+bool op_param::isRealForest() const
+{
+  return f->getRangeType() == forest::REAL;
+}
+
+inline
+const domain* op_param::getDomain() const
+{
+  return f ? f->getDomain() : 0;
+}
+
 // ---------------------- op_info ------------------------
 
 inline
-op_info::op_info() : op(0), f(0), nForests(0), cc(0) {}
+op_info::op_info() : op(0), p(0), nParams(0), cc(0) {}
 
 
 inline
-op_info::op_info(operation *oper, forest** forests, int n,
+op_info::op_info(operation *oper, op_param* plist, int n,
   compute_cache* cache)
-: op(oper), f(0), nForests(n), cc(cache)
+: op(oper), p(0), nParams(n), cc(cache)
 {
-  f = (forest **) malloc(nForests * sizeof(forest *));
-  for (int i = 0; i < nForests; ++i) f[i] = forests[i];
+  p = (op_param *) malloc(nParams * sizeof(op_param));
+  for (int i = 0; i < nParams; ++i) p[i] = plist[i];
 }
 
 
 inline
 op_info::~op_info()
 {
-  if (f != 0) free(f);
+  if (p != 0) free(p);
 }
 
 
 inline
 op_info::op_info(const op_info& a)
-: op(a.op), f(0), nForests(a.nForests), cc(a.cc)
+: op(a.op), p(0), nParams(a.nParams), cc(a.cc)
 {
-  f = (forest **) malloc(nForests * sizeof(forest *));
-  for (int i = 0; i < nForests; ++i) f[i] = a.f[i];
+  p = (op_param *) malloc(nParams * sizeof(op_param));
+  for (int i = 0; i < nParams; ++i) p[i] = a.p[i];
 }
 
 
@@ -1143,11 +1375,11 @@ inline
 op_info& op_info::operator=(const op_info& a)
 {
   if (this == &a) return *this;
-  if (nForests != a.nForests) {
-    nForests = a.nForests;
-    f = (forest **) realloc(f, nForests * sizeof(forest *));
+  if (nParams != a.nParams) {
+    nParams = a.nParams;
+    p = (op_param *) realloc(p, nParams * sizeof(op_param));
   }
-  for (int i = 0; i < nForests; ++i) f[i] = a.f[i];
+  for (int i = 0; i < nParams; ++i) p[i] = a.p[i];
   op = a.op;
   cc = a.cc;
   return *this;
@@ -1158,11 +1390,11 @@ inline
 bool op_info::operator==(const op_info& a) const
 {
   if (this == &a) return true;
-  if (op == a.op && nForests == a.nForests && cc == a.cc) {
+  if (op == a.op && nParams == a.nParams && cc == a.cc) {
     int i = 0;
-    for ( ; i < nForests && f[i] == a.f[i]; ++i)
+    for ( ; i < nParams && p[i] == a.p[i]; ++i)
       ;
-    if (i == nForests) return true;
+    if (i == nParams) return true;
   }
   return false;
 }
@@ -1171,35 +1403,44 @@ bool op_info::operator==(const op_info& a) const
 inline
 void op_info::print(FILE* s) const
 {
-  fprintf(s, "{op = %p, nForests = %d, cc = %p, f = {", op, nForests, cc);
-  if (nForests > 0) {
-    fprintf(s, "%p", f[0]);
-    for (int i = 1; i < nForests; ++i)
-      fprintf(s, ", %p", f[i]);
+  fprintf(s, "{op = %p, nParams = %d, cc = %p, f = {", op, nParams, cc);
+  if (nParams > 0) {
+    p[0].print(s);
+    for (int i = 1; i < nParams; ++i) {
+      fprintf(s, ", ");
+      p[i].print(s);
+    }
   }
   fprintf(s, "}\n");
 }
 
+inline
+bool op_info::areAllForests() const
+{
+  for (int i = 0; i < nParams; ++i) {
+    if (! p[i].isForest()) return false;
+  }
+  return true;
+}
 
 // ---------------------- builtin_op_key ------------------------
 
 inline
 builtin_op_key::builtin_op_key(compute_manager::op_code op,
-    const forest* const* f, int n)
-: opCode(op), forests(0), nForests(n)
+    const op_param* const p, int n)
+: opCode(op), plist(0), nParams(n)
 {
-  forests = (forest**) malloc(nForests * sizeof(forest*));
-  for (int i = 0; i < nForests; ++i)
-    forests[i] = const_cast<forest*>(f[i]);
+  plist = (op_param*) malloc(nParams * sizeof(op_param));
+  for (int i = 0; i < nParams; ++i) plist[i] = p[i];
 }
 
 
 inline
 builtin_op_key::builtin_op_key(const builtin_op_key& a)
-: opCode(a.opCode), forests(0), nForests(a.nForests)
+: opCode(a.opCode), plist(0), nParams(a.nParams)
 {
-  forests = (forest**) malloc(nForests * sizeof(forest*));
-  for (int i = 0; i < nForests; ++i) forests[i] = a.forests[i];
+  plist = (op_param*) malloc(nParams * sizeof(op_param));
+  for (int i = 0; i < nParams; ++i) plist[i] = a.plist[i];
 }
 
 
@@ -1207,11 +1448,11 @@ inline
 builtin_op_key& builtin_op_key::operator=(const builtin_op_key& a)
 {
   if (this == &a) return *this;
-  if (nForests != a.nForests) {
-    nForests = a.nForests;
-    forests = (forest **) realloc(forests, nForests * sizeof(forest *));
+  if (nParams != a.nParams) {
+    nParams = a.nParams;
+    plist = (op_param*) realloc(plist, nParams * sizeof(op_param));
   }
-  for (int i = 0; i < nForests; ++i) forests[i] = a.forests[i];
+  for (int i = 0; i < nParams; ++i) plist[i] = a.plist[i];
   opCode = a.opCode;
   return *this;
 }
@@ -1219,7 +1460,7 @@ builtin_op_key& builtin_op_key::operator=(const builtin_op_key& a)
 inline
 builtin_op_key::~builtin_op_key()
 {
-  free(forests);
+  free(plist);
 }
 
 
@@ -1230,16 +1471,16 @@ bool builtin_op_key::operator<(const builtin_op_key& key) const
     return true;
   else if (opCode > key.opCode)
     return false;
-  else if (nForests < key.nForests)
+  else if (nParams < key.nParams)
     return true;
-  else if (nForests > key.nForests)
+  else if (nParams > key.nParams)
     return false;
   else {
-    for (int i = 0; i < nForests; ++i)
+    for (int i = 0; i < nParams; ++i)
     {
-      if (forests[i] < key.forests[i])
+      if (plist[i] < key.plist[i])
         return true;
-      else if (forests[i] > key.forests[i])
+      else if (plist[i] > key.plist[i])
         return false;
     }
   }
@@ -1250,11 +1491,13 @@ bool builtin_op_key::operator<(const builtin_op_key& key) const
 inline
 void builtin_op_key::print(FILE* s) const
 {
-  fprintf(s, "{opCode = %d, nForests = %d, f = {", opCode, nForests);
-  if (nForests > 0) {
-    fprintf(s, "%p", forests[0]);
-    for (int i = 1; i < nForests; ++i)
-      fprintf(s, ", %p", forests[i]);
+  fprintf(s, "{opCode = %d, nParams = %d, plist = {", opCode, nParams);
+  if (nParams > 0) {
+    plist[0].print(s);
+    for (int i = 1; i < nParams; ++i) {
+      fprintf(s, ", ");
+      plist[i].print(s);
+    }
   }
   fprintf(s, "}\n");
 }
@@ -1264,22 +1507,21 @@ void builtin_op_key::print(FILE* s) const
 
 inline
 custom_op_key::custom_op_key(const operation* oper,
-  const forest* const* f, int n)
-: op(0), forests(0), nForests(n)
+  const op_param* const p, int n)
+: op(0), plist(0), nParams(n)
 {
   op = const_cast<operation*>(oper);
-  forests = (forest**) malloc(nForests * sizeof(forest*));
-  for (int i = 0; i < nForests; ++i)
-    forests[i] = const_cast<forest*>(f[i]);
+  plist = (op_param*) malloc(nParams * sizeof(op_param));
+  for (int i = 0; i < nParams; ++i) plist[i] = p[i];
 }
 
 
 inline
 custom_op_key::custom_op_key(const custom_op_key& a)
-: op(a.op), forests(0), nForests(a.nForests)
+: op(a.op), plist(0), nParams(a.nParams)
 {
-  forests = (forest**) malloc(nForests * sizeof(forest*));
-  for (int i = 0; i < nForests; ++i) forests[i] = a.forests[i];
+  plist = (op_param*) malloc(nParams * sizeof(op_param));
+  for (int i = 0; i < nParams; ++i) plist[i] = a.plist[i];
 }
 
 
@@ -1287,11 +1529,11 @@ inline
 custom_op_key& custom_op_key::operator=(const custom_op_key& a)
 {
   if (this == &a) return *this;
-  if (nForests != a.nForests) {
-    nForests = a.nForests;
-    forests = (forest **) realloc(forests, nForests * sizeof(forest *));
+  if (nParams != a.nParams) {
+    nParams = a.nParams;
+    plist = (op_param*) realloc(plist, nParams * sizeof(op_param));
   }
-  for (int i = 0; i < nForests; ++i) forests[i] = a.forests[i];
+  for (int i = 0; i < nParams; ++i) plist[i] = a.plist[i];
   op = a.op;
   return *this;
 }
@@ -1300,7 +1542,7 @@ custom_op_key& custom_op_key::operator=(const custom_op_key& a)
 inline
 custom_op_key::~custom_op_key()
 {
-  free(forests);
+  free(plist);
 }
 
 
@@ -1311,16 +1553,16 @@ bool custom_op_key::operator<(const custom_op_key& key) const
     return true;
   else if (op > key.op)
     return false;
-  else if (nForests < key.nForests)
+  else if (nParams < key.nParams)
     return true;
-  else if (nForests > key.nForests)
+  else if (nParams > key.nParams)
     return false;
   else {
-    for (int i = 0; i < nForests; ++i)
+    for (int i = 0; i < nParams; ++i)
     {
-      if (forests[i] < key.forests[i])
+      if (plist[i] < key.plist[i])
         return true;
-      else if (forests[i] > key.forests[i])
+      else if (plist[i] > key.plist[i])
         return false;
     }
   }
@@ -1331,11 +1573,13 @@ bool custom_op_key::operator<(const custom_op_key& key) const
 inline
 void custom_op_key::print(FILE* s) const
 {
-  fprintf(s, "{op = %p, nForests = %d, f = {", op, nForests);
-  if (nForests > 0) {
-    fprintf(s, "%p", forests[0]);
-    for (int i = 1; i < nForests; ++i)
-      fprintf(s, ", %p", forests[i]);
+  fprintf(s, "{op = %p, nParams = %d, plist = {", op, nParams);
+  if (nParams > 0) {
+    plist[0].print(s);
+    for (int i = 1; i < nParams; ++i) {
+      fprintf(s, ", ");
+      plist[i].print(s);
+    }
   }
   fprintf(s, "}\n");
 }

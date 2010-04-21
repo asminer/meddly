@@ -62,16 +62,16 @@ const int verbose = 0;
 op_info* getOp(forest* f, compute_manager::op_code op)
 {
   static const int nForests = 3;
-  static forest* forests[nForests];
+  static op_param plist[nForests];
   static expert_compute_manager* ecm = 
     static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
   assert(ecm != 0);
   assert(f != 0);
 
-  forests[0] = f;
-  forests[1] = f;
-  forests[2] = f;
-  return ecm->getOpInfo(op, forests, nForests);
+  plist[0].set(f);
+  plist[1].set(f);
+  plist[2].set(f);
+  return ecm->getOpInfo(op, plist, nForests);
 }
 
 
@@ -83,17 +83,17 @@ op_info* getOp(forest* f, compute_manager::op_code op)
 op_info* getOp(forest* f, operation* op)
 {
   static const int nForests = 3;
-  static forest* forests[nForests];
+  static op_param plist[nForests];
   static expert_compute_manager* ecm = 
     static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
   assert(ecm != 0);
   assert(f != 0);
   assert(op != 0);
 
-  forests[0] = f;
-  forests[1] = f;
-  forests[2] = f;
-  return ecm->getOpInfo(op, forests, nForests);
+  plist[0].set(f);
+  plist[1].set(f);
+  plist[2].set(f);
+  return ecm->getOpInfo(op, plist, nForests);
 }
 
 
@@ -142,14 +142,14 @@ dd_edge test_mtmdd(forest* mtmdd, compute_manager::op_code opCode,
 bool test_conversion(dd_edge& A, dd_edge& B)
 {
   static const int nForests = 2;
-  static forest* forests[nForests];
+  static op_param plist[nForests];
   static expert_compute_manager* ecm = 
     static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
   assert(ecm != 0);
 
-  forests[0] = A.getForest();
-  forests[1] = B.getForest();
-  op_info* op = ecm->getOpInfo(compute_manager::COPY, forests, nForests);
+  plist[0].set(A);
+  plist[1].set(B);
+  op_info* op = ecm->getOpInfo(compute_manager::COPY, plist, nForests);
   if (op == 0) {
     fprintf(stderr, "Conversion operation not found\n");
     return false;

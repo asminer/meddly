@@ -148,7 +148,10 @@ dd_edge& dd_edge::operator+=(const dd_edge& e)
 {
   if (opPlus == 0) {
     const int nOperands = 3;
-    forest* forests[nOperands] = {parent, parent, parent};
+    op_param plist[nOperands];
+    plist[0].set(parent);
+    plist[1].set(parent);
+    plist[2].set(parent);
     compute_manager::op_code opCode =
       (parent->getRangeType() == forest::BOOLEAN &&
         parent->getEdgeLabeling() == forest::MULTI_TERMINAL)
@@ -156,7 +159,7 @@ dd_edge& dd_edge::operator+=(const dd_edge& e)
       : compute_manager::PLUS;
     opPlus =
       smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
-      getOpInfo(opCode, forests, nOperands);
+      getOpInfo(opCode, plist, nOperands);
     assert(opPlus != 0);
   }
   assert(e.parent == parent);
@@ -173,7 +176,10 @@ dd_edge& dd_edge::operator*=(const dd_edge& e)
 {
   if (opStar == 0) {
     const int nOperands = 3;
-    forest* forests[nOperands] = {parent, parent, parent};
+    op_param plist[nOperands];
+    plist[0].set(parent);
+    plist[1].set(parent);
+    plist[2].set(parent);
     compute_manager::op_code opCode =
       (parent->getRangeType() == forest::BOOLEAN &&
         parent->getEdgeLabeling() == forest::MULTI_TERMINAL)
@@ -181,7 +187,7 @@ dd_edge& dd_edge::operator*=(const dd_edge& e)
       : compute_manager::MULTIPLY;
     opStar =
       smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
-      getOpInfo(opCode, forests, nOperands);
+      getOpInfo(opCode, plist, nOperands);
     assert(opStar != 0);
   }
   assert(e.parent == parent);
@@ -198,7 +204,10 @@ dd_edge& dd_edge::operator-=(const dd_edge& e)
 {
   if (opMinus == 0) {
     const int nOperands = 3;
-    forest* forests[nOperands] = {parent, parent, parent};
+    op_param plist[nOperands];
+    plist[0].set(parent);
+    plist[1].set(parent);
+    plist[2].set(parent);
     compute_manager::op_code opCode =
       (parent->getRangeType() == forest::BOOLEAN &&
         parent->getEdgeLabeling() == forest::MULTI_TERMINAL)
@@ -206,7 +215,7 @@ dd_edge& dd_edge::operator-=(const dd_edge& e)
       : compute_manager::MINUS;
     opMinus =
       smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
-      getOpInfo(opCode, forests, nOperands);
+      getOpInfo(opCode, plist, nOperands);
     assert(opMinus != 0);
   }
   assert(e.parent == parent);
@@ -223,12 +232,15 @@ dd_edge& dd_edge::operator/=(const dd_edge& e)
 {
   if (opDivide == 0) {
     const int nOperands = 3;
-    forest* forests[nOperands] = {parent, parent, parent};
+    op_param plist[nOperands];
+    plist[0].set(parent);
+    plist[1].set(parent);
+    plist[2].set(parent);
     assert(!(parent->getRangeType() == forest::BOOLEAN &&
         parent->getEdgeLabeling() == forest::MULTI_TERMINAL));
     opDivide =
       smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
-      getOpInfo(compute_manager::DIVIDE, forests, nOperands);
+      getOpInfo(compute_manager::DIVIDE, plist, nOperands);
   }
   assert(e.parent == parent);
   smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->

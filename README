@@ -95,7 +95,7 @@ To set the location of the gmp library, by hand
 
 $ CPPFLAGS="-I/path-to-gmp-header"
 $ LDFLAGS="-L/path-to-gmp-lib"
-$ export LDFLAGS
+$ export CPPFLAGS LDFLAGS
 $ ./configure
 
 To disable gmp support in Meddly:
