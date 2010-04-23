@@ -33,7 +33,6 @@
 
 #include <cstdio>
 
-#include <gmp.h>
 #include "meddly.h"
 #include "timer.h"
 
@@ -273,16 +272,6 @@ int main()
     CM->apply(compute_manager::CARDINALITY, solutions, c)
   );
   printf("\nThere are %ld solutions to the %d-queens problem\n\n", c, N);
-
-// Temporary
-  mpz_t cbig;
-  mpz_init(cbig);
-  assert(compute_manager::SUCCESS ==
-    CM->apply(compute_manager::CARDINALITY, solutions, cbig)
-  );
-  printf("There are ");
-  mpz_out_str(stdout, 10, cbig);
-  printf(" solutions to the %d-queens problem\n\n", N);
 
   // show one of the solutions
   dd_edge::const_iterator first = solutions.begin();
