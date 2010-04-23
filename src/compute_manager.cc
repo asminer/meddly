@@ -23,6 +23,7 @@
 
 #include "defines.h"
 #include "operations/operation_ext.h"
+#include "operations/cardinality.h"
 #include "compute_cache.h"
 
 #include "revision.h"
@@ -134,13 +135,14 @@ const char* expert_compute_manager::getOperationName(
     compute_manager::op_code op) const
 {
   switch(op) {
-    case COPY: return "Copy Edge";
-    case UNION: return "Union";
-    case INTERSECTION: return "Intersection";
-    case DIFFERENCE: return "Difference";
-    case COMPLEMENT: return "Complement";
-    case PRE_IMAGE: return "Pre-Image";
-    case POST_IMAGE: return "Post-Image";
+    case COPY:          return "Copy Edge";
+    case CARDINALITY:   return "Cardinality";
+    case UNION:         return "Union";
+    case INTERSECTION:  return "Intersection";
+    case DIFFERENCE:    return "Difference";
+    case COMPLEMENT:    return "Complement";
+    case PRE_IMAGE:     return "Pre-Image";
+    case POST_IMAGE:    return "Post-Image";
     case REACHABLE_STATES_DFS:
                      return "Reachable States via Depth-First Search";
     case REACHABLE_STATES_BFS:
@@ -325,6 +327,12 @@ op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
   // add new built-in op entry
   if (N == 2) {
     // unary operations
+    if (compute_manager::CARDINALITY == op) {
+      operation* opera = getCardinalityOperation(plist[0], plist[1]);
+      if (0==opera) return 0;
+      addBuiltinOp(key, opera, plist, N);
+      return &(builtinOpEntries->find(key)->second);
+    }
     if (f0->isMdd()) {
       if (f1->isEvplusMdd()) {
         if (op == compute_manager::CONVERT_TO_INDEX_SET) {

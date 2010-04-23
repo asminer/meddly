@@ -13,6 +13,7 @@ libops_la_SOURCES = \
 	../compute_cache.h \
 	operation_ext.h \
 	operation_ext.cc \
-	operation.cc 
+	operation.cc \
+  cardinality.cc
 
 

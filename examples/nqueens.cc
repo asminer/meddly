@@ -227,7 +227,7 @@ int main()
         CM->apply(compute_manager::MULTIPLY, uniq_col, uniq_dgm, uniq_col)
       );
       int k = uniq_col.getLevel()-1;
-      assert(k>=0);
+      if (k<0) k=0;
       assert(k<N);
       assert(
         compute_manager::SUCCESS ==
@@ -267,8 +267,11 @@ int main()
   printmem(f->getPeakMemoryUsed());
   printf(" peak memory\n");
 
-  double c = solutions.getCardinality();
-  printf("\nThere are %lg solutions to the %d-queens problem\n\n", c, N);
+  long c;
+  assert(compute_manager::SUCCESS ==
+    CM->apply(compute_manager::CARDINALITY, solutions, c)
+  );
+  printf("\nThere are %ld solutions to the %d-queens problem\n\n", c, N);
 
   // show one of the solutions
   dd_edge::const_iterator first = solutions.begin();

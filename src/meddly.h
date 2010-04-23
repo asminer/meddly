@@ -49,7 +49,7 @@ class dd_edge;
 class op_info;
 
 #ifndef __GMP_H__
-class mpz_t;
+class dummy;
 #endif
 
 // ******************************************************************
@@ -964,6 +964,8 @@ class dd_edge {
     int getLevel() const;
 
     /** Get node cardinality.
+        Provided for backward compatibility.
+        Use apply(CARDINALITY, ...) instead.
         @return         the cardinality of the node.
     */
     double getCardinality() const;
@@ -1210,6 +1212,10 @@ class compute_manager {
       */
       COPY=0,
 
+      /// Unary operation.  Return the number of variable assignments 
+      /// so that the function evaluates to non-zero.
+      CARDINALITY,
+
       /// Set operation for forests with range_type of BOOLEAN. All operands
       /// must belong to the same forest.
       UNION,
@@ -1372,10 +1378,15 @@ class compute_manager {
         (as supplied by the GNU MP library).
         @param  op    Operator handle.
         @param  a     Operand.
-        @param  c     Output parameter: the result, where \a c = \a op \a a.
+        @param  c     Input: an initialized MP integer.
+                      Output parameter: the result, where \a c = \a op \a a.
         @return       An appropriate error code.
     */
+#ifdef __GMP_H__
     virtual error apply(op_code op, const dd_edge &a, mpz_t &c) = 0;
+#else
+    virtual error apply(op_code op, const dd_edge &a, dummy &) = 0;
+#endif
 
 
     /** Apply a binary operator.

@@ -47,6 +47,8 @@
 
 #define DEBUG_DELETE_NM 0
 
+// #define DEBUG_CARD
+
 //#define MERGE_RIGHT
 //#define MERGE_LEFT
 
@@ -989,6 +991,9 @@ const
 
   // save result and return
   visited[p] = result;
+#ifdef DEBUG_CARD
+  fprintf(stderr, "Cardinality of node %d is %lg\n", p, result);
+#endif
   return result;
 }
 

@@ -346,9 +346,12 @@ int main(int argc, const char** argv)
   printmem(f->getPeakMemoryUsed());
   printf(" peak memory\n");
 
-  double c = solutions.getCardinality();
+  long c;
+  assert(compute_manager::SUCCESS ==
+    CM->apply(compute_manager::CARDINALITY, solutions, c)
+  );
   printf("\nFor a %dx%d chessboard, ", N, N);
-  printf("there are %lg covers with %d queens\n\n", c, q);
+  printf("there are %ld covers with %d queens\n\n", c, q);
 
   if (!outfile) return 0;
 
