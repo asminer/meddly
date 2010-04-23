@@ -18,7 +18,7 @@ BUILT_SOURCES = _revision revision.h
 CLEANFILES = revision.h
 
 libmeddly_la_SOURCES = \
-  defines.h \
+	defines.h \
 	dd_edge.cc \
 	domain.cc \
 	forest.cc \
@@ -37,7 +37,7 @@ libmeddly_la_SOURCES = \
 	timer.h 
 
 libmeddly_la_LIBADD = \
-  operations/libops.la
+	operations/libops.la
 
 ## compile apps
 

@@ -1247,18 +1247,37 @@ mtmxd_node_manager::createEdgeInternal(const int* const* vlist,
     int result = 0;
     // build using sort-based procedure
     // put terms into vlist[i][0]
-    int* list[N];
+    static int** list = 0;
+    static int** pList = 0;
+    static T* tList = 0;
+    static int listSize = 0;
+    static int tListSize = 0;
+
+    DCASSERT(N > 0);
+
+    // expand static arrays
+    if (listSize < N) {
+      list = (int**) realloc(list, N * sizeof(int*));
+      pList = (int**) realloc(pList, N * sizeof(int*));
+      listSize = N;
+    }
+
     memcpy(list, vlist, N * sizeof(int*));
-    int* pList[N];
     memcpy(pList, vplist, N * sizeof(int*));
+
     if (terms == 0) {
-      result =
-        sortBuild(list, pList, (T*)0, getDomain()->getNumVariables(), 0, N);
+      result = sortBuild(list, pList, (T*)0,
+          getDomain()->getNumVariables(), 0, N);
     } else {
-      T tList[N];
-      memcpy((void*)tList, (void*)terms, N * sizeof(T));
-      result =
-        sortBuild(list, pList, tList, getDomain()->getNumVariables(), 0, N);
+      if (tListSize < N) {
+        // T may represent a class, therefore using new and delete
+        if (tList != 0) { delete [] tList; }
+        tList = new T[N];
+        tListSize = N;
+      }
+      for (int i = 0; i < N; i++) { tList[i] = terms[i]; }
+      result = sortBuild(list, pList, tList,
+          getDomain()->getNumVariables(), 0, N);
     }
 #else
     if (terms == 0) {

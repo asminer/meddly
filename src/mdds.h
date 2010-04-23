@@ -191,6 +191,8 @@ class node_manager : public expert_forest {
 
     forest::error createSubMatrix(const bool* const* vlist,
         const bool* const* vplist, const dd_edge a, dd_edge& b);
+    forest::error createSubMatrix(const dd_edge& rows, const dd_edge& cols,
+        const dd_edge& a, dd_edge& b);
 
     virtual forest::error getElement(const dd_edge& a, int index, int* e);
 

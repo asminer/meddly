@@ -428,6 +428,12 @@ forest::error node_manager::createEdgeForVar(int vh, bool primedLevel,
 }
 
 
+forest::error node_manager::createSubMatrix(const dd_edge& rows,
+    const dd_edge& cols, const dd_edge& a, dd_edge& result)
+{
+  return forest::NOT_IMPLEMENTED;
+}
+
 forest::error node_manager::createSubMatrix(const bool* const* vlist,
     const bool* const* vplist, const dd_edge a, dd_edge& b)
 {
@@ -445,7 +451,7 @@ forest::error node_manager::createSubMatrix(const bool* const* vlist,
     int level = expertDomain->getVariableWithHeight(height);
     
     // create node at prime level
-    int nodeSize = expertDomain->getVariableBound(level);
+    int nodeSize = expertDomain->getVariableBound(level, true);
     int node = createTempNode(-level, nodeSize, false);
     for (int i = 0; i < nodeSize; i++)
     {
@@ -455,6 +461,7 @@ forest::error node_manager::createSubMatrix(const bool* const* vlist,
     mask = reduceNode(node);
 
     // create node at unprime level
+    nodeSize = expertDomain->getVariableBound(level, false);
     node = createTempNode(level, nodeSize, false);
     for (int i = 0; i < nodeSize; i++)
     {

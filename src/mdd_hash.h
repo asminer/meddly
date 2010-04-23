@@ -322,10 +322,12 @@ class mdd_hash_table {
             table[h] = nodes->getNext(ptr);
           }
           num_entries--;
+          DCASSERT(table[h] != 0);
           return ptr;
         }
         parent = ptr;
       }
+      DCASSERT(table[h] != 0);
       return nodes->getNull();
     }
 
@@ -335,6 +337,7 @@ class mdd_hash_table {
       Returns the (new) front of the list.
      */
     inline int insert(int key) {
+      DCASSERT(key != 0);
       DCASSERT(key >= 1);
       DCASSERT(find(key) == nodes->getNull());
       if (num_entries >= (size << 1)) expand();
