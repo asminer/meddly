@@ -330,7 +330,6 @@ double mdd_real_card::compute(op_info* owner, int ht, int a)
 
 /// Cardinality of MDDs, returning integers.
 class mdd_mpz_card : public cardinality_op {
-  mpz_t tmp;
   public:
     mdd_mpz_card()          { }
     virtual ~mdd_mpz_card() { }
@@ -356,7 +355,7 @@ class mdd_mpz_card : public cardinality_op {
         const int *entryData) const;
 
     virtual compute_manager::error typeCheck(const op_info* owner) {
-      return type_check(owner, op_param::INTEGER);
+      return type_check(owner, op_param::HUGEINT);
     }
 
     virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
@@ -404,10 +403,8 @@ compute(op_info* owner, const dd_edge& a, mpz_t &card)
 {
   if (0==owner) return compute_manager::TYPE_MISMATCH;
 #ifdef HAVE_LIBGMP
-  mpz_init(tmp);
   expert_forest* f = owner->p[0].getForest();
   compute(owner, f->getDomain()->getNumVariables(), a.getNode(), card);
-  mpz_clear(tmp);
   return compute_manager::SUCCESS;
 #else
   return compute_manager::NOT_IMPLEMENTED;
@@ -445,6 +442,8 @@ void mdd_mpz_card::compute(op_info* owner, int ht, int a, mpz_t &card)
   }
 
   // recurse
+  mpz_t tmp;
+  mpz_init(tmp);
   mpz_set_ui(card, 0); 
   if (f->isFullNode(a)) {
     int asize = f->getFullNodeSize(a);
@@ -459,6 +458,7 @@ void mdd_mpz_card::compute(op_info* owner, int ht, int a, mpz_t &card)
       mpz_add(card, card, tmp);
     }
   }
+  mpz_clear(tmp);
 
   // Add entry to compute table
   static int ansEntry[1+sizeof(mpz_t)/sizeof(int)];

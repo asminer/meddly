@@ -35,6 +35,7 @@
 #include <sys/resource.h>
 #include <unistd.h>
 
+#include <gmp.h>
 #include "meddly.h"
 
 int N;
@@ -352,6 +353,17 @@ int main(int argc, const char** argv)
   );
   printf("\nFor a %dx%d chessboard, ", N, N);
   printf("there are %ld covers with %d queens\n\n", c, q);
+
+// Temporary
+  mpz_t cbig;
+  mpz_init(cbig);
+  assert(compute_manager::SUCCESS ==
+    CM->apply(compute_manager::CARDINALITY, solutions, cbig)
+  );
+  printf("\nFor a %dx%d chessboard, there are ", N, N);
+  mpz_out_str(stdout, 10, cbig);
+  printf(" covers with %d queens\n\n", q);
+
 
   if (!outfile) return 0;
 
