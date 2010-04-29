@@ -329,6 +329,9 @@ double mdd_real_card::compute(op_info* owner, int ht, int a)
 // ******************************************************************
 
 /// Cardinality of MDDs, returning integers.
+
+#ifdef HAVE_LIBGMP
+
 class mdd_mpz_card : public cardinality_op {
   public:
     mdd_mpz_card()          { }
@@ -477,6 +480,8 @@ void mdd_mpz_card::compute(op_info* owner, int ht, int a, mpz_t &card)
 #endif
 }
 
+#endif
+
 // ******************************************************************
 // *                                                                *
 // *                           Front  end                           *
@@ -503,6 +508,8 @@ operation* getCardinalityOperation(const op_param &ft, const op_param &rt)
         }
         return 0;
 
+#ifdef HAVE_LIBGMP
+
     case op_param::HUGEINT:
         if (ft.isMdd()) {
           if (ft.isMT())      return mdd_mpz_card::getInstance();
@@ -510,6 +517,8 @@ operation* getCardinalityOperation(const op_param &ft, const op_param &rt)
           if (ft.isEVTimes()) return 0;
         }
         return 0;
+
+#endif
 
     default:
         return 0;

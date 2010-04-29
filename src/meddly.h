@@ -48,8 +48,10 @@ class domain;
 class dd_edge;
 class op_info;
 
-#ifndef __GMP_H__
-class dummy;
+#ifdef HAVE_LIBGMP
+#include <gmp.h>
+#else
+class mpz_t;
 #endif
 
 // ******************************************************************
@@ -1382,11 +1384,7 @@ class compute_manager {
                       Output parameter: the result, where \a c = \a op \a a.
         @return       An appropriate error code.
     */
-#ifdef __GMP_H__
     virtual error apply(op_code op, const dd_edge &a, mpz_t &c) = 0;
-#else
-    virtual error apply(op_code op, const dd_edge &a, dummy &) = 0;
-#endif
 
 
     /** Apply a binary operator.

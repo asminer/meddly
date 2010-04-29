@@ -14,6 +14,6 @@ libops_la_SOURCES = \
 	operation_ext.h \
 	operation_ext.cc \
 	operation.cc \
-  cardinality.cc
+	cardinality.cc
 
 

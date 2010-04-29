@@ -871,13 +871,8 @@ class operation {
 
     /// Compute the result of this operation on \a a and store the result in
     /// \a b.
-#ifdef __GMP_H__
     virtual compute_manager::error compute(op_info* cc, const dd_edge& a,
       mpz_t &b);
-#else
-    virtual compute_manager::error compute(op_info* cc, const dd_edge& a,
-      dummy &b);
-#endif
 
     /// Compute the result of this operation on \a a and \a b and store the
     /// result in \a c.
@@ -920,9 +915,7 @@ class op_param {
     void set(forest*);
     void set(long);
     void set(double);
-#ifdef __GMP_H__
     void set(mpz_t &);
-#endif
 
     type getType() const;
     bool isForest() const;
@@ -1021,11 +1014,7 @@ class expert_compute_manager : public compute_manager {
     virtual error apply(op_code op, const dd_edge &a, dd_edge &b);
     virtual error apply(op_code op, const dd_edge &a, long &c);
     virtual error apply(op_code op, const dd_edge &a, double &c);
-#ifdef __GMP_H__
     virtual error apply(op_code op, const dd_edge &a, mpz_t &c);
-#else
-    virtual error apply(op_code op, const dd_edge &a, dummy &c);
-#endif
 
     virtual error apply(op_code op, const dd_edge &a, const dd_edge &b,
         dd_edge &c);
@@ -1045,11 +1034,7 @@ class expert_compute_manager : public compute_manager {
     virtual error apply(op_info* op, const dd_edge &a, dd_edge &b);
     virtual error apply(op_info* op, const dd_edge &a, long &b);
     virtual error apply(op_info* op, const dd_edge &a, double &b);
-#ifdef __GMP_H__
     virtual error apply(op_info* op, const dd_edge &a, mpz_t &b);
-#else
-    virtual error apply(op_info* op, const dd_edge &a, dummy &b);
-#endif
 
     /** Obtain a concrete handle to the built-in operation.
         If a built-in operation is going to be called repeatedly for the
@@ -1215,14 +1200,12 @@ void op_param::set(double)
   my_type = REAL;
 }
 
-#ifdef __GMP_H__
 inline
 void op_param::set(mpz_t &)
 {
   f = 0;
   my_type = HUGEINT;
 }
-#endif
 
 inline 
 op_param::type op_param::getType() const 

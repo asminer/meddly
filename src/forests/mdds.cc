@@ -25,7 +25,6 @@
 // TODO: HERE: go through every function in mdds.h and mdds.cc
 
 
-#include "defines.h"
 #include "mdds.h"
 
 #include <map>    // for getCardinality()

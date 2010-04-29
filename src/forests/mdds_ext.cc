@@ -20,7 +20,6 @@
 */
 
 
-#include "defines.h"
 #include "mdds_ext.h"
 #include <algorithm>
 #include <limits.h>
@@ -748,7 +747,14 @@ mtmxd_node_manager::mtmxd_node_manager(domain *d, forest::range_type t)
 : node_manager(d, true, t,
       forest::MULTI_TERMINAL, forest::IDENTITY_REDUCED,
       forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION)
-{ root = 0; }
+{
+  root = 0;
+
+  pList = 0;
+  unpList = 0;
+  tList = 0;
+  listSize = 0;
+}
 
 
 mtmxd_node_manager::mtmxd_node_manager(domain *d,
@@ -756,11 +762,24 @@ mtmxd_node_manager::mtmxd_node_manager(domain *d,
     forest::edge_labeling e, forest::reduction_rule r,
     forest::node_storage s, forest::node_deletion_policy dp)
 : node_manager(d, relation, t, e, r, s, dp)
-{ }
+{
+  root = 0;
+
+  unpList = 0;
+  pList = 0;
+  tList = 0;
+  listSize = 0;
+}
 
 
 mtmxd_node_manager::~mtmxd_node_manager()
-{ }
+{
+  if (listSize > 0) {
+    free(unpList);
+    free(pList);
+    free(tList);
+  }
+}
 
 
 bool mtmxd_node_manager::singleNonZeroAt(int p, int val, int index) const

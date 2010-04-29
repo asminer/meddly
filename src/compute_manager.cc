@@ -183,7 +183,11 @@ compute_manager::error expert_compute_manager::apply(op_info* owner,
 compute_manager::error expert_compute_manager::apply(op_info* owner,
     const dd_edge &a, mpz_t &b)
 {
+#ifdef HAVE_LIBGMP
   return unary_apply(owner, a, b);
+#else
+  return compute_manager::UNKNOWN_OPERATION;
+#endif
 }
 
 
@@ -233,8 +237,13 @@ compute_manager::error expert_compute_manager::apply(
 compute_manager::error expert_compute_manager::apply(
     compute_manager::op_code op, const dd_edge &a, mpz_t &b)
 {
+#ifdef HAVE_LIBGMP
   return unary_apply(this, op, a, b);
+#else
+  return compute_manager::UNKNOWN_OPERATION;
+#endif
 }
+
 
 compute_manager::error expert_compute_manager::apply(
     compute_manager::op_code op, const dd_edge &a, const dd_edge &b,

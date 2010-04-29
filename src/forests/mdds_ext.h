@@ -28,6 +28,13 @@
 // TODO: mtmdd_node_manager
 // TODO: mtmxd_node_manager (??)
 
+// TODO: inPlaceSortBuild() must be modified to deal with don't care and
+//       don't change while building the node instead of deal with them
+//       separately (before the call to inPlaceSortBuild()).
+//       For this purpose, verify that compute_manager::UNION and PLUS
+//       work with nodes that are not at the top-level correctly.
+
+
 /* 
   TODO: ensure this rule
   All extensions must over-ride either reduceNode() or normalizeAndReduceNode().
@@ -40,6 +47,9 @@
 #include "mdds.h"
 
 #define SORT_BUILD
+
+//#define TREE_SORT
+#define IN_PLACE_SORT
 
 // N = domain->getNumVars() + 1
 void sortVector(int** indexes, int* terms, int N, int nVars);
@@ -294,12 +304,30 @@ class mtmxd_node_manager : public node_manager {
       int sortBuild(int** unpList, int** pList, T* tList,
           int height, int begin, int end);
 
+    template <typename T>
+      int inPlaceSort(int** list, int** otherList, T* tList,
+          int absLevel, int begin, int end);
+
+    template <typename T>
+      int inPlaceSortBuild(int** unpList, int** pList, T* tList,
+          int height, int begin, int end);
+
+
+    // Methods and data for batch addition via tree-building.
     void addToTree(int* unp, int* p, int terminalNode);
     int convertTreeToMtMxd();
     int convertToMtMxd(int addr, int height);
-
     int root;
+
+    // Methods and data for batch addition via sorting
+    template <typename T> void copyLists(const int* const* vlist,
+        const int* const* vplist, const T* terms, int nElements);
+    int** unpList;
+    int** pList;
+    void* tList;
+    int   listSize;
 };
+
 
 
 class mxd_node_manager : public mtmxd_node_manager {
@@ -1190,6 +1218,31 @@ int mtmdd_node_manager::sortBuild(int** list, T* tList,
 }
 
 
+
+template <typename T>
+inline
+void mtmxd_node_manager::copyLists(const int* const* vlist,
+    const int* const* vplist, const T* terms, int nElements)
+{
+  if (listSize < nElements) {
+    unpList = (int**) realloc(unpList, sizeof(int*) * nElements);
+    assert(unpList);
+    pList = (int**) realloc(pList, sizeof(int*) * nElements);
+    assert(pList);
+    tList = (void*) realloc(tList, sizeof(T) * nElements);
+    assert(tList);
+    listSize = nElements;
+  }
+
+  memcpy(unpList, vlist, nElements * sizeof(int*));
+  memcpy(pList, vplist, nElements * sizeof(int*));
+  if (terms != 0) {
+    T* tempTList = (T*)tList;
+    for (int i = 0; i < nElements; i++) { tempTList[i] = terms[i]; }
+  }
+}
+
+
 template <typename T>
 forest::error
 mtmxd_node_manager::createEdgeInternal(const int* const* vlist,
@@ -1243,43 +1296,7 @@ mtmxd_node_manager::createEdgeInternal(const int* const* vlist,
     }
   }
   else {
-#if 1
-    int result = 0;
-    // build using sort-based procedure
-    // put terms into vlist[i][0]
-    static int** list = 0;
-    static int** pList = 0;
-    static T* tList = 0;
-    static int listSize = 0;
-    static int tListSize = 0;
-
-    DCASSERT(N > 0);
-
-    // expand static arrays
-    if (listSize < N) {
-      list = (int**) realloc(list, N * sizeof(int*));
-      pList = (int**) realloc(pList, N * sizeof(int*));
-      listSize = N;
-    }
-
-    memcpy(list, vlist, N * sizeof(int*));
-    memcpy(pList, vplist, N * sizeof(int*));
-
-    if (terms == 0) {
-      result = sortBuild(list, pList, (T*)0,
-          getDomain()->getNumVariables(), 0, N);
-    } else {
-      if (tListSize < N) {
-        // T may represent a class, therefore using new and delete
-        if (tList != 0) { delete [] tList; }
-        tList = new T[N];
-        tListSize = N;
-      }
-      for (int i = 0; i < N; i++) { tList[i] = terms[i]; }
-      result = sortBuild(list, pList, tList,
-          getDomain()->getNumVariables(), 0, N);
-    }
-#else
+#ifdef TREE_SORT
     if (terms == 0) {
       int terminalNode = getTerminalNode(
           handleMultipleTerminalValues((T*)0, 0, N));
@@ -1294,6 +1311,22 @@ mtmxd_node_manager::createEdgeInternal(const int* const* vlist,
       }
     }
     int result = convertTreeToMtMxd();
+#else
+    // build using sort-based procedure
+    DCASSERT(N > 0);
+
+    // copy elements into internal volatile storage
+    copyLists(vlist, vplist, terms, N);
+
+    // call sort-based procedure for building the DD
+#ifdef IN_PLACE_SORT
+    int result = inPlaceSortBuild(unpList, pList, (T*)(terms == 0? 0: tList),
+        expertDomain->getNumVariables(), 0, N);
+#else
+    int result = sortBuild(unpList, pList, (T*)(terms == 0? 0: tList),
+        expertDomain->getNumVariables(), 0, N);
+#endif
+
 #endif
     e.set(result, 0, getNodeLevel(result));
   }
@@ -1502,6 +1535,175 @@ int mtmxd_node_manager::sortBuild(int** unpList, int** pList, T* tList,
     // skip the elements with the same index at this level
     for ( ; i < end && list[i][absLevel] == index; ++i);
     ptr[index] = sortBuild(unpList, pList, tList, nextHeight, start, i);
+  }
+
+  return reduceNode(result);
+}
+
+
+template<typename T>
+int mtmxd_node_manager::inPlaceSort(int** list, int** otherList, T* tList,
+    int absLevel, int begin, int end)
+{
+  // Determine range of values
+  int min = list[begin][absLevel];
+  int max = min;
+  for (int i = begin + 1; i < end; ++i) {
+    max = MAX(max, list[i][absLevel]);
+    min = MIN(min, list[i][absLevel]);
+  }
+
+  // Prepare arrays (expand them as necessary and clear them as necessary).
+  static int* count = 0;
+  static int* slot = 0;
+  static int countSize = 0;
+  if (countSize < (max + 1 - min)) {
+#ifdef DEVELOPMENT_CODE
+    for (int i = 0; i < countSize; i++) { assert(0 == count[i]); }
+#endif
+    int newSize = max + 1 - min;
+    count = (int*) realloc(count, newSize * sizeof(int));
+    slot = (int*) realloc(slot, newSize * sizeof(int));
+    memset(count + countSize, 0, (newSize - countSize) * sizeof(int));
+    countSize = newSize;
+  }
+
+  // c and s reduce the number of subtractions in indexes
+  int* c = count - min;
+  int* s = slot - min;
+
+  // Count the number of entries for each value
+  for (int i = begin; i < end; i++) {
+    c[list[i][absLevel]]++;
+  }
+
+  // Determine the initial slot positions
+  s[min] = begin;
+  for (int i = min + 1; i <= max; ++i) {
+    s[i] = s[i-1] + c[i-1];
+  }
+
+  // We have the correct bucket sizes, now move items into
+  // appropriate buckets.
+  
+  for (int i = min; i < max; ++i) {
+    // Move elements in bucket i to the correct slots.
+    // Repeat this until all the elements in bucket i belong in bucket i.
+    while (c[i] > 0) {
+      // Find appropriate slot for list[s[i]]
+      int* elem = list[s[i]];
+      int elemIndex = elem[absLevel];
+      if (i == elemIndex) {
+        // Already in the correct slot
+        --c[i];
+        ++s[i];
+      }
+      else {
+        // Move elem to correct slot
+        DCASSERT(elemIndex > i);
+        while (c[elemIndex] > 0 && elemIndex == list[s[elemIndex]][absLevel]) {
+          // These elements are already in the correct slots; advance pointers.
+          --c[elemIndex];
+          ++s[elemIndex];
+        }
+        // At correct slot for elem
+        DCASSERT(c[elemIndex] > 0);
+        CHECK_RANGE(begin, s[elemIndex], end);
+        SWAP(list[s[i]], list[s[elemIndex]]);
+        SWAP(otherList[s[i]], otherList[s[elemIndex]]);
+        if (tList) { SWAP(tList[s[i]], tList[s[elemIndex]]); }
+        // list[s[elemIndex]] now contains the correct element.
+        // Also, list[s[i]] now contains an unknown and this 
+        // will be handled in the next iteration.
+        // Note that we do not advance c[i] and s[i].
+      }
+    }
+    // Bucket i now contains only elements that belong in it.
+  }
+
+  c[max] = 0;
+
+#ifdef DEVELOPMENT_CODE
+  // Check if all buckets have been dealt with
+  for (int i = min; i <= max; i++) { assert(0 == c[i]); }
+#endif
+
+#ifdef DEVELOPMENT_CODE
+  // Check if sorted
+  for (int i = begin + 1; i < end; i++) {
+    assert(list[i-1][absLevel] <= list[i][absLevel]);
+  }
+#endif
+
+  // max represents the largest index; therefore max+1 represents the
+  // size of the full-node at this level.
+  return max + 1;
+}
+
+
+template <typename T>
+int mtmxd_node_manager::inPlaceSortBuild(int** unpList, int** pList, T* tList,
+    int height, int begin, int end)
+{
+  // [begin, end)
+
+  // terminal condition
+  if (height == 0) {
+    return getTerminalNode(handleMultipleTerminalValues(tList, begin, end));
+  }
+
+  if (begin + 1 == end) {
+    return createNode(unpList[begin], pList[begin],
+        getTerminalNode(handleMultipleTerminalValues(tList, begin, end)),
+        ABS(height), height < 0);
+  }
+
+  int** list = 0;
+  int** otherList = 0;
+  int nextHeight = 0;
+  int level = 0;
+  if (height > 0) {
+    list = unpList;
+    otherList = pList;
+    nextHeight = -height;
+    level = expertDomain->getVariableWithHeight(height);
+  } else {
+    list = pList;
+    otherList = unpList;
+    nextHeight = -height-1;
+    level = -(expertDomain->getVariableWithHeight(-height));
+  }
+  int absLevel = level < 0? -level: level;
+
+  // Sort elements at this level
+  int levelSize = inPlaceSort(list, otherList, tList, absLevel, begin, end);
+
+#ifdef DEVELOPMENT_CODE
+  // find largest index
+  int largestIndex = list[begin][absLevel];
+  for (int i = begin + 1; i < end; )
+  {
+    DCASSERT(largestIndex <= list[i][absLevel]);
+    largestIndex = list[i][absLevel];
+    // skip the elements with the same index at this level
+    for (++i; i < end && list[i][absLevel] == largestIndex; ++i);
+  }
+  if (largestIndex + 1 != levelSize) {
+    printf("largest index: %d, levelSize: %d\n", largestIndex, levelSize);
+    assert(false);
+  }
+#endif
+
+  // build node
+  int result = createTempNode(level, levelSize, true);
+  int* ptr = getFullNodeDownPtrs(result);
+  for (int i = begin; i < end; )
+  {
+    int index = list[i][absLevel];
+    int start = i++;
+    // skip the elements with the same index at this level
+    for ( ; i < end && list[i][absLevel] == index; ++i);
+    ptr[index] = inPlaceSortBuild(unpList, pList, tList, nextHeight, start, i);
   }
 
   return reduceNode(result);

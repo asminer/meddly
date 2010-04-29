@@ -41,8 +41,11 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#if 0
 #ifdef HAVE_LIBGMP
 #include <gmp.h>
+#endif
 #endif
 
 // Meddly

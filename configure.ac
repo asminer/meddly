@@ -55,6 +55,7 @@ AS_IF([test "x$with_gmp" != xno],
 AC_CONFIG_FILES([Makefile
                  examples/Makefile
                  src/Makefile
+                 src/forests/Makefile
                  src/operations/Makefile])
 
 AC_OUTPUT
