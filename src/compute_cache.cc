@@ -26,6 +26,9 @@
 const float expansionFactor = 1.25;
 
 
+/* compute cache methods */
+
+
 compute_cache::compute_cache()
 : nodes(0), nodeCount(1024), lastNode(-1),
   data(0), dataCount(1024), lastData(-1),

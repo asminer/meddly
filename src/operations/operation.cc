@@ -23,6 +23,19 @@
 #include "../defines.h"
 #include "../meddly_expert.h"
 
+/* compute table objects */
+
+ct_object::ct_object()
+{
+}
+
+ct_object::~ct_object()
+{
+}
+
+
+/* operation stuff */
+
 operation::operation()
 { }
 
@@ -58,7 +71,7 @@ operation::compute(op_info* cc, const dd_edge& a, double& b)
 
 
 compute_manager::error 
-operation::compute(op_info* cc, const dd_edge& a, mpz_t &b)
+operation::compute(op_info* cc, const dd_edge& a, ct_object &b)
 {
   return compute_manager::TYPE_MISMATCH;
 }
@@ -69,3 +82,5 @@ operation::compute(op_info* cc, const dd_edge& a, const dd_edge& b, dd_edge& c)
 {
   return compute_manager::TYPE_MISMATCH;
 }
+
+

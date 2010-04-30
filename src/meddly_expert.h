@@ -872,7 +872,7 @@ class operation {
     /// Compute the result of this operation on \a a and store the result in
     /// \a b.
     virtual compute_manager::error compute(op_info* cc, const dd_edge& a,
-      mpz_t &b);
+      ct_object &b);
 
     /// Compute the result of this operation on \a a and \a b and store the
     /// result in \a c.
@@ -915,7 +915,7 @@ class op_param {
     void set(forest*);
     void set(long);
     void set(double);
-    void set(mpz_t &);
+    void set(ct_object &);
 
     type getType() const;
     bool isForest() const;
@@ -977,13 +977,24 @@ class op_info {
 };
 
 
+/** Generic objects in compute tables.
+    Used for things other than dd_edges and simple types.
 
+    Defined in operation.cc
+*/
+class ct_object {
+  public:
+    ct_object();
+    virtual ~ct_object();
+    virtual op_param::type getType() = 0;
+};
 
 
 /** Expert Compute Manager class.
 
     Concrete class implements compute_manager and provides an interface
     to user-defined operations.
+
 
     TODO: At the moment, all (concrete) operations are singleton classes.
 */
@@ -1014,7 +1025,7 @@ class expert_compute_manager : public compute_manager {
     virtual error apply(op_code op, const dd_edge &a, dd_edge &b);
     virtual error apply(op_code op, const dd_edge &a, long &c);
     virtual error apply(op_code op, const dd_edge &a, double &c);
-    virtual error apply(op_code op, const dd_edge &a, mpz_t &c);
+    virtual error apply(op_code op, const dd_edge &a, ct_object &c);
 
     virtual error apply(op_code op, const dd_edge &a, const dd_edge &b,
         dd_edge &c);
@@ -1034,7 +1045,7 @@ class expert_compute_manager : public compute_manager {
     virtual error apply(op_info* op, const dd_edge &a, dd_edge &b);
     virtual error apply(op_info* op, const dd_edge &a, long &b);
     virtual error apply(op_info* op, const dd_edge &a, double &b);
-    virtual error apply(op_info* op, const dd_edge &a, mpz_t &b);
+    virtual error apply(op_info* op, const dd_edge &a, ct_object &b);
 
     /** Obtain a concrete handle to the built-in operation.
         If a built-in operation is going to be called repeatedly for the
@@ -1201,10 +1212,10 @@ void op_param::set(double)
 }
 
 inline
-void op_param::set(mpz_t &)
+void op_param::set(ct_object &x)
 {
   f = 0;
-  my_type = HUGEINT;
+  my_type = x.getType();
 }
 
 inline 

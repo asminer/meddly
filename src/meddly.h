@@ -47,12 +47,13 @@
 class domain;
 class dd_edge;
 class op_info;
+class ct_object;
 
-#ifdef HAVE_LIBGMP
-#include <gmp.h>
-#else
-class mpz_t;
+#ifdef __GMP_H__
+ct_object& MEDDLY_get_mpz_wrapper();
+void MEDDLY_unwrap(const ct_object &, mpz_t &value);
 #endif
+
 
 // ******************************************************************
 // *                                                                *
@@ -1375,6 +1376,9 @@ class compute_manager {
     */
     virtual error apply(op_code op, const dd_edge &a, double &c) = 0;
 
+    virtual error apply(op_code op, const dd_edge &a, ct_object &c) = 0;
+
+#ifdef __GMP_H__
     /** Apply a unary operator.
         For operators whose result is an arbitrary-precision integer
         (as supplied by the GNU MP library).
@@ -1384,7 +1388,13 @@ class compute_manager {
                       Output parameter: the result, where \a c = \a op \a a.
         @return       An appropriate error code.
     */
-    virtual error apply(op_code op, const dd_edge &a, mpz_t &c) = 0;
+    inline error apply(op_code op, const dd_edge &a, mpz_t &c) {
+      ct_object& x = MEDDLY_get_mpz_wrapper();
+      error e = apply(op, a, x);
+      MEDDLY_unwrap(x, c);
+      return e; 
+    }
+#endif
 
 
     /** Apply a binary operator.

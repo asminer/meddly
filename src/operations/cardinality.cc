@@ -19,9 +19,16 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+#ifdef HAVE_LIBGMP
+#include <gmp.h>
+#endif
 #include "../defines.h"
 #include "cardinality.h"
 #include "../compute_cache.h"
+#include "mpz_object.h"
 
 // #define DEBUG_CARD
 
@@ -338,17 +345,17 @@ class mdd_mpz_card : public cardinality_op {
     virtual ~mdd_mpz_card() { }
 
     virtual int getAnsLength() const  { 
-      return sizeof(mpz_t) / sizeof(int); 
+      return sizeof(ct_object*) / sizeof(int); 
     }
     virtual int getCacheEntryLength() const { 
-      return 1 + sizeof(mpz_t) / sizeof(int);
+      return 1 + sizeof(ct_object*) / sizeof(int);
     }
 
     virtual int getAnsLengthInBytes() const { 
-      return sizeof(mpz_t); 
+      return sizeof(ct_object*); 
     }
     virtual int getCacheEntryLengthInBytes() const { 
-      return sizeof(int) + sizeof(mpz_t);
+      return sizeof(int) + sizeof(ct_object*);
     }
 
     static mdd_mpz_card* getInstance();
@@ -362,9 +369,9 @@ class mdd_mpz_card : public cardinality_op {
     }
 
     virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
-      mpz_t& b);
+      ct_object &b);
 
-    void compute(op_info* owner, int ht, int a, mpz_t &b);
+    void compute(op_info* owner, int ht, int a, mpz_object &b);
 };
 
 mdd_mpz_card* 
@@ -378,47 +385,39 @@ getInstance()
 void mdd_mpz_card::
 discardEntry(op_info* owner, const int* data)
 {
-#ifdef HAVE_LIBGMP
   // data[] is of size owner.nParams
   // data[0] <--> DD node to take cardinality of
   // data[1] <--> result value (not a DD node)
   DCASSERT(owner->nParams == 2);
   owner->p[0].getForest()->uncacheNode(data[0]);
-  mpz_clear( ((mpz_t*)(data+1))[0] );
-#endif
+  delete( ((ct_object**)(data+1))[0] );
 }
 
 void
 mdd_mpz_card::
 showEntry(const op_info* owner, FILE* strm, const int *data) const
 {
-#ifdef HAVE_LIBGMP
   DCASSERT(owner->nParams == 2);
   fprintf(strm, "[%s(%d): ", owner->op->getName(), data[0]);
-  mpz_out_str(strm, 10, ((const mpz_t*)(data+1))[0]);
+  ((const mpz_object**)(data+1))[0]->show(strm);
   fprintf(strm, "]");
-#endif
 }
 
 compute_manager::error 
 mdd_mpz_card::
-compute(op_info* owner, const dd_edge& a, mpz_t &card)
+compute(op_info* owner, const dd_edge& a, ct_object &card)
 {
   if (0==owner) return compute_manager::TYPE_MISMATCH;
-#ifdef HAVE_LIBGMP
   expert_forest* f = owner->p[0].getForest();
-  compute(owner, f->getDomain()->getNumVariables(), a.getNode(), card);
+  mpz_object& mcard = dynamic_cast <mpz_object &> (card);
+  compute(owner, f->getDomain()->getNumVariables(), a.getNode(), mcard);
   return compute_manager::SUCCESS;
-#else
-  return compute_manager::NOT_IMPLEMENTED;
-#endif
 }
 
-void mdd_mpz_card::compute(op_info* owner, int ht, int a, mpz_t &card)
+void mdd_mpz_card::compute(op_info* owner, int ht, int a, mpz_object &card)
 {
-#ifdef HAVE_LIBGMP
   if (0==a) {
-    mpz_set_ui(card, 0);
+    card.setValue(0);
     return;
   }
   expert_forest* f = owner->p[0].getForest();
@@ -427,56 +426,52 @@ void mdd_mpz_card::compute(op_info* owner, int ht, int a, mpz_t &card)
     const expert_domain* d = smart_cast <const expert_domain*> (f->getDomain());
     int k = d->getVariableWithHeight(ht);
     compute(owner, ht-1, a, card);
-    mpz_mul_si(card, card, f->getLevelSize(k));
+    card.multiply(f->getLevelSize(k));
     return;
   }
   
   // Terminal case
   if (f->isTerminalNode(a)) {
-    mpz_set_ui(card, 1);
+    card.setValue(1);
     return;
   }
 
   // Check compute table
   const int* cacheEntry = owner->cc->find(owner, &a);
   if (cacheEntry) {
-    mpz_set(card, ((const mpz_t*)(cacheEntry+1))[0]);
+    ((const mpz_object**)(cacheEntry+1))[0]->copyInto(card);
     return;
   }
 
   // recurse
-  mpz_t tmp;
-  mpz_init(tmp);
-  mpz_set_ui(card, 0); 
+  mpz_object tmp;
+  tmp.setValue(0);
+  card.setValue(0);
   if (f->isFullNode(a)) {
     int asize = f->getFullNodeSize(a);
     for (int i = 0; i < asize; ++i) {
       compute(owner, ht - 1, f->getFullNodeDownPtr(a, i), tmp);
-      mpz_add(card, card, tmp);
+      card.add(tmp);
     } // for i
   } else {
     int asize = f->getSparseNodeSize(a);
     for (int i = 0; i < asize; ++i) {
       compute(owner, ht - 1, f->getSparseNodeDownPtr(a, i), tmp);
-      mpz_add(card, card, tmp);
+      card.add(tmp);
     }
   }
-  mpz_clear(tmp);
 
   // Add entry to compute table
   static int ansEntry[1+sizeof(mpz_t)/sizeof(int)];
   owner->p[0].getForest()->cacheNode(a);
   ansEntry[0] = a;
-  mpz_init( ((mpz_t*)(ansEntry+1))[0] );
-  mpz_set( ((mpz_t*)(ansEntry+1))[0] , card);
+  ((mpz_object**)(ansEntry+1))[0] = new mpz_object(card);
 
   owner->cc->add(owner, const_cast<const int*>(ansEntry));
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is ", a);
-  mpz_out_str(stderr, 10, card);
+  card.show(stderr);
   fprintf(stderr, "\n");
-#endif
-
 #endif
 }
 
