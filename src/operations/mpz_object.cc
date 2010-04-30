@@ -22,6 +22,8 @@
 #include "../defines.h"
 #include "mpz_object.h"
 
+#ifdef HAVE_LIBGMP 
+
 mpz_object::mpz_object()
 {
   mpz_init(value);
@@ -59,4 +61,6 @@ void MEDDLY_unwrap(const ct_object &x, mpz_t &value)
   const mpz_object &mx = dynamic_cast <const mpz_object &> (x);
   mx.copyInto(value);
 }
+
+#endif
 
