@@ -1351,50 +1351,6 @@ const domain* op_param::getDomain() const
 
 // ---------------------- op_info ------------------------
 
-inline
-op_info::op_info() : op(0), p(0), nParams(0), cc(0) {}
-
-
-inline
-op_info::op_info(operation *oper, op_param* plist, int n,
-  compute_cache* cache)
-: op(oper), p(0), nParams(n), cc(cache)
-{
-  p = (op_param *) malloc(nParams * sizeof(op_param));
-  for (int i = 0; i < nParams; ++i) p[i] = plist[i];
-}
-
-
-inline
-op_info::~op_info()
-{
-  if (p != 0) free(p);
-}
-
-
-inline
-op_info::op_info(const op_info& a)
-: op(a.op), p(0), nParams(a.nParams), cc(a.cc)
-{
-  p = (op_param *) malloc(nParams * sizeof(op_param));
-  for (int i = 0; i < nParams; ++i) p[i] = a.p[i];
-}
-
-
-inline
-op_info& op_info::operator=(const op_info& a)
-{
-  if (this == &a) return *this;
-  if (nParams != a.nParams) {
-    nParams = a.nParams;
-    p = (op_param *) realloc(p, nParams * sizeof(op_param));
-  }
-  for (int i = 0; i < nParams; ++i) p[i] = a.p[i];
-  op = a.op;
-  cc = a.cc;
-  return *this;
-}
-
 
 inline
 bool op_info::operator==(const op_info& a) const
@@ -1434,44 +1390,6 @@ bool op_info::areAllForests() const
 }
 
 // ---------------------- builtin_op_key ------------------------
-
-inline
-builtin_op_key::builtin_op_key(compute_manager::op_code op,
-    const op_param* const p, int n)
-: opCode(op), plist(0), nParams(n)
-{
-  plist = (op_param*) malloc(nParams * sizeof(op_param));
-  for (int i = 0; i < nParams; ++i) plist[i] = p[i];
-}
-
-
-inline
-builtin_op_key::builtin_op_key(const builtin_op_key& a)
-: opCode(a.opCode), plist(0), nParams(a.nParams)
-{
-  plist = (op_param*) malloc(nParams * sizeof(op_param));
-  for (int i = 0; i < nParams; ++i) plist[i] = a.plist[i];
-}
-
-
-inline
-builtin_op_key& builtin_op_key::operator=(const builtin_op_key& a)
-{
-  if (this == &a) return *this;
-  if (nParams != a.nParams) {
-    nParams = a.nParams;
-    plist = (op_param*) realloc(plist, nParams * sizeof(op_param));
-  }
-  for (int i = 0; i < nParams; ++i) plist[i] = a.plist[i];
-  opCode = a.opCode;
-  return *this;
-}
-
-inline
-builtin_op_key::~builtin_op_key()
-{
-  free(plist);
-}
 
 
 inline
@@ -1514,46 +1432,6 @@ void builtin_op_key::print(FILE* s) const
 
 
 // ---------------------- custom_op_key ------------------------
-
-inline
-custom_op_key::custom_op_key(const operation* oper,
-  const op_param* const p, int n)
-: op(0), plist(0), nParams(n)
-{
-  op = const_cast<operation*>(oper);
-  plist = (op_param*) malloc(nParams * sizeof(op_param));
-  for (int i = 0; i < nParams; ++i) plist[i] = p[i];
-}
-
-
-inline
-custom_op_key::custom_op_key(const custom_op_key& a)
-: op(a.op), plist(0), nParams(a.nParams)
-{
-  plist = (op_param*) malloc(nParams * sizeof(op_param));
-  for (int i = 0; i < nParams; ++i) plist[i] = a.plist[i];
-}
-
-
-inline
-custom_op_key& custom_op_key::operator=(const custom_op_key& a)
-{
-  if (this == &a) return *this;
-  if (nParams != a.nParams) {
-    nParams = a.nParams;
-    plist = (op_param*) realloc(plist, nParams * sizeof(op_param));
-  }
-  for (int i = 0; i < nParams; ++i) plist[i] = a.plist[i];
-  op = a.op;
-  return *this;
-}
-
-
-inline
-custom_op_key::~custom_op_key()
-{
-  free(plist);
-}
 
 
 inline

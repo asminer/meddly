@@ -42,16 +42,6 @@
 #include "config.h"
 #endif
 
-#if 0
-#ifdef HAVE_LIBGMP
-#include <gmp.h>
-#endif
-#endif
-
-// Meddly
-#include "meddly.h"
-#include "meddly_expert.h"
-
 // Things that everyone will need
 #include <cstdlib>
 #include <cassert>
@@ -59,6 +49,9 @@
 #include <cstdio>
 #include <limits>
 
+// Meddly
+#include "meddly.h"
+#include "meddly_expert.h"
 
 // Macro to handle extern "C"
 #ifdef __cplusplus
