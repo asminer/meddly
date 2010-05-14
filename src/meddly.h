@@ -1218,7 +1218,6 @@ class compute_manager {
       /// Unary operation.  Return the number of variable assignments 
       /// so that the function evaluates to non-zero.
       CARDINALITY,
-
       /// Set operation for forests with range_type of BOOLEAN. All operands
       /// must belong to the same forest.
       UNION,
@@ -1231,6 +1230,13 @@ class compute_manager {
       /// Set operation for forests with range_type of BOOLEAN. All operands
       /// must belong to the same forest.
       COMPLEMENT,
+
+      /// Unary operation for forests with range_type of INTEGER or REAL.
+      /// Return the largest value returned by the function.
+      MAX_RANGE,
+      /// Unary operation for forests with range_type of INTEGER or REAL.
+      /// Return the smallest value returned by the function.
+      MIN_RANGE,
 
       /// For forests with range_type of INTEGER and REAL. All operands must
       /// belong to the same forest.

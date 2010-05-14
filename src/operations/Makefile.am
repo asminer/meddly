@@ -15,6 +15,7 @@ libops_la_SOURCES = \
 	operation_ext.cc \
 	operation.cc \
   mpz_object.cc \
-	cardinality.cc
+	cardinality.cc \
+  maxmin_range.cc
 
 

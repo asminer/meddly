@@ -24,6 +24,7 @@
 #include "defines.h"
 #include "operations/operation_ext.h"
 #include "operations/cardinality.h"
+#include "operations/maxmin_range.h"
 #include "compute_cache.h"
 
 #include "revision.h"
@@ -141,6 +142,8 @@ const char* expert_compute_manager::getOperationName(
     case INTERSECTION:  return "Intersection";
     case DIFFERENCE:    return "Difference";
     case COMPLEMENT:    return "Complement";
+    case MAX_RANGE:     return "Maximum range";
+    case MIN_RANGE:     return "Minimum range";
     case PRE_IMAGE:     return "Pre-Image";
     case POST_IMAGE:    return "Post-Image";
     case REACHABLE_STATES_DFS:
@@ -336,6 +339,70 @@ op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
   // add new built-in op entry
   if (N == 2) {
     // unary operations
+    operation* opera = 0;
+    switch (op) {
+        case compute_manager::CARDINALITY:
+            opera = getCardinalityOperation(plist[0], plist[1]);
+            break;
+
+        case compute_manager::MAX_RANGE:
+            opera = getMaxRangeOperation(plist[0], plist[1]);
+            break;
+
+        case compute_manager::MIN_RANGE:
+            opera = getMinRangeOperation(plist[0], plist[1]);
+            break;
+
+        case compute_manager::CONVERT_TO_INDEX_SET:
+            if (f0->isMdd() && f1->isEvplusMdd()) {
+              opera = mdd_to_evplusmdd_index_set::getInstance();
+            }
+            break;
+
+        case compute_manager::COPY:
+            if (f0->isMdd()) {
+              if (f1->isMtMdd()) {
+                // MDD to MTMDD
+                // terminal true == 1, terminal false == 0
+                opera = mdd_to_mtmdd::getInstance();
+              } // f1
+            } else if (f0->isMtMdd()) {
+              if (f1->isMdd()) {
+                // MTMDD to MDD
+                // terminal 0 == false, !0 == true
+                opera = mtmdd_to_mdd::getInstance();
+              } else if ( f1->getEdgeLabeling() == forest::EVPLUS ||
+                          f1->getEdgeLabeling() == forest::EVTIMES) {
+                // MTMDD to EVMDD (works for both EVPLUS and EVTIMES)
+                // terminal 0 == false, !0 == true
+                opera = mtmdd_to_evmdd::getInstance();
+              } // f1
+            } else if (f0->isMxd()) {
+              if (f1->isMtMxd()) {
+                // MXD to MTMXD
+                // terminal true == 1, terminal false == 0
+                opera = mxd_to_mtmxd::getInstance();
+              } // f1
+            } else if (f0->isMtMxd()) {
+              if (f1->isMxd()) {
+                // MTMXD to MXD
+                // terminal 0 == false, !0 == true
+                opera = mtmxd_to_mxd::getInstance();
+              } // f1
+            } // f0
+            break;
+
+        default:
+            // not strictly necessary, but keeps compilers happy
+            return 0;
+
+    } // switch
+    if (0==opera) return 0;
+    addBuiltinOp(key, opera, plist, N);
+    return &(builtinOpEntries->find(key)->second);
+
+
+#if 0
     if (compute_manager::CARDINALITY == op) {
       operation* opera = getCardinalityOperation(plist[0], plist[1]);
       if (0==opera) return 0;
@@ -397,7 +464,8 @@ op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
         }
       }
     }
-  }
+#endif
+  } // End of Unary operations
   else if (N == 3) {
     // binary operations
     if (f0->isMdd()) {
