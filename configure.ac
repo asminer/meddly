@@ -17,6 +17,17 @@ AM_PROG_LIBTOOL
 
 # Checks for libraries.
 
+AC_ARG_WITH([gmp],
+  [AS_HELP_STRING([--without-gmp], [disable support for gmp])],
+  [],
+  [with_gmp=yes])
+LIBGMP=
+AS_IF([test "x$with_gmp" != xno],
+  [AC_CHECK_LIB([gmp], [__gmpz_init], [], 
+    [AC_MSG_FAILURE([gmp test failed (--without-gmp to disable)])],
+    [])])
+
+
 # Checks for header files.
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS([sys/time.h unistd.h])
@@ -39,18 +50,6 @@ AC_FUNC_REALLOC
 AC_TYPE_SIGNAL
 AC_FUNC_STRTOD
 AC_CHECK_FUNCS([gettimeofday memmove memset strtol])
-
-# Check for GMP
-
-AC_ARG_WITH([gmp],
-  [AS_HELP_STRING([--without-gmp], [disable support for gmp])],
-  [],
-  [with_gmp=yes])
-LIBGMP=
-AS_IF([test "x$with_gmp" != xno],
-  [AC_CHECK_LIB([gmp], [__gmpz_init], [], 
-    [AC_MSG_FAILURE([gmp test failed (--without-gmp to disable)])],
-    [])])
 
 AC_CONFIG_FILES([Makefile
                  examples/Makefile
