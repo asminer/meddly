@@ -77,10 +77,17 @@ const char* MEDDLY_getLibraryInfo(int what)
     case 0:
       if (!title) {
         title = new char[80];
-        snprintf(title, 80, 
-          "%s version %s.%d (32-bit and 64-bit compatible)", 
-          PACKAGE_NAME, VERSION, REVISION_NUMBER
-        );
+        if (REVISION_NUMBER) {
+          snprintf(title, 80, 
+            "%s version %s.%d (32-bit and 64-bit compatible)", 
+            PACKAGE_NAME, VERSION, REVISION_NUMBER
+          );
+        } else {
+          snprintf(title, 80, 
+            "%s version %s (32-bit and 64-bit compatible)", 
+            PACKAGE_NAME, VERSION
+          );
+        }
       }
       return title;
 

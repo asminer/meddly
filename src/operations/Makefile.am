@@ -14,8 +14,11 @@ libops_la_SOURCES = \
 	operation_ext.h \
 	operation_ext.cc \
 	operation.cc \
+  mpz_object.h \
   mpz_object.cc \
-	cardinality.cc \
+	cardinality.h \
+  cardinality.cc \
+  maxmin_range.h \
   maxmin_range.cc
 
 
