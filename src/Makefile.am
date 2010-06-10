@@ -44,4 +44,4 @@ AM_CXXFLAGS = -Wall
 
 include_HEADERS = meddly.h meddly_expert.h 
 
-EXTRA_DIST = BuildRevNo
+EXTRA_DIST = BuildRevNo revision.h
