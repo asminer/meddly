@@ -98,7 +98,7 @@ const char* MEDDLY_getLibraryInfo(int what)
       return "Released under the GNU Lesser General Public License, version 3";
  
     case 3:
-      return "http://sourceforge.net/projects/meddly/";
+      return "http://meddly.sourceforge.net/";
 
     case 4:
       return "Data Structures and operations available:\n\
