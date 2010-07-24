@@ -996,6 +996,7 @@ const
   return result;
 }
 
+#if 0
 double node_manager::getCardinality(int node) const
 {
   std::map<int, double> visited;
@@ -1006,6 +1007,7 @@ double node_manager::getCardinality(int node) const
   else
     return 0;
 }
+#endif
 
 unsigned node_manager::getNodeCount(int p) const
 {

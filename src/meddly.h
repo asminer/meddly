@@ -1003,6 +1003,11 @@ class dd_edge {
 
     class iterator {
       public:
+        enum iter_type {
+          DEFAULT=0,
+          ROW,
+          COLUMN
+        };
         iterator();
         ~iterator();
         iterator(const iterator& iter);
@@ -1014,12 +1019,27 @@ class dd_edge {
         const int* getAssignments() const;
         const int* getPrimedAssignments() const;
 
+#ifdef ROW_COL_ITERATOR
+        iterator(dd_edge* e, bool isRow, const int* minterm);
+#if 0
+        bool findFirstColumn(const int* minterm, int height, int node);
+#else
+        bool findFirstColumn(int height, int node);
+#endif
+        bool findFirstRow(const int* minterm, int height, int node);
+        bool findNextColumn(int height);
+#endif
+
       private:
         friend class dd_edge;
         iterator(dd_edge* parent, bool begin);
         void incrNonRelation();
         void incrRelation();
         void incrNonIdentRelation();
+        void incrRow();
+        void incrColumn();
+        void incrNonIdentRow();
+        void incrNonIdentColumn();
 
         dd_edge*  e;
         unsigned  size;
@@ -1027,6 +1047,7 @@ class dd_edge {
         int*      nodes;
         int*      pelement;
         int*      pnodes;
+        iter_type type;
     };
 
     typedef iterator const_iterator;
@@ -1037,6 +1058,11 @@ class dd_edge {
         @return         an iterator pointing to the first element.
     */
     const_iterator begin();
+
+#ifdef ROW_COL_ITERATOR
+    const_iterator beginRow(const int* minterm);
+    const_iterator beginColumn(const int* minterm);
+#endif
 
     /** Returns an iterator just past the last element of the dd_edge.
         This iterator represents the end of the list of elements.

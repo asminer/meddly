@@ -229,6 +229,8 @@ class node_manager : public expert_forest {
     // Dummy version available here.
     // In mdds_ext.h
 
+    virtual int getDownPtr(int p, int i) const;
+
     // Copy the downpointers into dptrs where dptrs[i] corresponds
     // to the downpointer at index i. For sparse nodes,
     // dptrs[index(i)] corresponds to the downpointer at index i.
@@ -258,7 +260,9 @@ class node_manager : public expert_forest {
     void showNode(FILE *s, int p, int verbose = 0) const;
     void showNodeGraph(FILE *s, int p) const;
     void showInfo(FILE* strm, int verbosity);
+#if 0
     double getCardinality(int p) const;
+#endif
     unsigned getNodeCount(int p) const;
     unsigned getEdgeCount(int p, bool countZeroes) const;
 
@@ -313,7 +317,6 @@ class node_manager : public expert_forest {
     // p: node
     // i: the ith downpointer.
     // note: for sparse nodes this may not be the same as the ith index pointer.
-    int getDownPtr(int p, int i) const;
     int getDownPtrAfterIndex(int p, int i, int &index) const;
 
     int getMddLevelMaxBound(int k) const;

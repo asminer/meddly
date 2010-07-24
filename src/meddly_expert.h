@@ -244,6 +244,14 @@ class expert_forest : public forest
     /// Get the node pointed to at the given index -- only for Full nodes
     int getFullNodeDownPtr(int node, int index) const;
 
+    /// Get the node pointed to at the given index -- works for Full and
+    /// Sparse nodes. For Full nodes, this is the same as calling
+    /// getFullNodeDownPtr(node, index). For Sparse nodes, this searches
+    /// the sparse node's indexes for the given index and if found, it
+    /// returns the downpointer associated with the index. Note that this
+    /// is not the same as calling getSparseNodeDownPtr(int node, int index).
+    virtual int getDownPtr(int node, int index) const = 0;
+
     /// Get the nodes pointed to by this node (works with Full or Sparse nodes.
     /// The vector downPointers is increased in size if necessary (but
     /// never reduced in size).
@@ -318,10 +326,12 @@ class expert_forest : public forest
     ///  is zero regardless of the cache-count.
     virtual bool isStale(int node) const = 0;
 
+#if 0
     /// Returns the cardinality of the node. Cardinality is the number of
     /// paths in the graph rooted at this node that end in a valid terminal.
     /// Paths that end at the terminal Zero (or False) are not counted.
     virtual double getCardinality(int node) const = 0;
+#endif
 
     /// Returns the node count for this node. The node count is the number
     /// of unique nodes in the decision diagram represented by this node.

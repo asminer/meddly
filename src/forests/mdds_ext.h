@@ -58,9 +58,9 @@ void sortMatrix(int** indexes, int** pindexes, int* terms, int N, int nVars);
 int binarySearch(const int* a, int sz, int find);
 
 template <typename T>
-T handleMultipleTerminalValues(T* tList, int begin, int end);
+T handleMultipleTerminalValues(const T* tList, int begin, int end);
 template <>
-bool handleMultipleTerminalValues(bool* tList, int begin, int end);
+bool handleMultipleTerminalValues(const bool* tList, int begin, int end);
 
 /*
 TODO: modifying mtmxd_node_manager to work like mtmdd_node_manager; and
@@ -122,8 +122,8 @@ class mtmdd_node_manager : public node_manager {
     // This create a MTMDD from a collection of edges (represented 
     // as vectors).
     template <typename T>
-    forest::error createEdgeInternal(const int* const* vlist,
-        const T* terms, int N, dd_edge &e);
+      forest::error createEdgeInternal(const int* const* vlist,
+          const T* terms, int N, dd_edge &e);
 
     // Create edge representing f(vlist[]) = term and store it in curr.
     void createEdge(const int* vlist, int term, dd_edge& e);
@@ -151,9 +151,36 @@ class mtmdd_node_manager : public node_manager {
     // Used by evaluate()
     int getTerminalNodeForEdge(int n, const int* vlist) const;
 
+#ifndef IN_PLACE_SORT
     template <typename T>
     int sortBuild(int** list, T* tList, int height, int begin, int end);
+#else
+#if 0
+    template <typename T>
+    int inPlaceSort(int** list, T* tList, int level, int begin, int end);
+    template <typename T>
+    int inPlaceSortBuild(int** list, T* tList, int height, int begin, int end);
+#else
+    template <typename T>
+    int inPlaceSort(const T* type, int level, int begin, int end);
+    template <typename T>
+    int inPlaceSortBuild(const T* type, int height, int begin, int end);
+#endif
+#endif
 
+    // Methods and data for batch addition via sorting
+    template <typename T> void copyLists(const int* const* vlist,
+        const T* terms, int nElements);
+
+    void expandCountAndSlotArrays(int size);
+
+    int** list;
+    int*  termList;
+    int   listSize;
+
+    int* count;
+    int* slot;
+    int countSize;
 };
 
 
@@ -1036,6 +1063,7 @@ mtmdd_node_manager::createEdgeInternal(const int* const* vlist,
   }
   else {
     // build using sort-based procedure
+#if 0
     // put terms into vlist[i][0]
     int* list[N];
     memcpy(list, vlist, N * sizeof(int*));
@@ -1052,11 +1080,58 @@ mtmdd_node_manager::createEdgeInternal(const int* const* vlist,
     }
 
     e.set(result, 0, getNodeLevel(result));
+#else
+    DCASSERT(N > 0);
+
+    // copy elements into internal volatile storage
+    copyLists(vlist, terms, N);
+
+    // call sort-based procedure for building the DD
+#ifdef IN_PLACE_SORT
+#if 0
+    int result = inPlaceSortBuild(list, (T*)(terms == 0? 0: termList),
+        expertDomain->getNumVariables(), 0, N);
+#else
+    int result = inPlaceSortBuild((T*)termList,
+        expertDomain->getNumVariables(), 0, N);
+#endif
+#else
+    int result = sortBuild(list, (T*)(terms == 0? 0: termList),
+        expertDomain->getNumVariables(), 0, N);
+#endif
+
+#endif
+    e.set(result, 0, getNodeLevel(result));
   }
 
   return forest::SUCCESS;
 }
 
+
+template <typename T>
+inline
+void mtmdd_node_manager::copyLists(const int* const* vlist,
+    const T* terms, int nElements)
+{
+  if (listSize < nElements) {
+    list = (int**) realloc(list, sizeof(int*) * nElements);
+    assert(list);
+    termList = (int*) realloc(termList, sizeof(T) * nElements);
+    assert(termList);
+    listSize = nElements;
+  }
+
+  memcpy(list, vlist, nElements * sizeof(int*));
+  if (terms != 0) {
+    T* tempTList = (T*)termList;
+    // Not doing memcpy in case T is a class
+    for (int i = 0; i < nElements; i++) { tempTList[i] = terms[i]; }
+  }
+}
+
+
+
+#ifndef IN_PLACE_SORT
 
 template <typename T>
 int mtmdd_node_manager::sortBuild(int** list, T* tList,
@@ -1216,6 +1291,321 @@ int mtmdd_node_manager::sortBuild(int** list, T* tList,
 
   return createNode(level, indices, dptrs);
 }
+
+
+#else
+
+
+#if 1
+
+template<typename T>
+int mtmdd_node_manager::inPlaceSort(const T* type,
+    int level, int begin, int end)
+{
+  // Determine range of values
+  int min = list[begin][level];
+  int max = min;
+  for (int i = begin + 1; i < end; ++i) {
+    max = MAX(max, list[i][level]);
+    min = MIN(min, list[i][level]);
+  }
+
+  // Prepare arrays (expand them as necessary and clear them as necessary).
+  // TODO: move the array definitions and initialization out of here.
+  expandCountAndSlotArrays(max + 1 - min);
+
+#ifdef DEVELOPMENT_CODE
+  for (int i = 0; i < countSize; i++) { assert(0 == count[i]); }
+#endif
+
+  // c and s reduce the number of subtractions in indexes
+  int* c = count - min;
+  int* s = slot - min;
+
+  // Count the number of entries for each value
+  for (int i = begin; i < end; i++) {
+    c[list[i][level]]++;
+  }
+
+  // Determine the initial slot positions
+  s[min] = begin;
+  for (int i = min + 1; i <= max; ++i) {
+    s[i] = s[i-1] + c[i-1];
+  }
+
+  // We have the correct bucket sizes, now move items into
+  // appropriate buckets.
+
+  T* terms = (T*)termList;
+  
+  for (int i = min; i < max; ++i) {
+    // Move elements in bucket i to the correct slots.
+    // Repeat this until all the elements in bucket i belong in bucket i.
+    while (c[i] > 0) {
+      // Find appropriate slot for list[s[i]]
+      int* elem = list[s[i]];
+      int elemIndex = elem[level];
+      if (i == elemIndex) {
+        // Already in the correct slot
+        --c[i];
+        ++s[i];
+      }
+      else {
+        // Move elem to correct slot
+        DCASSERT(elemIndex > i);
+        while (c[elemIndex] > 0 && elemIndex == list[s[elemIndex]][level]) {
+          // These elements are already in the correct slots; advance pointers.
+          --c[elemIndex];
+          ++s[elemIndex];
+        }
+        // At correct slot for elem
+        DCASSERT(c[elemIndex] > 0);
+        CHECK_RANGE(begin, s[elemIndex], end);
+        SWAP(list[s[i]], list[s[elemIndex]]);
+        if (terms) { SWAP(terms[s[i]], terms[s[elemIndex]]); }
+        // list[s[elemIndex]] now contains the correct element.
+        // Also, list[s[i]] now contains an unknown and this 
+        // will be handled in the next iteration.
+        // Note that we do not advance c[i] and s[i].
+      }
+    }
+    // Bucket i now contains only elements that belong in it.
+  }
+
+  c[max] = 0;
+
+#ifdef DEVELOPMENT_CODE
+  // Check if all buckets have been dealt with
+  for (int i = min; i <= max; i++) { assert(0 == c[i]); }
+#endif
+
+#ifdef DEVELOPMENT_CODE
+  // Check if sorted
+  for (int i = begin + 1; i < end; i++) {
+    assert(list[i-1][level] <= list[i][level]);
+  }
+#endif
+
+  // max represents the largest index
+  return max;
+}
+
+
+template <typename T>
+int mtmdd_node_manager::inPlaceSortBuild(const T *type,
+    int height, int begin, int end)
+{
+  // [begin, end)
+
+  // terminal condition
+  if (height == 0) {
+    return getTerminalNode(
+        handleMultipleTerminalValues((T*)termList, begin, end));
+  }
+
+  int nextHeight = height - 1;
+  int level = expertDomain->getVariableWithHeight(height);
+  DCASSERT(level > 0);
+
+  if (begin + 1 == end) {
+    // nothing to sort; just build a node starting at this level
+    int n = inPlaceSortBuild(type, nextHeight, begin, end);
+    int index = list[begin][level];
+    int result = createNode(level, index, n);
+    unlinkNode(n);
+    return result;
+  }
+
+  // Sort elements at this level
+  int nodeSize = 1 + inPlaceSort(type, level, begin, end);
+
+  // build node
+  int result = createTempNode(level, nodeSize, true);
+  int* ptr = getFullNodeDownPtrs(result);
+  for (int i = begin; i < end; )
+  {
+    int index = list[i][level];
+    int start = i++;
+    // skip the elements with the same index at this level
+    for ( ; i < end && list[i][level] == index; ++i);
+    ptr[index] = inPlaceSortBuild(type, nextHeight, start, i);
+  }
+
+  return reduceNode(result);
+}
+
+#else
+
+template<typename T>
+int mtmdd_node_manager::inPlaceSort(int** list, T* tList,
+    int level, int begin, int end)
+{
+  // Determine range of values
+  int min = list[begin][level];
+  int max = min;
+  for (int i = begin + 1; i < end; ++i) {
+    max = MAX(max, list[i][level]);
+    min = MIN(min, list[i][level]);
+  }
+
+  // Prepare arrays (expand them as necessary and clear them as necessary).
+  // TODO: move the array definitions and initialization out of here.
+  static int* count = 0;
+  static int* slot = 0;
+  static int countSize = 0;
+  if (countSize < (max + 1 - min)) {
+#ifdef DEVELOPMENT_CODE
+    for (int i = 0; i < countSize; i++) { assert(0 == count[i]); }
+#endif
+    int newSize = max + 1 - min;
+    count = (int*) realloc(count, newSize * sizeof(int));
+    slot = (int*) realloc(slot, newSize * sizeof(int));
+    memset(count + countSize, 0, (newSize - countSize) * sizeof(int));
+    countSize = newSize;
+  }
+
+  // c and s reduce the number of subtractions in indexes
+  int* c = count - min;
+  int* s = slot - min;
+
+  // Count the number of entries for each value
+  for (int i = begin; i < end; i++) {
+    c[list[i][level]]++;
+  }
+
+  // Determine the initial slot positions
+  s[min] = begin;
+  for (int i = min + 1; i <= max; ++i) {
+    s[i] = s[i-1] + c[i-1];
+  }
+
+  // We have the correct bucket sizes, now move items into
+  // appropriate buckets.
+  
+  for (int i = min; i < max; ++i) {
+    // Move elements in bucket i to the correct slots.
+    // Repeat this until all the elements in bucket i belong in bucket i.
+    while (c[i] > 0) {
+      // Find appropriate slot for list[s[i]]
+      int* elem = list[s[i]];
+      int elemIndex = elem[level];
+      if (i == elemIndex) {
+        // Already in the correct slot
+        --c[i];
+        ++s[i];
+      }
+      else {
+        // Move elem to correct slot
+        DCASSERT(elemIndex > i);
+        while (c[elemIndex] > 0 && elemIndex == list[s[elemIndex]][level]) {
+          // These elements are already in the correct slots; advance pointers.
+          --c[elemIndex];
+          ++s[elemIndex];
+        }
+        // At correct slot for elem
+        DCASSERT(c[elemIndex] > 0);
+        CHECK_RANGE(begin, s[elemIndex], end);
+        SWAP(list[s[i]], list[s[elemIndex]]);
+        if (tList) { SWAP(tList[s[i]], tList[s[elemIndex]]); }
+        // list[s[elemIndex]] now contains the correct element.
+        // Also, list[s[i]] now contains an unknown and this 
+        // will be handled in the next iteration.
+        // Note that we do not advance c[i] and s[i].
+      }
+    }
+    // Bucket i now contains only elements that belong in it.
+  }
+
+  c[max] = 0;
+
+#ifdef DEVELOPMENT_CODE
+  // Check if all buckets have been dealt with
+  for (int i = min; i <= max; i++) { assert(0 == c[i]); }
+#endif
+
+#ifdef DEVELOPMENT_CODE
+  // Check if sorted
+  for (int i = begin + 1; i < end; i++) {
+    assert(list[i-1][level] <= list[i][level]);
+  }
+#endif
+
+  // max represents the largest index; therefore max+1 represents the
+  // size of the full-node at this level.
+  return max + 1;
+}
+
+
+template <typename T>
+int mtmdd_node_manager::inPlaceSortBuild(int** list, T* tList,
+    int height, int begin, int end)
+{
+  // [begin, end)
+
+  // terminal condition
+  if (height == 0) {
+    return getTerminalNode(handleMultipleTerminalValues(tList, begin, end));
+  }
+
+  int nextHeight = height - 1;
+  int level = expertDomain->getVariableWithHeight(height);
+  DCASSERT(level > 0);
+
+#if 0
+  if (begin + 1 == end) {
+    return createNode(list[begin],
+        getTerminalNode(handleMultipleTerminalValues(tList, begin, end)),
+        ABS(height), height < 0);
+  }
+#else
+  if (begin + 1 == end) {
+    // nothing to sort; just build a node starting at this level
+    int n = inPlaceSortBuild(list, tList, nextHeight, begin, end);
+    int index = list[begin][level];
+    int result = createNode(level, index, n);
+    unlinkNode(n);
+    return result;
+  }
+#endif
+
+  // Sort elements at this level
+  int levelSize = inPlaceSort(list, tList, level, begin, end);
+
+#ifdef DEVELOPMENT_CODE
+  // find largest index
+  int largestIndex = list[begin][level];
+  for (int i = begin + 1; i < end; )
+  {
+    DCASSERT(largestIndex <= list[i][level]);
+    largestIndex = list[i][level];
+    // skip the elements with the same index at this level
+    for (++i; i < end && list[i][level] == largestIndex; ++i);
+  }
+  if (largestIndex + 1 != levelSize) {
+    printf("largest index: %d, levelSize: %d\n", largestIndex, levelSize);
+    assert(false);
+  }
+#endif
+
+  // build node
+  int result = createTempNode(level, levelSize, true);
+  int* ptr = getFullNodeDownPtrs(result);
+  for (int i = begin; i < end; )
+  {
+    int index = list[i][level];
+    int start = i++;
+    // skip the elements with the same index at this level
+    for ( ; i < end && list[i][level] == index; ++i);
+    ptr[index] = inPlaceSortBuild(list, tList, nextHeight, start, i);
+  }
+
+  return reduceNode(result);
+}
+
+#endif
+
+
+#endif
 
 
 
@@ -1554,6 +1944,7 @@ int mtmxd_node_manager::inPlaceSort(int** list, int** otherList, T* tList,
   }
 
   // Prepare arrays (expand them as necessary and clear them as necessary).
+  // TODO: move the array definitions and initialization out of here.
   static int* count = 0;
   static int* slot = 0;
   static int countSize = 0;
@@ -1869,7 +2260,7 @@ void mtmxd_node_manager::addToTree(int* unpList, int* pList, int terminalNode)
 
 template <typename T>
 inline
-T handleMultipleTerminalValues(T* tList, int begin, int end)
+T handleMultipleTerminalValues(const T* tList, int begin, int end)
 {
   DCASSERT(begin < end);
   T result = tList[begin++];
@@ -1880,7 +2271,7 @@ T handleMultipleTerminalValues(T* tList, int begin, int end)
 
 template <>
 inline
-bool handleMultipleTerminalValues(bool* tList, int begin, int end)
+bool handleMultipleTerminalValues(const bool* tList, int begin, int end)
 {
   DCASSERT(begin < end);
   return true;

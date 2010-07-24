@@ -129,7 +129,14 @@ void dd_edge::set(int n, float v, int l)
 
 double dd_edge::getCardinality() const
 {
+#if 0
   return smart_cast<expert_forest*>(parent)->getCardinality(node);
+#else
+  double cardinality = 0;
+  MEDDLY_getComputeManager()->apply(compute_manager::CARDINALITY,
+      *this, cardinality);
+  return cardinality;
+#endif
 }
 
 unsigned dd_edge::getNodeCount() const
@@ -284,8 +291,7 @@ void dd_edge::show(FILE* strm, int verbosity) const
     smart_cast<expert_forest*>(parent)->showNodeGraph(strm, node);
   }
   if (verbosity == 1 || verbosity == 3) {
-    fprintf(strm, "Cardinality of node %d: %0.8e\n", node,
-        smart_cast<expert_forest*>(parent)->getCardinality(node));
+    fprintf(strm, "Cardinality of node %d: %0.8e\n", node, getCardinality());
   }
 }
 
@@ -299,6 +305,31 @@ dd_edge::iterator dd_edge::begin()
   DCASSERT(beginIterator != 0);
   return *beginIterator;
 }
+
+
+#ifdef ROW_COL_ITERATOR
+dd_edge::iterator dd_edge::beginRow(const int* minterm)
+{
+  if (updateNeeded) {
+    updateIterators();
+    updateNeeded = false;
+  }
+  if (this->parent->isForRelations())
+    return iterator(this, true, minterm);
+  else
+    return *endIterator;
+}
+
+
+dd_edge::iterator dd_edge::beginColumn(const int* minterm)
+{
+  if (updateNeeded) {
+    updateIterators();
+    updateNeeded = false;
+  }
+  return iterator(this, false, minterm);
+}
+#endif
 
 
 dd_edge::iterator dd_edge::end()
@@ -324,12 +355,12 @@ void dd_edge::updateIterators()
 
 
 dd_edge::iterator::iterator()
-: e(0), size(0), element(0), nodes(0), pelement(0), pnodes(0)
+: e(0), size(0), element(0), nodes(0), pelement(0), pnodes(0), type(DEFAULT)
 { }
 
 
 dd_edge::iterator::iterator(dd_edge* e, bool begin)
-: e(e), size(0), element(0), nodes(0), pelement(0), pnodes(0)
+: e(e), size(0), element(0), nodes(0), pelement(0), pnodes(0), type(DEFAULT)
 {
   if (e == 0) return;
   
@@ -369,6 +400,309 @@ dd_edge::iterator::iterator(dd_edge* e, bool begin)
 }
 
 
+#ifdef ROW_COL_ITERATOR
+
+bool dd_edge::iterator::findNextColumn(int height)
+{
+  // See if you advance at a lower height
+  // If yes, return true.
+  // Otherwise, pick next index at this height, and find next path.
+  // If no such path exists, try next index until you run out of indexes.
+  // If you run our of indexes return false.
+  // Else, return true.
+
+  DCASSERT(e != 0);
+  DCASSERT(type == ROW);
+  expert_forest* f = smart_cast<expert_forest*>(e->parent);
+  DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
+  expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
+
+  if (height == 0) {
+    return nodes[0] != 0;
+  }
+
+  int nextHeight = height - 1;
+
+  if (findNextColumn(nextHeight)) {
+    return true;
+  }
+
+  int level = d->getVariableWithHeight(height);
+  if (nodes[level] == 0) {
+    // This is a reduced node. The only downpointer enabled has already
+    // been enabled. There is also no other index available at the
+    // primed level.
+    pnodes[level] = 0;
+    pelement[level] = 0;
+    return false;
+  }
+
+#ifdef DEVELOPMENT_CODE
+  // Lower levels should all be 0.
+  for (int i = domain::TERMINALS; i != level; i = d->getVariableAbove(i)) {
+    assert(pnodes[i] == 0);
+    assert(pelement[i] == 0);
+    assert(nodes[i] == 0);
+  }
+#endif
+
+#if 0
+  INCOMPLETE!!!!!
+  // Move to the next available index at the primed level.
+  bool found = false;
+  ++pelement[level];
+  for (int stop = d->getLevelBounds()[level]; pelement[level] < stop;
+      ++pelement[level]) {
+    int dptr = f->getDownPtr(pnodes[level], pelement[level]);
+    if (dptr == 0) continue;
+    if(findFirstColumn(nextHeight, n)) {
+      assert(false);
+    }
+  }
+
+  if (!found) {
+    nodes[level] = 0;
+    pnodes[level] = 0;
+    pelement[level] = 0;
+    return false;
+  }
+#endif
+  return true;
+}
+
+
+// Return true, if a column has been found starting at given level, and
+// the element and node vectors have been filled (at and below given level).
+bool dd_edge::iterator::findFirstColumn(int height, int node)
+{
+  DCASSERT(e != 0);
+  DCASSERT(type == ROW);
+  expert_forest* f = smart_cast<expert_forest*>(e->parent);
+  DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
+  expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
+
+  int level = d->getVariableWithHeight(height);
+  int nodeHeight = f->isTerminalNode(node)? 0: f->getNodeHeight(node);
+  int nodeLevel = d->getVariableWithHeight(nodeHeight);
+
+  // Fill skipped levels
+  for (int i = level; i != nodeLevel; i = d->getVariableBelow(i)) {
+    pelement[i] = element[i];
+    nodes[i] = pnodes[i] = 0;
+  }
+
+
+  if (f->isTerminalNode(node)) {
+    // If terminal zero, then return false.
+    // Fill up the node and element vectors at the terminal level.
+    int i = nodeLevel;
+    element[i] = pelement[i] = pnodes[i] = 0;
+    nodes[i] = node;
+    return node != 0;
+  }
+
+  DCASSERT(height > 0);
+
+  // node must be an unprimed node (based on identity-reduction rule).
+  DCASSERT(f->getNodeLevel(node) > 0);
+
+  int pnode = f->getDownPtr(node, element[nodeLevel]);
+  int pindex = -1;
+
+  // pnode must be a primed node for the same variable as node.
+  DCASSERT(pnode == 0 || f->getNodeLevel(node) == -f->getNodeLevel(pnode));
+
+  // Loop through till findFirstColumn() returns true (i.e. path found)
+  if (pnode != 0) {
+    int nextHeight = height - 1;
+    if (f->isFullNode(pnode)) {
+      for (int i = 0, stop = f->getFullNodeSize(pnode); i != stop; i++) {
+        int dptr = f->getFullNodeDownPtr(pnode, i);
+        if (dptr != 0) {
+          if (findFirstColumn(nextHeight, dptr)) {
+            // Found a non-zero path, break
+            pindex = i;
+            break;
+          }
+        }
+      }
+    }
+    else {
+      DCASSERT(f->isSparseNode(pnode));
+      for (int i = 0, stop = f->getSparseNodeSize(pnode); i != stop; i++) {
+        int dptr = f->getSparseNodeDownPtr(pnode, i);
+        if (findFirstColumn(nextHeight, dptr)) {
+          // Found a non-zero path; break
+          pindex = f->getSparseNodeIndex(pnode, i);
+          break;
+        }
+      }
+    }
+  }
+
+  if (pindex == -1) {
+    // No path
+    nodes[nodeLevel] = pnodes[nodeLevel] =
+      element[nodeLevel] = pelement[nodeLevel] = 0;
+    return false;
+  }
+
+  nodes[nodeLevel] = node;
+  pnodes[nodeLevel] = pnode;
+  pelement[nodeLevel] = pindex;
+  return true;
+}
+
+
+// Return true, if a row has been found starting at given level, and
+// the element and node vectors have been filled (at and below given level).
+bool dd_edge::iterator::findFirstRow(const int* minterm, int height, int node)
+{
+  DCASSERT(e != 0);
+  DCASSERT(type == COLUMN);
+  expert_forest* f = smart_cast<expert_forest*>(e->parent);
+  DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
+  expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
+
+  int level = d->getVariableWithHeight(height);
+  int nodeHeight = f->isTerminalNode(node)? 0: f->getNodeHeight(node);
+  int nodeLevel = d->getVariableWithHeight(nodeHeight);
+
+  // Fill skipped levels
+  for (int i = level; i != nodeLevel; i = d->getVariableBelow(i)) {
+    element[i] = pelement[i] = minterm[i];
+    nodes[i] = pnodes[i] = 0;
+  }
+
+
+  if (f->isTerminalNode(node)) {
+    // If terminal zero, then return false.
+    // Fill up the node and element vectors at the terminal level.
+    int i = nodeLevel;
+    element[i] = pelement[i] = pnodes[i] = 0;
+    nodes[i] = node;
+    return node != 0;
+  }
+
+  DCASSERT(height > 0);
+
+  // node must be an unprimed node (based on identity-reduction rule).
+  DCASSERT(f->getNodeLevel(node) > 0);
+
+  // Find the first i such that node[i][minterm[nodeLevel]] != 0
+
+  int unpindex = -1;
+  int pnode = -1;
+  int pindex = minterm[nodeLevel];
+
+  if (f->isFullNode(node)) {
+  }
+  else {
+    DCASSERT(f->isSparseNode(node));
+  }
+
+#if 0
+  // Loop through till findFirstRow() returns true (i.e. path found)
+  if (pnode != 0) {
+    int nextHeight = height - 1;
+    if (f->isFullNode(node)) {
+      for (int i = 0, stop = f->getFullNodeSize(node); i != stop; i++) {
+        int dptr = f->getFullNodeDownPtr(node, i);
+        if (dptr != 0) {
+          if (findFirstRow(minterm, nextHeight, dptr)) {
+            // Found a non-zero path, break
+            pindex = i;
+            break;
+          }
+        }
+      }
+    }
+    else {
+      DCASSERT(f->isSparseNode(node));
+      for (int i = 0, stop = f->getSparseNodeSize(node); i != stop; i++) {
+        int dptr = f->getSparseNodeDownPtr(node, i);
+        if (findFirstRow(minterm, nextHeight, dptr)) {
+          // Found a non-zero path; break
+          pindex = f->getSparseNodeIndex(node, i);
+          break;
+        }
+      }
+    }
+  }
+
+  if (pindex == -1) {
+    // No path
+    nodes[nodeLevel] = pnodes[nodeLevel] =
+      element[nodeLevel] = pelement[nodeLevel] = 0;
+    return false;
+  }
+
+  nodes[nodeLevel] = node;
+  pnodes[nodeLevel] = pnode;
+  element[nodeLevel] = minterm[nodeLevel];
+  pelement[nodeLevel] = pindex;
+  return true;
+#endif
+  return false;
+}
+#endif
+
+
+#ifdef ROW_COL_ITERATOR
+dd_edge::iterator::iterator(dd_edge* e, bool isRow, const int* minterm)
+: e(e), size(0), element(0), nodes(0), pelement(0), pnodes(0)
+{
+  type = isRow? ROW: COLUMN;
+  if (e == 0) return;
+
+  size = e->parent->getDomain()->getNumVariables() + 1;
+  element = (int*) malloc(size * sizeof(int));
+  nodes = (int*) malloc(size * sizeof(int));
+  memset(element, 0, size * sizeof(int));
+  memset(nodes, 0, size * sizeof(int));
+
+  DCASSERT(e->parent->isForRelations());
+
+  pelement = (int*) malloc(size * sizeof(int));
+  pnodes = (int*) malloc(size * sizeof(int));
+  memset(pelement, 0, size * sizeof(int));
+  memset(pnodes, 0, size * sizeof(int));
+
+  // do findFirstElement() and set element[] and nodes[]
+#ifdef DEBUG_ITER_BEGIN
+  printf("Begin: [");
+  for (int i = size-1; i > -1; --i)
+  {
+    printf("%d:%d ", nodes[i], element[i]);
+  }
+  printf("]\n");
+#endif
+
+  int topVariable = e->parent->getDomain()->getTopVariable();
+  if (ROW == type) {
+    memcpy(element, minterm, size * sizeof(int));
+    findFirstColumn(topVariable, e->node);
+  }
+  else {
+    assert(false);
+    // TODO: complete find-first-row
+    DCASSERT(COLUMN == type);
+    memcpy(pelement, minterm, size * sizeof(int));
+    // findFirstRow(topVariable, e->node);
+  }
+
+#ifdef DEBUG_ITER_BEGIN
+  printf("Begin: [");
+  for (int i = size-1; i > -1; --i)
+  {
+    printf("%d:%d ", nodes[i], element[i]);
+  }
+  printf("]\n");
+#endif
+}
+#endif
+
+
 dd_edge::iterator::~iterator()
 {
   if (e != 0) {
@@ -382,7 +716,7 @@ dd_edge::iterator::~iterator()
 
 dd_edge::iterator::iterator(const iterator& iter)
 : e(iter.e), size(iter.size),
-  element(0), nodes(0), pelement(0), pnodes(0)
+  element(0), nodes(0), pelement(0), pnodes(0), type(iter.type)
 {
   if (e != 0) {
     element = (int*) malloc(size * sizeof(int));
@@ -411,10 +745,12 @@ dd_edge::iterator& dd_edge::iterator::operator=(const iterator& iter)
       e = 0;
       size = 0;
       element = nodes = pelement = pnodes = 0;
+      type = DEFAULT;
     }
     if (iter.e != 0) {
       e = iter.e;
       size = iter.size;
+      type = iter.type;
 
       element = (int*) malloc(size * sizeof(int));
       nodes = (int*) malloc(size * sizeof(int));
@@ -455,6 +791,7 @@ void dd_edge::iterator::incrNonRelation()
 {
   DCASSERT(e != 0);
   DCASSERT(e->node != 0);
+  DCASSERT(type == DEFAULT);
 
   expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
@@ -588,6 +925,7 @@ void dd_edge::iterator::incrNonIdentRelation()
 {
   DCASSERT(e != 0);
   DCASSERT(e->node != 0);
+  DCASSERT(type == DEFAULT);
 
   expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
@@ -773,6 +1111,7 @@ void dd_edge::iterator::incrRelation()
 {
   DCASSERT(e != 0);
   DCASSERT(e->node != 0);
+  DCASSERT(type == DEFAULT);
 
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
   if (f->getReductionRule() != forest::IDENTITY_REDUCED) {
@@ -788,11 +1127,9 @@ void dd_edge::iterator::incrRelation()
     memset(nodes, 0, size * sizeof(int));
     memset(pnodes, 0, size * sizeof(int));
     int nodeLevel = f->getNodeLevel(e->node);
-    if (nodeLevel < 0) {
-      pnodes[-nodeLevel] = e->node;
-    } else {
-      nodes[nodeLevel] = e->node;
-    }
+    assert(nodeLevel >= 0);
+    nodes[nodeLevel] = e->node;
+    //TODO: test mtmxd iterator
   }
   else {
     // Start from the bottom level and see if you can find the next
@@ -983,7 +1320,7 @@ void dd_edge::iterator::operator++()
   // find next
   // set element to next
 
-  if (e != 0 && e->node != 0) {
+  if (e != 0 && e->node != 0 && type == DEFAULT) {
     if (e->parent->isForRelations()) {
       incrRelation();
     } else {
@@ -1004,14 +1341,16 @@ bool dd_edge::iterator::operator!=(const iterator& iter) const
           ? true
           : e != iter.e
             ? true
-            : (nodes[0] != iter.nodes[0])
+            : type != iter.type
               ? true
-              : (nodes[0] == 0)
-                ? false
-                : e->parent->isForRelations()
-                  ? (0 != memcmp(element, iter.element, size) ||
-                    0 != memcmp(pelement, iter.pelement, size))
-                  : 0 != memcmp(element, iter.element, size);
+              : (nodes[0] != iter.nodes[0])
+                ? true
+                : (nodes[0] == 0)
+                  ? false
+                  : e->parent->isForRelations()
+                    ? (0 != memcmp(element, iter.element, size) ||
+                      0 != memcmp(pelement, iter.pelement, size))
+                    : 0 != memcmp(element, iter.element, size);
 }
 
 

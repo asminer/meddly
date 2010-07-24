@@ -53,7 +53,7 @@
 
 
 // verbose: 0: minimum, 2: maximum
-const int verbose = 0;
+const int verbose = 1;
 
 // Given a forest and an op_code returns the corresponding op_info.
 // 

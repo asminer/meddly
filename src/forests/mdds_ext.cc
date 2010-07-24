@@ -165,7 +165,14 @@ mtmdd_node_manager::mtmdd_node_manager(domain *d, forest::range_type t)
 : node_manager(d, false, t,
       forest::MULTI_TERMINAL, forest::FULLY_REDUCED,
       forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION)
-{ }
+{
+  list = 0;
+  termList = 0;
+  listSize = 0;
+  count = 0;
+  slot = 0;
+  countSize = 0;
+}
 
 
 mtmdd_node_manager::mtmdd_node_manager(domain *d,
@@ -173,12 +180,39 @@ mtmdd_node_manager::mtmdd_node_manager(domain *d,
     forest::edge_labeling e, forest::reduction_rule r,
     forest::node_storage s, forest::node_deletion_policy dp)
 : node_manager(d, relation, t, e, r, s, dp)
-{ }
+{
+  list = 0;
+  termList = 0;
+  listSize = 0;
+  count = 0;
+  slot = 0;
+  countSize = 0;
+}
 
 
 
 mtmdd_node_manager::~mtmdd_node_manager()
-{ }
+{
+#if 1
+  if (list) free(list);
+  if (termList) free(termList);
+  if (count) free(count);
+  if (slot) free(slot);
+#endif
+}
+
+
+void mtmdd_node_manager::expandCountAndSlotArrays(int size)
+{
+  if (size <= countSize) return;
+
+  int newCountSize = countSize == 0? 8: countSize << 1;
+  count = (int*) realloc(count, newCountSize * sizeof(int));
+  slot = (int*) realloc(slot, newCountSize * sizeof(int));
+  memset(count + countSize, 0, (newCountSize - countSize) * sizeof(int));
+  memset(slot + countSize, 0, (newCountSize - countSize) * sizeof(int));
+  countSize = newCountSize;
+}
 
 
 int mtmdd_node_manager::reduceNode(int p)

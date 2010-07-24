@@ -332,7 +332,7 @@ int main(int argc, char *argv[])
   }
 #endif
 
-#if 1
+#if 0
   assert(forest::SUCCESS ==
       mtmxd->setReductionRule(forest::FULLY_REDUCED));
 #endif
@@ -362,7 +362,7 @@ int main(int argc, char *argv[])
   result.show(stdout, 1);
 
   // Use iterator to display elements
-  if (false) {
+  if (true) {
     unsigned counter = 0;
     for (dd_edge::const_iterator iter = result.begin(),
         endIter = result.end(); iter != endIter; ++iter, ++counter)
@@ -385,6 +385,41 @@ int main(int argc, char *argv[])
     printf("Iterator traversal: %0.4e elements\n", double(counter));
     printf("Cardinality: %0.4e\n", result.getCardinality());
   }
+
+  // Test Row and Column Iterators
+#if 0
+  if (true) {
+    dd_edge::const_iterator begin = result.begin();
+    dd_edge::const_iterator end = result.end();
+    if (begin != end) {
+      const int* element = begin.getAssignments();
+      // Print first minterm
+      const int* curr = element + nVariables;
+      const int* end = element - 1;
+      printf("[%d", *curr--);
+      while (curr != end) { printf(" %d", *curr--); }
+      printf("]\n");
+
+#if 0
+      element = begin.getPrimedAssignments();
+      curr = element + nVariables;
+      end = element - 1;
+      printf("[%d", *curr--);
+      while (curr != end) { printf(" %d", *curr--); }
+      printf("]\n");
+#endif
+
+      // Print first column
+      dd_edge::const_iterator colIter = result.beginRow(element);
+      element = colIter.getPrimedAssignments();
+      curr = element + nVariables;
+      end = element - 1;
+      printf("[%d", *curr--);
+      while (curr != end) { printf(" %d", *curr--); }
+      printf("]\n");
+    }
+  }
+#endif
 
 #if 0
   // Convert mtmxd to mxd
