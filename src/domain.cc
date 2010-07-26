@@ -222,6 +222,7 @@ forest* expert_domain::createForest(bool rel, forest::range_type t,
   if (f != 0) {
     // Add it to the list of forests
     assert (nForests <= szForests);
+#if 0
     if (szForests == 0) {
       // initialize forests[]
       szForests = 4;
@@ -251,6 +252,26 @@ forest* expert_domain::createForest(bool rel, forest::range_type t,
       forests[i] = f;
     }
     nForests++;
+#else
+    // Previous strategy of re-using forest handles can unexpected errors
+    // (user node handles, cached entries, etc.)
+    // Therefore, the new scheme does not recycling forest handles.
+    // Considering that will be relatively few forest handles created,
+    // this should not be an issue.
+
+    if (nForests == szForests) {
+      // expand forests[]
+      int newSize = szForests == 0? 4: szForests * 2;
+      expert_forest** temp = (expert_forest **) realloc(forests,
+          newSize * sizeof (expert_forest *));
+      assert(temp != 0);
+      forests = temp;
+      memset(forests + szForests, 0,
+          (newSize - szForests) * sizeof(expert_forest*));
+      szForests = newSize;
+    }
+    forests[nForests++] = f;
+#endif
   }
   
   return f;
