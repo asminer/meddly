@@ -84,13 +84,13 @@ bool equals(double *xgot, double *xans, int N)
   for (int i=0; i<N; i++) {
     double delta = xgot[i] - xans[i];
     if (xgot[i]) delta /= xgot[i];
-    if (delta < 1e-5) continue;
+    if (delta > -1e-5 && delta < 1e-5) continue;
     // not equal, print an error
     printf("Got     : [%lf", xgot[0]);
     for (int j=1; j<N; j++) printf(", %lf", xgot[j]);
-    printf("\nExpected: [%lf", xans[0]);
+    printf("]\nExpected: [%lf", xans[0]);
     for (int j=1; j<N; j++) printf(", %lf", xans[j]);
-    printf("\n");
+    printf("]\n");
     return false;
   }
   return true;
@@ -111,7 +111,7 @@ bool xA_check(dd_edge &ss, dd_edge &P)
       printf("Couldn't multiply: %s\n", CM->getErrorCodeName(ce));
       return false;
     }
-    q_alt[0] = q_alt[1] = q_alt[2];
+    q_alt[0] = q_alt[1] = q_alt[2] = 0;
     by_hand_oz(q_alt, p);
     if (!equals(q, q_alt, 3)) return false;
     p[0] = q[0];
@@ -141,6 +141,5 @@ int main(int argc, const char** argv)
   if (!build_oz(evpmdds, mtmxds, ss, P)) return 1;
   if (!xA_check(ss, P)) return 1;
 
-  printf("Returning 0\n");
   return 0;
 }
