@@ -307,7 +307,7 @@ dd_edge::iterator dd_edge::begin()
 }
 
 
-#ifdef ROW_COL_ITERATOR
+//#ifdef ROW_COL_ITERATOR
 dd_edge::iterator dd_edge::beginRow(const int* minterm)
 {
   if (updateNeeded) {
@@ -329,7 +329,7 @@ dd_edge::iterator dd_edge::beginColumn(const int* minterm)
   }
   return iterator(this, false, minterm);
 }
-#endif
+//#endif
 
 
 dd_edge::iterator dd_edge::end()
@@ -400,7 +400,7 @@ dd_edge::iterator::iterator(dd_edge* e, bool begin)
 }
 
 
-#ifdef ROW_COL_ITERATOR
+//#ifdef ROW_COL_ITERATOR
 
 bool dd_edge::iterator::findNextColumn(int height)
 {
@@ -645,10 +645,10 @@ bool dd_edge::iterator::findFirstRow(const int* minterm, int height, int node)
 #endif
   return false;
 }
-#endif
+//#endif
 
 
-#ifdef ROW_COL_ITERATOR
+//#ifdef ROW_COL_ITERATOR
 dd_edge::iterator::iterator(dd_edge* e, bool isRow, const int* minterm)
 : e(e), size(0), element(0), nodes(0), pelement(0), pnodes(0)
 {
@@ -700,7 +700,7 @@ dd_edge::iterator::iterator(dd_edge* e, bool isRow, const int* minterm)
   printf("]\n");
 #endif
 }
-#endif
+//#endif
 
 
 dd_edge::iterator::~iterator()

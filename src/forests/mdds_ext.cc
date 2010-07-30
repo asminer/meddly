@@ -1598,8 +1598,9 @@ forest::error mxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
 // ********************************** EVMDDs ********************************** 
 
 
-evmdd_node_manager::evmdd_node_manager(domain *d, forest::edge_labeling el)
-: node_manager(d, false, forest::BOOLEAN,
+evmdd_node_manager
+::evmdd_node_manager(domain *d, forest::range_type t, forest::edge_labeling el)
+: node_manager(d, false, t,
       el, forest::FULLY_REDUCED,
       forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION)
 {
@@ -1804,7 +1805,7 @@ forest::error evmdd_node_manager::evaluate(const dd_edge& f, const int* vlist,
 // ********************************* EV+MDDs ********************************** 
 
 evplusmdd_node_manager::evplusmdd_node_manager(domain *d)
-: evmdd_node_manager(d, forest::EVPLUS)
+: evmdd_node_manager(d, forest::INTEGER, forest::EVPLUS)
 { }
 
 evplusmdd_node_manager::~evplusmdd_node_manager()
@@ -2334,7 +2335,7 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
 // ********************************* EV*MDDs ********************************** 
 
 evtimesmdd_node_manager::evtimesmdd_node_manager(domain *d)
-: evmdd_node_manager(d, forest::EVTIMES)
+: evmdd_node_manager(d, forest::REAL, forest::EVTIMES)
 { }
 
 evtimesmdd_node_manager::~evtimesmdd_node_manager()

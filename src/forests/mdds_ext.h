@@ -391,7 +391,7 @@ class mxd_node_manager : public mtmxd_node_manager {
 
 class evmdd_node_manager : public node_manager {
   public:
-    evmdd_node_manager(domain *d, forest::edge_labeling el);
+    evmdd_node_manager(domain *d, forest::range_type t, forest::edge_labeling el);
     ~evmdd_node_manager();
 
     virtual void getDefaultEdgeValue(int& n) const { n = INF; }

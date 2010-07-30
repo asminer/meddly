@@ -58,3 +58,4 @@ nqueens_LDADD = ../src/libmeddly.la
 
 queen_cover_SOURCES = queen_cover.cc
 queen_cover_LDADD = ../src/libmeddly.la
+

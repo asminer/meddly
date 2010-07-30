@@ -1019,7 +1019,7 @@ class dd_edge {
         const int* getAssignments() const;
         const int* getPrimedAssignments() const;
 
-#ifdef ROW_COL_ITERATOR
+// #ifdef ROW_COL_ITERATOR
         iterator(dd_edge* e, bool isRow, const int* minterm);
 #if 0
         bool findFirstColumn(const int* minterm, int height, int node);
@@ -1028,7 +1028,7 @@ class dd_edge {
 #endif
         bool findFirstRow(const int* minterm, int height, int node);
         bool findNextColumn(int height);
-#endif
+// #endif
 
       private:
         friend class dd_edge;
@@ -1059,10 +1059,10 @@ class dd_edge {
     */
     const_iterator begin();
 
-#ifdef ROW_COL_ITERATOR
+// #ifdef ROW_COL_ITERATOR
     const_iterator beginRow(const int* minterm);
     const_iterator beginColumn(const int* minterm);
-#endif
+// #endif
 
     /** Returns an iterator just past the last element of the dd_edge.
         This iterator represents the end of the list of elements.
@@ -1448,6 +1448,32 @@ class compute_manager {
         dd_edge &c) = 0;
 
 
+    /**
+        Computes y = y + xA.
+        x and y are vectors, stored explicitly, and A is a matrix.
+
+        @param  y       Vector; dimension must be enough for largest y index.
+        @param  y_ind   Function to determine how minterms are mapped
+                        to indexes for vector y.  A value of infinity
+                        can be used to ignore minterms.  Should be an
+                        EV+MDD.
+
+        @param  x       Vector; dimension must be enough for largest x index.
+        @param  x_ind   Function to determine how minterms are mapped
+                        to indexes for vector x.  A value of infinity
+                        can be used to ignore minterms.  Should be an
+                        EV+MDD.
+
+        @param  A       Real-valued matrix, as an MTMxD or EV*MxD with
+                        same domain as y_ind and x_ind.
+
+        @return         An appropriate error code.  
+                        TBD: list the possible errors.
+    */
+    virtual error vectorMatrixMultiply(double* y, const dd_edge &y_ind,
+                      double* x, const dd_edge &x_ind, const dd_edge &A) = 0;
+
+
     /** Display compute table information.
         This is primarily for aid in debugging.
         @param  strm  File stream to write to.
@@ -1460,11 +1486,9 @@ class compute_manager {
     virtual long getNumCacheEntries() const = 0;
 };
 
-/** Function to build and initialize a compute manager.
+/** Function to build and initialize the compute manager.
     Built-in operations are initialized here.
-    
-    Do we ever instantiate multiple compute_managers, or is one enough?
-    One should suffice. Multiple calls will return the same compute_manager.
+    Multiple calls will return the same compute_manager.
 */
 compute_manager* MEDDLY_getComputeManager();
 

@@ -1,0 +1,377 @@
+
+// $Id$
+
+/*
+    Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
+    Copyright (C) 2009, Iowa State University Research Foundation, Inc.
+
+    This library is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published 
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this library.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "../defines.h"
+#include "vect_matr.h"
+
+compute_manager::error
+vmprimed_evplus_mt(
+  const op_param* pt, int ht, double* y, int y_ind, double* x, int x_ind, int A
+)
+{
+  // Handles the primed levels of A
+  compute_manager::error e = compute_manager::SUCCESS;
+
+  const expert_forest* fA = pt[4].readForest();
+  assert(fA);
+  if (0==ht) {
+    y[0] += x[0] * fA->getReal(A);
+    return e;
+  }
+  const expert_forest* fy = pt[1].readForest();
+  assert(fy);
+
+  // It should be impossible for an indexing function to skip levels, right?   
+  assert(fy->getNodeHeight(y_ind) == ht);
+  int yv, ys;
+
+  //
+  // Sparse y_ind
+  //
+  if (fy->isSparseNode(y_ind)) {
+    ys = fy->getSparseNodeSize(y_ind);
+
+    if (fA->isSparseNode(A)) {
+      // A is sparse, y_ind is sparse; intersect them
+      int As = fA->getSparseNodeSize(A);
+      int yp = 0;
+      int yj = fy->getSparseNodeIndex(y_ind, yp);
+      int Ap = 0;
+      int Aj = fA->getSparseNodeIndex(A, Ap);
+      for (;;) {
+        if (Aj < yj) {
+          Ap++;
+          if (Ap >= As) break;
+          Aj = fA->getSparseNodeIndex(A, Ap);
+          continue;
+        }
+        if (yj < Aj) {
+          yp++;
+          if (yp >= ys) break;
+          yj = fy->getSparseNodeIndex(y_ind, yp);
+          continue;
+        }
+        fy->getSparseNodeEdgeValue(y_ind, yp, yv);
+        e = vectorMatrixMult_evplus_mt(
+          pt, ht-1, y+yv, fy->getSparseNodeDownPtr(y_ind, yp), 
+          x, x_ind, fA->getSparseNodeDownPtr(A, Ap)
+        );
+        if (e) return e;
+        yp++;
+        if (yp >= ys) break;
+        yj = fy->getSparseNodeIndex(y_ind, yp);
+        Ap++;
+        if (Ap >= As) break;
+        Aj = fA->getSparseNodeIndex(A, Ap);
+      } // loop
+      return e;
+    } 
+    // A is full, y_ind is sparse; intersect them
+    int As = fA->getFullNodeSize(A);
+    for (int yp=0; yp<ys; yp++) {
+      int i = fy->getSparseNodeIndex(y_ind, yp);
+      if (i >= As) break;
+      int Ad = fA->getFullNodeDownPtr(A, i);
+      if (0==Ad) continue;
+      fy->getSparseNodeEdgeValue(y_ind, yp, yv);
+      e = vectorMatrixMult_evplus_mt(
+        pt, ht-1, y+yv, fy->getSparseNodeDownPtr(y_ind, yp), x, x_ind, Ad
+      );
+      if (e) return e;
+    } // for yp
+    return e;
+  } // y_ind is sparse
+
+  //
+  // Full y_ind
+  //
+  assert(fy->isFullNode(y_ind));
+  ys = fy->getFullNodeSize(y_ind);
+
+  if (fA->isSparseNode(A)) {
+    // A is sparse, y_ind is full; intersect them
+    int As = fA->getSparseNodeSize(A);
+    for (int Ap=0; Ap<As; Ap++) {
+      int i = fA->getSparseNodeIndex(A, Ap);
+      if (i >= ys) break;
+      int yd = fy->getFullNodeDownPtr(y_ind, i);
+      if (0==yd) continue;
+      fy->getFullNodeEdgeValue(y_ind, i, yv);
+      e = vectorMatrixMult_evplus_mt(
+        pt, ht-1, y+yv, yd, x, x_ind, fA->getSparseNodeDownPtr(A, Ap)
+      );
+      if (e) return e;
+    } // for Ap
+    return e;
+  }
+
+  // A is full, y_ind is full; intersect them
+  int As = fA->getFullNodeSize(A);
+  int sz = MIN(ys, As);
+  for (int i=0; i<sz; i++) {
+    int yd = fy->getFullNodeDownPtr(y_ind, i);
+    if (0==yd) continue;
+    int Ad = fA->getFullNodeDownPtr(A, i);
+    if (0==Ad) continue;
+    fy->getFullNodeEdgeValue(y_ind, i, yv);
+    e = vectorMatrixMult_evplus_mt(pt, ht-1, y+yv, yd, x, x_ind, Ad);
+    if (e) return e;
+  } // for i
+
+  return e;
+}
+
+compute_manager::error 
+vectorMatrixMult_evplus_mt(
+  const op_param* pt, int ht, double* y, int y_ind, double* x, int x_ind, int A
+)
+{
+  // Handles the unprimed levels of A
+  compute_manager::error e = compute_manager::SUCCESS;
+
+  const expert_forest* fA = pt[4].readForest();
+  assert(fA);
+  if (0==ht) {
+    y[0] += x[0] * fA->getReal(A);
+    return e;
+  }
+  const expert_forest* fx = pt[3].readForest();
+  assert(fx);
+
+  // It should be impossible for an indexing function to skip levels, right?   
+  assert(fx->getNodeHeight(x_ind) == ht);
+  int xv, xs;
+
+  //
+  // Identity node in A
+  //
+  if (fA->getNodeHeight(A) < ht) {
+    const expert_forest* fy = pt[1].readForest();
+    assert(fy);
+    int yv, ys;
+
+    if (fx->isSparseNode(x_ind)) {
+      xs = fx->getSparseNodeSize(x_ind);
+
+      if (fy->isSparseNode(y_ind)) {
+        // x_ind and y_ind are sparse; intersect them
+        int ys = fy->getSparseNodeSize(y_ind);
+        int xp = 0;
+        int xi = fx->getSparseNodeIndex(x_ind, xp);
+        int yp = 0;
+        int yi = fy->getSparseNodeIndex(y_ind, yp);
+        for (;;) {
+          if (yi < xi) {
+            yp++;
+            if (yp >= ys) break;
+            yi = fy->getSparseNodeIndex(y_ind, yp);
+            continue;
+          }
+          if (xi < yi) {
+            xp++;
+            if (xp >= xs) break;
+            xi = fx->getSparseNodeIndex(x_ind, xp);
+            continue;
+          }
+          fx->getSparseNodeEdgeValue(x_ind, xp, xv);
+          fy->getSparseNodeEdgeValue(y_ind, yp, yv);
+          e = vectorMatrixMult_evplus_mt(
+            pt, ht-1,
+            y+yv, fy->getSparseNodeDownPtr(y_ind, yp),
+            x+xv, fx->getSparseNodeDownPtr(x_ind, xp), 
+            A
+          );
+          if (e) return e;
+          xp++;
+          if (xp >= xs) break;
+          xi = fx->getSparseNodeIndex(x_ind, xp);
+          yp++;
+          if (yp >= ys) break;
+          yi = fy->getSparseNodeIndex(y_ind, yp);
+        } // loop
+        return e;
+      } // if y_ind is sparse
+
+      assert(fy->isFullNode(y_ind));
+      // x_ind is sparse, y_ind is full; intersect them
+      ys = fy->getFullNodeSize(y_ind);
+      for (int xp=0; xp<xs; xp++) {
+        int i = fx->getSparseNodeIndex(x_ind, xp);
+        if (i >= ys) break;
+        int yd = fy->getFullNodeDownPtr(y_ind, i);
+        if (0==yd) continue;
+        fx->getSparseNodeEdgeValue(x_ind, xp, xv);
+        fy->getFullNodeEdgeValue(y_ind, i, yv);
+        e = vectorMatrixMult_evplus_mt(
+          pt, ht-1, y+yv, yd, x+xv, fx->getSparseNodeDownPtr(x_ind, xp), A
+        );
+        if (e) return e;
+      } // for xp
+      return e;
+    } // if x_ind is sparse
+
+    assert(fx->isFullNode(x_ind));
+    xs = fx->getFullNodeSize(x_ind);
+
+    if (fy->isSparseNode(y_ind)) {
+      // x_ind is full, y_ind is sparse; intersect them
+      ys = fy->getSparseNodeSize(y_ind);
+      for (int yp=0; yp<ys; yp++) {
+        int i = fy->getSparseNodeIndex(y_ind, yp);
+        if (i >= xs) break;
+        int xd = fx->getFullNodeDownPtr(x_ind, i);
+        if (0==xd) continue;
+        fx->getFullNodeEdgeValue(x_ind, i, xv);
+        fy->getSparseNodeEdgeValue(y_ind, yp, yv);
+        e = vectorMatrixMult_evplus_mt(
+          pt, ht-1, y+yv, fy->getSparseNodeDownPtr(y_ind, yp), x+xv, xd, A
+        );
+        if (e) return e;
+      } // for xp
+      return e;
+    } // if y_ind is sparse
+
+    assert(fy->isFullNode(y_ind));
+    // x_ind is full, y_ind is full; intersect them
+    ys = fy->getFullNodeSize(y_ind);
+    int sz = MIN(xs, ys);
+    for (int i=0; i<sz; i++) {
+      int xd = fx->getFullNodeDownPtr(x_ind, i);
+      if (0==xd) continue;
+      int yd = fy->getFullNodeDownPtr(y_ind, i);
+      if (0==xd) continue;
+      fx->getFullNodeEdgeValue(x_ind, i, xv);
+      fy->getFullNodeEdgeValue(y_ind, i, yv);
+      e = vectorMatrixMult_evplus_mt(pt, ht-1, y+yv, yd, x+xv, xd, A);
+      if (e) return e;
+    } // for i
+    return e;
+
+  } // if A is identity
+
+  //
+  // Sparse x_ind
+  //
+  if (fx->isSparseNode(x_ind)) {
+    xs = fx->getSparseNodeSize(x_ind);
+
+    if (fA->isSparseNode(A)) {
+      // A is sparse, x_ind is sparse; intersect them
+      int As = fA->getSparseNodeSize(A);
+      int xp = 0;
+      int xi = fx->getSparseNodeIndex(x_ind, xp);
+      int Ap = 0;
+      int Ai = fA->getSparseNodeIndex(A, Ap);
+      for (;;) {
+        if (Ai < xi) {
+          Ap++;
+          if (Ap >= As) break;
+          Ai = fA->getSparseNodeIndex(A, Ap);
+          continue;
+        }
+        if (xi < Ai) {
+          xp++;
+          if (xp >= xs) break;
+          xi = fx->getSparseNodeIndex(x_ind, xp);
+          continue;
+        }
+        fx->getSparseNodeEdgeValue(x_ind, xp, xv);
+        e = vmprimed_evplus_mt(
+          pt, ht, y, y_ind,
+          x+xv, fx->getSparseNodeDownPtr(x_ind, xp), 
+          fA->getSparseNodeDownPtr(A, Ap)
+        );
+        if (e) return e;
+        xp++;
+        if (xp >= xs) break;
+        xi = fx->getSparseNodeIndex(x_ind, xp);
+        Ap++;
+        if (Ap >= As) break;
+        Ai = fA->getSparseNodeIndex(A, Ap);
+      } // loop
+      return e;
+    } 
+    // A is full, x_ind is sparse; intersect them
+    int As = fA->getFullNodeSize(A);
+    for (int xp=0; xp<xs; xp++) {
+      int i = fx->getSparseNodeIndex(x_ind, xp);
+      if (i >= As) break;
+      int Ad = fA->getFullNodeDownPtr(A, i);
+      if (0==Ad) continue;
+      fx->getSparseNodeEdgeValue(x_ind, xp, xv);
+      e = vmprimed_evplus_mt(
+        pt, ht, y, y_ind, x+xv, fx->getSparseNodeDownPtr(x_ind, xp), Ad
+      );
+      if (e) return e;
+    } // for xp
+    return e;
+  } // x_ind is sparse
+
+  //
+  // Full x_ind
+  //
+  assert(fx->isFullNode(x_ind));
+  xs = fx->getFullNodeSize(x_ind);
+
+  if (fA->isSparseNode(A)) {
+    // A is sparse, x_ind is full; intersect them
+    int As = fA->getSparseNodeSize(A);
+    for (int Ap=0; Ap<As; Ap++) {
+      int i = fA->getSparseNodeIndex(A, Ap);
+      if (i >= xs) break;
+      int xd = fx->getFullNodeDownPtr(x_ind, i);
+      if (0==xd) continue;
+      fx->getFullNodeEdgeValue(x_ind, i, xv);
+      e = vmprimed_evplus_mt(
+        pt, ht, y, y_ind, x+xv, xd, fA->getSparseNodeDownPtr(A, Ap)
+      );
+      if (e) return e;
+    } // for Ap
+    return e;
+  }
+
+  // A is full, x_ind is full; intersect them
+  int As = fA->getFullNodeSize(A);
+  int sz = MIN(xs, As);
+  for (int i=0; i<sz; i++) {
+    int xd = fx->getFullNodeDownPtr(x_ind, i);
+    if (0==xd) continue;
+    int Ad = fA->getFullNodeDownPtr(A, i);
+    if (0==Ad) continue;
+    fx->getFullNodeEdgeValue(x_ind, i, xv);
+    e = vmprimed_evplus_mt(pt, ht, y, y_ind, x+xv, xd, Ad);
+    if (e) return e;
+  } // for i
+
+  return e;
+}
+
+
+compute_manager::error 
+vectorMatrixMult_evplus_evtimes(
+  const op_param* pt, int ht, double* y, int y_ind, double* x, int x_ind, int A
+)
+{
+  // TBD
+  return compute_manager::NOT_IMPLEMENTED;
+}
+
+

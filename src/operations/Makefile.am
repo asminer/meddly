@@ -19,6 +19,8 @@ libops_la_SOURCES = \
 	cardinality.h \
   cardinality.cc \
   maxmin_range.h \
-  maxmin_range.cc
+  maxmin_range.cc \
+  vect_matr.h \
+  vect_matr.cc
 
 

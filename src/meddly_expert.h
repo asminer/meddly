@@ -911,11 +911,13 @@ class operation {
 class op_param {
   public:
     enum type {
-      FOREST    = 0,
-      BOOLEAN   = 1,
-      INTEGER   = 2,
-      REAL      = 3,
-      HUGEINT   = 4
+      FOREST      = 0,
+      BOOLEAN     = 1,
+      INTEGER     = 2,
+      REAL        = 3,
+      HUGEINT     = 4,
+      FLOATVECT   = 5,
+      DOUBLEVECT  = 6
     };
   public:
     op_param();
@@ -926,6 +928,8 @@ class op_param {
     void set(long);
     void set(double);
     void set(ct_object &);
+    void set(float*);
+    void set(double*);
 
     type getType() const;
     bool isForest() const;
@@ -1039,6 +1043,9 @@ class expert_compute_manager : public compute_manager {
 
     virtual error apply(op_code op, const dd_edge &a, const dd_edge &b,
         dd_edge &c);
+
+    virtual error vectorMatrixMultiply(double* y, const dd_edge &y_ind,
+                      double* x, const dd_edge &x_ind, const dd_edge &A);
 
     /** Same as apply(op_code, dd_edge&, dd_edge&, dd_edge&) except with
         op_info.
@@ -1228,6 +1235,20 @@ void op_param::set(ct_object &x)
   my_type = x.getType();
 }
 
+inline
+void op_param::set(float*)
+{
+  f = 0;
+  my_type = FLOATVECT;
+}
+
+inline
+void op_param::set(double*)
+{
+  f = 0;
+  my_type = DOUBLEVECT;
+}
+
 inline 
 op_param::type op_param::getType() const 
 { 
@@ -1270,6 +1291,14 @@ void op_param::print(FILE* s) const
 
     case FOREST:
         fprintf(s, "FOREST %p", f);
+        return;
+
+    case FLOATVECT:
+        fprintf(s, "float[]");
+        return;
+
+    case DOUBLEVECT:
+        fprintf(s, "double[]");
         return;
 
     default:
