@@ -72,11 +72,18 @@ bool build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
   return true;
 }
 
-void by_hand_oz(double* y, const double* const x)
+void by_hand_oz_xA(double* y, const double* const x)
 {
   y[0] += x[0]/2 + x[1]/2 + x[2]/4;
   y[1] += x[0]/4 +          x[2]/4;
   y[2] += x[0]/4 + x[1]/2 + x[2]/2;
+}
+
+void by_hand_oz_Ax(double* y, const double* const x)
+{
+  y[0] += x[0]/2 + x[1]/4 + x[2]/4;
+  y[1] += x[0]/2 +          x[2]/2;
+  y[2] += x[0]/4 + x[1]/4 + x[2]/2;
 }
 
 bool equals(double *xgot, double *xans, int N)
@@ -103,6 +110,7 @@ bool xA_check(dd_edge &ss, dd_edge &P)
   double q[3];
   double q_alt[3];
   p[0] = 0; p[1] = 1; p[2] = 0;
+  printf("xA multiplications:\n");
   for (i=0; i<9; i++) {
     printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
     q[0] = q[1] = q[2] = 0;
@@ -112,7 +120,34 @@ bool xA_check(dd_edge &ss, dd_edge &P)
       return false;
     }
     q_alt[0] = q_alt[1] = q_alt[2] = 0;
-    by_hand_oz(q_alt, p);
+    by_hand_oz_xA(q_alt, p);
+    if (!equals(q, q_alt, 3)) return false;
+    p[0] = q[0];
+    p[1] = q[1];
+    p[2] = q[2];
+  }
+  printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
+  return true;
+}
+
+bool Ax_check(dd_edge &ss, dd_edge &P)
+{
+  int i;
+  double p[3];
+  double q[3];
+  double q_alt[3];
+  p[0] = 0; p[1] = 1; p[2] = 0;
+  printf("Ax multiplications:\n");
+  for (i=0; i<9; i++) {
+    printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
+    q[0] = q[1] = q[2] = 0;
+    compute_manager::error ce = CM->matrixVectorMultiply(q, ss, P, p, ss);
+    if (ce) {
+      printf("Couldn't multiply: %s\n", CM->getErrorCodeName(ce));
+      return false;
+    }
+    q_alt[0] = q_alt[1] = q_alt[2] = 0;
+    by_hand_oz_Ax(q_alt, p);
     if (!equals(q, q_alt, 3)) return false;
     p[0] = q[0];
     p[1] = q[1];
@@ -140,6 +175,7 @@ int main(int argc, const char** argv)
 
   if (!build_oz(evpmdds, mtmxds, ss, P)) return 1;
   if (!xA_check(ss, P)) return 1;
+  if (!Ax_check(ss, P)) return 1;
 
   return 0;
 }

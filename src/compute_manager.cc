@@ -914,3 +914,70 @@ expert_compute_manager::vectorMatrixMultiply(double* y, const dd_edge &y_ind,
 }
 
 
+compute_manager::error 
+expert_compute_manager::matrixVectorMultiply(double* y, const dd_edge &y_ind,
+                      const dd_edge &A, double* x, const dd_edge &x_ind)
+{
+  const expert_forest* const fy = (expert_forest*) y_ind.getForest();
+  const expert_forest* const fA = (expert_forest*) A.getForest();
+  const expert_forest* const fx = (expert_forest*) x_ind.getForest();
+
+  if (
+           (fy->getRangeType() != forest::INTEGER) 
+        || (fy->isForRelations())
+        || (fx->getRangeType() != forest::INTEGER)
+        || (fx->isForRelations())
+        || (fA->getRangeType() != forest::REAL)
+        || (!fA->isForRelations())
+      ) 
+  {
+    return TYPE_MISMATCH;
+  }
+
+  // A can't be fully reduced.
+  if (forest::FULLY_REDUCED == fA->getReductionRule()) {
+    return TYPE_MISMATCH;
+  }
+
+  // For now, fy and fx must be EV+MDDs.
+  if (     (fy->getEdgeLabeling() != forest::EVPLUS) 
+        || (fx->getEdgeLabeling() != forest::EVPLUS) )
+  {
+    return NOT_IMPLEMENTED;
+  }
+
+  //everyone must use the same domain
+  if (      (fx->getDomain() != fy->getDomain()) 
+        ||  (fx->getDomain() != fA->getDomain())  )
+  {
+    return TYPE_MISMATCH;
+  }
+
+  static op_param plist[5];
+  plist[0].set(y);
+  plist[1].set(y_ind);
+  plist[2].set(A);
+  plist[3].set(x);
+  plist[4].set(x_ind);
+
+  switch (fA->getEdgeLabeling()) {
+    case forest::MULTI_TERMINAL:
+      return matrixVectorMult_evplus_mt(
+        plist, fy->getDomain()->getNumVariables(), y, y_ind.getNode(),
+        A.getNode(), x, x_ind.getNode()
+      );
+
+    case forest::EVTIMES:
+      return matrixVectorMult_evplus_evtimes(
+        plist, fy->getDomain()->getNumVariables(), y, y_ind.getNode(),
+        A.getNode(), x, x_ind.getNode()
+      );
+
+    default:
+      return TYPE_MISMATCH;
+  };
+
+
+}
+
+

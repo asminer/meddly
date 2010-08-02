@@ -1473,6 +1473,30 @@ class compute_manager {
     virtual error vectorMatrixMultiply(double* y, const dd_edge &y_ind,
                       double* x, const dd_edge &x_ind, const dd_edge &A) = 0;
 
+    /**
+        Computes y = y + Ax.
+        x and y are vectors, stored explicitly, and A is a matrix.
+
+        @param  y       Vector; dimension must be enough for largest y index.
+        @param  y_ind   Function to determine how minterms are mapped
+                        to indexes for vector y.  A value of infinity
+                        can be used to ignore minterms.  Should be an
+                        EV+MDD.
+
+        @param  A       Real-valued matrix, as an MTMxD or EV*MxD with
+                        same domain as y_ind and x_ind.
+
+        @param  x       Vector; dimension must be enough for largest x index.
+        @param  x_ind   Function to determine how minterms are mapped
+                        to indexes for vector x.  A value of infinity
+                        can be used to ignore minterms.  Should be an
+                        EV+MDD.
+
+        @return         An appropriate error code.  
+                        TBD: list the possible errors.
+    */
+    virtual error matrixVectorMultiply(double* y, const dd_edge &y_ind,
+                      const dd_edge &A, double* x, const dd_edge &x_ind) = 0;
 
     /** Display compute table information.
         This is primarily for aid in debugging.

@@ -1047,6 +1047,9 @@ class expert_compute_manager : public compute_manager {
     virtual error vectorMatrixMultiply(double* y, const dd_edge &y_ind,
                       double* x, const dd_edge &x_ind, const dd_edge &A);
 
+    virtual error matrixVectorMultiply(double* y, const dd_edge &y_ind,
+                      const dd_edge &A, double* x, const dd_edge &x_ind);
+
     /** Same as apply(op_code, dd_edge&, dd_edge&, dd_edge&) except with
         op_info.
 

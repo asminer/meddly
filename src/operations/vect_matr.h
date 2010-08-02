@@ -60,5 +60,42 @@ compute_manager::error vectorMatrixMult_evplus_evtimes(
   const op_param* pt, int ht, double* y, int y_ind, double* x, int x_ind, int A
 );
 
+
+
+
+/** Matrix vector multiplication for ev+mdd indexes, mtmxd matrices.
+    Computes y += Ax.
+
+      @param  pt      Parameter types; holds forests for y_ind, x_ind, A.
+      @param  ht      Height; outermost call should be number of levels.
+      @param  y       y vector.
+      @param  y_ind   EV+MDD node for y indexes.
+      @param  A       MTMDD node for A matrix.
+      @param  x       x vector.
+      @param  x_ind   EV+MDD node for x indexes.
+
+      @return         An appropriate error code.
+*/
+compute_manager::error matrixVectorMult_evplus_mt(
+  const op_param* pt, int ht, double* y, int y_ind, int A, double* x, int x_ind
+);
+
+/** Matrix vector multiplication for ev+mdd indexes, ev*mxd matrices.
+    Computes y += Ax.
+
+      @param  pt      Parameter types; holds forests for y_ind, x_ind, A.
+      @param  ht      Height; outermost call should be number of levels.
+      @param  y       y vector.
+      @param  y_ind   EV+MDD node for y indexes.
+      @param  A       MTMDD node for A matrix.
+      @param  x       x vector.
+      @param  x_ind   EV+MDD node for x indexes.
+
+      @return         An appropriate error code.
+*/
+compute_manager::error matrixVectorMult_evplus_evtimes(
+  const op_param* pt, int ht, double* y, int y_ind, int A, double* x, int x_ind
+);
+
 #endif
 
