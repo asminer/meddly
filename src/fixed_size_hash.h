@@ -69,7 +69,7 @@
 #define AGGRESIVE_GC 0
 #define START_AT_MAX_SIZE 0
 
-#define EXP_FACTOR 1.25       // new_size = old_size * 1.25
+#define EXP_FACTOR 1.50       // new_size = old_size * 1.50
 
 template <typename MANAGER>
 class fixed_size_hash_table {

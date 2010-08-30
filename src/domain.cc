@@ -26,8 +26,13 @@
 
 
 #include "defines.h"
+#if 0
 #include "forests/mdds_ext.h"
-
+#else
+#include "forests/mtmdd.h"
+#include "forests/mtmxd.h"
+#include "forests/evmdd.h"
+#endif
 
 
 // ----------------- domain ------------------------

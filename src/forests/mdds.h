@@ -478,6 +478,20 @@ class node_manager : public expert_forest {
     double cardinalityForRelations(int p, int k, bool primeLevel,
         std::map<int, double>& visited) const;
 
+    // Checks if one of the following reductions is satisfied:
+    // Fully, Quasi, Identity Reduced.
+    // If the node can be reduced to an existing node, the existing node
+    // is returned.
+    bool checkForReductions(int p, int nnz, int& result);
+
+    // Checks if the node has a single downpointer enabled and at
+    // the given index.
+    bool singleNonZeroAt(int p, int val, int index) const;
+
+    // Checks if the node satisfies the forests reduction rules.
+    // If it does not, an assert violation occurs.
+    void validateDownPointers(int p);
+
     // Pointer to expert_domain
     expert_domain* expertDomain;
 
@@ -1182,5 +1196,82 @@ node_manager::findFirstElement(const dd_edge& f, int* vlist, int* vplist) const
 {
   return forest::INVALID_OPERATION;
 }
+
+// ********************* utils ************************
+
+inline
+bool node_manager::singleNonZeroAt(int p, int val, int index) const
+{
+  DCASSERT(isActiveNode(p));
+  DCASSERT(!isTerminalNode(p));
+  DCASSERT(!isZombieNode(p));
+  DCASSERT(val != 0);
+  if (isFullNode(p)) {
+    const int* dptr = getFullNodeDownPtrsReadOnly(p);
+    const int sz = getFullNodeSize(p);
+    if (index >= sz || dptr[index] != val) return false;
+    int i = 0;
+    for ( ; i < index; ++i) { if (dptr[i] != 0) return false; }
+    for (i = index + 1 ; i < sz; ++i) { if (dptr[i] != 0) return false; }
+  } else {
+    if (getSparseNodeSize(p) != 1) return false;
+    if (getSparseNodeIndex(p, 0) != index) return false;
+    if (getSparseNodeDownPtr(p, 0) != val) return false;
+  }
+  return true;
+}
+
+inline
+bool node_manager::checkForReductions(int p, int nnz, int& result)
+{
+  if (getReductionRule() == forest::QUASI_REDUCED) return false;
+  if (nnz != getLevelSize(getNodeLevel(p))) return false;
+
+  const int* ptr = getFullNodeDownPtrs(p);
+  int size = getFullNodeSize(p);
+
+  switch (getReductionRule()) {
+
+    case forest::FULLY_REDUCED:
+      result = ptr[0];
+      for (int i = 1; i < size; ++i) {
+        if (ptr[i] != result) return false;
+      }
+      break;
+
+    case forest::IDENTITY_REDUCED:
+      if (isForRelations()) {
+        if (isPrimedNode(p)) return false;
+        if (isFullNode(ptr[0])) {
+          result = getFullNodeDownPtr(ptr[0], 0);
+          if (result == 0) return false;
+        } else {
+          int index = getSparseNodeIndex(ptr[0], 0);
+          if (index != 0) return false;
+          result = getSparseNodeDownPtr(ptr[0], 0);
+          DCASSERT(result != 0);
+        }
+        for (int i = 0; i < size; i++) {
+          if (!singleNonZeroAt(ptr[i], result, i)) return false;
+        }
+      }
+      else {
+        printf("Identity-Reduction is valid only for forests that ");
+        printf("store relations.\n");
+        printf("Either change reduction rule for forest %p or enable\n", this);
+        printf("relations for it.\n");
+        printf("Terminating.\n");
+        exit(1);
+      }
+      break;
+
+    default:
+      return false;
+  }
+
+  return true;
+}
+
+
 
 #endif

@@ -33,6 +33,8 @@
 #include "meddly.h"
 #include "timer.h"
 
+#define TESTING_AUTO_VAR_GROWTH
+
 
 void printUsage(FILE *outputStream)
 {
@@ -81,7 +83,7 @@ int main(int argc, char *argv[])
       assert(elements[i][j] >= 0 && elements[i][j] < variableBound);
     }
     // print element[i]
-    if (true)
+    if (false)
     {
       printf("Element %d: [%d", i, elements[i][0]);
       for (int j = 1; j <= nVariables; ++j)
@@ -98,10 +100,10 @@ int main(int argc, char *argv[])
   assert(bounds != 0);
   for (int i = 0; i < nVariables; ++i)
   {
-#if 0
-    bounds[i] = variableBound;
-#else
+#ifdef TESTING_AUTO_VAR_GROWTH
     bounds[i] = 2;
+#else
+    bounds[i] = variableBound;
 #endif
   }
 
@@ -140,18 +142,21 @@ int main(int argc, char *argv[])
 
   timer start;
 
+  printf("Started... ");
+
   assert(forest::SUCCESS ==
       states->createEdge(elements, nElements, initial_state));
 
   start.note_time();
-  printf("Time interval: %.4e seconds\n",
+  printf("done. Time interval: %.4e seconds\n",
       start.get_last_interval()/1000000.0);
 
-#if 1
+#if 0
   printf("\n\nInitial State:\n");
   initial_state.show(stdout, 2);
 #endif
 
+  printf("Elements in result: %f\n", initial_state.getCardinality());
   printf("Peak Nodes in MDD: %ld\n", states->getPeakNumNodes());
   printf("Nodes in compute table: %ld\n",
       (MEDDLY_getComputeManager())->getNumCacheEntries());

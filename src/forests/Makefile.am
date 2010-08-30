@@ -11,6 +11,9 @@ libforests_la_SOURCES = \
 	../mdd_hash.h \
 	mdds.h \
 	mdds.cc \
-	mdds_ext.h \
-	mdds_ext.cc
-
+	mtmdd.h \
+	mtmxd.h \
+	evmdd.h \
+	mtmdd.cc \
+	mtmxd.cc \
+	evmdd.cc

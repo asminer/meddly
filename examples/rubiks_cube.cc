@@ -61,8 +61,8 @@
 	Ids.
 */
 
-#define SATURATE
-#define NSF_CARDINALITY
+#define SATURATE 1
+#define NSF_CARDINALITY 1
 
 #define REORDER_CUBE 0
 #define FACED_ORDERING 0
@@ -138,7 +138,6 @@ static int order[] =
 void SetUpArrays()
 {
   for (int i = 1; i < num_levels + 1; i++) {
-#if 1
     if (i > 12) {
       comp_type[order[i] + 1] = 3;
       //comp_type[i] = 3;
@@ -148,17 +147,6 @@ void SetUpArrays()
       //comp_type[i] = 2;
       comp2_map[i - 1] = order[i] + 1;
     }
-#else
-    if (order[i] > 11) {
-      //comp_type[order[i] + 1] = 3;
-      comp_type[i] = 3;
-      comp3_map[order[i] - 12] = i;
-    } else {
-      //comp_type[order[i] + 1] = 2;
-      comp_type[i] = 2;
-      comp2_map[order[i]] = i;
-    }
-#endif
   }
 
   for (int i = 0; i < 12; i++) {
@@ -415,217 +403,6 @@ dd_edge DoMove(face f, direction d) {
 }
 
 
-#if 0
-// Original
-dd_edge DoMoveHelper(
-  int type3_a,
-  int type2_a,
-  int type3_b,
-  int type2_b,
-  int type3_c,
-  int type2_c,
-  int type3_d,
-  int type2_d
-  )
-{
-  const int sz = num_levels + 1;
-  int from[sz];  // num_levels is a constant
-  int to[sz];
-
-  // face is ordered like this:
-  // type3, type2, type3, type2, type3, type2, type3, type2
-
-  // transform to levels
-  int a2 = get_component_level(2, type2_a);
-  int b2 = get_component_level(2, type2_b);
-  int c2 = get_component_level(2, type2_c);
-  int d2 = get_component_level(2, type2_d);
-  int a3 = get_component_level(3, type3_a);
-  int b3 = get_component_level(3, type3_b);
-  int c3 = get_component_level(3, type3_c);
-  int d3 = get_component_level(3, type3_d);
-
-  fprintf(stderr, "type2_a, a2 = %d, %d\n", type2_a, a2);
-  fprintf(stderr, "type2_b, b2 = %d, %d\n", type2_b, b2);
-  fprintf(stderr, "type2_c, c2 = %d, %d\n", type2_c, c2);
-  fprintf(stderr, "type2_d, d2 = %d, %d\n", type2_d, d2);
-  fprintf(stderr, "type3_a, a3 = %d, %d\n", type3_a, a3);
-  fprintf(stderr, "type3_b, b3 = %d, %d\n", type3_b, b3);
-  fprintf(stderr, "type3_c, c3 = %d, %d\n", type3_c, c3);
-  fprintf(stderr, "type3_d, d3 = %d, %d\n", type3_d, d3);
-
-  // create node at level 13
-  dd_tempedge *temp13 = CreateTempEdge(relation, NULL);
-
-  // Set all levels (except term) to don't care
-  SetIntArray(from + 1, sz - 1, -2);
-  SetIntArray(to + 1, sz - 1, -2);
-  from[variables[a3]] = -1; to[variables[a3]] = -1;
-  from[variables[b3]] = -1; to[variables[b3]] = -1;
-  from[variables[c3]] = -1; to[variables[c3]] = -1;
-  from[variables[d3]] = -1; to[variables[d3]] = -1;
-  from[variables[a2]] = -1; to[variables[a2]] = -1;
-  from[variables[b2]] = -1; to[variables[b2]] = -1;
-  from[variables[c2]] = -1; to[variables[c2]] = -1;
-  from[variables[d2]] = -1; to[variables[d2]] = -1;
-
-  for (int i=0; i<type3; i++) {
-    from[variables[d3]] = i;
-    to[variables[a3]] = i;
-#if FROM_TO
-    AddMatrixElement(temp13, from, to, sz, true);
-#else
-    AddMatrixElement(temp13, to, from, sz, true);
-#endif
-  }
-  from[variables[d3]] = -1;
-  to[variables[a3]] = -1;
-
-  dd_edge *e13 = CreateEdge(temp13);
-
-  // create node at level 14
-  dd_tempedge *temp14 = CreateTempEdge(relation, NULL);
-
-  for (int i=0; i<type3; i++) {
-    from[variables[a3]] = i;
-    to[variables[b3]] = i;
-#if FROM_TO
-    AddMatrixElement(temp14, from, to, sz, true);
-#else
-    AddMatrixElement(temp14, to, from, sz, true);
-#endif
-  }
-  from[variables[a3]] = -1;
-  to[variables[b3]] = -1;
-
-  dd_edge *e14 = CreateEdge(temp14);
-
-  // create node at level 15
-  dd_tempedge *temp15 = CreateTempEdge(relation, NULL);
-
-  for (int i=0; i<type3; i++) {
-    from[variables[b3]] = i;
-    to[variables[c3]] = i;
-#if FROM_TO
-    AddMatrixElement(temp15, from, to, sz, true);
-#else
-    AddMatrixElement(temp15, to, from, sz, true);
-#endif
-  }
-  from[variables[b3]] = -1;
-  to[variables[c3]] = -1;
-
-  dd_edge *e15 = CreateEdge(temp15);
-
-  // create node at level 16
-  dd_tempedge *temp16 = CreateTempEdge(relation, NULL);
-
-  for (int i=0; i<type3; i++) {
-    from[variables[c3]] = i;
-    to[variables[d3]] = i;
-#if FROM_TO
-    AddMatrixElement(temp16, from, to, sz, true);
-#else
-    AddMatrixElement(temp16, to, from, sz, true);
-#endif
-  }
-  from[variables[c3]] = -1;
-  to[variables[d3]] = -1;
-
-  dd_edge *e16 = CreateEdge(temp16);
-  
-  // create node at level 1
-  dd_tempedge *temp1 = CreateTempEdge(relation, NULL);
-
-  for (int i=0; i<type2; i++) {
-    from[variables[d2]] = i;
-    to[variables[a2]] = i;
-#if FROM_TO
-    AddMatrixElement(temp1, from, to, sz, true);
-#else
-    AddMatrixElement(temp1, to, from, sz, true);
-#endif
-  }
-  from[variables[d2]] = -1;
-  to[variables[a2]] = -1;
-
-  dd_edge *e1 = CreateEdge(temp1);
-
-  // create node at level 2
-  dd_tempedge *temp2 = CreateTempEdge(relation, NULL);
-
-  for (int i=0; i<type2; i++) {
-    from[variables[a2]] = i;
-    to[variables[b2]] = i;
-#if FROM_TO
-    AddMatrixElement(temp2, from, to, sz, true);
-#else
-    AddMatrixElement(temp2, to, from, sz, true);
-#endif
-  }
-  from[variables[a2]] = -1;
-  to[variables[b2]] = -1;
-
-  dd_edge *e2 = CreateEdge(temp2);
-
-  // create node at level 3
-  dd_tempedge *temp3 = CreateTempEdge(relation, NULL);
-
-  for (int i=0; i<type2; i++) {
-    from[variables[b2]] = i;
-    to[variables[c2]] = i;
-#if FROM_TO
-    AddMatrixElement(temp3, from, to, sz, true);
-#else
-    AddMatrixElement(temp3, to, from, sz, true);
-#endif
-  }
-  from[variables[b2]] = -1;
-  to[variables[c2]] = -1;
-
-  dd_edge *e3 = CreateEdge(temp3);
-  
-  // create node at level 4
-  dd_tempedge *temp4 = CreateTempEdge(relation, NULL);
-
-  for (int i=0; i<type2; i++) {
-    from[variables[c2]] = i;
-    to[variables[d2]] = i;
-#if FROM_TO
-    AddMatrixElement(temp4, from, to, sz, true);
-#else
-    AddMatrixElement(temp4, to, from, sz, true);
-#endif
-  }
-  from[variables[c2]] = -1;
-  to[variables[d2]] = -1;
-
-  dd_edge *e4 = CreateEdge(temp4);
-  // ShowDDEdge(stderr, e4);
-
-  dd_edge *result = NULL;
-
-  assert(SUCCESS == ApplyBinary(OP_INTERSECTION, e1, e2, result));
-  assert(SUCCESS == ApplyBinary(OP_INTERSECTION, result, e3, result));
-  assert(SUCCESS == ApplyBinary(OP_INTERSECTION, result, e4, result));
-  assert(SUCCESS == ApplyBinary(OP_INTERSECTION, result, e13, result));
-  assert(SUCCESS == ApplyBinary(OP_INTERSECTION, result, e14, result));
-  assert(SUCCESS == ApplyBinary(OP_INTERSECTION, result, e15, result));
-  assert(SUCCESS == ApplyBinary(OP_INTERSECTION, result, e16, result));
-  ReleaseEdge(e1);
-  ReleaseEdge(e2);
-  ReleaseEdge(e3);
-  ReleaseEdge(e4);
-  ReleaseEdge(e13);
-  ReleaseEdge(e14);
-  ReleaseEdge(e15);
-  ReleaseEdge(e16);
-  return result;
-}
-
-#else
-
-// Modified
 dd_edge DoMoveHelper(
   int type3_a,
   int type2_a,
@@ -830,8 +607,6 @@ dd_edge DoMoveHelper(
   
   return result;
 }
-
-#endif
 
 
 #if 0
@@ -1332,7 +1107,7 @@ int main(int argc, char *argv[])
 
   // Set hash table to be a chained hash table with a
   // maximum of 16 million entries (default)
-  bool chaining = false;
+  bool chaining = true;
   int hashTableSize = 16 * 1024 * 1024;
   assert(compute_manager::SUCCESS ==
       MEDDLY_getComputeManager()->setHashTablePolicy(chaining, hashTableSize));
@@ -1576,7 +1351,7 @@ int main(int argc, char *argv[])
 
 #ifdef NSF_CARDINALITY
   fprintf(stderr, "# of nodes in next-state function: %1.6e\n",
-      nsf.getCardinality());
+      double(nsf.getNodeCount()));
 #endif
   fflush(stderr);
 

@@ -2192,7 +2192,15 @@ int node_manager::getFreeNode(int k)
     // compactLevel(k);
     // if (a_last + 1 < a_size) return getFreeNode(k);
     // int new_a_size = (a_size > 16384)? a_size + 16384: a_size * 2;
+
+#if 0
     int new_a_size = (a_size > 1024)? a_size + 1024: a_size * 2;
+#else
+    // increase size by 50%
+    int min_size = (a_last + 1) * 0.375;
+    int new_a_size = min_size * 4;
+#endif
+
     mdd_node_data *temp = (mdd_node_data*) realloc(address,
         new_a_size * sizeof(mdd_node_data));
     // assert(NULL != temp);
@@ -2476,11 +2484,19 @@ int node_manager::getHole(int k, int slots, bool search_holes)
     // not enough space, extend
     int *old_data = level[p_level].data;
     int old_size = level[p_level].size;
+
+#if 0
     while (level[p_level].last + slots >= level[p_level].size) {
       // level[p_level].size *= 2;
       level[p_level].size = (level[p_level].size > 1024)?
         level[p_level].size + 1024: level[p_level].size * 2;
     }
+#else
+    // new size is 50% more than previous (37.5% * 4 = 1.5 => 50% growth)
+    int min_size = (level[p_level].last + slots) * 0.375;
+    level[p_level].size = min_size * 4;
+#endif
+
 #if 0
     printf(" new size=%d slots=%d last=%d\n",
         level[p_level].size, slots, level[p_level].last);
@@ -2772,5 +2788,77 @@ long node_manager::getCurrentMemoryUsed() const {
 #else
   return curr_slots * sizeof(int);
 #endif
+}
+
+
+void node_manager::validateDownPointers(int p)
+{
+  assert(isFullNode(p));
+  int nodeHeight = getNodeHeight(p);
+  int nodeLevel = getNodeLevel(p);
+  int nodeSize = getFullNodeSize(p);
+  const int* ptr = getFullNodeDownPtrs(p);
+  switch (getReductionRule()) {
+    case forest::FULLY_REDUCED:
+      if (isUnprimedNode(p)) {
+        // unprimed node
+        for (int i = 0; i < nodeSize; ++i) {
+          assert(isReducedNode(ptr[i]));
+          assert(!isForRelations() ||
+              isTerminalNode(ptr[i]) ||
+              getNodeHeight(ptr[i]) < nodeHeight ||
+              getNodeLevel(ptr[i]) == -nodeLevel);
+        }
+      } else {
+        // primed node
+        for (int i = 0; i < nodeSize; ++i) {
+          assert(isReducedNode(ptr[i]));
+          assert(isTerminalNode(ptr[i]) ||
+              getNodeHeight(ptr[i]) < nodeHeight);
+        }
+      }
+      break;
+
+    case forest::QUASI_REDUCED:
+      if (isUnprimedNode(p)) {
+        // unprimed node
+        for (int i = 0; i < nodeSize; ++i) {
+          assert(isReducedNode(ptr[i]));
+          assert(!isForRelations() ||
+              isTerminalNode(ptr[i]) ||
+              getNodeLevel(ptr[i]) == -nodeLevel);
+        }
+      } else {
+        // primed node
+        for (int i = 0; i < nodeSize; ++i) {
+          assert(isReducedNode(ptr[i]));
+          assert(isTerminalNode(ptr[i]) ||
+              (getNodeHeight(ptr[i]) == (nodeHeight - 1) &&
+               isUnprimedNode(ptr[i])));
+        }
+      }
+      break;
+
+    case forest::IDENTITY_REDUCED:
+      assert(isForRelations());
+      if (isUnprimedNode(p)) {
+        // unprimed node
+        for (int i = 0; i < nodeSize; ++i) {
+          assert(isReducedNode(ptr[i]));
+          assert(ptr[i] == 0 || (getNodeLevel(ptr[i]) == -nodeLevel));
+        }
+      } else {
+        // primed node
+        for (int i = 0; i < nodeSize; ++i) {
+          assert(isReducedNode(ptr[i]));
+          assert(getNodeHeight(ptr[i]) < nodeHeight);
+          assert(isTerminalNode(ptr[i]) || isUnprimedNode(ptr[i]));
+        }
+      }
+      break;
+
+    default:
+      break;
+  }
 }
 
