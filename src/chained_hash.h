@@ -57,6 +57,8 @@
 #ifndef CHAINED_HASH_H
 #define CHAINED_HASH_H
 
+//#define CHECK_STALE_ONLY_ON_EQUAL
+
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <vector>
@@ -422,7 +424,46 @@ class chained_hash_table {
 
       if (table[h] == nodes->getNull()) { return nodes->getNull(); }
 
-      // remove stales from head of the list
+#ifdef CHECK_STALE_ONLY_ON_EQUAL
+      // Check the head of the list for match.
+      // If a match is found, check if it is a stale entry.
+      // If the entry is stale, discard it and return null,
+      // otherwise, return the matching entry.
+      if (nodes->equals(table[h], key)) {
+        if (!nodes->isStale(table[h])) return table[h];
+        // Remove stale entry and return null.
+        int ptr = table[h];
+        table[h] = nodes->getNext(table[h]);
+        nodes->uncacheNode(ptr);
+        nEntries--;
+        return nodes->getNull();
+      }
+
+      // Check the rest of the list for match.
+      int prev = table[h];
+      int ptr = nodes->getNext(table[h]);
+      for ( ; ptr != nodes->getNull(); ) {
+        if (nodes->equals(ptr, key)) {
+          if (!nodes->isStale(ptr)) {
+            // Move it to front and return.
+            nodes->setNext(prev, nodes->getNext(ptr));
+            nodes->setNext(ptr, table[h]);
+            table[h] = ptr;
+            return ptr;
+          }
+          // Remove stale entry and return null.
+          nodes->setNext(prev, nodes->getNext(ptr));
+          nodes->uncacheNode(ptr);
+          nEntries--;
+          return nodes->getNull();
+        }
+        // Advance pointers
+        prev = ptr;
+        ptr = nodes->getNext(ptr);
+      }
+#else
+      // Check the head of the list for match.
+      // Remove stale entries before checking for match.
       int ptr = nodes->getNull();
       while (table[h] != nodes->getNull()) {
         if (nodes->isStale(table[h])) {
@@ -438,7 +479,8 @@ class chained_hash_table {
       }
       if (table[h] == nodes->getNull()) { return nodes->getNull(); }
 
-      // remove stales from the rest of the list
+      // Check the rest of the list for match.
+      // Remove stale entries before checking for match.
       int prev = table[h];
       ptr = nodes->getNext(table[h]);
       int next = nodes->getNull();
@@ -447,10 +489,9 @@ class chained_hash_table {
         if (nodes->isStale(ptr)) {
           nodes->setNext(prev, next);
           nodes->uncacheNode(ptr);
-          // prev stays the same
           nEntries--;
         } else if (nodes->equals(ptr, key)) {
-          // move it to front and return
+          // Move it to front and return.
           nodes->setNext(prev, next);
           nodes->setNext(ptr, table[h]);
           table[h] = ptr;
@@ -459,6 +500,9 @@ class chained_hash_table {
           prev = ptr;
         }
       }
+#endif
+
+      // Not found, return null
       return nodes->getNull();
     }
 

@@ -649,6 +649,10 @@ class mdd_pre_image : public mdd_post_image {
 };
 
 
+#if 0
+
+// Moved to src/operations/reachability.h
+
 // Traditional reachability analysis
 class mdd_reachability_bfs : public mdd_mxd_image_operation {
   public:
@@ -732,6 +736,7 @@ class mdd_reachability_dfs : public mdd_mxd_image_operation {
     mxd_difference*   mxdDifference;
 };
 
+#endif
 
 // ------------------------ MTMDD Apply operations ---------------------------
 

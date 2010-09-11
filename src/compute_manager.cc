@@ -23,6 +23,7 @@
 
 #include "defines.h"
 #include "operations/operation_ext.h"
+#include "operations/reachability.h"
 #include "operations/cardinality.h"
 #include "operations/maxmin_range.h"
 #include "operations/vect_matr.h"

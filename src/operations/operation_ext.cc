@@ -4305,6 +4305,10 @@ int mdd_pre_image::expandByOneLevel(op_info* owner, op_info* unionOp,
 // ------------------------------------------------------------------
 
 
+#if 0
+
+// Moved to src/operations/reachability.cc
+
 // ---------------------- MDD Traditional Reachability -------------------
 
 
@@ -4407,8 +4411,8 @@ int mdd_reachability_bfs::compute(op_info* owner, int mdd, int mxd)
 }
 
 
-// ---------------------- MDD Saturation-based Reachability -------------------
 
+// ---------------------- MDD Saturation-based Reachability -------------------
 
 mdd_reachability_dfs* mdd_reachability_dfs::getInstance()
 {
@@ -6181,6 +6185,7 @@ int mdd_reachability_dfs::getMxdDifference(int a, int b)
   return mxdDifference->compute(mxdDifferenceOp, a, b);
 }
 
+#endif
 
 // ----------------------- MTMDD Apply operation ----------------------
 

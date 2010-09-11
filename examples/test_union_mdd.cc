@@ -33,7 +33,10 @@
 #include "meddly.h"
 #include "timer.h"
 
-#define TESTING_AUTO_VAR_GROWTH
+//#define TESTING_AUTO_VAR_GROWTH
+
+#define TESTING_UNION_SPEED
+
 
 
 void printUsage(FILE *outputStream)
@@ -107,12 +110,14 @@ int main(int argc, char *argv[])
 #endif
   }
 
+#if 1
   compute_manager* cm = MEDDLY_getComputeManager();
   assert(cm != 0);
-  bool chaining = false;
+  bool chaining = true;
   unsigned cacheSize = 262144u;
   assert(compute_manager::SUCCESS ==
       cm->setHashTablePolicy(chaining, cacheSize));
+#endif
 
   // Create a domain
   domain *d = MEDDLY_createDomain();
@@ -124,6 +129,7 @@ int main(int argc, char *argv[])
       forest::MULTI_TERMINAL);
   assert(states != 0);
 
+#if 0
   assert(forest::SUCCESS ==
       //states->setReductionRule(forest::FULLY_REDUCED));
       states->setReductionRule(forest::QUASI_REDUCED));
@@ -137,6 +143,7 @@ int main(int argc, char *argv[])
     assert(forest::SUCCESS ==
         states->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
   }
+#endif
 
   dd_edge initial_state(states);
 
@@ -144,8 +151,37 @@ int main(int argc, char *argv[])
 
   printf("Started... ");
 
+#ifdef TESTING_UNION_SPEED
+  // Create a dd_edge per element and combine using the UNION operator.
+  dd_edge** ddElements = new dd_edge*[nElements];
+  for (int i = 0; i < nElements; ++i)
+  {
+    ddElements[i] = new dd_edge(states);
+    assert(forest::SUCCESS ==
+        states->createEdge(elements + i, 1, *(ddElements[i])));
+  }
+  // Combine dd_edges
+  int nDDElements = nElements;
+  while (nDDElements > 1) {
+    int nCombinations = nDDElements/2;
+    for (int i = 0; i < nCombinations; i++)
+    {
+      // Combine i and (nDDElements-1-i)
+      (*(ddElements[i])) += (*(ddElements[nDDElements-1-i]));
+      delete ddElements[nDDElements-1-i];
+    }
+    nDDElements = (nDDElements+1)/2;
+  }
+  initial_state = *(ddElements[0]);
+  delete ddElements[0];
+  delete [] ddElements;
+
+#else
+  // Use Meddly's batch addition to combine all elements in one step.
   assert(forest::SUCCESS ==
       states->createEdge(elements, nElements, initial_state));
+
+#endif
 
   start.note_time();
   printf("done. Time interval: %.4e seconds\n",
@@ -156,7 +192,7 @@ int main(int argc, char *argv[])
   initial_state.show(stdout, 2);
 #endif
 
-  printf("Elements in result: %f\n", initial_state.getCardinality());
+  printf("Elements in result: %.4e\n", initial_state.getCardinality());
   printf("Peak Nodes in MDD: %ld\n", states->getPeakNumNodes());
   printf("Nodes in compute table: %ld\n",
       (MEDDLY_getComputeManager())->getNumCacheEntries());

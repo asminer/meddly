@@ -13,6 +13,8 @@ libops_la_SOURCES = \
 	../compute_cache.h \
 	operation_ext.h \
 	operation_ext.cc \
+	reachability.cc \
+	reachability.h \
 	operation.cc \
   mpz_object.h \
   mpz_object.cc \

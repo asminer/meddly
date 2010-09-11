@@ -23,7 +23,7 @@
 #include "compute_cache.h"
 
 
-const float expansionFactor = 1.25;
+const float expansionFactor = 1.5;
 
 
 /* compute cache methods */

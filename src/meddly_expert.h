@@ -69,8 +69,9 @@
 #endif
 
 // Functions for reinterpreting an int to a float and vice-versa
-inline float  toFloat(int a) { union { int i; float f; } n = {a}; return n.f; }
-inline int    toInt(float a) { union { float f; int i; } n = {a}; return n.i; }
+float   toFloat (int a);
+int     toInt   (float a);
+float*  toFloat (int* a);
 
 
 // Forward declarations
@@ -287,6 +288,11 @@ class expert_forest : public forest
     /// Get the edge value at the given index -- only for Sparse nodes
     void getSparseNodeEdgeValue(int node, int index, int& ev) const;
     void getSparseNodeEdgeValue(int node, int index, float& ev) const;
+
+    bool getDownPtrs(int node, const int*& dptrs) const;
+    bool getSparseNodeIndexes(int node, const int*& indexes) const;
+    bool getEdgeValues(int node, const float*& edgeValues) const;
+    bool getEdgeValues(int node, const int*& edgeValues) const;
 
     /// Increase the link count to this node. Call this when another node is
     /// made to point (down-pointer) to this node.
@@ -1969,6 +1975,52 @@ void expert_forest::setEdgeValue(int node, int index, float ev)
 
 
 inline
+bool expert_forest::getDownPtrs(int node, const int*& dptrs) const
+{
+  DCASSERT(isReducedNode(node));
+  if (isTerminalNode(node)) return false;
+  dptrs = isFullNode(node)
+    ? getNodeAddress(node) + 3
+    : getNodeAddress(node) + 3 + getSparseNodeSize(node);
+  return true;
+}
+
+
+inline
+bool expert_forest::getSparseNodeIndexes(int node, const int*& indexes) const
+{
+  DCASSERT(isSparseNode(node));
+  if (!isSparseNode(node)) return false;
+  indexes = getNodeAddress(node) + 3;
+  return true;
+}
+
+
+inline
+bool expert_forest::getEdgeValues(int node, const int*& evs) const
+{
+  DCASSERT(isReducedNode(node));
+  if (isTerminalNode(node)) return false;
+  evs = isFullNode(node)
+    ? getNodeAddress(node) + 3 + getFullNodeSize(node)
+    : getNodeAddress(node) + 3 + (getSparseNodeSize(node) * 2);
+  return true;
+}
+
+
+inline
+bool expert_forest::getEdgeValues(int node, const float*& evs) const
+{
+  DCASSERT(isReducedNode(node));
+  if (isTerminalNode(node)) return false;
+  evs = toFloat(isFullNode(node)
+    ? getNodeAddress(node) + 3 + getFullNodeSize(node)
+    : getNodeAddress(node) + 3 + (getSparseNodeSize(node) * 2));
+  return true;
+}
+
+
+inline
 int expert_forest::getFullNodeDownPtr(int p, int i) const
 {
   DCASSERT(isFullNode(p));
@@ -2267,6 +2319,27 @@ inline
 bool expert_forest::isEvtimesMdd() const {
   return !isForRelations() &&
          getEdgeLabeling() == forest::EVTIMES;
+}
+
+
+inline
+float toFloat(int a) {
+  union { int i; float f; } n = {a};
+  return n.f;
+}
+
+
+inline
+int toInt(float a) {
+  union { float f; int i; } n = {a};
+  return n.i;
+}
+
+
+inline
+float* toFloat(int* a) {
+  union { int* i; float* f; } n = {a};
+  return n.f;
 }
 
 
