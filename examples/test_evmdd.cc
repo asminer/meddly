@@ -430,9 +430,27 @@ int main(int argc, char *argv[])
   printf("Time interval: %.4e seconds\n",
       start.get_last_interval()/1000000.0);
 
-  printf("MDD: ");
-  mddResult.show(stdout, 2);
+  printf("\nMDD:\n");
 
+#if 1
+  // print the elements
+  {
+    dd_edge::iterator iter = mddResult.begin();
+    while (iter != mddResult.end()) {
+      const int* elem = iter.getAssignments();
+      int val = 0;
+      iter.getValue(val);
+      printf("[");
+      for (int i = 1; i < nVariables; i++) {
+        printf("%d ", elem[i]);
+      }
+      printf("%d]: %d\n", elem[nVariables], val);
+      ++iter;
+    }
+  }
+#endif
+
+  printf("MDD Cardinality: %1.6e\n", mddResult.getCardinality());
   printf("Peak Nodes in MDD: %ld\n", mdd->getPeakNumNodes());
   printf("Entries in compute table: %ld\n",
       (MEDDLY_getComputeManager())->getNumCacheEntries());
@@ -447,21 +465,23 @@ int main(int argc, char *argv[])
   assert(compute_manager::SUCCESS ==
       cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mddResult, indexSet));
 
-  printf("Index Set: ");
+  printf("\nIndex Set (EV+MDD):\n");
 
-#if 0
+#if 1
   // print the elements
-  dd_edge::iterator iter = indexSet.begin();
-  while (iter != indexSet.end()) {
-    const int* elem = iter.getAssignments();
-    int val = 0;
-    iter.getValue(val);
-    printf("[");
-    for (int i = 1; i < nVariables; i++) {
-      printf("%d ", elem[i]);
+  {
+    dd_edge::iterator iter = indexSet.begin();
+    while (iter != indexSet.end()) {
+      const int* elem = iter.getAssignments();
+      int val = 0;
+      iter.getValue(val);
+      printf("[");
+      for (int i = 1; i < nVariables; i++) {
+        printf("%d ", elem[i]);
+      }
+      printf("%d]: %d\n", elem[nVariables], val);
+      ++iter;
     }
-    printf("%d]: %d\n", elem[nVariables], val);
-    ++iter;
   }
 #endif
 
@@ -472,6 +492,7 @@ int main(int argc, char *argv[])
 
 #endif
 
+  printf("\n");
   // Cleanup; in this case simply delete the domain
   delete d;
 
