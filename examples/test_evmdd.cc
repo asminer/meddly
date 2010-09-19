@@ -39,6 +39,7 @@
 // Timer class
 #include "timer.h"
 
+#define TEST_INDEX_SET
 #define USE_SEQUENTIAL_PLUS 0
 #define USE_RANDOM_GENERATOR_BOUND 0
 #define USE_SERIAL_TERMS 0
@@ -432,8 +433,8 @@ int main(int argc, char *argv[])
   printf("MDD: ");
   mddResult.show(stdout, 2);
 
-  printf("Peak Nodes in MDD: %d\n", mdd->getPeakNumNodes());
-  printf("Entries in compute table: %d\n",
+  printf("Peak Nodes in MDD: %ld\n", mdd->getPeakNumNodes());
+  printf("Entries in compute table: %ld\n",
       (MEDDLY_getComputeManager())->getNumCacheEntries());
 
   // Create a EV+MDD forest in this domain (to store index set)
@@ -446,27 +447,27 @@ int main(int argc, char *argv[])
   assert(compute_manager::SUCCESS ==
       cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mddResult, indexSet));
 
+  printf("Index Set: ");
+
 #if 0
-  int* elements = (int *) malloc((nVariables + 1) * sizeof(int));
-  double cardinality = indexSet.getCardinality();
-  for (int index = 0; index < int(cardinality); index++)
-  {
-    assert(forest::SUCCESS == evplusmdd->getElement(indexSet, index, elements));
-    printf("Element at index %d: [ ", index);
-    for (int i = nVariables; i > 0; i--)
-    {
-      printf("%d ", elements[i]);
+  // print the elements
+  dd_edge::iterator iter = indexSet.begin();
+  while (iter != indexSet.end()) {
+    const int* elem = iter.getAssignments();
+    int val = 0;
+    iter.getValue(val);
+    printf("[");
+    for (int i = 1; i < nVariables; i++) {
+      printf("%d ", elem[i]);
     }
-    printf("]\n");
+    printf("%d]: %d\n", elem[nVariables], val);
+    ++iter;
   }
-  free(elements);
 #endif
 
-  printf("Index Set: ");
-  indexSet.show(stdout, 2);
-
-  printf("Peak Nodes in Index Set: %d\n", evplusmdd->getPeakNumNodes());
-  printf("Entries in compute table: %d\n",
+  printf("Index Set Cardinality: %1.6e\n", indexSet.getCardinality());
+  printf("Peak Nodes in Index Set: %ld\n", evplusmdd->getPeakNumNodes());
+  printf("Entries in compute table: %ld\n",
       (MEDDLY_getComputeManager())->getNumCacheEntries());
 
 #endif

@@ -1366,6 +1366,30 @@ bool dd_edge::iterator::operator==(const iterator& iter) const
 }
 
 
+void dd_edge::iterator::getValue(int& val) const
+{
+  if (e == 0 || nodes[0] == 0) return;
+  if (e->parent->getEdgeLabeling() == forest::MULTI_TERMINAL)
+    val = nodes[0];
+  else {
+    // return the value using evaluate
+    e->parent->evaluate(*e, element, val);
+  }
+}
+
+
+void dd_edge::iterator::getValue(float& val) const
+{
+  if (e == 0 || nodes[0] == 0) return;
+  if (e->parent->getEdgeLabeling() == forest::MULTI_TERMINAL)
+    val = toFloat(nodes[0]);
+  else {
+    // return the value using evaluate
+    e->parent->evaluate(*e, element, val);
+  }
+}
+
+
 const int* dd_edge::iterator::getAssignments() const
 {
   return e == 0

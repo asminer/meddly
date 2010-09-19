@@ -36,6 +36,25 @@
 //#define TESTING_AUTO_VAR_GROWTH
 
 #define TESTING_UNION_SPEED
+#define BUILD_INDEX_SET
+#define CHECK_ELEMENTS
+
+#define VERBOSE
+
+#define CACHE_SIZE 262144u
+
+void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
+{
+  compute_manager* cm = MEDDLY_getComputeManager();
+  assert(compute_manager::SUCCESS ==
+      cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mdd, indexSet));
+
+#if 1
+  indexSet.show(stdout, 3);
+#else
+  indexSet.show(stdout, 1);
+#endif
+}
 
 
 
@@ -86,15 +105,14 @@ int main(int argc, char *argv[])
       assert(elements[i][j] >= 0 && elements[i][j] < variableBound);
     }
     // print element[i]
-    if (false)
+#ifdef VERBOSE
+    printf("Element %d: [%d", i, elements[i][0]);
+    for (int j = 1; j <= nVariables; ++j)
     {
-      printf("Element %d: [%d", i, elements[i][0]);
-      for (int j = 1; j <= nVariables; ++j)
-      {
-        printf(" %d", elements[i][j]);
-      }
-      printf("]\n");
+      printf(" %d", elements[i][j]);
     }
+    printf("]\n");
+#endif
   }
 
   // initialize the variable bounds array to provide to the domain
@@ -110,11 +128,11 @@ int main(int argc, char *argv[])
 #endif
   }
 
-#if 1
+#ifdef CACHE_SIZE
   compute_manager* cm = MEDDLY_getComputeManager();
   assert(cm != 0);
   bool chaining = true;
-  unsigned cacheSize = 262144u;
+  unsigned cacheSize = CACHE_SIZE;
   assert(compute_manager::SUCCESS ==
       cm->setHashTablePolicy(chaining, cacheSize));
 #endif
@@ -132,10 +150,10 @@ int main(int argc, char *argv[])
 #if 0
   assert(forest::SUCCESS ==
       //states->setReductionRule(forest::FULLY_REDUCED));
-      states->setReductionRule(forest::QUASI_REDUCED));
+    states->setReductionRule(forest::QUASI_REDUCED));
   assert(forest::SUCCESS ==
       states->setNodeDeletion(forest::OPTIMISTIC_DELETION));
-      // states->setNodeDeletion(forest::PESSIMISTIC_DELETION));
+  // states->setNodeDeletion(forest::PESSIMISTIC_DELETION));
   if (variableBound < 4) {
     assert(forest::SUCCESS ==
         states->setNodeStorage(forest::FULL_STORAGE));
@@ -187,7 +205,7 @@ int main(int argc, char *argv[])
   printf("done. Time interval: %.4e seconds\n",
       start.get_last_interval()/1000000.0);
 
-#if 0
+#ifdef VERBOSE
   printf("\n\nInitial State:\n");
   initial_state.show(stdout, 2);
 #endif
@@ -197,12 +215,41 @@ int main(int argc, char *argv[])
   printf("Nodes in compute table: %ld\n",
       (MEDDLY_getComputeManager())->getNumCacheEntries());
 
+#ifdef BUILD_INDEX_SET
+  // TEST
+  forest* evmdd = d->createForest(false, forest::INTEGER,
+      forest::EVPLUS);
+  assert(evmdd != 0);
+  dd_edge evmdd_states(evmdd);
+  MEDDLY_getComputeManager()->apply(compute_manager::CONVERT_TO_INDEX_SET,
+      initial_state, evmdd_states);
+  evmdd_states.show(stdout, 3);
+
+  dd_edge::const_iterator iter = evmdd_states.begin();
+  int currentIndex = 0;
+  while (iter != evmdd_states.end()) {
+    const int* elem = iter.getAssignments();
+    printf("%d: [", currentIndex++);
+    for (int i = 1; i < nVariables; i++) {
+      printf("%d ", elem[i]);
+    }
+    int elemTerm = 0;
 #if 0
+    evmdd->evaluate(evmdd_states, elem, elemTerm);
+#else
+    iter.getValue(elemTerm);
+#endif
+    printf("%d] = %d\n", elem[nVariables], elemTerm);
+    ++iter;
+  }
+#endif
+
+#ifdef VERBOSE
   printf("\n\nForest Info:\n");
   states->showInfo(stdout);
 #endif
 
-#if 0
+#ifdef CHECK_ELEMENTS
   // make sure all the elements are in there
   for (int i = 0; i < nElements; ++i)
   {

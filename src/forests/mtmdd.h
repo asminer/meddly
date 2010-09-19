@@ -466,7 +466,6 @@ int mtmdd_node_manager::inPlaceSort(int level, int begin, int end)
   }
 
   // Prepare arrays (expand them as necessary and clear them as necessary).
-  // TODO: move the array definitions and initialization out of here.
   expandCountAndSlotArrays(max + 1 - min);
 
 #ifdef DEVELOPMENT_CODE
@@ -491,7 +490,9 @@ int mtmdd_node_manager::inPlaceSort(int level, int begin, int end)
   // We have the correct bucket sizes, now move items into
   // appropriate buckets.
 
+  assert(termList);
   T* terms = (T*)termList;
+  assert(terms);
   
   for (int i = min; i < max; ++i) {
     // Move elements in bucket i to the correct slots.
@@ -517,7 +518,7 @@ int mtmdd_node_manager::inPlaceSort(int level, int begin, int end)
         DCASSERT(c[elemIndex] > 0);
         CHECK_RANGE(begin, s[elemIndex], end);
         SWAP(list[s[i]], list[s[elemIndex]]);
-        if (terms) { SWAP(terms[s[i]], terms[s[elemIndex]]); }
+        SWAP(terms[s[i]], terms[s[elemIndex]]);
         --c[elemIndex];
         ++s[elemIndex];
         // list[s[elemIndex]] now contains the correct element.

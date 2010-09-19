@@ -1018,6 +1018,8 @@ class dd_edge {
         bool operator==(const iterator& iter) const;
         const int* getAssignments() const;
         const int* getPrimedAssignments() const;
+        void getValue(int& edgeValue) const;
+        void getValue(float& edgeValue) const;
 
 // #ifdef ROW_COL_ITERATOR
         iterator(dd_edge* e, bool isRow, const int* minterm);

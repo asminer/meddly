@@ -57,12 +57,10 @@ mtmdd_node_manager::mtmdd_node_manager(domain *d,
 
 mtmdd_node_manager::~mtmdd_node_manager()
 {
-#if 1
   if (list) free(list);
   if (termList) free(termList);
   if (count) free(count);
   if (slot) free(slot);
-#endif
 }
 
 

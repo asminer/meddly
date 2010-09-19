@@ -359,7 +359,7 @@ int main(int argc, char *argv[])
   printf("Nodes in compute table: %ld\n",
       (MEDDLY_getComputeManager())->getNumCacheEntries());
 
-  result.show(stdout, 1);
+  result.show(stdout, 2);
 
   // Use iterator to display elements
   if (true) {
