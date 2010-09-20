@@ -54,7 +54,7 @@ class cardinality_op : public operation {
 
   protected:
     inline compute_manager::error 
-    type_check(const op_info* owner, bool mdd, op_param::type p1type) 
+    type_check(const op_info* owner, op_param::type p1type) 
     {
         if (owner == 0)
           return compute_manager::UNKNOWN_OPERATION;
@@ -62,7 +62,7 @@ class cardinality_op : public operation {
           return compute_manager::TYPE_MISMATCH;
         if (owner->nParams != 2)
           return compute_manager::WRONG_NUMBER;
-        if (owner->p[0].isMdd()!=mdd || owner->p[1].getType() != p1type)
+        if (owner->p[1].getType() != p1type)
           return compute_manager::TYPE_MISMATCH;
         return compute_manager::SUCCESS;
     }
@@ -120,7 +120,9 @@ class mdd_int_card : public cardinality_op {
         const int *entryData) const;
 
     virtual compute_manager::error typeCheck(const op_info* owner) {
-      return type_check(owner, true, op_param::INTEGER);
+      if (owner->p[0].getForest()->isForRelations())
+        return compute_manager::TYPE_MISMATCH;
+      return type_check(owner, op_param::INTEGER);
     }
 
     virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
@@ -245,7 +247,9 @@ class mdd_real_card : public cardinality_op {
         const int *entryData) const;
 
     virtual compute_manager::error typeCheck(const op_info* owner) {
-      return type_check(owner, true, op_param::REAL);
+      if (owner->p[0].getForest()->isForRelations())
+        return compute_manager::TYPE_MISMATCH;
+      return type_check(owner, op_param::REAL);
     }
 
     virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
@@ -364,7 +368,9 @@ class mdd_mpz_card : public cardinality_op {
         const int *entryData) const;
 
     virtual compute_manager::error typeCheck(const op_info* owner) {
-      return type_check(owner, true, op_param::HUGEINT);
+      if (owner->p[0].getForest()->isForRelations())
+        return compute_manager::TYPE_MISMATCH;
+      return type_check(owner, op_param::HUGEINT);
     }
 
     virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
@@ -508,7 +514,9 @@ class mxd_int_card : public cardinality_op {
         const int *entryData) const;
 
     virtual compute_manager::error typeCheck(const op_info* owner) {
-      return type_check(owner, false, op_param::INTEGER);
+      if (!owner->p[0].getForest()->isForRelations())
+        return compute_manager::TYPE_MISMATCH;
+      return type_check(owner, op_param::INTEGER);
     }
 
     virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
@@ -643,7 +651,9 @@ class mxd_real_card : public cardinality_op {
         const int *entryData) const;
 
     virtual compute_manager::error typeCheck(const op_info* owner) {
-      return type_check(owner, false, op_param::REAL);
+      if (!owner->p[0].getForest()->isForRelations())
+        return compute_manager::TYPE_MISMATCH;
+      return type_check(owner, op_param::REAL);
     }
 
     virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
@@ -773,7 +783,9 @@ class mxd_mpz_card : public cardinality_op {
         const int *entryData) const;
 
     virtual compute_manager::error typeCheck(const op_info* owner) {
-      return type_check(owner, false, op_param::HUGEINT);
+      if (!owner->p[0].getForest()->isForRelations())
+        return compute_manager::TYPE_MISMATCH;
+      return type_check(owner, op_param::HUGEINT);
     }
 
     virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
@@ -904,40 +916,28 @@ operation* getCardinalityOperation(const op_param &ft, const op_param &rt)
   if (!ft.isForest()) return 0;
   switch (rt.getType()) {
     case op_param::INTEGER:
-        if (ft.isMdd()) {
-          if (ft.isMT())      return mdd_int_card::getInstance();
-          if (ft.isEVPlus())  return 0;
-          if (ft.isEVTimes()) return 0;
+        if (ft.readForest()->isForRelations()) {
+          return mxd_int_card::getInstance();
         } else {
-          if (ft.isMT())      return mxd_int_card::getInstance();
-          if (ft.isEVPlus())  return 0;
-          if (ft.isEVTimes()) return 0;
+          return mdd_int_card::getInstance();
         }
         return 0;
 
     case op_param::REAL:
-        if (ft.isMdd()) {
-          if (ft.isMT())      return mdd_real_card::getInstance();
-          if (ft.isEVPlus())  return 0;
-          if (ft.isEVTimes()) return 0;
+        if (ft.readForest()->isForRelations()) {
+          return mxd_real_card::getInstance();
         } else {
-          if (ft.isMT())      return mxd_real_card::getInstance();
-          if (ft.isEVPlus())  return 0;
-          if (ft.isEVTimes()) return 0;
+          return mdd_real_card::getInstance();
         }
         return 0;
 
 #ifdef HAVE_LIBGMP
 
     case op_param::HUGEINT:
-        if (ft.isMdd()) {
-          if (ft.isMT())      return mdd_mpz_card::getInstance();
-          if (ft.isEVPlus())  return 0;
-          if (ft.isEVTimes()) return 0;
+        if (ft.readForest()->isForRelations()) {
+          return mxd_mpz_card::getInstance();
         } else {
-          if (ft.isMT())      return mxd_mpz_card::getInstance();
-          if (ft.isEVPlus())  return 0;
-          if (ft.isEVTimes()) return 0;
+          return mdd_mpz_card::getInstance();
         }
         return 0;
 
