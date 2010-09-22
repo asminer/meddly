@@ -28,16 +28,6 @@
 
 //#define USE_GET_VECTOR_DOWN_POINTERS
 
-inline expert_forest* getExpertForest(op_info* op, int index) {
-  return op->p[index].getForest();
-  // return smart_cast<expert_forest*>(op->f[index]);
-}
-
-inline const expert_forest* getExpertForest(const op_info* op, int index) {
-  return op->p[index].readForest();
-  // return smart_cast<const expert_forest*>(op->f[index]);
-}
-
 // ---------------------- MDD Traditional Reachability -------------------
 
 

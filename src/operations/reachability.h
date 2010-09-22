@@ -24,7 +24,7 @@
 #ifndef REACHABILITY_H
 #define REACHABILITY_H
 
-#include "operation_ext.h"
+#include "prepostimage.h"
 #include "../compute_cache.h"
 #include <vector>
 
