@@ -31,6 +31,7 @@
 
 //#define ALT_SATURATE_HELPER
 
+// ---------------------- Forward Reachability -------------------
 
 // Traditional reachability analysis
 class mdd_reachability_bfs : public mdd_mxd_image_operation {
@@ -138,5 +139,24 @@ void mdd_reachability_dfs::clearVector(std::vector<int>& v, unsigned sz) const
     fill(v.begin(), v.end(), 0);
   }
 }
+
+// ---------------------- Backward Reachability -------------------
+
+// Traditional backward reachability analysis
+class mdd_reversereach_bfs : public mdd_mxd_image_operation {
+  public:
+    static mdd_reversereach_bfs* getInstance();
+    int compute(op_info* owner, int a, int b);
+    virtual const char* getName() const { return "Mdd-Mxd Reverse Reachability BFS"; }
+    virtual bool isCommutative() const { return false; }
+
+  protected:
+    mdd_reversereach_bfs();
+    mdd_reversereach_bfs(const mdd_reversereach_bfs& copy);
+    mdd_reversereach_bfs& operator=(const mdd_reversereach_bfs& copy);
+    virtual ~mdd_reversereach_bfs();
+};
+
+
 
 #endif

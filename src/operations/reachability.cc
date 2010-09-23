@@ -821,3 +821,106 @@ int mdd_reachability_dfs::getMxdDifference(int a, int b)
   return mxdDifference->compute(mxdDifferenceOp, a, b);
 }
 
+
+// ------------------ MDD Traditional Backward Reachability ---------------
+
+
+mdd_reversereach_bfs* mdd_reversereach_bfs::getInstance()
+{
+  static mdd_reversereach_bfs instance;
+  return &instance;
+}
+
+
+mdd_reversereach_bfs::mdd_reversereach_bfs()
+{ }
+
+
+mdd_reversereach_bfs::~mdd_reversereach_bfs() {}
+
+
+int mdd_reversereach_bfs::compute(op_info* owner, int mdd, int mxd)
+{
+  // set up aliases
+  DCASSERT(owner->nParams == 3 && owner->p[0] == owner->p[2]);
+  const int nOperands = 3;
+  op_param plist[nOperands] = {owner->p[0], owner->p[0], owner->p[0]};
+  expert_compute_manager* ecm = 
+    smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+  assert(ecm != 0);
+  op_info* unionOp =
+    ecm->getOpInfo(compute_manager::UNION, plist, nOperands);
+  assert(unionOp != 0);
+  plist[1] = owner->p[1];
+  op_info* preImageOp =
+    ecm->getOpInfo(compute_manager::PRE_IMAGE, plist, nOperands);
+  assert(preImageOp != 0);
+  expert_forest* mddNm = getExpertForest(owner, 0);
+
+  // Traditional (breadth-first) reverse reachability analysis
+
+#if 1
+  expert_forest* mxdNm = getExpertForest(owner, 1);
+  dd_edge nsf(mxdNm);
+  mxdNm->linkNode(mxd);
+  nsf.set(mxd, 0, mxdNm->getNodeLevel(mxd));
+  dd_edge reachableStates(mddNm);
+  mddNm->linkNode(mdd);
+  reachableStates.set(mdd, 0, mddNm->getNodeLevel(mdd));
+  dd_edge prevReachableStates(mddNm);
+
+  while(prevReachableStates != reachableStates)
+  {
+    prevReachableStates = reachableStates;
+    // printf("\nPre-Image (mdd:%d, mxd:%d): ",
+    //    reachableStates.getNode(), nsf.getNode());
+    dd_edge preImage(mddNm);
+    ecm->apply(preImageOp, reachableStates, nsf, preImage);
+    // printf("%d\n", preImage.getNode());
+    // preImage.show(stdout, 2);
+    // printf("\nUnion (mdd:%d, mdd:%d): ",
+    //    reachableStates.getNode(), preImage.getNode());
+    ecm->apply(unionOp, reachableStates, preImage, reachableStates);
+    // printf("%d\n", reachableStates.getNode());
+  }
+
+  int result = reachableStates.getNode();
+  mddNm->linkNode(result);
+#else
+
+  mdd_union* unionOpPtr = smart_cast<mdd_union*>(unionOp->op);
+  DCASSERT(unionOpPtr != 0);
+  mdd_post_image* preImageOpPtr =
+    smart_cast<mdd_post_image*>(preImageOp->op);
+  DCASSERT(preImageOpPtr != 0);
+
+  int nsf = mxd;
+  int reachableStates = mdd;
+  int prevReachableStates = 0;
+  int preImage = mdd;
+
+  mddNm->linkNode(reachableStates);
+  mddNm->linkNode(preImage);
+
+  do {
+    int prevPreImage = preImage;
+    preImage = preImageOpPtr->compute(preImageOp, preImage, nsf);
+    mddNm->unlinkNode(prevPreImage);
+
+    prevReachableStates = reachableStates;
+    reachableStates = unionOpPtr->compute(unionOp, reachableStates, preImage);
+    mddNm->unlinkNode(prevReachableStates);
+  } while (reachableStates != prevReachableStates);
+
+  mddNm->unlinkNode(preImage);
+
+  int result = reachableStates;
+  // no need for linkNode(reachableStates) because that has already been
+  // called once.
+
+#endif
+
+  return result;
+}
+
+

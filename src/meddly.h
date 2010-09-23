@@ -1310,12 +1310,15 @@ class compute_manager {
           must be stored in the same forest as the first operand.
           
           Applies to:
-          PRE_IMAGE, POST_IMAGE, REACHABLE_STATES_DFS, REACHABLE_STATES_BFS.
+          PRE_IMAGE, POST_IMAGE, REACHABLE_STATES_DFS, REACHABLE_STATES_BFS,
+          REVERSE_REACHABLE_DFS, REVERSE_REACHABLE_BFS.
       */
       PRE_IMAGE,
       POST_IMAGE,
       REACHABLE_STATES_DFS,
       REACHABLE_STATES_BFS,
+      REVERSE_REACHABLE_DFS,
+      REVERSE_REACHABLE_BFS,
 
       /// Convert MDD to EV+MDD index set
       CONVERT_TO_INDEX_SET

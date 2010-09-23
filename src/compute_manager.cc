@@ -159,6 +159,10 @@ const char* expert_compute_manager::getOperationName(
                      return "Reachable States via Depth-First Search";
     case REACHABLE_STATES_BFS:
                      return "Reachable States via Breadth-First Search";
+    case REVERSE_REACHABLE_DFS:
+                     return "Reverse Reachable States via Depth-First Search";
+    case REVERSE_REACHABLE_BFS:
+                     return "Reverse Reachable States via Breadth-First Search";
     default: return "Unknown operation";
   }
 }
@@ -518,6 +522,10 @@ op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
           case REACHABLE_STATES_BFS:
             // Mdd Reachable states using traditional breadth-first algorithm
             addBuiltinOp(key, mdd_reachability_bfs::getInstance(), plist, N);
+            return &(builtinOpEntries->find(key)->second);
+          case REVERSE_REACHABLE_BFS:
+            // Mdd Reverse reachable states using traditional breadth-first algorithm
+            addBuiltinOp(key, mdd_reversereach_bfs::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           default:
             break;
