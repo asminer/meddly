@@ -307,7 +307,6 @@ dd_edge::iterator dd_edge::begin()
 }
 
 
-//#ifdef ROW_COL_ITERATOR
 dd_edge::iterator dd_edge::beginRow(const int* minterm)
 {
   if (updateNeeded) {
@@ -329,7 +328,6 @@ dd_edge::iterator dd_edge::beginColumn(const int* minterm)
   }
   return iterator(this, false, minterm);
 }
-//#endif
 
 
 dd_edge::iterator dd_edge::end()
@@ -400,8 +398,112 @@ dd_edge::iterator::iterator(dd_edge* e, bool begin)
 }
 
 
-//#ifdef ROW_COL_ITERATOR
+// PRE: minterm[] is stored in pelement[]
+bool dd_edge::iterator::findNextRow(int height)
+{
+  // See if you advance at a lower height
+  // If yes, return true.
+  // Otherwise, pick next index at this height, and find next path.
+  // If no such path exists, try next index until you run out of indexes.
+  // If you run our of indexes return false.
+  // Else, return true.
 
+  if (height == 0) {
+    nodes[0] = 0;
+    return false;
+  }
+
+  DCASSERT(e != 0);
+  DCASSERT(type == COLUMN);
+  expert_forest* f = smart_cast<expert_forest*>(e->parent);
+  DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
+  expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
+
+  int nextHeight = height - 1;
+  int nodeLevel = d->getVariableWithHeight(height);
+
+  if (findNextRow(nextHeight)) return true;
+
+  // Find next available index at the unprimed level
+  // and call findNextRow() until it returns
+  // true or till you run out of indexes.
+
+  // pelement[nodeLevel] stays constant
+  // modify only element[nodeLevel]
+
+  if (nodes[nodeLevel] == 0) {
+    // Previously skipped level.
+    // Since pelement[nodeLevel] cannot be changed,
+    // and since this is a skipped level, element[i] must equal pelement[i].
+    // Therefore, no other indexes are available at this level.
+    DCASSERT(pnodes[nodeLevel] == 0);
+    element[nodeLevel] = 0;
+    return false;
+  }
+
+  DCASSERT(!f->isTerminalNode(nodes[nodeLevel]));
+  DCASSERT(!f->isTerminalNode(pnodes[nodeLevel]));
+
+  bool found = false;
+
+  const int* dptrs = 0;
+  assert(f->getDownPtrs(nodes[nodeLevel], dptrs));
+
+  // Select next index at the primed level
+  if (f->isFullNode(nodes[nodeLevel])) {
+    const int sz = f->getFullNodeSize(nodes[nodeLevel]);
+    for (int i = element[nodeLevel] + 1; i < sz; i++)
+    {
+      if (dptrs[i] != 0) {
+        // explore path
+        // dptrs[i] must be a primed node
+        DCASSERT(f->getNodeLevel(dptrs[i]) == -nodeLevel);
+        int unprimedNode = f->getDownPtr(dptrs[i], pelement[nodeLevel]);
+        if (findFirstRow(nextHeight, unprimedNode)) {
+          DCASSERT(nodes[f->getNodeLevel(unprimedNode)] == unprimedNode);
+          pnodes[nodeLevel] = dptrs[i];
+          element[nodeLevel] = i;
+          found = true;
+          break;
+        }
+      }
+    }
+  }
+  else {
+    DCASSERT(f->isSparseNode(nodes[nodeLevel]));
+    const int sz = f->getSparseNodeSize(nodes[nodeLevel]);
+    const int* iptrs = 0;
+    assert(f->getSparseNodeIndexes(nodes[nodeLevel], iptrs));
+    int i = 0;
+    for ( ; i < sz && iptrs[i] <= element[nodeLevel]; i++);
+    for ( ; i < sz; i++)
+    {
+      DCASSERT(dptrs[i] != 0);
+      // Explore path.
+      // dptrs[i] must be primed.
+      DCASSERT(f->getNodeLevel(dptrs[i]) == -nodeLevel);
+      int unprimedNode = f->getDownPtr(dptrs[i], pelement[nodeLevel]);
+      if (findFirstRow(nextHeight, unprimedNode)) {
+        DCASSERT(nodes[f->getNodeLevel(unprimedNode)] == unprimedNode);
+        pnodes[nodeLevel] = dptrs[i];
+        element[nodeLevel] = iptrs[i];
+        found = true;
+        break;
+      }
+    }
+  }
+
+  if (!found) {
+    element[nodeLevel] = 0;
+    pnodes[nodeLevel] = 0;
+    nodes[nodeLevel] = 0;
+  }
+
+  return found;
+}
+
+
+// PRE: minterm[] is stored in element[]
 bool dd_edge::iterator::findNextColumn(int height)
 {
   // See if you advance at a lower height
@@ -411,68 +513,182 @@ bool dd_edge::iterator::findNextColumn(int height)
   // If you run our of indexes return false.
   // Else, return true.
 
+  if (height == 0) {
+    nodes[0] = 0;
+    return false;
+  }
+
   DCASSERT(e != 0);
   DCASSERT(type == ROW);
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
   DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
   expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
 
-  if (height == 0) {
-    return nodes[0] != 0;
-  }
-
   int nextHeight = height - 1;
+  int nodeLevel = d->getVariableWithHeight(height);
 
-  if (findNextColumn(nextHeight)) {
-    return true;
-  }
+  if (findNextColumn(nextHeight)) return true;
 
-  int level = d->getVariableWithHeight(height);
-  if (nodes[level] == 0) {
-    // This is a reduced node. The only downpointer enabled has already
-    // been enabled. There is also no other index available at the
-    // primed level.
-    pnodes[level] = 0;
-    pelement[level] = 0;
+  // Find next available index at the primed level
+  // and call findNextColumn() until it returns
+  // true or till you run out of indexes.
+
+  // element[nodeLevel] stays constant
+  // modify only pelement[nodeLevel]
+
+  if (nodes[nodeLevel] == 0) {
+    // Previously skipped level.
+    // Since element[nodeLevel] cannot be changed,
+    // and since this is a skipped level, pelement[i] must equal element[i].
+    // Therefore, no other indexes are available at this level.
+    DCASSERT(pnodes[nodeLevel] == 0);
+    pelement[nodeLevel] = 0;
     return false;
   }
 
-#ifdef DEVELOPMENT_CODE
-  // Lower levels should all be 0.
-  for (int i = domain::TERMINALS; i != level; i = d->getVariableAbove(i)) {
-    assert(pnodes[i] == 0);
-    assert(pelement[i] == 0);
-    assert(nodes[i] == 0);
-  }
-#endif
+  DCASSERT(!f->isTerminalNode(nodes[nodeLevel]));
+  DCASSERT(!f->isTerminalNode(pnodes[nodeLevel]));
 
-#if 0
-  INCOMPLETE!!!!!
-  // Move to the next available index at the primed level.
   bool found = false;
-  ++pelement[level];
-  for (int stop = d->getLevelBounds()[level]; pelement[level] < stop;
-      ++pelement[level]) {
-    int dptr = f->getDownPtr(pnodes[level], pelement[level]);
-    if (dptr == 0) continue;
-    if(findFirstColumn(nextHeight, n)) {
-      assert(false);
+
+  const int* dptrs = 0;
+  assert(f->getDownPtrs(pnodes[nodeLevel], dptrs));
+  
+  // Select next index at the primed level
+  if (f->isFullNode(pnodes[nodeLevel])) {
+    const int sz = f->getFullNodeSize(pnodes[nodeLevel]);
+    for (int i = pelement[nodeLevel] + 1; i < sz; i++)
+    {
+      if (dptrs[i] != 0) {
+        // explore path
+        // dptrs[i] must be an unprimed node
+        DCASSERT(f->getNodeLevel(dptrs[i]) >= 0);
+        if (findFirstColumn(nextHeight, dptrs[i])) {
+          DCASSERT(nodes[f->getNodeLevel(dptrs[i])] == dptrs[i]);
+          pelement[nodeLevel] = i;
+          found = true;
+          break;
+        }
+      }
+    }
+  }
+  else {
+    DCASSERT(f->isSparseNode(pnodes[nodeLevel]));
+    const int sz = f->getSparseNodeSize(pnodes[nodeLevel]);
+    const int* iptrs = 0;
+    assert(f->getSparseNodeIndexes(pnodes[nodeLevel], iptrs));
+    int i = 0;
+    for ( ; i < sz && iptrs[i] <= pelement[nodeLevel]; i++);
+    for ( ; i < sz; i++)
+    {
+      DCASSERT(dptrs[i] != 0);
+      // Explore path.
+      // dptrs[i] must be unprimed.
+      DCASSERT(f->getNodeLevel(dptrs[i]) >= 0);
+      if (findFirstColumn(nextHeight, dptrs[i])) {
+        DCASSERT(nodes[f->getNodeLevel(dptrs[i])] == dptrs[i]);
+        pelement[nodeLevel] = iptrs[i];
+        found = true;
+        break;
+      }
     }
   }
 
   if (!found) {
-    nodes[level] = 0;
-    pnodes[level] = 0;
-    pelement[level] = 0;
-    return false;
+    pelement[nodeLevel] = 0;
+    pnodes[nodeLevel] = 0;
+    nodes[nodeLevel] = 0;
   }
-#endif
-  return true;
+
+  return found;
+}
+
+
+// Return true, if a row has been found starting at given level, and
+// the element and node vectors have been filled (at and below given level).
+// PRE: minterm[] have been copied into pelement[]
+bool dd_edge::iterator::findFirstRow(int height, int node)
+{
+  DCASSERT(e != 0);
+  DCASSERT(type == COLUMN);
+  expert_forest* f = smart_cast<expert_forest*>(e->parent);
+  DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
+  expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
+
+  int level = d->getVariableWithHeight(height);
+  int nodeHeight = f->isTerminalNode(node)? 0: f->getNodeHeight(node);
+  int nodeLevel = d->getVariableWithHeight(nodeHeight);
+
+  // Fill skipped levels
+  for (int i = level; i != nodeLevel; i = d->getVariableBelow(i)) {
+    element[i] = pelement[i];
+    nodes[i] = pnodes[i] = 0;
+  }
+
+  if (f->isTerminalNode(node)) {
+    // If terminal zero, then return false.
+    // Fill up the node and element vectors at the terminal level.
+    int i = nodeLevel;
+    element[i] = pelement[i] = pnodes[i] = 0;
+    nodes[i] = node;
+    return node != 0;
+  }
+
+  DCASSERT(height > 0);
+
+  // node must be an unprimed node (based on identity-reduction rule).
+  DCASSERT(f->getNodeLevel(node) > 0);
+
+  // Find the first i such that node[i][pelement[nodeLevel]] != 0
+
+  int nextHeight = height - 1;
+  bool found = false;
+
+  const int* dptrs = 0;
+  if (!f->getDownPtrs(node, dptrs)) return false;
+
+  if (f->isFullNode(node)) {
+    const int sz = f->getFullNodeSize(node);
+    for (int i = 0; i < sz; i++) {
+      if (dptrs[i] != 0) {
+        // explore path
+        int unprimedNode = f->getDownPtr(dptrs[i], pelement[nodeLevel]);
+        if (findFirstRow(nextHeight, unprimedNode)) {
+          // found a path, break
+          nodes[nodeLevel] = node;
+          pnodes[nodeLevel] = dptrs[i];
+          element[nodeLevel] = i;
+          found = true;
+          break;
+        }
+      }
+    }
+  }
+  else {
+    DCASSERT(f->isSparseNode(node));
+    const int sz = f->getSparseNodeSize(node);
+    for (int i = 0; i < sz; i++) {
+      DCASSERT(dptrs[i] != 0);
+      // explore path
+      int unprimedNode = f->getDownPtr(dptrs[i], pelement[nodeLevel]);
+      if (findFirstRow(nextHeight, unprimedNode)) {
+        // found a path, break
+        nodes[nodeLevel] = node;
+        pnodes[nodeLevel] = dptrs[i];
+        element[nodeLevel] = f->getSparseNodeIndex(node, i);
+        found = true;
+        break;
+      }
+    }
+  }
+
+  return found;
 }
 
 
 // Return true, if a column has been found starting at given level, and
 // the element and node vectors have been filled (at and below given level).
+// PRE: minterm[] have been copied into element[]
 bool dd_edge::iterator::findFirstColumn(int height, int node)
 {
   DCASSERT(e != 0);
@@ -491,7 +707,6 @@ bool dd_edge::iterator::findFirstColumn(int height, int node)
     nodes[i] = pnodes[i] = 0;
   }
 
-
   if (f->isTerminalNode(node)) {
     // If terminal zero, then return false.
     // Fill up the node and element vectors at the terminal level.
@@ -506,149 +721,56 @@ bool dd_edge::iterator::findFirstColumn(int height, int node)
   // node must be an unprimed node (based on identity-reduction rule).
   DCASSERT(f->getNodeLevel(node) > 0);
 
-  int pnode = f->getDownPtr(node, element[nodeLevel]);
-  int pindex = -1;
+  // Find the first i such that node[element[nodeLevel]][i] != 0
 
-  // pnode must be a primed node for the same variable as node.
-  DCASSERT(pnode == 0 || f->getNodeLevel(node) == -f->getNodeLevel(pnode));
+  int nextHeight = height - 1;
+  bool found = false;
+  int primedNode = f->getDownPtr(node, element[nodeLevel]);
 
-  // Loop through till findFirstColumn() returns true (i.e. path found)
-  if (pnode != 0) {
-    int nextHeight = height - 1;
-    if (f->isFullNode(pnode)) {
-      for (int i = 0, stop = f->getFullNodeSize(pnode); i != stop; i++) {
-        int dptr = f->getFullNodeDownPtr(pnode, i);
-        if (dptr != 0) {
-          if (findFirstColumn(nextHeight, dptr)) {
-            // Found a non-zero path, break
-            pindex = i;
-            break;
-          }
-        }
-      }
-    }
-    else {
-      DCASSERT(f->isSparseNode(pnode));
-      for (int i = 0, stop = f->getSparseNodeSize(pnode); i != stop; i++) {
-        int dptr = f->getSparseNodeDownPtr(pnode, i);
-        if (findFirstColumn(nextHeight, dptr)) {
-          // Found a non-zero path; break
-          pindex = f->getSparseNodeIndex(pnode, i);
+  const int* dptrs = 0;
+  if (!f->getDownPtrs(primedNode, dptrs)) return false;
+
+  if (f->isFullNode(primedNode)) {
+    // Find first i such that primedNode[i] does not lead to a 0.
+    const int sz = f->getFullNodeSize(primedNode);
+    for (int i = 0; i < sz; i++)
+    {
+      if (dptrs[i] != 0) {
+        // explore path
+        if (findFirstColumn(nextHeight, dptrs[i])) {
+          // found a path, break
+          pnodes[nodeLevel] = primedNode;
+          nodes[nodeLevel] = node;
+          pelement[nodeLevel] = i;
+          found = true;
           break;
         }
       }
     }
-  }
-
-  if (pindex == -1) {
-    // No path
-    nodes[nodeLevel] = pnodes[nodeLevel] =
-      element[nodeLevel] = pelement[nodeLevel] = 0;
-    return false;
-  }
-
-  nodes[nodeLevel] = node;
-  pnodes[nodeLevel] = pnode;
-  pelement[nodeLevel] = pindex;
-  return true;
-}
-
-
-// Return true, if a row has been found starting at given level, and
-// the element and node vectors have been filled (at and below given level).
-bool dd_edge::iterator::findFirstRow(const int* minterm, int height, int node)
-{
-  DCASSERT(e != 0);
-  DCASSERT(type == COLUMN);
-  expert_forest* f = smart_cast<expert_forest*>(e->parent);
-  DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
-  expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
-
-  int level = d->getVariableWithHeight(height);
-  int nodeHeight = f->isTerminalNode(node)? 0: f->getNodeHeight(node);
-  int nodeLevel = d->getVariableWithHeight(nodeHeight);
-
-  // Fill skipped levels
-  for (int i = level; i != nodeLevel; i = d->getVariableBelow(i)) {
-    element[i] = pelement[i] = minterm[i];
-    nodes[i] = pnodes[i] = 0;
-  }
-
-
-  if (f->isTerminalNode(node)) {
-    // If terminal zero, then return false.
-    // Fill up the node and element vectors at the terminal level.
-    int i = nodeLevel;
-    element[i] = pelement[i] = pnodes[i] = 0;
-    nodes[i] = node;
-    return node != 0;
-  }
-
-  DCASSERT(height > 0);
-
-  // node must be an unprimed node (based on identity-reduction rule).
-  DCASSERT(f->getNodeLevel(node) > 0);
-
-  // Find the first i such that node[i][minterm[nodeLevel]] != 0
-
-  int unpindex = -1;
-  int pnode = -1;
-  int pindex = minterm[nodeLevel];
-
-  if (f->isFullNode(node)) {
   }
   else {
-    DCASSERT(f->isSparseNode(node));
-  }
-
-#if 0
-  // Loop through till findFirstRow() returns true (i.e. path found)
-  if (pnode != 0) {
-    int nextHeight = height - 1;
-    if (f->isFullNode(node)) {
-      for (int i = 0, stop = f->getFullNodeSize(node); i != stop; i++) {
-        int dptr = f->getFullNodeDownPtr(node, i);
-        if (dptr != 0) {
-          if (findFirstRow(minterm, nextHeight, dptr)) {
-            // Found a non-zero path, break
-            pindex = i;
-            break;
-          }
-        }
-      }
-    }
-    else {
-      DCASSERT(f->isSparseNode(node));
-      for (int i = 0, stop = f->getSparseNodeSize(node); i != stop; i++) {
-        int dptr = f->getSparseNodeDownPtr(node, i);
-        if (findFirstRow(minterm, nextHeight, dptr)) {
-          // Found a non-zero path; break
-          pindex = f->getSparseNodeIndex(node, i);
-          break;
-        }
+    DCASSERT(f->isSparseNode(primedNode));
+    // Find first i such that primedNode[i] does not lead to a 0.
+    const int sz = f->getSparseNodeSize(primedNode);
+    for (int i = 0; i < sz; i++)
+    {
+      DCASSERT(dptrs[i] != 0);
+      // explore path
+      if (findFirstColumn(nextHeight, dptrs[i])) {
+        // found a path, break
+        pnodes[nodeLevel] = primedNode;
+        nodes[nodeLevel] = node;
+        pelement[nodeLevel] = f->getSparseNodeIndex(primedNode, i);
+        found = true;
+        break;
       }
     }
   }
 
-  if (pindex == -1) {
-    // No path
-    nodes[nodeLevel] = pnodes[nodeLevel] =
-      element[nodeLevel] = pelement[nodeLevel] = 0;
-    return false;
-  }
-
-  nodes[nodeLevel] = node;
-  pnodes[nodeLevel] = pnode;
-  element[nodeLevel] = minterm[nodeLevel];
-  pelement[nodeLevel] = pindex;
-  return true;
-#endif
-  return false;
+  return found;
 }
-//#endif
 
 
-//#ifdef ROW_COL_ITERATOR
 dd_edge::iterator::iterator(dd_edge* e, bool isRow, const int* minterm)
 : e(e), size(0), element(0), nodes(0), pelement(0), pnodes(0)
 {
@@ -684,11 +806,9 @@ dd_edge::iterator::iterator(dd_edge* e, bool isRow, const int* minterm)
     findFirstColumn(topVariable, e->node);
   }
   else {
-    assert(false);
-    // TODO: complete find-first-row
     DCASSERT(COLUMN == type);
     memcpy(pelement, minterm, size * sizeof(int));
-    // findFirstRow(topVariable, e->node);
+    findFirstRow(topVariable, e->node);
   }
 
 #ifdef DEBUG_ITER_BEGIN
@@ -1320,10 +1440,23 @@ void dd_edge::iterator::operator++()
   // find next
   // set element to next
 
-  if (e != 0 && e->node != 0 && type == DEFAULT) {
+  if (e != 0 && e->node != 0) {
     if (e->parent->isForRelations()) {
-      incrRelation();
+      switch (type) {
+        case DEFAULT:
+          incrRelation();
+          break;
+        case ROW:
+          findNextColumn(e->parent->getDomain()->getNumVariables());
+          break;
+        case COLUMN:
+          findNextRow(e->parent->getDomain()->getNumVariables());
+          break;
+        default:
+          break;
+      }
     } else {
+      DCASSERT(type == DEFAULT);
       incrNonRelation();
     }
   }

@@ -1021,16 +1021,11 @@ class dd_edge {
         void getValue(int& edgeValue) const;
         void getValue(float& edgeValue) const;
 
-// #ifdef ROW_COL_ITERATOR
         iterator(dd_edge* e, bool isRow, const int* minterm);
-#if 0
-        bool findFirstColumn(const int* minterm, int height, int node);
-#else
         bool findFirstColumn(int height, int node);
-#endif
-        bool findFirstRow(const int* minterm, int height, int node);
         bool findNextColumn(int height);
-// #endif
+        bool findFirstRow(int height, int node);
+        bool findNextRow(int height);
 
       private:
         friend class dd_edge;
@@ -1061,10 +1056,8 @@ class dd_edge {
     */
     const_iterator begin();
 
-// #ifdef ROW_COL_ITERATOR
     const_iterator beginRow(const int* minterm);
     const_iterator beginColumn(const int* minterm);
-// #endif
 
     /** Returns an iterator just past the last element of the dd_edge.
         This iterator represents the end of the list of elements.
