@@ -698,8 +698,8 @@ int main(int argc, char *argv[])
   if (false) {
     start.note_time();
     unsigned counter = 0;
-    for (dd_edge::const_iterator iter = reachableStates.begin(),
-        endIter = reachableStates.end(); iter != endIter; ++iter, ++counter)
+    for (dd_edge::const_iterator iter = reachableStates.begin();
+        iter; ++iter, ++counter)
     {
       const int* element = iter.getAssignments();
       assert(element != 0);

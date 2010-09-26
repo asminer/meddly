@@ -31,7 +31,7 @@ dd_edge::dd_edge(forest* p)
 : parent(p),
   node(0), value(0), level(0), index(-1),
   opPlus(0), opStar(0), opMinus(0), opDivide(0),
-  updateNeeded(true), beginIterator(0), endIterator(0)
+  updateNeeded(true), beginIterator(0)
 {
   assert(p != NULL);
   smart_cast<expert_forest*>(parent)->registerEdge(*this);
@@ -48,7 +48,6 @@ dd_edge::~dd_edge()
     smart_cast<expert_forest*>(parent)->unregisterEdge(*this);
   }
   if (beginIterator != 0) delete beginIterator;
-  if (endIterator != 0) delete endIterator;
 }
 
 
@@ -57,13 +56,12 @@ dd_edge::dd_edge(const dd_edge& e)
 : parent(e.parent), node(e.node), value(e.value), level(e.level), index(-1),
   opPlus(e.opPlus), opStar(e.opStar),
   opMinus(e.opMinus), opDivide(e.opDivide),
-  updateNeeded(e.updateNeeded), beginIterator(0), endIterator(0)
+  updateNeeded(e.updateNeeded), beginIterator(0)
 {
   smart_cast<expert_forest*>(parent)->registerEdge(*this);
   smart_cast<expert_forest*>(parent)->linkNode(node);
   if (!updateNeeded) {
     beginIterator = new const_iterator(*(e.beginIterator));
-    endIterator = new const_iterator(*(e.endIterator));
   }
 }
 
@@ -91,10 +89,9 @@ dd_edge& dd_edge::operator=(const dd_edge& e)
 
     updateNeeded = e.updateNeeded;
     if (updateNeeded) {
-      beginIterator = 0; endIterator = 0;
+      beginIterator = 0;
     } else {
       beginIterator = new const_iterator(*(e.beginIterator));
-      endIterator = new const_iterator(*(e.endIterator));
     }
   }
   return *this;
@@ -314,9 +311,10 @@ dd_edge::iterator dd_edge::beginRow(const int* minterm)
     updateNeeded = false;
   }
   if (this->parent->isForRelations())
-    return iterator(this, true, minterm);
+    // return iterator(this, true, minterm);
+    return iterator(this, iterator::ROW, minterm);
   else
-    return *endIterator;
+    return iterator();
 }
 
 
@@ -326,29 +324,17 @@ dd_edge::iterator dd_edge::beginColumn(const int* minterm)
     updateIterators();
     updateNeeded = false;
   }
-  return iterator(this, false, minterm);
-}
-
-
-dd_edge::iterator dd_edge::end()
-{
-  if (updateNeeded) {
-    updateIterators();
-    updateNeeded = false;
-  }
-  DCASSERT(endIterator != 0);
-  return *endIterator;
+  // return iterator(this, false, minterm);
+  return iterator(this, iterator::COLUMN, minterm);
 }
 
 
 void dd_edge::updateIterators()
 {
-  // update beginIterator and endIterator
+  // update beginIterator
   if (beginIterator != 0) delete beginIterator;
-  if (endIterator != 0) delete endIterator;
 
-  beginIterator = new iterator(this, true);
-  endIterator = new iterator(this, false);
+  beginIterator = new iterator(this, iterator::DEFAULT, 0);
 }
 
 
@@ -357,11 +343,14 @@ dd_edge::iterator::iterator()
 { }
 
 
-dd_edge::iterator::iterator(dd_edge* e, bool begin)
-: e(e), size(0), element(0), nodes(0), pelement(0), pnodes(0), type(DEFAULT)
+dd_edge::iterator::iterator(dd_edge* e, iter_type t, const int* minterm)
+: e(e), size(0), element(0), nodes(0), pelement(0), pnodes(0), type(t)
 {
   if (e == 0) return;
-  
+  if (type == ROW || type == COLUMN) {
+    if (!e->parent->isForRelations()) return;
+  }
+
   size = e->parent->getDomain()->getNumVariables() + 1;
   element = (int*) malloc(size * sizeof(int));
   nodes = (int*) malloc(size * sizeof(int));
@@ -375,26 +364,124 @@ dd_edge::iterator::iterator(dd_edge* e, bool begin)
     memset(pnodes, 0, size * sizeof(int));
   }
 
-  if (begin) {
-    // do findFirstElement() and set element[] and nodes[]
 #ifdef DEBUG_ITER_BEGIN
-    printf("Begin: [");
-    for (int i = size-1; i > -1; --i)
-    {
-      printf("%d:%d ", nodes[i], element[i]);
-    }
-    printf("]\n");
-#endif
-    ++(*this);
-#ifdef DEBUG_ITER_BEGIN
-    printf("Begin: [");
-    for (int i = size-1; i > -1; --i)
-    {
-      printf("%d:%d ", nodes[i], element[i]);
-    }
-    printf("]\n");
-#endif
+  printf("Begin (nodes, element): [");
+  for (int i = size-1; i > -1; --i)
+  {
+    printf("%d:%d ", nodes[i], element[i]);
   }
+  if (e->parent->isForRelations()) {
+    printf("] --> [");
+    for (int i = size-1; i > -1; --i)
+    {
+      printf("%d:%d ", pnodes[i], pelement[i]);
+    }
+  }
+  printf("]\n");
+#endif
+
+  switch (type) {
+    case DEFAULT:
+      // do findFirstElement() and set element[] and nodes[]
+      ++(*this);
+      break;
+
+    case ROW:
+      memcpy(element, minterm, size * sizeof(int));
+      findFirstColumn(e->parent->getDomain()->getTopVariable(), e->node);
+      break;
+
+    case COLUMN:
+      memcpy(pelement, minterm, size * sizeof(int));
+      findFirstRow(e->parent->getDomain()->getTopVariable(), e->node);
+      break;
+
+    default:
+      break;
+  }
+
+#ifdef DEBUG_ITER_BEGIN
+  printf("Begin (nodes, element): [");
+  for (int i = size-1; i > -1; --i)
+  {
+    printf("%d:%d ", nodes[i], element[i]);
+  }
+  if (e->parent->isForRelations()) {
+    printf("] --> [");
+    for (int i = size-1; i > -1; --i)
+    {
+      printf("%d:%d ", pnodes[i], pelement[i]);
+    }
+  }
+  printf("]\n");
+#endif
+
+}
+
+
+dd_edge::iterator::~iterator()
+{
+  if (e != 0) {
+    free(element);
+    free(nodes);
+    if (pelement != 0) free(pelement);
+    if (pnodes != 0) free (pnodes);
+  }
+}
+
+
+dd_edge::iterator::iterator(const iterator& iter)
+: e(iter.e), size(iter.size),
+  element(0), nodes(0), pelement(0), pnodes(0), type(iter.type)
+{
+  if (e != 0) {
+    element = (int*) malloc(size * sizeof(int));
+    nodes = (int*) malloc(size * sizeof(int));
+    memcpy(element, iter.element, size * sizeof(int));
+    memcpy(nodes, iter.nodes, size * sizeof(int));
+
+    if (e->parent->isForRelations()) {
+      pelement = (int*) malloc(size * sizeof(int));
+      pnodes = (int*) malloc(size * sizeof(int));
+      memcpy(pelement, iter.pelement, size * sizeof(int));
+      memcpy(pnodes, iter.pnodes, size * sizeof(int));
+    }
+  }
+}
+
+
+dd_edge::iterator& dd_edge::iterator::operator=(const iterator& iter)
+{
+  if (this != &iter) {
+    if (e != 0) {
+      free(element);
+      free(nodes);
+      if (pelement != 0) free(pelement);
+      if (pnodes != 0) free(pnodes);
+      e = 0;
+      size = 0;
+      element = nodes = pelement = pnodes = 0;
+      type = DEFAULT;
+    }
+    if (iter.e != 0) {
+      e = iter.e;
+      size = iter.size;
+      type = iter.type;
+
+      element = (int*) malloc(size * sizeof(int));
+      nodes = (int*) malloc(size * sizeof(int));
+      memcpy(element, iter.element, size * sizeof(int));
+      memcpy(nodes, iter.nodes, size * sizeof(int));
+
+      if (e->parent->isForRelations()) {
+        pelement = (int*) malloc(size * sizeof(int));
+        pnodes = (int*) malloc(size * sizeof(int));
+        memcpy(pelement, iter.pelement, size * sizeof(int));
+        memcpy(pnodes, iter.pnodes, size * sizeof(int));
+      }
+    }
+  }
+  return *this;
 }
 
 
@@ -768,142 +855,6 @@ bool dd_edge::iterator::findFirstColumn(int height, int node)
   }
 
   return found;
-}
-
-
-dd_edge::iterator::iterator(dd_edge* e, bool isRow, const int* minterm)
-: e(e), size(0), element(0), nodes(0), pelement(0), pnodes(0)
-{
-  type = isRow? ROW: COLUMN;
-  if (e == 0) return;
-
-  size = e->parent->getDomain()->getNumVariables() + 1;
-  element = (int*) malloc(size * sizeof(int));
-  nodes = (int*) malloc(size * sizeof(int));
-  memset(element, 0, size * sizeof(int));
-  memset(nodes, 0, size * sizeof(int));
-
-  DCASSERT(e->parent->isForRelations());
-
-  pelement = (int*) malloc(size * sizeof(int));
-  pnodes = (int*) malloc(size * sizeof(int));
-  memset(pelement, 0, size * sizeof(int));
-  memset(pnodes, 0, size * sizeof(int));
-
-  // do findFirstElement() and set element[] and nodes[]
-#ifdef DEBUG_ITER_BEGIN
-  printf("Begin: [");
-  for (int i = size-1; i > -1; --i)
-  {
-    printf("%d:%d ", nodes[i], element[i]);
-  }
-  printf("]\n");
-#endif
-
-  int topVariable = e->parent->getDomain()->getTopVariable();
-  if (ROW == type) {
-    memcpy(element, minterm, size * sizeof(int));
-    findFirstColumn(topVariable, e->node);
-  }
-  else {
-    DCASSERT(COLUMN == type);
-    memcpy(pelement, minterm, size * sizeof(int));
-    findFirstRow(topVariable, e->node);
-  }
-
-#ifdef DEBUG_ITER_BEGIN
-  printf("Begin: [");
-  for (int i = size-1; i > -1; --i)
-  {
-    printf("%d:%d ", nodes[i], element[i]);
-  }
-  printf("]\n");
-#endif
-}
-//#endif
-
-
-dd_edge::iterator::~iterator()
-{
-  if (e != 0) {
-    free(element);
-    free(nodes);
-    if (pelement != 0) free(pelement);
-    if (pnodes != 0) free (pnodes);
-  }
-}
-
-
-dd_edge::iterator::iterator(const iterator& iter)
-: e(iter.e), size(iter.size),
-  element(0), nodes(0), pelement(0), pnodes(0), type(iter.type)
-{
-  if (e != 0) {
-    element = (int*) malloc(size * sizeof(int));
-    nodes = (int*) malloc(size * sizeof(int));
-    memcpy(element, iter.element, size * sizeof(int));
-    memcpy(nodes, iter.nodes, size * sizeof(int));
-
-    if (e->parent->isForRelations()) {
-      pelement = (int*) malloc(size * sizeof(int));
-      pnodes = (int*) malloc(size * sizeof(int));
-      memcpy(pelement, iter.pelement, size * sizeof(int));
-      memcpy(pnodes, iter.pnodes, size * sizeof(int));
-    }
-  }
-}
-
-
-dd_edge::iterator& dd_edge::iterator::operator=(const iterator& iter)
-{
-  if (this != &iter) {
-    if (e != 0) {
-      free(element);
-      free(nodes);
-      if (pelement != 0) free(pelement);
-      if (pnodes != 0) free(pnodes);
-      e = 0;
-      size = 0;
-      element = nodes = pelement = pnodes = 0;
-      type = DEFAULT;
-    }
-    if (iter.e != 0) {
-      e = iter.e;
-      size = iter.size;
-      type = iter.type;
-
-      element = (int*) malloc(size * sizeof(int));
-      nodes = (int*) malloc(size * sizeof(int));
-      memcpy(element, iter.element, size * sizeof(int));
-      memcpy(nodes, iter.nodes, size * sizeof(int));
-
-      if (e->parent->isForRelations()) {
-        pelement = (int*) malloc(size * sizeof(int));
-        pnodes = (int*) malloc(size * sizeof(int));
-        memcpy(pelement, iter.pelement, size * sizeof(int));
-        memcpy(pnodes, iter.pnodes, size * sizeof(int));
-      }
-    }
-  }
-  return *this;
-}
-
-
-void dd_edge::iterator::operator--()
-{
-  // find prev
-  // set element to prev
-
-  if (e == 0) return;
-  if (e->node == 0) return;
-
-  if (nodes[0] == 0) {
-    // reached end, find last element in dd_edge
-    assert(false);
-  } else {
-    // find prev element
-    assert(false);
-  }
 }
 
 
@@ -1463,8 +1414,27 @@ void dd_edge::iterator::operator++()
 }
 
 
+void dd_edge::iterator::operator--()
+{
+  // find prev
+  // set element to prev
+
+  if (e == 0) return;
+  if (e->node == 0) return;
+
+  if (nodes[0] == 0) {
+    // reached end, find last element in dd_edge
+    assert(false);
+  } else {
+    // find prev element
+    assert(false);
+  }
+}
+
+
 bool dd_edge::iterator::operator!=(const iterator& iter) const
 {
+#if 0
   DCASSERT((e != iter.e) || (size == iter.size));
 
   // if terminals are different, return true.
@@ -1484,6 +1454,9 @@ bool dd_edge::iterator::operator!=(const iterator& iter) const
                     ? (0 != memcmp(element, iter.element, size) ||
                       0 != memcmp(pelement, iter.pelement, size))
                     : 0 != memcmp(element, iter.element, size);
+#else
+  return !(this->operator==(iter));
+#endif
 }
 
 
@@ -1491,11 +1464,20 @@ bool dd_edge::iterator::operator==(const iterator& iter) const
 {
   DCASSERT((e != iter.e) || (size == iter.size));
 
+#if 0
   // if both terminals are 0 return true.
   // if only one terminal is 0 return false.
   // if neither terminal is 0, return (element == iter.element)
-
   return !(*this != iter);
+#else
+  if (e != iter.e) return false;
+  if (type != iter.type) return false;
+  if (e == 0) return true;
+  if (e->parent->isForRelations()) {
+    if (0 != memcmp(pelement, iter.pelement, size)) return false;
+  }
+  return 0 == memcmp(element, iter.element, size);
+#endif
 }
 
 

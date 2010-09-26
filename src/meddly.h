@@ -1012,6 +1012,7 @@ class dd_edge {
         ~iterator();
         iterator(const iterator& iter);
         iterator& operator=(const iterator& iter);
+        operator bool() const;
         void operator--();
         void operator++();
         bool operator!=(const iterator& iter) const;
@@ -1020,8 +1021,8 @@ class dd_edge {
         const int* getPrimedAssignments() const;
         void getValue(int& edgeValue) const;
         void getValue(float& edgeValue) const;
-
-        iterator(dd_edge* e, bool isRow, const int* minterm);
+        
+        iterator(dd_edge* e, iter_type t, const int* minterm);
         bool findFirstColumn(int height, int node);
         bool findNextColumn(int height);
         bool findFirstRow(int height, int node);
@@ -1029,7 +1030,6 @@ class dd_edge {
 
       private:
         friend class dd_edge;
-        iterator(dd_edge* parent, bool begin);
         void incrNonRelation();
         void incrRelation();
         void incrNonIdentRelation();
@@ -1056,14 +1056,45 @@ class dd_edge {
     */
     const_iterator begin();
 
-    const_iterator beginRow(const int* minterm);
-    const_iterator beginColumn(const int* minterm);
+    /** Returns an iterator to the first element of the dd_edge
+        with minterm as the "from" component of the element
+        (the entire element being from->to).
 
-    /** Returns an iterator just past the last element of the dd_edge.
-        This iterator represents the end of the list of elements.
-        @return         an iterator just past the last element.
+        This iterator can then be used to visit the elements
+        in the DD with the same "from" component.
+        The elements are visited in lexicographic order of the
+        "to" component.
+        
+        This is only valid for DD that store relations.
+
+        If the relation is thought of as a matrix with the Y-axis
+        representing the "from" components and the X-axis representing
+        the "to" components, this iterator is useful for visiting all
+        the "to"s that correspond to a single "from".
+
+        @return         an iterator pointing to the first element.
     */
-    const_iterator end();
+    const_iterator beginRow(const int* minterm);
+
+    /** Returns an iterator to the first element of the dd_edge
+        with minterm as the "to" component of the element
+        (the entire element being to->from).
+
+        This iterator can then be used to visit the elements
+        in the DD with the same "to" component.
+        The elements are visited in lexicographic order of the
+        "from" component.
+        
+        This is only valid for DD that store relations.
+
+        If the relation is thought of as a matrix with the Y-axis
+        representing the "from" components and the X-axis representing
+        the "to" components, this iterator is useful for visiting all
+        the "from"s that correspond to a single "to".
+
+        @return         an iterator pointing to the first element.
+    */
+    const_iterator beginColumn(const int* minterm);
 
     /** Assignment operator.
         @param  e       dd_edge to copy.
@@ -1200,7 +1231,6 @@ class dd_edge {
 
     bool            updateNeeded;
     const_iterator* beginIterator;
-    const_iterator* endIterator;
 };
 
 
@@ -1634,6 +1664,13 @@ inline const dd_edge dd_edge::operator*(const dd_edge& e) const
 inline const dd_edge dd_edge::operator-(const dd_edge& e) const
 {
   return dd_edge(*this) -= e;
+}
+
+
+// Returns true if the iterator points to a valid element.
+inline dd_edge::iterator::operator bool() const
+{
+  return nodes[0] != 0;
 }
 
 

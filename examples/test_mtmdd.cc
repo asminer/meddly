@@ -344,8 +344,8 @@ int main(int argc, char *argv[])
     dd_edge reachableStates(result);
     start.note_time();
     unsigned counter = 0;
-    for (dd_edge::const_iterator iter = reachableStates.begin(),
-        endIter = reachableStates.end(); iter != endIter; ++iter, ++counter)
+    for (dd_edge::const_iterator iter = reachableStates.begin();
+        iter; ++iter, ++counter)
     {
       const int* element = iter.getAssignments();
       const int* curr = element + nVariables;

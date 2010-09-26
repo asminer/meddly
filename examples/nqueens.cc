@@ -275,8 +275,7 @@ int main()
 
   // show one of the solutions
   dd_edge::const_iterator first = solutions.begin();
-  dd_edge::const_iterator endIt = solutions.end();
-  if (first != endIt) {
+  if (first) {
     const int* minterm = first.getAssignments();
     printf("One solution:\n");
     for (int i=1; i<=N; i++) {

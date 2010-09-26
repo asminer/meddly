@@ -380,8 +380,8 @@ int main(int argc, char *argv[])
     dd_edge reachableStates(result);
     start.note_time();
     unsigned counter = 0;
-    for (dd_edge::const_iterator iter = reachableStates.begin(),
-        endIter = reachableStates.end(); iter != endIter; ++iter, ++counter)
+    for (dd_edge::const_iterator iter = reachableStates.begin();
+        iter; ++iter, ++counter)
     {
       const int* element = iter.getAssignments();
       const int* curr = element + nVariables;
@@ -394,18 +394,6 @@ int main(int argc, char *argv[])
     printf("Iterator traversal time (%0.4e elements): %0.4e seconds\n",
         double(counter), start.get_last_interval()/double(1000000.0));
     printf("Cardinality: %0.4e\n", reachableStates.getCardinality());
-    if (true) {
-      dd_edge::const_iterator iter = reachableStates.end();
-      ++iter;
-      const int* element = iter.getAssignments();
-      if (element != 0) {
-        const int* curr = element + nVariables;
-        const int* end = element - 1;
-        printf("%d: [%d", counter, *curr--);
-        while (curr != end) { printf(" %d", *curr--); }
-        printf("]\n");
-      }
-    }
   }
 
 
@@ -436,7 +424,7 @@ int main(int argc, char *argv[])
   // print the elements
   {
     dd_edge::iterator iter = mddResult.begin();
-    while (iter != mddResult.end()) {
+    while (iter) {
       const int* elem = iter.getAssignments();
       int val = 0;
       iter.getValue(val);
@@ -471,7 +459,7 @@ int main(int argc, char *argv[])
   // print the elements
   {
     dd_edge::iterator iter = indexSet.begin();
-    while (iter != indexSet.end()) {
+    while (iter) {
       const int* elem = iter.getAssignments();
       int val = 0;
       iter.getValue(val);

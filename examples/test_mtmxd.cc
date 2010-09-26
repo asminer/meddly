@@ -364,8 +364,8 @@ int main(int argc, char *argv[])
   // Use iterator to display elements
   if (true) {
     unsigned counter = 0;
-    for (dd_edge::const_iterator iter = result.begin(),
-        endIter = result.end(); iter != endIter; ++iter, ++counter)
+    for (dd_edge::const_iterator iter = result.begin();
+        iter; ++iter, ++counter)
     {
       const int* element = iter.getAssignments();
       const int* pelement = iter.getPrimedAssignments();
@@ -394,7 +394,7 @@ int main(int argc, char *argv[])
     const int* curr = 0;
     const int* end = 0;
 
-    while (element != 0) {
+    while (beginIter) {
       // Print minterm
       curr = element + nVariables;
       end = element - 1;
@@ -415,7 +415,7 @@ int main(int argc, char *argv[])
       dd_edge::const_iterator colIter = result.beginRow(element);
       element = colIter.getPrimedAssignments();
 
-      while (element != 0) {
+      while (colIter) {
         curr = element + nVariables;
         end = element - 1;
         printf(" --> [%d", *curr--);
@@ -425,26 +425,29 @@ int main(int argc, char *argv[])
         element = colIter.getPrimedAssignments();
       }
 
-      // Print minterm
-      element = beginIter.getAssignments();
-      curr = element + nVariables;
-      end = element - 1;
-      printf("[%d", *curr--);
-      while (curr != end) { printf(" %d", *curr--); }
-      printf("]\n");
-
       // Print column
+      element = beginIter.getAssignments();
       colIter = result.beginColumn(element);
-      element = colIter.getAssignments();
 
-      while (element != 0) {
+      if (colIter) {
+        // Print minterm
         curr = element + nVariables;
         end = element - 1;
-        printf(" <-- [%d", *curr--);
+        printf("[%d", *curr--);
         while (curr != end) { printf(" %d", *curr--); }
         printf("]\n");
-        ++colIter;
+
         element = colIter.getAssignments();
+
+        while (colIter) {
+          curr = element + nVariables;
+          end = element - 1;
+          printf(" <-- [%d", *curr--);
+          while (curr != end) { printf(" %d", *curr--); }
+          printf("]\n");
+          ++colIter;
+          element = colIter.getAssignments();
+        }
       }
 
       ++beginIter;

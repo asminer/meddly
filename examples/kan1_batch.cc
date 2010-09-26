@@ -367,8 +367,8 @@ int main(int argc, char* argv[])
 
   if (testMTMXDIterator) {
     unsigned counter = 0;
-    for (dd_edge::const_iterator iter = reachableStates.begin(),
-        endIter = reachableStates.end(); iter != endIter; ++iter, ++counter)
+    for (dd_edge::const_iterator iter = reachableStates.begin();
+        iter; ++iter, ++counter)
     {
       const int* element = iter.getAssignments();
       const int* curr = element + N - 1;
@@ -380,8 +380,8 @@ int main(int argc, char* argv[])
     printf("Iterator traversal: %0.4e elements\n", double(counter));
     printf("Cardinality: %0.4e\n", reachableStates.getCardinality());
     counter = 0;
-    for (dd_edge::const_iterator iter = nsf.begin(),
-        endIter = nsf.end(); iter != endIter; ++iter, ++counter)
+    for (dd_edge::const_iterator iter = nsf.begin();
+        iter; ++iter, ++counter)
     {
       const int* element = iter.getAssignments();
       const int* pelement = iter.getPrimedAssignments();

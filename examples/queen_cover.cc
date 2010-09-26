@@ -361,9 +361,8 @@ int main(int argc, const char** argv)
   fprintf(outfile, "%d # Board dimension\n\n", N);
   // show the solutions
   dd_edge::const_iterator iter = solutions.begin();
-  dd_edge::const_iterator endIt = solutions.end();
   long counter;
-  for (counter = 1; iter != endIt; ++iter, ++counter) {
+  for (counter = 1; iter; ++iter, ++counter) {
     fprintf(outfile, "solution %5ld:  ", counter);
     const int* minterm = iter.getAssignments();
     for (int i=0; i<N; i++) for (int j=0; j<N; j++) {

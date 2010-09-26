@@ -227,7 +227,7 @@ int main(int argc, char *argv[])
 
   dd_edge::const_iterator iter = evmdd_states.begin();
   int currentIndex = 0;
-  while (iter != evmdd_states.end()) {
+  while (iter) {
     const int* elem = iter.getAssignments();
     printf("%d: [", currentIndex++);
     for (int i = 1; i < nVariables; i++) {
