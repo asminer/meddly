@@ -1030,9 +1030,11 @@ int doChoice(const moves& m)
       case 15:
       case 16:
       case 17:
-        face f = face(choice % nFaces);
-        direction d = direction(choice / nFaces);
-        printf("Choice: %d, Face: %d, Direction: %d\n", choice, f, d);
+        {
+          face f = face(choice % nFaces);
+          direction d = direction(choice / nFaces);
+          printf("Choice: %d, Face: %d, Direction: %d\n", choice, f, d);
+        }
         assert(compute_manager::SUCCESS ==
             MEDDLY_getComputeManager()->apply(compute_manager::POST_IMAGE,
               result, nsf[choice], temp));

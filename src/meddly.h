@@ -1670,7 +1670,7 @@ inline const dd_edge dd_edge::operator-(const dd_edge& e) const
 // Returns true if the iterator points to a valid element.
 inline dd_edge::iterator::operator bool() const
 {
-  return nodes[0] != 0;
+  return nodes != 0 && nodes[0] != 0;
 }
 
 
