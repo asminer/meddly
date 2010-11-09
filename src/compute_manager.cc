@@ -27,6 +27,7 @@
 #include "operations/cardinality.h"
 #include "operations/maxmin_range.h"
 #include "operations/vect_matr.h"
+#include "operations/cross.h"
 #include "compute_cache.h"
 
 #include "revision.h"
@@ -414,73 +415,18 @@ op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
     addBuiltinOp(key, opera, plist, N);
     return &(builtinOpEntries->find(key)->second);
 
+  } // End of Unary operations
 
-#if 0
-    if (compute_manager::CARDINALITY == op) {
-      operation* opera = getCardinalityOperation(plist[0], plist[1]);
+  if (N == 3) {
+    // binary operations
+    operation* opera = 0;
+    if (CROSS == op) {
+      opera = getCrossOperation(plist[0]);
       if (0==opera) return 0;
       addBuiltinOp(key, opera, plist, N);
       return &(builtinOpEntries->find(key)->second);
     }
-    if (f0->isMdd()) {
-      if (f1->isEvplusMdd()) {
-        if (op == compute_manager::CONVERT_TO_INDEX_SET) {
-          // MDD to index set represented using EV+MDD
-          addBuiltinOp(key, mdd_to_evplusmdd_index_set::getInstance(),
-              plist, N);
-          return &(builtinOpEntries->find(key)->second);
-        }
-      }
-      else if (f1->isMtMdd()) {
-        if (op == compute_manager::COPY) {
-        // MDD to MTMDD
-        // terminal true == 1, terminal false == 0
-        addBuiltinOp(key, mdd_to_mtmdd::getInstance(), plist, N);
-        return &(builtinOpEntries->find(key)->second);
-        }
-      }
-    }
-    else if (f0->isMtMdd()) {
-      if (op == compute_manager::COPY) {
-        if (f1->isMdd()) {
-          // MTMDD to MDD
-          // terminal 0 == false, !0 == true
-          addBuiltinOp(key, mtmdd_to_mdd::getInstance(), plist, N);
-          return &(builtinOpEntries->find(key)->second);
-        }
-        else if (f1->getEdgeLabeling() == forest::EVPLUS ||
-            f1->getEdgeLabeling() == forest::EVTIMES) {
-          // MTMDD to EVMDD (works for both EVPLUS and EVTIMES)
-          // terminal 0 == false, !0 == true
-          addBuiltinOp(key, mtmdd_to_evmdd::getInstance(), plist, N);
-          return &(builtinOpEntries->find(key)->second);
-        }
-      }
-    }
-    else if (f0->isMxd()) {
-      if (f1->isMtMxd()) {
-        if (op == compute_manager::COPY) {
-          // MXD to MTMXD
-          // terminal true == 1, terminal false == 0
-          addBuiltinOp(key, mxd_to_mtmxd::getInstance(), plist, N);
-          return &(builtinOpEntries->find(key)->second);
-        }
-      }
-    }
-    else if (f0->isMtMxd()) {
-      if (f1->isMxd()) {
-        if (op == compute_manager::COPY) {
-          // MTMXD to MXD
-          // terminal 0 == false, !0 == true
-          addBuiltinOp(key, mtmxd_to_mxd::getInstance(), plist, N);
-          return &(builtinOpEntries->find(key)->second);
-        }
-      }
-    }
-#endif
-  } // End of Unary operations
-  else if (N == 3) {
-    // binary operations
+
     if (f0->isMdd()) {
       if (f1->isMdd() &&
           f2->isMdd()) {

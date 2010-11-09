@@ -1282,6 +1282,13 @@ class compute_manager {
       /// must belong to the same forest.
       COMPLEMENT,
 
+      /// Binary operation.  Combines two functions into a single one,
+      /// where the operands are MDDs and the result is an MXD.
+      /// Specifically, for MDD operands f and g, produces MXD h where
+      /// h(xn, x'n, ..., x1, x'1) = f(xn, ..., x1) * g(x'n, ..., x'1)
+      /// Works for BOOLEAN forests.
+      CROSS,
+
       /// Unary operation for forests with range_type of INTEGER or REAL.
       /// Return the largest value returned by the function.
       MAX_RANGE,

@@ -77,6 +77,7 @@ float*  toFloat (int* a);
 // Forward declarations
 class operation;
 class compute_cache;
+class expert_domain;
 
 
 class expert_forest : public forest
@@ -99,6 +100,10 @@ class expert_forest : public forest
 
     /// Returns a non-modifiable pointer to this forest's domain.
     const domain* getDomain() const;
+
+    inline const expert_domain* getExpertDomain() const {
+      return (expert_domain*) getDomain();
+    }
 
     /// Returns a modifiable pointer to this forest's domain.
     domain* useDomain();
@@ -947,6 +952,7 @@ class op_param {
     bool operator<(const op_param& a) const;
     bool operator>(const op_param& a) const;
     // for convenience
+    bool isForestOf(bool r, forest::range_type t, forest::edge_labeling e) const;
     bool isMxd() const;
     bool isMdd() const;
     bool isMT() const;
@@ -1341,6 +1347,14 @@ bool op_param::operator>(const op_param& p) const
   if (my_type > p.my_type) return true;
   if (my_type < p.my_type) return false;
   return f > p.f;
+}
+
+inline
+bool op_param::isForestOf(bool r, forest::range_type t, forest::edge_labeling e) const
+{
+  return  (f->isForRelations() == r)  &&
+          (f->getRangeType() == t)    &&
+          (f->getEdgeLabeling() == e);
 }
 
 inline

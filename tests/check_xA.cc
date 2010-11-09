@@ -28,7 +28,7 @@
 
 #include "meddly.h"
 
-const int vars[] = {0, 10, 10, 10};
+const int vars[] = {10, 10, 10};
 
 compute_manager* CM;
 
