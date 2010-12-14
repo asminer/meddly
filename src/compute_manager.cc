@@ -355,6 +355,18 @@ op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
     // unary operations
     operation* opera = 0;
     switch (op) {
+        case compute_manager::COMPLEMENT:
+            if (f0->isMdd()) {
+              if (f1->isMdd()) {
+                opera = mdd_complement::getInstance();
+              }
+            } else if (f0->isMxd()) {
+              if (f1->isMxd()) {
+                opera = mxd_complement::getInstance();
+              }
+            }
+            break;
+
         case compute_manager::CARDINALITY:
             opera = getCardinalityOperation(plist[0], plist[1]);
             break;
@@ -469,9 +481,18 @@ op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
             // Mdd Reachable states using traditional breadth-first algorithm
             addBuiltinOp(key, mdd_reachability_bfs::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
+#if 0
           case REVERSE_REACHABLE_BFS:
-            // Mdd Reverse reachable states using traditional breadth-first algorithm
-            addBuiltinOp(key, mdd_reversereach_bfs::getInstance(), plist, N);
+            // Mdd Reverse reachable states using traditional
+            // breadth-first algorithm
+            addBuiltinOp(key, mdd_backward_reachability_bfs::getInstance(),
+                plist, N);
+            return &(builtinOpEntries->find(key)->second);
+#endif
+          case REVERSE_REACHABLE_DFS:
+            // Mdd Reverse Reachable states using saturation-based algorithm
+            addBuiltinOp(key, mdd_backward_reachability_dfs::getInstance(),
+                plist, N);
             return &(builtinOpEntries->find(key)->second);
           default:
             break;

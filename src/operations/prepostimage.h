@@ -42,12 +42,6 @@ class mdd_mxd_image_operation : public mdd_apply_operation {
 
     virtual int compute(op_info* owner, int a, int b) = 0;
 
-#if 0
-  protected:
-    virtual bool findResult(op_info* owner, int a, int b, int& c);
-    virtual void saveResult(op_info* owner, int a, int b, int c);
-#endif
-
   private:
     // Disabling this function
     virtual bool checkTerminals(op_info* op, int a, int b, int& c);

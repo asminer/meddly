@@ -94,10 +94,12 @@
 
 #include "meddly.h"
 #include "meddly_expert.h"
+#include "timer.h"
 
 
 const bool testFindFirstElement = false;
 const bool testMTMXDIterator = false;
+const bool testMDDComplement = true;
 
 const int N = 5; // number of machines + 1
 int sizes[N-1] = { 4, 4, 4, 4 };
@@ -289,7 +291,7 @@ int main(int argc, char* argv[])
   assert(mxd != NULL);
 
   // Set up MDD options
-  assert(forest::SUCCESS == mxd->setReductionRule(forest::IDENTITY_REDUCED));
+  assert(forest::SUCCESS == mxd->setReductionRule(forest::QUASI_REDUCED));
   assert(forest::SUCCESS ==
       mxd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
   assert(forest::SUCCESS ==
@@ -320,6 +322,38 @@ int main(int argc, char* argv[])
       MEDDLY_getComputeManager()->apply(compute_manager::REACHABLE_STATES_BFS,
       initialStates, nsf, reachableStates));
   // reachableStates.show(stdout, 3);
+
+  if (testMDDComplement) {
+    dd_edge rsComplement(mdd);
+    timer compTimer;
+    compTimer.note_time();
+    assert(compute_manager::SUCCESS ==
+        MEDDLY_getComputeManager()->apply(compute_manager::COMPLEMENT,
+          reachableStates, rsComplement));
+    compTimer.note_time();
+    printf("\nComplement(RS) took %.4e seconds\n",
+            compTimer.get_last_interval()/1000000.0);
+    reachableStates.show(stdout, 1);
+    rsComplement.show(stdout, 1);
+    dd_edge nsfComplement(mxd);
+    compTimer.note_time();
+    assert(compute_manager::SUCCESS ==
+        MEDDLY_getComputeManager()->apply(compute_manager::COMPLEMENT,
+          nsf, nsfComplement));
+    compTimer.note_time();
+    printf("\nComplement(NSF) took %.4e seconds\n",
+            compTimer.get_last_interval()/1000000.0);
+    nsf.show(stdout, 1);
+    nsfComplement.show(stdout, 1);
+    dd_edge one(mxd);
+    assert(forest::SUCCESS == mxd->createEdge(true, one));
+    compTimer.note_time();
+    dd_edge diff = one - nsf;
+    compTimer.note_time();
+    printf("\nComplement(NSF) using Difference took %.4e seconds\n",
+            compTimer.get_last_interval()/1000000.0);
+    printf("diff %s nsfComplement\n\n", diff == nsfComplement? "==": "!=");
+  }
 
   // Create a EV+MDD forest in this domain (to store index set)
   forest* evplusmdd = d->createForest(false, forest::INTEGER, forest::EVPLUS);

@@ -33,46 +33,6 @@ mdd_mxd_image_operation::mdd_mxd_image_operation()
 mdd_mxd_image_operation::~mdd_mxd_image_operation() {}
 
 
-#if 0
-bool
-mdd_mxd_image_operation::findResult(op_info* owner, int a, int b, int& c)
-{
-  static int key[2];
-  // create cache entry
-  key[0] = a; key[1] = b;
-
-  const int* cacheEntry = owner->cc->find(owner, const_cast<const int*>(key));
-
-  if (cacheEntry == 0) return false;
-  c = cacheEntry[2];
-  getExpertForest(owner, 2)->linkNode(c);
-  return true;
-}
-
-
-void
-mdd_mxd_image_operation::saveResult(op_info* owner, int a, int b, int c)
-{
-  static int cacheEntry[3];
-
-  // create cache entry
-  cacheEntry[0] = a; cacheEntry[1] = b; cacheEntry[2] = c;
-
-#if 0
-#ifdef DEVELOPMENT_CODE
-  assert(!findResult(owner, cacheEntry[0], cacheEntry[1], cacheEntry[2]));
-#endif
-#endif
-
-  getExpertForest(owner, 0)->cacheNode(cacheEntry[0]);
-  getExpertForest(owner, 1)->cacheNode(cacheEntry[1]);
-  getExpertForest(owner, 2)->cacheNode(cacheEntry[2]);
-
-  owner->cc->add(owner, const_cast<const int*>(cacheEntry));
-}
-#endif
-
-
 bool mdd_mxd_image_operation::checkTerminals(op_info* op,
   int a, int b, int& c)
 {

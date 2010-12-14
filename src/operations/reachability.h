@@ -31,6 +31,9 @@
 
 //#define ALT_SATURATE_HELPER
 
+unsigned getNodeSize(expert_forest* f, int node);
+void clearVector(std::vector<int>& v, unsigned sz);
+
 // ---------------------- Forward Reachability -------------------
 
 // Traditional reachability analysis
@@ -57,7 +60,7 @@ class mdd_reachability_dfs : public mdd_mxd_image_operation {
     virtual const char* getName() const { return "Mdd-Mxd Reachability DFS"; }
     virtual bool isCommutative() const { return false; }
 
-  protected:
+  public:
     mdd_reachability_dfs();
     mdd_reachability_dfs(const mdd_reachability_dfs& copy);
     mdd_reachability_dfs& operator=(const mdd_reachability_dfs& copy);
@@ -93,9 +96,6 @@ class mdd_reachability_dfs : public mdd_mxd_image_operation {
     virtual int getMxdIntersection(int a, int b);
     virtual int getMxdDifference(int a, int b);
 
-    virtual unsigned getNodeSize(expert_forest* f, int node) const;
-    virtual void clearVector(std::vector<int>& v, unsigned sz) const;
-
     op_info*       owner;         // pointer to dfs reachability operation
     expert_forest* ddf;           // MDD forest
     expert_forest* xdf;           // MXD forest
@@ -121,24 +121,52 @@ class mdd_reachability_dfs : public mdd_mxd_image_operation {
     mxd_difference*   mxdDifference;
 };
 
-inline
-unsigned mdd_reachability_dfs::getNodeSize(expert_forest* f, int node) const
-{
-  return unsigned(
-      f->isFullNode(node)
-      ? f->getFullNodeSize(node)
-      : 1 + f->getSparseNodeIndex(node, f->getSparseNodeSize(node) - 1));
-}
 
-inline
-void mdd_reachability_dfs::clearVector(std::vector<int>& v, unsigned sz) const
-{
-  if (sz < v.size()) {
-    fill(v.begin(), v.begin() + sz, 0);
-  } else {
-    fill(v.begin(), v.end(), 0);
-  }
-}
+// ---------------------- Backward Reachability -------------------
+
+// Traditional backward reachability analysis
+class mdd_backward_reachability_bfs : public mdd_reachability_bfs {
+  public:
+    static mdd_backward_reachability_bfs* getInstance();
+    int compute(op_info* owner, int a, int b);
+    virtual const char* getName() const {
+      return "Mdd-Mxd Reverse Reachability BFS"; }
+
+#if 0
+  protected:
+    mdd_backward_reachability_bfs();
+    mdd_backward_reachability_bfs(const mdd_backward_reachability_bfs& copy);
+    mdd_backward_reachability_bfs& operator=(
+        const mdd_backward_reachability_bfs& copy);
+    virtual ~mdd_backward_reachability_bfs();
+#endif
+};
+
+
+
+// Traditional backward reachability analysis
+class mdd_backward_reachability_dfs : public mdd_reachability_dfs {
+  public:
+    static mdd_backward_reachability_dfs* getInstance();
+    virtual const char* getName() const {
+      return "Mdd-Mxd Reverse Reachability DFS"; }
+
+    virtual void saturateHelper(int mddLevel, std::vector<int>& mdd) {
+      reverseSaturateHelper(mddLevel, mdd);
+    }
+
+    virtual void reverseSaturateHelper(int mddLevel, std::vector<int>& mdd);
+    virtual int reverseRecFire(int mdd, int mxd);
+
+#if 0
+  protected:
+    mdd_backward_reachability_dfs() : mdd_reachability_dfs() {}
+    mdd_backward_reachability_dfs(const mdd_backward_reachability_dfs& copy);
+    mdd_backward_reachability_dfs& operator=(
+        const mdd_backward_reachability_dfs& copy);
+    virtual ~mdd_backward_reachability_dfs();
+#endif
+};
 
 #if 0
 // Reachability via "saturation" algorithm
@@ -194,23 +222,24 @@ class mtmdd_reachability_dfs : public mdd_reachability_dfs {
 
 
 
-// ---------------------- Backward Reachability -------------------
 
-// Traditional backward reachability analysis
-class mdd_reversereach_bfs : public mdd_mxd_image_operation {
-  public:
-    static mdd_reversereach_bfs* getInstance();
-    int compute(op_info* owner, int a, int b);
-    virtual const char* getName() const { return "Mdd-Mxd Reverse Reachability BFS"; }
-    virtual bool isCommutative() const { return false; }
+inline
+unsigned getNodeSize(expert_forest* f, int node)
+{
+  return unsigned(
+      f->isFullNode(node)
+      ? f->getFullNodeSize(node)
+      : 1 + f->getSparseNodeIndex(node, f->getSparseNodeSize(node) - 1));
+}
 
-  protected:
-    mdd_reversereach_bfs();
-    mdd_reversereach_bfs(const mdd_reversereach_bfs& copy);
-    mdd_reversereach_bfs& operator=(const mdd_reversereach_bfs& copy);
-    virtual ~mdd_reversereach_bfs();
-};
-
-
+inline
+void clearVector(std::vector<int>& v, unsigned sz)
+{
+  if (sz < v.size()) {
+    fill(v.begin(), v.begin() + sz, 0);
+  } else {
+    fill(v.begin(), v.end(), 0);
+  }
+}
 
 #endif
