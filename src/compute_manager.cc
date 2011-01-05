@@ -825,7 +825,7 @@ op_info* expert_compute_manager::getOpInfo(const operation* op,
 
 compute_manager::error 
 expert_compute_manager::vectorMatrixMultiply(double* y, const dd_edge &y_ind,
-                      double* x, const dd_edge &x_ind, const dd_edge &A)
+                      const double* x, const dd_edge &x_ind, const dd_edge &A)
 {
   const expert_forest* const fy = (expert_forest*) y_ind.getForest();
   const expert_forest* const fx = (expert_forest*) x_ind.getForest();
@@ -892,7 +892,7 @@ expert_compute_manager::vectorMatrixMultiply(double* y, const dd_edge &y_ind,
 
 compute_manager::error 
 expert_compute_manager::matrixVectorMultiply(double* y, const dd_edge &y_ind,
-                      const dd_edge &A, double* x, const dd_edge &x_ind)
+                      const dd_edge &A, const double* x, const dd_edge &x_ind)
 {
   const expert_forest* const fy = (expert_forest*) y_ind.getForest();
   const expert_forest* const fA = (expert_forest*) A.getForest();

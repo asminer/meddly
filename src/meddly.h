@@ -1506,7 +1506,7 @@ class compute_manager {
                         TBD: list the possible errors.
     */
     virtual error vectorMatrixMultiply(double* y, const dd_edge &y_ind,
-                      double* x, const dd_edge &x_ind, const dd_edge &A) = 0;
+                  const double* x, const dd_edge &x_ind, const dd_edge &A) = 0;
 
     /**
         Computes y = y + Ax.
@@ -1531,7 +1531,7 @@ class compute_manager {
                         TBD: list the possible errors.
     */
     virtual error matrixVectorMultiply(double* y, const dd_edge &y_ind,
-                      const dd_edge &A, double* x, const dd_edge &x_ind) = 0;
+                  const dd_edge &A, const double* x, const dd_edge &x_ind) = 0;
 
     /** Display compute table information.
         This is primarily for aid in debugging.

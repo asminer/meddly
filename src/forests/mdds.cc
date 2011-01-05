@@ -39,7 +39,7 @@
 #define DONT_USE_FULL 0
 
 #define ENABLE_GC 1
-#define DEBUG_GC
+// #define DEBUG_GC
 // #define ALT_ORPHAN_GC
 #define ENABLE_CACHE_COUNTING 0
 #define ENABLE_IN_COUNTING 0

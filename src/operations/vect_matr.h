@@ -40,7 +40,7 @@ class op_param;
       @return         An appropriate error code.
 */
 compute_manager::error vectorMatrixMult_evplus_mt(
-  const op_param* pt, int ht, double* y, int y_ind, double* x, int x_ind, int A
+  const op_param* pt, int ht, double* y, int y_ind, const double* x, int x_ind, int A
 );
 
 /** Vector matrix multiplication for ev+mdd indexes, ev*mxd matrices.
@@ -57,7 +57,7 @@ compute_manager::error vectorMatrixMult_evplus_mt(
       @return         An appropriate error code.
 */
 compute_manager::error vectorMatrixMult_evplus_evtimes(
-  const op_param* pt, int ht, double* y, int y_ind, double* x, int x_ind, int A
+  const op_param* pt, int ht, double* y, int y_ind, const double* x, int x_ind, int A
 );
 
 
@@ -77,7 +77,7 @@ compute_manager::error vectorMatrixMult_evplus_evtimes(
       @return         An appropriate error code.
 */
 compute_manager::error matrixVectorMult_evplus_mt(
-  const op_param* pt, int ht, double* y, int y_ind, int A, double* x, int x_ind
+  const op_param* pt, int ht, double* y, int y_ind, int A, const double* x, int x_ind
 );
 
 /** Matrix vector multiplication for ev+mdd indexes, ev*mxd matrices.
@@ -94,7 +94,7 @@ compute_manager::error matrixVectorMult_evplus_mt(
       @return         An appropriate error code.
 */
 compute_manager::error matrixVectorMult_evplus_evtimes(
-  const op_param* pt, int ht, double* y, int y_ind, int A, double* x, int x_ind
+  const op_param* pt, int ht, double* y, int y_ind, int A, const double* x, int x_ind
 );
 
 #endif

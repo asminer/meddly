@@ -939,8 +939,8 @@ class op_param {
     void set(long);
     void set(double);
     void set(ct_object &);
-    void set(float*);
-    void set(double*);
+    void set(const float*);
+    void set(const double*);
 
     type getType() const;
     bool isForest() const;
@@ -1057,10 +1057,10 @@ class expert_compute_manager : public compute_manager {
         dd_edge &c);
 
     virtual error vectorMatrixMultiply(double* y, const dd_edge &y_ind,
-                      double* x, const dd_edge &x_ind, const dd_edge &A);
+                      const double* x, const dd_edge &x_ind, const dd_edge &A);
 
     virtual error matrixVectorMultiply(double* y, const dd_edge &y_ind,
-                      const dd_edge &A, double* x, const dd_edge &x_ind);
+                      const dd_edge &A, const double* x, const dd_edge &x_ind);
 
     /** Same as apply(op_code, dd_edge&, dd_edge&, dd_edge&) except with
         op_info.
@@ -1251,14 +1251,14 @@ void op_param::set(ct_object &x)
 }
 
 inline
-void op_param::set(float*)
+void op_param::set(const float*)
 {
   f = 0;
   my_type = FLOATVECT;
 }
 
 inline
-void op_param::set(double*)
+void op_param::set(const double*)
 {
   f = 0;
   my_type = DOUBLEVECT;

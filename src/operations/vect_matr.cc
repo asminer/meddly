@@ -24,7 +24,7 @@
 
 compute_manager::error
 vmprimed_evplus_mt(
-  const op_param* pt, int ht, double* y, int y_ind, double* x, int x_ind, int A
+  const op_param* pt, int ht, double* y, int y_ind, const double* x, int x_ind, int A
 )
 {
   // Handles the primed levels of A
@@ -141,7 +141,7 @@ vmprimed_evplus_mt(
 
 compute_manager::error 
 vectorMatrixMult_evplus_mt(
-  const op_param* pt, int ht, double* y, int y_ind, double* x, int x_ind, int A
+  const op_param* pt, int ht, double* y, int y_ind, const double* x, int x_ind, int A
 )
 {
   // Handles the unprimed levels of A
@@ -370,7 +370,7 @@ vectorMatrixMult_evplus_mt(
 
 compute_manager::error 
 vectorMatrixMult_evplus_evtimes(
-  const op_param* pt, int ht, double* y, int y_ind, double* x, int x_ind, int A
+  const op_param* pt, int ht, double* y, int y_ind, const double* x, int x_ind, int A
 )
 {
   // TBD
@@ -383,7 +383,7 @@ vectorMatrixMult_evplus_evtimes(
 
 compute_manager::error
 mvprimed_evplus_mt(
-  const op_param* pt, int ht, double* y, int y_ind, int A, double* x, int x_ind
+  const op_param* pt, int ht, double* y, int y_ind, int A, const double* x, int x_ind
 )
 {
   // Handles the primed levels of A
@@ -504,7 +504,7 @@ mvprimed_evplus_mt(
 
 compute_manager::error 
 matrixVectorMult_evplus_mt(
-  const op_param* pt, int ht, double* y, int y_ind, int A, double* x, int X_ind
+  const op_param* pt, int ht, double* y, int y_ind, int A, const double* x, int X_ind
 )
 {
   // Handles the unprimed levels of A
@@ -737,7 +737,7 @@ matrixVectorMult_evplus_mt(
 
 compute_manager::error 
 matrixVectorMult_evplus_evtimes(
-  const op_param* pt, int ht, double* y, int y_ind, int A, double* x, int x_ind
+  const op_param* pt, int ht, double* y, int y_ind, int A, const double* x, int x_ind
 )
 {
   // TBD

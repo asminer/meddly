@@ -197,6 +197,7 @@ int mdd_reachability_dfs::compute(op_info* owner, int mdd, int mxd)
   fflush(stdout);
 #endif
 
+#ifdef DEBUG_SPLITS
   for (unsigned i = 0; i < splits.size(); i++) {
     fprintf(stdout, "# of nodes in the next-state function: %1.6e\n",
         double(xdf->getNodeCount(splits[i])));
@@ -206,6 +207,7 @@ int mdd_reachability_dfs::compute(op_info* owner, int mdd, int mxd)
     fprintf(stdout, "# of edges in the next-state function: %1.6e\n",
         double(xdf->getEdgeCount(splits[i], false)));
   }
+#endif
 
   // Saturate the node
   int result = saturate(mdd);
