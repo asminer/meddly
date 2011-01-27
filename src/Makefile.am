@@ -22,6 +22,7 @@ libmeddly_la_SOURCES = \
 	meddly.h \
 	meddly_expert.h \
 	dd_edge.cc \
+	temp_dd_edge.cc \
 	domain.cc \
 	forest.cc \
 	compute_manager.cc \

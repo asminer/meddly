@@ -812,6 +812,78 @@ class expert_domain : public domain {
 };
 
 
+/** A bare-bones class for the construction of temporary dd_edges.
+
+    The motivation behind offering this class is to speed up construction
+    of DDs, especially in the explicit addition of edges to the DD.
+
+    WARNING: THE USER IS COMPLETELY IN CHARGE OF MEMORY ALLOCATION.
+
+    Intended usage:
+    (1) Create an empty temp_dd_edge.
+    (2) Assign it a forest.
+    (3) Assign it to a level handle (-ve for primed levels).
+    (4) If this is a terminal node:
+        (a) Set levelHandle to 0.
+        (b) If MDD or EVMDD, the terminal is assumed to be TRUE.
+        (c) If MTMDD, set terminal value using either iValue or rValue,
+            depending on the range of the MTMDD.
+    (5) If this is a non-terminal node:
+        (a) Set levelHandle != 0.
+        (b) Set size > 0, and allocate memory for downpointer[].
+        (c) If EV+MDD, also allocate memory for iEdgeValue[].
+        (d) If EV*MDD, also allocate memory for rEdgeValue[].
+    (6) All downpointers point to either 0 (null) or other temp_dd_edges.
+    (7) The downpointers may point to any temp_dd_edge as long as they
+        belong to the same forest and maintain the variable ordering of the
+        associated domain.
+    (8) Note that the downpointers DO NOT have to point to distinct
+        temp_dd_edges (i.e. sharing is allowed).
+    (9) The user is in charge of creating, keeping track of and
+        deleting temp_dd_edges. Meddly is not monitoring any of this.
+    
+    (10) When the temp_dd_edge is ready, use convertToDDEdge() to convert
+         to a dd_edge based on the forest's reduction rules.
+         NOTE: The temp_dd_edge is left unchanged and the user is
+         responsible for deleting the temp_dd_edges after this conversion.
+*/
+class temp_dd_edge {
+  public:
+    temp_dd_edge();
+    // Deallocates downpointers[], iEdgeValues[] and rEdgeValues[].
+    // It DOES NOT DEALLOCATE any temp_dd_edges referred to by the
+    // downpointers.
+    ~temp_dd_edge();
+
+    // Adds an element to the temporary dd_edge.
+    // forest::error add(const int* vlist);
+    forest::error add(const int* vlist, const int* vplist);
+
+    // Converts the temporary dd_edge to a reduced dd_edge.
+    // Returns false if conversion fails (please refer to the intended
+    // usage rules listed above).
+    // 
+    // NOTE: The temp_dd_edge is left unchanged and the user is
+    // responsible for deleting the temp_dd_edges after this conversion.
+    //
+    bool convertToDDEdge(dd_edge& e) const;
+
+    int             levelHandle;
+    expert_forest*  forestHandle;
+    long            iValue;
+    double          rValue;
+    int             size;
+    temp_dd_edge**  downpointers;
+    long*           iEdgeValues;
+    double*         rEdgeValues;
+
+  private:
+    bool reduce(int& result) const;
+    bool reduce(std::map<temp_dd_edge*, int>& ct, int zero, int& result) const;
+};
+
+
+
 /** Operation class.
     Abstract base class.
 

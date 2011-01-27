@@ -35,11 +35,12 @@
 
 //#define TESTING_AUTO_VAR_GROWTH
 
-#define TESTING_UNION_SPEED
-#define BUILD_INDEX_SET
-#define CHECK_ELEMENTS
+//#define TESTING_TEMP_DD_EDGES
+//#define TESTING_UNION_SPEED
+//#define BUILD_INDEX_SET
+//#define CHECK_ELEMENTS
 
-#define VERBOSE
+//#define VERBOSE
 
 #define CACHE_SIZE 262144u
 
@@ -169,6 +170,18 @@ int main(int argc, char *argv[])
 
   printf("Started... ");
 
+#ifdef TESTING_TEMP_DD_EDGES
+  printf("Hello World!\n");
+  temp_dd_edge* temp = new temp_dd_edge;
+  temp->forestHandle = static_cast<expert_forest*>(states);
+  temp->levelHandle = nVariables;
+  for (int i = 0; i < nElements; ++i)
+  {
+    temp->add(elements[i], 0);
+  }
+  assert(temp->convertToDDEdge(initial_state));
+  delete temp;
+#else
 #ifdef TESTING_UNION_SPEED
   // Create a dd_edge per element and combine using the UNION operator.
   dd_edge** ddElements = new dd_edge*[nElements];
@@ -199,6 +212,7 @@ int main(int argc, char *argv[])
   assert(forest::SUCCESS ==
       states->createEdge(elements, nElements, initial_state));
 
+#endif
 #endif
 
   start.note_time();
