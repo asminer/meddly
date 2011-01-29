@@ -95,10 +95,17 @@ int main(int argc, char *argv[])
 
   // create the elements randomly
 
+  timer mallocTimer;
+  long mallocTime = 0;
+
   int** elements = (int **) malloc(nElements * sizeof(int *));
   for (int i = 0; i < nElements; ++i)
   {
+    mallocTimer.note_time();
     elements[i] = (int *) malloc((nVariables + 1) * sizeof(int));
+    mallocTimer.note_time();
+    mallocTime += mallocTimer.get_last_interval();
+
     elements[i][0] = 0;
     for (int j = nVariables; j >= 1; --j)
     {
@@ -280,9 +287,16 @@ int main(int argc, char *argv[])
   free(bounds);
   for (int i = 0; i < nElements; ++i)
   {
+    mallocTimer.note_time();
     free(elements[i]);
+    mallocTimer.note_time();
+    mallocTime += mallocTimer.get_last_interval();
   }
   free(elements);
+
+#ifdef VERBOSE
+  printf("Malloc time: %.4e seconds\n", mallocTime/1000000.0);
+#endif
 
   return 0;
 }
