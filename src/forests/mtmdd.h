@@ -45,7 +45,13 @@
 
 #define IN_PLACE_SORT
 
+const int mtmddDataHeaderSize = 4;
+
 class mtmdd_node_manager : public node_manager {
+  // MTMDD data header:
+  // { incount, next (unique table), size, ..., logical address}
+  // Data Header Size: 4
+
   public:
 
     mtmdd_node_manager(domain *d, forest::range_type t);

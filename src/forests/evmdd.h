@@ -47,11 +47,15 @@
 //#define TREE_SORT
 #define IN_PLACE_SORT
 
+const int evplusmddDataHeaderSize = 5;
+const int evtimesmddDataHeaderSize = 4;
+
 int binarySearch(const int* a, int sz, int find);
 
 class evmdd_node_manager : public node_manager {
   public:
-    evmdd_node_manager(domain *d, forest::range_type t, forest::edge_labeling el);
+    evmdd_node_manager(domain *d, forest::range_type t,
+        forest::edge_labeling el, int dataHeaderSize);
     ~evmdd_node_manager();
 
     virtual void getDefaultEdgeValue(int& n) const { n = INF; }
@@ -174,10 +178,15 @@ class evmdd_node_manager : public node_manager {
 
 
 class evplusmdd_node_manager : public evmdd_node_manager {
+  // EV+MDD data header:
+  // { incount, next (unique table), size, ..., cardinality, logical address }
+  // Data Header Size: 5
+
   public:
     evplusmdd_node_manager(domain *d);
     ~evplusmdd_node_manager();
 
+    virtual int createTempNode(int k, int sz, bool clear = true);
     virtual int createTempNode(int lh, std::vector<int>& downPointers,
         std::vector<int>& edgeValues);
 
@@ -208,10 +217,14 @@ class evplusmdd_node_manager : public evmdd_node_manager {
 
 
 class evtimesmdd_node_manager : public evmdd_node_manager {
+  // EV*MDD data header:
+  // { incount, next (unique table), size, ..., logical address }
+  // Data Header Size: 4
+
   public:
     evtimesmdd_node_manager(domain *d);
     ~evtimesmdd_node_manager();
-    
+
     virtual int createTempNode(int lh, std::vector<int>& downPointers,
         std::vector<float>& edgeValues);
 
@@ -427,8 +440,10 @@ void evmdd_node_manager::createSparseNode(int k, int index,
 #endif
 
   // fill in the location with p's address info
+
+  const int nodeSize = getDataHeaderSize() + 3;
   address[p].level = k;
-  address[p].offset = getHole(k, 7 /*4 + 3*/, true);
+  address[p].offset = getHole(k, nodeSize, true);
   address[p].cache_count = 0;
 
 #ifdef DEBUG_MDD_H
@@ -445,7 +460,8 @@ void evmdd_node_manager::createSparseNode(int k, int index,
   T identEv;
   getIdentityEdgeValue(identEv);
   foo[5] = toInt(identEv);        // this is the only ev, set resEv = ev
-  foo[6] = p;                     // pointer to this node in the address array
+  foo[6] = -1;                    // cardinality (-1: not been computed)
+  foo[7] = p;                     // pointer to this node in the address array
 
   resEv = ev;
 
@@ -470,7 +486,7 @@ void evmdd_node_manager::createSparseNode(int k, int index,
     unlinkNode(dptr);
     // code from deleteTempNode(p) adapted to work here
     {
-      makeHole(k, getNodeOffset(p), 7);
+      makeHole(k, getNodeOffset(p), nodeSize);
       freeNode(p);
       if (level[mapLevel(k)].compactLevel) compactLevel(k);
     }

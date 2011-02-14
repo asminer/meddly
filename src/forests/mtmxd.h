@@ -45,8 +45,14 @@
 
 #define IN_PLACE_SORT
 
+const int mtmxdDataHeaderSize = 4;
+
 class mtmxd_node_manager : public node_manager {
   // TODO: mtmxds can only be forest::IDENTITY_REDUCED
+  // MTMDD data header:
+  // { incount, next (unique table), size, ..., logical address}
+  // Data Header Size: 4
+
   public:
 
     mtmxd_node_manager(domain *d, forest::range_type t);

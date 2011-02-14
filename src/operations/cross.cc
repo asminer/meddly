@@ -104,7 +104,7 @@ class cross_op : public operation {
 bool cross_op::
 isEntryStale(const op_info* owner, const int* data)
 {
-  DCASSERT(owner->nParams == 4);
+  DCASSERT(owner->nParams == 3);
   // data[0] is the level number
   return owner->p[0].getForest()->isStale(data[1]) ||
          owner->p[1].getForest()->isStale(data[2]) ||
@@ -114,7 +114,7 @@ isEntryStale(const op_info* owner, const int* data)
 void cross_op::
 discardEntry(op_info* owner, const int* data)
 {
-  DCASSERT(owner->nParams == 4);
+  DCASSERT(owner->nParams == 3);
   // data[0] is the level number
   owner->p[0].getForest()->uncacheNode(data[1]);
   owner->p[1].getForest()->uncacheNode(data[2]);
@@ -125,7 +125,7 @@ void
 cross_op::
 showEntry(const op_info* owner, FILE* strm, const int *data) const
 {
-  DCASSERT(owner->nParams == 2);
+  DCASSERT(owner->nParams == 3);
   fprintf(strm, "[%s(%d, %d, %d): %d]",
       owner->op->getName(), data[0], data[1], data[2], data[3]
   );

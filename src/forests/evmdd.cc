@@ -27,16 +27,19 @@
 
 
 evmdd_node_manager
-::evmdd_node_manager(domain *d, forest::range_type t, forest::edge_labeling el)
+::evmdd_node_manager(domain *d, forest::range_type t, forest::edge_labeling el,
+  int dataHeaderSize)
 : node_manager(d, false, t,
       el, forest::FULLY_REDUCED,
-      forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION)
+      forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION,
+      dataHeaderSize)
 {
 }
 
 
 evmdd_node_manager::~evmdd_node_manager()
 { }
+
 
 int evmdd_node_manager::createTempNode(int k, int sz, bool clear)
 {
@@ -57,7 +60,7 @@ int evmdd_node_manager::createTempNode(int k, int sz, bool clear)
 #endif
 
   address[p].level = k;
-  address[p].offset = getHole(k, 4 + 2 * sz, true);
+  address[p].offset = getHole(k, getDataHeaderSize() + 2 * sz, true);
   address[p].cache_count = 0;
 
 #ifdef DEBUG_MDD_H
@@ -233,7 +236,8 @@ forest::error evmdd_node_manager::evaluate(const dd_edge& f, const int* vlist,
 // ********************************* EV+MDDs ********************************** 
 
 evplusmdd_node_manager::evplusmdd_node_manager(domain *d)
-: evmdd_node_manager(d, forest::INTEGER, forest::EVPLUS)
+: evmdd_node_manager(d, forest::INTEGER, forest::EVPLUS,
+  evplusmddDataHeaderSize)
 { }
 
 evplusmdd_node_manager::~evplusmdd_node_manager()
@@ -245,6 +249,59 @@ void evplusmdd_node_manager::initEdgeValues(int p) {
   int *edgeptr = getFullNodeEdgeValues(p);
   int *last = edgeptr + getFullNodeSize(p);
   for ( ; edgeptr != last; ++edgeptr) *edgeptr = INF;
+}
+
+
+int evplusmdd_node_manager::createTempNode(int k, int sz, bool clear)
+{
+  DCASSERT(k != 0);
+  if (isTimeToGc()) { gc(); }
+  CHECK_RANGE(1, mapLevel(k), l_size);
+  DCASSERT(level[mapLevel(k)].data != NULL);
+  CHECK_RANGE(1, sz, getLevelSize(k) + 1);
+  // get a location in address[] to store the node
+  int p = getFreeNode(k);
+
+#ifdef DEBUG_MDD_H
+  printf("%s: k: %d, sz: %d, new p: %d\n", __func__, k, sz, p);
+  fflush(stdout);
+#endif
+
+  // Need 5 locations instead of 4 since we are also storing cardinality
+  // of index sets
+  // address[p].offset = getHole(k, 4 + 2 * sz, true);
+  address[p].level = k;
+  address[p].offset = getHole(k, getDataHeaderSize() + 2 * sz, true);
+  address[p].cache_count = 0;
+
+#ifdef DEBUG_MDD_H
+  printf("%s: offset: %d\n", __func__, address[p].offset);
+  fflush(stdout);
+#endif
+
+  int* foo  = level[mapLevel(k)].data + address[p].offset;
+  *foo++    = 1;            // [0]: #incoming
+  *foo++    = temp_node;    // [1]:
+  *foo++    = sz;           // [2]: size
+  foo       += 2 * sz;      // advance to [3 + sz + sz]
+  *foo++    = -1;           // [3+sz+sz]: cardinality (-1: not been computed)
+  *foo      = p;            // [4+sz+sz]: pointer back to the address array
+
+  // initialize
+  if (clear) {
+    initDownPtrs(p);
+    initEdgeValues(p);
+  }
+
+#ifdef TRACK_DELETIONS
+  cout << "Creating node " << p << "\n";
+  cout.flush();
+#endif
+
+  incrTempNodeCount(k);
+  nodes_activated_since_gc++;
+
+  return p;
 }
 
 
@@ -405,7 +462,7 @@ void evplusmdd_node_manager::normalizeAndReduceNode(int& p, int& ev)
   // right now, tie goes to truncated full.
   if (3*nnz < 2*truncsize) {
     // sparse is better; convert
-    int newoffset = getHole(node_level, 4+3*nnz, true);
+    int newoffset = getHole(node_level, getDataHeaderSize()+3*nnz, true);
     // can't rely on previous dptr, re-point to p
     int* full_ptr = getNodeAddress(p);
     int* sparse_ptr = getAddress(node_level, newoffset);
@@ -437,9 +494,9 @@ void evplusmdd_node_manager::normalizeAndReduceNode(int& p, int& ev)
 #ifdef MEMORY_TRACE
     int saved_offset = getNodeOffset(p);
     setNodeOffset(p, newoffset);
-    makeHole(node_level, saved_offset, 4 + 2 * size);
+    makeHole(node_level, saved_offset, getDataHeaderSize() + 2 * size);
 #else
-    makeHole(node_level, getNodeOffset(p), 4 + 2 * size);
+    makeHole(node_level, getNodeOffset(p), getDataHeaderSize() + 2 * size);
     setNodeOffset(p, newoffset);
 #endif
     // address[p].cache_count does not change
@@ -447,7 +504,7 @@ void evplusmdd_node_manager::normalizeAndReduceNode(int& p, int& ev)
     // full is better
     if (truncsize < size) {
       // truncate the trailing 0s
-      int newoffset = getHole(node_level, 4+2*truncsize, true);
+      int newoffset = getHole(node_level, getDataHeaderSize()+2*truncsize, true);
       // can't rely on previous ptr, re-point to p
       int* full_ptr = getNodeAddress(p);
       int* trunc_ptr = getAddress(node_level, newoffset);
@@ -467,9 +524,9 @@ void evplusmdd_node_manager::normalizeAndReduceNode(int& p, int& ev)
 #ifdef MEMORY_TRACE
       int saved_offset = getNodeOffset(p);
       setNodeOffset(p, newoffset);
-      makeHole(node_level, saved_offset, 4 + 2 * size);
+      makeHole(node_level, saved_offset, getDataHeaderSize() + 2 * size);
 #else
-      makeHole(node_level, getNodeOffset(p), 4 + 2 * size);
+      makeHole(node_level, getNodeOffset(p), getDataHeaderSize() + 2 * size);
       setNodeOffset(p, newoffset);
 #endif
       // address[p].cache_count does not change
@@ -669,8 +726,8 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
 #endif
 
   int largestIndex = index[index.size()-1];
-  int fullNodeSize = (largestIndex + 1) * 2 + 4;
-  int sparseNodeSize = index.size() * 3 + 4;
+  int fullNodeSize = (largestIndex + 1) * 2 + getDataHeaderSize();
+  int sparseNodeSize = index.size() * 3 + getDataHeaderSize();
   int minNodeSize = MIN(fullNodeSize, sparseNodeSize);
 
   // Get a logical address for result (an index in address[]).
@@ -763,7 +820,8 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
 // ********************************* EV*MDDs ********************************** 
 
 evtimesmdd_node_manager::evtimesmdd_node_manager(domain *d)
-: evmdd_node_manager(d, forest::REAL, forest::EVTIMES)
+: evmdd_node_manager(d, forest::REAL, forest::EVTIMES,
+  evtimesmddDataHeaderSize)
 { }
 
 evtimesmdd_node_manager::~evtimesmdd_node_manager()
@@ -947,7 +1005,7 @@ void evtimesmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
   // right now, tie goes to truncated full.
   if (3*nnz < 2*truncsize) {
     // sparse is better; convert
-    int newoffset = getHole(node_level, 4+3*nnz, true);
+    int newoffset = getHole(node_level, getDataHeaderSize()+3*nnz, true);
     // can't rely on previous dptr, re-point to p
     int* full_ptr = getNodeAddress(p);
     int* sparse_ptr = getAddress(node_level, newoffset);
@@ -979,9 +1037,9 @@ void evtimesmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
 #ifdef MEMORY_TRACE
     int saved_offset = getNodeOffset(p);
     setNodeOffset(p, newoffset);
-    makeHole(node_level, saved_offset, 4 + 2 * size);
+    makeHole(node_level, saved_offset, getDataHeaderSize() + 2 * size);
 #else
-    makeHole(node_level, getNodeOffset(p), 4 + 2 * size);
+    makeHole(node_level, getNodeOffset(p), getDataHeaderSize() + 2 * size);
     setNodeOffset(p, newoffset);
 #endif
     // address[p].cache_count does not change
@@ -989,7 +1047,7 @@ void evtimesmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
     // full is better
     if (truncsize < size) {
       // truncate the trailing 0s
-      int newoffset = getHole(node_level, 4+2*truncsize, true);
+      int newoffset = getHole(node_level, getDataHeaderSize()+2*truncsize, true);
       // can't rely on previous ptr, re-point to p
       int* full_ptr = getNodeAddress(p);
       int* trunc_ptr = getAddress(node_level, newoffset);
@@ -1009,9 +1067,9 @@ void evtimesmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
 #ifdef MEMORY_TRACE
       int saved_offset = getNodeOffset(p);
       setNodeOffset(p, newoffset);
-      makeHole(node_level, saved_offset, 4 + 2 * size);
+      makeHole(node_level, saved_offset, getDataHeaderSize() + 2 * size);
 #else
-      makeHole(node_level, getNodeOffset(p), 4 + 2 * size);
+      makeHole(node_level, getNodeOffset(p), getDataHeaderSize() + 2 * size);
       setNodeOffset(p, newoffset);
 #endif
       // address[p].cache_count does not change
@@ -1159,8 +1217,8 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
 #endif
 
   int largestIndex = index[index.size()-1];
-  int fullNodeSize = (largestIndex + 1) * 2 + 4;
-  int sparseNodeSize = index.size() * 3 + 4;
+  int fullNodeSize = (largestIndex + 1) * 2 + getDataHeaderSize();
+  int sparseNodeSize = index.size() * 3 + getDataHeaderSize();
   int minNodeSize = MIN(fullNodeSize, sparseNodeSize);
 
   // Get a logical address for result (an index in address[]).

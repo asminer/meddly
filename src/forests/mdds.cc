@@ -55,9 +55,12 @@ const int add_size = 1024;
 const int l_add_size = 24;
 
 node_manager::node_manager(domain *d, bool rel, range_type t,
-  edge_labeling ev, reduction_rule r, node_storage s, node_deletion_policy nd)
+  edge_labeling ev, reduction_rule r, node_storage s, node_deletion_policy nd,
+  int dataHeaderSize)
 : expert_forest(d, rel, t, ev, r, s, nd)
 {
+  this->dataHeaderSize = dataHeaderSize;
+
   DCASSERT(d != NULL);
   expertDomain = smart_cast<expert_domain*>(d);
   DCASSERT(expertDomain != NULL);
@@ -255,7 +258,8 @@ void node_manager::buildLevelNode(int lh, int* dptrs, int sz)
   DCASSERT(sz > 0);
 
   level[mapLevel(lh)].levelNode = buildLevelNodeHelper(lh, dptrs, sz);
-  DCASSERT(getLevelNode(lh) != 0 && isReducedNode(getLevelNode(lh)));
+  DCASSERT(getLevelNode(lh) != 0 && isReducedNode(getLevelNode(lh)) ||
+      getLevelNode(lh) == 0 && sz == 1 && dptrs[0] == 0);
 }
 
 
@@ -398,7 +402,8 @@ forest::error node_manager::createEdgeForVar(int vh, bool primedLevel,
     int *terminalNodes = getTerminalNodes(getLevelSize(vh));
     buildLevelNode(k, terminalNodes, getLevelSize(vh));
     node = getLevelNode(k);
-    DCASSERT(node != 0);
+    DCASSERT(node != 0 ||
+        node == 0 && getLevelSize(vh) == 1 && terminalNodes[0] == 0);
   }
 
   linkNode(node);
@@ -850,33 +855,14 @@ void node_manager::dumpInternalLevel(FILE *s, int k) const
       a -= data[a];  
     } else {
       // proper node
-      if (data[a+2]>0) {
-        // Full storage
-        if (edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES) {
-          for (int i=0; i<2*data[a+2]; i++) {
-            fprintf(s, "|%d", data[a+3+i]);
-          }
-          a += 4 + 2 * data[a + 2];
-        } else {
-          for (int i=0; i<data[a+2]; i++) {
-            fprintf(s, "|%d", data[a+3+i]);
-          }
-          a += 4 + data[a + 2];
-        }
-      } else {
-        // sparse storage
-        if (edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES) {
-          for (int i=0; i<-3*data[a+2]; i++) {
-            fprintf(s, "|%d", data[a+3+i]);
-          }
-          a += 4 - 3 * data[a + 2];
-        } else {
-          for (int i=0; i<-2*data[a+2]; i++) {
-            fprintf(s, "|%d", data[a+3+i]);
-          }
-          a += 4 - 2 * data[a + 2];
-        }
+      int nElements =
+        data[a + 2] > 0
+        ? (edgeLabel == MULTI_TERMINAL? 1: 2) * data[a + 2]   // Full
+        : -(edgeLabel == MULTI_TERMINAL? 2: 3) * data[a + 2]; // Sparse
+      for (int i=0; i < nElements; i++) {
+        fprintf(s, "|%d", data[a+3+i]);
       }
+      a += getDataHeaderSize() + nElements;
     }
     fprintf(s, "|%d]\n", data[a-1]);
   } // for a
@@ -1373,89 +1359,47 @@ void node_manager::compactLevel(int k)
   int node_size = 0;
   int curr_node = 0;
 
-  if (edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES) {
-    while (node_ptr != end_ptr) {
-      // find new node
-      if (*node_ptr < 0) {
-        // found a hole, advance
-        assert(node_ptr[0] == node_ptr[-(*node_ptr)-1]);
-        node_size = -(*node_ptr);
-        memset(node_ptr, 0, node_size * sizeof(int));
-      } else {
-        // found an existing node
-        if (isPessimistic()) assert(*node_ptr != 0);
+  int sparseMultiplier = edgeLabel != forest::MULTI_TERMINAL? -3: -2;
+  int fullMultiplier = edgeLabel != forest::MULTI_TERMINAL? 2: 1;
 
-        node_size = *(node_ptr + 2);  // [2] = size
-        assert (node_size != 0);      // assuming zombies have been deleted
-        if (node_size < 0) {
-          // sparse
-          node_size = 4 - (3 * node_size);
-        } else {
-          // full
-          node_size = 4 + (2 * node_size);
-        }
-        curr_node = node_ptr[node_size - 1];
-        assert(getNodeOffset(curr_node) == (node_ptr - level[p_level].data));
-        if (node_ptr != curr_ptr) {
-#if 1
-          for (int i = 0; i < node_size; ++i) {
-            curr_ptr[i] = node_ptr[i];
-            node_ptr[i] = 0;
-          }
-#else
-          // copy node_ptr to curr_ptr
-          memmove(curr_ptr, node_ptr, node_size * sizeof(int));
-#endif
-          // change node offset
-          address[curr_node].offset = (curr_ptr - level[p_level].data);
-        }
-        assert(getNodeOffset(curr_node) == (curr_ptr - level[p_level].data));
-        curr_ptr += node_size;
-      }
-      node_ptr += node_size;
-    }
-  } else {
-    while (node_ptr != end_ptr) {
-      // find new node
-      if (*node_ptr < 0) {
-        // found a hole, advance
-        assert(node_ptr[0] == node_ptr[-(*node_ptr)-1]);
-        node_size = -(*node_ptr);
-        memset(node_ptr, 0, node_size * sizeof(int));
-      } else {
-        // found an existing node
-        if (isPessimistic()) assert(*node_ptr != 0);
+  while (node_ptr != end_ptr) {
+    // find new node
+    if (*node_ptr < 0) {
+      // found a hole, advance
+      assert(node_ptr[0] == node_ptr[-(*node_ptr)-1]);
+      node_size = -(*node_ptr);
+      memset(node_ptr, 0, node_size * sizeof(int));
+    } else {
+      // found an existing node
+      if (isPessimistic()) assert(*node_ptr != 0);
 
-        node_size = *(node_ptr + 2);  // [2] = size
-        assert (node_size != 0);      // assuming zombies have been deleted
-        if (node_size < 0) {
-          // sparse
-          node_size = 4 - (2 * node_size);
-        } else {
-          // full
-          node_size = 4 + node_size;
-        }
-        curr_node = node_ptr[node_size - 1];
-        assert(getNodeOffset(curr_node) == (node_ptr - level[p_level].data));
-        if (node_ptr != curr_ptr) {
+      node_size = *(node_ptr + 2);  // [2] = size
+      assert (node_size != 0);      // assuming zombies have been deleted
+
+      node_size = getDataHeaderSize() +
+        (node_size * (node_size < 0? sparseMultiplier: fullMultiplier));
+
+      curr_node = node_ptr[node_size - 1];
+      assert(getNodeOffset(curr_node) == (node_ptr - level[p_level].data));
+      if (node_ptr != curr_ptr) {
 #if 1
-          for (int i = 0; i < node_size; ++i) {
-            curr_ptr[i] = node_ptr[i];
-            node_ptr[i] = 0;
-          }
-#else
-          // copy node_ptr to curr_ptr
-          memmove(curr_ptr, node_ptr, node_size * sizeof(int));
-#endif
-          // change node offset
-          address[curr_node].offset = (curr_ptr - level[p_level].data);
+        for (int i = 0; i < node_size; ++i) {
+          curr_ptr[i] = node_ptr[i];
+          node_ptr[i] = 0;
         }
-        assert(getNodeOffset(curr_node) == (curr_ptr - level[p_level].data));
-        curr_ptr += node_size;
+#else
+        // copy node_ptr to curr_ptr
+        memmove(curr_ptr, node_ptr, node_size * sizeof(int));
+#endif
+        // change node offset
+        address[curr_node].offset = (curr_ptr - level[p_level].data);
       }
-      node_ptr += node_size;
+      assert(getNodeOffset(curr_node) == (curr_ptr - level[p_level].data));
+      curr_ptr += node_size;
     }
+    node_ptr += node_size;
   }
+
   curr_slots -= level[p_level].last;
   level[p_level].last = (curr_ptr - 1 - level[p_level].data);
   curr_slots += level[p_level].last;
@@ -1849,11 +1793,9 @@ void node_manager::deleteTempNode(int p)
 #endif
   }
   // make hole
-  if (edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES) {
-    makeHole(getNodeLevel(p), getNodeOffset(p), 4 + 2 * p_data[2]);
-  } else {
-    makeHole(getNodeLevel(p), getNodeOffset(p), 4 + p_data[2]);
-  }
+  makeHole(getNodeLevel(p), getNodeOffset(p),
+      getDataHeaderSize() +
+      (edgeLabel == forest::MULTI_TERMINAL? 1: 2) * p_data[2]);
   // reclaim node id
   freeNode(p);
 
@@ -1910,11 +1852,8 @@ void node_manager::deleteNode(int p)
 #endif
     }
     // Recycle node memory
-    if (edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES) {
-      makeHole(getNodeLevel(p), getNodeOffset(p), 4 - 3 * foo[2]);  
-    } else {
-      makeHole(getNodeLevel(p), getNodeOffset(p), 4 - 2 * foo[2]);  
-    }
+    makeHole(getNodeLevel(p), getNodeOffset(p), getDataHeaderSize()
+        - (edgeLabel == forest::MULTI_TERMINAL? 2: 3) * foo[2]);  
   } else {
     // Full encoding
     int* downptr = foo + 3;
@@ -1929,11 +1868,8 @@ void node_manager::deleteNode(int p)
 #endif
     }
     // Recycle node memory
-    if (edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES) {
-      makeHole(getNodeLevel(p), getNodeOffset(p), 4 + 2 * foo[2]);  
-    } else {
-      makeHole(getNodeLevel(p), getNodeOffset(p), 4 + foo[2]);  
-    }
+    makeHole(getNodeLevel(p), getNodeOffset(p), getDataHeaderSize()
+        + (edgeLabel == forest::MULTI_TERMINAL? 1: 2) * foo[2]);  
   }
 
   // recycle the index
@@ -1999,11 +1935,8 @@ void node_manager::zombifyNode(int p)
 #endif
     }
     // Recycle node memory
-    if (edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES) {
-      makeHole(node_level, node_offset, 4 - 3 * foo[2]);  
-    } else {
-      makeHole(node_level, node_offset, 4 - 2 * foo[2]);  
-    }
+    makeHole(node_level, node_offset, getDataHeaderSize()
+        - (edgeLabel == forest::MULTI_TERMINAL? 2: 3) * foo[2]);  
   } else {
     // Full encoding
     int* downptr = foo + 3;
@@ -2018,11 +1951,8 @@ void node_manager::zombifyNode(int p)
 #endif
     }
     // Recycle node memory
-    if (edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES) {
-      makeHole(node_level, node_offset, 4 + 2 * foo[2]);  
-    } else {
-      makeHole(node_level, node_offset, 4 + foo[2]);  
-    }
+    makeHole(node_level, node_offset, getDataHeaderSize()
+        + (edgeLabel == forest::MULTI_TERMINAL? 1: 2) * foo[2]);  
   }
 }
 
@@ -2382,18 +2312,26 @@ void node_manager::indexRemove(int k, int p_offset)
 
 int node_manager::getHole(int k, int slots, bool search_holes)
 {
-  const int min_node_size = 5;
   int p_level = mapLevel(k);
-  DCASSERT(p_level >= 0);
+
+#ifdef DEVELOPMENT_CODE
+  {
+    DCASSERT(p_level >= 0);
 #if 0
-  DCASSERT(p_level < 50);
+    DCASSERT(p_level < 50);
 #endif
-  DCASSERT(level[p_level].data != NULL);
-  DCASSERT(slots >= min_node_size);
-  DCASSERT((slots - min_node_size) + 1 <= (getLevelSize(k) *
-    ((edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES)? 2: 1)));
-  DCASSERT(0 < (slots - min_node_size) + 1);
-  CHECK_RANGE(0, p_level, l_size);
+    DCASSERT(level[p_level].data != NULL);
+    const int min_node_size =
+      edgeLabel == forest::EVPLUS ? 7
+      : edgeLabel == forest::EVTIMES ? 6 : 5;
+
+    DCASSERT(slots >= min_node_size);
+    DCASSERT((slots - min_node_size + 1) <=
+        (getLevelSize(k) * (edgeLabel == forest::MULTI_TERMINAL? 1: 2)));
+    DCASSERT(0 < (slots - min_node_size) + 1);
+    CHECK_RANGE(0, p_level, l_size);
+  }
+#endif
 
   curr_slots += slots;
   if (max_slots < curr_slots) max_slots = curr_slots;
@@ -2403,11 +2341,7 @@ int node_manager::getHole(int k, int slots, bool search_holes)
   fflush(stdout);
 #endif
 
-#if 1
   if (search_holes && areHolesRecycled()) {
-#else
-  if (areHolesRecycled) {
-#endif
     // First, try for a hole exactly of this size
     // by traversing the index nodes in the hole grid
     int chain = 0;
@@ -2449,7 +2383,15 @@ int node_manager::getHole(int k, int slots, bool search_holes)
       return curr;
     }
 
+#ifdef ENABLE_BREAKING_UP_HOLES
     // No hole with exact size, try the largest hole
+    const int min_node_size =
+      edgeLabel == forest::EVPLUS
+        ? 7
+        : edgeLabel == forest::EVTIMES
+          ? 6
+          : 5;
+
     curr = level[p_level].holes_top;
     if (slots < -(level[p_level].data[curr]) - min_node_size) {
       // we have a hole large enough
@@ -2475,7 +2417,9 @@ int node_manager::getHole(int k, int slots, bool search_holes)
 #endif
       return curr;
     }
+#endif
   }
+
   // can't recycle; grab from the end
   if (level[p_level].last + slots >= level[p_level].size) {
 #if 0
@@ -2485,23 +2429,16 @@ int node_manager::getHole(int k, int slots, bool search_holes)
     int *old_data = level[p_level].data;
     int old_size = level[p_level].size;
 
-#if 0
-    while (level[p_level].last + slots >= level[p_level].size) {
-      // level[p_level].size *= 2;
-      level[p_level].size = (level[p_level].size > 1024)?
-        level[p_level].size + 1024: level[p_level].size * 2;
-    }
-#else
     // new size is 50% more than previous (37.5% * 4 = 1.5 => 50% growth)
     int min_size = (level[p_level].last + slots) * 0.375;
     level[p_level].size = min_size * 4;
-#endif
 
 #if 0
     printf(" new size=%d slots=%d last=%d\n",
         level[p_level].size, slots, level[p_level].last);
     fflush(stdout);
 #endif
+
     level[p_level].data =
       (int*) realloc(level[p_level].data, level[p_level].size * sizeof(int));
     // assert(NULL != level[p_level].data);

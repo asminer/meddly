@@ -43,55 +43,21 @@
 
 using namespace std;
 
-/// Entities that use node_manager should inherit and implement the following
-/// functions which will enable the node_manager to remove nodes that have
-/// gone stale (zombie nodes).
-class node_manager_user {
-  public:
-
-    node_manager_user() {}
-    virtual ~node_manager_user() {}
-    virtual bool removeStaleEntries() {return false;}
-    virtual long getEntriesCount() const {return 0;}
-    virtual void getCacheCounts(unsigned count[], unsigned sz) const {}
-    virtual unsigned getCacheCount(int p) const {return 0;}
-};
-
-/**
- * \var mdd_node
- * An mdd node. For now its handle is a simple integer.
+/*
+ * The MDD node handle is an integer.
+ * The MDD node handle represents the offset in address[] where the node data
+ * is stored.
  */
-typedef int mdd_node;
-
-typedef struct _evmdd_node
-{
-	mdd_node node;
-	int value;
-  _evmdd_node(): node(0), value(INF) {}
-  _evmdd_node(mdd_node a, int v): node(a), value(v) {}
-  void operator=(const _evmdd_node& a)
-  {
-    node = a.node;
-    value = a.value;
-  }
-  bool operator!=(const _evmdd_node& a)
-  {
-    return ((node != a.node) || (value != a.value));
-  }
-  bool operator==(const _evmdd_node& a)
-  {
-    return ((node == a.node) && (value == a.value));
-  }
-  void print(FILE *s)
-  {
-    fprintf(s, "[n: %d, v: %d]", node, value);
-  }
-} evmdd_node;
 
 
 /**
-  If active, the node data is as follows:
 
+  Node states: Active, Hole.
+
+  Active Node:
+  ------------
+
+  If active, the node data is as follows:
   [0] incoming pointer count (>=0)
   [1] If this node is in the unique table,
         the next pointer (>=-1)
@@ -102,26 +68,27 @@ typedef struct _evmdd_node
         If = 0, the node is deleted but still in caches.
 
   Full storage:
-  [3..2+Size]      Downward pointers (>=0)
-  [3+Size] index ptr to this node in address array (>=0)
+  [3..2+Size]       Downward pointers (>=0)
+  [3+Size]          index ptr to this node in address array (>=0)
 
   Sparse storage:
-  [3..2+nnz]       Indexes (>=0)
-  [3+nnz..2+2*nnz] Downward pointers (>=0)
-  [3+2*nnz] index ptr to this node in address array (>=0)
-*/
-typedef struct {
-  int incount;
-  int next_ptr;
-  int size;
-  int *down_ptrs;
-  int index;
-} mdd_active_node;
+  [3..2+nnz]        Indexes (>=0)
+  [3+nnz..2+2*nnz]  Downward pointers (>=0)
+  [3+2*nnz]         index ptr to this node in address array (>=0)
 
-/**
-  If deleted, the node becomes a hole. There are two kinds depending on their
-  location in the "hole grid". The hole grid is a list of holes:
 
+  Hole:
+  -----
+
+  When deleted, the node becomes a hole.
+  A hole must satisfy hole[0] == -(size_of_hole) == hole[-(size_of_hole)-1]
+  i.e. the first and last locations in hole[] store -(size_of_hole).
+
+  There are two kinds oh holes depending on their location in the "hole grid":
+  Index Holes and Non-index Holes.
+
+  The hole grid structure:
+  ------------------------
   (holes_bottom)
   holes_of_size_0 (index) -- holes_of_size_0 (non_index) -- (non_index) -- NULL
   |
@@ -130,10 +97,9 @@ typedef struct {
   :
   :
   (holes_top)
-*/
 
-/**
-  Index hole data is as follows:
+  Index holes are represented as follows:
+  ---------------------------------------
   [0] -size (number of slots in hole)     
   [1] up
   [2] down 
@@ -142,39 +108,24 @@ typedef struct {
   :
   :
   [size-1] -size
-*/
-typedef struct {
-  int size;
-  int up_ptr_offset;
-  int down_ptr_offset;
-  int next_ptr_offset;
-  int *data;
-} mdd_index_hole;
 
-/**
-  Non-index hole data is as follows:
+  Non-index holes are represented as follows:
   [0] -size (number of slots in hole)     
   [1] flag (<0, indicates non-index node)
-  [3] prev pointer (nodes of same size)
+  [2] prev pointer (nodes of same size)
   [3] next pointer (nodes of same size)
   [4..size-2] Unused
   :
   :
   [size-1] -size
 */
-typedef struct {
-  int size;
-  int flag;
-  int prev_ptr_offset;
-  int next_ptr_offset;
-  int *data;
-} mdd_non_index_hole;
 
 
 class node_manager : public expert_forest {
   public:
     node_manager(domain *d, bool rel, range_type t, edge_labeling ev,
-        reduction_rule r, node_storage s, node_deletion_policy nd);
+        reduction_rule r, node_storage s, node_deletion_policy nd,
+        int dataHeaderSize);
     virtual ~node_manager();
 
     // ------------- inherited from expert_forest ---------------------------
@@ -566,6 +517,14 @@ class node_manager : public expert_forest {
     // scratch pad for buildLevelNode and getTerminalNodes
     int* dptrs;
     int dptrsSize;
+
+    // A node's data is composed of the downpointers and if applicable
+    // indexes and edge-values.
+    // Additionally some header information is stored for maintenance.
+    // This variable stores the size of this header data (the number of
+    // integers required to store it).
+    int dataHeaderSize;
+    int getDataHeaderSize() const { return dataHeaderSize; }
 };
 
 

@@ -29,7 +29,8 @@
 mtmxd_node_manager::mtmxd_node_manager(domain *d, forest::range_type t)
 : node_manager(d, true, t,
       forest::MULTI_TERMINAL, forest::IDENTITY_REDUCED,
-      forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION)
+      forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION,
+      mtmxdDataHeaderSize)
 {
   pList = 0;
   unpList = 0;
@@ -45,7 +46,7 @@ mtmxd_node_manager::mtmxd_node_manager(domain *d,
     bool relation, forest::range_type t,
     forest::edge_labeling e, forest::reduction_rule r,
     forest::node_storage s, forest::node_deletion_policy dp)
-: node_manager(d, relation, t, e, r, s, dp)
+: node_manager(d, relation, t, e, r, s, dp, mtmxdDataHeaderSize)
 {
   unpList = 0;
   pList = 0;
