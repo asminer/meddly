@@ -376,6 +376,27 @@ class expert_forest : public forest
     /// as we move down a path in the MDD.
     bool isEvtimesMdd() const;
 
+    /// Does this node represent an Index Set?
+    /// Note: Only applicable to EV+MDDs.
+    bool isIndexSet(int node) const;
+
+    /// Returns an Index Set's cardinality.
+    /// Note: Only applicable to Index Sets (which are
+    /// implemented using EV+MDDs).
+    /// Returns:
+    /// -1     Don't know yet
+    /// 0      Invalid node
+    /// > 0    Cardinality of the Index Set
+    int getIndexSetCardinality(int node) const;
+
+    /// Sets an Index Set's cardinality.
+    /// Note: Only applicable to Index Sets (which are
+    /// implemented using EV+MDDs).
+    /// Returns:
+    /// forest::INVALID_OPERATION     Operation is not valid for this forest.
+    /// forest::SUCCESS               Cardinality set successfully.
+    forest::error setIndexSetCardinality(int node, int c);
+
   protected:
 
     void unregisterDDEdges();
@@ -2405,6 +2426,47 @@ inline
 bool expert_forest::isEvtimesMdd() const {
   return !isForRelations() &&
          getEdgeLabeling() == forest::EVTIMES;
+}
+
+
+inline
+bool expert_forest::isIndexSet(int node) const {
+  return getIndexSetCardinality(node) > 0;
+}
+
+
+inline
+int expert_forest::getIndexSetCardinality(int node) const {
+  DCASSERT(isEvplusMdd());
+  DCASSERT(isActiveNode(node));
+  // Cardinality is stored just after the downpointers and edge-values
+  return isTerminalNode(node)
+    ? 1
+    : *(
+        getNodeAddress(node) +
+        3 +
+        (isFullNode(node)
+         ? 2 * getFullNodeSize(node)
+         : 3 * getSparseNodeSize(node))
+       );
+}
+
+
+inline
+forest::error expert_forest::setIndexSetCardinality(int node, int c) {
+  DCASSERT(isEvplusMdd());
+  DCASSERT(isActiveNode(node));
+  if (isEvplusMdd() && isActiveNode(node) && !isTerminalNode(node)) {
+    *(
+        getNodeAddress(node) +
+        3 +
+        (isFullNode(node)
+         ? 2 * getFullNodeSize(node)
+         : 3 * getSparseNodeSize(node))
+     ) = c;
+     return forest::SUCCESS;
+  }
+  return forest::INVALID_OPERATION;
 }
 
 

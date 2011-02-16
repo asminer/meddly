@@ -92,6 +92,9 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <set>
+#include <deque>
+
 #include "meddly.h"
 #include "meddly_expert.h"
 #include "timer.h"
@@ -100,6 +103,7 @@
 const bool testFindFirstElement = false;
 const bool testMTMXDIterator = false;
 const bool testMDDComplement = true;
+const bool testIndexSetCardinality = true;
 
 const int N = 5; // number of machines + 1
 int sizes[N-1] = { 4, 4, 4, 4 };
@@ -365,6 +369,9 @@ int main(int argc, char* argv[])
   int* element = (int *) malloc(N * sizeof(int));
 
   double cardinality = indexSet.getCardinality();
+  int node = indexSet.getNode();
+  printf("Cardinality of node %d: %d\n", node,
+      static_cast<expert_forest*>(evplusmdd)->getIndexSetCardinality(node));
   for (int index = 0; index < int(cardinality); index++)
   {
     assert(forest::SUCCESS == evplusmdd->getElement(indexSet, index, element));
@@ -374,6 +381,47 @@ int main(int argc, char* argv[])
       printf("%d ", element[i]);
     }
     printf("]\n");
+  }
+
+  if (testIndexSetCardinality) {
+    expert_forest* ef = static_cast<expert_forest*>(evplusmdd);
+    std::set<int> visited;
+    std::deque<int> toVisit;
+    toVisit.push_back(indexSet.getNode());
+
+    while (!toVisit.empty()) {
+      int n = toVisit.front();
+      toVisit.pop_front();
+      if (visited.find(n) != visited.end()) continue;
+      visited.insert(n);
+      // explore n
+      if (ef->isFullNode(n)) {
+        int sz = ef->getFullNodeSize(n);
+        for (int i = 0; i < sz; i++)
+        {
+          int dp = ef->getFullNodeDownPtr(n, i);
+          if (!ef->isTerminalNode(dp) && visited.find(dp) == visited.end())
+            toVisit.push_back(dp);
+        }
+      } else {
+        int sz = ef->getSparseNodeSize(n);
+        for (int i = 0; i < sz; i++)
+        {
+          int dp = ef->getSparseNodeDownPtr(n, i);
+          if (!ef->isTerminalNode(dp) && visited.find(dp) == visited.end())
+            toVisit.push_back(dp);
+        }
+      }
+    }
+
+    printf("Nodes in the Index Set:\n");
+    for (std::set<int>::iterator iter = visited.begin();
+        iter != visited.end(); ++iter)
+    {
+      printf("Node %d: Cardinality %d, Height: %d, InCount: %d\n",
+          *iter, ef->getIndexSetCardinality(*iter),
+          ef->getNodeHeight(*iter), ef->getInCount(*iter));
+    }
   }
 
   // Test findFirstElement()

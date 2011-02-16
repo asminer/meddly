@@ -7891,6 +7891,8 @@ void mdd_to_evplusmdd_index_set::compute(op_info* owner,
   DCASSERT((b == 0 && bev == INF) || (b != 0 && bev == 0));
   bev = total;
   saveResult(owner, a, b, bev);
+  // Store the cardinality along with node
+  evmddf->setIndexSetCardinality(b, bev);
 }
 
 
