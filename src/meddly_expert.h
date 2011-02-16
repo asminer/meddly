@@ -2440,8 +2440,9 @@ int expert_forest::getIndexSetCardinality(int node) const {
   DCASSERT(isEvplusMdd());
   DCASSERT(isActiveNode(node));
   // Cardinality is stored just after the downpointers and edge-values
-  return isTerminalNode(node)
-    ? 1
+  return
+    isTerminalNode(node)
+    ? node == 0? 0: 1
     : *(
         getNodeAddress(node) +
         3 +
