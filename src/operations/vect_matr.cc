@@ -149,16 +149,35 @@ vectorMatrixMult_evplus_mt(
 
   const expert_forest* fA = pt[4].readForest();
   assert(fA);
+
   if (0==ht) {
     y[0] += x[0] * fA->getReal(A);
     return e;
   }
+
   const expert_forest* fx = pt[3].readForest();
   assert(fx);
 
   // It should be impossible for an indexing function to skip levels, right?   
   assert(fx->getNodeHeight(x_ind) == ht);
   int xv, xs;
+
+  //
+  // A is identity matrix times a constant; exploit that if we can
+  //
+  if (0==fA->getNodeHeight(A) && (x_ind == y_ind)) {
+    const expert_forest* fy = pt[1].readForest();
+    assert(fy);
+    if (fx == fy) {
+      assert(fx->isIndexSet(x_ind));
+      // yes we can
+      float v = fA->getReal(A);
+      for (long i = fx->getIndexSetCardinality(x_ind)-1; i>=0; i--) {
+        y[i] += x[i] * v;
+      }
+      return e;
+    }
+  }
 
   //
   // Identity node in A
@@ -522,6 +541,23 @@ matrixVectorMult_evplus_mt(
   // It should be impossible for an indexing function to skip levels, right?   
   assert(fy->getNodeHeight(y_ind) == ht);
   int yv, ys;
+
+  //
+  // A is identity matrix times a constant; exploit that if we can
+  //
+  if (0==fA->getNodeHeight(A) && (X_ind == y_ind)) {
+    const expert_forest* fx = pt[4].readForest();
+    assert(fx);
+    if (fx == fy) {
+      assert(fy->isIndexSet(y_ind));
+      // yes we can
+      float v = fA->getReal(A);
+      for (long i = fy->getIndexSetCardinality(y_ind)-1; i>=0; i--) {
+        y[i] += x[i] * v;
+      }
+      return e;
+    }
+  }
 
   //
   // Identity node in A
