@@ -37,9 +37,11 @@ temp_dd_edge::temp_dd_edge()
 temp_dd_edge::~temp_dd_edge()
 {
   if (downpointers) {
+    /*
     for (int i = 0; i < size; ++i) {
       if (downpointers[i] != 0) delete downpointers[i];
     }
+    */
     free(downpointers);
   }
   if (iEdgeValues) free(iEdgeValues);
