@@ -870,16 +870,22 @@ int mdd_backward_reachability_bfs::compute(op_info* owner, int mdd, int mxd)
   while(prevReachableStates != reachableStates)
   {
     prevReachableStates = reachableStates;
-    // printf("\nPre-Image (mdd:%d, mxd:%d): ",
-    //    reachableStates.getNode(), nsf.getNode());
+#ifdef DEBUG_REV_SAT_BFS
+    printf("\nPre-Image (mdd:%d, mxd:%d): ",
+        reachableStates.getNode(), nsf.getNode());
+#endif
     dd_edge preImage(mddNm);
     ecm->apply(preImageOp, reachableStates, nsf, preImage);
-    // printf("%d\n", preImage.getNode());
-    // preImage.show(stdout, 2);
-    // printf("\nUnion (mdd:%d, mdd:%d): ",
-    //    reachableStates.getNode(), preImage.getNode());
+#ifdef DEBUG_REV_SAT_BFS
+    printf("%d\n", preImage.getNode());
+    preImage.show(stdout, 2);
+    printf("\nUnion (mdd:%d, mdd:%d): ",
+        reachableStates.getNode(), preImage.getNode());
+#endif
     ecm->apply(unionOp, reachableStates, preImage, reachableStates);
-    // printf("%d\n", reachableStates.getNode());
+#ifdef DEBUG_REV_SAT_BFS
+    printf("%d\n", reachableStates.getNode());
+#endif
   }
 
   int result = reachableStates.getNode();
