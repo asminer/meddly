@@ -75,6 +75,9 @@ class mtmxd_node_manager : public node_manager {
     virtual error findFirstElement(const dd_edge& f, int* vlist, int* vplist)
       const;
 
+    // Enlarges a temporary node, if new size is greater than old size.
+    virtual forest::error resizeNode(int node, int size);
+
     virtual int reduceNode(int p);
 
   public:
@@ -247,11 +250,11 @@ void mtmxd_node_manager::copyLists(const int* const* vlist,
 {
   if (listSize < nElements) {
     unpList = (int**) realloc(unpList, sizeof(int*) * nElements);
-    assert(unpList);
+    if (NULL == unpList) outOfMemory();
     pList = (int**) realloc(pList, sizeof(int*) * nElements);
-    assert(pList);
+    if (NULL == pList) outOfMemory();
     tList = (void*) realloc(tList, sizeof(T) * nElements);
-    assert(tList);
+    if (NULL == tList) outOfMemory();
     listSize = nElements;
   }
 
@@ -773,9 +776,9 @@ int mtmxd_node_manager::inPlaceSort(int level, bool isPrime,
   // We have the correct bucket sizes, now move items into
   // appropriate buckets.
 
-  assert(tList);
+  DCASSERT(tList);
   T* terms = (T*)tList;
-  assert(terms);
+  DCASSERT(terms);
   
   for (int i = min; i < max; ++i) {
     // Move elements in bucket i to the correct slots.

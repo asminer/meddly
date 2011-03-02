@@ -82,7 +82,7 @@ expert_domain::~expert_domain()
   for (int i = 0; i < szForests; ++i) {
     if (forests[i] != 0) {
       delete forests[i];
-      assert(forests[i] == 0);
+      DCASSERT(forests[i] == 0);
     }
   }
   
@@ -226,7 +226,7 @@ forest* expert_domain::createForest(bool rel, forest::range_type t,
 
   if (f != 0) {
     // Add it to the list of forests
-    assert (nForests <= szForests);
+    DCASSERT (nForests <= szForests);
 #if 0
     if (szForests == 0) {
       // initialize forests[]
@@ -269,7 +269,7 @@ forest* expert_domain::createForest(bool rel, forest::range_type t,
       int newSize = szForests == 0? 4: szForests * 2;
       expert_forest** temp = (expert_forest **) realloc(forests,
           newSize * sizeof (expert_forest *));
-      assert(temp != 0);
+      if (0 == temp) outOfMemory();
       forests = temp;
       memset(forests + szForests, 0,
           (newSize - szForests) * sizeof(expert_forest*));

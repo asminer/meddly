@@ -33,9 +33,9 @@ dd_edge::dd_edge(forest* p)
   opPlus(0), opStar(0), opMinus(0), opDivide(0),
   updateNeeded(true), beginIterator(0)
 {
-  assert(p != NULL);
+  DCASSERT(p != NULL);
   smart_cast<expert_forest*>(parent)->registerEdge(*this);
-  assert(index != -1);
+  DCASSERT(index != -1);
 }
 
 
@@ -73,7 +73,7 @@ dd_edge& dd_edge::operator=(const dd_edge& e)
     smart_cast<expert_forest*>(parent)->unlinkNode(node);
     if (parent != e.parent) {
       smart_cast<expert_forest*>(parent)->unregisterEdge(*this);
-      assert(index == -1);
+      DCASSERT(index == -1);
       parent = e.parent;
       smart_cast<expert_forest*>(parent)->registerEdge(*this);
       opPlus = e.opPlus;
@@ -164,9 +164,9 @@ dd_edge& dd_edge::operator+=(const dd_edge& e)
     opPlus =
       smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
       getOpInfo(opCode, plist, nOperands);
-    assert(opPlus != 0);
+    DCASSERT(opPlus != 0);
   }
-  assert(e.parent == parent);
+  DCASSERT(e.parent == parent);
   smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
     apply(opPlus, *this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
@@ -192,9 +192,9 @@ dd_edge& dd_edge::operator*=(const dd_edge& e)
     opStar =
       smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
       getOpInfo(opCode, plist, nOperands);
-    assert(opStar != 0);
+    DCASSERT(opStar != 0);
   }
-  assert(e.parent == parent);
+  DCASSERT(e.parent == parent);
   smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
     apply(opStar, *this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
@@ -220,9 +220,9 @@ dd_edge& dd_edge::operator-=(const dd_edge& e)
     opMinus =
       smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
       getOpInfo(opCode, plist, nOperands);
-    assert(opMinus != 0);
+    DCASSERT(opMinus != 0);
   }
-  assert(e.parent == parent);
+  DCASSERT(e.parent == parent);
   smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
     apply(opMinus, *this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
@@ -240,13 +240,13 @@ dd_edge& dd_edge::operator/=(const dd_edge& e)
     plist[0].set(parent);
     plist[1].set(parent);
     plist[2].set(parent);
-    assert(!(parent->getRangeType() == forest::BOOLEAN &&
+    DCASSERT(!(parent->getRangeType() == forest::BOOLEAN &&
         parent->getEdgeLabeling() == forest::MULTI_TERMINAL));
     opDivide =
       smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
       getOpInfo(compute_manager::DIVIDE, plist, nOperands);
   }
-  assert(e.parent == parent);
+  DCASSERT(e.parent == parent);
   smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
     apply(opDivide, *this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
@@ -268,7 +268,7 @@ void dd_edge::show(FILE* strm, int verbosity) const
       fprintf(strm, "node: %d*, ", eParent->getInteger(node));
     }
     else {
-      assert(eParent->getRangeType() == forest::BOOLEAN);
+      DCASSERT(eParent->getRangeType() == forest::BOOLEAN);
       fprintf(strm, "node: %s*, ",(eParent->getBoolean(node)? "true": "false"));
     }
   }
@@ -980,7 +980,7 @@ void dd_edge::iterator::incrNonRelation()
       nodes[f->getNodeLevel(n)] = n;
     }
   }
-  assert(nodes[0] != 0);
+  DCASSERT(nodes[0] != 0);
 #ifdef DEBUG_ITER_BEGIN
   printf("nodes[]: [");
   for (int i = size - 1; i > 0; --i)
@@ -1166,7 +1166,7 @@ void dd_edge::iterator::incrNonIdentRelation()
       isCurrLevelPrime = true;
     }
   }
-  assert(nodes[0] != 0);
+  DCASSERT(nodes[0] != 0);
 #ifdef DEBUG_ITER_BEGIN
   printf("nodes[]: [");
   for (int i = size - 1; i > 0; --i)
@@ -1334,7 +1334,7 @@ void dd_edge::iterator::incrRelation()
   {
     int node = isCurrLevelPrime? pnodes[currLevel]: nodes[currLevel];
     if (node == 0) {
-      assert(!isCurrLevelPrime);
+      DCASSERT(!isCurrLevelPrime);
       element[currLevel] = 0;
       pelement[currLevel] = 0;
       // jump over the prime level
@@ -1353,7 +1353,7 @@ void dd_edge::iterator::incrRelation()
         index = f->getSparseNodeIndex(node, 0);
         n = f->getSparseNodeDownPtr(node, 0);
       }
-      assert(index != -1);
+      DCASSERT(index != -1);
       if (isCurrLevelPrime) {
         pelement[currLevel] = index;
       } else {
@@ -1374,7 +1374,7 @@ void dd_edge::iterator::incrRelation()
       isCurrLevelPrime = true;
     }
   }
-  assert(nodes[0] != 0);
+  DCASSERT(nodes[0] != 0);
 #ifdef DEBUG_ITER_BEGIN
   printf("nodes[]: [");
   for (int i = size - 1; i > 0; --i)

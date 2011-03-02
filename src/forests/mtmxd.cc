@@ -83,6 +83,67 @@ void mtmxd_node_manager::expandCountAndSlotArrays(int size)
 }
 
 
+forest::error mtmxd_node_manager::resizeNode(int p, int size)
+{
+  // This operation can only be performed on Temporary nodes.
+  if (!isActiveNode(p) || isTerminalNode(p) || isReducedNode(p)) {
+    return forest::INVALID_OPERATION;
+  }
+
+  // If node is already large enough, do nothing, and return SUCCESS.
+  int nodeSize = getFullNodeSize(p);
+  if (size <= nodeSize) return forest::SUCCESS;
+
+  DCASSERT(size > nodeSize);
+
+  // Expand node:
+  // (a) Create array of desired size;
+  // (b) Copy over data from the old array to the new array;
+  // (c) Discard the old array
+  // (d) Update pointers
+
+  // Create array of desired size
+  int oldDataArraySize = getDataHeaderSize() + nodeSize;
+  int newDataArraySize = oldDataArraySize - nodeSize + size;
+  int nodeLevel = getNodeLevel(p);
+  int newOffset = getHole(nodeLevel, newDataArraySize, true);
+
+  DCASSERT(newDataArraySize > oldDataArraySize);
+
+  // Pointers to old and new data arrays
+  int* prev = getNodeAddress(p);
+  int* curr = level[mapLevel(nodeLevel)].data + newOffset;
+
+  // Copy old array to new array
+  // Don't copy last location from the old array to the new array
+  // -- last location stores the pointer to node p.
+  memcpy(curr, prev, (oldDataArraySize - 1) * sizeof(int));
+
+  // Clear out the trailing portion of the new array
+  // -- except the last location.
+  memset(curr + oldDataArraySize - 1, 0,
+      (newDataArraySize - oldDataArraySize) * sizeof(int));
+
+  // Discard the old array
+  makeHole(nodeLevel, address[p].offset, oldDataArraySize);
+
+  // Change the node size
+  curr[2] = size;
+
+  // Set the back-pointer in the new array
+  curr[newDataArraySize - 1] = p;
+
+  // Update the offset field to point to the new array
+  address[p].offset = newOffset;
+
+  DCASSERT(size == getFullNodeSize(p));
+  DCASSERT(p == 
+      getNodeAddress(p)[getDataHeaderSize() + getFullNodeSize(p) - 1]);
+
+  return forest::SUCCESS;
+}
+
+
 int mtmxd_node_manager::reduceNode(int p)
 {
   DCASSERT(isActiveNode(p));
@@ -117,7 +178,7 @@ int mtmxd_node_manager::reduceNode(int p)
 
   if (0 == nnz) {
     // duplicate of 0
-    deleteTempNode(p);
+    unlinkNode(p);
 #ifdef TRACE_REDUCE
     printf("\tReducing %d, got 0\n", p);
 #endif
@@ -128,7 +189,7 @@ int mtmxd_node_manager::reduceNode(int p)
   int temp = 0;
   if (checkForReductions(p, nnz, temp)) {
     linkNode(temp);
-    deleteTempNode(p);
+    unlinkNode(p);
     return temp;
   }
 
@@ -139,7 +200,7 @@ int mtmxd_node_manager::reduceNode(int p)
 #ifdef TRACE_REDUCE
     printf("\tReducing %d, got %d\n", p, q);
 #endif
-    deleteTempNode(p);
+    unlinkNode(p);
     return sharedCopy(q);
   }
 
@@ -269,7 +330,7 @@ int mtmxd_node_manager::createNode(int k, int index, int dptr)
       nodeData[3] = 0;
       nodeData[4] = 0;
       unlinkNode(dptr);
-      deleteTempNode(p);
+      unlinkNode(p);
       p = sharedCopy(q);
     }
     decrTempNodeCount(k);

@@ -76,7 +76,7 @@ class mdd_hash_table {
       updateHashShift();
       nodes = n;
       table = (int*) malloc(sizeof(int) * size);
-      assert(NULL != table);
+      if (NULL == table) outOfMemory();
       out_of_mem = false;
       int *end = table + size;
       for (int* curr = table; curr < end; curr++) {
@@ -95,14 +95,14 @@ class mdd_hash_table {
     inline void updateHashShift()
     {
       // note this works only is int is 32 bits
-      assert(getSize() > 1);
+      DCASSERT(getSize() > 1);
       right_shift = 0;
       for (unsigned i = getSize(); i > 1; )
       {
         right_shift++;
         i = i >> 1;
       }
-      assert(right_shift > 0);
+      DCASSERT(right_shift > 0);
       right_shift = 32 - right_shift;
     }
 
@@ -138,7 +138,7 @@ class mdd_hash_table {
         }
         table[i] = nodes->getNull();
       } // for i
-      assert(listlength == num_entries);
+      DCASSERT(listlength == num_entries);
       num_entries = 0;
       return front;
     }
@@ -280,7 +280,7 @@ class mdd_hash_table {
         if (nodes->equals(key, ptr)) {
           if (ptr != table[h]) {
             // not at front; move it to front
-            assert(parent != nodes->getNull());
+            DCASSERT(parent != nodes->getNull());
             nodes->setNext(parent, nodes->getNext(ptr));
             nodes->setNext(ptr, table[h]);
             table[h] = ptr;

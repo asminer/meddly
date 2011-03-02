@@ -12,6 +12,7 @@ test_union_mdd \
 test_mtmdd \
 test_mtmxd \
 test_evmdd \
+test_temporary_nodes \
 build_expression \
 kan1_batch \
 dining_phils \
@@ -52,6 +53,9 @@ rubiks_cube_LDADD = ../src/libmeddly.la
 
 test_evmdd_SOURCES = test_evmdd.cc
 test_evmdd_LDADD = ../src/libmeddly.la
+
+test_temporary_nodes_SOURCES = test_temporary_nodes.cc
+test_temporary_nodes_LDADD = ../src/libmeddly.la
 
 nqueens_SOURCES = nqueens.cc
 nqueens_LDADD = ../src/libmeddly.la

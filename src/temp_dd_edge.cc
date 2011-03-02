@@ -237,7 +237,7 @@ forest::error temp_dd_edge::add(const int* vlist, const int* vplist)
         MAX( size*2, index+1 ) );
     downpointers = (temp_dd_edge**) realloc(downpointers,
         sizeof(temp_dd_edge*) * newSize);
-    assert(downpointers != 0);
+    if (downpointers == 0) outOfMemory();
     memset(downpointers + size, 0, sizeof(temp_dd_edge*) * (newSize - size));
     size = newSize;
   }

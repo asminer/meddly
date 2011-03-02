@@ -1,4 +1,3 @@
-
 // $Id$
 
 /*
@@ -25,9 +24,7 @@
 
 const float expansionFactor = 1.5;
 
-
 /* compute cache methods */
-
 
 compute_cache::compute_cache()
 : nodes(0), nodeCount(1024), lastNode(-1),
@@ -37,7 +34,7 @@ compute_cache::compute_cache()
 {
   // initialize node and data arrays
   nodes = (cache_entry *) malloc(nodeCount * sizeof(cache_entry));
-  assert(nodes != NULL);
+  if (nodes == NULL) outOfMemory();
   for (int i = 0; i < nodeCount; ++i)
   {
     nodes[i].owner = 0;
@@ -45,7 +42,7 @@ compute_cache::compute_cache()
     setDataOffset(nodes[i], -1);
   }
   data = (int *) malloc(dataCount * sizeof(int));
-  assert(data != NULL);
+  if (data == NULL) outOfMemory();
   memset(data, 0, dataCount * sizeof(int));
 
   // create new hash table
@@ -133,7 +130,7 @@ void compute_cache::show(FILE *s, bool verbose) const
   fprintf(s, "%sPings:          \t%d\n", filler, pings);
   fprintf(s, "%sHits:           \t%d\n", filler, hits);
   fprintf(s, "Internal hash table info:\n");
-  assert(ht == 0 || fsht == 0);
+  DCASSERT(ht == 0 || fsht == 0);
   if (ht != 0) ht->show(s, verbose);
   if (fsht != 0) fsht->show(s, verbose);
 }
@@ -141,11 +138,11 @@ void compute_cache::show(FILE *s, bool verbose) const
 
 void compute_cache::expandNodes()
 {
-  assert(nodeCount != 0);
+  DCASSERT(nodeCount != 0);
   int newNodeCount = int(nodeCount * expansionFactor);
   cache_entry* tempNodes =
     (cache_entry *) realloc(nodes, newNodeCount * sizeof(cache_entry));
-  assert(tempNodes != NULL);
+  if (tempNodes == NULL) outOfMemory();
   nodes = tempNodes;
   for (int i = nodeCount; i < newNodeCount; ++i)
   {
@@ -162,7 +159,7 @@ void compute_cache::expandData()
 {
   int newDataCount = int(dataCount * expansionFactor);
   data = (int *) realloc(data, newDataCount * sizeof(int));
-  assert(data != NULL);
+  if (data == NULL) outOfMemory();
   memset(data + dataCount, 0, (newDataCount - dataCount) * sizeof(int));
   dataCount = newDataCount;
 }
@@ -172,7 +169,7 @@ void compute_cache::removeStales(op_info* owner)
 {
   static bool removingStales = false;
   if (!removingStales) {
-    assert(ht != 0 || fsht != 0);
+    DCASSERT(ht != 0 || fsht != 0);
     if (owner) {
       // for each entry belonging to owner, call isStale() and if necessary
       // hash-table's remove() (which will call uncacheNode() and which
@@ -210,13 +207,13 @@ void compute_cache::removeStales(op_info* owner)
 
 void compute_cache::clear()
 {
-  assert(ht != 0 || fsht != 0);
+  DCASSERT(ht != 0 || fsht != 0);
   if (ht) ht->clear();
   if (fsht) fsht->clear();
 }
 
 int compute_cache::getNumEntries() const
 {
-  assert(ht != 0 || fsht != 0);
+  DCASSERT(ht != 0 || fsht != 0);
   return (ht)? ht->getEntriesCount(): fsht->getEntriesCount();
 }

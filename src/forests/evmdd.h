@@ -69,6 +69,9 @@ class evmdd_node_manager : public node_manager {
     using node_manager::createTempNode;
     virtual int createTempNode(int k, int sz, bool clear = true);
 
+    // Enlarges a temporary node, if new size is greater than old size.
+    virtual forest::error resizeNode(int node, int size);
+
     virtual int doOp(int a, int b) const = 0;
     virtual float doOp(float a, float b) const = 0;
 
@@ -224,6 +227,17 @@ class evtimesmdd_node_manager : public evmdd_node_manager {
   public:
     evtimesmdd_node_manager(domain *d);
     ~evtimesmdd_node_manager();
+
+    using evmdd_node_manager::getDefaultEdgeValue;
+    using evmdd_node_manager::getIdentityEdgeValue;
+    virtual void getDefaultEdgeValue(int& n) const {
+      static int ev = toInt(NAN);
+      n = ev;
+    }
+    virtual void getIdentityEdgeValue(int& n) const {
+      static int ev = toInt(1.0f);
+      n = ev;
+    }
 
     virtual int createTempNode(int lh, std::vector<int>& downPointers,
         std::vector<float>& edgeValues);

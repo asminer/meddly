@@ -168,7 +168,6 @@ class node_manager : public expert_forest {
     virtual int createTempNode(int lh, std::vector<int>& downPointers,
         std::vector<float>& edgeValues) { return 0; }
 
-
     /// Apply reduction rule to the temporary node and finalize it. Once
     /// a node is reduced, its contents cannot be modified.
     virtual int reduceNode(int node) = 0;
@@ -369,7 +368,6 @@ class node_manager : public expert_forest {
 
     // delete node p
     void deleteNode(int p);
-    void deleteTempNode(int p);
 
     // free node p
     void freeNode(int p);
@@ -540,35 +538,27 @@ inline void node_manager::reclaimOrphanNode(int p) {
   DCASSERT(!isTerminalNode(p));
   DCASSERT(isReducedNode(p));
   DCASSERT(getInCount(p) == 0);
-
-#if 0
-  validateIncounts();
-#endif
-
-  // increase incount
-  ++(*(getNodeAddress(p)));
-
   reclaimed_nodes++;
   orphan_nodes--;
-  
-#ifdef TRACK_DELETIONS
-  cout << "\t+Node " << p << " count now " << *(getNodeAddress(p)) << "\n";
-  cout.flush();
-#endif
 }  
 
 inline void node_manager::handleNewOrphanNode(int p) {
   DCASSERT(!isPessimistic() || !isZombieNode(p));
   DCASSERT(isActiveNode(p));
   DCASSERT(!isTerminalNode(p));
-  DCASSERT(isReducedNode(p));
   DCASSERT(getInCount(p) == 0);
 
   // insted of orphan_nodes++ here; do it only when the orphan is not going
   // to get deleted or converted into a zombie
 
+  // Two possible scenarios:
+  // (1) a reduced node, or
+  // (2) a temporary node ready to be deleted.
+  DCASSERT(isReducedNode(p) || getCacheCount(p) == 0);
+
   if (getCacheCount(p) == 0) {
     // delete node
+    // this should take care of the temporary nodes also
 #ifdef TRACK_DELETIONS
     cout << "Deleting node " << p << " from unlinkNode\t";
     showNode(stdout, p);
@@ -576,10 +566,12 @@ inline void node_manager::handleNewOrphanNode(int p) {
     cout.flush();
 #endif
     deleteNode(p);
-  } else if (isPessimistic()) {
+  }
+  else if (isPessimistic()) {
     // zombify node
     zombifyNode(p);
-  } else {
+  }
+  else {
     orphan_nodes++;
   }
 
@@ -737,11 +729,11 @@ node_manager::createTempNode(int lh, std::vector<int>& downPointers)
   return tempNode;
 }
 
-
 // TODO: HERE: should we move these next few inlines up to mddinternal?
 inline bool node_manager::areHolesRecycled() const {
   return holeRecycling;
 }
+
 inline unsigned node_manager::getCompactionThreshold() const {
   return unsigned(compactionThreshold * 100.0);
 }

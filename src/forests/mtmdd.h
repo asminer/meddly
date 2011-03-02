@@ -72,6 +72,9 @@ class mtmdd_node_manager : public node_manager {
 
     virtual error findFirstElement(const dd_edge& f, int* vlist) const;
 
+    // Enlarges a temporary node, if new size is greater than old size.
+    virtual forest::error resizeNode(int node, int size);
+
     virtual int reduceNode(int p);
 
     // The following will either abort or return an error since they are not
@@ -275,10 +278,10 @@ void mtmdd_node_manager::copyLists(const int* const* vlist,
 {
   if (listSize < nElements) {
     list = (int**) realloc(list, sizeof(int*) * nElements);
-    assert(list);
+    if (NULL == list) outOfMemory();
     if (terms) {
       termList = (int*) realloc(termList, sizeof(T) * nElements);
-      assert(termList);
+      if (NULL == termList) outOfMemory();
     }
     listSize = nElements;
   }
@@ -496,9 +499,9 @@ int mtmdd_node_manager::inPlaceSort(int level, int begin, int end)
   // We have the correct bucket sizes, now move items into
   // appropriate buckets.
 
-  assert(termList);
+  DCASSERT(termList);
   T* terms = (T*)termList;
-  assert(terms);
+  DCASSERT(terms);
   
   for (int i = min; i < max; ++i) {
     // Move elements in bucket i to the correct slots.

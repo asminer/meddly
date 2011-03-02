@@ -68,14 +68,14 @@ node_manager::node_manager(domain *d, bool rel, range_type t,
   curr_mem_alloc = max_mem_alloc = 0;
   a_size = add_size;
   address = (mdd_node_data *) malloc(a_size * sizeof(mdd_node_data));
-  assert(NULL != address);
+  if (NULL == address) outOfMemory();
   updateMemoryAllocated(a_size * sizeof(mdd_node_data));
   memset(address, 0, a_size * sizeof(mdd_node_data));
   a_last = peak_nodes = a_unused = 0;
   
   l_size = l_add_size;
   level = (mdd_level_data *) malloc(l_size * sizeof(mdd_level_data));
-  assert(NULL != level);
+  if (NULL == level) outOfMemory();
   updateMemoryAllocated(l_size * sizeof(mdd_level_data));
   memset(level, 0, l_size * sizeof(mdd_level_data));
 
@@ -664,7 +664,10 @@ node_manager::~node_manager()
   gc();
 
   if (active_nodes != 0) {
-    printf("ALERT: Found known bug in %s (active_nodes > 0).\n", __func__);
+    printf("MEDDLY ALERT: In %s, active_nodes > 0.\n", __func__);
+    printf("This usually means that your application is still referring\n");
+    printf("to one or more MDD nodes. ");
+    printf("Fixing this may benefit your application.\n");
 #ifdef DEBUG_GC
     printf("%p: active %ld, zombie %ld, orphan %ld\n",
         this, active_nodes, zombie_nodes, orphan_nodes);
@@ -876,19 +879,19 @@ double node_manager::cardinalityForRelations(int p, int ht, bool primeLevel,
 {
   if (p == 0) return 0;
   if (ht == 0) {
-    assert(isTerminalNode(p));
+    DCASSERT(isTerminalNode(p));
     return 1;
   }
 
   int pHeight = getNodeHeight(p);
-  assert(pHeight >= 0);
+  DCASSERT(pHeight >= 0);
 
   if (pHeight < ht) {
     if (getReductionRule() == forest::IDENTITY_REDUCED) {
       // p is lower than ht
       if (primeLevel) {
         // ht is a prime level
-        assert(p == 0);
+        DCASSERT(p == 0);
         return 0;
       }
       else {
@@ -909,9 +912,9 @@ double node_manager::cardinalityForRelations(int p, int ht, bool primeLevel,
     }
   }
 
-  assert(pHeight == ht);
+  DCASSERT(pHeight == ht);
   int k = expertDomain->getVariableWithHeight(ht);
-  assert((primeLevel && (getNodeLevel(p) == -k)) ||
+  DCASSERT((primeLevel && (getNodeLevel(p) == -k)) ||
       (!primeLevel && getNodeLevel(p) == k));
 
   // check in cache
@@ -1227,7 +1230,7 @@ void node_manager::showNode(FILE *s, int p, int verbose) const
           } else if (getRangeType() == forest::INTEGER) {
             fprintf(s, "%d", getInteger(getSparseNodeDownPtr(p, z)));
           } else {
-            assert(getRangeType() == forest::BOOLEAN);
+            DCASSERT(getRangeType() == forest::BOOLEAN);
             fprintf(s, "%s",
                 (getBoolean(getSparseNodeDownPtr(p, z))? "T": "F"));
           }
@@ -1284,7 +1287,7 @@ void node_manager::showNode(FILE *s, int p, int verbose) const
 
 void node_manager::showNode(int p) const
 {
-  assert(edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES);
+  DCASSERT(edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES);
   if (isTerminalNode(p)) {
     fprintf(stderr, "(terminal)");
     return;
@@ -1366,21 +1369,21 @@ void node_manager::compactLevel(int k)
     // find new node
     if (*node_ptr < 0) {
       // found a hole, advance
-      assert(node_ptr[0] == node_ptr[-(*node_ptr)-1]);
+      DCASSERT(node_ptr[0] == node_ptr[-(*node_ptr)-1]);
       node_size = -(*node_ptr);
       memset(node_ptr, 0, node_size * sizeof(int));
     } else {
       // found an existing node
-      if (isPessimistic()) assert(*node_ptr != 0);
+      DCASSERT(!isPessimistic() || *node_ptr != 0);
 
       node_size = *(node_ptr + 2);  // [2] = size
-      assert (node_size != 0);      // assuming zombies have been deleted
+      DCASSERT (node_size != 0);      // assuming zombies have been deleted
 
       node_size = getDataHeaderSize() +
         (node_size * (node_size < 0? sparseMultiplier: fullMultiplier));
 
       curr_node = node_ptr[node_size - 1];
-      assert(getNodeOffset(curr_node) == (node_ptr - level[p_level].data));
+      DCASSERT(getNodeOffset(curr_node) == (node_ptr - level[p_level].data));
       if (node_ptr != curr_ptr) {
 #if 1
         for (int i = 0; i < node_size; ++i) {
@@ -1394,7 +1397,7 @@ void node_manager::compactLevel(int k)
         // change node offset
         address[curr_node].offset = (curr_ptr - level[p_level].data);
       }
-      assert(getNodeOffset(curr_node) == (curr_ptr - level[p_level].data));
+      DCASSERT(getNodeOffset(curr_node) == (curr_ptr - level[p_level].data));
       curr_ptr += node_size;
     }
     node_ptr += node_size;
@@ -1421,7 +1424,7 @@ void node_manager::compactLevel(int k)
     updateMemoryAllocated((new_size - level[p_level].size) * sizeof(int));
     level[p_level].data = (int *)
       realloc(level[p_level].data, new_size * sizeof(int));
-    assert(NULL != level[p_level].data);
+    if (NULL == level[p_level].data) outOfMemory();
     level[p_level].size = new_size;
 #ifdef MEMORY_TRACE
     printf("Reduced data[] by a factor of 2. New size: %d, Last: %d.\n",
@@ -1760,60 +1763,11 @@ bool node_manager::equals(int h1, int h2) const
 //  Protected methods
 // ------------------------------------------------------------------
 
-void node_manager::deleteTempNode(int p)
-{
-
-#if 0
-  validateIncounts();
-#endif
-
-  int *p_data = getNodeAddress(p);
-  int k = address[p].level;
-
-  // 0: incount
-  // 1: temp_node
-  // 2: size (full_node)
-  // 3..: downpointers (children)
-  // last: p
-
-  DCASSERT(address[p].cache_count == 0);
-  DCASSERT(p_data[1] == temp_node);
-  DCASSERT(p_data[0] == 1);
-  DCASSERT(p_data[2] > 0);  // full node
-
-  // unlinkNode children
-
-  for (int *curr = p_data + 3; curr < p_data + 3 + p_data[2]; ++curr) {
-#if ENABLE_IN_COUNTING
-    int temp = *curr;
-    *curr = 0;
-    unlinkNode(temp);
-#else
-    unlinkNode(*curr);
-#endif
-  }
-  // make hole
-  makeHole(getNodeLevel(p), getNodeOffset(p),
-      getDataHeaderSize() +
-      (edgeLabel == forest::MULTI_TERMINAL? 1: 2) * p_data[2]);
-  // reclaim node id
-  freeNode(p);
-
-  if (level[mapLevel(k)].compactLevel) compactLevel(k);
-
-#if 0
-  validateIncounts();
-#endif
-
-}
-
-
 void node_manager::deleteNode(int p)
 {
   DCASSERT(!isTerminalNode(p));
-  DCASSERT(getNext(p) != temp_node);
   DCASSERT(getInCount(p) == 0);
-  DCASSERT(isReducedNode(p));   // it's in the unique table
+  DCASSERT(isActiveNode(p));
 
 #if 0
   validateIncounts();
@@ -1822,55 +1776,59 @@ void node_manager::deleteNode(int p)
   int* foo = getNodeAddress(p);
   int k = getNodeLevel(p);
 
-  // remove from unique table
-  assert(unique->find(p) == p);
-#ifdef TRACK_DELETIONS
-  showNode(stdout, p);
-  int x = unique->remove(p);
-  printf("%s: p = %d, unique->remove(p) = %d\n", __func__, p, x);
-  fflush(stdout);
-  DCASSERT(x==p);
-#else
-  int x = unique->remove(p);
-  assert(x != -1);
-  assert(p == x);
+  // remove from unique table (only applicable to reduced nodes)
+  if (isReducedNode(p)) {
+#ifdef DEVELOPMENT_CODE
+    DCASSERT(unique->find(p) == p);
 #endif
-  assert(address[p].cache_count == 0);
 
-  // unlinkNode children
-  if (foo[2]<0) {
-    // Sparse encoding
-    int* downptr = foo + 3 - foo[2];
-    int* stop = downptr - foo[2];
-    for (; downptr < stop; ++downptr) {
-#if ENABLE_IN_COUNTING
-      int temp = *downptr;
-      *downptr = 0;
-      unlinkNode(temp);
-#else
-      unlinkNode(*downptr);
+#ifdef TRACK_DELETIONS
+    showNode(stdout, p);
 #endif
-    }
-    // Recycle node memory
-    makeHole(getNodeLevel(p), getNodeOffset(p), getDataHeaderSize()
-        - (edgeLabel == forest::MULTI_TERMINAL? 2: 3) * foo[2]);  
-  } else {
-    // Full encoding
-    int* downptr = foo + 3;
-    int* stop = downptr + foo[2];
-    for (; downptr < stop; ++downptr) {
-#if ENABLE_IN_COUNTING
-      int temp = *downptr;
-      *downptr = 0;
-      unlinkNode(temp);
+
+#ifdef DEVELOPMENT_CODE
+    int x = unique->remove(p);
 #else
-      unlinkNode(*downptr);
+    unique->remove(p);
 #endif
-    }
-    // Recycle node memory
-    makeHole(getNodeLevel(p), getNodeOffset(p), getDataHeaderSize()
-        + (edgeLabel == forest::MULTI_TERMINAL? 1: 2) * foo[2]);  
+
+#ifdef TRACK_DELETIONS
+    printf("%s: p = %d, unique->remove(p) = %d\n", __func__, p, x);
+    fflush(stdout);
+#endif
+
+    DCASSERT(x != -1);
+    DCASSERT(p == x);
+    DCASSERT(address[p].cache_count == 0);
   }
+  else {
+    // Temporary node
+    // TODO:
+    // clear cache of corresponding temporary node?
+  }
+
+  // unlink children
+  const int nDptrs = ABS(foo[2]);
+  int* downptr = foo + 3 + (foo[2] < 0? nDptrs: 0);
+  int* stop = downptr + nDptrs;
+#if ENABLE_IN_COUNTING
+  while (downptr < stop) {
+    int temp = *downptr;
+    *downptr++ = 0;
+    unlinkNode(temp);
+  }
+#else
+  while (downptr < stop) {
+    unlinkNode(*downptr++);
+  }
+#endif
+
+  // Recycle node memory
+  makeHole(getNodeLevel(p), getNodeOffset(p), getDataHeaderSize() +
+      nDptrs * ((foo[2] < 0)
+        ? (edgeLabel == forest::MULTI_TERMINAL? 2: 3)
+        : (edgeLabel == forest::MULTI_TERMINAL? 1: 2)
+        ));
 
   // recycle the index
   freeNode(p);
@@ -1883,8 +1841,6 @@ void node_manager::deleteNode(int p)
 
 }
 
-#if 1
-
 void node_manager::zombifyNode(int p)
 {
   DCASSERT(isActiveNode(p));
@@ -1892,21 +1848,16 @@ void node_manager::zombifyNode(int p)
   DCASSERT(isReducedNode(p));
   DCASSERT(getCacheCount(p) > 0);  // otherwise this node should be deleted
   DCASSERT(getInCount(p) == 0);
-
-  assert(address[p].cache_count > 0);
-# if 0
-  assert(zombie_nodes == 0);
-#endif
+  DCASSERT(address[p].cache_count > 0);
 
   zombie_nodes++;
   level[getNodeLevelMapping(p)].zombie_nodes++;
   active_nodes--;
 
   // mark node as zombie
-  assert(unique->find(p) == p);
-  // tag p to be a zombie node
   address[p].cache_count = -address[p].cache_count;
 
+  DCASSERT(unique->find(p) == p);
 #ifdef DEVELOPMENT_CODE 
   int x = unique->remove(p);
   DCASSERT(x==p);
@@ -1956,8 +1907,6 @@ void node_manager::zombifyNode(int p)
   }
 }
 
-#endif  // zombifyNode
-
 
 forest::error node_manager::garbageCollect() {
   gc();
@@ -1991,7 +1940,7 @@ bool node_manager::gc() {
 #ifdef DEBUG_GC
     printf("Zombie nodes: %ld\n", zombie_nodes);
 #endif
-    assert(zombie_nodes == 0);
+    DCASSERT(zombie_nodes == 0);
     freed_some = true;
   } else {
 #ifdef ALT_ORPHAN_GC
@@ -2035,7 +1984,7 @@ bool node_manager::gc() {
     for (int i = 1; i <= a_last; i++) {
       DCASSERT(!isTerminalNode(i));
       if (isActiveNode(i) && getInCount(i) == 0) {
-        assert(getCacheCount(i) > 0);
+        DCASSERT(getCacheCount(i) > 0);
         zombifyNode(i);
       }
     }
@@ -2046,7 +1995,7 @@ bool node_manager::gc() {
     // remove the stale nodes entries from caches
     smart_cast<expert_compute_manager *>(MEDDLY_getComputeManager())->
       removeStales();
-    assert(zombie_nodes == 0);
+    DCASSERT(zombie_nodes == 0);
     nodeDeletionPolicy = forest::OPTIMISTIC_DELETION;
     freed_some = true;
 #endif
@@ -2101,7 +2050,7 @@ void node_manager::removeZombies(int max_zombies) {
       }
     }
 #endif
-    assert(zombie_nodes == 0);
+    DCASSERT(zombie_nodes == 0);
   }
 #endif
 }
@@ -2133,7 +2082,7 @@ int node_manager::getFreeNode(int k)
 
     mdd_node_data *temp = (mdd_node_data*) realloc(address,
         new_a_size * sizeof(mdd_node_data));
-    // assert(NULL != temp);
+    // DCASSERT(NULL != temp);
     if (NULL == temp) {
       fprintf(stderr, "Memory allocation error while allocating MDD nodes.\n");
       exit(1);
@@ -2188,7 +2137,7 @@ void node_manager::freeNode(int p)
     if (a_size > add_size && a_last < a_size/2) {
       address = (mdd_node_data *)
           realloc(address, a_size/2 * sizeof(mdd_node_data));
-      assert(NULL != address);
+      if (NULL == address) outOfMemory();
       a_size /= 2;
       updateMemoryAllocated(-a_size * sizeof(mdd_node_data));
 #ifdef MEMORY_TRACE
@@ -2441,7 +2390,6 @@ int node_manager::getHole(int k, int slots, bool search_holes)
 
     level[p_level].data =
       (int*) realloc(level[p_level].data, level[p_level].size * sizeof(int));
-    // assert(NULL != level[p_level].data);
     if (NULL == level[p_level].data) {
       // garbage collect and try again
       level[p_level].data = old_data;
@@ -2505,7 +2453,7 @@ void node_manager::makeHole(int k, int addr, int slots)
       updateMemoryAllocated((new_size - level[mapped_k].size) * sizeof(int));
       level[mapped_k].data = (int *)
         realloc(level[mapped_k].data, new_size * sizeof(int));
-      assert(NULL != level[mapped_k].data);
+      if (NULL == level[mapped_k].data) outOfMemory();
       level[mapped_k].size = new_size;
 #ifdef MEMORY_TRACE
       printf("Reduced data[]. New size: %d, Last: %d.\n",

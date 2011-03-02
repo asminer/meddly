@@ -157,6 +157,10 @@ class expert_forest : public forest
     virtual int createTempNode(int lh, std::vector<int>& downPointers,
         std::vector<float>& edgeValues) = 0;
 
+    /// Increase the size of the temporary node.
+    /// The maximum size is dictated by domain to which this forest belongs to.
+    virtual forest::error resizeNode(int node, int size) = 0;
+
     /// The maximum size (number of indices) a node at this level can have
     int getLevelSize(int lh) const;
 
@@ -2037,7 +2041,7 @@ void expert_forest::setDownPtr(int p, int i, int value)
 {
   DCASSERT(!isReducedNode(p));
   DCASSERT(isFullNode(p));
-  DCASSERT(isReducedNode(value));
+  DCASSERT(isActiveNode(value));
   CHECK_RANGE(0, i, getFullNodeSize(p));
   int temp = *(getNodeAddress(p) + 3 + i);
   // linkNode to new node
@@ -2053,7 +2057,7 @@ void expert_forest::setDownPtrWoUnlink(int p, int i, int value)
 {
   DCASSERT(!isReducedNode(p));
   DCASSERT(isFullNode(p));
-  DCASSERT(isReducedNode(value));
+  DCASSERT(isActiveNode(value));
   CHECK_RANGE(0, i, getFullNodeSize(p));
   // linkNode to new node
   linkNode(value);
@@ -2197,15 +2201,13 @@ void expert_forest::linkNode(int p)
   DCASSERT(isActiveNode(p));
   if (isTerminalNode(p)) return;
   DCASSERT(!isPessimistic() || !isZombieNode(p));
-  DCASSERT(isReducedNode(p));
 
-  if (getInCount(p) == 0) {
-    reclaimOrphanNode(p);
-    return;
-  }
-
-  // increase incount and return
+  // increase incount
   ++getInCount(p);
+
+  if (getInCount(p) == 1) {
+    reclaimOrphanNode(p);
+  }
 
 #ifdef TRACK_DELETIONS
   fprintf(stdout, "\t+Node %d count now %d\n", p, getInCount(p));
@@ -2221,7 +2223,6 @@ void expert_forest::unlinkNode(int p)
   DCASSERT(isActiveNode(p));
   if (isTerminalNode(p)) return;
   DCASSERT(!isPessimistic() || !isZombieNode(p));
-  DCASSERT(isReducedNode(p));
   DCASSERT(getInCount(p) > 0);
   
   // decrement incoming count
@@ -2232,7 +2233,7 @@ void expert_forest::unlinkNode(int p)
   fflush(stdout);
 #endif
 
-  if (getInCount(p) == 0) handleNewOrphanNode(p);
+  if (getInCount(p) == 0) { handleNewOrphanNode(p); }
 }
 
 

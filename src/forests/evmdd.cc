@@ -92,6 +92,83 @@ int evmdd_node_manager::createTempNode(int k, int sz, bool clear)
 }
 
 
+forest::error evmdd_node_manager::resizeNode(int p, int size)
+{
+  // This operation can only be performed on Temporary nodes.
+  if (!isActiveNode(p) || isTerminalNode(p) || isReducedNode(p)) {
+    return forest::INVALID_OPERATION;
+  }
+
+  // If node is already large enough, do nothing, and return SUCCESS.
+  int oldSize = getFullNodeSize(p);
+  if (size <= oldSize) return forest::SUCCESS;
+
+  DCASSERT(size > oldSize);
+
+  // Expand node:
+  // (0) Create array of desired size;
+  // (1) Copy the header (change the new node size)
+  // (2) Copy the downpointers (zero-out the trailing dptrs in the new array)
+  // (3) Copy the edge-values (initialize the trailing evs in the new array)
+  // (4) Copy the trailer -- part of the header stored at the end of the node
+  // (5) Discard the old array
+  // (6) Update the offset field
+
+  // (0) Create array of desired size
+  int oldDataArraySize = getDataHeaderSize() + 2 * oldSize ;
+  int newDataArraySize = getDataHeaderSize() + 2 * size ;
+  int nodeLevel = getNodeLevel(p);
+  int newOffset = getHole(nodeLevel, newDataArraySize, true);
+
+  DCASSERT(newDataArraySize > oldDataArraySize);
+
+  // Pointers to old and new data arrays
+  int* prev = getNodeAddress(p);
+  int* curr = level[mapLevel(nodeLevel)].data + newOffset;
+
+  // (1)+(2) Copy the first 3 ints (part of the header) and the downpointers
+  memcpy(curr, prev, (3 + oldSize) * sizeof(int));
+  // Set the new node size
+  curr[2] = size;
+  // Advance pointers
+  prev += 3 + oldSize;
+  curr += 3 + oldSize;
+  // Zero-out the trailing dptrs in the new array
+  memset(curr, 0, (size - oldSize) * sizeof(int));
+  curr += (size - oldSize);
+
+  // (3) Copy the edge-values (initialize the trailing evs in the new array)
+  memcpy(curr, prev, oldSize * sizeof(int));
+  prev += oldSize;
+  curr += oldSize;
+  // Initialize trailing edge-values in the new array
+  DCASSERT(sizeof(int) == sizeof(float));
+  int defaultEV = 0;
+  getDefaultEdgeValue(defaultEV);
+  for (int* last = curr + (size - oldSize); curr != last; )
+  {
+    *curr++ = defaultEV;
+  }
+
+  // (4) Copy the trailer -- part of the header stored at the end of the node.
+  int trailerSize = getDataHeaderSize() - 3;
+  memcpy(curr, prev, trailerSize * sizeof(int));
+  DCASSERT(p == curr[trailerSize - 1]);
+
+  // (5) Discard the old array
+  makeHole(nodeLevel, address[p].offset, oldDataArraySize);
+
+  // (6) Update the offset field
+  address[p].offset = newOffset;
+
+  DCASSERT(size == getFullNodeSize(p));
+  DCASSERT(p == 
+      getNodeAddress(p)[getDataHeaderSize() + 2 * getFullNodeSize(p) - 1]);
+
+  return forest::SUCCESS;
+}
+
+
 // returns index with a[]; -1 if not found
 int binarySearch(const int* a, int sz, int find)
 {
@@ -398,7 +475,7 @@ void evplusmdd_node_manager::normalizeAndReduceNode(int& p, int& ev)
 
   if (0 == nnz) {
     // duplicate of 0
-    deleteTempNode(p);
+    unlinkNode(p);
 #ifdef TRACE_REDUCE
     printf("\tReducing %d, got 0\n", p);
 #endif
@@ -430,7 +507,7 @@ void evplusmdd_node_manager::normalizeAndReduceNode(int& p, int& ev)
     if (i == size ) {
       // for all i, dptr[i] == dptr[0] and eptr[i] == 0
       int temp = sharedCopy(dptr[0]);
-      deleteTempNode(p);
+      unlinkNode(p);
       p = temp;
       return;
     }
@@ -444,7 +521,7 @@ void evplusmdd_node_manager::normalizeAndReduceNode(int& p, int& ev)
     printf("\tReducing %d, got %d\n", p, q);
 #endif
     linkNode(q);
-    deleteTempNode(p);
+    unlinkNode(p);
     p = q;
     return;
   }
@@ -588,9 +665,8 @@ forest::error evplusmdd_node_manager::getElement(int a, int index, int* e)
 forest::error evplusmdd_node_manager::getElement(const dd_edge& a,
     int index, int* e)
 {
-  assert(e != 0);
+  if (e == 0 || index < 0) return forest::INVALID_VARIABLE;
   e[0] = 0;
-  if (index < 0) return forest::INVALID_VARIABLE;
   return getElement(a.getNode(), index, e);
 }
 
@@ -937,7 +1013,7 @@ void evtimesmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
 
   if (0 == nnz) {
     // duplicate of 0
-    deleteTempNode(p);
+    unlinkNode(p);
 #ifdef TRACE_REDUCE
     printf("\tReducing %d, got 0\n", p);
 #endif
@@ -972,7 +1048,7 @@ void evtimesmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
       if (i == size ) {
         // for all i, dptr[i] == dptr[0] and eptr[i] == eptr[0]
         int temp = sharedCopy(dptr[0]);
-        deleteTempNode(p);
+        unlinkNode(p);
         p = temp;
         return;
       }
@@ -987,7 +1063,7 @@ void evtimesmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
     printf("\tReducing %d, got %d\n", p, q);
 #endif
     linkNode(q);
-    deleteTempNode(p);
+    unlinkNode(p);
     p = q;
     return;
   }

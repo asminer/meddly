@@ -104,7 +104,7 @@ class fixed_size_hash_table {
       max_load_size = unsigned(table_size * max_load_factor);
       min_load_size = unsigned(table_size * min_load_factor);
       table = (int*) malloc(sizeof(int) * getSize());
-      assert(NULL != table);
+      if (NULL == table) outOfMemory();
       int *end = table + getSize();
       for (int* curr = table; curr < end; curr++) {
         *curr = nodes->getNull();
@@ -241,7 +241,7 @@ class fixed_size_hash_table {
       max_load_size = int(table_size * max_load_factor);
       min_load_size = int(table_size * min_load_factor);
       table = (int *) realloc(table, table_size * sizeof(int));
-      assert(NULL != table);
+      if (NULL == table) outOfMemory();
 
       for (unsigned i = 0; i < table_size; i++) {
         table[i] = nodes->getNull();
@@ -262,7 +262,7 @@ class fixed_size_hash_table {
       max_load_size = int(table_size * max_load_factor);
       min_load_size = int(table_size * min_load_factor);
       table = (int *) realloc(table, table_size * sizeof(int));
-      assert(NULL != table);
+      if (NULL == table) outOfMemory();
 
       for (unsigned i = 0; i < getSize(); i++) {
         table[i] = nodes->getNull();
@@ -292,7 +292,7 @@ class fixed_size_hash_table {
       min_load_size = unsigned(table_size * min_load_factor);
 
       table = (int*) realloc(table, sizeof(int) * getSize());
-      assert(NULL != table);
+      if (NULL == table) outOfMemory();
       int *end = table + getSize();
       for (int* curr = table; curr < end; curr++) {
         *curr = nodes->getNull();
@@ -410,7 +410,7 @@ class fixed_size_hash_table {
       if (table[h] != nodes->getNull()) {
         // regardless of this nodes state (could be stale),
         // remove it from the cache
-        assert(nodes->getNext(table[h]) == nodes->getNull());
+        DCASSERT(nodes->getNext(table[h]) == nodes->getNull());
         nodes->uncacheNode(table[h]);
         table[h] = nodes->getNull();
         num_entries--;

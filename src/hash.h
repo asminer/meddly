@@ -108,11 +108,11 @@ class hash_table {
       setSize(getMinSize());
       nodes = n;
       table = (int*) malloc(sizeof(int) * getSize());
-      assert(NULL != table);
+      if (NULL == table) outOfMemory();
 
 #ifdef MAX_DEPTH
       depth = (int*) malloc(sizeof(int) * getSize());
-      assert(NULL != depth);
+      if (NULL == depth) outOfMemory();
       memset(depth, 0, sizeof(int) * getSize());
 #endif
 
@@ -255,7 +255,7 @@ class hash_table {
 
 #ifdef MAX_DEPTH
       int* temp = (int*) realloc(depth, sizeof(int) * getSize());
-      assert(temp != NULL);
+      if (temp == NULL) outOfMemory();
       depth = temp;
       memset(depth, 0, sizeof(int) * getSize());
 #endif
@@ -361,7 +361,7 @@ class hash_table {
       setSize(getMinSize());
 
       table = (int*) realloc(table, sizeof(int) * getSize());
-      assert(NULL != table);
+      if (NULL == table) outOfMemory();
       int *end = table + getSize();
       for (int* curr = table; curr < end; curr++) {
         *curr = nodes->getNull();
@@ -369,7 +369,7 @@ class hash_table {
 
 #ifdef MAX_DEPTH
       depth = (int*) realloc(depth, sizeof(int) * getSize());
-      assert(NULL != depth);
+      if (NULL == depth) outOfMemory();
       memset(depth, 0, sizeof(int) * getSize());
 #endif
 
