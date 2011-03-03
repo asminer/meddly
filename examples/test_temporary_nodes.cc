@@ -44,6 +44,68 @@ void printUsage(FILE *outputStream)
 }
 
 
+int reduceTemporaryNode(std::map<int, int>& cache, expert_forest* f, int root)
+{
+  assert(!f->isTerminalNode(root) && !f->isReducedNode(root));
+  assert(f->isFullNode(root));
+
+  // Check cache for result
+  std::map<int, int>::iterator iter = cache.find(root);
+  if (iter != cache.end()) {
+    // Cache hit
+    f->linkNode(iter->second);
+    f->unlinkNode(root);
+    return iter->second;
+  }
+
+  int temp = 0;
+  int dptr = 0;
+  int size = f->getFullNodeSize(root);
+
+  for (int i = 0; i < size; ++i)
+  {
+    dptr = f->getFullNodeDownPtr(root, i);
+
+    // Ignore terminal nodes and reduced nodes
+    if (f->isTerminalNode(dptr) || f->isReducedNode(dptr)) continue;
+
+    temp = reduceTemporaryNode(cache, f, dptr);
+    // At this point, temp's incount has been increased and
+    // dptr's incount has been decreased by 1.
+
+    // Using WoUnlink, since dptr's has already been decreased
+    f->setDownPtrWoUnlink(root, i, temp);
+    // Unlinking temp because setDownPtr increases temp's incount by 1
+    f->unlinkNode(temp);
+  }
+
+  temp = f->reduceNode(root);
+
+  // Save result in cache
+  if (f->isActiveNode(root)) cache[root] = temp;
+
+  return temp;
+}
+
+
+int reduceTemporaryNode(expert_forest* f, int tempNode)
+{
+  // Recursive procedure:
+  // Start at root (i.e. tempNode).
+  // Build a temporary node for root.
+  // -- Build reduced nodes for each child(root).
+  // Keep track of duplicates via a compute cache which maps
+  //   each temporary node to a reduced node.
+
+  if (f->isTerminalNode(tempNode) || f->isReducedNode(tempNode)) {
+    return tempNode;
+  }
+
+  std::map<int, int> cache;
+  return reduceTemporaryNode(cache, f, tempNode);
+}
+
+
 int convertToTemporaryNode(std::map<int, int>& cache,
     expert_forest* f, int root)
 {
@@ -69,7 +131,7 @@ int convertToTemporaryNode(std::map<int, int>& cache,
     }
   }
   else {
-    DCASSERT(f->isSparseNode(root));
+    assert(f->isSparseNode(root));
     int sparseSize = f->getSparseNodeSize(root);
     int size = 1 + f->getSparseNodeIndex(root, sparseSize - 1);
     result = f->createTempNode(level, size, true);
@@ -207,7 +269,15 @@ int main(int argc, char *argv[])
   printf("--------------------\n");
   expertStates->showNodeGraph(stdout, temporaryNode);
 
+#if 0
   expertStates->unlinkNode(temporaryNode);
+#else
+  int reducedNode = reduceTemporaryNode(expertStates, temporaryNode);
+  dd_edge final(states);
+  final.set(reducedNode, 0, expertStates->getNodeLevel(reducedNode));
+  printf("%s\n",
+      (final == initialState)? "final == initial": "final != initial");
+#endif
 
   // Cleanup; in this case simply delete the domain
   delete d;

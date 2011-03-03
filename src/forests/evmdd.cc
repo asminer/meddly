@@ -438,7 +438,6 @@ void evplusmdd_node_manager::normalizeAndReduceNode(int& p, int& ev)
 
   DCASSERT(!isTerminalNode(p));
   DCASSERT(isFullNode(p));
-  DCASSERT(getInCount(p) == 1);
 
   const int size = getFullNodeSize(p);
   int *dptr = getFullNodeDownPtrs(p);
@@ -976,7 +975,6 @@ void evtimesmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
 
   DCASSERT(!isTerminalNode(p));
   DCASSERT(isFullNode(p));
-  DCASSERT(getInCount(p) == 1);
 
   const int size = getFullNodeSize(p);
   int *dptr = getFullNodeDownPtrs(p);

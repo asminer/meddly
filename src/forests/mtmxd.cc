@@ -153,7 +153,6 @@ int mtmxd_node_manager::reduceNode(int p)
 
   DCASSERT(!isTerminalNode(p));
   DCASSERT(isFullNode(p));
-  DCASSERT(getInCount(p) == 1);
 
   int size = getFullNodeSize(p);
   int* ptr = getFullNodeDownPtrs(p);

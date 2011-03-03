@@ -401,6 +401,12 @@ class expert_forest : public forest
     /// forest::SUCCESS               Cardinality set successfully.
     forest::error setIndexSetCardinality(int node, int c);
 
+    /// Is this node an active node?
+    /// An active node is a node that has not yet been recycled (i.e. dead).
+    /// Temporary nodes, Reduced nodes and Terminal nodes are considered
+    /// to be active nodes.
+    bool isActiveNode(int node) const;
+
   protected:
 
     void unregisterDDEdges();
@@ -413,7 +419,6 @@ class expert_forest : public forest
     int mapLevel(int level) const;
     int unmapLevel(int level) const;
 
-    bool isActiveNode(int node) const;
     bool isZombieNode(int node) const;
 
     bool isPessimistic() const;
@@ -1828,8 +1833,7 @@ int expert_forest::unmapLevel(int k) const
 inline
 bool expert_forest::isActiveNode(int p) const
 {
-  DCASSERT(isValidNodeIndex(p));
-  return (isTerminalNode(p) || getNodeOffset(p) > 0);
+  return (isValidNodeIndex(p) && (isTerminalNode(p) || getNodeOffset(p) > 0));
 }
 
 
