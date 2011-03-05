@@ -172,12 +172,10 @@ class node_manager : public expert_forest {
     /// a node is reduced, its contents cannot be modified.
     virtual int reduceNode(int node) = 0;
     // Dummy version available here.
-    // In mdds_ext.h
 
     /// Reduce and finalize an node with an incoming edge value
     virtual void normalizeAndReduceNode(int& node, int& ev) = 0;
     // Dummy version available here.
-    // In mdds_ext.h
 
     virtual int getDownPtr(int p, int i) const;
 
@@ -398,6 +396,11 @@ class node_manager : public expert_forest {
   protected:
   
     // modify temp nodes count for level k as well as the global count
+    // the temporary node count should be incremented only within
+    // createTempNode() or variants.
+    // decrTempNodeCount() should be called by any method that changes a
+    // temporary node to a reduced node.
+    // Note: deleting a temp node automatically calls decrTempNodeCount().
     void incrTempNodeCount(int k);
     void decrTempNodeCount(int k);
     

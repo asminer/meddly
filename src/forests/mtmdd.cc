@@ -141,6 +141,66 @@ forest::error mtmdd_node_manager::resizeNode(int p, int size)
 }
 
 
+int mtmdd_node_manager::recursiveReduceNode(std::map<int, int>& cache,
+    int root)
+{
+  DCASSERT(!isReducedNode(root));
+  DCASSERT(isFullNode(root));
+
+  // Check cache for result
+  std::map<int, int>::iterator iter = cache.find(root);
+  if (iter != cache.end()) {
+    // Cache hit
+    linkNode(iter->second);
+    unlinkNode(root);
+    return iter->second;
+  }
+
+  int temp = 0;
+  int dptr = 0;
+  int size = getFullNodeSize(root);
+
+  for (int i = 0; i < size; ++i)
+  {
+    dptr = getFullNodeDownPtr(root, i);
+
+    // Ignore terminal nodes and reduced nodes
+    if (isReducedNode(dptr)) continue;
+
+    temp = recursiveReduceNode(cache, dptr);
+    // At this point, temp's incount has been increased and
+    // dptr's incount has been decreased by 1.
+
+    // Using WoUnlink, since dptr's has already been decreased
+    setDownPtrWoUnlink(root, i, temp);
+    // Unlinking temp because setDownPtr increases temp's incount by 1
+    unlinkNode(temp);
+  }
+
+  temp = reduceNode(root);
+
+  // Save result in cache
+  if (isActiveNode(root)) cache[root] = temp;
+
+  return temp;
+}
+
+
+int mtmdd_node_manager::recursiveReduceNode(int tempNode)
+{
+  // Recursive procedure:
+  // Start at root (i.e. tempNode).
+  // Build a temporary node for root.
+  // -- Build reduced nodes for each child(root).
+  // Keep track of duplicates via a compute cache which maps
+  //   each temporary node to a reduced node.
+
+  DCASSERT(!isReducedNode(tempNode));
+  std::map<int, int> cache;
+  return recursiveReduceNode(cache, tempNode);
+}
+
+
 int mtmdd_node_manager::reduceNode(int p)
 {
   DCASSERT(isActiveNode(p));
@@ -154,7 +214,7 @@ int mtmdd_node_manager::reduceNode(int p)
   int* ptr = getFullNodeDownPtrs(p);
   int node_level = getNodeLevel(p);
 
-  decrTempNodeCount(node_level);
+  //HERE
 
 #ifdef DEVELOPMENT_CODE
   validateDownPointers(p);
@@ -163,13 +223,32 @@ int mtmdd_node_manager::reduceNode(int p)
   // quick scan: is this node zero?
   int nnz = 0;
   int truncsize = 0;
-  for (int i = 0; i < size; ++i) {
-    if (0 != ptr[i]) {
-      nnz++;
-      truncsize = i;
+  {
+#if 0
+    for (int i = 0; i < size; ++i) {
+      if (!isReducedNode(ptr[i])) {
+        ptr[i] = recursiveReduceNode(ptr[i]);
+      }
+      if (0 != ptr[i]) {
+        nnz++;
+        truncsize = i;
+      }
     }
+    truncsize++;
+#else
+    int* curr = ptr;
+    int* last = curr + size;
+    while (curr != last) {
+      if (!isReducedNode(*curr)) {
+        *curr = recursiveReduceNode(*curr);
+      }
+      if (0 != *curr++) {
+        ++nnz;
+        truncsize = curr - ptr;
+      }
+    }
+#endif
   }
-  truncsize++;
 
   if (0 == nnz) {
     // duplicate of 0
@@ -298,6 +377,10 @@ int mtmdd_node_manager::reduceNode(int p)
   // Sanity check that the hash value is unchanged
   DCASSERT(find(p) == p);
 
+  // Temporary node has been transformed to a reduced node; decrement
+  // temporary node count.
+  decrTempNodeCount(node_level);
+
   return p;
 }
 
@@ -386,7 +469,6 @@ int mtmdd_node_manager::createNode(int k, int index, int dptr)
       unlinkNode(p);
       p = sharedCopy(q);
     }
-    decrTempNodeCount(k);
     return p;
   }
 }

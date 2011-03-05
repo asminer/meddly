@@ -158,8 +158,6 @@ int mtmxd_node_manager::reduceNode(int p)
   int* ptr = getFullNodeDownPtrs(p);
   int node_level = getNodeLevel(p);
 
-  decrTempNodeCount(node_level);
-
 #ifdef DEVELOPMENT_CODE
   validateDownPointers(p);
 #endif
@@ -285,6 +283,10 @@ int mtmxd_node_manager::reduceNode(int p)
   // Sanity check that the hash value is unchanged
   DCASSERT(find(p) == p);
 
+  // Temporary node has been transformed to a reduced node; decrement
+  // temporary node count.
+  decrTempNodeCount(node_level);
+
   return p;
 }
 
@@ -332,7 +334,6 @@ int mtmxd_node_manager::createNode(int k, int index, int dptr)
       unlinkNode(p);
       p = sharedCopy(q);
     }
-    decrTempNodeCount(k);
     return p;
   }
 }

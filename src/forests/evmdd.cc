@@ -444,8 +444,6 @@ void evplusmdd_node_manager::normalizeAndReduceNode(int& p, int& ev)
   int *eptr = getFullNodeEdgeValues(p);
   const int node_level = getNodeLevel(p);
 
-  decrTempNodeCount(node_level);
-
 #ifdef DEVELOPMENT_CODE
   const int node_height = getNodeHeight(p);
   for (int i=0; i<size; i++) {
@@ -613,6 +611,10 @@ void evplusmdd_node_manager::normalizeAndReduceNode(int& p, int& ev)
   DCASSERT(getCacheCount(p) == 0);
   // Sanity check that the hash value is unchanged
   DCASSERT(find(p) == p);
+
+  // Temporary node has been transformed to a reduced node; decrement
+  // temporary node count.
+  decrTempNodeCount(node_level);
 
   return;
 }
@@ -982,8 +984,6 @@ void evtimesmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
   float *fptr = (float *)eptr;
   const int node_level = getNodeLevel(p);
 
-  decrTempNodeCount(node_level);
-
 #ifdef DEVELOPMENT_CODE
   const int node_height = getNodeHeight(p);
   for (int i=0; i<size; i++) {
@@ -1154,6 +1154,10 @@ void evtimesmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
   DCASSERT(getCacheCount(p) == 0);
   // Sanity check that the hash value is unchanged
   DCASSERT(find(p) == p);
+
+  // Temporary node has been transformed to a reduced node; decrement
+  // temporary node count.
+  decrTempNodeCount(node_level);
 
   return;
 }

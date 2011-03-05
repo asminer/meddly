@@ -1805,6 +1805,7 @@ void node_manager::deleteNode(int p)
     // Temporary node
     // TODO:
     // clear cache of corresponding temporary node?
+    decrTempNodeCount(k);
   }
 
   // unlink children
@@ -2688,7 +2689,7 @@ void node_manager::validateDownPointers(int p)
       if (isUnprimedNode(p)) {
         // unprimed node
         for (int i = 0; i < nodeSize; ++i) {
-          assert(isReducedNode(ptr[i]));
+          //assert(isReducedNode(ptr[i]));
           assert(!isForRelations() ||
               isTerminalNode(ptr[i]) ||
               getNodeHeight(ptr[i]) < nodeHeight ||
@@ -2697,7 +2698,7 @@ void node_manager::validateDownPointers(int p)
       } else {
         // primed node
         for (int i = 0; i < nodeSize; ++i) {
-          assert(isReducedNode(ptr[i]));
+          //assert(isReducedNode(ptr[i]));
           assert(isTerminalNode(ptr[i]) ||
               getNodeHeight(ptr[i]) < nodeHeight);
         }
@@ -2708,7 +2709,7 @@ void node_manager::validateDownPointers(int p)
       if (isUnprimedNode(p)) {
         // unprimed node
         for (int i = 0; i < nodeSize; ++i) {
-          assert(isReducedNode(ptr[i]));
+          //assert(isReducedNode(ptr[i]));
           assert(!isForRelations() ||
               isTerminalNode(ptr[i]) ||
               getNodeLevel(ptr[i]) == -nodeLevel);
@@ -2716,7 +2717,7 @@ void node_manager::validateDownPointers(int p)
       } else {
         // primed node
         for (int i = 0; i < nodeSize; ++i) {
-          assert(isReducedNode(ptr[i]));
+          //assert(isReducedNode(ptr[i]));
           assert(isTerminalNode(ptr[i]) ||
               (getNodeHeight(ptr[i]) == (nodeHeight - 1) &&
                isUnprimedNode(ptr[i])));
@@ -2729,13 +2730,13 @@ void node_manager::validateDownPointers(int p)
       if (isUnprimedNode(p)) {
         // unprimed node
         for (int i = 0; i < nodeSize; ++i) {
-          assert(isReducedNode(ptr[i]));
+          //assert(isReducedNode(ptr[i]));
           assert(ptr[i] == 0 || (getNodeLevel(ptr[i]) == -nodeLevel));
         }
       } else {
         // primed node
         for (int i = 0; i < nodeSize; ++i) {
-          assert(isReducedNode(ptr[i]));
+          //assert(isReducedNode(ptr[i]));
           assert(getNodeHeight(ptr[i]) < nodeHeight);
           assert(isTerminalNode(ptr[i]) || isUnprimedNode(ptr[i]));
         }

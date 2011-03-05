@@ -172,6 +172,14 @@ class expert_forest : public forest
     virtual void normalizeAndReduceNode(int& node, int& ev) = 0;
     virtual void normalizeAndReduceNode(int& node, float& ev) = 0;
 
+#if 0
+    /// A is a temporary node, and B is a reduced node.
+    /// Accumulate B into A, i.e. A += B.
+    /// A still remains a temporary node.
+    /// B is not modified.
+    virtual forest::error accumulate(int A, int B) = 0;
+#endif
+
     /// Has the node been reduced
     virtual bool isReducedNode(int node) const = 0;
 

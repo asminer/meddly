@@ -44,65 +44,78 @@ void printUsage(FILE *outputStream)
 }
 
 
-int reduceTemporaryNode(std::map<int, int>& cache, expert_forest* f, int root)
+int accumulate(expert_forest* f, int tempNode, int mdd)
 {
-  assert(!f->isTerminalNode(root) && !f->isReducedNode(root));
-  assert(f->isFullNode(root));
+  assert(f != 0);
+  assert(f->isReducedNode(mdd));
 
-  // Check cache for result
-  std::map<int, int>::iterator iter = cache.find(root);
-  if (iter != cache.end()) {
-    // Cache hit
-    f->linkNode(iter->second);
-    f->unlinkNode(root);
-    return iter->second;
+  // tempNode is a reduced node
+  if (f->isReducedNode(tempNode)) {
+    // Terminal cases
+
+    // One of the nodes is 0. Result is other node.
+    if (tempNode == 0 || mdd == 0) {
+      int result = tempNode + mdd;
+      f->linkNode(result);
+      return result;
+    }
+
+    // One of the nodes is 1. Result is 1.
+    // Terminal node for 1 is internally represented as -1.
+    if (tempNode == -1 || mdd == -1) {
+      return -1;
+    }
+
+    // Neither tempNode nor mdd is a terminal node.
+    // Compute result using dd_edge::operator+=.
+    dd_edge nodeA(f);
+    f->linkNode(tempNode);
+    nodeA.set(tempNode, 0, f->getNodeLevel(tempNode));
+    dd_edge nodeB(f);
+    f->linkNode(mdd);
+    nodeB.set(mdd, 0, f->getNodeLevel(mdd));
+    nodeA += nodeB;
+    // nodeA will unlink its node when this method returns,
+    // and this could result in a "stale" node being returned.
+    // To avoid this increment the incount for the result.
+    int result = nodeA.getNode();
+    f->linkNode(result);
+    return result;
   }
 
-  int temp = 0;
-  int dptr = 0;
-  int size = f->getFullNodeSize(root);
-
-  for (int i = 0; i < size; ++i)
-  {
-    dptr = f->getFullNodeDownPtr(root, i);
-
-    // Ignore terminal nodes and reduced nodes
-    if (f->isTerminalNode(dptr) || f->isReducedNode(dptr)) continue;
-
-    temp = reduceTemporaryNode(cache, f, dptr);
-    // At this point, temp's incount has been increased and
-    // dptr's incount has been decreased by 1.
-
-    // Using WoUnlink, since dptr's has already been decreased
-    f->setDownPtrWoUnlink(root, i, temp);
-    // Unlinking temp because setDownPtr increases temp's incount by 1
-    f->unlinkNode(temp);
+  // tempNode is a temporary node
+  else {
+    if (f->isFullNode(mdd)) {
+      int size = f->getFullNodeSize(mdd);
+      if (f->getFullNodeSize(tempNode) < size) {
+        f->resizeNode(tempNode, size);
+      }
+      for (int i = 0; i < size; ++i) {
+        int acc = accumulate(f, f->getFullNodeDownPtr(tempNode, i),
+            f->getFullNodeDownPtr(mdd, i));
+        f->setDownPtr(tempNode, i, acc);
+        f->unlinkNode(acc);
+      }
+    }
+    else {
+      assert(f->isSparseNode(mdd));
+      int nDptrs = f->getSparseNodeSize(mdd);
+      int size = 1 + f->getSparseNodeIndex(mdd, nDptrs - 1);
+      if (f->getFullNodeSize(tempNode) < size) {
+        f->resizeNode(tempNode, size);
+      }
+      for (int i = 0; i < nDptrs; ++i) {
+        int index = f->getSparseNodeIndex(mdd, i);
+        int temp = f->getFullNodeDownPtr(tempNode, index);
+        int acc = accumulate(f, temp, f->getSparseNodeDownPtr(mdd, i));
+        f->setDownPtr(tempNode, index, acc);
+        f->unlinkNode(acc);
+      }
+    }
   }
 
-  temp = f->reduceNode(root);
-
-  // Save result in cache
-  if (f->isActiveNode(root)) cache[root] = temp;
-
-  return temp;
-}
-
-
-int reduceTemporaryNode(expert_forest* f, int tempNode)
-{
-  // Recursive procedure:
-  // Start at root (i.e. tempNode).
-  // Build a temporary node for root.
-  // -- Build reduced nodes for each child(root).
-  // Keep track of duplicates via a compute cache which maps
-  //   each temporary node to a reduced node.
-
-  if (f->isTerminalNode(tempNode) || f->isReducedNode(tempNode)) {
-    return tempNode;
-  }
-
-  std::map<int, int> cache;
-  return reduceTemporaryNode(cache, f, tempNode);
+  f->linkNode(tempNode);
+  return tempNode;
 }
 
 
@@ -253,30 +266,78 @@ int main(int argc, char *argv[])
   expert_forest* expertStates = dynamic_cast<expert_forest*>(states);
   assert(0 != expertStates);
 
-  dd_edge initialState(states);
+  dd_edge nodeA(states);
+  dd_edge nodeB(states);
 
   // Use Meddly's batch addition to combine all elements in one step.
   assert(forest::SUCCESS ==
-      states->createEdge(elements, nElements, initialState));
+      states->createEdge(elements, nElements/2, nodeA));
+  assert(forest::SUCCESS ==
+      states->createEdge(elements + nElements/2,
+        nElements - nElements/2, nodeB));
 
-  int temporaryNode = 0;
-  convertDDEdgeToTemporaryNode(initialState, temporaryNode);
-
-  printf("Initial State Graph\n");
-  printf("-------------------\n");
-  expertStates->showNodeGraph(stdout, initialState.getNode());
-  printf("Temporary Node Graph\n");
-  printf("--------------------\n");
-  expertStates->showNodeGraph(stdout, temporaryNode);
+  int tempA = 0;
+  convertDDEdgeToTemporaryNode(nodeA, tempA);
 
 #if 0
-  expertStates->unlinkNode(temporaryNode);
-#else
-  int reducedNode = reduceTemporaryNode(expertStates, temporaryNode);
+  printf("nodeA\n");
+  printf("-------------------\n");
+  expertStates->showNodeGraph(stdout, nodeA.getNode());
+  printf("tempA\n");
+  printf("--------------------\n");
+  expertStates->showNodeGraph(stdout, tempA);
+#endif
+
+#if 0
+  int reducedNode = expertStates->reduceNode(tempA);
   dd_edge final(states);
   final.set(reducedNode, 0, expertStates->getNodeLevel(reducedNode));
   printf("%s\n",
-      (final == initialState)? "final == initial": "final != initial");
+      (final == nodeA)? "final == nodeA": "final != nodeA");
+#else
+
+  printf("tempA\n");
+  printf("-----\n");
+  expertStates->showNodeGraph(stdout, tempA);
+  printf("###################\n");
+  printf("nodeB\n");
+  printf("-----\n");
+  expertStates->showNodeGraph(stdout, nodeB.getNode());
+  printf("###################\n");
+
+  assert(!expertStates->isReducedNode(tempA));
+  int accumulator = accumulate(expertStates, tempA, nodeB.getNode());
+  assert(accumulator == tempA);
+
+  printf("tempA after Accumulation\n");
+  printf("------------------------\n");
+  expertStates->showNodeGraph(stdout, tempA);
+  printf("###################\n");
+
+  printf("nodeCount(tempA) = %d\n", expertStates->getInCount(tempA));
+  expertStates->unlinkNode(tempA);
+  accumulator = expertStates->reduceNode(tempA);
+
+  printf("tempA after Reduction\n");
+  printf("------------------------\n");
+  expertStates->showNodeGraph(stdout, accumulator);
+  printf("###################\n");
+
+  dd_edge aUnionB = nodeA + nodeB;
+  dd_edge final(states);
+  final.set(accumulator, 0, expertStates->getNodeLevel(accumulator));
+
+#if 0
+  printf("aUnionB\n");
+  printf("-------------------\n");
+  expertStates->showNodeGraph(stdout, aUnionB.getNode());
+  printf("final\n");
+  printf("--------------------\n");
+  expertStates->showNodeGraph(stdout, final.getNode());
+#endif
+
+  printf("%s\n",
+      (final == aUnionB)? "final == aUnionB": "final != aUnionB");
 #endif
 
   // Cleanup; in this case simply delete the domain
