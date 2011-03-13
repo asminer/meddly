@@ -151,6 +151,16 @@ class node_manager : public expert_forest {
     virtual forest::error findFirstElement(const dd_edge& f, int* vlist,
         int* vplist) const;
 
+    virtual forest::error accumulate(int& a, int b);
+    virtual forest::error accumulate(int& tempNode, int* element);
+
+    // cBM: Copy before modifying.
+    virtual int accumulateMdd(int a, int b, bool cBM);
+    virtual int addReducedNodes(int a, int b);
+    virtual int accumulateExpandA(int a, int b, bool cBM);
+    int accumulate(int tempNode, bool cBM, int* element, int level);
+    virtual int makeACopy(int node, int size = 0);
+
     /// Create a temporary node -- a node that can be modified by the user
     virtual int createTempNode(int lh, int size, bool clear = true);
 
@@ -540,7 +550,6 @@ inline void node_manager::reclaimOrphanNode(int p) {
   DCASSERT(isActiveNode(p));
   DCASSERT(!isTerminalNode(p));
   DCASSERT(isReducedNode(p));
-  DCASSERT(getInCount(p) == 0);
   reclaimed_nodes++;
   orphan_nodes--;
 }  

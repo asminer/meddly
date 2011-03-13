@@ -2603,6 +2603,7 @@ void node_manager::compareCacheCounts(int p)
 #endif
 }
 
+
 void node_manager::validateIncounts()
 {
 #if ENABLE_IN_COUNTING
@@ -2620,6 +2621,7 @@ void node_manager::validateIncounts()
       if (isFullNode(i)) {
         dptrs = getFullNodeDownPtrsReadOnly(i);
         for (int j = getFullNodeSize(i) - 1; j >=0 ; --j) {
+          if (isTerminalNode(dptrs[j])) continue;
           CHECK_RANGE(0, dptrs[j], sz);
           in_count[dptrs[j]]++;
         }
@@ -2627,6 +2629,7 @@ void node_manager::validateIncounts()
         DCASSERT(isSparseNode(i));
         dptrs = getSparseNodeDownPtrs(i);
         for (int j = getSparseNodeSize(i) - 1; j >= 0; --j) {
+          if (isTerminalNode(dptrs[j])) continue;
           CHECK_RANGE(0, dptrs[j], sz);
           in_count[dptrs[j]]++;
         }
@@ -2746,5 +2749,313 @@ void node_manager::validateDownPointers(int p)
     default:
       break;
   }
+}
+
+
+int node_manager::addReducedNodes(int a, int b)
+{
+  DCASSERT(isReducedNode(a));
+  DCASSERT(isReducedNode(b));
+  DCASSERT(!isTerminalNode(a));
+  DCASSERT(!isTerminalNode(b));
+
+  // Neither a nor b is a terminal node.
+  // Compute result using dd_edge::operator+=.
+  dd_edge nodeA(this);
+  linkNode(a);
+  nodeA.set(a, 0, getNodeLevel(a));
+  dd_edge nodeB(this);
+  linkNode(b);
+  nodeB.set(b, 0, getNodeLevel(b));
+  nodeA += nodeB;
+  // nodeA will unlink its node when this method returns,
+  // and this could result in a "stale" node being returned.
+  // To avoid this increment the incount for the result.
+  return sharedCopy(nodeA.getNode());
+}
+
+
+// Creates a temporary node as a copy of node a.
+// The size variable can be used to create a node a size larger than a.
+int node_manager::makeACopy(int a, int size)
+{
+  DCASSERT(getEdgeLabeling() == forest::MULTI_TERMINAL);
+  int result = 0;
+  if (isFullNode(a)) {
+    int aSize = getFullNodeSize(a);
+    int newSize = MAX ( size ,  aSize ) ;
+    result = createTempNode(getNodeLevel(a), newSize, false);
+    int i = 0;
+    for ( ; i < aSize; ++i) {
+      setDownPtrWoUnlink(result, i, getFullNodeDownPtr(a, i));
+    }
+    for ( ; i < newSize; ) {
+      setDownPtrWoUnlink(result, i++, 0);
+    }
+  }
+  else {
+    DCASSERT(isSparseNode(a));
+    int nDptrs = getSparseNodeSize(a);
+    int aSize = 1 + getSparseNodeIndex(a, nDptrs - 1);
+    int newSize = MAX ( size, aSize ) ;
+    result = createTempNode(getNodeLevel(a), newSize, true);
+    for (int i = 0; i < nDptrs; ++i) {
+      setDownPtrWoUnlink(result, getSparseNodeIndex(a, i),
+          getSparseNodeDownPtr(a, i));
+    }
+  }
+  return result;
+}
+
+
+// For all i, a[i] += b
+int node_manager::accumulateExpandA(int a, int b, bool cBM)
+{
+  DCASSERT(getReductionRule() != forest::IDENTITY_REDUCED);
+
+  bool needsToMakeACopy = cBM;
+  int savedTempNode = a;
+
+  int aSize = getFullNodeSize(a);
+  int aLevel = getNodeLevel(a);
+  int levelSize = getLevelSize(aLevel);
+
+  if (aSize < levelSize) {
+    if (needsToMakeACopy) {
+      a = makeACopy(a, levelSize);
+      needsToMakeACopy = false;
+    } else {
+      resizeNode(a, levelSize);
+    }
+    aSize = getFullNodeSize(a);
+  }
+
+  DCASSERT(aSize == levelSize);
+
+  for (int i = 0; i < aSize; i++) {
+    int dptr = getFullNodeDownPtr(a, i);
+    int result = accumulateMdd(dptr, b, cBM);
+    if (result != dptr) {
+      if (needsToMakeACopy) {
+        a = makeACopy(a);
+        needsToMakeACopy = false;
+      }
+      setDownPtr(a, i, result);
+    }
+    unlinkNode(result);
+  }
+
+  return savedTempNode == a? sharedCopy(a): a;
+}
+
+
+int node_manager::accumulateMdd(int a, int b, bool cBM)
+{
+  DCASSERT(getReductionRule() != forest::IDENTITY_REDUCED);
+  DCASSERT(isReducedNode(b));
+
+  // Terminal nodes
+  if (a == 0 || b == 0) { return sharedCopy(a + b); }
+  if (a == -1 || b == -1) { return sharedCopy(-1); }
+
+  DCASSERT(!isTerminalNode(a) && !isTerminalNode(b));
+
+  // a is a reduced node
+  if (isReducedNode(a)) {
+    return addReducedNodes(a, b);
+  }
+
+  // a is a temporary node
+  int aHeight = getMappedNodeHeight(a);
+  int bHeight = getMappedNodeHeight(b);
+
+  if (getInCount(a) > 1) cBM = true;
+
+  if (aHeight > bHeight) {
+    // b's levels were skipped.
+    // only quasi- and fully- reduced Mdds.
+    // a[i] += b
+    return accumulateExpandA(a, b, cBM);
+  }
+
+  bool needsToMakeACopy = cBM;
+  int savedTempNode = a;
+
+  if (aHeight < bHeight) {
+    // Build node c at the same level as b.
+    // set all c[i] = a;
+    int temp = a;
+    a = createTempNodeMaxSize(getNodeLevel(b), false);
+    setAllDownPtrsWoUnlink(a, temp);
+    needsToMakeACopy = false;
+  }
+
+  // Expand both nodes. a is a full node, b can be either sparse or full.
+
+  // Node b is Truncated-Full
+  if (isFullNode(b)) {
+    int size = getFullNodeSize(b);
+    // Resize a.
+    if (getFullNodeSize(a) < size) {
+      if (needsToMakeACopy) {
+        a = makeACopy(a, size);
+        needsToMakeACopy = false;
+      } else {
+        resizeNode(a, size);
+      }
+      DCASSERT(getFullNodeSize(a) == size);
+    }
+    // Accumulate into a.
+    for (int i = 0; i < size; ++i) {
+      int dptr = getFullNodeDownPtr(a, i);
+      int result = accumulateMdd(dptr, getFullNodeDownPtr(b, i), cBM);
+      if (result != dptr) {
+        if (needsToMakeACopy) {
+          a = makeACopy(a);
+          needsToMakeACopy = false;
+        }
+        setDownPtr(a, i, result);
+      }
+      unlinkNode(result);
+    }
+  }
+  // Node b is Sparse
+  else {
+    DCASSERT(isSparseNode(b));
+    int nDptrs = getSparseNodeSize(b);
+    int size = 1 + getSparseNodeIndex(b, nDptrs - 1);
+    // Resize a.
+    if (getFullNodeSize(a) < size) {
+      if (needsToMakeACopy) {
+        a = makeACopy(a, size);
+        needsToMakeACopy = false;
+      } else {
+        resizeNode(a, size);
+      }
+      DCASSERT(getFullNodeSize(a) == size);
+    }
+    // Accumulate into a.
+    for (int i = 0; i < nDptrs; ++i) {
+      int index = getSparseNodeIndex(b, i);
+      int dptr = getFullNodeDownPtr(a, index);
+      int result = accumulateMdd(dptr, getSparseNodeDownPtr(b, i), cBM);
+      if (result != dptr) {
+        if (needsToMakeACopy) {
+          a = makeACopy(a);
+          needsToMakeACopy = false;
+        }
+        setDownPtr(a, index, result);
+      }
+      unlinkNode(result);
+    }
+  }
+
+  return savedTempNode == a? sharedCopy(a): a;
+}
+
+
+forest::error node_manager::accumulate(int& a, int b)
+{
+  if (isActiveNode(a) && isActiveNode(b)) {
+    int result = accumulateMdd(a, b, false);
+    unlinkNode(a);
+    a = result;
+    return forest::SUCCESS;
+  }
+  return forest::INVALID_OPERATION;
+}
+
+
+// Add an element to a temporary edge
+// Start this recursion at the top level in the domain.
+// Use expert_domain::getTopVariable() to obtain the topmost level in
+// the domain.
+// cBM: copy before modifying.
+int node_manager::accumulate(int tempNode, bool cBM,
+    int* element, int level)
+{
+  DCASSERT(isMdd());
+
+  if (tempNode == -1) return -1;
+  if (level == 0) return -1;
+
+  int index = element[level];
+  int nodeLevel = getNodeLevel(tempNode);
+  int nextLevel = getDomain()->getVariableBelow(level);
+
+  int dptr = 0;
+  int newDptr = 0;
+  int inCount = 0;
+
+  if (level == nodeLevel) {
+    inCount = getInCount(tempNode);
+    dptr = getDownPtr(tempNode, index);
+  }
+  else {
+    // Levels have been skipped.
+    // We are only dealing with MDDs here.
+    inCount = getLevelSize(level);
+    dptr = tempNode;
+  }
+
+  // An incount > 1 indicates a need to duplicate the node before
+  // modifying.
+  if (inCount > 1) cBM = true;
+
+  newDptr = accumulate(dptr, cBM, element, nextLevel);
+
+  if (newDptr == dptr) {
+    // Element got absorbed into dptr
+    return tempNode;
+  }
+
+  // If tempNode is 0, create a temporary node.
+  // If tempNode is a reduced node or if its incount > 1,
+  //    create a copy (which is a temporary node).
+  // Otherwise, use tempNode (should be a temporary node with incount == 1).
+  int newNode = 0;
+  if (tempNode == 0) {
+    newNode = createTempNode(level, index + 1, true);
+  } else if (level != nodeLevel) {
+    newNode = createTempNodeMaxSize(level, false);
+    setAllDownPtrsWoUnlink(newNode, dptr);
+  } else if (isReducedNode(tempNode)) {
+    newNode = makeACopy(tempNode, index + 1);
+  } else if (cBM) {
+    newNode = makeACopy(tempNode, index + 1);
+  } else {
+    newNode = tempNode;
+  }
+
+  DCASSERT(!isReducedNode(newNode));
+  if (getFullNodeSize(newNode) < (index + 1)) {
+    resizeNode(newNode, index + 1);
+  }
+  setDownPtr(newNode, index, newDptr);
+  unlinkNode(newDptr);
+
+  return newNode;
+}
+
+
+// Add an element to a temporary edge
+forest::error node_manager::accumulate(int& tempNode, int* element)
+{
+  if (isActiveNode(tempNode) && element != 0) {
+    int result = accumulate(tempNode, false,
+        element, expertDomain->getTopVariable());
+    if (tempNode != result) {
+      // tempNode had to be copied into another node by accumulate().
+      // This could be either because tempNode was a reduced node,
+      // or because tempNode had incount > 1.
+      unlinkNode(tempNode);
+      tempNode = result;
+    }
+    // Note: tempNode == result indicates that the element was added
+    // to the existing temporary node. Therefore, there is no need to
+    // change incounts.
+    return forest::SUCCESS;
+  }
+  return forest::INVALID_OPERATION;
 }
 

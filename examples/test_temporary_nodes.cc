@@ -35,87 +35,241 @@
 // Timer class
 #include "timer.h"
 
-#define VERBOSE
+#include <set>
+
+//#define VERBOSE
+
+const int trueNode = -1;
+
+void findNodesInGraph(expert_forest* f, int node, std::set<int>& result);
+
+void convertDDEdgeToTemporaryNode(const dd_edge& a, int& b);
+int convertToTemporaryNode(std::map<int, int>& cache,
+    expert_forest* f, int root);
+void printUsage(FILE *outputStream);
+
+// TestA:
+// Builds temporary nodes by hand.
+// Adds elements on at a time and prints the results.
+void testA(expert_forest* f);
+
+// PhaseI: use convertDDEdgeToTemporaryNode.
+void doPhaseI(expert_forest* f, const int* const* elements,
+    int start, int end, int& tempNode);
+// PhaseII: use accumulate += minterms
+void doPhaseII(expert_forest* f, const int* const* elements,
+    int start, int end, int& tempNode);
+// Phase III: use acccumulate += mdd
+void doPhaseIII(expert_forest* f, const int* const* elements,
+    int start, int end, int& tempNode);
+
+void printIncounts(expert_forest* f, int node);
+
+int main(int argc, char *argv[])
+{
+  if (argc != 4) {
+    printUsage(stdout);
+    exit(1);
+  }
+
+  srandom(1u);
+
+  // initialize number of variables, their bounds and the number of elements
+  // to create
+
+  int nVariables = 0;
+  int variableBound = 0;
+  int nElements = 0;
+
+  sscanf(argv[1], "%d", &nVariables);
+  assert(nVariables > 0);
+
+  sscanf(argv[2], "%d", &variableBound);
+  assert(variableBound > 0);
+
+  sscanf(argv[3], "%d", &nElements);
+  assert(nElements > 0);
+
+  printf("#variables: %d, variable bound: %d, #elements: %d\n",
+      nVariables, variableBound, nElements);
+
+  // create the elements randomly
+
+  int** elements = (int **) malloc(nElements * sizeof(int *));
+  for (int i = 0; i < nElements; ++i)
+  {
+    elements[i] = (int *) malloc((nVariables + 1) * sizeof(int));
+    elements[i][0] = 0;
+    for (int j = nVariables; j >= 1; --j)
+    {
+      elements[i][j] = int(float(variableBound) * random() / (RAND_MAX + 1.0));
+      assert(elements[i][j] >= 0 && elements[i][j] < variableBound);
+    }
+    // print element[i]
+#ifdef VERBOSE
+    printf("Element %d: [%d", i, elements[i][0]);
+    for (int j = 1; j <= nVariables; ++j)
+    {
+      printf(" %d", elements[i][j]);
+    }
+    printf("]\n");
+#endif
+  }
+
+#ifdef VERBOSE
+  printf("#########################################################\n\n");
+#endif
+
+  // initialize the variable bounds array to provide to the domain
+
+  int* bounds = (int *) malloc(nVariables * sizeof(int));
+  assert(bounds != 0);
+  for (int i = 0; i < nVariables; ++i)
+  {
+    bounds[i] = variableBound;
+  }
+
+  // Create a domain
+  domain *d = MEDDLY_createDomain();
+  assert(d != 0);
+  assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVariables));
+
+  // Create an MDD forest in this domain (to store states)
+  forest* states = d->createForest(false, forest::BOOLEAN,
+      forest::MULTI_TERMINAL);
+  assert(states != 0);
+
+  assert(forest::SUCCESS ==
+      states->setReductionRule(forest::FULLY_REDUCED));
+    //states->setReductionRule(forest::QUASI_REDUCED));
+#if 0
+  assert(forest::SUCCESS ==
+      states->setNodeDeletion(forest::OPTIMISTIC_DELETION));
+  // states->setNodeDeletion(forest::PESSIMISTIC_DELETION));
+  if (variableBound < 4) {
+    assert(forest::SUCCESS ==
+        states->setNodeStorage(forest::FULL_STORAGE));
+  } else {
+    assert(forest::SUCCESS ==
+        states->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
+  }
+#endif
+
+  expert_forest* expertStates = dynamic_cast<expert_forest*>(states);
+  assert(0 != expertStates);
+
+#if 0
+  testA(expertStates);
+#endif
+
+  // Tests:
+  // (1) temp_node += min_terms
+  // (2) temp_node += mdd
+  // (3) reduce(temp_node)
+  //
+  // (0) convertDDEdgeToTemporaryNode()
+  // Use createEdge for nEments/3.
+  // Convert the above to temp_node.
+  //
+  // (1) temp_node += min_terms:
+  // Add nElements/3 to temp_node
+  //
+  // (2) temp_node += mdd
+  // Add nElements/3 to mdd using createEdge.
+  // Do temp_node += mdd
+  //
+  // (3) reduce(temp_node)
+  // assert(reduce(temp_node) == createEdge(nElements))
+
+  int tempNode = 0;
+  int twoNBy3 = 2 * nElements / 3;
+
+  // (0)
+  doPhaseI(expertStates, elements, 0, nElements/3, tempNode);
+
+  // (1)
+  doPhaseII(expertStates, elements, nElements/3, twoNBy3, tempNode);
+
+  // (2)
+  doPhaseIII(expertStates, elements, twoNBy3, nElements, tempNode);
+
+  // (3)
+  int accumulatedNode = expertStates->reduceNode(tempNode);
+
+#ifdef VERBOSE
+  printf("Reduced tempNode\n");
+  printf("----------------\n");
+  expertStates->showNodeGraph(stdout, accumulatedNode);
+  printf("\n");
+
+  printf("#########################################################\n\n");
+#endif
+
+#ifdef DEBUG_ACCUMULATE_MDD
+  printf("tempNode: %d, reducedNode: %d\n", tempNode, accumulatedNode);
+  if (expertStates->isActiveNode(tempNode)) {
+    printf("Incount(tempNode) after reduction: %d\n\n",
+        expertStates->getInCount(tempNode));
+  }
+#endif
+
+  dd_edge final(states);
+  final.set(accumulatedNode, 0,
+      expertStates->getNodeLevel(accumulatedNode));
+
+  dd_edge nodeC(states);
+  assert(forest::SUCCESS ==
+      states->createEdge(elements, nElements, nodeC));
+
+  if (final != nodeC) {
+#ifdef VERBOSE
+    printf("createEdge(nElements)\n");
+    printf("---------------------\n");
+    expertStates->showNodeGraph(stdout, nodeC.getNode());
+    printf("\n");
+    printf("#########################################################\n\n");
+#endif
+    printf("ERROR: Reduced tempNode != createEdge(nElements)\n");
+    dd_edge diff = final - nodeC;
+#if 0
+    printf("\nAccumulate - createEdge:\n");
+    expertStates->showNodeGraph(stdout, diff.getNode());
+#else
+    printf("\nAccumulate - createEdge: %d elements\n",
+        (int)diff.getCardinality());
+#endif
+    diff = nodeC - final;
+#if 0
+    printf("\ncreateEdge - Accumulate:\n");
+    expertStates->showNodeGraph(stdout, diff.getNode());
+#else
+    printf("\ncreateEdge - Accumulate: %d elements\n",
+        (int)diff.getCardinality());
+#endif
+  }
+
+  // Done with final and nodeC, clear them.
+  final.clear();
+  nodeC.clear();
+
+  // Cleanup; in this case simply delete the domain
+  delete d;
+
+  free(bounds);
+  for (int i = 0; i < nElements; ++i)
+  {
+    free(elements[i]);
+  }
+  free(elements);
+
+  return 0;
+}
+
 
 void printUsage(FILE *outputStream)
 {
   fprintf(outputStream,
       "Usage: test_temporary_nodes <#Variables> <VariableBound> <#Elements>\n");
-}
-
-
-int accumulate(expert_forest* f, int tempNode, int mdd)
-{
-  assert(f != 0);
-  assert(f->isReducedNode(mdd));
-
-  // tempNode is a reduced node
-  if (f->isReducedNode(tempNode)) {
-    // Terminal cases
-
-    // One of the nodes is 0. Result is other node.
-    if (tempNode == 0 || mdd == 0) {
-      int result = tempNode + mdd;
-      f->linkNode(result);
-      return result;
-    }
-
-    // One of the nodes is 1. Result is 1.
-    // Terminal node for 1 is internally represented as -1.
-    if (tempNode == -1 || mdd == -1) {
-      return -1;
-    }
-
-    // Neither tempNode nor mdd is a terminal node.
-    // Compute result using dd_edge::operator+=.
-    dd_edge nodeA(f);
-    f->linkNode(tempNode);
-    nodeA.set(tempNode, 0, f->getNodeLevel(tempNode));
-    dd_edge nodeB(f);
-    f->linkNode(mdd);
-    nodeB.set(mdd, 0, f->getNodeLevel(mdd));
-    nodeA += nodeB;
-    // nodeA will unlink its node when this method returns,
-    // and this could result in a "stale" node being returned.
-    // To avoid this increment the incount for the result.
-    int result = nodeA.getNode();
-    f->linkNode(result);
-    return result;
-  }
-
-  // tempNode is a temporary node
-  else {
-    if (f->isFullNode(mdd)) {
-      int size = f->getFullNodeSize(mdd);
-      if (f->getFullNodeSize(tempNode) < size) {
-        f->resizeNode(tempNode, size);
-      }
-      for (int i = 0; i < size; ++i) {
-        int acc = accumulate(f, f->getFullNodeDownPtr(tempNode, i),
-            f->getFullNodeDownPtr(mdd, i));
-        f->setDownPtr(tempNode, i, acc);
-        f->unlinkNode(acc);
-      }
-    }
-    else {
-      assert(f->isSparseNode(mdd));
-      int nDptrs = f->getSparseNodeSize(mdd);
-      int size = 1 + f->getSparseNodeIndex(mdd, nDptrs - 1);
-      if (f->getFullNodeSize(tempNode) < size) {
-        f->resizeNode(tempNode, size);
-      }
-      for (int i = 0; i < nDptrs; ++i) {
-        int index = f->getSparseNodeIndex(mdd, i);
-        int temp = f->getFullNodeDownPtr(tempNode, index);
-        int acc = accumulate(f, temp, f->getSparseNodeDownPtr(mdd, i));
-        f->setDownPtr(tempNode, index, acc);
-        f->unlinkNode(acc);
-      }
-    }
-  }
-
-  f->linkNode(tempNode);
-  return tempNode;
 }
 
 
@@ -177,178 +331,268 @@ void convertDDEdgeToTemporaryNode(const dd_edge& a, int& b)
 }
 
 
-int main(int argc, char *argv[])
+void findNodesInGraph(expert_forest* f, int node, std::set<int>& result)
 {
-  if (argc != 4) {
-    printUsage(stdout);
-    exit(1);
-  }
-
-  srandom(1u);
-
-  // initialize number of variables, their bounds and the number of elements
-  // to create
-
-  int nVariables = 0;
-  int variableBound = 0;
-  int nElements = 0;
-
-  sscanf(argv[1], "%d", &nVariables);
-  assert(nVariables > 0);
-
-  sscanf(argv[2], "%d", &variableBound);
-  assert(variableBound > 0);
-
-  sscanf(argv[3], "%d", &nElements);
-  assert(nElements > 0);
-
-  printf("#variables: %d, variable bound: %d, #elements: %d\n",
-      nVariables, variableBound, nElements);
-
-  // create the elements randomly
-
-  int** elements = (int **) malloc(nElements * sizeof(int *));
-  for (int i = 0; i < nElements; ++i)
-  {
-    elements[i] = (int *) malloc((nVariables + 1) * sizeof(int));
-    elements[i][0] = 0;
-    for (int j = nVariables; j >= 1; --j)
-    {
-      elements[i][j] = int(float(variableBound) * random() / (RAND_MAX + 1.0));
-      assert(elements[i][j] >= 0 && elements[i][j] < variableBound);
+  result.clear();
+  std::set<int> toVisit;
+  if (!f->isTerminalNode(node)) toVisit.insert(node);
+  while (!toVisit.empty()) {
+    std::set<int>::iterator iter = toVisit.begin();
+    int next = *iter;
+    toVisit.erase(iter);
+    result.insert(next);
+    if (f->isFullNode(next)) {
+      int size = f->getFullNodeSize(next);
+      for (int i = 0; i < size; ++i) {
+        int dptr = f->getFullNodeDownPtr(next, i);
+        if (!f->isTerminalNode(dptr))
+          if (result.find(dptr) == result.end())
+            toVisit.insert(dptr);
+      }
     }
-    // print element[i]
-#ifdef VERBOSE
-    printf("Element %d: [%d", i, elements[i][0]);
-    for (int j = 1; j <= nVariables; ++j)
-    {
-      printf(" %d", elements[i][j]);
+    else {
+      assert(f->isSparseNode(next));
+      int size = f->getSparseNodeSize(next);
+      for (int i = 0; i < size; ++i) {
+        int dptr = f->getSparseNodeDownPtr(next, i);
+        if (!f->isTerminalNode(dptr))
+          if (result.find(dptr) == result.end())
+            toVisit.insert(dptr);
+      }
     }
-    printf("]\n");
-#endif
   }
-
-  // initialize the variable bounds array to provide to the domain
-
-  int* bounds = (int *) malloc(nVariables * sizeof(int));
-  assert(bounds != 0);
-  for (int i = 0; i < nVariables; ++i)
-  {
-    bounds[i] = variableBound;
-  }
-
-  // Create a domain
-  domain *d = MEDDLY_createDomain();
-  assert(d != 0);
-  assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVariables));
-
-  // Create an MDD forest in this domain (to store states)
-  forest* states = d->createForest(false, forest::BOOLEAN,
-      forest::MULTI_TERMINAL);
-  assert(states != 0);
-
-#if 0
-  assert(forest::SUCCESS ==
-      //states->setReductionRule(forest::FULLY_REDUCED));
-    states->setReductionRule(forest::QUASI_REDUCED));
-  assert(forest::SUCCESS ==
-      states->setNodeDeletion(forest::OPTIMISTIC_DELETION));
-  // states->setNodeDeletion(forest::PESSIMISTIC_DELETION));
-  if (variableBound < 4) {
-    assert(forest::SUCCESS ==
-        states->setNodeStorage(forest::FULL_STORAGE));
-  } else {
-    assert(forest::SUCCESS ==
-        states->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
-  }
-#endif
-
-  expert_forest* expertStates = dynamic_cast<expert_forest*>(states);
-  assert(0 != expertStates);
-
-  dd_edge nodeA(states);
-  dd_edge nodeB(states);
-
-  // Use Meddly's batch addition to combine all elements in one step.
-  assert(forest::SUCCESS ==
-      states->createEdge(elements, nElements/2, nodeA));
-  assert(forest::SUCCESS ==
-      states->createEdge(elements + nElements/2,
-        nElements - nElements/2, nodeB));
-
-  int tempA = 0;
-  convertDDEdgeToTemporaryNode(nodeA, tempA);
-
-#if 0
-  printf("nodeA\n");
-  printf("-------------------\n");
-  expertStates->showNodeGraph(stdout, nodeA.getNode());
-  printf("tempA\n");
-  printf("--------------------\n");
-  expertStates->showNodeGraph(stdout, tempA);
-#endif
-
-#if 0
-  int reducedNode = expertStates->reduceNode(tempA);
-  dd_edge final(states);
-  final.set(reducedNode, 0, expertStates->getNodeLevel(reducedNode));
-  printf("%s\n",
-      (final == nodeA)? "final == nodeA": "final != nodeA");
-#else
-
-  printf("tempA\n");
-  printf("-----\n");
-  expertStates->showNodeGraph(stdout, tempA);
-  printf("###################\n");
-  printf("nodeB\n");
-  printf("-----\n");
-  expertStates->showNodeGraph(stdout, nodeB.getNode());
-  printf("###################\n");
-
-  assert(!expertStates->isReducedNode(tempA));
-  int accumulator = accumulate(expertStates, tempA, nodeB.getNode());
-  assert(accumulator == tempA);
-
-  printf("tempA after Accumulation\n");
-  printf("------------------------\n");
-  expertStates->showNodeGraph(stdout, tempA);
-  printf("###################\n");
-
-  printf("nodeCount(tempA) = %d\n", expertStates->getInCount(tempA));
-  expertStates->unlinkNode(tempA);
-  accumulator = expertStates->reduceNode(tempA);
-
-  printf("tempA after Reduction\n");
-  printf("------------------------\n");
-  expertStates->showNodeGraph(stdout, accumulator);
-  printf("###################\n");
-
-  dd_edge aUnionB = nodeA + nodeB;
-  dd_edge final(states);
-  final.set(accumulator, 0, expertStates->getNodeLevel(accumulator));
-
-#if 0
-  printf("aUnionB\n");
-  printf("-------------------\n");
-  expertStates->showNodeGraph(stdout, aUnionB.getNode());
-  printf("final\n");
-  printf("--------------------\n");
-  expertStates->showNodeGraph(stdout, final.getNode());
-#endif
-
-  printf("%s\n",
-      (final == aUnionB)? "final == aUnionB": "final != aUnionB");
-#endif
-
-  // Cleanup; in this case simply delete the domain
-  delete d;
-
-  free(bounds);
-  for (int i = 0; i < nElements; ++i)
-  {
-    free(elements[i]);
-  }
-  free(elements);
-
-  return 0;
 }
+
+
+void testA(expert_forest* f)
+{
+  // Domain must have 3 variables of size 2.
+
+  int nVars = 3;
+  assert(f->getDomain()->getNumVariables() == nVars);
+
+  int varSize = 2;
+  int level1 = f->getDomain()->getVariableAbove(domain::TERMINALS);
+  int level2 = f->getDomain()->getVariableAbove(level1);
+  int level3 = f->getDomain()->getVariableAbove(level2);
+
+  assert(f->getDomain()->getVariableBound(level1) == varSize);
+  assert(f->getDomain()->getVariableBound(level2) == varSize);
+  assert(f->getDomain()->getVariableBound(level3) == varSize);
+
+  {
+    // --------------------------------------------------------------------
+    // TEST #1
+    //
+    // Build a node for the set: {000, 010}
+    int trueNode = f->getTerminalNode(true);
+    int node1L1 = f->createTempNodeMaxSize(level1);
+    int node2L2 = f->createTempNodeMaxSize(level2);
+    int node3L3 = f->createTempNodeMaxSize(level3);
+
+    // node1L1 = {0} --> T
+    f->setDownPtr(node1L1, 0, trueNode);
+
+    // node2L2 = {0,1} --> node1L1
+    f->setDownPtr(node2L2, 0, node1L1);
+    f->setDownPtr(node2L2, 1, node1L1);
+
+    // node3L3 = {0} --> node2L2
+    f->setDownPtr(node3L3, 0, node2L2);
+
+    int tempNode = node3L3;
+    f->linkNode(tempNode);
+
+    f->unlinkNode(node3L3);
+    f->unlinkNode(node2L2);
+    f->unlinkNode(node1L1);
+    f->unlinkNode(trueNode);
+
+    printf("{000, 010}\n");
+    f->showNodeGraph(stdout, tempNode);
+    printIncounts(f, tempNode);
+
+    // Add 001
+    int* element = new int[nVars + 1];
+    element[0] = 0;
+    element[1] = 1;
+    element[2] = 0;
+    element[3] = 0;
+    f->accumulate(tempNode, element);
+
+    printf("Added {001}\n");
+    f->showNodeGraph(stdout, tempNode);
+    printIncounts(f, tempNode);
+
+    // Add 011
+    element[1] = 1;
+    element[2] = 1;
+    element[3] = 0;
+    f->accumulate(tempNode, element);
+
+    printf("Added {011}\n");
+    f->showNodeGraph(stdout, tempNode);
+    printIncounts(f, tempNode);
+
+    f->unlinkNode(tempNode);
+  }
+
+  {
+    // --------------------------------------------------------------------
+    // TEST #2
+    // Build a node for the set: {000, 100}
+    int trueNode = f->getTerminalNode(true);
+    int node1L1 = f->createTempNodeMaxSize(level1);
+    int node2L2 = f->createTempNodeMaxSize(level2);
+    int node3L3 = f->createTempNodeMaxSize(level3);
+
+    // node1L1 = {0} --> T
+    f->setDownPtr(node1L1, 0, trueNode);
+
+    // node2L2 = {0} --> node1L1
+    f->setDownPtr(node2L2, 0, node1L1);
+
+    // node3L3 = {0,1} --> node2L2
+    f->setDownPtr(node3L3, 0, node2L2);
+    f->setDownPtr(node3L3, 1, node2L2);
+
+    int tempNode = node3L3;
+    f->linkNode(tempNode);
+
+    f->unlinkNode(node3L3);
+    f->unlinkNode(node2L2);
+    f->unlinkNode(node1L1);
+    f->unlinkNode(trueNode);
+
+    printf("{000, 100}\n");
+    f->showNodeGraph(stdout, tempNode);
+    printIncounts(f, tempNode);
+
+    // Add 001
+    int* element = new int[nVars + 1];
+    element[0] = 0;
+    element[1] = 1;
+    element[2] = 0;
+    element[3] = 0;
+    f->accumulate(tempNode, element);
+
+    printf("Added {001}\n");
+    f->showNodeGraph(stdout, tempNode);
+    printIncounts(f, tempNode);
+
+    // Add 101
+    element[1] = 1;
+    element[2] = 0;
+    element[3] = 1;
+    f->accumulate(tempNode, element);
+
+    printf("Added {101}\n");
+    f->showNodeGraph(stdout, tempNode);
+    printIncounts(f, tempNode);
+
+    f->unlinkNode(tempNode);
+  }
+}
+
+
+void doPhaseI(expert_forest* f, const int* const* elements,
+    int start, int end, int& tempNode)
+{
+  dd_edge nodeA(f);
+  assert(forest::SUCCESS ==
+      f->createEdge(elements + start, end - start, nodeA));
+
+  convertDDEdgeToTemporaryNode(nodeA, tempNode);
+
+#ifdef VERBOSE
+  printf("Elements %d to %d\n\n", start, end - 1);
+
+  printf("nodeA (createEdge)\n");
+  printf("------------------\n");
+  f->showNodeGraph(stdout, nodeA.getNode());
+  printf("\n");
+
+  printf("tempNode (convert)\n");
+  printf("------------------\n");
+  f->showNodeGraph(stdout, tempNode);
+  printf("\n");
+
+  printf("#########################################################\n\n");
+#endif
+
+}
+
+
+// PhaseII: use accumulate += minterms
+void doPhaseII(expert_forest* f, const int* const* elements,
+    int start, int end, int& tempNode)
+{
+  for (int i = start; i < end; ++i) {
+    //accumulate(f, tempNode, (int*)(elements[i]));
+    f->accumulate(tempNode, (int*)(elements[i]));
+  }
+
+#ifdef VERBOSE
+  printf("Elements %d to %d\n\n", start, end - 1);
+
+  printf("tempNode (accumulate minterms)\n");
+  printf("------------------------------\n");
+  f->showNodeGraph(stdout, tempNode);
+  printf("\n");
+
+  printf("#########################################################\n\n");
+#endif
+}
+
+
+// Phase III: use acccumulate += mdd
+void doPhaseIII(expert_forest* f, const int* const* elements,
+    int start, int end, int& tempNode)
+{
+  dd_edge nodeB(f);
+  assert(forest::SUCCESS == f->createEdge(elements + start,
+        end - start, nodeB));
+#if 0
+  accumulate(f, tempNode, nodeB.getNode());
+#else
+  f->accumulate(tempNode, nodeB.getNode());
+#endif
+
+#ifdef VERBOSE
+  printf("Elements %d to %d\n\n", start, end - 1);
+
+  printf("nodeB (createEdge)\n");
+  printf("------------------\n");
+  f->showNodeGraph(stdout, nodeB.getNode());
+  printf("\n");
+
+  printf("tempNode (accumulate mdd)\n");
+  printf("-------------------------\n");
+  f->showNodeGraph(stdout, tempNode);
+  printf("\n");
+
+  printf("#########################################################\n\n");
+#endif
+
+#ifdef DEBUG_ACCUMULATE_MDD
+  printf("tempNode: %d\n", tempNode);
+  if (f->isActiveNode(tempNode)) {
+    printf("Incount(tempNode) before reduction: %d\n\n",
+        f->getInCount(tempNode));
+  }
+  printIncounts(f, tempNode);
+#endif
+
+}
+
+
+void printIncounts(expert_forest* f, int node)
+{
+  std::set<int> nodes;
+  findNodesInGraph(f, node, nodes);
+  for (std::set<int>::iterator iter = nodes.begin();
+      iter != nodes.end(); ++iter) {
+    printf("Incount(%d): %d\n", *iter, f->getInCount(*iter));
+  }
+}
+

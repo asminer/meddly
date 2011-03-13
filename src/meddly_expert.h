@@ -161,6 +161,10 @@ class expert_forest : public forest
     /// The maximum size is dictated by domain to which this forest belongs to.
     virtual forest::error resizeNode(int node, int size) = 0;
 
+    /// Build a copy of the given node.
+    /// The new node's size will be equal to max(sizeof(a), size).
+    virtual int makeACopy(int node, int size = 0) = 0;
+
     /// The maximum size (number of indices) a node at this level can have
     int getLevelSize(int lh) const;
 
@@ -172,15 +176,25 @@ class expert_forest : public forest
     virtual void normalizeAndReduceNode(int& node, int& ev) = 0;
     virtual void normalizeAndReduceNode(int& node, float& ev) = 0;
 
-#if 0
     /// A is a temporary node, and B is a reduced node.
     /// Accumulate B into A, i.e. A += B.
     /// A still remains a temporary node.
     /// B is not modified.
-    virtual forest::error accumulate(int A, int B) = 0;
-#endif
+    /// returns forest::INVALID_OPERATION if A or B are inactive nodes.
+    /// returns forest::SUCCESS otherwise.
+    virtual forest::error accumulate(int& A, int B) = 0;
+
+    /// A is a temporary node, and B is a minterm.
+    /// Accumulate B into A, i.e. A += B.
+    /// A still remains a temporary node.
+    /// B is not modified.
+    /// returns forest::INVALID_OPERATION if A is an inactive nodes.
+    /// returns forest::INVALID_OPERATION if B is 0.
+    /// returns forest::SUCCESS otherwise.
+    virtual forest::error accumulate(int& A, int* B) = 0;
 
     /// Has the node been reduced
+    /// Terminal nodes are also considered to be reduced nodes.
     virtual bool isReducedNode(int node) const = 0;
 
     /// Is this a full or truncated-full node?
@@ -426,6 +440,7 @@ class expert_forest : public forest
 
     int mapLevel(int level) const;
     int unmapLevel(int level) const;
+    int getMappedNodeHeight(int node) const;
 
     bool isZombieNode(int node) const;
 
@@ -1835,6 +1850,16 @@ inline
 int expert_forest::unmapLevel(int k) const
 {
   return (k%2 == 0)? k/2: -(k + 1)/2;
+}
+
+
+inline
+int expert_forest::getMappedNodeHeight(int p) const
+{
+  return
+    getNodeLevel(p) >= 0
+    ? 2 * getNodeHeight(p)        // 2n
+    : 2 * getNodeHeight(p) - 1;   // 2n-1
 }
 
 
