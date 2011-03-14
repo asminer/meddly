@@ -152,7 +152,7 @@ class node_manager : public expert_forest {
         int* vplist) const;
 
     virtual forest::error accumulate(int& a, int b);
-    virtual forest::error accumulate(int& tempNode, int* element);
+    virtual bool accumulate(int& tempNode, int* element);
 
     // cBM: Copy before modifying.
     virtual int accumulateMdd(int a, int b, bool cBM);
@@ -182,6 +182,16 @@ class node_manager : public expert_forest {
     /// a node is reduced, its contents cannot be modified.
     virtual int reduceNode(int node) = 0;
     // Dummy version available here.
+
+    // Helpers for reduceNode().
+    // These method assume that the top leve node is a temporary node
+    // whose children may be either reduced or temporary nodes
+    // (with an incount >= 1).
+    // Since there is a possibility of a temporary node being referred
+    // to multiple times, these methods use a cache to ensure that each
+    // temporary node is reduced only once.
+    int recursiveReduceNode(int tempNode);
+    int recursiveReduceNode(std::map<int, int>& cache, int root);
 
     /// Reduce and finalize an node with an incoming edge value
     virtual void normalizeAndReduceNode(int& node, int& ev) = 0;
@@ -536,6 +546,9 @@ class node_manager : public expert_forest {
     // integers required to store it).
     int dataHeaderSize;
     int getDataHeaderSize() const { return dataHeaderSize; }
+
+    // Place holder for accumulate-minterm result.
+    bool accumulateMintermAddedElement;
 };
 
 

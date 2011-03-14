@@ -2756,22 +2756,23 @@ int node_manager::addReducedNodes(int a, int b)
 {
   DCASSERT(isReducedNode(a));
   DCASSERT(isReducedNode(b));
-  DCASSERT(!isTerminalNode(a));
-  DCASSERT(!isTerminalNode(b));
 
   // Neither a nor b is a terminal node.
   // Compute result using dd_edge::operator+=.
-  dd_edge nodeA(this);
+  static dd_edge nodeA(this);
+  static dd_edge nodeB(this);
+
   linkNode(a);
-  nodeA.set(a, 0, getNodeLevel(a));
-  dd_edge nodeB(this);
   linkNode(b);
+  nodeA.set(a, 0, getNodeLevel(a));
   nodeB.set(b, 0, getNodeLevel(b));
+
   nodeA += nodeB;
-  // nodeA will unlink its node when this method returns,
-  // and this could result in a "stale" node being returned.
-  // To avoid this increment the incount for the result.
-  return sharedCopy(nodeA.getNode());
+  int result = sharedCopy(nodeA.getNode());
+  nodeA.clear();
+  nodeB.clear();
+
+  return result;
 }
 
 
@@ -2977,7 +2978,10 @@ int node_manager::accumulate(int tempNode, bool cBM,
   DCASSERT(isMdd());
 
   if (tempNode == -1) return -1;
-  if (level == 0) return -1;
+  if (level == 0) {
+    accumulateMintermAddedElement = true;
+    return -1;
+  }
 
   int index = element[level];
   int nodeLevel = getNodeLevel(tempNode);
@@ -3039,23 +3043,84 @@ int node_manager::accumulate(int tempNode, bool cBM,
 
 
 // Add an element to a temporary edge
-forest::error node_manager::accumulate(int& tempNode, int* element)
+bool node_manager::accumulate(int& tempNode, int* element)
 {
-  if (isActiveNode(tempNode) && element != 0) {
-    int result = accumulate(tempNode, false,
-        element, expertDomain->getTopVariable());
-    if (tempNode != result) {
-      // tempNode had to be copied into another node by accumulate().
-      // This could be either because tempNode was a reduced node,
-      // or because tempNode had incount > 1.
-      unlinkNode(tempNode);
-      tempNode = result;
-    }
-    // Note: tempNode == result indicates that the element was added
-    // to the existing temporary node. Therefore, there is no need to
-    // change incounts.
-    return forest::SUCCESS;
+  assert(isActiveNode(tempNode));
+  assert(element != 0);
+  accumulateMintermAddedElement = false;
+  int result = accumulate(tempNode, false,
+      element, expertDomain->getTopVariable());
+  if (tempNode != result) {
+    // tempNode had to be copied into another node by accumulate().
+    // This could be either because tempNode was a reduced node,
+    // or because tempNode had incount > 1.
+    unlinkNode(tempNode);
+    tempNode = result;
   }
-  return forest::INVALID_OPERATION;
+  // Note: tempNode == result indicates that the element was added
+  // to the existing temporary node. Therefore, there is no need to
+  // change incounts.
+  return accumulateMintermAddedElement;
 }
+
+
+int node_manager::recursiveReduceNode(std::map<int, int>& cache,
+    int root)
+{
+  DCASSERT(!isReducedNode(root));
+  DCASSERT(isFullNode(root));
+
+  // Check cache for result
+  std::map<int, int>::iterator iter = cache.find(root);
+  if (iter != cache.end()) {
+    // Cache hit
+    linkNode(iter->second);
+    unlinkNode(root);
+    return iter->second;
+  }
+
+  int temp = 0;
+  int dptr = 0;
+  int size = getFullNodeSize(root);
+
+  for (int i = 0; i < size; ++i)
+  {
+    dptr = getFullNodeDownPtr(root, i);
+
+    // Ignore terminal nodes and reduced nodes
+    if (isReducedNode(dptr)) continue;
+
+    temp = recursiveReduceNode(cache, dptr);
+    // At this point, temp's incount has been increased and
+    // dptr's incount has been decreased by 1.
+
+    // Using WoUnlink, since dptr's has already been decreased
+    setDownPtrWoUnlink(root, i, temp);
+    // Unlinking temp because setDownPtr increases temp's incount by 1
+    unlinkNode(temp);
+  }
+
+  temp = reduceNode(root);
+
+  // Save result in cache
+  if (isActiveNode(root)) cache[root] = temp;
+
+  return temp;
+}
+
+
+int node_manager::recursiveReduceNode(int tempNode)
+{
+  // Recursive procedure:
+  // Start at root (i.e. tempNode).
+  // Build a temporary node for root.
+  // -- Build reduced nodes for each child(root).
+  // Keep track of duplicates via a compute cache which maps
+  //   each temporary node to a reduced node.
+
+  DCASSERT(!isReducedNode(tempNode));
+  std::map<int, int> cache;
+  return recursiveReduceNode(cache, tempNode);
+}
+
 

@@ -218,11 +218,19 @@ class mxd_node_manager : public mtmxd_node_manager {
     using mtmxd_node_manager::createEdge;
     using mtmxd_node_manager::evaluate;
 
-    forest::error accumulate(int& tempNode, int* element, int* pelement);
+    virtual bool accumulate(int& tempNode, int* element, int* pelement);
+    virtual forest::error accumulate(int& a, int b);
+
     virtual int accumulate(int tempNode, bool cBM,
         int* element, int* pelement, int level);
     virtual int accumulateSkippedLevel(int tempNode,
         int* element, int* pelement, int level);
+
+    virtual int accumulateMxd(int a, int b, bool cBM);
+    virtual int accumulateMxdPrime(int a, int b, bool cBM);
+    virtual int addPrimeReducedNodes(int a, int b);
+    virtual int accumulateExpandA(int a, int b, bool cBM);
+    virtual int buildQRIdentityNode(int node, int level);
 
     // Refer to meddly.h
     virtual error createEdge(const int* const* vlist, const int* const* vplist,

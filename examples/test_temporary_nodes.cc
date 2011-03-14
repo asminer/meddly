@@ -585,6 +585,10 @@ void testB()
     f->showNodeGraph(stdout, tempNode);
     printIncounts(f, tempNode);
 
+    assert(f->getInCount(tempNode) == 1);
+    int reducedNode = f->reduceNode(tempNode);
+    tempNode = 0;
+
     // Add 011->000
     int* element = new int[nVars + 1];
     int* pelement = new int[nVars + 1];
@@ -598,11 +602,17 @@ void testB()
     pelement[3] = 0;
     f->accumulate(tempNode, element, pelement);
 
-    printf("Added {011->000} i.e. {001010}\n");
+    printf("Minterm {011->000} i.e. {001010}\n");
+    f->showNodeGraph(stdout, tempNode);
+    printIncounts(f, tempNode);
+
+    f->accumulate(tempNode, reducedNode);
+    printf("tempNode += reducedNode\n");
     f->showNodeGraph(stdout, tempNode);
     printIncounts(f, tempNode);
 
     f->unlinkNode(tempNode);
+    f->unlinkNode(reducedNode);
 
     delete [] element;
     delete [] pelement;

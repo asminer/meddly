@@ -105,16 +105,6 @@ class mtmdd_node_manager : public node_manager {
         forest::edge_labeling e, forest::reduction_rule r,
         forest::node_storage s, forest::node_deletion_policy dp);
 
-    // Helpers for redeuceNode().
-    // These method assume that the top leve node is a temporary node
-    // whose children may be either reduced or temporary nodes
-    // (with an incount >= 1).
-    // Since there is a possibility of a temporary node being referred
-    // to multiple times, these methods use a cache to ensure that each
-    // temporary node is reduced only once.
-    int recursiveReduceNode(int tempNode);
-    int recursiveReduceNode(std::map<int, int>& cache, int root);
-
     // This create a MTMDD from a collection of edges (represented 
     // as vectors).
     template <typename T>

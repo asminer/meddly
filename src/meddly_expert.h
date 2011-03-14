@@ -188,10 +188,16 @@ class expert_forest : public forest
     /// Accumulate B into A, i.e. A += B.
     /// A still remains a temporary node.
     /// B is not modified.
-    /// returns forest::INVALID_OPERATION if A is an inactive nodes.
-    /// returns forest::INVALID_OPERATION if B is 0.
-    /// returns forest::SUCCESS otherwise.
-    virtual forest::error accumulate(int& A, int* B) = 0;
+    /// Assert violation will occur if A is not an active node,
+    /// or if B is 0.
+    /// Returns true if a new element was added to MDD, false otherwise.
+    virtual bool accumulate(int& A, int* B);
+
+    /// Accumuluate a minterm into a MXD.
+    /// A is a temporary node.
+    /// vlist and vplist constitute the unprimed and primed levels
+    /// in the minterm.
+    virtual bool accumulate(int& A, int* vlist, int* vplist);
 
     /// Has the node been reduced
     /// Terminal nodes are also considered to be reduced nodes.
@@ -2508,6 +2514,16 @@ forest::error expert_forest::setIndexSetCardinality(int node, int c) {
   return forest::INVALID_OPERATION;
 }
 
+
+inline
+bool expert_forest::accumulate(int& A, int* vlist, int* vplist) {
+  return false;
+}
+
+inline
+bool expert_forest::accumulate(int& A, int* B) {
+  return false;
+}
 
 inline
 float toFloat(int a) {

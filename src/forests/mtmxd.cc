@@ -165,13 +165,32 @@ int mtmxd_node_manager::reduceNode(int p)
   // quick scan: is this node zero?
   int nnz = 0;
   int truncsize = 0;
-  for (int i = 0; i < size; ++i) {
-    if (0 != ptr[i]) {
-      nnz++;
-      truncsize = i;
+  {
+#if 0
+    for (int i = 0; i < size; ++i) {
+      if (!isReducedNode(ptr[i])) {
+        ptr[i] = recursiveReduceNode(ptr[i]);
+      }
+      if (0 != ptr[i]) {
+        nnz++;
+        truncsize = i;
+      }
     }
+    truncsize++;
+#else
+    int* curr = ptr;
+    int* last = curr + size;
+    while (curr != last) {
+      if (!isReducedNode(*curr)) {
+        *curr = recursiveReduceNode(*curr);
+      }
+      if (0 != *curr++) {
+        ++nnz;
+        truncsize = curr - ptr;
+      }
+    }
+#endif
   }
-  truncsize++;
 
   if (0 == nnz) {
     // duplicate of 0
@@ -900,6 +919,332 @@ forest::error mxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
 }
 
 
+#if 1
+
+int mxd_node_manager::buildQRIdentityNode(int node, int level)
+{
+  int size = getLevelSize(level);
+  int result = createTempNode(level, size, false);
+  for (int i = 0; i < size; )
+  {
+    int temp = createTempNode(-level, i + 1, true);
+    setDownPtrWoUnlink(temp, i, node);
+    setDownPtrWoUnlink(result, i, temp);
+    unlinkNode(temp);
+  }
+  return result;
+}
+
+
+int mxd_node_manager::accumulateExpandA(int a, int b, bool cBM)
+{
+  // a[i][i] += b
+
+  DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
+  DCASSERT(getMappedNodeHeight(a) > getMappedNodeHeight(b));
+  DCASSERT(!isReducedNode(a));
+
+  bool needsToMakeACopy = cBM;
+  int savedTempNode = a;
+
+  int aSize = getFullNodeSize(a);
+  int aLevel = getNodeLevel(a);
+  int levelSize = getLevelSize(aLevel);
+
+  if (aSize < levelSize) {
+    if (needsToMakeACopy) {
+      a = makeACopy(a, levelSize);
+      needsToMakeACopy = false;
+    } else {
+      resizeNode(a, levelSize);
+    }
+    aSize = getFullNodeSize(a);
+  }
+
+  DCASSERT(aSize == levelSize);
+
+  for (int i = 0; i < aSize; i++) {
+    int dptr = getFullNodeDownPtr(a, i);
+    DCASSERT(dptr != -1);
+    int pdptr = getDownPtr(dptr, i);
+    bool pcBM = dptr == 0? cBM: (cBM || (1 < getInCount(dptr)));
+    int result = accumulateMxd(pdptr, b, pcBM);
+
+    if (result != pdptr) {
+      // Need to modify a[i]
+      int pNode = 0;
+      if (dptr == 0) {
+        pNode = createTempNode(-aLevel, i + 1, true);
+      }
+      else if (isReducedNode(dptr) || pcBM) {
+        pNode = makeACopy(dptr, i + 1);
+      }
+      else if (getFullNodeSize(dptr) <= i) {
+        assert(forest::SUCCESS == resizeNode(dptr, i + 1));
+        pNode = sharedCopy(dptr);
+      }
+
+      setDownPtr(pNode, i, result);
+      unlinkNode(result);
+
+      if (pNode != dptr) {
+        if (needsToMakeACopy) {
+          a = makeACopy(a);
+          needsToMakeACopy = false;
+        }
+        setDownPtr(a, i, pNode);
+      }
+      unlinkNode(pNode);
+    }
+    unlinkNode(result);
+  }
+
+  return savedTempNode == a? sharedCopy(a): a;
+}
+
+
+int mxd_node_manager::addPrimeReducedNodes(int a, int b)
+{
+  DCASSERT(getNodeLevel(a) < 0);
+  DCASSERT(getNodeLevel(a) == getNodeLevel(b));
+  DCASSERT(isReducedNode(a));
+  DCASSERT(isReducedNode(b));
+
+  int level = getNodeLevel(a);
+  int size = getLevelSize(level);
+  int result = makeACopy(a, size);
+
+  if (isFullNode(b)) {
+    int bSize = getFullNodeSize(b);
+    for (int i = 0; i < bSize; ++i) {
+      if (getFullNodeDownPtr(b, i) == 0) continue;
+      int result = accumulateMxd(getFullNodeDownPtr(a, i),
+          getFullNodeDownPtr(b, i), true);
+      setDownPtr(a, i, result);
+      unlinkNode(result);
+    }
+  }
+  else {
+    int nDptrs = getSparseNodeSize(b);
+    for (int i = 0; i < nDptrs; ++i) {
+      int index = getSparseNodeIndex(b, i);
+      int result = accumulateMxd(getFullNodeDownPtr(a, index),
+          getSparseNodeDownPtr(b, i), true);
+      setDownPtr(a, index, result);
+      unlinkNode(result);
+    }
+  }
+
+  return reduceNode(result);
+}
+
+
+int mxd_node_manager::accumulateMxdPrime(int a, int b, bool cBM)
+{
+  DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
+  DCASSERT(isReducedNode(b));
+  DCASSERT(a != -1);
+  DCASSERT(b != -1);
+
+  // Terminal nodes
+  if (a == 0 || b == 0) { return sharedCopy(a + b); }
+
+  DCASSERT(getNodeLevel(a) == getNodeLevel(b));
+
+  // a is a reduced node
+  if (isReducedNode(a)) {
+    return addPrimeReducedNodes(a, b);
+  }
+
+  if (getInCount(a) > 1) cBM = true;
+
+  bool needsToMakeACopy = cBM;
+  int savedTempNode = a;
+
+  // Expand both nodes. a is a full node, b can be either sparse or full.
+
+  // Node b is Truncated-Full
+  if (isFullNode(b)) {
+    int size = getFullNodeSize(b);
+    // Resize a.
+    if (getFullNodeSize(a) < size) {
+      if (needsToMakeACopy) {
+        a = makeACopy(a, size);
+        needsToMakeACopy = false;
+      } else {
+        resizeNode(a, size);
+      }
+      DCASSERT(getFullNodeSize(a) == size);
+    }
+    // Accumulate into a.
+    for (int i = 0; i < size; ++i) {
+      int dptr = getFullNodeDownPtr(a, i);
+      int result =
+        accumulateMxd(dptr, getFullNodeDownPtr(b, i), cBM);
+      if (result != dptr) {
+        if (needsToMakeACopy) {
+          a = makeACopy(a);
+          needsToMakeACopy = false;
+        }
+        setDownPtr(a, i, result);
+      }
+      unlinkNode(result);
+    }
+  }
+  // Node b is Sparse
+  else {
+    DCASSERT(isSparseNode(b));
+    int nDptrs = getSparseNodeSize(b);
+    int size = 1 + getSparseNodeIndex(b, nDptrs - 1);
+    // Resize a.
+    if (getFullNodeSize(a) < size) {
+      if (needsToMakeACopy) {
+        a = makeACopy(a, size);
+        needsToMakeACopy = false;
+      } else {
+        resizeNode(a, size);
+      }
+      DCASSERT(getFullNodeSize(a) == size);
+    }
+    // Accumulate into a.
+    for (int i = 0; i < nDptrs; ++i) {
+      int index = getSparseNodeIndex(b, i);
+      int dptr = getFullNodeDownPtr(a, index);
+      int result =
+        accumulateMxd(dptr, getSparseNodeDownPtr(b, i), cBM);
+      if (result != dptr) {
+        if (needsToMakeACopy) {
+          a = makeACopy(a);
+          needsToMakeACopy = false;
+        }
+        setDownPtr(a, index, result);
+      }
+      unlinkNode(result);
+    }
+  }
+
+  return savedTempNode == a? sharedCopy(a): a;
+}
+
+
+int mxd_node_manager::accumulateMxd(int a, int b, bool cBM)
+{
+  DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
+  DCASSERT(isReducedNode(b));
+
+  // Terminal nodes
+  if (a == 0 || b == 0) { return sharedCopy(a + b); }
+
+  // a is a reduced node
+  if (isReducedNode(a)) {
+    return addReducedNodes(a, b);
+  }
+
+  // a is a temporary node
+  int aHeight = getMappedNodeHeight(a);
+  int bHeight = getMappedNodeHeight(b);
+
+  if (getInCount(a) > 1) cBM = true;
+
+  if (aHeight > bHeight) {
+    // b's levels were skipped.
+    // only identity-reduced Mxds.
+    // a[i] += b
+    return accumulateExpandA(a, b, cBM);
+  }
+
+  bool needsToMakeACopy = cBM;
+  int savedTempNode = a;
+
+  if (aHeight < bHeight) {
+    // Build node c at the same level as b.
+    // set all c[i] = a;
+    a = buildQRIdentityNode(a, getNodeLevel(b));
+    needsToMakeACopy = false;
+  }
+
+  // Expand both nodes. a is a full node, b can be either sparse or full.
+
+  // Node b is Truncated-Full
+  if (isFullNode(b)) {
+    int size = getFullNodeSize(b);
+    // Resize a.
+    if (getFullNodeSize(a) < size) {
+      if (needsToMakeACopy) {
+        a = makeACopy(a, size);
+        needsToMakeACopy = false;
+      } else {
+        resizeNode(a, size);
+      }
+      DCASSERT(getFullNodeSize(a) == size);
+    }
+    // Accumulate into a.
+    for (int i = 0; i < size; ++i) {
+      int dptr = getFullNodeDownPtr(a, i);
+      int result =
+        accumulateMxdPrime(dptr, getFullNodeDownPtr(b, i), cBM);
+      if (result != dptr) {
+        if (needsToMakeACopy) {
+          a = makeACopy(a);
+          needsToMakeACopy = false;
+        }
+        setDownPtr(a, i, result);
+      }
+      unlinkNode(result);
+    }
+  }
+  // Node b is Sparse
+  else {
+    DCASSERT(isSparseNode(b));
+    int nDptrs = getSparseNodeSize(b);
+    int size = 1 + getSparseNodeIndex(b, nDptrs - 1);
+    // Resize a.
+    if (getFullNodeSize(a) < size) {
+      if (needsToMakeACopy) {
+        a = makeACopy(a, size);
+        needsToMakeACopy = false;
+      } else {
+        resizeNode(a, size);
+      }
+      DCASSERT(getFullNodeSize(a) == size);
+    }
+    // Accumulate into a.
+    for (int i = 0; i < nDptrs; ++i) {
+      int index = getSparseNodeIndex(b, i);
+      int dptr = getFullNodeDownPtr(a, index);
+      int result =
+        accumulateMxdPrime(dptr, getSparseNodeDownPtr(b, i), cBM);
+      if (result != dptr) {
+        if (needsToMakeACopy) {
+          a = makeACopy(a);
+          needsToMakeACopy = false;
+        }
+        setDownPtr(a, index, result);
+      }
+      unlinkNode(result);
+    }
+  }
+
+  return savedTempNode == a? sharedCopy(a): a;
+}
+
+
+forest::error mxd_node_manager::accumulate(int& a, int b)
+{
+  if (isActiveNode(a) && isActiveNode(b)) {
+    int result = accumulateMxd(a, b, false);
+    unlinkNode(a);
+    a = result;
+    return forest::SUCCESS;
+  }
+  return forest::INVALID_OPERATION;
+}
+
+
+
+#endif
+
+
 int mxd_node_manager::accumulateSkippedLevel(int tempNode,
     int* element, int* pelement, int level)
 {
@@ -962,8 +1307,10 @@ int mxd_node_manager::accumulate(int tempNode, bool cBM,
   DCASSERT(isMxd());
   DCASSERT(this->getReductionRule() == forest::IDENTITY_REDUCED);
 
-  if (level == 0) return -1;
-  if (tempNode == -1) return -1;
+  if (level == 0) {
+    if (tempNode == 0) accumulateMintermAddedElement = true;
+    return -1;
+  }
   DCASSERT(level > 0);
 
   int nodeLevel = getNodeLevel(tempNode);
@@ -1052,24 +1399,25 @@ int mxd_node_manager::accumulate(int tempNode, bool cBM,
 
 
 // Add an element to a temporary edge
-forest::error mxd_node_manager::accumulate(int& tempNode,
+bool mxd_node_manager::accumulate(int& tempNode,
     int* element, int* pelement)
 {
-  if (isActiveNode(tempNode) && element != 0 && pelement != 0) {
-    int result = accumulate(tempNode, false,
-        element, pelement, expertDomain->getTopVariable());
-    if (tempNode != result) {
-      // tempNode had to be copied into another node by accumulate().
-      // This could be either because tempNode was a reduced node,
-      // or because tempNode had incount > 1.
-      unlinkNode(tempNode);
-      tempNode = result;
-    }
-    // Note: tempNode == result indicates that the element was added
-    // to the existing temporary node. Therefore, there is no need to
-    // change incounts.
-    return forest::SUCCESS;
+  assert(isActiveNode(tempNode));
+  assert(element != 0);
+  assert(pelement != 0);
+  accumulateMintermAddedElement = false;
+  int result = accumulate(tempNode, false,
+      element, pelement, expertDomain->getTopVariable());
+  if (tempNode != result) {
+    // tempNode had to be copied into another node by accumulate().
+    // This could be either because tempNode was a reduced node,
+    // or because tempNode had incount > 1.
+    unlinkNode(tempNode);
+    tempNode = result;
   }
-  return forest::INVALID_OPERATION;
+  // Note: tempNode == result indicates that the element was added
+  // to the existing temporary node. Therefore, there is no need to
+  // change incounts.
+  return accumulateMintermAddedElement;
 }
 
