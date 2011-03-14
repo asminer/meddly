@@ -886,7 +886,7 @@ inline int node_manager::getSparseNodeLargestIndex(int p) const {
 inline void node_manager::setAllDownPtrs(int p, int value) {
   DCASSERT(!isReducedNode(p));
   DCASSERT(isFullNode(p));
-  DCASSERT(isReducedNode(value));
+  DCASSERT(isActiveNode(value));
   int* curr = getFullNodeDownPtrs(p);
   int size = getFullNodeSize(p);
   for (int* end = curr + size; curr != end; )
@@ -900,7 +900,7 @@ inline void node_manager::setAllDownPtrs(int p, int value) {
 inline void node_manager::setAllDownPtrsWoUnlink(int p, int value) {
   DCASSERT(!isReducedNode(p));
   DCASSERT(isFullNode(p));
-  DCASSERT(isReducedNode(value));
+  DCASSERT(isActiveNode(value));
   int* curr = getFullNodeDownPtrs(p);
   int size = getFullNodeSize(p);
   for (int* end = curr + size; curr != end; )

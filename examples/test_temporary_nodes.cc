@@ -29,17 +29,24 @@
 
 #include <iostream>
 #include <string.h>
+#include <set>
 #include "meddly.h"
 #include "meddly_expert.h"
-
-#include "src/forests/mtmxd.h"
 
 // Timer class
 #include "timer.h"
 
-#include <set>
-
 //#define VERBOSE
+//#define TEST_MXD_OPS
+//#define TEST_MDD_OPS
+#define TEST_BATCH_OPS
+
+#if 0
+#ifdef TEST_MXD_OPS
+#include "src/forests/mtmxd.h"
+#endif
+
+#endif
 
 const int trueNode = -1;
 
@@ -48,12 +55,11 @@ void findNodesInGraph(expert_forest* f, int node, std::set<int>& result);
 void convertDDEdgeToTemporaryNode(const dd_edge& a, int& b);
 int convertToTemporaryNode(std::map<int, int>& cache,
     expert_forest* f, int root);
-void printUsage(FILE *outputStream);
 
 // TestA:
 // Builds temporary nodes by hand.
 // Adds elements on at a time and prints the results.
-void testA(expert_forest* f);
+void testA();
 
 // TestB:
 // Builds temporary nodes by hand (MXDs).
@@ -74,13 +80,15 @@ void printIncounts(expert_forest* f, int node);
 
 int main(int argc, char *argv[])
 {
-#if 1
+#ifdef TEST_MXD_OPS
+  testA();
+#endif
+
+#ifdef TEST_MXD_OPS
   testB();
-#else
-  if (argc != 4) {
-    printUsage(stdout);
-    exit(1);
-  }
+#endif
+
+#ifdef TEST_BATCH_OPS
 
   srandom(1u);
 
@@ -91,14 +99,20 @@ int main(int argc, char *argv[])
   int variableBound = 0;
   int nElements = 0;
 
-  sscanf(argv[1], "%d", &nVariables);
-  assert(nVariables > 0);
+  if (argc == 4) {
+    sscanf(argv[1], "%d", &nVariables);
+    sscanf(argv[2], "%d", &variableBound);
+    sscanf(argv[3], "%d", &nElements);
+  } 
 
-  sscanf(argv[2], "%d", &variableBound);
-  assert(variableBound > 0);
-
-  sscanf(argv[3], "%d", &nElements);
-  assert(nElements > 0);
+  while (nVariables <= 0 || variableBound <= 0 || nElements <= 0) {
+    printf("Number of variables? ");
+    scanf("%d", &nVariables);
+    printf("Size of variables? ");
+    scanf("%d", &variableBound);
+    printf("Number of elements? ");
+    scanf("%d", & nElements);
+  }
 
   printf("#variables: %d, variable bound: %d, #elements: %d\n",
       nVariables, variableBound, nElements);
@@ -149,28 +163,8 @@ int main(int argc, char *argv[])
       forest::MULTI_TERMINAL);
   assert(states != 0);
 
-  assert(forest::SUCCESS ==
-      states->setReductionRule(forest::FULLY_REDUCED));
-    //states->setReductionRule(forest::QUASI_REDUCED));
-#if 0
-  assert(forest::SUCCESS ==
-      states->setNodeDeletion(forest::OPTIMISTIC_DELETION));
-  // states->setNodeDeletion(forest::PESSIMISTIC_DELETION));
-  if (variableBound < 4) {
-    assert(forest::SUCCESS ==
-        states->setNodeStorage(forest::FULL_STORAGE));
-  } else {
-    assert(forest::SUCCESS ==
-        states->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
-  }
-#endif
-
   expert_forest* expertStates = dynamic_cast<expert_forest*>(states);
   assert(0 != expertStates);
-
-#if 0
-  testA(expertStates);
-#endif
 
   // Tests:
   // (1) temp_node += min_terms
@@ -273,14 +267,8 @@ int main(int argc, char *argv[])
   free(elements);
 
 #endif
+
   return 0;
-}
-
-
-void printUsage(FILE *outputStream)
-{
-  fprintf(outputStream,
-      "Usage: test_temporary_nodes <#Variables> <VariableBound> <#Elements>\n");
 }
 
 
@@ -375,21 +363,33 @@ void findNodesInGraph(expert_forest* f, int node, std::set<int>& result)
 }
 
 
-void testA(expert_forest* f)
+void testA()
 {
-  // Domain must have 3 variables of size 2.
-
   int nVars = 3;
-  assert(f->getDomain()->getNumVariables() == nVars);
-
   int varSize = 2;
+
+  // Initialize the variable bounds array to provide to the domain
+
+  int* bounds = new int[nVars];
+  assert(bounds != 0);
+  for (int i = 0; i < nVars; ) { bounds[i++] = varSize; }
+
+  // Create a domain
+  domain *d = MEDDLY_createDomain();
+  assert(d != 0);
+  assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVars));
+
+  // Create an MDD forest in this domain (to store states)
+  forest* states = d->createForest(false, forest::BOOLEAN,
+      forest::MULTI_TERMINAL);
+  assert(states != 0);
+
+  expert_forest* f = dynamic_cast<expert_forest*>(states);
+  assert(f != 0);
+
   int level1 = f->getDomain()->getVariableAbove(domain::TERMINALS);
   int level2 = f->getDomain()->getVariableAbove(level1);
   int level3 = f->getDomain()->getVariableAbove(level2);
-
-  assert(f->getDomain()->getVariableBound(level1) == varSize);
-  assert(f->getDomain()->getVariableBound(level2) == varSize);
-  assert(f->getDomain()->getVariableBound(level3) == varSize);
 
   {
     // --------------------------------------------------------------------
@@ -507,6 +507,11 @@ void testA(expert_forest* f)
 
     delete [] element;
   }
+
+  // Cleanup; in this case simply delete the domain
+  delete d;
+
+  delete [] bounds;
 }
 
 
@@ -517,7 +522,7 @@ void testB()
 
   // Initialize the variable bounds array to provide to the domain
 
-  int* bounds = (int *) malloc(nVars * sizeof(int));
+  int* bounds = new int[nVars];
   assert(bounds != 0);
   for (int i = 0; i < nVars; ) { bounds[i++] = varSize; }
 
@@ -531,7 +536,7 @@ void testB()
       forest::MULTI_TERMINAL);
   assert(states != 0);
 
-  mxd_node_manager* f = dynamic_cast<mxd_node_manager*>(states);
+  expert_forest* f = dynamic_cast<expert_forest*>(states);
   assert(f != 0);
 
   int level1 = f->getDomain()->getVariableAbove(domain::TERMINALS);
@@ -618,11 +623,10 @@ void testB()
     delete [] pelement;
   }
 
-
   // Cleanup; in this case simply delete the domain
   delete d;
 
-  free(bounds);
+  delete [] bounds;
 }
 
 
