@@ -900,3 +900,176 @@ forest::error mxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
 }
 
 
+int mxd_node_manager::accumulateSkippedLevel(int tempNode,
+    int* element, int* pelement, int level)
+{
+  DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
+  DCASSERT(level > 0);
+  DCASSERT(getNodeLevel(tempNode) >= 0);
+  DCASSERT(getNodeLevel(tempNode) != level);
+
+  int nodeLevel = getNodeLevel(tempNode);
+  int index = element[level];
+  int pindex = pelement[level];
+  int nextLevel = getDomain()->getVariableBelow(level);
+
+  // Since the forest is Identity-Reduced, it follows:
+  int dptr = index == pindex? tempNode: 0;
+
+  int newDptr = accumulate(dptr, true, element, pelement, nextLevel);
+
+  if (newDptr == dptr) {
+    // Element got absorbed into dptr
+    return tempNode;
+  }
+
+  // Since this is a skipped level node,
+  // if newDptr != dptr,
+  // a new node must be constructed regardless of cBM.
+  int node = 0;
+  if (tempNode == 0) {
+    int pNode = createTempNode(-level, pindex + 1, true);
+    setDownPtr(pNode, pindex, newDptr);
+    node = createTempNode(level, index + 1, true);
+    setDownPtr(node, index, pNode);
+    unlinkNode(pNode);
+  } else {
+    int size = getLevelSize(level);
+    node = createTempNode(level, size, false);
+    for (int i = 0; i < size; ++i) {
+      int pSize = 1 + (i == index? MAX( i , pindex ) : i);
+      int pNode = createTempNode(-level, pSize, true);
+      setDownPtrWoUnlink(pNode, i, tempNode);
+      if (i == index) setDownPtr(pNode, pindex, newDptr);
+      setDownPtr(node, i, pNode);
+      unlinkNode(pNode);
+    }
+  }
+
+  unlinkNode(newDptr);
+  return node;
+}
+
+
+// Add an element to a temporary edge
+// Start this recursion at the top level in the domain.
+// Use expert_domain::getTopVariable() to obtain the topmost level in
+// the domain.
+// cBM: copy before modifying.
+int mxd_node_manager::accumulate(int tempNode, bool cBM,
+    int* element, int* pelement, int level)
+{
+  DCASSERT(isMxd());
+  DCASSERT(this->getReductionRule() == forest::IDENTITY_REDUCED);
+
+  if (level == 0) return -1;
+  if (tempNode == -1) return -1;
+  DCASSERT(level > 0);
+
+  int nodeLevel = getNodeLevel(tempNode);
+  DCASSERT(nodeLevel >= 0);
+
+  if (level != nodeLevel) {
+    return accumulateSkippedLevel(tempNode, element, pelement, level);
+  }
+
+  int index = element[level];
+  int pindex = pelement[level];
+  int nextLevel = getDomain()->getVariableBelow(level);
+
+  // (1) Compute result for the next unprimed level.
+
+  int dptr = getDownPtr(tempNode, index);
+  DCASSERT(!isTerminalNode(dptr) || dptr == 0);
+  int pdptr = getDownPtr(dptr, pindex);
+
+  int inCount = getInCount(tempNode);
+  int pinCount = isTerminalNode(dptr)? 1: getInCount(dptr);
+
+  // An incount > 1 indicates a need to duplicate the node before
+  // modifying.
+  if (inCount > 1) cBM = true;
+  bool pcBM = cBM || (pinCount > 1);
+
+  int newpDptr = accumulate(pdptr, pcBM, element, pelement, nextLevel);
+
+  if (newpDptr == pdptr) {
+    // Element got absorbed into pdptr
+    return tempNode;
+  }
+
+  // (2) Create/update node at the primed level.
+
+  // If dptr is 0, create a temporary node.
+  // If dptr is a reduced node or if its incount > 1,
+  //    create a copy (which is a temporary node).
+  // Otherwise, use dptr (should be a temporary node with incount == 1).
+  int pNode = 0;
+  if (dptr == 0) {
+    pNode = createTempNode(-level, pindex + 1, true);
+  } else if (isReducedNode(dptr) || pcBM) {
+    pNode = makeACopy(dptr, pindex + 1);
+  } else {
+    pNode = dptr;
+    DCASSERT(!isReducedNode(pNode));
+    if (pindex >= getFullNodeSize(pNode)) {
+      resizeNode(pNode, pindex + 1);
+    }
+  }
+
+  DCASSERT(!isReducedNode(pNode));
+  DCASSERT(pindex < getFullNodeSize(pNode));
+  setDownPtr(pNode, pindex, newpDptr);
+  unlinkNode(newpDptr);
+  
+  // (3) Create/update node at the unprimed level.
+
+  if (pNode == dptr) {
+    // Element got absorbed into dptr
+    return tempNode;
+  }
+
+  int node = 0;
+  if (tempNode == 0) {
+    node = createTempNode(level, index + 1, true);
+  } else if (isReducedNode(tempNode) || cBM) {
+    node = makeACopy(tempNode, index + 1);
+  } else {
+    node = tempNode;
+    DCASSERT(!isReducedNode(node));
+    if (index >= getFullNodeSize(node)) {
+      resizeNode(node, index + 1);
+    }
+  }
+
+  DCASSERT(!isReducedNode(node));
+  DCASSERT(index < getFullNodeSize(node));
+  setDownPtr(node, index, pNode);
+  unlinkNode(pNode);
+
+  return node;
+}
+
+
+// Add an element to a temporary edge
+forest::error mxd_node_manager::accumulate(int& tempNode,
+    int* element, int* pelement)
+{
+  if (isActiveNode(tempNode) && element != 0 && pelement != 0) {
+    int result = accumulate(tempNode, false,
+        element, pelement, expertDomain->getTopVariable());
+    if (tempNode != result) {
+      // tempNode had to be copied into another node by accumulate().
+      // This could be either because tempNode was a reduced node,
+      // or because tempNode had incount > 1.
+      unlinkNode(tempNode);
+      tempNode = result;
+    }
+    // Note: tempNode == result indicates that the element was added
+    // to the existing temporary node. Therefore, there is no need to
+    // change incounts.
+    return forest::SUCCESS;
+  }
+  return forest::INVALID_OPERATION;
+}
+

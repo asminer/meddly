@@ -218,6 +218,12 @@ class mxd_node_manager : public mtmxd_node_manager {
     using mtmxd_node_manager::createEdge;
     using mtmxd_node_manager::evaluate;
 
+    forest::error accumulate(int& tempNode, int* element, int* pelement);
+    virtual int accumulate(int tempNode, bool cBM,
+        int* element, int* pelement, int level);
+    virtual int accumulateSkippedLevel(int tempNode,
+        int* element, int* pelement, int level);
+
     // Refer to meddly.h
     virtual error createEdge(const int* const* vlist, const int* const* vplist,
         int N, dd_edge& e);

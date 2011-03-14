@@ -32,6 +32,8 @@
 #include "meddly.h"
 #include "meddly_expert.h"
 
+#include "src/forests/mtmxd.h"
+
 // Timer class
 #include "timer.h"
 
@@ -53,6 +55,11 @@ void printUsage(FILE *outputStream);
 // Adds elements on at a time and prints the results.
 void testA(expert_forest* f);
 
+// TestB:
+// Builds temporary nodes by hand (MXDs).
+// Adds elements on at a time and prints the results.
+void testB();
+
 // PhaseI: use convertDDEdgeToTemporaryNode.
 void doPhaseI(expert_forest* f, const int* const* elements,
     int start, int end, int& tempNode);
@@ -67,6 +74,9 @@ void printIncounts(expert_forest* f, int node);
 
 int main(int argc, char *argv[])
 {
+#if 1
+  testB();
+#else
   if (argc != 4) {
     printUsage(stdout);
     exit(1);
@@ -262,6 +272,7 @@ int main(int argc, char *argv[])
   }
   free(elements);
 
+#endif
   return 0;
 }
 
@@ -435,6 +446,8 @@ void testA(expert_forest* f)
     printIncounts(f, tempNode);
 
     f->unlinkNode(tempNode);
+
+    delete [] element;
   }
 
   {
@@ -491,7 +504,115 @@ void testA(expert_forest* f)
     printIncounts(f, tempNode);
 
     f->unlinkNode(tempNode);
+
+    delete [] element;
   }
+}
+
+
+void testB()
+{
+  int nVars = 3;
+  int varSize = 2;
+
+  // Initialize the variable bounds array to provide to the domain
+
+  int* bounds = (int *) malloc(nVars * sizeof(int));
+  assert(bounds != 0);
+  for (int i = 0; i < nVars; ) { bounds[i++] = varSize; }
+
+  // Create a domain
+  domain *d = MEDDLY_createDomain();
+  assert(d != 0);
+  assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVars));
+
+  // Create an MDD forest in this domain (to store states)
+  forest* states = d->createForest(true, forest::BOOLEAN,
+      forest::MULTI_TERMINAL);
+  assert(states != 0);
+
+  mxd_node_manager* f = dynamic_cast<mxd_node_manager*>(states);
+  assert(f != 0);
+
+  int level1 = f->getDomain()->getVariableAbove(domain::TERMINALS);
+  int level2 = f->getDomain()->getVariableAbove(level1);
+  int level3 = f->getDomain()->getVariableAbove(level2);
+
+  {
+    // ----------------------------------------------------------------
+    // TEST #1
+    //
+    // Build a node for the set: {000->000, 010->000}
+    int trueNode = f->getTerminalNode(true);
+    int node1L1P = f->createTempNodeMaxSize(-level1);
+    int node2L1 = f->createTempNodeMaxSize(level1);
+    int node3L2P = f->createTempNodeMaxSize(-level2);
+    int node4L2 = f->createTempNodeMaxSize(level2);
+    int node5L3P = f->createTempNodeMaxSize(-level3);
+    int node6L3 = f->createTempNodeMaxSize(level3);
+
+    // node1L1P = {0} --> T
+    f->setDownPtr(node1L1P, 0, trueNode);
+
+    // node2L1 = {0} --> node1L1P
+    f->setDownPtr(node2L1, 0, node1L1P);
+
+    // node3L2P = {0,1} --> node2L1
+    f->setDownPtr(node3L2P, 0, node2L1);
+    f->setDownPtr(node3L2P, 1, node2L1);
+
+    // node4L2 = {0} --> node3L2P
+    f->setDownPtr(node4L2, 1, node3L2P);
+
+    // node5L3P = {0} --> node4L2
+    f->setDownPtr(node5L3P, 0, node4L2);
+
+    // node6L3 = {0} --> node5L3P
+    f->setDownPtr(node6L3, 0, node5L3P);
+
+    int tempNode = node6L3;
+    f->linkNode(tempNode);
+
+    f->unlinkNode(trueNode);
+    f->unlinkNode(node1L1P);
+    f->unlinkNode(node2L1);
+    f->unlinkNode(node3L2P);
+    f->unlinkNode(node4L2);
+    f->unlinkNode(node5L3P);
+    f->unlinkNode(node6L3);
+
+    printf("{010->000, 010->010}\n");
+    f->showNodeGraph(stdout, tempNode);
+    printIncounts(f, tempNode);
+
+    // Add 011->000
+    int* element = new int[nVars + 1];
+    int* pelement = new int[nVars + 1];
+    element[0] = 0;
+    element[1] = 1;
+    element[2] = 1;
+    element[3] = 0;
+    pelement[0] = 0;
+    pelement[1] = 0;
+    pelement[2] = 0;
+    pelement[3] = 0;
+    f->accumulate(tempNode, element, pelement);
+
+    printf("Added {011->000} i.e. {001010}\n");
+    f->showNodeGraph(stdout, tempNode);
+    printIncounts(f, tempNode);
+
+    f->unlinkNode(tempNode);
+
+    delete [] element;
+    delete [] pelement;
+  }
+
+
+  // Cleanup; in this case simply delete the domain
+  delete d;
+
+  free(bounds);
 }
 
 
