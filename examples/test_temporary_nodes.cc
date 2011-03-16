@@ -66,6 +66,10 @@ void testA();
 // Adds elements on at a time and prints the results.
 void testB();
 
+// TestC:
+// Testing dd_edge::operator+= along with temporary nodes.
+void testC();
+
 // PhaseI: use convertDDEdgeToTemporaryNode.
 void doPhaseI(expert_forest* f, const int* const* elements,
     int start, int end, int& tempNode);
@@ -80,6 +84,9 @@ void printIncounts(expert_forest* f, int node);
 
 int main(int argc, char *argv[])
 {
+  testC();
+  return 1;
+
 #ifdef TEST_MXD_OPS
   testA();
 #endif
@@ -621,6 +628,114 @@ void testB()
 
     delete [] element;
     delete [] pelement;
+  }
+
+  // Cleanup; in this case simply delete the domain
+  delete d;
+
+  delete [] bounds;
+}
+
+
+void testC()
+{
+  int nVars = 5;
+  int varSize = 2;
+
+  // Initialize the variable bounds array to provide to the domain
+
+  int* bounds = new int[nVars];
+  assert(bounds != 0);
+  for (int i = 0; i < nVars; ) { bounds[i++] = varSize; }
+
+  // Create a domain
+  domain *d = MEDDLY_createDomain();
+  assert(d != 0);
+  assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVars));
+
+  // Create an MDD forest in this domain (to store states)
+  forest* states = d->createForest(false, forest::BOOLEAN,
+      forest::MULTI_TERMINAL);
+  assert(states != 0);
+
+  expert_forest* f = dynamic_cast<expert_forest*>(states);
+  assert(f != 0);
+
+  f->setNodeDeletion(forest::PESSIMISTIC_DELETION);
+
+
+  {
+    // --------------------------------------------------------------------
+    // TEST #1
+    //
+    int U_aux = 0;
+    dd_edge S(f);
+    dd_edge U(f);
+    dd_edge e(f);
+    dd_edge initial(f);
+
+    // Add 00000
+    int* element = new int[nVars + 1];
+    element[0] = 0;
+    element[1] = 0;
+    element[2] = 0;
+    element[3] = 0;
+    element[4] = 0;
+    element[5] = 0;
+
+    f->createEdge((int**)(&element), 1, initial);
+
+    f->accumulate(U_aux, element);
+
+    printf("Temorary node for {00000}: %d\n", U_aux);
+    f->showInfo(stdout, 1);
+
+    e.set(f->reduceNode(U_aux), 0, f->getDomain()->getTopVariable());
+    U_aux = 0;
+
+    printf("After reduction:\ne = %d\nS = %d\nU = %d\n",
+        e.getNode(), S.getNode(), U.getNode());
+    f->showInfo(stdout, 1);
+
+    S += e;
+    U += e;
+    e.clear();
+
+    printf("After S+= and U+=:\ne = %d\nS = %d\nU = %d\n",
+        e.getNode(), S.getNode(), U.getNode());
+    f->showInfo(stdout, 1);
+
+    U.clear();
+
+    // Add 01011
+    element[1] = 1;
+    element[2] = 1;
+    element[3] = 0;
+    element[4] = 1;
+    element[5] = 0;
+    f->accumulate(U_aux, element);
+
+    printf("Temorary node for {01011}: %d\n", U_aux);
+    f->showInfo(stdout, 1);
+
+    e.set(f->reduceNode(U_aux), 0, f->getDomain()->getTopVariable());
+    U_aux = 0;
+
+    printf("After reduction:\ne = %d\nS = %d\nU = %d\n",
+        e.getNode(), S.getNode(), U.getNode());
+    f->showInfo(stdout, 1);
+
+    S += e;
+    U += e;
+    e.clear();
+
+    printf("After S+= and U+=:\ne = %d\nS = %d\nU = %d\n",
+        e.getNode(), S.getNode(), U.getNode());
+    f->showInfo(stdout, 1);
+
+    U.clear();
+
+    delete [] element;
   }
 
   // Cleanup; in this case simply delete the domain

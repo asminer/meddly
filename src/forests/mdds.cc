@@ -3047,12 +3047,18 @@ bool node_manager::accumulate(int& tempNode, int* element)
 {
   assert(isActiveNode(tempNode));
   assert(element != 0);
-  for (int i = expertDomain->getTopVariable(); i != domain::TERMINALS;
-      i = expertDomain->getVariableBelow(i)) {
-    if (element[i] >= expertDomain->getVariableBound(i)) {
-      expertDomain->enlargeVariableBound(i, false, element[i] + 1);
+
+  // Enlarge variable bounds if necessary
+  const int* heightsMap = expertDomain->getHeightsToLevelsMap() + 1;
+  for (const int* stop = heightsMap + expertDomain->getNumVariables();
+      heightsMap != stop; ) {
+    int level = *heightsMap++;
+    int sz = element[level] + 1;
+    if (sz > expertDomain->getVariableBound(level)) {
+      expertDomain->enlargeVariableBound(level, false, sz);
     }
   }
+
   accumulateMintermAddedElement = false;
   int result = accumulate(tempNode, false,
       element, expertDomain->getTopVariable());
