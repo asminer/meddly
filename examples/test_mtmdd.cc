@@ -347,10 +347,11 @@ int main(int argc, char *argv[])
     for (dd_edge::const_iterator iter = reachableStates.begin();
         iter; ++iter, ++counter)
     {
+      int level = iter.getLevel();
       const int* element = iter.getAssignments();
       const int* curr = element + nVariables;
       const int* end = element - 1;
-      printf("%d: [%d", counter, *curr--);
+      printf("%d: level %d, [%d", counter, level, *curr--);
       while (curr != end) { printf(" %d", *curr--); }
       printf("]\n");
     }

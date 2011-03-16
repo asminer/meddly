@@ -1019,6 +1019,9 @@ class dd_edge {
         bool operator==(const iterator& iter) const;
         const int* getAssignments() const;
         const int* getPrimedAssignments() const;
+        // Highest level at which the current minterm differs
+        // from the previous minterm.
+        int getLevel() const;
         void getValue(int& edgeValue) const;
         void getValue(float& edgeValue) const;
         
@@ -1045,6 +1048,7 @@ class dd_edge {
         int*      pelement;
         int*      pnodes;
         iter_type type;
+        int       foundPathAtLevel;
     };
 
     typedef iterator const_iterator;
@@ -1680,5 +1684,9 @@ inline dd_edge::iterator::operator bool() const
   return nodes != 0 && nodes[0] != 0;
 }
 
+inline int dd_edge::iterator::getLevel() const
+{
+  return foundPathAtLevel;
+}
 
 #endif

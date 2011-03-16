@@ -340,7 +340,9 @@ void dd_edge::updateIterators()
 
 dd_edge::iterator::iterator()
 : e(0), size(0), element(0), nodes(0), pelement(0), pnodes(0), type(DEFAULT)
-{ }
+{
+  foundPathAtLevel = 0;
+}
 
 
 dd_edge::iterator::iterator(dd_edge* e, iter_type t, const int* minterm)
@@ -351,6 +353,7 @@ dd_edge::iterator::iterator(dd_edge* e, iter_type t, const int* minterm)
     if (!e->parent->isForRelations()) return;
   }
 
+  foundPathAtLevel = e->parent->getDomain()->getTopVariable();
   size = e->parent->getDomain()->getNumVariables() + 1;
   element = (int*) malloc(size * sizeof(int));
   nodes = (int*) malloc(size * sizeof(int));
@@ -446,6 +449,8 @@ dd_edge::iterator::iterator(const iterator& iter)
       memcpy(pelement, iter.pelement, size * sizeof(int));
       memcpy(pnodes, iter.pnodes, size * sizeof(int));
     }
+
+    foundPathAtLevel = e->parent->getDomain()->getTopVariable();
   }
 }
 
@@ -479,6 +484,8 @@ dd_edge::iterator& dd_edge::iterator::operator=(const iterator& iter)
         memcpy(pelement, iter.pelement, size * sizeof(int));
         memcpy(pnodes, iter.pnodes, size * sizeof(int));
       }
+
+      foundPathAtLevel = e->parent->getDomain()->getTopVariable();
     }
   }
   return *this;
@@ -584,6 +591,8 @@ bool dd_edge::iterator::findNextRow(int height)
     element[nodeLevel] = 0;
     pnodes[nodeLevel] = 0;
     nodes[nodeLevel] = 0;
+  } else {
+    foundPathAtLevel = nodeLevel;
   }
 
   return found;
@@ -685,6 +694,8 @@ bool dd_edge::iterator::findNextColumn(int height)
     pelement[nodeLevel] = 0;
     pnodes[nodeLevel] = 0;
     nodes[nodeLevel] = 0;
+  } else {
+    foundPathAtLevel = -nodeLevel;
   }
 
   return found;
@@ -868,6 +879,7 @@ void dd_edge::iterator::incrNonRelation()
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
 
   int currLevel = d->getTopVariable();
+  foundPathAtLevel = currLevel;
 
   if (nodes[0] == 0) {
     memset(nodes, 0, size * sizeof(int));
@@ -953,6 +965,7 @@ void dd_edge::iterator::incrNonRelation()
 
     // found new path
     // select the first path starting from level below currLevel
+    foundPathAtLevel = currLevel;
     currLevel = d->getVariableBelow(currLevel);
   }
 
@@ -1006,6 +1019,7 @@ void dd_edge::iterator::incrNonIdentRelation()
 
   int currLevel = d->getTopVariable();
   bool isCurrLevelPrime = false;
+  foundPathAtLevel = currLevel;
 
   if (nodes[0] == 0) {
     memset(nodes, 0, size * sizeof(int));
@@ -1120,9 +1134,11 @@ void dd_edge::iterator::incrNonIdentRelation()
     // found new path
     // select the first path starting from level below currLevel
     if (isCurrLevelPrime) {
+      foundPathAtLevel = -currLevel;
       isCurrLevelPrime = false;
       currLevel = d->getVariableBelow(currLevel);
     } else {
+      foundPathAtLevel = currLevel;
       isCurrLevelPrime = true;
     }
   }
@@ -1193,6 +1209,7 @@ void dd_edge::iterator::incrRelation()
   expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
   int currLevel = d->getTopVariable();
   bool isCurrLevelPrime = false;
+  foundPathAtLevel = currLevel;
 
   if (nodes[0] == 0) {
     memset(nodes, 0, size * sizeof(int));
@@ -1322,9 +1339,11 @@ void dd_edge::iterator::incrRelation()
     // found new path
     // select the first path starting from level below currLevel
     if (isCurrLevelPrime) {
+      foundPathAtLevel = -currLevel;
       isCurrLevelPrime = false;
       currLevel = d->getVariableBelow(currLevel);
     } else {
+      foundPathAtLevel = currLevel;
       isCurrLevelPrime = true;
     }
   }
@@ -1398,10 +1417,12 @@ void dd_edge::iterator::operator++()
           incrRelation();
           break;
         case ROW:
-          findNextColumn(e->parent->getDomain()->getNumVariables());
+          if (!findNextColumn(e->parent->getDomain()->getNumVariables()))
+            foundPathAtLevel = -(e->parent->getDomain()->getTopVariable());
           break;
         case COLUMN:
-          findNextRow(e->parent->getDomain()->getNumVariables());
+          if (!findNextRow(e->parent->getDomain()->getNumVariables()))
+            foundPathAtLevel = e->parent->getDomain()->getTopVariable();
           break;
         default:
           break;
