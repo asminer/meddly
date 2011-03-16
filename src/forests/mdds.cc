@@ -3047,6 +3047,12 @@ bool node_manager::accumulate(int& tempNode, int* element)
 {
   assert(isActiveNode(tempNode));
   assert(element != 0);
+  for (int i = expertDomain->getTopVariable(); i != domain::TERMINALS;
+      i = expertDomain->getVariableBelow(i)) {
+    if (element[i] >= expertDomain->getVariableBound(i)) {
+      expertDomain->enlargeVariableBound(i, false, element[i] + 1);
+    }
+  }
   accumulateMintermAddedElement = false;
   int result = accumulate(tempNode, false,
       element, expertDomain->getTopVariable());

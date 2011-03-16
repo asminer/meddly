@@ -1405,6 +1405,15 @@ bool mxd_node_manager::accumulate(int& tempNode,
   assert(isActiveNode(tempNode));
   assert(element != 0);
   assert(pelement != 0);
+  for (int i = expertDomain->getTopVariable(); i != domain::TERMINALS;
+      i = expertDomain->getVariableBelow(i)) {
+    if (element[i] >= expertDomain->getVariableBound(i)) {
+      expertDomain->enlargeVariableBound(i, false, element[i] + 1);
+    }
+    if (pelement[i] >= expertDomain->getVariableBound(i, true)) {
+      expertDomain->enlargeVariableBound(i, true, pelement[i] + 1);
+    }
+  }
   accumulateMintermAddedElement = false;
   int result = accumulate(tempNode, false,
       element, pelement, expertDomain->getTopVariable());
