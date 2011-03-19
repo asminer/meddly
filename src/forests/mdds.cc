@@ -2393,10 +2393,9 @@ int node_manager::getHole(int k, int slots, bool search_holes)
       (int*) realloc(level[p_level].data, level[p_level].size * sizeof(int));
     if (NULL == level[p_level].data) {
       // garbage collect and try again
-      level[p_level].data = old_data;
-      level[p_level].size = old_size;
-      reportMemoryUsage(stdout);
       fprintf(stderr, "Memory allocation error while expand MDD level.\n");
+      fprintf(stderr, "Current size: %d, Requested size: %d\n",
+          old_size, level[p_level].size);
       exit(1);
     } else {
       updateMemoryAllocated((level[p_level].size - old_size) * sizeof(int));
