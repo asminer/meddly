@@ -462,7 +462,7 @@ class node_manager : public expert_forest {
 
     // Checks if the node satisfies the forests reduction rules.
     // If it does not, an assert violation occurs.
-    void validateDownPointers(int p);
+    void validateDownPointers(int p, bool recursive = false);
 
     // Pointer to expert_domain
     expert_domain* expertDomain;

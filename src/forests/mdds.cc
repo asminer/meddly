@@ -1193,7 +1193,7 @@ void node_manager::showNode(FILE *s, int p, int verbose) const
     fprintf(s, " in: %d", data[a]);
     fprintf(s, " cc: %d", address[p].cache_count);
   } else {
-    fprintf(s, "node: %d", p);
+    fprintf(s, "%snode: %d", (isReducedNode(p)? " ": "+"), p);
   }
   if (isSparseNode(p)) {
     // sparse
@@ -2372,25 +2372,15 @@ int node_manager::getHole(int k, int slots, bool search_holes)
 
   // can't recycle; grab from the end
   if (level[p_level].last + slots >= level[p_level].size) {
-#if 0
-    printf("Expand level %d: old size=%d", p_level, level[p_level].size);
-#endif
     // not enough space, extend
-    int *old_data = level[p_level].data;
     int old_size = level[p_level].size;
 
     // new size is 50% more than previous (37.5% * 4 = 1.5 => 50% growth)
-    int min_size = (level[p_level].last + slots) * 0.375;
-    level[p_level].size = min_size * 4;
+    level[p_level].size =
+      MAX( old_size, level[p_level].last + slots ) * 1.5;
 
-#if 0
-    printf(" new size=%d slots=%d last=%d\n",
-        level[p_level].size, slots, level[p_level].last);
-    fflush(stdout);
-#endif
-
-    level[p_level].data =
-      (int*) realloc(level[p_level].data, level[p_level].size * sizeof(int));
+    level[p_level].data = (int*)
+      realloc(level[p_level].data, level[p_level].size * sizeof(int));
     if (NULL == level[p_level].data) {
       // garbage collect and try again
       fprintf(stderr, "Memory allocation error while expand MDD level.\n");
@@ -2679,13 +2669,16 @@ long node_manager::getCurrentMemoryUsed() const {
 }
 
 
-void node_manager::validateDownPointers(int p)
+void node_manager::validateDownPointers(int p, bool recursive)
 {
-  assert(isFullNode(p));
+  if (isTerminalNode(p)) return;
+
   int nodeHeight = getNodeHeight(p);
   int nodeLevel = getNodeLevel(p);
-  int nodeSize = getFullNodeSize(p);
-  const int* ptr = getFullNodeDownPtrs(p);
+  int nodeSize = isFullNode(p)? getFullNodeSize(p): getSparseNodeSize(p);
+  const int* ptr = isFullNode(p)? getFullNodeDownPtrsReadOnly(p):
+    getSparseNodeDownPtrs(p);
+
   switch (getReductionRule()) {
     case forest::FULLY_REDUCED:
       if (isUnprimedNode(p)) {
@@ -2747,6 +2740,12 @@ void node_manager::validateDownPointers(int p)
 
     default:
       break;
+  }
+
+  if (recursive) {
+    for (int i = 0; i < nodeSize; ++i) {
+      validateDownPointers(ptr[i], true);
+    }
   }
 }
 

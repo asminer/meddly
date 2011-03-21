@@ -147,7 +147,10 @@ forest::error mtmxd_node_manager::resizeNode(int p, int size)
 int mtmxd_node_manager::reduceNode(int p)
 {
   DCASSERT(isActiveNode(p));
-  // assert(reductionRule == forest::IDENTITY_REDUCED);
+
+#ifdef DEVELOPMENT_CODE
+  validateDownPointers(p);
+#endif
 
   if (isReducedNode(p)) return p; 
 
@@ -158,38 +161,22 @@ int mtmxd_node_manager::reduceNode(int p)
   int* ptr = getFullNodeDownPtrs(p);
   int node_level = getNodeLevel(p);
 
-#ifdef DEVELOPMENT_CODE
-  validateDownPointers(p);
-#endif
-
   // quick scan: is this node zero?
   int nnz = 0;
   int truncsize = 0;
   {
-#if 0
-    for (int i = 0; i < size; ++i) {
-      if (!isReducedNode(ptr[i])) {
-        ptr[i] = recursiveReduceNode(ptr[i]);
-      }
-      if (0 != ptr[i]) {
-        nnz++;
-        truncsize = i;
-      }
-    }
-    truncsize++;
-#else
     int* curr = ptr;
     int* last = curr + size;
     while (curr != last) {
       if (!isReducedNode(*curr)) {
         *curr = recursiveReduceNode(*curr);
       }
+      DCASSERT(isReducedNode(*curr));
       if (0 != *curr++) {
         ++nnz;
         truncsize = curr - ptr;
       }
     }
-#endif
   }
 
   if (0 == nnz) {
@@ -985,7 +972,6 @@ int mxd_node_manager::accumulateExpandA(int a, int b, bool cBM)
       }
 
       setDownPtr(pNode, i, result);
-      unlinkNode(result);
 
       if (pNode != dptr) {
         if (needsToMakeACopy) {
@@ -1018,20 +1004,20 @@ int mxd_node_manager::addPrimeReducedNodes(int a, int b)
     int bSize = getFullNodeSize(b);
     for (int i = 0; i < bSize; ++i) {
       if (getFullNodeDownPtr(b, i) == 0) continue;
-      int result = accumulateMxd(getFullNodeDownPtr(a, i),
+      int temp = accumulateMxd(getFullNodeDownPtr(result, i),
           getFullNodeDownPtr(b, i), true);
-      setDownPtr(a, i, result);
-      unlinkNode(result);
+      setDownPtr(result, i, temp);
+      unlinkNode(temp);
     }
   }
   else {
     int nDptrs = getSparseNodeSize(b);
     for (int i = 0; i < nDptrs; ++i) {
       int index = getSparseNodeIndex(b, i);
-      int result = accumulateMxd(getFullNodeDownPtr(a, index),
+      int temp = accumulateMxd(getFullNodeDownPtr(result, index),
           getSparseNodeDownPtr(b, i), true);
-      setDownPtr(a, index, result);
-      unlinkNode(result);
+      setDownPtr(result, index, temp);
+      unlinkNode(temp);
     }
   }
 
@@ -1232,9 +1218,12 @@ int mxd_node_manager::accumulateMxd(int a, int b, bool cBM)
 forest::error mxd_node_manager::accumulate(int& a, int b)
 {
   if (isActiveNode(a) && isActiveNode(b)) {
+    // validateDownPointers(a, true);
+    // validateDownPointers(b, true);
     int result = accumulateMxd(a, b, false);
     unlinkNode(a);
     a = result;
+    // validateDownPointers(a, true);
     return forest::SUCCESS;
   }
   return forest::INVALID_OPERATION;
@@ -1411,6 +1400,7 @@ bool mxd_node_manager::accumulate(int& tempNode,
   for (const int* stop = heightsMap + expertDomain->getNumVariables();
       heightsMap != stop; ) {
     int level = *heightsMap++;
+#if 0
     int sz = element[level] + 1;
     if (sz > expertDomain->getVariableBound(level)) {
       expertDomain->enlargeVariableBound(level, false, sz);
@@ -1419,6 +1409,12 @@ bool mxd_node_manager::accumulate(int& tempNode,
     if (sz > expertDomain->getVariableBound(level, true)) {
       expertDomain->enlargeVariableBound(level, true, sz);
     }
+#else
+    int sz = MAX( element[level] , pelement[level] ) + 1;
+    if (sz > expertDomain->getVariableBound(level)) {
+      expertDomain->enlargeVariableBound(level, false, sz);
+    }
+#endif
   }
 
   accumulateMintermAddedElement = false;
