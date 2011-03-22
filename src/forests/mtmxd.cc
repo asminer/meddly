@@ -966,8 +966,9 @@ int mxd_node_manager::accumulateExpandA(int a, int b, bool cBM)
       else if (isReducedNode(dptr) || pcBM) {
         pNode = makeACopy(dptr, i + 1);
       }
-      else if (getFullNodeSize(dptr) <= i) {
-        assert(forest::SUCCESS == resizeNode(dptr, i + 1));
+      else {
+        if (getFullNodeSize(dptr) <= i)
+          assert(forest::SUCCESS == resizeNode(dptr, i + 1));
         pNode = sharedCopy(dptr);
       }
 
