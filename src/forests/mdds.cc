@@ -114,6 +114,9 @@ node_manager::node_manager(domain *d, bool rel, range_type t,
 
   dptrsSize = 0;
   dptrs = 0;
+
+  nodeA = 0;
+  nodeB = 0;
 }
 
 
@@ -653,6 +656,9 @@ void node_manager::clearAllNodes()
 
 node_manager::~node_manager()
 {
+  if (nodeA) delete nodeA;
+  if (nodeB) delete nodeB;
+
   // setting delete_terminal_nodes will ensure that all nodes in compute
   // tables are removed during garbage collection.
   delete_terminal_nodes = true;
@@ -2757,18 +2763,24 @@ int node_manager::addReducedNodes(int a, int b)
 
   // Neither a nor b is a terminal node.
   // Compute result using dd_edge::operator+=.
-  static dd_edge nodeA(this);
-  static dd_edge nodeB(this);
+  if (nodeA == 0) {
+    nodeA = new dd_edge(this);
+    DCASSERT(nodeB == 0);
+    nodeB = new dd_edge(this); 
+  }
+
+  dd_edge& A = *nodeA;
+  dd_edge& B = *nodeB;
 
   linkNode(a);
   linkNode(b);
-  nodeA.set(a, 0, getNodeLevel(a));
-  nodeB.set(b, 0, getNodeLevel(b));
+  A.set(a, 0, getNodeLevel(a));
+  B.set(b, 0, getNodeLevel(b));
 
-  nodeA += nodeB;
-  int result = sharedCopy(nodeA.getNode());
-  nodeA.clear();
-  nodeB.clear();
+  A += B;
+  int result = sharedCopy(A.getNode());
+  A.clear();
+  B.clear();
 
   return result;
 }

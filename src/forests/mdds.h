@@ -553,7 +553,12 @@ class node_manager : public expert_forest {
     bool accumulateMintermAddedElement;
 
   private:
+    // Cache for recursiveReduceNode()
     std::map<int, int> recursiveReduceCache;
+
+    // Persistant variables used in addReducedNodes()
+    dd_edge* nodeA;
+    dd_edge* nodeB;
 };
 
 
