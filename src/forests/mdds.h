@@ -134,11 +134,11 @@ class node_manager : public expert_forest {
     /// Refer to meddly.h
     forest::error createEdgeForVar(int vh, bool primedLevel, dd_edge& result);
     forest::error createEdgeForVar(int vh, bool primedLevel,
-       bool* terms, dd_edge& a);
+        bool* terms, dd_edge& a);
     forest::error createEdgeForVar(int vh, bool primedLevel,
-       int* terms, dd_edge& a);
+        int* terms, dd_edge& a);
     forest::error createEdgeForVar(int vh, bool primedLevel,
-       float* terms, dd_edge& a);
+        float* terms, dd_edge& a);
 
     forest::error createSubMatrix(const bool* const* vlist,
         const bool* const* vplist, const dd_edge a, dd_edge& b);
@@ -374,7 +374,7 @@ class node_manager : public expert_forest {
     // level based operations
     /// number of levels in the current mdd
     int getLevelCount() const;
-    
+
     /// Move nodes so that all holes are at the end.
     void compactAllLevels();
     void compactLevel(int k);
@@ -416,7 +416,7 @@ class node_manager : public expert_forest {
     void indexRemove(int k, int p_offset);
 
   protected:
-  
+
     // modify temp nodes count for level k as well as the global count
     // the temporary node count should be incremented only within
     // createTempNode() or variants.
@@ -425,7 +425,7 @@ class node_manager : public expert_forest {
     // Note: deleting a temp node automatically calls decrTempNodeCount().
     void incrTempNodeCount(int k);
     void decrTempNodeCount(int k);
-    
+
     // increment the count for "nodes activated since last garbage collection"
     void incrNodesActivatedSinceGc();
 
@@ -475,7 +475,7 @@ class node_manager : public expert_forest {
 
     /// Should we try to recycle holes.
     bool holeRecycling;
-    
+
     /**
       Number of hole slots that trigger a compaction.
       This is a number between 0 and 1 indicating percentage.
@@ -495,7 +495,7 @@ class node_manager : public expert_forest {
 
     /// Number of levels. This is not the size of all the levels put together.
     int l_size;
-    
+
     // performance stats
 
     /// For peak memory.
@@ -551,6 +551,9 @@ class node_manager : public expert_forest {
 
     // Place holder for accumulate-minterm result.
     bool accumulateMintermAddedElement;
+
+  private:
+    std::map<int, int> recursiveReduceCache;
 };
 
 

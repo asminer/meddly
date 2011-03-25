@@ -3130,7 +3130,7 @@ int node_manager::recursiveReduceNode(int tempNode, bool clearCache)
 
   DCASSERT(!isReducedNode(tempNode));
 
-  static std::map<int, int> cache;
+  std::map<int, int>& cache = recursiveReduceCache;
   if (clearCache) cache.clear();
   return recursiveReduceNode(cache, tempNode);
 }
