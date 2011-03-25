@@ -3089,20 +3089,20 @@ int node_manager::recursiveReduceNode(std::map<int, int>& cache,
     return iter->second;
   }
 
-  int temp = 0;
-  int dptr = 0;
   int size = getFullNodeSize(root);
 
   for (int i = 0; i < size; ++i)
   {
-    dptr = getFullNodeDownPtr(root, i);
+    int dptr = getFullNodeDownPtr(root, i);
 
     // Ignore terminal nodes and reduced nodes
     if (isReducedNode(dptr)) continue;
 
-    temp = recursiveReduceNode(cache, dptr);
+    int temp = recursiveReduceNode(cache, dptr);
     // At this point, temp's incount has been increased and
     // dptr's incount has been decreased by 1.
+
+    DCASSERT(isReducedNode(temp));
 
     // Using WoUnlink, since dptr's has already been decreased
     setDownPtrWoUnlink(root, i, temp);
@@ -3110,16 +3110,16 @@ int node_manager::recursiveReduceNode(std::map<int, int>& cache,
     unlinkNode(temp);
   }
 
-  temp = reduceNode(root);
+  int result = reduceNode(root);
 
   // Save result in cache
-  if (isActiveNode(root)) cache[root] = temp;
+  if (isActiveNode(root)) cache[root] = result;
 
-  return temp;
+  return result;
 }
 
 
-int node_manager::recursiveReduceNode(int tempNode)
+int node_manager::recursiveReduceNode(int tempNode, bool clearCache)
 {
   // Recursive procedure:
   // Start at root (i.e. tempNode).
@@ -3129,7 +3129,9 @@ int node_manager::recursiveReduceNode(int tempNode)
   //   each temporary node to a reduced node.
 
   DCASSERT(!isReducedNode(tempNode));
-  std::map<int, int> cache;
+
+  static std::map<int, int> cache;
+  if (clearCache) cache.clear();
   return recursiveReduceNode(cache, tempNode);
 }
 

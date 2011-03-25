@@ -190,7 +190,9 @@ class node_manager : public expert_forest {
     // Since there is a possibility of a temporary node being referred
     // to multiple times, these methods use a cache to ensure that each
     // temporary node is reduced only once.
-    int recursiveReduceNode(int tempNode);
+    // Note: The same cache can be used across consecutive reduce
+    // operations by specifying clearCache to false.
+    int recursiveReduceNode(int tempNode, bool clearCache = true);
     int recursiveReduceNode(std::map<int, int>& cache, int root);
 
     /// Reduce and finalize an node with an incoming edge value

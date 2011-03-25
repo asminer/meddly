@@ -162,30 +162,19 @@ int mtmdd_node_manager::reduceNode(int p)
   int nnz = 0;
   int truncsize = 0;
   {
-#if 0
-    for (int i = 0; i < size; ++i) {
-      if (!isReducedNode(ptr[i])) {
-        ptr[i] = recursiveReduceNode(ptr[i]);
-      }
-      if (0 != ptr[i]) {
-        nnz++;
-        truncsize = i;
-      }
-    }
-    truncsize++;
-#else
     int* curr = ptr;
     int* last = curr + size;
+    bool clearCache = true;
     while (curr != last) {
       if (!isReducedNode(*curr)) {
-        *curr = recursiveReduceNode(*curr);
+        *curr = recursiveReduceNode(*curr, clearCache);
+        clearCache = false;
       }
       if (0 != *curr++) {
         ++nnz;
         truncsize = curr - ptr;
       }
     }
-#endif
   }
 
   if (0 == nnz) {

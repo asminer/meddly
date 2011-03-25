@@ -167,9 +167,11 @@ int mtmxd_node_manager::reduceNode(int p)
   {
     int* curr = ptr;
     int* last = curr + size;
+    bool clearCache = true;
     while (curr != last) {
       if (!isReducedNode(*curr)) {
-        *curr = recursiveReduceNode(*curr);
+        *curr = recursiveReduceNode(*curr, clearCache);
+        clearCache = false;
       }
       DCASSERT(isReducedNode(*curr));
       if (0 != *curr++) {
