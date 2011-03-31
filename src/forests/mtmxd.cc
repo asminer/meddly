@@ -258,6 +258,7 @@ int mtmxd_node_manager::reduceNode(int p)
     // address[p].cache_count does not change
   } else {
     // full is better
+#ifndef TRUNCATED_REDUCE_IN_PLACE
     if (truncsize<size) {
       // truncate the trailing 0s
       int newoffset = getHole(node_level, 4+truncsize, true);
@@ -284,6 +285,7 @@ int mtmxd_node_manager::reduceNode(int p)
 #endif
       // address[p].cache_count does not change
     }
+#endif
   }
 
   // address[p].cache_count does not change
