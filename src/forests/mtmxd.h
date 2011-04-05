@@ -229,6 +229,10 @@ class mxd_node_manager : public mtmxd_node_manager {
     virtual int accumulateExpandA(int a, int b, bool cBM);
     virtual int buildQRIdentityNode(int node, int level);
 
+    virtual void accumulateMxdHelper(int& a, int b, bool cBM,
+        bool needsToMakeACopy,
+        int (mxd_node_manager::*function)(int, int, bool));
+
     // Refer to meddly.h
     virtual error createEdge(const int* const* vlist, const int* const* vplist,
         int N, dd_edge& e);

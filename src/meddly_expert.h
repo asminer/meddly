@@ -830,6 +830,7 @@ class expert_domain : public domain {
     const int* getHeightsToLevelsMap() const;
     const int* getLevelsToHeightsMap() const;
     const int* getLevelBounds() const;
+    bool areLevelsAndHeightsAligned() const;
 
     // functions inherited from class domain
     virtual int getNumForests() const;
@@ -859,6 +860,7 @@ class expert_domain : public domain {
 
     int* levelsToHeightsMap;
     int* heightsToLevelsMap;
+    bool levelsAndHeightsAligned;
 
     friend class expert_forest;
 
@@ -1683,16 +1685,18 @@ inline int expert_domain::getNumVariables() const
 
 inline int expert_domain::getTopVariable() const
 {
-  return (heightsToLevelsMap == 0)?
-            0:
-            heightsToLevelsMap[nVars];
+  return levelsAndHeightsAligned
+    ? nVars
+    : (heightsToLevelsMap == 0? 0: heightsToLevelsMap[nVars]);
 }
 
 
 inline int expert_domain::getVariableAbove(int vh) const
 {
-  if (vh < 0 || vh >= allocatedLevels)
-    return -1;
+  if (levelsAndHeightsAligned) {
+    return (vh >= 0 && vh < nVars)? vh + 1: -1;
+  }
+  if (vh < 0 || vh >= allocatedLevels) return -1;
   const int height = levelsToHeightsMap[vh];
   return (height >= 0 && height < nVars)?
             heightsToLevelsMap[height + 1]:
@@ -1702,8 +1706,10 @@ inline int expert_domain::getVariableAbove(int vh) const
 
 inline int expert_domain::getVariableBelow(int vh) const
 {
-  if (vh < 0 || vh >= allocatedLevels)
-    return -1;
+  if (levelsAndHeightsAligned) {
+    return (vh > 0 && vh <= nVars)? vh - 1: -1;
+  }
+  if (vh < 0 || vh >= allocatedLevels) return -1;
   const int height = levelsToHeightsMap[vh];
   return (height > 0 && height <= nVars)?
             heightsToLevelsMap[height - 1]:
@@ -1723,16 +1729,16 @@ inline int expert_domain::getVariableBound(int vh, bool prime) const
 
 inline int expert_domain::getVariableHeight(int vh) const
 {
-  return (vh < 0 || vh >= allocatedLevels)?
-            -1:
-            levelsToHeightsMap[vh];
+  return levelsAndHeightsAligned
+    ? ((vh >= 0 && vh <= nVars)? vh: -1)
+    : ((vh < 0 || vh >= allocatedLevels)? -1 : levelsToHeightsMap[vh]);
 }
 
 inline int expert_domain::getVariableWithHeight(int ht) const
 {
-  return (ht < 0 || ht > nVars)?
-            -1:
-            heightsToLevelsMap[ht];
+  return (ht < 0 || ht > nVars)
+    ? -1
+    : levelsAndHeightsAligned? ht: heightsToLevelsMap[ht];
 }
 
 
@@ -1752,6 +1758,13 @@ inline const int* expert_domain::getLevelBounds() const
 {
   return levelBounds;
 }
+
+
+inline bool expert_domain::areLevelsAndHeightsAligned() const
+{
+  return levelsAndHeightsAligned;
+}
+
 
 // **************************** operation *************************************
 

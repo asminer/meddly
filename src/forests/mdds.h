@@ -319,12 +319,12 @@ class node_manager : public expert_forest {
     // void cacheNode(int p);
     // void uncacheNode(int p);
     void show(FILE *s, int h) const;
-#if ALT_HASH_CALL
     unsigned hash(int h) const;
-#else
-    unsigned hash(int h, unsigned M) const;
-#endif
     bool equals(int h1, int h2) const;
+    
+    bool equalsFF(int h1, int h2) const;
+    bool equalsSS(int h1, int h2) const;
+    bool equalsFS(int h1, int h2) const;
 
     bool isCounting();
 
@@ -432,6 +432,7 @@ class node_manager : public expert_forest {
     // find, insert nodes into the unique table
     int find(int node);
     int insert(int node);
+    int replace(int node);
 
     // are sparse nodes enabled
     bool areSparseNodesEnabled() const;
@@ -518,7 +519,7 @@ class node_manager : public expert_forest {
     /// Total number of compactions
     int num_compactions;
     /// Switch to turn on garbage collection; should be turned off when done
-    bool enable_garbageCollection;
+    bool enable_garbage_collection;
     /// Count of nodes created since last gc
     unsigned nodes_activated_since_gc;
 
@@ -970,11 +971,11 @@ inline void node_manager::setNext(int h, int n) {
 inline bool node_manager::isStale(int h) const {
 #if 1
   return
-    isTerminalNode(h)?
-      delete_terminal_nodes:
-      isPessimistic()?
-        isZombieNode(h):
-        (enable_garbageCollection && getInCount(h) == 0);
+    isTerminalNode(h)
+    ? delete_terminal_nodes
+    : isPessimistic()
+    ? isZombieNode(h)
+    : (enable_garbage_collection && getInCount(h) == 0);
 #else
   return isTerminalNode(p)? false: isZombieNode(h);
 #endif
@@ -1102,6 +1103,11 @@ inline int node_manager::find(int node) {
 
 inline int node_manager::insert(int node) {
   return unique->insert(node);
+}
+
+
+inline int node_manager::replace(int node) {
+  return unique->replace(node);
 }
 
 

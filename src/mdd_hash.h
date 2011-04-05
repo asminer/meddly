@@ -39,7 +39,7 @@
 
   void setNext(int h);             // set the "next node" field for h
 
-	unsigned hash(int h, unsigned M); // compute hash value
+	unsigned hash(int h);             // compute hash value
 
 	bool equals(int h1, int h2);      // is h1 == h2?
 
@@ -54,15 +54,12 @@
 #include <sys/resource.h>
 #include "defines.h"
 
-#define ALT_HASH_CALL 1
-
 template <typename MANAGER>
 class mdd_hash_table {
 
   protected:
     // size grows by a factor of 2
     unsigned size;
-    unsigned right_shift;
     unsigned num_entries;
     int* table;
     MANAGER *nodes;
@@ -73,7 +70,6 @@ class mdd_hash_table {
     mdd_hash_table(MANAGER *n) {
       num_entries = 0;
       size = getMinSize();
-      updateHashShift();
       nodes = n;
       table = (int*) malloc(sizeof(int) * size);
       if (NULL == table) outOfMemory();
@@ -92,19 +88,6 @@ class mdd_hash_table {
     inline unsigned getMaxSize() const { return 1073741824; }
     inline unsigned getMinSize() const { return 8; }
     inline unsigned getEntriesCount() const { return num_entries; }
-    inline void updateHashShift()
-    {
-      // note this works only is int is 32 bits
-      DCASSERT(getSize() > 1);
-      right_shift = 0;
-      for (unsigned i = getSize(); i > 1; )
-      {
-        right_shift++;
-        i = i >> 1;
-      }
-      DCASSERT(right_shift > 0);
-      right_shift = 32 - right_shift;
-    }
 
     void show(FILE *s) const {
       fprintf(s, "%s :\n", __func__);
@@ -150,11 +133,7 @@ class mdd_hash_table {
       unsigned h = 0;
       for ( ; front != nodes->getNull(); front = next) {
         next = nodes->getNext(front);
-#if 0
-        h = nodes->hash(front, size);
-#else
         h = hash(front);
-#endif
         CHECK_RANGE(0, h, size);
         nodes->setNext(front, table[h]);
         table[h] = front;
@@ -163,12 +142,7 @@ class mdd_hash_table {
     }
 
     inline unsigned hash(int h) {
-#if ALT_HASH_CALL
-      // return nodes->hash(h) >> right_shift;
       return nodes->hash(h) % size;
-#else
-      return nodes->hash(h, size);
-#endif
     }
 
     /// Expand the hash table (if possible)
@@ -198,7 +172,6 @@ class mdd_hash_table {
       }
       table = temp;
       size = newSize;
-      updateHashShift();
       int *last = table + size;
       for (int *curr = table ; curr < last; ++curr) {
         *curr = nodes->getNull();
@@ -211,6 +184,7 @@ class mdd_hash_table {
       fflush(stderr);
 #endif
     }
+
 
     inline void shrink() {
       if (size <= getMinSize()) return;
@@ -234,7 +208,6 @@ class mdd_hash_table {
       } else {
         table = temp;
         size = newSize;
-        updateHashShift();
       }
       int *last = table + size;
       for (int *curr = table; curr < last; ++curr) {
@@ -261,26 +234,22 @@ class mdd_hash_table {
       fprintf(stderr, "\n");
 #endif
 
-#if 0
-      unsigned h = nodes->hash(key, size);
-#else
       unsigned h = hash(key);
-#endif
 
 #ifdef DEBUG_MDD_HASH_H
       fprintf(stderr, "%s: h = %d\n", __func__, h);
 #endif
       CHECK_RANGE(0, h, size);
-      int parent = nodes->getNull();
-      int ptr;
-      if (table[h] == nodes->getNull()) return nodes->getNull();
-      for (ptr = table[h];
-          ptr != nodes->getNull();
+      int null = nodes->getNull();
+      if (table[h] == null) return null;
+      int parent = null;
+      for (int ptr = table[h];
+          ptr != null;
           ptr = nodes->getNext(ptr)) {
         if (nodes->equals(key, ptr)) {
           if (ptr != table[h]) {
             // not at front; move it to front
-            DCASSERT(parent != nodes->getNull());
+            DCASSERT(parent != null);
             nodes->setNext(parent, nodes->getNext(ptr));
             nodes->setNext(ptr, table[h]);
             table[h] = ptr;
@@ -295,7 +264,7 @@ class mdd_hash_table {
 #ifdef DEBUG_MDD_HASH_H
       fprintf(stderr, "%s: did not find match\n", __func__);
 #endif
-      return nodes->getNull();
+      return null;
     }
 
 
@@ -304,11 +273,7 @@ class mdd_hash_table {
       Otherwise, return nodes->getNull().
      */
     inline int remove(int key) {
-#if 0
-      unsigned h = nodes->hash(key, size);
-#else
       unsigned h = hash(key);
-#endif
       CHECK_RANGE(0, h, size);
       int parent = nodes->getNull();
       int ptr = table[h];
@@ -341,17 +306,53 @@ class mdd_hash_table {
       DCASSERT(key >= 1);
       DCASSERT(find(key) == nodes->getNull());
       if (num_entries >= (size << 1)) expand();
-#if 0
-      unsigned h = nodes->hash(key, size);
-#else
       unsigned h = hash(key);
-#endif
       CHECK_RANGE(0, h, size);
       // insert at head of list
       nodes->setNext(key, table[h]);
       table[h] = key;
       num_entries++;
       return table[h];
+    }
+
+
+    int replace(int key) {
+      unsigned h = hash(key);
+      CHECK_RANGE(0, h, size);
+
+#ifdef DEBUG_MDD_HASH_H
+      fprintf(stderr, "%s: h = %d\n", __func__, h);
+#endif
+
+      // search this bucket
+      int null = nodes->getNull();
+      if (table[h] != null) {
+        int parent = null;
+        for (int ptr = table[h];
+            ptr != null;
+            ptr = nodes->getNext(ptr)) {
+          if (nodes->equals(key, ptr)) {
+#ifdef DEBUG_MDD_HASH_H
+            fprintf(stderr, "%s: found match = %d\n", __func__, ptr);
+#endif
+            return ptr;
+          }
+          parent = ptr;
+        } // for ptr
+      }
+
+      // not found; now insert
+      if (num_entries >= (size << 1)) {
+        expand();
+        h = hash(key);
+      }
+      nodes->setNext(key, table[h]);
+      table[h] = key;
+      ++num_entries;
+#ifdef DEBUG_MDD_HASH_H
+      fprintf(stderr, "%s: did not find match, inserted.\n", __func__);
+#endif
+      return key;
     }
 };
 

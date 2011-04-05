@@ -87,10 +87,10 @@ node_manager::node_manager(domain *d, bool rel, range_type t,
   performing_gc = false;
   nodes_activated_since_gc = 0;
   delete_terminal_nodes = false;
-#if 0
-  enable_garbageCollection = false;  // default
+#if 1
+  enable_garbage_collection = false;  // default
 #else
-  enable_garbageCollection = true;
+  enable_garbage_collection = true;
 #endif
 #if 1
   holeRecycling = true;
@@ -919,9 +919,11 @@ double node_manager::cardinalityForRelations(int p, int ht, bool primeLevel,
   }
 
   DCASSERT(pHeight == ht);
+#ifdef DEVELOPMENT_CODE
   int k = expertDomain->getVariableWithHeight(ht);
   DCASSERT((primeLevel && (getNodeLevel(p) == -k)) ||
       (!primeLevel && getNodeLevel(p) == k));
+#endif
 
   // check in cache
   std::map<int, double>::iterator curr = visited.find(p);
@@ -1483,17 +1485,76 @@ void node_manager::compactAllLevels()
       b ^= a; b -= rot(a,14); \
       c ^= b; c -= rot(b,24); \
   }
-#if ALT_HASH_CALL
+
+#if 1
+
 unsigned node_manager::hash(int h) const 
-#else
-unsigned node_manager::hash(int h, unsigned n) const 
-// when enabling this make sure you enable the %n in this function
-#endif
 {
-  uint32_t a, b, c;
   int* k = getNodeAddress(h);
   int length = k[2];
   DCASSERT(length != 0);
+  k += 3;
+
+  uint32_t a[] = { uint32_t(getNodeLevel(h)), 0, 0xdeadbeef };
+
+  if (length > 0) {
+    // Full node
+    int* ptr = k;
+    int* stop = k + length;
+    unsigned nnz = 1;
+    for (int i = 0; ptr != stop; ) {
+      if (*ptr == 0) { ++ptr; ++i; continue; }
+      a[nnz++] += i++;
+      if (nnz == 3) {
+        mix(a[0], a[1], a[2]);
+        nnz = 0;
+      }
+      a[nnz++] += *ptr++;
+      if (nnz == 3) {
+        mix(a[0], a[1], a[2]);
+        nnz = 0;
+      }
+    }
+  }
+  else {
+    // Sparse node
+    int* indexes = k;
+    int* ptr = k - length;
+    int* stop = ptr - length;
+    unsigned nnz = 1;
+    for ( ; ptr != stop; ) {
+      a[nnz++] += *indexes++;
+      if (nnz == 3) {
+        mix(a[0], a[1], a[2]);
+        nnz = 0;
+      }
+      a[nnz++] += *ptr++;
+      if (nnz == 3) {
+        mix(a[0], a[1], a[2]);
+        nnz = 0;
+      }
+    }
+  }
+
+  //if (nnz > 0) {
+    final(a[0], a[1], a[2]);
+  //}
+
+  // report the result
+  return a[2];
+}
+
+#else
+
+unsigned node_manager::hash(int h) const 
+{
+  int* k = getNodeAddress(h);
+  int length = k[2];
+  DCASSERT(length != 0);
+
+  uint32_t a = 0;
+  uint32_t b = 0;
+  uint32_t c = 0;
 
   if (length > 0) {
     // full node
@@ -1513,16 +1574,10 @@ unsigned node_manager::hash(int h, unsigned n) const
     }
 
     // Set up the internal state
-    // a = b = c = 0xdeadbeef;
-    // a = b = c = 0xdeadbeef + uint32_t(nnz)<<2;
-    // a = b = c = 0xdeadbeef + uint32_t(nnz)<<2 + uint32_t(getNodeLevel(h));
-    // a = b = c = 0xdeadbeef + uint32_t(nnz)<<16 + uint32_t(getNodeLevel(h));
 #if 1
     a = 0xdeadbeef;
     b = uint32_t(nnz)<<16;
     c = uint32_t(getNodeLevel(h));
-#else
-    a = b = c = 0;
 #endif
 
     // handle most of the key
@@ -1546,6 +1601,7 @@ unsigned node_manager::hash(int h, unsigned n) const
     { 
       case 0:
         // nothing left to add
+        final(a,b,c);
         break;
       case 1:
         while (*k == 0) { ++k; }
@@ -1586,8 +1642,6 @@ unsigned node_manager::hash(int h, unsigned n) const
     a = 0xdeadbeef;
     b = uint32_t(length)<<16;
     c = uint32_t(getNodeLevel(h));
-#else
-    a = b = c = 0;
 #endif
     // handle most of the key
     while (length > 3)
@@ -1607,18 +1661,152 @@ unsigned node_manager::hash(int h, unsigned n) const
       case 3: c += k[2];
       case 2: b += k[1];
       case 1: a += k[0];
-              final(a,b,c);
+              //final(a,b,c);
       case 0: // nothing left to add
+              final(a,b,c);
               break;
     }
   }
 
   // report the result
-#if ALT_HASH_CALL
   return c;
-#else
-  return c % n;
+}
+
 #endif
+
+
+bool node_manager::equalsFF(int h1, int h2) const
+{
+  DCASSERT(isFullNode(h1));
+  DCASSERT(isFullNode(h2));
+
+  int *ptr1 = getNodeAddress(h1) + 2;
+  int *ptr2 = getNodeAddress(h2) + 2;
+  int sz1 = *ptr1++;
+  int sz2 = *ptr2++;
+
+  int* h1Stop = ptr1 + sz1;
+  int* h2Stop = ptr2 + sz2;
+
+  if (sz1 > sz2) {
+    while (ptr2 != h2Stop) { if (*ptr1++ != *ptr2++) return false; }
+    while (ptr1 != h1Stop) { if (*ptr1++ != 0) return false; }
+  }
+  else {
+    DCASSERT(sz1 <= sz2);
+    while (ptr1 != h1Stop) { if (*ptr1++ != *ptr2++) return false; }
+    while (ptr2 != h2Stop) { if (*ptr2++ != 0) return false; }
+  }
+
+  if (edgeLabel == forest::MULTI_TERMINAL) return true;
+
+  // Check edge-values
+  DCASSERT(ptr1 == h1Stop);
+  DCASSERT(ptr2 == h2Stop);
+
+  h1Stop += MIN(sz1, sz2);
+  if (edgeLabel == forest::EVPLUS) {
+    while (ptr1 != h1Stop) { if (*ptr1++ != *ptr2++) return false; }
+  } else {
+    DCASSERT(edgeLabel == forest::EVTIMES);
+    while (ptr1 != h1Stop) {
+      if (!isAlmostEqual(*ptr1++, *ptr2++)) return false;
+    }
+  }
+  return true;
+}
+
+
+bool node_manager::equalsSS(int h1, int h2) const
+{
+  DCASSERT(isSparseNode(h1));
+  DCASSERT(isSparseNode(h2));
+
+  int *ptr1 = getNodeAddress(h1) + 2;
+  int *ptr2 = getNodeAddress(h2) + 2;
+  int sz1 = -(*ptr1++);
+  int sz2 = -(*ptr2++);
+
+  if (sz1 != sz2) return false;
+
+  int* h1Stop = ptr1 + sz1 + sz1;
+  while (ptr1 != h1Stop) { if (*ptr1++ != *ptr2++) return false; }
+
+  if (edgeLabel == forest::MULTI_TERMINAL) return true;
+
+  // Check edge-values
+  DCASSERT(ptr1 == h1Stop);
+  DCASSERT(ptr2 == (getNodeAddress(h2) + 3 + sz1 + sz1));
+
+  h1Stop += sz1;
+  if (edgeLabel == forest::EVPLUS) {
+    while (ptr1 != h1Stop) { if (*ptr1++ != *ptr2++) return false; }
+  } else {
+    DCASSERT(edgeLabel == forest::EVTIMES);
+    while (ptr1 != h1Stop) {
+      if (!isAlmostEqual(*ptr1++, *ptr2++)) return false;
+    }
+  }
+  return true;
+}
+
+
+bool node_manager::equalsFS(int h1, int h2) const
+{
+  DCASSERT(isFullNode(h1));
+  DCASSERT(isSparseNode(h2));
+
+  int *ptr1 = getNodeAddress(h1) + 2;
+  int *ptr2 = getNodeAddress(h2) + 2;
+  int sz1 = *ptr1++;
+  int sz2 = -(*ptr2++);
+
+  int* h1Start = ptr1;
+  int* h1Stop = ptr1 + sz1;
+  int* h2Stop = ptr2 + sz2;
+  int* down2 = h2Stop;
+
+  // If the last index in h2 does not exist in h1, return false.
+  // Otherwise, h1 is either the same "size" as h2 or larger than h2.
+
+  if (h2Stop[-1] >= sz1) {
+    // Last index of h2 does not exist in h1.
+    return false;
+  }
+
+  while (ptr2 != h2Stop) {
+    int index = *ptr2++;
+    DCASSERT(index < sz1);
+    int* stop = h1Start + index;
+    while (ptr1 != stop) { if (*ptr1++ != 0) return false; }
+    if (*ptr1++ != *down2++) return false;
+  }
+
+  while (ptr1 != h1Stop) {
+    if (*ptr1++ != 0) return false;
+  }
+
+  if (edgeLabel == forest::MULTI_TERMINAL) return true;
+
+  // Check edge-values
+  DCASSERT(ptr1 == h1Stop);
+  DCASSERT(ptr2 == h2Stop);
+  DCASSERT(down2 == h2Stop + sz2);
+
+  // ptr1 and down2 are pointing at the start of edge-values
+  // Reset the index pointer for h2 (sparse node).
+  ptr2 -= sz2;
+  if (edgeLabel == forest::EVPLUS) {
+    while (ptr2 != h2Stop) {
+      if (ptr1[*ptr2++] != *down2++) return false;
+    }
+  } else {
+    DCASSERT(edgeLabel == forest::EVTIMES);
+    while (ptr2 != h2Stop) {
+      if (!isAlmostEqual(ptr1[*ptr2++], *down2++)) return false;
+    }
+  }
+  return true;
 }
 
 
@@ -1631,139 +1819,14 @@ bool node_manager::equals(int h1, int h2) const
   DCASSERT(!isTerminalNode(h1));
   DCASSERT(!isTerminalNode(h2));
 
-  if (getNodeLevel(h1) != getNodeLevel(h2)) return false;
-  int *ptr1 = getNodeAddress(h1);
-  int *ptr2 = getNodeAddress(h2);
-  int sz1 = ptr1[2];
-  int sz2 = ptr2[2];
-  ptr1 += 3;
-  ptr2 += 3;
-  if (sz1 < 0) {
-    if (sz2 < 0) {
-      // both sparse
-      if (sz1 != sz2) return false;
-      if (edgeLabel == forest::MULTI_TERMINAL) {
-        return 0 == memcmp(ptr1, ptr2, -2 * sz1 * sizeof(int));
-      } else if (edgeLabel == forest::EVPLUS) {
-        return 0 == memcmp(ptr1, ptr2, -3 * sz1 * sizeof(int));
-      } else {
-        DCASSERT(edgeLabel == forest::EVTIMES);
-        if (0 != memcmp(ptr1, ptr2, -2 * sz1 * sizeof(int))) return false;
-        ptr1 -= 2 * sz1;
-        ptr2 -= 2 * sz1;
-        int* last = ptr1 - sz1;
-        for ( ; ptr1 != last; )
-        {
-          if (!isAlmostEqual(*ptr1++, *ptr2++)) return false;
-        }
-        return true;
-      }
-    }
-    else {
-      DCASSERT(sz2 > 0);
-      // node2 is full, node1 is sparse
-      int* down1 = ptr1 - sz1;
-      int i = 0;
-      if (edgeLabel == forest::EVPLUS) {
-        int* edge1 = down1 - sz1;
-        int* edge2 = ptr2 + sz2;
-        for (int z=0; z<-sz1; z++) {
-          for (; i<ptr1[z] && i<sz2; i++)  // node2 must be zeroes in between
-            if (ptr2[i]) return false;
-          if (ptr2[i] != down1[z]) return false;
-          if (edge2[i] != edge1[z]) return false;
-          i++;
-        }
-      } else if (edgeLabel == forest::EVTIMES) {
-        int* edge1 = down1 - sz1;
-        int* edge2 = ptr2 + sz2;
-        for (int z=0; z<-sz1; z++) {
-          for (; i<ptr1[z] && i<sz2; i++)  // node2 must be zeroes in between
-            if (ptr2[i]) return false;
-          if (ptr2[i] != down1[z]) return false;
-          if (!isAlmostEqual(edge2[i], edge1[z])) return false;
-          i++;
-        }
-      } else {
-        for (int z=0; z<-sz1; z++) {
-          for (; i<ptr1[z] && i<sz2; i++)  // node2 must be zeroes in between
-            if (ptr2[i]) return false;
-          if (ptr2[i] != down1[z]) return false;
-          i++;
-        }
-      }
-      // tail of node2
-      for (; i<sz2; i++)
-        if (ptr2[i]) return false;
-      return true;
-    }
-  }
-  else {
-    DCASSERT(sz1 > 0);
-    if (sz2 < 0) {
-      // node1 is full, node2 is sparse
-      int* down2 = ptr2 - sz2;
-      int i = 0;
-      if (edgeLabel == forest::EVPLUS) {
-        int* edge1 = ptr1 + sz1;
-        int* edge2 = down2 - sz2;
-        for (int z=0; z<-sz2; z++) {
-          for (; i<ptr2[z] && i<sz1; i++)  // node1 must be zeroes in between
-            if (ptr1[i]) return false;
-          if (ptr1[i] != down2[z]) return false;
-          if (edge1[i] != edge2[z]) return false;
-          i++;
-        }
-      } else if (edgeLabel == forest::EVTIMES) {
-        int* edge1 = ptr1 + sz1;
-        int* edge2 = down2 - sz2;
-        for (int z=0; z<-sz2; z++) {
-          for (; i<ptr2[z] && i<sz1; i++)  // node1 must be zeroes in between
-            if (ptr1[i]) return false;
-          if (ptr1[i] != down2[z]) return false;
-          if (!isAlmostEqual(edge1[i], edge2[z])) return false;
-          i++;
-        }
-      } else {
-        for (int z=0; z<-sz2; z++) {
-          for (; i<ptr2[z] && i<sz1; i++)  // node1 must be zeroes in between
-            if (ptr1[i]) return false;
-          if (ptr1[i] != down2[z]) return false;
-          i++;
-        }
-      }
-      // tail of node1
-      for (; i<sz1; i++)
-        if (ptr1[i]) return false;
-      return true;
-    }
-    else {
-      DCASSERT(sz2 > 0);
-      // both full
-      int ms = MIN(sz1, sz2);
-      if (memcmp(ptr1, ptr2, ms * sizeof(int))) return false;
-      // tails must be zero.  Only one loop will go.
-      for (int i = ms; i < sz1; i++)
-        if (ptr1[i]) return false; 
-      for (int i = ms; i < sz2; i++)
-        if (ptr2[i]) return false;
-      if (edgeLabel == forest::EVPLUS) {
-        // check edge-values
-        if (memcmp(ptr1 + sz1, ptr2 + sz2, ms * sizeof(int))) return false;
-      } else if (edgeLabel == forest::EVTIMES) {
-        // check edge-values
-        ptr1 += sz1;
-        ptr2 += sz2;
-        int* last = ptr1 + ms;
-        for ( ; ptr1 != last; )
-        {
-          if(!isAlmostEqual(*ptr1++, *ptr2++)) return false;
-        }
-      }
-      return true;
-    }
-  }
+  if (getNodeLevel(h1) != getNodeLevel(h2)) { return false; }
+
+  return
+    isFullNode(h1)
+    ? (isFullNode(h2) ? equalsFF(h1, h2) : equalsFS(h1, h2))
+    : (isFullNode(h2) ? equalsFS(h2, h1) : equalsSS(h1, h2));
 }
+
 
 // ------------------------------------------------------------------
 //  Protected methods
@@ -1954,8 +2017,8 @@ bool node_manager::gc() {
     int org_orphan_nodes = orphan_nodes;
     int reps = 0;
 
-    bool saved_gc_state = enable_garbageCollection;
-    enable_garbageCollection = true;
+    bool saved_gc_state = enable_garbage_collection;
+    enable_garbage_collection = true;
 
     do {
       reps++;
@@ -1970,7 +2033,7 @@ bool node_manager::gc() {
     } while (isTimeToGc());
 
     // return isStale to usual policy
-    enable_garbageCollection = saved_gc_state;
+    enable_garbage_collection = saved_gc_state;
     if (orphan_nodes < org_orphan_nodes) freed_some = true;
 
 #ifdef DEBUG_GC
@@ -3059,10 +3122,8 @@ bool node_manager::accumulate(int& tempNode, int* element)
   assert(element != 0);
 
   // Enlarge variable bounds if necessary
-  const int* heightsMap = expertDomain->getHeightsToLevelsMap() + 1;
-  for (const int* stop = heightsMap + expertDomain->getNumVariables();
-      heightsMap != stop; ) {
-    int level = *heightsMap++;
+  int level = domain::TERMINALS;
+  while (-1 != (level = expertDomain->getVariableAbove(level))) {
     int sz = element[level] + 1;
     if (sz > expertDomain->getVariableBound(level)) {
       expertDomain->enlargeVariableBound(level, false, sz);

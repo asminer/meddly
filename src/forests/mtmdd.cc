@@ -22,6 +22,8 @@
 
 #include "mtmdd.h"
 
+// TODO: Add option to create temporary nodes of max size when
+//       accumulating minterms.
 
 // ********************************** MTMDDs **********************************
 
@@ -164,12 +166,12 @@ int mtmdd_node_manager::reduceNode(int p)
   {
     int* curr = ptr;
     int* last = curr + size;
-    bool clearCache = true;
     while (curr != last) {
       if (!isReducedNode(*curr)) {
-        *curr = recursiveReduceNode(*curr, clearCache);
-        clearCache = false;
+        DCASSERT(getInCount(*curr) == 1);
+        *curr = reduceNode(*curr);
       }
+      DCASSERT(isReducedNode(*curr));
       if (0 != *curr++) {
         ++nnz;
         truncsize = curr - ptr;
@@ -212,6 +214,7 @@ int mtmdd_node_manager::reduceNode(int p)
   }
 
   // check unique table
+#if 0
   int q = find(p);
   if (getNull() != q) {
     // duplicate found
@@ -224,6 +227,14 @@ int mtmdd_node_manager::reduceNode(int p)
 
   // insert into unique table
   insert(p);
+#else
+  int q = replace(p);
+  if (q != p) {
+    // duplicate found
+    unlinkNode(p);
+    return sharedCopy(q);
+  }
+#endif
 
 #ifdef TRACE_REDUCE
   printf("\tReducing %d: unique, compressing\n", p);

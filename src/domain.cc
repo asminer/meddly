@@ -73,7 +73,9 @@ expert_domain::expert_domain()
   nVars(0), levelBounds(0), pLevelBounds(0),
   allocatedLevels(0), topLevel(0),
   levelsToHeightsMap(0), heightsToLevelsMap(0)
-{}
+{
+  levelsAndHeightsAligned = true;
+}
 
 
 expert_domain::~expert_domain()
@@ -173,6 +175,8 @@ domain::error expert_domain::createVariablesTopDown(const int* bounds, int N)
   // you could do that above with N/2 swaps but that is less readable
   // and this method is not a significant factor in library performance.
 
+  levelsAndHeightsAligned = false;
+
   return domain::SUCCESS;
 }
 
@@ -189,6 +193,7 @@ void expert_domain::showInfo(FILE* strm)
     fprintf(strm, "    %d\t\t%d\t\t%d\t\t%d\n",
             i, heightsToLevelsMap[i], levelBounds[level], pLevelBounds[level]);
   }
+
   // call showNodes for each of the forests in this domain.
   for (int i = 0; i < szForests; i++) {
     if (forests[i] != 0)
@@ -298,28 +303,30 @@ void expert_domain::unlinkForest(expert_forest* f)
 }
 
 
-// TODO: finish the rest
-
+// TODO: not implemented
 domain::error expert_domain::createVariable(int below, int &vh)
 {
+  // Update levelsAndHeightsAligned when this is implemented
   return domain::NOT_IMPLEMENTED;
 }
 
 
+// TODO: not implemented
 domain::error expert_domain::destroyVariable(int vh)
 {
   return domain::NOT_IMPLEMENTED;
 }
 
 
+// TODO: not implemented
 domain::error expert_domain::swapOrderOfVariables(int vh1, int vh2)
 {
   return domain::NOT_IMPLEMENTED;
 }
 
+// TODO: not implemented
 int expert_domain::findVariableBound(int vh) const
 {
-  // TODO: not implemented
   printf("expert_domain::findVariableBound() not implemented;");
   printf(" use getVariableBound().\n");
   return getVariableBound(vh, false);
@@ -329,16 +336,6 @@ domain::error expert_domain::enlargeVariableBound(int vh, bool prime, int b)
 {
   // if !prime, expand both prime and unprime
   // else expand only prime
-
-#if 0
-  for (int i = 0; i < szForests; ++i)
-  {
-    if (forests[i] != 0) {
-      if (forests[i]->getReductionRule() != forest::QUASI_REDUCED)
-        return domain::NOT_IMPLEMENTED;
-    }
-  }
-#endif
 
   if (getVariableBound(vh, false) == -1) return domain::NOT_IMPLEMENTED;
 
@@ -351,6 +348,7 @@ domain::error expert_domain::enlargeVariableBound(int vh, bool prime, int b)
   return domain::SUCCESS;
 }
 
+// TODO: not implemented
 domain::error expert_domain::shrinkVariableBound(int vh, int b, bool force)
 {
   return domain::NOT_IMPLEMENTED;
