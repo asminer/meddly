@@ -3484,6 +3484,291 @@ mxd_union::checkTerminals(op_info* op, int a, int b, int& c)
   return false;
 }
 
+
+int mxd_union::computeIdentExpandOneLevel(op_info* owner, int a, int b)
+{
+  expert_forest* expertForest = owner->p[0].getForest();
+  DCASSERT(!expertForest->isTerminalNode(a));
+  DCASSERT(!expertForest->isTerminalNode(b));
+  DCASSERT(expertForest->getNodeLevel(b) == expertForest->getNodeLevel(a));
+
+  int resultLevel = expertForest->getNodeLevel(a);
+  int resultSize = expertForest->getLevelSize(resultLevel);
+
+  // Set-up function pointer for call to the next level.
+  // If a and b are at the unprime level, call computeIdentExpandOneLevel().
+  // Otherwise, call computeIdent().
+  int (mxd_union::*function)(op_info*, int, int) =
+    resultLevel > 0
+    ? &mxd_union::computeIdentExpandOneLevel
+    : &mxd_union::computeIdent;
+
+  // Copy a into result.
+  int result = expertForest->makeACopy(a, resultSize);
+  int* resultDptrs = 0;
+  assert(expertForest->getDownPtrs(result, resultDptrs));
+
+  bool noChange = true;
+
+  // Add b to result.
+  int* rDptrs = resultDptrs;
+  const int* bDptrs = 0;
+  assert(expertForest->getDownPtrs(b, bDptrs));
+  if (expertForest->isFullNode(b)) {
+    int bSize = expertForest->getFullNodeSize(b);
+    for (const int* bEnd = bDptrs + bSize; bDptrs != bEnd; ++rDptrs, ++bDptrs)
+    {
+      // Terminal conditions.
+      if (*rDptrs == *bDptrs || 0 == *bDptrs) continue;
+      if (0 == *rDptrs) {
+        *rDptrs = *bDptrs;
+        expertForest->linkNode(*rDptrs);
+        noChange = false;
+        continue;
+      }
+      // Expand *rDptrs and *bDptrs.
+      int pNode = (this->*function)(owner, *rDptrs, *bDptrs);
+      if (*rDptrs != pNode) {
+        expertForest->unlinkNode(*rDptrs);
+        *rDptrs = pNode;
+        noChange = false;
+      }
+      expertForest->unlinkNode(pNode);
+    }
+  }
+  else {
+    DCASSERT(expertForest->isSparseNode(b));
+    int nDptrs = expertForest->getSparseNodeSize(b);
+    const int* bIndexes = 0;
+    assert(expertForest->getSparseNodeIndexes(b, bIndexes));
+    for (const int* bEnd = bDptrs + nDptrs; bDptrs != bEnd; ++bDptrs)
+    {
+      // Terminal conditions
+      rDptrs = resultDptrs + *bIndexes++;
+      DCASSERT(*bDptrs != 0);
+      if (*rDptrs == *bDptrs) continue;
+      if (0 == *rDptrs) {
+        *rDptrs = *bDptrs;
+        expertForest->linkNode(*rDptrs);
+        noChange = false;
+        continue;
+      }
+      // Expand *rDptrs and *bDptrs.
+      int pNode = (this->*function)(owner, *rDptrs, *bDptrs);
+      if (*rDptrs != pNode) {
+        expertForest->unlinkNode(*rDptrs);
+        *rDptrs = pNode;
+        noChange = false;
+      }
+      expertForest->unlinkNode(pNode);
+    }
+
+  }
+
+  if (noChange) {
+    // result is the same as node a.
+    // Don't call reduce; discard result and return a.
+    expertForest->linkNode(a);
+    expertForest->unlinkNode(result);
+    result = a;
+  } else {
+    result = expertForest->reduceNode(result);
+  }
+
+  return result;
+}
+
+
+#if 0
+int mxd_union::computeIdentExpand(op_info* owner, int a, int b)
+{
+  expert_forest* expertForest = owner->p[0].getForest();
+  int resultLevel = expertForest->getNodeLevel(a);
+  int resultSize = expertForest->getLevelSize(resultLevel);
+
+  // Copy a into result.
+  int result = expertForest->makeACopy(a, resultSize);
+  int* resultDptrs = 0;
+  assert(expertForest->getDownPtrs(result, resultDptrs));
+
+  bool noChange = true;
+
+  // Add b to result.
+  int* rDptrs = resultDptrs;
+  const int* bDptrs = 0;
+  assert(expertForest->getDownPtrs(b, bDptrs));
+  if (expertForest->isFullNode(b)) {
+    int bSize = expertForest->getFullNodeSize(b);
+    for (const int* bEnd = bDptrs + bSize; bDptrs != bEnd; ++rDptrs, ++bDptrs)
+    {
+      // Terminal conditions.
+      if (*rDptrs == *bDptrs || 0 == *bDptrs) continue;
+      if (0 == *rDptrs) {
+        *rDptrs = *bDptrs;
+        expertForest->linkNode(*rDptrs);
+        noChange = false;
+        continue;
+      }
+      // Expand *rDptrs and *bDptrs.
+      int pNode = computeIdentExpandPrimedLevel(owner, *rDptrs, *bDptrs);
+      if (*rDptrs != pNode) {
+        expertForest->unlinkNode(*rDptrs);
+        *rDptrs = pNode;
+        noChange = false;
+      }
+      expertForest->unlinkNode(pNode);
+    }
+  }
+  else {
+    DCASSERT(expertForest->isSparseNode(b));
+    int nDptrs = expertForest->getSparseNodeSize(b);
+    const int* bIndexes = 0;
+    assert(expertForest->getSparseNodeIndexes(b, bIndexes));
+    for (const int* bEnd = bDptrs + nDptrs; bDptrs != bEnd; ++bDptrs)
+    {
+      // Terminal conditions
+      rDptrs = resultDptrs + *bIndexes++;
+      DCASSERT(*bDptrs != 0);
+      if (*rDptrs == *bDptrs) continue;
+      if (0 == *rDptrs) {
+        *rDptrs = *bDptrs;
+        expertForest->linkNode(*rDptrs);
+        noChange = false;
+        continue;
+      }
+      // Expand *rDptrs and *bDptrs.
+      int pNode = computeIdentExpandPrimedLevel(owner, *rDptrs, *bDptrs);
+      if (*rDptrs != pNode) {
+        expertForest->unlinkNode(*rDptrs);
+        *rDptrs = pNode;
+        noChange = false;
+      }
+      expertForest->unlinkNode(pNode);
+    }
+
+  }
+
+  if (noChange) {
+    // result is the same as node a.
+    // Don't call reduce; discard result and return a.
+    expertForest->linkNode(a);
+    expertForest->unlinkNode(result);
+    result = a;
+  } else {
+    result = expertForest->reduceNode(result);
+  }
+
+  return result;
+}
+#endif
+
+
+int mxd_union::computeIdentExpandA(op_info* owner, int a, int b)
+{
+  expert_forest* expertForest = owner->p[0].getForest();
+  int resultLevel = expertForest->getNodeLevel(a);
+  int resultSize = expertForest->getLevelSize(resultLevel);
+
+  // Copy a into result.
+  int result = expertForest->makeACopy(a, resultSize);
+  int* resultDptrs = 0;
+  assert(expertForest->getDownPtrs(result, resultDptrs));
+
+  bool noChange = true;
+
+  // Add b to result[i][i]
+  int* rDptrs = resultDptrs;
+  for (int i = 0; i < resultSize; ++i, ++rDptrs) {
+    if (*rDptrs == 0) {
+      int pNode = expertForest->createTempNode(-resultLevel, i + 1, true);
+      expertForest->setDownPtrWoUnlink(pNode, i, b);
+      *rDptrs = expertForest->reduceNode(pNode);
+      noChange = false;
+    } else {
+      int mxdII = expertForest->getDownPtr(*rDptrs, i);
+      int temp = 0;
+      if (mxdII == 0) {
+        temp = b; expertForest->linkNode(b);
+      } else {
+        temp = computeIdent(owner, mxdII, b);
+      }
+      if (temp != mxdII) {
+        int pNode = expertForest->makeACopy(*rDptrs, i + 1);
+        expertForest->setDownPtr(pNode, i, temp);
+        expertForest->unlinkNode(*rDptrs);
+        *rDptrs = expertForest->reduceNode(pNode);
+        noChange = false;
+      }
+      expertForest->unlinkNode(temp);
+    }
+  }
+
+  if (noChange) {
+    // result is the same as node a.
+    // Don't call reduce; discard result and return a.
+    expertForest->linkNode(a);
+    expertForest->unlinkNode(result);
+    result = a;
+  } else {
+    result = expertForest->reduceNode(result);
+  }
+
+  return result;
+}
+
+
+int mxd_union::computeIdent(op_info* owner, int a, int b)
+{
+  expert_forest* expertForest = owner->p[0].getForest();
+
+  // Terminal conditions for recursion
+  if (a == b) {
+    expertForest->linkNode(a);
+    return a;
+  }
+  if (0 == a || 0 == b) {
+    int c = a + b;
+    expertForest->linkNode(c);
+    return c;
+  }
+
+  // Search compute table
+  static int cacheEntry[3];
+  if (a > b)  { cacheEntry[0] = b; cacheEntry[1] = a; }
+  else        { cacheEntry[0] = a; cacheEntry[1] = b; }
+  const int* ans = owner->cc->find(owner, (int*) cacheEntry);
+  if (ans != 0) {
+    expertForest->linkNode(*ans);
+    return *ans;
+  }
+
+  int aHeight = expertForest->getMappedNodeHeight(a);
+  int bHeight = expertForest->getMappedNodeHeight(b);
+  int result = 0;
+
+  if (aHeight > bHeight) {
+    // result[i][j] = a[i][j]
+    // except result[i][i] = a[i][i] + b
+    result = computeIdentExpandA(owner, a, b);
+  } else if (aHeight < bHeight) {
+    result = computeIdentExpandA(owner, b, a);
+  } else {
+    result = computeIdentExpandOneLevel(owner, b, a);
+  }
+
+  result = expertForest->reduceNode(result);
+
+  // Save result to compute table
+  cacheEntry[2] = result;
+  expertForest->cacheNode(a);
+  expertForest->cacheNode(b);
+  expertForest->cacheNode(result);
+  owner->cc->add(owner, (int*) cacheEntry);
+
+  return result;
+}
+
+
 // ------------------------------------------------------------------
 
 

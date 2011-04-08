@@ -289,6 +289,10 @@ class mxd_union : public mxd_apply_operation {
     virtual const char* getName() const { return "Mxd Union"; }
     virtual bool isCommutative() const { return true; }
 
+    virtual int computeIdent(op_info* owner, int a, int b);
+    virtual int computeIdentExpandA(op_info* owner, int a, int b);
+    virtual int computeIdentExpandOneLevel(op_info* owner, int a, int b);
+
   protected:
     mxd_union();
     mxd_union(const mxd_union& copy);

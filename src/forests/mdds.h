@@ -225,7 +225,7 @@ class node_manager : public expert_forest {
     void deleteOrphanNode(int node);      // for uncacheNode()
     void freeZombieNode(int node);        // for uncacheNode()
 
-    bool isStale(int h) const;
+    bool discardTemporaryNodesFromComputeCache() const;   // for isStale()
 
     void showNode(FILE *s, int p, int verbose = 0) const;
     void showNodeGraph(FILE *s, int p) const;
@@ -518,8 +518,6 @@ class node_manager : public expert_forest {
     long reclaimed_nodes;
     /// Total number of compactions
     int num_compactions;
-    /// Switch to turn on garbage collection; should be turned off when done
-    bool enable_garbage_collection;
     /// Count of nodes created since last gc
     unsigned nodes_activated_since_gc;
 
@@ -968,18 +966,11 @@ inline void node_manager::setNext(int h, int n) {
   DCASSERT(!isTerminalNode(h));
   *(getNodeAddress(h) + 1) = n; 
 }
-inline bool node_manager::isStale(int h) const {
-#if 1
-  return
-    isTerminalNode(h)
-    ? delete_terminal_nodes
-    : isPessimistic()
-    ? isZombieNode(h)
-    : (enable_garbage_collection && getInCount(h) == 0);
-#else
-  return isTerminalNode(p)? false: isZombieNode(h);
-#endif
+
+inline bool node_manager::discardTemporaryNodesFromComputeCache() const {
+  return delete_terminal_nodes;
 }
+
 inline bool node_manager::isCounting() { return counting; }
 
 // Dealing with node addressing

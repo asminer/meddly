@@ -6,6 +6,14 @@ but not necessarily in this order.
 
 
 --------------------------------------------------
+Work in Progress:
+--------------------------------------------------
+
+* When accumulate-minterms find a new minterm to be accumulated
+(i.e. minterm to be added to a 0 downpointer), the new edge
+should be built without having to go down the recursion.
+
+--------------------------------------------------
 Short term:
 --------------------------------------------------
 

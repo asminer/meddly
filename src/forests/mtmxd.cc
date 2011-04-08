@@ -1619,3 +1619,51 @@ bool mxd_node_manager::accumulate(int& tempNode,
   return accumulateMintermAddedElement;
 }
 
+
+#if 0
+// Add an element to a temporary edge
+bool mxd_node_manager::accumulate(int& tempNode, int* element, int* pelement)
+{
+  assert(isActiveNode(tempNode));
+  assert(element != 0);
+  assert(pelement != 0);
+
+  // Enlarge variable bounds if necessary
+  int level = domain::TERMINALS;
+  while (-1 != (level = expertDomain->getVariableAbove(level))) {
+    int sz = MAX( element[level] , pelement[level] ) + 1;
+    if (sz > expertDomain->getVariableBound(level)) {
+      expertDomain->enlargeVariableBound(level, false, sz);
+    }
+  }
+
+  // Traverse Mdd till you find a 0.
+  int nVars = expertDomain->getNumVariables() + 1;
+  int nodes[nVars];
+  int pnodes[nVars];
+  int indexes[nVars];
+  int pindexes[nVars];
+
+  int currHeight = nVars;
+  bool atPrimedLevel = false;
+
+  DCASSERT(!isReducedNode(tempNode);
+
+
+  accumulateMintermAddedElement = false;
+  int result = accumulate(tempNode, false,
+      element, pelement, expertDomain->getTopVariable());
+  if (tempNode != result) {
+    // tempNode had to be copied into another node by accumulate().
+    // This could be either because tempNode was a reduced node,
+    // or because tempNode had incount > 1.
+    unlinkNode(tempNode);
+    tempNode = result;
+  }
+  // Note: tempNode == result indicates that the element was added
+  // to the existing temporary node. Therefore, there is no need to
+  // change incounts.
+  return accumulateMintermAddedElement;
+}
+#endif
+

@@ -331,6 +331,10 @@ class expert_forest : public forest
     bool getEdgeValues(int node, const float*& edgeValues) const;
     bool getEdgeValues(int node, const int*& edgeValues) const;
 
+    bool getDownPtrs(int node, int*& dptrs);
+    bool getEdgeValues(int node, float*& edgeValues);
+    bool getEdgeValues(int node, int*& edgeValues);
+
     /// Increase the link count to this node. Call this when another node is
     /// made to point (down-pointer) to this node.
     void linkNode(int node);
@@ -367,7 +371,7 @@ class expert_forest : public forest
     ///   in-count and cache-count are zero.
     /// Pessimistic deletion: A node is said to be stale when the in-count
     ///  is zero regardless of the cache-count.
-    virtual bool isStale(int node) const = 0;
+    bool isStale(int node) const;
 
 #if 0
     /// Returns the cardinality of the node. Cardinality is the number of
@@ -435,6 +439,10 @@ class expert_forest : public forest
     /// to be active nodes.
     bool isActiveNode(int node) const;
 
+    /// If the node is at a primed level, it returns (2 * node_height - 1).
+    /// Otherwise, it returns (2 * node_height).
+    int getMappedNodeHeight(int node) const;
+
   protected:
 
     void unregisterDDEdges();
@@ -446,7 +454,6 @@ class expert_forest : public forest
 
     int mapLevel(int level) const;
     int unmapLevel(int level) const;
-    int getMappedNodeHeight(int node) const;
 
     bool isZombieNode(int node) const;
 
@@ -459,6 +466,8 @@ class expert_forest : public forest
     virtual void handleNewOrphanNode(int node) = 0;   // for unlinkNode()
     virtual void deleteOrphanNode(int node) = 0;      // for uncacheNode()
     virtual void freeZombieNode(int node) = 0;        // for uncacheNode()
+    // for isStale()
+    virtual bool discardTemporaryNodesFromComputeCache() const = 0;
 
     /// Address of each node.
     typedef struct {
@@ -1920,6 +1929,12 @@ bool expert_forest::isTerminalNode(int p) const
   return (p < 1);
 }
 
+inline bool expert_forest::isStale(int h) const {
+  if (isTerminalNode(h))  return discardTemporaryNodesFromComputeCache();
+  if (isPessimistic())    return isZombieNode(h);
+  /*isOptimistic()*/      return getInCount(h) == 0;
+}
+
 inline
 bool expert_forest::getBoolean(int terminalNode) const
 {
@@ -2138,6 +2153,39 @@ void expert_forest::setEdgeValue(int node, int index, float ev)
   DCASSERT(isFullNode(node));
   CHECK_RANGE(0, index, getFullNodeSize(node));
   *(getNodeAddress(node) + 3 + getFullNodeSize(node) + index) = toInt(ev);
+}
+
+
+inline
+bool expert_forest::getDownPtrs(int node, int*& dptrs)
+{
+  DCASSERT(isActiveNode(node));
+  if (isTerminalNode(node) || isReducedNode(node)) return false;
+  DCASSERT(isFullNode(node));
+  dptrs = getNodeAddress(node) + 3;
+  return true;
+}
+
+
+inline
+bool expert_forest::getEdgeValues(int node, int*& evs)
+{
+  DCASSERT(isActiveNode(node));
+  if (isTerminalNode(node) || isReducedNode(node)) return false;
+  DCASSERT(isFullNode(node));
+  evs = getNodeAddress(node) + 3 + getFullNodeSize(node);
+  return true;
+}
+
+
+inline
+bool expert_forest::getEdgeValues(int node, float*& evs)
+{
+  DCASSERT(isActiveNode(node));
+  if (isTerminalNode(node) || isReducedNode(node)) return false;
+  DCASSERT(isFullNode(node));
+  evs = toFloat(getNodeAddress(node) + 3 + getFullNodeSize(node));
+  return true;
 }
 
 

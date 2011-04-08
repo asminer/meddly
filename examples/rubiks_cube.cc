@@ -922,6 +922,8 @@ int doDfs(const moves& m)
   dd_edge nsf = buildOverallNextStateFunction(m);
   fprintf(stdout, "# of nodes in the next-state function: %1.6e\n",
       double(nsf.getNodeCount()));
+  fprintf(stdout, "# of non-zero edges in the next-state function: %1.6e\n",
+      double(nsf.getEdgeCount()));
 
   // Build initial state.
   assert(states);

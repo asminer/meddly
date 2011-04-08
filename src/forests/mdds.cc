@@ -40,7 +40,6 @@
 
 #define ENABLE_GC 1
 // #define DEBUG_GC
-// #define ALT_ORPHAN_GC
 #define ENABLE_CACHE_COUNTING 0
 #define ENABLE_IN_COUNTING 0
 
@@ -87,11 +86,6 @@ node_manager::node_manager(domain *d, bool rel, range_type t,
   performing_gc = false;
   nodes_activated_since_gc = 0;
   delete_terminal_nodes = false;
-#if 1
-  enable_garbage_collection = false;  // default
-#else
-  enable_garbage_collection = true;
-#endif
 #if 1
   holeRecycling = true;
 #else
@@ -1011,8 +1005,10 @@ unsigned node_manager::getNodeCount(int p) const
   std::set<int> discovered;
   std::queue<int> toExpand;
 
-  toExpand.push(p);
-  discovered.insert(p);
+  if (p != 0 && p != -1) {
+    toExpand.push(p);
+    discovered.insert(p);
+  }
 
   // expand the front of toExpand;
   // add newly discovered ones to discovered and toExpand
@@ -1027,6 +1023,7 @@ unsigned node_manager::getNodeCount(int p) const
       for (int i = 0; i < sz; ++i)
       {
         int temp = getFullNodeDownPtr(p, i);
+        if (temp == 0 || temp == -1) continue;
         // insert into discovered and toExpand if new
         if (discovered.find(temp) == discovered.end()) {
           toExpand.push(temp);
@@ -1039,6 +1036,7 @@ unsigned node_manager::getNodeCount(int p) const
       for (int i = 0; i < sz; ++i)
       {
         int temp = getSparseNodeDownPtr(p, i);
+        if (temp == 0 || temp == -1) continue;
         // insert into discovered and toExpand if new
         if (discovered.find(temp) == discovered.end()) {
           toExpand.push(temp);
@@ -1048,7 +1046,8 @@ unsigned node_manager::getNodeCount(int p) const
     }
   }
 
-  return discovered.size();
+  // Add 2 to discovered.size() for terminals 0 and -1.
+  return discovered.size() + 2;
 }
 
 
@@ -1077,6 +1076,7 @@ unsigned node_manager::getEdgeCount(int p, bool countZeroes) const
         int temp = getFullNodeDownPtr(p, i);
         if (countZeroes) count++;
         else if (temp != 0) count++;
+        if (temp == 0 || temp == -1)  continue;
         // insert into discovered and toExpand if new
         if (discovered.find(temp) == discovered.end()) {
           toExpand.push(temp);
@@ -1091,6 +1091,7 @@ unsigned node_manager::getEdgeCount(int p, bool countZeroes) const
         int temp = getSparseNodeDownPtr(p, i);
         if (countZeroes) count++;
         else if (temp != 0) count++;
+        if (temp == 0 || temp == -1)  continue;
         // insert into discovered and toExpand if new
         if (discovered.find(temp) == discovered.end()) {
           toExpand.push(temp);
@@ -2013,36 +2014,6 @@ bool node_manager::gc() {
     DCASSERT(zombie_nodes == 0);
     freed_some = true;
   } else {
-#ifdef ALT_ORPHAN_GC
-    int org_orphan_nodes = orphan_nodes;
-    int reps = 0;
-
-    bool saved_gc_state = enable_garbage_collection;
-    enable_garbage_collection = true;
-
-    do {
-      reps++;
-
-#ifdef DEBUG_GC
-      // count the number of orphaned nodes
-      fprintf(stderr, "Active: %d, Orphan: %d\n", active_nodes, orphan_nodes);
-#endif
-      // remove the stale nodes entries from caches
-      smart_cast<expert_compute_manager *>(MEDDLY_getComputeManager())->
-        removeStales();
-    } while (isTimeToGc());
-
-    // return isStale to usual policy
-    enable_garbage_collection = saved_gc_state;
-    if (orphan_nodes < org_orphan_nodes) freed_some = true;
-
-#ifdef DEBUG_GC
-    fprintf(stderr,"  done GC, loop repeated %d times.\n", reps);
-    fflush(stderr);
-#endif
-
-#else
-
 #ifdef DEBUG_GC
     fprintf(stderr, "Active: %ld, Zombie: %ld, Orphan: %ld\n",
         active_nodes, zombie_nodes, orphan_nodes);
@@ -2068,7 +2039,6 @@ bool node_manager::gc() {
     DCASSERT(zombie_nodes == 0);
     nodeDeletionPolicy = forest::OPTIMISTIC_DELETION;
     freed_some = true;
-#endif
   }
 
 #ifdef DEBUG_GC
@@ -2859,12 +2829,13 @@ int node_manager::makeACopy(int a, int size)
     int aSize = getFullNodeSize(a);
     int newSize = MAX ( size ,  aSize ) ;
     result = createTempNode(getNodeLevel(a), newSize, false);
-    int i = 0;
-    for ( ; i < aSize; ++i) {
-      setDownPtrWoUnlink(result, i, getFullNodeDownPtr(a, i));
+    int* rDptrs = getFullNodeDownPtrs(result);
+    const int* aDptrs = getFullNodeDownPtrsReadOnly(a);
+    for (const int* end = aDptrs + aSize; aDptrs != end; ) {
+      *rDptrs++ = sharedCopy(*aDptrs++);
     }
-    for ( ; i < newSize; ) {
-      setDownPtrWoUnlink(result, i++, 0);
+    for (const int* end = rDptrs + (newSize - aSize); rDptrs != end; ) {
+      *rDptrs++ = 0;
     }
   }
   else {
@@ -2873,9 +2844,11 @@ int node_manager::makeACopy(int a, int size)
     int aSize = 1 + getSparseNodeIndex(a, nDptrs - 1);
     int newSize = MAX ( size, aSize ) ;
     result = createTempNode(getNodeLevel(a), newSize, true);
-    for (int i = 0; i < nDptrs; ++i) {
-      setDownPtrWoUnlink(result, getSparseNodeIndex(a, i),
-          getSparseNodeDownPtr(a, i));
+    int* rDptrs = getFullNodeDownPtrs(result);
+    const int* aDptrs = getSparseNodeDownPtrs(a);
+    const int* aIndexes = getSparseNodeIndexes(a);
+    for (const int* end = aDptrs + nDptrs; aDptrs != end; ) {
+      rDptrs[*aIndexes++] = sharedCopy(*aDptrs++);
     }
   }
   return result;
