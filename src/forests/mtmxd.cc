@@ -1586,6 +1586,8 @@ int mxd_node_manager::accumulate(int tempNode, bool cBM,
 }
 
 
+#if 0
+
 // Add an element to a temporary edge
 bool mxd_node_manager::accumulate(int& tempNode,
     int* element, int* pelement)
@@ -1620,50 +1622,145 @@ bool mxd_node_manager::accumulate(int& tempNode,
 }
 
 
-#if 0
+#else
 // Add an element to a temporary edge
-bool mxd_node_manager::accumulate(int& tempNode, int* element, int* pelement)
+bool mxd_node_manager::accumulate(int& tempNode,
+    int* element, int* pelement)
 {
   assert(isActiveNode(tempNode));
   assert(element != 0);
   assert(pelement != 0);
+  DCASSERT(tempNode == 0 || !isReducedNode(tempNode));
 
   // Enlarge variable bounds if necessary
   int level = domain::TERMINALS;
+#if 0
   while (-1 != (level = expertDomain->getVariableAbove(level))) {
     int sz = MAX( element[level] , pelement[level] ) + 1;
     if (sz > expertDomain->getVariableBound(level)) {
       expertDomain->enlargeVariableBound(level, false, sz);
     }
   }
+#endif
 
   // Traverse Mdd till you find a 0.
-  int nVars = expertDomain->getNumVariables() + 1;
-  int nodes[nVars];
-  int pnodes[nVars];
-  int indexes[nVars];
-  int pindexes[nVars];
+  int parentNode = 0;
+  int currNode = tempNode;
+  int currLevel = expertDomain->getTopVariable();
+  if (currNode != 0) {
+    for ( ; domain::TERMINALS != currLevel ;
+        currLevel = expertDomain->getVariableBelow(currLevel))
+    {
+      // Skipped levels are not possible with temporary nodes.
+      DCASSERT(!isTerminalNode(currNode));
+      DCASSERT(getNodeLevel(currNode) == currLevel);
 
-  int currHeight = nVars;
-  bool atPrimedLevel = false;
+      // Unprimed level
+      parentNode = currNode;
+      int index = element[currLevel];
+      if (index >= getFullNodeSize(currNode)) {
+        // found a 0
+#ifdef CREATE_TEMP_NODES_MAX_SIZE_ONLY
+        resizeNode(currNode, getLevelSize(currLevel));
+#else
+        resizeNode(currNode, index + 1);
+#endif
+        currNode = 0;
+        break;
+      }
+      currNode = getFullNodeDownPtr(currNode, index);
+      if (currNode == 0) break;
 
-  DCASSERT(!isReducedNode(tempNode);
+      // Primed level
+      parentNode = currNode;
+      index = pelement[currLevel];
+      if (index >= getFullNodeSize(currNode)) {
+        // found a 0
+#ifdef CREATE_TEMP_NODES_MAX_SIZE_ONLY
+        resizeNode(currNode, getLevelSize(currLevel));
+#else
+        resizeNode(currNode, index + 1);
+#endif
+        currNode = 0;
+        break;
+      }
+      currNode = getFullNodeDownPtr(currNode, index);
+      if (currNode == 0) break;
+    }
 
-
-  accumulateMintermAddedElement = false;
-  int result = accumulate(tempNode, false,
-      element, pelement, expertDomain->getTopVariable());
-  if (tempNode != result) {
-    // tempNode had to be copied into another node by accumulate().
-    // This could be either because tempNode was a reduced node,
-    // or because tempNode had incount > 1.
-    unlinkNode(tempNode);
-    tempNode = result;
+    // Element already exists!
+    // Return false since do element was added.
+    if (currLevel == domain::TERMINALS) {
+      DCASSERT(currNode != 0);
+      return false;
+    }
   }
-  // Note: tempNode == result indicates that the element was added
-  // to the existing temporary node. Therefore, there is no need to
-  // change incounts.
-  return accumulateMintermAddedElement;
+
+  // Build a node from the minterm starting at one level below currLevel.
+  int unpNode = -1;
+  level = expertDomain->getVariableAbove(domain::TERMINALS);
+  for ( ; level != currLevel;
+      level = expertDomain->getVariableAbove(level)) {
+#ifdef CREATE_TEMP_NODES_MAX_SIZE_ONLY
+    int prime = createTempNodeMaxSize(-level, true);
+#else
+    int prime = createTempNode(-level, pelement[level] + 1, true);
+#endif
+    getFullNodeDownPtrs(prime)[pelement[level]] = unpNode;
+#ifdef CREATE_TEMP_NODES_MAX_SIZE_ONLY
+    unpNode = createTempNodeMaxSize(level, true);
+#else
+    unpNode = createTempNode(level, element[level] + 1, true);
+#endif
+    getFullNodeDownPtrs(unpNode)[element[level]] = prime;
+  }
+  DCASSERT(currLevel == level);
+  DCASSERT(getNodeLevel(unpNode) == expertDomain->getVariableBelow(level));
+
+  // Deal with the currLevel
+  int parentNodeLevel = getNodeLevel(parentNode);
+
+  if (parentNodeLevel == 0) {
+    DCASSERT(tempNode == 0);
+    // Build prime node with downpointer to unpNode.
+    // Build unprime node with downpointer to prime node.
+#ifdef CREATE_TEMP_NODES_MAX_SIZE_ONLY
+    int prime = createTempNodeMaxSize(-level, true);
+#else
+    int prime = createTempNode(-level, pelement[level] + 1, true);
+#endif
+    getFullNodeDownPtrs(prime)[pelement[level]] = unpNode;
+#ifdef CREATE_TEMP_NODES_MAX_SIZE_ONLY
+    unpNode = createTempNodeMaxSize(level, true);
+#else
+    unpNode = createTempNode(level, element[level] + 1, true);
+#endif
+    getFullNodeDownPtrs(unpNode)[element[level]] = prime;
+    // Update the root node.
+    tempNode = unpNode;
+  }
+  else if (parentNodeLevel > 0) {
+    // Parent is an unprimed node.
+    // Build prime node with downpointer to unpNode.
+    // Attach parent to prime node.
+#ifdef CREATE_TEMP_NODES_MAX_SIZE_ONLY
+    int prime = createTempNodeMaxSize(-level, true);
+#else
+    int prime = createTempNode(-level, pelement[level] + 1, true);
+#endif
+    getFullNodeDownPtrs(prime)[pelement[level]] = unpNode;
+    DCASSERT(element[level] < getFullNodeSize(parentNode));
+    DCASSERT(getFullNodeDownPtrs(parentNode)[element[level]] == 0);
+    getFullNodeDownPtrs(parentNode)[element[level]] = prime;
+  } else {
+    // Parent is a primed node.
+    // Attach parent to unpNode
+    DCASSERT(pelement[level] < getFullNodeSize(parentNode));
+    DCASSERT(getFullNodeDownPtrs(parentNode)[pelement[level]] == 0);
+    getFullNodeDownPtrs(parentNode)[pelement[level]] = unpNode;
+  }
+
+  return true;
 }
 #endif
 

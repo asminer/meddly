@@ -225,6 +225,7 @@ class node_manager : public expert_forest {
     void deleteOrphanNode(int node);      // for uncacheNode()
     void freeZombieNode(int node);        // for uncacheNode()
 
+    bool isStale(int node) const;
     bool discardTemporaryNodesFromComputeCache() const;   // for isStale()
 
     void showNode(FILE *s, int p, int verbose = 0) const;
@@ -965,6 +966,12 @@ inline void node_manager::setNext(int h, int n) {
   DCASSERT(isActiveNode(h));
   DCASSERT(!isTerminalNode(h));
   *(getNodeAddress(h) + 1) = n; 
+}
+
+inline bool node_manager::isStale(int h) const {
+  if (isTerminalNode(h))  return discardTemporaryNodesFromComputeCache();
+  if (isPessimistic())    return isZombieNode(h);
+  /*isOptimistic()*/      return getInCount(h) == 0;
 }
 
 inline bool node_manager::discardTemporaryNodesFromComputeCache() const {

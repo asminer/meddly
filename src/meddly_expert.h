@@ -371,7 +371,7 @@ class expert_forest : public forest
     ///   in-count and cache-count are zero.
     /// Pessimistic deletion: A node is said to be stale when the in-count
     ///  is zero regardless of the cache-count.
-    bool isStale(int node) const;
+    virtual bool isStale(int node) const = 0;
 
 #if 0
     /// Returns the cardinality of the node. Cardinality is the number of
@@ -1927,12 +1927,6 @@ inline
 bool expert_forest::isTerminalNode(int p) const
 {
   return (p < 1);
-}
-
-inline bool expert_forest::isStale(int h) const {
-  if (isTerminalNode(h))  return discardTemporaryNodesFromComputeCache();
-  if (isPessimistic())    return isZombieNode(h);
-  /*isOptimistic()*/      return getInCount(h) == 0;
 }
 
 inline
