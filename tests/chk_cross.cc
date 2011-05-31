@@ -30,6 +30,8 @@
 
 // #define DEBUG_RANDSET
 
+// #define DEBUG_SEGV
+
 const int vars[] = {4, 4, 4, 4, 4, 4};
 const int dontcare[] = {0, -1, -1, -1, -1, -1, -1};
 int minterm[7];
@@ -73,22 +75,58 @@ void randomizeMinterm()
 
 void makeRandomSet(forest* f, int nmt, dd_edge &x)
 {
+#ifdef DEBUG_SEGV
+  fprintf(stderr, "\tentering makeRandomSet\n");
+#endif
   dd_edge tmp(f);
   for (; nmt; nmt--) {
+#ifdef DEBUG_SEGV
+    fprintf(stderr, "\tminterm\n");
+#endif
     randomizeMinterm();
+#ifdef DEBUG_SEGV
+    fprintf(stderr, "\tedge\n");
+#endif
     assert(forest::SUCCESS == f->createEdge(mtaddr, 1, tmp));
+#ifdef DEBUG_SEGV
+    fprintf(stderr, "\tunion\n");
+#endif
     x += tmp;
+#ifdef DEBUG_SEGV
+    fprintf(stderr, "\tdone iter %d\n", nmt);
+#endif
   }
+#ifdef DEBUG_SEGV
+  fprintf(stderr, "\texiting makeRandomSet\n");
+#endif
 }
 
 void makeRandomRows(forest* f, int nmt, dd_edge &x)
 {
+#ifdef DEBUG_SEGV
+  fprintf(stderr, "\tentering makeRandomRows\n");
+#endif
   dd_edge tmp(f);
   for (; nmt; nmt--) {
+#ifdef DEBUG_SEGV
+    fprintf(stderr, "\tminterm\n");
+#endif
     randomizeMinterm();
+#ifdef DEBUG_SEGV
+    fprintf(stderr, "\tedge\n");
+#endif
     assert(forest::SUCCESS == f->createEdge(mtaddr, dcaddr, 1, tmp));
+#ifdef DEBUG_SEGV
+    fprintf(stderr, "\tunion\n");
+#endif
     x += tmp;
+#ifdef DEBUG_SEGV
+    fprintf(stderr, "\tdone iter %d\n", nmt);
+#endif
   }
+#ifdef DEBUG_SEGV
+  fprintf(stderr, "\texiting makeRandomRows\n");
+#endif
 }
 
 void makeRandomCols(forest* f, int nmt, dd_edge &x)
