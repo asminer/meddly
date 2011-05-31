@@ -936,7 +936,6 @@ int mdd_backward_reachability_bfs::compute(op_info* owner, int mdd, int mxd)
 
 mdd_backward_reachability_dfs* mdd_backward_reachability_dfs::getInstance()
 {
-  printf("backward dfs\n");
   static mdd_backward_reachability_dfs instance;
   return &instance;
 }
