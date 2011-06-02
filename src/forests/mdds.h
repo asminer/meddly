@@ -960,6 +960,7 @@ inline int node_manager::getNext(int h) const {
   DCASSERT(isActiveNode(h));
   DCASSERT(!isTerminalNode(h));
   // next pointer is at slot 1 (counting from 0)
+  DCASSERT(getNodeAddress(h));
   return *(getNodeAddress(h) + 1);
 }
 inline void node_manager::setNext(int h, int n) { 
