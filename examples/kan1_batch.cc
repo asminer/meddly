@@ -99,6 +99,7 @@
 #include "meddly_expert.h"
 #include "timer.h"
 
+using namespace MEDDLY;
 
 const bool testFindFirstElement = false;
 const bool testMTMXDIterator = false;
@@ -235,7 +236,7 @@ dd_edge MakeSynch23_4(forest* mxd)
 
 void getIndexSet(const dd_edge& mdd, dd_edge& indexSet)
 {
-  compute_manager* cm = MEDDLY_getComputeManager();
+  compute_manager* cm = getComputeManager();
   assert(compute_manager::SUCCESS ==
       cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mdd, indexSet));
 }
@@ -265,7 +266,7 @@ int main(int argc, char* argv[])
   int i;
 
   // Create a domain
-  domain *d = MEDDLY_createDomain();
+  domain *d = createDomain();
   assert(d != NULL);
 
   // Set up the state variables.
@@ -323,7 +324,7 @@ int main(int argc, char* argv[])
 
   dd_edge reachableStates(mdd);
   assert(compute_manager::SUCCESS ==
-      MEDDLY_getComputeManager()->apply(compute_manager::REACHABLE_STATES_BFS,
+      getComputeManager()->apply(compute_manager::REACHABLE_STATES_BFS,
       initialStates, nsf, reachableStates));
   // reachableStates.show(stdout, 3);
 
@@ -332,7 +333,7 @@ int main(int argc, char* argv[])
     timer compTimer;
     compTimer.note_time();
     assert(compute_manager::SUCCESS ==
-        MEDDLY_getComputeManager()->apply(compute_manager::COMPLEMENT,
+        getComputeManager()->apply(compute_manager::COMPLEMENT,
           reachableStates, rsComplement));
     compTimer.note_time();
     printf("\nComplement(RS) took %.4e seconds\n",
@@ -342,7 +343,7 @@ int main(int argc, char* argv[])
     dd_edge nsfComplement(mxd);
     compTimer.note_time();
     assert(compute_manager::SUCCESS ==
-        MEDDLY_getComputeManager()->apply(compute_manager::COMPLEMENT,
+        getComputeManager()->apply(compute_manager::COMPLEMENT,
           nsf, nsfComplement));
     compTimer.note_time();
     printf("\nComplement(NSF) took %.4e seconds\n",

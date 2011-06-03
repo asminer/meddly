@@ -26,6 +26,7 @@
 #include "cross.h"
 #include "../compute_cache.h"
 
+namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
@@ -299,4 +300,7 @@ operation* getCrossOperation(const op_param &ot)
 
   return bool_cross::getInstance();
 }
+
+
+} // namespace MEDDLY
 

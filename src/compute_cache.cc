@@ -26,7 +26,7 @@ const float expansionFactor = 1.5;
 
 /* compute cache methods */
 
-compute_cache::compute_cache()
+MEDDLY::compute_cache::compute_cache()
 : nodes(0), nodeCount(1024), lastNode(-1),
   data(0), dataCount(1024), lastData(-1),
   recycledNodes(-1), recycledFront(0),
@@ -55,7 +55,7 @@ compute_cache::compute_cache()
 }
 
 
-compute_cache::~compute_cache()
+MEDDLY::compute_cache::~compute_cache()
 {
   // delete hash table
   if (ht) { delete ht; ht = 0; }
@@ -79,7 +79,7 @@ compute_cache::~compute_cache()
 }
 
 
-bool compute_cache::setPolicy(bool chaining, unsigned maxSize)
+bool MEDDLY::compute_cache::setPolicy(bool chaining, unsigned maxSize)
 {
   // some data is already in cache; abort
   if (lastData > -1) return false;
@@ -105,13 +105,13 @@ bool compute_cache::setPolicy(bool chaining, unsigned maxSize)
 }
 
 
-void compute_cache::show(FILE* s, int h) const
+void MEDDLY::compute_cache::show(FILE* s, int h) const
 {
   nodes[h].owner->op->showEntry(nodes[h].owner, s, getDataAddress(nodes[h]));
 }
 
 
-void compute_cache::show(FILE *s, bool verbose) const
+void MEDDLY::compute_cache::show(FILE *s, bool verbose) const
 { 
   char filler[] = "\t";
   fprintf(s, "%sNumber of slots:\t%d\n", filler, nodeCount);
@@ -136,7 +136,7 @@ void compute_cache::show(FILE *s, bool verbose) const
 }
 
 
-void compute_cache::expandNodes()
+void MEDDLY::compute_cache::expandNodes()
 {
   DCASSERT(nodeCount != 0);
   int newNodeCount = int(nodeCount * expansionFactor);
@@ -155,7 +155,7 @@ void compute_cache::expandNodes()
 }
 
 
-void compute_cache::expandData()
+void MEDDLY::compute_cache::expandData()
 {
   int newDataCount = int(dataCount * expansionFactor);
   data = (int *) realloc(data, newDataCount * sizeof(int));
@@ -165,7 +165,7 @@ void compute_cache::expandData()
 }
 
 
-void compute_cache::removeStales(op_info* owner)
+void MEDDLY::compute_cache::removeStales(op_info* owner)
 {
   static bool removingStales = false;
   if (!removingStales) {
@@ -205,14 +205,14 @@ void compute_cache::removeStales(op_info* owner)
 }
 
 
-void compute_cache::clear()
+void MEDDLY::compute_cache::clear()
 {
   DCASSERT(ht != 0 || fsht != 0);
   if (ht) ht->clear();
   if (fsht) fsht->clear();
 }
 
-int compute_cache::getNumEntries() const
+int MEDDLY::compute_cache::getNumEntries() const
 {
   DCASSERT(ht != 0 || fsht != 0);
   return (ht)? ht->getEntriesCount(): fsht->getEntriesCount();

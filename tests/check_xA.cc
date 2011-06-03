@@ -28,6 +28,8 @@
 
 #include "meddly.h"
 
+using namespace MEDDLY;
+
 const int vars[] = {10, 10, 10};
 
 compute_manager* CM;
@@ -159,10 +161,10 @@ bool Ax_check(dd_edge &ss, dd_edge &P)
 
 int main(int argc, const char** argv)
 {
-  CM = MEDDLY_getComputeManager();
+  CM = getComputeManager();
   assert(CM);
 
-  domain* ozd = MEDDLY_createDomain();
+  domain* ozd = createDomain();
   assert(ozd);
   assert(domain::SUCCESS == ozd->createVariablesBottomUp(vars, 3));
   forest* evpmdds = ozd->createForest(0, forest::INTEGER, forest::EVPLUS);

@@ -93,6 +93,8 @@
 #include "meddly_expert.h"
 #include "timer.h"
 
+using namespace MEDDLY;
+
 void printmem(long m)
 {
   if (m<1024) {
@@ -295,7 +297,7 @@ void usage()
 // Test Index Set
 void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
 {
-  compute_manager* cm = MEDDLY_getComputeManager();
+  compute_manager* cm = getComputeManager();
   assert(compute_manager::SUCCESS ==
       cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mdd, indexSet));
 
@@ -311,7 +313,7 @@ void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
 dd_edge testPreImage(const dd_edge& mdd, const dd_edge& mxd)
 {
   dd_edge preImage(mdd.getForest());
-  compute_manager* cm = MEDDLY_getComputeManager();
+  compute_manager* cm = getComputeManager();
   assert(compute_manager::SUCCESS ==
       cm->apply(compute_manager::PRE_IMAGE, mdd, mxd, preImage));
 
@@ -329,7 +331,7 @@ dd_edge testPreImage(const dd_edge& mdd, const dd_edge& mxd)
 dd_edge testPostImage(const dd_edge& mdd, const dd_edge& mxd)
 {
   dd_edge postImage(mdd.getForest());
-  compute_manager* cm = MEDDLY_getComputeManager();
+  compute_manager* cm = getComputeManager();
   assert(compute_manager::SUCCESS ==
       cm->apply(compute_manager::POST_IMAGE, mdd, mxd, postImage));
 
@@ -437,7 +439,7 @@ int main(int argc, char *argv[])
   int *bounds = initializeLevelBounds(nLevels);
 
   expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+    static_cast<expert_compute_manager*>(getComputeManager());
   assert(ecm != 0);
 
   if (cacheSize > 0) {
@@ -450,7 +452,7 @@ int main(int argc, char *argv[])
   printf("Initiailzing forests\n");
 
   // Create a domain
-  domain *d = MEDDLY_createDomain();
+  domain *d = createDomain();
   assert(d != NULL);
 
   // Set up the state variables.
@@ -755,7 +757,7 @@ int main(int argc, char *argv[])
     int* element = (int *) malloc((nLevels + 1) * sizeof(int));
     dd_edge indexSet(evplusmdd);
     start.note_time();
-    compute_manager* cm = MEDDLY_getComputeManager();
+    compute_manager* cm = getComputeManager();
     assert(compute_manager::SUCCESS ==
         cm->apply(compute_manager::CONVERT_TO_INDEX_SET, reachableStates,
         indexSet));

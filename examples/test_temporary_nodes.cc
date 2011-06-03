@@ -33,6 +33,8 @@
 #include "meddly.h"
 #include "meddly_expert.h"
 
+using namespace MEDDLY;
+
 // Timer class
 #include "timer.h"
 
@@ -161,7 +163,7 @@ int main(int argc, char *argv[])
   }
 
   // Create a domain
-  domain *d = MEDDLY_createDomain();
+  domain *d = createDomain();
   assert(d != 0);
   assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVariables));
 
@@ -382,7 +384,7 @@ void testA()
   for (int i = 0; i < nVars; ) { bounds[i++] = varSize; }
 
   // Create a domain
-  domain *d = MEDDLY_createDomain();
+  domain *d = createDomain();
   assert(d != 0);
   assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVars));
 
@@ -534,7 +536,7 @@ void testB()
   for (int i = 0; i < nVars; ) { bounds[i++] = varSize; }
 
   // Create a domain
-  domain *d = MEDDLY_createDomain();
+  domain *d = createDomain();
   assert(d != 0);
   assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVars));
 
@@ -649,7 +651,7 @@ void testC()
   for (int i = 0; i < nVars; ) { bounds[i++] = varSize; }
 
   // Create a domain
-  domain *d = MEDDLY_createDomain();
+  domain *d = createDomain();
   assert(d != 0);
   assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVars));
 

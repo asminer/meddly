@@ -80,6 +80,7 @@
 #include "timer.h"
 
 using namespace std;
+using namespace MEDDLY;
 
 typedef enum {F, B, L, R, U, D} face;
 typedef enum {CW, CCW, FLIP} direction;
@@ -900,7 +901,7 @@ int doBfs(const moves& m)
   fflush(stdout);
   timer start;
   assert(compute_manager::SUCCESS ==
-      MEDDLY_getComputeManager()->apply(
+      getComputeManager()->apply(
         compute_manager::REACHABLE_STATES_BFS,
         initial, nsf, initial));
   start.note_time();
@@ -935,7 +936,7 @@ int doDfs(const moves& m)
   fflush(stdout);
   timer start;
   assert(compute_manager::SUCCESS ==
-      MEDDLY_getComputeManager()->apply(
+      getComputeManager()->apply(
         compute_manager::REACHABLE_STATES_DFS,
         initial, nsf, initial));
   start.note_time();
@@ -1038,14 +1039,14 @@ int doChoice(const moves& m)
           printf("Choice: %d, Face: %d, Direction: %d\n", choice, f, d);
         }
         assert(compute_manager::SUCCESS ==
-            MEDDLY_getComputeManager()->apply(compute_manager::POST_IMAGE,
+            getComputeManager()->apply(compute_manager::POST_IMAGE,
               result, nsf[choice], temp));
         result += temp;
         break;
       case 18:
         // Perform garbage collection.
         // For now, simply clear the compute table.
-        MEDDLY_getComputeManager()->clearComputeTable();
+        getComputeManager()->clearComputeTable();
         break;
       case 19:
         // Clear result.
@@ -1133,7 +1134,7 @@ int doSteppedBfs(const moves& m)
           printf("Processing event[%d]...", i);
           fflush(stdout);
           assert(compute_manager::SUCCESS ==
-              MEDDLY_getComputeManager()->apply(
+              getComputeManager()->apply(
                 compute_manager::REACHABLE_STATES_DFS,
                 eventResults[i], nsf[i], eventResults[i]));
           printf("done.\n");
@@ -1164,7 +1165,7 @@ int doSteppedBfs(const moves& m)
       case 3:
         // Perform garbage collection.
         // For now, simply clear the compute table.
-        MEDDLY_getComputeManager()->clearComputeTable();
+        getComputeManager()->clearComputeTable();
         break;
       case 4:
         // Clear result.
@@ -1247,10 +1248,10 @@ int main(int argc, char *argv[])
   bool chaining = true;
   int hashTableSize = 16 * 1024 * 1024;
   assert(compute_manager::SUCCESS ==
-      MEDDLY_getComputeManager()->setHashTablePolicy(chaining, hashTableSize));
+      getComputeManager()->setHashTablePolicy(chaining, hashTableSize));
 
   // Set up the state variables, as described earlier
-  d = MEDDLY_createDomain();
+  d = createDomain();
   if (NULL == d) {
     fprintf(stderr, "Couldn't create domain\n");
     return 1;

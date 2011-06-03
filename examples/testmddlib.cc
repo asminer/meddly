@@ -32,6 +32,8 @@
 #include <meddly.h>
 #include <stdlib.h>
 
+using namespace MEDDLY;
+
 /**
  * Model: A simple service counter
  *
@@ -60,7 +62,7 @@
 int main(int argc, char *argv[])
 {
   // Create a domain
-  domain *d = MEDDLY_createDomain();
+  domain *d = createDomain();
   const int N = 2;
   const int bounds[N] = {4, 2};
   // d->createVariablesTopDown(bounds, N);
@@ -180,7 +182,7 @@ int main(int argc, char *argv[])
   xd.show(stdout, 2);
   // transitions->showInfo(stdout);
 
-  compute_manager* cm = MEDDLY_getComputeManager();
+  compute_manager* cm = getComputeManager();
   printf("\nCompute Table:\n");
   cm->showComputeTable(stdout);
 
@@ -207,7 +209,7 @@ int main(int argc, char *argv[])
 #if 0
   // Do PreImage
   // Do PostImage
-  compute_manager* cm = MEDDLY_getComputeManager();
+  compute_manager* cm = getComputeManager();
   dd_edge post_image(states);
   cm->apply(POST_IMAGE, initial_state, xd, post_image);
 

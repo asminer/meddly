@@ -28,6 +28,8 @@
 
 #include "meddly.h"
 
+using namespace MEDDLY;
+
 // #define DEBUG_RANDSET
 
 // #define DEBUG_SEGV
@@ -203,10 +205,10 @@ void test(forest* mdd, forest* mxd, int nmt)
 
 int main()
 {
-  CM = MEDDLY_getComputeManager();
+  CM = getComputeManager();
   assert(CM);
 
-  domain* myd = MEDDLY_createDomain();
+  domain* myd = createDomain();
   assert(myd);
   assert(domain::SUCCESS == myd->createVariablesBottomUp(vars, 6));
 

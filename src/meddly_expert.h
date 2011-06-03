@@ -68,6 +68,8 @@
 #define CHECK_RANGE(MIN, VALUE, MAX)
 #endif
 
+namespace MEDDLY {
+
 // Functions for reinterpreting an int to a float and vice-versa
 float   toFloat (int a);
 int     toInt   (float a);
@@ -2600,5 +2602,6 @@ float* toFloat(int* a) {
   return n.f;
 }
 
+} // namespace MEDDLY
 
 #endif

@@ -33,14 +33,14 @@
 #include "revision.h"
 
 // ------------------ compute_manager --------------------------
-compute_manager::compute_manager() {}
+MEDDLY::compute_manager::compute_manager() {}
 
 
-compute_manager::~compute_manager() {}
+MEDDLY::compute_manager::~compute_manager() {}
 
 
 const char*
-compute_manager::getErrorCodeName(compute_manager::error e)
+MEDDLY::compute_manager::getErrorCodeName(compute_manager::error e)
 {
   switch (e) {
     case SUCCESS:
@@ -66,14 +66,14 @@ compute_manager::getErrorCodeName(compute_manager::error e)
 }
 
 
-compute_manager* MEDDLY_getComputeManager()
+compute_manager* MEDDLY::getComputeManager()
 {
   static expert_compute_manager* ecm = new expert_compute_manager();
   return ecm;
 }
 
 
-const char* MEDDLY_getLibraryInfo(int what)
+const char* MEDDLY::getLibraryInfo(int what)
 {
   static char* title = 0;
   switch (what) {
@@ -124,7 +124,7 @@ const char* MEDDLY_getLibraryInfo(int what)
 
 // ------------------------ expert_compute_manager --------------------
 
-expert_compute_manager::expert_compute_manager()
+MEDDLY::expert_compute_manager::expert_compute_manager()
 {
   // initialize compute cache
   cc = new compute_cache();
@@ -134,7 +134,7 @@ expert_compute_manager::expert_compute_manager()
 }
 
 
-expert_compute_manager::~expert_compute_manager()
+MEDDLY::expert_compute_manager::~expert_compute_manager()
 {
   delete customOpEntries;
   delete builtinOpEntries;
@@ -142,7 +142,7 @@ expert_compute_manager::~expert_compute_manager()
 }
 
 
-const char* expert_compute_manager::getOperationName(
+const char* MEDDLY::expert_compute_manager::getOperationName(
     compute_manager::op_code op) const
 {
   switch(op) {
@@ -179,25 +179,25 @@ unary_apply(op_info* owner, const dd_edge &a, TYPE &b)
     owner->op->compute(owner, a, b);
 }
 
-compute_manager::error expert_compute_manager::apply(op_info* owner,
+compute_manager::error MEDDLY::expert_compute_manager::apply(op_info* owner,
     const dd_edge &a, dd_edge &b)
 {
   return unary_apply(owner, a, b);
 }
 
-compute_manager::error expert_compute_manager::apply(op_info* owner,
+compute_manager::error MEDDLY::expert_compute_manager::apply(op_info* owner,
     const dd_edge &a, long &b)
 {
   return unary_apply(owner, a, b);
 }
 
-compute_manager::error expert_compute_manager::apply(op_info* owner,
+compute_manager::error MEDDLY::expert_compute_manager::apply(op_info* owner,
     const dd_edge &a, double &b)
 {
   return unary_apply(owner, a, b);
 }
 
-compute_manager::error expert_compute_manager::apply(op_info* owner,
+compute_manager::error MEDDLY::expert_compute_manager::apply(op_info* owner,
     const dd_edge &a, ct_object &b)
 {
 #ifdef HAVE_LIBGMP
@@ -208,7 +208,7 @@ compute_manager::error expert_compute_manager::apply(op_info* owner,
 }
 
 
-compute_manager::error expert_compute_manager::apply(op_info* owner,
+compute_manager::error MEDDLY::expert_compute_manager::apply(op_info* owner,
     const dd_edge &a, const dd_edge &b, dd_edge &c)
 {
   // type check
@@ -233,25 +233,25 @@ unary_apply(expert_compute_manager* CM, compute_manager::op_code op,
     CM->apply(opInfo, a, b);
 }
 
-compute_manager::error expert_compute_manager::apply(
+compute_manager::error MEDDLY::expert_compute_manager::apply(
     compute_manager::op_code op, const dd_edge &a, dd_edge &b)
 {
   return unary_apply(this, op, a, b);
 }
 
-compute_manager::error expert_compute_manager::apply(
+compute_manager::error MEDDLY::expert_compute_manager::apply(
     compute_manager::op_code op, const dd_edge &a, long &b)
 {
   return unary_apply(this, op, a, b);
 }
 
-compute_manager::error expert_compute_manager::apply(
+compute_manager::error MEDDLY::expert_compute_manager::apply(
     compute_manager::op_code op, const dd_edge &a, double &b)
 {
   return unary_apply(this, op, a, b);
 }
 
-compute_manager::error expert_compute_manager::apply(
+compute_manager::error MEDDLY::expert_compute_manager::apply(
     compute_manager::op_code op, const dd_edge &a, ct_object &b)
 {
 #ifdef HAVE_LIBGMP
@@ -262,7 +262,7 @@ compute_manager::error expert_compute_manager::apply(
 }
 
 
-compute_manager::error expert_compute_manager::apply(
+compute_manager::error MEDDLY::expert_compute_manager::apply(
     compute_manager::op_code op, const dd_edge &a, const dd_edge &b,
     dd_edge &c)
 {
@@ -278,7 +278,7 @@ compute_manager::error expert_compute_manager::apply(
 }
 
 
-compute_manager::error expert_compute_manager::setHashTablePolicy(
+compute_manager::error MEDDLY::expert_compute_manager::setHashTablePolicy(
     bool chaining, unsigned size)
 {
   if (size == 0) return compute_manager::TYPE_MISMATCH;
@@ -289,31 +289,31 @@ compute_manager::error expert_compute_manager::setHashTablePolicy(
 }
 
 
-void expert_compute_manager::showComputeTable(FILE* strm) const
+void MEDDLY::expert_compute_manager::showComputeTable(FILE* strm) const
 {
   if (cc != 0) cc->show(strm, true);
 }
 
 
-long expert_compute_manager::getNumCacheEntries() const
+long MEDDLY::expert_compute_manager::getNumCacheEntries() const
 {
   return (cc == 0)? 0: cc->getNumEntries();
 }
 
 
-void expert_compute_manager::removeStales(op_info* op)
+void MEDDLY::expert_compute_manager::removeStales(op_info* op)
 {
   if (cc != 0) cc->removeStales(op);
 }
 
 
-void expert_compute_manager::clearComputeTable()
+void MEDDLY::expert_compute_manager::clearComputeTable()
 {
   if (cc != 0) cc->clear();
 }
 
 
-void expert_compute_manager::addBuiltinOp(const builtin_op_key& key,
+void MEDDLY::expert_compute_manager::addBuiltinOp(const builtin_op_key& key,
   const operation* op, const op_param* plist, int n)
 {
   op_info entry(const_cast<operation*>(op), const_cast<op_param*>(plist),
@@ -338,7 +338,7 @@ void expert_compute_manager::addBuiltinOp(const builtin_op_key& key,
 }
 
 
-op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
+op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
     const op_param* const plist, int N)
 {
   // search in built-in op entries
@@ -801,7 +801,7 @@ op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
 }
 
 
-op_info* expert_compute_manager::getOpInfo(const operation* op,
+op_info* MEDDLY::expert_compute_manager::getOpInfo(const operation* op,
     const op_param* const plist, int N)
 {
   // search in custom op entries
@@ -822,7 +822,7 @@ op_info* expert_compute_manager::getOpInfo(const operation* op,
 }
 
 compute_manager::error 
-expert_compute_manager::vectorMatrixMultiply(double* y, const dd_edge &y_ind,
+MEDDLY::expert_compute_manager::vectorMatrixMultiply(double* y, const dd_edge &y_ind,
                       const double* x, const dd_edge &x_ind, const dd_edge &A)
 {
   const expert_forest* const fy = (expert_forest*) y_ind.getForest();
@@ -889,7 +889,7 @@ expert_compute_manager::vectorMatrixMultiply(double* y, const dd_edge &y_ind,
 
 
 compute_manager::error 
-expert_compute_manager::matrixVectorMultiply(double* y, const dd_edge &y_ind,
+MEDDLY::expert_compute_manager::matrixVectorMultiply(double* y, const dd_edge &y_ind,
                       const dd_edge &A, const double* x, const dd_edge &x_ind)
 {
   const expert_forest* const fy = (expert_forest*) y_ind.getForest();

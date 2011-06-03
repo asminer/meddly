@@ -23,6 +23,8 @@
 #include "maxmin_range.h"
 #include "../compute_cache.h"
 
+namespace MEDDLY {
+
 // ******************************************************************
 // *                                                                *
 // *                      maxminrange_op class                      *
@@ -516,3 +518,4 @@ operation* getMinRangeOperation(const op_param &ft, const op_param &rt)
   return 0;
 }
 
+} // namespace MEDDLY

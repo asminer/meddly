@@ -36,6 +36,8 @@
 #include "meddly.h"
 #include "timer.h"
 
+using namespace MEDDLY;
+
 int N;
 int* scratch;
 compute_manager* CM;
@@ -157,9 +159,9 @@ bool createQueenNodes(forest* f, int q, dd_edge &col, dd_edge &cp, dd_edge &cm)
 int main()
 {
   timer watch;
-  CM = MEDDLY_getComputeManager();
+  CM = getComputeManager();
   assert(CM);
-  printf("Using %s\n", MEDDLY_getLibraryInfo(0));
+  printf("Using %s\n", getLibraryInfo(0));
   printf("N-Queens solutions.  Enter the value for N:\n");
   scanf("%d", &N);
   if (N<1) return 0;
@@ -171,7 +173,7 @@ int main()
   for (int i=0; i<N; i++) {
     scratch[i] = N;
   }
-  domain* d = MEDDLY_createDomain();
+  domain* d = createDomain();
   assert(d);
   assert(domain::SUCCESS == d->createVariablesBottomUp(scratch, N));
   forest* f = d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL);

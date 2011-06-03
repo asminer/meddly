@@ -37,10 +37,10 @@
 
 // ----------------- domain ------------------------
 
-domain::domain() {}
-domain::~domain() {}
+MEDDLY::domain::domain() {}
+MEDDLY::domain::~domain() {}
 
-const char* domain::getErrorCodeName(domain::error e)
+const char* MEDDLY::domain::getErrorCodeName(domain::error e)
 {
   switch (e) {
     case SUCCESS:
@@ -60,7 +60,7 @@ const char* domain::getErrorCodeName(domain::error e)
   }
 }
 
-domain* MEDDLY_createDomain()
+MEDDLY::domain* MEDDLY::createDomain()
 {
   return new expert_domain();
 }
@@ -68,7 +68,7 @@ domain* MEDDLY_createDomain()
 
 // ----------------- expert_domain ------------------------
 
-expert_domain::expert_domain()
+MEDDLY::expert_domain::expert_domain()
 : nForests(0), forests(0), szForests(0),
   nVars(0), levelBounds(0), pLevelBounds(0),
   allocatedLevels(0), topLevel(0),
@@ -78,7 +78,7 @@ expert_domain::expert_domain()
 }
 
 
-expert_domain::~expert_domain()
+MEDDLY::expert_domain::~expert_domain()
 {
   // delete registered forests
   for (int i = 0; i < szForests; ++i) {
@@ -96,7 +96,7 @@ expert_domain::~expert_domain()
 }
 
 
-domain::error expert_domain::createVariablesBottomUp(const int* bounds, int N)
+MEDDLY::domain::error MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
 {
   // domain must be empty -- no variables defined so far
   DCASSERT(nForests == 0);
@@ -159,7 +159,7 @@ domain::error expert_domain::createVariablesBottomUp(const int* bounds, int N)
 }
 
 
-domain::error expert_domain::createVariablesTopDown(const int* bounds, int N)
+MEDDLY::domain::error MEDDLY::expert_domain::createVariablesTopDown(const int* bounds, int N)
 {
   // use createVariablesBottomUp, and then fix the levels to heights mapping
   domain::error err = createVariablesBottomUp(bounds, N);
@@ -181,7 +181,7 @@ domain::error expert_domain::createVariablesTopDown(const int* bounds, int N)
 }
 
 
-void expert_domain::showInfo(FILE* strm)
+void MEDDLY::expert_domain::showInfo(FILE* strm)
 {
   // list variables handles, their bounds and heights.
   fprintf(strm, "Domain info:\n");
@@ -202,7 +202,7 @@ void expert_domain::showInfo(FILE* strm)
 }
 
 
-forest* expert_domain::createForest(bool rel, forest::range_type t,
+MEDDLY::forest* MEDDLY::expert_domain::createForest(bool rel, forest::range_type t,
     forest::edge_labeling e)
 {
   expert_forest* f = 0;
@@ -288,7 +288,7 @@ forest* expert_domain::createForest(bool rel, forest::range_type t,
 }
 
 
-void expert_domain::unlinkForest(expert_forest* f)
+void MEDDLY::expert_domain::unlinkForest(expert_forest* f)
 {
   // find forest
   int i = 0;
@@ -304,7 +304,7 @@ void expert_domain::unlinkForest(expert_forest* f)
 
 
 // TODO: not implemented
-domain::error expert_domain::createVariable(int below, int &vh)
+MEDDLY::domain::error MEDDLY::expert_domain::createVariable(int below, int &vh)
 {
   // Update levelsAndHeightsAligned when this is implemented
   return domain::NOT_IMPLEMENTED;
@@ -312,27 +312,27 @@ domain::error expert_domain::createVariable(int below, int &vh)
 
 
 // TODO: not implemented
-domain::error expert_domain::destroyVariable(int vh)
+MEDDLY::domain::error MEDDLY::expert_domain::destroyVariable(int vh)
 {
   return domain::NOT_IMPLEMENTED;
 }
 
 
 // TODO: not implemented
-domain::error expert_domain::swapOrderOfVariables(int vh1, int vh2)
+MEDDLY::domain::error MEDDLY::expert_domain::swapOrderOfVariables(int vh1, int vh2)
 {
   return domain::NOT_IMPLEMENTED;
 }
 
 // TODO: not implemented
-int expert_domain::findVariableBound(int vh) const
+int MEDDLY::expert_domain::findVariableBound(int vh) const
 {
   printf("expert_domain::findVariableBound() not implemented;");
   printf(" use getVariableBound().\n");
   return getVariableBound(vh, false);
 }
 
-domain::error expert_domain::enlargeVariableBound(int vh, bool prime, int b)
+MEDDLY::domain::error MEDDLY::expert_domain::enlargeVariableBound(int vh, bool prime, int b)
 {
   // if !prime, expand both prime and unprime
   // else expand only prime
@@ -349,7 +349,7 @@ domain::error expert_domain::enlargeVariableBound(int vh, bool prime, int b)
 }
 
 // TODO: not implemented
-domain::error expert_domain::shrinkVariableBound(int vh, int b, bool force)
+MEDDLY::domain::error MEDDLY::expert_domain::shrinkVariableBound(int vh, int b, bool force)
 {
   return domain::NOT_IMPLEMENTED;
 }

@@ -26,6 +26,8 @@
 #ifdef HAVE_LIBGMP
 #include <gmp.h>
 
+namespace MEDDLY {
+
 class mpz_object : public ct_object {
   mpz_t value;
 public:
@@ -55,8 +57,7 @@ public:
   }
 };
 
-ct_object& MEDDLY_get_mpz_wrapper();
-void MEDDLY_unwrap(const ct_object &, mpz_t &value);
+}
 
 #endif
 #endif

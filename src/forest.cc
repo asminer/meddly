@@ -27,11 +27,11 @@
 
 // **************************** forest *********************************
 
-forest::forest() {}
-forest::~forest() {}
+MEDDLY::forest::forest() {}
+MEDDLY::forest::~forest() {}
 
 
-const char* forest::getErrorCodeName(forest::error e)
+const char* MEDDLY::forest::getErrorCodeName(forest::error e)
 {
   switch (e) {
     case SUCCESS:
@@ -53,7 +53,7 @@ const char* forest::getErrorCodeName(forest::error e)
 
 // **************************** expert_forest *********************************
 
-expert_forest::expert_forest(domain *d, bool rel, range_type t,
+MEDDLY::expert_forest::expert_forest(domain *d, bool rel, range_type t,
   edge_labeling ev, reduction_rule r, node_storage s, node_deletion_policy nd)
 : d(d), isRelation(rel), rangeType(t), edgeLabel(ev),
   reductionRule(r), nodeStorage(s), nodeDeletionPolicy(nd),
@@ -70,7 +70,7 @@ expert_forest::expert_forest(domain *d, bool rel, range_type t,
 }
 
 
-void expert_forest::unregisterDDEdges() {
+void MEDDLY::expert_forest::unregisterDDEdges() {
   // Go through the list of valid edges (value > 0), and set
   // the e.index to -1 (indicating unregistered edge).
 
@@ -94,7 +94,7 @@ void expert_forest::unregisterDDEdges() {
 }
 
 
-expert_forest::~expert_forest() {
+MEDDLY::expert_forest::~expert_forest() {
   // Go through the list of valid edges (value > 0), and set
   // the e.index to -1 (indicating unregistered edge).
   // unregisterDDEdges();
@@ -113,7 +113,7 @@ expert_forest::~expert_forest() {
 }
 
 
-void expert_forest::registerEdge(dd_edge& e) {
+void MEDDLY::expert_forest::registerEdge(dd_edge& e) {
   // add to collection of edges for this forest.
   // change e.index to help find this edge at a later time.
   if (firstHole >= 0) {
@@ -148,7 +148,7 @@ void expert_forest::registerEdge(dd_edge& e) {
 }
 
 
-void expert_forest::unregisterEdge(dd_edge& e) {
+void MEDDLY::expert_forest::unregisterEdge(dd_edge& e) {
   // remove this edge from the collection of edges for this forest.
   // change e.index to -1.
   DCASSERT(e.getIndex() >= 0);
@@ -165,12 +165,12 @@ void expert_forest::unregisterEdge(dd_edge& e) {
 
 #else
 
-float expert_forest::getReal(int term) const
+float MEDDLY::expert_forest::getReal(int term) const
 {
   return (term == 0)? 0.0: *((float*)&(term <<= 1));
 }
 
-int expert_forest::getTerminalNode(float a) const
+int MEDDLY::expert_forest::getTerminalNode(float a) const
 {
 #if 1
   // if ((a & 0xffffffff) == 0x00000000) return 0;

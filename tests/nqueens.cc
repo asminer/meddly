@@ -29,6 +29,8 @@
 
 #include "meddly.h"
 
+using namespace MEDDLY;
+
 const int N_LOW  = 1;
 const int N_HIGH = 12;
 const long solutions[] = { 
@@ -132,7 +134,7 @@ long buildQueenSolutions(int N)
   for (int i=0; i<N; i++) {
     scratch[i] = N;
   }
-  domain* d = MEDDLY_createDomain();
+  domain* d = createDomain();
   assert(d);
   assert(domain::SUCCESS == d->createVariablesBottomUp(scratch, N));
   forest* f = d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL);
@@ -219,7 +221,7 @@ long buildQueenSolutions(int N)
 
 int main()
 {
-  CM = MEDDLY_getComputeManager();
+  CM = getComputeManager();
   assert(CM);
   scratch = new int[N_HIGH+1];
 

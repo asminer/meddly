@@ -27,7 +27,7 @@
 #include "../defines.h"
 #include <vector>
 
-
+using namespace MEDDLY;
 
 /** MDD element-wise operations
 

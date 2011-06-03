@@ -64,7 +64,7 @@ op_info* getOp(forest* f, compute_manager::op_code op)
   static const int nForests = 3;
   static op_param plist[nForests];
   static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+    static_cast<expert_compute_manager*>(getComputeManager());
   assert(ecm != 0);
   assert(f != 0);
 
@@ -85,7 +85,7 @@ op_info* getOp(forest* f, operation* op)
   static const int nForests = 3;
   static op_param plist[nForests];
   static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+    static_cast<expert_compute_manager*>(getComputeManager());
   assert(ecm != 0);
   assert(f != 0);
   assert(op != 0);
@@ -108,7 +108,7 @@ dd_edge test_mtmdd(forest* mtmdd, compute_manager::op_code opCode,
   // C = A op B
 
   static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+    static_cast<expert_compute_manager*>(getComputeManager());
   assert(ecm != 0);
 
   dd_edge A(mtmdd);
@@ -144,7 +144,7 @@ bool test_conversion(dd_edge& A, dd_edge& B)
   static const int nForests = 2;
   static op_param plist[nForests];
   static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+    static_cast<expert_compute_manager*>(getComputeManager());
   assert(ecm != 0);
 
   plist[0].set(A);
@@ -237,7 +237,7 @@ int main(int argc, char *argv[])
   }
 
   // Create a domain
-  domain *d = MEDDLY_createDomain();
+  domain *d = createDomain();
   assert(d != 0);
   assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVariables));
 
@@ -284,7 +284,7 @@ int main(int argc, char *argv[])
 
   printf("Peak Nodes in MDD: %ld\n", mtmdd->getPeakNumNodes());
   printf("Nodes in compute table: %ld\n",
-      (MEDDLY_getComputeManager())->getNumCacheEntries());
+      (getComputeManager())->getNumCacheEntries());
 
 #if 0
   // Convert mtmdd to mdd

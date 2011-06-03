@@ -22,6 +22,8 @@
 #include "../defines.h"
 #include "vect_matr.h"
 
+namespace MEDDLY {
+
 compute_manager::error
 vmprimed_evplus_mt(
   const op_param* pt, int ht, double* y, int y_ind, const double* x, int x_ind, int A
@@ -779,5 +781,7 @@ matrixVectorMult_evplus_evtimes(
   // TBD
   return compute_manager::NOT_IMPLEMENTED;
 }
+
+} // namespace MEDDLY
 
 

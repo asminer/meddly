@@ -33,7 +33,6 @@
     General naming principles:
     Class names are of the form class_name.
     Method names are of the form verbObjectDetails.
-    Global functions have names prefixed with "MEDDLY_".
 
 */
 
@@ -43,6 +42,8 @@
 #include <cstdio>
 #include <cassert>
 
+namespace MEDDLY {
+
 // Forward declarations
 class domain;
 class dd_edge;
@@ -50,8 +51,8 @@ class op_info;
 class ct_object;
 
 #ifdef __GMP_H__
-ct_object& MEDDLY_get_mpz_wrapper();
-void MEDDLY_unwrap(const ct_object &, mpz_t &value);
+ct_object& get_mpz_wrapper();
+void unwrap(const ct_object &, mpz_t &value);
 #endif
 
 
@@ -72,8 +73,19 @@ void MEDDLY_unwrap(const ct_object &, mpz_t &value);
             4: String with library features
             Anything else: null string.
 */
-const char* MEDDLY_getLibraryInfo(int what = 0);
+const char* getLibraryInfo(int what = 0);
 
+#ifdef _MSC_VER
+  __declspec(deprecated)
+#endif
+#ifdef __GNUC__
+  __attribute__ ((deprecated))
+#endif
+inline const char* MEDDLY_getLibraryInfo(int what = 0) {
+  return getLibraryInfo(what);
+  
+  // This function is deprecated; use "getLibraryInfo" instead.
+};
 
 // ******************************************************************
 // *                                                                *
@@ -896,7 +908,20 @@ class domain {
 /** Front-end function to create a domain.
     This is required because domain is an abstract class.
 */
-domain* MEDDLY_createDomain();
+domain* createDomain();
+
+
+#ifdef _MSC_VER
+  __declspec(deprecated)
+#endif
+#ifdef __GNUC__
+  __attribute__ ((deprecated))
+#endif
+inline domain* MEDDLY_createDomain() {
+  return createDomain();
+
+  // This function is deprecated; use "createDomain" instead.
+}
 
 
 // ******************************************************************
@@ -1460,9 +1485,9 @@ class compute_manager {
         @return       An appropriate error code.
     */
     inline error apply(op_code op, const dd_edge &a, mpz_t &c) {
-      ct_object& x = MEDDLY_get_mpz_wrapper();
+      ct_object& x = get_mpz_wrapper();
       error e = apply(op, a, x);
-      MEDDLY_unwrap(x, c);
+      unwrap(x, c);
       return e; 
     }
 #endif
@@ -1553,7 +1578,19 @@ class compute_manager {
     Built-in operations are initialized here.
     Multiple calls will return the same compute_manager.
 */
-compute_manager* MEDDLY_getComputeManager();
+compute_manager* getComputeManager();
+
+#ifdef _MSC_VER
+  __declspec(deprecated)
+#endif
+#ifdef __GNUC__
+  __attribute__ ((deprecated))
+#endif
+inline compute_manager* MEDDLY_getComputeManager() {
+  return getComputeManager();
+
+  // This function is deprecated; use "getComputeManager" instead.
+}
 
 
 
@@ -1688,5 +1725,8 @@ inline int dd_edge::iterator::getLevel() const
 {
   return foundPathAtLevel;
 }
+
+} // namespace MEDDLY
+
 
 #endif

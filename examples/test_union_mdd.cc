@@ -33,6 +33,8 @@
 #include "meddly.h"
 #include "timer.h"
 
+using namespace MEDDLY;
+
 //#define TESTING_AUTO_VAR_GROWTH
 
 //#define TESTING_TEMP_DD_EDGES
@@ -46,7 +48,7 @@
 
 void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
 {
-  compute_manager* cm = MEDDLY_getComputeManager();
+  compute_manager* cm = getComputeManager();
   assert(compute_manager::SUCCESS ==
       cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mdd, indexSet));
 
@@ -137,7 +139,7 @@ int main(int argc, char *argv[])
   }
 
 #ifdef CACHE_SIZE
-  compute_manager* cm = MEDDLY_getComputeManager();
+  compute_manager* cm = getComputeManager();
   assert(cm != 0);
   bool chaining = true;
   unsigned cacheSize = CACHE_SIZE;
@@ -146,7 +148,7 @@ int main(int argc, char *argv[])
 #endif
 
   // Create a domain
-  domain *d = MEDDLY_createDomain();
+  domain *d = createDomain();
   assert(d != 0);
   assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVariables));
 
@@ -234,7 +236,7 @@ int main(int argc, char *argv[])
   printf("Elements in result: %.4e\n", initial_state.getCardinality());
   printf("Peak Nodes in MDD: %ld\n", states->getPeakNumNodes());
   printf("Nodes in compute table: %ld\n",
-      (MEDDLY_getComputeManager())->getNumCacheEntries());
+      (getComputeManager())->getNumCacheEntries());
 
 #ifdef BUILD_INDEX_SET
   // TEST
@@ -242,7 +244,7 @@ int main(int argc, char *argv[])
       forest::EVPLUS);
   assert(evmdd != 0);
   dd_edge evmdd_states(evmdd);
-  MEDDLY_getComputeManager()->apply(compute_manager::CONVERT_TO_INDEX_SET,
+  getComputeManager()->apply(compute_manager::CONVERT_TO_INDEX_SET,
       initial_state, evmdd_states);
   evmdd_states.show(stdout, 3);
 

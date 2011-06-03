@@ -46,6 +46,7 @@
 #define RECYCLED_LIST
 #define USE_CHAINED_HASH_TABLE
 
+namespace MEDDLY {
 
 class compute_cache {
   public:
@@ -643,6 +644,6 @@ int compute_cache::getFreeNode(int size)
   return newNode;
 }
 
-
+} // namespace MEDDLY
 
 #endif

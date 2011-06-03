@@ -25,9 +25,8 @@
 
 // #define DEBUG_ITER_BEGIN
 
-
 // Constructor.
-dd_edge::dd_edge(forest* p)
+MEDDLY::dd_edge::dd_edge(forest* p)
 : parent(p),
   node(0), value(0), level(0), index(-1),
   opPlus(0), opStar(0), opMinus(0), opDivide(0),
@@ -40,7 +39,7 @@ dd_edge::dd_edge(forest* p)
 
 
 // Destructor.  Will notify parent as appropriate.
-dd_edge::~dd_edge()
+MEDDLY::dd_edge::~dd_edge()
 {
   if (index != -1) {
     // still registered; unregister before discarding
@@ -52,7 +51,7 @@ dd_edge::~dd_edge()
 
 
 // Copy Constructor.
-dd_edge::dd_edge(const dd_edge& e)
+MEDDLY::dd_edge::dd_edge(const dd_edge& e)
 : parent(e.parent), node(e.node), value(e.value), level(e.level), index(-1),
   opPlus(e.opPlus), opStar(e.opStar),
   opMinus(e.opMinus), opDivide(e.opDivide),
@@ -67,7 +66,7 @@ dd_edge::dd_edge(const dd_edge& e)
 
 
 // Assignment operator.
-dd_edge& dd_edge::operator=(const dd_edge& e)
+MEDDLY::dd_edge& MEDDLY::dd_edge::operator=(const dd_edge& e)
 {
   if (this != &e) {
     smart_cast<expert_forest*>(parent)->unlinkNode(node);
@@ -98,13 +97,13 @@ dd_edge& dd_edge::operator=(const dd_edge& e)
 }
 
 
-void dd_edge::getEdgeValue(float& ev) const
+void MEDDLY::dd_edge::getEdgeValue(float& ev) const
 {
   ev = toFloat(value);
 }
 
 
-void dd_edge::set(int n, int v, int l)
+void MEDDLY::dd_edge::set(int n, int v, int l)
 {
   if (node != n) { updateNeeded = true; }
   smart_cast<expert_forest*>(parent)->unlinkNode(node);
@@ -114,7 +113,7 @@ void dd_edge::set(int n, int v, int l)
 }
 
 
-void dd_edge::set(int n, float v, int l)
+void MEDDLY::dd_edge::set(int n, float v, int l)
 {
   if (node != n) { updateNeeded = true; }
   smart_cast<expert_forest*>(parent)->unlinkNode(node);
@@ -124,7 +123,7 @@ void dd_edge::set(int n, float v, int l)
 }
 
 
-double dd_edge::getCardinality() const
+double MEDDLY::dd_edge::getCardinality() const
 {
 #if 0
   return smart_cast<expert_forest*>(parent)->getCardinality(node);
@@ -136,19 +135,19 @@ double dd_edge::getCardinality() const
 #endif
 }
 
-unsigned dd_edge::getNodeCount() const
+unsigned MEDDLY::dd_edge::getNodeCount() const
 {
   return smart_cast<expert_forest*>(parent)->getNodeCount(node);
 }
 
-unsigned dd_edge::getEdgeCount(bool countZeroes) const
+unsigned MEDDLY::dd_edge::getEdgeCount(bool countZeroes) const
 {
   return smart_cast<expert_forest*>(parent)->getEdgeCount(node, countZeroes);
 }
 
 //
 // Operator +=
-dd_edge& dd_edge::operator+=(const dd_edge& e)
+MEDDLY::dd_edge& MEDDLY::dd_edge::operator+=(const dd_edge& e)
 {
   if (opPlus == 0) {
     const int nOperands = 3;
@@ -176,7 +175,7 @@ dd_edge& dd_edge::operator+=(const dd_edge& e)
 
 
 // Operator *=
-dd_edge& dd_edge::operator*=(const dd_edge& e)
+MEDDLY::dd_edge& MEDDLY::dd_edge::operator*=(const dd_edge& e)
 {
   if (opStar == 0) {
     const int nOperands = 3;
@@ -204,7 +203,7 @@ dd_edge& dd_edge::operator*=(const dd_edge& e)
 
 
 // Operator -=
-dd_edge& dd_edge::operator-=(const dd_edge& e)
+MEDDLY::dd_edge& MEDDLY::dd_edge::operator-=(const dd_edge& e)
 {
   if (opMinus == 0) {
     const int nOperands = 3;
@@ -232,7 +231,7 @@ dd_edge& dd_edge::operator-=(const dd_edge& e)
 
 
 // Operator /=
-dd_edge& dd_edge::operator/=(const dd_edge& e)
+MEDDLY::dd_edge& MEDDLY::dd_edge::operator/=(const dd_edge& e)
 {
   if (opDivide == 0) {
     const int nOperands = 3;
@@ -256,7 +255,7 @@ dd_edge& dd_edge::operator/=(const dd_edge& e)
 
 
 // Display the edge information.
-void dd_edge::show(FILE* strm, int verbosity) const
+void MEDDLY::dd_edge::show(FILE* strm, int verbosity) const
 {
   expert_forest* eParent = smart_cast<expert_forest*>(parent);
   fprintf(strm, "(Forest Addr: %p, ", parent);
@@ -293,7 +292,7 @@ void dd_edge::show(FILE* strm, int verbosity) const
 }
 
 
-dd_edge::iterator dd_edge::begin()
+MEDDLY::dd_edge::iterator MEDDLY::dd_edge::begin()
 {
   if (updateNeeded) {
     updateIterators();
@@ -304,7 +303,7 @@ dd_edge::iterator dd_edge::begin()
 }
 
 
-dd_edge::iterator dd_edge::beginRow(const int* minterm)
+MEDDLY::dd_edge::iterator MEDDLY::dd_edge::beginRow(const int* minterm)
 {
   if (updateNeeded) {
     updateIterators();
@@ -318,7 +317,7 @@ dd_edge::iterator dd_edge::beginRow(const int* minterm)
 }
 
 
-dd_edge::iterator dd_edge::beginColumn(const int* minterm)
+MEDDLY::dd_edge::iterator MEDDLY::dd_edge::beginColumn(const int* minterm)
 {
   if (updateNeeded) {
     updateIterators();
@@ -329,7 +328,7 @@ dd_edge::iterator dd_edge::beginColumn(const int* minterm)
 }
 
 
-void dd_edge::updateIterators()
+void MEDDLY::dd_edge::updateIterators()
 {
   // update beginIterator
   if (beginIterator != 0) delete beginIterator;
@@ -338,14 +337,14 @@ void dd_edge::updateIterators()
 }
 
 
-dd_edge::iterator::iterator()
+MEDDLY::dd_edge::iterator::iterator()
 : e(0), size(0), element(0), nodes(0), pelement(0), pnodes(0), type(DEFAULT)
 {
   foundPathAtLevel = 0;
 }
 
 
-dd_edge::iterator::iterator(dd_edge* e, iter_type t, const int* minterm)
+MEDDLY::dd_edge::iterator::iterator(dd_edge* e, iter_type t, const int* minterm)
 : e(e), size(0), element(0), nodes(0), pelement(0), pnodes(0), type(t)
 {
   if (e == 0) return;
@@ -422,7 +421,7 @@ dd_edge::iterator::iterator(dd_edge* e, iter_type t, const int* minterm)
 }
 
 
-dd_edge::iterator::~iterator()
+MEDDLY::dd_edge::iterator::~iterator()
 {
   if (e != 0) {
     free(element);
@@ -433,7 +432,7 @@ dd_edge::iterator::~iterator()
 }
 
 
-dd_edge::iterator::iterator(const iterator& iter)
+MEDDLY::dd_edge::iterator::iterator(const iterator& iter)
 : e(iter.e), size(iter.size),
   element(0), nodes(0), pelement(0), pnodes(0), type(iter.type)
 {
@@ -455,7 +454,7 @@ dd_edge::iterator::iterator(const iterator& iter)
 }
 
 
-dd_edge::iterator& dd_edge::iterator::operator=(const iterator& iter)
+MEDDLY::dd_edge::iterator& MEDDLY::dd_edge::iterator::operator=(const iterator& iter)
 {
   if (this != &iter) {
     if (e != 0) {
@@ -493,7 +492,7 @@ dd_edge::iterator& dd_edge::iterator::operator=(const iterator& iter)
 
 
 // PRE: minterm[] is stored in pelement[]
-bool dd_edge::iterator::findNextRow(int height)
+bool MEDDLY::dd_edge::iterator::findNextRow(int height)
 {
   // See if you advance at a lower height
   // If yes, return true.
@@ -600,7 +599,7 @@ bool dd_edge::iterator::findNextRow(int height)
 
 
 // PRE: minterm[] is stored in element[]
-bool dd_edge::iterator::findNextColumn(int height)
+bool MEDDLY::dd_edge::iterator::findNextColumn(int height)
 {
   // See if you advance at a lower height
   // If yes, return true.
@@ -705,7 +704,7 @@ bool dd_edge::iterator::findNextColumn(int height)
 // Return true, if a row has been found starting at given level, and
 // the element and node vectors have been filled (at and below given level).
 // PRE: minterm[] have been copied into pelement[]
-bool dd_edge::iterator::findFirstRow(int height, int node)
+bool MEDDLY::dd_edge::iterator::findFirstRow(int height, int node)
 {
   DCASSERT(e != 0);
   DCASSERT(type == COLUMN);
@@ -787,7 +786,7 @@ bool dd_edge::iterator::findFirstRow(int height, int node)
 // Return true, if a column has been found starting at given level, and
 // the element and node vectors have been filled (at and below given level).
 // PRE: minterm[] have been copied into element[]
-bool dd_edge::iterator::findFirstColumn(int height, int node)
+bool MEDDLY::dd_edge::iterator::findFirstColumn(int height, int node)
 {
   DCASSERT(e != 0);
   DCASSERT(type == ROW);
@@ -869,7 +868,7 @@ bool dd_edge::iterator::findFirstColumn(int height, int node)
 }
 
 
-void dd_edge::iterator::incrNonRelation()
+void MEDDLY::dd_edge::iterator::incrNonRelation()
 {
   DCASSERT(e != 0);
   DCASSERT(e->node != 0);
@@ -1005,7 +1004,7 @@ void dd_edge::iterator::incrNonRelation()
 }
 
 
-void dd_edge::iterator::incrNonIdentRelation()
+void MEDDLY::dd_edge::iterator::incrNonIdentRelation()
 {
   DCASSERT(e != 0);
   DCASSERT(e->node != 0);
@@ -1194,7 +1193,7 @@ void dd_edge::iterator::incrNonIdentRelation()
 }
 
 
-void dd_edge::iterator::incrRelation()
+void MEDDLY::dd_edge::iterator::incrRelation()
 {
   DCASSERT(e != 0);
   DCASSERT(e->node != 0);
@@ -1405,7 +1404,7 @@ void dd_edge::iterator::incrRelation()
 }
 
 
-void dd_edge::iterator::operator++()
+void MEDDLY::dd_edge::iterator::operator++()
 {
   // find next
   // set element to next
@@ -1435,7 +1434,7 @@ void dd_edge::iterator::operator++()
 }
 
 
-void dd_edge::iterator::operator--()
+void MEDDLY::dd_edge::iterator::operator--()
 {
   // find prev
   // set element to prev
@@ -1453,7 +1452,7 @@ void dd_edge::iterator::operator--()
 }
 
 
-bool dd_edge::iterator::operator!=(const iterator& iter) const
+bool MEDDLY::dd_edge::iterator::operator!=(const iterator& iter) const
 {
 #if 0
   DCASSERT((e != iter.e) || (size == iter.size));
@@ -1481,7 +1480,7 @@ bool dd_edge::iterator::operator!=(const iterator& iter) const
 }
 
 
-bool dd_edge::iterator::operator==(const iterator& iter) const
+bool MEDDLY::dd_edge::iterator::operator==(const iterator& iter) const
 {
   DCASSERT((e != iter.e) || (size == iter.size));
 
@@ -1502,7 +1501,7 @@ bool dd_edge::iterator::operator==(const iterator& iter) const
 }
 
 
-void dd_edge::iterator::getValue(int& val) const
+void MEDDLY::dd_edge::iterator::getValue(int& val) const
 {
   if (e == 0 || nodes[0] == 0) return;
   if (e->parent->getEdgeLabeling() == forest::MULTI_TERMINAL)
@@ -1514,7 +1513,7 @@ void dd_edge::iterator::getValue(int& val) const
 }
 
 
-void dd_edge::iterator::getValue(float& val) const
+void MEDDLY::dd_edge::iterator::getValue(float& val) const
 {
   if (e == 0 || nodes[0] == 0) return;
   if (e->parent->getEdgeLabeling() == forest::MULTI_TERMINAL)
@@ -1526,7 +1525,7 @@ void dd_edge::iterator::getValue(float& val) const
 }
 
 
-const int* dd_edge::iterator::getAssignments() const
+const int* MEDDLY::dd_edge::iterator::getAssignments() const
 {
   return e == 0
           ? 0
@@ -1534,9 +1533,10 @@ const int* dd_edge::iterator::getAssignments() const
 }
 
 
-const int* dd_edge::iterator::getPrimedAssignments() const
+const int* MEDDLY::dd_edge::iterator::getPrimedAssignments() const
 {
   return e == 0
           ? 0
           : nodes[0] == 0? 0: e->parent->isForRelations()? pelement: 0;
 }
+

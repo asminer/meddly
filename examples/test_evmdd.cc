@@ -36,6 +36,8 @@
 #include "meddly_expert.h"
 #endif
 
+using namespace MEDDLY;
+
 // Timer class
 #include "timer.h"
 
@@ -55,6 +57,7 @@
 // verbose: 0: minimum, 2: maximum
 const int verbose = 0;
 
+
 #ifdef USE_EXPERT_INTERFACE
 
 // Given a forest and an op_code returns the corresponding op_info.
@@ -66,7 +69,7 @@ op_info* getOp(forest* f, compute_manager::op_code op)
   static const int nForests = 3;
   static forest* forests[nForests];
   static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+    static_cast<expert_compute_manager*>(getComputeManager());
   assert(ecm != 0);
   assert(f != 0);
 
@@ -87,7 +90,7 @@ op_info* getOp(forest* f, operation* op)
   static const int nForests = 3;
   static forest* forests[nForests];
   static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+    static_cast<expert_compute_manager*>(getComputeManager());
   assert(ecm != 0);
   assert(f != 0);
   assert(op != 0);
@@ -112,9 +115,9 @@ dd_edge test_evmdd(forest* evmdd, compute_manager::op_code opCode,
 
 #ifdef USE_EXPERT_INTERFACE
   static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+    static_cast<expert_compute_manager*>(getComputeManager());
 #else
-  static compute_manager* ecm = MEDDLY_getComputeManager();
+  static compute_manager* ecm = getComputeManager();
 #endif
   assert(ecm != 0);
 
@@ -284,7 +287,7 @@ int main(int argc, char *argv[])
   }
 
   // Create a domain
-  domain *d = MEDDLY_createDomain();
+  domain *d = createDomain();
   assert(d != 0);
   assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVariables));
 
@@ -351,7 +354,7 @@ int main(int argc, char *argv[])
 #if 0
     dd_edge result2 = result1;
     assert(compute_manager::SUCCESS ==
-        MEDDLY_getComputeManager()->apply(compute_manager::EQUAL,
+        getComputeManager()->apply(compute_manager::EQUAL,
           result, result1, result2));
     result2.show(stdout, 2);
 #endif
@@ -364,7 +367,7 @@ int main(int argc, char *argv[])
 
   printf("Peak Nodes in MDD: %ld\n", evmdd->getPeakNumNodes());
   printf("Entries in compute table: %ld\n",
-      (MEDDLY_getComputeManager())->getNumCacheEntries());
+      (getComputeManager())->getNumCacheEntries());
 
   if (verbose > 1) {
     printf("\n\nForest Info:\n");
@@ -441,7 +444,7 @@ int main(int argc, char *argv[])
   printf("MDD Cardinality: %1.6e\n", mddResult.getCardinality());
   printf("Peak Nodes in MDD: %ld\n", mdd->getPeakNumNodes());
   printf("Entries in compute table: %ld\n",
-      (MEDDLY_getComputeManager())->getNumCacheEntries());
+      (getComputeManager())->getNumCacheEntries());
 
   // Create a EV+MDD forest in this domain (to store index set)
   forest* evplusmdd = d->createForest(false, forest::INTEGER, forest::EVPLUS);
@@ -449,7 +452,7 @@ int main(int argc, char *argv[])
 
   // Convert MDD to Index Set EV+MDD and print the states
   dd_edge indexSet(evplusmdd);
-  compute_manager* cm = MEDDLY_getComputeManager();
+  compute_manager* cm = getComputeManager();
   assert(compute_manager::SUCCESS ==
       cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mddResult, indexSet));
 
@@ -476,7 +479,7 @@ int main(int argc, char *argv[])
   printf("Index Set Cardinality: %1.6e\n", indexSet.getCardinality());
   printf("Peak Nodes in Index Set: %ld\n", evplusmdd->getPeakNumNodes());
   printf("Entries in compute table: %ld\n",
-      (MEDDLY_getComputeManager())->getNumCacheEntries());
+      (getComputeManager())->getNumCacheEntries());
 
 #endif
 

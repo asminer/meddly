@@ -32,6 +32,8 @@
 
 // #define DEBUG_CARD
 
+namespace MEDDLY {
+
 // ******************************************************************
 // *                                                                *
 // *                      cardinality_op class                      *
@@ -947,4 +949,6 @@ operation* getCardinalityOperation(const op_param &ft, const op_param &rt)
         return 0;
   }
 }
+
+} // namespace MEDDLY
 

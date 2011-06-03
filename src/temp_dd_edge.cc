@@ -28,13 +28,13 @@
 #include "defines.h"
 
 
-temp_dd_edge::temp_dd_edge()
+MEDDLY::temp_dd_edge::temp_dd_edge()
 : levelHandle(0), forestHandle(0), iValue(0), rValue(0), size(0),
   downpointers(0), iEdgeValues(0), rEdgeValues(0)
 { }
 
 
-temp_dd_edge::~temp_dd_edge()
+MEDDLY::temp_dd_edge::~temp_dd_edge()
 {
   if (downpointers) {
     /*
@@ -49,7 +49,7 @@ temp_dd_edge::~temp_dd_edge()
 }
 
 
-bool temp_dd_edge::convertToDDEdge(dd_edge& result) const
+bool MEDDLY::temp_dd_edge::convertToDDEdge(dd_edge& result) const
 {
   // Pre-order traversal -- children first then parent.
   // i.e. depth-first.
@@ -78,7 +78,7 @@ bool temp_dd_edge::convertToDDEdge(dd_edge& result) const
 }
 
 
-bool temp_dd_edge::reduce(int& result) const
+bool MEDDLY::temp_dd_edge::reduce(int& result) const
 {
   // MDD
   // All temp nodes are full nodes.
@@ -117,7 +117,7 @@ bool temp_dd_edge::reduce(int& result) const
 }
 
 
-bool temp_dd_edge::reduce(std::map<temp_dd_edge*, int>& ct, int zero,
+bool MEDDLY::temp_dd_edge::reduce(std::map<temp_dd_edge*, int>& ct, int zero,
     int& result) const
 {
   DCASSERT(forestHandle->getEdgeLabeling() == forest::MULTI_TERMINAL);
@@ -202,7 +202,7 @@ bool temp_dd_edge::reduce(std::map<temp_dd_edge*, int>& ct, int zero,
 }
 
 
-forest::error temp_dd_edge::add(const int* vlist, const int* vplist)
+MEDDLY::forest::error MEDDLY::temp_dd_edge::add(const int* vlist, const int* vplist)
 {
   // Add element to this tree.
   // Nodes in the tree are not-reduced.

@@ -22,16 +22,20 @@
 #ifndef CROSS_H
 #define CROSS_H
 
-class operation;
-class op_param;
+namespace MEDDLY {
 
-/** Minimalist front-end interface.
-    Return the appropriate operation for 
-    the given forest and desired return type.
-      @param  ot  Operand type
-      @return The appropriate operation, or 0 on error.
-*/
-operation* getCrossOperation(const op_param &ot);
+  class operation;
+  class op_param;
+
+  /** Minimalist front-end interface.
+      Return the appropriate operation for 
+      the given forest and desired return type.
+        @param  ot  Operand type
+        @return The appropriate operation, or 0 on error.
+  */
+  operation* getCrossOperation(const op_param &ot);
+
+}
 
 #endif
 

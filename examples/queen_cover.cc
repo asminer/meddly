@@ -37,6 +37,8 @@
 
 #include "meddly.h"
 
+using namespace MEDDLY;
+
 int N;
 FILE* outfile;
 
@@ -101,7 +103,7 @@ forest* buildQueenForest()
   for (int i=0; i<N*N; i++) {
     vars[i] = 2;
   }
-  domain* d = MEDDLY_createDomain();
+  domain* d = createDomain();
   assert(d);
   assert(domain::SUCCESS == d->createVariablesBottomUp(vars, N*N));
   forest* f = d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL);
@@ -230,9 +232,9 @@ int usage(const char* who)
 int main(int argc, const char** argv)
 {
   if (!processArgs(argc, argv)) return usage(argv[0]);
-  CM = MEDDLY_getComputeManager();
+  CM = getComputeManager();
   assert(CM);
-  printf("Using %s\n", MEDDLY_getLibraryInfo(0));
+  printf("Using %s\n", getLibraryInfo(0));
 
   timer stopwatch;
   printf("\nDetermining queen covers for %dx%d chessboard.\n", N, N);

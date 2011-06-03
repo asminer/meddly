@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
     bounds[i] = variableBound;
 
   // Create a domain
-  domain *d = MEDDLY_createDomain();
+  domain *d = createDomain();
   assert(d != 0);
   assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVariables));
 
@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
   postImage.show(stdout, 2); 
 
   assert(compute_manager::SUCCESS ==
-      MEDDLY_getComputeManager()->apply(compute_manager::POST_IMAGE,
+      getComputeManager()->apply(compute_manager::POST_IMAGE,
         postImage, incrY1, postImage));
   // postImage *= expr;
   fprintf(stdout, "-----------------------------------------------------\n");
@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
   postImage.show(stdout, 2);
 
   assert(compute_manager::SUCCESS ==
-      MEDDLY_getComputeManager()->apply(compute_manager::PRE_IMAGE,
+      getComputeManager()->apply(compute_manager::PRE_IMAGE,
         postImage, incrY1, postImage));
   // postImage *= expr;
   fprintf(stdout, "-----------------------------------------------------\n");
@@ -323,7 +323,7 @@ dd_edge buildIncrVariable(forest* mtmxd, int level)
 
   // ---- Building y + 1 == y' ----
   assert(compute_manager::SUCCESS ==
-      MEDDLY_getComputeManager()->apply(compute_manager::EQUAL,
+      getComputeManager()->apply(compute_manager::EQUAL,
         yPrime, y, yPrime));
 
   // Make the rest of the transitions into "don't change"
@@ -411,7 +411,7 @@ dd_edge buildTransitionExpression(forest* mtmxd)
   // y1Prime.show(stdout, 2);
 
   assert(compute_manager::SUCCESS ==
-      MEDDLY_getComputeManager()->apply(compute_manager::EQUAL,
+      getComputeManager()->apply(compute_manager::EQUAL,
         y1Prime, y1, y1Prime));
 
   // y1Prime.show(stdout, 2);

@@ -23,6 +23,8 @@
 #include "../defines.h"
 #include "../meddly_expert.h"
 
+using namespace MEDDLY;
+
 // ---------------------- operation ------------------------
 
 operation::operation()
