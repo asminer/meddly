@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo Configuring for optimization
+./configure --prefix=$PWD CXXFLAGS=-O3 LDFLAGS=-L/opt/local/lib CPPFLAGS=-I/opt/local/include

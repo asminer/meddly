@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo Configuring with debug info
+./configure --prefix=$PWD CXXFLAGS="-ggdb -DDEVELOPMENT_CODE" LDFLAGS=-L/opt/local/lib CPPFLAGS=-I/opt/local/include
