@@ -5,7 +5,7 @@
 
 ## AC_PREREQ(2.60)
 AC_PREREQ(2.59)
-AC_INIT([meddly], [0.3], [junaid@cs.iastate.edu])
+AC_INIT([meddly], [0.4], [junaid@cs.iastate.edu])
 AM_INIT_AUTOMAKE
 AM_CONFIG_HEADER(config.h)
 AC_CONFIG_SRCDIR([src/meddly.h])
