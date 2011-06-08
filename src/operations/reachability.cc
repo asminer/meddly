@@ -22,14 +22,20 @@
 
 #include "reachability.h"
 
-//#define IGNORE_TERMS 0
+#include <set>
+
+//#define IGNORE_TERMS
 //#define IGNORE_INCOUNT 2
 //#define DEBUG_DFS
 
 //#define USE_GET_VECTOR_DOWN_POINTERS
 
 
-// ---------------------- MDD Traditional Reachability -------------------
+// **********************************************************************
+//
+//            Forward Reachability: Traditional Algorithm
+//
+// **********************************************************************
 
 
 mdd_reachability_bfs* mdd_reachability_bfs::getInstance()
@@ -131,8 +137,14 @@ int mdd_reachability_bfs::compute(op_info* owner, int mdd, int mxd)
 }
 
 
-// ---------------------- MDD Saturation-based Reachability -------------------
 
+
+
+// **********************************************************************
+//
+//            Forward Reachability: Saturation
+//
+// **********************************************************************
 
 mdd_reachability_dfs* mdd_reachability_dfs::getInstance()
 {
@@ -184,6 +196,9 @@ int mdd_reachability_dfs::compute(op_info* owner, int mdd, int mxd)
   // Split the next-state function: each level has its own next-state function
   // The nsf is stored into the vector splits
   splitMxd(mxd);
+  
+  // Clear the splitMxd() related compute table entries
+  clearSplitMxdComputeTableEntries();
 
 #ifdef DEBUG_DFS
   printf("Split Next-State Function:\n");
@@ -290,8 +305,29 @@ void mdd_reachability_dfs::initialize(op_info* o)
 }
 
 
+void mdd_reachability_dfs::clearSplitMxdComputeTableEntries()
+{
+  if (mxdIntersectionOp)
+    mxdIntersectionOp->cc->removeEntries(mxdIntersectionOp);
+  if (mxdDifferenceOp)
+    mxdDifferenceOp->cc->removeEntries(mxdDifferenceOp);
+}
+
+
 void mdd_reachability_dfs::clear()
 {
+  clearSplitMxdComputeTableEntries();
+
+  // Clear compute table for saturate()
+  // (not the same as the one used by recFire)
+  clearSaturateCT();
+
+  // Clear compute table for recFire()
+  owner->cc->removeEntries(owner);
+
+  // Clear mdd union compute table entries
+  if (mddUnion) mddUnionOp->cc->removeEntries(mddUnionOp);
+
   // clear pointer to dd nodes
   for (unsigned i = 0u; i < splits.size(); i++) xdf->unlinkNode(splits[i]);
 
@@ -320,6 +356,9 @@ void mdd_reachability_dfs::clear()
   mddUnion = 0;
   mxdIntersection = 0;
   mxdDifference = 0;
+
+  // Clear the memory allocated within getMatrix()'s static vectors.
+  getMatrix(0, 0, true);
 }
 
 
@@ -495,6 +534,13 @@ int mdd_reachability_dfs::saturate(int mdd)
   // terminal condition for recursion
   if (ddf->isTerminalNode(mdd)) return mdd;
 
+  // search compute table
+  int n = 0;
+  if (findSaturateResult(mdd, n)) {
+    ddf->linkNode(n);
+    return n;
+  }
+
   int k = ddf->getNodeLevel(mdd);      // level
   int sz = ddf->getLevelSize(k);       // size
 
@@ -502,26 +548,51 @@ int mdd_reachability_dfs::saturate(int mdd)
   printf("mdd: %d, level: %d, size: %d\n", mdd, k, sz);
 #endif
 
-  std::vector<int> node(sz, 0);
-  std::vector<int> mddDptrs;
-  ddf->getDownPtrs(mdd, mddDptrs);
-
-  std::vector<int>::iterator nodeIter = node.begin();
-  std::vector<int>::iterator mddIter = mddDptrs.begin();
-  for ( ; mddIter != mddDptrs.end(); ++nodeIter, ++mddIter)
-  {
-    if (*mddIter != 0) *nodeIter = saturate(*mddIter);
+#ifndef ALT_SATURATE_HELPER
+  std::vector<int> nDptrs(sz, 0);
+  assert(ddf->getDownPtrs(mdd, nDptrs));
+  for (std::vector<int>::iterator iter = nDptrs.begin();
+      iter != nDptrs.end(); ++iter) {
+    if (*iter) *iter = saturate(*iter);
   }
-  
+  saturateHelper(k, nDptrs);
+  n = ddf->reduceNode(ddf->createTempNode(k, nDptrs));
+#else
+  n = ddf->createTempNode(k, sz, true);
+  int * nDptrs = 0;
+  assert(ddf->getDownPtrs(n, nDptrs));
+  const int* mddDptrs = 0;
+  assert(ddf->getDownPtrs(mdd, mddDptrs));
+
+  if (ddf->isFullNode(mdd)) {
+    int mddSize = ddf->getFullNodeSize(mdd);
+    for (int i = 0; i < mddSize; ++i) {
+      if (mddDptrs[i]) nDptrs[i] = saturate(mddDptrs[i]);
+    }
+  }
+  else {
+    int mddNDptrs = ddf->getSparseNodeSize(mdd);
+    const int* mddIndexes = 0;
+    assert(ddf->getSparseNodeIndexes(mdd, mddIndexes));
+    for (int i = 0; i < mddNDptrs; ++i) {
+      DCASSERT(mddDptrs[i]);
+      nDptrs[mddIndexes[i]] = saturate(mddDptrs[i]);
+    }
+  }
+
   // call saturateHelper for n
 #ifdef DEBUG_DFS
   printf("Calling saturate: level %d\n", k);
 #endif
-  saturateHelper(k, node);
+
+  saturateHelper(n);
 
   // reduce and return
-  int n = ddf->createTempNode(k, node);
   n = ddf->reduceNode(n);
+#endif
+
+  // save in compute table
+  saveSaturateResult(mdd, n);
 
 #ifdef DEBUG_DFS
   ddf->showNodeGraph(stdout, n);
@@ -530,6 +601,14 @@ int mdd_reachability_dfs::saturate(int mdd)
   return n;
 }
 
+
+#ifndef ALT_SATURATE_HELPER
+
+// ----------------------------------------------------
+//
+//    Vector-based implementation -- works but slow
+//
+// ----------------------------------------------------
 
 void mdd_reachability_dfs::saturateHelper(int mddLevel, std::vector<int>& mdd)
 {
@@ -546,7 +625,7 @@ void mdd_reachability_dfs::saturateHelper(int mddLevel, std::vector<int>& mdd)
   int* curr = scratch1[mddLevel];
   int* next = scratch2[mddLevel];
   assert(unsigned(levelSize) == mdd.size());
-  for (int i = 0; i < levelSize; i++) next[i] = 1;
+  for (int i = 0; i < levelSize; i) next[i++] = 1;
 
   bool repeat = true;
   while (repeat)
@@ -809,26 +888,567 @@ int mdd_reachability_dfs::recFire(int mdd, int mxd)
 }
 
 
-int mdd_reachability_dfs::getMddUnion(int a, int b)
+#else
+
+// ----------------------------------------------------
+//
+//            getMxdAsVec() + sets for curr[]
+//
+// ----------------------------------------------------
+
+void mdd_reachability_dfs::saturateHelper(int mdd)
 {
-  return mddUnion->compute(mddUnionOp, a, b);
+  DCASSERT(!ddf->isReducedNode(mdd));
+  int mddLevel = ddf->getNodeLevel(mdd);
+  int levelSize = ddf->getLevelSize(mddLevel);
+  DCASSERT(levelSize == ddf->getFullNodeSize(mdd));
+
+  int mxd = splits[mddLevel];
+  if (mxd == 0) return;
+
+  DCASSERT(xdf->getNodeLevel(mxd) == mddLevel);
+
+  int** mxdVec = 0;
+  int mxdSize = 0;
+  assert(getMxdAsVec(mxd, mxdVec, mxdSize));
+
+  int* mddDptrs = 0;
+  assert(ddf->getDownPtrs(mdd, mddDptrs));
+  int mddSize = ddf->getFullNodeSize(mdd);
+
+  DCASSERT(mddSize == mxdSize);
+
+  // For each mdd[i] != 0 && mxd[i][j] != 0,
+  //    mdd[j] += recfire(mdd[i], mxd[i][j])
+
+  std::set<int> enabledIndexes;
+  std::set<int>::iterator iter;
+
+  for (int i = 0; i < mxdSize; enabledIndexes.insert(i++));
+
+  while (!enabledIndexes.empty()) {
+    iter = enabledIndexes.begin();
+    int i = *iter;
+    enabledIndexes.erase(iter);
+
+    const int* mddI = mddDptrs + i;
+    const int* mxdI = mxdVec[i];
+    if (*mddI == 0 || mxdI == 0) continue;
+
+    for (int j = 0; j < mxdSize; ++j) {
+
+      if (mxdI[j] == 0) continue;
+      if (mddDptrs[j] == -1) continue;
+
+      int rec = recFire(*mddI, mxdI[j]);
+
+      if (rec == 0) continue;
+      if (rec == mddDptrs[j]) { ddf->unlinkNode(rec); continue; }
+
+      bool updated = true;
+
+      if (0 == mddDptrs[j]) {
+        mddDptrs[j] = rec;
+      }
+      else if (rec == -1) {
+        ddf->unlinkNode(mddDptrs[j]);
+        mddDptrs[j] = -1;
+      }
+      else {
+        int acc = getMddUnion(mddDptrs[j], rec);
+        ddf->unlinkNode(rec);
+        if (acc != mddDptrs[j]) {
+          ddf->unlinkNode(mddDptrs[j]);
+          mddDptrs[j] = acc;
+        } else {
+          ddf->unlinkNode(acc);
+          updated = false;
+        }
+      }
+
+      if (updated) {
+        if (j == i) {
+          // Re-run inner for-loop.
+          j = -1;
+        } else {
+          enabledIndexes.insert(j);
+        }
+      }
+
+    } // For each i in enabledIndexes
+
+  } // For each mdd[i] and mxd[i]
+
 }
 
-int mdd_reachability_dfs::getMxdIntersection(int a, int b)
+
+void mdd_reachability_dfs::recFireExpandMdd(int mdd, int mxd, int& result)
 {
-  return mxdIntersection->compute(mxdIntersectionOp, a, b);
+  // for i = 0 to levelSize-1
+  //   result[i] = mdd[i] == 0? 0: recFire(mdd[i], mxd);
+  DCASSERT(ddf->isReducedNode(mdd));
+  DCASSERT(!ddf->isTerminalNode(mdd));
+  DCASSERT(result == 0);
+
+  int rLevel = ddf->getNodeLevel(mdd);
+  int rSize = ddf->getLevelSize(rLevel);
+  result = ddf->createTempNode(rLevel, rSize, true);
+
+  int* rDptrs = 0;
+  assert(ddf->getDownPtrs(result, rDptrs));
+
+  const int* mddDptrs = 0;
+  assert(ddf->getDownPtrs(mdd, mddDptrs));
+
+  if (ddf->isFullNode(mdd)) {
+    int mddSize = ddf->getFullNodeSize(mdd);
+    const int* mddStop = mddDptrs + mddSize;
+    for ( ; mddDptrs != mddStop; ++rDptrs, ++mddDptrs) {
+      if (*mddDptrs) *rDptrs = recFire(*mddDptrs, mxd);
+    }
+  }
+  else {
+    DCASSERT(ddf->isSparseNode(mdd));
+    int mddNDptrs = ddf->getSparseNodeSize(mdd);
+    const int* mddStop = mddDptrs + mddNDptrs; 
+    const int* mddIndexes = 0;
+    assert(ddf->getSparseNodeIndexes(mdd, mddIndexes));
+    for ( ; mddDptrs != mddStop; ++mddIndexes, ++mddDptrs) {
+      DCASSERT(*mddDptrs != 0);
+      rDptrs[*mddIndexes] = recFire(*mddDptrs, mxd);
+    }
+  }
 }
 
-int mdd_reachability_dfs::getMxdDifference(int a, int b)
+
+void mdd_reachability_dfs::recFireExpandMxd(int mdd, int mxd, int& result)
 {
-  return mxdDifference->compute(mxdDifferenceOp, a, b);
+  // for i = 0 to levelSize-1
+  //    if (mdd[i] != 0 && mxd[i] != 0)
+  //      for j = 0 to levelSize-1
+  //        result[j] += recFire(mdd[i], mxd[i][j])
+  //
+  // In this case, mdd[i] == mdd. Therefore,
+  //
+  // for i = 0 to levelSize-1
+  //    if (mxd[i] != 0)
+  //      for j = 0 to levelSize-1
+  //        result[j] += recFire(mdd, mxd[i][j])
+  //
+
+  DCASSERT(xdf->isReducedNode(mxd) && !xdf->isTerminalNode(mxd));
+  DCASSERT(xdf->getNodeLevel(mxd) > 0);
+  DCASSERT(result == 0);
+
+  int rLevel = xdf->getNodeLevel(mxd);
+  int rSize = ddf->getLevelSize(rLevel);
+  result = ddf->createTempNode(rLevel, rSize, true);
+
+  int* rDptrs = 0;
+  assert(ddf->getDownPtrs(result, rDptrs));
+
+  int** mxdVec = 0;
+  int mxdSize = 0;
+  assert(getMxdAsVec(mxd, mxdVec, mxdSize));
+  assert(mxdSize == rSize);
+
+  for (int i = 0; i < mxdSize; ++i) {
+    const int* mxdI = mxdVec[i];
+    if (mxdI == 0) continue;
+
+    for (int j = 0; j < mxdSize; ++j) {
+      if (mxdI[j] == 0) {}
+      else if (rDptrs[j] == -1) {}
+      else {
+        int rec = recFire(mdd, mxdI[j]);
+        if (rec == 0) {}
+        else if (rec == rDptrs[j]) { ddf->unlinkNode(rec); }
+        else if (0 == rDptrs[j]) { rDptrs[j] = rec; }
+        else if (rec == -1) { ddf->unlinkNode(rDptrs[j]); rDptrs[j] = -1; }
+        else {
+          int acc = getMddUnion(rDptrs[j], rec);
+          ddf->unlinkNode(rec);
+          ddf->unlinkNode(rDptrs[j]);
+          rDptrs[j] = acc;
+        }
+      }
+    }
+  }
+
 }
 
 
-#if 1
+void mdd_reachability_dfs::recFireExpand(int mdd, int mxd, int& result)
+{
+  // for i = 0 to levelSize-1
+  //    if (mdd[i] != 0 && mxd[i] != 0)
+  //      for j = 0 to levelSize-1
+  //        result[j] += recFire(mdd[i], mxd[i][j])
 
-// ---------------------- MDD Traditional Backward Reachability --------------
+  DCASSERT(ddf->isReducedNode(mdd) && !ddf->isTerminalNode(mdd));
+  DCASSERT(xdf->isReducedNode(mxd) && !xdf->isTerminalNode(mxd));
+  DCASSERT(ddf->getNodeLevel(mdd) == xdf->getNodeLevel(mxd));
+  DCASSERT(ddf->getNodeLevel(mdd) > 0);
+  DCASSERT(result == 0);
 
+  int rLevel = ddf->getNodeLevel(mdd);
+  int rSize = ddf->getLevelSize(rLevel);
+  result = ddf->createTempNode(rLevel, rSize, true);
+
+  int* rDptrs = 0;
+  const int* mddDptrs = 0;
+
+  assert(ddf->getDownPtrs(result, rDptrs));
+  assert(ddf->getDownPtrs(mdd, mddDptrs));
+
+  int** mxdVec = 0;
+  int mxdSize = 0;
+  assert(getMxdAsVec(mxd, mxdVec, mxdSize));
+  assert(mxdSize == rSize);
+
+  // recFireExpandMxdPrime(mdd, mxd, result[])
+  // At the primed level
+  // for i = 0 to mxdSize-1
+  //    if (mxd[i]) result[i] = UNION(result[i], recFire(mdd, mxd[i]));
+
+  if (ddf->isFullNode(mdd)) {
+    int mddSize = ddf->getFullNodeSize(mdd);
+    for (int i = 0; i < mddSize; ++i) {
+      const int mddI = mddDptrs[i];
+      const int* mxdI = mxdVec[i];
+      if (mddI == 0 || mxdI == 0) continue;
+
+      for (int j = 0; j < mxdSize; ++j) {
+        if (mxdI[j] == 0) {}
+        else if (rDptrs[j] == -1) {}
+        else {
+          int rec = recFire(mddI, mxdI[j]);
+          if (rec == 0) {}
+          else if (rec == rDptrs[j]) { ddf->unlinkNode(rec); }
+          else if (0 == rDptrs[j]) { rDptrs[j] = rec; }
+          else if (rec == -1) { ddf->unlinkNode(rDptrs[j]); rDptrs[j] = -1; }
+          else {
+            int acc = getMddUnion(rDptrs[j], rec);
+            ddf->unlinkNode(rec);
+            ddf->unlinkNode(rDptrs[j]);
+            rDptrs[j] = acc;
+          }
+        }
+      }
+    }
+  } else {
+    DCASSERT(ddf->isSparseNode(mdd));
+    int mddNDptrs = ddf->getSparseNodeSize(mdd);
+    const int* mddIndexes = 0;
+    assert(ddf->getSparseNodeIndexes(mdd, mddIndexes));
+
+    for (int i = 0; i < mddNDptrs; ++i) {
+      const int mddI = mddDptrs[i];
+      const int* mxdI = mxdVec[mddIndexes[i]];
+      if (mddI == 0 || mxdI == 0) continue;
+
+      for (int j = 0; j < mxdSize; ++j) {
+        if (mxdI[j] == 0) {}
+        else if (rDptrs[j] == -1) {}
+        else {
+          int rec = recFire(mddI, mxdI[j]);
+          if (rec == 0) {}
+          else if (rec == rDptrs[j]) { ddf->unlinkNode(rec); }
+          else if (0 == rDptrs[j]) { rDptrs[j] = rec; }
+          else if (rec == -1) { ddf->unlinkNode(rDptrs[j]); rDptrs[j] = -1; }
+          else {
+            int acc = getMddUnion(rDptrs[j], rec);
+            ddf->unlinkNode(rec);
+            ddf->unlinkNode(rDptrs[j]);
+            rDptrs[j] = acc;
+          }
+        }
+      }
+    }
+  }
+
+}
+
+
+int mdd_reachability_dfs::recFire(int mdd, int mxd)
+{
+  DCASSERT(ddf->isReducedNode(mdd));
+  DCASSERT(xdf->isReducedNode(mxd));
+
+  if (mxd == -1) {
+    ddf->linkNode(mdd);
+    return mdd;
+  }
+  if (mxd == 0 || mdd == 0) return 0;
+
+  DCASSERT(mdd == -1 || ddf->getNodeLevel(mdd) > 0);
+  DCASSERT(xdf->getNodeLevel(mxd) > 0);
+
+  int result = 0;
+  if (findResult(owner, mdd, mxd, result)) {
+    return result;
+  }
+
+  int mxdLevel = xdf->getNodeLevel(mxd);
+  int mddLevel = ddf->getNodeLevel(mdd);
+  result = 0;
+  if (mxdLevel < mddLevel) {
+    recFireExpandMdd(mdd, mxd, result);
+  } else if (mddLevel < mxdLevel) {
+    recFireExpandMxd(mdd, mxd, result);
+  } else {
+    DCASSERT(mxdLevel == mddLevel);
+    recFireExpand(mdd, mxd, result);
+  }
+
+  // If any result[i] != 0, call saturateHelper()
+  int* rDptrs = 0;
+  assert(ddf->getDownPtrs(result, rDptrs));
+  int* rStop = rDptrs + ddf->getFullNodeSize(result);
+  for ( ; rDptrs != rStop && *rDptrs == 0; ++rDptrs);
+
+  if (rDptrs == rStop) {
+    // All result[i] == 0. This nodes will reduce to 0.
+    // Instead of calling reduceNode(), unlink it and set result to 0.
+    ddf->unlinkNode(result);
+    result = 0;
+  } else {
+    // Some result[i] != 0.
+    // Saturate the node, and then reduce it.
+    saturateHelper(result);
+    result = ddf->reduceNode(result);
+  }
+
+  // Save result and return it.
+  saveResult(owner, mdd, mxd, result);
+  return result;
+}
+
+
+int** mdd_reachability_dfs::getMatrix(unsigned nodeLevel,
+    unsigned size, bool clear)
+{
+  // Enlarge static arrays.
+  static std::vector< int** > temp;
+  static std::vector< int > sizes;
+  static std::vector< int** > matrices;
+
+  if (clear) {
+    for (unsigned i = 0; i < temp.size(); i++) {
+      if (temp[i]) {
+        for (unsigned j = 0; j < sizes[i]; j++) {
+          free(temp[i][j]);
+        }
+        free(temp[i]);
+        temp[i] = 0;
+        sizes[i] = 0;
+        free(matrices[i]);
+        matrices[i] = 0;
+      }
+    }
+    return 0;
+  }
+
+  // Resize temp and sizes
+  if (temp.size() <= nodeLevel) {
+    temp.resize(nodeLevel + 1, 0);
+    sizes.resize(nodeLevel + 1, 0);
+    matrices.resize(nodeLevel + 1, 0);
+  }
+
+  // Resize the matrix at temp[nodeLevel]
+  if (sizes[nodeLevel] < size) {
+
+    // Update temp
+    temp[nodeLevel] =
+      (int**) realloc(temp[nodeLevel], size * sizeof(int*));
+    assert(temp[nodeLevel] != 0);
+    memset(temp[nodeLevel] + sizes[nodeLevel], 0,
+        (size - sizes[nodeLevel]) * sizeof(int*));
+
+    for (int i = 0; i < size; i++) {
+      temp[nodeLevel][i] =
+        (int*) realloc(temp[nodeLevel][i], size * sizeof(int));
+      assert(temp[nodeLevel][i] != 0);
+    }
+
+    // Update sizes
+    sizes[nodeLevel] = size;
+
+    // Update matrices
+    matrices[nodeLevel] = 
+      (int**) realloc(matrices[nodeLevel], size * sizeof(int*));
+    assert(matrices[nodeLevel] != 0);
+  }
+
+  // Clear the matrix at temp[nodeLevel]
+  for (int i = 0; i < size; i++) {
+    memset(temp[nodeLevel][i], 0, size * sizeof(int));
+  }
+  memcpy(matrices[nodeLevel], temp[nodeLevel], size * sizeof(int*));
+
+  return matrices[nodeLevel];
+}
+
+// Returns an mxd as array of int[]
+// If mxd[i] == 0, vec[i] = 0
+// Otherwise, (vec[i])[j] = mxd[i][j]
+// size is sizeof(int[])
+bool mdd_reachability_dfs::getMxdAsVec(int mxd, int**& vec, int& size)
+{
+  assert(vec == 0);
+  if (xdf->isTerminalNode(mxd)) return false;
+
+  DCASSERT(xdf->getNodeLevel(mxd) > 0);
+
+  // Build the arrays
+  size = xdf->getLevelSize(xdf->getNodeLevel(mxd));
+  vec = getMatrix(xdf->getNodeLevel(mxd), size, false);
+
+  // Build the mxd
+  const int* mxdDptrs = 0;
+  assert(xdf->getDownPtrs(mxd, mxdDptrs));
+
+  if (xdf->isFullNode(mxd)) {
+
+    int mxdSize = xdf->getFullNodeSize(mxd);
+    memset(vec + mxdSize, 0, (size - mxdSize) * sizeof(int*));
+
+    for (int i = 0; i < mxdSize; ++i) {
+      int mxdI = mxdDptrs[i];
+
+      if (mxdI == 0) {
+        vec[i] = 0;
+        continue;
+      }
+
+      // Build mxd[i]
+      int* currVec = vec[i];
+      const int* mxdIDptrs = 0;
+      assert(xdf->getDownPtrs(mxdI, mxdIDptrs));
+
+      if (xdf->isFullNode(mxdI)) {
+        int mxdISize = xdf->getFullNodeSize(mxdI);
+        memcpy(currVec, mxdIDptrs, mxdISize * sizeof(int));
+      } else {
+        DCASSERT(xdf->isSparseNode(mxdI));
+        int mxdINDptrs = xdf->getSparseNodeSize(mxdI);
+        const int* mxdIIndexes = 0;
+        assert(xdf->getSparseNodeIndexes(mxdI, mxdIIndexes));
+        for (int j = 0 ; j < mxdINDptrs; ++j) {
+          currVec[mxdIIndexes[j]] = mxdIDptrs[j];
+        }
+
+      } // End Build mxd[i]
+    } // End for each mxd[i]
+
+  } else {
+
+    DCASSERT(xdf->isSparseNode(mxd));
+    int mxdNDptrs = xdf->getSparseNodeSize(mxd);
+    const int* mxdIndexes = 0;
+    assert(xdf->getSparseNodeIndexes(mxd, mxdIndexes));
+
+    int mxdSize = mxdIndexes[mxdNDptrs - 1] + 1;
+    memset(vec + mxdSize, 0, (size - mxdSize) * sizeof(int*));
+
+    int expectedIndex = 0;
+    for (int i = 0; i < mxdNDptrs; ++i) {
+      DCASSERT(mxdDptrs[i] != 0);
+
+      if (mxdIndexes[i] > expectedIndex) {
+        memset(vec + expectedIndex, 0,
+            (mxdIndexes[i] - expectedIndex) * sizeof(int*));
+        expectedIndex = mxdIndexes[i] + 1;
+      }
+
+      // Build mxd[i]
+      int* currVec = vec[mxdIndexes[i]];
+      int mxdI = mxdDptrs[i];
+      const int* mxdIDptrs = 0;
+      assert(xdf->getDownPtrs(mxdI, mxdIDptrs));
+
+      if (xdf->isFullNode(mxdI)) {
+        int mxdISize = xdf->getFullNodeSize(mxdI);
+        memcpy(currVec, mxdIDptrs, mxdISize * sizeof(int));
+      } else {
+        DCASSERT(xdf->isSparseNode(mxdI));
+        int mxdINDptrs = xdf->getSparseNodeSize(mxdI);
+        const int* mxdIIndexes = 0;
+        assert(xdf->getSparseNodeIndexes(mxdI, mxdIIndexes));
+        for (int j = 0 ; j < mxdINDptrs; ++j) {
+          currVec[mxdIIndexes[j]] = mxdIDptrs[j];
+        }
+
+      } // End Build mxd[i]
+    } // End for each mxd[i]
+
+  }
+
+  return true;
+}
+
+#endif
+
+
+bool
+mdd_reachability_dfs::
+findResult(op_info* owner, int a, int b, int& c)
+{
+#ifndef USE_BINARY_COMPUTE_CACHE
+  static int key[2];
+
+  // create cache entry
+  key[0] = a; key[1] = b;
+
+  const int* cacheEntry = owner->cc->find(owner, const_cast<const int*>(key));
+
+  if (cacheEntry == 0) return false;
+  c = cacheEntry[2];
+  getExpertForest(owner, 2)->linkNode(c);
+  return true;
+
+#else
+
+  if (!owner->cc->find(owner, a, b, c)) return false;
+  getExpertForest(owner, 2)->linkNode(c);
+  return true;
+
+#endif
+}
+
+
+void
+mdd_reachability_dfs::
+saveResult(op_info* owner, int a, int b, int c)
+{
+  // a and c belong to mdd, b belongs to mxd.
+
+#ifndef USE_BINARY_COMPUTE_CACHE
+  static int cacheEntry[3];
+
+  // create cache entry
+  cacheEntry[0] = a; cacheEntry[1] = b; cacheEntry[2] = c;
+
+  getExpertForest(owner, 0)->cacheNode(a);
+  getExpertForest(owner, 1)->cacheNode(b);
+  getExpertForest(owner, 2)->cacheNode(c);
+
+  owner->cc->add(owner, const_cast<const int*>(cacheEntry));
+
+#else
+  owner->cc->add(owner, a, b, c);
+#endif
+}
+
+
+
+
+// **********************************************************************
+//
+//            Backward Reachability: Traditional Algorithm
+//
+// **********************************************************************
 
 mdd_backward_reachability_bfs* mdd_backward_reachability_bfs::getInstance()
 {
@@ -927,12 +1547,16 @@ int mdd_backward_reachability_bfs::compute(op_info* owner, int mdd, int mxd)
   return result;
 }
 
-#endif
 
 
-// -----------------------------------------------------------------------
-// Reverse Reachability using Saturation
-// -----------------------------------------------------------------------
+
+
+// **********************************************************************
+//
+//            Backward Reachability: Saturation
+//
+// **********************************************************************
+
 
 mdd_backward_reachability_dfs* mdd_backward_reachability_dfs::getInstance()
 {
@@ -940,7 +1564,6 @@ mdd_backward_reachability_dfs* mdd_backward_reachability_dfs::getInstance()
   return &instance;
 }
 
-#if 1
 
 void mdd_backward_reachability_dfs::reverseSaturateHelper(int mddLevel,
     std::vector<int>& mdd)
@@ -1182,109 +1805,3 @@ int mdd_backward_reachability_dfs::reverseRecFire(int mdd, int mxd)
   return result;
 }
 
-#endif
-
-
-#if 0
-
-// ---------------------- MTMDD Saturation-based Reachability -----------------
-
-
-mtmdd_reachability_dfs* mtmdd_reachability_dfs::getInstance()
-{
-  static mtmdd_reachability_dfs instance;
-  return &instance;
-}
-
-
-mtmdd_reachability_dfs::mtmdd_reachability_dfs()
-{ }
-
-
-mtmdd_reachability_dfs::~mtmdd_reachability_dfs() {}
-
-
-int mtmdd_reachability_dfs::compute(op_info* owner, int mtmdd, int mtmxd)
-{
-  DCASSERT(owner->nParams == 3 && owner->p[0] == owner->p[2]);
-
-  // Initialize class members and helper operations
-  initialize(owner);
-
-  // Depth-first reachability analysis (Saturation)
-
-#ifdef DEBUG_DFS
-  printf("Consolidated Next-State Function:\n");
-  xdf->showNodeGraph(stdout, mtmxd);
-  printf("\n");
-
-  printf("Initial State:\n");
-  ddf->showNodeGraph(stdout, mtmdd);
-  printf("\n");
-#endif
-
-#if 1
-  expert_forest* mxdNm = getExpertForest(owner, 1);
-  dd_edge nsf(mxdNm);
-  mxdNm->linkNode(mxd);
-  nsf.set(mxd, 0, mxdNm->getNodeLevel(mxd));
-  dd_edge reachableStates(mddNm);
-  mddNm->linkNode(mdd);
-  reachableStates.set(mdd, 0, mddNm->getNodeLevel(mdd));
-  dd_edge prevReachableStates(mddNm);
-
-  while(prevReachableStates != reachableStates)
-  {
-    prevReachableStates = reachableStates;
-    // printf("\nPre-Image (mdd:%d, mxd:%d): ",
-    //    reachableStates.getNode(), nsf.getNode());
-    dd_edge preImage(mddNm);
-    ecm->apply(preImageOp, reachableStates, nsf, preImage);
-    // printf("%d\n", preImage.getNode());
-    // preImage.show(stdout, 2);
-    // printf("\nUnion (mdd:%d, mdd:%d): ",
-    //    reachableStates.getNode(), preImage.getNode());
-    ecm->apply(unionOp, reachableStates, preImage, reachableStates);
-    // printf("%d\n", reachableStates.getNode());
-  }
-
-  int result = reachableStates.getNode();
-  mddNm->linkNode(result);
-#else
-
-  mdd_union* unionOpPtr = smart_cast<mdd_union*>(unionOp->op);
-  DCASSERT(unionOpPtr != 0);
-  mdd_post_image* preImageOpPtr =
-    smart_cast<mdd_post_image*>(preImageOp->op);
-  DCASSERT(preImageOpPtr != 0);
-
-  int nsf = mxd;
-  int reachableStates = mdd;
-  int prevReachableStates = 0;
-  int preImage = mdd;
-
-  mddNm->linkNode(reachableStates);
-  mddNm->linkNode(preImage);
-
-  do {
-    int prevPreImage = preImage;
-    preImage = preImageOpPtr->compute(preImageOp, preImage, nsf);
-    mddNm->unlinkNode(prevPreImage);
-
-    prevReachableStates = reachableStates;
-    reachableStates = unionOpPtr->compute(unionOp, reachableStates, preImage);
-    mddNm->unlinkNode(prevReachableStates);
-  } while (reachableStates != prevReachableStates);
-
-  mddNm->unlinkNode(preImage);
-
-  int result = reachableStates;
-  // no need for linkNode(reachableStates) because that has already been
-  // called once.
-
-#endif
-
-  return result;
-}
-
-#endif

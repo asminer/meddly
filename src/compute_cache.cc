@@ -205,6 +205,40 @@ void compute_cache::removeStales(op_info* owner)
 }
 
 
+void compute_cache::removeEntries(op_info* owner)
+{
+  static bool removingEntries = false;
+  if (!removingEntries) {
+    DCASSERT(ht != 0 || fsht != 0);
+    if (owner) {
+      // for each entry belonging to owner, call hash-table's remove()
+      // which will call uncacheNode(), which in-turn will call discardEntry()).
+      if (ht) {
+        cache_entry* end = nodes + lastNode + 1;
+        for (cache_entry* current = nodes; current != end; ++current)
+        {
+          DCASSERT(!removingEntries);
+          if (current->owner == owner) ht->remove(current - nodes);
+        }
+      }
+      if (fsht) {
+        cache_entry* end = nodes + lastNode + 1;
+        for (cache_entry* current = nodes; current != end; ++current)
+        {
+          DCASSERT(!removingEntries);
+          if (current->owner == owner) fsht->remove(current - nodes);
+        }
+      }
+    }
+    else {
+      removingEntries = true;
+      clear();
+      removingEntries = false;
+    }
+  }
+}
+
+
 void compute_cache::clear()
 {
   DCASSERT(ht != 0 || fsht != 0);
@@ -217,3 +251,165 @@ int compute_cache::getNumEntries() const
   DCASSERT(ht != 0 || fsht != 0);
   return (ht)? ht->getEntriesCount(): fsht->getEntriesCount();
 }
+
+
+
+// ****************************************************************************
+//
+//                          Binary Compute Cache
+//
+// ****************************************************************************
+
+
+binary_compute_cache::binary_compute_cache()
+: hits(0), pings(0), adds(0), inserts(0), op(0), f0(0), f1(0), f2(0),
+  checkForStales(true)
+{
+  compute_cache::clear();
+}
+
+
+binary_compute_cache::binary_compute_cache(const operation* op,
+  const op_param* plist, int n)
+: hits(0), pings(0), adds(0), inserts(0)
+{
+  assert(n == 3);
+  for (int i = 0; i < 3; ++i) assert(plist[i].isForest());
+  this->op = op;
+  f0 = const_cast<expert_forest*>(plist[0].readForest());
+  f1 = const_cast<expert_forest*>(plist[1].readForest());
+  f2 = const_cast<expert_forest*>(plist[2].readForest());
+
+  // Set the checkForStales flag based on f2's node deletion scheme.
+  // Ignoring f0 and f1 since the result belongs to f2, and the result
+  // is what will be accessed by the compute table user.
+  checkForStales =
+    f2->getNodeDeletion() == forest::PESSIMISTIC_DELETION;
+  
+  compute_cache::clear();
+}
+
+
+void binary_compute_cache::set(const operation* op,
+  expert_forest* f0, expert_forest* f1, expert_forest* f2)
+{
+  // op is allowed to be null.
+  assert(f0 != 0 && f1 != 0 && f2 != 0);
+  clear();
+  hits = pings = adds = inserts = 0;
+  this->op = op;
+  this->f0 = f0;
+  this->f1 = f1;
+  this->f2 = f2;
+
+  // See constructor for the logic used for setting checkForStales.
+  checkForStales =
+    f2->getNodeDeletion() == forest::PESSIMISTIC_DELETION;
+}
+
+
+binary_compute_cache::~binary_compute_cache()
+{
+  clear();
+}
+
+
+bool binary_compute_cache::setPolicy(bool chaining, unsigned maxSize)
+{ 
+  clear();
+  return true;
+}
+
+
+void binary_compute_cache::add(op_info* owner, const int* entry)
+{
+  assert(false);
+  add(owner, entry[0], entry[1], entry[2]);
+}
+
+
+const int* binary_compute_cache::find(op_info* owner, const int* entryKey) {
+  assert(false);
+  static int result[3];
+  result[0] = entryKey[0];
+  result[1] = entryKey[1];
+  return find(owner, result[0], result[1], result[2])? result: 0;
+}
+
+
+const char* binary_compute_cache::getOpName() const
+{
+  return op? op->getName(): "Unnamed Operation";
+}
+
+
+void binary_compute_cache::removeStales(op_info* owner)
+{
+  adds = 0;
+  if (ct.empty()) return;
+  if (owner) { assert(owner->cc == this); }
+  int staleCount = 0;
+  int count = 0;
+  std::map< key_type, ans_type >::iterator curr = ct.begin();
+  std::map< key_type, ans_type >::iterator end = ct.end();
+  while (curr != end) {
+    if (f0->isStale((curr->first).a) ||
+        f1->isStale((curr->first).b) ||
+        f2->isStale(curr->second)) {
+      f0->uncacheNode((curr->first).a);
+      f1->uncacheNode((curr->first).b);
+      f2->uncacheNode(curr->second);
+      ct.erase(curr++);
+      ++staleCount;
+    } else {
+      ++curr;
+    }
+    ++count;
+  }
+  fprintf(stderr, "Removed %d stale entries out of %d entries in %s\n",
+      staleCount, count, getOpName());
+}
+
+
+void binary_compute_cache::clear()
+{
+  adds = 0;
+  if (ct.empty()) return;
+  fprintf(stderr, "Removing all entries in %s\n", getOpName());
+  std::map< key_type, ans_type >::iterator curr = ct.begin();
+  std::map< key_type, ans_type >::iterator end = ct.end();
+  while (curr != end) {
+    f0->uncacheNode((curr->first).a);
+    f1->uncacheNode((curr->first).b);
+    f2->uncacheNode(curr->second);
+    ct.erase(curr++);
+  }
+  DCASSERT(ct.empty());
+}
+
+
+void binary_compute_cache::removeEntries(op_info* owner)
+{
+  if (owner) { assert(owner->cc == this); }
+  clear();
+}
+
+
+// for debugging
+void binary_compute_cache::show(FILE *s, bool verbose) const
+{
+  fprintf(s, "Compute table for %s\n", getOpName());
+  fprintf(s, "Inserts: %d, Pings: %d, Hits: %d, Adds (max %d): %d\n",
+      inserts, pings, hits, binary_compute_cache::maxAdds, adds);
+  if (ct.empty()) return;
+  if (verbose) {
+    std::map< key_type, ans_type >::const_iterator curr = ct.begin();
+    std::map< key_type, ans_type >::const_iterator end = ct.end();
+    while (curr != end) {
+      fprintf(s, "[%d, %d]: %d\n",
+          (curr->first).a, (curr->first).b, curr->second);
+      ++curr;
+    }
+  }
+}
+

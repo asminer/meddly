@@ -41,6 +41,7 @@
 #include "hash.h"
 #include "fixed_size_hash.h"
 #include "chained_hash.h"
+#include <map>
 
 // const int maxEntries = 262144 * 2;
 #define RECYCLED_LIST
@@ -59,7 +60,7 @@ class compute_cache {
     /** Destructor. Will discard all cache entries rendering all pointers
         to data within the cache invalid.
     */
-    ~compute_cache();
+    virtual ~compute_cache();
 
     /** Sets the policy for the hash table used by the cache.
         @param  chaining
@@ -68,7 +69,7 @@ class compute_cache {
         @param  maxSize the maximum size of the hash table.
         @return         true, if the operation completed successfully.
     */
-    bool setPolicy(bool chaining, unsigned maxSize);
+    virtual bool setPolicy(bool chaining, unsigned maxSize);
 
     /** Add an entry to the compute cache. Note that this cache allows for
         duplicate entries for the same key. The user may use find() before
@@ -78,9 +79,9 @@ class compute_cache {
         @param  entry integer array of size owner->op->getCacheEntryLength(),
                       containing the operands and the result to be stored
     */    
-    void add(op_info* owner, const int* entry);
+    virtual void add(op_info* owner, const int* entry);
     // void add(op_info* owner, int a, int b);
-    void add(op_info* owner, int a, int b, int c);
+    virtual void add(op_info* owner, int a, int b, int c);
 
     /** Find an entry in the compute cache based on the key provided.
         If more than an entry with the same key exists, this will return
@@ -90,9 +91,9 @@ class compute_cache {
                       containing the key to the cache entry to look for
         @return       integer array of size owner->op->getCacheEntryLength()
     */
-    const int* find(op_info* owner, const int* entryKey);
+    virtual const int* find(op_info* owner, const int* entryKey);
     // int find(op_info* owner, int a);
-    bool find(op_info* owner, int a, int b, int& c);
+    virtual bool find(op_info* owner, int a, int b, int& c);
 
     /** Remove stale entries.
         Scans the cache for entries that are no longer valid (i.e. they are
@@ -104,16 +105,32 @@ class compute_cache {
                       to be removed from the cache. If owner is null,
                       all the stale entries in the cache are removed.
     */
-    void removeStales(op_info* op = 0);
+    virtual void removeStales(op_info* op = 0);
+
+    /** Remove operation entries.
+
+        Scans the cache for entries that belong to the specified
+        operation and removes them.
+        
+        This can be a time-consuming process (proportional to
+        the number of cached entries).
+
+        If owner is non-null, all entries in the compute table are removed.
+
+        @param  owner op_info of the operation whose entries are
+                      to be removed from the cache. If owner is null,
+                      all the entries in the cache are removed.
+    */
+    virtual void removeEntries(op_info* op = 0);
 
     /** Removes all cached entries.
     */
-    void clear();
+    virtual void clear();
 
     /** Get the number of entries in the cache.
         @return     The number of entries in the cache.
     */
-    int getNumEntries() const;
+    virtual int getNumEntries() const;
 
     // ******************************************************************
     // *                 end of expert-user interface                   *
@@ -125,30 +142,30 @@ class compute_cache {
     // ******************************************************************
 
     // which integer handle to use for NULL.
-    int getNull() const;
+    virtual int getNull() const;
 
     // next node in this chain 
-    int getNext(int h) const;
+    virtual int getNext(int h) const;
 
     // set the "next node" field for h 
-    void setNext(int h, int n);
+    virtual void setNext(int h, int n);
 
     // compute hash value
-    unsigned hash(int h, unsigned n) const;
+    virtual unsigned hash(int h, unsigned n) const;
 
     // is key(h1) == key(h2)?
-    bool equals(int h1, int h2) const;
+    virtual bool equals(int h1, int h2) const;
 
     // is h a stale (invalid/unwanted) node
-    bool isStale(int h) const;
+    virtual bool isStale(int h) const;
 
     // node h has been removed from the cache, perform clean up of node
     // (decrement cache count, release node, etc.)
-    void uncacheNode(int h);
+    virtual void uncacheNode(int h);
 
     // for debugging
-    void show(FILE* s, int h) const;
-    void show(FILE *s, bool verbose = false) const;
+    virtual void show(FILE* s, int h) const;
+    virtual void show(FILE *s, bool verbose = false) const;
 
   private:
 
@@ -230,6 +247,102 @@ class compute_cache {
 
 
 
+// **********************************************************************
+//
+//  Binary Compute Cache:
+//  
+//  This class is meant to store the results of operations that follow
+//  the form:
+//  operator(operandA, operandB) = operandC
+//
+//  where,
+//  operandA belongs to forest0,
+//  operandB belongs to forest1, and
+//  operandC belongs to forest2.
+//
+//  There are no restrictions on the types of forests.
+//  Also, forest0, forest1 and forest2 may or may not represent the
+//  same forest.
+//
+//  Deprecated methods:
+//  (1) bool setPolicy(bool, unsigned)
+//  (2) void add(op_info*, const int*)
+//  (3) const int* find(op_info*, const int*)
+//
+// **********************************************************************
+class binary_compute_cache : public compute_cache {
+
+  public:
+
+    // Default Constructor: to be used with set().
+    // Note that set() is not an inherited method.
+    binary_compute_cache();
+    virtual void set(const operation* op, expert_forest* f0,
+        expert_forest* f1, expert_forest* f2);
+
+    // Constructor
+    binary_compute_cache(const operation* op, const op_param* plist, int n);
+
+    // Destructor
+    virtual ~binary_compute_cache();
+
+    virtual const char* getOpName() const;
+    virtual int getNumEntries() const;
+
+    virtual void add(op_info* owner, int a, int b, int c);
+    virtual bool find(op_info* owner, int a, int b, int& c);
+
+    virtual void clear();
+    virtual void removeStales(op_info* owner = 0);
+    virtual void removeEntries(op_info* owner = 0);
+
+    virtual void show(FILE *s, bool verbose = false) const;
+
+    // Deprecated Methods
+    virtual bool setPolicy(bool chaining, unsigned maxSize);
+    virtual void add(op_info* owner, const int* entry);
+    virtual const int* find(op_info* owner, const int* entryKey);
+
+  private:
+
+    class key {
+      public:
+        key() : a(0), b(0) {}
+        key(int A, int B) : a(A), b(B) {}
+        key(const key& k) : a(k.a), b(k.b) {}
+        key& operator=(const key& k) {
+          if (this != &k) { a = k.a; b = k.b; }
+          return *this;
+        }
+        void set(int A, int B) { a = A; b = B; }
+        bool operator<(const key& k) const {
+          if (a < k.a) return true;
+          if (a > k.a) return false;
+          return (b < k.b);
+        }
+
+        int a;
+        int b;
+    };
+
+    typedef key key_type;
+    typedef int ans_type;
+
+    std::map< key_type, ans_type > ct;
+
+    unsigned hits;
+    unsigned pings;
+    unsigned adds;
+    unsigned inserts;
+    static const unsigned maxAdds = 1000000;
+    static const unsigned maxStaleCount = maxAdds/10;
+
+    const operation* op;
+    expert_forest* f0;
+    expert_forest* f1;
+    expert_forest* f2;
+    bool checkForStales;
+};
 
 
 
@@ -251,12 +364,13 @@ class compute_cache {
 
 
 
-//------------------------Implementation---------------------------------
 
-// ******************************************************************
-// *                     expert-user interface                      *
-// ******************************************************************
 
+// **********************************************************************
+//
+//                    Inlined methods for compute_cache
+//
+// **********************************************************************
 
 inline
 void compute_cache::add(op_info* owner, const int* entry)
@@ -270,7 +384,6 @@ void compute_cache::add(op_info* owner, const int* entry)
   // insert node into hash table
   if (ht) ht->insert(node); else fsht->insert(node);
 }
-
 
 inline
 void compute_cache::add(op_info* owner, int a, int b, int c)
@@ -289,7 +402,6 @@ void compute_cache::add(op_info* owner, int a, int b, int c)
   // insert node into hash table
   if (ht) ht->insert(node); else fsht->insert(node);
 }
-
 
 inline
 const int* compute_cache::find(op_info* owner, const int* entryKey)
@@ -323,7 +435,6 @@ const int* compute_cache::find(op_info* owner, const int* entryKey)
   // did not find entry
   return 0;
 }
-
 
 inline
 bool compute_cache::find(op_info* owner, int a, int b, int& c)
@@ -363,9 +474,9 @@ bool compute_cache::find(op_info* owner, int a, int b, int& c)
 }
 
 
-// ******************************************************************
-// *         functions for hash table (inlined when possible)       *
-// ******************************************************************
+/*
+ * Hash table functions
+ */
 
 inline
 int compute_cache::getNull() const
@@ -373,13 +484,11 @@ int compute_cache::getNull() const
   return -1;
 }
 
-
 inline
 int compute_cache::getNext(int h) const
 {
   return nodes[h].next;
 }
-
 
 inline
 void compute_cache::setNext(int h, int n)
@@ -434,22 +543,8 @@ unsigned compute_cache::hash(int h, unsigned n) const
   int length = nodes[h].owner->op->getKeyLength();
   int* k = getDataAddress(nodes[h]);
 
-#if 0
-  switch(length)
-  {
-    case 1:
-      return smallFinal(k[0], length, 0xdeadbeef) % n;
-    case 2:
-      return smallFinal(k[0], k[1], length) % n;
-    case 3:
-      return smallFinal(k[0], k[1], k[2]) % n;
-  }
-#endif
-
   unsigned long a, b, c;
-  // Set up the internal state
   a = b = c = 0xdeadbeef;
-  //| (unsigned long)(length<<2);
 
   // handle most of the key
   while (length > 3)
@@ -472,28 +567,26 @@ unsigned compute_cache::hash(int h, unsigned n) const
     case 0: // nothing left to add
             break;
   }
-  // report the result
+
   return c % n;
 }
-
-
 
 inline
 bool compute_cache::equals(int h1, int h2) const
 {
-  return (nodes[h1].owner == nodes[h2].owner) &&
-    (0 == memcmp(getDataAddress(nodes[h1]), getDataAddress(nodes[h2]),
+  if (nodes[h1].owner != nodes[h2].owner) return false;
+  return 
+    (0 == memcmp(getDataAddress(nodes[h1]),
+                 getDataAddress(nodes[h2]),
                  nodes[h1].owner->op->getKeyLengthInBytes()));
 }
-
 
 inline
 bool compute_cache::isStale(int h) const
 {
-  return nodes[h].owner->op->isEntryStale(nodes[h].owner,
-      getDataAddress(nodes[h]));
+  return
+    nodes[h].owner->op->isEntryStale(nodes[h].owner, getDataAddress(nodes[h]));
 }
-
 
 inline
 void compute_cache::uncacheNode(int h)
@@ -502,15 +595,11 @@ void compute_cache::uncacheNode(int h)
   recycleNode(h);
 }
 
-
-/*---------------Private funtions--------------------*/
-
 inline
 int* compute_cache::getDataAddress(const cache_entry& n) const
 {
   return data + n.dataOffset;
 }
-
 
 inline
 void compute_cache::setDataOffset(cache_entry& n, int offset)
@@ -518,13 +607,11 @@ void compute_cache::setDataOffset(cache_entry& n, int offset)
   n.dataOffset = offset;
 }
 
-
 inline
 void compute_cache::setDataAddress(cache_entry& n, int* address)
 {
   n.dataOffset = address - data;
 }
-
 
 inline
 bool compute_cache::isFreeNode(const cache_entry& n) const
@@ -624,12 +711,9 @@ bool compute_cache::isDataStorageFull(int size) const
 inline
 int compute_cache::getFreeNode(int size)
 {
-#if 1
   // try to find a recycled node that fits
   int newNode = getRecycledNode(size);
-#else
-  int newNode = -1;
-#endif
+
   // if not found, get a new node
   if (newNode == -1) {
     // expand nodes and data arrays if necessary
@@ -640,9 +724,70 @@ int compute_cache::getFreeNode(int size)
     // nodes[newNode].data = data + lastData + 1;
     lastData += size;
   }
+
   return newNode;
 }
 
+
+// **********************************************************************
+//
+//                Inlined methods for binary_compute_cache
+//
+// **********************************************************************
+
+inline
+void binary_compute_cache::add(op_info* owner, int a, int b, int c)
+{
+  DCASSERT(owner == 0 || owner->cc == this);
+  static key k;
+  k.a = a; k.b = b;
+  f0->cacheNode(a);
+  f1->cacheNode(b);
+  f2->cacheNode(c);
+
+  // "ct[k] = c" will not overwrite an existing entry.
+  // Using map::insert() gives us a means to check whether the new
+  // entry was added to the ct.
+  // Note that insert() returns pair<iterator, bool>, and the bool is
+  // true if the pair was inserted.
+  assert((ct.insert(std::make_pair(k, c))).second);
+
+  ++inserts;
+#if 0
+  if (++adds > binary_compute_cache::maxAdds) {
+    removeStales();
+  }
+#endif
+}
+
+inline
+bool binary_compute_cache::find(op_info* owner, int a, int b, int& c)
+{
+  DCASSERT(owner->cc == this);
+  static key k;
+  k.a = a; k.b = b;
+  ++pings;
+  std::map< key_type, ans_type >::iterator ans = ct.find(k);
+  if (ans == ct.end()) return false;
+  c = ans->second;
+  if (checkForStales) {
+    if (f2->isStale(c)) {
+      ct.erase(ans);
+      f0->uncacheNode(a);
+      f1->uncacheNode(b);
+      f2->uncacheNode(c);
+      return false;
+    }
+  }
+  ++hits;
+  return true;
+}
+
+inline
+int binary_compute_cache::getNumEntries() const
+{
+  return ct.size();
+}
 
 
 #endif

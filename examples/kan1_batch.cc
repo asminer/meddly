@@ -74,171 +74,94 @@
     Initially, all machines are in local state "W".
     There are 160 reachable states.  All combinations are possible, EXCEPT
     that machines 2 and 3 are either BOTH in state W, or BOTH NOT in state W.
-
-
-    TODO in the library:
-
-   	Write the function 
-	AddMatrixElementAtLevel(dd_tempedge, level lh, int from, int to, bool term)
-
 */
 
-
-/* Probably we need a makefile and a mechanism to specify
-   the location of these header files...
-*/
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
 #include <set>
 #include <deque>
+#include <vector>
 
 #include "meddly.h"
 #include "meddly_expert.h"
 #include "timer.h"
 
 
-const bool testFindFirstElement = false;
-const bool testMTMXDIterator = false;
-const bool testMDDComplement = true;
-const bool testIndexSetCardinality = true;
 
-const int N = 5; // number of machines + 1
+// ========= BEGIN Global definitions ===========
+//
+//
+
+// N = number of machines + 1.
+const int N = 5;
+
+// Size of each variable
 int sizes[N-1] = { 4, 4, 4, 4 };
 
-
-dd_edge MakeLocalTransitions(int machine, forest* mxd)
-{
-  dd_edge nsf(mxd);
-
-  int from[N];
-  int to[N];
-  int* addrFrom[1] = { from };
-  int* addrTo[1] = { to };
-
-  for (int i = 1; i < N; ++i)
-  {
-    from[i] = -2;
-    to[i] = -2;
-  }
-
-  // W -> M
-  if (1 == machine) {
-    // adjust the vector
-    from[machine] = 0; to[machine] = 1;
-
-    // add it to nsf
-    dd_edge temp(mxd);
-    mxd->createEdge(reinterpret_cast<int**>(&addrFrom),
-        reinterpret_cast<int**>(&addrTo), 1, temp);
-    nsf += temp;
-
-    // revert the vector
-    from[machine] = -2; to[machine] = -2;
-  }
-
-  /* M -> B */
-  {
-    // adjust the vector
-    from[machine] = 1; to[machine] = 2;
-
-    // add it to nsf
-    dd_edge temp(mxd);
-    mxd->createEdge(reinterpret_cast<int**>(&addrFrom),
-        reinterpret_cast<int**>(&addrTo), 1, temp);
-    nsf += temp;
-
-    // revert the vector
-    from[machine] = -2; to[machine] = -2;
-  }
-
-  /* B -> M */
-  {
-    // adjust the vector
-    from[machine] = 2; to[machine] = 1;
-
-    // add it to nsf
-    dd_edge temp(mxd);
-    mxd->createEdge(reinterpret_cast<int**>(&addrFrom),
-        reinterpret_cast<int**>(&addrTo), 1, temp);
-    nsf += temp;
-
-    // revert the vector
-    from[machine] = -2; to[machine] = -2;
-  }
-
-  /* M -> G */
-  {
-    // adjust the vector
-    from[machine] = 1; to[machine] = 3;
-
-    // add it to nsf
-    dd_edge temp(mxd);
-    mxd->createEdge(reinterpret_cast<int**>(&addrFrom),
-        reinterpret_cast<int**>(&addrTo), 1, temp);
-    nsf += temp;
-
-    // revert the vector
-    from[machine] = -2; to[machine] = -2;
-  }
-
-  /* G -> W */
-  if (4 == machine) {
-    // adjust the vector
-    from[machine] = 3; to[machine] = 0;
-
-    // add it to nsf
-    dd_edge temp(mxd);
-    mxd->createEdge(reinterpret_cast<int**>(&addrFrom),
-        reinterpret_cast<int**>(&addrTo), 1, temp);
-    nsf += temp;
-
-    // revert the vector
-    from[machine] = -2; to[machine] = -2;
-  }
-
-  return nsf;
-}
+// ========= END Global definitions ===========
 
 
-dd_edge MakeSynch1_23(forest* mxd)
-{
-  dd_edge nsf(mxd);
 
-  int from[N] = {0, 3, 0, 0, -2};
-  int to[N]   = {0, 0, 1, 1, -2};
-  int* addrFrom[1] = { from };
-  int* addrTo[1] = { to };
+// ========= BEGIN Reachability Set generation ===========
 
-  mxd->createEdge(reinterpret_cast<int**>(&addrFrom),
-      reinterpret_cast<int**>(&addrTo), 1, nsf);
+// Build the initial state used for reachability set generation.
+// f: MDD forest.
+dd_edge getInitialStates(forest* f);
 
-  return nsf;
-}
+// Build the next-state function used for reachaility set generation.
+// f: MXD forest.
+dd_edge getNSF(forest* f);
 
-dd_edge MakeSynch23_4(forest* mxd)
-{
-  dd_edge nsf(mxd);
+// Helpers for getNSF()
+dd_edge MakeLocalTransitions(int machine, forest* mxd);
+dd_edge MakeSynch1_23(forest* mxd);
+dd_edge MakeSynch23_4(forest* mxd);
 
-  int from[N] = {0, -2, 3, 3, 0};
-  int to[N]   = {0, -2, 0, 0, 1};
-  int* addrFrom[1] = { from };
-  int* addrTo[1] = { to };
+// Builds the reachability set.
+// dfs: if true uses saturation, otherwise traditional algorithm
+//      for reachability set generation.
+dd_edge getReachabilitySet(const dd_edge& states, const dd_edge& nsf, bool dfs);
 
-  mxd->createEdge(reinterpret_cast<int**>(&addrFrom),
-      reinterpret_cast<int**>(&addrTo), 1, nsf);
+// ========= END Reachability Set generation ===========
 
-  return nsf;
-}
 
-void getIndexSet(const dd_edge& mdd, dd_edge& indexSet)
-{
-  compute_manager* cm = MEDDLY_getComputeManager();
-  assert(compute_manager::SUCCESS ==
-      cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mdd, indexSet));
-}
+
+// ========== BEGIN Tests ===========
+
+// Enable/Disable tests using these variables.
+const bool doMDDComplement        = true;
+const bool doMXDComplement        = true;
+const bool doIndexSet             = true;
+const bool doIndexSetCardinality  = true;
+const bool doFindFirstElement     = false;
+const bool doMTMDDIterator        = false;
+const bool doMTMXDIterator        = false;
+
+// MDD complement
+void testMDDComplement(const dd_edge& mdd);
+
+// MXD complement
+void testMXDComplement(const dd_edge& mxd);
+
+// Convertinf MDD to an Index Set (EV+MDD).
+void testIndexSet(domain* d, const dd_edge& mdd);
+
+// Iterate over elements of an MDD using
+// findFirstElement() and dd_edge::operator-=.
+void testFindFirstElement(const dd_edge& mdd);
+
+// Iterate over elements of an MDD using dd_edge::iterator.
+void testMTMDDIterator(const dd_edge& mdd);
+
+// Iterate over elements of an MXD using dd_edge::iterator.
+void testMTMXDIterator(const dd_edge& mxd);
+
+// ========== END Tests ===========
+
+
+
 
 int main(int argc, char* argv[])
 {
@@ -252,17 +175,16 @@ int main(int argc, char* argv[])
       if (strncmp(cmd, "-gif", 6) == 0) make_gifs = true;
       else if (strncmp(cmd, "-dfs", 5) == 0) dfs = true;
       else {
-        printf("Usage: $ kan1_batch [-gif|-dfs]\n");
-        printf("-gif : create gif representing the reachable states\n");
-        printf("-dfs : use depth-first algorithm to compute reachable states");
-        printf("\n\n");
-        // return 1;
+        fprintf(stderr, "Usage: $ kan1_batch [-gif|-dfs]\n");
+        fprintf(stderr, "-gif : create gif representing the reachable states\n");
+        fprintf(stderr,
+            "-dfs : use depth-first algorithm to compute reachable states");
+        fprintf(stderr, "\n\n");
         exit(1);
       }
     }
   }
   if (argc > 1) dfs = true;
-  int i;
 
   // Create a domain
   domain *d = MEDDLY_createDomain();
@@ -278,113 +200,321 @@ int main(int argc, char* argv[])
 
   // Set up MDD options
   assert(forest::SUCCESS == mdd->setReductionRule(forest::FULLY_REDUCED));
-  assert(forest::SUCCESS ==
-      mdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
-  assert(forest::SUCCESS ==
-      mdd->setNodeDeletion(forest::OPTIMISTIC_DELETION));
-
-  // Set up initial set of states
-  int initst[N] = { 0, 0, 0, 0, 0 };
-  int* addrInitst[1] = { initst };
-  dd_edge initialStates(mdd);
-  assert(forest::SUCCESS == mdd->createEdge(
-        reinterpret_cast<int**>(&addrInitst), 1, initialStates));
+  assert(forest::SUCCESS == mdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
+  assert(forest::SUCCESS == mdd->setNodeDeletion(forest::PESSIMISTIC_DELETION));
 
   // Create a MXD forest in domain (to store transition diagrams)
   forest* mxd = d->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
   assert(mxd != NULL);
 
-  // Set up MDD options
-  assert(forest::SUCCESS == mxd->setReductionRule(forest::QUASI_REDUCED));
-  assert(forest::SUCCESS ==
-      mxd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
-  assert(forest::SUCCESS ==
-      mxd->setNodeDeletion(forest::OPTIMISTIC_DELETION));
+  // Set up MXD options
+  assert(forest::SUCCESS == mxd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
+  assert(forest::SUCCESS == mxd->setNodeDeletion(forest::PESSIMISTIC_DELETION));
 
-  // Initialize Next-State Function (nsf)
-  dd_edge nsf(mxd);
+  // Set up initial set of states
+  dd_edge initialStates = getInitialStates(mdd);
+
+  // Build the Next-State Function (nsf)
+  dd_edge nsf = getNSF(mxd);
+
+  // Build Reachability Set
+  dd_edge reachableStates = getReachabilitySet(initialStates, nsf, dfs);
+
+  // Various test procedures
+  if (doMDDComplement)      testMDDComplement(reachableStates);
+  if (doMXDComplement)      testMXDComplement(nsf);
+  if (doIndexSet)           testIndexSet(d, reachableStates);
+  if (doFindFirstElement)   testFindFirstElement(reachableStates);
+  if (doMTMDDIterator)      testMTMDDIterator(reachableStates);
+  if (doMTMXDIterator)      testMTMXDIterator(nsf);
+
+  // Cleanup
+  delete d;
+
+  fprintf(stderr, "\nDone\n");
+  return 0;
+}
+
+
+
+
+// ========= BEGIN Reachability Set generation ===========
+
+
+dd_edge getInitialStates(forest* f)
+{
+  assert(f);
+  dd_edge states(f);
+
+  int element[N];
+  int* elements[] = { element };
+  memset(element, 0, N * sizeof(int));
+  assert(forest::SUCCESS == f->createEdge(elements, 1, states));
+
+  return states;
+}
+
+
+dd_edge getNSF(forest* f)
+{
+  assert(f);
+  dd_edge nsf(f);
 
   // Build and add local transitions to nsf
-  for (i=1; i<=4; i++) {
-    nsf += MakeLocalTransitions(i, mxd);
+  for (int i = 1; i <= 4; i++) {
+    nsf += MakeLocalTransitions(i, f);
   }
 
   // Build and add synchronizing transitions to nsf
-  nsf += MakeSynch1_23(mxd);
-  nsf += MakeSynch23_4(mxd);
+  nsf += MakeSynch1_23(f);
+  nsf += MakeSynch23_4(f);
 
-#if 0
-  printf("Initial states:\n");
-  initialStates.show(stdout, 2);
+  return nsf;
+}
 
-  printf("\nNext-State Function:\n");
-  nsf.show(stdout, 2);
-#endif
 
-  dd_edge reachableStates(mdd);
-  assert(compute_manager::SUCCESS ==
-      MEDDLY_getComputeManager()->apply(compute_manager::REACHABLE_STATES_BFS,
-      initialStates, nsf, reachableStates));
-  // reachableStates.show(stdout, 3);
+dd_edge MakeLocalTransitions(int machine, forest* mxd)
+{
+  dd_edge nsf(mxd);
 
-  if (testMDDComplement) {
-    dd_edge rsComplement(mdd);
-    timer compTimer;
-    compTimer.note_time();
-    assert(compute_manager::SUCCESS ==
-        MEDDLY_getComputeManager()->apply(compute_manager::COMPLEMENT,
-          reachableStates, rsComplement));
-    compTimer.note_time();
-    printf("\nComplement(RS) took %.4e seconds\n",
-            compTimer.get_last_interval()/1000000.0);
-    reachableStates.show(stdout, 1);
-    rsComplement.show(stdout, 1);
-    dd_edge nsfComplement(mxd);
-    compTimer.note_time();
-    assert(compute_manager::SUCCESS ==
-        MEDDLY_getComputeManager()->apply(compute_manager::COMPLEMENT,
-          nsf, nsfComplement));
-    compTimer.note_time();
-    printf("\nComplement(NSF) took %.4e seconds\n",
-            compTimer.get_last_interval()/1000000.0);
-    nsf.show(stdout, 1);
-    nsfComplement.show(stdout, 1);
-    dd_edge one(mxd);
-    assert(forest::SUCCESS == mxd->createEdge(true, one));
-    compTimer.note_time();
-    dd_edge diff = one - nsf;
-    compTimer.note_time();
-    printf("\nComplement(NSF) using Difference took %.4e seconds\n",
-            compTimer.get_last_interval()/1000000.0);
-    printf("diff %s nsfComplement\n\n", diff == nsfComplement? "==": "!=");
+  int from[N];
+  int to[N];
+  int* froms[] = { from };
+  int* tos[] = { to };
+
+  // Initialize elements (-2 indicates don't care).
+  std::fill_n(from, N, -2);
+  std::fill_n(to, N, -2);
+
+  // W -> M
+  if (1 == machine) {
+    // adjust the vector
+    from[machine] = 0; to[machine] = 1;
+
+    // add it to nsf
+    dd_edge temp(mxd);
+    mxd->createEdge(froms, tos, 1, temp);
+    nsf += temp;
+
+    // revert the vector
+    from[machine] = -2; to[machine] = -2;
   }
+
+  /* M -> B */
+  {
+    // adjust the vector
+    from[machine] = 1; to[machine] = 2;
+
+    // add it to nsf
+    dd_edge temp(mxd);
+    mxd->createEdge(froms, tos, 1, temp);
+    nsf += temp;
+
+    // revert the vector
+    from[machine] = -2; to[machine] = -2;
+  }
+
+  /* B -> M */
+  {
+    // adjust the vector
+    from[machine] = 2; to[machine] = 1;
+
+    // add it to nsf
+    dd_edge temp(mxd);
+    mxd->createEdge(froms, tos, 1, temp);
+    nsf += temp;
+
+    // revert the vector
+    from[machine] = -2; to[machine] = -2;
+  }
+
+  /* M -> G */
+  {
+    // adjust the vector
+    from[machine] = 1; to[machine] = 3;
+
+    // add it to nsf
+    dd_edge temp(mxd);
+    mxd->createEdge(froms, tos, 1, temp);
+    nsf += temp;
+
+    // revert the vector
+    from[machine] = -2; to[machine] = -2;
+  }
+
+  /* G -> W */
+  if (4 == machine) {
+    // adjust the vector
+    from[machine] = 3; to[machine] = 0;
+
+    // add it to nsf
+    dd_edge temp(mxd);
+    mxd->createEdge(froms, tos, 1, temp);
+    nsf += temp;
+
+    // revert the vector
+    from[machine] = -2; to[machine] = -2;
+  }
+
+  return nsf;
+}
+
+
+dd_edge MakeSynch1_23(forest* mxd)
+{
+  dd_edge nsf(mxd);
+
+  int from[]    = {0, 3, 0, 0, -2};
+  int to[]      = {0, 0, 1, 1, -2};
+  int* froms[]  = { from };
+  int* tos[]    = { to };
+
+  mxd->createEdge(froms, tos, 1, nsf);
+
+  return nsf;
+}
+
+
+dd_edge MakeSynch23_4(forest* mxd)
+{
+  dd_edge nsf(mxd);
+
+  int from[]    = {0, -2, 3, 3, 0};
+  int to[]      = {0, -2, 0, 0, 1};
+  int* froms[]  = { from };
+  int* tos[]    = { to };
+
+  mxd->createEdge(froms, tos, 1, nsf);
+
+  return nsf;
+}
+
+
+dd_edge getReachabilitySet(const dd_edge& states, const dd_edge& nsf, bool dfs)
+{
+  compute_manager *cm = MEDDLY_getComputeManager();
+
+  compute_manager::op_code op =
+    dfs
+    ? compute_manager::REACHABLE_STATES_DFS
+    : compute_manager::REACHABLE_STATES_BFS;
+
+  dd_edge rs(states);
+  assert(compute_manager::SUCCESS == cm->apply(op, states, nsf, rs));
+
+  return rs;
+}
+
+
+// ========= END Reachability Set generation ===========
+
+
+
+// ========== BEGIN Tests ===========
+
+
+void testMDDComplement(const dd_edge& mdd)
+{
+  compute_manager *cm = MEDDLY_getComputeManager();
+
+  dd_edge complement(mdd);
+  timer compTimer;
+  compTimer.note_time();
+  assert(compute_manager::SUCCESS ==
+      cm->apply(compute_manager::COMPLEMENT, mdd, complement));
+  compTimer.note_time();
+
+  fprintf(stderr, "\nMDD:\n");
+  mdd.show(stderr, 1);
+
+  fprintf(stderr, "\nComplement(MDD):\n");
+  complement.show(stderr, 1);
+
+  fprintf(stderr, "\nComplement(MDD) took %.4e seconds\n",
+      compTimer.get_last_interval()/1000000.0);
+}
+
+
+void testMXDComplement(const dd_edge& mxd)
+{
+  compute_manager *cm = MEDDLY_getComputeManager();
+
+  forest* f = mxd.getForest();
+  assert(f);
+
+  dd_edge complement(mxd);
+  timer compTimer;
+  compTimer.note_time();
+  assert(compute_manager::SUCCESS ==
+      cm->apply(compute_manager::COMPLEMENT, mxd, complement));
+  compTimer.note_time();
+
+  fprintf(stderr, "\nMXD:\n");
+  mxd.show(stderr, 1);
+
+  fprintf(stderr, "\nComplement(MXD):\n");
+  complement.show(stderr, 1);
+
+  fprintf(stderr, "\nComplement(MXD) took %.4e seconds\n",
+      compTimer.get_last_interval()/1000000.0);
+
+  // Complement of MXD using Mxd-Difference: (1 - MXD).
+
+  dd_edge one(mxd);
+  assert(forest::SUCCESS == f->createEdge(true, one));
+  compTimer.note_time();
+  dd_edge diff = one - mxd;
+  compTimer.note_time();
+
+  fprintf(stderr, "\n(1 - MXD):\n");
+  complement.show(stderr, 1);
+
+  fprintf(stderr, "\n(1 - MXD) took %.4e seconds\n",
+      compTimer.get_last_interval()/1000000.0);
+
+  // Check if Complement(MXD) == (1 - MXD)
+
+  fprintf(stderr, "diff %s complement\n\n",
+      diff == complement? "==": "!=");
+}
+
+
+void testIndexSet(domain* d, const dd_edge& mdd)
+{
+  assert(d);
+  compute_manager *cm = MEDDLY_getComputeManager();
 
   // Create a EV+MDD forest in this domain (to store index set)
   forest* evplusmdd = d->createForest(false, forest::INTEGER, forest::EVPLUS);
-  assert(evplusmdd != NULL);
+  assert(evplusmdd);
+  expert_forest* ef = static_cast<expert_forest*>(evplusmdd);
 
   // Convert MDD to Index Set EV+MDD and print the states
   dd_edge indexSet(evplusmdd);
-  getIndexSet(reachableStates, indexSet);
-  int* element = (int *) malloc(N * sizeof(int));
+  assert(compute_manager::SUCCESS ==
+      cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mdd, indexSet));
 
+  // Get Index Set Cardinality
   double cardinality = indexSet.getCardinality();
   int node = indexSet.getNode();
-  printf("Cardinality of node %d: %d\n", node,
-      static_cast<expert_forest*>(evplusmdd)->getIndexSetCardinality(node));
+  fprintf(stderr, "Cardinality of node %d: %d\n", node,
+      ef->getIndexSetCardinality(node));
+
+  // Print index set elements
+  int element[N];
   for (int index = 0; index < int(cardinality); index++)
   {
     assert(forest::SUCCESS == evplusmdd->getElement(indexSet, index, element));
-    printf("Element at index %d: [ ", index);
+    fprintf(stderr, "Element at index %d: [ ", index);
     for (int i = N - 1; i > 0; i--)
     {
-      printf("%d ", element[i]);
+      fprintf(stderr, "%d ", element[i]);
     }
-    printf("]\n");
+    fprintf(stderr, "]\n");
   }
 
-  if (testIndexSetCardinality) {
-    expert_forest* ef = static_cast<expert_forest*>(evplusmdd);
+  // For each node in the index set, print its cardinality.
+  if (doIndexSetCardinality) {
     std::set<int> visited;
     std::deque<int> toVisit;
     toVisit.push_back(indexSet.getNode());
@@ -414,80 +544,92 @@ int main(int argc, char* argv[])
       }
     }
 
-    printf("Nodes in the Index Set:\n");
+    fprintf(stderr, "Nodes in the Index Set:\n");
     for (std::set<int>::iterator iter = visited.begin();
         iter != visited.end(); ++iter)
     {
-      printf("Node %d: Cardinality %d, Height: %d, InCount: %d\n",
+      fprintf(stderr, "Node %d: Cardinality %d, Height: %d, InCount: %d\n",
           *iter, ef->getIndexSetCardinality(*iter),
           ef->getNodeHeight(*iter), ef->getInCount(*iter));
     }
   }
-
-  // Test findFirstElement()
-  if (testFindFirstElement) {
-    int** elements = &element;
-    dd_edge rsCopy(reachableStates);
-    cardinality = rsCopy.getCardinality();
-    for (int index = 0; index < cardinality; index++)
-    {
-      memset(element, 0, N * sizeof(int));
-      assert(forest::SUCCESS ==
-          mdd->findFirstElement(rsCopy, element));
-      printf("Element at index %d: [ ", index);
-      for (int i = N - 1; i > 0; i--)
-      {
-        printf("%d ", element[i]);
-      }
-      printf("]\n");
-      dd_edge temp(mdd);
-      mdd->createEdge(elements, 1, temp);
-      rsCopy -= temp;
-    }
-  }
-  free(element);
-
-  if (testMTMXDIterator) {
-    unsigned counter = 0;
-    for (dd_edge::const_iterator iter = reachableStates.begin();
-        iter; ++iter, ++counter)
-    {
-      const int* element = iter.getAssignments();
-      const int* curr = element + N - 1;
-      const int* end = element - 1;
-      printf("%d: [%d", counter, *curr--);
-      while (curr != end) { printf(" %d", *curr--); }
-      printf("]\n");
-    }
-    printf("Iterator traversal: %0.4e elements\n", double(counter));
-    printf("Cardinality: %0.4e\n", reachableStates.getCardinality());
-    counter = 0;
-    for (dd_edge::const_iterator iter = nsf.begin();
-        iter; ++iter, ++counter)
-    {
-      const int* element = iter.getAssignments();
-      const int* pelement = iter.getPrimedAssignments();
-      assert(element != 0 && pelement != 0);
-
-      const int* curr = element + N - 1;
-      const int* end = element - 1;
-      printf("%d: [%d", counter, *curr--);
-      while (curr != end) { printf(" %d", *curr--); }
-
-      curr = pelement + N - 1;
-      end = pelement - 1;
-      printf("] --> [%d", *curr--);
-      while (curr != end) { printf(" %d", *curr--); }
-      printf("]\n");
-    }
-    printf("Iterator traversal: %0.4e elements\n", double(counter));
-    printf("Cardinality: %0.4e\n", nsf.getCardinality());
-  }
-
-  // Cleanup
-  delete d;
-
-  printf("\nDone\n");
-  return 0;
 }
+
+
+void testFindFirstElement(const dd_edge& mdd)
+{
+  forest* f = mdd.getForest();
+  assert(f != 0);
+
+  int element[N];
+  int* elements[] = { element };
+
+  dd_edge mddCopy(mdd);
+  int cardinality = mddCopy.getCardinality();
+
+  for (int index = 0; index < cardinality; index++)
+  {
+    memset(element, 0, N * sizeof(int));
+    assert(forest::SUCCESS == f->findFirstElement(mddCopy, element));
+
+    fprintf(stderr, "Element at index %d: [ ", index);
+    for (int i = N - 1; i > 0; i--)
+    {
+      fprintf(stderr, "%d ", element[i]);
+    }
+    fprintf(stderr, "]\n");
+
+    dd_edge temp(f);
+    f->createEdge(elements, 1, temp);
+    mddCopy -= temp;
+  }
+
+  assert(mddCopy.getNode() == 0);
+}
+
+
+void testMTMDDIterator(const dd_edge& mtmdd)
+{
+  dd_edge copy(mtmdd);
+  unsigned counter = 0;
+  for (dd_edge::const_iterator iter = copy.begin(); iter; ++iter, ++counter)
+  {
+    const int* element = iter.getAssignments();
+    const int* curr = element + N - 1;
+    const int* end = element - 1;
+    fprintf(stderr, "%d: [%d", counter, *curr--);
+    while (curr != end) { fprintf(stderr, " %d", *curr--); }
+    fprintf(stderr, "]\n");
+  }
+  fprintf(stderr, "Iterator traversal: %0.4e elements\n", double(counter));
+  fprintf(stderr, "Cardinality: %0.4e\n", copy.getCardinality());
+}
+
+
+void testMTMXDIterator(const dd_edge& mtmxd)
+{
+  dd_edge copy(mtmxd);
+  unsigned counter = 0;
+  for (dd_edge::const_iterator iter = copy.begin(); iter; ++iter, ++counter)
+  {
+    const int* element = iter.getAssignments();
+    const int* pelement = iter.getPrimedAssignments();
+    assert(element != 0 && pelement != 0);
+
+    const int* curr = element + N - 1;
+    const int* end = element - 1;
+    fprintf(stderr, "%d: [%d", counter, *curr--);
+    while (curr != end) { fprintf(stderr, " %d", *curr--); }
+
+    curr = pelement + N - 1;
+    end = pelement - 1;
+    fprintf(stderr, "] --> [%d", *curr--);
+    while (curr != end) { fprintf(stderr, " %d", *curr--); }
+    fprintf(stderr, "]\n");
+  }
+  fprintf(stderr, "Iterator traversal: %0.4e elements\n", double(counter));
+  fprintf(stderr, "Cardinality: %0.4e\n", copy.getCardinality());
+}
+
+// ========== END Tests ===========
 

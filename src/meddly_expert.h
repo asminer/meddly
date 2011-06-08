@@ -288,15 +288,14 @@ class expert_forest : public forest
     /// the sparse node's indexes for the given index and if found, it
     /// returns the downpointer associated with the index. Note that this
     /// is not the same as calling getSparseNodeDownPtr(int node, int index).
-    virtual int getDownPtr(int node, int index) const = 0;
+    int getDownPtr(int node, int index) const;
 
     /// Get the nodes pointed to by this node (works with Full or Sparse nodes.
     /// The vector downPointers is increased in size if necessary (but
     /// never reduced in size).
     /// Returns false is operation is not possible. Possible reasons are:
     /// node does not exist; node is a terminal; or node has not been reduced.
-    virtual bool getDownPtrs(int node, std::vector<int>& downPointers) const
-        = 0;
+    bool getDownPtrs(int node, std::vector<int>& downPointers) const;
 
     /// Similar to getDownPtrs() except for EV+MDDs.
     /// If successful (return value true), the vectors hold the
@@ -371,7 +370,7 @@ class expert_forest : public forest
     ///   in-count and cache-count are zero.
     /// Pessimistic deletion: A node is said to be stale when the in-count
     ///  is zero regardless of the cache-count.
-    virtual bool isStale(int node) const = 0;
+    bool isStale(int node) const;
 
 #if 0
     /// Returns the cardinality of the node. Cardinality is the number of
@@ -382,11 +381,11 @@ class expert_forest : public forest
 
     /// Returns the node count for this node. The node count is the number
     /// of unique nodes in the decision diagram represented by this node.
-    virtual unsigned getNodeCount(int node) const = 0;
+    unsigned getNodeCount(int node) const;
 
     /// Returns the edge count for this node. The edge count is the number
     /// of unique edges in the decision diagram represented by this node.
-    virtual unsigned getEdgeCount(int node, bool countZeroes) const = 0;
+    unsigned getEdgeCount(int node, bool countZeroes) const;
 
     /// Display the contents of node
     virtual void showNode(FILE* s, int node, int verbose = 0) const = 0;
@@ -566,8 +565,8 @@ class expert_forest : public forest
     // Array index: most recently created hole in edge[]
     int firstHole;
 
-  // TODO: 
 #if 0
+  // TODO: 
 
   public:
 
@@ -656,49 +655,6 @@ class expert_forest : public forest
       TODO: errors?
      */
     virtual node_deletion_policy getNodeDeletionForVariable(int vh) const = 0;
-
-#else
-
-  public:
-
-    virtual unsigned getCompactionThreshold() const = 0;
-    virtual error setCompactionThreshold(unsigned p) = 0;
-    virtual error compactMemory() = 0;
-
-    virtual long getCurrentNumNodes() const = 0;
-    virtual long getCurrentMemoryUsed() const = 0;
-    virtual long getCurrentMemoryAllocated() const = 0;
-    virtual long getPeakNumNodes() const = 0;
-    virtual long getPeakMemoryUsed() const = 0;
-    virtual long getPeakMemoryAllocated() const = 0;
-
-    virtual error createEdge(const int* const* vlist, int N, dd_edge &e) = 0;
-    virtual error createEdge(const int* const* vlist, const int* terms, int N,
-        dd_edge &e) = 0;
-    virtual error createEdge(const int* const* vlist, const float* terms,
-        int N, dd_edge &e) = 0;
-    virtual error createEdge(const int* const* vlist, const int* const* vplist,
-        int N, dd_edge &e) = 0;
-    virtual error createEdge(const int* const* vlist, const int* const* vplist,
-        const int* terms, int N, dd_edge &e) = 0;
-    virtual error createEdge(const int* const* vlist, const int* const* vplist, 
-        const float* terms, int N, dd_edge &e) = 0;
-    virtual error createEdge(bool val, dd_edge &e) = 0;
-    virtual error createEdge(int val, dd_edge &e) = 0;
-    virtual error createEdge(float val, dd_edge &e) = 0;
-    virtual error evaluate(const dd_edge &f, const int* vlist, bool &term)
-      const = 0;
-    virtual error evaluate(const dd_edge &f, const int* vlist, int &term)
-      const = 0;
-    virtual error evaluate(const dd_edge &f, const int* vlist, float &term)
-      const = 0;
-    virtual error evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, bool &term) const = 0;
-    virtual error evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, int &term) const = 0;
-    virtual error evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, float &term) const = 0;
-    virtual void showInfo(FILE* strm, int verbosity=0) = 0;
 
 #endif
 
@@ -971,7 +927,6 @@ class operation {
   public:
 
     operation();
-    // int keyLength, int ansLength, const char *name);
 
     virtual ~operation();
 
@@ -1042,18 +997,6 @@ class operation {
     virtual compute_manager::error compute(op_info* cc, const dd_edge& a,
       const dd_edge& b, dd_edge& c);
 
-    // ******************************************************************
-
-  private:
-#if 0
-    const char *name;         // description of operation
-    int keyLength;            // number of input args
-    int ansLength;            // number of output args
-    int cacheEntryLength;     // (keyLength + ansLength)
-    int keyLengthInBytes;
-    int ansLengthInBytes;
-    int cacheEntryLengthInBytes;
-#endif
 };
 
 
@@ -1163,7 +1106,6 @@ class ct_object {
     Concrete class implements compute_manager and provides an interface
     to user-defined operations.
 
-
     TODO: At the moment, all (concrete) operations are singleton classes.
 */
 
@@ -1188,6 +1130,26 @@ class expert_compute_manager : public compute_manager {
         @param  op    Operation handle.
     */
     virtual void removeStales(op_info* op = 0);
+
+    /** Removes all stales entries in the compute table that belong to the
+        specified forest handle.
+
+        @param  f     Forest handle.
+    */
+    virtual void removeStales(expert_forest* f);
+
+    /** Removes all entries in the compute table that belong
+        to the specified operation handle.
+
+        Note that an operation handle is assigned to each distinct
+        tuple {operation code, forests[]}.
+
+        If op is 0, ALL the entries in the compute table are removed.
+        In other words, it is the same as calling clearComputeTable().
+
+        @param  op    Operation handle.
+    */
+    virtual void removeEntries(op_info* op = 0);
 
     virtual const char* getOperationName(op_code op) const;
     virtual error apply(op_code op, const dd_edge &a, dd_edge &b);
@@ -2186,7 +2148,6 @@ bool expert_forest::getEdgeValues(int node, float*& evs)
 inline
 bool expert_forest::getDownPtrs(int node, const int*& dptrs) const
 {
-  DCASSERT(isReducedNode(node));
   if (isTerminalNode(node)) return false;
   dptrs = isFullNode(node)
     ? getNodeAddress(node) + 3
@@ -2579,6 +2540,7 @@ inline
 bool expert_forest::accumulate(int& A, int* B) {
   return false;
 }
+
 
 inline
 float toFloat(int a) {

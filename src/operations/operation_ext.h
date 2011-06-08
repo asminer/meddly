@@ -337,8 +337,6 @@ class mxd_difference : public mxd_apply_operation {
 
 // ------------------------ MTMXD Apply operations ---------------------------
 
-// HERE --------
-
 /** MTXDD element-wise operations
 
     Abstract class for element-wise MTMXD operations.

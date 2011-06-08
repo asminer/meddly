@@ -197,7 +197,7 @@ void expert_domain::showInfo(FILE* strm)
   // call showNodes for each of the forests in this domain.
   for (int i = 0; i < szForests; i++) {
     if (forests[i] != 0)
-      forests[i]->showInfo(strm);
+      forests[i]->showInfo(strm, 2);
   }
 }
 

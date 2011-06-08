@@ -21,14 +21,9 @@
 
 
 
-//TODO: need to keep track of memory allocated as well.
-//TODO: revamp the node counting mechanism.
 //TODO: add a mechanism to node_manager so that reduction rule can
 //      be set after instantiation of the node_manager.
 //TODO: rename node_manager?
-//TODO: IMPORTANT: find a faster way of doing this:
-//      if (edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES) {
-//TODO:
 
 #ifndef MDDS_H
 #define MDDS_H
@@ -36,7 +31,6 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
-//#include <map>  // for getCardinality()
 
 #include "../defines.h"
 #include "../mdd_hash.h"
@@ -131,6 +125,20 @@ class node_manager : public expert_forest {
     // ------------- inherited from expert_forest ---------------------------
 
   public:
+    using expert_forest::getDownPtrsAndEdgeValues;
+    using expert_forest::getSparseNodeIndexes;
+    /*
+    using expert_forest::createTempNode;
+    using expert_forest::getDownPtr;
+    using expert_forest::resizeNode;
+    using expert_forest::makeACopy;
+    using expert_forest::reduceNode;
+    using expert_forest::normalizeAndReduceNode;
+    using expert_forest::accumulate;
+    using expert_forest::isReducedNode;
+    using expert_forest::isStale;
+    */
+
     /// Refer to meddly.h
     forest::error createEdgeForVar(int vh, bool primedLevel, dd_edge& result);
     forest::error createEdgeForVar(int vh, bool primedLevel,
@@ -199,13 +207,6 @@ class node_manager : public expert_forest {
     virtual void normalizeAndReduceNode(int& node, int& ev) = 0;
     // Dummy version available here.
 
-    virtual int getDownPtr(int p, int i) const;
-
-    // Copy the downpointers into dptrs where dptrs[i] corresponds
-    // to the downpointer at index i. For sparse nodes,
-    // dptrs[index(i)] corresponds to the downpointer at index i.
-    virtual bool getDownPtrs(int node, std::vector<int>& dptrs) const;
-
     // Similar to getDownPtrs() but for EV+MDDs
     virtual bool getDownPtrsAndEdgeValues(int node,
         std::vector<int>& dptrs, std::vector<int>& evs) const
@@ -225,17 +226,11 @@ class node_manager : public expert_forest {
     void deleteOrphanNode(int node);      // for uncacheNode()
     void freeZombieNode(int node);        // for uncacheNode()
 
-    bool isStale(int node) const;
     bool discardTemporaryNodesFromComputeCache() const;   // for isStale()
 
     void showNode(FILE *s, int p, int verbose = 0) const;
     void showNodeGraph(FILE *s, int p) const;
     void showInfo(FILE* strm, int verbosity);
-#if 0
-    double getCardinality(int p) const;
-#endif
-    unsigned getNodeCount(int p) const;
-    unsigned getEdgeCount(int p, bool countZeroes) const;
 
     long getCurrentNumNodes() const;
     long getCurrentMemoryUsed() const;
@@ -381,7 +376,7 @@ class node_manager : public expert_forest {
     void compactLevel(int k);
 
     /// garbage collect
-    bool gc();
+    bool gc(bool zombifyOrphanNodes = false);
     bool isTimeToGc();
 
     // zombify node p
@@ -577,46 +572,6 @@ inline void node_manager::reclaimOrphanNode(int p) {
   orphan_nodes--;
 }  
 
-inline void node_manager::handleNewOrphanNode(int p) {
-  DCASSERT(!isPessimistic() || !isZombieNode(p));
-  DCASSERT(isActiveNode(p));
-  DCASSERT(!isTerminalNode(p));
-  DCASSERT(getInCount(p) == 0);
-
-  // insted of orphan_nodes++ here; do it only when the orphan is not going
-  // to get deleted or converted into a zombie
-
-  // Two possible scenarios:
-  // (1) a reduced node, or
-  // (2) a temporary node ready to be deleted.
-  DCASSERT(isReducedNode(p) || getCacheCount(p) == 0);
-
-  if (getCacheCount(p) == 0) {
-    // delete node
-    // this should take care of the temporary nodes also
-#ifdef TRACK_DELETIONS
-    cout << "Deleting node " << p << " from unlinkNode\t";
-    showNode(stdout, p);
-    cout << "\n";
-    cout.flush();
-#endif
-    deleteNode(p);
-  }
-  else if (isPessimistic()) {
-    // zombify node
-    zombifyNode(p);
-  }
-  else {
-    orphan_nodes++;
-  }
-
-#if 0
-  if (getOrphanNodeCount() > 100000)
-    smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())
-      ->removeStales();
-#endif
-}
-
 inline void node_manager::deleteOrphanNode(int p) {
   DCASSERT(!isPessimistic());
   DCASSERT(getCacheCount(p) == 0 && getInCount(p) == 0);
@@ -652,107 +607,8 @@ inline int node_manager::getDownPtrAfterIndex(int p, int i, int &index)
 }
 
 
-inline int node_manager::getDownPtr(int p, int i) const {
-  DCASSERT(isActiveNode(p));
-  if (isTerminalNode(p)) return p;
-  DCASSERT(i >= 0);
-  if (isFullNode(p)) {
-    // full or trunc-full node
-    if (getFullNodeSize(p) > i) return getFullNodeDownPtr(p, i);
-
-    // full or trunc-full node, but i lies after the last non-zero downpointer
-    return 0;
-  } else {
-    // sparse node
-    // binary search to find the index ptr corresponding to i
-    int start = 0;
-    int stop = getSparseNodeSize(p) - 1;
-    
-    // the index ptr corresponding to i has been compressed i.e. its a zero.
-    if (getSparseNodeIndex(p, start) > i) return 0;
-    if (getSparseNodeIndex(p, stop) < i) return 0;
-
-    int mid = (start + stop)/2;
-    while(start < stop) {
-      if (getSparseNodeIndex(p, mid) == i)
-        return getSparseNodeDownPtr(p, mid);
-      if (getSparseNodeIndex(p, mid) > i)
-        stop = mid - 1;
-      else
-        start = mid + 1;
-      mid = (start + stop)/2;
-    }
-    if (getSparseNodeIndex(p, mid) == i)
-      return getSparseNodeDownPtr(p, mid);
-   
-    // index ptr not found - it was compressed because it was a zero.
-    return 0;
-  }
-}
-
-
-#if 0
-inline int node_manager::createVarNode(int lh)
-{
-  int node = level[mapLevel(k)].varNode;
-  linkNode(node);
-  return node;
-}
-#endif
-
-inline int node_manager::createTempNode(int k, int sz, bool clear)
-{
-  DCASSERT(k != 0);
-
-  if (isTimeToGc()) { gc(); }
-
-  CHECK_RANGE(1, mapLevel(k), l_size);
-  DCASSERT(level[mapLevel(k)].data != NULL);
-  CHECK_RANGE(1, sz, getLevelSize(k) + 1);
-
-  // get a location in address[] to store the node
-  int p = getFreeNode(k);
-
-#ifdef DEBUG_MDD_H
-  printf("%s: k: %d, sz: %d, new p: %d\n", __func__, k, sz, p);
-  fflush(stdout);
-#endif
-
-  // fill in the location with p's address info
-  DCASSERT(getEdgeLabeling() == forest::MULTI_TERMINAL);
-  address[p].level = k;
-  address[p].offset = getHole(k, 4 + sz, true);
-  address[p].cache_count = 0;
-
-#ifdef DEBUG_MDD_H
-  printf("%s: offset: %d\n", __func__, address[p].offset);
-  fflush(stdout);
-#endif
-
-  int* foo = level[mapLevel(k)].data + address[p].offset;
-  foo[0] = 1;                   // #incoming
-  foo[1] = temp_node;
-  foo[2] = sz;                  // size
-  foo[3 + sz] = p;              // pointer to this node in the address array
-
-  // initialize
-  if (clear) initDownPtrs(p);
-
-#ifdef TRACK_DELETIONS
-  cout << "Creating node " << p << "\n";
-  cout.flush();
-#endif
-
-  incrTempNodeCount(k);
-  nodes_activated_since_gc++;
-
-  return p;
-}
-
-
 inline
-int
-node_manager::createTempNode(int lh, std::vector<int>& downPointers)
+int node_manager::createTempNode(int lh, std::vector<int>& downPointers)
 {
   int tempNode = createTempNode(lh, downPointers.size(), false);
   int* dptrs = getFullNodeDownPtrs(tempNode);
@@ -764,7 +620,7 @@ node_manager::createTempNode(int lh, std::vector<int>& downPointers)
   return tempNode;
 }
 
-// TODO: HERE: should we move these next few inlines up to mddinternal?
+
 inline bool node_manager::areHolesRecycled() const {
   return holeRecycling;
 }
@@ -813,39 +669,6 @@ inline int node_manager::getLargestIndex(int p) const {
 }
 
 // Dealing with entries
-
-inline
-bool node_manager::getDownPtrs(int p, std::vector<int>& dptrs) const {
-  if (!isActiveNode(p) || isTerminalNode(p) || !isReducedNode(p))
-    return false;
-
-  if (isFullNode(p)) {
-    int size = getFullNodeSize(p);
-    if (dptrs.size() < unsigned(size))
-      dptrs.resize(size, 0);
-    const int* ptrs = getFullNodeDownPtrsReadOnly(p);
-    const int* end = ptrs + size;
-    std::vector<int>::iterator iter = dptrs.begin();
-    while (ptrs != end)
-    {
-      *iter++ = *ptrs++;
-    }
-  }
-  else {
-    int nnz = getSparseNodeSize(p);
-    int size = getLargestIndex(p) + 1;
-    if (dptrs.size() < unsigned(size))
-      dptrs.resize(size, 0);
-    const int* ptrs = getSparseNodeDownPtrs(p);
-    const int* index = getSparseNodeIndexes(p);
-    const int* end = ptrs + nnz;
-    while (ptrs != end)
-    {
-      dptrs[*index++] = *ptrs++;
-    }
-  }
-  return true;
-}
 
 // full node: entries start in the 4th slot (location 3, counting from 0)
 inline int* node_manager::getFullNodeDownPtrs(int p) {
@@ -969,12 +792,6 @@ inline void node_manager::setNext(int h, int n) {
   *(getNodeAddress(h) + 1) = n; 
 }
 
-inline bool node_manager::isStale(int h) const {
-  if (isTerminalNode(h))  return discardTemporaryNodesFromComputeCache();
-  if (isPessimistic())    return isZombieNode(h);
-  /*isOptimistic()*/      return getInCount(h) == 0;
-}
-
 inline bool node_manager::discardTemporaryNodesFromComputeCache() const {
   return delete_terminal_nodes;
 }
@@ -1043,10 +860,12 @@ inline bool node_manager::isTimeToGc()
 {
 #if 1
   return (isPessimistic())? (getZombieNodeCount() > 1000000):
-      (getOrphanNodeCount() > 500000);
+    (getOrphanNodeCount() > 500000);
   // return (nodes_activated_since_gc > 5000000); //10,000,000
-#else
+#elif 0
   return false;
+#else
+  return isPessimistic()? false: (getOrphanNodeCount() > 500000);
 #endif
 }
 
@@ -1130,23 +949,6 @@ inline int node_manager::getTempNodeId() const {
 // ****************** override expert_forest class ****************** 
 
 
-inline int node_manager::reduceNode(int node) {
-  fprintf(stderr, "Error:\n");
-  fprintf(stderr, "  Called reduceNode() for a forest with edge-values.\n");
-  fprintf(stderr, "  Call normalizeAndReduceNode() instead.\n");
-  fflush(stderr);
-  return 0;
-}
-
-inline void node_manager::normalizeAndReduceNode(int& node, int& ev) {
-  fprintf(stderr, "Error:\n");
-  fprintf(stderr, "  Called normalizeAndReduceNode() for a forest\n");
-  fprintf(stderr, "  without edge-values. Call reduceNode() instead.\n");
-  fflush(stderr);
-  node = 0;
-  ev = INF;
-}
-
 inline forest::error node_manager::compactMemory() {
   compactAllLevels();
   return forest::SUCCESS;
@@ -1187,82 +989,6 @@ node_manager::findFirstElement(const dd_edge& f, int* vlist, int* vplist) const
 {
   return forest::INVALID_OPERATION;
 }
-
-// ********************* utils ************************
-
-inline
-bool node_manager::singleNonZeroAt(int p, int val, int index) const
-{
-  DCASSERT(isActiveNode(p));
-  DCASSERT(!isTerminalNode(p));
-  DCASSERT(!isZombieNode(p));
-  DCASSERT(val != 0);
-  if (isFullNode(p)) {
-    const int* dptr = getFullNodeDownPtrsReadOnly(p);
-    const int sz = getFullNodeSize(p);
-    if (index >= sz || dptr[index] != val) return false;
-    int i = 0;
-    for ( ; i < index; ++i) { if (dptr[i] != 0) return false; }
-    for (i = index + 1 ; i < sz; ++i) { if (dptr[i] != 0) return false; }
-  } else {
-    if (getSparseNodeSize(p) != 1) return false;
-    if (getSparseNodeIndex(p, 0) != index) return false;
-    if (getSparseNodeDownPtr(p, 0) != val) return false;
-  }
-  return true;
-}
-
-inline
-bool node_manager::checkForReductions(int p, int nnz, int& result)
-{
-  if (getReductionRule() == forest::QUASI_REDUCED) return false;
-  if (nnz != getLevelSize(getNodeLevel(p))) return false;
-
-  const int* ptr = getFullNodeDownPtrs(p);
-  int size = getFullNodeSize(p);
-
-  switch (getReductionRule()) {
-
-    case forest::FULLY_REDUCED:
-      result = ptr[0];
-      for (int i = 1; i < size; ++i) {
-        if (ptr[i] != result) return false;
-      }
-      break;
-
-    case forest::IDENTITY_REDUCED:
-      if (isForRelations()) {
-        if (isPrimedNode(p)) return false;
-        if (isFullNode(ptr[0])) {
-          result = getFullNodeDownPtr(ptr[0], 0);
-          if (result == 0) return false;
-        } else {
-          int index = getSparseNodeIndex(ptr[0], 0);
-          if (index != 0) return false;
-          result = getSparseNodeDownPtr(ptr[0], 0);
-          DCASSERT(result != 0);
-        }
-        for (int i = 0; i < size; i++) {
-          if (!singleNonZeroAt(ptr[i], result, i)) return false;
-        }
-      }
-      else {
-        printf("Identity-Reduction is valid only for forests that ");
-        printf("store relations.\n");
-        printf("Either change reduction rule for forest %p or enable\n", this);
-        printf("relations for it.\n");
-        printf("Terminating.\n");
-        exit(1);
-      }
-      break;
-
-    default:
-      return false;
-  }
-
-  return true;
-}
-
 
 
 #endif

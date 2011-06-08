@@ -27,16 +27,29 @@
 #include "prepostimage.h"
 #include "../compute_cache.h"
 #include <vector>
+#include <map>
+
+#define ALT_SATURATE_HELPER
 
 
-//#define ALT_SATURATE_HELPER
+// **********************************************************************
+//
+//                        Helper functions
+//
+// **********************************************************************
 
 unsigned getNodeSize(expert_forest* f, int node);
 void clearVector(std::vector<int>& v, unsigned sz);
 
-// ---------------------- Forward Reachability -------------------
 
-// Traditional reachability analysis
+
+
+// **********************************************************************
+//
+//            Forward Reachability: Traditional Algorithm
+//
+// **********************************************************************
+
 class mdd_reachability_bfs : public mdd_mxd_image_operation {
   public:
     static mdd_reachability_bfs* getInstance();
@@ -52,13 +65,22 @@ class mdd_reachability_bfs : public mdd_mxd_image_operation {
 };
 
 
-// Reachability via "saturation" algorithm
+
+
+// **********************************************************************
+//
+//            Forward Reachability: Saturation
+//
+// **********************************************************************
+
 class mdd_reachability_dfs : public mdd_mxd_image_operation {
   public:
     static mdd_reachability_dfs* getInstance();
     int compute(op_info* owner, int a, int b);
     virtual const char* getName() const { return "Mdd-Mxd Reachability DFS"; }
     virtual bool isCommutative() const { return false; }
+    virtual bool findResult(op_info* owner, int a, int b, int& c);
+    virtual void saveResult(op_info* owner, int a, int b, int c);
 
   public:
     mdd_reachability_dfs();
@@ -68,28 +90,21 @@ class mdd_reachability_dfs : public mdd_mxd_image_operation {
 
     virtual void initialize(op_info* owner);
     virtual void clear();
+    virtual void clearSplitMxdComputeTableEntries();
 
     virtual void splitMxd(int mxd);
     virtual int saturate(int mdd);
-    virtual int recFire(int mdd, int mxd);
-#ifdef ALT_SATURATE_HELPER
-    virtual void saturateHelper(int mdd);
-    virtual void saturateHelperUnPrimeFull(int mdd, int mxd);
-    virtual void saturateHelperUnPrimeSparse(int mdd, int mxd);
-    virtual void saturateHelperPrimeFull(int mdd, int i, int mxdI,
-      std::vector<bool>& next);
-    virtual void saturateHelperPrimeSparse(int mdd, int i, int mxdI,
-      std::vector<bool>& next);
-
-    virtual void recFireExpandMdd(int mdd, int mxd, int result);
-    virtual void recFireExpandMxd(int mdd, int mxd, int result);
-    virtual void recFireFF(int mdd, int mxd, int result);
-    virtual void recFireFS(int mdd, int mxd, int result);
-    virtual void recFireSF(int mdd, int mxd, int result);
-    virtual void recFireSS(int mdd, int mxd, int result);
-    virtual void recFirePrime(int mdd, int mxd, int result);
-#else
+#ifndef ALT_SATURATE_HELPER
     virtual void saturateHelper(int mddLevel, std::vector<int>& mdd);
+    virtual int recFire(int mdd, int mxd);
+#else
+    void saturateHelper(int mdd);
+    int recFire(int mdd, int mxd);
+
+    void recFireExpandMdd(int mdd, int mxd, int& result);
+    void recFireExpandMxd(int mdd, int mxd, int& result);
+    void recFireExpand(int mdd, int mxd, int& result);
+
 #endif
 
     virtual int getMddUnion(int a, int b);
@@ -119,32 +134,45 @@ class mdd_reachability_dfs : public mdd_mxd_image_operation {
     mdd_union*        mddUnion;
     mxd_intersection* mxdIntersection;
     mxd_difference*   mxdDifference;
+
+    std::map<int, int>  saturateCT;
+    bool findSaturateResult(int a, int& b);
+    void saveSaturateResult(int a, int b);
+    void clearSaturateCT();
+
+    bool getMxdAsVec(int mxd, int**& vec, int& size);
+
+    // Helper for getMxdAsVec().
+    // Use getMxd(0, 0, true) to clear the static arrays in getMxd().
+    int** getMatrix(unsigned nodeLevel, unsigned size, bool clear);
 };
 
 
-// ---------------------- Backward Reachability -------------------
 
-// Traditional backward reachability analysis
+
+// **********************************************************************
+//
+//            Backward Reachability: Traditional Algorithm
+//
+// **********************************************************************
+
 class mdd_backward_reachability_bfs : public mdd_reachability_bfs {
   public:
     static mdd_backward_reachability_bfs* getInstance();
     int compute(op_info* owner, int a, int b);
     virtual const char* getName() const {
       return "Mdd-Mxd Reverse Reachability BFS"; }
-
-#if 0
-  protected:
-    mdd_backward_reachability_bfs();
-    mdd_backward_reachability_bfs(const mdd_backward_reachability_bfs& copy);
-    mdd_backward_reachability_bfs& operator=(
-        const mdd_backward_reachability_bfs& copy);
-    virtual ~mdd_backward_reachability_bfs();
-#endif
 };
 
 
 
-// Traditional backward reachability analysis
+
+// **********************************************************************
+//
+//            Backward Reachability: Saturation
+//
+// **********************************************************************
+
 class mdd_backward_reachability_dfs : public mdd_reachability_dfs {
   public:
     static mdd_backward_reachability_dfs* getInstance();
@@ -157,70 +185,23 @@ class mdd_backward_reachability_dfs : public mdd_reachability_dfs {
 
     virtual void reverseSaturateHelper(int mddLevel, std::vector<int>& mdd);
     virtual int reverseRecFire(int mdd, int mxd);
-
-#if 0
-  protected:
-    mdd_backward_reachability_dfs() : mdd_reachability_dfs() {}
-    mdd_backward_reachability_dfs(const mdd_backward_reachability_dfs& copy);
-    mdd_backward_reachability_dfs& operator=(
-        const mdd_backward_reachability_dfs& copy);
-    virtual ~mdd_backward_reachability_dfs();
-#endif
 };
 
-#if 0
-// Reachability via "saturation" algorithm
-class mtmdd_reachability_dfs : public mdd_reachability_dfs {
-  public:
-    static mtmdd_reachability_dfs* getInstance();
-    int compute(op_info* owner, int a, int b);
-    virtual const char* getName() const { return "Mdd-Mxd Reachability DFS"; }
-    virtual bool isCommutative() const { return false; }
-
-  protected:
-    mtmdd_reachability_dfs();
-    mtmdd_reachability_dfs(const mtmdd_reachability_dfs& copy);
-    mtmdd_reachability_dfs& operator=(const mtmdd_reachability_dfs& copy);
-    virtual ~mtmdd_reachability_dfs();
-
-    void initialize(op_info* owner);
-    void clear();
-
-    void splitMxd(int mxd);
-    int saturate(int mdd);
-    int recFire(int mdd, int mxd);
-    void saturateHelper(int mddLevel, std::vector<int>& mdd);
-
-    int getMddUnion(int a, int b);
-    int getMxdIntersection(int a, int b);
-    int getMxdDifference(int a, int b);
-
-  private:
-    op_info*       owner;         // pointer to dfs reachability operation
-    expert_forest* ddf;           // MDD forest
-    expert_forest* xdf;           // MXD forest
-    expert_domain* ed;            // domain
-    expert_compute_manager* ecm;  // compute manager
-
-    // Next-state function is split and stored here (see Saturation algorithm).
-    std::vector<int> splits;
-
-    // scratch.size () == number of variable handles in the domain
-    // scratch[level_handle].size() == level_bound(level_handle)
-    std::vector< std::vector<int> > scratch;
-    std::vector< std::vector<bool> > curr, next;
-
-    op_info*          mddUnionOp;
-    op_info*          mxdIntersectionOp;
-    op_info*          mxdDifferenceOp;
-
-    mdd_union*        mddUnion;
-    mxd_intersection* mxdIntersection;
-    mxd_difference*   mxdDifference;
-};
-#endif
 
 
+
+
+
+
+
+
+
+
+// **********************************************************************
+//
+//                            Inlined Methods
+//
+// **********************************************************************
 
 
 inline
@@ -239,6 +220,68 @@ void clearVector(std::vector<int>& v, unsigned sz)
     fill(v.begin(), v.begin() + sz, 0);
   } else {
     fill(v.begin(), v.end(), 0);
+  }
+}
+
+inline 
+int mdd_reachability_dfs::getMddUnion(int a, int b)
+{
+  DCASSERT(ddf->isTerminalNode(a) || ddf->isReducedNode(a));
+  DCASSERT(ddf->isTerminalNode(b) || ddf->isReducedNode(b));
+  return mddUnion->compute(mddUnionOp, a, b);
+}
+
+inline
+int mdd_reachability_dfs::getMxdIntersection(int a, int b)
+{
+  DCASSERT(xdf->isTerminalNode(a) || xdf->isReducedNode(a));
+  DCASSERT(xdf->isTerminalNode(b) || xdf->isReducedNode(b));
+  return mxdIntersection->compute(mxdIntersectionOp, a, b);
+}
+
+inline
+int mdd_reachability_dfs::getMxdDifference(int a, int b)
+{
+  DCASSERT(xdf->isTerminalNode(a) || xdf->isReducedNode(a));
+  DCASSERT(xdf->isTerminalNode(b) || xdf->isReducedNode(b));
+  return mxdDifference->compute(mxdDifferenceOp, a, b);
+}
+
+
+inline
+void mdd_reachability_dfs::saveSaturateResult(int a, int b)
+{
+  DCASSERT(! findSaturateResult(a, b));
+  saturateCT[a] = b;
+  ddf->cacheNode(a);
+  ddf->cacheNode(b);
+}
+
+inline
+bool mdd_reachability_dfs::findSaturateResult(int a, int& b)
+{
+  std::map<int, int>::iterator iter = saturateCT.find(a);
+  if (iter == saturateCT.end()) return false;
+  if (ddf->isStale(iter->second)) {
+    ddf->uncacheNode(iter->first);
+    ddf->uncacheNode(iter->second);
+    saturateCT.erase(iter);
+    return false;
+  }
+  b = iter->second;
+  return true;
+}
+
+inline
+void mdd_reachability_dfs::clearSaturateCT()
+{
+  std::map<int, int>::iterator iter = saturateCT.begin();
+  std::map<int, int>::iterator end = saturateCT.end();
+
+  while (iter != end) {
+    ddf->uncacheNode(iter->first);
+    ddf->uncacheNode(iter->second);
+    saturateCT.erase(iter++);
   }
 }
 

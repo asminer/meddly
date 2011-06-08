@@ -24,6 +24,10 @@
 // TODO: Testing
 
 #include "defines.h"
+#include <set>
+#include <queue>
+#include <vector>
+
 
 // **************************** forest *********************************
 
@@ -161,9 +165,84 @@ void expert_forest::unregisterEdge(dd_edge& e) {
 }
 
 
-#ifdef INLINED_REALS
+// TODO: make use of pointers to speed this up.
+int expert_forest::getDownPtr(int p, int i) const {
+  DCASSERT(isActiveNode(p));
+  if (isTerminalNode(p)) return p;
+  DCASSERT(i >= 0);
+  if (isFullNode(p)) {
+    // full or trunc-full node
+    if (getFullNodeSize(p) > i) return getFullNodeDownPtr(p, i);
 
-#else
+    // full or trunc-full node, but i lies after the last non-zero downpointer
+    return 0;
+  } else {
+    // sparse node
+    // binary search to find the index ptr corresponding to i
+    int start = 0;
+    int stop = getSparseNodeSize(p) - 1;
+    
+    // the index ptr corresponding to i has been compressed i.e. its a zero.
+    if (getSparseNodeIndex(p, start) > i) return 0;
+    if (getSparseNodeIndex(p, stop) < i) return 0;
+
+    int mid = (start + stop)/2;
+    while(start < stop) {
+      if (getSparseNodeIndex(p, mid) == i)
+        return getSparseNodeDownPtr(p, mid);
+      if (getSparseNodeIndex(p, mid) > i)
+        stop = mid - 1;
+      else
+        start = mid + 1;
+      mid = (start + stop)/2;
+    }
+    if (getSparseNodeIndex(p, mid) == i)
+      return getSparseNodeDownPtr(p, mid);
+   
+    // index ptr not found - it was compressed because it was a zero.
+    return 0;
+  }
+}
+
+
+bool expert_forest::getDownPtrs(int p, std::vector<int>& dptrs) const {
+  if (!isActiveNode(p) || isTerminalNode(p)) return false;
+
+  const int* ptrs = 0;
+  assert(getDownPtrs(p, ptrs));
+
+  if (isFullNode(p)) {
+    int size = getFullNodeSize(p);
+    if (dptrs.size() < unsigned(size)) dptrs.resize(size, 0);
+    const int* end = ptrs + size;
+    std::vector<int>::iterator iter = dptrs.begin();
+    while (ptrs != end) { *iter++ = *ptrs++; }
+  }
+  else {
+    int nnz = getSparseNodeSize(p);
+    const int* index = 0;
+    assert(getSparseNodeIndexes(p, index));
+    const int* end = ptrs + nnz;
+
+    int size = index[nnz-1] + 1;
+    if (dptrs.size() < unsigned(size)) dptrs.resize(size, 0);
+
+    while (ptrs != end) { dptrs[*index++] = *ptrs++; }
+  }
+  return true;
+}
+
+
+bool expert_forest::isStale(int h) const {
+  return
+    isTerminalNode(h)
+    ? discardTemporaryNodesFromComputeCache()
+    : isPessimistic()
+    ? isZombieNode(h)
+    : (getInCount(h) == 0);
+}
+
+#ifndef INLINED_REALS
 
 float expert_forest::getReal(int term) const
 {
@@ -172,19 +251,114 @@ float expert_forest::getReal(int term) const
 
 int expert_forest::getTerminalNode(float a) const
 {
-#if 1
-  // if ((a & 0xffffffff) == 0x00000000) return 0;
-  // if (a == 0.0) return 0;
   return (a == 0.0)? 0: (*((int*)((void*)&a)) >> 1) | 0x80000000;
-
-#else
-  unsigned int node = *((unsigned int*)((void*)(&a)));
-  // printf("%x\n", node);
-  return a == 0.0
-    ? 0
-    // : ((*((int*)((void*)&a))) >> 1) | 0x80000000;
-    : (node >> 1) | 0x80000000;
-#endif
 }
 
 #endif
+
+
+unsigned expert_forest::getNodeCount(int p) const
+{
+  std::set<int> discovered;
+  std::queue<int> toExpand;
+
+  if (p != 0 && p != -1) {
+    toExpand.push(p);
+    discovered.insert(p);
+  }
+
+  // expand the front of toExpand;
+  // add newly discovered ones to discovered and toExpand
+
+  while (!toExpand.empty()) {
+    int p = toExpand.front();
+    toExpand.pop();
+    if (isTerminalNode(p)) continue;
+    // expand
+    if (isFullNode(p)) {
+      const int sz = getFullNodeSize(p);
+      for (int i = 0; i < sz; ++i)
+      {
+        int temp = getFullNodeDownPtr(p, i);
+        if (temp == 0 || temp == -1) continue;
+        // insert into discovered and toExpand if new
+        if (discovered.find(temp) == discovered.end()) {
+          toExpand.push(temp);
+          discovered.insert(temp);
+        }
+      }
+    }
+    else {
+      const int sz = getSparseNodeSize(p);
+      for (int i = 0; i < sz; ++i)
+      {
+        int temp = getSparseNodeDownPtr(p, i);
+        if (temp == 0 || temp == -1) continue;
+        // insert into discovered and toExpand if new
+        if (discovered.find(temp) == discovered.end()) {
+          toExpand.push(temp);
+          discovered.insert(temp);
+        }
+      }
+    }
+  }
+
+  // Add 2 to discovered.size() for terminals 0 and -1.
+  return discovered.size() + 2;
+}
+
+
+unsigned expert_forest::getEdgeCount(int p, bool countZeroes) const
+{
+  std::set<int> discovered;
+  std::queue<int> toExpand;
+
+  toExpand.push(p);
+  discovered.insert(p);
+
+  unsigned count = 0;
+
+  // expand the front of toExpand;
+  // add newly discovered ones to discovered and toExpand
+
+  while (!toExpand.empty()) {
+    int p = toExpand.front();
+    toExpand.pop();
+    if (isTerminalNode(p)) continue;
+    // expand
+    if (isFullNode(p)) {
+      const int sz = getFullNodeSize(p);
+      for (int i = 0; i < sz; ++i)
+      {
+        int temp = getFullNodeDownPtr(p, i);
+        if (countZeroes) count++;
+        else if (temp != 0) count++;
+        if (temp == 0 || temp == -1)  continue;
+        // insert into discovered and toExpand if new
+        if (discovered.find(temp) == discovered.end()) {
+          toExpand.push(temp);
+          discovered.insert(temp);
+        }
+      }
+    }
+    else {
+      const int sz = getSparseNodeSize(p);
+      for (int i = 0; i < sz; ++i)
+      {
+        int temp = getSparseNodeDownPtr(p, i);
+        if (countZeroes) count++;
+        else if (temp != 0) count++;
+        if (temp == 0 || temp == -1)  continue;
+        // insert into discovered and toExpand if new
+        if (discovered.find(temp) == discovered.end()) {
+          toExpand.push(temp);
+          discovered.insert(temp);
+        }
+      }
+    }
+  }
+
+  return count;
+}
+
+

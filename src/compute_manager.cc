@@ -282,6 +282,15 @@ compute_manager::error expert_compute_manager::setHashTablePolicy(
     bool chaining, unsigned size)
 {
   if (size == 0) return compute_manager::TYPE_MISMATCH;
+
+  // Other compute tables may exist (!= cc).
+  std::map<builtin_op_key, op_info>::iterator curr = builtinOpEntries->begin();
+  std::map<builtin_op_key, op_info>::iterator end = builtinOpEntries->end();
+  for ( ; curr != end; ++curr) {
+    compute_cache* cache = (curr->second).cc;
+    if (cache != cc) cache->setPolicy(chaining, size);
+  }
+  
   if (cc->setPolicy(chaining, size))
     return compute_manager::SUCCESS;
   else
@@ -291,33 +300,127 @@ compute_manager::error expert_compute_manager::setHashTablePolicy(
 
 void expert_compute_manager::showComputeTable(FILE* strm) const
 {
-  if (cc != 0) cc->show(strm, true);
+  if (cc != 0) if (cc->getNumEntries() > 0) { cc->show(strm, true); }
+
+  // Other compute tables may exist (!= cc). Clear those as well.
+  std::map<builtin_op_key, op_info>::iterator curr = builtinOpEntries->begin();
+  std::map<builtin_op_key, op_info>::iterator end = builtinOpEntries->end();
+  for ( ; curr != end; ++curr) {
+    compute_cache* cache = (curr->second).cc;
+    if (cache != cc) cache->show(strm, true);
+  }
 }
 
 
 long expert_compute_manager::getNumCacheEntries() const
 {
-  return (cc == 0)? 0: cc->getNumEntries();
+  long sum = (cc == 0)? 0: cc->getNumEntries();
+
+  // Other compute tables may exist (!= cc). Clear those as well.
+  std::map<builtin_op_key, op_info>::const_iterator curr, end;
+  curr = builtinOpEntries->begin();
+  end = builtinOpEntries->end();
+  for ( ; curr != end; ++curr) {
+    compute_cache* cache = (curr->second).cc;
+    if (cache != cc) sum += cache->getNumEntries();
+  }
+
+  return sum;
 }
 
 
-void expert_compute_manager::removeStales(op_info* op)
+void expert_compute_manager::removeStales(expert_forest* f)
 {
-  if (cc != 0) cc->removeStales(op);
+  // remove stales from the main computa table (cc).
+  if (cc) cc->removeStales();
+
+  // Other compute tables may exist (!= cc). Remove stales from those also.
+  std::map<builtin_op_key, op_info>::iterator curr, end;
+  curr = builtinOpEntries->begin();
+  end = builtinOpEntries->end();
+  for ( ; curr != end; ++curr) {
+    op_info& opInfo = curr->second;
+    if (opInfo.cc == cc) continue;
+    bool clearCC = false;
+    for (int i = 0; i < opInfo.nParams; ++i) {
+      if (! opInfo.p[i].isForest()) continue;
+      if (opInfo.p[i].getForest() == f) { clearCC = true; break; }
+    }
+    if (clearCC) {
+      fprintf(stderr, "Removing stale entries for %s\n", opInfo.op->getName());
+      opInfo.cc->removeStales();
+    }
+  }
+}
+
+
+void expert_compute_manager::removeStales(op_info* owner)
+{
+  if (owner == 0) {
+    if (cc) cc->removeStales();
+  } else if (owner->cc == 0 || owner->cc == cc) {
+    // Entries for this owner are stored in the main compute table.
+    if (cc) cc->removeStales(owner);
+  } else {
+    DCASSERT(owner->cc);
+    // Entries for this owner are stored in custom compute table.
+    fprintf(stderr, "Clearing cache table for %s\n", owner->op->getName());
+    owner->cc->removeStales();
+  }
+}
+
+
+void expert_compute_manager::removeEntries(op_info* owner)
+{
+  if (owner == 0) {
+    if (cc) cc->removeEntries();
+  } else if (owner->cc == 0 || owner->cc == cc) {
+    // Entries for this owner are stored in the main compute table.
+    if (cc) cc->removeEntries(owner);
+  } else {
+    DCASSERT(owner->cc);
+    // Entries for this owner are stored in custom compute table.
+    fprintf(stderr, "Clearing cache table for %s\n", owner->op->getName());
+    owner->cc->removeEntries();
+  }
 }
 
 
 void expert_compute_manager::clearComputeTable()
 {
-  if (cc != 0) cc->clear();
+  if (cc) cc->clear();
+
+  // Other compute tables may exist (!= cc). Clear those as well.
+  std::map<builtin_op_key, op_info>::iterator curr = builtinOpEntries->begin();
+  std::map<builtin_op_key, op_info>::iterator end = builtinOpEntries->end();
+  for ( ; curr != end; ++curr) {
+    compute_cache* cache = (curr->second).cc;
+    if (cache != cc) cache->clear();
+  }
 }
 
 
 void expert_compute_manager::addBuiltinOp(const builtin_op_key& key,
   const operation* op, const op_param* plist, int n)
 {
+  compute_cache* cache = cc;
+
+#ifdef USE_BINARY_COMPUTE_CACHE
+  if (op->getCacheEntryLength() == 3 && n == 3) {
+    bool allForests = true;
+    for (int i = 0; i < n; ++i) {
+      if (! plist[i].isForest()) { allForests = false; break; }
+    }
+    if (allForests) {
+      fprintf(stderr, "Using binary compute cache for %s\n", op->getName());
+      cache = new binary_compute_cache(op, plist, n);
+    }
+  }
+#endif
+
   op_info entry(const_cast<operation*>(op), const_cast<op_param*>(plist),
-      n, cc);
+      n, cache);
+
   (*builtinOpEntries)[key] = entry;
 #ifdef DEVELOPMENT_CODE
   std::map<builtin_op_key, op_info>::iterator itr = builtinOpEntries->find(key);
