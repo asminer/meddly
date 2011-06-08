@@ -129,13 +129,13 @@ class expert_forest : public forest
     forest::node_deletion_policy getNodeDeletion() const;
 
     /// Sets the reduction rule for this forest.
-    forest::error setReductionRule(forest::reduction_rule r);
+    void setReductionRule(forest::reduction_rule r);
 
     /// Sets the storage mechanism for this forest.
-    forest::error setNodeStorage(forest::node_storage ns);
+    void setNodeStorage(forest::node_storage ns);
 
     /// Sets the node deletion policy for this forest.
-    forest::error setNodeDeletion(forest::node_deletion_policy np);
+    void setNodeDeletion(forest::node_deletion_policy np);
 
     /// Create a temporary node -- a node that can be modified by the user.
     /// If \a clear is true, downpointers are initialized to 0.
@@ -161,7 +161,7 @@ class expert_forest : public forest
 
     /// Increase the size of the temporary node.
     /// The maximum size is dictated by domain to which this forest belongs to.
-    virtual forest::error resizeNode(int node, int size) = 0;
+    virtual void resizeNode(int node, int size) = 0;
 
     /// Build a copy of the given node.
     /// The new node's size will be equal to max(sizeof(a), size).
@@ -182,9 +182,8 @@ class expert_forest : public forest
     /// Accumulate B into A, i.e. A += B.
     /// A still remains a temporary node.
     /// B is not modified.
-    /// returns forest::INVALID_OPERATION if A or B are inactive nodes.
-    /// returns forest::SUCCESS otherwise.
-    virtual forest::error accumulate(int& A, int B) = 0;
+    /// throws error::INVALID_OPERATION if A or B are inactive nodes.
+    virtual void accumulate(int& A, int B) = 0;
 
     /// A is a temporary node, and B is a minterm.
     /// Accumulate B into A, i.e. A += B.
@@ -430,10 +429,8 @@ class expert_forest : public forest
     /// Sets an Index Set's cardinality.
     /// Note: Only applicable to Index Sets (which are
     /// implemented using EV+MDDs).
-    /// Returns:
-    /// forest::INVALID_OPERATION     Operation is not valid for this forest.
-    /// forest::SUCCESS               Cardinality set successfully.
-    forest::error setIndexSetCardinality(int node, int c);
+    /// Throws INVALID_OPERATION if the operation is not valid for this forest.
+    void setIndexSetCardinality(int node, int c);
 
     /// Is this node an active node?
     /// An active node is a node that has not yet been recycled (i.e. dead).
@@ -664,8 +661,8 @@ class expert_forest : public forest
   public:
 
     virtual unsigned getCompactionThreshold() const = 0;
-    virtual error setCompactionThreshold(unsigned p) = 0;
-    virtual error compactMemory() = 0;
+    virtual void setCompactionThreshold(unsigned p) = 0;
+    virtual void compactMemory() = 0;
 
     virtual long getCurrentNumNodes() const = 0;
     virtual long getCurrentMemoryUsed() const = 0;
@@ -674,31 +671,31 @@ class expert_forest : public forest
     virtual long getPeakMemoryUsed() const = 0;
     virtual long getPeakMemoryAllocated() const = 0;
 
-    virtual error createEdge(const int* const* vlist, int N, dd_edge &e) = 0;
-    virtual error createEdge(const int* const* vlist, const int* terms, int N,
+    virtual void createEdge(const int* const* vlist, int N, dd_edge &e) = 0;
+    virtual void createEdge(const int* const* vlist, const int* terms, int N,
         dd_edge &e) = 0;
-    virtual error createEdge(const int* const* vlist, const float* terms,
+    virtual void createEdge(const int* const* vlist, const float* terms,
         int N, dd_edge &e) = 0;
-    virtual error createEdge(const int* const* vlist, const int* const* vplist,
+    virtual void createEdge(const int* const* vlist, const int* const* vplist,
         int N, dd_edge &e) = 0;
-    virtual error createEdge(const int* const* vlist, const int* const* vplist,
+    virtual void createEdge(const int* const* vlist, const int* const* vplist,
         const int* terms, int N, dd_edge &e) = 0;
-    virtual error createEdge(const int* const* vlist, const int* const* vplist, 
+    virtual void createEdge(const int* const* vlist, const int* const* vplist, 
         const float* terms, int N, dd_edge &e) = 0;
-    virtual error createEdge(bool val, dd_edge &e) = 0;
-    virtual error createEdge(int val, dd_edge &e) = 0;
-    virtual error createEdge(float val, dd_edge &e) = 0;
-    virtual error evaluate(const dd_edge &f, const int* vlist, bool &term)
+    virtual void createEdge(bool val, dd_edge &e) = 0;
+    virtual void createEdge(int val, dd_edge &e) = 0;
+    virtual void createEdge(float val, dd_edge &e) = 0;
+    virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
       const = 0;
-    virtual error evaluate(const dd_edge &f, const int* vlist, int &term)
+    virtual void evaluate(const dd_edge &f, const int* vlist, int &term)
       const = 0;
-    virtual error evaluate(const dd_edge &f, const int* vlist, float &term)
+    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
       const = 0;
-    virtual error evaluate(const dd_edge& f, const int* vlist,
+    virtual void evaluate(const dd_edge& f, const int* vlist,
         const int* vplist, bool &term) const = 0;
-    virtual error evaluate(const dd_edge& f, const int* vlist,
+    virtual void evaluate(const dd_edge& f, const int* vlist,
         const int* vplist, int &term) const = 0;
-    virtual error evaluate(const dd_edge& f, const int* vlist,
+    virtual void evaluate(const dd_edge& f, const int* vlist,
         const int* vplist, float &term) const = 0;
     virtual void showInfo(FILE* strm, int verbosity=0) = 0;
 
@@ -720,9 +717,8 @@ class expert_domain : public domain {
       @param  bounds  Current variable bounds.
                       bounds[i-1] gives the bound for variable i.
       @param  N       Number of variables.
-      @return         An appropriate error code.
      */
-    error createVariablesTopDown(const int* bounds, int N);
+    void createVariablesTopDown(const int* bounds, int N);
 
     /** Add a new variable with bound 1.
       Can be used when the domain already has forests, in which case
@@ -731,18 +727,16 @@ class expert_domain : public domain {
                       immediately above the variable \a below.
       @param  vh      Output parameter; handle of newly created variable,
                       if the operation is successful.
-      @return         An appropriate error code.
      */
-    error createVariable(int below, int &vh);
+    void createVariable(int below, int &vh);
 
     /** Destroy a variable with bound 1.
       An error occurs if the bound is not 1.
       Use shrinkVariableBound() to make the bound 1.
       All forests are modified as appropriate.
       @param  vh      Variable to eliminate.
-      @return         An appropriate error code.
      */
-    error destroyVariable(int vh);
+    void destroyVariable(int vh);
 
     /** Get the position of the variable in this domain's variable-order.
       \a TERMINALS are considered to be at height 0.
@@ -766,9 +760,8 @@ class expert_domain : public domain {
       Note that the variable handles will remain unchanged.
       @param  vh1     Variable handle.
       @param  vh2     Variable handle.
-      @return         An appropriate error code.
      */
-    error swapOrderOfVariables(int vh1, int vh2);
+    void swapOrderOfVariables(int vh1, int vh2);
 
     /** Find the actual bound of a variable.
       This is done by searching all nodes in all forests.
@@ -790,9 +783,8 @@ class expert_domain : public domain {
                       the primed and unprimed are enlarged.
       @param  b       New bound, if less than the current bound
                       an error code is returned.
-      @return         An appropriate error code.
      */
-    error enlargeVariableBound(int vh, bool prime, int b);
+    void enlargeVariableBound(int vh, bool prime, int b);
 
     /** Shrink the possible values for a variable.
       This could modify all nodes in all forests, depending on the
@@ -803,9 +795,8 @@ class expert_domain : public domain {
       @param  force   If \a b is too small, and information will be lost,
                       proceed anyway if \a force is true, otherwise
                       return an error code.
-      @return         An appropriate error code.
      */
-    error shrinkVariableBound(int vh, int b, bool force);
+    void shrinkVariableBound(int vh, int b, bool force);
 
     /* JB Feb 21 08: Not used.
      *
@@ -846,7 +837,7 @@ class expert_domain : public domain {
     // functions inherited from class domain
     virtual int getNumForests() const;
     virtual int getNumVariables() const;
-    virtual error createVariablesBottomUp(const int* bounds, int N);
+    virtual void createVariablesBottomUp(const int* bounds, int N);
     virtual int getVariableBound(int vh, bool prime = false) const;
     virtual int getTopVariable() const;
     virtual int getVariableAbove(int vh) const;
@@ -928,8 +919,8 @@ class temp_dd_edge {
     ~temp_dd_edge();
 
     // Adds an element to the temporary dd_edge.
-    // forest::error add(const int* vlist);
-    forest::error add(const int* vlist, const int* vplist);
+    // void add(const int* vlist);
+    void add(const int* vlist, const int* vplist);
 
     // Converts the temporary dd_edge to a reduced dd_edge.
     // Returns false if conversion fails (please refer to the intended
@@ -999,7 +990,7 @@ class operation {
     virtual int getCacheEntryLengthInBytes() const = 0;
 
     /// Checks if this operation is compatible with the forests in owner.
-    virtual compute_manager::error typeCheck(const op_info* owner) = 0;
+    virtual void typeCheck(const op_info* owner) = 0;
 
     /// Checks if the cache entry (in entryData[]) is stale.
     virtual bool isEntryStale(const op_info* owner, const int* entryData) = 0;
@@ -1017,31 +1008,31 @@ class operation {
     /// operands[]. operands[] contains the input as well as output dd_edges.
     /// Refer to the derived operation for information on the order of the
     /// operands in operands[].
-    virtual compute_manager::error compute(op_info* cc, dd_edge** operands);
+    virtual void compute(op_info* cc, dd_edge** operands);
     
     /// Compute the result of this operation on \a a and store the result in
     /// \a b.
-    virtual compute_manager::error compute(op_info* cc, const dd_edge& a,
+    virtual void compute(op_info* cc, const dd_edge& a,
       dd_edge& b);
 
     /// Compute the result of this operation on \a a and store the result in
     /// \a b.
-    virtual compute_manager::error compute(op_info* cc, const dd_edge& a,
+    virtual void compute(op_info* cc, const dd_edge& a,
       long& b);
 
     /// Compute the result of this operation on \a a and store the result in
     /// \a b.
-    virtual compute_manager::error compute(op_info* cc, const dd_edge& a,
+    virtual void compute(op_info* cc, const dd_edge& a,
       double& b);
 
     /// Compute the result of this operation on \a a and store the result in
     /// \a b.
-    virtual compute_manager::error compute(op_info* cc, const dd_edge& a,
+    virtual void compute(op_info* cc, const dd_edge& a,
       ct_object &b);
 
     /// Compute the result of this operation on \a a and \a b and store the
     /// result in \a c.
-    virtual compute_manager::error compute(op_info* cc, const dd_edge& a,
+    virtual void compute(op_info* cc, const dd_edge& a,
       const dd_edge& b, dd_edge& c);
 
     // ******************************************************************
@@ -1177,7 +1168,7 @@ class expert_compute_manager : public compute_manager {
     virtual ~expert_compute_manager();
 
     virtual void clearComputeTable();
-    virtual error setHashTablePolicy(bool chaining, unsigned size = 16777216u);
+    virtual void setHashTablePolicy(bool chaining, unsigned size = 16777216u);
     virtual void showComputeTable(FILE* strm) const;
     virtual long getNumCacheEntries() const;
 
@@ -1192,18 +1183,18 @@ class expert_compute_manager : public compute_manager {
     virtual void removeStales(op_info* op = 0);
 
     virtual const char* getOperationName(op_code op) const;
-    virtual error apply(op_code op, const dd_edge &a, dd_edge &b);
-    virtual error apply(op_code op, const dd_edge &a, long &c);
-    virtual error apply(op_code op, const dd_edge &a, double &c);
-    virtual error apply(op_code op, const dd_edge &a, ct_object &c);
+    virtual void apply(op_code op, const dd_edge &a, dd_edge &b);
+    virtual void apply(op_code op, const dd_edge &a, long &c);
+    virtual void apply(op_code op, const dd_edge &a, double &c);
+    virtual void apply(op_code op, const dd_edge &a, ct_object &c);
 
-    virtual error apply(op_code op, const dd_edge &a, const dd_edge &b,
+    virtual void apply(op_code op, const dd_edge &a, const dd_edge &b,
         dd_edge &c);
 
-    virtual error vectorMatrixMultiply(double* y, const dd_edge &y_ind,
+    virtual void vectorMatrixMultiply(double* y, const dd_edge &y_ind,
                       const double* x, const dd_edge &x_ind, const dd_edge &A);
 
-    virtual error matrixVectorMultiply(double* y, const dd_edge &y_ind,
+    virtual void matrixVectorMultiply(double* y, const dd_edge &y_ind,
                       const dd_edge &A, const double* x, const dd_edge &x_ind);
 
     /** Same as apply(op_code, dd_edge&, dd_edge&, dd_edge&) except with
@@ -1216,12 +1207,12 @@ class expert_compute_manager : public compute_manager {
         the compute_manager needs to search for the concrete handle just
         once (when calling getOpInfo(op_code,...)).
     */
-    virtual error apply(op_info* op, const dd_edge &a, const dd_edge &b,
+    virtual void apply(op_info* op, const dd_edge &a, const dd_edge &b,
         dd_edge &c);
-    virtual error apply(op_info* op, const dd_edge &a, dd_edge &b);
-    virtual error apply(op_info* op, const dd_edge &a, long &b);
-    virtual error apply(op_info* op, const dd_edge &a, double &b);
-    virtual error apply(op_info* op, const dd_edge &a, ct_object &b);
+    virtual void apply(op_info* op, const dd_edge &a, dd_edge &b);
+    virtual void apply(op_info* op, const dd_edge &a, long &b);
+    virtual void apply(op_info* op, const dd_edge &a, double &b);
+    virtual void apply(op_info* op, const dd_edge &a, ct_object &b);
 
     /** Obtain a concrete handle to the built-in operation.
         If a built-in operation is going to be called repeatedly for the
@@ -2439,40 +2430,35 @@ forest::node_deletion_policy expert_forest::getNodeDeletion() const
 
 
 inline
-forest::error expert_forest::setNodeDeletion(node_deletion_policy np)
+void expert_forest::setNodeDeletion(node_deletion_policy np)
 {
   if (np == forest::NEVER_DELETE)
-    return forest::NOT_IMPLEMENTED;
+    throw error(error::NOT_IMPLEMENTED);
   if (getCurrentNumNodes() > 0)
-    return forest::INVALID_OPERATION;
+    throw error(error::INVALID_OPERATION);
   nodeDeletionPolicy = np;
-  return forest::SUCCESS;
 }
 
 inline
-forest::error expert_forest::setNodeStorage(node_storage ns)
+void expert_forest::setNodeStorage(node_storage ns)
 {
-  if (nodeStorage == ns)
-    return forest::SUCCESS;
+  if (nodeStorage == ns) return;
   if (getCurrentNumNodes() > 0)
-    return forest::INVALID_OPERATION;
+    throw error(error::INVALID_OPERATION);
   nodeStorage = ns;
-  return forest::SUCCESS;
 }
 
 inline
-forest::error expert_forest::setReductionRule(reduction_rule r)
+void expert_forest::setReductionRule(reduction_rule r)
 {
-  if (reductionRule == r)
-    return forest::SUCCESS;
+  if (reductionRule == r) return;
   if (getCurrentNumNodes() > 0)
-    return forest::INVALID_OPERATION;
+    throw error(error::INVALID_OPERATION);
   if (!isForRelations() && r == forest::IDENTITY_REDUCED) {
     // cannot have IDENTITY reduced for non-relation forests.
-    return forest::INVALID_OPERATION;
+    throw error(error::INVALID_OPERATION);
   }
   reductionRule = r;
-  return forest::SUCCESS;
 }
 
 
@@ -2555,7 +2541,7 @@ int expert_forest::getIndexSetCardinality(int node) const {
 
 
 inline
-forest::error expert_forest::setIndexSetCardinality(int node, int c) {
+void expert_forest::setIndexSetCardinality(int node, int c) {
   DCASSERT(isEvplusMdd());
   DCASSERT(isActiveNode(node));
   if (isEvplusMdd() && isActiveNode(node) && !isTerminalNode(node)) {
@@ -2566,9 +2552,9 @@ forest::error expert_forest::setIndexSetCardinality(int node, int c) {
          ? 2 * getFullNodeSize(node)
          : 3 * getSparseNodeSize(node))
      ) = c;
-     return forest::SUCCESS;
+     return;
   }
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 

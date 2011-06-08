@@ -53,7 +53,7 @@ int mdd_reachability_bfs::compute(op_info* owner, int mdd, int mxd)
   const int nOperands = 3;
   op_param plist[nOperands] = {owner->p[0], owner->p[0], owner->p[0]};
   expert_compute_manager* ecm = 
-    smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+    smart_cast<expert_compute_manager*>(MEDDLY::getComputeManager());
   assert(ecm != 0);
   op_info* unionOp =
     ecm->getOpInfo(compute_manager::UNION, plist, nOperands);
@@ -223,7 +223,7 @@ void mdd_reachability_dfs::initialize(op_info* o)
 {
   // set up aliases
   owner = o;
-  ecm = smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+  ecm = smart_cast<expert_compute_manager*>(MEDDLY::getComputeManager());
   assert(ecm != 0);
   ddf = getExpertForest(owner, 0);
   assert(ddf != 0);
@@ -844,7 +844,7 @@ int mdd_backward_reachability_bfs::compute(op_info* owner, int mdd, int mxd)
   const int nOperands = 3;
   op_param plist[nOperands] = {owner->p[0], owner->p[0], owner->p[0]};
   expert_compute_manager* ecm = 
-    smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+    smart_cast<expert_compute_manager*>(MEDDLY::getComputeManager());
   assert(ecm != 0);
   op_info* unionOp =
     ecm->getOpInfo(compute_manager::UNION, plist, nOperands);

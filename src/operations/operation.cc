@@ -36,42 +36,42 @@ operation::~operation() {}
 
 // Defaults
 
-compute_manager::error 
+void 
 operation::compute(op_info* cc, dd_edge** operands)
 {
-  return compute_manager::TYPE_MISMATCH;
+  throw error(error::TYPE_MISMATCH);
 }
 
-compute_manager::error 
+void 
 operation::compute(op_info* cc, const dd_edge& a, dd_edge& b)
 {
-  return compute_manager::TYPE_MISMATCH;
+  throw error(error::TYPE_MISMATCH);
 }
 
-compute_manager::error 
+void 
 operation::compute(op_info* cc, const dd_edge& a, long& b)
 {
-  return compute_manager::TYPE_MISMATCH;
+  throw error(error::TYPE_MISMATCH);
 }
 
-compute_manager::error 
+void 
 operation::compute(op_info* cc, const dd_edge& a, double& b)
 {
-  return compute_manager::TYPE_MISMATCH;
+  throw error(error::TYPE_MISMATCH);
 }
 
 
-compute_manager::error 
+void 
 operation::compute(op_info* cc, const dd_edge& a, ct_object &b)
 {
-  return compute_manager::TYPE_MISMATCH;
+  throw error(error::TYPE_MISMATCH);
 }
 
 
-compute_manager::error 
+void 
 operation::compute(op_info* cc, const dd_edge& a, const dd_edge& b, dd_edge& c)
 {
-  return compute_manager::TYPE_MISMATCH;
+  throw error(error::TYPE_MISMATCH);
 }
 
 // ---------------------- op_info ------------------------

@@ -118,6 +118,8 @@ namespace MEDDLY {
         WRONG_NUMBER,
         /// A result won't fit in an integer / float.
         OVERFLOW,
+        /// Bad value for something.
+        INVALID_ASSIGNMENT,
         /// Miscellaneous error
         MISCELLANEOUS
       };

@@ -70,7 +70,7 @@ class evmdd_node_manager : public node_manager {
     virtual int createTempNode(int k, int sz, bool clear = true);
 
     // Enlarges a temporary node, if new size is greater than old size.
-    virtual forest::error resizeNode(int node, int size);
+    virtual void resizeNode(int node, int size);
 
     virtual int doOp(int a, int b) const = 0;
     virtual float doOp(float a, float b) const = 0;
@@ -83,12 +83,12 @@ class evmdd_node_manager : public node_manager {
 
     // Similar to above except that all paths lead to term.
     template <typename T>
-    forest::error createEdgeInternal(T term, dd_edge &e);
+    void createEdgeInternal(T term, dd_edge &e);
 
     // This create a EVMDD from a collection of edges (represented 
     // as vectors).
     template <typename T>
-    forest::error createEdgeInternal(const int* const* vlist,
+    void createEdgeInternal(const int* const* vlist,
         const T* terms, int N, dd_edge &e);
 
     // Create a node, at level k, whose ith index points to dptr with an
@@ -119,7 +119,7 @@ class evmdd_node_manager : public node_manager {
     // If the element represented by vlist exists, return the value
     // corresponding to it.
     template <typename T>
-    forest::error evaluateInternal(const dd_edge &f, const int* vlist,
+    void evaluateInternal(const dd_edge &f, const int* vlist,
         T &term) const;
 
     // list and tList are sorted lists containing elements to be added.
@@ -149,33 +149,33 @@ class evmdd_node_manager : public node_manager {
     // The following will either abort or return an error since they are not
     // applicable to this forest.
 
-    virtual error createEdge(const int* const* vlist, const int* terms,
+    virtual void createEdge(const int* const* vlist, const int* terms,
         int N, dd_edge &e);
-    virtual error createEdge(int val, dd_edge &e);
-    virtual error evaluate(const dd_edge &f, const int* vlist, int &term)
+    virtual void createEdge(int val, dd_edge &e);
+    virtual void evaluate(const dd_edge &f, const int* vlist, int &term)
       const;
 
-    virtual error createEdge(const int* const* vlist, const float* terms,
+    virtual void createEdge(const int* const* vlist, const float* terms,
         int N, dd_edge &e);
-    virtual error createEdge(float val, dd_edge &e);
-    virtual error evaluate(const dd_edge &f, const int* vlist, float &term)
+    virtual void createEdge(float val, dd_edge &e);
+    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
       const;
 
-    virtual error createEdge(const int* const* vlist, int N, dd_edge &e);
-    virtual error createEdge(const int* const* vlist, const int* const* vplist,
+    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, const int* const* vplist,
         int N, dd_edge &e);
-    virtual error createEdge(const int* const* vlist, const int* const* vplist,
+    virtual void createEdge(const int* const* vlist, const int* const* vplist,
         const int* terms, int N, dd_edge &e);
-    virtual error createEdge(const int* const* vlist, const int* const* vplist,
+    virtual void createEdge(const int* const* vlist, const int* const* vplist,
         const float* terms, int N, dd_edge &e);
-    virtual error createEdge(bool val, dd_edge &e);
-    virtual error evaluate(const dd_edge &f, const int* vlist, bool &term)
+    virtual void createEdge(bool val, dd_edge &e);
+    virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
       const;
-    virtual error evaluate(const dd_edge& f, const int* vlist,
+    virtual void evaluate(const dd_edge& f, const int* vlist,
         const int* vplist, bool &term) const;
-    virtual error evaluate(const dd_edge& f, const int* vlist,
+    virtual void evaluate(const dd_edge& f, const int* vlist,
         const int* vplist, int &term) const;
-    virtual error evaluate(const dd_edge& f, const int* vlist,
+    virtual void evaluate(const dd_edge& f, const int* vlist,
         const int* vplist, float &term) const;
 };
 
@@ -197,14 +197,14 @@ class evplusmdd_node_manager : public evmdd_node_manager {
         std::vector<int>& dptr, std::vector<int>& ev,
         int& result, int& resultEv);
 
-    virtual error createEdge(const int* const* vlist, const int* terms,
+    virtual void createEdge(const int* const* vlist, const int* terms,
         int N, dd_edge &e);
-    virtual error createEdge(int val, dd_edge &e);
-    virtual error evaluate(const dd_edge &f, const int* vlist, int &term)
+    virtual void createEdge(int val, dd_edge &e);
+    virtual void evaluate(const dd_edge &f, const int* vlist, int &term)
       const;
 
-    virtual forest::error getElement(const dd_edge& a, int index, int* e);
-    virtual forest::error getElement(int a, int index, int* e);
+    virtual void getElement(const dd_edge& a, int index, int* e);
+    virtual void getElement(int a, int index, int* e);
 
     virtual int doOp(int a, int b) const { return a + b; }
     virtual float doOp(float a, float b) const {
@@ -246,10 +246,10 @@ class evtimesmdd_node_manager : public evmdd_node_manager {
         std::vector<int>& dptr, std::vector<float>& ev,
         int& result, float& resultEv);
 
-    virtual error createEdge(const int* const* vlist, const float* terms,
+    virtual void createEdge(const int* const* vlist, const float* terms,
         int N, dd_edge &e);
-    virtual error createEdge(float val, dd_edge &e);
-    virtual error evaluate(const dd_edge &f, const int* vlist, float &term)
+    virtual void createEdge(float val, dd_edge &e);
+    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
       const;
 
     virtual int doOp(int a, int b) const { assert(false); return a * b; }
@@ -289,10 +289,10 @@ class evtimesmdd_node_manager : public evmdd_node_manager {
 // ------------------------ Inline methods -----------------------------------
 
 template <typename T>
-forest::error
+void
 evmdd_node_manager::createEdgeInternal(T term, dd_edge &e)
 {
-  if (e.getForest() != this) return forest::INVALID_OPERATION;
+  if (e.getForest() != this) throw error(error::INVALID_OPERATION);
 
   if (reductionRule == forest::FULLY_REDUCED) {
     e.set(getTerminalNode(true), term, domain::TERMINALS);
@@ -312,17 +312,16 @@ evmdd_node_manager::createEdgeInternal(T term, dd_edge &e)
     }
     e.set(curr, currEv, getNodeLevel(curr));
   }
-  return forest::SUCCESS;
 }
 
 
 template <typename T>
-forest::error
+void
 evmdd_node_manager::createEdgeInternal(const int* const* vlist,
     const T* terms, int N, dd_edge &e)
 {
-  if (e.getForest() != this) return forest::INVALID_OPERATION;
-  if (vlist == 0 || terms == 0 || N <= 0) return forest::INVALID_VARIABLE;
+  if (e.getForest() != this) throw error(error::INVALID_OPERATION);
+  if (vlist == 0 || terms == 0 || N <= 0) throw error(error::INVALID_VARIABLE);
 
   // check if the vlist contains valid indexes
   bool specialCasesFound = false;
@@ -367,7 +366,6 @@ evmdd_node_manager::createEdgeInternal(const int* const* vlist,
     sortBuild(list, tList, getDomain()->getNumVariables(), 0, N, node, ev);
     e.set(node, ev, getNodeLevel(node));
   }
-  return forest::SUCCESS;
 }
 
 
@@ -510,11 +508,11 @@ void evmdd_node_manager::createSparseNode(int k, int index,
 
 
 template <typename T>
-forest::error evmdd_node_manager::evaluateInternal(const dd_edge &f,
+void evmdd_node_manager::evaluateInternal(const dd_edge &f,
     const int* vlist, T &term) const
 {
-  if (f.getForest() != this) return forest::INVALID_OPERATION;
-  if (vlist == 0) return forest::INVALID_VARIABLE;
+  if (f.getForest() != this) throw error(error::INVALID_OPERATION);
+  if (vlist == 0) throw error(error::INVALID_VARIABLE);
 
   // assumption: vlist does not contain any special values (-1, -2, etc).
   // vlist contains a single element.
@@ -545,7 +543,6 @@ forest::error evmdd_node_manager::evaluateInternal(const dd_edge &f,
     term = (n == 0)? ev: doOp(term, ev);
     node = n;
   }
-  return forest::SUCCESS;
 }
 
 

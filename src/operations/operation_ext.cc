@@ -34,23 +34,22 @@ mdd_apply_operation::
 ~mdd_apply_operation()
 {}
 
-compute_manager::error
+void
 mdd_apply_operation::
 typeCheck(const op_info* owner)
 {
   if (owner == 0)
-    return compute_manager::UNKNOWN_OPERATION;
+    throw error(error::UNKNOWN_OPERATION);
   if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!owner->areAllForests())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->nParams != 3)
-    return compute_manager::WRONG_NUMBER;
+    throw error(error::WRONG_NUMBER);
   if (owner->p[0] != owner->p[1] || owner->p[0] != owner->p[2])
-    return compute_manager::FOREST_MISMATCH;
+    throw error(error::FOREST_MISMATCH);
   if (!getExpertForest(owner, 0)->isMdd())
-    return compute_manager::TYPE_MISMATCH;
-  return compute_manager::SUCCESS;
+    throw error(error::TYPE_MISMATCH);
 }
 
 
@@ -147,30 +146,31 @@ saveResult(op_info* owner, int a, int b, int c)
 }
 
 
-compute_manager::error
+void
 mdd_apply_operation::
 compute(op_info* owner, dd_edge** operands)
 {
-  if (operands == 0) return compute_manager::TYPE_MISMATCH;
+  if (operands == 0) 
+    throw error(error::TYPE_MISMATCH);
   // compute(owner, dd_edge, dd_edge, dd_edge) checks for owner == 0
-  return compute(owner, *operands[0], *operands[1], *operands[2]);
+  compute(owner, *operands[0], *operands[1], *operands[2]);
 }
 
-compute_manager::error
+void
 mdd_apply_operation::
 compute(op_info* owner, const dd_edge& a, dd_edge& b)
 {
-  return compute_manager::TYPE_MISMATCH;
+  throw error(error::TYPE_MISMATCH);
 }
 
-compute_manager::error
+void
 mdd_apply_operation::
 compute(op_info* owner, const dd_edge& a, const dd_edge& b, dd_edge& c)
 {
-  if (owner == 0) return compute_manager::TYPE_MISMATCH;
+  if (owner == 0) 
+    throw error(error::TYPE_MISMATCH);
   int result = compute(owner, a.getNode(), b.getNode());
   c.set(result, 0, getExpertForest(owner, 2)->getNodeLevel(result));
-  return compute_manager::SUCCESS;
 }
 
 
@@ -1689,24 +1689,23 @@ mxd_apply_operation::mxd_apply_operation()
 mxd_apply_operation::~mxd_apply_operation() {}
 
 
-compute_manager::error
+void
 mxd_apply_operation::typeCheck(const op_info* owner)
 {
   if (owner == 0)
-    return compute_manager::UNKNOWN_OPERATION;
+    throw error(error::UNKNOWN_OPERATION);
   if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!owner->areAllForests())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->nParams != 3)
-    return compute_manager::WRONG_NUMBER;
+    throw error(error::WRONG_NUMBER);
   if (owner->p[0] != owner->p[1] || owner->p[0] != owner->p[2])
-    return compute_manager::FOREST_MISMATCH;
+    throw error(error::FOREST_MISMATCH);
   if (!owner->p[0].isMxd() ||
       !owner->p[0].isBoolForest() ||
       !owner->p[0].isMT())
-    return compute_manager::TYPE_MISMATCH;
-  return compute_manager::SUCCESS;
+    throw error(error::TYPE_MISMATCH);
 }
 
 
@@ -2446,24 +2445,23 @@ mxd_alt_apply_operation::mxd_alt_apply_operation()
 mxd_alt_apply_operation::~mxd_alt_apply_operation() {}
 
 
-compute_manager::error
+void
 mxd_alt_apply_operation::typeCheck(const op_info* owner)
 {
   if (owner == 0)
-    return compute_manager::UNKNOWN_OPERATION;
+    throw error(error::UNKNOWN_OPERATION);
   if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!owner->areAllForests())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->nParams != 3)
-    return compute_manager::WRONG_NUMBER;
+    throw error(error::WRONG_NUMBER);
   if (owner->p[0] != owner->p[1] || owner->p[0] != owner->p[2])
-    return compute_manager::FOREST_MISMATCH;
+    throw error(error::FOREST_MISMATCH);
   if (!(owner->p[0].isMxd()) ||
       !owner->p[0].isBoolForest() ||
       !owner->p[0].isMT())
-    return compute_manager::TYPE_MISMATCH;
-  return compute_manager::SUCCESS;
+    throw error(error::TYPE_MISMATCH);
 }
 
 
@@ -2580,29 +2578,30 @@ mxd_alt_apply_operation::saveResult(op_info* owner, int k, int a, int b, int c)
 }
 
 
-compute_manager::error
+void
 mxd_alt_apply_operation::compute(op_info* owner, dd_edge** operands)
 {
-  if (operands == 0) return compute_manager::TYPE_MISMATCH;
+  if (operands == 0) 
+    throw error(error::TYPE_MISMATCH);
   // compute(owner, dd_edge, dd_edge, dd_edge) checks for owner == 0
-  return compute(owner, *operands[0], *operands[1], *operands[2]);
+  compute(owner, *operands[0], *operands[1], *operands[2]);
 }
 
-compute_manager::error
+void
 mxd_alt_apply_operation::compute(op_info* owner, const dd_edge& a, dd_edge& b)
 {
-  return compute_manager::TYPE_MISMATCH;
+  throw error(error::TYPE_MISMATCH);
 }
 
-compute_manager::error
+void
 mxd_alt_apply_operation::compute(op_info* owner, const dd_edge& a,
     const dd_edge& b, dd_edge& c)
 {
-  if (owner == 0) return compute_manager::TYPE_MISMATCH;
+  if (owner == 0) 
+    throw error(error::TYPE_MISMATCH);
   int result = compute(owner,
       owner->p[0].getDomain()->getTopVariable(), a.getNode(), b.getNode());
   c.set(result, 0, getExpertForest(owner, 2)->getNodeLevel(result));
-  return compute_manager::SUCCESS;
 }
 
 
@@ -3868,24 +3867,23 @@ mxd_complement::mxd_complement()
 mxd_complement::~mxd_complement() {}
 
 
-compute_manager::error
+void
 mxd_complement::typeCheck(const op_info* owner)
 {
   if (owner == 0)
-    return compute_manager::UNKNOWN_OPERATION;
+    throw error(error::UNKNOWN_OPERATION);
   if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!owner->areAllForests())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->nParams != 2)
-    return compute_manager::WRONG_NUMBER;
+    throw error(error::WRONG_NUMBER);
   if (owner->p[0].getDomain() != owner->p[1].getDomain())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!getExpertForest(owner, 0)->isMxd())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!getExpertForest(owner, 1)->isMxd())
-    return compute_manager::TYPE_MISMATCH;
-  return compute_manager::SUCCESS;
+    throw error(error::TYPE_MISMATCH);
 }
 
 
@@ -4124,27 +4122,26 @@ mtmdd_apply_operation::mtmdd_apply_operation()
 
 mtmdd_apply_operation::~mtmdd_apply_operation() {}
 
-compute_manager::error
+void
 mtmdd_apply_operation::typeCheck(const op_info* owner)
 {
   if (owner == 0)
-    return compute_manager::UNKNOWN_OPERATION;
+    throw error(error::UNKNOWN_OPERATION);
   if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!owner->areAllForests())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->nParams != 3)
-    return compute_manager::WRONG_NUMBER;
+    throw error(error::WRONG_NUMBER);
   if (owner->p[0] != owner->p[1] || owner->p[0] != owner->p[2])
-    return compute_manager::FOREST_MISMATCH;
+    throw error(error::FOREST_MISMATCH);
   if (owner->p[0].isMxd() ||
       owner->p[0].isBoolForest() ||
       // the above allows MTMDDs with INTEGERs and REALs
       // the line below allows only INTEGERs
       // owner->f[0]->getRangeType() != forest::INTEGER ||
       !owner->p[0].isMT())
-    return compute_manager::TYPE_MISMATCH;
-  return compute_manager::SUCCESS;
+    throw error(error::TYPE_MISMATCH);
 }
 
 
@@ -4341,27 +4338,26 @@ mtmdd_plus::mtmdd_plus()
 
 #else
 
-compute_manager::error
+void
 mtmdd_plus::typeCheck(const op_info* owner)
 {
   if (owner == 0)
-    return compute_manager::UNKNOWN_OPERATION;
+    throw error(error::UNKNOWN_OPERATION);
   if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!owner->areAllForests())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->nParams != 3)
-    return compute_manager::WRONG_NUMBER;
+    throw error(error::WRONG_NUMBER);
   if (owner->p[0] != owner->p[1] || owner->p[0] != owner->p[2])
-    return compute_manager::FOREST_MISMATCH;
+    throw error(error::FOREST_MISMATCH);
   if (owner->p[0].isMxd() ||
       owner->p[0].isBoolForest() ||
       // the above allows MTMDDs with INTEGERs and REALs
       // the line below allows only INTEGERs
       // owner->f[0]->getRangeType() != forest::INTEGER ||
       !owner->p[0].isMT())
-    return compute_manager::TYPE_MISMATCH;
-  return compute_manager::SUCCESS;
+    throw error(error::TYPE_MISMATCH);
 }
 
 
@@ -5005,23 +5001,22 @@ mtmdd_to_mdd_apply_operation::~mtmdd_to_mdd_apply_operation()
 }
 
 
-compute_manager::error
+void
 mtmdd_to_mdd_apply_operation::typeCheck(const op_info* owner)
 {
   if (owner == 0)
-    return compute_manager::UNKNOWN_OPERATION;
+    throw error(error::UNKNOWN_OPERATION);
   if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!owner->areAllForests())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->nParams != 3)
-    return compute_manager::WRONG_NUMBER;
+    throw error(error::WRONG_NUMBER);
   if (owner->p[0] != owner->p[1])
-    return compute_manager::FOREST_MISMATCH;
+    throw error(error::FOREST_MISMATCH);
   if (!getExpertForest(owner, 0)->isMtMdd() ||
       !getExpertForest(owner, 2)->isMdd())
-    return compute_manager::TYPE_MISMATCH;
-  return compute_manager::SUCCESS;
+    throw error(error::TYPE_MISMATCH);
 }
 
 
@@ -5352,22 +5347,21 @@ conversion_operation::conversion_operation()
 conversion_operation::~conversion_operation()
 {}
 
-compute_manager::error
+void
 conversion_operation::typeCheck(const op_info* owner)
 {
   if (owner == 0)
-    return compute_manager::UNKNOWN_OPERATION;
+    throw error(error::UNKNOWN_OPERATION);
   if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!owner->areAllForests())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->nParams != 2)
-    return compute_manager::WRONG_NUMBER;
+    throw error(error::WRONG_NUMBER);
   // No assumption about what kind of forests these are, but they
   // have to be forests in the same domain
   if (owner->p[0].getDomain() != owner->p[1].getDomain())
-    return compute_manager::TYPE_MISMATCH;
-  return compute_manager::SUCCESS;
+    throw error(error::TYPE_MISMATCH);
 }
 
 
@@ -5456,28 +5450,29 @@ conversion_operation::saveResult(op_info* owner, int a, int b)
 }
 
 
-compute_manager::error
+void
 conversion_operation::compute(op_info* owner, dd_edge** operands)
 {
-  if (operands == 0) return compute_manager::TYPE_MISMATCH;
+  if (operands == 0) 
+    throw error(error::TYPE_MISMATCH);
   // compute(owner, dd_edge, dd_edge, dd_edge) checks for owner == 0
-  return compute(owner, *operands[0], *operands[1]);
+  compute(owner, *operands[0], *operands[1]);
 }
 
-compute_manager::error
+void
 conversion_operation::compute(op_info* owner, const dd_edge& a, dd_edge& b)
 {
-  if (owner == 0) return compute_manager::TYPE_MISMATCH;
+  if (owner == 0) 
+    throw error(error::TYPE_MISMATCH);
   int result = compute(owner, a.getNode());
   b.set(result, 0, getExpertForest(owner, 1)->getNodeLevel(result));
-  return compute_manager::SUCCESS;
 }
 
-compute_manager::error
+void
 conversion_operation::compute(op_info* owner, const dd_edge& a,
     const dd_edge& b, dd_edge& c)
 {
-  return compute_manager::TYPE_MISMATCH;
+  throw error(error::TYPE_MISMATCH);
 }
 
 
@@ -5580,24 +5575,23 @@ mdd_complement::mdd_complement()
 mdd_complement::~mdd_complement() {}
 
 
-compute_manager::error
+void
 mdd_complement::typeCheck(const op_info* owner)
 {
   if (owner == 0)
-    return compute_manager::UNKNOWN_OPERATION;
+    throw error(error::UNKNOWN_OPERATION);
   if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!owner->areAllForests())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->nParams != 2)
-    return compute_manager::WRONG_NUMBER;
+    throw error(error::WRONG_NUMBER);
   if (owner->p[0].getDomain() != owner->p[1].getDomain())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!getExpertForest(owner, 0)->isMdd())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!getExpertForest(owner, 1)->isMdd())
-    return compute_manager::TYPE_MISMATCH;
-  return compute_manager::SUCCESS;
+    throw error(error::TYPE_MISMATCH);
 }
 
 
@@ -5628,24 +5622,23 @@ mtmdd_to_mdd::mtmdd_to_mdd()
 mtmdd_to_mdd::~mtmdd_to_mdd() {}
 
 
-compute_manager::error
+void
 mtmdd_to_mdd::typeCheck(const op_info* owner)
 {
   if (owner == 0)
-    return compute_manager::UNKNOWN_OPERATION;
+    throw error(error::UNKNOWN_OPERATION);
   if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!owner->areAllForests())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->nParams != 2)
-    return compute_manager::WRONG_NUMBER;
+    throw error(error::WRONG_NUMBER);
   if (owner->p[0].getDomain() != owner->p[1].getDomain())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!getExpertForest(owner, 0)->isMtMdd())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!getExpertForest(owner, 1)->isMdd())
-    return compute_manager::TYPE_MISMATCH;
-  return compute_manager::SUCCESS;
+    throw error(error::TYPE_MISMATCH);
 }
 
 
@@ -5680,24 +5673,23 @@ mdd_to_mtmdd::mdd_to_mtmdd()
 mdd_to_mtmdd::~mdd_to_mtmdd() {}
 
 
-compute_manager::error
+void
 mdd_to_mtmdd::typeCheck(const op_info* owner)
 {
   if (owner == 0)
-    return compute_manager::UNKNOWN_OPERATION;
+    throw error(error::UNKNOWN_OPERATION);
   if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!owner->areAllForests())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->nParams != 2)
-    return compute_manager::WRONG_NUMBER;
+    throw error(error::WRONG_NUMBER);
   if (owner->p[0].getDomain() != owner->p[1].getDomain())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!getExpertForest(owner, 0)->isMdd())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!getExpertForest(owner, 1)->isMtMdd())
-    return compute_manager::TYPE_MISMATCH;
-  return compute_manager::SUCCESS;
+    throw error(error::TYPE_MISMATCH);
 }
 
 
@@ -5733,24 +5725,23 @@ mtmxd_to_mxd::mtmxd_to_mxd()
 mtmxd_to_mxd::~mtmxd_to_mxd() {}
 
 
-compute_manager::error
+void
 mtmxd_to_mxd::typeCheck(const op_info* owner)
 {
   if (owner == 0)
-    return compute_manager::UNKNOWN_OPERATION;
+    throw error(error::UNKNOWN_OPERATION);
   if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!owner->areAllForests())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->nParams != 2)
-    return compute_manager::WRONG_NUMBER;
+    throw error(error::WRONG_NUMBER);
   if (owner->p[0].getDomain() != owner->p[1].getDomain())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!getExpertForest(owner, 0)->isMtMxd())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!getExpertForest(owner, 1)->isMxd())
-    return compute_manager::TYPE_MISMATCH;
-  return compute_manager::SUCCESS;
+    throw error(error::TYPE_MISMATCH);
 }
 
 
@@ -5785,24 +5776,23 @@ mxd_to_mtmxd::mxd_to_mtmxd()
 mxd_to_mtmxd::~mxd_to_mtmxd() {}
 
 
-compute_manager::error
+void
 mxd_to_mtmxd::typeCheck(const op_info* owner)
 {
   if (owner == 0)
-    return compute_manager::UNKNOWN_OPERATION;
+    throw error(error::UNKNOWN_OPERATION);
   if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!owner->areAllForests())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->nParams != 2)
-    return compute_manager::WRONG_NUMBER;
+    throw error(error::WRONG_NUMBER);
   if (owner->p[0].getDomain() != owner->p[1].getDomain())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!getExpertForest(owner, 0)->isMxd())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!getExpertForest(owner, 1)->isMtMxd())
-    return compute_manager::TYPE_MISMATCH;
-  return compute_manager::SUCCESS;
+    throw error(error::TYPE_MISMATCH);
 }
 
 
@@ -5838,25 +5828,24 @@ mtmdd_to_evmdd::mtmdd_to_evmdd()
 mtmdd_to_evmdd::~mtmdd_to_evmdd() {}
 
 
-compute_manager::error
+void
 mtmdd_to_evmdd::typeCheck(const op_info* owner)
 {
   if (owner == 0)
-    return compute_manager::UNKNOWN_OPERATION;
+    throw error(error::UNKNOWN_OPERATION);
   if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!owner->areAllForests())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->nParams != 2)
-    return compute_manager::WRONG_NUMBER;
+    throw error(error::WRONG_NUMBER);
   if (owner->p[0].getDomain() != owner->p[1].getDomain())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!getExpertForest(owner, 0)->isMtMdd())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->p[1].isMT())
     // !MULTI_TERMINAL is same as EV+ or EV*
-    return compute_manager::TYPE_MISMATCH;
-  return compute_manager::SUCCESS;
+    throw error(error::TYPE_MISMATCH);
 }
 
 
@@ -6008,32 +5997,33 @@ bool mtmdd_to_evmdd::checkTerminals(op_info* op, int a, int& b, float& ev)
 }
 
 
-compute_manager::error
+void
 mtmdd_to_evmdd::compute(op_info* owner, dd_edge** operands)
 {
-  if (operands == 0) return compute_manager::TYPE_MISMATCH;
+  if (operands == 0) 
+    throw error(error::TYPE_MISMATCH);
   // compute(owner, dd_edge, dd_edge, dd_edge) checks for owner == 0
-  return compute(owner, *operands[0], *operands[1]);
+  compute(owner, *operands[0], *operands[1]);
 }
 
 
-compute_manager::error
+void
 mtmdd_to_evmdd::compute(op_info* owner, const dd_edge& a,
     const dd_edge& b, dd_edge& c)
 {
-  return compute_manager::TYPE_MISMATCH;
+  throw error(error::TYPE_MISMATCH);
 }
 
 
-compute_manager::error
+void
 mtmdd_to_evmdd::compute(op_info* owner, const dd_edge& a, dd_edge& b)
 {
-  if (owner == 0) return compute_manager::TYPE_MISMATCH;
+  if (owner == 0) 
+    throw error(error::TYPE_MISMATCH);
   int result = 0;
   int ev = 0;
   compute(owner, a.getNode(), result, ev);
   b.set(result, ev, getExpertForest(owner, 1)->getNodeLevel(result));
-  return compute_manager::SUCCESS;
 }
 
 
@@ -6146,32 +6136,32 @@ mdd_to_evplusmdd_index_set::mdd_to_evplusmdd_index_set()
 mdd_to_evplusmdd_index_set::~mdd_to_evplusmdd_index_set() {}
 
 
-compute_manager::error
+void
 mdd_to_evplusmdd_index_set::typeCheck(const op_info* owner)
 {
   if (owner == 0)
-    return compute_manager::UNKNOWN_OPERATION;
+    throw error(error::UNKNOWN_OPERATION);
   if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!owner->areAllForests())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->nParams != 2)
-    return compute_manager::WRONG_NUMBER;
+    throw error(error::WRONG_NUMBER);
   if (owner->p[0].getDomain() != owner->p[1].getDomain())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!getExpertForest(owner, 0)->isMdd())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!getExpertForest(owner, 1)->isEvplusMdd())
-    return compute_manager::TYPE_MISMATCH;
-  return compute_manager::SUCCESS;
+    throw error(error::TYPE_MISMATCH);
 }
 
 
-compute_manager::error
+void
 mdd_to_evplusmdd_index_set::compute(op_info* owner,
     const dd_edge& a, dd_edge& b)
 {
-  if (owner == 0) return compute_manager::TYPE_MISMATCH;
+  if (owner == 0) 
+    throw error(error::TYPE_MISMATCH);
   int result = 0;
   int ev = 0;
   int nVars = owner->p[0].getDomain()->getNumVariables();
@@ -6179,7 +6169,6 @@ mdd_to_evplusmdd_index_set::compute(op_info* owner,
   // note that ev will be equal to the cardinality of the ev+mdd;
   // but we do not use that number here.
   b.set(result, 0, getExpertForest(owner, 1)->getNodeLevel(result));
-  return compute_manager::SUCCESS;
 }
 
 
@@ -6308,26 +6297,26 @@ mtmxd_apply_operation::mtmxd_apply_operation()
 
 mtmxd_apply_operation::~mtmxd_apply_operation() {}
 
-compute_manager::error
+void
 mtmxd_apply_operation::typeCheck(const op_info* owner)
 {
   if (owner == 0)
-    return compute_manager::UNKNOWN_OPERATION;
+    throw error(error::UNKNOWN_OPERATION);
   if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!owner->areAllForests())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->nParams != 3)
-    return compute_manager::WRONG_NUMBER;
+    throw error(error::WRONG_NUMBER);
   if (owner->p[0] != owner->p[1] || owner->p[0] != owner->p[2])
-    return compute_manager::FOREST_MISMATCH;
+    throw error(error::FOREST_MISMATCH);
   if (!(owner->p[0].isMxd()) ||
       owner->p[0].isBoolForest() ||
       // the above allows MTMXDs with INTEGERs and REALs
       // the line below allows only INTEGERs
       // owner->f[0]->getRangeType() != forest::INTEGER ||
       !owner->p[0].isMT())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   // mtmxd_apply_operation::compute() works correctly only with
   // operations that return 0 when operating on 0s. For example,
   // 0+0, 0*0, 0-0 all result in 0.
@@ -6336,10 +6325,9 @@ mtmxd_apply_operation::typeCheck(const op_info* owner)
   if (checkTerminals(const_cast<op_info*>(owner), 0, 0, result)) {
     if (result != 0) {
       const_cast<expert_forest*>(getExpertForest(owner, 0))->unlinkNode(result);
-      return compute_manager::TYPE_MISMATCH;
+      throw error(error::TYPE_MISMATCH);
     }
   }
-  return compute_manager::SUCCESS;
 }
 
 
@@ -6685,27 +6673,26 @@ mtmxd_alt_apply_operation()
 
 mtmxd_alt_apply_operation::~mtmxd_alt_apply_operation() {}
 
-compute_manager::error
+void
 mtmxd_alt_apply_operation::typeCheck(const op_info* owner)
 {
   if (owner == 0)
-    return compute_manager::UNKNOWN_OPERATION;
+    throw error(error::UNKNOWN_OPERATION);
   if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!owner->areAllForests())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->nParams != 3)
-    return compute_manager::WRONG_NUMBER;
+    throw error(error::WRONG_NUMBER);
   if (owner->p[0] != owner->p[1] || owner->p[0] != owner->p[2])
-    return compute_manager::FOREST_MISMATCH;
+    throw error(error::FOREST_MISMATCH);
   if (!(owner->p[0].isMxd()) ||
       owner->p[0].isBoolForest() ||
       // the above allows MTMXDs with INTEGERs and REALs
       // the line below allows only INTEGERs
       // owner->f[0]->getRangeType() != forest::INTEGER ||
       !owner->p[0].isMT())
-    return compute_manager::TYPE_MISMATCH;
-  return compute_manager::SUCCESS;
+    throw error(error::TYPE_MISMATCH);
 }
 
 
@@ -6906,22 +6893,23 @@ discardEntry(op_info* owner, const int* data)
 
 
 // Calls compute(op_info*, dd_edge, dd_edge, dd_edge)
-compute_manager::error
+void
 evmdd_apply_operation::
 compute(op_info* owner, dd_edge** operands)
 {
-  if (operands == 0) return compute_manager::TYPE_MISMATCH;
+  if (operands == 0) 
+    throw error(error::TYPE_MISMATCH);
   // compute(owner, dd_edge, dd_edge, dd_edge) checks for owner == 0
-  return compute(owner, *operands[0], *operands[1], *operands[2]);
+  compute(owner, *operands[0], *operands[1], *operands[2]);
 }
 
 
 // Returns an error
-compute_manager::error
+void
 evmdd_apply_operation::
 compute(op_info* owner, const dd_edge& a, dd_edge& b)
 {
-  return compute_manager::TYPE_MISMATCH;
+  throw error(error::TYPE_MISMATCH);
 }
 
 
@@ -6953,24 +6941,23 @@ showEntry(const op_info* owner, FILE* strm, const int *data) const
 }
 
 
-compute_manager::error
+void
 evplusmdd_apply_operation::
 typeCheck(const op_info* owner)
 {
   // op1 == EV+MDD, op2 == EV+MDD, op3 = EV+MDD
   if (owner == 0)
-    return compute_manager::UNKNOWN_OPERATION;
+    throw error(error::UNKNOWN_OPERATION);
   if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!owner->areAllForests())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->nParams != 3)
-    return compute_manager::WRONG_NUMBER;
+    throw error(error::WRONG_NUMBER);
   if (owner->p[0] != owner->p[1] || owner->p[0] != owner->p[2])
-    return compute_manager::FOREST_MISMATCH;
+    throw error(error::FOREST_MISMATCH);
   if (!getExpertForest(owner, 0)->isEvplusMdd())
-    return compute_manager::TYPE_MISMATCH;
-  return compute_manager::SUCCESS;
+    throw error(error::TYPE_MISMATCH);
 }
 
 
@@ -7028,11 +7015,12 @@ saveResult(op_info* owner, int a, int aev, int b, int bev, int c, int cev)
 
 // Implements APPLY operation -- calls checkTerminals to compute
 // result for terminal nodes.
-compute_manager::error
+void
 evplusmdd_apply_operation::
 compute(op_info* owner, const dd_edge& a, const dd_edge& b, dd_edge& c)
 {
-  if (owner == 0) return compute_manager::TYPE_MISMATCH;
+  if (owner == 0) 
+    throw error(error::TYPE_MISMATCH);
   int result = 0;
   int ev = 0;
   int aev = 0;
@@ -7041,20 +7029,19 @@ compute(op_info* owner, const dd_edge& a, const dd_edge& b, dd_edge& c)
   b.getEdgeValue(bev);
   compute(owner, a.getNode(), aev, b.getNode(), bev, result, ev);
   c.set(result, ev, getExpertForest(owner, 1)->getNodeLevel(result));
-  return compute_manager::SUCCESS;
 }
 
 
-compute_manager::error
+void
 evplusmdd_apply_operation::
 compute(op_info* owner, int a, int aev, int b, int bev, int& c, int& cev)
 {
   DCASSERT(owner->p[0] == owner->p[1] && owner->p[1] == owner->p[2]);
 
   if (checkTerminals(owner, a, aev, b, bev, c, cev))
-    return compute_manager::SUCCESS;
+    return;
   if (findResult(owner, a, aev, b, bev, c, cev))
-    return compute_manager::SUCCESS;
+    return;
 
   // 0. initialize result
   // 1. if a is at a lower level than b, expand b
@@ -7189,7 +7176,6 @@ compute(op_info* owner, int a, int aev, int b, int bev, int& c, int& cev)
 #endif
 
   saveResult(owner, a, aev, b, bev, c, cev);
-  return compute_manager::SUCCESS;
 }
 
 
@@ -7221,24 +7207,23 @@ showEntry(const op_info* owner, FILE* strm, const int *data) const
 }
 
 
-compute_manager::error
+void
 evtimesmdd_apply_operation::
 typeCheck(const op_info* owner)
 {
   // op1 == EV+MDD, op2 == EV+MDD, op3 = EV+MDD
   if (owner == 0)
-    return compute_manager::UNKNOWN_OPERATION;
+    throw error(error::UNKNOWN_OPERATION);
   if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!owner->areAllForests())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->nParams != 3)
-    return compute_manager::WRONG_NUMBER;
+    throw error(error::WRONG_NUMBER);
   if (owner->p[0] != owner->p[1] || owner->p[0] != owner->p[2])
-    return compute_manager::FOREST_MISMATCH;
+    throw error(error::FOREST_MISMATCH);
   if (!getExpertForest(owner, 0)->isEvtimesMdd())
-    return compute_manager::TYPE_MISMATCH;
-  return compute_manager::SUCCESS;
+    throw error(error::TYPE_MISMATCH);
 }
 
 
@@ -7297,11 +7282,12 @@ saveResult(op_info* owner, int a, float aev, int b, float bev, int c, float cev)
 
 // Implements APPLY operation -- calls checkTerminals to compute
 // result for terminal nodes.
-compute_manager::error
+void
 evtimesmdd_apply_operation::
 compute(op_info* owner, const dd_edge& a, const dd_edge& b, dd_edge& c)
 {
-  if (owner == 0) return compute_manager::TYPE_MISMATCH;
+  if (owner == 0) 
+    throw error(error::TYPE_MISMATCH);
   int result = 0;
   float ev = 0;
   float aev = 0;
@@ -7310,20 +7296,19 @@ compute(op_info* owner, const dd_edge& a, const dd_edge& b, dd_edge& c)
   b.getEdgeValue(bev);
   compute(owner, a.getNode(), aev, b.getNode(), bev, result, ev);
   c.set(result, ev, getExpertForest(owner, 1)->getNodeLevel(result));
-  return compute_manager::SUCCESS;
 }
 
 
-compute_manager::error
+void
 evtimesmdd_apply_operation::
 compute(op_info* owner, int a, float aev, int b, float bev, int& c, float& cev)
 {
   DCASSERT(owner->p[0] == owner->p[1] && owner->p[1] == owner->p[2]);
 
   if (checkTerminals(owner, a, aev, b, bev, c, cev))
-    return compute_manager::SUCCESS;
+    return;
   if (findResult(owner, a, aev, b, bev, c, cev))
-    return compute_manager::SUCCESS;
+    return;
 
   // 0. initialize result
   // 1. if a is at a lower level than b, expand b
@@ -7474,7 +7459,6 @@ compute(op_info* owner, int a, float aev, int b, float bev, int& c, float& cev)
 #endif
 
   saveResult(owner, a, aev, b, bev, c, cev);
-  return compute_manager::SUCCESS;
 }
 
 
@@ -7511,7 +7495,7 @@ checkTerminals(op_info* op, int a, int aev, int b, int bev, int& c, int& cev)
 
 #if 1
 
-compute_manager::error
+void
 evplusmdd_plus::
 compute(op_info* owner, int a, int aev, int b, int bev, int& c, int& cev)
 {
@@ -7519,9 +7503,9 @@ compute(op_info* owner, int a, int aev, int b, int bev, int& c, int& cev)
   DCASSERT(owner->p[0] == owner->p[1] && owner->p[1] == owner->p[2]);
 
   if (checkTerminals(owner, a, aev, b, bev, c, cev))
-    return compute_manager::SUCCESS;
+    return;
   if (findResult(owner, a, aev, b, bev, c, cev))
-    return compute_manager::SUCCESS;
+    return;
 
   // 0. initialize result
   // 1. if a is at a lower level than b, expand b
@@ -7677,24 +7661,23 @@ compute(op_info* owner, int a, int aev, int b, int bev, int& c, int& cev)
 #endif
 
   saveResult(owner, a, aev, b, bev, c, cev);
-  return compute_manager::SUCCESS;
 #else
-  return evplusmdd_apply_operation::compute(owner, a, aev, b, bev, c, cev);
+  evplusmdd_apply_operation::compute(owner, a, aev, b, bev, c, cev);
 #endif
 }
 
 #else
 
-compute_manager::error
+void
 evplusmdd_plus::
 compute(op_info* owner, int a, int aev, int b, int bev, int& c, int& cev)
 {
   DCASSERT(owner->p[0] == owner->p[1] && owner->p[1] == owner->p[2]);
 
   if (checkTerminals(owner, a, aev, b, bev, c, cev))
-    return compute_manager::SUCCESS;
+    return;
   if (findResult(owner, a, aev, b, bev, c, cev))
-    return compute_manager::SUCCESS;
+    return;
 
   // 0. initialize result
   // 1. if a is at a lower level than b, expand b
@@ -7903,7 +7886,6 @@ compute(op_info* owner, int a, int aev, int b, int bev, int& c, int& cev)
 #endif
 
   saveResult(owner, a, aev, b, bev, c, cev);
-  return compute_manager::SUCCESS;
 }
 
 #endif

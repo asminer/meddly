@@ -57,23 +57,23 @@ class mtmdd_node_manager : public node_manager {
     mtmdd_node_manager(domain *d, forest::range_type t);
     ~mtmdd_node_manager();
 
-    virtual error createEdge(const int* const* vlist, const int* terms, int N,
+    virtual void createEdge(const int* const* vlist, const int* terms, int N,
         dd_edge &e);
-    virtual error createEdge(const int* const* vlist, const float* terms,
+    virtual void createEdge(const int* const* vlist, const float* terms,
         int N, dd_edge &e);
 
-    virtual error createEdge(int val, dd_edge &e);
-    virtual error createEdge(float val, dd_edge &e);
+    virtual void createEdge(int val, dd_edge &e);
+    virtual void createEdge(float val, dd_edge &e);
 
-    virtual error evaluate(const dd_edge &f, const int* vlist, int &term)
+    virtual void evaluate(const dd_edge &f, const int* vlist, int &term)
       const;
-    virtual error evaluate(const dd_edge &f, const int* vlist, float &term)
+    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
       const;
 
-    virtual error findFirstElement(const dd_edge& f, int* vlist) const;
+    virtual void findFirstElement(const dd_edge& f, int* vlist) const;
 
     // Enlarges a temporary node, if new size is greater than old size.
-    virtual forest::error resizeNode(int node, int size);
+    virtual void resizeNode(int node, int size);
 
     virtual int reduceNode(int p);
 
@@ -81,21 +81,21 @@ class mtmdd_node_manager : public node_manager {
     // applicable to this forest.
     virtual void normalizeAndReduceNode(int& p, int& ev);
     virtual void normalizeAndReduceNode(int& p, float& ev);
-    virtual error createEdge(const int* const* vlist, int N, dd_edge &e);
-    virtual error createEdge(const int* const* vlist, const int* const* vplist,
+    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, const int* const* vplist,
         int N, dd_edge &e);
-    virtual error createEdge(const int* const* vlist, const int* const* vplist,
+    virtual void createEdge(const int* const* vlist, const int* const* vplist,
         const int* terms, int N, dd_edge &e);
-    virtual error createEdge(const int* const* vlist, const int* const* vplist, 
+    virtual void createEdge(const int* const* vlist, const int* const* vplist, 
         const float* terms, int N, dd_edge &e);
-    virtual error createEdge(bool val, dd_edge &e);
-    virtual error evaluate(const dd_edge &f, const int* vlist, bool &term)
+    virtual void createEdge(bool val, dd_edge &e);
+    virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
       const;
-    virtual error evaluate(const dd_edge& f, const int* vlist,
+    virtual void evaluate(const dd_edge& f, const int* vlist,
         const int* vplist, bool &term) const;
-    virtual error evaluate(const dd_edge& f, const int* vlist,
+    virtual void evaluate(const dd_edge& f, const int* vlist,
         const int* vplist, int &term) const;
-    virtual error evaluate(const dd_edge& f, const int* vlist,
+    virtual void evaluate(const dd_edge& f, const int* vlist,
         const int* vplist, float &term) const;
 
   protected:
@@ -108,7 +108,7 @@ class mtmdd_node_manager : public node_manager {
     // This create a MTMDD from a collection of edges (represented 
     // as vectors).
     template <typename T>
-      forest::error createEdgeInternal(const int* const* vlist,
+      void createEdgeInternal(const int* const* vlist,
           const T* terms, int N, dd_edge &e);
 
     // Create edge representing f(vlist[]) = term and store it in curr.
@@ -130,7 +130,7 @@ class mtmdd_node_manager : public node_manager {
     // the equivalent node representation. This makes this method useful
     // for createEdge(int, e) or (float, e) or (bool, e) as long as the
     // terminal value can be converted into an equivalent node.
-    error createEdgeHelper(int terminalNode, dd_edge& e);
+    void createEdgeHelper(int terminalNode, dd_edge& e);
 
     // Get the terminal node at the bottom of the edge with root n
     // and vlist representing the indexes for the levels.
@@ -176,22 +176,22 @@ class mdd_node_manager : public mtmdd_node_manager {
     using mtmdd_node_manager::evaluate;
 
     // Refer to meddly.h
-    virtual error createEdge(const int* const* vlist, int N, dd_edge &e);
-    virtual error createEdge(bool val, dd_edge &e);
-    virtual error evaluate(const dd_edge &f, const int* vlist, bool &term)
+    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
+    virtual void createEdge(bool val, dd_edge &e);
+    virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
       const;
 
     // The following will either abort or return an error since they are not
     // applicable to this forest.
-    virtual error createEdge(const int* const* vlist, const int* terms, int N,
+    virtual void createEdge(const int* const* vlist, const int* terms, int N,
         dd_edge &e);
-    virtual error createEdge(const int* const* vlist, const float* terms,
+    virtual void createEdge(const int* const* vlist, const float* terms,
         int N, dd_edge &e);
-    virtual error createEdge(int val, dd_edge &e);
-    virtual error createEdge(float val, dd_edge &e);
-    virtual error evaluate(const dd_edge &f, const int* vlist, int &term)
+    virtual void createEdge(int val, dd_edge &e);
+    virtual void createEdge(float val, dd_edge &e);
+    virtual void evaluate(const dd_edge &f, const int* vlist, int &term)
       const;
-    virtual error evaluate(const dd_edge &f, const int* vlist, float &term)
+    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
       const;
 };
 
@@ -202,7 +202,7 @@ class mdd_node_manager : public mtmdd_node_manager {
 
 template <typename T>
 inline
-forest::error
+void
 mtmdd_node_manager::createEdgeInternal(const int* const* vlist,
     const T* terms, int N, dd_edge &e)
 {
@@ -266,8 +266,6 @@ mtmdd_node_manager::createEdgeInternal(const int* const* vlist,
 
     e.set(result, 0, getNodeLevel(result));
   }
-
-  return forest::SUCCESS;
 }
 
 

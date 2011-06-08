@@ -36,7 +36,7 @@ class mdd_mxd_image_operation : public mdd_apply_operation {
     mdd_mxd_image_operation();
     virtual ~mdd_mxd_image_operation();
 
-    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void typeCheck(const op_info* owner);
     virtual const char* getName() const { return "Mdd-Mxd Image Operation"; }
     virtual bool isCommutative() const { return false; }
 
@@ -115,7 +115,7 @@ class mtmdd_post_image : public mdd_post_image {
   public:
     static mtmdd_post_image* getInstance();
     virtual const char* getName() const { return "MtMdd Post-Image"; }
-    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void typeCheck(const op_info* owner);
     virtual int compute(op_info* owner, int a, int b);
 
   protected:
@@ -132,7 +132,7 @@ class mtmdd_pre_image : public mdd_pre_image {
   public:
     static mtmdd_pre_image* getInstance();
     virtual const char* getName() const { return "MtMdd Pre-Image"; }
-    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void typeCheck(const op_info* owner);
     virtual int compute(op_info* owner, int a, int b);
 
   protected:

@@ -92,16 +92,16 @@ int evmdd_node_manager::createTempNode(int k, int sz, bool clear)
 }
 
 
-forest::error evmdd_node_manager::resizeNode(int p, int size)
+void evmdd_node_manager::resizeNode(int p, int size)
 {
   // This operation can only be performed on Temporary nodes.
   if (!isActiveNode(p) || isTerminalNode(p) || isReducedNode(p)) {
-    return forest::INVALID_OPERATION;
+    throw error(error::INVALID_OPERATION);
   }
 
   // If node is already large enough, do nothing, and return SUCCESS.
   int oldSize = getFullNodeSize(p);
-  if (size <= oldSize) return forest::SUCCESS;
+  if (size <= oldSize) return;
 
   DCASSERT(size > oldSize);
 
@@ -164,8 +164,6 @@ forest::error evmdd_node_manager::resizeNode(int p, int size)
   DCASSERT(size == getFullNodeSize(p));
   DCASSERT(p == 
       getNodeAddress(p)[getDataHeaderSize() + 2 * getFullNodeSize(p) - 1]);
-
-  return forest::SUCCESS;
 }
 
 
@@ -203,110 +201,110 @@ int evmdd_node_manager::reduceNode(int p)
 }
 
 
-forest::error
+void
 evmdd_node_manager::
 createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e)
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error
+void
 evmdd_node_manager::
 createEdge(int val, dd_edge &e)
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error
+void
 evmdd_node_manager::
 evaluate(const dd_edge &f, const int* vlist, int &term) const
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
 
-forest::error evmdd_node_manager::createEdge(const int* const* vlist, int N,
+void evmdd_node_manager::createEdge(const int* const* vlist, int N,
     dd_edge &e)
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error evmdd_node_manager::createEdge(const int* const* vlist,
+void evmdd_node_manager::createEdge(const int* const* vlist,
     const float* terms, int n, dd_edge &e)
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error evmdd_node_manager::createEdge(const int* const* vlist,
+void evmdd_node_manager::createEdge(const int* const* vlist,
     const int* const* vplist, int N, dd_edge &e)
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error evmdd_node_manager::createEdge(const int* const* vlist,
+void evmdd_node_manager::createEdge(const int* const* vlist,
     const int* const* vplist, const int* terms, int N, dd_edge &e)
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error evmdd_node_manager::createEdge(const int* const* vlist,
+void evmdd_node_manager::createEdge(const int* const* vlist,
     const int* const* vplist, const float* terms, int N, dd_edge &e)
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error evmdd_node_manager::createEdge(bool val, dd_edge &e)
+void evmdd_node_manager::createEdge(bool val, dd_edge &e)
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error evmdd_node_manager::createEdge(float val, dd_edge &e)
+void evmdd_node_manager::createEdge(float val, dd_edge &e)
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error evmdd_node_manager::evaluate(const dd_edge &f, const int* vlist,
+void evmdd_node_manager::evaluate(const dd_edge &f, const int* vlist,
     bool &term) const
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error evmdd_node_manager::evaluate(const dd_edge &f, const int* vlist,
+void evmdd_node_manager::evaluate(const dd_edge &f, const int* vlist,
     float &term) const
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error evmdd_node_manager::evaluate(const dd_edge& f, const int* vlist,
+void evmdd_node_manager::evaluate(const dd_edge& f, const int* vlist,
     const int* vplist, bool &term) const
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error evmdd_node_manager::evaluate(const dd_edge& f, const int* vlist,
+void evmdd_node_manager::evaluate(const dd_edge& f, const int* vlist,
     const int* vplist, int &term) const
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error evmdd_node_manager::evaluate(const dd_edge& f, const int* vlist,
+void evmdd_node_manager::evaluate(const dd_edge& f, const int* vlist,
     const int* vplist, float &term) const
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
@@ -620,10 +618,10 @@ void evplusmdd_node_manager::normalizeAndReduceNode(int& p, int& ev)
 }
 
 
-forest::error evplusmdd_node_manager::getElement(int a, int index, int* e)
+void evplusmdd_node_manager::getElement(int a, int index, int* e)
 {
-  if (a == 0) return forest::INVALID_VARIABLE;
-  if (a == -1) return forest::SUCCESS;
+  if (a == 0) throw error(error::INVALID_VARIABLE);
+  if (a == -1) return;
 
   int down = 0;
   int downIndex = -1;
@@ -663,16 +661,16 @@ forest::error evplusmdd_node_manager::getElement(int a, int index, int* e)
 }
 
 
-forest::error evplusmdd_node_manager::getElement(const dd_edge& a,
+void evplusmdd_node_manager::getElement(const dd_edge& a,
     int index, int* e)
 {
-  if (e == 0 || index < 0) return forest::INVALID_VARIABLE;
+  if (e == 0 || index < 0) throw error(error::INVALID_VARIABLE);
   e[0] = 0;
   return getElement(a.getNode(), index, e);
 }
 
 
-forest::error
+void
 evplusmdd_node_manager::
 createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e)
 {
@@ -680,7 +678,7 @@ createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e)
 }
 
 
-forest::error
+void
 evplusmdd_node_manager::
 createEdge(int val, dd_edge &e)
 {
@@ -688,7 +686,7 @@ createEdge(int val, dd_edge &e)
 }
 
 
-forest::error
+void
 evplusmdd_node_manager::
 evaluate(const dd_edge &f, const int* vlist, int &term) const
 {
@@ -1163,7 +1161,7 @@ void evtimesmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
 }
 
 
-forest::error
+void
 evtimesmdd_node_manager::
 createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
 {
@@ -1171,7 +1169,7 @@ createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
 }
 
 
-forest::error
+void
 evtimesmdd_node_manager::
 createEdge(float val, dd_edge &e)
 {
@@ -1179,7 +1177,7 @@ createEdge(float val, dd_edge &e)
 }
 
 
-forest::error
+void
 evtimesmdd_node_manager::
 evaluate(const dd_edge &f, const int* vlist, float &term) const
 {
