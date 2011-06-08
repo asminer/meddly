@@ -22,48 +22,23 @@
 
 
 /**
- * test_union_mdd.cc
+ * test_union_mxd.cc
  *
- * Testing MDD union.
+ * Testing MXD union.
  */
-
-//TODO: test union, intersection (optimize), diff (optimize)
 
 #include <iostream>
 #include "meddly.h"
 #include "timer.h"
 
-using namespace MEDDLY;
-
-//#define TESTING_AUTO_VAR_GROWTH
-
-//#define TESTING_TEMP_DD_EDGES
-//#define TESTING_UNION_SPEED
-//#define BUILD_INDEX_SET
-//#define CHECK_ELEMENTS
-
-//#define VERBOSE
-
 #define CACHE_SIZE 262144u
 
-void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
-{
-  compute_manager* cm = getComputeManager();
-  cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mdd, indexSet);
-
-#if 1
-  indexSet.show(stdout, 3);
-#else
-  indexSet.show(stdout, 1);
-#endif
-}
-
-
+using namespace MEDDLY;
 
 void printUsage(FILE *outputStream)
 {
   fprintf(outputStream,
-      "Usage: test_union_mdd <#Variables> <VariableBound> <#Elements>\n");
+      "Usage: test_union_mxd <#Variables> <VariableBound> <#Elements>\n");
 }
 
 int main(int argc, char *argv[])
@@ -100,26 +75,30 @@ int main(int argc, char *argv[])
   long mallocTime = 0;
 
   int** elements = (int **) malloc(nElements * sizeof(int *));
+  int** pelements = (int **) malloc(nElements * sizeof(int *));
   for (int i = 0; i < nElements; ++i)
   {
     mallocTimer.note_time();
     elements[i] = (int *) malloc((nVariables + 1) * sizeof(int));
+    pelements[i] = (int *) malloc((nVariables + 1) * sizeof(int));
     mallocTimer.note_time();
     mallocTime += mallocTimer.get_last_interval();
 
     elements[i][0] = 0;
+    pelements[i][0] = 0;
     for (int j = nVariables; j >= 1; --j)
     {
       elements[i][j] = int(float(variableBound) * random() / (RAND_MAX + 1.0));
       assert(elements[i][j] >= 0 && elements[i][j] < variableBound);
+      pelements[i][j] = int(float(variableBound) * random() / (RAND_MAX + 1.0));
+      assert(pelements[i][j] >= 0 && pelements[i][j] < variableBound);
     }
     // print element[i]
 #ifdef VERBOSE
     printf("Element %d: [%d", i, elements[i][0]);
-    for (int j = 1; j <= nVariables; ++j)
-    {
-      printf(" %d", elements[i][j]);
-    }
+    for (int j = 1; j <= nVariables; ++j) { printf(" %d", elements[i][j]); }
+    printf("] --> [%d", pelements[i][0]);
+    for (int j = 1; j <= nVariables; ++j) { printf(" %d", pelements[i][j]); }
     printf("]\n");
 #endif
   }
@@ -150,54 +129,24 @@ int main(int argc, char *argv[])
   assert(d != 0);
   d->createVariablesBottomUp(bounds, nVariables);
 
-  // Create an MDD forest in this domain (to store states)
-  forest* states = d->createForest(false, forest::BOOLEAN,
-      forest::MULTI_TERMINAL);
-  assert(states != 0);
+  // Create an MXD forest in this domain (to store a relation)
+  forest* xd = d->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  assert(xd != 0);
 
-#if 0
-  assert(forest::SUCCESS ==
-      //states->setReductionRule(forest::FULLY_REDUCED));
-    states->setReductionRule(forest::QUASI_REDUCED));
-  assert(forest::SUCCESS ==
-      states->setNodeDeletion(forest::OPTIMISTIC_DELETION));
-  // states->setNodeDeletion(forest::PESSIMISTIC_DELETION));
-  if (variableBound < 4) {
-    assert(forest::SUCCESS ==
-        states->setNodeStorage(forest::FULL_STORAGE));
-  } else {
-    assert(forest::SUCCESS ==
-        states->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
-  }
-#endif
-
-  dd_edge initial_state(states);
-
+  dd_edge initial_state(xd);
   timer start;
-
   printf("Started... ");
 
-#ifdef TESTING_TEMP_DD_EDGES
-  printf("Hello World!\n");
-  temp_dd_edge* temp = new temp_dd_edge;
-  temp->forestHandle = static_cast<expert_forest*>(states);
-  temp->levelHandle = nVariables;
-  for (int i = 0; i < nElements; ++i)
-  {
-    temp->add(elements[i], 0);
-  }
-  assert(temp->convertToDDEdge(initial_state));
-  delete temp;
-#else
-#ifdef TESTING_UNION_SPEED
   // Create a dd_edge per element and combine using the UNION operator.
   dd_edge** ddElements = new dd_edge*[nElements];
   for (int i = 0; i < nElements; ++i)
   {
-    ddElements[i] = new dd_edge(states);
-    states->createEdge(elements + i, 1, *(ddElements[i]));
+    ddElements[i] = new dd_edge(xd);
+    xd->createEdge(elements + i, pelements + i, 1, *(ddElements[i]));
   }
+
   // Combine dd_edges
+  start.note_time();
   int nDDElements = nElements;
   while (nDDElements > 1) {
     int nCombinations = nDDElements/2;
@@ -205,22 +154,15 @@ int main(int argc, char *argv[])
     {
       // Combine i and (nDDElements-1-i)
       (*(ddElements[i])) += (*(ddElements[nDDElements-1-i]));
-      delete ddElements[nDDElements-1-i];
     }
     nDDElements = (nDDElements+1)/2;
   }
   initial_state = *(ddElements[0]);
-  delete ddElements[0];
+  start.note_time();
+
+  for (int i = 0; i < nElements; ++i) delete ddElements[i];
   delete [] ddElements;
 
-#else
-  // Use Meddly's batch addition to combine all elements in one step.
-  states->createEdge(elements, nElements, initial_state);
-
-#endif
-#endif
-
-  start.note_time();
   printf("done. Time interval: %.4e seconds\n",
       start.get_last_interval()/1000000.0);
 
@@ -230,52 +172,13 @@ int main(int argc, char *argv[])
 #endif
 
   printf("Elements in result: %.4e\n", initial_state.getCardinality());
-  printf("Peak Nodes in MDD: %ld\n", states->getPeakNumNodes());
+  printf("Peak Nodes in MXD: %ld\n", xd->getPeakNumNodes());
   printf("Nodes in compute table: %ld\n",
       (getComputeManager())->getNumCacheEntries());
 
-#ifdef BUILD_INDEX_SET
-  // TEST
-  forest* evmdd = d->createForest(false, forest::INTEGER,
-      forest::EVPLUS);
-  assert(evmdd != 0);
-  dd_edge evmdd_states(evmdd);
-  getComputeManager()->apply(compute_manager::CONVERT_TO_INDEX_SET,
-      initial_state, evmdd_states);
-  evmdd_states.show(stdout, 3);
-
-  dd_edge::const_iterator iter = evmdd_states.begin();
-  int currentIndex = 0;
-  while (iter) {
-    const int* elem = iter.getAssignments();
-    printf("%d: [", currentIndex++);
-    for (int i = 1; i < nVariables; i++) {
-      printf("%d ", elem[i]);
-    }
-    int elemTerm = 0;
-#if 0
-    evmdd->evaluate(evmdd_states, elem, elemTerm);
-#else
-    iter.getValue(elemTerm);
-#endif
-    printf("%d] = %d\n", elem[nVariables], elemTerm);
-    ++iter;
-  }
-#endif
-
 #ifdef VERBOSE
   printf("\n\nForest Info:\n");
-  states->showInfo(stdout);
-#endif
-
-#ifdef CHECK_ELEMENTS
-  // make sure all the elements are in there
-  for (int i = 0; i < nElements; ++i)
-  {
-    bool result = false;
-    states->evaluate(initial_state, elements[i], result);
-    assert(result == true);
-  }
+  xd->showInfo(stdout);
 #endif
 
   // Cleanup; in this case simply delete the domain
@@ -286,10 +189,12 @@ int main(int argc, char *argv[])
   {
     mallocTimer.note_time();
     free(elements[i]);
+    free(pelements[i]);
     mallocTimer.note_time();
     mallocTime += mallocTimer.get_last_interval();
   }
   free(elements);
+  free(pelements);
 
 #ifdef VERBOSE
   printf("Malloc time: %.4e seconds\n", mallocTime/1000000.0);

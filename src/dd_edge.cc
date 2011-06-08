@@ -129,7 +129,7 @@ double MEDDLY::dd_edge::getCardinality() const
   return smart_cast<expert_forest*>(parent)->getCardinality(node);
 #else
   double cardinality = 0;
-  MEDDLY_getComputeManager()->apply(compute_manager::CARDINALITY,
+  getComputeManager()->apply(compute_manager::CARDINALITY,
       *this, cardinality);
   return cardinality;
 #endif
@@ -161,12 +161,12 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator+=(const dd_edge& e)
       ? compute_manager::UNION
       : compute_manager::PLUS;
     opPlus =
-      smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
+      smart_cast<expert_compute_manager*>(getComputeManager())->
       getOpInfo(opCode, plist, nOperands);
     DCASSERT(opPlus != 0);
   }
   DCASSERT(e.parent == parent);
-  smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
+  smart_cast<expert_compute_manager*>(getComputeManager())->
     apply(opPlus, *this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
   DCASSERT(updateNeeded == true);
@@ -189,12 +189,12 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator*=(const dd_edge& e)
       ? compute_manager::INTERSECTION
       : compute_manager::MULTIPLY;
     opStar =
-      smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
+      smart_cast<expert_compute_manager*>(getComputeManager())->
       getOpInfo(opCode, plist, nOperands);
     DCASSERT(opStar != 0);
   }
   DCASSERT(e.parent == parent);
-  smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
+  smart_cast<expert_compute_manager*>(getComputeManager())->
     apply(opStar, *this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
   DCASSERT(updateNeeded == true);
@@ -217,12 +217,12 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator-=(const dd_edge& e)
       ? compute_manager::DIFFERENCE
       : compute_manager::MINUS;
     opMinus =
-      smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
+      smart_cast<expert_compute_manager*>(getComputeManager())->
       getOpInfo(opCode, plist, nOperands);
     DCASSERT(opMinus != 0);
   }
   DCASSERT(e.parent == parent);
-  smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
+  smart_cast<expert_compute_manager*>(getComputeManager())->
     apply(opMinus, *this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
   DCASSERT(updateNeeded == true);
@@ -242,11 +242,11 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator/=(const dd_edge& e)
     DCASSERT(!(parent->getRangeType() == forest::BOOLEAN &&
         parent->getEdgeLabeling() == forest::MULTI_TERMINAL));
     opDivide =
-      smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
+      smart_cast<expert_compute_manager*>(getComputeManager())->
       getOpInfo(compute_manager::DIVIDE, plist, nOperands);
   }
   DCASSERT(e.parent == parent);
-  smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
+  smart_cast<expert_compute_manager*>(getComputeManager())->
     apply(opDivide, *this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
   DCASSERT(updateNeeded == true);

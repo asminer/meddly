@@ -202,7 +202,7 @@ bool MEDDLY::temp_dd_edge::reduce(std::map<temp_dd_edge*, int>& ct, int zero,
 }
 
 
-MEDDLY::forest::error MEDDLY::temp_dd_edge::add(const int* vlist, const int* vplist)
+void MEDDLY::temp_dd_edge::add(const int* vlist, const int* vplist)
 {
   // Add element to this tree.
   // Nodes in the tree are not-reduced.
@@ -219,14 +219,14 @@ MEDDLY::forest::error MEDDLY::temp_dd_edge::add(const int* vlist, const int* vpl
      Call downpointers[index]->add(vlist, vplist).
    */
 
-  if (levelHandle == 0) return forest::SUCCESS;
+  if (levelHandle == 0) return;
 
   DCASSERT(forestHandle->isForRelations() || levelHandle > 0);
 
   int index = levelHandle > 0? vlist[levelHandle]: vplist[-levelHandle];
 
   if (index >= forestHandle->getLevelSize(levelHandle))
-    return forest::INVALID_ASSIGNMENT;
+    throw error(error::INVALID_ASSIGNMENT);
 
   DCASSERT((size > 0 && downpointers != 0) ||
       (size == 0 && downpointers == 0));
@@ -254,7 +254,7 @@ MEDDLY::forest::error MEDDLY::temp_dd_edge::add(const int* vlist, const int* vpl
     }
   }
 
-  return downpointers[index]->add(vlist, vplist);
+  downpointers[index]->add(vlist, vplist);
 }
 
 

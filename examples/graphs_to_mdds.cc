@@ -80,7 +80,7 @@ int main(int argv, char *argc[])
   bounds[2] = 2;
 
   // Create variable in the above domain
-  assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, N));
+  d->createVariablesBottomUp(bounds, N);
   std::cout << "Created domain with "
     << d->getNumVariables()
     << " variables\n";

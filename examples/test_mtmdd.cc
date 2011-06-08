@@ -117,14 +117,11 @@ dd_edge test_mtmdd(forest* mtmdd, compute_manager::op_code opCode,
 
   int half = nElements/2;
 
-  assert(forest::SUCCESS ==
-      mtmdd->createEdge(element, terms, half, A));
-  assert(forest::SUCCESS ==
-      mtmdd->createEdge(element + half,
-        terms + half, nElements - half, B));
+  mtmdd->createEdge(element, terms, half, A);
+  mtmdd->createEdge(element + half, terms + half, nElements - half, B);
 
   op_info* op = getOp(mtmdd, opCode);
-  assert(compute_manager::SUCCESS == ecm->apply(op, A, B, C));
+  ecm->apply(op, A, B, C);
 
   if (verbose > 0) {
     printf("A: ");
@@ -158,9 +155,14 @@ bool test_conversion(dd_edge& A, dd_edge& B)
 #if 0
   return compute_manager::SUCCESS == ecm->apply(op, A, B)? true: false;
 #else
-  compute_manager::error err = ecm->apply(op, A, B);
-  printf("Apply error:\n %s\n", ecm->getErrorCodeName(err));
-  return (err == compute_manager::SUCCESS)? true: false;
+  try {
+    ecm->apply(op, A, B);
+    return true;
+  }
+  catch (MEDDLY::error err) {
+    printf("Apply error:\n %s\n", err.getName());
+    return false;
+  }
 #endif
 }
 
@@ -239,7 +241,7 @@ int main(int argc, char *argv[])
   // Create a domain
   domain *d = createDomain();
   assert(d != 0);
-  assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVariables));
+  d->createVariablesBottomUp(bounds, nVariables);
 
   // Create a MTMDD forest in this domain
 #if USE_REALS
@@ -268,11 +270,9 @@ int main(int argc, char *argv[])
     }
   }
 
-  assert(forest::SUCCESS ==
-      mtmdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
-  assert(forest::SUCCESS ==
-      // mtmdd->setNodeDeletion(forest::OPTIMISTIC_DELETION));
-    mtmdd->setNodeDeletion(forest::PESSIMISTIC_DELETION));
+  mtmdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
+  // mtmdd->setNodeDeletion(forest::OPTIMISTIC_DELETION);
+  mtmdd->setNodeDeletion(forest::PESSIMISTIC_DELETION);
 
   timer start;
   start.note_time();

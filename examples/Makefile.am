@@ -9,6 +9,7 @@ noinst_PROGRAMS = \
 testmddlib \
 graphs_to_mdds \
 test_union_mdd \
+test_union_mxd \
 test_mtmdd \
 test_mtmxd \
 test_evmdd \
@@ -32,6 +33,9 @@ graphs_to_mdds_LDADD = ../src/libmeddly.la
 
 test_union_mdd_SOURCES = test_union_mdd.cc
 test_union_mdd_LDADD = ../src/libmeddly.la
+
+test_union_mxd_SOURCES = test_union_mxd.cc
+test_union_mxd_LDADD = ../src/libmeddly.la
 
 test_mtmdd_SOURCES = test_mtmdd.cc
 test_mtmdd_LDADD = ../src/libmeddly.la

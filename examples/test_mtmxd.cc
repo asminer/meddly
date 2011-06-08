@@ -168,12 +168,10 @@ dd_edge doPlus(forest* mtmxd, int** from, int** to, element_type* terms, int N)
   for (int i = 0; i < N; ++i)
   {
     // Step (b): Build edge for from[i], to[i], terms[i]
-    assert(forest::SUCCESS ==
-        mtmxd->createEdge(from + i, to + i, terms + i, 1, temp));
+    mtmxd->createEdge(from + i, to + i, terms + i, 1, temp);
 
     // Step (c): Add it to result
-    assert(compute_manager::SUCCESS ==
-        ecm->apply(plusOp, result, temp, result));
+    ecm->apply(plusOp, result, temp, result);
   }
 
   return result;
@@ -203,7 +201,7 @@ dd_edge test_mtmxd(forest* mtmxd, compute_manager::op_code opCode,
   A = doPlus(mtmxd, from, to, terms, half);
   B = doPlus(mtmxd, from + half, to + half, terms + half, nElements - half);
 
-  assert(compute_manager::SUCCESS == ecm->apply(opCode, A, B, C));
+  ecm->apply(opCode, A, B, C);
 
   if (verbose > 0) {
     printf("A: ");
@@ -220,11 +218,13 @@ dd_edge test_mtmxd(forest* mtmxd, compute_manager::op_code opCode,
 
 bool test_conversion(dd_edge& A, dd_edge& B)
 {
-  return
-    (compute_manager::SUCCESS ==
-     getComputeManager()->apply(compute_manager::COPY, A, B))
-    ? true
-    : false;
+  try {
+    getComputeManager()->apply(compute_manager::COPY, A, B);
+    return true;
+  }
+  catch (MEDDLY::error e) {
+    return false;
+  }
 }
 
 
@@ -298,7 +298,7 @@ int main(int argc, char *argv[])
   // Create a domain
   domain *d = createDomain();
   assert(d != 0);
-  assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVariables));
+  d->createVariablesBottomUp(bounds, nVariables);
 
   // Create a MTMXD forest in this domain
 #if USE_REALS
@@ -336,10 +336,8 @@ int main(int argc, char *argv[])
   assert(forest::SUCCESS ==
       mtmxd->setReductionRule(forest::FULLY_REDUCED));
 #endif
-  assert(forest::SUCCESS ==
-      mtmxd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
-  assert(forest::SUCCESS ==
-      mtmxd->setNodeDeletion(forest::OPTIMISTIC_DELETION));
+  mtmxd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
+  mtmxd->setNodeDeletion(forest::OPTIMISTIC_DELETION);
 
   timer start;
   start.note_time();
@@ -348,8 +346,7 @@ int main(int argc, char *argv[])
       from, to, terms, nElements);
 #else
   dd_edge result(mtmxd);
-  assert(forest::SUCCESS ==
-      mtmxd->createEdge(from, to, terms, nElements, result));
+  mtmxd->createEdge(from, to, terms, nElements, result);
 #endif
   start.note_time();
   printf("Time interval: %.4e seconds\n",

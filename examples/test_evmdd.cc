@@ -127,18 +127,15 @@ dd_edge test_evmdd(forest* evmdd, compute_manager::op_code opCode,
 
   int half = nElements/2;
 
-  assert(forest::SUCCESS ==
-      evmdd->createEdge(element, terms, half, A));
-  assert(forest::SUCCESS ==
-      evmdd->createEdge(element + half,
-        terms + half, nElements - half, B));
+  evmdd->createEdge(element, terms, half, A);
+  evmdd->createEdge(element + half, terms + half, nElements - half, B);
 
 #ifdef USE_EXPERT_INTERFACE
   op_info* op = getOp(evmdd, opCode);
   assert(op != NULL);
-  assert(compute_manager::SUCCESS == ecm->apply(op, A, B, C));
+  ecm->apply(op, A, B, C);
 #else
-  assert(compute_manager::SUCCESS == ecm->apply(opCode, A, B, C));
+  ecm->apply(opCode, A, B, C);
 #endif
 
   if (verbose > 0) {
@@ -166,7 +163,7 @@ dd_edge test_evmdd_plus(forest* evmdd,
   for (int i = 0; i < nElements; i++)
   {
     if (verbose > 0) printf("element %d...", i);
-    assert(forest::SUCCESS == evmdd->createEdge(&element[i], &terms[i], 1, A));
+    evmdd->createEdge(&element[i], &terms[i], 1, A);
     B += A;
     if (verbose > 0) {
       printf(" done.\n");
@@ -289,7 +286,7 @@ int main(int argc, char *argv[])
   // Create a domain
   domain *d = createDomain();
   assert(d != 0);
-  assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVariables));
+  d->createVariablesBottomUp(bounds, nVariables);
 
   // Create a MTMDD forest in this domain
 #if USE_REALS
@@ -304,10 +301,8 @@ int main(int argc, char *argv[])
     printElements(element, terms, nElements, nVariables);
   }
 
-  assert(forest::SUCCESS ==
-      evmdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
-  assert(forest::SUCCESS ==
-      evmdd->setNodeDeletion(forest::PESSIMISTIC_DELETION));
+  evmdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
+  evmdd->setNodeDeletion(forest::PESSIMISTIC_DELETION);
 
   timer start;
   start.note_time();
@@ -322,8 +317,7 @@ int main(int argc, char *argv[])
 #else
   start.note_time();
   dd_edge result(evmdd);
-  assert(forest::SUCCESS ==
-      evmdd->createEdge(element, terms, nElements, result));
+  evmdd->createEdge(element, terms, nElements, result);
   start.note_time();
   printf("Batch Addition:\n");
   if (verbose > 0) result.show(stdout, 2);
@@ -408,15 +402,13 @@ int main(int argc, char *argv[])
   forest* mdd = d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL);
   assert(mdd != 0);
 
-  assert(forest::SUCCESS ==
-      mdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
-  assert(forest::SUCCESS ==
-      mdd->setNodeDeletion(forest::PESSIMISTIC_DELETION));
+  mdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
+  mdd->setNodeDeletion(forest::PESSIMISTIC_DELETION);
 
   start.note_time();
   printf("Building equivalent MDD...\n");
   dd_edge mddResult(mdd);
-  assert(forest::SUCCESS == mdd->createEdge(element, nElements, mddResult));
+  mdd->createEdge(element, nElements, mddResult);
   start.note_time();
   printf("Time interval: %.4e seconds\n",
       start.get_last_interval()/1000000.0);
@@ -453,8 +445,7 @@ int main(int argc, char *argv[])
   // Convert MDD to Index Set EV+MDD and print the states
   dd_edge indexSet(evplusmdd);
   compute_manager* cm = getComputeManager();
-  assert(compute_manager::SUCCESS ==
-      cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mddResult, indexSet));
+  cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mddResult, indexSet);
 
   printf("\nIndex Set (EV+MDD):\n");
 

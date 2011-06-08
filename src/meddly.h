@@ -1539,59 +1539,51 @@ inline compute_manager* MEDDLY_getComputeManager() {
 
 
 
+// **********************************************************************
+//
+//                    Inlined methods for dd_edge
+//
+// **********************************************************************
 
-
-// ****************************************************************************
-// *         Implementation details -- not meant for the casual user!         *
-// ****************************************************************************
-
-// definitions of inline functions
-
-
-// **************************** forest ****************************************
-
-
-// *************************** dd_edge ****************************************
-
-
-// Obtain a modifiable copy of the forest owning this edge.
-inline MEDDLY::forest* MEDDLY::dd_edge::getForest() const
+inline
+MEDDLY::forest* MEDDLY::dd_edge::getForest() const
 {
   return parent;
 }
 
-
-inline int MEDDLY::dd_edge::getNode() const
+inline
+int MEDDLY::dd_edge::getNode() const
 {
   return node;
 }
 
-
-inline void MEDDLY::dd_edge::getEdgeValue(int& ev) const
+inline
+void MEDDLY::dd_edge::getEdgeValue(int& ev) const
 {
   ev = value;
 }
 
-
-inline int MEDDLY::dd_edge::getLevel() const
+inline 
+int MEDDLY::dd_edge::getLevel() const
 {
   return level;
 }
 
-inline void MEDDLY::dd_edge::setIndex(int index)
+inline 
+void MEDDLY::dd_edge::setIndex(int index)
 {
   this->index = index;
 }
 
-inline int MEDDLY::dd_edge::getIndex() const
+inline 
+int MEDDLY::dd_edge::getIndex() const
 {
   return index;
 }
 
-// Clear the contents of this edge (it will still belong to the same forest)
-inline void MEDDLY::dd_edge::clear()
+inline 
+void MEDDLY::dd_edge::clear()
 {
-// TBD: is this an "always" assert, or "debugging only" assert?
   assert(index != -1);
   set(0, 0, 0);
   updateNeeded = true;
@@ -1599,7 +1591,8 @@ inline void MEDDLY::dd_edge::clear()
 
 
 // Check for equality.
-inline bool MEDDLY::dd_edge::operator==(const dd_edge& e) const
+inline 
+bool MEDDLY::dd_edge::operator==(const dd_edge& e) const
 {
   return (this == &e) ||
          (parent == e.parent && node == e.node &&
@@ -1608,43 +1601,46 @@ inline bool MEDDLY::dd_edge::operator==(const dd_edge& e) const
 
 
 // Check for inequality.
-inline bool MEDDLY::dd_edge::operator!=(const dd_edge& e) const
+inline 
+bool MEDDLY::dd_edge::operator!=(const dd_edge& e) const
 {
   return !(*this == e);
 }
 
 
 // Operator +
-inline const MEDDLY::dd_edge 
-MEDDLY::dd_edge::operator+(const dd_edge& e) const
+inline 
+const MEDDLY::dd_edge MEDDLY::dd_edge::operator+(const dd_edge& e) const
 {
   return dd_edge(*this) += e;
 }
 
 
 // Operator *
-inline const MEDDLY::dd_edge 
-MEDDLY::dd_edge::operator*(const dd_edge& e) const
+inline 
+const MEDDLY::dd_edge MEDDLY::dd_edge::operator*(const dd_edge& e) const
 {
   return dd_edge(*this) *= e;
 }
 
 
 // Operator -
-inline const MEDDLY::dd_edge 
-MEDDLY::dd_edge::operator-(const dd_edge& e) const
+inline 
+const MEDDLY::dd_edge MEDDLY::dd_edge::operator-(const dd_edge& e) const
 {
   return dd_edge(*this) -= e;
 }
 
 
 // Returns true if the iterator points to a valid element.
-inline MEDDLY::dd_edge::iterator::operator bool() const
+inline 
+MEDDLY::dd_edge::iterator::operator bool() const
 {
   return nodes != 0 && nodes[0] != 0;
 }
 
-inline int MEDDLY::dd_edge::iterator::getLevel() const
+inline 
+int MEDDLY::dd_edge::iterator::getLevel() const
 {
   return foundPathAtLevel;
 }

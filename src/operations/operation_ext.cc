@@ -25,6 +25,7 @@
 
 //#define IGNORE_TERMS 0
 //#define IGNORE_INCOUNT 2
+//#define IGNORE_MAPPED_HEIGHT 4
 
 mdd_apply_operation::
 mdd_apply_operation()
@@ -104,6 +105,13 @@ bool
 mdd_apply_operation::
 findResult(op_info* owner, int a, int b, int& c)
 {
+#ifdef IGNORE_MAPPED_HEIGHT
+  if (getExpertForest(owner, 0)->getMappedNodeHeight(a) < IGNORE_MAPPED_HEIGHT
+      || getExpertForest(owner, 1)->getMappedNodeHeight(b) < IGNORE_MAPPED_HEIGHT)
+    return false;
+#endif
+
+#ifndef USE_BINARY_COMPUTE_CACHE
   static int key[2];
 
   // create cache entry
@@ -120,6 +128,12 @@ findResult(op_info* owner, int a, int b, int& c)
   c = cacheEntry[2];
   getExpertForest(owner, 2)->linkNode(c);
   return true;
+#else
+  if (isCommutative() && a > b) { SWAP ( a , b ); }
+  if (!owner->cc->find(owner, a, b, c)) return false;
+  getExpertForest(owner, 2)->linkNode(c);
+  return true;
+#endif
 }
 
 
@@ -127,6 +141,21 @@ void
 mdd_apply_operation::
 saveResult(op_info* owner, int a, int b, int c)
 {
+#ifdef IGNORE_MAPPED_HEIGHT
+  if (getExpertForest(owner, 0)->getMappedNodeHeight(a) < IGNORE_MAPPED_HEIGHT
+      || getExpertForest(owner, 1)->getMappedNodeHeight(b) < IGNORE_MAPPED_HEIGHT)
+    return;
+#endif
+
+#ifdef IGNORE_INCOUNT
+  if ((!getExpertForest(owner, 0)->isTerminalNode(a) &&
+        getExpertForest(owner, 0)->getInCount(a) < IGNORE_INCOUNT) ||
+      (!getExpertForest(owner, 1)->isTerminalNode(b) &&
+       getExpertForest(owner, 1)->getInCount(b) < IGNORE_INCOUNT))
+    return;
+#endif
+
+#ifndef USE_BINARY_COMPUTE_CACHE
   static int cacheEntry[3];
 
   // create cache entry
@@ -143,6 +172,10 @@ saveResult(op_info* owner, int a, int b, int c)
   getExpertForest(owner, 2)->cacheNode(cacheEntry[2]);
 
   owner->cc->add(owner, const_cast<const int*>(cacheEntry));
+#else
+  if (isCommutative() && a > b) { SWAP ( a , b ); }
+  owner->cc->add(owner, a, b, c);
+#endif
 }
 
 
@@ -3531,9 +3564,9 @@ int mxd_union::computeIdentExpandOneLevel(op_info* owner, int a, int b)
         expertForest->unlinkNode(*rDptrs);
         *rDptrs = pNode;
         noChange = false;
-        continue;
+      } else {
+        expertForest->unlinkNode(pNode);
       }
-      expertForest->unlinkNode(pNode);
     }
   }
   else {
@@ -3559,9 +3592,9 @@ int mxd_union::computeIdentExpandOneLevel(op_info* owner, int a, int b)
         expertForest->unlinkNode(*rDptrs);
         *rDptrs = pNode;
         noChange = false;
-        continue;
+      } else {
+        expertForest->unlinkNode(pNode);
       }
-      expertForest->unlinkNode(pNode);
     }
 
   }
@@ -3578,90 +3611,6 @@ int mxd_union::computeIdentExpandOneLevel(op_info* owner, int a, int b)
 
   return result;
 }
-
-
-#if 0
-int mxd_union::computeIdentExpand(op_info* owner, int a, int b)
-{
-  expert_forest* expertForest = owner->p[0].getForest();
-  int resultLevel = expertForest->getNodeLevel(a);
-  int resultSize = expertForest->getLevelSize(resultLevel);
-
-  // Copy a into result.
-  int result = expertForest->makeACopy(a, resultSize);
-  int* resultDptrs = 0;
-  assert(expertForest->getDownPtrs(result, resultDptrs));
-
-  bool noChange = true;
-
-  // Add b to result.
-  int* rDptrs = resultDptrs;
-  const int* bDptrs = 0;
-  assert(expertForest->getDownPtrs(b, bDptrs));
-  if (expertForest->isFullNode(b)) {
-    int bSize = expertForest->getFullNodeSize(b);
-    for (const int* bEnd = bDptrs + bSize; bDptrs != bEnd; ++rDptrs, ++bDptrs)
-    {
-      // Terminal conditions.
-      if (*rDptrs == *bDptrs || 0 == *bDptrs) continue;
-      if (0 == *rDptrs) {
-        *rDptrs = *bDptrs;
-        expertForest->linkNode(*rDptrs);
-        noChange = false;
-        continue;
-      }
-      // Expand *rDptrs and *bDptrs.
-      int pNode = computeIdentExpandPrimedLevel(owner, *rDptrs, *bDptrs);
-      if (*rDptrs != pNode) {
-        expertForest->unlinkNode(*rDptrs);
-        *rDptrs = pNode;
-        noChange = false;
-      }
-      expertForest->unlinkNode(pNode);
-    }
-  }
-  else {
-    DCASSERT(expertForest->isSparseNode(b));
-    int nDptrs = expertForest->getSparseNodeSize(b);
-    const int* bIndexes = 0;
-    assert(expertForest->getSparseNodeIndexes(b, bIndexes));
-    for (const int* bEnd = bDptrs + nDptrs; bDptrs != bEnd; ++bDptrs)
-    {
-      // Terminal conditions
-      rDptrs = resultDptrs + *bIndexes++;
-      DCASSERT(*bDptrs != 0);
-      if (*rDptrs == *bDptrs) continue;
-      if (0 == *rDptrs) {
-        *rDptrs = *bDptrs;
-        expertForest->linkNode(*rDptrs);
-        noChange = false;
-        continue;
-      }
-      // Expand *rDptrs and *bDptrs.
-      int pNode = computeIdentExpandPrimedLevel(owner, *rDptrs, *bDptrs);
-      if (*rDptrs != pNode) {
-        expertForest->unlinkNode(*rDptrs);
-        *rDptrs = pNode;
-        noChange = false;
-      }
-      expertForest->unlinkNode(pNode);
-    }
-
-  }
-
-  if (noChange) {
-    // result is the same as node a.
-    // Don't call reduce; discard result and return a.
-    expertForest->linkNode(a);
-    expertForest->unlinkNode(result);
-    result = a;
-  } else {
-    result = expertForest->reduceNode(result);
-  }
-
-  return result;
-}
-#endif
 
 
 int mxd_union::computeIdentExpandA(op_info* owner, int a, int b)
@@ -3734,18 +3683,30 @@ int mxd_union::computeIdent(op_info* owner, int a, int b)
   }
 
   // Search compute table
-  static int cacheEntry[3];
-  if (a > b)  { cacheEntry[0] = b; cacheEntry[1] = a; }
-  else        { cacheEntry[0] = a; cacheEntry[1] = b; }
-  const int* ans = owner->cc->find(owner, (int*) cacheEntry);
-  if (ans != 0) {
-    expertForest->linkNode(ans[2]);
-    return ans[2];
-  }
-
+  int result = 0;
+#ifdef IGNORE_MAPPED_HEIGHT
   int aHeight = expertForest->getMappedNodeHeight(a);
   int bHeight = expertForest->getMappedNodeHeight(b);
-  int result = 0;
+  if (aHeight >= IGNORE_MAPPED_HEIGHT && bHeight >= IGNORE_MAPPED_HEIGHT) {
+    if ((a > b
+          ? owner->cc->find(owner, a, b, result)
+          : owner->cc->find(owner, b, a, result))) {
+      expertForest->linkNode(result);
+      return result;
+    }
+  }
+#else
+  if ((a > b
+        ? owner->cc->find(owner, a, b, result)
+        : owner->cc->find(owner, b, a, result))) {
+    expertForest->linkNode(result);
+    return result;
+  }
+  int aHeight = expertForest->getMappedNodeHeight(a);
+  int bHeight = expertForest->getMappedNodeHeight(b);
+#endif
+
+  result = 0;
 
   if (aHeight > bHeight) {
     // result[i][j] = a[i][j]
@@ -3760,13 +3721,23 @@ int mxd_union::computeIdent(op_info* owner, int a, int b)
   result = expertForest->reduceNode(result);
 
   // Save result to compute table
-  if (a > b)  { cacheEntry[0] = b; cacheEntry[1] = a; }
-  else        { cacheEntry[0] = a; cacheEntry[1] = b; }
-  cacheEntry[2] = result;
+#ifdef IGNORE_MAPPED_HEIGHT
+  if (aHeight < IGNORE_MAPPED_HEIGHT || bHeight < IGNORE_MAPPED_HEIGHT) {
+    return result;
+  }
+#endif
+
+#ifndef USE_BINARY_COMPUTE_CACHE
   expertForest->cacheNode(a);
   expertForest->cacheNode(b);
   expertForest->cacheNode(result);
-  owner->cc->add(owner, (int*) cacheEntry);
+#endif
+
+  if (a > b) {
+    owner->cc->add(owner, a, b, result);
+  } else {
+    owner->cc->add(owner, b, a, result);
+  }
 
   return result;
 }

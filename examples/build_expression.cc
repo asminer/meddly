@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
   // Create a domain
   domain *d = createDomain();
   assert(d != 0);
-  assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVariables));
+  d->createVariablesBottomUp(bounds, nVariables);
 
   // Create an MXD forest in this domain (to store states)
 
@@ -125,25 +125,24 @@ int main(int argc, char *argv[])
   int element[] = {0, 0, 0, 0, 0};
   int* elements[] = { element };
   element_type terms[] = {element_type(1)};
-  assert(forest::SUCCESS ==
-      states->createEdge((int**)elements, (element_type*)terms, 1, postImage));
+  states->createEdge((int**)elements, (element_type*)terms, 1, postImage);
   // postImage *= expr;
 
   fprintf(stdout, "-----------------------------------------------------\n");
   fprintf(stdout, "\nMTMDD for [0 0 0 = 1]:\n\n");
   postImage.show(stdout, 2); 
 
-  assert(compute_manager::SUCCESS ==
-      getComputeManager()->apply(compute_manager::POST_IMAGE,
-        postImage, incrY1, postImage));
+  getComputeManager()->apply(
+    compute_manager::POST_IMAGE, postImage, incrY1, postImage
+  );
   // postImage *= expr;
   fprintf(stdout, "-----------------------------------------------------\n");
   fprintf(stdout, "\nMTMDD after POST_IMAGE:\n\n");
   postImage.show(stdout, 2);
 
-  assert(compute_manager::SUCCESS ==
-      getComputeManager()->apply(compute_manager::PRE_IMAGE,
-        postImage, incrY1, postImage));
+  getComputeManager()->apply(
+    compute_manager::PRE_IMAGE, postImage, incrY1, postImage
+  );
   // postImage *= expr;
   fprintf(stdout, "-----------------------------------------------------\n");
   fprintf(stdout, "\nMTMDD after PRE_IMAGE:\n\n");
@@ -225,13 +224,13 @@ dd_edge buildExpressionWithTerms(forest* states)
 
   // y1
   dd_edge y1(states);
-  assert(forest::SUCCESS == states->createEdgeForVar(1, false, terms, y1));
+  states->createEdgeForVar(1, false, terms, y1);
 
   // ---- Building 2*y2 ----
 
   // y2
   dd_edge y2(states);
-  assert(forest::SUCCESS == states->createEdgeForVar(2, false, terms, y2));
+  states->createEdgeForVar(2, false, terms, y2);
 
   // constant 2
   dd_edge cons2(states);
@@ -248,7 +247,7 @@ dd_edge buildExpressionWithTerms(forest* states)
 
   // y3
   dd_edge y3(states);
-  assert(forest::SUCCESS == states->createEdgeForVar(3, false, terms, y3));
+  states->createEdgeForVar(3, false, terms, y3);
 
   // constant 3
   dd_edge cons3(states);
@@ -322,9 +321,7 @@ dd_edge buildIncrVariable(forest* mtmxd, int level)
   mtmxd->createEdgeForVar(level, true, yPrime);
 
   // ---- Building y + 1 == y' ----
-  assert(compute_manager::SUCCESS ==
-      getComputeManager()->apply(compute_manager::EQUAL,
-        yPrime, y, yPrime));
+  getComputeManager()->apply(compute_manager::EQUAL, yPrime, y, yPrime);
 
   // Make the rest of the transitions into "don't change"
   dd_edge multiplier = buildMultiplierForVariable(mtmxd, level);
@@ -410,9 +407,7 @@ dd_edge buildTransitionExpression(forest* mtmxd)
 
   // y1Prime.show(stdout, 2);
 
-  assert(compute_manager::SUCCESS ==
-      getComputeManager()->apply(compute_manager::EQUAL,
-        y1Prime, y1, y1Prime));
+  getComputeManager()->apply(compute_manager::EQUAL, y1Prime, y1, y1Prime);
 
   // y1Prime.show(stdout, 2);
 

@@ -105,14 +105,14 @@ forest* buildQueenForest()
   }
   domain* d = createDomain();
   assert(d);
-  assert(domain::SUCCESS == d->createVariablesBottomUp(vars, N*N));
+  d->createVariablesBottomUp(vars, N*N);
   forest* f = d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL);
   assert(f);
 
   // Set up MDD options
-  assert(forest::SUCCESS == f->setReductionRule(forest::FULLY_REDUCED));
-  assert(forest::SUCCESS == f->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
-  assert(forest::SUCCESS == f->setNodeDeletion(forest::PESSIMISTIC_DELETION));
+  f->setReductionRule(forest::FULLY_REDUCED);
+  f->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
+  f->setNodeDeletion(forest::PESSIMISTIC_DELETION);
   
   delete[] vars;
   return f;
@@ -125,23 +125,17 @@ inline int ijmap(int i, int j)
 
 void hasQueen(forest* f, int i, int j, dd_edge &e)
 {
-  assert(
-    forest::SUCCESS == f->createEdgeForVar(ijmap(i, j), false, e)
-  );
+  f->createEdgeForVar(ijmap(i, j), false, e);
 }
 
 void queenInRow(forest* f, int r, dd_edge &e)
 {
-  assert(
-    forest::SUCCESS == f->createEdge(int(0), e)
-  );
+  f->createEdge(int(0), e);
   if (r<0 || r>=N) return;
   for (int j=0; j<N; j++) {
     dd_edge tmp(f);
     hasQueen(f, r, j, tmp);
-    assert(
-      compute_manager::SUCCESS == CM->apply(compute_manager::MAX, e, tmp, e)
-    );
+    CM->apply(compute_manager::MAX, e, tmp, e);
   }
 }
 
@@ -151,16 +145,12 @@ void queenInCol(forest* f, int c, dd_edge &e)
     e = *qic[c];
     return;
   }
-  assert(
-    forest::SUCCESS == f->createEdge(int(0), e)
-  );
+  f->createEdge(int(0), e);
   if (c<0 || c>=N) return;
   for (int i=0; i<N; i++) {
     dd_edge tmp(f);
     hasQueen(f, i, c, tmp);
-    assert(
-      compute_manager::SUCCESS == CM->apply(compute_manager::MAX, e, tmp, e)
-    );
+    CM->apply(compute_manager::MAX, e, tmp, e);
   }
   qic[c] = new dd_edge(e);
 }
@@ -171,16 +161,12 @@ void queenInDiagP(forest* f, int d, dd_edge &e)
     e = *qidp[d];
     return;
   }
-  assert(
-    forest::SUCCESS == f->createEdge(int(0), e)
-  );
+  f->createEdge(int(0), e);
   if (d<0 || d>=2*N-1) return;
   for (int i=0; i<N; i++) for (int j=0; j<N; j++) if (i+j==d) {
     dd_edge tmp(f);
     hasQueen(f, i, j, tmp);
-    assert(
-      compute_manager::SUCCESS == CM->apply(compute_manager::MAX, e, tmp, e)
-    );
+    CM->apply(compute_manager::MAX, e, tmp, e);
   }
   qidp[d] = new dd_edge(e);
 }
@@ -191,16 +177,12 @@ void queenInDiagM(forest* f, int d, dd_edge &e)
     e = *qidm[d+N-1];
     return;
   }
-  assert(
-    forest::SUCCESS == f->createEdge(int(0), e)
-  );
+  f->createEdge(int(0), e);
   if (d<=-N || d>=N) return;
   for (int i=0; i<N; i++) for (int j=0; j<N; j++) if (i-j==d) {
     dd_edge tmp(f);
     hasQueen(f, i, j, tmp);
-    assert(
-      compute_manager::SUCCESS == CM->apply(compute_manager::MAX, e, tmp, e)
-    );
+    CM->apply(compute_manager::MAX, e, tmp, e);
   }
   qidm[d+N-1] = new dd_edge(e);
 }
@@ -242,15 +224,11 @@ int main(int argc, const char** argv)
   forest* f = buildQueenForest();
 
   dd_edge num_queens(f);
-  assert(
-    forest::SUCCESS == f->createEdge(int(0), num_queens)
-  );
+  f->createEdge(int(0), num_queens);
   for (int i=0; i<N; i++) for (int j=0; j<N; j++) {
     dd_edge tmp(f);
     hasQueen(f, i, j, tmp);
-    assert(compute_manager::SUCCESS ==
-      CM->apply(compute_manager::PLUS, num_queens, tmp, num_queens)
-    );
+    CM->apply(compute_manager::PLUS, num_queens, tmp, num_queens);
   } // for i,j
 
   // "By-hand" compute tables for queen in col, diag
@@ -271,12 +249,8 @@ int main(int argc, const char** argv)
 
     // Build all possible placements of q queens:
     dd_edge qqueens(f);
-    assert(
-      forest::SUCCESS == f->createEdge(q, qqueens)
-    );
-    assert(compute_manager::SUCCESS ==
-        CM->apply(compute_manager::EQUAL, qqueens, num_queens, qqueens)
-    );
+    f->createEdge(q, qqueens);
+    CM->apply(compute_manager::EQUAL, qqueens, num_queens, qqueens);
     solutions = qqueens;
 
     printf("\tAdding constraints by row\n\t\t");
@@ -294,26 +268,16 @@ int main(int argc, const char** argv)
         dd_edge dgm(f);
         queenInDiagM(f, i-j, dgm);
         // "OR" together the possible attackers for this square
-        assert(compute_manager::SUCCESS == 
-            CM->apply(compute_manager::MAX, col, dgp, col)
-        );
-        assert(compute_manager::SUCCESS == 
-            CM->apply(compute_manager::MAX, col, dgm, col)
-        );
-        assert(compute_manager::SUCCESS == 
-            CM->apply(compute_manager::MAX, col, qir, col)
-        );
+        CM->apply(compute_manager::MAX, col, dgp, col);
+        CM->apply(compute_manager::MAX, col, dgm, col);
+        CM->apply(compute_manager::MAX, col, qir, col);
         // "AND" with this row
-        assert(compute_manager::SUCCESS == 
-            CM->apply(compute_manager::MULTIPLY, rowcov, col, rowcov)
-        );
+        CM->apply(compute_manager::MULTIPLY, rowcov, col, rowcov);
       } // for j
       printf(", ");
       fflush(stdout);
       // "AND" directly with set of covers
-      assert(compute_manager::SUCCESS == 
-          CM->apply(compute_manager::MULTIPLY, solutions, rowcov, solutions)
-      );
+      CM->apply(compute_manager::MULTIPLY, solutions, rowcov, solutions);
     } // for i
 
     printf("\n");
@@ -349,9 +313,7 @@ int main(int argc, const char** argv)
   printf(" peak memory\n");
 
   long c;
-  assert(compute_manager::SUCCESS ==
-    CM->apply(compute_manager::CARDINALITY, solutions, c)
-  );
+  CM->apply(compute_manager::CARDINALITY, solutions, c);
   printf("\nFor a %dx%d chessboard, ", N, N);
   printf("there are %ld covers with %d queens\n\n", c, q);
 

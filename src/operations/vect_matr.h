@@ -38,10 +38,8 @@ namespace MEDDLY {
         @param  x       x vector.
         @param  x_ind   EV+MDD node for x indexes.
         @param  A       MTMDD node for A matrix.
-
-        @return         An appropriate error code.
   */
-  compute_manager::error vectorMatrixMult_evplus_mt(
+  void vectorMatrixMult_evplus_mt(
     const op_param* pt, int ht, double* y, int y_ind, const double* x, int x_ind, int A
   );
 
@@ -55,10 +53,8 @@ namespace MEDDLY {
         @param  x       x vector.
         @param  x_ind   EV+MDD node for x indexes.
         @param  A       MTMDD node for A matrix.
-
-        @return         An appropriate error code.
   */
-  compute_manager::error vectorMatrixMult_evplus_evtimes(
+  void vectorMatrixMult_evplus_evtimes(
     const op_param* pt, int ht, double* y, int y_ind, const double* x, int x_ind, int A
   );
 
@@ -75,10 +71,8 @@ namespace MEDDLY {
         @param  A       MTMDD node for A matrix.
         @param  x       x vector.
         @param  x_ind   EV+MDD node for x indexes.
-  
-        @return         An appropriate error code.
   */
-  compute_manager::error matrixVectorMult_evplus_mt(
+  void matrixVectorMult_evplus_mt(
     const op_param* pt, int ht, double* y, int y_ind, int A, const double* x, int x_ind
   );
 
@@ -92,10 +86,8 @@ namespace MEDDLY {
         @param  A       MTMDD node for A matrix.
         @param  x       x vector.
         @param  x_ind   EV+MDD node for x indexes.
-  
-        @return         An appropriate error code.
   */
-  compute_manager::error matrixVectorMult_evplus_evtimes(
+  void matrixVectorMult_evplus_evtimes(
     const op_param* pt, int ht, double* y, int y_ind, int A, const double* x, int x_ind
   );
 
