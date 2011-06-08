@@ -347,7 +347,7 @@ void expert_compute_manager::removeStales(expert_forest* f)
       if (opInfo.p[i].getForest() == f) { clearCC = true; break; }
     }
     if (clearCC) {
-      fprintf(stderr, "Removing stale entries for %s\n", opInfo.op->getName());
+      // fprintf(stderr, "Removing stale entries for %s\n", opInfo.op->getName());
       opInfo.cc->removeStales();
     }
   }
@@ -412,7 +412,7 @@ void expert_compute_manager::addBuiltinOp(const builtin_op_key& key,
       if (! plist[i].isForest()) { allForests = false; break; }
     }
     if (allForests) {
-      fprintf(stderr, "Using binary compute cache for %s\n", op->getName());
+      // fprintf(stderr, "Using binary compute cache for %s\n", op->getName());
       cache = new binary_compute_cache(op, plist, n);
     }
   }

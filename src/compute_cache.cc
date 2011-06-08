@@ -366,8 +366,8 @@ void binary_compute_cache::removeStales(op_info* owner)
     }
     ++count;
   }
-  fprintf(stderr, "Removed %d stale entries out of %d entries in %s\n",
-      staleCount, count, getOpName());
+  // fprintf(stderr, "Removed %d stale entries out of %d entries in %s\n",
+  //    staleCount, count, getOpName());
 }
 
 
@@ -375,7 +375,7 @@ void binary_compute_cache::clear()
 {
   adds = 0;
   if (ct.empty()) return;
-  fprintf(stderr, "Removing all entries in %s\n", getOpName());
+  // fprintf(stderr, "Removing all entries in %s\n", getOpName());
   std::map< key_type, ans_type >::iterator curr = ct.begin();
   std::map< key_type, ans_type >::iterator end = ct.end();
   while (curr != end) {
