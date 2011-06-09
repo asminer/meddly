@@ -49,53 +49,26 @@ namespace MEDDLY {
   class dd_edge;
   class op_info;
   class ct_object;
+  class expert_forest;
 
 #ifdef __GMP_H__
   ct_object& get_mpz_wrapper();
   void unwrap(const ct_object &, mpz_t &value);
 #endif
 
-
   // ******************************************************************
-  // *                                                                *
-  // *                      library  information                      *
-  // *                                                                *
-  // ******************************************************************
-
-  /** Get the information about the library.
-      @param  what  Determines the type of information to obtain.
-      @return A human-readable information string.
-              The string depends on parameter \a what, as follows.
-              0: Title string, e.g., "MDD library version 0.0.0"
-              1: Copyright string
-              2: License string
-              3: Reference url
-              4: String with library features
-              Anything else: null string.
-  */
-  const char* getLibraryInfo(int what = 0);
-
-#ifdef _MSC_VER
-  __declspec(deprecated)
-#endif
-#ifdef __GNUC__
-  __attribute__ ((deprecated))
-#endif
-  inline const char* MEDDLY_getLibraryInfo(int what = 0) {
-    return getLibraryInfo(what);
-    // This function is deprecated; use "getLibraryInfo" instead.
-  };
-
-  // ******************************************************************
-  // *                                                                *
   // *                          error  class                          *
-  // *                                                                *
   // ******************************************************************
  
+  /// Class for errors thrown by MEDDLY.
   class error {
     public:
       /// Error codes.
       enum code {
+        /// The library was not initialized.
+        UNINITIALIZED,
+        /// The library was already initialized.
+        ALREADY_INITIALIZED,
         /// The requested operation is not yet implemented!
         NOT_IMPLEMENTED,
         /// An operation failed due to lack of memory.
@@ -128,6 +101,8 @@ namespace MEDDLY {
       inline code getCode() const { return errcode; }
       inline const char* getName() const {
         switch (errcode) {
+            case  UNINITIALIZED:        return "Uninitialized";
+            case  ALREADY_INITIALIZED:  return "Already initialized";
             case  NOT_IMPLEMENTED:      return "Not implemented";
             case  INSUFFICIENT_MEMORY:  return "Insufficient memory";
             case  INVALID_OPERATION:    return "Invalid operation";
@@ -139,6 +114,7 @@ namespace MEDDLY {
             case  TYPE_MISMATCH:        return "Type mismatch";
             case  WRONG_NUMBER:         return "Wrong number";
             case  OVERFLOW:             return "Overflow";
+            case  INVALID_ASSIGNMENT:   return "Invalid assignment";
             case  MISCELLANEOUS:        return "Miscellaneous";
             default:                    return "Unknown error";
         }
@@ -147,6 +123,92 @@ namespace MEDDLY {
       code errcode;
   };
 
+
+  // ******************************************************************
+  // *                         settings  class                        *
+  // ******************************************************************
+
+  /** "Global" settings for MEDDLY.
+      These settings DO NOT CHANGE once the library is initialized.
+  */
+  struct settings {
+    public:
+      /// Should the compute tables chain items that hash to the same location.
+      bool doComputeTablesUseChaining;
+      /// Maximum compute table size.
+      unsigned maxComputeTableSize;
+    public:
+      /// Constructor, to set defaults.
+      settings() {
+        doComputeTablesUseChaining = true;
+        maxComputeTableSize = 16777216;
+      }
+  };
+
+  // ******************************************************************
+  // *                        statistics  class                       *
+  // ******************************************************************
+
+  /// Various performance measures for MEDDLY.
+  struct statistics {
+    long numCacheEntries;
+  };
+
+  // ******************************************************************
+  // *                                                                *
+  // *                       library management                       *
+  // *                                                                *
+  // ******************************************************************
+
+  /** Initialize the library.
+      Should be called before using any other functions.
+        @param  s   Collection of various settings.
+  */
+  void initialize(settings s);
+
+  /** Initialize the library with default settings.
+      Should be called before using any other functions.
+  */
+  inline void initialize() {
+    settings deflt;
+    initialize(deflt);
+  }
+
+  /** Clean up the library.
+      Can be called to free memory used by the library;
+      after it is called, the library may be initialized again.
+  */
+  void cleanup();
+
+  /// Get the current library settings.
+  const settings& getLibrarySettings();
+
+  /// Get the current library stats.
+  const statistics& getLibraryStats();
+
+  /** Get the information about the library.
+      @param  what  Determines the type of information to obtain.
+      @return A human-readable information string.
+              The string depends on parameter \a what, as follows.
+              0: Title string, e.g., "MDD library version 0.0.0"
+              1: Copyright string
+              2: License string
+              3: Reference url
+              4: String with library features
+              Anything else: null string.
+  */
+  const char* getLibraryInfo(int what = 0);
+
+#ifdef _MSC_VER
+  __declspec(deprecated)
+#endif
+#ifdef __GNUC__
+  __attribute__ ((deprecated))
+#endif
+  inline const char* MEDDLY_getLibraryInfo(int what = 0) {
+    return getLibraryInfo(what);
+    // This function is deprecated; use "getLibraryInfo" instead.
+  };
 
   // ******************************************************************
   // *                                                                *
@@ -885,283 +947,282 @@ namespace MEDDLY {
   }
 
 
-// ******************************************************************
-// *                                                                *
-// *                                                                *
-// *                         dd_edge  class                         *
-// *                                                                *
-// *                                                                *
-// ******************************************************************
+  // ******************************************************************
+  // *                                                                *
+  // *                                                                *
+  // *                         dd_edge  class                         *
+  // *                                                                *
+  // *                                                                *
+  // ******************************************************************
 
-/** Structure for handles to edges in forests.
+  /** Structure for handles to edges in forests.
 
-    A dd_edge is a handle for user manipulation of functions stored in forests.
+      A dd_edge is a handle for user manipulation of functions stored in
+      forests.
 
-    There are a few useful operations that can be applied directly
-    to a dd_edge; all the rest are done either through the "parent" forest,
-    or through operations in the compute_manager class.  These include:
+      There are a few useful operations that can be applied directly
+      to a dd_edge; all the rest are done either through the "parent" forest,
+      or through operations in the compute_manager class.  These include:
    
-    - Deletion of a dd_edge.  This will cause the parent forest
-      to recycle nodes as appropriate.
+      - Deletion of a dd_edge.  This will cause the parent forest to recycle
+        nodes as appropriate.
     
-    - Checking for equality of two dd_edges, using the method equals().
-*/
-class expert_forest;
+      - Checking for equality of two dd_edges, using the method equals().
+  */
+  class dd_edge {
+    public:
+      /** Constructor.
+          Creates an empty edge in forest \a p.
+          @param  p     forest to which this dd_edge will belong to.
+      */
+      dd_edge(forest* p);
 
-class dd_edge {
-  public:
-    /** Constructor.
-        Creates an empty edge in forest \a p.
-        @param  p     forest to which this dd_edge will belong to.
-    */
-    dd_edge(forest* p);
+      /// Destructor.  Will notify parent as appropriate.
+      ~dd_edge();
 
-    /// Destructor.  Will notify parent as appropriate.
-    ~dd_edge();
+      /** Copy Constructor.
+          @param  e       dd_edge to copy.
+      */
+      dd_edge(const dd_edge &e);
 
-    /** Copy Constructor.
-        @param  e       dd_edge to copy.
-    */
-    dd_edge(const dd_edge &e);
+      /** Clears the contents of this edge. It will belong to the same
+          forest as before.
+      */
+      void clear();
 
-    /** Clears the contents of this edge. It will belong to the same
-        forest as before.
-    */
-    void clear();
+      /** Obtain a modifiable copy of the forest owning this edge.
+          @return         the forest to which this edge belongs to.
+      */
+      forest* getForest() const;
 
-    /** Obtain a modifiable copy of the forest owning this edge.
-        @return         the forest to which this edge belongs to.
-    */
-    forest* getForest() const;
+      /** Get this dd_edge's node handle.
+          @return         the node handle.
+      */
+      int getNode() const;
 
-    /** Get this dd_edge's node handle.
-        @return         the node handle.
-    */
-    int getNode() const;
+      /** Get this dd_edge's edge value (only valid for edge-valued MDDs).
+          Note: EV+MDDs use Integer edge-values while EV*MDDs use
+          Real edge-value, so use the appropriate method.
+          @return         edge value (if applicable).
+      */
+      void getEdgeValue(int& edgeValue) const;
+      void getEdgeValue(float& edgeValue) const;
 
-    /** Get this dd_edge's edge value (only valid for edge-valued MDDs).
-        Note: EV+MDDs use Integer edge-values while EV*MDDs use
-        Real edge-value, so use the appropriate method.
-        @return         edge value (if applicable).
-    */
-    void getEdgeValue(int& edgeValue) const;
-    void getEdgeValue(float& edgeValue) const;
+      /** Get this dd_edge's level handle.
+          @return         the level handle.
+      */
+      int getLevel() const;
 
-    /** Get this dd_edge's level handle.
-        @return         the level handle.
-    */
-    int getLevel() const;
+      /** Get node cardinality.
+          Provided for backward compatibility.
+          Use apply(CARDINALITY, ...) instead.
+          @return         the cardinality of the node.
+      */
+      double getCardinality() const;
 
-    /** Get node cardinality.
-        Provided for backward compatibility.
-        Use apply(CARDINALITY, ...) instead.
-        @return         the cardinality of the node.
-    */
-    double getCardinality() const;
-
-    /** Counts the number of unique nodes in this decision diagram.
-        @return         the number of unique nodes starting at the root node
+      /** Counts the number of unique nodes in this decision diagram.
+          @return       the number of unique nodes starting at the root node
                         of this dd_edge.
-    */
-    unsigned getNodeCount() const;
+      */
+      unsigned getNodeCount() const;
 
-    /** Counts the number of unique edges in this decision diagram.
-        @param  countZeroes
+      /** Counts the number of unique edges in this decision diagram.
+          @param  countZeroes
                         if true, the stored zero edges are also counted
                         (sparse nodes do not store zero edges, so this
                         does not effect them; truncated nodes do store
                         some zero edges, so those edges will be counted).
-        @return         the number of unique edges starting at the root node
+          @return       the number of unique edges starting at the root node
                         of this dd_edge.
-    */
-    unsigned getEdgeCount(bool countZeroes = false) const;
+      */
+      unsigned getEdgeCount(bool countZeroes = false) const;
 
-    /** Modifies the dd_edge fields.
-        The dd_edge is cleared (it will still belong to the same forest),
-        and the dd_edge data is filled with the data provided.
-        @param  node    node handle.
-        @param  value   value of edge coming into the node (only useful
-                        for edge-valued MDDs)
-        @param  level   level handle.
-    */
-    void set(int node, int value, int level);
-    void set(int node, float value, int level);
+      /** Modifies the dd_edge fields.
+          The dd_edge is cleared (it will still belong to the same forest),
+          and the dd_edge data is filled with the data provided.
+          @param  node    node handle.
+          @param  value   value of edge coming into the node (only useful
+                          for edge-valued MDDs)
+          @param  level   level handle.
+      */
+      void set(int node, int value, int level);
+      void set(int node, float value, int level);
 
-    class iterator {
-      public:
-        enum iter_type {
-          DEFAULT=0,
-          ROW,
-          COLUMN
-        };
-        iterator();
-        ~iterator();
-        iterator(const iterator& iter);
-        iterator& operator=(const iterator& iter);
-        operator bool() const;
-        void operator--();
-        void operator++();
-        bool operator!=(const iterator& iter) const;
-        bool operator==(const iterator& iter) const;
-        const int* getAssignments() const;
-        const int* getPrimedAssignments() const;
-        // Highest level at which the current minterm differs
-        // from the previous minterm.
-        int getLevel() const;
-        void getValue(int& edgeValue) const;
-        void getValue(float& edgeValue) const;
+      class iterator {
+        public:
+          enum iter_type {
+            DEFAULT=0,
+            ROW,
+            COLUMN
+          };
+          iterator();
+          ~iterator();
+          iterator(const iterator& iter);
+          iterator& operator=(const iterator& iter);
+          operator bool() const;
+          void operator--();
+          void operator++();
+          bool operator!=(const iterator& iter) const;
+          bool operator==(const iterator& iter) const;
+          const int* getAssignments() const;
+          const int* getPrimedAssignments() const;
+          // Highest level at which the current minterm differs
+          // from the previous minterm.
+          int getLevel() const;
+          void getValue(int& edgeValue) const;
+          void getValue(float& edgeValue) const;
         
-        iterator(dd_edge* e, iter_type t, const int* minterm);
-        bool findFirstColumn(int height, int node);
-        bool findNextColumn(int height);
-        bool findFirstRow(int height, int node);
-        bool findNextRow(int height);
+          iterator(dd_edge* e, iter_type t, const int* minterm);
+          bool findFirstColumn(int height, int node);
+          bool findNextColumn(int height);
+          bool findFirstRow(int height, int node);
+          bool findNextRow(int height);
 
-      private:
-        friend class dd_edge;
-        void incrNonRelation();
-        void incrRelation();
-        void incrNonIdentRelation();
-        void incrRow();
-        void incrColumn();
-        void incrNonIdentRow();
-        void incrNonIdentColumn();
+        private:
+          friend class dd_edge;
+          void incrNonRelation();
+          void incrRelation();
+          void incrNonIdentRelation();
+          void incrRow();
+          void incrColumn();
+          void incrNonIdentRow();
+          void incrNonIdentColumn();
 
-        dd_edge*  e;
-        unsigned  size;
-        int*      element;
-        int*      nodes;
-        int*      pelement;
-        int*      pnodes;
-        iter_type type;
-        int       foundPathAtLevel;
-    };
+          dd_edge*  e;
+          unsigned  size;
+          int*      element;
+          int*      nodes;
+          int*      pelement;
+          int*      pnodes;
+          iter_type type;
+          int       foundPathAtLevel;
+      };
 
-    typedef iterator const_iterator;
+      typedef iterator const_iterator;
 
-    /** Returns an iterator to the first element of the dd_edge.
-        The iterator can be used to visit the elements in the DD in
-        lexicographic order.
-        @return         an iterator pointing to the first element.
-    */
-    const_iterator begin();
+      /** Returns an iterator to the first element of the dd_edge.
+          The iterator can be used to visit the elements in the DD in
+          lexicographic order.
+          @return         an iterator pointing to the first element.
+      */
+      const_iterator begin();
 
-    /** Returns an iterator to the first element of the dd_edge
-        with minterm as the "from" component of the element
-        (the entire element being from->to).
+      /** Returns an iterator to the first element of the dd_edge
+          with minterm as the "from" component of the element
+          (the entire element being from->to).
 
-        This iterator can then be used to visit the elements
-        in the DD with the same "from" component.
-        The elements are visited in lexicographic order of the
-        "to" component.
+          This iterator can then be used to visit the elements
+          in the DD with the same "from" component.
+          The elements are visited in lexicographic order of the
+          "to" component.
         
-        This is only valid for DD that store relations.
+          This is only valid for DD that store relations.
 
-        If the relation is thought of as a matrix with the Y-axis
-        representing the "from" components and the X-axis representing
-        the "to" components, this iterator is useful for visiting all
-        the "to"s that correspond to a single "from".
+          If the relation is thought of as a matrix with the Y-axis
+          representing the "from" components and the X-axis representing
+          the "to" components, this iterator is useful for visiting all
+          the "to"s that correspond to a single "from".
 
-        @return         an iterator pointing to the first element.
-    */
-    const_iterator beginRow(const int* minterm);
+          @return         an iterator pointing to the first element.
+      */
+      const_iterator beginRow(const int* minterm);
 
-    /** Returns an iterator to the first element of the dd_edge
-        with minterm as the "to" component of the element
-        (the entire element being to->from).
+      /** Returns an iterator to the first element of the dd_edge
+          with minterm as the "to" component of the element
+          (the entire element being to->from).
 
-        This iterator can then be used to visit the elements
-        in the DD with the same "to" component.
-        The elements are visited in lexicographic order of the
-        "from" component.
+          This iterator can then be used to visit the elements
+          in the DD with the same "to" component.
+          The elements are visited in lexicographic order of the
+          "from" component.
         
-        This is only valid for DD that store relations.
+          This is only valid for DD that store relations.
 
-        If the relation is thought of as a matrix with the Y-axis
-        representing the "from" components and the X-axis representing
-        the "to" components, this iterator is useful for visiting all
-        the "from"s that correspond to a single "to".
+          If the relation is thought of as a matrix with the Y-axis
+          representing the "from" components and the X-axis representing
+          the "to" components, this iterator is useful for visiting all
+          the "from"s that correspond to a single "to".
 
-        @return         an iterator pointing to the first element.
-    */
-    const_iterator beginColumn(const int* minterm);
+          @return         an iterator pointing to the first element.
+      */
+      const_iterator beginColumn(const int* minterm);
 
-    /** Assignment operator.
-        @param  e       dd_edge to copy.
-        @return         the new dd_edge.
-    */
-    dd_edge& operator=(const dd_edge &e);
+      /** Assignment operator.
+          @param  e       dd_edge to copy.
+          @return         the new dd_edge.
+      */
+      dd_edge& operator=(const dd_edge &e);
 
-    /** Check for equality.
-        @return true    iff this edge has the same parent and refers to
-                        the same edge as \a e.
-    */
-    bool operator==(const dd_edge& e) const;
+      /** Check for equality.
+          @return true    iff this edge has the same parent and refers to
+                          the same edge as \a e.
+      */
+      bool operator==(const dd_edge& e) const;
 
-    /** Check for inequality.
-        @return true    iff this edge does not refer to the same edge as \a e.
-    */
-    bool operator!=(const dd_edge& e) const;
+      /** Check for inequality.
+          @return true    iff this edge does not refer to the same edge as \a e.
+      */
+      bool operator!=(const dd_edge& e) const;
 
-    /** Plus operator.
-        BOOLEAN forests: Union; INTEGER/REAL forests: Addition.
-        @param  e       dd_edge to Union/Add with this dd_edge.
-        @return         \a this + \a e.
-    */
-    const dd_edge operator+(const dd_edge& e) const;
+      /** Plus operator.
+          BOOLEAN forests: Union; INTEGER/REAL forests: Addition.
+          @param  e       dd_edge to Union/Add with this dd_edge.
+          @return         \a this + \a e.
+      */
+      const dd_edge operator+(const dd_edge& e) const;
 
-    /** Compound Plus operator.
-        BOOLEAN forests: Union; INTEGER/REAL forests: Addition.
-        This edge is overwritten with the result of the operation.
-        @param  e       dd_edge to Union/Add with this dd_edge.
-        @return         \a this + \a e.
-    */
-    dd_edge& operator+=(const dd_edge &e);
+      /** Compound Plus operator.
+          BOOLEAN forests: Union; INTEGER/REAL forests: Addition.
+          This edge is overwritten with the result of the operation.
+          @param  e       dd_edge to Union/Add with this dd_edge.
+          @return         \a this + \a e.
+      */
+      dd_edge& operator+=(const dd_edge &e);
 
-    /** Star operator.
-        BOOLEAN forests: Intersection; INTEGER/REAL forests: Multiplication.
-        @param  e       dd_edge to Intersection/Multiply with this dd_edge.
-        @return         \a this * \a e.
-    */
-    const dd_edge operator*(const dd_edge& e) const;
+      /** Star operator.
+          BOOLEAN forests: Intersection; INTEGER/REAL forests: Multiplication.
+          @param  e       dd_edge to Intersection/Multiply with this dd_edge.
+          @return         \a this * \a e.
+      */
+      const dd_edge operator*(const dd_edge& e) const;
 
-    /** Compound Star operator.
-        BOOLEAN forests: Intersection; INTEGER/REAL forests: Multiplication.
-        This edge is overwritten with the result of the operation.
-        @param  e       dd_edge to Intersection/Multiply with this dd_edge.
-        @return         \a this * \a e.
-    */
-    dd_edge& operator*=(const dd_edge &e);
+      /** Compound Star operator.
+          BOOLEAN forests: Intersection; INTEGER/REAL forests: Multiplication.
+          This edge is overwritten with the result of the operation.
+          @param  e       dd_edge to Intersection/Multiply with this dd_edge.
+          @return         \a this * \a e.
+      */
+      dd_edge& operator*=(const dd_edge &e);
 
-    /** Minus operator.
-        BOOLEAN forests: Difference; INTEGER/REAL forests: Subtraction.
-        @param  e       dd_edge for difference/subtract.
-        @return         \a this - \a e.
-    */
-    const dd_edge operator-(const dd_edge& e) const;
+      /** Minus operator.
+          BOOLEAN forests: Difference; INTEGER/REAL forests: Subtraction.
+          @param  e       dd_edge for difference/subtract.
+          @return         \a this - \a e.
+      */
+      const dd_edge operator-(const dd_edge& e) const;
 
-    /** Compound Minus operator.
-        BOOLEAN forests: Difference; INTEGER/REAL forests: Subtraction.
-        This edge is overwritten with the result of the operation.
-        @param  e       dd_edge for difference/subtract.
-        @return         \a this - \a e.
-    */
-    dd_edge& operator-=(const dd_edge &e);
+      /** Compound Minus operator.
+          BOOLEAN forests: Difference; INTEGER/REAL forests: Subtraction.
+          This edge is overwritten with the result of the operation.
+          @param  e       dd_edge for difference/subtract.
+          @return         \a this - \a e.
+      */
+      dd_edge& operator-=(const dd_edge &e);
 
-    /** Divide operator.
-        BOOLEAN forests: INVALID; INTEGER/REAL forests: Division.
-        @param  e       dd_edge for division.
-        @return         \a this / \a e.
-    */
-    const dd_edge operator/(const dd_edge& e) const;
+      /** Divide operator.
+          BOOLEAN forests: INVALID; INTEGER/REAL forests: Division.
+          @param  e       dd_edge for division.
+          @return         \a this / \a e.
+      */
+      const dd_edge operator/(const dd_edge& e) const;
 
-    /** Compound Divide operator.
-        BOOLEAN forests: INVALID; INTEGER/REAL forests: Division.
-        This edge is overwritten with the result of the operation.
-        @param  e       dd_edge for division.
-        @return         \a this / \a e.
-    */
-    dd_edge& operator/=(const dd_edge &e);
+      /** Compound Divide operator.
+          BOOLEAN forests: INVALID; INTEGER/REAL forests: Division.
+          This edge is overwritten with the result of the operation.
+          @param  e       dd_edge for division.
+          @return         \a this / \a e.
+      */
+      dd_edge& operator/=(const dd_edge &e);
 
 #if 0
     //  Not implemented
@@ -1188,40 +1249,40 @@ class dd_edge {
     const dd_edge operator<(const dd_edge& e) const;
 #endif
 
-    /** Display the edge information.
-        This is primarily for aid in debugging.
-        Note that cardinality only works for MDDs, MTMDDs, MXDs and MTMXDs.
-        @param  strm      File stream to write to.
-        @param  verbosity 0: default
-                          1: default + cardinality
-                          2: default + displays graph rooted at this node.
-                          3: default + cardinality + graph.
-    */
-    void show(FILE* strm, int verbosity = 0) const;
+      /** Display the edge information.
+          This is primarily for aid in debugging.
+          Note that cardinality only works for MDDs, MTMDDs, MXDs and MTMXDs.
+          @param  strm      File stream to write to.
+          @param  verbosity 0: default
+                            1: default + cardinality
+                            2: default + displays graph rooted at this node.
+                            3: default + cardinality + graph.
+      */
+      void show(FILE* strm, int verbosity = 0) const;
 
-  private:
-    friend class expert_forest;
-    friend class iterator;
+    private:
+      friend class expert_forest;
+      friend class iterator;
 
-    void setIndex(int index);
-    int getIndex() const;
+      void setIndex(int index);
+      int getIndex() const;
 
-    forest *parent;
-    int node;
-    int value;
-    int level;
-    int index;
+      forest *parent;
+      int node;
+      int value;
+      int level;
+      int index;
 
-    op_info* opPlus;
-    op_info* opStar;
-    op_info* opMinus;
-    op_info* opDivide;
+      op_info* opPlus;
+      op_info* opStar;
+      op_info* opMinus;
+      op_info* opDivide;
 
-    void updateIterators();
+      void updateIterators();
 
-    bool            updateNeeded;
-    const_iterator* beginIterator;
-};
+      bool            updateNeeded;
+      const_iterator* beginIterator;
+  };
 
 
 // ******************************************************************
