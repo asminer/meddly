@@ -295,6 +295,8 @@ int main(int argc, char *argv[])
     bounds[i] = variableBound;
   }
 
+  initialize();
+
   // Create a domain
   domain *d = createDomain();
   assert(d != 0);
@@ -479,6 +481,7 @@ int main(int argc, char *argv[])
 
   // Cleanup; in this case simply delete the domain
   delete d;
+  cleanup();
 
   free(bounds);
   for (int i = 0; i < nElements; ++i)

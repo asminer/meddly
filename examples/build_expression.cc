@@ -84,6 +84,7 @@ dd_edge buildIncrY3(forest* mtmxd);
 
 int main(int argc, char *argv[])
 {
+  MEDDLY::initialize();
 
   // initialize the variable bounds array to provide to the domain
   int bounds[nVariables];
@@ -150,6 +151,8 @@ int main(int argc, char *argv[])
 
   // Cleanup; in this case simply delete the domain
   delete d;
+
+  MEDDLY::cleanup();
 
   return 0;
 }

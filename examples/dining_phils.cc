@@ -428,6 +428,15 @@ int main(int argc, char *argv[])
     scanf("%d", &nPhilosophers);
   }
 
+  // Initialize MEDDLY
+
+  MEDDLY::settings s;
+  s.doComputeTablesUseChaining = chaining;
+  if (cacheSize > 0) {
+    s.maxComputeTableSize = cacheSize;
+  }
+  MEDDLY::initialize(s);
+
   // Number of levels in domain (excluding terminals)
   int nLevels = nPhilosophers * 2;
 
@@ -437,12 +446,6 @@ int main(int argc, char *argv[])
   expert_compute_manager* ecm = 
     static_cast<expert_compute_manager*>(getComputeManager());
   assert(ecm != 0);
-
-  if (cacheSize > 0) {
-    ecm->setHashTablePolicy(chaining, cacheSize);
-  } else {
-    ecm->setHashTablePolicy(chaining);
-  }
 
   printf("Initiailzing forests\n");
 
@@ -778,6 +781,7 @@ int main(int argc, char *argv[])
 
   // Cleanup
   delete d;
+  MEDDLY::cleanup();
 
   printf("\n\nDONE\n");
   return 0;

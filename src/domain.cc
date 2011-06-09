@@ -40,12 +40,6 @@
 MEDDLY::domain::domain() {}
 MEDDLY::domain::~domain() {}
 
-MEDDLY::domain* MEDDLY::createDomain()
-{
-  return new expert_domain();
-}
-
-
 // ----------------- expert_domain ------------------------
 
 MEDDLY::expert_domain::expert_domain()

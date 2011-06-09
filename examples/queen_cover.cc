@@ -214,6 +214,7 @@ int usage(const char* who)
 int main(int argc, const char** argv)
 {
   if (!processArgs(argc, argv)) return usage(argv[0]);
+  initialize();
   CM = getComputeManager();
   assert(CM);
   printf("Using %s\n", getLibraryInfo(0));
@@ -337,5 +338,6 @@ int main(int argc, const char** argv)
     fprintf(outfile, "\n");
   } // for iter
   fprintf(outfile, "\n");
+  cleanup();
   return 0;
 }

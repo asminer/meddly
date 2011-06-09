@@ -116,13 +116,11 @@ int main(int argc, char *argv[])
 #endif
   }
 
+  settings s;
 #ifdef CACHE_SIZE
-  compute_manager* cm = getComputeManager();
-  assert(cm != 0);
-  bool chaining = true;
-  unsigned cacheSize = CACHE_SIZE;
-  cm->setHashTablePolicy(chaining, cacheSize);
+  s.maxComputeTableSize = CACHE_SIZE;
 #endif
+  initialize(s);
 
   // Create a domain
   domain *d = createDomain();
@@ -183,6 +181,7 @@ int main(int argc, char *argv[])
 
   // Cleanup; in this case simply delete the domain
   delete d;
+  cleanup();
 
   free(bounds);
   for (int i = 0; i < nElements; ++i)

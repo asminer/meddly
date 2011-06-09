@@ -199,6 +199,7 @@ void test(forest* mdd, forest* mxd, int nmt)
 
 int main()
 {
+  initialize();
   CM = getComputeManager();
   assert(CM);
 
@@ -215,7 +216,7 @@ int main()
     printf("\tChecking cross-product for %2d random minterms\n", m);
     test(mdd, mxd, m);
   }
-
+//  cleanup();
   return 0;
 }
 

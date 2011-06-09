@@ -79,10 +79,13 @@ MEDDLY::compute_cache::~compute_cache()
 }
 
 
-bool MEDDLY::compute_cache::setPolicy(bool chaining, unsigned maxSize)
+void MEDDLY::compute_cache::setPolicy(bool chaining, unsigned maxSize)
 {
+  if (0==maxSize)
+    throw error(error::INVALID_ASSIGNMENT);
   // some data is already in cache; abort
-  if (lastData > -1) return false;
+  if (lastData > -1) 
+    throw error(error::MISCELLANEOUS);
 
   // delete existing hash tables
   clear();
@@ -101,7 +104,6 @@ bool MEDDLY::compute_cache::setPolicy(bool chaining, unsigned maxSize)
     // create hash table with no chaining
     fsht = new fixed_size_hash_table<compute_cache>(this, maxSize);
   }
-  return true;
 }
 
 
@@ -314,10 +316,9 @@ MEDDLY::binary_compute_cache::~binary_compute_cache()
 }
 
 
-bool MEDDLY::binary_compute_cache::setPolicy(bool chaining, unsigned maxSize)
+void MEDDLY::binary_compute_cache::setPolicy(bool chaining, unsigned maxSize)
 { 
   clear();
-  return true;
 }
 
 

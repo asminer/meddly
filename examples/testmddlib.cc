@@ -61,6 +61,7 @@ using namespace MEDDLY;
 
 int main(int argc, char *argv[])
 {
+  initialize();
   // Create a domain
   domain *d = createDomain();
   const int N = 2;
@@ -225,6 +226,7 @@ int main(int argc, char *argv[])
 
   // Cleanup; in this case simply delete the domain
   delete d;
+  cleanup();
 
   return 0;
 }

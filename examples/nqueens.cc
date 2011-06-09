@@ -150,6 +150,7 @@ void createQueenNodes(forest* f, int q, dd_edge &col, dd_edge &cp, dd_edge &cm)
 int main()
 {
   timer watch;
+  initialize();
   CM = getComputeManager();
   assert(CM);
   printf("Using %s\n", getLibraryInfo(0));
@@ -255,6 +256,6 @@ int main()
       printf("\tQueen for row %2d in column %2d\n", i, minterm[i]+1);
     }
   }
-
+  cleanup();
   return 0;
 }

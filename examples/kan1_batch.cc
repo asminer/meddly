@@ -187,6 +187,8 @@ int main(int argc, char* argv[])
   }
   if (argc > 1) dfs = true;
 
+  initialize();
+
   // Create a domain
   domain *d = createDomain();
   assert(d != NULL);
@@ -231,6 +233,7 @@ int main(int argc, char* argv[])
 
   // Cleanup
   delete d;
+  cleanup();
 
   fprintf(stderr, "\nDone\n");
   return 0;

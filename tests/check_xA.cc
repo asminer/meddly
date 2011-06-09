@@ -167,6 +167,7 @@ bool Ax_check(dd_edge &ss, dd_edge &P)
 
 int main(int argc, const char** argv)
 {
+  initialize();
   CM = getComputeManager();
   assert(CM);
 
@@ -184,6 +185,6 @@ int main(int argc, const char** argv)
   if (!build_oz(evpmdds, mtmxds, ss, P)) return 1;
   if (!xA_check(ss, P)) return 1;
   if (!Ax_check(ss, P)) return 1;
-
+  cleanup();
   return 0;
 }

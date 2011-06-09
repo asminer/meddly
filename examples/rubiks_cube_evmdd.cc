@@ -970,6 +970,9 @@ int main(int argc, char *argv[])
   SetUpArrays();
   Init();
 
+  // Initialize MEDDLY
+  initialize();
+
   // Set up the state variables, as described earlier
   d = CreateDomain(num_levels, sizes, variables);
   if (NULL == d) {
@@ -1662,7 +1665,7 @@ int main(int argc, char *argv[])
   }
 
   DestroyDomain(d);
-
+  cleanup();
   fprintf(stderr, "\n\nDONE\n");
   return 0;
 }

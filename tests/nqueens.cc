@@ -192,6 +192,7 @@ long buildQueenSolutions(int N)
 
 int main()
 {
+  initialize();
   CM = getComputeManager();
   assert(CM);
   scratch = new int[N_HIGH+1];
@@ -205,6 +206,6 @@ int main()
     }
     printf("%d queens has %ld solutions\n", i, sols);
   }
-
+  cleanup();
   return 0;
 }

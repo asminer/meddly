@@ -130,6 +130,11 @@ namespace MEDDLY {
 
   /** "Global" settings for MEDDLY.
       These settings DO NOT CHANGE once the library is initialized.
+
+      The compute cache by default uses a hash table with chaining (i.e. a
+      list of entries at each hash location). This can be changed to a
+      hash-table without chaining. The maximum size of the hash table can
+      also be fixed (to limit the amount of memory it uses).
   */
   struct settings {
     public:
@@ -151,7 +156,7 @@ namespace MEDDLY {
 
   /// Various performance measures for MEDDLY.
   struct statistics {
-    long numCacheEntries;
+    // TBD
   };
 
   // ******************************************************************
@@ -1414,20 +1419,6 @@ class compute_manager {
     /** Removes all cached computation results from the compute table.
     */
     virtual void clearComputeTable() = 0;
-
-    /** Change the type of hash table being used for the compute cache.
-        The compute cache by default uses a hash table with chaining (i.e. a
-        list of entries at each hash location). This can be changed to a
-        hash-table without chaining. The maximum size of the hash table can
-        also be fixed (to limit the amount of memory it uses).
-        This operation is valid as long as nothing has been added to the cache
-        previously.
-        @param  chaining
-                      enables/disables chaining in hash table.
-        @param  size  size of cache (default 16777216).
-    */
-    virtual void setHashTablePolicy(bool chaining, unsigned size = 16777216u)
-        = 0;
 
     /** Obtain a human-readable name for an operation.
         @param  op    Operator handle.

@@ -1106,11 +1106,10 @@ class builtin_op_key;
 class custom_op_key;
 class expert_compute_manager : public compute_manager {
   public:
-    expert_compute_manager();
+    expert_compute_manager(const settings &s);
     virtual ~expert_compute_manager();
 
     virtual void clearComputeTable();
-    virtual void setHashTablePolicy(bool chaining, unsigned size = 16777216u);
     virtual void showComputeTable(FILE* strm) const;
     virtual long getNumCacheEntries() const;
 
@@ -1204,6 +1203,9 @@ class expert_compute_manager : public compute_manager {
     // using stl map for storing op_info entries
     std::map<builtin_op_key, op_info>* builtinOpEntries;
     std::map<custom_op_key, op_info>* customOpEntries;
+
+    const bool& useCTchaining;
+    const unsigned& maxCTsize;
 };
 
 

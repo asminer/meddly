@@ -238,6 +238,8 @@ int main(int argc, char *argv[])
     bounds[i] = variableBound;
   }
 
+  initialize();
+
   // Create a domain
   domain *d = createDomain();
   assert(d != 0);
@@ -370,6 +372,8 @@ int main(int argc, char *argv[])
     free(element[i]);
   }
   free(element);
+
+  cleanup();
 
   return 0;
 }

@@ -272,6 +272,8 @@ int main(int argc, char *argv[])
   }
   if (no_moves) { usage(); exit(1); }
 
+  initialize();
+
   bool random_search = (iterations > 0);
   bool GA = false;
 
@@ -469,7 +471,7 @@ int main(int argc, char *argv[])
   if (debug_level > 1) {
     fprintf(stderr, "\n\nDONE\n");
   }
-
+  cleanup();
   return 0;
 }
 

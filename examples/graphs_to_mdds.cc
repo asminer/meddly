@@ -65,6 +65,7 @@ using namespace MEDDLY;
 
 int main(int argv, char *argc[])
 {
+  initialize();
   std::cout << getLibraryInfo();
 
   // Create a domain
@@ -187,6 +188,6 @@ int main(int argv, char *argc[])
   diff.show(stdout, 2);
 
   cm->showComputeTable(stdout);
-
+  cleanup();
   return 0;
 }

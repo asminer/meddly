@@ -1235,11 +1235,8 @@ int main(int argc, char *argv[])
   SetUpArrays();
   Init();
 
-  // Set hash table to be a chained hash table with a
-  // maximum of 16 million entries (default)
-  bool chaining = true;
-  int hashTableSize = 16 * 1024 * 1024;
-  getComputeManager()->setHashTablePolicy(chaining, hashTableSize);
+  // Initialize MEDDLY
+  initialize();
 
   // Set up the state variables, as described earlier
   d = createDomain();
@@ -1316,7 +1313,7 @@ int main(int argc, char *argv[])
   }
 
   delete d;
-
+  cleanup();
   fprintf(stderr, "\n\nDONE\n");
   return 0;
 }

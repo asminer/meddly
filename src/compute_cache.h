@@ -68,9 +68,8 @@ class compute_cache {
                         if true, use cache with chaining,
                         otherwise, use cache without chaining.
         @param  maxSize the maximum size of the hash table.
-        @return         true, if the operation completed successfully.
     */
-    virtual bool setPolicy(bool chaining, unsigned maxSize);
+    virtual void setPolicy(bool chaining, unsigned maxSize);
 
     /** Add an entry to the compute cache. Note that this cache allows for
         duplicate entries for the same key. The user may use find() before
@@ -266,7 +265,7 @@ class compute_cache {
 //  same forest.
 //
 //  Deprecated methods:
-//  (1) bool setPolicy(bool, unsigned)
+//  (1) void setPolicy(bool, unsigned)
 //  (2) void add(op_info*, const int*)
 //  (3) const int* find(op_info*, const int*)
 //
@@ -300,7 +299,7 @@ class binary_compute_cache : public compute_cache {
     virtual void show(FILE *s, bool verbose = false) const;
 
     // Deprecated Methods
-    virtual bool setPolicy(bool chaining, unsigned maxSize);
+    virtual void setPolicy(bool chaining, unsigned maxSize);
     virtual void add(op_info* owner, const int* entry);
     virtual const int* find(op_info* owner, const int* entryKey);
 

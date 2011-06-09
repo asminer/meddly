@@ -30,8 +30,6 @@
 #include "operations/cross.h"
 #include "compute_cache.h"
 
-#include "revision.h"
-
 // ------------------ compute_manager --------------------------
 MEDDLY::compute_manager::compute_manager() {}
 
@@ -39,68 +37,17 @@ MEDDLY::compute_manager::compute_manager() {}
 MEDDLY::compute_manager::~compute_manager() {}
 
 
-compute_manager* MEDDLY::getComputeManager()
-{
-  static expert_compute_manager* ecm = new expert_compute_manager();
-  return ecm;
-}
-
-
-const char* MEDDLY::getLibraryInfo(int what)
-{
-  static char* title = 0;
-  switch (what) {
-    case 0:
-      if (!title) {
-        title = new char[80];
-        if (REVISION_NUMBER) {
-          snprintf(title, 80, 
-            "%s version %s.%d (32-bit and 64-bit compatible)", 
-            PACKAGE_NAME, VERSION, REVISION_NUMBER
-          );
-        } else {
-          snprintf(title, 80, 
-            "%s version %s (32-bit and 64-bit compatible)", 
-            PACKAGE_NAME, VERSION
-          );
-        }
-      }
-      return title;
-
-    case 1:
-      return "Copyright (C) 2009, Iowa State University Research Foundation, Inc.";
-
-    case 2:
-      return "Released under the GNU Lesser General Public License, version 3";
- 
-    case 3:
-      return "http://meddly.sourceforge.net/";
-
-    case 4:
-      return "Data Structures and operations available:\n\
-(1) MDDs: Union, Intersection, Difference.\n\
-(2) Matrix Diagrams (MXDs): Union, Intersection, Difference.\n\
-(3) Multi-Terminal MDDs (MTMDDs) with integer or real terminals:\n\
-    Arithmetic: Plus, Minus, Multiply, Divide, Min, Max.\n\
-    Logical: <, <=, >, >=, ==, !=.\n\
-    Conversion to and from MDDs.\n\
-(4) Multi-Terminal MXDs (MTMXDs) with integer or real terminals:\n\
-    Arithmetic: Plus, Minus, Multiply, Divide, Min, Max.\n\
-    Logical: <, <=, >, >=, ==, !=.\n\
-    Conversion to and from MXDs.\n\
-";
-  }
-  return 0;
-}
-
 
 
 // ------------------------ expert_compute_manager --------------------
 
-MEDDLY::expert_compute_manager::expert_compute_manager()
+MEDDLY::expert_compute_manager::expert_compute_manager(const settings &s)
+: useCTchaining(s.doComputeTablesUseChaining),
+  maxCTsize(s.maxComputeTableSize)
 {
   // initialize compute cache
   cc = new compute_cache();
+  cc->setPolicy(useCTchaining, maxCTsize);
   // initialize builtinOpEntries and customOpEntries
   builtinOpEntries = new std::map<builtin_op_key, op_info>();
   customOpEntries = new std::map<custom_op_key, op_info>();
@@ -245,24 +192,6 @@ void MEDDLY::expert_compute_manager::apply(
 }
 
 
-void MEDDLY::expert_compute_manager::setHashTablePolicy(
-    bool chaining, unsigned size)
-{
-  if (size == 0) throw error(error::TYPE_MISMATCH);
-
-  // Other compute tables may exist (!= cc).
-  std::map<builtin_op_key, op_info>::iterator curr = builtinOpEntries->begin();
-  std::map<builtin_op_key, op_info>::iterator end = builtinOpEntries->end();
-  for ( ; curr != end; ++curr) {
-    compute_cache* cache = (curr->second).cc;
-    if (cache != cc) cache->setPolicy(chaining, size);
-  }
-  
-  if (!cc->setPolicy(chaining, size))
-    throw error(error::TYPE_MISMATCH);
-}
-
-
 void MEDDLY::expert_compute_manager::showComputeTable(FILE* strm) const
 {
   if (cc != 0) if (cc->getNumEntries() > 0) { cc->show(strm, true); }
@@ -379,6 +308,7 @@ void MEDDLY::expert_compute_manager::addBuiltinOp(const builtin_op_key& key,
     if (allForests) {
       // fprintf(stderr, "Using binary compute cache for %s\n", op->getName());
       cache = new binary_compute_cache(op, plist, n);
+      cache->setPolicy(useCTchaining, maxCTsize);
     }
   }
 #endif
