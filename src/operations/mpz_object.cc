@@ -55,7 +55,7 @@ MEDDLY::op_param::type MEDDLY::mpz_object::getType()
   return op_param::HUGEINT;
 }
 
-MEDDLY::ct_object& get_mpz_wrapper()
+MEDDLY::ct_object& MEDDLY::get_mpz_wrapper()
 {
   static MEDDLY::mpz_object foo;
   return foo;
