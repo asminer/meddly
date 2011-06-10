@@ -27,7 +27,7 @@
 #include "../defines.h"
 #include <vector>
 
-
+using namespace MEDDLY;
 
 /** MDD element-wise operations
 
@@ -47,21 +47,21 @@ class mdd_apply_operation : public operation {
     virtual int getAnsLengthInBytes() const { return 4; }
     virtual int getCacheEntryLengthInBytes() const { return 12; }
 
-    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void typeCheck(const op_info* owner);
     virtual bool isEntryStale(const op_info* owner, const int* entryData);
     virtual void discardEntry(op_info* owner, const int* entryData);
     virtual void showEntry(const op_info* owner, FILE* strm,
         const int *entryData) const;
 
     // Calls compute(op_info*, dd_edge, dd_edge, dd_edge)
-    virtual compute_manager::error compute(op_info* owner, dd_edge** operands);
+    virtual void compute(op_info* owner, dd_edge** operands);
 
     // Returns an error
-    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+    virtual void compute(op_info* owner, const dd_edge& a,
         dd_edge& b);
 
     // Calls compute(op_info*, int, int) and stores result in c.
-    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+    virtual void compute(op_info* owner, const dd_edge& a,
         const dd_edge& b, dd_edge& c);
 
     // Implements APPLY. Returns the result of (a op b).
@@ -192,7 +192,7 @@ class mxd_apply_operation : public mdd_apply_operation {
     mxd_apply_operation();
     virtual ~mxd_apply_operation();
 
-    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void typeCheck(const op_info* owner);
     virtual int compute(op_info* owner, int a, int b);
     virtual const char* getName() const { return "Mxd Apply"; }
 
@@ -232,22 +232,22 @@ class mxd_alt_apply_operation : public operation {
     virtual int getAnsLengthInBytes() const { return 4; }
     virtual int getCacheEntryLengthInBytes() const { return 16; }
 
-    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void typeCheck(const op_info* owner);
     virtual bool isEntryStale(const op_info* owner, const int* entryData);
     virtual void discardEntry(op_info* owner, const int* entryData);
     virtual void showEntry(const op_info* owner, FILE* strm,
         const int *entryData) const;
 
     // Calls compute(op_info*, dd_edge, dd_edge, dd_edge)
-    virtual compute_manager::error compute(op_info* owner, dd_edge** operands);
+    virtual void compute(op_info* owner, dd_edge** operands);
 
     // Returns an error
-    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+    virtual void compute(op_info* owner, const dd_edge& a,
         dd_edge& b);
 
     // Implements APPLY operation -- calls checkTerminals to compute
     // result for terminal nodes.
-    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+    virtual void compute(op_info* owner, const dd_edge& a,
         const dd_edge& b, dd_edge& c);
 
     virtual int compute(op_info* owner, int level, int a, int b);
@@ -346,7 +346,7 @@ class mtmxd_apply_operation : public mxd_apply_operation {
   public:
     mtmxd_apply_operation();
     virtual ~mtmxd_apply_operation();
-    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void typeCheck(const op_info* owner);
     virtual const char* getName() const { return "MtMxd Apply"; }
 
   protected:
@@ -489,7 +489,7 @@ class mtmxd_alt_apply_operation : public mxd_alt_apply_operation {
   public:
     mtmxd_alt_apply_operation();
     virtual ~mtmxd_alt_apply_operation();
-    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void typeCheck(const op_info* owner);
     virtual const char* getName() const { return "MtMxd Alternative Apply"; }
   protected:
     virtual bool checkTerminals(op_info* op, int a, int b, int& c) = 0;
@@ -573,7 +573,7 @@ class mtmdd_apply_operation : public mdd_apply_operation {
     mtmdd_apply_operation();
     virtual ~mtmdd_apply_operation();
 
-    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void typeCheck(const op_info* owner);
     virtual const char* getName() const { return "MtMdd Apply"; }
 
   protected:
@@ -589,7 +589,7 @@ class mtmdd_plus : public mdd_union {
 #endif
   public:
     static mtmdd_plus* getInstance();
-    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void typeCheck(const op_info* owner);
     virtual const char* getName() const { return "MtMdd Plus"; }
     virtual bool isCommutative() const { return true; }
 
@@ -858,7 +858,7 @@ class mtmdd_to_mdd_apply_operation : public mtmdd_apply_operation {
     virtual ~mtmdd_to_mdd_apply_operation();
     virtual const char* getName() const { return "MtMdd To Mdd Apply"; }
 
-    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void typeCheck(const op_info* owner);
     virtual int compute(op_info* owner, int a, int b);
     virtual int computeHelper(op_info* owner, int a, int b);
 
@@ -1014,22 +1014,22 @@ class conversion_operation : public operation {
     virtual int getAnsLengthInBytes() const { return 4; }
     virtual int getCacheEntryLengthInBytes() const { return 8; }
 
-    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void typeCheck(const op_info* owner);
     virtual bool isEntryStale(const op_info* owner, const int* entryData);
     virtual void discardEntry(op_info* owner, const int* entryData);
     virtual void showEntry(const op_info* owner, FILE* strm,
         const int *entryData) const;
 
     // Calls compute(op_info*, dd_edge, dd_edge)
-    virtual compute_manager::error compute(op_info* owner, dd_edge** operands);
+    virtual void compute(op_info* owner, dd_edge** operands);
 
     // Implements APPLY operation -- calls checkTerminals to compute
     // result for terminal nodes.
-    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+    virtual void compute(op_info* owner, const dd_edge& a,
         dd_edge& b);
 
     // Returns an error
-    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+    virtual void compute(op_info* owner, const dd_edge& a,
         const dd_edge& b, dd_edge& c);
 
     virtual int compute(op_info* owner, int a);
@@ -1046,7 +1046,7 @@ class conversion_operation : public operation {
 class mdd_complement : public conversion_operation {
   public:
     static mdd_complement* getInstance();
-    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void typeCheck(const op_info* owner);
     virtual const char* getName() const { return "Mdd Complement"; }
 
   protected:
@@ -1061,7 +1061,7 @@ class mdd_complement : public conversion_operation {
 class mxd_complement : public conversion_operation {
   public:
     static mxd_complement* getInstance();
-    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void typeCheck(const op_info* owner);
     virtual const char* getName() const { return "Mxd Complement"; }
 
     virtual int getKeyLength() const { return 2; }
@@ -1094,7 +1094,7 @@ class mxd_complement : public conversion_operation {
 class mtmdd_to_mdd : public conversion_operation {
   public:
     static mtmdd_to_mdd* getInstance();
-    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void typeCheck(const op_info* owner);
     virtual const char* getName() const { return "Convert MtMdd to Mdd"; }
 
   protected:
@@ -1109,7 +1109,7 @@ class mtmdd_to_mdd : public conversion_operation {
 class mdd_to_mtmdd : public conversion_operation {
   public:
     static mdd_to_mtmdd* getInstance();
-    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void typeCheck(const op_info* owner);
     virtual const char* getName() const { return "Convert Mdd to MtMdd"; }
 
   protected:
@@ -1124,7 +1124,7 @@ class mdd_to_mtmdd : public conversion_operation {
 class mtmxd_to_mxd : public conversion_operation {
   public:
     static mtmxd_to_mxd* getInstance();
-    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void typeCheck(const op_info* owner);
     virtual const char* getName() const { return "Convert MtMxd to Mxd"; }
 
   protected:
@@ -1139,7 +1139,7 @@ class mtmxd_to_mxd : public conversion_operation {
 class mxd_to_mtmxd : public conversion_operation {
   public:
     static mxd_to_mtmxd* getInstance();
-    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void typeCheck(const op_info* owner);
     virtual const char* getName() const { return "Convert Mxd to MtMxd"; }
 
   protected:
@@ -1166,19 +1166,19 @@ class mtmdd_to_evmdd : public operation {
     virtual int getAnsLengthInBytes() const { return 8; }
     virtual int getCacheEntryLengthInBytes() const { return 12; }
 
-    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void typeCheck(const op_info* owner);
     virtual bool isEntryStale(const op_info* owner, const int* entryData);
     virtual void discardEntry(op_info* owner, const int* entryData);
     virtual void showEntry(const op_info* owner, FILE* strm,
         const int *entryData) const;
     // Calls compute(op_info*, dd_edge, dd_edge)
-    virtual compute_manager::error compute(op_info* owner, dd_edge** operands);
+    virtual void compute(op_info* owner, dd_edge** operands);
     // Implements APPLY operation -- calls checkTerminals to compute
     // result for terminal nodes.
-    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+    virtual void compute(op_info* owner, const dd_edge& a,
         dd_edge& b);
     // Returns an error
-    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+    virtual void compute(op_info* owner, const dd_edge& a,
         const dd_edge& b, dd_edge& c);
 
   protected:
@@ -1203,8 +1203,8 @@ class mdd_to_evplusmdd_index_set : public mtmdd_to_evmdd {
   public:
     static mdd_to_evplusmdd_index_set* getInstance();
     virtual const char* getName() const { return "Convert Mdd to Index Set"; }
-    virtual compute_manager::error typeCheck(const op_info* owner);
-    virtual compute_manager::error compute(op_info* owner,
+    virtual void typeCheck(const op_info* owner);
+    virtual void compute(op_info* owner,
         const dd_edge& a, dd_edge& b);
 
   protected:
@@ -1241,15 +1241,15 @@ class evmdd_apply_operation : public operation {
     virtual void discardEntry(op_info* owner, const int* entryData);
 
     // Calls compute(op_info*, dd_edge, dd_edge, dd_edge)
-    virtual compute_manager::error compute(op_info* owner, dd_edge** operands);
+    virtual void compute(op_info* owner, dd_edge** operands);
 
     // Returns an error
-    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+    virtual void compute(op_info* owner, const dd_edge& a,
         dd_edge& b);
 
     // Implements APPLY operation -- calls checkTerminals to compute
     // result for terminal nodes.
-    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+    virtual void compute(op_info* owner, const dd_edge& a,
         const dd_edge& b, dd_edge& c) = 0;
 };
 
@@ -1261,16 +1261,16 @@ class evplusmdd_apply_operation : public evmdd_apply_operation {
 
     virtual const char* getName() const { return "EV+MDD Apply"; }
 
-    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void typeCheck(const op_info* owner);
     virtual void showEntry(const op_info* owner, FILE* strm,
         const int *entryData) const;
 
     // Implements APPLY operation -- calls checkTerminals to compute
     // result for terminal nodes.
-    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+    virtual void compute(op_info* owner, const dd_edge& a,
         const dd_edge& b, dd_edge& c);
 
-    virtual compute_manager::error compute(op_info* owner, int a, int aev,
+    virtual void compute(op_info* owner, int a, int aev,
         int b, int bev, int& c, int& cev);
 
   protected:
@@ -1295,16 +1295,16 @@ class evtimesmdd_apply_operation : public evmdd_apply_operation {
 
     virtual const char* getName() const { return "EV*MDD Apply"; }
 
-    virtual compute_manager::error typeCheck(const op_info* owner);
+    virtual void typeCheck(const op_info* owner);
     virtual void showEntry(const op_info* owner, FILE* strm,
         const int *entryData) const;
 
     // Implements APPLY operation -- calls checkTerminals to compute
     // result for terminal nodes.
-    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+    virtual void compute(op_info* owner, const dd_edge& a,
         const dd_edge& b, dd_edge& c);
 
-    virtual compute_manager::error compute(op_info* owner, int a, float aev,
+    virtual void compute(op_info* owner, int a, float aev,
         int b, float bev, int& c, float& cev);
 
   protected:
@@ -1329,7 +1329,7 @@ class evplusmdd_plus : public evplusmdd_apply_operation {
     virtual bool isCommutative() const { return true; }
     virtual bool checkTerminals(op_info* op, int a, int aev, int b, int bev,
         int& c, int& cev);
-    virtual compute_manager::error compute(op_info* owner, int a, int aev,
+    virtual void compute(op_info* owner, int a, int aev,
         int b, int bev, int& c, int& cev);
 
   protected:

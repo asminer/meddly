@@ -33,6 +33,8 @@
 #include "meddly.h"
 #include "meddly_expert.h"
 
+using namespace MEDDLY;
+
 // Timer class
 #include "timer.h"
 
@@ -160,10 +162,12 @@ int main(int argc, char *argv[])
     bounds[i] = variableBound;
   }
 
+  initialize();
+
   // Create a domain
-  domain *d = MEDDLY_createDomain();
+  domain *d = createDomain();
   assert(d != 0);
-  assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVariables));
+  d->createVariablesBottomUp(bounds, nVariables);
 
   // Create an MDD forest in this domain (to store states)
   forest* states = d->createForest(false, forest::BOOLEAN,
@@ -229,8 +233,7 @@ int main(int argc, char *argv[])
       expertStates->getNodeLevel(accumulatedNode));
 
   dd_edge nodeC(states);
-  assert(forest::SUCCESS ==
-      states->createEdge(elements, nElements, nodeC));
+  states->createEdge(elements, nElements, nodeC);
 
   if (final != nodeC) {
 #ifdef VERBOSE
@@ -265,6 +268,7 @@ int main(int argc, char *argv[])
 
   // Cleanup; in this case simply delete the domain
   delete d;
+  cleanup();
 
   free(bounds);
   for (int i = 0; i < nElements; ++i)
@@ -382,9 +386,9 @@ void testA()
   for (int i = 0; i < nVars; ) { bounds[i++] = varSize; }
 
   // Create a domain
-  domain *d = MEDDLY_createDomain();
+  domain *d = createDomain();
   assert(d != 0);
-  assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVars));
+  d->createVariablesBottomUp(bounds, nVars);
 
   // Create an MDD forest in this domain (to store states)
   forest* states = d->createForest(false, forest::BOOLEAN,
@@ -534,9 +538,9 @@ void testB()
   for (int i = 0; i < nVars; ) { bounds[i++] = varSize; }
 
   // Create a domain
-  domain *d = MEDDLY_createDomain();
+  domain *d = createDomain();
   assert(d != 0);
-  assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVars));
+  d->createVariablesBottomUp(bounds, nVars);
 
   // Create an MDD forest in this domain (to store states)
   forest* states = d->createForest(true, forest::BOOLEAN,
@@ -649,9 +653,9 @@ void testC()
   for (int i = 0; i < nVars; ) { bounds[i++] = varSize; }
 
   // Create a domain
-  domain *d = MEDDLY_createDomain();
+  domain *d = createDomain();
   assert(d != 0);
-  assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVars));
+  d->createVariablesBottomUp(bounds, nVars);
 
   // Create an MDD forest in this domain (to store states)
   forest* states = d->createForest(false, forest::BOOLEAN,
@@ -749,8 +753,7 @@ void doPhaseI(expert_forest* f, const int* const* elements,
     int start, int end, int& tempNode)
 {
   dd_edge nodeA(f);
-  assert(forest::SUCCESS ==
-      f->createEdge(elements + start, end - start, nodeA));
+  f->createEdge(elements + start, end - start, nodeA);
 
   convertDDEdgeToTemporaryNode(nodeA, tempNode);
 
@@ -800,8 +803,7 @@ void doPhaseIII(expert_forest* f, const int* const* elements,
     int start, int end, int& tempNode)
 {
   dd_edge nodeB(f);
-  assert(forest::SUCCESS == f->createEdge(elements + start,
-        end - start, nodeB));
+  f->createEdge(elements + start, end - start, nodeB);
 #if 0
   accumulate(f, tempNode, nodeB.getNode());
 #else

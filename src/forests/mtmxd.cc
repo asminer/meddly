@@ -87,16 +87,16 @@ void mtmxd_node_manager::expandCountAndSlotArrays(int size)
 }
 
 
-forest::error mtmxd_node_manager::resizeNode(int p, int size)
+void mtmxd_node_manager::resizeNode(int p, int size)
 {
   // This operation can only be performed on Temporary nodes.
   if (!isActiveNode(p) || isTerminalNode(p) || isReducedNode(p)) {
-    return forest::INVALID_OPERATION;
+    throw error(error::INVALID_OPERATION);
   }
 
   // If node is already large enough, do nothing, and return SUCCESS.
   int nodeSize = getFullNodeSize(p);
-  if (size <= nodeSize) return forest::SUCCESS;
+  if (size <= nodeSize) return;
 
   DCASSERT(size > nodeSize);
 
@@ -143,8 +143,6 @@ forest::error mtmxd_node_manager::resizeNode(int p, int size)
   DCASSERT(size == getFullNodeSize(p));
   DCASSERT(p == 
       getNodeAddress(p)[getDataHeaderSize() + getFullNodeSize(p) - 1]);
-
-  return forest::SUCCESS;
 }
 
 
@@ -494,25 +492,27 @@ void mtmxd_node_manager::createEdge(const int* v, const int* vp, int term,
 }
 
 
-forest::error mtmxd_node_manager::createEdge(const int* const* vlist,
+void mtmxd_node_manager::createEdge(const int* const* vlist,
     const int* const* vplist, const int* terms, int N, dd_edge& e)
 {
-  if (e.getForest() != this) return forest::INVALID_OPERATION;
+  if (e.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
   if (vlist == 0 || vplist == 0 || terms == 0 || N <= 0)
-    return forest::INVALID_VARIABLE;
+    throw error(error::INVALID_VARIABLE);
 
-  return createEdgeInternal(vlist, vplist, terms, N, e);
+  createEdgeInternal(vlist, vplist, terms, N, e);
 }
 
 
-forest::error mtmxd_node_manager::createEdge(const int* const* vlist,
+void mtmxd_node_manager::createEdge(const int* const* vlist,
     const int* const* vplist, const float* terms, int N, dd_edge& e)
 {
-  if (e.getForest() != this) return forest::INVALID_OPERATION;
+  if (e.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
   if (vlist == 0 || vplist == 0 || terms == 0 || N <= 0)
-    return forest::INVALID_VARIABLE;
+    throw error(error::INVALID_VARIABLE);
 
-  return createEdgeInternal(vlist, vplist, terms, N, e);
+  createEdgeInternal(vlist, vplist, terms, N, e);
 }
 
 
@@ -537,25 +537,25 @@ int mtmxd_node_manager::createEdge(int dptr)
 }
 
 
-forest::error mtmxd_node_manager::createEdge(int val, dd_edge &e)
+void mtmxd_node_manager::createEdge(int val, dd_edge &e)
 {
   DCASSERT(getRangeType() == forest::INTEGER);
-  if (e.getForest() != this) return forest::INVALID_OPERATION;
+  if (e.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
 
   int node = createEdge(getTerminalNode(val));
   e.set(node, 0, getNodeLevel(node));
-  return forest::SUCCESS;
 }
 
 
-forest::error mtmxd_node_manager::createEdge(float val, dd_edge &e)
+void mtmxd_node_manager::createEdge(float val, dd_edge &e)
 {
   DCASSERT(getRangeType() == forest::REAL);
-  if (e.getForest() != this) return forest::INVALID_OPERATION;
+  if (e.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
 
   int node = createEdge(getTerminalNode(val));
   e.set(node, 0, getNodeLevel(node));
-  return forest::SUCCESS;
 }
 
 
@@ -611,31 +611,33 @@ int mtmxd_node_manager::getTerminalNodeForEdge(int n, const int* vlist,
 }
 
 
-forest::error mtmxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
+void mtmxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
     const int* vplist, int &term) const
 {
   DCASSERT(getRangeType() == forest::INTEGER);
-  if (f.getForest() != this) return forest::INVALID_OPERATION;
-  if (vlist == 0 || vplist == 0) return forest::INVALID_VARIABLE;
+  if (f.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
+  if (vlist == 0 || vplist == 0) 
+    throw error(error::INVALID_VARIABLE);
 
   // assumption: vlist and vplist do not contain any special values
   // (-1, -2, etc). vlist and vplist contains a single element.
   term = getInteger(getTerminalNodeForEdge(f.getNode(), vlist, vplist));
-  return forest::SUCCESS;
 }
 
 
-forest::error mtmxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
+void mtmxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
     const int* vplist, float &term) const
 {
   DCASSERT(getRangeType() == forest::REAL);
-  if (f.getForest() != this) return forest::INVALID_OPERATION;
-  if (vlist == 0 || vplist == 0) return forest::INVALID_VARIABLE;
+  if (f.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
+  if (vlist == 0 || vplist == 0) 
+    throw error(error::INVALID_VARIABLE);
 
   // assumption: vlist and vplist do not contain any special values
   // (-1, -2, etc). vlist and vplist contains a single element.
   term = getReal(getTerminalNodeForEdge(f.getNode(), vlist, vplist));
-  return forest::SUCCESS;
 }
 
 
@@ -651,76 +653,77 @@ void mtmxd_node_manager::normalizeAndReduceNode(int& p, float& ev)
 }
 
 
-forest::error mtmxd_node_manager::createEdge(const int* const* vlist, int N,
+void mtmxd_node_manager::createEdge(const int* const* vlist, int N,
     dd_edge &e)
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error mtmxd_node_manager::createEdge(const int* const* vlist,
+void mtmxd_node_manager::createEdge(const int* const* vlist,
     const int* terms, int N, dd_edge &e)
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error mtmxd_node_manager::createEdge(const int* const* vlist,
+void mtmxd_node_manager::createEdge(const int* const* vlist,
     const float* terms, int n, dd_edge &e)
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error mtmxd_node_manager::createEdge(const int* const* vlist,
+void mtmxd_node_manager::createEdge(const int* const* vlist,
     const int* const* vplist, int N, dd_edge &e)
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error mtmxd_node_manager::createEdge(bool val, dd_edge &e)
+void mtmxd_node_manager::createEdge(bool val, dd_edge &e)
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error mtmxd_node_manager::evaluate(const dd_edge &f, const int* vlist,
+void mtmxd_node_manager::evaluate(const dd_edge &f, const int* vlist,
     bool &term) const
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error mtmxd_node_manager::evaluate(const dd_edge &f, const int* vlist,
+void mtmxd_node_manager::evaluate(const dd_edge &f, const int* vlist,
     int &term) const
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error mtmxd_node_manager::evaluate(const dd_edge &f, const int* vlist,
+void mtmxd_node_manager::evaluate(const dd_edge &f, const int* vlist,
     float &term) const
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error mtmxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
+void mtmxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
     const int* vplist, bool &term) const
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error mtmxd_node_manager::findFirstElement(const dd_edge& f,
+void mtmxd_node_manager::findFirstElement(const dd_edge& f,
     int* vlist, int* vplist) const
 {
   // assumption: vlist does not contain any special values (-1, -2, etc).
   // vlist contains a single element.
   // vlist is based on level handles.
   int node = f.getNode();
-  if (node == 0) return forest::INVALID_ASSIGNMENT;
+  if (node == 0) 
+    throw error(error::INVALID_ASSIGNMENT);
 
   if (forest::IDENTITY_REDUCED == reductionRule) {
 
@@ -829,8 +832,6 @@ forest::error mtmxd_node_manager::findFirstElement(const dd_edge& f,
 
 
   }
-
-  return forest::SUCCESS;
 }
 
 
@@ -848,77 +849,80 @@ mxd_node_manager::~mxd_node_manager()
 { }
 
 
-forest::error mxd_node_manager::createEdge(const int* const* vlist,
+void mxd_node_manager::createEdge(const int* const* vlist,
     const int* const* vplist, int N, dd_edge &e)
 {
-  if (e.getForest() != this) return forest::INVALID_OPERATION;
-  if (vlist == 0 || vplist == 0 || N <= 0) return forest::INVALID_VARIABLE;
-  return createEdgeInternal(vlist, vplist, (bool*)0, N, e);
+  if (e.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
+  if (vlist == 0 || vplist == 0 || N <= 0) 
+    throw error(error::INVALID_VARIABLE);
+  createEdgeInternal(vlist, vplist, (bool*)0, N, e);
 }
 
 
-forest::error mxd_node_manager::createEdge(bool val, dd_edge &e)
+void mxd_node_manager::createEdge(bool val, dd_edge &e)
 {
   DCASSERT(getRangeType() == forest::BOOLEAN);
-  if (e.getForest() != this) return forest::INVALID_OPERATION;
+  if (e.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
 
   int node = createEdge(getTerminalNode(val));
   e.set(node, 0, getNodeLevel(node));
-  return forest::SUCCESS;
 }
 
 
-forest::error mxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
+void mxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
     const int* vplist, bool &term) const
 {
   DCASSERT(getRangeType() == forest::BOOLEAN);
-  if (f.getForest() != this) return forest::INVALID_OPERATION;
-  if (vlist == 0 || vplist == 0) return forest::INVALID_VARIABLE;
+  if (f.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
+  if (vlist == 0 || vplist == 0) 
+    throw error(error::INVALID_VARIABLE);
 
   // assumption: vlist and vplist do not contain any special values
   // (-1, -2, etc). vlist and vplist contains a single element.
   term = getBoolean(getTerminalNodeForEdge(f.getNode(), vlist, vplist));
-  return forest::SUCCESS;
 }
 
 
-forest::error mxd_node_manager::createEdge(const int* const* vlist,
+void mxd_node_manager::createEdge(const int* const* vlist,
     const int* const* vplist, const int* terms, int N, dd_edge &e)
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error mxd_node_manager::createEdge(const int* const* vlist,
+void mxd_node_manager::createEdge(const int* const* vlist,
     const int* const* vplist, const float* terms, int N, dd_edge &e)
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error mxd_node_manager::createEdge(int val, dd_edge &e)
+void mxd_node_manager::createEdge(int val, dd_edge &e)
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error mxd_node_manager::createEdge(float val, dd_edge &e)
+void mxd_node_manager::createEdge(float val, dd_edge &e)
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error mxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
+void mxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
     const int* vplist, int &term) const
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error mxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
+void mxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
     const int* vplist, float &term) const
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
@@ -1389,7 +1393,7 @@ int mxd_node_manager::addPrimeReducedNodes(int a, int b)
 }
 
 
-forest::error mxd_node_manager::accumulate(int& a, int b)
+void mxd_node_manager::accumulate(int& a, int b)
 {
   if (isActiveNode(a) && isActiveNode(b)) {
     // validateDownPointers(a, true);
@@ -1399,9 +1403,9 @@ forest::error mxd_node_manager::accumulate(int& a, int b)
     if (unlinkA) unlinkNode(a);
     a = result;
     // validateDownPointers(a, true);
-    return forest::SUCCESS;
+    return;
   }
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 

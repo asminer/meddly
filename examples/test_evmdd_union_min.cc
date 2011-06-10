@@ -45,6 +45,8 @@ int main(int argc, char *argv[])
   reduction_rule r = forest::FULLY_REDUCED;
 #endif
   node_storage s = FULL_OR_SPARSE_STORAGE;
+
+  initialize();
   
   domain *d = CreateDomain(sz-1, bound, height);
   assert(NULL != d);
@@ -118,5 +120,6 @@ int main(int argc, char *argv[])
   ShowForestNodes(stderr, evmdd);
   DestroyForest(evmdd);
   DestroyDomain(d);
+  cleanup();
   return 0;
 }

@@ -33,6 +33,7 @@
 
 #define CACHE_SIZE 262144u
 
+using namespace MEDDLY;
 
 void printUsage(FILE *outputStream)
 {
@@ -115,18 +116,16 @@ int main(int argc, char *argv[])
 #endif
   }
 
+  settings s;
 #ifdef CACHE_SIZE
-  compute_manager* cm = MEDDLY_getComputeManager();
-  assert(cm != 0);
-  bool chaining = true;
-  unsigned cacheSize = CACHE_SIZE;
-  assert(compute_manager::SUCCESS == cm->setHashTablePolicy(chaining, cacheSize));
+  s.maxComputeTableSize = CACHE_SIZE;
 #endif
+  initialize(s);
 
   // Create a domain
-  domain *d = MEDDLY_createDomain();
+  domain *d = createDomain();
   assert(d != 0);
-  assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVariables));
+  d->createVariablesBottomUp(bounds, nVariables);
 
   // Create an MXD forest in this domain (to store a relation)
   forest* xd = d->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
@@ -141,8 +140,7 @@ int main(int argc, char *argv[])
   for (int i = 0; i < nElements; ++i)
   {
     ddElements[i] = new dd_edge(xd);
-    assert(forest::SUCCESS ==
-        xd->createEdge(elements + i, pelements + i, 1, *(ddElements[i])));
+    xd->createEdge(elements + i, pelements + i, 1, *(ddElements[i]));
   }
 
   // Combine dd_edges
@@ -174,7 +172,7 @@ int main(int argc, char *argv[])
   printf("Elements in result: %.4e\n", initial_state.getCardinality());
   printf("Peak Nodes in MXD: %ld\n", xd->getPeakNumNodes());
   printf("Nodes in compute table: %ld\n",
-      (MEDDLY_getComputeManager())->getNumCacheEntries());
+      (getComputeManager())->getNumCacheEntries());
 
 #ifdef VERBOSE
   printf("\n\nForest Info:\n");
@@ -183,6 +181,7 @@ int main(int argc, char *argv[])
 
   // Cleanup; in this case simply delete the domain
   delete d;
+  cleanup();
 
   free(bounds);
   for (int i = 0; i < nElements; ++i)

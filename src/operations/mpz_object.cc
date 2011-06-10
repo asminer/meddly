@@ -19,46 +19,52 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "mpz_object.h"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #ifdef HAVE_LIBGMP 
 
-mpz_object::mpz_object()
+#include <gmp.h>
+#include "../defines.h"
+#include "mpz_object.h"
+
+MEDDLY::mpz_object::mpz_object()
 {
   mpz_init(value);
 }
 
-mpz_object::mpz_object(const mpz_t &v)
+MEDDLY::mpz_object::mpz_object(const mpz_t &v)
 {
   mpz_init_set(value, v);
 }
 
-mpz_object::mpz_object(const mpz_object &x)
+MEDDLY::mpz_object::mpz_object(const mpz_object &x)
 {
   mpz_init_set(value, x.value);
 }
 
 
-mpz_object::~mpz_object()
+MEDDLY::mpz_object::~mpz_object()
 {
   mpz_clear(value);
 }
 
-op_param::type mpz_object::getType()
+MEDDLY::op_param::type MEDDLY::mpz_object::getType()
 {
   return op_param::HUGEINT;
 }
 
-ct_object& MEDDLY_get_mpz_wrapper()
+MEDDLY::ct_object& get_mpz_wrapper()
 {
-  static mpz_object foo;
+  static MEDDLY::mpz_object foo;
   return foo;
 }
 
-void MEDDLY_unwrap(const ct_object &x, mpz_t &value)
+void MEDDLY::unwrap(const ct_object &x, mpz_t &value)
 {
-  const mpz_object &mx = dynamic_cast <const mpz_object &> (x);
+  using namespace MEDDLY;
+  const mpz_object &mx = static_cast <const mpz_object &> (x);
   mx.copyInto(value);
 }
 

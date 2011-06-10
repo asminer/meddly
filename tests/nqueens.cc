@@ -29,6 +29,8 @@
 
 #include "meddly.h"
 
+using namespace MEDDLY;
+
 const int N_LOW  = 1;
 const int N_HIGH = 12;
 const long solutions[] = { 
@@ -58,10 +60,7 @@ void intersect(dd_edge** A, int L)
   for (int i=1; i<L; i++) {
     fprintf(stderr, "%d ", L-i);
     if (A[i]) {
-      assert(
-        compute_manager::SUCCESS ==
-        CM->apply(compute_manager::MULTIPLY, *A[0], *A[i], *A[0])
-      );
+      CM->apply(compute_manager::MULTIPLY, *A[0], *A[i], *A[0]);
       delete A[i];
       A[i] = 0;
     }
@@ -78,10 +77,7 @@ void intersect(dd_edge** A, int L)
     // combine adjacent pairs
     for (int i=0; i<L; i+=2) {
       if (A[i] && A[i+1]) {
-        assert(
-          compute_manager::SUCCESS ==
-          CM->apply(compute_manager::MULTIPLY, *A[i], *A[i+1], *A[i])
-        );
+        CM->apply(compute_manager::MULTIPLY, *A[i], *A[i+1], *A[i]);
         delete A[i+1];
         A[i+1] = 0;
         printf(".");
@@ -107,22 +103,19 @@ void intersect(dd_edge** A, int L)
 #endif
 
 
-bool createQueenNodes(forest* f, int q, int N, dd_edge &col, dd_edge &cp, dd_edge &cm)
+void createQueenNodes(forest* f, int q, int N, dd_edge &col, dd_edge &cp, dd_edge &cm)
 {
   assert(q>0);
   assert(q<=N);
-  bool error = f->createEdgeForVar(q, false, col);
-  if (error) return error;
+  f->createEdgeForVar(q, false, col);
   for (int i=0; i<N; i++) {
     scratch[i] = i+q;
   }
-  error = f->createEdgeForVar(q, false, scratch, cp);
-  if (error) return error;
+  f->createEdgeForVar(q, false, scratch, cp);
   for (int i=0; i<N; i++) {
     scratch[i] = i-q;
   }
-  error = f->createEdgeForVar(q, false, scratch, cm);
-  return error;
+  f->createEdgeForVar(q, false, scratch, cm);
 }
 
 long buildQueenSolutions(int N)
@@ -132,16 +125,16 @@ long buildQueenSolutions(int N)
   for (int i=0; i<N; i++) {
     scratch[i] = N;
   }
-  domain* d = MEDDLY_createDomain();
+  domain* d = createDomain();
   assert(d);
-  assert(domain::SUCCESS == d->createVariablesBottomUp(scratch, N));
+  d->createVariablesBottomUp(scratch, N);
   forest* f = d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL);
   assert(f);
 
   // Set up MDD options
-  assert(forest::SUCCESS == f->setReductionRule(forest::FULLY_REDUCED));
-  assert(forest::SUCCESS == f->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
-  assert(forest::SUCCESS == f->setNodeDeletion(forest::PESSIMISTIC_DELETION));
+  f->setReductionRule(forest::FULLY_REDUCED);
+  f->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
+  f->setNodeDeletion(forest::PESSIMISTIC_DELETION);
 
 
   dd_edge** col = new dd_edge*[N];
@@ -153,9 +146,9 @@ long buildQueenSolutions(int N)
     col[i] = new dd_edge(f);
     dgp[i] = new dd_edge(f);
     dgm[i] = new dd_edge(f);
-    assert(false == createQueenNodes(f, i+1, N, *col[i], *dgp[i], *dgm[i]));
+    createQueenNodes(f, i+1, N, *col[i], *dgp[i], *dgm[i]);
     constr[i] = new dd_edge(f);
-    assert(forest::SUCCESS == f->createEdge(int(1), *constr[i]));
+    f->createEdge(int(1), *constr[i]);
   }
   constr[N] = 0;
 
@@ -163,44 +156,24 @@ long buildQueenSolutions(int N)
   //  printf("\tBuilding queen %2d constraints\n", i+1);
     for (int j=N-1; j>i; j--) {
       dd_edge uniq_col(f);
-      assert(
-        compute_manager::SUCCESS ==
-        CM->apply(compute_manager::NOT_EQUAL, *col[i], *col[j], uniq_col)
-      );
+      CM->apply(compute_manager::NOT_EQUAL, *col[i], *col[j], uniq_col);
       dd_edge uniq_dgp(f);
-      assert(
-        compute_manager::SUCCESS ==
-        CM->apply(compute_manager::NOT_EQUAL, *dgp[i], *dgp[j], uniq_dgp)
-      );
+      CM->apply(compute_manager::NOT_EQUAL, *dgp[i], *dgp[j], uniq_dgp);
       dd_edge uniq_dgm(f);
-      assert(
-        compute_manager::SUCCESS ==
-        CM->apply(compute_manager::NOT_EQUAL, *dgm[i], *dgm[j], uniq_dgm)
-      );
+      CM->apply(compute_manager::NOT_EQUAL, *dgm[i], *dgm[j], uniq_dgm);
       // build overall "not attacking each other" set...
-      assert(
-        compute_manager::SUCCESS ==
-        CM->apply(compute_manager::MULTIPLY, uniq_col, uniq_dgp, uniq_col)
-      );
-      assert(
-        compute_manager::SUCCESS ==
-        CM->apply(compute_manager::MULTIPLY, uniq_col, uniq_dgm, uniq_col)
-      );
+      CM->apply(compute_manager::MULTIPLY, uniq_col, uniq_dgp, uniq_col);
+      CM->apply(compute_manager::MULTIPLY, uniq_col, uniq_dgm, uniq_col);
       int k = uniq_col.getLevel()-1;
       if (k<0) k=0;
       assert(k<N);
-      assert(
-        compute_manager::SUCCESS ==
-        CM->apply(compute_manager::MULTIPLY, *constr[k], uniq_col, *constr[k])
-      );
+      CM->apply(compute_manager::MULTIPLY, *constr[k], uniq_col, *constr[k]);
     } // for j
   } // for i
   intersect(constr, N);
   assert(constr[0]);
   long c;
-  assert(compute_manager::SUCCESS ==
-    CM->apply(compute_manager::CARDINALITY, *constr[0], c)
-  );
+  CM->apply(compute_manager::CARDINALITY, *constr[0], c);
   // cleanup
   for (int i=0; i<N; i++) {
     delete col[i];
@@ -219,7 +192,8 @@ long buildQueenSolutions(int N)
 
 int main()
 {
-  CM = MEDDLY_getComputeManager();
+  initialize();
+  CM = getComputeManager();
   assert(CM);
   scratch = new int[N_HIGH+1];
 
@@ -232,6 +206,6 @@ int main()
     }
     printf("%d queens has %ld solutions\n", i, sols);
   }
-
+  cleanup();
   return 0;
 }

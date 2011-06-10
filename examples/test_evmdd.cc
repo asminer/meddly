@@ -36,6 +36,8 @@
 #include "meddly_expert.h"
 #endif
 
+using namespace MEDDLY;
+
 // Timer class
 #include "timer.h"
 
@@ -55,6 +57,7 @@
 // verbose: 0: minimum, 2: maximum
 const int verbose = 0;
 
+
 #ifdef USE_EXPERT_INTERFACE
 
 // Given a forest and an op_code returns the corresponding op_info.
@@ -66,7 +69,7 @@ op_info* getOp(forest* f, compute_manager::op_code op)
   static const int nForests = 3;
   static forest* forests[nForests];
   static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+    static_cast<expert_compute_manager*>(getComputeManager());
   assert(ecm != 0);
   assert(f != 0);
 
@@ -87,7 +90,7 @@ op_info* getOp(forest* f, operation* op)
   static const int nForests = 3;
   static forest* forests[nForests];
   static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+    static_cast<expert_compute_manager*>(getComputeManager());
   assert(ecm != 0);
   assert(f != 0);
   assert(op != 0);
@@ -112,9 +115,9 @@ dd_edge test_evmdd(forest* evmdd, compute_manager::op_code opCode,
 
 #ifdef USE_EXPERT_INTERFACE
   static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+    static_cast<expert_compute_manager*>(getComputeManager());
 #else
-  static compute_manager* ecm = MEDDLY_getComputeManager();
+  static compute_manager* ecm = getComputeManager();
 #endif
   assert(ecm != 0);
 
@@ -124,18 +127,15 @@ dd_edge test_evmdd(forest* evmdd, compute_manager::op_code opCode,
 
   int half = nElements/2;
 
-  assert(forest::SUCCESS ==
-      evmdd->createEdge(element, terms, half, A));
-  assert(forest::SUCCESS ==
-      evmdd->createEdge(element + half,
-        terms + half, nElements - half, B));
+  evmdd->createEdge(element, terms, half, A);
+  evmdd->createEdge(element + half, terms + half, nElements - half, B);
 
 #ifdef USE_EXPERT_INTERFACE
   op_info* op = getOp(evmdd, opCode);
   assert(op != NULL);
-  assert(compute_manager::SUCCESS == ecm->apply(op, A, B, C));
+  ecm->apply(op, A, B, C);
 #else
-  assert(compute_manager::SUCCESS == ecm->apply(opCode, A, B, C));
+  ecm->apply(opCode, A, B, C);
 #endif
 
   if (verbose > 0) {
@@ -163,7 +163,7 @@ dd_edge test_evmdd_plus(forest* evmdd,
   for (int i = 0; i < nElements; i++)
   {
     if (verbose > 0) printf("element %d...", i);
-    assert(forest::SUCCESS == evmdd->createEdge(&element[i], &terms[i], 1, A));
+    evmdd->createEdge(&element[i], &terms[i], 1, A);
     B += A;
     if (verbose > 0) {
       printf(" done.\n");
@@ -283,10 +283,12 @@ int main(int argc, char *argv[])
     bounds[i] = variableBound;
   }
 
+  initialize();
+
   // Create a domain
-  domain *d = MEDDLY_createDomain();
+  domain *d = createDomain();
   assert(d != 0);
-  assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVariables));
+  d->createVariablesBottomUp(bounds, nVariables);
 
   // Create a MTMDD forest in this domain
 #if USE_REALS
@@ -301,10 +303,8 @@ int main(int argc, char *argv[])
     printElements(element, terms, nElements, nVariables);
   }
 
-  assert(forest::SUCCESS ==
-      evmdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
-  assert(forest::SUCCESS ==
-      evmdd->setNodeDeletion(forest::PESSIMISTIC_DELETION));
+  evmdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
+  evmdd->setNodeDeletion(forest::PESSIMISTIC_DELETION);
 
   timer start;
   start.note_time();
@@ -319,8 +319,7 @@ int main(int argc, char *argv[])
 #else
   start.note_time();
   dd_edge result(evmdd);
-  assert(forest::SUCCESS ==
-      evmdd->createEdge(element, terms, nElements, result));
+  evmdd->createEdge(element, terms, nElements, result);
   start.note_time();
   printf("Batch Addition:\n");
   if (verbose > 0) result.show(stdout, 2);
@@ -351,7 +350,7 @@ int main(int argc, char *argv[])
 #if 0
     dd_edge result2 = result1;
     assert(compute_manager::SUCCESS ==
-        MEDDLY_getComputeManager()->apply(compute_manager::EQUAL,
+        getComputeManager()->apply(compute_manager::EQUAL,
           result, result1, result2));
     result2.show(stdout, 2);
 #endif
@@ -364,7 +363,7 @@ int main(int argc, char *argv[])
 
   printf("Peak Nodes in MDD: %ld\n", evmdd->getPeakNumNodes());
   printf("Entries in compute table: %ld\n",
-      (MEDDLY_getComputeManager())->getNumCacheEntries());
+      (getComputeManager())->getNumCacheEntries());
 
   if (verbose > 1) {
     printf("\n\nForest Info:\n");
@@ -405,15 +404,13 @@ int main(int argc, char *argv[])
   forest* mdd = d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL);
   assert(mdd != 0);
 
-  assert(forest::SUCCESS ==
-      mdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
-  assert(forest::SUCCESS ==
-      mdd->setNodeDeletion(forest::PESSIMISTIC_DELETION));
+  mdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
+  mdd->setNodeDeletion(forest::PESSIMISTIC_DELETION);
 
   start.note_time();
   printf("Building equivalent MDD...\n");
   dd_edge mddResult(mdd);
-  assert(forest::SUCCESS == mdd->createEdge(element, nElements, mddResult));
+  mdd->createEdge(element, nElements, mddResult);
   start.note_time();
   printf("Time interval: %.4e seconds\n",
       start.get_last_interval()/1000000.0);
@@ -441,7 +438,7 @@ int main(int argc, char *argv[])
   printf("MDD Cardinality: %1.6e\n", mddResult.getCardinality());
   printf("Peak Nodes in MDD: %ld\n", mdd->getPeakNumNodes());
   printf("Entries in compute table: %ld\n",
-      (MEDDLY_getComputeManager())->getNumCacheEntries());
+      (getComputeManager())->getNumCacheEntries());
 
   // Create a EV+MDD forest in this domain (to store index set)
   forest* evplusmdd = d->createForest(false, forest::INTEGER, forest::EVPLUS);
@@ -449,9 +446,8 @@ int main(int argc, char *argv[])
 
   // Convert MDD to Index Set EV+MDD and print the states
   dd_edge indexSet(evplusmdd);
-  compute_manager* cm = MEDDLY_getComputeManager();
-  assert(compute_manager::SUCCESS ==
-      cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mddResult, indexSet));
+  compute_manager* cm = getComputeManager();
+  cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mddResult, indexSet);
 
   printf("\nIndex Set (EV+MDD):\n");
 
@@ -476,13 +472,14 @@ int main(int argc, char *argv[])
   printf("Index Set Cardinality: %1.6e\n", indexSet.getCardinality());
   printf("Peak Nodes in Index Set: %ld\n", evplusmdd->getPeakNumNodes());
   printf("Entries in compute table: %ld\n",
-      (MEDDLY_getComputeManager())->getNumCacheEntries());
+      (getComputeManager())->getNumCacheEntries());
 
 #endif
 
   printf("\n");
   // Cleanup; in this case simply delete the domain
   delete d;
+  cleanup();
 
   free(bounds);
   for (int i = 0; i < nElements; ++i)

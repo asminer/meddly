@@ -36,6 +36,7 @@
 #include "../mdd_hash.h"
 
 using namespace std;
+using namespace MEDDLY;
 
 /*
  * The MDD node handle is an integer.
@@ -140,26 +141,26 @@ class node_manager : public expert_forest {
     */
 
     /// Refer to meddly.h
-    forest::error createEdgeForVar(int vh, bool primedLevel, dd_edge& result);
-    forest::error createEdgeForVar(int vh, bool primedLevel,
+    void createEdgeForVar(int vh, bool primedLevel, dd_edge& result);
+    void createEdgeForVar(int vh, bool primedLevel,
         bool* terms, dd_edge& a);
-    forest::error createEdgeForVar(int vh, bool primedLevel,
+    void createEdgeForVar(int vh, bool primedLevel,
         int* terms, dd_edge& a);
-    forest::error createEdgeForVar(int vh, bool primedLevel,
+    void createEdgeForVar(int vh, bool primedLevel,
         float* terms, dd_edge& a);
 
-    forest::error createSubMatrix(const bool* const* vlist,
+    void createSubMatrix(const bool* const* vlist,
         const bool* const* vplist, const dd_edge a, dd_edge& b);
-    forest::error createSubMatrix(const dd_edge& rows, const dd_edge& cols,
+    void createSubMatrix(const dd_edge& rows, const dd_edge& cols,
         const dd_edge& a, dd_edge& b);
 
-    virtual forest::error getElement(const dd_edge& a, int index, int* e);
+    virtual void getElement(const dd_edge& a, int index, int* e);
 
-    virtual forest::error findFirstElement(const dd_edge& f, int* vlist) const;
-    virtual forest::error findFirstElement(const dd_edge& f, int* vlist,
+    virtual void findFirstElement(const dd_edge& f, int* vlist) const;
+    virtual void findFirstElement(const dd_edge& f, int* vlist,
         int* vplist) const;
 
-    virtual forest::error accumulate(int& a, int b);
+    virtual void accumulate(int& a, int b);
     virtual bool accumulate(int& tempNode, int* element);
 
     // cBM: Copy before modifying.
@@ -244,9 +245,9 @@ class node_manager : public expert_forest {
     // Compaction will occur if
     // level[i].hole_slots > (level[i].size * compactionThreshold / 100) 
     unsigned getCompactionThreshold() const;
-    forest::error setCompactionThreshold(unsigned p);
-    forest::error compactMemory();
-    forest::error garbageCollect();
+    void setCompactionThreshold(unsigned p);
+    void compactMemory();
+    void garbageCollect();
 
     // *************** override expert_forest class -- done ***************
 
@@ -629,10 +630,9 @@ inline unsigned node_manager::getCompactionThreshold() const {
   return unsigned(compactionThreshold * 100.0);
 }
 
-inline forest::error node_manager::setCompactionThreshold(unsigned t) {
-  if (t > 100) return forest::INVALID_ASSIGNMENT;
+inline void node_manager::setCompactionThreshold(unsigned t) {
+  if (t > 100) throw error(error::INVALID_ASSIGNMENT);
   compactionThreshold = t/100.0;
-  return forest::SUCCESS;
 }
 
 // Dealing with cache count
@@ -949,9 +949,8 @@ inline int node_manager::getTempNodeId() const {
 // ****************** override expert_forest class ****************** 
 
 
-inline forest::error node_manager::compactMemory() {
+inline void node_manager::compactMemory() {
   compactAllLevels();
-  return forest::SUCCESS;
 }
 
 inline long node_manager::getCurrentMemoryAllocated() const {
@@ -978,16 +977,16 @@ inline bool node_manager::isValidVariable(int vh) const {
   return expertDomain->getVariableHeight(vh) != -1;
 }
 
-inline forest::error
+inline void
 node_manager::findFirstElement(const dd_edge& f, int* vlist) const
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
-inline forest::error
+inline void
 node_manager::findFirstElement(const dd_edge& f, int* vlist, int* vplist) const
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 

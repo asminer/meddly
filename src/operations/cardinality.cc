@@ -32,6 +32,8 @@
 
 // #define DEBUG_CARD
 
+namespace MEDDLY {
+
 // ******************************************************************
 // *                                                                *
 // *                      cardinality_op class                      *
@@ -53,18 +55,17 @@ class cardinality_op : public operation {
     virtual void discardEntry(op_info* owner, const int* entryData);
 
   protected:
-    inline compute_manager::error 
+    inline void 
     type_check(const op_info* owner, op_param::type p1type) 
     {
         if (owner == 0)
-          return compute_manager::UNKNOWN_OPERATION;
+          throw error(error::UNKNOWN_OPERATION);
         if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-          return compute_manager::TYPE_MISMATCH;
+          throw error(error::TYPE_MISMATCH);
         if (owner->nParams != 2)
-          return compute_manager::WRONG_NUMBER;
+          throw error(error::WRONG_NUMBER);
         if (owner->p[1].getType() != p1type)
-          return compute_manager::TYPE_MISMATCH;
-        return compute_manager::SUCCESS;
+          throw error(error::TYPE_MISMATCH);
     }
 };
 
@@ -119,13 +120,13 @@ class mdd_int_card : public cardinality_op {
     virtual void showEntry(const op_info* owner, FILE* strm,
         const int *entryData) const;
 
-    virtual compute_manager::error typeCheck(const op_info* owner) {
+    virtual void typeCheck(const op_info* owner) {
       if (owner->p[0].getForest()->isForRelations())
-        return compute_manager::TYPE_MISMATCH;
-      return type_check(owner, op_param::INTEGER);
+        throw error(error::TYPE_MISMATCH);
+      type_check(owner, op_param::INTEGER);
     }
 
-    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+    virtual void compute(op_info* owner, const dd_edge& a,
       long& b);
 
     long compute(op_info* owner, int ht, int a);
@@ -149,14 +150,15 @@ showEntry(const op_info* owner, FILE* strm, const int *data) const
   );
 }
 
-compute_manager::error 
+void 
 mdd_int_card::
 compute(op_info* owner, const dd_edge& a, long& b)
 {
-  if (0==owner) return compute_manager::TYPE_MISMATCH;
+  if (0==owner) 
+    throw error(error::TYPE_MISMATCH);
   expert_forest* f = owner->p[0].getForest();
   b = compute(owner, f->getDomain()->getNumVariables(), a.getNode());
-  return compute_manager::SUCCESS;
+  return;
 }
 
 long mdd_int_card::compute(op_info* owner, int ht, int a)
@@ -246,13 +248,13 @@ class mdd_real_card : public cardinality_op {
     virtual void showEntry(const op_info* owner, FILE* strm,
         const int *entryData) const;
 
-    virtual compute_manager::error typeCheck(const op_info* owner) {
+    virtual void typeCheck(const op_info* owner) {
       if (owner->p[0].getForest()->isForRelations())
-        return compute_manager::TYPE_MISMATCH;
-      return type_check(owner, op_param::REAL);
+        throw error(error::TYPE_MISMATCH);
+      type_check(owner, op_param::REAL);
     }
 
-    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+    virtual void compute(op_info* owner, const dd_edge& a,
       double& b);
 
     double compute(op_info* owner, int ht, int a);
@@ -276,14 +278,14 @@ showEntry(const op_info* owner, FILE* strm, const int *data) const
   );
 }
 
-compute_manager::error 
+void 
 mdd_real_card::
 compute(op_info* owner, const dd_edge& a, double& b)
 {
-  if (0==owner) return compute_manager::TYPE_MISMATCH;
+  if (0==owner) 
+    throw error(error::TYPE_MISMATCH);
   expert_forest* f = owner->p[0].getForest();
   b = compute(owner, f->getDomain()->getNumVariables(), a.getNode());
-  return compute_manager::SUCCESS;
 }
 
 double mdd_real_card::compute(op_info* owner, int ht, int a)
@@ -367,13 +369,13 @@ class mdd_mpz_card : public cardinality_op {
     virtual void showEntry(const op_info* owner, FILE* strm,
         const int *entryData) const;
 
-    virtual compute_manager::error typeCheck(const op_info* owner) {
+    virtual void typeCheck(const op_info* owner) {
       if (owner->p[0].getForest()->isForRelations())
-        return compute_manager::TYPE_MISMATCH;
-      return type_check(owner, op_param::HUGEINT);
+        throw error(error::TYPE_MISMATCH);
+      type_check(owner, op_param::HUGEINT);
     }
 
-    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+    virtual void compute(op_info* owner, const dd_edge& a,
       ct_object &b);
 
     void compute(op_info* owner, int ht, int a, mpz_object &b);
@@ -408,15 +410,15 @@ showEntry(const op_info* owner, FILE* strm, const int *data) const
   fprintf(strm, "]");
 }
 
-compute_manager::error 
+void 
 mdd_mpz_card::
 compute(op_info* owner, const dd_edge& a, ct_object &card)
 {
-  if (0==owner) return compute_manager::TYPE_MISMATCH;
+  if (0==owner) 
+    throw error(error::TYPE_MISMATCH);
   expert_forest* f = owner->p[0].getForest();
   mpz_object& mcard = dynamic_cast <mpz_object &> (card);
   compute(owner, f->getDomain()->getNumVariables(), a.getNode(), mcard);
-  return compute_manager::SUCCESS;
 }
 
 void mdd_mpz_card::compute(op_info* owner, int ht, int a, mpz_object &card)
@@ -513,13 +515,13 @@ class mxd_int_card : public cardinality_op {
     virtual void showEntry(const op_info* owner, FILE* strm,
         const int *entryData) const;
 
-    virtual compute_manager::error typeCheck(const op_info* owner) {
+    virtual void typeCheck(const op_info* owner) {
       if (!owner->p[0].getForest()->isForRelations())
-        return compute_manager::TYPE_MISMATCH;
-      return type_check(owner, op_param::INTEGER);
+        throw error(error::TYPE_MISMATCH);
+      type_check(owner, op_param::INTEGER);
     }
 
-    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+    virtual void compute(op_info* owner, const dd_edge& a,
       long& b);
 
     long compute(op_info* owner, int ht, bool primed, int a);
@@ -543,14 +545,14 @@ showEntry(const op_info* owner, FILE* strm, const int *data) const
   );
 }
 
-compute_manager::error 
+void 
 mxd_int_card::
 compute(op_info* owner, const dd_edge& a, long& b)
 {
-  if (0==owner) return compute_manager::TYPE_MISMATCH;
+  if (0==owner) 
+    throw error(error::TYPE_MISMATCH);
   expert_forest* f = owner->p[0].getForest();
   b = compute(owner, f->getDomain()->getNumVariables(), false, a.getNode());
-  return compute_manager::SUCCESS;
 }
 
 long mxd_int_card::compute(op_info* owner, int ht, bool primed, int a)
@@ -650,13 +652,13 @@ class mxd_real_card : public cardinality_op {
     virtual void showEntry(const op_info* owner, FILE* strm,
         const int *entryData) const;
 
-    virtual compute_manager::error typeCheck(const op_info* owner) {
+    virtual void typeCheck(const op_info* owner) {
       if (!owner->p[0].getForest()->isForRelations())
-        return compute_manager::TYPE_MISMATCH;
-      return type_check(owner, op_param::REAL);
+        throw error(error::TYPE_MISMATCH);
+      type_check(owner, op_param::REAL);
     }
 
-    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+    virtual void compute(op_info* owner, const dd_edge& a,
       double& b);
 
     double compute(op_info* owner, int ht, bool primed, int a);
@@ -680,14 +682,14 @@ showEntry(const op_info* owner, FILE* strm, const int *data) const
   );
 }
 
-compute_manager::error 
+void 
 mxd_real_card::
 compute(op_info* owner, const dd_edge& a, double& b)
 {
-  if (0==owner) return compute_manager::TYPE_MISMATCH;
+  if (0==owner) 
+    throw error(error::TYPE_MISMATCH);
   expert_forest* f = owner->p[0].getForest();
   b = compute(owner, f->getDomain()->getNumVariables(), false, a.getNode());
-  return compute_manager::SUCCESS;
 }
 
 double mxd_real_card::compute(op_info* owner, int ht, bool primed, int a)
@@ -782,13 +784,13 @@ class mxd_mpz_card : public cardinality_op {
     virtual void showEntry(const op_info* owner, FILE* strm,
         const int *entryData) const;
 
-    virtual compute_manager::error typeCheck(const op_info* owner) {
+    virtual void typeCheck(const op_info* owner) {
       if (!owner->p[0].getForest()->isForRelations())
-        return compute_manager::TYPE_MISMATCH;
-      return type_check(owner, op_param::HUGEINT);
+        throw error(error::TYPE_MISMATCH);
+      type_check(owner, op_param::HUGEINT);
     }
 
-    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+    virtual void compute(op_info* owner, const dd_edge& a,
       ct_object &b);
 
     void compute(op_info* owner, int ht, bool primed, int a, mpz_object &b);
@@ -823,15 +825,15 @@ showEntry(const op_info* owner, FILE* strm, const int *data) const
   fprintf(strm, "]");
 }
 
-compute_manager::error 
+void 
 mxd_mpz_card::
 compute(op_info* owner, const dd_edge& a, ct_object &card)
 {
-  if (0==owner) return compute_manager::TYPE_MISMATCH;
+  if (0==owner) 
+    throw error(error::TYPE_MISMATCH);
   expert_forest* f = owner->p[0].getForest();
   mpz_object& mcard = dynamic_cast <mpz_object &> (card);
   compute(owner, f->getDomain()->getNumVariables(), false, a.getNode(), mcard);
-  return compute_manager::SUCCESS;
 }
 
 void mxd_mpz_card::compute(op_info* owner, int ht, bool primed, int a, mpz_object &card)
@@ -947,4 +949,6 @@ operation* getCardinalityOperation(const op_param &ft, const op_param &rt)
         return 0;
   }
 }
+
+} // namespace MEDDLY
 

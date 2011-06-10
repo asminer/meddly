@@ -33,6 +33,8 @@
 #include "meddly.h"
 #include "timer.h"
 
+using namespace MEDDLY;
+
 //#define TESTING_AUTO_VAR_GROWTH
 
 //#define TESTING_TEMP_DD_EDGES
@@ -46,9 +48,8 @@
 
 void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
 {
-  compute_manager* cm = MEDDLY_getComputeManager();
-  assert(compute_manager::SUCCESS ==
-      cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mdd, indexSet));
+  compute_manager* cm = getComputeManager();
+  cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mdd, indexSet);
 
 #if 1
   indexSet.show(stdout, 3);
@@ -136,19 +137,17 @@ int main(int argc, char *argv[])
 #endif
   }
 
+
+  settings s;
 #ifdef CACHE_SIZE
-  compute_manager* cm = MEDDLY_getComputeManager();
-  assert(cm != 0);
-  bool chaining = true;
-  unsigned cacheSize = CACHE_SIZE;
-  assert(compute_manager::SUCCESS ==
-      cm->setHashTablePolicy(chaining, cacheSize));
+  s.maxComputeTableSize = CACHE_SIZE;
 #endif
+  initialize(s);
 
   // Create a domain
-  domain *d = MEDDLY_createDomain();
+  domain *d = createDomain();
   assert(d != 0);
-  assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVariables));
+  d->createVariablesBottomUp(bounds, nVariables);
 
   // Create an MDD forest in this domain (to store states)
   forest* states = d->createForest(false, forest::BOOLEAN,
@@ -195,8 +194,7 @@ int main(int argc, char *argv[])
   for (int i = 0; i < nElements; ++i)
   {
     ddElements[i] = new dd_edge(states);
-    assert(forest::SUCCESS ==
-        states->createEdge(elements + i, 1, *(ddElements[i])));
+    states->createEdge(elements + i, 1, *(ddElements[i]));
   }
   // Combine dd_edges
   int nDDElements = nElements;
@@ -216,8 +214,7 @@ int main(int argc, char *argv[])
 
 #else
   // Use Meddly's batch addition to combine all elements in one step.
-  assert(forest::SUCCESS ==
-      states->createEdge(elements, nElements, initial_state));
+  states->createEdge(elements, nElements, initial_state);
 
 #endif
 #endif
@@ -234,7 +231,7 @@ int main(int argc, char *argv[])
   printf("Elements in result: %.4e\n", initial_state.getCardinality());
   printf("Peak Nodes in MDD: %ld\n", states->getPeakNumNodes());
   printf("Nodes in compute table: %ld\n",
-      (MEDDLY_getComputeManager())->getNumCacheEntries());
+      (getComputeManager())->getNumCacheEntries());
 
 #ifdef BUILD_INDEX_SET
   // TEST
@@ -242,7 +239,7 @@ int main(int argc, char *argv[])
       forest::EVPLUS);
   assert(evmdd != 0);
   dd_edge evmdd_states(evmdd);
-  MEDDLY_getComputeManager()->apply(compute_manager::CONVERT_TO_INDEX_SET,
+  getComputeManager()->apply(compute_manager::CONVERT_TO_INDEX_SET,
       initial_state, evmdd_states);
   evmdd_states.show(stdout, 3);
 
@@ -275,14 +272,14 @@ int main(int argc, char *argv[])
   for (int i = 0; i < nElements; ++i)
   {
     bool result = false;
-    assert(forest::SUCCESS == 
-        states->evaluate(initial_state, elements[i], result));
+    states->evaluate(initial_state, elements[i], result);
     assert(result == true);
   }
 #endif
 
   // Cleanup; in this case simply delete the domain
   delete d;
+  cleanup();
 
   free(bounds);
   for (int i = 0; i < nElements; ++i)

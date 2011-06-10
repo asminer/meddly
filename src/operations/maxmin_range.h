@@ -22,26 +22,30 @@
 #ifndef MAXMIN_RANGE_H
 #define MAXMIN_RANGE_H
 
-class operation;
-class op_param;
+namespace MEDDLY {
 
-/** Minimalist front-end interface.
-    Return the appropriate operation for 
-    the given forest and desired return type.
-      @param  ft  Forest type
-      @param  rt  Return type
-      @return The appropriate operation, or 0 on error.
-*/
-operation* getMaxRangeOperation(const op_param &ft, const op_param &rt);
+  class operation;
+  class op_param;
 
-/** Minimalist front-end interface.
-    Return the appropriate operation for 
-    the given forest and desired return type.
-      @param  ft  Forest type
-      @param  rt  Return type
-      @return The appropriate operation, or 0 on error.
-*/
-operation* getMinRangeOperation(const op_param &ft, const op_param &rt);
+  /** Minimalist front-end interface.
+      Return the appropriate operation for 
+      the given forest and desired return type.
+        @param  ft  Forest type
+        @param  rt  Return type
+        @return The appropriate operation, or 0 on error.
+  */
+  operation* getMaxRangeOperation(const op_param &ft, const op_param &rt);
+
+  /** Minimalist front-end interface.
+      Return the appropriate operation for 
+      the given forest and desired return type.
+        @param  ft  Forest type
+        @param  rt  Return type
+        @return The appropriate operation, or 0 on error.
+  */
+  operation* getMinRangeOperation(const op_param &ft, const op_param &rt);
+
+}
 
 #endif
 

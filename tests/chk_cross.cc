@@ -28,6 +28,8 @@
 
 #include "meddly.h"
 
+using namespace MEDDLY;
+
 // #define DEBUG_RANDSET
 
 // #define DEBUG_SEGV
@@ -87,7 +89,7 @@ void makeRandomSet(forest* f, int nmt, dd_edge &x)
 #ifdef DEBUG_SEGV
     fprintf(stderr, "\tedge\n");
 #endif
-    assert(forest::SUCCESS == f->createEdge(mtaddr, 1, tmp));
+    f->createEdge(mtaddr, 1, tmp);
 #ifdef DEBUG_SEGV
     fprintf(stderr, "\tunion\n");
 #endif
@@ -115,7 +117,7 @@ void makeRandomRows(forest* f, int nmt, dd_edge &x)
 #ifdef DEBUG_SEGV
     fprintf(stderr, "\tedge\n");
 #endif
-    assert(forest::SUCCESS == f->createEdge(mtaddr, dcaddr, 1, tmp));
+    f->createEdge(mtaddr, dcaddr, 1, tmp);
 #ifdef DEBUG_SEGV
     fprintf(stderr, "\tunion\n");
 #endif
@@ -134,7 +136,7 @@ void makeRandomCols(forest* f, int nmt, dd_edge &x)
   dd_edge tmp(f);
   for (; nmt; nmt--) {
     randomizeMinterm();
-    assert(forest::SUCCESS == f->createEdge(dcaddr, mtaddr, 1, tmp));
+    f->createEdge(dcaddr, mtaddr, 1, tmp);
     x += tmp;
   }
 }
@@ -143,7 +145,7 @@ void test(forest* mdd, forest* mxd, int nmt)
 {
   dd_edge rs(mdd), cs(mdd);
   dd_edge one(mdd);
-  assert(forest::SUCCESS == mdd->createEdge(true, one));
+  mdd->createEdge(true, one);
 
   dd_edge rr(mxd), cr(mxd), rcr(mxd), tmp(mxd);
 
@@ -160,9 +162,7 @@ void test(forest* mdd, forest* mxd, int nmt)
 #endif
 
   // check: generate rr from rs, make sure they match
-  assert(compute_manager::SUCCESS == 
-    CM->apply(compute_manager::CROSS, rs, one, tmp)
-  );
+  CM->apply(compute_manager::CROSS, rs, one, tmp);
 #ifdef DEBUG_RANDSET
   printf("rs x 1:\n");
   tmp.show(stdout, 2);
@@ -183,9 +183,7 @@ void test(forest* mdd, forest* mxd, int nmt)
 #endif
   
   // check: generate cr from cs, make sure they match
-  assert(compute_manager::SUCCESS == 
-    CM->apply(compute_manager::CROSS, one, cs, tmp)
-  );
+  CM->apply(compute_manager::CROSS, one, cs, tmp);
 #ifdef DEBUG_RANDSET
   printf("cs x 1:\n");
   tmp.show(stdout, 2);
@@ -193,9 +191,7 @@ void test(forest* mdd, forest* mxd, int nmt)
   assert(tmp == cr);
 
   // intersection of rr and cr should equal rs x cs.
-  assert(compute_manager::SUCCESS ==
-    CM->apply(compute_manager::CROSS, rs, cs, rcr)
-  );
+  CM->apply(compute_manager::CROSS, rs, cs, rcr);
   tmp = rr * cr;
   assert(tmp == rcr);
 }
@@ -203,12 +199,13 @@ void test(forest* mdd, forest* mxd, int nmt)
 
 int main()
 {
-  CM = MEDDLY_getComputeManager();
+  initialize();
+  CM = getComputeManager();
   assert(CM);
 
-  domain* myd = MEDDLY_createDomain();
+  domain* myd = createDomain();
   assert(myd);
-  assert(domain::SUCCESS == myd->createVariablesBottomUp(vars, 6));
+  myd->createVariablesBottomUp(vars, 6);
 
   forest* mdd = myd->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
   assert(mdd);
@@ -219,7 +216,7 @@ int main()
     printf("\tChecking cross-product for %2d random minterms\n", m);
     test(mdd, mxd, m);
   }
-
+//  cleanup();
   return 0;
 }
 

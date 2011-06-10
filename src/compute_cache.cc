@@ -26,7 +26,7 @@ const float expansionFactor = 1.5;
 
 /* compute cache methods */
 
-compute_cache::compute_cache()
+MEDDLY::compute_cache::compute_cache()
 : nodes(0), nodeCount(1024), lastNode(-1),
   data(0), dataCount(1024), lastData(-1),
   recycledNodes(-1), recycledFront(0),
@@ -55,7 +55,7 @@ compute_cache::compute_cache()
 }
 
 
-compute_cache::~compute_cache()
+MEDDLY::compute_cache::~compute_cache()
 {
   // delete hash table
   if (ht) { delete ht; ht = 0; }
@@ -79,10 +79,13 @@ compute_cache::~compute_cache()
 }
 
 
-bool compute_cache::setPolicy(bool chaining, unsigned maxSize)
+void MEDDLY::compute_cache::setPolicy(bool chaining, unsigned maxSize)
 {
+  if (0==maxSize)
+    throw error(error::INVALID_ASSIGNMENT);
   // some data is already in cache; abort
-  if (lastData > -1) return false;
+  if (lastData > -1) 
+    throw error(error::MISCELLANEOUS);
 
   // delete existing hash tables
   clear();
@@ -101,17 +104,16 @@ bool compute_cache::setPolicy(bool chaining, unsigned maxSize)
     // create hash table with no chaining
     fsht = new fixed_size_hash_table<compute_cache>(this, maxSize);
   }
-  return true;
 }
 
 
-void compute_cache::show(FILE* s, int h) const
+void MEDDLY::compute_cache::show(FILE* s, int h) const
 {
   nodes[h].owner->op->showEntry(nodes[h].owner, s, getDataAddress(nodes[h]));
 }
 
 
-void compute_cache::show(FILE *s, bool verbose) const
+void MEDDLY::compute_cache::show(FILE *s, bool verbose) const
 { 
   char filler[] = "\t";
   fprintf(s, "%sNumber of slots:\t%d\n", filler, nodeCount);
@@ -136,7 +138,7 @@ void compute_cache::show(FILE *s, bool verbose) const
 }
 
 
-void compute_cache::expandNodes()
+void MEDDLY::compute_cache::expandNodes()
 {
   DCASSERT(nodeCount != 0);
   int newNodeCount = int(nodeCount * expansionFactor);
@@ -155,7 +157,7 @@ void compute_cache::expandNodes()
 }
 
 
-void compute_cache::expandData()
+void MEDDLY::compute_cache::expandData()
 {
   int newDataCount = int(dataCount * expansionFactor);
   data = (int *) realloc(data, newDataCount * sizeof(int));
@@ -165,7 +167,7 @@ void compute_cache::expandData()
 }
 
 
-void compute_cache::removeStales(op_info* owner)
+void MEDDLY::compute_cache::removeStales(op_info* owner)
 {
   static bool removingStales = false;
   if (!removingStales) {
@@ -205,7 +207,7 @@ void compute_cache::removeStales(op_info* owner)
 }
 
 
-void compute_cache::removeEntries(op_info* owner)
+void MEDDLY::compute_cache::removeEntries(op_info* owner)
 {
   static bool removingEntries = false;
   if (!removingEntries) {
@@ -239,14 +241,14 @@ void compute_cache::removeEntries(op_info* owner)
 }
 
 
-void compute_cache::clear()
+void MEDDLY::compute_cache::clear()
 {
   DCASSERT(ht != 0 || fsht != 0);
   if (ht) ht->clear();
   if (fsht) fsht->clear();
 }
 
-int compute_cache::getNumEntries() const
+int MEDDLY::compute_cache::getNumEntries() const
 {
   DCASSERT(ht != 0 || fsht != 0);
   return (ht)? ht->getEntriesCount(): fsht->getEntriesCount();
@@ -261,7 +263,7 @@ int compute_cache::getNumEntries() const
 // ****************************************************************************
 
 
-binary_compute_cache::binary_compute_cache()
+MEDDLY::binary_compute_cache::binary_compute_cache()
 : hits(0), pings(0), adds(0), inserts(0), op(0), f0(0), f1(0), f2(0),
   checkForStales(true)
 {
@@ -269,7 +271,7 @@ binary_compute_cache::binary_compute_cache()
 }
 
 
-binary_compute_cache::binary_compute_cache(const operation* op,
+MEDDLY::binary_compute_cache::binary_compute_cache(const operation* op,
   const op_param* plist, int n)
 : hits(0), pings(0), adds(0), inserts(0)
 {
@@ -290,7 +292,7 @@ binary_compute_cache::binary_compute_cache(const operation* op,
 }
 
 
-void binary_compute_cache::set(const operation* op,
+void MEDDLY::binary_compute_cache::set(const operation* op,
   expert_forest* f0, expert_forest* f1, expert_forest* f2)
 {
   // op is allowed to be null.
@@ -308,27 +310,26 @@ void binary_compute_cache::set(const operation* op,
 }
 
 
-binary_compute_cache::~binary_compute_cache()
+MEDDLY::binary_compute_cache::~binary_compute_cache()
 {
   clear();
 }
 
 
-bool binary_compute_cache::setPolicy(bool chaining, unsigned maxSize)
+void MEDDLY::binary_compute_cache::setPolicy(bool chaining, unsigned maxSize)
 { 
   clear();
-  return true;
 }
 
 
-void binary_compute_cache::add(op_info* owner, const int* entry)
+void MEDDLY::binary_compute_cache::add(op_info* owner, const int* entry)
 {
   assert(false);
   add(owner, entry[0], entry[1], entry[2]);
 }
 
 
-const int* binary_compute_cache::find(op_info* owner, const int* entryKey) {
+const int* MEDDLY::binary_compute_cache::find(op_info* owner, const int* entryKey) {
   assert(false);
   static int result[3];
   result[0] = entryKey[0];
@@ -337,13 +338,13 @@ const int* binary_compute_cache::find(op_info* owner, const int* entryKey) {
 }
 
 
-const char* binary_compute_cache::getOpName() const
+const char* MEDDLY::binary_compute_cache::getOpName() const
 {
   return op? op->getName(): "Unnamed Operation";
 }
 
 
-void binary_compute_cache::removeStales(op_info* owner)
+void MEDDLY::binary_compute_cache::removeStales(op_info* owner)
 {
   adds = 0;
   if (ct.empty()) return;
@@ -371,7 +372,7 @@ void binary_compute_cache::removeStales(op_info* owner)
 }
 
 
-void binary_compute_cache::clear()
+void MEDDLY::binary_compute_cache::clear()
 {
   adds = 0;
   if (ct.empty()) return;
@@ -388,7 +389,7 @@ void binary_compute_cache::clear()
 }
 
 
-void binary_compute_cache::removeEntries(op_info* owner)
+void MEDDLY::binary_compute_cache::removeEntries(op_info* owner)
 {
   if (owner) { assert(owner->cc == this); }
   clear();
@@ -396,11 +397,11 @@ void binary_compute_cache::removeEntries(op_info* owner)
 
 
 // for debugging
-void binary_compute_cache::show(FILE *s, bool verbose) const
+void MEDDLY::binary_compute_cache::show(FILE *s, bool verbose) const
 {
   fprintf(s, "Compute table for %s\n", getOpName());
   fprintf(s, "Inserts: %d, Pings: %d, Hits: %d, Adds (max %d): %d\n",
-      inserts, pings, hits, binary_compute_cache::maxAdds, adds);
+      inserts, pings, hits, MEDDLY::binary_compute_cache::maxAdds, adds);
   if (ct.empty()) return;
   if (verbose) {
     std::map< key_type, ans_type >::const_iterator curr = ct.begin();

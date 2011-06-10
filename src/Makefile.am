@@ -21,6 +21,7 @@ libmeddly_la_SOURCES = \
 	defines.h \
 	meddly.h \
 	meddly_expert.h \
+  meddly.cc \
 	dd_edge.cc \
 	temp_dd_edge.cc \
 	domain.cc \

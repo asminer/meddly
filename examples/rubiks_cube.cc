@@ -80,6 +80,7 @@
 #include "timer.h"
 
 using namespace std;
+using namespace MEDDLY;
 
 typedef enum {F, B, L, R, U, D} face;
 typedef enum {CW, CCW, FLIP} direction;
@@ -396,8 +397,7 @@ dd_edge BuildMoveHelper(
   // a3' <- d3
   {
     dd_edge temp(relation);
-    assert(forest::SUCCESS == relation->createEdge(from + offset,
-          to + offset, type3, temp));
+    relation->createEdge(from + offset, to + offset, type3, temp);
     result = temp;
     offset += type3;
   }
@@ -408,8 +408,7 @@ dd_edge BuildMoveHelper(
   for (int i = 0; i < 3; i++)
   {
     dd_edge temp(relation);
-    assert(forest::SUCCESS == relation->createEdge(from + offset,
-          to + offset, type3, temp));
+    relation->createEdge(from + offset, to + offset, type3, temp);
     result *= temp;
     offset += type3;
   }
@@ -421,8 +420,7 @@ dd_edge BuildMoveHelper(
   for (int i = 0; i < 4; i++)
   {
     dd_edge temp(relation);
-    assert(forest::SUCCESS == relation->createEdge(from + offset,
-          to + offset, type2, temp));
+    relation->createEdge(from + offset, to + offset, type2, temp);
     result *= temp;
     offset += type2;
   }
@@ -603,8 +601,7 @@ dd_edge BuildFlipMoveHelper(
   // a3' <- c3
   {
     dd_edge temp(relation);
-    assert(forest::SUCCESS == relation->createEdge(from + offset,
-          to + offset, type3, temp));
+    relation->createEdge(from + offset, to + offset, type3, temp);
     result = temp;
     offset += type3;
   }
@@ -615,8 +612,7 @@ dd_edge BuildFlipMoveHelper(
   for (int i = 0; i < 3; i++)
   {
     dd_edge temp(relation);
-    assert(forest::SUCCESS == relation->createEdge(from + offset,
-          to + offset, type3, temp));
+    relation->createEdge(from + offset, to + offset, type3, temp);
     result *= temp;
     offset += type3;
   }
@@ -628,8 +624,7 @@ dd_edge BuildFlipMoveHelper(
   for (int i = 0; i < 4; i++)
   {
     dd_edge temp(relation);
-    assert(forest::SUCCESS == relation->createEdge(from + offset,
-          to + offset, type2, temp));
+    relation->createEdge(from + offset, to + offset, type2, temp);
     result *= temp;
     offset += type2;
   }
@@ -893,16 +888,15 @@ int doBfs(const moves& m)
   // Build initial state.
   assert(states);
   dd_edge initial(states);
-  assert(forest::SUCCESS == states->createEdge(initst, 1, initial));
+  states->createEdge(initst, 1, initial);
 
   // Perform Reachability via "traditional" reachability algorithm.
   fprintf(stdout, "Started BFS Saturate...");
   fflush(stdout);
   timer start;
-  assert(compute_manager::SUCCESS ==
-      MEDDLY_getComputeManager()->apply(
-        compute_manager::REACHABLE_STATES_BFS,
-        initial, nsf, initial));
+  getComputeManager()->apply(
+    compute_manager::REACHABLE_STATES_BFS, initial, nsf, initial
+  );
   start.note_time();
   fprintf(stdout, " done!\n");
   fflush(stdout);
@@ -928,16 +922,15 @@ int doDfs(const moves& m)
   // Build initial state.
   assert(states);
   dd_edge initial(states);
-  assert(forest::SUCCESS == states->createEdge(initst, 1, initial));
+  states->createEdge(initst, 1, initial);
 
   // Perform Reacability via "saturation".
   fprintf(stdout, "Started DFS Saturate...");
   fflush(stdout);
   timer start;
-  assert(compute_manager::SUCCESS ==
-      MEDDLY_getComputeManager()->apply(
-        compute_manager::REACHABLE_STATES_DFS,
-        initial, nsf, initial));
+  getComputeManager()->apply(
+    compute_manager::REACHABLE_STATES_DFS, initial, nsf, initial
+  );
   start.note_time();
   fprintf(stdout, " done!\n");
   fflush(stdout);
@@ -995,7 +988,7 @@ int doChoice(const moves& m)
   assert(states);
 
   dd_edge initial(states);
-  assert(forest::SUCCESS == states->createEdge(initst, 1, initial));
+  states->createEdge(initst, 1, initial);
 
   dd_edge result = initial;
   dd_edge temp(states);
@@ -1037,15 +1030,15 @@ int doChoice(const moves& m)
           direction d = direction(choice / nFaces);
           printf("Choice: %d, Face: %d, Direction: %d\n", choice, f, d);
         }
-        assert(compute_manager::SUCCESS ==
-            MEDDLY_getComputeManager()->apply(compute_manager::POST_IMAGE,
-              result, nsf[choice], temp));
+        getComputeManager()->apply(
+          compute_manager::POST_IMAGE, result, nsf[choice], temp
+        );
         result += temp;
         break;
       case 18:
         // Perform garbage collection.
         // For now, simply clear the compute table.
-        MEDDLY_getComputeManager()->clearComputeTable();
+        getComputeManager()->clearComputeTable();
         break;
       case 19:
         // Clear result.
@@ -1100,7 +1093,7 @@ int doSteppedBfs(const moves& m)
   assert(states);
 
   dd_edge initial(states);
-  assert(forest::SUCCESS == states->createEdge(initst, 1, initial));
+  states->createEdge(initst, 1, initial);
 
   dd_edge result = initial;
   dd_edge temp(states);
@@ -1132,10 +1125,10 @@ int doSteppedBfs(const moves& m)
         {
           printf("Processing event[%d]...", i);
           fflush(stdout);
-          assert(compute_manager::SUCCESS ==
-              MEDDLY_getComputeManager()->apply(
-                compute_manager::REACHABLE_STATES_DFS,
-                eventResults[i], nsf[i], eventResults[i]));
+          getComputeManager()->apply(
+            compute_manager::REACHABLE_STATES_DFS, 
+            eventResults[i], nsf[i], eventResults[i]
+          );
           printf("done.\n");
           fflush(stdout);
         }
@@ -1164,7 +1157,7 @@ int doSteppedBfs(const moves& m)
       case 3:
         // Perform garbage collection.
         // For now, simply clear the compute table.
-        MEDDLY_getComputeManager()->clearComputeTable();
+        getComputeManager()->clearComputeTable();
         break;
       case 4:
         // Clear result.
@@ -1242,20 +1235,16 @@ int main(int argc, char *argv[])
   SetUpArrays();
   Init();
 
-  // Set hash table to be a chained hash table with a
-  // maximum of 16 million entries (default)
-  bool chaining = true;
-  int hashTableSize = 16 * 1024 * 1024;
-  assert(compute_manager::SUCCESS ==
-      MEDDLY_getComputeManager()->setHashTablePolicy(chaining, hashTableSize));
+  // Initialize MEDDLY
+  initialize();
 
   // Set up the state variables, as described earlier
-  d = MEDDLY_createDomain();
+  d = createDomain();
   if (NULL == d) {
     fprintf(stderr, "Couldn't create domain\n");
     return 1;
   }
-  assert(domain::SUCCESS == d->createVariablesBottomUp(sizes, num_levels));
+  d->createVariablesBottomUp(sizes, num_levels);
   CheckVars(d);
 
   int topVar = d->getTopVariable();
@@ -1309,7 +1298,7 @@ int main(int argc, char *argv[])
   initst[0][0] = 0;
 
   dd_edge initial(states);
-  assert(forest::SUCCESS == states->createEdge(initst, 1, initial));
+  states->createEdge(initst, 1, initial);
 
   if (dfs) {
     doDfs(enabled);
@@ -1324,7 +1313,7 @@ int main(int argc, char *argv[])
   }
 
   delete d;
-
+  cleanup();
   fprintf(stderr, "\n\nDONE\n");
   return 0;
 }

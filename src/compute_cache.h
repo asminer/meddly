@@ -47,6 +47,7 @@
 #define RECYCLED_LIST
 #define USE_CHAINED_HASH_TABLE
 
+namespace MEDDLY {
 
 class compute_cache {
   public:
@@ -67,9 +68,8 @@ class compute_cache {
                         if true, use cache with chaining,
                         otherwise, use cache without chaining.
         @param  maxSize the maximum size of the hash table.
-        @return         true, if the operation completed successfully.
     */
-    virtual bool setPolicy(bool chaining, unsigned maxSize);
+    virtual void setPolicy(bool chaining, unsigned maxSize);
 
     /** Add an entry to the compute cache. Note that this cache allows for
         duplicate entries for the same key. The user may use find() before
@@ -265,7 +265,7 @@ class compute_cache {
 //  same forest.
 //
 //  Deprecated methods:
-//  (1) bool setPolicy(bool, unsigned)
+//  (1) void setPolicy(bool, unsigned)
 //  (2) void add(op_info*, const int*)
 //  (3) const int* find(op_info*, const int*)
 //
@@ -299,7 +299,7 @@ class binary_compute_cache : public compute_cache {
     virtual void show(FILE *s, bool verbose = false) const;
 
     // Deprecated Methods
-    virtual bool setPolicy(bool chaining, unsigned maxSize);
+    virtual void setPolicy(bool chaining, unsigned maxSize);
     virtual void add(op_info* owner, const int* entry);
     virtual const int* find(op_info* owner, const int* entryKey);
 
@@ -344,6 +344,8 @@ class binary_compute_cache : public compute_cache {
     bool checkForStales;
 };
 
+} // namespace MEDDLY
+
 
 
 
@@ -373,7 +375,7 @@ class binary_compute_cache : public compute_cache {
 // **********************************************************************
 
 inline
-void compute_cache::add(op_info* owner, const int* entry)
+void MEDDLY::compute_cache::add(op_info* owner, const int* entry)
 {
   // copy entry data
   int node = getFreeNode(owner->op->getCacheEntryLength());
@@ -386,7 +388,7 @@ void compute_cache::add(op_info* owner, const int* entry)
 }
 
 inline
-void compute_cache::add(op_info* owner, int a, int b, int c)
+void MEDDLY::compute_cache::add(op_info* owner, int a, int b, int c)
 {
   // copy entry data
   DCASSERT(owner->op->getKeyLength() == 2 &&
@@ -404,7 +406,7 @@ void compute_cache::add(op_info* owner, int a, int b, int c)
 }
 
 inline
-const int* compute_cache::find(op_info* owner, const int* entryKey)
+const int* MEDDLY::compute_cache::find(op_info* owner, const int* entryKey)
 {
   pings++;
   int keyLength = owner->op->getKeyLength();
@@ -437,7 +439,7 @@ const int* compute_cache::find(op_info* owner, const int* entryKey)
 }
 
 inline
-bool compute_cache::find(op_info* owner, int a, int b, int& c)
+bool MEDDLY::compute_cache::find(op_info* owner, int a, int b, int& c)
 {
   DCASSERT(owner->op->getKeyLength() == 2 &&
       owner->op->getCacheEntryLength() == 3);
@@ -479,19 +481,19 @@ bool compute_cache::find(op_info* owner, int a, int b, int& c)
  */
 
 inline
-int compute_cache::getNull() const
+int MEDDLY::compute_cache::getNull() const
 {
   return -1;
 }
 
 inline
-int compute_cache::getNext(int h) const
+int MEDDLY::compute_cache::getNext(int h) const
 {
   return nodes[h].next;
 }
 
 inline
-void compute_cache::setNext(int h, int n)
+void MEDDLY::compute_cache::setNext(int h, int n)
 {
   nodes[h].next = n;
 }
@@ -538,7 +540,7 @@ unsigned smallFinal(unsigned a, unsigned b, unsigned c)
 }
 
 inline
-unsigned compute_cache::hash(int h, unsigned n) const
+unsigned MEDDLY::compute_cache::hash(int h, unsigned n) const
 {
   int length = nodes[h].owner->op->getKeyLength();
   int* k = getDataAddress(nodes[h]);
@@ -572,7 +574,7 @@ unsigned compute_cache::hash(int h, unsigned n) const
 }
 
 inline
-bool compute_cache::equals(int h1, int h2) const
+bool MEDDLY::compute_cache::equals(int h1, int h2) const
 {
   if (nodes[h1].owner != nodes[h2].owner) return false;
   return 
@@ -582,45 +584,45 @@ bool compute_cache::equals(int h1, int h2) const
 }
 
 inline
-bool compute_cache::isStale(int h) const
+bool MEDDLY::compute_cache::isStale(int h) const
 {
   return
     nodes[h].owner->op->isEntryStale(nodes[h].owner, getDataAddress(nodes[h]));
 }
 
 inline
-void compute_cache::uncacheNode(int h)
+void MEDDLY::compute_cache::uncacheNode(int h)
 {
   nodes[h].owner->op->discardEntry(nodes[h].owner, getDataAddress(nodes[h]));
   recycleNode(h);
 }
 
 inline
-int* compute_cache::getDataAddress(const cache_entry& n) const
+int* MEDDLY::compute_cache::getDataAddress(const cache_entry& n) const
 {
   return data + n.dataOffset;
 }
 
 inline
-void compute_cache::setDataOffset(cache_entry& n, int offset)
+void MEDDLY::compute_cache::setDataOffset(cache_entry& n, int offset)
 {
   n.dataOffset = offset;
 }
 
 inline
-void compute_cache::setDataAddress(cache_entry& n, int* address)
+void MEDDLY::compute_cache::setDataAddress(cache_entry& n, int* address)
 {
   n.dataOffset = address - data;
 }
 
 inline
-bool compute_cache::isFreeNode(const cache_entry& n) const
+bool MEDDLY::compute_cache::isFreeNode(const cache_entry& n) const
 {
   return n.owner == NULL;
 }
 
 inline
-void compute_cache::recycleNode(int h)
+void MEDDLY::compute_cache::recycleNode(int h)
 {
   int nodeSize = nodes[h].owner->op->getCacheEntryLength();
 
@@ -671,7 +673,7 @@ void compute_cache::recycleNode(int h)
 }
 
 inline
-int compute_cache::getRecycledNode(int size)
+int MEDDLY::compute_cache::getRecycledNode(int size)
 {
 #ifdef RECYCLED_LIST
   if (recycledFront != NULL) {
@@ -697,19 +699,19 @@ int compute_cache::getRecycledNode(int size)
 }
 
 inline
-bool compute_cache::isNodesStorageFull() const
+bool MEDDLY::compute_cache::isNodesStorageFull() const
 {
   return (lastNode + 1) >= nodeCount;
 }
 
 inline
-bool compute_cache::isDataStorageFull(int size) const
+bool MEDDLY::compute_cache::isDataStorageFull(int size) const
 {
   return (lastData + size) >= dataCount;
 }
 
 inline
-int compute_cache::getFreeNode(int size)
+int MEDDLY::compute_cache::getFreeNode(int size)
 {
   // try to find a recycled node that fits
   int newNode = getRecycledNode(size);
@@ -728,7 +730,6 @@ int compute_cache::getFreeNode(int size)
   return newNode;
 }
 
-
 // **********************************************************************
 //
 //                Inlined methods for binary_compute_cache
@@ -736,7 +737,7 @@ int compute_cache::getFreeNode(int size)
 // **********************************************************************
 
 inline
-void binary_compute_cache::add(op_info* owner, int a, int b, int c)
+void MEDDLY::binary_compute_cache::add(op_info* owner, int a, int b, int c)
 {
   DCASSERT(owner == 0 || owner->cc == this);
   static key k;
@@ -761,7 +762,7 @@ void binary_compute_cache::add(op_info* owner, int a, int b, int c)
 }
 
 inline
-bool binary_compute_cache::find(op_info* owner, int a, int b, int& c)
+bool MEDDLY::binary_compute_cache::find(op_info* owner, int a, int b, int& c)
 {
   DCASSERT(owner->cc == this);
   static key k;
@@ -784,7 +785,7 @@ bool binary_compute_cache::find(op_info* owner, int a, int b, int& c)
 }
 
 inline
-int binary_compute_cache::getNumEntries() const
+int MEDDLY::binary_compute_cache::getNumEntries() const
 {
   return ct.size();
 }

@@ -28,6 +28,8 @@
 
 #include "meddly.h"
 
+using namespace MEDDLY;
+
 const int vars[] = {10, 10, 10};
 
 compute_manager* CM;
@@ -43,10 +45,11 @@ bool build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
   const int* sslist[] = { R, N, S };
   const int indexes[] = { 0, 1, 2 };
 
-  forest::error fe;
-  fe = indf->createEdge(sslist, indexes, 3, ss);
-  if (fe) {
-    printf("Couldn't build indexes: %s\n", indf->getErrorCodeName(fe));
+  try {
+    indf->createEdge(sslist, indexes, 3, ss);
+  }
+  catch (MEDDLY::error fe) {
+    printf("Couldn't build indexes: %s\n", fe.getName());
     return false;
   }
 
@@ -62,10 +65,11 @@ bool build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
     0.5,  0.25, 0.25, 0.5,  0.5,  0.25, 0.25, 0.5
   };
 
-  
-  fe = mxd->createEdge(fromlist, tolist, problist, 8, P);
-  if (fe) {
-    printf("Couldn't build matrix: %s\n", mxd->getErrorCodeName(fe));
+  try { 
+    mxd->createEdge(fromlist, tolist, problist, 8, P);
+  }
+  catch (MEDDLY::error fe) {
+    printf("Couldn't build matrix: %s\n", fe.getName());
     return false;
   }
 
@@ -114,9 +118,11 @@ bool xA_check(dd_edge &ss, dd_edge &P)
   for (i=0; i<9; i++) {
     printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
     q[0] = q[1] = q[2] = 0;
-    compute_manager::error ce = CM->vectorMatrixMultiply(q, ss, p, ss, P);
-    if (ce) {
-      printf("Couldn't multiply: %s\n", CM->getErrorCodeName(ce));
+    try {
+      CM->vectorMatrixMultiply(q, ss, p, ss, P);
+    }
+    catch (MEDDLY::error ce) {
+      printf("Couldn't multiply: %s\n", ce.getName());
       return false;
     }
     q_alt[0] = q_alt[1] = q_alt[2] = 0;
@@ -141,9 +147,11 @@ bool Ax_check(dd_edge &ss, dd_edge &P)
   for (i=0; i<9; i++) {
     printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
     q[0] = q[1] = q[2] = 0;
-    compute_manager::error ce = CM->matrixVectorMultiply(q, ss, P, p, ss);
-    if (ce) {
-      printf("Couldn't multiply: %s\n", CM->getErrorCodeName(ce));
+    try {
+      CM->matrixVectorMultiply(q, ss, P, p, ss);
+    }
+    catch (MEDDLY::error ce) {
+      printf("Couldn't multiply: %s\n", ce.getName());
       return false;
     }
     q_alt[0] = q_alt[1] = q_alt[2] = 0;
@@ -159,12 +167,13 @@ bool Ax_check(dd_edge &ss, dd_edge &P)
 
 int main(int argc, const char** argv)
 {
-  CM = MEDDLY_getComputeManager();
+  initialize();
+  CM = getComputeManager();
   assert(CM);
 
-  domain* ozd = MEDDLY_createDomain();
+  domain* ozd = createDomain();
   assert(ozd);
-  assert(domain::SUCCESS == ozd->createVariablesBottomUp(vars, 3));
+  ozd->createVariablesBottomUp(vars, 3);
   forest* evpmdds = ozd->createForest(0, forest::INTEGER, forest::EVPLUS);
   assert(evpmdds);
   forest* mtmxds = ozd->createForest(1, forest::REAL, forest::MULTI_TERMINAL);
@@ -176,6 +185,6 @@ int main(int argc, const char** argv)
   if (!build_oz(evpmdds, mtmxds, ss, P)) return 1;
   if (!xA_check(ss, P)) return 1;
   if (!Ax_check(ss, P)) return 1;
-
+  cleanup();
   return 0;
 }

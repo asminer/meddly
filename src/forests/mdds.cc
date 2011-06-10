@@ -380,22 +380,25 @@ int* node_manager::getTerminalNodes(int n, float* terms)
 }
 
 
-forest::error node_manager::createEdgeForVar(int vh, bool primedLevel,
+void node_manager::createEdgeForVar(int vh, bool primedLevel,
     dd_edge& result)
 {
-  if (!isValidVariable(vh)) return forest::INVALID_VARIABLE;
-  if (result.getForest() != this) return forest::INVALID_OPERATION;
+  if (!isValidVariable(vh)) 
+    throw error(error::INVALID_VARIABLE);
+  if (result.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
 
   int k = primedLevel? -vh: vh;
   DCASSERT(isValidLevel(k));
   int node = getLevelNode(k);
 
   if (node == 0) {
-    if (!isForRelations() && primedLevel) return forest::INVALID_ASSIGNMENT;
+    if (!isForRelations() && primedLevel) 
+      throw error(error::INVALID_ASSIGNMENT);
     if (getRangeType() == forest::BOOLEAN && getLevelSize(vh) > 2)
-      return forest::INVALID_OPERATION;
+      throw error(error::INVALID_OPERATION);
     if (getEdgeLabeling() != forest::MULTI_TERMINAL)
-      return forest::INVALID_OPERATION;
+      throw error(error::INVALID_OPERATION);
     int *terminalNodes = getTerminalNodes(getLevelSize(vh));
     buildLevelNode(k, terminalNodes, getLevelSize(vh));
     node = getLevelNode(k);
@@ -405,44 +408,50 @@ forest::error node_manager::createEdgeForVar(int vh, bool primedLevel,
 
   linkNode(node);
   result.set(node, 0, getNodeLevel(node));
-  return forest::SUCCESS;
 }
 
 
-forest::error node_manager::createEdgeForVar(int vh, bool primedLevel,
+void node_manager::createEdgeForVar(int vh, bool primedLevel,
     bool* terms, dd_edge& result)
 {
-  if (!isValidVariable(vh)) return forest::INVALID_VARIABLE;
-  if (result.getForest() != this) return forest::INVALID_OPERATION;
-  if (getRangeType() != forest::BOOLEAN) return forest::INVALID_OPERATION;
-  if (getLevelSize(vh) != 2) return forest::INVALID_OPERATION;
+  if (!isValidVariable(vh)) 
+    throw error(error::INVALID_VARIABLE);
+  if (result.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
+  if (getRangeType() != forest::BOOLEAN) 
+    throw error(error::INVALID_OPERATION);
+  if (getLevelSize(vh) != 2) 
+    throw error(error::INVALID_OPERATION);
 
   int k = primedLevel? -vh: vh;
   DCASSERT(isValidLevel(k));
 
-  if (!isForRelations() && primedLevel) return forest::INVALID_ASSIGNMENT;
+  if (!isForRelations() && primedLevel) 
+    throw error(error::INVALID_ASSIGNMENT);
   if (getEdgeLabeling() != forest::MULTI_TERMINAL)
-    return forest::INVALID_OPERATION;
+    throw error(error::INVALID_OPERATION);
   int *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
   int node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
 
   result.set(node, 0, getNodeLevel(node));
-  return forest::SUCCESS;
 }
 
 
-forest::error node_manager::createSubMatrix(const dd_edge& rows,
+void node_manager::createSubMatrix(const dd_edge& rows,
     const dd_edge& cols, const dd_edge& a, dd_edge& result)
 {
-  return forest::NOT_IMPLEMENTED;
+  throw error(error::NOT_IMPLEMENTED);
 }
 
-forest::error node_manager::createSubMatrix(const bool* const* vlist,
+void node_manager::createSubMatrix(const bool* const* vlist,
     const bool* const* vplist, const dd_edge a, dd_edge& b)
 {
-  if (a.getForest() != this) return forest::INVALID_OPERATION;
-  if (b.getForest() != this) return forest::INVALID_OPERATION;
-  if (!isMxd()) return forest::INVALID_OPERATION;
+  if (a.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
+  if (b.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
+  if (!isMxd()) 
+    throw error(error::INVALID_OPERATION);
 
   // Build Mask: go bottom up
   // When mask for level i is done, create node at level i+1 (higher)
@@ -479,57 +488,61 @@ forest::error node_manager::createSubMatrix(const bool* const* vlist,
   b.show(stdout, 3);
 #endif
   b *= a;
-
-  return forest::SUCCESS;
 }
 
 
-forest::error node_manager::getElement(const dd_edge& a,
+void node_manager::getElement(const dd_edge& a,
     int index, int* e)
 {
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
-forest::error node_manager::createEdgeForVar(int vh, bool primedLevel,
+void node_manager::createEdgeForVar(int vh, bool primedLevel,
     int* terms, dd_edge& result)
 {
-  if (!isValidVariable(vh)) return forest::INVALID_VARIABLE;
-  if (result.getForest() != this) return forest::INVALID_OPERATION;
-  if (getRangeType() != forest::INTEGER) return forest::INVALID_OPERATION;
+  if (!isValidVariable(vh)) 
+    throw error(error::INVALID_VARIABLE);
+  if (result.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
+  if (getRangeType() != forest::INTEGER) 
+    throw error(error::INVALID_OPERATION);
 
   int k = primedLevel? -vh: vh;
   DCASSERT(isValidLevel(k));
 
-  if (!isForRelations() && primedLevel) return forest::INVALID_ASSIGNMENT;
+  if (!isForRelations() && primedLevel) 
+    throw error(error::INVALID_ASSIGNMENT);
   if (getEdgeLabeling() != forest::MULTI_TERMINAL)
-    return forest::INVALID_OPERATION;
+    throw error(error::INVALID_OPERATION);
   int *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
   int node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
 
   result.set(node, 0, getNodeLevel(node));
-  return forest::SUCCESS;
 }
 
 
-forest::error node_manager::createEdgeForVar(int vh, bool primedLevel,
+void node_manager::createEdgeForVar(int vh, bool primedLevel,
     float* terms, dd_edge& result)
 {
-  if (!isValidVariable(vh)) return forest::INVALID_VARIABLE;
-  if (result.getForest() != this) return forest::INVALID_OPERATION;
-  if (getRangeType() != forest::REAL) return forest::INVALID_OPERATION;
+  if (!isValidVariable(vh)) 
+    throw error(error::INVALID_VARIABLE);
+  if (result.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
+  if (getRangeType() != forest::REAL) 
+    throw error(error::INVALID_OPERATION);
 
   int k = primedLevel? -vh: vh;
   DCASSERT(isValidLevel(k));
 
-  if (!isForRelations() && primedLevel) return forest::INVALID_ASSIGNMENT;
+  if (!isForRelations() && primedLevel) 
+    throw error(error::INVALID_ASSIGNMENT);
   if (getEdgeLabeling() != forest::MULTI_TERMINAL)
-    return forest::INVALID_OPERATION;
+    throw error(error::INVALID_OPERATION);
   int *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
   int node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
 
   result.set(node, 0, getNodeLevel(node));
-  return forest::SUCCESS;
 }
 
 
@@ -1862,9 +1875,8 @@ void node_manager::zombifyNode(int p)
 }
 
 
-forest::error node_manager::garbageCollect() {
+void node_manager::garbageCollect() {
   gc();
-  return forest::SUCCESS;
 }
 
 
@@ -1889,7 +1901,7 @@ bool node_manager::gc(bool zombifyOrphanNodes) {
     printf("Zombie nodes: %ld\n", zombie_nodes);
 #endif
     // remove the stale nodes entries from caches
-    smart_cast<expert_compute_manager *>(MEDDLY_getComputeManager())->
+    smart_cast<expert_compute_manager *>(MEDDLY::getComputeManager())->
       removeStales(this);
 #ifdef DEBUG_GC
     printf("Zombie nodes: %ld\n", zombie_nodes);
@@ -1897,7 +1909,7 @@ bool node_manager::gc(bool zombifyOrphanNodes) {
 #ifdef DEVELOPMENT_CODE
     if (zombie_nodes != 0) {
       showInfo(stderr, 2);
-      smart_cast<expert_compute_manager *>(MEDDLY_getComputeManager())->
+      smart_cast<expert_compute_manager *>(MEDDLY::getComputeManager())->
         showComputeTable(stderr);
     }
     DCASSERT(zombie_nodes == 0);
@@ -1926,12 +1938,12 @@ bool node_manager::gc(bool zombifyOrphanNodes) {
           active_nodes, zombie_nodes, orphan_nodes);
 #endif
       // remove the stale nodes entries from caches
-      smart_cast<expert_compute_manager *>(MEDDLY_getComputeManager())->
+      smart_cast<expert_compute_manager *>(MEDDLY::getComputeManager())->
         removeStales(this);
 #ifdef DEVELOPMENT_CODE
       if (zombie_nodes != 0) {
         showInfo(stderr, 2);
-        smart_cast<expert_compute_manager *>(MEDDLY_getComputeManager())->
+        smart_cast<expert_compute_manager *>(MEDDLY::getComputeManager())->
           showComputeTable(stderr);
       }
 #endif
@@ -1940,7 +1952,7 @@ bool node_manager::gc(bool zombifyOrphanNodes) {
     } else {
 
       // remove the stale nodes entries from caches
-      smart_cast<expert_compute_manager *>(MEDDLY_getComputeManager())->
+      smart_cast<expert_compute_manager *>(MEDDLY::getComputeManager())->
         removeStales(this);
 
     }
@@ -1986,7 +1998,7 @@ void node_manager::removeZombies(int max_zombies) {
     }
 #endif
     // remove the stale nodes entries from caches
-    smart_cast<expert_compute_manager *>(MEDDLY_getComputeManager())->
+    smart_cast<expert_compute_manager *>(MEDDLY::getComputeManager())->
       removeStales(this);
 #if 0
     if (zombie_nodes > 0) {
@@ -2913,15 +2925,15 @@ int node_manager::accumulateMdd(int a, int b, bool cBM)
 }
 
 
-forest::error node_manager::accumulate(int& a, int b)
+void node_manager::accumulate(int& a, int b)
 {
   if (isActiveNode(a) && isActiveNode(b)) {
     int result = accumulateMdd(a, b, false);
     unlinkNode(a);
     a = result;
-    return forest::SUCCESS;
+    return;
   }
-  return forest::INVALID_OPERATION;
+  throw error(error::INVALID_OPERATION);
 }
 
 
@@ -3202,7 +3214,7 @@ void node_manager::handleNewOrphanNode(int p) {
 
 #if 0
   if (getOrphanNodeCount() > 100000)
-    smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())
+    smart_cast<expert_compute_manager*>(MEDDLY::getComputeManager())
       ->removeStales(this);
 #endif
 }

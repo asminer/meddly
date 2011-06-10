@@ -26,12 +26,13 @@
 #include "cross.h"
 #include "../compute_cache.h"
 
-
 // ******************************************************************
 // *                                                                *
 // *                         cross_op class                         *
 // *                                                                *
 // ******************************************************************
+
+namespace MEDDLY {
 
 /** Abstract base class for cross operations.
 */
@@ -81,27 +82,29 @@ class cross_op : public operation {
     }
 
   protected:
-    inline compute_manager::error 
+    inline void 
     type_check(const op_info* o, forest::range_type t, forest::edge_labeling e) 
     {
         if (o == 0)
-          return compute_manager::UNKNOWN_OPERATION;
+          throw error(error::UNKNOWN_OPERATION);
         if (o->op == 0 || o->p == 0 || o->cc == 0)
-          return compute_manager::TYPE_MISMATCH;
+          throw error(error::TYPE_MISMATCH);
         if (o->nParams != 3)
-          return compute_manager::WRONG_NUMBER;
+          throw error(error::WRONG_NUMBER);
         if (o->p[0].isForestOf(false, t, e) &&
             o->p[1].isForestOf(false, t, e) &&
             o->p[2].isForestOf(true,  t, e)) 
         {
-          return compute_manager::SUCCESS;
+          return;
         } else {
-          return compute_manager::TYPE_MISMATCH;
+          throw error(error::TYPE_MISMATCH);
         }
     }
 };
 
-bool cross_op::
+} // namespace MEDDLY
+
+bool MEDDLY::cross_op::
 isEntryStale(const op_info* owner, const int* data)
 {
   DCASSERT(owner->nParams == 3);
@@ -111,7 +114,7 @@ isEntryStale(const op_info* owner, const int* data)
          owner->p[2].getForest()->isStale(data[3]);
 }
 
-void cross_op::
+void MEDDLY::cross_op::
 discardEntry(op_info* owner, const int* data)
 {
   DCASSERT(owner->nParams == 3);
@@ -122,7 +125,7 @@ discardEntry(op_info* owner, const int* data)
 }
 
 void
-cross_op::
+MEDDLY::cross_op::
 showEntry(const op_info* owner, FILE* strm, const int *data) const
 {
   DCASSERT(owner->nParams == 3);
@@ -138,6 +141,8 @@ showEntry(const op_info* owner, FILE* strm, const int *data) const
 // *                                                                *
 // ******************************************************************
 
+namespace MEDDLY {
+
 /// Boolean cross product operation.
 class bool_cross : public cross_op {
   public:
@@ -146,38 +151,39 @@ class bool_cross : public cross_op {
 
     static bool_cross* getInstance();
 
-    virtual compute_manager::error typeCheck(const op_info* owner) {
+    virtual void typeCheck(const op_info* owner) {
       return type_check(owner, forest::BOOLEAN, forest::MULTI_TERMINAL);
     }
 
-    virtual compute_manager::error compute(op_info* owner, const dd_edge &a,
+    virtual void compute(op_info* owner, const dd_edge &a,
       const dd_edge &b, dd_edge &c);
 
     int compute_unprimed(op_info* owner, int ht, int a, int b);
     int compute_primed(op_info* owner, int ht, int a, int b);
 };
 
-bool_cross*
-bool_cross::
+} // namespace MEDDLY
+
+MEDDLY::bool_cross*
+MEDDLY::bool_cross::
 getInstance()
 {
   static bool_cross instance;
   return &instance;
 }
 
-compute_manager::error
-bool_cross::
+void
+MEDDLY::bool_cross::
 compute(op_info* owner, const dd_edge &a, const dd_edge &b, dd_edge &c)
 {
-  if (0==owner) return compute_manager::TYPE_MISMATCH;
+  if (0==owner) throw error(error::TYPE_MISMATCH);
   int L = owner->p[0].getForest()->getDomain()->getNumVariables();
   int cnode = compute_unprimed(owner, L, a.getNode(), b.getNode());
   c.set(cnode, 0, owner->p[2].getForest()->getNodeLevel(cnode));
-  return compute_manager::SUCCESS;
 }
 
 int
-bool_cross::
+MEDDLY::bool_cross::
 compute_unprimed(op_info* owner, int ht, int a, int b)
 {
   if (0==ht) {
@@ -233,7 +239,7 @@ compute_unprimed(op_info* owner, int ht, int a, int b)
 }
 
 int
-bool_cross::
+MEDDLY::bool_cross::
 compute_primed(op_info* owner, int ht, int a, int b)
 {
   if (0==a || 0==b) return 0;
@@ -292,11 +298,12 @@ compute_primed(op_info* owner, int ht, int a, int b)
 // *                                                                *
 // ******************************************************************
 
-operation* getCrossOperation(const op_param &ot)
+MEDDLY::operation* MEDDLY::getCrossOperation(const op_param &ot)
 {
   if (!ot.isForest()) return 0;
   if (!ot.isBoolForest()) return 0;
 
   return bool_cross::getInstance();
 }
+
 

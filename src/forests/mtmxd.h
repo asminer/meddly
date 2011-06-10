@@ -59,24 +59,24 @@ class mtmxd_node_manager : public node_manager {
     ~mtmxd_node_manager();
 
     // Refer to meddly.h
-    error createEdge(const int* const* vlist, const int* const* vplist,
+    void createEdge(const int* const* vlist, const int* const* vplist,
         const int* terms, int N, dd_edge& e);
-    error createEdge(const int* const* vlist, const int* const* vplist,
+    void createEdge(const int* const* vlist, const int* const* vplist,
         const float* terms, int N, dd_edge& e);
 
-    error createEdge(int val, dd_edge &e);
-    error createEdge(float val, dd_edge &e);
+    void createEdge(int val, dd_edge &e);
+    void createEdge(float val, dd_edge &e);
 
-    error evaluate(const dd_edge& f, const int* vlist, const int* vplist,
+    void evaluate(const dd_edge& f, const int* vlist, const int* vplist,
         int &term) const;
-    error evaluate(const dd_edge& f, const int* vlist, const int* vplist,
+    void evaluate(const dd_edge& f, const int* vlist, const int* vplist,
         float &term) const;
 
-    virtual error findFirstElement(const dd_edge& f, int* vlist, int* vplist)
+    virtual void findFirstElement(const dd_edge& f, int* vlist, int* vplist)
       const;
 
     // Enlarges a temporary node, if new size is greater than old size.
-    virtual forest::error resizeNode(int node, int size);
+    virtual void resizeNode(int node, int size);
 
     virtual int reduceNode(int p);
 
@@ -92,23 +92,23 @@ class mtmxd_node_manager : public node_manager {
     // The following will either abort or return an error since they are not
     // applicable to this forest.
 
-    virtual error createEdge(const int* const* vlist, int N, dd_edge &e);
-    virtual error createEdge(const int* const* vlist, const int* terms, int N,
+    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, const int* terms, int N,
         dd_edge &e);
-    virtual error createEdge(const int* const* vlist, const float* terms,
+    virtual void createEdge(const int* const* vlist, const float* terms,
         int N, dd_edge &e);
 
-    virtual error createEdge(const int* const* vlist, const int* const* vplist,
+    virtual void createEdge(const int* const* vlist, const int* const* vplist,
         int N, dd_edge &e);
-    virtual error createEdge(bool val, dd_edge &e);
+    virtual void createEdge(bool val, dd_edge &e);
 
-    virtual error evaluate(const dd_edge &f, const int* vlist, bool &term)
+    virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
       const;
-    virtual error evaluate(const dd_edge &f, const int* vlist, int &term)
+    virtual void evaluate(const dd_edge &f, const int* vlist, int &term)
       const;
-    virtual error evaluate(const dd_edge &f, const int* vlist, float &term)
+    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
       const;
-    virtual error evaluate(const dd_edge& f, const int* vlist,
+    virtual void evaluate(const dd_edge& f, const int* vlist,
         const int* vplist, bool &term) const;
 
   protected:
@@ -121,7 +121,7 @@ class mtmxd_node_manager : public node_manager {
     // This create a MTMXD from a collection of edges (represented 
     // as vectors vlist and vplist).
     template <typename T>
-      forest::error createEdgeInternal(const int* const* vlist,
+      void createEdgeInternal(const int* const* vlist,
           const int* const* vplist, const T* terms, int N, dd_edge &e);
 
     // Creates an edge representing v[] vp[] = terminal node (not value),
@@ -216,7 +216,7 @@ class mxd_node_manager : public mtmxd_node_manager {
     using mtmxd_node_manager::evaluate;
 
     virtual bool accumulate(int& tempNode, int* element, int* pelement);
-    virtual forest::error accumulate(int& a, int b);
+    virtual void accumulate(int& a, int b);
 
     virtual int accumulate(int tempNode, bool cBM,
         int* element, int* pelement, int level);
@@ -234,23 +234,23 @@ class mxd_node_manager : public mtmxd_node_manager {
         int (mxd_node_manager::*function)(int, int, bool));
 
     // Refer to meddly.h
-    virtual error createEdge(const int* const* vlist, const int* const* vplist,
+    virtual void createEdge(const int* const* vlist, const int* const* vplist,
         int N, dd_edge& e);
-    virtual error createEdge(bool val, dd_edge &e);
-    virtual error evaluate(const dd_edge& f, const int* vlist,
+    virtual void createEdge(bool val, dd_edge &e);
+    virtual void evaluate(const dd_edge& f, const int* vlist,
         const int* vplist, bool &term) const;
 
     // The following will either abort or return an error since they are not
     // applicable to this forest.
-    virtual error createEdge(const int* const* vlist, const int* const* vplist,
+    virtual void createEdge(const int* const* vlist, const int* const* vplist,
         const int* terms, int N, dd_edge &e);
-    virtual error createEdge(const int* const* vlist, const int* const* vplist,
+    virtual void createEdge(const int* const* vlist, const int* const* vplist,
         const float* terms, int N, dd_edge &e);
-    virtual error createEdge(int val, dd_edge &e);
-    virtual error createEdge(float val, dd_edge &e);
-    virtual error evaluate(const dd_edge &f, const int* vlist,
+    virtual void createEdge(int val, dd_edge &e);
+    virtual void createEdge(float val, dd_edge &e);
+    virtual void evaluate(const dd_edge &f, const int* vlist,
         const int* vplist, int &term) const;
-    virtual error evaluate(const dd_edge &f, const int* vlist,
+    virtual void evaluate(const dd_edge &f, const int* vlist,
         const int* vplist, float &term) const;
 };
 
@@ -283,7 +283,7 @@ void mtmxd_node_manager::copyLists(const int* const* vlist,
 
 
 template <typename T>
-forest::error
+void
 mtmxd_node_manager::createEdgeInternal(const int* const* vlist,
     const int* const* vplist, const T* terms, int N, dd_edge &e)
 {
@@ -352,8 +352,6 @@ mtmxd_node_manager::createEdgeInternal(const int* const* vlist,
 
     e.set(result, 0, getNodeLevel(result));
   }
-
-  return forest::SUCCESS;
 }
 
 

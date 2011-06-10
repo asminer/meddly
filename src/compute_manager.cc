@@ -30,111 +30,31 @@
 #include "operations/cross.h"
 #include "compute_cache.h"
 
-#include "revision.h"
-
 // ------------------ compute_manager --------------------------
-compute_manager::compute_manager() {}
+MEDDLY::compute_manager::compute_manager() {}
 
 
-compute_manager::~compute_manager() {}
+MEDDLY::compute_manager::~compute_manager() {}
 
-
-const char*
-compute_manager::getErrorCodeName(compute_manager::error e)
-{
-  switch (e) {
-    case SUCCESS:
-        return "Operation returned successfully";
-    case NOT_IMPLEMENTED:
-        return "Operation not implemented";
-    case INSUFFICIENT_MEMORY:
-        return "Operation failed -- lack of memory";
-    case UNKNOWN_OPERATION:
-        return "Operation failed -- bad operation handle";
-    case FOREST_MISMATCH:
-        return "Operation requires same forest, it was not";
-    case TYPE_MISMATCH:
-        return
-          "Operation not supported for given forest, operand or result type";
-    case WRONG_NUMBER:
-        return "Operation failed -- incorrect number of operands";
-    case OVERFLOW:
-        return "Operation failed -- calculation will not fit data type";
-    default:
-        return "Unknown error code";
-  }
-}
-
-
-compute_manager* MEDDLY_getComputeManager()
-{
-  static expert_compute_manager* ecm = new expert_compute_manager();
-  return ecm;
-}
-
-
-const char* MEDDLY_getLibraryInfo(int what)
-{
-  static char* title = 0;
-  switch (what) {
-    case 0:
-      if (!title) {
-        title = new char[80];
-        if (REVISION_NUMBER) {
-          snprintf(title, 80, 
-            "%s version %s.%d (32-bit and 64-bit compatible)", 
-            PACKAGE_NAME, VERSION, REVISION_NUMBER
-          );
-        } else {
-          snprintf(title, 80, 
-            "%s version %s (32-bit and 64-bit compatible)", 
-            PACKAGE_NAME, VERSION
-          );
-        }
-      }
-      return title;
-
-    case 1:
-      return "Copyright (C) 2009, Iowa State University Research Foundation, Inc.";
-
-    case 2:
-      return "Released under the GNU Lesser General Public License, version 3";
- 
-    case 3:
-      return "http://meddly.sourceforge.net/";
-
-    case 4:
-      return "Data Structures and operations available:\n\
-(1) MDDs: Union, Intersection, Difference.\n\
-(2) Matrix Diagrams (MXDs): Union, Intersection, Difference.\n\
-(3) Multi-Terminal MDDs (MTMDDs) with integer or real terminals:\n\
-    Arithmetic: Plus, Minus, Multiply, Divide, Min, Max.\n\
-    Logical: <, <=, >, >=, ==, !=.\n\
-    Conversion to and from MDDs.\n\
-(4) Multi-Terminal MXDs (MTMXDs) with integer or real terminals:\n\
-    Arithmetic: Plus, Minus, Multiply, Divide, Min, Max.\n\
-    Logical: <, <=, >, >=, ==, !=.\n\
-    Conversion to and from MXDs.\n\
-";
-  }
-  return 0;
-}
 
 
 
 // ------------------------ expert_compute_manager --------------------
 
-expert_compute_manager::expert_compute_manager()
+MEDDLY::expert_compute_manager::expert_compute_manager(const settings &s)
+: useCTchaining(s.doComputeTablesUseChaining),
+  maxCTsize(s.maxComputeTableSize)
 {
   // initialize compute cache
   cc = new compute_cache();
+  cc->setPolicy(useCTchaining, maxCTsize);
   // initialize builtinOpEntries and customOpEntries
   builtinOpEntries = new std::map<builtin_op_key, op_info>();
   customOpEntries = new std::map<custom_op_key, op_info>();
 }
 
 
-expert_compute_manager::~expert_compute_manager()
+MEDDLY::expert_compute_manager::~expert_compute_manager()
 {
   delete customOpEntries;
   delete builtinOpEntries;
@@ -142,7 +62,7 @@ expert_compute_manager::~expert_compute_manager()
 }
 
 
-const char* expert_compute_manager::getOperationName(
+const char* MEDDLY::expert_compute_manager::getOperationName(
     compute_manager::op_code op) const
 {
   switch(op) {
@@ -169,35 +89,33 @@ const char* expert_compute_manager::getOperationName(
 }
 
 template <class TYPE>
-inline compute_manager::error
+inline void
 unary_apply(op_info* owner, const dd_edge &a, TYPE &b)
 {
   // type check
-  compute_manager::error err = owner->op->typeCheck(owner);
-  return err != compute_manager::SUCCESS?
-    err:
-    owner->op->compute(owner, a, b);
+  owner->op->typeCheck(owner);
+  owner->op->compute(owner, a, b);
 }
 
-compute_manager::error expert_compute_manager::apply(op_info* owner,
+void MEDDLY::expert_compute_manager::apply(op_info* owner,
     const dd_edge &a, dd_edge &b)
 {
   return unary_apply(owner, a, b);
 }
 
-compute_manager::error expert_compute_manager::apply(op_info* owner,
+void MEDDLY::expert_compute_manager::apply(op_info* owner,
     const dd_edge &a, long &b)
 {
   return unary_apply(owner, a, b);
 }
 
-compute_manager::error expert_compute_manager::apply(op_info* owner,
+void MEDDLY::expert_compute_manager::apply(op_info* owner,
     const dd_edge &a, double &b)
 {
   return unary_apply(owner, a, b);
 }
 
-compute_manager::error expert_compute_manager::apply(op_info* owner,
+void MEDDLY::expert_compute_manager::apply(op_info* owner,
     const dd_edge &a, ct_object &b)
 {
 #ifdef HAVE_LIBGMP
@@ -208,19 +126,17 @@ compute_manager::error expert_compute_manager::apply(op_info* owner,
 }
 
 
-compute_manager::error expert_compute_manager::apply(op_info* owner,
+void MEDDLY::expert_compute_manager::apply(op_info* owner,
     const dd_edge &a, const dd_edge &b, dd_edge &c)
 {
   // type check
-  compute_manager::error err = owner->op->typeCheck(owner);
-  return err != compute_manager::SUCCESS?
-    err:
-    owner->op->compute(owner, a, b, c);
+  owner->op->typeCheck(owner);
+  owner->op->compute(owner, a, b, c);
 }
 
 
 template <class TYPE>
-inline compute_manager::error 
+inline void 
 unary_apply(expert_compute_manager* CM, compute_manager::op_code op, 
             const dd_edge &a, TYPE &b)
 {
@@ -228,41 +144,40 @@ unary_apply(expert_compute_manager* CM, compute_manager::op_code op,
   plist[0].set(a);
   plist[1].set(b);
   op_info* opInfo = CM->getOpInfo(op, plist, 2);
-  return opInfo == 0?
-    compute_manager::UNKNOWN_OPERATION:
-    CM->apply(opInfo, a, b);
+  if (0==opInfo) throw error(error::UNKNOWN_OPERATION);
+  CM->apply(opInfo, a, b);
 }
 
-compute_manager::error expert_compute_manager::apply(
+void MEDDLY::expert_compute_manager::apply(
     compute_manager::op_code op, const dd_edge &a, dd_edge &b)
 {
-  return unary_apply(this, op, a, b);
+  unary_apply(this, op, a, b);
 }
 
-compute_manager::error expert_compute_manager::apply(
+void MEDDLY::expert_compute_manager::apply(
     compute_manager::op_code op, const dd_edge &a, long &b)
 {
-  return unary_apply(this, op, a, b);
+  unary_apply(this, op, a, b);
 }
 
-compute_manager::error expert_compute_manager::apply(
+void MEDDLY::expert_compute_manager::apply(
     compute_manager::op_code op, const dd_edge &a, double &b)
 {
-  return unary_apply(this, op, a, b);
+  unary_apply(this, op, a, b);
 }
 
-compute_manager::error expert_compute_manager::apply(
+void MEDDLY::expert_compute_manager::apply(
     compute_manager::op_code op, const dd_edge &a, ct_object &b)
 {
 #ifdef HAVE_LIBGMP
-  return unary_apply(this, op, a, b);
+  unary_apply(this, op, a, b);
 #else
-  return compute_manager::UNKNOWN_OPERATION;
+  throw error(error::UNKNOWN_OPERATION);
 #endif
 }
 
 
-compute_manager::error expert_compute_manager::apply(
+void MEDDLY::expert_compute_manager::apply(
     compute_manager::op_code op, const dd_edge &a, const dd_edge &b,
     dd_edge &c)
 {
@@ -272,33 +187,12 @@ compute_manager::error expert_compute_manager::apply(
   plist[1].set(b);
   plist[2].set(c);
   op_info* opInfo = getOpInfo(op, plist, nForests);
-  return opInfo == 0?
-    compute_manager::UNKNOWN_OPERATION:
-    apply(opInfo, a, b, c);
+  if (0==opInfo) throw error(error::UNKNOWN_OPERATION);
+  apply(opInfo, a, b, c);
 }
 
 
-compute_manager::error expert_compute_manager::setHashTablePolicy(
-    bool chaining, unsigned size)
-{
-  if (size == 0) return compute_manager::TYPE_MISMATCH;
-
-  // Other compute tables may exist (!= cc).
-  std::map<builtin_op_key, op_info>::iterator curr = builtinOpEntries->begin();
-  std::map<builtin_op_key, op_info>::iterator end = builtinOpEntries->end();
-  for ( ; curr != end; ++curr) {
-    compute_cache* cache = (curr->second).cc;
-    if (cache != cc) cache->setPolicy(chaining, size);
-  }
-  
-  if (cc->setPolicy(chaining, size))
-    return compute_manager::SUCCESS;
-  else
-    return compute_manager::TYPE_MISMATCH;
-}
-
-
-void expert_compute_manager::showComputeTable(FILE* strm) const
+void MEDDLY::expert_compute_manager::showComputeTable(FILE* strm) const
 {
   if (cc != 0) if (cc->getNumEntries() > 0) { cc->show(strm, true); }
 
@@ -312,7 +206,7 @@ void expert_compute_manager::showComputeTable(FILE* strm) const
 }
 
 
-long expert_compute_manager::getNumCacheEntries() const
+long MEDDLY::expert_compute_manager::getNumCacheEntries() const
 {
   long sum = (cc == 0)? 0: cc->getNumEntries();
 
@@ -329,7 +223,7 @@ long expert_compute_manager::getNumCacheEntries() const
 }
 
 
-void expert_compute_manager::removeStales(expert_forest* f)
+void MEDDLY::expert_compute_manager::removeStales(expert_forest* f)
 {
   // remove stales from the main computa table (cc).
   if (cc) cc->removeStales();
@@ -354,7 +248,7 @@ void expert_compute_manager::removeStales(expert_forest* f)
 }
 
 
-void expert_compute_manager::removeStales(op_info* owner)
+void MEDDLY::expert_compute_manager::removeStales(op_info* owner)
 {
   if (owner == 0) {
     if (cc) cc->removeStales();
@@ -400,7 +294,7 @@ void expert_compute_manager::clearComputeTable()
 }
 
 
-void expert_compute_manager::addBuiltinOp(const builtin_op_key& key,
+void MEDDLY::expert_compute_manager::addBuiltinOp(const builtin_op_key& key,
   const operation* op, const op_param* plist, int n)
 {
   compute_cache* cache = cc;
@@ -414,6 +308,7 @@ void expert_compute_manager::addBuiltinOp(const builtin_op_key& key,
     if (allForests) {
       // fprintf(stderr, "Using binary compute cache for %s\n", op->getName());
       cache = new binary_compute_cache(op, plist, n);
+      cache->setPolicy(useCTchaining, maxCTsize);
     }
   }
 #endif
@@ -441,7 +336,7 @@ void expert_compute_manager::addBuiltinOp(const builtin_op_key& key,
 }
 
 
-op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
+op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
     const op_param* const plist, int N)
 {
   // search in built-in op entries
@@ -904,7 +799,7 @@ op_info* expert_compute_manager::getOpInfo(compute_manager::op_code op,
 }
 
 
-op_info* expert_compute_manager::getOpInfo(const operation* op,
+op_info* MEDDLY::expert_compute_manager::getOpInfo(const operation* op,
     const op_param* const plist, int N)
 {
   // search in custom op entries
@@ -924,8 +819,8 @@ op_info* expert_compute_manager::getOpInfo(const operation* op,
   return &(itr->second);
 }
 
-compute_manager::error 
-expert_compute_manager::vectorMatrixMultiply(double* y, const dd_edge &y_ind,
+void 
+MEDDLY::expert_compute_manager::vectorMatrixMultiply(double* y, const dd_edge &y_ind,
                       const double* x, const dd_edge &x_ind, const dd_edge &A)
 {
   const expert_forest* const fy = (expert_forest*) y_ind.getForest();
@@ -941,26 +836,26 @@ expert_compute_manager::vectorMatrixMultiply(double* y, const dd_edge &y_ind,
         || (!fA->isForRelations())
       ) 
   {
-    return TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   }
 
   // A can't be fully reduced.
   if (forest::FULLY_REDUCED == fA->getReductionRule()) {
-    return TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   }
 
   // For now, fy and fx must be EV+MDDs.
   if (     (fy->getEdgeLabeling() != forest::EVPLUS) 
         || (fx->getEdgeLabeling() != forest::EVPLUS) )
   {
-    return NOT_IMPLEMENTED;
+    throw error(error::NOT_IMPLEMENTED);
   }
 
   //everyone must use the same domain
   if (      (fx->getDomain() != fy->getDomain()) 
         ||  (fx->getDomain() != fA->getDomain())  )
   {
-    return TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   }
 
   static op_param plist[5];
@@ -984,15 +879,15 @@ expert_compute_manager::vectorMatrixMultiply(double* y, const dd_edge &y_ind,
       );
 
     default:
-      return TYPE_MISMATCH;
+      throw error(error::TYPE_MISMATCH);
   };
 
 
 }
 
 
-compute_manager::error 
-expert_compute_manager::matrixVectorMultiply(double* y, const dd_edge &y_ind,
+void 
+MEDDLY::expert_compute_manager::matrixVectorMultiply(double* y, const dd_edge &y_ind,
                       const dd_edge &A, const double* x, const dd_edge &x_ind)
 {
   const expert_forest* const fy = (expert_forest*) y_ind.getForest();
@@ -1008,26 +903,26 @@ expert_compute_manager::matrixVectorMultiply(double* y, const dd_edge &y_ind,
         || (!fA->isForRelations())
       ) 
   {
-    return TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   }
 
   // A can't be fully reduced.
   if (forest::FULLY_REDUCED == fA->getReductionRule()) {
-    return TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   }
 
   // For now, fy and fx must be EV+MDDs.
   if (     (fy->getEdgeLabeling() != forest::EVPLUS) 
         || (fx->getEdgeLabeling() != forest::EVPLUS) )
   {
-    return NOT_IMPLEMENTED;
+    throw error(error::NOT_IMPLEMENTED);
   }
 
   //everyone must use the same domain
   if (      (fx->getDomain() != fy->getDomain()) 
         ||  (fx->getDomain() != fA->getDomain())  )
   {
-    return TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   }
 
   static op_param plist[5];
@@ -1051,7 +946,7 @@ expert_compute_manager::matrixVectorMultiply(double* y, const dd_edge &y_ind,
       );
 
     default:
-      return TYPE_MISMATCH;
+      throw error(error::TYPE_MISMATCH);
   };
 
 

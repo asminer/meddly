@@ -61,12 +61,15 @@
 #include <iostream>
 #include "meddly.h"
 
+using namespace MEDDLY;
+
 int main(int argv, char *argc[])
 {
-  std::cout << MEDDLY_getLibraryInfo();
+  initialize();
+  std::cout << getLibraryInfo();
 
   // Create a domain
-  domain* d = MEDDLY_createDomain();
+  domain* d = createDomain();
   assert(d != 0);
 
   // We have three variables A, B and C.
@@ -78,7 +81,7 @@ int main(int argv, char *argc[])
   bounds[2] = 2;
 
   // Create variable in the above domain
-  assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, N));
+  d->createVariablesBottomUp(bounds, N);
   std::cout << "Created domain with "
     << d->getNumVariables()
     << " variables\n";
@@ -143,7 +146,7 @@ int main(int argv, char *argc[])
   // 1. Get a handle to the compute manager (through which operations
   //    are performed).
   // 2. Call compute manager with the operation code for UNION
-  compute_manager* cm = MEDDLY_getComputeManager();
+  compute_manager* cm = getComputeManager();
   assert(cm != 0);
 
   // do all = union(first, second)
@@ -185,6 +188,6 @@ int main(int argv, char *argc[])
   diff.show(stdout, 2);
 
   cm->showComputeTable(stdout);
-
+  cleanup();
   return 0;
 }

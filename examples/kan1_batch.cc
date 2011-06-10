@@ -88,6 +88,7 @@
 #include "meddly_expert.h"
 #include "timer.h"
 
+using namespace MEDDLY;
 
 
 // ========= BEGIN Global definitions ===========
@@ -186,30 +187,32 @@ int main(int argc, char* argv[])
   }
   if (argc > 1) dfs = true;
 
+  initialize();
+
   // Create a domain
-  domain *d = MEDDLY_createDomain();
+  domain *d = createDomain();
   assert(d != NULL);
 
   // Set up the state variables.
   // Use one per "machine", with 4 values each: {W = 0, M, B, G}
-  assert(domain::SUCCESS == d->createVariablesBottomUp(sizes, N-1));
+  d->createVariablesBottomUp(sizes, N-1);
 
   // Create an MDD forest in this domain (to store states)
   forest* mdd = d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL);
   assert(mdd != NULL);
 
   // Set up MDD options
-  assert(forest::SUCCESS == mdd->setReductionRule(forest::FULLY_REDUCED));
-  assert(forest::SUCCESS == mdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
-  assert(forest::SUCCESS == mdd->setNodeDeletion(forest::PESSIMISTIC_DELETION));
+  mdd->setReductionRule(forest::FULLY_REDUCED);
+  mdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
+  mdd->setNodeDeletion(forest::PESSIMISTIC_DELETION);
 
   // Create a MXD forest in domain (to store transition diagrams)
   forest* mxd = d->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
   assert(mxd != NULL);
 
   // Set up MXD options
-  assert(forest::SUCCESS == mxd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
-  assert(forest::SUCCESS == mxd->setNodeDeletion(forest::PESSIMISTIC_DELETION));
+  mxd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
+  mxd->setNodeDeletion(forest::PESSIMISTIC_DELETION);
 
   // Set up initial set of states
   dd_edge initialStates = getInitialStates(mdd);
@@ -230,6 +233,7 @@ int main(int argc, char* argv[])
 
   // Cleanup
   delete d;
+  cleanup();
 
   fprintf(stderr, "\nDone\n");
   return 0;
@@ -249,7 +253,7 @@ dd_edge getInitialStates(forest* f)
   int element[N];
   int* elements[] = { element };
   memset(element, 0, N * sizeof(int));
-  assert(forest::SUCCESS == f->createEdge(elements, 1, states));
+  f->createEdge(elements, 1, states);
 
   return states;
 }
@@ -392,7 +396,7 @@ dd_edge MakeSynch23_4(forest* mxd)
 
 dd_edge getReachabilitySet(const dd_edge& states, const dd_edge& nsf, bool dfs)
 {
-  compute_manager *cm = MEDDLY_getComputeManager();
+  compute_manager *cm = getComputeManager();
 
   compute_manager::op_code op =
     dfs
@@ -400,7 +404,7 @@ dd_edge getReachabilitySet(const dd_edge& states, const dd_edge& nsf, bool dfs)
     : compute_manager::REACHABLE_STATES_BFS;
 
   dd_edge rs(states);
-  assert(compute_manager::SUCCESS == cm->apply(op, states, nsf, rs));
+  cm->apply(op, states, nsf, rs);
 
   return rs;
 }
@@ -415,13 +419,12 @@ dd_edge getReachabilitySet(const dd_edge& states, const dd_edge& nsf, bool dfs)
 
 void testMDDComplement(const dd_edge& mdd)
 {
-  compute_manager *cm = MEDDLY_getComputeManager();
+  compute_manager *cm = getComputeManager();
 
   dd_edge complement(mdd);
   timer compTimer;
   compTimer.note_time();
-  assert(compute_manager::SUCCESS ==
-      cm->apply(compute_manager::COMPLEMENT, mdd, complement));
+  cm->apply(compute_manager::COMPLEMENT, mdd, complement);
   compTimer.note_time();
 
   fprintf(stderr, "\nMDD:\n");
@@ -437,7 +440,7 @@ void testMDDComplement(const dd_edge& mdd)
 
 void testMXDComplement(const dd_edge& mxd)
 {
-  compute_manager *cm = MEDDLY_getComputeManager();
+  compute_manager *cm = getComputeManager();
 
   forest* f = mxd.getForest();
   assert(f);
@@ -445,8 +448,7 @@ void testMXDComplement(const dd_edge& mxd)
   dd_edge complement(mxd);
   timer compTimer;
   compTimer.note_time();
-  assert(compute_manager::SUCCESS ==
-      cm->apply(compute_manager::COMPLEMENT, mxd, complement));
+  cm->apply(compute_manager::COMPLEMENT, mxd, complement);
   compTimer.note_time();
 
   fprintf(stderr, "\nMXD:\n");
@@ -461,7 +463,7 @@ void testMXDComplement(const dd_edge& mxd)
   // Complement of MXD using Mxd-Difference: (1 - MXD).
 
   dd_edge one(mxd);
-  assert(forest::SUCCESS == f->createEdge(true, one));
+  f->createEdge(true, one);
   compTimer.note_time();
   dd_edge diff = one - mxd;
   compTimer.note_time();
@@ -482,7 +484,7 @@ void testMXDComplement(const dd_edge& mxd)
 void testIndexSet(domain* d, const dd_edge& mdd)
 {
   assert(d);
-  compute_manager *cm = MEDDLY_getComputeManager();
+  compute_manager *cm = getComputeManager();
 
   // Create a EV+MDD forest in this domain (to store index set)
   forest* evplusmdd = d->createForest(false, forest::INTEGER, forest::EVPLUS);
@@ -491,8 +493,7 @@ void testIndexSet(domain* d, const dd_edge& mdd)
 
   // Convert MDD to Index Set EV+MDD and print the states
   dd_edge indexSet(evplusmdd);
-  assert(compute_manager::SUCCESS ==
-      cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mdd, indexSet));
+  cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mdd, indexSet);
 
   // Get Index Set Cardinality
   double cardinality = indexSet.getCardinality();
@@ -504,7 +505,7 @@ void testIndexSet(domain* d, const dd_edge& mdd)
   int element[N];
   for (int index = 0; index < int(cardinality); index++)
   {
-    assert(forest::SUCCESS == evplusmdd->getElement(indexSet, index, element));
+    evplusmdd->getElement(indexSet, index, element);
     fprintf(stderr, "Element at index %d: [ ", index);
     for (int i = N - 1; i > 0; i--)
     {
@@ -570,7 +571,7 @@ void testFindFirstElement(const dd_edge& mdd)
   for (int index = 0; index < cardinality; index++)
   {
     memset(element, 0, N * sizeof(int));
-    assert(forest::SUCCESS == f->findFirstElement(mddCopy, element));
+    f->findFirstElement(mddCopy, element);
 
     fprintf(stderr, "Element at index %d: [ ", index);
     for (int i = N - 1; i > 0; i--)

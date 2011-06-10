@@ -64,7 +64,7 @@ op_info* getOp(forest* f, compute_manager::op_code op)
   static const int nForests = 3;
   static op_param plist[nForests];
   static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+    static_cast<expert_compute_manager*>(getComputeManager());
   assert(ecm != 0);
   assert(f != 0);
 
@@ -85,7 +85,7 @@ op_info* getOp(forest* f, operation* op)
   static const int nForests = 3;
   static op_param plist[nForests];
   static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+    static_cast<expert_compute_manager*>(getComputeManager());
   assert(ecm != 0);
   assert(f != 0);
   assert(op != 0);
@@ -108,7 +108,7 @@ dd_edge test_mtmdd(forest* mtmdd, compute_manager::op_code opCode,
   // C = A op B
 
   static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+    static_cast<expert_compute_manager*>(getComputeManager());
   assert(ecm != 0);
 
   dd_edge A(mtmdd);
@@ -117,14 +117,11 @@ dd_edge test_mtmdd(forest* mtmdd, compute_manager::op_code opCode,
 
   int half = nElements/2;
 
-  assert(forest::SUCCESS ==
-      mtmdd->createEdge(element, terms, half, A));
-  assert(forest::SUCCESS ==
-      mtmdd->createEdge(element + half,
-        terms + half, nElements - half, B));
+  mtmdd->createEdge(element, terms, half, A);
+  mtmdd->createEdge(element + half, terms + half, nElements - half, B);
 
   op_info* op = getOp(mtmdd, opCode);
-  assert(compute_manager::SUCCESS == ecm->apply(op, A, B, C));
+  ecm->apply(op, A, B, C);
 
   if (verbose > 0) {
     printf("A: ");
@@ -144,7 +141,7 @@ bool test_conversion(dd_edge& A, dd_edge& B)
   static const int nForests = 2;
   static op_param plist[nForests];
   static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+    static_cast<expert_compute_manager*>(getComputeManager());
   assert(ecm != 0);
 
   plist[0].set(A);
@@ -158,9 +155,14 @@ bool test_conversion(dd_edge& A, dd_edge& B)
 #if 0
   return compute_manager::SUCCESS == ecm->apply(op, A, B)? true: false;
 #else
-  compute_manager::error err = ecm->apply(op, A, B);
-  printf("Apply error:\n %s\n", ecm->getErrorCodeName(err));
-  return (err == compute_manager::SUCCESS)? true: false;
+  try {
+    ecm->apply(op, A, B);
+    return true;
+  }
+  catch (MEDDLY::error err) {
+    printf("Apply error:\n %s\n", err.getName());
+    return false;
+  }
 #endif
 }
 
@@ -236,10 +238,12 @@ int main(int argc, char *argv[])
     bounds[i] = variableBound;
   }
 
+  initialize();
+
   // Create a domain
-  domain *d = MEDDLY_createDomain();
+  domain *d = createDomain();
   assert(d != 0);
-  assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nVariables));
+  d->createVariablesBottomUp(bounds, nVariables);
 
   // Create a MTMDD forest in this domain
 #if USE_REALS
@@ -268,11 +272,9 @@ int main(int argc, char *argv[])
     }
   }
 
-  assert(forest::SUCCESS ==
-      mtmdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
-  assert(forest::SUCCESS ==
-      // mtmdd->setNodeDeletion(forest::OPTIMISTIC_DELETION));
-    mtmdd->setNodeDeletion(forest::PESSIMISTIC_DELETION));
+  mtmdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
+  // mtmdd->setNodeDeletion(forest::OPTIMISTIC_DELETION);
+  mtmdd->setNodeDeletion(forest::PESSIMISTIC_DELETION);
 
   timer start;
   start.note_time();
@@ -284,7 +286,7 @@ int main(int argc, char *argv[])
 
   printf("Peak Nodes in MDD: %ld\n", mtmdd->getPeakNumNodes());
   printf("Nodes in compute table: %ld\n",
-      (MEDDLY_getComputeManager())->getNumCacheEntries());
+      (getComputeManager())->getNumCacheEntries());
 
 #if 0
   // Convert mtmdd to mdd
@@ -370,6 +372,8 @@ int main(int argc, char *argv[])
     free(element[i]);
   }
   free(element);
+
+  cleanup();
 
   return 0;
 }

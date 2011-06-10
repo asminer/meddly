@@ -93,6 +93,8 @@
 #include "meddly_expert.h"
 #include "timer.h"
 
+using namespace MEDDLY;
+
 void printmem(long m)
 {
   if (m<1024) {
@@ -295,9 +297,8 @@ void usage()
 // Test Index Set
 void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
 {
-  compute_manager* cm = MEDDLY_getComputeManager();
-  assert(compute_manager::SUCCESS ==
-      cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mdd, indexSet));
+  compute_manager* cm = getComputeManager();
+  cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mdd, indexSet);
 
 #if 1
   indexSet.show(stdout, 3);
@@ -311,9 +312,8 @@ void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
 dd_edge testPreImage(const dd_edge& mdd, const dd_edge& mxd)
 {
   dd_edge preImage(mdd.getForest());
-  compute_manager* cm = MEDDLY_getComputeManager();
-  assert(compute_manager::SUCCESS ==
-      cm->apply(compute_manager::PRE_IMAGE, mdd, mxd, preImage));
+  compute_manager* cm = getComputeManager();
+  cm->apply(compute_manager::PRE_IMAGE, mdd, mxd, preImage);
 
 #if 1
   preImage.show(stdout, 3);
@@ -329,9 +329,8 @@ dd_edge testPreImage(const dd_edge& mdd, const dd_edge& mxd)
 dd_edge testPostImage(const dd_edge& mdd, const dd_edge& mxd)
 {
   dd_edge postImage(mdd.getForest());
-  compute_manager* cm = MEDDLY_getComputeManager();
-  assert(compute_manager::SUCCESS ==
-      cm->apply(compute_manager::POST_IMAGE, mdd, mxd, postImage));
+  compute_manager* cm = getComputeManager();
+  cm->apply(compute_manager::POST_IMAGE, mdd, mxd, postImage);
 
 #if 1
   postImage.show(stdout, 3);
@@ -375,8 +374,7 @@ dd_edge testSubMatrix(int* bounds, int nLevels, const dd_edge& nsf)
 
   forest* mxd = nsf.getForest();
   dd_edge subMatrix(mxd);
-  assert(forest::SUCCESS ==
-    mxd->createSubMatrix(vlist, vplist, nsf, subMatrix));
+  mxd->createSubMatrix(vlist, vplist, nsf, subMatrix);
 
 #if 1
   subMatrix.show(stdout, 3);
@@ -430,6 +428,15 @@ int main(int argc, char *argv[])
     scanf("%d", &nPhilosophers);
   }
 
+  // Initialize MEDDLY
+
+  MEDDLY::settings s;
+  s.doComputeTablesUseChaining = chaining;
+  if (cacheSize > 0) {
+    s.maxComputeTableSize = cacheSize;
+  }
+  MEDDLY::initialize(s);
+
   // Number of levels in domain (excluding terminals)
   int nLevels = nPhilosophers * 2;
 
@@ -437,25 +444,18 @@ int main(int argc, char *argv[])
   int *bounds = initializeLevelBounds(nLevels);
 
   expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+    static_cast<expert_compute_manager*>(getComputeManager());
   assert(ecm != 0);
-
-  if (cacheSize > 0) {
-    assert(compute_manager::SUCCESS ==
-        ecm->setHashTablePolicy(chaining, cacheSize));
-  } else {
-    assert(compute_manager::SUCCESS == ecm->setHashTablePolicy(chaining));
-  }
 
   printf("Initiailzing forests\n");
 
   // Create a domain
-  domain *d = MEDDLY_createDomain();
+  domain *d = createDomain();
   assert(d != NULL);
 
   // Set up the state variables.
   // Use one per "machine", with 4 values each: {W = 0, M, B, G}
-  assert(domain::SUCCESS == d->createVariablesBottomUp(bounds, nLevels));
+  d->createVariablesBottomUp(bounds, nLevels);
 
   // Create an MDD forest in this domain (to store states)
   forest* mdd =
@@ -464,37 +464,40 @@ int main(int argc, char *argv[])
 
   // Set up MDD options
 #if 1
-  assert(forest::SUCCESS == mdd->setReductionRule(forest::FULLY_REDUCED));
-  assert(forest::SUCCESS ==
-      mdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
+  mdd->setReductionRule(forest::FULLY_REDUCED);
+  mdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
 #else
-  assert(forest::SUCCESS == mdd->setReductionRule(forest::QUASI_REDUCED));
-  assert(forest::SUCCESS == mdd->setNodeStorage(forest::FULL_STORAGE));
+  mdd->setReductionRule(forest::QUASI_REDUCED);
+  mdd->setNodeStorage(forest::FULL_STORAGE);
 #endif
-  assert(forest::SUCCESS == mdd->setNodeDeletion(pessimistic?
-        forest::PESSIMISTIC_DELETION: forest::OPTIMISTIC_DELETION));
+  mdd->setNodeDeletion(
+    pessimistic
+    ? forest::PESSIMISTIC_DELETION
+    : forest::OPTIMISTIC_DELETION
+  );
 
   // Create a MXD forest in domain (to store transition diagrams)
   forest* mxd = d->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
   assert(mxd != NULL);
 
   // Set up MXD options
-  assert(forest::SUCCESS == mxd->setReductionRule(forest::IDENTITY_REDUCED));
+  mxd->setReductionRule(forest::IDENTITY_REDUCED);
 #if 1
-  assert(forest::SUCCESS ==
-      mxd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE));
+  mxd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
 #else
-  assert(forest::SUCCESS == mxd->setNodeStorage(forest::FULL_STORAGE));
+  mxd->setNodeStorage(forest::FULL_STORAGE);
 #endif
-  assert(forest::SUCCESS == mxd->setNodeDeletion(pessimistic?
-        forest::PESSIMISTIC_DELETION: forest::OPTIMISTIC_DELETION));
+  mxd->setNodeDeletion(
+    pessimistic
+      ? forest::PESSIMISTIC_DELETION
+      : forest::OPTIMISTIC_DELETION
+  );
 
   // Set up initial state array based on nPhilosophers
   int *initSt = initializeInitialState(nLevels);
   int *addrInitSt[1] = { initSt };
   dd_edge initialStates(mdd);
-  assert(forest::SUCCESS == mdd->createEdge(
-        reinterpret_cast<int**>(addrInitSt), 1, initialStates));
+  mdd->createEdge(reinterpret_cast<int**>(addrInitSt), 1, initialStates);
 
   printf("Building next-state function for %d dining philosophers\n", 
           nPhilosophers);
@@ -685,7 +688,7 @@ int main(int argc, char *argv[])
     double cardinality = indexSet.getCardinality();
     for (int index = 0; index < int(cardinality); index++)
     {
-      assert(forest::SUCCESS == evplusmdd->getElement(indexSet, index, element));
+      evplusmdd->getElement(indexSet, index, element);
       printf("Element at index %d: [ ", index);
       for (int i = nLevels; i > 0; i--)
       {
@@ -727,7 +730,7 @@ int main(int argc, char *argv[])
     for (int index = 0; index < cardinality; index++)
     {
       // memset(element, 0, (nLevels + 1) * sizeof(int));
-      assert(forest::SUCCESS == mdd->findFirstElement(rsCopy, element));
+      mdd->findFirstElement(rsCopy, element);
 #if 0
       printf("Element at index %d: [ ", index);
       for (int i = N - 1; i > 0; i--)
@@ -755,15 +758,12 @@ int main(int argc, char *argv[])
     int* element = (int *) malloc((nLevels + 1) * sizeof(int));
     dd_edge indexSet(evplusmdd);
     start.note_time();
-    compute_manager* cm = MEDDLY_getComputeManager();
-    assert(compute_manager::SUCCESS ==
-        cm->apply(compute_manager::CONVERT_TO_INDEX_SET, reachableStates,
-        indexSet));
+    compute_manager* cm = getComputeManager();
+    cm->apply(compute_manager::CONVERT_TO_INDEX_SET, reachableStates, indexSet);
     double cardinality = indexSet.getCardinality();
     for (int index = 0, card = int(cardinality); index < card; index++)
     {
-      assert(forest::SUCCESS ==
-          evplusmdd->getElement(indexSet, index, element));
+      evplusmdd->getElement(indexSet, index, element);
 #if 0
       printf("Element at index %d: [ ", index);
       for (int i = N - 1; i > 0; i--)
@@ -781,6 +781,7 @@ int main(int argc, char *argv[])
 
   // Cleanup
   delete d;
+  MEDDLY::cleanup();
 
   printf("\n\nDONE\n");
   return 0;

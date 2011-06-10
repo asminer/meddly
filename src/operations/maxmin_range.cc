@@ -23,6 +23,8 @@
 #include "maxmin_range.h"
 #include "../compute_cache.h"
 
+namespace MEDDLY {
+
 // ******************************************************************
 // *                                                                *
 // *                      maxminrange_op class                      *
@@ -43,18 +45,17 @@ class maxminrange_op : public operation {
     virtual void discardEntry(op_info* owner, const int* entryData);
 
   protected:
-    inline compute_manager::error 
+    inline void 
     type_check(const op_info* owner, op_param::type p1type) 
     {
         if (owner == 0)
-          return compute_manager::UNKNOWN_OPERATION;
+          throw error(error::UNKNOWN_OPERATION);
         if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-          return compute_manager::TYPE_MISMATCH;
+          throw error(error::TYPE_MISMATCH);
         if (owner->nParams != 2)
-          return compute_manager::WRONG_NUMBER;
+          throw error(error::WRONG_NUMBER);
         if (owner->p[1].getType() != p1type)
-          return compute_manager::TYPE_MISMATCH;
-        return compute_manager::SUCCESS;
+          throw error(error::TYPE_MISMATCH);
     }
 };
 
@@ -106,14 +107,14 @@ class int_maxminrange_op : public maxminrange_op {
       return sizeof(int) + sizeof(long);
     }
 
-    virtual compute_manager::error typeCheck(const op_info* owner) {
-      return type_check(owner, op_param::INTEGER);
+    virtual void typeCheck(const op_info* owner) {
+      type_check(owner, op_param::INTEGER);
     }
 
     virtual void showEntry(const op_info* owner, FILE* strm,
         const int *entryData) const;
 
-    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+    virtual void compute(op_info* owner, const dd_edge& a,
       long& b);
 
     // for derived classes
@@ -130,13 +131,13 @@ showEntry(const op_info* owner, FILE* strm, const int *data) const
   );
 }
 
-compute_manager::error 
+void 
 int_maxminrange_op::
 compute(op_info* owner, const dd_edge& a, long& b)
 {
-  if (0==owner) return compute_manager::TYPE_MISMATCH;
+  if (0==owner) 
+    throw error(error::TYPE_MISMATCH);
   b = compute(owner, a.getNode());
-  return compute_manager::SUCCESS;
 }
 
 
@@ -301,14 +302,14 @@ class real_maxminrange_op : public maxminrange_op {
       return sizeof(int) + sizeof(double);
     }
 
-    virtual compute_manager::error typeCheck(const op_info* owner) {
-      return type_check(owner, op_param::REAL);
+    virtual void typeCheck(const op_info* owner) {
+      type_check(owner, op_param::REAL);
     }
 
     virtual void showEntry(const op_info* owner, FILE* strm,
         const int *entryData) const;
 
-    virtual compute_manager::error compute(op_info* owner, const dd_edge& a,
+    virtual void compute(op_info* owner, const dd_edge& a,
       double& b);
 
     // for derived classes
@@ -325,13 +326,13 @@ showEntry(const op_info* owner, FILE* strm, const int *data) const
   );
 }
 
-compute_manager::error 
+void 
 real_maxminrange_op::
 compute(op_info* owner, const dd_edge& a, double& b)
 {
-  if (0==owner) return compute_manager::TYPE_MISMATCH;
+  if (0==owner) 
+    throw error(error::TYPE_MISMATCH);
   b = compute(owner, a.getNode());
-  return compute_manager::SUCCESS;
 }
 
 
@@ -516,3 +517,4 @@ operation* getMinRangeOperation(const op_param &ft, const op_param &rt)
   return 0;
 }
 
+} // namespace MEDDLY

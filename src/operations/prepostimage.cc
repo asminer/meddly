@@ -41,24 +41,23 @@ bool mdd_mxd_image_operation::checkTerminals(op_info* op,
 }
 
 
-compute_manager::error
+void
 mdd_mxd_image_operation::typeCheck(const op_info* owner)
 {
   // op1 == MDD, op2 == MXD, op3 = MDD
   if (owner == 0)
-    return compute_manager::UNKNOWN_OPERATION;
+    throw error(error::UNKNOWN_OPERATION);
   if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!owner->areAllForests())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->nParams != 3)
-    return compute_manager::WRONG_NUMBER;
+    throw error(error::WRONG_NUMBER);
   if (owner->p[0] == owner->p[1] || owner->p[0] != owner->p[2])
-    return compute_manager::FOREST_MISMATCH;
+    throw error(error::FOREST_MISMATCH);
   if (!getExpertForest(owner, 0)->isMdd() ||
       !getExpertForest(owner, 1)->isMxd())
-    return compute_manager::TYPE_MISMATCH;
-  return compute_manager::SUCCESS;
+    throw error(error::TYPE_MISMATCH);
 }
 
 
@@ -88,7 +87,7 @@ int mdd_post_image::compute(op_info* owner, int mdd, int mxd)
   const int nOperands = 3;
   op_param plist[nOperands] = {owner->p[0], owner->p[0], owner->p[0]};
   op_info* unionOp = 
-    smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
+    smart_cast<expert_compute_manager*>(MEDDLY::getComputeManager())->
     getOpInfo(compute_manager::UNION, plist, nOperands);
   assert(unionOp != 0);
 
@@ -200,7 +199,7 @@ void mdd_post_image::expandMxdHelper (op_info* owner, op_info* unionOp,
   expert_forest* mxdNm = getExpertForest(owner, 1);
 #if 0
   expert_compute_manager* cm = 
-    smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager());
+    smart_cast<expert_compute_manager*>(MEDDLY::getComputeManager());
 #endif
 
   mdd_union* unionOpPtr = smart_cast<mdd_union*>(unionOp->op);
@@ -733,24 +732,23 @@ mtmdd_post_image::mtmdd_post_image()
 mtmdd_post_image::~mtmdd_post_image() {}
 
 
-compute_manager::error
+void
 mtmdd_post_image::typeCheck(const op_info* owner)
 {
   // op1 == MTMDD, op2 == MTMXD, op3 = MTMDD
   if (owner == 0)
-    return compute_manager::UNKNOWN_OPERATION;
+    throw error(error::UNKNOWN_OPERATION);
   if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!owner->areAllForests())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->nParams != 3)
-    return compute_manager::WRONG_NUMBER;
+    throw error(error::WRONG_NUMBER);
   if (owner->p[0] == owner->p[1] || owner->p[0] != owner->p[2])
-    return compute_manager::FOREST_MISMATCH;
+    throw error(error::FOREST_MISMATCH);
   if (!getExpertForest(owner, 0)->isMtMdd() ||
       !getExpertForest(owner, 1)->isMtMxd())
-    return compute_manager::TYPE_MISMATCH;
-  return compute_manager::SUCCESS;
+    throw error(error::TYPE_MISMATCH);
 }
 
 
@@ -760,7 +758,7 @@ int mtmdd_post_image::compute(op_info* owner, int mdd, int mxd)
   const int nOperands = 3;
   op_param plist[nOperands] = {owner->p[0], owner->p[0], owner->p[0]};
   op_info* plusOp = 
-    smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
+    smart_cast<expert_compute_manager*>(MEDDLY::getComputeManager())->
     getOpInfo(compute_manager::PLUS, plist, nOperands);
   assert(plusOp != 0);
   return compute(owner, plusOp, mdd, mxd);
@@ -852,24 +850,23 @@ mtmdd_pre_image::mtmdd_pre_image()
 mtmdd_pre_image::~mtmdd_pre_image() {}
 
 
-compute_manager::error
+void
 mtmdd_pre_image::typeCheck(const op_info* owner)
 {
   // op1 == MTMDD, op2 == MTMXD, op3 = MTMDD
   if (owner == 0)
-    return compute_manager::UNKNOWN_OPERATION;
+    throw error(error::UNKNOWN_OPERATION);
   if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (!owner->areAllForests())
-    return compute_manager::TYPE_MISMATCH;
+    throw error(error::TYPE_MISMATCH);
   if (owner->nParams != 3)
-    return compute_manager::WRONG_NUMBER;
+    throw error(error::WRONG_NUMBER);
   if (owner->p[0] == owner->p[1] || owner->p[0] != owner->p[2])
-    return compute_manager::FOREST_MISMATCH;
+    throw error(error::FOREST_MISMATCH);
   if (!getExpertForest(owner, 0)->isMtMdd() ||
       !getExpertForest(owner, 1)->isMtMxd())
-    return compute_manager::TYPE_MISMATCH;
-  return compute_manager::SUCCESS;
+    throw error(error::TYPE_MISMATCH);
 }
 
 
@@ -879,7 +876,7 @@ int mtmdd_pre_image::compute(op_info* owner, int mdd, int mxd)
   const int nOperands = 3;
   op_param plist[nOperands] = {owner->p[0], owner->p[0], owner->p[0]};
   op_info* plusOp = 
-    smart_cast<expert_compute_manager*>(MEDDLY_getComputeManager())->
+    smart_cast<expert_compute_manager*>(MEDDLY::getComputeManager())->
     getOpInfo(compute_manager::PLUS, plist, nOperands);
   assert(plusOp != 0);
   return compute(owner, plusOp, mdd, mxd);

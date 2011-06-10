@@ -31,33 +31,13 @@
 
 // **************************** forest *********************************
 
-forest::forest() {}
-forest::~forest() {}
+MEDDLY::forest::forest() {}
+MEDDLY::forest::~forest() {}
 
-
-const char* forest::getErrorCodeName(forest::error e)
-{
-  switch (e) {
-    case SUCCESS:
-        return "Operation returned successfully";
-    case NOT_IMPLEMENTED:
-        return "Operation not implemented";
-    case INSUFFICIENT_MEMORY:
-        return "Operation failed -- lack of memory";
-    case INVALID_OPERATION:
-        return "Operation not supported for the given forest";
-    case INVALID_VARIABLE:
-        return "Operation failed -- invalid variable handle";
-    case INVALID_ASSIGNMENT:
-        return "Operation falied -- variable out of range";
-    default:
-        return "Unknown error code";
-  }
-}
 
 // **************************** expert_forest *********************************
 
-expert_forest::expert_forest(domain *d, bool rel, range_type t,
+MEDDLY::expert_forest::expert_forest(domain *d, bool rel, range_type t,
   edge_labeling ev, reduction_rule r, node_storage s, node_deletion_policy nd)
 : d(d), isRelation(rel), rangeType(t), edgeLabel(ev),
   reductionRule(r), nodeStorage(s), nodeDeletionPolicy(nd),
@@ -74,7 +54,7 @@ expert_forest::expert_forest(domain *d, bool rel, range_type t,
 }
 
 
-void expert_forest::unregisterDDEdges() {
+void MEDDLY::expert_forest::unregisterDDEdges() {
   // Go through the list of valid edges (value > 0), and set
   // the e.index to -1 (indicating unregistered edge).
 
@@ -98,7 +78,7 @@ void expert_forest::unregisterDDEdges() {
 }
 
 
-expert_forest::~expert_forest() {
+MEDDLY::expert_forest::~expert_forest() {
   // Go through the list of valid edges (value > 0), and set
   // the e.index to -1 (indicating unregistered edge).
   // unregisterDDEdges();
@@ -117,7 +97,7 @@ expert_forest::~expert_forest() {
 }
 
 
-void expert_forest::registerEdge(dd_edge& e) {
+void MEDDLY::expert_forest::registerEdge(dd_edge& e) {
   // add to collection of edges for this forest.
   // change e.index to help find this edge at a later time.
   if (firstHole >= 0) {
@@ -152,7 +132,7 @@ void expert_forest::registerEdge(dd_edge& e) {
 }
 
 
-void expert_forest::unregisterEdge(dd_edge& e) {
+void MEDDLY::expert_forest::unregisterEdge(dd_edge& e) {
   // remove this edge from the collection of edges for this forest.
   // change e.index to -1.
   DCASSERT(e.getIndex() >= 0);
@@ -166,7 +146,7 @@ void expert_forest::unregisterEdge(dd_edge& e) {
 
 
 // TODO: make use of pointers to speed this up.
-int expert_forest::getDownPtr(int p, int i) const {
+int MEDDLY::expert_forest::getDownPtr(int p, int i) const {
   DCASSERT(isActiveNode(p));
   if (isTerminalNode(p)) return p;
   DCASSERT(i >= 0);
@@ -205,7 +185,7 @@ int expert_forest::getDownPtr(int p, int i) const {
 }
 
 
-bool expert_forest::getDownPtrs(int p, std::vector<int>& dptrs) const {
+bool MEDDLY::expert_forest::getDownPtrs(int p, std::vector<int>& dptrs) const {
   if (!isActiveNode(p) || isTerminalNode(p)) return false;
 
   const int* ptrs = 0;
@@ -233,7 +213,7 @@ bool expert_forest::getDownPtrs(int p, std::vector<int>& dptrs) const {
 }
 
 
-bool expert_forest::isStale(int h) const {
+bool MEDDLY::expert_forest::isStale(int h) const {
   return
     isTerminalNode(h)
     ? discardTemporaryNodesFromComputeCache()
@@ -244,12 +224,12 @@ bool expert_forest::isStale(int h) const {
 
 #ifndef INLINED_REALS
 
-float expert_forest::getReal(int term) const
+float MEDDLY::expert_forest::getReal(int term) const
 {
   return (term == 0)? 0.0: *((float*)&(term <<= 1));
 }
 
-int expert_forest::getTerminalNode(float a) const
+int MEDDLY::expert_forest::getTerminalNode(float a) const
 {
   return (a == 0.0)? 0: (*((int*)((void*)&a)) >> 1) | 0x80000000;
 }
@@ -257,7 +237,7 @@ int expert_forest::getTerminalNode(float a) const
 #endif
 
 
-unsigned expert_forest::getNodeCount(int p) const
+unsigned MEDDLY::expert_forest::getNodeCount(int p) const
 {
   std::set<int> discovered;
   std::queue<int> toExpand;
@@ -308,7 +288,7 @@ unsigned expert_forest::getNodeCount(int p) const
 }
 
 
-unsigned expert_forest::getEdgeCount(int p, bool countZeroes) const
+unsigned MEDDLY::expert_forest::getEdgeCount(int p, bool countZeroes) const
 {
   std::set<int> discovered;
   std::queue<int> toExpand;
