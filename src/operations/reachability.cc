@@ -1225,71 +1225,6 @@ int mdd_reachability_dfs::recFire(int mdd, int mxd)
 }
 
 
-int** mdd_reachability_dfs::getMatrix(unsigned nodeLevel,
-    unsigned size, bool clear)
-{
-  // Enlarge static arrays.
-  static std::vector< int** > temp;
-  static std::vector< int > sizes;
-  static std::vector< int** > matrices;
-
-  if (clear) {
-    for (unsigned i = 0; i < temp.size(); i++) {
-      if (temp[i]) {
-        for (unsigned j = 0; j < sizes[i]; j++) {
-          free(temp[i][j]);
-        }
-        free(temp[i]);
-        temp[i] = 0;
-        sizes[i] = 0;
-        free(matrices[i]);
-        matrices[i] = 0;
-      }
-    }
-    return 0;
-  }
-
-  // Resize temp and sizes
-  if (temp.size() <= nodeLevel) {
-    temp.resize(nodeLevel + 1, 0);
-    sizes.resize(nodeLevel + 1, 0);
-    matrices.resize(nodeLevel + 1, 0);
-  }
-
-  // Resize the matrix at temp[nodeLevel]
-  if (sizes[nodeLevel] < size) {
-
-    // Update temp
-    temp[nodeLevel] =
-      (int**) realloc(temp[nodeLevel], size * sizeof(int*));
-    assert(temp[nodeLevel] != 0);
-    memset(temp[nodeLevel] + sizes[nodeLevel], 0,
-        (size - sizes[nodeLevel]) * sizeof(int*));
-
-    for (int i = 0; i < size; i++) {
-      temp[nodeLevel][i] =
-        (int*) realloc(temp[nodeLevel][i], size * sizeof(int));
-      assert(temp[nodeLevel][i] != 0);
-    }
-
-    // Update sizes
-    sizes[nodeLevel] = size;
-
-    // Update matrices
-    matrices[nodeLevel] = 
-      (int**) realloc(matrices[nodeLevel], size * sizeof(int*));
-    assert(matrices[nodeLevel] != 0);
-  }
-
-  // Clear the matrix at temp[nodeLevel]
-  for (int i = 0; i < size; i++) {
-    memset(temp[nodeLevel][i], 0, size * sizeof(int));
-  }
-  memcpy(matrices[nodeLevel], temp[nodeLevel], size * sizeof(int*));
-
-  return matrices[nodeLevel];
-}
-
 // Returns an mxd as array of int[]
 // If mxd[i] == 0, vec[i] = 0
 // Otherwise, (vec[i])[j] = mxd[i][j]
@@ -1389,6 +1324,72 @@ bool mdd_reachability_dfs::getMxdAsVec(int mxd, int**& vec, int& size)
 }
 
 #endif
+
+
+int** mdd_reachability_dfs::getMatrix(unsigned nodeLevel,
+    unsigned size, bool clear)
+{
+  // Enlarge static arrays.
+  static std::vector< int** > temp;
+  static std::vector< int > sizes;
+  static std::vector< int** > matrices;
+
+  if (clear) {
+    for (unsigned i = 0; i < temp.size(); i++) {
+      if (temp[i]) {
+        for (unsigned j = 0; j < sizes[i]; j++) {
+          free(temp[i][j]);
+        }
+        free(temp[i]);
+        temp[i] = 0;
+        sizes[i] = 0;
+        free(matrices[i]);
+        matrices[i] = 0;
+      }
+    }
+    return 0;
+  }
+
+  // Resize temp and sizes
+  if (temp.size() <= nodeLevel) {
+    temp.resize(nodeLevel + 1, 0);
+    sizes.resize(nodeLevel + 1, 0);
+    matrices.resize(nodeLevel + 1, 0);
+  }
+
+  // Resize the matrix at temp[nodeLevel]
+  if (sizes[nodeLevel] < size) {
+
+    // Update temp
+    temp[nodeLevel] =
+      (int**) realloc(temp[nodeLevel], size * sizeof(int*));
+    assert(temp[nodeLevel] != 0);
+    memset(temp[nodeLevel] + sizes[nodeLevel], 0,
+        (size - sizes[nodeLevel]) * sizeof(int*));
+
+    for (int i = 0; i < size; i++) {
+      temp[nodeLevel][i] =
+        (int*) realloc(temp[nodeLevel][i], size * sizeof(int));
+      assert(temp[nodeLevel][i] != 0);
+    }
+
+    // Update sizes
+    sizes[nodeLevel] = size;
+
+    // Update matrices
+    matrices[nodeLevel] = 
+      (int**) realloc(matrices[nodeLevel], size * sizeof(int*));
+    assert(matrices[nodeLevel] != 0);
+  }
+
+  // Clear the matrix at temp[nodeLevel]
+  for (int i = 0; i < size; i++) {
+    memset(temp[nodeLevel][i], 0, size * sizeof(int));
+  }
+  memcpy(matrices[nodeLevel], temp[nodeLevel], size * sizeof(int*));
+
+  return matrices[nodeLevel];
+}
 
 
 bool
@@ -1562,6 +1563,54 @@ mdd_backward_reachability_dfs* mdd_backward_reachability_dfs::getInstance()
 {
   static mdd_backward_reachability_dfs instance;
   return &instance;
+}
+
+
+int mdd_backward_reachability_dfs::saturate(int mdd)
+{
+#ifdef DEBUG_DFS
+  printf("mdd: %d\n", mdd);
+#endif
+
+  // how does saturateHelper get called?
+  // bottom-up i.e. call helper on children before calling helper for parent
+
+  DCASSERT(ddf->isReducedNode(mdd));
+
+  // terminal condition for recursion
+  if (ddf->isTerminalNode(mdd)) return mdd;
+
+  // search compute table
+  int n = 0;
+  if (findSaturateResult(mdd, n)) {
+    ddf->linkNode(n);
+    return n;
+  }
+
+  int k = ddf->getNodeLevel(mdd);      // level
+  int sz = ddf->getLevelSize(k);       // size
+
+#ifdef DEBUG_DFS
+  printf("mdd: %d, level: %d, size: %d\n", mdd, k, sz);
+#endif
+
+  std::vector<int> nDptrs(sz, 0);
+  assert(ddf->getDownPtrs(mdd, nDptrs));
+  for (std::vector<int>::iterator iter = nDptrs.begin();
+      iter != nDptrs.end(); ++iter) {
+    if (*iter) *iter = saturate(*iter);
+  }
+  saturateHelper(k, nDptrs);
+  n = ddf->reduceNode(ddf->createTempNode(k, nDptrs));
+
+  // save in compute table
+  saveSaturateResult(mdd, n);
+
+#ifdef DEBUG_DFS
+  ddf->showNodeGraph(stdout, n);
+#endif
+
+  return n;
 }
 
 

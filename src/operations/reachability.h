@@ -173,16 +173,19 @@ class mdd_backward_reachability_bfs : public mdd_reachability_bfs {
 //
 // **********************************************************************
 
+// TODO: Make this faster by applying the techniques used with
+// mdd_reachability_dfs (based on per-operation compute table and getMatrix).
 class mdd_backward_reachability_dfs : public mdd_reachability_dfs {
   public:
     static mdd_backward_reachability_dfs* getInstance();
     virtual const char* getName() const {
-      return "Mdd-Mxd Reverse Reachability DFS"; }
+      return "Mdd-Mxd Reverse Reachability DFS";
+    }
 
+    virtual int saturate(int mdd);
     virtual void saturateHelper(int mddLevel, std::vector<int>& mdd) {
       reverseSaturateHelper(mddLevel, mdd);
     }
-
     virtual void reverseSaturateHelper(int mddLevel, std::vector<int>& mdd);
     virtual int reverseRecFire(int mdd, int mxd);
 };
