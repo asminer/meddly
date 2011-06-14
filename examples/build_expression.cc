@@ -92,9 +92,8 @@ int main(int argc, char *argv[])
     bounds[i] = variableBound;
 
   // Create a domain
-  domain *d = createDomain();
+  domain *d = createDomainBottomUp(bounds, nVariables);
   assert(d != 0);
-  d->createVariablesBottomUp(bounds, nVariables);
 
   // Create an MXD forest in this domain (to store states)
 
@@ -149,9 +148,8 @@ int main(int argc, char *argv[])
   fprintf(stdout, "\nMTMDD after PRE_IMAGE:\n\n");
   postImage.show(stdout, 2);
 
-  // Cleanup; in this case simply delete the domain
-  delete d;
-
+  // Cleanup
+  MEDDLY::destroyDomain(d);
   MEDDLY::cleanup();
 
   return 0;

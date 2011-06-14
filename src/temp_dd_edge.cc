@@ -245,12 +245,11 @@ void MEDDLY::temp_dd_edge::add(const int* vlist, const int* vplist)
   if (downpointers[index] == 0) {
     downpointers[index] = new temp_dd_edge();
     downpointers[index]->forestHandle = forestHandle;
-    const expert_domain* ed = forestHandle->getExpertDomain();
     if (forestHandle->isForRelations()) {
       downpointers[index]->levelHandle = 
-        levelHandle < 0? ed->getVariableBelow(-levelHandle): -levelHandle;
+        levelHandle < 0? (-levelHandle)-1 : -levelHandle;
     } else {
-      downpointers[index]->levelHandle = ed->getVariableBelow(levelHandle);
+      downpointers[index]->levelHandle = levelHandle-1;
     }
   }
 

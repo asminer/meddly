@@ -724,13 +724,12 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
   // -  index[i] should be in the range [0, levelSize).
   // -  dptr[i] should be a reduced node at a level "below" lh.
   // -  edge-value of INF is reserved for edges pointing to terminal 0.
-  const int nodeHeight = expertDomain->getVariableHeight(lh);
   for (unsigned i = 0; i < dptr.size(); i++)
   {
     CHECK_RANGE(0, index[i], getLevelSize(lh));
     assert(dptr[i] != 0 && ev[i] != INF);
     assert(isReducedNode(dptr[i]));
-    assert(getNodeHeight(dptr[i]) < nodeHeight);
+    assert(getNodeHeight(dptr[i]) < lh);
   }
 #endif
 
@@ -1216,13 +1215,12 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
   // -  index[i] should be in the range [0, levelSize).
   // -  dptr[i] should be a reduced node at a level "below" lh.
   // -  edge-value of NAN is reserved for edges pointing to terminal 0.
-  const int nodeHeight = expertDomain->getVariableHeight(lh);
   for (unsigned i = 0; i < dptr.size(); i++)
   {
     CHECK_RANGE(0, index[i], getLevelSize(lh));
     assert(dptr[i] != 0 && !isNan(ev[i]));
     assert(isReducedNode(dptr[i]));
-    assert(getNodeHeight(dptr[i]) < nodeHeight);
+    assert(getNodeHeight(dptr[i]) < lh);
   }
 #endif
 

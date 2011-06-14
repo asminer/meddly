@@ -101,7 +101,7 @@ node_manager::node_manager(domain *d, bool rel, range_type t,
 #endif
 
   // set level sizes
-  assert(0 == setLevelBoundsAndHeights());
+  setLevelBounds();
 #endif
 
   counting = false;
@@ -122,9 +122,7 @@ int node_manager::buildLevelNodeHelper(int lh, int* dptrs, int sz)
   DCASSERT(dptrs != 0);
   DCASSERT(sz > 0);
 
-  const int* h2lMap = expertDomain->getHeightsToLevelsMap();
   const int absLh = (lh < 0)? -lh: lh;
-  int nodeHeight = expertDomain->getVariableHeight(absLh);
 
   if (isForRelations()) {
     // build from bottom up
@@ -134,9 +132,8 @@ int node_manager::buildLevelNodeHelper(int lh, int* dptrs, int sz)
     //      do for primed first and then unprimed
 
     if (getReductionRule() != forest::FULLY_REDUCED) {
-      for (int height = 1; height < nodeHeight; ++height)
+      for (int i = 1; i < absLh; ++i)
       {
-        int i = h2lMap[height];
         for (int j = 0; j < sz; ++j)
         {
           // primed
@@ -175,9 +172,8 @@ int node_manager::buildLevelNodeHelper(int lh, int* dptrs, int sz)
     //    for j = 0 to sz
     //      dptrs[j] = node at level i with all downpointers to prev dptrs[j]
 
-    for (int height = 1; height < nodeHeight; ++height)
+    for (int i = 1; i < absLh; ++i)
     {
-      int i = h2lMap[height];
       for (int j = 0; j < sz; ++j)
       {
         int temp = createTempNodeMaxSize(i, false);
@@ -211,9 +207,8 @@ int node_manager::buildLevelNodeHelper(int lh, int* dptrs, int sz)
 
       // build primed and unprimed nodes for levels lh+1 to topLevel
       int topHeight = d->getNumVariables();
-      for (int height = nodeHeight + 1; height <= topHeight; ++height)
+      for (int i = absLh + 1; i <= topHeight; ++i)
       {
-        int i = h2lMap[height];
         // primed
         int temp = createTempNodeMaxSize(-i, false);
         setAllDownPtrsWoUnlink(temp, node);
@@ -232,9 +227,8 @@ int node_manager::buildLevelNodeHelper(int lh, int* dptrs, int sz)
     DCASSERT(!isForRelations());
     // build nodes for levels above lh
     int topHeight = d->getNumVariables();
-    for (int height = nodeHeight + 1; height <= topHeight; ++height)
+    for (int i = absLh + 1; i <= topHeight; ++i)
     {
-      int i = h2lMap[height];
       int temp = createTempNodeMaxSize(i, false);
       setAllDownPtrsWoUnlink(temp, node);
       unlinkNode(node);
@@ -271,16 +265,14 @@ void node_manager::clearLevelNodes()
 {
   // for each level, unlink the level node
   if (isForRelations()) {
-    for (int i = expertDomain->getTopVariable(); i > 0;
-        i = expertDomain->getVariableBelow(i))
+    for (int i = expertDomain->getNumVariables(); i; i--)
     {
       clearLevelNode(i);
       clearLevelNode(-i);
     }
   }
   else {
-    for (int i = expertDomain->getTopVariable(); i > 0;
-        i = expertDomain->getVariableBelow(i))
+    for (int i = expertDomain->getNumVariables(); i; i--)
     {
       clearLevelNode(i);
     }
@@ -458,10 +450,8 @@ void node_manager::createSubMatrix(const bool* const* vlist,
   // such that all downpointers with vlist[i+1]==1 point to mask.
   int mask = getTerminalNode(true);
   int nVars = expertDomain->getNumVariables();
-  for (int height = 1; height <= nVars; height++)
+  for (int level = 1; level <= nVars; level++)
   {
-    int level = expertDomain->getVariableWithHeight(height);
-    
     // create node at prime level
     int nodeSize = expertDomain->getVariableBound(level, true);
     int node = createTempNode(-level, nodeSize, false);
@@ -548,26 +538,18 @@ void node_manager::createEdgeForVar(int vh, bool primedLevel,
 
 #endif
 
-int node_manager::setLevelBoundsAndHeights()
+void node_manager::setLevelBounds()
 {
-  // find biggest level handle
-  const int* h2lMap = expertDomain->getHeightsToLevelsMap();
-  const int* bounds = expertDomain->getLevelBounds();
-
   for (int i = expertDomain->getNumVariables(); i >= 1; --i) {
-    if (setLevelBoundAndHeight(h2lMap[i], bounds[h2lMap[i]], i) < 0)
-      return -1;
+    setLevelBound(i, expertDomain->getVariableBound(i, false));
     if (isForRelations()) {
       // primed level
-      if (setLevelBoundAndHeight(-h2lMap[i], bounds[h2lMap[i]], i) < 0)
-        return -1;
+      setLevelBound(-i, expertDomain->getVariableBound(i, true));
     }
   }
-  // success
-  return 0;
 }
 
-int node_manager::setLevelBoundAndHeight(int k, int sz, int h)
+void node_manager::setLevelBound(int k, int sz)
 {
   DCASSERT(k != 0);
   int mapped_k = mapLevel(k);
@@ -577,25 +559,24 @@ int node_manager::setLevelBoundAndHeight(int k, int sz, int h)
     // l_size = l_size * 2;
     l_size = mapped_k + 2;
     level = (mdd_level_data *) realloc(level, l_size * sizeof(mdd_level_data));
-    if (level == NULL) {
-      fprintf(stderr, "Memory allocation error while allocating new level.\n");
-      exit(1);
-    }
+    if (0==level) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
     updateMemoryAllocated((l_size - old_l_size) * sizeof(mdd_level_data));
     // wipe new level data
     memset(level + old_l_size, 0,
         (l_size - old_l_size) * sizeof(mdd_level_data));
   }
   // level already defined
-  if (level[mapped_k].data != NULL) return -1;
+  if (level[mapped_k].data) 
+    throw MEDDLY::error(MEDDLY::error::MISCELLANEOUS);
   
   DCASSERT(mapped_k < l_size);
-  DCASSERT(level[mapped_k].data == NULL);
+  DCASSERT(level[mapped_k].data == 0);
   
   level[mapped_k].size = add_size;
   level[mapped_k].data = (int *) malloc(level[mapped_k].size * sizeof(int));
   DCASSERT(NULL != level[mapped_k].data);
-  if (level[mapped_k].data == NULL) return -1;
+  if (level[mapped_k].data == 0) 
+    throw MEDDLY::error(MEDDLY::error::MISCELLANEOUS);
   updateMemoryAllocated(level[mapped_k].size * sizeof(int));
   memset(level[mapped_k].data, 0, level[mapped_k].size * sizeof(int));
   level[mapped_k].holes_top = level[mapped_k].holes_bottom =
@@ -603,14 +584,11 @@ int node_manager::setLevelBoundAndHeight(int k, int sz, int h)
     level[mapped_k].max_hole_chain = level[mapped_k].num_compactions = 0;
   level[mapped_k].last = 0;
 
-  level[mapped_k].height = h;
+  level[mapped_k].height = (k>0) ? k : -k;
   level[mapped_k].temp_nodes = 0;
   level[mapped_k].compactLevel = false;
 
   level[mapped_k].levelNode = 0;
-
-  // success
-  return 0;
 }
 
 
@@ -632,7 +610,7 @@ void node_manager::setHoleRecycling(bool policy)
 
 void node_manager::clearAllNodes()
 {
-  int level = expertDomain->getTopVariable();
+  int level = expertDomain->getNumVariables();
   while (level > 0 && active_nodes > 0)
   {
     // find all nodes at curr level and make them into orphans
@@ -656,7 +634,7 @@ void node_manager::clearAllNodes()
       }
     }
 
-    level = expertDomain->getVariableBelow(level);
+    level--;
   }
 }
 
@@ -887,6 +865,8 @@ void node_manager::dumpInternalLevel(FILE *s, int k) const
   DCASSERT(a == ((l_info->last)+1));
 }
 
+/*
+
 double node_manager::cardinalityForRelations(int p, int ht, bool primeLevel,
     std::map<int, double>& visited) const
 {
@@ -909,16 +889,14 @@ double node_manager::cardinalityForRelations(int p, int ht, bool primeLevel,
       }
       else {
         // ht is a un-prime level
-        int k = expertDomain->getVariableWithHeight(ht);
-        int levelSize = expertDomain->getVariableBound(k, primeLevel);
+        int levelSize = expertDomain->getVariableBound(ht, primeLevel);
         return levelSize *
           cardinalityForRelations(p, ht - 1, false, visited);
       }
     }
     else {
       // p is lower than ht
-      int k = expertDomain->getVariableWithHeight(ht);
-      int levelSize = expertDomain->getVariableBound(k, primeLevel);
+      int levelSize = expertDomain->getVariableBound(ht, primeLevel);
       int nextHeight = primeLevel? ht - 1: ht;
       return levelSize *
           cardinalityForRelations(p, nextHeight, !primeLevel, visited);
@@ -927,9 +905,8 @@ double node_manager::cardinalityForRelations(int p, int ht, bool primeLevel,
 
   DCASSERT(pHeight == ht);
 #ifdef DEVELOPMENT_CODE
-  int k = expertDomain->getVariableWithHeight(ht);
-  DCASSERT((primeLevel && (getNodeLevel(p) == -k)) ||
-      (!primeLevel && getNodeLevel(p) == k));
+  DCASSERT((primeLevel && (getNodeLevel(p) == -ht)) ||
+      (!primeLevel && getNodeLevel(p) == ht));
 #endif
 
   // check in cache
@@ -966,8 +943,7 @@ const
   DCASSERT(pHeight <= ht);
 
   if (pHeight < ht) {
-    int k = expertDomain->getVariableWithHeight(ht);
-    return getLevelSize(k) * cardinality(p, ht - 1, visited);
+    return getLevelSize(ht) * cardinality(p, ht - 1, visited);
   }
 
   if (isTerminalNode(p)) {
@@ -999,12 +975,12 @@ const
 #endif
   return result;
 }
-
+*/
 
 void node_manager::showNodeGraph(FILE *s, int p) const
 {
   std::vector< std::set<int> >
-    discovered(mapLevel(expertDomain->getTopVariable()) + 1);
+    discovered(mapLevel(expertDomain->getNumVariables()) + 1);
   std::queue<int> toExpand;
 
   toExpand.push(p);
@@ -2939,7 +2915,7 @@ void node_manager::accumulate(int& a, int b)
 
 // Add an element to a temporary edge
 // Start this recursion at the top level in the domain.
-// Use expert_domain::getTopVariable() to obtain the topmost level in
+// Use expert_domain::getNumVariables() to obtain the topmost level in
 // the domain.
 // cBM: copy before modifying.
 int node_manager::accumulate(int tempNode, bool cBM,
@@ -2955,7 +2931,7 @@ int node_manager::accumulate(int tempNode, bool cBM,
 
   int index = element[level];
   int nodeLevel = getNodeLevel(tempNode);
-  int nextLevel = getDomain()->getVariableBelow(level);
+  int nextLevel = level-1;
 
   int dptr = 0;
   int newDptr = 0;
@@ -3019,8 +2995,7 @@ bool node_manager::accumulate(int& tempNode, int* element)
   assert(element != 0);
 
   // Enlarge variable bounds if necessary
-  int level = domain::TERMINALS;
-  while (-1 != (level = expertDomain->getVariableAbove(level))) {
+  for (int level=1; level<=expertDomain->getNumVariables(); level++) {
     int sz = element[level] + 1;
     if (sz > expertDomain->getVariableBound(level)) {
       expertDomain->enlargeVariableBound(level, false, sz);
@@ -3029,7 +3004,7 @@ bool node_manager::accumulate(int& tempNode, int* element)
 
   accumulateMintermAddedElement = false;
   int result = accumulate(tempNode, false,
-      element, expertDomain->getTopVariable());
+      element, expertDomain->getNumVariables());
   if (tempNode != result) {
     // tempNode had to be copied into another node by accumulate().
     // This could be either because tempNode was a reduced node,

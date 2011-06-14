@@ -165,9 +165,8 @@ int main(int argc, char *argv[])
   initialize();
 
   // Create a domain
-  domain *d = createDomain();
+  domain *d = createDomainBottomUp(bounds, nVariables);
   assert(d != 0);
-  d->createVariablesBottomUp(bounds, nVariables);
 
   // Create an MDD forest in this domain (to store states)
   forest* states = d->createForest(false, forest::BOOLEAN,
@@ -267,7 +266,7 @@ int main(int argc, char *argv[])
   nodeC.clear();
 
   // Cleanup; in this case simply delete the domain
-  delete d;
+  destroyDomain(d);
   cleanup();
 
   free(bounds);
@@ -398,9 +397,9 @@ void testA()
   expert_forest* f = dynamic_cast<expert_forest*>(states);
   assert(f != 0);
 
-  int level1 = f->getDomain()->getVariableAbove(domain::TERMINALS);
-  int level2 = f->getDomain()->getVariableAbove(level1);
-  int level3 = f->getDomain()->getVariableAbove(level2);
+  int level1 = 1;
+  int level2 = 2;
+  int level3 = 3;
 
   {
     // --------------------------------------------------------------------
@@ -520,7 +519,7 @@ void testA()
   }
 
   // Cleanup; in this case simply delete the domain
-  delete d;
+  destroyDomain(d);
 
   delete [] bounds;
 }
@@ -550,9 +549,9 @@ void testB()
   expert_forest* f = dynamic_cast<expert_forest*>(states);
   assert(f != 0);
 
-  int level1 = f->getDomain()->getVariableAbove(domain::TERMINALS);
-  int level2 = f->getDomain()->getVariableAbove(level1);
-  int level3 = f->getDomain()->getVariableAbove(level2);
+  int level1 = 1;
+  int level2 = 2;
+  int level3 = 3;
 
   {
     // ----------------------------------------------------------------
@@ -635,7 +634,7 @@ void testB()
   }
 
   // Cleanup; in this case simply delete the domain
-  delete d;
+  destroyDomain(d);
 
   delete [] bounds;
 }
@@ -694,7 +693,7 @@ void testC()
     printf("Temorary node for {00000}: %d\n", U_aux);
     f->showInfo(stdout, 1);
 
-    e.set(f->reduceNode(U_aux), 0, f->getDomain()->getTopVariable());
+    e.set(f->reduceNode(U_aux), 0, f->getDomain()->getNumVariables());
     U_aux = 0;
 
     printf("After reduction:\ne = %d\nS = %d\nU = %d\n",
@@ -722,7 +721,7 @@ void testC()
     printf("Temorary node for {01011}: %d\n", U_aux);
     f->showInfo(stdout, 1);
 
-    e.set(f->reduceNode(U_aux), 0, f->getDomain()->getTopVariable());
+    e.set(f->reduceNode(U_aux), 0, f->getDomain()->getNumVariables());
     U_aux = 0;
 
     printf("After reduction:\ne = %d\nS = %d\nU = %d\n",
@@ -743,7 +742,7 @@ void testC()
   }
 
   // Cleanup; in this case simply delete the domain
-  delete d;
+  destroyDomain(d);
 
   delete [] bounds;
 }

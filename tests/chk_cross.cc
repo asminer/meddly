@@ -203,9 +203,8 @@ int main()
   CM = getComputeManager();
   assert(CM);
 
-  domain* myd = createDomain();
+  domain* myd = createDomainBottomUp(vars, 6);
   assert(myd);
-  myd->createVariablesBottomUp(vars, 6);
 
   forest* mdd = myd->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
   assert(mdd);
@@ -216,7 +215,8 @@ int main()
     printf("\tChecking cross-product for %2d random minterms\n", m);
     test(mdd, mxd, m);
   }
-//  cleanup();
+  destroyDomain(myd);
+  cleanup();
   return 0;
 }
 

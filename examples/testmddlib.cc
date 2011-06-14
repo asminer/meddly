@@ -225,7 +225,7 @@ int main(int argc, char *argv[])
 #endif
 
   // Cleanup; in this case simply delete the domain
-  delete d;
+  destroyDomain(d);
   cleanup();
 
   return 0;

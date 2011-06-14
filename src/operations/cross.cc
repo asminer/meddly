@@ -184,16 +184,15 @@ compute(op_info* owner, const dd_edge &a, const dd_edge &b, dd_edge &c)
 
 int
 MEDDLY::bool_cross::
-compute_unprimed(op_info* owner, int ht, int a, int b)
+compute_unprimed(op_info* owner, int lh, int a, int b)
 {
-  if (0==ht) {
+  if (0==lh) {
     return a;
   }
   if (0==a || 0==b) return 0;
 
   // convert height to level handle
   expert_forest* fc = owner->p[2].getForest();
-  int lh = fc->getExpertDomain()->getVariableWithHeight(ht);
 
   // check compute table
   int c;
@@ -204,9 +203,9 @@ compute_unprimed(op_info* owner, int ht, int a, int b)
 
   // recurse
   expert_forest* fa = owner->p[0].getForest();
-  if (fa->getNodeHeight(a) < ht) {
+  if (fa->getNodeHeight(a) < lh) {
     // skipped level
-    int d = compute_primed(owner, ht, a, b);
+    int d = compute_primed(owner, lh, a, b);
     for (int i=fc->getLevelSize(lh)-1; i>=0; i--) {
       fc->setDownPtr(c, i, d);
     } 
@@ -217,14 +216,14 @@ compute_unprimed(op_info* owner, int ht, int a, int b)
       for (int i=fa->getFullNodeSize(a)-1; i>=0; i--) {
         int ai = fa->getFullNodeDownPtr(a, i);
         if (0==ai) continue;
-        fc->setDownPtr(c, i, compute_primed(owner, ht, ai, b));
+        fc->setDownPtr(c, i, compute_primed(owner, lh, ai, b));
       }
     } else {
       // Sparse storage
       for (int z=fa->getSparseNodeSize(a)-1; z>=0; z--) {
         int i = fa->getSparseNodeIndex(a, z);
         int ai = fa->getSparseNodeDownPtr(a, z);
-        fc->setDownPtr(c, i, compute_primed(owner, ht, ai, b));
+        fc->setDownPtr(c, i, compute_primed(owner, lh, ai, b));
       }
     }
   }
@@ -246,7 +245,7 @@ compute_primed(op_info* owner, int ht, int a, int b)
 
   // convert height to level handle
   expert_forest* fc = owner->p[2].getForest();
-  int lh = - fc->getExpertDomain()->getVariableWithHeight(ht);
+  int lh = -ht;
 
   // check compute table
   int c;

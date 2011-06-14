@@ -286,9 +286,8 @@ int main(int argc, char *argv[])
   initialize();
 
   // Create a domain
-  domain *d = createDomain();
+  domain *d = createDomainBottomUp(bounds, nVariables);
   assert(d != 0);
-  d->createVariablesBottomUp(bounds, nVariables);
 
   // Create a MTMDD forest in this domain
 #if USE_REALS
@@ -397,7 +396,7 @@ int main(int argc, char *argv[])
 
 
   // Build equivalent MDD
-  delete evmdd;
+  destroyForest(evmdd);
 
 #ifdef TEST_INDEX_SET
 
@@ -478,7 +477,7 @@ int main(int argc, char *argv[])
 
   printf("\n");
   // Cleanup; in this case simply delete the domain
-  delete d;
+  destroyDomain(d);
   cleanup();
 
   free(bounds);

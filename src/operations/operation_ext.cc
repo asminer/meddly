@@ -2633,7 +2633,7 @@ mxd_alt_apply_operation::compute(op_info* owner, const dd_edge& a,
   if (owner == 0) 
     throw error(error::TYPE_MISMATCH);
   int result = compute(owner,
-      owner->p[0].getDomain()->getTopVariable(), a.getNode(), b.getNode());
+      owner->p[0].getDomain()->getNumVariables(), a.getNode(), b.getNode());
   c.set(result, 0, getExpertForest(owner, 2)->getNodeLevel(result));
 }
 
@@ -3961,7 +3961,7 @@ mxd_complement::checkTerminals(op_info* op, int a, int& b)
 int mxd_complement::compute(op_info* owner, int a)
 {
   return compute(owner,
-      getExpertForest(owner, 0)->getExpertDomain()->getTopVariable(), a);
+      getExpertForest(owner, 0)->getExpertDomain()->getNumVariables(), a);
 }
 
 
@@ -3991,8 +3991,7 @@ int mxd_complement::compute(op_info* owner, int resultLevel, int a)
   int resultSize = f1->getLevelSize(resultLevel);
   result = f1->createTempNode(resultLevel, resultSize, false);
 
-  int nextLevel = (resultLevel > 0)? -resultLevel:
-      f0->getExpertDomain()->getVariableBelow(-resultLevel);
+  int nextLevel = (resultLevel > 0)? -resultLevel: (-resultLevel)-1;
 
   if (nodeALevel != resultLevel) {
     // All result[i] = compute(nextLevel, a)
@@ -4001,7 +4000,7 @@ int mxd_complement::compute(op_info* owner, int resultLevel, int a)
         f1->getReductionRule() == forest::IDENTITY_REDUCED) {
       DCASSERT(resultLevel > 0);
       DCASSERT(nextLevel < 0);
-      int nextNextLevel = f0->getExpertDomain()->getVariableBelow(-nextLevel);
+      int nextNextLevel = (-nextLevel)-1;
       int zero = compute(owner, nextNextLevel, 0);
       int temp = compute(owner, nextNextLevel, a);
       for (int i = 0; i < resultSize; ++i) {
@@ -4885,7 +4884,7 @@ void mtmdd_to_mdd_apply_operation::buildScratch(const expert_domain *d)
   // each level in scratch corresponds to a level in the domain
   // each level[i] is of size levelSizes[i] == getVariableBound(i)
 
-  int topVar = d->getTopVariable();
+  int topVar = d->getNumVariables();
 
   // number of levels in the domain (incl. terminals)
   nLevels = topVar + 1;
@@ -4917,7 +4916,7 @@ void mtmdd_to_mdd_apply_operation::initScratch(const expert_domain* d)
 
   if (scratch != 0) {
     // if its the same size, leave it alone otherwise rebuild it
-    if (nLevels == (unsigned int)(1 + d->getTopVariable())) {
+    if (nLevels == (unsigned int)(1 + d->getNumVariables())) {
       // now check if the level sizes are the same
       unsigned i = 0;
       for ( ; i < nLevels && levelSizes[i] == d->getVariableBound(i); ++i);
@@ -6175,9 +6174,8 @@ void mdd_to_evplusmdd_index_set::compute(op_info* owner,
   }
 
   // Create node at appropriate height
-  const int resultLevel = d->getVariableWithHeight(height);
-  const int resultSize = d->getVariableBound(resultLevel);
-  int result = evmddf->createTempNode(resultLevel, resultSize, true);
+  const int resultSize = d->getVariableBound(height);
+  int result = evmddf->createTempNode(height, resultSize, true);
 
   // Total counts all the paths leading from result
   int total = 0;

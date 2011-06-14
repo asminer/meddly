@@ -189,13 +189,11 @@ int main(int argc, char* argv[])
 
   initialize();
 
-  // Create a domain
-  domain *d = createDomain();
+  // Create a domain and set up the state variables.
+  // Use one per "machine", with 4 values each: {W = 0, M, B, G}
+  domain *d = createDomainBottomUp(sizes, N-1);
   assert(d != NULL);
 
-  // Set up the state variables.
-  // Use one per "machine", with 4 values each: {W = 0, M, B, G}
-  d->createVariablesBottomUp(sizes, N-1);
 
   // Create an MDD forest in this domain (to store states)
   forest* mdd = d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL);
@@ -232,7 +230,7 @@ int main(int argc, char* argv[])
   if (doMTMXDIterator)      testMTMXDIterator(nsf);
 
   // Cleanup
-  delete d;
+  destroyDomain(d);
   cleanup();
 
   fprintf(stderr, "\nDone\n");

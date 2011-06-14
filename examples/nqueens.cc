@@ -165,9 +165,8 @@ int main()
   for (int i=0; i<N; i++) {
     scratch[i] = N;
   }
-  domain* d = createDomain();
+  domain* d = createDomainBottomUp(scratch, N);
   assert(d);
-  d->createVariablesBottomUp(scratch, N);
   forest* f = d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL);
   assert(f);
 
@@ -256,6 +255,7 @@ int main()
       printf("\tQueen for row %2d in column %2d\n", i, minterm[i]+1);
     }
   }
+  destroyDomain(d);
   cleanup();
   return 0;
 }
