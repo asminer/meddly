@@ -125,9 +125,8 @@ long buildQueenSolutions(int N)
   for (int i=0; i<N; i++) {
     scratch[i] = N;
   }
-  domain* d = createDomain();
+  domain* d = createDomainBottomUp(scratch, N);
   assert(d);
-  d->createVariablesBottomUp(scratch, N);
   forest* f = d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL);
   assert(f);
 

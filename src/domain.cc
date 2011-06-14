@@ -89,11 +89,18 @@ void MEDDLY::expert_variable::removeFromList(const domain* d)
   if (find >= dl_used) return;  // not found; should we throw something?
   domlist[find] = domlist[dl_used-1];
   dl_used--;
+  // if that was the last domain...
+  if (0==dl_used) delete this;  
 }
 
 void MEDDLY::expert_variable::enlargeBound(bool prime, int b)
 {
-  throw error(error::NOT_IMPLEMENTED);
+  if (prime) {
+    if (pr_bound < b) pr_bound = b;
+  } else {
+    if (un_bound < b) un_bound = b;
+    if (pr_bound < b) pr_bound = b;
+  }
 }
 
 void MEDDLY::expert_variable::shrinkBound(int b, bool force)
@@ -110,14 +117,14 @@ MEDDLY::domain::domain(variable** v, int N)
 {
   vars = v;
   nVars = N;
-  for (int i=0; i<N; i++) {
+  for (int i=1; i<N; i++) {
     ((expert_variable*)vars[i])->addToList(this);
   }
 }
 
 MEDDLY::domain::~domain() 
 {
-  for (int i=0; i<nVars; i++) {
+  for (int i=1; i<nVars; i++) {
     ((expert_variable*)vars[i])->removeFromList(this);
   }
   free(vars);
@@ -161,6 +168,7 @@ void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
   vars[0] = 0;
   for (int i=1; i<=N; i++) {
     vars[i] = MEDDLY::createVariable(bounds[i-1], 0);
+    ((expert_variable*)vars[i])->addToList(this);
   }
 }
 
@@ -178,6 +186,7 @@ void MEDDLY::expert_domain::createVariablesTopDown(const int* bounds, int N)
   vars[0] = 0;
   for (int i=N; i; i--) {
     vars[N-i+1] = MEDDLY::createVariable(bounds[i], 0);
+    ((expert_variable*)vars[i])->addToList(this);
   }
 }
 
@@ -321,27 +330,3 @@ int MEDDLY::expert_domain::findVariableBound(int vh) const
   return getVariableBound(vh, false);
 }
 
-/*
-
-void MEDDLY::expert_domain::enlargeVariableBound(int vh, bool prime, int b)
-{
-  // if !prime, expand both prime and unprime
-  // else expand only prime
-
-  if (getVariableBound(vh, false) == -1) throw error(error::NOT_IMPLEMENTED);
-
-  if (prime) {
-    if (pLevelBounds[vh] < b) pLevelBounds[vh] = b;
-  } else {
-    if (levelBounds[vh] < b) levelBounds[vh] = b;
-    if (pLevelBounds[vh] < b) pLevelBounds[vh] = b;
-  }
-}
-
-// TODO: not implemented
-void MEDDLY::expert_domain::shrinkVariableBound(int vh, int b, bool force)
-{
-  throw error(error::NOT_IMPLEMENTED);
-}
-
-*/

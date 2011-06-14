@@ -870,39 +870,7 @@ class expert_domain : public domain {
      * I suppose this is a function we thought we could use at a later time.
      */
 
-    /** Get the Heights to Level Map for this domain.
-
-      For many operations (such as apply() defined in compute_manager),
-      it is necessary to map the level handles to their height above
-      the TERMINALS level. This function will enable the expert-user
-      to implement these functions.
-
-      Let's assume that the user has already created an integer array to
-      represent an edge. This array must be ordered by the level
-      handles representing the variables, i.e. vlist[i] represents the
-      value corresponding to the variable represented by level handle i.
-
-      To order this by height, perform the following transformation:
-      Assuming map[] is the array returned by this function,
-      vlist_h[j] = vlist[map[j]] where j = 0 to height of the top variable.
-
-      @return        An integer array of size equal to the height
-                      of the topmost variable in this domain.
-     */
-    // const int* getHeightsToLevelsMap() const; // unneeded
-    // const int* getLevelsToHeightsMap() const; // unneeded
-    // const int* getLevelBounds() const; // obsolete
-    // bool areLevelsAndHeightsAligned() const; // should always be true
-
     // functions inherited from class domain
-    /*
-    virtual int getNumVariables() const;
-    virtual int getVariableBound(int vh, bool prime = false) const;
-    virtual int getTopVariable() const;
-    virtual int getVariableAbove(int vh) const;
-    virtual int getVariableBelow(int vh) const;
-    */
-
     virtual int getNumForests() const;
     virtual void createVariablesBottomUp(const int* bounds, int N);
     virtual forest* createForest(bool rel, forest::range_type t,
@@ -915,17 +883,6 @@ class expert_domain : public domain {
     int nForests;
     expert_forest** forests;
     int szForests;
-
-    // int nVars;
-
-    // int* levelBounds;
-    // int* pLevelBounds;
-    // int allocatedLevels;
-    // int topLevel;
-
-    // int* levelsToHeightsMap;
-    // int* heightsToLevelsMap;
-    // bool levelsAndHeightsAligned;
 
     friend class expert_forest;
 
@@ -1749,96 +1706,6 @@ inline int expert_domain::getNumForests() const
   return nForests;
 }
 
-
-/*
-inline int expert_domain::getNumVariables() const
-{
-  return nVars;
-}
-
-
-inline int expert_domain::getTopVariable() const
-{
-  return levelsAndHeightsAligned
-    ? nVars
-    : (heightsToLevelsMap == 0? 0: heightsToLevelsMap[nVars]);
-}
-
-
-inline int expert_domain::getVariableAbove(int vh) const
-{
-  if (levelsAndHeightsAligned) {
-    return (vh >= 0 && vh < nVars)? vh + 1: -1;
-  }
-  if (vh < 0 || vh >= allocatedLevels) return -1;
-  const int height = levelsToHeightsMap[vh];
-  return (height >= 0 && height < nVars)?
-            heightsToLevelsMap[height + 1]:
-            -1;
-}
-
-
-inline int expert_domain::getVariableBelow(int vh) const
-{
-  if (levelsAndHeightsAligned) {
-    return (vh > 0 && vh <= nVars)? vh - 1: -1;
-  }
-  if (vh < 0 || vh >= allocatedLevels) return -1;
-  const int height = levelsToHeightsMap[vh];
-  return (height > 0 && height <= nVars)?
-            heightsToLevelsMap[height - 1]:
-            -1;
-}
-
-
-inline int expert_domain::getVariableBound(int vh, bool prime) const
-{
-  return (vh < 0 || vh >= allocatedLevels)
-            ? -1
-            : prime
-              ? pLevelBounds[vh]
-              : levelBounds[vh];
-}
-
-
-inline int expert_domain::getVariableHeight(int vh) const
-{
-  return levelsAndHeightsAligned
-    ? ((vh >= 0 && vh <= nVars)? vh: -1)
-    : ((vh < 0 || vh >= allocatedLevels)? -1 : levelsToHeightsMap[vh]);
-}
-
-inline int expert_domain::getVariableWithHeight(int ht) const
-{
-  return (ht < 0 || ht > nVars)
-    ? -1
-    : levelsAndHeightsAligned? ht: heightsToLevelsMap[ht];
-}
-
-
-inline const int* expert_domain::getHeightsToLevelsMap() const
-{
-  return heightsToLevelsMap;
-}
-
-
-inline const int* expert_domain::getLevelsToHeightsMap() const
-{
-  return levelsToHeightsMap;
-}
-
-
-inline const int* expert_domain::getLevelBounds() const
-{
-  return levelBounds;
-}
-
-
-inline bool expert_domain::areLevelsAndHeightsAligned() const
-{
-  return levelsAndHeightsAligned;
-}
-*/
 
 // **************************** operation *************************************
 

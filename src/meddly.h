@@ -213,9 +213,10 @@ namespace MEDDLY {
 #ifdef __GNUC__
   __attribute__ ((deprecated))
 #endif
+  /// This function is deprecated as of version 0.4; 
+  /// use "getLibraryInfo" instead.
   inline const char* MEDDLY_getLibraryInfo(int what = 0) {
     return getLibraryInfo(what);
-    // This function is deprecated as of 0.4; use "getLibraryInfo" instead.
   };
 
   // ******************************************************************
@@ -856,9 +857,10 @@ namespace MEDDLY {
         return primed ? pr_bound : un_bound; 
       }
       inline const char* getName() const { return name; }
-    private:
+    protected:
       int un_bound;
       int pr_bound;
+    private:
       char* name;
   };
 
@@ -1046,11 +1048,11 @@ namespace MEDDLY {
 #ifdef __GNUC__
   __attribute__ ((deprecated))
 #endif
+  /// This function is deprecated as of version 0.4; 
+  /// use "createDomain" instead.
   inline domain* MEDDLY_createDomain() {
     return createDomain();
-    // This function is deprecated as of 0.4; use "createDomain" instead.
   }
-
 
   // ******************************************************************
   // *                                                                *
@@ -1657,9 +1659,10 @@ compute_manager* getComputeManager();
 #ifdef __GNUC__
   __attribute__ ((deprecated))
 #endif
+/// This function is deprecated as of version 0.4; 
+/// use "getComputeManager" instead.
 inline compute_manager* MEDDLY_getComputeManager() {
   return getComputeManager();
-  // This function is deprecated as of 0.4; use "getComputeManager" instead.
 }
 
 } // namespace MEDDLY
