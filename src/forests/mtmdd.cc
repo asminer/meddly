@@ -413,13 +413,11 @@ int mtmdd_node_manager::createNode(int k, int index, int dptr)
 void mtmdd_node_manager::createEdge(const int* v, int term, dd_edge& e)
 {
   // construct the edge bottom-up
-  const int* h2l_map = expertDomain->getHeightsToLevelsMap();
-  int h_sz = expertDomain->getNumVariables() + 1;
   DCASSERT(isTerminalNode(term));
   int result = term;
   int curr = 0;
-  for (int i=1; i<h_sz; i++) {
-    curr = createNode(h2l_map[i], v[h2l_map[i]], result);
+  for (int i=1; i<=expertDomain->getNumVariables(); i++) {
+    curr = createNode(i, v[i], result);
     unlinkNode(result);
     result = curr;
   }
@@ -445,17 +443,15 @@ void mtmdd_node_manager::createEdgeHelper(int terminalNode, dd_edge& e)
   DCASSERT(isTerminalNode(terminalNode));
 
   if (reductionRule == forest::FULLY_REDUCED || terminalNode == 0) {
-    e.set(terminalNode, 0, domain::TERMINALS);
+    e.set(terminalNode, 0, 0);
     return;
   }
 
   // construct the edge bottom-up
-  const int* h2l_map = expertDomain->getHeightsToLevelsMap();
-  int h_sz = expertDomain->getNumVariables() + 1;
   int result = terminalNode;
   int curr = 0;
-  for (int i=1; i<h_sz; i++) {
-    curr = createTempNodeMaxSize(h2l_map[i], false);
+  for (int i=1; i<=expertDomain->getNumVariables(); i++) {
+    curr = createTempNodeMaxSize(i, false);
     setAllDownPtrsWoUnlink(curr, result);
     unlinkNode(result);
     result = reduceNode(curr);
@@ -476,9 +472,8 @@ int mtmdd_node_manager::getTerminalNodeForEdge(int n, const int* vlist) const
 {
   // assumption: vlist does not contain any special values (-1, -2, etc).
   // vlist contains a single element.
-  const int* h2l_map = expertDomain->getHeightsToLevelsMap();
   while (!isTerminalNode(n)) {
-    n = getDownPtr(n, vlist[h2l_map[getNodeHeight(n)]]);
+    n = getDownPtr(n, vlist[getNodeHeight(n)]);
   }
   return n;
 }
@@ -606,9 +601,7 @@ mtmdd_node_manager::findFirstElement(const dd_edge& f, int* vlist) const
   if (node == 0) 
     throw error(error::INVALID_ASSIGNMENT);
 
-  int currLevel = expertDomain->getTopVariable();
-  DCASSERT(currLevel != domain::TERMINALS);
-  while (currLevel != domain::TERMINALS)
+  for (int currLevel = expertDomain->getNumVariables(); currLevel; currLevel--)
   {
     DCASSERT(node != 0);
     if (currLevel != getNodeLevel(node)) {
@@ -634,8 +627,7 @@ mtmdd_node_manager::findFirstElement(const dd_edge& f, int* vlist) const
         node = getSparseNodeDownPtr(node, 0);
       }
     }
-    currLevel = expertDomain->getVariableBelow(currLevel);
-  }
+  } // for currLevel
 }
 
 

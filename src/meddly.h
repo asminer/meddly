@@ -1,4 +1,4 @@
-
+  
 // $Id$
 
 /*
@@ -75,8 +75,10 @@ namespace MEDDLY {
         INSUFFICIENT_MEMORY,
         /// An operation is not supported for the given forest.
         INVALID_OPERATION,
-        /// A provided variable handle is erroneous.
+        /// A provided variable is erroneous.
         INVALID_VARIABLE,
+        /// A provided level number is erroneous.
+        INVALID_LEVEL,
         /// A provided variable bound is out of range.
         INVALID_BOUND,
         /// We expected an empty domain, but it wasn't
@@ -107,6 +109,7 @@ namespace MEDDLY {
             case  INSUFFICIENT_MEMORY:  return "Insufficient memory";
             case  INVALID_OPERATION:    return "Invalid operation";
             case  INVALID_VARIABLE:     return "Invalid variable";
+            case  INVALID_LEVEL:        return "Invalid level";
             case  INVALID_BOUND:        return "Invalid bound";
             case  DOMAIN_NOT_EMPTY:     return "Domain not empty";
             case  UNKNOWN_OPERATION:    return "Unknown operation";
@@ -827,6 +830,49 @@ namespace MEDDLY {
   // ******************************************************************
   // *                                                                *
   // *                                                                *
+  // *                         variable class                         *
+  // *                                                                *
+  // *                                                                *
+  // ******************************************************************
+
+  /** Variable class.
+      Abstract base class.
+      A variable consists of an optional name, and a bound.
+      A single variable object is used to describe both 
+      the primed and unprimed versions of the variable.
+
+      Note: variables are automatically deleted when
+      removed from their last domain.
+
+      Additional features are provided in the expert interface.
+  */
+  class variable {
+    protected:
+      variable(int bound, char* name);
+    protected:
+      virtual ~variable();
+    public:
+      inline int getBound(bool primed) const { 
+        return primed ? pr_bound : un_bound; 
+      }
+      inline const char* getName() const { return name; }
+    private:
+      int un_bound;
+      int pr_bound;
+      char* name;
+  };
+
+  /** Front-end function to create a variable.
+      This is required because variable is an abstract class.
+        @param  bound   The initial bound for the varaible.
+        @param  name    Variable name (used only in display / debugging), or 0.
+        @return A new variable, or 0 on error.
+  */
+  variable* createVariable(int bound, char* name);
+
+  // ******************************************************************
+  // *                                                                *
+  // *                                                                *
   // *                          domain class                          *
   // *                                                                *
   // *                                                                *
@@ -837,26 +883,22 @@ namespace MEDDLY {
       Abstract base class.
       A domain is an ordered collection of variables,
       along with a rich set of operations for adding and removing variables.
-      Variables are described by "handles" which have the following properties:
-      - variable handles are non-negative integers.
-      - when a new variable is created, it is given the lowest unused handle.
-      - there is a special variable, TERMINALS, that refers to terminal nodes.
+      A variable may be shared in more than one domain
+      (see the expert interface on how to do this safely).
   
       When a domain is destroyed, all of its forests are destroyed.
   */
   class domain {
     public:
-      /// Special variable handle for the terminal nodes.
       static const int TERMINALS = 0;
-
+    public:
       /** Create all variables at once, from the bottom up.
           Requires the domain to be "empty" (containing no variables or
-          forests).  When successful, variable handle \a N will refer to the
-          top-most variable, and variable handle 1 will refer to the
-          bottom-most variable.
+          forests).  
   
           @param  bounds  variable bounds.
-                          bounds[i-1] gives the bound for variable i.
+                          bounds[i] gives the bound for the variable
+                          at level i+1.
           @param  N       Number of variables.
       */
       virtual void createVariablesBottomUp(const int* bounds, int N) = 0;
@@ -881,41 +923,70 @@ namespace MEDDLY {
         forest::edge_labeling ev) = 0;
 
       /// Get the number of variables in this domain.
-      /// Note that TERMINALS is not counted as a level.
-      /// So, if the domain has N variables in it (excluding the
-      /// TERMINAL level which is always present), N is returned.
-      virtual int getNumVariables() const = 0;
+      inline int getNumVariables() const { return nVars; }
 
       /** Get the specified bound of a variable.
-          @param  vh      Variable handle.
+          No range checking, for speed.
+          @param  lev     Level number, should be 1 for bottom-most
+                          and getNumVariables() for top-most.
           @param  prime   If prime is true, get the bound for 
                           the primed variable.
-          @return         The bound set for variable \a vh.
-                          If \a vh is TERMINALS, returns 0.
-                          If \a vh is invalid, returns -1.
+          @return         The bound set for variable at level \a lev.
       */
-      virtual int getVariableBound(int vh, bool prime = false) const = 0;
+      inline int getVariableBound(int lev, bool prime = false) const {
+        return vars[lev]->getBound(prime);
+      }
+
+      /// @return The variable at level \a lev.
+      inline variable* getVar(int lev) { return vars[lev]; }
+      /// @return The variable at level \a lev.
+      inline const variable* readVar(int lev) const { return vars[lev]; }
 
       /** Get the topmost variable.
+          Deprecated as of version 0.5.
           @return         The variable handle for the top-most variable.
-                          If there are no variables, returns TERMINALS.
+                          If there are no variables, returns 0.
       */
-      virtual int getTopVariable() const = 0;
+#ifdef _MSC_VER
+  __declspec(deprecated)
+#endif
+#ifdef __GNUC__
+  __attribute__ ((deprecated))
+#endif
+      inline int getTopVariable() const { return nVars; }
 
       /** Get the variable immediately above this one.
+          Deprecated as of version 0.5.
           @param  vh      Any variable handle.
           @return         The variable appearing on top of this one. If \a vh
                           is already the top-most variable, returns -1.
       */
-      virtual int getVariableAbove(int vh) const = 0;
+#ifdef _MSC_VER
+  __declspec(deprecated)
+#endif
+#ifdef __GNUC__
+  __attribute__ ((deprecated))
+#endif
+      inline int getVariableAbove(int vh) const {
+        return (vh>=nVars) ? -1 : vh+1;
+      }
 
       /** Get the variable immediately below this one.
+          Depracated as of version 0.5.
           @param  vh      Any variable handle.
           @return         The variable appearing below this one. If \a vh is 
                           the bottom-most variable, returns \a TERMINALS. If 
                           \a vh is \a TERMINALS, returns -1.
       */
-      virtual int getVariableBelow(int vh) const = 0;
+#ifdef _MSC_VER
+  __declspec(deprecated)
+#endif
+#ifdef __GNUC__
+  __attribute__ ((deprecated))
+#endif
+      inline int getVariableBelow(int vh) const {
+        return vh-1;
+      }
 
       /// Get the number of forests associated with this domain.
       virtual int getNumForests() const = 0;
@@ -930,14 +1001,43 @@ namespace MEDDLY {
       virtual ~domain();
 
     protected:
-      /// Constructor, creates an empty domain.
-      domain();
+      /// Constructor.
+      domain(variable** v, int N);
+
+      variable** vars;
+      int nVars;
   };
 
-  /** Front-end function to create a domain.
+  /** Front-end function to create a domain with the given variables.
+        @param  vars    List of variables, in order.
+                        vars[i] gives the variable at level i.
+                        Note that vars[0] should be 0.
+        @param  N       Number of variables.
+                        vars[N] refers to the top-most variable.
+
+        @return A new domain.
+  */
+  domain* createDomain(variable** vars, int N);
+
+  /** Front-end function to create an empty domain.
       This is required because domain is an abstract class.
   */
-  domain* createDomain();
+  inline domain* createDomain() { 
+    return createDomain((variable**) 0, 0);
+  }
+
+  /** Front-end function to create a domain with given variable bounds.
+      Equivalent to creating an empty domain and then building the
+      domain bottom up.
+  
+        @param  bounds  variable bounds.
+                        bounds[i] gives the bound for the variable
+                        at level i.
+        @param  N       Number of variables.
+
+        @return A new domain.
+  */
+  domain* createDomainBottomUp(const int* bounds, int N);
 
 
 #ifdef _MSC_VER

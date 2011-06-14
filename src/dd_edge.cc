@@ -352,7 +352,7 @@ MEDDLY::dd_edge::iterator::iterator(dd_edge* e, iter_type t, const int* minterm)
     if (!e->parent->isForRelations()) return;
   }
 
-  foundPathAtLevel = e->parent->getDomain()->getTopVariable();
+  foundPathAtLevel = e->parent->getDomain()->getNumVariables();
   size = e->parent->getDomain()->getNumVariables() + 1;
   element = (int*) malloc(size * sizeof(int));
   nodes = (int*) malloc(size * sizeof(int));
@@ -390,12 +390,12 @@ MEDDLY::dd_edge::iterator::iterator(dd_edge* e, iter_type t, const int* minterm)
 
     case ROW:
       memcpy(element, minterm, size * sizeof(int));
-      findFirstColumn(e->parent->getDomain()->getTopVariable(), e->node);
+      findFirstColumn(e->parent->getDomain()->getNumVariables(), e->node);
       break;
 
     case COLUMN:
       memcpy(pelement, minterm, size * sizeof(int));
-      findFirstRow(e->parent->getDomain()->getTopVariable(), e->node);
+      findFirstRow(e->parent->getDomain()->getNumVariables(), e->node);
       break;
 
     default:
@@ -449,7 +449,7 @@ MEDDLY::dd_edge::iterator::iterator(const iterator& iter)
       memcpy(pnodes, iter.pnodes, size * sizeof(int));
     }
 
-    foundPathAtLevel = e->parent->getDomain()->getTopVariable();
+    foundPathAtLevel = e->parent->getDomain()->getNumVariables();
   }
 }
 
@@ -484,7 +484,7 @@ MEDDLY::dd_edge::iterator& MEDDLY::dd_edge::iterator::operator=(const iterator& 
         memcpy(pnodes, iter.pnodes, size * sizeof(int));
       }
 
-      foundPathAtLevel = e->parent->getDomain()->getTopVariable();
+      foundPathAtLevel = e->parent->getDomain()->getNumVariables();
     }
   }
   return *this;
@@ -510,10 +510,8 @@ bool MEDDLY::dd_edge::iterator::findNextRow(int height)
   DCASSERT(type == COLUMN);
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
   DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
-  expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
 
   int nextHeight = height - 1;
-  int nodeLevel = d->getVariableWithHeight(height);
 
   if (findNextRow(nextHeight)) return true;
 
@@ -521,41 +519,41 @@ bool MEDDLY::dd_edge::iterator::findNextRow(int height)
   // and call findNextRow() until it returns
   // true or till you run out of indexes.
 
-  // pelement[nodeLevel] stays constant
-  // modify only element[nodeLevel]
+  // pelement[height] stays constant
+  // modify only element[height]
 
-  if (nodes[nodeLevel] == 0) {
+  if (nodes[height] == 0) {
     // Previously skipped level.
-    // Since pelement[nodeLevel] cannot be changed,
+    // Since pelement[height] cannot be changed,
     // and since this is a skipped level, element[i] must equal pelement[i].
     // Therefore, no other indexes are available at this level.
-    DCASSERT(pnodes[nodeLevel] == 0);
-    element[nodeLevel] = 0;
+    DCASSERT(pnodes[height] == 0);
+    element[height] = 0;
     return false;
   }
 
-  DCASSERT(!f->isTerminalNode(nodes[nodeLevel]));
-  DCASSERT(!f->isTerminalNode(pnodes[nodeLevel]));
+  DCASSERT(!f->isTerminalNode(nodes[height]));
+  DCASSERT(!f->isTerminalNode(pnodes[height]));
 
   bool found = false;
 
   const int* dptrs = 0;
-  assert(f->getDownPtrs(nodes[nodeLevel], dptrs));
+  assert(f->getDownPtrs(nodes[height], dptrs));
 
   // Select next index at the primed level
-  if (f->isFullNode(nodes[nodeLevel])) {
-    const int sz = f->getFullNodeSize(nodes[nodeLevel]);
-    for (int i = element[nodeLevel] + 1; i < sz; i++)
+  if (f->isFullNode(nodes[height])) {
+    const int sz = f->getFullNodeSize(nodes[height]);
+    for (int i = element[height] + 1; i < sz; i++)
     {
       if (dptrs[i] != 0) {
         // explore path
         // dptrs[i] must be a primed node
-        DCASSERT(f->getNodeLevel(dptrs[i]) == -nodeLevel);
-        int unprimedNode = f->getDownPtr(dptrs[i], pelement[nodeLevel]);
+        DCASSERT(f->getNodeLevel(dptrs[i]) == -height);
+        int unprimedNode = f->getDownPtr(dptrs[i], pelement[height]);
         if (findFirstRow(nextHeight, unprimedNode)) {
           DCASSERT(nodes[f->getNodeLevel(unprimedNode)] == unprimedNode);
-          pnodes[nodeLevel] = dptrs[i];
-          element[nodeLevel] = i;
+          pnodes[height] = dptrs[i];
+          element[height] = i;
           found = true;
           break;
         }
@@ -563,23 +561,23 @@ bool MEDDLY::dd_edge::iterator::findNextRow(int height)
     }
   }
   else {
-    DCASSERT(f->isSparseNode(nodes[nodeLevel]));
-    const int sz = f->getSparseNodeSize(nodes[nodeLevel]);
+    DCASSERT(f->isSparseNode(nodes[height]));
+    const int sz = f->getSparseNodeSize(nodes[height]);
     const int* iptrs = 0;
-    assert(f->getSparseNodeIndexes(nodes[nodeLevel], iptrs));
+    assert(f->getSparseNodeIndexes(nodes[height], iptrs));
     int i = 0;
-    for ( ; i < sz && iptrs[i] <= element[nodeLevel]; i++);
+    for ( ; i < sz && iptrs[i] <= element[height]; i++);
     for ( ; i < sz; i++)
     {
       DCASSERT(dptrs[i] != 0);
       // Explore path.
       // dptrs[i] must be primed.
-      DCASSERT(f->getNodeLevel(dptrs[i]) == -nodeLevel);
-      int unprimedNode = f->getDownPtr(dptrs[i], pelement[nodeLevel]);
+      DCASSERT(f->getNodeLevel(dptrs[i]) == -height);
+      int unprimedNode = f->getDownPtr(dptrs[i], pelement[height]);
       if (findFirstRow(nextHeight, unprimedNode)) {
         DCASSERT(nodes[f->getNodeLevel(unprimedNode)] == unprimedNode);
-        pnodes[nodeLevel] = dptrs[i];
-        element[nodeLevel] = iptrs[i];
+        pnodes[height] = dptrs[i];
+        element[height] = iptrs[i];
         found = true;
         break;
       }
@@ -587,11 +585,11 @@ bool MEDDLY::dd_edge::iterator::findNextRow(int height)
   }
 
   if (!found) {
-    element[nodeLevel] = 0;
-    pnodes[nodeLevel] = 0;
-    nodes[nodeLevel] = 0;
+    element[height] = 0;
+    pnodes[height] = 0;
+    nodes[height] = 0;
   } else {
-    foundPathAtLevel = nodeLevel;
+    foundPathAtLevel = height;
   }
 
   return found;
@@ -617,10 +615,8 @@ bool MEDDLY::dd_edge::iterator::findNextColumn(int height)
   DCASSERT(type == ROW);
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
   DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
-  expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
 
   int nextHeight = height - 1;
-  int nodeLevel = d->getVariableWithHeight(height);
 
   if (findNextColumn(nextHeight)) return true;
 
@@ -628,31 +624,31 @@ bool MEDDLY::dd_edge::iterator::findNextColumn(int height)
   // and call findNextColumn() until it returns
   // true or till you run out of indexes.
 
-  // element[nodeLevel] stays constant
-  // modify only pelement[nodeLevel]
+  // element[height] stays constant
+  // modify only pelement[height]
 
-  if (nodes[nodeLevel] == 0) {
+  if (nodes[height] == 0) {
     // Previously skipped level.
-    // Since element[nodeLevel] cannot be changed,
+    // Since element[height] cannot be changed,
     // and since this is a skipped level, pelement[i] must equal element[i].
     // Therefore, no other indexes are available at this level.
-    DCASSERT(pnodes[nodeLevel] == 0);
-    pelement[nodeLevel] = 0;
+    DCASSERT(pnodes[height] == 0);
+    pelement[height] = 0;
     return false;
   }
 
-  DCASSERT(!f->isTerminalNode(nodes[nodeLevel]));
-  DCASSERT(!f->isTerminalNode(pnodes[nodeLevel]));
+  DCASSERT(!f->isTerminalNode(nodes[height]));
+  DCASSERT(!f->isTerminalNode(pnodes[height]));
 
   bool found = false;
 
   const int* dptrs = 0;
-  assert(f->getDownPtrs(pnodes[nodeLevel], dptrs));
+  assert(f->getDownPtrs(pnodes[height], dptrs));
   
   // Select next index at the primed level
-  if (f->isFullNode(pnodes[nodeLevel])) {
-    const int sz = f->getFullNodeSize(pnodes[nodeLevel]);
-    for (int i = pelement[nodeLevel] + 1; i < sz; i++)
+  if (f->isFullNode(pnodes[height])) {
+    const int sz = f->getFullNodeSize(pnodes[height]);
+    for (int i = pelement[height] + 1; i < sz; i++)
     {
       if (dptrs[i] != 0) {
         // explore path
@@ -660,7 +656,7 @@ bool MEDDLY::dd_edge::iterator::findNextColumn(int height)
         DCASSERT(f->getNodeLevel(dptrs[i]) >= 0);
         if (findFirstColumn(nextHeight, dptrs[i])) {
           DCASSERT(nodes[f->getNodeLevel(dptrs[i])] == dptrs[i]);
-          pelement[nodeLevel] = i;
+          pelement[height] = i;
           found = true;
           break;
         }
@@ -668,12 +664,12 @@ bool MEDDLY::dd_edge::iterator::findNextColumn(int height)
     }
   }
   else {
-    DCASSERT(f->isSparseNode(pnodes[nodeLevel]));
-    const int sz = f->getSparseNodeSize(pnodes[nodeLevel]);
+    DCASSERT(f->isSparseNode(pnodes[height]));
+    const int sz = f->getSparseNodeSize(pnodes[height]);
     const int* iptrs = 0;
-    assert(f->getSparseNodeIndexes(pnodes[nodeLevel], iptrs));
+    assert(f->getSparseNodeIndexes(pnodes[height], iptrs));
     int i = 0;
-    for ( ; i < sz && iptrs[i] <= pelement[nodeLevel]; i++);
+    for ( ; i < sz && iptrs[i] <= pelement[height]; i++);
     for ( ; i < sz; i++)
     {
       DCASSERT(dptrs[i] != 0);
@@ -682,7 +678,7 @@ bool MEDDLY::dd_edge::iterator::findNextColumn(int height)
       DCASSERT(f->getNodeLevel(dptrs[i]) >= 0);
       if (findFirstColumn(nextHeight, dptrs[i])) {
         DCASSERT(nodes[f->getNodeLevel(dptrs[i])] == dptrs[i]);
-        pelement[nodeLevel] = iptrs[i];
+        pelement[height] = iptrs[i];
         found = true;
         break;
       }
@@ -690,11 +686,11 @@ bool MEDDLY::dd_edge::iterator::findNextColumn(int height)
   }
 
   if (!found) {
-    pelement[nodeLevel] = 0;
-    pnodes[nodeLevel] = 0;
-    nodes[nodeLevel] = 0;
+    pelement[height] = 0;
+    pnodes[height] = 0;
+    nodes[height] = 0;
   } else {
-    foundPathAtLevel = -nodeLevel;
+    foundPathAtLevel = -height;
   }
 
   return found;
@@ -710,14 +706,11 @@ bool MEDDLY::dd_edge::iterator::findFirstRow(int height, int node)
   DCASSERT(type == COLUMN);
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
   DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
-  expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
 
-  int level = d->getVariableWithHeight(height);
   int nodeHeight = f->isTerminalNode(node)? 0: f->getNodeHeight(node);
-  int nodeLevel = d->getVariableWithHeight(nodeHeight);
 
   // Fill skipped levels
-  for (int i = level; i != nodeLevel; i = d->getVariableBelow(i)) {
+  for (int i = height; i != nodeHeight; i--) {
     element[i] = pelement[i];
     nodes[i] = pnodes[i] = 0;
   }
@@ -725,7 +718,7 @@ bool MEDDLY::dd_edge::iterator::findFirstRow(int height, int node)
   if (f->isTerminalNode(node)) {
     // If terminal zero, then return false.
     // Fill up the node and element vectors at the terminal level.
-    int i = nodeLevel;
+    int i = nodeHeight;
     element[i] = pelement[i] = pnodes[i] = 0;
     nodes[i] = node;
     return node != 0;
@@ -736,7 +729,7 @@ bool MEDDLY::dd_edge::iterator::findFirstRow(int height, int node)
   // node must be an unprimed node (based on identity-reduction rule).
   DCASSERT(f->getNodeLevel(node) > 0);
 
-  // Find the first i such that node[i][pelement[nodeLevel]] != 0
+  // Find the first i such that node[i][pelement[nodeHeight]] != 0
 
   int nextHeight = height - 1;
   bool found = false;
@@ -749,12 +742,12 @@ bool MEDDLY::dd_edge::iterator::findFirstRow(int height, int node)
     for (int i = 0; i < sz; i++) {
       if (dptrs[i] != 0) {
         // explore path
-        int unprimedNode = f->getDownPtr(dptrs[i], pelement[nodeLevel]);
+        int unprimedNode = f->getDownPtr(dptrs[i], pelement[nodeHeight]);
         if (findFirstRow(nextHeight, unprimedNode)) {
           // found a path, break
-          nodes[nodeLevel] = node;
-          pnodes[nodeLevel] = dptrs[i];
-          element[nodeLevel] = i;
+          nodes[nodeHeight] = node;
+          pnodes[nodeHeight] = dptrs[i];
+          element[nodeHeight] = i;
           found = true;
           break;
         }
@@ -767,12 +760,12 @@ bool MEDDLY::dd_edge::iterator::findFirstRow(int height, int node)
     for (int i = 0; i < sz; i++) {
       DCASSERT(dptrs[i] != 0);
       // explore path
-      int unprimedNode = f->getDownPtr(dptrs[i], pelement[nodeLevel]);
+      int unprimedNode = f->getDownPtr(dptrs[i], pelement[nodeHeight]);
       if (findFirstRow(nextHeight, unprimedNode)) {
         // found a path, break
-        nodes[nodeLevel] = node;
-        pnodes[nodeLevel] = dptrs[i];
-        element[nodeLevel] = f->getSparseNodeIndex(node, i);
+        nodes[nodeHeight] = node;
+        pnodes[nodeHeight] = dptrs[i];
+        element[nodeHeight] = f->getSparseNodeIndex(node, i);
         found = true;
         break;
       }
@@ -792,14 +785,11 @@ bool MEDDLY::dd_edge::iterator::findFirstColumn(int height, int node)
   DCASSERT(type == ROW);
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
   DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
-  expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
 
-  int level = d->getVariableWithHeight(height);
   int nodeHeight = f->isTerminalNode(node)? 0: f->getNodeHeight(node);
-  int nodeLevel = d->getVariableWithHeight(nodeHeight);
 
   // Fill skipped levels
-  for (int i = level; i != nodeLevel; i = d->getVariableBelow(i)) {
+  for (int i = height; i != nodeHeight; i--) {
     pelement[i] = element[i];
     nodes[i] = pnodes[i] = 0;
   }
@@ -807,7 +797,7 @@ bool MEDDLY::dd_edge::iterator::findFirstColumn(int height, int node)
   if (f->isTerminalNode(node)) {
     // If terminal zero, then return false.
     // Fill up the node and element vectors at the terminal level.
-    int i = nodeLevel;
+    int i = nodeHeight;
     element[i] = pelement[i] = pnodes[i] = 0;
     nodes[i] = node;
     return node != 0;
@@ -818,11 +808,11 @@ bool MEDDLY::dd_edge::iterator::findFirstColumn(int height, int node)
   // node must be an unprimed node (based on identity-reduction rule).
   DCASSERT(f->getNodeLevel(node) > 0);
 
-  // Find the first i such that node[element[nodeLevel]][i] != 0
+  // Find the first i such that node[element[nodeHeight]][i] != 0
 
   int nextHeight = height - 1;
   bool found = false;
-  int primedNode = f->getDownPtr(node, element[nodeLevel]);
+  int primedNode = f->getDownPtr(node, element[nodeHeight]);
 
   const int* dptrs = 0;
   if (!f->getDownPtrs(primedNode, dptrs)) return false;
@@ -836,9 +826,9 @@ bool MEDDLY::dd_edge::iterator::findFirstColumn(int height, int node)
         // explore path
         if (findFirstColumn(nextHeight, dptrs[i])) {
           // found a path, break
-          pnodes[nodeLevel] = primedNode;
-          nodes[nodeLevel] = node;
-          pelement[nodeLevel] = i;
+          pnodes[nodeHeight] = primedNode;
+          nodes[nodeHeight] = node;
+          pelement[nodeHeight] = i;
           found = true;
           break;
         }
@@ -855,9 +845,9 @@ bool MEDDLY::dd_edge::iterator::findFirstColumn(int height, int node)
       // explore path
       if (findFirstColumn(nextHeight, dptrs[i])) {
         // found a path, break
-        pnodes[nodeLevel] = primedNode;
-        nodes[nodeLevel] = node;
-        pelement[nodeLevel] = f->getSparseNodeIndex(primedNode, i);
+        pnodes[nodeHeight] = primedNode;
+        nodes[nodeHeight] = node;
+        pelement[nodeHeight] = f->getSparseNodeIndex(primedNode, i);
         found = true;
         break;
       }
@@ -877,7 +867,7 @@ void MEDDLY::dd_edge::iterator::incrNonRelation()
   expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
 
-  int currLevel = d->getTopVariable();
+  int currLevel = d->getNumVariables();
   foundPathAtLevel = currLevel;
 
   if (nodes[0] == 0) {
@@ -889,10 +879,10 @@ void MEDDLY::dd_edge::iterator::incrNonRelation()
     // valid edge. Move up a level if no more edges exist from this level.
 
     int lastSkipped = e->node;
-    currLevel = d->getVariableAbove(domain::TERMINALS);
+    currLevel = 1;
     bool found = false;
 
-    while (currLevel != -1)
+    while (currLevel <= d->getNumVariables())
     {
       int node = nodes[currLevel];
       if (node == 0) {
@@ -953,7 +943,7 @@ void MEDDLY::dd_edge::iterator::incrNonRelation()
       if (nodes[currLevel] != 0) lastSkipped = nodes[currLevel];
       nodes[currLevel] = 0;
       element[currLevel] = 0;
-      currLevel = d->getVariableAbove(currLevel);
+      currLevel++;
     }
 
     if (!found) {
@@ -965,12 +955,11 @@ void MEDDLY::dd_edge::iterator::incrNonRelation()
     // found new path
     // select the first path starting from level below currLevel
     foundPathAtLevel = currLevel;
-    currLevel = d->getVariableBelow(currLevel);
+    currLevel--;
   }
 
   // select the first path starting at currLevel
-  for ( ; currLevel != domain::TERMINALS;
-      currLevel = d->getVariableBelow(currLevel))
+  for ( ; currLevel; currLevel--)
   {
     int node = nodes[currLevel];
     if (node == 0) {
@@ -1016,7 +1005,7 @@ void MEDDLY::dd_edge::iterator::incrNonIdentRelation()
   DCASSERT(f->getReductionRule() == forest::FULLY_REDUCED
       || f->getReductionRule() == forest::QUASI_REDUCED);
 
-  int currLevel = d->getTopVariable();
+  int currLevel = d->getNumVariables();
   bool isCurrLevelPrime = false;
   foundPathAtLevel = currLevel;
 
@@ -1035,11 +1024,11 @@ void MEDDLY::dd_edge::iterator::incrNonIdentRelation()
     // valid edge. Move up a level if no more edges exist from this level.
 
     int lastSkipped = e->node;
-    currLevel = d->getVariableAbove(domain::TERMINALS);
+    currLevel = 1;
     isCurrLevelPrime = true;
     bool found = false;
 
-    while (currLevel != -1)
+    while (currLevel <= d->getNumVariables())
     {
       int node = isCurrLevelPrime? pnodes[currLevel]: nodes[currLevel];
       int& currElement = isCurrLevelPrime?
@@ -1119,7 +1108,7 @@ void MEDDLY::dd_edge::iterator::incrNonIdentRelation()
           lastSkipped = nodes[currLevel];
           nodes[currLevel] = 0;
         }
-        currLevel = d->getVariableAbove(currLevel);
+        currLevel++;
         isCurrLevelPrime = true;
       }
     }
@@ -1135,7 +1124,7 @@ void MEDDLY::dd_edge::iterator::incrNonIdentRelation()
     if (isCurrLevelPrime) {
       foundPathAtLevel = -currLevel;
       isCurrLevelPrime = false;
-      currLevel = d->getVariableBelow(currLevel);
+      currLevel--;
     } else {
       foundPathAtLevel = currLevel;
       isCurrLevelPrime = true;
@@ -1143,7 +1132,7 @@ void MEDDLY::dd_edge::iterator::incrNonIdentRelation()
   }
 
   // select the first path starting at currLevel
-  for ( ; currLevel != domain::TERMINALS; )
+  for ( ; currLevel; )
   {
     int node = isCurrLevelPrime? pnodes[currLevel]: nodes[currLevel];
     int& currElement = isCurrLevelPrime
@@ -1176,7 +1165,7 @@ void MEDDLY::dd_edge::iterator::incrNonIdentRelation()
 
     if (isCurrLevelPrime) {
       isCurrLevelPrime = false;
-      currLevel = d->getVariableBelow(currLevel);
+      currLevel--;
     } else {
       isCurrLevelPrime = true;
     }
@@ -1206,7 +1195,7 @@ void MEDDLY::dd_edge::iterator::incrRelation()
   }
 
   expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
-  int currLevel = d->getTopVariable();
+  int currLevel = d->getNumVariables();
   bool isCurrLevelPrime = false;
   foundPathAtLevel = currLevel;
 
@@ -1223,11 +1212,11 @@ void MEDDLY::dd_edge::iterator::incrRelation()
     // valid edge. Move up a level if no more edges exist from this level.
 
     int lastSkipped = e->node;
-    currLevel = d->getVariableAbove(domain::TERMINALS);
+    currLevel = 1;
     isCurrLevelPrime = true;
     bool found = false;
 
-    while (currLevel != -1)
+    while (currLevel <= d->getNumVariables())
     {
       int node = isCurrLevelPrime? pnodes[currLevel]: nodes[currLevel];
       if (node == 0) {
@@ -1324,7 +1313,7 @@ void MEDDLY::dd_edge::iterator::incrRelation()
         if (nodes[currLevel] != 0) lastSkipped = nodes[currLevel];
         nodes[currLevel] = 0;
         element[currLevel] = 0;
-        currLevel = d->getVariableAbove(currLevel);
+        currLevel++;
         isCurrLevelPrime = true;
       }
     }
@@ -1340,7 +1329,7 @@ void MEDDLY::dd_edge::iterator::incrRelation()
     if (isCurrLevelPrime) {
       foundPathAtLevel = -currLevel;
       isCurrLevelPrime = false;
-      currLevel = d->getVariableBelow(currLevel);
+      currLevel--;
     } else {
       foundPathAtLevel = currLevel;
       isCurrLevelPrime = true;
@@ -1348,7 +1337,7 @@ void MEDDLY::dd_edge::iterator::incrRelation()
   }
 
   // select the first path starting at currLevel
-  for ( ; currLevel != domain::TERMINALS; )
+  for ( ; currLevel; )
   {
     int node = isCurrLevelPrime? pnodes[currLevel]: nodes[currLevel];
     if (node == 0) {
@@ -1387,7 +1376,7 @@ void MEDDLY::dd_edge::iterator::incrRelation()
 
     if (isCurrLevelPrime) {
       isCurrLevelPrime = false;
-      currLevel = d->getVariableBelow(currLevel);
+      currLevel--;
     } else {
       isCurrLevelPrime = true;
     }
@@ -1417,11 +1406,11 @@ void MEDDLY::dd_edge::iterator::operator++()
           break;
         case ROW:
           if (!findNextColumn(e->parent->getDomain()->getNumVariables()))
-            foundPathAtLevel = -(e->parent->getDomain()->getTopVariable());
+            foundPathAtLevel = -(e->parent->getDomain()->getNumVariables());
           break;
         case COLUMN:
           if (!findNextRow(e->parent->getDomain()->getNumVariables()))
-            foundPathAtLevel = e->parent->getDomain()->getTopVariable();
+            foundPathAtLevel = e->parent->getDomain()->getNumVariables();
           break;
         default:
           break;

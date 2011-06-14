@@ -291,24 +291,21 @@ mtmxd_node_manager::createEdgeInternal(const int* const* vlist,
   bool specialCasesFound = false;
   for (int i = 0; i < N; i++)
   {
-    for (int currLevel = expertDomain->getTopVariable();
-        currLevel != domain::TERMINALS;
-        currLevel = expertDomain->getVariableBelow(currLevel))
-    {
+    for (int level = expertDomain->getNumVariables(); level; level--) {
       // unprimed level
-      int bound = vlist[i][currLevel] + 1;
-      if (bound >= expertDomain->getVariableBound(currLevel, false))
-        expertDomain->enlargeVariableBound(currLevel, false, bound);
+      int bound = vlist[i][level] + 1;
+      if (bound >= expertDomain->getVariableBound(level, false))
+        expertDomain->enlargeVariableBound(level, false, bound);
       else if (bound < 0)
         specialCasesFound = true;
       // primed level
-      bound = vplist[i][currLevel] + 1;
-      if (bound >= expertDomain->getVariableBound(currLevel, true))
-        expertDomain->enlargeVariableBound(currLevel, true, bound);
+      bound = vplist[i][level] + 1;
+      if (bound >= expertDomain->getVariableBound(level, true))
+        expertDomain->enlargeVariableBound(level, true, bound);
       else if (bound < 0)
         specialCasesFound = true;
-    }
-  }
+    } // for level
+  } // for i
 
   if (N == 1 || specialCasesFound) {
     // build using "standard" procedure
@@ -781,25 +778,22 @@ int mtmxd_node_manager::inPlaceSortBuild(int height, bool isPrime,
         height, isPrime);
   }
 
-  int level = expertDomain->getVariableWithHeight(height);
-  DCASSERT(level > 0);
-
   // Sort elements at this level
-  int nodeSize = 1 + inPlaceSort<T>(level, isPrime, begin, end);
+  int nodeSize = 1 + inPlaceSort<T>(height, isPrime, begin, end);
 
   int nextHeight = isPrime? height - 1: height;
   bool nextIsPrime = !isPrime;
   int** list = isPrime? pList: unpList;
 
   // build node
-  int result = createTempNode(isPrime? -level: level, nodeSize, true);
+  int result = createTempNode(isPrime? -height: height, nodeSize, true);
   int* ptr = getFullNodeDownPtrs(result);
   for (int i = begin; i < end; )
   {
-    int index = list[i][level];
+    int index = list[i][height];
     int start = i++;
     // skip the elements with the same index at this level
-    for ( ; i < end && list[i][level] == index; ++i);
+    for ( ; i < end && list[i][height] == index; ++i);
     ptr[index] = inPlaceSortBuild<T>(nextHeight, nextIsPrime, start, i);
   }
 

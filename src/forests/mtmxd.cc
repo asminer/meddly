@@ -449,27 +449,23 @@ int mtmxd_node_manager::createNode(const int* v, const int* vp, int term,
     int startAtHeight, bool primedLevel)
 {
   // construct the edge bottom-up
-  const int* h2l_map = expertDomain->getHeightsToLevelsMap();
-  DCASSERT(isTerminalNode(term));
-  const int* end = h2l_map + startAtHeight;
-  for (++h2l_map; h2l_map != end; ++h2l_map)
-  {
+  for (int k=1; k<startAtHeight; k++) {
     int prev = term;
-    term = createNode(*h2l_map, v[*h2l_map], vp[*h2l_map], term);
+    term = createNode(k, v[k], vp[k], term);
     unlinkNode(prev);
-  }
+  } // for k
 
   // deal with height == startAtHeight
   // handle primed level first
   if (primedLevel) {
     // only primed level to be handled at this height
     int prev = term;
-    term = createNode(-(*h2l_map), vp[*h2l_map], term);
+    term = createNode(-startAtHeight, vp[startAtHeight], term);
     unlinkNode(prev);
   } else {
     // both primed and unprimed levels to be handled at this height
     int prev = term;
-    term = createNode(*h2l_map, v[*h2l_map], vp[*h2l_map], term);
+    term = createNode(startAtHeight, v[startAtHeight], vp[startAtHeight], term);
     unlinkNode(prev);
   }
 
@@ -524,13 +520,11 @@ int mtmxd_node_manager::createEdge(int dptr)
   if (reductionRule == forest::FULLY_REDUCED) return sharedCopy(dptr);
 
   // construct the edge bottom-up
-  const int* h2l_map = expertDomain->getHeightsToLevelsMap();
-  int h_sz = expertDomain->getNumVariables() + 1;
   int curr = dptr;
   int prev = 0;
-  for (int i=1; i<h_sz; i++) {
+  for (int i=1; i<=expertDomain->getNumVariables(); i++) {
     prev = curr;
-    curr = createNode(h2l_map[i], -1, -1, prev);
+    curr = createNode(i, -1, -1, prev);
     unlinkNode(prev);
   }
   return curr;
@@ -579,9 +573,7 @@ int mtmxd_node_manager::getTerminalNodeForEdge(int n, const int* vlist,
           // skipped levels
           for ( ; nextHeight != currHeight; --currHeight)
           {
-            int currLevel = expertDomain->getVariableWithHeight(currHeight);
-            DCASSERT(currLevel != -1);
-            if (vlist[currLevel] != vplist[currLevel]) {
+            if (vlist[currHeight] != vplist[currHeight]) {
               next = 0;
               break;
             }
@@ -727,18 +719,16 @@ void mtmxd_node_manager::findFirstElement(const dd_edge& f,
 
   if (forest::IDENTITY_REDUCED == reductionRule) {
 
-    for (int currLevel = expertDomain->getTopVariable();
-        currLevel != domain::TERMINALS;
-        currLevel = expertDomain->getVariableBelow(currLevel))
+    for (int level = expertDomain->getNumVariables(); level; level--)
     {
       DCASSERT(node != 0);
       DCASSERT(isUnprimedNode(node));
-      if (currLevel != getNodeLevel(node)) {
-        // currLevel is "higher" than node, and has been skipped.
+      if (level != getNodeLevel(node)) {
+        // level is "higher" than node, and has been skipped.
         // Since this is a mxd, reduced nodes enable "don't change" paths
         // at the skipped level.
-        vlist[currLevel] = 0;   // picking the first index
-        vplist[currLevel] = 0;
+        vlist[level] = 0;   // picking the first index
+        vplist[level] = 0;
       } else {
         // find a valid path at this unprime level
         if (isFullNode(node)) {
@@ -748,12 +738,12 @@ void mtmxd_node_manager::findFirstElement(const dd_edge& f,
             int n = getFullNodeDownPtr(node, i);
             if (n != 0) {
               node = n;
-              vlist[currLevel] = i;
+              vlist[level] = i;
               break;
             }
           }
         } else {
-          vlist[currLevel] = getSparseNodeIndex(node, 0);
+          vlist[level] = getSparseNodeIndex(node, 0);
           node = getSparseNodeDownPtr(node, 0);
         }
 
@@ -769,23 +759,22 @@ void mtmxd_node_manager::findFirstElement(const dd_edge& f,
             int n = getFullNodeDownPtr(node, i);
             if (n != 0) {
               node = n;
-              vplist[currLevel] = i;
+              vplist[level] = i;
               break;
             }
           }
         } else {
-          vplist[currLevel] = getSparseNodeIndex(node, 0);
+          vplist[level] = getSparseNodeIndex(node, 0);
           node = getSparseNodeDownPtr(node, 0);
         }
       }
-    }
+    } // for level
 
   }
   else {
 
     // !IDENTITY_REDUCED
-    for (int currLevel = expertDomain->getTopVariable();
-        currLevel != domain::TERMINALS; )
+    for (int currLevel = expertDomain->getNumVariables(); currLevel; )
     {
       DCASSERT(node != 0);
       if (currLevel != getNodeLevel(node)) {
@@ -826,9 +815,9 @@ void mtmxd_node_manager::findFirstElement(const dd_edge& f,
       }
       // Set next level
       currLevel = currLevel < 0
-                    ? expertDomain->getVariableBelow(-currLevel)
+                    ? (-currLevel)-1
                     : -currLevel;
-    }
+    } // currlevel
 
 
   }
@@ -1423,12 +1412,11 @@ int mxd_node_manager::accumulateSkippedLevel(int tempNode,
 
   int index = element[level];
   int pindex = pelement[level];
-  int nextLevel = getDomain()->getVariableBelow(level);
 
   // Since the forest is Identity-Reduced, it follows:
   int dptr = index == pindex? tempNode: 0;
 
-  int newDptr = accumulate(dptr, true, element, pelement, nextLevel);
+  int newDptr = accumulate(dptr, true, element, pelement, level-1);
 
   if (newDptr == dptr) {
     // Element got absorbed into dptr
@@ -1480,7 +1468,7 @@ int mxd_node_manager::accumulateSkippedLevel(int tempNode,
 
 // Add an element to a temporary edge
 // Start this recursion at the top level in the domain.
-// Use expert_domain::getTopVariable() to obtain the topmost level in
+// Use expert_domain::getNumVariables() to obtain the topmost level in
 // the domain.
 // cBM: copy before modifying.
 int mxd_node_manager::accumulate(int tempNode, bool cBM,
@@ -1504,7 +1492,6 @@ int mxd_node_manager::accumulate(int tempNode, bool cBM,
 
   int index = element[level];
   int pindex = pelement[level];
-  int nextLevel = getDomain()->getVariableBelow(level);
 
   // (1) Compute result for the next unprimed level.
 
@@ -1520,7 +1507,7 @@ int mxd_node_manager::accumulate(int tempNode, bool cBM,
   if (inCount > 1) cBM = true;
   bool pcBM = cBM || (pinCount > 1);
 
-  int newpDptr = accumulate(pdptr, pcBM, element, pelement, nextLevel);
+  int newpDptr = accumulate(pdptr, pcBM, element, pelement, level-1);
 
   if (newpDptr == pdptr) {
     // Element got absorbed into pdptr
@@ -1611,7 +1598,7 @@ bool mxd_node_manager::accumulate(int& tempNode,
 
   accumulateMintermAddedElement = false;
   int result = accumulate(tempNode, false,
-      element, pelement, expertDomain->getTopVariable());
+      element, pelement, expertDomain->getNumVariables());
   if (tempNode != result) {
     // tempNode had to be copied into another node by accumulate().
     // This could be either because tempNode was a reduced node,
@@ -1637,8 +1624,8 @@ bool mxd_node_manager::accumulate(int& tempNode,
   DCASSERT(tempNode == 0 || !isReducedNode(tempNode));
 
   // Enlarge variable bounds if necessary
-  int level = domain::TERMINALS;
 #if 0
+  int level = domain::TERMINALS;
   while (-1 != (level = expertDomain->getVariableAbove(level))) {
     int sz = MAX( element[level] , pelement[level] ) + 1;
     if (sz > expertDomain->getVariableBound(level)) {
@@ -1650,10 +1637,9 @@ bool mxd_node_manager::accumulate(int& tempNode,
   // Traverse Mdd till you find a 0.
   int parentNode = 0;
   int currNode = tempNode;
-  int currLevel = expertDomain->getTopVariable();
+  int currLevel = expertDomain->getNumVariables();
   if (currNode != 0) {
-    for ( ; domain::TERMINALS != currLevel ;
-        currLevel = expertDomain->getVariableBelow(currLevel))
+    for ( ; currLevel ; currLevel-- )
     {
       // Skipped levels are not possible with temporary nodes.
       DCASSERT(!isTerminalNode(currNode));
@@ -1694,7 +1680,7 @@ bool mxd_node_manager::accumulate(int& tempNode,
 
     // Element already exists!
     // Return false since do element was added.
-    if (currLevel == domain::TERMINALS) {
+    if (currLevel == 0) {
       DCASSERT(currNode != 0);
       return false;
     }
@@ -1702,9 +1688,8 @@ bool mxd_node_manager::accumulate(int& tempNode,
 
   // Build a node from the minterm starting at one level below currLevel.
   int unpNode = -1;
-  level = expertDomain->getVariableAbove(domain::TERMINALS);
-  for ( ; level != currLevel;
-      level = expertDomain->getVariableAbove(level)) {
+  int level;
+  for (level=1; level != currLevel; level++) {
 #ifdef CREATE_TEMP_NODES_MAX_SIZE_ONLY
     int prime = createTempNodeMaxSize(-level, true);
 #else
@@ -1719,7 +1704,7 @@ bool mxd_node_manager::accumulate(int& tempNode,
     getFullNodeDownPtrs(unpNode)[element[level]] = prime;
   }
   DCASSERT(currLevel == level);
-  DCASSERT(getNodeLevel(unpNode) == expertDomain->getVariableBelow(level));
+  DCASSERT(getNodeLevel(unpNode) == level-1);
 
   // Deal with the currLevel
   int parentNodeLevel = getNodeLevel(parentNode);

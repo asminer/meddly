@@ -295,19 +295,17 @@ evmdd_node_manager::createEdgeInternal(T term, dd_edge &e)
   if (e.getForest() != this) throw error(error::INVALID_OPERATION);
 
   if (reductionRule == forest::FULLY_REDUCED) {
-    e.set(getTerminalNode(true), term, domain::TERMINALS);
+    e.set(getTerminalNode(true), term, 0);
   } else {
     // construct the edge bottom-up
-    const int* h2l_map = expertDomain->getHeightsToLevelsMap();
-    int h_sz = expertDomain->getNumVariables() + 1;
     int prev = getTerminalNode(false);
     T prevEv = 0;
     int curr = getTerminalNode(true);
     T currEv = term;
-    for (int i=1; i<h_sz; i++) {
+    for (int i=1; i<=expertDomain->getNumVariables(); i++) {
       prev = curr;
       prevEv = currEv;
-      createNode(h2l_map[i], -1, prev, prevEv, curr, currEv);
+      createNode(i, -1, prev, prevEv, curr, currEv);
       unlinkNode(prev);
     }
     e.set(curr, currEv, getNodeLevel(curr));
@@ -327,19 +325,13 @@ evmdd_node_manager::createEdgeInternal(const int* const* vlist,
   bool specialCasesFound = false;
   for (int i = 0; i < N; i++)
   {
-    const int* h2l_map = expertDomain->getHeightsToLevelsMap();
-    int currHeight = expertDomain->getNumVariables();
-    int currLevel = h2l_map[currHeight];
-    while (currHeight > 0)
-    {
-      int bound = vlist[i][currLevel] + 1;
-      if (bound >= getLevelSize(currLevel))
-        expertDomain->enlargeVariableBound(currLevel, false, bound);
+    for (int level = expertDomain->getNumVariables(); level; level--) {
+      int bound = vlist[i][level] + 1;
+      if (bound >= getLevelSize(level))
+        expertDomain->enlargeVariableBound(level, false, bound);
       else if (bound < 0)
         specialCasesFound = true;
-      currHeight--;
-      currLevel = h2l_map[currHeight];
-    }
+    } // for level
   }
 
   if (N == 1 || specialCasesFound) {
@@ -374,17 +366,15 @@ void
 evmdd_node_manager::createEdgeInternal(const int* v, T term, dd_edge &e)
 {
   // construct the edge bottom-up
-  const int* h2l_map = expertDomain->getHeightsToLevelsMap();
-  int h_sz = expertDomain->getNumVariables() + 1;
   int prev = getTerminalNode(false);
   T prevEv;
   getIdentityEdgeValue(prevEv);
   int curr = getTerminalNode(true);
   T currEv = term;
-  for (int i=1; i<h_sz; i++) {
+  for (int i=1; i<=expertDomain->getNumVariables(); i++) {
     prev = curr;
     prevEv = currEv;
-    createNode(h2l_map[i], v[h2l_map[i]], prev, prevEv, curr, currEv);
+    createNode(i, v[i], prev, prevEv, curr, currEv);
     unlinkNode(prev);
   }
   e.set(curr, currEv, getNodeLevel(curr));
@@ -517,7 +507,6 @@ void evmdd_node_manager::evaluateInternal(const dd_edge &f,
   // assumption: vlist does not contain any special values (-1, -2, etc).
   // vlist contains a single element.
   int node = f.getNode();
-  const int* h2l_map = expertDomain->getHeightsToLevelsMap();
 
   f.getEdgeValue(term);
   while (!isTerminalNode(node)) {
@@ -525,7 +514,7 @@ void evmdd_node_manager::evaluateInternal(const dd_edge &f,
     getDefaultEdgeValue(ev);
     int n = 0;
     if (isFullNode(node)) {
-      int index = vlist[h2l_map[getNodeHeight(node)]];
+      int index = vlist[getNodeHeight(node)];
       if (index < getFullNodeSize(node)) {
         getFullNodeEdgeValue(node, index, ev);
         n = getFullNodeDownPtr(node, index);
@@ -534,7 +523,7 @@ void evmdd_node_manager::evaluateInternal(const dd_edge &f,
       // find the index
       // binary search
       int index = binarySearch(getSparseNodeIndexes(node),
-          getSparseNodeSize(node), vlist[h2l_map[getNodeHeight(node)]]);
+          getSparseNodeSize(node), vlist[getNodeHeight(node)]);
       if (index != -1 ) {
         getSparseNodeEdgeValue(node, index, ev);
         n = getSparseNodeDownPtr(node, index);
@@ -566,23 +555,22 @@ void evmdd_node_manager::sortBuild(int** list, T* tList,
   }
 
   int N = end - begin;
-  int level = expertDomain->getVariableWithHeight(height);
   int nextHeight = height - 1;
 
   if (N == 1) {
     // nothing to sort; just build a node starting at this level
-    int index = list[begin][level];
+    int index = list[begin][height];
     int n;
     T ev;
     sortBuild(list, tList, nextHeight, begin, end, n, ev);
-    createNode(level, index, n, ev, node, edgeValue);
+    createNode(height, index, n, ev, node, edgeValue);
     unlinkNode(n);
     return;
   }
 
   // do radix sort for this level
 
-  int levelSize = getLevelSize(level);
+  int levelSize = getLevelSize(height);
 #if 0
   vector<int> count(levelSize+1, 0);
 #else
@@ -599,7 +587,7 @@ void evmdd_node_manager::sortBuild(int** list, T* tList,
     // determine size for count[]
     levelSize = 0;
     for (int i = begin; i < end; i++) {
-      int index = list[i][level];
+      int index = list[i][height];
       if (index > levelSize) { levelSize = index; }
     }
     // levelSize refers to the maximum index found so far,
@@ -609,7 +597,7 @@ void evmdd_node_manager::sortBuild(int** list, T* tList,
     count.resize(levelSize+1, 0);
 
     // go through list and count the number of entries in each "bucket"
-    for (int i = begin; i < end; i++) { count[list[i][level]]++; }
+    for (int i = begin; i < end; i++) { count[list[i][height]]++; }
 
     // find starting index for each "bucket" in sorted lists
     // levelSize == number of buckets
@@ -649,7 +637,7 @@ void evmdd_node_manager::sortBuild(int** list, T* tList,
     for ( ; listPtr != firstListPtr; )
     {
       // getting index and get count[] ready for next insert
-      int index = count[(*listPtr)[level]]--;
+      int index = count[(*listPtr)[height]]--;
       // insert at index
       sortedList[index] = *listPtr--;
       sortedtList[index] = *tListPtr--;
@@ -699,7 +687,7 @@ void evmdd_node_manager::sortBuild(int** list, T* tList,
   // build node from indices, dptrs and edgeValues
 
   DCASSERT(dptrs.size() > 0);
-  createNode(level, indices, dptrs, edgeValues, node, edgeValue);
+  createNode(height, indices, dptrs, edgeValues, node, edgeValue);
 }
 
 

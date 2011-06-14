@@ -660,99 +660,203 @@ class expert_forest : public forest
 };
 
 
+class expert_variable : public variable {
+  public:
+    expert_variable(int b, char* n);
+  private:
+    virtual ~expert_variable();
+  public:
+    /// Update our list of domains: add \a d.
+    void addToList(domain* d);
+    /// Update our list of domains: remove \a d.
+    void removeFromList(const domain* d);
+
+    /** Enlarge the possible values for a variable.
+      This could modify all nodes in all forests, depending on the
+      choice of reduction rule.
+      @param  prime   If prime is true, enlarge the bound for
+                      the primed variable only, otherwise both
+                      the primed and unprimed are enlarged.
+      @param  b       New bound, if less than the current bound
+                      an error is thrown.
+    */
+    void enlargeBound(bool prime, int b);
+
+    /** Shrink the possible values for a variable.
+      This could modify all nodes in all forests, depending on the
+      choice of reduction rule.
+      @param  b       New bound, if more than the current bound
+                      an error is thrown.
+      @param  force   If \a b is too small, and information will be lost,
+                      proceed anyway if \a force is true, otherwise
+                      return an error code.
+    */
+    void shrinkBound(int b, bool force);
+  private:
+    domain** domlist;
+    int dl_alloc;
+    int dl_used;
+};
 
 class expert_domain : public domain {
   public:
-    expert_domain();
+    expert_domain(variable**, int);
     ~expert_domain();
 
     /** Create all variables at once, from the top down.
       Requires the domain to be "empty" (containing no variables or forests).
-      When successful, variable handle 1 will refer to the top-most variable,
-      and variable handle \a N will refer to the bottom-most variable.
       @param  bounds  Current variable bounds.
-                      bounds[i-1] gives the bound for variable i.
+                      bounds[0] gives the bound for the top-most variable,
+                      and bounds[N-1] gives the bound for the bottom-most
+                      variable.
       @param  N       Number of variables.
      */
     void createVariablesTopDown(const int* bounds, int N);
+
+    /** Insert a new variable.
+          @param  lev   Level to insert above; use 0 for a 
+                        new bottom-most level.
+          @param  v     Variable to insert.
+    */
+    void insertVariableAboveLevel(int lev, variable* v);
+
+    /** Remove a variable at the specified level.
+        An error is thrown if the variable size is not 1.
+        Use shrinkVariableBound() to make the bound 1.
+        All forests are modified as appropriate.
+          @param  lev   Level number.
+    */
+    void removeVariableAtLevel(int lev);
+
+    /** Find the level of a given variable.
+          @param  v   Variable to search for.
+          @return 0, if the variable was not found;
+                  i, with getVar(i) == v, otherwise.
+    */
+    int findLevelOfVariable(const variable* v) const;
+
+    inline expert_variable* getExpertVar(int lev) const {
+      return (expert_variable*) vars[lev];
+    }
+    inline const expert_variable* readExpertVar(int lev) const {
+      return (expert_variable*) vars[lev];
+    }
+
+    
 
     /** Add a new variable with bound 1.
       Can be used when the domain already has forests, in which case
       all forests are modified as appropriate.
       @param  below   Placement information: the new variable will appear
-                      immediately above the variable \a below.
-      @param  vh      Output parameter; handle of newly created variable,
-                      if the operation is successful.
+                      immediately above the level \a below.
      */
-    void createVariable(int below, int &vh);
+    void createVariable(int below);
+
+    /** Add a new variable with bound 1.
+      Deprecated as of version 0.5; use one paramater version instead.
+     */
+#ifdef _MSC_VER
+  __declspec(deprecated)
+#endif
+#ifdef __GNUC__
+  __attribute__ ((deprecated))
+#endif
+    inline void createVariable(int below, int &vh) {
+      createVariable(below);
+      vh = below+1;
+    }
 
     /** Destroy a variable with bound 1.
-      An error occurs if the bound is not 1.
-      Use shrinkVariableBound() to make the bound 1.
-      All forests are modified as appropriate.
-      @param  vh      Variable to eliminate.
+        Deprecated as of version 0.5; use removeVariableAtLevel instead.
      */
-    void destroyVariable(int vh);
+#ifdef _MSC_VER
+  __declspec(deprecated)
+#endif
+#ifdef __GNUC__
+  __attribute__ ((deprecated))
+#endif
+    inline void destroyVariable(int vh) { removeVariableAtLevel(vh); }
 
     /** Get the position of the variable in this domain's variable-order.
       \a TERMINALS are considered to be at height 0.
       be at height 0.
+      Deprecated as of version 0.5: level height always equals level handle.
       @param  vh      Any variable handle.
       @return         The variable at this height. 0 for \a TERMINALS.
                       If \a vh is not a valid level handle, return -1.
      */
-    int getVariableHeight(int vh) const;
+#ifdef _MSC_VER
+  __declspec(deprecated)
+#endif
+#ifdef __GNUC__
+  __attribute__ ((deprecated))
+#endif
+    inline int getVariableHeight(int vh) const { return vh; }
 
     /** Get the variable with height \a ht in this domain's variable-order.
       \a TERMINALS are considered to be at height 0.
+      Deprecated as of version 0.5: level height always equals level handle.
       @param  ht      Height of the variable.
       @return         The variable with this height. If the height is not in
                       [0, height of top variable], returns -1.
      */
-    int getVariableWithHeight(int ht) const;
+#ifdef _MSC_VER
+  __declspec(deprecated)
+#endif
+#ifdef __GNUC__
+  __attribute__ ((deprecated))
+#endif
+    inline int getVariableWithHeight(int ht) const { return ht; }
 
     /** Swap the locations of variables in forests.
       I.e., changes the variable ordering of all forests with this domain.
-      Note that the variable handles will remain unchanged.
-      @param  vh1     Variable handle.
-      @param  vh2     Variable handle.
+      @param  lev1    Level of first variable.
+      @param  lev2    Level of second variable.
      */
-    void swapOrderOfVariables(int vh1, int vh2);
+    void swapOrderOfVariables(int lev1, int lev2);
 
     /** Find the actual bound of a variable.
-      This is done by searching all nodes in all forests.
-      If this function returns \a i, then the bound for
-      this variable can be shrunk to \a i without any loss of information.
+      Deprecated as of version 0.5; use TBD instead.
       @param  vh      Variable handle.
       @return         The smallest shrinkable bound before information loss
                       for variable \a vh. If \a vh is invalid, or TERMINALS,
                       returns 0.
      */
+#ifdef _MSC_VER
+  __declspec(deprecated)
+#endif
+#ifdef __GNUC__
+  __attribute__ ((deprecated))
+#endif
     int findVariableBound(int vh) const;
 
     /** Enlarge the possible values for a variable.
       This could modify all nodes in all forests, depending on the
       choice of reduction rule.
-      @param  vh      Variable handle.
+      @param  lev     Variable handle.
       @param  prime   If prime is true, enlarge the bound for
                       the primed variable only, otherwise both
                       the primed and unprimed are enlarged.
       @param  b       New bound, if less than the current bound
                       an error code is returned.
      */
-    void enlargeVariableBound(int vh, bool prime, int b);
+    inline void enlargeVariableBound(int vh, bool prime, int b) {
+      getExpertVar(vh)->enlargeBound(prime, b);
+    }
 
     /** Shrink the possible values for a variable.
       This could modify all nodes in all forests, depending on the
       choice of reduction rule.
-      @param  vh      Variable handle.
+      @param  lev     Variable handle.
       @param  b       New bound, if more than the current bound
                       an error code is returned.
       @param  force   If \a b is too small, and information will be lost,
                       proceed anyway if \a force is true, otherwise
                       return an error code.
      */
-    void shrinkVariableBound(int vh, int b, bool force);
+    void shrinkVariableBound(int vh, int b, bool force) {
+      getExpertVar(vh)->shrinkBound(b, force);
+    }
 
     /* JB Feb 21 08: Not used.
      *
@@ -785,22 +889,25 @@ class expert_domain : public domain {
       @return        An integer array of size equal to the height
                       of the topmost variable in this domain.
      */
-    const int* getHeightsToLevelsMap() const;
-    const int* getLevelsToHeightsMap() const;
-    const int* getLevelBounds() const;
-    bool areLevelsAndHeightsAligned() const;
+    // const int* getHeightsToLevelsMap() const; // unneeded
+    // const int* getLevelsToHeightsMap() const; // unneeded
+    // const int* getLevelBounds() const; // obsolete
+    // bool areLevelsAndHeightsAligned() const; // should always be true
 
     // functions inherited from class domain
-    virtual int getNumForests() const;
+    /*
     virtual int getNumVariables() const;
-    virtual void createVariablesBottomUp(const int* bounds, int N);
     virtual int getVariableBound(int vh, bool prime = false) const;
     virtual int getTopVariable() const;
     virtual int getVariableAbove(int vh) const;
     virtual int getVariableBelow(int vh) const;
-    virtual void showInfo(FILE* strm);
+    */
+
+    virtual int getNumForests() const;
+    virtual void createVariablesBottomUp(const int* bounds, int N);
     virtual forest* createForest(bool rel, forest::range_type t,
         forest::edge_labeling ev);
+    virtual void showInfo(FILE* strm);
 
     // ----------------------------------------------------------------------
 
@@ -809,16 +916,16 @@ class expert_domain : public domain {
     expert_forest** forests;
     int szForests;
 
-    int nVars;
+    // int nVars;
 
-    int* levelBounds;
-    int* pLevelBounds;
-    int allocatedLevels;
-    int topLevel;
+    // int* levelBounds;
+    // int* pLevelBounds;
+    // int allocatedLevels;
+    // int topLevel;
 
-    int* levelsToHeightsMap;
-    int* heightsToLevelsMap;
-    bool levelsAndHeightsAligned;
+    // int* levelsToHeightsMap;
+    // int* heightsToLevelsMap;
+    // bool levelsAndHeightsAligned;
 
     friend class expert_forest;
 
@@ -1643,6 +1750,7 @@ inline int expert_domain::getNumForests() const
 }
 
 
+/*
 inline int expert_domain::getNumVariables() const
 {
   return nVars;
@@ -1730,7 +1838,7 @@ inline bool expert_domain::areLevelsAndHeightsAligned() const
 {
   return levelsAndHeightsAligned;
 }
-
+*/
 
 // **************************** operation *************************************
 

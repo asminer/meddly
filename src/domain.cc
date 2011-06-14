@@ -34,21 +34,105 @@
 #include "forests/evmdd.h"
 #endif
 
+// ----------------------------------------------------------------------
+// varaiable
+// ----------------------------------------------------------------------
 
-// ----------------- domain ------------------------
-
-MEDDLY::domain::domain() {}
-MEDDLY::domain::~domain() {}
-
-// ----------------- expert_domain ------------------------
-
-MEDDLY::expert_domain::expert_domain()
-: nForests(0), forests(0), szForests(0),
-  nVars(0), levelBounds(0), pLevelBounds(0),
-  allocatedLevels(0), topLevel(0),
-  levelsToHeightsMap(0), heightsToLevelsMap(0)
+MEDDLY::variable::variable(int b, char* n)
 {
-  levelsAndHeightsAligned = true;
+  un_bound = b;
+  pr_bound = b;
+  name = n;
+}
+
+MEDDLY::variable::~variable()
+{
+  delete[] name;
+}
+
+// ----------------------------------------------------------------------
+// expert_varaiable
+// ----------------------------------------------------------------------
+
+MEDDLY::expert_variable::expert_variable(int b, char* n)
+ : variable(b, n)
+{
+  domlist = 0;
+  dl_alloc = 0;
+  dl_used = 0;
+}
+
+MEDDLY::expert_variable::~expert_variable()
+{
+  free(domlist);
+}
+
+void MEDDLY::expert_variable::addToList(domain* d)
+{
+  if (dl_used >= dl_alloc) {
+    int ns = dl_alloc+8;
+    domain** dl = (domain**) realloc(domlist, ns * sizeof(void*));
+    if (0==dl) throw error(error::INSUFFICIENT_MEMORY);
+    dl_alloc = ns;
+    domlist = dl;
+  }
+  domlist[dl_used] = d;
+  dl_used++;
+}
+
+void MEDDLY::expert_variable::removeFromList(const domain* d)
+{
+  int find;
+  for (find=0; find<dl_used; find++) {
+    if (d == domlist[find]) break;
+  }
+  if (find >= dl_used) return;  // not found; should we throw something?
+  domlist[find] = domlist[dl_used-1];
+  dl_used--;
+}
+
+void MEDDLY::expert_variable::enlargeBound(bool prime, int b)
+{
+  throw error(error::NOT_IMPLEMENTED);
+}
+
+void MEDDLY::expert_variable::shrinkBound(int b, bool force)
+{
+  throw error(error::NOT_IMPLEMENTED);
+}
+
+// ----------------------------------------------------------------------
+// domain
+// ----------------------------------------------------------------------
+
+
+MEDDLY::domain::domain(variable** v, int N) 
+{
+  vars = v;
+  nVars = N;
+  for (int i=0; i<N; i++) {
+    ((expert_variable*)vars[i])->addToList(this);
+  }
+}
+
+MEDDLY::domain::~domain() 
+{
+  for (int i=0; i<nVars; i++) {
+    ((expert_variable*)vars[i])->removeFromList(this);
+  }
+  free(vars);
+}
+
+// ----------------------------------------------------------------------
+// expert_domain
+// ----------------------------------------------------------------------
+
+MEDDLY::expert_domain::expert_domain(variable** x, int n)
+: domain(x, n)
+{
+  nForests = 0;
+  forests = 0;
+  szForests = 0;
 }
 
 
@@ -61,91 +145,40 @@ MEDDLY::expert_domain::~expert_domain()
       DCASSERT(forests[i] == 0);
     }
   }
-  
-  // free arrays
-  free(levelBounds);
-  free(pLevelBounds);
-  free(levelsToHeightsMap);
-  free(heightsToLevelsMap);
 }
 
 
 void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
 {
   // domain must be empty -- no variables defined so far
-  DCASSERT(nForests == 0);
-  DCASSERT(nVars == 0);
   if (nForests != 0 || nVars != 0)
     throw error(error::DOMAIN_NOT_EMPTY);
 
-  // N is the number of variables (0: TERMINALS, 1: bottom , N: top)
-  allocatedLevels = 2;
-  while (allocatedLevels < (N + 1))
-    allocatedLevels *= 2;
+  vars = (variable**) malloc((1+N) * sizeof(void*));
+  if (0==vars) throw error(error::INSUFFICIENT_MEMORY);
   nVars = N;
-  topLevel = N;
 
-  levelBounds = (int *) malloc(allocatedLevels * sizeof(int));
-  if (levelBounds == 0) {
-    throw error(error::INSUFFICIENT_MEMORY);
-  }
-
-  pLevelBounds = (int *) malloc(allocatedLevels * sizeof(int));
-  if (pLevelBounds == 0) {
-    free(levelBounds);
-    throw error(error::INSUFFICIENT_MEMORY);
-  }
-
-  levelsToHeightsMap = (int *) malloc(allocatedLevels * sizeof(int));
-  if (levelsToHeightsMap == 0) {
-    free(levelBounds);
-    free(pLevelBounds);
-    throw error(error::INSUFFICIENT_MEMORY);
-  }
-  
-  heightsToLevelsMap = (int *) malloc(allocatedLevels * sizeof(int));
-  if (heightsToLevelsMap == 0) {
-    free(levelBounds);
-    free(pLevelBounds);
-    free(levelsToHeightsMap);
-    throw error(error::INSUFFICIENT_MEMORY);
-  }
-
-  levelBounds[0] = 0;
-  pLevelBounds[0] = 0;
-  levelsToHeightsMap[0] = 0;
-  heightsToLevelsMap[0] = 0;
-  for (int i = 1; i < N + 1; ++i) {
-    levelBounds[i] = bounds[i-1];
-    pLevelBounds[i] = bounds[i-1];
-    levelsToHeightsMap[i] = i;
-    heightsToLevelsMap[i] = i;
-  }
-  // identify invalid levels with -1
-  for (int i = N + 1; i < allocatedLevels; ++i) {
-    levelBounds[i] = -1;
-    pLevelBounds[i] = -1;
-    levelsToHeightsMap[i] = -1;
-    heightsToLevelsMap[i] = -1;
+  vars[0] = 0;
+  for (int i=1; i<=N; i++) {
+    vars[i] = MEDDLY::createVariable(bounds[i-1], 0);
   }
 }
 
 
 void MEDDLY::expert_domain::createVariablesTopDown(const int* bounds, int N)
 {
-  // use createVariablesBottomUp, and then fix the levels to heights mapping
-  createVariablesBottomUp(bounds, N);
+  // domain must be empty -- no variables defined so far
+  if (nForests != 0 || nVars != 0)
+    throw error(error::DOMAIN_NOT_EMPTY);
 
-  // modify levelsToHeightsMap and heightsToLevelsMap such that
-  // height(level1) = N, height(level2) = N - 1, ..., height(levelN) = 1
-  for (int i = 1; i < N + 1; ++i) {
-    levelsToHeightsMap[i] = N + 1 - i;
-    heightsToLevelsMap[N + 1 - i] = i;
+  vars = (variable**) malloc((1+N) * sizeof(void*));
+  if (0==vars) throw error(error::INSUFFICIENT_MEMORY);
+  nVars = N;
+
+  vars[0] = 0;
+  for (int i=N; i; i--) {
+    vars[N-i+1] = MEDDLY::createVariable(bounds[i], 0);
   }
-  // you could do that above with N/2 swaps but that is less readable
-  // and this method is not a significant factor in library performance.
-
-  levelsAndHeightsAligned = false;
 }
 
 
@@ -155,11 +188,12 @@ void MEDDLY::expert_domain::showInfo(FILE* strm)
   fprintf(strm, "Domain info:\n");
   fprintf(strm, "  #variables: %d\n", nVars);
   fprintf(strm, "  Variables listed in height-order (ascending):\n");
-  fprintf(strm, "    height\t\thandle\t\tbound\t\tprime-bound\n");
+  fprintf(strm, "    height\t\tname\t\tbound\t\tprime-bound\n");
   for (int i = 1; i < nVars + 1; ++i) {
-    int level = heightsToLevelsMap[i];
-    fprintf(strm, "    %d\t\t%d\t\t%d\t\t%d\n",
-            i, heightsToLevelsMap[i], levelBounds[level], pLevelBounds[level]);
+    const char* name = vars[i]->getName();
+    if (0==name) name = "null";
+    fprintf(strm, "    %d\t\t%s\t\t%d\t\t%d\n",
+            i, name, vars[i]->getBound(0), vars[i]->getBound(1));
   }
 
   // call showNodes for each of the forests in this domain.
@@ -271,19 +305,6 @@ void MEDDLY::expert_domain::unlinkForest(expert_forest* f)
 }
 
 
-// TODO: not implemented
-void MEDDLY::expert_domain::createVariable(int below, int &vh)
-{
-  // Update levelsAndHeightsAligned when this is implemented
-  throw error(error::NOT_IMPLEMENTED);
-}
-
-
-// TODO: not implemented
-void MEDDLY::expert_domain::destroyVariable(int vh)
-{
-  throw error(error::NOT_IMPLEMENTED);
-}
 
 
 // TODO: not implemented
@@ -299,6 +320,8 @@ int MEDDLY::expert_domain::findVariableBound(int vh) const
   printf(" use getVariableBound().\n");
   return getVariableBound(vh, false);
 }
+
+/*
 
 void MEDDLY::expert_domain::enlargeVariableBound(int vh, bool prime, int b)
 {
@@ -321,4 +344,4 @@ void MEDDLY::expert_domain::shrinkVariableBound(int vh, int b, bool force)
   throw error(error::NOT_IMPLEMENTED);
 }
 
-
+*/

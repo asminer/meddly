@@ -210,20 +210,14 @@ mtmdd_node_manager::createEdgeInternal(const int* const* vlist,
   bool specialCasesFound = false;
   for (int i = 0; i < N; i++)
   {
-    const int* h2l_map = expertDomain->getHeightsToLevelsMap();
-    int currHeight = expertDomain->getNumVariables();
-    int currLevel = h2l_map[currHeight];
-    while (currHeight > 0)
-    {
-      int bound = vlist[i][currLevel] + 1;
-      if (bound >= getLevelSize(currLevel))
-        expertDomain->enlargeVariableBound(currLevel, false, bound);
+    for (int level = expertDomain->getNumVariables(); level; level--) {
+      int bound = vlist[i][level] + 1;
+      if (bound >= getLevelSize(level))
+        expertDomain->enlargeVariableBound(level, false, bound);
       else if (bound < 0)
         specialCasesFound = true;
-      currHeight--;
-      currLevel = h2l_map[currHeight];
-    }
-  }
+    } // for level
+  } // for i
 
   if (N == 1 || specialCasesFound) {
     // build using "standard" procedure
@@ -660,30 +654,28 @@ int mtmdd_node_manager::inPlaceSortBuild(int height, int begin, int end)
   }
 
   int nextHeight = height - 1;
-  int level = expertDomain->getVariableWithHeight(height);
-  DCASSERT(level > 0);
 
   if (begin + 1 == end) {
     // nothing to sort; just build a node starting at this level
     int n = inPlaceSortBuild<T>(nextHeight, begin, end);
-    int index = list[begin][level];
-    int result = createNode(level, index, n);
+    int index = list[begin][height];
+    int result = createNode(height, index, n);
     unlinkNode(n);
     return result;
   }
 
   // Sort elements at this level
-  int nodeSize = 1 + inPlaceSort<T>(level, begin, end);
+  int nodeSize = 1 + inPlaceSort<T>(height, begin, end);
 
   // build node
-  int result = createTempNode(level, nodeSize, true);
+  int result = createTempNode(height, nodeSize, true);
   int* ptr = getFullNodeDownPtrs(result);
   for (int i = begin; i < end; )
   {
-    int index = list[i][level];
+    int index = list[i][height];
     int start = i++;
     // skip the elements with the same index at this level
-    for ( ; i < end && list[i][level] == index; ++i);
+    for ( ; i < end && list[i][height] == index; ++i);
     ptr[index] = inPlaceSortBuild<T>(nextHeight, start, i);
   }
 

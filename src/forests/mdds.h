@@ -355,8 +355,8 @@ class node_manager : public expert_forest {
     void dumpInternal(FILE *s) const; 
     void dumpInternalLevel(FILE *s, int k) const; 
 
-    int setLevelBoundsAndHeights();
-    int setLevelBoundAndHeight(int k, int sz, int h);
+    void setLevelBounds();
+    void setLevelBound(int k, int sz);
 
     long getUniqueTableMemoryUsed() const;
     long getTempNodeCount() const;
@@ -440,6 +440,7 @@ class node_manager : public expert_forest {
     // get the id used to indicate temporary nodes
     int getTempNodeId() const;
 
+    /*
     // Cardinality for Mdds and MtMdds
     // k is the height (>= 0)
     double cardinality(int p, int k, std::map<int, double>& visited) const;
@@ -449,6 +450,7 @@ class node_manager : public expert_forest {
     // the current primed or unprimed level.
     double cardinalityForRelations(int p, int k, bool primeLevel,
         std::map<int, double>& visited) const;
+    */
 
     // Checks if one of the following reductions is satisfied:
     // Fully, Quasi, Identity Reduced.
@@ -974,7 +976,8 @@ inline int node_manager::getLevelNode(int k) const {
 }
 
 inline bool node_manager::isValidVariable(int vh) const {
-  return expertDomain->getVariableHeight(vh) != -1;
+  return (vh > 0) && (vh <= expertDomain->getNumVariables());
+  //return expertDomain->getVariableHeight(vh) != -1;
 }
 
 inline void

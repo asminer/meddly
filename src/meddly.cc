@@ -103,13 +103,25 @@ const char* MEDDLY::getLibraryInfo(int what)
   return 0;
 }
 
-MEDDLY::domain* MEDDLY::createDomain()
+MEDDLY::variable* MEDDLY::createVariable(int bound, char* name)
 {
   if (0==ECM) throw error(error::UNINITIALIZED);
-  return new expert_domain();
+  return new expert_variable(bound, name);
 }
 
+MEDDLY::domain* MEDDLY::createDomain(variable** vars, int N)
+{
+  if (0==ECM) throw error(error::UNINITIALIZED);
+  return new expert_domain(vars, N);
+}
 
+MEDDLY::domain* MEDDLY::createDomainBottomUp(const int* bounds, int N)
+{
+  if (0==ECM) throw error(error::UNINITIALIZED);
+  domain* d = new expert_domain(0, 0);
+  d->createVariablesBottomUp(bounds, N);
+  return d;
+}
 
 MEDDLY::compute_manager* MEDDLY::getComputeManager()
 {
