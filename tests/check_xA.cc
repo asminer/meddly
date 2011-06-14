@@ -171,9 +171,8 @@ int main(int argc, const char** argv)
   CM = getComputeManager();
   assert(CM);
 
-  domain* ozd = createDomain();
+  domain* ozd = createDomainBottomUp(vars, 3);
   assert(ozd);
-  ozd->createVariablesBottomUp(vars, 3);
   forest* evpmdds = ozd->createForest(0, forest::INTEGER, forest::EVPLUS);
   assert(evpmdds);
   forest* mtmxds = ozd->createForest(1, forest::REAL, forest::MULTI_TERMINAL);

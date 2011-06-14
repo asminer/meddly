@@ -168,10 +168,9 @@ long mdd_int_card::compute(op_info* owner, int ht, int a)
   if (f->getNodeHeight(a) < ht) {
     // skipped level
     const expert_domain* d = smart_cast <const expert_domain*> (f->getDomain());
-    int k = d->getVariableWithHeight(ht);
     long card = compute(owner, ht-1, a);
     if (card<0) return -1;
-    long ans = card * f->getLevelSize(k);
+    long ans = card * f->getLevelSize(ht);
     if (ans < card) return -1; // overflow
     return ans;
   }
@@ -295,8 +294,7 @@ double mdd_real_card::compute(op_info* owner, int ht, int a)
   if (f->getNodeHeight(a) < ht) {
     // skipped level
     const expert_domain* d = smart_cast <const expert_domain*> (f->getDomain());
-    int k = d->getVariableWithHeight(ht);
-    return f->getLevelSize(k) * compute(owner, ht - 1, a);
+    return f->getLevelSize(ht) * compute(owner, ht - 1, a);
   }
   
   // Terminal case
@@ -431,9 +429,8 @@ void mdd_mpz_card::compute(op_info* owner, int ht, int a, mpz_object &card)
   if (f->getNodeHeight(a) < ht) {
     // skipped level
     const expert_domain* d = smart_cast <const expert_domain*> (f->getDomain());
-    int k = d->getVariableWithHeight(ht);
     compute(owner, ht-1, a, card);
-    card.multiply(f->getLevelSize(k));
+    card.multiply(f->getLevelSize(ht));
     return;
   }
   
@@ -572,8 +569,7 @@ long mxd_int_card::compute(op_info* owner, int ht, bool primed, int a)
     }
     if (card<0) return -1;
     const expert_domain* d = smart_cast <const expert_domain*> (f->getDomain());
-    int k = d->getVariableWithHeight(ht);
-    long ans = card * f->getLevelSize(k);
+    long ans = card * f->getLevelSize(ht);
     if (ans < card) return -1; // overflow
     return ans;
   }
@@ -708,8 +704,7 @@ double mxd_real_card::compute(op_info* owner, int ht, bool primed, int a)
                 : compute(owner, ht, true, a);
     }
     const expert_domain* d = smart_cast <const expert_domain*> (f->getDomain());
-    int k = d->getVariableWithHeight(ht);
-    return card * f->getLevelSize(k);
+    return card * f->getLevelSize(ht);
   }
   
   // Terminal case
@@ -853,8 +848,7 @@ void mxd_mpz_card::compute(op_info* owner, int ht, bool primed, int a, mpz_objec
       else        compute(owner, ht, true, a, card);
     }
     const expert_domain* d = smart_cast <const expert_domain*> (f->getDomain());
-    int k = d->getVariableWithHeight(ht);
-    card.multiply(f->getLevelSize(k));
+    card.multiply(f->getLevelSize(ht));
     return;
   }
   

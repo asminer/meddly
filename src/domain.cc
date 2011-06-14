@@ -190,6 +190,25 @@ void MEDDLY::expert_domain::createVariablesTopDown(const int* bounds, int N)
   }
 }
 
+void MEDDLY::expert_domain::insertVariableAboveLevel(int lev, variable* v)
+{
+  throw error(error::NOT_IMPLEMENTED);
+}
+
+void MEDDLY::expert_domain::removeVariableAtLevel(int lev)
+{
+  throw error(error::NOT_IMPLEMENTED);
+}
+
+int MEDDLY::expert_domain::findLevelOfVariable(const variable *v) const
+{
+  // TBD: more efficient implementation based on binary search?
+  int i;
+  for (i=nVars; i; i--) {
+    if (vars[i] == v) break;
+  }
+  return i;
+}
 
 void MEDDLY::expert_domain::showInfo(FILE* strm)
 {

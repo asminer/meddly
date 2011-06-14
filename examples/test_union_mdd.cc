@@ -145,9 +145,8 @@ int main(int argc, char *argv[])
   initialize(s);
 
   // Create a domain
-  domain *d = createDomain();
+  domain *d = createDomainBottomUp(bounds, nVariables);
   assert(d != 0);
-  d->createVariablesBottomUp(bounds, nVariables);
 
   // Create an MDD forest in this domain (to store states)
   forest* states = d->createForest(false, forest::BOOLEAN,

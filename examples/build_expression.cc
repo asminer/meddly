@@ -92,9 +92,8 @@ int main(int argc, char *argv[])
     bounds[i] = variableBound;
 
   // Create a domain
-  domain *d = createDomain();
+  domain *d = createDomainBottomUp(bounds, nVariables);
   assert(d != 0);
-  d->createVariablesBottomUp(bounds, nVariables);
 
   // Create an MXD forest in this domain (to store states)
 

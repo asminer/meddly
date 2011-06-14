@@ -298,9 +298,8 @@ int main(int argc, char *argv[])
   initialize();
 
   // Create a domain
-  domain *d = createDomain();
+  domain *d = createDomainBottomUp(bounds, nVariables);
   assert(d != 0);
-  d->createVariablesBottomUp(bounds, nVariables);
 
   // Create a MTMXD forest in this domain
 #if USE_REALS

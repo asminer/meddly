@@ -800,6 +800,7 @@ class expert_domain : public domain {
       @return         The variable with this height. If the height is not in
                       [0, height of top variable], returns -1.
      */
+
 #ifdef _MSC_VER
   __declspec(deprecated)
 #endif

@@ -449,13 +449,10 @@ int main(int argc, char *argv[])
 
   printf("Initiailzing forests\n");
 
-  // Create a domain
-  domain *d = createDomain();
-  assert(d != NULL);
-
-  // Set up the state variables.
+  // Create a domain and set up the state variables.
   // Use one per "machine", with 4 values each: {W = 0, M, B, G}
-  d->createVariablesBottomUp(bounds, nLevels);
+  domain *d = createDomainBottomUp(bounds, nLevels);
+  assert(d != NULL);
 
   // Create an MDD forest in this domain (to store states)
   forest* mdd =

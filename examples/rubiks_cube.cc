@@ -218,14 +218,14 @@ void CheckVars(domain *d)
   // more flexible.
   int nVars = d->getNumVariables();
   int currHeight = nVars;
-  int topVar = d->getTopVariable();
+  int topVar = d->getNumVariables();
   while (topVar > 0)
   {
     if (topVar != currHeight) {
       // complain
       exit(1);
     }
-    topVar = d->getVariableBelow(topVar);
+    topVar--;
     currHeight--;
   }
 }
@@ -1239,22 +1239,19 @@ int main(int argc, char *argv[])
   initialize();
 
   // Set up the state variables, as described earlier
-  d = createDomain();
+  d = createDomainBottomUp(sizes, num_levels);
   if (NULL == d) {
     fprintf(stderr, "Couldn't create domain\n");
     return 1;
   }
-  d->createVariablesBottomUp(sizes, num_levels);
   CheckVars(d);
 
-  int topVar = d->getTopVariable();
-  int height = d->getNumVariables();
+  int topVar = d->getNumVariables();
   while (topVar > 0)
   {
-    printf("height %d, level %d, size %d\n", height, topVar,
+    printf("level %d, size %d\n", topVar,
         static_cast<expert_domain*>(d)->getVariableBound(topVar));
-    topVar = d->getVariableBelow(topVar);
-    height--;
+    topVar--;
   }
 
   // Create forests

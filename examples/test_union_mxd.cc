@@ -123,9 +123,8 @@ int main(int argc, char *argv[])
   initialize(s);
 
   // Create a domain
-  domain *d = createDomain();
+  domain *d = createDomainBottomUp(bounds, nVariables);
   assert(d != 0);
-  d->createVariablesBottomUp(bounds, nVariables);
 
   // Create an MXD forest in this domain (to store a relation)
   forest* xd = d->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);

@@ -103,9 +103,8 @@ forest* buildQueenForest()
   for (int i=0; i<N*N; i++) {
     vars[i] = 2;
   }
-  domain* d = createDomain();
+  domain* d = createDomainBottomUp(vars, N*N);
   assert(d);
-  d->createVariablesBottomUp(vars, N*N);
   forest* f = d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL);
   assert(f);
 

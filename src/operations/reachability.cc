@@ -273,7 +273,7 @@ void mdd_reachability_dfs::initialize(op_info* o)
   assert(mxdDifference != 0);
 
   // Intialize the scratch 2-D vector (i.e. make it the correct size)
-  int nLevels = ed->getTopVariable() + 1;
+  int nLevels = ed->getNumVariables() + 1;
 
   // Initialize the splits vector
   splits.resize(nLevels, 0);
@@ -292,15 +292,14 @@ void mdd_reachability_dfs::initialize(op_info* o)
   memset(scratch2, 0, scratchSize * sizeof(int*));
   for (unsigned height = ed->getNumVariables(); height > 0; --height)
   {
-    int lh = ed->getVariableWithHeight(height);
-    int sz = ed->getVariableBound(lh);
-    assert(lh < scratchSize);
-    scratch0[lh] = (int*) malloc(sz * sizeof(int));
-    scratch1[lh] = (int*) malloc(sz * sizeof(int));
-    scratch2[lh] = (int*) malloc(sz * sizeof(int));
-    memset(scratch0[lh], 0, sz * sizeof(int));
-    memset(scratch1[lh], 0, sz * sizeof(int));
-    memset(scratch2[lh], 0, sz * sizeof(int));
+    int sz = ed->getVariableBound(height);
+    assert(height < scratchSize);
+    scratch0[height] = (int*) malloc(sz * sizeof(int));
+    scratch1[height] = (int*) malloc(sz * sizeof(int));
+    scratch2[height] = (int*) malloc(sz * sizeof(int));
+    memset(scratch0[height], 0, sz * sizeof(int));
+    memset(scratch1[height], 0, sz * sizeof(int));
+    memset(scratch2[height], 0, sz * sizeof(int));
   }
 }
 
@@ -730,8 +729,7 @@ int mdd_reachability_dfs::recFire(int mdd, int mxd)
   int mxdHeight = xdf->getNodeHeight(mxd);
   int mddHeight = ddf->getNodeHeight(mdd);
   int nodeHeight = MAX(mxdHeight, mddHeight);
-  int nodeLevel = ed->getVariableWithHeight(nodeHeight);
-  int newSize = ddf->getLevelSize(nodeLevel);
+  int newSize = ddf->getLevelSize(nodeHeight);
   std::vector<int> node(newSize, 0);
 
   if (mxdHeight < mddHeight) {
@@ -878,9 +876,9 @@ int mdd_reachability_dfs::recFire(int mdd, int mxd)
 
   unsigned i = 0u;
   for ( ; i < node.size() && node[i] == 0; i++);
-  if (i != node.size()) saturateHelper(nodeLevel, node);
+  if (i != node.size()) saturateHelper(nodeHeight, node);
 
-  int n = ddf->createTempNode(nodeLevel, node);
+  int n = ddf->createTempNode(nodeHeight, node);
   result = ddf->reduceNode(n);
 
   saveResult(owner, mdd, mxd, result);
@@ -1740,8 +1738,7 @@ int mdd_backward_reachability_dfs::reverseRecFire(int mdd, int mxd)
   int mxdHeight = xdf->getNodeHeight(mxd);
   int mddHeight = ddf->getNodeHeight(mdd);
   int nodeHeight = MAX(mxdHeight, mddHeight);
-  int nodeLevel = ed->getVariableWithHeight(nodeHeight);
-  int newSize = ddf->getLevelSize(nodeLevel);
+  int newSize = ddf->getLevelSize(nodeHeight);
   std::vector<int> node(newSize, 0);
 
   if (mxdHeight < mddHeight) {
@@ -1845,9 +1842,9 @@ int mdd_backward_reachability_dfs::reverseRecFire(int mdd, int mxd)
 
   unsigned i = 0u;
   for ( ; i < node.size() && node[i] == 0; i++);
-  if (i != node.size()) reverseSaturateHelper(nodeLevel, node);
+  if (i != node.size()) reverseSaturateHelper(nodeHeight, node);
 
-  int n = ddf->createTempNode(nodeLevel, node);
+  int n = ddf->createTempNode(nodeHeight, node);
   result = ddf->reduceNode(n);
 
   saveResult(owner, mdd, mxd, result);
