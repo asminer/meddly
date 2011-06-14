@@ -1309,7 +1309,7 @@ int main(int argc, char *argv[])
 #endif
   }
 
-  delete d;
+  destroyDomain(d);
   cleanup();
   fprintf(stderr, "\n\nDONE\n");
   return 0;

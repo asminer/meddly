@@ -97,9 +97,11 @@ class expert_forest : public forest
     expert_forest(domain *d, bool rel, range_type t, edge_labeling ev,
       reduction_rule r, node_storage s, node_deletion_policy ndp);
 
-    /// Destructor.  Will request the domain to destroy the forest.
+  protected:
+    /// Destructor.
     virtual ~expert_forest();  
 
+  public:
     /// Returns a non-modifiable pointer to this forest's domain.
     const domain* getDomain() const;
 
@@ -542,6 +544,7 @@ class expert_forest : public forest
 
   private:
     friend class dd_edge;
+    friend void MEDDLY::destroyDomain(domain* &d);
     void registerEdge(dd_edge& e);
     void unregisterEdge(dd_edge& e);
 
@@ -701,8 +704,11 @@ class expert_variable : public variable {
 class expert_domain : public domain {
   public:
     expert_domain(variable**, int);
+
+  protected:
     ~expert_domain();
 
+  public:
     /** Create all variables at once, from the top down.
       Requires the domain to be "empty" (containing no variables or forests).
       @param  bounds  Current variable bounds.
@@ -885,14 +891,15 @@ class expert_domain : public domain {
     expert_forest** forests;
     int szForests;
 
-    friend class expert_forest;
-
     // Forests may be deleted either by calling the destructor for the forest,
     // or by destroying the domain. The domain maintains a list of forest
     // handles to delete the forests linked to it. To make sure that a forest
     // is not deleted more than once, the list of forest handles in the domain
     // is updated by a call to unlinkForest from the forest destructor.
-    void unlinkForest(expert_forest *);
+    void unlinkForest(forest *);
+
+    friend void MEDDLY::destroyForest(forest* &f);
+    friend void MEDDLY::destroyDomain(domain* &d);
 };
 
 

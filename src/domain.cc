@@ -145,13 +145,9 @@ MEDDLY::expert_domain::expert_domain(variable** x, int n)
 
 MEDDLY::expert_domain::~expert_domain()
 {
-  // delete registered forests
-  for (int i = 0; i < szForests; ++i) {
-    if (forests[i] != 0) {
-      delete forests[i];
-      DCASSERT(forests[i] == 0);
-    }
-  }
+  // just cleanup
+  free(forests);
+
 }
 
 
@@ -318,7 +314,7 @@ MEDDLY::forest* MEDDLY::expert_domain::createForest(bool rel, forest::range_type
 }
 
 
-void MEDDLY::expert_domain::unlinkForest(expert_forest* f)
+void MEDDLY::expert_domain::unlinkForest(forest* f)
 {
   // find forest
   int i = 0;

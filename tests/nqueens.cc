@@ -184,8 +184,8 @@ long buildQueenSolutions(int N)
   delete[] dgp;
   delete[] dgm;
   delete[] constr;
-  delete f;
-  delete d;
+  destroyForest(f);
+  destroyDomain(d);
   return c;
 }
 

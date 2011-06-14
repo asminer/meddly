@@ -148,9 +148,8 @@ int main(int argc, char *argv[])
   fprintf(stdout, "\nMTMDD after PRE_IMAGE:\n\n");
   postImage.show(stdout, 2);
 
-  // Cleanup; in this case simply delete the domain
-  delete d;
-
+  // Cleanup
+  MEDDLY::destroyDomain(d);
   MEDDLY::cleanup();
 
   return 0;

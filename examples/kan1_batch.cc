@@ -230,7 +230,7 @@ int main(int argc, char* argv[])
   if (doMTMXDIterator)      testMTMXDIterator(nsf);
 
   // Cleanup
-  delete d;
+  destroyDomain(d);
   cleanup();
 
   fprintf(stderr, "\nDone\n");

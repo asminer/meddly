@@ -316,8 +316,11 @@ namespace MEDDLY {
       /// Constructor -- this class cannot be instantiated.
       forest();
 
-      /// Destructor.  Will request the domain to destroy the forest.
+    protected:
+      /// Destructor.
       virtual ~forest();  
+
+    public:
 
       /// Returns a non-modifiable pointer to this forest's domain.
       virtual const domain* getDomain() const = 0;
@@ -825,8 +828,14 @@ namespace MEDDLY {
                             2 : internal forest + statistics.
       */
       virtual void showInfo(FILE* strm, int verbosity=0) = 0;
+
+
+    friend void MEDDLY::destroyForest(forest* &f);
   };
 
+  /** Front-end function to destroy a forest.
+  */
+  void destroyForest(forest* &f);
 
   // ******************************************************************
   // *                                                                *
@@ -999,12 +1008,14 @@ namespace MEDDLY {
       */
       virtual void showInfo(FILE* strm) = 0;
 
-      /// Destructor.
-      virtual ~domain();
-
     protected:
       /// Constructor.
       domain(variable** v, int N);
+
+      /// Destructor.
+      virtual ~domain();
+
+      friend void MEDDLY::destroyDomain(domain* &d);
 
       variable** vars;
       int nVars;
@@ -1053,6 +1064,11 @@ namespace MEDDLY {
   inline domain* MEDDLY_createDomain() {
     return createDomain();
   }
+
+  /** Front-end function to destroy a domain.
+      For consistency.
+  */
+  void destroyDomain(domain* &d);
 
   // ******************************************************************
   // *                                                                *

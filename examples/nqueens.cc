@@ -255,6 +255,7 @@ int main()
       printf("\tQueen for row %2d in column %2d\n", i, minterm[i]+1);
     }
   }
+  destroyDomain(d);
   cleanup();
   return 0;
 }

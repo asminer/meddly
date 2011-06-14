@@ -266,7 +266,7 @@ int main(int argc, char *argv[])
   nodeC.clear();
 
   // Cleanup; in this case simply delete the domain
-  delete d;
+  destroyDomain(d);
   cleanup();
 
   free(bounds);
@@ -519,7 +519,7 @@ void testA()
   }
 
   // Cleanup; in this case simply delete the domain
-  delete d;
+  destroyDomain(d);
 
   delete [] bounds;
 }
@@ -634,7 +634,7 @@ void testB()
   }
 
   // Cleanup; in this case simply delete the domain
-  delete d;
+  destroyDomain(d);
 
   delete [] bounds;
 }
@@ -742,7 +742,7 @@ void testC()
   }
 
   // Cleanup; in this case simply delete the domain
-  delete d;
+  destroyDomain(d);
 
   delete [] bounds;
 }

@@ -396,7 +396,7 @@ int main(int argc, char *argv[])
 
 
   // Build equivalent MDD
-  delete evmdd;
+  destroyForest(evmdd);
 
 #ifdef TEST_INDEX_SET
 
@@ -477,7 +477,7 @@ int main(int argc, char *argv[])
 
   printf("\n");
   // Cleanup; in this case simply delete the domain
-  delete d;
+  destroyDomain(d);
   cleanup();
 
   free(bounds);

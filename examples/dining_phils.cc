@@ -777,7 +777,7 @@ int main(int argc, char *argv[])
   }
 
   // Cleanup
-  delete d;
+  MEDDLY::destroyDomain(d);
   MEDDLY::cleanup();
 
   printf("\n\nDONE\n");

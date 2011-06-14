@@ -215,7 +215,8 @@ int main()
     printf("\tChecking cross-product for %2d random minterms\n", m);
     test(mdd, mxd, m);
   }
-//  cleanup();
+  destroyDomain(myd);
+  cleanup();
   return 0;
 }
 

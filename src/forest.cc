@@ -91,9 +91,6 @@ MEDDLY::expert_forest::~expert_forest() {
   // to a pointer), the user program will automatically call the
   // destructor for each dd_edge when the corresponding variable goes out of
   // scope. Therefore there is no need to destruct dd_edges from here.
-
-  // Inform the domain that you are going away
-  smart_cast<expert_domain*>(d)->unlinkForest(this);
 }
 
 

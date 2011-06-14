@@ -184,6 +184,7 @@ int main(int argc, const char** argv)
   if (!build_oz(evpmdds, mtmxds, ss, P)) return 1;
   if (!xA_check(ss, P)) return 1;
   if (!Ax_check(ss, P)) return 1;
+  destroyDomain(ozd);
   cleanup();
   return 0;
 }
