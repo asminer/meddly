@@ -95,6 +95,8 @@
 
 using namespace MEDDLY;
 
+// #define NAME_VARIABLES
+
 void printmem(long m)
 {
   if (m<1024) {
@@ -121,18 +123,33 @@ void printmem(long m)
   printf("%3.2lf Tbytes", approx);
 }
 
-int* initializeLevelBounds(int nLevels)
+variable** initializeVariables(int nLevels)
 {
-  // set bounds (node size) for each level
+  // set bounds for each variable
   // forks: 2 states, philosophers: 5 states
-  int *bounds = (int *) malloc(nLevels * sizeof(int));
-  for (int i = nLevels - 1; i >= 0; i -= 2) {
+  variable** vars = (variable**) malloc((1+nLevels) * sizeof(void*));
+  vars[0] = 0;
+#ifdef NAME_VARIABLES
+  char buffer[32];
+  for (int i = nLevels; i; i -= 2) {
     // forks
-    bounds[i] = 2;
+    buffer[0] = 0;
+    snprintf(buffer, 32, "fork%d", i/2);
+    vars[i] = createVariable(2, strdup(buffer));
     // philosophers one level below corresponding forks
-    bounds[i - 1] = 5;
+    buffer[0] = 0;
+    snprintf(buffer, 32, "phil%d", i/2);
+    vars[i-1] = createVariable(5, strdup(buffer));
   }
-  return bounds;
+#else
+  for (int i = nLevels; i; i -= 2) {
+    // forks
+    vars[i] = createVariable(2, 0);
+    // philosophers one level below corresponding forks
+    vars[i-1] = createVariable(5, 0);
+  }
+#endif
+  return vars;
 }
 
 
@@ -441,7 +458,7 @@ int main(int argc, char *argv[])
   int nLevels = nPhilosophers * 2;
 
   // Set up arrays bounds based on nPhilosophers
-  int *bounds = initializeLevelBounds(nLevels);
+  variable** vars = initializeVariables(nLevels);
 
   expert_compute_manager* ecm = 
     static_cast<expert_compute_manager*>(getComputeManager());
@@ -450,8 +467,7 @@ int main(int argc, char *argv[])
   printf("Initiailzing forests\n");
 
   // Create a domain and set up the state variables.
-  // Use one per "machine", with 4 values each: {W = 0, M, B, G}
-  domain *d = createDomainBottomUp(bounds, nLevels);
+  domain *d = createDomain(vars, nLevels);
   assert(d != NULL);
 
   // Create an MDD forest in this domain (to store states)

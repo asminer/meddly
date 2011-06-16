@@ -126,6 +126,7 @@ MEDDLY::domain* MEDDLY::createDomainBottomUp(const int* bounds, int N)
 void MEDDLY::destroyDomain(MEDDLY::domain* &d)
 {
   if (0==d) return;
+  if (0==ECM) throw error(error::UNINITIALIZED);
   expert_domain* ed = (expert_domain*) d;
   // delete registered forests
   for (int i = 0; i < ed->nForests; ++i) {
@@ -138,6 +139,7 @@ void MEDDLY::destroyDomain(MEDDLY::domain* &d)
 void MEDDLY::destroyForest(MEDDLY::forest* &f)
 {
   if (0==f) return;
+  if (0==ECM) throw error(error::UNINITIALIZED);
   expert_domain* ed = (expert_domain*)f->useDomain();
   ed->unlinkForest(f);
   delete f;
