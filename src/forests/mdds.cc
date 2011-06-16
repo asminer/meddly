@@ -1027,7 +1027,12 @@ void node_manager::showNodeGraph(FILE *s, int p) const
   {
     if (discovered[i].empty()) continue;
     int k = unmapLevel(i);
-    fprintf(s, "Level: %d%s\n", ABS(k), (k < 0? "'": " "));
+    const variable* v = d->getVar(ABS(k));
+    if (v->getName()) {
+      fprintf(s, "Level: %s%s\n", v->getName(), (k < 0? "'": " "));
+    } else {
+      fprintf(s, "Level: %d%s\n", ABS(k), (k < 0? "'": " "));
+    }
     for (std::set<int>::iterator iter = discovered[i].begin();
         iter != discovered[i].end(); iter++)
     {
@@ -1066,7 +1071,12 @@ void node_manager::showNode(FILE *s, int p, int verbose) const
 #endif
   int* data = level[l].data;
   if (verbose) {
-    fprintf(s, " level: %d", ABS(unmapLevel(l)));
+    const variable* v = d->getVar(ABS(unmapLevel(l)));
+    if (v->getName()) {
+      fprintf(s, " level: %s", v->getName());
+    } else {
+      fprintf(s, " level: %d", ABS(unmapLevel(l)));
+    }
     if (getNodeLevel(p) < 0)
       fprintf(s, "'");
     else
