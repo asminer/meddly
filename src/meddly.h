@@ -50,6 +50,7 @@ namespace MEDDLY {
   class op_info;
   class ct_object;
   class expert_forest;
+  class unary_opcode;
 
 #ifdef __GMP_H__
   ct_object& get_mpz_wrapper();
@@ -1406,6 +1407,97 @@ namespace MEDDLY {
       bool            updateNeeded;
       const_iterator* beginIterator;
   };
+
+
+  // *****************************************************************
+  // *                           opnd_type                           *
+  // *****************************************************************
+
+  /// Argument and result types for apply operations.
+  enum opnd_type {
+        FOREST      = 0,
+        BOOLEAN     = 1,
+        INTEGER     = 2,
+        REAL        = 3,
+        HUGEINT     = 4,
+        FLOATVECT   = 5,
+        DOUBLEVECT  = 6
+  };
+
+  // ******************************************************************
+  // *                        Unary operations                        *
+  // ******************************************************************
+
+  /** Create a copy of a dd_edge.
+      The copy may be stored in any forest as long as it belongs to the
+      same domain as the original and the transformation is valid.
+      Copying is valid with the following:
+      MDD to MTMDD, MTMDD to MDD, MXD to MTMXD, MTMXD to MXD.
+  */
+  extern const unary_opcode* COPY;
+
+  /// Unary operation.  Return the number of variable assignments 
+  /// so that the function evaluates to non-zero.
+  extern const unary_opcode* CARDINALITY;
+
+  /// For BOOLEAN forests, flip the return values.
+  extern const unary_opcode* COMPLEMENT;
+
+  /// Find the largest value returned by the function.
+  extern const unary_opcode* MAX_RANGE;
+
+  /// Find the smallest value returned by the function.
+  extern const unary_opcode* MIN_RANGE;
+
+  /// Convert MDD to EV+MDD index set.  A special case of COPY, really.
+  extern const unary_opcode* CONVERT_TO_INDEX_SET;
+
+  /** Apply a unary operator.
+      The operand and the result are not necessarily in the same forest,
+      but they must belong to forests that share the same domain.
+      This is useful, for instance, for copying a function to a new forest.
+        @param  op    Operator handle.
+        @param  a     Operand.
+        @param  c     Output parameter: the result, where \a c = \a op \a a.
+  */
+  void apply(const unary_opcode* op, const dd_edge &a, dd_edge &c);
+
+  /** Apply a unary operator.
+      For operators whose result is an integer.
+        @param  op    Operator handle.
+        @param  a     Operand.
+        @param  c     Output parameter: the result, where \a c = \a op \a a.
+  */
+  void apply(const unary_opcode* op, const dd_edge &a, long &c);
+
+  /** Apply a unary operator.
+      For operators whose result is a real.
+        @param  op    Operator handle.
+        @param  a     Operand.
+        @param  c     Output parameter: the result, where \a c = \a op \a a.
+  */
+  void apply(const unary_opcode* op, const dd_edge &a, double &c);
+
+  void apply(const unary_opcode* op, const dd_edge &a, opnd_type cr, 
+    ct_object &c);
+
+#ifdef __GMP_H__
+  /** Apply a unary operator.
+      For operators whose result is an arbitrary-precision integer
+      (as supplied by the GNU MP library).
+        @param  op    Operator handle.
+        @param  a     Operand.
+        @param  c     Input: an initialized MP integer.
+                      Output parameter: the result, where \a c = \a op \a a.
+  */
+  inline void apply(const unary_opcode* op, const dd_edge &a, mpz_t &c) {
+    ct_object& x = get_mpz_wrapper();
+    apply(op, a, HUGEINT, x);
+    unwrap(x, c);
+  }
+#endif
+
+
 
 
 // ******************************************************************

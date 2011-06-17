@@ -36,7 +36,7 @@ namespace MEDDLY {
 
 /** Abstract base class for cross operations.
 */
-class cross_op : public operation {
+class cross_op : public old_operation {
   public:
     cross_op()                              { }
     virtual ~cross_op()                     { }
@@ -297,7 +297,7 @@ compute_primed(op_info* owner, int ht, int a, int b)
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::operation* MEDDLY::getCrossOperation(const op_param &ot)
+MEDDLY::old_operation* MEDDLY::getCrossOperation(const op_param &ot)
 {
   if (!ot.isForest()) return 0;
   if (!ot.isBoolForest()) return 0;

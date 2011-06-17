@@ -85,7 +85,7 @@ op_info* getOp(forest* f, compute_manager::op_code op)
 // 
 // This is only valid for operations of the form C = A op B,
 // where A, B and C belong to the same forest.
-op_info* getOp(forest* f, operation* op)
+op_info* getOp(forest* f, old_operation* op)
 {
   static const int nForests = 3;
   static op_param plist[nForests];

@@ -271,7 +271,7 @@ MEDDLY::binary_compute_cache::binary_compute_cache()
 }
 
 
-MEDDLY::binary_compute_cache::binary_compute_cache(const operation* op,
+MEDDLY::binary_compute_cache::binary_compute_cache(const old_operation* op,
   const op_param* plist, int n)
 : hits(0), pings(0), adds(0), inserts(0)
 {
@@ -292,7 +292,7 @@ MEDDLY::binary_compute_cache::binary_compute_cache(const operation* op,
 }
 
 
-void MEDDLY::binary_compute_cache::set(const operation* op,
+void MEDDLY::binary_compute_cache::set(const old_operation* op,
   expert_forest* f0, expert_forest* f1, expert_forest* f2)
 {
   // op is allowed to be null.

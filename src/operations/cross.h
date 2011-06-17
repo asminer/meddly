@@ -24,7 +24,7 @@
 
 namespace MEDDLY {
 
-  class operation;
+  class old_operation;
   class op_param;
 
   /** Minimalist front-end interface.
@@ -33,7 +33,7 @@ namespace MEDDLY {
         @param  ot  Operand type
         @return The appropriate operation, or 0 on error.
   */
-  operation* getCrossOperation(const op_param &ot);
+  old_operation* getCrossOperation(const op_param &ot);
 
 }
 

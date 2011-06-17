@@ -33,7 +33,7 @@ using namespace MEDDLY;
 
     Abstract class for element-wise MDD operations.
 */
-class mdd_apply_operation : public operation {
+class mdd_apply_operation : public old_operation {
   public:
     mdd_apply_operation();
     virtual ~mdd_apply_operation();
@@ -218,7 +218,7 @@ class mxd_apply_operation : public mdd_apply_operation {
 };
 
 
-class mxd_alt_apply_operation : public operation {
+class mxd_alt_apply_operation : public old_operation {
   public:
     mxd_alt_apply_operation();
     virtual ~mxd_alt_apply_operation();
@@ -999,7 +999,7 @@ class mtmdd_to_mdd_not_equal : public mtmdd_to_mdd_apply_operation {
     one type of forest to another. For example from MTMDD to MDD and
     vice-versa.
 */
-class conversion_operation : public operation {
+class conversion_operation : public old_operation {
   public:
     conversion_operation();
     virtual ~conversion_operation();
@@ -1152,7 +1152,7 @@ class mxd_to_mtmxd : public conversion_operation {
 };
 
 /// Convert MTMDDs to EVMDDs
-class mtmdd_to_evmdd : public operation {
+class mtmdd_to_evmdd : public old_operation {
   public:
     static mtmdd_to_evmdd* getInstance();
 
@@ -1222,7 +1222,7 @@ class mdd_to_evplusmdd_index_set : public mtmdd_to_evmdd {
 
 // --------------------------- EVMDD operations ------------------------------
 
-class evmdd_apply_operation : public operation {
+class evmdd_apply_operation : public old_operation {
   public:
     evmdd_apply_operation();
     virtual ~evmdd_apply_operation();

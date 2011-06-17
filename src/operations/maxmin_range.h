@@ -24,7 +24,7 @@
 
 namespace MEDDLY {
 
-  class operation;
+  class old_operation;
   class op_param;
 
   /** Minimalist front-end interface.
@@ -34,7 +34,7 @@ namespace MEDDLY {
         @param  rt  Return type
         @return The appropriate operation, or 0 on error.
   */
-  operation* getMaxRangeOperation(const op_param &ft, const op_param &rt);
+  old_operation* getMaxRangeOperation(const op_param &ft, const op_param &rt);
 
   /** Minimalist front-end interface.
       Return the appropriate operation for 
@@ -43,7 +43,7 @@ namespace MEDDLY {
         @param  rt  Return type
         @return The appropriate operation, or 0 on error.
   */
-  operation* getMinRangeOperation(const op_param &ft, const op_param &rt);
+  old_operation* getMinRangeOperation(const op_param &ft, const op_param &rt);
 
 }
 

@@ -25,51 +25,51 @@
 
 using namespace MEDDLY;
 
-// ---------------------- operation ------------------------
+// ---------------------- old_operation ------------------------
 
-operation::operation()
+old_operation::old_operation()
 { }
 
 
-operation::~operation() {}
+old_operation::~old_operation() {}
 
 
 // Defaults
 
 void 
-operation::compute(op_info* cc, dd_edge** operands)
+old_operation::compute(op_info* cc, dd_edge** operands)
 {
   throw error(error::TYPE_MISMATCH);
 }
 
 void 
-operation::compute(op_info* cc, const dd_edge& a, dd_edge& b)
+old_operation::compute(op_info* cc, const dd_edge& a, dd_edge& b)
 {
   throw error(error::TYPE_MISMATCH);
 }
 
 void 
-operation::compute(op_info* cc, const dd_edge& a, long& b)
+old_operation::compute(op_info* cc, const dd_edge& a, long& b)
 {
   throw error(error::TYPE_MISMATCH);
 }
 
 void 
-operation::compute(op_info* cc, const dd_edge& a, double& b)
-{
-  throw error(error::TYPE_MISMATCH);
-}
-
-
-void 
-operation::compute(op_info* cc, const dd_edge& a, ct_object &b)
+old_operation::compute(op_info* cc, const dd_edge& a, double& b)
 {
   throw error(error::TYPE_MISMATCH);
 }
 
 
 void 
-operation::compute(op_info* cc, const dd_edge& a, const dd_edge& b, dd_edge& c)
+old_operation::compute(op_info* cc, const dd_edge& a, ct_object &b)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+
+void 
+old_operation::compute(op_info* cc, const dd_edge& a, const dd_edge& b, dd_edge& c)
 {
   throw error(error::TYPE_MISMATCH);
 }
@@ -82,7 +82,7 @@ op_info::op_info()
 {
 }
 
-op_info::op_info(operation *oper, op_param* plist, int n,
+op_info::op_info(old_operation *oper, op_param* plist, int n,
   compute_cache* cache)
 : op(oper), p(0), nParams(n), cc(cache)
 {
@@ -165,11 +165,11 @@ builtin_op_key::~builtin_op_key()
 
 // ---------------------- custom_op_key ------------------------
 
-custom_op_key::custom_op_key(const operation* oper,
+custom_op_key::custom_op_key(const old_operation* oper,
   const op_param* const p, int n)
 : op(0), plist(0), nParams(n)
 {
-  op = const_cast<operation*>(oper);
+  op = const_cast<old_operation*>(oper);
   plist = (op_param*) malloc(nParams * sizeof(op_param));
   for (int i = 0; i < nParams; ++i) plist[i] = p[i];
 }

@@ -33,7 +33,7 @@ namespace MEDDLY {
 
 /** Abstract base class for max, min range operations.
 */
-class maxminrange_op : public operation {
+class maxminrange_op : public old_operation {
   public:
     maxminrange_op()                        { }
     virtual ~maxminrange_op()               { }
@@ -477,7 +477,7 @@ double real_min_range_op::compute(op_info* owner, int a)
 // *                                                                *
 // ******************************************************************
 
-operation* getMaxRangeOperation(const op_param &ft, const op_param &rt)
+old_operation* getMaxRangeOperation(const op_param &ft, const op_param &rt)
 {
   switch (rt.getType()) {
     case op_param::INTEGER:
@@ -497,7 +497,7 @@ operation* getMaxRangeOperation(const op_param &ft, const op_param &rt)
   return 0;
 }
 
-operation* getMinRangeOperation(const op_param &ft, const op_param &rt)
+old_operation* getMinRangeOperation(const op_param &ft, const op_param &rt)
 {
   switch (rt.getType()) {
     case op_param::INTEGER:

@@ -22,6 +22,7 @@ libmeddly_la_SOURCES = \
 	meddly.h \
 	meddly_expert.h \
   meddly.cc \
+  unary.cc \
 	dd_edge.cc \
 	temp_dd_edge.cc \
 	domain.cc \
@@ -29,6 +30,8 @@ libmeddly_la_SOURCES = \
 	compute_manager.cc \
 	compute_cache.cc \
 	compute_cache.h \
+  compute_table.h \
+  compute_table.cc \
 	defines.h \
 	hash.h \
 	fixed_size_hash.h \

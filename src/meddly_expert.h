@@ -70,17 +70,461 @@
 
 namespace MEDDLY {
 
-// Functions for reinterpreting an int to a float and vice-versa
-float   toFloat (int a);
-int     toInt   (float a);
-float*  toFloat (int* a);
+  // Functions for reinterpreting an int to a float and vice-versa
+  float   toFloat (int a);
+  int     toInt   (float a);
+  float*  toFloat (int* a);
 
 
-// Forward declarations
-class operation;
-class compute_cache;
-class expert_domain;
+  // Forward declarations
+  class old_operation;
+  class compute_cache;
+  class compute_table;
+  class expert_domain;
+  class expert_forest;
 
+  // "Global" variables
+  extern compute_table* Monolithic_CT;
+
+  // ******************************************************************
+  // *                     expert_variable  class                     *
+  // ******************************************************************
+
+  class expert_variable : public variable {
+    public:
+      expert_variable(int b, char* n);
+    private:
+      virtual ~expert_variable();
+    public:
+      /// Update our list of domains: add \a d.
+      void addToList(domain* d);
+      /// Update our list of domains: remove \a d.
+      void removeFromList(const domain* d);
+  
+      /** Enlarge the possible values for a variable.
+        This could modify all nodes in all forests, depending on the
+        choice of reduction rule.
+        @param  prime   If prime is true, enlarge the bound for
+                        the primed variable only, otherwise both
+                        the primed and unprimed are enlarged.
+        @param  b       New bound, if less than the current bound
+                        an error is thrown.
+      */
+      void enlargeBound(bool prime, int b);
+
+      /** Shrink the possible values for a variable.
+        This could modify all nodes in all forests, depending on the
+        choice of reduction rule.
+        @param  b       New bound, if more than the current bound
+                        an error is thrown.
+        @param  force   If \a b is too small, and information will be lost,
+                        proceed anyway if \a force is true, otherwise
+                        return an error code.
+      */
+      void shrinkBound(int b, bool force);
+    private:
+      domain** domlist;
+      int dl_alloc;
+      int dl_used;
+  };
+
+  // ******************************************************************
+  // *                      expert_domain  class                      *
+  // ******************************************************************
+
+  class expert_domain : public domain {
+    public:
+      expert_domain(variable**, int);
+
+    protected:
+      ~expert_domain();
+
+    public:
+      /** Create all variables at once, from the top down.
+        Requires the domain to be "empty" (containing no variables or forests).
+        @param  bounds  Current variable bounds.
+                        bounds[0] gives the bound for the top-most variable,
+                        and bounds[N-1] gives the bound for the bottom-most
+                        variable.
+        @param  N       Number of variables.
+      */
+      void createVariablesTopDown(const int* bounds, int N);
+
+      /** Insert a new variable.
+            @param  lev   Level to insert above; use 0 for a 
+                          new bottom-most level.
+            @param  v     Variable to insert.
+      */
+      void insertVariableAboveLevel(int lev, variable* v);
+
+      /** Remove a variable at the specified level.
+          An error is thrown if the variable size is not 1.
+          Use shrinkVariableBound() to make the bound 1.
+          All forests are modified as appropriate.
+            @param  lev   Level number.
+      */
+      void removeVariableAtLevel(int lev);
+
+      /** Find the level of a given variable.
+            @param  v   Variable to search for.
+            @return 0, if the variable was not found;
+                    i, with getVar(i) == v, otherwise.
+      */
+      int findLevelOfVariable(const variable* v) const;
+
+      inline expert_variable* getExpertVar(int lev) const {
+        return (expert_variable*) vars[lev];
+      }
+      inline const expert_variable* readExpertVar(int lev) const {
+        return (expert_variable*) vars[lev];
+      }
+
+    
+
+      /** Add a new variable with bound 1.
+        Can be used when the domain already has forests, in which case
+        all forests are modified as appropriate.
+        @param  below   Placement information: the new variable will appear
+                        immediately above the level \a below.
+      */
+      void createVariable(int below);
+
+      /** Add a new variable with bound 1.
+        Deprecated as of version 0.5; use one paramater version instead.
+      */
+#ifdef _MSC_VER
+      __declspec(deprecated)
+#endif
+#ifdef __GNUC__
+      __attribute__ ((deprecated))
+#endif
+      inline void createVariable(int below, int &vh) {
+        createVariable(below);
+        vh = below+1;
+      }
+
+      /** Destroy a variable with bound 1.
+          Deprecated as of version 0.5; use removeVariableAtLevel instead.
+      */
+#ifdef _MSC_VER
+      __declspec(deprecated)
+#endif
+#ifdef __GNUC__
+      __attribute__ ((deprecated))
+#endif
+      inline void destroyVariable(int vh) { removeVariableAtLevel(vh); }
+
+      /** Get the position of the variable in this domain's variable-order.
+        \a TERMINALS are considered to be at height 0.
+        be at height 0.
+        Deprecated as of version 0.5: level height always equals level handle.
+        @param  vh      Any variable handle.
+        @return         The variable at this height. 0 for \a TERMINALS.
+                        If \a vh is not a valid level handle, return -1.
+      */
+#ifdef _MSC_VER
+      __declspec(deprecated)
+#endif
+#ifdef __GNUC__
+      __attribute__ ((deprecated))
+#endif
+      inline int getVariableHeight(int vh) const { return vh; }
+
+      /** Get the variable with height \a ht in this domain's variable-order.
+        \a TERMINALS are considered to be at height 0.
+        Deprecated as of version 0.5: level height always equals level handle.
+        @param  ht      Height of the variable.
+        @return         The variable with this height. If the height is not in
+                        [0, height of top variable], returns -1.
+      */
+#ifdef _MSC_VER
+      __declspec(deprecated)
+#endif
+#ifdef __GNUC__
+      __attribute__ ((deprecated))
+#endif
+      inline int getVariableWithHeight(int ht) const { return ht; }
+
+      /** Swap the locations of variables in forests.
+        I.e., changes the variable ordering of all forests with this domain.
+        @param  lev1    Level of first variable.
+        @param  lev2    Level of second variable.
+      */
+      void swapOrderOfVariables(int lev1, int lev2);
+
+      /** Find the actual bound of a variable.
+        @param  vh      Variable handle.
+        @return         The smallest shrinkable bound before information loss
+                        for variable \a vh. If \a vh is invalid, or TERMINALS,
+                        returns 0.
+      */
+      int findVariableBound(int vh) const;
+
+      /** Enlarge the possible values for a variable.
+        This could modify all nodes in all forests, depending on the
+        choice of reduction rule.
+        @param  lev     Variable handle.
+        @param  prime   If prime is true, enlarge the bound for
+                        the primed variable only, otherwise both
+                        the primed and unprimed are enlarged.
+        @param  b       New bound, if less than the current bound
+                        an error code is returned.
+      */
+      inline void enlargeVariableBound(int vh, bool prime, int b) {
+        getExpertVar(vh)->enlargeBound(prime, b);
+      }
+
+      /** Shrink the possible values for a variable.
+        This could modify all nodes in all forests, depending on the
+        choice of reduction rule.
+        @param  lev     Variable handle.
+        @param  b       New bound, if more than the current bound
+                        an error code is returned.
+        @param  force   If \a b is too small, and information will be lost,
+                        proceed anyway if \a force is true, otherwise
+                        return an error code.
+      */
+      void shrinkVariableBound(int vh, int b, bool force) {
+        getExpertVar(vh)->shrinkBound(b, force);
+      }
+
+      // functions inherited from class domain
+      virtual int getNumForests() const;
+      virtual void createVariablesBottomUp(const int* bounds, int N);
+      virtual forest* createForest(bool rel, forest::range_type t,
+        forest::edge_labeling ev);
+      virtual void showInfo(FILE* strm);
+  
+      // --------------------------------------------------------------------
+
+    private:
+      int nForests;
+      expert_forest** forests;
+      int szForests;
+
+      // Forests may be deleted either by calling the destructor for the
+      // forest, or by destroying the domain. The domain maintains a list of
+      // forest handles to delete the forests linked to it. To make sure that a
+      // forest is not deleted more than once, the list of forest handles in
+      // the domain is updated by a call to unlinkForest from the forest
+      // destructor.
+      void unlinkForest(forest *);
+
+      friend void MEDDLY::destroyForest(forest* &f);
+      friend void MEDDLY::destroyDomain(domain* &d);
+  };
+
+
+  // ******************************************************************
+  // *                        operation  class                        *
+  // ******************************************************************
+  /** Generic operation.
+      Necessary for compute table entries.
+  */
+  class operation {
+    protected:
+      int key_length; 
+      int ans_length; 
+    public:
+      operation();
+
+      // tbd: privatize this
+      virtual ~operation();
+
+      /// Number of ints that make up the key (usually the operands).
+      inline int getKeyLength() const { 
+        return key_length; 
+      }
+
+      /// Number of ints that make up the answer (usually the results).
+      inline int getAnsLength() const { 
+        return ans_length; 
+      }
+
+      /// Number of ints that make up the entire record (key + answer)
+      inline int getCacheEntryLength() const { 
+        return key_length + ans_length; 
+      }
+
+      // are these used?
+
+      inline int getKeyLengthInBytes() const { 
+        return sizeof(int) * key_length;
+      }
+      inline int getAnsLengthInBytes() const {
+        return sizeof(int) * ans_length;
+      }
+      inline int getCacheEntryLengthInBytes() const {
+        return sizeof(int) * (key_length + ans_length);
+      }
+
+      /// Checks if the cache entry (in entryData[]) is stale.
+      virtual bool isEntryStale(const int* entryData) = 0;
+
+      /// Removes the cache entry (in entryData[]) by informing the
+      /// applicable forests that the nodes in this entry are being removed
+      /// from the cache
+      virtual void discardEntry(const int* entryData) = 0;
+
+      /// Prints a string representation of this cache entry on strm (stream).
+      virtual void showEntry(FILE* strm, const int *entryData) const = 0;
+  };
+
+  // ******************************************************************
+  // *                     unary_operation  class                     *
+  // ******************************************************************
+
+  /** Mechanism to apply a unary operation in a specific forest.
+      Specific operations will be derived from this class.
+  */
+  class unary_operation : public operation {
+      // not sure if this is necessary:
+      const unary_opcode* opcode;
+      // for cache of operations.
+      unary_operation* next;
+    protected:
+      expert_forest* argF;
+      expert_forest* resF;
+      opnd_type resultType;
+    public:
+      unary_operation(const unary_opcode* code, 
+        expert_forest* arg, expert_forest* res);
+
+      unary_operation(const unary_opcode* code,
+        expert_forest* arg, opnd_type res);
+
+      // tbd: privatize this...
+      virtual ~unary_operation();
+
+      // handy
+      const char* getName() const;
+
+      // used by "compute manager"
+
+      inline bool matches(const expert_forest* arg, const expert_forest* res) 
+        const { 
+          return (arg == argF && res == resF); 
+        }
+
+      inline bool matches(const expert_forest* arg, opnd_type res) const { 
+        return (arg == argF && resultType == res); 
+      }
+
+      inline unary_operation* getNext()         { return next; }
+      inline void setNext(unary_operation* n)   { next = n; }
+
+      // high-level front-ends
+      virtual void compute(const dd_edge &arg, dd_edge &res);
+      virtual void compute(const dd_edge &arg, long &res);
+      virtual void compute(const dd_edge &arg, double &res);
+      virtual void compute(const dd_edge &arg, ct_object &c);
+
+      // TBD: low-level front-ends?
+      // e.g.,
+      // virtual int computeDD(int k, int p);
+      // virtual void computeEvDD(int k, int v, int p, int &w, int &q);
+  };
+
+  // ******************************************************************
+  // *                      unary_builder  class                      *
+  // ******************************************************************
+
+  /** Mechanism for building unary_operations.
+      This class will have many derived classes.
+      Each instance of this class will know how to build a particular
+      type of unary operation.
+      The goal here is to simplify the logic for building operations.
+  */
+  class unary_builder {
+      unary_builder* next;
+    protected:
+      const unary_opcode* opcode;
+    public:
+      unary_builder(unary_opcode* oc);
+      virtual ~unary_builder();
+
+      inline unary_builder* getNext() { return next; }
+
+      /** Does this builder know how to build
+          the operation for the given forests?
+          Default behavior is to always return false.
+      */
+      virtual bool canBuild(const forest* arg, const forest* res) const;
+
+      /** Does this builder know how to build
+          the operation for the given forest and return type?
+          Default behavior is to always return false.
+      */
+      virtual bool canBuild(const forest* arg, opnd_type res) const;
+
+      /** Build the requested operation (it is assumed that we can.)
+          Default behavior is to throw an "unknown operation" error.
+      */
+      virtual unary_operation* build(const forest* ar, const forest* rs) const;
+
+      /** Build the requested operation (it is assumed that we can.)
+          Default behavior is to throw an "unknown operation" error.
+      */
+      virtual unary_operation* build(const forest* ar, opnd_type res) const;
+  };
+
+
+  // ******************************************************************
+  // *                       unary_opcode class                       *
+  // ******************************************************************
+
+  /// Wrapper for unary operations.
+  class unary_opcode {
+      const char* name;
+      unary_builder* builders;
+      int index;
+      unary_opcode* next;
+      static int next_index;
+      static unary_opcode* list;
+
+      friend void MEDDLY::initialize(settings s);
+      friend void MEDDLY::cleanup();
+      friend class unary_builder;
+
+    public:
+      unary_opcode(const char* n);
+      ~unary_opcode();
+
+      inline int getIndex() const { return index; }
+      inline const char* getName() const { return name; }
+      
+      unary_operation* buildOperation(const forest* arg, const forest* res)
+        const;
+      unary_operation* buildOperation(const forest* arg, opnd_type res) const;
+  };
+
+  // ******************************************************************
+  // *                        Unary operations                        *
+  // ******************************************************************
+
+  /** Find, or build if necessary, a unary operation.
+        @param  code    Operation we want
+        @param  arg     Argument forest
+        @param  res     Result forest
+        @return         The matching operation, if it already exists;
+                        a new operation, otherwise.
+  */
+  unary_operation* getOperation(const unary_opcode* code, 
+    const forest* arg, const forest* res);
+
+  /** Find, or build if necessary, a unary operation.
+        @param  code    Operation we want
+        @param  arg     Argument forest
+        @param  res     Result type
+        @return         The matching operation, if it already exists;
+                        a new operation, otherwise.
+  */
+  unary_operation* getOperation(const unary_opcode* code,
+    const forest* arg, opnd_type result);
+
+  // ******************************************************************
+  // *                      expert_forest  class                      *
+  // ******************************************************************
 
 class expert_forest : public forest
 {
@@ -663,245 +1107,6 @@ class expert_forest : public forest
 };
 
 
-class expert_variable : public variable {
-  public:
-    expert_variable(int b, char* n);
-  private:
-    virtual ~expert_variable();
-  public:
-    /// Update our list of domains: add \a d.
-    void addToList(domain* d);
-    /// Update our list of domains: remove \a d.
-    void removeFromList(const domain* d);
-
-    /** Enlarge the possible values for a variable.
-      This could modify all nodes in all forests, depending on the
-      choice of reduction rule.
-      @param  prime   If prime is true, enlarge the bound for
-                      the primed variable only, otherwise both
-                      the primed and unprimed are enlarged.
-      @param  b       New bound, if less than the current bound
-                      an error is thrown.
-    */
-    void enlargeBound(bool prime, int b);
-
-    /** Shrink the possible values for a variable.
-      This could modify all nodes in all forests, depending on the
-      choice of reduction rule.
-      @param  b       New bound, if more than the current bound
-                      an error is thrown.
-      @param  force   If \a b is too small, and information will be lost,
-                      proceed anyway if \a force is true, otherwise
-                      return an error code.
-    */
-    void shrinkBound(int b, bool force);
-  private:
-    domain** domlist;
-    int dl_alloc;
-    int dl_used;
-};
-
-class expert_domain : public domain {
-  public:
-    expert_domain(variable**, int);
-
-  protected:
-    ~expert_domain();
-
-  public:
-    /** Create all variables at once, from the top down.
-      Requires the domain to be "empty" (containing no variables or forests).
-      @param  bounds  Current variable bounds.
-                      bounds[0] gives the bound for the top-most variable,
-                      and bounds[N-1] gives the bound for the bottom-most
-                      variable.
-      @param  N       Number of variables.
-     */
-    void createVariablesTopDown(const int* bounds, int N);
-
-    /** Insert a new variable.
-          @param  lev   Level to insert above; use 0 for a 
-                        new bottom-most level.
-          @param  v     Variable to insert.
-    */
-    void insertVariableAboveLevel(int lev, variable* v);
-
-    /** Remove a variable at the specified level.
-        An error is thrown if the variable size is not 1.
-        Use shrinkVariableBound() to make the bound 1.
-        All forests are modified as appropriate.
-          @param  lev   Level number.
-    */
-    void removeVariableAtLevel(int lev);
-
-    /** Find the level of a given variable.
-          @param  v   Variable to search for.
-          @return 0, if the variable was not found;
-                  i, with getVar(i) == v, otherwise.
-    */
-    int findLevelOfVariable(const variable* v) const;
-
-    inline expert_variable* getExpertVar(int lev) const {
-      return (expert_variable*) vars[lev];
-    }
-    inline const expert_variable* readExpertVar(int lev) const {
-      return (expert_variable*) vars[lev];
-    }
-
-    
-
-    /** Add a new variable with bound 1.
-      Can be used when the domain already has forests, in which case
-      all forests are modified as appropriate.
-      @param  below   Placement information: the new variable will appear
-                      immediately above the level \a below.
-     */
-    void createVariable(int below);
-
-    /** Add a new variable with bound 1.
-      Deprecated as of version 0.5; use one paramater version instead.
-     */
-#ifdef _MSC_VER
-  __declspec(deprecated)
-#endif
-#ifdef __GNUC__
-  __attribute__ ((deprecated))
-#endif
-    inline void createVariable(int below, int &vh) {
-      createVariable(below);
-      vh = below+1;
-    }
-
-    /** Destroy a variable with bound 1.
-        Deprecated as of version 0.5; use removeVariableAtLevel instead.
-     */
-#ifdef _MSC_VER
-  __declspec(deprecated)
-#endif
-#ifdef __GNUC__
-  __attribute__ ((deprecated))
-#endif
-    inline void destroyVariable(int vh) { removeVariableAtLevel(vh); }
-
-    /** Get the position of the variable in this domain's variable-order.
-      \a TERMINALS are considered to be at height 0.
-      be at height 0.
-      Deprecated as of version 0.5: level height always equals level handle.
-      @param  vh      Any variable handle.
-      @return         The variable at this height. 0 for \a TERMINALS.
-                      If \a vh is not a valid level handle, return -1.
-     */
-#ifdef _MSC_VER
-  __declspec(deprecated)
-#endif
-#ifdef __GNUC__
-  __attribute__ ((deprecated))
-#endif
-    inline int getVariableHeight(int vh) const { return vh; }
-
-    /** Get the variable with height \a ht in this domain's variable-order.
-      \a TERMINALS are considered to be at height 0.
-      Deprecated as of version 0.5: level height always equals level handle.
-      @param  ht      Height of the variable.
-      @return         The variable with this height. If the height is not in
-                      [0, height of top variable], returns -1.
-     */
-
-#ifdef _MSC_VER
-  __declspec(deprecated)
-#endif
-#ifdef __GNUC__
-  __attribute__ ((deprecated))
-#endif
-    inline int getVariableWithHeight(int ht) const { return ht; }
-
-    /** Swap the locations of variables in forests.
-      I.e., changes the variable ordering of all forests with this domain.
-      @param  lev1    Level of first variable.
-      @param  lev2    Level of second variable.
-     */
-    void swapOrderOfVariables(int lev1, int lev2);
-
-    /** Find the actual bound of a variable.
-      Deprecated as of version 0.5; use TBD instead.
-      @param  vh      Variable handle.
-      @return         The smallest shrinkable bound before information loss
-                      for variable \a vh. If \a vh is invalid, or TERMINALS,
-                      returns 0.
-     */
-#ifdef _MSC_VER
-  __declspec(deprecated)
-#endif
-#ifdef __GNUC__
-  __attribute__ ((deprecated))
-#endif
-    int findVariableBound(int vh) const;
-
-    /** Enlarge the possible values for a variable.
-      This could modify all nodes in all forests, depending on the
-      choice of reduction rule.
-      @param  lev     Variable handle.
-      @param  prime   If prime is true, enlarge the bound for
-                      the primed variable only, otherwise both
-                      the primed and unprimed are enlarged.
-      @param  b       New bound, if less than the current bound
-                      an error code is returned.
-     */
-    inline void enlargeVariableBound(int vh, bool prime, int b) {
-      getExpertVar(vh)->enlargeBound(prime, b);
-    }
-
-    /** Shrink the possible values for a variable.
-      This could modify all nodes in all forests, depending on the
-      choice of reduction rule.
-      @param  lev     Variable handle.
-      @param  b       New bound, if more than the current bound
-                      an error code is returned.
-      @param  force   If \a b is too small, and information will be lost,
-                      proceed anyway if \a force is true, otherwise
-                      return an error code.
-     */
-    void shrinkVariableBound(int vh, int b, bool force) {
-      getExpertVar(vh)->shrinkBound(b, force);
-    }
-
-    /* JB Feb 21 08: Not used.
-     *
-     * From domain.h under SwapDomainLevelIndices(..):
-     * Swap indices for a given level.
-     * Modifies all forests attached to this domain.
-     * Motivation: if some index is never "used", it can be placed at the
-     * end of the node (via this function), and then the bound for the level
-     * can be decreased (using ShrinkDomainLevelBound).
-     *
-     * I suppose this is a function we thought we could use at a later time.
-     */
-
-    // functions inherited from class domain
-    virtual int getNumForests() const;
-    virtual void createVariablesBottomUp(const int* bounds, int N);
-    virtual forest* createForest(bool rel, forest::range_type t,
-        forest::edge_labeling ev);
-    virtual void showInfo(FILE* strm);
-
-    // ----------------------------------------------------------------------
-
-  private:
-    int nForests;
-    expert_forest** forests;
-    int szForests;
-
-    // Forests may be deleted either by calling the destructor for the forest,
-    // or by destroying the domain. The domain maintains a list of forest
-    // handles to delete the forests linked to it. To make sure that a forest
-    // is not deleted more than once, the list of forest handles in the domain
-    // is updated by a call to unlinkForest from the forest destructor.
-    void unlinkForest(forest *);
-
-    friend void MEDDLY::destroyForest(forest* &f);
-    friend void MEDDLY::destroyDomain(domain* &d);
-};
-
 
 /** A bare-bones class for the construction of temporary dd_edges.
 
@@ -987,13 +1192,13 @@ class temp_dd_edge {
 */
 
 
-class operation {
+class old_operation {
 
   public:
 
-    operation();
+    old_operation();
 
-    virtual ~operation();
+    virtual ~old_operation();
 
     /// Operation description
     virtual const char* getName() const = 0;
@@ -1139,14 +1344,14 @@ class op_info {
   public:
     op_info();
     ~op_info();
-    op_info(operation *oper, op_param* plist, int n, compute_cache* cache);
+    op_info(old_operation *oper, op_param* plist, int n, compute_cache* cache);
     op_info(const op_info& a);
     op_info& operator=(const op_info& a);
     bool operator==(const op_info& a) const;
     void print(FILE* strm) const;
     bool areAllForests() const;
 
-    operation* op;
+    old_operation* op;
     op_param* p;
     int nParams;
     compute_cache* cc;
@@ -1260,12 +1465,12 @@ class expert_compute_manager : public compute_manager {
     */
     virtual op_info* getOpInfo(op_code op, const op_param* const plist,
         int N);
-    virtual op_info* getOpInfo(const operation* op, 
+    virtual op_info* getOpInfo(const old_operation* op, 
         const op_param* const p, int N);
 
   private:
 
-    void addBuiltinOp(const builtin_op_key& key, const operation* op,
+    void addBuiltinOp(const builtin_op_key& key, const old_operation* op,
         const op_param* plist, int n); 
 
     // compute cache
@@ -1349,7 +1554,7 @@ class builtin_op_key {
 
 class custom_op_key {
   public:
-    custom_op_key(const operation* op, const op_param* const p, int n);
+    custom_op_key(const old_operation* op, const op_param* const p, int n);
     ~custom_op_key();
     custom_op_key(const custom_op_key& a);
     custom_op_key& operator=(const custom_op_key& a);
@@ -1359,7 +1564,7 @@ class custom_op_key {
     void print(FILE* strm) const;
 
   private:
-    operation* op;
+    old_operation* op;
     op_param* plist;
     int nParams;
 };
@@ -2534,6 +2739,9 @@ float* toFloat(int* a) {
   union { int* i; float* f; } n = {a};
   return n.f;
 }
+
+inline 
+const char* unary_operation::getName() const { return opcode->getName(); }
 
 } // namespace MEDDLY
 

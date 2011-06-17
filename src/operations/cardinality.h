@@ -24,7 +24,18 @@
 
 namespace MEDDLY {
 
-  class operation;
+  class unary_opcode;
+  class settings;
+
+  /// Minimalist interface.
+  /// Set up a unary_opcode for the "cardinality" operation.
+  const unary_opcode* initializeCardinality(const settings &s);
+
+
+
+// old interface 
+
+  class old_operation;
   class op_param;
 
   /** Minimalist front-end interface.
@@ -34,7 +45,7 @@ namespace MEDDLY {
         @param  rt  Return type
         @return The appropriate operation, or 0 on error.
   */
-  operation* getCardinalityOperation(const op_param &ft, const op_param &rt);
+  old_operation* getCardinalityOperation(const op_param &ft, const op_param &rt);
 
 };
 

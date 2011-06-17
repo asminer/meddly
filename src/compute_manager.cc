@@ -295,7 +295,7 @@ void expert_compute_manager::clearComputeTable()
 
 
 void MEDDLY::expert_compute_manager::addBuiltinOp(const builtin_op_key& key,
-  const operation* op, const op_param* plist, int n)
+  const old_operation* op, const op_param* plist, int n)
 {
   compute_cache* cache = cc;
 
@@ -313,7 +313,7 @@ void MEDDLY::expert_compute_manager::addBuiltinOp(const builtin_op_key& key,
   }
 #endif
 
-  op_info entry(const_cast<operation*>(op), const_cast<op_param*>(plist),
+  op_info entry(const_cast<old_operation*>(op), const_cast<op_param*>(plist),
       n, cache);
 
   (*builtinOpEntries)[key] = entry;
@@ -351,7 +351,7 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
   // add new built-in op entry
   if (N == 2) {
     // unary operations
-    operation* opera = 0;
+    old_operation* opera = 0;
     switch (op) {
         case compute_manager::COMPLEMENT:
             if (f0->isMdd()) {
@@ -429,7 +429,7 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
 
   if (N == 3) {
     // binary operations
-    operation* opera = 0;
+    old_operation* opera = 0;
     if (CROSS == op) {
       opera = getCrossOperation(plist[0]);
       if (0==opera) return 0;
@@ -799,7 +799,7 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
 }
 
 
-op_info* MEDDLY::expert_compute_manager::getOpInfo(const operation* op,
+op_info* MEDDLY::expert_compute_manager::getOpInfo(const old_operation* op,
     const op_param* const plist, int N)
 {
   // search in custom op entries
@@ -807,7 +807,7 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(const operation* op,
   std::map<custom_op_key, op_info>::iterator itr = customOpEntries->find(key);
   if (itr == customOpEntries->end()) {
     // add new entry
-    op_info entry(const_cast<operation*>(op), 
+    op_info entry(const_cast<old_operation*>(op), 
         const_cast<op_param*>(plist), N, cc);
     (*customOpEntries)[key] = entry;
     itr = customOpEntries->find(key);

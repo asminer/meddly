@@ -33,6 +33,190 @@
 // #define DEBUG_CARD
 
 namespace MEDDLY {
+  class card_mdd_int;
+  class card_builder;
+};
+
+// ******************************************************************
+// *                                                                *
+// *                        Card  operations                        *
+// *                                                                *
+// ******************************************************************
+
+//  Cardinality on MDDs, returning integer
+class MEDDLY::card_mdd_int : public unary_operation {
+public:
+  card_mdd_int(const unary_opcode* oc, expert_forest* arg);
+
+  // required
+  virtual bool isEntryStale(const int* entryData);
+  virtual void discardEntry(const int* entryData);
+  virtual void showEntry(FILE* strm, const int *entryData) const;
+  virtual void compute(const dd_edge &arg, long &res);
+
+  // helper
+  long compute(int ht, int a);
+};
+
+MEDDLY::card_mdd_int::card_mdd_int(const unary_opcode* oc, expert_forest* arg)
+ : unary_operation(oc, arg, INTEGER)
+{
+  key_length = 1;
+  ans_length = sizeof(long) / sizeof(int); 
+}
+
+bool MEDDLY::card_mdd_int::
+isEntryStale(const int* data)
+{
+  return argF->isStale(data[0]);
+}
+
+void MEDDLY::card_mdd_int::
+discardEntry(const int* data)
+{
+  argF->uncacheNode(data[0]);
+}
+
+void
+MEDDLY::card_mdd_int::
+showEntry(FILE* strm, const int *data) const
+{
+  fprintf(strm, "[%s(%d): %ld(L)]",
+      getName(), data[0], ((const long*)(data+1))[0]
+  );
+}
+
+void 
+MEDDLY::card_mdd_int::compute(const dd_edge& a, long& b)
+{
+  b = compute(argF->getDomain()->getNumVariables(), a.getNode());
+}
+
+long MEDDLY::card_mdd_int::compute(int ht, int a)
+{
+  if (0==a) return 0;
+  if (argF->getNodeHeight(a) < ht) {
+    // skipped level
+    const expert_domain* d = smart_cast <const expert_domain*> (argF->getDomain());
+    long card = compute(ht-1, a);
+    if (card<0) return -1;
+    long ans = card * argF->getLevelSize(ht);
+    if (ans < card) return -1; // overflow
+    return ans;
+  }
+  
+  // Terminal case
+  if (argF->isTerminalNode(a)) return 1;
+
+  // Check compute table
+  // TBD: we're using the monolithic one here
+/*
+  const int* cacheEntry = Monolithic_CT->find(this, &a);
+  if (cacheEntry) {
+    return ((const long*)(cacheEntry+1))[0];
+  }
+  */
+
+  // recurse
+  bool a_is_full = argF->isFullNode(a);
+  int asize = a_is_full ? argF->getFullNodeSize(a) : argF->getSparseNodeSize(a);
+  long card = 0;
+  for (int i = 0; i < asize; ++i) {
+    long d = a_is_full 
+              ? compute(ht - 1, argF->getFullNodeDownPtr(a, i))
+              : compute(ht - 1, argF->getSparseNodeDownPtr(a, i));
+
+    // tricky, because we need to keep any overflows at -1
+    d += card;
+    if (d < card) { // must be overflow somewhere
+      card = -1;
+      break;
+    } else {
+      card = d;
+    }
+  } // for i
+
+  // Add entry to compute table
+  static int ansEntry[1+sizeof(long)/sizeof(int)];
+  argF->cacheNode(a);
+  ansEntry[0] = a;
+  ((long*)(ansEntry+1))[0] = card;
+
+  // Monolithic_CT->add(owner, const_cast<const int*>(ansEntry));
+#ifdef DEBUG_CARD
+  fprintf(stderr, "Cardinality of node %d is %ld(L)\n", a, card);
+#endif
+  return card;
+}
+
+
+// ******************************************************************
+// *                                                                *
+// *                         Card  builders                         *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::card_builder : public unary_builder {
+  public:
+    card_builder(unary_opcode* oc);
+    virtual bool canBuild(const forest* arg, opnd_type res) const;
+    virtual unary_operation* build(const forest* ar, opnd_type res) const;
+};
+
+MEDDLY::card_builder::card_builder(unary_opcode* oc)
+ : unary_builder(oc)
+{
+}
+
+bool MEDDLY::card_builder::canBuild(const forest* arg, opnd_type res) const
+{
+  return (INTEGER==res || REAL==res || HUGEINT==res);
+}
+
+MEDDLY::unary_operation* 
+MEDDLY::card_builder::build(const forest* arg, opnd_type res) const
+{
+  if (0==arg) return 0;
+  switch (res) {
+    case INTEGER:
+      if (arg->isForRelations())
+        return 0;
+      else                        
+        return new card_mdd_int(opcode, (expert_forest*)arg);
+
+    case REAL:
+      return 0;
+
+    case HUGEINT:
+      return 0;
+
+    default:
+      throw error(error::TYPE_MISMATCH);
+  }
+}
+
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
+
+const MEDDLY::unary_opcode* MEDDLY::initializeCardinality(const settings &s)
+{
+  unary_opcode* Card = new unary_opcode("Card");
+  unary_builder* ocb = new card_builder(Card);
+  return Card;
+}
+
+// ******************************************************************
+// ******************************************************************
+// ******************************************************************
+// ***                         OLD  STUFF                         ***
+// ******************************************************************
+// ******************************************************************
+// ******************************************************************
+
+namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
@@ -42,7 +226,7 @@ namespace MEDDLY {
 
 /** Abstract base class for cardinality operations.
 */
-class cardinality_op : public operation {
+class cardinality_op : public old_operation {
   public:
     cardinality_op()                        { }
     virtual ~cardinality_op()               { }
@@ -907,7 +1091,7 @@ void mxd_mpz_card::compute(op_info* owner, int ht, bool primed, int a, mpz_objec
 // *                                                                *
 // ******************************************************************
 
-operation* getCardinalityOperation(const op_param &ft, const op_param &rt)
+old_operation* getCardinalityOperation(const op_param &ft, const op_param &rt)
 {
   if (!ft.isForest()) return 0;
   switch (rt.getType()) {
