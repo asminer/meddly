@@ -270,10 +270,10 @@ void mtmdd_node_manager::copyLists(const int* const* vlist,
 {
   if (listSize < nElements) {
     list = (int**) realloc(list, sizeof(int*) * nElements);
-    if (NULL == list) outOfMemory();
+    if (NULL == list) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
     if (terms) {
       termList = (int*) realloc(termList, sizeof(T) * nElements);
-      if (NULL == termList) outOfMemory();
+      if (NULL == termList) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
     }
     listSize = nElements;
   }

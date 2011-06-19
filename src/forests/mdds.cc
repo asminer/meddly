@@ -67,14 +67,14 @@ node_manager::node_manager(domain *d, bool rel, range_type t,
   curr_mem_alloc = max_mem_alloc = 0;
   a_size = add_size;
   address = (mdd_node_data *) malloc(a_size * sizeof(mdd_node_data));
-  if (NULL == address) outOfMemory();
+  if (NULL == address) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
   updateMemoryAllocated(a_size * sizeof(mdd_node_data));
   memset(address, 0, a_size * sizeof(mdd_node_data));
   a_last = peak_nodes = a_unused = 0;
   
   l_size = l_add_size;
   level = (mdd_level_data *) malloc(l_size * sizeof(mdd_level_data));
-  if (NULL == level) outOfMemory();
+  if (NULL == level) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
   updateMemoryAllocated(l_size * sizeof(mdd_level_data));
   memset(level, 0, l_size * sizeof(mdd_level_data));
 
@@ -1315,7 +1315,7 @@ void node_manager::compactLevel(int k)
     updateMemoryAllocated((new_size - level[p_level].size) * sizeof(int));
     level[p_level].data = (int *)
       realloc(level[p_level].data, new_size * sizeof(int));
-    if (NULL == level[p_level].data) outOfMemory();
+    if (NULL == level[p_level].data) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
     level[p_level].size = new_size;
 #ifdef MEMORY_TRACE
     printf("Reduced data[] by a factor of 2. New size: %d, Last: %d.\n",
@@ -2082,7 +2082,7 @@ void node_manager::freeNode(int p)
     if (a_size > add_size && a_last < a_size/2) {
       address = (mdd_node_data *)
           realloc(address, a_size/2 * sizeof(mdd_node_data));
-      if (NULL == address) outOfMemory();
+      if (NULL == address) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
       a_size /= 2;
       updateMemoryAllocated(-a_size * sizeof(mdd_node_data));
 #ifdef MEMORY_TRACE
@@ -2387,7 +2387,7 @@ void node_manager::makeHole(int k, int addr, int slots)
       updateMemoryAllocated((new_size - level[mapped_k].size) * sizeof(int));
       level[mapped_k].data = (int *)
         realloc(level[mapped_k].data, new_size * sizeof(int));
-      if (NULL == level[mapped_k].data) outOfMemory();
+      if (NULL == level[mapped_k].data) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
       level[mapped_k].size = new_size;
 #ifdef MEMORY_TRACE
       printf("Reduced data[]. New size: %d, Last: %d.\n",

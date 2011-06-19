@@ -72,7 +72,7 @@ class mdd_hash_table {
       size = getMinSize();
       nodes = n;
       table = (int*) malloc(sizeof(int) * size);
-      if (NULL == table) outOfMemory();
+      if (NULL == table) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
       out_of_mem = false;
       int *end = table + size;
       for (int* curr = table; curr < end; curr++) {

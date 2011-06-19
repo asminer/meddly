@@ -300,7 +300,7 @@ MEDDLY::forest* MEDDLY::expert_domain::createForest(bool rel, forest::range_type
       int newSize = szForests == 0? 4: szForests * 2;
       expert_forest** temp = (expert_forest **) realloc(forests,
           newSize * sizeof (expert_forest *));
-      if (0 == temp) outOfMemory();
+      if (0 == temp) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
       forests = temp;
       memset(forests + szForests, 0,
           (newSize - szForests) * sizeof(expert_forest*));

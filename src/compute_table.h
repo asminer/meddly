@@ -54,14 +54,17 @@ namespace MEDDLY {
 
       struct stats {
         long numEntries;
+        unsigned hits;
+        unsigned pings;
       };
 
     public:
       /// Constructor
       compute_table(settings s);
 
-      /** Destructor. Will discard all table entries rendering all pointers
-          to data within the table invalid.
+      /** Destructor. 
+          Does NOT properly discard all table entries;
+          use \a clear() for this.
       */
       virtual ~compute_table();
 
@@ -90,23 +93,28 @@ namespace MEDDLY {
 
       /** Remove stale entries.
           Scans the table for entries that are no longer valid (i.e. they are
-          stale) and removes them. This can be a time-consuming process
-          (proportional to the number of cached entries).
-          If op is non-null, all stale entries associated with a particular
-          operation are removed.
-          @param  op    Operation whose stale entries are to be removed from
-                        the table. If owner is null, all the stale entries in
-                        the table are removed.
+          stale, according to operation::isEntryStale) and removes them. This
+          can be a time-consuming process (proportional to the number of cached
+          entries).
       */
-      virtual void removeStales(operation* op = 0) = 0;
+      virtual void removeStales() = 0;
 
-      /** Removes all cached entries.
+      /** Removes all entries.
       */
-      virtual void clear() = 0;
+      virtual void removeAll() = 0;
 
       /// Get performance stats for the table.
-      virtual void getStats(stats &s) const = 0;
+      inline const stats& getStats() {
+        updateStats();
+        return perf;
+      }
 
+    protected:
+      settings opts;
+      stats perf;
+      static unsigned raw_hash(const int* data, int length);
+
+      virtual void updateStats() = 0;
   };
 
 

@@ -111,7 +111,7 @@ void MEDDLY::expert_forest::registerEdge(dd_edge& e) {
       int new_sz = sz * 2;
       edge_data* new_edge =
           (edge_data*) realloc(edge, new_sz * sizeof(edge_data));
-      if (NULL == new_edge) outOfMemory();
+      if (NULL == new_edge) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
       edge = new_edge;
       for (int i = sz; i < new_sz; ++i)
       {

@@ -265,11 +265,11 @@ void mtmxd_node_manager::copyLists(const int* const* vlist,
 {
   if (listSize < nElements) {
     unpList = (int**) realloc(unpList, sizeof(int*) * nElements);
-    if (NULL == unpList) outOfMemory();
+    if (NULL == unpList) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
     pList = (int**) realloc(pList, sizeof(int*) * nElements);
-    if (NULL == pList) outOfMemory();
+    if (NULL == pList) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
     tList = (void*) realloc(tList, sizeof(T) * nElements);
-    if (NULL == tList) outOfMemory();
+    if (NULL == tList) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
     listSize = nElements;
   }
 

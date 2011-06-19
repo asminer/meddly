@@ -155,13 +155,6 @@ bool isAlmostEqual(int A, int B)
 }
 
 
-inline
-void outOfMemory()
-{
-  printf("Out of memory!\n");
-  exit(1);
-}
-
 
 #endif
 
