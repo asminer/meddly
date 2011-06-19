@@ -24,7 +24,7 @@
 */
 
 #include "defines.h"
-
+#include "compute_table.h"
 
 // ******************************************************************
 // *                       operation  methods                       *
@@ -34,10 +34,17 @@ MEDDLY::operation::operation()
 {
   key_length = 0;
   ans_length = 0;
+  if (useMonolithicCT)
+    CT = Monolithic_CT;
+  else {
+    compute_table::settings s;
+    CT = createOperationTable(s, this); 
+  }
 }
 
 MEDDLY::operation::~operation()
 {
+  if (CT && CT->isOperationTable()) delete CT;
 }
 
 // ******************************************************************

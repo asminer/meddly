@@ -27,19 +27,34 @@
 #endif
 #include "../defines.h"
 #include "cardinality.h"
-#include "../compute_cache.h"
+#include "../compute_table.h"
 #include "mpz_object.h"
+
+// for now
+#include "../compute_cache.h"
 
 // #define DEBUG_CARD
 
 namespace MEDDLY {
   class card_mdd_int;
+  class card_mdd_real;
+#ifdef HAVE_LIBGMP
+  class card_mdd_mpz;
+#endif
   class card_builder;
 };
 
 // ******************************************************************
 // *                                                                *
+// *                                                                *
 // *                        Card  operations                        *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+// ******************************************************************
+// *                                                                *
+// *                       card_mdd_int class                       *
 // *                                                                *
 // ******************************************************************
 
@@ -58,6 +73,10 @@ public:
   long compute(int ht, int a);
 };
 
+// ******************************************************************
+// *                      card_mdd_int methods                      *
+// ******************************************************************
+
 MEDDLY::card_mdd_int::card_mdd_int(const unary_opcode* oc, expert_forest* arg)
  : unary_operation(oc, arg, INTEGER)
 {
@@ -65,31 +84,32 @@ MEDDLY::card_mdd_int::card_mdd_int(const unary_opcode* oc, expert_forest* arg)
   ans_length = sizeof(long) / sizeof(int); 
 }
 
-bool MEDDLY::card_mdd_int::
-isEntryStale(const int* data)
+bool MEDDLY::card_mdd_int::isEntryStale(const int* data)
 {
   return argF->isStale(data[0]);
 }
 
-void MEDDLY::card_mdd_int::
-discardEntry(const int* data)
+void MEDDLY::card_mdd_int::discardEntry(const int* data)
 {
   argF->uncacheNode(data[0]);
 }
 
-void
-MEDDLY::card_mdd_int::
-showEntry(FILE* strm, const int *data) const
+void MEDDLY::card_mdd_int::showEntry(FILE* strm, const int *data) const
 {
   fprintf(strm, "[%s(%d): %ld(L)]",
       getName(), data[0], ((const long*)(data+1))[0]
   );
 }
 
-void 
-MEDDLY::card_mdd_int::compute(const dd_edge& a, long& b)
+void MEDDLY::card_mdd_int::compute(const dd_edge& a, long& b)
 {
   b = compute(argF->getDomain()->getNumVariables(), a.getNode());
+}
+
+inline void overflow_acc(long &a, long x)
+{
+  a += x;
+  if (a < x) throw MEDDLY::error(MEDDLY::error::OVERFLOW);
 }
 
 long MEDDLY::card_mdd_int::compute(int ht, int a)
@@ -97,11 +117,10 @@ long MEDDLY::card_mdd_int::compute(int ht, int a)
   if (0==a) return 0;
   if (argF->getNodeHeight(a) < ht) {
     // skipped level
-    const expert_domain* d = smart_cast <const expert_domain*> (argF->getDomain());
     long card = compute(ht-1, a);
-    if (card<0) return -1;
     long ans = card * argF->getLevelSize(ht);
-    if (ans < card) return -1; // overflow
+    if (ans < card) 
+      throw error(error::OVERFLOW);
     return ans;
   }
   
@@ -109,32 +128,24 @@ long MEDDLY::card_mdd_int::compute(int ht, int a)
   if (argF->isTerminalNode(a)) return 1;
 
   // Check compute table
-  // TBD: we're using the monolithic one here
-/*
-  const int* cacheEntry = Monolithic_CT->find(this, &a);
+  const int* cacheEntry = CT->find(this, &a);
   if (cacheEntry) {
     return ((const long*)(cacheEntry+1))[0];
   }
-  */
 
   // recurse
-  bool a_is_full = argF->isFullNode(a);
-  int asize = a_is_full ? argF->getFullNodeSize(a) : argF->getSparseNodeSize(a);
   long card = 0;
-  for (int i = 0; i < asize; ++i) {
-    long d = a_is_full 
-              ? compute(ht - 1, argF->getFullNodeDownPtr(a, i))
-              : compute(ht - 1, argF->getSparseNodeDownPtr(a, i));
-
-    // tricky, because we need to keep any overflows at -1
-    d += card;
-    if (d < card) { // must be overflow somewhere
-      card = -1;
-      break;
-    } else {
-      card = d;
+  if (argF->isFullNode(a)) {
+    int asize = argF->getFullNodeSize(a);
+    for (int i = 0; i < asize; ++i) {
+      overflow_acc(card, compute(ht - 1, argF->getFullNodeDownPtr(a, i)));
+    } // for i
+  } else {
+    int asize = argF->getSparseNodeSize(a);
+    for (int i = 0; i < asize; ++i) {
+      overflow_acc(card, compute(ht - 1, argF->getSparseNodeDownPtr(a, i)));
     }
-  } // for i
+  }
 
   // Add entry to compute table
   static int ansEntry[1+sizeof(long)/sizeof(int)];
@@ -142,13 +153,230 @@ long MEDDLY::card_mdd_int::compute(int ht, int a)
   ansEntry[0] = a;
   ((long*)(ansEntry+1))[0] = card;
 
-  // Monolithic_CT->add(owner, const_cast<const int*>(ansEntry));
+  CT->add(this, const_cast<const int*>(ansEntry));
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is %ld(L)\n", a, card);
 #endif
   return card;
 }
 
+
+// ******************************************************************
+// *                                                                *
+// *                      card_mdd_real  class                      *
+// *                                                                *
+// ******************************************************************
+
+//  Cardinality on MDDs, returning real
+class MEDDLY::card_mdd_real : public unary_operation {
+public:
+  card_mdd_real(const unary_opcode* oc, expert_forest* arg);
+
+  // required
+  virtual bool isEntryStale(const int* entryData);
+  virtual void discardEntry(const int* entryData);
+  virtual void showEntry(FILE* strm, const int *entryData) const;
+  virtual void compute(const dd_edge &arg, double &res);
+
+  // helper
+  double compute(int ht, int a);
+};
+
+// ******************************************************************
+// *                     card_mdd_real  methods                     *
+// ******************************************************************
+
+MEDDLY::card_mdd_real::card_mdd_real(const unary_opcode* oc, expert_forest* arg)
+ : unary_operation(oc, arg, REAL)
+{
+  key_length = 1;
+  ans_length = sizeof(double) / sizeof(int); 
+}
+
+bool MEDDLY::card_mdd_real::isEntryStale(const int* data)
+{
+  return argF->isStale(data[0]);
+}
+
+void MEDDLY::card_mdd_real::discardEntry(const int* data)
+{
+  argF->uncacheNode(data[0]);
+}
+
+void MEDDLY::card_mdd_real::showEntry(FILE* strm, const int *data) const
+{
+  fprintf(strm, "[%s(%d): %le]",
+      getName(), data[0], ((const double*)(data+1))[0]
+  );
+}
+
+void MEDDLY::card_mdd_real::compute(const dd_edge& a, double& b)
+{
+  b = compute(argF->getDomain()->getNumVariables(), a.getNode());
+}
+
+double MEDDLY::card_mdd_real::compute(int ht, int a)
+{
+  if (0==a) return 0.0;
+  if (argF->getNodeHeight(a) < ht) {
+    // skipped level
+    return argF->getLevelSize(ht) * compute(ht - 1, a);
+  }
+  
+  // Terminal case
+  if (argF->isTerminalNode(a)) return 1.0;
+
+  // Check compute table
+  const int* cacheEntry = CT->find(this, &a);
+  if (cacheEntry) {
+    return ((const double*)(cacheEntry+1))[0];
+  }
+
+  // recurse
+  double card = 0.0;
+  if (argF->isFullNode(a)) {
+    int asize = argF->getFullNodeSize(a);
+    for (int i = 0; i < asize; ++i) {
+      card += compute(ht - 1, argF->getFullNodeDownPtr(a, i));
+    } // for i
+  } else {
+    int asize = argF->getSparseNodeSize(a);
+    for (int i = 0; i < asize; ++i) {
+      card += compute(ht - 1, argF->getSparseNodeDownPtr(a, i));
+    }
+  }
+
+  // Add entry to compute table
+  static int ansEntry[1+sizeof(long)/sizeof(int)];
+  argF->cacheNode(a);
+  ansEntry[0] = a;
+  ((double*)(ansEntry+1))[0] = card;
+
+  CT->add(this, const_cast<const int*>(ansEntry));
+#ifdef DEBUG_CARD
+  fprintf(stderr, "Cardinality of node %d is %le\n", a, card);
+#endif
+  return card;
+}
+
+#ifdef HAVE_LIBGMP
+
+// ******************************************************************
+// *                                                                *
+// *                       card_mdd_mpz class                       *
+// *                                                                *
+// ******************************************************************
+
+/// Cardinality of MDDs, returning large (mpz) integers.
+class MEDDLY::card_mdd_mpz : public unary_operation {
+public:
+  card_mdd_mpz(const unary_opcode* oc, expert_forest* arg);
+
+  // required
+  virtual bool isEntryStale(const int* entryData);
+  virtual void discardEntry(const int* entryData);
+  virtual void showEntry(FILE* strm, const int *entryData) const;
+  virtual void compute(const dd_edge& a, ct_object &res);
+
+  // helper
+  void compute(int ht, int a, mpz_object &b);
+};
+
+// ******************************************************************
+// *                      card_mdd_mpz methods                      *
+// ******************************************************************
+
+MEDDLY::card_mdd_mpz::card_mdd_mpz(const unary_opcode* oc, expert_forest* arg)
+ : unary_operation(oc, arg, HUGEINT)
+{
+  key_length = 1;
+  ans_length = sizeof(ct_object*) / sizeof(int); 
+}
+
+bool MEDDLY::card_mdd_mpz::isEntryStale(const int* data)
+{
+  return argF->isStale(data[0]);
+}
+
+void MEDDLY::card_mdd_mpz::discardEntry(const int* data)
+{
+  argF->uncacheNode(data[0]);
+  delete( ((ct_object**)(data+1))[0] );
+}
+
+void MEDDLY::card_mdd_mpz::showEntry(FILE* strm, const int *entryData) const
+{
+  fprintf(strm, "[%s(%d): ", getName(), entryData[0]);
+  ((const mpz_object**)(entryData+1))[0]->show(strm);
+  fprintf(strm, "]");
+}
+
+void MEDDLY::card_mdd_mpz::compute(const dd_edge& a, ct_object &res)
+{
+  mpz_object& mcard = dynamic_cast <mpz_object &> (res);
+  compute(argF->getDomain()->getNumVariables(), a.getNode(), mcard);
+}
+
+void MEDDLY::card_mdd_mpz::compute(int ht, int a, mpz_object &card)
+{
+  if (0==a) {
+    card.setValue(0);
+    return;
+  }
+  if (argF->getNodeHeight(a) < ht) {
+    // skipped level
+    compute(ht-1, a, card);
+    card.multiply(argF->getLevelSize(ht));
+    return;
+  }
+  
+  // Terminal case
+  if (argF->isTerminalNode(a)) {
+    card.setValue(1);
+    return;
+  }
+
+  // Check compute table
+  const int* cacheEntry = CT->find(this, &a);
+  if (cacheEntry) {
+    ((const mpz_object**)(cacheEntry+1))[0]->copyInto(card);
+    return;
+  }
+
+  // recurse
+  mpz_object tmp;
+  tmp.setValue(0);
+  card.setValue(0);
+  if (argF->isFullNode(a)) {
+    int asize = argF->getFullNodeSize(a);
+    for (int i = 0; i < asize; ++i) {
+      compute(ht - 1, argF->getFullNodeDownPtr(a, i), tmp);
+      card.add(tmp);
+    } // for i
+  } else {
+    int asize = argF->getSparseNodeSize(a);
+    for (int i = 0; i < asize; ++i) {
+      compute(ht - 1, argF->getSparseNodeDownPtr(a, i), tmp);
+      card.add(tmp);
+    }
+  }
+
+  // Add entry to compute table
+  static int ansEntry[1+sizeof(mpz_t)/sizeof(int)];
+  argF->cacheNode(a);
+  ansEntry[0] = a;
+  ((mpz_object**)(ansEntry+1))[0] = new mpz_object(card);
+
+  CT->add(this, const_cast<const int*>(ansEntry));
+#ifdef DEBUG_CARD
+  fprintf(stderr, "Cardinality of node %d is ", a);
+  card.show(stderr);
+  fprintf(stderr, "\n");
+#endif
+}
+
+
+#endif
 
 // ******************************************************************
 // *                                                                *
@@ -170,7 +398,11 @@ MEDDLY::card_builder::card_builder(unary_opcode* oc)
 
 bool MEDDLY::card_builder::canBuild(const forest* arg, opnd_type res) const
 {
+#ifdef HAVE_LIBGMP
   return (INTEGER==res || REAL==res || HUGEINT==res);
+#else
+  return (INTEGER==res || REAL==res);
+#endif
 }
 
 MEDDLY::unary_operation* 
@@ -185,10 +417,18 @@ MEDDLY::card_builder::build(const forest* arg, opnd_type res) const
         return new card_mdd_int(opcode, (expert_forest*)arg);
 
     case REAL:
-      return 0;
+      if (arg->isForRelations())
+        return 0;
+      else                        
+        return new card_mdd_real(opcode, (expert_forest*)arg);
 
+#ifdef HAVE_LIBGMP
     case HUGEINT:
-      return 0;
+      if (arg->isForRelations())
+        return 0;
+      else                        
+        return new card_mdd_mpz(opcode, (expert_forest*)arg);
+#endif
 
     default:
       throw error(error::TYPE_MISMATCH);

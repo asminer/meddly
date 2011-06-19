@@ -34,8 +34,8 @@
 
 */
 
-#ifndef COMPUTE_CACHE_H
-#define COMPUTE_CACHE_H
+#ifndef COMPUTE_TABLE_H
+#define COMPUTE_TABLE_H
 
 #include "defines.h"
 
@@ -49,7 +49,7 @@ namespace MEDDLY {
         /// The maximum size of the hash table.
         unsigned maxSize;
 
-        settings(); // to set default values
+        settings(); // to set default values, from MEDDLY::settings
       };
 
       struct stats {

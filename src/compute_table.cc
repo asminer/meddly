@@ -33,6 +33,8 @@ namespace MEDDLY {
   class monolithic_table;
   class operation_table;
   const float expansionFactor = 1.5;
+
+  extern settings meddlySettings;
 }
 
 // **********************************************************************
@@ -43,8 +45,8 @@ namespace MEDDLY {
 
 MEDDLY::compute_table::settings::settings()
 {
-  chaining = true;
-  maxSize = 262144*4;
+  chaining = meddlySettings.doComputeTablesUseChaining;
+  maxSize = meddlySettings.maxComputeTableSize;
 }
 
 MEDDLY::compute_table::compute_table(settings s)

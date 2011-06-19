@@ -27,6 +27,7 @@
 
 #include "defines.h"
 #include "revision.h"
+#include "compute_table.h"
 
 
 namespace MEDDLY {
@@ -52,9 +53,11 @@ namespace MEDDLY {
   // size of unary cache
   int unary_cache_size = 0;
 
+  // operation settings
+  bool& operation::useMonolithicCT(meddlySettings.useMonolithicComputeTable);
 
   // Monolithic compute table, if used
-  compute_table* Monolithic_CT = 0;
+  compute_table* operation::Monolithic_CT = 0;
 
 };
 
@@ -217,6 +220,14 @@ void MEDDLY::initialize(settings s)
   if (ECM) throw error(error::ALREADY_INITIALIZED);
   meddlySettings = s;
   initStats(meddlyStats);
+
+  // set up monolithic compute table, if needed
+  if (meddlySettings.useMonolithicComputeTable) {
+    compute_table::settings s;
+    operation::Monolithic_CT = createMonolithicTable(s);
+  }
+
+  // Unary operation initialization
 
   unary_opcode::next_index = 0;
   unary_opcode::list = 0;

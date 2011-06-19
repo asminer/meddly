@@ -83,9 +83,6 @@ namespace MEDDLY {
   class expert_domain;
   class expert_forest;
 
-  // "Global" variables
-  extern compute_table* Monolithic_CT;
-
   // ******************************************************************
   // *                     expert_variable  class                     *
   // ******************************************************************
@@ -322,9 +319,15 @@ namespace MEDDLY {
       Necessary for compute table entries.
   */
   class operation {
+      // declared and initialized in meddly.cc
+      static bool& useMonolithicCT;
+      // declared and initialized in meddly.cc
+      static compute_table* Monolithic_CT;
+      friend void MEDDLY::initialize(MEDDLY::settings);
     protected:
       int key_length; 
       int ans_length; 
+      compute_table* CT;
     public:
       operation();
 
