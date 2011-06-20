@@ -29,6 +29,8 @@
 #include "revision.h"
 #include "compute_table.h"
 
+// unary operations
+#include "operations/cardinality.h"
 
 namespace MEDDLY {
   // "global" variables
@@ -232,7 +234,8 @@ void MEDDLY::initialize(settings s)
   unary_opcode::next_index = 0;
   unary_opcode::list = 0;
 
-  // initialize unary ops here
+  CARDINALITY = initializeCardinality(s);
+  // ...
 
   // set up operation cache
   unary_cache_size = unary_opcode::next_index;

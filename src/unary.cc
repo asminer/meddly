@@ -103,7 +103,7 @@ void MEDDLY::unary_operation::compute(const dd_edge &arg, ct_object &c)
 MEDDLY::unary_builder::unary_builder(unary_opcode* oc)
 {
   next = oc->builders;
-  oc->builders = next;
+  oc->builders = this;
   opcode = oc;
 }
 

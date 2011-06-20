@@ -36,11 +36,20 @@
 // #define DEBUG_CARD
 
 namespace MEDDLY {
+  class card_int;
   class card_mdd_int;
+  class card_mxd_int;
+
+  class card_real;
   class card_mdd_real;
+  class card_mxd_real;
+
 #ifdef HAVE_LIBGMP
+  class card_mpz;
   class card_mdd_mpz;
+  class card_mxd_mpz;
 #endif
+
   class card_builder;
 };
 
@@ -54,63 +63,67 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
-// *                       card_mdd_int class                       *
+// *                         card_int class                         *
 // *                                                                *
 // ******************************************************************
 
-//  Cardinality on MDDs, returning integer
-class MEDDLY::card_mdd_int : public unary_operation {
+//  Abstract base class: cardinality that returns an integer
+class MEDDLY::card_int : public unary_operation {
 public:
-  card_mdd_int(const unary_opcode* oc, expert_forest* arg);
+  card_int(const unary_opcode* oc, expert_forest* arg);
 
-  // required
+  // common
   virtual bool isEntryStale(const int* entryData);
   virtual void discardEntry(const int* entryData);
   virtual void showEntry(FILE* strm, const int *entryData) const;
-  virtual void compute(const dd_edge &arg, long &res);
 
-  // helper
-  long compute(int ht, int a);
+protected:
+  static inline void overflow_acc(long &a, long x) {
+    a += x;
+    if (a < x) throw error(error::OVERFLOW);
+  }
 };
 
-// ******************************************************************
-// *                      card_mdd_int methods                      *
-// ******************************************************************
-
-MEDDLY::card_mdd_int::card_mdd_int(const unary_opcode* oc, expert_forest* arg)
+MEDDLY::card_int::card_int(const unary_opcode* oc, expert_forest* arg)
  : unary_operation(oc, arg, INTEGER)
 {
   key_length = 1;
   ans_length = sizeof(long) / sizeof(int); 
 }
 
-bool MEDDLY::card_mdd_int::isEntryStale(const int* data)
+bool MEDDLY::card_int::isEntryStale(const int* data)
 {
   return argF->isStale(data[0]);
 }
 
-void MEDDLY::card_mdd_int::discardEntry(const int* data)
+void MEDDLY::card_int::discardEntry(const int* data)
 {
   argF->uncacheNode(data[0]);
 }
 
-void MEDDLY::card_mdd_int::showEntry(FILE* strm, const int *data) const
+void MEDDLY::card_int::showEntry(FILE* strm, const int *data) const
 {
   fprintf(strm, "[%s(%d): %ld(L)]",
       getName(), data[0], ((const long*)(data+1))[0]
   );
 }
 
-void MEDDLY::card_mdd_int::compute(const dd_edge& a, long& b)
-{
-  b = compute(argF->getDomain()->getNumVariables(), a.getNode());
-}
+// ******************************************************************
+// *                                                                *
+// *                       card_mdd_int class                       *
+// *                                                                *
+// ******************************************************************
 
-inline void overflow_acc(long &a, long x)
-{
-  a += x;
-  if (a < x) throw MEDDLY::error(MEDDLY::error::OVERFLOW);
-}
+//  Cardinality on MDDs, returning integer
+class MEDDLY::card_mdd_int : public card_int {
+public:
+  card_mdd_int(const unary_opcode* oc, expert_forest* arg)
+    : card_int(oc, arg) { }
+  virtual void compute(const dd_edge &arg, long &res) {
+    res = compute(argF->getDomain()->getNumVariables(), arg.getNode());
+  }
+  long compute(int ht, int a);
+};
 
 long MEDDLY::card_mdd_int::compute(int ht, int a)
 {
@@ -163,57 +176,145 @@ long MEDDLY::card_mdd_int::compute(int ht, int a)
 
 // ******************************************************************
 // *                                                                *
-// *                      card_mdd_real  class                      *
+// *                       card_mxd_int class                       *
 // *                                                                *
 // ******************************************************************
 
-//  Cardinality on MDDs, returning real
-class MEDDLY::card_mdd_real : public unary_operation {
+//  Cardinality on MxDs, returning integer
+class MEDDLY::card_mxd_int : public card_int {
 public:
-  card_mdd_real(const unary_opcode* oc, expert_forest* arg);
+  card_mxd_int(const unary_opcode* oc, expert_forest* arg)
+    : card_int(oc, arg) { }
+  virtual void compute(const dd_edge &arg, long &res) {
+    res = compute(argF->getDomain()->getNumVariables(), false, arg.getNode());
+  }
+  long compute(int ht, bool primed, int a);
+};
 
-  // required
+long MEDDLY::card_mxd_int::compute(int ht, bool primed, int a)
+{
+  if (0==a) return 0;
+  if (argF->getNodeHeight(a) < ht) {
+    // skipped level
+    long card;
+    if (argF->getReductionRule() == forest::IDENTITY_REDUCED) {
+      assert(!primed);
+      card = compute(ht-1, false, a);
+    } else {
+      card = primed 
+                ? compute(ht-1, false, a)
+                : compute(ht, true, a);
+    }
+    long ans = card * argF->getLevelSize(ht);
+    if (ans < card) 
+      throw error(error::OVERFLOW);
+    return ans;
+  }
+
+  // Terminal case
+  if (argF->isTerminalNode(a)) return 1;
+
+  // Check compute table
+  const int* cacheEntry = CT->find(this, &a);
+  if (cacheEntry) {
+    return ((const long*)(cacheEntry+1))[0];
+  }
+
+// mdd version
+  
+  // recurse
+  int htm1 = primed ? ht-1 : ht;
+  bool nextpr = !primed;
+  long card = 0;
+  if (argF->isFullNode(a)) {
+    int asize = argF->getFullNodeSize(a);
+    for (int i = 0; i < asize; ++i) {
+      overflow_acc(
+        card, compute(htm1, nextpr, argF->getFullNodeDownPtr(a, i))
+      );
+    } // for i
+  } else {
+    int asize = argF->getSparseNodeSize(a);
+    for (int i = 0; i < asize; ++i) {
+      overflow_acc(
+        card, compute(htm1, nextpr, argF->getSparseNodeDownPtr(a, i))
+      );
+    }
+  }
+
+  // Add entry to compute table
+  static int ansEntry[1+sizeof(long)/sizeof(int)];
+  argF->cacheNode(a);
+  ansEntry[0] = a;
+  ((long*)(ansEntry+1))[0] = card;
+
+  CT->add(this, const_cast<const int*>(ansEntry));
+#ifdef DEBUG_CARD
+  fprintf(stderr, "Cardinality of node %d is %ld(L)\n", a, card);
+#endif
+  return card;
+}
+
+
+
+// ******************************************************************
+// *                                                                *
+// *                        card_real  class                        *
+// *                                                                *
+// ******************************************************************
+
+//  Abstract base class: cardinality that returns a real
+class MEDDLY::card_real : public unary_operation {
+public:
+  card_real(const unary_opcode* oc, expert_forest* arg);
+
+  // common
   virtual bool isEntryStale(const int* entryData);
   virtual void discardEntry(const int* entryData);
   virtual void showEntry(FILE* strm, const int *entryData) const;
-  virtual void compute(const dd_edge &arg, double &res);
-
-  // helper
-  double compute(int ht, int a);
 };
 
-// ******************************************************************
-// *                     card_mdd_real  methods                     *
-// ******************************************************************
-
-MEDDLY::card_mdd_real::card_mdd_real(const unary_opcode* oc, expert_forest* arg)
+MEDDLY::card_real::card_real(const unary_opcode* oc, expert_forest* arg)
  : unary_operation(oc, arg, REAL)
 {
   key_length = 1;
   ans_length = sizeof(double) / sizeof(int); 
 }
 
-bool MEDDLY::card_mdd_real::isEntryStale(const int* data)
+bool MEDDLY::card_real::isEntryStale(const int* data)
 {
   return argF->isStale(data[0]);
 }
 
-void MEDDLY::card_mdd_real::discardEntry(const int* data)
+void MEDDLY::card_real::discardEntry(const int* data)
 {
   argF->uncacheNode(data[0]);
 }
 
-void MEDDLY::card_mdd_real::showEntry(FILE* strm, const int *data) const
+void MEDDLY::card_real::showEntry(FILE* strm, const int *data) const
 {
   fprintf(strm, "[%s(%d): %le]",
       getName(), data[0], ((const double*)(data+1))[0]
   );
 }
 
-void MEDDLY::card_mdd_real::compute(const dd_edge& a, double& b)
-{
-  b = compute(argF->getDomain()->getNumVariables(), a.getNode());
-}
+
+// ******************************************************************
+// *                                                                *
+// *                      card_mdd_real  class                      *
+// *                                                                *
+// ******************************************************************
+
+//  Cardinality on MDDs, returning real
+class MEDDLY::card_mdd_real : public card_real {
+public:
+  card_mdd_real(const unary_opcode* oc, expert_forest* arg)
+    : card_real(oc, arg) { }
+  virtual void compute(const dd_edge &arg, double &res) {
+    res = compute(argF->getDomain()->getNumVariables(), arg.getNode());
+  }
+  double compute(int ht, int a);
+};
 
 double MEDDLY::card_mdd_real::compute(int ht, int a)
 {
@@ -259,7 +360,126 @@ double MEDDLY::card_mdd_real::compute(int ht, int a)
   return card;
 }
 
+// ******************************************************************
+// *                                                                *
+// *                      card_mxd_real  class                      *
+// *                                                                *
+// ******************************************************************
+
+//  Cardinality on MxDs, returning real
+class MEDDLY::card_mxd_real : public card_real {
+public:
+  card_mxd_real(const unary_opcode* oc, expert_forest* arg)
+    : card_real(oc, arg) { }
+  virtual void compute(const dd_edge &arg, double &res) {
+    res = compute(argF->getDomain()->getNumVariables(), false, arg.getNode());
+  }
+  double compute(int ht, bool primed, int a);
+};
+
+double MEDDLY::card_mxd_real::compute(int ht, bool primed, int a)
+{
+  if (0==a) return 0.0;
+  if (argF->getNodeHeight(a) < ht) {
+    // skipped level
+    double card;
+    if (argF->getReductionRule() == forest::IDENTITY_REDUCED) {
+      assert(!primed);
+      card = compute(ht-1, false, a);
+    } else {
+      card = primed 
+                ? compute(ht-1, false, a)
+                : compute(ht, true, a);
+    }
+    return card * argF->getLevelSize(ht);
+  }
+  
+  // Terminal case
+  if (argF->isTerminalNode(a)) return 1.0;
+
+  // Check compute table
+  const int* cacheEntry = CT->find(this, &a);
+  if (cacheEntry) {
+    return ((const double*)(cacheEntry+1))[0];
+  }
+
+  // recurse
+  int htm1 = primed ? ht-1 : ht;
+  bool nextprimed = !primed;
+  double card = 0.0;
+  if (argF->isFullNode(a)) {
+    int asize = argF->getFullNodeSize(a);
+    for (int i = 0; i < asize; ++i) {
+      card += compute(htm1, nextprimed, argF->getFullNodeDownPtr(a, i));
+    } // for i
+  } else {
+    int asize = argF->getSparseNodeSize(a);
+    for (int i = 0; i < asize; ++i) {
+      card += compute(htm1, nextprimed, argF->getSparseNodeDownPtr(a, i));
+    }
+  }
+
+  // Add entry to compute table
+  static int ansEntry[1+sizeof(long)/sizeof(int)];
+  argF->cacheNode(a);
+  ansEntry[0] = a;
+  ((double*)(ansEntry+1))[0] = card;
+
+  CT->add(this, const_cast<const int*>(ansEntry));
+#ifdef DEBUG_CARD
+  fprintf(stderr, "Cardinality of node %d is %le\n", a, card);
+#endif
+  return card;
+}
+
+
+
+
+// ******************************************************************
+// *                                                                *
+// *                         card_mpz class                         *
+// *                                                                *
+// ******************************************************************
+
 #ifdef HAVE_LIBGMP
+
+//  Abstract base class: cardinality that returns large (mpz) integers.
+class MEDDLY::card_mpz : public unary_operation {
+public:
+  card_mpz(const unary_opcode* oc, expert_forest* arg);
+
+  // common
+  virtual bool isEntryStale(const int* entryData);
+  virtual void discardEntry(const int* entryData);
+  virtual void showEntry(FILE* strm, const int *entryData) const;
+};
+
+MEDDLY::card_mpz::card_mpz(const unary_opcode* oc, expert_forest* arg)
+ : unary_operation(oc, arg, HUGEINT)
+{
+  key_length = 1;
+  ans_length = sizeof(ct_object*) / sizeof(int); 
+}
+
+bool MEDDLY::card_mpz::isEntryStale(const int* data)
+{
+  return argF->isStale(data[0]);
+}
+
+void MEDDLY::card_mpz::discardEntry(const int* data)
+{
+  argF->uncacheNode(data[0]);
+  delete( ((ct_object**)(data+1))[0] );
+}
+
+void MEDDLY::card_mpz::showEntry(FILE* strm, const int *entryData) const
+{
+  fprintf(strm, "[%s(%d): ", getName(), entryData[0]);
+  ((const mpz_object**)(entryData+1))[0]->show(strm);
+  fprintf(strm, "]");
+}
+
+#endif
 
 // ******************************************************************
 // *                                                                *
@@ -267,55 +487,19 @@ double MEDDLY::card_mdd_real::compute(int ht, int a)
 // *                                                                *
 // ******************************************************************
 
+#ifdef HAVE_LIBGMP
+
 /// Cardinality of MDDs, returning large (mpz) integers.
-class MEDDLY::card_mdd_mpz : public unary_operation {
+class MEDDLY::card_mdd_mpz : public card_mpz {
 public:
-  card_mdd_mpz(const unary_opcode* oc, expert_forest* arg);
-
-  // required
-  virtual bool isEntryStale(const int* entryData);
-  virtual void discardEntry(const int* entryData);
-  virtual void showEntry(FILE* strm, const int *entryData) const;
-  virtual void compute(const dd_edge& a, ct_object &res);
-
-  // helper
+  card_mdd_mpz(const unary_opcode* oc, expert_forest* arg)
+    : card_mpz(oc, arg) { }
+  virtual void compute(const dd_edge& a, ct_object &res) {
+    mpz_object& mcard = dynamic_cast <mpz_object &> (res);
+    compute(argF->getDomain()->getNumVariables(), a.getNode(), mcard);
+  }
   void compute(int ht, int a, mpz_object &b);
 };
-
-// ******************************************************************
-// *                      card_mdd_mpz methods                      *
-// ******************************************************************
-
-MEDDLY::card_mdd_mpz::card_mdd_mpz(const unary_opcode* oc, expert_forest* arg)
- : unary_operation(oc, arg, HUGEINT)
-{
-  key_length = 1;
-  ans_length = sizeof(ct_object*) / sizeof(int); 
-}
-
-bool MEDDLY::card_mdd_mpz::isEntryStale(const int* data)
-{
-  return argF->isStale(data[0]);
-}
-
-void MEDDLY::card_mdd_mpz::discardEntry(const int* data)
-{
-  argF->uncacheNode(data[0]);
-  delete( ((ct_object**)(data+1))[0] );
-}
-
-void MEDDLY::card_mdd_mpz::showEntry(FILE* strm, const int *entryData) const
-{
-  fprintf(strm, "[%s(%d): ", getName(), entryData[0]);
-  ((const mpz_object**)(entryData+1))[0]->show(strm);
-  fprintf(strm, "]");
-}
-
-void MEDDLY::card_mdd_mpz::compute(const dd_edge& a, ct_object &res)
-{
-  mpz_object& mcard = dynamic_cast <mpz_object &> (res);
-  compute(argF->getDomain()->getNumVariables(), a.getNode(), mcard);
-}
 
 void MEDDLY::card_mdd_mpz::compute(int ht, int a, mpz_object &card)
 {
@@ -375,8 +559,97 @@ void MEDDLY::card_mdd_mpz::compute(int ht, int a, mpz_object &card)
 #endif
 }
 
+#endif
+
+// ******************************************************************
+// *                                                                *
+// *                       card_mxd_mpz class                       *
+// *                                                                *
+// ******************************************************************
+
+#ifdef HAVE_LIBGMP
+
+/// Cardinality of MxDs, returning large (mpz) integers.
+class MEDDLY::card_mxd_mpz : public card_mpz {
+public:
+  card_mxd_mpz(const unary_opcode* oc, expert_forest* arg)
+    : card_mpz(oc, arg) { }
+  virtual void compute(const dd_edge& a, ct_object &res) {
+    mpz_object& mcard = dynamic_cast <mpz_object &> (res);
+    compute(argF->getDomain()->getNumVariables(), false, a.getNode(), mcard);
+  }
+  void compute(int ht, bool primed, int a, mpz_object &b);
+};
+
+void MEDDLY::card_mxd_mpz::compute(int ht, bool primed, int a, mpz_object &card)
+{
+  if (0==a) {
+    card.setValue(0);
+    return;
+  }
+  if (argF->getNodeHeight(a) < ht) {
+    // skipped level
+    if (argF->getReductionRule() == forest::IDENTITY_REDUCED) {
+      assert(!primed);
+      compute(ht-1, false, a, card);
+    } else {
+      if (primed) compute(ht-1, false, a, card);
+      else        compute(ht, true, a, card);
+    }
+    card.multiply(argF->getLevelSize(ht));
+    return;
+  }
+  
+  // Terminal case
+  if (argF->isTerminalNode(a)) {
+    card.setValue(1);
+    return;
+  }
+
+  // Check compute table
+  const int* cacheEntry = CT->find(this, &a);
+  if (cacheEntry) {
+    ((const mpz_object**)(cacheEntry+1))[0]->copyInto(card);
+    return;
+  }
+
+  // recurse
+  int htm1 = primed ? ht-1 : ht;
+  bool nextprimed = !primed;
+  mpz_object tmp;
+  tmp.setValue(0);
+  card.setValue(0);
+  if (argF->isFullNode(a)) {
+    int asize = argF->getFullNodeSize(a);
+    for (int i = 0; i < asize; ++i) {
+      compute(htm1, nextprimed, argF->getFullNodeDownPtr(a, i), tmp);
+      card.add(tmp);
+    } // for i
+  } else {
+    int asize = argF->getSparseNodeSize(a);
+    for (int i = 0; i < asize; ++i) {
+      compute(htm1, nextprimed, argF->getSparseNodeDownPtr(a, i), tmp);
+      card.add(tmp);
+    }
+  }
+
+  // Add entry to compute table
+  static int ansEntry[1+sizeof(mpz_t)/sizeof(int)];
+  argF->cacheNode(a);
+  ansEntry[0] = a;
+  ((mpz_object**)(ansEntry+1))[0] = new mpz_object(card);
+
+  CT->add(this, const_cast<const int*>(ansEntry));
+#ifdef DEBUG_CARD
+  fprintf(stderr, "Cardinality of node %d is ", a);
+  card.show(stderr);
+  fprintf(stderr, "\n");
+#endif
+}
 
 #endif
+
+
 
 // ******************************************************************
 // *                                                                *
@@ -412,20 +685,20 @@ MEDDLY::card_builder::build(const forest* arg, opnd_type res) const
   switch (res) {
     case INTEGER:
       if (arg->isForRelations())
-        return 0;
+        return new card_mxd_int(opcode, (expert_forest*)arg);
       else                        
         return new card_mdd_int(opcode, (expert_forest*)arg);
 
     case REAL:
       if (arg->isForRelations())
-        return 0;
+        return new card_mxd_real(opcode, (expert_forest*)arg);
       else                        
         return new card_mdd_real(opcode, (expert_forest*)arg);
 
 #ifdef HAVE_LIBGMP
     case HUGEINT:
       if (arg->isForRelations())
-        return 0;
+        return new card_mxd_mpz(opcode, (expert_forest*)arg);
       else                        
         return new card_mdd_mpz(opcode, (expert_forest*)arg);
 #endif
