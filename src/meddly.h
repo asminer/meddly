@@ -57,7 +57,7 @@ namespace MEDDLY {
   class compute_manager;
   class op_info;
   class ct_object;
-  class unary_opcode;
+  class unary_opname;
 
   /// Argument and result types for apply operations.
   enum opnd_type {
@@ -128,23 +128,23 @@ namespace MEDDLY {
       Copying is valid with the following:
       MDD to MTMDD, MTMDD to MDD, MXD to MTMXD, MTMXD to MXD.
   */
-  extern const unary_opcode* COPY;
+  extern const unary_opname* COPY;
 
   /// Unary operation.  Return the number of variable assignments 
   /// so that the function evaluates to non-zero.
-  extern const unary_opcode* CARDINALITY;
+  extern const unary_opname* CARDINALITY;
 
   /// For BOOLEAN forests, flip the return values.
-  extern const unary_opcode* COMPLEMENT;
+  extern const unary_opname* COMPLEMENT;
 
   /// Find the largest value returned by the function.
-  extern const unary_opcode* MAX_RANGE;
+  extern const unary_opname* MAX_RANGE;
 
   /// Find the smallest value returned by the function.
-  extern const unary_opcode* MIN_RANGE;
+  extern const unary_opname* MIN_RANGE;
 
   /// Convert MDD to EV+MDD index set.  A special case of COPY, really.
-  extern const unary_opcode* CONVERT_TO_INDEX_SET;
+  extern const unary_opname* CONVERT_TO_INDEX_SET;
 
   // ******************************************************************
   // *                  library management functions                  *
@@ -300,7 +300,7 @@ namespace MEDDLY {
         @param  a     Operand.
         @param  c     Output parameter: the result, where \a c = \a op \a a.
   */
-  void apply(const unary_opcode* op, const dd_edge &a, dd_edge &c);
+  void apply(const unary_opname* op, const dd_edge &a, dd_edge &c);
 
   /** Apply a unary operator.
       For operators whose result is an integer.
@@ -308,7 +308,7 @@ namespace MEDDLY {
         @param  a     Operand.
         @param  c     Output parameter: the result, where \a c = \a op \a a.
   */
-  void apply(const unary_opcode* op, const dd_edge &a, long &c);
+  void apply(const unary_opname* op, const dd_edge &a, long &c);
 
   /** Apply a unary operator.
       For operators whose result is a real.
@@ -316,9 +316,9 @@ namespace MEDDLY {
         @param  a     Operand.
         @param  c     Output parameter: the result, where \a c = \a op \a a.
   */
-  void apply(const unary_opcode* op, const dd_edge &a, double &c);
+  void apply(const unary_opname* op, const dd_edge &a, double &c);
 
-  void apply(const unary_opcode* op, const dd_edge &a, opnd_type cr, 
+  void apply(const unary_opname* op, const dd_edge &a, opnd_type cr, 
     ct_object &c);
 
 #ifdef __GMP_H__
@@ -330,7 +330,7 @@ namespace MEDDLY {
         @param  c     Input: an initialized MP integer.
                       Output parameter: the result, where \a c = \a op \a a.
   */
-  inline void apply(const unary_opcode* op, const dd_edge &a, mpz_t &c) {
+  inline void apply(const unary_opname* op, const dd_edge &a, mpz_t &c) {
     ct_object& x = get_mpz_wrapper();
     apply(op, a, HUGEINT, x);
     unwrap(x, c);
@@ -513,10 +513,10 @@ class MEDDLY::forest {
       PESSIMISTIC_DELETION
     };
 
+  protected:
     /// Constructor -- this class cannot be instantiated.
     forest();
 
-  protected:
     /// Destructor.
     virtual ~forest();  
 
@@ -1028,9 +1028,6 @@ class MEDDLY::forest {
                           2 : internal forest + statistics.
     */
     virtual void showInfo(FILE* strm, int verbosity=0) = 0;
-
-
-  friend void MEDDLY::destroyForest(forest* &f);
 };
 
 // ******************************************************************
@@ -1187,9 +1184,6 @@ class MEDDLY::domain {
       return vh-1;
     }
 
-    /// Get the number of forests associated with this domain.
-    virtual int getNumForests() const = 0;
-
     /** Display lots of information about the domain.
         This is primarily for aid in debugging.
         @param  strm    File stream to write to.
@@ -1202,8 +1196,6 @@ class MEDDLY::domain {
 
     /// Destructor.
     virtual ~domain();
-
-    friend void MEDDLY::destroyDomain(domain* &d);
 
     variable** vars;
     int nVars;

@@ -366,7 +366,9 @@ class MEDDLY::monolithic_table : public compute_table {
 
     // is h a stale (invalid/unwanted) node
     inline bool isStale(int h) const {
-      return nodes[h].op->isEntryStale(getDataAddress(nodes[h]));
+      return
+        nodes[h].op->isMarkedForDeletion() ||
+        nodes[h].op->isEntryStale(getDataAddress(nodes[h]));
     }
 
     // node h has been removed from the table, perform clean up of node
@@ -740,7 +742,9 @@ class MEDDLY::operation_table : public compute_table {
 
     // is h a stale (invalid/unwanted) node
     inline bool isStale(int h) const {
-      return global_op->isEntryStale(getDataAddress(nodes[h]));
+      return
+        global_op->isMarkedForDeletion() ||
+        global_op->isEntryStale(getDataAddress(nodes[h]));
     }
 
     // node h has been removed from the table, perform clean up of node

@@ -118,7 +118,7 @@ using namespace MEDDLY;
 
 class node_manager : public expert_forest {
   public:
-    node_manager(domain *d, bool rel, range_type t, edge_labeling ev,
+    node_manager(int dsl, domain *d, bool rel, range_type t, edge_labeling ev,
         reduction_rule r, node_storage s, node_deletion_policy nd,
         int dataHeaderSize);
     virtual ~node_manager();

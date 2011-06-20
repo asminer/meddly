@@ -24,12 +24,12 @@
 
 namespace MEDDLY {
 
-  class unary_opcode;
+  class unary_opname;
   class settings;
 
   /// Minimalist interface.
-  /// Set up a unary_opcode for the "cardinality" operation.
-  const unary_opcode* initializeCardinality(const settings &s);
+  /// Set up a unary_opname for the "cardinality" operation.
+  const unary_opname* initializeCardinality(const settings &s);
 
 
 

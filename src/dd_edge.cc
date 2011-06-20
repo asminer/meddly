@@ -125,14 +125,9 @@ void MEDDLY::dd_edge::set(int n, float v, int l)
 
 double MEDDLY::dd_edge::getCardinality() const
 {
-#if 0
-  return smart_cast<expert_forest*>(parent)->getCardinality(node);
-#else
   double cardinality = 0;
-  getComputeManager()->apply(compute_manager::CARDINALITY,
-      *this, cardinality);
+  apply(CARDINALITY, *this, cardinality);
   return cardinality;
-#endif
 }
 
 unsigned MEDDLY::dd_edge::getNodeCount() const

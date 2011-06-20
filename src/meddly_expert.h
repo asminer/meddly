@@ -75,436 +75,29 @@ namespace MEDDLY {
   int     toInt   (float a);
   float*  toFloat (int* a);
 
-
-  // Forward declarations
-  class old_operation;
+  // classes defined elsewhere
   class compute_cache;
   class compute_table;
+
+  // classes defined here
+  class expert_variable;
   class expert_domain;
   class expert_forest;
+  class temp_dd_edge;
+
+  class opname;
+  class operation;
+
+  class unary_opname;
+  class unary_operation;
 
   // ******************************************************************
-  // *                     expert_variable  class                     *
+  // *                      Operation management                      *
   // ******************************************************************
 
-  class expert_variable : public variable {
-    public:
-      expert_variable(int b, char* n);
-    private:
-      virtual ~expert_variable();
-    public:
-      /// Update our list of domains: add \a d.
-      void addToList(domain* d);
-      /// Update our list of domains: remove \a d.
-      void removeFromList(const domain* d);
+  /// Remove an existing operation from the operation cache.
+  void removeOperationFromCache(operation* );
   
-      /** Enlarge the possible values for a variable.
-        This could modify all nodes in all forests, depending on the
-        choice of reduction rule.
-        @param  prime   If prime is true, enlarge the bound for
-                        the primed variable only, otherwise both
-                        the primed and unprimed are enlarged.
-        @param  b       New bound, if less than the current bound
-                        an error is thrown.
-      */
-      void enlargeBound(bool prime, int b);
-
-      /** Shrink the possible values for a variable.
-        This could modify all nodes in all forests, depending on the
-        choice of reduction rule.
-        @param  b       New bound, if more than the current bound
-                        an error is thrown.
-        @param  force   If \a b is too small, and information will be lost,
-                        proceed anyway if \a force is true, otherwise
-                        return an error code.
-      */
-      void shrinkBound(int b, bool force);
-    private:
-      domain** domlist;
-      int dl_alloc;
-      int dl_used;
-  };
-
-  // ******************************************************************
-  // *                      expert_domain  class                      *
-  // ******************************************************************
-
-  class expert_domain : public domain {
-    public:
-      expert_domain(variable**, int);
-
-    protected:
-      ~expert_domain();
-
-    public:
-      /** Create all variables at once, from the top down.
-        Requires the domain to be "empty" (containing no variables or forests).
-        @param  bounds  Current variable bounds.
-                        bounds[0] gives the bound for the top-most variable,
-                        and bounds[N-1] gives the bound for the bottom-most
-                        variable.
-        @param  N       Number of variables.
-      */
-      void createVariablesTopDown(const int* bounds, int N);
-
-      /** Insert a new variable.
-            @param  lev   Level to insert above; use 0 for a 
-                          new bottom-most level.
-            @param  v     Variable to insert.
-      */
-      void insertVariableAboveLevel(int lev, variable* v);
-
-      /** Remove a variable at the specified level.
-          An error is thrown if the variable size is not 1.
-          Use shrinkVariableBound() to make the bound 1.
-          All forests are modified as appropriate.
-            @param  lev   Level number.
-      */
-      void removeVariableAtLevel(int lev);
-
-      /** Find the level of a given variable.
-            @param  v   Variable to search for.
-            @return 0, if the variable was not found;
-                    i, with getVar(i) == v, otherwise.
-      */
-      int findLevelOfVariable(const variable* v) const;
-
-      inline expert_variable* getExpertVar(int lev) const {
-        return (expert_variable*) vars[lev];
-      }
-      inline const expert_variable* readExpertVar(int lev) const {
-        return (expert_variable*) vars[lev];
-      }
-
-    
-
-      /** Add a new variable with bound 1.
-        Can be used when the domain already has forests, in which case
-        all forests are modified as appropriate.
-        @param  below   Placement information: the new variable will appear
-                        immediately above the level \a below.
-      */
-      void createVariable(int below);
-
-      /** Add a new variable with bound 1.
-        Deprecated as of version 0.5; use one paramater version instead.
-      */
-#ifdef _MSC_VER
-      __declspec(deprecated)
-#endif
-#ifdef __GNUC__
-      __attribute__ ((deprecated))
-#endif
-      inline void createVariable(int below, int &vh) {
-        createVariable(below);
-        vh = below+1;
-      }
-
-      /** Destroy a variable with bound 1.
-          Deprecated as of version 0.5; use removeVariableAtLevel instead.
-      */
-#ifdef _MSC_VER
-      __declspec(deprecated)
-#endif
-#ifdef __GNUC__
-      __attribute__ ((deprecated))
-#endif
-      inline void destroyVariable(int vh) { removeVariableAtLevel(vh); }
-
-      /** Get the position of the variable in this domain's variable-order.
-        \a TERMINALS are considered to be at height 0.
-        be at height 0.
-        Deprecated as of version 0.5: level height always equals level handle.
-        @param  vh      Any variable handle.
-        @return         The variable at this height. 0 for \a TERMINALS.
-                        If \a vh is not a valid level handle, return -1.
-      */
-#ifdef _MSC_VER
-      __declspec(deprecated)
-#endif
-#ifdef __GNUC__
-      __attribute__ ((deprecated))
-#endif
-      inline int getVariableHeight(int vh) const { return vh; }
-
-      /** Get the variable with height \a ht in this domain's variable-order.
-        \a TERMINALS are considered to be at height 0.
-        Deprecated as of version 0.5: level height always equals level handle.
-        @param  ht      Height of the variable.
-        @return         The variable with this height. If the height is not in
-                        [0, height of top variable], returns -1.
-      */
-#ifdef _MSC_VER
-      __declspec(deprecated)
-#endif
-#ifdef __GNUC__
-      __attribute__ ((deprecated))
-#endif
-      inline int getVariableWithHeight(int ht) const { return ht; }
-
-      /** Swap the locations of variables in forests.
-        I.e., changes the variable ordering of all forests with this domain.
-        @param  lev1    Level of first variable.
-        @param  lev2    Level of second variable.
-      */
-      void swapOrderOfVariables(int lev1, int lev2);
-
-      /** Find the actual bound of a variable.
-        @param  vh      Variable handle.
-        @return         The smallest shrinkable bound before information loss
-                        for variable \a vh. If \a vh is invalid, or TERMINALS,
-                        returns 0.
-      */
-      int findVariableBound(int vh) const;
-
-      /** Enlarge the possible values for a variable.
-        This could modify all nodes in all forests, depending on the
-        choice of reduction rule.
-        @param  lev     Variable handle.
-        @param  prime   If prime is true, enlarge the bound for
-                        the primed variable only, otherwise both
-                        the primed and unprimed are enlarged.
-        @param  b       New bound, if less than the current bound
-                        an error code is returned.
-      */
-      inline void enlargeVariableBound(int vh, bool prime, int b) {
-        getExpertVar(vh)->enlargeBound(prime, b);
-      }
-
-      /** Shrink the possible values for a variable.
-        This could modify all nodes in all forests, depending on the
-        choice of reduction rule.
-        @param  lev     Variable handle.
-        @param  b       New bound, if more than the current bound
-                        an error code is returned.
-        @param  force   If \a b is too small, and information will be lost,
-                        proceed anyway if \a force is true, otherwise
-                        return an error code.
-      */
-      void shrinkVariableBound(int vh, int b, bool force) {
-        getExpertVar(vh)->shrinkBound(b, force);
-      }
-
-      // functions inherited from class domain
-      virtual int getNumForests() const;
-      virtual void createVariablesBottomUp(const int* bounds, int N);
-      virtual forest* createForest(bool rel, forest::range_type t,
-        forest::edge_labeling ev);
-      virtual void showInfo(FILE* strm);
-  
-      // --------------------------------------------------------------------
-
-    private:
-      int nForests;
-      expert_forest** forests;
-      int szForests;
-
-      // Forests may be deleted either by calling the destructor for the
-      // forest, or by destroying the domain. The domain maintains a list of
-      // forest handles to delete the forests linked to it. To make sure that a
-      // forest is not deleted more than once, the list of forest handles in
-      // the domain is updated by a call to unlinkForest from the forest
-      // destructor.
-      void unlinkForest(forest *);
-
-      friend void MEDDLY::destroyForest(forest* &f);
-      friend void MEDDLY::destroyDomain(domain* &d);
-  };
-
-
-  // ******************************************************************
-  // *                        operation  class                        *
-  // ******************************************************************
-  /** Generic operation.
-      Necessary for compute table entries.
-  */
-  class operation {
-      // declared and initialized in meddly.cc
-      static bool& useMonolithicCT;
-      // declared and initialized in meddly.cc
-      static compute_table* Monolithic_CT;
-      friend void MEDDLY::initialize(MEDDLY::settings);
-    protected:
-      int key_length; 
-      int ans_length; 
-      compute_table* CT;
-    public:
-      operation();
-
-      // tbd: privatize this
-      virtual ~operation();
-
-      /// Number of ints that make up the key (usually the operands).
-      inline int getKeyLength() const { 
-        return key_length; 
-      }
-
-      /// Number of ints that make up the answer (usually the results).
-      inline int getAnsLength() const { 
-        return ans_length; 
-      }
-
-      /// Number of ints that make up the entire record (key + answer)
-      inline int getCacheEntryLength() const { 
-        return key_length + ans_length; 
-      }
-
-      // are these used?
-
-      inline int getKeyLengthInBytes() const { 
-        return sizeof(int) * key_length;
-      }
-      inline int getAnsLengthInBytes() const {
-        return sizeof(int) * ans_length;
-      }
-      inline int getCacheEntryLengthInBytes() const {
-        return sizeof(int) * (key_length + ans_length);
-      }
-
-      /// Checks if the cache entry (in entryData[]) is stale.
-      virtual bool isEntryStale(const int* entryData) = 0;
-
-      /// Removes the cache entry (in entryData[]) by informing the
-      /// applicable forests that the nodes in this entry are being removed
-      /// from the cache
-      virtual void discardEntry(const int* entryData) = 0;
-
-      /// Prints a string representation of this cache entry on strm (stream).
-      virtual void showEntry(FILE* strm, const int *entryData) const = 0;
-  };
-
-  // ******************************************************************
-  // *                     unary_operation  class                     *
-  // ******************************************************************
-
-  /** Mechanism to apply a unary operation in a specific forest.
-      Specific operations will be derived from this class.
-  */
-  class unary_operation : public operation {
-      // not sure if this is necessary:
-      const unary_opcode* opcode;
-      // for cache of operations.
-      unary_operation* next;
-    protected:
-      expert_forest* argF;
-      expert_forest* resF;
-      opnd_type resultType;
-    public:
-      unary_operation(const unary_opcode* code, 
-        expert_forest* arg, expert_forest* res);
-
-      unary_operation(const unary_opcode* code,
-        expert_forest* arg, opnd_type res);
-
-      // tbd: privatize this...
-      virtual ~unary_operation();
-
-      // handy
-      const char* getName() const;
-
-      // used by "compute manager"
-
-      inline bool matches(const expert_forest* arg, const expert_forest* res) 
-        const { 
-          return (arg == argF && res == resF); 
-        }
-
-      inline bool matches(const expert_forest* arg, opnd_type res) const { 
-        return (arg == argF && resultType == res); 
-      }
-
-      inline unary_operation* getNext()         { return next; }
-      inline void setNext(unary_operation* n)   { next = n; }
-
-      // high-level front-ends
-      virtual void compute(const dd_edge &arg, dd_edge &res);
-      virtual void compute(const dd_edge &arg, long &res);
-      virtual void compute(const dd_edge &arg, double &res);
-      virtual void compute(const dd_edge &arg, ct_object &c);
-
-      // TBD: low-level front-ends?
-      // e.g.,
-      // virtual int computeDD(int k, int p);
-      // virtual void computeEvDD(int k, int v, int p, int &w, int &q);
-  };
-
-  // ******************************************************************
-  // *                      unary_builder  class                      *
-  // ******************************************************************
-
-  /** Mechanism for building unary_operations.
-      This class will have many derived classes.
-      Each instance of this class will know how to build a particular
-      type of unary operation.
-      The goal here is to simplify the logic for building operations.
-  */
-  class unary_builder {
-      unary_builder* next;
-    protected:
-      const unary_opcode* opcode;
-    public:
-      unary_builder(unary_opcode* oc);
-      virtual ~unary_builder();
-
-      inline unary_builder* getNext() { return next; }
-
-      /** Does this builder know how to build
-          the operation for the given forests?
-          Default behavior is to always return false.
-      */
-      virtual bool canBuild(const forest* arg, const forest* res) const;
-
-      /** Does this builder know how to build
-          the operation for the given forest and return type?
-          Default behavior is to always return false.
-      */
-      virtual bool canBuild(const forest* arg, opnd_type res) const;
-
-      /** Build the requested operation (it is assumed that we can.)
-          Default behavior is to throw an "unknown operation" error.
-      */
-      virtual unary_operation* build(const forest* ar, const forest* rs) const;
-
-      /** Build the requested operation (it is assumed that we can.)
-          Default behavior is to throw an "unknown operation" error.
-      */
-      virtual unary_operation* build(const forest* ar, opnd_type res) const;
-  };
-
-
-  // ******************************************************************
-  // *                       unary_opcode class                       *
-  // ******************************************************************
-
-  /// Wrapper for unary operations.
-  class unary_opcode {
-      const char* name;
-      unary_builder* builders;
-      int index;
-      unary_opcode* next;
-      static int next_index;
-      static unary_opcode* list;
-
-      friend void MEDDLY::initialize(settings s);
-      friend void MEDDLY::cleanup();
-      friend class unary_builder;
-
-    public:
-      unary_opcode(const char* n);
-      ~unary_opcode();
-
-      inline int getIndex() const { return index; }
-      inline const char* getName() const { return name; }
-      
-      unary_operation* buildOperation(const forest* arg, const forest* res)
-        const;
-      unary_operation* buildOperation(const forest* arg, opnd_type res) const;
-  };
-
-  // ******************************************************************
-  // *                        Unary operations                        *
-  // ******************************************************************
-
   /** Find, or build if necessary, a unary operation.
         @param  code    Operation we want
         @param  arg     Argument forest
@@ -512,8 +105,8 @@ namespace MEDDLY {
         @return         The matching operation, if it already exists;
                         a new operation, otherwise.
   */
-  unary_operation* getOperation(const unary_opcode* code, 
-    const forest* arg, const forest* res);
+  unary_operation* getOperation(const unary_opname* code, 
+    const expert_forest* arg, const expert_forest* res);
 
   /** Find, or build if necessary, a unary operation.
         @param  code    Operation we want
@@ -522,37 +115,284 @@ namespace MEDDLY {
         @return         The matching operation, if it already exists;
                         a new operation, otherwise.
   */
-  unary_operation* getOperation(const unary_opcode* code,
-    const forest* arg, opnd_type result);
+  unary_operation* getOperation(const unary_opname* code,
+    const expert_forest* arg, opnd_type result);
 
-  // ******************************************************************
-  // *                      expert_forest  class                      *
-  // ******************************************************************
 
-class expert_forest : public forest
+  /** Should be unnecessary to call this.
+      But, it does destroy (safely) the given operation.
+  */
+  void destroyOperation(operation* &op);
+
+}; // namespace MEDDLY
+
+
+// ******************************************************************
+// *                     expert_variable  class                     *
+// ******************************************************************
+
+class MEDDLY::expert_variable : public variable {
+  public:
+    expert_variable(int b, char* n);
+  private:
+    virtual ~expert_variable();
+  public:
+    /// Update our list of domains: add \a d.
+    void addToList(domain* d);
+    /// Update our list of domains: remove \a d.
+    void removeFromList(const domain* d);
+
+    /** Enlarge the possible values for a variable.
+      This could modify all nodes in all forests, depending on the
+      choice of reduction rule.
+      @param  prime   If prime is true, enlarge the bound for
+                      the primed variable only, otherwise both
+                      the primed and unprimed are enlarged.
+      @param  b       New bound, if less than the current bound
+                      an error is thrown.
+    */
+    void enlargeBound(bool prime, int b);
+
+    /** Shrink the possible values for a variable.
+      This could modify all nodes in all forests, depending on the
+      choice of reduction rule.
+      @param  b       New bound, if more than the current bound
+                      an error is thrown.
+      @param  force   If \a b is too small, and information will be lost,
+                      proceed anyway if \a force is true, otherwise
+                      return an error code.
+    */
+    void shrinkBound(int b, bool force);
+  private:
+    domain** domlist;
+    int dl_alloc;
+    int dl_used;
+};
+
+
+// ******************************************************************
+// *                      expert_domain  class                      *
+// ******************************************************************
+
+class MEDDLY::expert_domain : public domain {
+  public:
+    expert_domain(variable**, int);
+
+  protected:
+    ~expert_domain();
+
+  public:
+    /** Create all variables at once, from the top down.
+      Requires the domain to be "empty" (containing no variables or forests).
+      @param  bounds  Current variable bounds.
+                      bounds[0] gives the bound for the top-most variable,
+                      and bounds[N-1] gives the bound for the bottom-most
+                      variable.
+      @param  N       Number of variables.
+    */
+    void createVariablesTopDown(const int* bounds, int N);
+
+    /** Insert a new variable.
+          @param  lev   Level to insert above; use 0 for a 
+                        new bottom-most level.
+          @param  v     Variable to insert.
+    */
+    void insertVariableAboveLevel(int lev, variable* v);
+
+    /** Remove a variable at the specified level.
+        An error is thrown if the variable size is not 1.
+        Use shrinkVariableBound() to make the bound 1.
+        All forests are modified as appropriate.
+          @param  lev   Level number.
+    */
+    void removeVariableAtLevel(int lev);
+
+    /** Find the level of a given variable.
+          @param  v   Variable to search for.
+          @return 0, if the variable was not found;
+                  i, with getVar(i) == v, otherwise.
+    */
+    int findLevelOfVariable(const variable* v) const;
+
+    inline expert_variable* getExpertVar(int lev) const {
+      return (expert_variable*) vars[lev];
+    }
+    inline const expert_variable* readExpertVar(int lev) const {
+      return (expert_variable*) vars[lev];
+    }
+
+    
+
+    /** Add a new variable with bound 1.
+      Can be used when the domain already has forests, in which case
+      all forests are modified as appropriate.
+      @param  below   Placement information: the new variable will appear
+                      immediately above the level \a below.
+    */
+    void createVariable(int below);
+
+    /** Add a new variable with bound 1.
+      Deprecated as of version 0.5; use one paramater version instead.
+    */
+#ifdef _MSC_VER
+    __declspec(deprecated)
+#endif
+#ifdef __GNUC__
+    __attribute__ ((deprecated))
+#endif
+    inline void createVariable(int below, int &vh) {
+      createVariable(below);
+      vh = below+1;
+    }
+
+    /** Destroy a variable with bound 1.
+        Deprecated as of version 0.5; use removeVariableAtLevel instead.
+    */
+#ifdef _MSC_VER
+    __declspec(deprecated)
+#endif
+#ifdef __GNUC__
+    __attribute__ ((deprecated))
+#endif
+    inline void destroyVariable(int vh) { removeVariableAtLevel(vh); }
+
+    /** Get the position of the variable in this domain's variable-order.
+      \a TERMINALS are considered to be at height 0.
+      be at height 0.
+      Deprecated as of version 0.5: level height always equals level handle.
+      @param  vh      Any variable handle.
+      @return         The variable at this height. 0 for \a TERMINALS.
+                      If \a vh is not a valid level handle, return -1.
+    */
+#ifdef _MSC_VER
+    __declspec(deprecated)
+#endif
+#ifdef __GNUC__
+    __attribute__ ((deprecated))
+#endif
+    inline int getVariableHeight(int vh) const { return vh; }
+
+    /** Get the variable with height \a ht in this domain's variable-order.
+      \a TERMINALS are considered to be at height 0.
+      Deprecated as of version 0.5: level height always equals level handle.
+      @param  ht      Height of the variable.
+      @return         The variable with this height. If the height is not in
+                      [0, height of top variable], returns -1.
+    */
+#ifdef _MSC_VER
+    __declspec(deprecated)
+#endif
+#ifdef __GNUC__
+    __attribute__ ((deprecated))
+#endif
+    inline int getVariableWithHeight(int ht) const { return ht; }
+
+    /** Swap the locations of variables in forests.
+      I.e., changes the variable ordering of all forests with this domain.
+      @param  lev1    Level of first variable.
+      @param  lev2    Level of second variable.
+    */
+    void swapOrderOfVariables(int lev1, int lev2);
+
+    /** Find the actual bound of a variable.
+      @param  vh      Variable handle.
+      @return         The smallest shrinkable bound before information loss
+                      for variable \a vh. If \a vh is invalid, or TERMINALS,
+                      returns 0.
+    */
+    int findVariableBound(int vh) const;
+
+    /** Enlarge the possible values for a variable.
+      This could modify all nodes in all forests, depending on the
+      choice of reduction rule.
+      @param  lev     Variable handle.
+      @param  prime   If prime is true, enlarge the bound for
+                      the primed variable only, otherwise both
+                      the primed and unprimed are enlarged.
+      @param  b       New bound, if less than the current bound
+                      an error code is returned.
+    */
+    inline void enlargeVariableBound(int vh, bool prime, int b) {
+      getExpertVar(vh)->enlargeBound(prime, b);
+    }
+
+    /** Shrink the possible values for a variable.
+      This could modify all nodes in all forests, depending on the
+      choice of reduction rule.
+      @param  lev     Variable handle.
+      @param  b       New bound, if more than the current bound
+                      an error code is returned.
+      @param  force   If \a b is too small, and information will be lost,
+                      proceed anyway if \a force is true, otherwise
+                      return an error code.
+    */
+    void shrinkVariableBound(int vh, int b, bool force) {
+      getExpertVar(vh)->shrinkBound(b, force);
+    }
+
+    virtual void createVariablesBottomUp(const int* bounds, int N);
+    virtual forest* createForest(bool rel, forest::range_type t,
+      forest::edge_labeling ev);
+    virtual void showInfo(FILE* strm);
+
+    /// Free the slot that the forest is using.
+    void unlinkForest(expert_forest* f, int slot);
+
+    // --------------------------------------------------------------------
+
+  private:
+    expert_forest** forests;
+    int szForests;
+
+    /// Find a free slot for a new forest.
+    int findEmptyForestSlot();
+
+    /// Mark this domain for deletion
+    void markForDeletion();
+
+    friend void MEDDLY::destroyDomain(domain* &d);
+};
+
+
+// ******************************************************************
+// *                      expert_forest  class                      *
+// ******************************************************************
+
+class MEDDLY::expert_forest : public forest
 {
   public:
     /** Constructor.
-      @param  d     domain to which this forest belongs to.
-      @param  rel   does this forest represent a relation.
-      @param  t     the range of the functions represented in this forest.
-      @param  ev    edge annotation.
-      @param  r     reduction rule.
-      @param  s     storage rule.
-      @param  ndp   node deletion policy.
+      @param  dslot   slot used to store the forest, in the domain
+      @param  d       domain to which this forest belongs to.
+      @param  rel     does this forest represent a relation.
+      @param  t       the range of the functions represented in this forest.
+      @param  ev      edge annotation.
+      @param  r       reduction rule.
+      @param  s       storage rule.
+      @param  ndp     node deletion policy.
     */
-    expert_forest(domain *d, bool rel, range_type t, edge_labeling ev,
-      reduction_rule r, node_storage s, node_deletion_policy ndp);
+    expert_forest(int dslot, domain *d, bool rel, range_type t, 
+      edge_labeling ev, reduction_rule r, node_storage s, 
+      node_deletion_policy ndp);
 
   protected:
     /// Destructor.
     virtual ~expert_forest();  
+
+    /// Phase one destruction.
+    void markForDeletion();
+
+    friend void MEDDLY::destroyForest(MEDDLY::forest* &f);
+    friend class expert_domain;
 
   public:
     /// Returns a non-modifiable pointer to this forest's domain.
     const domain* getDomain() const;
 
     inline const expert_domain* getExpertDomain() const {
+      return (expert_domain*) getDomain();
+    }
+    inline expert_domain* useExpertDomain() {
       return (expert_domain*) getDomain();
     }
 
@@ -822,13 +662,6 @@ class expert_forest : public forest
     ///  is zero regardless of the cache-count.
     bool isStale(int node) const;
 
-#if 0
-    /// Returns the cardinality of the node. Cardinality is the number of
-    /// paths in the graph rooted at this node that end in a valid terminal.
-    /// Paths that end at the terminal Zero (or False) are not counted.
-    virtual double getCardinality(int node) const = 0;
-#endif
-
     /// Returns the node count for this node. The node count is the number
     /// of unique nodes in the decision diagram represented by this node.
     unsigned getNodeCount(int node) const;
@@ -889,6 +722,13 @@ class expert_forest : public forest
     /// If the node is at a primed level, it returns (2 * node_height - 1).
     /// Otherwise, it returns (2 * node_height).
     int getMappedNodeHeight(int node) const;
+
+    /// Register an operation with this forest.
+    /// Returns the slot number, for use with unregistering.
+    int registerOperation(operation* op);
+
+    /// Unregister an operation.
+    void unregisterOperation(operation* op, int slot);
 
   protected:
 
@@ -990,10 +830,13 @@ class expert_forest : public forest
     forest::node_deletion_policy nodeDeletionPolicy;
 
   private:
+    int d_slot;
+    bool is_marked_for_deletion;
+
     friend class dd_edge;
-    friend void MEDDLY::destroyDomain(domain* &d);
     void registerEdge(dd_edge& e);
     void unregisterEdge(dd_edge& e);
+
 
     // structure to store references to registered dd_edges.
     typedef struct {
@@ -1013,6 +856,10 @@ class expert_forest : public forest
     unsigned firstFree;
     // Array index: most recently created hole in edge[]
     int firstHole;
+
+    // Array of operations
+    operation** oplist;
+    int szOplist;
 
 #if 0
   // TODO: 
@@ -1110,7 +957,6 @@ class expert_forest : public forest
 };
 
 
-
 /** A bare-bones class for the construction of temporary dd_edges.
 
     The motivation behind offering this class is to speed up construction
@@ -1146,7 +992,7 @@ class expert_forest : public forest
          NOTE: The temp_dd_edge is left unchanged and the user is
          responsible for deleting the temp_dd_edges after this conversion.
 */
-class temp_dd_edge {
+class MEDDLY::temp_dd_edge {
   public:
     temp_dd_edge();
     // Deallocates downpointers[], iEdgeValues[] and rEdgeValues[].
@@ -1182,6 +1028,981 @@ class temp_dd_edge {
 };
 
 
+
+// ******************************************************************
+// *                          opname class                          *
+// ******************************************************************
+
+/// Class for names of operations.
+class MEDDLY::opname {
+    const char* name;
+    int index;
+    opname* next;
+    static int next_index;
+    static opname* list;
+
+    friend void MEDDLY::initialize(settings s);
+    friend void MEDDLY::cleanup();
+  public:
+    opname(const char* n);
+    virtual ~opname();
+
+    inline int getIndex() const         { return index; }
+    inline const char* getName() const  { return name; }
+};
+
+// ******************************************************************
+// *                        operation  class                        *
+// ******************************************************************
+
+/** Generic operation.
+    Operations are tied to specific forests.
+    Necessary for compute table entries.
+*/
+class MEDDLY::operation {
+    const opname* theOpName;
+    bool is_marked_for_deletion;
+
+    friend void MEDDLY::initialize(MEDDLY::settings);
+    // declared and initialized in meddly.cc
+    static bool& useMonolithicCT;
+    // declared and initialized in meddly.cc
+    static compute_table* Monolithic_CT;
+  protected:
+    int key_length; 
+    int ans_length; 
+    compute_table* CT;
+    // for cache of operations.
+    operation* next;
+  public:
+    operation(const opname* n);
+
+  protected:
+    virtual ~operation();
+
+    void markForDeletion();
+
+    friend class expert_forest;
+    friend void MEDDLY::destroyOperation(operation* &op);
+
+  public:
+    inline bool isMarkedForDeletion() const { 
+      return is_marked_for_deletion;
+    }
+
+    inline void setNext(operation* n) { next = n; }
+    inline operation* getNext()       { return next; }
+
+    static void removeStalesFromMonolithic();
+
+    // handy
+    inline const char* getName() const { return theOpName->getName(); }
+    inline const opname* getOpName() const { return theOpName; }
+
+    /// Number of ints that make up the key (usually the operands).
+    inline int getKeyLength() const { 
+      return key_length; 
+    }
+
+    /// Number of ints that make up the answer (usually the results).
+    inline int getAnsLength() const { 
+      return ans_length; 
+    }
+
+    /// Number of ints that make up the entire record (key + answer)
+    inline int getCacheEntryLength() const { 
+      return key_length + ans_length; 
+    }
+
+    inline int getKeyLengthInBytes() const { 
+      return sizeof(int) * key_length;
+    }
+    inline int getAnsLengthInBytes() const {
+      return sizeof(int) * ans_length;
+    }
+    inline int getCacheEntryLengthInBytes() const {
+      return sizeof(int) * (key_length + ans_length);
+    }
+
+    /// Checks if the cache entry (in entryData[]) is stale.
+    virtual bool isEntryStale(const int* entryData) = 0;
+
+    /// Removes the cache entry (in entryData[]) by informing the
+    /// applicable forests that the nodes in this entry are being removed
+    /// from the cache
+    virtual void discardEntry(const int* entryData) = 0;
+
+    /// Prints a string representation of this cache entry on strm (stream).
+    virtual void showEntry(FILE* strm, const int *entryData) const = 0;
+};
+
+// ******************************************************************
+// *                       unary_opname class                       *
+// ******************************************************************
+
+/// Unary operation names.
+class MEDDLY::unary_opname : public opname {
+  public:
+    unary_opname(const char* n);
+    virtual ~unary_opname();
+
+    virtual unary_operation* 
+      buildOperation(const forest* arg, const forest* res) const;
+
+    virtual unary_operation* 
+      buildOperation(const forest* arg, opnd_type res) const;
+};
+
+// ******************************************************************
+// *                     unary_operation  class                     *
+// ******************************************************************
+
+/** Mechanism to apply a unary operation in a specific forest.
+    Specific operations will be derived from this class.
+*/
+class MEDDLY::unary_operation : public operation {
+  protected:
+    expert_forest* argF;
+    expert_forest* resF;
+    opnd_type resultType;
+  private:
+    int argFslot;
+    int resFslot;
+  public:
+    unary_operation(const unary_opname* code, 
+      expert_forest* arg, expert_forest* res);
+
+    unary_operation(const unary_opname* code,
+      expert_forest* arg, opnd_type res);
+
+  protected:
+    virtual ~unary_operation();
+
+  public:
+    inline bool matches(const expert_forest* arg, const expert_forest* res) 
+      const { 
+        return (arg == argF && res == resF); 
+      }
+
+    inline bool matches(const expert_forest* arg, opnd_type res) const { 
+      return (arg == argF && resultType == res); 
+    }
+
+    // high-level front-ends
+    virtual void compute(const dd_edge &arg, dd_edge &res);
+    virtual void compute(const dd_edge &arg, long &res);
+    virtual void compute(const dd_edge &arg, double &res);
+    virtual void compute(const dd_edge &arg, ct_object &c);
+
+    // TBD: low-level front-ends?
+    // e.g.,
+    // virtual int computeDD(int k, int p);
+    // virtual void computeEvDD(int k, int v, int p, int &w, int &q);
+};
+
+
+
+
+
+
+
+
+// ****************************************************************************
+// *                                                                          *
+// *                          Implementation details                          *
+// *                                                                          *
+// *            Everything below here  can (and should) be ignored            *
+// *                                                                          *
+// ****************************************************************************
+
+
+inline
+int MEDDLY::expert_forest::getInternalNodeSize(int p) const
+{
+  DCASSERT(isActiveNode(p) && !isTerminalNode(p));
+  return *(getNodeAddress(p) + 2);
+}
+
+
+inline
+int* MEDDLY::expert_forest::getAddress(int k, int offset) const
+{
+  DCASSERT(level != 0 && level[mapLevel(k)].data != 0);
+  return  (level[mapLevel(k)].data + offset);
+}
+
+
+inline
+int* MEDDLY::expert_forest::getNodeAddress(int p) const
+{
+  DCASSERT(isActiveNode(p) && !isTerminalNode(p));
+  return getAddress(getNodeLevel(p), getNodeOffset(p));
+}
+
+
+inline
+int MEDDLY::expert_forest::getNodeOffset(int p) const
+{
+  DCASSERT(isValidNodeIndex(p));
+  return  (address[p].offset);
+}
+
+// map the level value (which could be primed) to the correct index in
+// the level[]
+// map logical level to physical level (index of level in the level vector)
+inline
+int MEDDLY::expert_forest::mapLevel(int k) const
+{
+  return (k >= 0)? 2 * k: ((-2 * k) - 1);
+}
+
+// map physical level to logical level (level in terms of prime, unprime)
+
+inline
+int MEDDLY::expert_forest::unmapLevel(int k) const
+{
+  return (k%2 == 0)? k/2: -(k + 1)/2;
+}
+
+
+inline
+int MEDDLY::expert_forest::getMappedNodeHeight(int p) const
+{
+  return
+    getNodeLevel(p) >= 0
+    ? 2 * getNodeHeight(p)        // 2n
+    : 2 * getNodeHeight(p) - 1;   // 2n-1
+}
+
+
+inline
+bool MEDDLY::expert_forest::isActiveNode(int p) const
+{
+  return (isValidNodeIndex(p) && (isTerminalNode(p) || getNodeOffset(p) > 0));
+}
+
+
+inline
+bool MEDDLY::expert_forest::isZombieNode(int p) const
+{
+  DCASSERT(isValidNodeIndex(p));
+  DCASSERT(!isTerminalNode(p));
+  return (getCacheCount(p) < 0);
+}
+
+
+inline
+int& MEDDLY::expert_forest::getInCount(int p) const
+{
+  DCASSERT(isActiveNode(p) && !isTerminalNode(p));
+  return *(getNodeAddress(p));
+}
+
+
+inline
+int& MEDDLY::expert_forest::getCacheCount(int p) const
+{
+  DCASSERT(isValidNodeIndex(p));
+  DCASSERT(!isTerminalNode(p));
+  return address[p].cache_count;
+}
+
+inline
+bool MEDDLY::expert_forest::isTerminalNode(int p) const
+{
+  return (p < 1);
+}
+
+inline
+bool MEDDLY::expert_forest::getBoolean(int terminalNode) const
+{
+  DCASSERT(getRangeType() == forest::BOOLEAN ||
+      getEdgeLabeling() != forest::MULTI_TERMINAL);
+  DCASSERT(terminalNode == 0 || terminalNode == -1);
+  return (terminalNode == 0)? false: true;
+}
+
+inline
+int MEDDLY::expert_forest::getTerminalNode(bool booleanValue) const
+{
+  DCASSERT(getRangeType() == forest::BOOLEAN ||
+      getEdgeLabeling() != forest::MULTI_TERMINAL);
+  return booleanValue? -1: 0;
+}
+
+inline
+int MEDDLY::expert_forest::getInteger(int terminalNode) const
+{
+  DCASSERT(getRangeType() == forest::INTEGER);
+  DCASSERT(isTerminalNode(terminalNode) && terminalNode <= 0);
+  // set 32nd bit based on 31st bit.  << gets rid of MSB; >> sign extends.
+  return terminalNode << 1 >> 1;
+}
+
+inline
+int MEDDLY::expert_forest::getTerminalNode(int integerValue) const
+{
+  DCASSERT(getRangeType() == forest::INTEGER);
+  // value has to fit within 31 bits (incl. sign)
+  // int(0xc0000000) == -1073741824
+  // int(0x3fffffff) == +1073741823
+  // DCASSERT(-1073741824 <= integerValue && integerValue <= 1073741823);
+  DCASSERT(-1073741824 <= integerValue && integerValue <= 1073741823);
+  return integerValue == 0? 0: integerValue | 0x80000000;
+}
+
+#define INLINED_REALS 1 // Inlining getReal and getTerminalNode(float)
+
+#ifdef INLINED_REALS
+// Warning: Optimizing (-O2) with inlined functions with gcc vers 4.1.3
+//          produced errors in output. Assembly output showed incorrect
+//          sequence of operations that caused errors. This does not occur
+//          with lower optimization (-O0 and -O1). This also does not occur
+//          if these two operations (getReal(int), getTerminalNode(float))
+//          are made non-inlined. To overcome this issue (while keeping
+//          -O2 optimization and inlined functions), memcpy is used instead
+//          of typecasting.
+
+inline
+float MEDDLY::expert_forest::getReal(int term) const
+{
+  DCASSERT(getRangeType() == forest::REAL);
+#if 0
+  // Warning: does not work when compiled with -O2 with gcc 4.1.3
+  return *(float*)((void*)&(term <<= 1));
+#else
+  if (term == 0) return 0.0;
+  term <<= 1;
+#if 1
+  float ret;
+  memcpy(&ret, &term, sizeof(float));
+  return ret;
+#else
+  return toFloat(term);
+#endif
+#endif
+}
+
+inline
+int MEDDLY::expert_forest::getTerminalNode(float a) const
+{
+  DCASSERT(getRangeType() == forest::REAL);
+#if 0
+  // Warning: does not work when compiled with -O2 with gcc 4.1.3
+  return (a == 0.0)? 0: (*((int*)((void*)&a)) >> 1) | 0x80000000;
+#else
+  if (a == 0.0) return 0;
+#if 1
+  int node;
+  memcpy(&node, &a, sizeof(int));
+  // printf("%x\n", node);
+  return (node >> 1) | 0x80000000;
+#else
+  return (toInt(a) >> 1) | 0x80000000;
+#endif
+#endif
+}
+
+#endif
+
+inline
+int MEDDLY::expert_forest::createTempNodeMaxSize(int lh, bool clear)
+{
+  return createTempNode(lh, getLevelSize(lh), clear);
+}
+
+inline
+int MEDDLY::expert_forest::getLevelSize(int lh) const {
+  DCASSERT(isValidLevel(lh));
+  DCASSERT(lh == 0 || level[mapLevel(lh)].data != NULL);
+  if (lh < 0) {
+    return static_cast<expert_domain*>(d)->getVariableBound(-lh, true);
+  } else {
+    return static_cast<expert_domain*>(d)->getVariableBound(lh, false);
+  }
+}
+
+inline
+int MEDDLY::expert_forest::getNodeLevel(int p) const
+{
+#ifdef DEBUG_MDD_H
+  printf("%s: p: %d\n", __func__, p);
+#endif
+  DCASSERT(isActiveNode(p) || isZombieNode(p));
+  return (isTerminalNode(p)? 0: address[p].level);
+}
+
+
+inline
+int MEDDLY::expert_forest::getNodeHeight(int p) const
+{
+  DCASSERT(isActiveNode(p));
+  return level[mapLevel(getNodeLevel(p))].height;
+}
+
+
+inline
+bool MEDDLY::expert_forest::isFullNode(int p) const
+{
+#ifdef DEBUG_MDD_H
+  printf("%s: p: %d, size: %d\n", __func__, p, getInternalNodeSize(p));
+#endif
+  DCASSERT(isActiveNode(p) && !isTerminalNode(p));
+  return (getInternalNodeSize(p) > 0);
+}
+
+
+inline
+bool MEDDLY::expert_forest::isSparseNode(int p) const
+{
+#ifdef DEBUG_MDD_H
+  printf("%s: p: %d, size: %d\n", __func__, p, getInternalNodeSize(p));
+#endif
+  DCASSERT(isActiveNode(p) && !isTerminalNode(p));
+  return (getInternalNodeSize(p) < 0);
+}
+
+
+inline
+int MEDDLY::expert_forest::getFullNodeSize(int p) const
+{
+#ifdef DEBUG_MDD_H
+  printf("%s: p: %d\n", __func__, p);
+#endif
+  DCASSERT(isFullNode(p));
+  return getInternalNodeSize(p);
+}
+
+
+inline
+int MEDDLY::expert_forest::getSparseNodeSize(int p) const
+{
+#ifdef DEBUG_MDD_H
+printf("%s: p: %d\n", __func__, p);
+#endif
+  DCASSERT(isSparseNode(p));
+  return -getInternalNodeSize(p);
+}
+
+
+inline
+void MEDDLY::expert_forest::setDownPtr(int p, int i, int value)
+{
+  DCASSERT(!isReducedNode(p));
+  DCASSERT(isFullNode(p));
+  DCASSERT(isActiveNode(value));
+  CHECK_RANGE(0, i, getFullNodeSize(p));
+  int temp = *(getNodeAddress(p) + 3 + i);
+  // linkNode to new node
+  linkNode(value);
+  *(getNodeAddress(p) + 3 + i) = value;
+  // unlinkNode old node
+  unlinkNode(temp);
+}
+
+
+inline
+void MEDDLY::expert_forest::setDownPtrWoUnlink(int p, int i, int value)
+{
+  DCASSERT(!isReducedNode(p));
+  DCASSERT(isFullNode(p));
+  DCASSERT(isActiveNode(value));
+  CHECK_RANGE(0, i, getFullNodeSize(p));
+  // linkNode to new node
+  linkNode(value);
+  *(getNodeAddress(p) + 3 + i) = value;
+}
+
+
+inline
+void MEDDLY::expert_forest::setEdgeValue(int node, int index, int ev)
+{
+  DCASSERT(!isReducedNode(node));
+  DCASSERT(isFullNode(node));
+  CHECK_RANGE(0, index, getFullNodeSize(node));
+  *(getNodeAddress(node) + 3 + getFullNodeSize(node) + index) = ev;
+}
+
+
+inline
+void MEDDLY::expert_forest::setEdgeValue(int node, int index, float ev)
+{
+  DCASSERT(!isReducedNode(node));
+  DCASSERT(isFullNode(node));
+  CHECK_RANGE(0, index, getFullNodeSize(node));
+  *(getNodeAddress(node) + 3 + getFullNodeSize(node) + index) = toInt(ev);
+}
+
+
+inline
+bool MEDDLY::expert_forest::getDownPtrs(int node, int*& dptrs)
+{
+  DCASSERT(isActiveNode(node));
+  if (isTerminalNode(node) || isReducedNode(node)) return false;
+  DCASSERT(isFullNode(node));
+  dptrs = getNodeAddress(node) + 3;
+  return true;
+}
+
+
+inline
+bool MEDDLY::expert_forest::getEdgeValues(int node, int*& evs)
+{
+  DCASSERT(isActiveNode(node));
+  if (isTerminalNode(node) || isReducedNode(node)) return false;
+  DCASSERT(isFullNode(node));
+  evs = getNodeAddress(node) + 3 + getFullNodeSize(node);
+  return true;
+}
+
+
+inline
+bool MEDDLY::expert_forest::getEdgeValues(int node, float*& evs)
+{
+  DCASSERT(isActiveNode(node));
+  if (isTerminalNode(node) || isReducedNode(node)) return false;
+  DCASSERT(isFullNode(node));
+  evs = toFloat(getNodeAddress(node) + 3 + getFullNodeSize(node));
+  return true;
+}
+
+
+inline
+bool MEDDLY::expert_forest::getDownPtrs(int node, const int*& dptrs) const
+{
+  if (isTerminalNode(node)) return false;
+  dptrs = isFullNode(node)
+    ? getNodeAddress(node) + 3
+    : getNodeAddress(node) + 3 + getSparseNodeSize(node);
+  return true;
+}
+
+
+inline
+bool MEDDLY::expert_forest
+::getSparseNodeIndexes(int node, const int*& indexes) const
+{
+  DCASSERT(isSparseNode(node));
+  if (!isSparseNode(node)) return false;
+  indexes = getNodeAddress(node) + 3;
+  return true;
+}
+
+
+inline
+bool MEDDLY::expert_forest::getEdgeValues(int node, const int*& evs) const
+{
+  DCASSERT(isReducedNode(node));
+  if (isTerminalNode(node)) return false;
+  evs = isFullNode(node)
+    ? getNodeAddress(node) + 3 + getFullNodeSize(node)
+    : getNodeAddress(node) + 3 + (getSparseNodeSize(node) * 2);
+  return true;
+}
+
+
+inline
+bool MEDDLY::expert_forest::getEdgeValues(int node, const float*& evs) const
+{
+  DCASSERT(isReducedNode(node));
+  if (isTerminalNode(node)) return false;
+  evs = toFloat(isFullNode(node)
+    ? getNodeAddress(node) + 3 + getFullNodeSize(node)
+    : getNodeAddress(node) + 3 + (getSparseNodeSize(node) * 2));
+  return true;
+}
+
+
+inline
+int MEDDLY::expert_forest::getFullNodeDownPtr(int p, int i) const
+{
+  DCASSERT(isFullNode(p));
+  CHECK_RANGE(0, i, getFullNodeSize(p));
+  return getNodeAddress(p)[3 + i];
+}
+
+
+inline
+int MEDDLY::expert_forest::getSparseNodeDownPtr(int p, int i) const
+{
+  DCASSERT(isSparseNode(p));
+  CHECK_RANGE(0, i, getSparseNodeSize(p));
+  return *(getNodeAddress(p) + 3 + getSparseNodeSize(p) + i);
+}
+
+
+inline
+int MEDDLY::expert_forest::getSparseNodeIndex(int p, int i) const
+{
+  DCASSERT(isSparseNode(p));
+  CHECK_RANGE(0, i, getSparseNodeSize(p));
+  return *(getNodeAddress(p) + 3 + i);
+}
+
+
+inline
+void MEDDLY::expert_forest
+::getFullNodeEdgeValue(int node, int index, int& ev) const
+{
+  DCASSERT(isFullNode(node));
+  CHECK_RANGE(0, index, getFullNodeSize(node));
+  ev = *(getNodeAddress(node) + 3 + getFullNodeSize(node) + index);
+}
+
+
+inline
+void MEDDLY::expert_forest
+::getSparseNodeEdgeValue(int node, int index, int& ev) const
+{
+  DCASSERT(isSparseNode(node));
+  CHECK_RANGE(0, index, getSparseNodeSize(node));
+  ev = *(getNodeAddress(node) + 3 + (getSparseNodeSize(node) * 2) + index);
+}
+
+
+inline
+void MEDDLY::expert_forest
+::getFullNodeEdgeValue(int node, int index, float& ev) const
+{
+  DCASSERT(isFullNode(node));
+  CHECK_RANGE(0, index, getFullNodeSize(node));
+  ev = toFloat(*(getNodeAddress(node) + 3 + getFullNodeSize(node) + index));
+}
+
+
+inline
+void MEDDLY::expert_forest
+::getSparseNodeEdgeValue(int node, int index, float& ev) const
+{
+  DCASSERT(isSparseNode(node));
+  CHECK_RANGE(0, index, getSparseNodeSize(node));
+  ev = toFloat(*(getNodeAddress(node) + 3 +
+        (getSparseNodeSize(node) * 2) + index));
+}
+
+
+inline
+void MEDDLY::expert_forest::linkNode(int p)
+{ 
+  DCASSERT(isActiveNode(p));
+  if (isTerminalNode(p)) return;
+  DCASSERT(!isPessimistic() || !isZombieNode(p));
+
+  // increase incount
+  ++getInCount(p);
+
+  if (getInCount(p) == 1) {
+    reclaimOrphanNode(p);
+  }
+
+#ifdef TRACK_DELETIONS
+  fprintf(stdout, "\t+Node %d count now %d\n", p, getInCount(p));
+  fflush(stdout);
+#endif
+}  
+
+
+
+inline
+void MEDDLY::expert_forest::unlinkNode(int p)
+{
+  DCASSERT(isActiveNode(p));
+  if (isTerminalNode(p)) return;
+  DCASSERT(!isPessimistic() || !isZombieNode(p));
+  DCASSERT(getInCount(p) > 0);
+  
+  // decrement incoming count
+  --getInCount(p);
+
+#ifdef TRACK_DELETIONS
+  fprintf(stdout, "\t-Node %d count now %d\n", p, getInCount(p));
+  fflush(stdout);
+#endif
+
+  if (getInCount(p) == 0) { handleNewOrphanNode(p); }
+}
+
+
+
+inline
+void MEDDLY::expert_forest::cacheNode(int p)
+{
+  DCASSERT(isActiveNode(p));
+  if (isTerminalNode(p)) return;
+  DCASSERT(isReducedNode(p));
+  getCacheCount(p)++;
+#ifdef TRACK_CACHECOUNT
+  fprintf(stdout, "\t+Node %d is in %d caches\n", p, getCacheCount(p));
+  fflush(stdout);
+#endif
+}
+
+
+
+inline
+void MEDDLY::expert_forest::uncacheNode(int p)
+{
+  if (isTerminalNode(p)) return;
+  DCASSERT(isActiveNode(p) ||
+      (!isActiveNode(p) && isPessimistic() && isZombieNode(p)));
+
+  if (isPessimistic() && isZombieNode(p)) {
+    DCASSERT(getCacheCount(p) < 0);
+    getCacheCount(p)++;                           // special case; stored -ve
+    if (getCacheCount(p) == 0) {
+      freeZombieNode(p);
+    }
+    return;
+  }
+
+  DCASSERT(getCacheCount(p) > 0);
+  getCacheCount(p)--;
+#ifdef TRACK_CACHECOUNT
+  fprintf(stdout, "\t-Node %d is in %d caches\n", p, getCacheCount(p));
+  fflush(stdout);
+#endif
+
+  if (getCacheCount(p) == 0 && getInCount(p) == 0) {
+    deleteOrphanNode(p);
+  }
+}
+
+
+inline
+const MEDDLY::domain* MEDDLY::expert_forest::getDomain() const
+{
+  return d;
+}
+
+
+inline
+MEDDLY::domain* MEDDLY::expert_forest::useDomain()
+{
+  return d;
+}
+
+
+inline
+bool MEDDLY::expert_forest::isForRelations() const
+{
+  return isRelation;
+}
+
+
+inline
+MEDDLY::forest::range_type MEDDLY::expert_forest::getRangeType() const
+{
+  return rangeType;
+}
+
+
+inline
+MEDDLY::forest::edge_labeling MEDDLY::expert_forest::getEdgeLabeling() const
+{
+  return edgeLabel;
+}
+
+
+inline
+MEDDLY::forest::reduction_rule MEDDLY::expert_forest::getReductionRule() const
+{
+  return reductionRule;
+}
+
+
+inline
+MEDDLY::forest::node_storage MEDDLY::expert_forest::getNodeStorage() const
+{
+  return nodeStorage;
+}
+
+
+inline
+MEDDLY::forest::node_deletion_policy 
+MEDDLY::expert_forest::getNodeDeletion() const
+{
+  return nodeDeletionPolicy;
+}
+
+
+inline
+void MEDDLY::expert_forest::setNodeDeletion(node_deletion_policy np)
+{
+  if (np == forest::NEVER_DELETE)
+    throw error(error::NOT_IMPLEMENTED);
+  if (getCurrentNumNodes() > 0)
+    throw error(error::INVALID_OPERATION);
+  nodeDeletionPolicy = np;
+}
+
+inline
+void MEDDLY::expert_forest::setNodeStorage(node_storage ns)
+{
+  if (nodeStorage == ns) return;
+  if (getCurrentNumNodes() > 0)
+    throw error(error::INVALID_OPERATION);
+  nodeStorage = ns;
+}
+
+inline
+void MEDDLY::expert_forest::setReductionRule(reduction_rule r)
+{
+  if (reductionRule == r) return;
+  if (getCurrentNumNodes() > 0)
+    throw error(error::INVALID_OPERATION);
+  if (!isForRelations() && r == forest::IDENTITY_REDUCED) {
+    // cannot have IDENTITY reduced for non-relation forests.
+    throw error(error::INVALID_OPERATION);
+  }
+  reductionRule = r;
+}
+
+
+inline
+bool MEDDLY::expert_forest::isPessimistic() const {
+  return nodeDeletionPolicy == forest::PESSIMISTIC_DELETION;
+}
+
+
+inline
+bool MEDDLY::expert_forest::isMdd() const {
+  return !isForRelations() &&
+         getRangeType() == forest::BOOLEAN &&
+         getEdgeLabeling() == forest::MULTI_TERMINAL;
+}
+
+
+inline
+bool MEDDLY::expert_forest::isMtMdd() const {
+  return !isForRelations() &&
+         // same as == INTEGER || == REAL
+         getRangeType() != forest::BOOLEAN &&
+         getEdgeLabeling() == forest::MULTI_TERMINAL;
+}
+
+
+inline
+bool MEDDLY::expert_forest::isMxd() const {
+  return isForRelations() &&
+         getRangeType() == forest::BOOLEAN &&
+         getEdgeLabeling() == forest::MULTI_TERMINAL;
+}
+
+
+inline
+bool MEDDLY::expert_forest::isMtMxd() const {
+  return isForRelations() &&
+         // same as == INTEGER || == REAL
+         getRangeType() != forest::BOOLEAN &&
+         getEdgeLabeling() == forest::MULTI_TERMINAL;
+}
+
+
+inline
+bool MEDDLY::expert_forest::isEvplusMdd() const {
+  return !isForRelations() &&
+         getEdgeLabeling() == forest::EVPLUS;
+}
+
+
+inline
+bool MEDDLY::expert_forest::isEvtimesMdd() const {
+  return !isForRelations() &&
+         getEdgeLabeling() == forest::EVTIMES;
+}
+
+
+inline
+bool MEDDLY::expert_forest::isIndexSet(int node) const {
+  return getIndexSetCardinality(node) > 0;
+}
+
+
+inline
+int MEDDLY::expert_forest::getIndexSetCardinality(int node) const {
+  DCASSERT(isEvplusMdd());
+  DCASSERT(isActiveNode(node));
+  // Cardinality is stored just after the downpointers and edge-values
+  return
+    isTerminalNode(node)
+    ? node == 0? 0: 1
+    : *(
+        getNodeAddress(node) +
+        3 +
+        (isFullNode(node)
+         ? 2 * getFullNodeSize(node)
+         : 3 * getSparseNodeSize(node))
+       );
+}
+
+
+inline
+void MEDDLY::expert_forest::setIndexSetCardinality(int node, int c) {
+  DCASSERT(isEvplusMdd());
+  DCASSERT(isActiveNode(node));
+  if (isEvplusMdd() && isActiveNode(node) && !isTerminalNode(node)) {
+    *(
+        getNodeAddress(node) +
+        3 +
+        (isFullNode(node)
+         ? 2 * getFullNodeSize(node)
+         : 3 * getSparseNodeSize(node))
+     ) = c;
+     return;
+  }
+  throw error(error::INVALID_OPERATION);
+}
+
+
+inline
+bool MEDDLY::expert_forest::accumulate(int& A, int* vlist, int* vplist) {
+  return false;
+}
+
+inline
+bool MEDDLY::expert_forest::accumulate(int& A, int* B) {
+  return false;
+}
+
+
+inline
+float MEDDLY::toFloat(int a) {
+  union { int i; float f; } n = {a};
+  return n.f;
+}
+
+
+inline
+int MEDDLY::toInt(float a) {
+  union { float f; int i; } n = {a};
+  return n.i;
+}
+
+
+inline
+float* MEDDLY::toFloat(int* a) {
+  union { int* i; float* f; } n = {a};
+  return n.f;
+}
+
+
+
+  // ******************************************************************
+  // ******************************************************************
+  // ******************************************************************
+  // ******************************************************************
+  // ******************************************************************
+  // ******************************************************************
+  // ******************************************************************
+  // ******************************************************************
+  // ******************************************************************
+  // ******************************************************************
+
+
+// everything within this namespace will eventually be removed
+
+namespace MEDDLY {
+  
 
 /** Operation class.
     Abstract base class.
@@ -1574,9 +2395,6 @@ class custom_op_key {
 
 
 
-// ****************************************************************************
-// *         Implementation details -- not meant for the casual user!         *
-// ****************************************************************************
 
 // ---------------------- op_param ------------------------
 
@@ -1914,838 +2732,8 @@ void custom_op_key::print(FILE* s) const
 }
 
 
-// ************************* expert_domain ************************************
-
-
-inline int expert_domain::getNumForests() const
-{
-  return nForests;
-}
-
-
-// **************************** operation *************************************
-
-
-#if 0
-// Operation description
-inline const char* operation::getName() const
-{
-  return name;
-}
-
-
-// Number of ints that make up the key (usually the operands).
-inline int operation::getKeyLength() const
-{
-  return keyLength;
-}
-
-
-// Number of ints that make up the answer (usually the results).
-inline int operation::getAnsLength() const
-{
-  return ansLength;
-}
-
-
-// Number of ints that make up the entire record (key + answer)
-inline int operation::getCacheEntryLength() const
-{
-  return cacheEntryLength;
-}
-
-
-// keyLength * sizeof(int)
-inline int operation::getKeyLengthInBytes() const
-{
-  return keyLengthInBytes;
-}
-
-
-// ansLength * sizeof(int)
-inline int operation::getAnsLengthInBytes() const
-{
-  return ansLengthInBytes;
-}
-
-
-// cacheEntryLength * sizeof(int)
-inline int operation::getCacheEntryLengthInBytes() const
-{
-  return cacheEntryLengthInBytes;
-}
-
-#endif
-
-// **************************** expert_forest *********************************
-
-
-inline
-int expert_forest::getInternalNodeSize(int p) const
-{
-  DCASSERT(isActiveNode(p) && !isTerminalNode(p));
-  return *(getNodeAddress(p) + 2);
-}
-
-
-inline
-int* expert_forest::getAddress(int k, int offset) const
-{
-  DCASSERT(level != 0 && level[mapLevel(k)].data != 0);
-  return  (level[mapLevel(k)].data + offset);
-}
-
-
-inline
-int* expert_forest::getNodeAddress(int p) const
-{
-  DCASSERT(isActiveNode(p) && !isTerminalNode(p));
-  return getAddress(getNodeLevel(p), getNodeOffset(p));
-}
-
-
-inline
-int expert_forest::getNodeOffset(int p) const
-{
-  DCASSERT(isValidNodeIndex(p));
-  return  (address[p].offset);
-}
-
-// map the level value (which could be primed) to the correct index in
-// the level[]
-// map logical level to physical level (index of level in the level vector)
-inline
-int expert_forest::mapLevel(int k) const
-{
-  return (k >= 0)? 2 * k: ((-2 * k) - 1);
-}
-
-// map physical level to logical level (level in terms of prime, unprime)
-
-inline
-int expert_forest::unmapLevel(int k) const
-{
-  return (k%2 == 0)? k/2: -(k + 1)/2;
-}
-
-
-inline
-int expert_forest::getMappedNodeHeight(int p) const
-{
-  return
-    getNodeLevel(p) >= 0
-    ? 2 * getNodeHeight(p)        // 2n
-    : 2 * getNodeHeight(p) - 1;   // 2n-1
-}
-
-
-inline
-bool expert_forest::isActiveNode(int p) const
-{
-  return (isValidNodeIndex(p) && (isTerminalNode(p) || getNodeOffset(p) > 0));
-}
-
-
-inline
-bool expert_forest::isZombieNode(int p) const
-{
-  DCASSERT(isValidNodeIndex(p));
-  DCASSERT(!isTerminalNode(p));
-  return (getCacheCount(p) < 0);
-}
-
-
-inline
-int& expert_forest::getInCount(int p) const
-{
-  DCASSERT(isActiveNode(p) && !isTerminalNode(p));
-  return *(getNodeAddress(p));
-}
-
-
-inline
-int& expert_forest::getCacheCount(int p) const
-{
-  DCASSERT(isValidNodeIndex(p));
-  DCASSERT(!isTerminalNode(p));
-  return address[p].cache_count;
-}
-
-inline
-bool expert_forest::isTerminalNode(int p) const
-{
-  return (p < 1);
-}
-
-inline
-bool expert_forest::getBoolean(int terminalNode) const
-{
-  DCASSERT(getRangeType() == forest::BOOLEAN ||
-      getEdgeLabeling() != forest::MULTI_TERMINAL);
-  DCASSERT(terminalNode == 0 || terminalNode == -1);
-  return (terminalNode == 0)? false: true;
-}
-
-inline
-int expert_forest::getTerminalNode(bool booleanValue) const
-{
-  DCASSERT(getRangeType() == forest::BOOLEAN ||
-      getEdgeLabeling() != forest::MULTI_TERMINAL);
-  return booleanValue? -1: 0;
-}
-
-inline
-int expert_forest::getInteger(int terminalNode) const
-{
-  DCASSERT(getRangeType() == forest::INTEGER);
-  DCASSERT(isTerminalNode(terminalNode) && terminalNode <= 0);
-  // set 32nd bit based on 31st bit.  << gets rid of MSB; >> sign extends.
-  return terminalNode << 1 >> 1;
-}
-
-inline
-int expert_forest::getTerminalNode(int integerValue) const
-{
-  DCASSERT(getRangeType() == forest::INTEGER);
-  // value has to fit within 31 bits (incl. sign)
-  // int(0xc0000000) == -1073741824
-  // int(0x3fffffff) == +1073741823
-  // DCASSERT(-1073741824 <= integerValue && integerValue <= 1073741823);
-  DCASSERT(-1073741824 <= integerValue && integerValue <= 1073741823);
-  return integerValue == 0? 0: integerValue | 0x80000000;
-}
-
-#define INLINED_REALS 1 // Inlining getReal and getTerminalNode(float)
-
-#ifdef INLINED_REALS
-// Warning: Optimizing (-O2) with inlined functions with gcc vers 4.1.3
-//          produced errors in output. Assembly output showed incorrect
-//          sequence of operations that caused errors. This does not occur
-//          with lower optimization (-O0 and -O1). This also does not occur
-//          if these two operations (getReal(int), getTerminalNode(float))
-//          are made non-inlined. To overcome this issue (while keeping
-//          -O2 optimization and inlined functions), memcpy is used instead
-//          of typecasting.
-
-inline
-float expert_forest::getReal(int term) const
-{
-  DCASSERT(getRangeType() == forest::REAL);
-#if 0
-  // Warning: does not work when compiled with -O2 with gcc 4.1.3
-  return *(float*)((void*)&(term <<= 1));
-#else
-  if (term == 0) return 0.0;
-  term <<= 1;
-#if 1
-  float ret;
-  memcpy(&ret, &term, sizeof(float));
-  return ret;
-#else
-  return toFloat(term);
-#endif
-#endif
-}
-
-inline
-int expert_forest::getTerminalNode(float a) const
-{
-  DCASSERT(getRangeType() == forest::REAL);
-#if 0
-  // Warning: does not work when compiled with -O2 with gcc 4.1.3
-  return (a == 0.0)? 0: (*((int*)((void*)&a)) >> 1) | 0x80000000;
-#else
-  if (a == 0.0) return 0;
-#if 1
-  int node;
-  memcpy(&node, &a, sizeof(int));
-  // printf("%x\n", node);
-  return (node >> 1) | 0x80000000;
-#else
-  return (toInt(a) >> 1) | 0x80000000;
-#endif
-#endif
-}
-
-#endif
-
-inline
-int expert_forest::createTempNodeMaxSize(int lh, bool clear)
-{
-  return createTempNode(lh, getLevelSize(lh), clear);
-}
-
-inline
-int expert_forest::getLevelSize(int lh) const {
-  DCASSERT(isValidLevel(lh));
-  DCASSERT(lh == 0 || level[mapLevel(lh)].data != NULL);
-  if (lh < 0) {
-    return static_cast<expert_domain*>(d)->getVariableBound(-lh, true);
-  } else {
-    return static_cast<expert_domain*>(d)->getVariableBound(lh, false);
-  }
-}
-
-inline
-int expert_forest::getNodeLevel(int p) const
-{
-#ifdef DEBUG_MDD_H
-  printf("%s: p: %d\n", __func__, p);
-#endif
-  DCASSERT(isActiveNode(p) || isZombieNode(p));
-  return (isTerminalNode(p)? 0: address[p].level);
-}
-
-
-inline
-int expert_forest::getNodeHeight(int p) const
-{
-  DCASSERT(isActiveNode(p));
-  return level[mapLevel(getNodeLevel(p))].height;
-}
-
-
-inline
-bool expert_forest::isFullNode(int p) const
-{
-#ifdef DEBUG_MDD_H
-  printf("%s: p: %d, size: %d\n", __func__, p, getInternalNodeSize(p));
-#endif
-  DCASSERT(isActiveNode(p) && !isTerminalNode(p));
-  return (getInternalNodeSize(p) > 0);
-}
-
-
-inline
-bool expert_forest::isSparseNode(int p) const
-{
-#ifdef DEBUG_MDD_H
-  printf("%s: p: %d, size: %d\n", __func__, p, getInternalNodeSize(p));
-#endif
-  DCASSERT(isActiveNode(p) && !isTerminalNode(p));
-  return (getInternalNodeSize(p) < 0);
-}
-
-
-inline
-int expert_forest::getFullNodeSize(int p) const
-{
-#ifdef DEBUG_MDD_H
-  printf("%s: p: %d\n", __func__, p);
-#endif
-  DCASSERT(isFullNode(p));
-  return getInternalNodeSize(p);
-}
-
-
-inline
-int expert_forest::getSparseNodeSize(int p) const
-{
-#ifdef DEBUG_MDD_H
-printf("%s: p: %d\n", __func__, p);
-#endif
-  DCASSERT(isSparseNode(p));
-  return -getInternalNodeSize(p);
-}
-
-
-inline
-void expert_forest::setDownPtr(int p, int i, int value)
-{
-  DCASSERT(!isReducedNode(p));
-  DCASSERT(isFullNode(p));
-  DCASSERT(isActiveNode(value));
-  CHECK_RANGE(0, i, getFullNodeSize(p));
-  int temp = *(getNodeAddress(p) + 3 + i);
-  // linkNode to new node
-  linkNode(value);
-  *(getNodeAddress(p) + 3 + i) = value;
-  // unlinkNode old node
-  unlinkNode(temp);
-}
-
-
-inline
-void expert_forest::setDownPtrWoUnlink(int p, int i, int value)
-{
-  DCASSERT(!isReducedNode(p));
-  DCASSERT(isFullNode(p));
-  DCASSERT(isActiveNode(value));
-  CHECK_RANGE(0, i, getFullNodeSize(p));
-  // linkNode to new node
-  linkNode(value);
-  *(getNodeAddress(p) + 3 + i) = value;
-}
-
-
-inline
-void expert_forest::setEdgeValue(int node, int index, int ev)
-{
-  DCASSERT(!isReducedNode(node));
-  DCASSERT(isFullNode(node));
-  CHECK_RANGE(0, index, getFullNodeSize(node));
-  *(getNodeAddress(node) + 3 + getFullNodeSize(node) + index) = ev;
-}
-
-
-inline
-void expert_forest::setEdgeValue(int node, int index, float ev)
-{
-  DCASSERT(!isReducedNode(node));
-  DCASSERT(isFullNode(node));
-  CHECK_RANGE(0, index, getFullNodeSize(node));
-  *(getNodeAddress(node) + 3 + getFullNodeSize(node) + index) = toInt(ev);
-}
-
-
-inline
-bool expert_forest::getDownPtrs(int node, int*& dptrs)
-{
-  DCASSERT(isActiveNode(node));
-  if (isTerminalNode(node) || isReducedNode(node)) return false;
-  DCASSERT(isFullNode(node));
-  dptrs = getNodeAddress(node) + 3;
-  return true;
-}
-
-
-inline
-bool expert_forest::getEdgeValues(int node, int*& evs)
-{
-  DCASSERT(isActiveNode(node));
-  if (isTerminalNode(node) || isReducedNode(node)) return false;
-  DCASSERT(isFullNode(node));
-  evs = getNodeAddress(node) + 3 + getFullNodeSize(node);
-  return true;
-}
-
-
-inline
-bool expert_forest::getEdgeValues(int node, float*& evs)
-{
-  DCASSERT(isActiveNode(node));
-  if (isTerminalNode(node) || isReducedNode(node)) return false;
-  DCASSERT(isFullNode(node));
-  evs = toFloat(getNodeAddress(node) + 3 + getFullNodeSize(node));
-  return true;
-}
-
-
-inline
-bool expert_forest::getDownPtrs(int node, const int*& dptrs) const
-{
-  if (isTerminalNode(node)) return false;
-  dptrs = isFullNode(node)
-    ? getNodeAddress(node) + 3
-    : getNodeAddress(node) + 3 + getSparseNodeSize(node);
-  return true;
-}
-
-
-inline
-bool expert_forest::getSparseNodeIndexes(int node, const int*& indexes) const
-{
-  DCASSERT(isSparseNode(node));
-  if (!isSparseNode(node)) return false;
-  indexes = getNodeAddress(node) + 3;
-  return true;
-}
-
-
-inline
-bool expert_forest::getEdgeValues(int node, const int*& evs) const
-{
-  DCASSERT(isReducedNode(node));
-  if (isTerminalNode(node)) return false;
-  evs = isFullNode(node)
-    ? getNodeAddress(node) + 3 + getFullNodeSize(node)
-    : getNodeAddress(node) + 3 + (getSparseNodeSize(node) * 2);
-  return true;
-}
-
-
-inline
-bool expert_forest::getEdgeValues(int node, const float*& evs) const
-{
-  DCASSERT(isReducedNode(node));
-  if (isTerminalNode(node)) return false;
-  evs = toFloat(isFullNode(node)
-    ? getNodeAddress(node) + 3 + getFullNodeSize(node)
-    : getNodeAddress(node) + 3 + (getSparseNodeSize(node) * 2));
-  return true;
-}
-
-
-inline
-int expert_forest::getFullNodeDownPtr(int p, int i) const
-{
-  DCASSERT(isFullNode(p));
-  CHECK_RANGE(0, i, getFullNodeSize(p));
-  return getNodeAddress(p)[3 + i];
-}
-
-
-inline
-int expert_forest::getSparseNodeDownPtr(int p, int i) const
-{
-  DCASSERT(isSparseNode(p));
-  CHECK_RANGE(0, i, getSparseNodeSize(p));
-  return *(getNodeAddress(p) + 3 + getSparseNodeSize(p) + i);
-}
-
-
-inline
-int expert_forest::getSparseNodeIndex(int p, int i) const
-{
-  DCASSERT(isSparseNode(p));
-  CHECK_RANGE(0, i, getSparseNodeSize(p));
-  return *(getNodeAddress(p) + 3 + i);
-}
-
-
-inline
-void expert_forest::getFullNodeEdgeValue(int node, int index, int& ev) const
-{
-  DCASSERT(isFullNode(node));
-  CHECK_RANGE(0, index, getFullNodeSize(node));
-  ev = *(getNodeAddress(node) + 3 + getFullNodeSize(node) + index);
-}
-
-
-inline
-void expert_forest::getSparseNodeEdgeValue(int node, int index, int& ev) const
-{
-  DCASSERT(isSparseNode(node));
-  CHECK_RANGE(0, index, getSparseNodeSize(node));
-  ev = *(getNodeAddress(node) + 3 + (getSparseNodeSize(node) * 2) + index);
-}
-
-
-inline
-void expert_forest::getFullNodeEdgeValue(int node, int index, float& ev) const
-{
-  DCASSERT(isFullNode(node));
-  CHECK_RANGE(0, index, getFullNodeSize(node));
-  ev = toFloat(*(getNodeAddress(node) + 3 + getFullNodeSize(node) + index));
-}
-
-
-inline
-void expert_forest::getSparseNodeEdgeValue(int node, int index, float& ev) const
-{
-  DCASSERT(isSparseNode(node));
-  CHECK_RANGE(0, index, getSparseNodeSize(node));
-  ev = toFloat(*(getNodeAddress(node) + 3 +
-        (getSparseNodeSize(node) * 2) + index));
-}
-
-
-inline
-void expert_forest::linkNode(int p)
-{ 
-  DCASSERT(isActiveNode(p));
-  if (isTerminalNode(p)) return;
-  DCASSERT(!isPessimistic() || !isZombieNode(p));
-
-  // increase incount
-  ++getInCount(p);
-
-  if (getInCount(p) == 1) {
-    reclaimOrphanNode(p);
-  }
-
-#ifdef TRACK_DELETIONS
-  fprintf(stdout, "\t+Node %d count now %d\n", p, getInCount(p));
-  fflush(stdout);
-#endif
-}  
-
-
-
-inline
-void expert_forest::unlinkNode(int p)
-{
-  DCASSERT(isActiveNode(p));
-  if (isTerminalNode(p)) return;
-  DCASSERT(!isPessimistic() || !isZombieNode(p));
-  DCASSERT(getInCount(p) > 0);
-  
-  // decrement incoming count
-  --getInCount(p);
-
-#ifdef TRACK_DELETIONS
-  fprintf(stdout, "\t-Node %d count now %d\n", p, getInCount(p));
-  fflush(stdout);
-#endif
-
-  if (getInCount(p) == 0) { handleNewOrphanNode(p); }
-}
-
-
-
-inline
-void expert_forest::cacheNode(int p)
-{
-  DCASSERT(isActiveNode(p));
-  if (isTerminalNode(p)) return;
-  DCASSERT(isReducedNode(p));
-  getCacheCount(p)++;
-#ifdef TRACK_CACHECOUNT
-  fprintf(stdout, "\t+Node %d is in %d caches\n", p, getCacheCount(p));
-  fflush(stdout);
-#endif
-}
-
-
-
-inline
-void expert_forest::uncacheNode(int p)
-{
-  if (isTerminalNode(p)) return;
-  DCASSERT(isActiveNode(p) ||
-      (!isActiveNode(p) && isPessimistic() && isZombieNode(p)));
-
-  if (isPessimistic() && isZombieNode(p)) {
-    DCASSERT(getCacheCount(p) < 0);
-    getCacheCount(p)++;                           // special case; stored -ve
-    if (getCacheCount(p) == 0) {
-      freeZombieNode(p);
-    }
-    return;
-  }
-
-  DCASSERT(getCacheCount(p) > 0);
-  getCacheCount(p)--;
-#ifdef TRACK_CACHECOUNT
-  fprintf(stdout, "\t-Node %d is in %d caches\n", p, getCacheCount(p));
-  fflush(stdout);
-#endif
-
-  if (getCacheCount(p) == 0 && getInCount(p) == 0) {
-    deleteOrphanNode(p);
-  }
-}
-
-
-inline
-const domain* expert_forest::getDomain() const
-{
-  return d;
-}
-
-
-inline
-domain* expert_forest::useDomain()
-{
-  return d;
-}
-
-
-inline
-bool expert_forest::isForRelations() const
-{
-  return isRelation;
-}
-
-
-inline
-forest::range_type expert_forest::getRangeType() const
-{
-  return rangeType;
-}
-
-
-inline
-forest::edge_labeling expert_forest::getEdgeLabeling() const
-{
-  return edgeLabel;
-}
-
-
-inline
-forest::reduction_rule expert_forest::getReductionRule() const
-{
-  return reductionRule;
-}
-
-
-inline
-forest::node_storage expert_forest::getNodeStorage() const
-{
-  return nodeStorage;
-}
-
-
-inline
-forest::node_deletion_policy expert_forest::getNodeDeletion() const
-{
-  return nodeDeletionPolicy;
-}
-
-
-inline
-void expert_forest::setNodeDeletion(node_deletion_policy np)
-{
-  if (np == forest::NEVER_DELETE)
-    throw error(error::NOT_IMPLEMENTED);
-  if (getCurrentNumNodes() > 0)
-    throw error(error::INVALID_OPERATION);
-  nodeDeletionPolicy = np;
-}
-
-inline
-void expert_forest::setNodeStorage(node_storage ns)
-{
-  if (nodeStorage == ns) return;
-  if (getCurrentNumNodes() > 0)
-    throw error(error::INVALID_OPERATION);
-  nodeStorage = ns;
-}
-
-inline
-void expert_forest::setReductionRule(reduction_rule r)
-{
-  if (reductionRule == r) return;
-  if (getCurrentNumNodes() > 0)
-    throw error(error::INVALID_OPERATION);
-  if (!isForRelations() && r == forest::IDENTITY_REDUCED) {
-    // cannot have IDENTITY reduced for non-relation forests.
-    throw error(error::INVALID_OPERATION);
-  }
-  reductionRule = r;
-}
-
-
-inline
-bool expert_forest::isPessimistic() const {
-  return nodeDeletionPolicy == forest::PESSIMISTIC_DELETION;
-}
-
-
-inline
-bool expert_forest::isMdd() const {
-  return !isForRelations() &&
-         getRangeType() == forest::BOOLEAN &&
-         getEdgeLabeling() == forest::MULTI_TERMINAL;
-}
-
-
-inline
-bool expert_forest::isMtMdd() const {
-  return !isForRelations() &&
-         // same as == INTEGER || == REAL
-         getRangeType() != forest::BOOLEAN &&
-         getEdgeLabeling() == forest::MULTI_TERMINAL;
-}
-
-
-inline
-bool expert_forest::isMxd() const {
-  return isForRelations() &&
-         getRangeType() == forest::BOOLEAN &&
-         getEdgeLabeling() == forest::MULTI_TERMINAL;
-}
-
-
-inline
-bool expert_forest::isMtMxd() const {
-  return isForRelations() &&
-         // same as == INTEGER || == REAL
-         getRangeType() != forest::BOOLEAN &&
-         getEdgeLabeling() == forest::MULTI_TERMINAL;
-}
-
-
-inline
-bool expert_forest::isEvplusMdd() const {
-  return !isForRelations() &&
-         getEdgeLabeling() == forest::EVPLUS;
-}
-
-
-inline
-bool expert_forest::isEvtimesMdd() const {
-  return !isForRelations() &&
-         getEdgeLabeling() == forest::EVTIMES;
-}
-
-
-inline
-bool expert_forest::isIndexSet(int node) const {
-  return getIndexSetCardinality(node) > 0;
-}
-
-
-inline
-int expert_forest::getIndexSetCardinality(int node) const {
-  DCASSERT(isEvplusMdd());
-  DCASSERT(isActiveNode(node));
-  // Cardinality is stored just after the downpointers and edge-values
-  return
-    isTerminalNode(node)
-    ? node == 0? 0: 1
-    : *(
-        getNodeAddress(node) +
-        3 +
-        (isFullNode(node)
-         ? 2 * getFullNodeSize(node)
-         : 3 * getSparseNodeSize(node))
-       );
-}
-
-
-inline
-void expert_forest::setIndexSetCardinality(int node, int c) {
-  DCASSERT(isEvplusMdd());
-  DCASSERT(isActiveNode(node));
-  if (isEvplusMdd() && isActiveNode(node) && !isTerminalNode(node)) {
-    *(
-        getNodeAddress(node) +
-        3 +
-        (isFullNode(node)
-         ? 2 * getFullNodeSize(node)
-         : 3 * getSparseNodeSize(node))
-     ) = c;
-     return;
-  }
-  throw error(error::INVALID_OPERATION);
-}
-
-
-inline
-bool expert_forest::accumulate(int& A, int* vlist, int* vplist) {
-  return false;
-}
-
-inline
-bool expert_forest::accumulate(int& A, int* B) {
-  return false;
-}
-
-
-inline
-float toFloat(int a) {
-  union { int i; float f; } n = {a};
-  return n.f;
-}
-
-
-inline
-int toInt(float a) {
-  union { float f; int i; } n = {a};
-  return n.i;
-}
-
-
-inline
-float* toFloat(int* a) {
-  union { int* i; float* f; } n = {a};
-  return n.f;
-}
-
-inline 
-const char* unary_operation::getName() const { return opcode->getName(); }
-
 } // namespace MEDDLY
+
+
 
 #endif

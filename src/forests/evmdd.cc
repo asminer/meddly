@@ -27,9 +27,9 @@
 
 
 evmdd_node_manager
-::evmdd_node_manager(domain *d, forest::range_type t, forest::edge_labeling el,
-  int dataHeaderSize)
-: node_manager(d, false, t,
+::evmdd_node_manager(int dsl, domain *d, forest::range_type t, 
+  forest::edge_labeling el, int dataHeaderSize)
+: node_manager(dsl, d, false, t,
       el, forest::FULLY_REDUCED,
       forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION,
       dataHeaderSize)
@@ -310,8 +310,8 @@ void evmdd_node_manager::evaluate(const dd_edge& f, const int* vlist,
 
 // ********************************* EV+MDDs ********************************** 
 
-evplusmdd_node_manager::evplusmdd_node_manager(domain *d)
-: evmdd_node_manager(d, forest::INTEGER, forest::EVPLUS,
+evplusmdd_node_manager::evplusmdd_node_manager(int dsl, domain *d)
+: evmdd_node_manager(dsl, d, forest::INTEGER, forest::EVPLUS,
   evplusmddDataHeaderSize)
 { }
 
@@ -893,8 +893,8 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
 
 // ********************************* EV*MDDs ********************************** 
 
-evtimesmdd_node_manager::evtimesmdd_node_manager(domain *d)
-: evmdd_node_manager(d, forest::REAL, forest::EVTIMES,
+evtimesmdd_node_manager::evtimesmdd_node_manager(int dsl, domain *d)
+: evmdd_node_manager(dsl, d, forest::REAL, forest::EVTIMES,
   evtimesmddDataHeaderSize)
 { }
 

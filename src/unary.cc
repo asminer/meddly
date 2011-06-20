@@ -27,76 +27,6 @@
 #include "compute_table.h"
 
 // ******************************************************************
-// *                       operation  methods                       *
-// ******************************************************************
-
-MEDDLY::operation::operation()
-{
-  key_length = 0;
-  ans_length = 0;
-  if (useMonolithicCT)
-    CT = Monolithic_CT;
-  else {
-    compute_table::settings s;
-    CT = createOperationTable(s, this); 
-  }
-}
-
-MEDDLY::operation::~operation()
-{
-  if (CT && CT->isOperationTable()) delete CT;
-}
-
-// ******************************************************************
-// *                    unary_operation  methods                    *
-// ******************************************************************
-
-MEDDLY::unary_operation::unary_operation(const unary_opcode* code, 
-        expert_forest* arg, expert_forest* res)
-{
-  next = 0;
-  opcode = code;
-  argF = arg;
-  resultType = FOREST;
-  resF = res;
-}
-
-MEDDLY::unary_operation::unary_operation(const unary_opcode* code,
-        expert_forest* arg, opnd_type res)
-{
-  next = 0;
-  opcode = code;
-  argF = arg;
-  resultType = res;
-  resF = 0;
-}
-
-MEDDLY::unary_operation::~unary_operation()
-{
-  delete next;
-}
-
-void MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
-{
-  throw error(error::TYPE_MISMATCH);
-}
-
-void MEDDLY::unary_operation::compute(const dd_edge &arg, long &res)
-{
-  throw error(error::TYPE_MISMATCH);
-}
-
-void MEDDLY::unary_operation::compute(const dd_edge &arg, double &res)
-{
-  throw error(error::TYPE_MISMATCH);
-}
-
-void MEDDLY::unary_operation::compute(const dd_edge &arg, ct_object &c)
-{
-  throw error(error::TYPE_MISMATCH);
-}
-
-// ******************************************************************
 // *                     unary_builder  methods                     *
 // ******************************************************************
 
@@ -122,18 +52,6 @@ MEDDLY::unary_builder::canBuild(const forest* arg, const forest* res) const
 bool MEDDLY::unary_builder::canBuild(const forest* arg, opnd_type res) const
 {
   return false;
-}
-
-MEDDLY::unary_operation* 
-MEDDLY::unary_builder::build(const forest* ar, const forest* rs) const
-{
-  throw error(error::UNKNOWN_OPERATION);  
-}
-
-MEDDLY::unary_operation* 
-MEDDLY::unary_builder::build(const forest* ar, opnd_type res) const
-{
-  throw error(error::UNKNOWN_OPERATION);
 }
 
 // ******************************************************************

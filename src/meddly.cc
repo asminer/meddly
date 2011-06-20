@@ -43,17 +43,17 @@ namespace MEDDLY {
 
   // unary operation "codes"
 
-  const unary_opcode* COPY = 0;
-  const unary_opcode* CARDINALITY = 0;
-  const unary_opcode* COMPLEMENT = 0;
-  const unary_opcode* MAX_RANGE = 0;
-  const unary_opcode* MIN_RANGE = 0;
-  const unary_opcode* CONVERT_TO_INDEX_SET = 0;
+  const unary_opname* COPY = 0;
+  const unary_opname* CARDINALITY = 0;
+  const unary_opname* COMPLEMENT = 0;
+  const unary_opname* MAX_RANGE = 0;
+  const unary_opname* MIN_RANGE = 0;
+  const unary_opname* CONVERT_TO_INDEX_SET = 0;
 
-  // cache of unary operations
-  unary_operation** unary_cache = 0;
-  // size of unary cache
-  int unary_cache_size = 0;
+  // cache of operations
+  operation** op_cache = 0;
+  // size of cache
+  int op_cache_size = 0;
 
   // operation settings
   bool& operation::useMonolithicCT(meddlySettings.useMonolithicComputeTable);
@@ -73,24 +73,24 @@ void initStats(MEDDLY::statistics &s)
 // front end - unary operations
 //----------------------------------------------------------------------
 
-MEDDLY::unary_operation* MEDDLY::getOperation(const unary_opcode* code, 
-  const forest* arg, const forest* res)
+MEDDLY::unary_operation* MEDDLY::getOperation(const unary_opname* code, 
+  const expert_forest* arg, const expert_forest* res)
 {
-  if (code->getIndex()<0 || code->getIndex()>=unary_cache_size)
+  if (code->getIndex()<0 || code->getIndex()>=op_cache_size)
     throw error(error::INVALID_OPERATION);
 
-  unary_operation* curr;
-  unary_operation* prev = 0;
-  for (curr=unary_cache[code->getIndex()]; curr; curr=curr->getNext()) {
-    if (curr->matches((expert_forest*)arg, (expert_forest*)res)) {
+  operation* curr;
+  operation* prev = 0;
+  for (curr=op_cache[code->getIndex()]; curr; curr=curr->getNext()) {
+    if (((unary_operation*)curr)->matches(arg, res)) {
       // move to front of list...
       if (prev) {
         prev->setNext(curr->getNext());
-        curr->setNext(unary_cache[code->getIndex()]);
-        unary_cache[code->getIndex()] = curr;
+        curr->setNext(op_cache[code->getIndex()]);
+        op_cache[code->getIndex()] = curr;
       }
       // ... and return
-      return curr;
+      return (unary_operation*) curr;
     }
     prev = curr;
   } // for
@@ -98,30 +98,30 @@ MEDDLY::unary_operation* MEDDLY::getOperation(const unary_opcode* code,
   // none present, build a new one...
   curr = code->buildOperation(arg, res);
   // ...move it to the front...
-  curr->setNext(unary_cache[code->getIndex()]);
-  unary_cache[code->getIndex()] = curr;
+  curr->setNext(op_cache[code->getIndex()]);
+  op_cache[code->getIndex()] = curr;
   // ...and return
-  return curr;
+  return (unary_operation*) curr;
 }
 
-MEDDLY::unary_operation* MEDDLY::getOperation(const unary_opcode* code, 
-  const forest* arg, opnd_type res)
+MEDDLY::unary_operation* MEDDLY::getOperation(const unary_opname* code, 
+  const expert_forest* arg, opnd_type res)
 {
-  if (code->getIndex()<0 || code->getIndex()>=unary_cache_size)
+  if (code->getIndex()<0 || code->getIndex()>=op_cache_size)
     throw error(error::INVALID_OPERATION);
 
-  unary_operation* curr;
-  unary_operation* prev = 0;
-  for (curr=unary_cache[code->getIndex()]; curr; curr=curr->getNext()) {
-    if (curr->matches((expert_forest*)arg, res)) {
+  operation* curr;
+  operation* prev = 0;
+  for (curr=op_cache[code->getIndex()]; curr; curr=curr->getNext()) {
+    if (((unary_operation*)curr)->matches(arg, res)) {
       // move to front of list...
       if (prev) {
         prev->setNext(curr->getNext());
-        curr->setNext(unary_cache[code->getIndex()]);
-        unary_cache[code->getIndex()] = curr;
+        curr->setNext(op_cache[code->getIndex()]);
+        op_cache[code->getIndex()] = curr;
       }
       // ... and return
-      return curr;
+      return (unary_operation*) curr;
     }
     prev = curr;
   } // for
@@ -129,34 +129,60 @@ MEDDLY::unary_operation* MEDDLY::getOperation(const unary_opcode* code,
   // none present, build a new one...
   curr = code->buildOperation(arg, res);
   // ...move it to the front...
-  curr->setNext(unary_cache[code->getIndex()]);
-  unary_cache[code->getIndex()] = curr;
+  curr->setNext(op_cache[code->getIndex()]);
+  op_cache[code->getIndex()] = curr;
   // ...and return
-  return curr;
+  return (unary_operation*) curr;
 }
 
-void MEDDLY::apply(const unary_opcode* code, const dd_edge &a, dd_edge &c)
+void MEDDLY::removeOperationFromCache(operation* op)
 {
-  unary_operation* op = getOperation(code, a.getForest(), c.getForest());
+  if (0==op) return;
+  const opname* code = op->getOpName();
+
+  operation* curr;
+  operation* prev = 0;
+  for (curr=op_cache[code->getIndex()]; curr; curr=curr->getNext()) {
+    if (curr == op) break;
+    prev = curr;
+  } // for
+  if (0==curr) return;  // not found
+  // remove curr
+  if (prev) {
+    prev->setNext(curr->getNext());
+  } else {
+    op_cache[code->getIndex()] = curr->getNext();
+  }
+  curr->setNext(0);
+}
+
+void MEDDLY::apply(const unary_opname* code, const dd_edge &a, dd_edge &c)
+{
+  expert_forest* aF = (expert_forest*) a.getForest();
+  expert_forest* cF = (expert_forest*) c.getForest();
+  unary_operation* op = getOperation(code, aF, cF);
   op->compute(a, c);
 }
 
-void MEDDLY::apply(const unary_opcode* code, const dd_edge &a, long &c)
+void MEDDLY::apply(const unary_opname* code, const dd_edge &a, long &c)
 {
-  unary_operation* op = getOperation(code, a.getForest(), INTEGER);
+  expert_forest* aF = (expert_forest*) a.getForest();
+  unary_operation* op = getOperation(code, aF, INTEGER);
   op->compute(a, c);
 }
 
-void MEDDLY::apply(const unary_opcode* code, const dd_edge &a, double &c)
+void MEDDLY::apply(const unary_opname* code, const dd_edge &a, double &c)
 {
-  unary_operation* op = getOperation(code, a.getForest(), REAL);
+  expert_forest* aF = (expert_forest*) a.getForest();
+  unary_operation* op = getOperation(code, aF, REAL);
   op->compute(a, c);
 }
 
-void MEDDLY::apply(const unary_opcode* code, const dd_edge &a, opnd_type cr,
+void MEDDLY::apply(const unary_opname* code, const dd_edge &a, opnd_type cr,
   ct_object &c)
 {
-  unary_operation* op = getOperation(code, a.getForest(), cr);
+  expert_forest* aF = (expert_forest*) a.getForest();
+  unary_operation* op = getOperation(code, aF, cr);
   op->compute(a, c);
 }
 
@@ -189,11 +215,9 @@ void MEDDLY::destroyDomain(MEDDLY::domain* &d)
   if (0==d) return;
   if (0==ECM) throw error(error::UNINITIALIZED);
   expert_domain* ed = (expert_domain*) d;
-  // delete registered forests
-  for (int i = 0; i < ed->nForests; ++i) {
-    delete ed->forests[i];
-  }
-  delete d;
+  ed->markForDeletion();
+  operation::removeStalesFromMonolithic();
+  delete ed;
   d = 0;
 }
 
@@ -201,10 +225,22 @@ void MEDDLY::destroyForest(MEDDLY::forest* &f)
 {
   if (0==f) return;
   if (0==ECM) throw error(error::UNINITIALIZED);
-  expert_domain* ed = (expert_domain*)f->useDomain();
-  ed->unlinkForest(f);
-  delete f;
+  expert_forest* ef = (expert_forest*) f;
+  ef->markForDeletion();
+  operation::removeStalesFromMonolithic();
+  delete ef;
   f = 0;
+}
+
+void MEDDLY::destroyOperation(MEDDLY::operation* &op)
+{
+  if (0==op) return;
+  if (0==ECM) throw error(error::UNINITIALIZED);
+  removeOperationFromCache(op);
+  op->markForDeletion();
+  operation::removeStalesFromMonolithic();
+  delete op;
+  op = 0;
 }
 
 MEDDLY::compute_manager* MEDDLY::getComputeManager()
@@ -229,21 +265,20 @@ void MEDDLY::initialize(settings s)
     operation::Monolithic_CT = createMonolithicTable(s);
   }
 
-  // Unary operation initialization
+  opname::next_index = 0;
+  opname::list = 0;
 
-  unary_opcode::next_index = 0;
-  unary_opcode::list = 0;
+  // Initialize opnames here
 
   CARDINALITY = initializeCardinality(s);
   // ...
 
   // set up operation cache
-  unary_cache_size = unary_opcode::next_index;
-  unary_cache = new unary_operation*[unary_cache_size];
-  for (int i=0; i<unary_cache_size; i++) {
-    unary_cache[i] = 0;
+  op_cache_size = opname::next_index;
+  op_cache = new operation*[op_cache_size];
+  for (int i=0; i<op_cache_size; i++) {
+    op_cache[i] = 0;
   }
-
 
   ECM = new expert_compute_manager(meddlySettings);
 }

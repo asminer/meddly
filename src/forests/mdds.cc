@@ -53,10 +53,10 @@
 const int add_size = 1024;
 const int l_add_size = 24;
 
-node_manager::node_manager(domain *d, bool rel, range_type t,
+node_manager::node_manager(int dsl, domain *d, bool rel, range_type t,
   edge_labeling ev, reduction_rule r, node_storage s, node_deletion_policy nd,
   int dataHeaderSize)
-: expert_forest(d, rel, t, ev, r, s, nd)
+: expert_forest(dsl, d, rel, t, ev, r, s, nd)
 {
   this->dataHeaderSize = dataHeaderSize;
 
