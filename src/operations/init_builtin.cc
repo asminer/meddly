@@ -1,4 +1,5 @@
 
+
 // $Id$
 
 /*
@@ -19,17 +20,21 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef CARDINALITY_H
-#define CARDINALITY_H
-
-namespace MEDDLY {
-  class unary_opname;
-  class settings;
-
-  /// Minimalist interface.
-  /// Set up a unary_opname for the "cardinality" operation.
-  unary_opname* initializeCardinality(const settings &s);
-};
-
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
+#include "../defines.h"
+#include "init_builtin.h"
 
+#include "cardinality.h"
+
+void MEDDLY::builtin_initializer::init(const settings &s)
+{
+  MEDDLY::CARDINALITY = (CARD = initializeCardinality(s));
+}
+
+void MEDDLY::builtin_initializer::cleanup()
+{
+  delete CARD;
+  MEDDLY::CARDINALITY = 0;
+}

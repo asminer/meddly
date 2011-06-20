@@ -11,6 +11,7 @@ libops_la_SOURCES = \
 	../meddly_expert.h \
 	../defines.h \
 	../compute_cache.h \
+  init_builtin.h    init_builtin.cc \
 	operation.cc \
 	operation_ext.h   operation_ext.cc \
 	reachability.h    reachability.cc \

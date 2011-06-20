@@ -71,35 +71,6 @@ namespace MEDDLY {
   };
 
   // ******************************************************************
-  // *                         settings  class                        *
-  // ******************************************************************
-
-  /** "Global" settings for MEDDLY.
-      These settings DO NOT CHANGE once the library is initialized.
-  
-      The compute cache by default uses a hash table with chaining (i.e. a
-      list of entries at each hash location). This can be changed to a
-      hash-table without chaining. The maximum size of the hash table can
-      also be fixed (to limit the amount of memory it uses).
-  */
-  struct settings {
-    public:
-      /// Do we use one monolithic compute table? Otherwise, one per operation.
-      bool useMonolithicComputeTable;
-      /// Should the compute tables chain items that hash to the same location.
-      bool doComputeTablesUseChaining;
-      /// Maximum compute table size.
-      unsigned maxComputeTableSize;
-    public:
-      /// Constructor, to set defaults.
-      settings() {
-        doComputeTablesUseChaining = true;
-        useMonolithicComputeTable = true;
-        maxComputeTableSize = 16777216;
-      }
-  };
-  
-  // ******************************************************************
   // *                        statistics  class                       *
   // ******************************************************************
   
@@ -154,15 +125,12 @@ namespace MEDDLY {
       Should be called before using any other functions.
         @param  s   Collection of various settings.
   */
-  void initialize(settings s);
+  void initialize(const settings &s);
 
   /** Initialize the library with default settings.
       Should be called before using any other functions.
   */
-  inline void initialize() {
-    settings deflt;
-    initialize(deflt);
-  }
+  void initialize();
 
   /** Clean up the library.
       Can be called to free memory used by the library;
@@ -1199,6 +1167,8 @@ class MEDDLY::domain {
 
     variable** vars;
     int nVars;
+
+    friend void MEDDLY::cleanup();
 };
 
 
@@ -1572,9 +1542,6 @@ class MEDDLY::compute_manager {
       */
       COPY=0,
 
-      /// Unary operation.  Return the number of variable assignments 
-      /// so that the function evaluates to non-zero.
-      CARDINALITY,
       /// Set operation for forests with range_type of BOOLEAN. All operands
       /// must belong to the same forest.
       UNION,

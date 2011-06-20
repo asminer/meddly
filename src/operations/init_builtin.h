@@ -1,4 +1,5 @@
 
+
 // $Id$
 
 /*
@@ -19,17 +20,16 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef CARDINALITY_H
-#define CARDINALITY_H
-
 namespace MEDDLY {
-  class unary_opname;
-  class settings;
-
-  /// Minimalist interface.
-  /// Set up a unary_opname for the "cardinality" operation.
-  unary_opname* initializeCardinality(const settings &s);
+  class builtin_initializer;
 };
 
-#endif
+class MEDDLY::builtin_initializer : public op_initializer {
+  unary_opname* CARD;
+public:
+  builtin_initializer(op_initializer* b) : op_initializer(b) { }
+protected:
+  virtual void init(const settings &s);
+  virtual void cleanup();
+};
 

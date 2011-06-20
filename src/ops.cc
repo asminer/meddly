@@ -33,21 +33,17 @@
 // ******************************************************************
 
 int MEDDLY::opname::next_index;
-MEDDLY::opname* MEDDLY::opname::list;
 
 MEDDLY::opname::opname(const char* n)
 {
   name = n;
   index = next_index;
   next_index++;
-  next = list;
-  list = this;
 }
 
 MEDDLY::opname::~opname()
 {
   // library must be closing
-  delete next;
 }
 
 // ******************************************************************
@@ -165,4 +161,29 @@ void MEDDLY::unary_operation::compute(const dd_edge &arg, ct_object &c)
   throw error(error::TYPE_MISMATCH);
 }
 
+// ******************************************************************
+// *                     op_initializer methods                     *
+// ******************************************************************
+
+MEDDLY::op_initializer::op_initializer(op_initializer* bef)
+{
+  before = bef;
+}
+
+MEDDLY::op_initializer::~op_initializer()
+{
+  delete before;
+}
+
+void MEDDLY::op_initializer::initChain(const settings &s)
+{
+  if (before) before->initChain(s);
+  init(s);
+}
+
+void MEDDLY::op_initializer::cleanupChain()
+{
+  cleanup();
+  if (before) before->cleanupChain();
+}
 

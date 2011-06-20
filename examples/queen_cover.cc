@@ -313,7 +313,7 @@ int main(int argc, const char** argv)
   printf(" peak memory\n");
 
   long c;
-  CM->apply(compute_manager::CARDINALITY, solutions, c);
+  apply(CARDINALITY, solutions, c);
   printf("\nFor a %dx%d chessboard, ", N, N);
   printf("there are %ld covers with %d queens\n\n", c, q);
 

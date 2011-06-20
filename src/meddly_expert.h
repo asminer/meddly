@@ -80,6 +80,7 @@ namespace MEDDLY {
   class compute_table;
 
   // classes defined here
+  struct settings;
   class expert_variable;
   class expert_domain;
   class expert_forest;
@@ -90,6 +91,8 @@ namespace MEDDLY {
 
   class unary_opname;
   class unary_operation;
+
+  class op_initializer;
 
   // ******************************************************************
   // *                      Operation management                      *
@@ -124,9 +127,45 @@ namespace MEDDLY {
   */
   void destroyOperation(operation* &op);
 
+  
+  /// Builds an initializer for MEDDLY's builtin operations.
+  op_initializer* makeBuiltinInitializer();
+
 }; // namespace MEDDLY
 
 
+// ******************************************************************
+// *                         settings  class                        *
+// ******************************************************************
+
+/** "Global" settings for MEDDLY.
+    These settings DO NOT CHANGE once the library is initialized.
+  
+    The compute cache by default uses a hash table with chaining (i.e. a
+    list of entries at each hash location). This can be changed to a
+    hash-table without chaining. The maximum size of the hash table can
+    also be fixed (to limit the amount of memory it uses).
+*/
+struct MEDDLY::settings {
+  public:
+    /// Do we use one monolithic compute table? Otherwise, one per operation.
+    bool useMonolithicComputeTable;
+    /// Should the compute tables chain items that hash to the same location.
+    bool doComputeTablesUseChaining;
+    /// Maximum compute table size.
+    unsigned maxComputeTableSize;
+    /// Initializer for operations
+    op_initializer* operationBuilder;
+  public:
+    /// Constructor, to set defaults.
+    settings() {
+      doComputeTablesUseChaining = true;
+      useMonolithicComputeTable = true;
+      maxComputeTableSize = 16777216;
+      operationBuilder = makeBuiltinInitializer();
+    }
+};
+  
 // ******************************************************************
 // *                     expert_variable  class                     *
 // ******************************************************************
@@ -1037,11 +1076,9 @@ class MEDDLY::temp_dd_edge {
 class MEDDLY::opname {
     const char* name;
     int index;
-    opname* next;
     static int next_index;
-    static opname* list;
 
-    friend void MEDDLY::initialize(settings s);
+    friend void MEDDLY::initialize(const settings &);
     friend void MEDDLY::cleanup();
   public:
     opname(const char* n);
@@ -1063,7 +1100,9 @@ class MEDDLY::operation {
     const opname* theOpName;
     bool is_marked_for_deletion;
 
-    friend void MEDDLY::initialize(MEDDLY::settings);
+    friend void MEDDLY::initialize(const settings &);
+    friend void MEDDLY::cleanup();
+
     // declared and initialized in meddly.cc
     static bool& useMonolithicCT;
     // declared and initialized in meddly.cc
@@ -1200,11 +1239,30 @@ class MEDDLY::unary_operation : public operation {
     // virtual void computeEvDD(int k, int v, int p, int &w, int &q);
 };
 
+// ******************************************************************
+// *                      op_initializer class                      *
+// ******************************************************************
 
+/** Preferred mechanism for users to initialize their own operations.
+    Derive a class from this one, provide the \a execute method.
+*/
+class MEDDLY::op_initializer {
+  op_initializer* before;
+public:
+  /// Constructor.
+  ///   @param  bef   initializer(s) to execute before this one.
+  op_initializer(op_initializer* bef);
 
+  virtual ~op_initializer();
 
+  void initChain(const settings &s);
+  void cleanupChain();
 
+protected:
 
+  virtual void init(const settings &s) = 0;
+  virtual void cleanup() = 0;
+};
 
 
 // ****************************************************************************

@@ -25,12 +25,13 @@
 
 */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 #include "defines.h"
 #include "revision.h"
 #include "compute_table.h"
-
-// unary operations
-#include "operations/cardinality.h"
+#include "operations/init_builtin.h"
 
 namespace MEDDLY {
   // "global" variables
@@ -39,7 +40,13 @@ namespace MEDDLY {
 
   statistics meddlyStats;
 
+  bool libraryRunning = 0;
+
   expert_compute_manager* ECM = 0;
+
+  // list of all domains; needed when we destroy the library.
+  domain** dom_list = 0;
+  int dom_list_size = 0;
 
   // unary operation "codes"
 
@@ -192,19 +199,33 @@ void MEDDLY::apply(const unary_opname* code, const dd_edge &a, opnd_type cr,
 
 MEDDLY::variable* MEDDLY::createVariable(int bound, char* name)
 {
-  if (0==ECM) throw error(error::UNINITIALIZED);
+  if (!libraryRunning) throw error(error::UNINITIALIZED);
   return new expert_variable(bound, name);
 }
 
 MEDDLY::domain* MEDDLY::createDomain(variable** vars, int N)
 {
-  if (0==ECM) throw error(error::UNINITIALIZED);
-  return new expert_domain(vars, N);
+  if (!libraryRunning) throw error(error::UNINITIALIZED);
+  int slot;
+  for (slot=0; slot<dom_list_size; slot++) {
+    if (slot) continue;
+    dom_list[slot] = new expert_domain(vars, N);
+    return dom_list[slot];
+  }
+  // expand list
+  int newsize = dom_list_size + 16;
+  domain** tmp = (domain**) realloc(dom_list, newsize * sizeof(domain*));
+  if (0==tmp) throw error(error::INSUFFICIENT_MEMORY);
+  dom_list = tmp;
+  for (int i=dom_list_size; i<newsize; i++) dom_list[i] = 0;
+  dom_list_size = newsize;
+  dom_list[slot] = new expert_domain(vars, N);
+  return dom_list[slot];
 }
 
 MEDDLY::domain* MEDDLY::createDomainBottomUp(const int* bounds, int N)
 {
-  if (0==ECM) throw error(error::UNINITIALIZED);
+  if (!libraryRunning) throw error(error::UNINITIALIZED);
   domain* d = new expert_domain(0, 0);
   d->createVariablesBottomUp(bounds, N);
   return d;
@@ -213,7 +234,14 @@ MEDDLY::domain* MEDDLY::createDomainBottomUp(const int* bounds, int N)
 void MEDDLY::destroyDomain(MEDDLY::domain* &d)
 {
   if (0==d) return;
-  if (0==ECM) throw error(error::UNINITIALIZED);
+  if (!libraryRunning) throw error(error::UNINITIALIZED);
+  // remove from our list
+  for (int i=0; i<dom_list_size; i++) {
+    if (dom_list[i] != d) continue;
+    dom_list[i] = 0;
+    break;
+  }
+  // remove
   expert_domain* ed = (expert_domain*) d;
   ed->markForDeletion();
   operation::removeStalesFromMonolithic();
@@ -224,7 +252,7 @@ void MEDDLY::destroyDomain(MEDDLY::domain* &d)
 void MEDDLY::destroyForest(MEDDLY::forest* &f)
 {
   if (0==f) return;
-  if (0==ECM) throw error(error::UNINITIALIZED);
+  if (!libraryRunning) throw error(error::UNINITIALIZED);
   expert_forest* ef = (expert_forest*) f;
   ef->markForDeletion();
   operation::removeStalesFromMonolithic();
@@ -235,7 +263,7 @@ void MEDDLY::destroyForest(MEDDLY::forest* &f)
 void MEDDLY::destroyOperation(MEDDLY::operation* &op)
 {
   if (0==op) return;
-  if (0==ECM) throw error(error::UNINITIALIZED);
+  if (!libraryRunning) throw error(error::UNINITIALIZED);
   removeOperationFromCache(op);
   op->markForDeletion();
   operation::removeStalesFromMonolithic();
@@ -243,21 +271,33 @@ void MEDDLY::destroyOperation(MEDDLY::operation* &op)
   op = 0;
 }
 
+MEDDLY::op_initializer* MEDDLY::makeBuiltinInitializer()
+{
+  return new builtin_initializer(0);
+}
+
 MEDDLY::compute_manager* MEDDLY::getComputeManager()
 {
-  if (0==ECM) throw error(error::UNINITIALIZED);
+  if (!libraryRunning) throw error(error::UNINITIALIZED);
   return ECM;
 }
 
 //----------------------------------------------------------------------
-// front end - initialize and cleanup
+// front end - initialize and cleanup of library
 //----------------------------------------------------------------------
 
-void MEDDLY::initialize(settings s)
+void MEDDLY::initialize(const settings &s)
 {
-  if (ECM) throw error(error::ALREADY_INITIALIZED);
+  if (libraryRunning) throw error(error::ALREADY_INITIALIZED);
   meddlySettings = s;
   initStats(meddlyStats);
+
+  // set up empty list of domains
+  dom_list_size = 16;
+  dom_list = (domain**) malloc(dom_list_size * sizeof(domain*));
+  for (int i=0; i<dom_list_size; i++) {
+    dom_list[i] = 0;
+  }
 
   // set up monolithic compute table, if needed
   if (meddlySettings.useMonolithicComputeTable) {
@@ -266,12 +306,9 @@ void MEDDLY::initialize(settings s)
   }
 
   opname::next_index = 0;
-  opname::list = 0;
 
-  // Initialize opnames here
-
-  CARDINALITY = initializeCardinality(s);
-  // ...
+  if (meddlySettings.operationBuilder) 
+    meddlySettings.operationBuilder->initChain(s);
 
   // set up operation cache
   op_cache_size = opname::next_index;
@@ -281,15 +318,38 @@ void MEDDLY::initialize(settings s)
   }
 
   ECM = new expert_compute_manager(meddlySettings);
+  libraryRunning = 1;
+}
+
+void MEDDLY::initialize()
+{
+  settings deflt;
+  initialize(deflt);
 }
 
 void MEDDLY::cleanup()
 {
-  if (0==ECM) throw error(error::UNINITIALIZED);
+  if (!libraryRunning) throw error(error::UNINITIALIZED);
   delete ECM;
   ECM = 0;
 
-  // TBD: cleanup unary stuff
+  // clean up domains
+  for (int i=0; i<dom_list_size; i++) {
+    delete dom_list[i];
+  }
+  free(dom_list);
+
+  // clean up compute table
+  delete operation::Monolithic_CT;
+  operation::Monolithic_CT = 0;
+
+  // clean up operation cache (operations should be destroyed already)
+  delete[] op_cache;
+
+  if (meddlySettings.operationBuilder) 
+    meddlySettings.operationBuilder->cleanupChain();
+
+  libraryRunning = 0;
 }
 
 //----------------------------------------------------------------------

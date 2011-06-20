@@ -67,7 +67,6 @@ const char* MEDDLY::expert_compute_manager::getOperationName(
 {
   switch(op) {
     case COPY:          return "Copy Edge";
-    case CARDINALITY:   return "Cardinality";
     case UNION:         return "Union";
     case INTERSECTION:  return "Intersection";
     case DIFFERENCE:    return "Difference";
@@ -363,10 +362,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
                 opera = mxd_complement::getInstance();
               }
             }
-            break;
-
-        case compute_manager::CARDINALITY:
-            opera = getCardinalityOperation(plist[0], plist[1]);
             break;
 
         case compute_manager::MAX_RANGE:

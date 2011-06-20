@@ -172,7 +172,7 @@ long buildQueenSolutions(int N)
   intersect(constr, N);
   assert(constr[0]);
   long c;
-  CM->apply(compute_manager::CARDINALITY, *constr[0], c);
+  apply(CARDINALITY, *constr[0], c);
   // cleanup
   for (int i=0; i<N; i++) {
     delete col[i];

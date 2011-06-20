@@ -243,12 +243,8 @@ int main()
   printf(" peak memory\n");
 
   long c;
-  CM->apply(compute_manager::CARDINALITY, solutions, c);
+  apply(CARDINALITY, solutions, c);
   printf("\nThere are %ld solutions to the %d-queens problem\n\n", c, N);
-
-  long c2;
-  apply(CARDINALITY, solutions, c2);
-  printf("\nThere are %ld solutions to the %d-queens problem\n\n", c2, N);
 
   // show one of the solutions
   dd_edge::const_iterator first = solutions.begin();
