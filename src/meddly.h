@@ -1562,13 +1562,6 @@ class MEDDLY::compute_manager {
       /// Works for BOOLEAN forests.
       CROSS,
 
-      /// Unary operation for forests with range_type of INTEGER or REAL.
-      /// Return the largest value returned by the function.
-      MAX_RANGE,
-      /// Unary operation for forests with range_type of INTEGER or REAL.
-      /// Return the smallest value returned by the function.
-      MIN_RANGE,
-
       /// For forests with range_type of INTEGER and REAL. All operands must
       /// belong to the same forest.
       MIN,

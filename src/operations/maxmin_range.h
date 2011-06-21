@@ -23,28 +23,14 @@
 #define MAXMIN_RANGE_H
 
 namespace MEDDLY {
+  class unary_opname;
+  class settings;
 
-  class old_operation;
-  class op_param;
+  /// Set up a unary_opname for the "maxrange" operation.
+  unary_opname* initializeMaxRange(const settings &s);
 
-  /** Minimalist front-end interface.
-      Return the appropriate operation for 
-      the given forest and desired return type.
-        @param  ft  Forest type
-        @param  rt  Return type
-        @return The appropriate operation, or 0 on error.
-  */
-  old_operation* getMaxRangeOperation(const op_param &ft, const op_param &rt);
-
-  /** Minimalist front-end interface.
-      Return the appropriate operation for 
-      the given forest and desired return type.
-        @param  ft  Forest type
-        @param  rt  Return type
-        @return The appropriate operation, or 0 on error.
-  */
-  old_operation* getMinRangeOperation(const op_param &ft, const op_param &rt);
-
+  /// Set up a unary_opname for the "minrange" operation.
+  unary_opname* initializeMinRange(const settings &s);
 }
 
 #endif

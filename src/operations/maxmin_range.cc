@@ -19,456 +19,429 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 #include "../defines.h"
 #include "maxmin_range.h"
-#include "../compute_cache.h"
+#include "../compute_table.h"
 
 namespace MEDDLY {
 
-// ******************************************************************
-// *                                                                *
-// *                      maxminrange_op class                      *
-// *                                                                *
-// ******************************************************************
+  class range_int;
+  class range_real;
 
-/** Abstract base class for max, min range operations.
-*/
-class maxminrange_op : public old_operation {
-  public:
-    maxminrange_op()                        { }
-    virtual ~maxminrange_op()               { }
+  class maxrange_int;
+  class minrange_int;
 
-    virtual int getKeyLength() const        { return 1; }
-    virtual int getKeyLengthInBytes() const { return sizeof(int); }
+  class maxrange_real;
+  class minrange_real;
 
-    virtual bool isEntryStale(const op_info* owner, const int* entryData);
-    virtual void discardEntry(op_info* owner, const int* entryData);
-
-  protected:
-    inline void 
-    type_check(const op_info* owner, op_param::type p1type) 
-    {
-        if (owner == 0)
-          throw error(error::UNKNOWN_OPERATION);
-        if (owner->op == 0 || owner->p == 0 || owner->cc == 0)
-          throw error(error::TYPE_MISMATCH);
-        if (owner->nParams != 2)
-          throw error(error::WRONG_NUMBER);
-        if (owner->p[1].getType() != p1type)
-          throw error(error::TYPE_MISMATCH);
-    }
+  class maxrange_opname;
+  class minrange_opname;
 };
 
-bool maxminrange_op::
-isEntryStale(const op_info* owner, const int* data)
-{
-  // data[] is of size owner.nParams
-  // data[0] <--> DD node to find max/min range of
-  // data[1] <--> result value (not a DD node)
-  DCASSERT(owner->nParams == 2);
-  return owner->p[0].getForest()->isStale(data[0]);
-}
-
-void maxminrange_op::
-discardEntry(op_info* owner, const int* data)
-{
-  // data[] is of size owner.nParams
-  // data[0] <--> DD node to find max/min range of
-  // data[1] <--> result value (not a DD node)
-  DCASSERT(owner->nParams == 2);
-  owner->p[0].getForest()->uncacheNode(data[0]);
-}
-
-
 // ******************************************************************
 // *                                                                *
-// *                    int_maxminrange_op class                    *
+// *                        range_int  class                        *
 // *                                                                *
 // ******************************************************************
 
-/** Abstract base class for max, min range operations with integer range.
-*/
-class int_maxminrange_op : public maxminrange_op {
+/// Abstract base class: max or min range that returns an integer.
+class MEDDLY::range_int : public unary_operation {
   public:
-    int_maxminrange_op()                    { }
-    virtual ~int_maxminrange_op()           { }
+    range_int(const unary_opname* oc, expert_forest* arg);
 
-    virtual int getAnsLength() const  { 
-      return sizeof(long) / sizeof(int); 
-    }
-    virtual int getCacheEntryLength() const { 
-      return 1 + sizeof(long) / sizeof(int);
-    }
-
-    virtual int getAnsLengthInBytes() const { 
-      return sizeof(long); 
-    }
-    virtual int getCacheEntryLengthInBytes() const { 
-      return sizeof(int) + sizeof(long);
-    }
-
-    virtual void typeCheck(const op_info* owner) {
-      type_check(owner, op_param::INTEGER);
-    }
-
-    virtual void showEntry(const op_info* owner, FILE* strm,
-        const int *entryData) const;
-
-    virtual void compute(op_info* owner, const dd_edge& a,
-      long& b);
-
-    // for derived classes
-    virtual long compute(op_info* owner, int a) = 0;
+    // common
+    virtual bool isEntryStale(const int* entryData);
+    virtual void discardEntry(const int* entryData);
+    virtual void showEntry(FILE* strm, const int *entryData) const;
 };
 
-void
-int_maxminrange_op::
-showEntry(const op_info* owner, FILE* strm, const int *data) const
+MEDDLY::range_int::range_int(const unary_opname* oc, expert_forest* arg)
+ : unary_operation(oc, arg, INTEGER)
 {
-  DCASSERT(owner->nParams == 2);
+  key_length = 1;
+  ans_length = sizeof(long) / sizeof(int); 
+}
+
+bool MEDDLY::range_int::isEntryStale(const int* data)
+{
+  return argF->isStale(data[0]);
+}
+
+void MEDDLY::range_int::discardEntry(const int* data)
+{
+  argF->uncacheNode(data[0]);
+}
+
+void MEDDLY::range_int::showEntry(FILE* strm, const int *data) const
+{
   fprintf(strm, "[%s(%d): %ld(L)]",
-      owner->op->getName(), data[0], ((const long*)(data+1))[0]
+      getName(), data[0], ((const long*)(data+1))[0]
   );
 }
 
-void 
-int_maxminrange_op::
-compute(op_info* owner, const dd_edge& a, long& b)
-{
-  if (0==owner) 
-    throw error(error::TYPE_MISMATCH);
-  b = compute(owner, a.getNode());
-}
-
 
 // ******************************************************************
 // *                                                                *
-// *                     int_max_range_op class                     *
+// *                        range_real class                        *
 // *                                                                *
 // ******************************************************************
 
-class int_max_range_op : public int_maxminrange_op {
+/// Abstract base class: max or min range that returns a real.
+class MEDDLY::range_real : public unary_operation {
   public:
-    int_max_range_op()                    { }
-    virtual ~int_max_range_op()           { }
-    virtual const char* getName() const   { return "Max_range"; }
+    range_real(const unary_opname* oc, expert_forest* arg);
 
-    static int_max_range_op* getInstance();
-
-    virtual long compute(op_info* owner, int a);
+    // common
+    virtual bool isEntryStale(const int* entryData);
+    virtual void discardEntry(const int* entryData);
+    virtual void showEntry(FILE* strm, const int *entryData) const;
 };
 
-int_max_range_op* 
-int_max_range_op::
-getInstance()
+MEDDLY::range_real::range_real(const unary_opname* oc, expert_forest* arg)
+ : unary_operation(oc, arg, INTEGER)
 {
-  static int_max_range_op instance;
-  return &instance;
+  key_length = 1;
+  ans_length = sizeof(double) / sizeof(int); 
 }
 
-long int_max_range_op::compute(op_info* owner, int a)
+bool MEDDLY::range_real::isEntryStale(const int* data)
 {
-  expert_forest* f = owner->p[0].getForest();
+  return argF->isStale(data[0]);
+}
 
+void MEDDLY::range_real::discardEntry(const int* data)
+{
+  argF->uncacheNode(data[0]);
+}
+
+void MEDDLY::range_real::showEntry(FILE* strm, const int *data) const
+{
+  fprintf(strm, "[%s(%d): %le]",
+      getName(), data[0], ((const double*)(data+1))[0]
+  );
+}
+
+
+// ******************************************************************
+// *                                                                *
+// *                       maxrange_int class                       *
+// *                                                                *
+// ******************************************************************
+
+/// Max range, returns an integer
+class MEDDLY::maxrange_int : public range_int {
+public:
+  maxrange_int(const unary_opname* oc, expert_forest* arg)
+    : range_int(oc, arg) { }
+  virtual void compute(const dd_edge &arg, long &res) {
+    res = compute(arg.getNode());
+  }
+  long compute(int a);
+};
+
+long MEDDLY::maxrange_int::compute(int a)
+{
   // Terminal case
-  if (f->isTerminalNode(a)) return f->getInteger(a);
+  if (argF->isTerminalNode(a)) return argF->getInteger(a);
   
   // Check compute table
-  const int* cacheEntry = owner->cc->find(owner, &a);
+  const int* cacheEntry = CT->find(this, &a);
   if (cacheEntry) {
     return ((const long*)(cacheEntry+1))[0];
   }
 
   // recurse
   long max;
-  if (f->isFullNode(a)) {
+  if (argF->isFullNode(a)) {
     // Full node
-    int asize = f->getFullNodeSize(a);
-    max = compute(owner, f->getFullNodeDownPtr(a, 0));
+    int asize = argF->getFullNodeSize(a);
+    max = compute(argF->getFullNodeDownPtr(a, 0));
     for (int i = 1; i < asize; ++i) {
-      max = MAX(max, compute(owner, f->getFullNodeDownPtr(a, i)));
+      max = MAX(max, compute(argF->getFullNodeDownPtr(a, i)));
     } // for i
   } else {
     // Sparse node
-    int asize = f->getSparseNodeSize(a);
-    max = compute(owner, f->getSparseNodeDownPtr(a, 0));
+    int asize = argF->getSparseNodeSize(a);
+    max = compute(argF->getSparseNodeDownPtr(a, 0));
     for (int i = 1; i < asize; ++i) {
-      max = MAX(max, compute(owner, f->getSparseNodeDownPtr(a, i)));
+      max = MAX(max, compute(argF->getSparseNodeDownPtr(a, i)));
     } // for i
   } 
 
   // Add entry to compute table
   static int ansEntry[1+sizeof(long)/sizeof(int)];
-  owner->p[0].getForest()->cacheNode(a);
+  argF->cacheNode(a);
   ansEntry[0] = a;
   ((long*)(ansEntry+1))[0] = max;
 
-  owner->cc->add(owner, const_cast<const int*>(ansEntry));
+  CT->add(this, const_cast<const int*>(ansEntry));
   return max;
 }
 
 
+
 // ******************************************************************
 // *                                                                *
-// *                     int_min_range_op class                     *
+// *                       minrange_int class                       *
 // *                                                                *
 // ******************************************************************
 
-class int_min_range_op : public int_maxminrange_op {
-  public:
-    int_min_range_op()                    { }
-    virtual ~int_min_range_op()           { }
-    virtual const char* getName() const   { return "Min_range"; }
-
-    static int_min_range_op* getInstance();
-
-    virtual long compute(op_info* owner, int a);
+/// Min range, returns an integer
+class MEDDLY::minrange_int : public range_int {
+public:
+  minrange_int(const unary_opname* oc, expert_forest* arg)
+    : range_int(oc, arg) { }
+  virtual void compute(const dd_edge &arg, long &res) {
+    res = compute(arg.getNode());
+  }
+  long compute(int a);
 };
 
-int_min_range_op* 
-int_min_range_op::
-getInstance()
+long MEDDLY::minrange_int::compute(int a)
 {
-  static int_min_range_op instance;
-  return &instance;
-}
-
-long int_min_range_op::compute(op_info* owner, int a)
-{
-  expert_forest* f = owner->p[0].getForest();
-
   // Terminal case
-  if (f->isTerminalNode(a)) return f->getInteger(a);
+  if (argF->isTerminalNode(a)) return argF->getInteger(a);
   
   // Check compute table
-  const int* cacheEntry = owner->cc->find(owner, &a);
+  const int* cacheEntry = CT->find(this, &a);
   if (cacheEntry) {
     return ((const long*)(cacheEntry+1))[0];
   }
 
   // recurse
   long min;
-  if (f->isFullNode(a)) {
+  if (argF->isFullNode(a)) {
     // Full node
-    int asize = f->getFullNodeSize(a);
-    min = compute(owner, f->getFullNodeDownPtr(a, 0));
+    int asize = argF->getFullNodeSize(a);
+    min = compute(argF->getFullNodeDownPtr(a, 0));
     for (int i = 1; i < asize; ++i) {
-      min = MIN(min, compute(owner, f->getFullNodeDownPtr(a, i)));
+      min = MIN(min, compute(argF->getFullNodeDownPtr(a, i)));
     } // for i
   } else {
     // Sparse node
-    int asize = f->getSparseNodeSize(a);
-    min = compute(owner, f->getSparseNodeDownPtr(a, 0));
+    int asize = argF->getSparseNodeSize(a);
+    min = compute(argF->getSparseNodeDownPtr(a, 0));
     for (int i = 1; i < asize; ++i) {
-      min = MIN(min, compute(owner, f->getSparseNodeDownPtr(a, i)));
+      min = MIN(min, compute(argF->getSparseNodeDownPtr(a, i)));
     } // for i
   } 
 
   // Add entry to compute table
   static int ansEntry[1+sizeof(long)/sizeof(int)];
-  owner->p[0].getForest()->cacheNode(a);
+  argF->cacheNode(a);
   ansEntry[0] = a;
   ((long*)(ansEntry+1))[0] = min;
 
-  owner->cc->add(owner, const_cast<const int*>(ansEntry));
+  CT->add(this, const_cast<const int*>(ansEntry));
   return min;
 }
 
 
+
 // ******************************************************************
 // *                                                                *
-// *                   real_maxminrange_op  class                   *
+// *                      maxrange_real  class                      *
 // *                                                                *
 // ******************************************************************
 
-/** Abstract base class for max, min range operations with real range.
-*/
-class real_maxminrange_op : public maxminrange_op {
-  public:
-    real_maxminrange_op()                    { }
-    virtual ~real_maxminrange_op()           { }
-
-    virtual int getAnsLength() const  { 
-      return sizeof(double) / sizeof(int); 
-    }
-    virtual int getCacheEntryLength() const { 
-      return 1 + sizeof(double) / sizeof(int);
-    }
-
-    virtual int getAnsLengthInBytes() const { 
-      return sizeof(double); 
-    }
-    virtual int getCacheEntryLengthInBytes() const { 
-      return sizeof(int) + sizeof(double);
-    }
-
-    virtual void typeCheck(const op_info* owner) {
-      type_check(owner, op_param::REAL);
-    }
-
-    virtual void showEntry(const op_info* owner, FILE* strm,
-        const int *entryData) const;
-
-    virtual void compute(op_info* owner, const dd_edge& a,
-      double& b);
-
-    // for derived classes
-    virtual double compute(op_info* owner, int a) = 0;
+/// Max range, returns a real
+class MEDDLY::maxrange_real : public range_real {
+public:
+  maxrange_real(const unary_opname* oc, expert_forest* arg)
+    : range_real(oc, arg) { }
+  virtual void compute(const dd_edge &arg, double &res) {
+    res = compute(arg.getNode());
+  }
+  double compute(int a);
 };
 
-void
-real_maxminrange_op::
-showEntry(const op_info* owner, FILE* strm, const int *data) const
+double MEDDLY::maxrange_real::compute(int a)
 {
-  DCASSERT(owner->nParams == 2);
-  fprintf(strm, "[%s(%d): %le]",
-      owner->op->getName(), data[0], ((const double*)(data+1))[0]
-  );
-}
-
-void 
-real_maxminrange_op::
-compute(op_info* owner, const dd_edge& a, double& b)
-{
-  if (0==owner) 
-    throw error(error::TYPE_MISMATCH);
-  b = compute(owner, a.getNode());
-}
-
-
-// ******************************************************************
-// *                                                                *
-// *                    real_max_range_op  class                    *
-// *                                                                *
-// ******************************************************************
-
-class real_max_range_op : public real_maxminrange_op {
-  public:
-    real_max_range_op()                   { }
-    virtual ~real_max_range_op()          { }
-    virtual const char* getName() const   { return "Max_range"; }
-
-    static real_max_range_op* getInstance();
-
-    virtual double compute(op_info* owner, int a);
-};
-
-real_max_range_op* 
-real_max_range_op::
-getInstance()
-{
-  static real_max_range_op instance;
-  return &instance;
-}
-
-double real_max_range_op::compute(op_info* owner, int a)
-{
-  expert_forest* f = owner->p[0].getForest();
-
   // Terminal case
-  if (f->isTerminalNode(a)) return f->getReal(a);
+  if (argF->isTerminalNode(a)) return argF->getReal(a);
   
   // Check compute table
-  const int* cacheEntry = owner->cc->find(owner, &a);
+  const int* cacheEntry = CT->find(this, &a);
   if (cacheEntry) {
     return ((const double*)(cacheEntry+1))[0];
   }
 
   // recurse
   double max;
-  if (f->isFullNode(a)) {
+  if (argF->isFullNode(a)) {
     // Full node
-    int asize = f->getFullNodeSize(a);
-    max = compute(owner, f->getFullNodeDownPtr(a, 0));
+    int asize = argF->getFullNodeSize(a);
+    max = compute(argF->getFullNodeDownPtr(a, 0));
     for (int i = 1; i < asize; ++i) {
-      max = MAX(max, compute(owner, f->getFullNodeDownPtr(a, i)));
+      max = MAX(max, compute(argF->getFullNodeDownPtr(a, i)));
     } // for i
   } else {
     // Sparse node
-    int asize = f->getSparseNodeSize(a);
-    max = compute(owner, f->getSparseNodeDownPtr(a, 0));
+    int asize = argF->getSparseNodeSize(a);
+    max = compute(argF->getSparseNodeDownPtr(a, 0));
     for (int i = 1; i < asize; ++i) {
-      max = MAX(max, compute(owner, f->getSparseNodeDownPtr(a, i)));
+      max = MAX(max, compute(argF->getSparseNodeDownPtr(a, i)));
     } // for i
   } 
 
   // Add entry to compute table
   static int ansEntry[1+sizeof(double)/sizeof(int)];
-  owner->p[0].getForest()->cacheNode(a);
+  argF->cacheNode(a);
   ansEntry[0] = a;
   ((double*)(ansEntry+1))[0] = max;
 
-  owner->cc->add(owner, const_cast<const int*>(ansEntry));
+  CT->add(this, const_cast<const int*>(ansEntry));
   return max;
 }
 
 
+
 // ******************************************************************
 // *                                                                *
-// *                    real_min_range_op  class                    *
+// *                      minrange_real  class                      *
 // *                                                                *
 // ******************************************************************
 
-class real_min_range_op : public real_maxminrange_op {
-  public:
-    real_min_range_op()                   { }
-    virtual ~real_min_range_op()          { }
-    virtual const char* getName() const   { return "Min_range"; }
-
-    static real_min_range_op* getInstance();
-
-    virtual double compute(op_info* owner, int a);
+/// Min range, returns a real
+class MEDDLY::minrange_real : public range_real {
+public:
+  minrange_real(const unary_opname* oc, expert_forest* arg)
+    : range_real(oc, arg) { }
+  virtual void compute(const dd_edge &arg, double &res) {
+    res = compute(arg.getNode());
+  }
+  double compute(int a);
 };
 
-real_min_range_op* 
-real_min_range_op::
-getInstance()
+double MEDDLY::minrange_real::compute(int a)
 {
-  static real_min_range_op instance;
-  return &instance;
-}
-
-double real_min_range_op::compute(op_info* owner, int a)
-{
-  expert_forest* f = owner->p[0].getForest();
-
   // Terminal case
-  if (f->isTerminalNode(a)) return f->getReal(a);
+  if (argF->isTerminalNode(a)) return argF->getReal(a);
   
   // Check compute table
-  const int* cacheEntry = owner->cc->find(owner, &a);
+  const int* cacheEntry = CT->find(this, &a);
   if (cacheEntry) {
     return ((const double*)(cacheEntry+1))[0];
   }
 
   // recurse
   double min;
-  if (f->isFullNode(a)) {
+  if (argF->isFullNode(a)) {
     // Full node
-    int asize = f->getFullNodeSize(a);
-    min = compute(owner, f->getFullNodeDownPtr(a, 0));
+    int asize = argF->getFullNodeSize(a);
+    min = compute(argF->getFullNodeDownPtr(a, 0));
     for (int i = 1; i < asize; ++i) {
-      min = MIN(min, compute(owner, f->getFullNodeDownPtr(a, i)));
+      min = MIN(min, compute(argF->getFullNodeDownPtr(a, i)));
     } // for i
   } else {
     // Sparse node
-    int asize = f->getSparseNodeSize(a);
-    min = compute(owner, f->getSparseNodeDownPtr(a, 0));
+    int asize = argF->getSparseNodeSize(a);
+    min = compute(argF->getSparseNodeDownPtr(a, 0));
     for (int i = 1; i < asize; ++i) {
-      min = MIN(min, compute(owner, f->getSparseNodeDownPtr(a, i)));
+      min = MIN(min, compute(argF->getSparseNodeDownPtr(a, i)));
     } // for i
   } 
 
   // Add entry to compute table
   static int ansEntry[1+sizeof(double)/sizeof(int)];
-  owner->p[0].getForest()->cacheNode(a);
+  argF->cacheNode(a);
   ansEntry[0] = a;
   ((double*)(ansEntry+1))[0] = min;
 
-  owner->cc->add(owner, const_cast<const int*>(ansEntry));
+  CT->add(this, const_cast<const int*>(ansEntry));
   return min;
 }
 
+
+
+// ******************************************************************
+// *                                                                *
+// *                     maxrange_opname  class                     *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::maxrange_opname : public unary_opname {
+  public:
+    maxrange_opname();
+    virtual unary_operation*
+      buildOperation(const forest* ar, opnd_type res) const;
+};
+
+MEDDLY::maxrange_opname::maxrange_opname() : unary_opname("Max_range")
+{
+}
+
+MEDDLY::unary_operation*
+MEDDLY::maxrange_opname::buildOperation(const forest* ar, opnd_type res) const
+{
+  if (0==ar) return 0;
+
+  if (ar->getEdgeLabeling() != forest::MULTI_TERMINAL)
+    throw error(error::NOT_IMPLEMENTED);
+
+  switch (res) {
+    case INTEGER:
+      if (forest::INTEGER != ar->getRangeType())
+        throw error(error::TYPE_MISMATCH);
+      return new maxrange_int(this, (expert_forest*) ar);
+
+    case REAL:
+      if (forest::REAL != ar->getRangeType())
+        throw error(error::TYPE_MISMATCH);
+      return new maxrange_real(this, (expert_forest*) ar);
+
+    default:
+      throw error(error::TYPE_MISMATCH);
+  } // switch
+
+  throw error(error::MISCELLANEOUS);
+}
+
+// ******************************************************************
+// *                                                                *
+// *                     minrange_opname  class                     *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::minrange_opname : public unary_opname {
+  public:
+    minrange_opname();
+    virtual unary_operation*
+      buildOperation(const forest* ar, opnd_type res) const;
+};
+
+MEDDLY::minrange_opname::minrange_opname() : unary_opname("Min_range")
+{
+}
+
+MEDDLY::unary_operation*
+MEDDLY::minrange_opname::buildOperation(const forest* ar, opnd_type res) const
+{
+  if (0==ar) return 0;
+
+  if (ar->getEdgeLabeling() != forest::MULTI_TERMINAL)
+    throw error(error::NOT_IMPLEMENTED);
+
+  switch (res) {
+    case INTEGER:
+      if (forest::INTEGER != ar->getRangeType())
+        throw error(error::TYPE_MISMATCH);
+      return new minrange_int(this, (expert_forest*) ar);
+
+    case REAL:
+      if (forest::REAL != ar->getRangeType())
+        throw error(error::TYPE_MISMATCH);
+      return new minrange_real(this, (expert_forest*) ar);
+
+    default:
+      throw error(error::TYPE_MISMATCH);
+  } // switch
+
+  throw error(error::MISCELLANEOUS);
+}
 
 
 // ******************************************************************
@@ -477,44 +450,13 @@ double real_min_range_op::compute(op_info* owner, int a)
 // *                                                                *
 // ******************************************************************
 
-old_operation* getMaxRangeOperation(const op_param &ft, const op_param &rt)
+MEDDLY::unary_opname* MEDDLY::initializeMaxRange(const settings &s)
 {
-  switch (rt.getType()) {
-    case op_param::INTEGER:
-      if (!ft.isIntForest())    return 0;
-      if (ft.isMT())            return int_max_range_op::getInstance();
-      return 0;
-
-    case op_param::REAL:
-      if (!ft.isRealForest())   return 0;
-      if (ft.isMT())            return real_max_range_op::getInstance();
-      return 0;
-
-    default:
-      return 0;
-  } // switch
-
-  return 0;
+  return new maxrange_opname;
 }
 
-old_operation* getMinRangeOperation(const op_param &ft, const op_param &rt)
+MEDDLY::unary_opname* MEDDLY::initializeMinRange(const settings &s)
 {
-  switch (rt.getType()) {
-    case op_param::INTEGER:
-      if (!ft.isIntForest())    return 0;
-      if (ft.isMT())            return int_min_range_op::getInstance();
-      return 0;
-
-    case op_param::REAL:
-      if (!ft.isRealForest())   return 0;
-      if (ft.isMT())            return real_min_range_op::getInstance();
-      return 0;
-
-    default:
-      return 0;
-  } // switch
-
-  return 0;
+  return new minrange_opname;
 }
 
-} // namespace MEDDLY

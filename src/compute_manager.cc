@@ -71,8 +71,6 @@ const char* MEDDLY::expert_compute_manager::getOperationName(
     case INTERSECTION:  return "Intersection";
     case DIFFERENCE:    return "Difference";
     case COMPLEMENT:    return "Complement";
-    case MAX_RANGE:     return "Maximum range";
-    case MIN_RANGE:     return "Minimum range";
     case PRE_IMAGE:     return "Pre-Image";
     case POST_IMAGE:    return "Post-Image";
     case REACHABLE_STATES_DFS:
@@ -362,14 +360,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
                 opera = mxd_complement::getInstance();
               }
             }
-            break;
-
-        case compute_manager::MAX_RANGE:
-            opera = getMaxRangeOperation(plist[0], plist[1]);
-            break;
-
-        case compute_manager::MIN_RANGE:
-            opera = getMinRangeOperation(plist[0], plist[1]);
             break;
 
         case compute_manager::CONVERT_TO_INDEX_SET:

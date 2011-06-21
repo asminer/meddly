@@ -27,14 +27,25 @@
 #include "init_builtin.h"
 
 #include "cardinality.h"
+#include "maxmin_range.h"
 
 void MEDDLY::builtin_initializer::init(const settings &s)
 {
-  MEDDLY::CARDINALITY = (CARD = initializeCardinality(s));
+  MEDDLY::CARDINALITY   = (CARD     = initializeCardinality(s)  );
+  MEDDLY::MAX_RANGE     = (MAXRANGE = initializeMaxRange(s)     );
+  MEDDLY::MIN_RANGE     = (MINRANGE = initializeMaxRange(s)     );
+}
+
+template <class T>
+inline void cleanPair(T *local, const T* &global)
+{
+  delete local;
+  global = 0;
 }
 
 void MEDDLY::builtin_initializer::cleanup()
 {
-  delete CARD;
-  MEDDLY::CARDINALITY = 0;
+  cleanPair(CARD,       MEDDLY::CARDINALITY);
+  cleanPair(MAXRANGE,   MEDDLY::MAX_RANGE);
+  cleanPair(MINRANGE,   MEDDLY::MIN_RANGE);
 }
