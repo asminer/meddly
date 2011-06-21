@@ -445,8 +445,7 @@ int main(int argc, char *argv[])
 
   // Convert MDD to Index Set EV+MDD and print the states
   dd_edge indexSet(evplusmdd);
-  compute_manager* cm = getComputeManager();
-  cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mddResult, indexSet);
+  apply(CONVERT_TO_INDEX_SET, mddResult, indexSet);
 
   printf("\nIndex Set (EV+MDD):\n");
 

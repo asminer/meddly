@@ -491,7 +491,7 @@ void testIndexSet(domain* d, const dd_edge& mdd)
 
   // Convert MDD to Index Set EV+MDD and print the states
   dd_edge indexSet(evplusmdd);
-  cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mdd, indexSet);
+  apply(CONVERT_TO_INDEX_SET, mdd, indexSet);
 
   // Get Index Set Cardinality
   double cardinality = indexSet.getCardinality();

@@ -1617,7 +1617,7 @@ class MEDDLY::compute_manager {
       REVERSE_REACHABLE_BFS,
 
       /// Convert MDD to EV+MDD index set
-      CONVERT_TO_INDEX_SET
+      // CONVERT_TO_INDEX_SET
 
       // there will be many more codes...
     };

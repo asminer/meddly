@@ -362,12 +362,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
             }
             break;
 
-        case compute_manager::CONVERT_TO_INDEX_SET:
-            if (f0->isMdd() && f1->isEvplusMdd()) {
-              opera = mdd_to_evplusmdd_index_set::getInstance();
-            }
-            break;
-
         case compute_manager::COPY:
             if (f0->isMdd()) {
               if (f1->isMtMdd()) {

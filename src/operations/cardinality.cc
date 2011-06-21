@@ -30,9 +30,6 @@
 #include "../compute_table.h"
 #include "mpz_object.h"
 
-// for now
-#include "../compute_cache.h"
-
 // #define DEBUG_CARD
 
 namespace MEDDLY {

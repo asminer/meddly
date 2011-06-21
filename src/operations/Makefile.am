@@ -12,13 +12,14 @@ libops_la_SOURCES = \
 	../defines.h \
 	../compute_cache.h \
   init_builtin.h    init_builtin.cc \
+	cardinality.h     cardinality.cc  \
+  maxmin_range.h    maxmin_range.cc \
+  mdd2evplus.h      mdd2evplus.cc   \
 	operation.cc \
 	operation_ext.h   operation_ext.cc \
 	reachability.h    reachability.cc \
   prepostimage.h    prepostimage.cc \
   mpz_object.h      mpz_object.cc \
-	cardinality.h     cardinality.cc \
-  maxmin_range.h    maxmin_range.cc \
   vect_matr.h       vect_matr.cc \
   cross.h           cross.cc
 

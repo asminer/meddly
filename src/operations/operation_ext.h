@@ -1199,23 +1199,6 @@ class mtmdd_to_evmdd : public old_operation {
 };
 
 
-class mdd_to_evplusmdd_index_set : public mtmdd_to_evmdd {
-  public:
-    static mdd_to_evplusmdd_index_set* getInstance();
-    virtual const char* getName() const { return "Convert Mdd to Index Set"; }
-    virtual void typeCheck(const op_info* owner);
-    virtual void compute(op_info* owner,
-        const dd_edge& a, dd_edge& b);
-
-  protected:
-    mdd_to_evplusmdd_index_set();
-    mdd_to_evplusmdd_index_set(const mdd_to_evplusmdd_index_set& copy);
-    mdd_to_evplusmdd_index_set& operator=(const
-        mdd_to_evplusmdd_index_set& copy);
-    ~mdd_to_evplusmdd_index_set();
-
-    virtual void compute(op_info* owner, int a, int height, int& b, int& bev);
-};
 
 
 

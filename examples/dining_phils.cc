@@ -314,8 +314,7 @@ void usage()
 // Test Index Set
 void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
 {
-  compute_manager* cm = getComputeManager();
-  cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mdd, indexSet);
+  apply(CONVERT_TO_INDEX_SET, mdd, indexSet);
 
 #if 1
   indexSet.show(stdout, 3);
@@ -771,8 +770,7 @@ int main(int argc, char *argv[])
     int* element = (int *) malloc((nLevels + 1) * sizeof(int));
     dd_edge indexSet(evplusmdd);
     start.note_time();
-    compute_manager* cm = getComputeManager();
-    cm->apply(compute_manager::CONVERT_TO_INDEX_SET, reachableStates, indexSet);
+    apply(CONVERT_TO_INDEX_SET, reachableStates, indexSet);
     double cardinality = indexSet.getCardinality();
     for (int index = 0, card = int(cardinality); index < card; index++)
     {
