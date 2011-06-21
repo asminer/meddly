@@ -121,7 +121,7 @@ void MEDDLY::expert_compute_manager::apply(op_info* owner,
 #ifdef HAVE_LIBGMP
   return unary_apply(owner, a, b);
 #else
-  return compute_manager::UNKNOWN_OPERATION;
+  throw error(error::UNKNOWN_OPERATION);
 #endif
 }
 
