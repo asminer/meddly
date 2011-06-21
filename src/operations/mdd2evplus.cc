@@ -208,6 +208,10 @@ MEDDLY::mdd2evplus_opname
 ::buildOperation(const forest* arg, const forest* res) const
 {
   if (0==arg || 0==res) return 0;
+
+  if (arg->getDomain() != res->getDomain())
+    throw error(error::DOMAIN_MISMATCH);
+
   if (arg->isForRelations() || 
       arg->getRangeType() != forest::BOOLEAN ||
       arg->getEdgeLabeling() != forest::MULTI_TERMINAL ||

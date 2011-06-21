@@ -138,25 +138,11 @@ dd_edge test_mtmdd(forest* mtmdd, compute_manager::op_code opCode,
 
 bool test_conversion(dd_edge& A, dd_edge& B)
 {
-  static const int nForests = 2;
-  static op_param plist[nForests];
-  static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(getComputeManager());
-  assert(ecm != 0);
-
-  plist[0].set(A);
-  plist[1].set(B);
-  op_info* op = ecm->getOpInfo(compute_manager::COPY, plist, nForests);
-  if (op == 0) {
-    fprintf(stderr, "Conversion operation not found\n");
-    return false;
-  }
-
 #if 0
   return compute_manager::SUCCESS == ecm->apply(op, A, B)? true: false;
 #else
   try {
-    ecm->apply(op, A, B);
+    apply(COPY, A, B);
     return true;
   }
   catch (MEDDLY::error err) {

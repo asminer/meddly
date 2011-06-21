@@ -66,7 +66,6 @@ const char* MEDDLY::expert_compute_manager::getOperationName(
     compute_manager::op_code op) const
 {
   switch(op) {
-    case COPY:          return "Copy Edge";
     case UNION:         return "Union";
     case INTERSECTION:  return "Intersection";
     case DIFFERENCE:    return "Difference";
@@ -350,38 +349,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
     old_operation* opera = 0;
     switch (op) {
 
-        case compute_manager::COPY:
-            if (f0->isMdd()) {
-              if (f1->isMtMdd()) {
-                // MDD to MTMDD
-                // terminal true == 1, terminal false == 0
-                opera = mdd_to_mtmdd::getInstance();
-              } // f1
-            } else if (f0->isMtMdd()) {
-              if (f1->isMdd()) {
-                // MTMDD to MDD
-                // terminal 0 == false, !0 == true
-                opera = mtmdd_to_mdd::getInstance();
-              } else if ( f1->getEdgeLabeling() == forest::EVPLUS ||
-                          f1->getEdgeLabeling() == forest::EVTIMES) {
-                // MTMDD to EVMDD (works for both EVPLUS and EVTIMES)
-                // terminal 0 == false, !0 == true
-                opera = mtmdd_to_evmdd::getInstance();
-              } // f1
-            } else if (f0->isMxd()) {
-              if (f1->isMtMxd()) {
-                // MXD to MTMXD
-                // terminal true == 1, terminal false == 0
-                opera = mxd_to_mtmxd::getInstance();
-              } // f1
-            } else if (f0->isMtMxd()) {
-              if (f1->isMxd()) {
-                // MTMXD to MXD
-                // terminal 0 == false, !0 == true
-                opera = mtmxd_to_mxd::getInstance();
-              } // f1
-            } // f0
-            break;
 
         default:
             // not strictly necessary, but keeps compilers happy

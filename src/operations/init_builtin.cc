@@ -26,6 +26,7 @@
 #include "../defines.h"
 #include "init_builtin.h"
 
+#include "copy.h"
 #include "cardinality.h"
 #include "complement.h"
 #include "maxmin_range.h"
@@ -33,6 +34,7 @@
 
 void MEDDLY::builtin_initializer::init(const settings &s)
 {
+  MEDDLY::COPY                  = (COPY       = initializeCopy(s)       );
   MEDDLY::CARDINALITY           = (CARD       = initializeCardinality(s));
   MEDDLY::COMPLEMENT            = (COMPL      = initializeComplement(s) );
   MEDDLY::MAX_RANGE             = (MAXRANGE   = initializeMaxRange(s)   );
@@ -49,6 +51,7 @@ inline void cleanPair(T *local, const T* &global)
 
 void MEDDLY::builtin_initializer::cleanup()
 {
+  cleanPair(COPY,         MEDDLY::COPY);
   cleanPair(CARD,         MEDDLY::CARDINALITY);
   cleanPair(COMPL,        MEDDLY::COMPLEMENT);
   cleanPair(MAXRANGE,     MEDDLY::MAX_RANGE);

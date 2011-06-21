@@ -12,6 +12,7 @@ libops_la_SOURCES = \
 	../defines.h \
 	../compute_cache.h \
   init_builtin.h    init_builtin.cc \
+  copy.h            copy.cc         \
 	cardinality.h     cardinality.cc  \
   complement.h      complement.cc   \
   maxmin_range.h    maxmin_range.cc \

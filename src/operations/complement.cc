@@ -342,6 +342,9 @@ MEDDLY::compl_opname
 {
   if (0==arg || 0==res) return 0;
 
+  if (arg->getDomain() != res->getDomain())
+    throw error(error::DOMAIN_MISMATCH);
+
   if (arg->getRangeType() != forest::BOOLEAN ||
       arg->getEdgeLabeling() != forest::MULTI_TERMINAL ||
       res->getRangeType() != forest::BOOLEAN ||

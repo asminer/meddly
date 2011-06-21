@@ -219,7 +219,7 @@ dd_edge test_mtmxd(forest* mtmxd, compute_manager::op_code opCode,
 bool test_conversion(dd_edge& A, dd_edge& B)
 {
   try {
-    getComputeManager()->apply(compute_manager::COPY, A, B);
+    apply(COPY, A, B);
     return true;
   }
   catch (MEDDLY::error e) {

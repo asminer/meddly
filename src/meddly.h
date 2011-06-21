@@ -345,6 +345,8 @@ class MEDDLY::error {
       DOMAIN_NOT_EMPTY,
       /// Unknown operation (bad operation handle).
       UNKNOWN_OPERATION,
+      /// Requested operation requires same domains, they weren't.
+      DOMAIN_MISMATCH,
       /// Requested operation requires same forest, it wasn't.
       FOREST_MISMATCH,
       /// Requested operation not supported for operand or result type.
@@ -373,6 +375,7 @@ class MEDDLY::error {
           case  INVALID_BOUND:        return "Invalid bound";
           case  DOMAIN_NOT_EMPTY:     return "Domain not empty";
           case  UNKNOWN_OPERATION:    return "Unknown operation";
+          case  DOMAIN_MISMATCH:      return "Domain mismatch";
           case  FOREST_MISMATCH:      return "Forest mismatch";
           case  TYPE_MISMATCH:        return "Type mismatch";
           case  WRONG_NUMBER:         return "Wrong number";
@@ -1534,14 +1537,6 @@ class MEDDLY::compute_manager {
   public:
     /// built-in operators.
     enum op_code {
-      /** Create a copy of a dd_edge.
-          The copy may be stored in any forest as long as it belongs to the
-          same domain as the original and the transformation is valid.
-          Copying is valid with the following:
-          MDD to MTMDD, MTMDD to MDD, MXD to MTMXD, MTMXD to MXD.
-      */
-      COPY=0,
-
       /// Set operation for forests with range_type of BOOLEAN. All operands
       /// must belong to the same forest.
       UNION,
@@ -1551,9 +1546,6 @@ class MEDDLY::compute_manager {
       /// Set operation for forests with range_type of BOOLEAN. All operands
       /// must belong to the same forest.
       DIFFERENCE,
-      /// Set operation for forests with range_type of BOOLEAN. All operands
-      /// must belong to the same forest.
-      // COMPLEMENT,
 
       /// Binary operation.  Combines two functions into a single one,
       /// where the operands are MDDs and the result is an MXD.
