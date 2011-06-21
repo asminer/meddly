@@ -70,7 +70,6 @@ const char* MEDDLY::expert_compute_manager::getOperationName(
     case UNION:         return "Union";
     case INTERSECTION:  return "Intersection";
     case DIFFERENCE:    return "Difference";
-    case COMPLEMENT:    return "Complement";
     case PRE_IMAGE:     return "Pre-Image";
     case POST_IMAGE:    return "Post-Image";
     case REACHABLE_STATES_DFS:
@@ -350,17 +349,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
     // unary operations
     old_operation* opera = 0;
     switch (op) {
-        case compute_manager::COMPLEMENT:
-            if (f0->isMdd()) {
-              if (f1->isMdd()) {
-                opera = mdd_complement::getInstance();
-              }
-            } else if (f0->isMxd()) {
-              if (f1->isMxd()) {
-                opera = mxd_complement::getInstance();
-              }
-            }
-            break;
 
         case compute_manager::COPY:
             if (f0->isMdd()) {

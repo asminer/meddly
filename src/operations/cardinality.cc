@@ -159,8 +159,7 @@ long MEDDLY::card_mdd_int::compute(int ht, int a)
 
   // Add entry to compute table
   static int ansEntry[1+sizeof(long)/sizeof(int)];
-  argF->cacheNode(a);
-  ansEntry[0] = a;
+  ansEntry[0] = argF->cacheNode(a);
   ((long*)(ansEntry+1))[0] = card;
 
   CT->add(this, const_cast<const int*>(ansEntry));
@@ -241,8 +240,7 @@ long MEDDLY::card_mxd_int::compute(int ht, bool primed, int a)
 
   // Add entry to compute table
   static int ansEntry[1+sizeof(long)/sizeof(int)];
-  argF->cacheNode(a);
-  ansEntry[0] = a;
+  ansEntry[0] = argF->cacheNode(a);
   ((long*)(ansEntry+1))[0] = card;
 
   CT->add(this, const_cast<const int*>(ansEntry));
@@ -346,8 +344,7 @@ double MEDDLY::card_mdd_real::compute(int ht, int a)
 
   // Add entry to compute table
   static int ansEntry[1+sizeof(long)/sizeof(int)];
-  argF->cacheNode(a);
-  ansEntry[0] = a;
+  ansEntry[0] = argF->cacheNode(a);
   ((double*)(ansEntry+1))[0] = card;
 
   CT->add(this, const_cast<const int*>(ansEntry));
@@ -418,8 +415,7 @@ double MEDDLY::card_mxd_real::compute(int ht, bool primed, int a)
 
   // Add entry to compute table
   static int ansEntry[1+sizeof(long)/sizeof(int)];
-  argF->cacheNode(a);
-  ansEntry[0] = a;
+  ansEntry[0] = argF->cacheNode(a);
   ((double*)(ansEntry+1))[0] = card;
 
   CT->add(this, const_cast<const int*>(ansEntry));
@@ -544,8 +540,7 @@ void MEDDLY::card_mdd_mpz::compute(int ht, int a, mpz_object &card)
 
   // Add entry to compute table
   static int ansEntry[1+sizeof(mpz_t)/sizeof(int)];
-  argF->cacheNode(a);
-  ansEntry[0] = a;
+  ansEntry[0] = argF->cacheNode(a);
   ((mpz_object**)(ansEntry+1))[0] = new mpz_object(card);
 
   CT->add(this, const_cast<const int*>(ansEntry));
@@ -632,8 +627,7 @@ void MEDDLY::card_mxd_mpz::compute(int ht, bool primed, int a, mpz_object &card)
 
   // Add entry to compute table
   static int ansEntry[1+sizeof(mpz_t)/sizeof(int)];
-  argF->cacheNode(a);
-  ansEntry[0] = a;
+  ansEntry[0] = argF->cacheNode(a);
   ((mpz_object**)(ansEntry+1))[0] = new mpz_object(card);
 
   CT->add(this, const_cast<const int*>(ansEntry));
@@ -650,7 +644,7 @@ void MEDDLY::card_mxd_mpz::compute(int ht, bool primed, int a, mpz_object &card)
 
 // ******************************************************************
 // *                                                                *
-// *                       Card_opname  class                       *
+// *                       card_opname  class                       *
 // *                                                                *
 // ******************************************************************
 

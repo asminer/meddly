@@ -1043,54 +1043,6 @@ class conversion_operation : public old_operation {
 };
 
 
-class mdd_complement : public conversion_operation {
-  public:
-    static mdd_complement* getInstance();
-    virtual void typeCheck(const op_info* owner);
-    virtual const char* getName() const { return "Mdd Complement"; }
-
-  protected:
-    mdd_complement();
-    mdd_complement(const mdd_complement& copy);
-    mdd_complement& operator=(const mdd_complement& copy);
-    ~mdd_complement();
-
-    virtual bool checkTerminals(op_info* op, int a, int& b);
-};
-
-class mxd_complement : public conversion_operation {
-  public:
-    static mxd_complement* getInstance();
-    virtual void typeCheck(const op_info* owner);
-    virtual const char* getName() const { return "Mxd Complement"; }
-
-    virtual int getKeyLength() const { return 2; }
-    virtual int getAnsLength() const { return 1; }
-    virtual int getCacheEntryLength() const { return 3; }
-
-    virtual int getKeyLengthInBytes() const { return 8; }
-    virtual int getAnsLengthInBytes() const { return 4; }
-    virtual int getCacheEntryLengthInBytes() const { return 12; }
-
-    virtual bool isEntryStale(const op_info* owner, const int* entryData);
-    virtual void discardEntry(op_info* owner, const int* entryData);
-    virtual void showEntry(const op_info* owner, FILE* strm,
-        const int *entryData) const;
-
-    virtual int compute(op_info* owner, int a);
-    virtual int compute(op_info* owner, int level, int a);
-
-  protected:
-    virtual bool checkTerminals(op_info* op, int a, int& b);
-    virtual bool findResult(op_info* owner, int level, int a, int& b);
-    virtual void saveResult(op_info* owner, int level, int a, int c);
-
-    mxd_complement();
-    mxd_complement(const mxd_complement& copy);
-    mxd_complement& operator=(const mxd_complement& copy);
-    ~mxd_complement();
-};
-
 class mtmdd_to_mdd : public conversion_operation {
   public:
     static mtmdd_to_mdd* getInstance();

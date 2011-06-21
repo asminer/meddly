@@ -1,5 +1,4 @@
 
-
 // $Id$
 
 /*
@@ -20,21 +19,17 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef COMPLEMENT_H
+#define COMPLEMENT_H
+
 namespace MEDDLY {
-  class builtin_initializer;
+  class unary_opname;
+  class settings;
+
+  /// Minimalist interface.
+  /// Set up a unary_opname for the "complement" operation.
+  unary_opname* initializeComplement(const settings &s);
 };
 
-class MEDDLY::builtin_initializer : public op_initializer {
-  // unary_opname* COPY;
-  unary_opname* CARD;
-  unary_opname* COMPL;
-  unary_opname* MAXRANGE;
-  unary_opname* MINRANGE;
-  unary_opname* MDD2EVPLUS;
-public:
-  builtin_initializer(op_initializer* b) : op_initializer(b) { }
-protected:
-  virtual void init(const settings &s);
-  virtual void cleanup();
-};
+#endif
 

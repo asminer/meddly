@@ -173,8 +173,7 @@ long MEDDLY::maxrange_int::compute(int a)
 
   // Add entry to compute table
   static int ansEntry[1+sizeof(long)/sizeof(int)];
-  argF->cacheNode(a);
-  ansEntry[0] = a;
+  ansEntry[0] = argF->cacheNode(a);
   ((long*)(ansEntry+1))[0] = max;
 
   CT->add(this, const_cast<const int*>(ansEntry));
@@ -231,8 +230,7 @@ long MEDDLY::minrange_int::compute(int a)
 
   // Add entry to compute table
   static int ansEntry[1+sizeof(long)/sizeof(int)];
-  argF->cacheNode(a);
-  ansEntry[0] = a;
+  ansEntry[0] = argF->cacheNode(a);
   ((long*)(ansEntry+1))[0] = min;
 
   CT->add(this, const_cast<const int*>(ansEntry));
@@ -289,8 +287,7 @@ double MEDDLY::maxrange_real::compute(int a)
 
   // Add entry to compute table
   static int ansEntry[1+sizeof(double)/sizeof(int)];
-  argF->cacheNode(a);
-  ansEntry[0] = a;
+  ansEntry[0] = argF->cacheNode(a);
   ((double*)(ansEntry+1))[0] = max;
 
   CT->add(this, const_cast<const int*>(ansEntry));
@@ -347,8 +344,7 @@ double MEDDLY::minrange_real::compute(int a)
 
   // Add entry to compute table
   static int ansEntry[1+sizeof(double)/sizeof(int)];
-  argF->cacheNode(a);
-  ansEntry[0] = a;
+  ansEntry[0] = argF->cacheNode(a);
   ((double*)(ansEntry+1))[0] = min;
 
   CT->add(this, const_cast<const int*>(ansEntry));

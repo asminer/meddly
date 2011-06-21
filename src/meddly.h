@@ -1553,7 +1553,7 @@ class MEDDLY::compute_manager {
       DIFFERENCE,
       /// Set operation for forests with range_type of BOOLEAN. All operands
       /// must belong to the same forest.
-      COMPLEMENT,
+      // COMPLEMENT,
 
       /// Binary operation.  Combines two functions into a single one,
       /// where the operands are MDDs and the result is an MXD.
@@ -1616,10 +1616,6 @@ class MEDDLY::compute_manager {
       REVERSE_REACHABLE_DFS,
       REVERSE_REACHABLE_BFS,
 
-      /// Convert MDD to EV+MDD index set
-      // CONVERT_TO_INDEX_SET
-
-      // there will be many more codes...
     };
 
   public:

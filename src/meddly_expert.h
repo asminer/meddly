@@ -665,7 +665,8 @@ class MEDDLY::expert_forest : public forest
 
     /// Increase the link count to this node. Call this when another node is
     /// made to point (down-pointer) to this node.
-    void linkNode(int node);
+    ///   @return node, for convenience.
+    int linkNode(int node);
 
     /// Decrease the link count to this node. If link count reduces to 0, this
     /// node may get marked for deletion. Call this when another node releases
@@ -673,8 +674,9 @@ class MEDDLY::expert_forest : public forest
     void unlinkNode(int node);
 
     /// Increase the cache count for this node. Call this whenever this node
-    /// is added to a cache.
-    void cacheNode(int node);
+    /// is added to a cache. 
+    ///   @return node, for convenience.
+    int cacheNode(int node);
 
     /// Decrease the cache count for this node. Call this whenever this node
     /// is removed from a cache.
@@ -1740,10 +1742,10 @@ void MEDDLY::expert_forest
 
 
 inline
-void MEDDLY::expert_forest::linkNode(int p)
+int MEDDLY::expert_forest::linkNode(int p)
 { 
   DCASSERT(isActiveNode(p));
-  if (isTerminalNode(p)) return;
+  if (isTerminalNode(p)) return p;
   DCASSERT(!isPessimistic() || !isZombieNode(p));
 
   // increase incount
@@ -1757,6 +1759,7 @@ void MEDDLY::expert_forest::linkNode(int p)
   fprintf(stdout, "\t+Node %d count now %d\n", p, getInCount(p));
   fflush(stdout);
 #endif
+  return p;
 }  
 
 
@@ -1783,16 +1786,17 @@ void MEDDLY::expert_forest::unlinkNode(int p)
 
 
 inline
-void MEDDLY::expert_forest::cacheNode(int p)
+int MEDDLY::expert_forest::cacheNode(int p)
 {
   DCASSERT(isActiveNode(p));
-  if (isTerminalNode(p)) return;
+  if (isTerminalNode(p)) return p;
   DCASSERT(isReducedNode(p));
   getCacheCount(p)++;
 #ifdef TRACK_CACHECOUNT
   fprintf(stdout, "\t+Node %d is in %d caches\n", p, getCacheCount(p));
   fflush(stdout);
 #endif
+  return p;
 }
 
 

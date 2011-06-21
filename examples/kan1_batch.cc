@@ -417,12 +417,10 @@ dd_edge getReachabilitySet(const dd_edge& states, const dd_edge& nsf, bool dfs)
 
 void testMDDComplement(const dd_edge& mdd)
 {
-  compute_manager *cm = getComputeManager();
-
   dd_edge complement(mdd);
   timer compTimer;
   compTimer.note_time();
-  cm->apply(compute_manager::COMPLEMENT, mdd, complement);
+  apply(COMPLEMENT, mdd, complement);
   compTimer.note_time();
 
   fprintf(stderr, "\nMDD:\n");
@@ -438,15 +436,13 @@ void testMDDComplement(const dd_edge& mdd)
 
 void testMXDComplement(const dd_edge& mxd)
 {
-  compute_manager *cm = getComputeManager();
-
   forest* f = mxd.getForest();
   assert(f);
 
   dd_edge complement(mxd);
   timer compTimer;
   compTimer.note_time();
-  cm->apply(compute_manager::COMPLEMENT, mxd, complement);
+  apply(COMPLEMENT, mxd, complement);
   compTimer.note_time();
 
   fprintf(stderr, "\nMXD:\n");
