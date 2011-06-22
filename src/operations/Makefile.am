@@ -17,12 +17,14 @@ libops_la_SOURCES = \
   complement.h      complement.cc   \
   maxmin_range.h    maxmin_range.cc \
   mdd2evplus.h      mdd2evplus.cc   \
+  \
+  cross.h           cross.cc        \
+  \
 	operation.cc \
 	operation_ext.h   operation_ext.cc \
 	reachability.h    reachability.cc \
   prepostimage.h    prepostimage.cc \
   mpz_object.h      mpz_object.cc \
-  vect_matr.h       vect_matr.cc \
-  cross.h           cross.cc
+  vect_matr.h       vect_matr.cc 
 
 

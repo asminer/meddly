@@ -343,33 +343,8 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
   const expert_forest* const f1 = plist[1].readForest();
   const expert_forest* const f2 = plist[2].readForest();
 
-  // add new built-in op entry
-  if (N == 2) {
-    // unary operations
-    old_operation* opera = 0;
-    switch (op) {
-
-
-        default:
-            // not strictly necessary, but keeps compilers happy
-            return 0;
-
-    } // switch
-    if (0==opera) return 0;
-    addBuiltinOp(key, opera, plist, N);
-    return &(builtinOpEntries->find(key)->second);
-
-  } // End of Unary operations
-
   if (N == 3) {
     // binary operations
-    old_operation* opera = 0;
-    if (CROSS == op) {
-      opera = getCrossOperation(plist[0]);
-      if (0==opera) return 0;
-      addBuiltinOp(key, opera, plist, N);
-      return &(builtinOpEntries->find(key)->second);
-    }
 
     if (f0->isMdd()) {
       if (f1->isMdd() &&

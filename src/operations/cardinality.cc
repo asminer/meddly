@@ -652,7 +652,7 @@ class MEDDLY::card_opname : public unary_opname {
   public:
     card_opname();
     virtual unary_operation* 
-      buildOperation(const forest* ar, opnd_type res) const;
+      buildOperation(expert_forest* ar, opnd_type res) const;
 };
 
 MEDDLY::card_opname::card_opname()
@@ -661,28 +661,28 @@ MEDDLY::card_opname::card_opname()
 }
 
 MEDDLY::unary_operation* 
-MEDDLY::card_opname::buildOperation(const forest* arg, opnd_type res) const
+MEDDLY::card_opname::buildOperation(expert_forest* arg, opnd_type res) const
 {
   if (0==arg) return 0;
   switch (res) {
     case INTEGER:
       if (arg->isForRelations())
-        return new card_mxd_int(this, (expert_forest*)arg);
+        return new card_mxd_int(this, arg);
       else                        
-        return new card_mdd_int(this, (expert_forest*)arg);
+        return new card_mdd_int(this, arg);
 
     case REAL:
       if (arg->isForRelations())
-        return new card_mxd_real(this, (expert_forest*)arg);
+        return new card_mxd_real(this, arg);
       else                        
-        return new card_mdd_real(this, (expert_forest*)arg);
+        return new card_mdd_real(this, arg);
 
 #ifdef HAVE_LIBGMP
     case HUGEINT:
       if (arg->isForRelations())
-        return new card_mxd_mpz(this, (expert_forest*)arg);
+        return new card_mxd_mpz(this, arg);
       else                        
-        return new card_mdd_mpz(this, (expert_forest*)arg);
+        return new card_mdd_mpz(this, arg);
 #endif
 
     default:

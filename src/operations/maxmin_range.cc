@@ -363,7 +363,7 @@ class MEDDLY::maxrange_opname : public unary_opname {
   public:
     maxrange_opname();
     virtual unary_operation*
-      buildOperation(const forest* ar, opnd_type res) const;
+      buildOperation(expert_forest* ar, opnd_type res) const;
 };
 
 MEDDLY::maxrange_opname::maxrange_opname() : unary_opname("Max_range")
@@ -371,7 +371,7 @@ MEDDLY::maxrange_opname::maxrange_opname() : unary_opname("Max_range")
 }
 
 MEDDLY::unary_operation*
-MEDDLY::maxrange_opname::buildOperation(const forest* ar, opnd_type res) const
+MEDDLY::maxrange_opname::buildOperation(expert_forest* ar, opnd_type res) const
 {
   if (0==ar) return 0;
 
@@ -382,12 +382,12 @@ MEDDLY::maxrange_opname::buildOperation(const forest* ar, opnd_type res) const
     case INTEGER:
       if (forest::INTEGER != ar->getRangeType())
         throw error(error::TYPE_MISMATCH);
-      return new maxrange_int(this, (expert_forest*) ar);
+      return new maxrange_int(this,  ar);
 
     case REAL:
       if (forest::REAL != ar->getRangeType())
         throw error(error::TYPE_MISMATCH);
-      return new maxrange_real(this, (expert_forest*) ar);
+      return new maxrange_real(this,  ar);
 
     default:
       throw error(error::TYPE_MISMATCH);
@@ -406,7 +406,7 @@ class MEDDLY::minrange_opname : public unary_opname {
   public:
     minrange_opname();
     virtual unary_operation*
-      buildOperation(const forest* ar, opnd_type res) const;
+      buildOperation(expert_forest* ar, opnd_type res) const;
 };
 
 MEDDLY::minrange_opname::minrange_opname() : unary_opname("Min_range")
@@ -414,7 +414,7 @@ MEDDLY::minrange_opname::minrange_opname() : unary_opname("Min_range")
 }
 
 MEDDLY::unary_operation*
-MEDDLY::minrange_opname::buildOperation(const forest* ar, opnd_type res) const
+MEDDLY::minrange_opname::buildOperation(expert_forest* ar, opnd_type res) const
 {
   if (0==ar) return 0;
 
@@ -425,12 +425,12 @@ MEDDLY::minrange_opname::buildOperation(const forest* ar, opnd_type res) const
     case INTEGER:
       if (forest::INTEGER != ar->getRangeType())
         throw error(error::TYPE_MISMATCH);
-      return new minrange_int(this, (expert_forest*) ar);
+      return new minrange_int(this,  ar);
 
     case REAL:
       if (forest::REAL != ar->getRangeType())
         throw error(error::TYPE_MISMATCH);
-      return new minrange_real(this, (expert_forest*) ar);
+      return new minrange_real(this,  ar);
 
     default:
       throw error(error::TYPE_MISMATCH);

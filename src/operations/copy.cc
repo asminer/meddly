@@ -366,7 +366,7 @@ class MEDDLY::copy_opname : public unary_opname {
   public:
     copy_opname();
     virtual unary_operation* 
-      buildOperation(const forest* ar, const forest* res) const;
+      buildOperation(expert_forest* ar, expert_forest* res) const;
 };
 
 MEDDLY::copy_opname::copy_opname()
@@ -376,7 +376,7 @@ MEDDLY::copy_opname::copy_opname()
 
 MEDDLY::unary_operation*
 MEDDLY::copy_opname
-::buildOperation(const forest* arg, const forest* res) const
+::buildOperation(expert_forest* arg, expert_forest* res) const
 {
   if (0==arg || 0==res) return 0;
 
@@ -394,9 +394,7 @@ MEDDLY::copy_opname
       throw error(error::TYPE_MISMATCH);
    
     if (res->getEdgeLabeling() == forest::EVPLUS) {
-      return new copy_MT2Evplus(
-        this, (expert_forest*) arg, (expert_forest*) res
-      );
+      return new copy_MT2Evplus(this,  arg,  res);
     }
 
     throw error(error::NOT_IMPLEMENTED);
@@ -405,16 +403,12 @@ MEDDLY::copy_opname
   if (arg->getRangeType() == forest::BOOLEAN) {
     if (res->getRangeType() == forest::BOOLEAN)
       throw error(error::NOT_IMPLEMENTED);
-    return new copy_bool2MT(
-      this, (expert_forest*) arg, (expert_forest*) res
-    );
+    return new copy_bool2MT(this,  arg,  res);
   } // boolean
   else {
     if (res->getRangeType() != forest::BOOLEAN)
       throw error(error::NOT_IMPLEMENTED);
-    return new copy_MT2bool(
-      this, (expert_forest*) arg, (expert_forest*) res
-    );
+    return new copy_MT2bool(this,  arg,  res);
   }
 }
 

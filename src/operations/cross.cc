@@ -24,271 +24,248 @@
 #endif
 #include "../defines.h"
 #include "cross.h"
-#include "../compute_cache.h"
-
-// ******************************************************************
-// *                                                                *
-// *                         cross_op class                         *
-// *                                                                *
-// ******************************************************************
+#include "../compute_table.h"
 
 namespace MEDDLY {
-
-/** Abstract base class for cross operations.
-*/
-class cross_op : public old_operation {
-  public:
-    cross_op()                              { }
-    virtual ~cross_op()                     { }
-
-    virtual const char* getName() const     { return "Cross"; }
-    virtual int getKeyLength() const        { return 3; }
-    virtual int getKeyLengthInBytes() const { return 3*sizeof(int); }
-
-    virtual int getAnsLength() const        { return 1; }
-    virtual int getAnsLengthInBytes() const { return sizeof(int); }  
-
-    virtual int getCacheEntryLength() const         { return 4; }
-    virtual int getCacheEntryLengthInBytes() const  { return 4*sizeof(int); }
-
-    virtual bool isEntryStale(const op_info* owner, const int* entryData);
-    virtual void discardEntry(op_info* owner, const int* entryData);
-
-    virtual void showEntry(const op_info* owner, FILE* strm,
-        const int *entryData) const;
-
-    inline bool findResult(op_info* owner, int k, int a, int b, int& c) {
-      static int key[3];
-      key[0] = k;
-      key[1] = a;
-      key[2] = b;
-      const int* cacheEntry = owner->cc->find(owner, key);
-      if (0==cacheEntry) return false;
-      c = cacheEntry[3];
-      owner->p[2].getForest()->linkNode(c);
-      return true;
-    }
-
-    inline void saveResult(op_info* owner, int k, int a, int b, int c) {
-      owner->p[0].getForest()->cacheNode(a);
-      owner->p[1].getForest()->cacheNode(b);
-      owner->p[2].getForest()->cacheNode(c);
-      static int entry[4];
-      entry[0] = k;
-      entry[1] = a;
-      entry[2] = b;
-      entry[3] = c;
-      owner->cc->add(owner, entry);
-    }
-
-  protected:
-    inline void 
-    type_check(const op_info* o, forest::range_type t, forest::edge_labeling e) 
-    {
-        if (o == 0)
-          throw error(error::UNKNOWN_OPERATION);
-        if (o->op == 0 || o->p == 0 || o->cc == 0)
-          throw error(error::TYPE_MISMATCH);
-        if (o->nParams != 3)
-          throw error(error::WRONG_NUMBER);
-        if (o->p[0].isForestOf(false, t, e) &&
-            o->p[1].isForestOf(false, t, e) &&
-            o->p[2].isForestOf(true,  t, e)) 
-        {
-          return;
-        } else {
-          throw error(error::TYPE_MISMATCH);
-        }
-    }
+  class cross_bool;
+  class cross_opname;
 };
 
-} // namespace MEDDLY
+// ******************************************************************
+// *                                                                *
+// *                        cross_bool class                        *
+// *                                                                *
+// ******************************************************************
 
-bool MEDDLY::cross_op::
-isEntryStale(const op_info* owner, const int* data)
+class MEDDLY::cross_bool : public binary_operation {
+  public:
+    cross_bool(const binary_opname* oc, expert_forest* a1,
+      expert_forest* a2, expert_forest* res);
+
+    virtual bool isEntryStale(const int* entryData);
+    virtual void discardEntry(const int* entryData);
+    virtual void showEntry(FILE* strm, const int *entryData) const;
+    virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
+
+    int compute_pr(int ht, int a, int b);
+    int compute_un(int ht, int a, int b);
+};
+
+MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
+  expert_forest* a2, expert_forest* res) : binary_operation(oc, a1, a2, res)
 {
-  DCASSERT(owner->nParams == 3);
-  // data[0] is the level number
-  return owner->p[0].getForest()->isStale(data[1]) ||
-         owner->p[1].getForest()->isStale(data[2]) ||
-         owner->p[2].getForest()->isStale(data[3]);
+  key_length = 3; 
+  ans_length = 1;
+  // data[0] : height
+  // data[1] : a
+  // data[2] : b
+  // data[3] : c
 }
 
-void MEDDLY::cross_op::
-discardEntry(op_info* owner, const int* data)
+bool MEDDLY::cross_bool::isEntryStale(const int* data)
 {
-  DCASSERT(owner->nParams == 3);
   // data[0] is the level number
-  owner->p[0].getForest()->uncacheNode(data[1]);
-  owner->p[1].getForest()->uncacheNode(data[2]);
-  owner->p[2].getForest()->uncacheNode(data[3]);
+  return arg1F->isStale(data[1]) ||
+         arg2F->isStale(data[2]) ||
+         resF->isStale(data[3]);
+}
+
+void MEDDLY::cross_bool::discardEntry(const int* data)
+{
+  // data[0] is the level number
+  arg1F->uncacheNode(data[1]);
+  arg2F->uncacheNode(data[2]);
+  resF->uncacheNode(data[3]);
 }
 
 void
-MEDDLY::cross_op::
-showEntry(const op_info* owner, FILE* strm, const int *data) const
+MEDDLY::cross_bool ::showEntry(FILE* strm, const int *data) const
 {
-  DCASSERT(owner->nParams == 3);
-  fprintf(strm, "[%s(%d, %d, %d): %d]",
-      owner->op->getName(), data[0], data[1], data[2], data[3]
+  fprintf(strm, "[%s(%d, %d, %d): %d]", 
+    getName(), data[0], data[1], data[2], data[3]
   );
 }
 
-
-// ******************************************************************
-// *                                                                *
-// *                        bool_cross class                        *
-// *                                                                *
-// ******************************************************************
-
-namespace MEDDLY {
-
-/// Boolean cross product operation.
-class bool_cross : public cross_op {
-  public:
-    bool_cross()            { }
-    virtual ~bool_cross()   { }
-
-    static bool_cross* getInstance();
-
-    virtual void typeCheck(const op_info* owner) {
-      return type_check(owner, forest::BOOLEAN, forest::MULTI_TERMINAL);
-    }
-
-    virtual void compute(op_info* owner, const dd_edge &a,
-      const dd_edge &b, dd_edge &c);
-
-    int compute_unprimed(op_info* owner, int ht, int a, int b);
-    int compute_primed(op_info* owner, int ht, int a, int b);
-};
-
-} // namespace MEDDLY
-
-MEDDLY::bool_cross*
-MEDDLY::bool_cross::
-getInstance()
-{
-  static bool_cross instance;
-  return &instance;
-}
-
 void
-MEDDLY::bool_cross::
-compute(op_info* owner, const dd_edge &a, const dd_edge &b, dd_edge &c)
+MEDDLY::cross_bool::compute(const dd_edge &a, const dd_edge &b, dd_edge &c)
 {
-  if (0==owner) throw error(error::TYPE_MISMATCH);
-  int L = owner->p[0].getForest()->getDomain()->getNumVariables();
-  int cnode = compute_unprimed(owner, L, a.getNode(), b.getNode());
-  c.set(cnode, 0, owner->p[2].getForest()->getNodeLevel(cnode));
+  int L = arg1F->getDomain()->getNumVariables();
+  int cnode = compute_un(L, a.getNode(), b.getNode());
+  c.set(cnode, 0, resF->getNodeLevel(cnode));
 }
 
-int
-MEDDLY::bool_cross::
-compute_unprimed(op_info* owner, int lh, int a, int b)
+int MEDDLY::cross_bool::compute_un(int lh, int a, int b)
 {
   if (0==lh) {
-    return a;
+    return resF->getTerminalNode(
+      arg1F->getBoolean(a)
+    );
   }
-  if (0==a || 0==b) return 0;
-
-  // convert height to level handle
-  expert_forest* fc = owner->p[2].getForest();
+  if (0==a || 0==b) return resF->getTerminalNode(0);
 
   // check compute table
-  int c;
-  if (findResult(owner, lh, a, b, c)) return c;
+  static int cacheEntry[4];
+  cacheEntry[0] = lh;
+  cacheEntry[1] = a;
+  cacheEntry[2] = b;
+  const int* cacheFind = CT->find(this, cacheEntry);
+  if (cacheFind) {
+    return resF->linkNode(cacheFind[3]);
+  }
 
   // build new result node
-  c = fc->createTempNodeMaxSize(lh, true);
+  int c = resF->createTempNodeMaxSize(lh, true);
 
   // recurse
-  expert_forest* fa = owner->p[0].getForest();
-  if (fa->getNodeHeight(a) < lh) {
+  if (arg1F->getNodeHeight(a) < lh) {
     // skipped level
-    int d = compute_primed(owner, lh, a, b);
-    for (int i=fc->getLevelSize(lh)-1; i>=0; i--) {
-      fc->setDownPtr(c, i, d);
+    int d = compute_pr(lh, a, b);
+    for (int i=resF->getLevelSize(lh)-1; i>=0; i--) {
+      resF->setDownPtrWoUnlink(c, i, d);
     } 
+    resF->unlinkNode(d);
   } else {
     // not skipped level
-    if (fa->isFullNode(a)) {
+    if (arg1F->isFullNode(a)) {
       // Full storage
-      for (int i=fa->getFullNodeSize(a)-1; i>=0; i--) {
-        int ai = fa->getFullNodeDownPtr(a, i);
+      for (int i=arg1F->getFullNodeSize(a)-1; i>=0; i--) {
+        int ai = arg1F->getFullNodeDownPtr(a, i);
         if (0==ai) continue;
-        fc->setDownPtr(c, i, compute_primed(owner, lh, ai, b));
+        int d = compute_pr(lh, ai, b);
+        resF->setDownPtrWoUnlink(c, i, d);
+        resF->unlinkNode(d);
       }
     } else {
       // Sparse storage
-      for (int z=fa->getSparseNodeSize(a)-1; z>=0; z--) {
-        int i = fa->getSparseNodeIndex(a, z);
-        int ai = fa->getSparseNodeDownPtr(a, z);
-        fc->setDownPtr(c, i, compute_primed(owner, lh, ai, b));
+      for (int z=arg1F->getSparseNodeSize(a)-1; z>=0; z--) {
+        int i = arg1F->getSparseNodeIndex(a, z);
+        int ai = arg1F->getSparseNodeDownPtr(a, z);
+        int d = compute_pr(lh, ai, b);
+        resF->setDownPtrWoUnlink(c, i, d);
+        resF->unlinkNode(d);
       }
     }
   }
 
-  // reduce
-  c = fc->reduceNode(c);
-
-  // add to compute table
-  saveResult(owner, lh, a, b, c);
+  // reduce, save in compute table
+  c = resF->reduceNode(c);
+  cacheEntry[0] = lh;
+  cacheEntry[1] = arg1F->cacheNode(a);
+  cacheEntry[2] = arg2F->cacheNode(b);
+  cacheEntry[3] = resF->cacheNode(c);
+  CT->add(this, cacheEntry);
 
   return c;
 }
 
-int
-MEDDLY::bool_cross::
-compute_primed(op_info* owner, int ht, int a, int b)
+int MEDDLY::cross_bool::compute_pr(int ht, int a, int b)
 {
-  if (0==a || 0==b) return 0;
+  if (0==a || 0==b) return resF->getTerminalNode(0);
 
   // convert height to level handle
-  expert_forest* fc = owner->p[2].getForest();
-  int lh = -ht;
+  int lh = -ht; 
+  ht--;
 
   // check compute table
-  int c;
-  if (findResult(owner, lh, a, b, c)) return c;
+  static int cacheEntry[4];
+  cacheEntry[0] = lh;
+  cacheEntry[1] = a;
+  cacheEntry[2] = b;
+  const int* cacheFind = CT->find(this, cacheEntry);
+  if (cacheFind) {
+    return resF->linkNode(cacheFind[3]);
+  }
 
   // build new result node
-  c = fc->createTempNodeMaxSize(lh, true);
+  int c = resF->createTempNodeMaxSize(lh, true);
 
   // recurse
-  ht--;
-  expert_forest* fb = owner->p[0].getForest();
-  if (fb->getNodeHeight(b) <= ht) {
+  if (arg2F->getNodeHeight(b) <= ht) {
     // skipped level
-    int d = compute_unprimed(owner, ht, a, b);
-    for (int i=fc->getLevelSize(lh)-1; i>=0; i--) {
-      fc->setDownPtr(c, i, d);
+    int d = compute_un(ht, a, b);
+    for (int i=resF->getLevelSize(lh)-1; i>=0; i--) {
+      resF->setDownPtrWoUnlink(c, i, d);
     } 
+    resF->unlinkNode(d);
   } else {
     // not skipped level
-    if (fb->isFullNode(b)) {
+    if (arg2F->isFullNode(b)) {
       // Full storage
-      for (int i=fb->getFullNodeSize(b)-1; i>=0; i--) {
-        int bi = fb->getFullNodeDownPtr(b, i);
+      for (int i=arg2F->getFullNodeSize(b)-1; i>=0; i--) {
+        int bi = arg2F->getFullNodeDownPtr(b, i);
         if (0==bi) continue;
-        fc->setDownPtr(c, i, compute_unprimed(owner, ht, a, bi));
+        int d = compute_un(ht, a, bi);
+        resF->setDownPtrWoUnlink(c, i, d);
+        resF->unlinkNode(d);
       }
     } else {
       // Sparse storage
-      for (int z=fb->getSparseNodeSize(b)-1; z>=0; z--) {
-        int i = fb->getSparseNodeIndex(b, z);
-        int bi = fb->getSparseNodeDownPtr(b, z);
-        fc->setDownPtr(c, i, compute_unprimed(owner, ht, a, bi));
+      for (int z=arg2F->getSparseNodeSize(b)-1; z>=0; z--) {
+        int i = arg2F->getSparseNodeIndex(b, z);
+        int bi = arg2F->getSparseNodeDownPtr(b, z);
+        int d = compute_un(ht, a, bi);
+        resF->setDownPtrWoUnlink(c, i, d);
+        resF->unlinkNode(d);
       }
     }
   }
 
-  // reduce
-  c = fc->reduceNode(c);
-
-  // add to compute table
-  saveResult(owner, lh, a, b, c);
+  // reduce, save in compute table
+  c = resF->reduceNode(c);
+  cacheEntry[0] = lh;
+  cacheEntry[1] = arg1F->cacheNode(a);
+  cacheEntry[2] = arg2F->cacheNode(b);
+  cacheEntry[3] = resF->cacheNode(c);
+  CT->add(this, cacheEntry);
 
   return c;
+}
+
+
+// ******************************************************************
+// *                                                                *
+// *                       cross_opname class                       *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::cross_opname : public binary_opname {
+  public:
+    cross_opname();
+    virtual binary_operation* buildOperation(expert_forest* a1, 
+      expert_forest* a2, expert_forest* r) const;
+};
+
+MEDDLY::cross_opname::cross_opname()
+ : binary_opname("Cross")
+{
+}
+
+MEDDLY::binary_operation* 
+MEDDLY::cross_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
+  expert_forest* r) const
+{
+  if (0==a1 || 0==a2 || 0==r) return 0;
+
+  if (  
+    (a1->getDomain() != r->getDomain()) || 
+    (a2->getDomain() != r->getDomain()) 
+  )
+    throw error(error::DOMAIN_MISMATCH);
+
+  if (
+    a1->isForRelations()  ||
+    (a1->getRangeType() != forest::BOOLEAN) ||
+    (a1->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
+    a2->isForRelations()  ||
+    (a2->getRangeType() != forest::BOOLEAN) ||
+    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
+    (!r->isForRelations())  ||
+    (r->getRangeType() != forest::BOOLEAN) ||
+    (r->getEdgeLabeling() != forest::MULTI_TERMINAL)
+  )
+    throw error(error::TYPE_MISMATCH);
+
+  return new cross_bool(this, a1, a2, r);
 }
 
 // ******************************************************************
@@ -297,12 +274,8 @@ compute_primed(op_info* owner, int ht, int a, int b)
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::old_operation* MEDDLY::getCrossOperation(const op_param &ot)
+MEDDLY::binary_opname* MEDDLY::initializeCross(const settings &s)
 {
-  if (!ot.isForest()) return 0;
-  if (!ot.isBoolForest()) return 0;
-
-  return bool_cross::getInstance();
+  return new cross_opname;
 }
-
 

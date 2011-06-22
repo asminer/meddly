@@ -328,7 +328,7 @@ class MEDDLY::compl_opname : public unary_opname {
   public:
     compl_opname();
     virtual unary_operation* 
-      buildOperation(const forest* ar, const forest* res) const;
+      buildOperation(expert_forest* ar, expert_forest* res) const;
 };
 
 MEDDLY::compl_opname::compl_opname()
@@ -338,7 +338,7 @@ MEDDLY::compl_opname::compl_opname()
 
 MEDDLY::unary_operation* 
 MEDDLY::compl_opname
-::buildOperation(const forest* arg, const forest* res) const
+::buildOperation(expert_forest* arg, expert_forest* res) const
 {
   if (0==arg || 0==res) return 0;
 
@@ -353,9 +353,9 @@ MEDDLY::compl_opname
   ) throw error(error::TYPE_MISMATCH);
 
   if (arg->isForRelations())
-    return new compl_mxd(this, (expert_forest*) arg, (expert_forest*) res);
+    return new compl_mxd(this,  arg,  res);
   else
-    return new compl_mdd(this, (expert_forest*) arg, (expert_forest*) res);
+    return new compl_mdd(this,  arg,  res);
 }
 
 // ******************************************************************

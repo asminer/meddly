@@ -32,6 +32,8 @@
 #include "maxmin_range.h"
 #include "mdd2evplus.h"
 
+#include "cross.h"
+
 void MEDDLY::builtin_initializer::init(const settings &s)
 {
   MEDDLY::COPY                  = (COPY       = initializeCopy(s)       );
@@ -40,6 +42,8 @@ void MEDDLY::builtin_initializer::init(const settings &s)
   MEDDLY::MAX_RANGE             = (MAXRANGE   = initializeMaxRange(s)   );
   MEDDLY::MIN_RANGE             = (MINRANGE   = initializeMaxRange(s)   );
   MEDDLY::CONVERT_TO_INDEX_SET  = (MDD2EVPLUS = initializeMDD2EVPLUS(s) );
+
+  MEDDLY::CROSS                 = (CROSS      = initializeCross(s)      );
 }
 
 template <class T>
@@ -57,4 +61,6 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(MAXRANGE,     MEDDLY::MAX_RANGE);
   cleanPair(MINRANGE,     MEDDLY::MIN_RANGE);
   cleanPair(MDD2EVPLUS,   MEDDLY::CONVERT_TO_INDEX_SET);
+
+  cleanPair(CROSS,        MEDDLY::CROSS);
 }

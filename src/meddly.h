@@ -58,6 +58,7 @@ namespace MEDDLY {
   class op_info;
   class ct_object;
   class unary_opname;
+  class binary_opname;
 
   /// Argument and result types for apply operations.
   enum opnd_type {
@@ -116,6 +117,19 @@ namespace MEDDLY {
 
   /// Convert MDD to EV+MDD index set.  A special case of COPY, really.
   extern const unary_opname* CONVERT_TO_INDEX_SET;
+
+  // ******************************************************************
+  // *                    Named  binary operations                    *
+  // ******************************************************************
+
+
+  /// Binary operation.  Combines two functions into a single one,
+  /// where the operands are MDDs and the result is an MXD.
+  /// Specifically, for MDD operands f and g, produces MXD h where
+  /// h(xn, x'n, ..., x1, x'1) = f(xn, ..., x1) * g(x'n, ..., x'1)
+  /// Works for BOOLEAN forests.
+  extern const binary_opname* CROSS;
+
 
   // ******************************************************************
   // *                  library management functions                  *
@@ -304,6 +318,27 @@ namespace MEDDLY {
     unwrap(x, c);
   }
 #endif
+
+  // ******************************************************************
+  // *                          Binary apply                          *
+  // ******************************************************************
+
+  /** Apply a binary operator.
+      \a a, \a b and \a c are not required to be in the same forest,
+      but they must have the same domain. The result will be in the
+      same forest as \a result. The operator decides the type of forest
+      for each \a dd_edge.
+      Useful, for example, for constructing comparisons
+      where the resulting type is "boolean" but the operators are not,
+      e.g., c = f EQUALS g.
+      @param  op    Operator handle.
+      @param  a     First operand.
+      @param  b     Second operand.
+      @param  c     Output parameter: the result,
+                    where \a c = \a a \a op \a b.
+  */ 
+  void apply(const binary_opname* op, const dd_edge &a, const dd_edge &b,
+    dd_edge &c);
 
 
 };  // namespace MEDDLY
@@ -1547,12 +1582,6 @@ class MEDDLY::compute_manager {
       /// must belong to the same forest.
       DIFFERENCE,
 
-      /// Binary operation.  Combines two functions into a single one,
-      /// where the operands are MDDs and the result is an MXD.
-      /// Specifically, for MDD operands f and g, produces MXD h where
-      /// h(xn, x'n, ..., x1, x'1) = f(xn, ..., x1) * g(x'n, ..., x'1)
-      /// Works for BOOLEAN forests.
-      CROSS,
 
       /// For forests with range_type of INTEGER and REAL. All operands must
       /// belong to the same forest.

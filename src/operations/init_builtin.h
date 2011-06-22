@@ -31,6 +31,8 @@ class MEDDLY::builtin_initializer : public op_initializer {
   unary_opname* MAXRANGE;
   unary_opname* MINRANGE;
   unary_opname* MDD2EVPLUS;
+
+  binary_opname*  CROSS;
 public:
   builtin_initializer(op_initializer* b) : op_initializer(b) { }
 protected:

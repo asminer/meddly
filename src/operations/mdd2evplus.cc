@@ -195,7 +195,7 @@ class MEDDLY::mdd2evplus_opname : public unary_opname {
   public:
     mdd2evplus_opname();
     virtual unary_operation* 
-      buildOperation(const forest* ar, const forest* res) const;
+      buildOperation(expert_forest* ar, expert_forest* res) const;
 };
 
 MEDDLY::mdd2evplus_opname::mdd2evplus_opname()
@@ -205,7 +205,7 @@ MEDDLY::mdd2evplus_opname::mdd2evplus_opname()
 
 MEDDLY::unary_operation*
 MEDDLY::mdd2evplus_opname
-::buildOperation(const forest* arg, const forest* res) const
+::buildOperation(expert_forest* arg, expert_forest* res) const
 {
   if (0==arg || 0==res) return 0;
 
@@ -221,7 +221,7 @@ MEDDLY::mdd2evplus_opname
   ) throw error(error::TYPE_MISMATCH);
 
   return new mdd2evplus_operation(
-    this, (expert_forest*) arg, (expert_forest*) res
+    this,  arg,  res
   );
 }
 

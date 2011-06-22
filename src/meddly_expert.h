@@ -87,10 +87,12 @@ namespace MEDDLY {
   class temp_dd_edge;
 
   class opname;
-  class operation;
-
   class unary_opname;
+  class binary_opname;
+
+  class operation;
   class unary_operation;
+  class binary_operation;
 
   class op_initializer;
 
@@ -109,7 +111,7 @@ namespace MEDDLY {
                         a new operation, otherwise.
   */
   unary_operation* getOperation(const unary_opname* code, 
-    const expert_forest* arg, const expert_forest* res);
+    expert_forest* arg, expert_forest* res);
 
   /** Find, or build if necessary, a unary operation.
         @param  code    Operation we want
@@ -119,8 +121,19 @@ namespace MEDDLY {
                         a new operation, otherwise.
   */
   unary_operation* getOperation(const unary_opname* code,
-    const expert_forest* arg, opnd_type result);
+    expert_forest* arg, opnd_type result);
 
+
+  /** Find, or build if necessary, a binary operation.
+        @param  code    Operation we want
+        @param  arg1    Argument 1 forest
+        @param  arg2    Argument 2 forest
+        @param  res     Result forest
+        @return         The matching operation, if it already exists;
+                        a new operation, otherwise.
+  */
+  binary_operation* getOperation(const binary_opname* code, 
+    expert_forest* arg1, expert_forest* arg2, expert_forest* res);
 
   /** Should be unnecessary to call this.
       But, it does destroy (safely) the given operation.
@@ -1091,6 +1104,38 @@ class MEDDLY::opname {
 };
 
 // ******************************************************************
+// *                       unary_opname class                       *
+// ******************************************************************
+
+/// Unary operation names.
+class MEDDLY::unary_opname : public opname {
+  public:
+    unary_opname(const char* n);
+    virtual ~unary_opname();
+
+    virtual unary_operation* 
+      buildOperation(expert_forest* arg, expert_forest* res) const;
+
+    virtual unary_operation* 
+      buildOperation(expert_forest* arg, opnd_type res) const;
+};
+
+// ******************************************************************
+// *                      binary_opname  class                      *
+// ******************************************************************
+
+/// Binary operation names.
+class MEDDLY::binary_opname : public opname {
+  public:
+    binary_opname(const char* n);
+    virtual ~binary_opname();
+
+    virtual binary_operation* buildOperation(expert_forest* arg1, 
+      expert_forest* arg2, expert_forest* res) const = 0;
+};
+
+
+// ******************************************************************
 // *                        operation  class                        *
 // ******************************************************************
 
@@ -1178,23 +1223,6 @@ class MEDDLY::operation {
 };
 
 // ******************************************************************
-// *                       unary_opname class                       *
-// ******************************************************************
-
-/// Unary operation names.
-class MEDDLY::unary_opname : public opname {
-  public:
-    unary_opname(const char* n);
-    virtual ~unary_opname();
-
-    virtual unary_operation* 
-      buildOperation(const forest* arg, const forest* res) const;
-
-    virtual unary_operation* 
-      buildOperation(const forest* arg, opnd_type res) const;
-};
-
-// ******************************************************************
 // *                     unary_operation  class                     *
 // ******************************************************************
 
@@ -1239,6 +1267,41 @@ class MEDDLY::unary_operation : public operation {
     // e.g.,
     // virtual int computeDD(int k, int p);
     // virtual void computeEvDD(int k, int v, int p, int &w, int &q);
+};
+
+// ******************************************************************
+// *                     binary_operation class                     *
+// ******************************************************************
+
+/** Mechanism to apply a binary operation in a specific forest.
+    Specific operations will be derived from this class.
+*/
+class MEDDLY::binary_operation : public operation {
+  protected:
+    expert_forest* arg1F;
+    expert_forest* arg2F;
+    expert_forest* resF;
+    opnd_type resultType;
+  private:
+    int arg1Fslot;
+    int arg2Fslot;
+    int resFslot;
+  public:
+    binary_operation(const binary_opname* code, 
+      expert_forest* arg1, expert_forest* arg2, expert_forest* res);
+
+  protected:
+    virtual ~binary_operation();
+
+  public:
+    inline bool matches(const expert_forest* arg1, const expert_forest* arg2, 
+      const expert_forest* res) const { 
+        return (arg1 == arg1F && arg2 == arg2F && res == resF); 
+      }
+
+    // high-level front-end
+    virtual void compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res)
+      = 0;
 };
 
 // ******************************************************************

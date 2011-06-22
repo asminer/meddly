@@ -47,6 +47,43 @@ MEDDLY::opname::~opname()
 }
 
 // ******************************************************************
+// *                      unary_opname methods                      *
+// ******************************************************************
+
+MEDDLY::unary_opname::unary_opname(const char* n) : opname(n)
+{
+}
+
+MEDDLY::unary_opname::~unary_opname()
+{
+}
+
+MEDDLY::unary_operation* 
+MEDDLY::unary_opname::buildOperation(expert_forest* ar, expert_forest* rs) const
+{
+  throw error(error::TYPE_MISMATCH);  
+}
+
+MEDDLY::unary_operation* 
+MEDDLY::unary_opname::buildOperation(expert_forest* ar, opnd_type res) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+
+// ******************************************************************
+// *                     binary_opname  methods                     *
+// ******************************************************************
+
+MEDDLY::binary_opname::binary_opname(const char* n) : opname(n)
+{
+}
+
+MEDDLY::binary_opname::~binary_opname()
+{
+}
+
+// ******************************************************************
 // *                       operation  methods                       *
 // ******************************************************************
 
@@ -83,31 +120,6 @@ void MEDDLY::operation::markForDeletion()
 
   // TBD: remove from list
 }
-
-// ******************************************************************
-// *                      unary_opname methods                      *
-// ******************************************************************
-
-MEDDLY::unary_opname::unary_opname(const char* n) : opname(n)
-{
-}
-
-MEDDLY::unary_opname::~unary_opname()
-{
-}
-
-MEDDLY::unary_operation* 
-MEDDLY::unary_opname::buildOperation(const forest* ar, const forest* rs) const
-{
-  throw error(error::TYPE_MISMATCH);  
-}
-
-MEDDLY::unary_operation* 
-MEDDLY::unary_opname::buildOperation(const forest* ar, opnd_type res) const
-{
-  throw error(error::TYPE_MISMATCH);
-}
-
 
 // ******************************************************************
 // *                    unary_operation  methods                    *
@@ -160,6 +172,30 @@ void MEDDLY::unary_operation::compute(const dd_edge &arg, ct_object &c)
 {
   throw error(error::TYPE_MISMATCH);
 }
+
+// ******************************************************************
+// *                    binary_operation methods                    *
+// ******************************************************************
+
+MEDDLY::binary_operation:: binary_operation(const binary_opname* op, 
+  expert_forest* arg1, expert_forest* arg2, expert_forest* res) : operation(op)
+{
+  arg1F = arg1;
+  arg2F = arg2;
+  resF = res;
+
+  arg1Fslot = arg1F->registerOperation(this);
+  arg2Fslot = arg2F->registerOperation(this);
+  resFslot = res->registerOperation(this);
+}
+
+MEDDLY::binary_operation::~binary_operation()
+{
+  arg1F->unregisterOperation(this, arg1Fslot);
+  arg2F->unregisterOperation(this, arg2Fslot);
+  if (resF) resF->unregisterOperation(this, resFslot);
+}
+
 
 // ******************************************************************
 // *                     op_initializer methods                     *

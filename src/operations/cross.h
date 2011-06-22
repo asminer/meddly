@@ -23,6 +23,13 @@
 #define CROSS_H
 
 namespace MEDDLY {
+  class binary_opname;
+  class settings;
+
+  /// Set up a binary_opname for the "cross-product" operation.
+  binary_opname* initializeCross(const settings &s);
+
+// OLD
 
   class old_operation;
   class op_param;
