@@ -12,6 +12,8 @@ libops_la_SOURCES = \
 	../defines.h \
 	../compute_cache.h \
   init_builtin.h    init_builtin.cc \
+  apply_base.h      apply_base.cc   \
+  \
   copy.h            copy.cc         \
 	cardinality.h     cardinality.cc  \
   complement.h      complement.cc   \
@@ -19,6 +21,7 @@ libops_la_SOURCES = \
   mdd2evplus.h      mdd2evplus.cc   \
   \
   cross.h           cross.cc        \
+  multiply.h        multiply.cc     \
   \
 	operation.cc \
 	operation_ext.h   operation_ext.cc \

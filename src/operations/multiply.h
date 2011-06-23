@@ -1,5 +1,4 @@
 
-
 // $Id$
 
 /*
@@ -20,41 +19,16 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef MULTIPLY_H
+#define MULTIPLY_H
+
 namespace MEDDLY {
-  class builtin_initializer;
-};
+  class binary_opname;
+  class settings;
 
-class MEDDLY::builtin_initializer : public op_initializer {
-  unary_opname* COPY;
-  unary_opname* CARD;
-  unary_opname* COMPL;
-  unary_opname* MAXRANGE;
-  unary_opname* MINRANGE;
-  unary_opname* MDD2EVPLUS;
+  /// Set up a binary_opname for the "multiply" operation.
+  binary_opname* initializeMultiply(const settings &s);
+}
 
-  binary_opname* UNION;
-  binary_opname* INTERSECTION;
-  binary_opname* DIFFERENCE;
-
-  binary_opname* CROSS;
-
-  binary_opname* MIN;
-  binary_opname* MAX;
-  binary_opname* PLUS;
-  binary_opname* MINUS;
-  binary_opname* MULTIPLY;
-  binary_opname* DIVIDE;
-
-  binary_opname* EQ;
-  binary_opname* NE;
-  binary_opname* LT;
-  binary_opname* LE;
-  binary_opname* GT;
-  binary_opname* GE;
-public:
-  builtin_initializer(op_initializer* b) : op_initializer(b) { }
-protected:
-  virtual void init(const settings &s);
-  virtual void cleanup();
-};
+#endif
 

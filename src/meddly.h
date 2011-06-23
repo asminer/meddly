@@ -122,6 +122,15 @@ namespace MEDDLY {
   // *                    Named  binary operations                    *
   // ******************************************************************
 
+  /// Set operation for forests with range_type of BOOLEAN. All operands
+  /// must belong to the same forest.
+  extern const binary_opname* UNION;
+  /// Set operation for forests with range_type of BOOLEAN. All operands
+  /// must belong to the same forest.
+  extern const binary_opname* INTERSECTION;
+  /// Set operation for forests with range_type of BOOLEAN. All operands
+  /// must belong to the same forest.
+  extern const binary_opname* DIFFERENCE;
 
   /// Binary operation.  Combines two functions into a single one,
   /// where the operands are MDDs and the result is an MXD.
@@ -129,6 +138,44 @@ namespace MEDDLY {
   /// h(xn, x'n, ..., x1, x'1) = f(xn, ..., x1) * g(x'n, ..., x'1)
   /// Works for BOOLEAN forests.
   extern const binary_opname* CROSS;
+
+  /// For forests with range_type of INTEGER and REAL. All operands must
+  /// belong to the same forest.
+  extern const binary_opname* MINIMUM;
+  /// For forests with range_type of INTEGER and REAL. All operands must
+  /// belong to the same forest.
+  extern const binary_opname* MAXIMUM;
+  /// For forests with range_type of INTEGER and REAL. All operands must
+  /// belong to the same forest.
+  extern const binary_opname* PLUS;
+  /// For forests with range_type of INTEGER and REAL. All operands must
+  /// belong to the same forest.
+  extern const binary_opname* MINUS;
+  /// For forests with range_type of INTEGER and REAL. All operands must
+  /// belong to the same forest.
+  extern const binary_opname* MULTIPLY;
+  /// For forests with range_type of INTEGER and REAL. All operands must
+  /// belong to the same forest.
+  extern const binary_opname* DIVIDE;
+
+  /// For forests with range_type of INTEGER and REAL. All operands must
+  /// belong to the same forest.
+  extern const binary_opname* EQUAL;
+  /// For forests with range_type of INTEGER and REAL. All operands must
+  /// belong to the same forest.
+  extern const binary_opname* NOT_EQUAL;
+  /// For forests with range_type of INTEGER and REAL. All operands must
+  /// belong to the same forest.
+  extern const binary_opname* LESS_THAN;
+  /// For forests with range_type of INTEGER and REAL. All operands must
+  /// belong to the same forest.
+  extern const binary_opname* LESS_THAN_EQUAL;
+  /// For forests with range_type of INTEGER and REAL. All operands must
+  /// belong to the same forest.
+  extern const binary_opname* GREATER_THAN;
+  /// For forests with range_type of INTEGER and REAL. All operands must
+  /// belong to the same forest.
+  extern const binary_opname* GREATER_THAN_EQUAL;
 
 
   // ******************************************************************
@@ -1595,9 +1642,6 @@ class MEDDLY::compute_manager {
       /// For forests with range_type of INTEGER and REAL. All operands must
       /// belong to the same forest.
       MINUS,
-      /// For forests with range_type of INTEGER and REAL. All operands must
-      /// belong to the same forest.
-      MULTIPLY,
       /// For forests with range_type of INTEGER and REAL. All operands must
       /// belong to the same forest.
       DIVIDE,

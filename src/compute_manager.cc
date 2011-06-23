@@ -114,9 +114,9 @@ void MEDDLY::expert_compute_manager::apply(op_info* owner,
     const dd_edge &a, ct_object &b)
 {
 #ifdef HAVE_LIBGMP
-  return unary_apply(owner, a, b);
+  unary_apply(owner, a, b);
 #else
-  return compute_manager::UNKNOWN_OPERATION;
+  throw error(error::UNKNOWN_OPERATION);
 #endif
 }
 
@@ -451,10 +451,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
               // MtMdd minus
               addBuiltinOp(key, mtmdd_minus::getInstance(), plist, N);
               return &(builtinOpEntries->find(key)->second);
-            case MULTIPLY:
-              // MtMdd multiply
-              addBuiltinOp(key, mtmdd_multiply::getInstance(), plist, N);
-              return &(builtinOpEntries->find(key)->second);
             case DIVIDE:
               // MtMdd divide
               addBuiltinOp(key, mtmdd_divide::getInstance(), plist, N);
@@ -538,10 +534,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
             // MtMxd minus
             addBuiltinOp(key, mtmxd_minus::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
-          case MULTIPLY:
-            // MtMxd multiply
-            addBuiltinOp(key, mtmxd_multiply::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
           case DIVIDE:
             // MtMxd divide
             addBuiltinOp(key, mtmxd_divide::getInstance(), plist, N);
@@ -590,10 +582,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
           case MINUS:
             // Ev+Mdd minus
             addBuiltinOp(key, evplusmdd_minus::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case MULTIPLY:
-            // Ev+Mdd multiply
-            addBuiltinOp(key, evplusmdd_multiply::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
 #if 0
           case DIVIDE:
@@ -652,10 +640,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
           case MINUS:
             // Ev*Mdd minus
             addBuiltinOp(key, evtimesmdd_minus::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case MULTIPLY:
-            // Ev*Mdd multiply
-            addBuiltinOp(key, evtimesmdd_multiply::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
 #if 0
           case DIVIDE:

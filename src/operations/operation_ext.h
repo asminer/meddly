@@ -387,22 +387,6 @@ class mtmxd_minus : public mtmxd_apply_operation {
 };
 
 
-class mtmxd_multiply : public mtmxd_apply_operation {
-  public:
-    static mtmxd_multiply* getInstance();
-    virtual const char* getName() const { return "MtMxd Multiply"; }
-    virtual bool isCommutative() const { return true; }
-
-  protected:
-    mtmxd_multiply();
-    mtmxd_multiply(const mtmxd_multiply& copy);
-    mtmxd_multiply& operator=(const mtmxd_multiply& copy);
-    ~mtmxd_multiply();
-
-    virtual bool checkTerminals(op_info* op, int a, int b, int& c);
-};
-
-
 class mtmxd_min : public mtmxd_apply_operation {
   public:
     static mtmxd_min* getInstance();
@@ -614,23 +598,6 @@ class mtmdd_minus : public mtmdd_apply_operation {
     mtmdd_minus(const mtmdd_minus& copy);
     mtmdd_minus& operator=(const mtmdd_minus& copy);
     ~mtmdd_minus();
-
-    virtual bool checkTerminals(op_info* op, int a, int b, int& c);
-};
-
-
-class mtmdd_multiply : public mtmdd_apply_operation {
-  public:
-    static mtmdd_multiply* getInstance();
-    virtual const char* getName() const { return "MtMdd Multiply"; }
-    virtual bool isCommutative() const { return true; }
-
-
-  protected:
-    mtmdd_multiply();
-    mtmdd_multiply(const mtmdd_multiply& copy);
-    mtmdd_multiply& operator=(const mtmdd_multiply& copy);
-    ~mtmdd_multiply();
 
     virtual bool checkTerminals(op_info* op, int a, int b, int& c);
 };
@@ -1119,22 +1086,6 @@ class evplusmdd_plus : public evplusmdd_apply_operation {
 };
 
 
-class evplusmdd_multiply : public evplusmdd_apply_operation {
-  public:
-    virtual const char* getName() const { return "EV+MDD Multiply"; }
-    virtual bool isCommutative() const { return true; }
-    virtual bool checkTerminals(op_info* op, int a, int aev, int b, int bev,
-        int& c, int& cev);
-    static evplusmdd_multiply* getInstance();
-
-  protected:
-    evplusmdd_multiply() {}
-    evplusmdd_multiply(const evplusmdd_multiply& copy);
-    evplusmdd_multiply& operator=(const evplusmdd_multiply& copy);
-    virtual ~evplusmdd_multiply() {}
-};
-
-
 class evplusmdd_minus : public evplusmdd_apply_operation {
   public:
     virtual const char* getName() const { return "EV+MDD Minus"; }
@@ -1164,22 +1115,6 @@ class evtimesmdd_plus : public evtimesmdd_apply_operation {
     evtimesmdd_plus(const evtimesmdd_plus& copy);
     evtimesmdd_plus& operator=(const evtimesmdd_plus& copy);
     virtual ~evtimesmdd_plus() {}
-};
-
-
-class evtimesmdd_multiply : public evtimesmdd_apply_operation {
-  public:
-    virtual const char* getName() const { return "EV*MDD Multiply"; }
-    virtual bool isCommutative() const { return true; }
-    virtual bool checkTerminals(op_info* op, int a, float aev, int b, float bev,
-        int& c, float& cev);
-    static evtimesmdd_multiply* getInstance();
-
-  protected:
-    evtimesmdd_multiply() {}
-    evtimesmdd_multiply(const evtimesmdd_multiply& copy);
-    evtimesmdd_multiply& operator=(const evtimesmdd_multiply& copy);
-    virtual ~evtimesmdd_multiply() {}
 };
 
 

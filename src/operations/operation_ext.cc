@@ -3893,52 +3893,6 @@ mtmdd_divide::checkTerminals(op_info* op, int a, int b, int& c)
 }
 
 
-// ----------------------- MTMDD Multiply ----------------------------
-
-
-mtmdd_multiply* mtmdd_multiply::getInstance()
-{
-  static mtmdd_multiply instance;
-  return &instance;
-}
-
-
-mtmdd_multiply::mtmdd_multiply()
-{ }
-
-
-mtmdd_multiply::~mtmdd_multiply() {}
-
-
-bool
-mtmdd_multiply::checkTerminals(op_info* op, int a, int b, int& c)
-{
-
-  if (a == 0 || b == 0) {
-    c = 0;
-    return true;
-  }
-
-  if (getExpertForest(op, 0)->isTerminalNode(a) &&
-      getExpertForest(op, 0)->isTerminalNode(b)) {
-    if (getExpertForest(op, 0)->getRangeType() ==
-        forest::INTEGER) {
-      c = getExpertForest(op, 0)->getTerminalNode(
-          getExpertForest(op, 0)->getInteger(a) *
-          getExpertForest(op, 0)->getInteger(b));
-    } else {
-      DCASSERT(getExpertForest(op, 0)->getRangeType() ==
-          forest::REAL);
-      c = getExpertForest(op, 0)->getTerminalNode(
-          getExpertForest(op, 0)->getReal(a) *
-          getExpertForest(op, 0)->getReal(b));
-    }
-    return true;
-  }
-  return false;
-}
-
-
 // ----------------------- MTMDD Minus ----------------------------
 
 
@@ -5085,49 +5039,6 @@ mtmxd_apply_operation::typeCheck(const op_info* owner)
       throw error(error::TYPE_MISMATCH);
     }
   }
-}
-
-
-// ----------------------- MTMXD Multiply ----------------------------
-
-
-mtmxd_multiply* mtmxd_multiply::getInstance()
-{
-  static mtmxd_multiply instance;
-  return &instance;
-}
-
-
-mtmxd_multiply::mtmxd_multiply()
-{ }
-
-
-mtmxd_multiply::~mtmxd_multiply() {}
-
-
-bool
-mtmxd_multiply::checkTerminals(op_info* op, int a, int b, int& c)
-{
-  if (a == 0 || b == 0) {
-    c = 0;
-    return true;
-  }
-
-  if (getExpertForest(op, 0)->isTerminalNode(a) &&
-      getExpertForest(op, 0)->isTerminalNode(b)) {
-    if (getExpertForest(op, 0)->getRangeType() == forest::INTEGER) {
-      c = getExpertForest(op, 0)->getTerminalNode(
-          getExpertForest(op, 0)->getInteger(a) *
-          getExpertForest(op, 0)->getInteger(b));
-    } else {
-      DCASSERT(getExpertForest(op, 0)->getRangeType() == forest::REAL);
-      c = getExpertForest(op, 0)->getTerminalNode(
-          getExpertForest(op, 0)->getReal(a) *
-          getExpertForest(op, 0)->getReal(b));
-    }
-    return true;
-  }
-  return false;
 }
 
 
@@ -6648,31 +6559,6 @@ compute(op_info* owner, int a, int aev, int b, int bev, int& c, int& cev)
 #endif
 
 
-evplusmdd_multiply*
-evplusmdd_multiply::
-getInstance()
-{
-  static evplusmdd_multiply instance;
-  return &instance;
-}
-
-
-bool
-evplusmdd_multiply::
-checkTerminals(op_info* op, int a, int aev, int b, int bev, int& c, int& cev)
-{
-  if (a == 0 || b == 0) {
-    c = 0; cev = INF;
-    return true;
-  }
-  if (a == -1 && b == -1) {
-    c = -1; cev = aev * bev;
-    return true;
-  }
-  return false;
-}
-
-
 evplusmdd_minus*
 evplusmdd_minus::
 getInstance()
@@ -6730,32 +6616,6 @@ checkTerminals(op_info* op, int a, float aev, int b, float bev,
   }
   if (a == -1 && b == -1) {
     c = -1; cev = aev + bev;
-    return true;
-  }
-  return false;
-}
-
-
-evtimesmdd_multiply*
-evtimesmdd_multiply::
-getInstance()
-{
-  static evtimesmdd_multiply instance;
-  return &instance;
-}
-
-
-bool
-evtimesmdd_multiply::
-checkTerminals(op_info* op, int a, float aev, int b, float bev,
-    int& c, float& cev)
-{
-  if (a == 0 || b == 0) {
-    c = 0; cev = NAN;
-    return true;
-  }
-  if (a == -1 && b == -1) {
-    c = -1; cev = aev * bev;
     return true;
   }
   return false;

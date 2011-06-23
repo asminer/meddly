@@ -59,7 +59,25 @@ namespace MEDDLY {
 
   // binary operation "codes"
 
+  const binary_opname* UNION = 0;
+  const binary_opname* INTERSECTION = 0;
+  const binary_opname* DIFFERENCE = 0;
+
   const binary_opname* CROSS = 0;
+
+  const binary_opname* MINIMUM = 0;
+  const binary_opname* MAXIMUM = 0;
+  const binary_opname* PLUS = 0;
+  const binary_opname* MINUS = 0;
+  const binary_opname* MULTIPLY = 0;
+  const binary_opname* DIVIDE = 0;
+
+  const binary_opname* EQUAL = 0;
+  const binary_opname* NOT_EQUAL = 0;
+  const binary_opname* LESS_THAN = 0;
+  const binary_opname* LESS_THAN_EQUAL = 0;
+  const binary_opname* GREATER_THAN = 0;
+  const binary_opname* GREATER_THAN_EQUAL = 0;
 
   // cache of operations
   operation** op_cache = 0;

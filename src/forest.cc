@@ -58,6 +58,20 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   szOplist = 0;
 }
 
+void MEDDLY::expert_forest::removeAllComputeTableEntries()
+{
+  if (is_marked_for_deletion) return;
+  if (operation::useMonolithicComputeTable()) {
+    is_marked_for_deletion = true;
+    operation::removeStalesFromMonolithic();
+    is_marked_for_deletion = false;
+  } else {
+    for (int i=0; i<szOplist; i++) 
+      if (oplist[i])
+        oplist[i]->removeAllComputeTableEntries();
+  }
+}
+
 int MEDDLY::expert_forest::registerOperation(operation* op)
 {
   for (int slot=0; slot<szOplist; slot++) {

@@ -182,7 +182,7 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator*=(const dd_edge& e)
       (parent->getRangeType() == forest::BOOLEAN &&
         parent->getEdgeLabeling() == forest::MULTI_TERMINAL)
       ? compute_manager::INTERSECTION
-      : compute_manager::MULTIPLY;
+      : compute_manager::INTERSECTION;  // TBD... should be multiply
     opStar =
       smart_cast<expert_compute_manager*>(getComputeManager())->
       getOpInfo(opCode, plist, nOperands);

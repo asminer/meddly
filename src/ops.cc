@@ -121,6 +121,14 @@ void MEDDLY::operation::markForDeletion()
   // TBD: remove from list
 }
 
+void MEDDLY::operation::removeAllComputeTableEntries()
+{
+  if (is_marked_for_deletion) return;
+  is_marked_for_deletion = true;
+  CT->removeStales();
+  is_marked_for_deletion = false;
+}
+
 // ******************************************************************
 // *                    unary_operation  methods                    *
 // ******************************************************************

@@ -272,12 +272,12 @@ int main(int argc, const char** argv)
         CM->apply(compute_manager::MAX, col, dgm, col);
         CM->apply(compute_manager::MAX, col, qir, col);
         // "AND" with this row
-        CM->apply(compute_manager::MULTIPLY, rowcov, col, rowcov);
+        apply(MULTIPLY, rowcov, col, rowcov);
       } // for j
       printf(", ");
       fflush(stdout);
       // "AND" directly with set of covers
-      CM->apply(compute_manager::MULTIPLY, solutions, rowcov, solutions);
+      apply(MULTIPLY, solutions, rowcov, solutions);
     } // for i
 
     printf("\n");

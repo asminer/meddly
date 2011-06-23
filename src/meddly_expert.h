@@ -478,6 +478,9 @@ class MEDDLY::expert_forest : public forest
     /// Sets the node deletion policy for this forest.
     void setNodeDeletion(forest::node_deletion_policy np);
 
+    /// Remove all compute table entries associated with this forest.
+    void removeAllComputeTableEntries();
+
     /// Create a temporary node -- a node that can be modified by the user.
     /// If \a clear is true, downpointers are initialized to 0.
     virtual int createTempNode(int lh, int size, bool clear = true) = 0;
@@ -1179,7 +1182,11 @@ class MEDDLY::operation {
     inline void setNext(operation* n) { next = n; }
     inline operation* getNext()       { return next; }
 
+    inline static bool useMonolithicComputeTable() { return useMonolithicCT; }
     static void removeStalesFromMonolithic();
+
+    /// Remove all compute table entries for this operation.
+    void removeAllComputeTableEntries();
 
     // handy
     inline const char* getName() const { return theOpName->getName(); }

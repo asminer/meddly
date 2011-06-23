@@ -33,6 +33,7 @@
 #include "mdd2evplus.h"
 
 #include "cross.h"
+#include "multiply.h"
 
 void MEDDLY::builtin_initializer::init(const settings &s)
 {
@@ -44,6 +45,8 @@ void MEDDLY::builtin_initializer::init(const settings &s)
   MEDDLY::CONVERT_TO_INDEX_SET  = (MDD2EVPLUS = initializeMDD2EVPLUS(s) );
 
   MEDDLY::CROSS                 = (CROSS      = initializeCross(s)      );
+
+  MEDDLY::MULTIPLY              = (MULTIPLY   = initializeMultiply(s)   );
 }
 
 template <class T>
@@ -63,4 +66,6 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(MDD2EVPLUS,   MEDDLY::CONVERT_TO_INDEX_SET);
 
   cleanPair(CROSS,        MEDDLY::CROSS);
+
+  cleanPair(MULTIPLY,     MEDDLY::MULTIPLY);
 }
