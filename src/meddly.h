@@ -1648,9 +1648,6 @@ class MEDDLY::compute_manager {
 
       /// For forests with range_type of INTEGER and REAL. All operands must
       /// belong to the same forest.
-      NOT_EQUAL,
-      /// For forests with range_type of INTEGER and REAL. All operands must
-      /// belong to the same forest.
       LESS_THAN,
       /// For forests with range_type of INTEGER and REAL. All operands must
       /// belong to the same forest.

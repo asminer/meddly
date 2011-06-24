@@ -155,11 +155,11 @@ long buildQueenSolutions(int N)
   //  printf("\tBuilding queen %2d constraints\n", i+1);
     for (int j=N-1; j>i; j--) {
       dd_edge uniq_col(f);
-      CM->apply(compute_manager::NOT_EQUAL, *col[i], *col[j], uniq_col);
+      apply(NOT_EQUAL, *col[i], *col[j], uniq_col);
       dd_edge uniq_dgp(f);
-      CM->apply(compute_manager::NOT_EQUAL, *dgp[i], *dgp[j], uniq_dgp);
+      apply(NOT_EQUAL, *dgp[i], *dgp[j], uniq_dgp);
       dd_edge uniq_dgm(f);
-      CM->apply(compute_manager::NOT_EQUAL, *dgm[i], *dgm[j], uniq_dgm);
+      apply(NOT_EQUAL, *dgm[i], *dgm[j], uniq_dgm);
       // build overall "not attacking each other" set...
       apply(MULTIPLY, uniq_col, uniq_dgp, uniq_col);
       apply(MULTIPLY, uniq_col, uniq_dgm, uniq_col);

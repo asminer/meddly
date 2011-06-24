@@ -105,6 +105,8 @@ void initStats(MEDDLY::statistics &s)
 MEDDLY::unary_operation* MEDDLY::getOperation(const unary_opname* code, 
   expert_forest* arg, expert_forest* res)
 {
+  if (!libraryRunning) 
+    throw error(error::UNINITIALIZED);
   if (code->getIndex()<0 || code->getIndex()>=op_cache_size)
     throw error(error::INVALID_OPERATION);
 
@@ -136,6 +138,8 @@ MEDDLY::unary_operation* MEDDLY::getOperation(const unary_opname* code,
 MEDDLY::unary_operation* MEDDLY::getOperation(const unary_opname* code, 
   expert_forest* arg, opnd_type res)
 {
+  if (!libraryRunning) 
+    throw error(error::UNINITIALIZED);
   if (code->getIndex()<0 || code->getIndex()>=op_cache_size)
     throw error(error::INVALID_OPERATION);
 
@@ -167,6 +171,8 @@ MEDDLY::unary_operation* MEDDLY::getOperation(const unary_opname* code,
 MEDDLY::binary_operation* MEDDLY::getOperation(const binary_opname* code, 
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
 {
+  if (!libraryRunning) 
+    throw error(error::UNINITIALIZED);
   if (code->getIndex()<0 || code->getIndex()>=op_cache_size)
     throw error(error::INVALID_OPERATION);
 
@@ -198,6 +204,8 @@ MEDDLY::binary_operation* MEDDLY::getOperation(const binary_opname* code,
 void MEDDLY::removeOperationFromCache(operation* op)
 {
   if (0==op) return;
+  if (!libraryRunning) 
+    throw error(error::UNINITIALIZED);
   const opname* code = op->getOpName();
 
   operation* curr;
@@ -218,7 +226,10 @@ void MEDDLY::removeOperationFromCache(operation* op)
 
 void MEDDLY::apply(const unary_opname* code, const dd_edge &a, dd_edge &c)
 {
-  if (0==code)  throw error(error::UNKNOWN_OPERATION);
+  if (!libraryRunning) 
+    throw error(error::UNINITIALIZED);
+  if (0==code)  
+    throw error(error::UNKNOWN_OPERATION);
   expert_forest* aF = (expert_forest*) a.getForest();
   expert_forest* cF = (expert_forest*) c.getForest();
   unary_operation* op = getOperation(code, aF, cF);
@@ -227,7 +238,10 @@ void MEDDLY::apply(const unary_opname* code, const dd_edge &a, dd_edge &c)
 
 void MEDDLY::apply(const unary_opname* code, const dd_edge &a, long &c)
 {
-  if (0==code)  throw error(error::UNKNOWN_OPERATION);
+  if (!libraryRunning) 
+    throw error(error::UNINITIALIZED);
+  if (0==code)
+    throw error(error::UNKNOWN_OPERATION);
   expert_forest* aF = (expert_forest*) a.getForest();
   unary_operation* op = getOperation(code, aF, INTEGER);
   op->compute(a, c);
@@ -235,7 +249,10 @@ void MEDDLY::apply(const unary_opname* code, const dd_edge &a, long &c)
 
 void MEDDLY::apply(const unary_opname* code, const dd_edge &a, double &c)
 {
-  if (0==code)  throw error(error::UNKNOWN_OPERATION);
+  if (!libraryRunning) 
+    throw error(error::UNINITIALIZED);
+  if (0==code)
+    throw error(error::UNKNOWN_OPERATION);
   expert_forest* aF = (expert_forest*) a.getForest();
   unary_operation* op = getOperation(code, aF, REAL);
   op->compute(a, c);
@@ -244,7 +261,10 @@ void MEDDLY::apply(const unary_opname* code, const dd_edge &a, double &c)
 void MEDDLY::apply(const unary_opname* code, const dd_edge &a, opnd_type cr,
   ct_object &c)
 {
-  if (0==code)  throw error(error::UNKNOWN_OPERATION);
+  if (!libraryRunning) 
+    throw error(error::UNINITIALIZED);
+  if (0==code)
+    throw error(error::UNKNOWN_OPERATION);
   expert_forest* aF = (expert_forest*) a.getForest();
   unary_operation* op = getOperation(code, aF, cr);
   op->compute(a, c);
@@ -253,7 +273,10 @@ void MEDDLY::apply(const unary_opname* code, const dd_edge &a, opnd_type cr,
 void MEDDLY::apply(const binary_opname* code, const dd_edge &a, 
   const dd_edge &b, dd_edge &c)
 {
-  if (0==code)  throw error(error::UNKNOWN_OPERATION);
+  if (!libraryRunning) 
+    throw error(error::UNINITIALIZED);
+  if (0==code)
+    throw error(error::UNKNOWN_OPERATION);
   expert_forest* aF = (expert_forest*) a.getForest();
   expert_forest* bF = (expert_forest*) b.getForest();
   expert_forest* cF = (expert_forest*) c.getForest();

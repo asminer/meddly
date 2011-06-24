@@ -23,6 +23,7 @@ libops_la_SOURCES = \
   cross.h           cross.cc        \
   multiply.h        multiply.cc     \
   comp_eq.h         comp_eq.cc      \
+  comp_ne.h         comp_ne.cc      \
   \
 	operation.cc \
 	operation_ext.h   operation_ext.cc \
