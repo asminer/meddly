@@ -100,16 +100,12 @@ op_info* getOp(forest* f, old_operation* op)
 // Tests a mtmdd operation on the elements provided.
 // This function assumes that each element[i] represents
 // an element in the given MTMDD.
-dd_edge test_mtmdd(forest* mtmdd, compute_manager::op_code opCode,
+dd_edge test_mtmdd(forest* mtmdd, const binary_opname* opCode,
     int** element, element_type* terms, int nElements)
 {
   // A = first nElements/2 elements combined using +.
   // B = second nElements/2 elements combined using +.
   // C = A op B
-
-  static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(getComputeManager());
-  assert(ecm != 0);
 
   dd_edge A(mtmdd);
   dd_edge B(mtmdd);
@@ -120,8 +116,7 @@ dd_edge test_mtmdd(forest* mtmdd, compute_manager::op_code opCode,
   mtmdd->createEdge(element, terms, half, A);
   mtmdd->createEdge(element + half, terms + half, nElements - half, B);
 
-  op_info* op = getOp(mtmdd, opCode);
-  ecm->apply(op, A, B, C);
+  apply(opCode, A, B, C);
 
   if (verbose > 0) {
     printf("A: ");
@@ -263,8 +258,7 @@ int main(int argc, char *argv[])
 
   timer start;
   start.note_time();
-  dd_edge result = test_mtmdd(mtmdd, compute_manager::PLUS,
-      element, terms, nElements);
+  dd_edge result = test_mtmdd(mtmdd, PLUS, element, terms, nElements);
   start.note_time();
   printf("Time interval: %.4e seconds\n",
       start.get_last_interval()/1000000.0);

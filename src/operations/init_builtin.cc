@@ -35,7 +35,10 @@
 #include "cross.h"
 
 #include "maxmin.h"
+#include "plus.h"
+#include "minus.h"
 #include "multiply.h"
+#include "divide.h"
 
 #include "comp_eq.h"
 #include "comp_ne.h"
@@ -57,6 +60,8 @@ void MEDDLY::builtin_initializer::init(const settings &s)
 
   MEDDLY::MAXIMUM               = (MAX        = initializeMaximum(s)    );
   MEDDLY::MINIMUM               = (MIN        = initializeMinimum(s)    );
+  MEDDLY::PLUS                  = (PLUS       = initializePlus(s)       );
+  MEDDLY::MINUS                 = (MINUS      = initializeMinus(s)      );
   MEDDLY::MULTIPLY              = (MULTIPLY   = initializeMultiply(s)   );
   MEDDLY::DIVIDE                = (DIVIDE     = initializeMultiply(s)   );
 
@@ -88,6 +93,8 @@ void MEDDLY::builtin_initializer::cleanup()
 
   cleanPair(MAX,          MEDDLY::MAXIMUM);
   cleanPair(MIN,          MEDDLY::MINIMUM);
+  cleanPair(PLUS,         MEDDLY::PLUS);
+  cleanPair(MINUS,        MEDDLY::MINUS);
   cleanPair(MULTIPLY,     MEDDLY::MULTIPLY);
   cleanPair(DIVIDE,       MEDDLY::DIVIDE);
 

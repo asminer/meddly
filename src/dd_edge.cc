@@ -154,7 +154,8 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator+=(const dd_edge& e)
       (parent->getRangeType() == forest::BOOLEAN &&
         parent->getEdgeLabeling() == forest::MULTI_TERMINAL)
       ? compute_manager::UNION
-      : compute_manager::PLUS;
+      : compute_manager::UNION;
+      // TBD fix this!
     opPlus =
       smart_cast<expert_compute_manager*>(getComputeManager())->
       getOpInfo(opCode, plist, nOperands);
@@ -210,7 +211,8 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator-=(const dd_edge& e)
       (parent->getRangeType() == forest::BOOLEAN &&
         parent->getEdgeLabeling() == forest::MULTI_TERMINAL)
       ? compute_manager::DIFFERENCE
-      : compute_manager::MINUS;
+      : compute_manager::DIFFERENCE; // TBD: fix this
+      // : compute_manager::MINUS;
     opMinus =
       smart_cast<expert_compute_manager*>(getComputeManager())->
       getOpInfo(opCode, plist, nOperands);

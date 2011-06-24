@@ -757,9 +757,11 @@ int mtmdd_post_image::compute(op_info* owner, int mdd, int mxd)
   DCASSERT(owner->nParams == 3 && owner->p[0] == owner->p[2]);
   const int nOperands = 3;
   op_param plist[nOperands] = {owner->p[0], owner->p[0], owner->p[0]};
-  op_info* plusOp = 
+  op_info* plusOp = 0;
+/*
     smart_cast<expert_compute_manager*>(MEDDLY::getComputeManager())->
     getOpInfo(compute_manager::PLUS, plist, nOperands);
+*/
   assert(plusOp != 0);
   return compute(owner, plusOp, mdd, mxd);
 }
@@ -875,9 +877,11 @@ int mtmdd_pre_image::compute(op_info* owner, int mdd, int mxd)
   DCASSERT(owner->nParams == 3 && owner->p[0] == owner->p[2]);
   const int nOperands = 3;
   op_param plist[nOperands] = {owner->p[0], owner->p[0], owner->p[0]};
-  op_info* plusOp = 
+  op_info* plusOp = 0;
+/*
     smart_cast<expert_compute_manager*>(MEDDLY::getComputeManager())->
     getOpInfo(compute_manager::PLUS, plist, nOperands);
+*/
   assert(plusOp != 0);
   return compute(owner, plusOp, mdd, mxd);
 }

@@ -1632,13 +1632,6 @@ class MEDDLY::compute_manager {
       DIFFERENCE,
 
 
-      /// For forests with range_type of INTEGER and REAL. All operands must
-      /// belong to the same forest.
-      PLUS,
-      /// For forests with range_type of INTEGER and REAL. All operands must
-      /// belong to the same forest.
-      MINUS,
-
       /** Image operations on a set-of-states with a transition function.
           The first operand must be the set-of-states and the second operand
           must be the transition function. The result is a set-of-states that

@@ -157,11 +157,9 @@ dd_edge doPlus(forest* mtmxd, int** from, int** to, element_type* terms, int N)
 
   // Step (a): Use getOp() defined above to fetch the operation corresponding
   // to the the forests involved.
-  op_info* plusOp = getOp(mtmxd, compute_manager::PLUS);
-
-  // Expert compute manager necessary to call apply(op_info*, ....)
-  expert_compute_manager* ecm =
-    static_cast<expert_compute_manager*>(getComputeManager());
+  binary_operation* plusOp = getOperation(PLUS, 
+    (expert_forest*) mtmxd, (expert_forest*) mtmxd, (expert_forest*) mtmxd
+  );
 
   dd_edge result(mtmxd);
   dd_edge temp(mtmxd);
@@ -171,7 +169,7 @@ dd_edge doPlus(forest* mtmxd, int** from, int** to, element_type* terms, int N)
     mtmxd->createEdge(from + i, to + i, terms + i, 1, temp);
 
     // Step (c): Add it to result
-    ecm->apply(plusOp, result, temp, result);
+    plusOp->compute(result, temp, result);
   }
 
   return result;

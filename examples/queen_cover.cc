@@ -42,8 +42,6 @@ using namespace MEDDLY;
 int N;
 FILE* outfile;
 
-compute_manager* CM;
-
 dd_edge** qic;
 dd_edge** qidp;
 dd_edge** qidm;
@@ -214,8 +212,6 @@ int main(int argc, const char** argv)
 {
   if (!processArgs(argc, argv)) return usage(argv[0]);
   initialize();
-  CM = getComputeManager();
-  assert(CM);
   printf("Using %s\n", getLibraryInfo(0));
 
   timer stopwatch;
@@ -228,7 +224,7 @@ int main(int argc, const char** argv)
   for (int i=0; i<N; i++) for (int j=0; j<N; j++) {
     dd_edge tmp(f);
     hasQueen(f, i, j, tmp);
-    CM->apply(compute_manager::PLUS, num_queens, tmp, num_queens);
+    apply(PLUS, num_queens, tmp, num_queens);
   } // for i,j
 
   // "By-hand" compute tables for queen in col, diag

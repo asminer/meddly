@@ -433,19 +433,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
       if (f1->isMtMdd()) {
 
         if (f2->isMtMdd()) {
-          // MTMDD binary operation
-          switch (op) {
-            case PLUS:
-              // MtMdd plus
-              addBuiltinOp(key, mtmdd_plus::getInstance(), plist, N);
-              return &(builtinOpEntries->find(key)->second);
-            case MINUS:
-              // MtMdd minus
-              addBuiltinOp(key, mtmdd_minus::getInstance(), plist, N);
-              return &(builtinOpEntries->find(key)->second);
-            default:
-              break;
-          }
         }
       } // MTMDD binary operations
       else if (f1->isMtMxd()) {
@@ -480,18 +467,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
       if (f1->isMtMxd() &&
           f2->isMtMxd()) {
         // MTMXD binary operation
-        switch (op) {
-          case PLUS:
-            // MtMxd plus
-            addBuiltinOp(key, mtmxd_plus::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case MINUS:
-            // MtMxd minus
-            addBuiltinOp(key, mtmxd_minus::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          default:
-            break;
-        }
       }
 
     }
@@ -500,18 +475,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
           f2->isEvplusMdd()) {
 
         // EV+MDD binary operation
-        switch (op) {
-          case PLUS:
-            // Ev+Mdd plus
-            addBuiltinOp(key, evplusmdd_plus::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case MINUS:
-            // Ev+Mdd minus
-            addBuiltinOp(key, evplusmdd_minus::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          default:
-            break;
-        }
       }
     }
     else if (f0->isEvtimesMdd()) {
@@ -519,18 +482,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
           f2->isEvtimesMdd()) {
 
         // EV*MDD binary operation
-        switch (op) {
-          case PLUS:
-            // Ev*Mdd plus
-            addBuiltinOp(key, evtimesmdd_plus::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case MINUS:
-            // Ev*Mdd minus
-            addBuiltinOp(key, evtimesmdd_minus::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          default:
-            break;
-        }
       }
     }
   }
