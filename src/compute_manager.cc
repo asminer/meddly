@@ -435,14 +435,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
         if (f2->isMtMdd()) {
           // MTMDD binary operation
           switch (op) {
-            case MIN:
-              // MtMdd min
-              addBuiltinOp(key, mtmdd_min::getInstance(), plist, N);
-              return &(builtinOpEntries->find(key)->second);
-            case MAX:
-              // MtMdd max
-              addBuiltinOp(key, mtmdd_max::getInstance(), plist, N);
-              return &(builtinOpEntries->find(key)->second);
             case PLUS:
               // MtMdd plus
               addBuiltinOp(key, mtmdd_plus::getInstance(), plist, N);
@@ -450,10 +442,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
             case MINUS:
               // MtMdd minus
               addBuiltinOp(key, mtmdd_minus::getInstance(), plist, N);
-              return &(builtinOpEntries->find(key)->second);
-            case DIVIDE:
-              // MtMdd divide
-              addBuiltinOp(key, mtmdd_divide::getInstance(), plist, N);
               return &(builtinOpEntries->find(key)->second);
             default:
               break;
@@ -493,14 +481,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
           f2->isMtMxd()) {
         // MTMXD binary operation
         switch (op) {
-          case MIN:
-            // MtMxd min
-            addBuiltinOp(key, mtmxd_min::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case MAX:
-            // MtMxd max
-            addBuiltinOp(key, mtmxd_max::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
           case PLUS:
             // MtMxd plus
             addBuiltinOp(key, mtmxd_plus::getInstance(), plist, N);
@@ -508,10 +488,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
           case MINUS:
             // MtMxd minus
             addBuiltinOp(key, mtmxd_minus::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case DIVIDE:
-            // MtMxd divide
-            addBuiltinOp(key, mtmxd_divide::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           default:
             break;
@@ -533,45 +509,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
             // Ev+Mdd minus
             addBuiltinOp(key, evplusmdd_minus::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
-#if 0
-          case DIVIDE:
-            // Ev+Mdd divide
-            addBuiltinOp(key, evplusmdd_divide::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case MIN:
-            // Ev+Mdd min
-            addBuiltinOp(key, evplusmdd_min::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case MAX:
-            // Ev+Mdd max
-            addBuiltinOp(key, evplusmdd_max::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case EQUAL:
-            // Ev+Mdd ==
-            addBuiltinOp(key, evplusmdd_equal::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case NOT_EQUAL:
-            // Ev+Mdd !=
-            addBuiltinOp(key, evplusmdd_not_equal::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case LESS_THAN:
-            // Ev+Mdd <
-            addBuiltinOp(key, evplusmdd_less_than::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case LESS_THAN_EQUAL:
-            // Ev+Mdd <=
-            addBuiltinOp(key, evplusmdd_less_than_equal::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case GREATER_THAN:
-            // MtMdd >
-            addBuiltinOp(key, evplusmdd_greater_than::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case GREATER_THAN_EQUAL:
-            // MtMdd >=
-            addBuiltinOp(key, evplusmdd_greater_than_equal::getInstance(),
-                plist, N);
-            return &(builtinOpEntries->find(key)->second);
-#endif
           default:
             break;
         }
@@ -591,43 +528,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
             // Ev*Mdd minus
             addBuiltinOp(key, evtimesmdd_minus::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
-#if 0
-          case DIVIDE:
-            // Ev*Mdd divide
-            addBuiltinOp(key, evtimesmdd_divide::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case MIN:
-            // Ev*Mdd min
-            addBuiltinOp(key, evtimesmdd_min::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case MAX:
-            // Ev*Mdd max
-            addBuiltinOp(key, evtimesmdd_max::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-#endif
-#if 0
-          case NOT_EQUAL:
-            // Ev*Mdd !=
-            addBuiltinOp(key, evtimesmdd_not_equal::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case LESS_THAN:
-            // Ev*Mdd <
-            addBuiltinOp(key, evtimesmdd_less_than::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case LESS_THAN_EQUAL:
-            // Ev*Mdd <=
-            addBuiltinOp(key, evtimesmdd_less_than_equal::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case GREATER_THAN:
-            // Ev*Mdd >
-            addBuiltinOp(key, evtimesmdd_greater_than::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case GREATER_THAN_EQUAL:
-            // Ev*Mdd >=
-            addBuiltinOp(key, evtimesmdd_greater_than_equal::getInstance(),
-                plist, N);
-            return &(builtinOpEntries->find(key)->second);
-#endif
           default:
             break;
         }

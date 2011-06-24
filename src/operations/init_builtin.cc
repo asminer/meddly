@@ -33,6 +33,8 @@
 #include "mdd2evplus.h"
 
 #include "cross.h"
+
+#include "maxmin.h"
 #include "multiply.h"
 
 #include "comp_eq.h"
@@ -53,7 +55,10 @@ void MEDDLY::builtin_initializer::init(const settings &s)
 
   MEDDLY::CROSS                 = (CROSS      = initializeCross(s)      );
 
+  MEDDLY::MAXIMUM               = (MAX        = initializeMaximum(s)    );
+  MEDDLY::MINIMUM               = (MIN        = initializeMinimum(s)    );
   MEDDLY::MULTIPLY              = (MULTIPLY   = initializeMultiply(s)   );
+  MEDDLY::DIVIDE                = (DIVIDE     = initializeMultiply(s)   );
 
   MEDDLY::EQUAL                 = (EQ         = initializeEQ(s)         );
   MEDDLY::NOT_EQUAL             = (NE         = initializeNE(s)         );
@@ -81,7 +86,10 @@ void MEDDLY::builtin_initializer::cleanup()
 
   cleanPair(CROSS,        MEDDLY::CROSS);
 
+  cleanPair(MAX,          MEDDLY::MAXIMUM);
+  cleanPair(MIN,          MEDDLY::MINIMUM);
   cleanPair(MULTIPLY,     MEDDLY::MULTIPLY);
+  cleanPair(DIVIDE,       MEDDLY::DIVIDE);
 
   cleanPair(EQ,           MEDDLY::EQUAL);
   cleanPair(NE,           MEDDLY::NOT_EQUAL);
@@ -90,3 +98,4 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(GT,           MEDDLY::GREATER_THAN);
   cleanPair(GE,           MEDDLY::GREATER_THAN_EQUAL);
 }
+

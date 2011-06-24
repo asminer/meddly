@@ -23,50 +23,52 @@
 #include "config.h"
 #endif
 #include "../defines.h"
-#include "comp_gt.h"
+#include "divide.h"
 #include "../compute_table.h"
 #include "apply_base.h"
 
 namespace MEDDLY {
-  class morethan_mdd;
-  class morethan_mxd;
+  class divide_mdd;
+  class divide_mxd;
 
-  class morethan_opname;
+  class divide_opname;
 };
 
 
 // ******************************************************************
 // *                                                                *
-// *                       morethan_mdd class                       *
+// *                        divide_mdd class                        *
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::morethan_mdd : public generic_binary_mdd {
+class MEDDLY::divide_mdd : public generic_binary_mdd {
   public:
-    morethan_mdd(const binary_opname* opcode, expert_forest* arg1,
+    divide_mdd(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
   protected:
     virtual bool checkTerminals(int a, int b, int& c);
 };
 
-MEDDLY::morethan_mdd::morethan_mdd(const binary_opname* opcode, 
+MEDDLY::divide_mdd::divide_mdd(const binary_opname* opcode, 
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_mdd(opcode, arg1, arg2, res)
 {
 }
 
-bool MEDDLY::morethan_mdd::checkTerminals(int a, int b, int& c)
+bool MEDDLY::divide_mdd::checkTerminals(int a, int b, int& c)
 {
   if (arg1F->isTerminalNode(a) &&
       arg2F->isTerminalNode(b)) {
     if (resF->getRangeType() == forest::INTEGER) {
-      bool lt = arg1F->getInteger(a) > arg2F->getInteger(b);
-      c = resF->getTerminalNode(lt ? 1 : 0);
+      c = resF->getTerminalNode(
+        arg1F->getInteger(a) / arg2F->getInteger(b)
+      );
     } else {
       DCASSERT(resF->getRangeType() == forest::REAL);
-      bool lt = arg1F->getReal(a) > arg2F->getReal(b);
-      c = resF->getTerminalNode(float(lt ? 1 : 0));
+      c = resF->getTerminalNode(
+        arg1F->getReal(a) / arg2F->getReal(b)
+      );
     }
     return true;
   }
@@ -76,36 +78,38 @@ bool MEDDLY::morethan_mdd::checkTerminals(int a, int b, int& c)
 
 // ******************************************************************
 // *                                                                *
-// *                       morethan_mxd class                       *
+// *                        divide_mxd class                        *
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::morethan_mxd : public generic_binbylevel_mxd {
+class MEDDLY::divide_mxd : public generic_binbylevel_mxd {
   public:
-    morethan_mxd(const binary_opname* opcode, expert_forest* arg1,
+    divide_mxd(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
   protected:
     virtual bool checkTerminals(int a, int b, int& c);
 };
 
-MEDDLY::morethan_mxd::morethan_mxd(const binary_opname* opcode, 
+MEDDLY::divide_mxd::divide_mxd(const binary_opname* opcode, 
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binbylevel_mxd(opcode, arg1, arg2, res)
 {
 }
 
-bool MEDDLY::morethan_mxd::checkTerminals(int a, int b, int& c)
+bool MEDDLY::divide_mxd::checkTerminals(int a, int b, int& c)
 {
   if (arg1F->isTerminalNode(a) &&
       arg2F->isTerminalNode(b)) {
     if (resF->getRangeType() == forest::INTEGER) {
-      bool lt = arg1F->getInteger(a) > arg2F->getInteger(b);
-      c = resF->getTerminalNode(lt ? 1 : 0);
+      c = resF->getTerminalNode(
+        arg1F->getInteger(a) / arg2F->getInteger(b)
+      );
     } else {
       DCASSERT(resF->getRangeType() == forest::REAL);
-      bool lt = arg1F->getReal(a) > arg2F->getReal(b);
-      c = resF->getTerminalNode(float(lt ? 1 : 0));
+      c = resF->getTerminalNode(
+        arg1F->getReal(a) / arg2F->getReal(b)
+      );
     }
     return true;
   }
@@ -115,24 +119,24 @@ bool MEDDLY::morethan_mxd::checkTerminals(int a, int b, int& c)
 
 // ******************************************************************
 // *                                                                *
-// *                     morethan_opname  class                     *
+// *                      divide_opname  class                      *
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::morethan_opname : public binary_opname {
+class MEDDLY::divide_opname : public binary_opname {
   public:
-    morethan_opname();
+    divide_opname();
     virtual binary_operation* buildOperation(expert_forest* a1, 
       expert_forest* a2, expert_forest* r) const;
 };
 
-MEDDLY::morethan_opname::morethan_opname()
- : binary_opname("MoreThan")
+MEDDLY::divide_opname::divide_opname()
+ : binary_opname("LessThan")
 {
 }
 
 MEDDLY::binary_operation* 
-MEDDLY::morethan_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
+MEDDLY::divide_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
   expert_forest* r) const
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
@@ -156,9 +160,9 @@ MEDDLY::morethan_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 
   if (r->getEdgeLabeling() == forest::MULTI_TERMINAL) {
     if (r->isForRelations())
-      return new morethan_mxd(this, a1, a2, r);
+      return new divide_mxd(this, a1, a2, r);
     else
-      return new morethan_mdd(this, a1, a2, r);
+      return new divide_mdd(this, a1, a2, r);
   }
 
   throw error(error::NOT_IMPLEMENTED);
@@ -170,8 +174,8 @@ MEDDLY::morethan_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeGT(const settings &s)
+MEDDLY::binary_opname* MEDDLY::initializeDivide(const settings &s)
 {
-  return new morethan_opname;
+  return new divide_opname;
 }
 

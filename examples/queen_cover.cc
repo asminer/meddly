@@ -134,7 +134,7 @@ void queenInRow(forest* f, int r, dd_edge &e)
   for (int j=0; j<N; j++) {
     dd_edge tmp(f);
     hasQueen(f, r, j, tmp);
-    CM->apply(compute_manager::MAX, e, tmp, e);
+    apply(MAXIMUM, e, tmp, e);
   }
 }
 
@@ -149,7 +149,7 @@ void queenInCol(forest* f, int c, dd_edge &e)
   for (int i=0; i<N; i++) {
     dd_edge tmp(f);
     hasQueen(f, i, c, tmp);
-    CM->apply(compute_manager::MAX, e, tmp, e);
+    apply(MAXIMUM, e, tmp, e);
   }
   qic[c] = new dd_edge(e);
 }
@@ -165,7 +165,7 @@ void queenInDiagP(forest* f, int d, dd_edge &e)
   for (int i=0; i<N; i++) for (int j=0; j<N; j++) if (i+j==d) {
     dd_edge tmp(f);
     hasQueen(f, i, j, tmp);
-    CM->apply(compute_manager::MAX, e, tmp, e);
+    apply(MAXIMUM, e, tmp, e);
   }
   qidp[d] = new dd_edge(e);
 }
@@ -181,7 +181,7 @@ void queenInDiagM(forest* f, int d, dd_edge &e)
   for (int i=0; i<N; i++) for (int j=0; j<N; j++) if (i-j==d) {
     dd_edge tmp(f);
     hasQueen(f, i, j, tmp);
-    CM->apply(compute_manager::MAX, e, tmp, e);
+    apply(MAXIMUM, e, tmp, e);
   }
   qidm[d+N-1] = new dd_edge(e);
 }
@@ -268,9 +268,9 @@ int main(int argc, const char** argv)
         dd_edge dgm(f);
         queenInDiagM(f, i-j, dgm);
         // "OR" together the possible attackers for this square
-        CM->apply(compute_manager::MAX, col, dgp, col);
-        CM->apply(compute_manager::MAX, col, dgm, col);
-        CM->apply(compute_manager::MAX, col, qir, col);
+        apply(MAXIMUM, col, dgp, col);
+        apply(MAXIMUM, col, dgm, col);
+        apply(MAXIMUM, col, qir, col);
         // "AND" with this row
         apply(MULTIPLY, rowcov, col, rowcov);
       } // for j

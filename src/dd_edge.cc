@@ -229,20 +229,13 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator-=(const dd_edge& e)
 MEDDLY::dd_edge& MEDDLY::dd_edge::operator/=(const dd_edge& e)
 {
   if (opDivide == 0) {
-    const int nOperands = 3;
-    op_param plist[nOperands];
-    plist[0].set(parent);
-    plist[1].set(parent);
-    plist[2].set(parent);
-    DCASSERT(!(parent->getRangeType() == forest::BOOLEAN &&
-        parent->getEdgeLabeling() == forest::MULTI_TERMINAL));
-    opDivide =
-      smart_cast<expert_compute_manager*>(getComputeManager())->
-      getOpInfo(compute_manager::DIVIDE, plist, nOperands);
+    opDivide = getOperation(DIVIDE, 
+      smart_cast<expert_forest*>(parent), 
+      smart_cast<expert_forest*>(e.parent), 
+      smart_cast<expert_forest*>(parent)
+    );
   }
-  DCASSERT(e.parent == parent);
-  smart_cast<expert_compute_manager*>(getComputeManager())->
-    apply(opDivide, *this, e, *this);
+  opDivide->compute(*this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
   DCASSERT(updateNeeded == true);
   return *this;

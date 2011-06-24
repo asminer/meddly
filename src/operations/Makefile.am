@@ -21,7 +21,10 @@ libops_la_SOURCES = \
   mdd2evplus.h      mdd2evplus.cc   \
   \
   cross.h           cross.cc        \
+  maxmin.h          maxmin.cc       \
   multiply.h        multiply.cc     \
+  divide.h          divide.cc       \
+  \
   comp_eq.h         comp_eq.cc      \
   comp_ne.h         comp_ne.cc      \
   comp_lt.h         comp_lt.cc      \

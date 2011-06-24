@@ -54,7 +54,6 @@ MEDDLY::moreequal_mdd::moreequal_mdd(const binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_mdd(opcode, arg1, arg2, res)
 {
-  operationCommutes();
 }
 
 bool MEDDLY::moreequal_mdd::checkTerminals(int a, int b, int& c)
@@ -94,7 +93,6 @@ MEDDLY::moreequal_mxd::moreequal_mxd(const binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binbylevel_mxd(opcode, arg1, arg2, res)
 {
-  operationCommutes();
 }
 
 bool MEDDLY::moreequal_mxd::checkTerminals(int a, int b, int& c)

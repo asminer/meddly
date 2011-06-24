@@ -59,6 +59,8 @@ namespace MEDDLY {
   class ct_object;
   class unary_opname;
   class binary_opname;
+  class unary_operation;
+  class binary_operation;
 
   /// Argument and result types for apply operations.
   enum opnd_type {
@@ -1586,7 +1588,7 @@ class MEDDLY::dd_edge {
     op_info* opPlus;
     op_info* opStar;
     op_info* opMinus;
-    op_info* opDivide;
+    binary_operation* opDivide;
 
     void updateIterators();
 
@@ -1632,19 +1634,10 @@ class MEDDLY::compute_manager {
 
       /// For forests with range_type of INTEGER and REAL. All operands must
       /// belong to the same forest.
-      MIN,
-      /// For forests with range_type of INTEGER and REAL. All operands must
-      /// belong to the same forest.
-      MAX,
-      /// For forests with range_type of INTEGER and REAL. All operands must
-      /// belong to the same forest.
       PLUS,
       /// For forests with range_type of INTEGER and REAL. All operands must
       /// belong to the same forest.
       MINUS,
-      /// For forests with range_type of INTEGER and REAL. All operands must
-      /// belong to the same forest.
-      DIVIDE,
 
       /** Image operations on a set-of-states with a transition function.
           The first operand must be the set-of-states and the second operand
