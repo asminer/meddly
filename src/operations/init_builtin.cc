@@ -34,6 +34,7 @@
 
 #include "cross.h"
 #include "multiply.h"
+#include "comp_eq.h"
 
 void MEDDLY::builtin_initializer::init(const settings &s)
 {
@@ -47,6 +48,8 @@ void MEDDLY::builtin_initializer::init(const settings &s)
   MEDDLY::CROSS                 = (CROSS      = initializeCross(s)      );
 
   MEDDLY::MULTIPLY              = (MULTIPLY   = initializeMultiply(s)   );
+
+  MEDDLY::EQUAL                 = (EQ         = initializeEQ(s)         );
 }
 
 template <class T>
@@ -68,4 +71,6 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(CROSS,        MEDDLY::CROSS);
 
   cleanPair(MULTIPLY,     MEDDLY::MULTIPLY);
+
+  cleanPair(EQ,           MEDDLY::EQUAL);
 }

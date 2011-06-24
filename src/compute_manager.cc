@@ -455,10 +455,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
               // MtMdd divide
               addBuiltinOp(key, mtmdd_divide::getInstance(), plist, N);
               return &(builtinOpEntries->find(key)->second);
-            case EQUAL:
-              // MtMdd ==
-              addBuiltinOp(key, mtmdd_equal::getInstance(), plist, N);
-              return &(builtinOpEntries->find(key)->second);
             case NOT_EQUAL:
               // MtMdd !=
               addBuiltinOp(key, mtmdd_not_equal::getInstance(), plist, N);
@@ -537,10 +533,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
           case DIVIDE:
             // MtMxd divide
             addBuiltinOp(key, mtmxd_divide::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case EQUAL:
-            // MtMxd ==
-            addBuiltinOp(key, mtmxd_equal::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
           case NOT_EQUAL:
             // MtMxd !=
@@ -655,10 +647,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
             addBuiltinOp(key, evtimesmdd_max::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
 #endif
-          case EQUAL:
-            // Ev*Mdd ==
-            addBuiltinOp(key, evtimesmdd_equal::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
 #if 0
           case NOT_EQUAL:
             // Ev*Mdd !=

@@ -322,7 +322,7 @@ dd_edge buildIncrVariable(forest* mtmxd, int level)
   mtmxd->createEdgeForVar(level, true, yPrime);
 
   // ---- Building y + 1 == y' ----
-  getComputeManager()->apply(compute_manager::EQUAL, yPrime, y, yPrime);
+  apply(EQUAL, yPrime, y, yPrime);
 
   // Make the rest of the transitions into "don't change"
   dd_edge multiplier = buildMultiplierForVariable(mtmxd, level);
@@ -408,7 +408,7 @@ dd_edge buildTransitionExpression(forest* mtmxd)
 
   // y1Prime.show(stdout, 2);
 
-  getComputeManager()->apply(compute_manager::EQUAL, y1Prime, y1, y1Prime);
+  apply(EQUAL, y1Prime, y1, y1Prime);
 
   // y1Prime.show(stdout, 2);
 

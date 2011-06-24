@@ -1340,6 +1340,886 @@ void MEDDLY::generic_binary_mxd::singleExpandB(int a, int b, int result,
 
 // ******************************************************************
 // *                                                                *
+// *                 generic_binbylevel_mxd methods                 *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::generic_binbylevel_mxd
+::generic_binbylevel_mxd(const binary_opname* code, expert_forest* arg1, 
+  expert_forest* arg2, expert_forest* res)
+ : binary_operation(code, arg1, arg2, res)
+{
+  can_commute = false;
+  key_length = 3;
+  ans_length = 1;
+}
+
+MEDDLY::generic_binbylevel_mxd::~generic_binbylevel_mxd()
+{
+}
+
+bool MEDDLY::generic_binbylevel_mxd::isEntryStale(const int* data)
+{
+  return arg1F->isStale(data[1]) ||
+         arg2F->isStale(data[2]) ||
+         resF->isStale(data[3]);
+}
+
+void MEDDLY::generic_binbylevel_mxd::discardEntry(const int* data)
+{
+  arg1F->uncacheNode(data[1]);
+  arg2F->uncacheNode(data[2]);
+  resF->uncacheNode(data[3]);
+}
+
+void
+MEDDLY::generic_binbylevel_mxd::showEntry(FILE* strm, const int *data) const
+{
+  fprintf(strm, "[%s(%d, %d, %d): %d]", getName(), 
+    data[0], data[1], data[2], data[3]
+  );
+}
+
+void MEDDLY::generic_binbylevel_mxd
+::compute(const dd_edge& a, const dd_edge& b, dd_edge& c)
+{
+  int result = compute(
+    resF->getDomain()->getNumVariables(), a.getNode(), b.getNode()
+  );
+  c.set(result, 0, resF->getNodeLevel(result));
+}
+
+int MEDDLY::generic_binbylevel_mxd
+::compute(int resultLevel, int a, int b)
+{
+  return resF->getReductionRule() == forest::IDENTITY_REDUCED
+      ? computeIdent(resultLevel, a, b)
+      : computeNonIdent(resultLevel, a, b);
+}
+
+int MEDDLY::generic_binbylevel_mxd
+::computeIdent(int resultLevel, int a, int b)
+{
+  // Note 1:
+  // The main difference between mxd::compute and mdd::compute is in the
+  // manner in which skipped levels are dealt with.
+  //
+  // If aLevel < bLevel (or vice versa), MXD reduction rules specify that
+  // a and b are both unprimed nodes. Therefore, when expanding b (since
+  // it is at a higher level), expand the primed nodes also).
+  //
+  // Note 2:
+  // Nodes in mxd_alt_apply_operation::compute() are built by expanding
+  // one level at a time (i.e. no levels are skipped when building the result).
+  // This is to ensure correctness for operations where op(0, 0) != 0.
+
+  int result = 0;
+  DCASSERT(resF->getReductionRule() == forest::IDENTITY_REDUCED);
+
+  if (resultLevel == 0) {
+    checkTerminals(a, b, result);
+    return result;
+  }
+
+  if (findResult(resultLevel, a, b, result)) {
+    return result;
+  }
+
+  // expand nodes
+  // 0. initialize result
+  // 1. deal with special cases
+  // 2. copy node a to node result
+  // 3. do operation between contents of result and node b
+
+  const int aLevel = arg1F->getNodeLevel(a);
+  const int bLevel = arg2F->getNodeLevel(b);
+
+  // 0. initialize result
+  int resultSize = resF->getLevelSize(resultLevel);
+  result = resF->createTempNode(resultLevel, resultSize, false);
+
+  if (aLevel != resultLevel && bLevel != resultLevel) {
+    expandSkippedLevel(a, b, result, resultLevel, resultSize);
+  }
+  else if (aLevel != resultLevel) {
+    // aLevel != resultLevel, bLevel == resultLevel
+    if (resultLevel < 0)
+      singleExpandB(a, b, result, resultLevel, resultSize);
+    else
+      expandB(a, b, result, resultLevel, resultSize);
+  }
+  else if (bLevel != resultLevel) {
+    // aLevel == resultLevel, bLevel != resultLevel
+    if (resultLevel < 0)
+      singleExpandA(a, b, result, resultLevel, resultSize);
+    else
+      expandA(a, b, result, resultLevel, resultSize);
+  }
+  else {
+    // aLevel == resultLevel, bLevel == resultLevel
+    DCASSERT(aLevel == resultLevel && bLevel == resultLevel);
+    // 2. copy node a to node result
+    if (arg1F->isFullNode(a)) {
+      // a is a full-node
+      const int aSize = arg1F->getFullNodeSize(a);
+      DCASSERT(aSize <= resultSize);
+      for (int i = 0; i < aSize; ++i)
+        resF->setDownPtrWoUnlink(result,
+            i, arg1F->getFullNodeDownPtr(a, i));
+      for (int i = aSize; i < resultSize; ++i)
+        resF->setDownPtrWoUnlink(result, i, 0);
+    }
+    else {
+      // a is a sparse-node
+      const int aSize = arg1F->getSparseNodeSize(a);
+      for (int i = 0; i < resultSize; ++i)
+        resF->setDownPtrWoUnlink(result, i, 0);
+      for (int i = 0; i < aSize; ++i)
+        resF->setDownPtrWoUnlink(result,
+            arg1F->getSparseNodeIndex(a, i),
+            arg1F->getSparseNodeDownPtr(a, i));
+    }
+
+    // 3. do operation between contents of result and node b
+    int nextLevel = (resultLevel > 0)? -resultLevel: -resultLevel-1;
+    if (arg2F->isFullNode(b)) {
+      // b is a full-node
+      const int bSize = arg2F->getFullNodeSize(b);
+      DCASSERT(bSize <= resultSize);
+      for (int i = 0; i < bSize; ++i)
+      {
+        int tempResult = computeIdent(nextLevel,
+            resF->getFullNodeDownPtr(result, i),
+            arg2F->getFullNodeDownPtr(b, i));
+        resF->setDownPtr(result, i, tempResult);
+        resF->unlinkNode(tempResult);
+      }
+      for (int i = bSize; i < resultSize; ++i)
+      {
+        int tempResult = computeIdent(nextLevel,
+            resF->getFullNodeDownPtr(result, i), 0);
+        resF->setDownPtr(result, i, tempResult);
+        resF->unlinkNode(tempResult);
+      }
+    }
+    else {
+      // b is a sparse-node
+      const int bSize = arg2F->getSparseNodeSize(b);
+      DCASSERT(arg2F->getSparseNodeIndex(b, bSize - 1) <= resultSize);
+      // j goes through every index (like a full-node index pointer)
+      int j = 0;
+      for (int i = 0; i < bSize; ++i, ++j)
+      {
+        // sparse-nodes skip indices which represent downpointer 0
+        // call compute of those skipped indices
+        for (int index = arg2F->getSparseNodeIndex(b, i);
+            j < index; ++j)
+        {
+          int tempResult = computeIdent(nextLevel,
+              resF->getFullNodeDownPtr(result, j), 0);
+          resF->setDownPtr(result, j, tempResult);
+          resF->unlinkNode(tempResult);
+        }
+        // done with skipped indices; deal with the next sparse node index
+        DCASSERT(j == arg2F->getSparseNodeIndex(b, i));
+        int tempResult = computeIdent(nextLevel,
+            resF->getFullNodeDownPtr(result, j),
+            arg2F->getSparseNodeDownPtr(b, i));
+        resF->setDownPtr(result, j, tempResult);
+        resF->unlinkNode(tempResult);
+      }
+      DCASSERT(j == arg2F->getSparseNodeIndex(b, bSize - 1) + 1);
+      for ( ; j < resultSize; ++j)
+      {
+        int tempResult = computeIdent(nextLevel,
+            resF->getFullNodeDownPtr(result, j), 0);
+        resF->setDownPtr(result, j, tempResult);
+        resF->unlinkNode(tempResult);
+      }
+    }
+  }
+
+  result = resF->reduceNode(result);
+  saveResult(resultLevel, a, b, result);
+  return result;
+}
+
+int MEDDLY::generic_binbylevel_mxd
+::computeNonIdent(int resultLevel, int a, int b)
+{
+  DCASSERT(resF->getReductionRule() != forest::IDENTITY_REDUCED);
+
+  int result = 0;
+
+  if (resultLevel == 0) {
+    checkTerminals(a, b, result);
+    return result;
+  }
+
+  if (findResult(resultLevel, a, b, result)) {
+    return result;
+  }
+
+
+  // expand nodes
+  // 0. initialize result
+  // 1. deal with special cases
+  // 2. copy node a to node result
+  // 3. do operation between contents of result and node b
+
+  // 0. initialize result
+  const int aLevel = arg1F->getNodeLevel(a);
+  const int bLevel = arg2F->getNodeLevel(b);
+
+  int resultSize = resF->getLevelSize(resultLevel);
+  int nextLevel = (resultLevel > 0)? -resultLevel: -resultLevel-1;
+
+  if (aLevel != resultLevel && bLevel != resultLevel) {
+
+    // c[i] = a op b
+    int c = computeNonIdent(nextLevel, a, b);
+    std::vector<int> C(resultSize, c);
+    if (!resF->isTerminalNode(c))
+      resF->getInCount(c) += resultSize;
+    resF->unlinkNode(c);
+    result = resF->createTempNode(resultLevel, C);
+    result = resF->reduceNode(result);
+
+  }
+  else {
+
+    // get downpointers for a
+    std::vector<int> A;
+    if (aLevel != resultLevel) {
+      if (int(A.size()) < resultSize) A.resize(resultSize);
+      std::fill_n(A.begin(), resultSize, a);
+    } else {
+      arg1F->getDownPtrs(a, A);
+    }
+
+    // get downpointers for b
+    std::vector<int> B;
+    if (bLevel != resultLevel) {
+      if (int(B.size()) < resultSize) B.resize(resultSize);
+      std::fill_n(B.begin(), resultSize, b);
+    } else {
+      arg2F->getDownPtrs(b, B);
+    }
+
+    // compute C
+    std::vector<int> C(resultSize, 0);
+
+    int min = MIN(A.size(), B.size());
+    std::vector<int>::iterator aIter = A.begin();
+    std::vector<int>::iterator bIter = B.begin();
+    std::vector<int>::iterator cIter = C.begin();
+
+    for (std::vector<int>::iterator end = cIter + min; cIter != end; )
+    {
+      *cIter++ = computeNonIdent(nextLevel, *aIter++, *bIter++);
+    }
+
+    for (std::vector<int>::iterator end = A.end(); aIter != end; )
+    {
+      DCASSERT(cIter != C.end());
+      *cIter++ = computeNonIdent(nextLevel, *aIter++, 0);
+    }
+
+    for (std::vector<int>::iterator end = B.end(); bIter != end; )
+    {
+      DCASSERT(cIter != C.end());
+      *cIter++ = computeNonIdent(nextLevel, 0, *bIter++);
+    }
+
+    DCASSERT(aIter == A.end() && bIter == B.end());
+
+    if (cIter != C.end()) {
+      int zeroZero = computeNonIdent(nextLevel, 0, 0);
+      if (zeroZero != 0) std::fill(cIter, C.end(), zeroZero);
+      if (!resF->isTerminalNode(zeroZero)) {
+        unsigned count = C.size() - (cIter - C.begin());
+        resF->getInCount(zeroZero) += int(count);
+      }
+      resF->unlinkNode(zeroZero);
+    }
+
+    result = resF->createTempNode(resultLevel, C);
+    result = resF->reduceNode(result);
+
+  }
+
+  saveResult(resultLevel, a, b, result);
+  return result;
+}
+
+
+void MEDDLY::generic_binbylevel_mxd::expandSkippedLevel(int a, int b, 
+  int result, int resultLevel, int resultSize)
+{
+  DCASSERT(arg1F->getNodeLevel(a) != resultLevel);
+  DCASSERT(arg2F->getNodeLevel(b) != resultLevel);
+  if (resultLevel > 0) {
+    DCASSERT(arg1F->getNodeLevel(a) >= 0);
+    DCASSERT(arg2F->getNodeLevel(b) >= 0);
+    // both a and b are below result
+    int zeroZeroAtOneLevelBelow = computeIdent(resultLevel-1, 0, 0);
+    int aBAtOneLevelBelow = computeIdent(resultLevel-1, a, b);
+    int pResultSize = resF->getLevelSize(-resultLevel);
+
+    for (int i = 0; i < resultSize; ++i)
+    {
+      // create primed node at -resultLevel
+      int p = resF->createTempNode(-resultLevel, pResultSize, false);
+      for (int j = 0; j < pResultSize; ++j)
+      {
+        // create unprimed node at resultLevel-1
+        resF->setDownPtrWoUnlink(p, j,
+            (i == j)? aBAtOneLevelBelow: zeroZeroAtOneLevelBelow);
+      }
+      p = resF->reduceNode(p);
+      resF->setDownPtrWoUnlink(result, i, p);
+      resF->unlinkNode(p);
+    }
+    resF->unlinkNode(zeroZeroAtOneLevelBelow);
+    resF->unlinkNode(aBAtOneLevelBelow);
+  }
+  else {
+    DCASSERT(resultLevel < 0);
+    DCASSERT(a == 0 && b == 0);
+    int zeroZeroAtOneLevelBelow = computeIdent(-resultLevel-1, 0, 0);
+    for (int i = 0; i < resultSize; ++i)
+    {
+      resF->setDownPtrWoUnlink(result, i, zeroZeroAtOneLevelBelow);
+    }
+    resF->unlinkNode(zeroZeroAtOneLevelBelow);
+  }
+}
+
+
+void MEDDLY::generic_binbylevel_mxd::expandA(int a, int b,
+  int result, int resultLevel, int resultSize)
+{
+  // result[i][j] = a[i][j] op b[i][j]
+  // but b[i][j] = b only when i == j, and 0 otherwise
+  // result[i][i] = a[i][i] op b, and
+  // result[i][j] = a[i][j] op 0, when i != j
+
+  // compute each result[i] using above before inserting into result node
+
+  // when a[i] == 0, a[i][j] = 0 for all j, and
+  // result[i][i] = 0 op b
+  // result[i][j] = 0 op 0 for i != j
+  DCASSERT(resultLevel > 0);
+  int zeroOpZero = computeIdent(resultLevel-1, 0, 0);
+  int zeroOpB = computeIdent(resultLevel-1, 0, b);
+
+  int pResultSize = resF->getLevelSize(-resultLevel);
+
+  if (arg1F->isFullNode(a)) {
+    const int aSize = arg1F->getFullNodeSize(a);
+    for (int i = 0; i < aSize; ++i)
+    {
+      int iA = arg1F->getFullNodeDownPtr(a, i);
+      int iResult =
+        resF->createTempNode(-resultLevel, pResultSize, false);
+      if (iA == 0) {
+        for (int j = 0; j < pResultSize; ++j)
+          resF->setDownPtrWoUnlink(iResult, j,
+              i == j? zeroOpB: zeroOpZero);
+      }
+      else if (arg1F->isFullNode(iA)) {
+        const int iASize = arg1F->getFullNodeSize(iA);
+        for (int j = 0; j < iASize; ++j)
+        {
+          int ijA = arg1F->getFullNodeDownPtr(iA, j);
+          if (ijA == 0) {
+            resF->setDownPtrWoUnlink(iResult, j, i == j
+                ? zeroOpB
+                : zeroOpZero);
+          }
+          else {
+            int tempResult = (i == j)?
+              computeIdent(resultLevel-1, ijA, b):
+              computeIdent(resultLevel-1, ijA, 0);
+            resF->setDownPtrWoUnlink(iResult, j, tempResult);
+            resF->unlinkNode(tempResult);
+          }
+        }
+        for (int j = iASize; j < pResultSize; ++j)
+        {
+          resF->setDownPtrWoUnlink(iResult, j,
+              i == j? zeroOpB: zeroOpZero);
+        }
+      }
+      else {
+        DCASSERT(arg1F->isSparseNode(iA));
+        const int iASize = arg1F->getSparseNodeSize(iA);
+        int j = 0;
+        for (int k = 0; k < iASize; ++k, ++j)
+        {
+          // sparse-nodes skip indices which represent downpointer 0
+          // call compute of those skipped indices
+          for (int index = arg1F->getSparseNodeIndex(iA, k);
+              j < index; ++j)
+          {
+            resF->setDownPtrWoUnlink(iResult, j, i == j
+                ? zeroOpB
+                : zeroOpZero);
+          }
+          // done with skipped indices; deal with the next sparse node index
+          DCASSERT(j == arg1F->getSparseNodeIndex(iA, k));
+          int ijA = arg1F->getSparseNodeDownPtr(iA, k);
+          int tempResult = (i == j)?
+            computeIdent(resultLevel-1, ijA, b):
+            computeIdent(resultLevel-1, ijA, 0);
+          resF->setDownPtrWoUnlink(iResult, j, tempResult);
+          resF->unlinkNode(tempResult);
+        }
+        DCASSERT(j == arg1F->getSparseNodeIndex(iA, iASize - 1) + 1);
+        for ( ; j < pResultSize; ++j)
+        {
+          resF->setDownPtrWoUnlink(iResult, j,
+              i == j? zeroOpB: zeroOpZero);
+        }
+      }
+      iResult = resF->reduceNode(iResult);
+      resF->setDownPtrWoUnlink(result, i, iResult);
+      resF->unlinkNode(iResult);
+    }
+    // TODO: can optimize when zeroOpZero == zeroOpB == 0
+    for (int i = aSize; i < resultSize; ++i)
+    {
+      int iResult =
+        resF->createTempNode(-resultLevel, pResultSize, false);
+      for (int j = 0; j < pResultSize; ++j)
+        resF->setDownPtrWoUnlink(iResult, j,
+            i == j? zeroOpB: zeroOpZero);
+      iResult = resF->reduceNode(iResult);
+      resF->setDownPtrWoUnlink(result, i, iResult);
+      resF->unlinkNode(iResult);
+    }
+  }
+  else {
+    DCASSERT(arg1F->isSparseNode(a));
+    const int aSize = arg1F->getSparseNodeSize(a);
+    int i = 0;
+    for (int aIndex = 0; aIndex < aSize; ++aIndex, ++i)
+    {
+      for (int index = arg1F->getSparseNodeIndex(a, aIndex);
+          i < index; ++i)
+      {
+        int iResult =
+          resF->createTempNode(-resultLevel, pResultSize, false);
+        for (int j = 0; j < pResultSize; ++j)
+          resF->setDownPtrWoUnlink(iResult, j,
+              i == j? zeroOpB: zeroOpZero);
+        iResult = resF->reduceNode(iResult);
+        resF->setDownPtrWoUnlink(result, i, iResult);
+        resF->unlinkNode(iResult);
+      }
+
+      DCASSERT(i == arg1F->getSparseNodeIndex(a, aIndex));
+      int iA = arg1F->getSparseNodeDownPtr(a, aIndex);
+      int iResult =
+        resF->createTempNode(-resultLevel, pResultSize, false);
+      DCASSERT(iA != 0 && iA != -1);
+      if (arg1F->isFullNode(iA)) {
+        const int iASize = arg1F->getFullNodeSize(iA);
+        for (int j = 0; j < iASize; ++j)
+        {
+          int ijA = arg1F->getFullNodeDownPtr(iA, j);
+          if (ijA == 0) {
+            resF->setDownPtrWoUnlink(iResult, j,
+                i == j? zeroOpB : zeroOpZero);
+          }
+          else {
+            int tempResult = (i == j)?
+              computeIdent(resultLevel-1, ijA, b):
+              computeIdent(resultLevel-1, ijA, 0);
+            resF->setDownPtrWoUnlink(iResult, j, tempResult);
+            resF->unlinkNode(tempResult);
+          }
+        }
+        for (int j = iASize; j < pResultSize; ++j)
+        {
+          resF->setDownPtrWoUnlink(iResult, j,
+              i == j? zeroOpB: zeroOpZero);
+        }
+      }
+      else {
+        DCASSERT(arg1F->isSparseNode(iA));
+        const int iASize = arg1F->getSparseNodeSize(iA);
+        int j = 0;
+        for (int k = 0; k < iASize; ++k, ++j)
+        {
+          // sparse-nodes skip indices which represent downpointer 0
+          // call compute of those skipped indices
+          for (int index = arg1F->getSparseNodeIndex(iA, k);
+              j < index; ++j)
+          {
+            resF->setDownPtrWoUnlink(iResult, j, i == j
+                ? zeroOpB
+                : zeroOpZero);
+          }
+          // done with skipped indices; deal with the next sparse node index
+          DCASSERT(j == arg1F->getSparseNodeIndex(iA, k));
+          int ijA = arg1F->getSparseNodeDownPtr(iA, k);
+          int tempResult = i == j?
+            computeIdent(resultLevel-1, ijA, b):
+            computeIdent(resultLevel-1, ijA, 0);
+          resF->setDownPtrWoUnlink(iResult, j, tempResult);
+          resF->unlinkNode(tempResult);
+        }
+        DCASSERT(j == arg1F->getSparseNodeIndex(iA, iASize - 1) + 1);
+        for ( ; j < pResultSize; ++j)
+        {
+          resF->setDownPtrWoUnlink(iResult, j,
+              i == j? zeroOpB: zeroOpZero);
+        }
+      }
+      iResult = resF->reduceNode(iResult);
+      resF->setDownPtrWoUnlink(result, i, iResult);
+      resF->unlinkNode(iResult);
+    }
+
+    // TODO: can optimize when zeroOpZero == zeroOpB == 0
+    DCASSERT(i == arg1F->getSparseNodeIndex(a, aSize - 1) + 1);
+    for ( ; i < resultSize; ++i)
+    {
+      int iResult =
+        resF->createTempNode(-resultLevel, pResultSize, false);
+      for (int j = 0; j < pResultSize; ++j)
+        resF->setDownPtrWoUnlink(iResult, j,
+            i == j? zeroOpB: zeroOpZero);
+      iResult = resF->reduceNode(iResult);
+      resF->setDownPtrWoUnlink(result, i, iResult);
+      resF->unlinkNode(iResult);
+    }
+  }
+
+  resF->unlinkNode(zeroOpZero);
+  resF->unlinkNode(zeroOpB);
+}
+
+
+void MEDDLY::generic_binbylevel_mxd::singleExpandA(int a, int b,
+  int result, int resultLevel, int resultSize)
+{
+  // result[i] = a[i] op b[i], but b[i] = b,
+  // therefore, result[i] = a[i] op b
+
+  // compute each result[i] using above before inserting into result node
+
+  DCASSERT(resultLevel < 0);
+  int zeroB = computeIdent(-resultLevel-1, 0, b);
+
+  if (arg1F->isFullNode(a)) {
+    const int aSize = arg1F->getFullNodeSize(a);
+    int i = 0;
+    for ( ; i < aSize; ++i)
+    {
+      int tempResult = computeIdent(-resultLevel-1,
+          arg1F->getFullNodeDownPtr(a, i), b);
+      resF->setDownPtrWoUnlink(result, i, tempResult);
+      resF->unlinkNode(tempResult);
+    }
+    for ( ; i < resultSize; ++i)
+    {
+      resF->setDownPtrWoUnlink(result, i, zeroB);
+    }
+  }
+  else {
+    DCASSERT(arg1F->isSparseNode(a));
+    const int aSize = arg1F->getSparseNodeSize(a);
+    int i = 0;
+    for (int aIndex = 0; aIndex < aSize; ++aIndex, ++i)
+    {
+      for (int index = arg1F->getSparseNodeIndex(a, aIndex);
+          i < index; ++i)
+      {
+        resF->setDownPtrWoUnlink(result, i, zeroB);
+      }
+      DCASSERT(i == arg1F->getSparseNodeIndex(a, aIndex));
+      int tempResult = computeIdent(-resultLevel-1,
+          arg1F->getSparseNodeDownPtr(a, aIndex), b);
+      resF->setDownPtrWoUnlink(result, i, tempResult);
+      resF->unlinkNode(tempResult);
+    }
+    for ( ; i < resultSize; ++i)
+    {
+      resF->setDownPtrWoUnlink(result, i, zeroB);
+    }
+  }
+
+  resF->unlinkNode(zeroB);
+}
+
+
+void MEDDLY::generic_binbylevel_mxd::expandB(int a, int b,
+  int result, int resultLevel, int resultSize)
+{
+  // result[i][j] = a[i][j] op b[i][j]
+  // but a[i][j] = a only when i == j, and 0 otherwise
+  // result[i][i] = a op b[i][i], and
+  // result[i][j] = 0 op b[i][j], when i != j
+
+  // compute each result[i] using above before inserting into result node
+
+  // when b[i] == 0, b[i][j] = 0 for all j, and
+  // result[i][i] = a op 0
+  // result[i][j] = 0 op 0 for i != j
+  DCASSERT(resultLevel > 0);
+  int zeroOpZero = computeIdent(resultLevel-1, 0, 0);
+  int aOpZero = computeIdent(resultLevel-1, a, 0);
+
+  int pResultSize = resF->getLevelSize(-resultLevel);
+
+  if (arg2F->isFullNode(b)) {
+    const int bSize = arg2F->getFullNodeSize(b);
+    for (int i = 0; i < bSize; ++i)
+    {
+      int iB = arg2F->getFullNodeDownPtr(b, i);
+      int iResult =
+        resF->createTempNode(-resultLevel, pResultSize, false);
+      if (iB == 0) {
+        for (int j = 0; j < pResultSize; ++j)
+          resF->setDownPtrWoUnlink(iResult, j,
+              i == j? aOpZero: zeroOpZero);
+      }
+      else if (arg2F->isFullNode(iB)) {
+        const int iBSize = arg2F->getFullNodeSize(iB);
+        for (int j = 0; j < iBSize; ++j)
+        {
+          int ijB = arg2F->getFullNodeDownPtr(iB, j);
+          if (ijB == 0) {
+            resF->setDownPtrWoUnlink(iResult, j, i == j
+                ? aOpZero
+                : zeroOpZero);
+          }
+          else {
+            int tempResult = (i == j)?
+              computeIdent(resultLevel-1, a, ijB):
+              computeIdent(resultLevel-1, 0, ijB);
+            resF->setDownPtrWoUnlink(iResult, j, tempResult);
+            resF->unlinkNode(tempResult);
+          }
+        }
+        for (int j = iBSize; j < pResultSize; ++j)
+        {
+          resF->setDownPtrWoUnlink(iResult, j,
+              i == j? aOpZero: zeroOpZero);
+        }
+      }
+      else {
+        DCASSERT(arg2F->isSparseNode(iB));
+        const int iBSize = arg2F->getSparseNodeSize(iB);
+        int j = 0;
+        for (int k = 0; k < iBSize; ++k, ++j)
+        {
+          // sparse-nodes skip indices which represent downpointer 0
+          // call compute of those skipped indices
+          for (int index = arg2F->getSparseNodeIndex(iB, k);
+              j < index; ++j)
+          {
+            resF->setDownPtrWoUnlink(iResult, j, i == j
+                ? aOpZero
+                : zeroOpZero);
+          }
+          // done with skipped indices; deal with the next sparse node index
+          DCASSERT(j == arg2F->getSparseNodeIndex(iB, k));
+          int ijB = arg2F->getSparseNodeDownPtr(iB, k);
+          int tempResult = (i == j)?
+            computeIdent(resultLevel-1, a, ijB):
+            computeIdent(resultLevel-1, 0, ijB);
+          resF->setDownPtrWoUnlink(iResult, j, tempResult);
+          resF->unlinkNode(tempResult);
+        }
+        DCASSERT(j == arg2F->getSparseNodeIndex(iB, iBSize - 1) + 1);
+        for ( ; j < pResultSize; ++j)
+        {
+          resF->setDownPtrWoUnlink(iResult, j,
+              i == j? aOpZero: zeroOpZero);
+        }
+      }
+      iResult = resF->reduceNode(iResult);
+      resF->setDownPtrWoUnlink(result, i, iResult);
+      resF->unlinkNode(iResult);
+    }
+    // TODO: can optimize when zeroOpZero == aOpZero == 0
+    for (int i = bSize; i < resultSize; ++i)
+    {
+      int iResult =
+        resF->createTempNode(-resultLevel, pResultSize, false);
+      for (int j = 0; j < pResultSize; ++j)
+        resF->setDownPtrWoUnlink(iResult, j,
+            i == j? aOpZero: zeroOpZero);
+      iResult = resF->reduceNode(iResult);
+      resF->setDownPtrWoUnlink(result, i, iResult);
+      resF->unlinkNode(iResult);
+    }
+  }
+  else {
+    DCASSERT(arg2F->isSparseNode(b));
+    const int bSize = arg2F->getSparseNodeSize(b);
+    int i = 0;
+    for (int bIndex = 0; bIndex < bSize; ++bIndex, ++i)
+    {
+      for (int index = arg2F->getSparseNodeIndex(b, bIndex);
+          i < index; ++i)
+      {
+        int iResult =
+          resF->createTempNode(-resultLevel, pResultSize, false);
+        for (int j = 0; j < pResultSize; ++j)
+          resF->setDownPtrWoUnlink(iResult, j,
+              i == j? aOpZero: zeroOpZero);
+        iResult = resF->reduceNode(iResult);
+        resF->setDownPtrWoUnlink(result, i, iResult);
+        resF->unlinkNode(iResult);
+      }
+
+      DCASSERT(i == arg2F->getSparseNodeIndex(b, bIndex));
+      int iB = arg2F->getSparseNodeDownPtr(b, bIndex);
+      int iResult =
+        resF->createTempNode(-resultLevel, pResultSize, false);
+      DCASSERT(iB != 0 && iB != -1);
+      if (arg2F->isFullNode(iB)) {
+        const int iBSize = arg2F->getFullNodeSize(iB);
+        for (int j = 0; j < iBSize; ++j)
+        {
+          int ijB = arg2F->getFullNodeDownPtr(iB, j);
+          if (ijB == 0) {
+            resF->setDownPtrWoUnlink(iResult, j, i == j
+                ? aOpZero
+                : zeroOpZero);
+          }
+          else {
+            int tempResult = (i == j)?
+              computeIdent(resultLevel-1, a, ijB):
+              computeIdent(resultLevel-1, 0, ijB);
+            resF->setDownPtrWoUnlink(iResult, j, tempResult);
+            resF->unlinkNode(tempResult);
+          }
+        }
+        for (int j = iBSize; j < pResultSize; ++j)
+        {
+          resF->setDownPtrWoUnlink(iResult, j,
+              i == j? aOpZero: zeroOpZero);
+        }
+      }
+      else {
+        DCASSERT(arg2F->isSparseNode(iB));
+        const int iBSize = arg2F->getSparseNodeSize(iB);
+        int j = 0;
+        for (int k = 0; k < iBSize; ++k, ++j)
+        {
+          // sparse-nodes skip indices which represent downpointer 0
+          // call compute of those skipped indices
+          for (int index = arg2F->getSparseNodeIndex(iB, k);
+              j < index; ++j)
+          {
+            resF->setDownPtrWoUnlink(iResult, j, i == j
+                ? aOpZero
+                : zeroOpZero);
+          }
+          // done with skipped indices; deal with the next sparse node index
+          DCASSERT(j == arg2F->getSparseNodeIndex(iB, k));
+          int ijB = arg2F->getSparseNodeDownPtr(iB, k);
+          int tempResult = i == j?
+            computeIdent(resultLevel-1, a, ijB):
+            computeIdent(resultLevel-1, 0, ijB);
+          resF->setDownPtrWoUnlink(iResult, j, tempResult);
+          resF->unlinkNode(tempResult);
+        }
+        DCASSERT(j == arg2F->getSparseNodeIndex(iB, iBSize - 1) + 1);
+        for ( ; j < pResultSize; ++j)
+        {
+          resF->setDownPtrWoUnlink(iResult, j,
+              i == j? aOpZero: zeroOpZero);
+        }
+      }
+      iResult = resF->reduceNode(iResult);
+      resF->setDownPtrWoUnlink(result, i, iResult);
+      resF->unlinkNode(iResult);
+    }
+
+    // TODO: can optimize when zeroOpZero == aOpZero == 0
+    DCASSERT(i == arg2F->getSparseNodeIndex(b, bSize - 1) + 1);
+    for ( ; i < resultSize; ++i)
+    {
+      int iResult =
+        resF->createTempNode(-resultLevel, pResultSize, false);
+      for (int j = 0; j < pResultSize; ++j)
+        resF->setDownPtrWoUnlink(iResult, j,
+            i == j? aOpZero: zeroOpZero);
+      iResult = resF->reduceNode(iResult);
+      resF->setDownPtrWoUnlink(result, i, iResult);
+      resF->unlinkNode(iResult);
+    }
+  }
+
+  resF->unlinkNode(zeroOpZero);
+  resF->unlinkNode(aOpZero);
+}
+
+
+void MEDDLY::generic_binbylevel_mxd::singleExpandB(int a, int b,
+  int result, int resultLevel, int resultSize)
+{
+  // result[i] = a[i] op b[i], but a[i] = b,
+  // therefore, result[i] = a op b[i]
+
+  // compute each result[i] using above before inserting into result node
+
+  DCASSERT(resultLevel < 0);
+  int aZero = computeIdent(-resultLevel-1, a, 0);
+
+  if (arg2F->isFullNode(b)) {
+    const int bSize = arg2F->getFullNodeSize(b);
+    int i = 0;
+    for ( ; i < bSize; ++i)
+    {
+      int tempResult = computeIdent(-resultLevel-1,
+          a, arg2F->getFullNodeDownPtr(b, i));
+      resF->setDownPtrWoUnlink(result, i, tempResult);
+      resF->unlinkNode(tempResult);
+    }
+    for ( ; i < resultSize; ++i)
+    {
+      resF->setDownPtrWoUnlink(result, i, aZero);
+    }
+  }
+  else {
+    DCASSERT(arg2F->isSparseNode(b));
+    const int bSize = arg2F->getSparseNodeSize(b);
+    int i = 0;
+    for (int bIndex = 0; bIndex < bSize; ++bIndex, ++i)
+    {
+      for (int index = arg2F->getSparseNodeIndex(b, bIndex);
+          i < index; ++i)
+      {
+        resF->setDownPtrWoUnlink(result, i, aZero);
+      }
+      DCASSERT(i == arg2F->getSparseNodeIndex(b, bIndex));
+      int tempResult = computeIdent(-resultLevel-1,
+          a, arg2F->getSparseNodeDownPtr(b, bIndex));
+      resF->setDownPtrWoUnlink(result, i, tempResult);
+      resF->unlinkNode(tempResult);
+    }
+    for ( ; i < resultSize; ++i)
+    {
+      resF->setDownPtrWoUnlink(result, i, aZero);
+    }
+  }
+
+  resF->unlinkNode(aZero);
+}
+
+
+
+
+
+// ******************************************************************
+// *                                                                *
 // *                   generic_binary_ev  methods                   *
 // *                                                                *
 // ******************************************************************

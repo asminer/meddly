@@ -4494,40 +4494,6 @@ mtmdd_greater_than_equal::checkTerminals(op_info* op,
 }
 
 
-// -------------------- MTMDD Equal-To ----------------------
-
-
-mtmdd_equal* mtmdd_equal::getInstance()
-{
-  static mtmdd_equal instance;
-  return &instance;
-}
-
-
-mtmdd_equal::mtmdd_equal()
-{ }
-
-
-mtmdd_equal::~mtmdd_equal() {}
-
-
-bool
-mtmdd_equal::checkTerminals(op_info* op, int a, int b, int& c)
-{
-  if (getExpertForest(op, 0)->isTerminalNode(a) &&
-      getExpertForest(op, 0)->isTerminalNode(b)) {
-    if (getExpertForest(op, 0)->getRangeType() == forest::INTEGER) {
-      c = getExpertForest(op, 0)->getTerminalNode(int((a == b)? 1: 0));
-    } else {
-      DCASSERT(getExpertForest(op, 0)->getRangeType() == forest::REAL);
-      c = getExpertForest(op, 0)->getTerminalNode(float((a == b)? 1: 0));
-    }
-    return true;
-  }
-  return false;
-}
-
-
 // -------------------- MTMDD Not-Equal-To ----------------------
 
 
@@ -5478,43 +5444,6 @@ mtmxd_greater_than_equal::checkTerminals(op_info* op,
   }
   return false;
 }
-
-
-// -------------------- MTMXD Equal-To ----------------------
-
-
-mtmxd_equal* mtmxd_equal::getInstance()
-{
-  static mtmxd_equal instance;
-  return &instance;
-}
-
-
-mtmxd_equal::mtmxd_equal()
-{ }
-
-
-mtmxd_equal::~mtmxd_equal() {}
-
-
-bool
-mtmxd_equal::checkTerminals(op_info* op, int a, int b, int& c)
-{
-  if (getExpertForest(op, 0)->isTerminalNode(a) &&
-      getExpertForest(op, 0)->isTerminalNode(b)) {
-    if (getExpertForest(op, 0)->getRangeType() == forest::INTEGER) {
-      c = getExpertForest(op, 0)->getTerminalNode(int((a == b)? 1: 0));
-    } else {
-      DCASSERT(getExpertForest(op, 0)->getRangeType() == forest::REAL);
-      c = getExpertForest(op, 0)->getTerminalNode(float((a == b)? 1: 0));
-    }
-    return true;
-  }
-  return false;
-}
-
-
-
 
 
 // ---------------------- EVMDD Operations -------------------------
@@ -6650,36 +6579,6 @@ checkTerminals(op_info* op, int a, float aev, int b, float bev,
     c = -1; cev = aev - bev;
     return true;
   }
-  return false;
-}
-
-
-evtimesmdd_equal*
-evtimesmdd_equal::
-getInstance()
-{
-  static evtimesmdd_equal instance;
-  return &instance;
-}
-
-
-bool
-evtimesmdd_equal::
-checkTerminals(op_info* op, int a, float aev, int b, float bev,
-    int& c, float& cev)
-{
-  if (getExpertForest(op, 0)->isTerminalNode(a) &&
-      getExpertForest(op, 1)->isTerminalNode(b)) {
-    if (a == b && ((aev == bev) || (isNan(aev) && isNan(bev)))) {
-      c = -1;
-      cev = 1.0;
-    } else {
-      c = 0;
-      cev = NAN;
-    }
-    return true;
-  }
-
   return false;
 }
 

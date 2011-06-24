@@ -250,7 +250,7 @@ int main(int argc, const char** argv)
     // Build all possible placements of q queens:
     dd_edge qqueens(f);
     f->createEdge(q, qqueens);
-    CM->apply(compute_manager::EQUAL, qqueens, num_queens, qqueens);
+    apply(EQUAL, qqueens, num_queens, qqueens);
     solutions = qqueens;
 
     printf("\tAdding constraints by row\n\t\t");

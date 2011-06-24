@@ -29,6 +29,7 @@
 namespace MEDDLY {
   class generic_binary_mdd;
   class generic_binary_mxd;
+  class generic_binbylevel_mxd;
   class generic_binary_ev;
   class generic_binary_evplus;
   class generic_binary_evtimes;
@@ -126,6 +127,79 @@ class MEDDLY::generic_binary_mxd : public generic_binary_mdd {
     virtual void singleExpandB(int a, int b, int result, 
       int resultLevel, int resultSize);
 };
+
+// ******************************************************************
+
+class MEDDLY::generic_binbylevel_mxd : public binary_operation {
+    bool can_commute;
+  public:
+    generic_binbylevel_mxd(const binary_opname* code, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res);
+
+  protected:
+    virtual ~generic_binbylevel_mxd();
+
+  public:
+    virtual bool isEntryStale(const int* entryData);
+    virtual void discardEntry(const int* entryData);
+    virtual void showEntry(FILE* strm, const int *entryData) const;
+    virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
+
+    virtual int compute(int level, int a, int b);
+
+  protected:
+    inline void operationCommutes() {
+      can_commute = (arg1F == arg2F);
+    }
+
+    inline bool findResult(int k, int a, int b, int &c) {
+      static int key[3];
+      key[0] = k;
+      if (can_commute && a > b) {
+        key[1] = b; key[2] = a;
+      } else {
+        key[1] = a; key[2] = b;
+      }
+      const int* cacheFind = CT->find(this, key);
+      if (0==cacheFind) return false;
+      c = resF->linkNode(cacheFind[3]);
+      return true;
+    }
+
+    inline bool saveResult(int k, int a, int b, int c) {
+      static int cacheEntry[4];
+      cacheEntry[0] = k;
+      if (can_commute && a > b) {
+        cacheEntry[1] = arg1F->cacheNode(b); 
+        cacheEntry[2] = arg2F->cacheNode(a);
+      } else {
+        cacheEntry[1] = arg1F->cacheNode(a); 
+        cacheEntry[2] = arg2F->cacheNode(b);
+      }
+      cacheEntry[3] = resF->cacheNode(c);
+      CT->add(this, cacheEntry);
+    }
+
+    virtual int computeIdent(int level, int a, int b);
+    virtual int computeNonIdent(int level, int a, int b);
+
+    virtual void expandSkippedLevel(int a, int b,
+        int result, int resultLevel, int resultSize);
+    virtual void expandA(int a, int b,
+        int result, int resultLevel, int resultSize);
+    virtual void singleExpandA(int a, int b,
+        int result, int resultLevel, int resultSize);
+    virtual void expandB(int a, int b,
+        int result, int resultLevel, int resultSize);
+    virtual void singleExpandB(int a, int b,
+        int result, int resultLevel, int resultSize);
+
+  protected:
+    // If terminal condition is reached, returns true and the result in c.
+    // Must be provided in derived classes.
+    virtual bool checkTerminals(int a, int b, int& c) = 0;
+};
+    
 
 // ******************************************************************
 

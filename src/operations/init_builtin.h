@@ -35,7 +35,6 @@ class MEDDLY::builtin_initializer : public op_initializer {
   binary_opname* UNION;
   binary_opname* INTERSECTION;
   binary_opname* DIFFERENCE;
-
   binary_opname* CROSS;
 
   binary_opname* MIN;

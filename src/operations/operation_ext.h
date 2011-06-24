@@ -530,22 +530,6 @@ class mtmxd_greater_than_equal : public mtmxd_alt_apply_operation {
 };
 
 
-class mtmxd_equal : public mtmxd_alt_apply_operation {
-  public:
-    static mtmxd_equal* getInstance();
-    virtual const char* getName() const { return "MtMxd Equal"; }
-    virtual bool isCommutative() const { return true; }
-
-  protected:
-    mtmxd_equal();
-    mtmxd_equal(const mtmxd_equal& copy);
-    mtmxd_equal& operator=(const mtmxd_equal& copy);
-    ~mtmxd_equal();
-
-    virtual bool checkTerminals(op_info* op, int a, int b, int& c);
-};
-
-
 // ------------------------ MTMDD Apply operations ---------------------------
 
 /** MTMDD element-wise operations
@@ -776,22 +760,6 @@ class mtmdd_greater_than_equal : public mtmdd_apply_operation {
     mtmdd_greater_than_equal(const mtmdd_greater_than_equal& copy);
     mtmdd_greater_than_equal& operator=(const mtmdd_greater_than_equal& copy);
     ~mtmdd_greater_than_equal();
-
-    virtual bool checkTerminals(op_info* op, int a, int b, int& c);
-};
-
-
-class mtmdd_equal : public mtmdd_apply_operation {
-  public:
-    static mtmdd_equal* getInstance();
-    virtual const char* getName() const { return "MtMdd Equal"; }
-    virtual bool isCommutative() const { return true; }
-
-  protected:
-    mtmdd_equal();
-    mtmdd_equal(const mtmdd_equal& copy);
-    mtmdd_equal& operator=(const mtmdd_equal& copy);
-    ~mtmdd_equal();
 
     virtual bool checkTerminals(op_info* op, int a, int b, int& c);
 };
@@ -1132,23 +1100,6 @@ class evtimesmdd_minus : public evtimesmdd_apply_operation {
     evtimesmdd_minus& operator=(const evtimesmdd_minus& copy);
     virtual ~evtimesmdd_minus() {}
 };
-
-
-class evtimesmdd_equal : public evtimesmdd_apply_operation {
-  public:
-    virtual const char* getName() const { return "EV*MDD Equal"; }
-    virtual bool isCommutative() const { return true; }
-    virtual bool checkTerminals(op_info* op, int a, float aev, int b, float bev,
-        int& c, float& cev);
-    static evtimesmdd_equal* getInstance();
-
-  protected:
-    evtimesmdd_equal() {}
-    evtimesmdd_equal(const evtimesmdd_equal& copy);
-    evtimesmdd_equal& operator=(const evtimesmdd_equal& copy);
-    virtual ~evtimesmdd_equal() {}
-};
-
 
 
 inline expert_forest* getExpertForest(op_info* op, int index) {
