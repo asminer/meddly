@@ -24,6 +24,10 @@ libops_la_SOURCES = \
   multiply.h        multiply.cc     \
   comp_eq.h         comp_eq.cc      \
   comp_ne.h         comp_ne.cc      \
+  comp_lt.h         comp_lt.cc      \
+  comp_le.h         comp_le.cc      \
+  comp_gt.h         comp_gt.cc      \
+  comp_ge.h         comp_ge.cc      \
   \
 	operation.cc \
 	operation_ext.h   operation_ext.cc \

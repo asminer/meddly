@@ -1646,19 +1646,6 @@ class MEDDLY::compute_manager {
       /// belong to the same forest.
       DIVIDE,
 
-      /// For forests with range_type of INTEGER and REAL. All operands must
-      /// belong to the same forest.
-      LESS_THAN,
-      /// For forests with range_type of INTEGER and REAL. All operands must
-      /// belong to the same forest.
-      LESS_THAN_EQUAL,
-      /// For forests with range_type of INTEGER and REAL. All operands must
-      /// belong to the same forest.
-      GREATER_THAN,
-      /// For forests with range_type of INTEGER and REAL. All operands must
-      /// belong to the same forest.
-      GREATER_THAN_EQUAL,
-
       /** Image operations on a set-of-states with a transition function.
           The first operand must be the set-of-states and the second operand
           must be the transition function. The result is a set-of-states that

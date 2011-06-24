@@ -37,6 +37,10 @@
 
 #include "comp_eq.h"
 #include "comp_ne.h"
+#include "comp_lt.h"
+#include "comp_le.h"
+#include "comp_gt.h"
+#include "comp_ge.h"
 
 void MEDDLY::builtin_initializer::init(const settings &s)
 {
@@ -53,6 +57,10 @@ void MEDDLY::builtin_initializer::init(const settings &s)
 
   MEDDLY::EQUAL                 = (EQ         = initializeEQ(s)         );
   MEDDLY::NOT_EQUAL             = (NE         = initializeNE(s)         );
+  MEDDLY::LESS_THAN             = (LT         = initializeLT(s)         );
+  MEDDLY::LESS_THAN_EQUAL       = (LE         = initializeLE(s)         );
+  MEDDLY::GREATER_THAN          = (GT         = initializeGT(s)         );
+  MEDDLY::GREATER_THAN_EQUAL    = (GE         = initializeGE(s)         );
 }
 
 template <class T>
@@ -77,4 +85,8 @@ void MEDDLY::builtin_initializer::cleanup()
 
   cleanPair(EQ,           MEDDLY::EQUAL);
   cleanPair(NE,           MEDDLY::NOT_EQUAL);
+  cleanPair(LT,           MEDDLY::LESS_THAN);
+  cleanPair(LE,           MEDDLY::LESS_THAN_EQUAL);
+  cleanPair(GT,           MEDDLY::GREATER_THAN);
+  cleanPair(GE,           MEDDLY::GREATER_THAN_EQUAL);
 }

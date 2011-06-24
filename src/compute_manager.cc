@@ -455,23 +455,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
               // MtMdd divide
               addBuiltinOp(key, mtmdd_divide::getInstance(), plist, N);
               return &(builtinOpEntries->find(key)->second);
-            case LESS_THAN:
-              // MtMdd <
-              addBuiltinOp(key, mtmdd_less_than::getInstance(), plist, N);
-              return &(builtinOpEntries->find(key)->second);
-            case LESS_THAN_EQUAL:
-              // MtMdd <=
-              addBuiltinOp(key, mtmdd_less_than_equal::getInstance(), plist, N);
-              return &(builtinOpEntries->find(key)->second);
-            case GREATER_THAN:
-              // MtMdd >
-              addBuiltinOp(key, mtmdd_greater_than::getInstance(), plist, N);
-              return &(builtinOpEntries->find(key)->second);
-            case GREATER_THAN_EQUAL:
-              // MtMdd >=
-              addBuiltinOp(key, mtmdd_greater_than_equal::getInstance(),
-                  plist, N);
-              return &(builtinOpEntries->find(key)->second);
             default:
               break;
           }
@@ -529,23 +512,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
           case DIVIDE:
             // MtMxd divide
             addBuiltinOp(key, mtmxd_divide::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case LESS_THAN:
-            // MtMxd <
-            addBuiltinOp(key, mtmxd_less_than::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case LESS_THAN_EQUAL:
-            // MtMxd <=
-            addBuiltinOp(key, mtmxd_less_than_equal::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case GREATER_THAN:
-            // MtMxd >
-            addBuiltinOp(key, mtmxd_greater_than::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case GREATER_THAN_EQUAL:
-            // MtMxd >=
-            addBuiltinOp(key, mtmxd_greater_than_equal::getInstance(),
-                plist, N);
             return &(builtinOpEntries->find(key)->second);
           default:
             break;
