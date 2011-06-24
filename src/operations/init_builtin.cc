@@ -32,6 +32,9 @@
 #include "maxmin_range.h"
 #include "mdd2evplus.h"
 
+#include "union.h"
+#include "intersection.h"
+#include "difference.h"
 #include "cross.h"
 
 #include "maxmin.h"
@@ -49,28 +52,31 @@
 
 void MEDDLY::builtin_initializer::init(const settings &s)
 {
-  MEDDLY::COPY                  = (COPY       = initializeCopy(s)       );
-  MEDDLY::CARDINALITY           = (CARD       = initializeCardinality(s));
-  MEDDLY::COMPLEMENT            = (COMPL      = initializeComplement(s) );
-  MEDDLY::MAX_RANGE             = (MAXRANGE   = initializeMaxRange(s)   );
-  MEDDLY::MIN_RANGE             = (MINRANGE   = initializeMaxRange(s)   );
-  MEDDLY::CONVERT_TO_INDEX_SET  = (MDD2EVPLUS = initializeMDD2EVPLUS(s) );
+  MEDDLY::COPY                  = (COPY       = initializeCopy(s)         );
+  MEDDLY::CARDINALITY           = (CARD       = initializeCardinality(s)  );
+  MEDDLY::COMPLEMENT            = (COMPL      = initializeComplement(s)   );
+  MEDDLY::MAX_RANGE             = (MAXRANGE   = initializeMaxRange(s)     );
+  MEDDLY::MIN_RANGE             = (MINRANGE   = initializeMaxRange(s)     );
+  MEDDLY::CONVERT_TO_INDEX_SET  = (MDD2EVPLUS = initializeMDD2EVPLUS(s)   );
 
-  MEDDLY::CROSS                 = (CROSS      = initializeCross(s)      );
+  MEDDLY::UNION                 = (UNION      = initializeUnion(s)        );
+  MEDDLY::INTERSECTION          = (INTERSECT  = initializeIntersection(s) );
+  MEDDLY::DIFFERENCE            = (DIFFERENCE = initializeDifference(s)   );
+  MEDDLY::CROSS                 = (CROSS      = initializeCross(s)        );
 
-  MEDDLY::MAXIMUM               = (MAX        = initializeMaximum(s)    );
-  MEDDLY::MINIMUM               = (MIN        = initializeMinimum(s)    );
-  MEDDLY::PLUS                  = (PLUS       = initializePlus(s)       );
-  MEDDLY::MINUS                 = (MINUS      = initializeMinus(s)      );
-  MEDDLY::MULTIPLY              = (MULTIPLY   = initializeMultiply(s)   );
-  MEDDLY::DIVIDE                = (DIVIDE     = initializeMultiply(s)   );
+  MEDDLY::MAXIMUM               = (MAX        = initializeMaximum(s)      );
+  MEDDLY::MINIMUM               = (MIN        = initializeMinimum(s)      );
+  MEDDLY::PLUS                  = (PLUS       = initializePlus(s)         );
+  MEDDLY::MINUS                 = (MINUS      = initializeMinus(s)        );
+  MEDDLY::MULTIPLY              = (MULTIPLY   = initializeMultiply(s)     );
+  MEDDLY::DIVIDE                = (DIVIDE     = initializeMultiply(s)     );
 
-  MEDDLY::EQUAL                 = (EQ         = initializeEQ(s)         );
-  MEDDLY::NOT_EQUAL             = (NE         = initializeNE(s)         );
-  MEDDLY::LESS_THAN             = (LT         = initializeLT(s)         );
-  MEDDLY::LESS_THAN_EQUAL       = (LE         = initializeLE(s)         );
-  MEDDLY::GREATER_THAN          = (GT         = initializeGT(s)         );
-  MEDDLY::GREATER_THAN_EQUAL    = (GE         = initializeGE(s)         );
+  MEDDLY::EQUAL                 = (EQ         = initializeEQ(s)           );
+  MEDDLY::NOT_EQUAL             = (NE         = initializeNE(s)           );
+  MEDDLY::LESS_THAN             = (LT         = initializeLT(s)           );
+  MEDDLY::LESS_THAN_EQUAL       = (LE         = initializeLE(s)           );
+  MEDDLY::GREATER_THAN          = (GT         = initializeGT(s)           );
+  MEDDLY::GREATER_THAN_EQUAL    = (GE         = initializeGE(s)           );
 }
 
 template <class T>
@@ -89,6 +95,9 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(MINRANGE,     MEDDLY::MIN_RANGE);
   cleanPair(MDD2EVPLUS,   MEDDLY::CONVERT_TO_INDEX_SET);
 
+  cleanPair(UNION,        MEDDLY::UNION);
+  cleanPair(INTERSECT,    MEDDLY::INTERSECTION);
+  cleanPair(DIFFERENCE,   MEDDLY::DIFFERENCE);
   cleanPair(CROSS,        MEDDLY::CROSS);
 
   cleanPair(MAX,          MEDDLY::MAXIMUM);

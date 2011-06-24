@@ -19,20 +19,15 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-
-#ifndef PREPOSTIMAGE_H
-#define PREPOSTIMAGE_H
+#ifndef DIFFERENCE_H
+#define DIFFERENCE_H
 
 namespace MEDDLY {
   class binary_opname;
   class settings;
 
-  /// Set up a binary_opname for the "preimage" operation.
-  binary_opname* initializePreImage(const settings &s);
-
-  /// Set up a binary_opname for the "postimage" operation.
-  binary_opname* initializePostImage(const settings &s);
+  /// Set up a binary_opname for the "difference" operation.
+  binary_opname* initializeDifference(const settings &s);
 }
 
 #endif

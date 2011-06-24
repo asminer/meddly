@@ -19,20 +19,15 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-
-#ifndef PREPOSTIMAGE_H
-#define PREPOSTIMAGE_H
+#ifndef UNION_H
+#define UNION_H
 
 namespace MEDDLY {
   class binary_opname;
   class settings;
 
-  /// Set up a binary_opname for the "preimage" operation.
-  binary_opname* initializePreImage(const settings &s);
-
-  /// Set up a binary_opname for the "postimage" operation.
-  binary_opname* initializePostImage(const settings &s);
+  /// Set up a binary_opname for the "union" operation.
+  binary_opname* initializeUnion(const settings &s);
 }
 
 #endif

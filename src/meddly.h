@@ -179,6 +179,21 @@ namespace MEDDLY {
   /// belong to the same forest.
   extern const binary_opname* GREATER_THAN_EQUAL;
 
+  /** Image operations on a set-of-states with a transition function.
+      The first operand must be the set-of-states and the second operand
+      must be the transition function. The result is a set-of-states that
+      must be stored in the same forest as the first operand.
+      
+      Applies to:
+      PRE_IMAGE, POST_IMAGE, REACHABLE_STATES_DFS, REACHABLE_STATES_BFS,
+      REVERSE_REACHABLE_DFS, REVERSE_REACHABLE_BFS.
+  */
+  extern const binary_opname* PRE_IMAGE;
+  extern const binary_opname* POST_IMAGE;
+  extern const binary_opname* REACHABLE_STATES_DFS;
+  extern const binary_opname* REACHABLE_STATES_BFS;
+  extern const binary_opname* REVERSE_REACHABLE_DFS;
+  extern const binary_opname* REVERSE_REACHABLE_BFS;
 
   // ******************************************************************
   // *                  library management functions                  *
@@ -1619,37 +1634,9 @@ class MEDDLY::dd_edge {
 */
 class MEDDLY::compute_manager {
   public:
-    /// built-in operators.
-    enum op_code {
-      /// Set operation for forests with range_type of BOOLEAN. All operands
-      /// must belong to the same forest.
-      UNION,
-      /// Set operation for forests with range_type of BOOLEAN. All operands
-      /// must belong to the same forest.
-      INTERSECTION,
-      /// Set operation for forests with range_type of BOOLEAN. All operands
-      /// must belong to the same forest.
-      DIFFERENCE,
-
-
-      /** Image operations on a set-of-states with a transition function.
-          The first operand must be the set-of-states and the second operand
-          must be the transition function. The result is a set-of-states that
-          must be stored in the same forest as the first operand.
-          
-          Applies to:
-          PRE_IMAGE, POST_IMAGE, REACHABLE_STATES_DFS, REACHABLE_STATES_BFS,
-          REVERSE_REACHABLE_DFS, REVERSE_REACHABLE_BFS.
-      */
-      PRE_IMAGE,
-      POST_IMAGE,
-      REACHABLE_STATES_DFS,
-      REACHABLE_STATES_BFS,
-      REVERSE_REACHABLE_DFS,
-      REVERSE_REACHABLE_BFS,
-
-    };
-
+  enum op_code {
+    foobar
+  };
   public:
     compute_manager();
     virtual ~compute_manager();

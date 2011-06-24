@@ -33,7 +33,7 @@ class MEDDLY::builtin_initializer : public op_initializer {
   unary_opname* MDD2EVPLUS;
 
   binary_opname* UNION;
-  binary_opname* INTERSECTION;
+  binary_opname* INTERSECT;
   binary_opname* DIFFERENCE;
   binary_opname* CROSS;
 
@@ -50,6 +50,14 @@ class MEDDLY::builtin_initializer : public op_initializer {
   binary_opname* LE;
   binary_opname* GT;
   binary_opname* GE;
+
+  binary_opname* PRE_IMAGE;
+  binary_opname* POST_IMAGE;
+  binary_opname* FORWARD_DFS;
+  binary_opname* FORWARD_BFS;
+  binary_opname* BACKWARD_DFS;
+  binary_opname* BACKWARD_BFS;
+
 public:
   builtin_initializer(op_initializer* b) : op_initializer(b) { }
 protected:

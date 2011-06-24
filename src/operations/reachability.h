@@ -51,6 +51,7 @@ void clearVector(std::vector<int>& v, unsigned sz);
 // **********************************************************************
 
 class mdd_reachability_bfs : public mdd_mxd_image_operation {
+    binary_operation* unionOp;
   public:
     static mdd_reachability_bfs* getInstance();
     int compute(op_info* owner, int a, int b);

@@ -66,9 +66,6 @@ const char* MEDDLY::expert_compute_manager::getOperationName(
     compute_manager::op_code op) const
 {
   switch(op) {
-    case UNION:         return "Union";
-    case INTERSECTION:  return "Intersection";
-    case DIFFERENCE:    return "Difference";
     case PRE_IMAGE:     return "Pre-Image";
     case POST_IMAGE:    return "Post-Image";
     case REACHABLE_STATES_DFS:
@@ -350,22 +347,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
       if (f1->isMdd() &&
           f2->isMdd()) {
         // MDD binary operation
-        switch (op) {
-          case UNION:
-            // Mdd union
-            addBuiltinOp(key, mdd_union::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case INTERSECTION:
-            // Mdd intersection
-            addBuiltinOp(key, mdd_intersection::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case DIFFERENCE:
-            // Mdd difference
-            addBuiltinOp(key, mdd_difference::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          default:
-            break;
-        }
       }
 
       if (f1->isMxd() &&
@@ -408,23 +389,6 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
 
       if (f1->isMxd() &&
           f2->isMxd()) {
-        // MXD binary operation
-        switch (op) {
-          case UNION:
-            // Mxd union
-            addBuiltinOp(key, mxd_union::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case INTERSECTION:
-            // Mxd intersection
-            addBuiltinOp(key, mxd_intersection::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case DIFFERENCE:
-            // Mxd difference
-            addBuiltinOp(key, mxd_difference::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          default:
-            break;
-        }
       }
 
     }

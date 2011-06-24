@@ -62,7 +62,6 @@ namespace MEDDLY {
   const binary_opname* UNION = 0;
   const binary_opname* INTERSECTION = 0;
   const binary_opname* DIFFERENCE = 0;
-
   const binary_opname* CROSS = 0;
 
   const binary_opname* MINIMUM = 0;
@@ -78,6 +77,13 @@ namespace MEDDLY {
   const binary_opname* LESS_THAN_EQUAL = 0;
   const binary_opname* GREATER_THAN = 0;
   const binary_opname* GREATER_THAN_EQUAL = 0;
+
+  const binary_opname* PRE_IMAGE = 0;
+  const binary_opname* POST_IMAGE = 0;
+  const binary_opname* REACHABLE_STATES_DFS = 0;
+  const binary_opname* REACHABLE_STATES_BFS = 0;
+  const binary_opname* REVERSE_REACHABLE_DFS = 0;
+  const binary_opname* REVERSE_REACHABLE_BFS = 0;
 
   // cache of operations
   operation** op_cache = 0;

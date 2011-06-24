@@ -7,10 +7,6 @@
 noinst_LTLIBRARIES = libops.la 
 
 libops_la_SOURCES = \
-	../meddly.h \
-	../meddly_expert.h \
-	../defines.h \
-	../compute_cache.h \
   init_builtin.h    init_builtin.cc \
   apply_base.h      apply_base.cc   \
   \
@@ -20,6 +16,9 @@ libops_la_SOURCES = \
   maxmin_range.h    maxmin_range.cc \
   mdd2evplus.h      mdd2evplus.cc   \
   \
+  union.h           union.cc        \
+  intersection.h    intersection.cc \
+  difference.h      difference.cc   \
   cross.h           cross.cc        \
   \
   maxmin.h          maxmin.cc       \
@@ -35,11 +34,12 @@ libops_la_SOURCES = \
   comp_gt.h         comp_gt.cc      \
   comp_ge.h         comp_ge.cc      \
   \
-	operation.cc \
-	operation_ext.h   operation_ext.cc \
-	reachability.h    reachability.cc \
   prepostimage.h    prepostimage.cc \
+	reachability.h    reachability.cc \
   mpz_object.h      mpz_object.cc \
-  vect_matr.h       vect_matr.cc 
+  vect_matr.h       vect_matr.cc \
+  \
+	operation.cc \
+	operation_ext.h   operation_ext.cc 
 
 
