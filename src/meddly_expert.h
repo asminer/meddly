@@ -115,6 +115,16 @@ namespace MEDDLY {
 
   /** Find, or build if necessary, a unary operation.
         @param  code    Operation we want
+        @param  arg     Argument forest from this dd_edge
+        @param  res     Result forest from this dd_edge
+        @return         The matching operation, if it already exists;
+                        a new operation, otherwise.
+  */
+  unary_operation* getOperation(const unary_opname* code, 
+    const dd_edge& arg, const dd_edge& res);
+
+  /** Find, or build if necessary, a unary operation.
+        @param  code    Operation we want
         @param  arg     Argument forest
         @param  res     Result type
         @return         The matching operation, if it already exists;
@@ -122,6 +132,16 @@ namespace MEDDLY {
   */
   unary_operation* getOperation(const unary_opname* code,
     expert_forest* arg, opnd_type result);
+
+  /** Find, or build if necessary, a unary operation.
+        @param  code    Operation we want
+        @param  arg     Argument forest from this dd_edge
+        @param  res     Result type
+        @return         The matching operation, if it already exists;
+                        a new operation, otherwise.
+  */
+  unary_operation* getOperation(const unary_opname* code,
+    const dd_edge& arg, opnd_type result);
 
 
   /** Find, or build if necessary, a binary operation.
@@ -134,6 +154,17 @@ namespace MEDDLY {
   */
   binary_operation* getOperation(const binary_opname* code, 
     expert_forest* arg1, expert_forest* arg2, expert_forest* res);
+
+  /** Find, or build if necessary, a binary operation.
+        @param  code    Operation we want
+        @param  arg1    Argument 1 forest taken from this dd_edge
+        @param  arg2    Argument 2 forest taken from this dd_edge
+        @param  res     Result forest taken from this dd_edge
+        @return         The matching operation, if it already exists;
+                        a new operation, otherwise.
+  */
+  binary_operation* getOperation(const binary_opname* code, 
+    const dd_edge& arg1, const dd_edge& arg2, const dd_edge& res);
 
   /** Should be unnecessary to call this.
       But, it does destroy (safely) the given operation.
@@ -1345,6 +1376,38 @@ protected:
 // *                                                                          *
 // ****************************************************************************
 
+inline
+MEDDLY::unary_operation* 
+MEDDLY::getOperation(const unary_opname* code, const dd_edge& arg, 
+  const dd_edge& res)
+{
+  return getOperation(code, 
+    (expert_forest*) arg.getForest(), 
+    (expert_forest*) res.getForest()
+  );
+}
+
+inline
+MEDDLY::unary_operation* 
+MEDDLY::getOperation(const unary_opname* code, const dd_edge& arg, 
+  opnd_type res)
+{
+  return getOperation(code, (expert_forest*) arg.getForest(), res);
+}
+
+inline
+MEDDLY::binary_operation* 
+MEDDLY::getOperation(const binary_opname* code, const dd_edge& arg1, 
+  const dd_edge& arg2, const dd_edge& res)
+{
+  return getOperation(code, 
+    (expert_forest*) arg1.getForest(), 
+    (expert_forest*) arg2.getForest(), 
+    (expert_forest*) res.getForest()
+  );
+}
+
+// ****************************************************************************
 
 inline
 int MEDDLY::expert_forest::getInternalNodeSize(int p) const

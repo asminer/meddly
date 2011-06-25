@@ -236,9 +236,7 @@ void MEDDLY::apply(const unary_opname* code, const dd_edge &a, dd_edge &c)
     throw error(error::UNINITIALIZED);
   if (0==code)  
     throw error(error::UNKNOWN_OPERATION);
-  expert_forest* aF = (expert_forest*) a.getForest();
-  expert_forest* cF = (expert_forest*) c.getForest();
-  unary_operation* op = getOperation(code, aF, cF);
+  unary_operation* op = getOperation(code, a, c);
   op->compute(a, c);
 }
 
@@ -248,8 +246,7 @@ void MEDDLY::apply(const unary_opname* code, const dd_edge &a, long &c)
     throw error(error::UNINITIALIZED);
   if (0==code)
     throw error(error::UNKNOWN_OPERATION);
-  expert_forest* aF = (expert_forest*) a.getForest();
-  unary_operation* op = getOperation(code, aF, INTEGER);
+  unary_operation* op = getOperation(code, a, INTEGER);
   op->compute(a, c);
 }
 
@@ -259,8 +256,7 @@ void MEDDLY::apply(const unary_opname* code, const dd_edge &a, double &c)
     throw error(error::UNINITIALIZED);
   if (0==code)
     throw error(error::UNKNOWN_OPERATION);
-  expert_forest* aF = (expert_forest*) a.getForest();
-  unary_operation* op = getOperation(code, aF, REAL);
+  unary_operation* op = getOperation(code, a, REAL);
   op->compute(a, c);
 }
 
@@ -271,8 +267,7 @@ void MEDDLY::apply(const unary_opname* code, const dd_edge &a, opnd_type cr,
     throw error(error::UNINITIALIZED);
   if (0==code)
     throw error(error::UNKNOWN_OPERATION);
-  expert_forest* aF = (expert_forest*) a.getForest();
-  unary_operation* op = getOperation(code, aF, cr);
+  unary_operation* op = getOperation(code, a, cr);
   op->compute(a, c);
 }
 
@@ -283,10 +278,7 @@ void MEDDLY::apply(const binary_opname* code, const dd_edge &a,
     throw error(error::UNINITIALIZED);
   if (0==code)
     throw error(error::UNKNOWN_OPERATION);
-  expert_forest* aF = (expert_forest*) a.getForest();
-  expert_forest* bF = (expert_forest*) b.getForest();
-  expert_forest* cF = (expert_forest*) c.getForest();
-  binary_operation* op = getOperation(code, aF, bF, cF);
+  binary_operation* op = getOperation(code, a, b, c);
   op->compute(a, b, c);
 }
 

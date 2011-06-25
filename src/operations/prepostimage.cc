@@ -29,14 +29,190 @@
 #include "apply_base.h"
 
 namespace MEDDLY {
-  class preimage_mdd;
-  class preimage_mtmdd;
-  class preimage_opname;
+  class image_op;
 
+  class preimage_mdd;
   class postimage_mdd;
+
+  class preimage_mtmdd;
   class postimage_mtmdd;
+
+  class preimage_opname;
   class postimage_opname;
 };
+
+// ******************************************************************
+// *                                                                *
+// *                         image_op class                         *
+// *                                                                *
+// ******************************************************************
+
+/// Abstract base class for all pre/post image operations.
+class MEDDLY::image_op : public binary_operation {
+  public:
+    image_op(const binary_opname* opcode, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res);
+
+    virtual bool isEntryStale(const int* entryData);
+    virtual void discardEntry(const int* entryData);
+    virtual void showEntry(FILE* strm, const int *entryData) const;
+};
+
+MEDDLY::image_op::image_op(const binary_opname* oc, expert_forest* a1,
+  expert_forest* a2, expert_forest* res) : binary_operation(oc, a1, a2, res)
+{
+  key_length = 2; 
+  ans_length = 1;
+}
+
+bool MEDDLY::image_op::isEntryStale(const int* data)
+{
+  return arg1F->isStale(data[0]) ||
+         arg2F->isStale(data[1]) ||
+         resF->isStale(data[2]);
+}
+
+void MEDDLY::image_op::discardEntry(const int* data)
+{
+  arg1F->uncacheNode(data[0]);
+  arg2F->uncacheNode(data[1]);
+  resF->uncacheNode(data[2]);
+}
+
+void
+MEDDLY::image_op::showEntry(FILE* strm, const int *data) const
+{
+  fprintf(strm, "[%s(%d, %d): %d]", getName(), data[0], data[1], data[2]);
+}
+
+
+// ******************************************************************
+// *                                                                *
+// *                       preimage_mdd class                       *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::preimage_mdd : public image_op {
+  public:
+    preimage_mdd(const binary_opname* opcode, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res);
+
+    virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
+    int compute(int a, int b);
+  protected:
+    binary_operation* unionOp;
+};
+
+MEDDLY::preimage_mdd::preimage_mdd(const binary_opname* oc, expert_forest* a1,
+  expert_forest* a2, expert_forest* res) : image_op(oc, a1, a2, res)
+{
+  unionOp = 0;
+}
+
+void MEDDLY::preimage_mdd
+::compute(const dd_edge &a, const dd_edge &b, dd_edge &c)
+{
+  unionOp = getOperation(UNION, a, b, c);
+  int cnode = compute(a.getNode(), b.getNode());
+  c.set(cnode, 0, resF->getNodeLevel(cnode));
+  unionOp = 0;  // for sanity
+}
+
+// TBD: HERE
+
+// ******************************************************************
+// *                                                                *
+// *                     preimage_opname  class                     *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::preimage_opname : public binary_opname {
+  public:
+    preimage_opname();
+    virtual binary_operation* buildOperation(expert_forest* a1, 
+      expert_forest* a2, expert_forest* r) const;
+};
+
+MEDDLY::preimage_opname::preimage_opname()
+ : binary_opname("Pre-image")
+{
+}
+
+MEDDLY::binary_operation* 
+MEDDLY::preimage_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
+  expert_forest* r) const
+{
+  if (0==a1 || 0==a2 || 0==r) return 0;
+
+  if (  
+    (a1->getDomain() != r->getDomain()) || 
+    (a2->getDomain() != r->getDomain()) 
+  )
+    throw error(error::DOMAIN_MISMATCH);
+
+  if (
+    a1->isForRelations()    ||
+    !a2->isForRelations()   ||
+    r->isForRelations()     ||
+    (a1->getRangeType() != r->getRangeType()) ||
+    (a2->getRangeType() != r->getRangeType()) ||
+    (a1->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
+    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
+    (r->getEdgeLabeling() != forest::MULTI_TERMINAL)
+  )
+    throw error(error::TYPE_MISMATCH);
+
+  // TBD 
+  throw error(error::NOT_IMPLEMENTED);
+}
+
+
+// ******************************************************************
+// *                                                                *
+// *                     postimage_opname class                     *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::postimage_opname : public binary_opname {
+  public:
+    postimage_opname();
+    virtual binary_operation* buildOperation(expert_forest* a1, 
+      expert_forest* a2, expert_forest* r) const;
+};
+
+MEDDLY::postimage_opname::postimage_opname()
+ : binary_opname("Post-image")
+{
+}
+
+MEDDLY::binary_operation* 
+MEDDLY::postimage_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
+  expert_forest* r) const
+{
+  if (0==a1 || 0==a2 || 0==r) return 0;
+
+  if (  
+    (a1->getDomain() != r->getDomain()) || 
+    (a2->getDomain() != r->getDomain()) 
+  )
+    throw error(error::DOMAIN_MISMATCH);
+
+  if (
+    a1->isForRelations()    ||
+    !a2->isForRelations()   ||
+    r->isForRelations()     ||
+    (a1->getRangeType() != r->getRangeType()) ||
+    (a2->getRangeType() != r->getRangeType()) ||
+    (a1->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
+    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
+    (r->getEdgeLabeling() != forest::MULTI_TERMINAL)
+  )
+    throw error(error::TYPE_MISMATCH);
+
+  // TBD 
+  throw error(error::NOT_IMPLEMENTED);
+}
+
 
 // ******************************************************************
 // *                                                                *

@@ -231,11 +231,7 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator-=(const dd_edge& e)
 MEDDLY::dd_edge& MEDDLY::dd_edge::operator/=(const dd_edge& e)
 {
   if (opDivide == 0) {
-    opDivide = getOperation(DIVIDE, 
-      smart_cast<expert_forest*>(parent), 
-      smart_cast<expert_forest*>(e.parent), 
-      smart_cast<expert_forest*>(parent)
-    );
+    opDivide = getOperation(DIVIDE, *this, e, *this);
   }
   opDivide->compute(*this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true

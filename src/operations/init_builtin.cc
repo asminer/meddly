@@ -50,6 +50,8 @@
 #include "comp_gt.h"
 #include "comp_ge.h"
 
+#include "prepostimage.h"
+
 void MEDDLY::builtin_initializer::init(const settings &s)
 {
   MEDDLY::COPY                  = (COPY       = initializeCopy(s)         );
@@ -77,6 +79,9 @@ void MEDDLY::builtin_initializer::init(const settings &s)
   MEDDLY::LESS_THAN_EQUAL       = (LE         = initializeLE(s)           );
   MEDDLY::GREATER_THAN          = (GT         = initializeGT(s)           );
   MEDDLY::GREATER_THAN_EQUAL    = (GE         = initializeGE(s)           );
+
+  MEDDLY::PRE_IMAGE             = (PRE_IMAGE  = initializePreImage(s)     );
+  MEDDLY::POST_IMAGE            = (POST_IMAGE = initializePreImage(s)     );
 }
 
 template <class T>
@@ -113,5 +118,8 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(LE,           MEDDLY::LESS_THAN_EQUAL);
   cleanPair(GT,           MEDDLY::GREATER_THAN);
   cleanPair(GE,           MEDDLY::GREATER_THAN_EQUAL);
+
+  cleanPair(PRE_IMAGE,    MEDDLY::PRE_IMAGE);
+  cleanPair(POST_IMAGE,   MEDDLY::POST_IMAGE);
 }
 
