@@ -33,12 +33,14 @@
 #include "meddly.h"
 #include "meddly_expert.h"
 
+using namespace MEDDLY;
+
 // Only include this file if referring to operations that are not
 // available via the mddlib interface. 
 // 
 // Also, include this file if you would like to create a custom
 // operation by deriving one of the existing operations.
-#include "operation_ext.h"
+// #include "operation_ext.h"
 
 // Timer class
 #include "timer.h"
@@ -55,6 +57,7 @@
 // verbose: 0: minimum, 2: maximum
 const int verbose = 1;
 
+#if 0
 // Given a forest and an op_code returns the corresponding op_info.
 // 
 // This is only valid for operations of the form C = A op B,
@@ -95,7 +98,7 @@ op_info* getOp(forest* f, old_operation* op)
   plist[2].set(f);
   return ecm->getOpInfo(op, plist, nForests);
 }
-
+#endif
 
 // Tests a mtmdd operation on the elements provided.
 // This function assumes that each element[i] represents
@@ -264,8 +267,10 @@ int main(int argc, char *argv[])
       start.get_last_interval()/1000000.0);
 
   printf("Peak Nodes in MDD: %ld\n", mtmdd->getPeakNumNodes());
+  /* TBD: FIX
   printf("Nodes in compute table: %ld\n",
       (getComputeManager())->getNumCacheEntries());
+  */
 
 #if 0
   // Convert mtmdd to mdd
@@ -339,7 +344,9 @@ int main(int argc, char *argv[])
     start.note_time();
     printf("Iterator traversal time (%0.4e elements): %0.4e seconds\n",
         double(counter), start.get_last_interval()/double(1000000.0));
-    printf("Cardinality: %0.4e\n", reachableStates.getCardinality());
+    double c;
+    apply(CARDINALITY, reachableStates, c);
+    printf("Cardinality: %0.4e\n", c);
   }
 
   // Cleanup; in this case simply delete the domain

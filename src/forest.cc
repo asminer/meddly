@@ -58,6 +58,17 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   szOplist = 0;
 }
 
+void MEDDLY::expert_forest::removeStaleComputeTableEntries()
+{
+  if (operation::useMonolithicComputeTable()) {
+    operation::removeStalesFromMonolithic();
+  } else {
+    for (int i=0; i<szOplist; i++) 
+      if (oplist[i])
+        oplist[i]->removeStaleComputeTableEntries();
+  }
+}
+
 void MEDDLY::expert_forest::removeAllComputeTableEntries()
 {
   if (is_marked_for_deletion) return;
@@ -107,6 +118,18 @@ void MEDDLY::expert_forest::unregisterOperation(operation* op, int slot)
   oplist[slot] = 0;
 }
 
+
+void MEDDLY::expert_forest::showComputeTable(FILE* s) const
+{
+  if (is_marked_for_deletion) return;
+  if (operation::useMonolithicComputeTable()) {
+    operation::showMonolithicComputeTable(s);
+  } else {
+    for (int i=0; i<szOplist; i++) 
+      if (oplist[i])
+        oplist[i]->showComputeTable(s);
+  }
+}
 
 
 void MEDDLY::expert_forest::unregisterDDEdges() {

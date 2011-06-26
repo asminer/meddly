@@ -54,6 +54,8 @@
 #include "reach_bfs.h"
 #include "reach_dfs.h"
 
+#include "vect_matr.h"
+
 void MEDDLY::builtin_initializer::init(const settings &s)
 {
   MEDDLY::COPY                  = (COPY       = initializeCopy(s)         );
@@ -88,6 +90,9 @@ void MEDDLY::builtin_initializer::init(const settings &s)
   MEDDLY::REACHABLE_STATES_BFS  = (FORWARD_BFS  = initializeForwardBFS(s) );
   MEDDLY::REVERSE_REACHABLE_DFS = (BACKWARD_DFS = initializeBackwardDFS(s));
   MEDDLY::REVERSE_REACHABLE_BFS = (BACKWARD_BFS = initializeBackwardBFS(s));
+
+  MEDDLY::VECT_MATR_MULT        = (VECT_MATR_MULT = initVectorMatrixMult(s));
+  MEDDLY::MATR_VECT_MULT        = (MATR_VECT_MULT = initMatrixVectorMult(s));
 }
 
 template <class T>

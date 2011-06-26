@@ -29,6 +29,18 @@
 #include "compute_table.h"
 
 // ******************************************************************
+// *                       ct_object  methods                       *
+// ******************************************************************
+
+MEDDLY::ct_object::ct_object()
+{
+}
+
+MEDDLY::ct_object::~ct_object()
+{
+}
+
+// ******************************************************************
 // *                         opname methods                         *
 // ******************************************************************
 
@@ -133,12 +145,27 @@ void MEDDLY::operation::markForDeletion()
   // TBD: remove from list
 }
 
+void MEDDLY::operation::removeStaleComputeTableEntries()
+{
+  CT->removeStales();
+}
+
 void MEDDLY::operation::removeAllComputeTableEntries()
 {
   if (is_marked_for_deletion) return;
   is_marked_for_deletion = true;
   CT->removeStales();
   is_marked_for_deletion = false;
+}
+
+void MEDDLY::operation::showMonolithicComputeTable(FILE* s)
+{
+  if (Monolithic_CT) Monolithic_CT->show(s, true);
+}
+
+void MEDDLY::operation::showComputeTable(FILE* s) const
+{
+  CT->show(s, true);
 }
 
 // ******************************************************************

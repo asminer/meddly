@@ -99,6 +99,24 @@ namespace MEDDLY {
   class op_initializer;
 
   // ******************************************************************
+  // *                   Named numerical operations                   *
+  // ******************************************************************
+
+  /** Computes y = y + xA.
+      x and y are vectors, stored explicitly, and A is a matrix.
+      x_ind and y_ind specify how minterms are mapped to indexes
+      for vectors x and y, respectively.
+  */
+  extern const numerical_opname* VECT_MATR_MULT;
+
+  /** Computes y = y + Ax.
+      x and y are vectors, stored explicitly, and A is a matrix.
+      x_ind and y_ind specify how minterms are mapped to indexes
+      for vectors x and y, respectively.
+  */
+  extern const numerical_opname* MATR_VECT_MULT;
+
+  // ******************************************************************
   // *                      Operation management                      *
   // ******************************************************************
 
@@ -179,6 +197,21 @@ namespace MEDDLY {
 
 }; // namespace MEDDLY
 
+
+// ******************************************************************
+// *                         ct_object class                        *
+// ******************************************************************
+
+/** Generic objects in compute tables.
+    Used for things other than dd_edges and simple types.
+    Defined in ops.cc
+*/
+class MEDDLY::ct_object {
+  public:
+    ct_object();
+    virtual ~ct_object();
+    virtual opnd_type getType() = 0;
+};
 
 // ******************************************************************
 // *                         settings  class                        *
@@ -511,6 +544,9 @@ class MEDDLY::expert_forest : public forest
     /// Sets the node deletion policy for this forest.
     void setNodeDeletion(forest::node_deletion_policy np);
 
+    /// Remove any stale compute table entries associated with this forest.
+    void removeStaleComputeTableEntries();
+
     /// Remove all compute table entries associated with this forest.
     void removeAllComputeTableEntries();
 
@@ -821,6 +857,8 @@ class MEDDLY::expert_forest : public forest
     void unregisterOperation(operation* op, int slot);
 
   protected:
+    // for debugging:
+    void showComputeTable(FILE* s) const;
 
     void unregisterDDEdges();
 
@@ -1188,7 +1226,7 @@ class MEDDLY::numerical_opname : public opname {
         times (say, within a linear solver) with the same dd_edges.
     */
     virtual numerical_operation* buildOperation(const dd_edge &x_ind,
-      const dd_edge &A_ind, const dd_edge &y_ind) const = 0;
+      const dd_edge &A, const dd_edge &y_ind) const = 0;
 };
 
 
@@ -1239,8 +1277,16 @@ class MEDDLY::operation {
     inline static bool useMonolithicComputeTable() { return useMonolithicCT; }
     static void removeStalesFromMonolithic();
 
+    /// Remove stale compute table entries for this operation.
+    void removeStaleComputeTableEntries();
+
     /// Remove all compute table entries for this operation.
     void removeAllComputeTableEntries();
+
+    // for debugging:
+
+    static void showMonolithicComputeTable(FILE*);
+    void showComputeTable(FILE*) const;
 
     // handy
     inline const char* getName() const { return theOpName->getName(); }

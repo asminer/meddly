@@ -50,9 +50,9 @@ MEDDLY::mpz_object::~mpz_object()
   mpz_clear(value);
 }
 
-MEDDLY::op_param::type MEDDLY::mpz_object::getType()
+MEDDLY::opnd_type MEDDLY::mpz_object::getType()
 {
-  return op_param::HUGEINT;
+  return HUGEINT;
 }
 
 MEDDLY::ct_object& MEDDLY::get_mpz_wrapper()

@@ -552,6 +552,7 @@ void MEDDLY::monolithic_table::show(FILE* s, int h) const
 void MEDDLY::monolithic_table::show(FILE *s, bool verbose) const
 { 
   char filler[] = "\t";
+  fprintf(s, "Monolithic compute table\n");
   fprintf(s, "%sNumber of slots:\t%d\n", filler, nodeCount);
   fprintf(s, "%sMemory usage:   \t%lu\n",
       filler, (unsigned long)(
@@ -932,6 +933,7 @@ void MEDDLY::operation_table::show(FILE* s, int h) const
 void MEDDLY::operation_table::show(FILE *s, bool verbose) const
 { 
   char filler[] = "\t";
+  fprintf(s, "Compute table for %s operation\n", global_op->getName());
   fprintf(s, "%sNumber of slots:\t%d\n", filler, nodeCount);
   fprintf(s, "%sMemory usage:   \t%lu\n",
       filler, (unsigned long)(

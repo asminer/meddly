@@ -109,6 +109,9 @@ namespace MEDDLY {
         return perf;
       }
 
+      /// For debugging.
+      virtual void show(FILE *s, bool verbose = false) const = 0;
+
     protected:
       settings opts;
       stats perf;

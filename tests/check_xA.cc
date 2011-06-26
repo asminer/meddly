@@ -32,8 +32,6 @@ using namespace MEDDLY;
 
 const int vars[] = {10, 10, 10};
 
-compute_manager* CM;
-
 bool build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
 {
   const int R[] = {0, 3, 1, 4};
@@ -168,8 +166,6 @@ bool Ax_check(dd_edge &ss, dd_edge &P)
 int main(int argc, const char** argv)
 {
   initialize();
-  CM = getComputeManager();
-  assert(CM);
 
   domain* ozd = createDomainBottomUp(vars, 3);
   assert(ozd);

@@ -33,12 +33,14 @@
 #include "meddly.h"
 #include "meddly_expert.h"
 
+using namespace MEDDLY;
+
 // Only include this file if referring to operations that are not
 // available via the mddlib interface. 
 // 
 // Also, include this file if you would like to create a custom
 // operation by deriving one of the existing operations.
-#include "operation_ext.h"
+// #include "operation_ext.h"
 
 // Timer class
 #include "timer.h"
@@ -59,7 +61,7 @@
 // verbose: 0: minimum, 2: maximum
 const int verbose = 1;
 
-
+#if 0
 // Given a forest and an op_code returns the corresponding op_info.
 // 
 // This is only valid for operations of the form C = A op B,
@@ -100,7 +102,7 @@ op_info* getOp(forest* f, old_operation* op)
   plist[2].set(f);
   return ecm->getOpInfo(op, plist, nForests);
 }
-
+#endif
 
 // Combine N elements using + operator
 dd_edge doPlus(forest* mtmxd, int** from, int** to, element_type* terms, int N)
@@ -179,16 +181,12 @@ dd_edge doPlus(forest* mtmxd, int** from, int** to, element_type* terms, int N)
 // Tests a mtmxd operation on the elements provided.
 // This function assumes that each from[i] and to[i] combine
 // to make up an element in the given MTMXD.
-dd_edge test_mtmxd(forest* mtmxd, compute_manager::op_code opCode,
+dd_edge test_mtmxd(forest* mtmxd, binary_opname* opCode,
     int** from, int** to, element_type* terms, int nElements)
 {
   // A = first nElements/2 elements combined using +.
   // B = second nElements/2 elements combined using +.
   // C = A op B
-
-  static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(getComputeManager());
-  assert(ecm != 0);
 
   dd_edge A(mtmxd);
   dd_edge B(mtmxd);
@@ -199,7 +197,7 @@ dd_edge test_mtmxd(forest* mtmxd, compute_manager::op_code opCode,
   A = doPlus(mtmxd, from, to, terms, half);
   B = doPlus(mtmxd, from + half, to + half, terms + half, nElements - half);
 
-  ecm->apply(opCode, A, B, C);
+  apply(opCode, A, B, C);
 
   if (verbose > 0) {
     printf("A: ");
@@ -352,8 +350,10 @@ int main(int argc, char *argv[])
       start.get_last_interval()/1000000.0);
 
   printf("Peak Nodes in MXD: %ld\n", mtmxd->getPeakNumNodes());
+  /* TBD: FIX
   printf("Nodes in compute table: %ld\n",
       (getComputeManager())->getNumCacheEntries());
+  */
 
   result.show(stdout, 2);
 
@@ -379,7 +379,9 @@ int main(int argc, char *argv[])
       printf("]\n");
     }
     printf("Iterator traversal: %0.4e elements\n", double(counter));
-    printf("Cardinality: %0.4e\n", result.getCardinality());
+    double c;
+    apply(CARDINALITY, result, c);
+    printf("Cardinality: %0.4e\n", c);
   }
 
   // Test Row and Column Iterators

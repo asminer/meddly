@@ -54,7 +54,6 @@ namespace MEDDLY {
   class variable;
   class domain;
   class dd_edge;
-  class op_info;
   class ct_object;
   class unary_opname;
   class binary_opname;
@@ -1296,37 +1295,45 @@ class MEDDLY::dd_edge {
     /** Clears the contents of this edge. It will belong to the same
         forest as before.
     */
-    void clear();
+    inline void clear() {
+      assert(index != -1);
+      set(0, 0, 0);
+      updateNeeded = true;
+    }
 
     /** Obtain a modifiable copy of the forest owning this edge.
         @return         the forest to which this edge belongs to.
     */
-    forest* getForest() const;
+    inline forest* getForest() const  { return parent; }
 
     /** Get this dd_edge's node handle.
         @return         the node handle.
     */
-    int getNode() const;
+    inline int getNode() const { return node; }
 
     /** Get this dd_edge's edge value (only valid for edge-valued MDDs).
         Note: EV+MDDs use Integer edge-values while EV*MDDs use
         Real edge-value, so use the appropriate method.
         @return         edge value (if applicable).
     */
-    void getEdgeValue(int& edgeValue) const;
+    inline void getEdgeValue(int& ev) const { ev = value; }
     void getEdgeValue(float& edgeValue) const;
 
     /** Get this dd_edge's level handle.
         @return         the level handle.
     */
-    int getLevel() const;
+    inline int getLevel() const { return level; }
 
     /** Get node cardinality.
         Provided for backward compatibility.
         Use apply(CARDINALITY, ...) instead.
         @return         the cardinality of the node.
     */
-    double getCardinality() const;
+    inline double getCardinality() const {
+      double c;
+      apply(CARDINALITY, *this, c);
+      return c;
+    }
 
     /** Counts the number of unique nodes in this decision diagram.
         @return       the number of unique nodes starting at the root node
@@ -1367,7 +1374,7 @@ class MEDDLY::dd_edge {
         ~iterator();
         iterator(const iterator& iter);
         iterator& operator=(const iterator& iter);
-        operator bool() const;
+        inline operator bool() const { return nodes && nodes[0]; }
         void operator--();
         void operator++();
         bool operator!=(const iterator& iter) const;
@@ -1376,7 +1383,7 @@ class MEDDLY::dd_edge {
         const int* getPrimedAssignments() const;
         // Highest level at which the current minterm differs
         // from the previous minterm.
-        int getLevel() const;
+        inline int getLevel() const { return foundPathAtLevel; }
         void getValue(int& edgeValue) const;
         void getValue(float& edgeValue) const;
         
@@ -1465,19 +1472,26 @@ class MEDDLY::dd_edge {
         @return true    iff this edge has the same parent and refers to
                         the same edge as \a e.
     */
-    bool operator==(const dd_edge& e) const;
+    inline bool operator==(const dd_edge& e) const {
+      return (parent == e.parent && node == e.node 
+              && value == e.value && level == e.level);
+    }
 
     /** Check for inequality.
         @return true    iff this edge does not refer to the same edge as \a e.
     */
-    bool operator!=(const dd_edge& e) const;
+    inline bool operator!=(const dd_edge& e) const {
+      return !(*this == e);
+    }
 
     /** Plus operator.
         BOOLEAN forests: Union; INTEGER/REAL forests: Addition.
         @param  e       dd_edge to Union/Add with this dd_edge.
         @return         \a this + \a e.
     */
-    const dd_edge operator+(const dd_edge& e) const;
+    inline const dd_edge operator+(const dd_edge& e) const {
+      return dd_edge(*this) += e;
+    }
 
     /** Compound Plus operator.
         BOOLEAN forests: Union; INTEGER/REAL forests: Addition.
@@ -1492,7 +1506,9 @@ class MEDDLY::dd_edge {
         @param  e       dd_edge to Intersection/Multiply with this dd_edge.
         @return         \a this * \a e.
     */
-    const dd_edge operator*(const dd_edge& e) const;
+    inline const dd_edge operator*(const dd_edge& e) const {
+      return dd_edge(*this) *= e;
+    }
 
     /** Compound Star operator.
         BOOLEAN forests: Intersection; INTEGER/REAL forests: Multiplication.
@@ -1507,7 +1523,9 @@ class MEDDLY::dd_edge {
         @param  e       dd_edge for difference/subtract.
         @return         \a this - \a e.
     */
-    const dd_edge operator-(const dd_edge& e) const;
+    inline const dd_edge operator-(const dd_edge& e) const {
+      return dd_edge(*this) -= e;
+    }
 
     /** Compound Minus operator.
         BOOLEAN forests: Difference; INTEGER/REAL forests: Subtraction.
@@ -1572,8 +1590,8 @@ class MEDDLY::dd_edge {
     friend class expert_forest;
     friend class iterator;
 
-    void setIndex(int index);
-    int getIndex() const;
+    inline void setIndex(int ind) { index = ind; }
+    inline int getIndex() const { return index; }
 
     forest *parent;
     int node;

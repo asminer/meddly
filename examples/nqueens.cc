@@ -40,7 +40,6 @@ using namespace MEDDLY;
 
 int N;
 int* scratch;
-compute_manager* CM;
 
 void printmem(long m)
 {
@@ -151,8 +150,6 @@ int main()
 {
   timer watch;
   initialize();
-  CM = getComputeManager();
-  assert(CM);
   printf("Using %s\n", getLibraryInfo(0));
   printf("N-Queens solutions.  Enter the value for N:\n");
   scanf("%d", &N);

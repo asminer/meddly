@@ -106,20 +106,12 @@ op_info* getOp(forest* f, operation* op)
 // Tests a evmdd operation on the elements provided.
 // This function assumes that each element[i] represents
 // an element in the given MTMDD.
-dd_edge test_evmdd(forest* evmdd, compute_manager::op_code opCode,
+dd_edge test_evmdd(forest* evmdd, const binary_opname* opCode,
     int** element, element_type* terms, int nElements)
 {
   // A = first nElements/2 elements combined using +.
   // B = second nElements/2 elements combined using +.
   // C = A op B
-
-#ifdef USE_EXPERT_INTERFACE
-  static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(getComputeManager());
-#else
-  static compute_manager* ecm = getComputeManager();
-#endif
-  assert(ecm != 0);
 
   dd_edge A(evmdd);
   dd_edge B(evmdd);
@@ -131,11 +123,11 @@ dd_edge test_evmdd(forest* evmdd, compute_manager::op_code opCode,
   evmdd->createEdge(element + half, terms + half, nElements - half, B);
 
 #ifdef USE_EXPERT_INTERFACE
-  op_info* op = getOp(evmdd, opCode);
+  binary_operation* op = getOperation(opCode, A, B, C);
   assert(op != NULL);
-  ecm->apply(op, A, B, C);
+  op->compute(op, A, B, C);
 #else
-  ecm->apply(opCode, A, B, C);
+  apply(opCode, A, B, C);
 #endif
 
   if (verbose > 0) {
@@ -361,8 +353,10 @@ int main(int argc, char *argv[])
       start.get_last_interval()/1000000.0);
 
   printf("Peak Nodes in MDD: %ld\n", evmdd->getPeakNumNodes());
+  /* TBD: FIX
   printf("Entries in compute table: %ld\n",
       (getComputeManager())->getNumCacheEntries());
+  */
 
   if (verbose > 1) {
     printf("\n\nForest Info:\n");
@@ -436,8 +430,10 @@ int main(int argc, char *argv[])
 
   printf("MDD Cardinality: %1.6e\n", mddResult.getCardinality());
   printf("Peak Nodes in MDD: %ld\n", mdd->getPeakNumNodes());
+  /* TBD: FIX
   printf("Entries in compute table: %ld\n",
       (getComputeManager())->getNumCacheEntries());
+  */
 
   // Create a EV+MDD forest in this domain (to store index set)
   forest* evplusmdd = d->createForest(false, forest::INTEGER, forest::EVPLUS);
@@ -469,8 +465,10 @@ int main(int argc, char *argv[])
 
   printf("Index Set Cardinality: %1.6e\n", indexSet.getCardinality());
   printf("Peak Nodes in Index Set: %ld\n", evplusmdd->getPeakNumNodes());
+  /* TBD: FIX
   printf("Entries in compute table: %ld\n",
       (getComputeManager())->getNumCacheEntries());
+  */
 
 #endif
 

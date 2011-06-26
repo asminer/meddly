@@ -38,7 +38,6 @@ const long solutions[] = {
 };
 
 int* scratch;
-compute_manager* CM;
 
 #define LINEAR_INTERSECTIONS
 #ifdef  LINEAR_INTERSECTIONS
@@ -192,8 +191,6 @@ long buildQueenSolutions(int N)
 int main()
 {
   initialize();
-  CM = getComputeManager();
-  assert(CM);
   scratch = new int[N_HIGH+1];
 
   for (int i=N_LOW; i<=N_HIGH; i++) {

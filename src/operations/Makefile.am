@@ -9,6 +9,7 @@ noinst_LTLIBRARIES = libops.la
 libops_la_SOURCES = \
   init_builtin.h    init_builtin.cc \
   apply_base.h      apply_base.cc   \
+  mpz_object.h      mpz_object.cc   \
   \
   copy.h            copy.cc         \
 	cardinality.h     cardinality.cc  \
@@ -37,10 +38,5 @@ libops_la_SOURCES = \
   prepostimage.h    prepostimage.cc \
   reach_bfs.h       reach_bfs.cc    \
   reach_dfs.h       reach_dfs.cc    \
-  mpz_object.h      mpz_object.cc \
-  vect_matr.h       vect_matr.cc \
-  \
-	operation.cc \
-	operation_ext.h   operation_ext.cc 
-
+  vect_matr.h       vect_matr.cc
 

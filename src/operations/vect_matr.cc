@@ -22,6 +22,8 @@
 #include "../defines.h"
 #include "vect_matr.h"
 
+#if 0
+
 using namespace MEDDLY;
 
 void
@@ -745,5 +747,5 @@ MEDDLY::matrixVectorMult_evplus_evtimes(
   throw error(error::NOT_IMPLEMENTED);
 }
 
-
+#endif
 

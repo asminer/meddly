@@ -226,10 +226,14 @@ int main(int argc, char *argv[])
   initial_state.show(stdout, 2);
 #endif
 
-  printf("Elements in result: %.4e\n", initial_state.getCardinality());
+  double c;
+  apply(CARDINALITY, initial_state, c);
+  printf("Elements in result: %.4e\n", c);
   printf("Peak Nodes in MDD: %ld\n", states->getPeakNumNodes());
+  /* TBD: FIX
   printf("Nodes in compute table: %ld\n",
       (getComputeManager())->getNumCacheEntries());
+  */
 
 #ifdef BUILD_INDEX_SET
   // TEST

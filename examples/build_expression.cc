@@ -34,8 +34,11 @@
 #include <vector>
 
 #include "meddly.h"
-#include "operation_ext.h"
+#include "meddly_expert.h"
+// #include "operation_ext.h"
 #include "timer.h"
+
+using namespace MEDDLY;
 
 #define USE_REALS 1
 
@@ -132,17 +135,13 @@ int main(int argc, char *argv[])
   fprintf(stdout, "\nMTMDD for [0 0 0 = 1]:\n\n");
   postImage.show(stdout, 2); 
 
-  getComputeManager()->apply(
-    compute_manager::POST_IMAGE, postImage, incrY1, postImage
-  );
+  apply(POST_IMAGE, postImage, incrY1, postImage);
   // postImage *= expr;
   fprintf(stdout, "-----------------------------------------------------\n");
   fprintf(stdout, "\nMTMDD after POST_IMAGE:\n\n");
   postImage.show(stdout, 2);
 
-  getComputeManager()->apply(
-    compute_manager::PRE_IMAGE, postImage, incrY1, postImage
-  );
+  apply(PRE_IMAGE, postImage, incrY1, postImage);
   // postImage *= expr;
   fprintf(stdout, "-----------------------------------------------------\n");
   fprintf(stdout, "\nMTMDD after PRE_IMAGE:\n\n");

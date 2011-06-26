@@ -42,8 +42,6 @@ namespace MEDDLY {
 
   bool libraryRunning = 0;
 
-  expert_compute_manager* ECM = 0;
-
   // list of all domains; needed when we destroy the library.
   domain** dom_list = 0;
   int dom_list_size = 0;
@@ -84,6 +82,11 @@ namespace MEDDLY {
   const binary_opname* REACHABLE_STATES_BFS = 0;
   const binary_opname* REVERSE_REACHABLE_DFS = 0;
   const binary_opname* REVERSE_REACHABLE_BFS = 0;
+
+  // numerical operation "codes"
+
+  const numerical_opname* VECT_MATR_MULTIPLY = 0;
+  const numerical_opname* MATR_VECT_MULTIPLY = 0;
 
   // cache of operations
   operation** op_cache = 0;
@@ -365,12 +368,6 @@ MEDDLY::op_initializer* MEDDLY::makeBuiltinInitializer()
   return new builtin_initializer(0);
 }
 
-MEDDLY::compute_manager* MEDDLY::getComputeManager()
-{
-  if (!libraryRunning) throw error(error::UNINITIALIZED);
-  return ECM;
-}
-
 //----------------------------------------------------------------------
 // front end - initialize and cleanup of library
 //----------------------------------------------------------------------
@@ -406,7 +403,6 @@ void MEDDLY::initialize(const settings &s)
     op_cache[i] = 0;
   }
 
-  ECM = new expert_compute_manager(meddlySettings);
   libraryRunning = 1;
 }
 
@@ -419,8 +415,6 @@ void MEDDLY::initialize()
 void MEDDLY::cleanup()
 {
   if (!libraryRunning) throw error(error::UNINITIALIZED);
-  delete ECM;
-  ECM = 0;
 
   // clean up domains
   for (int i=0; i<dom_list_size; i++) {

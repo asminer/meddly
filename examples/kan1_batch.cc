@@ -394,15 +394,13 @@ dd_edge MakeSynch23_4(forest* mxd)
 
 dd_edge getReachabilitySet(const dd_edge& states, const dd_edge& nsf, bool dfs)
 {
-  compute_manager *cm = getComputeManager();
-
-  compute_manager::op_code op =
+  const binary_opname* op =
     dfs
-    ? compute_manager::REACHABLE_STATES_DFS
-    : compute_manager::REACHABLE_STATES_BFS;
+    ? REACHABLE_STATES_DFS
+    : REACHABLE_STATES_BFS;
 
   dd_edge rs(states);
-  cm->apply(op, states, nsf, rs);
+  apply(op, states, nsf, rs);
 
   return rs;
 }
@@ -478,7 +476,6 @@ void testMXDComplement(const dd_edge& mxd)
 void testIndexSet(domain* d, const dd_edge& mdd)
 {
   assert(d);
-  compute_manager *cm = getComputeManager();
 
   // Create a EV+MDD forest in this domain (to store index set)
   forest* evplusmdd = d->createForest(false, forest::INTEGER, forest::EVPLUS);
