@@ -84,6 +84,18 @@ MEDDLY::binary_opname::~binary_opname()
 }
 
 // ******************************************************************
+// *                    numerical_opname methods                    *
+// ******************************************************************
+
+MEDDLY::numerical_opname::numerical_opname(const char* n) : opname(n)
+{
+}
+
+MEDDLY::numerical_opname::~numerical_opname()
+{
+}
+
+// ******************************************************************
 // *                       operation  methods                       *
 // ******************************************************************
 
@@ -201,9 +213,36 @@ MEDDLY::binary_operation::~binary_operation()
 {
   arg1F->unregisterOperation(this, arg1Fslot);
   arg2F->unregisterOperation(this, arg2Fslot);
-  if (resF) resF->unregisterOperation(this, resFslot);
+  resF->unregisterOperation(this, resFslot);
 }
 
+int MEDDLY::binary_operation::compute(int a, int b)
+{
+  throw error(error::WRONG_NUMBER);
+}
+
+int MEDDLY::binary_operation::compute(int k, int a, int b)
+{
+  throw error(error::WRONG_NUMBER);
+}
+
+// ******************************************************************
+// *                  numerical_operation  methods                  *
+// ******************************************************************
+
+MEDDLY::numerical_operation::numerical_operation(const numerical_opname* op)
+  : operation(op)
+{
+}
+
+MEDDLY::numerical_operation::~numerical_operation()
+{
+}
+
+void MEDDLY::numerical_operation::compute(double* y, double* x)
+{
+  throw error(error::TYPE_MISMATCH);
+}
 
 // ******************************************************************
 // *                     op_initializer methods                     *

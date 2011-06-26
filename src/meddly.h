@@ -54,7 +54,6 @@ namespace MEDDLY {
   class variable;
   class domain;
   class dd_edge;
-  class compute_manager;
   class op_info;
   class ct_object;
   class unary_opname;
@@ -300,24 +299,6 @@ namespace MEDDLY {
   /// use "createDomain" instead.
   inline domain* MEDDLY_createDomain() {
     return createDomain();
-  }
-
-  /** Function to build and initialize the compute manager.
-      Built-in operations are initialized here.
-      Multiple calls will return the same compute_manager.
-  */
-  compute_manager* getComputeManager();
-
-#ifdef _MSC_VER
-  __declspec(deprecated)
-#endif
-#ifdef __GNUC__
-  __attribute__ ((deprecated))
-#endif
-  /// This function is deprecated as of version 0.4; 
-  /// use "getComputeManager" instead.
-  inline compute_manager* MEDDLY_getComputeManager() {
-    return getComputeManager();
   }
 
 
@@ -1289,7 +1270,7 @@ class MEDDLY::domain {
 
     There are a few useful operations that can be applied directly
     to a dd_edge; all the rest are done either through the "parent" forest,
-    or through operations in the compute_manager class.  These include:
+    or through operations.  These include:
    
     - Deletion of a dd_edge.  This will cause the parent forest to recycle
       nodes as appropriate.
@@ -1600,9 +1581,9 @@ class MEDDLY::dd_edge {
     int level;
     int index;
 
-    op_info* opPlus;
-    op_info* opStar;
-    op_info* opMinus;
+    binary_operation* opPlus;
+    binary_operation* opStar;
+    binary_operation* opMinus;
     binary_operation* opDivide;
 
     void updateIterators();
@@ -1610,299 +1591,6 @@ class MEDDLY::dd_edge {
     bool            updateNeeded;
     const_iterator* beginIterator;
 };
-
-
-// ******************************************************************
-// *                                                                *
-// *                                                                *
-// *                     compute_manager  class                     *
-// *                                                                *
-// *                                                                *
-// ******************************************************************
-
-/** Class that handles operations on functions in forests.
-    Abstract base class.
-
-    Substantial operations on decision diagrams are here.
-    I.e., this class manages operations on dd_edges
-    in (common or different) forests that produce new dd_edges.
-    
-  
-    TODO: do we need a compute table cleanup interface here,
-    or compute table policy settings here?
-
-*/
-class MEDDLY::compute_manager {
-  public:
-  enum op_code {
-    foobar
-  };
-  public:
-    compute_manager();
-    virtual ~compute_manager();
-
-    /** Removes all cached computation results from the compute table.
-    */
-    virtual void clearComputeTable() = 0;
-
-    /** Obtain a human-readable name for an operation.
-        @param  op    Operator handle.
-        @return       A human-readable string constant (e.g., "Union").
-    */
-    virtual const char* getOperationName(op_code op) const = 0;
-
-    /** Apply a unary operator.
-        The operand and the result are not necessarily in the same forest,
-        but they must belong to forests that share the same domain.
-        This is useful, for instance, for copying a function to a new forest.
-        @param  op    Operator handle.
-        @param  a     Operand.
-        @param  c     Output parameter: the result, where \a c = \a op \a a.
-    */
-    virtual void apply(op_code op, const dd_edge &a, dd_edge &c) = 0;
-
-    /** Apply a unary operator.
-        For operators whose result is an integer.
-        @param  op    Operator handle.
-        @param  a     Operand.
-        @param  c     Output parameter: the result, where \a c = \a op \a a.
-    */
-    virtual void apply(op_code op, const dd_edge &a, long &c) = 0;
-
-    /** Apply a unary operator.
-        For operators whose result is a real.
-        @param  op    Operator handle.
-        @param  a     Operand.
-        @param  c     Output parameter: the result, where \a c = \a op \a a.
-    */
-    virtual void apply(op_code op, const dd_edge &a, double &c) = 0;
-
-    virtual void apply(op_code op, const dd_edge &a, ct_object &c) = 0;
-
-#ifdef __GMP_H__
-    /** Apply a unary operator.
-        For operators whose result is an arbitrary-precision integer
-        (as supplied by the GNU MP library).
-        @param  op    Operator handle.
-        @param  a     Operand.
-        @param  c     Input: an initialized MP integer.
-                      Output parameter: the result, where \a c = \a op \a a.
-    */
-    inline void apply(op_code op, const dd_edge &a, mpz_t &c) {
-      ct_object& x = get_mpz_wrapper();
-      apply(op, a, x);
-      unwrap(x, c);
-    }
-#endif
-
-
-    /** Apply a binary operator.
-        \a a, \a b and \a c are not required to be in the same forest,
-        but they must have the same domain. The result will be in the
-        same forest as \a result. The operator decides the type of forest
-        for each \a dd_edge.
-        Useful, for example, for constructing comparisons
-        where the resulting type is "boolean" but the operators are not,
-        e.g., c = f EQUALS g.
-        @param  op    Operator handle.
-        @param  a     First operand.
-        @param  b     Second operand.
-        @param  c     Output parameter: the result,
-                      where \a c = \a a \a op \a b.
-    */ 
-    virtual void apply(op_code op, const dd_edge &a, const dd_edge &b,
-        dd_edge &c) = 0;
-
-
-    /**
-        Computes y = y + xA.
-        x and y are vectors, stored explicitly, and A is a matrix.
-
-        @param  y       Vector; dimension must be enough for largest y index.
-        @param  y_ind   Function to determine how minterms are mapped
-                        to indexes for vector y.  A value of infinity
-                        can be used to ignore minterms.  Should be an
-                        EV+MDD.
-
-        @param  x       Vector; dimension must be enough for largest x index.
-        @param  x_ind   Function to determine how minterms are mapped
-                        to indexes for vector x.  A value of infinity
-                        can be used to ignore minterms.  Should be an
-                        EV+MDD.
-
-        @param  A       Real-valued matrix, as an MTMxD or EV*MxD with
-                        same domain as y_ind and x_ind.
-    */
-    virtual void vectorMatrixMultiply(double* y, const dd_edge &y_ind,
-                  const double* x, const dd_edge &x_ind, const dd_edge &A) = 0;
-
-    /**
-        Computes y = y + Ax.
-        x and y are vectors, stored explicitly, and A is a matrix.
-
-        @param  y       Vector; dimension must be enough for largest y index.
-        @param  y_ind   Function to determine how minterms are mapped
-                        to indexes for vector y.  A value of infinity
-                        can be used to ignore minterms.  Should be an
-                        EV+MDD.
-
-        @param  A       Real-valued matrix, as an MTMxD or EV*MxD with
-                        same domain as y_ind and x_ind.
-
-        @param  x       Vector; dimension must be enough for largest x index.
-        @param  x_ind   Function to determine how minterms are mapped
-                        to indexes for vector x.  A value of infinity
-                        can be used to ignore minterms.  Should be an
-                        EV+MDD.
-    */
-    virtual void matrixVectorMultiply(double* y, const dd_edge &y_ind,
-                  const dd_edge &A, const double* x, const dd_edge &x_ind) = 0;
-
-    /** Display compute table information.
-        This is primarily for aid in debugging.
-        @param  strm  File stream to write to.
-    */
-    virtual void showComputeTable(FILE* strm) const = 0;
-
-    /** Get the number of entries in the compute table.
-        @return       The number of entries in the compute table.
-    */
-    virtual long getNumCacheEntries() const = 0;
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// **********************************************************************
-//
-//                    Inlined methods for dd_edge
-//
-// **********************************************************************
-
-inline
-MEDDLY::forest* MEDDLY::dd_edge::getForest() const
-{
-  return parent;
-}
-
-inline
-int MEDDLY::dd_edge::getNode() const
-{
-  return node;
-}
-
-inline
-void MEDDLY::dd_edge::getEdgeValue(int& ev) const
-{
-  ev = value;
-}
-
-inline 
-int MEDDLY::dd_edge::getLevel() const
-{
-  return level;
-}
-
-inline 
-void MEDDLY::dd_edge::setIndex(int index)
-{
-  this->index = index;
-}
-
-inline 
-int MEDDLY::dd_edge::getIndex() const
-{
-  return index;
-}
-
-inline 
-void MEDDLY::dd_edge::clear()
-{
-  assert(index != -1);
-  set(0, 0, 0);
-  updateNeeded = true;
-}
-
-
-// Check for equality.
-inline 
-bool MEDDLY::dd_edge::operator==(const dd_edge& e) const
-{
-  return (this == &e) ||
-         (parent == e.parent && node == e.node &&
-          value == e.value && level == e.level);
-}
-
-
-// Check for inequality.
-inline 
-bool MEDDLY::dd_edge::operator!=(const dd_edge& e) const
-{
-  return !(*this == e);
-}
-
-
-// Operator +
-inline 
-const MEDDLY::dd_edge MEDDLY::dd_edge::operator+(const dd_edge& e) const
-{
-  return dd_edge(*this) += e;
-}
-
-
-// Operator *
-inline 
-const MEDDLY::dd_edge MEDDLY::dd_edge::operator*(const dd_edge& e) const
-{
-  return dd_edge(*this) *= e;
-}
-
-
-// Operator -
-inline 
-const MEDDLY::dd_edge MEDDLY::dd_edge::operator-(const dd_edge& e) const
-{
-  return dd_edge(*this) -= e;
-}
-
-
-// Returns true if the iterator points to a valid element.
-inline 
-MEDDLY::dd_edge::iterator::operator bool() const
-{
-  return nodes != 0 && nodes[0] != 0;
-}
-
-inline 
-int MEDDLY::dd_edge::iterator::getLevel() const
-{
-  return foundPathAtLevel;
-}
 
 
 #endif

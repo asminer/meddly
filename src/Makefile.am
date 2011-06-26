@@ -27,9 +27,6 @@ libmeddly_la_SOURCES = \
 	temp_dd_edge.cc \
 	domain.cc \
 	forest.cc \
-	compute_manager.cc \
-	compute_cache.cc \
-	compute_cache.h \
   compute_table.h \
   compute_table.cc \
 	defines.h \

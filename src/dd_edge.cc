@@ -145,25 +145,13 @@ unsigned MEDDLY::dd_edge::getEdgeCount(bool countZeroes) const
 MEDDLY::dd_edge& MEDDLY::dd_edge::operator+=(const dd_edge& e)
 {
   if (opPlus == 0) {
-    const int nOperands = 3;
-    op_param plist[nOperands];
-    plist[0].set(parent);
-    plist[1].set(parent);
-    plist[2].set(parent);
-    compute_manager::op_code opCode =
-      (parent->getRangeType() == forest::BOOLEAN &&
-        parent->getEdgeLabeling() == forest::MULTI_TERMINAL)
-      ? compute_manager::UNION
-      : compute_manager::UNION;
-      // TBD fix this!
-    opPlus =
-      smart_cast<expert_compute_manager*>(getComputeManager())->
-      getOpInfo(opCode, plist, nOperands);
+    if (parent->getRangeType() == forest::BOOLEAN)
+      opPlus = getOperation(UNION, *this, e, *this);
+    else
+      opPlus = getOperation(PLUS, *this, e, *this);
     DCASSERT(opPlus != 0);
   }
-  DCASSERT(e.parent == parent);
-  smart_cast<expert_compute_manager*>(getComputeManager())->
-    apply(opPlus, *this, e, *this);
+  opPlus->compute(*this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
   DCASSERT(updateNeeded == true);
   return *this;
@@ -174,24 +162,13 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator+=(const dd_edge& e)
 MEDDLY::dd_edge& MEDDLY::dd_edge::operator*=(const dd_edge& e)
 {
   if (opStar == 0) {
-    const int nOperands = 3;
-    op_param plist[nOperands];
-    plist[0].set(parent);
-    plist[1].set(parent);
-    plist[2].set(parent);
-    compute_manager::op_code opCode =
-      (parent->getRangeType() == forest::BOOLEAN &&
-        parent->getEdgeLabeling() == forest::MULTI_TERMINAL)
-      ? compute_manager::INTERSECTION
-      : compute_manager::INTERSECTION;  // TBD... should be multiply
-    opStar =
-      smart_cast<expert_compute_manager*>(getComputeManager())->
-      getOpInfo(opCode, plist, nOperands);
+    if (parent->getRangeType() == forest::BOOLEAN)
+      opStar = getOperation(INTERSECTION, *this, e, *this);
+    else
+      opStar = getOperation(MULTIPLY, *this, e, *this);
     DCASSERT(opStar != 0);
   }
-  DCASSERT(e.parent == parent);
-  smart_cast<expert_compute_manager*>(getComputeManager())->
-    apply(opStar, *this, e, *this);
+  opStar->compute(*this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
   DCASSERT(updateNeeded == true);
   return *this;
@@ -202,25 +179,13 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator*=(const dd_edge& e)
 MEDDLY::dd_edge& MEDDLY::dd_edge::operator-=(const dd_edge& e)
 {
   if (opMinus == 0) {
-    const int nOperands = 3;
-    op_param plist[nOperands];
-    plist[0].set(parent);
-    plist[1].set(parent);
-    plist[2].set(parent);
-    compute_manager::op_code opCode =
-      (parent->getRangeType() == forest::BOOLEAN &&
-        parent->getEdgeLabeling() == forest::MULTI_TERMINAL)
-      ? compute_manager::DIFFERENCE
-      : compute_manager::DIFFERENCE; // TBD: fix this
-      // : compute_manager::MINUS;
-    opMinus =
-      smart_cast<expert_compute_manager*>(getComputeManager())->
-      getOpInfo(opCode, plist, nOperands);
+    if (parent->getRangeType() == forest::BOOLEAN)
+      opMinus = getOperation(DIFFERENCE, *this, e, *this);
+    else
+      opMinus = getOperation(MINUS, *this, e, *this);
     DCASSERT(opMinus != 0);
   }
-  DCASSERT(e.parent == parent);
-  smart_cast<expert_compute_manager*>(getComputeManager())->
-    apply(opMinus, *this, e, *this);
+  opMinus->compute(*this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
   DCASSERT(updateNeeded == true);
   return *this;

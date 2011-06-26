@@ -23,7 +23,7 @@
 
 #include "defines.h"
 #include "operations/operation_ext.h"
-#include "operations/reachability.h"
+// #include "operations/reachability.h"
 #include "operations/cardinality.h"
 #include "operations/maxmin_range.h"
 #include "operations/vect_matr.h"
@@ -65,19 +65,7 @@ MEDDLY::expert_compute_manager::~expert_compute_manager()
 const char* MEDDLY::expert_compute_manager::getOperationName(
     compute_manager::op_code op) const
 {
-  switch(op) {
-    case PRE_IMAGE:     return "Pre-Image";
-    case POST_IMAGE:    return "Post-Image";
-    case REACHABLE_STATES_DFS:
-                     return "Reachable States via Depth-First Search";
-    case REACHABLE_STATES_BFS:
-                     return "Reachable States via Breadth-First Search";
-    case REVERSE_REACHABLE_DFS:
-                     return "Reverse Reachable States via Depth-First Search";
-    case REVERSE_REACHABLE_BFS:
-                     return "Reverse Reachable States via Breadth-First Search";
-    default: return "Unknown operation";
-  }
+  return "Unknown operation";
 }
 
 template <class TYPE>
@@ -331,124 +319,6 @@ void MEDDLY::expert_compute_manager::addBuiltinOp(const builtin_op_key& key,
 op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
     const op_param* const plist, int N)
 {
-  // search in built-in op entries
-  builtin_op_key key(op, plist, N);
-  std::map<builtin_op_key, op_info>::iterator itr = builtinOpEntries->find(key);
-  if (itr != builtinOpEntries->end()) return &(itr->second);
-
-  const expert_forest* const f0 = plist[0].readForest();
-  const expert_forest* const f1 = plist[1].readForest();
-  const expert_forest* const f2 = plist[2].readForest();
-
-  if (N == 3) {
-    // binary operations
-
-    if (f0->isMdd()) {
-      if (f1->isMdd() &&
-          f2->isMdd()) {
-        // MDD binary operation
-      }
-
-      if (f1->isMxd() &&
-          f2->isMdd()) {
-        // MDD MXD image operations
-        switch (op) {
-          case POST_IMAGE:
-            // Mdd Post-Image
-            addBuiltinOp(key, mdd_post_image::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case PRE_IMAGE:
-            // Mdd Pre-Image
-            addBuiltinOp(key, mdd_pre_image::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case REACHABLE_STATES_DFS:
-            // Mdd Reachable states using saturation-based algorithm
-            addBuiltinOp(key, mdd_reachability_dfs::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case REACHABLE_STATES_BFS:
-            // Mdd Reachable states using traditional breadth-first algorithm
-            addBuiltinOp(key, mdd_reachability_bfs::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case REVERSE_REACHABLE_BFS:
-            // Mdd Reverse reachable states using traditional
-            // breadth-first algorithm
-            addBuiltinOp(key, mdd_backward_reachability_bfs::getInstance(),
-                plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case REVERSE_REACHABLE_DFS:
-            // Mdd Reverse Reachable states using saturation-based algorithm
-            addBuiltinOp(key, mdd_backward_reachability_dfs::getInstance(),
-                plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          default:
-            break;
-        }
-      }
-    }
-    else if (f0->isMxd()) {
-
-      if (f1->isMxd() &&
-          f2->isMxd()) {
-      }
-
-    }
-    else if (f0->isMtMdd()) {
-
-      if (f1->isMtMdd()) {
-
-        if (f2->isMtMdd()) {
-        }
-      } // MTMDD binary operations
-      else if (f1->isMtMxd()) {
-
-        if (f2->isMtMdd()) {
-          // MTMDD-MTMXD image operation
-          switch (op) {
-          case POST_IMAGE:
-            // MtMdd Post-Image
-            addBuiltinOp(key, mtmdd_post_image::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case PRE_IMAGE:
-            // MtMdd Pre-Image
-            addBuiltinOp(key, mtmdd_pre_image::getInstance(), plist, N);
-            return &(builtinOpEntries->find(key)->second);
-          case REACHABLE_STATES_DFS:
-            // MtMdd Reachable states using saturation-based algorithm
-            assert(false);
-          case REACHABLE_STATES_BFS:
-            // MtMdd Reachable states using traditional breadth-first algorithm
-            assert(false);
-          default:
-            break;
-          }
-        } // MTMDD-MTMXD image operation
-
-      }
-
-    }
-    else if (f0->isMtMxd()) {
-
-      if (f1->isMtMxd() &&
-          f2->isMtMxd()) {
-        // MTMXD binary operation
-      }
-
-    }
-    else if (f0->isEvplusMdd()) {
-      if (f1->isEvplusMdd() &&
-          f2->isEvplusMdd()) {
-
-        // EV+MDD binary operation
-      }
-    }
-    else if (f0->isEvtimesMdd()) {
-      if (f1->isEvtimesMdd() &&
-          f2->isEvtimesMdd()) {
-
-        // EV*MDD binary operation
-      }
-    }
-  }
   return 0;
 }
 

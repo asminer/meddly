@@ -26,7 +26,6 @@
 #include "../defines.h"
 #include "prepostimage.h"
 #include "../compute_table.h"
-#include "apply_base.h"
 
 namespace MEDDLY {
   class image_op;
@@ -73,7 +72,7 @@ class MEDDLY::image_op : public binary_operation {
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
     virtual int compute(int a, int b) = 0;
   protected:
-    generic_binary_mdd* unionOp;
+    binary_operation* unionOp;
 };
 
 MEDDLY::image_op::image_op(const binary_opname* oc, expert_forest* a1,
@@ -108,9 +107,9 @@ void MEDDLY::image_op
 ::compute(const dd_edge &a, const dd_edge &b, dd_edge &c)
 {
   if (resF->getRangeType() == forest::BOOLEAN) {
-    unionOp = smart_cast<generic_binary_mdd*>(getOperation(UNION, a, b, c));
+    unionOp = getOperation(UNION, a, b, c);
   } else {
-    unionOp = smart_cast<generic_binary_mdd*>(getOperation(MAXIMUM, a, b, c));
+    unionOp = getOperation(MAXIMUM, a, b, c);
   }
   DCASSERT(unionOp);
   int cnode = compute(a.getNode(), b.getNode());
