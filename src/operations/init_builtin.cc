@@ -51,6 +51,8 @@
 #include "comp_ge.h"
 
 #include "prepostimage.h"
+#include "reach_bfs.h"
+#include "reach_dfs.h"
 
 void MEDDLY::builtin_initializer::init(const settings &s)
 {
@@ -80,8 +82,12 @@ void MEDDLY::builtin_initializer::init(const settings &s)
   MEDDLY::GREATER_THAN          = (GT         = initializeGT(s)           );
   MEDDLY::GREATER_THAN_EQUAL    = (GE         = initializeGE(s)           );
 
-  MEDDLY::PRE_IMAGE             = (PRE_IMAGE  = initializePreImage(s)     );
-  MEDDLY::POST_IMAGE            = (POST_IMAGE = initializePreImage(s)     );
+  MEDDLY::PRE_IMAGE             = (PRE_IMAGE    = initializePreImage(s)   );
+  MEDDLY::POST_IMAGE            = (POST_IMAGE   = initializePreImage(s)   );
+  MEDDLY::REACHABLE_STATES_DFS  = (FORWARD_DFS  = initializeForwardDFS(s) );
+  MEDDLY::REACHABLE_STATES_BFS  = (FORWARD_BFS  = initializeForwardBFS(s) );
+  MEDDLY::REVERSE_REACHABLE_DFS = (BACKWARD_DFS = initializeBackwardDFS(s));
+  MEDDLY::REVERSE_REACHABLE_BFS = (BACKWARD_BFS = initializeBackwardBFS(s));
 }
 
 template <class T>
@@ -121,5 +127,9 @@ void MEDDLY::builtin_initializer::cleanup()
 
   cleanPair(PRE_IMAGE,    MEDDLY::PRE_IMAGE);
   cleanPair(POST_IMAGE,   MEDDLY::POST_IMAGE);
+  cleanPair(FORWARD_DFS,  MEDDLY::REACHABLE_STATES_DFS);
+  cleanPair(FORWARD_BFS,  MEDDLY::REACHABLE_STATES_BFS);
+  cleanPair(BACKWARD_DFS, MEDDLY::REVERSE_REACHABLE_DFS);
+  cleanPair(BACKWARD_BFS, MEDDLY::REVERSE_REACHABLE_BFS);
 }
 

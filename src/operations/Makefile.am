@@ -35,7 +35,8 @@ libops_la_SOURCES = \
   comp_ge.h         comp_ge.cc      \
   \
   prepostimage.h    prepostimage.cc \
-	reachability.h    reachability.cc \
+  reach_bfs.h       reach_bfs.cc    \
+  reach_dfs.h       reach_dfs.cc    \
   mpz_object.h      mpz_object.cc \
   vect_matr.h       vect_matr.cc \
   \
