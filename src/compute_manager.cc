@@ -450,7 +450,7 @@ op_info* MEDDLY::expert_compute_manager::getOpInfo(compute_manager::op_code op,
             // Mdd intersection
             addBuiltinOp(key, mdd_intersection::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
-          case DIFFERENCE:
+          case 
             // Mdd difference
             addBuiltinOp(key, mdd_difference::getInstance(), plist, N);
             return &(builtinOpEntries->find(key)->second);
