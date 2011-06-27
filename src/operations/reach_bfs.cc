@@ -93,6 +93,8 @@ MEDDLY::common_bfs_mt::common_bfs_mt(const binary_opname* oc, expert_forest* a1,
 {
   unionOp = 0;
   imageOp = 0;
+  key_length = 0;
+  ans_length = 0;
 }
 
 bool MEDDLY::common_bfs_mt::isEntryStale(const int* entryData)
