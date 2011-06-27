@@ -62,31 +62,30 @@ bool MEDDLY::union_mdd::checkTerminals(int a, int b, int& c)
     c = -1;
     return true;
   }
-  if (a==0 && b==0) {
-    c = 0;
-    return true;
-  }
-  if (a == 0) 
+  if (a == 0) {
+    if (b==0) {
+      c = 0;
+      return true;
+    }
     if (arg2F == resF) {
       c = resF->linkNode(b);
       return true;
-    } else {
-      return false;
-    }
-  if (a == b) 
+    } 
+    return false;
+  }
+  if (a == b) {
     if (arg1F == arg2F && arg1F == resF) {
       c = resF->linkNode(b);
       return true;
-    } else {
-      return false;
-    }
+    } 
+    return false;
+  }
   if (b == 0) {
     if (arg1F == resF) {
       c = resF->linkNode(a);
       return true;
-    } else {
-      return false;
-    }
+    } 
+    return false;
   }
   return false;
 }

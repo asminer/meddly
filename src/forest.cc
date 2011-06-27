@@ -140,8 +140,7 @@ void MEDDLY::expert_forest::unregisterDDEdges() {
   for (unsigned i = 0; i < firstFree; ++i) {
     if (edge[i].edge != 0) {
       DCASSERT(edge[i].nextHole == -1);
-      int node = edge[i].edge->getNode();
-      unlinkNode(node);
+      edge[i].edge->set(0, 0, 0);
       edge[i].edge->setIndex(-1);
     }
   }

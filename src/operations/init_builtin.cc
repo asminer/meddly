@@ -85,7 +85,7 @@ void MEDDLY::builtin_initializer::init(const settings &s)
   MEDDLY::GREATER_THAN_EQUAL    = (GE         = initializeGE(s)           );
 
   MEDDLY::PRE_IMAGE             = (PRE_IMAGE    = initializePreImage(s)   );
-  MEDDLY::POST_IMAGE            = (POST_IMAGE   = initializePreImage(s)   );
+  MEDDLY::POST_IMAGE            = (POST_IMAGE   = initializePostImage(s)  );
   MEDDLY::REACHABLE_STATES_DFS  = (FORWARD_DFS  = initializeForwardDFS(s) );
   MEDDLY::REACHABLE_STATES_BFS  = (FORWARD_BFS  = initializeForwardBFS(s) );
   MEDDLY::REVERSE_REACHABLE_DFS = (BACKWARD_DFS = initializeBackwardDFS(s));

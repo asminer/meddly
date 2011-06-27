@@ -240,7 +240,8 @@ struct MEDDLY::settings {
     settings() {
       doComputeTablesUseChaining = true;
       useMonolithicComputeTable = true;
-      maxComputeTableSize = 16777216;
+      // maxComputeTableSize = 16777216;
+      maxComputeTableSize = 262144*4;
       operationBuilder = makeBuiltinInitializer();
     }
 };

@@ -22,6 +22,24 @@
 #include "../defines.h"
 #include "vect_matr.h"
 
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::numerical_opname* MEDDLY::initVectorMatrixMult(const settings &s)
+{
+  // TBD
+  return 0;
+}
+
+MEDDLY::numerical_opname* MEDDLY::initMatrixVectorMult(const settings &s)
+{
+  // TBD
+  return 0;
+}
+
 #if 0
 
 using namespace MEDDLY;

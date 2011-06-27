@@ -85,8 +85,8 @@ namespace MEDDLY {
 
   // numerical operation "codes"
 
-  const numerical_opname* VECT_MATR_MULTIPLY = 0;
-  const numerical_opname* MATR_VECT_MULTIPLY = 0;
+  const numerical_opname* VECT_MATR_MULT = 0;
+  const numerical_opname* MATR_VECT_MULT = 0;
 
   // cache of operations
   operation** op_cache = 0;

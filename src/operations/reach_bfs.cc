@@ -26,3 +26,267 @@
 #include "../defines.h"
 #include "reach_bfs.h"
 
+// #define DEBUG_BFS
+
+namespace MEDDLY {
+  class common_bfs_mt;
+  class forwd_bfs_mt;
+  class bckwd_bfs_mt;
+
+  class forwd_bfs_opname;
+  class bckwd_bfs_opname;
+};
+
+// ******************************************************************
+// *                                                                *
+// *                      common_bfs_mt  class                      *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::common_bfs_mt : public binary_operation {
+  public:
+    common_bfs_mt(const binary_opname* opcode, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res);
+
+    virtual bool isEntryStale(const int* entryData);
+    virtual void discardEntry(const int* entryData);
+    virtual void showEntry(FILE* strm, const int* entryData) const;
+    virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
+    virtual int compute(int a, int b) = 0;
+  protected:
+    binary_operation* unionOp;
+    binary_operation* imageOp;
+
+    inline int iterate(int init, int R) {
+      int reachableStates = arg1F->linkNode(init);
+      int prevReachable = 0;
+#ifdef DEBUG_BFS
+      fprintf(stderr, "Relation: %d\n", R);
+      arg2F->showNodeGraph(stderr, R);
+      fprintf(stderr, "Initial states: %d\n", init);
+      arg1F->showNodeGraph(stderr, init);
+      int iters = 0;
+#endif
+      while (prevReachable != reachableStates) {
+        resF->unlinkNode(prevReachable);
+        prevReachable = reachableStates;
+        int front = imageOp->compute(reachableStates, R);
+#ifdef DEBUG_BFS
+        iters++;
+        fprintf(stderr, "Iteration %d\npseudo-frontier: %d\n", iters, front);
+        arg1F->showNodeGraph(stderr, front);
+#endif
+        reachableStates = unionOp->compute(reachableStates, front);
+#ifdef DEBUG_BFS
+        fprintf(stderr, "Reachable so far: %d\n", reachableStates);
+        arg1F->showNodeGraph(stderr, reachableStates);
+#endif
+        resF->unlinkNode(front);
+      }
+      resF->unlinkNode(prevReachable);
+      return reachableStates;
+    }
+};
+
+MEDDLY::common_bfs_mt::common_bfs_mt(const binary_opname* oc, expert_forest* a1,
+  expert_forest* a2, expert_forest* res) : binary_operation(oc, a1, a2, res)
+{
+  unionOp = 0;
+  imageOp = 0;
+}
+
+bool MEDDLY::common_bfs_mt::isEntryStale(const int* entryData)
+{
+  throw error(error::MISCELLANEOUS);
+  // this operation won't add any CT entries.
+}
+
+void MEDDLY::common_bfs_mt::discardEntry(const int* entryData)
+{
+  throw error(error::MISCELLANEOUS);
+  // this operation won't add any CT entries.
+}
+
+void MEDDLY::common_bfs_mt::showEntry(FILE* strm, const int* entryData) const
+{
+  throw error(error::MISCELLANEOUS);
+  // this operation won't add any CT entries.
+}
+
+void MEDDLY::common_bfs_mt
+::compute(const dd_edge &a, const dd_edge &b, dd_edge &c)
+{
+  int cnode = compute(a.getNode(), b.getNode());
+  c.set(cnode, 0, resF->getNodeLevel(cnode));
+}
+
+// ******************************************************************
+// *                                                                *
+// *                       forwd_bfs_mt class                       *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::forwd_bfs_mt : public common_bfs_mt {
+  public:
+    forwd_bfs_mt(const binary_opname* opcode, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res);
+
+    virtual int compute(int a, int b);
+};
+
+MEDDLY::forwd_bfs_mt::forwd_bfs_mt(const binary_opname* oc, expert_forest* a1,
+  expert_forest* a2, expert_forest* res) : common_bfs_mt(oc, a1, a2, res)
+{
+}
+
+int MEDDLY::forwd_bfs_mt::compute(int a, int b)
+{
+  if (resF->getRangeType() == forest::BOOLEAN) {
+    unionOp = getOperation(UNION, resF, resF, resF);
+  } else {
+    unionOp = getOperation(MAXIMUM, resF, resF, resF);
+  }
+  imageOp = getOperation(POST_IMAGE, arg1F, arg2F, resF);
+
+  return iterate(a, b);
+}
+
+
+// ******************************************************************
+// *                                                                *
+// *                       bckwd_bfs_mt class                       *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::bckwd_bfs_mt : public common_bfs_mt {
+  public:
+    bckwd_bfs_mt(const binary_opname* opcode, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res);
+
+    virtual int compute(int a, int b);
+};
+
+MEDDLY::bckwd_bfs_mt::bckwd_bfs_mt(const binary_opname* oc, expert_forest* a1,
+  expert_forest* a2, expert_forest* res) : common_bfs_mt(oc, a1, a2, res)
+{
+}
+
+int MEDDLY::bckwd_bfs_mt::compute(int a, int b)
+{
+  if (resF->getRangeType() == forest::BOOLEAN) {
+    unionOp = getOperation(UNION, resF, resF, resF);
+  } else {
+    unionOp = getOperation(MAXIMUM, resF, resF, resF);
+  }
+  imageOp = getOperation(PRE_IMAGE, arg1F, arg2F, resF);
+
+  return iterate(a, b);
+}
+
+
+// ******************************************************************
+// *                                                                *
+// *                     forwd_bfs_opname class                     *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::forwd_bfs_opname : public binary_opname {
+  public:
+    forwd_bfs_opname();
+    virtual binary_operation* buildOperation(expert_forest* a1,
+      expert_forest* a2, expert_forest* r) const;
+};
+
+MEDDLY::forwd_bfs_opname::forwd_bfs_opname()
+ : binary_opname("ReachableBFS")
+{
+}
+
+MEDDLY::binary_operation* 
+MEDDLY::forwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
+  expert_forest* r) const
+{
+  if (0==a1 || 0==a2 || 0==r) return 0;
+
+  if (  
+    (a1->getDomain() != r->getDomain()) || 
+    (a2->getDomain() != r->getDomain()) 
+  )
+    throw error(error::DOMAIN_MISMATCH);
+
+  if (
+    a1->isForRelations()    ||
+    !a2->isForRelations()   ||
+    r->isForRelations()     ||
+    (a1->getRangeType() != r->getRangeType()) ||
+    (a2->getRangeType() != r->getRangeType()) ||
+    (a1->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
+    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
+    (r->getEdgeLabeling() != forest::MULTI_TERMINAL)
+  )
+    throw error(error::TYPE_MISMATCH);
+
+  return new forwd_bfs_mt(this, a1, a2, r);
+}
+
+// ******************************************************************
+// *                                                                *
+// *                     bckwd_bfs_opname class                     *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::bckwd_bfs_opname : public binary_opname {
+  public:
+    bckwd_bfs_opname();
+    virtual binary_operation* buildOperation(expert_forest* a1,
+      expert_forest* a2, expert_forest* r) const;
+};
+
+MEDDLY::bckwd_bfs_opname::bckwd_bfs_opname()
+ : binary_opname("ReverseReachableBFS")
+{
+}
+
+MEDDLY::binary_operation* 
+MEDDLY::bckwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
+  expert_forest* r) const
+{
+  if (0==a1 || 0==a2 || 0==r) return 0;
+
+  if (  
+    (a1->getDomain() != r->getDomain()) || 
+    (a2->getDomain() != r->getDomain()) 
+  )
+    throw error(error::DOMAIN_MISMATCH);
+
+  if (a1 != r)
+    throw error(error::FOREST_MISMATCH);
+
+  if (
+    a1->isForRelations()    ||
+    !a2->isForRelations()   ||
+    (a1->getRangeType() != a2->getRangeType()) ||
+    (a1->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
+    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) 
+  )
+    throw error(error::TYPE_MISMATCH);
+
+  return new bckwd_bfs_mt(this, a1, a2, r);
+}
+
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::binary_opname* MEDDLY::initializeForwardBFS(const settings &s)
+{
+  return new forwd_bfs_opname;
+}
+
+MEDDLY::binary_opname* MEDDLY::initializeBackwardBFS(const settings &s)
+{
+  return new bckwd_bfs_opname;
+}
+

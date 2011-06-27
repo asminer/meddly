@@ -26,3 +26,21 @@
 #include "../defines.h"
 #include "reach_dfs.h"
 
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::binary_opname* MEDDLY::initializeForwardDFS(const settings &s)
+{
+  // TBD
+  return 0;
+}
+
+MEDDLY::binary_opname* MEDDLY::initializeBackwardDFS(const settings &s)
+{
+  // TBD
+  return 0;
+}
+

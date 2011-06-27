@@ -34,6 +34,7 @@
 #include <cstdio>
 
 #include "meddly.h"
+#include "meddly_expert.h"
 #include "timer.h"
 
 using namespace MEDDLY;
@@ -179,6 +180,7 @@ int main()
   dd_edge** dgm = new dd_edge*[N];
   dd_edge** constr = new dd_edge*[N+1];
 
+
   for (int i=0; i<N; i++) {
     col[i] = new dd_edge(f);
     dgp[i] = new dd_edge(f);
@@ -252,6 +254,7 @@ int main()
       printf("\tQueen for row %2d in column %2d\n", i, minterm[i]+1);
     }
   }
+
   destroyDomain(d);
   cleanup();
   return 0;
