@@ -40,8 +40,6 @@ int minterm[7];
 const int* mtaddr[] = { minterm };
 const int* dcaddr[] = { dontcare };
 
-compute_manager* CM;
-
 long seed = 123456789L;
 
 double Random()
@@ -200,8 +198,6 @@ void test(forest* mdd, forest* mxd, int nmt)
 int main()
 {
   initialize();
-  CM = getComputeManager();
-  assert(CM);
 
   domain* myd = createDomainBottomUp(vars, 6);
   assert(myd);

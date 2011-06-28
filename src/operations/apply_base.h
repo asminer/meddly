@@ -72,7 +72,7 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
       return true;
     }
 
-    inline bool saveResult(int a, int b, int c) {
+    inline void saveResult(int a, int b, int c) {
       static int cacheEntry[3];
       if (can_commute && a > b) {
         cacheEntry[0] = arg1F->cacheNode(b); 

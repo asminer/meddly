@@ -56,43 +56,49 @@
 
 #include "vect_matr.h"
 
+template <class T>
+inline void initP(const T* &global, T* &local, T* init)
+{
+  global = (local = init);
+}
+
 void MEDDLY::builtin_initializer::init(const settings &s)
 {
-  MEDDLY::COPY                  = (COPY       = initializeCopy(s)         );
-  MEDDLY::CARDINALITY           = (CARD       = initializeCardinality(s)  );
-  MEDDLY::COMPLEMENT            = (COMPL      = initializeComplement(s)   );
-  MEDDLY::MAX_RANGE             = (MAXRANGE   = initializeMaxRange(s)     );
-  MEDDLY::MIN_RANGE             = (MINRANGE   = initializeMaxRange(s)     );
-  MEDDLY::CONVERT_TO_INDEX_SET  = (MDD2EVPLUS = initializeMDD2EVPLUS(s)   );
+  initP(MEDDLY::COPY,                 COPY,       initializeCopy(s)         );
+  initP(MEDDLY::CARDINALITY,          CARD,       initializeCardinality(s)  );
+  initP(MEDDLY::COMPLEMENT,           COMPL,      initializeComplement(s)   );
+  initP(MEDDLY::MAX_RANGE,            MAXRANGE,   initializeMaxRange(s)     );
+  initP(MEDDLY::MIN_RANGE,            MINRANGE,   initializeMaxRange(s)     );
+  initP(MEDDLY::CONVERT_TO_INDEX_SET, MDD2EVPLUS, initializeMDD2EVPLUS(s)   );
 
-  MEDDLY::UNION                 = (UNION      = initializeUnion(s)        );
-  MEDDLY::INTERSECTION          = (INTERSECT  = initializeIntersection(s) );
-  MEDDLY::DIFFERENCE            = (DIFFERENCE = initializeDifference(s)   );
-  MEDDLY::CROSS                 = (CROSS      = initializeCross(s)        );
+  initP(MEDDLY::UNION,                UNION,      initializeUnion(s)        );
+  initP(MEDDLY::INTERSECTION,         INTERSECT,  initializeIntersection(s) );
+  initP(MEDDLY::DIFFERENCE,           DIFFERENCE, initializeDifference(s)   );
+  initP(MEDDLY::CROSS,                CROSS,      initializeCross(s)        );
 
-  MEDDLY::MAXIMUM               = (MAX        = initializeMaximum(s)      );
-  MEDDLY::MINIMUM               = (MIN        = initializeMinimum(s)      );
-  MEDDLY::PLUS                  = (PLUS       = initializePlus(s)         );
-  MEDDLY::MINUS                 = (MINUS      = initializeMinus(s)        );
-  MEDDLY::MULTIPLY              = (MULTIPLY   = initializeMultiply(s)     );
-  MEDDLY::DIVIDE                = (DIVIDE     = initializeMultiply(s)     );
+  initP(MEDDLY::MAXIMUM,              MAX,        initializeMaximum(s)      );
+  initP(MEDDLY::MINIMUM,              MIN,        initializeMinimum(s)      );
+  initP(MEDDLY::PLUS,                 PLUS,       initializePlus(s)         );
+  initP(MEDDLY::MINUS,                MINUS,      initializeMinus(s)        );
+  initP(MEDDLY::MULTIPLY,             MULTIPLY,   initializeMultiply(s)     );
+  initP(MEDDLY::DIVIDE,               DIVIDE,     initializeMultiply(s)     );
 
-  MEDDLY::EQUAL                 = (EQ         = initializeEQ(s)           );
-  MEDDLY::NOT_EQUAL             = (NE         = initializeNE(s)           );
-  MEDDLY::LESS_THAN             = (LT         = initializeLT(s)           );
-  MEDDLY::LESS_THAN_EQUAL       = (LE         = initializeLE(s)           );
-  MEDDLY::GREATER_THAN          = (GT         = initializeGT(s)           );
-  MEDDLY::GREATER_THAN_EQUAL    = (GE         = initializeGE(s)           );
+  initP(MEDDLY::EQUAL,                EQ,           initializeEQ(s)         );
+  initP(MEDDLY::NOT_EQUAL,            NE,           initializeNE(s)         );
+  initP(MEDDLY::LESS_THAN,            LT,           initializeLT(s)         );
+  initP(MEDDLY::LESS_THAN_EQUAL,      LE,           initializeLE(s)         );
+  initP(MEDDLY::GREATER_THAN,         GT,           initializeGT(s)         );
+  initP(MEDDLY::GREATER_THAN_EQUAL,   GE,           initializeGE(s)         );
 
-  MEDDLY::PRE_IMAGE             = (PRE_IMAGE    = initializePreImage(s)   );
-  MEDDLY::POST_IMAGE            = (POST_IMAGE   = initializePostImage(s)  );
-  MEDDLY::REACHABLE_STATES_DFS  = (FORWARD_DFS  = initializeForwardDFS(s) );
-  MEDDLY::REACHABLE_STATES_BFS  = (FORWARD_BFS  = initializeForwardBFS(s) );
-  MEDDLY::REVERSE_REACHABLE_DFS = (BACKWARD_DFS = initializeBackwardDFS(s));
-  MEDDLY::REVERSE_REACHABLE_BFS = (BACKWARD_BFS = initializeBackwardBFS(s));
+  initP(MEDDLY::PRE_IMAGE,            PRE_IMAGE,    initializePreImage(s)   );
+  initP(MEDDLY::POST_IMAGE,           POST_IMAGE,   initializePostImage(s)  );
+  initP(MEDDLY::REACHABLE_STATES_DFS, FORWARD_DFS,  initializeForwardDFS(s) );
+  initP(MEDDLY::REACHABLE_STATES_BFS, FORWARD_BFS,  initializeForwardBFS(s) );
+  initP(MEDDLY::REVERSE_REACHABLE_DFS,BACKWARD_DFS, initializeBackwardDFS(s));
+  initP(MEDDLY::REVERSE_REACHABLE_BFS,BACKWARD_BFS, initializeBackwardBFS(s));
 
-  MEDDLY::VECT_MATR_MULT        = (VECT_MATR_MULT = initVectorMatrixMult(s));
-  MEDDLY::MATR_VECT_MULT        = (MATR_VECT_MULT = initMatrixVectorMult(s));
+  initP(MEDDLY::VECT_MATR_MULT, VECT_MATR_MULT, initVectorMatrixMult(s));
+  initP(MEDDLY::MATR_VECT_MULT, MATR_VECT_MULT, initMatrixVectorMult(s));
 }
 
 template <class T>
@@ -104,37 +110,40 @@ inline void cleanPair(T *local, const T* &global)
 
 void MEDDLY::builtin_initializer::cleanup()
 {
-  cleanPair(COPY,         MEDDLY::COPY);
-  cleanPair(CARD,         MEDDLY::CARDINALITY);
-  cleanPair(COMPL,        MEDDLY::COMPLEMENT);
-  cleanPair(MAXRANGE,     MEDDLY::MAX_RANGE);
-  cleanPair(MINRANGE,     MEDDLY::MIN_RANGE);
-  cleanPair(MDD2EVPLUS,   MEDDLY::CONVERT_TO_INDEX_SET);
+  cleanPair(COPY,           MEDDLY::COPY);
+  cleanPair(CARD,           MEDDLY::CARDINALITY);
+  cleanPair(COMPL,          MEDDLY::COMPLEMENT);
+  cleanPair(MAXRANGE,       MEDDLY::MAX_RANGE);
+  cleanPair(MINRANGE,       MEDDLY::MIN_RANGE);
+  cleanPair(MDD2EVPLUS,     MEDDLY::CONVERT_TO_INDEX_SET);
 
-  cleanPair(UNION,        MEDDLY::UNION);
-  cleanPair(INTERSECT,    MEDDLY::INTERSECTION);
-  cleanPair(DIFFERENCE,   MEDDLY::DIFFERENCE);
-  cleanPair(CROSS,        MEDDLY::CROSS);
+  cleanPair(UNION,          MEDDLY::UNION);
+  cleanPair(INTERSECT,      MEDDLY::INTERSECTION);
+  cleanPair(DIFFERENCE,     MEDDLY::DIFFERENCE);
+  cleanPair(CROSS,          MEDDLY::CROSS);
 
-  cleanPair(MAX,          MEDDLY::MAXIMUM);
-  cleanPair(MIN,          MEDDLY::MINIMUM);
-  cleanPair(PLUS,         MEDDLY::PLUS);
-  cleanPair(MINUS,        MEDDLY::MINUS);
-  cleanPair(MULTIPLY,     MEDDLY::MULTIPLY);
-  cleanPair(DIVIDE,       MEDDLY::DIVIDE);
+  cleanPair(MAX,            MEDDLY::MAXIMUM);
+  cleanPair(MIN,            MEDDLY::MINIMUM);
+  cleanPair(PLUS,           MEDDLY::PLUS);
+  cleanPair(MINUS,          MEDDLY::MINUS);
+  cleanPair(MULTIPLY,       MEDDLY::MULTIPLY);
+  cleanPair(DIVIDE,         MEDDLY::DIVIDE);
 
-  cleanPair(EQ,           MEDDLY::EQUAL);
-  cleanPair(NE,           MEDDLY::NOT_EQUAL);
-  cleanPair(LT,           MEDDLY::LESS_THAN);
-  cleanPair(LE,           MEDDLY::LESS_THAN_EQUAL);
-  cleanPair(GT,           MEDDLY::GREATER_THAN);
-  cleanPair(GE,           MEDDLY::GREATER_THAN_EQUAL);
+  cleanPair(EQ,             MEDDLY::EQUAL);
+  cleanPair(NE,             MEDDLY::NOT_EQUAL);
+  cleanPair(LT,             MEDDLY::LESS_THAN);
+  cleanPair(LE,             MEDDLY::LESS_THAN_EQUAL);
+  cleanPair(GT,             MEDDLY::GREATER_THAN);
+  cleanPair(GE,             MEDDLY::GREATER_THAN_EQUAL);
 
-  cleanPair(PRE_IMAGE,    MEDDLY::PRE_IMAGE);
-  cleanPair(POST_IMAGE,   MEDDLY::POST_IMAGE);
-  cleanPair(FORWARD_DFS,  MEDDLY::REACHABLE_STATES_DFS);
-  cleanPair(FORWARD_BFS,  MEDDLY::REACHABLE_STATES_BFS);
-  cleanPair(BACKWARD_DFS, MEDDLY::REVERSE_REACHABLE_DFS);
-  cleanPair(BACKWARD_BFS, MEDDLY::REVERSE_REACHABLE_BFS);
+  cleanPair(PRE_IMAGE,      MEDDLY::PRE_IMAGE);
+  cleanPair(POST_IMAGE,     MEDDLY::POST_IMAGE);
+  cleanPair(FORWARD_DFS,    MEDDLY::REACHABLE_STATES_DFS);
+  cleanPair(FORWARD_BFS,    MEDDLY::REACHABLE_STATES_BFS);
+  cleanPair(BACKWARD_DFS,   MEDDLY::REVERSE_REACHABLE_DFS);
+  cleanPair(BACKWARD_BFS,   MEDDLY::REVERSE_REACHABLE_BFS);
+
+  cleanPair(VECT_MATR_MULT, MEDDLY::VECT_MATR_MULT);
+  cleanPair(MATR_VECT_MULT, MEDDLY::MATR_VECT_MULT);
 }
 

@@ -69,6 +69,20 @@ bool MEDDLY::plus_mdd::checkTerminals(int a, int b, int& c)
     }
     return true;
   }
+  if (0==a) {
+    if (arg2F == resF) {
+      c = arg2F->linkNode(b);
+      return true;
+    }
+    return false;
+  }
+  if (0==b) {
+    if (arg1F == resF) {
+      c = arg1F->linkNode(a);
+      return true;
+    }
+    return false;
+  }
   return false;
 }
 

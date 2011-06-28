@@ -22,166 +22,124 @@
 #include "../defines.h"
 #include "vect_matr.h"
 
+namespace MEDDLY {
+  class base_evplus_mt;
+
+  class VM_evplus_mt;
+
+  class MV_evplus_mt;
+
+  class VM_opname;
+  class MV_opname;
+};
+
 // ******************************************************************
 // *                                                                *
-// *                           Front  end                           *
+// *                      base_evplus_mt class                      *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::numerical_opname* MEDDLY::initVectorMatrixMult(const settings &s)
+class MEDDLY::base_evplus_mt : public numerical_operation {
+  public:
+    base_evplus_mt(const numerical_opname* code, const dd_edge &x_ind,
+      const dd_edge& A, const dd_edge &y_ind);
+
+    virtual ~base_evplus_mt();
+
+    virtual void compute(double* y, const double* x);
+
+    virtual void compute(int ht, double* y, int y_ind, const double* x, 
+      int x_ind, int A) = 0;
+
+    virtual bool isEntryStale(const int*) {
+      throw error(error::MISCELLANEOUS);
+    }
+    virtual void discardEntry(const int*) {
+      throw error(error::MISCELLANEOUS);
+    }
+    virtual void showEntry(FILE*, const int*) const {
+      throw error(error::MISCELLANEOUS);
+    }
+
+  protected:
+    const expert_forest* fx;
+    const expert_forest* fA;
+    const expert_forest* fy;
+    int x_root;
+    int A_root;
+    int y_root;
+    int L;
+};
+
+MEDDLY::base_evplus_mt::base_evplus_mt(const numerical_opname* code, 
+  const dd_edge &x_ind, const dd_edge& A, const dd_edge &y_ind)
+ : numerical_operation(code)
 {
-  // TBD
-  return 0;
+  fx = (const expert_forest*) x_ind.getForest();
+  fA = (const expert_forest*) A.getForest();
+  fy = (const expert_forest*) y_ind.getForest();
+  DCASSERT(fx);
+  DCASSERT(fA);
+  DCASSERT(fy);
+  x_root = x_ind.getNode();
+  A_root = A.getNode();
+  y_root = y_ind.getNode();
+  L = fx->getDomain()->getNumVariables();
 }
 
-MEDDLY::numerical_opname* MEDDLY::initMatrixVectorMult(const settings &s)
+MEDDLY::base_evplus_mt::~base_evplus_mt()
 {
-  // TBD
-  return 0;
 }
 
-#if 0
-
-using namespace MEDDLY;
-
-void
-vmprimed_evplus_mt(
-  const op_param* pt, int ht, double* y, int y_ind, const double* x, int x_ind, int A
-)
+void MEDDLY::base_evplus_mt::compute(double* y, const double* x)
 {
-  // Handles the primed levels of A
-  const expert_forest* fA = pt[4].readForest();
-  assert(fA);
-  if (0==ht) {
-    y[0] += x[0] * fA->getReal(A);
-    return;
-  }
-  const expert_forest* fy = pt[1].readForest();
-  assert(fy);
-
-  // It should be impossible for an indexing function to skip levels, right?   
-  assert(fy->getNodeHeight(y_ind) == ht);
-  int yv, ys;
-
-  //
-  // Sparse y_ind
-  //
-  if (fy->isSparseNode(y_ind)) {
-    ys = fy->getSparseNodeSize(y_ind);
-
-    if (fA->isSparseNode(A)) {
-      // A is sparse, y_ind is sparse; intersect them
-      int As = fA->getSparseNodeSize(A);
-      int yp = 0;
-      int yj = fy->getSparseNodeIndex(y_ind, yp);
-      int Ap = 0;
-      int Aj = fA->getSparseNodeIndex(A, Ap);
-      for (;;) {
-        if (Aj < yj) {
-          Ap++;
-          if (Ap >= As) break;
-          Aj = fA->getSparseNodeIndex(A, Ap);
-          continue;
-        }
-        if (yj < Aj) {
-          yp++;
-          if (yp >= ys) break;
-          yj = fy->getSparseNodeIndex(y_ind, yp);
-          continue;
-        }
-        fy->getSparseNodeEdgeValue(y_ind, yp, yv);
-        vectorMatrixMult_evplus_mt(
-          pt, ht-1, y+yv, fy->getSparseNodeDownPtr(y_ind, yp), 
-          x, x_ind, fA->getSparseNodeDownPtr(A, Ap)
-        );
-        yp++;
-        if (yp >= ys) break;
-        yj = fy->getSparseNodeIndex(y_ind, yp);
-        Ap++;
-        if (Ap >= As) break;
-        Aj = fA->getSparseNodeIndex(A, Ap);
-      } // loop
-      return;
-    } 
-    // A is full, y_ind is sparse; intersect them
-    int As = fA->getFullNodeSize(A);
-    for (int yp=0; yp<ys; yp++) {
-      int i = fy->getSparseNodeIndex(y_ind, yp);
-      if (i >= As) break;
-      int Ad = fA->getFullNodeDownPtr(A, i);
-      if (0==Ad) continue;
-      fy->getSparseNodeEdgeValue(y_ind, yp, yv);
-      vectorMatrixMult_evplus_mt(
-        pt, ht-1, y+yv, fy->getSparseNodeDownPtr(y_ind, yp), x, x_ind, Ad
-      );
-    } // for yp
-    return;
-  } // y_ind is sparse
-
-  //
-  // Full y_ind
-  //
-  assert(fy->isFullNode(y_ind));
-  ys = fy->getFullNodeSize(y_ind);
-
-  if (fA->isSparseNode(A)) {
-    // A is sparse, y_ind is full; intersect them
-    int As = fA->getSparseNodeSize(A);
-    for (int Ap=0; Ap<As; Ap++) {
-      int i = fA->getSparseNodeIndex(A, Ap);
-      if (i >= ys) break;
-      int yd = fy->getFullNodeDownPtr(y_ind, i);
-      if (0==yd) continue;
-      fy->getFullNodeEdgeValue(y_ind, i, yv);
-      vectorMatrixMult_evplus_mt(
-        pt, ht-1, y+yv, yd, x, x_ind, fA->getSparseNodeDownPtr(A, Ap)
-      );
-    } // for Ap
-    return;
-  }
-
-  // A is full, y_ind is full; intersect them
-  int As = fA->getFullNodeSize(A);
-  int sz = MIN(ys, As);
-  for (int i=0; i<sz; i++) {
-    int yd = fy->getFullNodeDownPtr(y_ind, i);
-    if (0==yd) continue;
-    int Ad = fA->getFullNodeDownPtr(A, i);
-    if (0==Ad) continue;
-    fy->getFullNodeEdgeValue(y_ind, i, yv);
-    vectorMatrixMult_evplus_mt(pt, ht-1, y+yv, yd, x, x_ind, Ad);
-  } // for i
+  compute(L, y, y_root, x, x_root, A_root);
 }
 
-void 
-MEDDLY::vectorMatrixMult_evplus_mt(
-  const op_param* pt, int ht, double* y, int y_ind, const double* x, int x_ind, int A
-)
+// ******************************************************************
+// *                                                                *
+// *                       VM_evplus_mt class                       *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::VM_evplus_mt : public base_evplus_mt {
+  public:
+    VM_evplus_mt(const numerical_opname* code, const dd_edge &x_ind,
+      const dd_edge& A, const dd_edge &y_ind);
+
+    virtual void compute(int ht, double* y, int y_ind, const double* x, 
+      int x_ind, int A);
+
+    void comp_pr(int ht, double* y, int y_ind, const double* x, 
+      int x_ind, int A);
+
+};
+
+MEDDLY::VM_evplus_mt::VM_evplus_mt(const numerical_opname* code, 
+  const dd_edge &x_ind, const dd_edge& A, const dd_edge &y_ind)
+  : base_evplus_mt(code, x_ind, A, y_ind)
+{
+}
+
+void MEDDLY::VM_evplus_mt::compute(int ht, double* y, int y_ind, 
+  const double* x, int x_ind, int A)
 {
   // Handles the unprimed levels of A
-  const expert_forest* fA = pt[4].readForest();
-  assert(fA);
-
   if (0==ht) {
     y[0] += x[0] * fA->getReal(A);
     return;
   }
 
-  const expert_forest* fx = pt[3].readForest();
-  assert(fx);
-
   // It should be impossible for an indexing function to skip levels, right?   
-  assert(fx->getNodeHeight(x_ind) == ht);
+  DCASSERT(fx->getNodeHeight(x_ind) == ht);
   int xv, xs;
 
   //
   // A is identity matrix times a constant; exploit that if we can
   //
   if (0==fA->getNodeHeight(A) && (x_ind == y_ind)) {
-    const expert_forest* fy = pt[1].readForest();
-    assert(fy);
     if (fx == fy) {
-      assert(fx->isIndexSet(x_ind));
+      DCASSERT(fx->isIndexSet(x_ind));
       // yes we can
       float v = fA->getReal(A);
       for (long i = fx->getIndexSetCardinality(x_ind)-1; i>=0; i--) {
@@ -195,8 +153,6 @@ MEDDLY::vectorMatrixMult_evplus_mt(
   // Identity node in A
   //
   if (fA->getNodeHeight(A) < ht) {
-    const expert_forest* fy = pt[1].readForest();
-    assert(fy);
     int yv, ys;
 
     if (fx->isSparseNode(x_ind)) {
@@ -224,8 +180,8 @@ MEDDLY::vectorMatrixMult_evplus_mt(
           }
           fx->getSparseNodeEdgeValue(x_ind, xp, xv);
           fy->getSparseNodeEdgeValue(y_ind, yp, yv);
-          vectorMatrixMult_evplus_mt(
-            pt, ht-1,
+          compute(
+            ht-1,
             y+yv, fy->getSparseNodeDownPtr(y_ind, yp),
             x+xv, fx->getSparseNodeDownPtr(x_ind, xp), 
             A
@@ -240,7 +196,7 @@ MEDDLY::vectorMatrixMult_evplus_mt(
         return;
       } // if y_ind is sparse
 
-      assert(fy->isFullNode(y_ind));
+      DCASSERT(fy->isFullNode(y_ind));
       // x_ind is sparse, y_ind is full; intersect them
       ys = fy->getFullNodeSize(y_ind);
       for (int xp=0; xp<xs; xp++) {
@@ -250,14 +206,12 @@ MEDDLY::vectorMatrixMult_evplus_mt(
         if (0==yd) continue;
         fx->getSparseNodeEdgeValue(x_ind, xp, xv);
         fy->getFullNodeEdgeValue(y_ind, i, yv);
-        vectorMatrixMult_evplus_mt(
-          pt, ht-1, y+yv, yd, x+xv, fx->getSparseNodeDownPtr(x_ind, xp), A
-        );
+        compute(ht-1, y+yv, yd, x+xv, fx->getSparseNodeDownPtr(x_ind, xp), A);
       } // for xp
       return;
     } // if x_ind is sparse
 
-    assert(fx->isFullNode(x_ind));
+    DCASSERT(fx->isFullNode(x_ind));
     xs = fx->getFullNodeSize(x_ind);
 
     if (fy->isSparseNode(y_ind)) {
@@ -270,14 +224,12 @@ MEDDLY::vectorMatrixMult_evplus_mt(
         if (0==xd) continue;
         fx->getFullNodeEdgeValue(x_ind, i, xv);
         fy->getSparseNodeEdgeValue(y_ind, yp, yv);
-        vectorMatrixMult_evplus_mt(
-          pt, ht-1, y+yv, fy->getSparseNodeDownPtr(y_ind, yp), x+xv, xd, A
-        );
+        compute(ht-1, y+yv, fy->getSparseNodeDownPtr(y_ind, yp), x+xv, xd, A);
       } // for xp
       return;
     } // if y_ind is sparse
 
-    assert(fy->isFullNode(y_ind));
+    DCASSERT(fy->isFullNode(y_ind));
     // x_ind is full, y_ind is full; intersect them
     ys = fy->getFullNodeSize(y_ind);
     int sz = MIN(xs, ys);
@@ -288,7 +240,7 @@ MEDDLY::vectorMatrixMult_evplus_mt(
       if (0==xd) continue;
       fx->getFullNodeEdgeValue(x_ind, i, xv);
       fy->getFullNodeEdgeValue(y_ind, i, yv);
-      vectorMatrixMult_evplus_mt(pt, ht-1, y+yv, yd, x+xv, xd, A);
+      compute(ht-1, y+yv, yd, x+xv, xd, A);
     } // for i
     return;
 
@@ -321,8 +273,8 @@ MEDDLY::vectorMatrixMult_evplus_mt(
           continue;
         }
         fx->getSparseNodeEdgeValue(x_ind, xp, xv);
-        vmprimed_evplus_mt(
-          pt, ht, y, y_ind,
+        comp_pr(
+          ht, y, y_ind,
           x+xv, fx->getSparseNodeDownPtr(x_ind, xp), 
           fA->getSparseNodeDownPtr(A, Ap)
         );
@@ -343,8 +295,8 @@ MEDDLY::vectorMatrixMult_evplus_mt(
       int Ad = fA->getFullNodeDownPtr(A, i);
       if (0==Ad) continue;
       fx->getSparseNodeEdgeValue(x_ind, xp, xv);
-      vmprimed_evplus_mt(
-        pt, ht, y, y_ind, x+xv, fx->getSparseNodeDownPtr(x_ind, xp), Ad
+      comp_pr(
+        ht, y, y_ind, x+xv, fx->getSparseNodeDownPtr(x_ind, xp), Ad
       );
     } // for xp
     return;
@@ -353,7 +305,7 @@ MEDDLY::vectorMatrixMult_evplus_mt(
   //
   // Full x_ind
   //
-  assert(fx->isFullNode(x_ind));
+  DCASSERT(fx->isFullNode(x_ind));
   xs = fx->getFullNodeSize(x_ind);
 
   if (fA->isSparseNode(A)) {
@@ -365,8 +317,8 @@ MEDDLY::vectorMatrixMult_evplus_mt(
       int xd = fx->getFullNodeDownPtr(x_ind, i);
       if (0==xd) continue;
       fx->getFullNodeEdgeValue(x_ind, i, xv);
-      vmprimed_evplus_mt(
-        pt, ht, y, y_ind, x+xv, xd, fA->getSparseNodeDownPtr(A, Ap)
+      comp_pr(
+        ht, y, y_ind, x+xv, xd, fA->getSparseNodeDownPtr(A, Ap)
       );
     } // for Ap
     return;
@@ -381,169 +333,161 @@ MEDDLY::vectorMatrixMult_evplus_mt(
     int Ad = fA->getFullNodeDownPtr(A, i);
     if (0==Ad) continue;
     fx->getFullNodeEdgeValue(x_ind, i, xv);
-    vmprimed_evplus_mt(pt, ht, y, y_ind, x+xv, xd, Ad);
+    comp_pr(ht, y, y_ind, x+xv, xd, Ad);
   } // for i
 
 }
 
-
-// ----------------------------------------------------------------------
-// ----------------------------------------------------------------------
-
-void 
-MEDDLY::vectorMatrixMult_evplus_evtimes(
-  const op_param* pt, int ht, double* y, int y_ind, const double* x, int x_ind, int A
-)
-{
-  // TBD
-  throw error(error::NOT_IMPLEMENTED);
-}
-
-
-// ----------------------------------------------------------------------
-// ----------------------------------------------------------------------
-
-void
-mvprimed_evplus_mt(
-  const op_param* pt, int ht, double* y, int y_ind, int A, const double* x, int x_ind
-)
+void MEDDLY::VM_evplus_mt::comp_pr(int ht, double* y, int y_ind, 
+  const double* x, int x_ind, int A)
 {
   // Handles the primed levels of A
-  const expert_forest* fA = pt[2].readForest();
-  assert(fA);
   if (0==ht) {
     y[0] += x[0] * fA->getReal(A);
     return;
   }
-  const expert_forest* fx = pt[4].readForest();
-  assert(fx);
 
   // It should be impossible for an indexing function to skip levels, right?   
-  assert(fx->getNodeHeight(x_ind) == ht);
-  int xv, xs;
+  DCASSERT(fy->getNodeHeight(y_ind) == ht);
+  int yv, ys;
 
   //
-  // Sparse x_ind
+  // Sparse y_ind
   //
-  if (fx->isSparseNode(x_ind)) {
-    xs = fx->getSparseNodeSize(x_ind);
+  if (fy->isSparseNode(y_ind)) {
+    ys = fy->getSparseNodeSize(y_ind);
 
     if (fA->isSparseNode(A)) {
-      // A is sparse, x_ind is sparse; intersect them
+      // A is sparse, y_ind is sparse; intersect them
       int As = fA->getSparseNodeSize(A);
-      int xp = 0;
-      int xj = fx->getSparseNodeIndex(x_ind, xp);
+      int yp = 0;
+      int yj = fy->getSparseNodeIndex(y_ind, yp);
       int Ap = 0;
       int Aj = fA->getSparseNodeIndex(A, Ap);
       for (;;) {
-        if (Aj < xj) {
+        if (Aj < yj) {
           Ap++;
           if (Ap >= As) break;
           Aj = fA->getSparseNodeIndex(A, Ap);
           continue;
         }
-        if (xj < Aj) {
-          xp++;
-          if (xp >= xs) break;
-          xj = fx->getSparseNodeIndex(x_ind, xp);
+        if (yj < Aj) {
+          yp++;
+          if (yp >= ys) break;
+          yj = fy->getSparseNodeIndex(y_ind, yp);
           continue;
         }
-        fx->getSparseNodeEdgeValue(x_ind, xp, xv);
-        matrixVectorMult_evplus_mt(
-          pt, ht-1, y, y_ind,
-          fA->getSparseNodeDownPtr(A, Ap),
-          x+xv, fx->getSparseNodeDownPtr(x_ind, xp)
+        fy->getSparseNodeEdgeValue(y_ind, yp, yv);
+        compute(
+          ht-1, y+yv, fy->getSparseNodeDownPtr(y_ind, yp), 
+          x, x_ind, fA->getSparseNodeDownPtr(A, Ap)
         );
-        xp++;
-        if (xp >= xs) break;
-        xj = fx->getSparseNodeIndex(x_ind, xp);
+        yp++;
+        if (yp >= ys) break;
+        yj = fy->getSparseNodeIndex(y_ind, yp);
         Ap++;
         if (Ap >= As) break;
         Aj = fA->getSparseNodeIndex(A, Ap);
       } // loop
       return;
     } 
-    // A is full, x_ind is sparse; intersect them
+    // A is full, y_ind is sparse; intersect them
     int As = fA->getFullNodeSize(A);
-    for (int xp=0; xp<xs; xp++) {
-      int i = fx->getSparseNodeIndex(x_ind, xp);
+    for (int yp=0; yp<ys; yp++) {
+      int i = fy->getSparseNodeIndex(y_ind, yp);
       if (i >= As) break;
       int Ad = fA->getFullNodeDownPtr(A, i);
       if (0==Ad) continue;
-      fx->getSparseNodeEdgeValue(x_ind, xp, xv);
-      matrixVectorMult_evplus_mt(
-        pt, ht-1, y, y_ind, Ad,
-        x+xv, fx->getSparseNodeDownPtr(x_ind, xp)
+      fy->getSparseNodeEdgeValue(y_ind, yp, yv);
+      compute(
+        ht-1, y+yv, fy->getSparseNodeDownPtr(y_ind, yp), x, x_ind, Ad
       );
-    } // for xp
+    } // for yp
     return;
-  } // x_ind is sparse
+  } // y_ind is sparse
 
   //
-  // Full x_ind
+  // Full y_ind
   //
-  assert(fx->isFullNode(x_ind));
-  xs = fx->getFullNodeSize(x_ind);
+  DCASSERT(fy->isFullNode(y_ind));
+  ys = fy->getFullNodeSize(y_ind);
 
   if (fA->isSparseNode(A)) {
-    // A is sparse, x_ind is full; intersect them
+    // A is sparse, y_ind is full; intersect them
     int As = fA->getSparseNodeSize(A);
     for (int Ap=0; Ap<As; Ap++) {
       int i = fA->getSparseNodeIndex(A, Ap);
-      if (i >= xs) break;
-      int xd = fx->getFullNodeDownPtr(x_ind, i);
-      if (0==xd) continue;
-      fx->getFullNodeEdgeValue(x_ind, i, xv);
-      matrixVectorMult_evplus_mt(
-        pt, ht-1, y, y_ind, fA->getSparseNodeDownPtr(A, Ap), x+xv, xd
+      if (i >= ys) break;
+      int yd = fy->getFullNodeDownPtr(y_ind, i);
+      if (0==yd) continue;
+      fy->getFullNodeEdgeValue(y_ind, i, yv);
+      compute(
+        ht-1, y+yv, yd, x, x_ind, fA->getSparseNodeDownPtr(A, Ap)
       );
     } // for Ap
     return;
   }
 
-  // A is full, x_ind is full; intersect them
+  // A is full, y_ind is full; intersect them
   int As = fA->getFullNodeSize(A);
-  int sz = MIN(xs, As);
+  int sz = MIN(ys, As);
   for (int i=0; i<sz; i++) {
-    int xd = fx->getFullNodeDownPtr(x_ind, i);
-    if (0==xd) continue;
+    int yd = fy->getFullNodeDownPtr(y_ind, i);
+    if (0==yd) continue;
     int Ad = fA->getFullNodeDownPtr(A, i);
     if (0==Ad) continue;
-    fx->getFullNodeEdgeValue(x_ind, i, xv);
-    matrixVectorMult_evplus_mt(pt, ht-1, y, y_ind, Ad, x+xv, xd);
+    fy->getFullNodeEdgeValue(y_ind, i, yv);
+    compute(ht-1, y+yv, yd, x, x_ind, Ad);
   } // for i
-
 }
 
 
 
-void 
-MEDDLY::matrixVectorMult_evplus_mt(
-  const op_param* pt, int ht, double* y, int y_ind, int A, const double* x, int X_ind
-)
+
+// ******************************************************************
+// *                                                                *
+// *                       MV_evplus_mt class                       *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::MV_evplus_mt : public base_evplus_mt {
+  public:
+    MV_evplus_mt(const numerical_opname* code, const dd_edge &x_ind,
+      const dd_edge& A, const dd_edge &y_ind);
+
+    virtual void compute(int ht, double* y, int y_ind, const double* x, 
+      int x_ind, int A);
+
+    void comp_pr(int ht, double* y, int y_ind, const double* x, 
+      int x_ind, int A);
+
+};
+
+MEDDLY::MV_evplus_mt::MV_evplus_mt(const numerical_opname* code, 
+  const dd_edge &x_ind, const dd_edge& A, const dd_edge &y_ind)
+  : base_evplus_mt(code, x_ind, A, y_ind)
+{
+}
+
+void MEDDLY::MV_evplus_mt::compute(int ht, double* y, int y_ind, 
+  const double* x, int X_ind, int A)
 {
   // Handles the unprimed levels of A
-  const expert_forest* fA = pt[2].readForest();
-  assert(fA);
   if (0==ht) {
     y[0] += fA->getReal(A) * x[0];
     return;
   }
-  const expert_forest* fy = pt[1].readForest();
-  assert(fy);
 
   // It should be impossible for an indexing function to skip levels, right?   
-  assert(fy->getNodeHeight(y_ind) == ht);
+  DCASSERT(fy->getNodeHeight(y_ind) == ht);
   int yv, ys;
 
   //
   // A is identity matrix times a constant; exploit that if we can
   //
   if (0==fA->getNodeHeight(A) && (X_ind == y_ind)) {
-    const expert_forest* fx = pt[4].readForest();
-    assert(fx);
     if (fx == fy) {
-      assert(fy->isIndexSet(y_ind));
+      DCASSERT(fy->isIndexSet(y_ind));
       // yes we can
       float v = fA->getReal(A);
       for (long i = fy->getIndexSetCardinality(y_ind)-1; i>=0; i--) {
@@ -557,25 +501,23 @@ MEDDLY::matrixVectorMult_evplus_mt(
   // Identity node in A
   //
   if (fA->getNodeHeight(A) < ht) {
-    const expert_forest* fX = pt[4].readForest();
-    assert(fX);
     int Xv, Xs;
 
     if (fy->isSparseNode(y_ind)) {
       ys = fy->getSparseNodeSize(y_ind);
 
-      if (fX->isSparseNode(X_ind)) {
+      if (fx->isSparseNode(X_ind)) {
         // X_ind and y_ind are sparse; intersect them
-        int Xs = fX->getSparseNodeSize(X_ind);
+        int Xs = fx->getSparseNodeSize(X_ind);
         int yp = 0;
         int yi = fy->getSparseNodeIndex(y_ind, yp);
         int Xp = 0;
-        int Xi = fX->getSparseNodeIndex(X_ind, Xp);
+        int Xi = fx->getSparseNodeIndex(X_ind, Xp);
         for (;;) {
           if (Xi < yi) {
             Xp++;
             if (Xp >= Xs) break;
-            Xi = fX->getSparseNodeIndex(X_ind, Xp);
+            Xi = fx->getSparseNodeIndex(X_ind, Xp);
             continue;
           }
           if (yi < Xi) {
@@ -585,72 +527,68 @@ MEDDLY::matrixVectorMult_evplus_mt(
             continue;
           }
           fy->getSparseNodeEdgeValue(y_ind, yp, yv);
-          fX->getSparseNodeEdgeValue(X_ind, Xp, Xv);
-          matrixVectorMult_evplus_mt(
-            pt, ht-1,
+          fx->getSparseNodeEdgeValue(X_ind, Xp, Xv);
+          compute(
+            ht-1,
             y+yv, fy->getSparseNodeDownPtr(y_ind, yp), 
-            A,
-            x+Xv, fX->getSparseNodeDownPtr(X_ind, Xp)
+            x+Xv, fx->getSparseNodeDownPtr(X_ind, Xp),
+            A
           );
           yp++;
           if (yp >= ys) break;
           yi = fy->getSparseNodeIndex(y_ind, yp);
           Xp++;
           if (Xp >= Xs) break;
-          Xi = fX->getSparseNodeIndex(X_ind, Xp);
+          Xi = fx->getSparseNodeIndex(X_ind, Xp);
         } // loop
         return;
       } // if X_ind is sparse
 
-      assert(fX->isFullNode(X_ind));
+      DCASSERT(fx->isFullNode(X_ind));
       // y_ind is sparse, X_ind is full; intersect them
-      Xs = fX->getFullNodeSize(X_ind);
+      Xs = fx->getFullNodeSize(X_ind);
       for (int yp=0; yp<ys; yp++) {
         int i = fy->getSparseNodeIndex(y_ind, yp);
         if (i >= Xs) break;
-        int Xd = fX->getFullNodeDownPtr(X_ind, i);
+        int Xd = fx->getFullNodeDownPtr(X_ind, i);
         if (0==Xd) continue;
         fy->getSparseNodeEdgeValue(y_ind, yp, yv);
-        fX->getFullNodeEdgeValue(X_ind, i, Xv);
-        matrixVectorMult_evplus_mt(
-          pt, ht-1, y+yv, fy->getSparseNodeDownPtr(y_ind, yp), A, x+Xv, Xd
-        );
+        fx->getFullNodeEdgeValue(X_ind, i, Xv);
+        compute(ht-1, y+yv, fy->getSparseNodeDownPtr(y_ind, yp), x+Xv, Xd, A);
       } // for yp
       return;
     } // if y_ind is sparse
 
-    assert(fy->isFullNode(y_ind));
+    DCASSERT(fy->isFullNode(y_ind));
     ys = fy->getFullNodeSize(y_ind);
 
-    if (fX->isSparseNode(X_ind)) {
+    if (fx->isSparseNode(X_ind)) {
       // y_ind is full, X_ind is sparse; intersect them
-      Xs = fX->getSparseNodeSize(X_ind);
+      Xs = fx->getSparseNodeSize(X_ind);
       for (int Xp=0; Xp<Xs; Xp++) {
-        int i = fX->getSparseNodeIndex(X_ind, Xp);
+        int i = fx->getSparseNodeIndex(X_ind, Xp);
         if (i >= ys) break;
         int yd = fy->getFullNodeDownPtr(y_ind, i);
         if (0==yd) continue;
         fy->getFullNodeEdgeValue(y_ind, i, yv);
-        fX->getSparseNodeEdgeValue(X_ind, Xp, Xv);
-        matrixVectorMult_evplus_mt(
-          pt, ht-1, y+yv, yd, A, x+Xv, fX->getSparseNodeDownPtr(X_ind, Xp)
-        );
+        fx->getSparseNodeEdgeValue(X_ind, Xp, Xv);
+        compute(ht-1, y+yv, yd, x+Xv, fx->getSparseNodeDownPtr(X_ind, Xp), A);
       } // for yp
       return;
     } // if X_ind is sparse
 
-    assert(fX->isFullNode(X_ind));
+    DCASSERT(fx->isFullNode(X_ind));
     // y_ind is full, X_ind is full; intersect them
-    Xs = fX->getFullNodeSize(X_ind);
+    Xs = fx->getFullNodeSize(X_ind);
     int sz = MIN(ys, Xs);
     for (int i=0; i<sz; i++) {
       int yd = fy->getFullNodeDownPtr(y_ind, i);
       if (0==yd) continue;
-      int Xd = fX->getFullNodeDownPtr(X_ind, i);
+      int Xd = fx->getFullNodeDownPtr(X_ind, i);
       if (0==yd) continue;
       fy->getFullNodeEdgeValue(y_ind, i, yv);
-      fX->getFullNodeEdgeValue(X_ind, i, Xv);
-      matrixVectorMult_evplus_mt(pt, ht-1, y+yv, yd, A, x+Xv, Xd);
+      fx->getFullNodeEdgeValue(X_ind, i, Xv);
+      compute(ht-1, y+yv, yd, x+Xv, Xd, A);
     } // for i
     return;
 
@@ -683,11 +621,11 @@ MEDDLY::matrixVectorMult_evplus_mt(
           continue;
         }
         fy->getSparseNodeEdgeValue(y_ind, yp, yv);
-        mvprimed_evplus_mt(
-          pt, ht, 
+        comp_pr(
+          ht, 
           y+yv, fy->getSparseNodeDownPtr(y_ind, yp), 
-          fA->getSparseNodeDownPtr(A, Ap),
-          x, X_ind
+          x, X_ind,
+          fA->getSparseNodeDownPtr(A, Ap)
         );
         yp++;
         if (yp >= ys) break;
@@ -706,10 +644,10 @@ MEDDLY::matrixVectorMult_evplus_mt(
       int Ad = fA->getFullNodeDownPtr(A, i);
       if (0==Ad) continue;
       fy->getSparseNodeEdgeValue(y_ind, yp, yv);
-      mvprimed_evplus_mt(
-        pt, ht, 
+      comp_pr(
+        ht, 
         y+yv, fy->getSparseNodeDownPtr(y_ind, yp), 
-        Ad, x, X_ind
+        x, X_ind, Ad
       );
     } // for yp
     return;
@@ -718,7 +656,7 @@ MEDDLY::matrixVectorMult_evplus_mt(
   //
   // Full y_ind
   //
-  assert(fy->isFullNode(y_ind));
+  DCASSERT(fy->isFullNode(y_ind));
   ys = fy->getFullNodeSize(y_ind);
 
   if (fA->isSparseNode(A)) {
@@ -730,9 +668,7 @@ MEDDLY::matrixVectorMult_evplus_mt(
       int yd = fy->getFullNodeDownPtr(y_ind, i);
       if (0==yd) continue;
       fy->getFullNodeEdgeValue(y_ind, i, yv);
-      mvprimed_evplus_mt(
-        pt, ht, y+yv, yd, fA->getSparseNodeDownPtr(A, Ap), x, X_ind
-      );
+      comp_pr(ht, y+yv, yd, x, X_ind, fA->getSparseNodeDownPtr(A, Ap));
     } // for Ap
     return;
   }
@@ -746,24 +682,269 @@ MEDDLY::matrixVectorMult_evplus_mt(
     int Ad = fA->getFullNodeDownPtr(A, i);
     if (0==Ad) continue;
     fy->getFullNodeEdgeValue(y_ind, i, yv);
-    mvprimed_evplus_mt(pt, ht, y+yv, yd, Ad, x, X_ind);
+    comp_pr(ht, y+yv, yd, x, X_ind, Ad);
+  } // for i
+
+}
+
+void MEDDLY::MV_evplus_mt::comp_pr(int ht, double* y, int y_ind, 
+  const double* x, int x_ind, int A)
+{
+  // Handles the primed levels of A
+  if (0==ht) {
+    y[0] += x[0] * fA->getReal(A);
+    return;
+  }
+
+  // It should be impossible for an indexing function to skip levels, right?   
+  DCASSERT(fx->getNodeHeight(x_ind) == ht);
+  int xv, xs;
+
+  //
+  // Sparse x_ind
+  //
+  if (fx->isSparseNode(x_ind)) {
+    xs = fx->getSparseNodeSize(x_ind);
+
+    if (fA->isSparseNode(A)) {
+      // A is sparse, x_ind is sparse; intersect them
+      int As = fA->getSparseNodeSize(A);
+      int xp = 0;
+      int xj = fx->getSparseNodeIndex(x_ind, xp);
+      int Ap = 0;
+      int Aj = fA->getSparseNodeIndex(A, Ap);
+      for (;;) {
+        if (Aj < xj) {
+          Ap++;
+          if (Ap >= As) break;
+          Aj = fA->getSparseNodeIndex(A, Ap);
+          continue;
+        }
+        if (xj < Aj) {
+          xp++;
+          if (xp >= xs) break;
+          xj = fx->getSparseNodeIndex(x_ind, xp);
+          continue;
+        }
+        fx->getSparseNodeEdgeValue(x_ind, xp, xv);
+        compute(
+          ht-1, y, y_ind,
+          x+xv, fx->getSparseNodeDownPtr(x_ind, xp),
+          fA->getSparseNodeDownPtr(A, Ap)
+        );
+        xp++;
+        if (xp >= xs) break;
+        xj = fx->getSparseNodeIndex(x_ind, xp);
+        Ap++;
+        if (Ap >= As) break;
+        Aj = fA->getSparseNodeIndex(A, Ap);
+      } // loop
+      return;
+    } 
+    // A is full, x_ind is sparse; intersect them
+    int As = fA->getFullNodeSize(A);
+    for (int xp=0; xp<xs; xp++) {
+      int i = fx->getSparseNodeIndex(x_ind, xp);
+      if (i >= As) break;
+      int Ad = fA->getFullNodeDownPtr(A, i);
+      if (0==Ad) continue;
+      fx->getSparseNodeEdgeValue(x_ind, xp, xv);
+      compute(
+        ht-1, y, y_ind, x+xv, fx->getSparseNodeDownPtr(x_ind, xp), Ad
+      );
+    } // for xp
+    return;
+  } // x_ind is sparse
+
+  //
+  // Full x_ind
+  //
+  DCASSERT(fx->isFullNode(x_ind));
+  xs = fx->getFullNodeSize(x_ind);
+
+  if (fA->isSparseNode(A)) {
+    // A is sparse, x_ind is full; intersect them
+    int As = fA->getSparseNodeSize(A);
+    for (int Ap=0; Ap<As; Ap++) {
+      int i = fA->getSparseNodeIndex(A, Ap);
+      if (i >= xs) break;
+      int xd = fx->getFullNodeDownPtr(x_ind, i);
+      if (0==xd) continue;
+      fx->getFullNodeEdgeValue(x_ind, i, xv);
+      compute(
+        ht-1, y, y_ind, x+xv, xd, fA->getSparseNodeDownPtr(A, Ap)
+      );
+    } // for Ap
+    return;
+  }
+
+  // A is full, x_ind is full; intersect them
+  int As = fA->getFullNodeSize(A);
+  int sz = MIN(xs, As);
+  for (int i=0; i<sz; i++) {
+    int xd = fx->getFullNodeDownPtr(x_ind, i);
+    if (0==xd) continue;
+    int Ad = fA->getFullNodeDownPtr(A, i);
+    if (0==Ad) continue;
+    fx->getFullNodeEdgeValue(x_ind, i, xv);
+    compute(ht-1, y, y_ind, x+xv, xd, Ad);
   } // for i
 
 }
 
 
-// ----------------------------------------------------------------------
-// ----------------------------------------------------------------------
 
+// ******************************************************************
+// *                                                                *
+// *                        VM_opname  class                        *
+// *                                                                *
+// ******************************************************************
 
-void 
-MEDDLY::matrixVectorMult_evplus_evtimes(
-  const op_param* pt, int ht, double* y, int y_ind, int A, const double* x, int x_ind
-)
+class MEDDLY::VM_opname : public numerical_opname {
+  public:
+    VM_opname();
+    virtual numerical_operation* buildOperation(const dd_edge &x_ind,
+      const dd_edge& A, const dd_edge& y_ind) const;
+};
+
+MEDDLY::VM_opname::VM_opname() : numerical_opname("VectMatrMult")
 {
-  // TBD
-  throw error(error::NOT_IMPLEMENTED);
 }
 
-#endif
+MEDDLY::numerical_operation* 
+MEDDLY::VM_opname::buildOperation(const dd_edge &x_ind, const dd_edge& A,
+  const dd_edge& y_ind) const
+{
+  const expert_forest* fx = (const expert_forest*) x_ind.getForest();
+  const expert_forest* fA = (const expert_forest*) A.getForest();
+  const expert_forest* fy = (const expert_forest*) y_ind.getForest();
+
+  // everyone must use the same domain
+  if (      (fx->getDomain() != fy->getDomain()) 
+        ||  (fx->getDomain() != fA->getDomain())  )
+  {
+    throw error(error::DOMAIN_MISMATCH);
+  }
+
+  // Check edge types
+  if (
+           (fy->getRangeType() != forest::INTEGER) 
+        || (fy->isForRelations())
+        || (fx->getRangeType() != forest::INTEGER)
+        || (fx->isForRelations())
+        || (fA->getRangeType() != forest::REAL)
+        || (!fA->isForRelations())
+      ) 
+  {
+    throw error(error::TYPE_MISMATCH);
+  }
+
+  // A can't be fully reduced.
+  if (forest::FULLY_REDUCED == fA->getReductionRule()) {
+    throw error(error::TYPE_MISMATCH);
+  }
+
+  // For now, fy and fx must be EV+MDDs.
+  if (     (fy->getEdgeLabeling() != forest::EVPLUS) 
+        || (fx->getEdgeLabeling() != forest::EVPLUS) )
+  {
+    throw error(error::NOT_IMPLEMENTED);
+  }
+
+  switch (fA->getEdgeLabeling()) {
+    case forest::MULTI_TERMINAL:
+      return new VM_evplus_mt(this, x_ind, A, y_ind);
+
+    case forest::EVTIMES:
+      throw error(error::NOT_IMPLEMENTED);
+
+    default:
+      throw error(error::TYPE_MISMATCH);
+  };
+}
+
+// ******************************************************************
+// *                                                                *
+// *                        MV_opname  class                        *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::MV_opname : public numerical_opname {
+  public:
+    MV_opname();
+    virtual numerical_operation* buildOperation(const dd_edge &x_ind,
+      const dd_edge& A, const dd_edge& y_ind) const;
+};
+
+MEDDLY::MV_opname::MV_opname() : numerical_opname("MatrVectMult")
+{
+}
+
+MEDDLY::numerical_operation* 
+MEDDLY::MV_opname::buildOperation(const dd_edge &x_ind, const dd_edge& A,
+  const dd_edge& y_ind) const
+{
+  const expert_forest* fx = (const expert_forest*) x_ind.getForest();
+  const expert_forest* fA = (const expert_forest*) A.getForest();
+  const expert_forest* fy = (const expert_forest*) y_ind.getForest();
+
+  // everyone must use the same domain
+  if (      (fx->getDomain() != fy->getDomain()) 
+        ||  (fx->getDomain() != fA->getDomain())  )
+  {
+    throw error(error::DOMAIN_MISMATCH);
+  }
+
+  // Check edge types
+  if (
+           (fy->getRangeType() != forest::INTEGER) 
+        || (fy->isForRelations())
+        || (fx->getRangeType() != forest::INTEGER)
+        || (fx->isForRelations())
+        || (fA->getRangeType() != forest::REAL)
+        || (!fA->isForRelations())
+      ) 
+  {
+    throw error(error::TYPE_MISMATCH);
+  }
+
+  // A can't be fully reduced.
+  if (forest::FULLY_REDUCED == fA->getReductionRule()) {
+    throw error(error::TYPE_MISMATCH);
+  }
+
+  // For now, fy and fx must be EV+MDDs.
+  if (     (fy->getEdgeLabeling() != forest::EVPLUS) 
+        || (fx->getEdgeLabeling() != forest::EVPLUS) )
+  {
+    throw error(error::NOT_IMPLEMENTED);
+  }
+
+  switch (fA->getEdgeLabeling()) {
+    case forest::MULTI_TERMINAL:
+      return new MV_evplus_mt(this, x_ind, A, y_ind);
+
+    case forest::EVTIMES:
+      throw error(error::NOT_IMPLEMENTED);
+
+    default:
+      throw error(error::TYPE_MISMATCH);
+  };
+}
+
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::numerical_opname* MEDDLY::initVectorMatrixMult(const settings &s)
+{
+  return new VM_opname;
+}
+
+MEDDLY::numerical_opname* MEDDLY::initMatrixVectorMult(const settings &s)
+{
+  return new MV_opname;
+}
 

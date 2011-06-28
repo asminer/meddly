@@ -1432,7 +1432,7 @@ class MEDDLY::numerical_operation : public operation {
     virtual ~numerical_operation();
   public:
     /// compute y += some function of x, depending on the operation.
-    virtual void compute(double* y, double* x);
+    virtual void compute(double* y, const double* x);
 };
 
 // ******************************************************************

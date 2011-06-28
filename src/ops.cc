@@ -266,7 +266,7 @@ MEDDLY::numerical_operation::~numerical_operation()
 {
 }
 
-void MEDDLY::numerical_operation::compute(double* y, double* x)
+void MEDDLY::numerical_operation::compute(double* y, const double* x)
 {
   throw error(error::TYPE_MISMATCH);
 }

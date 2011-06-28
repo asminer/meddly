@@ -68,6 +68,12 @@ bool MEDDLY::minus_mdd::checkTerminals(int a, int b, int& c)
     }
     return true;
   }
+  if (0==b) {
+    if (arg1F == resF) {
+      c = arg1F->linkNode(a);
+      return true;
+    }
+  }
   return false;
 }
 

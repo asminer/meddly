@@ -27,6 +27,7 @@
 
 #include "apply_base.h"
 
+// #define DEBUG_APPLY
 
 // ******************************************************************
 // *                                                                *
@@ -222,6 +223,9 @@ int MEDDLY::generic_binary_mdd::compute(int a, int b)
 #endif
 
   saveResult(a, b, result);
+#ifdef DEBUG_APPLY
+  fprintf(stderr, "%s(%d, %d)=%d\n", __func__, a, b, result);
+#endif
   return result;
 }
 
@@ -754,6 +758,9 @@ int MEDDLY::generic_binary_mxd::computeIdent(int a, int b)
 
   result = resF->reduceNode(result);
   saveResult(a, b, result);
+#ifdef DEBUG_APPLY
+  fprintf(stderr, "%s(%d, %d)=%d\n", __func__, a, b, result);
+#endif
   return result;
 }
 
@@ -842,6 +849,9 @@ int MEDDLY::generic_binary_mxd::computeNonIdent(int a, int b)
   result = resF->createTempNode(resultLevel, C);
   result = resF->reduceNode(result);
   saveResult(a, b, result);
+#ifdef DEBUG_APPLY
+  fprintf(stderr, "%s(%d, %d)=%d\n", __func__, a, b, result);
+#endif
   return result;
 }
 
@@ -1541,6 +1551,9 @@ int MEDDLY::generic_binbylevel_mxd
 
   result = resF->reduceNode(result);
   saveResult(resultLevel, a, b, result);
+#ifdef DEBUG_APPLY
+  fprintf(stderr, "%s(%d, %d)=%d\n", __func__, a, b, result);
+#endif
   return result;
 }
 
@@ -1649,6 +1662,9 @@ int MEDDLY::generic_binbylevel_mxd
   }
 
   saveResult(resultLevel, a, b, result);
+#ifdef DEBUG_APPLY
+  fprintf(stderr, "%s(%d, %d)=%d\n", __func__, a, b, result);
+#endif
   return result;
 }
 

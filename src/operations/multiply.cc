@@ -27,6 +27,8 @@
 #include "../compute_table.h"
 #include "apply_base.h"
 
+#define OLD_MULTIPLY
+
 namespace MEDDLY {
   class multiply_mdd;
   class multiply_mxd;
@@ -64,7 +66,7 @@ bool MEDDLY::multiply_mdd::checkTerminals(int a, int b, int& c)
     c = 0;
     return true;
   }
-
+#ifdef OLD_MULTIPLY
   if (arg1F->isTerminalNode(a) &&
       arg2F->isTerminalNode(b)) {
     if (resF->getRangeType() == forest::INTEGER) {
@@ -75,6 +77,47 @@ bool MEDDLY::multiply_mdd::checkTerminals(int a, int b, int& c)
     }
     return true;
   }
+#else
+  if (arg1F->isTerminalNode(a)) {
+    if (arg2F->isTerminalNode(b)) {
+      if (resF->getRangeType() == forest::INTEGER) {
+        c = resF->getTerminalNode(arg1F->getInteger(a) * arg2F->getInteger(b));
+      } else {
+        DCASSERT(resF->getRangeType() == forest::REAL);
+        c = resF->getTerminalNode(arg1F->getReal(a) * arg2F->getReal(b));
+      }
+      return true;
+    }
+    if (arg2F != resF) return false;
+    if (resF->getRangeType() == forest::INTEGER) {
+      if (1==arg1F->getInteger(a)) {
+        c = arg2F->linkNode(b);
+        return true;
+      }
+    } else {
+      DCASSERT(resF->getRangeType() == forest::REAL);
+      if (1.0==arg1F->getReal(a)) {
+        c = arg2F->linkNode(b);
+        return true;
+      }
+    }
+  } // a is terminal
+  if (arg2F->isTerminalNode(b)) {
+    if (arg1F != resF) return false;
+    if (resF->getRangeType() == forest::INTEGER) {
+      if (1==arg2F->getInteger(b)) {
+        c = arg1F->linkNode(a);
+        return true;
+      }
+    } else {
+      DCASSERT(resF->getRangeType() == forest::REAL);
+      if (1.0==arg2F->getReal(b)) {
+        c = arg1F->linkNode(a);
+        return true;
+      }
+    }
+  }
+#endif
   return false;
 }
 

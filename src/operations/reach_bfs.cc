@@ -27,6 +27,7 @@
 #include "reach_bfs.h"
 
 // #define DEBUG_BFS
+#define VERBOSE_BFS
 
 namespace MEDDLY {
   class common_bfs_mt;
@@ -67,16 +68,29 @@ class MEDDLY::common_bfs_mt : public binary_operation {
       arg1F->showNodeGraph(stderr, init);
       int iters = 0;
 #endif
+#ifdef VERBOSE_BFS
+      int iters = 0;
+#endif
       while (prevReachable != reachableStates) {
+#ifdef VERBOSE_BFS
+        iters++;
+        fprintf(stderr, "Iteration %d:\n", iters);
+#endif
         resF->unlinkNode(prevReachable);
         prevReachable = reachableStates;
         int front = imageOp->compute(reachableStates, R);
+#ifdef VERBOSE_BFS
+        fprintf(stderr, "\timage done %d\n", front);
+#endif
 #ifdef DEBUG_BFS
         iters++;
         fprintf(stderr, "Iteration %d\npseudo-frontier: %d\n", iters, front);
         arg1F->showNodeGraph(stderr, front);
 #endif
         reachableStates = unionOp->compute(reachableStates, front);
+#ifdef VERBOSE_BFS
+        fprintf(stderr, "\tunion done %d\n", reachableStates);
+#endif
 #ifdef DEBUG_BFS
         fprintf(stderr, "Reachable so far: %d\n", reachableStates);
         arg1F->showNodeGraph(stderr, reachableStates);
