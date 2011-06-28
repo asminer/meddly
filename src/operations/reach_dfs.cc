@@ -135,20 +135,20 @@ class MEDDLY::forwd_dfs_mt : public common_dfs_mt {
 
 
     inline int getMddUnion(int a, int b) {
-      DCASSERT(ddf->isTerminalNode(a) || ddf->isReducedNode(a));
-      DCASSERT(ddf->isTerminalNode(b) || ddf->isReducedNode(b));
+      DCASSERT(resF->isTerminalNode(a) || resF->isReducedNode(a));
+      DCASSERT(resF->isTerminalNode(b) || resF->isReducedNode(b));
       DCASSERT(mddUnion);
       return mddUnion->compute(a, b);
     };
     inline int getMxdIntersection(int a, int b) {
-      DCASSERT(xdf->isTerminalNode(a) || xdf->isReducedNode(a));
-      DCASSERT(xdf->isTerminalNode(b) || xdf->isReducedNode(b));
+      DCASSERT(arg2F->isTerminalNode(a) || arg2F->isReducedNode(a));
+      DCASSERT(arg2F->isTerminalNode(b) || arg2F->isReducedNode(b));
       DCASSERT(mxdIntersection);
       return mxdIntersection->compute(a, b);
     }
     inline int getMxdDifference(int a, int b) {
-      DCASSERT(xdf->isTerminalNode(a) || xdf->isReducedNode(a));
-      DCASSERT(xdf->isTerminalNode(b) || xdf->isReducedNode(b));
+      DCASSERT(arg2F->isTerminalNode(a) || arg2F->isReducedNode(a));
+      DCASSERT(arg2F->isTerminalNode(b) || arg2F->isReducedNode(b));
       DCASSERT(mxdDifference);
       return mxdDifference->compute(a, b);
     }

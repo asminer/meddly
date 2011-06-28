@@ -150,7 +150,9 @@ void createQueenNodes(forest* f, int q, dd_edge &col, dd_edge &cp, dd_edge &cm)
 int main()
 {
   timer watch;
-  initialize();
+  settings s;
+  // s.useMonolithicComputeTable = false;
+  initialize(s);
   printf("Using %s\n", getLibraryInfo(0));
   printf("N-Queens solutions.  Enter the value for N:\n");
   scanf("%d", &N);
