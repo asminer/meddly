@@ -26,6 +26,8 @@
 #include "chained_hash.h"
 #include <map>
 
+// #define DEBUG_CT
+
 #define RECYCLED_LIST
 #define USE_CHAINED_HASH_TABLE
 
@@ -445,6 +447,11 @@ MEDDLY::monolithic_table:: ~monolithic_table()
 
 void MEDDLY::monolithic_table::add(operation* op, const int* entry)
 {
+#ifdef DEBUG_CT
+  fprintf(stderr, "MT adding entry ");
+  op->showEntry(stderr, entry);
+  fprintf(stderr, "\n");
+#endif
   // copy entry data
   int node = getFreeNode(op->getCacheEntryLength());
   nodes[node].op = op;
@@ -477,6 +484,11 @@ const int* MEDDLY::monolithic_table::find(operation* op, const int* entryKey)
   if (h != getNull()) {
     // found entry
     perf.hits++;
+#ifdef DEBUG_CT
+    fprintf(stderr, "MT found entry ");
+    op->showEntry(stderr, getDataAddress(nodes[h]));
+    fprintf(stderr, "\n");
+#endif
     return getDataAddress(nodes[h]);
   }
   // did not find entry
@@ -622,7 +634,6 @@ class MEDDLY::operation_table : public compute_table {
     int* data;                      // Array of ints for storing data
     int dataCount;                  // size of array data
     int lastData;                   // last used index in array data
-    int recycledNodes;              // -1 indicates no recycled nodes
     int recycledFront;              // first recycled node
     fixed_size_hash_table<operation_table>* fsht;
 #ifdef USE_CHAINED_HASH_TABLE
@@ -702,7 +713,6 @@ class MEDDLY::operation_table : public compute_table {
     // Places the node in the recyled nodes list.
     // Note: Usually called after owner->op->discardEntry(..).
     inline void recycleNode(int h) {
-      nodes[h].dataOffset = -1;
       nodes[h].next = recycledFront;
       recycledFront = h;
     }
@@ -793,8 +803,7 @@ MEDDLY::operation_table::operation_table(settings s, operation* op)
   memset(data, 0, dataCount * sizeof(int));
 
   // Initialize recycled lists
-  recycledNodes = -1;
-  recycledFront = 0;
+  recycledFront = -1;
 
   // Initialize actual tables
   if (opts.chaining) {
@@ -831,6 +840,11 @@ void MEDDLY::operation_table::add(operation* op, const int* entry)
   int node = getFreeNode();
   memcpy(getDataAddress(nodes[node]), entry, op->getCacheEntryLengthInBytes());
   nodes[node].next = getNull();
+#ifdef DEBUG_CT
+  fprintf(stderr, "OT adding entry ");
+  op->showEntry(stderr, entry);
+  fprintf(stderr, " to slot %d\n", node);
+#endif
   // insert node into hash table
   if (ht) ht->insert(node); else fsht->insert(node);
 }
@@ -859,6 +873,11 @@ const int* MEDDLY::operation_table::find(operation* op, const int* entryKey)
   if (h != getNull()) {
     // found entry
     perf.hits++;
+#ifdef DEBUG_CT
+    fprintf(stderr, "OT found entry ");
+    op->showEntry(stderr, getDataAddress(nodes[h]));
+    fprintf(stderr, " at slot %d\n", h);
+#endif
     return getDataAddress(nodes[h]);
   }
   // did not find entry
@@ -927,6 +946,7 @@ void MEDDLY::operation_table::expandData()
 void MEDDLY::operation_table::show(FILE* s, int h) const
 {
   global_op->showEntry(s, getDataAddress(nodes[h]));
+  fprintf(s, "[slot %d] ", h);
 }
 
 

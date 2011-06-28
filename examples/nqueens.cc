@@ -151,7 +151,7 @@ int main()
 {
   timer watch;
   settings s;
-  // s.useMonolithicComputeTable = false;
+  s.useMonolithicComputeTable = false;
   initialize(s);
   printf("Using %s\n", getLibraryInfo(0));
   printf("N-Queens solutions.  Enter the value for N:\n");
@@ -211,6 +211,19 @@ int main()
       apply(MULTIPLY, *constr[k], uniq_col, *constr[k]);
     } // for j
   } // for i
+
+  /*
+  ( (expert_forest*)f)->showInfo(stdout, 1);
+  if (operation::useMonolithicComputeTable()) {
+    operation::showMonolithicComputeTable(stdout);
+  } else {
+    operation* neq = getOperation(NOT_EQUAL, f, f, f);
+    operation* mult = getOperation(MULTIPLY, f, f, f);
+    neq->showComputeTable(stdout);
+    mult->showComputeTable(stdout);
+  }
+  */
+
   printf("Building solutions\n");
   intersect(constr, N);
   assert(constr[0]);
