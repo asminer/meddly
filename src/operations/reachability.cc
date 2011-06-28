@@ -27,6 +27,7 @@
 //#define IGNORE_TERMS
 //#define IGNORE_INCOUNT 2
 //#define DEBUG_DFS
+#define VERBOSE_BFS
 
 //#define USE_GET_VECTOR_DOWN_POINTERS
 
@@ -81,20 +82,30 @@ int mdd_reachability_bfs::compute(op_info* owner, int mdd, int mxd)
   mddNm->linkNode(mdd);
   reachableStates.set(mdd, 0, mddNm->getNodeLevel(mdd));
   dd_edge prevReachableStates(mddNm);
-
+#ifdef VERBOSE_BFS
+  int iters = 0;
+#endif
   while(prevReachableStates != reachableStates)
   {
+#ifdef VERBOSE_BFS
+    iters++;
+    fprintf(stderr, "Iteration %d:\n", iters);
+#endif
     prevReachableStates = reachableStates;
     // printf("\nPost-Image (mdd:%d, mxd:%d): ",
     //    reachableStates.getNode(), nsf.getNode());
     dd_edge postImage(mddNm);
     ecm->apply(postImageOp, reachableStates, nsf, postImage);
-    // printf("%d\n", postImage.getNode());
+#ifdef VERBOSE_BFS
+    fprintf(stderr, "\timage done %d\n", postImage.getNode());
+#endif
     // postImage.show(stdout, 2);
     // printf("\nUnion (mdd:%d, mdd:%d): ",
     //    reachableStates.getNode(), postImage.getNode());
     ecm->apply(unionOp, reachableStates, postImage, reachableStates);
-    // printf("%d\n", reachableStates.getNode());
+#ifdef VERBOSE_BFS
+    fprintf(stderr, "\tunion done %d\n", reachableStates.getNode());
+#endif
   }
 
   int result = reachableStates.getNode();
