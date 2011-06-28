@@ -1246,6 +1246,10 @@ void node_manager::compactLevel(int k)
   printf("\n");
 #endif
 
+#ifdef DEBUG_SLOW
+  fprintf(stderr, "Compacting forest level %d\n", k);
+#endif
+
   // alternate algorithm -- since we now have the node ids in the node data
   int *node_ptr = level[p_level].data + 1;  // since we leave [0] empty
   int *end_ptr = level[p_level].data + level[p_level].last + 1;

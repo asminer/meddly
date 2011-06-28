@@ -158,14 +158,14 @@ void MEDDLY::operation::removeAllComputeTableEntries()
   is_marked_for_deletion = false;
 }
 
-void MEDDLY::operation::showMonolithicComputeTable(FILE* s)
+void MEDDLY::operation::showMonolithicComputeTable(FILE* s, bool verbose)
 {
-  if (Monolithic_CT) Monolithic_CT->show(s, true);
+  if (Monolithic_CT) Monolithic_CT->show(s, verbose);
 }
 
-void MEDDLY::operation::showComputeTable(FILE* s) const
+void MEDDLY::operation::showComputeTable(FILE* s, bool verbose) const
 {
-  CT->show(s, true);
+  CT->show(s, verbose);
 }
 
 // ******************************************************************

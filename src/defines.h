@@ -42,6 +42,8 @@
 #include "config.h"
 #endif
 
+#define DEBUG_SLOW
+
 // Things that everyone will need
 #include <cstdlib>
 #include <cassert>

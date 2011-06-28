@@ -462,6 +462,9 @@ class hash_table {
     // Expands the hash table (the number of buckets) if necessary
     // (based on isTimeToExpand()). After expanding it rehashes the entries.
     inline void expand() {
+#ifdef DEBUG_SLOW
+      fprintf(stdout, "Enlarging compute table (current size %d)\n", size);
+#endif
 #ifdef DEBUG_HASH_EXPAND_H
       fprintf(stdout, "%s: Trying to enlarge table...\n", __func__);
       // fprintf(stdout, "%s: Old table:\n", __func__);
@@ -505,6 +508,9 @@ class hash_table {
     }
 
     inline void shrink() {
+#ifdef DEBUG_SLOW
+      fprintf(stderr, "Shrinking compute table (current size %d)\n", size);
+#endif
 #ifdef DEBUG_HASH_H
       fprintf(stdout, "Shrinking table.  Old table:\n");
       show(stdout);

@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
   // transitions->showInfo(stdout);
 
   printf("\nCompute Table:\n");
-  operation::showMonolithicComputeTable(stdout);
+  operation::showMonolithicComputeTable(stdout, true);
 
   dd_edge reachableStates(initial_state);
   dd_edge prevReachableStates(states);

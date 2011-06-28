@@ -784,6 +784,10 @@ int main(int argc, char *argv[])
     free(element);
   }
 
+#if 0
+  mdd->showInfo(stdout);
+  MEDDLY::operation::showMonolithicComputeTable(stdout, false);
+#endif
   // Cleanup
   MEDDLY::destroyDomain(d);
   MEDDLY::cleanup();

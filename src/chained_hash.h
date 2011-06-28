@@ -59,6 +59,8 @@
 
 //#define CHECK_STALE_ONLY_ON_EQUAL
 
+// #define DEBUG_HASH_EXPAND_H
+
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <vector>
@@ -371,6 +373,9 @@ class chained_hash_table {
     // (based on isTimeToExpand()). After expanding it rehashes the entries.
     inline void expand() {
 
+#ifdef DEBUG_SLOW
+      fprintf(stdout, "Enlarging compute table (current size %ld)\n", table.size());
+#endif
 #ifdef DEBUG_HASH_EXPAND_H
       fprintf(stdout, "%s: Trying to enlarge table...\n", __func__);
 #endif
@@ -393,7 +398,9 @@ class chained_hash_table {
     inline void shrink() {
       if (table.size() <= minTableSize) return;
       if (nEntries / table.size() > 0.5) return;
-
+#ifdef DEBUG_SLOW
+      fprintf(stderr, "Shrinking compute table (current size %ld)\n", table.size());
+#endif
 #ifdef DEBUG_HASH_H
       fprintf(stdout, "Shrinking table.  Old table:\n");
       show(stdout);

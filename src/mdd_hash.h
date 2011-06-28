@@ -89,6 +89,11 @@ class mdd_hash_table {
     inline unsigned getMinSize() const { return 8; }
     inline unsigned getEntriesCount() const { return num_entries; }
 
+    inline void showInfo(FILE* s) const {
+      fprintf(s, "\t%-24s%u\n", "Current size:", getSize());
+      fprintf(s, "\t%-24s%u\n", "Current entries:", getEntriesCount());
+    }
+
     void show(FILE *s) const {
       fprintf(s, "%s :\n", __func__);
       for (unsigned i = 0; i < size; i++) {
@@ -148,6 +153,9 @@ class mdd_hash_table {
     /// Expand the hash table (if possible)
     inline void expand() {
       if (size >= getMaxSize() || out_of_mem) return;
+#ifdef DEBUG_SLOW
+      fprintf(stderr, "Enlarging unique table (current size: %d)\n", size);
+#endif
 #ifdef DEBUG_MDD_HASH_EXPAND_H
       fprintf(stderr, "%s: Trying to enlarge unique table...\n", __func__);
       // fprintf(stderr, "%s: Old table:\n", __func__);
@@ -188,6 +196,9 @@ class mdd_hash_table {
 
     inline void shrink() {
       if (size <= getMinSize()) return;
+#ifdef DEBUG_SLOW
+      fprintf(stderr, "Shrinking unique table (current size: %d)\n", size);
+#endif
 #ifdef DEBUG_MDD_HASH_H
       // fprintf(stderr, "Old table:\n");
       // show(stderr);

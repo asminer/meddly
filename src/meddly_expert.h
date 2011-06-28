@@ -859,7 +859,7 @@ class MEDDLY::expert_forest : public forest
 
   protected:
     // for debugging:
-    void showComputeTable(FILE* s) const;
+    void showComputeTable(FILE* s, bool verbose) const;
 
     void unregisterDDEdges();
 
@@ -1286,8 +1286,8 @@ class MEDDLY::operation {
 
     // for debugging:
 
-    static void showMonolithicComputeTable(FILE*);
-    void showComputeTable(FILE*) const;
+    static void showMonolithicComputeTable(FILE*, bool verbose);
+    void showComputeTable(FILE*, bool verbose) const;
 
     // handy
     inline const char* getName() const { return theOpName->getName(); }
