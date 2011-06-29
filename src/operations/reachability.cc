@@ -27,7 +27,7 @@
 //#define IGNORE_TERMS
 //#define IGNORE_INCOUNT 2
 //#define DEBUG_DFS
-#define VERBOSE_BFS
+// #define VERBOSE_BFS
 
 //#define USE_GET_VECTOR_DOWN_POINTERS
 
