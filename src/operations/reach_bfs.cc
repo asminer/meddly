@@ -27,7 +27,7 @@
 #include "reach_bfs.h"
 
 // #define DEBUG_BFS
-#define VERBOSE_BFS
+// #define VERBOSE_BFS
 
 namespace MEDDLY {
   class common_bfs_mt;

@@ -704,7 +704,7 @@ int main(int argc, char *argv[])
     }
   }
 
-  if (false) {
+  if (true ) {
     start.note_time();
     unsigned counter = 0;
     for (dd_edge::const_iterator iter = reachableStates.begin();
@@ -712,9 +712,9 @@ int main(int argc, char *argv[])
     {
       const int* element = iter.getAssignments();
       assert(element != 0);
-#if 0
+#if 1
       printf("%d: [", counter);
-      for (int i = N - 1; i > 0; --i)
+      for (int i = 2*nPhilosophers; i > 0; --i)
       {
         printf("%d ", element[i]);
       }

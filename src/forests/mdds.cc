@@ -1898,7 +1898,7 @@ bool node_manager::gc(bool zombifyOrphanNodes) {
 #ifdef DEVELOPMENT_CODE
     if (zombie_nodes != 0) {
       showInfo(stderr, 2);
-      showComputeTable(stderr);
+      showComputeTable(stderr, true);
     }
     DCASSERT(zombie_nodes == 0);
 #endif
@@ -1930,7 +1930,7 @@ bool node_manager::gc(bool zombifyOrphanNodes) {
 #ifdef DEVELOPMENT_CODE
       if (zombie_nodes != 0) {
         showInfo(stderr, 2);
-        showComputeTable(stderr);
+        showComputeTable(stderr, true);
       }
 #endif
       DCASSERT(zombie_nodes == 0);
