@@ -47,17 +47,12 @@ namespace MEDDLY {
 // *                                                                    *
 // **********************************************************************
 
-MEDDLY::compute_table::settings::settings()
+MEDDLY::compute_table::compute_table(const settings &s)
 {
-  chaining = meddlySettings.doComputeTablesUseChaining;
-  maxSize = meddlySettings.maxComputeTableSize;
-}
+  chaining = s.doComputeTablesUseChaining;
+  maxSize = s.maxComputeTableSize;
 
-MEDDLY::compute_table::compute_table(settings s)
-{
-  opts = s;
-
-  if (0==opts.maxSize)
+  if (0==maxSize)
     throw error(error::INVALID_ASSIGNMENT);
 
   perf.numEntries = 0;
@@ -421,17 +416,17 @@ MEDDLY::monolithic_table::monolithic_table(settings s)
   recycledFront = 0;
 
   // Initialize actual tables
-  if (opts.chaining) {
+  if (chaining) {
     // create hash table with chaining
 #ifdef USE_CHAINED_HASH_TABLE
-    ht = new chained_hash_table<monolithic_table>(this, opts.maxSize);
+    ht = new chained_hash_table<monolithic_table>(this, maxSize);
 #else
-    ht = new hash_table<monolithic_table>(this, opts.maxSize);
+    ht = new hash_table<monolithic_table>(this, maxSize);
 #endif
     fsht = 0;
   } else {
     // create hash table with no chaining
-    fsht = new fixed_size_hash_table<monolithic_table>(this, opts.maxSize);
+    fsht = new fixed_size_hash_table<monolithic_table>(this, maxSize);
     ht = 0;
   }
 }
@@ -808,17 +803,17 @@ MEDDLY::operation_table::operation_table(settings s, operation* op)
   recycledFront = -1;
 
   // Initialize actual tables
-  if (opts.chaining) {
+  if (chaining) {
     // create hash table with chaining
 #ifdef USE_CHAINED_HASH_TABLE
-    ht = new chained_hash_table<operation_table>(this, opts.maxSize);
+    ht = new chained_hash_table<operation_table>(this, maxSize);
 #else
-    ht = new hash_table<operation_table>(this, opts.maxSize);
+    ht = new hash_table<operation_table>(this, maxSize);
 #endif
     fsht = 0;
   } else {
     // create hash table with no chaining
-    fsht = new fixed_size_hash_table<operation_table>(this, opts.maxSize);
+    fsht = new fixed_size_hash_table<operation_table>(this, maxSize);
     ht = 0;
   }
 }

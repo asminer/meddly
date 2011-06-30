@@ -37,6 +37,8 @@
 #ifndef COMPUTE_TABLE_H
 #define COMPUTE_TABLE_H
 
+#define USE_NEW_COMPUTE_TABLE
+
 #include "defines.h"
 
 namespace MEDDLY {
@@ -125,7 +127,6 @@ class MEDDLY::compute_table {
       virtual void show(FILE *s, bool verbose = false) const = 0;
 
     protected:
-      settings opts;
       stats perf;
       static unsigned raw_hash(const int* data, int length);
 
