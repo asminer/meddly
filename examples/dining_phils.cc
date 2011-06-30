@@ -624,7 +624,9 @@ int main(int argc, char *argv[])
 #if 0   // determine verbosity of output
   reachableStates.show(stdout, 2);
 #else
-  reachableStates.show(stdout, 1);
+  double c;
+  apply(CARDINALITY, reachableStates, c);
+  printf("Approximately %e reachable states\n", c);
 #endif
 
 #if 0
@@ -704,7 +706,7 @@ int main(int argc, char *argv[])
     }
   }
 
-  if (true ) {
+  if (false) {
     start.note_time();
     unsigned counter = 0;
     for (dd_edge::const_iterator iter = reachableStates.begin();

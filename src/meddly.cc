@@ -33,6 +33,8 @@
 #include "compute_table.h"
 #include "operations/init_builtin.h"
 
+// #define STATS_ON_DESTROY
+
 namespace MEDDLY {
   // "global" variables
 
@@ -387,7 +389,6 @@ void MEDDLY::initialize(const settings &s)
 
   // set up monolithic compute table, if needed
   if (meddlySettings.useMonolithicComputeTable) {
-    compute_table::settings s;
     operation::Monolithic_CT = createMonolithicTable(s);
   }
 
@@ -415,6 +416,14 @@ void MEDDLY::initialize()
 void MEDDLY::cleanup()
 {
   if (!libraryRunning) throw error(error::UNINITIALIZED);
+
+#ifdef STATS_ON_DESTROY
+  if (operation::Monolithic_CT) {
+    fprintf(stderr, "Compute table (before destroy):\n");
+    operation::Monolithic_CT->show(stderr, false);
+  }
+
+#endif
 
   // clean up domains
   for (int i=0; i<dom_list_size; i++) {

@@ -60,6 +60,7 @@
 //#define CHECK_STALE_ONLY_ON_EQUAL
 
 // #define DEBUG_HASH_EXPAND_H
+// #define DEBUG_CT_ENTRIES
 
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -158,6 +159,9 @@ class chained_hash_table {
           if (nodes->isStale(curr)) {
             // remove from cache
             nodes->uncacheNode(curr);
+#ifdef DEBUG_CT_ENTRIES
+            printf("Removed stale CT entry %d\n", curr);
+#endif
           } else {
             // add to head of list
             nodes->setNext(curr, front);
@@ -181,6 +185,9 @@ class chained_hash_table {
         int next = nodes->getNext(front);
         if (nodes->isStale(front)) {
           nodes->uncacheNode(front);
+#ifdef DEBUG_CT_ENTRIES
+          printf("Removed stale CT entry %d\n", front);
+#endif
         } else {
           insertWithoutExpand(front);
         }
@@ -202,6 +209,9 @@ class chained_hash_table {
         table[h] = nodes->getNext(table[h]);
         nodes->uncacheNode(stale);
         nEntries--;
+#ifdef DEBUG_CT_ENTRIES
+        printf("Removed stale CT entry %d (#entries %d)\n", stale, nEntries);
+#endif
         return;
       }
 
@@ -211,8 +221,11 @@ class chained_hash_table {
       if (curr == nodes->getNull()) {
         // remove table[h]
         nodes->uncacheNode(table[h]);
-        table[h] = nodes->getNull();
         nEntries--;
+#ifdef DEBUG_CT_ENTRIES
+        printf("Removed stale CT entry %d (#entries %d)\n", table[h], nEntries);
+#endif
+        table[h] = nodes->getNull();
         return;
       }
 
@@ -220,6 +233,9 @@ class chained_hash_table {
         nodes->setNext(table[h], nodes->getNext(curr));
         nodes->uncacheNode(curr);
         nEntries--;
+#ifdef DEBUG_CT_ENTRIES
+        printf("Removed stale CT entry %d (#entries %d)\n", curr, nEntries);
+#endif
         return;
       }
 
@@ -230,6 +246,9 @@ class chained_hash_table {
           nodes->setNext(curr, nodes->getNext(next));
           nodes->uncacheNode(next);
           nEntries--;
+#ifdef DEBUG_CT_ENTRIES
+          printf("Removed stale CT entry %d (#entries %d)\n", next, nEntries);
+#endif
           return;
         }
         prev = curr;
@@ -242,6 +261,9 @@ class chained_hash_table {
       nodes->setNext(prev, next);
       nodes->uncacheNode(curr);
       nEntries--;
+#ifdef DEBUG_CT_ENTRIES
+      printf("Removed stale CT entry %d (#entries %d)\n", curr, nEntries);
+#endif
     }
 
     /// If table contains key, remove it and return it; otherwise return
@@ -257,8 +279,11 @@ class chained_hash_table {
         if (head == key) {
           int next = nodes->getNext(head);
           nodes->uncacheNode(head);
-          head = next;
           nEntries--;
+#ifdef DEBUG_CT_ENTRIES
+          printf("Removed stale CT entry %d (#entries %d)\n", head, nEntries);
+#endif
+          head = next;
           result = key;
         }
         else {
@@ -269,6 +294,9 @@ class chained_hash_table {
               nodes->setNext(prev, nodes->getNext(curr));
               nodes->uncacheNode(curr);
               nEntries--;
+#ifdef DEBUG_CT_ENTRIES
+              printf("Removed stale CT entry %d (#entries %d)\n", curr, nEntries);
+#endif
               result = key;
               break;
             }
@@ -294,6 +322,10 @@ class chained_hash_table {
       nodes->setNext(key, table[h]);
       table[h] = key;
       nEntries++;
+
+#ifdef DEBUG_CT_ENTRIES
+      printf("Added CT entry %d (#entries = %d)\n", key, nEntries);
+#endif
 
       return key;
     }
@@ -328,6 +360,9 @@ class chained_hash_table {
           while (table[i] != nodes->getNull() && nodes->isStale(table[i])) {
             next = nodes->getNext(table[i]);
             nodes->uncacheNode(table[i]);
+#ifdef DEBUG_CT_ENTRIES
+            printf("Removed stale CT entry %d\n", table[i]);
+#endif
             table[i] = next;
             stale_count++;
           }
@@ -340,6 +375,9 @@ class chained_hash_table {
             if (nodes->isStale(curr)) {
               nodes->setNext(prev, next);
               nodes->uncacheNode(curr);
+#ifdef DEBUG_CT_ENTRIES
+              printf("Removed stale CT entry %d\n", curr);
+#endif
               stale_count++;
               // prev remains the same
             } else {
@@ -443,6 +481,9 @@ class chained_hash_table {
         table[h] = nodes->getNext(table[h]);
         nodes->uncacheNode(ptr);
         nEntries--;
+#ifdef DEBUG_CT_ENTRIES
+        printf("Removed stale CT entry %d (#entries %d)\n", ptr, nEntries);
+#endif
         return nodes->getNull();
       }
 
@@ -462,6 +503,9 @@ class chained_hash_table {
           nodes->setNext(prev, nodes->getNext(ptr));
           nodes->uncacheNode(ptr);
           nEntries--;
+#ifdef DEBUG_CT_ENTRIES
+          printf("Removed stale CT entry %d (#entries %d)\n", ptr, nEntries);
+#endif
           return nodes->getNull();
         }
         // Advance pointers
@@ -478,6 +522,9 @@ class chained_hash_table {
           table[h] = nodes->getNext(table[h]);
           nodes->uncacheNode(ptr);
           nEntries--;
+#ifdef DEBUG_CT_ENTRIES
+          printf("Removed stale CT entry %d (#entries %d)\n", ptr, nEntries);
+#endif
         } else if (nodes->equals(table[h], key)) {
           return table[h];
         } else {
@@ -497,6 +544,9 @@ class chained_hash_table {
           nodes->setNext(prev, next);
           nodes->uncacheNode(ptr);
           nEntries--;
+#ifdef DEBUG_CT_ENTRIES
+          printf("Removed stale CT entry %d (#entries %d)\n", ptr, nEntries);
+#endif
         } else if (nodes->equals(ptr, key)) {
           // Move it to front and return.
           nodes->setNext(prev, next);

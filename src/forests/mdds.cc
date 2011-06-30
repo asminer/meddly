@@ -49,6 +49,7 @@
 
 //#define MERGE_RIGHT
 //#define MERGE_LEFT
+//#define TRACK_DELETIONS
 
 const int add_size = 1024;
 const int l_add_size = 24;
@@ -2057,6 +2058,9 @@ void node_manager::freeZombieNode(int p)
     address[p].offset = -a_unused;
     a_unused = p;
   }
+#ifdef TRACK_DELETIONS
+  printf("reclaimed zombie %d\n", p);
+#endif
 }
 
 void node_manager::freeNode(int p)

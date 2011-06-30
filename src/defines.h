@@ -42,7 +42,8 @@
 #include "config.h"
 #endif
 
-#define DEBUG_SLOW
+// #define DEBUG_SLOW
+// #define TRACE_ALL_OPS
 
 // Things that everyone will need
 #include <cstdlib>

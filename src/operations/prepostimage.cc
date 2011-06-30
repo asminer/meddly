@@ -485,6 +485,9 @@ int MEDDLY::postimage_mdd::compute_rec(int mdd, int mxd)
 
   DCASSERT(resF->isReducedNode(result));
 
+#ifdef TRACE_ALL_OPS
+  printf("computed postimage(%d, %d) = %d\n", mdd, mxd, result);
+#endif
   // save result in compute cache and return it
   return saveResult(mdd, mxd, result);
 }

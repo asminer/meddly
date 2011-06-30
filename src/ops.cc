@@ -28,6 +28,10 @@
 #include "defines.h"
 #include "compute_table.h"
 
+namespace MEDDLY {
+  extern settings meddlySettings;
+}
+
 // ******************************************************************
 // *                       ct_object  methods                       *
 // ******************************************************************
@@ -119,8 +123,7 @@ MEDDLY::operation::operation(const opname* n)
   if (useMonolithicCT)
     CT = Monolithic_CT;
   else {
-    compute_table::settings s;
-    CT = createOperationTable(s, this); 
+    CT = createOperationTable(meddlySettings, this); 
   }
   is_marked_for_deletion = false;
   next = 0;

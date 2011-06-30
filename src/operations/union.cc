@@ -218,6 +218,10 @@ int MEDDLY::union_mxd::computeIdent(int a, int b)
   resF->cacheNode(result);
 #endif
 
+#ifdef TRACE_ALL_OPS
+  printf("computed %s(%d, %d)=%d\n", getName(), a, b, result);
+#endif
+
   saveResult(a, b, result);
   return result;
 }
