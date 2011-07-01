@@ -394,15 +394,13 @@ dd_edge MakeSynch23_4(forest* mxd)
 
 dd_edge getReachabilitySet(const dd_edge& states, const dd_edge& nsf, bool dfs)
 {
-  compute_manager *cm = getComputeManager();
-
-  compute_manager::op_code op =
+  const binary_opname* op =
     dfs
-    ? compute_manager::REACHABLE_STATES_DFS
-    : compute_manager::REACHABLE_STATES_BFS;
+    ? REACHABLE_STATES_DFS
+    : REACHABLE_STATES_BFS;
 
   dd_edge rs(states);
-  cm->apply(op, states, nsf, rs);
+  apply(op, states, nsf, rs);
 
   return rs;
 }
@@ -417,12 +415,10 @@ dd_edge getReachabilitySet(const dd_edge& states, const dd_edge& nsf, bool dfs)
 
 void testMDDComplement(const dd_edge& mdd)
 {
-  compute_manager *cm = getComputeManager();
-
   dd_edge complement(mdd);
   timer compTimer;
   compTimer.note_time();
-  cm->apply(compute_manager::COMPLEMENT, mdd, complement);
+  apply(COMPLEMENT, mdd, complement);
   compTimer.note_time();
 
   fprintf(stderr, "\nMDD:\n");
@@ -438,15 +434,13 @@ void testMDDComplement(const dd_edge& mdd)
 
 void testMXDComplement(const dd_edge& mxd)
 {
-  compute_manager *cm = getComputeManager();
-
   forest* f = mxd.getForest();
   assert(f);
 
   dd_edge complement(mxd);
   timer compTimer;
   compTimer.note_time();
-  cm->apply(compute_manager::COMPLEMENT, mxd, complement);
+  apply(COMPLEMENT, mxd, complement);
   compTimer.note_time();
 
   fprintf(stderr, "\nMXD:\n");
@@ -482,7 +476,6 @@ void testMXDComplement(const dd_edge& mxd)
 void testIndexSet(domain* d, const dd_edge& mdd)
 {
   assert(d);
-  compute_manager *cm = getComputeManager();
 
   // Create a EV+MDD forest in this domain (to store index set)
   forest* evplusmdd = d->createForest(false, forest::INTEGER, forest::EVPLUS);
@@ -491,7 +484,7 @@ void testIndexSet(domain* d, const dd_edge& mdd)
 
   // Convert MDD to Index Set EV+MDD and print the states
   dd_edge indexSet(evplusmdd);
-  cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mdd, indexSet);
+  apply(CONVERT_TO_INDEX_SET, mdd, indexSet);
 
   // Get Index Set Cardinality
   double cardinality = indexSet.getCardinality();

@@ -23,20 +23,12 @@
 #define CROSS_H
 
 namespace MEDDLY {
+  class binary_opname;
+  class settings;
 
-  class operation;
-  class op_param;
-
-  /** Minimalist front-end interface.
-      Return the appropriate operation for 
-      the given forest and desired return type.
-        @param  ot  Operand type
-        @return The appropriate operation, or 0 on error.
-  */
-  operation* getCrossOperation(const op_param &ot);
-
+  /// Set up a binary_opname for the "cross-product" operation.
+  binary_opname* initializeCross(const settings &s);
 }
 
 #endif
-
 

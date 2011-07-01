@@ -894,9 +894,7 @@ int doBfs(const moves& m)
   fprintf(stdout, "Started BFS Saturate...");
   fflush(stdout);
   timer start;
-  getComputeManager()->apply(
-    compute_manager::REACHABLE_STATES_BFS, initial, nsf, initial
-  );
+  apply(REACHABLE_STATES_BFS, initial, nsf, initial);
   start.note_time();
   fprintf(stdout, " done!\n");
   fflush(stdout);
@@ -928,9 +926,7 @@ int doDfs(const moves& m)
   fprintf(stdout, "Started DFS Saturate...");
   fflush(stdout);
   timer start;
-  getComputeManager()->apply(
-    compute_manager::REACHABLE_STATES_DFS, initial, nsf, initial
-  );
+  apply(REACHABLE_STATES_DFS, initial, nsf, initial);
   start.note_time();
   fprintf(stdout, " done!\n");
   fflush(stdout);
@@ -1030,15 +1026,12 @@ int doChoice(const moves& m)
           direction d = direction(choice / nFaces);
           printf("Choice: %d, Face: %d, Direction: %d\n", choice, f, d);
         }
-        getComputeManager()->apply(
-          compute_manager::POST_IMAGE, result, nsf[choice], temp
-        );
+        apply(POST_IMAGE, result, nsf[choice], temp);
         result += temp;
         break;
       case 18:
         // Perform garbage collection.
-        // For now, simply clear the compute table.
-        getComputeManager()->clearComputeTable();
+        states->garbageCollect();
         break;
       case 19:
         // Clear result.
@@ -1125,9 +1118,8 @@ int doSteppedBfs(const moves& m)
         {
           printf("Processing event[%d]...", i);
           fflush(stdout);
-          getComputeManager()->apply(
-            compute_manager::REACHABLE_STATES_DFS, 
-            eventResults[i], nsf[i], eventResults[i]
+          apply(
+            REACHABLE_STATES_DFS, eventResults[i], nsf[i], eventResults[i]
           );
           printf("done.\n");
           fflush(stdout);
@@ -1156,8 +1148,7 @@ int doSteppedBfs(const moves& m)
         break;
       case 3:
         // Perform garbage collection.
-        // For now, simply clear the compute table.
-        getComputeManager()->clearComputeTable();
+        states->garbageCollect();
         break;
       case 4:
         // Clear result.

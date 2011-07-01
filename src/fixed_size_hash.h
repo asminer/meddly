@@ -104,7 +104,7 @@ class fixed_size_hash_table {
       max_load_size = unsigned(table_size * max_load_factor);
       min_load_size = unsigned(table_size * min_load_factor);
       table = (int*) malloc(sizeof(int) * getSize());
-      if (NULL == table) outOfMemory();
+      if (NULL == table) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
       int *end = table + getSize();
       for (int* curr = table; curr < end; curr++) {
         *curr = nodes->getNull();
@@ -241,7 +241,7 @@ class fixed_size_hash_table {
       max_load_size = int(table_size * max_load_factor);
       min_load_size = int(table_size * min_load_factor);
       table = (int *) realloc(table, table_size * sizeof(int));
-      if (NULL == table) outOfMemory();
+      if (NULL == table) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
 
       for (unsigned i = 0; i < table_size; i++) {
         table[i] = nodes->getNull();
@@ -262,7 +262,7 @@ class fixed_size_hash_table {
       max_load_size = int(table_size * max_load_factor);
       min_load_size = int(table_size * min_load_factor);
       table = (int *) realloc(table, table_size * sizeof(int));
-      if (NULL == table) outOfMemory();
+      if (NULL == table) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
 
       for (unsigned i = 0; i < getSize(); i++) {
         table[i] = nodes->getNull();
@@ -292,7 +292,7 @@ class fixed_size_hash_table {
       min_load_size = unsigned(table_size * min_load_factor);
 
       table = (int*) realloc(table, sizeof(int) * getSize());
-      if (NULL == table) outOfMemory();
+      if (NULL == table) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
       int *end = table + getSize();
       for (int* curr = table; curr < end; curr++) {
         *curr = nodes->getNull();

@@ -60,6 +60,7 @@
 
 #include <iostream>
 #include "meddly.h"
+#include "meddly_expert.h"
 
 using namespace MEDDLY;
 
@@ -146,14 +147,12 @@ int main(int argv, char *argc[])
   // 1. Get a handle to the compute manager (through which operations
   //    are performed).
   // 2. Call compute manager with the operation code for UNION
-  compute_manager* cm = getComputeManager();
-  assert(cm != 0);
 
   // do all = union(first, second)
   std::cout << "\nUnion("
     << first.getNode() << ", " << second.getNode() << "): ";
   dd_edge all(mdd);
-  cm->apply(compute_manager::UNION, first, second, all);
+  apply(UNION, first, second, all);
   std::cout << all.getNode() << "\n";
   all.show(stdout, 2);
 
@@ -161,7 +160,7 @@ int main(int argv, char *argc[])
   // -- note that all is over-written with the result of the union
   std::cout << "\nUnion("
     << all.getNode() << ", " << theRest.getNode() << "): ";
-  cm->apply(compute_manager::UNION, all, theRest, all);
+  apply(UNION, all, theRest, all);
   std::cout << all.getNode() << "\n";
   all.show(stdout, 2);
 
@@ -169,7 +168,7 @@ int main(int argv, char *argc[])
   std::cout << "\nIntersection("
     << theRest.getNode() << ", " << all.getNode() << "): ";
   dd_edge intersect(mdd);
-  cm->apply(compute_manager::INTERSECTION, theRest, all, intersect);
+  apply(INTERSECTION, theRest, all, intersect);
   std::cout << intersect.getNode() << "\n";
   intersect.show(stdout, 2);
 
@@ -183,11 +182,11 @@ int main(int argv, char *argc[])
   std::cout << "\nUsing difference to compute complement, "
     << "Difference(" << one.getNode() << ", " << all.getNode() << "): ";
   dd_edge diff(mdd);
-  cm->apply(compute_manager::DIFFERENCE, one, all, diff);
+  apply(DIFFERENCE, one, all, diff);
   std::cout << diff.getNode() << "\n";
   diff.show(stdout, 2);
 
-  cm->showComputeTable(stdout);
+  operation::showMonolithicComputeTable(stdout, true);
   cleanup();
   return 0;
 }

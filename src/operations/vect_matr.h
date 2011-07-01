@@ -22,76 +22,16 @@
 #ifndef VECT_MATR_H
 #define VECT_MATR_H
 
-// meddly.h must be included before this one.
-
 namespace MEDDLY {
+  class numerical_opname;
+  class settings;
+  
+  /// Set up a numerical_opname for "vector matrix multiply".
+  numerical_opname* initVectorMatrixMult(const settings &s);
 
-  class op_param;
-
-  /** Vector matrix multiplication for ev+mdd indexes, mtmxd matrices.
-      Computes y += xA.
-
-        @param  pt      Parameter types; holds forests for y_ind, x_ind, A.
-        @param  ht      Height; outermost call should be number of levels.
-        @param  y       y vector.
-        @param  y_ind   EV+MDD node for y indexes.
-        @param  x       x vector.
-        @param  x_ind   EV+MDD node for x indexes.
-        @param  A       MTMDD node for A matrix.
-  */
-  void vectorMatrixMult_evplus_mt(
-    const op_param* pt, int ht, double* y, int y_ind, const double* x, int x_ind, int A
-  );
-
-  /** Vector matrix multiplication for ev+mdd indexes, ev*mxd matrices.
-      Computes y += xA.
-
-        @param  pt      Parameter types; holds forests for y_ind, x_ind, A.
-        @param  ht      Height; outermost call should be number of levels.
-        @param  y       y vector.
-        @param  y_ind   EV+MDD node for y indexes.
-        @param  x       x vector.
-        @param  x_ind   EV+MDD node for x indexes.
-        @param  A       MTMDD node for A matrix.
-  */
-  void vectorMatrixMult_evplus_evtimes(
-    const op_param* pt, int ht, double* y, int y_ind, const double* x, int x_ind, int A
-  );
-
-
-
-
-  /** Matrix vector multiplication for ev+mdd indexes, mtmxd matrices.
-      Computes y += Ax.
-
-        @param  pt      Parameter types; holds forests for y_ind, x_ind, A.
-        @param  ht      Height; outermost call should be number of levels.
-        @param  y       y vector.
-        @param  y_ind   EV+MDD node for y indexes.
-        @param  A       MTMDD node for A matrix.
-        @param  x       x vector.
-        @param  x_ind   EV+MDD node for x indexes.
-  */
-  void matrixVectorMult_evplus_mt(
-    const op_param* pt, int ht, double* y, int y_ind, int A, const double* x, int x_ind
-  );
-
-  /** Matrix vector multiplication for ev+mdd indexes, ev*mxd matrices.
-      Computes y += Ax.
-
-        @param  pt      Parameter types; holds forests for y_ind, x_ind, A.
-        @param  ht      Height; outermost call should be number of levels.
-        @param  y       y vector.
-        @param  y_ind   EV+MDD node for y indexes.
-        @param  A       MTMDD node for A matrix.
-        @param  x       x vector.
-        @param  x_ind   EV+MDD node for x indexes.
-  */
-  void matrixVectorMult_evplus_evtimes(
-    const op_param* pt, int ht, double* y, int y_ind, int A, const double* x, int x_ind
-  );
-
-};
+  /// Set up a numerical_opname for "matrix vector multiply".
+  numerical_opname* initMatrixVectorMult(const settings &s);
+}
 
 #endif
 

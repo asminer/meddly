@@ -55,7 +55,7 @@ class mtmxd_node_manager : public node_manager {
 
   public:
 
-    mtmxd_node_manager(domain *d, forest::range_type t);
+    mtmxd_node_manager(int dsl, domain *d, forest::range_type t);
     ~mtmxd_node_manager();
 
     // Refer to meddly.h
@@ -114,7 +114,7 @@ class mtmxd_node_manager : public node_manager {
   protected:
 
     // Used by derived classes for initialization
-    mtmxd_node_manager(domain *d, bool relation, forest::range_type t,
+    mtmxd_node_manager(int dsl, domain *d, bool relation, forest::range_type t,
         forest::edge_labeling e, forest::reduction_rule r,
         forest::node_storage s, forest::node_deletion_policy dp);
 
@@ -209,7 +209,7 @@ class mxd_node_manager : public mtmxd_node_manager {
   // TODO: mxds can only be forest::IDENTITY_REDUCED
   public:
 
-    mxd_node_manager(domain *d);
+    mxd_node_manager(int dsl, domain *d);
     ~mxd_node_manager();
 
     using mtmxd_node_manager::createEdge;
@@ -265,11 +265,11 @@ void mtmxd_node_manager::copyLists(const int* const* vlist,
 {
   if (listSize < nElements) {
     unpList = (int**) realloc(unpList, sizeof(int*) * nElements);
-    if (NULL == unpList) outOfMemory();
+    if (NULL == unpList) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
     pList = (int**) realloc(pList, sizeof(int*) * nElements);
-    if (NULL == pList) outOfMemory();
+    if (NULL == pList) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
     tList = (void*) realloc(tList, sizeof(T) * nElements);
-    if (NULL == tList) outOfMemory();
+    if (NULL == tList) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
     listSize = nElements;
   }
 

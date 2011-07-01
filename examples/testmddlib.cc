@@ -30,6 +30,7 @@
 
 #include <iostream>
 #include <meddly.h>
+#include <meddly_expert.h>
 #include <stdlib.h>
 
 using namespace MEDDLY;
@@ -183,9 +184,8 @@ int main(int argc, char *argv[])
   xd.show(stdout, 2);
   // transitions->showInfo(stdout);
 
-  compute_manager* cm = getComputeManager();
   printf("\nCompute Table:\n");
-  cm->showComputeTable(stdout);
+  operation::showMonolithicComputeTable(stdout, true);
 
   dd_edge reachableStates(initial_state);
   dd_edge prevReachableStates(states);
@@ -196,12 +196,12 @@ int main(int argc, char *argv[])
     prevReachableStates = reachableStates;
     printf("\nPost-Image (mdd:%d, mxd:%d): ",
         reachableStates.getNode(), xd.getNode());
-    cm->apply(compute_manager::POST_IMAGE, reachableStates, xd, postImage);
+    apply(POST_IMAGE, reachableStates, xd, postImage);
     printf("%d\n", postImage.getNode());
     // postImage.show(stdout, 2);
     printf("\nUnion (mdd:%d, mdd:%d): ",
         reachableStates.getNode(), postImage.getNode());
-    cm->apply(compute_manager::UNION, reachableStates, postImage,
+    apply(UNION, reachableStates, postImage,
         reachableStates);
     printf("%d\n", reachableStates.getNode());
   }

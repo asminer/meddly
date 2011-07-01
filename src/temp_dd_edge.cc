@@ -237,7 +237,7 @@ void MEDDLY::temp_dd_edge::add(const int* vlist, const int* vplist)
         MAX( size*2, index+1 ) );
     downpointers = (temp_dd_edge**) realloc(downpointers,
         sizeof(temp_dd_edge*) * newSize);
-    if (downpointers == 0) outOfMemory();
+    if (downpointers == 0) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
     memset(downpointers + size, 0, sizeof(temp_dd_edge*) * (newSize - size));
     size = newSize;
   }

@@ -72,7 +72,7 @@ class mdd_hash_table {
       size = getMinSize();
       nodes = n;
       table = (int*) malloc(sizeof(int) * size);
-      if (NULL == table) outOfMemory();
+      if (NULL == table) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
       out_of_mem = false;
       int *end = table + size;
       for (int* curr = table; curr < end; curr++) {
@@ -153,6 +153,9 @@ class mdd_hash_table {
     /// Expand the hash table (if possible)
     inline void expand() {
       if (size >= getMaxSize() || out_of_mem) return;
+#ifdef DEBUG_SLOW
+      fprintf(stderr, "Enlarging unique table (current size: %d)\n", size);
+#endif
 #ifdef DEBUG_MDD_HASH_EXPAND_H
       fprintf(stderr, "%s: Trying to enlarge unique table...\n", __func__);
       // fprintf(stderr, "%s: Old table:\n", __func__);
@@ -193,6 +196,9 @@ class mdd_hash_table {
 
     inline void shrink() {
       if (size <= getMinSize()) return;
+#ifdef DEBUG_SLOW
+      fprintf(stderr, "Shrinking unique table (current size: %d)\n", size);
+#endif
 #ifdef DEBUG_MDD_HASH_H
       // fprintf(stderr, "Old table:\n");
       // show(stderr);

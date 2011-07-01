@@ -23,19 +23,12 @@
 #define CARDINALITY_H
 
 namespace MEDDLY {
+  class unary_opname;
+  class settings;
 
-  class operation;
-  class op_param;
-
-  /** Minimalist front-end interface.
-      Return the appropriate operation for 
-      the given forest and desired return type.
-        @param  ft  Forest type
-        @param  rt  Return type
-        @return The appropriate operation, or 0 on error.
-  */
-  operation* getCardinalityOperation(const op_param &ft, const op_param &rt);
-
+  /// Minimalist interface.
+  /// Set up a unary_opname for the "cardinality" operation.
+  unary_opname* initializeCardinality(const settings &s);
 };
 
 #endif

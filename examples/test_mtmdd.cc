@@ -33,12 +33,14 @@
 #include "meddly.h"
 #include "meddly_expert.h"
 
+using namespace MEDDLY;
+
 // Only include this file if referring to operations that are not
 // available via the mddlib interface. 
 // 
 // Also, include this file if you would like to create a custom
 // operation by deriving one of the existing operations.
-#include "operation_ext.h"
+// #include "operation_ext.h"
 
 // Timer class
 #include "timer.h"
@@ -55,6 +57,7 @@
 // verbose: 0: minimum, 2: maximum
 const int verbose = 1;
 
+#if 0
 // Given a forest and an op_code returns the corresponding op_info.
 // 
 // This is only valid for operations of the form C = A op B,
@@ -80,7 +83,7 @@ op_info* getOp(forest* f, compute_manager::op_code op)
 // 
 // This is only valid for operations of the form C = A op B,
 // where A, B and C belong to the same forest.
-op_info* getOp(forest* f, operation* op)
+op_info* getOp(forest* f, old_operation* op)
 {
   static const int nForests = 3;
   static op_param plist[nForests];
@@ -95,21 +98,17 @@ op_info* getOp(forest* f, operation* op)
   plist[2].set(f);
   return ecm->getOpInfo(op, plist, nForests);
 }
-
+#endif
 
 // Tests a mtmdd operation on the elements provided.
 // This function assumes that each element[i] represents
 // an element in the given MTMDD.
-dd_edge test_mtmdd(forest* mtmdd, compute_manager::op_code opCode,
+dd_edge test_mtmdd(forest* mtmdd, const binary_opname* opCode,
     int** element, element_type* terms, int nElements)
 {
   // A = first nElements/2 elements combined using +.
   // B = second nElements/2 elements combined using +.
   // C = A op B
-
-  static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(getComputeManager());
-  assert(ecm != 0);
 
   dd_edge A(mtmdd);
   dd_edge B(mtmdd);
@@ -120,8 +119,7 @@ dd_edge test_mtmdd(forest* mtmdd, compute_manager::op_code opCode,
   mtmdd->createEdge(element, terms, half, A);
   mtmdd->createEdge(element + half, terms + half, nElements - half, B);
 
-  op_info* op = getOp(mtmdd, opCode);
-  ecm->apply(op, A, B, C);
+  apply(opCode, A, B, C);
 
   if (verbose > 0) {
     printf("A: ");
@@ -138,25 +136,11 @@ dd_edge test_mtmdd(forest* mtmdd, compute_manager::op_code opCode,
 
 bool test_conversion(dd_edge& A, dd_edge& B)
 {
-  static const int nForests = 2;
-  static op_param plist[nForests];
-  static expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(getComputeManager());
-  assert(ecm != 0);
-
-  plist[0].set(A);
-  plist[1].set(B);
-  op_info* op = ecm->getOpInfo(compute_manager::COPY, plist, nForests);
-  if (op == 0) {
-    fprintf(stderr, "Conversion operation not found\n");
-    return false;
-  }
-
 #if 0
   return compute_manager::SUCCESS == ecm->apply(op, A, B)? true: false;
 #else
   try {
-    ecm->apply(op, A, B);
+    apply(COPY, A, B);
     return true;
   }
   catch (MEDDLY::error err) {
@@ -277,15 +261,16 @@ int main(int argc, char *argv[])
 
   timer start;
   start.note_time();
-  dd_edge result = test_mtmdd(mtmdd, compute_manager::PLUS,
-      element, terms, nElements);
+  dd_edge result = test_mtmdd(mtmdd, PLUS, element, terms, nElements);
   start.note_time();
   printf("Time interval: %.4e seconds\n",
       start.get_last_interval()/1000000.0);
 
   printf("Peak Nodes in MDD: %ld\n", mtmdd->getPeakNumNodes());
+  /* TBD: FIX
   printf("Nodes in compute table: %ld\n",
       (getComputeManager())->getNumCacheEntries());
+  */
 
 #if 0
   // Convert mtmdd to mdd
@@ -359,7 +344,9 @@ int main(int argc, char *argv[])
     start.note_time();
     printf("Iterator traversal time (%0.4e elements): %0.4e seconds\n",
         double(counter), start.get_last_interval()/double(1000000.0));
-    printf("Cardinality: %0.4e\n", reachableStates.getCardinality());
+    double c;
+    apply(CARDINALITY, reachableStates, c);
+    printf("Cardinality: %0.4e\n", c);
   }
 
   // Cleanup; in this case simply delete the domain

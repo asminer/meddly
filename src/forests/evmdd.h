@@ -54,7 +54,7 @@ int binarySearch(const int* a, int sz, int find);
 
 class evmdd_node_manager : public node_manager {
   public:
-    evmdd_node_manager(domain *d, forest::range_type t,
+    evmdd_node_manager(int dsl, domain *d, forest::range_type t,
         forest::edge_labeling el, int dataHeaderSize);
     ~evmdd_node_manager();
 
@@ -186,7 +186,7 @@ class evplusmdd_node_manager : public evmdd_node_manager {
   // Data Header Size: 5
 
   public:
-    evplusmdd_node_manager(domain *d);
+    evplusmdd_node_manager(int dsl, domain *d);
     ~evplusmdd_node_manager();
 
     virtual int createTempNode(int k, int sz, bool clear = true);
@@ -225,7 +225,7 @@ class evtimesmdd_node_manager : public evmdd_node_manager {
   // Data Header Size: 4
 
   public:
-    evtimesmdd_node_manager(domain *d);
+    evtimesmdd_node_manager(int dsl, domain *d);
     ~evtimesmdd_node_manager();
 
     using evmdd_node_manager::getDefaultEdgeValue;

@@ -277,11 +277,11 @@ class binary_compute_cache : public compute_cache {
     // Default Constructor: to be used with set().
     // Note that set() is not an inherited method.
     binary_compute_cache();
-    virtual void set(const operation* op, expert_forest* f0,
+    virtual void set(const old_operation* op, expert_forest* f0,
         expert_forest* f1, expert_forest* f2);
 
     // Constructor
-    binary_compute_cache(const operation* op, const op_param* plist, int n);
+    binary_compute_cache(const old_operation* op, const op_param* plist, int n);
 
     // Destructor
     virtual ~binary_compute_cache();
@@ -337,7 +337,7 @@ class binary_compute_cache : public compute_cache {
     static const unsigned maxAdds = 1000000;
     static const unsigned maxStaleCount = maxAdds/10;
 
-    const operation* op;
+    const old_operation* op;
     expert_forest* f0;
     expert_forest* f1;
     expert_forest* f2;

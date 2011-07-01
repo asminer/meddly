@@ -34,7 +34,7 @@ MEDDLY::compute_cache::compute_cache()
 {
   // initialize node and data arrays
   nodes = (cache_entry *) malloc(nodeCount * sizeof(cache_entry));
-  if (nodes == NULL) outOfMemory();
+  if (nodes == NULL) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
   for (int i = 0; i < nodeCount; ++i)
   {
     nodes[i].owner = 0;
@@ -42,7 +42,7 @@ MEDDLY::compute_cache::compute_cache()
     setDataOffset(nodes[i], -1);
   }
   data = (int *) malloc(dataCount * sizeof(int));
-  if (data == NULL) outOfMemory();
+  if (data == NULL) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
   memset(data, 0, dataCount * sizeof(int));
 
   // create new hash table
@@ -144,7 +144,7 @@ void MEDDLY::compute_cache::expandNodes()
   int newNodeCount = int(nodeCount * expansionFactor);
   cache_entry* tempNodes =
     (cache_entry *) realloc(nodes, newNodeCount * sizeof(cache_entry));
-  if (tempNodes == NULL) outOfMemory();
+  if (tempNodes == NULL) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
   nodes = tempNodes;
   for (int i = nodeCount; i < newNodeCount; ++i)
   {
@@ -161,7 +161,7 @@ void MEDDLY::compute_cache::expandData()
 {
   int newDataCount = int(dataCount * expansionFactor);
   data = (int *) realloc(data, newDataCount * sizeof(int));
-  if (data == NULL) outOfMemory();
+  if (data == NULL) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
   memset(data + dataCount, 0, (newDataCount - dataCount) * sizeof(int));
   dataCount = newDataCount;
 }
@@ -271,7 +271,7 @@ MEDDLY::binary_compute_cache::binary_compute_cache()
 }
 
 
-MEDDLY::binary_compute_cache::binary_compute_cache(const operation* op,
+MEDDLY::binary_compute_cache::binary_compute_cache(const old_operation* op,
   const op_param* plist, int n)
 : hits(0), pings(0), adds(0), inserts(0)
 {
@@ -292,7 +292,7 @@ MEDDLY::binary_compute_cache::binary_compute_cache(const operation* op,
 }
 
 
-void MEDDLY::binary_compute_cache::set(const operation* op,
+void MEDDLY::binary_compute_cache::set(const old_operation* op,
   expert_forest* f0, expert_forest* f1, expert_forest* f2)
 {
   // op is allowed to be null.

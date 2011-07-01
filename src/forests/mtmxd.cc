@@ -30,8 +30,8 @@
 // ******************************** MTMXDs ******************************* 
 
 
-mtmxd_node_manager::mtmxd_node_manager(domain *d, forest::range_type t)
-: node_manager(d, true, t,
+mtmxd_node_manager::mtmxd_node_manager(int dsl, domain *d, forest::range_type t)
+: node_manager(dsl, d, true, t,
       forest::MULTI_TERMINAL, forest::IDENTITY_REDUCED,
       forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION,
       mtmxdDataHeaderSize)
@@ -46,11 +46,11 @@ mtmxd_node_manager::mtmxd_node_manager(domain *d, forest::range_type t)
 }
 
 
-mtmxd_node_manager::mtmxd_node_manager(domain *d,
+mtmxd_node_manager::mtmxd_node_manager(int dsl, domain *d,
     bool relation, forest::range_type t,
     forest::edge_labeling e, forest::reduction_rule r,
     forest::node_storage s, forest::node_deletion_policy dp)
-: node_manager(d, relation, t, e, r, s, dp, mtmxdDataHeaderSize)
+: node_manager(dsl, d, relation, t, e, r, s, dp, mtmxdDataHeaderSize)
 {
   unpList = 0;
   pList = 0;
@@ -827,8 +827,8 @@ void mtmxd_node_manager::findFirstElement(const dd_edge& f,
 // *********************************** MXDs *********************************** 
 
 
-mxd_node_manager::mxd_node_manager(domain *d)
-: mtmxd_node_manager(d, true, forest::BOOLEAN,
+mxd_node_manager::mxd_node_manager(int dsl, domain *d)
+: mtmxd_node_manager(dsl, d, true, forest::BOOLEAN,
       forest::MULTI_TERMINAL, forest::IDENTITY_REDUCED,
       forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION)
 { }

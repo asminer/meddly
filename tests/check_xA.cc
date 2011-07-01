@@ -27,12 +27,11 @@
 #include <stdio.h>
 
 #include "meddly.h"
+#include "meddly_expert.h"
 
 using namespace MEDDLY;
 
 const int vars[] = {10, 10, 10};
-
-compute_manager* CM;
 
 bool build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
 {
@@ -115,11 +114,12 @@ bool xA_check(dd_edge &ss, dd_edge &P)
   double q_alt[3];
   p[0] = 0; p[1] = 1; p[2] = 0;
   printf("xA multiplications:\n");
+  numerical_operation* VM = VECT_MATR_MULT->buildOperation(ss, P, ss);
   for (i=0; i<9; i++) {
     printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
     q[0] = q[1] = q[2] = 0;
     try {
-      CM->vectorMatrixMultiply(q, ss, p, ss, P);
+      VM->compute(q, p);
     }
     catch (MEDDLY::error ce) {
       printf("Couldn't multiply: %s\n", ce.getName());
@@ -133,6 +133,7 @@ bool xA_check(dd_edge &ss, dd_edge &P)
     p[2] = q[2];
   }
   printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
+  destroyOperation(VM);
   return true;
 }
 
@@ -144,11 +145,12 @@ bool Ax_check(dd_edge &ss, dd_edge &P)
   double q_alt[3];
   p[0] = 0; p[1] = 1; p[2] = 0;
   printf("Ax multiplications:\n");
+  numerical_operation* MV = MATR_VECT_MULT->buildOperation(ss, P, ss);
   for (i=0; i<9; i++) {
     printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
     q[0] = q[1] = q[2] = 0;
     try {
-      CM->matrixVectorMultiply(q, ss, P, p, ss);
+      MV->compute(q, p);
     }
     catch (MEDDLY::error ce) {
       printf("Couldn't multiply: %s\n", ce.getName());
@@ -162,14 +164,13 @@ bool Ax_check(dd_edge &ss, dd_edge &P)
     p[2] = q[2];
   }
   printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
+  destroyOperation(MV);
   return true;
 }
 
 int main(int argc, const char** argv)
 {
   initialize();
-  CM = getComputeManager();
-  assert(CM);
 
   domain* ozd = createDomainBottomUp(vars, 3);
   assert(ozd);
@@ -184,7 +185,6 @@ int main(int argc, const char** argv)
   if (!build_oz(evpmdds, mtmxds, ss, P)) return 1;
   if (!xA_check(ss, P)) return 1;
   if (!Ax_check(ss, P)) return 1;
-  destroyDomain(ozd);
   cleanup();
   return 0;
 }

@@ -40,8 +40,6 @@ int minterm[7];
 const int* mtaddr[] = { minterm };
 const int* dcaddr[] = { dontcare };
 
-compute_manager* CM;
-
 long seed = 123456789L;
 
 double Random()
@@ -162,7 +160,7 @@ void test(forest* mdd, forest* mxd, int nmt)
 #endif
 
   // check: generate rr from rs, make sure they match
-  CM->apply(compute_manager::CROSS, rs, one, tmp);
+  apply(CROSS, rs, one, tmp);
 #ifdef DEBUG_RANDSET
   printf("rs x 1:\n");
   tmp.show(stdout, 2);
@@ -183,7 +181,7 @@ void test(forest* mdd, forest* mxd, int nmt)
 #endif
   
   // check: generate cr from cs, make sure they match
-  CM->apply(compute_manager::CROSS, one, cs, tmp);
+  apply(CROSS, one, cs, tmp);
 #ifdef DEBUG_RANDSET
   printf("cs x 1:\n");
   tmp.show(stdout, 2);
@@ -191,7 +189,7 @@ void test(forest* mdd, forest* mxd, int nmt)
   assert(tmp == cr);
 
   // intersection of rr and cr should equal rs x cs.
-  CM->apply(compute_manager::CROSS, rs, cs, rcr);
+  apply(CROSS, rs, cs, rcr);
   tmp = rr * cr;
   assert(tmp == rcr);
 }
@@ -200,8 +198,6 @@ void test(forest* mdd, forest* mxd, int nmt)
 int main()
 {
   initialize();
-  CM = getComputeManager();
-  assert(CM);
 
   domain* myd = createDomainBottomUp(vars, 6);
   assert(myd);

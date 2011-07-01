@@ -54,7 +54,7 @@ class mtmdd_node_manager : public node_manager {
 
   public:
 
-    mtmdd_node_manager(domain *d, forest::range_type t);
+    mtmdd_node_manager(int dsl, domain *d, forest::range_type t);
     ~mtmdd_node_manager();
 
     virtual void createEdge(const int* const* vlist, const int* terms, int N,
@@ -101,7 +101,7 @@ class mtmdd_node_manager : public node_manager {
   protected:
 
     // Used by derived classes for initialization
-    mtmdd_node_manager(domain *d, bool relation, forest::range_type t,
+    mtmdd_node_manager(int dsl, domain *d, bool relation, forest::range_type t,
         forest::edge_labeling e, forest::reduction_rule r,
         forest::node_storage s, forest::node_deletion_policy dp);
 
@@ -169,7 +169,7 @@ class mtmdd_node_manager : public node_manager {
 class mdd_node_manager : public mtmdd_node_manager {
   public:
 
-    mdd_node_manager(domain *d);
+    mdd_node_manager(int dsl, domain *d);
     ~mdd_node_manager();
 
     using mtmdd_node_manager::createEdge;
@@ -270,10 +270,10 @@ void mtmdd_node_manager::copyLists(const int* const* vlist,
 {
   if (listSize < nElements) {
     list = (int**) realloc(list, sizeof(int*) * nElements);
-    if (NULL == list) outOfMemory();
+    if (NULL == list) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
     if (terms) {
       termList = (int*) realloc(termList, sizeof(T) * nElements);
-      if (NULL == termList) outOfMemory();
+      if (NULL == termList) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
     }
     listSize = nElements;
   }

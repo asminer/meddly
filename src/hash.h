@@ -108,11 +108,11 @@ class hash_table {
       setSize(getMinSize());
       nodes = n;
       table = (int*) malloc(sizeof(int) * getSize());
-      if (NULL == table) outOfMemory();
+      if (NULL == table) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
 
 #ifdef MAX_DEPTH
       depth = (int*) malloc(sizeof(int) * getSize());
-      if (NULL == depth) outOfMemory();
+      if (NULL == depth) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
       memset(depth, 0, sizeof(int) * getSize());
 #endif
 
@@ -255,7 +255,7 @@ class hash_table {
 
 #ifdef MAX_DEPTH
       int* temp = (int*) realloc(depth, sizeof(int) * getSize());
-      if (temp == NULL) outOfMemory();
+      if (temp == NULL) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
       depth = temp;
       memset(depth, 0, sizeof(int) * getSize());
 #endif
@@ -361,7 +361,7 @@ class hash_table {
       setSize(getMinSize());
 
       table = (int*) realloc(table, sizeof(int) * getSize());
-      if (NULL == table) outOfMemory();
+      if (NULL == table) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
       int *end = table + getSize();
       for (int* curr = table; curr < end; curr++) {
         *curr = nodes->getNull();
@@ -369,7 +369,7 @@ class hash_table {
 
 #ifdef MAX_DEPTH
       depth = (int*) realloc(depth, sizeof(int) * getSize());
-      if (NULL == depth) outOfMemory();
+      if (NULL == depth) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
       memset(depth, 0, sizeof(int) * getSize());
 #endif
 
@@ -462,6 +462,9 @@ class hash_table {
     // Expands the hash table (the number of buckets) if necessary
     // (based on isTimeToExpand()). After expanding it rehashes the entries.
     inline void expand() {
+#ifdef DEBUG_SLOW
+      fprintf(stdout, "Enlarging compute table (current size %d)\n", size);
+#endif
 #ifdef DEBUG_HASH_EXPAND_H
       fprintf(stdout, "%s: Trying to enlarge table...\n", __func__);
       // fprintf(stdout, "%s: Old table:\n", __func__);
@@ -505,6 +508,9 @@ class hash_table {
     }
 
     inline void shrink() {
+#ifdef DEBUG_SLOW
+      fprintf(stderr, "Shrinking compute table (current size %d)\n", size);
+#endif
 #ifdef DEBUG_HASH_H
       fprintf(stdout, "Shrinking table.  Old table:\n");
       show(stdout);

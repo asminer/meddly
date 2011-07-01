@@ -137,7 +137,6 @@ MEDDLY::domain::~domain()
 MEDDLY::expert_domain::expert_domain(variable** x, int n)
 : domain(x, n)
 {
-  nForests = 0;
   forests = 0;
   szForests = 0;
 }
@@ -154,7 +153,7 @@ MEDDLY::expert_domain::~expert_domain()
 void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
 {
   // domain must be empty -- no variables defined so far
-  if (nForests != 0 || nVars != 0)
+  if (szForests != 0 || nVars != 0)
     throw error(error::DOMAIN_NOT_EMPTY);
 
   vars = (variable**) malloc((1+N) * sizeof(void*));
@@ -172,7 +171,7 @@ void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
 void MEDDLY::expert_domain::createVariablesTopDown(const int* bounds, int N)
 {
   // domain must be empty -- no variables defined so far
-  if (nForests != 0 || nVars != 0)
+  if (szForests != 0 || nVars != 0)
     throw error(error::DOMAIN_NOT_EMPTY);
 
   vars = (variable**) malloc((1+N) * sizeof(void*));
@@ -231,104 +230,72 @@ void MEDDLY::expert_domain::showInfo(FILE* strm)
 MEDDLY::forest* MEDDLY::expert_domain::createForest(bool rel, forest::range_type t,
     forest::edge_labeling e)
 {
+  int slot = findEmptyForestSlot();
+
   expert_forest* f = 0;
 
   if (rel) {
     if(e == forest::MULTI_TERMINAL) {
       if (t == forest::BOOLEAN) {
-        f = new mxd_node_manager(this);
+        f = new mxd_node_manager(slot, this);
       } else if (t == forest::INTEGER || t == forest::REAL) {
-        f = new mtmxd_node_manager(this, t);
+        f = new mtmxd_node_manager(slot, this, t);
       }
     }
   } else {
     if (e == forest::MULTI_TERMINAL) {
       if (t == forest::BOOLEAN) {
-        f = new mdd_node_manager(this);
+        f = new mdd_node_manager(slot, this);
       } else if (t == forest::INTEGER || t == forest::REAL) {
-        f = new mtmdd_node_manager(this, t);
+        f = new mtmdd_node_manager(slot, this, t);
       }
     } else if (e == forest::EVPLUS) {
-      f = new evplusmdd_node_manager(this);
+      f = new evplusmdd_node_manager(slot, this);
     } else if (e == forest::EVTIMES) {
-      f = new evtimesmdd_node_manager(this);
+      f = new evtimesmdd_node_manager(slot, this);
     }
   }
-
-  if (f != 0) {
-    // Add it to the list of forests
-    DCASSERT (nForests <= szForests);
-#if 0
-    if (szForests == 0) {
-      // initialize forests[]
-      szForests = 4;
-      forests = (expert_forest **) malloc(szForests * sizeof(expert_forest *));
-      assert(forests != 0);
-      memset(forests, 0, szForests * sizeof(expert_forest *));
-      assert(nForests == 0);
-      forests[nForests] = f;
-    } else if (nForests == szForests) {
-      // expand forests[]
-      expert_forest** temp = (expert_forest **) realloc(forests,
-          szForests * 2 * sizeof (expert_forest *));
-      assert(temp != 0);
-      forests = temp;
-      memset(forests + szForests, 0, szForests * sizeof(expert_forest*));
-      szForests *= 2;
-      forests[nForests] = f;
-    } else {
-      // find the first hole in forests[] -- this array should be small,
-      // modifications will be rare and therefore O(n^2) complexity is
-      // still not significant.
-      // TODO: modify scheme to the one that dd_edges and forests share.
-      int i = 0;
-      for (i = 0; i < szForests && forests[i] != 0; ++i)
-        ;
-      assert (i < szForests);
-      forests[i] = f;
-    }
-    nForests++;
-#else
-    // Previous strategy of re-using forest handles can unexpected errors
-    // (user node handles, cached entries, etc.)
-    // Therefore, the new scheme does not recycling forest handles.
-    // Considering that will be relatively few forest handles created,
-    // this should not be an issue.
-
-    if (nForests == szForests) {
-      // expand forests[]
-      int newSize = szForests == 0? 4: szForests * 2;
-      expert_forest** temp = (expert_forest **) realloc(forests,
-          newSize * sizeof (expert_forest *));
-      if (0 == temp) outOfMemory();
-      forests = temp;
-      memset(forests + szForests, 0,
-          (newSize - szForests) * sizeof(expert_forest*));
-      szForests = newSize;
-    }
-    forests[nForests++] = f;
-#endif
-  }
-  
+  forests[slot] = f;
   return f;
 }
 
-
-void MEDDLY::expert_domain::unlinkForest(forest* f)
+int MEDDLY::expert_domain::findEmptyForestSlot()
 {
-  // find forest
-  int i = 0;
-  for (i = 0; i < szForests; ++i) {
-    if (forests[i] == f) {
-      // unlink forest
-      forests[i] = 0;
-      return;
-    }
+  for (int slot=0; slot<szForests; slot++) {
+    if (0==forests[slot]) return slot;
   }
-  assert(false);
+  // need to expand
+  int newSize;
+  if (szForests) {
+    if (szForests > 16) newSize = szForests + 16;
+    else                newSize = szForests * 2;
+  } else {
+    newSize = 4;
+  }
+  expert_forest** temp = (expert_forest **) realloc(
+    forests, newSize * sizeof (expert_forest *)
+  );
+  if (0 == temp) throw error(error::INSUFFICIENT_MEMORY);
+  forests = temp;
+  memset(forests + szForests, 0,
+      (newSize - szForests) * sizeof(expert_forest*));
+  int slot = szForests;
+  szForests = newSize;
+  return slot;
 }
 
+void MEDDLY::expert_domain::unlinkForest(expert_forest* f, int slot)
+{
+  if (forests[slot] != f)
+    throw error(error::MISCELLANEOUS);
+  forests[slot] = 0;
+}
 
+void MEDDLY::expert_domain::markForDeletion()
+{
+  for (int slot=0; slot<szForests; slot++) 
+    if (forests[slot]) forests[slot]->markForDeletion();
+}
 
 
 // TODO: not implemented

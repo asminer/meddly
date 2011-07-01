@@ -42,8 +42,6 @@ using namespace MEDDLY;
 int N;
 FILE* outfile;
 
-compute_manager* CM;
-
 dd_edge** qic;
 dd_edge** qidp;
 dd_edge** qidm;
@@ -134,7 +132,7 @@ void queenInRow(forest* f, int r, dd_edge &e)
   for (int j=0; j<N; j++) {
     dd_edge tmp(f);
     hasQueen(f, r, j, tmp);
-    CM->apply(compute_manager::MAX, e, tmp, e);
+    apply(MAXIMUM, e, tmp, e);
   }
 }
 
@@ -149,7 +147,7 @@ void queenInCol(forest* f, int c, dd_edge &e)
   for (int i=0; i<N; i++) {
     dd_edge tmp(f);
     hasQueen(f, i, c, tmp);
-    CM->apply(compute_manager::MAX, e, tmp, e);
+    apply(MAXIMUM, e, tmp, e);
   }
   qic[c] = new dd_edge(e);
 }
@@ -165,7 +163,7 @@ void queenInDiagP(forest* f, int d, dd_edge &e)
   for (int i=0; i<N; i++) for (int j=0; j<N; j++) if (i+j==d) {
     dd_edge tmp(f);
     hasQueen(f, i, j, tmp);
-    CM->apply(compute_manager::MAX, e, tmp, e);
+    apply(MAXIMUM, e, tmp, e);
   }
   qidp[d] = new dd_edge(e);
 }
@@ -181,7 +179,7 @@ void queenInDiagM(forest* f, int d, dd_edge &e)
   for (int i=0; i<N; i++) for (int j=0; j<N; j++) if (i-j==d) {
     dd_edge tmp(f);
     hasQueen(f, i, j, tmp);
-    CM->apply(compute_manager::MAX, e, tmp, e);
+    apply(MAXIMUM, e, tmp, e);
   }
   qidm[d+N-1] = new dd_edge(e);
 }
@@ -214,8 +212,6 @@ int main(int argc, const char** argv)
 {
   if (!processArgs(argc, argv)) return usage(argv[0]);
   initialize();
-  CM = getComputeManager();
-  assert(CM);
   printf("Using %s\n", getLibraryInfo(0));
 
   timer stopwatch;
@@ -228,7 +224,7 @@ int main(int argc, const char** argv)
   for (int i=0; i<N; i++) for (int j=0; j<N; j++) {
     dd_edge tmp(f);
     hasQueen(f, i, j, tmp);
-    CM->apply(compute_manager::PLUS, num_queens, tmp, num_queens);
+    apply(PLUS, num_queens, tmp, num_queens);
   } // for i,j
 
   // "By-hand" compute tables for queen in col, diag
@@ -250,7 +246,7 @@ int main(int argc, const char** argv)
     // Build all possible placements of q queens:
     dd_edge qqueens(f);
     f->createEdge(q, qqueens);
-    CM->apply(compute_manager::EQUAL, qqueens, num_queens, qqueens);
+    apply(EQUAL, qqueens, num_queens, qqueens);
     solutions = qqueens;
 
     printf("\tAdding constraints by row\n\t\t");
@@ -268,16 +264,16 @@ int main(int argc, const char** argv)
         dd_edge dgm(f);
         queenInDiagM(f, i-j, dgm);
         // "OR" together the possible attackers for this square
-        CM->apply(compute_manager::MAX, col, dgp, col);
-        CM->apply(compute_manager::MAX, col, dgm, col);
-        CM->apply(compute_manager::MAX, col, qir, col);
+        apply(MAXIMUM, col, dgp, col);
+        apply(MAXIMUM, col, dgm, col);
+        apply(MAXIMUM, col, qir, col);
         // "AND" with this row
-        CM->apply(compute_manager::MULTIPLY, rowcov, col, rowcov);
+        apply(MULTIPLY, rowcov, col, rowcov);
       } // for j
       printf(", ");
       fflush(stdout);
       // "AND" directly with set of covers
-      CM->apply(compute_manager::MULTIPLY, solutions, rowcov, solutions);
+      apply(MULTIPLY, solutions, rowcov, solutions);
     } // for i
 
     printf("\n");
@@ -313,7 +309,7 @@ int main(int argc, const char** argv)
   printf(" peak memory\n");
 
   long c;
-  CM->apply(compute_manager::CARDINALITY, solutions, c);
+  apply(CARDINALITY, solutions, c);
   printf("\nFor a %dx%d chessboard, ", N, N);
   printf("there are %ld covers with %d queens\n\n", c, q);
 

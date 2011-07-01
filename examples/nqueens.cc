@@ -40,7 +40,6 @@ using namespace MEDDLY;
 
 int N;
 int* scratch;
-compute_manager* CM;
 
 void printmem(long m)
 {
@@ -89,7 +88,7 @@ void intersect(dd_edge** A, int L)
   for (int i=1; i<L; i++) {
     fprintf(stderr, "%d ", L-i);
     if (A[i]) {
-      CM->apply(compute_manager::MULTIPLY, *A[0], *A[i], *A[0]);
+      apply(MULTIPLY, *A[0], *A[i], *A[0]);
       delete A[i];
       A[i] = 0;
     }
@@ -106,7 +105,7 @@ void intersect(dd_edge** A, int L)
     // combine adjacent pairs
     for (int i=0; i<L; i+=2) {
       if (A[i] && A[i+1]) {
-        CM->apply(compute_manager::MULTIPLY, *A[i], *A[i+1], *A[i]);
+        apply(MULTIPLY, *A[i], *A[i+1], *A[i]);
         delete A[i+1];
         A[i+1] = 0;
         printf(".");
@@ -151,8 +150,6 @@ int main()
 {
   timer watch;
   initialize();
-  CM = getComputeManager();
-  assert(CM);
   printf("Using %s\n", getLibraryInfo(0));
   printf("N-Queens solutions.  Enter the value for N:\n");
   scanf("%d", &N);
@@ -182,6 +179,7 @@ int main()
   dd_edge** dgm = new dd_edge*[N];
   dd_edge** constr = new dd_edge*[N+1];
 
+
   for (int i=0; i<N; i++) {
     col[i] = new dd_edge(f);
     dgp[i] = new dd_edge(f);
@@ -196,20 +194,33 @@ int main()
     printf("Building queen %2d constraints\n", i+1);
     for (int j=N-1; j>i; j--) {
       dd_edge uniq_col(f);
-      CM->apply(compute_manager::NOT_EQUAL, *col[i], *col[j], uniq_col);
+      apply(NOT_EQUAL, *col[i], *col[j], uniq_col);
       dd_edge uniq_dgp(f);
-      CM->apply(compute_manager::NOT_EQUAL, *dgp[i], *dgp[j], uniq_dgp);
+      apply(NOT_EQUAL, *dgp[i], *dgp[j], uniq_dgp);
       dd_edge uniq_dgm(f);
-      CM->apply(compute_manager::NOT_EQUAL, *dgm[i], *dgm[j], uniq_dgm);
+      apply(NOT_EQUAL, *dgm[i], *dgm[j], uniq_dgm);
       // build overall "not attacking each other" set...
-      CM->apply(compute_manager::MULTIPLY, uniq_col, uniq_dgp, uniq_col);
-      CM->apply(compute_manager::MULTIPLY, uniq_col, uniq_dgm, uniq_col);
+      apply(MULTIPLY, uniq_col, uniq_dgp, uniq_col);
+      apply(MULTIPLY, uniq_col, uniq_dgm, uniq_col);
       int k = uniq_col.getLevel()-1;
       if (k<0) k=0;
       assert(k<N);
-      CM->apply(compute_manager::MULTIPLY, *constr[k], uniq_col, *constr[k]);
+      apply(MULTIPLY, *constr[k], uniq_col, *constr[k]);
     } // for j
   } // for i
+
+  /*
+  ( (expert_forest*)f)->showInfo(stdout, 1);
+  if (operation::useMonolithicComputeTable()) {
+    operation::showMonolithicComputeTable(stdout);
+  } else {
+    operation* neq = getOperation(NOT_EQUAL, f, f, f);
+    operation* mult = getOperation(MULTIPLY, f, f, f);
+    neq->showComputeTable(stdout);
+    mult->showComputeTable(stdout);
+  }
+  */
+
   printf("Building solutions\n");
   intersect(constr, N);
   assert(constr[0]);
@@ -244,7 +255,7 @@ int main()
   printf(" peak memory\n");
 
   long c;
-  CM->apply(compute_manager::CARDINALITY, *solutions, c);
+  apply(CARDINALITY, *solutions, c);
   printf("\nThere are %ld solutions to the %d-queens problem\n\n", c, N);
 
   // show one of the solutions
@@ -258,7 +269,6 @@ int main()
   }
   delete solutions;
   // f->showInfo(stdout, 1);
-  destroyDomain(d);
   cleanup();
   return 0;
 }

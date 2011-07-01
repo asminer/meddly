@@ -314,8 +314,7 @@ void usage()
 // Test Index Set
 void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
 {
-  compute_manager* cm = getComputeManager();
-  cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mdd, indexSet);
+  apply(CONVERT_TO_INDEX_SET, mdd, indexSet);
 
 #if 1
   indexSet.show(stdout, 3);
@@ -329,8 +328,7 @@ void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
 dd_edge testPreImage(const dd_edge& mdd, const dd_edge& mxd)
 {
   dd_edge preImage(mdd.getForest());
-  compute_manager* cm = getComputeManager();
-  cm->apply(compute_manager::PRE_IMAGE, mdd, mxd, preImage);
+  apply(PRE_IMAGE, mdd, mxd, preImage);
 
 #if 1
   preImage.show(stdout, 3);
@@ -346,8 +344,7 @@ dd_edge testPreImage(const dd_edge& mdd, const dd_edge& mxd)
 dd_edge testPostImage(const dd_edge& mdd, const dd_edge& mxd)
 {
   dd_edge postImage(mdd.getForest());
-  compute_manager* cm = getComputeManager();
-  cm->apply(compute_manager::POST_IMAGE, mdd, mxd, postImage);
+  apply(POST_IMAGE, mdd, mxd, postImage);
 
 #if 1
   postImage.show(stdout, 3);
@@ -460,10 +457,6 @@ int main(int argc, char *argv[])
   // Set up arrays bounds based on nPhilosophers
   variable** vars = initializeVariables(nLevels);
 
-  expert_compute_manager* ecm = 
-    static_cast<expert_compute_manager*>(getComputeManager());
-  assert(ecm != 0);
-
   printf("Initiailzing forests\n");
 
   // Create a domain and set up the state variables.
@@ -559,10 +552,10 @@ int main(int argc, char *argv[])
     : "traditional iteration"
   );
   start.note_time();
-  ecm->apply(
+  apply(
       dfs?
-      compute_manager::REACHABLE_STATES_DFS:
-      compute_manager::REACHABLE_STATES_BFS,
+      REACHABLE_STATES_DFS:
+      REACHABLE_STATES_BFS,
       reachableStates, nsf, reachableStates);
   start.note_time();
   printf("Reachability set construction took %.4e seconds\n",
@@ -632,7 +625,7 @@ int main(int argc, char *argv[])
   reachableStates.show(stdout, 2);
 #else
   double c;
-  ecm->apply(compute_manager::CARDINALITY, reachableStates, c);
+  apply(CARDINALITY, reachableStates, c);
   printf("Approximately %e reachable states\n", c);
 #endif
 
@@ -773,8 +766,7 @@ int main(int argc, char *argv[])
     int* element = (int *) malloc((nLevels + 1) * sizeof(int));
     dd_edge indexSet(evplusmdd);
     start.note_time();
-    compute_manager* cm = getComputeManager();
-    cm->apply(compute_manager::CONVERT_TO_INDEX_SET, reachableStates, indexSet);
+    apply(CONVERT_TO_INDEX_SET, reachableStates, indexSet);
     double cardinality = indexSet.getCardinality();
     for (int index = 0, card = int(cardinality); index < card; index++)
     {
@@ -794,6 +786,10 @@ int main(int argc, char *argv[])
     free(element);
   }
 
+#if 0
+  mdd->showInfo(stdout);
+  MEDDLY::operation::showMonolithicComputeTable(stdout, false);
+#endif
   // Cleanup
   MEDDLY::destroyDomain(d);
   MEDDLY::cleanup();

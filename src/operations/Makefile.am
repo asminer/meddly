@@ -7,18 +7,36 @@
 noinst_LTLIBRARIES = libops.la 
 
 libops_la_SOURCES = \
-	../meddly.h \
-	../meddly_expert.h \
-	../defines.h \
-	../compute_cache.h \
-	operation.cc \
-	operation_ext.h   operation_ext.cc \
-	reachability.h    reachability.cc \
-  prepostimage.h    prepostimage.cc \
-  mpz_object.h      mpz_object.cc \
-	cardinality.h     cardinality.cc \
+  init_builtin.h    init_builtin.cc \
+  apply_base.h      apply_base.cc   \
+  mpz_object.h      mpz_object.cc   \
+  \
+  copy.h            copy.cc         \
+	cardinality.h     cardinality.cc  \
+  complement.h      complement.cc   \
   maxmin_range.h    maxmin_range.cc \
-  vect_matr.h       vect_matr.cc \
-  cross.h           cross.cc
-
+  mdd2evplus.h      mdd2evplus.cc   \
+  \
+  union.h           union.cc        \
+  intersection.h    intersection.cc \
+  difference.h      difference.cc   \
+  cross.h           cross.cc        \
+  \
+  maxmin.h          maxmin.cc       \
+  plus.h            plus.cc         \
+  minus.h           minus.cc        \
+  multiply.h        multiply.cc     \
+  divide.h          divide.cc       \
+  \
+  comp_eq.h         comp_eq.cc      \
+  comp_ne.h         comp_ne.cc      \
+  comp_lt.h         comp_lt.cc      \
+  comp_le.h         comp_le.cc      \
+  comp_gt.h         comp_gt.cc      \
+  comp_ge.h         comp_ge.cc      \
+  \
+  prepostimage.h    prepostimage.cc \
+  reach_bfs.h       reach_bfs.cc    \
+  reach_dfs.h       reach_dfs.cc    \
+  vect_matr.h       vect_matr.cc
 

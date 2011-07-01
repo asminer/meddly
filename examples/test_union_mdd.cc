@@ -48,8 +48,7 @@ using namespace MEDDLY;
 
 void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
 {
-  compute_manager* cm = getComputeManager();
-  cm->apply(compute_manager::CONVERT_TO_INDEX_SET, mdd, indexSet);
+  apply(CONVERT_TO_INDEX_SET, mdd, indexSet);
 
 #if 1
   indexSet.show(stdout, 3);
@@ -227,10 +226,14 @@ int main(int argc, char *argv[])
   initial_state.show(stdout, 2);
 #endif
 
-  printf("Elements in result: %.4e\n", initial_state.getCardinality());
+  double c;
+  apply(CARDINALITY, initial_state, c);
+  printf("Elements in result: %.4e\n", c);
   printf("Peak Nodes in MDD: %ld\n", states->getPeakNumNodes());
+  /* TBD: FIX
   printf("Nodes in compute table: %ld\n",
       (getComputeManager())->getNumCacheEntries());
+  */
 
 #ifdef BUILD_INDEX_SET
   // TEST
@@ -238,8 +241,7 @@ int main(int argc, char *argv[])
       forest::EVPLUS);
   assert(evmdd != 0);
   dd_edge evmdd_states(evmdd);
-  getComputeManager()->apply(compute_manager::CONVERT_TO_INDEX_SET,
-      initial_state, evmdd_states);
+  apply(CONVERT_TO_INDEX_SET, initial_state, evmdd_states);
   evmdd_states.show(stdout, 3);
 
   dd_edge::const_iterator iter = evmdd_states.begin();

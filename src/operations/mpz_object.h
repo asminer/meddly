@@ -35,7 +35,7 @@ public:
   mpz_object(const mpz_t &v);
   mpz_object(const mpz_object &v);
   virtual ~mpz_object();
-  virtual op_param::type getType();
+  virtual opnd_type getType();
   
   inline void copyInto(mpz_t &x) const {
     mpz_set(x, value);

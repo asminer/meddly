@@ -54,10 +54,10 @@
 const int add_size = 1024;
 const int l_add_size = 24;
 
-node_manager::node_manager(domain *d, bool rel, range_type t,
+node_manager::node_manager(int dsl, domain *d, bool rel, range_type t,
   edge_labeling ev, reduction_rule r, node_storage s, node_deletion_policy nd,
   int dataHeaderSize)
-: expert_forest(d, rel, t, ev, r, s, nd)
+: expert_forest(dsl, d, rel, t, ev, r, s, nd)
 {
   this->dataHeaderSize = dataHeaderSize;
 
@@ -68,14 +68,14 @@ node_manager::node_manager(domain *d, bool rel, range_type t,
   curr_mem_alloc = max_mem_alloc = 0;
   a_size = add_size;
   address = (mdd_node_data *) malloc(a_size * sizeof(mdd_node_data));
-  if (NULL == address) outOfMemory();
+  if (NULL == address) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
   updateMemoryAllocated(a_size * sizeof(mdd_node_data));
   memset(address, 0, a_size * sizeof(mdd_node_data));
   a_last = peak_nodes = a_unused = 0;
   
   l_size = l_add_size;
   level = (mdd_level_data *) malloc(l_size * sizeof(mdd_level_data));
-  if (NULL == level) outOfMemory();
+  if (NULL == level) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
   updateMemoryAllocated(l_size * sizeof(mdd_level_data));
   memset(level, 0, l_size * sizeof(mdd_level_data));
 
@@ -1247,6 +1247,10 @@ void node_manager::compactLevel(int k)
   printf("\n");
 #endif
 
+#ifdef DEBUG_SLOW
+  fprintf(stderr, "Compacting forest level %d\n", k);
+#endif
+
   // alternate algorithm -- since we now have the node ids in the node data
   int *node_ptr = level[p_level].data + 1;  // since we leave [0] empty
   int *end_ptr = level[p_level].data + level[p_level].last + 1;
@@ -1316,7 +1320,7 @@ void node_manager::compactLevel(int k)
     updateMemoryAllocated((new_size - level[p_level].size) * sizeof(int));
     level[p_level].data = (int *)
       realloc(level[p_level].data, new_size * sizeof(int));
-    if (NULL == level[p_level].data) outOfMemory();
+    if (NULL == level[p_level].data) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
     level[p_level].size = new_size;
 #ifdef MEMORY_TRACE
     printf("Reduced data[] by a factor of 2. New size: %d, Last: %d.\n",
@@ -1888,16 +1892,14 @@ bool node_manager::gc(bool zombifyOrphanNodes) {
     printf("Zombie nodes: %ld\n", zombie_nodes);
 #endif
     // remove the stale nodes entries from caches
-    smart_cast<expert_compute_manager *>(MEDDLY::getComputeManager())->
-      removeStales(this);
+    removeStaleComputeTableEntries();
 #ifdef DEBUG_GC
     printf("Zombie nodes: %ld\n", zombie_nodes);
 #endif
 #ifdef DEVELOPMENT_CODE
     if (zombie_nodes != 0) {
       showInfo(stderr, 2);
-      smart_cast<expert_compute_manager *>(MEDDLY::getComputeManager())->
-        showComputeTable(stderr);
+      showComputeTable(stderr, true);
     }
     DCASSERT(zombie_nodes == 0);
 #endif
@@ -1925,13 +1927,11 @@ bool node_manager::gc(bool zombifyOrphanNodes) {
           active_nodes, zombie_nodes, orphan_nodes);
 #endif
       // remove the stale nodes entries from caches
-      smart_cast<expert_compute_manager *>(MEDDLY::getComputeManager())->
-        removeStales(this);
+      removeStaleComputeTableEntries();
 #ifdef DEVELOPMENT_CODE
       if (zombie_nodes != 0) {
         showInfo(stderr, 2);
-        smart_cast<expert_compute_manager *>(MEDDLY::getComputeManager())->
-          showComputeTable(stderr);
+        showComputeTable(stderr, true);
       }
 #endif
       DCASSERT(zombie_nodes == 0);
@@ -1939,8 +1939,7 @@ bool node_manager::gc(bool zombifyOrphanNodes) {
     } else {
 
       // remove the stale nodes entries from caches
-      smart_cast<expert_compute_manager *>(MEDDLY::getComputeManager())->
-        removeStales(this);
+      removeStaleComputeTableEntries();
 
     }
 
@@ -1985,8 +1984,7 @@ void node_manager::removeZombies(int max_zombies) {
     }
 #endif
     // remove the stale nodes entries from caches
-    smart_cast<expert_compute_manager *>(MEDDLY::getComputeManager())->
-      removeStales(this);
+    removeStaleComputeTableEntries();
 #if 0
     if (zombie_nodes > 0) {
       for (int i = 1; i <= a_last; i++) {
@@ -2086,7 +2084,7 @@ void node_manager::freeNode(int p)
     if (a_size > add_size && a_last < a_size/2) {
       address = (mdd_node_data *)
           realloc(address, a_size/2 * sizeof(mdd_node_data));
-      if (NULL == address) outOfMemory();
+      if (NULL == address) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
       a_size /= 2;
       updateMemoryAllocated(-a_size * sizeof(mdd_node_data));
 #ifdef MEMORY_TRACE
@@ -2391,7 +2389,7 @@ void node_manager::makeHole(int k, int addr, int slots)
       updateMemoryAllocated((new_size - level[mapped_k].size) * sizeof(int));
       level[mapped_k].data = (int *)
         realloc(level[mapped_k].data, new_size * sizeof(int));
-      if (NULL == level[mapped_k].data) outOfMemory();
+      if (NULL == level[mapped_k].data) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
       level[mapped_k].size = new_size;
 #ifdef MEMORY_TRACE
       printf("Reduced data[]. New size: %d, Last: %d.\n",

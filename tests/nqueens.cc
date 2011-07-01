@@ -38,7 +38,6 @@ const long solutions[] = {
 };
 
 int* scratch;
-compute_manager* CM;
 
 #define LINEAR_INTERSECTIONS
 #ifdef  LINEAR_INTERSECTIONS
@@ -60,7 +59,7 @@ void intersect(dd_edge** A, int L)
   for (int i=1; i<L; i++) {
     fprintf(stderr, "%d ", L-i);
     if (A[i]) {
-      CM->apply(compute_manager::MULTIPLY, *A[0], *A[i], *A[0]);
+      apply(MULTIPLY, *A[0], *A[i], *A[0]);
       delete A[i];
       A[i] = 0;
     }
@@ -77,7 +76,7 @@ void intersect(dd_edge** A, int L)
     // combine adjacent pairs
     for (int i=0; i<L; i+=2) {
       if (A[i] && A[i+1]) {
-        CM->apply(compute_manager::MULTIPLY, *A[i], *A[i+1], *A[i]);
+        apply(MULTIPLY, *A[i], *A[i+1], *A[i]);
         delete A[i+1];
         A[i+1] = 0;
         printf(".");
@@ -155,24 +154,24 @@ long buildQueenSolutions(int N)
   //  printf("\tBuilding queen %2d constraints\n", i+1);
     for (int j=N-1; j>i; j--) {
       dd_edge uniq_col(f);
-      CM->apply(compute_manager::NOT_EQUAL, *col[i], *col[j], uniq_col);
+      apply(NOT_EQUAL, *col[i], *col[j], uniq_col);
       dd_edge uniq_dgp(f);
-      CM->apply(compute_manager::NOT_EQUAL, *dgp[i], *dgp[j], uniq_dgp);
+      apply(NOT_EQUAL, *dgp[i], *dgp[j], uniq_dgp);
       dd_edge uniq_dgm(f);
-      CM->apply(compute_manager::NOT_EQUAL, *dgm[i], *dgm[j], uniq_dgm);
+      apply(NOT_EQUAL, *dgm[i], *dgm[j], uniq_dgm);
       // build overall "not attacking each other" set...
-      CM->apply(compute_manager::MULTIPLY, uniq_col, uniq_dgp, uniq_col);
-      CM->apply(compute_manager::MULTIPLY, uniq_col, uniq_dgm, uniq_col);
+      apply(MULTIPLY, uniq_col, uniq_dgp, uniq_col);
+      apply(MULTIPLY, uniq_col, uniq_dgm, uniq_col);
       int k = uniq_col.getLevel()-1;
       if (k<0) k=0;
       assert(k<N);
-      CM->apply(compute_manager::MULTIPLY, *constr[k], uniq_col, *constr[k]);
+      apply(MULTIPLY, *constr[k], uniq_col, *constr[k]);
     } // for j
   } // for i
   intersect(constr, N);
   assert(constr[0]);
   long c;
-  CM->apply(compute_manager::CARDINALITY, *constr[0], c);
+  apply(CARDINALITY, *constr[0], c);
   // cleanup
   for (int i=0; i<N; i++) {
     delete col[i];
@@ -192,8 +191,6 @@ long buildQueenSolutions(int N)
 int main()
 {
   initialize();
-  CM = getComputeManager();
-  assert(CM);
   scratch = new int[N_HIGH+1];
 
   for (int i=N_LOW; i<=N_HIGH; i++) {

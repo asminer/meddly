@@ -42,6 +42,9 @@
 #include "config.h"
 #endif
 
+// #define DEBUG_SLOW
+// #define TRACE_ALL_OPS
+
 // Things that everyone will need
 #include <cstdlib>
 #include <cassert>
@@ -154,13 +157,6 @@ bool isAlmostEqual(int A, int B)
 #endif
 }
 
-
-inline
-void outOfMemory()
-{
-  printf("Out of memory!\n");
-  exit(1);
-}
 
 
 #endif
