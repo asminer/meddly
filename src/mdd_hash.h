@@ -89,6 +89,11 @@ class mdd_hash_table {
     inline unsigned getMinSize() const { return 8; }
     inline unsigned getEntriesCount() const { return num_entries; }
 
+    inline void showInfo(FILE* s) const {
+      fprintf(s, "\t%-24s%u\n", "Current size:", getSize());
+      fprintf(s, "\t%-24s%u\n", "Current entries:", getEntriesCount());
+    }
+
     void show(FILE *s) const {
       fprintf(s, "%s :\n", __func__);
       for (unsigned i = 0; i < size; i++) {

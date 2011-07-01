@@ -967,6 +967,8 @@ inline void node_manager::showInfo(FILE* strm, int verbosity) {
   showAll(strm, verbosity);
   fprintf(strm, "DD stats:\n");
   reportMemoryUsage(strm, '\t');
+  fprintf(strm, "Unique table stats:\n");
+  unique->showInfo(strm);
 }
 
 // *************** override expert_forest class -- done ***************

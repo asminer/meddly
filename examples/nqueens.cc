@@ -213,7 +213,8 @@ int main()
   printf("Building solutions\n");
   intersect(constr, N);
   assert(constr[0]);
-  dd_edge solutions = *constr[0];
+  dd_edge* solutions = constr[0];
+  constr[0] = 0;
   watch.note_time();
 
   printf("Elapsed time: %lf seconds\n", watch.get_last_interval()/1000000.0);
@@ -232,7 +233,7 @@ int main()
 
   printf("Done.\n\n");
 
-  printf("Set of solutions requires %d nodes\n", solutions.getNodeCount());
+  printf("Set of solutions requires %d nodes\n", solutions->getNodeCount());
   printf("Forest stats:\n");
   printf("\t%ld current nodes\n", f->getCurrentNumNodes());
   printf("\t%ld peak nodes\n", f->getPeakNumNodes());
@@ -243,11 +244,11 @@ int main()
   printf(" peak memory\n");
 
   long c;
-  CM->apply(compute_manager::CARDINALITY, solutions, c);
+  CM->apply(compute_manager::CARDINALITY, *solutions, c);
   printf("\nThere are %ld solutions to the %d-queens problem\n\n", c, N);
 
   // show one of the solutions
-  dd_edge::const_iterator first = solutions.begin();
+  dd_edge::const_iterator first = solutions->begin();
   if (first) {
     const int* minterm = first.getAssignments();
     printf("One solution:\n");
@@ -255,6 +256,8 @@ int main()
       printf("\tQueen for row %2d in column %2d\n", i, minterm[i]+1);
     }
   }
+  delete solutions;
+  // f->showInfo(stdout, 1);
   destroyDomain(d);
   cleanup();
   return 0;
