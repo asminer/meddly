@@ -587,6 +587,8 @@ int MEDDLY::postimage_mdd::sparseSparse(int mdd, int mxd)
       expandMxdHelper(arg1F->getSparseNodeDownPtr(mdd, i),
           arg2F->getSparseNodeDownPtr(mxd, j), result);
       ++i, ++j;
+      if (i < mddSize) mddIndex = arg1F->getSparseNodeIndex(mdd, i);
+      if (j < mxdSize) mxdIndex = arg2F->getSparseNodeIndex(mxd, j);
     }
   }
   return resF->reduceNode(result);
