@@ -58,9 +58,8 @@
 #define CHAINED_HASH_H
 
 //#define CHECK_STALE_ONLY_ON_EQUAL
-
+//#define DEBUG_CT_ENTRIES
 // #define DEBUG_HASH_EXPAND_H
-// #define DEBUG_CT_ENTRIES
 
 #include <sys/time.h>
 #include <sys/resource.h>
