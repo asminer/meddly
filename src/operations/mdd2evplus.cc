@@ -165,8 +165,9 @@ MEDDLY::mdd2evplus_operation
         int ddn, dcard;
         compute(height-1, argF->getSparseNodeDownPtr(a, i), ddn, dcard);
         if (0==ddn) continue;
-        resF->setDownPtrWoUnlink(bdn, i, ddn);
-        resF->setEdgeValue(bdn, i, bcard);
+        int ii = argF->getSparseNodeIndex(a, i);
+        resF->setDownPtrWoUnlink(bdn, ii, ddn);
+        resF->setEdgeValue(bdn, ii, bcard);
         resF->unlinkNode(ddn);
         bcard += dcard;
       } // for i

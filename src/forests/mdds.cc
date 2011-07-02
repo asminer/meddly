@@ -1098,11 +1098,11 @@ void node_manager::showNode(FILE *s, int p, int verbose) const
         int e = 0;
         getSparseNodeEdgeValue(p, z, e);
         if (e == INF) {
-          fprintf(s, "%d:INF:%d",
+          fprintf(s, "%d:<INF,%d>",
               getSparseNodeIndex(p, z),
               getSparseNodeDownPtr(p, z));
         } else {
-          fprintf(s, "%d:%d:%d",
+          fprintf(s, "%d:<%d,%d>",
               getSparseNodeIndex(p, z),
               e,
               getSparseNodeDownPtr(p, z));
@@ -1110,7 +1110,7 @@ void node_manager::showNode(FILE *s, int p, int verbose) const
       } else if (edgeLabel == forest::EVTIMES) {
         float e = 0;
         getSparseNodeEdgeValue(p, z, e);
-        fprintf(s, "%d:%f:%d",
+        fprintf(s, "%d:<%f,%d>",
             getSparseNodeIndex(p, z),
             e,
             getSparseNodeDownPtr(p, z));
@@ -1146,16 +1146,16 @@ void node_manager::showNode(FILE *s, int p, int verbose) const
         int e = 0;
         getFullNodeEdgeValue(p, i, e);
         if  (e == INF) {
-          fprintf(s, "INF:%d",
+          fprintf(s, "<INF,%d>",
               getFullNodeDownPtr(p, i));
         } else {
-          fprintf(s, "%d:%d", e,
+          fprintf(s, "<%d,%d>", e,
               getFullNodeDownPtr(p, i));
         }
       } else if (edgeLabel == forest::EVTIMES) {
         float e = 0;
         getFullNodeEdgeValue(p, i, e);
-        fprintf(s, "%f:%d", e,
+        fprintf(s, "<%f,%d>", e,
             getFullNodeDownPtr(p, i));
       } else {
         if (isTerminalNode(getFullNodeDownPtr(p, i))) {
