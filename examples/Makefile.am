@@ -20,7 +20,8 @@ dining_phils \
 rubiks_cube \
 nqueens \
 queen_cover \
-kanban  
+kanban \
+slot
 
 AM_CPPFLAGS = -I../src -I../src/operations
 AM_CXXFLAGS = -Wall
@@ -70,4 +71,7 @@ queen_cover_LDADD = ../src/libmeddly.la
 
 kanban_SOURCES = kanban.cc simple_model.h simple_model.cc
 kanban_LDADD = ../src/libmeddly.la
+
+slot_SOURCES = slot.cc simple_model.h simple_model.cc
+slot_LDADD = ../src/libmeddly.la
 
