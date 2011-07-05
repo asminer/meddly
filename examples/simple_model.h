@@ -31,11 +31,12 @@
                             (unless the value is already zero)
                         '.' means no change.
       @param  nEvents   Size of events array.
-      @param  f   The forest to use; should be a boolean one for relations.
-      @param  e   Edge to store the result.
+      @param  f         The forest to use; should be a boolean one for relations.
+      @param  e         Edge to store the result.
+      @param  verb      Verbosity level.
 */
 void buildNextStateFunction(const char* const* events, int nEvents, 
-  MEDDLY::forest* f, MEDDLY::dd_edge &e);
+  MEDDLY::forest* f, MEDDLY::dd_edge &e, int verb);
 
 #endif
 

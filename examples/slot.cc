@@ -73,6 +73,7 @@ char* Put(int i, int N)
   char* t = newEvent(N);
   char* tloc = t+8*i;
   tloc[3] = '+';
+  tloc[7] = '+';
   tloc[4] = '-';
   tloc[6] = '-';
   return t;
@@ -183,7 +184,7 @@ int main(int argc, const char** argv)
   // Build next-state function
   forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge nsf(mxd);
-  buildNextStateFunction(events, 8*N, mxd, nsf); 
+  buildNextStateFunction(events, 8*N, mxd, nsf, 2);
 
   printf("Building reachable states\n");
   fflush(stdout);
@@ -193,6 +194,19 @@ int main(int argc, const char** argv)
     apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
   else
     apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
+
+#ifdef SHOW_STATES
+  int count = 0;
+  for (dd_edge::const_iterator i = reachable.begin(); i; ++i, ++count) {
+    const int* element = i.getAssignments();
+    printf("State %4d: [%d", count, element[1]);
+    for (int j=2; j<=8*N; j++) {
+      printf(", %d", element[j]);
+    } // for j
+    printf("]\n");
+  }  // for i
+#endif
+
 
   printf("Done\n");
   double c;

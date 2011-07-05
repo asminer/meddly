@@ -52,7 +52,6 @@ void buildNextStateFunction(const char* const* events, int nEvents,
   int* temp = new int[maxBound];
   int* minterm = new int[nVars+1];
   int* mtprime = new int[nVars+1];
-  for (int i=1; i<=nVars; i++) mtprime[i] = -1;
   dd_edge** varP  = new dd_edge*[nVars+1];
   varP[0] = 0;
   dd_edge** inc   = new dd_edge*[nVars+1];
@@ -97,8 +96,10 @@ void buildNextStateFunction(const char* const* events, int nEvents,
     for (int i=1; i<=nVars; i++) {
       if ('.' == ev[i]) {
         minterm[i] = -2;
+        mtprime[i] = -2;
       } else {
         minterm[i] = -1;
+        mtprime[i] = -1;
       }
     }
     mxd->createEdge(&minterm, &mtprime, 1, nsf_ev);

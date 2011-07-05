@@ -23,7 +23,6 @@
 #include "meddly_expert.h"
 #include "simple_model.h"
 
-// #define DEBUG_EVENTS
 #define VERBOSE
 
 inline int MAX(int a, int b) {
@@ -31,12 +30,10 @@ inline int MAX(int a, int b) {
 }
 
 void buildNextStateFunction(const char* const* events, int nEvents,
-  MEDDLY::forest* mxd, MEDDLY::dd_edge &nsf)
+  MEDDLY::forest* mxd, MEDDLY::dd_edge &nsf, int verb)
 {
   using namespace MEDDLY;
-#ifdef VERBOSE
-  fprintf(stderr, "Building next-state function\n");
-#endif
+  if (verb) fprintf(stderr, "Building next-state function\n");
 
   // set up auxiliary mtmxd forest and edges
   domain* d = mxd->useDomain();
@@ -52,7 +49,6 @@ void buildNextStateFunction(const char* const* events, int nEvents,
   int* temp = new int[maxBound];
   int* minterm = new int[nVars+1];
   int* mtprime = new int[nVars+1];
-  for (int i=1; i<=nVars; i++) mtprime[i] = -1;
   dd_edge** varP  = new dd_edge*[nVars+1];
   varP[0] = 0;
   dd_edge** inc   = new dd_edge*[nVars+1];
@@ -84,9 +80,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
 
   for (int e=0; e<nEvents; e++) {
     const char* ev = events[e];
-#ifdef VERBOSE
-    fprintf(stderr, "Event %5d", e);
-#endif
+    if (verb>1) fprintf(stderr, "Event %5d", e);
 
     dd_edge nsf_ev(mxd);
     dd_edge term(mxd);
@@ -97,8 +91,10 @@ void buildNextStateFunction(const char* const* events, int nEvents,
     for (int i=1; i<=nVars; i++) {
       if ('.' == ev[i]) {
         minterm[i] = -2;
+        mtprime[i] = -2;
       } else {
         minterm[i] = -1;
+        mtprime[i] = -1;
       }
     }
     mxd->createEdge(&minterm, &mtprime, 1, nsf_ev);
@@ -106,19 +102,20 @@ void buildNextStateFunction(const char* const* events, int nEvents,
     printf("Initial nsf for event %d\n", e);
     nsf_ev.show(stdout, 2);
 #endif
-#ifdef VERBOSE
-    fprintf(stderr, " : ");
-#endif
+    if (verb>2) fprintf(stderr, " : ");
     
     //
     // 'and' with the "do care" levels
     //
     for (int i=1; i<=nVars; i++) {
       dd_edge docare(mtmxd);
-#ifdef VERBOSE
-      fputc(ev[i], stderr);
-#endif
-      if ('.' == ev[i]) continue;
+
+      if ('.' == ev[i]) {
+        if (verb>3) fputc('.', stderr);
+        continue;
+      } else {
+        if (verb>2) fputc(ev[i], stderr);
+      }
       switch (ev[i]) {
         case '+':   apply(EQUAL, varP[i][0], inc[i][0], docare);
                     break;
@@ -143,14 +140,10 @@ void buildNextStateFunction(const char* const* events, int nEvents,
     printf("Complete nsf for event %d:\n", e);
     nsf_ev.show(stdout, 2);
 #endif
-#ifdef VERBOSE
-    fputc(' ', stderr);
-#endif
+    if (verb>2) fputc(' ', stderr);
     nsf += nsf_ev;
 
-#ifdef VERBOSE
-    fputc('\n', stderr);
-#endif
+    if (verb>1) fputc('\n', stderr);
   } // for e
 
   // cleanup
