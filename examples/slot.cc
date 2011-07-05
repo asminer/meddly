@@ -216,8 +216,5 @@ int main(int argc, const char** argv)
   // cleanup
   MEDDLY::cleanup();
   return 0;
-  
-
-  return 0;
 }
 
