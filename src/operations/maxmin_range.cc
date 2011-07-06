@@ -59,7 +59,7 @@ class MEDDLY::range_int : public unary_operation {
 };
 
 MEDDLY::range_int::range_int(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, arg, INTEGER)
+ : unary_operation(oc, true, arg, INTEGER)
 {
   key_length = 1;
   ans_length = sizeof(long) / sizeof(int); 
@@ -101,7 +101,7 @@ class MEDDLY::range_real : public unary_operation {
 };
 
 MEDDLY::range_real::range_real(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, arg, INTEGER)
+ : unary_operation(oc, true, arg, INTEGER)
 {
   key_length = 1;
   ans_length = sizeof(double) / sizeof(int); 

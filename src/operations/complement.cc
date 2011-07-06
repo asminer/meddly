@@ -54,7 +54,7 @@ class MEDDLY::compl_mdd : public unary_operation {
 
 MEDDLY::compl_mdd
 ::compl_mdd(const unary_opname* oc, expert_forest* arg, expert_forest* res)
- : unary_operation(oc, arg, res)
+ : unary_operation(oc, true, arg, res)
 {
   key_length = 1; 
   ans_length = 1;
@@ -162,7 +162,7 @@ class MEDDLY::compl_mxd : public unary_operation {
 
 MEDDLY::compl_mxd
 ::compl_mxd(const unary_opname* oc, expert_forest* arg, expert_forest* res)
- : unary_operation(oc, arg, res)
+ : unary_operation(oc, true, arg, res)
 {
   key_length = 2; 
   ans_length = 1;

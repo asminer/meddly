@@ -34,11 +34,12 @@
 
 MEDDLY::generic_binary_mdd::generic_binary_mdd(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-  : binary_operation(code, arg1, arg2, res)
+  : binary_operation(code, true, arg1, arg2, res)
 {
   can_commute = false;
   key_length = 2;
   ans_length = 1;
+  CT->initializeSearchKey(CTsrch, this);
 }
 
 MEDDLY::generic_binary_mdd::~generic_binary_mdd()
@@ -1351,7 +1352,7 @@ void MEDDLY::generic_binary_mxd::singleExpandB(int a, int b, int result,
 MEDDLY::generic_binbylevel_mxd
 ::generic_binbylevel_mxd(const binary_opname* code, expert_forest* arg1, 
   expert_forest* arg2, expert_forest* res)
- : binary_operation(code, arg1, arg2, res)
+ : binary_operation(code, true, arg1, arg2, res)
 {
   can_commute = false;
   key_length = 3;
@@ -2230,7 +2231,7 @@ void MEDDLY::generic_binbylevel_mxd::singleExpandB(int a, int b,
 
 MEDDLY::generic_binary_ev::generic_binary_ev(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-  : binary_operation(code, arg1, arg2, res)
+  : binary_operation(code, true, arg1, arg2, res)
 {
   can_commute = false;
   key_length = 4;

@@ -52,7 +52,8 @@ class MEDDLY::mdd2evplus_operation : public unary_operation {
 };
 
 MEDDLY::mdd2evplus_operation::mdd2evplus_operation(const unary_opname* oc, 
-  expert_forest* arg, expert_forest* res) : unary_operation(oc, arg, res)
+  expert_forest* arg, expert_forest* res)
+: unary_operation(oc, true, arg, res)
 {
   key_length = 1;
   ans_length = 2; // pointer, cardinality

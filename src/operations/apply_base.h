@@ -39,6 +39,8 @@ namespace MEDDLY {
 
 class MEDDLY::generic_binary_mdd : public binary_operation {
     bool can_commute;
+  protected:
+    compute_table::search_key CTsrch;
   public:
     generic_binary_mdd(const binary_opname* code, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
@@ -60,6 +62,18 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
     }
 
     inline bool findResult(int a, int b, int &c) {
+      if (can_commute && a > b) {
+        CTsrch.key(0) = b;
+        CTsrch.key(1) = a;
+      } else {
+        CTsrch.key(0) = a;
+        CTsrch.key(1) = b;
+      }
+      const int* cacheFind = CT->find(CTsrch);
+      if (0==cacheFind) return false;
+      c = resF->linkNode(cacheFind[2]);
+      return true;
+      /*
       static int key[2];
       if (can_commute && a > b) {
         key[0] = b; key[1] = a;
@@ -70,9 +84,21 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
       if (0==cacheFind) return false;
       c = resF->linkNode(cacheFind[2]);
       return true;
+      */
     }
 
     inline void saveResult(int a, int b, int c) {
+      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      if (can_commute && a > b) {
+        entry.key(0) = arg2F->cacheNode(b);
+        entry.key(1) = arg1F->cacheNode(a);
+      } else {
+        entry.key(0) = arg1F->cacheNode(a);
+        entry.key(1) = arg2F->cacheNode(b);
+      }
+      entry.result(0) = resF->cacheNode(c);
+      CT->addEntry();
+      /*
       static int cacheEntry[3];
       if (can_commute && a > b) {
         cacheEntry[0] = arg1F->cacheNode(b); 
@@ -83,6 +109,7 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
       }
       cacheEntry[2] = resF->cacheNode(c);
       CT->add(this, cacheEntry);
+      */
     }
 
     // not sure about these...

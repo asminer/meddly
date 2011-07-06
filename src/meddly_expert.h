@@ -866,7 +866,7 @@ class MEDDLY::expert_forest : public forest
 
   protected:
     // for debugging:
-    void showComputeTable(FILE* s, bool verbose) const;
+    void showComputeTable(FILE* s, int verbLevel) const;
 
     void unregisterDDEdges();
 
@@ -1257,6 +1257,18 @@ class MEDDLY::operation {
     static bool& useMonolithicCT;
     // declared and initialized in meddly.cc
     static compute_table* Monolithic_CT;
+    // declared and initialized in meddly.cc
+    static operation** op_list;
+    // declared and initialized in meddly.cc
+    static int* op_holes;
+    // declared and initialized in meddly.cc
+    static int list_size;
+    // declared and initialized in meddly.cc
+    static int list_alloc;
+    // declared and initialized in meddly.cc
+    static int free_list;
+
+    int oplist_index;
   protected:
     int key_length; 
     int ans_length; 
@@ -1264,7 +1276,7 @@ class MEDDLY::operation {
     // for cache of operations.
     operation* next;
   public:
-    operation(const opname* n);
+    operation(const opname* n, bool uses_CT);
 
   protected:
     virtual ~operation();
@@ -1275,6 +1287,9 @@ class MEDDLY::operation {
     friend void MEDDLY::destroyOpInternal(operation* op);
 
   public:
+    // should ONLY be called during library cleanup.
+    static void destroyOpList();
+
     inline bool isMarkedForDeletion() const { 
       return is_marked_for_deletion;
     }
@@ -1291,10 +1306,15 @@ class MEDDLY::operation {
     /// Remove all compute table entries for this operation.
     void removeAllComputeTableEntries();
 
+    // for compute tables.
+
+    inline int getIndex() const { return oplist_index; }
+    static inline operation* getOpWithIndex(int i) { return op_list[i]; }
+
     // for debugging:
 
-    static void showMonolithicComputeTable(FILE*, bool verbose);
-    void showComputeTable(FILE*, bool verbose) const;
+    static void showMonolithicComputeTable(FILE*, int verbLevel);
+    void showComputeTable(FILE*, int verbLevel) const;
 
     // handy
     inline const char* getName() const { return theOpName->getName(); }
@@ -1353,10 +1373,10 @@ class MEDDLY::unary_operation : public operation {
     int argFslot;
     int resFslot;
   public:
-    unary_operation(const unary_opname* code, 
+    unary_operation(const unary_opname* code, bool uses_CT,
       expert_forest* arg, expert_forest* res);
 
-    unary_operation(const unary_opname* code,
+    unary_operation(const unary_opname* code, bool uses_CT,
       expert_forest* arg, opnd_type res);
 
   protected:
@@ -1402,7 +1422,7 @@ class MEDDLY::binary_operation : public operation {
     int arg2Fslot;
     int resFslot;
   public:
-    binary_operation(const binary_opname* code, 
+    binary_operation(const binary_opname* code, bool uses_CT,
       expert_forest* arg1, expert_forest* arg2, expert_forest* res);
 
   protected:
@@ -1434,7 +1454,7 @@ class MEDDLY::binary_operation : public operation {
 */
 class MEDDLY::numerical_operation : public operation {
   public:
-    numerical_operation(const numerical_opname* code);
+    numerical_operation(const numerical_opname* code, bool uses_CT);
   protected:
     virtual ~numerical_operation();
   public:

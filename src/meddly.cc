@@ -101,6 +101,12 @@ namespace MEDDLY {
   // Monolithic compute table, if used
   compute_table* operation::Monolithic_CT = 0;
 
+  operation** operation::op_list = 0;
+  int* operation::op_holes = 0;
+  int operation::list_size = 0;
+  int operation::list_alloc = 0;
+  int operation::free_list = -1;
+
   // helper function
   void destroyOpInternal(operation* op);
 };

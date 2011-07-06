@@ -36,6 +36,8 @@
 #include "meddly.h"
 #include "timer.h"
 
+// #define SHOW_ALL_SOLUTIONS
+
 using namespace MEDDLY;
 
 int N;
@@ -91,6 +93,7 @@ void intersect(dd_edge** A, int L)
       apply(MULTIPLY, *A[0], *A[i], *A[0]);
       delete A[i];
       A[i] = 0;
+      // operation::removeStalesFromMonolithic();
     }
   }
   fprintf(stderr, "\n");
@@ -209,18 +212,6 @@ int main()
     } // for j
   } // for i
 
-  /*
-  ( (expert_forest*)f)->showInfo(stdout, 1);
-  if (operation::useMonolithicComputeTable()) {
-    operation::showMonolithicComputeTable(stdout);
-  } else {
-    operation* neq = getOperation(NOT_EQUAL, f, f, f);
-    operation* mult = getOperation(MULTIPLY, f, f, f);
-    neq->showComputeTable(stdout);
-    mult->showComputeTable(stdout);
-  }
-  */
-
   printf("Building solutions\n");
   intersect(constr, N);
   assert(constr[0]);
@@ -258,8 +249,18 @@ int main()
   apply(CARDINALITY, *solutions, c);
   printf("\nThere are %ld solutions to the %d-queens problem\n\n", c, N);
 
-  // show one of the solutions
   dd_edge::const_iterator first = solutions->begin();
+#ifdef SHOW_ALL_SOLUTIONS
+  c = 0;
+  for (; first; ++first) {
+    const int* minterm = first.getAssignments();
+    c++;
+    printf("Solution %6d: [%d", c, minterm[1]);
+    for (int i=2; i<=N; i++) printf(", %d", minterm[i]);
+    printf("]\n");
+  }
+#else
+  // show one of the solutions
   if (first) {
     const int* minterm = first.getAssignments();
     printf("One solution:\n");
@@ -267,7 +268,10 @@ int main()
       printf("\tQueen for row %2d in column %2d\n", i, minterm[i]+1);
     }
   }
+#endif
   delete solutions;
+
+  // operation::showMonolithicComputeTable(stdout, 6);
   // f->showInfo(stdout, 1);
   cleanup();
   return 0;

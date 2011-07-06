@@ -58,7 +58,7 @@ class MEDDLY::copy_MT : public unary_operation {
 
 MEDDLY::copy_MT
 :: copy_MT(const unary_opname* oc, expert_forest* arg, expert_forest* res)
- : unary_operation(oc, arg, res)
+ : unary_operation(oc, true, arg, res)
 {
   key_length = 1;
   ans_length = 1;
@@ -278,7 +278,8 @@ class MEDDLY::copy_MT2Evplus : public unary_operation {
 };
 
 MEDDLY::copy_MT2Evplus::copy_MT2Evplus(const unary_opname* oc, 
-  expert_forest* arg, expert_forest* res) : unary_operation(oc, arg, res)
+  expert_forest* arg, expert_forest* res)
+: unary_operation(oc, true, arg, res)
 {
   key_length = 1;
   ans_length = 2;

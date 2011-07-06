@@ -79,13 +79,16 @@ protected:
     a += x;
     if (a < x) throw error(error::OVERFLOW);
   }
+
+  compute_table::search_key CTsrch;
 };
 
 MEDDLY::card_int::card_int(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, arg, INTEGER)
+ : unary_operation(oc, true, arg, INTEGER)
 {
   key_length = 1;
   ans_length = sizeof(long) / sizeof(int); 
+  CT->initializeSearchKey(CTsrch, this);
 }
 
 bool MEDDLY::card_int::isEntryStale(const int* data)
@@ -138,9 +141,13 @@ long MEDDLY::card_mdd_int::compute(int ht, int a)
   if (argF->isTerminalNode(a)) return 1;
 
   // Check compute table
-  const int* cacheEntry = CT->find(this, &a);
+  CTsrch.key(0) = a; 
+  const int* cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
-    return ((const long*)(cacheEntry+1))[0];
+    // ugly but portable
+    long answer;
+    memcpy(&answer, cacheEntry+1, sizeof(long));
+    return answer;
   }
 
   // recurse
@@ -158,11 +165,11 @@ long MEDDLY::card_mdd_int::compute(int ht, int a)
   }
 
   // Add entry to compute table
-  static int ansEntry[1+sizeof(long)/sizeof(int)];
-  ansEntry[0] = argF->cacheNode(a);
-  ((long*)(ansEntry+1))[0] = card;
+  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  entry.key(0) = argF->cacheNode(a);
+  entry.copyResult(0, &card, sizeof(long));
+  CT->addEntry();
 
-  CT->add(this, const_cast<const int*>(ansEntry));
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is %ld(L)\n", a, card);
 #endif
@@ -270,7 +277,7 @@ public:
 };
 
 MEDDLY::card_real::card_real(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, arg, REAL)
+ : unary_operation(oc, true, arg, REAL)
 {
   key_length = 1;
   ans_length = sizeof(double) / sizeof(int); 
@@ -448,7 +455,7 @@ public:
 };
 
 MEDDLY::card_mpz::card_mpz(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, arg, HUGEINT)
+ : unary_operation(oc, true, arg, HUGEINT)
 {
   key_length = 1;
   ans_length = sizeof(ct_object*) / sizeof(int); 

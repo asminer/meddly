@@ -119,15 +119,15 @@ void MEDDLY::expert_forest::unregisterOperation(operation* op, int slot)
 }
 
 
-void MEDDLY::expert_forest::showComputeTable(FILE* s, bool verbose) const
+void MEDDLY::expert_forest::showComputeTable(FILE* s, int verbLevel) const
 {
   if (is_marked_for_deletion) return;
   if (operation::useMonolithicComputeTable()) {
-    operation::showMonolithicComputeTable(s, verbose);
+    operation::showMonolithicComputeTable(s, verbLevel);
   } else {
     for (int i=0; i<szOplist; i++) 
       if (oplist[i])
-        oplist[i]->showComputeTable(s, verbose);
+        oplist[i]->showComputeTable(s, verbLevel);
   }
 }
 

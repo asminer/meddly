@@ -77,7 +77,8 @@ class MEDDLY::image_op : public binary_operation {
 };
 
 MEDDLY::image_op::image_op(const binary_opname* oc, expert_forest* a1,
-  expert_forest* a2, expert_forest* res) : binary_operation(oc, a1, a2, res)
+  expert_forest* a2, expert_forest* res)
+: binary_operation(oc, true, a1, a2, res)
 {
   key_length = 2; 
   ans_length = 1;

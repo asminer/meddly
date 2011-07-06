@@ -66,6 +66,40 @@ class MEDDLY::compute_table {
         long numEntries;
         unsigned hits;
         unsigned pings;
+        static const int chainHistogramSize = 256;
+        long chainHistogram[chainHistogramSize];
+        long numLargeChains;
+        int maxChainLength;
+      };
+
+      class search_key {
+          friend class base_table;
+          friend class monolithic_table;
+          friend class operation_table;
+          int hashLength;
+          int* data;
+          int* key_data;
+        public:
+          search_key();
+          ~search_key();
+          inline int& key(int i) { return key_data[i]; }
+      };
+
+      class temp_entry {
+          friend class base_table;
+          friend class monolithic_table;
+          friend class operation_table;
+          int handle;
+          int hashLength;
+          int* entry;
+          int* key_entry;
+          int* res_entry;
+        public:
+          inline int& key(int i) { return key_entry[i]; }
+          inline int& result(int i) { return res_entry[i]; }
+          inline void copyResult(int i, void* data, size_t bytes) {
+            memcpy(res_entry+i, data, bytes);
+          }
       };
 
     public:
@@ -81,27 +115,30 @@ class MEDDLY::compute_table {
       /// Is this a per-operation compute table?
       virtual bool isOperationTable() const = 0;
 
-      /** Add an entry to the compute table. Note that this table allows for
-          duplicate entries for the same key. The user may use find() before
-          using add() to prevent such duplication. A copy of the data
-          in entry[] is stored in the table.
-          @param  op    Operation associated with this table entry
-          @param  entry integer array of size op->getCacheEntryLength(),
-                        containing the operands and the result to be stored
-      */    
-      virtual void add(operation* op, const int* entry) = 0;
+      /// Initialize a search key for a given operation.
+      virtual void initializeSearchKey(search_key &key, operation* op) = 0;
 
       /** Find an entry in the compute table based on the key provided.
-          If more than an entry with the same key exists, this will return
-          the first matching entry.
-          @param  op    Operation associated with this table entry
-          @param  entry integer array of size op->getKeyLength(),
-                        containing the key to the table entry to look for
-          @return       integer array of size op->getCacheEntryLength()
+          @param  key   Key to search for.
+          @return       0, if not found;
+                        otherwise, an integer array of size 
+                        op->getCacheEntryLength()
       */
-      virtual const int* find(operation* op, const int* entryKey) = 0;
+      virtual const int* find(const search_key &key) = 0;
 
-      /** Remove stale entries.
+      /** Start a new compute table entry.
+          The operation should "fill in" the values for the entry,
+          then call \a addEntry().
+      */
+      virtual temp_entry& startNewEntry(operation* op) = 0;
+
+      /** Add the "current" new entry to the compute table.
+          The entry may be specified by filling in the values 
+          for the struct returned by \a startNewEntry().
+      */
+      virtual void addEntry() = 0;
+
+      /** Remove all stale entries.
           Scans the table for entries that are no longer valid (i.e. they are
           stale, according to operation::isEntryStale) and removes them. This
           can be a time-consuming process (proportional to the number of cached
@@ -115,18 +152,25 @@ class MEDDLY::compute_table {
 
       /// Get performance stats for the table.
       inline const stats& getStats() {
-        updateStats();
         return perf;
       }
 
       /// For debugging.
-      virtual void show(FILE *s, bool verbose = false) const = 0;
+      virtual void show(FILE *s, int verbLevel = 0) const = 0;
+
+ // OLD, for compiling
+
+      const int* find(operation* op, const int* key) const {
+        throw error(error::NOT_IMPLEMENTED);
+      }
+
+      void add(operation* op, const int* entry) const {
+        throw error(error::NOT_IMPLEMENTED);
+      }
 
     protected:
       stats perf;
-      static unsigned raw_hash(const int* data, int length);
-
-      virtual void updateStats() = 0;
+      temp_entry currEntry;
 };
 
 #endif
