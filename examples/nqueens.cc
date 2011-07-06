@@ -36,6 +36,8 @@
 #include "meddly.h"
 #include "timer.h"
 
+// #define SHOW_ALL_SOLUTIONS
+
 using namespace MEDDLY;
 
 int N;
@@ -258,8 +260,18 @@ int main()
   apply(CARDINALITY, *solutions, c);
   printf("\nThere are %ld solutions to the %d-queens problem\n\n", c, N);
 
-  // show one of the solutions
   dd_edge::const_iterator first = solutions->begin();
+#ifdef SHOW_ALL_SOLUTIONS
+  c = 0;
+  for (; first; ++first) {
+    const int* minterm = first.getAssignments();
+    c++;
+    printf("Solution %6d: [%d", c, minterm[1]);
+    for (int i=2; i<=N; i++) printf(", %d", minterm[i]);
+    printf("]\n");
+  }
+#else
+  // show one of the solutions
   if (first) {
     const int* minterm = first.getAssignments();
     printf("One solution:\n");
@@ -267,6 +279,7 @@ int main()
       printf("\tQueen for row %2d in column %2d\n", i, minterm[i]+1);
     }
   }
+#endif
   delete solutions;
   // f->showInfo(stdout, 1);
   cleanup();

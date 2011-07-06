@@ -349,6 +349,9 @@ class chained_hash_table {
     /// If shrinkable is true, it will reduce the size of the
     /// hash table when there is a certain amount of wasted space in it.
     inline unsigned removeStaleEntries(bool shrinkable = true) {
+#ifdef DEBUG_SLOW
+      printf("Removing stales (size %ld, entries %u)\n", table.size(), nEntries);
+#endif
       unsigned total_stale_count = 0;
       unsigned stale_count = 0;
       int prev, curr, next;
@@ -396,6 +399,9 @@ class chained_hash_table {
       if (shrinkable && table.size() > minTableSize &&
         nEntries / table.size() < 0.5)
         shrink();
+#ifdef DEBUG_SLOW
+      printf("Done removing stales (size %ld, entries %u)\n", table.size(), nEntries);
+#endif
       return total_stale_count;
     }
 

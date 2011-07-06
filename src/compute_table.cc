@@ -494,6 +494,9 @@ void MEDDLY::monolithic_table::removeStales()
 {
   static bool removingStales = false;
   if (!removingStales) {
+#ifdef DEBUG_SLOW
+    printf("MT removing stales\n");
+#endif
     removingStales = true;
     if (ht) ht->removeStaleEntries();
     if (fsht) fsht->removeStaleEntries();
