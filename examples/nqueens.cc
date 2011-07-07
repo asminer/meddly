@@ -281,6 +281,8 @@ int main()
   }
 #endif
   delete solutions;
+
+  operation::showMonolithicComputeTable(stdout, false);
   // f->showInfo(stdout, 1);
   cleanup();
   return 0;

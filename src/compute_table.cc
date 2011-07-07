@@ -443,9 +443,9 @@ MEDDLY::monolithic_table:: ~monolithic_table()
 void MEDDLY::monolithic_table::add(operation* op, const int* entry)
 {
 #ifdef DEBUG_CT
-  fprintf(stderr, "MT adding entry ");
-  op->showEntry(stderr, entry);
-  fprintf(stderr, "\n");
+  printf("Adding CT entry ");
+  op->showEntry(stdout, entry);
+  printf("\n");
 #endif
   // copy entry data
   int node = getFreeNode(op->getCacheEntryLength());
@@ -480,9 +480,9 @@ const int* MEDDLY::monolithic_table::find(operation* op, const int* entryKey)
     // found entry
     perf.hits++;
 #ifdef DEBUG_CT
-    fprintf(stderr, "MT found entry ");
-    op->showEntry(stderr, getDataAddress(nodes[h]));
-    fprintf(stderr, "\n");
+    printf("Found CT entry ");
+    op->showEntry(stdout, getDataAddress(nodes[h]));
+    printf("\n");
 #endif
     return getDataAddress(nodes[h]);
   }
@@ -839,9 +839,9 @@ void MEDDLY::operation_table::add(operation* op, const int* entry)
   memcpy(getDataAddress(nodes[node]), entry, op->getCacheEntryLengthInBytes());
   nodes[node].next = getNull();
 #ifdef DEBUG_CT
-  fprintf(stderr, "OT adding entry ");
-  op->showEntry(stderr, entry);
-  fprintf(stderr, " to slot %d\n", node);
+  printf("Adding CT entry ");
+  op->showEntry(stdout, entry);
+  printf("\n");
 #endif
   // insert node into hash table
   if (ht) ht->insert(node); else fsht->insert(node);
@@ -872,9 +872,9 @@ const int* MEDDLY::operation_table::find(operation* op, const int* entryKey)
     // found entry
     perf.hits++;
 #ifdef DEBUG_CT
-    fprintf(stderr, "OT found entry ");
-    op->showEntry(stderr, getDataAddress(nodes[h]));
-    fprintf(stderr, " at slot %d\n", h);
+    printf("Found CT entry ");
+    op->showEntry(stdout, getDataAddress(nodes[h]));
+    printf("\n");
 #endif
     return getDataAddress(nodes[h]);
   }
