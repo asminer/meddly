@@ -49,6 +49,8 @@ class MEDDLY::mdd2evplus_operation : public unary_operation {
     virtual void compute(const dd_edge &arg, dd_edge &res);
 
     void compute(int ht, int a, int &bdn, int &bcard);
+  protected:
+    compute_table::search_key CTsrch;
 };
 
 MEDDLY::mdd2evplus_operation::mdd2evplus_operation(const unary_opname* oc, 
@@ -57,6 +59,7 @@ MEDDLY::mdd2evplus_operation::mdd2evplus_operation(const unary_opname* oc,
 {
   key_length = 1;
   ans_length = 2; // pointer, cardinality
+  CT->initializeSearchKey(CTsrch, this);
 }
 
 bool 
@@ -121,11 +124,11 @@ MEDDLY::mdd2evplus_operation
 
   // Check compute table
   if (aHeight == height) {
-    const int* cacheEntry = CT->find(this, &a);
+    CTsrch.key(0) = a;
+    const int* cacheEntry = CT->find(CTsrch);
     if (cacheEntry) {
-      bdn = cacheEntry[1];
+      bdn = resF->linkNode(cacheEntry[1]);
       bcard = cacheEntry[2];
-      resF->linkNode(bdn);
       return;
     }
   }
@@ -179,11 +182,13 @@ MEDDLY::mdd2evplus_operation
   int dummy;
   resF->normalizeAndReduceNode(bdn, dummy);
   DCASSERT((bdn==0 && dummy==INF) || (bdn!= 0 && dummy==0));
-  static int cacheEntry[3];
-  cacheEntry[0] = argF->cacheNode(a);
-  cacheEntry[1] = resF->cacheNode(bdn);
-  cacheEntry[2] = bcard;
-  CT->add(this, cacheEntry);
+
+  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  entry.key(0) = argF->cacheNode(a);
+  entry.result(0) = resF->cacheNode(bdn);
+  entry.result(1) = bcard;
+  CT->addEntry();
+
   resF->setIndexSetCardinality(bdn, bcard);
 }
 

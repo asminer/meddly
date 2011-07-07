@@ -126,7 +126,7 @@ class MEDDLY::compute_table {
           void copyResult(int i, void* data, size_t bytes) {
 #ifdef DEVELOPMENT_CODE
             assert(i>=0);
-            assert(i+bytes<=resLength);
+            assert(i+bytes<=resLength*sizeof(int));
 #endif
             memcpy(res_entry+i, data, bytes);
           }
@@ -187,16 +187,6 @@ class MEDDLY::compute_table {
 
       /// For debugging.
       virtual void show(FILE *s, int verbLevel = 0) const = 0;
-
- // OLD, for compiling
-
-      const int* find(operation* op, const int* key) const {
-        throw error(error::NOT_IMPLEMENTED);
-      }
-
-      void add(operation* op, const int* entry) const {
-        throw error(error::NOT_IMPLEMENTED);
-      }
 
     protected:
       stats perf;

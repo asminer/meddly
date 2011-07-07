@@ -1898,8 +1898,8 @@ bool node_manager::gc(bool zombifyOrphanNodes) {
 #endif
 #ifdef DEVELOPMENT_CODE
     if (zombie_nodes != 0) {
-      showInfo(stderr, 2);
-      showComputeTable(stderr, true);
+      showInfo(stderr, 1);
+      showComputeTable(stderr, 6);
     }
     DCASSERT(zombie_nodes == 0);
 #endif

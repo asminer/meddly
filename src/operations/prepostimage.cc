@@ -54,25 +54,26 @@ class MEDDLY::image_op : public binary_operation {
     virtual void showEntry(FILE* strm, const int *entryData) const;
 
     inline bool findResult(int a, int b, int &c) {
-      static int key[2];
-      key[0] = a; key[1] = b;
-      const int* cacheFind = CT->find(this, key);
+      CTsrch.key(0) = a;
+      CTsrch.key(1) = b;
+      const int* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
       c = resF->linkNode(cacheFind[2]);
       return true;
     }
     inline int saveResult(int a, int b, int c) {
-      static int cacheEntry[3];
-      cacheEntry[0] = arg1F->cacheNode(a); 
-      cacheEntry[1] = arg2F->cacheNode(b);
-      cacheEntry[2] = resF->cacheNode(c);
-      CT->add(this, cacheEntry);
+      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      entry.key(0) = arg1F->cacheNode(a); 
+      entry.key(1) = arg2F->cacheNode(b);
+      entry.result(0) = resF->cacheNode(c);
+      CT->addEntry();
       return c;
     }
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
     virtual int compute(int a, int b);
   protected:
     binary_operation* unionOp;
+    compute_table::search_key CTsrch;
     virtual int compute_rec(int a, int b) = 0;
 };
 
@@ -83,6 +84,7 @@ MEDDLY::image_op::image_op(const binary_opname* oc, expert_forest* a1,
   key_length = 2; 
   ans_length = 1;
   unionOp = 0;
+  CT->initializeSearchKey(CTsrch, this);
 }
 
 bool MEDDLY::image_op::isEntryStale(const int* data)

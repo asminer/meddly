@@ -1357,6 +1357,7 @@ MEDDLY::generic_binbylevel_mxd
   can_commute = false;
   key_length = 3;
   ans_length = 1;
+  CT->initializeSearchKey(CTsrch, this);
 }
 
 MEDDLY::generic_binbylevel_mxd::~generic_binbylevel_mxd()
@@ -2236,6 +2237,7 @@ MEDDLY::generic_binary_ev::generic_binary_ev(const binary_opname* code,
   can_commute = false;
   key_length = 4;
   ans_length = 2;
+  CT->initializeSearchKey(CTsrch, this);
 }
 
 MEDDLY::generic_binary_ev::~generic_binary_ev()

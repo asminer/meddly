@@ -49,6 +49,8 @@ class MEDDLY::cross_bool : public binary_operation {
 
     int compute_pr(int ht, int a, int b);
     int compute_un(int ht, int a, int b);
+  protected:
+    compute_table::search_key CTsrch;
 };
 
 MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
@@ -61,6 +63,7 @@ MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
   // data[1] : a
   // data[2] : b
   // data[3] : c
+  CT->initializeSearchKey(CTsrch, this);
 }
 
 bool MEDDLY::cross_bool::isEntryStale(const int* data)
@@ -105,11 +108,10 @@ int MEDDLY::cross_bool::compute_un(int lh, int a, int b)
   if (0==a || 0==b) return resF->getTerminalNode(0);
 
   // check compute table
-  static int cacheEntry[4];
-  cacheEntry[0] = lh;
-  cacheEntry[1] = a;
-  cacheEntry[2] = b;
-  const int* cacheFind = CT->find(this, cacheEntry);
+  CTsrch.key(0) = lh;
+  CTsrch.key(1) = a;
+  CTsrch.key(2) = b;
+  const int* cacheFind = CT->find(CTsrch);
   if (cacheFind) {
     return resF->linkNode(cacheFind[3]);
   }
@@ -150,11 +152,13 @@ int MEDDLY::cross_bool::compute_un(int lh, int a, int b)
 
   // reduce, save in compute table
   c = resF->reduceNode(c);
-  cacheEntry[0] = lh;
-  cacheEntry[1] = arg1F->cacheNode(a);
-  cacheEntry[2] = arg2F->cacheNode(b);
-  cacheEntry[3] = resF->cacheNode(c);
-  CT->add(this, cacheEntry);
+
+  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  entry.key(0) = lh;
+  entry.key(1) = arg1F->cacheNode(a);
+  entry.key(2) = arg2F->cacheNode(b);
+  entry.result(0) = resF->cacheNode(c);
+  CT->addEntry();
 
   return c;
 }
@@ -168,11 +172,10 @@ int MEDDLY::cross_bool::compute_pr(int ht, int a, int b)
   ht--;
 
   // check compute table
-  static int cacheEntry[4];
-  cacheEntry[0] = lh;
-  cacheEntry[1] = a;
-  cacheEntry[2] = b;
-  const int* cacheFind = CT->find(this, cacheEntry);
+  CTsrch.key(0) = lh;
+  CTsrch.key(1) = a;
+  CTsrch.key(2) = b;
+  const int* cacheFind = CT->find(CTsrch);
   if (cacheFind) {
     return resF->linkNode(cacheFind[3]);
   }
@@ -213,11 +216,13 @@ int MEDDLY::cross_bool::compute_pr(int ht, int a, int b)
 
   // reduce, save in compute table
   c = resF->reduceNode(c);
-  cacheEntry[0] = lh;
-  cacheEntry[1] = arg1F->cacheNode(a);
-  cacheEntry[2] = arg2F->cacheNode(b);
-  cacheEntry[3] = resF->cacheNode(c);
-  CT->add(this, cacheEntry);
+
+  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  entry.key(0) = lh;
+  entry.key(1) = arg1F->cacheNode(a);
+  entry.key(2) = arg2F->cacheNode(b);
+  entry.result(0) = resF->cacheNode(c);
+  CT->addEntry();
 
   return c;
 }

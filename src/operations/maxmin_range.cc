@@ -56,6 +56,8 @@ class MEDDLY::range_int : public unary_operation {
     virtual bool isEntryStale(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
+  protected:
+    compute_table::search_key CTsrch;
 };
 
 MEDDLY::range_int::range_int(const unary_opname* oc, expert_forest* arg)
@@ -63,6 +65,7 @@ MEDDLY::range_int::range_int(const unary_opname* oc, expert_forest* arg)
 {
   key_length = 1;
   ans_length = sizeof(long) / sizeof(int); 
+  CT->initializeSearchKey(CTsrch, this);
 }
 
 bool MEDDLY::range_int::isEntryStale(const int* data)
@@ -77,9 +80,9 @@ void MEDDLY::range_int::discardEntry(const int* data)
 
 void MEDDLY::range_int::showEntry(FILE* strm, const int *data) const
 {
-  fprintf(strm, "[%s(%d): %ld(L)]",
-      getName(), data[0], ((const long*)(data+1))[0]
-  );
+  long answer;
+  memcpy(&answer, data+1, sizeof(long));
+  fprintf(strm, "[%s(%d): %ld(L)]", getName(), data[0], answer);
 }
 
 
@@ -98,6 +101,8 @@ class MEDDLY::range_real : public unary_operation {
     virtual bool isEntryStale(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
+  protected:
+    compute_table::search_key CTsrch;
 };
 
 MEDDLY::range_real::range_real(const unary_opname* oc, expert_forest* arg)
@@ -105,6 +110,7 @@ MEDDLY::range_real::range_real(const unary_opname* oc, expert_forest* arg)
 {
   key_length = 1;
   ans_length = sizeof(double) / sizeof(int); 
+  CT->initializeSearchKey(CTsrch, this);
 }
 
 bool MEDDLY::range_real::isEntryStale(const int* data)
@@ -119,9 +125,9 @@ void MEDDLY::range_real::discardEntry(const int* data)
 
 void MEDDLY::range_real::showEntry(FILE* strm, const int *data) const
 {
-  fprintf(strm, "[%s(%d): %le]",
-      getName(), data[0], ((const double*)(data+1))[0]
-  );
+  double answer;
+  memcpy(&answer, data+1, sizeof(double));
+  fprintf(strm, "[%s(%d): %le]", getName(), data[0], answer);
 }
 
 
@@ -148,9 +154,13 @@ long MEDDLY::maxrange_int::compute(int a)
   if (argF->isTerminalNode(a)) return argF->getInteger(a);
   
   // Check compute table
-  const int* cacheEntry = CT->find(this, &a);
+  CTsrch.key(0) = a;
+  const int* cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
-    return ((const long*)(cacheEntry+1))[0];
+    // ugly but portable
+    long answer;
+    memcpy(&answer, cacheEntry+1, sizeof(long));
+    return answer;
   }
 
   // recurse
@@ -172,11 +182,11 @@ long MEDDLY::maxrange_int::compute(int a)
   } 
 
   // Add entry to compute table
-  static int ansEntry[1+sizeof(long)/sizeof(int)];
-  ansEntry[0] = argF->cacheNode(a);
-  ((long*)(ansEntry+1))[0] = max;
+  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  entry.key(0) = argF->cacheNode(a);
+  entry.copyResult(0, &max, sizeof(long));
+  CT->addEntry();
 
-  CT->add(this, const_cast<const int*>(ansEntry));
   return max;
 }
 
@@ -205,9 +215,13 @@ long MEDDLY::minrange_int::compute(int a)
   if (argF->isTerminalNode(a)) return argF->getInteger(a);
   
   // Check compute table
-  const int* cacheEntry = CT->find(this, &a);
+  CTsrch.key(0) = a; 
+  const int* cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
-    return ((const long*)(cacheEntry+1))[0];
+    // ugly but portable
+    long answer;
+    memcpy(&answer, cacheEntry+1, sizeof(long));
+    return answer;
   }
 
   // recurse
@@ -229,11 +243,11 @@ long MEDDLY::minrange_int::compute(int a)
   } 
 
   // Add entry to compute table
-  static int ansEntry[1+sizeof(long)/sizeof(int)];
-  ansEntry[0] = argF->cacheNode(a);
-  ((long*)(ansEntry+1))[0] = min;
+  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  entry.key(0) = argF->cacheNode(a);
+  entry.copyResult(0, &min, sizeof(long));
+  CT->addEntry();
 
-  CT->add(this, const_cast<const int*>(ansEntry));
   return min;
 }
 
@@ -262,9 +276,13 @@ double MEDDLY::maxrange_real::compute(int a)
   if (argF->isTerminalNode(a)) return argF->getReal(a);
   
   // Check compute table
-  const int* cacheEntry = CT->find(this, &a);
+  CTsrch.key(0) = a; 
+  const int* cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
-    return ((const double*)(cacheEntry+1))[0];
+    // ugly but portable
+    double answer;
+    memcpy(&answer, cacheEntry+1, sizeof(double));
+    return answer;
   }
 
   // recurse
@@ -286,11 +304,11 @@ double MEDDLY::maxrange_real::compute(int a)
   } 
 
   // Add entry to compute table
-  static int ansEntry[1+sizeof(double)/sizeof(int)];
-  ansEntry[0] = argF->cacheNode(a);
-  ((double*)(ansEntry+1))[0] = max;
+  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  entry.key(0) = argF->cacheNode(a);
+  entry.copyResult(0, &max, sizeof(double));
+  CT->addEntry();
 
-  CT->add(this, const_cast<const int*>(ansEntry));
   return max;
 }
 
@@ -319,9 +337,13 @@ double MEDDLY::minrange_real::compute(int a)
   if (argF->isTerminalNode(a)) return argF->getReal(a);
   
   // Check compute table
-  const int* cacheEntry = CT->find(this, &a);
+  CTsrch.key(0) = a; 
+  const int* cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
-    return ((const double*)(cacheEntry+1))[0];
+    // ugly but portable
+    double answer;
+    memcpy(&answer, cacheEntry+1, sizeof(double));
+    return answer;
   }
 
   // recurse
@@ -343,11 +365,11 @@ double MEDDLY::minrange_real::compute(int a)
   } 
 
   // Add entry to compute table
-  static int ansEntry[1+sizeof(double)/sizeof(int)];
-  ansEntry[0] = argF->cacheNode(a);
-  ((double*)(ansEntry+1))[0] = min;
+  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  entry.key(0) = argF->cacheNode(a);
+  entry.copyResult(0, &min, sizeof(double));
+  CT->addEntry();
 
-  CT->add(this, const_cast<const int*>(ansEntry));
   return min;
 }
 

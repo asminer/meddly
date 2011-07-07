@@ -861,7 +861,9 @@ inline int node_manager::getLevelCount() const { return l_size; }
 inline bool node_manager::isTimeToGc()
 {
 #if 1
-  return (isPessimistic())? (getZombieNodeCount() > 1000000):
+  // const int zombieTrigger = 1000;  // use for debugging
+  const int zombieTrigger = 1000000;
+  return (isPessimistic())? (getZombieNodeCount() > zombieTrigger):
     (getOrphanNodeCount() > 500000);
   // return (nodes_activated_since_gc > 5000000); //10,000,000
 #elif 0

@@ -22,6 +22,8 @@
 #include "compute_table.h"
 
 // #define DEBUG_CT
+// #define DEBUG_TABLE2LIST
+// #define DEBUG_LIST2TABLE
 
 namespace MEDDLY {
 
@@ -139,6 +141,7 @@ class MEDDLY::base_table : public compute_table {
 
     virtual int convertToList() = 0;
     virtual void listToTable(int h) = 0;
+    virtual void showTitle(FILE* s) const = 0;
     virtual void showEntry(FILE* s, int h) const = 0;
 
   private:
@@ -182,10 +185,10 @@ void MEDDLY::base_table::addEntry()
   table[h] = currEntry.handle;
 
 #ifdef DEBUG_CT
-  fprintf(stderr, "Adding CT entry ");
-  showEntry(stderr, currEntry.handle);
+  printf("Adding CT entry ");
+  showEntry(stdout, currEntry.handle);
   // fprintf(stderr, " to slot %u", h);
-  fprintf(stderr, "\n");
+  printf("\n");
 #endif
 
   if (perf.numEntries < tableExpand) return;
@@ -256,8 +259,8 @@ void MEDDLY::base_table::removeStales()
 
 void MEDDLY::base_table::show(FILE *s, int verbLevel) const
 { 
+  showTitle(s);
   char filler[] = "\t";
-  fprintf(s, "Monolithic compute table\n");
   fprintf(s, "%sNumber of entries :\t%ld\n", filler, perf.numEntries);
   fprintf(s, "%sHash table size   :\t%d\n", filler, tableSize);
   fprintf(s, "%sEntry array size  :\t%d\n", filler, entriesSize);
@@ -461,6 +464,7 @@ class MEDDLY::monolithic_table : public base_table {
   protected:
     virtual int convertToList();
     virtual void listToTable(int h);
+    virtual void showTitle(FILE* s) const;
     virtual void showEntry(FILE* s, int h) const;
 };
 
@@ -517,8 +521,7 @@ const int* MEDDLY::monolithic_table::find(const search_key &key)
     //
     // Check for match
     //
-    int hashLength = 1+currop->getKeyLength();
-    if (memcmp(entries+curr+1, key.data, hashLength*sizeof(int))==0) {
+    if (memcmp(entries+curr+1, key.data, key.hashLength*sizeof(int))==0) {
       // "Hit"
       perf.hits++;
       sawChain(chain);
@@ -529,10 +532,10 @@ const int* MEDDLY::monolithic_table::find(const search_key &key)
         table[h] = curr;
       }
 #ifdef DEBUG_CT
-      fprintf(stderr, "Found CT entry ");
-      currop->showEntry(stderr, entries + curr + 2);
+      printf("Found CT entry ");
+      currop->showEntry(stdout, entries + curr + 2);
       // fprintf(stderr, " in slot %u", h);
-      fprintf(stderr, "\n");
+      printf("\n");
 #endif
       return entries + curr + 2;
     };
@@ -589,6 +592,11 @@ int MEDDLY::monolithic_table::convertToList()
       // Check for stale
       //
       if (currop->isMarkedForDeletion() || currop->isEntryStale(entry)) {
+#ifdef DEBUG_TABLE2LIST
+        printf("\tstale ");
+        currop->showEntry(stdout, entry);
+        printf(" (handle %d slot %d)\n", curr, i);
+#endif
         currop->discardEntry(entry);
         recycleEntry(curr, 2+currop->getCacheEntryLength());
         continue;
@@ -596,25 +604,52 @@ int MEDDLY::monolithic_table::convertToList()
       //
       // Not stale, move to list
       //
+#ifdef DEBUG_TABLE2LIST
+      printf("\tkeep  ");
+      currop->showEntry(stdout, entry);
+      printf(" (handle %d slot %d)\n", curr, i);
+#endif
       entries[curr] = list;
       list = curr;
     } // while
   } // for i
+#ifdef DEBUG_TABLE2LIST
+  printf("Built list: %d", list);
+  if (list ) for (int L=entries[list]; L; L=entries[L])
+    printf("->%d", L);
+  printf("\n");
+#endif
   return list;
 }
 
 void MEDDLY::monolithic_table::listToTable(int L)
 {
+#ifdef DEBUG_LIST2TABLE
+  printf("Recovering  list: %d", L);
+  if (L) for (int i=entries[L]; i; i=entries[i])
+    printf("->%d", i);
+  printf("\n");
+#endif
   while (L) {
     int curr = L;
     L = entries[L];
     operation* currop = operation::getOpWithIndex(entries[curr+1]);
     DCASSERT(currop);
-    int hashlength = 1+currop->getCacheEntryLength();
-    int h = raw_hash(entries + curr + 1, hashlength);
-    entries[L] = table[h];
-    table[h] = L;
+    int hashlength = 1+currop->getKeyLength();
+    unsigned h = raw_hash(entries + curr + 1, hashlength);
+    entries[curr] = table[h];
+    table[h] = curr;
+#ifdef DEBUG_LIST2TABLE
+    printf("\tsave  ");
+    currop->showEntry(stdout, entries + curr + 2);
+    printf(" (handle %d slot %d)\n", curr, h);
+#endif
   }
+}
+
+void MEDDLY::monolithic_table::showTitle(FILE *s) const
+{
+  fprintf(s, "Monolithic compute table\n");
 }
 
 void MEDDLY::monolithic_table::showEntry(FILE *s, int curr) const
@@ -648,6 +683,7 @@ class MEDDLY::operation_table : public base_table {
   protected:
     virtual int convertToList();
     virtual void listToTable(int h);
+    virtual void showTitle(FILE* s) const;
     virtual void showEntry(FILE* s, int h) const;
   private:
     operation* global_op;
@@ -690,7 +726,6 @@ const int* MEDDLY::operation_table::find(const search_key &key)
   int chain = 0;
   while (curr) {
     chain++;
-    int length = global_op->getCacheEntryLength();
     //
     // Check for stale
     //
@@ -701,6 +736,7 @@ const int* MEDDLY::operation_table::find(const search_key &key)
       int next = entries[curr];
       if (prev) entries[prev] = next;
       else      table[h] = next;
+      int length = global_op->getCacheEntryLength();
       recycleEntry(curr, length+1);
       curr = next;
       continue;
@@ -708,7 +744,7 @@ const int* MEDDLY::operation_table::find(const search_key &key)
     //
     // Check for match
     //
-    if (memcmp(entries+curr+1, key.data, length)==0) {
+    if (memcmp(entries+curr+1, key.data, key.hashLength*sizeof(int))==0) {
       // "Hit"
       perf.hits++;
       sawChain(chain);
@@ -719,9 +755,9 @@ const int* MEDDLY::operation_table::find(const search_key &key)
         table[h] = curr;
       }
 #ifdef DEBUG_CT
-      fprintf(stderr, "Found CT entry ");
-      global_op->showEntry(stderr, entries + curr + 1);
-      fprintf(stderr, "\n");
+      printf("Found CT entry ");
+      global_op->showEntry(stdout, entries + curr + 1);
+      printf("\n");
 #endif
       return entries + curr + 1;
     };
@@ -793,11 +829,18 @@ void MEDDLY::operation_table::listToTable(int L)
   while (L) {
     int curr = L;
     L = entries[L];
-    int hashlength = global_op->getCacheEntryLength();
+    int hashlength = global_op->getKeyLength();
     int h = raw_hash(entries + curr + 1, hashlength);
-    entries[L] = table[h];
-    table[h] = L;
+    entries[curr] = table[h];
+    table[h] = curr;
   }
+}
+
+void MEDDLY::operation_table::showTitle(FILE *s) const
+{
+  fprintf(s, "Compute table for %s (index %d)\n", 
+    global_op->getName(), global_op->getIndex()
+  );
 }
 
 void MEDDLY::operation_table::showEntry(FILE *s, int curr) const
@@ -806,866 +849,6 @@ void MEDDLY::operation_table::showEntry(FILE *s, int curr) const
 }
 
 
-
-// **********************************************************************
-// **********************************************************************
-// **********************************************************************
-#ifdef OLD_TABLE
-// **********************************************************************
-// **********************************************************************
-// **********************************************************************
-
-
-
-// **********************************************************************
-// *                                                                    *
-// *                                                                    *
-// *                       monolithic_table class                       *
-// *                                                                    *
-// *                                                                    *
-// **********************************************************************
-
-class MEDDLY::monolithic_table : public compute_table {
-  public:
-    monolithic_table(settings s);
-    virtual ~monolithic_table();
-
-    // required functions
-
-    virtual bool isOperationTable() const   { return false; }
-    virtual void add(operation* op, const int* entry);
-    virtual const int* find(operation* op, const int* entryKey);
-    virtual void removeStales();
-    virtual void removeAll();
-    virtual void updateStats();
-
-  private:
-
-    // ******************************************************************
-    // *                    Internal data-structures                    *
-    // ******************************************************************
-
-    /*  The compute table maintains an array of table entries which can
-        be identified by {owner, data}.
-    */
-    struct table_entry {
-      operation* op;                // operation to which entry belongs to
-      int dataOffset;               // entry data (usually: {key, result})
-      int next;                     // for hash table
-    };
-
-    /*  Cache entries that have been discard (or of no use anymore) are
-        recycled and placed on a recycled_list corresponding to the size of the
-        table entry (size of table entry is determined by the size of its data
-        array).
-    */
-    struct recycled_list {
-      int size;                     // size of nodes in this list
-      int front;                    // first node in list, -1 terminates
-      recycled_list* next;          // points to next recycled node list
-    };
-
-    // ******************************************************************
-    // *                      Internal data                             *
-    // ******************************************************************
-
-    table_entry* nodes;             // Array of nodes
-    int nodeCount;                  // size of array nodes
-    int lastNode;                   // last used index in array nodes
-    int* data;                      // Array of ints for storing data
-    int dataCount;                  // size of array data
-    int lastData;                   // last used index in array data
-#ifdef RECYCLED_LIST
-    int recycledNodes;              // -1 indicates no recycled nodes
-    recycled_list* recycledFront;
-#else
-    std::vector<int> holes;
-#endif
-    fixed_size_hash_table<monolithic_table>* fsht;
-#ifdef USE_CHAINED_HASH_TABLE
-    chained_hash_table<monolithic_table>* ht;
-#else
-    hash_table<monolithic_table>* ht;
-#endif
-
-    // ******************************************************************
-    // *                      Internal functions                        *
-    // ******************************************************************
-
-    // Expand the nodes array (grows by expansionFactor).
-    void expandNodes();
-    // Expand the data array (grows by expansionFactor).
-    void expandData();
-
-    // Return the address of the data associated with this entry
-    inline int* getDataAddress(const table_entry& n) const {
-      return data + n.dataOffset;
-    }
-
-    // Set the address of the data associated with this entry
-    inline void setDataAddress(table_entry& n, const int* address) {
-      n.dataOffset = address - data;
-    }
-
-    // Set the address of the data associated with this entry using offset
-    inline void setDataOffset(table_entry& n, int offset) {
-      n.dataOffset = offset;
-    }
-
-    // Is this a free node (i.e. stores no valid data)
-    inline bool isFreeNode(const table_entry& n) const {
-      return 0 == n.op;
-    }
-
-    // Is the nodes array full?
-    inline bool isNodesStorageFull() const {
-      return (lastNode + 1) >= nodeCount;
-    }
-
-    // Can the data array accomodate (size * sizeof(int)) more bytes?
-    inline bool isDataStorageFull(int size) const {
-      return (lastData + size) >= dataCount;
-    }
-
-    // Helper for getFreeNode; tries to find a previously recycled node.
-    inline int getRecycledNode(int size) {
-#ifdef RECYCLED_LIST
-      if (recycledFront) {
-        recycled_list* curr = recycledFront;
-        while (curr && curr->size != size) { curr = curr->next; }
-        if (curr && curr->front != -1) {
-          int node = curr->front;
-          curr->front = nodes[node].next;
-          nodes[node].next = getNull();
-          // no need to clean up data array here; look at recycleNode(..)
-          return node;
-        }
-      }
-      return -1;                        // did not find recycled node
-#else
-      if (int(holes.size()) <= size) return -1;
-      if (holes[size] == -1) return -1;
-      int node = holes[size];
-      holes[size] = nodes[node].next;
-      nodes[node].next = getNull();
-      return node;
-#endif
-    }
-
-    // Returns a free node with a data array of (size * sizeof(int)) bytes.
-    inline int getFreeNode(int size) {
-      // try to find a recycled node that fits
-      int newNode = getRecycledNode(size);
-
-      // if not found, get a new node
-      if (newNode == -1) {
-        // expand nodes and data arrays if necessary
-        if (isNodesStorageFull()) expandNodes();
-        if (isDataStorageFull(size)) expandData();
-        newNode = ++lastNode;
-        setDataOffset(nodes[newNode], lastData + 1);
-        // nodes[newNode].data = data + lastData + 1;
-        lastData += size;
-      }
-
-      return newNode;
-    }
-
-    // Places the node in the recyled nodes list.
-    // Note: Usually called after owner->discardEntry(..).
-    inline void recycleNode(int h) {
-      int nodeSize = nodes[h].op->getCacheEntryLength();
-
-#ifdef RECYCLED_LIST
-
-      // Holes stored in a list of lists, where each list contains nodes of
-      // a certain size
-
-      // find correct list
-      recycled_list* curr = recycledFront;
-      while(curr && curr->size != nodeSize) {
-        curr = curr->next;
-      }
-
-      // if corresponding list does not exist, create one
-      if (0 == curr) {
-        // create a new recycled list for nodes of this size
-        curr = (recycled_list *) malloc(sizeof(recycled_list));
-        curr->size = nodeSize;
-        curr->next = recycledFront;
-        recycledFront = curr;
-        curr->front = -1;
-      }
-
-      // add node to front of corresponding list
-      nodes[h].op = 0;
-      nodes[h].next = curr->front;
-      curr->front = h;
-
-#else
-
-      // Holes stored in a vector of lists, where each list contains nodes of a
-      // certain size. The index of the vector gives the size of the nodes in
-      // the corresponding list.
-  
-      // enlarge vector if necessary
-      if (int(holes.size()) <= nodeSize) {
-        holes.resize(nodeSize + 1, -1);
-      }
-
-      // add node to front of corresponding list
-      nodes[h].owner = 0;
-      nodes[h].next = holes[nodeSize];
-      holes[nodeSize] = h;
-#endif
-    }
-
-  public:
-    // ******************************************************************
-    // *                    functions for  hash table                   *
-    // ******************************************************************
-
-    // which integer handle to use for NULL.
-    inline int getNull() const { 
-      return -1; 
-    }
-
-    // next node in this chain 
-    inline int getNext(int h) const { 
-      return nodes[h].next;
-    }
-
-    // set the "next node" field for h 
-    inline void setNext(int h, int n) { 
-      nodes[h].next = n; 
-    }
-
-    // compute hash value
-    inline unsigned hash(int h, unsigned n) const {
-      return raw_hash(getDataAddress(nodes[h]), nodes[h].op->getKeyLength()) % n;
-    }
-
-    // is key(h1) == key(h2)?
-    inline bool equals(int h1, int h2) const {
-      if (nodes[h1].op != nodes[h2].op) return false;
-      return (0 == memcmp(
-        getDataAddress(nodes[h1]), 
-        getDataAddress(nodes[h2]), 
-        nodes[h1].op->getKeyLengthInBytes()
-      ));
-    }
-
-    // is h a stale (invalid/unwanted) node
-    inline bool isStale(int h) const {
-      return
-        nodes[h].op->isMarkedForDeletion() ||
-        nodes[h].op->isEntryStale(getDataAddress(nodes[h]));
-    }
-
-    // node h has been removed from the table, perform clean up of node
-    // (decrement table count, release node, etc.)
-    inline void uncacheNode(int h) {
-      nodes[h].op->discardEntry(getDataAddress(nodes[h]));
-      recycleNode(h);
-    }
-
-    // for debugging
-    virtual void show(FILE* s, int h) const;
-    virtual void show(FILE *s, bool verbose = false) const;
-};
-
-// **********************************************************************
-// *                                                                    *
-// *                      monolithic_table methods                      *
-// *                                                                    *
-// **********************************************************************
-
-MEDDLY::monolithic_table::monolithic_table(settings s)
- : compute_table(s)
-{
-  // Initialize node array
-  nodeCount = 1024;
-  lastNode = -1;
-  nodes = (table_entry *) malloc(nodeCount * sizeof(table_entry));
-  if (0==nodes)
-    throw error(error::INSUFFICIENT_MEMORY);
-  for (int i=0; i<nodeCount; i++) {
-    nodes[i].op = 0;
-    nodes[i].next = getNull();
-    setDataOffset(nodes[i], -1);
-  }
-
-  // Initialize data array
-  dataCount = 1024;
-  lastData = -1;
-  data = (int *) malloc(dataCount * sizeof(int));
-  if (0==data) 
-    throw error(error::INSUFFICIENT_MEMORY);
-  memset(data, 0, dataCount * sizeof(int));
-
-  // Initialize recycled lists
-  recycledNodes = -1;
-  recycledFront = 0;
-
-  // Initialize actual tables
-  if (chaining) {
-    // create hash table with chaining
-#ifdef USE_CHAINED_HASH_TABLE
-    ht = new chained_hash_table<monolithic_table>(this, maxSize);
-#else
-    ht = new hash_table<monolithic_table>(this, maxSize);
-#endif
-    fsht = 0;
-  } else {
-    // create hash table with no chaining
-    fsht = new fixed_size_hash_table<monolithic_table>(this, maxSize);
-    ht = 0;
-  }
-}
-
-MEDDLY::monolithic_table:: ~monolithic_table()
-{
-  // delete hash table
-  if (ht) { delete ht; ht = 0; }
-  if (fsht) { delete fsht; fsht = 0; }
-
-  // free data and nodes arrays
-  free(data);
-  free(nodes);
-}
-
-void MEDDLY::monolithic_table::add(operation* op, const int* entry)
-{
-#ifdef DEBUG_CT
-  fprintf(stderr, "MT adding entry ");
-  op->showEntry(stderr, entry);
-  fprintf(stderr, "\n");
-#endif
-  // copy entry data
-  int node = getFreeNode(op->getCacheEntryLength());
-  nodes[node].op = op;
-  memcpy(getDataAddress(nodes[node]), entry, op->getCacheEntryLengthInBytes());
-  nodes[node].next = getNull();
-  // insert node into hash table
-  if (ht) ht->insert(node); else fsht->insert(node);
-}
-
-const int* MEDDLY::monolithic_table::find(operation* op, const int* entryKey)
-{
-  perf.pings++;
-  // build key node
-  int node = getFreeNode(op->getCacheEntryLength());
-  nodes[node].op = op;
-  // copying only keyLength data because hash() ignores the rest anyway.
-  // moreover the key is all the user is reqd to provide
-#ifdef DEVELOPMENT_CODE
-  memset(getDataAddress(nodes[node]), 0, op->getCacheEntryLengthInBytes());
-#endif
-  memcpy(getDataAddress(nodes[node]), entryKey, op->getKeyLengthInBytes());
-  nodes[node].next = getNull();
-
-  // search for key node
-  int h = (ht)? ht->find(node): fsht->find(node);
-
-  // recycle key node
-  recycleNode(node);
-
-  if (h != getNull()) {
-    // found entry
-    perf.hits++;
-#ifdef DEBUG_CT
-    fprintf(stderr, "MT found entry ");
-    op->showEntry(stderr, getDataAddress(nodes[h]));
-    fprintf(stderr, "\n");
-#endif
-    return getDataAddress(nodes[h]);
-  }
-  // did not find entry
-  return 0;
-}
-
-void MEDDLY::monolithic_table::removeStales()
-{
-  static bool removingStales = false;
-  if (!removingStales) {
-    removingStales = true;
-    if (ht) ht->removeStaleEntries();
-    if (fsht) fsht->removeStaleEntries();
-    removingStales = false;
-  }
-}
-
-void MEDDLY::monolithic_table::removeAll()
-{
-  // go through all nodes and remove each valid node
-  table_entry* end = nodes + lastNode + 1;
-  for (table_entry* curr = nodes; curr != end; ++curr) {
-    if (!isFreeNode(*curr)) {
-      DCASSERT(curr->dataOffset != -1);
-      if (ht) ht->remove(curr - nodes);
-      else    fsht->remove(curr - nodes);
-    }
-  }
-}
-
-void MEDDLY::monolithic_table::updateStats()
-{
-  DCASSERT(ht != 0 || fsht != 0);
-  perf.numEntries = (ht)? ht->getEntriesCount(): fsht->getEntriesCount();
-}
-
-void MEDDLY::monolithic_table::expandNodes()
-{
-  DCASSERT(nodeCount != 0);
-  int newNodeCount = int(nodeCount * expansionFactor);
-  table_entry* tempNodes =
-    (table_entry *) realloc(nodes, newNodeCount * sizeof(table_entry));
-  if (0 == tempNodes)
-    throw error(error::INSUFFICIENT_MEMORY);
-  nodes = tempNodes;
-  for (int i = nodeCount; i < newNodeCount; ++i) {
-    nodes[i].op = 0;
-    // nodes[i].data = 0;
-    nodes[i].next = getNull();
-    setDataOffset(nodes[i], -1);
-  }
-  nodeCount = newNodeCount;
-}
-
-
-void MEDDLY::monolithic_table::expandData()
-{
-  int newDataCount = int(dataCount * expansionFactor);
-  data = (int *) realloc(data, newDataCount * sizeof(int));
-  if (0 == data) 
-    throw error(error::INSUFFICIENT_MEMORY);
-  memset(data + dataCount, 0, (newDataCount - dataCount) * sizeof(int));
-  dataCount = newDataCount;
-}
-
-
-void MEDDLY::monolithic_table::show(FILE* s, int h) const
-{
-  nodes[h].op->showEntry(s, getDataAddress(nodes[h]));
-}
-
-
-void MEDDLY::monolithic_table::show(FILE *s, bool verbose) const
-{ 
-  char filler[] = "\t";
-  fprintf(s, "Monolithic compute table\n");
-  fprintf(s, "%sNumber of slots:\t%d\n", filler, nodeCount);
-  fprintf(s, "%sMemory usage:   \t%lu\n",
-      filler, (unsigned long)(
-        dataCount * sizeof(int) +
-        nodeCount * sizeof(table_entry) +
-        (ht == 0? 0: ht->getMemoryUsage()) +
-        (fsht == 0? 0: fsht->getMemoryUsage())));
-  if (verbose) {
-    fprintf(s, "%s  Nodes[]:      \t%lu\n",
-        filler, (unsigned long)(nodeCount * sizeof(table_entry)));
-    fprintf(s, "%s  Data[]:       \t%lu\n",
-        filler, (unsigned long)(dataCount * sizeof(int)));
-  }
-  fprintf(s, "%sPings:          \t%d\n", filler, perf.pings);
-  fprintf(s, "%sHits:           \t%d\n", filler, perf.hits);
-  fprintf(s, "Internal hash table info:\n");
-  DCASSERT(ht == 0 || fsht == 0);
-  if (ht != 0) ht->show(s, verbose);
-  if (fsht != 0) fsht->show(s, verbose);
-}
-
-
-// **********************************************************************
-// *                                                                    *
-// *                                                                    *
-// *                       operation_table  class                       *
-// *                                                                    *
-// *                                                                    *
-// **********************************************************************
-
-class MEDDLY::operation_table : public compute_table {
-  public:
-    operation_table(settings s, operation* op);
-    virtual ~operation_table();
-
-    // required functions
-
-    virtual bool isOperationTable() const   { return false; }
-    virtual void add(operation* op, const int* entry);
-    virtual const int* find(operation* op, const int* entryKey);
-    virtual void removeStales();
-    virtual void removeAll();
-    virtual void updateStats();
-
-  private:
-
-    // ******************************************************************
-    // *                    Internal data-structures                    *
-    // ******************************************************************
-
-    /*  The compute table maintains an array of table entries which can
-        be identified by {owner, data}.
-    */
-    struct table_entry {
-      int dataOffset;               // entry data (usually: {key, result})
-      int next;                     // for hash table
-    };
-
-    // ******************************************************************
-    // *                      Internal data                             *
-    // ******************************************************************
-
-    operation* global_op;           // Operation everywhere
-    table_entry* nodes;             // Array of nodes
-    int nodeCount;                  // size of array nodes
-    int lastNode;                   // last used index in array nodes
-    int* data;                      // Array of ints for storing data
-    int dataCount;                  // size of array data
-    int lastData;                   // last used index in array data
-    int recycledFront;              // first recycled node
-    fixed_size_hash_table<operation_table>* fsht;
-#ifdef USE_CHAINED_HASH_TABLE
-    chained_hash_table<operation_table>* ht;
-#else
-    hash_table<operation_table>* ht;
-#endif
-
-    // ******************************************************************
-    // *                      Internal functions                        *
-    // ******************************************************************
-
-    // Expand the nodes array (grows by expansionFactor).
-    void expandNodes();
-    // Expand the data array (grows by expansionFactor).
-    void expandData();
-
-    // Return the address of the data associated with this entry
-    inline int* getDataAddress(const table_entry& n) const {
-      return data + n.dataOffset;
-    }
-
-    // Set the address of the data associated with this entry
-    inline void setDataAddress(table_entry& n, const int* address) {
-      n.dataOffset = address - data;
-    }
-
-    // Set the address of the data associated with this entry using offset
-    inline void setDataOffset(table_entry& n, int offset) {
-      n.dataOffset = offset;
-    }
-
-    // Is this a free node (i.e. stores no valid data)
-    inline bool isFreeNode(const table_entry& n) const {
-      return n.dataOffset >= 0;
-    }
-
-    // Is the nodes array full?
-    inline bool isNodesStorageFull() const {
-      return (lastNode + 1) >= nodeCount;
-    }
-
-    // Can the data array accomodate (size * sizeof(int)) more bytes?
-    inline bool isDataStorageFull(int size) const {
-      return (lastData + size) >= dataCount;
-    }
-
-    // Helper for getFreeNode; tries to find a previously recycled node.
-    inline int getRecycledNode() {
-      if (recycledFront >= 0) {
-        int ans = recycledFront;
-        recycledFront = nodes[recycledFront].next;
-        return ans;
-      }
-      return -1;                        // did not find recycled node
-    }
-
-    // Returns a free node 
-    inline int getFreeNode() {
-      // try to find a recycled node that fits
-      int newNode = getRecycledNode();
-
-      // if not found, get a new node
-      if (newNode == -1) {
-        int size = global_op->getCacheEntryLength();
-        // expand nodes and data arrays if necessary
-        if (isNodesStorageFull()) expandNodes();
-        if (isDataStorageFull(size)) expandData();
-        newNode = ++lastNode;
-        setDataOffset(nodes[newNode], lastData + 1);
-        lastData += size;
-      }
-
-      return newNode;
-    }
-
-    // Places the node in the recyled nodes list.
-    // Note: Usually called after owner->discardEntry(..).
-    inline void recycleNode(int h) {
-      nodes[h].next = recycledFront;
-      recycledFront = h;
-    }
-
-  public:
-    // ******************************************************************
-    // *                    functions for  hash table                   *
-    // ******************************************************************
-
-    // which integer handle to use for NULL.
-    inline int getNull() const { 
-      return -1; 
-    }
-
-    // next node in this chain 
-    inline int getNext(int h) const { 
-      return nodes[h].next;
-    }
-
-    // set the "next node" field for h 
-    inline void setNext(int h, int n) { 
-      nodes[h].next = n; 
-    }
-
-    // compute hash value
-    inline unsigned hash(int h, unsigned n) const {
-      return raw_hash(getDataAddress(nodes[h]), global_op->getKeyLength()) % n;
-    }
-
-    // is key(h1) == key(h2)?
-    inline bool equals(int h1, int h2) const {
-      return (0 == memcmp(
-        getDataAddress(nodes[h1]), 
-        getDataAddress(nodes[h2]), 
-        global_op->getKeyLengthInBytes()
-      ));
-    }
-
-    // is h a stale (invalid/unwanted) node
-    inline bool isStale(int h) const {
-      return
-        global_op->isMarkedForDeletion() ||
-        global_op->isEntryStale(getDataAddress(nodes[h]));
-    }
-
-    // node h has been removed from the table, perform clean up of node
-    // (decrement table count, release node, etc.)
-    inline void uncacheNode(int h) {
-      global_op->discardEntry(getDataAddress(nodes[h]));
-      recycleNode(h);
-    }
-
-    // for debugging
-    virtual void show(FILE* s, int h) const;
-    virtual void show(FILE *s, bool verbose = false) const;
-};
-
-// **********************************************************************
-// *                                                                    *
-// *                      operation_table  methods                      *
-// *                                                                    *
-// **********************************************************************
-
-MEDDLY::operation_table::operation_table(settings s, operation* op)
- : compute_table(s)
-{
-  if (0==op) 
-    throw error(error::INVALID_OPERATION);
-  global_op = op;
-
-  // Initialize node array
-  nodeCount = 1024;
-  lastNode = -1;
-  nodes = (table_entry *) malloc(nodeCount * sizeof(table_entry));
-  if (0==nodes)
-    throw error(error::INSUFFICIENT_MEMORY);
-  for (int i=0; i<nodeCount; i++) {
-    nodes[i].next = getNull();
-    setDataOffset(nodes[i], -1);
-  }
-
-  // Initialize data array
-  dataCount = 1024;
-  lastData = -1;
-  data = (int *) malloc(dataCount * sizeof(int));
-  if (0==data) 
-    throw error(error::INSUFFICIENT_MEMORY);
-  memset(data, 0, dataCount * sizeof(int));
-
-  // Initialize recycled lists
-  recycledFront = -1;
-
-  // Initialize actual tables
-  if (chaining) {
-    // create hash table with chaining
-#ifdef USE_CHAINED_HASH_TABLE
-    ht = new chained_hash_table<operation_table>(this, maxSize);
-#else
-    ht = new hash_table<operation_table>(this, maxSize);
-#endif
-    fsht = 0;
-  } else {
-    // create hash table with no chaining
-    fsht = new fixed_size_hash_table<operation_table>(this, maxSize);
-    ht = 0;
-  }
-}
-
-MEDDLY::operation_table:: ~operation_table()
-{
-  // delete hash table
-  if (ht) { delete ht; ht = 0; }
-  if (fsht) { delete fsht; fsht = 0; }
-
-  // free data and nodes arrays
-  free(data);
-  free(nodes);
-}
-
-void MEDDLY::operation_table::add(operation* op, const int* entry)
-{
-  if (op != global_op)
-    throw error(error::INVALID_OPERATION);
-  // copy entry data
-  int node = getFreeNode();
-  memcpy(getDataAddress(nodes[node]), entry, op->getCacheEntryLengthInBytes());
-  nodes[node].next = getNull();
-#ifdef DEBUG_CT
-  fprintf(stderr, "OT adding entry ");
-  op->showEntry(stderr, entry);
-  // fprintf(stderr, " to slot %d", node);
-  fprintf(stderr, "\n");
-#endif
-  // insert node into hash table
-  if (ht) ht->insert(node); else fsht->insert(node);
-}
-
-const int* MEDDLY::operation_table::find(operation* op, const int* entryKey)
-{
-  if (op != global_op)
-    throw error(error::INVALID_OPERATION);
-  perf.pings++;
-  // build key node
-  int node = getFreeNode();
-  // copying only keyLength data because hash() ignores the rest anyway.
-  // moreover the key is all the user is reqd to provide
-#ifdef DEVELOPMENT_CODE
-  memset(getDataAddress(nodes[node]), 0, op->getCacheEntryLengthInBytes());
-#endif
-  memcpy(getDataAddress(nodes[node]), entryKey, op->getKeyLengthInBytes());
-  nodes[node].next = getNull();
-
-  // search for key node
-  int h = (ht)? ht->find(node): fsht->find(node);
-
-  // recycle key node
-  recycleNode(node);
-
-  if (h != getNull()) {
-    // found entry
-    perf.hits++;
-#ifdef DEBUG_CT
-    fprintf(stderr, "OT found entry ");
-    op->showEntry(stderr, getDataAddress(nodes[h]));
-    fprintf(stderr, " at slot %d\n", h);
-#endif
-    return getDataAddress(nodes[h]);
-  }
-  // did not find entry
-  return 0;
-}
-
-void MEDDLY::operation_table::removeStales()
-{
-  static bool removingStales = false;
-  if (!removingStales) {
-    removingStales = true;
-    if (ht) ht->removeStaleEntries();
-    if (fsht) fsht->removeStaleEntries();
-    removingStales = false;
-  }
-}
-
-void MEDDLY::operation_table::removeAll()
-{
-  // go through all nodes and remove each valid node
-  table_entry* end = nodes + lastNode + 1;
-  for (table_entry* curr = nodes; curr != end; ++curr) {
-    if (!isFreeNode(*curr)) {
-      DCASSERT(curr->dataOffset != -1);
-      if (ht) ht->remove(curr - nodes);
-      else    fsht->remove(curr - nodes);
-    }
-  }
-}
-
-void MEDDLY::operation_table::updateStats()
-{
-  DCASSERT(ht != 0 || fsht != 0);
-  perf.numEntries = (ht)? ht->getEntriesCount(): fsht->getEntriesCount();
-}
-
-void MEDDLY::operation_table::expandNodes()
-{
-  DCASSERT(nodeCount != 0);
-  int newNodeCount = int(nodeCount * expansionFactor);
-  table_entry* tempNodes =
-    (table_entry *) realloc(nodes, newNodeCount * sizeof(table_entry));
-  if (0 == tempNodes)
-    throw error(error::INSUFFICIENT_MEMORY);
-  nodes = tempNodes;
-  for (int i = nodeCount; i < newNodeCount; ++i) {
-    // nodes[i].data = 0;
-    nodes[i].next = getNull();
-    setDataOffset(nodes[i], -1);
-  }
-  nodeCount = newNodeCount;
-}
-
-
-void MEDDLY::operation_table::expandData()
-{
-  int newDataCount = int(dataCount * expansionFactor);
-  data = (int *) realloc(data, newDataCount * sizeof(int));
-  if (0 == data) 
-    throw error(error::INSUFFICIENT_MEMORY);
-  memset(data + dataCount, 0, (newDataCount - dataCount) * sizeof(int));
-  dataCount = newDataCount;
-}
-
-
-void MEDDLY::operation_table::show(FILE* s, int h) const
-{
-  global_op->showEntry(s, getDataAddress(nodes[h]));
-  fprintf(s, "[slot %d] ", h);
-}
-
-
-void MEDDLY::operation_table::show(FILE *s, bool verbose) const
-{ 
-  char filler[] = "\t";
-  fprintf(s, "Compute table for %s operation\n", global_op->getName());
-  fprintf(s, "%sNumber of slots:\t%d\n", filler, nodeCount);
-  fprintf(s, "%sMemory usage:   \t%lu\n",
-      filler, (unsigned long)(
-        dataCount * sizeof(int) +
-        nodeCount * sizeof(table_entry) +
-        (ht == 0? 0: ht->getMemoryUsage()) +
-        (fsht == 0? 0: fsht->getMemoryUsage())));
-  if (verbose) {
-    fprintf(s, "%s  Nodes[]:      \t%lu\n",
-        filler, (unsigned long)(nodeCount * sizeof(table_entry)));
-    fprintf(s, "%s  Data[]:       \t%lu\n",
-        filler, (unsigned long)(dataCount * sizeof(int)));
-  }
-  fprintf(s, "%sPings:          \t%d\n", filler, perf.pings);
-  fprintf(s, "%sHits:           \t%d\n", filler, perf.hits);
-  fprintf(s, "Internal hash table info:\n");
-  DCASSERT(ht == 0 || fsht == 0);
-  if (ht != 0) ht->show(s, verbose);
-  if (fsht != 0) fsht->show(s, verbose);
-}
-
-#endif
 
 // **********************************************************************
 // *                                                                    *

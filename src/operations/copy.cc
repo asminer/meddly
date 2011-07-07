@@ -54,6 +54,7 @@ class MEDDLY::copy_MT : public unary_operation {
     virtual void compute(const dd_edge &arg, dd_edge &res);
   protected:
     virtual int compute(int a) = 0;
+    compute_table::search_key CTsrch;
 };
 
 MEDDLY::copy_MT
@@ -62,6 +63,7 @@ MEDDLY::copy_MT
 {
   key_length = 1;
   ans_length = 1;
+  CT->initializeSearchKey(CTsrch, this);
 }
 
 bool MEDDLY::copy_MT::isEntryStale(const int* entryData)
@@ -115,7 +117,8 @@ int MEDDLY::copy_bool2MT::compute(int a)
   }
 
   // Check compute table
-  const int* cacheFind = CT->find(this, &a);
+  CTsrch.key(0) = a;
+  const int* cacheFind = CT->find(CTsrch);
   if (cacheFind) {
     return resF->linkNode(cacheFind[1]);
   }
@@ -160,10 +163,10 @@ int MEDDLY::copy_bool2MT::compute(int a)
 
   // Reduce, add to compute table
   b = resF->reduceNode(b);
-  static int cacheEntry[2];
-  cacheEntry[0] = argF->cacheNode(a);
-  cacheEntry[1] = resF->cacheNode(b);
-  CT->add(this, cacheEntry);
+  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  entry.key(0) = argF->cacheNode(a);
+  entry.result(0) = resF->cacheNode(b);
+  CT->addEntry();
 
   return b;
 }
@@ -193,7 +196,8 @@ int MEDDLY::copy_MT2bool::compute(int a)
   }
 
   // Check compute table
-  const int* cacheFind = CT->find(this, &a);
+  CTsrch.key(0) = a;
+  const int* cacheFind = CT->find(CTsrch);
   if (cacheFind) {
     return resF->linkNode(cacheFind[1]);
   }
@@ -237,10 +241,10 @@ int MEDDLY::copy_MT2bool::compute(int a)
 
   // Reduce, add to compute table
   b = resF->reduceNode(b);
-  static int cacheEntry[2];
-  cacheEntry[0] = argF->cacheNode(a);
-  cacheEntry[1] = resF->cacheNode(b);
-  CT->add(this, cacheEntry);
+  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  entry.key(0) = argF->cacheNode(a);
+  entry.result(0) = resF->cacheNode(b);
+  CT->addEntry();
 
   return b;
 }
@@ -259,15 +263,15 @@ class MEDDLY::copy_MT2Evplus : public unary_operation {
     virtual bool isEntryStale(const int* entryData) {
       return 
         argF->isStale(entryData[0]) ||
-        resF->isStale(entryData[1]);
+        resF->isStale(entryData[2]);
     }
     virtual void discardEntry(const int* entryData) {
       argF->uncacheNode(entryData[0]);
-      resF->uncacheNode(entryData[1]);
+      resF->uncacheNode(entryData[2]);
     }
     virtual void showEntry(FILE* strm, const int *entryData) const {
       fprintf(strm, "[%s(%d) <%d, %d>]", getName(), entryData[0], 
-        entryData[2], entryData[1]);
+        entryData[1], entryData[2]);
     }
     virtual void compute(const dd_edge &arg, dd_edge &res) {
       int b, bev;
@@ -275,6 +279,8 @@ class MEDDLY::copy_MT2Evplus : public unary_operation {
       res.set(b, bev, resF->getNodeLevel(b));
     }
     virtual void compute(int a, int &b, int &bev);
+  protected:
+    compute_table::search_key CTsrch;
 };
 
 MEDDLY::copy_MT2Evplus::copy_MT2Evplus(const unary_opname* oc, 
@@ -284,8 +290,9 @@ MEDDLY::copy_MT2Evplus::copy_MT2Evplus(const unary_opname* oc,
   key_length = 1;
   ans_length = 2;
   // entry[0]: MT node
-  // entry[1]: EV node
-  // entry[2]: EV value
+  // entry[1]: EV value
+  // entry[2]: EV node
+  CT->initializeSearchKey(CTsrch, this);
 }
 
 void MEDDLY::copy_MT2Evplus::compute(int a, int &b, int &bev)
@@ -298,10 +305,11 @@ void MEDDLY::copy_MT2Evplus::compute(int a, int &b, int &bev)
   }
 
   // Check compute table
-  const int* cacheFind = CT->find(this, &a);
+  CTsrch.key(0) = a;
+  const int* cacheFind = CT->find(CTsrch);
   if (cacheFind) {
-    b = resF->linkNode(cacheFind[1]);
-    bev = cacheFind[2];
+    bev = cacheFind[1];
+    b = resF->linkNode(cacheFind[2]);
     return;
   }
 
@@ -351,11 +359,11 @@ void MEDDLY::copy_MT2Evplus::compute(int a, int &b, int &bev)
   // Reduce, add to compute table
   bev = 0;
   resF->normalizeAndReduceNode(b, bev);
-  static int cacheEntry[3];
-  cacheEntry[0] = argF->cacheNode(a);
-  cacheEntry[1] = resF->cacheNode(b);
-  cacheEntry[2] = bev;
-  CT->add(this, cacheEntry);
+  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  entry.key(0) = argF->cacheNode(a);
+  entry.result(0) = bev;
+  entry.result(1) = resF->cacheNode(b);
+  CT->addEntry();
 }
 
 // ******************************************************************

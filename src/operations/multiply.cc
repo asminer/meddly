@@ -27,7 +27,7 @@
 #include "../compute_table.h"
 #include "apply_base.h"
 
-// #define OLD_MULTIPLY
+#define OLD_MULTIPLY
 
 namespace MEDDLY {
   class multiply_mdd;

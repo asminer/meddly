@@ -61,30 +61,32 @@ class MEDDLY::common_dfs_mt : public binary_operation {
     virtual int compute(int a, int b) = 0;
 
   protected:
+    compute_table::search_key CTsrch;
     inline bool findResult(int a, int b, int &c) {
-      static int key[2];
-      key[0] = a; key[1] = b;
-      const int* cacheFind = CT->find(this, key);
+      CTsrch.key(0) = a;
+      CTsrch.key(1) = b;
+      const int* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
       c = resF->linkNode(cacheFind[2]);
       return true;
     }
     inline int saveResult(int a, int b, int c) {
-      static int cacheEntry[3];
-      cacheEntry[0] = arg1F->cacheNode(a); 
-      cacheEntry[1] = arg2F->cacheNode(b);
-      cacheEntry[2] = resF->cacheNode(c);
-      CT->add(this, cacheEntry);
+      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      entry.key(0) = arg1F->cacheNode(a); 
+      entry.key(1) = arg2F->cacheNode(b);
+      entry.result(0) = resF->cacheNode(c);
+      CT->addEntry();
       return c;
     }
 };
 
 MEDDLY::common_dfs_mt::common_dfs_mt(const binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res)
-: binary_operation(oc, false, a1, a2, res)
+: binary_operation(oc, true, a1, a2, res)
 {
   key_length = 2;
   ans_length = 1;
+  CT->initializeSearchKey(CTsrch, this);
 }
 
 bool MEDDLY::common_dfs_mt::isEntryStale(const int* data)

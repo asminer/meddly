@@ -50,6 +50,8 @@ class MEDDLY::compl_mdd : public unary_operation {
     virtual void compute(const dd_edge& a, dd_edge& b);
 
     int compute(int a);
+  protected:
+    compute_table::search_key CTsrch;
 };
 
 MEDDLY::compl_mdd
@@ -60,6 +62,7 @@ MEDDLY::compl_mdd
   ans_length = 1;
   // ct entry 0: input node
   // ct entry 1: output node
+  CT->initializeSearchKey(CTsrch, this);
 }
 
 bool MEDDLY::compl_mdd::isEntryStale(const int* data)
@@ -90,7 +93,8 @@ int MEDDLY::compl_mdd::compute(int a)
     return resF->getTerminalNode(a==0);
   }
   // Check compute table
-  const int* cacheFind = CT->find(this, &a);
+  CTsrch.key(0) = a;
+  const int* cacheFind = CT->find(CTsrch);
   if (cacheFind) {
     return resF->linkNode(cacheFind[1]);
   }
@@ -134,10 +138,11 @@ int MEDDLY::compl_mdd::compute(int a)
 
   // reduce, save in compute table
   b = resF->reduceNode(b);
-  static int cacheEntry[2];
-  cacheEntry[0] = argF->cacheNode(a);
-  cacheEntry[1] = resF->cacheNode(b);
-  CT->add(this, cacheEntry);
+  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  entry.key(0) = argF->cacheNode(a);
+  entry.result(0) = resF->cacheNode(b);
+  CT->addEntry();
+
   return b;
 }
 
@@ -158,6 +163,8 @@ class MEDDLY::compl_mxd : public unary_operation {
     virtual void compute(const dd_edge& a, dd_edge& b);
 
     int compute(int ht, int a);
+  protected:
+    compute_table::search_key CTsrch;
 };
 
 MEDDLY::compl_mxd
@@ -169,6 +176,7 @@ MEDDLY::compl_mxd
   // ct entry 0: level
   // ct entry 1: input node
   // ct entry 2: output node
+  CT->initializeSearchKey(CTsrch, this);
 }
 
 bool MEDDLY::compl_mxd::isEntryStale(const int* data)
@@ -204,10 +212,9 @@ int MEDDLY::compl_mxd::compute(int ht, int a)
     return resF->getTerminalNode(a==0);
   }
   // Check compute table
-  static int cacheEntry[3];
-  cacheEntry[0] = ht;
-  cacheEntry[1] = a;
-  const int* cacheFind = CT->find(this, cacheEntry);
+  CTsrch.key(0) = ht;
+  CTsrch.key(1) = a;
+  const int* cacheFind = CT->find(CTsrch);
   if (cacheFind) {
 #ifdef DEBUG_MXD_COMPL
     fprintf(stderr, "\tin CT:   compl_mxd(%d, %d) : %d\n", ht, a, cacheFind[2]);
@@ -304,10 +311,11 @@ int MEDDLY::compl_mxd::compute(int ht, int a)
 
   // reduce, save in compute table
   b = resF->reduceNode(b);
-  cacheEntry[0] = ht;
-  cacheEntry[1] = argF->cacheNode(a);
-  cacheEntry[2] = resF->cacheNode(b);
-  CT->add(this, cacheEntry);
+  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  entry.key(0) = ht;
+  entry.key(1) = argF->cacheNode(a);
+  entry.result(0) = resF->cacheNode(b);
+  CT->addEntry();
 
 #ifdef DEBUG_MXD_COMPL
   fprintf(stderr, "\tfinished compl_mxd(%d, %d) : %d\n", ht, a, b);
