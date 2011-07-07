@@ -221,7 +221,7 @@ int MEDDLY::generic_binary_mdd::compute(int a, int b)
 
   saveResult(a, b, result);
 #ifdef TRACE_ALL_OPS
-  printf("computed %s(%d, %d)=%d\n", getName(), a, b, result);
+  printf("computed %s(%d, %d) = %d\n", getName(), a, b, result);
 #endif
   return result;
 }
@@ -756,7 +756,7 @@ int MEDDLY::generic_binary_mxd::computeIdent(int a, int b)
   result = resF->reduceNode(result);
   saveResult(a, b, result);
 #ifdef TRACE_ALL_OPS
-  printf("computed %s(%d, %d)=%d\n", getName(), a, b, result);
+  printf("computed %s(%d, %d) = %d\n", getName(), a, b, result);
 #endif
   return result;
 }
@@ -1545,6 +1545,11 @@ int MEDDLY::generic_binbylevel_mxd
 
   result = resF->reduceNode(result);
   saveResult(resultLevel, a, b, result);
+#ifdef TRACE_ALL_OPS
+  printf("computed %s(%d, %d, %d) = %d\n", getName(), 
+    resultLevel, a, b, result
+  );
+#endif
   return result;
 }
 
