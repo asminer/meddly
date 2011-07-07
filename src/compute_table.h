@@ -79,10 +79,19 @@ class MEDDLY::compute_table {
           int hashLength;
           int* data;
           int* key_data;
+#ifdef DEVELOPMENT_CODE
+          int keyLength;  // used for range checking
+#endif
         public:
           search_key();
           ~search_key();
-          inline int& key(int i) { return key_data[i]; }
+          inline int& key(int i) { 
+#ifdef DEVELOPMENT_CODE
+            assert(i>=0);
+            assert(i<keyLength);
+#endif
+            return key_data[i]; 
+          }
       };
 
       class temp_entry {
@@ -94,10 +103,31 @@ class MEDDLY::compute_table {
           int* entry;
           int* key_entry;
           int* res_entry;
+#ifdef DEVELOPMENT_CODE
+          int keyLength;
+          int resLength;
+#endif
         public:
-          inline int& key(int i) { return key_entry[i]; }
-          inline int& result(int i) { return res_entry[i]; }
-          inline void copyResult(int i, void* data, size_t bytes) {
+          inline int& key(int i) { 
+#ifdef DEVELOPMENT_CODE
+            assert(i>=0);
+            assert(i<keyLength);
+#endif
+            return key_entry[i]; 
+          }
+          inline int& result(int i) { 
+#ifdef DEVELOPMENT_CODE
+            assert(i>=0);
+            assert(i<resLength);
+#endif
+            return res_entry[i]; 
+          }
+          // inline void copyResult(int i, void* data, size_t bytes) {
+          void copyResult(int i, void* data, size_t bytes) {
+#ifdef DEVELOPMENT_CODE
+            assert(i>=0);
+            assert(i+bytes<=resLength);
+#endif
             memcpy(res_entry+i, data, bytes);
           }
       };

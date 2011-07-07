@@ -485,6 +485,9 @@ void MEDDLY::monolithic_table
   key.data = new int[key.hashLength];
   key.key_data = key.data+1;
   key.data[0] = op->getIndex();
+#ifdef DEVELOPMENT_CODE
+  key.keyLength = op->getKeyLength();
+#endif
 }
 
 const int* MEDDLY::monolithic_table::find(const search_key &key)
@@ -550,6 +553,10 @@ MEDDLY::monolithic_table::startNewEntry(operation* op)
   currEntry.entry[1] = op->getIndex();
   currEntry.key_entry = currEntry.entry + 2;
   currEntry.res_entry = currEntry.key_entry + op->getKeyLength();
+#ifdef DEVELOPMENT_CODE
+  currEntry.keyLength = op->getKeyLength();
+  currEntry.resLength = op->getAnsLength();
+#endif
   return currEntry;
 }
 
@@ -669,6 +676,9 @@ void MEDDLY::operation_table
   key.hashLength = op->getKeyLength();
   key.data = new int[key.hashLength];
   key.key_data = key.data;
+#ifdef DEVELOPMENT_CODE
+  key.keyLength = op->getKeyLength();
+#endif
 }
 
 const int* MEDDLY::operation_table::find(const search_key &key)
@@ -726,11 +736,17 @@ const int* MEDDLY::operation_table::find(const search_key &key)
 MEDDLY::compute_table::temp_entry& 
 MEDDLY::operation_table::startNewEntry(operation* op)
 {
+  if (op != global_op)
+    throw error(error::UNKNOWN_OPERATION);
   currEntry.handle = newEntry(1+op->getCacheEntryLength());
   currEntry.hashLength = op->getKeyLength();
   currEntry.entry = entries + currEntry.handle;
   currEntry.key_entry = currEntry.entry + 1;
   currEntry.res_entry = currEntry.key_entry + op->getKeyLength();
+#ifdef DEVELOPMENT_CODE
+  currEntry.keyLength = op->getKeyLength();
+  currEntry.resLength = op->getAnsLength();
+#endif
   return currEntry;
 }
 
