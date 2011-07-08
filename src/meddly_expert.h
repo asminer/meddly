@@ -239,6 +239,8 @@ struct MEDDLY::settings {
     bool useMonolithicComputeTable;
     /// Should the compute tables chain items that hash to the same location.
     bool doComputeTablesUseChaining;
+    /// Should the compute tables aggressively try to eliminate stales.
+    bool doComputeTablesCheckStales;
     /// Maximum compute table size.
     unsigned maxComputeTableSize;
     /// Initializer for operations
@@ -247,6 +249,7 @@ struct MEDDLY::settings {
     /// Constructor, to set defaults.
     settings() {
       doComputeTablesUseChaining = true;
+      doComputeTablesCheckStales = false;
       useMonolithicComputeTable = true;
       maxComputeTableSize = 16777216;
       operationBuilder = makeBuiltinInitializer();

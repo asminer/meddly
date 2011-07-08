@@ -48,6 +48,7 @@ MEDDLY::compute_table::compute_table(const settings &s)
 {
   chaining = s.doComputeTablesUseChaining;
   maxSize = s.maxComputeTableSize;
+  checkStales = s.doComputeTablesCheckStales;
 
   if (0==maxSize)
     throw error(error::INVALID_ASSIGNMENT);
@@ -466,6 +467,22 @@ class MEDDLY::monolithic_table : public base_table {
     virtual void listToTable(int h);
     virtual void showTitle(FILE* s) const;
     virtual void showEntry(FILE* s, int h) const;
+
+    inline bool checkStale(unsigned h, int prev, int &curr) {
+        operation* currop = operation::getOpWithIndex(entries[curr+1]);
+        DCASSERT(currop);
+        if (currop->isMarkedForDeletion() || currop->isEntryStale(entries+curr+2)) {
+          currop->discardEntry(entries+curr+2);
+          int next = entries[curr];
+          if (prev) entries[prev] = next;
+          else      table[h] = next;
+          int length = currop->getCacheEntryLength();
+          recycleEntry(curr, length+2);
+          curr = next;
+          return true;
+        }
+        return false;
+    }
 };
 
 // **********************************************************************
@@ -503,28 +520,24 @@ const int* MEDDLY::monolithic_table::find(const search_key &key)
   int chain = 0;
   while (curr) {
     chain++;
-    operation* currop = operation::getOpWithIndex(entries[curr+1]);
-    DCASSERT(currop);
-    //
-    // Check for stale
-    //
-    if (currop->isMarkedForDeletion() || currop->isEntryStale(entries+curr+2)) {
-      currop->discardEntry(entries+curr+2);
-      int next = entries[curr];
-      if (prev) entries[prev] = next;
-      else      table[h] = next;
-      int length = 1+currop->getCacheEntryLength();
-      recycleEntry(curr, length+1);
-      curr = next;
-      continue;
+    if (checkStales) {
+      if (checkStale(h, prev, curr)) continue;
     }
     //
     // Check for match
     //
     if (memcmp(entries+curr+1, key.data, key.hashLength*sizeof(int))==0) {
+      sawChain(chain);
+      if (!checkStales) {
+        if (checkStale(h, prev, curr)) {
+          // The match is stale.
+          // Since there can NEVER be more than one match
+          // in the table, we're done!
+          return 0;
+        }
+      }
       // "Hit"
       perf.hits++;
-      sawChain(chain);
       if (prev) {
         // not at the front; move it there
         entries[prev] = entries[curr];
@@ -685,6 +698,22 @@ class MEDDLY::operation_table : public base_table {
     virtual void listToTable(int h);
     virtual void showTitle(FILE* s) const;
     virtual void showEntry(FILE* s, int h) const;
+
+    inline bool checkStale(unsigned h, int prev, int &curr) {
+        if (global_op->isMarkedForDeletion() 
+          || global_op->isEntryStale(entries+curr+1)) 
+        {
+          global_op->discardEntry(entries+curr+1);
+          int next = entries[curr];
+          if (prev) entries[prev] = next;
+          else      table[h] = next;
+          int length = global_op->getCacheEntryLength();
+          recycleEntry(curr, length+1);
+          curr = next;
+          return true;
+        }
+        return false;
+    }
   private:
     operation* global_op;
 };
@@ -726,28 +755,24 @@ const int* MEDDLY::operation_table::find(const search_key &key)
   int chain = 0;
   while (curr) {
     chain++;
-    //
-    // Check for stale
-    //
-    if (global_op->isMarkedForDeletion() 
-          || global_op->isEntryStale(entries+curr+1)) 
-    {
-      global_op->discardEntry(entries+curr+1);
-      int next = entries[curr];
-      if (prev) entries[prev] = next;
-      else      table[h] = next;
-      int length = global_op->getCacheEntryLength();
-      recycleEntry(curr, length+1);
-      curr = next;
-      continue;
+    if (checkStales) {
+      if (checkStale(h, prev, curr)) continue;
     }
     //
     // Check for match
     //
     if (memcmp(entries+curr+1, key.data, key.hashLength*sizeof(int))==0) {
+      sawChain(chain);
+      if (!checkStales) {
+        if (checkStale(h, prev, curr)) {
+          // The match is stale.
+          // Since there can NEVER be more than one match
+          // in the table, we're done!
+          return 0;
+        }
+      } 
       // "Hit"
       perf.hits++;
-      sawChain(chain);
       if (prev) {
         // not at the front; move it there
         entries[prev] = entries[curr];

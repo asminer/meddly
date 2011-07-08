@@ -61,6 +61,8 @@ class MEDDLY::compute_table {
       bool chaining;
       /// The maximum size of the hash table.
       unsigned maxSize;
+      /// Aggressively try to eliminate atale entries.
+      bool checkStales;
 
       struct stats {
         long numEntries;
