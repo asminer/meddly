@@ -120,7 +120,7 @@ MEDDLY::operation::operation(const opname* n, bool uses_CT)
   theOpName = n;
   key_length = 0;
   ans_length = 0;
-  if (useMonolithicCT)
+  if (Monolithic_CT)
     CT = Monolithic_CT;
   else {
     CT = createOperationTable(meddlySettings, this); 

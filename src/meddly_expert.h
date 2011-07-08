@@ -235,10 +235,18 @@ class MEDDLY::ct_object {
 */
 struct MEDDLY::settings {
   public:
-    /// Do we use one monolithic compute table? Otherwise, one per operation.
-    bool useMonolithicComputeTable;
-    /// Should the compute tables chain items that hash to the same location.
-    bool doComputeTablesUseChaining;
+    /// Options for compute tables.
+    enum computeTableOption {
+      /// One huge hash table that uses chaining.
+      MonolithicChainedHash,
+      /// A hash table (with chaining) for each operation.
+      OperationChainedHash,
+      /// A STL "map" for each operation.
+      OperationMap
+    };
+  public:
+    /// The type of compute table(s) that should be used.
+    computeTableOption useComputeTableType;
     /// Should the compute tables aggressively try to eliminate stales.
     bool doComputeTablesCheckStales;
     /// Maximum compute table size.
@@ -248,11 +256,17 @@ struct MEDDLY::settings {
   public:
     /// Constructor, to set defaults.
     settings() {
-      doComputeTablesUseChaining = true;
+      // useComputeTableType = MonolithicChainedHash;
+      useComputeTableType = OperationMap;
       doComputeTablesCheckStales = false;
-      useMonolithicComputeTable = true;
       maxComputeTableSize = 16777216;
       operationBuilder = makeBuiltinInitializer();
+    }
+    /// super handly
+    inline bool usesMonolithicComputeTable() {
+      return (
+        MonolithicChainedHash == useComputeTableType
+      );
     }
 };
   
@@ -1257,8 +1271,6 @@ class MEDDLY::operation {
     friend void MEDDLY::cleanup();
 
     // declared and initialized in meddly.cc
-    static bool& useMonolithicCT;
-    // declared and initialized in meddly.cc
     static compute_table* Monolithic_CT;
     // declared and initialized in meddly.cc
     static operation** op_list;
@@ -1300,7 +1312,7 @@ class MEDDLY::operation {
     inline void setNext(operation* n) { next = n; }
     inline operation* getNext()       { return next; }
 
-    inline static bool useMonolithicComputeTable() { return useMonolithicCT; }
+    inline static bool useMonolithicComputeTable() { return Monolithic_CT; }
     static void removeStalesFromMonolithic();
 
     /// Remove stale compute table entries for this operation.

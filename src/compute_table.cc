@@ -21,19 +21,28 @@
 
 #include "compute_table.h"
 
+#include <map>  // for operation_map
+
 // #define DEBUG_CT
 // #define DEBUG_TABLE2LIST
 // #define DEBUG_LIST2TABLE
 
 namespace MEDDLY {
-
+  /// base class for all compute tables; 
+  /// handles allocation of entries :^)
   class base_table;
 
-  class chained_table;
+  /// base class for hash tables (gives hash function)
+  class base_hash;
 
-  class monolithic_table;
-  class operation_table;
-  const float expansionFactor = 1.5;
+  class base_chained;
+
+  class monolithic_chained;
+  class operation_chained;
+  // const float expansionFactor = 1.5;
+
+  /// essentially, the "old" binary_compute_table.
+  class operation_map;
 
   extern settings meddlySettings;
 }
@@ -46,7 +55,6 @@ namespace MEDDLY {
 
 MEDDLY::compute_table::compute_table(const settings &s)
 {
-  chaining = s.doComputeTablesUseChaining;
   maxSize = s.maxComputeTableSize;
   checkStales = s.doComputeTablesCheckStales;
 
@@ -56,10 +64,10 @@ MEDDLY::compute_table::compute_table(const settings &s)
   perf.numEntries = 0;
   perf.hits = 0;
   perf.pings = 0;
-  perf.numLargeChains = 0;
-  perf.maxChainLength = 0;
-  for (int i=0; i<perf.chainHistogramSize; i++)
-    perf.chainHistogram[i] = 0;
+  perf.numLargeSearches = 0;
+  perf.maxSearchLength = 0;
+  for (int i=0; i<perf.searchHistogramSize; i++)
+    perf.searchHistogram[i] = 0;
 }
 
 MEDDLY::compute_table::~compute_table()
@@ -91,62 +99,30 @@ class MEDDLY::base_table : public compute_table {
     base_table(const settings &s);
     virtual ~base_table();
 
-    virtual void addEntry();
-    virtual void removeStales();
-
-    virtual void show(FILE *s, int verbLevel = 0) const;
-
   protected:
-    unsigned raw_hash(const int* k, int length); 
-
+    inline void sawSearch(int c) {
+      if (c>=stats::searchHistogramSize) {
+        perf.numLargeSearches++;
+      } else {
+        perf.searchHistogram[c]++;
+      }
+      if (c>perf.maxSearchLength) perf.maxSearchLength = c;
+    }
     int newEntry(int size);
     inline void recycleEntry(int h, int size) {
       entries[h] = freeList[size];
       freeList[size] = h;
       perf.numEntries--;
     }
-
-    inline void sawChain(int c) {
-      if (c>=stats::chainHistogramSize) {
-        perf.numLargeChains++;
-      } else {
-        perf.chainHistogram[c]++;
-      }
-      if (c>perf.maxChainLength) perf.maxChainLength = c;
-    }
-
-    int*  table;
-    unsigned int tableSize;
-    unsigned int tableExpand;
-
+    void dumpInternal(FILE* s, int verbLevel) const;
+    void report(FILE* s, int indent, int &level, unsigned long mem) const;
+  protected:
     int*  entries;
     int entriesSize;
     int entriesAlloc;
-
-    // Anatomy of an active compute table entry h:
-    //  Note: C is 1 if we use chaining, 0 otherwise.
-    //  Note: M is 1 if this is a monolithic table, 0 otherwise.
-    //
-    //  if (C),   entries[h]        : next pointer.
-    //  if (M),   entries[h+C]      : operation index.
-    //            entries[h+C+M]    : first item in entry.
-    //            entries[h+C+M+1]  : second item in entry.
-    //            ...
-    //
-    //  Anatomy of a recycled compute table entry h:
-    //
-    //            entries[h]        : next pointer in free list
-    //
-
-    void dumpInternal(FILE* s) const;
-
-    virtual int convertToList() = 0;
-    virtual void listToTable(int h) = 0;
-    virtual void showTitle(FILE* s) const = 0;
-    virtual void showEntry(FILE* s, int h) const = 0;
-
   private:
     static const int maxEntrySize = 15;
+    static const int maxEntryBytes = sizeof(int) * maxEntrySize;
     int* freeList;
 };
 
@@ -157,18 +133,12 @@ class MEDDLY::base_table : public compute_table {
 MEDDLY::base_table::base_table(const settings &s)
  : compute_table(s)
 {
-  tableSize = 1024;
-  tableExpand = 4*tableSize;
-  table = (int*) malloc(tableSize * sizeof(int));
-  if (0==table) throw error(error::INSUFFICIENT_MEMORY);
-  for (unsigned i=0; i<tableSize; i++) table[i] = 0;
-  
   entriesAlloc = 1024;
   entries = (int*) malloc(entriesAlloc * sizeof(int));
   entriesSize = 1;
   // entries[0] is never, ever, used.
   if (0==entries) throw error(error::INSUFFICIENT_MEMORY);
-
+  // for recycling entries
   freeList = new int[1+maxEntrySize];
   for (int i=0; i<=maxEntrySize; i++) freeList[i] = 0;
 }
@@ -176,212 +146,7 @@ MEDDLY::base_table::base_table(const settings &s)
 MEDDLY::base_table::~base_table()
 {
   free(entries);
-  free(table);
-}
-
-void MEDDLY::base_table::addEntry()
-{
-  unsigned h = raw_hash(currEntry.entry+1, currEntry.hashLength) % tableSize;
-  currEntry.entry[0] = table[h];
-  table[h] = currEntry.handle;
-
-#ifdef DEBUG_CT
-  printf("Adding CT entry ");
-  showEntry(stdout, currEntry.handle);
-  // fprintf(stderr, " to slot %u", h);
-  printf("\n");
-#endif
-
-  if (perf.numEntries < tableExpand) return;
-
-#ifdef DEBUG_SLOW
-  fprintf(stdout, "Running GC in compute table (size %d, entries %ld)\n", tableSize, perf.numEntries);
-#endif
-
-  int list = convertToList();
-  if (perf.numEntries < tableSize) {
-    // Don't need to expand
-    listToTable(list);
-#ifdef DEBUG_SLOW
-    fprintf(stdout, "Done CT GC, no resizing (now entries %ld)\n", perf.numEntries);
-#endif
-    return;
-  } 
-
-  if (tableSize >= maxSize) {
-    // Cannot expand
-    listToTable(list);
-    tableExpand = perf.numEntries + tableSize;
-    if (tableExpand < 0) tableExpand = INT_MAX;
-#ifdef DEBUG_SLOW
-    fprintf(stdout, "CT already at maximum size\n");
-#endif
-    return;
-  }
-
-  unsigned newsize = tableSize*2;
-  if (newsize > maxSize) newsize = maxSize;
-
-  int* newt = (int*) realloc(table, newsize * sizeof(int));
-  if (0==newt) throw error(error::INSUFFICIENT_MEMORY);
-
-  for (unsigned i=tableSize; i<newsize; i++) newt[i] = 0;
-
-  table = newt;
-  tableSize = newsize;
-  tableExpand = 4*tableSize;
-
-  listToTable(list);
-#ifdef DEBUG_SLOW
-  fprintf(stdout, "CT enlarged to size %d\n", tableSize);
-#endif
-}
-
-void MEDDLY::base_table::removeStales()
-{
-#ifdef DEBUG_SLOW
-  fprintf(stdout, "Removing stales in CT (size %d, entries %ld)\n", tableSize, perf.numEntries);
-#endif
-  int list = convertToList();
-  if ((tableSize > 1024) && (perf.numEntries * 2 < tableSize)) {
-    // shrink table
-    int newsize = tableSize / 2;
-    int* newt = (int*) realloc(table, newsize * sizeof(int));
-    if (0==newt) throw error(error::INSUFFICIENT_MEMORY); 
-    table = newt;
-    tableSize = newsize;
-    tableExpand = 4*tableSize;
-  }
-  listToTable(list);
-#ifdef DEBUG_SLOW
-  fprintf(stdout, "Done removing CT stales (size %d, entries %ld)\n", tableSize, perf.numEntries);
-#endif
-}
-
-void MEDDLY::base_table::show(FILE *s, int verbLevel) const
-{ 
-  showTitle(s);
-  char filler[] = "\t";
-  fprintf(s, "%sNumber of entries :\t%ld\n", filler, perf.numEntries);
-  fprintf(s, "%sHash table size   :\t%d\n", filler, tableSize);
-  fprintf(s, "%sEntry array size  :\t%d\n", filler, entriesSize);
-  fprintf(s, "%sEntry array alloc :\t%d\n", filler, entriesAlloc);
-  unsigned long usage = 0;
-  usage += sizeof(int) * tableSize;
-  usage += sizeof(int) * entriesAlloc;
-  fprintf(s, "%sTotal Memory usage:\t%lu\n", filler, usage);
-  
-  if (verbLevel < 1) return;
-
-  fprintf(s, "%sPings             :\t%d\n", filler, perf.pings);
-  fprintf(s, "%sHits              :\t%d\n", filler, perf.hits);
-
-  if (verbLevel<2) return;
-
-  fprintf(s, "%sChain length histogram:\n", filler);
-  for (int i=0; i<stats::chainHistogramSize; i++) {
-    if (perf.chainHistogram[i]) {
-      fprintf(s, "%s%s%3d: %ld\n", filler, filler, i, perf.chainHistogram[i]);
-    }
-  }
-  if (perf.numLargeChains)
-    fprintf(s, "%sChains longer than %d: %ld\n", filler, 
-            stats::chainHistogramSize-1, perf.numLargeChains
-    );
-  fprintf(s, "%sMax chain length seen: %d\n", filler, perf.maxChainLength);
-
-  if (verbLevel<5) return;
-
-  fprintf(s, "Hash table chains:\n");
-
-  for (unsigned i=0; i<tableSize; i++) {
-    if (0==table[i]) continue;
-    fprintf(s, "table[%9d]: %d", i, table[i]);
-    int curr = entries[table[i]];
-    while (curr) {
-      fprintf(s, " -> %d", curr);
-      curr = entries[curr];
-    }
-    fprintf(s, "\n");
-  }
-  fprintf(s, "\n");
-
-  if (verbLevel<6) return;
-
-  fprintf(s, "Hash table nodes:\n");
-  
-  for (unsigned i=0; i<tableSize; i++) {
-    int curr = table[i];
-    while (curr) {
-      fprintf(s, "\tNode %9d:  ", curr);
-      showEntry(s, curr);
-      fprintf(s, "\n");
-      curr = entries[curr];
-    }
-  }
-  fprintf(s, "\n");
-
-  if (verbLevel<8) return;
-
-  fprintf(s, "Raw hash table info:\n");
-  dumpInternal(s);
-}
-/*
- * Bob Jenkin's Hash
- * Free to use for educational or commerical purposes
- * http://burtleburtle.net/bob/hash/doobs.html
- */
-#define rot(x,k) (((x)<<(k)) | ((x)>>(32-(k))))
-
-inline void mix(unsigned &a, unsigned &b, unsigned &c)
-{
-  a -= c;  a ^= rot(c, 4);  c += b; 
-  b -= a;  b ^= rot(a, 6);  a += c;
-  c -= b;  c ^= rot(b, 8);  b += a;
-  a -= c;  a ^= rot(c,16);  c += b;
-  b -= a;  b ^= rot(a,19);  a += c;
-  c -= b;  c ^= rot(b, 4);  b += a;
-}
-
-inline void final(unsigned &a, unsigned &b, unsigned &c)
-{
-  c ^= b; c -= rot(b,14);
-  a ^= c; a -= rot(c,11);
-  b ^= a; b -= rot(a,25);
-  c ^= b; c -= rot(b,16);
-  a ^= c; a -= rot(c,4); 
-  b ^= a; b -= rot(a,14);
-  c ^= b; c -= rot(b,24);
-}
-
-unsigned MEDDLY::base_table::raw_hash(const int* k, int length)
-{
-  unsigned a, b, c;
-  a = b = c = 0xdeadbeef;
-
-  // handle most of the key
-  while (length > 3)
-  {
-    a += *k++;
-    b += *k++;
-    c += *k++;
-    mix(a,b,c);
-    length -= 3;
-  }
-
-  // handle the last 3 uint32_t's
-  switch(length)
-  { 
-    // all the case statements fall through
-    case 3: c += k[2];
-    case 2: b += k[1];
-    case 1: a += k[0];
-            final(a,b,c);
-    case 0: // nothing left to add
-            break;
-  }
-
-  return c % tableSize;
+  delete[] freeList;
 }
 
 //
@@ -415,15 +180,9 @@ int MEDDLY::base_table::newEntry(int size)
   return h;
 }
 
-void MEDDLY::base_table::dumpInternal(FILE* s) const
+void MEDDLY::base_table::dumpInternal(FILE* s, int verbLevel) const
 {
-  if (0==table) fprintf(s, "Table: null\n");
-  else {
-    fprintf(s, "Table: [%d", table[0]);
-    for (unsigned i=1; i<tableSize; i++) 
-      fprintf(s, ", %d", table[i]);
-    fprintf(s, "]\n");
-  }
+  if (verbLevel < 1) return;
   if (0==entries) fprintf(s, "Entries: null\n");
   else {
     fprintf(s, "Entries: [%d", entries[0]);
@@ -440,19 +199,340 @@ void MEDDLY::base_table::dumpInternal(FILE* s) const
   }
 }
 
+void MEDDLY::base_table
+::report(FILE* s, int indent, int &level, unsigned long mem) const
+{
+  if (level < 1) return;
+  fprintf(s, "%*sNumber of entries :\t%ld\n", indent, "", perf.numEntries);
+  fprintf(s, "%*sEntry array size  :\t%d\n", indent, "", entriesSize);
+  fprintf(s, "%*sEntry array alloc :\t%d\n", indent, "", entriesAlloc);
+  mem += sizeof(int) * entriesAlloc;
+  fprintf(s, "%*sTotal Memory usage:\t%lu\n", indent, "", mem);
+
+  if (--level < 1) return;
+
+  fprintf(s, "%*sPings             :\t%d\n", indent, "", perf.pings);
+  fprintf(s, "%*sHits              :\t%d\n", indent, "", perf.hits);
+
+  if (--level < 1) return;
+
+  fprintf(s, "%*sSearch length histogram:\n", indent, "");
+  for (int i=0; i<stats::searchHistogramSize; i++) {
+    if (perf.searchHistogram[i]) {
+      fprintf(s, "%*s%3d: %ld\n", indent+4, "", i, perf.searchHistogram[i]);
+    }
+  }
+  if (perf.numLargeSearches)
+    fprintf(s, "%*sSearches longer than %d: %ld\n", indent, "",
+            stats::searchHistogramSize-1, perf.numLargeSearches
+    );
+  fprintf(s, "%*sMax search length: %d\n", indent, "", perf.maxSearchLength);
+}
 
 // **********************************************************************
 // *                                                                    *
 // *                                                                    *
-// *                       monolithic_table class                       *
+// *                          base_hash  class                          *
 // *                                                                    *
 // *                                                                    *
 // **********************************************************************
 
-class MEDDLY::monolithic_table : public base_table {
+/** Abstract base class for hashing compute tables.
+  * All use the same hash function:
+  *
+  *   Bob Jenkin's Hash
+  *   Free to use for educational or commerical purposes
+  *   http://burtleburtle.net/bob/hash/doobs.html
+  */
+class MEDDLY::base_hash : public base_table {
   public:
-    monolithic_table(const settings &s);
-    virtual ~monolithic_table();
+    base_hash(const settings &s, int initTS, int initTE);
+    virtual ~base_hash();
+
+  protected:
+    inline unsigned hash(const int* k, int length) {
+      return raw_hash(k, length) % tableSize;
+    }
+    void dumpInternal(FILE* s, int verbLevel) const;
+    void report(FILE* s, int indent, int &level, unsigned long mem) const;
+  protected:
+    int*  table;
+    unsigned int tableSize;
+    unsigned int tableExpand;
+  private:
+    static inline unsigned rot(unsigned x, int k) {
+        return (((x)<<(k)) | ((x)>>(32-(k))));
+    }
+    static inline void mix(unsigned &a, unsigned &b, unsigned &c) {
+        a -= c;  a ^= rot(c, 4);  c += b; 
+        b -= a;  b ^= rot(a, 6);  a += c;
+        c -= b;  c ^= rot(b, 8);  b += a;
+        a -= c;  a ^= rot(c,16);  c += b;
+        b -= a;  b ^= rot(a,19);  a += c;
+        c -= b;  c ^= rot(b, 4);  b += a;
+    }
+    static inline void final(unsigned &a, unsigned &b, unsigned &c) {
+        c ^= b; c -= rot(b,14);
+        a ^= c; a -= rot(c,11);
+        b ^= a; b -= rot(a,25);
+        c ^= b; c -= rot(b,16);
+        a ^= c; a -= rot(c,4); 
+        b ^= a; b -= rot(a,14);
+        c ^= b; c -= rot(b,24);
+    }
+    static unsigned raw_hash(const int* k, int length);
+};
+
+// **********************************************************************
+// *                         base_hash  methods                         *
+// **********************************************************************
+
+MEDDLY::base_hash::base_hash(const settings &s, int initTS, int initTE)
+ : base_table(s)
+{
+  tableSize = initTS;
+  tableExpand = initTE;
+  table = (int*) malloc(tableSize * sizeof(int));
+  if (0==table) throw error(error::INSUFFICIENT_MEMORY);
+  for (unsigned i=0; i<tableSize; i++) table[i] = 0;
+}
+
+MEDDLY::base_hash::~base_hash()
+{
+  free(table);
+}
+
+void MEDDLY::base_hash::dumpInternal(FILE* s, int verbLevel) const
+{
+  if (verbLevel < 1) return;
+  if (0==table) fprintf(s, "Table: null\n");
+  else {
+    fprintf(s, "Table: [%d", table[0]);
+    for (unsigned i=1; i<tableSize; i++) 
+      fprintf(s, ", %d", table[i]);
+    fprintf(s, "]\n");
+  }
+  base_table::dumpInternal(s, verbLevel-1);
+}
+
+void MEDDLY::base_hash
+::report(FILE* s, int indent, int &level, unsigned long mem) const
+{
+  if (level < 1) return;
+  fprintf(s, "%*sHash table size   :\t%d\n", indent, "", tableSize);
+  mem += sizeof(int) * tableSize;
+  base_table::report(s, indent, level, mem);
+}
+
+unsigned MEDDLY::base_hash::raw_hash(const int* k, int length)
+{
+  unsigned a, b, c;
+  a = b = c = 0xdeadbeef;
+
+  // handle most of the key
+  while (length > 3)
+  {
+    a += *k++;
+    b += *k++;
+    c += *k++;
+    mix(a,b,c);
+    length -= 3;
+  }
+
+  // handle the last 3 uint32_t's
+  switch(length)
+  { 
+    // all the case statements fall through
+    case 3: c += k[2];
+    case 2: b += k[1];
+    case 1: a += k[0];
+            final(a,b,c);
+    case 0: // nothing left to add
+            break;
+  }
+
+  return c;
+}
+
+
+// **********************************************************************
+// *                                                                    *
+// *                                                                    *
+// *                         base_chained class                         *
+// *                                                                    *
+// *                                                                    *
+// **********************************************************************
+
+/// Abstract base class for hash tables with chaining.
+class MEDDLY::base_chained : public base_hash {
+  public:
+    base_chained(const settings &s);
+    virtual ~base_chained();
+
+    virtual void addEntry();
+    virtual void removeStales();
+  protected:
+    void dumpInternal(FILE* s, int verbLevel) const;
+    virtual int convertToList() = 0;
+    virtual void listToTable(int h) = 0;
+    virtual void showEntry(FILE* s, int h) const = 0;
+};
+
+// **********************************************************************
+// *                        base_chained methods                        *
+// **********************************************************************
+
+MEDDLY::base_chained::base_chained(const settings &s)
+ : base_hash(s, 1024, 4*1024)
+{
+}
+
+MEDDLY::base_chained::~base_chained()
+{
+}
+
+void MEDDLY::base_chained::addEntry()
+{
+  unsigned h = hash(currEntry.entry+1, currEntry.hashLength);
+  currEntry.entry[0] = table[h];
+  table[h] = currEntry.handle;
+
+#ifdef DEBUG_CT
+  printf("Adding CT entry ");
+  showEntry(stdout, currEntry.handle);
+  // fprintf(stderr, " to slot %u", h);
+  printf("\n");
+#endif
+
+  if (perf.numEntries < tableExpand) return;
+
+#ifdef DEBUG_SLOW
+  fprintf(stdout, "Running GC in compute table (size %d, entries %ld)\n", 
+    tableSize, perf.numEntries
+  );
+#endif
+
+  int list = convertToList();
+  if (perf.numEntries < tableSize) {
+    // Don't need to expand
+    listToTable(list);
+#ifdef DEBUG_SLOW
+    fprintf(stdout, "Done CT GC, no resizing (now entries %ld)\n", 
+      perf.numEntries
+    );
+#endif
+    return;
+  } 
+
+  if (tableSize >= maxSize) {
+    // Cannot expand
+    listToTable(list);
+    tableExpand = perf.numEntries + tableSize;
+    if (tableExpand < 0) tableExpand = INT_MAX;
+#ifdef DEBUG_SLOW
+    fprintf(stdout, "CT already at maximum size\n");
+#endif
+    return;
+  }
+
+  unsigned newsize = tableSize*2;
+  if (newsize > maxSize) newsize = maxSize;
+
+  int* newt = (int*) realloc(table, newsize * sizeof(int));
+  if (0==newt) throw error(error::INSUFFICIENT_MEMORY);
+
+  for (unsigned i=tableSize; i<newsize; i++) newt[i] = 0;
+
+  table = newt;
+  tableSize = newsize;
+  tableExpand = 4*tableSize;
+
+  listToTable(list);
+#ifdef DEBUG_SLOW
+  fprintf(stdout, "CT enlarged to size %d\n", tableSize);
+#endif
+}
+
+void MEDDLY::base_chained::removeStales()
+{
+#ifdef DEBUG_SLOW
+  fprintf(stdout, "Removing stales in CT (size %d, entries %ld)\n", 
+    tableSize, perf.numEntries
+  );
+#endif
+  int list = convertToList();
+  if ((tableSize > 1024) && (perf.numEntries * 2 < tableSize)) {
+    // shrink table
+    int newsize = tableSize / 2;
+    int* newt = (int*) realloc(table, newsize * sizeof(int));
+    if (0==newt) throw error(error::INSUFFICIENT_MEMORY); 
+    table = newt;
+    tableSize = newsize;
+    tableExpand = 4*tableSize;
+  }
+  listToTable(list);
+#ifdef DEBUG_SLOW
+  fprintf(stdout, "Done removing CT stales (size %d, entries %ld)\n", 
+    tableSize, perf.numEntries
+  );
+#endif
+}
+
+void MEDDLY::base_chained::dumpInternal(FILE* s, int verbLevel) const
+{
+  if (verbLevel < 1) return;
+
+  fprintf(s, "Hash table chains:\n");
+
+  for (unsigned i=0; i<tableSize; i++) {
+    if (0==table[i]) continue;
+    fprintf(s, "table[%9d]: %d", i, table[i]);
+    int curr = entries[table[i]];
+    while (curr) {
+      fprintf(s, " -> %d", curr);
+      curr = entries[curr];
+    }
+    fprintf(s, "\n");
+  }
+
+  fprintf(s, "\nHash table nodes:\n");
+  
+  for (unsigned i=0; i<tableSize; i++) {
+    int curr = table[i];
+    while (curr) {
+      fprintf(s, "\tNode %9d:  ", curr);
+      showEntry(s, curr);
+      fprintf(s, "\n");
+      curr = entries[curr];
+    }
+  }
+  fprintf(s, "\n");
+
+  base_hash::dumpInternal(s, verbLevel-1);
+}
+
+
+// **********************************************************************
+// *                                                                    *
+// *                                                                    *
+// *                      monolithic_chained class                      *
+// *                                                                    *
+// *                                                                    *
+// **********************************************************************
+
+/*
+    Anatomy of an entry:
+
+      entries[h]      : next pointer in chain
+      entries[h+1]    : operation index
+      entries[h+2]    : first "payload" item
+      ...
+      entries[h+L+1]  : last "payload" item, L is cache entry length.
+*/
+class MEDDLY::monolithic_chained : public base_chained {
+  public:
+    monolithic_chained(const settings &s);
+    virtual ~monolithic_chained();
 
     // required functions
 
@@ -462,10 +542,11 @@ class MEDDLY::monolithic_table : public base_table {
     virtual temp_entry& startNewEntry(operation* op);
     virtual void removeAll();
 
+    void show(FILE *s, int verbLevel) const;
+
   protected:
     virtual int convertToList();
     virtual void listToTable(int h);
-    virtual void showTitle(FILE* s) const;
     virtual void showEntry(FILE* s, int h) const;
 
     inline bool checkStale(unsigned h, int prev, int &curr) {
@@ -486,23 +567,24 @@ class MEDDLY::monolithic_table : public base_table {
 };
 
 // **********************************************************************
-// *                      monolithic_table methods                      *
+// *                     monolithic_chained methods                     *
 // **********************************************************************
 
-MEDDLY::monolithic_table::monolithic_table(const settings &s)
- : base_table(s)
+MEDDLY::monolithic_chained::monolithic_chained(const settings &s)
+ : base_chained(s)
 {
 }
 
-MEDDLY::monolithic_table::~monolithic_table()
+MEDDLY::monolithic_chained::~monolithic_chained()
 {
 }
 
-void MEDDLY::monolithic_table
+void MEDDLY::monolithic_chained
 ::initializeSearchKey(search_key &key, operation* op)
 {
   DCASSERT(0==key.data);
   key.hashLength = op->getKeyLength()+1;
+  key.hashBytes = key.hashLength * sizeof(int);
   key.data = new int[key.hashLength];
   key.key_data = key.data+1;
   key.data[0] = op->getIndex();
@@ -511,10 +593,10 @@ void MEDDLY::monolithic_table
 #endif
 }
 
-const int* MEDDLY::monolithic_table::find(const search_key &key)
+const int* MEDDLY::monolithic_chained::find(const search_key &key)
 {
   perf.pings++;
-  unsigned h = raw_hash(key.data, key.hashLength);
+  unsigned h = hash(key.data, key.hashLength);
   int prev = 0;
   int curr = table[h];
   int chain = 0;
@@ -526,8 +608,8 @@ const int* MEDDLY::monolithic_table::find(const search_key &key)
     //
     // Check for match
     //
-    if (memcmp(entries+curr+1, key.data, key.hashLength*sizeof(int))==0) {
-      sawChain(chain);
+    if (memcmp(entries+curr+1, key.data, key.hashBytes)==0) {
+      sawSearch(chain);
       if (!checkStales) {
         if (checkStale(h, prev, curr)) {
           // The match is stale.
@@ -546,6 +628,8 @@ const int* MEDDLY::monolithic_table::find(const search_key &key)
       }
 #ifdef DEBUG_CT
       printf("Found CT entry ");
+      operation* currop = operation::getOpWithIndex(entries[curr+1]);
+      assert(currop);
       currop->showEntry(stdout, entries + curr + 2);
       // fprintf(stderr, " in slot %u", h);
       printf("\n");
@@ -556,12 +640,12 @@ const int* MEDDLY::monolithic_table::find(const search_key &key)
     prev = curr;
     curr = entries[curr];
   }
-  sawChain(chain);
+  sawSearch(chain);
   return 0;
 }
 
 MEDDLY::compute_table::temp_entry& 
-MEDDLY::monolithic_table::startNewEntry(operation* op)
+MEDDLY::monolithic_chained::startNewEntry(operation* op)
 {
   currEntry.handle = newEntry(2+op->getCacheEntryLength());
   currEntry.hashLength = op->getKeyLength()+1;
@@ -576,7 +660,7 @@ MEDDLY::monolithic_table::startNewEntry(operation* op)
   return currEntry;
 }
 
-void MEDDLY::monolithic_table::removeAll()
+void MEDDLY::monolithic_chained::removeAll()
 {
   for (unsigned i=0; i<tableSize; i++) {
     while (table[i]) {
@@ -590,8 +674,17 @@ void MEDDLY::monolithic_table::removeAll()
   } // for i
 }
 
+void MEDDLY::monolithic_chained::show(FILE *s, int verbLevel) const
+{
+  if (verbLevel < 1) return;
+  fprintf(s, "Monolithic compute table\n");
+  report(s, 6, verbLevel, 0);
+  verbLevel--;
+  dumpInternal(s, verbLevel);
+}
 
-int MEDDLY::monolithic_table::convertToList()
+
+int MEDDLY::monolithic_chained::convertToList()
 {
   int list = 0;
   for (unsigned i=0; i<tableSize; i++) {
@@ -635,7 +728,7 @@ int MEDDLY::monolithic_table::convertToList()
   return list;
 }
 
-void MEDDLY::monolithic_table::listToTable(int L)
+void MEDDLY::monolithic_chained::listToTable(int L)
 {
 #ifdef DEBUG_LIST2TABLE
   printf("Recovering  list: %d", L);
@@ -649,7 +742,7 @@ void MEDDLY::monolithic_table::listToTable(int L)
     operation* currop = operation::getOpWithIndex(entries[curr+1]);
     DCASSERT(currop);
     int hashlength = 1+currop->getKeyLength();
-    unsigned h = raw_hash(entries + curr + 1, hashlength);
+    unsigned h = hash(entries + curr + 1, hashlength);
     entries[curr] = table[h];
     table[h] = curr;
 #ifdef DEBUG_LIST2TABLE
@@ -660,12 +753,7 @@ void MEDDLY::monolithic_table::listToTable(int L)
   }
 }
 
-void MEDDLY::monolithic_table::showTitle(FILE *s) const
-{
-  fprintf(s, "Monolithic compute table\n");
-}
-
-void MEDDLY::monolithic_table::showEntry(FILE *s, int curr) const
+void MEDDLY::monolithic_chained::showEntry(FILE *s, int curr) const
 { 
   operation* op = operation::getOpWithIndex(entries[curr+1]);
   op->showEntry(s, entries + curr + 2);
@@ -675,15 +763,23 @@ void MEDDLY::monolithic_table::showEntry(FILE *s, int curr) const
 // **********************************************************************
 // *                                                                    *
 // *                                                                    *
-// *                       operation_table  class                       *
+// *                      operation_chained  class                      *
 // *                                                                    *
 // *                                                                    *
 // **********************************************************************
 
-class MEDDLY::operation_table : public base_table {
+/*
+    Anatomy of an entry:
+
+      entries[h]      : next pointer in chain
+      entries[h+1]    : first "payload" item
+      ...
+      entries[h+L]    : last "payload" item, L is cache entry length.
+*/
+class MEDDLY::operation_chained : public base_chained {
   public:
-    operation_table(const settings &s, operation* op);
-    virtual ~operation_table();
+    operation_chained(const settings &s, operation* op);
+    virtual ~operation_chained();
 
     // required functions
 
@@ -693,11 +789,14 @@ class MEDDLY::operation_table : public base_table {
     virtual temp_entry& startNewEntry(operation* op);
     virtual void removeAll();
 
+    void show(FILE *s, int verbLevel) const;
+
   protected:
     virtual int convertToList();
     virtual void listToTable(int h);
-    virtual void showTitle(FILE* s) const;
-    virtual void showEntry(FILE* s, int h) const;
+    virtual void showEntry(FILE* s, int h) const { 
+      global_op->showEntry(s, entries + h + 1);
+    }
 
     inline bool checkStale(unsigned h, int prev, int &curr) {
         if (global_op->isMarkedForDeletion() 
@@ -719,26 +818,27 @@ class MEDDLY::operation_table : public base_table {
 };
 
 // **********************************************************************
-// *                      operation_table  methods                      *
+// *                     operation_chained  methods                     *
 // **********************************************************************
 
-MEDDLY::operation_table::operation_table(const settings &s, operation* op)
- : base_table(s)
+MEDDLY::operation_chained::operation_chained(const settings &s, operation* op)
+ : base_chained(s)
 {
   global_op = op;
 }
 
-MEDDLY::operation_table::~operation_table()
+MEDDLY::operation_chained::~operation_chained()
 {
 }
 
-void MEDDLY::operation_table
+void MEDDLY::operation_chained
 ::initializeSearchKey(search_key &key, operation* op)
 {
   if (op != global_op)
     throw error(error::UNKNOWN_OPERATION);
   DCASSERT(0==key.data);
   key.hashLength = op->getKeyLength();
+  key.hashBytes = key.hashLength * sizeof(int);
   key.data = new int[key.hashLength];
   key.key_data = key.data;
 #ifdef DEVELOPMENT_CODE
@@ -746,10 +846,10 @@ void MEDDLY::operation_table
 #endif
 }
 
-const int* MEDDLY::operation_table::find(const search_key &key)
+const int* MEDDLY::operation_chained::find(const search_key &key)
 {
   perf.pings++;
-  unsigned h = raw_hash(key.data, key.hashLength);
+  unsigned h = hash(key.data, key.hashLength);
   int prev = 0;
   int curr = table[h];
   int chain = 0;
@@ -761,8 +861,8 @@ const int* MEDDLY::operation_table::find(const search_key &key)
     //
     // Check for match
     //
-    if (memcmp(entries+curr+1, key.data, key.hashLength*sizeof(int))==0) {
-      sawChain(chain);
+    if (memcmp(entries+curr+1, key.data, key.hashBytes)==0) {
+      sawSearch(chain);
       if (!checkStales) {
         if (checkStale(h, prev, curr)) {
           // The match is stale.
@@ -790,12 +890,12 @@ const int* MEDDLY::operation_table::find(const search_key &key)
     prev = curr;
     curr = entries[curr];
   }
-  sawChain(chain);
+  sawSearch(chain);
   return 0;
 }
 
 MEDDLY::compute_table::temp_entry& 
-MEDDLY::operation_table::startNewEntry(operation* op)
+MEDDLY::operation_chained::startNewEntry(operation* op)
 {
   if (op != global_op)
     throw error(error::UNKNOWN_OPERATION);
@@ -811,7 +911,7 @@ MEDDLY::operation_table::startNewEntry(operation* op)
   return currEntry;
 }
 
-void MEDDLY::operation_table::removeAll()
+void MEDDLY::operation_chained::removeAll()
 {
   for (unsigned i=0; i<tableSize; i++) {
     while (table[i]) {
@@ -823,7 +923,19 @@ void MEDDLY::operation_table::removeAll()
   } // for i
 }
 
-int MEDDLY::operation_table::convertToList()
+void MEDDLY::operation_chained::show(FILE *s, int verbLevel) const
+{
+  if (verbLevel < 1) return;
+  fprintf(s, "Compute table for %s (index %d)\n", 
+    global_op->getName(), global_op->getIndex()
+  );
+  report(s, 6, verbLevel, 0);
+  verbLevel--;
+  dumpInternal(s, verbLevel);
+}
+
+
+int MEDDLY::operation_chained::convertToList()
 {
   int list = 0;
   for (unsigned i=0; i<tableSize; i++) {
@@ -849,28 +961,269 @@ int MEDDLY::operation_table::convertToList()
   return list;
 }
 
-void MEDDLY::operation_table::listToTable(int L)
+void MEDDLY::operation_chained::listToTable(int L)
 {
   while (L) {
     int curr = L;
     L = entries[L];
     int hashlength = global_op->getKeyLength();
-    int h = raw_hash(entries + curr + 1, hashlength);
+    int h = hash(entries + curr + 1, hashlength);
     entries[curr] = table[h];
     table[h] = curr;
   }
 }
 
-void MEDDLY::operation_table::showTitle(FILE *s) const
+// **********************************************************************
+// *                                                                    *
+// *                                                                    *
+// *                        operation_map  class                        *
+// *                                                                    *
+// *                                                                    *
+// **********************************************************************
+
+/*
+    Anatomy of an entry:
+
+      entries[h  ]    : first "payload" item
+      ...
+      entries[h+L-1]  : last "payload" item, L is cache entry length.
+
+    Pure payload :^)
+    Don't worry, we pay for it in the "map" I'm sure.
+*/
+class MEDDLY::operation_map : public base_table {
+  public:
+    operation_map(const settings &s, operation* op);
+    virtual ~operation_map();
+
+    // required functions
+
+    virtual bool isOperationTable() const   { return true; }
+    virtual void initializeSearchKey(search_key &key, operation* op);
+    virtual const int* find(const search_key &key);
+    virtual temp_entry& startNewEntry(operation* op);
+    virtual void addEntry();
+    virtual void removeStales();
+    virtual void removeAll();
+
+    virtual void show(FILE *s, int verbLevel = 0) const;
+  protected:
+    virtual void showEntry(FILE* s, int h) const {
+      global_op->showEntry(s, entries + h);
+    }
+    // for now ... key for our map.
+    friend class key_type;
+    class key_type {
+        int handle;
+        union {
+          operation_map* parent;
+          const int* search;
+        };
+      public:
+        key_type() {
+          handle = 0;
+          search = 0;
+        }
+        key_type(operation_map* p, int h) {
+          parent = p;
+          handle = h;
+        }
+        void set(const int* s) {
+          handle = 0;
+          search = s;
+        }
+        inline const int* getData() const {
+          if (handle) return parent->entries + handle;
+          return search;
+        }
+    };
+    // For comparing entries in our map.
+    class key_less {
+        int bytes;
+      public:
+        key_less(int b) { 
+          bytes = b; 
+        }
+        inline bool operator() (const key_type &p, const key_type &q) const {
+          return memcmp(p.getData(), q.getData(), bytes) < 0;
+        }
+    };  
+    inline bool isStale(const int* entry) {
+      return (
+        global_op->isMarkedForDeletion() || global_op->isEntryStale(entry)
+      );
+    }
+    inline void removeEntry(int h) {
+      // we're cheating... it's not really const :^)
+      global_op->discardEntry(entries+h);
+      recycleEntry(h, global_op->getCacheEntryLength());
+    }
+  private:
+    std::map<key_type, int, key_less> *ct;
+    operation* global_op;
+    key_type search;
+};
+
+// **********************************************************************
+// *                       operation_map  methods                       *
+// **********************************************************************
+
+MEDDLY::operation_map::operation_map(const settings &s, operation* op)
+ : base_table(s)
 {
+  global_op = op;
+  ct = 0;
+}
+
+MEDDLY::operation_map::~operation_map()
+{
+  delete ct;
+}
+
+void MEDDLY::operation_map
+::initializeSearchKey(search_key &key, operation* op)
+{
+  if (op != global_op)
+    throw error(error::UNKNOWN_OPERATION);
+  DCASSERT(0==key.key_data);
+  // key struct, mostly unused
+  key.data = new int[key.hashLength];
+  key.key_data = key.data;
+#ifdef DEVELOPMENT_CODE
+  key.keyLength = op->getKeyLength();
+#endif
+  // local stuff
+  ct = new std::map<key_type, int, key_less> (
+    key_less(op->getKeyLength()*sizeof(int))
+  );
+  search.set(key.data); // really neat trick if it works...
+}
+
+const int* MEDDLY::operation_map::find(const search_key &key)
+{
+  DCASSERT(ct);
+  perf.pings++;
+  std::map<key_type, int, key_less>::iterator ans = ct->find(search);
+  if (ans == ct->end()) return 0;
+  int h = ans->second;
+  if (isStale(entries+h)) {
+    ct->erase(ans);
+    removeEntry(h);
+    return 0;
+  }
+#ifdef DEBUG_CT
+  printf("Found CT entry ");
+  global_op->showEntry(stdout, entries+h);
+  printf("\n");
+#endif
+  perf.hits++;
+  return entries+h;
+}
+
+MEDDLY::compute_table::temp_entry& 
+MEDDLY::operation_map::startNewEntry(operation* op)
+{
+  if (op != global_op)
+    throw error(error::UNKNOWN_OPERATION);
+  currEntry.handle = newEntry(op->getCacheEntryLength());
+  currEntry.hashLength = op->getKeyLength();
+  currEntry.entry = entries + currEntry.handle;
+  currEntry.key_entry = currEntry.entry;
+  currEntry.res_entry = currEntry.key_entry + op->getKeyLength();
+#ifdef DEVELOPMENT_CODE
+  currEntry.keyLength = op->getKeyLength();
+  currEntry.resLength = op->getAnsLength();
+#endif
+  return currEntry;
+}
+
+void MEDDLY::operation_map::addEntry()
+{
+  DCASSERT(ct);
+#ifdef DEBUG_CT
+  printf("Adding CT entry ");
+  showEntry(stdout, currEntry.handle);
+  printf("\n");
+#endif
+#ifdef DEVELOPMENT_CODE
+  assert(
+#endif
+  (ct->insert(
+    std::make_pair(
+      key_type(this, currEntry.handle),
+      currEntry.handle
+    )
+  ))
+#ifdef DEVELOPMENT_CODE
+  .second)
+#endif
+  ;
+}
+
+void MEDDLY::operation_map::removeStales()
+{
+  if (0==ct) return;
+#ifdef DEBUG_SLOW
+  fprintf(stdout, "Removing stales in CT (entries %ld)\n", perf.numEntries);
+#endif
+
+  std::map<key_type, int, key_less>::iterator curr = ct->begin();
+  std::map<key_type, int, key_less>::iterator end = ct->end();
+  while (curr != end) {
+    int h = curr->second;
+    if (isStale(entries+h)) {
+      ct->erase(curr++);
+      removeEntry(h);
+    } else {
+      ++curr;
+    }
+  }
+
+#ifdef DEBUG_SLOW
+  fprintf(stdout, "Done removing CT stales (entries %ld)\n", perf.numEntries);
+#endif
+}
+
+void MEDDLY::operation_map::removeAll()
+{
+  if (0==ct) return;
+  std::map<key_type, int, key_less>::iterator curr = ct->begin();
+  std::map<key_type, int, key_less>::iterator end = ct->end();
+  while (curr != end) {
+    int h = curr->second;
+    ct->erase(curr++);
+    removeEntry(h);
+  }
+  DCASSERT(ct->empty());
+}
+
+void MEDDLY::operation_map::show(FILE *s, int verbLevel) const
+{
+  if (verbLevel < 1) return;
   fprintf(s, "Compute table for %s (index %d)\n", 
     global_op->getName(), global_op->getIndex()
   );
-}
+  report(s, 6, verbLevel, 0);
+  verbLevel--;
+  if (verbLevel < 1) return;
 
-void MEDDLY::operation_table::showEntry(FILE *s, int curr) const
-{ 
-  global_op->showEntry(s, entries + curr + 1);
+  if (0==ct) {
+    fprintf(s, "Empty map\n");
+  } else {
+    fprintf(s, "Map entries, in order:\n\t");
+    std::map<key_type, int, key_less>::iterator curr = ct->begin();
+    std::map<key_type, int, key_less>::iterator end = ct->end();
+    const char* comma = "";
+    while (curr != end) {
+      fprintf(s, "%s%d", comma, curr->second);
+      comma = ", ";
+      ++curr;
+    }
+    fprintf(s, "\n\n");
+  }
+
+  verbLevel--;
+  dumpInternal(s, verbLevel);
 }
 
 
@@ -886,12 +1239,29 @@ void MEDDLY::operation_table::showEntry(FILE *s, int curr) const
 MEDDLY::compute_table*
 MEDDLY::createMonolithicTable(const settings &s)
 {
-  return new monolithic_table(s);
+  switch (s.useComputeTableType) {
+
+    case settings::MonolithicChainedHash:
+        return new monolithic_chained(s);
+
+    default:
+        throw error(error::INVALID_ASSIGNMENT);
+  }
 }
 
 MEDDLY::compute_table*
 MEDDLY::createOperationTable(const settings &s, operation* op)
 {
-  return new operation_table(s, op);
+  switch (s.useComputeTableType) {
+
+    case settings::OperationChainedHash:
+        return new operation_chained(s, op);
+
+    case settings::OperationMap:
+        return new operation_map(s, op);
+
+    default:
+        throw error(error::INVALID_ASSIGNMENT);
+  }
 }
 

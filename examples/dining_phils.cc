@@ -445,7 +445,8 @@ int main(int argc, char *argv[])
   // Initialize MEDDLY
 
   MEDDLY::settings s;
-  s.doComputeTablesUseChaining = chaining;
+  // TBD
+  // s.doComputeTablesUseChaining = chaining;
   if (cacheSize > 0) {
     s.maxComputeTableSize = cacheSize;
   }

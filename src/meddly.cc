@@ -95,9 +95,6 @@ namespace MEDDLY {
   // size of cache
   int op_cache_size = 0;
 
-  // operation settings
-  bool& operation::useMonolithicCT(meddlySettings.useMonolithicComputeTable);
-
   // Monolithic compute table, if used
   compute_table* operation::Monolithic_CT = 0;
 
@@ -413,7 +410,7 @@ void MEDDLY::initialize(const settings &s)
   }
 
   // set up monolithic compute table, if needed
-  if (meddlySettings.useMonolithicComputeTable) {
+  if (meddlySettings.usesMonolithicComputeTable()) {
     operation::Monolithic_CT = createMonolithicTable(s);
   }
 

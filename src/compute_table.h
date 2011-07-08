@@ -57,8 +57,6 @@ namespace MEDDLY {
 
 class MEDDLY::compute_table {
     public:
-      /// If true, use a table with chaining; otherwise, don't chain.
-      bool chaining;
       /// The maximum size of the hash table.
       unsigned maxSize;
       /// Aggressively try to eliminate atale entries.
@@ -68,22 +66,23 @@ class MEDDLY::compute_table {
         long numEntries;
         unsigned hits;
         unsigned pings;
-        static const int chainHistogramSize = 256;
-        long chainHistogram[chainHistogramSize];
-        long numLargeChains;
-        int maxChainLength;
+        static const int searchHistogramSize = 256;
+        long searchHistogram[searchHistogramSize];
+        long numLargeSearches;
+        int maxSearchLength;
       };
 
       class search_key {
           friend class base_table;
-          friend class monolithic_table;
-          friend class operation_table;
+          friend class monolithic_chained;
+          friend class operation_chained;
+          friend class operation_map;
           int hashLength;
+          int hashBytes;
           int* data;
           int* key_data;
-#ifdef DEVELOPMENT_CODE
-          int keyLength;  // used for range checking
-#endif
+          /// used only for range checking during "development".
+          int keyLength;  
         public:
           search_key();
           ~search_key();
@@ -97,18 +96,18 @@ class MEDDLY::compute_table {
       };
 
       class temp_entry {
-          friend class base_table;
-          friend class monolithic_table;
-          friend class operation_table;
+          friend class base_chained;
+          friend class monolithic_chained;
+          friend class operation_chained;
+          friend class operation_map;
           int handle;
           int hashLength;
           int* entry;
           int* key_entry;
           int* res_entry;
-#ifdef DEVELOPMENT_CODE
+          // The remaining entries are used only in development code
           int keyLength;
           int resLength;
-#endif
         public:
           inline int& key(int i) { 
 #ifdef DEVELOPMENT_CODE
