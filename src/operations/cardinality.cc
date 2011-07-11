@@ -69,7 +69,7 @@ public:
   card_int(const unary_opname* oc, expert_forest* arg);
 
   // common
-  virtual bool isEntryStale(const int* entryData);
+  virtual bool isStaleEntry(const int* entryData);
   virtual void discardEntry(const int* entryData);
   virtual void showEntry(FILE* strm, const int *entryData) const;
 
@@ -85,7 +85,7 @@ MEDDLY::card_int::card_int(const unary_opname* oc, expert_forest* arg)
 {
 }
 
-bool MEDDLY::card_int::isEntryStale(const int* data)
+bool MEDDLY::card_int::isStaleEntry(const int* data)
 {
   return argF->isStale(data[0]);
 }
@@ -269,7 +269,7 @@ public:
   card_real(const unary_opname* oc, expert_forest* arg);
 
   // common
-  virtual bool isEntryStale(const int* entryData);
+  virtual bool isStaleEntry(const int* entryData);
   virtual void discardEntry(const int* entryData);
   virtual void showEntry(FILE* strm, const int *entryData) const;
 };
@@ -279,7 +279,7 @@ MEDDLY::card_real::card_real(const unary_opname* oc, expert_forest* arg)
 {
 }
 
-bool MEDDLY::card_real::isEntryStale(const int* data)
+bool MEDDLY::card_real::isStaleEntry(const int* data)
 {
   return argF->isStale(data[0]);
 }
@@ -453,7 +453,7 @@ public:
   card_mpz(const unary_opname* oc, expert_forest* arg);
 
   // common
-  virtual bool isEntryStale(const int* entryData);
+  virtual bool isStaleEntry(const int* entryData);
   virtual void discardEntry(const int* entryData);
   virtual void showEntry(FILE* strm, const int *entryData) const;
 };
@@ -463,7 +463,7 @@ MEDDLY::card_mpz::card_mpz(const unary_opname* oc, expert_forest* arg)
 {
 }
 
-bool MEDDLY::card_mpz::isEntryStale(const int* data)
+bool MEDDLY::card_mpz::isStaleEntry(const int* data)
 {
   return argF->isStale(data[0]);
 }

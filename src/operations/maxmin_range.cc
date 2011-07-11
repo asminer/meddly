@@ -52,7 +52,7 @@ class MEDDLY::range_int : public unary_operation {
     range_int(const unary_opname* oc, expert_forest* arg);
 
     // common
-    virtual bool isEntryStale(const int* entryData);
+    virtual bool isStaleEntry(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
 };
@@ -62,7 +62,7 @@ MEDDLY::range_int::range_int(const unary_opname* oc, expert_forest* arg)
 {
 }
 
-bool MEDDLY::range_int::isEntryStale(const int* data)
+bool MEDDLY::range_int::isStaleEntry(const int* data)
 {
   return argF->isStale(data[0]);
 }
@@ -92,7 +92,7 @@ class MEDDLY::range_real : public unary_operation {
     range_real(const unary_opname* oc, expert_forest* arg);
 
     // common
-    virtual bool isEntryStale(const int* entryData);
+    virtual bool isStaleEntry(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
 };
@@ -102,7 +102,7 @@ MEDDLY::range_real::range_real(const unary_opname* oc, expert_forest* arg)
 {
 }
 
-bool MEDDLY::range_real::isEntryStale(const int* data)
+bool MEDDLY::range_real::isStaleEntry(const int* data)
 {
   return argF->isStale(data[0]);
 }

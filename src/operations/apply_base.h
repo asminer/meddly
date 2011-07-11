@@ -47,7 +47,6 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
     virtual ~generic_binary_mdd();
 
   public:
-    virtual bool isEntryStale(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
@@ -55,6 +54,7 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
     virtual int compute(int a, int b);
 
   protected:
+    virtual bool isStaleEntry(const int* entryData);
     inline void operationCommutes() {
       can_commute = (arg1F == arg2F);
     }
@@ -141,7 +141,6 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
     virtual ~generic_binbylevel_mxd();
 
   public:
-    virtual bool isEntryStale(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
@@ -149,6 +148,7 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
     virtual int compute(int level, int a, int b);
 
   protected:
+    virtual bool isStaleEntry(const int* entryData);
     inline void operationCommutes() {
       can_commute = (arg1F == arg2F);
     }
@@ -216,10 +216,10 @@ class MEDDLY::generic_binary_ev : public binary_operation {
     virtual ~generic_binary_ev();
 
   public:
-    virtual bool isEntryStale(const int* entryData);
     virtual void discardEntry(const int* entryData);
 
   protected:
+    virtual bool isStaleEntry(const int* entryData);
     inline void operationCommutes() {
       can_commute = (arg1F == arg2F);
     }

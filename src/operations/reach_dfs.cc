@@ -53,7 +53,7 @@ class MEDDLY::common_dfs_mt : public binary_operation {
     common_dfs_mt(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
-    virtual bool isEntryStale(const int* entryData);
+    virtual bool isStaleEntry(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int* entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
@@ -84,7 +84,7 @@ MEDDLY::common_dfs_mt::common_dfs_mt(const binary_opname* oc, expert_forest* a1,
 {
 }
 
-bool MEDDLY::common_dfs_mt::isEntryStale(const int* data)
+bool MEDDLY::common_dfs_mt::isStaleEntry(const int* data)
 {
   return arg1F->isStale(data[0]) ||
          arg2F->isStale(data[1]) ||

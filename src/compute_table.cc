@@ -588,7 +588,7 @@ class MEDDLY::monolithic_chained : public base_chained {
     inline bool checkStale(unsigned h, int prev, int &curr) {
         operation* currop = operation::getOpWithIndex(entries[curr+1]);
         DCASSERT(currop);
-        if (currop->isMarkedForDeletion() || currop->isEntryStale(entries+curr+2)) {
+        if (currop->isEntryStale(entries+curr+2)) {
           currop->discardEntry(entries+curr+2);
           int next = entries[curr];
           if (prev) entries[prev] = next;
@@ -736,7 +736,7 @@ int MEDDLY::monolithic_chained::convertToList(bool removeStales)
         //
         // Check for stale
         //
-        if (currop->isMarkedForDeletion() || currop->isEntryStale(entry)) {
+        if (currop->isEntryStale(entry)) {
 #ifdef DEBUG_TABLE2LIST
           printf("\tstale ");
           currop->showEntry(stdout, entry);
@@ -838,9 +838,7 @@ class MEDDLY::operation_chained : public base_chained {
     }
 
     inline bool checkStale(unsigned h, int prev, int &curr) {
-        if (global_op->isMarkedForDeletion() 
-          || global_op->isEntryStale(entries+curr+1)) 
-        {
+        if (global_op->isEntryStale(entries+curr+1)) {
           global_op->discardEntry(entries+curr+1);
           int next = entries[curr];
           if (prev) entries[prev] = next;
@@ -939,7 +937,7 @@ int MEDDLY::operation_chained::convertToList(bool removeStales)
         //
         // Check for stale
         //
-        if (global_op->isMarkedForDeletion() || global_op->isEntryStale(entry)) {
+        if (global_op->isEntryStale(entry)) {
           global_op->discardEntry(entry);
           recycleEntry(curr, 1+global_op->getCacheEntryLength());
           continue;
@@ -1117,9 +1115,7 @@ class MEDDLY::operation_map : public base_table {
         }
     };  
     inline bool isStale(const int* entry) {
-      return (
-        global_op->isMarkedForDeletion() || global_op->isEntryStale(entry)
-      );
+      return global_op->isEntryStale(entry);
     }
     inline void removeEntry(int h) {
       // we're cheating... it's not really const :^)

@@ -41,7 +41,7 @@ class MEDDLY::mdd2evplus_operation : public unary_operation {
     mdd2evplus_operation(const unary_opname* oc, expert_forest* arg, 
       expert_forest* res);
 
-    virtual bool isEntryStale(const int* entryData);
+    virtual bool isStaleEntry(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
 
@@ -60,7 +60,7 @@ MEDDLY::mdd2evplus_operation::mdd2evplus_operation(const unary_opname* oc,
 
 bool 
 MEDDLY::mdd2evplus_operation
-::isEntryStale(const int* entryData)
+::isStaleEntry(const int* entryData)
 {
   return 
     argF->isStale(entryData[0]) ||

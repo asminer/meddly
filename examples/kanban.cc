@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "meddly.h"
+#include "meddly_expert.h"
 #include "simple_model.h"
 
 const char* kanban[] = {
@@ -108,6 +109,8 @@ int main(int argc, const char** argv)
   double c;
   apply(CARDINALITY, reachable, c);
   printf("Approx. %g reachable states\n", c);
+  
+  operation::showAllComputeTables(stdout, 2);
   
   // cleanup
   MEDDLY::cleanup();

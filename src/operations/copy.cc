@@ -47,7 +47,7 @@ class MEDDLY::copy_MT : public unary_operation {
   public:
     copy_MT(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
-    virtual bool isEntryStale(const int* entryData);
+    virtual bool isStaleEntry(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
     virtual void compute(const dd_edge &arg, dd_edge &res);
@@ -61,7 +61,7 @@ MEDDLY::copy_MT
 {
 }
 
-bool MEDDLY::copy_MT::isEntryStale(const int* entryData)
+bool MEDDLY::copy_MT::isStaleEntry(const int* entryData)
 {
   return 
     argF->isStale(entryData[0]) ||
@@ -255,7 +255,7 @@ class MEDDLY::copy_MT2Evplus : public unary_operation {
     copy_MT2Evplus(const unary_opname* oc, expert_forest* arg, 
       expert_forest* res);
 
-    virtual bool isEntryStale(const int* entryData) {
+    virtual bool isStaleEntry(const int* entryData) {
       return 
         argF->isStale(entryData[0]) ||
         resF->isStale(entryData[2]);

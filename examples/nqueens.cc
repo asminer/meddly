@@ -270,16 +270,7 @@ int main()
   }
 #endif
   delete solutions;
-  if (operation::useMonolithicComputeTable()) {
-    operation::showMonolithicComputeTable(stdout, 1);
-  } else {
-    operation* op = getOperation(MULTIPLY, f, f, f);
-    op->showComputeTable(stdout, 1);
-    op = getOperation(CARDINALITY, f, INTEGER);
-    op->showComputeTable(stdout, 1);
-    op = getOperation(NOT_EQUAL, f, f, f);
-    op->showComputeTable(stdout, 1);
-  }
+  operation::showAllComputeTables(stdout, 1);
   // f->showInfo(stdout, 1);
   cleanup();
   return 0;

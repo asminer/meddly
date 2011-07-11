@@ -1451,6 +1451,7 @@ class MEDDLY::operation {
 
     int key_length; 
     int ans_length; 
+
   protected:
     /// Compute table to use, if any.
     compute_table* CT;
@@ -1480,9 +1481,11 @@ class MEDDLY::operation {
     // should ONLY be called during library cleanup.
     static void destroyOpList();
 
+    /*
     inline bool isMarkedForDeletion() const { 
       return is_marked_for_deletion;
     }
+    */
 
     inline void setNext(operation* n) { next = n; }
     inline operation* getNext()       { return next; }
@@ -1504,6 +1507,7 @@ class MEDDLY::operation {
     // for debugging:
 
     static void showMonolithicComputeTable(FILE*, int verbLevel);
+    static void showAllComputeTables(FILE*, int verbLevel);
     void showComputeTable(FILE*, int verbLevel) const;
 
     // handy
@@ -1525,21 +1529,15 @@ class MEDDLY::operation {
       return key_length + ans_length; 
     }
 
-/*
-    inline int getKeyLengthInBytes() const { 
-      return sizeof(int) * key_length;
-    }
-    inline int getAnsLengthInBytes() const {
-      return sizeof(int) * ans_length;
-    }
-    inline int getCacheEntryLengthInBytes() const {
-      return sizeof(int) * (key_length + ans_length);
-    }
-    */
-
     /// Checks if the cache entry (in entryData[]) is stale.
-    virtual bool isEntryStale(const int* entryData) = 0;
+    inline bool isEntryStale(const int* data) {
+      return (is_marked_for_deletion || isStaleEntry(data));
+    }
 
+  protected:
+    virtual bool isStaleEntry(const int* entry) = 0;
+
+  public:
     /// Removes the cache entry (in entryData[]) by informing the
     /// applicable forests that the nodes in this entry are being removed
     /// from the cache
@@ -1547,6 +1545,12 @@ class MEDDLY::operation {
 
     /// Prints a string representation of this cache entry on strm (stream).
     virtual void showEntry(FILE* strm, const int *entryData) const = 0;
+
+  protected:
+    void allocEntryForests(int nf);
+    void addEntryForest(int index, expert_forest* f);
+    void allocEntryObjects(int no);
+    void addEntryObject(int index);
 };
 
 // ******************************************************************

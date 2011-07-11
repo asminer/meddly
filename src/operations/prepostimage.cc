@@ -48,7 +48,7 @@ class MEDDLY::image_op : public binary_operation {
     image_op(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
-    virtual bool isEntryStale(const int* entryData);
+    virtual bool isStaleEntry(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
 
@@ -82,7 +82,7 @@ MEDDLY::image_op::image_op(const binary_opname* oc, expert_forest* a1,
   unionOp = 0;
 }
 
-bool MEDDLY::image_op::isEntryStale(const int* data)
+bool MEDDLY::image_op::isStaleEntry(const int* data)
 {
   return arg1F->isStale(data[0]) ||
          arg2F->isStale(data[1]) ||

@@ -42,7 +42,7 @@ MEDDLY::generic_binary_mdd::~generic_binary_mdd()
 {
 }
 
-bool MEDDLY::generic_binary_mdd::isEntryStale(const int* data)
+bool MEDDLY::generic_binary_mdd::isStaleEntry(const int* data)
 {
   return arg1F->isStale(data[0]) ||
          arg2F->isStale(data[1]) ||
@@ -1357,7 +1357,7 @@ MEDDLY::generic_binbylevel_mxd::~generic_binbylevel_mxd()
 {
 }
 
-bool MEDDLY::generic_binbylevel_mxd::isEntryStale(const int* data)
+bool MEDDLY::generic_binbylevel_mxd::isStaleEntry(const int* data)
 {
   return arg1F->isStale(data[1]) ||
          arg2F->isStale(data[2]) ||
@@ -2234,7 +2234,7 @@ MEDDLY::generic_binary_ev::~generic_binary_ev()
 {
 }
 
-bool MEDDLY::generic_binary_ev::isEntryStale(const int* data)
+bool MEDDLY::generic_binary_ev::isStaleEntry(const int* data)
 {
   return arg1F->isStale(data[1]) ||
          arg2F->isStale(data[3]) ||

@@ -163,6 +163,7 @@ MEDDLY::operation::operation(const opname* n, int kl, int al)
     // Initialize CT search structure
     //
     CT->initializeSearchKey(CTsrch, this);
+
   }
 }
 
@@ -216,6 +217,18 @@ void MEDDLY::operation::removeAllComputeTableEntries()
 void MEDDLY::operation::showMonolithicComputeTable(FILE* s, int verbLevel)
 {
   if (Monolithic_CT) Monolithic_CT->show(s, verbLevel);
+}
+
+void MEDDLY::operation::showAllComputeTables(FILE* s, int verbLevel)
+{
+  if (Monolithic_CT) {
+    Monolithic_CT->show(s, verbLevel);
+    return;
+  }
+  for (int i=0; i<list_size; i++) 
+    if (op_list[i]) {
+      op_list[i]->showComputeTable(s, verbLevel);
+    }
 }
 
 void MEDDLY::operation::showComputeTable(FILE* s, int verbLevel) const

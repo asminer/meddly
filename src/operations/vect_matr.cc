@@ -51,7 +51,7 @@ class MEDDLY::base_evplus_mt : public numerical_operation {
     virtual void compute(int ht, double* y, int y_ind, const double* x, 
       int x_ind, int A) = 0;
 
-    virtual bool isEntryStale(const int*) {
+    virtual bool isStaleEntry(const int*) {
       throw error(error::MISCELLANEOUS);
     }
     virtual void discardEntry(const int*) {

@@ -41,7 +41,7 @@ class MEDDLY::cross_bool : public binary_operation {
     cross_bool(const binary_opname* oc, expert_forest* a1,
       expert_forest* a2, expert_forest* res);
 
-    virtual bool isEntryStale(const int* entryData);
+    virtual bool isStaleEntry(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
@@ -60,7 +60,7 @@ MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
   // data[3] : c
 }
 
-bool MEDDLY::cross_bool::isEntryStale(const int* data)
+bool MEDDLY::cross_bool::isStaleEntry(const int* data)
 {
   // data[0] is the level number
   return arg1F->isStale(data[1]) ||

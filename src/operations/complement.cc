@@ -43,7 +43,7 @@ class MEDDLY::compl_mdd : public unary_operation {
   public:
     compl_mdd(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
-    virtual bool isEntryStale(const int* entryData);
+    virtual bool isStaleEntry(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
     virtual void compute(const dd_edge& a, dd_edge& b);
@@ -59,7 +59,7 @@ MEDDLY::compl_mdd
   // ct entry 1: output node
 }
 
-bool MEDDLY::compl_mdd::isEntryStale(const int* data)
+bool MEDDLY::compl_mdd::isStaleEntry(const int* data)
 {
   return argF->isStale(data[0]) || resF->isStale(data[1]);
 }
@@ -151,7 +151,7 @@ class MEDDLY::compl_mxd : public unary_operation {
   public:
     compl_mxd(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
-    virtual bool isEntryStale(const int* entryData);
+    virtual bool isStaleEntry(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
     virtual void compute(const dd_edge& a, dd_edge& b);
@@ -168,7 +168,7 @@ MEDDLY::compl_mxd
   // ct entry 2: output node
 }
 
-bool MEDDLY::compl_mxd::isEntryStale(const int* data)
+bool MEDDLY::compl_mxd::isStaleEntry(const int* data)
 {
   return argF->isStale(data[1]) || resF->isStale(data[2]);
 }
