@@ -39,9 +39,8 @@ namespace MEDDLY {
 
 class MEDDLY::generic_binary_mdd : public binary_operation {
     bool can_commute;
-    compute_table::search_key CTsrch;
   public:
-    generic_binary_mdd(const binary_opname* code, expert_forest* arg1,
+    generic_binary_mdd(const binary_opname* code, expert_forest* arg1, 
       expert_forest* arg2, expert_forest* res);
 
   protected:
@@ -107,7 +106,7 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
 
 class MEDDLY::generic_binary_mxd : public generic_binary_mdd {
   public:
-    generic_binary_mxd(const binary_opname* code, expert_forest* arg1,
+    generic_binary_mxd(const binary_opname* code, expert_forest* arg1, 
       expert_forest* arg2, expert_forest* res);
 
   protected:
@@ -134,9 +133,8 @@ class MEDDLY::generic_binary_mxd : public generic_binary_mdd {
 
 class MEDDLY::generic_binbylevel_mxd : public binary_operation {
     bool can_commute;
-    compute_table::search_key CTsrch;
   public:
-    generic_binbylevel_mxd(const binary_opname* code, expert_forest* arg1,
+    generic_binbylevel_mxd(const binary_opname* code, expert_forest* arg1, 
       expert_forest* arg2, expert_forest* res);
 
   protected:
@@ -210,9 +208,8 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
 class MEDDLY::generic_binary_ev : public binary_operation {
   protected:
     bool can_commute;
-    compute_table::search_key CTsrch;
   public:
-    generic_binary_ev(const binary_opname* code, expert_forest* arg1,
+    generic_binary_ev(const binary_opname* code, expert_forest* arg1, 
       expert_forest* arg2, expert_forest* res);
 
   protected:
@@ -232,7 +229,7 @@ class MEDDLY::generic_binary_ev : public binary_operation {
 
 class MEDDLY::generic_binary_evplus : public generic_binary_ev {
   public:
-    generic_binary_evplus(const binary_opname* code, expert_forest* arg1,
+    generic_binary_evplus(const binary_opname* code, expert_forest* arg1, 
       expert_forest* arg2, expert_forest* res);
 
   protected:
@@ -293,7 +290,7 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
 
 class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
   public:
-    generic_binary_evtimes(const binary_opname* code, expert_forest* arg1,
+    generic_binary_evtimes(const binary_opname* code, expert_forest* arg1, 
       expert_forest* arg2, expert_forest* res);
 
   protected:

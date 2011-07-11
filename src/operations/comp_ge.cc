@@ -24,7 +24,6 @@
 #endif
 #include "../defines.h"
 #include "comp_ge.h"
-#include "../compute_table.h"
 #include "apply_base.h"
 
 namespace MEDDLY {

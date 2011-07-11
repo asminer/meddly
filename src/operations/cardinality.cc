@@ -27,7 +27,6 @@
 #endif
 #include "../defines.h"
 #include "cardinality.h"
-#include "../compute_table.h"
 #include "mpz_object.h"
 
 // #define DEBUG_CARD
@@ -79,15 +78,11 @@ protected:
     a += x;
     if (a < x) throw error(error::OVERFLOW);
   }
-  compute_table::search_key CTsrch;
 };
 
 MEDDLY::card_int::card_int(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, true, arg, INTEGER)
+ : unary_operation(oc, 1, sizeof(long) / sizeof(int), arg, INTEGER)
 {
-  key_length = 1;
-  ans_length = sizeof(long) / sizeof(int); 
-  CT->initializeSearchKey(CTsrch, this);
 }
 
 bool MEDDLY::card_int::isEntryStale(const int* data)
@@ -277,16 +272,11 @@ public:
   virtual bool isEntryStale(const int* entryData);
   virtual void discardEntry(const int* entryData);
   virtual void showEntry(FILE* strm, const int *entryData) const;
-protected:
-  compute_table::search_key CTsrch;
 };
 
 MEDDLY::card_real::card_real(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, true, arg, REAL)
+ : unary_operation(oc, 1, sizeof(double) / sizeof(int), arg, REAL)
 {
-  key_length = 1;
-  ans_length = sizeof(double) / sizeof(int); 
-  CT->initializeSearchKey(CTsrch, this);
 }
 
 bool MEDDLY::card_real::isEntryStale(const int* data)
@@ -466,16 +456,11 @@ public:
   virtual bool isEntryStale(const int* entryData);
   virtual void discardEntry(const int* entryData);
   virtual void showEntry(FILE* strm, const int *entryData) const;
-protected:
-  compute_table::search_key CTsrch;
 };
 
 MEDDLY::card_mpz::card_mpz(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, true, arg, HUGEINT)
+ : unary_operation(oc, 1, sizeof(ct_object*) / sizeof(int), arg, HUGEINT)
 {
-  key_length = 1;
-  ans_length = sizeof(ct_object*) / sizeof(int); 
-  CT->initializeSearchKey(CTsrch, this);
 }
 
 bool MEDDLY::card_mpz::isEntryStale(const int* data)

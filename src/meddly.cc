@@ -411,7 +411,7 @@ void MEDDLY::initialize(const settings &s)
 
   // set up monolithic compute table, if needed
   if (meddlySettings.usesMonolithicComputeTable()) {
-    operation::Monolithic_CT = createMonolithicTable(s);
+    operation::Monolithic_CT = createMonolithicTable(s.computeTable);
   }
 
   opname::next_index = 0;

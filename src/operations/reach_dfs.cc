@@ -25,7 +25,6 @@
 #endif
 #include "../defines.h"
 #include "reach_dfs.h"
-#include "../compute_table.h"
 
 #include <vector>
 #include <map>
@@ -61,7 +60,6 @@ class MEDDLY::common_dfs_mt : public binary_operation {
     virtual int compute(int a, int b) = 0;
 
   protected:
-    compute_table::search_key CTsrch;
     inline bool findResult(int a, int b, int &c) {
       CTsrch.key(0) = a;
       CTsrch.key(1) = b;
@@ -82,11 +80,8 @@ class MEDDLY::common_dfs_mt : public binary_operation {
 
 MEDDLY::common_dfs_mt::common_dfs_mt(const binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res)
-: binary_operation(oc, true, a1, a2, res)
+: binary_operation(oc, 2, 1, a1, a2, res)
 {
-  key_length = 2;
-  ans_length = 1;
-  CT->initializeSearchKey(CTsrch, this);
 }
 
 bool MEDDLY::common_dfs_mt::isEntryStale(const int* data)

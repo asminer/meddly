@@ -24,7 +24,6 @@
 #endif
 #include "../defines.h"
 #include "mdd2evplus.h"
-#include "../compute_table.h"
 
 namespace MEDDLY {
   class mdd2evplus_operation;
@@ -49,17 +48,14 @@ class MEDDLY::mdd2evplus_operation : public unary_operation {
     virtual void compute(const dd_edge &arg, dd_edge &res);
 
     void compute(int ht, int a, int &bdn, int &bcard);
-  protected:
-    compute_table::search_key CTsrch;
 };
 
 MEDDLY::mdd2evplus_operation::mdd2evplus_operation(const unary_opname* oc, 
   expert_forest* arg, expert_forest* res)
-: unary_operation(oc, true, arg, res)
+: unary_operation(oc, 1, 2, arg, res)
 {
-  key_length = 1;
-  ans_length = 2; // pointer, cardinality
-  CT->initializeSearchKey(CTsrch, this);
+  // answer[0] : pointer
+  // answer[1] : cardinality
 }
 
 bool 

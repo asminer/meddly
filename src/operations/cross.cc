@@ -24,7 +24,6 @@
 #endif
 #include "../defines.h"
 #include "cross.h"
-#include "../compute_table.h"
 
 namespace MEDDLY {
   class cross_bool;
@@ -49,21 +48,16 @@ class MEDDLY::cross_bool : public binary_operation {
 
     int compute_pr(int ht, int a, int b);
     int compute_un(int ht, int a, int b);
-  protected:
-    compute_table::search_key CTsrch;
 };
 
 MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res) 
-: binary_operation(oc, true, a1, a2, res)
+: binary_operation(oc, 3, 1, a1, a2, res)
 {
-  key_length = 3; 
-  ans_length = 1;
   // data[0] : height
   // data[1] : a
   // data[2] : b
   // data[3] : c
-  CT->initializeSearchKey(CTsrch, this);
 }
 
 bool MEDDLY::cross_bool::isEntryStale(const int* data)

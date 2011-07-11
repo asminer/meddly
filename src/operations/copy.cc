@@ -24,7 +24,6 @@
 #endif
 #include "../defines.h"
 #include "copy.h"
-#include "../compute_table.h"
 
 namespace MEDDLY {
   class copy_MT;
@@ -54,16 +53,12 @@ class MEDDLY::copy_MT : public unary_operation {
     virtual void compute(const dd_edge &arg, dd_edge &res);
   protected:
     virtual int compute(int a) = 0;
-    compute_table::search_key CTsrch;
 };
 
 MEDDLY::copy_MT
 :: copy_MT(const unary_opname* oc, expert_forest* arg, expert_forest* res)
- : unary_operation(oc, true, arg, res)
+ : unary_operation(oc, 1, 1, arg, res)
 {
-  key_length = 1;
-  ans_length = 1;
-  CT->initializeSearchKey(CTsrch, this);
 }
 
 bool MEDDLY::copy_MT::isEntryStale(const int* entryData)
@@ -279,20 +274,15 @@ class MEDDLY::copy_MT2Evplus : public unary_operation {
       res.set(b, bev, resF->getNodeLevel(b));
     }
     virtual void compute(int a, int &b, int &bev);
-  protected:
-    compute_table::search_key CTsrch;
 };
 
 MEDDLY::copy_MT2Evplus::copy_MT2Evplus(const unary_opname* oc, 
   expert_forest* arg, expert_forest* res)
-: unary_operation(oc, true, arg, res)
+: unary_operation(oc, 1, 2, arg, res)
 {
-  key_length = 1;
-  ans_length = 2;
   // entry[0]: MT node
   // entry[1]: EV value
   // entry[2]: EV node
-  CT->initializeSearchKey(CTsrch, this);
 }
 
 void MEDDLY::copy_MT2Evplus::compute(int a, int &b, int &bev)

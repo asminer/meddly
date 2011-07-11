@@ -24,7 +24,6 @@
 #endif
 #include "../defines.h"
 #include "multiply.h"
-#include "../compute_table.h"
 #include "apply_base.h"
 
 #define OLD_MULTIPLY

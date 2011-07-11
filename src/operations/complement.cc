@@ -24,7 +24,6 @@
 #endif
 #include "../defines.h"
 #include "complement.h"
-#include "../compute_table.h"
 
 namespace MEDDLY {
   class compl_mdd;
@@ -50,19 +49,14 @@ class MEDDLY::compl_mdd : public unary_operation {
     virtual void compute(const dd_edge& a, dd_edge& b);
 
     int compute(int a);
-  protected:
-    compute_table::search_key CTsrch;
 };
 
 MEDDLY::compl_mdd
 ::compl_mdd(const unary_opname* oc, expert_forest* arg, expert_forest* res)
- : unary_operation(oc, true, arg, res)
+ : unary_operation(oc, 1, 1, arg, res)
 {
-  key_length = 1; 
-  ans_length = 1;
   // ct entry 0: input node
   // ct entry 1: output node
-  CT->initializeSearchKey(CTsrch, this);
 }
 
 bool MEDDLY::compl_mdd::isEntryStale(const int* data)
@@ -163,20 +157,15 @@ class MEDDLY::compl_mxd : public unary_operation {
     virtual void compute(const dd_edge& a, dd_edge& b);
 
     int compute(int ht, int a);
-  protected:
-    compute_table::search_key CTsrch;
 };
 
 MEDDLY::compl_mxd
 ::compl_mxd(const unary_opname* oc, expert_forest* arg, expert_forest* res)
- : unary_operation(oc, true, arg, res)
+ : unary_operation(oc, 2, 1, arg, res)
 {
-  key_length = 2; 
-  ans_length = 1;
   // ct entry 0: level
   // ct entry 1: input node
   // ct entry 2: output node
-  CT->initializeSearchKey(CTsrch, this);
 }
 
 bool MEDDLY::compl_mxd::isEntryStale(const int* data)

@@ -115,19 +115,21 @@ MEDDLY::numerical_opname::~numerical_opname()
 // *                       operation  methods                       *
 // ******************************************************************
 
-MEDDLY::operation::operation(const opname* n, bool uses_CT)
+MEDDLY::operation::operation(const opname* n, int kl, int al)
 {
   theOpName = n;
-  key_length = 0;
-  ans_length = 0;
-  if (Monolithic_CT)
-    CT = Monolithic_CT;
-  else {
-    CT = createOperationTable(meddlySettings, this); 
-  }
+  key_length = kl;
+  ans_length = al;
   is_marked_for_deletion = false;
   next = 0;
-  if (uses_CT) {
+
+  if (0==key_length) {
+    oplist_index = -1;
+    CT = 0;
+  } else {
+    // 
+    // assign an index to this operation, for use in CT
+    //
     if (free_list>=0) {
       oplist_index = free_list;
       free_list = op_holes[free_list];
@@ -147,8 +149,20 @@ MEDDLY::operation::operation(const opname* n, bool uses_CT)
       list_size++;
     }
     op_list[oplist_index] = this;
-  } else {
-    oplist_index = -1;
+
+    // 
+    // Initialize CT 
+    //
+    if (Monolithic_CT)
+      CT = Monolithic_CT;
+    else {
+      CT = createOperationTable(meddlySettings.computeTable, this); 
+    }
+
+    //
+    // Initialize CT search structure
+    //
+    CT->initializeSearchKey(CTsrch, this);
   }
 }
 
@@ -188,14 +202,14 @@ void MEDDLY::operation::destroyOpList()
 
 void MEDDLY::operation::removeStaleComputeTableEntries()
 {
-  CT->removeStales();
+  if (CT) CT->removeStales();
 }
 
 void MEDDLY::operation::removeAllComputeTableEntries()
 {
   if (is_marked_for_deletion) return;
   is_marked_for_deletion = true;
-  CT->removeStales();
+  if (CT) CT->removeStales();
   is_marked_for_deletion = false;
 }
 
@@ -206,15 +220,15 @@ void MEDDLY::operation::showMonolithicComputeTable(FILE* s, int verbLevel)
 
 void MEDDLY::operation::showComputeTable(FILE* s, int verbLevel) const
 {
-  CT->show(s, verbLevel);
+  if (CT) CT->show(s, verbLevel);
 }
 
 // ******************************************************************
 // *                    unary_operation  methods                    *
 // ******************************************************************
 
-MEDDLY::unary_operation::unary_operation(const unary_opname* code, bool uCT,
-  expert_forest* arg, expert_forest* res) : operation(code, uCT)
+MEDDLY::unary_operation::unary_operation(const unary_opname* code, int kl, 
+  int al, expert_forest* arg, expert_forest* res) : operation(code, kl, al)
 {
   argF = arg;
   resultType = FOREST;
@@ -224,8 +238,8 @@ MEDDLY::unary_operation::unary_operation(const unary_opname* code, bool uCT,
   resFslot = resF->registerOperation(this);
 }
 
-MEDDLY::unary_operation::unary_operation(const unary_opname* code, bool uCT,
-  expert_forest* arg, opnd_type res) : operation(code, uCT)
+MEDDLY::unary_operation::unary_operation(const unary_opname* code, int kl, 
+  int al, expert_forest* arg, opnd_type res) : operation(code, kl, al)
 {
   argF = arg;
   resultType = res;
@@ -265,9 +279,9 @@ void MEDDLY::unary_operation::compute(const dd_edge &arg, ct_object &c)
 // *                    binary_operation methods                    *
 // ******************************************************************
 
-MEDDLY::binary_operation::binary_operation(const binary_opname* op, bool uCT,
-  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-: operation(op, uCT)
+MEDDLY::binary_operation::binary_operation(const binary_opname* op, int kl, 
+  int al, expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+: operation(op, kl, al)
 {
   arg1F = arg1;
   arg2F = arg2;
@@ -299,8 +313,8 @@ int MEDDLY::binary_operation::compute(int k, int a, int b)
 // *                  numerical_operation  methods                  *
 // ******************************************************************
 
-MEDDLY::numerical_operation::numerical_operation(const numerical_opname* op, 
-  bool uCT) : operation(op, uCT)
+MEDDLY::numerical_operation::numerical_operation(const numerical_opname* op) 
+ : operation(op, 0, 0)
 {
 }
 

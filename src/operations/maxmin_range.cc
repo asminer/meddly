@@ -24,7 +24,6 @@
 #endif
 #include "../defines.h"
 #include "maxmin_range.h"
-#include "../compute_table.h"
 
 namespace MEDDLY {
 
@@ -56,16 +55,11 @@ class MEDDLY::range_int : public unary_operation {
     virtual bool isEntryStale(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
-  protected:
-    compute_table::search_key CTsrch;
 };
 
 MEDDLY::range_int::range_int(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, true, arg, INTEGER)
+ : unary_operation(oc, 1, sizeof(long) / sizeof(int), arg, INTEGER)
 {
-  key_length = 1;
-  ans_length = sizeof(long) / sizeof(int); 
-  CT->initializeSearchKey(CTsrch, this);
 }
 
 bool MEDDLY::range_int::isEntryStale(const int* data)
@@ -101,16 +95,11 @@ class MEDDLY::range_real : public unary_operation {
     virtual bool isEntryStale(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
-  protected:
-    compute_table::search_key CTsrch;
 };
 
 MEDDLY::range_real::range_real(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, true, arg, INTEGER)
+ : unary_operation(oc, 1, sizeof(double) / sizeof(int), arg, INTEGER)
 {
-  key_length = 1;
-  ans_length = sizeof(double) / sizeof(int); 
-  CT->initializeSearchKey(CTsrch, this);
 }
 
 bool MEDDLY::range_real::isEntryStale(const int* data)

@@ -25,7 +25,6 @@
 #endif
 #include "../defines.h"
 #include "prepostimage.h"
-#include "../compute_table.h"
 
 namespace MEDDLY {
   class image_op;
@@ -73,18 +72,14 @@ class MEDDLY::image_op : public binary_operation {
     virtual int compute(int a, int b);
   protected:
     binary_operation* unionOp;
-    compute_table::search_key CTsrch;
     virtual int compute_rec(int a, int b) = 0;
 };
 
 MEDDLY::image_op::image_op(const binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res)
-: binary_operation(oc, true, a1, a2, res)
+: binary_operation(oc, 2, 1, a1, a2, res)
 {
-  key_length = 2; 
-  ans_length = 1;
   unionOp = 0;
-  CT->initializeSearchKey(CTsrch, this);
 }
 
 bool MEDDLY::image_op::isEntryStale(const int* data)

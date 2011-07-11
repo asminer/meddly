@@ -75,10 +75,6 @@ namespace MEDDLY {
   int     toInt   (float a);
   float*  toFloat (int* a);
 
-  // classes defined elsewhere
-  class compute_cache;
-  class compute_table;
-
   // classes defined here
   struct settings;
   class expert_variable;
@@ -90,6 +86,8 @@ namespace MEDDLY {
   class unary_opname;
   class binary_opname;
   class numerical_opname;
+
+  class compute_table;
 
   class operation;
   class unary_operation;
@@ -235,37 +233,53 @@ class MEDDLY::ct_object {
 */
 struct MEDDLY::settings {
   public:
-    /// Options for compute tables.
-    enum computeTableOption {
-      /// One huge hash table that uses chaining.
-      MonolithicChainedHash,
-      /// A hash table (with chaining) for each operation.
-      OperationChainedHash,
-      /// A STL "map" for each operation.
-      OperationMap
+    struct computeTableSettings {
+      public:
+        enum styleOption {
+          /// One huge hash table that uses chaining.
+          MonolithicChainedHash,
+          /// A hash table (with chaining) for each operation.
+          OperationChainedHash,
+          /// A STL "map" for each operation.
+          OperationMap
+        };
+        enum staleRemovalOption {
+          /// Whenever we see a stale entry, remove it.
+          Aggressive,
+          /// Only remove stales when we need to expand the table
+          Moderate,
+          /// Only remove stales during Garbage Collection.
+          Lazy
+        };
+      public:
+        /// The type of compute table(s) that should be used.
+        styleOption style;
+        /// Maximum compute table size.
+        unsigned maxSize;
+        /// How aggressively should we try to eliminate stale entries.
+        staleRemovalOption staleRemoval;
+      public:
+        /// Constructor, to set defaults.
+        computeTableSettings() {
+          style = MonolithicChainedHash;
+          staleRemoval = Moderate;
+          maxSize = 16777216;
+        }
     };
   public:
-    /// The type of compute table(s) that should be used.
-    computeTableOption useComputeTableType;
-    /// Should the compute tables aggressively try to eliminate stales.
-    bool doComputeTablesCheckStales;
-    /// Maximum compute table size.
-    unsigned maxComputeTableSize;
+    /// Settings for the compute table(s)
+    computeTableSettings computeTable;
     /// Initializer for operations
     op_initializer* operationBuilder;
   public:
     /// Constructor, to set defaults.
-    settings() {
-      // useComputeTableType = MonolithicChainedHash;
-      useComputeTableType = OperationMap;
-      doComputeTablesCheckStales = false;
-      maxComputeTableSize = 16777216;
+    settings() : computeTable() {
       operationBuilder = makeBuiltinInitializer();
     }
     /// super handly
     inline bool usesMonolithicComputeTable() {
       return (
-        MonolithicChainedHash == useComputeTableType
+       computeTableSettings::MonolithicChainedHash == computeTable.style
       );
     }
 };
@@ -1256,6 +1270,156 @@ class MEDDLY::numerical_opname : public opname {
 
 
 // ******************************************************************
+// *                      compute_table  class                      *
+// ******************************************************************
+
+/** Interface for compute tables.
+    Anyone implementing an operation (see below) will
+    probably want to use this.
+*/
+class MEDDLY::compute_table {
+    public:
+      /// The maximum size of the hash table.
+      unsigned maxSize;
+      /// Do we try to eliminate stales during a "find" operation
+      bool checkStalesOnFind;
+      /// Do we try to eliminate stales during a "resize" operation
+      bool checkStalesOnResize;
+
+      struct stats {
+        long numEntries;
+        unsigned hits;
+        unsigned pings;
+        static const int searchHistogramSize = 256;
+        long searchHistogram[searchHistogramSize];
+        long numLargeSearches;
+        int maxSearchLength;
+      };
+
+      class search_key {
+          friend class base_table;
+          friend class base_hash;
+          friend class monolithic_chained;
+          friend class operation_chained;
+          friend class operation_map;
+          int hashLength;
+          int hashBytes;
+          int* data;
+          int* key_data;
+          /// used only for range checking during "development".
+          int keyLength;  
+        public:
+          search_key();
+          ~search_key();
+          inline int& key(int i) { 
+#ifdef DEVELOPMENT_CODE
+            assert(i>=0);
+            assert(i<keyLength);
+#endif
+            return key_data[i]; 
+          }
+      };
+
+      class temp_entry {
+          friend class base_chained;
+          friend class monolithic_chained;
+          friend class operation_chained;
+          friend class operation_map;
+          int handle;
+          int hashLength;
+          int* entry;
+          int* key_entry;
+          int* res_entry;
+          // The remaining entries are used only in development code
+          int keyLength;
+          int resLength;
+        public:
+          inline int& key(int i) { 
+#ifdef DEVELOPMENT_CODE
+            assert(i>=0);
+            assert(i<keyLength);
+#endif
+            return key_entry[i]; 
+          }
+          inline int& result(int i) { 
+#ifdef DEVELOPMENT_CODE
+            assert(i>=0);
+            assert(i<resLength);
+#endif
+            return res_entry[i]; 
+          }
+          // inline void copyResult(int i, void* data, size_t bytes) {
+          void copyResult(int i, void* data, size_t bytes) {
+#ifdef DEVELOPMENT_CODE
+            assert(i>=0);
+            assert(i+bytes<=resLength*sizeof(int));
+#endif
+            memcpy(res_entry+i, data, bytes);
+          }
+      };
+
+    public:
+      /// Constructor
+      compute_table(const settings::computeTableSettings &s);
+
+      /** Destructor. 
+          Does NOT properly discard all table entries;
+          use \a removeAll() for this.
+      */
+      virtual ~compute_table();
+
+      /// Is this a per-operation compute table?
+      virtual bool isOperationTable() const = 0;
+
+      /// Initialize a search key for a given operation.
+      virtual void initializeSearchKey(search_key &key, operation* op) = 0;
+
+      /** Find an entry in the compute table based on the key provided.
+          @param  key   Key to search for.
+          @return       0, if not found;
+                        otherwise, an integer array of size 
+                        op->getCacheEntryLength()
+      */
+      virtual const int* find(const search_key &key) = 0;
+
+      /** Start a new compute table entry.
+          The operation should "fill in" the values for the entry,
+          then call \a addEntry().
+      */
+      virtual temp_entry& startNewEntry(operation* op) = 0;
+
+      /** Add the "current" new entry to the compute table.
+          The entry may be specified by filling in the values 
+          for the struct returned by \a startNewEntry().
+      */
+      virtual void addEntry() = 0;
+
+      /** Remove all stale entries.
+          Scans the table for entries that are no longer valid (i.e. they are
+          stale, according to operation::isEntryStale) and removes them. This
+          can be a time-consuming process (proportional to the number of cached
+          entries).
+      */
+      virtual void removeStales() = 0;
+
+      /** Removes all entries.
+      */
+      virtual void removeAll() = 0;
+
+      /// Get performance stats for the table.
+      inline const stats& getStats() {
+        return perf;
+      }
+
+      /// For debugging.
+      virtual void show(FILE *s, int verbLevel = 0) const = 0;
+
+    protected:
+      stats perf;
+      temp_entry currEntry;
+};
+
+// ******************************************************************
 // *                        operation  class                        *
 // ******************************************************************
 
@@ -1284,14 +1448,25 @@ class MEDDLY::operation {
     static int free_list;
 
     int oplist_index;
-  protected:
+
     int key_length; 
     int ans_length; 
+  protected:
+    /// Compute table to use, if any.
     compute_table* CT;
+    /// Struct for CT searches.
+    compute_table::search_key CTsrch;
     // for cache of operations.
     operation* next;
   public:
-    operation(const opname* n, bool uses_CT);
+    /// New constructor.
+    /// @param  n   Operation "name"
+    /// @param  kl  Key length of compute table entries.
+    ///             Use 0 if this operation does not use the compute table.
+    /// @param  al  Answer length of compute table entries.
+    ///             Use 0 if this operation does not use the compute table.
+    operation(const opname* n, int kl, int al);
+    //operation(const opname* n, bool uses_CT);
 
   protected:
     virtual ~operation();
@@ -1350,6 +1525,7 @@ class MEDDLY::operation {
       return key_length + ans_length; 
     }
 
+/*
     inline int getKeyLengthInBytes() const { 
       return sizeof(int) * key_length;
     }
@@ -1359,6 +1535,7 @@ class MEDDLY::operation {
     inline int getCacheEntryLengthInBytes() const {
       return sizeof(int) * (key_length + ans_length);
     }
+    */
 
     /// Checks if the cache entry (in entryData[]) is stale.
     virtual bool isEntryStale(const int* entryData) = 0;
@@ -1388,10 +1565,10 @@ class MEDDLY::unary_operation : public operation {
     int argFslot;
     int resFslot;
   public:
-    unary_operation(const unary_opname* code, bool uses_CT,
+    unary_operation(const unary_opname* code, int kl, int al,
       expert_forest* arg, expert_forest* res);
 
-    unary_operation(const unary_opname* code, bool uses_CT,
+    unary_operation(const unary_opname* code, int kl, int al,
       expert_forest* arg, opnd_type res);
 
   protected:
@@ -1437,7 +1614,7 @@ class MEDDLY::binary_operation : public operation {
     int arg2Fslot;
     int resFslot;
   public:
-    binary_operation(const binary_opname* code, bool uses_CT,
+    binary_operation(const binary_opname* code, int kl, int al,
       expert_forest* arg1, expert_forest* arg2, expert_forest* res);
 
   protected:
@@ -1469,7 +1646,7 @@ class MEDDLY::binary_operation : public operation {
 */
 class MEDDLY::numerical_operation : public operation {
   public:
-    numerical_operation(const numerical_opname* code, bool uses_CT);
+    numerical_operation(const numerical_opname* code);
   protected:
     virtual ~numerical_operation();
   public:

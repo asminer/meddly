@@ -39,12 +39,13 @@ namespace MEDDLY {
 
   class monolithic_chained;
   class operation_chained;
+
   // const float expansionFactor = 1.5;
 
   /// essentially, the "old" binary_compute_table.
   class operation_map;
 
-  extern settings meddlySettings;
+  // extern settings meddlySettings;
 }
 
 // **********************************************************************
@@ -53,13 +54,26 @@ namespace MEDDLY {
 // *                                                                    *
 // **********************************************************************
 
-MEDDLY::compute_table::compute_table(const settings &s)
+MEDDLY::compute_table::compute_table(const settings::computeTableSettings &s)
 {
-  maxSize = s.maxComputeTableSize;
-  checkStales = s.doComputeTablesCheckStales;
-
+  maxSize = s.maxSize;
   if (0==maxSize)
     throw error(error::INVALID_ASSIGNMENT);
+
+  switch (s.staleRemoval) {
+    case settings::computeTableSettings::Aggressive:
+            checkStalesOnFind = true;
+            checkStalesOnResize = true;
+            break;
+    case settings::computeTableSettings::Moderate:
+            checkStalesOnFind = false;
+            checkStalesOnResize = true;
+            break;
+    case settings::computeTableSettings::Lazy:
+            checkStalesOnFind = false;
+            checkStalesOnResize = false;
+            break;
+  }
 
   perf.numEntries = 0;
   perf.hits = 0;
@@ -96,7 +110,7 @@ MEDDLY::compute_table::search_key::~search_key()
 
 class MEDDLY::base_table : public compute_table {
   public:
-    base_table(const settings &s);
+    base_table(const settings::computeTableSettings &s);
     virtual ~base_table();
 
   protected:
@@ -116,6 +130,21 @@ class MEDDLY::base_table : public compute_table {
     }
     void dumpInternal(FILE* s, int verbLevel) const;
     void report(FILE* s, int indent, int &level, unsigned long mem) const;
+
+    static inline bool equal_sw(const int* a, const int* b, int N) {
+      switch (N) {  // note: cases 8 - 2 fall through
+        case  8:    if (a[7] != b[7]) return false;
+        case  7:    if (a[6] != b[6]) return false;
+        case  6:    if (a[5] != b[5]) return false;
+        case  5:    if (a[4] != b[4]) return false;
+        case  4:    if (a[3] != b[3]) return false;
+        case  3:    if (a[2] != b[2]) return false;
+        case  2:    if (a[1] != b[1]) return false;
+        case  1:    return a[0] == b[0];
+        case  0:    return true;
+        default:    return (0==memcmp(a, b, N*sizeof(int)));
+      };
+    }
   protected:
     int*  entries;
     int entriesSize;
@@ -130,7 +159,7 @@ class MEDDLY::base_table : public compute_table {
 // *                         base_table methods                         *
 // **********************************************************************
 
-MEDDLY::base_table::base_table(const settings &s)
+MEDDLY::base_table::base_table(const settings::computeTableSettings &s)
  : compute_table(s)
 {
   entriesAlloc = 1024;
@@ -246,13 +275,20 @@ void MEDDLY::base_table
   */
 class MEDDLY::base_hash : public base_table {
   public:
-    base_hash(const settings &s, int initTS, int initTE);
+    base_hash(const settings::computeTableSettings &s, int initTS, int initTE);
     virtual ~base_hash();
 
   protected:
-    inline unsigned hash(const int* k, int length) {
+    inline unsigned hash(const int* k, int length) const {
       return raw_hash(k, length) % tableSize;
     }
+    inline unsigned hash(const search_key &key) const {
+      return hash(key.data, key.hashLength);
+    }
+    inline const int* getKeyData(const search_key &key) const {
+      return key.data;
+    }
+    
     void dumpInternal(FILE* s, int verbLevel) const;
     void report(FILE* s, int indent, int &level, unsigned long mem) const;
   protected:
@@ -287,8 +323,8 @@ class MEDDLY::base_hash : public base_table {
 // *                         base_hash  methods                         *
 // **********************************************************************
 
-MEDDLY::base_hash::base_hash(const settings &s, int initTS, int initTE)
- : base_table(s)
+MEDDLY::base_hash::base_hash(const settings::computeTableSettings &s, 
+  int initTS, int initTE) : base_table(s)
 {
   tableSize = initTS;
   tableExpand = initTE;
@@ -366,14 +402,14 @@ unsigned MEDDLY::base_hash::raw_hash(const int* k, int length)
 /// Abstract base class for hash tables with chaining.
 class MEDDLY::base_chained : public base_hash {
   public:
-    base_chained(const settings &s);
+    base_chained(const settings::computeTableSettings &s);
     virtual ~base_chained();
 
     virtual void addEntry();
     virtual void removeStales();
   protected:
     void dumpInternal(FILE* s, int verbLevel) const;
-    virtual int convertToList() = 0;
+    virtual int convertToList(bool removeStales) = 0;
     virtual void listToTable(int h) = 0;
     virtual void showEntry(FILE* s, int h) const = 0;
 };
@@ -382,7 +418,7 @@ class MEDDLY::base_chained : public base_hash {
 // *                        base_chained methods                        *
 // **********************************************************************
 
-MEDDLY::base_chained::base_chained(const settings &s)
+MEDDLY::base_chained::base_chained(const settings::computeTableSettings &s)
  : base_hash(s, 1024, 4*1024)
 {
 }
@@ -412,7 +448,7 @@ void MEDDLY::base_chained::addEntry()
   );
 #endif
 
-  int list = convertToList();
+  int list = convertToList(checkStalesOnResize);
   if (perf.numEntries < tableSize) {
     // Don't need to expand
     listToTable(list);
@@ -460,7 +496,7 @@ void MEDDLY::base_chained::removeStales()
     tableSize, perf.numEntries
   );
 #endif
-  int list = convertToList();
+  int list = convertToList(true);
   if ((tableSize > 1024) && (perf.numEntries * 2 < tableSize)) {
     // shrink table
     int newsize = tableSize / 2;
@@ -531,7 +567,7 @@ void MEDDLY::base_chained::dumpInternal(FILE* s, int verbLevel) const
 */
 class MEDDLY::monolithic_chained : public base_chained {
   public:
-    monolithic_chained(const settings &s);
+    monolithic_chained(const settings::computeTableSettings &s);
     virtual ~monolithic_chained();
 
     // required functions
@@ -545,7 +581,7 @@ class MEDDLY::monolithic_chained : public base_chained {
     void show(FILE *s, int verbLevel) const;
 
   protected:
-    virtual int convertToList();
+    virtual int convertToList(bool removeStales);
     virtual void listToTable(int h);
     virtual void showEntry(FILE* s, int h) const;
 
@@ -570,7 +606,8 @@ class MEDDLY::monolithic_chained : public base_chained {
 // *                     monolithic_chained methods                     *
 // **********************************************************************
 
-MEDDLY::monolithic_chained::monolithic_chained(const settings &s)
+MEDDLY::monolithic_chained
+::monolithic_chained(const settings::computeTableSettings &s)
  : base_chained(s)
 {
 }
@@ -596,21 +633,22 @@ void MEDDLY::monolithic_chained
 const int* MEDDLY::monolithic_chained::find(const search_key &key)
 {
   perf.pings++;
-  unsigned h = hash(key.data, key.hashLength);
+  unsigned h = hash(key);
   int prev = 0;
   int curr = table[h];
   int chain = 0;
   while (curr) {
     chain++;
-    if (checkStales) {
+    if (checkStalesOnFind) {
       if (checkStale(h, prev, curr)) continue;
     }
     //
     // Check for match
     //
-    if (memcmp(entries+curr+1, key.data, key.hashBytes)==0) {
+    if (equal_sw(entries+curr+1, key.data, key.hashLength)) {
+    // if (memcmp(entries+curr+1, key.data, key.hashBytes)==0) {
       sawSearch(chain);
-      if (!checkStales) {
+      if (!checkStalesOnFind) {
         if (checkStale(h, prev, curr)) {
           // The match is stale.
           // Since there can NEVER be more than one match
@@ -684,29 +722,31 @@ void MEDDLY::monolithic_chained::show(FILE *s, int verbLevel) const
 }
 
 
-int MEDDLY::monolithic_chained::convertToList()
+int MEDDLY::monolithic_chained::convertToList(bool removeStales)
 {
   int list = 0;
   for (unsigned i=0; i<tableSize; i++) {
     while (table[i]) {
       int curr = table[i];
       table[i] = entries[curr];
-      operation* currop = operation::getOpWithIndex(entries[curr+1]);
-      DCASSERT(currop);
-      const int* entry = entries + curr + 2;
-      //
-      // Check for stale
-      //
-      if (currop->isMarkedForDeletion() || currop->isEntryStale(entry)) {
+      if (removeStales) {
+        operation* currop = operation::getOpWithIndex(entries[curr+1]);
+        DCASSERT(currop);
+        const int* entry = entries + curr + 2;
+        //
+        // Check for stale
+        //
+        if (currop->isMarkedForDeletion() || currop->isEntryStale(entry)) {
 #ifdef DEBUG_TABLE2LIST
-        printf("\tstale ");
-        currop->showEntry(stdout, entry);
-        printf(" (handle %d slot %d)\n", curr, i);
+          printf("\tstale ");
+          currop->showEntry(stdout, entry);
+          printf(" (handle %d slot %d)\n", curr, i);
 #endif
-        currop->discardEntry(entry);
-        recycleEntry(curr, 2+currop->getCacheEntryLength());
-        continue;
-      }
+          currop->discardEntry(entry);
+          recycleEntry(curr, 2+currop->getCacheEntryLength());
+          continue;
+        }
+      } // if removeStales
       //
       // Not stale, move to list
       //
@@ -778,21 +818,20 @@ void MEDDLY::monolithic_chained::showEntry(FILE *s, int curr) const
 */
 class MEDDLY::operation_chained : public base_chained {
   public:
-    operation_chained(const settings &s, operation* op);
+    operation_chained(const settings::computeTableSettings &s, operation* op);
     virtual ~operation_chained();
 
     // required functions
 
     virtual bool isOperationTable() const   { return true; }
     virtual void initializeSearchKey(search_key &key, operation* op);
-    virtual const int* find(const search_key &key);
     virtual temp_entry& startNewEntry(operation* op);
     virtual void removeAll();
 
     void show(FILE *s, int verbLevel) const;
 
   protected:
-    virtual int convertToList();
+    virtual int convertToList(bool removeStales);
     virtual void listToTable(int h);
     virtual void showEntry(FILE* s, int h) const { 
       global_op->showEntry(s, entries + h + 1);
@@ -821,7 +860,8 @@ class MEDDLY::operation_chained : public base_chained {
 // *                     operation_chained  methods                     *
 // **********************************************************************
 
-MEDDLY::operation_chained::operation_chained(const settings &s, operation* op)
+MEDDLY::operation_chained
+::operation_chained(const settings::computeTableSettings &s, operation* op)
  : base_chained(s)
 {
   global_op = op;
@@ -844,54 +884,6 @@ void MEDDLY::operation_chained
 #ifdef DEVELOPMENT_CODE
   key.keyLength = op->getKeyLength();
 #endif
-}
-
-const int* MEDDLY::operation_chained::find(const search_key &key)
-{
-  perf.pings++;
-  unsigned h = hash(key.data, key.hashLength);
-  int prev = 0;
-  int curr = table[h];
-  int chain = 0;
-  while (curr) {
-    chain++;
-    if (checkStales) {
-      if (checkStale(h, prev, curr)) continue;
-    }
-    //
-    // Check for match
-    //
-    if (memcmp(entries+curr+1, key.data, key.hashBytes)==0) {
-      sawSearch(chain);
-      if (!checkStales) {
-        if (checkStale(h, prev, curr)) {
-          // The match is stale.
-          // Since there can NEVER be more than one match
-          // in the table, we're done!
-          return 0;
-        }
-      } 
-      // "Hit"
-      perf.hits++;
-      if (prev) {
-        // not at the front; move it there
-        entries[prev] = entries[curr];
-        entries[curr] = table[h];
-        table[h] = curr;
-      }
-#ifdef DEBUG_CT
-      printf("Found CT entry ");
-      global_op->showEntry(stdout, entries + curr + 1);
-      printf("\n");
-#endif
-      return entries + curr + 1;
-    };
-    // advance pointers
-    prev = curr;
-    curr = entries[curr];
-  }
-  sawSearch(chain);
-  return 0;
 }
 
 MEDDLY::compute_table::temp_entry& 
@@ -935,21 +927,23 @@ void MEDDLY::operation_chained::show(FILE *s, int verbLevel) const
 }
 
 
-int MEDDLY::operation_chained::convertToList()
+int MEDDLY::operation_chained::convertToList(bool removeStales)
 {
   int list = 0;
   for (unsigned i=0; i<tableSize; i++) {
     while (table[i]) {
       int curr = table[i];
       table[i] = entries[curr];
-      const int* entry = entries + curr + 1;
-      //
-      // Check for stale
-      //
-      if (global_op->isMarkedForDeletion() || global_op->isEntryStale(entry)) {
-        global_op->discardEntry(entry);
-        recycleEntry(curr, 1+global_op->getCacheEntryLength());
-        continue;
+      if (removeStales) {
+        const int* entry = entries + curr + 1;
+        //
+        // Check for stale
+        //
+        if (global_op->isMarkedForDeletion() || global_op->isEntryStale(entry)) {
+          global_op->discardEntry(entry);
+          recycleEntry(curr, 1+global_op->getCacheEntryLength());
+          continue;
+        }
       }
       //
       // Not stale, move to list
@@ -976,6 +970,80 @@ void MEDDLY::operation_chained::listToTable(int L)
 // **********************************************************************
 // *                                                                    *
 // *                                                                    *
+// *                    operation_chained_fast class                    *
+// *                                                                    *
+// *                                                                    *
+// **********************************************************************
+
+namespace MEDDLY {
+  template <int N>
+  class operation_chained_fast : public operation_chained {
+    public:
+      operation_chained_fast(const settings::computeTableSettings &s, 
+        operation* op) : operation_chained(s, op) { }
+      virtual ~operation_chained_fast() { }
+      virtual const int* find(const search_key &key);
+  };
+};
+
+// **********************************************************************
+// *                     operation_chained  methods                     *
+// **********************************************************************
+
+template <int N>
+const int* MEDDLY::operation_chained_fast<N>::find(const search_key &key)
+{
+  perf.pings++;
+  unsigned h = hash(key);
+  int prev = 0;
+  int curr = table[h];
+  int chain = 0;
+  while (curr) {
+    chain++;
+    if (checkStalesOnFind) {
+      if (checkStale(h, prev, curr)) continue;
+    }
+    //
+    // Check for match
+    //
+    if (equal_sw(entries+curr+1, getKeyData(key), N)) {
+    // if (memcmp(entries+curr+1, key.data, key.hashBytes)==0) {
+      sawSearch(chain);
+      if (!checkStalesOnFind) {
+        if (checkStale(h, prev, curr)) {
+          // The match is stale.
+          // Since there can NEVER be more than one match
+          // in the table, we're done!
+          return 0;
+        }
+      } 
+      // "Hit"
+      perf.hits++;
+      if (prev) {
+        // not at the front; move it there
+        entries[prev] = entries[curr];
+        entries[curr] = table[h];
+        table[h] = curr;
+      }
+#ifdef DEBUG_CT
+      printf("Found CT entry ");
+      global_op->showEntry(stdout, entries + curr + 1);
+      printf("\n");
+#endif
+      return entries + curr + 1;
+    };
+    // advance pointers
+    prev = curr;
+    curr = entries[curr];
+  }
+  sawSearch(chain);
+  return 0;
+}
+
+
+// **********************************************************************
+// *                                                                    *
+// *                                                                    *
 // *                        operation_map  class                        *
 // *                                                                    *
 // *                                                                    *
@@ -993,7 +1061,7 @@ void MEDDLY::operation_chained::listToTable(int L)
 */
 class MEDDLY::operation_map : public base_table {
   public:
-    operation_map(const settings &s, operation* op);
+    operation_map(const settings::computeTableSettings &s, operation* op);
     virtual ~operation_map();
 
     // required functions
@@ -1068,7 +1136,8 @@ class MEDDLY::operation_map : public base_table {
 // *                       operation_map  methods                       *
 // **********************************************************************
 
-MEDDLY::operation_map::operation_map(const settings &s, operation* op)
+MEDDLY::operation_map
+::operation_map(const settings::computeTableSettings &s, operation* op)
  : base_table(s)
 {
   global_op = op;
@@ -1237,11 +1306,11 @@ void MEDDLY::operation_map::show(FILE *s, int verbLevel) const
 // **********************************************************************
 
 MEDDLY::compute_table*
-MEDDLY::createMonolithicTable(const settings &s)
+MEDDLY::createMonolithicTable(const settings::computeTableSettings  &s)
 {
-  switch (s.useComputeTableType) {
+  switch (s.style) {
 
-    case settings::MonolithicChainedHash:
+    case settings::computeTableSettings::MonolithicChainedHash:
         return new monolithic_chained(s);
 
     default:
@@ -1250,14 +1319,28 @@ MEDDLY::createMonolithicTable(const settings &s)
 }
 
 MEDDLY::compute_table*
-MEDDLY::createOperationTable(const settings &s, operation* op)
+MEDDLY::createOperationTable(const settings::computeTableSettings  &s, 
+  operation* op)
 {
-  switch (s.useComputeTableType) {
+  switch (s.style) {
 
-    case settings::OperationChainedHash:
-        return new operation_chained(s, op);
+    case settings::computeTableSettings::OperationChainedHash:
+        switch (op->getKeyLength()) {
+          case 8:   return new operation_chained_fast<8>(s, op);
+          case 7:   return new operation_chained_fast<7>(s, op);
+          case 6:   return new operation_chained_fast<6>(s, op);
+          case 5:   return new operation_chained_fast<5>(s, op);
+          case 4:   return new operation_chained_fast<4>(s, op);
+          case 3:   return new operation_chained_fast<3>(s, op);
+          case 2:   return new operation_chained_fast<2>(s, op);
+          case 1:   return new operation_chained_fast<1>(s, op);
+          default:  assert(0);
+                    return 0;
+        }
+        assert(0);
+        return 0;
 
-    case settings::OperationMap:
+    case settings::computeTableSettings::OperationMap:
         return new operation_map(s, op);
 
     default:
