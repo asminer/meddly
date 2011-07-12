@@ -262,7 +262,10 @@ struct MEDDLY::settings {
         /// Constructor, to set defaults.
         computeTableSettings() {
           style = MonolithicChainedHash;
+          // style = OperationChainedHash;
+          // staleRemoval = Aggressive;
           staleRemoval = Moderate;
+          // staleRemoval = Lazy;
           maxSize = 16777216;
         }
     };
@@ -1303,9 +1306,9 @@ class MEDDLY::compute_table {
           friend class operation_chained;
           friend class operation_map;
           int hashLength;
-          int hashBytes;
           int* data;
           int* key_data;
+          operation* op;
           /// used only for range checking during "development".
           int keyLength;  
         public:
@@ -1459,6 +1462,10 @@ class MEDDLY::operation {
     compute_table::search_key CTsrch;
     // for cache of operations.
     operation* next;
+    // must stale compute table hits be discarded.
+    // if the result forest is using pessimistic deletion, then true.
+    // otherwise, false.  MUST BE SET BY DERIVED CLASSES.
+    bool discardStaleHits;
   public:
     /// New constructor.
     /// @param  n   Operation "name"
@@ -1472,6 +1479,12 @@ class MEDDLY::operation {
   protected:
     virtual ~operation();
 
+    inline void setAnswerForest(const expert_forest* f) {
+      discardStaleHits = f 
+        ?   f->getNodeDeletion() == forest::PESSIMISTIC_DELETION
+        :   false;  // shouldn't be possible, so we'll do what's fastest.
+    }
+
     void markForDeletion();
 
     friend class expert_forest;
@@ -1480,12 +1493,6 @@ class MEDDLY::operation {
   public:
     // should ONLY be called during library cleanup.
     static void destroyOpList();
-
-    /*
-    inline bool isMarkedForDeletion() const { 
-      return is_marked_for_deletion;
-    }
-    */
 
     inline void setNext(operation* n) { next = n; }
     inline operation* getNext()       { return next; }
@@ -1545,6 +1552,10 @@ class MEDDLY::operation {
 
     /// Prints a string representation of this cache entry on strm (stream).
     virtual void showEntry(FILE* strm, const int *entryData) const = 0;
+
+    inline bool shouldStaleCacheHitsBeDiscarded() const {
+      return discardStaleHits;
+    }
 
   protected:
     void allocEntryForests(int nf);

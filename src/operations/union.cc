@@ -211,12 +211,6 @@ int MEDDLY::union_mxd::computeIdent(int a, int b)
   }
 #endif
 
-#ifndef USE_BINARY_COMPUTE_CACHE
-  arg1F->cacheNode(a);
-  arg2F->cacheNode(b);
-  resF->cacheNode(result);
-#endif
-
 #ifdef TRACE_ALL_OPS
   printf("computed %s(%d, %d)=%d\n", getName(), a, b, result);
 #endif

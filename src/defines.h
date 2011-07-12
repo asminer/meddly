@@ -111,8 +111,6 @@ template <class T> inline bool POSITIVE(T X) { return (X>0) ? true : false; }
 #define MEMORY_TRACE
 #endif
 
-#define USE_BINARY_COMPUTE_CACHE
-
 // Safe typecasting for development code;  fast casting otherwise
 
 #ifdef DEVELOPMENT_CODE

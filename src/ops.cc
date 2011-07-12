@@ -122,6 +122,7 @@ MEDDLY::operation::operation(const opname* n, int kl, int al)
   ans_length = al;
   is_marked_for_deletion = false;
   next = 0;
+  discardStaleHits = true;
 
   if (0==key_length) {
     oplist_index = -1;
@@ -249,6 +250,8 @@ MEDDLY::unary_operation::unary_operation(const unary_opname* code, int kl,
 
   argFslot = argF->registerOperation(this);
   resFslot = resF->registerOperation(this);
+
+  setAnswerForest(resF);
 }
 
 MEDDLY::unary_operation::unary_operation(const unary_opname* code, int kl, 
@@ -260,6 +263,8 @@ MEDDLY::unary_operation::unary_operation(const unary_opname* code, int kl,
 
   argFslot = argF->registerOperation(this);
   resFslot = -1;
+
+  setAnswerForest(0);
 }
 
 MEDDLY::unary_operation::~unary_operation()
@@ -303,6 +308,8 @@ MEDDLY::binary_operation::binary_operation(const binary_opname* op, int kl,
   arg1Fslot = arg1F->registerOperation(this);
   arg2Fslot = arg2F->registerOperation(this);
   resFslot = res->registerOperation(this);
+
+  setAnswerForest(resF);
 }
 
 MEDDLY::binary_operation::~binary_operation()

@@ -90,6 +90,7 @@ MEDDLY::compute_table::~compute_table()
 
 MEDDLY::compute_table::search_key::search_key()
 {
+  op = 0;
   hashLength = 0;
   data = 0;
   key_data = 0;
@@ -621,10 +622,10 @@ void MEDDLY::monolithic_chained
 {
   DCASSERT(0==key.data);
   key.hashLength = op->getKeyLength()+1;
-  key.hashBytes = key.hashLength * sizeof(int);
   key.data = new int[key.hashLength];
   key.key_data = key.data+1;
   key.data[0] = op->getIndex();
+  key.op = op;
 #ifdef DEVELOPMENT_CODE
   key.keyLength = op->getKeyLength();
 #endif
@@ -639,16 +640,12 @@ const int* MEDDLY::monolithic_chained::find(const search_key &key)
   int chain = 0;
   while (curr) {
     chain++;
-    if (checkStalesOnFind) {
-      if (checkStale(h, prev, curr)) continue;
-    }
     //
     // Check for match
     //
     if (equal_sw(entries+curr+1, key.data, key.hashLength)) {
-    // if (memcmp(entries+curr+1, key.data, key.hashBytes)==0) {
       sawSearch(chain);
-      if (!checkStalesOnFind) {
+      if (key.op->shouldStaleCacheHitsBeDiscarded()) {
         if (checkStale(h, prev, curr)) {
           // The match is stale.
           // Since there can NEVER be more than one match
@@ -666,14 +663,18 @@ const int* MEDDLY::monolithic_chained::find(const search_key &key)
       }
 #ifdef DEBUG_CT
       printf("Found CT entry ");
-      operation* currop = operation::getOpWithIndex(entries[curr+1]);
-      assert(currop);
-      currop->showEntry(stdout, entries + curr + 2);
+      key.op->showEntry(stdout, entries + curr + 2);
       // fprintf(stderr, " in slot %u", h);
       printf("\n");
 #endif
       return entries + curr + 2;
     };
+    //
+    // No match; maybe check stale
+    //
+    if (checkStalesOnFind) {
+      if (checkStale(h, prev, curr)) continue;
+    }
     // advance pointers
     prev = curr;
     curr = entries[curr];
@@ -850,7 +851,7 @@ class MEDDLY::operation_chained : public base_chained {
         }
         return false;
     }
-  private:
+  protected:
     operation* global_op;
 };
 
@@ -876,9 +877,9 @@ void MEDDLY::operation_chained
     throw error(error::UNKNOWN_OPERATION);
   DCASSERT(0==key.data);
   key.hashLength = op->getKeyLength();
-  key.hashBytes = key.hashLength * sizeof(int);
   key.data = new int[key.hashLength];
   key.key_data = key.data;
+  key.op = op;
 #ifdef DEVELOPMENT_CODE
   key.keyLength = op->getKeyLength();
 #endif
@@ -998,16 +999,12 @@ const int* MEDDLY::operation_chained_fast<N>::find(const search_key &key)
   int chain = 0;
   while (curr) {
     chain++;
-    if (checkStalesOnFind) {
-      if (checkStale(h, prev, curr)) continue;
-    }
     //
     // Check for match
     //
     if (equal_sw(entries+curr+1, getKeyData(key), N)) {
-    // if (memcmp(entries+curr+1, key.data, key.hashBytes)==0) {
       sawSearch(chain);
-      if (!checkStalesOnFind) {
+      if (global_op->shouldStaleCacheHitsBeDiscarded()) {
         if (checkStale(h, prev, curr)) {
           // The match is stale.
           // Since there can NEVER be more than one match
@@ -1030,6 +1027,12 @@ const int* MEDDLY::operation_chained_fast<N>::find(const search_key &key)
 #endif
       return entries + curr + 1;
     };
+    //
+    // No match; maybe check stale
+    //
+    if (checkStalesOnFind) {
+      if (checkStale(h, prev, curr)) continue;
+    }
     // advance pointers
     prev = curr;
     curr = entries[curr];
@@ -1171,10 +1174,12 @@ const int* MEDDLY::operation_map::find(const search_key &key)
   std::map<key_type, int, key_less>::iterator ans = ct->find(search);
   if (ans == ct->end()) return 0;
   int h = ans->second;
-  if (isStale(entries+h)) {
-    ct->erase(ans);
-    removeEntry(h);
-    return 0;
+  if (global_op->shouldStaleCacheHitsBeDiscarded()) {
+    if (isStale(entries+h)) {
+      ct->erase(ans);
+      removeEntry(h);
+      return 0;
+    }
   }
 #ifdef DEBUG_CT
   printf("Found CT entry ");
