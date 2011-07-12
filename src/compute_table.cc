@@ -42,8 +42,6 @@ namespace MEDDLY {
 
   // const float expansionFactor = 1.5;
 
-  /// essentially, the "old" binary_compute_table.
-  class operation_map;
 
   // extern settings meddlySettings;
 }
@@ -145,6 +143,34 @@ class MEDDLY::base_table : public compute_table {
         case  0:    return true;
         default:    return (0==memcmp(a, b, N*sizeof(int)));
       };
+    }
+
+    // M is 1 if we need a slot for the operation index, 0 otherwise.
+    static inline void init(search_key &key, operation* op, int M) {
+      DCASSERT(0==key.data);
+      key.hashLength = op->getKeyLength() + M;
+      key.data = new int[key.hashLength];
+      key.key_data = key.data+M;
+      if (M) key.data[0] = op->getIndex();
+      key.op = op;
+#ifdef DEVELOPMENT_CODE
+      key.keyLength = op->getKeyLength();
+#endif
+    }
+    
+    // C is the number of slots we need for "chaining".
+    // M is 1 if we need a slot for the operation index, 0 otherwise.
+    inline void startNewEntry(operation* op, int C, int M) {
+      currEntry.handle = newEntry(op->getCacheEntryLength()+C+M);
+      currEntry.hashLength = op->getKeyLength()+M;
+      currEntry.entry = entries + currEntry.handle;
+      if (M) currEntry.entry[C] = op->getIndex();
+      currEntry.key_entry = currEntry.entry + C + M;
+      currEntry.res_entry = currEntry.key_entry + op->getKeyLength();
+#ifdef DEVELOPMENT_CODE
+      currEntry.keyLength = op->getKeyLength();
+      currEntry.resLength = op->getAnsLength();
+#endif
     }
   protected:
     int*  entries;
@@ -284,10 +310,7 @@ class MEDDLY::base_hash : public base_table {
       return raw_hash(k, length) % tableSize;
     }
     inline unsigned hash(const search_key &key) const {
-      return hash(key.data, key.hashLength);
-    }
-    inline const int* getKeyData(const search_key &key) const {
-      return key.data;
+      return hash(key.rawData(), key.dataLength());
     }
     
     void dumpInternal(FILE* s, int verbLevel) const;
@@ -430,13 +453,13 @@ MEDDLY::base_chained::~base_chained()
 
 void MEDDLY::base_chained::addEntry()
 {
-  unsigned h = hash(currEntry.entry+1, currEntry.hashLength);
-  currEntry.entry[0] = table[h];
-  table[h] = currEntry.handle;
+  unsigned h = hash(currEntry.readEntry(1), currEntry.readLength());
+  currEntry.data(0) = table[h];
+  table[h] = currEntry.readHandle();
 
 #ifdef DEBUG_CT
   printf("Adding CT entry ");
-  showEntry(stdout, currEntry.handle);
+  showEntry(stdout, currEntry.readHandle());
   // fprintf(stderr, " to slot %u", h);
   printf("\n");
 #endif
@@ -620,15 +643,7 @@ MEDDLY::monolithic_chained::~monolithic_chained()
 void MEDDLY::monolithic_chained
 ::initializeSearchKey(search_key &key, operation* op)
 {
-  DCASSERT(0==key.data);
-  key.hashLength = op->getKeyLength()+1;
-  key.data = new int[key.hashLength];
-  key.key_data = key.data+1;
-  key.data[0] = op->getIndex();
-  key.op = op;
-#ifdef DEVELOPMENT_CODE
-  key.keyLength = op->getKeyLength();
-#endif
+  init(key, op, 1);
 }
 
 const int* MEDDLY::monolithic_chained::find(const search_key &key)
@@ -643,9 +658,9 @@ const int* MEDDLY::monolithic_chained::find(const search_key &key)
     //
     // Check for match
     //
-    if (equal_sw(entries+curr+1, key.data, key.hashLength)) {
+    if (equal_sw(entries+curr+1, key.rawData(), key.dataLength())) {
       sawSearch(chain);
-      if (key.op->shouldStaleCacheHitsBeDiscarded()) {
+      if (key.getOp()->shouldStaleCacheHitsBeDiscarded()) {
         if (checkStale(h, prev, curr)) {
           // The match is stale.
           // Since there can NEVER be more than one match
@@ -663,7 +678,7 @@ const int* MEDDLY::monolithic_chained::find(const search_key &key)
       }
 #ifdef DEBUG_CT
       printf("Found CT entry ");
-      key.op->showEntry(stdout, entries + curr + 2);
+      key.getOp()->showEntry(stdout, entries + curr + 2);
       // fprintf(stderr, " in slot %u", h);
       printf("\n");
 #endif
@@ -686,16 +701,7 @@ const int* MEDDLY::monolithic_chained::find(const search_key &key)
 MEDDLY::compute_table::temp_entry& 
 MEDDLY::monolithic_chained::startNewEntry(operation* op)
 {
-  currEntry.handle = newEntry(2+op->getCacheEntryLength());
-  currEntry.hashLength = op->getKeyLength()+1;
-  currEntry.entry = entries + currEntry.handle;
-  currEntry.entry[1] = op->getIndex();
-  currEntry.key_entry = currEntry.entry + 2;
-  currEntry.res_entry = currEntry.key_entry + op->getKeyLength();
-#ifdef DEVELOPMENT_CODE
-  currEntry.keyLength = op->getKeyLength();
-  currEntry.resLength = op->getAnsLength();
-#endif
+  base_table::startNewEntry(op, 1, 1);
   return currEntry;
 }
 
@@ -875,14 +881,7 @@ void MEDDLY::operation_chained
 {
   if (op != global_op)
     throw error(error::UNKNOWN_OPERATION);
-  DCASSERT(0==key.data);
-  key.hashLength = op->getKeyLength();
-  key.data = new int[key.hashLength];
-  key.key_data = key.data;
-  key.op = op;
-#ifdef DEVELOPMENT_CODE
-  key.keyLength = op->getKeyLength();
-#endif
+  init(key, op, 0);
 }
 
 MEDDLY::compute_table::temp_entry& 
@@ -890,15 +889,7 @@ MEDDLY::operation_chained::startNewEntry(operation* op)
 {
   if (op != global_op)
     throw error(error::UNKNOWN_OPERATION);
-  currEntry.handle = newEntry(1+op->getCacheEntryLength());
-  currEntry.hashLength = op->getKeyLength();
-  currEntry.entry = entries + currEntry.handle;
-  currEntry.key_entry = currEntry.entry + 1;
-  currEntry.res_entry = currEntry.key_entry + op->getKeyLength();
-#ifdef DEVELOPMENT_CODE
-  currEntry.keyLength = op->getKeyLength();
-  currEntry.resLength = op->getAnsLength();
-#endif
+  base_table::startNewEntry(op, 1, 0);
   return currEntry;
 }
 
@@ -1002,7 +993,7 @@ const int* MEDDLY::operation_chained_fast<N>::find(const search_key &key)
     //
     // Check for match
     //
-    if (equal_sw(entries+curr+1, getKeyData(key), N)) {
+    if (equal_sw(entries+curr+1, key.rawData(), N)) {
       sawSearch(chain);
       if (global_op->shouldStaleCacheHitsBeDiscarded()) {
         if (checkStale(h, prev, curr)) {
@@ -1050,6 +1041,8 @@ const int* MEDDLY::operation_chained_fast<N>::find(const search_key &key)
 // *                                                                    *
 // **********************************************************************
 
+namespace MEDDLY {
+
 /*
     Anatomy of an entry:
 
@@ -1060,28 +1053,12 @@ const int* MEDDLY::operation_chained_fast<N>::find(const search_key &key)
     Pure payload :^)
     Don't worry, we pay for it in the "map" I'm sure.
 */
-class MEDDLY::operation_map : public base_table {
-  public:
-    operation_map(const settings::computeTableSettings &s, operation* op);
-    virtual ~operation_map();
-
-    // required functions
-
-    virtual bool isOperationTable() const   { return true; }
-    virtual void initializeSearchKey(search_key &key, operation* op);
-    virtual const int* find(const search_key &key);
-    virtual temp_entry& startNewEntry(operation* op);
-    virtual void addEntry();
-    virtual void removeStales();
-    virtual void removeAll();
-
-    virtual void show(FILE *s, int verbLevel = 0) const;
+template <int N>
+class operation_map : public base_table {
   protected:
-    virtual void showEntry(FILE* s, int h) const {
-      global_op->showEntry(s, entries + h);
-    }
     // for now ... key for our map.
     friend class key_type;
+
     class key_type {
         int handle;
         union {
@@ -1106,22 +1083,59 @@ class MEDDLY::operation_map : public base_table {
           return search;
         }
     };
+
     // For comparing entries in our map.
     class key_less {
-        int bytes;
       public:
-        key_less(int b) { 
-          bytes = b; 
-        }
         inline bool operator() (const key_type &p, const key_type &q) const {
-          return memcmp(p.getData(), q.getData(), bytes) < 0;
+          const int* a = p.getData();
+          const int* b = q.getData();
+          switch (N) {
+              case 8:   if (a[7] < b[7]) return true;
+                        if (a[7] > b[7]) return false;
+              case 7:   if (a[6] < b[6]) return true;
+                        if (a[6] > b[6]) return false;
+              case 6:   if (a[5] < b[5]) return true;
+                        if (a[5] > b[5]) return false;
+              case 5:   if (a[4] < b[4]) return true;
+                        if (a[4] > b[4]) return false;
+              case 4:   if (a[3] < b[3]) return true;
+                        if (a[3] > b[3]) return false;
+              case 3:   if (a[2] < b[2]) return true;
+                        if (a[2] > b[2]) return false;
+              case 2:   if (a[1] < b[1]) return true;
+                        if (a[1] > b[1]) return false;
+              case 1:   return a[0] < b[0];
+              case 0:   return false;
+              default:  return memcmp(a, b, N*sizeof(int)) < 0;
+          }
         }
     };  
+
+  public:
+    operation_map(const settings::computeTableSettings &s, operation* op);
+    virtual ~operation_map();
+
+    // required functions
+
+    virtual bool isOperationTable() const   { return true; }
+    virtual void initializeSearchKey(search_key &key, operation* op);
+    virtual const int* find(const search_key &key);
+
+    virtual temp_entry& startNewEntry(operation* op);
+    virtual void addEntry();
+    virtual void removeStales();
+    virtual void removeAll();
+
+    virtual void show(FILE *s, int verbLevel = 0) const;
+  protected:
+    virtual void showEntry(FILE* s, int h) const {
+      global_op->showEntry(s, entries + h);
+    }
     inline bool isStale(const int* entry) {
       return global_op->isEntryStale(entry);
     }
     inline void removeEntry(int h) {
-      // we're cheating... it's not really const :^)
       global_op->discardEntry(entries+h);
       recycleEntry(h, global_op->getCacheEntryLength());
     }
@@ -1131,47 +1145,46 @@ class MEDDLY::operation_map : public base_table {
     key_type search;
 };
 
+};
+
 // **********************************************************************
 // *                       operation_map  methods                       *
 // **********************************************************************
 
-MEDDLY::operation_map
+template <int N>
+MEDDLY::operation_map<N>
 ::operation_map(const settings::computeTableSettings &s, operation* op)
- : base_table(s)
+ : base_table(s) 
 {
   global_op = op;
-  ct = 0;
+  ct = new std::map<key_type, int, key_less>;
 }
 
-MEDDLY::operation_map::~operation_map()
+template <int N>
+MEDDLY::operation_map<N>::~operation_map()
 {
   delete ct;
 }
 
-void MEDDLY::operation_map
+template <int N>
+void MEDDLY::operation_map<N>
 ::initializeSearchKey(search_key &key, operation* op)
 {
   if (op != global_op)
     throw error(error::UNKNOWN_OPERATION);
-  DCASSERT(0==key.key_data);
-  // key struct, mostly unused
-  key.data = new int[key.hashLength];
-  key.key_data = key.data;
-#ifdef DEVELOPMENT_CODE
-  key.keyLength = op->getKeyLength();
-#endif
-  // local stuff
-  ct = new std::map<key_type, int, key_less> (
-    key_less(op->getKeyLength()*sizeof(int))
-  );
-  search.set(key.data); // really neat trick if it works...
+  init(key, op, 0);
+  search.set(key.rawData()); // really neat trick if it works...
 }
 
-const int* MEDDLY::operation_map::find(const search_key &key)
+template <int N>
+const int* MEDDLY::operation_map<N>
+::find(const search_key &key) 
 {
   DCASSERT(ct);
   perf.pings++;
-  std::map<key_type, int, key_less>::iterator ans = ct->find(search);
+  typename std::map <key_type, int, key_less>::iterator 
+    ans = ct->find(search);
+      
   if (ans == ct->end()) return 0;
   int h = ans->second;
   if (global_op->shouldStaleCacheHitsBeDiscarded()) {
@@ -1190,29 +1203,23 @@ const int* MEDDLY::operation_map::find(const search_key &key)
   return entries+h;
 }
 
+template <int N>
 MEDDLY::compute_table::temp_entry& 
-MEDDLY::operation_map::startNewEntry(operation* op)
+MEDDLY::operation_map<N>::startNewEntry(operation* op)
 {
   if (op != global_op)
     throw error(error::UNKNOWN_OPERATION);
-  currEntry.handle = newEntry(op->getCacheEntryLength());
-  currEntry.hashLength = op->getKeyLength();
-  currEntry.entry = entries + currEntry.handle;
-  currEntry.key_entry = currEntry.entry;
-  currEntry.res_entry = currEntry.key_entry + op->getKeyLength();
-#ifdef DEVELOPMENT_CODE
-  currEntry.keyLength = op->getKeyLength();
-  currEntry.resLength = op->getAnsLength();
-#endif
+  base_table::startNewEntry(op, 0, 0);
   return currEntry;
 }
 
-void MEDDLY::operation_map::addEntry()
+template <int N>
+void MEDDLY::operation_map<N>::addEntry()
 {
   DCASSERT(ct);
 #ifdef DEBUG_CT
   printf("Adding CT entry ");
-  showEntry(stdout, currEntry.handle);
+  showEntry(stdout, currEntry.readHandle());
   printf("\n");
 #endif
 #ifdef DEVELOPMENT_CODE
@@ -1220,8 +1227,8 @@ void MEDDLY::operation_map::addEntry()
 #endif
   (ct->insert(
     std::make_pair(
-      key_type(this, currEntry.handle),
-      currEntry.handle
+      key_type(this, currEntry.readHandle()),
+      currEntry.readHandle()
     )
   ))
 #ifdef DEVELOPMENT_CODE
@@ -1230,15 +1237,16 @@ void MEDDLY::operation_map::addEntry()
   ;
 }
 
-void MEDDLY::operation_map::removeStales()
+template <int N>
+void MEDDLY::operation_map<N>::removeStales()
 {
   if (0==ct) return;
 #ifdef DEBUG_SLOW
   fprintf(stdout, "Removing stales in CT (entries %ld)\n", perf.numEntries);
 #endif
 
-  std::map<key_type, int, key_less>::iterator curr = ct->begin();
-  std::map<key_type, int, key_less>::iterator end = ct->end();
+  typename std::map<key_type, int, key_less>::iterator curr = ct->begin();
+  typename std::map<key_type, int, key_less>::iterator end = ct->end();
   while (curr != end) {
     int h = curr->second;
     if (isStale(entries+h)) {
@@ -1254,11 +1262,12 @@ void MEDDLY::operation_map::removeStales()
 #endif
 }
 
-void MEDDLY::operation_map::removeAll()
+template <int N>
+void MEDDLY::operation_map<N>::removeAll()
 {
   if (0==ct) return;
-  std::map<key_type, int, key_less>::iterator curr = ct->begin();
-  std::map<key_type, int, key_less>::iterator end = ct->end();
+  typename std::map<key_type, int, key_less>::iterator curr = ct->begin();
+  typename std::map<key_type, int, key_less>::iterator end = ct->end();
   while (curr != end) {
     int h = curr->second;
     ct->erase(curr++);
@@ -1267,7 +1276,8 @@ void MEDDLY::operation_map::removeAll()
   DCASSERT(ct->empty());
 }
 
-void MEDDLY::operation_map::show(FILE *s, int verbLevel) const
+template <int N>
+void MEDDLY::operation_map<N>::show(FILE *s, int verbLevel) const
 {
   if (verbLevel < 1) return;
   fprintf(s, "Compute table for %s (index %d)\n", 
@@ -1281,8 +1291,8 @@ void MEDDLY::operation_map::show(FILE *s, int verbLevel) const
     fprintf(s, "Empty map\n");
   } else {
     fprintf(s, "Map entries, in order:\n\t");
-    std::map<key_type, int, key_less>::iterator curr = ct->begin();
-    std::map<key_type, int, key_less>::iterator end = ct->end();
+    typename std::map<key_type, int, key_less>::iterator curr = ct->begin();
+    typename std::map<key_type, int, key_less>::iterator end = ct->end();
     const char* comma = "";
     while (curr != end) {
       fprintf(s, "%s%d", comma, curr->second);
@@ -1342,7 +1352,20 @@ MEDDLY::createOperationTable(const settings::computeTableSettings  &s,
         return 0;
 
     case settings::computeTableSettings::OperationMap:
-        return new operation_map(s, op);
+        switch (op->getKeyLength()) {
+          case 8:   return new operation_map<8>(s, op);
+          case 7:   return new operation_map<7>(s, op);
+          case 6:   return new operation_map<6>(s, op);
+          case 5:   return new operation_map<5>(s, op);
+          case 4:   return new operation_map<4>(s, op);
+          case 3:   return new operation_map<3>(s, op);
+          case 2:   return new operation_map<2>(s, op);
+          case 1:   return new operation_map<1>(s, op);
+          default:  assert(0);
+                    return 0;
+        }
+        assert(0);
+        return 0;
 
     default:
         throw error(error::INVALID_ASSIGNMENT);

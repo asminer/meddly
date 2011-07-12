@@ -262,7 +262,7 @@ struct MEDDLY::settings {
         /// Constructor, to set defaults.
         computeTableSettings() {
           style = MonolithicChainedHash;
-          // style = OperationChainedHash;
+          // style = OperationMap;
           // staleRemoval = Aggressive;
           staleRemoval = Moderate;
           // staleRemoval = Lazy;
@@ -1301,14 +1301,10 @@ class MEDDLY::compute_table {
 
       class search_key {
           friend class base_table;
-          friend class base_hash;
-          friend class monolithic_chained;
-          friend class operation_chained;
-          friend class operation_map;
           int hashLength;
           int* data;
           int* key_data;
-          operation* op;
+          const operation* op;
           /// used only for range checking during "development".
           int keyLength;  
         public:
@@ -1321,13 +1317,13 @@ class MEDDLY::compute_table {
 #endif
             return key_data[i]; 
           }
+          inline const int* rawData() const { return data; }
+          inline int dataLength() const { return hashLength; }
+          inline const operation* getOp() const { return op; }
       };
 
       class temp_entry {
-          friend class base_chained;
-          friend class monolithic_chained;
-          friend class operation_chained;
-          friend class operation_map;
+          friend class base_table;
           int handle;
           int hashLength;
           int* entry;
@@ -1358,6 +1354,13 @@ class MEDDLY::compute_table {
             assert(i+bytes<=resLength*sizeof(int));
 #endif
             memcpy(res_entry+i, data, bytes);
+          }
+          // The following are used by the compute table.
+          inline const int* readEntry(int off) const { return entry+off; }
+          inline int readHandle() const { return handle; }
+          inline int readLength() const { return hashLength; }
+          inline int& data(int i) {
+            return entry[i];
           }
       };
 
