@@ -862,9 +862,11 @@ inline bool node_manager::isTimeToGc()
 {
 #if 1
   // const int zombieTrigger = 1000;  // use for debugging
+  // const int orphanTrigger = 500;  // use for debugging
   const int zombieTrigger = 1000000;
+  const int orphanTrigger = 500000;
   return (isPessimistic())? (getZombieNodeCount() > zombieTrigger):
-    (getOrphanNodeCount() > 500000);
+    (getOrphanNodeCount() > orphanTrigger);
   // return (nodes_activated_since_gc > 5000000); //10,000,000
 #elif 0
   return false;

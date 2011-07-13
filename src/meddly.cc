@@ -355,6 +355,13 @@ void MEDDLY::destroyForest(MEDDLY::forest* &f)
   expert_forest* ef = (expert_forest*) f;
   ef->markForDeletion();
   operation::removeStalesFromMonolithic();
+  for (int i=0; i<operation::getOpListSize(); i++) {
+    operation* op = operation::getOpWithIndex(i);
+    if (0==op) continue;
+    if (op->isMarkedForDeletion()) {
+      destroyOpInternal(op);
+    }
+  }
   delete ef;
   f = 0;
 }
@@ -364,8 +371,10 @@ inline void MEDDLY::destroyOpInternal(MEDDLY::operation* op)
   if (0==op) return;
   if (!libraryRunning) throw error(error::UNINITIALIZED);
   removeOperationFromCache(op);
-  op->markForDeletion();
-  operation::removeStalesFromMonolithic();
+  if (!op->isMarkedForDeletion()) {
+    op->markForDeletion();
+    operation::removeStalesFromMonolithic();
+  }
   delete op;
 }
 

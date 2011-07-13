@@ -261,11 +261,12 @@ struct MEDDLY::settings {
       public:
         /// Constructor, to set defaults.
         computeTableSettings() {
-          style = MonolithicChainedHash;
-          // style = OperationMap;
+          // style = MonolithicChainedHash;
+          // style = OperationChainedHash;
+          style = OperationMap;
           // staleRemoval = Aggressive;
-          staleRemoval = Moderate;
-          // staleRemoval = Lazy;
+          // staleRemoval = Moderate;
+          staleRemoval = Lazy;
           maxSize = 16777216;
         }
     };
@@ -892,11 +893,10 @@ class MEDDLY::expert_forest : public forest
     int getMappedNodeHeight(int node) const;
 
     /// Register an operation with this forest.
-    /// Returns the slot number, for use with unregistering.
-    int registerOperation(operation* op);
+    void registerOperation(const operation* op);
 
     /// Unregister an operation.
-    void unregisterOperation(operation* op, int slot);
+    void unregisterOperation(const operation* op);
 
   protected:
     // for debugging:
@@ -1027,9 +1027,9 @@ class MEDDLY::expert_forest : public forest
     // Array index: most recently created hole in edge[]
     int firstHole;
 
-    // Array of operations
-    operation** oplist;
-    int szOplist;
+    // Used to count registered operations
+    int* opCount;
+    int szOpCount;
 
 #if 0
   // TODO: 
@@ -1494,6 +1494,8 @@ class MEDDLY::operation {
     friend void MEDDLY::destroyOpInternal(operation* op);
 
   public:
+    inline bool isMarkedForDeletion() const { return is_marked_for_deletion; }
+
     // should ONLY be called during library cleanup.
     static void destroyOpList();
 
@@ -1513,6 +1515,7 @@ class MEDDLY::operation {
 
     inline int getIndex() const { return oplist_index; }
     static inline operation* getOpWithIndex(int i) { return op_list[i]; }
+    static inline int getOpListSize() { return list_size; }
 
     // for debugging:
 
@@ -1579,9 +1582,6 @@ class MEDDLY::unary_operation : public operation {
     expert_forest* argF;
     expert_forest* resF;
     opnd_type resultType;
-  private:
-    int argFslot;
-    int resFslot;
   public:
     unary_operation(const unary_opname* code, int kl, int al,
       expert_forest* arg, expert_forest* res);
@@ -1627,10 +1627,6 @@ class MEDDLY::binary_operation : public operation {
     expert_forest* arg2F;
     expert_forest* resF;
     opnd_type resultType;
-  private:
-    int arg1Fslot;
-    int arg2Fslot;
-    int resFslot;
   public:
     binary_operation(const binary_opname* code, int kl, int al,
       expert_forest* arg1, expert_forest* arg2, expert_forest* res);

@@ -117,6 +117,8 @@ MEDDLY::numerical_opname::~numerical_opname()
 
 MEDDLY::operation::operation(const opname* n, int kl, int al)
 {
+  DCASSERT(kl>=0);
+  DCASSERT(al>=0);
   theOpName = n;
   key_length = kl;
   ans_length = al;
@@ -124,33 +126,30 @@ MEDDLY::operation::operation(const opname* n, int kl, int al)
   next = 0;
   discardStaleHits = true;
 
-  if (0==key_length) {
-    oplist_index = -1;
-    CT = 0;
+  // 
+  // assign an index to this operation
+  //
+  if (free_list>=0) {
+    oplist_index = free_list;
+    free_list = op_holes[free_list];
   } else {
-    // 
-    // assign an index to this operation, for use in CT
-    //
-    if (free_list>=0) {
-      oplist_index = free_list;
-      free_list = op_holes[free_list];
-    } else {
-      if (list_size >= list_alloc) {
-        int nla = list_alloc + 256;
-        op_list = (operation**) realloc(op_list, nla * sizeof(void*));
-        op_holes = (int*) realloc(op_holes, nla * sizeof(int));
-        if (0==op_list || 0==op_holes) throw error(error::INSUFFICIENT_MEMORY);
-        for (int i=list_size; i<list_alloc; i++) {
-          op_list[i] = 0;
-          op_holes[i] = -1;
-        }
-        list_alloc = nla;
+    if (list_size >= list_alloc) {
+      int nla = list_alloc + 256;
+      op_list = (operation**) realloc(op_list, nla * sizeof(void*));
+      op_holes = (int*) realloc(op_holes, nla * sizeof(int));
+      if (0==op_list || 0==op_holes) throw error(error::INSUFFICIENT_MEMORY);
+      for (int i=list_size; i<list_alloc; i++) {
+        op_list[i] = 0;
+        op_holes[i] = -1;
       }
-      oplist_index = list_size;
-      list_size++;
+      list_alloc = nla;
     }
-    op_list[oplist_index] = this;
+    oplist_index = list_size;
+    list_size++;
+  }
+  op_list[oplist_index] = this;
 
+  if (key_length) { // this op uses the CT
     // 
     // Initialize CT 
     //
@@ -164,7 +163,9 @@ MEDDLY::operation::operation(const opname* n, int kl, int al)
     // Initialize CT search structure
     //
     CT->initializeSearchKey(CTsrch, this);
-
+  } else {
+    DCASSERT(0==ans_length);
+    CT = 0;
   }
 }
 
@@ -248,8 +249,8 @@ MEDDLY::unary_operation::unary_operation(const unary_opname* code, int kl,
   resultType = FOREST;
   resF = res;
 
-  argFslot = argF->registerOperation(this);
-  resFslot = resF->registerOperation(this);
+  argF->registerOperation(this);
+  resF->registerOperation(this);
 
   setAnswerForest(resF);
 }
@@ -261,16 +262,15 @@ MEDDLY::unary_operation::unary_operation(const unary_opname* code, int kl,
   resultType = res;
   resF = 0;
 
-  argFslot = argF->registerOperation(this);
-  resFslot = -1;
+  argF->registerOperation(this);
 
   setAnswerForest(0);
 }
 
 MEDDLY::unary_operation::~unary_operation()
 {
-  argF->unregisterOperation(this, argFslot);
-  if (resF) resF->unregisterOperation(this, resFslot);
+  argF->unregisterOperation(this);
+  if (resF) resF->unregisterOperation(this);
 }
 
 void MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
@@ -305,18 +305,18 @@ MEDDLY::binary_operation::binary_operation(const binary_opname* op, int kl,
   arg2F = arg2;
   resF = res;
 
-  arg1Fslot = arg1F->registerOperation(this);
-  arg2Fslot = arg2F->registerOperation(this);
-  resFslot = res->registerOperation(this);
+  arg1F->registerOperation(this);
+  arg2F->registerOperation(this);
+  res->registerOperation(this);
 
   setAnswerForest(resF);
 }
 
 MEDDLY::binary_operation::~binary_operation()
 {
-  arg1F->unregisterOperation(this, arg1Fslot);
-  arg2F->unregisterOperation(this, arg2Fslot);
-  resF->unregisterOperation(this, resFslot);
+  arg1F->unregisterOperation(this);
+  arg2F->unregisterOperation(this);
+  resF->unregisterOperation(this);
 }
 
 int MEDDLY::binary_operation::compute(int a, int b)

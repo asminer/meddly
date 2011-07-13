@@ -27,6 +27,9 @@
 // #define DEBUG_TABLE2LIST
 // #define DEBUG_LIST2TABLE
 
+// #define DEBUG_REMOVESTALES
+// #define SUMMARY_STALES
+
 namespace MEDDLY {
   /// base class for all compute tables; 
   /// handles allocation of entries :^)
@@ -1136,6 +1139,12 @@ class operation_map : public base_table {
       return global_op->isEntryStale(entry);
     }
     inline void removeEntry(int h) {
+#ifdef DEBUG_REMOVESTALES
+      if (2==N) {
+        printf("\tremoving %s", global_op->getName());
+        printf("(%d, %d) = %d\n", entries[h], entries[h+1], entries[h+2]);
+      }
+#endif
       global_op->discardEntry(entries+h);
       recycleEntry(h, global_op->getCacheEntryLength());
     }
@@ -1244,6 +1253,9 @@ void MEDDLY::operation_map<N>::removeStales()
 #ifdef DEBUG_SLOW
   fprintf(stdout, "Removing stales in CT (entries %ld)\n", perf.numEntries);
 #endif
+#ifdef SUMMARY_STALES
+  int stales = 0;
+#endif
 
   typename std::map<key_type, int, key_less>::iterator curr = ct->begin();
   typename std::map<key_type, int, key_less>::iterator end = ct->end();
@@ -1252,6 +1264,9 @@ void MEDDLY::operation_map<N>::removeStales()
     if (isStale(entries+h)) {
       ct->erase(curr++);
       removeEntry(h);
+#ifdef SUMMARY_STALES
+      stales++;
+#endif
     } else {
       ++curr;
     }
@@ -1259,6 +1274,10 @@ void MEDDLY::operation_map<N>::removeStales()
 
 #ifdef DEBUG_SLOW
   fprintf(stdout, "Done removing CT stales (entries %ld)\n", perf.numEntries);
+#endif
+#ifdef SUMMARY_STALES
+  printf("CT %s (index %d) removed %d stales\n", 
+    global_op->getName(), global_op->getIndex(), stales);
 #endif
 }
 

@@ -214,6 +214,7 @@ int main(int argc, const char** argv)
   printf("Approx. %g reachable states\n", c);
   
   // cleanup
+//  MEDDLY::destroyDomain(d);
   MEDDLY::cleanup();
   return 0;
 }
