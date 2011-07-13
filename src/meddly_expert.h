@@ -261,12 +261,12 @@ struct MEDDLY::settings {
       public:
         /// Constructor, to set defaults.
         computeTableSettings() {
-          // style = MonolithicChainedHash;
+          style = MonolithicChainedHash;
           // style = OperationChainedHash;
-          style = OperationMap;
-          // staleRemoval = Aggressive;
+          // style = OperationMap;
+          staleRemoval = Aggressive;
           // staleRemoval = Moderate;
-          staleRemoval = Lazy;
+          // staleRemoval = Lazy;
           maxSize = 16777216;
         }
     };
@@ -1303,6 +1303,7 @@ class MEDDLY::compute_table {
           friend class base_table;
           int hashLength;
           int* data;
+          bool killData;
           int* key_data;
           const operation* op;
           /// used only for range checking during "development".
@@ -1418,7 +1419,7 @@ class MEDDLY::compute_table {
       }
 
       /// For debugging.
-      virtual void show(FILE *s, int verbLevel = 0) const = 0;
+      virtual void show(FILE *s, int verbLevel = 0) = 0;
 
     protected:
       stats perf;

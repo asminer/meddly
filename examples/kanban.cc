@@ -110,7 +110,7 @@ int main(int argc, const char** argv)
   apply(CARDINALITY, reachable, c);
   printf("Approx. %g reachable states\n", c);
   
-  operation::showAllComputeTables(stdout, 2);
+  operation::showAllComputeTables(stdout, 1);
   
   // cleanup
   MEDDLY::cleanup();
