@@ -238,6 +238,8 @@ struct MEDDLY::settings {
         enum styleOption {
           /// One huge hash table that uses chaining.
           MonolithicChainedHash,
+          /// One huge hash table that does not use chaining.
+          MonolithicUnchainedHash,
           /// A hash table (with chaining) for each operation.
           OperationChainedHash,
           /// A STL "map" for each operation.
@@ -261,12 +263,12 @@ struct MEDDLY::settings {
       public:
         /// Constructor, to set defaults.
         computeTableSettings() {
-          style = MonolithicChainedHash;
+          style = MonolithicUnchainedHash;
           // style = OperationChainedHash;
           // style = OperationMap;
-          staleRemoval = Aggressive;
+          // staleRemoval = Aggressive;
           // staleRemoval = Moderate;
-          // staleRemoval = Lazy;
+          staleRemoval = Lazy;
           maxSize = 16777216;
         }
     };
@@ -283,7 +285,8 @@ struct MEDDLY::settings {
     /// super handly
     inline bool usesMonolithicComputeTable() {
       return (
-       computeTableSettings::MonolithicChainedHash == computeTable.style
+       computeTableSettings::MonolithicChainedHash == computeTable.style ||
+       computeTableSettings::MonolithicUnchainedHash == computeTable.style 
       );
     }
 };

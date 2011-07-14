@@ -114,7 +114,7 @@ void MEDDLY::expert_forest::unregisterOperation(const operation* op)
 
 void MEDDLY::expert_forest::showComputeTable(FILE* s, int verbLevel) const
 {
-  if (is_marked_for_deletion) return;
+  // if (is_marked_for_deletion) return;
   if (operation::useMonolithicComputeTable()) {
     operation::showMonolithicComputeTable(s, verbLevel);
   } else {

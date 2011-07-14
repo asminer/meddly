@@ -1929,12 +1929,10 @@ bool node_manager::gc(bool zombifyOrphanNodes) {
       // remove the stale nodes entries from caches
       removeStaleComputeTableEntries();
 #ifdef DEVELOPMENT_CODE
-      /*
       if (zombie_nodes != 0) {
-        showInfo(stderr, 2);
-        showComputeTable(stderr, true);
+        showInfo(stderr, 1);
+        showComputeTable(stderr, 5);
       }
-      */
       // TBD: better error message here
 #endif
       DCASSERT(zombie_nodes == 0);

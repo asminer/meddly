@@ -621,7 +621,7 @@ int main(int argc, char *argv[])
   printmem(mdd->getPeakMemoryUsed());
   printf(" peak memory\n");
   
-  operation::showMonolithicComputeTable(stdout, 1);
+  operation::showAllComputeTables(stdout, 1);
 
 #if 0   // determine verbosity of output
   reachableStates.show(stdout, 2);
