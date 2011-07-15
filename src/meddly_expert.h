@@ -265,13 +265,8 @@ struct MEDDLY::settings {
       public:
         /// Constructor, to set defaults.
         computeTableSettings() {
-          // style = MonolithicUnchainedHash;
-          style = OperationUnchainedHash;
-          // style = OperationChainedHash;
-          // style = OperationMap;
-          // staleRemoval = Aggressive;
+          style = MonolithicUnchainedHash;
           staleRemoval = Moderate;
-          // staleRemoval = Lazy;
           maxSize = 16777216;
         }
     };
