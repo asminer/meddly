@@ -242,6 +242,8 @@ struct MEDDLY::settings {
           MonolithicUnchainedHash,
           /// A hash table (with chaining) for each operation.
           OperationChainedHash,
+          /// A hash table (no chaining) for each operation.
+          OperationUnchainedHash,
           /// A STL "map" for each operation.
           OperationMap
         };
@@ -263,12 +265,13 @@ struct MEDDLY::settings {
       public:
         /// Constructor, to set defaults.
         computeTableSettings() {
-          style = MonolithicUnchainedHash;
+          // style = MonolithicUnchainedHash;
+          style = OperationUnchainedHash;
           // style = OperationChainedHash;
           // style = OperationMap;
           // staleRemoval = Aggressive;
-          // staleRemoval = Moderate;
-          staleRemoval = Lazy;
+          staleRemoval = Moderate;
+          // staleRemoval = Lazy;
           maxSize = 16777216;
         }
     };
