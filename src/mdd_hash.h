@@ -126,7 +126,7 @@ class mdd_hash_table {
         }
         table[i] = nodes->getNull();
       } // for i
-      DCASSERT(listlength == num_entries);
+      MEDDLY_DCASSERT(listlength == num_entries);
       num_entries = 0;
       return front;
     }
@@ -139,7 +139,7 @@ class mdd_hash_table {
       for ( ; front != nodes->getNull(); front = next) {
         next = nodes->getNext(front);
         h = hash(front);
-        CHECK_RANGE(0, h, size);
+        MEDDLY_CHECK_RANGE(0, h, size);
         nodes->setNext(front, table[h]);
         table[h] = front;
         num_entries++;
@@ -250,7 +250,7 @@ class mdd_hash_table {
 #ifdef DEBUG_MDD_HASH_H
       fprintf(stderr, "%s: h = %d\n", __func__, h);
 #endif
-      CHECK_RANGE(0, h, size);
+      MEDDLY_CHECK_RANGE(0, h, size);
       int null = nodes->getNull();
       if (table[h] == null) return null;
       int parent = null;
@@ -260,7 +260,7 @@ class mdd_hash_table {
         if (nodes->equals(key, ptr)) {
           if (ptr != table[h]) {
             // not at front; move it to front
-            DCASSERT(parent != null);
+            MEDDLY_DCASSERT(parent != null);
             nodes->setNext(parent, nodes->getNext(ptr));
             nodes->setNext(ptr, table[h]);
             table[h] = ptr;
@@ -285,7 +285,7 @@ class mdd_hash_table {
      */
     inline int remove(int key) {
       unsigned h = hash(key);
-      CHECK_RANGE(0, h, size);
+      MEDDLY_CHECK_RANGE(0, h, size);
       int parent = nodes->getNull();
       int ptr = table[h];
       for ( ; ptr != nodes->getNull(); ptr = nodes->getNext(ptr)) {
@@ -298,12 +298,12 @@ class mdd_hash_table {
             table[h] = nodes->getNext(ptr);
           }
           num_entries--;
-          DCASSERT(table[h] != 0);
+          MEDDLY_DCASSERT(table[h] != 0);
           return ptr;
         }
         parent = ptr;
       }
-      DCASSERT(table[h] != 0);
+      MEDDLY_DCASSERT(table[h] != 0);
       return nodes->getNull();
     }
 
@@ -313,12 +313,12 @@ class mdd_hash_table {
       Returns the (new) front of the list.
      */
     inline int insert(int key) {
-      DCASSERT(key != 0);
-      DCASSERT(key >= 1);
-      DCASSERT(find(key) == nodes->getNull());
+      MEDDLY_DCASSERT(key != 0);
+      MEDDLY_DCASSERT(key >= 1);
+      MEDDLY_DCASSERT(find(key) == nodes->getNull());
       if (num_entries >= (size << 1)) expand();
       unsigned h = hash(key);
-      CHECK_RANGE(0, h, size);
+      MEDDLY_CHECK_RANGE(0, h, size);
       // insert at head of list
       nodes->setNext(key, table[h]);
       table[h] = key;
@@ -329,7 +329,7 @@ class mdd_hash_table {
 
     int replace(int key) {
       unsigned h = hash(key);
-      CHECK_RANGE(0, h, size);
+      MEDDLY_CHECK_RANGE(0, h, size);
 
 #ifdef DEBUG_MDD_HASH_H
       fprintf(stderr, "%s: h = %d\n", __func__, h);

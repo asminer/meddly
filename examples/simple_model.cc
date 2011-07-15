@@ -80,7 +80,8 @@ void buildNextStateFunction(const char* const* events, int nEvents,
 
   for (int e=0; e<nEvents; e++) {
     const char* ev = events[e];
-    if (verb>1) fprintf(stderr, "Event %5d", e);
+    if (2==verb) fprintf(stderr, "%5d", e);
+    if (verb>2) fprintf(stderr, "Event %5d", e);
 
     dd_edge nsf_ev(mxd);
     dd_edge term(mxd);
@@ -143,8 +144,9 @@ void buildNextStateFunction(const char* const* events, int nEvents,
     if (verb>2) fputc(' ', stderr);
     nsf += nsf_ev;
 
-    if (verb>1) fputc('\n', stderr);
+    if (verb>2) fputc('\n', stderr);
   } // for e
+  if (verb==2) fputc('\n', stderr);
 
   // cleanup
   delete[] mtprime;

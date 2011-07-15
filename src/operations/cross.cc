@@ -24,7 +24,6 @@
 #endif
 #include "../defines.h"
 #include "cross.h"
-#include "../compute_table.h"
 
 namespace MEDDLY {
   class cross_bool;
@@ -42,7 +41,7 @@ class MEDDLY::cross_bool : public binary_operation {
     cross_bool(const binary_opname* oc, expert_forest* a1,
       expert_forest* a2, expert_forest* res);
 
-    virtual bool isEntryStale(const int* entryData);
+    virtual bool isStaleEntry(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
@@ -52,17 +51,16 @@ class MEDDLY::cross_bool : public binary_operation {
 };
 
 MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
-  expert_forest* a2, expert_forest* res) : binary_operation(oc, a1, a2, res)
+  expert_forest* a2, expert_forest* res) 
+: binary_operation(oc, 3, 1, a1, a2, res)
 {
-  key_length = 3; 
-  ans_length = 1;
   // data[0] : height
   // data[1] : a
   // data[2] : b
   // data[3] : c
 }
 
-bool MEDDLY::cross_bool::isEntryStale(const int* data)
+bool MEDDLY::cross_bool::isStaleEntry(const int* data)
 {
   // data[0] is the level number
   return arg1F->isStale(data[1]) ||
@@ -104,11 +102,10 @@ int MEDDLY::cross_bool::compute_un(int lh, int a, int b)
   if (0==a || 0==b) return resF->getTerminalNode(0);
 
   // check compute table
-  static int cacheEntry[4];
-  cacheEntry[0] = lh;
-  cacheEntry[1] = a;
-  cacheEntry[2] = b;
-  const int* cacheFind = CT->find(this, cacheEntry);
+  CTsrch.key(0) = lh;
+  CTsrch.key(1) = a;
+  CTsrch.key(2) = b;
+  const int* cacheFind = CT->find(CTsrch);
   if (cacheFind) {
     return resF->linkNode(cacheFind[3]);
   }
@@ -149,11 +146,13 @@ int MEDDLY::cross_bool::compute_un(int lh, int a, int b)
 
   // reduce, save in compute table
   c = resF->reduceNode(c);
-  cacheEntry[0] = lh;
-  cacheEntry[1] = arg1F->cacheNode(a);
-  cacheEntry[2] = arg2F->cacheNode(b);
-  cacheEntry[3] = resF->cacheNode(c);
-  CT->add(this, cacheEntry);
+
+  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  entry.key(0) = lh;
+  entry.key(1) = arg1F->cacheNode(a);
+  entry.key(2) = arg2F->cacheNode(b);
+  entry.result(0) = resF->cacheNode(c);
+  CT->addEntry();
 
   return c;
 }
@@ -167,11 +166,10 @@ int MEDDLY::cross_bool::compute_pr(int ht, int a, int b)
   ht--;
 
   // check compute table
-  static int cacheEntry[4];
-  cacheEntry[0] = lh;
-  cacheEntry[1] = a;
-  cacheEntry[2] = b;
-  const int* cacheFind = CT->find(this, cacheEntry);
+  CTsrch.key(0) = lh;
+  CTsrch.key(1) = a;
+  CTsrch.key(2) = b;
+  const int* cacheFind = CT->find(CTsrch);
   if (cacheFind) {
     return resF->linkNode(cacheFind[3]);
   }
@@ -212,11 +210,13 @@ int MEDDLY::cross_bool::compute_pr(int ht, int a, int b)
 
   // reduce, save in compute table
   c = resF->reduceNode(c);
-  cacheEntry[0] = lh;
-  cacheEntry[1] = arg1F->cacheNode(a);
-  cacheEntry[2] = arg2F->cacheNode(b);
-  cacheEntry[3] = resF->cacheNode(c);
-  CT->add(this, cacheEntry);
+
+  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  entry.key(0) = lh;
+  entry.key(1) = arg1F->cacheNode(a);
+  entry.key(2) = arg2F->cacheNode(b);
+  entry.result(0) = resF->cacheNode(c);
+  CT->addEntry();
 
   return c;
 }

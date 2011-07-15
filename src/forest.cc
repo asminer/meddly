@@ -54,8 +54,8 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
     edge[i].edge = 0;
   }
   // initialize array of operations
-  oplist = 0;
-  szOplist = 0;
+  opCount = 0;
+  szOpCount = 0;
 }
 
 void MEDDLY::expert_forest::removeStaleComputeTableEntries()
@@ -63,9 +63,11 @@ void MEDDLY::expert_forest::removeStaleComputeTableEntries()
   if (operation::useMonolithicComputeTable()) {
     operation::removeStalesFromMonolithic();
   } else {
-    for (int i=0; i<szOplist; i++) 
-      if (oplist[i])
-        oplist[i]->removeStaleComputeTableEntries();
+    for (int i=0; i<szOpCount; i++) 
+      if (opCount[i]) {
+        operation* op = operation::getOpWithIndex(i);
+        op->removeStaleComputeTableEntries();
+      }
   }
 }
 
@@ -77,57 +79,50 @@ void MEDDLY::expert_forest::removeAllComputeTableEntries()
     operation::removeStalesFromMonolithic();
     is_marked_for_deletion = false;
   } else {
-    for (int i=0; i<szOplist; i++) 
-      if (oplist[i])
-        oplist[i]->removeAllComputeTableEntries();
+    for (int i=0; i<szOpCount; i++) 
+      if (opCount[i]) {
+        operation* op = operation::getOpWithIndex(i);
+        op->removeAllComputeTableEntries();
+      }
   }
 }
 
-int MEDDLY::expert_forest::registerOperation(operation* op)
+void MEDDLY::expert_forest::registerOperation(const operation* op)
 {
-  for (int slot=0; slot<szOplist; slot++) {
-    if (0==oplist[slot]) {
-      oplist[slot] = op;
-      return slot;
+  MEDDLY_DCASSERT(op->getIndex() >= 0);
+  if (op->getIndex() >= szOpCount) {
+    // need to expand
+    int newSize = ((op->getIndex() / 16) +1 )*16; // expand in chunks of 16
+    int* tmp = (int*) realloc(opCount, newSize * sizeof(int));
+    if (0==tmp) throw error(error::INSUFFICIENT_MEMORY);
+    for ( ; szOpCount < newSize; szOpCount++) {
+      tmp[szOpCount] = 0;
     }
+    opCount = tmp;
   }
-  // need to expand
-  int newSize;
-  if (szOplist) {
-    if (szOplist > 16)  newSize = szOplist + 16;
-    else                newSize = szOplist * 2;
-  } else {
-    newSize = 4;
-  }
-  operation** temp = (operation**) realloc(
-    oplist, newSize * sizeof(operation*)
-  );
-  if (0 == temp) throw error(error::INSUFFICIENT_MEMORY);
-  oplist = temp;
-  memset(oplist + szOplist + 1, 0,
-      (newSize - (1+szOplist)) * sizeof(operation*));
-  int slot = szOplist;
-  szOplist = newSize;
-  oplist[slot] = op;
-  return slot;
+  opCount[op->getIndex()] ++;
 }
 
-void MEDDLY::expert_forest::unregisterOperation(operation* op, int slot)
+void MEDDLY::expert_forest::unregisterOperation(const operation* op)
 {
-  if (oplist[slot] != op) throw error(error::MISCELLANEOUS);
-  oplist[slot] = 0;
+  MEDDLY_DCASSERT(op->getIndex() >= 0);
+  MEDDLY_DCASSERT(szOpCount > op->getIndex());
+  MEDDLY_DCASSERT(opCount[op->getIndex()]>0);
+  opCount[op->getIndex()] --;
 }
 
 
-void MEDDLY::expert_forest::showComputeTable(FILE* s, bool verbose) const
+void MEDDLY::expert_forest::showComputeTable(FILE* s, int verbLevel) const
 {
-  if (is_marked_for_deletion) return;
+  // if (is_marked_for_deletion) return;
   if (operation::useMonolithicComputeTable()) {
-    operation::showMonolithicComputeTable(s, verbose);
+    operation::showMonolithicComputeTable(s, verbLevel);
   } else {
-    for (int i=0; i<szOplist; i++) 
-      if (oplist[i])
-        oplist[i]->showComputeTable(s, verbose);
+    for (int i=0; i<szOpCount; i++) 
+      if (opCount[i]) {
+        operation* op = operation::getOpWithIndex(i);
+        op->showComputeTable(s, verbLevel);
+      }
   }
 }
 
@@ -139,7 +134,7 @@ void MEDDLY::expert_forest::unregisterDDEdges() {
   // ignore the NULLs; release the rest
   for (unsigned i = 0; i < firstFree; ++i) {
     if (edge[i].edge != 0) {
-      DCASSERT(edge[i].nextHole == -1);
+      MEDDLY_DCASSERT(edge[i].nextHole == -1);
       edge[i].edge->set(0, 0, 0);
       edge[i].edge->setIndex(-1);
     }
@@ -164,12 +159,7 @@ MEDDLY::expert_forest::~expert_forest() {
   // Delete the arrays
   free(edge);
 
-  // deal with operations associated with this forest
-  for (int i=0; i<szOplist; i++) {
-    MEDDLY::removeOperationFromCache(oplist[i]);
-    delete oplist[i];
-  }
-  free(oplist);
+  free(opCount);
 
 
   // NOTE: since the user is provided with the dd_edges instances (as opposed
@@ -184,9 +174,11 @@ void MEDDLY::expert_forest::markForDeletion()
 {
   is_marked_for_deletion = true;
   // deal with operations associated with this forest
-  for (int i=0; i<szOplist; i++) {
-    if (oplist[i]) oplist[i]->markForDeletion();
-  }
+  for (int i=0; i<szOpCount; i++) 
+    if (opCount[i]) {
+      operation* op = operation::getOpWithIndex(i);
+      op->markForDeletion();
+    }
 }
 
 void MEDDLY::expert_forest::registerEdge(dd_edge& e) {
@@ -215,7 +207,7 @@ void MEDDLY::expert_forest::registerEdge(dd_edge& e) {
       }
       sz = new_sz;
     }
-    DCASSERT(firstFree < sz);
+    MEDDLY_DCASSERT(firstFree < sz);
     edge[firstFree].nextHole = -1;
     edge[firstFree].edge = &e;
     e.setIndex(firstFree);
@@ -227,9 +219,9 @@ void MEDDLY::expert_forest::registerEdge(dd_edge& e) {
 void MEDDLY::expert_forest::unregisterEdge(dd_edge& e) {
   // remove this edge from the collection of edges for this forest.
   // change e.index to -1.
-  DCASSERT(e.getIndex() >= 0);
+  MEDDLY_DCASSERT(e.getIndex() >= 0);
   int index = e.getIndex();
-  DCASSERT(edge[index].edge == &e);
+  MEDDLY_DCASSERT(edge[index].edge == &e);
   edge[index].edge = 0;
   edge[index].nextHole = firstHole;
   firstHole = index;
@@ -239,9 +231,9 @@ void MEDDLY::expert_forest::unregisterEdge(dd_edge& e) {
 
 // TODO: make use of pointers to speed this up.
 int MEDDLY::expert_forest::getDownPtr(int p, int i) const {
-  DCASSERT(isActiveNode(p));
+  MEDDLY_DCASSERT(isActiveNode(p));
   if (isTerminalNode(p)) return p;
-  DCASSERT(i >= 0);
+  MEDDLY_DCASSERT(i >= 0);
   if (isFullNode(p)) {
     // full or trunc-full node
     if (getFullNodeSize(p) > i) return getFullNodeDownPtr(p, i);

@@ -32,9 +32,9 @@ MEDDLY::dd_edge::dd_edge(forest* p)
   opPlus(0), opStar(0), opMinus(0), opDivide(0),
   updateNeeded(true), beginIterator(0)
 {
-  DCASSERT(p != NULL);
+  MEDDLY_DCASSERT(p != NULL);
   smart_cast<expert_forest*>(parent)->registerEdge(*this);
-  DCASSERT(index != -1);
+  MEDDLY_DCASSERT(index != -1);
 }
 
 
@@ -72,7 +72,7 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator=(const dd_edge& e)
     smart_cast<expert_forest*>(parent)->unlinkNode(node);
     if (parent != e.parent) {
       smart_cast<expert_forest*>(parent)->unregisterEdge(*this);
-      DCASSERT(index == -1);
+      MEDDLY_DCASSERT(index == -1);
       parent = e.parent;
       smart_cast<expert_forest*>(parent)->registerEdge(*this);
       opPlus = e.opPlus;
@@ -142,11 +142,11 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator+=(const dd_edge& e)
       opPlus = getOperation(UNION, *this, e, *this);
     else
       opPlus = getOperation(PLUS, *this, e, *this);
-    DCASSERT(opPlus != 0);
+    MEDDLY_DCASSERT(opPlus != 0);
   }
   opPlus->compute(*this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
-  DCASSERT(updateNeeded == true);
+  MEDDLY_DCASSERT(updateNeeded == true);
   return *this;
 }
 
@@ -159,11 +159,11 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator*=(const dd_edge& e)
       opStar = getOperation(INTERSECTION, *this, e, *this);
     else
       opStar = getOperation(MULTIPLY, *this, e, *this);
-    DCASSERT(opStar != 0);
+    MEDDLY_DCASSERT(opStar != 0);
   }
   opStar->compute(*this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
-  DCASSERT(updateNeeded == true);
+  MEDDLY_DCASSERT(updateNeeded == true);
   return *this;
 }
 
@@ -176,11 +176,11 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator-=(const dd_edge& e)
       opMinus = getOperation(DIFFERENCE, *this, e, *this);
     else
       opMinus = getOperation(MINUS, *this, e, *this);
-    DCASSERT(opMinus != 0);
+    MEDDLY_DCASSERT(opMinus != 0);
   }
   opMinus->compute(*this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
-  DCASSERT(updateNeeded == true);
+  MEDDLY_DCASSERT(updateNeeded == true);
   return *this;
 }
 
@@ -193,7 +193,7 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator/=(const dd_edge& e)
   }
   opDivide->compute(*this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
-  DCASSERT(updateNeeded == true);
+  MEDDLY_DCASSERT(updateNeeded == true);
   return *this;
 }
 
@@ -211,7 +211,7 @@ void MEDDLY::dd_edge::show(FILE* strm, int verbosity) const
       fprintf(strm, "node: %d*, ", eParent->getInteger(node));
     }
     else {
-      DCASSERT(eParent->getRangeType() == forest::BOOLEAN);
+      MEDDLY_DCASSERT(eParent->getRangeType() == forest::BOOLEAN);
       fprintf(strm, "node: %s*, ",(eParent->getBoolean(node)? "true": "false"));
     }
   }
@@ -242,7 +242,7 @@ MEDDLY::dd_edge::iterator MEDDLY::dd_edge::begin()
     updateIterators();
     updateNeeded = false;
   }
-  DCASSERT(beginIterator != 0);
+  MEDDLY_DCASSERT(beginIterator != 0);
   return *beginIterator;
 }
 
@@ -450,10 +450,10 @@ bool MEDDLY::dd_edge::iterator::findNextRow(int height)
     return false;
   }
 
-  DCASSERT(e != 0);
-  DCASSERT(type == COLUMN);
+  MEDDLY_DCASSERT(e != 0);
+  MEDDLY_DCASSERT(type == COLUMN);
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
-  DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
 
   int nextHeight = height - 1;
 
@@ -471,13 +471,13 @@ bool MEDDLY::dd_edge::iterator::findNextRow(int height)
     // Since pelement[height] cannot be changed,
     // and since this is a skipped level, element[i] must equal pelement[i].
     // Therefore, no other indexes are available at this level.
-    DCASSERT(pnodes[height] == 0);
+    MEDDLY_DCASSERT(pnodes[height] == 0);
     element[height] = 0;
     return false;
   }
 
-  DCASSERT(!f->isTerminalNode(nodes[height]));
-  DCASSERT(!f->isTerminalNode(pnodes[height]));
+  MEDDLY_DCASSERT(!f->isTerminalNode(nodes[height]));
+  MEDDLY_DCASSERT(!f->isTerminalNode(pnodes[height]));
 
   bool found = false;
 
@@ -492,10 +492,10 @@ bool MEDDLY::dd_edge::iterator::findNextRow(int height)
       if (dptrs[i] != 0) {
         // explore path
         // dptrs[i] must be a primed node
-        DCASSERT(f->getNodeLevel(dptrs[i]) == -height);
+        MEDDLY_DCASSERT(f->getNodeLevel(dptrs[i]) == -height);
         int unprimedNode = f->getDownPtr(dptrs[i], pelement[height]);
         if (findFirstRow(nextHeight, unprimedNode)) {
-          DCASSERT(nodes[f->getNodeLevel(unprimedNode)] == unprimedNode);
+          MEDDLY_DCASSERT(nodes[f->getNodeLevel(unprimedNode)] == unprimedNode);
           pnodes[height] = dptrs[i];
           element[height] = i;
           found = true;
@@ -505,7 +505,7 @@ bool MEDDLY::dd_edge::iterator::findNextRow(int height)
     }
   }
   else {
-    DCASSERT(f->isSparseNode(nodes[height]));
+    MEDDLY_DCASSERT(f->isSparseNode(nodes[height]));
     const int sz = f->getSparseNodeSize(nodes[height]);
     const int* iptrs = 0;
     assert(f->getSparseNodeIndexes(nodes[height], iptrs));
@@ -513,13 +513,13 @@ bool MEDDLY::dd_edge::iterator::findNextRow(int height)
     for ( ; i < sz && iptrs[i] <= element[height]; i++);
     for ( ; i < sz; i++)
     {
-      DCASSERT(dptrs[i] != 0);
+      MEDDLY_DCASSERT(dptrs[i] != 0);
       // Explore path.
       // dptrs[i] must be primed.
-      DCASSERT(f->getNodeLevel(dptrs[i]) == -height);
+      MEDDLY_DCASSERT(f->getNodeLevel(dptrs[i]) == -height);
       int unprimedNode = f->getDownPtr(dptrs[i], pelement[height]);
       if (findFirstRow(nextHeight, unprimedNode)) {
-        DCASSERT(nodes[f->getNodeLevel(unprimedNode)] == unprimedNode);
+        MEDDLY_DCASSERT(nodes[f->getNodeLevel(unprimedNode)] == unprimedNode);
         pnodes[height] = dptrs[i];
         element[height] = iptrs[i];
         found = true;
@@ -555,10 +555,10 @@ bool MEDDLY::dd_edge::iterator::findNextColumn(int height)
     return false;
   }
 
-  DCASSERT(e != 0);
-  DCASSERT(type == ROW);
+  MEDDLY_DCASSERT(e != 0);
+  MEDDLY_DCASSERT(type == ROW);
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
-  DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
 
   int nextHeight = height - 1;
 
@@ -576,13 +576,13 @@ bool MEDDLY::dd_edge::iterator::findNextColumn(int height)
     // Since element[height] cannot be changed,
     // and since this is a skipped level, pelement[i] must equal element[i].
     // Therefore, no other indexes are available at this level.
-    DCASSERT(pnodes[height] == 0);
+    MEDDLY_DCASSERT(pnodes[height] == 0);
     pelement[height] = 0;
     return false;
   }
 
-  DCASSERT(!f->isTerminalNode(nodes[height]));
-  DCASSERT(!f->isTerminalNode(pnodes[height]));
+  MEDDLY_DCASSERT(!f->isTerminalNode(nodes[height]));
+  MEDDLY_DCASSERT(!f->isTerminalNode(pnodes[height]));
 
   bool found = false;
 
@@ -597,9 +597,9 @@ bool MEDDLY::dd_edge::iterator::findNextColumn(int height)
       if (dptrs[i] != 0) {
         // explore path
         // dptrs[i] must be an unprimed node
-        DCASSERT(f->getNodeLevel(dptrs[i]) >= 0);
+        MEDDLY_DCASSERT(f->getNodeLevel(dptrs[i]) >= 0);
         if (findFirstColumn(nextHeight, dptrs[i])) {
-          DCASSERT(nodes[f->getNodeLevel(dptrs[i])] == dptrs[i]);
+          MEDDLY_DCASSERT(nodes[f->getNodeLevel(dptrs[i])] == dptrs[i]);
           pelement[height] = i;
           found = true;
           break;
@@ -608,7 +608,7 @@ bool MEDDLY::dd_edge::iterator::findNextColumn(int height)
     }
   }
   else {
-    DCASSERT(f->isSparseNode(pnodes[height]));
+    MEDDLY_DCASSERT(f->isSparseNode(pnodes[height]));
     const int sz = f->getSparseNodeSize(pnodes[height]);
     const int* iptrs = 0;
     assert(f->getSparseNodeIndexes(pnodes[height], iptrs));
@@ -616,12 +616,12 @@ bool MEDDLY::dd_edge::iterator::findNextColumn(int height)
     for ( ; i < sz && iptrs[i] <= pelement[height]; i++);
     for ( ; i < sz; i++)
     {
-      DCASSERT(dptrs[i] != 0);
+      MEDDLY_DCASSERT(dptrs[i] != 0);
       // Explore path.
       // dptrs[i] must be unprimed.
-      DCASSERT(f->getNodeLevel(dptrs[i]) >= 0);
+      MEDDLY_DCASSERT(f->getNodeLevel(dptrs[i]) >= 0);
       if (findFirstColumn(nextHeight, dptrs[i])) {
-        DCASSERT(nodes[f->getNodeLevel(dptrs[i])] == dptrs[i]);
+        MEDDLY_DCASSERT(nodes[f->getNodeLevel(dptrs[i])] == dptrs[i]);
         pelement[height] = iptrs[i];
         found = true;
         break;
@@ -646,10 +646,10 @@ bool MEDDLY::dd_edge::iterator::findNextColumn(int height)
 // PRE: minterm[] have been copied into pelement[]
 bool MEDDLY::dd_edge::iterator::findFirstRow(int height, int node)
 {
-  DCASSERT(e != 0);
-  DCASSERT(type == COLUMN);
+  MEDDLY_DCASSERT(e != 0);
+  MEDDLY_DCASSERT(type == COLUMN);
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
-  DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
 
   int nodeHeight = f->isTerminalNode(node)? 0: f->getNodeHeight(node);
 
@@ -668,10 +668,10 @@ bool MEDDLY::dd_edge::iterator::findFirstRow(int height, int node)
     return node != 0;
   }
 
-  DCASSERT(height > 0);
+  MEDDLY_DCASSERT(height > 0);
 
   // node must be an unprimed node (based on identity-reduction rule).
-  DCASSERT(f->getNodeLevel(node) > 0);
+  MEDDLY_DCASSERT(f->getNodeLevel(node) > 0);
 
   // Find the first i such that node[i][pelement[nodeHeight]] != 0
 
@@ -699,10 +699,10 @@ bool MEDDLY::dd_edge::iterator::findFirstRow(int height, int node)
     }
   }
   else {
-    DCASSERT(f->isSparseNode(node));
+    MEDDLY_DCASSERT(f->isSparseNode(node));
     const int sz = f->getSparseNodeSize(node);
     for (int i = 0; i < sz; i++) {
-      DCASSERT(dptrs[i] != 0);
+      MEDDLY_DCASSERT(dptrs[i] != 0);
       // explore path
       int unprimedNode = f->getDownPtr(dptrs[i], pelement[nodeHeight]);
       if (findFirstRow(nextHeight, unprimedNode)) {
@@ -725,10 +725,10 @@ bool MEDDLY::dd_edge::iterator::findFirstRow(int height, int node)
 // PRE: minterm[] have been copied into element[]
 bool MEDDLY::dd_edge::iterator::findFirstColumn(int height, int node)
 {
-  DCASSERT(e != 0);
-  DCASSERT(type == ROW);
+  MEDDLY_DCASSERT(e != 0);
+  MEDDLY_DCASSERT(type == ROW);
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
-  DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
 
   int nodeHeight = f->isTerminalNode(node)? 0: f->getNodeHeight(node);
 
@@ -747,10 +747,10 @@ bool MEDDLY::dd_edge::iterator::findFirstColumn(int height, int node)
     return node != 0;
   }
 
-  DCASSERT(height > 0);
+  MEDDLY_DCASSERT(height > 0);
 
   // node must be an unprimed node (based on identity-reduction rule).
-  DCASSERT(f->getNodeLevel(node) > 0);
+  MEDDLY_DCASSERT(f->getNodeLevel(node) > 0);
 
   // Find the first i such that node[element[nodeHeight]][i] != 0
 
@@ -780,12 +780,12 @@ bool MEDDLY::dd_edge::iterator::findFirstColumn(int height, int node)
     }
   }
   else {
-    DCASSERT(f->isSparseNode(primedNode));
+    MEDDLY_DCASSERT(f->isSparseNode(primedNode));
     // Find first i such that primedNode[i] does not lead to a 0.
     const int sz = f->getSparseNodeSize(primedNode);
     for (int i = 0; i < sz; i++)
     {
-      DCASSERT(dptrs[i] != 0);
+      MEDDLY_DCASSERT(dptrs[i] != 0);
       // explore path
       if (findFirstColumn(nextHeight, dptrs[i])) {
         // found a path, break
@@ -804,9 +804,9 @@ bool MEDDLY::dd_edge::iterator::findFirstColumn(int height, int node)
 
 void MEDDLY::dd_edge::iterator::incrNonRelation()
 {
-  DCASSERT(e != 0);
-  DCASSERT(e->node != 0);
-  DCASSERT(type == DEFAULT);
+  MEDDLY_DCASSERT(e != 0);
+  MEDDLY_DCASSERT(e->node != 0);
+  MEDDLY_DCASSERT(type == DEFAULT);
 
   expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
@@ -857,14 +857,14 @@ void MEDDLY::dd_edge::iterator::incrNonRelation()
         if (found) break;
       }
       else {
-        DCASSERT(f->isSparseNode(node));
+        MEDDLY_DCASSERT(f->isSparseNode(node));
         // find sparse index corresponding to element[currLevel]
         int begin = 0;
         int end = f->getSparseNodeSize(node);
         if (element[currLevel] < f->getSparseNodeIndex(node, end-1)) {
           while (begin + 1 < end) {
             int mid = (begin + end) / 2;
-            DCASSERT(mid > begin && mid < end);
+            MEDDLY_DCASSERT(mid > begin && mid < end);
             if (f->getSparseNodeIndex(node, mid) > element[currLevel]) {
               end = mid;
             } else {
@@ -874,8 +874,8 @@ void MEDDLY::dd_edge::iterator::incrNonRelation()
             //if (f->getSparseNodeDownPtr(node, begin)
           }
           // range is [begin, end), therefore
-          DCASSERT(f->getSparseNodeIndex(node, begin) == element[currLevel]);
-          DCASSERT(begin + 1 < f->getSparseNodeSize(node));
+          MEDDLY_DCASSERT(f->getSparseNodeIndex(node, begin) == element[currLevel]);
+          MEDDLY_DCASSERT(begin + 1 < f->getSparseNodeSize(node));
           element[currLevel] = f->getSparseNodeIndex(node, begin + 1);
           node = f->getSparseNodeDownPtr(node, begin + 1);
           nodes[f->getNodeLevel(node)] = node;
@@ -919,13 +919,13 @@ void MEDDLY::dd_edge::iterator::incrNonRelation()
         }
       }
     } else {
-      DCASSERT(f->isSparseNode(node));
+      MEDDLY_DCASSERT(f->isSparseNode(node));
       element[currLevel] = f->getSparseNodeIndex(node, 0);
       int n = f->getSparseNodeDownPtr(node, 0);
       nodes[f->getNodeLevel(n)] = n;
     }
   }
-  DCASSERT(nodes[0] != 0);
+  MEDDLY_DCASSERT(nodes[0] != 0);
 #ifdef DEBUG_ITER_BEGIN
   printf("nodes[]: [");
   for (int i = size - 1; i > 0; --i)
@@ -939,14 +939,14 @@ void MEDDLY::dd_edge::iterator::incrNonRelation()
 
 void MEDDLY::dd_edge::iterator::incrNonIdentRelation()
 {
-  DCASSERT(e != 0);
-  DCASSERT(e->node != 0);
-  DCASSERT(type == DEFAULT);
+  MEDDLY_DCASSERT(e != 0);
+  MEDDLY_DCASSERT(e->node != 0);
+  MEDDLY_DCASSERT(type == DEFAULT);
 
   expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
 
-  DCASSERT(f->getReductionRule() == forest::FULLY_REDUCED
+  MEDDLY_DCASSERT(f->getReductionRule() == forest::FULLY_REDUCED
       || f->getReductionRule() == forest::QUASI_REDUCED);
 
   int currLevel = d->getNumVariables();
@@ -1004,7 +1004,7 @@ void MEDDLY::dd_edge::iterator::incrNonIdentRelation()
         }
       }
       else {
-        DCASSERT(f->isSparseNode(node));
+        MEDDLY_DCASSERT(f->isSparseNode(node));
         // find sparse index corresponding to element[currLevel]
         int begin = 0;
         int end = f->getSparseNodeSize(node);
@@ -1013,7 +1013,7 @@ void MEDDLY::dd_edge::iterator::incrNonIdentRelation()
         if (searchFor < f->getSparseNodeIndex(node, end-1)) {
           while (begin + 1 < end) {
             int mid = (begin + end) / 2;
-            DCASSERT(mid > begin && mid < end);
+            MEDDLY_DCASSERT(mid > begin && mid < end);
             if (f->getSparseNodeIndex(node, mid) > searchFor) {
               end = mid;
             } else {
@@ -1021,8 +1021,8 @@ void MEDDLY::dd_edge::iterator::incrNonIdentRelation()
             }
           }
           // range is [begin, end), therefore
-          DCASSERT(f->getSparseNodeIndex(node, begin) == searchFor);
-          DCASSERT(begin + 1 < f->getSparseNodeSize(node));
+          MEDDLY_DCASSERT(f->getSparseNodeIndex(node, begin) == searchFor);
+          MEDDLY_DCASSERT(begin + 1 < f->getSparseNodeSize(node));
           currElement = f->getSparseNodeIndex(node, begin + 1);
           node = f->getSparseNodeDownPtr(node, begin + 1);
           found = true;
@@ -1093,11 +1093,11 @@ void MEDDLY::dd_edge::iterator::incrNonIdentRelation()
           if (n != 0) { index = i; break; }
         }
       } else {
-        DCASSERT(f->isSparseNode(node));
+        MEDDLY_DCASSERT(f->isSparseNode(node));
         index = f->getSparseNodeIndex(node, 0);
         n = f->getSparseNodeDownPtr(node, 0);
       }
-      DCASSERT(index != -1);
+      MEDDLY_DCASSERT(index != -1);
       currElement = index;
       int nodeLevel = f->getNodeLevel(n);
       if (nodeLevel < 0) {
@@ -1114,7 +1114,7 @@ void MEDDLY::dd_edge::iterator::incrNonIdentRelation()
       isCurrLevelPrime = true;
     }
   }
-  DCASSERT(nodes[0] != 0);
+  MEDDLY_DCASSERT(nodes[0] != 0);
 #ifdef DEBUG_ITER_BEGIN
   printf("nodes[]: [");
   for (int i = size - 1; i > 0; --i)
@@ -1128,9 +1128,9 @@ void MEDDLY::dd_edge::iterator::incrNonIdentRelation()
 
 void MEDDLY::dd_edge::iterator::incrRelation()
 {
-  DCASSERT(e != 0);
-  DCASSERT(e->node != 0);
-  DCASSERT(type == DEFAULT);
+  MEDDLY_DCASSERT(e != 0);
+  MEDDLY_DCASSERT(e->node != 0);
+  MEDDLY_DCASSERT(type == DEFAULT);
 
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
   if (f->getReductionRule() != forest::IDENTITY_REDUCED) {
@@ -1210,7 +1210,7 @@ void MEDDLY::dd_edge::iterator::incrRelation()
         }
       }
       else {
-        DCASSERT(f->isSparseNode(node));
+        MEDDLY_DCASSERT(f->isSparseNode(node));
         // find sparse index corresponding to element[currLevel]
         int begin = 0;
         int end = f->getSparseNodeSize(node);
@@ -1219,7 +1219,7 @@ void MEDDLY::dd_edge::iterator::incrRelation()
         if (searchFor < f->getSparseNodeIndex(node, end-1)) {
           while (begin + 1 < end) {
             int mid = (begin + end) / 2;
-            DCASSERT(mid > begin && mid < end);
+            MEDDLY_DCASSERT(mid > begin && mid < end);
             if (f->getSparseNodeIndex(node, mid) > searchFor) {
               end = mid;
             } else {
@@ -1227,8 +1227,8 @@ void MEDDLY::dd_edge::iterator::incrRelation()
             }
           }
           // range is [begin, end), therefore
-          DCASSERT(f->getSparseNodeIndex(node, begin) == searchFor);
-          DCASSERT(begin + 1 < f->getSparseNodeSize(node));
+          MEDDLY_DCASSERT(f->getSparseNodeIndex(node, begin) == searchFor);
+          MEDDLY_DCASSERT(begin + 1 < f->getSparseNodeSize(node));
           if (isCurrLevelPrime) {
             pelement[currLevel] = f->getSparseNodeIndex(node, begin + 1);
           } else {
@@ -1285,7 +1285,7 @@ void MEDDLY::dd_edge::iterator::incrRelation()
   {
     int node = isCurrLevelPrime? pnodes[currLevel]: nodes[currLevel];
     if (node == 0) {
-      DCASSERT(!isCurrLevelPrime);
+      MEDDLY_DCASSERT(!isCurrLevelPrime);
       element[currLevel] = 0;
       pelement[currLevel] = 0;
       // jump over the prime level
@@ -1300,11 +1300,11 @@ void MEDDLY::dd_edge::iterator::incrRelation()
           if (n != 0) { index = i; break; }
         }
       } else {
-        DCASSERT(f->isSparseNode(node));
+        MEDDLY_DCASSERT(f->isSparseNode(node));
         index = f->getSparseNodeIndex(node, 0);
         n = f->getSparseNodeDownPtr(node, 0);
       }
-      DCASSERT(index != -1);
+      MEDDLY_DCASSERT(index != -1);
       if (isCurrLevelPrime) {
         pelement[currLevel] = index;
       } else {
@@ -1325,7 +1325,7 @@ void MEDDLY::dd_edge::iterator::incrRelation()
       isCurrLevelPrime = true;
     }
   }
-  DCASSERT(nodes[0] != 0);
+  MEDDLY_DCASSERT(nodes[0] != 0);
 #ifdef DEBUG_ITER_BEGIN
   printf("nodes[]: [");
   for (int i = size - 1; i > 0; --i)
@@ -1360,7 +1360,7 @@ void MEDDLY::dd_edge::iterator::operator++()
           break;
       }
     } else {
-      DCASSERT(type == DEFAULT);
+      MEDDLY_DCASSERT(type == DEFAULT);
       incrNonRelation();
     }
   }
@@ -1388,7 +1388,7 @@ void MEDDLY::dd_edge::iterator::operator--()
 bool MEDDLY::dd_edge::iterator::operator!=(const iterator& iter) const
 {
 #if 0
-  DCASSERT((e != iter.e) || (size == iter.size));
+  MEDDLY_DCASSERT((e != iter.e) || (size == iter.size));
 
   // if terminals are different, return true.
   // else if terminals are 0, return false.
@@ -1415,7 +1415,7 @@ bool MEDDLY::dd_edge::iterator::operator!=(const iterator& iter) const
 
 bool MEDDLY::dd_edge::iterator::operator==(const iterator& iter) const
 {
-  DCASSERT((e != iter.e) || (size == iter.size));
+  MEDDLY_DCASSERT((e != iter.e) || (size == iter.size));
 
 #if 0
   // if both terminals are 0 return true.

@@ -24,7 +24,6 @@
 #endif
 #include "../defines.h"
 #include "copy.h"
-#include "../compute_table.h"
 
 namespace MEDDLY {
   class copy_MT;
@@ -48,7 +47,7 @@ class MEDDLY::copy_MT : public unary_operation {
   public:
     copy_MT(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
-    virtual bool isEntryStale(const int* entryData);
+    virtual bool isStaleEntry(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
     virtual void compute(const dd_edge &arg, dd_edge &res);
@@ -58,13 +57,11 @@ class MEDDLY::copy_MT : public unary_operation {
 
 MEDDLY::copy_MT
 :: copy_MT(const unary_opname* oc, expert_forest* arg, expert_forest* res)
- : unary_operation(oc, arg, res)
+ : unary_operation(oc, 1, 1, arg, res)
 {
-  key_length = 1;
-  ans_length = 1;
 }
 
-bool MEDDLY::copy_MT::isEntryStale(const int* entryData)
+bool MEDDLY::copy_MT::isStaleEntry(const int* entryData)
 {
   return 
     argF->isStale(entryData[0]) ||
@@ -115,7 +112,8 @@ int MEDDLY::copy_bool2MT::compute(int a)
   }
 
   // Check compute table
-  const int* cacheFind = CT->find(this, &a);
+  CTsrch.key(0) = a;
+  const int* cacheFind = CT->find(CTsrch);
   if (cacheFind) {
     return resF->linkNode(cacheFind[1]);
   }
@@ -132,7 +130,7 @@ int MEDDLY::copy_bool2MT::compute(int a)
   int i;
   if (argF->isFullNode(a)) {
     const int aSize = argF->getFullNodeSize(a);
-    DCASSERT(aSize <= bSize);
+    MEDDLY_DCASSERT(aSize <= bSize);
     for (i=0; i<aSize; i++) {
       int temp = compute(argF->getFullNodeDownPtr(a, i));
       resF->setDownPtrWoUnlink(b, i, temp);
@@ -141,14 +139,14 @@ int MEDDLY::copy_bool2MT::compute(int a)
   } // a is full
   else {
     const int aSize = argF->getSparseNodeSize(a);
-    DCASSERT(argF->getSparseNodeIndex(a, aSize - 1) < bSize);
+    MEDDLY_DCASSERT(argF->getSparseNodeIndex(a, aSize - 1) < bSize);
     i = 0;
     for (int z=0; z<aSize; z++) {
       int aIndex = argF->getSparseNodeIndex(a, z);
       for (; i<aIndex; i++) {
         resF->setDownPtrWoUnlink(b, i, zero);
       }
-      DCASSERT(i == aIndex && i < bSize);
+      MEDDLY_DCASSERT(i == aIndex && i < bSize);
       int temp = compute(argF->getSparseNodeDownPtr(a, z));
       resF->setDownPtrWoUnlink(b, i, temp);
       resF->unlinkNode(temp);
@@ -160,10 +158,10 @@ int MEDDLY::copy_bool2MT::compute(int a)
 
   // Reduce, add to compute table
   b = resF->reduceNode(b);
-  static int cacheEntry[2];
-  cacheEntry[0] = argF->cacheNode(a);
-  cacheEntry[1] = resF->cacheNode(b);
-  CT->add(this, cacheEntry);
+  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  entry.key(0) = argF->cacheNode(a);
+  entry.result(0) = resF->cacheNode(b);
+  CT->addEntry();
 
   return b;
 }
@@ -193,7 +191,8 @@ int MEDDLY::copy_MT2bool::compute(int a)
   }
 
   // Check compute table
-  const int* cacheFind = CT->find(this, &a);
+  CTsrch.key(0) = a;
+  const int* cacheFind = CT->find(CTsrch);
   if (cacheFind) {
     return resF->linkNode(cacheFind[1]);
   }
@@ -208,7 +207,7 @@ int MEDDLY::copy_MT2bool::compute(int a)
   int i;
   if (argF->isFullNode(a)) {
     const int aSize = argF->getFullNodeSize(a);
-    DCASSERT(aSize <= bSize);
+    MEDDLY_DCASSERT(aSize <= bSize);
     for (i=0; i<aSize; i++) {
       int temp = compute(argF->getFullNodeDownPtr(a, i));
       resF->setDownPtrWoUnlink(b, i, temp);
@@ -217,14 +216,14 @@ int MEDDLY::copy_MT2bool::compute(int a)
   } // a is full
   else {
     const int aSize = argF->getSparseNodeSize(a);
-    DCASSERT(argF->getSparseNodeIndex(a, aSize - 1) < bSize);
+    MEDDLY_DCASSERT(argF->getSparseNodeIndex(a, aSize - 1) < bSize);
     i = 0;
     for (int z=0; z<aSize; z++) {
       int aIndex = argF->getSparseNodeIndex(a, z);
       for (; i<aIndex; i++) {
         resF->setDownPtrWoUnlink(b, i, zero);
       }
-      DCASSERT(i == aIndex && i < bSize);
+      MEDDLY_DCASSERT(i == aIndex && i < bSize);
       int temp = compute(argF->getSparseNodeDownPtr(a, z));
       resF->setDownPtrWoUnlink(b, i, temp);
       resF->unlinkNode(temp);
@@ -237,10 +236,10 @@ int MEDDLY::copy_MT2bool::compute(int a)
 
   // Reduce, add to compute table
   b = resF->reduceNode(b);
-  static int cacheEntry[2];
-  cacheEntry[0] = argF->cacheNode(a);
-  cacheEntry[1] = resF->cacheNode(b);
-  CT->add(this, cacheEntry);
+  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  entry.key(0) = argF->cacheNode(a);
+  entry.result(0) = resF->cacheNode(b);
+  CT->addEntry();
 
   return b;
 }
@@ -256,18 +255,18 @@ class MEDDLY::copy_MT2Evplus : public unary_operation {
     copy_MT2Evplus(const unary_opname* oc, expert_forest* arg, 
       expert_forest* res);
 
-    virtual bool isEntryStale(const int* entryData) {
+    virtual bool isStaleEntry(const int* entryData) {
       return 
         argF->isStale(entryData[0]) ||
-        resF->isStale(entryData[1]);
+        resF->isStale(entryData[2]);
     }
     virtual void discardEntry(const int* entryData) {
       argF->uncacheNode(entryData[0]);
-      resF->uncacheNode(entryData[1]);
+      resF->uncacheNode(entryData[2]);
     }
     virtual void showEntry(FILE* strm, const int *entryData) const {
       fprintf(strm, "[%s(%d) <%d, %d>]", getName(), entryData[0], 
-        entryData[2], entryData[1]);
+        entryData[1], entryData[2]);
     }
     virtual void compute(const dd_edge &arg, dd_edge &res) {
       int b, bev;
@@ -278,13 +277,12 @@ class MEDDLY::copy_MT2Evplus : public unary_operation {
 };
 
 MEDDLY::copy_MT2Evplus::copy_MT2Evplus(const unary_opname* oc, 
-  expert_forest* arg, expert_forest* res) : unary_operation(oc, arg, res)
+  expert_forest* arg, expert_forest* res)
+: unary_operation(oc, 1, 2, arg, res)
 {
-  key_length = 1;
-  ans_length = 2;
   // entry[0]: MT node
-  // entry[1]: EV node
-  // entry[2]: EV value
+  // entry[1]: EV value
+  // entry[2]: EV node
 }
 
 void MEDDLY::copy_MT2Evplus::compute(int a, int &b, int &bev)
@@ -297,10 +295,11 @@ void MEDDLY::copy_MT2Evplus::compute(int a, int &b, int &bev)
   }
 
   // Check compute table
-  const int* cacheFind = CT->find(this, &a);
+  CTsrch.key(0) = a;
+  const int* cacheFind = CT->find(CTsrch);
   if (cacheFind) {
-    b = resF->linkNode(cacheFind[1]);
-    bev = cacheFind[2];
+    bev = cacheFind[1];
+    b = resF->linkNode(cacheFind[2]);
     return;
   }
 
@@ -315,7 +314,7 @@ void MEDDLY::copy_MT2Evplus::compute(int a, int &b, int &bev)
   int i;
   if (argF->isFullNode(a)) {
     const int aSize = argF->getFullNodeSize(a);
-    DCASSERT(aSize <= bSize);
+    MEDDLY_DCASSERT(aSize <= bSize);
     for (i=0; i<aSize; i++) {
       int d, dev;
       compute(argF->getFullNodeDownPtr(a, i), d, dev);
@@ -326,7 +325,7 @@ void MEDDLY::copy_MT2Evplus::compute(int a, int &b, int &bev)
   } // a is full
   else {
     const int aSize = argF->getSparseNodeSize(a);
-    DCASSERT(argF->getSparseNodeIndex(a, aSize - 1) < bSize);
+    MEDDLY_DCASSERT(argF->getSparseNodeIndex(a, aSize - 1) < bSize);
     i = 0;
     for (int z=0; z<aSize; z++) {
       int aIndex = argF->getSparseNodeIndex(a, z);
@@ -334,7 +333,7 @@ void MEDDLY::copy_MT2Evplus::compute(int a, int &b, int &bev)
         resF->setDownPtrWoUnlink(b, i, zero);
         resF->setEdgeValue(b, i, zev);
       }
-      DCASSERT(i == aIndex && i < bSize);
+      MEDDLY_DCASSERT(i == aIndex && i < bSize);
       int d, dev;
       compute(argF->getSparseNodeDownPtr(a, z), d, dev);
       resF->setDownPtrWoUnlink(b, i, d);
@@ -350,11 +349,11 @@ void MEDDLY::copy_MT2Evplus::compute(int a, int &b, int &bev)
   // Reduce, add to compute table
   bev = 0;
   resF->normalizeAndReduceNode(b, bev);
-  static int cacheEntry[3];
-  cacheEntry[0] = argF->cacheNode(a);
-  cacheEntry[1] = resF->cacheNode(b);
-  cacheEntry[2] = bev;
-  CT->add(this, cacheEntry);
+  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  entry.key(0) = argF->cacheNode(a);
+  entry.result(0) = bev;
+  entry.result(1) = resF->cacheNode(b);
+  CT->addEntry();
 }
 
 // ******************************************************************

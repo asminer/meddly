@@ -567,17 +567,17 @@ inline bool node_manager::isValidNodeIndex(int node) const {
 }
 
 inline void node_manager::reclaimOrphanNode(int p) {
-  DCASSERT(!isPessimistic() || !isZombieNode(p));
-  DCASSERT(isActiveNode(p));
-  DCASSERT(!isTerminalNode(p));
-  DCASSERT(isReducedNode(p));
+  MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
+  MEDDLY_DCASSERT(isActiveNode(p));
+  MEDDLY_DCASSERT(!isTerminalNode(p));
+  MEDDLY_DCASSERT(isReducedNode(p));
   reclaimed_nodes++;
   orphan_nodes--;
 }  
 
 inline void node_manager::deleteOrphanNode(int p) {
-  DCASSERT(!isPessimistic());
-  DCASSERT(getCacheCount(p) == 0 && getInCount(p) == 0);
+  MEDDLY_DCASSERT(!isPessimistic());
+  MEDDLY_DCASSERT(getCacheCount(p) == 0 && getInCount(p) == 0);
 #ifdef TRACK_DELETIONS
   cout << "Deleting node " << p << " from uncacheNode\t";
   showNode(stdout, p);
@@ -590,10 +590,10 @@ inline void node_manager::deleteOrphanNode(int p) {
 
 inline int node_manager::getDownPtrAfterIndex(int p, int i, int &index)
   const {
-  DCASSERT(isActiveNode(p));
-  DCASSERT(i >= 0);
+  MEDDLY_DCASSERT(isActiveNode(p));
+  MEDDLY_DCASSERT(i >= 0);
   if (isTerminalNode(p)) return p;
-  DCASSERT(i < getLevelSize(getNodeLevel(p)));
+  MEDDLY_DCASSERT(i < getLevelSize(getNodeLevel(p)));
   if (isFullNode(p)) {
     // full or trunc-full node
     // full or trunc-full node, but i lies after the last non-zero downpointer
@@ -660,13 +660,13 @@ inline bool node_manager::isReducedNode(int p) const {
 #ifdef DEBUG_MDD_H
   printf("%s: p: %d\n", __func__, p);
 #endif
-  DCASSERT(isActiveNode(p));
+  MEDDLY_DCASSERT(isActiveNode(p));
   return (isTerminalNode(p) || (getNext(p) >= getNull()));
 }
 
 // Dealing with slot 2 (node size)
 inline int node_manager::getLargestIndex(int p) const {
-  DCASSERT(isActiveNode(p) && !isTerminalNode(p));
+  MEDDLY_DCASSERT(isActiveNode(p) && !isTerminalNode(p));
   return isFullNode(p)? getFullNodeSize(p) - 1: getSparseNodeLargestIndex(p);
 }
 
@@ -677,51 +677,51 @@ inline int* node_manager::getFullNodeDownPtrs(int p) {
 #ifdef DEBUG_MDD_H
   printf("%s: p: %d\n", __func__, p);
 #endif
-  DCASSERT(isFullNode(p));
-  DCASSERT(!isReducedNode(p));
+  MEDDLY_DCASSERT(isFullNode(p));
+  MEDDLY_DCASSERT(!isReducedNode(p));
   return (getNodeAddress(p) + 3);
 }
 
 inline const int* node_manager::getFullNodeDownPtrsReadOnly(int p) const {
-  DCASSERT(isFullNode(p));
+  MEDDLY_DCASSERT(isFullNode(p));
   return (getNodeAddress(p) + 3);
 }
 
 inline const int* node_manager::getFullNodeEdgeValuesReadOnly(int p) const {
-  DCASSERT(isFullNode(p));
+  MEDDLY_DCASSERT(isFullNode(p));
   return (getNodeAddress(p) + 3 + getFullNodeSize(p));
 }
 
 inline int* node_manager::getFullNodeEdgeValues(int p) {
-  DCASSERT(isFullNode(p));
-  DCASSERT(!isReducedNode(p));
+  MEDDLY_DCASSERT(isFullNode(p));
+  MEDDLY_DCASSERT(!isReducedNode(p));
   return (getNodeAddress(p) + 3 + getFullNodeSize(p));
 }
 
 inline const int* node_manager::getSparseNodeIndexes(int p) const {
-  DCASSERT(isSparseNode(p));
+  MEDDLY_DCASSERT(isSparseNode(p));
   return (getNodeAddress(p) + 3);
 }
 
 inline const int* node_manager::getSparseNodeDownPtrs(int p) const {
-  DCASSERT(isSparseNode(p));
+  MEDDLY_DCASSERT(isSparseNode(p));
   return (getNodeAddress(p) + 3 + getSparseNodeSize(p));
 }
 
 inline const int* node_manager::getSparseNodeEdgeValues(int p) const {
-  DCASSERT(isSparseNode(p));
+  MEDDLY_DCASSERT(isSparseNode(p));
   return (getNodeAddress(p) + 3 + 2 * getSparseNodeSize(p));
 }
 
 inline int node_manager::getSparseNodeLargestIndex(int p) const {
-  DCASSERT(isSparseNode(p));
+  MEDDLY_DCASSERT(isSparseNode(p));
   return getSparseNodeIndex(p, getSparseNodeSize(p) - 1);
 }
 
 inline void node_manager::setAllDownPtrs(int p, int value) {
-  DCASSERT(!isReducedNode(p));
-  DCASSERT(isFullNode(p));
-  DCASSERT(isActiveNode(value));
+  MEDDLY_DCASSERT(!isReducedNode(p));
+  MEDDLY_DCASSERT(isFullNode(p));
+  MEDDLY_DCASSERT(isActiveNode(value));
   int* curr = getFullNodeDownPtrs(p);
   int size = getFullNodeSize(p);
   for (int* end = curr + size; curr != end; )
@@ -733,9 +733,9 @@ inline void node_manager::setAllDownPtrs(int p, int value) {
 }
 
 inline void node_manager::setAllDownPtrsWoUnlink(int p, int value) {
-  DCASSERT(!isReducedNode(p));
-  DCASSERT(isFullNode(p));
-  DCASSERT(isActiveNode(value));
+  MEDDLY_DCASSERT(!isReducedNode(p));
+  MEDDLY_DCASSERT(isFullNode(p));
+  MEDDLY_DCASSERT(isActiveNode(value));
   int* curr = getFullNodeDownPtrs(p);
   int size = getFullNodeSize(p);
   for (int* end = curr + size; curr != end; )
@@ -746,15 +746,15 @@ inline void node_manager::setAllDownPtrsWoUnlink(int p, int value) {
 }
 
 inline void node_manager::initDownPtrs(int p) {
-  DCASSERT(!isReducedNode(p));
-  DCASSERT(isFullNode(p));
+  MEDDLY_DCASSERT(!isReducedNode(p));
+  MEDDLY_DCASSERT(isFullNode(p));
   memset(getFullNodeDownPtrs(p), 0, sizeof(int) * getFullNodeSize(p));
 }
 
 inline void node_manager::setAllEdgeValues(int p, int value) {
-  DCASSERT(edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES);
-  DCASSERT(!isReducedNode(p));
-  DCASSERT(isFullNode(p));
+  MEDDLY_DCASSERT(edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES);
+  MEDDLY_DCASSERT(!isReducedNode(p));
+  MEDDLY_DCASSERT(isFullNode(p));
   int *edgeptr = getFullNodeEdgeValues(p);
   int *last = edgeptr + getFullNodeSize(p);
   for ( ; edgeptr != last; ++edgeptr) *edgeptr = value;
@@ -762,9 +762,9 @@ inline void node_manager::setAllEdgeValues(int p, int value) {
 
 
 inline void node_manager::setAllEdgeValues(int p, float fvalue) {
-  DCASSERT(edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES);
-  DCASSERT(!isReducedNode(p));
-  DCASSERT(isFullNode(p));
+  MEDDLY_DCASSERT(edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES);
+  MEDDLY_DCASSERT(!isReducedNode(p));
+  MEDDLY_DCASSERT(isFullNode(p));
   int *edgeptr = getFullNodeEdgeValues(p);
   int *last = edgeptr + getFullNodeSize(p);
   int value = toInt(fvalue);
@@ -782,15 +782,15 @@ inline bool node_manager::isUnprimedNode(int p) const {
 // For uniqueness table
 inline int node_manager::getNull() const { return -1; }
 inline int node_manager::getNext(int h) const { 
-  DCASSERT(isActiveNode(h));
-  DCASSERT(!isTerminalNode(h));
+  MEDDLY_DCASSERT(isActiveNode(h));
+  MEDDLY_DCASSERT(!isTerminalNode(h));
   // next pointer is at slot 1 (counting from 0)
-  DCASSERT(getNodeAddress(h));
+  MEDDLY_DCASSERT(getNodeAddress(h));
   return *(getNodeAddress(h) + 1);
 }
 inline void node_manager::setNext(int h, int n) { 
-  DCASSERT(isActiveNode(h));
-  DCASSERT(!isTerminalNode(h));
+  MEDDLY_DCASSERT(isActiveNode(h));
+  MEDDLY_DCASSERT(!isTerminalNode(h));
   *(getNodeAddress(h) + 1) = n; 
 }
 
@@ -803,14 +803,14 @@ inline bool node_manager::isCounting() { return counting; }
 // Dealing with node addressing
 
 inline void node_manager::setNodeOffset(int p, int offset) {
-  CHECK_RANGE(1, p, a_last+1);
+  MEDDLY_CHECK_RANGE(1, p, a_last+1);
   address[p].offset = offset;
 }
 
 // Dealing with node status
 
 inline bool node_manager::isDeletedNode(int p) const {
-  CHECK_RANGE(1, p, a_last+1);
+  MEDDLY_CHECK_RANGE(1, p, a_last+1);
   return !(isActiveNode(p) || isZombieNode(p));
 }
 
@@ -861,8 +861,12 @@ inline int node_manager::getLevelCount() const { return l_size; }
 inline bool node_manager::isTimeToGc()
 {
 #if 1
-  return (isPessimistic())? (getZombieNodeCount() > 1000000):
-    (getOrphanNodeCount() > 500000);
+  // const int zombieTrigger = 1000;  // use for debugging
+  // const int orphanTrigger = 500;  // use for debugging
+  const int zombieTrigger = 1000000;
+  const int orphanTrigger = 500000;
+  return (isPessimistic())? (getZombieNodeCount() > zombieTrigger):
+    (getOrphanNodeCount() > orphanTrigger);
   // return (nodes_activated_since_gc > 5000000); //10,000,000
 #elif 0
   return false;
@@ -889,10 +893,10 @@ inline bool node_manager::doesLevelNeedCompaction(int k)
 }
 
 inline void node_manager::midRemove(int k, int p_offset) {
-  DCASSERT(isHoleNonIndex(k, p_offset));
+  MEDDLY_DCASSERT(isHoleNonIndex(k, p_offset));
   int p_level = mapLevel(k);
   int left = level[p_level].data[p_offset+2];
-  DCASSERT(left);
+  MEDDLY_DCASSERT(left);
   int right = level[p_level].data[p_offset+3];
 
   level[p_level].data[left + 3] = right;

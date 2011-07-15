@@ -93,7 +93,7 @@ bool MEDDLY::temp_dd_edge::reduce(int& result) const
   switch (forestHandle->getRangeType()) {
     //case forest::range_type::BOOLEAN:
     case forest::BOOLEAN:
-      DCASSERT(0 == forestHandle->getTerminalNode(false));
+      MEDDLY_DCASSERT(0 == forestHandle->getTerminalNode(false));
       zero = 0;
       break;
 
@@ -120,14 +120,14 @@ bool MEDDLY::temp_dd_edge::reduce(int& result) const
 bool MEDDLY::temp_dd_edge::reduce(std::map<temp_dd_edge*, int>& ct, int zero,
     int& result) const
 {
-  DCASSERT(forestHandle->getEdgeLabeling() == forest::MULTI_TERMINAL);
+  MEDDLY_DCASSERT(forestHandle->getEdgeLabeling() == forest::MULTI_TERMINAL);
 
   // Special case: terminal node
   if (levelHandle == 0) {
     switch (forestHandle->getRangeType()) {
       //case forest::range_type::BOOLEAN:
       case forest::BOOLEAN:
-        DCASSERT(-1 == forestHandle->getTerminalNode(true));
+        MEDDLY_DCASSERT(-1 == forestHandle->getTerminalNode(true));
         result = -1;
         break;
 
@@ -147,7 +147,7 @@ bool MEDDLY::temp_dd_edge::reduce(std::map<temp_dd_edge*, int>& ct, int zero,
     return true;
   }
 
-  DCASSERT(levelHandle != 0 && size > 0);
+  MEDDLY_DCASSERT(levelHandle != 0 && size > 0);
 
   // Look for e in ct
   // If found return cached node
@@ -221,14 +221,14 @@ void MEDDLY::temp_dd_edge::add(const int* vlist, const int* vplist)
 
   if (levelHandle == 0) return;
 
-  DCASSERT(forestHandle->isForRelations() || levelHandle > 0);
+  MEDDLY_DCASSERT(forestHandle->isForRelations() || levelHandle > 0);
 
   int index = levelHandle > 0? vlist[levelHandle]: vplist[-levelHandle];
 
   if (index >= forestHandle->getLevelSize(levelHandle))
     throw error(error::INVALID_ASSIGNMENT);
 
-  DCASSERT((size > 0 && downpointers != 0) ||
+  MEDDLY_DCASSERT((size > 0 && downpointers != 0) ||
       (size == 0 && downpointers == 0));
 
   if (size <= index) {

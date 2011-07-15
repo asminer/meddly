@@ -93,7 +93,7 @@ void mtmdd_node_manager::resizeNode(int p, int size)
   int nodeSize = getFullNodeSize(p);
   if (size <= nodeSize) return;
 
-  DCASSERT(size > nodeSize);
+  MEDDLY_DCASSERT(size > nodeSize);
 
   // Expand node:
   // (a) Create array of desired size;
@@ -107,7 +107,7 @@ void mtmdd_node_manager::resizeNode(int p, int size)
   int nodeLevel = getNodeLevel(p);
   int newOffset = getHole(nodeLevel, newDataArraySize, true);
 
-  DCASSERT(newDataArraySize > oldDataArraySize);
+  MEDDLY_DCASSERT(newDataArraySize > oldDataArraySize);
 
   // Pointers to old and new data arrays
   int* prev = getNodeAddress(p);
@@ -135,20 +135,20 @@ void mtmdd_node_manager::resizeNode(int p, int size)
   // Update the offset field to point to the new array
   address[p].offset = newOffset;
 
-  DCASSERT(size == getFullNodeSize(p));
-  DCASSERT(p == 
+  MEDDLY_DCASSERT(size == getFullNodeSize(p));
+  MEDDLY_DCASSERT(p == 
       getNodeAddress(p)[getDataHeaderSize() + getFullNodeSize(p) - 1]);
 }
 
 
 int mtmdd_node_manager::reduceNode(int p)
 {
-  DCASSERT(isActiveNode(p));
+  MEDDLY_DCASSERT(isActiveNode(p));
 
   if (isReducedNode(p)) return p; 
 
-  DCASSERT(!isTerminalNode(p));
-  DCASSERT(isFullNode(p));
+  MEDDLY_DCASSERT(!isTerminalNode(p));
+  MEDDLY_DCASSERT(isFullNode(p));
 
   int size = getFullNodeSize(p);
   int* ptr = getFullNodeDownPtrs(p);
@@ -166,10 +166,10 @@ int mtmdd_node_manager::reduceNode(int p)
     int* last = curr + size;
     while (curr != last) {
       if (!isReducedNode(*curr)) {
-        DCASSERT(getInCount(*curr) == 1);
+        MEDDLY_DCASSERT(getInCount(*curr) == 1);
         *curr = reduceNode(*curr);
       }
-      DCASSERT(isReducedNode(*curr));
+      MEDDLY_DCASSERT(isReducedNode(*curr));
       if (0 != *curr++) {
         ++nnz;
         truncsize = curr - ptr;
@@ -199,7 +199,7 @@ int mtmdd_node_manager::reduceNode(int p)
         ptr[i] = buildQuasiReducedNodeAtLevel(nextLevel, ptr[i]);
         unlinkNode(temp);
       }
-      DCASSERT(ptr[i] == 0 || (getNodeLevel(ptr[i]) == nextLevel));
+      MEDDLY_DCASSERT(ptr[i] == 0 || (getNodeLevel(ptr[i]) == nextLevel));
     }
   } else {
     // check for possible reductions
@@ -309,9 +309,9 @@ int mtmdd_node_manager::reduceNode(int p)
   }
 
   // address[p].cache_count does not change
-  DCASSERT(getCacheCount(p) == 0);
+  MEDDLY_DCASSERT(getCacheCount(p) == 0);
   // Sanity check that the hash value is unchanged
-  DCASSERT(find(p) == p);
+  MEDDLY_DCASSERT(find(p) == p);
 
   // Temporary node has been transformed to a reduced node; decrement
   // temporary node count.
@@ -353,7 +353,7 @@ int mtmdd_node_manager::createNode(int lh,
 
 int mtmdd_node_manager::createNode(int k, int index, int dptr)
 {
-  DCASSERT(index >= -1);
+  MEDDLY_DCASSERT(index >= -1);
 
   if (index > -1 && getLevelSize(k) <= index) {
     expertDomain->enlargeVariableBound(k, false, index + 1);
@@ -377,7 +377,7 @@ int mtmdd_node_manager::createNode(int k, int index, int dptr)
     return reduceNode(curr);
   }
   else {
-    DCASSERT (nodeStorage == SPARSE_STORAGE ||
+    MEDDLY_DCASSERT (nodeStorage == SPARSE_STORAGE ||
         (nodeStorage == FULL_OR_SPARSE_STORAGE && index >= 2));
     // Build a sparse node
     int p = createTempNode(k, 2);
@@ -392,8 +392,8 @@ int mtmdd_node_manager::createNode(int k, int index, int dptr)
     if (getNull() == q) {
       // no duplicate found; insert into unique table
       insert(p);
-      DCASSERT(getCacheCount(p) == 0);
-      DCASSERT(find(p) == p);
+      MEDDLY_DCASSERT(getCacheCount(p) == 0);
+      MEDDLY_DCASSERT(find(p) == p);
     }
     else {
       // duplicate found; discard this node and return the duplicate
@@ -413,7 +413,7 @@ int mtmdd_node_manager::createNode(int k, int index, int dptr)
 void mtmdd_node_manager::createEdge(const int* v, int term, dd_edge& e)
 {
   // construct the edge bottom-up
-  DCASSERT(isTerminalNode(term));
+  MEDDLY_DCASSERT(isTerminalNode(term));
   int result = term;
   int curr = 0;
   for (int i=1; i<=expertDomain->getNumVariables(); i++) {
@@ -440,7 +440,7 @@ void mtmdd_node_manager::createEdge(const int* const* vlist,
 
 void mtmdd_node_manager::createEdgeHelper(int terminalNode, dd_edge& e)
 {
-  DCASSERT(isTerminalNode(terminalNode));
+  MEDDLY_DCASSERT(isTerminalNode(terminalNode));
 
   if (reductionRule == forest::FULLY_REDUCED || terminalNode == 0) {
     e.set(terminalNode, 0, 0);
@@ -603,7 +603,7 @@ mtmdd_node_manager::findFirstElement(const dd_edge& f, int* vlist) const
 
   for (int currLevel = expertDomain->getNumVariables(); currLevel; currLevel--)
   {
-    DCASSERT(node != 0);
+    MEDDLY_DCASSERT(node != 0);
     if (currLevel != getNodeLevel(node)) {
       // currLevel is "higher" than node, and has been skipped.
       // Since this is a mdd, reduced nodes enable all paths at the

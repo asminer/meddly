@@ -67,23 +67,60 @@
 
 // Handy Constants
 
-const int INF = std::numeric_limits<int>::max();
-const float NAN = std::numeric_limits<float>::quiet_NaN();
-inline bool isNan(float t) { return t != t; }
-inline bool isNan(int t) { return t != t; }
+namespace MEDDLY {
+  const int INF = std::numeric_limits<int>::max();
+  const float NAN = std::numeric_limits<float>::quiet_NaN();
+  inline bool isNan(float t) { return t != t; }
+  inline bool isNan(int t) { return t != t; }
 
-// Handy Macros
+  // Handy Macros
 
-/// Standard MAX "macro".
-template <class T> inline T MAX(T X,T Y) { return ((X>Y)?X:Y); }
-/// Standard MIN "macro".
-template <class T> inline T MIN(T X,T Y) { return ((X<Y)?X:Y); }
-/// Standard ABS "macro".
-template <class T> inline T ABS(T X) { return ((X<0)?(-X):(X)); }
-/// SWAP "macro".
-template <class T> inline void SWAP(T &x, T &y) { T tmp=x; x=y; y=tmp; }
-/// POSITIVE "macro".
-template <class T> inline bool POSITIVE(T X) { return (X>0) ? true : false; }
+  /// Standard MAX "macro".
+  template <class T> inline T MAX(T X,T Y) { return ((X>Y)?X:Y); }
+  /// Standard MIN "macro".
+  template <class T> inline T MIN(T X,T Y) { return ((X<Y)?X:Y); }
+  /// Standard ABS "macro".
+  template <class T> inline T ABS(T X) { return ((X<0)?(-X):(X)); }
+  /// SWAP "macro".
+  template <class T> inline void SWAP(T &x, T &y) { T tmp=x; x=y; y=tmp; }
+  /// POSITIVE "macro".
+  template <class T> inline bool POSITIVE(T X) { return (X>0) ? true : false; }
+
+  // maxUlps would be a small +ve integer.
+  inline bool isAlmostEqual(int A, int B) {
+    static const int maxUlps = 16;
+  
+    if (isNan(A) && isNan(B)) return true;
+  
+    // Make sure maxUlps is non-negative and small enough that the
+    // default NAN won't compare as equal to anything.
+    MEDDLY_CHECK_RANGE(1, maxUlps, 4 * 1024 * 1024);
+  
+    // Make aInt lexicographically ordered as a twos-complement int
+    // int aInt = *(int*)&A;
+    // if (aInt < 0) aInt = 0x80000000 - aInt;
+  
+    // Make bInt lexicographically ordered as a twos-complement int
+    // int bInt = *(int*)&B;
+    // if (bInt < 0) bInt = 0x80000000 - bInt;
+  
+    // return ABS(aInt - bInt) <= maxUlps;
+  
+    // return A < 0
+    //         ? B < 0 ? ABS(B - A) <= maxUlps: ABS(mask - A - B) <= maxUlps
+    //         : B < 0 ? ABS(A - mask + B) <= maxUlps: ABS(A - B) <= maxUlps;
+#if 0
+    static const int mask = 0x80000000;
+    return ABS(A < 0? B < 0? B - A: mask - A - B: B < 0? A - mask + B: A - B)
+            <= maxUlps;
+#else
+    if (A < 0) A = 0x80000000 - A;
+    if (B < 0) B = 0x80000000 - B;
+    return ABS(A - B) <= maxUlps;
+#endif
+  }
+
+}
 
 /*
 
@@ -97,8 +134,8 @@ template <class T> inline bool POSITIVE(T X) { return (X>0) ? true : false; }
    Macros useful for debugging "development code" that are turned off 
    for release code (for speed):
 
-   DCASSERT()
-   CHECK_RANGE(low, x, high+1)
+   MEDDLY_DCASSERT()
+   MEDDLY_CHECK_RANGE(low, x, high+1)
 
 */
 
@@ -111,8 +148,6 @@ template <class T> inline bool POSITIVE(T X) { return (X>0) ? true : false; }
 #define MEMORY_TRACE
 #endif
 
-#define USE_BINARY_COMPUTE_CACHE
-
 // Safe typecasting for development code;  fast casting otherwise
 
 #ifdef DEVELOPMENT_CODE
@@ -120,42 +155,6 @@ template <class T> inline bool POSITIVE(T X) { return (X>0) ? true : false; }
 #else
 #define smart_cast	static_cast
 #endif
-
-// maxUlps would be a small +ve integer.
-inline
-bool isAlmostEqual(int A, int B)
-{
-  static const int maxUlps = 16;
-
-  if (isNan(A) && isNan(B)) return true;
-
-  // Make sure maxUlps is non-negative and small enough that the
-  // default NAN won't compare as equal to anything.
-  CHECK_RANGE(1, maxUlps, 4 * 1024 * 1024);
-
-  // Make aInt lexicographically ordered as a twos-complement int
-  // int aInt = *(int*)&A;
-  // if (aInt < 0) aInt = 0x80000000 - aInt;
-
-  // Make bInt lexicographically ordered as a twos-complement int
-  // int bInt = *(int*)&B;
-  // if (bInt < 0) bInt = 0x80000000 - bInt;
-
-  // return ABS(aInt - bInt) <= maxUlps;
-
-  // return A < 0
-  //         ? B < 0 ? ABS(B - A) <= maxUlps: ABS(mask - A - B) <= maxUlps
-  //         : B < 0 ? ABS(A - mask + B) <= maxUlps: ABS(A - B) <= maxUlps;
-#if 0
-  static const int mask = 0x80000000;
-  return ABS(A < 0? B < 0? B - A: mask - A - B: B < 0? A - mask + B: A - B)
-          <= maxUlps;
-#else
-  if (A < 0) A = 0x80000000 - A;
-  if (B < 0) B = 0x80000000 - B;
-  return ABS(A - B) <= maxUlps;
-#endif
-}
 
 
 

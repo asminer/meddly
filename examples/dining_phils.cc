@@ -170,7 +170,7 @@ void SetIntArray(int *p, int p_size, int c)
 
 dd_edge MakeSynchP_Forks(int philosopher, int nPhilosophers, forest* mxd)
 {
-  CHECK_RANGE(0, philosopher, nPhilosophers);
+  MEDDLY_CHECK_RANGE(0, philosopher, nPhilosophers);
 
   dd_edge nsf(mxd);
   dd_edge temp(mxd);
@@ -445,9 +445,10 @@ int main(int argc, char *argv[])
   // Initialize MEDDLY
 
   MEDDLY::settings s;
-  s.doComputeTablesUseChaining = chaining;
+  // TBD
+  // s.doComputeTablesUseChaining = chaining;
   if (cacheSize > 0) {
-    s.maxComputeTableSize = cacheSize;
+    s.computeTable.maxSize = cacheSize;
   }
   MEDDLY::initialize(s);
 
@@ -620,6 +621,7 @@ int main(int argc, char *argv[])
   printmem(mdd->getPeakMemoryUsed());
   printf(" peak memory\n");
   
+  operation::showAllComputeTables(stdout, 1);
 
 #if 0   // determine verbosity of output
   reachableStates.show(stdout, 2);

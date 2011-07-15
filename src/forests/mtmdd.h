@@ -245,7 +245,7 @@ mtmdd_node_manager::createEdgeInternal(const int* const* vlist,
   }
   else {
     // build using sort-based procedure
-    DCASSERT(N > 0);
+    MEDDLY_DCASSERT(N > 0);
 
     // copy elements into internal volatile storage
     copyLists(vlist, terms, N);
@@ -445,7 +445,7 @@ int mtmdd_node_manager::sortBuild(int** list, T* tList,
 
   // build node from indices, dptrs and edgeValues
 
-  DCASSERT(dptrs.size() > 0);
+  MEDDLY_DCASSERT(dptrs.size() > 0);
 
   return createNode(level, indices, dptrs);
 }
@@ -491,9 +491,9 @@ int mtmdd_node_manager::inPlaceSort(int level, int begin, int end)
   // We have the correct bucket sizes, now move items into
   // appropriate buckets.
 
-  DCASSERT(termList);
+  MEDDLY_DCASSERT(termList);
   T* terms = (T*)termList;
-  DCASSERT(terms);
+  MEDDLY_DCASSERT(terms);
   
   for (int i = min; i < max; ++i) {
     // Move elements in bucket i to the correct slots.
@@ -509,15 +509,15 @@ int mtmdd_node_manager::inPlaceSort(int level, int begin, int end)
       }
       else {
         // Move elem to correct slot
-        DCASSERT(elemIndex > i);
+        MEDDLY_DCASSERT(elemIndex > i);
         while (c[elemIndex] > 0 && elemIndex == list[s[elemIndex]][level]) {
           // These elements are already in the correct slots; advance pointers.
           --c[elemIndex];
           ++s[elemIndex];
         }
         // At correct slot for elem
-        DCASSERT(c[elemIndex] > 0);
-        CHECK_RANGE(begin, s[elemIndex], end);
+        MEDDLY_DCASSERT(c[elemIndex] > 0);
+        MEDDLY_CHECK_RANGE(begin, s[elemIndex], end);
         SWAP(list[s[i]], list[s[elemIndex]]);
         SWAP(terms[s[i]], terms[s[elemIndex]]);
         --c[elemIndex];
@@ -601,15 +601,15 @@ int mtmdd_node_manager::inPlaceSort<bool>(int level, int begin, int end)
       }
       else {
         // Move elem to correct slot
-        DCASSERT(elemIndex > i);
+        MEDDLY_DCASSERT(elemIndex > i);
         while (c[elemIndex] > 0 && elemIndex == list[s[elemIndex]][level]) {
           // These elements are already in the correct slots; advance pointers.
           --c[elemIndex];
           ++s[elemIndex];
         }
         // At correct slot for elem
-        DCASSERT(c[elemIndex] > 0);
-        CHECK_RANGE(begin, s[elemIndex], end);
+        MEDDLY_DCASSERT(c[elemIndex] > 0);
+        MEDDLY_CHECK_RANGE(begin, s[elemIndex], end);
         SWAP(list[s[i]], list[s[elemIndex]]);
         --c[elemIndex];
         ++s[elemIndex];
@@ -690,7 +690,7 @@ inline
 T mtmdd_node_manager::handleMultipleTerminalValues(const T* tList,
     int begin, int end)
 {
-  DCASSERT(begin < end);
+  MEDDLY_DCASSERT(begin < end);
   T result = tList[begin++];
   while (begin != end) result += tList[begin++];
   return result;
@@ -702,7 +702,7 @@ inline
 bool mtmdd_node_manager::handleMultipleTerminalValues(const bool* tList,
     int begin, int end)
 {
-  DCASSERT(begin < end);
+  MEDDLY_DCASSERT(begin < end);
   return true;
 }
 

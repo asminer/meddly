@@ -93,6 +93,7 @@ void intersect(dd_edge** A, int L)
       apply(MULTIPLY, *A[0], *A[i], *A[0]);
       delete A[i];
       A[i] = 0;
+      // operation::removeStalesFromMonolithic();
     }
   }
   fprintf(stderr, "\n");
@@ -148,14 +149,28 @@ void createQueenNodes(forest* f, int q, dd_edge &col, dd_edge &cp, dd_edge &cm)
   f->createEdgeForVar(q, false, scratch, cm);
 }
 
-int main()
+bool processArgs(int argc, const char** argv)
 {
+  if (argc<2) return false;
+  if (argc>3) return false;
+  N = atoi(argv[1]); 
+  if (N<1) return false;
+  return true;
+}
+
+int usage(const char* who)
+{
+  printf("Usage: %s N\n\n\t        N:  board dimension\n\n", who);
+  return 1;
+}
+
+int main(int argc, const char** argv)
+{
+  if (!processArgs(argc, argv)) return usage(argv[0]);
   timer watch;
   initialize();
   printf("Using %s\n", getLibraryInfo(0));
-  printf("N-Queens solutions.  Enter the value for N:\n");
-  scanf("%d", &N);
-  if (N<1) return 0;
+  printf("%d-Queens solutions.\n", N);
   scratch = new int[N+1];
   
   watch.note_time();
@@ -211,19 +226,8 @@ int main()
     } // for j
   } // for i
 
-  /*
-  ( (expert_forest*)f)->showInfo(stdout, 1);
-  if (operation::useMonolithicComputeTable()) {
-    operation::showMonolithicComputeTable(stdout);
-  } else {
-    operation* neq = getOperation(NOT_EQUAL, f, f, f);
-    operation* mult = getOperation(MULTIPLY, f, f, f);
-    neq->showComputeTable(stdout);
-    mult->showComputeTable(stdout);
-  }
-  */
-
   printf("Building solutions\n");
+  fflush(stdout);
   intersect(constr, N);
   assert(constr[0]);
   dd_edge* solutions = constr[0];
@@ -281,8 +285,7 @@ int main()
   }
 #endif
   delete solutions;
-
-  operation::showMonolithicComputeTable(stdout, false);
+  operation::showAllComputeTables(stdout, 2);
   // f->showInfo(stdout, 1);
   cleanup();
   return 0;

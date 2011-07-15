@@ -40,94 +40,21 @@
 #include "defines.h"
 
 namespace MEDDLY {
-  class compute_table;
-  struct settings;
 
   /** Build a new, monolithic table.
       Monolithic means that the table stores entries for several
       (ideally, all) operations.
   */
-  compute_table* createMonolithicTable(const settings &s); 
+  compute_table* createMonolithicTable(
+    const settings::computeTableSettings &s
+  ); 
 
   /** Build a new table for a single operation.
   */
-  compute_table* createOperationTable(const settings &s, operation* op);
+  compute_table* createOperationTable(
+    const settings::computeTableSettings &s, operation* op
+  );
 }
-
-
-class MEDDLY::compute_table {
-    public:
-      /// If true, use a table with chaining; otherwise, don't chain.
-      bool chaining;
-      /// The maximum size of the hash table.
-      unsigned maxSize;
-
-      struct stats {
-        long numEntries;
-        unsigned hits;
-        unsigned pings;
-      };
-
-    public:
-      /// Constructor
-      compute_table(const settings &s);
-
-      /** Destructor. 
-          Does NOT properly discard all table entries;
-          use \a clear() for this.
-      */
-      virtual ~compute_table();
-
-      /// Is this a per-operation compute table?
-      virtual bool isOperationTable() const = 0;
-
-      /** Add an entry to the compute table. Note that this table allows for
-          duplicate entries for the same key. The user may use find() before
-          using add() to prevent such duplication. A copy of the data
-          in entry[] is stored in the table.
-          @param  op    Operation associated with this table entry
-          @param  entry integer array of size op->getCacheEntryLength(),
-                        containing the operands and the result to be stored
-      */    
-      virtual void add(operation* op, const int* entry) = 0;
-
-      /** Find an entry in the compute table based on the key provided.
-          If more than an entry with the same key exists, this will return
-          the first matching entry.
-          @param  op    Operation associated with this table entry
-          @param  entry integer array of size op->getKeyLength(),
-                        containing the key to the table entry to look for
-          @return       integer array of size op->getCacheEntryLength()
-      */
-      virtual const int* find(operation* op, const int* entryKey) = 0;
-
-      /** Remove stale entries.
-          Scans the table for entries that are no longer valid (i.e. they are
-          stale, according to operation::isEntryStale) and removes them. This
-          can be a time-consuming process (proportional to the number of cached
-          entries).
-      */
-      virtual void removeStales() = 0;
-
-      /** Removes all entries.
-      */
-      virtual void removeAll() = 0;
-
-      /// Get performance stats for the table.
-      inline const stats& getStats() {
-        updateStats();
-        return perf;
-      }
-
-      /// For debugging.
-      virtual void show(FILE *s, bool verbose = false) const = 0;
-
-    protected:
-      stats perf;
-      static unsigned raw_hash(const int* data, int length);
-
-      virtual void updateStats() = 0;
-};
 
 #endif
 

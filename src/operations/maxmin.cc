@@ -24,7 +24,6 @@
 #endif
 #include "../defines.h"
 #include "maxmin.h"
-#include "../compute_table.h"
 #include "apply_base.h"
 
 namespace MEDDLY {
@@ -68,7 +67,7 @@ bool MEDDLY::maximum_mdd::checkTerminals(int a, int b, int& c)
         MAX(arg1F->getInteger(a), arg2F->getInteger(b))
       );
     } else {
-      DCASSERT(resF->getRangeType() == forest::REAL);
+      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
       c = resF->getTerminalNode(
         MAX(arg1F->getReal(a), arg2F->getReal(b))
       );
@@ -110,7 +109,7 @@ bool MEDDLY::maximum_mxd::checkTerminals(int a, int b, int& c)
         MAX(arg1F->getInteger(a), arg2F->getInteger(b))
       );
     } else {
-      DCASSERT(resF->getRangeType() == forest::REAL);
+      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
       c = resF->getTerminalNode(
         MAX(arg1F->getReal(a), arg2F->getReal(b))
       );
@@ -203,7 +202,7 @@ bool MEDDLY::minimum_mdd::checkTerminals(int a, int b, int& c)
         MIN(arg1F->getInteger(a), arg2F->getInteger(b))
       );
     } else {
-      DCASSERT(resF->getRangeType() == forest::REAL);
+      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
       c = resF->getTerminalNode(
         MIN(arg1F->getReal(a), arg2F->getReal(b))
       );
@@ -245,7 +244,7 @@ bool MEDDLY::minimum_mxd::checkTerminals(int a, int b, int& c)
         MIN(arg1F->getInteger(a), arg2F->getInteger(b))
       );
     } else {
-      DCASSERT(resF->getRangeType() == forest::REAL);
+      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
       c = resF->getTerminalNode(
         MIN(arg1F->getReal(a), arg2F->getReal(b))
       );

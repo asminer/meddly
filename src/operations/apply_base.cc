@@ -23,7 +23,6 @@
 #include "config.h"
 #endif
 #include "../defines.h"
-#include "../compute_table.h"
 #include "apply_base.h"
 
 // ******************************************************************
@@ -34,18 +33,16 @@
 
 MEDDLY::generic_binary_mdd::generic_binary_mdd(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-  : binary_operation(code, arg1, arg2, res)
+  : binary_operation(code, 2, 1, arg1, arg2, res)
 {
   can_commute = false;
-  key_length = 2;
-  ans_length = 1;
 }
 
 MEDDLY::generic_binary_mdd::~generic_binary_mdd()
 {
 }
 
-bool MEDDLY::generic_binary_mdd::isEntryStale(const int* data)
+bool MEDDLY::generic_binary_mdd::isStaleEntry(const int* data)
 {
   return arg1F->isStale(data[0]) ||
          arg2F->isStale(data[1]) ||
@@ -108,7 +105,7 @@ int MEDDLY::generic_binary_mdd::compute(int a, int b)
     expandA(a, b, result, resultSize);
   }
   else {
-    DCASSERT(aLevel == bLevel);
+    MEDDLY_DCASSERT(aLevel == bLevel);
     // expand a and b
     // result[i] = a[i] op b[i]
 
@@ -117,17 +114,17 @@ int MEDDLY::generic_binary_mdd::compute(int a, int b)
         fullFull(a, b, result, resultSize);
       }
       else {
-        DCASSERT(arg2F->isSparseNode(b));
+        MEDDLY_DCASSERT(arg2F->isSparseNode(b));
         fullSparse(a, b, result, resultSize);
       }
     }
     else {
-      DCASSERT(arg1F->isSparseNode(a));
+      MEDDLY_DCASSERT(arg1F->isSparseNode(a));
       if (arg2F->isFullNode(b)) {
         sparseFull(a, b, result, resultSize);
       }
       else {
-        DCASSERT(arg2F->isSparseNode(b));
+        MEDDLY_DCASSERT(arg2F->isSparseNode(b));
         sparseSparse(a, b, result, resultSize);
       }
     }
@@ -235,7 +232,7 @@ expandA(int a, int b, int result, int resultSize)
 
   if (arg1F->isFullNode(a)) {
     const int aSize = arg1F->getFullNodeSize(a);
-    DCASSERT(aSize <= resultSize);
+    MEDDLY_DCASSERT(aSize <= resultSize);
     int zeroB = compute(0, b);
     for (int i = 0; i < aSize; ++i)
     {
@@ -255,7 +252,7 @@ expandA(int a, int b, int result, int resultSize)
     }
     resF->unlinkNode(zeroB);
   } else {
-    DCASSERT(arg1F->isSparseNode(a));
+    MEDDLY_DCASSERT(arg1F->isSparseNode(a));
     const int aSize = arg1F->getSparseNodeSize(a);
     int zeroB = compute(0, b);
     // j goes through every index (like a full-node index pointer)
@@ -268,12 +265,12 @@ expandA(int a, int b, int result, int resultSize)
         resF->setDownPtrWoUnlink(result, j, zeroB);
       }
       // done with skipped indices; deal with the next sparse node index
-      DCASSERT(j == arg1F->getSparseNodeIndex(a, i));
+      MEDDLY_DCASSERT(j == arg1F->getSparseNodeIndex(a, i));
       int tempResult = compute(arg1F->getSparseNodeDownPtr(a, i), b);
       resF->setDownPtrWoUnlink(result, j, tempResult);
       resF->unlinkNode(tempResult);
     }
-    DCASSERT(j == arg1F->getSparseNodeIndex(a, aSize - 1) + 1);
+    MEDDLY_DCASSERT(j == arg1F->getSparseNodeIndex(a, aSize - 1) + 1);
     for ( ; j < resultSize; ++j)
     {
       resF->setDownPtrWoUnlink(result, j, zeroB);
@@ -292,7 +289,7 @@ expandB(int a, int b, int result, int resultSize)
 
   if (arg2F->isFullNode(b)) {
     const int bSize = arg2F->getFullNodeSize(b);
-    DCASSERT(bSize <= resultSize);
+    MEDDLY_DCASSERT(bSize <= resultSize);
     int aZero = compute(a, 0);
     for (int i = 0; i < bSize; ++i)
     {
@@ -312,7 +309,7 @@ expandB(int a, int b, int result, int resultSize)
     }
     resF->unlinkNode(aZero);
   } else {
-    DCASSERT(arg2F->isSparseNode(b));
+    MEDDLY_DCASSERT(arg2F->isSparseNode(b));
     const int bSize = arg2F->getSparseNodeSize(b);
     // j goes through every index (like a full-node index pointer)
     int j = 0;
@@ -325,12 +322,12 @@ expandB(int a, int b, int result, int resultSize)
         resF->setDownPtrWoUnlink(result, j, aZero);
       }
       // done with skipped indices; deal with the next sparse node index
-      DCASSERT(j == arg2F->getSparseNodeIndex(b, i));
+      MEDDLY_DCASSERT(j == arg2F->getSparseNodeIndex(b, i));
       int tempResult = compute(a, arg2F->getSparseNodeDownPtr(b, i));
       resF->setDownPtrWoUnlink(result, j, tempResult);
       resF->unlinkNode(tempResult);
     }
-    DCASSERT(j == arg2F->getSparseNodeIndex(b, bSize - 1) + 1);
+    MEDDLY_DCASSERT(j == arg2F->getSparseNodeIndex(b, bSize - 1) + 1);
     for ( ; j < resultSize; ++j)
     {
       resF->setDownPtrWoUnlink(result, j, aZero);
@@ -343,9 +340,9 @@ void
 MEDDLY::generic_binary_mdd::
 fullFull (int a, int b, int result, int resultSize)
 {
-  DCASSERT(arg1F->isFullNode(a));
-  DCASSERT(arg2F->isFullNode(b));
-  DCASSERT(!resF->isReducedNode(result));
+  MEDDLY_DCASSERT(arg1F->isFullNode(a));
+  MEDDLY_DCASSERT(arg2F->isFullNode(b));
+  MEDDLY_DCASSERT(!resF->isReducedNode(result));
 
   int aSize = arg1F->getFullNodeSize(a);
   int bSize = arg2F->getFullNodeSize(b);
@@ -386,9 +383,9 @@ void
 MEDDLY::generic_binary_mdd::
 sparseSparse (int a, int b, int result, int resultSize)
 {
-  DCASSERT(arg1F->isSparseNode(a));
-  DCASSERT(arg2F->isSparseNode(b));
-  DCASSERT(!resF->isReducedNode(result));
+  MEDDLY_DCASSERT(arg1F->isSparseNode(a));
+  MEDDLY_DCASSERT(arg2F->isSparseNode(b));
+  MEDDLY_DCASSERT(!resF->isReducedNode(result));
 
   int aNnz = arg1F->getSparseNodeSize(a);
   int aSize = arg1F->getSparseNodeIndex(a, aNnz - 1) + 1;
@@ -406,8 +403,8 @@ sparseSparse (int a, int b, int result, int resultSize)
   int k = 0;
   for ( ; k < minSize; ++k)
   {
-    DCASSERT(k <= aIndex);
-    DCASSERT(k <= bIndex);
+    MEDDLY_DCASSERT(k <= aIndex);
+    MEDDLY_DCASSERT(k <= bIndex);
     if (k < aIndex) {
       kA = 0;
     }
@@ -441,7 +438,7 @@ sparseSparse (int a, int b, int result, int resultSize)
       // a has zeroes in these slots
       resF->setDownPtrWoUnlink(result, k, zeroZero);
     }
-    DCASSERT(k == arg1F->getSparseNodeIndex(a, i));
+    MEDDLY_DCASSERT(k == arg1F->getSparseNodeIndex(a, i));
     int tempResult = compute(arg1F->getSparseNodeDownPtr(a, i), 0);
     resF->setDownPtrWoUnlink(result, k, tempResult);
     resF->unlinkNode(tempResult);
@@ -454,7 +451,7 @@ sparseSparse (int a, int b, int result, int resultSize)
       // b has zeroes in these slots
       resF->setDownPtrWoUnlink(result, k, zeroZero);
     }
-    DCASSERT(k == arg2F->getSparseNodeIndex(b, j));
+    MEDDLY_DCASSERT(k == arg2F->getSparseNodeIndex(b, j));
     int tempResult = compute(0, arg2F->getSparseNodeDownPtr(b, j));
     resF->setDownPtrWoUnlink(result, k, tempResult);
     resF->unlinkNode(tempResult);
@@ -471,9 +468,9 @@ void
 MEDDLY::generic_binary_mdd::
 fullSparse (int a, int b, int result, int resultSize)
 {
-  DCASSERT(arg1F->isFullNode(a));
-  DCASSERT(arg2F->isSparseNode(b));
-  DCASSERT(!resF->isReducedNode(result));
+  MEDDLY_DCASSERT(arg1F->isFullNode(a));
+  MEDDLY_DCASSERT(arg2F->isSparseNode(b));
+  MEDDLY_DCASSERT(!resF->isReducedNode(result));
 
   int aSize = arg1F->getFullNodeSize(a);
   int bNnz = arg2F->getSparseNodeSize(b);
@@ -492,7 +489,7 @@ fullSparse (int a, int b, int result, int resultSize)
       resF->unlinkNode(tempResult);
     }
     else {
-      DCASSERT(i == arg2F->getSparseNodeIndex(b, j));
+      MEDDLY_DCASSERT(i == arg2F->getSparseNodeIndex(b, j));
       int tempResult = compute(arg1F->getFullNodeDownPtr(a, i),
           arg2F->getSparseNodeDownPtr(b, j));
       resF->setDownPtrWoUnlink(result, i, tempResult);
@@ -522,7 +519,7 @@ fullSparse (int a, int b, int result, int resultSize)
       // b has zeroes in these slots
       resF->setDownPtrWoUnlink(result, i, zeroZero);
     }
-    DCASSERT(i == arg2F->getSparseNodeIndex(b, j));
+    MEDDLY_DCASSERT(i == arg2F->getSparseNodeIndex(b, j));
     int tempResult = compute(0, arg2F->getSparseNodeDownPtr(b, j));
     resF->setDownPtrWoUnlink(result, i, tempResult);
     resF->unlinkNode(tempResult);
@@ -539,9 +536,9 @@ void
 MEDDLY::generic_binary_mdd::
 sparseFull (int a, int b, int result, int resultSize)
 {
-  DCASSERT(arg1F->isSparseNode(a));
-  DCASSERT(arg2F->isFullNode(b));
-  DCASSERT(!resF->isReducedNode(result));
+  MEDDLY_DCASSERT(arg1F->isSparseNode(a));
+  MEDDLY_DCASSERT(arg2F->isFullNode(b));
+  MEDDLY_DCASSERT(!resF->isReducedNode(result));
 
   int aNnz = arg1F->getSparseNodeSize(a);
   int aSize = arg1F->getSparseNodeIndex(a, aNnz - 1) + 1;
@@ -560,7 +557,7 @@ sparseFull (int a, int b, int result, int resultSize)
       resF->unlinkNode(tempResult);
     }
     else {
-      DCASSERT(i == arg1F->getSparseNodeIndex(a, j));
+      MEDDLY_DCASSERT(i == arg1F->getSparseNodeIndex(a, j));
       int tempResult = compute(arg1F->getSparseNodeDownPtr(a, j),
           arg2F->getFullNodeDownPtr(b, i));
       resF->setDownPtrWoUnlink(result, i, tempResult);
@@ -578,7 +575,7 @@ sparseFull (int a, int b, int result, int resultSize)
       // b has zeroes in these slots
       resF->setDownPtrWoUnlink(result, i, zeroZero);
     }
-    DCASSERT(i < aSize && i == arg1F->getSparseNodeIndex(a, j));
+    MEDDLY_DCASSERT(i < aSize && i == arg1F->getSparseNodeIndex(a, j));
     int tempResult = compute(arg1F->getSparseNodeDownPtr(a, j), 0);
     resF->setDownPtrWoUnlink(result, i, tempResult);
     resF->unlinkNode(tempResult);
@@ -681,7 +678,7 @@ int MEDDLY::generic_binary_mxd::computeIdent(int a, int b)
     if (arg1F->isFullNode(a)) {
       // a is a full-node
       const int aSize = arg1F->getFullNodeSize(a);
-      DCASSERT(aSize <= resultSize);
+      MEDDLY_DCASSERT(aSize <= resultSize);
       for (int i = 0; i < aSize; ++i)
         resF->setDownPtr(result, i, arg1F->getFullNodeDownPtr(a, i));
     }
@@ -698,7 +695,7 @@ int MEDDLY::generic_binary_mxd::computeIdent(int a, int b)
     if (arg2F->isFullNode(b)) {
       // b is a full-node
       const int bSize = arg2F->getFullNodeSize(b);
-      DCASSERT(bSize <= resultSize);
+      MEDDLY_DCASSERT(bSize <= resultSize);
       for (int i = 0; i < bSize; ++i)
       {
         int tempResult = computeIdent(
@@ -719,7 +716,7 @@ int MEDDLY::generic_binary_mxd::computeIdent(int a, int b)
     else {
       // b is a sparse-node
       const int bSize = arg2F->getSparseNodeSize(b);
-      DCASSERT(arg2F->getSparseNodeIndex(b, bSize - 1) <= resultSize);
+      MEDDLY_DCASSERT(arg2F->getSparseNodeIndex(b, bSize - 1) <= resultSize);
       // j goes through every index (like a full-node index pointer)
       int j = 0;
       for (int i = 0; i < bSize; ++i, ++j)
@@ -735,14 +732,14 @@ int MEDDLY::generic_binary_mxd::computeIdent(int a, int b)
           resF->unlinkNode(tempResult);
         }
         // done with skipped indices; deal with the next sparse node index
-        DCASSERT(j == arg2F->getSparseNodeIndex(b, i));
+        MEDDLY_DCASSERT(j == arg2F->getSparseNodeIndex(b, i));
         int tempResult = computeIdent(
             resF->getFullNodeDownPtr(result, j),
             arg2F->getSparseNodeDownPtr(b, i));
         resF->setDownPtr(result, j, tempResult);
         resF->unlinkNode(tempResult);
       }
-      DCASSERT(j == arg2F->getSparseNodeIndex(b, bSize - 1) + 1);
+      MEDDLY_DCASSERT(j == arg2F->getSparseNodeIndex(b, bSize - 1) + 1);
       for ( ; j < resultSize; ++j)
       {
         int tempResult = computeIdent(
@@ -765,7 +762,7 @@ int MEDDLY::generic_binary_mxd::computeIdent(int a, int b)
 
 int MEDDLY::generic_binary_mxd::computeNonIdent(int a, int b)
 {
-  DCASSERT(resF->getReductionRule() != forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(resF->getReductionRule() != forest::IDENTITY_REDUCED);
 
   int result = 0;
   if (checkTerminals(a, b, result))
@@ -821,17 +818,17 @@ int MEDDLY::generic_binary_mxd::computeNonIdent(int a, int b)
 
   for (std::vector<int>::iterator end = A.end(); aIter != end; )
   {
-    DCASSERT(cIter != C.end());
+    MEDDLY_DCASSERT(cIter != C.end());
     *cIter++ = computeNonIdent(*aIter++, 0);
   }
 
   for (std::vector<int>::iterator end = B.end(); bIter != end; )
   {
-    DCASSERT(cIter != C.end());
+    MEDDLY_DCASSERT(cIter != C.end());
     *cIter++ = computeNonIdent(0, *bIter++);
   }
 
-  DCASSERT(aIter == A.end() && bIter == B.end());
+  MEDDLY_DCASSERT(aIter == A.end() && bIter == B.end());
 
   if (cIter != C.end()) {
     int zeroZero = computeNonIdent(0, 0);
@@ -870,7 +867,7 @@ void MEDDLY::generic_binary_mxd::expandA(int a, int b, int result,
 
   if (arg1F->isFullNode(a)) {
     const int aSize = arg1F->getFullNodeSize(a);
-    DCASSERT(aSize <= resultSize);
+    MEDDLY_DCASSERT(aSize <= resultSize);
     for (int i = 0; i < aSize; ++i)
     {
       int iA = arg1F->getFullNodeDownPtr(a, i);
@@ -902,7 +899,7 @@ void MEDDLY::generic_binary_mxd::expandA(int a, int b, int result,
         }
       }
       else {
-        DCASSERT(arg1F->isSparseNode(iA));
+        MEDDLY_DCASSERT(arg1F->isSparseNode(iA));
         const int iASize = arg1F->getSparseNodeSize(iA);
         int j = 0;
         for (int k = 0; k < iASize; ++k, ++j)
@@ -917,14 +914,14 @@ void MEDDLY::generic_binary_mxd::expandA(int a, int b, int result,
                 : zeroOpZero);
           }
           // done with skipped indices; deal with the next sparse node index
-          DCASSERT(j == arg1F->getSparseNodeIndex(iA, k));
+          MEDDLY_DCASSERT(j == arg1F->getSparseNodeIndex(iA, k));
           int ijA = arg1F->getSparseNodeDownPtr(iA, k);
           int tempResult = (i == j)?
             computeIdent(ijA, b): computeIdent(ijA, 0);
           resF->setDownPtr(iResult, j, tempResult);
           resF->unlinkNode(tempResult);
         }
-        DCASSERT(j == arg1F->getSparseNodeIndex(iA, iASize - 1) + 1);
+        MEDDLY_DCASSERT(j == arg1F->getSparseNodeIndex(iA, iASize - 1) + 1);
         for ( ; j < pResultSize; ++j)
         {
           resF->setDownPtr(iResult, j, (i == j)? zeroOpB: zeroOpZero);
@@ -946,9 +943,9 @@ void MEDDLY::generic_binary_mxd::expandA(int a, int b, int result,
     }
   }
   else {
-    DCASSERT(arg1F->isSparseNode(a));
+    MEDDLY_DCASSERT(arg1F->isSparseNode(a));
     const int aSize = arg1F->getSparseNodeSize(a);
-    DCASSERT(arg1F->getSparseNodeIndex(a, aSize-1) < resultSize);
+    MEDDLY_DCASSERT(arg1F->getSparseNodeIndex(a, aSize-1) < resultSize);
     int i = 0;
     for (int aIndex = 0; aIndex < aSize; ++aIndex, ++i)
     {
@@ -963,10 +960,10 @@ void MEDDLY::generic_binary_mxd::expandA(int a, int b, int result,
         resF->unlinkNode(iResult);
       }
 
-      DCASSERT(i == arg1F->getSparseNodeIndex(a, aIndex));
+      MEDDLY_DCASSERT(i == arg1F->getSparseNodeIndex(a, aIndex));
       int iA = arg1F->getSparseNodeDownPtr(a, aIndex);
       int iResult = resF->createTempNode(-resultLevel, pResultSize);
-      DCASSERT(iA != 0 && iA != -1);
+      MEDDLY_DCASSERT(iA != 0 && iA != -1);
       if (arg1F->isFullNode(iA)) {
         const int iASize = arg1F->getFullNodeSize(iA);
         for (int j = 0; j < iASize; ++j)
@@ -990,7 +987,7 @@ void MEDDLY::generic_binary_mxd::expandA(int a, int b, int result,
         }
       }
       else {
-        DCASSERT(arg1F->isSparseNode(iA));
+        MEDDLY_DCASSERT(arg1F->isSparseNode(iA));
         const int iASize = arg1F->getSparseNodeSize(iA);
         int j = 0;
         for (int k = 0; k < iASize; ++k, ++j)
@@ -1005,14 +1002,14 @@ void MEDDLY::generic_binary_mxd::expandA(int a, int b, int result,
                 : zeroOpZero);
           }
           // done with skipped indices; deal with the next sparse node index
-          DCASSERT(j == arg1F->getSparseNodeIndex(iA, k));
+          MEDDLY_DCASSERT(j == arg1F->getSparseNodeIndex(iA, k));
           int ijA = arg1F->getSparseNodeDownPtr(iA, k);
           int tempResult = (i == j)?
             computeIdent(ijA, b): computeIdent(ijA, 0);
           resF->setDownPtr(iResult, j, tempResult);
           resF->unlinkNode(tempResult);
         }
-        DCASSERT(j == arg1F->getSparseNodeIndex(iA, iASize - 1) + 1);
+        MEDDLY_DCASSERT(j == arg1F->getSparseNodeIndex(iA, iASize - 1) + 1);
         for ( ; j < pResultSize; ++j)
         {
           resF->setDownPtr(iResult, j, (i == j)? zeroOpB: zeroOpZero);
@@ -1024,7 +1021,7 @@ void MEDDLY::generic_binary_mxd::expandA(int a, int b, int result,
     }
 
     // TODO: can optimize when zeroOpZero == zeroOpB == 0
-    DCASSERT(i == arg1F->getSparseNodeIndex(a, aSize - 1) + 1);
+    MEDDLY_DCASSERT(i == arg1F->getSparseNodeIndex(a, aSize - 1) + 1);
     for ( ; i < resultSize; ++i)
     {
       int iResult = resF->createTempNode(-resultLevel, pResultSize);
@@ -1053,7 +1050,7 @@ void MEDDLY::generic_binary_mxd::singleExpandA(int a, int b, int result,
 
   if (arg1F->isFullNode(a)) {
     const int aSize = arg1F->getFullNodeSize(a);
-    DCASSERT(aSize <= resultSize);
+    MEDDLY_DCASSERT(aSize <= resultSize);
     int i = 0;
     for ( ; i < aSize; ++i)
     {
@@ -1068,7 +1065,7 @@ void MEDDLY::generic_binary_mxd::singleExpandA(int a, int b, int result,
     }
   }
   else {
-    DCASSERT(arg1F->isSparseNode(a));
+    MEDDLY_DCASSERT(arg1F->isSparseNode(a));
     const int aSize = arg1F->getSparseNodeSize(a);
     int i = 0;
     for (int aIndex = 0; aIndex < aSize; ++aIndex, ++i)
@@ -1076,11 +1073,11 @@ void MEDDLY::generic_binary_mxd::singleExpandA(int a, int b, int result,
       for (int index = arg1F->getSparseNodeIndex(a, aIndex);
           i < index; ++i)
       {
-        DCASSERT(i < resultSize);
+        MEDDLY_DCASSERT(i < resultSize);
         resF->setDownPtr(result, i, zeroB);
       }
-      DCASSERT(i == arg1F->getSparseNodeIndex(a, aIndex));
-      DCASSERT(i < resultSize);
+      MEDDLY_DCASSERT(i == arg1F->getSparseNodeIndex(a, aIndex));
+      MEDDLY_DCASSERT(i < resultSize);
       int tempResult =
         computeIdent(arg1F->getSparseNodeDownPtr(a, aIndex), b);
       resF->setDownPtr(result, i, tempResult);
@@ -1116,7 +1113,7 @@ void MEDDLY::generic_binary_mxd::expandB(int a, int b, int result,
 
   if (arg2F->isFullNode(b)) {
     const int bSize = arg2F->getFullNodeSize(b);
-    DCASSERT(bSize <= resultSize);
+    MEDDLY_DCASSERT(bSize <= resultSize);
     for (int i = 0; i < bSize; ++i)
     {
       int iB = arg2F->getFullNodeDownPtr(b, i);
@@ -1148,7 +1145,7 @@ void MEDDLY::generic_binary_mxd::expandB(int a, int b, int result,
         }
       }
       else {
-        DCASSERT(arg2F->isSparseNode(iB));
+        MEDDLY_DCASSERT(arg2F->isSparseNode(iB));
         const int iBSize = arg2F->getSparseNodeSize(iB);
         int j = 0;
         for (int k = 0; k < iBSize; ++k, ++j)
@@ -1163,14 +1160,14 @@ void MEDDLY::generic_binary_mxd::expandB(int a, int b, int result,
                 : zeroOpZero);
           }
           // done with skipped indices; deal with the next sparse node index
-          DCASSERT(j == arg2F->getSparseNodeIndex(iB, k));
+          MEDDLY_DCASSERT(j == arg2F->getSparseNodeIndex(iB, k));
           int ijB = arg2F->getSparseNodeDownPtr(iB, k);
           int tempResult = (i == j)?
             computeIdent(a, ijB): computeIdent(0, ijB);
           resF->setDownPtr(iResult, j, tempResult);
           resF->unlinkNode(tempResult);
         }
-        DCASSERT(j == arg2F->getSparseNodeIndex(iB, iBSize - 1) + 1);
+        MEDDLY_DCASSERT(j == arg2F->getSparseNodeIndex(iB, iBSize - 1) + 1);
         for ( ; j < pResultSize; ++j)
         {
           resF->setDownPtr(iResult, j, (i == j)? aOpZero: zeroOpZero);
@@ -1192,7 +1189,7 @@ void MEDDLY::generic_binary_mxd::expandB(int a, int b, int result,
     }
   }
   else {
-    DCASSERT(arg2F->isSparseNode(b));
+    MEDDLY_DCASSERT(arg2F->isSparseNode(b));
     const int bSize = arg2F->getSparseNodeSize(b);
     int i = 0;
     for (int bIndex = 0; bIndex < bSize; ++bIndex, ++i)
@@ -1208,10 +1205,10 @@ void MEDDLY::generic_binary_mxd::expandB(int a, int b, int result,
         resF->unlinkNode(iResult);
       }
 
-      DCASSERT(i == arg2F->getSparseNodeIndex(b, bIndex));
+      MEDDLY_DCASSERT(i == arg2F->getSparseNodeIndex(b, bIndex));
       int iB = arg2F->getSparseNodeDownPtr(b, bIndex);
       int iResult = resF->createTempNode(-resultLevel, pResultSize);
-      DCASSERT(iB != 0 && iB != -1);
+      MEDDLY_DCASSERT(iB != 0 && iB != -1);
       if (arg2F->isFullNode(iB)) {
         const int iBSize = arg2F->getFullNodeSize(iB);
         for (int j = 0; j < iBSize; ++j)
@@ -1235,7 +1232,7 @@ void MEDDLY::generic_binary_mxd::expandB(int a, int b, int result,
         }
       }
       else {
-        DCASSERT(arg2F->isSparseNode(iB));
+        MEDDLY_DCASSERT(arg2F->isSparseNode(iB));
         const int iBSize = arg2F->getSparseNodeSize(iB);
         int j = 0;
         for (int k = 0; k < iBSize; ++k, ++j)
@@ -1250,27 +1247,27 @@ void MEDDLY::generic_binary_mxd::expandB(int a, int b, int result,
                 : zeroOpZero);
           }
           // done with skipped indices; deal with the next sparse node index
-          DCASSERT(j == arg2F->getSparseNodeIndex(iB, k));
+          MEDDLY_DCASSERT(j == arg2F->getSparseNodeIndex(iB, k));
           int ijB = arg2F->getSparseNodeDownPtr(iB, k);
           int tempResult = (i == j)?
             computeIdent(a, ijB): computeIdent(0, ijB);
           resF->setDownPtr(iResult, j, tempResult);
           resF->unlinkNode(tempResult);
         }
-        DCASSERT(j == arg2F->getSparseNodeIndex(iB, iBSize - 1) + 1);
+        MEDDLY_DCASSERT(j == arg2F->getSparseNodeIndex(iB, iBSize - 1) + 1);
         for ( ; j < pResultSize; ++j)
         {
           resF->setDownPtr(iResult, j, (i == j)? aOpZero: zeroOpZero);
         }
       }
       iResult = resF->reduceNode(iResult);
-      DCASSERT(i < resultSize);
+      MEDDLY_DCASSERT(i < resultSize);
       resF->setDownPtr(result, i, iResult);
       resF->unlinkNode(iResult);
     }
 
     // TODO: can optimize when zeroOpZero == aOpZero == 0
-    DCASSERT(i == arg2F->getSparseNodeIndex(b, bSize - 1) + 1);
+    MEDDLY_DCASSERT(i == arg2F->getSparseNodeIndex(b, bSize - 1) + 1);
     for ( ; i < resultSize; ++i)
     {
       int iResult = resF->createTempNode(-resultLevel, pResultSize);
@@ -1299,7 +1296,7 @@ void MEDDLY::generic_binary_mxd::singleExpandB(int a, int b, int result,
 
   if (arg2F->isFullNode(b)) {
     const int bSize = arg2F->getFullNodeSize(b);
-    DCASSERT(bSize <= resultSize);
+    MEDDLY_DCASSERT(bSize <= resultSize);
     int i = 0;
     for ( ; i < bSize; ++i)
     {
@@ -1314,7 +1311,7 @@ void MEDDLY::generic_binary_mxd::singleExpandB(int a, int b, int result,
     }
   }
   else {
-    DCASSERT(arg2F->isSparseNode(b));
+    MEDDLY_DCASSERT(arg2F->isSparseNode(b));
     const int bSize = arg2F->getSparseNodeSize(b);
     int i = 0;
     for (int bIndex = 0; bIndex < bSize; ++bIndex, ++i)
@@ -1322,11 +1319,11 @@ void MEDDLY::generic_binary_mxd::singleExpandB(int a, int b, int result,
       for (int index = arg2F->getSparseNodeIndex(b, bIndex);
           i < index; ++i)
       {
-        DCASSERT(i < resultSize);
+        MEDDLY_DCASSERT(i < resultSize);
         resF->setDownPtr(result, i, aZero);
       }
-      DCASSERT(i == arg2F->getSparseNodeIndex(b, bIndex));
-      DCASSERT(i < resultSize);
+      MEDDLY_DCASSERT(i == arg2F->getSparseNodeIndex(b, bIndex));
+      MEDDLY_DCASSERT(i < resultSize);
       int tempResult =
         computeIdent(a, arg2F->getSparseNodeDownPtr(b, bIndex));
       resF->setDownPtr(result, i, tempResult);
@@ -1351,18 +1348,16 @@ void MEDDLY::generic_binary_mxd::singleExpandB(int a, int b, int result,
 MEDDLY::generic_binbylevel_mxd
 ::generic_binbylevel_mxd(const binary_opname* code, expert_forest* arg1, 
   expert_forest* arg2, expert_forest* res)
- : binary_operation(code, arg1, arg2, res)
+ : binary_operation(code, 3, 1, arg1, arg2, res)
 {
   can_commute = false;
-  key_length = 3;
-  ans_length = 1;
 }
 
 MEDDLY::generic_binbylevel_mxd::~generic_binbylevel_mxd()
 {
 }
 
-bool MEDDLY::generic_binbylevel_mxd::isEntryStale(const int* data)
+bool MEDDLY::generic_binbylevel_mxd::isStaleEntry(const int* data)
 {
   return arg1F->isStale(data[1]) ||
          arg2F->isStale(data[2]) ||
@@ -1418,7 +1413,7 @@ int MEDDLY::generic_binbylevel_mxd
   // This is to ensure correctness for operations where op(0, 0) != 0.
 
   int result = 0;
-  DCASSERT(resF->getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(resF->getReductionRule() == forest::IDENTITY_REDUCED);
 
   if (resultLevel == 0) {
     checkTerminals(a, b, result);
@@ -1461,12 +1456,12 @@ int MEDDLY::generic_binbylevel_mxd
   }
   else {
     // aLevel == resultLevel, bLevel == resultLevel
-    DCASSERT(aLevel == resultLevel && bLevel == resultLevel);
+    MEDDLY_DCASSERT(aLevel == resultLevel && bLevel == resultLevel);
     // 2. copy node a to node result
     if (arg1F->isFullNode(a)) {
       // a is a full-node
       const int aSize = arg1F->getFullNodeSize(a);
-      DCASSERT(aSize <= resultSize);
+      MEDDLY_DCASSERT(aSize <= resultSize);
       for (int i = 0; i < aSize; ++i)
         resF->setDownPtrWoUnlink(result,
             i, arg1F->getFullNodeDownPtr(a, i));
@@ -1489,7 +1484,7 @@ int MEDDLY::generic_binbylevel_mxd
     if (arg2F->isFullNode(b)) {
       // b is a full-node
       const int bSize = arg2F->getFullNodeSize(b);
-      DCASSERT(bSize <= resultSize);
+      MEDDLY_DCASSERT(bSize <= resultSize);
       for (int i = 0; i < bSize; ++i)
       {
         int tempResult = computeIdent(nextLevel,
@@ -1509,7 +1504,7 @@ int MEDDLY::generic_binbylevel_mxd
     else {
       // b is a sparse-node
       const int bSize = arg2F->getSparseNodeSize(b);
-      DCASSERT(arg2F->getSparseNodeIndex(b, bSize - 1) <= resultSize);
+      MEDDLY_DCASSERT(arg2F->getSparseNodeIndex(b, bSize - 1) <= resultSize);
       // j goes through every index (like a full-node index pointer)
       int j = 0;
       for (int i = 0; i < bSize; ++i, ++j)
@@ -1525,14 +1520,14 @@ int MEDDLY::generic_binbylevel_mxd
           resF->unlinkNode(tempResult);
         }
         // done with skipped indices; deal with the next sparse node index
-        DCASSERT(j == arg2F->getSparseNodeIndex(b, i));
+        MEDDLY_DCASSERT(j == arg2F->getSparseNodeIndex(b, i));
         int tempResult = computeIdent(nextLevel,
             resF->getFullNodeDownPtr(result, j),
             arg2F->getSparseNodeDownPtr(b, i));
         resF->setDownPtr(result, j, tempResult);
         resF->unlinkNode(tempResult);
       }
-      DCASSERT(j == arg2F->getSparseNodeIndex(b, bSize - 1) + 1);
+      MEDDLY_DCASSERT(j == arg2F->getSparseNodeIndex(b, bSize - 1) + 1);
       for ( ; j < resultSize; ++j)
       {
         int tempResult = computeIdent(nextLevel,
@@ -1556,7 +1551,7 @@ int MEDDLY::generic_binbylevel_mxd
 int MEDDLY::generic_binbylevel_mxd
 ::computeNonIdent(int resultLevel, int a, int b)
 {
-  DCASSERT(resF->getReductionRule() != forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(resF->getReductionRule() != forest::IDENTITY_REDUCED);
 
   int result = 0;
 
@@ -1630,17 +1625,17 @@ int MEDDLY::generic_binbylevel_mxd
 
     for (std::vector<int>::iterator end = A.end(); aIter != end; )
     {
-      DCASSERT(cIter != C.end());
+      MEDDLY_DCASSERT(cIter != C.end());
       *cIter++ = computeNonIdent(nextLevel, *aIter++, 0);
     }
 
     for (std::vector<int>::iterator end = B.end(); bIter != end; )
     {
-      DCASSERT(cIter != C.end());
+      MEDDLY_DCASSERT(cIter != C.end());
       *cIter++ = computeNonIdent(nextLevel, 0, *bIter++);
     }
 
-    DCASSERT(aIter == A.end() && bIter == B.end());
+    MEDDLY_DCASSERT(aIter == A.end() && bIter == B.end());
 
     if (cIter != C.end()) {
       int zeroZero = computeNonIdent(nextLevel, 0, 0);
@@ -1665,11 +1660,11 @@ int MEDDLY::generic_binbylevel_mxd
 void MEDDLY::generic_binbylevel_mxd::expandSkippedLevel(int a, int b, 
   int result, int resultLevel, int resultSize)
 {
-  DCASSERT(arg1F->getNodeLevel(a) != resultLevel);
-  DCASSERT(arg2F->getNodeLevel(b) != resultLevel);
+  MEDDLY_DCASSERT(arg1F->getNodeLevel(a) != resultLevel);
+  MEDDLY_DCASSERT(arg2F->getNodeLevel(b) != resultLevel);
   if (resultLevel > 0) {
-    DCASSERT(arg1F->getNodeLevel(a) >= 0);
-    DCASSERT(arg2F->getNodeLevel(b) >= 0);
+    MEDDLY_DCASSERT(arg1F->getNodeLevel(a) >= 0);
+    MEDDLY_DCASSERT(arg2F->getNodeLevel(b) >= 0);
     // both a and b are below result
     int zeroZeroAtOneLevelBelow = computeIdent(resultLevel-1, 0, 0);
     int aBAtOneLevelBelow = computeIdent(resultLevel-1, a, b);
@@ -1693,8 +1688,8 @@ void MEDDLY::generic_binbylevel_mxd::expandSkippedLevel(int a, int b,
     resF->unlinkNode(aBAtOneLevelBelow);
   }
   else {
-    DCASSERT(resultLevel < 0);
-    DCASSERT(a == 0 && b == 0);
+    MEDDLY_DCASSERT(resultLevel < 0);
+    MEDDLY_DCASSERT(a == 0 && b == 0);
     int zeroZeroAtOneLevelBelow = computeIdent(-resultLevel-1, 0, 0);
     for (int i = 0; i < resultSize; ++i)
     {
@@ -1718,7 +1713,7 @@ void MEDDLY::generic_binbylevel_mxd::expandA(int a, int b,
   // when a[i] == 0, a[i][j] = 0 for all j, and
   // result[i][i] = 0 op b
   // result[i][j] = 0 op 0 for i != j
-  DCASSERT(resultLevel > 0);
+  MEDDLY_DCASSERT(resultLevel > 0);
   int zeroOpZero = computeIdent(resultLevel-1, 0, 0);
   int zeroOpB = computeIdent(resultLevel-1, 0, b);
 
@@ -1761,7 +1756,7 @@ void MEDDLY::generic_binbylevel_mxd::expandA(int a, int b,
         }
       }
       else {
-        DCASSERT(arg1F->isSparseNode(iA));
+        MEDDLY_DCASSERT(arg1F->isSparseNode(iA));
         const int iASize = arg1F->getSparseNodeSize(iA);
         int j = 0;
         for (int k = 0; k < iASize; ++k, ++j)
@@ -1776,7 +1771,7 @@ void MEDDLY::generic_binbylevel_mxd::expandA(int a, int b,
                 : zeroOpZero);
           }
           // done with skipped indices; deal with the next sparse node index
-          DCASSERT(j == arg1F->getSparseNodeIndex(iA, k));
+          MEDDLY_DCASSERT(j == arg1F->getSparseNodeIndex(iA, k));
           int ijA = arg1F->getSparseNodeDownPtr(iA, k);
           int tempResult = (i == j)?
             computeIdent(resultLevel-1, ijA, b):
@@ -1784,7 +1779,7 @@ void MEDDLY::generic_binbylevel_mxd::expandA(int a, int b,
           resF->setDownPtrWoUnlink(iResult, j, tempResult);
           resF->unlinkNode(tempResult);
         }
-        DCASSERT(j == arg1F->getSparseNodeIndex(iA, iASize - 1) + 1);
+        MEDDLY_DCASSERT(j == arg1F->getSparseNodeIndex(iA, iASize - 1) + 1);
         for ( ; j < pResultSize; ++j)
         {
           resF->setDownPtrWoUnlink(iResult, j,
@@ -1809,7 +1804,7 @@ void MEDDLY::generic_binbylevel_mxd::expandA(int a, int b,
     }
   }
   else {
-    DCASSERT(arg1F->isSparseNode(a));
+    MEDDLY_DCASSERT(arg1F->isSparseNode(a));
     const int aSize = arg1F->getSparseNodeSize(a);
     int i = 0;
     for (int aIndex = 0; aIndex < aSize; ++aIndex, ++i)
@@ -1827,11 +1822,11 @@ void MEDDLY::generic_binbylevel_mxd::expandA(int a, int b,
         resF->unlinkNode(iResult);
       }
 
-      DCASSERT(i == arg1F->getSparseNodeIndex(a, aIndex));
+      MEDDLY_DCASSERT(i == arg1F->getSparseNodeIndex(a, aIndex));
       int iA = arg1F->getSparseNodeDownPtr(a, aIndex);
       int iResult =
         resF->createTempNode(-resultLevel, pResultSize, false);
-      DCASSERT(iA != 0 && iA != -1);
+      MEDDLY_DCASSERT(iA != 0 && iA != -1);
       if (arg1F->isFullNode(iA)) {
         const int iASize = arg1F->getFullNodeSize(iA);
         for (int j = 0; j < iASize; ++j)
@@ -1856,7 +1851,7 @@ void MEDDLY::generic_binbylevel_mxd::expandA(int a, int b,
         }
       }
       else {
-        DCASSERT(arg1F->isSparseNode(iA));
+        MEDDLY_DCASSERT(arg1F->isSparseNode(iA));
         const int iASize = arg1F->getSparseNodeSize(iA);
         int j = 0;
         for (int k = 0; k < iASize; ++k, ++j)
@@ -1871,7 +1866,7 @@ void MEDDLY::generic_binbylevel_mxd::expandA(int a, int b,
                 : zeroOpZero);
           }
           // done with skipped indices; deal with the next sparse node index
-          DCASSERT(j == arg1F->getSparseNodeIndex(iA, k));
+          MEDDLY_DCASSERT(j == arg1F->getSparseNodeIndex(iA, k));
           int ijA = arg1F->getSparseNodeDownPtr(iA, k);
           int tempResult = i == j?
             computeIdent(resultLevel-1, ijA, b):
@@ -1879,7 +1874,7 @@ void MEDDLY::generic_binbylevel_mxd::expandA(int a, int b,
           resF->setDownPtrWoUnlink(iResult, j, tempResult);
           resF->unlinkNode(tempResult);
         }
-        DCASSERT(j == arg1F->getSparseNodeIndex(iA, iASize - 1) + 1);
+        MEDDLY_DCASSERT(j == arg1F->getSparseNodeIndex(iA, iASize - 1) + 1);
         for ( ; j < pResultSize; ++j)
         {
           resF->setDownPtrWoUnlink(iResult, j,
@@ -1892,7 +1887,7 @@ void MEDDLY::generic_binbylevel_mxd::expandA(int a, int b,
     }
 
     // TODO: can optimize when zeroOpZero == zeroOpB == 0
-    DCASSERT(i == arg1F->getSparseNodeIndex(a, aSize - 1) + 1);
+    MEDDLY_DCASSERT(i == arg1F->getSparseNodeIndex(a, aSize - 1) + 1);
     for ( ; i < resultSize; ++i)
     {
       int iResult =
@@ -1919,7 +1914,7 @@ void MEDDLY::generic_binbylevel_mxd::singleExpandA(int a, int b,
 
   // compute each result[i] using above before inserting into result node
 
-  DCASSERT(resultLevel < 0);
+  MEDDLY_DCASSERT(resultLevel < 0);
   int zeroB = computeIdent(-resultLevel-1, 0, b);
 
   if (arg1F->isFullNode(a)) {
@@ -1938,7 +1933,7 @@ void MEDDLY::generic_binbylevel_mxd::singleExpandA(int a, int b,
     }
   }
   else {
-    DCASSERT(arg1F->isSparseNode(a));
+    MEDDLY_DCASSERT(arg1F->isSparseNode(a));
     const int aSize = arg1F->getSparseNodeSize(a);
     int i = 0;
     for (int aIndex = 0; aIndex < aSize; ++aIndex, ++i)
@@ -1948,7 +1943,7 @@ void MEDDLY::generic_binbylevel_mxd::singleExpandA(int a, int b,
       {
         resF->setDownPtrWoUnlink(result, i, zeroB);
       }
-      DCASSERT(i == arg1F->getSparseNodeIndex(a, aIndex));
+      MEDDLY_DCASSERT(i == arg1F->getSparseNodeIndex(a, aIndex));
       int tempResult = computeIdent(-resultLevel-1,
           arg1F->getSparseNodeDownPtr(a, aIndex), b);
       resF->setDownPtrWoUnlink(result, i, tempResult);
@@ -1977,7 +1972,7 @@ void MEDDLY::generic_binbylevel_mxd::expandB(int a, int b,
   // when b[i] == 0, b[i][j] = 0 for all j, and
   // result[i][i] = a op 0
   // result[i][j] = 0 op 0 for i != j
-  DCASSERT(resultLevel > 0);
+  MEDDLY_DCASSERT(resultLevel > 0);
   int zeroOpZero = computeIdent(resultLevel-1, 0, 0);
   int aOpZero = computeIdent(resultLevel-1, a, 0);
 
@@ -2020,7 +2015,7 @@ void MEDDLY::generic_binbylevel_mxd::expandB(int a, int b,
         }
       }
       else {
-        DCASSERT(arg2F->isSparseNode(iB));
+        MEDDLY_DCASSERT(arg2F->isSparseNode(iB));
         const int iBSize = arg2F->getSparseNodeSize(iB);
         int j = 0;
         for (int k = 0; k < iBSize; ++k, ++j)
@@ -2035,7 +2030,7 @@ void MEDDLY::generic_binbylevel_mxd::expandB(int a, int b,
                 : zeroOpZero);
           }
           // done with skipped indices; deal with the next sparse node index
-          DCASSERT(j == arg2F->getSparseNodeIndex(iB, k));
+          MEDDLY_DCASSERT(j == arg2F->getSparseNodeIndex(iB, k));
           int ijB = arg2F->getSparseNodeDownPtr(iB, k);
           int tempResult = (i == j)?
             computeIdent(resultLevel-1, a, ijB):
@@ -2043,7 +2038,7 @@ void MEDDLY::generic_binbylevel_mxd::expandB(int a, int b,
           resF->setDownPtrWoUnlink(iResult, j, tempResult);
           resF->unlinkNode(tempResult);
         }
-        DCASSERT(j == arg2F->getSparseNodeIndex(iB, iBSize - 1) + 1);
+        MEDDLY_DCASSERT(j == arg2F->getSparseNodeIndex(iB, iBSize - 1) + 1);
         for ( ; j < pResultSize; ++j)
         {
           resF->setDownPtrWoUnlink(iResult, j,
@@ -2068,7 +2063,7 @@ void MEDDLY::generic_binbylevel_mxd::expandB(int a, int b,
     }
   }
   else {
-    DCASSERT(arg2F->isSparseNode(b));
+    MEDDLY_DCASSERT(arg2F->isSparseNode(b));
     const int bSize = arg2F->getSparseNodeSize(b);
     int i = 0;
     for (int bIndex = 0; bIndex < bSize; ++bIndex, ++i)
@@ -2086,11 +2081,11 @@ void MEDDLY::generic_binbylevel_mxd::expandB(int a, int b,
         resF->unlinkNode(iResult);
       }
 
-      DCASSERT(i == arg2F->getSparseNodeIndex(b, bIndex));
+      MEDDLY_DCASSERT(i == arg2F->getSparseNodeIndex(b, bIndex));
       int iB = arg2F->getSparseNodeDownPtr(b, bIndex);
       int iResult =
         resF->createTempNode(-resultLevel, pResultSize, false);
-      DCASSERT(iB != 0 && iB != -1);
+      MEDDLY_DCASSERT(iB != 0 && iB != -1);
       if (arg2F->isFullNode(iB)) {
         const int iBSize = arg2F->getFullNodeSize(iB);
         for (int j = 0; j < iBSize; ++j)
@@ -2116,7 +2111,7 @@ void MEDDLY::generic_binbylevel_mxd::expandB(int a, int b,
         }
       }
       else {
-        DCASSERT(arg2F->isSparseNode(iB));
+        MEDDLY_DCASSERT(arg2F->isSparseNode(iB));
         const int iBSize = arg2F->getSparseNodeSize(iB);
         int j = 0;
         for (int k = 0; k < iBSize; ++k, ++j)
@@ -2131,7 +2126,7 @@ void MEDDLY::generic_binbylevel_mxd::expandB(int a, int b,
                 : zeroOpZero);
           }
           // done with skipped indices; deal with the next sparse node index
-          DCASSERT(j == arg2F->getSparseNodeIndex(iB, k));
+          MEDDLY_DCASSERT(j == arg2F->getSparseNodeIndex(iB, k));
           int ijB = arg2F->getSparseNodeDownPtr(iB, k);
           int tempResult = i == j?
             computeIdent(resultLevel-1, a, ijB):
@@ -2139,7 +2134,7 @@ void MEDDLY::generic_binbylevel_mxd::expandB(int a, int b,
           resF->setDownPtrWoUnlink(iResult, j, tempResult);
           resF->unlinkNode(tempResult);
         }
-        DCASSERT(j == arg2F->getSparseNodeIndex(iB, iBSize - 1) + 1);
+        MEDDLY_DCASSERT(j == arg2F->getSparseNodeIndex(iB, iBSize - 1) + 1);
         for ( ; j < pResultSize; ++j)
         {
           resF->setDownPtrWoUnlink(iResult, j,
@@ -2152,7 +2147,7 @@ void MEDDLY::generic_binbylevel_mxd::expandB(int a, int b,
     }
 
     // TODO: can optimize when zeroOpZero == aOpZero == 0
-    DCASSERT(i == arg2F->getSparseNodeIndex(b, bSize - 1) + 1);
+    MEDDLY_DCASSERT(i == arg2F->getSparseNodeIndex(b, bSize - 1) + 1);
     for ( ; i < resultSize; ++i)
     {
       int iResult =
@@ -2179,7 +2174,7 @@ void MEDDLY::generic_binbylevel_mxd::singleExpandB(int a, int b,
 
   // compute each result[i] using above before inserting into result node
 
-  DCASSERT(resultLevel < 0);
+  MEDDLY_DCASSERT(resultLevel < 0);
   int aZero = computeIdent(-resultLevel-1, a, 0);
 
   if (arg2F->isFullNode(b)) {
@@ -2198,7 +2193,7 @@ void MEDDLY::generic_binbylevel_mxd::singleExpandB(int a, int b,
     }
   }
   else {
-    DCASSERT(arg2F->isSparseNode(b));
+    MEDDLY_DCASSERT(arg2F->isSparseNode(b));
     const int bSize = arg2F->getSparseNodeSize(b);
     int i = 0;
     for (int bIndex = 0; bIndex < bSize; ++bIndex, ++i)
@@ -2208,7 +2203,7 @@ void MEDDLY::generic_binbylevel_mxd::singleExpandB(int a, int b,
       {
         resF->setDownPtrWoUnlink(result, i, aZero);
       }
-      DCASSERT(i == arg2F->getSparseNodeIndex(b, bIndex));
+      MEDDLY_DCASSERT(i == arg2F->getSparseNodeIndex(b, bIndex));
       int tempResult = computeIdent(-resultLevel-1,
           a, arg2F->getSparseNodeDownPtr(b, bIndex));
       resF->setDownPtrWoUnlink(result, i, tempResult);
@@ -2235,18 +2230,16 @@ void MEDDLY::generic_binbylevel_mxd::singleExpandB(int a, int b,
 
 MEDDLY::generic_binary_ev::generic_binary_ev(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-  : binary_operation(code, arg1, arg2, res)
+  : binary_operation(code, 4, 2, arg1, arg2, res)
 {
   can_commute = false;
-  key_length = 4;
-  ans_length = 2;
 }
 
 MEDDLY::generic_binary_ev::~generic_binary_ev()
 {
 }
 
-bool MEDDLY::generic_binary_ev::isEntryStale(const int* data)
+bool MEDDLY::generic_binary_ev::isStaleEntry(const int* data)
 {
   return arg1F->isStale(data[1]) ||
          arg2F->isStale(data[3]) ||

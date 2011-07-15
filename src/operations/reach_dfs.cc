@@ -25,7 +25,6 @@
 #endif
 #include "../defines.h"
 #include "reach_dfs.h"
-#include "../compute_table.h"
 
 #include <vector>
 #include <map>
@@ -54,7 +53,7 @@ class MEDDLY::common_dfs_mt : public binary_operation {
     common_dfs_mt(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
-    virtual bool isEntryStale(const int* entryData);
+    virtual bool isStaleEntry(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int* entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
@@ -62,31 +61,30 @@ class MEDDLY::common_dfs_mt : public binary_operation {
 
   protected:
     inline bool findResult(int a, int b, int &c) {
-      static int key[2];
-      key[0] = a; key[1] = b;
-      const int* cacheFind = CT->find(this, key);
+      CTsrch.key(0) = a;
+      CTsrch.key(1) = b;
+      const int* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
       c = resF->linkNode(cacheFind[2]);
       return true;
     }
     inline int saveResult(int a, int b, int c) {
-      static int cacheEntry[3];
-      cacheEntry[0] = arg1F->cacheNode(a); 
-      cacheEntry[1] = arg2F->cacheNode(b);
-      cacheEntry[2] = resF->cacheNode(c);
-      CT->add(this, cacheEntry);
+      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      entry.key(0) = arg1F->cacheNode(a); 
+      entry.key(1) = arg2F->cacheNode(b);
+      entry.result(0) = resF->cacheNode(c);
+      CT->addEntry();
       return c;
     }
 };
 
 MEDDLY::common_dfs_mt::common_dfs_mt(const binary_opname* oc, expert_forest* a1,
-  expert_forest* a2, expert_forest* res) : binary_operation(oc, a1, a2, res)
+  expert_forest* a2, expert_forest* res)
+: binary_operation(oc, 2, 1, a1, a2, res)
 {
-  key_length = 2;
-  ans_length = 1;
 }
 
-bool MEDDLY::common_dfs_mt::isEntryStale(const int* data)
+bool MEDDLY::common_dfs_mt::isStaleEntry(const int* data)
 {
   return arg1F->isStale(data[0]) ||
          arg2F->isStale(data[1]) ||
@@ -153,21 +151,21 @@ class MEDDLY::forwd_dfs_mt : public common_dfs_mt {
 
 
     inline int getMddUnion(int a, int b) {
-      DCASSERT(resF->isTerminalNode(a) || resF->isReducedNode(a));
-      DCASSERT(resF->isTerminalNode(b) || resF->isReducedNode(b));
-      DCASSERT(mddUnion);
+      MEDDLY_DCASSERT(resF->isTerminalNode(a) || resF->isReducedNode(a));
+      MEDDLY_DCASSERT(resF->isTerminalNode(b) || resF->isReducedNode(b));
+      MEDDLY_DCASSERT(mddUnion);
       return mddUnion->compute(a, b);
     };
     inline int getMxdIntersection(int a, int b) {
-      DCASSERT(arg2F->isTerminalNode(a) || arg2F->isReducedNode(a));
-      DCASSERT(arg2F->isTerminalNode(b) || arg2F->isReducedNode(b));
-      DCASSERT(mxdIntersection);
+      MEDDLY_DCASSERT(arg2F->isTerminalNode(a) || arg2F->isReducedNode(a));
+      MEDDLY_DCASSERT(arg2F->isTerminalNode(b) || arg2F->isReducedNode(b));
+      MEDDLY_DCASSERT(mxdIntersection);
       return mxdIntersection->compute(a, b);
     }
     inline int getMxdDifference(int a, int b) {
-      DCASSERT(arg2F->isTerminalNode(a) || arg2F->isReducedNode(a));
-      DCASSERT(arg2F->isTerminalNode(b) || arg2F->isReducedNode(b));
-      DCASSERT(mxdDifference);
+      MEDDLY_DCASSERT(arg2F->isTerminalNode(a) || arg2F->isReducedNode(a));
+      MEDDLY_DCASSERT(arg2F->isTerminalNode(b) || arg2F->isReducedNode(b));
+      MEDDLY_DCASSERT(mxdDifference);
       return mxdDifference->compute(a, b);
     }
 
@@ -184,7 +182,7 @@ class MEDDLY::forwd_dfs_mt : public common_dfs_mt {
       return true;
     }
     inline void saveSaturateResult(int a, int b) {
-      DCASSERT(! findSaturateResult(a, b));
+      MEDDLY_DCASSERT(! findSaturateResult(a, b));
       saturateCT[a] = b;
       arg1F->cacheNode(a);
       resF->cacheNode(b);
@@ -387,7 +385,7 @@ void MEDDLY::forwd_dfs_mt::splitMxd(int mxd)
   arg2F->linkNode(mxd);
   splits[arg2F->getNodeLevel(mxd)] = mxd;
 #else
-  DCASSERT(arg2F != 0);
+  MEDDLY_DCASSERT(arg2F != 0);
 
   int falseNode = arg2F->getTerminalNode(false);
   int trueNode = arg2F->getTerminalNode(true);
@@ -421,7 +419,7 @@ void MEDDLY::forwd_dfs_mt::splitMxd(int mxd)
 
   while (!arg2F->isTerminalNode(mxd)) {
     level = arg2F->getNodeLevel(mxd);
-    DCASSERT(level > 0); // we only deal with unprimed levels
+    MEDDLY_DCASSERT(level > 0); // we only deal with unprimed levels
 
     // Find intersection for all mxd[i][i]
     // Note: only do this if mxd is a full node; when it is sparse, some
@@ -443,7 +441,7 @@ void MEDDLY::forwd_dfs_mt::splitMxd(int mxd)
           // out of the loop it true.
 
           // if mxdI is a terminal node it must be a 0 (falseNode)
-          DCASSERT((arg2F->isTerminalNode(mxdI) && mxdI == falseNode) ||
+          MEDDLY_DCASSERT((arg2F->isTerminalNode(mxdI) && mxdI == falseNode) ||
               !arg2F->isTerminalNode(mxdI));
 
           int mxdII = falseNode;
@@ -453,7 +451,7 @@ void MEDDLY::forwd_dfs_mt::splitMxd(int mxd)
               if (arg2F->getFullNodeSize(mxdI) > i)
                 mxdII = arg2F->getFullNodeDownPtr(mxdI, i);
             } else {
-              DCASSERT(arg2F->isSparseNode(mxdI));
+              MEDDLY_DCASSERT(arg2F->isSparseNode(mxdI));
               // search for ith index
               int found = -1;
               int mxdINnz = arg2F->getSparseNodeSize(mxdI);
@@ -513,9 +511,9 @@ void MEDDLY::forwd_dfs_mt::splitMxd(int mxd)
       }
     }
 
-    DCASSERT(splits[level] == falseNode);
+    MEDDLY_DCASSERT(splits[level] == falseNode);
 
-    DCASSERT(intersection == falseNode ||
+    MEDDLY_DCASSERT(intersection == falseNode ||
         arg2F->getNodeLevel(mxd) > arg2F->getNodeLevel(intersection));
 
     if (intersection != falseNode) {
@@ -531,7 +529,7 @@ void MEDDLY::forwd_dfs_mt::splitMxd(int mxd)
     mxd = intersection;
   }
 
-  DCASSERT(arg2F->isTerminalNode(mxd));
+  MEDDLY_DCASSERT(arg2F->isTerminalNode(mxd));
   arg2F->unlinkNode(mxd);
 #endif
 }
@@ -545,7 +543,7 @@ int MEDDLY::forwd_dfs_mt::saturate(int mdd)
   // how does saturateHelper get called?
   // bottom-up i.e. call helper on children before calling helper for parent
 
-  DCASSERT(arg1F->isReducedNode(mdd));
+  MEDDLY_DCASSERT(arg1F->isReducedNode(mdd));
 
   // terminal condition for recursion
   if (arg1F->isTerminalNode(mdd)) return mdd;
@@ -591,7 +589,7 @@ int MEDDLY::forwd_dfs_mt::saturate(int mdd)
     const int* mddIndexes = 0;
     assert(arg1F->getSparseNodeIndexes(mdd, mddIndexes));
     for (int i = 0; i < mddNDptrs; ++i) {
-      DCASSERT(mddDptrs[i]);
+      MEDDLY_DCASSERT(mddDptrs[i]);
       nDptrs[mddIndexes[i]] = saturate(mddDptrs[i]);
     }
   }
@@ -627,7 +625,7 @@ int MEDDLY::forwd_dfs_mt::saturate(int mdd)
 
 void MEDDLY::forwd_dfs_mt::saturateHelper(int mddLevel, std::vector<int>& mdd)
 {
-  DCASSERT(unsigned(resF->getLevelSize(mddLevel)) == mdd.size());
+  MEDDLY_DCASSERT(unsigned(resF->getLevelSize(mddLevel)) == mdd.size());
 
   int mxd = splits[mddLevel];
   if (arg2F->isTerminalNode(mxd)) return;
@@ -654,7 +652,7 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(int mddLevel, std::vector<int>& mdd)
     for (unsigned i = 0u; i < mxdDptrs.size(); i++)
     {
       if (mxdDptrs[i] == 0 || mdd[i] == 0 || curr[i] == 0) continue;
-      DCASSERT(!arg2F->isTerminalNode(mxdDptrs[i]));
+      MEDDLY_DCASSERT(!arg2F->isTerminalNode(mxdDptrs[i]));
 
       // Breaking it up into two cases (a) mxd[i] is full, or (b) sparse.
       const int* mxdIDptrs = 0;
@@ -692,7 +690,7 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(int mddLevel, std::vector<int>& mdd)
         // For each mxd[i][j] != 0
         for (int k = 0; k < mxdISize; k++)
         {
-          DCASSERT(0 != mxdIDptrs[k]);
+          MEDDLY_DCASSERT(0 != mxdIDptrs[k]);
           int f = recFire(mdd[i], mxdIDptrs[k]);
           if (f != 0) {
             unsigned j = mxdIIptrs[k];
@@ -728,8 +726,8 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(int mddLevel, std::vector<int>& mdd)
 
 int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
 {
-  DCASSERT(resF->isReducedNode(mdd));
-  DCASSERT(arg2F->isReducedNode(mxd));
+  MEDDLY_DCASSERT(resF->isReducedNode(mdd));
+  MEDDLY_DCASSERT(arg2F->isReducedNode(mxd));
 
   if (mxd == -1) {
     resF->linkNode(mdd);
@@ -807,7 +805,7 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
         assert(arg2F->getSparseNodeIndexes(mxdDptrs[i], mxdIIptrs));
         for (int k = 0; k < mxdISize; k++)
         {
-          DCASSERT(0 != mxdIDptrs[k]);
+          MEDDLY_DCASSERT(0 != mxdIDptrs[k]);
           int f = recFire(mdd, mxdIDptrs[k]);
           if (f != 0) {
             unsigned j = mxdIIptrs[k];
@@ -821,7 +819,7 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
 #endif
     }
   } else {
-    DCASSERT(mxdHeight == mddHeight);
+    MEDDLY_DCASSERT(mxdHeight == mddHeight);
     std::vector<int> mddDptrs;
     std::vector<int> mxdDptrs;
     std::vector<int> mxdIDptrs;
@@ -875,7 +873,7 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
         assert(arg2F->getSparseNodeIndexes(mxdDptrs[i], mxdIIptrs));
         for (int k = 0; k < mxdISize; k++)
         {
-          DCASSERT(0 != mxdIDptrs[k]);
+          MEDDLY_DCASSERT(0 != mxdIDptrs[k]);
           int f = recFire(mddDptrs[i], mxdIDptrs[k]);
           if (f != 0) {
             unsigned j = mxdIIptrs[k];
@@ -912,15 +910,15 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
 
 void MEDDLY::forwd_dfs_mt::saturateHelper(int mdd)
 {
-  DCASSERT(!resF->isReducedNode(mdd));
+  MEDDLY_DCASSERT(!resF->isReducedNode(mdd));
   int mddLevel = resF->getNodeLevel(mdd);
   int levelSize = resF->getLevelSize(mddLevel);
-  DCASSERT(levelSize == resF->getFullNodeSize(mdd));
+  MEDDLY_DCASSERT(levelSize == resF->getFullNodeSize(mdd));
 
   int mxd = splits[mddLevel];
   if (mxd == 0) return;
 
-  DCASSERT(arg2F->getNodeLevel(mxd) == mddLevel);
+  MEDDLY_DCASSERT(arg2F->getNodeLevel(mxd) == mddLevel);
 
   int** mxdVec = 0;
   int mxdSize = 0;
@@ -930,7 +928,7 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(int mdd)
   assert(resF->getDownPtrs(mdd, mddDptrs));
   int mddSize = resF->getFullNodeSize(mdd);
 
-  DCASSERT(mddSize == mxdSize);
+  MEDDLY_DCASSERT(mddSize == mxdSize);
 
   // For each mdd[i] != 0 && mxd[i][j] != 0,
   //    mdd[j] += recfire(mdd[i], mxd[i][j])
@@ -1000,9 +998,9 @@ void MEDDLY::forwd_dfs_mt::recFireExpandMdd(int mdd, int mxd, int& result)
 {
   // for i = 0 to levelSize-1
   //   result[i] = mdd[i] == 0? 0: recFire(mdd[i], mxd);
-  DCASSERT(resF->isReducedNode(mdd));
-  DCASSERT(!resF->isTerminalNode(mdd));
-  DCASSERT(result == 0);
+  MEDDLY_DCASSERT(resF->isReducedNode(mdd));
+  MEDDLY_DCASSERT(!resF->isTerminalNode(mdd));
+  MEDDLY_DCASSERT(result == 0);
 
   int rLevel = resF->getNodeLevel(mdd);
   int rSize = resF->getLevelSize(rLevel);
@@ -1022,13 +1020,13 @@ void MEDDLY::forwd_dfs_mt::recFireExpandMdd(int mdd, int mxd, int& result)
     }
   }
   else {
-    DCASSERT(resF->isSparseNode(mdd));
+    MEDDLY_DCASSERT(resF->isSparseNode(mdd));
     int mddNDptrs = resF->getSparseNodeSize(mdd);
     const int* mddStop = mddDptrs + mddNDptrs; 
     const int* mddIndexes = 0;
     assert(resF->getSparseNodeIndexes(mdd, mddIndexes));
     for ( ; mddDptrs != mddStop; ++mddIndexes, ++mddDptrs) {
-      DCASSERT(*mddDptrs != 0);
+      MEDDLY_DCASSERT(*mddDptrs != 0);
       rDptrs[*mddIndexes] = recFire(*mddDptrs, mxd);
     }
   }
@@ -1050,9 +1048,9 @@ void MEDDLY::forwd_dfs_mt::recFireExpandMxd(int mdd, int mxd, int& result)
   //        result[j] += recFire(mdd, mxd[i][j])
   //
 
-  DCASSERT(arg2F->isReducedNode(mxd) && !arg2F->isTerminalNode(mxd));
-  DCASSERT(arg2F->getNodeLevel(mxd) > 0);
-  DCASSERT(result == 0);
+  MEDDLY_DCASSERT(arg2F->isReducedNode(mxd) && !arg2F->isTerminalNode(mxd));
+  MEDDLY_DCASSERT(arg2F->getNodeLevel(mxd) > 0);
+  MEDDLY_DCASSERT(result == 0);
 
   int rLevel = arg2F->getNodeLevel(mxd);
   int rSize = resF->getLevelSize(rLevel);
@@ -1099,11 +1097,11 @@ void MEDDLY::forwd_dfs_mt::recFireExpand(int mdd, int mxd, int& result)
   //      for j = 0 to levelSize-1
   //        result[j] += recFire(mdd[i], mxd[i][j])
 
-  DCASSERT(resF->isReducedNode(mdd) && !resF->isTerminalNode(mdd));
-  DCASSERT(arg2F->isReducedNode(mxd) && !arg2F->isTerminalNode(mxd));
-  DCASSERT(resF->getNodeLevel(mdd) == arg2F->getNodeLevel(mxd));
-  DCASSERT(resF->getNodeLevel(mdd) > 0);
-  DCASSERT(result == 0);
+  MEDDLY_DCASSERT(resF->isReducedNode(mdd) && !resF->isTerminalNode(mdd));
+  MEDDLY_DCASSERT(arg2F->isReducedNode(mxd) && !arg2F->isTerminalNode(mxd));
+  MEDDLY_DCASSERT(resF->getNodeLevel(mdd) == arg2F->getNodeLevel(mxd));
+  MEDDLY_DCASSERT(resF->getNodeLevel(mdd) > 0);
+  MEDDLY_DCASSERT(result == 0);
 
   int rLevel = resF->getNodeLevel(mdd);
   int rSize = resF->getLevelSize(rLevel);
@@ -1151,7 +1149,7 @@ void MEDDLY::forwd_dfs_mt::recFireExpand(int mdd, int mxd, int& result)
       }
     }
   } else {
-    DCASSERT(resF->isSparseNode(mdd));
+    MEDDLY_DCASSERT(resF->isSparseNode(mdd));
     int mddNDptrs = resF->getSparseNodeSize(mdd);
     const int* mddIndexes = 0;
     assert(resF->getSparseNodeIndexes(mdd, mddIndexes));
@@ -1186,8 +1184,8 @@ void MEDDLY::forwd_dfs_mt::recFireExpand(int mdd, int mxd, int& result)
 
 int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
 {
-  DCASSERT(resF->isReducedNode(mdd));
-  DCASSERT(arg2F->isReducedNode(mxd));
+  MEDDLY_DCASSERT(resF->isReducedNode(mdd));
+  MEDDLY_DCASSERT(arg2F->isReducedNode(mxd));
 
   if (mxd == -1) {
     resF->linkNode(mdd);
@@ -1195,8 +1193,8 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
   }
   if (mxd == 0 || mdd == 0) return 0;
 
-  DCASSERT(mdd == -1 || resF->getNodeLevel(mdd) > 0);
-  DCASSERT(arg2F->getNodeLevel(mxd) > 0);
+  MEDDLY_DCASSERT(mdd == -1 || resF->getNodeLevel(mdd) > 0);
+  MEDDLY_DCASSERT(arg2F->getNodeLevel(mxd) > 0);
 
   int result = 0;
   if (findResult(mdd, mxd, result)) {
@@ -1211,7 +1209,7 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
   } else if (mddLevel < mxdLevel) {
     recFireExpandMxd(mdd, mxd, result);
   } else {
-    DCASSERT(mxdLevel == mddLevel);
+    MEDDLY_DCASSERT(mxdLevel == mddLevel);
     recFireExpand(mdd, mxd, result);
   }
 
@@ -1247,7 +1245,7 @@ bool MEDDLY::forwd_dfs_mt::getMxdAsVec(int mxd, int**& vec, int& size)
   assert(vec == 0);
   if (arg2F->isTerminalNode(mxd)) return false;
 
-  DCASSERT(arg2F->getNodeLevel(mxd) > 0);
+  MEDDLY_DCASSERT(arg2F->getNodeLevel(mxd) > 0);
 
   // Build the arrays
   size = arg2F->getLevelSize(arg2F->getNodeLevel(mxd));
@@ -1279,7 +1277,7 @@ bool MEDDLY::forwd_dfs_mt::getMxdAsVec(int mxd, int**& vec, int& size)
         int mxdISize = arg2F->getFullNodeSize(mxdI);
         memcpy(currVec, mxdIDptrs, mxdISize * sizeof(int));
       } else {
-        DCASSERT(arg2F->isSparseNode(mxdI));
+        MEDDLY_DCASSERT(arg2F->isSparseNode(mxdI));
         int mxdINDptrs = arg2F->getSparseNodeSize(mxdI);
         const int* mxdIIndexes = 0;
         assert(arg2F->getSparseNodeIndexes(mxdI, mxdIIndexes));
@@ -1292,7 +1290,7 @@ bool MEDDLY::forwd_dfs_mt::getMxdAsVec(int mxd, int**& vec, int& size)
 
   } else {
 
-    DCASSERT(arg2F->isSparseNode(mxd));
+    MEDDLY_DCASSERT(arg2F->isSparseNode(mxd));
     int mxdNDptrs = arg2F->getSparseNodeSize(mxd);
     const int* mxdIndexes = 0;
     assert(arg2F->getSparseNodeIndexes(mxd, mxdIndexes));
@@ -1302,7 +1300,7 @@ bool MEDDLY::forwd_dfs_mt::getMxdAsVec(int mxd, int**& vec, int& size)
 
     int expectedIndex = 0;
     for (int i = 0; i < mxdNDptrs; ++i) {
-      DCASSERT(mxdDptrs[i] != 0);
+      MEDDLY_DCASSERT(mxdDptrs[i] != 0);
 
       if (mxdIndexes[i] > expectedIndex) {
         memset(vec + expectedIndex, 0,
@@ -1320,7 +1318,7 @@ bool MEDDLY::forwd_dfs_mt::getMxdAsVec(int mxd, int**& vec, int& size)
         int mxdISize = arg2F->getFullNodeSize(mxdI);
         memcpy(currVec, mxdIDptrs, mxdISize * sizeof(int));
       } else {
-        DCASSERT(arg2F->isSparseNode(mxdI));
+        MEDDLY_DCASSERT(arg2F->isSparseNode(mxdI));
         int mxdINDptrs = arg2F->getSparseNodeSize(mxdI);
         const int* mxdIIndexes = 0;
         assert(arg2F->getSparseNodeIndexes(mxdI, mxdIIndexes));
@@ -1444,7 +1442,7 @@ int MEDDLY::bckwd_dfs_mt::saturate(int mdd)
   // how does saturateHelper get called?
   // bottom-up i.e. call helper on children before calling helper for parent
 
-  DCASSERT(resF->isReducedNode(mdd));
+  MEDDLY_DCASSERT(resF->isReducedNode(mdd));
 
   // terminal condition for recursion
   if (resF->isTerminalNode(mdd)) return mdd;
@@ -1486,7 +1484,7 @@ int MEDDLY::bckwd_dfs_mt::saturate(int mdd)
 void MEDDLY::bckwd_dfs_mt::reverseSaturateHelper(int mddLevel,
     std::vector<int>& mdd)
 {
-  DCASSERT(unsigned(resF->getLevelSize(mddLevel)) == mdd.size());
+  MEDDLY_DCASSERT(unsigned(resF->getLevelSize(mddLevel)) == mdd.size());
 
   int mxd = splits[mddLevel];
   if (arg2F->isTerminalNode(mxd)) return;
@@ -1519,7 +1517,7 @@ void MEDDLY::bckwd_dfs_mt::reverseSaturateHelper(int mddLevel,
     for (unsigned i = 0u; i < mxdDptrs.size(); i++)
     {
       if (mxdDptrs[i] == 0) continue;
-      DCASSERT(!arg2F->isTerminalNode(mxdDptrs[i]));
+      MEDDLY_DCASSERT(!arg2F->isTerminalNode(mxdDptrs[i]));
 
       // Breaking it up into two cases (a) mxd[i] is full, or (b) sparse.
       const int* mxdIDptrs = 0;
@@ -1556,7 +1554,7 @@ void MEDDLY::bckwd_dfs_mt::reverseSaturateHelper(int mddLevel,
         assert(arg2F->getSparseNodeIndexes(mxdDptrs[i], mxdIIptrs));
         for (int k = 0; k < mxdISize; k++)
         {
-          DCASSERT(0 != mxdIDptrs[k]);
+          MEDDLY_DCASSERT(0 != mxdIDptrs[k]);
           unsigned j = mxdIIptrs[k];
           if (mdd[j] == 0 || curr[j] == 0) continue;
           int f = reverseRecFire(mdd[j], mxdIDptrs[k]);
@@ -1592,8 +1590,8 @@ void MEDDLY::bckwd_dfs_mt::reverseSaturateHelper(int mddLevel,
 
 int MEDDLY::bckwd_dfs_mt::reverseRecFire(int mdd, int mxd)
 {
-  DCASSERT(resF->isReducedNode(mdd));
-  DCASSERT(arg2F->isReducedNode(mxd));
+  MEDDLY_DCASSERT(resF->isReducedNode(mdd));
+  MEDDLY_DCASSERT(arg2F->isReducedNode(mxd));
 
   if (mxd == -1) {
     resF->linkNode(mdd);
@@ -1650,7 +1648,7 @@ int MEDDLY::bckwd_dfs_mt::reverseRecFire(int mdd, int mxd)
         unsigned mxdISize = arg2F->getSparseNodeSize(mxdDptrs[i]);
         for (unsigned k = 0; k < mxdISize; k++)
         {
-          DCASSERT(0 != mxdIDptrs[k]);
+          MEDDLY_DCASSERT(0 != mxdIDptrs[k]);
           int f = reverseRecFire(mdd, mxdIDptrs[k]);
           if (f == 0) continue;
           int u = getMddUnion(node[i], f);
@@ -1661,7 +1659,7 @@ int MEDDLY::bckwd_dfs_mt::reverseRecFire(int mdd, int mxd)
       }
     }
   } else {
-    DCASSERT(mxdHeight == mddHeight);
+    MEDDLY_DCASSERT(mxdHeight == mddHeight);
     std::vector<int> mddDptrs;
     std::vector<int> mxdDptrs;
     std::vector<int> mxdIDptrs;
@@ -1697,7 +1695,7 @@ int MEDDLY::bckwd_dfs_mt::reverseRecFire(int mdd, int mxd)
         assert(arg2F->getSparseNodeIndexes(mxdDptrs[i], mxdIIptrs));
         for (int k = 0; k < mxdISize; k++)
         {
-          DCASSERT(0 != mxdIDptrs[k]);
+          MEDDLY_DCASSERT(0 != mxdIDptrs[k]);
           unsigned j = mxdIIptrs[k];
           if (j >= mddDptrs.size()) break;
           int f = reverseRecFire(mddDptrs[j], mxdIDptrs[k]);

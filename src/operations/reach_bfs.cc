@@ -49,7 +49,7 @@ class MEDDLY::common_bfs_mt : public binary_operation {
     common_bfs_mt(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
-    virtual bool isEntryStale(const int* entryData);
+    virtual bool isStaleEntry(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int* entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
@@ -103,15 +103,14 @@ class MEDDLY::common_bfs_mt : public binary_operation {
 };
 
 MEDDLY::common_bfs_mt::common_bfs_mt(const binary_opname* oc, expert_forest* a1,
-  expert_forest* a2, expert_forest* res) : binary_operation(oc, a1, a2, res)
+  expert_forest* a2, expert_forest* res)
+: binary_operation(oc, 0, 0, a1, a2, res)
 {
   unionOp = 0;
   imageOp = 0;
-  key_length = 0;
-  ans_length = 0;
 }
 
-bool MEDDLY::common_bfs_mt::isEntryStale(const int* entryData)
+bool MEDDLY::common_bfs_mt::isStaleEntry(const int* entryData)
 {
   throw error(error::MISCELLANEOUS);
   // this operation won't add any CT entries.

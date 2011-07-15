@@ -333,7 +333,7 @@ mtmxd_node_manager::createEdgeInternal(const int* const* vlist,
   }
   else {
     // build using sort-based procedure
-    DCASSERT(N > 0);
+    MEDDLY_DCASSERT(N > 0);
 
     // copy elements into internal volatile storage
     copyLists(vlist, vplist, terms, N);
@@ -358,7 +358,7 @@ template <typename T>
 int mtmxd_node_manager::sort(int** list, int** otherList, T* tList,
     int absLevel, int begin, int end)
 {
-  DCASSERT(tList != 0);
+  MEDDLY_DCASSERT(tList != 0);
 
   vector<int>& count = countVector;
 
@@ -528,7 +528,7 @@ int mtmxd_node_manager::sortBuild(int** unpList, int** pList, T* tList,
   int largestIndex = list[begin][absLevel];
   for (int i = begin + 1; i < end; )
   {
-    DCASSERT(largestIndex <= list[i][absLevel]);
+    MEDDLY_DCASSERT(largestIndex <= list[i][absLevel]);
     largestIndex = list[i][absLevel];
     // skip the elements with the same index at this level
     for (++i; i < end && list[i][absLevel] == largestIndex; ++i);
@@ -601,9 +601,9 @@ int mtmxd_node_manager::inPlaceSort(int level, bool isPrime,
   // We have the correct bucket sizes, now move items into
   // appropriate buckets.
 
-  DCASSERT(tList);
+  MEDDLY_DCASSERT(tList);
   T* terms = (T*)tList;
-  DCASSERT(terms);
+  MEDDLY_DCASSERT(terms);
   
   for (int i = min; i < max; ++i) {
     // Move elements in bucket i to the correct slots.
@@ -619,15 +619,15 @@ int mtmxd_node_manager::inPlaceSort(int level, bool isPrime,
       }
       else {
         // Move elem to correct slot
-        DCASSERT(elemIndex > i);
+        MEDDLY_DCASSERT(elemIndex > i);
         while (c[elemIndex] > 0 && elemIndex == list[s[elemIndex]][level]) {
           // These elements are already in the correct slots; advance pointers.
           --c[elemIndex];
           ++s[elemIndex];
         }
         // At correct slot for elem
-        DCASSERT(c[elemIndex] > 0);
-        CHECK_RANGE(begin, s[elemIndex], end);
+        MEDDLY_DCASSERT(c[elemIndex] > 0);
+        MEDDLY_CHECK_RANGE(begin, s[elemIndex], end);
         SWAP(list[s[i]], list[s[elemIndex]]);
         SWAP(otherList[s[i]], otherList[s[elemIndex]]);
         SWAP(terms[s[i]], terms[s[elemIndex]]);
@@ -719,15 +719,15 @@ int mtmxd_node_manager::inPlaceSort<bool>(int level, bool isPrime,
       }
       else {
         // Move elem to correct slot
-        DCASSERT(elemIndex > i);
+        MEDDLY_DCASSERT(elemIndex > i);
         while (c[elemIndex] > 0 && elemIndex == list[s[elemIndex]][level]) {
           // These elements are already in the correct slots; advance pointers.
           --c[elemIndex];
           ++s[elemIndex];
         }
         // At correct slot for elem
-        DCASSERT(c[elemIndex] > 0);
-        CHECK_RANGE(begin, s[elemIndex], end);
+        MEDDLY_DCASSERT(c[elemIndex] > 0);
+        MEDDLY_CHECK_RANGE(begin, s[elemIndex], end);
         SWAP(list[s[i]], list[s[elemIndex]]);
         SWAP(otherList[s[i]], otherList[s[elemIndex]]);
         --c[elemIndex];
@@ -806,7 +806,7 @@ inline
 T mtmxd_node_manager::handleMultipleTerminalValues(const T* tList,
     int begin, int end)
 {
-  DCASSERT(begin < end);
+  MEDDLY_DCASSERT(begin < end);
   T result = tList[begin++];
   while (begin != end) result += tList[begin++];
   return result;
@@ -818,7 +818,7 @@ inline
 bool mtmxd_node_manager::handleMultipleTerminalValues(const bool* tList,
     int begin, int end)
 {
-  DCASSERT(begin < end);
+  MEDDLY_DCASSERT(begin < end);
   return true;
 }
 

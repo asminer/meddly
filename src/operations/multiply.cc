@@ -24,7 +24,6 @@
 #endif
 #include "../defines.h"
 #include "multiply.h"
-#include "../compute_table.h"
 #include "apply_base.h"
 
 #define OLD_MULTIPLY
@@ -72,7 +71,7 @@ bool MEDDLY::multiply_mdd::checkTerminals(int a, int b, int& c)
     if (resF->getRangeType() == forest::INTEGER) {
       c = resF->getTerminalNode(arg1F->getInteger(a) * arg2F->getInteger(b));
     } else {
-      DCASSERT(resF->getRangeType() == forest::REAL);
+      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
       c = resF->getTerminalNode(arg1F->getReal(a) * arg2F->getReal(b));
     }
     return true;
@@ -83,7 +82,7 @@ bool MEDDLY::multiply_mdd::checkTerminals(int a, int b, int& c)
       if (resF->getRangeType() == forest::INTEGER) {
         c = resF->getTerminalNode(arg1F->getInteger(a) * arg2F->getInteger(b));
       } else {
-        DCASSERT(resF->getRangeType() == forest::REAL);
+        MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
         c = resF->getTerminalNode(arg1F->getReal(a) * arg2F->getReal(b));
       }
       return true;
@@ -95,7 +94,7 @@ bool MEDDLY::multiply_mdd::checkTerminals(int a, int b, int& c)
         return true;
       }
     } else {
-      DCASSERT(resF->getRangeType() == forest::REAL);
+      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
       if (1.0==arg1F->getReal(a)) {
         c = arg2F->linkNode(b);
         return true;
@@ -110,7 +109,7 @@ bool MEDDLY::multiply_mdd::checkTerminals(int a, int b, int& c)
         return true;
       }
     } else {
-      DCASSERT(resF->getRangeType() == forest::REAL);
+      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
       if (1.0==arg2F->getReal(b)) {
         c = arg1F->linkNode(a);
         return true;
@@ -157,7 +156,7 @@ bool MEDDLY::multiply_mxd::checkTerminals(int a, int b, int& c)
     if (resF->getRangeType() == forest::INTEGER) {
       c = resF->getTerminalNode(arg1F->getInteger(a) * arg2F->getInteger(b));
     } else {
-      DCASSERT(resF->getRangeType() == forest::REAL);
+      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
       c = resF->getTerminalNode(arg1F->getReal(a) * arg2F->getReal(b));
     }
     return true;

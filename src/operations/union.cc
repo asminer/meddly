@@ -24,7 +24,6 @@
 #endif
 #include "../defines.h"
 #include "union.h"
-#include "../compute_table.h"
 #include "apply_base.h"
 
 namespace MEDDLY {
@@ -212,12 +211,6 @@ int MEDDLY::union_mxd::computeIdent(int a, int b)
   }
 #endif
 
-#ifndef USE_BINARY_COMPUTE_CACHE
-  arg1F->cacheNode(a);
-  arg2F->cacheNode(b);
-  resF->cacheNode(result);
-#endif
-
 #ifdef TRACE_ALL_OPS
   printf("computed %s(%d, %d)=%d\n", getName(), a, b, result);
 #endif
@@ -231,7 +224,7 @@ int MEDDLY::union_mxd::computeIdentExpandA(int a, int b)
   int resultLevel = arg1F->getNodeLevel(a);
   int resultSize = arg1F->getLevelSize(resultLevel);
 
-  DCASSERT(arg1F == resF);
+  MEDDLY_DCASSERT(arg1F == resF);
 
   // Copy a into result.
   int result = arg1F->makeACopy(a, resultSize);
@@ -282,11 +275,11 @@ int MEDDLY::union_mxd::computeIdentExpandA(int a, int b)
 
 int MEDDLY::union_mxd::computeIdentExpandOneLevel(int a, int b)
 {
-  DCASSERT(!arg1F->isTerminalNode(a));
-  DCASSERT(!arg2F->isTerminalNode(b));
-  DCASSERT(arg2F->getNodeLevel(b) == arg1F->getNodeLevel(a));
+  MEDDLY_DCASSERT(!arg1F->isTerminalNode(a));
+  MEDDLY_DCASSERT(!arg2F->isTerminalNode(b));
+  MEDDLY_DCASSERT(arg2F->getNodeLevel(b) == arg1F->getNodeLevel(a));
 
-  DCASSERT(arg1F == resF);
+  MEDDLY_DCASSERT(arg1F == resF);
 
   int resultLevel = arg1F->getNodeLevel(a);
   int resultSize = arg1F->getLevelSize(resultLevel);
@@ -334,7 +327,7 @@ int MEDDLY::union_mxd::computeIdentExpandOneLevel(int a, int b)
     }
   }
   else {
-    DCASSERT(arg2F->isSparseNode(b));
+    MEDDLY_DCASSERT(arg2F->isSparseNode(b));
     int nDptrs = arg2F->getSparseNodeSize(b);
     const int* bIndexes = 0;
     assert(arg2F->getSparseNodeIndexes(b, bIndexes));
@@ -342,7 +335,7 @@ int MEDDLY::union_mxd::computeIdentExpandOneLevel(int a, int b)
     {
       // Terminal conditions
       rDptrs = resultDptrs + *bIndexes++;
-      DCASSERT(*bDptrs != 0);
+      MEDDLY_DCASSERT(*bDptrs != 0);
       if (*rDptrs == *bDptrs) continue;
       if (0 == *rDptrs) {
         *rDptrs = *bDptrs;

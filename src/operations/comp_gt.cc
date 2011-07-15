@@ -24,7 +24,6 @@
 #endif
 #include "../defines.h"
 #include "comp_gt.h"
-#include "../compute_table.h"
 #include "apply_base.h"
 
 namespace MEDDLY {
@@ -64,7 +63,7 @@ bool MEDDLY::morethan_mdd::checkTerminals(int a, int b, int& c)
       bool lt = arg1F->getInteger(a) > arg2F->getInteger(b);
       c = resF->getTerminalNode(lt ? 1 : 0);
     } else {
-      DCASSERT(resF->getRangeType() == forest::REAL);
+      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
       bool lt = arg1F->getReal(a) > arg2F->getReal(b);
       c = resF->getTerminalNode(float(lt ? 1 : 0));
     }
@@ -103,7 +102,7 @@ bool MEDDLY::morethan_mxd::checkTerminals(int a, int b, int& c)
       bool lt = arg1F->getInteger(a) > arg2F->getInteger(b);
       c = resF->getTerminalNode(lt ? 1 : 0);
     } else {
-      DCASSERT(resF->getRangeType() == forest::REAL);
+      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
       bool lt = arg1F->getReal(a) > arg2F->getReal(b);
       c = resF->getTerminalNode(float(lt ? 1 : 0));
     }

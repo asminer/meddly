@@ -24,7 +24,6 @@
 #endif
 #include "../defines.h"
 #include "mdd2evplus.h"
-#include "../compute_table.h"
 
 namespace MEDDLY {
   class mdd2evplus_operation;
@@ -42,7 +41,7 @@ class MEDDLY::mdd2evplus_operation : public unary_operation {
     mdd2evplus_operation(const unary_opname* oc, expert_forest* arg, 
       expert_forest* res);
 
-    virtual bool isEntryStale(const int* entryData);
+    virtual bool isStaleEntry(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
 
@@ -52,15 +51,16 @@ class MEDDLY::mdd2evplus_operation : public unary_operation {
 };
 
 MEDDLY::mdd2evplus_operation::mdd2evplus_operation(const unary_opname* oc, 
-  expert_forest* arg, expert_forest* res) : unary_operation(oc, arg, res)
+  expert_forest* arg, expert_forest* res)
+: unary_operation(oc, 1, 2, arg, res)
 {
-  key_length = 1;
-  ans_length = 2; // pointer, cardinality
+  // answer[0] : pointer
+  // answer[1] : cardinality
 }
 
 bool 
 MEDDLY::mdd2evplus_operation
-::isEntryStale(const int* entryData)
+::isStaleEntry(const int* entryData)
 {
   return 
     argF->isStale(entryData[0]) ||
@@ -87,11 +87,11 @@ void
 MEDDLY::mdd2evplus_operation
 ::compute(const dd_edge &arg, dd_edge &res)
 {
-  DCASSERT(arg.getForest() == argF);
-  DCASSERT(res.getForest() == resF);
-  DCASSERT(resF->getTerminalNode(false) == 0);
-  DCASSERT(argF->getTerminalNode(true) == -1);
-  DCASSERT(argF->getTerminalNode(false) == 0);
+  MEDDLY_DCASSERT(arg.getForest() == argF);
+  MEDDLY_DCASSERT(res.getForest() == resF);
+  MEDDLY_DCASSERT(resF->getTerminalNode(false) == 0);
+  MEDDLY_DCASSERT(argF->getTerminalNode(true) == -1);
+  MEDDLY_DCASSERT(argF->getTerminalNode(false) == 0);
   int down, card;
   int nVars = argF->getDomain()->getNumVariables();
   compute(nVars, arg.getNode(), down, card);
@@ -109,22 +109,22 @@ MEDDLY::mdd2evplus_operation
     return;
   }
   if (height == 0) {
-    DCASSERT(argF->getTerminalNode(true) == a);
+    MEDDLY_DCASSERT(argF->getTerminalNode(true) == a);
     bdn = resF->getTerminalNode(true);
     bcard = 1;
     return;
   }
 
   int aHeight = argF->getNodeHeight(a);
-  DCASSERT(aHeight <= height);
+  MEDDLY_DCASSERT(aHeight <= height);
 
   // Check compute table
   if (aHeight == height) {
-    const int* cacheEntry = CT->find(this, &a);
+    CTsrch.key(0) = a;
+    const int* cacheEntry = CT->find(CTsrch);
     if (cacheEntry) {
-      bdn = cacheEntry[1];
+      bdn = resF->linkNode(cacheEntry[1]);
       bcard = cacheEntry[2];
-      resF->linkNode(bdn);
       return;
     }
   }
@@ -177,12 +177,14 @@ MEDDLY::mdd2evplus_operation
   // reduce, save in compute table
   int dummy;
   resF->normalizeAndReduceNode(bdn, dummy);
-  DCASSERT((bdn==0 && dummy==INF) || (bdn!= 0 && dummy==0));
-  static int cacheEntry[3];
-  cacheEntry[0] = argF->cacheNode(a);
-  cacheEntry[1] = resF->cacheNode(bdn);
-  cacheEntry[2] = bcard;
-  CT->add(this, cacheEntry);
+  MEDDLY_DCASSERT((bdn==0 && dummy==INF) || (bdn!= 0 && dummy==0));
+
+  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  entry.key(0) = argF->cacheNode(a);
+  entry.result(0) = resF->cacheNode(bdn);
+  entry.result(1) = bcard;
+  CT->addEntry();
+
   resF->setIndexSetCardinality(bdn, bcard);
 }
 

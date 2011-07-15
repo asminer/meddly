@@ -98,7 +98,7 @@ void mtmxd_node_manager::resizeNode(int p, int size)
   int nodeSize = getFullNodeSize(p);
   if (size <= nodeSize) return;
 
-  DCASSERT(size > nodeSize);
+  MEDDLY_DCASSERT(size > nodeSize);
 
   // Expand node:
   // (a) Create array of desired size;
@@ -112,7 +112,7 @@ void mtmxd_node_manager::resizeNode(int p, int size)
   int nodeLevel = getNodeLevel(p);
   int newOffset = getHole(nodeLevel, newDataArraySize, true);
 
-  DCASSERT(newDataArraySize > oldDataArraySize);
+  MEDDLY_DCASSERT(newDataArraySize > oldDataArraySize);
 
   // Pointers to old and new data arrays
   int* prev = getNodeAddress(p);
@@ -140,15 +140,15 @@ void mtmxd_node_manager::resizeNode(int p, int size)
   // Update the offset field to point to the new array
   address[p].offset = newOffset;
 
-  DCASSERT(size == getFullNodeSize(p));
-  DCASSERT(p == 
+  MEDDLY_DCASSERT(size == getFullNodeSize(p));
+  MEDDLY_DCASSERT(p == 
       getNodeAddress(p)[getDataHeaderSize() + getFullNodeSize(p) - 1]);
 }
 
 
 int mtmxd_node_manager::reduceNode(int p)
 {
-  DCASSERT(isActiveNode(p));
+  MEDDLY_DCASSERT(isActiveNode(p));
 
 #ifdef DEVELOPMENT_CODE
   validateDownPointers(p);
@@ -156,8 +156,8 @@ int mtmxd_node_manager::reduceNode(int p)
 
   if (isReducedNode(p)) return p; 
 
-  DCASSERT(!isTerminalNode(p));
-  DCASSERT(isFullNode(p));
+  MEDDLY_DCASSERT(!isTerminalNode(p));
+  MEDDLY_DCASSERT(isFullNode(p));
 
   int size = getFullNodeSize(p);
   int* ptr = getFullNodeDownPtrs(p);
@@ -171,10 +171,10 @@ int mtmxd_node_manager::reduceNode(int p)
     int* last = curr + size;
     while (curr != last) {
       if (!isReducedNode(*curr)) {
-        DCASSERT(getInCount(*curr) == 1);
+        MEDDLY_DCASSERT(getInCount(*curr) == 1);
         *curr = reduceNode(*curr);
       }
-      DCASSERT(isReducedNode(*curr));
+      MEDDLY_DCASSERT(isReducedNode(*curr));
       if (0 != *curr++) {
         ++nnz;
         truncsize = curr - ptr;
@@ -299,9 +299,9 @@ int mtmxd_node_manager::reduceNode(int p)
   }
 
   // address[p].cache_count does not change
-  DCASSERT(getCacheCount(p) == 0);
+  MEDDLY_DCASSERT(getCacheCount(p) == 0);
   // Sanity check that the hash value is unchanged
-  DCASSERT(find(p) == p);
+  MEDDLY_DCASSERT(find(p) == p);
 
   // Temporary node has been transformed to a reduced node; decrement
   // temporary node count.
@@ -313,7 +313,7 @@ int mtmxd_node_manager::reduceNode(int p)
 
 int mtmxd_node_manager::createNode(int k, int index, int dptr)
 {
-  DCASSERT(index >= 0 && index < getLevelSize(k) && isValidNodeIndex(dptr));
+  MEDDLY_DCASSERT(index >= 0 && index < getLevelSize(k) && isValidNodeIndex(dptr));
 
   if (dptr == 0) return 0;
 
@@ -326,7 +326,7 @@ int mtmxd_node_manager::createNode(int k, int index, int dptr)
     return reduceNode(curr);
   }
   else {
-    DCASSERT (nodeStorage == SPARSE_STORAGE ||
+    MEDDLY_DCASSERT (nodeStorage == SPARSE_STORAGE ||
         (nodeStorage == FULL_OR_SPARSE_STORAGE && index >= 2));
     // Build a sparse node
     int p = createTempNode(k, 2);
@@ -341,8 +341,8 @@ int mtmxd_node_manager::createNode(int k, int index, int dptr)
     if (getNull() == q) {
       // no duplicate found; insert into unique table
       insert(p);
-      DCASSERT(getCacheCount(p) == 0);
-      DCASSERT(find(p) == p);
+      MEDDLY_DCASSERT(getCacheCount(p) == 0);
+      MEDDLY_DCASSERT(find(p) == p);
     }
     else {
       // duplicate found; discard this node and return the duplicate
@@ -360,7 +360,7 @@ int mtmxd_node_manager::createNode(int k, int index, int dptr)
 
 int mtmxd_node_manager::createNode(int k, int index1, int index2, int dptr)
 {
-  DCASSERT((index1 >= 0 && index2 >= 0) ||
+  MEDDLY_DCASSERT((index1 >= 0 && index2 >= 0) ||
       (index1 >= -1 && index2 >= -1) ||
       (index1 >= -2 && index2 >= -2 && index1 == index2));
 
@@ -397,7 +397,7 @@ int mtmxd_node_manager::createNode(int k, int index1, int index2, int dptr)
   else if (index1 == -2) {
 
     // "don't change"
-    DCASSERT(reductionRule == forest::QUASI_REDUCED ||
+    MEDDLY_DCASSERT(reductionRule == forest::QUASI_REDUCED ||
         reductionRule == forest::FULLY_REDUCED);
     int sz = getLevelSize(k);
     result = createTempNode(k, sz, false);
@@ -514,7 +514,7 @@ void mtmxd_node_manager::createEdge(const int* const* vlist,
 
 int mtmxd_node_manager::createEdge(int dptr)
 {
-  DCASSERT(isTerminalNode(dptr));
+  MEDDLY_DCASSERT(isTerminalNode(dptr));
   if (dptr == 0) return 0;
 
   if (reductionRule == forest::FULLY_REDUCED) return sharedCopy(dptr);
@@ -533,7 +533,7 @@ int mtmxd_node_manager::createEdge(int dptr)
 
 void mtmxd_node_manager::createEdge(int val, dd_edge &e)
 {
-  DCASSERT(getRangeType() == forest::INTEGER);
+  MEDDLY_DCASSERT(getRangeType() == forest::INTEGER);
   if (e.getForest() != this) 
     throw error(error::INVALID_OPERATION);
 
@@ -544,7 +544,7 @@ void mtmxd_node_manager::createEdge(int val, dd_edge &e)
 
 void mtmxd_node_manager::createEdge(float val, dd_edge &e)
 {
-  DCASSERT(getRangeType() == forest::REAL);
+  MEDDLY_DCASSERT(getRangeType() == forest::REAL);
   if (e.getForest() != this) 
     throw error(error::INVALID_OPERATION);
 
@@ -566,7 +566,7 @@ int mtmxd_node_manager::getTerminalNodeForEdge(int n, const int* vlist,
       if (nLevel < 0) {
         // Primed Node
         int next = getDownPtr(n, vplist[-nLevel]);
-        DCASSERT(isTerminalNode(next) || isUnprimedNode(next));
+        MEDDLY_DCASSERT(isTerminalNode(next) || isUnprimedNode(next));
         int currHeight = getNodeHeight(n) - 1;
         int nextHeight = getNodeHeight(next);
         if (nextHeight < currHeight) {
@@ -583,7 +583,7 @@ int mtmxd_node_manager::getTerminalNodeForEdge(int n, const int* vlist,
       }
       else {
         // Unprimed Node
-        DCASSERT(getDownPtr(n, vlist[nLevel]) == 0
+        MEDDLY_DCASSERT(getDownPtr(n, vlist[nLevel]) == 0
             || -nLevel == getNodeLevel(getDownPtr(n, vlist[nLevel])));
         n = getDownPtr(n, vlist[nLevel]);
       }
@@ -606,7 +606,7 @@ int mtmxd_node_manager::getTerminalNodeForEdge(int n, const int* vlist,
 void mtmxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
     const int* vplist, int &term) const
 {
-  DCASSERT(getRangeType() == forest::INTEGER);
+  MEDDLY_DCASSERT(getRangeType() == forest::INTEGER);
   if (f.getForest() != this) 
     throw error(error::INVALID_OPERATION);
   if (vlist == 0 || vplist == 0) 
@@ -621,7 +621,7 @@ void mtmxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
 void mtmxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
     const int* vplist, float &term) const
 {
-  DCASSERT(getRangeType() == forest::REAL);
+  MEDDLY_DCASSERT(getRangeType() == forest::REAL);
   if (f.getForest() != this) 
     throw error(error::INVALID_OPERATION);
   if (vlist == 0 || vplist == 0) 
@@ -721,8 +721,8 @@ void mtmxd_node_manager::findFirstElement(const dd_edge& f,
 
     for (int level = expertDomain->getNumVariables(); level; level--)
     {
-      DCASSERT(node != 0);
-      DCASSERT(isUnprimedNode(node));
+      MEDDLY_DCASSERT(node != 0);
+      MEDDLY_DCASSERT(isUnprimedNode(node));
       if (level != getNodeLevel(node)) {
         // level is "higher" than node, and has been skipped.
         // Since this is a mxd, reduced nodes enable "don't change" paths
@@ -747,10 +747,10 @@ void mtmxd_node_manager::findFirstElement(const dd_edge& f,
           node = getSparseNodeDownPtr(node, 0);
         }
 
-        DCASSERT(!isTerminalNode(node));
+        MEDDLY_DCASSERT(!isTerminalNode(node));
         // can't be -1 because that violates MXD properties
         // can't be 0 because node cannot be set to 0 in the above construct.
-        DCASSERT(isPrimedNode(node));
+        MEDDLY_DCASSERT(isPrimedNode(node));
         // find a valid path at this prime level
         if (isFullNode(node)) {
           int size = getFullNodeSize(node);
@@ -776,7 +776,7 @@ void mtmxd_node_manager::findFirstElement(const dd_edge& f,
     // !IDENTITY_REDUCED
     for (int currLevel = expertDomain->getNumVariables(); currLevel; )
     {
-      DCASSERT(node != 0);
+      MEDDLY_DCASSERT(node != 0);
       if (currLevel != getNodeLevel(node)) {
         // currLevel been skipped. !IDENTITY_REDUCED ==> reduced nodes
         // enable all paths at the skipped level. Pick the first index.
@@ -851,7 +851,7 @@ void mxd_node_manager::createEdge(const int* const* vlist,
 
 void mxd_node_manager::createEdge(bool val, dd_edge &e)
 {
-  DCASSERT(getRangeType() == forest::BOOLEAN);
+  MEDDLY_DCASSERT(getRangeType() == forest::BOOLEAN);
   if (e.getForest() != this) 
     throw error(error::INVALID_OPERATION);
 
@@ -863,7 +863,7 @@ void mxd_node_manager::createEdge(bool val, dd_edge &e)
 void mxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
     const int* vplist, bool &term) const
 {
-  DCASSERT(getRangeType() == forest::BOOLEAN);
+  MEDDLY_DCASSERT(getRangeType() == forest::BOOLEAN);
   if (f.getForest() != this) 
     throw error(error::INVALID_OPERATION);
   if (vlist == 0 || vplist == 0) 
@@ -943,12 +943,12 @@ int mxd_node_manager::accumulateExpandA(int a, int b, bool cBM)
   // a[i][i] += b
   // return reduceNode(a)
 
-  DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
-  DCASSERT(getMappedNodeHeight(a) > getMappedNodeHeight(b));
-  DCASSERT(!isReducedNode(a));
-  DCASSERT(getInCount(a) == 1);
-  DCASSERT(cBM == false);
-  DCASSERT(b != 0);
+  MEDDLY_DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(getMappedNodeHeight(a) > getMappedNodeHeight(b));
+  MEDDLY_DCASSERT(!isReducedNode(a));
+  MEDDLY_DCASSERT(getInCount(a) == 1);
+  MEDDLY_DCASSERT(cBM == false);
+  MEDDLY_DCASSERT(b != 0);
 
   int aSize = getFullNodeSize(a);
   int aLevel = getNodeLevel(a);
@@ -959,12 +959,12 @@ int mxd_node_manager::accumulateExpandA(int a, int b, bool cBM)
     aSize = getFullNodeSize(a);
   }
 
-  DCASSERT(aSize == levelSize);
+  MEDDLY_DCASSERT(aSize == levelSize);
 
   for (int i = aSize; --i >= 0; ) {
     int dptr = getFullNodeDownPtr(a, i);
     if (isReducedNode(dptr)) {
-      DCASSERT(-1 != dptr);
+      MEDDLY_DCASSERT(-1 != dptr);
       int pDptr = dptr == 0? 0: getDownPtr(dptr, i);
       int acc = pDptr == 0? sharedCopy(b): addReducedNodes(pDptr, b);
       if (pDptr != acc) {
@@ -978,14 +978,14 @@ int mxd_node_manager::accumulateExpandA(int a, int b, bool cBM)
       }
       unlinkNode(acc);
     } else {
-      DCASSERT(getInCount(dptr) == 1);
+      MEDDLY_DCASSERT(getInCount(dptr) == 1);
       int pDptr = getFullNodeDownPtr(dptr, i);
       int acc =
         pDptr == 0
         ? sharedCopy(b)
         : accumulateMxd(pDptr, b,
             (pDptr == -1? false: (getInCount(pDptr) > 1)));
-      DCASSERT(isReducedNode(acc));
+      MEDDLY_DCASSERT(isReducedNode(acc));
       if (pDptr != acc) {
         if (getFullNodeSize(dptr) <= i) { resizeNode(dptr, i + 1); }
         setDownPtr(dptr, i, acc);
@@ -1007,11 +1007,11 @@ void mxd_node_manager::accumulateMxdHelper(int& a, int b, bool cBM,
 {
   // Expand both nodes. a is a full node, b can be either sparse or full.
 
-  DCASSERT(!isReducedNode(a));
-  DCASSERT(getInCount(a) == 1);
-  DCASSERT(isReducedNode(b));
-  DCASSERT(!needsToMakeACopy);
-  DCASSERT(!cBM);
+  MEDDLY_DCASSERT(!isReducedNode(a));
+  MEDDLY_DCASSERT(getInCount(a) == 1);
+  MEDDLY_DCASSERT(isReducedNode(b));
+  MEDDLY_DCASSERT(!needsToMakeACopy);
+  MEDDLY_DCASSERT(!cBM);
 
   // Node b is Truncated-Full
   if (isFullNode(b)) {
@@ -1019,7 +1019,7 @@ void mxd_node_manager::accumulateMxdHelper(int& a, int b, bool cBM,
     // Resize a.
     if (getFullNodeSize(a) < size) {
       resizeNode(a, size);
-      DCASSERT(getFullNodeSize(a) == size);
+      MEDDLY_DCASSERT(getFullNodeSize(a) == size);
     }
     // Accumulate into a.
     int* aDptrs = getFullNodeDownPtrs(a);
@@ -1027,20 +1027,20 @@ void mxd_node_manager::accumulateMxdHelper(int& a, int b, bool cBM,
     for (int i = 0; i < size; ++i) {
       bool unlinkAOfI = isReducedNode(aDptrs[i]);
       int result = (this->*function)(aDptrs[i], bDptrs[i], cBM);
-      DCASSERT(isReducedNode(result));
+      MEDDLY_DCASSERT(isReducedNode(result));
       if (unlinkAOfI) unlinkNode(aDptrs[i]);
       aDptrs[i] = result;
     }
   }
   // Node b is Sparse
   else {
-    DCASSERT(isSparseNode(b));
+    MEDDLY_DCASSERT(isSparseNode(b));
     int nDptrs = getSparseNodeSize(b);
     int size = 1 + getSparseNodeIndex(b, nDptrs - 1);
     // Resize a.
     if (getFullNodeSize(a) < size) {
       resizeNode(a, size);
-      DCASSERT(getFullNodeSize(a) == size);
+      MEDDLY_DCASSERT(getFullNodeSize(a) == size);
     }
     // Accumulate into a.
     int* aDptrs = getFullNodeDownPtrs(a);
@@ -1051,7 +1051,7 @@ void mxd_node_manager::accumulateMxdHelper(int& a, int b, bool cBM,
       int* currA = aDptrs + index;
       bool unlinkCurrA = isReducedNode(*currA);
       int result = (this->*function)(*currA, *bDptrs++, cBM);
-      DCASSERT(isReducedNode(result));
+      MEDDLY_DCASSERT(isReducedNode(result));
       if (unlinkCurrA) unlinkNode(*currA);
       *currA = result;
     }
@@ -1061,10 +1061,10 @@ void mxd_node_manager::accumulateMxdHelper(int& a, int b, bool cBM,
 
 int mxd_node_manager::accumulateMxdPrime(int a, int b, bool cBM)
 {
-  DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
-  DCASSERT(isReducedNode(b));
-  DCASSERT(a != -1);
-  DCASSERT(b != -1);
+  MEDDLY_DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(isReducedNode(b));
+  MEDDLY_DCASSERT(a != -1);
+  MEDDLY_DCASSERT(b != -1);
 
   // Terminal nodes
   if (a == 0 || b == 0) {
@@ -1072,7 +1072,7 @@ int mxd_node_manager::accumulateMxdPrime(int a, int b, bool cBM)
     return isReducedNode(result)? sharedCopy(result): reduceNode(result);
   }
 
-  DCASSERT(getNodeLevel(a) == getNodeLevel(b));
+  MEDDLY_DCASSERT(getNodeLevel(a) == getNodeLevel(b));
 
   // a is a reduced node
   if (isReducedNode(a)) { return addPrimeReducedNodes(a, b); }
@@ -1090,8 +1090,8 @@ int mxd_node_manager::accumulateMxdPrime(int a, int b, bool cBM)
 
 int mxd_node_manager::accumulateMxd(int a, int b, bool cBM)
 {
-  DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
-  DCASSERT(isReducedNode(b));
+  MEDDLY_DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(isReducedNode(b));
 
   // Terminal nodes
   if (a == 0 || b == 0) { 
@@ -1106,7 +1106,7 @@ int mxd_node_manager::accumulateMxd(int a, int b, bool cBM)
   int aHeight = getMappedNodeHeight(a);
   int bHeight = getMappedNodeHeight(b);
 
-  DCASSERT(aHeight >= bHeight);
+  MEDDLY_DCASSERT(aHeight >= bHeight);
 
   if (getInCount(a) > 1) cBM = true;
 
@@ -1133,9 +1133,9 @@ int mxd_node_manager::accumulateExpandA(int a, int b, bool cBM)
 {
   // a[i][i] += b
 
-  DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
-  DCASSERT(getMappedNodeHeight(a) > getMappedNodeHeight(b));
-  DCASSERT(!isReducedNode(a));
+  MEDDLY_DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(getMappedNodeHeight(a) > getMappedNodeHeight(b));
+  MEDDLY_DCASSERT(!isReducedNode(a));
 
   bool needsToMakeACopy = cBM;
   int savedTempNode = a;
@@ -1154,11 +1154,11 @@ int mxd_node_manager::accumulateExpandA(int a, int b, bool cBM)
     aSize = getFullNodeSize(a);
   }
 
-  DCASSERT(aSize == levelSize);
+  MEDDLY_DCASSERT(aSize == levelSize);
 
   for (int i = 0; i < aSize; i++) {
     int dptr = getFullNodeDownPtr(a, i);
-    DCASSERT(dptr != -1);
+    MEDDLY_DCASSERT(dptr != -1);
     int pdptr = getDownPtr(dptr, i);
     bool pcBM = dptr == 0? cBM: (cBM || (1 < getInCount(dptr)));
     int result = accumulateMxd(pdptr, b, pcBM);
@@ -1218,7 +1218,7 @@ void mxd_node_manager::accumulateMxdHelper(int& a, int b, bool cBM,
       } else {
         resizeNode(a, size);
       }
-      DCASSERT(getFullNodeSize(a) == size);
+      MEDDLY_DCASSERT(getFullNodeSize(a) == size);
     }
     // Accumulate into a.
     int* aDptrs = getFullNodeDownPtrs(a);
@@ -1237,7 +1237,7 @@ void mxd_node_manager::accumulateMxdHelper(int& a, int b, bool cBM,
   }
   // Node b is Sparse
   else {
-    DCASSERT(isSparseNode(b));
+    MEDDLY_DCASSERT(isSparseNode(b));
     int nDptrs = getSparseNodeSize(b);
     int size = 1 + getSparseNodeIndex(b, nDptrs - 1);
     // Resize a.
@@ -1248,7 +1248,7 @@ void mxd_node_manager::accumulateMxdHelper(int& a, int b, bool cBM,
       } else {
         resizeNode(a, size);
       }
-      DCASSERT(getFullNodeSize(a) == size);
+      MEDDLY_DCASSERT(getFullNodeSize(a) == size);
     }
     // Accumulate into a.
     int* aDptrs = getFullNodeDownPtrs(a);
@@ -1275,15 +1275,15 @@ void mxd_node_manager::accumulateMxdHelper(int& a, int b, bool cBM,
 // TODO: Make temporary nodes of max size.
 int mxd_node_manager::accumulateMxdPrime(int a, int b, bool cBM)
 {
-  DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
-  DCASSERT(isReducedNode(b));
-  DCASSERT(a != -1);
-  DCASSERT(b != -1);
+  MEDDLY_DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(isReducedNode(b));
+  MEDDLY_DCASSERT(a != -1);
+  MEDDLY_DCASSERT(b != -1);
 
   // Terminal nodes
   if (a == 0 || b == 0) { return sharedCopy(a + b); }
 
-  DCASSERT(getNodeLevel(a) == getNodeLevel(b));
+  MEDDLY_DCASSERT(getNodeLevel(a) == getNodeLevel(b));
 
   // a is a reduced node
   if (isReducedNode(a)) { return addPrimeReducedNodes(a, b); }
@@ -1303,8 +1303,8 @@ int mxd_node_manager::accumulateMxdPrime(int a, int b, bool cBM)
 // TODO: Make temporary nodes of max size.
 int mxd_node_manager::accumulateMxd(int a, int b, bool cBM)
 {
-  DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
-  DCASSERT(isReducedNode(b));
+  MEDDLY_DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(isReducedNode(b));
 
   // Terminal nodes
   if (a == 0 || b == 0) { return sharedCopy(a + b); }
@@ -1348,10 +1348,10 @@ int mxd_node_manager::accumulateMxd(int a, int b, bool cBM)
 
 int mxd_node_manager::addPrimeReducedNodes(int a, int b)
 {
-  DCASSERT(getNodeLevel(a) < 0);
-  DCASSERT(getNodeLevel(a) == getNodeLevel(b));
-  DCASSERT(isReducedNode(a));
-  DCASSERT(isReducedNode(b));
+  MEDDLY_DCASSERT(getNodeLevel(a) < 0);
+  MEDDLY_DCASSERT(getNodeLevel(a) == getNodeLevel(b));
+  MEDDLY_DCASSERT(isReducedNode(a));
+  MEDDLY_DCASSERT(isReducedNode(b));
 
   int level = getNodeLevel(a);
   int size = getLevelSize(level);
@@ -1405,10 +1405,10 @@ void mxd_node_manager::accumulate(int& a, int b)
 int mxd_node_manager::accumulateSkippedLevel(int tempNode,
     int* element, int* pelement, int level)
 {
-  DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
-  DCASSERT(level > 0);
-  DCASSERT(getNodeLevel(tempNode) >= 0);
-  DCASSERT(getNodeLevel(tempNode) != level);
+  MEDDLY_DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(level > 0);
+  MEDDLY_DCASSERT(getNodeLevel(tempNode) >= 0);
+  MEDDLY_DCASSERT(getNodeLevel(tempNode) != level);
 
   int index = element[level];
   int pindex = pelement[level];
@@ -1474,17 +1474,17 @@ int mxd_node_manager::accumulateSkippedLevel(int tempNode,
 int mxd_node_manager::accumulate(int tempNode, bool cBM,
     int* element, int* pelement, int level)
 {
-  DCASSERT(isMxd());
-  DCASSERT(this->getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(isMxd());
+  MEDDLY_DCASSERT(this->getReductionRule() == forest::IDENTITY_REDUCED);
 
   if (level == 0) {
     if (tempNode == 0) accumulateMintermAddedElement = true;
     return -1;
   }
-  DCASSERT(level > 0);
+  MEDDLY_DCASSERT(level > 0);
 
   int nodeLevel = getNodeLevel(tempNode);
-  DCASSERT(nodeLevel >= 0);
+  MEDDLY_DCASSERT(nodeLevel >= 0);
 
   if (level != nodeLevel) {
     return accumulateSkippedLevel(tempNode, element, pelement, level);
@@ -1496,7 +1496,7 @@ int mxd_node_manager::accumulate(int tempNode, bool cBM,
   // (1) Compute result for the next unprimed level.
 
   int dptr = getDownPtr(tempNode, index);
-  DCASSERT(!isTerminalNode(dptr) || dptr == 0);
+  MEDDLY_DCASSERT(!isTerminalNode(dptr) || dptr == 0);
   int pdptr = getDownPtr(dptr, pindex);
 
   int inCount = getInCount(tempNode);
@@ -1532,14 +1532,14 @@ int mxd_node_manager::accumulate(int tempNode, bool cBM,
     pNode = makeACopy(dptr, pNodeSize);
   } else {
     pNode = dptr;
-    DCASSERT(!isReducedNode(pNode));
+    MEDDLY_DCASSERT(!isReducedNode(pNode));
     if (pindex >= getFullNodeSize(pNode)) {
       resizeNode(pNode, pNodeSize);
     }
   }
 
-  DCASSERT(!isReducedNode(pNode));
-  DCASSERT(pindex < getFullNodeSize(pNode));
+  MEDDLY_DCASSERT(!isReducedNode(pNode));
+  MEDDLY_DCASSERT(pindex < getFullNodeSize(pNode));
   setDownPtr(pNode, pindex, newpDptr);
   unlinkNode(newpDptr);
   
@@ -1562,14 +1562,14 @@ int mxd_node_manager::accumulate(int tempNode, bool cBM,
     node = makeACopy(tempNode, nodeSize);
   } else {
     node = tempNode;
-    DCASSERT(!isReducedNode(node));
+    MEDDLY_DCASSERT(!isReducedNode(node));
     if (index >= getFullNodeSize(node)) {
       resizeNode(node, nodeSize);
     }
   }
 
-  DCASSERT(!isReducedNode(node));
-  DCASSERT(index < getFullNodeSize(node));
+  MEDDLY_DCASSERT(!isReducedNode(node));
+  MEDDLY_DCASSERT(index < getFullNodeSize(node));
   setDownPtr(node, index, pNode);
   unlinkNode(pNode);
 
@@ -1621,7 +1621,7 @@ bool mxd_node_manager::accumulate(int& tempNode,
   assert(isActiveNode(tempNode));
   assert(element != 0);
   assert(pelement != 0);
-  DCASSERT(tempNode == 0 || !isReducedNode(tempNode));
+  MEDDLY_DCASSERT(tempNode == 0 || !isReducedNode(tempNode));
 
   // Enlarge variable bounds if necessary
 #if 0
@@ -1642,8 +1642,8 @@ bool mxd_node_manager::accumulate(int& tempNode,
     for ( ; currLevel ; currLevel-- )
     {
       // Skipped levels are not possible with temporary nodes.
-      DCASSERT(!isTerminalNode(currNode));
-      DCASSERT(getNodeLevel(currNode) == currLevel);
+      MEDDLY_DCASSERT(!isTerminalNode(currNode));
+      MEDDLY_DCASSERT(getNodeLevel(currNode) == currLevel);
 
       // Unprimed level
       parentNode = currNode;
@@ -1681,7 +1681,7 @@ bool mxd_node_manager::accumulate(int& tempNode,
     // Element already exists!
     // Return false since do element was added.
     if (currLevel == 0) {
-      DCASSERT(currNode != 0);
+      MEDDLY_DCASSERT(currNode != 0);
       return false;
     }
   }
@@ -1703,14 +1703,14 @@ bool mxd_node_manager::accumulate(int& tempNode,
 #endif
     getFullNodeDownPtrs(unpNode)[element[level]] = prime;
   }
-  DCASSERT(currLevel == level);
-  DCASSERT(getNodeLevel(unpNode) == level-1);
+  MEDDLY_DCASSERT(currLevel == level);
+  MEDDLY_DCASSERT(getNodeLevel(unpNode) == level-1);
 
   // Deal with the currLevel
   int parentNodeLevel = getNodeLevel(parentNode);
 
   if (parentNodeLevel == 0) {
-    DCASSERT(tempNode == 0);
+    MEDDLY_DCASSERT(tempNode == 0);
     // Build prime node with downpointer to unpNode.
     // Build unprime node with downpointer to prime node.
 #ifdef CREATE_TEMP_NODES_MAX_SIZE_ONLY
@@ -1738,14 +1738,14 @@ bool mxd_node_manager::accumulate(int& tempNode,
     int prime = createTempNode(-level, pelement[level] + 1, true);
 #endif
     getFullNodeDownPtrs(prime)[pelement[level]] = unpNode;
-    DCASSERT(element[level] < getFullNodeSize(parentNode));
-    DCASSERT(getFullNodeDownPtrs(parentNode)[element[level]] == 0);
+    MEDDLY_DCASSERT(element[level] < getFullNodeSize(parentNode));
+    MEDDLY_DCASSERT(getFullNodeDownPtrs(parentNode)[element[level]] == 0);
     getFullNodeDownPtrs(parentNode)[element[level]] = prime;
   } else {
     // Parent is a primed node.
     // Attach parent to unpNode
-    DCASSERT(pelement[level] < getFullNodeSize(parentNode));
-    DCASSERT(getFullNodeDownPtrs(parentNode)[pelement[level]] == 0);
+    MEDDLY_DCASSERT(pelement[level] < getFullNodeSize(parentNode));
+    MEDDLY_DCASSERT(getFullNodeDownPtrs(parentNode)[pelement[level]] == 0);
     getFullNodeDownPtrs(parentNode)[pelement[level]] = unpNode;
   }
 

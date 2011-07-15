@@ -95,11 +95,14 @@ namespace MEDDLY {
   // size of cache
   int op_cache_size = 0;
 
-  // operation settings
-  bool& operation::useMonolithicCT(meddlySettings.useMonolithicComputeTable);
-
   // Monolithic compute table, if used
   compute_table* operation::Monolithic_CT = 0;
+
+  operation** operation::op_list = 0;
+  int* operation::op_holes = 0;
+  int operation::list_size = 0;
+  int operation::list_alloc = 0;
+  int operation::free_list = -1;
 
   // helper function
   void destroyOpInternal(operation* op);
@@ -352,6 +355,13 @@ void MEDDLY::destroyForest(MEDDLY::forest* &f)
   expert_forest* ef = (expert_forest*) f;
   ef->markForDeletion();
   operation::removeStalesFromMonolithic();
+  for (int i=0; i<operation::getOpListSize(); i++) {
+    operation* op = operation::getOpWithIndex(i);
+    if (0==op) continue;
+    if (op->isMarkedForDeletion()) {
+      destroyOpInternal(op);
+    }
+  }
   delete ef;
   f = 0;
 }
@@ -361,8 +371,10 @@ inline void MEDDLY::destroyOpInternal(MEDDLY::operation* op)
   if (0==op) return;
   if (!libraryRunning) throw error(error::UNINITIALIZED);
   removeOperationFromCache(op);
-  op->markForDeletion();
-  operation::removeStalesFromMonolithic();
+  if (!op->isMarkedForDeletion()) {
+    op->markForDeletion();
+    operation::removeStalesFromMonolithic();
+  }
   delete op;
 }
 
@@ -407,8 +419,8 @@ void MEDDLY::initialize(const settings &s)
   }
 
   // set up monolithic compute table, if needed
-  if (meddlySettings.useMonolithicComputeTable) {
-    operation::Monolithic_CT = createMonolithicTable(s);
+  if (meddlySettings.usesMonolithicComputeTable()) {
+    operation::Monolithic_CT = createMonolithicTable(s.computeTable);
   }
 
   opname::next_index = 0;

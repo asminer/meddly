@@ -56,28 +56,25 @@
 
 // Use this for assertions that will fail only when your
 // code is wrong.  Handy for debugging.
-#ifdef DCASSERTS_ON 
-#define DCASSERT(X) assert(X)
+#ifdef DCASSERTS_ON
+#define MEDDLY_DCASSERT(X) assert(X)
 #else
-#define DCASSERT(X)
+#define MEDDLY_DCASSERT(X)
 #endif
 
+// Use this for range checking assertions that should succeed.
 #ifdef RANGE_CHECK_ON
-#define CHECK_RANGE(MIN, VALUE, MAX)  {assert(VALUE<MAX);assert(VALUE>=MIN);}
+#define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX) { assert(VALUE < MAX); assert(VALUE >= MIN); }
 #else
-#define CHECK_RANGE(MIN, VALUE, MAX)
+#define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX)
 #endif
-
+ 
 namespace MEDDLY {
 
   // Functions for reinterpreting an int to a float and vice-versa
   float   toFloat (int a);
   int     toInt   (float a);
   float*  toFloat (int* a);
-
-  // classes defined elsewhere
-  class compute_cache;
-  class compute_table;
 
   // classes defined here
   struct settings;
@@ -90,6 +87,8 @@ namespace MEDDLY {
   class unary_opname;
   class binary_opname;
   class numerical_opname;
+
+  class compute_table;
 
   class operation;
   class unary_operation;
@@ -235,21 +234,59 @@ class MEDDLY::ct_object {
 */
 struct MEDDLY::settings {
   public:
-    /// Do we use one monolithic compute table? Otherwise, one per operation.
-    bool useMonolithicComputeTable;
-    /// Should the compute tables chain items that hash to the same location.
-    bool doComputeTablesUseChaining;
-    /// Maximum compute table size.
-    unsigned maxComputeTableSize;
+    struct computeTableSettings {
+      public:
+        enum styleOption {
+          /// One huge hash table that uses chaining.
+          MonolithicChainedHash,
+          /// One huge hash table that does not use chaining.
+          MonolithicUnchainedHash,
+          /// A hash table (with chaining) for each operation.
+          OperationChainedHash,
+          /// A hash table (no chaining) for each operation.
+          OperationUnchainedHash,
+          /// A STL "map" for each operation.
+          OperationMap
+        };
+        enum staleRemovalOption {
+          /// Whenever we see a stale entry, remove it.
+          Aggressive,
+          /// Only remove stales when we need to expand the table
+          Moderate,
+          /// Only remove stales during Garbage Collection.
+          Lazy
+        };
+      public:
+        /// The type of compute table(s) that should be used.
+        styleOption style;
+        /// Maximum compute table size.
+        unsigned maxSize;
+        /// How aggressively should we try to eliminate stale entries.
+        staleRemovalOption staleRemoval;
+      public:
+        /// Constructor, to set defaults.
+        computeTableSettings() {
+          style = MonolithicUnchainedHash;
+          staleRemoval = Moderate;
+          maxSize = 16777216;
+        }
+    };
+  public:
+    /// Settings for the compute table(s)
+    computeTableSettings computeTable;
     /// Initializer for operations
     op_initializer* operationBuilder;
   public:
     /// Constructor, to set defaults.
-    settings() {
-      doComputeTablesUseChaining = true;
-      useMonolithicComputeTable = true;
-      maxComputeTableSize = 16777216;
+    settings() : computeTable() {
       operationBuilder = makeBuiltinInitializer();
+    }
+    /// super handly
+    inline bool usesMonolithicComputeTable() {
+      return (
+       computeTableSettings::MonolithicChainedHash == computeTable.style ||
+       computeTableSettings::MonolithicUnchainedHash == computeTable.style 
+      );
     }
 };
   
@@ -858,15 +895,14 @@ class MEDDLY::expert_forest : public forest
     int getMappedNodeHeight(int node) const;
 
     /// Register an operation with this forest.
-    /// Returns the slot number, for use with unregistering.
-    int registerOperation(operation* op);
+    void registerOperation(const operation* op);
 
     /// Unregister an operation.
-    void unregisterOperation(operation* op, int slot);
+    void unregisterOperation(const operation* op);
 
   protected:
     // for debugging:
-    void showComputeTable(FILE* s, bool verbose) const;
+    void showComputeTable(FILE* s, int verbLevel) const;
 
     void unregisterDDEdges();
 
@@ -993,9 +1029,9 @@ class MEDDLY::expert_forest : public forest
     // Array index: most recently created hole in edge[]
     int firstHole;
 
-    // Array of operations
-    operation** oplist;
-    int szOplist;
+    // Used to count registered operations
+    int* opCount;
+    int szOpCount;
 
 #if 0
   // TODO: 
@@ -1239,6 +1275,160 @@ class MEDDLY::numerical_opname : public opname {
 
 
 // ******************************************************************
+// *                      compute_table  class                      *
+// ******************************************************************
+
+/** Interface for compute tables.
+    Anyone implementing an operation (see below) will
+    probably want to use this.
+*/
+class MEDDLY::compute_table {
+    public:
+      /// The maximum size of the hash table.
+      unsigned maxSize;
+      /// Do we try to eliminate stales during a "find" operation
+      bool checkStalesOnFind;
+      /// Do we try to eliminate stales during a "resize" operation
+      bool checkStalesOnResize;
+
+      struct stats {
+        long numEntries;
+        unsigned hits;
+        unsigned pings;
+        static const int searchHistogramSize = 256;
+        long searchHistogram[searchHistogramSize];
+        long numLargeSearches;
+        int maxSearchLength;
+      };
+
+      class search_key {
+          friend class base_table;
+          int hashLength;
+          int* data;
+          bool killData;
+          int* key_data;
+          const operation* op;
+          /// used only for range checking during "development".
+          int keyLength;  
+        public:
+          search_key();
+          ~search_key();
+          inline int& key(int i) { 
+#ifdef DEVELOPMENT_CODE
+            assert(i>=0);
+            assert(i<keyLength);
+#endif
+            return key_data[i]; 
+          }
+          inline const int* rawData() const { return data; }
+          inline int dataLength() const { return hashLength; }
+          inline const operation* getOp() const { return op; }
+      };
+
+      class temp_entry {
+          friend class base_table;
+          int handle;
+          int hashLength;
+          int* entry;
+          int* key_entry;
+          int* res_entry;
+          // The remaining entries are used only in development code
+          int keyLength;
+          int resLength;
+        public:
+          inline int& key(int i) { 
+#ifdef DEVELOPMENT_CODE
+            assert(i>=0);
+            assert(i<keyLength);
+#endif
+            return key_entry[i]; 
+          }
+          inline int& result(int i) { 
+#ifdef DEVELOPMENT_CODE
+            assert(i>=0);
+            assert(i<resLength);
+#endif
+            return res_entry[i]; 
+          }
+          // inline void copyResult(int i, void* data, size_t bytes) {
+          void copyResult(int i, void* data, size_t bytes) {
+#ifdef DEVELOPMENT_CODE
+            assert(i>=0);
+            assert(i+bytes<=resLength*sizeof(int));
+#endif
+            memcpy(res_entry+i, data, bytes);
+          }
+          // The following are used by the compute table.
+          inline const int* readEntry(int off) const { return entry+off; }
+          inline int readHandle() const { return handle; }
+          inline int readLength() const { return hashLength; }
+          inline int& data(int i) {
+            return entry[i];
+          }
+      };
+
+    public:
+      /// Constructor
+      compute_table(const settings::computeTableSettings &s);
+
+      /** Destructor. 
+          Does NOT properly discard all table entries;
+          use \a removeAll() for this.
+      */
+      virtual ~compute_table();
+
+      /// Is this a per-operation compute table?
+      virtual bool isOperationTable() const = 0;
+
+      /// Initialize a search key for a given operation.
+      virtual void initializeSearchKey(search_key &key, operation* op) = 0;
+
+      /** Find an entry in the compute table based on the key provided.
+          @param  key   Key to search for.
+          @return       0, if not found;
+                        otherwise, an integer array of size 
+                        op->getCacheEntryLength()
+      */
+      virtual const int* find(const search_key &key) = 0;
+
+      /** Start a new compute table entry.
+          The operation should "fill in" the values for the entry,
+          then call \a addEntry().
+      */
+      virtual temp_entry& startNewEntry(operation* op) = 0;
+
+      /** Add the "current" new entry to the compute table.
+          The entry may be specified by filling in the values 
+          for the struct returned by \a startNewEntry().
+      */
+      virtual void addEntry() = 0;
+
+      /** Remove all stale entries.
+          Scans the table for entries that are no longer valid (i.e. they are
+          stale, according to operation::isEntryStale) and removes them. This
+          can be a time-consuming process (proportional to the number of cached
+          entries).
+      */
+      virtual void removeStales() = 0;
+
+      /** Removes all entries.
+      */
+      virtual void removeAll() = 0;
+
+      /// Get performance stats for the table.
+      inline const stats& getStats() {
+        return perf;
+      }
+
+      /// For debugging.
+      virtual void show(FILE *s, int verbLevel = 0) = 0;
+
+    protected:
+      stats perf;
+      temp_entry currEntry;
+};
+
+// ******************************************************************
 // *                        operation  class                        *
 // ******************************************************************
 
@@ -1254,20 +1444,52 @@ class MEDDLY::operation {
     friend void MEDDLY::cleanup();
 
     // declared and initialized in meddly.cc
-    static bool& useMonolithicCT;
-    // declared and initialized in meddly.cc
     static compute_table* Monolithic_CT;
-  protected:
+    // declared and initialized in meddly.cc
+    static operation** op_list;
+    // declared and initialized in meddly.cc
+    static int* op_holes;
+    // declared and initialized in meddly.cc
+    static int list_size;
+    // declared and initialized in meddly.cc
+    static int list_alloc;
+    // declared and initialized in meddly.cc
+    static int free_list;
+
+    int oplist_index;
+
     int key_length; 
     int ans_length; 
+
+  protected:
+    /// Compute table to use, if any.
     compute_table* CT;
+    /// Struct for CT searches.
+    compute_table::search_key CTsrch;
     // for cache of operations.
     operation* next;
+    // must stale compute table hits be discarded.
+    // if the result forest is using pessimistic deletion, then true.
+    // otherwise, false.  MUST BE SET BY DERIVED CLASSES.
+    bool discardStaleHits;
   public:
-    operation(const opname* n);
+    /// New constructor.
+    /// @param  n   Operation "name"
+    /// @param  kl  Key length of compute table entries.
+    ///             Use 0 if this operation does not use the compute table.
+    /// @param  al  Answer length of compute table entries.
+    ///             Use 0 if this operation does not use the compute table.
+    operation(const opname* n, int kl, int al);
+    //operation(const opname* n, bool uses_CT);
 
   protected:
     virtual ~operation();
+
+    inline void setAnswerForest(const expert_forest* f) {
+      discardStaleHits = f 
+        ?   f->getNodeDeletion() == forest::PESSIMISTIC_DELETION
+        :   false;  // shouldn't be possible, so we'll do what's fastest.
+    }
 
     void markForDeletion();
 
@@ -1275,14 +1497,15 @@ class MEDDLY::operation {
     friend void MEDDLY::destroyOpInternal(operation* op);
 
   public:
-    inline bool isMarkedForDeletion() const { 
-      return is_marked_for_deletion;
-    }
+    inline bool isMarkedForDeletion() const { return is_marked_for_deletion; }
+
+    // should ONLY be called during library cleanup.
+    static void destroyOpList();
 
     inline void setNext(operation* n) { next = n; }
     inline operation* getNext()       { return next; }
 
-    inline static bool useMonolithicComputeTable() { return useMonolithicCT; }
+    inline static bool useMonolithicComputeTable() { return Monolithic_CT; }
     static void removeStalesFromMonolithic();
 
     /// Remove stale compute table entries for this operation.
@@ -1291,10 +1514,17 @@ class MEDDLY::operation {
     /// Remove all compute table entries for this operation.
     void removeAllComputeTableEntries();
 
+    // for compute tables.
+
+    inline int getIndex() const { return oplist_index; }
+    static inline operation* getOpWithIndex(int i) { return op_list[i]; }
+    static inline int getOpListSize() { return list_size; }
+
     // for debugging:
 
-    static void showMonolithicComputeTable(FILE*, bool verbose);
-    void showComputeTable(FILE*, bool verbose) const;
+    static void showMonolithicComputeTable(FILE*, int verbLevel);
+    static void showAllComputeTables(FILE*, int verbLevel);
+    void showComputeTable(FILE*, int verbLevel) const;
 
     // handy
     inline const char* getName() const { return theOpName->getName(); }
@@ -1315,19 +1545,15 @@ class MEDDLY::operation {
       return key_length + ans_length; 
     }
 
-    inline int getKeyLengthInBytes() const { 
-      return sizeof(int) * key_length;
-    }
-    inline int getAnsLengthInBytes() const {
-      return sizeof(int) * ans_length;
-    }
-    inline int getCacheEntryLengthInBytes() const {
-      return sizeof(int) * (key_length + ans_length);
-    }
-
     /// Checks if the cache entry (in entryData[]) is stale.
-    virtual bool isEntryStale(const int* entryData) = 0;
+    inline bool isEntryStale(const int* data) {
+      return (is_marked_for_deletion || isStaleEntry(data));
+    }
 
+  protected:
+    virtual bool isStaleEntry(const int* entry) = 0;
+
+  public:
     /// Removes the cache entry (in entryData[]) by informing the
     /// applicable forests that the nodes in this entry are being removed
     /// from the cache
@@ -1335,6 +1561,16 @@ class MEDDLY::operation {
 
     /// Prints a string representation of this cache entry on strm (stream).
     virtual void showEntry(FILE* strm, const int *entryData) const = 0;
+
+    inline bool shouldStaleCacheHitsBeDiscarded() const {
+      return discardStaleHits;
+    }
+
+  protected:
+    void allocEntryForests(int nf);
+    void addEntryForest(int index, expert_forest* f);
+    void allocEntryObjects(int no);
+    void addEntryObject(int index);
 };
 
 // ******************************************************************
@@ -1349,14 +1585,11 @@ class MEDDLY::unary_operation : public operation {
     expert_forest* argF;
     expert_forest* resF;
     opnd_type resultType;
-  private:
-    int argFslot;
-    int resFslot;
   public:
-    unary_operation(const unary_opname* code, 
+    unary_operation(const unary_opname* code, int kl, int al,
       expert_forest* arg, expert_forest* res);
 
-    unary_operation(const unary_opname* code,
+    unary_operation(const unary_opname* code, int kl, int al,
       expert_forest* arg, opnd_type res);
 
   protected:
@@ -1397,12 +1630,8 @@ class MEDDLY::binary_operation : public operation {
     expert_forest* arg2F;
     expert_forest* resF;
     opnd_type resultType;
-  private:
-    int arg1Fslot;
-    int arg2Fslot;
-    int resFslot;
   public:
-    binary_operation(const binary_opname* code, 
+    binary_operation(const binary_opname* code, int kl, int al,
       expert_forest* arg1, expert_forest* arg2, expert_forest* res);
 
   protected:
@@ -1512,7 +1741,7 @@ MEDDLY::getOperation(const binary_opname* code, const dd_edge& arg1,
 inline
 int MEDDLY::expert_forest::getInternalNodeSize(int p) const
 {
-  DCASSERT(isActiveNode(p) && !isTerminalNode(p));
+  MEDDLY_DCASSERT(isActiveNode(p) && !isTerminalNode(p));
   return *(getNodeAddress(p) + 2);
 }
 
@@ -1520,7 +1749,7 @@ int MEDDLY::expert_forest::getInternalNodeSize(int p) const
 inline
 int* MEDDLY::expert_forest::getAddress(int k, int offset) const
 {
-  DCASSERT(level != 0 && level[mapLevel(k)].data != 0);
+  MEDDLY_DCASSERT(level != 0 && level[mapLevel(k)].data != 0);
   return  (level[mapLevel(k)].data + offset);
 }
 
@@ -1528,7 +1757,7 @@ int* MEDDLY::expert_forest::getAddress(int k, int offset) const
 inline
 int* MEDDLY::expert_forest::getNodeAddress(int p) const
 {
-  DCASSERT(isActiveNode(p) && !isTerminalNode(p));
+  MEDDLY_DCASSERT(isActiveNode(p) && !isTerminalNode(p));
   return getAddress(getNodeLevel(p), getNodeOffset(p));
 }
 
@@ -1536,7 +1765,7 @@ int* MEDDLY::expert_forest::getNodeAddress(int p) const
 inline
 int MEDDLY::expert_forest::getNodeOffset(int p) const
 {
-  DCASSERT(isValidNodeIndex(p));
+  MEDDLY_DCASSERT(isValidNodeIndex(p));
   return  (address[p].offset);
 }
 
@@ -1578,8 +1807,8 @@ bool MEDDLY::expert_forest::isActiveNode(int p) const
 inline
 bool MEDDLY::expert_forest::isZombieNode(int p) const
 {
-  DCASSERT(isValidNodeIndex(p));
-  DCASSERT(!isTerminalNode(p));
+  MEDDLY_DCASSERT(isValidNodeIndex(p));
+  MEDDLY_DCASSERT(!isTerminalNode(p));
   return (getCacheCount(p) < 0);
 }
 
@@ -1587,7 +1816,7 @@ bool MEDDLY::expert_forest::isZombieNode(int p) const
 inline
 int& MEDDLY::expert_forest::getInCount(int p) const
 {
-  DCASSERT(isActiveNode(p) && !isTerminalNode(p));
+  MEDDLY_DCASSERT(isActiveNode(p) && !isTerminalNode(p));
   return *(getNodeAddress(p));
 }
 
@@ -1595,8 +1824,8 @@ int& MEDDLY::expert_forest::getInCount(int p) const
 inline
 int& MEDDLY::expert_forest::getCacheCount(int p) const
 {
-  DCASSERT(isValidNodeIndex(p));
-  DCASSERT(!isTerminalNode(p));
+  MEDDLY_DCASSERT(isValidNodeIndex(p));
+  MEDDLY_DCASSERT(!isTerminalNode(p));
   return address[p].cache_count;
 }
 
@@ -1609,16 +1838,16 @@ bool MEDDLY::expert_forest::isTerminalNode(int p) const
 inline
 bool MEDDLY::expert_forest::getBoolean(int terminalNode) const
 {
-  DCASSERT(getRangeType() == forest::BOOLEAN ||
+  MEDDLY_DCASSERT(getRangeType() == forest::BOOLEAN ||
       getEdgeLabeling() != forest::MULTI_TERMINAL);
-  DCASSERT(terminalNode == 0 || terminalNode == -1);
+  MEDDLY_DCASSERT(terminalNode == 0 || terminalNode == -1);
   return (terminalNode == 0)? false: true;
 }
 
 inline
 int MEDDLY::expert_forest::getTerminalNode(bool booleanValue) const
 {
-  DCASSERT(getRangeType() == forest::BOOLEAN ||
+  MEDDLY_DCASSERT(getRangeType() == forest::BOOLEAN ||
       getEdgeLabeling() != forest::MULTI_TERMINAL);
   return booleanValue? -1: 0;
 }
@@ -1626,8 +1855,8 @@ int MEDDLY::expert_forest::getTerminalNode(bool booleanValue) const
 inline
 int MEDDLY::expert_forest::getInteger(int terminalNode) const
 {
-  DCASSERT(getRangeType() == forest::INTEGER);
-  DCASSERT(isTerminalNode(terminalNode) && terminalNode <= 0);
+  MEDDLY_DCASSERT(getRangeType() == forest::INTEGER);
+  MEDDLY_DCASSERT(isTerminalNode(terminalNode) && terminalNode <= 0);
   // set 32nd bit based on 31st bit.  << gets rid of MSB; >> sign extends.
   return terminalNode << 1 >> 1;
 }
@@ -1635,12 +1864,12 @@ int MEDDLY::expert_forest::getInteger(int terminalNode) const
 inline
 int MEDDLY::expert_forest::getTerminalNode(int integerValue) const
 {
-  DCASSERT(getRangeType() == forest::INTEGER);
+  MEDDLY_DCASSERT(getRangeType() == forest::INTEGER);
   // value has to fit within 31 bits (incl. sign)
   // int(0xc0000000) == -1073741824
   // int(0x3fffffff) == +1073741823
-  // DCASSERT(-1073741824 <= integerValue && integerValue <= 1073741823);
-  DCASSERT(-1073741824 <= integerValue && integerValue <= 1073741823);
+  // MEDDLY_DCASSERT(-1073741824 <= integerValue && integerValue <= 1073741823);
+  MEDDLY_DCASSERT(-1073741824 <= integerValue && integerValue <= 1073741823);
   return integerValue == 0? 0: integerValue | 0x80000000;
 }
 
@@ -1659,7 +1888,7 @@ int MEDDLY::expert_forest::getTerminalNode(int integerValue) const
 inline
 float MEDDLY::expert_forest::getReal(int term) const
 {
-  DCASSERT(getRangeType() == forest::REAL);
+  MEDDLY_DCASSERT(getRangeType() == forest::REAL);
 #if 0
   // Warning: does not work when compiled with -O2 with gcc 4.1.3
   return *(float*)((void*)&(term <<= 1));
@@ -1679,7 +1908,7 @@ float MEDDLY::expert_forest::getReal(int term) const
 inline
 int MEDDLY::expert_forest::getTerminalNode(float a) const
 {
-  DCASSERT(getRangeType() == forest::REAL);
+  MEDDLY_DCASSERT(getRangeType() == forest::REAL);
 #if 0
   // Warning: does not work when compiled with -O2 with gcc 4.1.3
   return (a == 0.0)? 0: (*((int*)((void*)&a)) >> 1) | 0x80000000;
@@ -1706,8 +1935,8 @@ int MEDDLY::expert_forest::createTempNodeMaxSize(int lh, bool clear)
 
 inline
 int MEDDLY::expert_forest::getLevelSize(int lh) const {
-  DCASSERT(isValidLevel(lh));
-  DCASSERT(lh == 0 || level[mapLevel(lh)].data != NULL);
+  MEDDLY_DCASSERT(isValidLevel(lh));
+  MEDDLY_DCASSERT(lh == 0 || level[mapLevel(lh)].data != NULL);
   if (lh < 0) {
     return static_cast<expert_domain*>(d)->getVariableBound(-lh, true);
   } else {
@@ -1721,7 +1950,7 @@ int MEDDLY::expert_forest::getNodeLevel(int p) const
 #ifdef DEBUG_MDD_H
   printf("%s: p: %d\n", __func__, p);
 #endif
-  DCASSERT(isActiveNode(p) || isZombieNode(p));
+  MEDDLY_DCASSERT(isActiveNode(p) || isZombieNode(p));
   return (isTerminalNode(p)? 0: address[p].level);
 }
 
@@ -1729,7 +1958,7 @@ int MEDDLY::expert_forest::getNodeLevel(int p) const
 inline
 int MEDDLY::expert_forest::getNodeHeight(int p) const
 {
-  DCASSERT(isActiveNode(p));
+  MEDDLY_DCASSERT(isActiveNode(p));
   return level[mapLevel(getNodeLevel(p))].height;
 }
 
@@ -1740,7 +1969,7 @@ bool MEDDLY::expert_forest::isFullNode(int p) const
 #ifdef DEBUG_MDD_H
   printf("%s: p: %d, size: %d\n", __func__, p, getInternalNodeSize(p));
 #endif
-  DCASSERT(isActiveNode(p) && !isTerminalNode(p));
+  MEDDLY_DCASSERT(isActiveNode(p) && !isTerminalNode(p));
   return (getInternalNodeSize(p) > 0);
 }
 
@@ -1751,7 +1980,7 @@ bool MEDDLY::expert_forest::isSparseNode(int p) const
 #ifdef DEBUG_MDD_H
   printf("%s: p: %d, size: %d\n", __func__, p, getInternalNodeSize(p));
 #endif
-  DCASSERT(isActiveNode(p) && !isTerminalNode(p));
+  MEDDLY_DCASSERT(isActiveNode(p) && !isTerminalNode(p));
   return (getInternalNodeSize(p) < 0);
 }
 
@@ -1762,7 +1991,7 @@ int MEDDLY::expert_forest::getFullNodeSize(int p) const
 #ifdef DEBUG_MDD_H
   printf("%s: p: %d\n", __func__, p);
 #endif
-  DCASSERT(isFullNode(p));
+  MEDDLY_DCASSERT(isFullNode(p));
   return getInternalNodeSize(p);
 }
 
@@ -1773,7 +2002,7 @@ int MEDDLY::expert_forest::getSparseNodeSize(int p) const
 #ifdef DEBUG_MDD_H
 printf("%s: p: %d\n", __func__, p);
 #endif
-  DCASSERT(isSparseNode(p));
+  MEDDLY_DCASSERT(isSparseNode(p));
   return -getInternalNodeSize(p);
 }
 
@@ -1781,10 +2010,10 @@ printf("%s: p: %d\n", __func__, p);
 inline
 void MEDDLY::expert_forest::setDownPtr(int p, int i, int value)
 {
-  DCASSERT(!isReducedNode(p));
-  DCASSERT(isFullNode(p));
-  DCASSERT(isActiveNode(value));
-  CHECK_RANGE(0, i, getFullNodeSize(p));
+  MEDDLY_DCASSERT(!isReducedNode(p));
+  MEDDLY_DCASSERT(isFullNode(p));
+  MEDDLY_DCASSERT(isActiveNode(value));
+  MEDDLY_CHECK_RANGE(0, i, getFullNodeSize(p));
   int temp = *(getNodeAddress(p) + 3 + i);
   // linkNode to new node
   linkNode(value);
@@ -1797,10 +2026,10 @@ void MEDDLY::expert_forest::setDownPtr(int p, int i, int value)
 inline
 void MEDDLY::expert_forest::setDownPtrWoUnlink(int p, int i, int value)
 {
-  DCASSERT(!isReducedNode(p));
-  DCASSERT(isFullNode(p));
-  DCASSERT(isActiveNode(value));
-  CHECK_RANGE(0, i, getFullNodeSize(p));
+  MEDDLY_DCASSERT(!isReducedNode(p));
+  MEDDLY_DCASSERT(isFullNode(p));
+  MEDDLY_DCASSERT(isActiveNode(value));
+  MEDDLY_CHECK_RANGE(0, i, getFullNodeSize(p));
   // linkNode to new node
   linkNode(value);
   *(getNodeAddress(p) + 3 + i) = value;
@@ -1810,9 +2039,9 @@ void MEDDLY::expert_forest::setDownPtrWoUnlink(int p, int i, int value)
 inline
 void MEDDLY::expert_forest::setEdgeValue(int node, int index, int ev)
 {
-  DCASSERT(!isReducedNode(node));
-  DCASSERT(isFullNode(node));
-  CHECK_RANGE(0, index, getFullNodeSize(node));
+  MEDDLY_DCASSERT(!isReducedNode(node));
+  MEDDLY_DCASSERT(isFullNode(node));
+  MEDDLY_CHECK_RANGE(0, index, getFullNodeSize(node));
   *(getNodeAddress(node) + 3 + getFullNodeSize(node) + index) = ev;
 }
 
@@ -1820,9 +2049,9 @@ void MEDDLY::expert_forest::setEdgeValue(int node, int index, int ev)
 inline
 void MEDDLY::expert_forest::setEdgeValue(int node, int index, float ev)
 {
-  DCASSERT(!isReducedNode(node));
-  DCASSERT(isFullNode(node));
-  CHECK_RANGE(0, index, getFullNodeSize(node));
+  MEDDLY_DCASSERT(!isReducedNode(node));
+  MEDDLY_DCASSERT(isFullNode(node));
+  MEDDLY_CHECK_RANGE(0, index, getFullNodeSize(node));
   *(getNodeAddress(node) + 3 + getFullNodeSize(node) + index) = toInt(ev);
 }
 
@@ -1830,9 +2059,9 @@ void MEDDLY::expert_forest::setEdgeValue(int node, int index, float ev)
 inline
 bool MEDDLY::expert_forest::getDownPtrs(int node, int*& dptrs)
 {
-  DCASSERT(isActiveNode(node));
+  MEDDLY_DCASSERT(isActiveNode(node));
   if (isTerminalNode(node) || isReducedNode(node)) return false;
-  DCASSERT(isFullNode(node));
+  MEDDLY_DCASSERT(isFullNode(node));
   dptrs = getNodeAddress(node) + 3;
   return true;
 }
@@ -1841,9 +2070,9 @@ bool MEDDLY::expert_forest::getDownPtrs(int node, int*& dptrs)
 inline
 bool MEDDLY::expert_forest::getEdgeValues(int node, int*& evs)
 {
-  DCASSERT(isActiveNode(node));
+  MEDDLY_DCASSERT(isActiveNode(node));
   if (isTerminalNode(node) || isReducedNode(node)) return false;
-  DCASSERT(isFullNode(node));
+  MEDDLY_DCASSERT(isFullNode(node));
   evs = getNodeAddress(node) + 3 + getFullNodeSize(node);
   return true;
 }
@@ -1852,9 +2081,9 @@ bool MEDDLY::expert_forest::getEdgeValues(int node, int*& evs)
 inline
 bool MEDDLY::expert_forest::getEdgeValues(int node, float*& evs)
 {
-  DCASSERT(isActiveNode(node));
+  MEDDLY_DCASSERT(isActiveNode(node));
   if (isTerminalNode(node) || isReducedNode(node)) return false;
-  DCASSERT(isFullNode(node));
+  MEDDLY_DCASSERT(isFullNode(node));
   evs = toFloat(getNodeAddress(node) + 3 + getFullNodeSize(node));
   return true;
 }
@@ -1875,7 +2104,7 @@ inline
 bool MEDDLY::expert_forest
 ::getSparseNodeIndexes(int node, const int*& indexes) const
 {
-  DCASSERT(isSparseNode(node));
+  MEDDLY_DCASSERT(isSparseNode(node));
   if (!isSparseNode(node)) return false;
   indexes = getNodeAddress(node) + 3;
   return true;
@@ -1885,7 +2114,7 @@ bool MEDDLY::expert_forest
 inline
 bool MEDDLY::expert_forest::getEdgeValues(int node, const int*& evs) const
 {
-  DCASSERT(isReducedNode(node));
+  MEDDLY_DCASSERT(isReducedNode(node));
   if (isTerminalNode(node)) return false;
   evs = isFullNode(node)
     ? getNodeAddress(node) + 3 + getFullNodeSize(node)
@@ -1897,7 +2126,7 @@ bool MEDDLY::expert_forest::getEdgeValues(int node, const int*& evs) const
 inline
 bool MEDDLY::expert_forest::getEdgeValues(int node, const float*& evs) const
 {
-  DCASSERT(isReducedNode(node));
+  MEDDLY_DCASSERT(isReducedNode(node));
   if (isTerminalNode(node)) return false;
   evs = toFloat(isFullNode(node)
     ? getNodeAddress(node) + 3 + getFullNodeSize(node)
@@ -1909,8 +2138,8 @@ bool MEDDLY::expert_forest::getEdgeValues(int node, const float*& evs) const
 inline
 int MEDDLY::expert_forest::getFullNodeDownPtr(int p, int i) const
 {
-  DCASSERT(isFullNode(p));
-  CHECK_RANGE(0, i, getFullNodeSize(p));
+  MEDDLY_DCASSERT(isFullNode(p));
+  MEDDLY_CHECK_RANGE(0, i, getFullNodeSize(p));
   return getNodeAddress(p)[3 + i];
 }
 
@@ -1918,8 +2147,8 @@ int MEDDLY::expert_forest::getFullNodeDownPtr(int p, int i) const
 inline
 int MEDDLY::expert_forest::getSparseNodeDownPtr(int p, int i) const
 {
-  DCASSERT(isSparseNode(p));
-  CHECK_RANGE(0, i, getSparseNodeSize(p));
+  MEDDLY_DCASSERT(isSparseNode(p));
+  MEDDLY_CHECK_RANGE(0, i, getSparseNodeSize(p));
   return *(getNodeAddress(p) + 3 + getSparseNodeSize(p) + i);
 }
 
@@ -1927,8 +2156,8 @@ int MEDDLY::expert_forest::getSparseNodeDownPtr(int p, int i) const
 inline
 int MEDDLY::expert_forest::getSparseNodeIndex(int p, int i) const
 {
-  DCASSERT(isSparseNode(p));
-  CHECK_RANGE(0, i, getSparseNodeSize(p));
+  MEDDLY_DCASSERT(isSparseNode(p));
+  MEDDLY_CHECK_RANGE(0, i, getSparseNodeSize(p));
   return *(getNodeAddress(p) + 3 + i);
 }
 
@@ -1937,8 +2166,8 @@ inline
 void MEDDLY::expert_forest
 ::getFullNodeEdgeValue(int node, int index, int& ev) const
 {
-  DCASSERT(isFullNode(node));
-  CHECK_RANGE(0, index, getFullNodeSize(node));
+  MEDDLY_DCASSERT(isFullNode(node));
+  MEDDLY_CHECK_RANGE(0, index, getFullNodeSize(node));
   ev = *(getNodeAddress(node) + 3 + getFullNodeSize(node) + index);
 }
 
@@ -1947,8 +2176,8 @@ inline
 void MEDDLY::expert_forest
 ::getSparseNodeEdgeValue(int node, int index, int& ev) const
 {
-  DCASSERT(isSparseNode(node));
-  CHECK_RANGE(0, index, getSparseNodeSize(node));
+  MEDDLY_DCASSERT(isSparseNode(node));
+  MEDDLY_CHECK_RANGE(0, index, getSparseNodeSize(node));
   ev = *(getNodeAddress(node) + 3 + (getSparseNodeSize(node) * 2) + index);
 }
 
@@ -1957,8 +2186,8 @@ inline
 void MEDDLY::expert_forest
 ::getFullNodeEdgeValue(int node, int index, float& ev) const
 {
-  DCASSERT(isFullNode(node));
-  CHECK_RANGE(0, index, getFullNodeSize(node));
+  MEDDLY_DCASSERT(isFullNode(node));
+  MEDDLY_CHECK_RANGE(0, index, getFullNodeSize(node));
   ev = toFloat(*(getNodeAddress(node) + 3 + getFullNodeSize(node) + index));
 }
 
@@ -1967,8 +2196,8 @@ inline
 void MEDDLY::expert_forest
 ::getSparseNodeEdgeValue(int node, int index, float& ev) const
 {
-  DCASSERT(isSparseNode(node));
-  CHECK_RANGE(0, index, getSparseNodeSize(node));
+  MEDDLY_DCASSERT(isSparseNode(node));
+  MEDDLY_CHECK_RANGE(0, index, getSparseNodeSize(node));
   ev = toFloat(*(getNodeAddress(node) + 3 +
         (getSparseNodeSize(node) * 2) + index));
 }
@@ -1977,9 +2206,9 @@ void MEDDLY::expert_forest
 inline
 int MEDDLY::expert_forest::linkNode(int p)
 { 
-  DCASSERT(isActiveNode(p));
+  MEDDLY_DCASSERT(isActiveNode(p));
   if (isTerminalNode(p)) return p;
-  DCASSERT(!isPessimistic() || !isZombieNode(p));
+  MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
 
   // increase incount
   ++getInCount(p);
@@ -2000,10 +2229,10 @@ int MEDDLY::expert_forest::linkNode(int p)
 inline
 void MEDDLY::expert_forest::unlinkNode(int p)
 {
-  DCASSERT(isActiveNode(p));
+  MEDDLY_DCASSERT(isActiveNode(p));
   if (isTerminalNode(p)) return;
-  DCASSERT(!isPessimistic() || !isZombieNode(p));
-  DCASSERT(getInCount(p) > 0);
+  MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
+  MEDDLY_DCASSERT(getInCount(p) > 0);
   
   // decrement incoming count
   --getInCount(p);
@@ -2021,9 +2250,9 @@ void MEDDLY::expert_forest::unlinkNode(int p)
 inline
 int MEDDLY::expert_forest::cacheNode(int p)
 {
-  DCASSERT(isActiveNode(p));
+  MEDDLY_DCASSERT(isActiveNode(p));
   if (isTerminalNode(p)) return p;
-  DCASSERT(isReducedNode(p));
+  MEDDLY_DCASSERT(isReducedNode(p));
   getCacheCount(p)++;
 #ifdef TRACK_CACHECOUNT
   fprintf(stdout, "\t+Node %d is in %d caches\n", p, getCacheCount(p));
@@ -2038,11 +2267,11 @@ inline
 void MEDDLY::expert_forest::uncacheNode(int p)
 {
   if (isTerminalNode(p)) return;
-  DCASSERT(isActiveNode(p) ||
+  MEDDLY_DCASSERT(isActiveNode(p) ||
       (!isActiveNode(p) && isPessimistic() && isZombieNode(p)));
 
   if (isPessimistic() && isZombieNode(p)) {
-    DCASSERT(getCacheCount(p) < 0);
+    MEDDLY_DCASSERT(getCacheCount(p) < 0);
     getCacheCount(p)++;                           // special case; stored -ve
     if (getCacheCount(p) == 0) {
       freeZombieNode(p);
@@ -2050,7 +2279,7 @@ void MEDDLY::expert_forest::uncacheNode(int p)
     return;
   }
 
-  DCASSERT(getCacheCount(p) > 0);
+  MEDDLY_DCASSERT(getCacheCount(p) > 0);
   getCacheCount(p)--;
 #ifdef TRACK_CACHECOUNT
   fprintf(stdout, "\t-Node %d is in %d caches\n", p, getCacheCount(p));
@@ -2215,8 +2444,8 @@ bool MEDDLY::expert_forest::isIndexSet(int node) const {
 
 inline
 int MEDDLY::expert_forest::getIndexSetCardinality(int node) const {
-  DCASSERT(isEvplusMdd());
-  DCASSERT(isActiveNode(node));
+  MEDDLY_DCASSERT(isEvplusMdd());
+  MEDDLY_DCASSERT(isActiveNode(node));
   // Cardinality is stored just after the downpointers and edge-values
   return
     isTerminalNode(node)
@@ -2233,8 +2462,8 @@ int MEDDLY::expert_forest::getIndexSetCardinality(int node) const {
 
 inline
 void MEDDLY::expert_forest::setIndexSetCardinality(int node, int c) {
-  DCASSERT(isEvplusMdd());
-  DCASSERT(isActiveNode(node));
+  MEDDLY_DCASSERT(isEvplusMdd());
+  MEDDLY_DCASSERT(isActiveNode(node));
   if (isEvplusMdd() && isActiveNode(node) && !isTerminalNode(node)) {
     *(
         getNodeAddress(node) +

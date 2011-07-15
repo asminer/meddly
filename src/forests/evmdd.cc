@@ -43,13 +43,13 @@ evmdd_node_manager::~evmdd_node_manager()
 
 int evmdd_node_manager::createTempNode(int k, int sz, bool clear)
 {
-  DCASSERT(k != 0);
+  MEDDLY_DCASSERT(k != 0);
 
   if (isTimeToGc()) { gc(); }
 
-  CHECK_RANGE(1, mapLevel(k), l_size);
-  DCASSERT(level[mapLevel(k)].data != NULL);
-  CHECK_RANGE(1, sz, getLevelSize(k) + 1);
+  MEDDLY_CHECK_RANGE(1, mapLevel(k), l_size);
+  MEDDLY_DCASSERT(level[mapLevel(k)].data != NULL);
+  MEDDLY_CHECK_RANGE(1, sz, getLevelSize(k) + 1);
 
   // get a location in address[] to store the node
   int p = getFreeNode(k);
@@ -103,7 +103,7 @@ void evmdd_node_manager::resizeNode(int p, int size)
   int oldSize = getFullNodeSize(p);
   if (size <= oldSize) return;
 
-  DCASSERT(size > oldSize);
+  MEDDLY_DCASSERT(size > oldSize);
 
   // Expand node:
   // (0) Create array of desired size;
@@ -120,7 +120,7 @@ void evmdd_node_manager::resizeNode(int p, int size)
   int nodeLevel = getNodeLevel(p);
   int newOffset = getHole(nodeLevel, newDataArraySize, true);
 
-  DCASSERT(newDataArraySize > oldDataArraySize);
+  MEDDLY_DCASSERT(newDataArraySize > oldDataArraySize);
 
   // Pointers to old and new data arrays
   int* prev = getNodeAddress(p);
@@ -142,7 +142,7 @@ void evmdd_node_manager::resizeNode(int p, int size)
   prev += oldSize;
   curr += oldSize;
   // Initialize trailing edge-values in the new array
-  DCASSERT(sizeof(int) == sizeof(float));
+  MEDDLY_DCASSERT(sizeof(int) == sizeof(float));
   int defaultEV = 0;
   getDefaultEdgeValue(defaultEV);
   for (int* last = curr + (size - oldSize); curr != last; )
@@ -153,7 +153,7 @@ void evmdd_node_manager::resizeNode(int p, int size)
   // (4) Copy the trailer -- part of the header stored at the end of the node.
   int trailerSize = getDataHeaderSize() - 3;
   memcpy(curr, prev, trailerSize * sizeof(int));
-  DCASSERT(p == curr[trailerSize - 1]);
+  MEDDLY_DCASSERT(p == curr[trailerSize - 1]);
 
   // (5) Discard the old array
   makeHole(nodeLevel, address[p].offset, oldDataArraySize);
@@ -161,8 +161,8 @@ void evmdd_node_manager::resizeNode(int p, int size)
   // (6) Update the offset field
   address[p].offset = newOffset;
 
-  DCASSERT(size == getFullNodeSize(p));
-  DCASSERT(p == 
+  MEDDLY_DCASSERT(size == getFullNodeSize(p));
+  MEDDLY_DCASSERT(p == 
       getNodeAddress(p)[getDataHeaderSize() + 2 * getFullNodeSize(p) - 1]);
 }
 
@@ -178,7 +178,7 @@ int binarySearch(const int* a, int sz, int find)
     if (*mid == find) return (mid - a);
     if (*mid < find) {
       if (mid == begin) {
-        DCASSERT(begin + 1 == end);
+        MEDDLY_DCASSERT(begin + 1 == end);
         // find > *mid ==> find > *begin
         // therefore, compare with *end and quit
         // simply advance begin (loop will terminate)
@@ -319,8 +319,8 @@ evplusmdd_node_manager::~evplusmdd_node_manager()
 { }
 
 void evplusmdd_node_manager::initEdgeValues(int p) {
-  DCASSERT(!isReducedNode(p));
-  DCASSERT(isFullNode(p));
+  MEDDLY_DCASSERT(!isReducedNode(p));
+  MEDDLY_DCASSERT(isFullNode(p));
   int *edgeptr = getFullNodeEdgeValues(p);
   int *last = edgeptr + getFullNodeSize(p);
   for ( ; edgeptr != last; ++edgeptr) *edgeptr = INF;
@@ -329,11 +329,11 @@ void evplusmdd_node_manager::initEdgeValues(int p) {
 
 int evplusmdd_node_manager::createTempNode(int k, int sz, bool clear)
 {
-  DCASSERT(k != 0);
+  MEDDLY_DCASSERT(k != 0);
   if (isTimeToGc()) { gc(); }
-  CHECK_RANGE(1, mapLevel(k), l_size);
-  DCASSERT(level[mapLevel(k)].data != NULL);
-  CHECK_RANGE(1, sz, getLevelSize(k) + 1);
+  MEDDLY_CHECK_RANGE(1, mapLevel(k), l_size);
+  MEDDLY_DCASSERT(level[mapLevel(k)].data != NULL);
+  MEDDLY_CHECK_RANGE(1, sz, getLevelSize(k) + 1);
   // get a location in address[] to store the node
   int p = getFreeNode(k);
 
@@ -427,15 +427,15 @@ bool evplusmdd_node_manager::getDownPtrsAndEdgeValues(int p,
 
 void evplusmdd_node_manager::normalizeAndReduceNode(int& p, int& ev)
 {
-  DCASSERT(isActiveNode(p));
+  MEDDLY_DCASSERT(isActiveNode(p));
 
   if (isReducedNode(p)) {
     if (p == 0) ev = INF;
     return;
   }
 
-  DCASSERT(!isTerminalNode(p));
-  DCASSERT(isFullNode(p));
+  MEDDLY_DCASSERT(!isTerminalNode(p));
+  MEDDLY_DCASSERT(isFullNode(p));
 
   const int size = getFullNodeSize(p);
   int *dptr = getFullNodeDownPtrs(p);
@@ -462,7 +462,7 @@ void evplusmdd_node_manager::normalizeAndReduceNode(int& p, int& ev)
     if (0 != dptr[i]) {
       nnz++;
       truncsize = i;
-      DCASSERT(eptr[i] != INF);
+      MEDDLY_DCASSERT(eptr[i] != INF);
       if (eptr[i] < min) min = eptr[i];
     }
   }
@@ -480,11 +480,11 @@ void evplusmdd_node_manager::normalizeAndReduceNode(int& p, int& ev)
   }
 
   // normalize -- there should be atleast one i s.t. eptr[i] == 0
-  DCASSERT(min != INF);
+  MEDDLY_DCASSERT(min != INF);
   for (int i = 0; i < size; i++) {
     if (0 != dptr[i]) {
       eptr[i] -= min;
-      DCASSERT(eptr[i] >= 0);
+      MEDDLY_DCASSERT(eptr[i] >= 0);
     } // else eptr[i] == INF
   }
 
@@ -606,9 +606,9 @@ void evplusmdd_node_manager::normalizeAndReduceNode(int& p, int& ev)
   }
 
   // address[p].cache_count does not change
-  DCASSERT(getCacheCount(p) == 0);
+  MEDDLY_DCASSERT(getCacheCount(p) == 0);
   // Sanity check that the hash value is unchanged
-  DCASSERT(find(p) == p);
+  MEDDLY_DCASSERT(find(p) == p);
 
   // Temporary node has been transformed to a reduced node; decrement
   // temporary node count.
@@ -640,7 +640,7 @@ void evplusmdd_node_manager::getElement(int a, int index, int* e)
     }
   }
   else {
-    DCASSERT(isSparseNode(a));
+    MEDDLY_DCASSERT(isSparseNode(a));
     int aNnz = getSparseNodeSize(a);
     for (int i = aNnz - 1; i >= 0; i--)
     {
@@ -653,9 +653,9 @@ void evplusmdd_node_manager::getElement(int a, int index, int* e)
     }
   }
 
-  DCASSERT(downIndex >= 0);
+  MEDDLY_DCASSERT(downIndex >= 0);
   int aLevel = getNodeLevel(a);
-  DCASSERT(aLevel >= 0);
+  MEDDLY_DCASSERT(aLevel >= 0);
   e[aLevel] = downIndex;
   return getElement(down, index - ev, e);
 }
@@ -726,7 +726,7 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
   // -  edge-value of INF is reserved for edges pointing to terminal 0.
   for (unsigned i = 0; i < dptr.size(); i++)
   {
-    CHECK_RANGE(0, index[i], getLevelSize(lh));
+    MEDDLY_CHECK_RANGE(0, index[i], getLevelSize(lh));
     assert(dptr[i] != 0 && ev[i] != INF);
     assert(isReducedNode(dptr[i]));
     assert(getNodeHeight(dptr[i]) < lh);
@@ -872,8 +872,8 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
   if (getNull() == found) {
     // No duplicate found; insert into unique table
     insert(result);
-    DCASSERT(getCacheCount(result) == 0);
-    DCASSERT(find(result) == result);
+    MEDDLY_DCASSERT(getCacheCount(result) == 0);
+    MEDDLY_DCASSERT(find(result) == result);
   }
   else {
     // Duplicate found; unlink all dptr[] and return the duplicate
@@ -902,10 +902,10 @@ evtimesmdd_node_manager::~evtimesmdd_node_manager()
 { }
 
 void evtimesmdd_node_manager::initEdgeValues(int p) {
-  DCASSERT(!isReducedNode(p));
-  DCASSERT(isFullNode(p));
+  MEDDLY_DCASSERT(!isReducedNode(p));
+  MEDDLY_DCASSERT(isFullNode(p));
 
-  DCASSERT(sizeof(int) == sizeof(float));
+  MEDDLY_DCASSERT(sizeof(int) == sizeof(float));
 
   float defaultEV;
   getDefaultEdgeValue(defaultEV);
@@ -965,15 +965,15 @@ bool evtimesmdd_node_manager::getDownPtrsAndEdgeValues(int p,
 
 void evtimesmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
 {
-  DCASSERT(isActiveNode(p));
+  MEDDLY_DCASSERT(isActiveNode(p));
 
   if (isReducedNode(p)) {
     if (p == 0) ev = NAN;
     return;
   }
 
-  DCASSERT(!isTerminalNode(p));
-  DCASSERT(isFullNode(p));
+  MEDDLY_DCASSERT(!isTerminalNode(p));
+  MEDDLY_DCASSERT(isFullNode(p));
 
   const int size = getFullNodeSize(p);
   int *dptr = getFullNodeDownPtrs(p);
@@ -1148,9 +1148,9 @@ void evtimesmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
   }
 
   // address[p].cache_count does not change
-  DCASSERT(getCacheCount(p) == 0);
+  MEDDLY_DCASSERT(getCacheCount(p) == 0);
   // Sanity check that the hash value is unchanged
-  DCASSERT(find(p) == p);
+  MEDDLY_DCASSERT(find(p) == p);
 
   // Temporary node has been transformed to a reduced node; decrement
   // temporary node count.
@@ -1217,7 +1217,7 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
   // -  edge-value of NAN is reserved for edges pointing to terminal 0.
   for (unsigned i = 0; i < dptr.size(); i++)
   {
-    CHECK_RANGE(0, index[i], getLevelSize(lh));
+    MEDDLY_CHECK_RANGE(0, index[i], getLevelSize(lh));
     assert(dptr[i] != 0 && !isNan(ev[i]));
     assert(isReducedNode(dptr[i]));
     assert(getNodeHeight(dptr[i]) < lh);
@@ -1363,8 +1363,8 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
   if (getNull() == found) {
     // No duplicate found; insert into unique table
     insert(result);
-    DCASSERT(getCacheCount(result) == 0);
-    DCASSERT(find(result) == result);
+    MEDDLY_DCASSERT(getCacheCount(result) == 0);
+    MEDDLY_DCASSERT(find(result) == result);
   }
   else {
     // Duplicate found; unlink all dptr[] and return the duplicate

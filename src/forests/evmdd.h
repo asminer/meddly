@@ -384,8 +384,8 @@ template <typename T>
 void evmdd_node_manager::createNode(int k, int index, int dptr, T ev,
     int& res, T& resEv)
 {
-  DCASSERT(dptr >= -1 && ev >= 0);
-  DCASSERT(index >= -1);
+  MEDDLY_DCASSERT(dptr >= -1 && ev >= 0);
+  MEDDLY_DCASSERT(index >= -1);
 
   if (index == -1) {
     // if all edge values are the same for a evmdd node, it is
@@ -413,7 +413,7 @@ void evmdd_node_manager::createNode(int k, int index, int dptr, T ev,
     normalizeAndReduceNode(res, resEv);
   }
   else {
-    DCASSERT (nodeStorage == SPARSE_STORAGE ||
+    MEDDLY_DCASSERT (nodeStorage == SPARSE_STORAGE ||
         (nodeStorage == FULL_OR_SPARSE_STORAGE && index >= 2));
     // Build a sparse node
     createSparseNode(k, index, dptr, ev, res, resEv);
@@ -426,12 +426,12 @@ template <typename T>
 void evmdd_node_manager::createSparseNode(int k, int index,
     int dptr, T ev, int& res, T& resEv)
 {
-  DCASSERT(k != 0);
+  MEDDLY_DCASSERT(k != 0);
 
   if (isTimeToGc()) { garbageCollect(); }
 
-  DCASSERT(isValidLevel(k));
-  CHECK_RANGE(0, index, getLevelSize(k));
+  MEDDLY_DCASSERT(isValidLevel(k));
+  MEDDLY_CHECK_RANGE(0, index, getLevelSize(k));
 
   // get a location in address[] to store the node
   int p = getFreeNode(k);
@@ -479,8 +479,8 @@ void evmdd_node_manager::createSparseNode(int k, int index,
   if (getNull() == q) {
     // no duplicate found; insert into unique table
     insert(p);
-    DCASSERT(getCacheCount(p) == 0);
-    DCASSERT(find(p) == p);
+    MEDDLY_DCASSERT(getCacheCount(p) == 0);
+    MEDDLY_DCASSERT(find(p) == p);
     res = p;
   }
   else {
@@ -686,7 +686,7 @@ void evmdd_node_manager::sortBuild(int** list, T* tList,
 
   // build node from indices, dptrs and edgeValues
 
-  DCASSERT(dptrs.size() > 0);
+  MEDDLY_DCASSERT(dptrs.size() > 0);
   createNode(height, indices, dptrs, edgeValues, node, edgeValue);
 }
 
@@ -696,7 +696,7 @@ inline
 T evmdd_node_manager::handleMultipleTerminalValues(const T* tList,
     int begin, int end)
 {
-  DCASSERT(begin < end);
+  MEDDLY_DCASSERT(begin < end);
   T result = tList[begin++];
   while (begin != end) result += tList[begin++];
   return result;
@@ -708,7 +708,7 @@ inline
 bool evmdd_node_manager::handleMultipleTerminalValues(const bool* tList,
     int begin, int end)
 {
-  DCASSERT(begin < end);
+  MEDDLY_DCASSERT(begin < end);
   return true;
 }
 

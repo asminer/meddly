@@ -51,7 +51,7 @@ class MEDDLY::base_evplus_mt : public numerical_operation {
     virtual void compute(int ht, double* y, int y_ind, const double* x, 
       int x_ind, int A) = 0;
 
-    virtual bool isEntryStale(const int*) {
+    virtual bool isStaleEntry(const int*) {
       throw error(error::MISCELLANEOUS);
     }
     virtual void discardEntry(const int*) {
@@ -78,9 +78,9 @@ MEDDLY::base_evplus_mt::base_evplus_mt(const numerical_opname* code,
   fx = (const expert_forest*) x_ind.getForest();
   fA = (const expert_forest*) A.getForest();
   fy = (const expert_forest*) y_ind.getForest();
-  DCASSERT(fx);
-  DCASSERT(fA);
-  DCASSERT(fy);
+  MEDDLY_DCASSERT(fx);
+  MEDDLY_DCASSERT(fA);
+  MEDDLY_DCASSERT(fy);
   x_root = x_ind.getNode();
   A_root = A.getNode();
   y_root = y_ind.getNode();
@@ -131,7 +131,7 @@ void MEDDLY::VM_evplus_mt::compute(int ht, double* y, int y_ind,
   }
 
   // It should be impossible for an indexing function to skip levels, right?   
-  DCASSERT(fx->getNodeHeight(x_ind) == ht);
+  MEDDLY_DCASSERT(fx->getNodeHeight(x_ind) == ht);
   int xv, xs;
 
   //
@@ -139,7 +139,7 @@ void MEDDLY::VM_evplus_mt::compute(int ht, double* y, int y_ind,
   //
   if (0==fA->getNodeHeight(A) && (x_ind == y_ind)) {
     if (fx == fy) {
-      DCASSERT(fx->isIndexSet(x_ind));
+      MEDDLY_DCASSERT(fx->isIndexSet(x_ind));
       // yes we can
       float v = fA->getReal(A);
       for (long i = fx->getIndexSetCardinality(x_ind)-1; i>=0; i--) {
@@ -196,7 +196,7 @@ void MEDDLY::VM_evplus_mt::compute(int ht, double* y, int y_ind,
         return;
       } // if y_ind is sparse
 
-      DCASSERT(fy->isFullNode(y_ind));
+      MEDDLY_DCASSERT(fy->isFullNode(y_ind));
       // x_ind is sparse, y_ind is full; intersect them
       ys = fy->getFullNodeSize(y_ind);
       for (int xp=0; xp<xs; xp++) {
@@ -211,7 +211,7 @@ void MEDDLY::VM_evplus_mt::compute(int ht, double* y, int y_ind,
       return;
     } // if x_ind is sparse
 
-    DCASSERT(fx->isFullNode(x_ind));
+    MEDDLY_DCASSERT(fx->isFullNode(x_ind));
     xs = fx->getFullNodeSize(x_ind);
 
     if (fy->isSparseNode(y_ind)) {
@@ -229,7 +229,7 @@ void MEDDLY::VM_evplus_mt::compute(int ht, double* y, int y_ind,
       return;
     } // if y_ind is sparse
 
-    DCASSERT(fy->isFullNode(y_ind));
+    MEDDLY_DCASSERT(fy->isFullNode(y_ind));
     // x_ind is full, y_ind is full; intersect them
     ys = fy->getFullNodeSize(y_ind);
     int sz = MIN(xs, ys);
@@ -305,7 +305,7 @@ void MEDDLY::VM_evplus_mt::compute(int ht, double* y, int y_ind,
   //
   // Full x_ind
   //
-  DCASSERT(fx->isFullNode(x_ind));
+  MEDDLY_DCASSERT(fx->isFullNode(x_ind));
   xs = fx->getFullNodeSize(x_ind);
 
   if (fA->isSparseNode(A)) {
@@ -348,7 +348,7 @@ void MEDDLY::VM_evplus_mt::comp_pr(int ht, double* y, int y_ind,
   }
 
   // It should be impossible for an indexing function to skip levels, right?   
-  DCASSERT(fy->getNodeHeight(y_ind) == ht);
+  MEDDLY_DCASSERT(fy->getNodeHeight(y_ind) == ht);
   int yv, ys;
 
   //
@@ -409,7 +409,7 @@ void MEDDLY::VM_evplus_mt::comp_pr(int ht, double* y, int y_ind,
   //
   // Full y_ind
   //
-  DCASSERT(fy->isFullNode(y_ind));
+  MEDDLY_DCASSERT(fy->isFullNode(y_ind));
   ys = fy->getFullNodeSize(y_ind);
 
   if (fA->isSparseNode(A)) {
@@ -479,7 +479,7 @@ void MEDDLY::MV_evplus_mt::compute(int ht, double* y, int y_ind,
   }
 
   // It should be impossible for an indexing function to skip levels, right?   
-  DCASSERT(fy->getNodeHeight(y_ind) == ht);
+  MEDDLY_DCASSERT(fy->getNodeHeight(y_ind) == ht);
   int yv, ys;
 
   //
@@ -487,7 +487,7 @@ void MEDDLY::MV_evplus_mt::compute(int ht, double* y, int y_ind,
   //
   if (0==fA->getNodeHeight(A) && (X_ind == y_ind)) {
     if (fx == fy) {
-      DCASSERT(fy->isIndexSet(y_ind));
+      MEDDLY_DCASSERT(fy->isIndexSet(y_ind));
       // yes we can
       float v = fA->getReal(A);
       for (long i = fy->getIndexSetCardinality(y_ind)-1; i>=0; i--) {
@@ -544,7 +544,7 @@ void MEDDLY::MV_evplus_mt::compute(int ht, double* y, int y_ind,
         return;
       } // if X_ind is sparse
 
-      DCASSERT(fx->isFullNode(X_ind));
+      MEDDLY_DCASSERT(fx->isFullNode(X_ind));
       // y_ind is sparse, X_ind is full; intersect them
       Xs = fx->getFullNodeSize(X_ind);
       for (int yp=0; yp<ys; yp++) {
@@ -559,7 +559,7 @@ void MEDDLY::MV_evplus_mt::compute(int ht, double* y, int y_ind,
       return;
     } // if y_ind is sparse
 
-    DCASSERT(fy->isFullNode(y_ind));
+    MEDDLY_DCASSERT(fy->isFullNode(y_ind));
     ys = fy->getFullNodeSize(y_ind);
 
     if (fx->isSparseNode(X_ind)) {
@@ -577,7 +577,7 @@ void MEDDLY::MV_evplus_mt::compute(int ht, double* y, int y_ind,
       return;
     } // if X_ind is sparse
 
-    DCASSERT(fx->isFullNode(X_ind));
+    MEDDLY_DCASSERT(fx->isFullNode(X_ind));
     // y_ind is full, X_ind is full; intersect them
     Xs = fx->getFullNodeSize(X_ind);
     int sz = MIN(ys, Xs);
@@ -656,7 +656,7 @@ void MEDDLY::MV_evplus_mt::compute(int ht, double* y, int y_ind,
   //
   // Full y_ind
   //
-  DCASSERT(fy->isFullNode(y_ind));
+  MEDDLY_DCASSERT(fy->isFullNode(y_ind));
   ys = fy->getFullNodeSize(y_ind);
 
   if (fA->isSparseNode(A)) {
@@ -697,7 +697,7 @@ void MEDDLY::MV_evplus_mt::comp_pr(int ht, double* y, int y_ind,
   }
 
   // It should be impossible for an indexing function to skip levels, right?   
-  DCASSERT(fx->getNodeHeight(x_ind) == ht);
+  MEDDLY_DCASSERT(fx->getNodeHeight(x_ind) == ht);
   int xv, xs;
 
   //
@@ -759,7 +759,7 @@ void MEDDLY::MV_evplus_mt::comp_pr(int ht, double* y, int y_ind,
   //
   // Full x_ind
   //
-  DCASSERT(fx->isFullNode(x_ind));
+  MEDDLY_DCASSERT(fx->isFullNode(x_ind));
   xs = fx->getFullNodeSize(x_ind);
 
   if (fA->isSparseNode(A)) {

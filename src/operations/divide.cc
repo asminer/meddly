@@ -24,7 +24,6 @@
 #endif
 #include "../defines.h"
 #include "divide.h"
-#include "../compute_table.h"
 #include "apply_base.h"
 
 namespace MEDDLY {
@@ -65,7 +64,7 @@ bool MEDDLY::divide_mdd::checkTerminals(int a, int b, int& c)
         arg1F->getInteger(a) / arg2F->getInteger(b)
       );
     } else {
-      DCASSERT(resF->getRangeType() == forest::REAL);
+      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
       c = resF->getTerminalNode(
         arg1F->getReal(a) / arg2F->getReal(b)
       );
@@ -106,7 +105,7 @@ bool MEDDLY::divide_mxd::checkTerminals(int a, int b, int& c)
         arg1F->getInteger(a) / arg2F->getInteger(b)
       );
     } else {
-      DCASSERT(resF->getRangeType() == forest::REAL);
+      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
       c = resF->getTerminalNode(
         arg1F->getReal(a) / arg2F->getReal(b)
       );

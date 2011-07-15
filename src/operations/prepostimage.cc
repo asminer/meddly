@@ -25,7 +25,6 @@
 #endif
 #include "../defines.h"
 #include "prepostimage.h"
-#include "../compute_table.h"
 
 namespace MEDDLY {
   class image_op;
@@ -49,24 +48,24 @@ class MEDDLY::image_op : public binary_operation {
     image_op(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
-    virtual bool isEntryStale(const int* entryData);
+    virtual bool isStaleEntry(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
 
     inline bool findResult(int a, int b, int &c) {
-      static int key[2];
-      key[0] = a; key[1] = b;
-      const int* cacheFind = CT->find(this, key);
+      CTsrch.key(0) = a;
+      CTsrch.key(1) = b;
+      const int* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
       c = resF->linkNode(cacheFind[2]);
       return true;
     }
     inline int saveResult(int a, int b, int c) {
-      static int cacheEntry[3];
-      cacheEntry[0] = arg1F->cacheNode(a); 
-      cacheEntry[1] = arg2F->cacheNode(b);
-      cacheEntry[2] = resF->cacheNode(c);
-      CT->add(this, cacheEntry);
+      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      entry.key(0) = arg1F->cacheNode(a); 
+      entry.key(1) = arg2F->cacheNode(b);
+      entry.result(0) = resF->cacheNode(c);
+      CT->addEntry();
       return c;
     }
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
@@ -77,14 +76,13 @@ class MEDDLY::image_op : public binary_operation {
 };
 
 MEDDLY::image_op::image_op(const binary_opname* oc, expert_forest* a1,
-  expert_forest* a2, expert_forest* res) : binary_operation(oc, a1, a2, res)
+  expert_forest* a2, expert_forest* res)
+: binary_operation(oc, 2, 1, a1, a2, res)
 {
-  key_length = 2; 
-  ans_length = 1;
   unionOp = 0;
 }
 
-bool MEDDLY::image_op::isEntryStale(const int* data)
+bool MEDDLY::image_op::isStaleEntry(const int* data)
 {
   return arg1F->isStale(data[0]) ||
          arg2F->isStale(data[1]) ||
@@ -118,7 +116,7 @@ int MEDDLY::image_op::compute(int a, int b)
   } else {
     unionOp = getOperation(MAXIMUM, resF, resF, resF);
   }
-  DCASSERT(unionOp);
+  MEDDLY_DCASSERT(unionOp);
   return compute_rec(a, b);
 }
 
@@ -178,11 +176,11 @@ int MEDDLY::preimage_mdd::compute_rec(int mdd, int mxd)
     result = expandMdd(mdd, mxd);
   } else {
     // same level
-    DCASSERT(arg1F->getNodeLevel(mdd) == arg2F->getNodeLevel(mxd));
+    MEDDLY_DCASSERT(arg1F->getNodeLevel(mdd) == arg2F->getNodeLevel(mxd));
     result = expand(mdd, mxd);
   } // same level
 
-  DCASSERT(resF->isReducedNode(result));
+  MEDDLY_DCASSERT(resF->isReducedNode(result));
 
   // save result in compute cache and return it
   return saveResult(mdd, mxd, result);
@@ -193,7 +191,7 @@ int MEDDLY::preimage_mdd::expandMxdByOneLevel(int mdd, int iMxd)
 {
   if (iMxd == 0) return 0;
 
-  DCASSERT(!arg2F->isTerminalNode(iMxd));
+  MEDDLY_DCASSERT(!arg2F->isTerminalNode(iMxd));
 
   int result = 0;
   int tempResult = 0;
@@ -283,7 +281,7 @@ int MEDDLY::preimage_mdd::expandMdd(int mdd, int mxd)
 int MEDDLY::preimage_mdd::expandByOneLevel(int mdd, int iMxd)
 {
   if (iMxd == 0) return 0;
-  DCASSERT(!arg2F->isTerminalNode(iMxd));
+  MEDDLY_DCASSERT(!arg2F->isTerminalNode(iMxd));
   int result = 0;
   int tempResult = 0;
   if (arg2F->isFullNode(iMxd)) {
@@ -303,7 +301,7 @@ int MEDDLY::preimage_mdd::expandByOneLevel(int mdd, int iMxd)
       }
     } // mdd is a full node
     else {
-      DCASSERT(arg1F->isSparseNode(mdd));
+      MEDDLY_DCASSERT(arg1F->isSparseNode(mdd));
       int iMxdSize = arg2F->getFullNodeSize(iMxd);
       int mddSize = arg1F->getSparseNodeSize(mdd);
       for (int j = 0; j < mddSize; j++) {
@@ -322,7 +320,7 @@ int MEDDLY::preimage_mdd::expandByOneLevel(int mdd, int iMxd)
     } // mdd is a sparse node
   } // iMxd is a full node
   else {
-    DCASSERT(arg2F->isSparseNode(iMxd));
+    MEDDLY_DCASSERT(arg2F->isSparseNode(iMxd));
     if (arg1F->isFullNode(mdd)) {
       int iMxdSize = arg2F->getSparseNodeSize(iMxd);
       int mddSize = arg1F->getFullNodeSize(mdd);
@@ -341,7 +339,7 @@ int MEDDLY::preimage_mdd::expandByOneLevel(int mdd, int iMxd)
       }
     } // mdd is a full node
     else {
-      DCASSERT(arg1F->isSparseNode(mdd));
+      MEDDLY_DCASSERT(arg1F->isSparseNode(mdd));
       int iMxdLargestIndex = arg2F->getSparseNodeIndex(iMxd,
         arg2F->getSparseNodeSize(iMxd) - 1);
       int mddSize = arg1F->getSparseNodeSize(mdd);
@@ -355,11 +353,11 @@ int MEDDLY::preimage_mdd::expandByOneLevel(int mdd, int iMxd)
         iMxdIndex = arg2F->getSparseNodeIndex(iMxd, k);
         while (iMxdIndex < mddIndex) {
           k++;
-          DCASSERT(k < arg2F->getSparseNodeSize(iMxd));
+          MEDDLY_DCASSERT(k < arg2F->getSparseNodeSize(iMxd));
           iMxdIndex = arg2F->getSparseNodeIndex(iMxd, k);
         }
         if (mddIndex < iMxdIndex) { ++j; continue; }
-        DCASSERT(mddIndex == iMxdIndex);
+        MEDDLY_DCASSERT(mddIndex == iMxdIndex);
         int jResult = compute_rec(
             arg1F->getSparseNodeDownPtr(mdd, j),
             arg2F->getSparseNodeDownPtr(iMxd, k)
@@ -469,7 +467,7 @@ int MEDDLY::postimage_mdd::compute_rec(int mdd, int mxd)
     result = expandMdd(mdd, mxd);
   } else {
     // same level
-    DCASSERT(arg1F->getNodeLevel(mdd) == arg2F->getNodeLevel(mxd));
+    MEDDLY_DCASSERT(arg1F->getNodeLevel(mdd) == arg2F->getNodeLevel(mxd));
     if (arg1F->isFullNode(mdd)) {
       if (arg2F->isFullNode(mxd))
         result = fullFull(mdd, mxd);
@@ -483,7 +481,7 @@ int MEDDLY::postimage_mdd::compute_rec(int mdd, int mxd)
     }
   } // same level
 
-  DCASSERT(resF->isReducedNode(result));
+  MEDDLY_DCASSERT(resF->isReducedNode(result));
 
 #ifdef TRACE_ALL_OPS
   printf("computed postimage(%d, %d) = %d\n", mdd, mxd, result);
@@ -494,8 +492,8 @@ int MEDDLY::postimage_mdd::compute_rec(int mdd, int mxd)
 
 int MEDDLY::postimage_mdd::fullFull(int mdd, int mxd)
 {
-  DCASSERT(arg1F->isFullNode(mdd));
-  DCASSERT(arg2F->isFullNode(mxd));
+  MEDDLY_DCASSERT(arg1F->isFullNode(mdd));
+  MEDDLY_DCASSERT(arg2F->isFullNode(mxd));
 
   // for each mxd[i]
   //   for each mxd[i][j]
@@ -521,8 +519,8 @@ int MEDDLY::postimage_mdd::fullFull(int mdd, int mxd)
 
 int MEDDLY::postimage_mdd::fullSparse(int mdd, int mxd)
 {
-  DCASSERT(arg1F->isFullNode(mdd));
-  DCASSERT(arg2F->isSparseNode(mxd));
+  MEDDLY_DCASSERT(arg1F->isFullNode(mdd));
+  MEDDLY_DCASSERT(arg2F->isSparseNode(mxd));
 
   // create new node
   int result = resF->createTempNodeMaxSize(arg1F->getNodeLevel(mdd));
@@ -542,8 +540,8 @@ int MEDDLY::postimage_mdd::fullSparse(int mdd, int mxd)
 
 int MEDDLY::postimage_mdd::sparseFull(int mdd, int mxd)
 {
-  DCASSERT(arg1F->isSparseNode(mdd));
-  DCASSERT(arg2F->isFullNode(mxd));
+  MEDDLY_DCASSERT(arg1F->isSparseNode(mdd));
+  MEDDLY_DCASSERT(arg2F->isFullNode(mxd));
 
   // create new node
   int result = resF->createTempNodeMaxSize(arg1F->getNodeLevel(mdd));
@@ -563,8 +561,8 @@ int MEDDLY::postimage_mdd::sparseFull(int mdd, int mxd)
 
 int MEDDLY::postimage_mdd::sparseSparse(int mdd, int mxd)
 {
-  DCASSERT(arg1F->isSparseNode(mdd));
-  DCASSERT(arg2F->isSparseNode(mxd));
+  MEDDLY_DCASSERT(arg1F->isSparseNode(mdd));
+  MEDDLY_DCASSERT(arg2F->isSparseNode(mxd));
 
   // create new node
   int result = resF->createTempNodeMaxSize(arg1F->getNodeLevel(mdd));
@@ -645,9 +643,9 @@ void MEDDLY::postimage_mdd::expandMxdHelper(int mdd, int iMxd, int result)
 {
   if (iMxd == 0) return;
 
-  DCASSERT(unionOp != 0);
-  DCASSERT(!arg2F->isTerminalNode(iMxd));
-  DCASSERT(!resF->isReducedNode(result));
+  MEDDLY_DCASSERT(unionOp != 0);
+  MEDDLY_DCASSERT(!arg2F->isTerminalNode(iMxd));
+  MEDDLY_DCASSERT(!resF->isReducedNode(result));
 
   int tempResult = 0;
   if (arg2F->isFullNode(iMxd)) {

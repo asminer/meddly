@@ -24,7 +24,6 @@
 #endif
 #include "../defines.h"
 #include "comp_eq.h"
-#include "../compute_table.h"
 #include "apply_base.h"
 
 namespace MEDDLY {
@@ -66,7 +65,7 @@ bool MEDDLY::equal_mdd::checkTerminals(int a, int b, int& c)
     if (resF->getRangeType() == forest::INTEGER) {
       c = resF->getTerminalNode(term);
     } else {
-      DCASSERT(resF->getRangeType() == forest::REAL);
+      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
       c = resF->getTerminalNode(float(term));
     }
     return true;
@@ -105,7 +104,7 @@ bool MEDDLY::equal_mxd::checkTerminals(int a, int b, int& c)
     if (resF->getRangeType() == forest::INTEGER) {
       c = resF->getTerminalNode(term);
     } else {
-      DCASSERT(resF->getRangeType() == forest::REAL);
+      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
       c = resF->getTerminalNode(float(term));
     }
     return true;

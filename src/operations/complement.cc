@@ -24,7 +24,6 @@
 #endif
 #include "../defines.h"
 #include "complement.h"
-#include "../compute_table.h"
 
 namespace MEDDLY {
   class compl_mdd;
@@ -44,7 +43,7 @@ class MEDDLY::compl_mdd : public unary_operation {
   public:
     compl_mdd(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
-    virtual bool isEntryStale(const int* entryData);
+    virtual bool isStaleEntry(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
     virtual void compute(const dd_edge& a, dd_edge& b);
@@ -54,15 +53,13 @@ class MEDDLY::compl_mdd : public unary_operation {
 
 MEDDLY::compl_mdd
 ::compl_mdd(const unary_opname* oc, expert_forest* arg, expert_forest* res)
- : unary_operation(oc, arg, res)
+ : unary_operation(oc, 1, 1, arg, res)
 {
-  key_length = 1; 
-  ans_length = 1;
   // ct entry 0: input node
   // ct entry 1: output node
 }
 
-bool MEDDLY::compl_mdd::isEntryStale(const int* data)
+bool MEDDLY::compl_mdd::isStaleEntry(const int* data)
 {
   return argF->isStale(data[0]) || resF->isStale(data[1]);
 }
@@ -90,7 +87,8 @@ int MEDDLY::compl_mdd::compute(int a)
     return resF->getTerminalNode(a==0);
   }
   // Check compute table
-  const int* cacheFind = CT->find(this, &a);
+  CTsrch.key(0) = a;
+  const int* cacheFind = CT->find(CTsrch);
   if (cacheFind) {
     return resF->linkNode(cacheFind[1]);
   }
@@ -101,7 +99,7 @@ int MEDDLY::compl_mdd::compute(int a)
 
   if (argF->isFullNode(a)) {
     const int aSize = argF->getFullNodeSize(a);
-    DCASSERT(aSize <= bSize);
+    MEDDLY_DCASSERT(aSize <= bSize);
     int i, temp;
     for (i=0; i<aSize; i++) {
       temp = compute(argF->getFullNodeDownPtr(a, i));
@@ -134,10 +132,11 @@ int MEDDLY::compl_mdd::compute(int a)
 
   // reduce, save in compute table
   b = resF->reduceNode(b);
-  static int cacheEntry[2];
-  cacheEntry[0] = argF->cacheNode(a);
-  cacheEntry[1] = resF->cacheNode(b);
-  CT->add(this, cacheEntry);
+  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  entry.key(0) = argF->cacheNode(a);
+  entry.result(0) = resF->cacheNode(b);
+  CT->addEntry();
+
   return b;
 }
 
@@ -152,7 +151,7 @@ class MEDDLY::compl_mxd : public unary_operation {
   public:
     compl_mxd(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
-    virtual bool isEntryStale(const int* entryData);
+    virtual bool isStaleEntry(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
     virtual void compute(const dd_edge& a, dd_edge& b);
@@ -162,16 +161,14 @@ class MEDDLY::compl_mxd : public unary_operation {
 
 MEDDLY::compl_mxd
 ::compl_mxd(const unary_opname* oc, expert_forest* arg, expert_forest* res)
- : unary_operation(oc, arg, res)
+ : unary_operation(oc, 2, 1, arg, res)
 {
-  key_length = 2; 
-  ans_length = 1;
   // ct entry 0: level
   // ct entry 1: input node
   // ct entry 2: output node
 }
 
-bool MEDDLY::compl_mxd::isEntryStale(const int* data)
+bool MEDDLY::compl_mxd::isStaleEntry(const int* data)
 {
   return argF->isStale(data[1]) || resF->isStale(data[2]);
 }
@@ -204,10 +201,9 @@ int MEDDLY::compl_mxd::compute(int ht, int a)
     return resF->getTerminalNode(a==0);
   }
   // Check compute table
-  static int cacheEntry[3];
-  cacheEntry[0] = ht;
-  cacheEntry[1] = a;
-  const int* cacheFind = CT->find(this, cacheEntry);
+  CTsrch.key(0) = ht;
+  CTsrch.key(1) = a;
+  const int* cacheFind = CT->find(CTsrch);
   if (cacheFind) {
 #ifdef DEBUG_MXD_COMPL
     fprintf(stderr, "\tin CT:   compl_mxd(%d, %d) : %d\n", ht, a, cacheFind[2]);
@@ -229,8 +225,8 @@ int MEDDLY::compl_mxd::compute(int ht, int a)
     // Special case: expand both levels at skipped identity-reduced level.
     if (ht > 0 &&
         resF->getReductionRule() == forest::IDENTITY_REDUCED) {
-      DCASSERT(ht > 0);
-      DCASSERT(htm1 < 0);
+      MEDDLY_DCASSERT(ht > 0);
+      MEDDLY_DCASSERT(htm1 < 0);
       int htm2 = (-htm1)-1;
       int zero = compute(htm2, 0);
       int temp = compute(htm2, a);
@@ -261,7 +257,7 @@ int MEDDLY::compl_mxd::compute(int ht, int a)
   else if (argF->isFullNode(a)) {
     // a is a full-node
     const int aSize = argF->getFullNodeSize(a);
-    DCASSERT(aSize <= bSize);
+    MEDDLY_DCASSERT(aSize <= bSize);
     int i = 0;
     for ( ; i < aSize; ++i) {
       int temp = compute(htm1, argF->getFullNodeDownPtr(a, i));
@@ -278,9 +274,9 @@ int MEDDLY::compl_mxd::compute(int ht, int a)
   } // not skipped, a full
   else {
     // a is a sparse-node
-    DCASSERT(argF->isSparseNode(a));
+    MEDDLY_DCASSERT(argF->isSparseNode(a));
     const int aSize = argF->getSparseNodeSize(a);
-    DCASSERT(argF->getSparseNodeIndex(a, aSize - 1) < bSize);
+    MEDDLY_DCASSERT(argF->getSparseNodeIndex(a, aSize - 1) < bSize);
     int i = 0;        // goes from 0..bSize
     int aIndex = 0;   // j is the sparse index; aIndex is the equiv full index
     int zero = compute(htm1, 0);
@@ -290,7 +286,7 @@ int MEDDLY::compl_mxd::compute(int ht, int a)
         // a[i] is 0
         resF->setDownPtrWoUnlink(b, i++, zero);
       }
-      DCASSERT(i == aIndex && i < bSize);
+      MEDDLY_DCASSERT(i == aIndex && i < bSize);
       int temp = compute(htm1, argF->getSparseNodeDownPtr(a, j));
       resF->setDownPtrWoUnlink(b, i, temp);
       resF->unlinkNode(temp);
@@ -304,10 +300,11 @@ int MEDDLY::compl_mxd::compute(int ht, int a)
 
   // reduce, save in compute table
   b = resF->reduceNode(b);
-  cacheEntry[0] = ht;
-  cacheEntry[1] = argF->cacheNode(a);
-  cacheEntry[2] = resF->cacheNode(b);
-  CT->add(this, cacheEntry);
+  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  entry.key(0) = ht;
+  entry.key(1) = argF->cacheNode(a);
+  entry.result(0) = resF->cacheNode(b);
+  CT->addEntry();
 
 #ifdef DEBUG_MXD_COMPL
   fprintf(stderr, "\tfinished compl_mxd(%d, %d) : %d\n", ht, a, b);

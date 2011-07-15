@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "meddly.h"
+#include "meddly_expert.h"
 #include "simple_model.h"
 
 using namespace MEDDLY;
@@ -214,6 +215,7 @@ int main(int argc, const char** argv)
   printf("Approx. %g reachable states\n", c);
   
   // cleanup
+  operation::showAllComputeTables(stdout, 1);
   MEDDLY::cleanup();
   return 0;
 }
