@@ -23,6 +23,8 @@
 
 #include <map>  // for operation_map
 
+#include <limits.h>
+
 // #define DEBUG_SLOW
 // #define DEBUG_CT
 // #define DEBUG_TABLE2LIST
@@ -549,7 +551,7 @@ void MEDDLY::base_chained::addEntry()
   table = newt;
   tableSize = newsize;
   if (tableSize == maxSize) {
-    tableExpand = 0xffffffff;
+    tableExpand = INT_MAX;
   } else {
     tableExpand = 4*tableSize;
   }
@@ -1247,7 +1249,7 @@ class MEDDLY::base_unchained : public base_hash {
       if (currMemory > peakMemory) peakMemory = currMemory;
 
       if (tableSize == maxSize) {
-        tableExpand = 0xffffffff;
+        tableExpand = INT_MAX;
       } else {
         tableExpand = tableSize / 2;
       }
