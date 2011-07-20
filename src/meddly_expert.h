@@ -97,6 +97,9 @@ namespace MEDDLY {
 
   class op_initializer;
 
+  // classes defined elsewhere
+  class base_table;
+
   // ******************************************************************
   // *                   Named numerical operations                   *
   // ******************************************************************
@@ -198,6 +201,8 @@ namespace MEDDLY {
   /// Safely destroy the given numerical operation.
   void destroyOperation(numerical_operation* &op);
 
+  /// Should not be called directly.
+  void destroyOpInternal(operation* op);
   
   /// Builds an initializer for MEDDLY's builtin operations.
   op_initializer* makeBuiltinInitializer();
@@ -1302,7 +1307,7 @@ class MEDDLY::compute_table {
       };
 
       class search_key {
-          friend class base_table;
+          friend class MEDDLY::base_table;
           int hashLength;
           int* data;
           bool killData;
@@ -1326,7 +1331,7 @@ class MEDDLY::compute_table {
       };
 
       class temp_entry {
-          friend class base_table;
+          friend class MEDDLY::base_table;
           int handle;
           int hashLength;
           int* entry;
