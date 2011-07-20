@@ -20,7 +20,6 @@
 */
 
 #include "meddly.h"
-#include "meddly_expert.h"
 #include "simple_model.h"
 
 #define VERBOSE

@@ -307,7 +307,7 @@ void MEDDLY::base_table
 ::report(FILE* s, int indent, int &level) const
 {
   if (level < 1) return;
-  fprintf(s, "%*sNumber of entries :\t%ld\n", indent, "", perf.numEntries);
+  fprintf(s, "%*sNumber of entries :\t%u\n", indent, "", perf.numEntries);
   fprintf(s, "%*sEntry array size  :\t%d\n", indent, "", entriesSize);
   fprintf(s, "%*sEntry array alloc :\t%d\n", indent, "", entriesAlloc);
 
@@ -549,7 +549,7 @@ void MEDDLY::base_chained::addEntry()
   table = newt;
   tableSize = newsize;
   if (tableSize == maxSize) {
-    tableExpand = INT_MAX;
+    tableExpand = 0xffffffff;
   } else {
     tableExpand = 4*tableSize;
   }
@@ -1247,7 +1247,7 @@ class MEDDLY::base_unchained : public base_hash {
       if (currMemory > peakMemory) peakMemory = currMemory;
 
       if (tableSize == maxSize) {
-        tableExpand = INT_MAX;
+        tableExpand = 0xffffffff;
       } else {
         tableExpand = tableSize / 2;
       }
@@ -1893,7 +1893,7 @@ void MEDDLY::operation_map<K>::show(FILE *s, int verbLevel)
     global_op->getName(), global_op->getIndex()
   );
 
-  fprintf(s, "\tMap size: %ld\n", ct.size());
+  fprintf(s, "\tMap size: %ld\n", long(ct.size()));
   verbLevel -= 4;
   if (verbLevel<1) return;
 

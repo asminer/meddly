@@ -29,9 +29,10 @@
 
 
 #include <iostream>
+#include <stdlib.h>
+#include <string.h>
 #include <meddly.h>
 #include <meddly_expert.h>
-#include <stdlib.h>
 
 using namespace MEDDLY;
 

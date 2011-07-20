@@ -1292,7 +1292,7 @@ class MEDDLY::compute_table {
       bool checkStalesOnResize;
 
       struct stats {
-        long numEntries;
+        unsigned numEntries;
         unsigned hits;
         unsigned pings;
         static const int searchHistogramSize = 256;
@@ -1350,8 +1350,7 @@ class MEDDLY::compute_table {
 #endif
             return res_entry[i]; 
           }
-          // inline void copyResult(int i, void* data, size_t bytes) {
-          void copyResult(int i, void* data, size_t bytes) {
+          inline void copyResult(int i, void* data, size_t bytes) {
 #ifdef DEVELOPMENT_CODE
             assert(i>=0);
             assert(i+bytes<=resLength*sizeof(int));

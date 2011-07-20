@@ -25,6 +25,7 @@
 
 
 #include <stdio.h>
+#include <string.h>
 
 #include "meddly.h"
 #include "meddly_expert.h"

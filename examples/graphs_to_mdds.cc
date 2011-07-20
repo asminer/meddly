@@ -59,6 +59,7 @@
 //
 
 #include <iostream>
+#include <string.h>
 #include "meddly.h"
 #include "meddly_expert.h"
 

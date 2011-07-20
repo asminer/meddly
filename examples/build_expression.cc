@@ -34,8 +34,6 @@
 #include <vector>
 
 #include "meddly.h"
-#include "meddly_expert.h"
-// #include "operation_ext.h"
 #include "timer.h"
 
 using namespace MEDDLY;
