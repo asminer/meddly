@@ -5,14 +5,16 @@
 ## compile library
 
 check_PROGRAMS = \
-  nqueens check_xA chk_cross kanban
+  sat_test nqueens check_xA chk_cross kanban
 
 TESTS = \
-  nqueens check_xA chk_cross kanban
+  sat_test nqueens check_xA chk_cross kanban
 
 AM_CPPFLAGS = -I../src -I../src/operations
 AM_CXXFLAGS = -Wall
 
+sat_test_SOURCES = sat_test.cc
+sat_test_LDADD = ../src/libmeddly.la
 
 nqueens_SOURCES = nqueens.cc
 nqueens_LDADD = ../src/libmeddly.la

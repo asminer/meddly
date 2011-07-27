@@ -281,7 +281,7 @@ namespace MEDDLY {
   
         @param  bounds  variable bounds.
                         bounds[i] gives the bound for the variable
-                        at level i.
+                        at level i+1.
         @param  N       Number of variables.
 
         @return A new domain.
