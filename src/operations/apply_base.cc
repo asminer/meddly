@@ -282,7 +282,7 @@ expandA(int a, int b, int result, int resultSize)
 
 void
 MEDDLY::generic_binary_mdd::
-expandB(int a, int b, int result, int resultSize)
+
 {
   // fill in result node and return
   // result[i] = compute(a, b[i])
