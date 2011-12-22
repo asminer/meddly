@@ -12,3 +12,5 @@ clean:
 install: docs
 uninstall: clean
 
+Doxyfile: ../src/revision.h ../configure.ac Doxyfile.skel
+	./BuildDoxyFile
