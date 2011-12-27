@@ -30,8 +30,8 @@
 // ******************************** MTMXDs ******************************* 
 
 
-mtmxd_node_manager::mtmxd_node_manager(int dsl, domain *d, forest::range_type t)
-: node_manager(dsl, d, true, t,
+MEDDLY::mtmxd_forest::mtmxd_forest(int dsl, domain *d, forest::range_type t)
+: mt_forest(dsl, d, true, t,
       forest::MULTI_TERMINAL, forest::IDENTITY_REDUCED,
       forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION,
       mtmxdDataHeaderSize)
@@ -46,11 +46,11 @@ mtmxd_node_manager::mtmxd_node_manager(int dsl, domain *d, forest::range_type t)
 }
 
 
-mtmxd_node_manager::mtmxd_node_manager(int dsl, domain *d,
+MEDDLY::mtmxd_forest::mtmxd_forest(int dsl, domain *d,
     bool relation, forest::range_type t,
     forest::edge_labeling e, forest::reduction_rule r,
     forest::node_storage s, forest::node_deletion_policy dp)
-: node_manager(dsl, d, relation, t, e, r, s, dp, mtmxdDataHeaderSize)
+: mt_forest(dsl, d, relation, t, e, r, s, dp, mtmxdDataHeaderSize)
 {
   unpList = 0;
   pList = 0;
@@ -62,7 +62,7 @@ mtmxd_node_manager::mtmxd_node_manager(int dsl, domain *d,
 }
 
 
-mtmxd_node_manager::~mtmxd_node_manager()
+MEDDLY::mtmxd_forest::~mtmxd_forest()
 {
   if (unpList) free(unpList);
   if (pList) free(pList);
@@ -72,7 +72,7 @@ mtmxd_node_manager::~mtmxd_node_manager()
 }
 
 
-void mtmxd_node_manager::expandCountAndSlotArrays(int size)
+void MEDDLY::mtmxd_forest::expandCountAndSlotArrays(int size)
 {
   if (size <= countSize) return;
 
@@ -87,7 +87,7 @@ void mtmxd_node_manager::expandCountAndSlotArrays(int size)
 }
 
 
-void mtmxd_node_manager::resizeNode(int p, int size)
+void MEDDLY::mtmxd_forest::resizeNode(int p, int size)
 {
   // This operation can only be performed on Temporary nodes.
   if (!isActiveNode(p) || isTerminalNode(p) || isReducedNode(p)) {
@@ -146,7 +146,7 @@ void mtmxd_node_manager::resizeNode(int p, int size)
 }
 
 
-int mtmxd_node_manager::reduceNode(int p)
+int MEDDLY::mtmxd_forest::reduceNode(int p)
 {
   MEDDLY_DCASSERT(isActiveNode(p));
 
@@ -311,7 +311,7 @@ int mtmxd_node_manager::reduceNode(int p)
 }
 
 
-int mtmxd_node_manager::createNode(int k, int index, int dptr)
+int MEDDLY::mtmxd_forest::createNode(int k, int index, int dptr)
 {
   MEDDLY_DCASSERT(index >= 0 && index < getLevelSize(k) && isValidNodeIndex(dptr));
 
@@ -358,7 +358,7 @@ int mtmxd_node_manager::createNode(int k, int index, int dptr)
   }
 }
 
-int mtmxd_node_manager::createNode(int k, int index1, int index2, int dptr)
+int MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, int dptr)
 {
   MEDDLY_DCASSERT((index1 >= 0 && index2 >= 0) ||
       (index1 >= -1 && index2 >= -1) ||
@@ -445,7 +445,7 @@ int mtmxd_node_manager::createNode(int k, int index1, int index2, int dptr)
 }
 
 
-int mtmxd_node_manager::createNode(const int* v, const int* vp, int term,
+int MEDDLY::mtmxd_forest::createNode(const int* v, const int* vp, int term,
     int startAtHeight, bool primedLevel)
 {
   // construct the edge bottom-up
@@ -473,7 +473,7 @@ int mtmxd_node_manager::createNode(const int* v, const int* vp, int term,
 }
 
 
-void mtmxd_node_manager::createEdge(const int* v, const int* vp, int term,
+void MEDDLY::mtmxd_forest::createEdge(const int* v, const int* vp, int term,
     int startAtHeight, bool primedLevel, dd_edge& e)
 {
   term = createNode(v, vp, term, startAtHeight, primedLevel);
@@ -481,14 +481,14 @@ void mtmxd_node_manager::createEdge(const int* v, const int* vp, int term,
 }
 
 
-void mtmxd_node_manager::createEdge(const int* v, const int* vp, int term,
+void MEDDLY::mtmxd_forest::createEdge(const int* v, const int* vp, int term,
     dd_edge& e)
 {
   createEdge(v, vp, term, expertDomain->getNumVariables(), false, e);
 }
 
 
-void mtmxd_node_manager::createEdge(const int* const* vlist,
+void MEDDLY::mtmxd_forest::createEdge(const int* const* vlist,
     const int* const* vplist, const int* terms, int N, dd_edge& e)
 {
   if (e.getForest() != this) 
@@ -500,7 +500,7 @@ void mtmxd_node_manager::createEdge(const int* const* vlist,
 }
 
 
-void mtmxd_node_manager::createEdge(const int* const* vlist,
+void MEDDLY::mtmxd_forest::createEdge(const int* const* vlist,
     const int* const* vplist, const float* terms, int N, dd_edge& e)
 {
   if (e.getForest() != this) 
@@ -512,7 +512,7 @@ void mtmxd_node_manager::createEdge(const int* const* vlist,
 }
 
 
-int mtmxd_node_manager::createEdge(int dptr)
+int MEDDLY::mtmxd_forest::createEdge(int dptr)
 {
   MEDDLY_DCASSERT(isTerminalNode(dptr));
   if (dptr == 0) return 0;
@@ -531,7 +531,7 @@ int mtmxd_node_manager::createEdge(int dptr)
 }
 
 
-void mtmxd_node_manager::createEdge(int val, dd_edge &e)
+void MEDDLY::mtmxd_forest::createEdge(int val, dd_edge &e)
 {
   MEDDLY_DCASSERT(getRangeType() == forest::INTEGER);
   if (e.getForest() != this) 
@@ -542,7 +542,7 @@ void mtmxd_node_manager::createEdge(int val, dd_edge &e)
 }
 
 
-void mtmxd_node_manager::createEdge(float val, dd_edge &e)
+void MEDDLY::mtmxd_forest::createEdge(float val, dd_edge &e)
 {
   MEDDLY_DCASSERT(getRangeType() == forest::REAL);
   if (e.getForest() != this) 
@@ -553,7 +553,7 @@ void mtmxd_node_manager::createEdge(float val, dd_edge &e)
 }
 
 
-int mtmxd_node_manager::getTerminalNodeForEdge(int n, const int* vlist,
+int MEDDLY::mtmxd_forest::getTerminalNodeForEdge(int n, const int* vlist,
     const int* vplist) const
 {
   // assumption: vlist and vplist do not contain any special values
@@ -603,7 +603,7 @@ int mtmxd_node_manager::getTerminalNodeForEdge(int n, const int* vlist,
 }
 
 
-void mtmxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
+void MEDDLY::mtmxd_forest::evaluate(const dd_edge& f, const int* vlist,
     const int* vplist, int &term) const
 {
   MEDDLY_DCASSERT(getRangeType() == forest::INTEGER);
@@ -618,7 +618,7 @@ void mtmxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
 }
 
 
-void mtmxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
+void MEDDLY::mtmxd_forest::evaluate(const dd_edge& f, const int* vlist,
     const int* vplist, float &term) const
 {
   MEDDLY_DCASSERT(getRangeType() == forest::REAL);
@@ -633,81 +633,81 @@ void mtmxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
 }
 
 
-void mtmxd_node_manager::normalizeAndReduceNode(int& p, int& ev)
+void MEDDLY::mtmxd_forest::normalizeAndReduceNode(int& p, int& ev)
 {
   assert(false);
 }
 
 
-void mtmxd_node_manager::normalizeAndReduceNode(int& p, float& ev)
+void MEDDLY::mtmxd_forest::normalizeAndReduceNode(int& p, float& ev)
 {
   assert(false);
 }
 
 
-void mtmxd_node_manager::createEdge(const int* const* vlist, int N,
+void MEDDLY::mtmxd_forest::createEdge(const int* const* vlist, int N,
     dd_edge &e)
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void mtmxd_node_manager::createEdge(const int* const* vlist,
+void MEDDLY::mtmxd_forest::createEdge(const int* const* vlist,
     const int* terms, int N, dd_edge &e)
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void mtmxd_node_manager::createEdge(const int* const* vlist,
+void MEDDLY::mtmxd_forest::createEdge(const int* const* vlist,
     const float* terms, int n, dd_edge &e)
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void mtmxd_node_manager::createEdge(const int* const* vlist,
+void MEDDLY::mtmxd_forest::createEdge(const int* const* vlist,
     const int* const* vplist, int N, dd_edge &e)
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void mtmxd_node_manager::createEdge(bool val, dd_edge &e)
+void MEDDLY::mtmxd_forest::createEdge(bool val, dd_edge &e)
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void mtmxd_node_manager::evaluate(const dd_edge &f, const int* vlist,
+void MEDDLY::mtmxd_forest::evaluate(const dd_edge &f, const int* vlist,
     bool &term) const
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void mtmxd_node_manager::evaluate(const dd_edge &f, const int* vlist,
+void MEDDLY::mtmxd_forest::evaluate(const dd_edge &f, const int* vlist,
     int &term) const
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void mtmxd_node_manager::evaluate(const dd_edge &f, const int* vlist,
+void MEDDLY::mtmxd_forest::evaluate(const dd_edge &f, const int* vlist,
     float &term) const
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void mtmxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
+void MEDDLY::mtmxd_forest::evaluate(const dd_edge& f, const int* vlist,
     const int* vplist, bool &term) const
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void mtmxd_node_manager::findFirstElement(const dd_edge& f,
+void MEDDLY::mtmxd_forest::findFirstElement(const dd_edge& f,
     int* vlist, int* vplist) const
 {
   // assumption: vlist does not contain any special values (-1, -2, etc).
@@ -827,18 +827,18 @@ void mtmxd_node_manager::findFirstElement(const dd_edge& f,
 // *********************************** MXDs *********************************** 
 
 
-mxd_node_manager::mxd_node_manager(int dsl, domain *d)
-: mtmxd_node_manager(dsl, d, true, forest::BOOLEAN,
+MEDDLY::mt_mxd_bool::mt_mxd_bool(int dsl, domain *d)
+: MEDDLY::mtmxd_forest(dsl, d, true, forest::BOOLEAN,
       forest::MULTI_TERMINAL, forest::IDENTITY_REDUCED,
       forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION)
 { }
 
 
-mxd_node_manager::~mxd_node_manager()
+MEDDLY::mt_mxd_bool::~mt_mxd_bool()
 { }
 
 
-void mxd_node_manager::createEdge(const int* const* vlist,
+void MEDDLY::mt_mxd_bool::createEdge(const int* const* vlist,
     const int* const* vplist, int N, dd_edge &e)
 {
   if (e.getForest() != this) 
@@ -849,7 +849,7 @@ void mxd_node_manager::createEdge(const int* const* vlist,
 }
 
 
-void mxd_node_manager::createEdge(bool val, dd_edge &e)
+void MEDDLY::mt_mxd_bool::createEdge(bool val, dd_edge &e)
 {
   MEDDLY_DCASSERT(getRangeType() == forest::BOOLEAN);
   if (e.getForest() != this) 
@@ -860,7 +860,7 @@ void mxd_node_manager::createEdge(bool val, dd_edge &e)
 }
 
 
-void mxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
+void MEDDLY::mt_mxd_bool::evaluate(const dd_edge& f, const int* vlist,
     const int* vplist, bool &term) const
 {
   MEDDLY_DCASSERT(getRangeType() == forest::BOOLEAN);
@@ -875,40 +875,40 @@ void mxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
 }
 
 
-void mxd_node_manager::createEdge(const int* const* vlist,
+void MEDDLY::mt_mxd_bool::createEdge(const int* const* vlist,
     const int* const* vplist, const int* terms, int N, dd_edge &e)
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void mxd_node_manager::createEdge(const int* const* vlist,
+void MEDDLY::mt_mxd_bool::createEdge(const int* const* vlist,
     const int* const* vplist, const float* terms, int N, dd_edge &e)
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void mxd_node_manager::createEdge(int val, dd_edge &e)
+void MEDDLY::mt_mxd_bool::createEdge(int val, dd_edge &e)
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void mxd_node_manager::createEdge(float val, dd_edge &e)
+void MEDDLY::mt_mxd_bool::createEdge(float val, dd_edge &e)
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void mxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
+void MEDDLY::mt_mxd_bool::evaluate(const dd_edge& f, const int* vlist,
     const int* vplist, int &term) const
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void mxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
+void MEDDLY::mt_mxd_bool::evaluate(const dd_edge& f, const int* vlist,
     const int* vplist, float &term) const
 {
   throw error(error::INVALID_OPERATION);
@@ -917,7 +917,7 @@ void mxd_node_manager::evaluate(const dd_edge& f, const int* vlist,
 
 #if 1
 
-int mxd_node_manager::buildQRIdentityNode(int node, int level)
+int MEDDLY::mt_mxd_bool::buildQRIdentityNode(int node, int level)
 {
   int size = getLevelSize(level);
   int result = createTempNode(level, size, false);
@@ -938,7 +938,7 @@ int mxd_node_manager::buildQRIdentityNode(int node, int level)
 
 #ifdef REDUCE_ACCUMULATE_MXD
 
-int mxd_node_manager::accumulateExpandA(int a, int b, bool cBM)
+int MEDDLY::mt_mxd_bool::accumulateExpandA(int a, int b, bool cBM)
 {
   // a[i][i] += b
   // return reduceNode(a)
@@ -1001,9 +1001,9 @@ int mxd_node_manager::accumulateExpandA(int a, int b, bool cBM)
 }
 
 
-void mxd_node_manager::accumulateMxdHelper(int& a, int b, bool cBM,
+void MEDDLY::mt_mxd_bool::accumulateMxdHelper(int& a, int b, bool cBM,
     bool needsToMakeACopy,
-    int (mxd_node_manager::*function)(int, int, bool))
+    int (MEDDLY::mt_mxd_bool::*function)(int, int, bool))
 {
   // Expand both nodes. a is a full node, b can be either sparse or full.
 
@@ -1059,7 +1059,7 @@ void mxd_node_manager::accumulateMxdHelper(int& a, int b, bool cBM,
 }
 
 
-int mxd_node_manager::accumulateMxdPrime(int a, int b, bool cBM)
+int MEDDLY::mt_mxd_bool::accumulateMxdPrime(int a, int b, bool cBM)
 {
   MEDDLY_DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
   MEDDLY_DCASSERT(isReducedNode(b));
@@ -1082,13 +1082,13 @@ int mxd_node_manager::accumulateMxdPrime(int a, int b, bool cBM)
 
   // Expand both nodes. a is a full node, b can be either sparse or full.
   accumulateMxdHelper(a, b, cBM, needsToMakeACopy, 
-      &mxd_node_manager::accumulateMxd);
+      &MEDDLY::mt_mxd_bool::accumulateMxd);
 
   return reduceNode(a);
 }
 
 
-int mxd_node_manager::accumulateMxd(int a, int b, bool cBM)
+int MEDDLY::mt_mxd_bool::accumulateMxd(int a, int b, bool cBM)
 {
   MEDDLY_DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
   MEDDLY_DCASSERT(isReducedNode(b));
@@ -1121,7 +1121,7 @@ int mxd_node_manager::accumulateMxd(int a, int b, bool cBM)
 
   // Expand both nodes. a is a full node, b can be either sparse or full.
   accumulateMxdHelper(a, b, cBM, needsToMakeACopy,
-      &mxd_node_manager::accumulateMxdPrime);
+      &MEDDLY::mt_mxd_bool::accumulateMxdPrime);
 
   return reduceNode(a);
 }
@@ -1129,7 +1129,7 @@ int mxd_node_manager::accumulateMxd(int a, int b, bool cBM)
 
 #else
 
-int mxd_node_manager::accumulateExpandA(int a, int b, bool cBM)
+int MEDDLY::mt_mxd_bool::accumulateExpandA(int a, int b, bool cBM)
 {
   // a[i][i] += b
 
@@ -1201,9 +1201,9 @@ int mxd_node_manager::accumulateExpandA(int a, int b, bool cBM)
 }
 
 
-void mxd_node_manager::accumulateMxdHelper(int& a, int b, bool cBM,
+void MEDDLY::mt_mxd_bool::accumulateMxdHelper(int& a, int b, bool cBM,
     bool needsToMakeACopy,
-    int (mxd_node_manager::*function)(int, int, bool))
+    int (MEDDLY::mt_mxd_bool::*function)(int, int, bool))
 {
   // Expand both nodes. a is a full node, b can be either sparse or full.
 
@@ -1273,7 +1273,7 @@ void mxd_node_manager::accumulateMxdHelper(int& a, int b, bool cBM,
 
 
 // TODO: Make temporary nodes of max size.
-int mxd_node_manager::accumulateMxdPrime(int a, int b, bool cBM)
+int MEDDLY::mt_mxd_bool::accumulateMxdPrime(int a, int b, bool cBM)
 {
   MEDDLY_DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
   MEDDLY_DCASSERT(isReducedNode(b));
@@ -1294,14 +1294,14 @@ int mxd_node_manager::accumulateMxdPrime(int a, int b, bool cBM)
 
   // Expand both nodes. a is a full node, b can be either sparse or full.
   accumulateMxdHelper(a, b, cBM, needsToMakeACopy, 
-      &mxd_node_manager::accumulateMxd);
+      &MEDDLY::mt_mxd_bool::accumulateMxd);
 
   return savedTempNode == a? sharedCopy(a): a;
 }
 
 
 // TODO: Make temporary nodes of max size.
-int mxd_node_manager::accumulateMxd(int a, int b, bool cBM)
+int MEDDLY::mt_mxd_bool::accumulateMxd(int a, int b, bool cBM)
 {
   MEDDLY_DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
   MEDDLY_DCASSERT(isReducedNode(b));
@@ -1337,7 +1337,7 @@ int mxd_node_manager::accumulateMxd(int a, int b, bool cBM)
 
   // Expand both nodes. a is a full node, b can be either sparse or full.
   accumulateMxdHelper(a, b, cBM, needsToMakeACopy,
-      &mxd_node_manager::accumulateMxdPrime);
+      &MEDDLY::mt_mxd_bool::accumulateMxdPrime);
 
   return savedTempNode == a? sharedCopy(a): a;
 }
@@ -1346,7 +1346,7 @@ int mxd_node_manager::accumulateMxd(int a, int b, bool cBM)
 #endif
 
 
-int mxd_node_manager::addPrimeReducedNodes(int a, int b)
+int MEDDLY::mt_mxd_bool::addPrimeReducedNodes(int a, int b)
 {
   MEDDLY_DCASSERT(getNodeLevel(a) < 0);
   MEDDLY_DCASSERT(getNodeLevel(a) == getNodeLevel(b));
@@ -1382,7 +1382,7 @@ int mxd_node_manager::addPrimeReducedNodes(int a, int b)
 }
 
 
-void mxd_node_manager::accumulate(int& a, int b)
+void MEDDLY::mt_mxd_bool::accumulate(int& a, int b)
 {
   if (isActiveNode(a) && isActiveNode(b)) {
     // validateDownPointers(a, true);
@@ -1402,7 +1402,7 @@ void mxd_node_manager::accumulate(int& a, int b)
 #endif
 
 
-int mxd_node_manager::accumulateSkippedLevel(int tempNode,
+int MEDDLY::mt_mxd_bool::accumulateSkippedLevel(int tempNode,
     int* element, int* pelement, int level)
 {
   MEDDLY_DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
@@ -1471,7 +1471,7 @@ int mxd_node_manager::accumulateSkippedLevel(int tempNode,
 // Use expert_domain::getNumVariables() to obtain the topmost level in
 // the domain.
 // cBM: copy before modifying.
-int mxd_node_manager::accumulate(int tempNode, bool cBM,
+int MEDDLY::mt_mxd_bool::accumulate(int tempNode, bool cBM,
     int* element, int* pelement, int level)
 {
   MEDDLY_DCASSERT(isMxd());
@@ -1580,7 +1580,7 @@ int mxd_node_manager::accumulate(int tempNode, bool cBM,
 #if 0
 
 // Add an element to a temporary edge
-bool mxd_node_manager::accumulate(int& tempNode,
+bool MEDDLY::mt_mxd_bool::accumulate(int& tempNode,
     int* element, int* pelement)
 {
   assert(isActiveNode(tempNode));
@@ -1615,7 +1615,7 @@ bool mxd_node_manager::accumulate(int& tempNode,
 
 #else
 // Add an element to a temporary edge
-bool mxd_node_manager::accumulate(int& tempNode,
+bool MEDDLY::mt_mxd_bool::accumulate(int& tempNode,
     int* element, int* pelement)
 {
   assert(isActiveNode(tempNode));

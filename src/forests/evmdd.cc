@@ -26,10 +26,10 @@
 // ********************************** EVMDDs ********************************** 
 
 
-evmdd_node_manager
-::evmdd_node_manager(int dsl, domain *d, forest::range_type t, 
+MEDDLY::evmdd_forest
+::evmdd_forest(int dsl, domain *d, forest::range_type t, 
   forest::edge_labeling el, int dataHeaderSize)
-: node_manager(dsl, d, false, t,
+: mt_forest(dsl, d, false, t,
       el, forest::FULLY_REDUCED,
       forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION,
       dataHeaderSize)
@@ -37,11 +37,11 @@ evmdd_node_manager
 }
 
 
-evmdd_node_manager::~evmdd_node_manager()
+MEDDLY::evmdd_forest::~evmdd_forest()
 { }
 
 
-int evmdd_node_manager::createTempNode(int k, int sz, bool clear)
+int MEDDLY::evmdd_forest::createTempNode(int k, int sz, bool clear)
 {
   MEDDLY_DCASSERT(k != 0);
 
@@ -92,7 +92,7 @@ int evmdd_node_manager::createTempNode(int k, int sz, bool clear)
 }
 
 
-void evmdd_node_manager::resizeNode(int p, int size)
+void MEDDLY::evmdd_forest::resizeNode(int p, int size)
 {
   // This operation can only be performed on Temporary nodes.
   if (!isActiveNode(p) || isTerminalNode(p) || isReducedNode(p)) {
@@ -194,7 +194,7 @@ int binarySearch(const int* a, int sz, int find)
 }
 
 
-int evmdd_node_manager::reduceNode(int p)
+int MEDDLY::evmdd_forest::reduceNode(int p)
 {
   assert(false);
   return 0;
@@ -202,7 +202,7 @@ int evmdd_node_manager::reduceNode(int p)
 
 
 void
-evmdd_node_manager::
+MEDDLY::evmdd_forest::
 createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e)
 {
   throw error(error::INVALID_OPERATION);
@@ -210,7 +210,7 @@ createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e)
 
 
 void
-evmdd_node_manager::
+MEDDLY::evmdd_forest::
 createEdge(int val, dd_edge &e)
 {
   throw error(error::INVALID_OPERATION);
@@ -218,7 +218,7 @@ createEdge(int val, dd_edge &e)
 
 
 void
-evmdd_node_manager::
+MEDDLY::evmdd_forest::
 evaluate(const dd_edge &f, const int* vlist, int &term) const
 {
   throw error(error::INVALID_OPERATION);
@@ -226,82 +226,82 @@ evaluate(const dd_edge &f, const int* vlist, int &term) const
 
 
 
-void evmdd_node_manager::createEdge(const int* const* vlist, int N,
+void MEDDLY::evmdd_forest::createEdge(const int* const* vlist, int N,
     dd_edge &e)
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void evmdd_node_manager::createEdge(const int* const* vlist,
+void MEDDLY::evmdd_forest::createEdge(const int* const* vlist,
     const float* terms, int n, dd_edge &e)
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void evmdd_node_manager::createEdge(const int* const* vlist,
+void MEDDLY::evmdd_forest::createEdge(const int* const* vlist,
     const int* const* vplist, int N, dd_edge &e)
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void evmdd_node_manager::createEdge(const int* const* vlist,
+void MEDDLY::evmdd_forest::createEdge(const int* const* vlist,
     const int* const* vplist, const int* terms, int N, dd_edge &e)
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void evmdd_node_manager::createEdge(const int* const* vlist,
+void MEDDLY::evmdd_forest::createEdge(const int* const* vlist,
     const int* const* vplist, const float* terms, int N, dd_edge &e)
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void evmdd_node_manager::createEdge(bool val, dd_edge &e)
+void MEDDLY::evmdd_forest::createEdge(bool val, dd_edge &e)
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void evmdd_node_manager::createEdge(float val, dd_edge &e)
+void MEDDLY::evmdd_forest::createEdge(float val, dd_edge &e)
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void evmdd_node_manager::evaluate(const dd_edge &f, const int* vlist,
+void MEDDLY::evmdd_forest::evaluate(const dd_edge &f, const int* vlist,
     bool &term) const
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void evmdd_node_manager::evaluate(const dd_edge &f, const int* vlist,
+void MEDDLY::evmdd_forest::evaluate(const dd_edge &f, const int* vlist,
     float &term) const
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void evmdd_node_manager::evaluate(const dd_edge& f, const int* vlist,
+void MEDDLY::evmdd_forest::evaluate(const dd_edge& f, const int* vlist,
     const int* vplist, bool &term) const
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void evmdd_node_manager::evaluate(const dd_edge& f, const int* vlist,
+void MEDDLY::evmdd_forest::evaluate(const dd_edge& f, const int* vlist,
     const int* vplist, int &term) const
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void evmdd_node_manager::evaluate(const dd_edge& f, const int* vlist,
+void MEDDLY::evmdd_forest::evaluate(const dd_edge& f, const int* vlist,
     const int* vplist, float &term) const
 {
   throw error(error::INVALID_OPERATION);
@@ -310,15 +310,15 @@ void evmdd_node_manager::evaluate(const dd_edge& f, const int* vlist,
 
 // ********************************* EV+MDDs ********************************** 
 
-evplusmdd_node_manager::evplusmdd_node_manager(int dsl, domain *d)
-: evmdd_node_manager(dsl, d, forest::INTEGER, forest::EVPLUS,
+MEDDLY::evp_mdd_int::evp_mdd_int(int dsl, domain *d)
+: evmdd_forest(dsl, d, forest::INTEGER, forest::EVPLUS,
   evplusmddDataHeaderSize)
 { }
 
-evplusmdd_node_manager::~evplusmdd_node_manager()
+MEDDLY::evp_mdd_int::~evp_mdd_int()
 { }
 
-void evplusmdd_node_manager::initEdgeValues(int p) {
+void MEDDLY::evp_mdd_int::initEdgeValues(int p) {
   MEDDLY_DCASSERT(!isReducedNode(p));
   MEDDLY_DCASSERT(isFullNode(p));
   int *edgeptr = getFullNodeEdgeValues(p);
@@ -327,7 +327,7 @@ void evplusmdd_node_manager::initEdgeValues(int p) {
 }
 
 
-int evplusmdd_node_manager::createTempNode(int k, int sz, bool clear)
+int MEDDLY::evp_mdd_int::createTempNode(int k, int sz, bool clear)
 {
   MEDDLY_DCASSERT(k != 0);
   if (isTimeToGc()) { gc(); }
@@ -381,7 +381,7 @@ int evplusmdd_node_manager::createTempNode(int k, int sz, bool clear)
 
 
 // Similar to getDownPtrs() but for EV+MDDs
-bool evplusmdd_node_manager::getDownPtrsAndEdgeValues(int p,
+bool MEDDLY::evp_mdd_int::getDownPtrsAndEdgeValues(int p,
     std::vector<int>& dptrs, std::vector<int>& evs) const
 {
   if (!isActiveNode(p) || isTerminalNode(p) || !isReducedNode(p))
@@ -425,7 +425,7 @@ bool evplusmdd_node_manager::getDownPtrsAndEdgeValues(int p,
 }
 
 
-void evplusmdd_node_manager::normalizeAndReduceNode(int& p, int& ev)
+void MEDDLY::evp_mdd_int::normalizeAndReduceNode(int& p, int& ev)
 {
   MEDDLY_DCASSERT(isActiveNode(p));
 
@@ -618,7 +618,7 @@ void evplusmdd_node_manager::normalizeAndReduceNode(int& p, int& ev)
 }
 
 
-void evplusmdd_node_manager::getElement(int a, int index, int* e)
+void MEDDLY::evp_mdd_int::getElement(int a, int index, int* e)
 {
   if (a == 0) throw error(error::INVALID_VARIABLE);
   if (a == -1) return;
@@ -661,7 +661,7 @@ void evplusmdd_node_manager::getElement(int a, int index, int* e)
 }
 
 
-void evplusmdd_node_manager::getElement(const dd_edge& a,
+void MEDDLY::evp_mdd_int::getElement(const dd_edge& a,
     int index, int* e)
 {
   if (e == 0 || index < 0) throw error(error::INVALID_VARIABLE);
@@ -671,7 +671,7 @@ void evplusmdd_node_manager::getElement(const dd_edge& a,
 
 
 void
-evplusmdd_node_manager::
+MEDDLY::evp_mdd_int::
 createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e)
 {
   return createEdgeInternal(vlist, terms, N, e);
@@ -679,7 +679,7 @@ createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e)
 
 
 void
-evplusmdd_node_manager::
+MEDDLY::evp_mdd_int::
 createEdge(int val, dd_edge &e)
 {
   return createEdgeInternal(val, e);
@@ -687,7 +687,7 @@ createEdge(int val, dd_edge &e)
 
 
 void
-evplusmdd_node_manager::
+MEDDLY::evp_mdd_int::
 evaluate(const dd_edge &f, const int* vlist, int &term) const
 {
   return evaluateInternal(f, vlist, term);
@@ -695,12 +695,12 @@ evaluate(const dd_edge &f, const int* vlist, int &term) const
 
 
 int
-evplusmdd_node_manager::
+MEDDLY::evp_mdd_int::
 createTempNode(int lh, std::vector<int>& downPointers,
     std::vector<int>& edgeValues)
 {
   int tempNode =
-    evmdd_node_manager::createTempNode(lh, downPointers.size(), false);
+    evmdd_forest::createTempNode(lh, downPointers.size(), false);
   int* dptrs = getFullNodeDownPtrs(tempNode);
   int* evs = getFullNodeEdgeValues(tempNode);
   std::vector<int>::iterator dpiter = downPointers.begin();
@@ -715,7 +715,7 @@ createTempNode(int lh, std::vector<int>& downPointers,
 
 
 void
-evplusmdd_node_manager::
+MEDDLY::evp_mdd_int::
 createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
     std::vector<int>& ev, int& result, int& resultEv)
 {
@@ -744,13 +744,13 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
 
   // Compute minimum edge-value for normalization
   int minEv = INF;
-  for (vector<int>::iterator iter = ev.begin(); iter != ev.end(); iter++)
+  for (std::vector<int>::iterator iter = ev.begin(); iter != ev.end(); iter++)
   {
     if (*iter < minEv) minEv = *iter;
   }
 
   // Normalize edge-values
-  for (vector<int>::iterator iter = ev.begin(); iter != ev.end(); iter++)
+  for (std::vector<int>::iterator iter = ev.begin(); iter != ev.end(); iter++)
   {
     *iter -= minEv;
   }
@@ -764,19 +764,19 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
     // Check for fully-reduced: same dptr[i] and ev[i] == 0
     bool reducible = true;
     if (ev[0] == 0) {
-      for (vector<int>::iterator iter = ev.begin(); iter != ev.end(); )
+      for (std::vector<int>::iterator iter = ev.begin(); iter != ev.end(); )
       {
         if (*iter++ != ev[0]) { reducible = false; break; }
       }
       if (reducible) {
-        for (vector<int>::iterator iter = dptr.begin(); iter != dptr.end(); )
+        for (std::vector<int>::iterator iter = dptr.begin(); iter != dptr.end(); )
         {
           if (*iter++ != dptr[0]) { reducible = false; break; }
         }
         if (reducible) {
           // Reduce to dptr[0] and resultEv
           // Unlink all dptr[i], i = 1 to size - 1
-          for (vector<int>::iterator iter = dptr.begin() + 1;
+          for (std::vector<int>::iterator iter = dptr.begin() + 1;
               iter != dptr.end(); )
           {
             unlinkNode(*iter++);
@@ -792,7 +792,7 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
   // For that you need to go through the indexes and find the largest index.
 
 #ifdef DEVELOPMENT_CODE
-  for (vector<int>::iterator iter = index.begin() + 1;
+  for (std::vector<int>::iterator iter = index.begin() + 1;
       iter != index.end(); ++iter)
   {
     assert(*iter > *(iter-1));
@@ -893,15 +893,15 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
 
 // ********************************* EV*MDDs ********************************** 
 
-evtimesmdd_node_manager::evtimesmdd_node_manager(int dsl, domain *d)
-: evmdd_node_manager(dsl, d, forest::REAL, forest::EVTIMES,
+MEDDLY::evt_mdd_real::evt_mdd_real(int dsl, domain *d)
+: evmdd_forest(dsl, d, forest::REAL, forest::EVTIMES,
   evtimesmddDataHeaderSize)
 { }
 
-evtimesmdd_node_manager::~evtimesmdd_node_manager()
+MEDDLY::evt_mdd_real::~evt_mdd_real()
 { }
 
-void evtimesmdd_node_manager::initEdgeValues(int p) {
+void MEDDLY::evt_mdd_real::initEdgeValues(int p) {
   MEDDLY_DCASSERT(!isReducedNode(p));
   MEDDLY_DCASSERT(isFullNode(p));
 
@@ -917,7 +917,7 @@ void evtimesmdd_node_manager::initEdgeValues(int p) {
 
 
 // Similar to getDownPtrs() but for EV*MDDs
-bool evtimesmdd_node_manager::getDownPtrsAndEdgeValues(int p,
+bool MEDDLY::evt_mdd_real::getDownPtrsAndEdgeValues(int p,
     std::vector<int>& dptrs, std::vector<float>& evs) const
 {
   if (!isActiveNode(p) || isTerminalNode(p) || !isReducedNode(p))
@@ -963,7 +963,7 @@ bool evtimesmdd_node_manager::getDownPtrsAndEdgeValues(int p,
 }
 
 
-void evtimesmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
+void MEDDLY::evt_mdd_real::normalizeAndReduceNode(int& p, float& ev)
 {
   MEDDLY_DCASSERT(isActiveNode(p));
 
@@ -1161,7 +1161,7 @@ void evtimesmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
 
 
 void
-evtimesmdd_node_manager::
+MEDDLY::evt_mdd_real::
 createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
 {
   return createEdgeInternal(vlist, terms, N, e);
@@ -1169,7 +1169,7 @@ createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
 
 
 void
-evtimesmdd_node_manager::
+MEDDLY::evt_mdd_real::
 createEdge(float val, dd_edge &e)
 {
   return createEdgeInternal(val, e);
@@ -1177,7 +1177,7 @@ createEdge(float val, dd_edge &e)
 
 
 void
-evtimesmdd_node_manager::
+MEDDLY::evt_mdd_real::
 evaluate(const dd_edge &f, const int* vlist, float &term) const
 {
   return evaluateInternal(f, vlist, term);
@@ -1185,12 +1185,12 @@ evaluate(const dd_edge &f, const int* vlist, float &term) const
 
 
 int
-evtimesmdd_node_manager::
+MEDDLY::evt_mdd_real::
 createTempNode(int lh, std::vector<int>& downPointers,
     std::vector<float>& edgeValues)
 {
   int tempNode =
-    evmdd_node_manager::createTempNode(lh, downPointers.size(), false);
+    evmdd_forest::createTempNode(lh, downPointers.size(), false);
   int* dptrs = getFullNodeDownPtrs(tempNode);
   int* ievs = getFullNodeEdgeValues(tempNode);
   float* evs = (float *)ievs;
@@ -1206,7 +1206,7 @@ createTempNode(int lh, std::vector<int>& downPointers,
 
 
 void
-evtimesmdd_node_manager::
+MEDDLY::evt_mdd_real::
 createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
     std::vector<float>& ev, int& result, float& resultEv)
 {
@@ -1235,13 +1235,13 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
 
   // Compute minimum edge-value for normalization
   float maxEv = 0.0;
-  for (vector<float>::iterator iter = ev.begin(); iter != ev.end(); iter++)
+  for (std::vector<float>::iterator iter = ev.begin(); iter != ev.end(); iter++)
   {
     if (*iter > maxEv) maxEv = *iter;
   }
 
   // Normalize edge-values
-  for (vector<float>::iterator iter = ev.begin(); iter != ev.end(); iter++)
+  for (std::vector<float>::iterator iter = ev.begin(); iter != ev.end(); iter++)
   {
     *iter /= maxEv;
   }
@@ -1255,19 +1255,19 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
     // Check for fully-reduced: same dptr[i] and ev[i] == 0.0
     bool reducible = true;
     if (ev[0] == 0.0) {
-      for (vector<float>::iterator iter = ev.begin(); iter != ev.end(); )
+      for (std::vector<float>::iterator iter = ev.begin(); iter != ev.end(); )
       {
         if (*iter++ != ev[0]) { reducible = false; break; }
       }
       if (reducible) {
-        for (vector<int>::iterator iter = dptr.begin(); iter != dptr.end(); )
+        for (std::vector<int>::iterator iter = dptr.begin(); iter != dptr.end(); )
         {
           if (*iter++ != dptr[0]) { reducible = false; break; }
         }
         if (reducible) {
           // Reduce to dptr[0] and resultEv
           // Unlink all dptr[i], i = 1 to size - 1
-          for (vector<int>::iterator iter = dptr.begin() + 1;
+          for (std::vector<int>::iterator iter = dptr.begin() + 1;
               iter != dptr.end(); )
           {
             unlinkNode(*iter++);
@@ -1283,7 +1283,7 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
   // For that you need to go through the indexes and find the largest index.
 
 #ifdef DEVELOPMENT_CODE
-  for (vector<int>::iterator iter = index.begin() + 1;
+  for (std::vector<int>::iterator iter = index.begin() + 1;
       iter != index.end(); ++iter)
   {
     assert(*iter > *(iter-1));

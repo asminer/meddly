@@ -41,21 +41,28 @@
 #ifndef MTMDD_H
 #define MTMDD_H
 
-#include "mdds.h"
+#include "mt.h"
 
 #define IN_PLACE_SORT
 
+namespace MEDDLY {
+  class mtmdd_forest;
+  class mt_mdd_bool;  // TBD - split into its own file
+};
+
+// ******************************************************************
+
 const int mtmddDataHeaderSize = 4;
 
-class mtmdd_node_manager : public node_manager {
+class MEDDLY::mtmdd_forest : public mt_forest {
   // MTMDD data header:
   // { incount, next (unique table), size, ..., logical address}
   // Data Header Size: 4
 
   public:
 
-    mtmdd_node_manager(int dsl, domain *d, forest::range_type t);
-    ~mtmdd_node_manager();
+    mtmdd_forest(int dsl, domain *d, forest::range_type t);
+    ~mtmdd_forest();
 
     virtual void createEdge(const int* const* vlist, const int* terms, int N,
         dd_edge &e);
@@ -101,7 +108,7 @@ class mtmdd_node_manager : public node_manager {
   protected:
 
     // Used by derived classes for initialization
-    mtmdd_node_manager(int dsl, domain *d, bool relation, forest::range_type t,
+    mtmdd_forest(int dsl, domain *d, bool relation, forest::range_type t,
         forest::edge_labeling e, forest::reduction_rule r,
         forest::node_storage s, forest::node_deletion_policy dp);
 
@@ -166,14 +173,14 @@ class mtmdd_node_manager : public node_manager {
 };
 
 
-class mdd_node_manager : public mtmdd_node_manager {
+class MEDDLY::mt_mdd_bool : public mtmdd_forest {
   public:
 
-    mdd_node_manager(int dsl, domain *d);
-    ~mdd_node_manager();
+    mt_mdd_bool(int dsl, domain *d);
+    ~mt_mdd_bool();
 
-    using mtmdd_node_manager::createEdge;
-    using mtmdd_node_manager::evaluate;
+    using mtmdd_forest::createEdge;
+    using mtmdd_forest::evaluate;
 
     // Refer to meddly.h
     virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
@@ -203,7 +210,7 @@ class mdd_node_manager : public mtmdd_node_manager {
 template <typename T>
 inline
 void
-mtmdd_node_manager::createEdgeInternal(const int* const* vlist,
+MEDDLY::mtmdd_forest::createEdgeInternal(const int* const* vlist,
     const T* terms, int N, dd_edge &e)
 {
   // check if the vlist contains valid indexes
@@ -265,7 +272,7 @@ mtmdd_node_manager::createEdgeInternal(const int* const* vlist,
 
 template <typename T>
 inline
-void mtmdd_node_manager::copyLists(const int* const* vlist,
+void MEDDLY::mtmdd_forest::copyLists(const int* const* vlist,
     const T* terms, int nElements)
 {
   if (listSize < nElements) {
@@ -292,7 +299,7 @@ void mtmdd_node_manager::copyLists(const int* const* vlist,
 
 template <typename T>
 inline
-int mtmdd_node_manager::sortBuild(int** list, T* tList,
+int MEDDLY::mtmdd_forest::sortBuild(int** list, T* tList,
     int height, int begin, int end)
 {
   // [begin, end)
@@ -453,10 +460,11 @@ int mtmdd_node_manager::sortBuild(int** list, T* tList,
 
 #else
 
+namespace MEDDLY {
 
 template<typename T>
 inline
-int mtmdd_node_manager::inPlaceSort(int level, int begin, int end)
+int mtmdd_forest::inPlaceSort(int level, int begin, int end)
 {
   // Determine range of values
   int min = list[begin][level];
@@ -552,7 +560,7 @@ int mtmdd_node_manager::inPlaceSort(int level, int begin, int end)
 
 template<>
 inline
-int mtmdd_node_manager::inPlaceSort<bool>(int level, int begin, int end)
+int mtmdd_forest::inPlaceSort<bool>(int level, int begin, int end)
 {
   // Determine range of values
   int min = list[begin][level];
@@ -643,7 +651,7 @@ int mtmdd_node_manager::inPlaceSort<bool>(int level, int begin, int end)
 
 template <typename T>
 inline
-int mtmdd_node_manager::inPlaceSortBuild(int height, int begin, int end)
+int mtmdd_forest::inPlaceSortBuild(int height, int begin, int end)
 {
   // [begin, end)
 
@@ -682,12 +690,15 @@ int mtmdd_node_manager::inPlaceSortBuild(int height, int begin, int end)
   return reduceNode(result);
 }
 
+} // namespace
+
 #endif
 
+namespace MEDDLY {
 
 template <typename T>
 inline
-T mtmdd_node_manager::handleMultipleTerminalValues(const T* tList,
+T mtmdd_forest::handleMultipleTerminalValues(const T* tList,
     int begin, int end)
 {
   MEDDLY_DCASSERT(begin < end);
@@ -699,13 +710,14 @@ T mtmdd_node_manager::handleMultipleTerminalValues(const T* tList,
 
 template <>
 inline
-bool mtmdd_node_manager::handleMultipleTerminalValues(const bool* tList,
+bool mtmdd_forest::handleMultipleTerminalValues(const bool* tList,
     int begin, int end)
 {
   MEDDLY_DCASSERT(begin < end);
   return true;
 }
 
+}
 
 #endif
 

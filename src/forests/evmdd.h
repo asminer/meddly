@@ -40,23 +40,31 @@
 #ifndef EVMDD_H
 #define EVMDD_H
 
-#include "mdds.h"
+#include "mt.h"
 
 #define SORT_BUILD
 
 //#define TREE_SORT
 #define IN_PLACE_SORT
 
+namespace MEDDLY {
+  class evmdd_forest;
+  class evp_mdd_int;    // TBD - split into its own file
+  class evt_mdd_real;   // TBD - split into its own file
+};
+
+// ******************************************************************
+
 const int evplusmddDataHeaderSize = 5;
 const int evtimesmddDataHeaderSize = 4;
 
 int binarySearch(const int* a, int sz, int find);
 
-class evmdd_node_manager : public node_manager {
+class MEDDLY::evmdd_forest : public mt_forest {
   public:
-    evmdd_node_manager(int dsl, domain *d, forest::range_type t,
+    evmdd_forest(int dsl, domain *d, forest::range_type t,
         forest::edge_labeling el, int dataHeaderSize);
-    ~evmdd_node_manager();
+    ~evmdd_forest();
 
     virtual void getDefaultEdgeValue(int& n) const { n = INF; }
     virtual void getIdentityEdgeValue(int& n) const { n = 0; }
@@ -66,7 +74,7 @@ class evmdd_node_manager : public node_manager {
     virtual void initEdgeValues(int p) = 0;
 
   protected:
-    using node_manager::createTempNode;
+    using mt_forest::createTempNode;
     virtual int createTempNode(int k, int sz, bool clear = true);
 
     // Enlarges a temporary node, if new size is greater than old size.
@@ -180,14 +188,14 @@ class evmdd_node_manager : public node_manager {
 };
 
 
-class evplusmdd_node_manager : public evmdd_node_manager {
+class MEDDLY::evp_mdd_int : public evmdd_forest {
   // EV+MDD data header:
   // { incount, next (unique table), size, ..., cardinality, logical address }
   // Data Header Size: 5
 
   public:
-    evplusmdd_node_manager(int dsl, domain *d);
-    ~evplusmdd_node_manager();
+    evp_mdd_int(int dsl, domain *d);
+    ~evp_mdd_int();
 
     virtual int createTempNode(int k, int sz, bool clear = true);
     virtual int createTempNode(int lh, std::vector<int>& downPointers,
@@ -219,17 +227,17 @@ class evplusmdd_node_manager : public evmdd_node_manager {
 };
 
 
-class evtimesmdd_node_manager : public evmdd_node_manager {
+class MEDDLY::evt_mdd_real : public evmdd_forest {
   // EV*MDD data header:
   // { incount, next (unique table), size, ..., logical address }
   // Data Header Size: 4
 
   public:
-    evtimesmdd_node_manager(int dsl, domain *d);
-    ~evtimesmdd_node_manager();
+    evt_mdd_real(int dsl, domain *d);
+    ~evt_mdd_real();
 
-    using evmdd_node_manager::getDefaultEdgeValue;
-    using evmdd_node_manager::getIdentityEdgeValue;
+    using evmdd_forest::getDefaultEdgeValue;
+    using evmdd_forest::getIdentityEdgeValue;
     virtual void getDefaultEdgeValue(int& n) const {
       static int ev = toInt(NAN);
       n = ev;
@@ -290,7 +298,7 @@ class evtimesmdd_node_manager : public evmdd_node_manager {
 
 template <typename T>
 void
-evmdd_node_manager::createEdgeInternal(T term, dd_edge &e)
+MEDDLY::evmdd_forest::createEdgeInternal(T term, dd_edge &e)
 {
   if (e.getForest() != this) throw error(error::INVALID_OPERATION);
 
@@ -315,7 +323,7 @@ evmdd_node_manager::createEdgeInternal(T term, dd_edge &e)
 
 template <typename T>
 void
-evmdd_node_manager::createEdgeInternal(const int* const* vlist,
+MEDDLY::evmdd_forest::createEdgeInternal(const int* const* vlist,
     const T* terms, int N, dd_edge &e)
 {
   if (e.getForest() != this) throw error(error::INVALID_OPERATION);
@@ -363,7 +371,7 @@ evmdd_node_manager::createEdgeInternal(const int* const* vlist,
 
 template <typename T>
 void
-evmdd_node_manager::createEdgeInternal(const int* v, T term, dd_edge &e)
+MEDDLY::evmdd_forest::createEdgeInternal(const int* v, T term, dd_edge &e)
 {
   // construct the edge bottom-up
   int prev = getTerminalNode(false);
@@ -381,7 +389,7 @@ evmdd_node_manager::createEdgeInternal(const int* v, T term, dd_edge &e)
 }
 
 template <typename T>
-void evmdd_node_manager::createNode(int k, int index, int dptr, T ev,
+void MEDDLY::evmdd_forest::createNode(int k, int index, int dptr, T ev,
     int& res, T& resEv)
 {
   MEDDLY_DCASSERT(dptr >= -1 && ev >= 0);
@@ -423,7 +431,7 @@ void evmdd_node_manager::createNode(int k, int index, int dptr, T ev,
 
 
 template <typename T>
-void evmdd_node_manager::createSparseNode(int k, int index,
+void MEDDLY::evmdd_forest::createSparseNode(int k, int index,
     int dptr, T ev, int& res, T& resEv)
 {
   MEDDLY_DCASSERT(k != 0);
@@ -498,7 +506,7 @@ void evmdd_node_manager::createSparseNode(int k, int index,
 
 
 template <typename T>
-void evmdd_node_manager::evaluateInternal(const dd_edge &f,
+void MEDDLY::evmdd_forest::evaluateInternal(const dd_edge &f,
     const int* vlist, T &term) const
 {
   if (f.getForest() != this) throw error(error::INVALID_OPERATION);
@@ -536,7 +544,7 @@ void evmdd_node_manager::evaluateInternal(const dd_edge &f,
 
 
 template <typename T>
-void evmdd_node_manager::sortBuild(int** list, T* tList,
+void MEDDLY::evmdd_forest::sortBuild(int** list, T* tList,
     int height, int begin, int end, int& node, T& edgeValue)
 {
   // [begin, end)
@@ -574,15 +582,15 @@ void evmdd_node_manager::sortBuild(int** list, T* tList,
 #if 0
   vector<int> count(levelSize+1, 0);
 #else
-  vector<int> count(1, 0);
+  std::vector<int> count(1, 0);
 #endif
 
   // Curly braces here to limit the scope of the vectors defined within.
   // Without limiting the scope, memory usage will increase significantly
   // -- especially if there are a lot of variables in the domain.
   {
-    vector<int*> sortedList(N, (int*)0);
-    vector<T> sortedtList(N, 0);
+    std::vector<int*> sortedList(N, (int*)0);
+    std::vector<T> sortedtList(N, 0);
 
     // determine size for count[]
     levelSize = 0;
@@ -609,8 +617,8 @@ void evmdd_node_manager::sortBuild(int** list, T* tList,
     }
     count[levelSize]--;
 #else
-    vector<int>::iterator last = count.begin() + levelSize;
-    for (vector<int>::iterator iter = count.begin(); iter != last; iter++)
+    std::vector<int>::iterator last = count.begin() + levelSize;
+    for (std::vector<int>::iterator iter = count.begin(); iter != last; iter++)
     {
       *(iter+1) += *iter;
       (*iter)--;
@@ -654,8 +662,8 @@ void evmdd_node_manager::sortBuild(int** list, T* tList,
 #else
     listPtr = list + begin;
     tListPtr = tList + begin;
-    vector<int*>::iterator sortedListIter = sortedList.begin();
-    typename vector<T>::iterator sortedtListIter = sortedtList.begin();
+    std::vector<int*>::iterator sortedListIter = sortedList.begin();
+    typename std::vector<T>::iterator sortedtListIter = sortedtList.begin();
     for ( ; sortedListIter != sortedList.end(); )
     {
       *listPtr++ = *sortedListIter++;
@@ -668,9 +676,9 @@ void evmdd_node_manager::sortBuild(int** list, T* tList,
 
   // call sortBuild for each index and store result
   // as (index, node, edge-value).
-  vector<int> indices;
-  vector<int> dptrs;
-  vector<T> edgeValues;
+  std::vector<int> indices;
+  std::vector<int> dptrs;
+  std::vector<T> edgeValues;
   for (int i = 0; i < levelSize; i++)
   {
     if (count[i+1] > count[i]) {
@@ -690,10 +698,11 @@ void evmdd_node_manager::sortBuild(int** list, T* tList,
   createNode(height, indices, dptrs, edgeValues, node, edgeValue);
 }
 
+namespace MEDDLY {
 
 template <typename T>
 inline
-T evmdd_node_manager::handleMultipleTerminalValues(const T* tList,
+T evmdd_forest::handleMultipleTerminalValues(const T* tList,
     int begin, int end)
 {
   MEDDLY_DCASSERT(begin < end);
@@ -705,13 +714,14 @@ T evmdd_node_manager::handleMultipleTerminalValues(const T* tList,
 
 template <>
 inline
-bool evmdd_node_manager::handleMultipleTerminalValues(const bool* tList,
+bool evmdd_forest::handleMultipleTerminalValues(const bool* tList,
     int begin, int end)
 {
   MEDDLY_DCASSERT(begin < end);
   return true;
 }
 
+} // namespace
 
 #endif
 

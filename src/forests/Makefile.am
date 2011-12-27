@@ -9,8 +9,7 @@ noinst_LTLIBRARIES = libforests.la
 libforests_la_SOURCES = \
 	../defines.h \
 	../mdd_hash.h \
-	mdds.h \
-	mdds.cc \
+	mt.h        mt.cc \
 	mtmdd.h \
 	mtmxd.h \
 	evmdd.h \
