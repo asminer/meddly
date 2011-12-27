@@ -237,22 +237,22 @@ MEDDLY::forest* MEDDLY::expert_domain::createForest(bool rel, forest::range_type
   if (rel) {
     if(e == forest::MULTI_TERMINAL) {
       if (t == forest::BOOLEAN) {
-        f = new mxd_node_manager(slot, this);
+        f = new mt_mxd_bool(slot, this);
       } else if (t == forest::INTEGER || t == forest::REAL) {
-        f = new mtmxd_node_manager(slot, this, t);
+        f = new mtmxd_forest(slot, this, t);
       }
     }
   } else {
     if (e == forest::MULTI_TERMINAL) {
       if (t == forest::BOOLEAN) {
-        f = new mdd_node_manager(slot, this);
+        f = new mt_mdd_bool(slot, this);
       } else if (t == forest::INTEGER || t == forest::REAL) {
-        f = new mtmdd_node_manager(slot, this, t);
+        f = new mtmdd_forest(slot, this, t);
       }
     } else if (e == forest::EVPLUS) {
-      f = new evplusmdd_node_manager(slot, this);
+      f = new evp_mdd_int(slot, this);
     } else if (e == forest::EVTIMES) {
-      f = new evtimesmdd_node_manager(slot, this);
+      f = new evt_mdd_real(slot, this);
     }
   }
   forests[slot] = f;
