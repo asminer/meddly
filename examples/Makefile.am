@@ -14,6 +14,7 @@ test_mtmdd \
 test_mtmxd \
 test_evmdd \
 test_temporary_nodes \
+test_user_operation \
 build_expression \
 kan1_batch \
 dining_phils \
@@ -74,4 +75,7 @@ kanban_LDADD = ../src/libmeddly.la
 
 slot_SOURCES = slot.cc simple_model.h simple_model.cc
 slot_LDADD = ../src/libmeddly.la
+
+test_user_operation_SOURCES = test_user_operation.cc
+test_user_operation_LDADD = ../src/libmeddly.la
 
