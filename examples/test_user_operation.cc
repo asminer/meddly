@@ -166,13 +166,30 @@ int main(int argc, char* argv[])
   printElements(stdout, e4);
   fprintf(stdout, "\n");
 
-  // e4 = AndSum(e1, e2)
+  // e5 = AndSum(e1, e2)
   dd_edge e5 = AndSum(e1, e2);
   fprintf(stdout, "AndSum(A,B):\n");
   e5.show(stdout, 2);
   fprintf(stdout, "\n");
   fprintf(stdout, "Elements in AndSum(A, B):\n");
   printElements(stdout, e5);
+  fprintf(stdout, "\n");
+
+  // e6 = e4 > 1
+  dd_edge e6(f);
+  int termOne = static_cast<expert_forest*>(f)->getTerminalNode(1);
+  e6.set(termOne, 0, static_cast<expert_forest*>(f)->getNodeLevel(termOne));
+  // e3 = e1 + e2
+  // e4 = e1 x e2;
+  // e6 = e4 > 1;
+  // e6 *= e3
+  apply(GREATER_THAN, e4, e6, e6);
+  e6 *= e3;
+  fprintf(stdout, "(A + B) x ((A + B) > 1):\n");
+  e6.show(stdout, 2);
+  fprintf(stdout, "\n");
+  fprintf(stdout, "Elements in (A + B) x ((A + B) > 1):\n");
+  printElements(stdout, e6);
   fprintf(stdout, "\n");
 
   // Cleanup
@@ -186,12 +203,73 @@ int main(int argc, char* argv[])
 }
 
 
+// < op1, <op2, result> >
+std::map<int, std::map<int, int> > cache;
+
+
+void printCache(FILE* strm, expert_forest* f)
+{
+  fprintf(strm, "Cache Table:\n");
+  for (map<int, map<int, int> >::iterator i = cache.begin();
+      i != cache.end(); ++i) {
+    map<int, int>& j = i->second;
+    for (map<int, int>::iterator jIter = j.begin(); jIter != j.end(); ++jIter) {
+      fprintf(strm, "[(%d, %d) --> %d]\n",
+          i->first, jIter->first, jIter->second);
+    }
+  }
+  fprintf(strm, "\n");
+}
+
+
+void clearCache(expert_forest* f)
+{
+  printCache(stdout, f);
+  for (map<int, map<int, int> >::iterator i = cache.begin();
+      i != cache.end(); ++i) {
+    f->unlinkNode(i->first);
+    map<int, int>& j = i->second;
+    for (map<int, int>::iterator jIter = j.begin(); jIter != j.end(); ++jIter) {
+      f->unlinkNode(jIter->first);
+      f->unlinkNode(jIter->second);
+    }
+  }
+  cache.clear();
+}
+
+
+void saveInCache(expert_forest* f, int nodeA, int nodeB, int nodeC)
+{
+  f->linkNode(nodeA);
+  f->linkNode(nodeB);
+  f->linkNode(nodeC);
+  map<int, map<int, int> >::iterator iter = cache.find(nodeA);
+  if (iter == cache.end()) {
+    static map<int, int> temp;
+    cache[nodeA] = temp;
+  }
+  (cache[nodeA])[nodeB] = nodeC;
+}
+
+
+bool findInCache(expert_forest* f, int nodeA, int nodeB, int& result)
+{
+  map<int, map<int, int> >::iterator i = cache.find(nodeA);
+  if (i == cache.end()) return false;
+  map<int, int>::iterator j = (i->second).find(nodeA);
+  if (j == (i->second).end()) return false;
+  result = j->second;
+  return true;
+}
+
+
 dd_edge AndSum(dd_edge& e1, dd_edge& e2)
 {
   assert(e1.getForest() == e2.getForest());
   // f is used by the recursive AndSum(int, int).
   f = static_cast<expert_forest*>(e1.getForest());
   int resultNode = AndSum(e1.getNode(), e2.getNode());
+  clearCache(f);
   dd_edge result(f);
   result.set(resultNode, 0, f->getNodeLevel(resultNode));
   return result;
@@ -211,6 +289,19 @@ int AndSum(int n1, int n2)
     // Extract the terminal values before adding them.
     // The sum is converted to a terminal node before it is returned.
     return f->getTerminalNode(f->getInteger(n1) + f->getInteger(n2));
+  }
+
+  // AndSum(n1, n2) == AndSum(n2, n1).
+  // Therefore, to reduce the number of cache table entries and at the same time
+  // increase the number of cache hits, sort n1 and n2.
+  if (n1 > n2) { int temp = n1; n1 = n2; n2 = temp; }
+
+  // Search in cache table
+  int resultNode = 0;
+  if (findInCache(f, n1, n2, resultNode)) {
+    // Found
+    f->linkNode(resultNode);
+    return resultNode;
   }
 
   // n1 and n2 may be on different levels (since were working with
@@ -260,7 +351,13 @@ int AndSum(int n1, int n2)
   }
 
   int tempNode = f->createTempNode(resultLevel, result);
-  int resultNode = f->reduceNode(tempNode);
+  resultNode = f->reduceNode(tempNode);
+
+  // TODO: save result to cache.
+  saveInCache(f, n1, n2, resultNode);
+
+  // Alternatively, user the cache provided by MEDDLY by building an
+  // operation derived from MEDDLY::operation.
 
   return resultNode;
 }
