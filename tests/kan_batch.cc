@@ -26,6 +26,10 @@
 #include "meddly.h"
 #include "simple_model.h"
 
+#include "kan_rs1.h"
+#include "kan_rs2.h"
+#include "kan_rs3.h"
+
 const char* kanban[] = {
   "X-+..............",  // Tin1
   "X.-+.............",  // Tr1
@@ -45,6 +49,7 @@ const char* kanban[] = {
   "X.............-.+"   // Tg4
 };
 
+// 160 states for N=1
 long expected[] = { 
   1, 160, 4600, 58400, 454475, 2546432, 11261376, 
   41644800, 133865325, 384392800, 1005927208 
@@ -52,61 +57,104 @@ long expected[] = {
 
 using namespace MEDDLY;
 
-long buildReachset(int N, bool useSat)
+dd_edge buildReachsetSAT(forest* mdd, forest* mxd, int N)
 {
-  int sizes[16];
-
-  for (int i=15; i>=0; i--) sizes[i] = N+1;
-  domain* d = createDomainBottomUp(sizes, 16);
-
   // Build initial state
   int* initial = new int[17];
   for (int i=16; i; i--) initial[i] = 0;
   initial[1] = initial[5] = initial[9] = initial[13] = N;
-  forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge init_state(mdd);
   mdd->createEdge(&initial, 1, init_state);
 
   // Build next-state function
-  forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge nsf(mxd);
   buildNextStateFunction(kanban, 16, mxd, nsf); 
 
   dd_edge reachable(mdd);
-  if (useSat)
-    apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
-  else
-    apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
+  apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
 
-  long c;
-  apply(CARDINALITY, reachable, c);
+  return reachable;
+}
+
+void mark2minterm(const char* mark, int* minterm, int np)
+{
+  for (; np; np--) {
+    minterm[np] = mark[np]-48;
+  }
+  minterm[0] = 0;
+}
+
+dd_edge buildReachsetBatch(int b, forest* mdd, const char* rs[], long states)
+{
+  int** batch = new int*[b];
+  for (int i=0; i<b; i++) {
+    batch[i] = new int[17];
+  }
+
+  dd_edge reachable(mdd);
+
+  int i = 0;
+  for (long s=0; s<states; s++) {
+    if (i>=b) {
+      dd_edge tmp(mdd);
+      mdd->createEdge(batch, b, tmp);
+      reachable += tmp;
+      i = 0;
+    }
+    mark2minterm(rs[s]-1, batch[i], 16);
+    i++;
+  }
+  if (i) {
+    dd_edge tmp(mdd);
+    mdd->createEdge(batch, i, tmp);
+    reachable += tmp;
+  }
+  return reachable;
+}
+
+bool checkRS(int N, const char* rs[]) 
+{
+  bool ok = true;
+  const int batches[] = { 1000, 100, 10, 1, 0 };
+  int sizes[16];
+
+  for (int i=15; i>=0; i--) sizes[i] = N+1;
+  domain* d = createDomainBottomUp(sizes, 16);
+  forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
+
+  dd_edge reachable = buildReachsetSAT(mdd, mxd, N);
+
+  for (int b=0; batches[b]; b++) { 
+    printf("\tBuilding %ld markings by hand, %d at a time\n", 
+      expected[N], batches[b]);
+
+    dd_edge brs = buildReachsetBatch(batches[b], mdd, rs, expected[N]);
+
+    if (brs != reachable) {
+      printf("\t\tError, didn't match\n");
+      ok = false;
+      break;
+    }
+  }
 
   destroyDomain(d);
-  
-  return c;
+  return ok;
 }
+
 
 int main()
 {
   MEDDLY::initialize();
 
-  printf("Building Kanban reachability sets, using saturation\n");
-  for (int n=1; n<11; n++) {
-    printf("N=%2d:  ", n);
-    fflush(stdout);
-    long c = buildReachset(n, true);
-    printf("%12ld states\n", c);
-    if (c != expected[n]) return 1;
-  }
+  printf("Checking Kanban reachability set, N=1\n");
+  if (!checkRS(1, kanban_rs1)) return 1;
 
-  printf("Building Kanban reachability sets, using traditional iteration\n");
-  for (int n=1; n<11; n++) {
-    printf("N=%2d:  ", n);
-    fflush(stdout);
-    long c = buildReachset(n, false);
-    printf("%12ld states\n", c);
-    if (c != expected[n]) return 1;
-  }
+  printf("Checking Kanban reachability set, N=2\n");
+  if (!checkRS(2, kanban_rs2)) return 1;
+
+  printf("Checking Kanban reachability set, N=3\n");
+  if (!checkRS(3, kanban_rs3)) return 1;
 
   MEDDLY::cleanup();
   printf("Done\n");
