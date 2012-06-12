@@ -29,8 +29,14 @@
 #if 0
 #include "forests/mdds_ext.h"
 #else
-#include "forests/mtmdd.h"
-#include "forests/mtmxd.h"
+#include "forests/mtmddbool.h"
+#include "forests/mtmddint.h"
+#include "forests/mtmddreal.h"
+
+#include "forests/mtmxdbool.h"
+#include "forests/mtmxdint.h"
+#include "forests/mtmxdreal.h"
+
 #include "forests/evmdd.h"
 #endif
 
@@ -236,18 +242,40 @@ MEDDLY::forest* MEDDLY::expert_domain::createForest(bool rel, forest::range_type
 
   if (rel) {
     if(e == forest::MULTI_TERMINAL) {
-      if (t == forest::BOOLEAN) {
-        f = new mt_mxd_bool(slot, this);
-      } else if (t == forest::INTEGER || t == forest::REAL) {
-        f = new mtmxd_forest(slot, this, t);
+      switch (t) {
+        case forest::BOOLEAN:
+            f = new mt_mxd_bool(slot, this);
+            break;
+
+        case forest::INTEGER:
+            f = new mt_mxd_int(slot, this);
+            break;
+
+        case forest::REAL:
+            f = new mt_mxd_real(slot, this);
+            break;
+
+        default:
+            throw error(error::TYPE_MISMATCH);
       }
     }
   } else {
     if (e == forest::MULTI_TERMINAL) {
-      if (t == forest::BOOLEAN) {
-        f = new mt_mdd_bool(slot, this);
-      } else if (t == forest::INTEGER || t == forest::REAL) {
-        f = new mtmdd_forest(slot, this, t);
+      switch (t) {
+        case forest::BOOLEAN:
+            f = new mt_mdd_bool(slot, this);
+            break;
+
+        case forest::INTEGER:
+            f = new mt_mdd_int(slot, this);
+            break;
+
+        case forest::REAL:
+            f = new mt_mdd_real(slot, this);
+            break;
+
+        default:
+            throw error(error::TYPE_MISMATCH);
       }
     } else if (e == forest::EVPLUS) {
       f = new evp_mdd_int(slot, this);
