@@ -840,7 +840,7 @@ MEDDLY::VM_opname::buildOperation(const dd_edge &x_ind, const dd_edge& A,
   }
 
   // A can't be fully reduced.
-  if (forest::FULLY_REDUCED == fA->getReductionRule()) {
+  if (fA->isFullyReduced()) {
     throw error(error::TYPE_MISMATCH);
   }
 
@@ -909,7 +909,7 @@ MEDDLY::MV_opname::buildOperation(const dd_edge &x_ind, const dd_edge& A,
   }
 
   // A can't be fully reduced.
-  if (forest::FULLY_REDUCED == fA->getReductionRule()) {
+  if (fA->isFullyReduced()) {
     throw error(error::TYPE_MISMATCH);
   }
 

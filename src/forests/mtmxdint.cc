@@ -23,10 +23,8 @@
 #include "mtmxdint.h"
 
 
-MEDDLY::mt_mxd_int::mt_mxd_int(int dsl, domain *d)
-: MEDDLY::mtmxd_forest(dsl, d, true, forest::INTEGER,
-      forest::MULTI_TERMINAL, forest::IDENTITY_REDUCED,
-      forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION)
+MEDDLY::mt_mxd_int::mt_mxd_int(int dsl, domain *d, const policies &p)
+: MEDDLY::mtmxd_forest(dsl, d, true, INTEGER, MULTI_TERMINAL, p)
 { }
 
 

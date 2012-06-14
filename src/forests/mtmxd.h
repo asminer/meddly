@@ -61,7 +61,7 @@ class MEDDLY::mtmxd_forest : public mt_forest {
 
   public:
 
-    mtmxd_forest(int dsl, domain *d, forest::range_type t);
+  //  mtmxd_forest(int dsl, domain *d, forest::range_type t);
     ~mtmxd_forest();
 
     // Refer to meddly.h
@@ -120,9 +120,8 @@ class MEDDLY::mtmxd_forest : public mt_forest {
   protected:
 
     // Used by derived classes for initialization
-    mtmxd_forest(int dsl, domain *d, bool relation, forest::range_type t,
-        forest::edge_labeling e, forest::reduction_rule r,
-        forest::node_storage s, forest::node_deletion_policy dp);
+    mtmxd_forest(int dsl, domain *d, bool relation, range_type t,
+        edge_labeling e, const policies &p);
 
     // This create a MTMXD from a collection of edges (represented 
     // as vectors vlist and vplist).
@@ -244,17 +243,17 @@ MEDDLY::mtmxd_forest::createEdgeInternal(const int* const* vlist,
   bool specialCasesFound = false;
   for (int i = 0; i < N; i++)
   {
-    for (int level = expertDomain->getNumVariables(); level; level--) {
+    for (int level = getExpertDomain()->getNumVariables(); level; level--) {
       // unprimed level
       int bound = vlist[i][level] + 1;
-      if (bound >= expertDomain->getVariableBound(level, false))
-        expertDomain->enlargeVariableBound(level, false, bound);
+      if (bound >= getExpertDomain()->getVariableBound(level, false))
+        useExpertDomain()->enlargeVariableBound(level, false, bound);
       else if (bound < 0)
         specialCasesFound = true;
       // primed level
       bound = vplist[i][level] + 1;
-      if (bound >= expertDomain->getVariableBound(level, true))
-        expertDomain->enlargeVariableBound(level, true, bound);
+      if (bound >= getExpertDomain()->getVariableBound(level, true))
+        useExpertDomain()->enlargeVariableBound(level, true, bound);
       else if (bound < 0)
         specialCasesFound = true;
     } // for level
@@ -293,11 +292,11 @@ MEDDLY::mtmxd_forest::createEdgeInternal(const int* const* vlist,
 
     // call sort-based procedure for building the DD
 #ifdef IN_PLACE_SORT
-    int result = inPlaceSortBuild<T>(expertDomain->getNumVariables(),
+    int result = inPlaceSortBuild<T>(getExpertDomain()->getNumVariables(),
         false, 0, N);
 #else
     int result = sortBuild(unpList, pList, (T*)(terms == 0? 0: tList),
-        expertDomain->getNumVariables(), 0, N);
+        getExpertDomain()->getNumVariables(), 0, N);
 #endif
 
     e.set(result, 0, getNodeLevel(result));
@@ -465,12 +464,12 @@ int MEDDLY::mtmxd_forest::sortBuild(int** unpList, int** pList, T* tList,
     list = unpList;
     otherList = pList;
     nextHeight = -height;
-    level = expertDomain->getVariableWithHeight(height);
+    level = getExpertDomain()->getVariableWithHeight(height);
   } else {
     list = pList;
     otherList = unpList;
     nextHeight = -height-1;
-    level = -(expertDomain->getVariableWithHeight(-height));
+    level = -(getExpertDomain()->getVariableWithHeight(-height));
   }
   int absLevel = level < 0? -level: level;
 

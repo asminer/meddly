@@ -62,8 +62,8 @@ int binarySearch(const int* a, int sz, int find);
 
 class MEDDLY::evmdd_forest : public mt_forest {
   public:
-    evmdd_forest(int dsl, domain *d, forest::range_type t,
-        forest::edge_labeling el, int dataHeaderSize);
+    evmdd_forest(int dsl, domain *d, range_type t,
+        edge_labeling el, const policies &p, int dataHeaderSize);
     ~evmdd_forest();
 
     virtual void getDefaultEdgeValue(int& n) const { n = INF; }
@@ -194,7 +194,7 @@ class MEDDLY::evp_mdd_int : public evmdd_forest {
   // Data Header Size: 5
 
   public:
-    evp_mdd_int(int dsl, domain *d);
+    evp_mdd_int(int dsl, domain *d, const policies &p);
     ~evp_mdd_int();
 
     virtual int createTempNode(int k, int sz, bool clear = true);
@@ -233,7 +233,7 @@ class MEDDLY::evt_mdd_real : public evmdd_forest {
   // Data Header Size: 4
 
   public:
-    evt_mdd_real(int dsl, domain *d);
+    evt_mdd_real(int dsl, domain *d, const policies &p);
     ~evt_mdd_real();
 
     using evmdd_forest::getDefaultEdgeValue;
@@ -302,7 +302,7 @@ MEDDLY::evmdd_forest::createEdgeInternal(T term, dd_edge &e)
 {
   if (e.getForest() != this) throw error(error::INVALID_OPERATION);
 
-  if (reductionRule == forest::FULLY_REDUCED) {
+  if (isFullyReduced()) {
     e.set(getTerminalNode(true), term, 0);
   } else {
     // construct the edge bottom-up
@@ -310,7 +310,7 @@ MEDDLY::evmdd_forest::createEdgeInternal(T term, dd_edge &e)
     T prevEv = 0;
     int curr = getTerminalNode(true);
     T currEv = term;
-    for (int i=1; i<=expertDomain->getNumVariables(); i++) {
+    for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
       prev = curr;
       prevEv = currEv;
       createNode(i, -1, prev, prevEv, curr, currEv);
@@ -333,10 +333,10 @@ MEDDLY::evmdd_forest::createEdgeInternal(const int* const* vlist,
   bool specialCasesFound = false;
   for (int i = 0; i < N; i++)
   {
-    for (int level = expertDomain->getNumVariables(); level; level--) {
+    for (int level = getExpertDomain()->getNumVariables(); level; level--) {
       int bound = vlist[i][level] + 1;
       if (bound >= getLevelSize(level))
-        expertDomain->enlargeVariableBound(level, false, bound);
+        useExpertDomain()->enlargeVariableBound(level, false, bound);
       else if (bound < 0)
         specialCasesFound = true;
     } // for level
@@ -379,7 +379,7 @@ MEDDLY::evmdd_forest::createEdgeInternal(const int* v, T term, dd_edge &e)
   getIdentityEdgeValue(prevEv);
   int curr = getTerminalNode(true);
   T currEv = term;
-  for (int i=1; i<=expertDomain->getNumVariables(); i++) {
+  for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
     prev = curr;
     prevEv = currEv;
     createNode(i, v[i], prev, prevEv, curr, currEv);
@@ -399,7 +399,7 @@ void MEDDLY::evmdd_forest::createNode(int k, int index, int dptr, T ev,
     // if all edge values are the same for a evmdd node, it is
     // equivalent to say that they are all 0 (since we subtract the minimum
     // anyway).
-    if (reductionRule == forest::FULLY_REDUCED) {
+    if (isFullyReduced()) {
       res = sharedCopy(dptr);
       resEv = ev;
       return;
@@ -412,8 +412,7 @@ void MEDDLY::evmdd_forest::createNode(int k, int index, int dptr, T ev,
   }
 
   // a single downpointer points to dptr
-  if (nodeStorage == FULL_STORAGE ||
-      (nodeStorage == FULL_OR_SPARSE_STORAGE && index < 2)) {
+  if (!areSparseNodesEnabled() || (areFullNodesEnabled() && index < 2)) {
     // Build a full node
     res = createTempNode(k, index + 1);
     setDownPtrWoUnlink(res, index, dptr);
@@ -421,8 +420,8 @@ void MEDDLY::evmdd_forest::createNode(int k, int index, int dptr, T ev,
     normalizeAndReduceNode(res, resEv);
   }
   else {
-    MEDDLY_DCASSERT (nodeStorage == SPARSE_STORAGE ||
-        (nodeStorage == FULL_OR_SPARSE_STORAGE && index >= 2));
+    MEDDLY_DCASSERT (!areFullNodesEnabled() ||
+        (areSparseNodesEnabled() && index >= 2));
     // Build a sparse node
     createSparseNode(k, index, dptr, ev, res, resEv);
     // res, resEv set by createSparseNode(..); do not call normalizeAndReduce

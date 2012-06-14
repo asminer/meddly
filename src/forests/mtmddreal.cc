@@ -23,10 +23,8 @@
 #include "mtmddreal.h"
 
 
-MEDDLY::mt_mdd_real::mt_mdd_real(int dsl, domain *d)
-: MEDDLY::mtmdd_forest(dsl, d, false, forest::REAL,
-      forest::MULTI_TERMINAL, forest::FULLY_REDUCED,
-      forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION)
+MEDDLY::mt_mdd_real::mt_mdd_real(int dsl, domain *d, const policies &p)
+: MEDDLY::mtmdd_forest(dsl, d, false, REAL, MULTI_TERMINAL, p)
 { }
 
 

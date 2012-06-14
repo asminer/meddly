@@ -60,7 +60,7 @@ class MEDDLY::mtmdd_forest : public mt_forest {
 
   public:
 
-    mtmdd_forest(int dsl, domain *d, forest::range_type t);
+    // mtmdd_forest(int dsl, domain *d, range_type t, const policies &p);
     ~mtmdd_forest();
 
     virtual void createEdge(const int* const* vlist, const int* terms, int N,
@@ -107,9 +107,8 @@ class MEDDLY::mtmdd_forest : public mt_forest {
   protected:
 
     // Used by derived classes for initialization
-    mtmdd_forest(int dsl, domain *d, bool relation, forest::range_type t,
-        forest::edge_labeling e, forest::reduction_rule r,
-        forest::node_storage s, forest::node_deletion_policy dp);
+    mtmdd_forest(int dsl, domain *d, bool relation, range_type t,
+        edge_labeling e, const policies &p);
 
     // This create a MTMDD from a collection of edges (represented 
     // as vectors).
@@ -185,10 +184,10 @@ MEDDLY::mtmdd_forest::createEdgeInternal(const int* const* vlist,
   bool specialCasesFound = false;
   for (int i = 0; i < N; i++)
   {
-    for (int level = expertDomain->getNumVariables(); level; level--) {
+    for (int level = getExpertDomain()->getNumVariables(); level; level--) {
       int bound = vlist[i][level] + 1;
       if (bound >= getLevelSize(level))
-        expertDomain->enlargeVariableBound(level, false, bound);
+        useExpertDomain()->enlargeVariableBound(level, false, bound);
       else if (bound < 0)
         specialCasesFound = true;
     } // for level
@@ -227,10 +226,10 @@ MEDDLY::mtmdd_forest::createEdgeInternal(const int* const* vlist,
 
     // call sort-based procedure for building the DD
 #ifdef IN_PLACE_SORT
-    int result = inPlaceSortBuild<T>(expertDomain->getNumVariables(), 0, N);
+    int result = inPlaceSortBuild<T>(getExpertDomain()->getNumVariables(), 0, N);
 #else
     int result = sortBuild(list, (T*)(terms == 0? 0: termList),
-        expertDomain->getNumVariables(), 0, N);
+        getExpertDomain()->getNumVariables(), 0, N);
 #endif
 
     e.set(result, 0, getNodeLevel(result));
@@ -279,7 +278,7 @@ int MEDDLY::mtmdd_forest::sortBuild(int** list, T* tList,
   }
 
   int N = end - begin;
-  int level = expertDomain->getVariableWithHeight(height);
+  int level = getExpertDomain()->getVariableWithHeight(height);
   int nextHeight = height - 1;
 
   if (N == 1) {

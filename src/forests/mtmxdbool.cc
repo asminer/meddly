@@ -28,10 +28,8 @@
 #define REDUCE_ACCUMULATE_MXD
   
 
-MEDDLY::mt_mxd_bool::mt_mxd_bool(int dsl, domain *d)
-: MEDDLY::mtmxd_forest(dsl, d, true, forest::BOOLEAN,
-      forest::MULTI_TERMINAL, forest::IDENTITY_REDUCED,
-      forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION)
+MEDDLY::mt_mxd_bool::mt_mxd_bool(int dsl, domain *d, const policies &p)
+: MEDDLY::mtmxd_forest(dsl, d, true, BOOLEAN, MULTI_TERMINAL, p)
 { }
 
 
@@ -790,16 +788,16 @@ bool MEDDLY::mt_mxd_bool::accumulate(int& tempNode,
 
   // Enlarge variable bounds if necessary
   int level = domain::TERMINALS;
-  while (-1 != (level = expertDomain->getVariableAbove(level))) {
+  while (-1 != (level = getExpertDomain()->getVariableAbove(level))) {
     int sz = MAX( element[level] , pelement[level] ) + 1;
-    if (sz > expertDomain->getVariableBound(level)) {
-      expertDomain->enlargeVariableBound(level, false, sz);
+    if (sz > getExpertDomain()->getVariableBound(level)) {
+      getExpertDomain()->enlargeVariableBound(level, false, sz);
     }
   }
 
   accumulateMintermAddedElement = false;
   int result = accumulate(tempNode, false,
-      element, pelement, expertDomain->getNumVariables());
+      element, pelement, getExpertDomain()->getNumVariables());
   if (tempNode != result) {
     // tempNode had to be copied into another node by accumulate().
     // This could be either because tempNode was a reduced node,
@@ -827,10 +825,10 @@ bool MEDDLY::mt_mxd_bool::accumulate(int& tempNode,
   // Enlarge variable bounds if necessary
 #if 0
   int level = domain::TERMINALS;
-  while (-1 != (level = expertDomain->getVariableAbove(level))) {
+  while (-1 != (level = getExpertDomain()->getVariableAbove(level))) {
     int sz = MAX( element[level] , pelement[level] ) + 1;
-    if (sz > expertDomain->getVariableBound(level)) {
-      expertDomain->enlargeVariableBound(level, false, sz);
+    if (sz > getExpertDomain()->getVariableBound(level)) {
+      getExpertDomain()->enlargeVariableBound(level, false, sz);
     }
   }
 #endif
@@ -838,7 +836,7 @@ bool MEDDLY::mt_mxd_bool::accumulate(int& tempNode,
   // Traverse Mdd till you find a 0.
   int parentNode = 0;
   int currNode = tempNode;
-  int currLevel = expertDomain->getNumVariables();
+  int currLevel = getExpertDomain()->getNumVariables();
   if (currNode != 0) {
     for ( ; currLevel ; currLevel-- )
     {

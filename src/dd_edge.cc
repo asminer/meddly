@@ -1133,7 +1133,7 @@ void MEDDLY::dd_edge::iterator::incrRelation()
   MEDDLY_DCASSERT(type == DEFAULT);
 
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
-  if (f->getReductionRule() != forest::IDENTITY_REDUCED) {
+  if (!f->isIdentityReduced()) {
     incrNonIdentRelation();
     return;
   }

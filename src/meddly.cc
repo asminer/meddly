@@ -341,10 +341,9 @@ void MEDDLY::destroyDomain(MEDDLY::domain* &d)
     break;
   }
   // remove
-  expert_domain* ed = (expert_domain*) d;
-  ed->markForDeletion();
+  d->markForDeletion();
   operation::removeStalesFromMonolithic();
-  delete ed;
+  delete d;
   d = 0;
 }
 

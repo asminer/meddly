@@ -57,6 +57,7 @@ namespace MEDDLY {
   class ct_object;
   class unary_opname;
   class binary_opname;
+  class operation;
   class unary_operation;
   class binary_operation;
 
@@ -434,6 +435,8 @@ class MEDDLY::error {
       WRONG_NUMBER,
       /// A result won't fit in an integer / float.
       OVERFLOW,
+      /// Invalid policy setting.
+      INVALID_POLICY,
       /// Bad value for something.
       INVALID_ASSIGNMENT,
       /// Miscellaneous error
@@ -459,6 +462,7 @@ class MEDDLY::error {
           case  TYPE_MISMATCH:        return "Type mismatch";
           case  WRONG_NUMBER:         return "Wrong number";
           case  OVERFLOW:             return "Overflow";
+          case  INVALID_POLICY:       return "Invalid policy";
           case  INVALID_ASSIGNMENT:   return "Invalid assignment";
           case  MISCELLANEOUS:        return "Miscellaneous";
           default:                    return "Unknown error";
@@ -485,10 +489,6 @@ class MEDDLY::error {
     depending on your conceptual view) represented in a single
     decision diagram forest over a common domain.
     
-    Some interesting features of forests:
-    - The reduction rule can be different for different variables.
-    - The storage rule can be different for different variables.
-
     TBD: discussion of garbage collection.
 
     When a forest is destroyed, all of the corresponding dd_edges
@@ -520,104 +520,179 @@ class MEDDLY::forest {
       // TBD: there may be others in the future :^)
     };
 
-    /** Supported node reduction rules.
-        Currently, the following reduction rules are allowed:
-        - Fully reduced, meaning that duplicate and redundant nodes are
-          eliminated.
-        - Quasi reduced, meaning that duplicate nodes are eliminated.
-        - Identity reduced, for relations only, meaning that duplicate
-          nodes are eliminated, as are "identity" pairs of primed, unprimed
-          variables.
-    */
-    enum reduction_rule {
-      /// Nodes are fully reduced.
-      FULLY_REDUCED,
-      /// Nodes are quasi-reduced.
-      QUASI_REDUCED,
-      /// Nodes are identity-reduced.
-      IDENTITY_REDUCED
-    };
+    /// Collection of forest policies.
+    struct policies {
 
-    /// Supported node storage meachanisms.
-    enum node_storage {
-      /// Truncated full storage.
-      FULL_STORAGE,
-      /// Sparse storage.
-      SPARSE_STORAGE,
-      /// For each node, either full or sparse, whichever is more compact.
-      FULL_OR_SPARSE_STORAGE
-    };
-
-    /// Supported node deletion policies.
-    enum node_deletion_policy {
-      /** Never delete nodes.
-          Useful for debugging the garbage collector.
+      /** Supported node reduction rules.
+          Currently, the following reduction rules are allowed:
+            - Fully reduced, meaning that duplicate and redundant nodes are
+              eliminated.
+            - Quasi reduced, meaning that duplicate nodes are eliminated.
+            - Identity reduced, for relations only, meaning that duplicate
+              nodes are eliminated, as are "identity" pairs of primed, unprimed
+              variables.
       */
-      NEVER_DELETE,
-      /** Nodes are marked for deletion.
-          We assume that a deleted node might be used again,
-          so we keep it until it no longer appears in any compute table.
-      */
-      OPTIMISTIC_DELETION,
-      /// Nodes are removed as soon as they become disconnected.
-      PESSIMISTIC_DELETION
-    };
-
-    /// Forest stats.
-    struct stats {
-      struct node_stats {
-        long NumNodes;
-        long MemUsed;
-        long MemAlloc;
-
-        node_stats() {
-          NumNodes = MemUsed = MemAlloc = 0;
-        }
+      enum reduction_rule {
+          /// Nodes are fully reduced.
+          FULLY_REDUCED,
+          /// Nodes are quasi-reduced.
+          QUASI_REDUCED,
+          /// Nodes are identity-reduced.
+          IDENTITY_REDUCED
       };
-      node_stats current;
-      node_stats peak;
 
-      public:
-        stats() : current(), peak() { }
+      /// Supported node storage meachanisms.
+      enum node_storage {
+          /// Truncated full storage.
+          FULL_STORAGE,
+          /// Sparse storage.
+          SPARSE_STORAGE,
+          /// For each node, either full or sparse, whichever is more compact.
+          FULL_OR_SPARSE_STORAGE
+      };
 
-        inline void updateNodes(int delta) {
-          current.NumNodes += delta;
-          if (current.NumNodes > peak.NumNodes) {
-            peak.NumNodes = current.NumNodes;
-          }
-        }
+      /// Supported node deletion policies.
+      enum node_deletion {
+          /** Never delete nodes.
+              Useful for debugging the garbage collector.
+          */
+          NEVER_DELETE,
+          /** Nodes are marked for deletion.
+              We assume that a deleted node might be used again,
+              so we keep it until it no longer appears in any compute table.
+          */
+          OPTIMISTIC_DELETION,
+          /// Nodes are removed as soon as they become disconnected.
+          PESSIMISTIC_DELETION
+      };
 
-        inline void updateMemUsed(long bytes) {
-          current.MemUsed += bytes;
-          if (current.MemUsed > peak.MemUsed) {
-            peak.MemUsed = current.MemUsed;
-          }
-        }
+      /// Default reduction rule for all levels in the forest.
+      reduction_rule reduction;
+      /// Default storage rule for all levels in the forest.
+      node_storage storage;
+      /// Default deletion policy for all levels in the forest.
+      node_deletion deletion;
 
-        inline void updateMemAlloc(long bytes) {
-          current.MemAlloc += bytes;
-          if (current.MemAlloc > peak.MemAlloc) {
-            peak.MemAlloc = current.MemAlloc;
-          }
-        }
+      /// Compaction threshold for all variables in the forest.
+      unsigned compaction;
+      /// Number of zombie nodes to trigger garbage collection
+      unsigned zombieTrigger;
+      /// Number of orphan nodes to trigger garbage collection
+      unsigned orphanTrigger;
+      /// Should we run the memory compactor after garbage collection
+      bool compactAfterGC;
+
+
+      /// Constructor; sets reasonable defaults
+      policies(bool rel) {
+        reduction = rel ? IDENTITY_REDUCED : FULLY_REDUCED;
+        storage = FULL_OR_SPARSE_STORAGE;
+        deletion = OPTIMISTIC_DELETION;
+        compaction = 50;
+        zombieTrigger = 1000000;
+        orphanTrigger = 500000;
+        compactAfterGC = true;
+      }
+
+      inline void setFullyReduced()     { reduction = FULLY_REDUCED; }
+      inline void setQuasiReduced()     { reduction = QUASI_REDUCED; }
+      inline void setIdentityReduced()  { reduction = IDENTITY_REDUCED; }
+
+      inline void setFullStorage()      { storage = FULL_STORAGE; }
+      inline void setSparseStorage()    { storage = SPARSE_STORAGE; }
+      inline void setCompactStorage()   { storage = FULL_OR_SPARSE_STORAGE; }
+
+      inline void setOptimistic()       { deletion = OPTIMISTIC_DELETION; }
+      inline void setPessimistic()      { deletion = PESSIMISTIC_DELETION; }
+    }; // end of struct policies
+
+    /// Collection of various stats for performance measurement
+    struct statset {
+      /// Number of times a dead node was resurrected.
+      long reclaimed_nodes;
+      /// Number of times the forest storage array was compacted
+      long num_compactions;
+      /// Current number of zombie nodes (waiting for deletion)
+      long zombie_nodes;
+      /// Current number of orphan nodes (disconnected)
+      long orphan_nodes;
+      /// Current number of connected nodes
+      long active_nodes;
+      /// Current number of temporary nodes
+      long temp_nodes;
+
+      /// Peak number of active nodes
+      long peak_active;
+
+      /// Current memory used for nodes
+      long memory_used;
+      /// Current memory allocated for nodes
+      long memory_alloc;
+      /// Peak memory used for nodes
+      long peak_memory_used;
+      /// Peak memory allocated for nodes
+      long peak_memory_alloc;
+
+      // unique table stats
+
+      /// Current memory for UT
+      long memory_UT;
+      /// Peak memory for UT
+      long peak_memory_UT;
+      /// Longest chain search in UT
+      int max_UT_chain;
+
+      statset();
+
+      // nice helpers
+
+      inline void incActive(long b) {
+        active_nodes += b;
+        if (active_nodes > peak_active) 
+          peak_active = active_nodes;
+      }
+      inline void decActive(long b) {
+        active_nodes -= b;
+      }
+      inline void incMemUsed(long b) {
+        memory_used += b;
+        if (memory_used > peak_memory_used) 
+          peak_memory_used = memory_used;
+      }
+      inline void decMemUsed(long b) {
+        memory_used -= b;
+      }
+      inline void incMemAlloc(long b) {
+        memory_alloc += b;
+        if (memory_alloc > peak_memory_alloc) 
+          peak_memory_alloc = memory_alloc;
+      }
+      inline void decMemAlloc(long b) {
+        memory_alloc -= b;
+      }
+      inline void sawUTchain(int c) {
+        if (c > max_UT_chain)
+          max_UT_chain = c;
+      }
     };
 
   protected:
-    /** Constructor.  This class cannot be instantiated.
+    /** Constructor -- this class cannot be instantiated.
+      @param  dslot   slot used to store the forest, in the domain
       @param  d       domain to which this forest belongs to.
       @param  rel     does this forest represent a relation.
       @param  t       the range of the functions represented in this forest.
       @param  ev      edge annotation.
-      @param  r       reduction rule.
-      @param  s       storage rule.
-      @param  ndp     node deletion policy.
+      @param  p       Polcies for reduction, storage, deletion.
     */
-    forest(domain *d, bool rel, range_type t, 
-      edge_labeling ev, reduction_rule r, node_storage s, 
-      node_deletion_policy ndp);
+    forest(int dslot, domain* d, bool rel, range_type t, edge_labeling ev, 
+      const policies &p);
 
     /// Destructor.
     virtual ~forest();  
+
+    /// Phase one destruction.
+    void markForDeletion();
 
   public:
 
@@ -656,48 +731,119 @@ class MEDDLY::forest {
       return e == edgeLabel;
     }
 
-    /** Set the specified reduction rule for all variables in this forest.
-        @param  r   Desired reduction rule.
-    */
-    virtual void setReductionRule(reduction_rule r) = 0;
+    /// Check if we match a specific type of forest
+    inline bool matches(bool isR, range_type rt, edge_labeling el) const {
+      return (isRelation == isR) && (rangeType == rt) && (edgeLabel == el);
+    }
+
+    /// Returne the current policies used by this forest.
+    inline const policies& getPolicies() const {
+      return deflt;
+    }
 
     /// Returns the reduction rule used by this forest.
-    inline forest::reduction_rule getReductionRule() const {
-      return reductionRule;
+    inline policies::reduction_rule getReductionRule() const {
+      return deflt.reduction;
     }
 
-    /** Set the node storage mechanism for all variables in this forest.
-        The same as calling setNodeStorageForVariable(), for all variables.
-        @param  ns  Desired node storage mechanism.
-    */
-    virtual void setNodeStorage(node_storage ns) = 0;
+    /// Returns true if the forest is fully reduced.
+    inline bool isFullyReduced() const {
+      return policies::FULLY_REDUCED == deflt.reduction;
+    }
+
+    /// Returns true if the forest is quasi reduced.
+    inline bool isQuasiReduced() const {
+      return policies::QUASI_REDUCED == deflt.reduction;
+    }
+
+    /// Returns true if the forest is identity reduced.
+    inline bool isIdentityReduced() const {
+      return policies::IDENTITY_REDUCED == deflt.reduction;
+    }
 
     /// Returns the storage mechanism used by this forest.
-    inline node_storage getNodeStorage() const {
-      return nodeStorage;
+    inline policies::node_storage getNodeStorage() const {
+      return deflt.storage;
     }
-
-    /** Set the node deletion policy for all variables in this forest.
-        Determines how aggressively node memory should be reclaimed when
-        nodes become disconnected.
-        @param  np  Policy to use.
-        TODO: need to specify what happens when the policy is changed.
-    */
-    virtual void setNodeDeletion(node_deletion_policy np) = 0;
 
     /// Returns the node deletion policy used by this forest.
-    inline node_deletion_policy getNodeDeletion() const {
-      return nodeDeletionPolicy;
+    inline policies::node_deletion getNodeDeletion() const {
+      return deflt.deletion;
     }
 
+    /// Are we using pessimistic deletion
+    inline bool isPessimistic() const {
+      return policies::PESSIMISTIC_DELETION == deflt.deletion;
+    }
 
-    /** Set a compaction threshold for all variables in this forest.
-        The threshold is set as a percentage * 100.  Whenever the \b unused
-        memory for this variable exceeds the threshold (as a percentage), a
-        compaction operation is performed automatically.
-        @param  p   Percentage * 100, i.e., use 50 for 50\%.
+    /// Can we store nodes sparsely
+    inline bool areSparseNodesEnabled() const {
+      return policies::FULL_STORAGE != deflt.storage;
+    }
+
+    /// Can we store nodes fully
+    inline bool areFullNodesEnabled() const {
+      return policies::SPARSE_STORAGE != deflt.storage;
+    }
+
+    /// Get forest performance stats.
+    inline const statset& getStats() const { return stats; }
+
+    /** Get the current number of nodes in the forest, at all levels.
+        @return     The current number of nodes, not counting deleted or
+                    marked for deletion nodes.
     */
-    virtual void setCompactionThreshold(unsigned p) = 0;
+    inline long getCurrentNumNodes() const {
+      return stats.active_nodes;
+    }
+
+    /** Get the current total memory used by the forest.
+        This should be equal to summing getMemoryUsedForVariable()
+        over all variables.
+        @return     Current memory used by the forest.
+    */
+    inline long getCurrentMemoryUsed() const {
+      return stats.memory_used;
+    }
+
+    /** Get the current total memory allocated by the forest.
+        This should be equal to summing getMemoryAllocatedForVariable()
+        over all variables.
+        @return     Current total memory allocated by the forest.
+    */
+    inline long getCurrentMemoryAllocated() const {
+      return stats.memory_alloc; 
+    }
+
+    /** Get the peak number of nodes in the forest, at all levels.
+        This will be at least as large as calling getNumNodes() after
+        every operation and maintaining the maximum.
+        @return     The peak number of nodes that existed at one time,
+                    in the forest.
+    */
+    inline long getPeakNumNodes() const {
+      return stats.peak_active;
+    }
+
+    /** Get the peak memory used by the forest.
+        @return     Peak total memory used by the forest.
+    */
+    inline long getPeakMemoryUsed() const {
+      return stats.peak_memory_used;
+    }
+
+    /** Get the peak memory allocated by the forest.
+        @return     Peak memory allocated by the forest.
+    */
+    inline long getPeakMemoryAllocated() const {
+      return stats.peak_memory_alloc;
+    }
+
+    /// Remove any stale compute table entries associated with this forest.
+    void removeStaleComputeTableEntries();
+
+    /// Remove all compute table entries associated with this forest.
+    void removeAllComputeTableEntries();
 
     /** Force garbage collection.
         All disconnected nodes in this forest are discarded along with any
@@ -709,85 +855,6 @@ class MEDDLY::forest {
         This is not the same as garbage collection.
     */
     virtual void compactMemory() = 0;
-
-    /// Get forest performance stats.
-    inline const stats& getStats() const { return perf; }
-
-    /** Get the current number of nodes in the forest, at all levels.
-        @return     The current number of nodes, not counting deleted or
-                    marked for deletion nodes.
-    */
-    inline long getCurrentNumNodes() const {
-      return perf.current.NumNodes;
-    }
-
-    /** Get the current total memory used by the forest.
-        This should be equal to summing getMemoryUsedForVariable()
-        over all variables.
-        @return     Current memory used by the forest.
-    */
-    inline long getCurrentMemoryUsed() const {
-      return perf.current.MemUsed;
-    }
-
-    /** Get the current total memory allocated by the forest.
-        This should be equal to summing getMemoryAllocatedForVariable()
-        over all variables.
-        @return     Current total memory allocated by the forest.
-    */
-    inline long getCurrentMemoryAllocated() const {
-      return perf.current.MemAlloc;
-    }
-
-    /** Get the peak number of nodes in the forest, at all levels.
-        This will be at least as large as calling getNumNodes() after
-        every operation and maintaining the maximum.
-        @return     The peak number of nodes that existed at one time,
-                    in the forest.
-    */
-    inline long getPeakNumNodes() const {
-      return perf.peak.NumNodes;
-    }
-
-    /** Get the peak memory used by the forest.
-        @return     Peak total memory used by the forest.
-    */
-    inline long getPeakMemoryUsed() const {
-      return perf.peak.MemUsed;
-    }
-
-    /** Get the peak memory allocated by the forest.
-        @return     Peak memory allocated by the forest.
-    */
-    inline long getPeakMemoryAllocated() const {
-      return perf.peak.MemAlloc;
-    }
-
-
-    /** Create an edge such that
-        f(v_1, ..., vh=i, ..., v_n) = i for 0 <= i < size(vh).
-
-        For example, in a forest with range_type INTEGER, with 3 variables,
-        all of size 3, if vh == 2. An edge is created such that
-        v_1 v_2 v_3 TERM
-        X   0   X  0
-        X   1   X  1
-        X   2   X  2
-        where X represents "all possible".
-
-        \a primedLevel is useful only with forests that store relations. Here,
-        \a primedLevel is used to indicate whether the edge is to be created
-        for the primed or the unprimed level.
-  
-        @param  vh    Variable handle.
-        @param  primedLevel
-                      true: creates node for the primed vh variable.
-                      false: creates node for the unprimed vh variable.
-        @param  a     return a handle to a node in the forest such that
-                      f(v_1, ..., vh=i, ..., v_n) = i for 0 <= i < size(vh).
-    */
-    virtual void createEdgeForVar(int vh, bool primedLevel, dd_edge& a) = 0;
-
 
     /** Create an edge representing the subset of a Matrix Diagram.
 
@@ -895,6 +962,38 @@ class MEDDLY::forest {
         @throws       TYPE_MISMATCH, if the forest's range is not REAL.
     */
     virtual void createEdgeForVar(int vh, bool vp, float* terms, dd_edge& a);
+
+    /** Create an edge such that
+        f(v_1, ..., vh=i, ..., v_n) = i for 0 <= i < size(vh).
+
+        For example, in a forest with range_type INTEGER, with 3 variables,
+        all of size 3, if vh == 2. An edge is created such that
+        v_1 v_2 v_3 TERM
+        X   0   X  0
+        X   1   X  1
+        X   2   X  2
+        where X represents "all possible".
+
+        \a primedLevel is useful only with forests that store relations. Here,
+        \a primedLevel is used to indicate whether the edge is to be created
+        for the primed or the unprimed level.
+  
+        @param  vh    Variable handle.
+        @param  pr
+                      true: creates node for the primed vh variable.
+                      false: creates node for the unprimed vh variable.
+        @param  a     return a handle to a node in the forest such that
+                      f(v_1, ..., vh=i, ..., v_n) = i for 0 <= i < size(vh).
+    */
+    inline void createEdgeForVar(int vh, bool pr, dd_edge& a) {
+      switch (rangeType) {
+        case BOOLEAN:   createEdgeForVar(vh, pr, (bool*)  0, a);  break;
+        case INTEGER:   createEdgeForVar(vh, pr, (int*)   0, a);  break;
+        case REAL:      createEdgeForVar(vh, pr, (float*) 0, a);  break;
+        default:        throw error(error::MISCELLANEOUS);
+      };
+    };
+
 
     /** Create an edge as the union of several explicit vectors.
         @param  vlist Array of vectors. Each vector has dimension equal
@@ -1219,16 +1318,59 @@ class MEDDLY::forest {
     */
     virtual void showInfo(FILE* strm, int verbosity=0) = 0;
 
-  private:
+  private:  // Domain info 
+    friend class domain;
+    int d_slot;
     domain* d;
+
+  private:  // For operation registration
+    friend class operation;
+
+    int* opCount;
+    int szOpCount;
+
+    /// Register an operation with this forest.
+    /// Called only within operation.
+    void registerOperation(const operation* op);
+
+    /// Unregister an operation.
+    /// Called only within operation.
+    void unregisterOperation(const operation* op);
+
+  private:  // For edge registration
+    friend class dd_edge;
+
+    // structure to store references to registered dd_edges.
+    struct edge_data {
+      // If nextHole >= 0, this is a hole, in which case nextHole also
+      // refers to the array index of the next hole in edge[]
+      int nextHole;
+      // registered dd_edge
+      dd_edge* edge;
+    };
+
+    // Array of registered dd_edges
+    edge_data *edge;
+
+    // Size of edge[]
+    unsigned sz;
+    // Array index: 1 + (last used slot in edge[])
+    unsigned firstFree;
+    // Array index: most recently created hole in edge[]
+    int firstHole;
+
+    void registerEdge(dd_edge& e);
+    void unregisterEdge(dd_edge& e);
+    void unregisterDDEdges();
+
+  private:
     bool isRelation;
+    bool is_marked_for_deletion;
     range_type rangeType;
     edge_labeling edgeLabel;
   protected:
-    reduction_rule reductionRule;
-    node_storage nodeStorage;
-    node_deletion_policy nodeDeletionPolicy;
-    stats perf;
+    policies deflt;
+    statset stats;
 };
 
 // ******************************************************************
@@ -1314,10 +1456,15 @@ class MEDDLY::domain {
         @param  ev      Edge labeling mechanism, i.e., should this be a
                         Multi-terminal decision diagram forest,
                         edge-valued with plus/times decision diagram forest.
+        @param  p       Policies to use within the forest.
         @return 0       if an error occurs, a new forest otherwise.
     */
-    virtual forest* createForest(bool rel, forest::range_type t,
-      forest::edge_labeling ev) = 0;
+    forest* createForest(bool rel, forest::range_type t,
+      forest::edge_labeling ev, const forest::policies &p);
+
+    /// Create a forest using the library default policies.
+    forest* createForest(bool rel, forest::range_type t,
+      forest::edge_labeling ev);
 
     /// Get the number of variables in this domain.
     inline int getNumVariables() const { return nVars; }
@@ -1389,7 +1536,12 @@ class MEDDLY::domain {
         This is primarily for aid in debugging.
         @param  strm    File stream to write to.
     */
-    virtual void showInfo(FILE* strm) = 0;
+    void showInfo(FILE* strm);
+
+    /// Free the slot that the forest is using.
+    void unlinkForest(expert_forest* f, int slot);
+
+    // --------------------------------------------------------------------
 
   protected:
     /// Constructor.
@@ -1402,6 +1554,21 @@ class MEDDLY::domain {
     int nVars;
 
     friend void MEDDLY::cleanup();
+
+  private:
+    expert_forest** forests;
+    int szForests;
+
+    /// Find a free slot for a new forest.
+    int findEmptyForestSlot();
+
+    /// Mark this domain for deletion
+    void markForDeletion();
+
+    friend void MEDDLY::destroyDomain(domain* &d);
+
+  public:
+    inline bool hasForests() const { return forests; }
 };
 
 

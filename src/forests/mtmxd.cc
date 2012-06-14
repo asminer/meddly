@@ -23,6 +23,7 @@
 #include "mtmxd.h"
 
 
+/*
 MEDDLY::mtmxd_forest::mtmxd_forest(int dsl, domain *d, forest::range_type t)
 : mt_forest(dsl, d, true, t,
       forest::MULTI_TERMINAL, forest::IDENTITY_REDUCED,
@@ -37,13 +38,12 @@ MEDDLY::mtmxd_forest::mtmxd_forest(int dsl, domain *d, forest::range_type t)
   slot = 0;
   countSize = 0;
 }
-
+*/
 
 MEDDLY::mtmxd_forest::mtmxd_forest(int dsl, domain *d,
     bool relation, forest::range_type t,
-    forest::edge_labeling e, forest::reduction_rule r,
-    forest::node_storage s, forest::node_deletion_policy dp)
-: mt_forest(dsl, d, relation, t, e, r, s, dp, mtmxdDataHeaderSize)
+    forest::edge_labeling e, const policies &p)
+: mt_forest(dsl, d, relation, t, e, p, mtmxdDataHeaderSize)
 {
   unpList = 0;
   pList = 0;
@@ -311,16 +311,15 @@ int MEDDLY::mtmxd_forest::createNode(int k, int index, int dptr)
   if (dptr == 0) return 0;
 
   // a single downpointer points to dptr
-  if (nodeStorage == FULL_STORAGE ||
-      (nodeStorage == FULL_OR_SPARSE_STORAGE && index < 2)) {
+  if (!areSparseNodesEnabled() || (areFullNodesEnabled() && index < 2)) {
     // Build a full node
     int curr = createTempNode(k, index + 1);
     setDownPtrWoUnlink(curr, index, dptr);
     return reduceNode(curr);
   }
   else {
-    MEDDLY_DCASSERT (nodeStorage == SPARSE_STORAGE ||
-        (nodeStorage == FULL_OR_SPARSE_STORAGE && index >= 2));
+    MEDDLY_DCASSERT (!areFullNodesEnabled() ||
+        (areSparseNodesEnabled() && index >= 2));
     // Build a sparse node
     int p = createTempNode(k, 2);
     int* nodeData = getNodeAddress(p);
@@ -359,7 +358,7 @@ int MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, int dptr)
 
   int result = 0;
 
-  if (reductionRule == forest::IDENTITY_REDUCED) {
+  if (isIdentityReduced()) {
 
     if (index1 == -2) {
       // "don't change"
@@ -390,8 +389,7 @@ int MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, int dptr)
   else if (index1 == -2) {
 
     // "don't change"
-    MEDDLY_DCASSERT(reductionRule == forest::QUASI_REDUCED ||
-        reductionRule == forest::FULLY_REDUCED);
+    MEDDLY_DCASSERT(isQuasiReduced() || isFullyReduced());
     int sz = getLevelSize(k);
     result = createTempNode(k, sz, false);
     int* unprimedDptrs = getFullNodeDownPtrs(result);
@@ -402,7 +400,7 @@ int MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, int dptr)
     result = reduceNode(result);
 
   }
-  else if (reductionRule == forest::QUASI_REDUCED) {
+  else if (isQuasiReduced()) {
 
     int p = 0;
     if (index2 == -1) {
@@ -477,7 +475,7 @@ void MEDDLY::mtmxd_forest::createEdge(const int* v, const int* vp, int term,
 void MEDDLY::mtmxd_forest::createEdge(const int* v, const int* vp, int term,
     dd_edge& e)
 {
-  createEdge(v, vp, term, expertDomain->getNumVariables(), false, e);
+  createEdge(v, vp, term, getExpertDomain()->getNumVariables(), false, e);
 }
 
 
@@ -510,12 +508,12 @@ int MEDDLY::mtmxd_forest::createEdge(int dptr)
   MEDDLY_DCASSERT(isTerminalNode(dptr));
   if (dptr == 0) return 0;
 
-  if (reductionRule == forest::FULLY_REDUCED) return sharedCopy(dptr);
+  if (isFullyReduced()) return sharedCopy(dptr);
 
   // construct the edge bottom-up
   int curr = dptr;
   int prev = 0;
-  for (int i=1; i<=expertDomain->getNumVariables(); i++) {
+  for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
     prev = curr;
     curr = createNode(i, -1, -1, prev);
     unlinkNode(prev);
@@ -552,7 +550,7 @@ int MEDDLY::mtmxd_forest::getTerminalNodeForEdge(int n, const int* vlist,
   // assumption: vlist and vplist do not contain any special values
   // (-1, -2, etc). vlist and vplist contain a single element.
 
-  if (reductionRule == forest::IDENTITY_REDUCED) {
+  if (isIdentityReduced()) {
 
     while (!isTerminalNode(n)) {
       int nLevel = getNodeLevel(n);
@@ -710,9 +708,9 @@ void MEDDLY::mtmxd_forest::findFirstElement(const dd_edge& f,
   if (node == 0) 
     throw error(error::INVALID_ASSIGNMENT);
 
-  if (forest::IDENTITY_REDUCED == reductionRule) {
+  if (isIdentityReduced()) {
 
-    for (int level = expertDomain->getNumVariables(); level; level--)
+    for (int level = getExpertDomain()->getNumVariables(); level; level--)
     {
       MEDDLY_DCASSERT(node != 0);
       MEDDLY_DCASSERT(isUnprimedNode(node));
@@ -767,7 +765,7 @@ void MEDDLY::mtmxd_forest::findFirstElement(const dd_edge& f,
   else {
 
     // !IDENTITY_REDUCED
-    for (int currLevel = expertDomain->getNumVariables(); currLevel; )
+    for (int currLevel = getExpertDomain()->getNumVariables(); currLevel; )
     {
       MEDDLY_DCASSERT(node != 0);
       if (currLevel != getNodeLevel(node)) {

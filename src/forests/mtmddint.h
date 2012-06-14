@@ -36,7 +36,7 @@ namespace MEDDLY {
 class MEDDLY::mt_mdd_int : public mtmdd_forest {
   public:
 
-    mt_mdd_int(int dsl, domain *d);
+    mt_mdd_int(int dsl, domain *d, const policies &p);
     ~mt_mdd_int();
 };
 

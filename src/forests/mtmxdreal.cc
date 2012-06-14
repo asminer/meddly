@@ -23,10 +23,8 @@
 #include "mtmxdreal.h"
 
 
-MEDDLY::mt_mxd_real::mt_mxd_real(int dsl, domain *d)
-: MEDDLY::mtmxd_forest(dsl, d, true, forest::REAL,
-      forest::MULTI_TERMINAL, forest::IDENTITY_REDUCED,
-      forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION)
+MEDDLY::mt_mxd_real::mt_mxd_real(int dsl, domain *d, const policies &p)
+: MEDDLY::mtmxd_forest(dsl, d, true, REAL, MULTI_TERMINAL, p)
 { }
 
 

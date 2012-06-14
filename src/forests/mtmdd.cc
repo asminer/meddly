@@ -27,10 +27,11 @@
 
 // ********************************** MTMDDs **********************************
 
-MEDDLY::mtmdd_forest::mtmdd_forest(int dsl, domain *d, forest::range_type t)
+/*
+MEDDLY::mtmdd_forest
+::mtmdd_forest(int dsl, domain *d, range_type t, const policies &p)
 : mt_forest(dsl, d, false, t,
-      forest::MULTI_TERMINAL, forest::FULLY_REDUCED,
-      forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION,
+      policies::MULTI_TERMINAL, policies::FULLY_REDUCED, p,
       mtmddDataHeaderSize)
 {
   list = 0;
@@ -40,13 +41,13 @@ MEDDLY::mtmdd_forest::mtmdd_forest(int dsl, domain *d, forest::range_type t)
   slot = 0;
   countSize = 0;
 }
+*/
 
 
 MEDDLY::mtmdd_forest::mtmdd_forest(int dsl, domain *d,
     bool relation, forest::range_type t,
-    forest::edge_labeling e, forest::reduction_rule r,
-    forest::node_storage s, forest::node_deletion_policy dp)
-: mt_forest(dsl, d, relation, t, e, r, s, dp, mtmddDataHeaderSize)
+    forest::edge_labeling e, const policies &p)
+: mt_forest(dsl, d, relation, t, e, p, mtmddDataHeaderSize)
 {
   list = 0;
   termList = 0;
@@ -187,7 +188,7 @@ int MEDDLY::mtmdd_forest::reduceNode(int p)
   }
 
   // check for possible reductions
-  if (reductionRule == forest::QUASI_REDUCED) {
+  if (isQuasiReduced()) {
     // ensure than all downpointers are pointing to nodes exactly one
     // level below or zero.
     int nextLevel = node_level - 1;
@@ -356,29 +357,28 @@ int MEDDLY::mtmdd_forest::createNode(int k, int index, int dptr)
   MEDDLY_DCASSERT(index >= -1);
 
   if (index > -1 && getLevelSize(k) <= index) {
-    expertDomain->enlargeVariableBound(k, false, index + 1);
+    useExpertDomain()->enlargeVariableBound(k, false, index + 1);
   }
 
   if (dptr == 0) return 0;
   if (index == -1) {
     // all downpointers should point to dptr
-    if (reductionRule == forest::FULLY_REDUCED) return sharedCopy(dptr);
+    if (isFullyReduced()) return sharedCopy(dptr);
     int curr = createTempNodeMaxSize(k, false);
     setAllDownPtrsWoUnlink(curr, dptr);
     return reduceNode(curr);
   }
 
   // a single downpointer points to dptr
-  if (nodeStorage == FULL_STORAGE ||
-      (nodeStorage == FULL_OR_SPARSE_STORAGE && index < 2)) {
+  if (!areSparseNodesEnabled() || (areFullNodesEnabled() && index < 2)) {
     // Build a full node
     int curr = createTempNode(k, index + 1);
     setDownPtrWoUnlink(curr, index, dptr);
     return reduceNode(curr);
   }
   else {
-    MEDDLY_DCASSERT (nodeStorage == SPARSE_STORAGE ||
-        (nodeStorage == FULL_OR_SPARSE_STORAGE && index >= 2));
+    MEDDLY_DCASSERT (!areFullNodesEnabled() ||
+        (areSparseNodesEnabled() && index >= 2));
     // Build a sparse node
     int p = createTempNode(k, 2);
     int* nodeData = getNodeAddress(p);
@@ -416,7 +416,7 @@ void MEDDLY::mtmdd_forest::createEdge(const int* v, int term, dd_edge& e)
   MEDDLY_DCASSERT(isTerminalNode(term));
   int result = term;
   int curr = 0;
-  for (int i=1; i<=expertDomain->getNumVariables(); i++) {
+  for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
     curr = createNode(i, v[i], result);
     unlinkNode(result);
     result = curr;
@@ -442,7 +442,7 @@ void MEDDLY::mtmdd_forest::createEdgeHelper(int terminalNode, dd_edge& e)
 {
   MEDDLY_DCASSERT(isTerminalNode(terminalNode));
 
-  if (reductionRule == forest::FULLY_REDUCED || terminalNode == 0) {
+  if (isFullyReduced() || terminalNode == 0) {
     e.set(terminalNode, 0, 0);
     return;
   }
@@ -450,7 +450,7 @@ void MEDDLY::mtmdd_forest::createEdgeHelper(int terminalNode, dd_edge& e)
   // construct the edge bottom-up
   int result = terminalNode;
   int curr = 0;
-  for (int i=1; i<=expertDomain->getNumVariables(); i++) {
+  for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
     curr = createTempNodeMaxSize(i, false);
     setAllDownPtrsWoUnlink(curr, result);
     unlinkNode(result);
@@ -601,7 +601,7 @@ MEDDLY::mtmdd_forest::findFirstElement(const dd_edge& f, int* vlist) const
   if (node == 0) 
     throw error(error::INVALID_ASSIGNMENT);
 
-  for (int currLevel = expertDomain->getNumVariables(); currLevel; currLevel--)
+  for (int currLevel = getExpertDomain()->getNumVariables(); currLevel; currLevel--)
   {
     MEDDLY_DCASSERT(node != 0);
     if (currLevel != getNodeLevel(node)) {

@@ -121,8 +121,7 @@ namespace MEDDLY {
 class MEDDLY::mt_forest : public expert_forest {
   public:
     mt_forest(int dsl, domain *d, bool rel, range_type t, edge_labeling ev,
-        reduction_rule r, node_storage s, node_deletion_policy nd,
-        int dataHeaderSize);
+        const policies &p, int dataHeaderSize);
     virtual ~mt_forest();
 
     // ------------- inherited from expert_forest ---------------------------
@@ -239,8 +238,8 @@ class MEDDLY::mt_forest : public expert_forest {
     // To set compaction threshold to 45%, call setCompactionThreshold(45).
     // Compaction will occur if
     // level[i].hole_slots > (level[i].size * compactionThreshold / 100) 
-    unsigned getCompactionThreshold() const;
-    void setCompactionThreshold(unsigned p);
+    // unsigned getCompactionThreshold() const;
+    // void setCompactionThreshold(unsigned p);
     void compactMemory();
     void garbageCollect();
 
@@ -367,13 +366,15 @@ class MEDDLY::mt_forest : public expert_forest {
     void setLevelBound(int k, int sz);
 
     long getUniqueTableMemoryUsed() const;
+    /*
     long getTempNodeCount() const;
     long getZombieNodeCount() const;
     long getOrphanNodeCount() const;
+    */
     long getHoleMemoryUsage() const;
 
     int getMaxHoleChain() const;
-    int getCompactionsCount() const;
+    // int getCompactionsCount() const;
 
     // level based operations
     /// number of levels in the current mdd
@@ -438,9 +439,6 @@ class MEDDLY::mt_forest : public expert_forest {
     int insert(int node);
     int replace(int node);
 
-    // are sparse nodes enabled
-    bool areSparseNodesEnabled() const;
-
     // is k a level that has been initialized
     bool isValidLevel(int k) const;
 
@@ -462,7 +460,7 @@ class MEDDLY::mt_forest : public expert_forest {
     void validateDownPointers(int p, bool recursive = false);
 
     // Pointer to expert_domain
-    expert_domain* expertDomain;
+    // expert_domain* expertDomain;
 
     // Special next values
     static const int temp_node = -5;
@@ -477,7 +475,7 @@ class MEDDLY::mt_forest : public expert_forest {
       Compaction will occur if
       level[i].hole_slots > (level[i].size * compactionThreshold) 
       */
-    float compactionThreshold;
+    // float compactionThreshold;
 
     /// Size of address/next array.
     int a_size;
@@ -494,20 +492,20 @@ class MEDDLY::mt_forest : public expert_forest {
     // performance stats
 
     /// Number of alive nodes.
-    long active_nodes;
+    // long active_nodes;
     /// Largest traversed height of holes grid
     int max_hole_chain;
     /// Number of zombie nodes
-    long zombie_nodes;
+    // long zombie_nodes;
     /// These are just like zombies but they have not been zombified --
     /// exist only in non-pessimistic caches
-    long orphan_nodes;
+    // long orphan_nodes;
     /// Number of temporary nodes -- nodes that have not been reduced
-    long temp_nodes;
+    // long temp_nodes;
     /// Number reclaimed nodes
-    long reclaimed_nodes;
+    // long reclaimed_nodes;
     /// Total number of compactions
-    int num_compactions;
+    // int num_compactions;
     /// Count of nodes created since last gc
     unsigned nodes_activated_since_gc;
 
@@ -562,8 +560,8 @@ inline void MEDDLY::mt_forest::reclaimOrphanNode(int p) {
   MEDDLY_DCASSERT(isActiveNode(p));
   MEDDLY_DCASSERT(!isTerminalNode(p));
   MEDDLY_DCASSERT(isReducedNode(p));
-  reclaimed_nodes++;
-  orphan_nodes--;
+  stats.reclaimed_nodes++;
+  stats.orphan_nodes--;
 }  
 
 inline void MEDDLY::mt_forest::deleteOrphanNode(int p) {
@@ -575,7 +573,7 @@ inline void MEDDLY::mt_forest::deleteOrphanNode(int p) {
   cout << "\n";
   cout.flush();
 #endif
-  orphan_nodes--;
+  stats.orphan_nodes--;
   deleteNode(p);
 }
 
@@ -619,6 +617,7 @@ inline bool MEDDLY::mt_forest::areHolesRecycled() const {
   return holeRecycling;
 }
 
+/*
 inline unsigned MEDDLY::mt_forest::getCompactionThreshold() const {
   return unsigned(compactionThreshold * 100.0);
 }
@@ -627,6 +626,7 @@ inline void MEDDLY::mt_forest::setCompactionThreshold(unsigned t) {
   if (t > 100) throw error(error::INVALID_ASSIGNMENT);
   compactionThreshold = t/100.0;
 }
+*/
 
 // Dealing with cache count
 // Dealing with node level
@@ -809,6 +809,7 @@ inline long MEDDLY::mt_forest::getUniqueTableMemoryUsed() const {
   return (unique->getSize() * sizeof(int));
 }
 
+/*
 inline long MEDDLY::mt_forest::getTempNodeCount() const {
   return temp_nodes;
 }
@@ -818,6 +819,7 @@ inline long MEDDLY::mt_forest::getZombieNodeCount() const {
 inline long MEDDLY::mt_forest::getOrphanNodeCount() const {
   return orphan_nodes;
 }
+*/
 
 /// number of levels in the current mdd
 inline int MEDDLY::mt_forest::getLevelCount() const { return l_size; }
@@ -828,11 +830,11 @@ inline bool MEDDLY::mt_forest::isTimeToGc()
 #if 1
   // const int zombieTrigger = 1000;  // use for debugging
   // const int orphanTrigger = 500;  // use for debugging
-  const int zombieTrigger = 1000000;
-  const int orphanTrigger = 500000;
-  return (isPessimistic())? (getZombieNodeCount() > zombieTrigger):
-    (getOrphanNodeCount() > orphanTrigger);
-  // return (nodes_activated_since_gc > 5000000); //10,000,000
+  // const int zombieTrigger = 1000000;
+  // const int orphanTrigger = 500000;
+  return isPessimistic() 
+    ? (stats.zombie_nodes > deflt.zombieTrigger)
+    : (stats.orphan_nodes > deflt.orphanTrigger);
 #elif 0
   return false;
 #else
@@ -852,8 +854,8 @@ inline bool MEDDLY::mt_forest::doesLevelNeedCompaction(int k)
 #else
   return ((level[mapLevel(k)].hole_slots > 10000) ||
       ((level[mapLevel(k)].hole_slots > 100) && 
-       (level[mapLevel(k)].hole_slots >
-        (level[mapLevel(k)].last * compactionThreshold))));
+       (level[mapLevel(k)].hole_slots * 100>
+        (level[mapLevel(k)].last * deflt.compaction))));
 #endif
 }
 
@@ -870,13 +872,13 @@ inline void MEDDLY::mt_forest::midRemove(int k, int p_offset) {
 
 inline void MEDDLY::mt_forest::incrTempNodeCount(int k) {
   level[mapLevel(k)].temp_nodes++;
-  temp_nodes++;
+  stats.temp_nodes++;
 }
 
 
 inline void MEDDLY::mt_forest::decrTempNodeCount(int k) {
   level[mapLevel(k)].temp_nodes--;
-  temp_nodes--;
+  stats.temp_nodes--;
 }
 
 
@@ -897,12 +899,6 @@ inline int MEDDLY::mt_forest::insert(int node) {
 
 inline int MEDDLY::mt_forest::replace(int node) {
   return unique->replace(node);
-}
-
-
-inline bool MEDDLY::mt_forest::areSparseNodesEnabled() const {
-  return nodeStorage == forest::FULL_OR_SPARSE_STORAGE ||
-      nodeStorage == forest::SPARSE_STORAGE;
 }
 
 
@@ -939,7 +935,7 @@ inline int MEDDLY::mt_forest::getLevelNode(int k) const {
 }
 
 inline bool MEDDLY::mt_forest::isValidVariable(int vh) const {
-  return (vh > 0) && (vh <= expertDomain->getNumVariables());
+  return (vh > 0) && (vh <= getExpertDomain()->getNumVariables());
   //return expertDomain->getVariableHeight(vh) != -1;
 }
 

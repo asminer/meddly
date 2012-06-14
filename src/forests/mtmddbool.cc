@@ -23,10 +23,8 @@
 #include "mtmddbool.h"
 
 
-MEDDLY::mt_mdd_bool::mt_mdd_bool(int dsl, domain *d)
-: MEDDLY::mtmdd_forest(dsl, d, false, forest::BOOLEAN,
-      forest::MULTI_TERMINAL, forest::FULLY_REDUCED,
-      forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION)
+MEDDLY::mt_mdd_bool::mt_mdd_bool(int dsl, domain *d, const policies &p)
+: MEDDLY::mtmdd_forest(dsl, d, false, BOOLEAN, MULTI_TERMINAL, p)
 { }
 
 

@@ -37,7 +37,7 @@ class MEDDLY::mt_mxd_bool : public mtmxd_forest {
   // TODO: mxds can only be forest::IDENTITY_REDUCED
   public:
 
-    mt_mxd_bool(int dsl, domain *d);
+    mt_mxd_bool(int dsl, domain *d, const policies &p);
     ~mt_mxd_bool();
 
     using mtmxd_forest::createEdge;

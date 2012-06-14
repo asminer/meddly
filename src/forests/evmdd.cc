@@ -27,12 +27,9 @@
 
 
 MEDDLY::evmdd_forest
-::evmdd_forest(int dsl, domain *d, forest::range_type t, 
-  forest::edge_labeling el, int dataHeaderSize)
-: mt_forest(dsl, d, false, t,
-      el, forest::FULLY_REDUCED,
-      forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION,
-      dataHeaderSize)
+::evmdd_forest(int dsl, domain *d, range_type t, edge_labeling el, 
+  const policies &p, int dataHeaderSize)
+: mt_forest(dsl, d, false, t, el, p, dataHeaderSize)
 {
 }
 
@@ -310,8 +307,8 @@ void MEDDLY::evmdd_forest::evaluate(const dd_edge& f, const int* vlist,
 
 // ********************************* EV+MDDs ********************************** 
 
-MEDDLY::evp_mdd_int::evp_mdd_int(int dsl, domain *d)
-: evmdd_forest(dsl, d, forest::INTEGER, forest::EVPLUS,
+MEDDLY::evp_mdd_int::evp_mdd_int(int dsl, domain *d, const policies &p)
+: evmdd_forest(dsl, d, forest::INTEGER, forest::EVPLUS, p,
   evplusmddDataHeaderSize)
 { }
 
@@ -493,7 +490,7 @@ void MEDDLY::evp_mdd_int::normalizeAndReduceNode(int& p, int& ev)
   ev = min;
 
   // check for possible reductions
-  if (reductionRule == forest::FULLY_REDUCED &&
+  if (isFullyReduced() &&
       nnz == getLevelSize(node_level) && eptr[0] == 0) {
     // if downpointers are the same and ev are same (i.e. 0 after
     // normalizing), eliminate node
@@ -760,7 +757,7 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
 
   // Check for possible reductions
   if (int(index.size()) == getLevelSize(lh) &&
-      reductionRule == forest::FULLY_REDUCED) {
+      isFullyReduced()) {
     // Check for fully-reduced: same dptr[i] and ev[i] == 0
     bool reducible = true;
     if (ev[0] == 0) {
@@ -893,8 +890,8 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
 
 // ********************************* EV*MDDs ********************************** 
 
-MEDDLY::evt_mdd_real::evt_mdd_real(int dsl, domain *d)
-: evmdd_forest(dsl, d, forest::REAL, forest::EVTIMES,
+MEDDLY::evt_mdd_real::evt_mdd_real(int dsl, domain *d, const policies &p)
+: evmdd_forest(dsl, d, forest::REAL, forest::EVTIMES, p,
   evtimesmddDataHeaderSize)
 { }
 
@@ -1031,7 +1028,7 @@ void MEDDLY::evt_mdd_real::normalizeAndReduceNode(int& p, float& ev)
   ev = max;
 
   // check for possible reductions
-  if (reductionRule == forest::FULLY_REDUCED &&
+  if (isFullyReduced() &&
       nnz == getLevelSize(node_level)) {
     // if downpointers are the same and ev are same, eliminate node
     int i = 1;
@@ -1251,7 +1248,7 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
 
   // Check for possible reductions
   if (int(index.size()) == getLevelSize(lh) &&
-      reductionRule == forest::FULLY_REDUCED) {
+      isFullyReduced()) {
     // Check for fully-reduced: same dptr[i] and ev[i] == 0.0
     bool reducible = true;
     if (ev[0] == 0.0) {
