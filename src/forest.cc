@@ -31,22 +31,132 @@
 
 // **************************** forest *********************************
 
-MEDDLY::forest::forest() {}
+MEDDLY::forest::forest(domain *_d, bool rel, range_type t,
+  edge_labeling ev, reduction_rule r, node_storage s, node_deletion_policy nd)
+{
+  d = _d;
+  isRelation = rel;
+  rangeType = t;
+  edgeLabel = ev;
+  reductionRule = r;
+  nodeStorage = s;
+  nodeDeletionPolicy = nd;
+}
+
 MEDDLY::forest::~forest() {}
 
+void MEDDLY::forest::createEdgeForVar(int vh, bool vp, bool* terms, dd_edge& a)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest::createEdgeForVar(int vh, bool vp, int* terms, dd_edge& a)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest::createEdgeForVar(int vh, bool vp, float* terms, dd_edge& a)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest::createEdge(const int* const* vlist, int N, dd_edge &e)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest
+::createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest
+::createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest
+::createEdge(const int* const* vl, const int* const* vpl, int N, dd_edge &e)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest
+::createEdge(const int* const* vlist, const int* const* vplist,
+      const int* terms, int N, dd_edge &e)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest
+::createEdge(const int* const* vlist, const int* const* vplist,
+      const float* terms, int N, dd_edge &e)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest::createEdge(bool val, dd_edge &e)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest::createEdge(int val, dd_edge &e)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest::createEdge(float val, dd_edge &e)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, bool &t) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, int &t) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, float &t) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest
+::evaluate(const dd_edge& f, const int* vl, const int* vpl, bool &t) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest
+::evaluate(const dd_edge& f, const int* vl, const int* vpl, int &t) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest
+::evaluate(const dd_edge& f, const int* vl, const int* vpl, float &t) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
 
 // **************************** expert_forest *********************************
 
 MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   edge_labeling ev, reduction_rule r, node_storage s, node_deletion_policy nd)
-: d(d), isRelation(rel), rangeType(t), edgeLabel(ev),
-  reductionRule(r), nodeStorage(s), nodeDeletionPolicy(nd),
-  sz(256), firstFree(0), firstHole(-1)
+: forest(d, rel, t, ev, r, s, nd)
 {
   d_slot = ds;
+  sz = 256;
   is_marked_for_deletion = false;
   // firstHole < 0 indicates no holes.
   firstHole = -1;
+  firstFree = 0;
   // Create an array to store pointers to dd_edges.
   edge = (edge_data *) malloc(sz * sizeof(edge_data));
   for (unsigned i = 0; i < sz; ++i) {
@@ -167,7 +277,7 @@ MEDDLY::expert_forest::~expert_forest() {
   // destructor for each dd_edge when the corresponding variable goes out of
   // scope. Therefore there is no need to destruct dd_edges from here.
 
-  ((expert_domain*) d)->unlinkForest(this, d_slot);
+  useExpertDomain()->unlinkForest(this, d_slot);
 }
 
 void MEDDLY::expert_forest::markForDeletion()

@@ -554,36 +554,12 @@ class MEDDLY::expert_forest : public forest
     friend class expert_domain;
 
   public:
-    /// Returns a non-modifiable pointer to this forest's domain.
-    const domain* getDomain() const;
-
     inline const expert_domain* getExpertDomain() const {
       return (expert_domain*) getDomain();
     }
     inline expert_domain* useExpertDomain() {
-      return (expert_domain*) getDomain();
+      return (expert_domain*) useDomain();
     }
-
-    /// Returns a modifiable pointer to this forest's domain.
-    domain* useDomain();
-
-    /// Does this forest represent functions that are relations?
-    bool isForRelations() const;
-
-    /// Returns the type of range represented by functions in this forest.
-    forest::range_type getRangeType() const;
-
-    /// Returns the edge annotation mechanism used by this forest.
-    forest::edge_labeling getEdgeLabeling() const;
-
-    /// Returns the reduction rule used by this forest.
-    forest::reduction_rule getReductionRule() const;
-
-    /// Returns the storage mechanism used by this forest.
-    forest::node_storage getNodeStorage() const;
-
-    /// Returns the node deletion policy used by this forest.
-    forest::node_deletion_policy getNodeDeletion() const;
 
     /// Sets the reduction rule for this forest.
     void setReductionRule(forest::reduction_rule r);
@@ -997,14 +973,6 @@ class MEDDLY::expert_forest : public forest
 
     /// Level data. Each level maintains its own data array and hole grid.
     mdd_level_data *level;
-
-    domain *d;
-    bool isRelation;
-    forest::range_type rangeType;
-    forest::edge_labeling edgeLabel;
-    forest::reduction_rule reductionRule;
-    forest::node_storage nodeStorage;
-    forest::node_deletion_policy nodeDeletionPolicy;
 
   private:
     int d_slot;
@@ -1942,9 +1910,9 @@ int MEDDLY::expert_forest::getLevelSize(int lh) const {
   MEDDLY_DCASSERT(isValidLevel(lh));
   MEDDLY_DCASSERT(lh == 0 || level[mapLevel(lh)].data != NULL);
   if (lh < 0) {
-    return static_cast<expert_domain*>(d)->getVariableBound(-lh, true);
+    return getExpertDomain()->getVariableBound(-lh, true);
   } else {
-    return static_cast<expert_domain*>(d)->getVariableBound(lh, false);
+    return getExpertDomain()->getVariableBound(lh, false);
   }
 }
 
@@ -2294,64 +2262,6 @@ void MEDDLY::expert_forest::uncacheNode(int p)
     deleteOrphanNode(p);
   }
 }
-
-
-inline
-const MEDDLY::domain* MEDDLY::expert_forest::getDomain() const
-{
-  return d;
-}
-
-
-inline
-MEDDLY::domain* MEDDLY::expert_forest::useDomain()
-{
-  return d;
-}
-
-
-inline
-bool MEDDLY::expert_forest::isForRelations() const
-{
-  return isRelation;
-}
-
-
-inline
-MEDDLY::forest::range_type MEDDLY::expert_forest::getRangeType() const
-{
-  return rangeType;
-}
-
-
-inline
-MEDDLY::forest::edge_labeling MEDDLY::expert_forest::getEdgeLabeling() const
-{
-  return edgeLabel;
-}
-
-
-inline
-MEDDLY::forest::reduction_rule MEDDLY::expert_forest::getReductionRule() const
-{
-  return reductionRule;
-}
-
-
-inline
-MEDDLY::forest::node_storage MEDDLY::expert_forest::getNodeStorage() const
-{
-  return nodeStorage;
-}
-
-
-inline
-MEDDLY::forest::node_deletion_policy 
-MEDDLY::expert_forest::getNodeDeletion() const
-{
-  return nodeDeletionPolicy;
-}
-
 
 inline
 void MEDDLY::expert_forest::setNodeDeletion(node_deletion_policy np)

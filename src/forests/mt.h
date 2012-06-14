@@ -235,13 +235,6 @@ class MEDDLY::mt_forest : public expert_forest {
     void showNodeGraph(FILE *s, int p) const;
     void showInfo(FILE* strm, int verbosity);
 
-    long getCurrentNumNodes() const;
-    long getCurrentMemoryUsed() const;
-    long getCurrentMemoryAllocated() const;
-    long getPeakNumNodes() const;
-    long getPeakMemoryUsed() const;
-    long getPeakMemoryAllocated() const;
-
     // Compaction threshold is a percentage value.
     // To set compaction threshold to 45%, call setCompactionThreshold(45).
     // Compaction will occur if
@@ -328,6 +321,19 @@ class MEDDLY::mt_forest : public expert_forest {
     bool isCounting();
 
   protected:
+    // Updating stats
+    /*
+    inline void updateNodesUsed(int delta);
+
+    inline void updateMemoryAllocated(long bytes) {
+      perf.current.MemAlloc += bytes;
+      if (perf.current.MemAlloc > perf.peak.MemAlloc)
+        curr_mem_alloc > max_mem_alloc) max_mem_alloc = curr_mem_alloc;
+#if 0
+  printf("%p: Curr: %d, Peak: %d\n", this, curr_mem_alloc, max_mem_alloc);
+#endif
+}
+    */
 
     // Building level nodes
     int getLevelNode(int lh) const;
@@ -364,7 +370,6 @@ class MEDDLY::mt_forest : public expert_forest {
     long getTempNodeCount() const;
     long getZombieNodeCount() const;
     long getOrphanNodeCount() const;
-    void updateMemoryAllocated(long bytes);
     long getHoleMemoryUsage() const;
 
     int getMaxHoleChain() const;
@@ -442,18 +447,6 @@ class MEDDLY::mt_forest : public expert_forest {
     // get the id used to indicate temporary nodes
     int getTempNodeId() const;
 
-    /*
-    // Cardinality for Mdds and MtMdds
-    // k is the height (>= 0)
-    double cardinality(int p, int k, std::map<int, double>& visited) const;
-
-    // Cardinality for Mxds and MtMxds
-    // k is height (always >=0). k combined with primeLevel indicates
-    // the current primed or unprimed level.
-    double cardinalityForRelations(int p, int k, bool primeLevel,
-        std::map<int, double>& visited) const;
-    */
-
     // Checks if one of the following reductions is satisfied:
     // Fully, Quasi, Identity Reduced.
     // If the node can be reduced to an existing node, the existing node
@@ -500,10 +493,6 @@ class MEDDLY::mt_forest : public expert_forest {
 
     // performance stats
 
-    /// For peak memory.
-    long max_slots;
-    /// Also for peak memory.
-    long curr_slots;
     /// Number of alive nodes.
     long active_nodes;
     /// Largest traversed height of holes grid
@@ -532,8 +521,8 @@ class MEDDLY::mt_forest : public expert_forest {
     /// Uniqueness table
     mdd_hash_table <mt_forest> *unique;
 
-    long curr_mem_alloc;
-    long max_mem_alloc;
+    // long curr_mem_alloc;
+    // long max_mem_alloc;
 
     bool counting;
 
@@ -819,16 +808,7 @@ inline bool MEDDLY::mt_forest::isDeletedNode(int p) const {
 inline long MEDDLY::mt_forest::getUniqueTableMemoryUsed() const {
   return (unique->getSize() * sizeof(int));
 }
-inline long MEDDLY::mt_forest::getPeakNumNodes() const {
-  return peak_nodes;    // terminal nodes not included
-}
-inline long MEDDLY::mt_forest::getCurrentNumNodes() const {
-#if 1
-  return active_nodes; // excludes terminal nodes
-#else
-  return active_nodes - orphan_nodes - temp_nodes;
-#endif
-}
+
 inline long MEDDLY::mt_forest::getTempNodeCount() const {
   return temp_nodes;
 }
@@ -837,23 +817,6 @@ inline long MEDDLY::mt_forest::getZombieNodeCount() const {
 }
 inline long MEDDLY::mt_forest::getOrphanNodeCount() const {
   return orphan_nodes;
-}
-inline long MEDDLY::mt_forest::getPeakMemoryUsed() const {
-#if 0
-  int sum = 0;
-  for (int i = 0; i < l_size; i++) sum += level[i].max_slots;
-  return sum * sizeof(int);
-#else
-  return max_slots * sizeof(int);
-#endif
-}
-
-inline void MEDDLY::mt_forest::updateMemoryAllocated(long bytes) {
-  curr_mem_alloc += bytes;
-  if (curr_mem_alloc > max_mem_alloc) max_mem_alloc = curr_mem_alloc;
-#if 0
-  printf("%p: Curr: %d, Peak: %d\n", this, curr_mem_alloc, max_mem_alloc);
-#endif
 }
 
 /// number of levels in the current mdd
@@ -959,14 +922,6 @@ inline int MEDDLY::mt_forest::getTempNodeId() const {
 
 inline void MEDDLY::mt_forest::compactMemory() {
   compactAllLevels();
-}
-
-inline long MEDDLY::mt_forest::getCurrentMemoryAllocated() const {
-  return curr_mem_alloc;
-}
-
-inline long MEDDLY::mt_forest::getPeakMemoryAllocated() const {
-  return max_mem_alloc;
 }
 
 inline void MEDDLY::mt_forest::showInfo(FILE* strm, int verbosity) {

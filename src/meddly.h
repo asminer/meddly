@@ -563,9 +563,58 @@ class MEDDLY::forest {
       PESSIMISTIC_DELETION
     };
 
+    /// Forest stats.
+    struct stats {
+      struct node_stats {
+        long NumNodes;
+        long MemUsed;
+        long MemAlloc;
+
+        node_stats() {
+          NumNodes = MemUsed = MemAlloc = 0;
+        }
+      };
+      node_stats current;
+      node_stats peak;
+
+      public:
+        stats() : current(), peak() { }
+
+        inline void updateNodes(int delta) {
+          current.NumNodes += delta;
+          if (current.NumNodes > peak.NumNodes) {
+            peak.NumNodes = current.NumNodes;
+          }
+        }
+
+        inline void updateMemUsed(long bytes) {
+          current.MemUsed += bytes;
+          if (current.MemUsed > peak.MemUsed) {
+            peak.MemUsed = current.MemUsed;
+          }
+        }
+
+        inline void updateMemAlloc(long bytes) {
+          current.MemAlloc += bytes;
+          if (current.MemAlloc > peak.MemAlloc) {
+            peak.MemAlloc = current.MemAlloc;
+          }
+        }
+    };
+
   protected:
-    /// Constructor -- this class cannot be instantiated.
-    forest();
+    /** Constructor.  This class cannot be instantiated.
+      @param  d       domain to which this forest belongs to.
+      @param  rel     does this forest represent a relation.
+      @param  t       the range of the functions represented in this forest.
+      @param  ev      edge annotation.
+      @param  r       reduction rule.
+      @param  s       storage rule.
+      @param  ndp     node deletion policy.
+    */
+    forest(domain *d, bool rel, range_type t, 
+      edge_labeling ev, reduction_rule r, node_storage s, 
+      node_deletion_policy ndp);
 
     /// Destructor.
     virtual ~forest();  
@@ -573,30 +622,60 @@ class MEDDLY::forest {
   public:
 
     /// Returns a non-modifiable pointer to this forest's domain.
-    virtual const domain* getDomain() const = 0;
+    inline const domain* getDomain() const {
+      return d;
+    }
 
     /// Returns a pointer to this forest's domain.
-    virtual domain* useDomain() = 0;
+    inline domain* useDomain() {
+      return d;
+    }
 
     /// Does this forest represent relations or matrices?
-    virtual bool isForRelations() const = 0;
+    inline bool isForRelations() const {
+      return isRelation;
+    }
 
     /// Returns the range type.
-    virtual range_type getRangeType() const = 0;
+    inline range_type getRangeType() const {
+      return rangeType;
+    }
+
+    /// Query the range type.
+    inline bool isRangeType(range_type r) const {
+      return r == rangeType;
+    }
 
     /// Returns the edge labeling mechanism.
-    virtual edge_labeling getEdgeLabeling() const = 0;
+    inline edge_labeling getEdgeLabeling() const {
+      return edgeLabel;
+    }
+
+    /// Query the edge labeling mechanism.
+    inline bool isEdgeLabeling(edge_labeling e) const {
+      return e == edgeLabel;
+    }
 
     /** Set the specified reduction rule for all variables in this forest.
         @param  r   Desired reduction rule.
     */
     virtual void setReductionRule(reduction_rule r) = 0;
 
+    /// Returns the reduction rule used by this forest.
+    inline forest::reduction_rule getReductionRule() const {
+      return reductionRule;
+    }
+
     /** Set the node storage mechanism for all variables in this forest.
         The same as calling setNodeStorageForVariable(), for all variables.
         @param  ns  Desired node storage mechanism.
     */
     virtual void setNodeStorage(node_storage ns) = 0;
+
+    /// Returns the storage mechanism used by this forest.
+    inline node_storage getNodeStorage() const {
+      return nodeStorage;
+    }
 
     /** Set the node deletion policy for all variables in this forest.
         Determines how aggressively node memory should be reclaimed when
@@ -605,6 +684,12 @@ class MEDDLY::forest {
         TODO: need to specify what happens when the policy is changed.
     */
     virtual void setNodeDeletion(node_deletion_policy np) = 0;
+
+    /// Returns the node deletion policy used by this forest.
+    inline node_deletion_policy getNodeDeletion() const {
+      return nodeDeletionPolicy;
+    }
+
 
     /** Set a compaction threshold for all variables in this forest.
         The threshold is set as a percentage * 100.  Whenever the \b unused
@@ -625,25 +710,34 @@ class MEDDLY::forest {
     */
     virtual void compactMemory() = 0;
 
+    /// Get forest performance stats.
+    inline const stats& getStats() const { return perf; }
+
     /** Get the current number of nodes in the forest, at all levels.
         @return     The current number of nodes, not counting deleted or
                     marked for deletion nodes.
     */
-    virtual long getCurrentNumNodes() const = 0;
+    inline long getCurrentNumNodes() const {
+      return perf.current.NumNodes;
+    }
 
     /** Get the current total memory used by the forest.
         This should be equal to summing getMemoryUsedForVariable()
         over all variables.
         @return     Current memory used by the forest.
     */
-    virtual long getCurrentMemoryUsed() const = 0;
+    inline long getCurrentMemoryUsed() const {
+      return perf.current.MemUsed;
+    }
 
     /** Get the current total memory allocated by the forest.
         This should be equal to summing getMemoryAllocatedForVariable()
         over all variables.
         @return     Current total memory allocated by the forest.
     */
-    virtual long getCurrentMemoryAllocated() const = 0;
+    inline long getCurrentMemoryAllocated() const {
+      return perf.current.MemAlloc;
+    }
 
     /** Get the peak number of nodes in the forest, at all levels.
         This will be at least as large as calling getNumNodes() after
@@ -651,17 +745,23 @@ class MEDDLY::forest {
         @return     The peak number of nodes that existed at one time,
                     in the forest.
     */
-    virtual long getPeakNumNodes() const = 0;
+    inline long getPeakNumNodes() const {
+      return perf.peak.NumNodes;
+    }
 
     /** Get the peak memory used by the forest.
         @return     Peak total memory used by the forest.
     */
-    virtual long getPeakMemoryUsed() const = 0;
+    inline long getPeakMemoryUsed() const {
+      return perf.peak.MemUsed;
+    }
 
     /** Get the peak memory allocated by the forest.
         @return     Peak memory allocated by the forest.
     */
-    virtual long getPeakMemoryAllocated() const = 0;
+    inline long getPeakMemoryAllocated() const {
+      return perf.peak.MemAlloc;
+    }
 
 
     /** Create an edge such that
@@ -728,16 +828,17 @@ class MEDDLY::forest {
         for the primed or the unprimed level.
 
         @param  vh    Variable handle.
-        @param  primedLevel
+        @param  vp
                       true: creates node for the primed vh variable.
                       false: creates node for the unprimed vh variable.
         @param  terms Array of boolean terminal values.
         @param  a     return a handle to a node in the forest such that
                       f(v_1, ..., vh=i, ..., v_n) = terms[i]
                       for 0 <= i < size(vh).
+
+        @throws       TYPE_MISMATCH, if the forest's range is not BOOLEAN.
     */
-    virtual void createEdgeForVar(int vh, bool primedLevel,
-      bool* terms, dd_edge& a) = 0;
+    virtual void createEdgeForVar(int vh, bool vp, bool* terms, dd_edge& a);
 
     /** Create an edge such that
         f(v_1, ..., vh=i, ..., v_n) = terms[i] for 0 <= i < size(vh).
@@ -755,16 +856,17 @@ class MEDDLY::forest {
         for the primed or the unprimed level.
 
         @param  vh    Variable handle.
-        @param  primedLevel
+        @param  vp
                       true: creates node for the primed vh variable.
                       false: creates node for the unprimed vh variable.
         @param  terms Array of boolean terminal values.
         @param  a     return a handle to a node in the forest such that
                       f(v_1, ..., vh=i, ..., v_n) = terms[i]
                       for 0 <= i < size(vh).
+        
+        @throws       TYPE_MISMATCH, if the forest's range is not INTEGER.
     */
-    virtual void createEdgeForVar(int vh, bool primedLevel,
-      int* terms, dd_edge& a) = 0;
+    virtual void createEdgeForVar(int vh, bool vp, int* terms, dd_edge& a);
 
     /** Create an edge such that
         f(v_1, ..., vh=i, ..., v_n) = terms[i] for 0 <= i < size(vh).
@@ -782,20 +884,19 @@ class MEDDLY::forest {
         for the primed or the unprimed level.
 
         @param  vh    Variable handle.
-        @param  primedLevel
+        @param  vp
                       true: creates node for the primed vh variable.
                       false: creates node for the unprimed vh variable.
         @param  terms Array of boolean terminal values.
         @param  a     return a handle to a node in the forest such that
                       f(v_1, ..., vh=i, ..., v_n) = terms[i]
                       for 0 <= i < size(vh).
+
+        @throws       TYPE_MISMATCH, if the forest's range is not REAL.
     */
-    virtual void createEdgeForVar(int vh, bool primedLevel,
-      float* terms, dd_edge& a) = 0;
+    virtual void createEdgeForVar(int vh, bool vp, float* terms, dd_edge& a);
 
     /** Create an edge as the union of several explicit vectors.
-        The range type of the forest must be booleans.
-        The forest must not be for relations.
         @param  vlist Array of vectors. Each vector has dimension equal
                       to one plus the largest variable handle in the domain.
                       A vector \a x indicates a set of variable assignments,
@@ -807,12 +908,14 @@ class MEDDLY::forest {
                       f(v_1, ..., v_n) = 1, iff there is a vector
                       x in \a vlist corresponding to the variable assignments
                       v_1, ..., v_n; f(v_1, ..., v_n) = 0, otherwise.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not BOOLEAN, 
+                        or the forest is for relations.
     */
-    virtual void createEdge(const int* const* vlist, int N, dd_edge &e) = 0;
+    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
 
     /** Create an edge as the union of several vectors and return values.
-        The range type of the forest must be integers.
-        The forest must not be for relations.
         @param  vlist Array of vectors. Each vector has dimension equal
                       to one plus the largest variable handle in the domain.
                       A vector \a x indicates a set of variable assignments,
@@ -826,13 +929,15 @@ class MEDDLY::forest {
                       iff j is the smallest integer such that vector vlist[j]
                       corresponds to the variable assignments v_1, ..., v_n;
                       f(v_1, ..., v_n) = 0, otherwise.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not INTEGER,
+                        or the forest is for relations.
     */
     virtual void createEdge(const int* const* vlist, const int* terms, int N,
-      dd_edge &e) = 0;
+      dd_edge &e);
 
     /** Create an edge as the union of several vectors and return values.
-        The range type of the forest must be reals.
-        The forest must not be for relations.
         @param  vlist Array of vectors. Each vector has dimension equal
                       to one plus the largest variable handle in the domain.
                       A vector \a x indicates a set of variable assignments,
@@ -846,14 +951,16 @@ class MEDDLY::forest {
                       iff j is the smallest integer such that vector vlist[j]
                       corresponds to the variable assignments v_1, ..., v_n;
                       f(v_1, ..., v_n) = 0, otherwise.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not REAL,
+                        or the forest is for relations.
     */
     virtual void createEdge(const int* const* vlist, const float* terms,
-      int N, dd_edge &e) = 0;
+      int N, dd_edge &e);
 
 
     /** Create an edge as the union of several explicit matrices.
-        The range type of the forest must be booleans.
-        The forest must be for relations.
         @param  vlist   Array of vectors. Each vector has dimension equal to
                         one plus the largest variable handle in the domain.
                         A vector \a x indicates a set of unprimed variable
@@ -877,14 +984,16 @@ class MEDDLY::forest {
                         assignments v_1, ..., v_n, and vplist[i] corresponds
                         to variable assignments v'_1, ..., v'_n.
                         f(v_1, v'_1, ..., v_n, v'_n) = 0, otherwise.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not BOOLEAN, 
+                        or the forest is not for relations.
     */
     virtual void createEdge(const int* const* vlist, const int* const* vplist,
-      int N, dd_edge &e) = 0;
+      int N, dd_edge &e);
 
 
     /** Create an edge as the union of several explicit matrices.
-        The range type of the forest must be integers.
-        The forest must be for relations.
         @param  vlist   Array of vectors. Each vector has dimension equal to
                         one plus the largest variable handle in the domain.
                         A vector \a x indicates a set of unprimed variable
@@ -909,14 +1018,16 @@ class MEDDLY::forest {
                         assignments v_1, ..., v_n, and vplist[i] corresponds
                         to variable assignments v'_1, ..., v'_n.
                         f(v_1, v'_1, ..., v_n, v'_n) = 0, otherwise.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not INTEGER, 
+                        or the forest is not for relations.
     */
     virtual void createEdge(const int* const* vlist, const int* const* vplist,
-      const int* terms, int N, dd_edge &e) = 0;
+      const int* terms, int N, dd_edge &e);
 
 
     /** Create an edge as the union of several explicit matrices.
-        The range type of the forest must be reals.
-        The forest must be for relations.
         @param  vlist   Array of vectors. Each vector has dimension equal to
                         one plus the largest variable handle in the domain.
                         A vector \a x indicates a set of unprimed variable
@@ -941,69 +1052,88 @@ class MEDDLY::forest {
                         assignments v_1, ..., v_n, and vplist[i] corresponds
                         to variable assignments v'_1, ..., v'_n.
                         f(v_1, v'_1, ..., v_n, v'_n) = 0, otherwise.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not REAL, 
+                        or the forest is not for relations.
     */
     virtual void createEdge(const int* const* vlist, 
-      const int* const* vplist, const float* terms, int N, dd_edge &e) = 0;
+      const int* const* vplist, const float* terms, int N, dd_edge &e);
 
 
     /** Create an edge for a boolean constant.
         @param  val   Requested constant.
         @param  e     returns a handle to a node in the forest for
                       function f = \a val.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not BOOLEAN.
     */
-    virtual void createEdge(bool val, dd_edge &e) = 0;
+    virtual void createEdge(bool val, dd_edge &e);
 
     /** Create an edge for an integer constant.
         @param  val   Requested constant.
         @param  e     returns a handle to a node in the forest for
                       function f = \a val.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not BOOLEAN.
     */
-    virtual void createEdge(int val, dd_edge &e) = 0;
+    virtual void createEdge(int val, dd_edge &e);
 
     /** Create an edge for an integer constant.
         @param  val   Requested constant.
         @param  e     returns a handle to a node in the forest for
                       function f = \a val.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not BOOLEAN.
     */
-    virtual void createEdge(float val, dd_edge &e) = 0;
+    virtual void createEdge(float val, dd_edge &e);
 
     /** Evaluate the function encoded by an edge.
-        The forest must not be a relation, and must have range type of
-        boolean.  
         @param  f     Edge (function) to evaluate.
         @param  vlist List of variable assignments, of dimension one higher
                       than the largest variable handle.
         @param  term  Output parameter, will be set to
                       f(v1 = vlist[v1], ..., vn = vlist[vn]).
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not BOOLEAN, 
+                        or the forest is for relations.
     */
     virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
-      const = 0;
+      const;
 
     /** Evaluate the function encoded by an edge.
-        The forest must not be a relation, and must have range type of 
-        integer.
         @param  f     Edge (function) to evaluate.
         @param  vlist List of variable assignments, of dimension one higher
                       than the largest variable handle.
         @param  term  Output parameter, will be set to
                       f(v1 = vlist[v1], ..., vn = vlist[vn]).
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not INTEGER,
+                        or the forest is for relations.
     */
     virtual void evaluate(const dd_edge &f, const int* vlist, int &term)
-      const = 0;
+      const;
 
     /** Evaluate the function encoded by an edge.
-        The forest must not be a relation, and must have range type of real.
         @param  f     Edge (function) to evaluate.
         @param  vlist List of variable assignments, of dimension one higher
                       than the largest variable handle.
         @param  term  Output parameter, will be set to
                       f(v1 = vlist[v1], ..., vn = vlist[vn]).
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not REAL,
+                        or the forest is for relations.
     */
     virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
-      const = 0;
+      const;
 
     /** Evaluate the function encoded by an edge.
-        The forest must be a relation, and must have range type of boolean.
         @param  f       Edge (function) to evaluate.
         @param  vlist   List of variable assignments for unprimed variables,
                         of dimension one higher than the largest variable
@@ -1014,12 +1144,15 @@ class MEDDLY::forest {
         @param  term    Output parameter, will be set to
                         f(v1 = vlist[v1], v'1 = vplist[v1], ...,
                         vn = vlist[vn], v'n = vplist[vn]).
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not BOOLEAN, 
+                        or the forest is not for relations.
     */
     virtual void evaluate(const dd_edge& f, const int* vlist,
-      const int* vplist, bool &term) const = 0;
+      const int* vplist, bool &term) const;
 
     /** Evaluate the function encoded by an edge.
-        The forest must be a relation, and must have range type of integer.
         @param  f       Edge (function) to evaluate.
         @param  vlist   List of variable assignments for unprimed variables,
                         of dimension one higher than the largest variable
@@ -1030,12 +1163,15 @@ class MEDDLY::forest {
         @param  term    Output parameter, will be set to
                         f(v1 = vlist[v1], v'1 = vplist[v1], ...,
                         vn = vlist[vn], v'n = vplist[vn]).
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not INTEGER, 
+                        or the forest is not for relations.
     */
     virtual void evaluate(const dd_edge& f, const int* vlist,
-      const int* vplist, int &term) const = 0;
+      const int* vplist, int &term) const;
 
     /** Evaluate the function encoded by an edge.
-        The forest must be a relation, and must have range type of real.
         @param  f       Edge (function) to evaluate.
         @param  vlist   List of variable assignments for unprimed variables,
                         of dimension one higher than the largest variable
@@ -1046,9 +1182,13 @@ class MEDDLY::forest {
         @param  term    Output parameter, will be set to
                         f(v1 = vlist[v1], v'1 = vplist[v1], ...,
                         vn = vlist[vn], v'n = vplist[vn]).
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not REAL, 
+                        or the forest is not for relations.
     */
     virtual void evaluate(const dd_edge& f, const int* vlist,
-      const int* vplist, float &term) const = 0;
+      const int* vplist, float &term) const;
 
 
     /** Returns a state from the MDD represented by \a f.
@@ -1078,6 +1218,17 @@ class MEDDLY::forest {
                           2 : internal forest + statistics.
     */
     virtual void showInfo(FILE* strm, int verbosity=0) = 0;
+
+  private:
+    domain* d;
+    bool isRelation;
+    range_type rangeType;
+    edge_labeling edgeLabel;
+  protected:
+    reduction_rule reductionRule;
+    node_storage nodeStorage;
+    node_deletion_policy nodeDeletionPolicy;
+    stats perf;
 };
 
 // ******************************************************************
@@ -1184,9 +1335,9 @@ class MEDDLY::domain {
     }
 
     /// @return The variable at level \a lev.
-    inline variable* getVar(int lev) { return vars[lev]; }
+    inline const variable* getVar(int lev) const { return vars[lev]; }
     /// @return The variable at level \a lev.
-    inline const variable* readVar(int lev) const { return vars[lev]; }
+    inline variable* useVar(int lev) { return vars[lev]; }
 
     /** Get the topmost variable.
         Deprecated as of version 0.5.
