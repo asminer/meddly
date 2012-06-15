@@ -216,7 +216,7 @@ int main(int argc, const char** argv)
   
   // cleanup
   operation::showAllComputeTables(stdout, 1);
-  destroyDomain(d);
+  MEDDLY::cleanup();
   return 0;
 }
 

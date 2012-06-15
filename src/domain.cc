@@ -195,6 +195,13 @@ void MEDDLY::domain::expandDomList()
   dom_list_size = ndls;
 }
 
+void MEDDLY::domain::markDomList()
+{
+  for (int i=0; i<dom_list_size; i++) {
+    if (dom_list[i]) dom_list[i]->markForDeletion();
+  }
+}
+
 void MEDDLY::domain::deleteDomList()
 {
   for (int i=0; i<dom_list_size; i++) {

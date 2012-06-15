@@ -1624,6 +1624,7 @@ class MEDDLY::domain {
     int my_index;
 
     static void expandDomList();
+    static void markDomList();
     static void deleteDomList();
 
   public:

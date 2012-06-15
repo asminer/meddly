@@ -635,6 +635,11 @@ MEDDLY::mt_forest::~mt_forest()
   delete_terminal_nodes = true;
   // unlink all nodes that are being stored at the respective levels
   clearLevelNodes();
+
+  /*
+
+  // All these things should now be unnecessary...
+
   // remove all disconnected nodes
   gc(true);
 
@@ -650,6 +655,7 @@ MEDDLY::mt_forest::~mt_forest()
     clearAllNodes();
     gc(true);
   }
+  */
 
   if (dptrsSize > 0) {
     free(dptrs);

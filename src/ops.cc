@@ -176,7 +176,7 @@ MEDDLY::operation::operation(const opname* n, int kl, int al)
 
 MEDDLY::operation::~operation()
 {
-  if (CT && CT->isOperationTable()) delete CT;
+  if (CT && (CT!=Monolithic_CT)) delete CT;
   delete next;
   if (oplist_index >= 0) {
     MEDDLY_DCASSERT(op_list[oplist_index] == this);

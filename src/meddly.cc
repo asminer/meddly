@@ -227,7 +227,7 @@ MEDDLY::binary_operation* MEDDLY::getOperation(const binary_opname* code,
 
 void MEDDLY::removeOperationFromCache(operation* op)
 {
-  if (0==op) return;
+  if (0==op || 0==op_cache) return;
   if (!libraryRunning) 
     throw error(error::UNINITIALIZED);
   const opname* code = op->getOpName();
@@ -439,15 +439,23 @@ void MEDDLY::cleanup()
 
 #endif
 
-  // clean up domains
+  // clean up domains (should catch all forests)
+  domain::markDomList();
   domain::deleteDomList();
+
+  // clean up operation cache 
+  delete[] op_cache;
+  op_cache = 0;
+
+  // clean up operations
+  for (int i=0; i<operation::getOpListSize(); i++) {
+    destroyOpInternal(operation::getOpWithIndex(i));
+  }
 
   // clean up compute table
   delete operation::Monolithic_CT;
   operation::Monolithic_CT = 0;
 
-  // clean up operation cache (operations should be destroyed already)
-  delete[] op_cache;
 
   if (meddlySettings.operationBuilder) 
     meddlySettings.operationBuilder->cleanupChain();
