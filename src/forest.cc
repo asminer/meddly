@@ -28,6 +28,7 @@
 #include <queue>
 #include <vector>
 
+// #define DEBUG_CLEANUP
 
 // ******************************************************************
 // *                                                                *
@@ -65,6 +66,9 @@ MEDDLY::forest
 ::forest(int ds, domain* _d, bool rel, range_type t, edge_labeling ev, 
   const policies &p) : deflt(p)
 {
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Creating forest #%d in domain #%d\n", ds, _d->ID());
+#endif
   d_slot = ds;
   is_marked_for_deletion = false;
   d = _d;
@@ -98,8 +102,16 @@ MEDDLY::forest
 
 MEDDLY::forest::~forest()
 {
-  free(edge);
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Deleting forest #%d in domain #%d\n", d_slot, d->ID());
+#endif
+  // operations are deleted elsewhere...
   free(opCount);
+  // Make SURE our edges are orphaned
+  for (unsigned i = 0; i < firstFree; ++i) {
+    if (edge[i].edge) edge[i].edge->orphan();
+  }
+  free(edge);
   // NOTE: since the user is provided with the dd_edges instances (as opposed
   // to a pointer), the user program will automatically call the
   // destructor for each dd_edge when the corresponding variable goes out of
@@ -109,6 +121,9 @@ MEDDLY::forest::~forest()
 
 void MEDDLY::forest::markForDeletion()
 {
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Marking forest #%d for deletion in domain #%d\n", d_slot, d->ID());
+#endif
   is_marked_for_deletion = true;
   // deal with operations associated with this forest
   for (int i=0; i<szOpCount; i++) 

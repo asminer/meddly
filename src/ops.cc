@@ -28,6 +28,8 @@
 #include "defines.h"
 #include "compute_table.h"
 
+// #define DEBUG_CLEANUP
+
 namespace MEDDLY {
   extern settings meddlySettings;
 }
@@ -117,6 +119,9 @@ MEDDLY::numerical_opname::~numerical_opname()
 
 MEDDLY::operation::operation(const opname* n, int kl, int al)
 {
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Creating operation %x\n", this);
+#endif
   MEDDLY_DCASSERT(kl>=0);
   MEDDLY_DCASSERT(al>=0);
   theOpName = n;
@@ -179,6 +184,9 @@ MEDDLY::operation::~operation()
     op_holes[oplist_index] = free_list;
     free_list = oplist_index;
   }
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Deleting operation %x\n", this);
+#endif
 }
 
 void MEDDLY::operation::removeStalesFromMonolithic()
@@ -188,6 +196,9 @@ void MEDDLY::operation::removeStalesFromMonolithic()
 
 void MEDDLY::operation::markForDeletion()
 {
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Marking operation %x for deletion\n", this);
+#endif
   is_marked_for_deletion = true;
   if (CT && CT->isOperationTable()) CT->removeStales();
 }

@@ -40,6 +40,8 @@
 #include "forests/evmdd.h"
 #endif
 
+// #define DEBUG_CLEANUP
+
 namespace MEDDLY {
   extern settings meddlySettings;
 }
@@ -132,17 +134,78 @@ MEDDLY::domain::domain(variable** v, int N)
   }
   forests = 0;
   szForests = 0;
+
+  //
+  // Add myself to the master list
+  //
+  if (-1 == free_list) {
+    expandDomList();
+  }
+  MEDDLY_DCASSERT(free_list != -1);
+  my_index = free_list;
+  free_list = dom_free[free_list];
+  dom_list[my_index] = this;
+  dom_free[my_index] = -1;
+
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Creating domain #%d\n", my_index);
+#endif
 }
 
 MEDDLY::domain::~domain() 
 {
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Deleting domain #%d\n", my_index);
+#endif
+
   for (int i=1; i<nVars; i++) {
     ((expert_variable*)vars[i])->removeFromList(this);
   }
   free(vars);
 
-  // just cleanup
+  for (int i=0; i<szForests; i++) {
+    delete forests[i];
+    MEDDLY_DCASSERT(0==forests[i]);
+  }
   free(forests);
+
+  //
+  // Remove myself from the master list
+  //
+  dom_list[my_index] = 0;
+  dom_free[my_index] = free_list;
+  free_list = my_index;
+}
+
+void MEDDLY::domain::expandDomList()
+{
+  int ndls = dom_list_size + 16;
+  domain** tmp_dl = (domain**) realloc(dom_list, ndls * sizeof(domain*));
+  if (0==tmp_dl) throw error(error::INSUFFICIENT_MEMORY);
+  dom_list = tmp_dl;
+  int* tmp_df = (int*) realloc(dom_free, ndls * sizeof(int));
+  if (0==tmp_df) throw error(error::INSUFFICIENT_MEMORY);
+  dom_free = tmp_df;
+  for (int i=dom_list_size; i<ndls; i++) {
+    dom_list[i] = 0;
+    dom_free[i] = i+1;
+  }
+  dom_free[ndls-1] = -1;
+  free_list = dom_list_size;
+  dom_list_size = ndls;
+}
+
+void MEDDLY::domain::deleteDomList()
+{
+  for (int i=0; i<dom_list_size; i++) {
+    delete dom_list[i];
+  }
+  free(dom_list);
+  free(dom_free);
+  dom_list_size = 0;
+  dom_list = 0;
+  dom_free = 0;
+  free_list = -1;
 }
 
 MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t, 
@@ -241,7 +304,7 @@ int MEDDLY::domain::findEmptyForestSlot()
   } else {
     newSize = 4;
   }
-  expert_forest** temp = (expert_forest **) realloc(
+  forest** temp = (forest **) realloc(
     forests, newSize * sizeof (expert_forest *)
   );
   if (0 == temp) throw error(error::INSUFFICIENT_MEMORY);
@@ -255,6 +318,9 @@ int MEDDLY::domain::findEmptyForestSlot()
 
 void MEDDLY::domain::markForDeletion()
 {
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Marking domain #%d for deletion\n", my_index);
+#endif
   for (int slot=0; slot<szForests; slot++) 
     if (forests[slot]) forests[slot]->markForDeletion();
 }

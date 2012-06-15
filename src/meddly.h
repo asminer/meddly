@@ -694,6 +694,8 @@ class MEDDLY::forest {
     /// Phase one destruction.
     void markForDeletion();
 
+    friend void MEDDLY::destroyForest(MEDDLY::forest* &f);
+
   public:
 
     /// Returns a non-modifiable pointer to this forest's domain.
@@ -1578,7 +1580,7 @@ class MEDDLY::domain {
     friend void MEDDLY::cleanup();
 
   private:
-    expert_forest** forests;
+    forest** forests;
     int szForests;
 
     /// Find a free slot for a new forest.
@@ -1591,6 +1593,24 @@ class MEDDLY::domain {
 
   public:
     inline bool hasForests() const { return forests; }
+
+  private:
+    /// List of all domains; initialized in meddly.cc
+    static domain** dom_list;
+    /// List of free slots (same dimension as dom_list); c.f. meddly.cc
+    static int* dom_free;
+    /// Size of domain list; initialized in meddly.cc
+    static int dom_list_size;
+    /// First free slot; initialized in meddly.cc
+    static int free_list;
+    /// Index of this domain in the domain list.
+    int my_index;
+
+    static void expandDomList();
+    static void deleteDomList();
+
+  public:
+    inline int ID() const { return my_index; }
 };
 
 
@@ -1644,7 +1664,7 @@ class MEDDLY::dd_edge {
     /** Obtain a modifiable copy of the forest owning this edge.
         @return         the forest to which this edge belongs to.
     */
-    inline forest* getForest() const  { return parent; }
+    inline forest* getForest() const { return parent; }
 
     /** Get this dd_edge's node handle.
         @return         the node handle.
@@ -1948,6 +1968,11 @@ class MEDDLY::dd_edge {
 
     bool            updateNeeded;
     const_iterator* beginIterator;
+
+    // called when the parent is destroyed
+    inline void orphan() {
+      parent = 0;
+    }
 };
 
 

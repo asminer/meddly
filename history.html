@@ -22,10 +22,59 @@
 </li>
 <li>  Reorganized forest class hierarchy.
 </li>
-<li>  getVar, readVar changed to getVar, useVar for consistency.
+</ul>
+
+<h4>INTERFACE CHANGES</h4>
+
+<ul>
+<li>  Policy settings for a forest are now specified when the forest
+      is constructed.
+      The old code segment
+      <pre>
+      forest *f = d->createForest(false, forest::BOOLEAN,
+        forest::MULTI_TERMINAL);
+      f->setReductionRule(forest::FULLY_REDUCED);
+      f->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
+      f->setNodeDeletion(forest::PESSIMISTIC_DELETION);
+      </pre>
+      can be replaced by
+      <pre>
+      forest::policies fp(false); // false: not a relation
+      fp.setFullyReduced();
+      fp.setCompactStorage();
+      fp.setPessimistic();
+      forest *f = d->createForest(false, forest::BOOLEAN,
+        forest::MULTI_TERMINAL, fp);
+      </pre>
+      The default settings for the forest::policies struct 
+      may be found by examining the header file <tt>meddly.h</tt>,
+      and of course it is only necessary to specify a desired
+      policy that differs from its default.
+      Alternatively, a forest may be created using
+      <pre>
+      forest *f = d->createForest(false, forest::BOOLEAN,
+        forest::MULTI_TERMINAL);
+      </pre>
+      which will use the library-wide default policies,
+      based on whether the new forest is a relation or not.
+      The library-wide defaults, if not specified, 
+      will be equal to the default <tt>forest::policies</tt>
+      initialization;
+      otherwise, they may be changed by adjusting
+      <tt>mddDefaults</tt> and <tt>mxdDefaults</tt>
+      in <tt>MEDDLY::settings</tt> (in the expert interface)
+      before the library is initialized.
 </li>
-<li>  Added stats class to forest, and new mechanism to obtain performance stats.
-      Old mechanism is still present for compatability.
+
+<li>  In class <tt>domain</tt>,
+      old methods <tt>getVar</tt> and <tt>readVar</tt>
+      are changed to <tt>useVar</tt> and <tt>getVar</tt>, for consistency.
+</li>
+
+<li>  Added a better statistics mechanism for forests.
+      The old interface is stil present, for compatability.
+      More information may be obtained using
+      <tt>forest::getStats()</tt>.
 </li>
 </ul>
 

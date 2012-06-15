@@ -76,6 +76,7 @@ MEDDLY::mt_forest::mt_forest(int dsl, domain *d, bool rel, range_type t,
   unique = new mdd_hash_table<mt_forest> (this);
   max_hole_chain = 0;
 
+  delete_terminal_nodes = false;
 #if 1
   holeRecycling = true;
 #else
@@ -112,7 +113,7 @@ int MEDDLY::mt_forest::buildLevelNodeHelper(int lh, int* dptrs, int sz)
     //      dptrs[j] = node at level i with all downpointers to prev dptrs[j]
     //      do for primed first and then unprimed
 
-    if (isFullyReduced()) {
+    if (!isFullyReduced()) {
       for (int i = 1; i < absLh; ++i)
       {
         for (int j = 0; j < sz; ++j)

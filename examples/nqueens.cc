@@ -285,6 +285,8 @@ int main(int argc, const char** argv)
   delete solutions;
   operation::showAllComputeTables(stdout, 2);
   // f->showInfo(stdout, 1);
-  cleanup();
+//  cleanup();
+  destroyForest(f);
+  destroyDomain(d);
   return 0;
 }

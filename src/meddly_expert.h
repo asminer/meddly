@@ -528,9 +528,6 @@ class MEDDLY::expert_forest : public forest
     /// Destructor.
     virtual ~expert_forest();  
 
-    friend void MEDDLY::destroyForest(MEDDLY::forest* &f);
-    friend class expert_domain;
-
   public:
     inline const expert_domain* getExpertDomain() const {
       return (expert_domain*) getDomain();
