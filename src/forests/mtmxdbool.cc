@@ -142,7 +142,7 @@ int MEDDLY::mt_mxd_bool::accumulateExpandA(int a, int b, bool cBM)
   // a[i][i] += b
   // return reduceNode(a)
 
-  MEDDLY_DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(isIdentityReduced());
   MEDDLY_DCASSERT(getMappedNodeHeight(a) > getMappedNodeHeight(b));
   MEDDLY_DCASSERT(!isReducedNode(a));
   MEDDLY_DCASSERT(getInCount(a) == 1);
@@ -260,7 +260,7 @@ void MEDDLY::mt_mxd_bool::accumulateMxdHelper(int& a, int b, bool cBM,
 
 int MEDDLY::mt_mxd_bool::accumulateMxdPrime(int a, int b, bool cBM)
 {
-  MEDDLY_DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(isIdentityReduced());
   MEDDLY_DCASSERT(isReducedNode(b));
   MEDDLY_DCASSERT(a != -1);
   MEDDLY_DCASSERT(b != -1);
@@ -289,7 +289,7 @@ int MEDDLY::mt_mxd_bool::accumulateMxdPrime(int a, int b, bool cBM)
 
 int MEDDLY::mt_mxd_bool::accumulateMxd(int a, int b, bool cBM)
 {
-  MEDDLY_DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(isIdentityReduced());
   MEDDLY_DCASSERT(isReducedNode(b));
 
   // Terminal nodes
@@ -332,7 +332,7 @@ int MEDDLY::mt_mxd_bool::accumulateExpandA(int a, int b, bool cBM)
 {
   // a[i][i] += b
 
-  MEDDLY_DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(isIdentityReduced());
   MEDDLY_DCASSERT(getMappedNodeHeight(a) > getMappedNodeHeight(b));
   MEDDLY_DCASSERT(!isReducedNode(a));
 
@@ -474,7 +474,7 @@ void MEDDLY::mt_mxd_bool::accumulateMxdHelper(int& a, int b, bool cBM,
 // TODO: Make temporary nodes of max size.
 int MEDDLY::mt_mxd_bool::accumulateMxdPrime(int a, int b, bool cBM)
 {
-  MEDDLY_DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(isIdentityReduced());
   MEDDLY_DCASSERT(isReducedNode(b));
   MEDDLY_DCASSERT(a != -1);
   MEDDLY_DCASSERT(b != -1);
@@ -502,7 +502,7 @@ int MEDDLY::mt_mxd_bool::accumulateMxdPrime(int a, int b, bool cBM)
 // TODO: Make temporary nodes of max size.
 int MEDDLY::mt_mxd_bool::accumulateMxd(int a, int b, bool cBM)
 {
-  MEDDLY_DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(isIdentityReduced());
   MEDDLY_DCASSERT(isReducedNode(b));
 
   // Terminal nodes
@@ -604,7 +604,7 @@ void MEDDLY::mt_mxd_bool::accumulate(int& a, int b)
 int MEDDLY::mt_mxd_bool::accumulateSkippedLevel(int tempNode,
     int* element, int* pelement, int level)
 {
-  MEDDLY_DCASSERT(getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(isIdentityReduced());
   MEDDLY_DCASSERT(level > 0);
   MEDDLY_DCASSERT(getNodeLevel(tempNode) >= 0);
   MEDDLY_DCASSERT(getNodeLevel(tempNode) != level);
@@ -674,7 +674,7 @@ int MEDDLY::mt_mxd_bool::accumulate(int tempNode, bool cBM,
     int* element, int* pelement, int level)
 {
   MEDDLY_DCASSERT(isMxd());
-  MEDDLY_DCASSERT(this->getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(isIdentityReduced());
 
   if (level == 0) {
     if (tempNode == 0) accumulateMintermAddedElement = true;

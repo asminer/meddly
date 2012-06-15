@@ -173,6 +173,7 @@ MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t,
             default:
                 throw error(error::TYPE_MISMATCH);
         }; // range type switch
+        break;
 
     case forest::EVPLUS:
       f = new evp_mdd_int(slot, this, p);

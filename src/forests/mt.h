@@ -142,7 +142,7 @@ class MEDDLY::mt_forest : public expert_forest {
     */
 
     /// Refer to meddly.h
-    void createEdgeForVar(int vh, bool primedLevel, dd_edge& result);
+    // void createEdgeForVar(int vh, bool primedLevel, dd_edge& result);
     void createEdgeForVar(int vh, bool primedLevel,
         bool* terms, dd_edge& a);
     void createEdgeForVar(int vh, bool primedLevel,
@@ -343,7 +343,7 @@ class MEDDLY::mt_forest : public expert_forest {
     void clearAllNodes();
 
     // Building custom level nodes
-    int* getTerminalNodes(int n);
+    // int* getTerminalNodes(int n);
     int* getTerminalNodes(int n, bool* terms);
     int* getTerminalNodes(int n, int* terms);
     int* getTerminalNodes(int n, float* terms);

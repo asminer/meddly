@@ -262,7 +262,7 @@ void MEDDLY::mt_forest::clearLevelNodes()
 
 
 
-
+/*
 int* MEDDLY::mt_forest::getTerminalNodes(int n)
 {
   // use the array that comes with object (saves having to alloc/dealloc)
@@ -293,13 +293,12 @@ int* MEDDLY::mt_forest::getTerminalNodes(int n)
 
   return dptrs;
 }
-
+*/
 
 int* MEDDLY::mt_forest::getTerminalNodes(int n, bool* terms)
 {
   MEDDLY_DCASSERT(n == 2);
   MEDDLY_DCASSERT(getRangeType() == forest::BOOLEAN);
-  MEDDLY_DCASSERT(terms != 0);
 
   // use the array that comes with object (saves having to alloc/dealloc)
   if (dptrsSize < n) {
@@ -309,8 +308,14 @@ int* MEDDLY::mt_forest::getTerminalNodes(int n, bool* terms)
     dptrs = (int *) realloc(dptrs, dptrsSize * sizeof(int));
     MEDDLY_DCASSERT(NULL != dptrs);
   }
+
   // fill array with terminal nodes
-  for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(terms[i]);
+  if (terms) {
+    for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(terms[i]);
+  } else {
+    dptrs[0] = getTerminalNode(false);
+    dptrs[1] = getTerminalNode(true);
+  }
   return dptrs;
 }
 
@@ -318,7 +323,6 @@ int* MEDDLY::mt_forest::getTerminalNodes(int n, bool* terms)
 int* MEDDLY::mt_forest::getTerminalNodes(int n, int* terms)
 {
   MEDDLY_DCASSERT(getRangeType() == forest::INTEGER);
-  MEDDLY_DCASSERT(terms != 0);
 
   // use the array that comes with object (saves having to alloc/dealloc)
   if (dptrsSize < n) {
@@ -328,8 +332,13 @@ int* MEDDLY::mt_forest::getTerminalNodes(int n, int* terms)
     dptrs = (int *) realloc(dptrs, dptrsSize * sizeof(int));
     MEDDLY_DCASSERT(NULL != dptrs);
   }
+
   // fill array with terminal nodes
-  for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(terms[i]);
+  if (terms) {
+    for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(terms[i]);
+  } else {
+    for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(i);
+  }
   return dptrs;
 }
 
@@ -337,7 +346,6 @@ int* MEDDLY::mt_forest::getTerminalNodes(int n, int* terms)
 int* MEDDLY::mt_forest::getTerminalNodes(int n, float* terms)
 {
   MEDDLY_DCASSERT(getRangeType() == forest::REAL);
-  MEDDLY_DCASSERT(terms != 0);
 
   // use the array that comes with object (saves having to alloc/dealloc)
   if (dptrsSize < n) {
@@ -348,11 +356,16 @@ int* MEDDLY::mt_forest::getTerminalNodes(int n, float* terms)
     MEDDLY_DCASSERT(NULL != dptrs);
   }
   // fill array with terminal nodes
-  for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(terms[i]);
+  if (terms) {
+    for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(terms[i]);
+  } else {
+    for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(float(i));
+  }
   return dptrs;
 }
 
 
+/*
 void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
     dd_edge& result)
 {
@@ -382,6 +395,7 @@ void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
   linkNode(node);
   result.set(node, 0, getNodeLevel(node));
 }
+*/
 
 
 void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
