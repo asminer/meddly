@@ -588,7 +588,7 @@ class MEDDLY::forest {
         reduction = rel ? IDENTITY_REDUCED : FULLY_REDUCED;
         storage = FULL_OR_SPARSE_STORAGE;
         deletion = OPTIMISTIC_DELETION;
-        compaction = 50;
+        compaction = 40;
         zombieTrigger = 1000000;
         orphanTrigger = 500000;
         compactAfterGC = true;
