@@ -464,41 +464,36 @@ int main(int argc, char *argv[])
   domain *d = createDomain(vars, nLevels);
   assert(d != NULL);
 
+  // Set up MDD options
+  forest::policies pmdd(false);
+#if 1
+  // nothing
+#else
+  pmdd.setQuasiReduced();
+  pmdd.setFullStorage();
+#endif
+  if (pessimistic)  pmdd.setPessimistic();
+  else              pmdd.setOptimistic();
+
   // Create an MDD forest in this domain (to store states)
   forest* mdd =
-    d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL);
+    d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL, pmdd);
   assert(mdd != NULL);
 
-  // Set up MDD options
+  // Set up MXD options
+  forest::policies pmxd(true);
 #if 1
-  mdd->setReductionRule(forest::FULLY_REDUCED);
-  mdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
+  // nothing
 #else
-  mdd->setReductionRule(forest::QUASI_REDUCED);
-  mdd->setNodeStorage(forest::FULL_STORAGE);
+  pmxd.setFullStorage();
 #endif
-  mdd->setNodeDeletion(
-    pessimistic
-    ? forest::PESSIMISTIC_DELETION
-    : forest::OPTIMISTIC_DELETION
-  );
+  if (pessimistic)  pmdd.setPessimistic();
+  else              pmdd.setOptimistic();
 
   // Create a MXD forest in domain (to store transition diagrams)
-  forest* mxd = d->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mxd = 
+    d->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL, pmxd);
   assert(mxd != NULL);
-
-  // Set up MXD options
-  mxd->setReductionRule(forest::IDENTITY_REDUCED);
-#if 1
-  mxd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
-#else
-  mxd->setNodeStorage(forest::FULL_STORAGE);
-#endif
-  mxd->setNodeDeletion(
-    pessimistic
-      ? forest::PESSIMISTIC_DELETION
-      : forest::OPTIMISTIC_DELETION
-  );
 
   // Set up initial state array based on nPhilosophers
   int *initSt = initializeInitialState(nLevels);

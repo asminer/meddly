@@ -657,15 +657,14 @@ void testC()
   d->createVariablesBottomUp(bounds, nVars);
 
   // Create an MDD forest in this domain (to store states)
+  forest::policies p(false);
+  p.setPessimistic();
   forest* states = d->createForest(false, forest::BOOLEAN,
-      forest::MULTI_TERMINAL);
+      forest::MULTI_TERMINAL, p);
   assert(states != 0);
 
   expert_forest* f = dynamic_cast<expert_forest*>(states);
   assert(f != 0);
-
-  f->setNodeDeletion(forest::PESSIMISTIC_DELETION);
-
 
   {
     // --------------------------------------------------------------------

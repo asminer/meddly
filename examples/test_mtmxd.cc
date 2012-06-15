@@ -298,12 +298,13 @@ int main(int argc, char *argv[])
   assert(d != 0);
 
   // Create a MTMXD forest in this domain
+  forest::policies p(true);
 #if USE_REALS
   forest* mtmxd =
-    d->createForest(true, forest::REAL, forest::MULTI_TERMINAL);
+    d->createForest(true, forest::REAL, forest::MULTI_TERMINAL, p);
 #else
   forest* mtmxd =
-    d->createForest(true, forest::INTEGER, forest::MULTI_TERMINAL);
+    d->createForest(true, forest::INTEGER, forest::MULTI_TERMINAL, p);
 #endif
   assert(mtmxd != 0);
 
@@ -328,13 +329,6 @@ int main(int argc, char *argv[])
 #endif
   }
 #endif
-
-#if 0
-  assert(forest::SUCCESS ==
-      mtmxd->setReductionRule(forest::FULLY_REDUCED));
-#endif
-  mtmxd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
-  mtmxd->setNodeDeletion(forest::OPTIMISTIC_DELETION);
 
   timer start;
   start.note_time();

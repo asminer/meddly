@@ -249,8 +249,8 @@ MEDDLY::unary_operation::unary_operation(const unary_opname* code, int kl,
   resultType = FOREST;
   resF = res;
 
-  argF->registerOperation(this);
-  resF->registerOperation(this);
+  registerInForest(argF);
+  registerInForest(resF);
 
   setAnswerForest(resF);
 }
@@ -262,15 +262,15 @@ MEDDLY::unary_operation::unary_operation(const unary_opname* code, int kl,
   resultType = res;
   resF = 0;
 
-  argF->registerOperation(this);
+  registerInForest(argF);
 
   setAnswerForest(0);
 }
 
 MEDDLY::unary_operation::~unary_operation()
 {
-  argF->unregisterOperation(this);
-  if (resF) resF->unregisterOperation(this);
+  unregisterInForest(argF);
+  unregisterInForest(resF);
 }
 
 void MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
@@ -305,18 +305,18 @@ MEDDLY::binary_operation::binary_operation(const binary_opname* op, int kl,
   arg2F = arg2;
   resF = res;
 
-  arg1F->registerOperation(this);
-  arg2F->registerOperation(this);
-  res->registerOperation(this);
+  registerInForest(arg1F);
+  registerInForest(arg2F);
+  registerInForest(res);
 
   setAnswerForest(resF);
 }
 
 MEDDLY::binary_operation::~binary_operation()
 {
-  arg1F->unregisterOperation(this);
-  arg2F->unregisterOperation(this);
-  resF->unregisterOperation(this);
+  unregisterInForest(arg1F);
+  unregisterInForest(arg2F);
+  unregisterInForest(resF);
 }
 
 int MEDDLY::binary_operation::compute(int a, int b)

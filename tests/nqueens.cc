@@ -126,14 +126,11 @@ long buildQueenSolutions(int N)
   }
   domain* d = createDomainBottomUp(scratch, N);
   assert(d);
-  forest* f = d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL);
+  forest::policies p(false);
+  p.setPessimistic();
+  forest* f = 
+    d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL, p);
   assert(f);
-
-  // Set up MDD options
-  f->setReductionRule(forest::FULLY_REDUCED);
-  f->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
-  f->setNodeDeletion(forest::PESSIMISTIC_DELETION);
-
 
   dd_edge** col = new dd_edge*[N];
   dd_edge** dgp = new dd_edge*[N];

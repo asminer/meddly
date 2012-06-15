@@ -727,8 +727,23 @@ class MEDDLY::forest {
     }
 
     /// Query the edge labeling mechanism.
-    inline bool isEdgeLabeling(edge_labeling e) const {
-      return e == edgeLabel;
+    // inline bool isEdgeLabeling(edge_labeling e) const {
+    //  return e == edgeLabel;
+    //}
+
+    /// Is the edge labeling "MULTI_TERMINAL".
+    inline bool isMultiTerminal() const {
+      return MULTI_TERMINAL == edgeLabel;
+    }
+
+    /// Is the edge labeling "EV_PLUS".
+    inline bool isEVPlus() const {
+      return EVPLUS == edgeLabel;
+    }
+
+    /// Is the edge labeling "EV_TIMES".
+    inline bool isEVTimes() const {
+      return EVTIMES == edgeLabel;
     }
 
     /// Check if we match a specific type of forest
@@ -1307,7 +1322,6 @@ class MEDDLY::forest {
     virtual void findFirstElement(const dd_edge& f, int* vlist, int* vplist)
       const = 0;
 
-
     /** Display all active (i.e., connected) nodes in the forest.
         This is primarily for aid in debugging.
         @param  strm      File stream to write to.
@@ -1317,6 +1331,14 @@ class MEDDLY::forest {
                           2 : internal forest + statistics.
     */
     virtual void showInfo(FILE* strm, int verbosity=0) = 0;
+
+  protected:
+    // for debugging:
+    void showComputeTable(FILE* s, int verbLevel) const;
+
+    inline bool isMarkedForDeletion() const {
+      return is_marked_for_deletion;
+    }
 
   private:  // Domain info 
     friend class domain;
@@ -1539,7 +1561,7 @@ class MEDDLY::domain {
     void showInfo(FILE* strm);
 
     /// Free the slot that the forest is using.
-    void unlinkForest(expert_forest* f, int slot);
+    void unlinkForest(forest* f, int slot);
 
     // --------------------------------------------------------------------
 
@@ -1905,7 +1927,7 @@ class MEDDLY::dd_edge {
     void show(FILE* strm, int verbosity = 0) const;
 
   private:
-    friend class expert_forest;
+    friend class forest;
     friend class iterator;
 
     inline void setIndex(int ind) { index = ind; }

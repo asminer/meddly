@@ -73,11 +73,7 @@ int main(int argc, char *argv[])
 
   // Create an MDD forest in this domain (to store states)
   forest* states = d->createForest(false, forest::BOOLEAN,
-      forest::MULTI_TERMINAL);
-  // states->setReductionRule(forest::QUASI_REDUCED);
-  states->setReductionRule(forest::FULLY_REDUCED);
-  states->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
-  states->setNodeDeletion(forest::OPTIMISTIC_DELETION);
+      forest::MULTI_TERMINAL, forest::policies(false));
 
 #if 1
   printf("Constructing initial set of states\n");
@@ -142,11 +138,7 @@ int main(int argc, char *argv[])
 
   // Create a MXD forest in domain (to store transition diagrams)
   forest* transitions = d->createForest(true, forest::BOOLEAN,
-      forest::MULTI_TERMINAL);
-  transitions->setReductionRule(forest::IDENTITY_REDUCED);
-  transitions->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
-  // transitions->setNodeStorage(forest::FULL_STORAGE);
-  transitions->setNodeDeletion(forest::OPTIMISTIC_DELETION);
+      forest::MULTI_TERMINAL, forest::policies(true));
 
   // Construct a transition diagram in the MXD forest (using +, *)
   // Note: x here denotes "value does not change"

@@ -371,24 +371,9 @@ void MEDDLY::forest::unregisterDDEdges()
 
 
 MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
-  edge_labeling ev, reduction_rule r, node_storage s, node_deletion_policy nd)
-: forest(d, rel, t, ev, r, s, nd)
+  edge_labeling ev, const policies &p)
+: forest(ds, d, rel, t, ev, p)
 {
-}
-
-
-void MEDDLY::expert_forest::showComputeTable(FILE* s, int verbLevel) const
-{
-  // if (is_marked_for_deletion) return;
-  if (operation::useMonolithicComputeTable()) {
-    operation::showMonolithicComputeTable(s, verbLevel);
-  } else {
-    for (int i=0; i<szOpCount; i++) 
-      if (opCount[i]) {
-        operation* op = operation::getOpWithIndex(i);
-        op->showComputeTable(s, verbLevel);
-      }
-  }
 }
 
 
@@ -465,7 +450,7 @@ bool MEDDLY::expert_forest::getDownPtrs(int p, std::vector<int>& dptrs) const {
 
 bool MEDDLY::expert_forest::isStale(int h) const {
   return
-    is_marked_for_deletion || (
+    isMarkedForDeletion() || (
       isTerminalNode(h)
       ? discardTemporaryNodesFromComputeCache()
       : isPessimistic()

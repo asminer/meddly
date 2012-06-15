@@ -196,21 +196,18 @@ int main(int argc, char* argv[])
 
 
   // Create an MDD forest in this domain (to store states)
-  forest* mdd = d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest::policies pmdd(false);
+  pmdd.setPessimistic();
+  forest* mdd = d->createForest(false, forest::BOOLEAN, 
+    forest::MULTI_TERMINAL, pmdd);
   assert(mdd != NULL);
 
-  // Set up MDD options
-  mdd->setReductionRule(forest::FULLY_REDUCED);
-  mdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
-  mdd->setNodeDeletion(forest::PESSIMISTIC_DELETION);
-
   // Create a MXD forest in domain (to store transition diagrams)
-  forest* mxd = d->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest::policies pmxd(true);
+  pmxd.setPessimistic();
+  forest* mxd = d->createForest(true, forest::BOOLEAN, 
+    forest::MULTI_TERMINAL, pmxd);
   assert(mxd != NULL);
-
-  // Set up MXD options
-  mxd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
-  mxd->setNodeDeletion(forest::PESSIMISTIC_DELETION);
 
   // Set up initial set of states
   dd_edge initialStates = getInitialStates(mdd);

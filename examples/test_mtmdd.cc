@@ -229,12 +229,14 @@ int main(int argc, char *argv[])
   assert(d != 0);
 
   // Create a MTMDD forest in this domain
+  forest::policies p(false);
+  p.setPessimistic();
 #if USE_REALS
   forest* mtmdd =
-    d->createForest(false, forest::REAL, forest::MULTI_TERMINAL);
+    d->createForest(false, forest::REAL, forest::MULTI_TERMINAL, p);
 #else
   forest* mtmdd =
-    d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL);
+    d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL, p);
 #endif
   assert(mtmdd != 0);
 
@@ -254,10 +256,6 @@ int main(int argc, char *argv[])
 #endif
     }
   }
-
-  mtmdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
-  // mtmdd->setNodeDeletion(forest::OPTIMISTIC_DELETION);
-  mtmdd->setNodeDeletion(forest::PESSIMISTIC_DELETION);
 
   timer start;
   start.note_time();

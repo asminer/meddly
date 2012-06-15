@@ -743,7 +743,7 @@ inline void MEDDLY::mt_forest::initDownPtrs(int p) {
 }
 
 inline void MEDDLY::mt_forest::setAllEdgeValues(int p, int value) {
-  MEDDLY_DCASSERT(edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES);
+  MEDDLY_DCASSERT(isEVPlus() || isEVTimes());
   MEDDLY_DCASSERT(!isReducedNode(p));
   MEDDLY_DCASSERT(isFullNode(p));
   int *edgeptr = getFullNodeEdgeValues(p);
@@ -753,7 +753,7 @@ inline void MEDDLY::mt_forest::setAllEdgeValues(int p, int value) {
 
 
 inline void MEDDLY::mt_forest::setAllEdgeValues(int p, float fvalue) {
-  MEDDLY_DCASSERT(edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES);
+  MEDDLY_DCASSERT(isEVPlus() || isEVTimes());
   MEDDLY_DCASSERT(!isReducedNode(p));
   MEDDLY_DCASSERT(isFullNode(p));
   int *edgeptr = getFullNodeEdgeValues(p);

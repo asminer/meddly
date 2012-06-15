@@ -453,7 +453,7 @@ bool MEDDLY::dd_edge::iterator::findNextRow(int height)
   MEDDLY_DCASSERT(e != 0);
   MEDDLY_DCASSERT(type == COLUMN);
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
-  MEDDLY_DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(f->isIdentityReduced());
 
   int nextHeight = height - 1;
 
@@ -558,7 +558,7 @@ bool MEDDLY::dd_edge::iterator::findNextColumn(int height)
   MEDDLY_DCASSERT(e != 0);
   MEDDLY_DCASSERT(type == ROW);
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
-  MEDDLY_DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(f->isIdentityReduced());
 
   int nextHeight = height - 1;
 
@@ -649,7 +649,7 @@ bool MEDDLY::dd_edge::iterator::findFirstRow(int height, int node)
   MEDDLY_DCASSERT(e != 0);
   MEDDLY_DCASSERT(type == COLUMN);
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
-  MEDDLY_DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(f->isIdentityReduced());
 
   int nodeHeight = f->isTerminalNode(node)? 0: f->getNodeHeight(node);
 
@@ -728,7 +728,7 @@ bool MEDDLY::dd_edge::iterator::findFirstColumn(int height, int node)
   MEDDLY_DCASSERT(e != 0);
   MEDDLY_DCASSERT(type == ROW);
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
-  MEDDLY_DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(f->isIdentityReduced());
 
   int nodeHeight = f->isTerminalNode(node)? 0: f->getNodeHeight(node);
 
@@ -946,8 +946,7 @@ void MEDDLY::dd_edge::iterator::incrNonIdentRelation()
   expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
 
-  MEDDLY_DCASSERT(f->getReductionRule() == forest::FULLY_REDUCED
-      || f->getReductionRule() == forest::QUASI_REDUCED);
+  MEDDLY_DCASSERT(f->isFullyReduced() || f->isQuasiReduced());
 
   int currLevel = d->getNumVariables();
   bool isCurrLevelPrime = false;

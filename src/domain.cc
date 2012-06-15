@@ -220,7 +220,7 @@ void MEDDLY::domain::showInfo(FILE* strm)
   }
 }
 
-void MEDDLY::domain::unlinkForest(expert_forest* f, int slot)
+void MEDDLY::domain::unlinkForest(forest* f, int slot)
 {
   if (forests[slot] != f)
     throw error(error::MISCELLANEOUS);

@@ -503,9 +503,6 @@ class MEDDLY::expert_domain : public domain {
     }
 
     virtual void createVariablesBottomUp(const int* bounds, int N);
-    virtual forest* createForest(bool rel, forest::range_type t,
-      forest::edge_labeling ev, const forest::policies &p);
-
 };
 
 
@@ -841,18 +838,7 @@ class MEDDLY::expert_forest : public forest
     /// Otherwise, it returns (2 * node_height).
     int getMappedNodeHeight(int node) const;
 
-    /// Register an operation with this forest.
-    void registerOperation(const operation* op);
-
-    /// Unregister an operation.
-    void unregisterOperation(const operation* op);
-
   protected:
-    // for debugging:
-    void showComputeTable(FILE* s, int verbLevel) const;
-
-    void unregisterDDEdges();
-
     int getInternalNodeSize(int node) const;
     int* getNodeAddress(int node) const;
     int* getAddress(int k, int offset) const;
@@ -1398,8 +1384,16 @@ class MEDDLY::operation {
 
     void markForDeletion();
 
-    friend class expert_forest;
+    friend class forest;
     friend void MEDDLY::destroyOpInternal(operation* op);
+
+    inline void registerInForest(forest* f) { 
+      if (f) f->registerOperation(this); 
+    }
+
+    inline void unregisterInForest(forest* f) { 
+      if (f) f->unregisterOperation(this); 
+    }
 
   public:
     inline bool isMarkedForDeletion() const { return is_marked_for_deletion; }
