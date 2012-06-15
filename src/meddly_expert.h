@@ -528,6 +528,8 @@ class MEDDLY::expert_forest : public forest
     /// Destructor.
     virtual ~expert_forest();  
 
+  // ------------------------------------------------------------
+  // inlines.
   public:
     inline const expert_domain* getExpertDomain() const {
       return (expert_domain*) getDomain();
@@ -536,6 +538,20 @@ class MEDDLY::expert_forest : public forest
       return (expert_domain*) useDomain();
     }
 
+  // ------------------------------------------------------------
+  // virtual, with default implementation.
+  public:
+    /// Apply reduction rule to the temporary node and finalize it. Once
+    /// a node is reduced, its contents cannot be modified.
+    virtual int reduceNode(int node);
+
+    /// Reduce and finalize an node with an incoming edge value
+    virtual void normalizeAndReduceNode(int& node, int& ev);
+    virtual void normalizeAndReduceNode(int& node, float& ev);
+
+
+  // here down --- needs organizing
+  public:
     /// Create a temporary node -- a node that can be modified by the user.
     /// If \a clear is true, downpointers are initialized to 0.
     virtual int createTempNode(int lh, int size, bool clear = true) = 0;
@@ -568,14 +584,6 @@ class MEDDLY::expert_forest : public forest
 
     /// The maximum size (number of indices) a node at this level can have
     int getLevelSize(int lh) const;
-
-    /// Apply reduction rule to the temporary node and finalize it. Once
-    /// a node is reduced, its contents cannot be modified.
-    virtual int reduceNode(int node) = 0;
-
-    /// Reduce and finalize an node with an incoming edge value
-    virtual void normalizeAndReduceNode(int& node, int& ev) = 0;
-    virtual void normalizeAndReduceNode(int& node, float& ev) = 0;
 
     /// A is a temporary node, and B is a reduced node.
     /// Accumulate B into A, i.e. A += B.

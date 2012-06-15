@@ -40,6 +40,14 @@ class MEDDLY::mt_mxd_bool : public mtmxd_forest {
     mt_mxd_bool(int dsl, domain *d, const policies &p);
     ~mt_mxd_bool();
 
+    virtual void createEdge(bool val, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, const int* const* vplist,
+        int N, dd_edge& e);
+    virtual void evaluate(const dd_edge& f, const int* vlist,
+        const int* vplist, bool &term) const;
+
+  // still to be reorganized 
+  public:
     using mtmxd_forest::createEdge;
     using mtmxd_forest::evaluate;
 
@@ -61,25 +69,6 @@ class MEDDLY::mt_mxd_bool : public mtmxd_forest {
         bool needsToMakeACopy,
         int (mt_mxd_bool::*function)(int, int, bool));
 
-    // Refer to meddly.h
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-        int N, dd_edge& e);
-    virtual void createEdge(bool val, dd_edge &e);
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, bool &term) const;
-
-    // The following will either abort or return an error since they are not
-    // applicable to this forest.
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-        const int* terms, int N, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-        const float* terms, int N, dd_edge &e);
-    virtual void createEdge(int val, dd_edge &e);
-    virtual void createEdge(float val, dd_edge &e);
-    virtual void evaluate(const dd_edge &f, const int* vlist,
-        const int* vplist, int &term) const;
-    virtual void evaluate(const dd_edge &f, const int* vlist,
-        const int* vplist, float &term) const;
 };
 
 #endif

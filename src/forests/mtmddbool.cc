@@ -32,6 +32,13 @@ MEDDLY::mt_mdd_bool::~mt_mdd_bool()
 { }
 
 
+void MEDDLY::mt_mdd_bool::createEdge(bool term, dd_edge& e)
+{
+  if (e.getForest() != this) throw error(error::INVALID_OPERATION);
+  createEdgeHelper(getTerminalNode(term), e);
+}
+
+
 void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist,
     int N, dd_edge &e)
 {
@@ -39,15 +46,7 @@ void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist,
     throw error(error::INVALID_OPERATION);
   if (vlist == 0 || N <= 0) 
     throw error(error::INVALID_VARIABLE);
-  MEDDLY::mtmdd_forest::createEdgeInternal(vlist, (bool*)0, N, e);
-}
-
-
-void MEDDLY::mt_mdd_bool::createEdge(bool term, dd_edge& e)
-{
-  if (e.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-  createEdgeHelper(getTerminalNode(term), e);
+  createEdgeInternal(vlist, (bool*)0, N, e);
 }
 
 
@@ -55,45 +54,5 @@ void MEDDLY::mt_mdd_bool::evaluate(const dd_edge &f, const int* vlist,
     bool &term) const
 {
   term = getBoolean(getTerminalNodeForEdge(f.getNode(), vlist));
-}
-
-
-void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist,
-    const int* terms, int N, dd_edge &e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist,
-    const float* terms, int n, dd_edge &e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void MEDDLY::mt_mdd_bool::createEdge(int val, dd_edge &e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void MEDDLY::mt_mdd_bool::createEdge(float val, dd_edge &e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void MEDDLY::mt_mdd_bool::evaluate(const dd_edge &f, const int* vlist,
-    int &term) const
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void MEDDLY::mt_mdd_bool::evaluate(const dd_edge &f, const int* vlist,
-    float &term) const
-{
-  throw error(error::INVALID_OPERATION);
 }
 

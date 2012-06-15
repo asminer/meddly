@@ -38,6 +38,12 @@ class MEDDLY::mt_mxd_int : public mtmxd_forest {
 
     mt_mxd_int(int dsl, domain *d, const policies &p);
     ~mt_mxd_int();
+
+    void createEdge(int val, dd_edge &e);
+    void createEdge(const int* const* vlist, const int* const* vplist,
+        const int* terms, int N, dd_edge& e);
+    void evaluate(const dd_edge& f, const int* vlist, const int* vplist,
+        int &term) const;
 };
 
 #endif

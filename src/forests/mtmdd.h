@@ -63,19 +63,6 @@ class MEDDLY::mtmdd_forest : public mt_forest {
     // mtmdd_forest(int dsl, domain *d, range_type t, const policies &p);
     ~mtmdd_forest();
 
-    virtual void createEdge(const int* const* vlist, const int* terms, int N,
-        dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const float* terms,
-        int N, dd_edge &e);
-
-    virtual void createEdge(int val, dd_edge &e);
-    virtual void createEdge(float val, dd_edge &e);
-
-    virtual void evaluate(const dd_edge &f, const int* vlist, int &term)
-      const;
-    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
-      const;
-
     virtual void findFirstElement(const dd_edge& f, int* vlist) const;
 
     // Enlarges a temporary node, if new size is greater than old size.
@@ -83,32 +70,51 @@ class MEDDLY::mtmdd_forest : public mt_forest {
 
     virtual int reduceNode(int p);
 
-    // The following will either abort or return an error since they are not
-    // applicable to this forest.
-    virtual void normalizeAndReduceNode(int& p, int& ev);
-    virtual void normalizeAndReduceNode(int& p, float& ev);
-    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-        int N, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-        const int* terms, int N, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const int* const* vplist, 
-        const float* terms, int N, dd_edge &e);
-    virtual void createEdge(bool val, dd_edge &e);
-    virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
-      const;
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, bool &term) const;
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, int &term) const;
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, float &term) const;
-
   protected:
 
     // Used by derived classes for initialization
     mtmdd_forest(int dsl, domain *d, bool relation, range_type t,
         edge_labeling e, const policies &p);
+
+
+  protected:
+    // Creates an edge representing the terminal node given by
+    // terminalNode.
+    // Note: terminalNode is usually a terminal value converted into
+    // the equivalent node representation. This makes this method useful
+    // for createEdge(int, e) or (float, e) or (bool, e) as long as the
+    // terminal value can be converted into an equivalent node.
+    inline void createEdgeHelper(int terminalNode, dd_edge& e) {
+        MEDDLY_DCASSERT(isTerminalNode(terminalNode));
+
+        if (isFullyReduced() || terminalNode == 0) {
+          e.set(terminalNode, 0, 0);
+          return;
+        }
+
+        // construct the edge bottom-up
+        int result = terminalNode;
+        int curr = 0;
+        for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
+          curr = createTempNodeMaxSize(i, false);
+          setAllDownPtrsWoUnlink(curr, result);
+          unlinkNode(result);
+          result = reduceNode(curr);
+        }
+        e.set(result, 0, getNodeLevel(result));
+    }
+
+    // Get the terminal node at the bottom of the edge with root n
+    // and vlist representing the indexes for the levels.
+    // Used by evaluate()
+    inline int getTerminalNodeForEdge(int n, const int* vlist) const {
+        // assumption: vlist does not contain any special values (-1, -2, etc).
+        // vlist contains a single element.
+        while (!isTerminalNode(n)) {
+          n = getDownPtr(n, vlist[getNodeHeight(n)]);
+        }
+        return n;
+    }
 
     // This create a MTMDD from a collection of edges (represented 
     // as vectors).
@@ -116,7 +122,9 @@ class MEDDLY::mtmdd_forest : public mt_forest {
       void createEdgeInternal(const int* const* vlist,
           const T* terms, int N, dd_edge &e);
 
-    // Create edge representing f(vlist[]) = term and store it in curr.
+  protected: // still to be organized
+
+    // Create edge representing f(vlist[]) = term and store it in e
     void createEdge(const int* vlist, int term, dd_edge& e);
 
     // Create a node, at level k, whose ith index points to dptr.
@@ -129,18 +137,6 @@ class MEDDLY::mtmdd_forest : public mt_forest {
     // are "transferred" from the dptr vector.
     int createNode(int lh, std::vector<int>& index, std::vector<int>& dptr);
 
-    // Creates an edge representing the terminal node given by
-    // terminalNode.
-    // Note: terminalNode is usually a terminal value converted into
-    // the equivalent node representation. This makes this method useful
-    // for createEdge(int, e) or (float, e) or (bool, e) as long as the
-    // terminal value can be converted into an equivalent node.
-    void createEdgeHelper(int terminalNode, dd_edge& e);
-
-    // Get the terminal node at the bottom of the edge with root n
-    // and vlist representing the indexes for the levels.
-    // Used by evaluate()
-    int getTerminalNodeForEdge(int n, const int* vlist) const;
 
     template <typename T>
     T handleMultipleTerminalValues(const T* tList, int begin, int end);

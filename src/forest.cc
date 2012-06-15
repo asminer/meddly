@@ -395,6 +395,21 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
 MEDDLY::expert_forest::~expert_forest() {
 }
 
+int MEDDLY::expert_forest::reduceNode(int node)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::expert_forest::normalizeAndReduceNode(int& node, int& ev)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::expert_forest::normalizeAndReduceNode(int& node, float& ev)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
 // TODO: make use of pointers to speed this up.
 int MEDDLY::expert_forest::getDownPtr(int p, int i) const {
   MEDDLY_DCASSERT(isActiveNode(p));

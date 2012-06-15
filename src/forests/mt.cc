@@ -54,6 +54,13 @@
 const int add_size = 1024;
 const int l_add_size = 24;
 
+// ******************************************************************
+// *                                                                *
+// *                         public methods                         *
+// *                                                                *
+// ******************************************************************
+
+
 MEDDLY::mt_forest::mt_forest(int dsl, domain *d, bool rel, range_type t,
   edge_labeling ev, const policies &p, int dataHeaderSize)
 : expert_forest(dsl, d, rel, t, ev, p)
@@ -95,6 +102,18 @@ MEDDLY::mt_forest::mt_forest(int dsl, domain *d, bool rel, range_type t,
   nodeB = 0;
 }
 
+// ******************************************************************
+// *                                                                *
+// *                       protected  methods                       *
+// *                                                                *
+// ******************************************************************
+
+
+// ******************************************************************
+// *                                                                *
+// *                      disorganized methods                      *
+// *                                                                *
+// ******************************************************************
 
 #if 1
 
@@ -364,39 +383,6 @@ int* MEDDLY::mt_forest::getTerminalNodes(int n, float* terms)
   }
   return dptrs;
 }
-
-
-/*
-void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
-    dd_edge& result)
-{
-  if (!isValidVariable(vh)) 
-    throw error(error::INVALID_VARIABLE);
-  if (result.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-
-  int k = primedLevel? -vh: vh;
-  MEDDLY_DCASSERT(isValidLevel(k));
-  int node = getLevelNode(k);
-
-  if (node == 0) {
-    if (!isForRelations() && primedLevel) 
-      throw error(error::INVALID_ASSIGNMENT);
-    if (getRangeType() == forest::BOOLEAN && getLevelSize(vh) > 2)
-      throw error(error::INVALID_OPERATION);
-    if (getEdgeLabeling() != MULTI_TERMINAL)
-      throw error(error::INVALID_OPERATION);
-    int *terminalNodes = getTerminalNodes(getLevelSize(vh));
-    buildLevelNode(k, terminalNodes, getLevelSize(vh));
-    node = getLevelNode(k);
-    MEDDLY_DCASSERT(node != 0 ||
-        node == 0 && getLevelSize(vh) == 1 && terminalNodes[0] == 0);
-  }
-
-  linkNode(node);
-  result.set(node, 0, getNodeLevel(node));
-}
-*/
 
 
 void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
@@ -3015,25 +3001,6 @@ int MEDDLY::mt_forest::createTempNode(int k, int sz, bool clear)
   nodes_activated_since_gc++;
 
   return p;
-}
-
-
-int MEDDLY::mt_forest::reduceNode(int node) {
-  fprintf(stderr, "Error:\n");
-  fprintf(stderr, "  Called reduceNode() for a forest with edge-values.\n");
-  fprintf(stderr, "  Call normalizeAndReduceNode() instead.\n");
-  fflush(stderr);
-  return 0;
-}
-
-
-void MEDDLY::mt_forest::normalizeAndReduceNode(int& node, int& ev) {
-  fprintf(stderr, "Error:\n");
-  fprintf(stderr, "  Called normalizeAndReduceNode() for a forest\n");
-  fprintf(stderr, "  without edge-values. Call reduceNode() instead.\n");
-  fflush(stderr);
-  node = 0;
-  ev = INF;
 }
 
 

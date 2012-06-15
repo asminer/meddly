@@ -60,23 +60,7 @@ class MEDDLY::mtmxd_forest : public mt_forest {
   // Data Header Size: 4
 
   public:
-
-  //  mtmxd_forest(int dsl, domain *d, forest::range_type t);
     ~mtmxd_forest();
-
-    // Refer to meddly.h
-    void createEdge(const int* const* vlist, const int* const* vplist,
-        const int* terms, int N, dd_edge& e);
-    void createEdge(const int* const* vlist, const int* const* vplist,
-        const float* terms, int N, dd_edge& e);
-
-    void createEdge(int val, dd_edge &e);
-    void createEdge(float val, dd_edge &e);
-
-    void evaluate(const dd_edge& f, const int* vlist, const int* vplist,
-        int &term) const;
-    void evaluate(const dd_edge& f, const int* vlist, const int* vplist,
-        float &term) const;
 
     virtual void findFirstElement(const dd_edge& f, int* vlist, int* vplist)
       const;
@@ -85,37 +69,6 @@ class MEDDLY::mtmxd_forest : public mt_forest {
     virtual void resizeNode(int node, int size);
 
     virtual int reduceNode(int p);
-
-  public:
-
-    // Refer to meddly_expert.h
-    // The following will either abort or return an error since they are not
-    // applicable to this forest.
-    virtual void normalizeAndReduceNode(int& p, int& ev);
-    virtual void normalizeAndReduceNode(int& p, float& ev);
-
-    // Refer to meddly.h
-    // The following will either abort or return an error since they are not
-    // applicable to this forest.
-
-    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const int* terms, int N,
-        dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const float* terms,
-        int N, dd_edge &e);
-
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-        int N, dd_edge &e);
-    virtual void createEdge(bool val, dd_edge &e);
-
-    virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
-      const;
-    virtual void evaluate(const dd_edge &f, const int* vlist, int &term)
-      const;
-    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
-      const;
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, bool &term) const;
 
   protected:
 
@@ -141,7 +94,7 @@ class MEDDLY::mtmxd_forest : public mt_forest {
 
     // Creates a top-level node representing {-1, -1, ..., -1} = terminal node
     // (not value), and returns it (returned node is already linked to.
-    int createEdge(int termNode);
+    int createEdgeTo(int termNode);
 
     // Starting at height given by {startAtHeight, primedLevel},
     // creates a node representing v[] vp[] = terminal node (not value)

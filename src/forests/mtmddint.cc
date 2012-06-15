@@ -31,3 +31,28 @@ MEDDLY::mt_mdd_int::mt_mdd_int(int dsl, domain *d, const policies &p)
 MEDDLY::mt_mdd_int::~mt_mdd_int()
 { }
 
+void MEDDLY::mt_mdd_int::createEdge(int term, dd_edge& e)
+{
+  if (e.getForest() != this) throw error(error::INVALID_OPERATION);
+  createEdgeHelper(getTerminalNode(term), e);
+}
+
+void MEDDLY::mt_mdd_int::createEdge(const int* const* vlist,
+    const int* terms, int N, dd_edge& e)
+{
+  if (e.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
+  if (vlist == 0 || terms == 0 || N <= 0) 
+    throw error(error::INVALID_VARIABLE);
+
+  createEdgeInternal(vlist, terms, N, e);
+}
+
+void MEDDLY::mt_mdd_int::evaluate(const dd_edge &f,
+    const int* vlist, int &term) const
+{
+  // assumption: vlist does not contain any special values (-1, -2, etc).
+  // vlist contains a single element.
+  term = getInteger(getTerminalNodeForEdge(f.getNode(), vlist));
+}
+

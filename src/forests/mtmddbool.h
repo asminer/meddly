@@ -39,26 +39,9 @@ class MEDDLY::mt_mdd_bool : public mtmdd_forest {
     mt_mdd_bool(int dsl, domain *d, const policies &p);
     ~mt_mdd_bool();
 
-    using mtmdd_forest::createEdge;
-    using mtmdd_forest::evaluate;
-
-    // Refer to meddly.h
-    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
     virtual void createEdge(bool val, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
     virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
-      const;
-
-    // The following will either abort or return an error since they are not
-    // applicable to this forest.
-    virtual void createEdge(const int* const* vlist, const int* terms, int N,
-        dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const float* terms,
-        int N, dd_edge &e);
-    virtual void createEdge(int val, dd_edge &e);
-    virtual void createEdge(float val, dd_edge &e);
-    virtual void evaluate(const dd_edge &f, const int* vlist, int &term)
-      const;
-    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
       const;
 };
 

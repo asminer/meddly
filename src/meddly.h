@@ -696,6 +696,8 @@ class MEDDLY::forest {
 
     friend void MEDDLY::destroyForest(MEDDLY::forest* &f);
 
+  // ------------------------------------------------------------
+  // inlines.
   public:
 
     /// Returns a non-modifiable pointer to this forest's domain.
@@ -856,45 +858,18 @@ class MEDDLY::forest {
       return stats.peak_memory_alloc;
     }
 
+  // ------------------------------------------------------------
+  // non-virtual.
+  public:
     /// Remove any stale compute table entries associated with this forest.
     void removeStaleComputeTableEntries();
 
     /// Remove all compute table entries associated with this forest.
     void removeAllComputeTableEntries();
 
-    /** Force garbage collection.
-        All disconnected nodes in this forest are discarded along with any
-        compute table entries that may include them.
-    */
-    virtual void garbageCollect() = 0;
-
-    /** Compact the memory for all variables in this forest.
-        This is not the same as garbage collection.
-    */
-    virtual void compactMemory() = 0;
-
-    /** Create an edge representing the subset of a Matrix Diagram.
-
-        size(vlist) == number of variables in the forest + 1 (for terminals)
-        size(vlist[i]) == size (i.e. bound) of variable i
-        size(vlist) == size(vplist)
-        size(vlist[i]) == size(vplist[i])
-        If vlist[i][j] is true, that index is included in the mask
-        If vlist[i][j] is false, that index is excluded from the mask.
-        
-        TODO: write a better description (an example might also help).
-    */
-    virtual void createSubMatrix(const bool* const* vlist,
-      const bool* const* vplist, const dd_edge a, dd_edge& b) = 0;
-
-
-    /** Returns element \a e at index \a i from an Index Set EV+MDD.
-    
-        size(e) = number of variables in the forest + 1 (for terminals).
-        TODO: complete this description
-    */
-    virtual void getElement(const dd_edge& a, int index, int* e) = 0;
-
+  // ------------------------------------------------------------
+  // virtual, with default implementation.
+  public:
 
     /** Create an edge such that
         f(v_1, ..., vh=i, ..., v_n) = terms[i] for 0 <= i < size(vh).
@@ -1307,6 +1282,43 @@ class MEDDLY::forest {
       const int* vplist, float &term) const;
 
 
+  // ------------------------------------------------------------
+  // abstract virtual.
+  public:
+    /** Force garbage collection.
+        All disconnected nodes in this forest are discarded along with any
+        compute table entries that may include them.
+    */
+    virtual void garbageCollect() = 0;
+
+    /** Compact the memory for all variables in this forest.
+        This is not the same as garbage collection.
+    */
+    virtual void compactMemory() = 0;
+
+    /** Create an edge representing the subset of a Matrix Diagram.
+
+        size(vlist) == number of variables in the forest + 1 (for terminals)
+        size(vlist[i]) == size (i.e. bound) of variable i
+        size(vlist) == size(vplist)
+        size(vlist[i]) == size(vplist[i])
+        If vlist[i][j] is true, that index is included in the mask
+        If vlist[i][j] is false, that index is excluded from the mask.
+        
+        TODO: write a better description (an example might also help).
+    */
+    virtual void createSubMatrix(const bool* const* vlist,
+      const bool* const* vplist, const dd_edge a, dd_edge& b) = 0;
+
+
+    /** Returns element \a e at index \a i from an Index Set EV+MDD.
+    
+        size(e) = number of variables in the forest + 1 (for terminals).
+        TODO: complete this description
+    */
+    virtual void getElement(const dd_edge& a, int index, int* e) = 0;
+
+
     /** Returns a state from the MDD represented by \a f.
         @param  f       Edge.
         @param  vlist   Output parameter used to return a state from \a f.
@@ -1334,6 +1346,8 @@ class MEDDLY::forest {
     */
     virtual void showInfo(FILE* strm, int verbosity=0) = 0;
 
+  // ------------------------------------------------------------
+  // For derived classes.
   protected:
     // for debugging:
     void showComputeTable(FILE* s, int verbLevel) const;
@@ -1342,6 +1356,12 @@ class MEDDLY::forest {
       return is_marked_for_deletion;
     }
 
+  protected:
+    policies deflt;
+    statset stats;
+
+  // ------------------------------------------------------------
+  // Ugly details from here down.
   private:  // Domain info 
     friend class domain;
     int d_slot;
@@ -1392,9 +1412,6 @@ class MEDDLY::forest {
     bool is_marked_for_deletion;
     range_type rangeType;
     edge_labeling edgeLabel;
-  protected:
-    policies deflt;
-    statset stats;
 };
 
 // ******************************************************************

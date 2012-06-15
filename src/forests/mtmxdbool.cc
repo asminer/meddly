@@ -37,6 +37,17 @@ MEDDLY::mt_mxd_bool::~mt_mxd_bool()
 { }
 
 
+void MEDDLY::mt_mxd_bool::createEdge(bool val, dd_edge &e)
+{
+  MEDDLY_DCASSERT(getRangeType() == forest::BOOLEAN);
+  if (e.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
+
+  int node = createEdgeTo(getTerminalNode(val));
+  e.set(node, 0, getNodeLevel(node));
+}
+
+
 void MEDDLY::mt_mxd_bool::createEdge(const int* const* vlist,
     const int* const* vplist, int N, dd_edge &e)
 {
@@ -45,17 +56,6 @@ void MEDDLY::mt_mxd_bool::createEdge(const int* const* vlist,
   if (vlist == 0 || vplist == 0 || N <= 0) 
     throw error(error::INVALID_VARIABLE);
   createEdgeInternal(vlist, vplist, (bool*)0, N, e);
-}
-
-
-void MEDDLY::mt_mxd_bool::createEdge(bool val, dd_edge &e)
-{
-  MEDDLY_DCASSERT(getRangeType() == forest::BOOLEAN);
-  if (e.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-
-  int node = createEdge(getTerminalNode(val));
-  e.set(node, 0, getNodeLevel(node));
 }
 
 
@@ -71,46 +71,6 @@ void MEDDLY::mt_mxd_bool::evaluate(const dd_edge& f, const int* vlist,
   // assumption: vlist and vplist do not contain any special values
   // (-1, -2, etc). vlist and vplist contains a single element.
   term = getBoolean(getTerminalNodeForEdge(f.getNode(), vlist, vplist));
-}
-
-
-void MEDDLY::mt_mxd_bool::createEdge(const int* const* vlist,
-    const int* const* vplist, const int* terms, int N, dd_edge &e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void MEDDLY::mt_mxd_bool::createEdge(const int* const* vlist,
-    const int* const* vplist, const float* terms, int N, dd_edge &e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void MEDDLY::mt_mxd_bool::createEdge(int val, dd_edge &e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void MEDDLY::mt_mxd_bool::createEdge(float val, dd_edge &e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void MEDDLY::mt_mxd_bool::evaluate(const dd_edge& f, const int* vlist,
-    const int* vplist, int &term) const
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void MEDDLY::mt_mxd_bool::evaluate(const dd_edge& f, const int* vlist,
-    const int* vplist, float &term) const
-{
-  throw error(error::INVALID_OPERATION);
 }
 
 

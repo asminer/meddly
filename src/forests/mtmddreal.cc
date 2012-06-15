@@ -31,3 +31,29 @@ MEDDLY::mt_mdd_real::mt_mdd_real(int dsl, domain *d, const policies &p)
 MEDDLY::mt_mdd_real::~mt_mdd_real()
 { }
 
+void MEDDLY::mt_mdd_real::createEdge(float term, dd_edge& e)
+{
+  if (e.getForest() != this) throw error(error::INVALID_OPERATION);
+  createEdgeHelper(getTerminalNode(term), e);
+}
+
+void MEDDLY::mt_mdd_real::createEdge(const int* const* vlist,
+    const float* terms, int N, dd_edge& e)
+{
+  if (e.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
+  if (vlist == 0 || terms == 0 || N <= 0) 
+    throw error(error::INVALID_VARIABLE);
+
+  createEdgeInternal(vlist, terms, N, e);
+}
+
+void MEDDLY::mt_mdd_real::evaluate(const dd_edge &f,
+    const int* vlist, float &term) const
+{
+  // assumption: vlist does not contain any special values (-1, -2, etc).
+  // vlist contains a single element.
+  term = getReal(getTerminalNodeForEdge(f.getNode(), vlist));
+}
+
+

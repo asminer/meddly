@@ -31,3 +31,41 @@ MEDDLY::mt_mxd_real::mt_mxd_real(int dsl, domain *d, const policies &p)
 MEDDLY::mt_mxd_real::~mt_mxd_real()
 { }
 
+void MEDDLY::mt_mxd_real::createEdge(float val, dd_edge &e)
+{
+  MEDDLY_DCASSERT(getRangeType() == forest::REAL);
+  if (e.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
+
+  int node = createEdgeTo(getTerminalNode(val));
+  e.set(node, 0, getNodeLevel(node));
+}
+
+
+void MEDDLY::mt_mxd_real::createEdge(const int* const* vlist,
+    const int* const* vplist, const float* terms, int N, dd_edge& e)
+{
+  if (e.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
+  if (vlist == 0 || vplist == 0 || terms == 0 || N <= 0)
+    throw error(error::INVALID_VARIABLE);
+
+  createEdgeInternal(vlist, vplist, terms, N, e);
+}
+
+
+void MEDDLY::mt_mxd_real::evaluate(const dd_edge& f, const int* vlist,
+    const int* vplist, float &term) const
+{
+  MEDDLY_DCASSERT(getRangeType() == forest::REAL);
+  if (f.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
+  if (vlist == 0 || vplist == 0) 
+    throw error(error::INVALID_VARIABLE);
+
+  // assumption: vlist and vplist do not contain any special values
+  // (-1, -2, etc). vlist and vplist contains a single element.
+  term = getReal(getTerminalNodeForEdge(f.getNode(), vlist, vplist));
+}
+
+

@@ -124,25 +124,11 @@ class MEDDLY::mt_forest : public expert_forest {
         const policies &p, int dataHeaderSize);
     virtual ~mt_forest();
 
-    // ------------- inherited from expert_forest ---------------------------
-
   public:
     using expert_forest::getDownPtrsAndEdgeValues;
     using expert_forest::getSparseNodeIndexes;
-    /*
-    using expert_forest::createTempNode;
-    using expert_forest::getDownPtr;
-    using expert_forest::resizeNode;
-    using expert_forest::makeACopy;
-    using expert_forest::reduceNode;
-    using expert_forest::normalizeAndReduceNode;
-    using expert_forest::accumulate;
-    using expert_forest::isReducedNode;
-    using expert_forest::isStale;
-    */
 
     /// Refer to meddly.h
-    // void createEdgeForVar(int vh, bool primedLevel, dd_edge& result);
     void createEdgeForVar(int vh, bool primedLevel,
         bool* terms, dd_edge& a);
     void createEdgeForVar(int vh, bool primedLevel,
@@ -188,11 +174,6 @@ class MEDDLY::mt_forest : public expert_forest {
     virtual int createTempNode(int lh, std::vector<int>& downPointers,
         std::vector<float>& edgeValues) { return 0; }
 
-    /// Apply reduction rule to the temporary node and finalize it. Once
-    /// a node is reduced, its contents cannot be modified.
-    virtual int reduceNode(int node) = 0;
-    // Dummy version available here.
-
     // Helpers for reduceNode().
     // These method assume that the top leve node is a temporary node
     // whose children may be either reduced or temporary nodes
@@ -204,10 +185,6 @@ class MEDDLY::mt_forest : public expert_forest {
     // operations by specifying clearCache to false.
     int recursiveReduceNode(int tempNode, bool clearCache = true);
     int recursiveReduceNode(std::map<int, int>& cache, int root);
-
-    /// Reduce and finalize an node with an incoming edge value
-    virtual void normalizeAndReduceNode(int& node, int& ev) = 0;
-    // Dummy version available here.
 
     // Similar to getDownPtrs() but for EV+MDDs
     virtual bool getDownPtrsAndEdgeValues(int node,
@@ -320,20 +297,6 @@ class MEDDLY::mt_forest : public expert_forest {
     bool isCounting();
 
   protected:
-    // Updating stats
-    /*
-    inline void updateNodesUsed(int delta);
-
-    inline void updateMemoryAllocated(long bytes) {
-      perf.current.MemAlloc += bytes;
-      if (perf.current.MemAlloc > perf.peak.MemAlloc)
-        curr_mem_alloc > max_mem_alloc) max_mem_alloc = curr_mem_alloc;
-#if 0
-  printf("%p: Curr: %d, Peak: %d\n", this, curr_mem_alloc, max_mem_alloc);
-#endif
-}
-    */
-
     // Building level nodes
     int getLevelNode(int lh) const;
     int buildLevelNodeHelper(int lh, int* terminalNodes, int sz);

@@ -23,23 +23,6 @@
 #include "mtmxd.h"
 
 
-/*
-MEDDLY::mtmxd_forest::mtmxd_forest(int dsl, domain *d, forest::range_type t)
-: mt_forest(dsl, d, true, t,
-      forest::MULTI_TERMINAL, forest::IDENTITY_REDUCED,
-      forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION,
-      mtmxdDataHeaderSize)
-{
-  pList = 0;
-  unpList = 0;
-  tList = 0;
-  listSize = 0;
-  count = 0;
-  slot = 0;
-  countSize = 0;
-}
-*/
-
 MEDDLY::mtmxd_forest::mtmxd_forest(int dsl, domain *d,
     bool relation, forest::range_type t,
     forest::edge_labeling e, const policies &p)
@@ -479,31 +462,7 @@ void MEDDLY::mtmxd_forest::createEdge(const int* v, const int* vp, int term,
 }
 
 
-void MEDDLY::mtmxd_forest::createEdge(const int* const* vlist,
-    const int* const* vplist, const int* terms, int N, dd_edge& e)
-{
-  if (e.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-  if (vlist == 0 || vplist == 0 || terms == 0 || N <= 0)
-    throw error(error::INVALID_VARIABLE);
-
-  createEdgeInternal(vlist, vplist, terms, N, e);
-}
-
-
-void MEDDLY::mtmxd_forest::createEdge(const int* const* vlist,
-    const int* const* vplist, const float* terms, int N, dd_edge& e)
-{
-  if (e.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-  if (vlist == 0 || vplist == 0 || terms == 0 || N <= 0)
-    throw error(error::INVALID_VARIABLE);
-
-  createEdgeInternal(vlist, vplist, terms, N, e);
-}
-
-
-int MEDDLY::mtmxd_forest::createEdge(int dptr)
+int MEDDLY::mtmxd_forest::createEdgeTo(int dptr)
 {
   MEDDLY_DCASSERT(isTerminalNode(dptr));
   if (dptr == 0) return 0;
@@ -519,28 +478,6 @@ int MEDDLY::mtmxd_forest::createEdge(int dptr)
     unlinkNode(prev);
   }
   return curr;
-}
-
-
-void MEDDLY::mtmxd_forest::createEdge(int val, dd_edge &e)
-{
-  MEDDLY_DCASSERT(getRangeType() == forest::INTEGER);
-  if (e.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-
-  int node = createEdge(getTerminalNode(val));
-  e.set(node, 0, getNodeLevel(node));
-}
-
-
-void MEDDLY::mtmxd_forest::createEdge(float val, dd_edge &e)
-{
-  MEDDLY_DCASSERT(getRangeType() == forest::REAL);
-  if (e.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-
-  int node = createEdge(getTerminalNode(val));
-  e.set(node, 0, getNodeLevel(node));
 }
 
 
@@ -591,110 +528,6 @@ int MEDDLY::mtmxd_forest::getTerminalNodeForEdge(int n, const int* vlist,
 
   }
   return n;
-}
-
-
-void MEDDLY::mtmxd_forest::evaluate(const dd_edge& f, const int* vlist,
-    const int* vplist, int &term) const
-{
-  MEDDLY_DCASSERT(getRangeType() == forest::INTEGER);
-  if (f.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-  if (vlist == 0 || vplist == 0) 
-    throw error(error::INVALID_VARIABLE);
-
-  // assumption: vlist and vplist do not contain any special values
-  // (-1, -2, etc). vlist and vplist contains a single element.
-  term = getInteger(getTerminalNodeForEdge(f.getNode(), vlist, vplist));
-}
-
-
-void MEDDLY::mtmxd_forest::evaluate(const dd_edge& f, const int* vlist,
-    const int* vplist, float &term) const
-{
-  MEDDLY_DCASSERT(getRangeType() == forest::REAL);
-  if (f.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-  if (vlist == 0 || vplist == 0) 
-    throw error(error::INVALID_VARIABLE);
-
-  // assumption: vlist and vplist do not contain any special values
-  // (-1, -2, etc). vlist and vplist contains a single element.
-  term = getReal(getTerminalNodeForEdge(f.getNode(), vlist, vplist));
-}
-
-
-void MEDDLY::mtmxd_forest::normalizeAndReduceNode(int& p, int& ev)
-{
-  assert(false);
-}
-
-
-void MEDDLY::mtmxd_forest::normalizeAndReduceNode(int& p, float& ev)
-{
-  assert(false);
-}
-
-
-void MEDDLY::mtmxd_forest::createEdge(const int* const* vlist, int N,
-    dd_edge &e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void MEDDLY::mtmxd_forest::createEdge(const int* const* vlist,
-    const int* terms, int N, dd_edge &e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void MEDDLY::mtmxd_forest::createEdge(const int* const* vlist,
-    const float* terms, int n, dd_edge &e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void MEDDLY::mtmxd_forest::createEdge(const int* const* vlist,
-    const int* const* vplist, int N, dd_edge &e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void MEDDLY::mtmxd_forest::createEdge(bool val, dd_edge &e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void MEDDLY::mtmxd_forest::evaluate(const dd_edge &f, const int* vlist,
-    bool &term) const
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void MEDDLY::mtmxd_forest::evaluate(const dd_edge &f, const int* vlist,
-    int &term) const
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void MEDDLY::mtmxd_forest::evaluate(const dd_edge &f, const int* vlist,
-    float &term) const
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void MEDDLY::mtmxd_forest::evaluate(const dd_edge& f, const int* vlist,
-    const int* vplist, bool &term) const
-{
-  throw error(error::INVALID_OPERATION);
 }
 
 
