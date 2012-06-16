@@ -438,7 +438,15 @@ void MEDDLY::cleanup()
   }
 
 #endif
+  domain::markDomList();
+  purgeMarkedOperations();
+  domain::deleteDomList();
 
+  // clean up operation cache 
+  delete[] op_cache;
+  op_cache = 0;
+
+/*
   // clean up domains (should catch all forests)
   domain::markDomList();
   domain::deleteDomList();
@@ -451,11 +459,11 @@ void MEDDLY::cleanup()
   for (int i=0; i<operation::getOpListSize(); i++) {
     destroyOpInternal(operation::getOpWithIndex(i));
   }
+*/
 
   // clean up compute table
   delete operation::Monolithic_CT;
   operation::Monolithic_CT = 0;
-
 
   if (meddlySettings.operationBuilder) 
     meddlySettings.operationBuilder->cleanupChain();
