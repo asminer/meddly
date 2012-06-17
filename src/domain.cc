@@ -132,6 +132,7 @@ MEDDLY::domain::domain(variable** v, int N)
   for (int i=1; i<N; i++) {
     ((expert_variable*)vars[i])->addToList(this);
   }
+  is_marked_for_deletion = false;
   forests = 0;
   szForests = 0;
 
@@ -165,7 +166,6 @@ MEDDLY::domain::~domain()
 
   for (int i=0; i<szForests; i++) {
     delete forests[i];
-    MEDDLY_DCASSERT(0==forests[i]);
   }
   free(forests);
 
@@ -328,6 +328,7 @@ void MEDDLY::domain::markForDeletion()
 #ifdef DEBUG_CLEANUP
   fprintf(stderr, "Marking domain #%d for deletion\n", my_index);
 #endif
+  is_marked_for_deletion = true;
   for (int slot=0; slot<szForests; slot++) 
     if (forests[slot]) forests[slot]->markForDeletion();
 }

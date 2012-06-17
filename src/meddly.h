@@ -691,11 +691,6 @@ class MEDDLY::forest {
     /// Destructor.
     virtual ~forest();  
 
-    /// Phase one destruction.
-    void markForDeletion();
-
-    friend void MEDDLY::destroyForest(MEDDLY::forest* &f);
-
   // ------------------------------------------------------------
   // inlines.
   public:
@@ -857,6 +852,9 @@ class MEDDLY::forest {
     inline long getPeakMemoryAllocated() const {
       return stats.peak_memory_alloc;
     }
+
+    /// Are we about to be deleted?
+    inline bool isMarkedForDeletion() const { return is_marked_for_deletion; }
 
   // ------------------------------------------------------------
   // non-virtual.
@@ -1352,10 +1350,6 @@ class MEDDLY::forest {
     // for debugging:
     void showComputeTable(FILE* s, int verbLevel) const;
 
-    inline bool isMarkedForDeletion() const {
-      return is_marked_for_deletion;
-    }
-
   protected:
     policies deflt;
     statset stats;
@@ -1412,6 +1406,12 @@ class MEDDLY::forest {
     bool is_marked_for_deletion;
     range_type rangeType;
     edge_labeling edgeLabel;
+
+    /// Mark for deletion.
+    void markForDeletion();
+
+    friend void MEDDLY::destroyForest(MEDDLY::forest* &f);
+
 };
 
 // ******************************************************************
@@ -1594,9 +1594,8 @@ class MEDDLY::domain {
     variable** vars;
     int nVars;
 
-    friend void MEDDLY::cleanup();
-
   private:
+    bool is_marked_for_deletion;
     forest** forests;
     int szForests;
 
@@ -1607,9 +1606,11 @@ class MEDDLY::domain {
     void markForDeletion();
 
     friend void MEDDLY::destroyDomain(domain* &d);
+    friend void MEDDLY::cleanup();
 
   public:
     inline bool hasForests() const { return forests; }
+    inline bool isMarkedForDeletion() const { return is_marked_for_deletion; }
 
   private:
     /// List of all domains; initialized in meddly.cc

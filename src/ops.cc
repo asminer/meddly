@@ -203,8 +203,9 @@ void MEDDLY::operation::markForDeletion()
   if (CT && CT->isOperationTable()) CT->removeStales();
 }
 
-void MEDDLY::operation::destroyOpList()
+void MEDDLY::operation::destroyAllOps() 
 {
+  for (int i=0; i<list_size; i++) delete op_list[i];
   free(op_list);
   free(op_holes);
   op_list = 0;

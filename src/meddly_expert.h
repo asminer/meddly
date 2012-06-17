@@ -1336,9 +1336,6 @@ class MEDDLY::operation {
     const opname* theOpName;
     bool is_marked_for_deletion;
 
-    friend void MEDDLY::initialize(const settings &);
-    friend void MEDDLY::cleanup();
-
     // declared and initialized in meddly.cc
     static compute_table* Monolithic_CT;
     // declared and initialized in meddly.cc
@@ -1390,7 +1387,9 @@ class MEDDLY::operation {
     void markForDeletion();
 
     friend class forest;
+    friend void MEDDLY::initialize(const settings &);
     friend void MEDDLY::destroyOpInternal(operation* op);
+    friend void MEDDLY::cleanup();
 
     inline void registerInForest(forest* f) { 
       if (f) f->registerOperation(this); 
@@ -1400,11 +1399,12 @@ class MEDDLY::operation {
       if (f) f->unregisterOperation(this); 
     }
 
+  private:
+    // should ONLY be called during library cleanup.
+    static void destroyAllOps();
+
   public:
     inline bool isMarkedForDeletion() const { return is_marked_for_deletion; }
-
-    // should ONLY be called during library cleanup.
-    static void destroyOpList();
 
     inline void setNext(operation* n) { next = n; }
     inline operation* getNext()       { return next; }
