@@ -20,12 +20,12 @@
 */
 
 
-// TODO: implement changes made to node_manager interface
+// TODO: implement changes made to mt_forest interface
 //
 // TODO: HERE: go through every function in mdds.h and mdds.cc
 
 
-#include "mdds.h"
+#include "mt.h"
 
 #include <map>    // for getCardinality()
 #include <queue>  // for showNodeGraph
@@ -54,38 +54,35 @@
 const int add_size = 1024;
 const int l_add_size = 24;
 
-node_manager::node_manager(int dsl, domain *d, bool rel, range_type t,
-  edge_labeling ev, reduction_rule r, node_storage s, node_deletion_policy nd,
-  int dataHeaderSize)
-: expert_forest(dsl, d, rel, t, ev, r, s, nd)
+// ******************************************************************
+// *                                                                *
+// *                         public methods                         *
+// *                                                                *
+// ******************************************************************
+
+
+MEDDLY::mt_forest::mt_forest(int dsl, domain *d, bool rel, range_type t,
+  edge_labeling ev, const policies &p, int dataHeaderSize)
+: expert_forest(dsl, d, rel, t, ev, p)
 {
   this->dataHeaderSize = dataHeaderSize;
 
-  MEDDLY_DCASSERT(d != NULL);
-  expertDomain = smart_cast<expert_domain*>(d);
-  MEDDLY_DCASSERT(expertDomain != NULL);
-
-  curr_mem_alloc = max_mem_alloc = 0;
   a_size = add_size;
   address = (mdd_node_data *) malloc(a_size * sizeof(mdd_node_data));
   if (NULL == address) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
-  updateMemoryAllocated(a_size * sizeof(mdd_node_data));
+  stats.incMemAlloc(a_size * sizeof(mdd_node_data));
   memset(address, 0, a_size * sizeof(mdd_node_data));
   a_last = peak_nodes = a_unused = 0;
   
   l_size = l_add_size;
   level = (mdd_level_data *) malloc(l_size * sizeof(mdd_level_data));
   if (NULL == level) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
-  updateMemoryAllocated(l_size * sizeof(mdd_level_data));
+  stats.incMemAlloc(l_size * sizeof(mdd_level_data));
   memset(level, 0, l_size * sizeof(mdd_level_data));
 
-  unique = new mdd_hash_table<node_manager> (this);
-  curr_slots = max_slots = max_hole_chain = num_compactions = 0;
-  active_nodes = zombie_nodes = orphan_nodes = temp_nodes = reclaimed_nodes = 0;
+  unique = new mdd_hash_table<mt_forest> (this);
+  max_hole_chain = 0;
 
-  // default policies
-  performing_gc = false;
-  nodes_activated_since_gc = 0;
   delete_terminal_nodes = false;
 #if 1
   holeRecycling = true;
@@ -93,17 +90,8 @@ node_manager::node_manager(int dsl, domain *d, bool rel, range_type t,
   holeRecycling = false;
 #endif
 
-#if 1
-  // atmost 100% of the data can be holes, effectively infinite
-#if 0
-  setCompactionThreshold(50);
-#else
-  setCompactionThreshold(40);
-#endif
-
   // set level sizes
   setLevelBounds();
-#endif
 
   counting = false;
 
@@ -114,11 +102,23 @@ node_manager::node_manager(int dsl, domain *d, bool rel, range_type t,
   nodeB = 0;
 }
 
+// ******************************************************************
+// *                                                                *
+// *                       protected  methods                       *
+// *                                                                *
+// ******************************************************************
+
+
+// ******************************************************************
+// *                                                                *
+// *                      disorganized methods                      *
+// *                                                                *
+// ******************************************************************
 
 #if 1
 
 
-int node_manager::buildLevelNodeHelper(int lh, int* dptrs, int sz)
+int MEDDLY::mt_forest::buildLevelNodeHelper(int lh, int* dptrs, int sz)
 {
   MEDDLY_DCASSERT(dptrs != 0);
   MEDDLY_DCASSERT(sz > 0);
@@ -132,7 +132,7 @@ int node_manager::buildLevelNodeHelper(int lh, int* dptrs, int sz)
     //      dptrs[j] = node at level i with all downpointers to prev dptrs[j]
     //      do for primed first and then unprimed
 
-    if (getReductionRule() != forest::FULLY_REDUCED) {
+    if (!isFullyReduced()) {
       for (int i = 1; i < absLh; ++i)
       {
         for (int j = 0; j < sz; ++j)
@@ -166,7 +166,7 @@ int node_manager::buildLevelNodeHelper(int lh, int* dptrs, int sz)
       }
     }
   }
-  else if (getReductionRule() == forest::QUASI_REDUCED) {
+  else if (isQuasiReduced()) {
     MEDDLY_DCASSERT(!isForRelations());
     // build from bottom up
     // for i = 1 to lh-1
@@ -196,7 +196,7 @@ int node_manager::buildLevelNodeHelper(int lh, int* dptrs, int sz)
 
   // now build the levels above this node
   if (isForRelations()) {
-    if (getReductionRule() != forest::FULLY_REDUCED) {
+    if (!isFullyReduced()) {
       // build additional node at lh level if necessary
       if (lh < 0) {
         // build unprimed node at level ABS(lh)
@@ -207,7 +207,7 @@ int node_manager::buildLevelNodeHelper(int lh, int* dptrs, int sz)
       }
 
       // build primed and unprimed nodes for levels lh+1 to topLevel
-      int topHeight = d->getNumVariables();
+      int topHeight = getDomain()->getNumVariables();
       for (int i = absLh + 1; i <= topHeight; ++i)
       {
         // primed
@@ -224,10 +224,10 @@ int node_manager::buildLevelNodeHelper(int lh, int* dptrs, int sz)
     }
     // done building node for Relations
   }
-  else if (getReductionRule() == forest::QUASI_REDUCED) {
+  else if (isQuasiReduced()) {
     MEDDLY_DCASSERT(!isForRelations());
     // build nodes for levels above lh
-    int topHeight = d->getNumVariables();
+    int topHeight = getDomain()->getNumVariables();
     for (int i = absLh + 1; i <= topHeight; ++i)
     {
       int temp = createTempNodeMaxSize(i, false);
@@ -243,7 +243,7 @@ int node_manager::buildLevelNodeHelper(int lh, int* dptrs, int sz)
 }
 
 
-void node_manager::buildLevelNode(int lh, int* dptrs, int sz)
+void MEDDLY::mt_forest::buildLevelNode(int lh, int* dptrs, int sz)
 {
   MEDDLY_DCASSERT(getLevelNode(lh) == 0);
   MEDDLY_DCASSERT(dptrs != 0);
@@ -255,25 +255,25 @@ void node_manager::buildLevelNode(int lh, int* dptrs, int sz)
 }
 
 
-void node_manager::clearLevelNode(int lh)
+void MEDDLY::mt_forest::clearLevelNode(int lh)
 {
   unlinkNode(level[mapLevel(lh)].levelNode);
   level[mapLevel(lh)].levelNode = 0;
 }
 
 
-void node_manager::clearLevelNodes()
+void MEDDLY::mt_forest::clearLevelNodes()
 {
   // for each level, unlink the level node
   if (isForRelations()) {
-    for (int i = expertDomain->getNumVariables(); i; i--)
+    for (int i = getExpertDomain()->getNumVariables(); i; i--)
     {
       clearLevelNode(i);
       clearLevelNode(-i);
     }
   }
   else {
-    for (int i = expertDomain->getNumVariables(); i; i--)
+    for (int i = getExpertDomain()->getNumVariables(); i; i--)
     {
       clearLevelNode(i);
     }
@@ -282,13 +282,13 @@ void node_manager::clearLevelNodes()
 
 
 
-
-int* node_manager::getTerminalNodes(int n)
+/*
+int* MEDDLY::mt_forest::getTerminalNodes(int n)
 {
   // use the array that comes with object (saves having to alloc/dealloc)
   if (dptrsSize < n) {
     // array not large enough, expand
-    updateMemoryAllocated((n - dptrsSize) * sizeof(int));
+    stats.incMemAlloc((n - dptrsSize) * sizeof(int));
     dptrsSize = n;
     dptrs = (int *) realloc(dptrs, dptrsSize * sizeof(int));
     MEDDLY_DCASSERT(NULL != dptrs);
@@ -313,98 +313,79 @@ int* node_manager::getTerminalNodes(int n)
 
   return dptrs;
 }
+*/
 
-
-int* node_manager::getTerminalNodes(int n, bool* terms)
+int* MEDDLY::mt_forest::getTerminalNodes(int n, bool* terms)
 {
   MEDDLY_DCASSERT(n == 2);
   MEDDLY_DCASSERT(getRangeType() == forest::BOOLEAN);
-  MEDDLY_DCASSERT(terms != 0);
 
   // use the array that comes with object (saves having to alloc/dealloc)
   if (dptrsSize < n) {
     // array not large enough, expand
-    updateMemoryAllocated((n - dptrsSize) * sizeof(int));
+    stats.incMemAlloc((n - dptrsSize) * sizeof(int));
     dptrsSize = n;
     dptrs = (int *) realloc(dptrs, dptrsSize * sizeof(int));
     MEDDLY_DCASSERT(NULL != dptrs);
   }
+
   // fill array with terminal nodes
-  for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(terms[i]);
+  if (terms) {
+    for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(terms[i]);
+  } else {
+    dptrs[0] = getTerminalNode(false);
+    dptrs[1] = getTerminalNode(true);
+  }
   return dptrs;
 }
 
 
-int* node_manager::getTerminalNodes(int n, int* terms)
+int* MEDDLY::mt_forest::getTerminalNodes(int n, int* terms)
 {
   MEDDLY_DCASSERT(getRangeType() == forest::INTEGER);
-  MEDDLY_DCASSERT(terms != 0);
 
   // use the array that comes with object (saves having to alloc/dealloc)
   if (dptrsSize < n) {
     // array not large enough, expand
-    updateMemoryAllocated((n - dptrsSize) * sizeof(int));
+    stats.incMemAlloc((n - dptrsSize) * sizeof(int));
     dptrsSize = n;
     dptrs = (int *) realloc(dptrs, dptrsSize * sizeof(int));
     MEDDLY_DCASSERT(NULL != dptrs);
   }
+
   // fill array with terminal nodes
-  for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(terms[i]);
+  if (terms) {
+    for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(terms[i]);
+  } else {
+    for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(i);
+  }
   return dptrs;
 }
 
 
-int* node_manager::getTerminalNodes(int n, float* terms)
+int* MEDDLY::mt_forest::getTerminalNodes(int n, float* terms)
 {
   MEDDLY_DCASSERT(getRangeType() == forest::REAL);
-  MEDDLY_DCASSERT(terms != 0);
 
   // use the array that comes with object (saves having to alloc/dealloc)
   if (dptrsSize < n) {
     // array not large enough, expand
-    updateMemoryAllocated((n - dptrsSize) * sizeof(int));
+    stats.incMemAlloc((n - dptrsSize) * sizeof(int));
     dptrsSize = n;
     dptrs = (int *) realloc(dptrs, dptrsSize * sizeof(int));
     MEDDLY_DCASSERT(NULL != dptrs);
   }
   // fill array with terminal nodes
-  for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(terms[i]);
+  if (terms) {
+    for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(terms[i]);
+  } else {
+    for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(float(i));
+  }
   return dptrs;
 }
 
 
-void node_manager::createEdgeForVar(int vh, bool primedLevel,
-    dd_edge& result)
-{
-  if (!isValidVariable(vh)) 
-    throw error(error::INVALID_VARIABLE);
-  if (result.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-
-  int k = primedLevel? -vh: vh;
-  MEDDLY_DCASSERT(isValidLevel(k));
-  int node = getLevelNode(k);
-
-  if (node == 0) {
-    if (!isForRelations() && primedLevel) 
-      throw error(error::INVALID_ASSIGNMENT);
-    if (getRangeType() == forest::BOOLEAN && getLevelSize(vh) > 2)
-      throw error(error::INVALID_OPERATION);
-    if (getEdgeLabeling() != forest::MULTI_TERMINAL)
-      throw error(error::INVALID_OPERATION);
-    int *terminalNodes = getTerminalNodes(getLevelSize(vh));
-    buildLevelNode(k, terminalNodes, getLevelSize(vh));
-    node = getLevelNode(k);
-    MEDDLY_DCASSERT(node != 0 ||
-        node == 0 && getLevelSize(vh) == 1 && terminalNodes[0] == 0);
-  }
-
-  linkNode(node);
-  result.set(node, 0, getNodeLevel(node));
-}
-
-
-void node_manager::createEdgeForVar(int vh, bool primedLevel,
+void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
     bool* terms, dd_edge& result)
 {
   if (!isValidVariable(vh)) 
@@ -421,7 +402,7 @@ void node_manager::createEdgeForVar(int vh, bool primedLevel,
 
   if (!isForRelations() && primedLevel) 
     throw error(error::INVALID_ASSIGNMENT);
-  if (getEdgeLabeling() != forest::MULTI_TERMINAL)
+  if (getEdgeLabeling() != MULTI_TERMINAL)
     throw error(error::INVALID_OPERATION);
   int *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
   int node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
@@ -430,13 +411,13 @@ void node_manager::createEdgeForVar(int vh, bool primedLevel,
 }
 
 
-void node_manager::createSubMatrix(const dd_edge& rows,
+void MEDDLY::mt_forest::createSubMatrix(const dd_edge& rows,
     const dd_edge& cols, const dd_edge& a, dd_edge& result)
 {
   throw error(error::NOT_IMPLEMENTED);
 }
 
-void node_manager::createSubMatrix(const bool* const* vlist,
+void MEDDLY::mt_forest::createSubMatrix(const bool* const* vlist,
     const bool* const* vplist, const dd_edge a, dd_edge& b)
 {
   if (a.getForest() != this) 
@@ -450,11 +431,11 @@ void node_manager::createSubMatrix(const bool* const* vlist,
   // When mask for level i is done, create node at level i+1 (higher)
   // such that all downpointers with vlist[i+1]==1 point to mask.
   int mask = getTerminalNode(true);
-  int nVars = expertDomain->getNumVariables();
+  int nVars = getExpertDomain()->getNumVariables();
   for (int level = 1; level <= nVars; level++)
   {
     // create node at prime level
-    int nodeSize = expertDomain->getVariableBound(level, true);
+    int nodeSize = getExpertDomain()->getVariableBound(level, true);
     int node = createTempNode(-level, nodeSize, false);
     for (int i = 0; i < nodeSize; i++)
     {
@@ -464,7 +445,7 @@ void node_manager::createSubMatrix(const bool* const* vlist,
     mask = reduceNode(node);
 
     // create node at unprime level
-    nodeSize = expertDomain->getVariableBound(level, false);
+    nodeSize = getExpertDomain()->getVariableBound(level, false);
     node = createTempNode(level, nodeSize, false);
     for (int i = 0; i < nodeSize; i++)
     {
@@ -482,14 +463,14 @@ void node_manager::createSubMatrix(const bool* const* vlist,
 }
 
 
-void node_manager::getElement(const dd_edge& a,
+void MEDDLY::mt_forest::getElement(const dd_edge& a,
     int index, int* e)
 {
   throw error(error::INVALID_OPERATION);
 }
 
 
-void node_manager::createEdgeForVar(int vh, bool primedLevel,
+void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
     int* terms, dd_edge& result)
 {
   if (!isValidVariable(vh)) 
@@ -504,7 +485,7 @@ void node_manager::createEdgeForVar(int vh, bool primedLevel,
 
   if (!isForRelations() && primedLevel) 
     throw error(error::INVALID_ASSIGNMENT);
-  if (getEdgeLabeling() != forest::MULTI_TERMINAL)
+  if (getEdgeLabeling() != MULTI_TERMINAL)
     throw error(error::INVALID_OPERATION);
   int *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
   int node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
@@ -513,7 +494,7 @@ void node_manager::createEdgeForVar(int vh, bool primedLevel,
 }
 
 
-void node_manager::createEdgeForVar(int vh, bool primedLevel,
+void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
     float* terms, dd_edge& result)
 {
   if (!isValidVariable(vh)) 
@@ -528,7 +509,7 @@ void node_manager::createEdgeForVar(int vh, bool primedLevel,
 
   if (!isForRelations() && primedLevel) 
     throw error(error::INVALID_ASSIGNMENT);
-  if (getEdgeLabeling() != forest::MULTI_TERMINAL)
+  if (getEdgeLabeling() != MULTI_TERMINAL)
     throw error(error::INVALID_OPERATION);
   int *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
   int node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
@@ -539,18 +520,18 @@ void node_manager::createEdgeForVar(int vh, bool primedLevel,
 
 #endif
 
-void node_manager::setLevelBounds()
+void MEDDLY::mt_forest::setLevelBounds()
 {
-  for (int i = expertDomain->getNumVariables(); i >= 1; --i) {
-    setLevelBound(i, expertDomain->getVariableBound(i, false));
+  for (int i = getExpertDomain()->getNumVariables(); i >= 1; --i) {
+    setLevelBound(i, getExpertDomain()->getVariableBound(i, false));
     if (isForRelations()) {
       // primed level
-      setLevelBound(-i, expertDomain->getVariableBound(i, true));
+      setLevelBound(-i, getExpertDomain()->getVariableBound(i, true));
     }
   }
 }
 
-void node_manager::setLevelBound(int k, int sz)
+void MEDDLY::mt_forest::setLevelBound(int k, int sz)
 {
   MEDDLY_DCASSERT(k != 0);
   int mapped_k = mapLevel(k);
@@ -561,7 +542,9 @@ void node_manager::setLevelBound(int k, int sz)
     l_size = mapped_k + 2;
     level = (mdd_level_data *) realloc(level, l_size * sizeof(mdd_level_data));
     if (0==level) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
-    updateMemoryAllocated((l_size - old_l_size) * sizeof(mdd_level_data));
+    long bytes = (l_size - old_l_size) * sizeof(mdd_level_data);
+    stats.incMemUsed(bytes);
+    stats.incMemAlloc(bytes);
     // wipe new level data
     memset(level + old_l_size, 0,
         (l_size - old_l_size) * sizeof(mdd_level_data));
@@ -578,7 +561,9 @@ void node_manager::setLevelBound(int k, int sz)
   MEDDLY_DCASSERT(NULL != level[mapped_k].data);
   if (level[mapped_k].data == 0) 
     throw MEDDLY::error(MEDDLY::error::MISCELLANEOUS);
-  updateMemoryAllocated(level[mapped_k].size * sizeof(int));
+  long bytes = level[mapped_k].size * sizeof(int);
+  stats.incMemUsed(bytes);
+  stats.incMemAlloc(bytes);
   memset(level[mapped_k].data, 0, level[mapped_k].size * sizeof(int));
   level[mapped_k].holes_top = level[mapped_k].holes_bottom =
     level[mapped_k].hole_slots =
@@ -593,7 +578,7 @@ void node_manager::setLevelBound(int k, int sz)
 }
 
 
-void node_manager::setHoleRecycling(bool policy)
+void MEDDLY::mt_forest::setHoleRecycling(bool policy)
 {
   if (policy == holeRecycling) return;
   if (policy) {
@@ -609,10 +594,10 @@ void node_manager::setHoleRecycling(bool policy)
 }
 
 
-void node_manager::clearAllNodes()
+void MEDDLY::mt_forest::clearAllNodes()
 {
-  int level = expertDomain->getNumVariables();
-  while (level > 0 && active_nodes > 0)
+  int level = getExpertDomain()->getNumVariables();
+  while (level > 0 && stats.active_nodes > 0)
   {
     // find all nodes at curr level and make them into orphans
     for (int i = 1; i < a_last; i++)
@@ -623,7 +608,7 @@ void node_manager::clearAllNodes()
       }
     }
 
-    if (active_nodes > 0 && isForRelations()) {
+    if (stats.active_nodes > 0 && isForRelations()) {
       level = -level;
       // find all nodes at curr level and make them into orphans
       for (int i = 1; i < a_last; i++)
@@ -640,7 +625,7 @@ void node_manager::clearAllNodes()
 }
 
 
-node_manager::~node_manager()
+MEDDLY::mt_forest::~mt_forest()
 {
   if (nodeA) delete nodeA;
   if (nodeB) delete nodeB;
@@ -648,14 +633,17 @@ node_manager::~node_manager()
   // setting delete_terminal_nodes will ensure that all nodes in compute
   // tables are removed during garbage collection.
   delete_terminal_nodes = true;
-  // unlink all nodes that the user has a link to
-  unregisterDDEdges();
   // unlink all nodes that are being stored at the respective levels
   clearLevelNodes();
+
+  /*
+
+  // All these things should now be unnecessary...
+
   // remove all disconnected nodes
   gc(true);
 
-  if (active_nodes != 0) {
+  if (stats.active_nodes != 0) {
     printf("MEDDLY ALERT: In %s, active_nodes > 0.\n", __func__);
     printf("This usually means that your application is still referring\n");
     printf("to one or more MDD nodes. ");
@@ -667,6 +655,7 @@ node_manager::~node_manager()
     clearAllNodes();
     gc(true);
   }
+  */
 
   if (dptrsSize > 0) {
     free(dptrs);
@@ -698,9 +687,9 @@ node_manager::~node_manager()
 
 // *********************************************************************
 // TODO: test this out
-int node_manager::buildQuasiReducedNodeAtLevel(int k, int p)
+int MEDDLY::mt_forest::buildQuasiReducedNodeAtLevel(int k, int p)
 {
-  MEDDLY_DCASSERT(reductionRule == forest::QUASI_REDUCED);
+  MEDDLY_DCASSERT(isQuasiReduced());
   int curr = p;
   int p_level = getNodeLevel(p);
   for (int i = p_level + 1; i <= k; i++)
@@ -714,7 +703,7 @@ int node_manager::buildQuasiReducedNodeAtLevel(int k, int p)
 // *********************************************************************
 
 
-int node_manager::getMddLevelMaxBound(int k) const
+int MEDDLY::mt_forest::getMddLevelMaxBound(int k) const
 {
   // Go through each node in this level and check its size - in terms of 
   // # of downpointers. If it has more downpointers that the current max_bound
@@ -748,12 +737,12 @@ int node_manager::getMddLevelMaxBound(int k) const
   return max_bound;
 }
 
-int node_manager::getMxdLevelMaxBound(int k) const
+int MEDDLY::mt_forest::getMxdLevelMaxBound(int k) const
 {
   return MAX(getMddLevelMaxBound(k), getMddLevelMaxBound(-k));
 }
 
-int node_manager::getLevelMaxBound(int k) const
+int MEDDLY::mt_forest::getLevelMaxBound(int k) const
 {
   return isForRelations()?
             getMxdLevelMaxBound(k):
@@ -767,7 +756,7 @@ int digits(int a)
   return d;
 }
 
-void node_manager::dump(FILE *s) const
+void MEDDLY::mt_forest::dump(FILE *s) const
 {
   int nwidth = digits(a_last);
   for (int p=0; p<=a_last; p++) {
@@ -778,12 +767,12 @@ void node_manager::dump(FILE *s) const
   }
 }
 
-void node_manager::showAll() const
+void MEDDLY::mt_forest::showAll() const
 {
   dumpInternal(stderr);
 }
 
-void node_manager::dumpInternal(FILE *s) const
+void MEDDLY::mt_forest::dumpInternal(FILE *s) const
 {
   fprintf(s, "Internal forest storage\n");
   fprintf(s, "First unused node index: %d\n", a_unused);
@@ -821,7 +810,7 @@ void node_manager::dumpInternal(FILE *s) const
   fflush(s);
 }
 
-void node_manager::dumpInternalLevel(FILE *s, int k) const
+void MEDDLY::mt_forest::dumpInternalLevel(FILE *s, int k) const
 {
   int p_level = mapLevel(k);
   mdd_level_data* l_info = &level[p_level];
@@ -852,8 +841,8 @@ void node_manager::dumpInternalLevel(FILE *s, int k) const
       // proper node
       int nElements =
         data[a + 2] > 0
-        ? (edgeLabel == MULTI_TERMINAL? 1: 2) * data[a + 2]   // Full
-        : -(edgeLabel == MULTI_TERMINAL? 2: 3) * data[a + 2]; // Sparse
+        ? (isMultiTerminal()? 1: 2) * data[a + 2]   // Full
+        : -(isMultiTerminal()? 2: 3) * data[a + 2]; // Sparse
       for (int i=0; i < nElements; i++) {
         fprintf(s, "|%d", data[a+3+i]);
       }
@@ -866,122 +855,11 @@ void node_manager::dumpInternalLevel(FILE *s, int k) const
   MEDDLY_DCASSERT(a == ((l_info->last)+1));
 }
 
-/*
 
-double node_manager::cardinalityForRelations(int p, int ht, bool primeLevel,
-    std::map<int, double>& visited) const
-{
-  if (p == 0) return 0;
-  if (ht == 0) {
-    MEDDLY_DCASSERT(isTerminalNode(p));
-    return 1;
-  }
-
-  int pHeight = getNodeHeight(p);
-  MEDDLY_DCASSERT(pHeight >= 0);
-
-  if (pHeight < ht) {
-    if (getReductionRule() == forest::IDENTITY_REDUCED) {
-      // p is lower than ht
-      if (primeLevel) {
-        // ht is a prime level
-        MEDDLY_DCASSERT(p == 0);
-        return 0;
-      }
-      else {
-        // ht is a un-prime level
-        int levelSize = expertDomain->getVariableBound(ht, primeLevel);
-        return levelSize *
-          cardinalityForRelations(p, ht - 1, false, visited);
-      }
-    }
-    else {
-      // p is lower than ht
-      int levelSize = expertDomain->getVariableBound(ht, primeLevel);
-      int nextHeight = primeLevel? ht - 1: ht;
-      return levelSize *
-          cardinalityForRelations(p, nextHeight, !primeLevel, visited);
-    }
-  }
-
-  MEDDLY_DCASSERT(pHeight == ht);
-#ifdef DEVELOPMENT_CODE
-  MEDDLY_DCASSERT((primeLevel && (getNodeLevel(p) == -ht)) ||
-      (!primeLevel && getNodeLevel(p) == ht));
-#endif
-
-  // check in cache
-  std::map<int, double>::iterator curr = visited.find(p);
-  if (curr != visited.end())
-    return curr->second;
-
-  // not found in cache; compute by expanding
-  int nextHeight = (primeLevel)? ht - 1: ht;
-  bool nextPrimeLevel = !primeLevel;
-  double result = 0;
-  if (isFullNode(p)) {
-    const int sz = getFullNodeSize(p);
-    for (int i = 0; i < sz; ++i)
-      result += cardinalityForRelations(getFullNodeDownPtr(p, i),
-          nextHeight, nextPrimeLevel, visited);
-  }
-  else {
-    const int sz = getSparseNodeSize(p);
-    for (int i = 0; i < sz; ++i)
-      result += cardinalityForRelations(getSparseNodeDownPtr(p, i),
-          nextHeight, nextPrimeLevel, visited);
-  }
-
-  // save result and return
-  visited[p] = result;
-  return result;
-}
-
-double node_manager::cardinality(int p, int ht, std::map<int, double>& visited)
-const
-{
-  int pHeight = getNodeHeight(p);
-  MEDDLY_DCASSERT(pHeight <= ht);
-
-  if (pHeight < ht) {
-    return getLevelSize(ht) * cardinality(p, ht - 1, visited);
-  }
-
-  if (isTerminalNode(p)) {
-    return p == 0? 0: 1;
-  }
-
-  // check in cache
-  std::map<int, double>::iterator curr = visited.find(p);
-  if (curr != visited.end())
-    return curr->second;
-
-  // not found in cache; compute by expanding
-  double result = 0;
-  if (isFullNode(p)) {
-    const int sz = getFullNodeSize(p);
-    for (int i = 0; i < sz; ++i)
-      result += cardinality(getFullNodeDownPtr(p, i), ht - 1, visited);
-  }
-  else {
-    const int sz = getSparseNodeSize(p);
-    for (int i = 0; i < sz; ++i)
-      result += cardinality(getSparseNodeDownPtr(p, i), ht - 1, visited);
-  }
-
-  // save result and return
-  visited[p] = result;
-#ifdef DEBUG_CARD
-  fprintf(stderr, "Cardinality of node %d is %lg\n", p, result);
-#endif
-  return result;
-}
-*/
-
-void node_manager::showNodeGraph(FILE *s, int p) const
+void MEDDLY::mt_forest::showNodeGraph(FILE *s, int p) const
 {
   std::vector< std::set<int> >
-    discovered(mapLevel(expertDomain->getNumVariables()) + 1);
+    discovered(mapLevel(getExpertDomain()->getNumVariables()) + 1);
   std::queue<int> toExpand;
 
   toExpand.push(p);
@@ -1028,7 +906,7 @@ void node_manager::showNodeGraph(FILE *s, int p) const
   {
     if (discovered[i].empty()) continue;
     int k = unmapLevel(i);
-    const variable* v = d->getVar(ABS(k));
+    const variable* v = getDomain()->getVar(ABS(k));
     if (v->getName()) {
       fprintf(s, "Level: %s%s\n", v->getName(), (k < 0? "'": " "));
     } else {
@@ -1045,12 +923,12 @@ void node_manager::showNodeGraph(FILE *s, int p) const
 }
 
 
-int ifTermGetInt(const node_manager *nm, int node)
+int ifTermGetInt(const MEDDLY::mt_forest *nm, int node)
 {
   return nm->isTerminalNode(node) ? nm->getInteger(node) : node;
 }
 
-void node_manager::showNode(FILE *s, int p, int verbose) const
+void MEDDLY::mt_forest::showNode(FILE *s, int p, int verbose) const
 {
   if (isTerminalNode(p)) {
     fprintf(s, "(terminal)");
@@ -1072,7 +950,7 @@ void node_manager::showNode(FILE *s, int p, int verbose) const
 #endif
   int* data = level[l].data;
   if (verbose) {
-    const variable* v = d->getVar(ABS(unmapLevel(l)));
+    const variable* v = getDomain()->getVar(ABS(unmapLevel(l)));
     if (v->getName()) {
       fprintf(s, " level: %s", v->getName());
     } else {
@@ -1094,7 +972,7 @@ void node_manager::showNode(FILE *s, int p, int verbose) const
     fprintf(s, " down: (");
     for (int z=0; z<getSparseNodeSize(p); z++) {
       if (z) fprintf(s, ", ");
-      if (edgeLabel == forest::EVPLUS) {
+      if (isEVPlus()) {
         int e = 0;
         getSparseNodeEdgeValue(p, z, e);
         if (e == INF) {
@@ -1107,7 +985,7 @@ void node_manager::showNode(FILE *s, int p, int verbose) const
               e,
               getSparseNodeDownPtr(p, z));
         }
-      } else if (edgeLabel == forest::EVTIMES) {
+      } else if (isEVTimes()) {
         float e = 0;
         getSparseNodeEdgeValue(p, z, e);
         fprintf(s, "%d:<%f,%d>",
@@ -1142,7 +1020,7 @@ void node_manager::showNode(FILE *s, int p, int verbose) const
     fprintf(s, " down: [");
     for (int i=0; i<getFullNodeSize(p); i++) {
       if (i) fprintf(s, "|");
-      if (edgeLabel == forest::EVPLUS) {
+      if (isEVPlus()) {
         int e = 0;
         getFullNodeEdgeValue(p, i, e);
         if  (e == INF) {
@@ -1152,7 +1030,7 @@ void node_manager::showNode(FILE *s, int p, int verbose) const
           fprintf(s, "<%d,%d>", e,
               getFullNodeDownPtr(p, i));
         }
-      } else if (edgeLabel == forest::EVTIMES) {
+      } else if (isEVTimes()) {
         float e = 0;
         getFullNodeEdgeValue(p, i, e);
         fprintf(s, "<%f,%d>", e,
@@ -1177,9 +1055,9 @@ void node_manager::showNode(FILE *s, int p, int verbose) const
   }
 }
 
-void node_manager::showNode(int p) const
+void MEDDLY::mt_forest::showNode(int p) const
 {
-  MEDDLY_DCASSERT(edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES);
+  MEDDLY_DCASSERT(isEVPlus() || isEVTimes());
   if (isTerminalNode(p)) {
     fprintf(stderr, "(terminal)");
     return;
@@ -1221,7 +1099,7 @@ void node_manager::showNode(int p) const
   }
 }
 
-void node_manager::compactLevel(int k)
+void MEDDLY::mt_forest::compactLevel(int k)
 {
   if (k == 0) { level[0].compactLevel = false; return; }
   // mapped p_level
@@ -1258,8 +1136,8 @@ void node_manager::compactLevel(int k)
   int node_size = 0;
   int curr_node = 0;
 
-  int sparseMultiplier = edgeLabel != forest::MULTI_TERMINAL? -3: -2;
-  int fullMultiplier = edgeLabel != forest::MULTI_TERMINAL? 2: 1;
+  int sparseMultiplier = isMultiTerminal() ? -2 : -3;
+  int fullMultiplier = isMultiTerminal() ? 1 : 2;
 
   while (node_ptr != end_ptr) {
     // find new node
@@ -1299,16 +1177,13 @@ void node_manager::compactLevel(int k)
     node_ptr += node_size;
   }
 
-  curr_slots -= level[p_level].last;
   level[p_level].last = (curr_ptr - 1 - level[p_level].data);
-  curr_slots += level[p_level].last;
-  if (max_slots < curr_slots) max_slots = curr_slots;
 
   // set up hole pointers and such
   level[p_level].holes_top = level[p_level].holes_bottom = 0;
   level[p_level].hole_slots = 0;
 
-  num_compactions++;
+  stats.num_compactions++;
   level[p_level].num_compactions++;
   level[p_level].compactLevel = false;
 
@@ -1317,7 +1192,7 @@ void node_manager::compactLevel(int k)
     int new_size = level[p_level].size/2;
     while (new_size > add_size && new_size > level[p_level].last * 3)
     { new_size /= 2; }
-    updateMemoryAllocated((new_size - level[p_level].size) * sizeof(int));
+    stats.decMemAlloc((level[p_level].size - new_size) * sizeof(int));
     level[p_level].data = (int *)
       realloc(level[p_level].data, new_size * sizeof(int));
     if (NULL == level[p_level].data) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
@@ -1335,7 +1210,7 @@ void node_manager::compactLevel(int k)
 #endif
 }
 
-void node_manager::compactAllLevels()
+void MEDDLY::mt_forest::compactAllLevels()
 {
   for (int i=0; i<l_size; i++) {
     level[i].compactLevel = true;
@@ -1376,7 +1251,7 @@ void node_manager::compactAllLevels()
 
 #if 1
 
-unsigned node_manager::hash(int h) const 
+unsigned MEDDLY::mt_forest::hash(int h) const 
 {
   int* k = getNodeAddress(h);
   int length = k[2];
@@ -1434,7 +1309,7 @@ unsigned node_manager::hash(int h) const
 
 #else
 
-unsigned node_manager::hash(int h) const 
+unsigned MEDDLY::mt_forest::hash(int h) const 
 {
   int* k = getNodeAddress(h);
   int length = k[2];
@@ -1563,7 +1438,7 @@ unsigned node_manager::hash(int h) const
 #endif
 
 
-bool node_manager::equalsFF(int h1, int h2) const
+bool MEDDLY::mt_forest::equalsFF(int h1, int h2) const
 {
   MEDDLY_DCASSERT(isFullNode(h1));
   MEDDLY_DCASSERT(isFullNode(h2));
@@ -1586,17 +1461,17 @@ bool node_manager::equalsFF(int h1, int h2) const
     while (ptr2 != h2Stop) { if (*ptr2++ != 0) return false; }
   }
 
-  if (edgeLabel == forest::MULTI_TERMINAL) return true;
+  if (isMultiTerminal()) return true;
 
   // Check edge-values
   MEDDLY_DCASSERT(ptr1 == h1Stop);
   MEDDLY_DCASSERT(ptr2 == h2Stop);
 
   h1Stop += MIN(sz1, sz2);
-  if (edgeLabel == forest::EVPLUS) {
+  if (isEVPlus()) {
     while (ptr1 != h1Stop) { if (*ptr1++ != *ptr2++) return false; }
   } else {
-    MEDDLY_DCASSERT(edgeLabel == forest::EVTIMES);
+    MEDDLY_DCASSERT(isEVTimes());
     while (ptr1 != h1Stop) {
       if (!isAlmostEqual(*ptr1++, *ptr2++)) return false;
     }
@@ -1605,7 +1480,7 @@ bool node_manager::equalsFF(int h1, int h2) const
 }
 
 
-bool node_manager::equalsSS(int h1, int h2) const
+bool MEDDLY::mt_forest::equalsSS(int h1, int h2) const
 {
   MEDDLY_DCASSERT(isSparseNode(h1));
   MEDDLY_DCASSERT(isSparseNode(h2));
@@ -1620,17 +1495,17 @@ bool node_manager::equalsSS(int h1, int h2) const
   int* h1Stop = ptr1 + sz1 + sz1;
   while (ptr1 != h1Stop) { if (*ptr1++ != *ptr2++) return false; }
 
-  if (edgeLabel == forest::MULTI_TERMINAL) return true;
+  if (isMultiTerminal()) return true;
 
   // Check edge-values
   MEDDLY_DCASSERT(ptr1 == h1Stop);
   MEDDLY_DCASSERT(ptr2 == (getNodeAddress(h2) + 3 + sz1 + sz1));
 
   h1Stop += sz1;
-  if (edgeLabel == forest::EVPLUS) {
+  if (isEVPlus()) {
     while (ptr1 != h1Stop) { if (*ptr1++ != *ptr2++) return false; }
   } else {
-    MEDDLY_DCASSERT(edgeLabel == forest::EVTIMES);
+    MEDDLY_DCASSERT(isEVTimes());
     while (ptr1 != h1Stop) {
       if (!isAlmostEqual(*ptr1++, *ptr2++)) return false;
     }
@@ -1639,7 +1514,7 @@ bool node_manager::equalsSS(int h1, int h2) const
 }
 
 
-bool node_manager::equalsFS(int h1, int h2) const
+bool MEDDLY::mt_forest::equalsFS(int h1, int h2) const
 {
   MEDDLY_DCASSERT(isFullNode(h1));
   MEDDLY_DCASSERT(isSparseNode(h2));
@@ -1674,7 +1549,7 @@ bool node_manager::equalsFS(int h1, int h2) const
     if (*ptr1++ != 0) return false;
   }
 
-  if (edgeLabel == forest::MULTI_TERMINAL) return true;
+  if (isMultiTerminal()) return true;
 
   // Check edge-values
   MEDDLY_DCASSERT(ptr1 == h1Stop);
@@ -1684,12 +1559,12 @@ bool node_manager::equalsFS(int h1, int h2) const
   // ptr1 and down2 are pointing at the start of edge-values
   // Reset the index pointer for h2 (sparse node).
   ptr2 -= sz2;
-  if (edgeLabel == forest::EVPLUS) {
+  if (isEVPlus()) {
     while (ptr2 != h2Stop) {
       if (ptr1[*ptr2++] != *down2++) return false;
     }
   } else {
-    MEDDLY_DCASSERT(edgeLabel == forest::EVTIMES);
+    MEDDLY_DCASSERT(isEVTimes());
     while (ptr2 != h2Stop) {
       if (!isAlmostEqual(ptr1[*ptr2++], *down2++)) return false;
     }
@@ -1698,7 +1573,7 @@ bool node_manager::equalsFS(int h1, int h2) const
 }
 
 
-bool node_manager::equals(int h1, int h2) const 
+bool MEDDLY::mt_forest::equals(int h1, int h2) const 
 {
   MEDDLY_DCASSERT(h1);	
   MEDDLY_DCASSERT(h2);
@@ -1720,7 +1595,7 @@ bool node_manager::equals(int h1, int h2) const
 //  Protected methods
 // ------------------------------------------------------------------
 
-void node_manager::deleteNode(int p)
+void MEDDLY::mt_forest::deleteNode(int p)
 {
   MEDDLY_DCASSERT(!isTerminalNode(p));
   MEDDLY_DCASSERT(getInCount(p) == 0);
@@ -1784,8 +1659,8 @@ void node_manager::deleteNode(int p)
   // Recycle node memory
   makeHole(getNodeLevel(p), getNodeOffset(p), getDataHeaderSize() +
       nDptrs * ((foo[2] < 0)
-        ? (edgeLabel == forest::MULTI_TERMINAL? 2: 3)
-        : (edgeLabel == forest::MULTI_TERMINAL? 1: 2)
+        ? (isMultiTerminal() ? 2: 3)
+        : (isMultiTerminal() ? 1: 2)
         ));
 
   // recycle the index
@@ -1799,7 +1674,7 @@ void node_manager::deleteNode(int p)
 
 }
 
-void node_manager::zombifyNode(int p)
+void MEDDLY::mt_forest::zombifyNode(int p)
 {
   MEDDLY_DCASSERT(isActiveNode(p));
   MEDDLY_DCASSERT(!isTerminalNode(p));
@@ -1808,9 +1683,9 @@ void node_manager::zombifyNode(int p)
   MEDDLY_DCASSERT(getInCount(p) == 0);
   MEDDLY_DCASSERT(address[p].cache_count > 0);
 
-  zombie_nodes++;
+  stats.zombie_nodes++;
   level[getNodeLevelMapping(p)].zombie_nodes++;
-  active_nodes--;
+  stats.decActive(1);
 
   // mark node as zombie
   address[p].cache_count = -address[p].cache_count;
@@ -1845,7 +1720,7 @@ void node_manager::zombifyNode(int p)
     }
     // Recycle node memory
     makeHole(node_level, node_offset, getDataHeaderSize()
-        - (edgeLabel == forest::MULTI_TERMINAL? 2: 3) * foo[2]);  
+        - (isMultiTerminal() ? 2: 3) * foo[2]);  
   } else {
     // Full encoding
     int* downptr = foo + 3;
@@ -1861,17 +1736,17 @@ void node_manager::zombifyNode(int p)
     }
     // Recycle node memory
     makeHole(node_level, node_offset, getDataHeaderSize()
-        + (edgeLabel == forest::MULTI_TERMINAL? 1: 2) * foo[2]);  
+        + (isMultiTerminal() ? 1: 2) * foo[2]);  
   }
 }
 
 
-void node_manager::garbageCollect() {
+void MEDDLY::mt_forest::garbageCollect() {
   gc();
 }
 
 
-bool node_manager::gc(bool zombifyOrphanNodes) {
+bool MEDDLY::mt_forest::gc(bool zombifyOrphanNodes) {
 #if ENABLE_GC
   // change isStale such that all nodes with (incount == 0)
   // are considered to be stale
@@ -1897,11 +1772,11 @@ bool node_manager::gc(bool zombifyOrphanNodes) {
     printf("Zombie nodes: %ld\n", zombie_nodes);
 #endif
 #ifdef DEVELOPMENT_CODE
-    if (zombie_nodes != 0) {
+    if (stats.zombie_nodes != 0) {
       showInfo(stderr, 1);
       showComputeTable(stderr, 6);
     }
-    MEDDLY_DCASSERT(zombie_nodes == 0);
+    MEDDLY_DCASSERT(stats.zombie_nodes == 0);
 #endif
     freed_some = true;
   } else {
@@ -1909,12 +1784,12 @@ bool node_manager::gc(bool zombifyOrphanNodes) {
     if (zombifyOrphanNodes) {
 #ifdef DEBUG_GC
       fprintf(stderr, "Active: %ld, Zombie: %ld, Orphan: %ld\n",
-          active_nodes, zombie_nodes, orphan_nodes);
+          stats.active_nodes, stats.zombie_nodes, stats.orphan_nodes);
 #endif
       // convert orphans to zombies
-      nodeDeletionPolicy = forest::PESSIMISTIC_DELETION;
-      orphan_nodes = 0;
-      MEDDLY_DCASSERT(zombie_nodes == 0);
+      // nodeDeletionPolicy = forest::PESSIMISTIC_DELETION;
+      stats.orphan_nodes = 0;
+      MEDDLY_DCASSERT(stats.zombie_nodes == 0);
       for (int i = 1; i <= a_last; i++) {
         MEDDLY_DCASSERT(!isTerminalNode(i));
         if (isActiveNode(i) && getInCount(i) == 0) {
@@ -1924,19 +1799,19 @@ bool node_manager::gc(bool zombifyOrphanNodes) {
       }
 #ifdef DEBUG_GC
       fprintf(stderr, "Active: %ld, Zombie: %ld, Orphan: %ld\n",
-          active_nodes, zombie_nodes, orphan_nodes);
+          stats.active_nodes, zombie_nodes, orphan_nodes);
 #endif
       // remove the stale nodes entries from caches
       removeStaleComputeTableEntries();
 #ifdef DEVELOPMENT_CODE
-      if (zombie_nodes != 0) {
+      if (stats.zombie_nodes != 0) {
         showInfo(stderr, 1);
         showComputeTable(stderr, 5);
       }
       // TBD: better error message here
 #endif
-      MEDDLY_DCASSERT(zombie_nodes == 0);
-      nodeDeletionPolicy = forest::OPTIMISTIC_DELETION;
+      MEDDLY_DCASSERT(stats.zombie_nodes == 0);
+      // nodeDeletionPolicy = forest::OPTIMISTIC_DELETION;
     } else {
 
       // remove the stale nodes entries from caches
@@ -1971,12 +1846,12 @@ bool node_manager::gc(bool zombifyOrphanNodes) {
 }
 
 
-void node_manager::removeZombies(int max_zombies) {
+void MEDDLY::mt_forest::removeZombies(int max_zombies) {
 #if 1
   return;
 #else
   // too many zombies? kill em!
-  if (zombie_nodes > max_zombies && active_nodes/zombie_nodes < 3) {
+  if (zombie_nodes > max_zombies && stats.active_nodes/zombie_nodes < 3) {
 #if 0
     for (int i = 1; i <= a_last; i++) {
       if (isActiveNode(i) && isZombieNode(i)) {
@@ -2000,14 +1875,14 @@ void node_manager::removeZombies(int max_zombies) {
 #endif
 }
 
-int node_manager::getFreeNode(int k)
+int MEDDLY::mt_forest::getFreeNode(int k)
 {
   if (a_unused) {
     // grab a recycled index
     int p = a_unused;
     MEDDLY_DCASSERT(address[p].offset < 1);
     a_unused = -address[p].offset;
-    active_nodes++;
+    stats.incActive(1);
     return p;
   }
   // new index
@@ -2032,22 +1907,22 @@ int node_manager::getFreeNode(int k)
       fprintf(stderr, "Memory allocation error while allocating MDD nodes.\n");
       exit(1);
     }
-    updateMemoryAllocated((new_a_size - a_size) * sizeof(mdd_node_data));
+    stats.incMemAlloc((new_a_size - a_size) * sizeof(mdd_node_data));
     address = temp;
     memset(address + a_size, 0, (new_a_size - a_size) * sizeof(mdd_node_data));
     a_size = new_a_size;
   }
   a_last++;
-  active_nodes++;
+  stats.incActive(1);
   if (getCurrentNumNodes() > peak_nodes) peak_nodes = getCurrentNumNodes();
   return a_last;
 }
 
-void node_manager::freeZombieNode(int p)
+void MEDDLY::mt_forest::freeZombieNode(int p)
 {
   MEDDLY_DCASSERT(address[p].level != 0);
   MEDDLY_DCASSERT(address[p].cache_count == 0);
-  zombie_nodes--;
+  stats.zombie_nodes--;
   level[mapLevel(address[p].level)].zombie_nodes--;
   address[p].level = 0;
   address[p].cache_count = 0;
@@ -2064,7 +1939,7 @@ void node_manager::freeZombieNode(int p)
 #endif
 }
 
-void node_manager::freeNode(int p)
+void MEDDLY::mt_forest::freeNode(int p)
 {
 #ifdef TRACE_REDUCE
   printf("%s: p = %d, a_last = %d\n", __func__, p, a_last);
@@ -2074,7 +1949,7 @@ void node_manager::freeNode(int p)
   MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
   MEDDLY_DCASSERT(address[p].cache_count == 0);
 
-  active_nodes--;
+  stats.decActive(1);
 
   address[p].level = 0;
   address[p].cache_count = 0;
@@ -2087,7 +1962,7 @@ void node_manager::freeNode(int p)
           realloc(address, a_size/2 * sizeof(mdd_node_data));
       if (NULL == address) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
       a_size /= 2;
-      updateMemoryAllocated(-a_size * sizeof(mdd_node_data));
+      stats.decMemAlloc(a_size * sizeof(mdd_node_data));
 #ifdef MEMORY_TRACE
       printf("Reduced node[] by a factor of 2. New size: %d.\n", a_size);
 #endif
@@ -2098,7 +1973,7 @@ void node_manager::freeNode(int p)
   }
 }
 
-void node_manager::gridInsert(int k, int p_offset)
+void MEDDLY::mt_forest::gridInsert(int k, int p_offset)
 {
   // sanity check to make sure that the first and last slots in this hole
   // have the same value, i.e. -(# of slots in the hole)
@@ -2155,7 +2030,7 @@ void node_manager::gridInsert(int k, int p_offset)
   }
 }
 
-void node_manager::indexRemove(int k, int p_offset)
+void MEDDLY::mt_forest::indexRemove(int k, int p_offset)
 {
 #ifdef MEMORY_TRACE
   cout << __func__ << "(" << k << ", " << p_offset << ")\n";
@@ -2207,7 +2082,7 @@ void node_manager::indexRemove(int k, int p_offset)
   }
 }
 
-int node_manager::getHole(int k, int slots, bool search_holes)
+int MEDDLY::mt_forest::getHole(int k, int slots, bool search_holes)
 {
   int p_level = mapLevel(k);
 
@@ -2219,19 +2094,18 @@ int node_manager::getHole(int k, int slots, bool search_holes)
 #endif
     MEDDLY_DCASSERT(level[p_level].data != NULL);
     const int min_node_size =
-      edgeLabel == forest::EVPLUS ? 7
-      : edgeLabel == forest::EVTIMES ? 6 : 5;
+      isEVPlus() ? 7
+      : isEVTimes() ? 6 : 5;
 
     MEDDLY_DCASSERT(slots >= min_node_size);
     MEDDLY_DCASSERT((slots - min_node_size + 1) <=
-        (getLevelSize(k) * (edgeLabel == forest::MULTI_TERMINAL? 1: 2)));
+        (getLevelSize(k) * (isMultiTerminal() ? 1: 2)));
     MEDDLY_DCASSERT(0 < (slots - min_node_size) + 1);
     MEDDLY_CHECK_RANGE(0, p_level, l_size);
   }
 #endif
 
-  curr_slots += slots;
-  if (max_slots < curr_slots) max_slots = curr_slots;
+  stats.incMemUsed(slots * sizeof(int));
 
 #ifdef DEBUG_MDD_H
   printf("%s: p_level: %d, slots: %d\n", __func__, p_level, slots);
@@ -2283,9 +2157,9 @@ int node_manager::getHole(int k, int slots, bool search_holes)
 #ifdef ENABLE_BREAKING_UP_HOLES
     // No hole with exact size, try the largest hole
     const int min_node_size =
-      edgeLabel == forest::EVPLUS
+      isEVPlus()
         ? 7
-        : edgeLabel == forest::EVTIMES
+        : isEVTimes()
           ? 6
           : 5;
 
@@ -2335,19 +2209,18 @@ int node_manager::getHole(int k, int slots, bool search_holes)
           old_size, level[p_level].size);
       exit(1);
     } else {
-      updateMemoryAllocated((level[p_level].size - old_size) * sizeof(int));
+      stats.incMemAlloc((level[p_level].size - old_size) * sizeof(int));
       memset(level[p_level].data + old_size, 0,
           (level[p_level].size - old_size) * sizeof(int));
     }
   }
   int h = level[p_level].last + 1;
   level[p_level].last += slots;
-  // level[p_level].max_slots = MAX(level[p_level].max_slots, level[p_level].last);
   return h;
 }
 
 
-void node_manager::makeHole(int k, int addr, int slots)
+void MEDDLY::mt_forest::makeHole(int k, int addr, int slots)
 {
   // need to map level
   int mapped_k = mapLevel(k);
@@ -2355,7 +2228,7 @@ void node_manager::makeHole(int k, int addr, int slots)
   cout << "Calling makeHole(" << k << ", " << addr << ", " << slots << ")\n";
 #endif
 
-  curr_slots -= slots;
+  stats.decMemUsed(slots * sizeof(int));
 
   int* data = level[mapped_k].data;
   level[mapped_k].hole_slots += slots;
@@ -2387,7 +2260,7 @@ void node_manager::makeHole(int k, int addr, int slots)
       int new_size = level[mapped_k].size/2;
       while (new_size > (level[mapped_k].last + 1) * 2) new_size /= 2;
       if (new_size < add_size) new_size = add_size;
-      updateMemoryAllocated((new_size - level[mapped_k].size) * sizeof(int));
+      stats.incMemAlloc((new_size - level[mapped_k].size) * sizeof(int));
       level[mapped_k].data = (int *)
         realloc(level[mapped_k].data, new_size * sizeof(int));
       if (NULL == level[mapped_k].data) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
@@ -2425,7 +2298,7 @@ void node_manager::makeHole(int k, int addr, int slots)
 #endif
 }
 
-void node_manager::reportMemoryUsage(FILE * s, const char filler) {
+void MEDDLY::mt_forest::reportMemoryUsage(FILE * s, const char filler) {
   fprintf(s, "%cPeak Nodes:             %ld\n", filler, getPeakNumNodes());
   fprintf(s, "%cActive Nodes:           %ld\n", filler, getCurrentNumNodes());
 #if 0
@@ -2438,7 +2311,7 @@ void node_manager::reportMemoryUsage(FILE * s, const char filler) {
   fprintf(s, "%c%cOrphan Nodes:\t\t%d\n", filler, filler,
       getOrphanNodeCount());
 #endif
-  fprintf(s, "%cReclaimed Nodes:        %ld\n", filler, reclaimed_nodes);
+  fprintf(s, "%cReclaimed Nodes:        %ld\n", filler, stats.reclaimed_nodes);
   fprintf(s, "%cMem Used:               %ld\n", filler,
       getCurrentMemoryUsed());
   fprintf(s, "%cPeak Mem Used:          %ld\n", filler, getPeakMemoryUsed());
@@ -2448,7 +2321,7 @@ void node_manager::reportMemoryUsage(FILE * s, const char filler) {
       filler, getPeakMemoryAllocated());
   fprintf(s, "%cUnique Tbl Mem Used:    %ld\n", filler,
       getUniqueTableMemoryUsed());
-  fprintf(s, "%cCompactions:            %d\n", filler, getCompactionsCount());
+  fprintf(s, "%cCompactions:            %ld\n", filler, stats.num_compactions);
 #if 0
   fprintf(s, "%cHole Memory Usage:\t%d\n", filler, getHoleMemoryUsage());
   fprintf(s, "%cMax Hole Chain:\t%d\n", filler, getMaxHoleChain());
@@ -2490,7 +2363,7 @@ void node_manager::reportMemoryUsage(FILE * s, const char filler) {
 #endif
 }
 
-void node_manager::compareCacheCounts(int p)
+void MEDDLY::mt_forest::compareCacheCounts(int p)
 {
 #if ENABLE_CACHE_COUNTING
   counting = true;
@@ -2540,7 +2413,7 @@ void node_manager::compareCacheCounts(int p)
 }
 
 
-void node_manager::validateIncounts()
+void MEDDLY::mt_forest::validateIncounts()
 {
 #if ENABLE_IN_COUNTING
 
@@ -2585,38 +2458,27 @@ void node_manager::validateIncounts()
 }
 
 
-void node_manager::showLevel(FILE *s, int k) const {
+void MEDDLY::mt_forest::showLevel(FILE *s, int k) const {
   dumpInternalLevel(s, k);
 }
-void node_manager::showAll(FILE *s, int verb) const { 
+void MEDDLY::mt_forest::showAll(FILE *s, int verb) const { 
   if (0==verb)  return;
   if (1==verb)  dump(s);
   else          dumpInternal(s); 
 }
 
-void node_manager::show(FILE *s, int h) const { fprintf(s, "%d", h); }
+void MEDDLY::mt_forest::show(FILE *s, int h) const { fprintf(s, "%d", h); }
 
-long node_manager::getHoleMemoryUsage() const {
+long MEDDLY::mt_forest::getHoleMemoryUsage() const {
   long sum = 0;
   for(int i=0; i<l_size; i++) sum += level[i].hole_slots;
   return sum * sizeof(int); 
 }
 
-int node_manager::getMaxHoleChain() const { return max_hole_chain; }
-int node_manager::getCompactionsCount() const { return num_compactions; }
+int MEDDLY::mt_forest::getMaxHoleChain() const { return max_hole_chain; }
+// int MEDDLY::mt_forest::getCompactionsCount() const { return num_compactions; }
 
-long node_manager::getCurrentMemoryUsed() const { 
-#if 0
-  int sum = 0;
-  for(int i=0; i<l_size; i++) sum += level[i].last - level[i].hole_slots;
-  return sum * sizeof(int); 
-#else
-  return curr_slots * sizeof(int);
-#endif
-}
-
-
-void node_manager::validateDownPointers(int p, bool recursive)
+void MEDDLY::mt_forest::validateDownPointers(int p, bool recursive)
 {
   if (isTerminalNode(p)) return;
 
@@ -2627,7 +2489,7 @@ void node_manager::validateDownPointers(int p, bool recursive)
     getSparseNodeDownPtrs(p);
 
   switch (getReductionRule()) {
-    case forest::FULLY_REDUCED:
+    case policies::FULLY_REDUCED:
       if (isUnprimedNode(p)) {
         // unprimed node
         for (int i = 0; i < nodeSize; ++i) {
@@ -2647,7 +2509,7 @@ void node_manager::validateDownPointers(int p, bool recursive)
       }
       break;
 
-    case forest::QUASI_REDUCED:
+    case policies::QUASI_REDUCED:
       if (isUnprimedNode(p)) {
         // unprimed node
         for (int i = 0; i < nodeSize; ++i) {
@@ -2667,7 +2529,7 @@ void node_manager::validateDownPointers(int p, bool recursive)
       }
       break;
 
-    case forest::IDENTITY_REDUCED:
+    case policies::IDENTITY_REDUCED:
       assert(isForRelations());
       if (isUnprimedNode(p)) {
         // unprimed node
@@ -2697,7 +2559,7 @@ void node_manager::validateDownPointers(int p, bool recursive)
 }
 
 
-int node_manager::addReducedNodes(int a, int b)
+int MEDDLY::mt_forest::addReducedNodes(int a, int b)
 {
   MEDDLY_DCASSERT(isReducedNode(a));
   MEDDLY_DCASSERT(isReducedNode(b));
@@ -2729,9 +2591,9 @@ int node_manager::addReducedNodes(int a, int b)
 
 // Creates a temporary node as a copy of node a.
 // The size variable can be used to create a node a size larger than a.
-int node_manager::makeACopy(int a, int size)
+int MEDDLY::mt_forest::makeACopy(int a, int size)
 {
-  MEDDLY_DCASSERT(getEdgeLabeling() == forest::MULTI_TERMINAL);
+  MEDDLY_DCASSERT(isMultiTerminal());
   int result = 0;
   int* rDptrs = 0;
 
@@ -2769,9 +2631,9 @@ int node_manager::makeACopy(int a, int size)
 
 
 // For all i, a[i] += b
-int node_manager::accumulateExpandA(int a, int b, bool cBM)
+int MEDDLY::mt_forest::accumulateExpandA(int a, int b, bool cBM)
 {
-  MEDDLY_DCASSERT(getReductionRule() != forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(!isIdentityReduced());
 
   bool needsToMakeACopy = cBM;
   int savedTempNode = a;
@@ -2809,9 +2671,9 @@ int node_manager::accumulateExpandA(int a, int b, bool cBM)
 }
 
 
-int node_manager::accumulateMdd(int a, int b, bool cBM)
+int MEDDLY::mt_forest::accumulateMdd(int a, int b, bool cBM)
 {
-  MEDDLY_DCASSERT(getReductionRule() != forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(!isIdentityReduced());
   MEDDLY_DCASSERT(isReducedNode(b));
 
   // Terminal nodes
@@ -2914,7 +2776,7 @@ int node_manager::accumulateMdd(int a, int b, bool cBM)
 }
 
 
-void node_manager::accumulate(int& a, int b)
+void MEDDLY::mt_forest::accumulate(int& a, int b)
 {
   if (isActiveNode(a) && isActiveNode(b)) {
     int result = accumulateMdd(a, b, false);
@@ -2931,7 +2793,7 @@ void node_manager::accumulate(int& a, int b)
 // Use expert_domain::getNumVariables() to obtain the topmost level in
 // the domain.
 // cBM: copy before modifying.
-int node_manager::accumulate(int tempNode, bool cBM,
+int MEDDLY::mt_forest::accumulate(int tempNode, bool cBM,
     int* element, int level)
 {
   MEDDLY_DCASSERT(isMdd());
@@ -3002,22 +2864,22 @@ int node_manager::accumulate(int tempNode, bool cBM,
 
 
 // Add an element to a temporary edge
-bool node_manager::accumulate(int& tempNode, int* element)
+bool MEDDLY::mt_forest::accumulate(int& tempNode, int* element)
 {
   assert(isActiveNode(tempNode));
   assert(element != 0);
 
   // Enlarge variable bounds if necessary
-  for (int level=1; level<=expertDomain->getNumVariables(); level++) {
+  for (int level=1; level<=getExpertDomain()->getNumVariables(); level++) {
     int sz = element[level] + 1;
-    if (sz > expertDomain->getVariableBound(level)) {
-      expertDomain->enlargeVariableBound(level, false, sz);
+    if (sz > getExpertDomain()->getVariableBound(level)) {
+      useExpertDomain()->enlargeVariableBound(level, false, sz);
     }
   }
 
   accumulateMintermAddedElement = false;
   int result = accumulate(tempNode, false,
-      element, expertDomain->getNumVariables());
+      element, getExpertDomain()->getNumVariables());
   if (tempNode != result) {
     // tempNode had to be copied into another node by accumulate().
     // This could be either because tempNode was a reduced node,
@@ -3032,7 +2894,7 @@ bool node_manager::accumulate(int& tempNode, int* element)
 }
 
 
-int node_manager::recursiveReduceNode(std::map<int, int>& cache,
+int MEDDLY::mt_forest::recursiveReduceNode(std::map<int, int>& cache,
     int root)
 {
   MEDDLY_DCASSERT(!isReducedNode(root));
@@ -3077,7 +2939,7 @@ int node_manager::recursiveReduceNode(std::map<int, int>& cache,
 }
 
 
-int node_manager::recursiveReduceNode(int tempNode, bool clearCache)
+int MEDDLY::mt_forest::recursiveReduceNode(int tempNode, bool clearCache)
 {
   // Recursive procedure:
   // Start at root (i.e. tempNode).
@@ -3094,7 +2956,7 @@ int node_manager::recursiveReduceNode(int tempNode, bool clearCache)
 }
 
 
-int node_manager::createTempNode(int k, int sz, bool clear)
+int MEDDLY::mt_forest::createTempNode(int k, int sz, bool clear)
 {
   MEDDLY_DCASSERT(k != 0);
 
@@ -3117,7 +2979,7 @@ int node_manager::createTempNode(int k, int sz, bool clear)
 #endif
 
   // fill in the location with p's address info
-  MEDDLY_DCASSERT(getEdgeLabeling() == forest::MULTI_TERMINAL);
+  MEDDLY_DCASSERT(isMultiTerminal());
   address[p].level = k;
   address[p].offset = getHole(k, 4 + sz, true);
   address[p].cache_count = 0;
@@ -3148,26 +3010,7 @@ int node_manager::createTempNode(int k, int sz, bool clear)
 }
 
 
-int node_manager::reduceNode(int node) {
-  fprintf(stderr, "Error:\n");
-  fprintf(stderr, "  Called reduceNode() for a forest with edge-values.\n");
-  fprintf(stderr, "  Call normalizeAndReduceNode() instead.\n");
-  fflush(stderr);
-  return 0;
-}
-
-
-void node_manager::normalizeAndReduceNode(int& node, int& ev) {
-  fprintf(stderr, "Error:\n");
-  fprintf(stderr, "  Called normalizeAndReduceNode() for a forest\n");
-  fprintf(stderr, "  without edge-values. Call reduceNode() instead.\n");
-  fflush(stderr);
-  node = 0;
-  ev = INF;
-}
-
-
-void node_manager::handleNewOrphanNode(int p) {
+void MEDDLY::mt_forest::handleNewOrphanNode(int p) {
   MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
   MEDDLY_DCASSERT(isActiveNode(p));
   MEDDLY_DCASSERT(!isTerminalNode(p));
@@ -3197,7 +3040,7 @@ void node_manager::handleNewOrphanNode(int p) {
     zombifyNode(p);
   }
   else {
-    orphan_nodes++;
+    stats.orphan_nodes++;
   }
 
 #if 0
@@ -3210,7 +3053,7 @@ void node_manager::handleNewOrphanNode(int p) {
 
 // ********************* utils ************************
 
-bool node_manager::singleNonZeroAt(int p, int val, int index) const
+bool MEDDLY::mt_forest::singleNonZeroAt(int p, int val, int index) const
 {
   MEDDLY_DCASSERT(isActiveNode(p));
   MEDDLY_DCASSERT(!isTerminalNode(p));
@@ -3232,9 +3075,9 @@ bool node_manager::singleNonZeroAt(int p, int val, int index) const
 }
 
 
-bool node_manager::checkForReductions(int p, int nnz, int& result)
+bool MEDDLY::mt_forest::checkForReductions(int p, int nnz, int& result)
 {
-  if (getReductionRule() == forest::QUASI_REDUCED) return false;
+  if (isQuasiReduced()) return false;
   if (nnz != getLevelSize(getNodeLevel(p))) return false;
 
   const int* ptr = getFullNodeDownPtrs(p);
@@ -3242,14 +3085,14 @@ bool node_manager::checkForReductions(int p, int nnz, int& result)
 
   switch (getReductionRule()) {
 
-    case forest::FULLY_REDUCED:
+    case policies::FULLY_REDUCED:
       result = ptr[0];
       for (int i = 1; i < size; ++i) {
         if (ptr[i] != result) return false;
       }
       break;
 
-    case forest::IDENTITY_REDUCED:
+    case policies::IDENTITY_REDUCED:
       if (isForRelations()) {
         if (isPrimedNode(p)) return false;
         if (isFullNode(ptr[0])) {

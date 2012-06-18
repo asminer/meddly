@@ -29,10 +29,22 @@
 #if 0
 #include "forests/mdds_ext.h"
 #else
-#include "forests/mtmdd.h"
-#include "forests/mtmxd.h"
+#include "forests/mtmddbool.h"
+#include "forests/mtmddint.h"
+#include "forests/mtmddreal.h"
+
+#include "forests/mtmxdbool.h"
+#include "forests/mtmxdint.h"
+#include "forests/mtmxdreal.h"
+
 #include "forests/evmdd.h"
 #endif
+
+// #define DEBUG_CLEANUP
+
+namespace MEDDLY {
+  extern settings meddlySettings;
+}
 
 // ----------------------------------------------------------------------
 // varaiable
@@ -120,15 +132,208 @@ MEDDLY::domain::domain(variable** v, int N)
   for (int i=1; i<N; i++) {
     ((expert_variable*)vars[i])->addToList(this);
   }
+  is_marked_for_deletion = false;
+  forests = 0;
+  szForests = 0;
+
+  //
+  // Add myself to the master list
+  //
+  if (-1 == free_list) {
+    expandDomList();
+  }
+  MEDDLY_DCASSERT(free_list != -1);
+  my_index = free_list;
+  free_list = dom_free[free_list];
+  dom_list[my_index] = this;
+  dom_free[my_index] = -1;
+
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Creating domain #%d\n", my_index);
+#endif
 }
 
 MEDDLY::domain::~domain() 
 {
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Deleting domain #%d\n", my_index);
+#endif
+
   for (int i=1; i<nVars; i++) {
     ((expert_variable*)vars[i])->removeFromList(this);
   }
   free(vars);
+
+  for (int i=0; i<szForests; i++) {
+    delete forests[i];
+  }
+  free(forests);
+
+  //
+  // Remove myself from the master list
+  //
+  dom_list[my_index] = 0;
+  dom_free[my_index] = free_list;
+  free_list = my_index;
 }
+
+void MEDDLY::domain::expandDomList()
+{
+  int ndls = dom_list_size + 16;
+  domain** tmp_dl = (domain**) realloc(dom_list, ndls * sizeof(domain*));
+  if (0==tmp_dl) throw error(error::INSUFFICIENT_MEMORY);
+  dom_list = tmp_dl;
+  int* tmp_df = (int*) realloc(dom_free, ndls * sizeof(int));
+  if (0==tmp_df) throw error(error::INSUFFICIENT_MEMORY);
+  dom_free = tmp_df;
+  for (int i=dom_list_size; i<ndls; i++) {
+    dom_list[i] = 0;
+    dom_free[i] = i+1;
+  }
+  dom_free[ndls-1] = -1;
+  free_list = dom_list_size;
+  dom_list_size = ndls;
+}
+
+void MEDDLY::domain::markDomList()
+{
+  for (int i=0; i<dom_list_size; i++) {
+    if (dom_list[i]) dom_list[i]->markForDeletion();
+  }
+}
+
+void MEDDLY::domain::deleteDomList()
+{
+  for (int i=0; i<dom_list_size; i++) {
+    delete dom_list[i];
+  }
+  free(dom_list);
+  free(dom_free);
+  dom_list_size = 0;
+  dom_list = 0;
+  dom_free = 0;
+  free_list = -1;
+}
+
+MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t, 
+    forest::edge_labeling e, const forest::policies &p)
+{
+  int slot = findEmptyForestSlot();
+
+  expert_forest* f = 0;
+
+  switch (e) {
+    case forest::MULTI_TERMINAL:
+        switch (t) {
+            case forest::BOOLEAN:
+                if (rel)  f = new mt_mxd_bool(slot, this, p);
+                else      f = new mt_mdd_bool(slot, this, p);
+                break;
+
+            case forest::INTEGER:
+                if (rel)  f = new mt_mxd_int(slot, this, p);
+                else      f = new mt_mdd_int(slot, this, p);
+                break;
+
+            case forest::REAL:
+                if (rel)  f = new mt_mxd_real(slot, this, p);
+                else      f = new mt_mdd_real(slot, this, p);
+                break;
+
+            default:
+                throw error(error::TYPE_MISMATCH);
+        }; // range type switch
+        break;
+
+    case forest::EVPLUS:
+      f = new evp_mdd_int(slot, this, p);
+      break;
+
+    case forest::EVTIMES:
+      f = new evt_mdd_real(slot, this, p);
+      break;
+
+    default:
+      throw error(error::TYPE_MISMATCH);
+  } // edge label switch
+
+  MEDDLY_DCASSERT(f);
+  forests[slot] = f;
+  return f;
+}
+
+MEDDLY::forest* 
+MEDDLY::domain
+::createForest(bool rel, forest::range_type t, forest::edge_labeling e)
+{
+  return createForest(rel, t, e, 
+    rel ? meddlySettings.mxdDefaults : meddlySettings.mddDefaults);
+}
+
+void MEDDLY::domain::showInfo(FILE* strm)
+{
+  // list variables handles, their bounds and heights.
+  fprintf(strm, "Domain info:\n");
+  fprintf(strm, "  #variables: %d\n", nVars);
+  fprintf(strm, "  Variables listed in height-order (ascending):\n");
+  fprintf(strm, "    height\t\tname\t\tbound\t\tprime-bound\n");
+  for (int i = 1; i < nVars + 1; ++i) {
+    const char* name = vars[i]->getName();
+    if (0==name) name = "null";
+    fprintf(strm, "    %d\t\t%s\t\t%d\t\t%d\n",
+            i, name, vars[i]->getBound(0), vars[i]->getBound(1));
+  }
+
+  // call showNodes for each of the forests in this domain.
+  for (int i = 0; i < szForests; i++) {
+    if (forests[i] != 0)
+      forests[i]->showInfo(strm, 2);
+  }
+}
+
+void MEDDLY::domain::unlinkForest(forest* f, int slot)
+{
+  if (forests[slot] != f)
+    throw error(error::MISCELLANEOUS);
+  forests[slot] = 0;
+}
+
+int MEDDLY::domain::findEmptyForestSlot()
+{
+  for (int slot=0; slot<szForests; slot++) {
+    if (0==forests[slot]) return slot;
+  }
+  // need to expand
+  int newSize;
+  if (szForests) {
+    if (szForests > 16) newSize = szForests + 16;
+    else                newSize = szForests * 2;
+  } else {
+    newSize = 4;
+  }
+  forest** temp = (forest **) realloc(
+    forests, newSize * sizeof (expert_forest *)
+  );
+  if (0 == temp) throw error(error::INSUFFICIENT_MEMORY);
+  forests = temp;
+  memset(forests + szForests, 0,
+      (newSize - szForests) * sizeof(expert_forest*));
+  int slot = szForests;
+  szForests = newSize;
+  return slot;
+}
+
+void MEDDLY::domain::markForDeletion()
+{
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Marking domain #%d for deletion\n", my_index);
+#endif
+  is_marked_for_deletion = true;
+  for (int slot=0; slot<szForests; slot++) 
+    if (forests[slot]) forests[slot]->markForDeletion();
+}
+
+
 
 // ----------------------------------------------------------------------
 // expert_domain
@@ -137,23 +342,18 @@ MEDDLY::domain::~domain()
 MEDDLY::expert_domain::expert_domain(variable** x, int n)
 : domain(x, n)
 {
-  forests = 0;
-  szForests = 0;
 }
 
 
 MEDDLY::expert_domain::~expert_domain()
 {
-  // just cleanup
-  free(forests);
-
 }
 
 
 void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
 {
   // domain must be empty -- no variables defined so far
-  if (szForests != 0 || nVars != 0)
+  if (hasForests() || nVars != 0)
     throw error(error::DOMAIN_NOT_EMPTY);
 
   vars = (variable**) malloc((1+N) * sizeof(void*));
@@ -171,7 +371,7 @@ void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
 void MEDDLY::expert_domain::createVariablesTopDown(const int* bounds, int N)
 {
   // domain must be empty -- no variables defined so far
-  if (szForests != 0 || nVars != 0)
+  if (hasForests() || nVars != 0)
     throw error(error::DOMAIN_NOT_EMPTY);
 
   vars = (variable**) malloc((1+N) * sizeof(void*));
@@ -204,99 +404,6 @@ int MEDDLY::expert_domain::findLevelOfVariable(const variable *v) const
   }
   return i;
 }
-
-void MEDDLY::expert_domain::showInfo(FILE* strm)
-{
-  // list variables handles, their bounds and heights.
-  fprintf(strm, "Domain info:\n");
-  fprintf(strm, "  #variables: %d\n", nVars);
-  fprintf(strm, "  Variables listed in height-order (ascending):\n");
-  fprintf(strm, "    height\t\tname\t\tbound\t\tprime-bound\n");
-  for (int i = 1; i < nVars + 1; ++i) {
-    const char* name = vars[i]->getName();
-    if (0==name) name = "null";
-    fprintf(strm, "    %d\t\t%s\t\t%d\t\t%d\n",
-            i, name, vars[i]->getBound(0), vars[i]->getBound(1));
-  }
-
-  // call showNodes for each of the forests in this domain.
-  for (int i = 0; i < szForests; i++) {
-    if (forests[i] != 0)
-      forests[i]->showInfo(strm, 2);
-  }
-}
-
-
-MEDDLY::forest* MEDDLY::expert_domain::createForest(bool rel, forest::range_type t,
-    forest::edge_labeling e)
-{
-  int slot = findEmptyForestSlot();
-
-  expert_forest* f = 0;
-
-  if (rel) {
-    if(e == forest::MULTI_TERMINAL) {
-      if (t == forest::BOOLEAN) {
-        f = new mxd_node_manager(slot, this);
-      } else if (t == forest::INTEGER || t == forest::REAL) {
-        f = new mtmxd_node_manager(slot, this, t);
-      }
-    }
-  } else {
-    if (e == forest::MULTI_TERMINAL) {
-      if (t == forest::BOOLEAN) {
-        f = new mdd_node_manager(slot, this);
-      } else if (t == forest::INTEGER || t == forest::REAL) {
-        f = new mtmdd_node_manager(slot, this, t);
-      }
-    } else if (e == forest::EVPLUS) {
-      f = new evplusmdd_node_manager(slot, this);
-    } else if (e == forest::EVTIMES) {
-      f = new evtimesmdd_node_manager(slot, this);
-    }
-  }
-  forests[slot] = f;
-  return f;
-}
-
-int MEDDLY::expert_domain::findEmptyForestSlot()
-{
-  for (int slot=0; slot<szForests; slot++) {
-    if (0==forests[slot]) return slot;
-  }
-  // need to expand
-  int newSize;
-  if (szForests) {
-    if (szForests > 16) newSize = szForests + 16;
-    else                newSize = szForests * 2;
-  } else {
-    newSize = 4;
-  }
-  expert_forest** temp = (expert_forest **) realloc(
-    forests, newSize * sizeof (expert_forest *)
-  );
-  if (0 == temp) throw error(error::INSUFFICIENT_MEMORY);
-  forests = temp;
-  memset(forests + szForests, 0,
-      (newSize - szForests) * sizeof(expert_forest*));
-  int slot = szForests;
-  szForests = newSize;
-  return slot;
-}
-
-void MEDDLY::expert_domain::unlinkForest(expert_forest* f, int slot)
-{
-  if (forests[slot] != f)
-    throw error(error::MISCELLANEOUS);
-  forests[slot] = 0;
-}
-
-void MEDDLY::expert_domain::markForDeletion()
-{
-  for (int slot=0; slot<szForests; slot++) 
-    if (forests[slot]) forests[slot]->markForDeletion();
-}
-
 
 // TODO: not implemented
 void MEDDLY::expert_domain::swapOrderOfVariables(int vh1, int vh2)

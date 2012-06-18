@@ -23,7 +23,25 @@
 
 #include "defines.h"
 
+// #define DEBUG_CLEANUP
+
 // #define DEBUG_ITER_BEGIN
+
+// Helper functions
+inline void linkNode(MEDDLY::forest* p, int node)
+{
+  MEDDLY_DCASSERT(p);
+  MEDDLY_DCASSERT(smart_cast<MEDDLY::expert_forest*>(p));
+  smart_cast<MEDDLY::expert_forest*>(p)->linkNode(node);
+}
+
+inline void unlinkNode(MEDDLY::forest* p, int node)
+{
+  if (p) {
+    MEDDLY_DCASSERT(smart_cast<MEDDLY::expert_forest*>(p));
+    smart_cast<MEDDLY::expert_forest*>(p)->unlinkNode(node);
+  }
+}
 
 // Constructor.
 MEDDLY::dd_edge::dd_edge(forest* p)
@@ -32,8 +50,11 @@ MEDDLY::dd_edge::dd_edge(forest* p)
   opPlus(0), opStar(0), opMinus(0), opDivide(0),
   updateNeeded(true), beginIterator(0)
 {
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Creating dd_edge %x\n", this);
+#endif
   MEDDLY_DCASSERT(p != NULL);
-  smart_cast<expert_forest*>(parent)->registerEdge(*this);
+  parent->registerEdge(*this);
   MEDDLY_DCASSERT(index != -1);
 }
 
@@ -41,10 +62,13 @@ MEDDLY::dd_edge::dd_edge(forest* p)
 // Destructor.  Will notify parent as appropriate.
 MEDDLY::dd_edge::~dd_edge()
 {
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Deleting dd_edge %x\n", this);
+#endif
   if (index != -1) {
     // still registered; unregister before discarding
-    smart_cast<expert_forest*>(parent)->unlinkNode(node);
-    smart_cast<expert_forest*>(parent)->unregisterEdge(*this);
+    unlinkNode(parent, node);
+    if (parent) parent->unregisterEdge(*this);
   }
   if (beginIterator != 0) delete beginIterator;
 }
@@ -57,8 +81,11 @@ MEDDLY::dd_edge::dd_edge(const dd_edge& e)
   opMinus(e.opMinus), opDivide(e.opDivide),
   updateNeeded(e.updateNeeded), beginIterator(0)
 {
-  smart_cast<expert_forest*>(parent)->registerEdge(*this);
-  smart_cast<expert_forest*>(parent)->linkNode(node);
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Creating dd_edge %x\n", this);
+#endif
+  parent->registerEdge(*this);
+  linkNode(parent, node);
   if (!updateNeeded) {
     beginIterator = new const_iterator(*(e.beginIterator));
   }
@@ -69,18 +96,18 @@ MEDDLY::dd_edge::dd_edge(const dd_edge& e)
 MEDDLY::dd_edge& MEDDLY::dd_edge::operator=(const dd_edge& e)
 {
   if (this != &e) {
-    smart_cast<expert_forest*>(parent)->unlinkNode(node);
+    unlinkNode(parent, node);
     if (parent != e.parent) {
-      smart_cast<expert_forest*>(parent)->unregisterEdge(*this);
+      if (parent) parent->unregisterEdge(*this);
       MEDDLY_DCASSERT(index == -1);
       parent = e.parent;
-      smart_cast<expert_forest*>(parent)->registerEdge(*this);
+      parent->registerEdge(*this);
       opPlus = e.opPlus;
       opStar = e.opStar;
       opMinus = e.opMinus;
       opDivide = e.opDivide;
     }
-    smart_cast<expert_forest*>(parent)->linkNode(e.node);
+    linkNode(parent, e.node);
     node = e.node;
     value = e.value;
     level = e.level;
@@ -106,7 +133,7 @@ void MEDDLY::dd_edge::getEdgeValue(float& ev) const
 void MEDDLY::dd_edge::set(int n, int v, int l)
 {
   if (node != n) { updateNeeded = true; }
-  smart_cast<expert_forest*>(parent)->unlinkNode(node);
+  unlinkNode(parent, node);
   node = n;
   value = v;
   level = l;
@@ -116,7 +143,7 @@ void MEDDLY::dd_edge::set(int n, int v, int l)
 void MEDDLY::dd_edge::set(int n, float v, int l)
 {
   if (node != n) { updateNeeded = true; }
-  smart_cast<expert_forest*>(parent)->unlinkNode(node);
+  unlinkNode(parent, node);
   node = n;
   value = toInt(v);
   level = l;
@@ -453,7 +480,7 @@ bool MEDDLY::dd_edge::iterator::findNextRow(int height)
   MEDDLY_DCASSERT(e != 0);
   MEDDLY_DCASSERT(type == COLUMN);
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
-  MEDDLY_DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(f->isIdentityReduced());
 
   int nextHeight = height - 1;
 
@@ -558,7 +585,7 @@ bool MEDDLY::dd_edge::iterator::findNextColumn(int height)
   MEDDLY_DCASSERT(e != 0);
   MEDDLY_DCASSERT(type == ROW);
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
-  MEDDLY_DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(f->isIdentityReduced());
 
   int nextHeight = height - 1;
 
@@ -649,7 +676,7 @@ bool MEDDLY::dd_edge::iterator::findFirstRow(int height, int node)
   MEDDLY_DCASSERT(e != 0);
   MEDDLY_DCASSERT(type == COLUMN);
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
-  MEDDLY_DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(f->isIdentityReduced());
 
   int nodeHeight = f->isTerminalNode(node)? 0: f->getNodeHeight(node);
 
@@ -728,7 +755,7 @@ bool MEDDLY::dd_edge::iterator::findFirstColumn(int height, int node)
   MEDDLY_DCASSERT(e != 0);
   MEDDLY_DCASSERT(type == ROW);
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
-  MEDDLY_DCASSERT(f->getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(f->isIdentityReduced());
 
   int nodeHeight = f->isTerminalNode(node)? 0: f->getNodeHeight(node);
 
@@ -946,8 +973,7 @@ void MEDDLY::dd_edge::iterator::incrNonIdentRelation()
   expert_domain* d = smart_cast<expert_domain*>(e->parent->useDomain());
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
 
-  MEDDLY_DCASSERT(f->getReductionRule() == forest::FULLY_REDUCED
-      || f->getReductionRule() == forest::QUASI_REDUCED);
+  MEDDLY_DCASSERT(f->isFullyReduced() || f->isQuasiReduced());
 
   int currLevel = d->getNumVariables();
   bool isCurrLevelPrime = false;
@@ -1133,7 +1159,7 @@ void MEDDLY::dd_edge::iterator::incrRelation()
   MEDDLY_DCASSERT(type == DEFAULT);
 
   expert_forest* f = smart_cast<expert_forest*>(e->parent);
-  if (f->getReductionRule() != forest::IDENTITY_REDUCED) {
+  if (!f->isIdentityReduced()) {
     incrNonIdentRelation();
     return;
   }

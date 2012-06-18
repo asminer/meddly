@@ -58,6 +58,7 @@ void intersect(dd_edge** A, int L)
   fprintf(stderr, "\t");
   for (int i=1; i<L; i++) {
     fprintf(stderr, "%d ", L-i);
+    fflush(stderr);
     if (A[i]) {
       apply(MULTIPLY, *A[0], *A[i], *A[0]);
       delete A[i];
@@ -65,6 +66,7 @@ void intersect(dd_edge** A, int L)
     }
   }
   fprintf(stderr, "\n");
+  fflush(stderr);
 }
 
 #else 
@@ -119,21 +121,22 @@ void createQueenNodes(forest* f, int q, int N, dd_edge &col, dd_edge &cp, dd_edg
 
 long buildQueenSolutions(int N)
 {
-  printf("Building solutions for %d queens\n", N);
+  printf("Building solutions for %d", N);
+  fflush(stdout);
 
   for (int i=0; i<N; i++) {
     scratch[i] = N;
   }
   domain* d = createDomainBottomUp(scratch, N);
   assert(d);
-  forest* f = d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL);
+  forest::policies p(false);
+  p.setPessimistic();
+  forest* f = 
+    d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL, p);
   assert(f);
 
-  // Set up MDD options
-  f->setReductionRule(forest::FULLY_REDUCED);
-  f->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
-  f->setNodeDeletion(forest::PESSIMISTIC_DELETION);
-
+  printf(" q");
+  fflush(stdout);
 
   dd_edge** col = new dd_edge*[N];
   dd_edge** dgp = new dd_edge*[N];
@@ -149,6 +152,9 @@ long buildQueenSolutions(int N)
     f->createEdge(int(1), *constr[i]);
   }
   constr[N] = 0;
+
+  printf("ue");
+  fflush(stdout);
 
   for (int i=0; i<N-1; i++) {
   //  printf("\tBuilding queen %2d constraints\n", i+1);
@@ -168,6 +174,10 @@ long buildQueenSolutions(int N)
       apply(MULTIPLY, *constr[k], uniq_col, *constr[k]);
     } // for j
   } // for i
+
+  printf("ens\n");
+  fflush(stdout);
+
   intersect(constr, N);
   assert(constr[0]);
   long c;

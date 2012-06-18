@@ -194,7 +194,7 @@ long MEDDLY::card_mxd_int::compute(int ht, bool primed, int a)
   if (argF->getNodeHeight(a) < ht) {
     // skipped level
     long card;
-    if (argF->getReductionRule() == forest::IDENTITY_REDUCED) {
+    if (argF->isIdentityReduced()) {
       assert(!primed);
       card = compute(ht-1, false, a);
     } else {
@@ -384,7 +384,7 @@ double MEDDLY::card_mxd_real::compute(int ht, bool primed, int a)
   if (argF->getNodeHeight(a) < ht) {
     // skipped level
     double card;
-    if (argF->getReductionRule() == forest::IDENTITY_REDUCED) {
+    if (argF->isIdentityReduced()) {
       assert(!primed);
       card = compute(ht-1, false, a);
     } else {
@@ -598,7 +598,7 @@ void MEDDLY::card_mxd_mpz::compute(int ht, bool primed, int a, mpz_object &card)
   }
   if (argF->getNodeHeight(a) < ht) {
     // skipped level
-    if (argF->getReductionRule() == forest::IDENTITY_REDUCED) {
+    if (argF->isIdentityReduced()) {
       assert(!primed);
       compute(ht-1, false, a, card);
     } else {

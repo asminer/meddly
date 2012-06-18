@@ -282,9 +282,13 @@ struct MEDDLY::settings {
     computeTableSettings computeTable;
     /// Initializer for operations
     op_initializer* operationBuilder;
+    /// Default forest policies for "sets"
+    forest::policies mddDefaults;
+    /// Default forest policies for "relations"
+    forest::policies mxdDefaults;
   public:
     /// Constructor, to set defaults.
-    settings() : computeTable() {
+    settings() : computeTable(), mddDefaults(0), mxdDefaults(1) {
       operationBuilder = makeBuiltinInitializer();
     }
     /// super handly
@@ -500,26 +504,6 @@ class MEDDLY::expert_domain : public domain {
     }
 
     virtual void createVariablesBottomUp(const int* bounds, int N);
-    virtual forest* createForest(bool rel, forest::range_type t,
-      forest::edge_labeling ev);
-    virtual void showInfo(FILE* strm);
-
-    /// Free the slot that the forest is using.
-    void unlinkForest(expert_forest* f, int slot);
-
-    // --------------------------------------------------------------------
-
-  private:
-    expert_forest** forests;
-    int szForests;
-
-    /// Find a free slot for a new forest.
-    int findEmptyForestSlot();
-
-    /// Mark this domain for deletion
-    void markForDeletion();
-
-    friend void MEDDLY::destroyDomain(domain* &d);
 };
 
 
@@ -536,71 +520,39 @@ class MEDDLY::expert_forest : public forest
       @param  rel     does this forest represent a relation.
       @param  t       the range of the functions represented in this forest.
       @param  ev      edge annotation.
-      @param  r       reduction rule.
-      @param  s       storage rule.
-      @param  ndp     node deletion policy.
+      @param  p       Polcies for reduction, storage, deletion.
     */
     expert_forest(int dslot, domain *d, bool rel, range_type t, 
-      edge_labeling ev, reduction_rule r, node_storage s, 
-      node_deletion_policy ndp);
+      edge_labeling ev, const policies &p);
 
   protected:
     /// Destructor.
     virtual ~expert_forest();  
 
-    /// Phase one destruction.
-    void markForDeletion();
-
-    friend void MEDDLY::destroyForest(MEDDLY::forest* &f);
-    friend class expert_domain;
-
+  // ------------------------------------------------------------
+  // inlines.
   public:
-    /// Returns a non-modifiable pointer to this forest's domain.
-    const domain* getDomain() const;
-
     inline const expert_domain* getExpertDomain() const {
       return (expert_domain*) getDomain();
     }
     inline expert_domain* useExpertDomain() {
-      return (expert_domain*) getDomain();
+      return (expert_domain*) useDomain();
     }
 
-    /// Returns a modifiable pointer to this forest's domain.
-    domain* useDomain();
+  // ------------------------------------------------------------
+  // virtual, with default implementation.
+  public:
+    /// Apply reduction rule to the temporary node and finalize it. Once
+    /// a node is reduced, its contents cannot be modified.
+    virtual int reduceNode(int node);
 
-    /// Does this forest represent functions that are relations?
-    bool isForRelations() const;
+    /// Reduce and finalize an node with an incoming edge value
+    virtual void normalizeAndReduceNode(int& node, int& ev);
+    virtual void normalizeAndReduceNode(int& node, float& ev);
 
-    /// Returns the type of range represented by functions in this forest.
-    forest::range_type getRangeType() const;
 
-    /// Returns the edge annotation mechanism used by this forest.
-    forest::edge_labeling getEdgeLabeling() const;
-
-    /// Returns the reduction rule used by this forest.
-    forest::reduction_rule getReductionRule() const;
-
-    /// Returns the storage mechanism used by this forest.
-    forest::node_storage getNodeStorage() const;
-
-    /// Returns the node deletion policy used by this forest.
-    forest::node_deletion_policy getNodeDeletion() const;
-
-    /// Sets the reduction rule for this forest.
-    void setReductionRule(forest::reduction_rule r);
-
-    /// Sets the storage mechanism for this forest.
-    void setNodeStorage(forest::node_storage ns);
-
-    /// Sets the node deletion policy for this forest.
-    void setNodeDeletion(forest::node_deletion_policy np);
-
-    /// Remove any stale compute table entries associated with this forest.
-    void removeStaleComputeTableEntries();
-
-    /// Remove all compute table entries associated with this forest.
-    void removeAllComputeTableEntries();
-
+  // here down --- needs organizing
+  public:
     /// Create a temporary node -- a node that can be modified by the user.
     /// If \a clear is true, downpointers are initialized to 0.
     virtual int createTempNode(int lh, int size, bool clear = true) = 0;
@@ -633,14 +585,6 @@ class MEDDLY::expert_forest : public forest
 
     /// The maximum size (number of indices) a node at this level can have
     int getLevelSize(int lh) const;
-
-    /// Apply reduction rule to the temporary node and finalize it. Once
-    /// a node is reduced, its contents cannot be modified.
-    virtual int reduceNode(int node) = 0;
-
-    /// Reduce and finalize an node with an incoming edge value
-    virtual void normalizeAndReduceNode(int& node, int& ev) = 0;
-    virtual void normalizeAndReduceNode(int& node, float& ev) = 0;
 
     /// A is a temporary node, and B is a reduced node.
     /// Accumulate B into A, i.e. A += B.
@@ -900,18 +844,7 @@ class MEDDLY::expert_forest : public forest
     /// Otherwise, it returns (2 * node_height).
     int getMappedNodeHeight(int node) const;
 
-    /// Register an operation with this forest.
-    void registerOperation(const operation* op);
-
-    /// Unregister an operation.
-    void unregisterOperation(const operation* op);
-
   protected:
-    // for debugging:
-    void showComputeTable(FILE* s, int verbLevel) const;
-
-    void unregisterDDEdges();
-
     int getInternalNodeSize(int node) const;
     int* getNodeAddress(int node) const;
     int* getAddress(int k, int offset) const;
@@ -921,8 +854,6 @@ class MEDDLY::expert_forest : public forest
     int unmapLevel(int level) const;
 
     bool isZombieNode(int node) const;
-
-    bool isPessimistic() const;
 
     // the following virtual functions are implemented in node_manager
     virtual bool isValidNodeIndex(int node) const = 0;
@@ -999,45 +930,6 @@ class MEDDLY::expert_forest : public forest
     /// Level data. Each level maintains its own data array and hole grid.
     mdd_level_data *level;
 
-    domain *d;
-    bool isRelation;
-    forest::range_type rangeType;
-    forest::edge_labeling edgeLabel;
-    forest::reduction_rule reductionRule;
-    forest::node_storage nodeStorage;
-    forest::node_deletion_policy nodeDeletionPolicy;
-
-  private:
-    int d_slot;
-    bool is_marked_for_deletion;
-
-    friend class dd_edge;
-    void registerEdge(dd_edge& e);
-    void unregisterEdge(dd_edge& e);
-
-
-    // structure to store references to registered dd_edges.
-    typedef struct {
-      // If nextHole >= 0, this is a hole, in which case nextHole also
-      // refers to the array index of the next hole in edge[]
-      int nextHole;
-      // registered dd_edge
-      dd_edge* edge;
-    } edge_data;
-
-    // Array of registered dd_edges
-    edge_data *edge;
-
-    // Size of edge[]
-    unsigned sz;
-    // Array index: 1 + (last used slot in edge[])
-    unsigned firstFree;
-    // Array index: most recently created hole in edge[]
-    int firstHole;
-
-    // Used to count registered operations
-    int* opCount;
-    int szOpCount;
 
 #if 0
   // TODO: 
@@ -1445,9 +1337,6 @@ class MEDDLY::operation {
     const opname* theOpName;
     bool is_marked_for_deletion;
 
-    friend void MEDDLY::initialize(const settings &);
-    friend void MEDDLY::cleanup();
-
     // declared and initialized in meddly.cc
     static compute_table* Monolithic_CT;
     // declared and initialized in meddly.cc
@@ -1492,20 +1381,31 @@ class MEDDLY::operation {
 
     inline void setAnswerForest(const expert_forest* f) {
       discardStaleHits = f 
-        ?   f->getNodeDeletion() == forest::PESSIMISTIC_DELETION
+        ?   f->getNodeDeletion() == forest::policies::PESSIMISTIC_DELETION
         :   false;  // shouldn't be possible, so we'll do what's fastest.
     }
 
     void markForDeletion();
 
-    friend class expert_forest;
+    friend class forest;
+    friend void MEDDLY::initialize(const settings &);
     friend void MEDDLY::destroyOpInternal(operation* op);
+    friend void MEDDLY::cleanup();
+
+    inline void registerInForest(forest* f) { 
+      if (f) f->registerOperation(this); 
+    }
+
+    inline void unregisterInForest(forest* f) { 
+      if (f) f->unregisterOperation(this); 
+    }
+
+  private:
+    // should ONLY be called during library cleanup.
+    static void destroyAllOps();
 
   public:
     inline bool isMarkedForDeletion() const { return is_marked_for_deletion; }
-
-    // should ONLY be called during library cleanup.
-    static void destroyOpList();
 
     inline void setNext(operation* n) { next = n; }
     inline operation* getNext()       { return next; }
@@ -1943,9 +1843,9 @@ int MEDDLY::expert_forest::getLevelSize(int lh) const {
   MEDDLY_DCASSERT(isValidLevel(lh));
   MEDDLY_DCASSERT(lh == 0 || level[mapLevel(lh)].data != NULL);
   if (lh < 0) {
-    return static_cast<expert_domain*>(d)->getVariableBound(-lh, true);
+    return getExpertDomain()->getVariableBound(-lh, true);
   } else {
-    return static_cast<expert_domain*>(d)->getVariableBound(lh, false);
+    return getExpertDomain()->getVariableBound(lh, false);
   }
 }
 
@@ -2295,103 +2195,6 @@ void MEDDLY::expert_forest::uncacheNode(int p)
     deleteOrphanNode(p);
   }
 }
-
-
-inline
-const MEDDLY::domain* MEDDLY::expert_forest::getDomain() const
-{
-  return d;
-}
-
-
-inline
-MEDDLY::domain* MEDDLY::expert_forest::useDomain()
-{
-  return d;
-}
-
-
-inline
-bool MEDDLY::expert_forest::isForRelations() const
-{
-  return isRelation;
-}
-
-
-inline
-MEDDLY::forest::range_type MEDDLY::expert_forest::getRangeType() const
-{
-  return rangeType;
-}
-
-
-inline
-MEDDLY::forest::edge_labeling MEDDLY::expert_forest::getEdgeLabeling() const
-{
-  return edgeLabel;
-}
-
-
-inline
-MEDDLY::forest::reduction_rule MEDDLY::expert_forest::getReductionRule() const
-{
-  return reductionRule;
-}
-
-
-inline
-MEDDLY::forest::node_storage MEDDLY::expert_forest::getNodeStorage() const
-{
-  return nodeStorage;
-}
-
-
-inline
-MEDDLY::forest::node_deletion_policy 
-MEDDLY::expert_forest::getNodeDeletion() const
-{
-  return nodeDeletionPolicy;
-}
-
-
-inline
-void MEDDLY::expert_forest::setNodeDeletion(node_deletion_policy np)
-{
-  if (np == forest::NEVER_DELETE)
-    throw error(error::NOT_IMPLEMENTED);
-  if (getCurrentNumNodes() > 0)
-    throw error(error::INVALID_OPERATION);
-  nodeDeletionPolicy = np;
-}
-
-inline
-void MEDDLY::expert_forest::setNodeStorage(node_storage ns)
-{
-  if (nodeStorage == ns) return;
-  if (getCurrentNumNodes() > 0)
-    throw error(error::INVALID_OPERATION);
-  nodeStorage = ns;
-}
-
-inline
-void MEDDLY::expert_forest::setReductionRule(reduction_rule r)
-{
-  if (reductionRule == r) return;
-  if (getCurrentNumNodes() > 0)
-    throw error(error::INVALID_OPERATION);
-  if (!isForRelations() && r == forest::IDENTITY_REDUCED) {
-    // cannot have IDENTITY reduced for non-relation forests.
-    throw error(error::INVALID_OPERATION);
-  }
-  reductionRule = r;
-}
-
-
-inline
-bool MEDDLY::expert_forest::isPessimistic() const {
-  return nodeDeletionPolicy == forest::PESSIMISTIC_DELETION;
-}
-
 
 inline
 bool MEDDLY::expert_forest::isMdd() const {

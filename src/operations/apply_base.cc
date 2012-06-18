@@ -617,7 +617,7 @@ MEDDLY::generic_binary_mxd::~generic_binary_mxd()
 }
 
 int MEDDLY::generic_binary_mxd::compute(int a, int b) {
-  return arg1F->getReductionRule() == forest::IDENTITY_REDUCED
+  return arg1F->isIdentityReduced()
       ? computeIdent(a, b)
       : computeNonIdent(a, b);
 }
@@ -762,7 +762,7 @@ int MEDDLY::generic_binary_mxd::computeIdent(int a, int b)
 
 int MEDDLY::generic_binary_mxd::computeNonIdent(int a, int b)
 {
-  MEDDLY_DCASSERT(resF->getReductionRule() != forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(!resF->isIdentityReduced());
 
   int result = 0;
   if (checkTerminals(a, b, result))
@@ -1391,7 +1391,7 @@ void MEDDLY::generic_binbylevel_mxd
 int MEDDLY::generic_binbylevel_mxd
 ::compute(int resultLevel, int a, int b)
 {
-  return resF->getReductionRule() == forest::IDENTITY_REDUCED
+  return resF->isIdentityReduced()
       ? computeIdent(resultLevel, a, b)
       : computeNonIdent(resultLevel, a, b);
 }
@@ -1413,7 +1413,7 @@ int MEDDLY::generic_binbylevel_mxd
   // This is to ensure correctness for operations where op(0, 0) != 0.
 
   int result = 0;
-  MEDDLY_DCASSERT(resF->getReductionRule() == forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(resF->isIdentityReduced());
 
   if (resultLevel == 0) {
     checkTerminals(a, b, result);
@@ -1551,7 +1551,7 @@ int MEDDLY::generic_binbylevel_mxd
 int MEDDLY::generic_binbylevel_mxd
 ::computeNonIdent(int resultLevel, int a, int b)
 {
-  MEDDLY_DCASSERT(resF->getReductionRule() != forest::IDENTITY_REDUCED);
+  MEDDLY_DCASSERT(!resF->isIdentityReduced());
 
   int result = 0;
 

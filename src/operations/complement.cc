@@ -196,7 +196,7 @@ int MEDDLY::compl_mxd::compute(int ht, int a)
     return resF->getTerminalNode(a==0);
   }
   if (argF->isTerminalNode(a) && 
-      resF->getReductionRule() == forest::FULLY_REDUCED) 
+      resF->isFullyReduced()) 
   {
     return resF->getTerminalNode(a==0);
   }
@@ -224,7 +224,7 @@ int MEDDLY::compl_mxd::compute(int ht, int a)
     // All result[i] = compute(htm1, a)
     // Special case: expand both levels at skipped identity-reduced level.
     if (ht > 0 &&
-        resF->getReductionRule() == forest::IDENTITY_REDUCED) {
+        resF->isIdentityReduced()) {
       MEDDLY_DCASSERT(ht > 0);
       MEDDLY_DCASSERT(htm1 < 0);
       int htm2 = (-htm1)-1;

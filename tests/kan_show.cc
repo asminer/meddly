@@ -26,6 +26,10 @@
 #include "meddly.h"
 #include "simple_model.h"
 
+#include "kan_rs1.h"
+#include "kan_rs2.h"
+#include "kan_rs3.h"
+
 const char* kanban[] = {
   "X-+..............",  // Tin1
   "X.-+.............",  // Tr1
@@ -45,6 +49,7 @@ const char* kanban[] = {
   "X.............-.+"   // Tg4
 };
 
+// 160 states for N=1
 long expected[] = { 
   1, 160, 4600, 58400, 454475, 2546432, 11261376, 
   41644800, 133865325, 384392800, 1005927208 
@@ -52,13 +57,8 @@ long expected[] = {
 
 using namespace MEDDLY;
 
-long buildReachset(int N, bool useSat)
+dd_edge buildReachset(domain* d, int N)
 {
-  int sizes[16];
-
-  for (int i=15; i>=0; i--) sizes[i] = N+1;
-  domain* d = createDomainBottomUp(sizes, 16);
-
   // Build initial state
   int* initial = new int[17];
   for (int i=16; i; i--) initial[i] = 0;
@@ -73,40 +73,89 @@ long buildReachset(int N, bool useSat)
   buildNextStateFunction(kanban, 16, mxd, nsf); 
 
   dd_edge reachable(mdd);
-  if (useSat)
-    apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
-  else
-    apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
+  apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
 
-  long c;
-  apply(CARDINALITY, reachable, c);
+  return reachable;
+}
+
+bool matches(const char* mark, const int* minterm, int np)
+{
+  for (int i=0; i<np; i++) 
+    if (mark[i]-48 != minterm[i]) return false;
+  return true;
+}
+
+long checkRS(int N, const char* rs[]) 
+{
+  int sizes[16];
+
+  for (int i=15; i>=0; i--) sizes[i] = N+1;
+  domain* d = createDomainBottomUp(sizes, 16);
+
+  dd_edge reachable = buildReachset(d, N);
+
+  // enumerate states
+  long c = 0;
+  dd_edge::iterator i = reachable.begin();
+  for (; i; ++i) {
+    if (c>=expected[N]) {
+      c++;
+      break;
+    }
+    if (!matches(rs[c], i.getAssignments()+1, 16)) {
+      fprintf(stderr, "Marking %ld mismatched\n", c);
+      break;
+    }
+    c++;
+  }
 
   destroyDomain(d);
-  
   return c;
+}
+
+void showRS(int N)
+{
+  int sizes[16];
+
+  for (int i=15; i>=0; i--) sizes[i] = N+1;
+  domain* d = createDomainBottomUp(sizes, 16);
+
+  dd_edge reachable = buildReachset(d, N);
+
+  // enumerate states
+  long c = 0;
+  dd_edge::iterator i = reachable.begin();
+  for (; i; ++i) {
+    const int* minterm = i.getAssignments();
+    printf("%5ld: %d", c, minterm[1]);
+    for (int l=2; l<=16; l++) printf(", %d", minterm[l]);
+    printf("\n");
+    c++;
+  }
+
+  destroyDomain(d);
 }
 
 int main()
 {
   MEDDLY::initialize();
 
-  printf("Building Kanban reachability sets, using saturation\n");
-  for (int n=1; n<11; n++) {
-    printf("N=%2d:  ", n);
-    fflush(stdout);
-    long c = buildReachset(n, true);
-    printf("%12ld states\n", c);
-    if (c != expected[n]) return 1;
-  }
+  long c;
 
-  printf("Building Kanban reachability sets, using traditional iteration\n");
-  for (int n=1; n<11; n++) {
-    printf("N=%2d:  ", n);
-    fflush(stdout);
-    long c = buildReachset(n, false);
-    printf("%12ld states\n", c);
-    if (c != expected[n]) return 1;
-  }
+  printf("Checking Kanban reachability set, N=1\n");
+  c = checkRS(1, kanban_rs1);
+  if (c != expected[1]) return 1;
+  printf("\t%ld markings checked out\n", c);
+
+  printf("Checking Kanban reachability set, N=2\n");
+  c = checkRS(2, kanban_rs2);
+  if (c != expected[2]) return 1;
+  printf("\t%ld markings checked out\n", c);
+
+  printf("Checking Kanban reachability set, N=3\n");
+  c = checkRS(3, kanban_rs3);
+  if (c != expected[3]) return 1;
+  printf("\t%ld markings checked out\n", c);
 
   MEDDLY::cleanup();
   printf("Done\n");

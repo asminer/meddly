@@ -28,37 +28,213 @@
 #include <queue>
 #include <vector>
 
+// #define DEBUG_CLEANUP
 
-// **************************** forest *********************************
+// ******************************************************************
+// *                                                                *
+// *                    forest::statset  methods                    *
+// *                                                                *
+// ******************************************************************
 
-MEDDLY::forest::forest() {}
-MEDDLY::forest::~forest() {}
-
-
-// **************************** expert_forest *********************************
-
-MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
-  edge_labeling ev, reduction_rule r, node_storage s, node_deletion_policy nd)
-: d(d), isRelation(rel), rangeType(t), edgeLabel(ev),
-  reductionRule(r), nodeStorage(s), nodeDeletionPolicy(nd),
-  sz(256), firstFree(0), firstHole(-1)
+MEDDLY::forest::statset::statset()
 {
+  reclaimed_nodes = 0;
+  num_compactions = 0;
+  zombie_nodes = 0;
+  orphan_nodes = 0;
+  active_nodes = 0;
+  peak_active = 0;
+  memory_used = 0;
+  memory_alloc = 0;
+  peak_memory_used = 0;
+  peak_memory_alloc = 0;
+  memory_UT = 0;
+  peak_memory_UT = 0;
+  max_UT_chain = 0;
+}
+
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                         forest methods                         *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::forest
+::forest(int ds, domain* _d, bool rel, range_type t, edge_labeling ev, 
+  const policies &p) : deflt(p)
+{
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Creating forest #%d in domain #%d\n", ds, _d->ID());
+#endif
   d_slot = ds;
   is_marked_for_deletion = false;
-  // firstHole < 0 indicates no holes.
-  firstHole = -1;
+  d = _d;
+  isRelation = rel;
+  rangeType = t;
+  edgeLabel = ev;
+  // check policies
+  if (!isRelation) {
+    if (policies::IDENTITY_REDUCED == deflt.reduction)
+      throw error(error::INVALID_POLICY);
+  } 
+  //
+  // Initialize array of operations
+  //
+  opCount = 0;
+  szOpCount = 0;
+  //
+  // Initialize list of registered dd_edges
+  //
+  firstHole = -1; // firstHole < 0 indicates no holes.
+  firstFree = 0;
+  sz = 256;
+
   // Create an array to store pointers to dd_edges.
   edge = (edge_data *) malloc(sz * sizeof(edge_data));
   for (unsigned i = 0; i < sz; ++i) {
     edge[i].nextHole = -1;
     edge[i].edge = 0;
   }
-  // initialize array of operations
-  opCount = 0;
-  szOpCount = 0;
 }
 
-void MEDDLY::expert_forest::removeStaleComputeTableEntries()
+MEDDLY::forest::~forest()
+{
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Deleting forest #%d in domain #%d\n", d_slot, d->ID());
+#endif
+  // operations are deleted elsewhere...
+  free(opCount);
+  // Make SURE our edges are orphaned
+  for (unsigned i = 0; i < firstFree; ++i) {
+    if (edge[i].edge) edge[i].edge->orphan();
+  }
+  free(edge);
+  // NOTE: since the user is provided with the dd_edges instances (as opposed
+  // to a pointer), the user program will automatically call the
+  // destructor for each dd_edge when the corresponding variable goes out of
+  // scope. Therefore there is no need to destruct dd_edges from here.
+  d->unlinkForest(this, d_slot);
+}
+
+void MEDDLY::forest::markForDeletion()
+{
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Marking forest #%d for deletion in domain #%d\n", d_slot, d->ID());
+#endif
+  is_marked_for_deletion = true;
+  // deal with operations associated with this forest
+  for (int i=0; i<szOpCount; i++) 
+    if (opCount[i]) {
+      operation* op = operation::getOpWithIndex(i);
+      op->markForDeletion();
+    }
+  unregisterDDEdges();
+}
+
+void MEDDLY::forest::createEdgeForVar(int vh, bool vp, bool* terms, dd_edge& a)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest::createEdgeForVar(int vh, bool vp, int* terms, dd_edge& a)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest::createEdgeForVar(int vh, bool vp, float* terms, dd_edge& a)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest::createEdge(const int* const* vlist, int N, dd_edge &e)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest
+::createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest
+::createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest
+::createEdge(const int* const* vl, const int* const* vpl, int N, dd_edge &e)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest
+::createEdge(const int* const* vlist, const int* const* vplist,
+      const int* terms, int N, dd_edge &e)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest
+::createEdge(const int* const* vlist, const int* const* vplist,
+      const float* terms, int N, dd_edge &e)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest::createEdge(bool val, dd_edge &e)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest::createEdge(int val, dd_edge &e)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest::createEdge(float val, dd_edge &e)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, bool &t) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, int &t) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, float &t) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest
+::evaluate(const dd_edge& f, const int* vl, const int* vpl, bool &t) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest
+::evaluate(const dd_edge& f, const int* vl, const int* vpl, int &t) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest
+::evaluate(const dd_edge& f, const int* vl, const int* vpl, float &t) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest::removeStaleComputeTableEntries()
 {
   if (operation::useMonolithicComputeTable()) {
     operation::removeStalesFromMonolithic();
@@ -71,7 +247,7 @@ void MEDDLY::expert_forest::removeStaleComputeTableEntries()
   }
 }
 
-void MEDDLY::expert_forest::removeAllComputeTableEntries()
+void MEDDLY::forest::removeAllComputeTableEntries()
 {
   if (is_marked_for_deletion) return;
   if (operation::useMonolithicComputeTable()) {
@@ -87,7 +263,20 @@ void MEDDLY::expert_forest::removeAllComputeTableEntries()
   }
 }
 
-void MEDDLY::expert_forest::registerOperation(const operation* op)
+void MEDDLY::forest::showComputeTable(FILE* s, int verbLevel) const
+{
+  if (operation::useMonolithicComputeTable()) {
+    operation::showMonolithicComputeTable(s, verbLevel);
+  } else {
+    for (int i=0; i<szOpCount; i++) 
+      if (opCount[i]) {
+        operation* op = operation::getOpWithIndex(i);
+        op->showComputeTable(s, verbLevel);
+      }
+  }
+}
+
+void MEDDLY::forest::registerOperation(const operation* op)
 {
   MEDDLY_DCASSERT(op->getIndex() >= 0);
   if (op->getIndex() >= szOpCount) {
@@ -103,7 +292,7 @@ void MEDDLY::expert_forest::registerOperation(const operation* op)
   opCount[op->getIndex()] ++;
 }
 
-void MEDDLY::expert_forest::unregisterOperation(const operation* op)
+void MEDDLY::forest::unregisterOperation(const operation* op)
 {
   MEDDLY_DCASSERT(op->getIndex() >= 0);
   MEDDLY_DCASSERT(szOpCount > op->getIndex());
@@ -111,77 +300,8 @@ void MEDDLY::expert_forest::unregisterOperation(const operation* op)
   opCount[op->getIndex()] --;
 }
 
-
-void MEDDLY::expert_forest::showComputeTable(FILE* s, int verbLevel) const
+void MEDDLY::forest::registerEdge(dd_edge& e) 
 {
-  // if (is_marked_for_deletion) return;
-  if (operation::useMonolithicComputeTable()) {
-    operation::showMonolithicComputeTable(s, verbLevel);
-  } else {
-    for (int i=0; i<szOpCount; i++) 
-      if (opCount[i]) {
-        operation* op = operation::getOpWithIndex(i);
-        op->showComputeTable(s, verbLevel);
-      }
-  }
-}
-
-
-void MEDDLY::expert_forest::unregisterDDEdges() {
-  // Go through the list of valid edges (value > 0), and set
-  // the e.index to -1 (indicating unregistered edge).
-
-  // ignore the NULLs; release the rest
-  for (unsigned i = 0; i < firstFree; ++i) {
-    if (edge[i].edge != 0) {
-      MEDDLY_DCASSERT(edge[i].nextHole == -1);
-      edge[i].edge->set(0, 0, 0);
-      edge[i].edge->setIndex(-1);
-    }
-  }
-
-  // firstHole < 0 indicates no holes.
-  for (unsigned i = 0; i < firstFree; ++i) {
-    edge[i].nextHole = -1;
-    edge[i].edge = 0;
-  }
-  firstHole = -1;
-  firstFree = 0;
-}
-
-
-MEDDLY::expert_forest::~expert_forest() {
-  // Go through the list of valid edges (value > 0), and set
-  // the e.index to -1 (indicating unregistered edge).
-  // unregisterDDEdges();
-  // No need to call this from here -- ~node_manager() calls it.
-
-  // Delete the arrays
-  free(edge);
-
-  free(opCount);
-
-
-  // NOTE: since the user is provided with the dd_edges instances (as opposed
-  // to a pointer), the user program will automatically call the
-  // destructor for each dd_edge when the corresponding variable goes out of
-  // scope. Therefore there is no need to destruct dd_edges from here.
-
-  ((expert_domain*) d)->unlinkForest(this, d_slot);
-}
-
-void MEDDLY::expert_forest::markForDeletion()
-{
-  is_marked_for_deletion = true;
-  // deal with operations associated with this forest
-  for (int i=0; i<szOpCount; i++) 
-    if (opCount[i]) {
-      operation* op = operation::getOpWithIndex(i);
-      op->markForDeletion();
-    }
-}
-
-void MEDDLY::expert_forest::registerEdge(dd_edge& e) {
   // add to collection of edges for this forest.
   // change e.index to help find this edge at a later time.
   if (firstHole >= 0) {
@@ -216,7 +336,8 @@ void MEDDLY::expert_forest::registerEdge(dd_edge& e) {
 }
 
 
-void MEDDLY::expert_forest::unregisterEdge(dd_edge& e) {
+void MEDDLY::forest::unregisterEdge(dd_edge& e) 
+{
   // remove this edge from the collection of edges for this forest.
   // change e.index to -1.
   MEDDLY_DCASSERT(e.getIndex() >= 0);
@@ -228,6 +349,66 @@ void MEDDLY::expert_forest::unregisterEdge(dd_edge& e) {
   e.setIndex(-1);
 }
 
+
+void MEDDLY::forest::unregisterDDEdges() 
+{
+  // Go through the list of valid edges (value > 0), and set
+  // the e.index to -1 (indicating unregistered edge).
+
+  // ignore the NULLs; release the rest
+  for (unsigned i = 0; i < firstFree; ++i) {
+    if (edge[i].edge != 0) {
+      MEDDLY_DCASSERT(edge[i].nextHole == -1);
+      edge[i].edge->set(0, 0, 0);
+      edge[i].edge->setIndex(-1);
+    }
+  }
+
+  // firstHole < 0 indicates no holes.
+  for (unsigned i = 0; i < firstFree; ++i) {
+    edge[i].nextHole = -1;
+    edge[i].edge = 0;
+  }
+  firstHole = -1;
+  firstFree = 0;
+}
+
+
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                     expert_forest  methods                     *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+
+
+MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
+  edge_labeling ev, const policies &p)
+: forest(ds, d, rel, t, ev, p)
+{
+}
+
+
+MEDDLY::expert_forest::~expert_forest() {
+}
+
+int MEDDLY::expert_forest::reduceNode(int node)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::expert_forest::normalizeAndReduceNode(int& node, int& ev)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::expert_forest::normalizeAndReduceNode(int& node, float& ev)
+{
+  throw error(error::TYPE_MISMATCH);
+}
 
 // TODO: make use of pointers to speed this up.
 int MEDDLY::expert_forest::getDownPtr(int p, int i) const {
@@ -299,7 +480,7 @@ bool MEDDLY::expert_forest::getDownPtrs(int p, std::vector<int>& dptrs) const {
 
 bool MEDDLY::expert_forest::isStale(int h) const {
   return
-    is_marked_for_deletion || (
+    isMarkedForDeletion() || (
       isTerminalNode(h)
       ? discardTemporaryNodesFromComputeCache()
       : isPessimistic()

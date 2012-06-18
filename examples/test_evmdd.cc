@@ -282,10 +282,12 @@ int main(int argc, char *argv[])
   assert(d != 0);
 
   // Create a MTMDD forest in this domain
+  forest::policies p1(false);
+  p1.setPessimistic();
 #if USE_REALS
-  forest* evmdd = d->createForest(false, forest::REAL, forest::EVTIMES);
+  forest* evmdd = d->createForest(false, forest::REAL, forest::EVTIMES, p1);
 #else
-  forest* evmdd = d->createForest(false, forest::INTEGER, forest::EVPLUS);
+  forest* evmdd = d->createForest(false, forest::INTEGER, forest::EVPLUS, p1);
 #endif
   assert(evmdd != 0);
 
@@ -293,9 +295,6 @@ int main(int argc, char *argv[])
   if (verbose > 0) {
     printElements(element, terms, nElements, nVariables);
   }
-
-  evmdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
-  evmdd->setNodeDeletion(forest::PESSIMISTIC_DELETION);
 
   timer start;
   start.note_time();
@@ -394,11 +393,11 @@ int main(int argc, char *argv[])
 
 #ifdef TEST_INDEX_SET
 
-  forest* mdd = d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest::policies p2(false);
+  p2.setPessimistic();
+  forest* mdd 
+    = d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL, p2);
   assert(mdd != 0);
-
-  mdd->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
-  mdd->setNodeDeletion(forest::PESSIMISTIC_DELETION);
 
   start.note_time();
   printf("Building equivalent MDD...\n");

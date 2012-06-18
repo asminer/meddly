@@ -27,26 +27,10 @@
 
 // ********************************** MTMDDs **********************************
 
-mtmdd_node_manager::mtmdd_node_manager(int dsl, domain *d, forest::range_type t)
-: node_manager(dsl, d, false, t,
-      forest::MULTI_TERMINAL, forest::FULLY_REDUCED,
-      forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION,
-      mtmddDataHeaderSize)
-{
-  list = 0;
-  termList = 0;
-  listSize = 0;
-  count = 0;
-  slot = 0;
-  countSize = 0;
-}
-
-
-mtmdd_node_manager::mtmdd_node_manager(int dsl, domain *d,
+MEDDLY::mtmdd_forest::mtmdd_forest(int dsl, domain *d,
     bool relation, forest::range_type t,
-    forest::edge_labeling e, forest::reduction_rule r,
-    forest::node_storage s, forest::node_deletion_policy dp)
-: node_manager(dsl, d, relation, t, e, r, s, dp, mtmddDataHeaderSize)
+    forest::edge_labeling e, const policies &p)
+: mt_forest(dsl, d, relation, t, e, p, mtmddDataHeaderSize)
 {
   list = 0;
   termList = 0;
@@ -58,7 +42,7 @@ mtmdd_node_manager::mtmdd_node_manager(int dsl, domain *d,
 
 
 
-mtmdd_node_manager::~mtmdd_node_manager()
+MEDDLY::mtmdd_forest::~mtmdd_forest()
 {
   if (list) free(list);
   if (termList) free(termList);
@@ -67,7 +51,7 @@ mtmdd_node_manager::~mtmdd_node_manager()
 }
 
 
-void mtmdd_node_manager::expandCountAndSlotArrays(int size)
+void MEDDLY::mtmdd_forest::expandCountAndSlotArrays(int size)
 {
   if (size <= countSize) return;
 
@@ -82,7 +66,7 @@ void mtmdd_node_manager::expandCountAndSlotArrays(int size)
 }
 
 
-void mtmdd_node_manager::resizeNode(int p, int size)
+void MEDDLY::mtmdd_forest::resizeNode(int p, int size)
 {
   // This operation can only be performed on Temporary nodes.
   if (!isActiveNode(p) || isTerminalNode(p) || isReducedNode(p)) {
@@ -141,7 +125,7 @@ void mtmdd_node_manager::resizeNode(int p, int size)
 }
 
 
-int mtmdd_node_manager::reduceNode(int p)
+int MEDDLY::mtmdd_forest::reduceNode(int p)
 {
   MEDDLY_DCASSERT(isActiveNode(p));
 
@@ -187,7 +171,7 @@ int mtmdd_node_manager::reduceNode(int p)
   }
 
   // check for possible reductions
-  if (reductionRule == forest::QUASI_REDUCED) {
+  if (isQuasiReduced()) {
     // ensure than all downpointers are pointing to nodes exactly one
     // level below or zero.
     int nextLevel = node_level - 1;
@@ -321,13 +305,13 @@ int mtmdd_node_manager::reduceNode(int p)
 }
 
 
-int mtmdd_node_manager::createNode(int lh,
+int MEDDLY::mtmdd_forest::createNode(int lh,
     std::vector<int>& index, std::vector<int>& dptr)
 {
   // last index in index[] should be the largest.
 #ifdef DEVELOPMENT_CODE
   int max = 0;
-  for (vector<int>::iterator iter = index.begin();
+  for (std::vector<int>::iterator iter = index.begin();
       iter != index.end(); ++iter)
   {
     if (max < *iter) max = *iter;
@@ -339,7 +323,7 @@ int mtmdd_node_manager::createNode(int lh,
   int result = createTempNode(lh, largestIndex+1, true);
   int* ptr = getFullNodeDownPtrs(result);
 
-  for (vector<int>::iterator iIter = index.begin(), dIter = dptr.begin();
+  for (std::vector<int>::iterator iIter = index.begin(), dIter = dptr.begin();
       iIter != index.end(); )
   {
     // no need to for any linking because the links are "transferred"
@@ -351,34 +335,33 @@ int mtmdd_node_manager::createNode(int lh,
 }
 
 
-int mtmdd_node_manager::createNode(int k, int index, int dptr)
+int MEDDLY::mtmdd_forest::createNode(int k, int index, int dptr)
 {
   MEDDLY_DCASSERT(index >= -1);
 
   if (index > -1 && getLevelSize(k) <= index) {
-    expertDomain->enlargeVariableBound(k, false, index + 1);
+    useExpertDomain()->enlargeVariableBound(k, false, index + 1);
   }
 
   if (dptr == 0) return 0;
   if (index == -1) {
     // all downpointers should point to dptr
-    if (reductionRule == forest::FULLY_REDUCED) return sharedCopy(dptr);
+    if (isFullyReduced()) return sharedCopy(dptr);
     int curr = createTempNodeMaxSize(k, false);
     setAllDownPtrsWoUnlink(curr, dptr);
     return reduceNode(curr);
   }
 
   // a single downpointer points to dptr
-  if (nodeStorage == FULL_STORAGE ||
-      (nodeStorage == FULL_OR_SPARSE_STORAGE && index < 2)) {
+  if (!areSparseNodesEnabled() || (areFullNodesEnabled() && index < 2)) {
     // Build a full node
     int curr = createTempNode(k, index + 1);
     setDownPtrWoUnlink(curr, index, dptr);
     return reduceNode(curr);
   }
   else {
-    MEDDLY_DCASSERT (nodeStorage == SPARSE_STORAGE ||
-        (nodeStorage == FULL_OR_SPARSE_STORAGE && index >= 2));
+    MEDDLY_DCASSERT (!areFullNodesEnabled() ||
+        (areSparseNodesEnabled() && index >= 2));
     // Build a sparse node
     int p = createTempNode(k, 2);
     int* nodeData = getNodeAddress(p);
@@ -410,13 +393,13 @@ int mtmdd_node_manager::createNode(int k, int index, int dptr)
 }
 
 
-void mtmdd_node_manager::createEdge(const int* v, int term, dd_edge& e)
+void MEDDLY::mtmdd_forest::createEdge(const int* v, int term, dd_edge& e)
 {
   // construct the edge bottom-up
   MEDDLY_DCASSERT(isTerminalNode(term));
   int result = term;
   int curr = 0;
-  for (int i=1; i<=expertDomain->getNumVariables(); i++) {
+  for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
     curr = createNode(i, v[i], result);
     unlinkNode(result);
     result = curr;
@@ -426,173 +409,8 @@ void mtmdd_node_manager::createEdge(const int* v, int term, dd_edge& e)
 }
 
 
-void mtmdd_node_manager::createEdge(const int* const* vlist,
-    const int* terms, int N, dd_edge& e)
-{
-  if (e.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-  if (vlist == 0 || terms == 0 || N <= 0) 
-    throw error(error::INVALID_VARIABLE);
-
-  createEdgeInternal(vlist, terms, N, e);
-}
-
-
-void mtmdd_node_manager::createEdgeHelper(int terminalNode, dd_edge& e)
-{
-  MEDDLY_DCASSERT(isTerminalNode(terminalNode));
-
-  if (reductionRule == forest::FULLY_REDUCED || terminalNode == 0) {
-    e.set(terminalNode, 0, 0);
-    return;
-  }
-
-  // construct the edge bottom-up
-  int result = terminalNode;
-  int curr = 0;
-  for (int i=1; i<=expertDomain->getNumVariables(); i++) {
-    curr = createTempNodeMaxSize(i, false);
-    setAllDownPtrsWoUnlink(curr, result);
-    unlinkNode(result);
-    result = reduceNode(curr);
-  }
-  e.set(result, 0, getNodeLevel(result));
-}
-
-
-void mtmdd_node_manager::createEdge(int term, dd_edge& e)
-{
-  if (e.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-  createEdgeHelper(getTerminalNode(term), e);
-}
-
-
-int mtmdd_node_manager::getTerminalNodeForEdge(int n, const int* vlist) const
-{
-  // assumption: vlist does not contain any special values (-1, -2, etc).
-  // vlist contains a single element.
-  while (!isTerminalNode(n)) {
-    n = getDownPtr(n, vlist[getNodeHeight(n)]);
-  }
-  return n;
-}
-
-
-void mtmdd_node_manager::evaluate(const dd_edge &f,
-    const int* vlist, int &term) const
-{
-  // assumption: vlist does not contain any special values (-1, -2, etc).
-  // vlist contains a single element.
-  term = getInteger(getTerminalNodeForEdge(f.getNode(), vlist));
-}
-
-
-void mtmdd_node_manager::normalizeAndReduceNode(int& p, int& ev)
-{
-  assert(false);
-}
-
-
-void mtmdd_node_manager::normalizeAndReduceNode(int& p, float& ev)
-{
-  assert(false);
-}
-
-
-void mtmdd_node_manager::createEdge(const int* const* vlist, int N,
-    dd_edge &e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void mtmdd_node_manager::createEdge(const int* const* vlist,
-    const float* terms, int N, dd_edge& e)
-{
-  if (e.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-  if (vlist == 0 || terms == 0 || N <= 0) 
-    throw error(error::INVALID_VARIABLE);
-
-  createEdgeInternal(vlist, terms, N, e);
-}
-
-
-void mtmdd_node_manager::createEdge(const int* const* vlist,
-    const int* const* vplist, int N, dd_edge &e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void mtmdd_node_manager::createEdge(const int* const* vlist,
-    const int* const* vplist, const int* terms, int N, dd_edge &e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void mtmdd_node_manager::createEdge(const int* const* vlist,
-    const int* const* vplist, const float* terms, int N, dd_edge &e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void mtmdd_node_manager::createEdge(bool val, dd_edge &e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void mtmdd_node_manager::createEdge(float term, dd_edge& e)
-{
-  if (e.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-  createEdgeHelper(getTerminalNode(term), e);
-}
-
-
-void mtmdd_node_manager::evaluate(const dd_edge &f, const int* vlist,
-    bool &term) const
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void mtmdd_node_manager::evaluate(const dd_edge &f,
-    const int* vlist, float &term) const
-{
-  // assumption: vlist does not contain any special values (-1, -2, etc).
-  // vlist contains a single element.
-  term = getReal(getTerminalNodeForEdge(f.getNode(), vlist));
-}
-
-
-void mtmdd_node_manager::evaluate(const dd_edge& f, const int* vlist,
-    const int* vplist, bool &term) const
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void mtmdd_node_manager::evaluate(const dd_edge& f, const int* vlist,
-    const int* vplist, int &term) const
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void mtmdd_node_manager::evaluate(const dd_edge& f, const int* vlist,
-    const int* vplist, float &term) const
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
 void
-mtmdd_node_manager::findFirstElement(const dd_edge& f, int* vlist) const
+MEDDLY::mtmdd_forest::findFirstElement(const dd_edge& f, int* vlist) const
 {
   // assumption: vlist does not contain any special values (-1, -2, etc).
   // vlist contains a single element.
@@ -601,7 +419,7 @@ mtmdd_node_manager::findFirstElement(const dd_edge& f, int* vlist) const
   if (node == 0) 
     throw error(error::INVALID_ASSIGNMENT);
 
-  for (int currLevel = expertDomain->getNumVariables(); currLevel; currLevel--)
+  for (int currLevel = getExpertDomain()->getNumVariables(); currLevel; currLevel--)
   {
     MEDDLY_DCASSERT(node != 0);
     if (currLevel != getNodeLevel(node)) {
@@ -630,83 +448,4 @@ mtmdd_node_manager::findFirstElement(const dd_edge& f, int* vlist) const
   } // for currLevel
 }
 
-
-
-// *********************************** MDDs ***********************************
-
-mdd_node_manager::mdd_node_manager(int dsl, domain *d)
-: mtmdd_node_manager(dsl, d, false, forest::BOOLEAN,
-      forest::MULTI_TERMINAL, forest::FULLY_REDUCED,
-      forest::FULL_OR_SPARSE_STORAGE, OPTIMISTIC_DELETION)
-{ }
-
-
-mdd_node_manager::~mdd_node_manager()
-{ }
-
-
-void mdd_node_manager::createEdge(const int* const* vlist,
-    int N, dd_edge &e)
-{
-  if (e.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-  if (vlist == 0 || N <= 0) 
-    throw error(error::INVALID_VARIABLE);
-  mtmdd_node_manager::createEdgeInternal(vlist, (bool*)0, N, e);
-}
-
-
-void mdd_node_manager::createEdge(bool term, dd_edge& e)
-{
-  if (e.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-  createEdgeHelper(getTerminalNode(term), e);
-}
-
-
-void mdd_node_manager::evaluate(const dd_edge &f, const int* vlist,
-    bool &term) const
-{
-  term = getBoolean(getTerminalNodeForEdge(f.getNode(), vlist));
-}
-
-
-void mdd_node_manager::createEdge(const int* const* vlist,
-    const int* terms, int N, dd_edge &e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void mdd_node_manager::createEdge(const int* const* vlist,
-    const float* terms, int n, dd_edge &e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void mdd_node_manager::createEdge(int val, dd_edge &e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void mdd_node_manager::createEdge(float val, dd_edge &e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void mdd_node_manager::evaluate(const dd_edge &f, const int* vlist,
-    int &term) const
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void mdd_node_manager::evaluate(const dd_edge &f, const int* vlist,
-    float &term) const
-{
-  throw error(error::INVALID_OPERATION);
-}
 

@@ -41,34 +41,27 @@
 #ifndef MTMDD_H
 #define MTMDD_H
 
-#include "mdds.h"
+#include "mt.h"
 
 #define IN_PLACE_SORT
 
+namespace MEDDLY {
+  class mtmdd_forest;
+};
+
+// ******************************************************************
+
 const int mtmddDataHeaderSize = 4;
 
-class mtmdd_node_manager : public node_manager {
+class MEDDLY::mtmdd_forest : public mt_forest {
   // MTMDD data header:
   // { incount, next (unique table), size, ..., logical address}
   // Data Header Size: 4
 
   public:
 
-    mtmdd_node_manager(int dsl, domain *d, forest::range_type t);
-    ~mtmdd_node_manager();
-
-    virtual void createEdge(const int* const* vlist, const int* terms, int N,
-        dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const float* terms,
-        int N, dd_edge &e);
-
-    virtual void createEdge(int val, dd_edge &e);
-    virtual void createEdge(float val, dd_edge &e);
-
-    virtual void evaluate(const dd_edge &f, const int* vlist, int &term)
-      const;
-    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
-      const;
+    // mtmdd_forest(int dsl, domain *d, range_type t, const policies &p);
+    ~mtmdd_forest();
 
     virtual void findFirstElement(const dd_edge& f, int* vlist) const;
 
@@ -77,33 +70,51 @@ class mtmdd_node_manager : public node_manager {
 
     virtual int reduceNode(int p);
 
-    // The following will either abort or return an error since they are not
-    // applicable to this forest.
-    virtual void normalizeAndReduceNode(int& p, int& ev);
-    virtual void normalizeAndReduceNode(int& p, float& ev);
-    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-        int N, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-        const int* terms, int N, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const int* const* vplist, 
-        const float* terms, int N, dd_edge &e);
-    virtual void createEdge(bool val, dd_edge &e);
-    virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
-      const;
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, bool &term) const;
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, int &term) const;
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, float &term) const;
-
   protected:
 
     // Used by derived classes for initialization
-    mtmdd_node_manager(int dsl, domain *d, bool relation, forest::range_type t,
-        forest::edge_labeling e, forest::reduction_rule r,
-        forest::node_storage s, forest::node_deletion_policy dp);
+    mtmdd_forest(int dsl, domain *d, bool relation, range_type t,
+        edge_labeling e, const policies &p);
+
+
+  protected:
+    // Creates an edge representing the terminal node given by
+    // terminalNode.
+    // Note: terminalNode is usually a terminal value converted into
+    // the equivalent node representation. This makes this method useful
+    // for createEdge(int, e) or (float, e) or (bool, e) as long as the
+    // terminal value can be converted into an equivalent node.
+    inline void createEdgeHelper(int terminalNode, dd_edge& e) {
+        MEDDLY_DCASSERT(isTerminalNode(terminalNode));
+
+        if (isFullyReduced() || terminalNode == 0) {
+          e.set(terminalNode, 0, 0);
+          return;
+        }
+
+        // construct the edge bottom-up
+        int result = terminalNode;
+        int curr = 0;
+        for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
+          curr = createTempNodeMaxSize(i, false);
+          setAllDownPtrsWoUnlink(curr, result);
+          unlinkNode(result);
+          result = reduceNode(curr);
+        }
+        e.set(result, 0, getNodeLevel(result));
+    }
+
+    // Get the terminal node at the bottom of the edge with root n
+    // and vlist representing the indexes for the levels.
+    // Used by evaluate()
+    inline int getTerminalNodeForEdge(int n, const int* vlist) const {
+        // assumption: vlist does not contain any special values (-1, -2, etc).
+        // vlist contains a single element.
+        while (!isTerminalNode(n)) {
+          n = getDownPtr(n, vlist[getNodeHeight(n)]);
+        }
+        return n;
+    }
 
     // This create a MTMDD from a collection of edges (represented 
     // as vectors).
@@ -111,7 +122,9 @@ class mtmdd_node_manager : public node_manager {
       void createEdgeInternal(const int* const* vlist,
           const T* terms, int N, dd_edge &e);
 
-    // Create edge representing f(vlist[]) = term and store it in curr.
+  protected: // still to be organized
+
+    // Create edge representing f(vlist[]) = term and store it in e
     void createEdge(const int* vlist, int term, dd_edge& e);
 
     // Create a node, at level k, whose ith index points to dptr.
@@ -124,18 +137,6 @@ class mtmdd_node_manager : public node_manager {
     // are "transferred" from the dptr vector.
     int createNode(int lh, std::vector<int>& index, std::vector<int>& dptr);
 
-    // Creates an edge representing the terminal node given by
-    // terminalNode.
-    // Note: terminalNode is usually a terminal value converted into
-    // the equivalent node representation. This makes this method useful
-    // for createEdge(int, e) or (float, e) or (bool, e) as long as the
-    // terminal value can be converted into an equivalent node.
-    void createEdgeHelper(int terminalNode, dd_edge& e);
-
-    // Get the terminal node at the bottom of the edge with root n
-    // and vlist representing the indexes for the levels.
-    // Used by evaluate()
-    int getTerminalNodeForEdge(int n, const int* vlist) const;
 
     template <typename T>
     T handleMultipleTerminalValues(const T* tList, int begin, int end);
@@ -166,54 +167,23 @@ class mtmdd_node_manager : public node_manager {
 };
 
 
-class mdd_node_manager : public mtmdd_node_manager {
-  public:
-
-    mdd_node_manager(int dsl, domain *d);
-    ~mdd_node_manager();
-
-    using mtmdd_node_manager::createEdge;
-    using mtmdd_node_manager::evaluate;
-
-    // Refer to meddly.h
-    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
-    virtual void createEdge(bool val, dd_edge &e);
-    virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
-      const;
-
-    // The following will either abort or return an error since they are not
-    // applicable to this forest.
-    virtual void createEdge(const int* const* vlist, const int* terms, int N,
-        dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const float* terms,
-        int N, dd_edge &e);
-    virtual void createEdge(int val, dd_edge &e);
-    virtual void createEdge(float val, dd_edge &e);
-    virtual void evaluate(const dd_edge &f, const int* vlist, int &term)
-      const;
-    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
-      const;
-};
-
-
-
 // ------------------------ Inline methods -----------------------------------
 
 
 template <typename T>
 inline
 void
-mtmdd_node_manager::createEdgeInternal(const int* const* vlist,
+MEDDLY::mtmdd_forest::createEdgeInternal(const int* const* vlist,
     const T* terms, int N, dd_edge &e)
 {
   // check if the vlist contains valid indexes
   bool specialCasesFound = false;
   for (int i = 0; i < N; i++)
   {
-    for (int level = expertDomain->getNumVariables(); level; level--) {
+    for (int level = getExpertDomain()->getNumVariables(); level; level--) {
       int bound = vlist[i][level] + 1;
       if (bound >= getLevelSize(level))
-        expertDomain->enlargeVariableBound(level, false, bound);
+        useExpertDomain()->enlargeVariableBound(level, false, bound);
       else if (bound < 0)
         specialCasesFound = true;
     } // for level
@@ -252,10 +222,10 @@ mtmdd_node_manager::createEdgeInternal(const int* const* vlist,
 
     // call sort-based procedure for building the DD
 #ifdef IN_PLACE_SORT
-    int result = inPlaceSortBuild<T>(expertDomain->getNumVariables(), 0, N);
+    int result = inPlaceSortBuild<T>(getExpertDomain()->getNumVariables(), 0, N);
 #else
     int result = sortBuild(list, (T*)(terms == 0? 0: termList),
-        expertDomain->getNumVariables(), 0, N);
+        getExpertDomain()->getNumVariables(), 0, N);
 #endif
 
     e.set(result, 0, getNodeLevel(result));
@@ -265,7 +235,7 @@ mtmdd_node_manager::createEdgeInternal(const int* const* vlist,
 
 template <typename T>
 inline
-void mtmdd_node_manager::copyLists(const int* const* vlist,
+void MEDDLY::mtmdd_forest::copyLists(const int* const* vlist,
     const T* terms, int nElements)
 {
   if (listSize < nElements) {
@@ -292,7 +262,7 @@ void mtmdd_node_manager::copyLists(const int* const* vlist,
 
 template <typename T>
 inline
-int mtmdd_node_manager::sortBuild(int** list, T* tList,
+int MEDDLY::mtmdd_forest::sortBuild(int** list, T* tList,
     int height, int begin, int end)
 {
   // [begin, end)
@@ -304,7 +274,7 @@ int mtmdd_node_manager::sortBuild(int** list, T* tList,
   }
 
   int N = end - begin;
-  int level = expertDomain->getVariableWithHeight(height);
+  int level = getExpertDomain()->getVariableWithHeight(height);
   int nextHeight = height - 1;
 
   if (N == 1) {
@@ -453,10 +423,11 @@ int mtmdd_node_manager::sortBuild(int** list, T* tList,
 
 #else
 
+namespace MEDDLY {
 
 template<typename T>
 inline
-int mtmdd_node_manager::inPlaceSort(int level, int begin, int end)
+int mtmdd_forest::inPlaceSort(int level, int begin, int end)
 {
   // Determine range of values
   int min = list[begin][level];
@@ -552,7 +523,7 @@ int mtmdd_node_manager::inPlaceSort(int level, int begin, int end)
 
 template<>
 inline
-int mtmdd_node_manager::inPlaceSort<bool>(int level, int begin, int end)
+int mtmdd_forest::inPlaceSort<bool>(int level, int begin, int end)
 {
   // Determine range of values
   int min = list[begin][level];
@@ -643,7 +614,7 @@ int mtmdd_node_manager::inPlaceSort<bool>(int level, int begin, int end)
 
 template <typename T>
 inline
-int mtmdd_node_manager::inPlaceSortBuild(int height, int begin, int end)
+int mtmdd_forest::inPlaceSortBuild(int height, int begin, int end)
 {
   // [begin, end)
 
@@ -682,12 +653,15 @@ int mtmdd_node_manager::inPlaceSortBuild(int height, int begin, int end)
   return reduceNode(result);
 }
 
+} // namespace
+
 #endif
 
+namespace MEDDLY {
 
 template <typename T>
 inline
-T mtmdd_node_manager::handleMultipleTerminalValues(const T* tList,
+T mtmdd_forest::handleMultipleTerminalValues(const T* tList,
     int begin, int end)
 {
   MEDDLY_DCASSERT(begin < end);
@@ -699,13 +673,14 @@ T mtmdd_node_manager::handleMultipleTerminalValues(const T* tList,
 
 template <>
 inline
-bool mtmdd_node_manager::handleMultipleTerminalValues(const bool* tList,
+bool mtmdd_forest::handleMultipleTerminalValues(const bool* tList,
     int begin, int end)
 {
   MEDDLY_DCASSERT(begin < end);
   return true;
 }
 
+}
 
 #endif
 

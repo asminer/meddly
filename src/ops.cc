@@ -28,6 +28,8 @@
 #include "defines.h"
 #include "compute_table.h"
 
+// #define DEBUG_CLEANUP
+
 namespace MEDDLY {
   extern settings meddlySettings;
 }
@@ -117,6 +119,9 @@ MEDDLY::numerical_opname::~numerical_opname()
 
 MEDDLY::operation::operation(const opname* n, int kl, int al)
 {
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Creating operation %x\n", this);
+#endif
   MEDDLY_DCASSERT(kl>=0);
   MEDDLY_DCASSERT(al>=0);
   theOpName = n;
@@ -171,7 +176,7 @@ MEDDLY::operation::operation(const opname* n, int kl, int al)
 
 MEDDLY::operation::~operation()
 {
-  if (CT && CT->isOperationTable()) delete CT;
+  if (CT && (CT!=Monolithic_CT)) delete CT;
   delete next;
   if (oplist_index >= 0) {
     MEDDLY_DCASSERT(op_list[oplist_index] == this);
@@ -179,6 +184,9 @@ MEDDLY::operation::~operation()
     op_holes[oplist_index] = free_list;
     free_list = oplist_index;
   }
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Deleting operation %x\n", this);
+#endif
 }
 
 void MEDDLY::operation::removeStalesFromMonolithic()
@@ -188,12 +196,16 @@ void MEDDLY::operation::removeStalesFromMonolithic()
 
 void MEDDLY::operation::markForDeletion()
 {
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Marking operation %x for deletion\n", this);
+#endif
   is_marked_for_deletion = true;
   if (CT && CT->isOperationTable()) CT->removeStales();
 }
 
-void MEDDLY::operation::destroyOpList()
+void MEDDLY::operation::destroyAllOps() 
 {
+  for (int i=0; i<list_size; i++) delete op_list[i];
   free(op_list);
   free(op_holes);
   op_list = 0;
@@ -249,8 +261,8 @@ MEDDLY::unary_operation::unary_operation(const unary_opname* code, int kl,
   resultType = FOREST;
   resF = res;
 
-  argF->registerOperation(this);
-  resF->registerOperation(this);
+  registerInForest(argF);
+  registerInForest(resF);
 
   setAnswerForest(resF);
 }
@@ -262,15 +274,15 @@ MEDDLY::unary_operation::unary_operation(const unary_opname* code, int kl,
   resultType = res;
   resF = 0;
 
-  argF->registerOperation(this);
+  registerInForest(argF);
 
   setAnswerForest(0);
 }
 
 MEDDLY::unary_operation::~unary_operation()
 {
-  argF->unregisterOperation(this);
-  if (resF) resF->unregisterOperation(this);
+  unregisterInForest(argF);
+  unregisterInForest(resF);
 }
 
 void MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
@@ -305,18 +317,18 @@ MEDDLY::binary_operation::binary_operation(const binary_opname* op, int kl,
   arg2F = arg2;
   resF = res;
 
-  arg1F->registerOperation(this);
-  arg2F->registerOperation(this);
-  res->registerOperation(this);
+  registerInForest(arg1F);
+  registerInForest(arg2F);
+  registerInForest(res);
 
   setAnswerForest(resF);
 }
 
 MEDDLY::binary_operation::~binary_operation()
 {
-  arg1F->unregisterOperation(this);
-  arg2F->unregisterOperation(this);
-  resF->unregisterOperation(this);
+  unregisterInForest(arg1F);
+  unregisterInForest(arg2F);
+  unregisterInForest(resF);
 }
 
 int MEDDLY::binary_operation::compute(int a, int b)

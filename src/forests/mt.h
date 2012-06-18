@@ -20,13 +20,13 @@
 */
 
 
+// TODO: go through this file & cleanup
 
-//TODO: add a mechanism to node_manager so that reduction rule can
-//      be set after instantiation of the node_manager.
-//TODO: rename node_manager?
+//TODO: add a mechanism to mt_forest so that reduction rule can
+//      be set after instantiation of the mt_forest.
 
-#ifndef MDDS_H
-#define MDDS_H
+#ifndef MT_FOREST
+#define MT_FOREST
 
 #include <fstream>
 #include <iostream>
@@ -35,8 +35,10 @@
 #include "../defines.h"
 #include "../mdd_hash.h"
 
-using namespace std;
-using namespace MEDDLY;
+namespace MEDDLY {
+  class mt_forest;
+};
+
 
 /*
  * The MDD node handle is an integer.
@@ -116,32 +118,17 @@ using namespace MEDDLY;
 */
 
 
-class node_manager : public expert_forest {
+class MEDDLY::mt_forest : public expert_forest {
   public:
-    node_manager(int dsl, domain *d, bool rel, range_type t, edge_labeling ev,
-        reduction_rule r, node_storage s, node_deletion_policy nd,
-        int dataHeaderSize);
-    virtual ~node_manager();
-
-    // ------------- inherited from expert_forest ---------------------------
+    mt_forest(int dsl, domain *d, bool rel, range_type t, edge_labeling ev,
+        const policies &p, int dataHeaderSize);
+    virtual ~mt_forest();
 
   public:
     using expert_forest::getDownPtrsAndEdgeValues;
     using expert_forest::getSparseNodeIndexes;
-    /*
-    using expert_forest::createTempNode;
-    using expert_forest::getDownPtr;
-    using expert_forest::resizeNode;
-    using expert_forest::makeACopy;
-    using expert_forest::reduceNode;
-    using expert_forest::normalizeAndReduceNode;
-    using expert_forest::accumulate;
-    using expert_forest::isReducedNode;
-    using expert_forest::isStale;
-    */
 
     /// Refer to meddly.h
-    void createEdgeForVar(int vh, bool primedLevel, dd_edge& result);
     void createEdgeForVar(int vh, bool primedLevel,
         bool* terms, dd_edge& a);
     void createEdgeForVar(int vh, bool primedLevel,
@@ -187,11 +174,6 @@ class node_manager : public expert_forest {
     virtual int createTempNode(int lh, std::vector<int>& downPointers,
         std::vector<float>& edgeValues) { return 0; }
 
-    /// Apply reduction rule to the temporary node and finalize it. Once
-    /// a node is reduced, its contents cannot be modified.
-    virtual int reduceNode(int node) = 0;
-    // Dummy version available here.
-
     // Helpers for reduceNode().
     // These method assume that the top leve node is a temporary node
     // whose children may be either reduced or temporary nodes
@@ -203,10 +185,6 @@ class node_manager : public expert_forest {
     // operations by specifying clearCache to false.
     int recursiveReduceNode(int tempNode, bool clearCache = true);
     int recursiveReduceNode(std::map<int, int>& cache, int root);
-
-    /// Reduce and finalize an node with an incoming edge value
-    virtual void normalizeAndReduceNode(int& node, int& ev) = 0;
-    // Dummy version available here.
 
     // Similar to getDownPtrs() but for EV+MDDs
     virtual bool getDownPtrsAndEdgeValues(int node,
@@ -233,19 +211,12 @@ class node_manager : public expert_forest {
     void showNodeGraph(FILE *s, int p) const;
     void showInfo(FILE* strm, int verbosity);
 
-    long getCurrentNumNodes() const;
-    long getCurrentMemoryUsed() const;
-    long getCurrentMemoryAllocated() const;
-    long getPeakNumNodes() const;
-    long getPeakMemoryUsed() const;
-    long getPeakMemoryAllocated() const;
-
     // Compaction threshold is a percentage value.
     // To set compaction threshold to 45%, call setCompactionThreshold(45).
     // Compaction will occur if
     // level[i].hole_slots > (level[i].size * compactionThreshold / 100) 
-    unsigned getCompactionThreshold() const;
-    void setCompactionThreshold(unsigned p);
+    // unsigned getCompactionThreshold() const;
+    // void setCompactionThreshold(unsigned p);
     void compactMemory();
     void garbageCollect();
 
@@ -326,7 +297,6 @@ class node_manager : public expert_forest {
     bool isCounting();
 
   protected:
-
     // Building level nodes
     int getLevelNode(int lh) const;
     int buildLevelNodeHelper(int lh, int* terminalNodes, int sz);
@@ -336,7 +306,7 @@ class node_manager : public expert_forest {
     void clearAllNodes();
 
     // Building custom level nodes
-    int* getTerminalNodes(int n);
+    // int* getTerminalNodes(int n);
     int* getTerminalNodes(int n, bool* terms);
     int* getTerminalNodes(int n, int* terms);
     int* getTerminalNodes(int n, float* terms);
@@ -359,14 +329,15 @@ class node_manager : public expert_forest {
     void setLevelBound(int k, int sz);
 
     long getUniqueTableMemoryUsed() const;
+    /*
     long getTempNodeCount() const;
     long getZombieNodeCount() const;
     long getOrphanNodeCount() const;
-    void updateMemoryAllocated(long bytes);
+    */
     long getHoleMemoryUsage() const;
 
     int getMaxHoleChain() const;
-    int getCompactionsCount() const;
+    // int getCompactionsCount() const;
 
     // level based operations
     /// number of levels in the current mdd
@@ -431,26 +402,11 @@ class node_manager : public expert_forest {
     int insert(int node);
     int replace(int node);
 
-    // are sparse nodes enabled
-    bool areSparseNodesEnabled() const;
-
     // is k a level that has been initialized
     bool isValidLevel(int k) const;
 
     // get the id used to indicate temporary nodes
     int getTempNodeId() const;
-
-    /*
-    // Cardinality for Mdds and MtMdds
-    // k is the height (>= 0)
-    double cardinality(int p, int k, std::map<int, double>& visited) const;
-
-    // Cardinality for Mxds and MtMxds
-    // k is height (always >=0). k combined with primeLevel indicates
-    // the current primed or unprimed level.
-    double cardinalityForRelations(int p, int k, bool primeLevel,
-        std::map<int, double>& visited) const;
-    */
 
     // Checks if one of the following reductions is satisfied:
     // Fully, Quasi, Identity Reduced.
@@ -467,7 +423,7 @@ class node_manager : public expert_forest {
     void validateDownPointers(int p, bool recursive = false);
 
     // Pointer to expert_domain
-    expert_domain* expertDomain;
+    // expert_domain* expertDomain;
 
     // Special next values
     static const int temp_node = -5;
@@ -482,7 +438,7 @@ class node_manager : public expert_forest {
       Compaction will occur if
       level[i].hole_slots > (level[i].size * compactionThreshold) 
       */
-    float compactionThreshold;
+    // float compactionThreshold;
 
     /// Size of address/next array.
     int a_size;
@@ -498,25 +454,21 @@ class node_manager : public expert_forest {
 
     // performance stats
 
-    /// For peak memory.
-    long max_slots;
-    /// Also for peak memory.
-    long curr_slots;
     /// Number of alive nodes.
-    long active_nodes;
+    // long active_nodes;
     /// Largest traversed height of holes grid
     int max_hole_chain;
     /// Number of zombie nodes
-    long zombie_nodes;
+    // long zombie_nodes;
     /// These are just like zombies but they have not been zombified --
     /// exist only in non-pessimistic caches
-    long orphan_nodes;
+    // long orphan_nodes;
     /// Number of temporary nodes -- nodes that have not been reduced
-    long temp_nodes;
+    // long temp_nodes;
     /// Number reclaimed nodes
-    long reclaimed_nodes;
+    // long reclaimed_nodes;
     /// Total number of compactions
-    int num_compactions;
+    // int num_compactions;
     /// Count of nodes created since last gc
     unsigned nodes_activated_since_gc;
 
@@ -528,10 +480,10 @@ class node_manager : public expert_forest {
     bool delete_terminal_nodes;
 
     /// Uniqueness table
-    mdd_hash_table <node_manager> *unique;
+    mdd_hash_table <mt_forest> *unique;
 
-    long curr_mem_alloc;
-    long max_mem_alloc;
+    // long curr_mem_alloc;
+    // long max_mem_alloc;
 
     bool counting;
 
@@ -562,20 +514,20 @@ class node_manager : public expert_forest {
 
 /// Inline functions implemented here
 
-inline bool node_manager::isValidNodeIndex(int node) const {
+inline bool MEDDLY::mt_forest::isValidNodeIndex(int node) const {
   return node <= a_last;
 }
 
-inline void node_manager::reclaimOrphanNode(int p) {
+inline void MEDDLY::mt_forest::reclaimOrphanNode(int p) {
   MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
   MEDDLY_DCASSERT(isActiveNode(p));
   MEDDLY_DCASSERT(!isTerminalNode(p));
   MEDDLY_DCASSERT(isReducedNode(p));
-  reclaimed_nodes++;
-  orphan_nodes--;
+  stats.reclaimed_nodes++;
+  stats.orphan_nodes--;
 }  
 
-inline void node_manager::deleteOrphanNode(int p) {
+inline void MEDDLY::mt_forest::deleteOrphanNode(int p) {
   MEDDLY_DCASSERT(!isPessimistic());
   MEDDLY_DCASSERT(getCacheCount(p) == 0 && getInCount(p) == 0);
 #ifdef TRACK_DELETIONS
@@ -584,11 +536,11 @@ inline void node_manager::deleteOrphanNode(int p) {
   cout << "\n";
   cout.flush();
 #endif
-  orphan_nodes--;
+  stats.orphan_nodes--;
   deleteNode(p);
 }
 
-inline int node_manager::getDownPtrAfterIndex(int p, int i, int &index)
+inline int MEDDLY::mt_forest::getDownPtrAfterIndex(int p, int i, int &index)
   const {
   MEDDLY_DCASSERT(isActiveNode(p));
   MEDDLY_DCASSERT(i >= 0);
@@ -611,7 +563,7 @@ inline int node_manager::getDownPtrAfterIndex(int p, int i, int &index)
 
 
 inline
-int node_manager::createTempNode(int lh, std::vector<int>& downPointers)
+int MEDDLY::mt_forest::createTempNode(int lh, std::vector<int>& downPointers)
 {
   int tempNode = createTempNode(lh, downPointers.size(), false);
   int* dptrs = getFullNodeDownPtrs(tempNode);
@@ -624,24 +576,26 @@ int node_manager::createTempNode(int lh, std::vector<int>& downPointers)
 }
 
 
-inline bool node_manager::areHolesRecycled() const {
+inline bool MEDDLY::mt_forest::areHolesRecycled() const {
   return holeRecycling;
 }
 
-inline unsigned node_manager::getCompactionThreshold() const {
+/*
+inline unsigned MEDDLY::mt_forest::getCompactionThreshold() const {
   return unsigned(compactionThreshold * 100.0);
 }
 
-inline void node_manager::setCompactionThreshold(unsigned t) {
+inline void MEDDLY::mt_forest::setCompactionThreshold(unsigned t) {
   if (t > 100) throw error(error::INVALID_ASSIGNMENT);
   compactionThreshold = t/100.0;
 }
+*/
 
 // Dealing with cache count
 // Dealing with node level
 
 // use this to find out which level the node maps to
-inline int node_manager::getNodeLevelMapping(int p) const {
+inline int MEDDLY::mt_forest::getNodeLevelMapping(int p) const {
   return mapLevel(getNodeLevel(p));
 }
 
@@ -649,14 +603,14 @@ inline int node_manager::getNodeLevelMapping(int p) const {
 
 // linkNodeing and unlinkNodeing nodes
 
-inline int node_manager::sharedCopy(int p) {
+inline int MEDDLY::mt_forest::sharedCopy(int p) {
   linkNode(p);
   return p;
 }
 
 // Dealing with slot 1 (next pointer)
 
-inline bool node_manager::isReducedNode(int p) const {
+inline bool MEDDLY::mt_forest::isReducedNode(int p) const {
 #ifdef DEBUG_MDD_H
   printf("%s: p: %d\n", __func__, p);
 #endif
@@ -665,7 +619,7 @@ inline bool node_manager::isReducedNode(int p) const {
 }
 
 // Dealing with slot 2 (node size)
-inline int node_manager::getLargestIndex(int p) const {
+inline int MEDDLY::mt_forest::getLargestIndex(int p) const {
   MEDDLY_DCASSERT(isActiveNode(p) && !isTerminalNode(p));
   return isFullNode(p)? getFullNodeSize(p) - 1: getSparseNodeLargestIndex(p);
 }
@@ -673,7 +627,7 @@ inline int node_manager::getLargestIndex(int p) const {
 // Dealing with entries
 
 // full node: entries start in the 4th slot (location 3, counting from 0)
-inline int* node_manager::getFullNodeDownPtrs(int p) {
+inline int* MEDDLY::mt_forest::getFullNodeDownPtrs(int p) {
 #ifdef DEBUG_MDD_H
   printf("%s: p: %d\n", __func__, p);
 #endif
@@ -682,43 +636,43 @@ inline int* node_manager::getFullNodeDownPtrs(int p) {
   return (getNodeAddress(p) + 3);
 }
 
-inline const int* node_manager::getFullNodeDownPtrsReadOnly(int p) const {
+inline const int* MEDDLY::mt_forest::getFullNodeDownPtrsReadOnly(int p) const {
   MEDDLY_DCASSERT(isFullNode(p));
   return (getNodeAddress(p) + 3);
 }
 
-inline const int* node_manager::getFullNodeEdgeValuesReadOnly(int p) const {
+inline const int* MEDDLY::mt_forest::getFullNodeEdgeValuesReadOnly(int p) const {
   MEDDLY_DCASSERT(isFullNode(p));
   return (getNodeAddress(p) + 3 + getFullNodeSize(p));
 }
 
-inline int* node_manager::getFullNodeEdgeValues(int p) {
+inline int* MEDDLY::mt_forest::getFullNodeEdgeValues(int p) {
   MEDDLY_DCASSERT(isFullNode(p));
   MEDDLY_DCASSERT(!isReducedNode(p));
   return (getNodeAddress(p) + 3 + getFullNodeSize(p));
 }
 
-inline const int* node_manager::getSparseNodeIndexes(int p) const {
+inline const int* MEDDLY::mt_forest::getSparseNodeIndexes(int p) const {
   MEDDLY_DCASSERT(isSparseNode(p));
   return (getNodeAddress(p) + 3);
 }
 
-inline const int* node_manager::getSparseNodeDownPtrs(int p) const {
+inline const int* MEDDLY::mt_forest::getSparseNodeDownPtrs(int p) const {
   MEDDLY_DCASSERT(isSparseNode(p));
   return (getNodeAddress(p) + 3 + getSparseNodeSize(p));
 }
 
-inline const int* node_manager::getSparseNodeEdgeValues(int p) const {
+inline const int* MEDDLY::mt_forest::getSparseNodeEdgeValues(int p) const {
   MEDDLY_DCASSERT(isSparseNode(p));
   return (getNodeAddress(p) + 3 + 2 * getSparseNodeSize(p));
 }
 
-inline int node_manager::getSparseNodeLargestIndex(int p) const {
+inline int MEDDLY::mt_forest::getSparseNodeLargestIndex(int p) const {
   MEDDLY_DCASSERT(isSparseNode(p));
   return getSparseNodeIndex(p, getSparseNodeSize(p) - 1);
 }
 
-inline void node_manager::setAllDownPtrs(int p, int value) {
+inline void MEDDLY::mt_forest::setAllDownPtrs(int p, int value) {
   MEDDLY_DCASSERT(!isReducedNode(p));
   MEDDLY_DCASSERT(isFullNode(p));
   MEDDLY_DCASSERT(isActiveNode(value));
@@ -732,7 +686,7 @@ inline void node_manager::setAllDownPtrs(int p, int value) {
   if (!isTerminalNode(value)) getInCount(value) += size;
 }
 
-inline void node_manager::setAllDownPtrsWoUnlink(int p, int value) {
+inline void MEDDLY::mt_forest::setAllDownPtrsWoUnlink(int p, int value) {
   MEDDLY_DCASSERT(!isReducedNode(p));
   MEDDLY_DCASSERT(isFullNode(p));
   MEDDLY_DCASSERT(isActiveNode(value));
@@ -745,14 +699,14 @@ inline void node_manager::setAllDownPtrsWoUnlink(int p, int value) {
   if (!isTerminalNode(value)) getInCount(value) += size;
 }
 
-inline void node_manager::initDownPtrs(int p) {
+inline void MEDDLY::mt_forest::initDownPtrs(int p) {
   MEDDLY_DCASSERT(!isReducedNode(p));
   MEDDLY_DCASSERT(isFullNode(p));
   memset(getFullNodeDownPtrs(p), 0, sizeof(int) * getFullNodeSize(p));
 }
 
-inline void node_manager::setAllEdgeValues(int p, int value) {
-  MEDDLY_DCASSERT(edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES);
+inline void MEDDLY::mt_forest::setAllEdgeValues(int p, int value) {
+  MEDDLY_DCASSERT(isEVPlus() || isEVTimes());
   MEDDLY_DCASSERT(!isReducedNode(p));
   MEDDLY_DCASSERT(isFullNode(p));
   int *edgeptr = getFullNodeEdgeValues(p);
@@ -761,8 +715,8 @@ inline void node_manager::setAllEdgeValues(int p, int value) {
 }
 
 
-inline void node_manager::setAllEdgeValues(int p, float fvalue) {
-  MEDDLY_DCASSERT(edgeLabel == forest::EVPLUS || edgeLabel == forest::EVTIMES);
+inline void MEDDLY::mt_forest::setAllEdgeValues(int p, float fvalue) {
+  MEDDLY_DCASSERT(isEVPlus() || isEVTimes());
   MEDDLY_DCASSERT(!isReducedNode(p));
   MEDDLY_DCASSERT(isFullNode(p));
   int *edgeptr = getFullNodeEdgeValues(p);
@@ -772,102 +726,78 @@ inline void node_manager::setAllEdgeValues(int p, float fvalue) {
 }
 
 
-inline bool node_manager::isPrimedNode(int p) const {
+inline bool MEDDLY::mt_forest::isPrimedNode(int p) const {
   return (getNodeLevel(p) < 0);
 }
-inline bool node_manager::isUnprimedNode(int p) const {
+inline bool MEDDLY::mt_forest::isUnprimedNode(int p) const {
   return (getNodeLevel(p) > 0);
 }
 
 // For uniqueness table
-inline int node_manager::getNull() const { return -1; }
-inline int node_manager::getNext(int h) const { 
+inline int MEDDLY::mt_forest::getNull() const { return -1; }
+inline int MEDDLY::mt_forest::getNext(int h) const { 
   MEDDLY_DCASSERT(isActiveNode(h));
   MEDDLY_DCASSERT(!isTerminalNode(h));
   // next pointer is at slot 1 (counting from 0)
   MEDDLY_DCASSERT(getNodeAddress(h));
   return *(getNodeAddress(h) + 1);
 }
-inline void node_manager::setNext(int h, int n) { 
+inline void MEDDLY::mt_forest::setNext(int h, int n) { 
   MEDDLY_DCASSERT(isActiveNode(h));
   MEDDLY_DCASSERT(!isTerminalNode(h));
   *(getNodeAddress(h) + 1) = n; 
 }
 
-inline bool node_manager::discardTemporaryNodesFromComputeCache() const {
+inline bool MEDDLY::mt_forest::discardTemporaryNodesFromComputeCache() const {
   return delete_terminal_nodes;
 }
 
-inline bool node_manager::isCounting() { return counting; }
+inline bool MEDDLY::mt_forest::isCounting() { return counting; }
 
 // Dealing with node addressing
 
-inline void node_manager::setNodeOffset(int p, int offset) {
+inline void MEDDLY::mt_forest::setNodeOffset(int p, int offset) {
   MEDDLY_CHECK_RANGE(1, p, a_last+1);
   address[p].offset = offset;
 }
 
 // Dealing with node status
 
-inline bool node_manager::isDeletedNode(int p) const {
+inline bool MEDDLY::mt_forest::isDeletedNode(int p) const {
   MEDDLY_CHECK_RANGE(1, p, a_last+1);
   return !(isActiveNode(p) || isZombieNode(p));
 }
 
-inline long node_manager::getUniqueTableMemoryUsed() const {
+inline long MEDDLY::mt_forest::getUniqueTableMemoryUsed() const {
   return (unique->getSize() * sizeof(int));
 }
-inline long node_manager::getPeakNumNodes() const {
-  return peak_nodes;    // terminal nodes not included
-}
-inline long node_manager::getCurrentNumNodes() const {
-#if 1
-  return active_nodes; // excludes terminal nodes
-#else
-  return active_nodes - orphan_nodes - temp_nodes;
-#endif
-}
-inline long node_manager::getTempNodeCount() const {
+
+/*
+inline long MEDDLY::mt_forest::getTempNodeCount() const {
   return temp_nodes;
 }
-inline long node_manager::getZombieNodeCount() const {
+inline long MEDDLY::mt_forest::getZombieNodeCount() const {
   return zombie_nodes;
 }
-inline long node_manager::getOrphanNodeCount() const {
+inline long MEDDLY::mt_forest::getOrphanNodeCount() const {
   return orphan_nodes;
 }
-inline long node_manager::getPeakMemoryUsed() const {
-#if 0
-  int sum = 0;
-  for (int i = 0; i < l_size; i++) sum += level[i].max_slots;
-  return sum * sizeof(int);
-#else
-  return max_slots * sizeof(int);
-#endif
-}
-
-inline void node_manager::updateMemoryAllocated(long bytes) {
-  curr_mem_alloc += bytes;
-  if (curr_mem_alloc > max_mem_alloc) max_mem_alloc = curr_mem_alloc;
-#if 0
-  printf("%p: Curr: %d, Peak: %d\n", this, curr_mem_alloc, max_mem_alloc);
-#endif
-}
+*/
 
 /// number of levels in the current mdd
-inline int node_manager::getLevelCount() const { return l_size; }
+inline int MEDDLY::mt_forest::getLevelCount() const { return l_size; }
 
 /// garbage collect
-inline bool node_manager::isTimeToGc()
+inline bool MEDDLY::mt_forest::isTimeToGc()
 {
 #if 1
   // const int zombieTrigger = 1000;  // use for debugging
   // const int orphanTrigger = 500;  // use for debugging
-  const int zombieTrigger = 1000000;
-  const int orphanTrigger = 500000;
-  return (isPessimistic())? (getZombieNodeCount() > zombieTrigger):
-    (getOrphanNodeCount() > orphanTrigger);
-  // return (nodes_activated_since_gc > 5000000); //10,000,000
+  // const int zombieTrigger = 1000000;
+  // const int orphanTrigger = 500000;
+  return isPessimistic() 
+    ? (stats.zombie_nodes > deflt.zombieTrigger)
+    : (stats.orphan_nodes > deflt.orphanTrigger);
 #elif 0
   return false;
 #else
@@ -875,11 +805,11 @@ inline bool node_manager::isTimeToGc()
 #endif
 }
 
-inline bool node_manager::isHoleNonIndex(int k, int p_offset) {
+inline bool MEDDLY::mt_forest::isHoleNonIndex(int k, int p_offset) {
   return (level[mapLevel(k)].data[p_offset + 1] == non_index_hole);
 }
 
-inline bool node_manager::doesLevelNeedCompaction(int k)
+inline bool MEDDLY::mt_forest::doesLevelNeedCompaction(int k)
 {
 #if 0
   return (level[mapLevel(k)].hole_slots >
@@ -887,12 +817,12 @@ inline bool node_manager::doesLevelNeedCompaction(int k)
 #else
   return ((level[mapLevel(k)].hole_slots > 10000) ||
       ((level[mapLevel(k)].hole_slots > 100) && 
-       (level[mapLevel(k)].hole_slots >
-        (level[mapLevel(k)].last * compactionThreshold))));
+       (level[mapLevel(k)].hole_slots * 100>
+        (level[mapLevel(k)].last * deflt.compaction))));
 #endif
 }
 
-inline void node_manager::midRemove(int k, int p_offset) {
+inline void MEDDLY::mt_forest::midRemove(int k, int p_offset) {
   MEDDLY_DCASSERT(isHoleNonIndex(k, p_offset));
   int p_level = mapLevel(k);
   int left = level[p_level].data[p_offset+2];
@@ -903,71 +833,57 @@ inline void node_manager::midRemove(int k, int p_offset) {
   if (right) level[p_level].data[right + 2] = left;
 }
 
-inline void node_manager::incrTempNodeCount(int k) {
+inline void MEDDLY::mt_forest::incrTempNodeCount(int k) {
   level[mapLevel(k)].temp_nodes++;
-  temp_nodes++;
+  stats.temp_nodes++;
 }
 
 
-inline void node_manager::decrTempNodeCount(int k) {
+inline void MEDDLY::mt_forest::decrTempNodeCount(int k) {
   level[mapLevel(k)].temp_nodes--;
-  temp_nodes--;
+  stats.temp_nodes--;
 }
 
 
-inline void node_manager::incrNodesActivatedSinceGc() {
+inline void MEDDLY::mt_forest::incrNodesActivatedSinceGc() {
   nodes_activated_since_gc++;
 }
 
 
-inline int node_manager::find(int node) {
+inline int MEDDLY::mt_forest::find(int node) {
   return unique->find(node);
 }
 
 
-inline int node_manager::insert(int node) {
+inline int MEDDLY::mt_forest::insert(int node) {
   return unique->insert(node);
 }
 
 
-inline int node_manager::replace(int node) {
+inline int MEDDLY::mt_forest::replace(int node) {
   return unique->replace(node);
 }
 
 
-inline bool node_manager::areSparseNodesEnabled() const {
-  return nodeStorage == forest::FULL_OR_SPARSE_STORAGE ||
-      nodeStorage == forest::SPARSE_STORAGE;
-}
-
-
-inline bool node_manager::isValidLevel(int k) const {
+inline bool MEDDLY::mt_forest::isValidLevel(int k) const {
   int mapped_level = mapLevel(k);
   return (1 <= mapped_level && mapped_level < l_size &&
     level[mapped_level].data != NULL);
 }
 
 
-inline int node_manager::getTempNodeId() const {
+inline int MEDDLY::mt_forest::getTempNodeId() const {
   return temp_node;
 }
 
 // ****************** override expert_forest class ****************** 
 
 
-inline void node_manager::compactMemory() {
+inline void MEDDLY::mt_forest::compactMemory() {
   compactAllLevels();
 }
 
-inline long node_manager::getCurrentMemoryAllocated() const {
-  return curr_mem_alloc;
-}
-
-inline long node_manager::getPeakMemoryAllocated() const {
-  return max_mem_alloc;
-}
-
-inline void node_manager::showInfo(FILE* strm, int verbosity) {
+inline void MEDDLY::mt_forest::showInfo(FILE* strm, int verbosity) {
   showAll(strm, verbosity);
   fprintf(strm, "DD stats:\n");
   reportMemoryUsage(strm, '\t');
@@ -977,23 +893,23 @@ inline void node_manager::showInfo(FILE* strm, int verbosity) {
 
 // *************** override expert_forest class -- done ***************
 
-inline int node_manager::getLevelNode(int k) const {
+inline int MEDDLY::mt_forest::getLevelNode(int k) const {
   return level[mapLevel(k)].levelNode;
 }
 
-inline bool node_manager::isValidVariable(int vh) const {
-  return (vh > 0) && (vh <= expertDomain->getNumVariables());
+inline bool MEDDLY::mt_forest::isValidVariable(int vh) const {
+  return (vh > 0) && (vh <= getExpertDomain()->getNumVariables());
   //return expertDomain->getVariableHeight(vh) != -1;
 }
 
 inline void
-node_manager::findFirstElement(const dd_edge& f, int* vlist) const
+MEDDLY::mt_forest::findFirstElement(const dd_edge& f, int* vlist) const
 {
   throw error(error::INVALID_OPERATION);
 }
 
 inline void
-node_manager::findFirstElement(const dd_edge& f, int* vlist, int* vplist) const
+MEDDLY::mt_forest::findFirstElement(const dd_edge& f, int* vlist, int* vplist) const
 {
   throw error(error::INVALID_OPERATION);
 }

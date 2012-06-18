@@ -30,7 +30,7 @@
 // #define DEBUG_TABLE2LIST
 // #define DEBUG_LIST2TABLE
 
-#define DEBUG_REMOVESTALES
+// #define DEBUG_REMOVESTALES
 // #define SUMMARY_STALES
 
 namespace MEDDLY {

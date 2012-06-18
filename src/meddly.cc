@@ -44,10 +44,6 @@ namespace MEDDLY {
 
   bool libraryRunning = 0;
 
-  // list of all domains; needed when we destroy the library.
-  domain** dom_list = 0;
-  int dom_list_size = 0;
-
   // unary operation "codes"
 
   const unary_opname* COPY = 0;
@@ -98,13 +94,25 @@ namespace MEDDLY {
   // Monolithic compute table, if used
   compute_table* operation::Monolithic_CT = 0;
 
+  //
+  // List of operations
+  //
   operation** operation::op_list = 0;
   int* operation::op_holes = 0;
   int operation::list_size = 0;
   int operation::list_alloc = 0;
   int operation::free_list = -1;
 
-  // helper function
+  //
+  // List of all domains
+  //
+  domain** domain::dom_list = 0;
+  int* domain::dom_free = 0;
+  int domain::dom_list_size = 0;
+  int domain::free_list = -1;
+
+  // helper functions
+  void purgeMarkedOperations();
   void destroyOpInternal(operation* op);
 };
 
@@ -219,7 +227,7 @@ MEDDLY::binary_operation* MEDDLY::getOperation(const binary_opname* code,
 
 void MEDDLY::removeOperationFromCache(operation* op)
 {
-  if (0==op) return;
+  if (0==op || 0==op_cache) return;
   if (!libraryRunning) 
     throw error(error::UNINITIALIZED);
   const opname* code = op->getOpName();
@@ -305,21 +313,7 @@ MEDDLY::variable* MEDDLY::createVariable(int bound, char* name)
 MEDDLY::domain* MEDDLY::createDomain(variable** vars, int N)
 {
   if (!libraryRunning) throw error(error::UNINITIALIZED);
-  int slot;
-  for (slot=0; slot<dom_list_size; slot++) {
-    if (slot) continue;
-    dom_list[slot] = new expert_domain(vars, N);
-    return dom_list[slot];
-  }
-  // expand list
-  int newsize = dom_list_size + 16;
-  domain** tmp = (domain**) realloc(dom_list, newsize * sizeof(domain*));
-  if (0==tmp) throw error(error::INSUFFICIENT_MEMORY);
-  dom_list = tmp;
-  for (int i=dom_list_size; i<newsize; i++) dom_list[i] = 0;
-  dom_list_size = newsize;
-  dom_list[slot] = new expert_domain(vars, N);
-  return dom_list[slot];
+  return new expert_domain(vars, N);
 }
 
 MEDDLY::domain* MEDDLY::createDomainBottomUp(const int* bounds, int N)
@@ -334,17 +328,9 @@ void MEDDLY::destroyDomain(MEDDLY::domain* &d)
 {
   if (0==d) return;
   if (!libraryRunning) throw error(error::UNINITIALIZED);
-  // remove from our list
-  for (int i=0; i<dom_list_size; i++) {
-    if (dom_list[i] != d) continue;
-    dom_list[i] = 0;
-    break;
-  }
-  // remove
-  expert_domain* ed = (expert_domain*) d;
-  ed->markForDeletion();
-  operation::removeStalesFromMonolithic();
-  delete ed;
+  d->markForDeletion();
+  purgeMarkedOperations();
+  delete d;
   d = 0;
 }
 
@@ -352,8 +338,14 @@ void MEDDLY::destroyForest(MEDDLY::forest* &f)
 {
   if (0==f) return;
   if (!libraryRunning) throw error(error::UNINITIALIZED);
-  expert_forest* ef = (expert_forest*) f;
-  ef->markForDeletion();
+  f->markForDeletion();
+  purgeMarkedOperations();
+  delete f;
+  f = 0;
+}
+
+void MEDDLY::purgeMarkedOperations()
+{
   operation::removeStalesFromMonolithic();
   for (int i=0; i<operation::getOpListSize(); i++) {
     operation* op = operation::getOpWithIndex(i);
@@ -362,8 +354,6 @@ void MEDDLY::destroyForest(MEDDLY::forest* &f)
       destroyOpInternal(op);
     }
   }
-  delete ef;
-  f = 0;
 }
 
 inline void MEDDLY::destroyOpInternal(MEDDLY::operation* op)
@@ -411,13 +401,6 @@ void MEDDLY::initialize(const settings &s)
   meddlySettings = s;
   initStats(meddlyStats);
 
-  // set up empty list of domains
-  dom_list_size = 16;
-  dom_list = (domain**) malloc(dom_list_size * sizeof(domain*));
-  for (int i=0; i<dom_list_size; i++) {
-    dom_list[i] = 0;
-  }
-
   // set up monolithic compute table, if needed
   if (meddlySettings.usesMonolithicComputeTable()) {
     operation::Monolithic_CT = createMonolithicTable(s.computeTable);
@@ -455,19 +438,19 @@ void MEDDLY::cleanup()
   }
 
 #endif
+  domain::markDomList();
 
-  // clean up domains
-  for (int i=0; i<dom_list_size; i++) {
-    delete dom_list[i];
-  }
-  free(dom_list);
+  operation::destroyAllOps();
+
+  domain::deleteDomList();
+
+  // clean up operation cache 
+  delete[] op_cache;
+  op_cache = 0;
 
   // clean up compute table
   delete operation::Monolithic_CT;
   operation::Monolithic_CT = 0;
-
-  // clean up operation cache (operations should be destroyed already)
-  delete[] op_cache;
 
   if (meddlySettings.operationBuilder) 
     meddlySettings.operationBuilder->cleanupChain();

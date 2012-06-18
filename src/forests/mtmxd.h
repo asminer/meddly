@@ -41,36 +41,26 @@
 #ifndef MTMXD_H
 #define MTMXD_H
 
-#include "mdds.h"
+#include "mt.h"
 
 #define IN_PLACE_SORT
 
+namespace MEDDLY {
+  class mtmxd_forest;
+};
+
+// ******************************************************************
+
 const int mtmxdDataHeaderSize = 4;
 
-class mtmxd_node_manager : public node_manager {
+class MEDDLY::mtmxd_forest : public mt_forest {
   // TODO: mtmxds can only be forest::IDENTITY_REDUCED
   // MTMDD data header:
   // { incount, next (unique table), size, ..., logical address}
   // Data Header Size: 4
 
   public:
-
-    mtmxd_node_manager(int dsl, domain *d, forest::range_type t);
-    ~mtmxd_node_manager();
-
-    // Refer to meddly.h
-    void createEdge(const int* const* vlist, const int* const* vplist,
-        const int* terms, int N, dd_edge& e);
-    void createEdge(const int* const* vlist, const int* const* vplist,
-        const float* terms, int N, dd_edge& e);
-
-    void createEdge(int val, dd_edge &e);
-    void createEdge(float val, dd_edge &e);
-
-    void evaluate(const dd_edge& f, const int* vlist, const int* vplist,
-        int &term) const;
-    void evaluate(const dd_edge& f, const int* vlist, const int* vplist,
-        float &term) const;
+    ~mtmxd_forest();
 
     virtual void findFirstElement(const dd_edge& f, int* vlist, int* vplist)
       const;
@@ -80,43 +70,11 @@ class mtmxd_node_manager : public node_manager {
 
     virtual int reduceNode(int p);
 
-  public:
-
-    // Refer to meddly_expert.h
-    // The following will either abort or return an error since they are not
-    // applicable to this forest.
-    virtual void normalizeAndReduceNode(int& p, int& ev);
-    virtual void normalizeAndReduceNode(int& p, float& ev);
-
-    // Refer to meddly.h
-    // The following will either abort or return an error since they are not
-    // applicable to this forest.
-
-    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const int* terms, int N,
-        dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const float* terms,
-        int N, dd_edge &e);
-
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-        int N, dd_edge &e);
-    virtual void createEdge(bool val, dd_edge &e);
-
-    virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
-      const;
-    virtual void evaluate(const dd_edge &f, const int* vlist, int &term)
-      const;
-    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
-      const;
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, bool &term) const;
-
   protected:
 
     // Used by derived classes for initialization
-    mtmxd_node_manager(int dsl, domain *d, bool relation, forest::range_type t,
-        forest::edge_labeling e, forest::reduction_rule r,
-        forest::node_storage s, forest::node_deletion_policy dp);
+    mtmxd_forest(int dsl, domain *d, bool relation, range_type t,
+        edge_labeling e, const policies &p);
 
     // This create a MTMXD from a collection of edges (represented 
     // as vectors vlist and vplist).
@@ -136,7 +94,7 @@ class mtmxd_node_manager : public node_manager {
 
     // Creates a top-level node representing {-1, -1, ..., -1} = terminal node
     // (not value), and returns it (returned node is already linked to.
-    int createEdge(int termNode);
+    int createEdgeTo(int termNode);
 
     // Starting at height given by {startAtHeight, primedLevel},
     // creates a node representing v[] vp[] = terminal node (not value)
@@ -203,64 +161,11 @@ class mtmxd_node_manager : public node_manager {
     int countSize;
 };
 
-
-
-class mxd_node_manager : public mtmxd_node_manager {
-  // TODO: mxds can only be forest::IDENTITY_REDUCED
-  public:
-
-    mxd_node_manager(int dsl, domain *d);
-    ~mxd_node_manager();
-
-    using mtmxd_node_manager::createEdge;
-    using mtmxd_node_manager::evaluate;
-
-    virtual bool accumulate(int& tempNode, int* element, int* pelement);
-    virtual void accumulate(int& a, int b);
-
-    virtual int accumulate(int tempNode, bool cBM,
-        int* element, int* pelement, int level);
-    virtual int accumulateSkippedLevel(int tempNode,
-        int* element, int* pelement, int level);
-
-    virtual int accumulateMxd(int a, int b, bool cBM);
-    virtual int accumulateMxdPrime(int a, int b, bool cBM);
-    virtual int addPrimeReducedNodes(int a, int b);
-    virtual int accumulateExpandA(int a, int b, bool cBM);
-    virtual int buildQRIdentityNode(int node, int level);
-
-    virtual void accumulateMxdHelper(int& a, int b, bool cBM,
-        bool needsToMakeACopy,
-        int (mxd_node_manager::*function)(int, int, bool));
-
-    // Refer to meddly.h
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-        int N, dd_edge& e);
-    virtual void createEdge(bool val, dd_edge &e);
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, bool &term) const;
-
-    // The following will either abort or return an error since they are not
-    // applicable to this forest.
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-        const int* terms, int N, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-        const float* terms, int N, dd_edge &e);
-    virtual void createEdge(int val, dd_edge &e);
-    virtual void createEdge(float val, dd_edge &e);
-    virtual void evaluate(const dd_edge &f, const int* vlist,
-        const int* vplist, int &term) const;
-    virtual void evaluate(const dd_edge &f, const int* vlist,
-        const int* vplist, float &term) const;
-};
-
-
-
 // ------------------------ Inline methods -----------------------------------
 
 template <typename T>
 inline
-void mtmxd_node_manager::copyLists(const int* const* vlist,
+void MEDDLY::mtmxd_forest::copyLists(const int* const* vlist,
     const int* const* vplist, const T* terms, int nElements)
 {
   if (listSize < nElements) {
@@ -284,24 +189,24 @@ void mtmxd_node_manager::copyLists(const int* const* vlist,
 
 template <typename T>
 void
-mtmxd_node_manager::createEdgeInternal(const int* const* vlist,
+MEDDLY::mtmxd_forest::createEdgeInternal(const int* const* vlist,
     const int* const* vplist, const T* terms, int N, dd_edge &e)
 {
   // check if the vlist contains valid indexes
   bool specialCasesFound = false;
   for (int i = 0; i < N; i++)
   {
-    for (int level = expertDomain->getNumVariables(); level; level--) {
+    for (int level = getExpertDomain()->getNumVariables(); level; level--) {
       // unprimed level
       int bound = vlist[i][level] + 1;
-      if (bound >= expertDomain->getVariableBound(level, false))
-        expertDomain->enlargeVariableBound(level, false, bound);
+      if (bound >= getExpertDomain()->getVariableBound(level, false))
+        useExpertDomain()->enlargeVariableBound(level, false, bound);
       else if (bound < 0)
         specialCasesFound = true;
       // primed level
       bound = vplist[i][level] + 1;
-      if (bound >= expertDomain->getVariableBound(level, true))
-        expertDomain->enlargeVariableBound(level, true, bound);
+      if (bound >= getExpertDomain()->getVariableBound(level, true))
+        useExpertDomain()->enlargeVariableBound(level, true, bound);
       else if (bound < 0)
         specialCasesFound = true;
     } // for level
@@ -340,11 +245,11 @@ mtmxd_node_manager::createEdgeInternal(const int* const* vlist,
 
     // call sort-based procedure for building the DD
 #ifdef IN_PLACE_SORT
-    int result = inPlaceSortBuild<T>(expertDomain->getNumVariables(),
+    int result = inPlaceSortBuild<T>(getExpertDomain()->getNumVariables(),
         false, 0, N);
 #else
     int result = sortBuild(unpList, pList, (T*)(terms == 0? 0: tList),
-        expertDomain->getNumVariables(), 0, N);
+        getExpertDomain()->getNumVariables(), 0, N);
 #endif
 
     e.set(result, 0, getNodeLevel(result));
@@ -355,7 +260,7 @@ mtmxd_node_manager::createEdgeInternal(const int* const* vlist,
 #ifndef IN_PLACE_SORT
 
 template <typename T>
-int mtmxd_node_manager::sort(int** list, int** otherList, T* tList,
+int MEDDLY::mtmxd_forest::sort(int** list, int** otherList, T* tList,
     int absLevel, int begin, int end)
 {
   MEDDLY_DCASSERT(tList != 0);
@@ -424,7 +329,7 @@ int mtmxd_node_manager::sort(int** list, int** otherList, T* tList,
 
 template <>
 inline
-int mtmxd_node_manager::sort(int** list, int** otherList, bool* tList,
+int MEDDLY::mtmxd_forest::sort(int** list, int** otherList, bool* tList,
     int absLevel, int begin, int end)
 {
   int N = end - begin;
@@ -488,7 +393,7 @@ int mtmxd_node_manager::sort(int** list, int** otherList, bool* tList,
 
 
 template <typename T>
-int mtmxd_node_manager::sortBuild(int** unpList, int** pList, T* tList,
+int MEDDLY::mtmxd_forest::sortBuild(int** unpList, int** pList, T* tList,
     int height, int begin, int end)
 {
   // [begin, end)
@@ -512,12 +417,12 @@ int mtmxd_node_manager::sortBuild(int** unpList, int** pList, T* tList,
     list = unpList;
     otherList = pList;
     nextHeight = -height;
-    level = expertDomain->getVariableWithHeight(height);
+    level = getExpertDomain()->getVariableWithHeight(height);
   } else {
     list = pList;
     otherList = unpList;
     nextHeight = -height-1;
-    level = -(expertDomain->getVariableWithHeight(-height));
+    level = -(getExpertDomain()->getVariableWithHeight(-height));
   }
   int absLevel = level < 0? -level: level;
 
@@ -556,10 +461,11 @@ int mtmxd_node_manager::sortBuild(int** unpList, int** pList, T* tList,
 
 #endif
 
+namespace MEDDLY {
 
 template<typename T>
 inline
-int mtmxd_node_manager::inPlaceSort(int level, bool isPrime,
+int mtmxd_forest::inPlaceSort(int level, bool isPrime,
     int begin, int end)
 {
   // plist, unpList, tList
@@ -663,7 +569,7 @@ int mtmxd_node_manager::inPlaceSort(int level, bool isPrime,
 
 template<>
 inline
-int mtmxd_node_manager::inPlaceSort<bool>(int level, bool isPrime,
+int mtmxd_forest::inPlaceSort<bool>(int level, bool isPrime,
     int begin, int end)
 {
   // plist, unpList, tList
@@ -761,7 +667,7 @@ int mtmxd_node_manager::inPlaceSort<bool>(int level, bool isPrime,
 
 
 template <typename T>
-int mtmxd_node_manager::inPlaceSortBuild(int height, bool isPrime,
+int mtmxd_forest::inPlaceSortBuild(int height, bool isPrime,
     int begin, int end)
 {
   // [begin, end)
@@ -803,7 +709,7 @@ int mtmxd_node_manager::inPlaceSortBuild(int height, bool isPrime,
 
 template <typename T>
 inline
-T mtmxd_node_manager::handleMultipleTerminalValues(const T* tList,
+T mtmxd_forest::handleMultipleTerminalValues(const T* tList,
     int begin, int end)
 {
   MEDDLY_DCASSERT(begin < end);
@@ -815,13 +721,14 @@ T mtmxd_node_manager::handleMultipleTerminalValues(const T* tList,
 
 template <>
 inline
-bool mtmxd_node_manager::handleMultipleTerminalValues(const bool* tList,
+bool mtmxd_forest::handleMultipleTerminalValues(const bool* tList,
     int begin, int end)
 {
   MEDDLY_DCASSERT(begin < end);
   return true;
 }
 
+} // namespace
 
 #endif
 

@@ -57,6 +57,7 @@ namespace MEDDLY {
   class ct_object;
   class unary_opname;
   class binary_opname;
+  class operation;
   class unary_operation;
   class binary_operation;
 
@@ -434,6 +435,8 @@ class MEDDLY::error {
       WRONG_NUMBER,
       /// A result won't fit in an integer / float.
       OVERFLOW,
+      /// Invalid policy setting.
+      INVALID_POLICY,
       /// Bad value for something.
       INVALID_ASSIGNMENT,
       /// Miscellaneous error
@@ -459,6 +462,7 @@ class MEDDLY::error {
           case  TYPE_MISMATCH:        return "Type mismatch";
           case  WRONG_NUMBER:         return "Wrong number";
           case  OVERFLOW:             return "Overflow";
+          case  INVALID_POLICY:       return "Invalid policy";
           case  INVALID_ASSIGNMENT:   return "Invalid assignment";
           case  MISCELLANEOUS:        return "Miscellaneous";
           default:                    return "Unknown error";
@@ -485,10 +489,6 @@ class MEDDLY::error {
     depending on your conceptual view) represented in a single
     decision diagram forest over a common domain.
     
-    Some interesting features of forests:
-    - The reduction rule can be different for different variables.
-    - The storage rule can be different for different variables.
-
     TBD: discussion of garbage collection.
 
     When a forest is destroyed, all of the corresponding dd_edges
@@ -520,130 +520,314 @@ class MEDDLY::forest {
       // TBD: there may be others in the future :^)
     };
 
-    /** Supported node reduction rules.
-        Currently, the following reduction rules are allowed:
-        - Fully reduced, meaning that duplicate and redundant nodes are
-          eliminated.
-        - Quasi reduced, meaning that duplicate nodes are eliminated.
-        - Identity reduced, for relations only, meaning that duplicate
-          nodes are eliminated, as are "identity" pairs of primed, unprimed
-          variables.
-    */
-    enum reduction_rule {
-      /// Nodes are fully reduced.
-      FULLY_REDUCED,
-      /// Nodes are quasi-reduced.
-      QUASI_REDUCED,
-      /// Nodes are identity-reduced.
-      IDENTITY_REDUCED
-    };
+    /// Collection of forest policies.
+    struct policies {
 
-    /// Supported node storage meachanisms.
-    enum node_storage {
-      /// Truncated full storage.
-      FULL_STORAGE,
-      /// Sparse storage.
-      SPARSE_STORAGE,
-      /// For each node, either full or sparse, whichever is more compact.
-      FULL_OR_SPARSE_STORAGE
-    };
+      /** Supported node reduction rules.
+          Currently, the following reduction rules are allowed:
+            - Fully reduced, meaning that duplicate and redundant nodes are
+              eliminated.
+            - Quasi reduced, meaning that duplicate nodes are eliminated.
+            - Identity reduced, for relations only, meaning that duplicate
+              nodes are eliminated, as are "identity" pairs of primed, unprimed
+              variables.
+      */
+      enum reduction_rule {
+          /// Nodes are fully reduced.
+          FULLY_REDUCED,
+          /// Nodes are quasi-reduced.
+          QUASI_REDUCED,
+          /// Nodes are identity-reduced.
+          IDENTITY_REDUCED
+      };
 
-    /// Supported node deletion policies.
-    enum node_deletion_policy {
-      /** Never delete nodes.
-          Useful for debugging the garbage collector.
-      */
-      NEVER_DELETE,
-      /** Nodes are marked for deletion.
-          We assume that a deleted node might be used again,
-          so we keep it until it no longer appears in any compute table.
-      */
-      OPTIMISTIC_DELETION,
-      /// Nodes are removed as soon as they become disconnected.
-      PESSIMISTIC_DELETION
+      /// Supported node storage meachanisms.
+      enum node_storage {
+          /// Truncated full storage.
+          FULL_STORAGE,
+          /// Sparse storage.
+          SPARSE_STORAGE,
+          /// For each node, either full or sparse, whichever is more compact.
+          FULL_OR_SPARSE_STORAGE
+      };
+
+      /// Supported node deletion policies.
+      enum node_deletion {
+          /** Never delete nodes.
+              Useful for debugging the garbage collector.
+          */
+          NEVER_DELETE,
+          /** Nodes are marked for deletion.
+              We assume that a deleted node might be used again,
+              so we keep it until it no longer appears in any compute table.
+          */
+          OPTIMISTIC_DELETION,
+          /// Nodes are removed as soon as they become disconnected.
+          PESSIMISTIC_DELETION
+      };
+
+      /// Default reduction rule for all levels in the forest.
+      reduction_rule reduction;
+      /// Default storage rule for all levels in the forest.
+      node_storage storage;
+      /// Default deletion policy for all levels in the forest.
+      node_deletion deletion;
+
+      /// Compaction threshold for all variables in the forest.
+      unsigned compaction;
+      /// Number of zombie nodes to trigger garbage collection
+      unsigned zombieTrigger;
+      /// Number of orphan nodes to trigger garbage collection
+      unsigned orphanTrigger;
+      /// Should we run the memory compactor after garbage collection
+      bool compactAfterGC;
+
+
+      /// Constructor; sets reasonable defaults
+      policies(bool rel) {
+        reduction = rel ? IDENTITY_REDUCED : FULLY_REDUCED;
+        storage = FULL_OR_SPARSE_STORAGE;
+        deletion = OPTIMISTIC_DELETION;
+        compaction = 40;
+        zombieTrigger = 1000000;
+        orphanTrigger = 500000;
+        compactAfterGC = true;
+      }
+
+      inline void setFullyReduced()     { reduction = FULLY_REDUCED; }
+      inline void setQuasiReduced()     { reduction = QUASI_REDUCED; }
+      inline void setIdentityReduced()  { reduction = IDENTITY_REDUCED; }
+
+      inline void setFullStorage()      { storage = FULL_STORAGE; }
+      inline void setSparseStorage()    { storage = SPARSE_STORAGE; }
+      inline void setCompactStorage()   { storage = FULL_OR_SPARSE_STORAGE; }
+
+      inline void setOptimistic()       { deletion = OPTIMISTIC_DELETION; }
+      inline void setPessimistic()      { deletion = PESSIMISTIC_DELETION; }
+    }; // end of struct policies
+
+    /// Collection of various stats for performance measurement
+    struct statset {
+      /// Number of times a dead node was resurrected.
+      long reclaimed_nodes;
+      /// Number of times the forest storage array was compacted
+      long num_compactions;
+      /// Current number of zombie nodes (waiting for deletion)
+      long zombie_nodes;
+      /// Current number of orphan nodes (disconnected)
+      long orphan_nodes;
+      /// Current number of connected nodes
+      long active_nodes;
+      /// Current number of temporary nodes
+      long temp_nodes;
+
+      /// Peak number of active nodes
+      long peak_active;
+
+      /// Current memory used for nodes
+      long memory_used;
+      /// Current memory allocated for nodes
+      long memory_alloc;
+      /// Peak memory used for nodes
+      long peak_memory_used;
+      /// Peak memory allocated for nodes
+      long peak_memory_alloc;
+
+      // unique table stats
+
+      /// Current memory for UT
+      long memory_UT;
+      /// Peak memory for UT
+      long peak_memory_UT;
+      /// Longest chain search in UT
+      int max_UT_chain;
+
+      statset();
+
+      // nice helpers
+
+      inline void incActive(long b) {
+        active_nodes += b;
+        if (active_nodes > peak_active) 
+          peak_active = active_nodes;
+      }
+      inline void decActive(long b) {
+        active_nodes -= b;
+      }
+      inline void incMemUsed(long b) {
+        memory_used += b;
+        if (memory_used > peak_memory_used) 
+          peak_memory_used = memory_used;
+      }
+      inline void decMemUsed(long b) {
+        memory_used -= b;
+      }
+      inline void incMemAlloc(long b) {
+        memory_alloc += b;
+        if (memory_alloc > peak_memory_alloc) 
+          peak_memory_alloc = memory_alloc;
+      }
+      inline void decMemAlloc(long b) {
+        memory_alloc -= b;
+      }
+      inline void sawUTchain(int c) {
+        if (c > max_UT_chain)
+          max_UT_chain = c;
+      }
     };
 
   protected:
-    /// Constructor -- this class cannot be instantiated.
-    forest();
+    /** Constructor -- this class cannot be instantiated.
+      @param  dslot   slot used to store the forest, in the domain
+      @param  d       domain to which this forest belongs to.
+      @param  rel     does this forest represent a relation.
+      @param  t       the range of the functions represented in this forest.
+      @param  ev      edge annotation.
+      @param  p       Polcies for reduction, storage, deletion.
+    */
+    forest(int dslot, domain* d, bool rel, range_type t, edge_labeling ev, 
+      const policies &p);
 
     /// Destructor.
     virtual ~forest();  
 
+  // ------------------------------------------------------------
+  // inlines.
   public:
 
     /// Returns a non-modifiable pointer to this forest's domain.
-    virtual const domain* getDomain() const = 0;
+    inline const domain* getDomain() const {
+      return d;
+    }
 
     /// Returns a pointer to this forest's domain.
-    virtual domain* useDomain() = 0;
+    inline domain* useDomain() {
+      return d;
+    }
 
     /// Does this forest represent relations or matrices?
-    virtual bool isForRelations() const = 0;
+    inline bool isForRelations() const {
+      return isRelation;
+    }
 
     /// Returns the range type.
-    virtual range_type getRangeType() const = 0;
+    inline range_type getRangeType() const {
+      return rangeType;
+    }
+
+    /// Query the range type.
+    inline bool isRangeType(range_type r) const {
+      return r == rangeType;
+    }
 
     /// Returns the edge labeling mechanism.
-    virtual edge_labeling getEdgeLabeling() const = 0;
+    inline edge_labeling getEdgeLabeling() const {
+      return edgeLabel;
+    }
 
-    /** Set the specified reduction rule for all variables in this forest.
-        @param  r   Desired reduction rule.
-    */
-    virtual void setReductionRule(reduction_rule r) = 0;
+    /// Query the edge labeling mechanism.
+    // inline bool isEdgeLabeling(edge_labeling e) const {
+    //  return e == edgeLabel;
+    //}
 
-    /** Set the node storage mechanism for all variables in this forest.
-        The same as calling setNodeStorageForVariable(), for all variables.
-        @param  ns  Desired node storage mechanism.
-    */
-    virtual void setNodeStorage(node_storage ns) = 0;
+    /// Is the edge labeling "MULTI_TERMINAL".
+    inline bool isMultiTerminal() const {
+      return MULTI_TERMINAL == edgeLabel;
+    }
 
-    /** Set the node deletion policy for all variables in this forest.
-        Determines how aggressively node memory should be reclaimed when
-        nodes become disconnected.
-        @param  np  Policy to use.
-        TODO: need to specify what happens when the policy is changed.
-    */
-    virtual void setNodeDeletion(node_deletion_policy np) = 0;
+    /// Is the edge labeling "EV_PLUS".
+    inline bool isEVPlus() const {
+      return EVPLUS == edgeLabel;
+    }
 
-    /** Set a compaction threshold for all variables in this forest.
-        The threshold is set as a percentage * 100.  Whenever the \b unused
-        memory for this variable exceeds the threshold (as a percentage), a
-        compaction operation is performed automatically.
-        @param  p   Percentage * 100, i.e., use 50 for 50\%.
-    */
-    virtual void setCompactionThreshold(unsigned p) = 0;
+    /// Is the edge labeling "EV_TIMES".
+    inline bool isEVTimes() const {
+      return EVTIMES == edgeLabel;
+    }
 
-    /** Force garbage collection.
-        All disconnected nodes in this forest are discarded along with any
-        compute table entries that may include them.
-    */
-    virtual void garbageCollect() = 0;
+    /// Check if we match a specific type of forest
+    inline bool matches(bool isR, range_type rt, edge_labeling el) const {
+      return (isRelation == isR) && (rangeType == rt) && (edgeLabel == el);
+    }
 
-    /** Compact the memory for all variables in this forest.
-        This is not the same as garbage collection.
-    */
-    virtual void compactMemory() = 0;
+    /// Returne the current policies used by this forest.
+    inline const policies& getPolicies() const {
+      return deflt;
+    }
+
+    /// Returns the reduction rule used by this forest.
+    inline policies::reduction_rule getReductionRule() const {
+      return deflt.reduction;
+    }
+
+    /// Returns true if the forest is fully reduced.
+    inline bool isFullyReduced() const {
+      return policies::FULLY_REDUCED == deflt.reduction;
+    }
+
+    /// Returns true if the forest is quasi reduced.
+    inline bool isQuasiReduced() const {
+      return policies::QUASI_REDUCED == deflt.reduction;
+    }
+
+    /// Returns true if the forest is identity reduced.
+    inline bool isIdentityReduced() const {
+      return policies::IDENTITY_REDUCED == deflt.reduction;
+    }
+
+    /// Returns the storage mechanism used by this forest.
+    inline policies::node_storage getNodeStorage() const {
+      return deflt.storage;
+    }
+
+    /// Returns the node deletion policy used by this forest.
+    inline policies::node_deletion getNodeDeletion() const {
+      return deflt.deletion;
+    }
+
+    /// Are we using pessimistic deletion
+    inline bool isPessimistic() const {
+      return policies::PESSIMISTIC_DELETION == deflt.deletion;
+    }
+
+    /// Can we store nodes sparsely
+    inline bool areSparseNodesEnabled() const {
+      return policies::FULL_STORAGE != deflt.storage;
+    }
+
+    /// Can we store nodes fully
+    inline bool areFullNodesEnabled() const {
+      return policies::SPARSE_STORAGE != deflt.storage;
+    }
+
+    /// Get forest performance stats.
+    inline const statset& getStats() const { return stats; }
 
     /** Get the current number of nodes in the forest, at all levels.
         @return     The current number of nodes, not counting deleted or
                     marked for deletion nodes.
     */
-    virtual long getCurrentNumNodes() const = 0;
+    inline long getCurrentNumNodes() const {
+      return stats.active_nodes;
+    }
 
     /** Get the current total memory used by the forest.
         This should be equal to summing getMemoryUsedForVariable()
         over all variables.
         @return     Current memory used by the forest.
     */
-    virtual long getCurrentMemoryUsed() const = 0;
+    inline long getCurrentMemoryUsed() const {
+      return stats.memory_used;
+    }
 
     /** Get the current total memory allocated by the forest.
         This should be equal to summing getMemoryAllocatedForVariable()
         over all variables.
         @return     Current total memory allocated by the forest.
     */
-    virtual long getCurrentMemoryAllocated() const = 0;
+    inline long getCurrentMemoryAllocated() const {
+      return stats.memory_alloc; 
+    }
 
     /** Get the peak number of nodes in the forest, at all levels.
         This will be at least as large as calling getNumNodes() after
@@ -651,18 +835,123 @@ class MEDDLY::forest {
         @return     The peak number of nodes that existed at one time,
                     in the forest.
     */
-    virtual long getPeakNumNodes() const = 0;
+    inline long getPeakNumNodes() const {
+      return stats.peak_active;
+    }
 
     /** Get the peak memory used by the forest.
         @return     Peak total memory used by the forest.
     */
-    virtual long getPeakMemoryUsed() const = 0;
+    inline long getPeakMemoryUsed() const {
+      return stats.peak_memory_used;
+    }
 
     /** Get the peak memory allocated by the forest.
         @return     Peak memory allocated by the forest.
     */
-    virtual long getPeakMemoryAllocated() const = 0;
+    inline long getPeakMemoryAllocated() const {
+      return stats.peak_memory_alloc;
+    }
 
+    /// Are we about to be deleted?
+    inline bool isMarkedForDeletion() const { return is_marked_for_deletion; }
+
+  // ------------------------------------------------------------
+  // non-virtual.
+  public:
+    /// Remove any stale compute table entries associated with this forest.
+    void removeStaleComputeTableEntries();
+
+    /// Remove all compute table entries associated with this forest.
+    void removeAllComputeTableEntries();
+
+  // ------------------------------------------------------------
+  // virtual, with default implementation.
+  public:
+
+    /** Create an edge such that
+        f(v_1, ..., vh=i, ..., v_n) = terms[i] for 0 <= i < size(vh).
+
+        For example, in a forest with range_type BOOLEAN, with 3 variables,
+        all of size 3, if vh == 2. An edge is created such that
+        v_1 v_2 v_3 TERM
+        X   0   X  terms[0]
+        X   1   X  terms[1]
+        X   2   X  terms[2]
+        where X represents "all possible".
+
+        \a primedLevel is useful only with forests that store relations. Here,
+        \a primedLevel is used to indicate whether the edge is to be created
+        for the primed or the unprimed level.
+
+        @param  vh    Variable handle.
+        @param  vp
+                      true: creates node for the primed vh variable.
+                      false: creates node for the unprimed vh variable.
+        @param  terms Array of boolean terminal values.
+        @param  a     return a handle to a node in the forest such that
+                      f(v_1, ..., vh=i, ..., v_n) = terms[i]
+                      for 0 <= i < size(vh).
+
+        @throws       TYPE_MISMATCH, if the forest's range is not BOOLEAN.
+    */
+    virtual void createEdgeForVar(int vh, bool vp, bool* terms, dd_edge& a);
+
+    /** Create an edge such that
+        f(v_1, ..., vh=i, ..., v_n) = terms[i] for 0 <= i < size(vh).
+
+        For example, in a forest with range_type INTEGER, with 3 variables,
+        all of size 3, if vh == 2. An edge is created such that
+        v_1 v_2 v_3 TERM
+        X   0   X  terms[0]
+        X   1   X  terms[1]
+        X   2   X  terms[2]
+        where X represents "all possible".
+
+        \a primedLevel is useful only with forests that store relations. Here,
+        \a primedLevel is used to indicate whether the edge is to be created
+        for the primed or the unprimed level.
+
+        @param  vh    Variable handle.
+        @param  vp
+                      true: creates node for the primed vh variable.
+                      false: creates node for the unprimed vh variable.
+        @param  terms Array of boolean terminal values.
+        @param  a     return a handle to a node in the forest such that
+                      f(v_1, ..., vh=i, ..., v_n) = terms[i]
+                      for 0 <= i < size(vh).
+        
+        @throws       TYPE_MISMATCH, if the forest's range is not INTEGER.
+    */
+    virtual void createEdgeForVar(int vh, bool vp, int* terms, dd_edge& a);
+
+    /** Create an edge such that
+        f(v_1, ..., vh=i, ..., v_n) = terms[i] for 0 <= i < size(vh).
+
+        For example, in a forest with range_type REAL, with 3 variables,
+        all of size 3, if vh == 2. An edge is created such that
+        v_1 v_2 v_3 TERM
+        X   0   X  terms[0]
+        X   1   X  terms[1]
+        X   2   X  terms[2]
+        where X represents "all possible".
+
+        \a primedLevel is useful only with forests that store relations. Here,
+        \a primedLevel is used to indicate whether the edge is to be created
+        for the primed or the unprimed level.
+
+        @param  vh    Variable handle.
+        @param  vp
+                      true: creates node for the primed vh variable.
+                      false: creates node for the unprimed vh variable.
+        @param  terms Array of boolean terminal values.
+        @param  a     return a handle to a node in the forest such that
+                      f(v_1, ..., vh=i, ..., v_n) = terms[i]
+                      for 0 <= i < size(vh).
+
+        @throws       TYPE_MISMATCH, if the forest's range is not REAL.
+    */
+    virtual void createEdgeForVar(int vh, bool vp, float* terms, dd_edge& a);
 
     /** Create an edge such that
         f(v_1, ..., vh=i, ..., v_n) = i for 0 <= i < size(vh).
@@ -680,14 +969,330 @@ class MEDDLY::forest {
         for the primed or the unprimed level.
   
         @param  vh    Variable handle.
-        @param  primedLevel
+        @param  pr
                       true: creates node for the primed vh variable.
                       false: creates node for the unprimed vh variable.
         @param  a     return a handle to a node in the forest such that
                       f(v_1, ..., vh=i, ..., v_n) = i for 0 <= i < size(vh).
     */
-    virtual void createEdgeForVar(int vh, bool primedLevel, dd_edge& a) = 0;
+    inline void createEdgeForVar(int vh, bool pr, dd_edge& a) {
+      switch (rangeType) {
+        case BOOLEAN:   createEdgeForVar(vh, pr, (bool*)  0, a);  break;
+        case INTEGER:   createEdgeForVar(vh, pr, (int*)   0, a);  break;
+        case REAL:      createEdgeForVar(vh, pr, (float*) 0, a);  break;
+        default:        throw error(error::MISCELLANEOUS);
+      };
+    };
 
+
+    /** Create an edge as the union of several explicit vectors.
+        @param  vlist Array of vectors. Each vector has dimension equal
+                      to one plus the largest variable handle in the domain.
+                      A vector \a x indicates a set of variable assignments,
+                      where x[vh] less than 0 means
+                      "don't care for variable vh", otherwise x[vh] gives
+                      the variable assignment for vh.
+        @param  N     Number of vectors (dimension of \a vlist).
+        @param  e     returns a handle to a node in the forest, such that
+                      f(v_1, ..., v_n) = 1, iff there is a vector
+                      x in \a vlist corresponding to the variable assignments
+                      v_1, ..., v_n; f(v_1, ..., v_n) = 0, otherwise.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not BOOLEAN, 
+                        or the forest is for relations.
+    */
+    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
+
+    /** Create an edge as the union of several vectors and return values.
+        @param  vlist Array of vectors. Each vector has dimension equal
+                      to one plus the largest variable handle in the domain.
+                      A vector \a x indicates a set of variable assignments,
+                      where x[vh] less than 0 means
+                      "don't care for variable vh", otherwise x[vh] gives
+                      the variable assignment for vh.
+        @param  terms Array of return values, same dimension as \a vlist.
+        @param  N     Number of vectors (dimension of \a vlist).
+        @param  e     returns a handle to a node in the forest that encodes
+                      the function f: f(v_1, ..., v_n) = terms[j]
+                      iff j is the smallest integer such that vector vlist[j]
+                      corresponds to the variable assignments v_1, ..., v_n;
+                      f(v_1, ..., v_n) = 0, otherwise.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not INTEGER,
+                        or the forest is for relations.
+    */
+    virtual void createEdge(const int* const* vlist, const int* terms, int N,
+      dd_edge &e);
+
+    /** Create an edge as the union of several vectors and return values.
+        @param  vlist Array of vectors. Each vector has dimension equal
+                      to one plus the largest variable handle in the domain.
+                      A vector \a x indicates a set of variable assignments,
+                      where x[vh] less than 0 means
+                      "don't care for variable vh", otherwise x[vh] gives
+                      the variable assignment for vh.
+        @param  terms Array of return values, same dimension as \a vlist.
+        @param  N     Number of vectors (dimension of \a vlist).
+        @param  e     returns a handle to a node in the forest that encodes
+                      the function f: f(v_1, ..., v_n) = terms[j]
+                      iff j is the smallest integer such that vector vlist[j]
+                      corresponds to the variable assignments v_1, ..., v_n;
+                      f(v_1, ..., v_n) = 0, otherwise.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not REAL,
+                        or the forest is for relations.
+    */
+    virtual void createEdge(const int* const* vlist, const float* terms,
+      int N, dd_edge &e);
+
+
+    /** Create an edge as the union of several explicit matrices.
+        @param  vlist   Array of vectors. Each vector has dimension equal to
+                        one plus the largest variable handle in the domain.
+                        A vector \a x indicates a set of unprimed variable
+                        assignments, where x[vh] equal to -1 means
+                        "don't care for unprimed variable vh", x[vh] equal
+                        to -2 means "don't change for variable vh",
+                        otherwise x[vh] gives the variable assignment for
+                        unprimed variable vh.
+        @param  vplist  Array of vectors, same dimension as \a vlist.
+                        A vector \a x = vplist[i] indicates a set of primed
+                        variable assignments, where x[vh] less than 0 means
+                        "don't change for variable vh" iff we are not
+                        changing the unprimed variable, and
+                        "don't care for primed variable vh" otherwise.
+                        Otherwise x[vh] gives the variable assignment for
+                        primed variable vh.
+        @param  N       Number of vectors (dimension of \a vlist).
+        @param  e       returns a handle to a node in the forest, such that
+                        f(v_1, v'_1, ..., v_n, v'_n) = 1, iff there is a
+                        vector vlist[i] corresponding to the variable
+                        assignments v_1, ..., v_n, and vplist[i] corresponds
+                        to variable assignments v'_1, ..., v'_n.
+                        f(v_1, v'_1, ..., v_n, v'_n) = 0, otherwise.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not BOOLEAN, 
+                        or the forest is not for relations.
+    */
+    virtual void createEdge(const int* const* vlist, const int* const* vplist,
+      int N, dd_edge &e);
+
+
+    /** Create an edge as the union of several explicit matrices.
+        @param  vlist   Array of vectors. Each vector has dimension equal to
+                        one plus the largest variable handle in the domain.
+                        A vector \a x indicates a set of unprimed variable
+                        assignments, where x[vh] equal to -1 means
+                        "don't care for unprimed variable vh", x[vh] equal
+                        to -2 means "don't change for variable vh",
+                        otherwise x[vh] gives the variable assignment for
+                        unprimed variable vh.
+        @param  vplist  Array of vectors, same dimension as \a vlist.
+                        A vector \a x = vplist[i] indicates a set of primed
+                        variable assignments, where x[vh] less than 0 means
+                        "don't change for variable vh" iff we are not
+                        changing the unprimed variable, and
+                        "don't care for primed variable vh" otherwise.
+                        Otherwise x[vh] gives the variable assignment for
+                        primed variable vh.
+        @param  terms   Array of return values, same dimension as \a vlist.
+        @param  N       Number of vectors (dimension of \a vlist).
+        @param  e       returns a handle to a node in the forest, such that
+                        f(v_1, v'_1, ..., v_n, v'_n) = term[i], iff there is
+                        a vector vlist[i] corresponding to the variable
+                        assignments v_1, ..., v_n, and vplist[i] corresponds
+                        to variable assignments v'_1, ..., v'_n.
+                        f(v_1, v'_1, ..., v_n, v'_n) = 0, otherwise.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not INTEGER, 
+                        or the forest is not for relations.
+    */
+    virtual void createEdge(const int* const* vlist, const int* const* vplist,
+      const int* terms, int N, dd_edge &e);
+
+
+    /** Create an edge as the union of several explicit matrices.
+        @param  vlist   Array of vectors. Each vector has dimension equal to
+                        one plus the largest variable handle in the domain.
+                        A vector \a x indicates a set of unprimed variable
+                        assignments, where x[vh] equal to -1 means
+                        "don't care for unprimed variable vh", x[vh] equal
+                        to -2 means "don't change for variable vh",
+                        otherwise x[vh] gives the variable assignment for
+                        unprimed variable vh.
+        @param  vplist  Array of vectors, same dimension as \a vlist.
+                        A vector \a x = vplist[i] indicates a set of primed
+                        variable assignments, where x[vh] less than 0 means
+                        "don't change for variable vh" iff we are not
+                        changing the unprimed variable, and
+                        "don't care for primed variable vh" otherwise.
+                        Otherwise x[vh] gives the variable assignment for
+                        primed variable vh.
+        @param  terms   Array of return values, same dimension as \a vlist.
+        @param  N       Number of vectors (dimension of \a vlist).
+        @param  e       returns a handle to a node in the forest, such that
+                        f(v_1, v'_1, ..., v_n, v'_n) = term[i], iff there is
+                        a vector vlist[i] corresponding to the variable
+                        assignments v_1, ..., v_n, and vplist[i] corresponds
+                        to variable assignments v'_1, ..., v'_n.
+                        f(v_1, v'_1, ..., v_n, v'_n) = 0, otherwise.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not REAL, 
+                        or the forest is not for relations.
+    */
+    virtual void createEdge(const int* const* vlist, 
+      const int* const* vplist, const float* terms, int N, dd_edge &e);
+
+
+    /** Create an edge for a boolean constant.
+        @param  val   Requested constant.
+        @param  e     returns a handle to a node in the forest for
+                      function f = \a val.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not BOOLEAN.
+    */
+    virtual void createEdge(bool val, dd_edge &e);
+
+    /** Create an edge for an integer constant.
+        @param  val   Requested constant.
+        @param  e     returns a handle to a node in the forest for
+                      function f = \a val.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not BOOLEAN.
+    */
+    virtual void createEdge(int val, dd_edge &e);
+
+    /** Create an edge for an integer constant.
+        @param  val   Requested constant.
+        @param  e     returns a handle to a node in the forest for
+                      function f = \a val.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not BOOLEAN.
+    */
+    virtual void createEdge(float val, dd_edge &e);
+
+    /** Evaluate the function encoded by an edge.
+        @param  f     Edge (function) to evaluate.
+        @param  vlist List of variable assignments, of dimension one higher
+                      than the largest variable handle.
+        @param  term  Output parameter, will be set to
+                      f(v1 = vlist[v1], ..., vn = vlist[vn]).
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not BOOLEAN, 
+                        or the forest is for relations.
+    */
+    virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
+      const;
+
+    /** Evaluate the function encoded by an edge.
+        @param  f     Edge (function) to evaluate.
+        @param  vlist List of variable assignments, of dimension one higher
+                      than the largest variable handle.
+        @param  term  Output parameter, will be set to
+                      f(v1 = vlist[v1], ..., vn = vlist[vn]).
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not INTEGER,
+                        or the forest is for relations.
+    */
+    virtual void evaluate(const dd_edge &f, const int* vlist, int &term)
+      const;
+
+    /** Evaluate the function encoded by an edge.
+        @param  f     Edge (function) to evaluate.
+        @param  vlist List of variable assignments, of dimension one higher
+                      than the largest variable handle.
+        @param  term  Output parameter, will be set to
+                      f(v1 = vlist[v1], ..., vn = vlist[vn]).
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not REAL,
+                        or the forest is for relations.
+    */
+    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
+      const;
+
+    /** Evaluate the function encoded by an edge.
+        @param  f       Edge (function) to evaluate.
+        @param  vlist   List of variable assignments for unprimed variables,
+                        of dimension one higher than the largest variable
+                        handle.
+        @param  vplist  List of variable assignments for primed variables, 
+                        of dimension one higher than the largest variable
+                        handle.
+        @param  term    Output parameter, will be set to
+                        f(v1 = vlist[v1], v'1 = vplist[v1], ...,
+                        vn = vlist[vn], v'n = vplist[vn]).
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not BOOLEAN, 
+                        or the forest is not for relations.
+    */
+    virtual void evaluate(const dd_edge& f, const int* vlist,
+      const int* vplist, bool &term) const;
+
+    /** Evaluate the function encoded by an edge.
+        @param  f       Edge (function) to evaluate.
+        @param  vlist   List of variable assignments for unprimed variables,
+                        of dimension one higher than the largest variable
+                        handle.
+        @param  vplist  List of variable assignments for primed variables, 
+                        of dimension one higher than the largest variable
+                        handle.
+        @param  term    Output parameter, will be set to
+                        f(v1 = vlist[v1], v'1 = vplist[v1], ...,
+                        vn = vlist[vn], v'n = vplist[vn]).
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not INTEGER, 
+                        or the forest is not for relations.
+    */
+    virtual void evaluate(const dd_edge& f, const int* vlist,
+      const int* vplist, int &term) const;
+
+    /** Evaluate the function encoded by an edge.
+        @param  f       Edge (function) to evaluate.
+        @param  vlist   List of variable assignments for unprimed variables,
+                        of dimension one higher than the largest variable
+                        handle.
+        @param  vplist  List of variable assignments for primed variables, 
+                        of dimension one higher than the largest variable
+                        handle.
+        @param  term    Output parameter, will be set to
+                        f(v1 = vlist[v1], v'1 = vplist[v1], ...,
+                        vn = vlist[vn], v'n = vplist[vn]).
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not REAL, 
+                        or the forest is not for relations.
+    */
+    virtual void evaluate(const dd_edge& f, const int* vlist,
+      const int* vplist, float &term) const;
+
+
+  // ------------------------------------------------------------
+  // abstract virtual.
+  public:
+    /** Force garbage collection.
+        All disconnected nodes in this forest are discarded along with any
+        compute table entries that may include them.
+    */
+    virtual void garbageCollect() = 0;
+
+    /** Compact the memory for all variables in this forest.
+        This is not the same as garbage collection.
+    */
+    virtual void compactMemory() = 0;
 
     /** Create an edge representing the subset of a Matrix Diagram.
 
@@ -712,345 +1317,6 @@ class MEDDLY::forest {
     virtual void getElement(const dd_edge& a, int index, int* e) = 0;
 
 
-    /** Create an edge such that
-        f(v_1, ..., vh=i, ..., v_n) = terms[i] for 0 <= i < size(vh).
-
-        For example, in a forest with range_type BOOLEAN, with 3 variables,
-        all of size 3, if vh == 2. An edge is created such that
-        v_1 v_2 v_3 TERM
-        X   0   X  terms[0]
-        X   1   X  terms[1]
-        X   2   X  terms[2]
-        where X represents "all possible".
-
-        \a primedLevel is useful only with forests that store relations. Here,
-        \a primedLevel is used to indicate whether the edge is to be created
-        for the primed or the unprimed level.
-
-        @param  vh    Variable handle.
-        @param  primedLevel
-                      true: creates node for the primed vh variable.
-                      false: creates node for the unprimed vh variable.
-        @param  terms Array of boolean terminal values.
-        @param  a     return a handle to a node in the forest such that
-                      f(v_1, ..., vh=i, ..., v_n) = terms[i]
-                      for 0 <= i < size(vh).
-    */
-    virtual void createEdgeForVar(int vh, bool primedLevel,
-      bool* terms, dd_edge& a) = 0;
-
-    /** Create an edge such that
-        f(v_1, ..., vh=i, ..., v_n) = terms[i] for 0 <= i < size(vh).
-
-        For example, in a forest with range_type INTEGER, with 3 variables,
-        all of size 3, if vh == 2. An edge is created such that
-        v_1 v_2 v_3 TERM
-        X   0   X  terms[0]
-        X   1   X  terms[1]
-        X   2   X  terms[2]
-        where X represents "all possible".
-
-        \a primedLevel is useful only with forests that store relations. Here,
-        \a primedLevel is used to indicate whether the edge is to be created
-        for the primed or the unprimed level.
-
-        @param  vh    Variable handle.
-        @param  primedLevel
-                      true: creates node for the primed vh variable.
-                      false: creates node for the unprimed vh variable.
-        @param  terms Array of boolean terminal values.
-        @param  a     return a handle to a node in the forest such that
-                      f(v_1, ..., vh=i, ..., v_n) = terms[i]
-                      for 0 <= i < size(vh).
-    */
-    virtual void createEdgeForVar(int vh, bool primedLevel,
-      int* terms, dd_edge& a) = 0;
-
-    /** Create an edge such that
-        f(v_1, ..., vh=i, ..., v_n) = terms[i] for 0 <= i < size(vh).
-
-        For example, in a forest with range_type REAL, with 3 variables,
-        all of size 3, if vh == 2. An edge is created such that
-        v_1 v_2 v_3 TERM
-        X   0   X  terms[0]
-        X   1   X  terms[1]
-        X   2   X  terms[2]
-        where X represents "all possible".
-
-        \a primedLevel is useful only with forests that store relations. Here,
-        \a primedLevel is used to indicate whether the edge is to be created
-        for the primed or the unprimed level.
-
-        @param  vh    Variable handle.
-        @param  primedLevel
-                      true: creates node for the primed vh variable.
-                      false: creates node for the unprimed vh variable.
-        @param  terms Array of boolean terminal values.
-        @param  a     return a handle to a node in the forest such that
-                      f(v_1, ..., vh=i, ..., v_n) = terms[i]
-                      for 0 <= i < size(vh).
-    */
-    virtual void createEdgeForVar(int vh, bool primedLevel,
-      float* terms, dd_edge& a) = 0;
-
-    /** Create an edge as the union of several explicit vectors.
-        The range type of the forest must be booleans.
-        The forest must not be for relations.
-        @param  vlist Array of vectors. Each vector has dimension equal
-                      to one plus the largest variable handle in the domain.
-                      A vector \a x indicates a set of variable assignments,
-                      where x[vh] less than 0 means
-                      "don't care for variable vh", otherwise x[vh] gives
-                      the variable assignment for vh.
-        @param  N     Number of vectors (dimension of \a vlist).
-        @param  e     returns a handle to a node in the forest, such that
-                      f(v_1, ..., v_n) = 1, iff there is a vector
-                      x in \a vlist corresponding to the variable assignments
-                      v_1, ..., v_n; f(v_1, ..., v_n) = 0, otherwise.
-    */
-    virtual void createEdge(const int* const* vlist, int N, dd_edge &e) = 0;
-
-    /** Create an edge as the union of several vectors and return values.
-        The range type of the forest must be integers.
-        The forest must not be for relations.
-        @param  vlist Array of vectors. Each vector has dimension equal
-                      to one plus the largest variable handle in the domain.
-                      A vector \a x indicates a set of variable assignments,
-                      where x[vh] less than 0 means
-                      "don't care for variable vh", otherwise x[vh] gives
-                      the variable assignment for vh.
-        @param  terms Array of return values, same dimension as \a vlist.
-        @param  N     Number of vectors (dimension of \a vlist).
-        @param  e     returns a handle to a node in the forest that encodes
-                      the function f: f(v_1, ..., v_n) = terms[j]
-                      iff j is the smallest integer such that vector vlist[j]
-                      corresponds to the variable assignments v_1, ..., v_n;
-                      f(v_1, ..., v_n) = 0, otherwise.
-    */
-    virtual void createEdge(const int* const* vlist, const int* terms, int N,
-      dd_edge &e) = 0;
-
-    /** Create an edge as the union of several vectors and return values.
-        The range type of the forest must be reals.
-        The forest must not be for relations.
-        @param  vlist Array of vectors. Each vector has dimension equal
-                      to one plus the largest variable handle in the domain.
-                      A vector \a x indicates a set of variable assignments,
-                      where x[vh] less than 0 means
-                      "don't care for variable vh", otherwise x[vh] gives
-                      the variable assignment for vh.
-        @param  terms Array of return values, same dimension as \a vlist.
-        @param  N     Number of vectors (dimension of \a vlist).
-        @param  e     returns a handle to a node in the forest that encodes
-                      the function f: f(v_1, ..., v_n) = terms[j]
-                      iff j is the smallest integer such that vector vlist[j]
-                      corresponds to the variable assignments v_1, ..., v_n;
-                      f(v_1, ..., v_n) = 0, otherwise.
-    */
-    virtual void createEdge(const int* const* vlist, const float* terms,
-      int N, dd_edge &e) = 0;
-
-
-    /** Create an edge as the union of several explicit matrices.
-        The range type of the forest must be booleans.
-        The forest must be for relations.
-        @param  vlist   Array of vectors. Each vector has dimension equal to
-                        one plus the largest variable handle in the domain.
-                        A vector \a x indicates a set of unprimed variable
-                        assignments, where x[vh] equal to -1 means
-                        "don't care for unprimed variable vh", x[vh] equal
-                        to -2 means "don't change for variable vh",
-                        otherwise x[vh] gives the variable assignment for
-                        unprimed variable vh.
-        @param  vplist  Array of vectors, same dimension as \a vlist.
-                        A vector \a x = vplist[i] indicates a set of primed
-                        variable assignments, where x[vh] less than 0 means
-                        "don't change for variable vh" iff we are not
-                        changing the unprimed variable, and
-                        "don't care for primed variable vh" otherwise.
-                        Otherwise x[vh] gives the variable assignment for
-                        primed variable vh.
-        @param  N       Number of vectors (dimension of \a vlist).
-        @param  e       returns a handle to a node in the forest, such that
-                        f(v_1, v'_1, ..., v_n, v'_n) = 1, iff there is a
-                        vector vlist[i] corresponding to the variable
-                        assignments v_1, ..., v_n, and vplist[i] corresponds
-                        to variable assignments v'_1, ..., v'_n.
-                        f(v_1, v'_1, ..., v_n, v'_n) = 0, otherwise.
-    */
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-      int N, dd_edge &e) = 0;
-
-
-    /** Create an edge as the union of several explicit matrices.
-        The range type of the forest must be integers.
-        The forest must be for relations.
-        @param  vlist   Array of vectors. Each vector has dimension equal to
-                        one plus the largest variable handle in the domain.
-                        A vector \a x indicates a set of unprimed variable
-                        assignments, where x[vh] equal to -1 means
-                        "don't care for unprimed variable vh", x[vh] equal
-                        to -2 means "don't change for variable vh",
-                        otherwise x[vh] gives the variable assignment for
-                        unprimed variable vh.
-        @param  vplist  Array of vectors, same dimension as \a vlist.
-                        A vector \a x = vplist[i] indicates a set of primed
-                        variable assignments, where x[vh] less than 0 means
-                        "don't change for variable vh" iff we are not
-                        changing the unprimed variable, and
-                        "don't care for primed variable vh" otherwise.
-                        Otherwise x[vh] gives the variable assignment for
-                        primed variable vh.
-        @param  terms   Array of return values, same dimension as \a vlist.
-        @param  N       Number of vectors (dimension of \a vlist).
-        @param  e       returns a handle to a node in the forest, such that
-                        f(v_1, v'_1, ..., v_n, v'_n) = term[i], iff there is
-                        a vector vlist[i] corresponding to the variable
-                        assignments v_1, ..., v_n, and vplist[i] corresponds
-                        to variable assignments v'_1, ..., v'_n.
-                        f(v_1, v'_1, ..., v_n, v'_n) = 0, otherwise.
-    */
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-      const int* terms, int N, dd_edge &e) = 0;
-
-
-    /** Create an edge as the union of several explicit matrices.
-        The range type of the forest must be reals.
-        The forest must be for relations.
-        @param  vlist   Array of vectors. Each vector has dimension equal to
-                        one plus the largest variable handle in the domain.
-                        A vector \a x indicates a set of unprimed variable
-                        assignments, where x[vh] equal to -1 means
-                        "don't care for unprimed variable vh", x[vh] equal
-                        to -2 means "don't change for variable vh",
-                        otherwise x[vh] gives the variable assignment for
-                        unprimed variable vh.
-        @param  vplist  Array of vectors, same dimension as \a vlist.
-                        A vector \a x = vplist[i] indicates a set of primed
-                        variable assignments, where x[vh] less than 0 means
-                        "don't change for variable vh" iff we are not
-                        changing the unprimed variable, and
-                        "don't care for primed variable vh" otherwise.
-                        Otherwise x[vh] gives the variable assignment for
-                        primed variable vh.
-        @param  terms   Array of return values, same dimension as \a vlist.
-        @param  N       Number of vectors (dimension of \a vlist).
-        @param  e       returns a handle to a node in the forest, such that
-                        f(v_1, v'_1, ..., v_n, v'_n) = term[i], iff there is
-                        a vector vlist[i] corresponding to the variable
-                        assignments v_1, ..., v_n, and vplist[i] corresponds
-                        to variable assignments v'_1, ..., v'_n.
-                        f(v_1, v'_1, ..., v_n, v'_n) = 0, otherwise.
-    */
-    virtual void createEdge(const int* const* vlist, 
-      const int* const* vplist, const float* terms, int N, dd_edge &e) = 0;
-
-
-    /** Create an edge for a boolean constant.
-        @param  val   Requested constant.
-        @param  e     returns a handle to a node in the forest for
-                      function f = \a val.
-    */
-    virtual void createEdge(bool val, dd_edge &e) = 0;
-
-    /** Create an edge for an integer constant.
-        @param  val   Requested constant.
-        @param  e     returns a handle to a node in the forest for
-                      function f = \a val.
-    */
-    virtual void createEdge(int val, dd_edge &e) = 0;
-
-    /** Create an edge for an integer constant.
-        @param  val   Requested constant.
-        @param  e     returns a handle to a node in the forest for
-                      function f = \a val.
-    */
-    virtual void createEdge(float val, dd_edge &e) = 0;
-
-    /** Evaluate the function encoded by an edge.
-        The forest must not be a relation, and must have range type of
-        boolean.  
-        @param  f     Edge (function) to evaluate.
-        @param  vlist List of variable assignments, of dimension one higher
-                      than the largest variable handle.
-        @param  term  Output parameter, will be set to
-                      f(v1 = vlist[v1], ..., vn = vlist[vn]).
-    */
-    virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
-      const = 0;
-
-    /** Evaluate the function encoded by an edge.
-        The forest must not be a relation, and must have range type of 
-        integer.
-        @param  f     Edge (function) to evaluate.
-        @param  vlist List of variable assignments, of dimension one higher
-                      than the largest variable handle.
-        @param  term  Output parameter, will be set to
-                      f(v1 = vlist[v1], ..., vn = vlist[vn]).
-    */
-    virtual void evaluate(const dd_edge &f, const int* vlist, int &term)
-      const = 0;
-
-    /** Evaluate the function encoded by an edge.
-        The forest must not be a relation, and must have range type of real.
-        @param  f     Edge (function) to evaluate.
-        @param  vlist List of variable assignments, of dimension one higher
-                      than the largest variable handle.
-        @param  term  Output parameter, will be set to
-                      f(v1 = vlist[v1], ..., vn = vlist[vn]).
-    */
-    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
-      const = 0;
-
-    /** Evaluate the function encoded by an edge.
-        The forest must be a relation, and must have range type of boolean.
-        @param  f       Edge (function) to evaluate.
-        @param  vlist   List of variable assignments for unprimed variables,
-                        of dimension one higher than the largest variable
-                        handle.
-        @param  vplist  List of variable assignments for primed variables, 
-                        of dimension one higher than the largest variable
-                        handle.
-        @param  term    Output parameter, will be set to
-                        f(v1 = vlist[v1], v'1 = vplist[v1], ...,
-                        vn = vlist[vn], v'n = vplist[vn]).
-    */
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-      const int* vplist, bool &term) const = 0;
-
-    /** Evaluate the function encoded by an edge.
-        The forest must be a relation, and must have range type of integer.
-        @param  f       Edge (function) to evaluate.
-        @param  vlist   List of variable assignments for unprimed variables,
-                        of dimension one higher than the largest variable
-                        handle.
-        @param  vplist  List of variable assignments for primed variables, 
-                        of dimension one higher than the largest variable
-                        handle.
-        @param  term    Output parameter, will be set to
-                        f(v1 = vlist[v1], v'1 = vplist[v1], ...,
-                        vn = vlist[vn], v'n = vplist[vn]).
-    */
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-      const int* vplist, int &term) const = 0;
-
-    /** Evaluate the function encoded by an edge.
-        The forest must be a relation, and must have range type of real.
-        @param  f       Edge (function) to evaluate.
-        @param  vlist   List of variable assignments for unprimed variables,
-                        of dimension one higher than the largest variable
-                        handle.
-        @param  vplist  List of variable assignments for primed variables, 
-                        of dimension one higher than the largest variable
-                        handle.
-        @param  term    Output parameter, will be set to
-                        f(v1 = vlist[v1], v'1 = vplist[v1], ...,
-                        vn = vlist[vn], v'n = vplist[vn]).
-    */
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-      const int* vplist, float &term) const = 0;
-
-
     /** Returns a state from the MDD represented by \a f.
         @param  f       Edge.
         @param  vlist   Output parameter used to return a state from \a f.
@@ -1068,7 +1334,6 @@ class MEDDLY::forest {
     virtual void findFirstElement(const dd_edge& f, int* vlist, int* vplist)
       const = 0;
 
-
     /** Display all active (i.e., connected) nodes in the forest.
         This is primarily for aid in debugging.
         @param  strm      File stream to write to.
@@ -1078,6 +1343,75 @@ class MEDDLY::forest {
                           2 : internal forest + statistics.
     */
     virtual void showInfo(FILE* strm, int verbosity=0) = 0;
+
+  // ------------------------------------------------------------
+  // For derived classes.
+  protected:
+    // for debugging:
+    void showComputeTable(FILE* s, int verbLevel) const;
+
+  protected:
+    policies deflt;
+    statset stats;
+
+  // ------------------------------------------------------------
+  // Ugly details from here down.
+  private:  // Domain info 
+    friend class domain;
+    int d_slot;
+    domain* d;
+
+  private:  // For operation registration
+    friend class operation;
+
+    int* opCount;
+    int szOpCount;
+
+    /// Register an operation with this forest.
+    /// Called only within operation.
+    void registerOperation(const operation* op);
+
+    /// Unregister an operation.
+    /// Called only within operation.
+    void unregisterOperation(const operation* op);
+
+  private:  // For edge registration
+    friend class dd_edge;
+
+    // structure to store references to registered dd_edges.
+    struct edge_data {
+      // If nextHole >= 0, this is a hole, in which case nextHole also
+      // refers to the array index of the next hole in edge[]
+      int nextHole;
+      // registered dd_edge
+      dd_edge* edge;
+    };
+
+    // Array of registered dd_edges
+    edge_data *edge;
+
+    // Size of edge[]
+    unsigned sz;
+    // Array index: 1 + (last used slot in edge[])
+    unsigned firstFree;
+    // Array index: most recently created hole in edge[]
+    int firstHole;
+
+    void registerEdge(dd_edge& e);
+    void unregisterEdge(dd_edge& e);
+    void unregisterDDEdges();
+
+  private:
+    bool isRelation;
+    bool is_marked_for_deletion;
+    range_type rangeType;
+    edge_labeling edgeLabel;
+
+    /// Mark for deletion.
+    void markForDeletion();
+
+    friend void MEDDLY::destroyForest(MEDDLY::forest* &f);
+
 };
 
 // ******************************************************************
@@ -1163,10 +1497,15 @@ class MEDDLY::domain {
         @param  ev      Edge labeling mechanism, i.e., should this be a
                         Multi-terminal decision diagram forest,
                         edge-valued with plus/times decision diagram forest.
+        @param  p       Policies to use within the forest.
         @return 0       if an error occurs, a new forest otherwise.
     */
-    virtual forest* createForest(bool rel, forest::range_type t,
-      forest::edge_labeling ev) = 0;
+    forest* createForest(bool rel, forest::range_type t,
+      forest::edge_labeling ev, const forest::policies &p);
+
+    /// Create a forest using the library default policies.
+    forest* createForest(bool rel, forest::range_type t,
+      forest::edge_labeling ev);
 
     /// Get the number of variables in this domain.
     inline int getNumVariables() const { return nVars; }
@@ -1184,9 +1523,9 @@ class MEDDLY::domain {
     }
 
     /// @return The variable at level \a lev.
-    inline variable* getVar(int lev) { return vars[lev]; }
+    inline const variable* getVar(int lev) const { return vars[lev]; }
     /// @return The variable at level \a lev.
-    inline const variable* readVar(int lev) const { return vars[lev]; }
+    inline variable* useVar(int lev) { return vars[lev]; }
 
     /** Get the topmost variable.
         Deprecated as of version 0.5.
@@ -1238,7 +1577,12 @@ class MEDDLY::domain {
         This is primarily for aid in debugging.
         @param  strm    File stream to write to.
     */
-    virtual void showInfo(FILE* strm) = 0;
+    void showInfo(FILE* strm);
+
+    /// Free the slot that the forest is using.
+    void unlinkForest(forest* f, int slot);
+
+    // --------------------------------------------------------------------
 
   protected:
     /// Constructor.
@@ -1250,7 +1594,42 @@ class MEDDLY::domain {
     variable** vars;
     int nVars;
 
+  private:
+    bool is_marked_for_deletion;
+    forest** forests;
+    int szForests;
+
+    /// Find a free slot for a new forest.
+    int findEmptyForestSlot();
+
+    /// Mark this domain for deletion
+    void markForDeletion();
+
+    friend void MEDDLY::destroyDomain(domain* &d);
     friend void MEDDLY::cleanup();
+
+  public:
+    inline bool hasForests() const { return forests; }
+    inline bool isMarkedForDeletion() const { return is_marked_for_deletion; }
+
+  private:
+    /// List of all domains; initialized in meddly.cc
+    static domain** dom_list;
+    /// List of free slots (same dimension as dom_list); c.f. meddly.cc
+    static int* dom_free;
+    /// Size of domain list; initialized in meddly.cc
+    static int dom_list_size;
+    /// First free slot; initialized in meddly.cc
+    static int free_list;
+    /// Index of this domain in the domain list.
+    int my_index;
+
+    static void expandDomList();
+    static void markDomList();
+    static void deleteDomList();
+
+  public:
+    inline int ID() const { return my_index; }
 };
 
 
@@ -1304,7 +1683,7 @@ class MEDDLY::dd_edge {
     /** Obtain a modifiable copy of the forest owning this edge.
         @return         the forest to which this edge belongs to.
     */
-    inline forest* getForest() const  { return parent; }
+    inline forest* getForest() const { return parent; }
 
     /** Get this dd_edge's node handle.
         @return         the node handle.
@@ -1587,7 +1966,7 @@ class MEDDLY::dd_edge {
     void show(FILE* strm, int verbosity = 0) const;
 
   private:
-    friend class expert_forest;
+    friend class forest;
     friend class iterator;
 
     inline void setIndex(int ind) { index = ind; }
@@ -1608,6 +1987,11 @@ class MEDDLY::dd_edge {
 
     bool            updateNeeded;
     const_iterator* beginIterator;
+
+    // called when the parent is destroyed
+    inline void orphan() {
+      parent = 0;
+    }
 };
 
 
