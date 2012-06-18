@@ -40,6 +40,7 @@
 
 #include <map>
 #include <vector>
+#include <string.h>	// For memcpy
 
 
 // Flags for development version only. Significant reduction in performance.
