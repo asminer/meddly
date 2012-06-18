@@ -602,6 +602,7 @@ class MEDDLY::forest {
       inline void setSparseStorage()    { storage = SPARSE_STORAGE; }
       inline void setCompactStorage()   { storage = FULL_OR_SPARSE_STORAGE; }
 
+      inline void setNeverDelete()      { deletion = NEVER_DELETE; }
       inline void setOptimistic()       { deletion = OPTIMISTIC_DELETION; }
       inline void setPessimistic()      { deletion = PESSIMISTIC_DELETION; }
     }; // end of struct policies
