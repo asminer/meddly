@@ -226,9 +226,6 @@ class MEDDLY::mt_forest : public expert_forest {
     void setHoleRecycling(bool policy);
     int sharedCopy(int p);
 
-    // use this to find out which level the node maps to
-    int getNodeLevelMapping(int p) const;
-
     // Dealing with slot 2 (node size)
     int getLargestIndex(int p) const;
 
@@ -341,11 +338,11 @@ class MEDDLY::mt_forest : public expert_forest {
 
     // level based operations
     /// number of levels in the current mdd
-    int getLevelCount() const;
+    // int getLevelCount() const;
 
     /// Move nodes so that all holes are at the end.
     void compactAllLevels();
-    void compactLevel(int k);
+    // void compactLevel(int k);
 
     /// garbage collect
     bool gc(bool zombifyOrphanNodes = false);
@@ -363,25 +360,24 @@ class MEDDLY::mt_forest : public expert_forest {
     // find the next free node in address[]
     int getFreeNode(int k);
 
-    // returns offset to the hole found in level
-    int getHole(int k, int slots, bool search_holes);
+    // int getHole(int k, int slots, bool search_holes);
 
     // makes a hole of size == slots, at the specified level and offset
-    void makeHole(int k, int p_offset, int slots);
+    // void makeHole(int k, int p_offset, int slots);
 
     // int p in these functions is p's offset in data
     // change it to mean the mdd node handle
 
     // add a hole to the hole grid
-    void gridInsert(int k, int p_offset);
+    // void gridInsert(int k, int p_offset);
 
-    bool isHoleNonIndex(int k, int p_offset);
+    // bool isHoleNonIndex(int k, int p_offset);
 
     // remove a non-index hole from the hole grid
-    void midRemove(int k, int p_offset);
+    //void midRemove(int k, int p_offset);
 
     // remove an index hole from the hole grid
-    void indexRemove(int k, int p_offset);
+    // void indexRemove(int k, int p_offset);
 
   protected:
 
@@ -427,7 +423,6 @@ class MEDDLY::mt_forest : public expert_forest {
 
     // Special next values
     static const int temp_node = -5;
-    static const int non_index_hole = -2;
 
     /// Should we try to recycle holes.
     bool holeRecycling;
@@ -448,9 +443,6 @@ class MEDDLY::mt_forest : public expert_forest {
     int a_unused;
     /// Peak nodes;
     int peak_nodes;
-
-    /// Number of levels. This is not the size of all the levels put together.
-    int l_size;
 
     // performance stats
 
@@ -595,9 +587,11 @@ inline void MEDDLY::mt_forest::setCompactionThreshold(unsigned t) {
 // Dealing with node level
 
 // use this to find out which level the node maps to
+/*
 inline int MEDDLY::mt_forest::getNodeLevelMapping(int p) const {
   return mapLevel(getNodeLevel(p));
 }
+*/
 
 // Dealing with slot 0 (incount)
 
@@ -785,7 +779,7 @@ inline long MEDDLY::mt_forest::getOrphanNodeCount() const {
 */
 
 /// number of levels in the current mdd
-inline int MEDDLY::mt_forest::getLevelCount() const { return l_size; }
+// inline int MEDDLY::mt_forest::getLevelCount() const { return l_size; }
 
 /// garbage collect
 inline bool MEDDLY::mt_forest::isTimeToGc()
@@ -805,22 +799,26 @@ inline bool MEDDLY::mt_forest::isTimeToGc()
 #endif
 }
 
+/*
 inline bool MEDDLY::mt_forest::isHoleNonIndex(int k, int p_offset) {
-  return (level[mapLevel(k)].data[p_offset + 1] == non_index_hole);
+  return (levels[k].data[p_offset + 1] == non_index_hole);
 }
+*/
 
+/*
 inline bool MEDDLY::mt_forest::doesLevelNeedCompaction(int k)
 {
 #if 0
   return (level[mapLevel(k)].hole_slots >
       (level[mapLevel(k)].size * compactionThreshold));
 #else
-  return ((level[mapLevel(k)].hole_slots > 10000) ||
-      ((level[mapLevel(k)].hole_slots > 100) && 
-       (level[mapLevel(k)].hole_slots * 100>
-        (level[mapLevel(k)].last * deflt.compaction))));
+  return ((levels[k].hole_slots > 10000) ||
+      ((levels[k].hole_slots > 100) && 
+       (levels[k].hole_slots * 100>
+        (levels[k].last * deflt.compaction))));
 #endif
 }
+*/
 
 inline void MEDDLY::mt_forest::midRemove(int k, int p_offset) {
   MEDDLY_DCASSERT(isHoleNonIndex(k, p_offset));
@@ -834,13 +832,13 @@ inline void MEDDLY::mt_forest::midRemove(int k, int p_offset) {
 }
 
 inline void MEDDLY::mt_forest::incrTempNodeCount(int k) {
-  level[mapLevel(k)].temp_nodes++;
+  level[mapLevel(k)].incrTempNodeCount();
   stats.temp_nodes++;
 }
 
 
 inline void MEDDLY::mt_forest::decrTempNodeCount(int k) {
-  level[mapLevel(k)].temp_nodes--;
+  level[mapLevel(k)].decrTempNodeCount();
   stats.temp_nodes--;
 }
 

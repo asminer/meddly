@@ -538,6 +538,14 @@ class MEDDLY::expert_forest : public forest
     inline expert_domain* useExpertDomain() {
       return (expert_domain*) useDomain();
     }
+    /// Ignores prime/unprime.
+    inline int getNumVariables() const {
+      return getDomain()->getNumVariables();
+    }
+    inline int getMinLevelIndex() const {
+      return isForRelations() ? -getDomain()->getNumVariables() : 0;
+    }
+
 
   // ------------------------------------------------------------
   // virtual, with default implementation.
@@ -850,9 +858,6 @@ class MEDDLY::expert_forest : public forest
     int* getAddress(int k, int offset) const;
     int getNodeOffset(int node) const;
 
-    int mapLevel(int level) const;
-    int unmapLevel(int level) const;
-
     bool isZombieNode(int node) const;
 
     // the following virtual functions are implemented in node_manager
@@ -890,10 +895,16 @@ class MEDDLY::expert_forest : public forest
     /// address info for nodes
     mdd_node_data *address;
 
+  // ------------------------------------------------------------
+  // |
+  // |  Storage mechanism for "node data".
+  // |
+  protected:
+
     /// Level data for each level in a MDD
-    typedef struct {
-      /// level height
-      int height;
+    struct level_data {
+      static const int non_index_hole = -2;
+
       /// data array
       int* data;
       /// Size of data array.
@@ -925,104 +936,68 @@ class MEDDLY::expert_forest : public forest
       int temp_nodes;
       /// Total number of compactions
       int num_compactions;
-    } mdd_level_data;
 
+    public:
+      level_data() { clear(); }
+
+      /// Zero out the struct
+      void clear();
+
+      /// Destroy the level.
+      void destroy(statset &s);
+
+
+      inline void incrTempNodeCount() {
+        temp_nodes++;
+      }
+
+      inline void decrTempNodeCount() {
+        temp_nodes--;
+      }
+
+    // --------------------------------------------------------
+    // |
+    // |  Hole management
+    // |
+    public:
+
+      // returns offset to the hole found in level
+      int getHole(int slots, bool search_holes);
+
+      // makes a hole of size == slots, at the specified offset
+      void makeHole(int p_offset, int slots);
+
+      // add a hole to the hole grid
+      void gridInsert(int p_offset);
+
+      inline bool isHoleNonIndex(int p_offset) {
+        return (data[p_offset + 1] == non_index_hole);
+      }
+
+      // remove a non-index hole from the hole grid
+      void midRemove(int p_offset);
+
+      // remove an index hole from the hole grid
+      void indexRemove(int p_offset);
+
+      inline bool needsCompaction(const forest::policies &deflt) const {
+        if (hole_slots <= 100)  return false;
+        if (hole_slots > 10000) return true;
+        return hole_slots * 100 > last * deflt.compaction;
+      }
+
+      // Compact this level.  (Rearrange, to remove all holes.)
+      void compact();
+
+    };
+
+  private:
+    level_data* raw_levels;
+
+  protected:
     /// Level data. Each level maintains its own data array and hole grid.
-    mdd_level_data *level;
-
-
-#if 0
-  // TODO: 
-
-  public:
-
-    /** Set the specified reduction rule for one variable.
-      @param  r   Desired reduction rule.
-      @param  vh  Variable handle where the rule will be applied. 
-      @return     An appropriate error code.
-     */
-    virtual error setReductionRuleForVariable(reduction_rule r, int vh) = 0;
-
-    /** Get the current reduction rule for the specified variable.
-      @param  vh  Variable handle.
-      @return     The reduction rule for the variable.
-      TODO: dealing with errors?
-     */
-    virtual reduction_rule getReductionRuleForVariable(int vh) const = 0;
-
-    /** Set the node storage meachanism for one variable.
-      @param  ns  Desired node storage mechanism.
-      @param  vh  Variable handle where the meachanism will be applied. 
-      @return     An appropriate error code.
-     */
-    virtual error setNodeStorageForVariable(node_storage ns, int vh) = 0;
-
-    /** Get the current node storage meachanism for one variable.
-      @param  vh  Variable handle.  
-      @return     The reduction rule for the variable.
-      TODO: dealing with errors?
-     */
-    virtual node_storage getNodeStorageForVariable(int vh) const = 0;
-
-    /** Get the current memory allocation for a given variable.
-      I.e., the total amount of memory allocated for nodes
-      for the given variable, including memory space currently
-      unused (e.g., holes from deleted nodes).
-      @param  vh  Variable handle.
-      @return     The memory usage in bytes, or -1 on error.
-     */
-    virtual int getMemoryAllocationForVariable(int vh) const = 0;
-
-    /** Get the current memory usage for a given variable.
-      Like getMemoryAllocationForVariable(), except we
-      report only the memory actually in use.
-      @param  vh  Variable handle.
-      @return     The memory usage in bytes, or -1 on error.
-     */
-    virtual int getMemoryUsedForVariable(int vh) const = 0;
-
-    /** Compact the memory for a given variable.
-      Can be expensive.
-      @param  vh  Variable handle.
-      @return     An appropriate error code.
-     */
-    virtual error compactMemoryForVariable(int vh) = 0;
-
-    /** Set a compaction threshold for a given variable.
-      The threshold is set as a percentage * 100.
-      Whenever the \b unused memory for this variable exceeds the threshold
-      (as a percentage), a compaction operation is performed automatically.
-      @param  vh  Variable handle.
-      @param  p   Percentage * 100, i.e., use 50 for 50\%.
-      @return     An appropriate error code.
-     */    
-    virtual error setCompactionThresholdForVariable(int vh, int p) = 0;
-
-    /** Get the compaction threshold currently set for a given variable.
-      @param  vh  Variable handle.
-      @return     The threshold, or -1 on error.
-     */    
-    virtual int getCompactionThresholdForVariable(int vh) const = 0;
-
-    /** Set the node deletion policy for a given variable.
-      Determines how aggressively node memory should be reclaimed when
-      nodes become disconnected.
-      @param  vh  Variable handle.
-      @param  np  Policy to use.
-      @return     An appropriate error code.
-      TODO: need to specify what happens when the policy is changed.
-     */
-    virtual error 
-      setNodeDeletionForVariable(int vh, node_deletion_policy np) = 0;
-
-    /** Get the node deletion policy for a given variable.
-      @param  vh  Variable handle.
-      @return     The current policy.
-      TODO: errors?
-     */
-    virtual node_deletion_policy getNodeDeletionForVariable(int vh) const = 0;
-
-#endif
+    /// The array is shifted, so we can use level[k] with negative k.
+    level_data *levels;
 
 };
 
@@ -1654,8 +1629,8 @@ int MEDDLY::expert_forest::getInternalNodeSize(int p) const
 inline
 int* MEDDLY::expert_forest::getAddress(int k, int offset) const
 {
-  MEDDLY_DCASSERT(level != 0 && level[mapLevel(k)].data != 0);
-  return  (level[mapLevel(k)].data + offset);
+  MEDDLY_DCASSERT(levels != 0 && levels[k].data != 0);
+  return  (levels[k].data + offset);
 }
 
 
@@ -1677,19 +1652,23 @@ int MEDDLY::expert_forest::getNodeOffset(int p) const
 // map the level value (which could be primed) to the correct index in
 // the level[]
 // map logical level to physical level (index of level in the level vector)
+/*
 inline
 int MEDDLY::expert_forest::mapLevel(int k) const
 {
   return (k >= 0)? 2 * k: ((-2 * k) - 1);
 }
+*/
 
 // map physical level to logical level (level in terms of prime, unprime)
 
+/*
 inline
 int MEDDLY::expert_forest::unmapLevel(int k) const
 {
   return (k%2 == 0)? k/2: -(k + 1)/2;
 }
+*/
 
 
 inline
@@ -1841,7 +1820,7 @@ int MEDDLY::expert_forest::createTempNodeMaxSize(int lh, bool clear)
 inline
 int MEDDLY::expert_forest::getLevelSize(int lh) const {
   MEDDLY_DCASSERT(isValidLevel(lh));
-  MEDDLY_DCASSERT(lh == 0 || level[mapLevel(lh)].data != NULL);
+  MEDDLY_DCASSERT(lh == 0 || levels[lh].data != NULL);
   if (lh < 0) {
     return getExpertDomain()->getVariableBound(-lh, true);
   } else {
@@ -1864,7 +1843,12 @@ inline
 int MEDDLY::expert_forest::getNodeHeight(int p) const
 {
   MEDDLY_DCASSERT(isActiveNode(p));
-  return level[mapLevel(getNodeLevel(p))].height;
+  if (isForRelations()) {
+    int k = getNodeLevel(p);
+    return (k<0) ? (-2*k-1) : 2*k;
+  } else {
+    return getNodeLevel(p);
+  }
 }
 
 

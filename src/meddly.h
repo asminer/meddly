@@ -1995,5 +1995,4 @@ class MEDDLY::dd_edge {
     }
 };
 
-
 #endif

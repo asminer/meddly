@@ -377,6 +377,35 @@ void MEDDLY::forest::unregisterDDEdges()
 
 // ******************************************************************
 // *                                                                *
+// *               expert_forest::level_data  methods               *
+// *                                                                *
+// ******************************************************************
+
+void MEDDLY::expert_forest::level_data::clear()
+{
+  data = 0;
+  size = 0;
+  last = 0;
+  compactLevel = false;
+  holes_top = 0;
+  holes_bottom = 0;
+  hole_slots = 0;
+  max_hole_chain = 0;
+  zombie_nodes = 0;
+  temp_nodes = 0;
+  num_compactions = 0;
+}
+
+void MEDDLY::expert_forest::level_data::destroy(statset &s)
+{
+  printf("Destroying level; max hole chain: %d\n", max_hole_chain);
+  s.decMemAlloc(size*sizeof(int));
+  free(data);
+}
+
+
+// ******************************************************************
+// *                                                                *
 // *                                                                *
 // *                     expert_forest  methods                     *
 // *                                                                *
@@ -389,10 +418,28 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   edge_labeling ev, const policies &p)
 : forest(ds, d, rel, t, ev, p)
 {
+  //
+  // Initialize level array
+  //
+  int N = getNumVariables();
+  if (rel) {
+    raw_levels = new level_data[2*N+1];
+    levels = raw_levels + N;
+    stats.incMemAlloc(2*N+1 * sizeof(level_data));
+  } else {
+    raw_levels = new level_data[N+1];
+    levels = raw_levels;
+    stats.incMemAlloc(N+1 * sizeof(level_data));
+  }
 }
 
 
-MEDDLY::expert_forest::~expert_forest() {
+MEDDLY::expert_forest::~expert_forest() 
+{
+  for (int i=getMinLevelIndex(); i<=getNumVariables(); i++) {
+    levels[i].destroy(stats);
+  }
+  delete[] raw_levels;
 }
 
 int MEDDLY::expert_forest::reduceNode(int node)

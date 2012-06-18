@@ -74,11 +74,13 @@ MEDDLY::mt_forest::mt_forest(int dsl, domain *d, bool rel, range_type t,
   memset(address, 0, a_size * sizeof(mdd_node_data));
   a_last = peak_nodes = a_unused = 0;
   
+  /*
   l_size = l_add_size;
   level = (mdd_level_data *) malloc(l_size * sizeof(mdd_level_data));
   if (NULL == level) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
   stats.incMemAlloc(l_size * sizeof(mdd_level_data));
   memset(level, 0, l_size * sizeof(mdd_level_data));
+  */
 
   unique = new mdd_hash_table<mt_forest> (this);
   max_hole_chain = 0;
