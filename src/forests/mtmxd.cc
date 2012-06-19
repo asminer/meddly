@@ -86,13 +86,13 @@ void MEDDLY::mtmxd_forest::resizeNode(int p, int size)
   int oldDataArraySize = getDataHeaderSize() + nodeSize;
   int newDataArraySize = oldDataArraySize - nodeSize + size;
   int nodeLevel = getNodeLevel(p);
-  int newOffset = getHole(nodeLevel, newDataArraySize, true);
+  int newOffset = levels[nodeLevel].getHole(newDataArraySize, true);
 
   MEDDLY_DCASSERT(newDataArraySize > oldDataArraySize);
 
   // Pointers to old and new data arrays
   int* prev = getNodeAddress(p);
-  int* curr = level[mapLevel(nodeLevel)].data + newOffset;
+  int* curr = levels[nodeLevel].data + newOffset;
 
   // Copy old array to new array
   // Don't copy last location from the old array to the new array
@@ -105,7 +105,7 @@ void MEDDLY::mtmxd_forest::resizeNode(int p, int size)
       (newDataArraySize - oldDataArraySize) * sizeof(int));
 
   // Discard the old array
-  makeHole(nodeLevel, address[p].offset, oldDataArraySize);
+  levels[nodeLevel].makeHole(address[p].offset, oldDataArraySize);
 
   // Change the node size
   curr[2] = size;
@@ -208,7 +208,7 @@ int MEDDLY::mtmxd_forest::reduceNode(int p)
   // right now, tie goes to truncated full.
   if (2*nnz < truncsize) {
     // sparse is better; convert
-    int newoffset = getHole(node_level, 4+2*nnz, true);
+    int newoffset = levels[node_level].getHole(4+2*nnz, true);
     // can't rely on previous ptr, re-point to p
     int* full_ptr = getNodeAddress(p);
     int* sparse_ptr = getAddress(node_level, newoffset);
@@ -238,7 +238,7 @@ int MEDDLY::mtmxd_forest::reduceNode(int p)
     setNodeOffset(p, newoffset);
     makeHole(node_level, saved_offset, 4 + size);
 #else
-    makeHole(node_level, getNodeOffset(p), 4 + size);
+    levels[node_level].makeHole(getNodeOffset(p), 4 + size);
     setNodeOffset(p, newoffset);
 #endif
     // address[p].cache_count does not change
@@ -247,7 +247,7 @@ int MEDDLY::mtmxd_forest::reduceNode(int p)
 #ifndef TRUNCATED_REDUCE_IN_PLACE
     if (truncsize<size) {
       // truncate the trailing 0s
-      int newoffset = getHole(node_level, 4+truncsize, true);
+      int newoffset = levels[node_level].getHole(4+truncsize, true);
       // can't rely on previous ptr, re-point to p
       int* full_ptr = getNodeAddress(p);
       int* trunc_ptr = getAddress(node_level, newoffset);
@@ -266,7 +266,7 @@ int MEDDLY::mtmxd_forest::reduceNode(int p)
       setNodeOffset(p, newoffset);
       makeHole(node_level, saved_offset, 4 + size);
 #else
-      makeHole(node_level, getNodeOffset(p), 4 + size);
+      levels[node_level].makeHole(getNodeOffset(p), 4 + size);
       setNodeOffset(p, newoffset);
 #endif
       // address[p].cache_count does not change

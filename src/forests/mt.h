@@ -322,8 +322,8 @@ class MEDDLY::mt_forest : public expert_forest {
     void dumpInternal(FILE *s) const; 
     void dumpInternalLevel(FILE *s, int k) const; 
 
-    void setLevelBounds();
-    void setLevelBound(int k, int sz);
+    // void setLevelBounds();
+    // void setLevelBound(int k, int sz);
 
     long getUniqueTableMemoryUsed() const;
     /*
@@ -435,15 +435,6 @@ class MEDDLY::mt_forest : public expert_forest {
       */
     // float compactionThreshold;
 
-    /// Size of address/next array.
-    int a_size;
-    /// Last used address.
-    int a_last;
-    /// Pointer to unused address list.
-    int a_unused;
-    /// Peak nodes;
-    int peak_nodes;
-
     // performance stats
 
     /// Number of alive nodes.
@@ -482,14 +473,6 @@ class MEDDLY::mt_forest : public expert_forest {
     // scratch pad for buildLevelNode and getTerminalNodes
     int* dptrs;
     int dptrsSize;
-
-    // A node's data is composed of the downpointers and if applicable
-    // indexes and edge-values.
-    // Additionally some header information is stored for maintenance.
-    // This variable stores the size of this header data (the number of
-    // integers required to store it).
-    int dataHeaderSize;
-    int getDataHeaderSize() const { return dataHeaderSize; }
 
     // Place holder for accumulate-minterm result.
     bool accumulateMintermAddedElement;

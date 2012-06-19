@@ -103,7 +103,7 @@ int MEDDLY::mt_mxd_bool::accumulateExpandA(int a, int b, bool cBM)
   // return reduceNode(a)
 
   MEDDLY_DCASSERT(isIdentityReduced());
-  MEDDLY_DCASSERT(getMappedNodeHeight(a) > getMappedNodeHeight(b));
+  MEDDLY_DCASSERT(getNodeHeight(a) > getNodeHeight(b));
   MEDDLY_DCASSERT(!isReducedNode(a));
   MEDDLY_DCASSERT(getInCount(a) == 1);
   MEDDLY_DCASSERT(cBM == false);
@@ -262,8 +262,8 @@ int MEDDLY::mt_mxd_bool::accumulateMxd(int a, int b, bool cBM)
   if (isReducedNode(a)) { return addReducedNodes(a, b); }
 
   // a is a temporary node
-  int aHeight = getMappedNodeHeight(a);
-  int bHeight = getMappedNodeHeight(b);
+  int aHeight = getNodeHeight(a);
+  int bHeight = getNodeHeight(b);
 
   MEDDLY_DCASSERT(aHeight >= bHeight);
 
@@ -293,7 +293,7 @@ int MEDDLY::mt_mxd_bool::accumulateExpandA(int a, int b, bool cBM)
   // a[i][i] += b
 
   MEDDLY_DCASSERT(isIdentityReduced());
-  MEDDLY_DCASSERT(getMappedNodeHeight(a) > getMappedNodeHeight(b));
+  MEDDLY_DCASSERT(getNodeHeight(a) > getNodeHeight(b));
   MEDDLY_DCASSERT(!isReducedNode(a));
 
   bool needsToMakeACopy = cBM;
@@ -472,8 +472,8 @@ int MEDDLY::mt_mxd_bool::accumulateMxd(int a, int b, bool cBM)
   if (isReducedNode(a)) { return addReducedNodes(a, b); }
 
   // a is a temporary node
-  int aHeight = getMappedNodeHeight(a);
-  int bHeight = getMappedNodeHeight(b);
+  int aHeight = getNodeHeight(a);
+  int bHeight = getNodeHeight(b);
 
   if (getInCount(a) > 1) cBM = true;
 

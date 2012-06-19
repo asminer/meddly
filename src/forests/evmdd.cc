@@ -44,8 +44,8 @@ int MEDDLY::evmdd_forest::createTempNode(int k, int sz, bool clear)
 
   if (isTimeToGc()) { gc(); }
 
-  MEDDLY_CHECK_RANGE(1, mapLevel(k), l_size);
-  MEDDLY_DCASSERT(level[mapLevel(k)].data != NULL);
+  MEDDLY_CHECK_RANGE(getMinLevelIndex(), k, getNumVariables()+1);
+  MEDDLY_DCASSERT(levels[k].data);
   MEDDLY_CHECK_RANGE(1, sz, getLevelSize(k) + 1);
 
   // get a location in address[] to store the node
@@ -57,7 +57,7 @@ int MEDDLY::evmdd_forest::createTempNode(int k, int sz, bool clear)
 #endif
 
   address[p].level = k;
-  address[p].offset = getHole(k, getDataHeaderSize() + 2 * sz, true);
+  address[p].offset = levels[k].getHole(getDataHeaderSize() + 2 * sz, true);
   address[p].cache_count = 0;
 
 #ifdef DEBUG_MDD_H
@@ -65,7 +65,7 @@ int MEDDLY::evmdd_forest::createTempNode(int k, int sz, bool clear)
   fflush(stdout);
 #endif
 
-  int* foo = level[mapLevel(k)].data + address[p].offset;
+  int* foo = levels[k].data + address[p].offset;
   foo[0] = 1;                   // #incoming
   foo[1] = temp_node;
   foo[2] = sz;                  // size
@@ -115,13 +115,13 @@ void MEDDLY::evmdd_forest::resizeNode(int p, int size)
   int oldDataArraySize = getDataHeaderSize() + 2 * oldSize ;
   int newDataArraySize = getDataHeaderSize() + 2 * size ;
   int nodeLevel = getNodeLevel(p);
-  int newOffset = getHole(nodeLevel, newDataArraySize, true);
+  int newOffset = levels[nodeLevel].getHole(newDataArraySize, true);
 
   MEDDLY_DCASSERT(newDataArraySize > oldDataArraySize);
 
   // Pointers to old and new data arrays
   int* prev = getNodeAddress(p);
-  int* curr = level[mapLevel(nodeLevel)].data + newOffset;
+  int* curr = levels[nodeLevel].data + newOffset;
 
   // (1)+(2) Copy the first 3 ints (part of the header) and the downpointers
   memcpy(curr, prev, (3 + oldSize) * sizeof(int));
@@ -153,7 +153,7 @@ void MEDDLY::evmdd_forest::resizeNode(int p, int size)
   MEDDLY_DCASSERT(p == curr[trailerSize - 1]);
 
   // (5) Discard the old array
-  makeHole(nodeLevel, address[p].offset, oldDataArraySize);
+  levels[nodeLevel].makeHole(address[p].offset, oldDataArraySize);
 
   // (6) Update the offset field
   address[p].offset = newOffset;
@@ -328,8 +328,7 @@ int MEDDLY::evp_mdd_int::createTempNode(int k, int sz, bool clear)
 {
   MEDDLY_DCASSERT(k != 0);
   if (isTimeToGc()) { gc(); }
-  MEDDLY_CHECK_RANGE(1, mapLevel(k), l_size);
-  MEDDLY_DCASSERT(level[mapLevel(k)].data != NULL);
+  MEDDLY_DCASSERT(isValidLevel(k));
   MEDDLY_CHECK_RANGE(1, sz, getLevelSize(k) + 1);
   // get a location in address[] to store the node
   int p = getFreeNode(k);
@@ -343,7 +342,7 @@ int MEDDLY::evp_mdd_int::createTempNode(int k, int sz, bool clear)
   // of index sets
   // address[p].offset = getHole(k, 4 + 2 * sz, true);
   address[p].level = k;
-  address[p].offset = getHole(k, getDataHeaderSize() + 2 * sz, true);
+  address[p].offset = levels[k].getHole(getDataHeaderSize() + 2 * sz, true);
   address[p].cache_count = 0;
 
 #ifdef DEBUG_MDD_H
@@ -351,7 +350,7 @@ int MEDDLY::evp_mdd_int::createTempNode(int k, int sz, bool clear)
   fflush(stdout);
 #endif
 
-  int* foo  = level[mapLevel(k)].data + address[p].offset;
+  int* foo  = levels[k].data + address[p].offset;
   *foo++    = 1;            // [0]: #incoming
   *foo++    = temp_node;    // [1]:
   *foo++    = sz;           // [2]: size
@@ -531,7 +530,7 @@ void MEDDLY::evp_mdd_int::normalizeAndReduceNode(int& p, int& ev)
   // right now, tie goes to truncated full.
   if (3*nnz < 2*truncsize) {
     // sparse is better; convert
-    int newoffset = getHole(node_level, getDataHeaderSize()+3*nnz, true);
+    int newoffset = levels[node_level].getHole(getDataHeaderSize()+3*nnz, true);
     // can't rely on previous dptr, re-point to p
     int* full_ptr = getNodeAddress(p);
     int* sparse_ptr = getAddress(node_level, newoffset);
@@ -565,7 +564,7 @@ void MEDDLY::evp_mdd_int::normalizeAndReduceNode(int& p, int& ev)
     setNodeOffset(p, newoffset);
     makeHole(node_level, saved_offset, getDataHeaderSize() + 2 * size);
 #else
-    makeHole(node_level, getNodeOffset(p), getDataHeaderSize() + 2 * size);
+    levels[node_level].makeHole(getNodeOffset(p), getDataHeaderSize() + 2 * size);
     setNodeOffset(p, newoffset);
 #endif
     // address[p].cache_count does not change
@@ -573,7 +572,7 @@ void MEDDLY::evp_mdd_int::normalizeAndReduceNode(int& p, int& ev)
     // full is better
     if (truncsize < size) {
       // truncate the trailing 0s
-      int newoffset = getHole(node_level, getDataHeaderSize()+2*truncsize, true);
+      int newoffset = levels[node_level].getHole(getDataHeaderSize()+2*truncsize, true);
       // can't rely on previous ptr, re-point to p
       int* full_ptr = getNodeAddress(p);
       int* trunc_ptr = getAddress(node_level, newoffset);
@@ -595,7 +594,7 @@ void MEDDLY::evp_mdd_int::normalizeAndReduceNode(int& p, int& ev)
       setNodeOffset(p, newoffset);
       makeHole(node_level, saved_offset, getDataHeaderSize() + 2 * size);
 #else
-      makeHole(node_level, getNodeOffset(p), getDataHeaderSize() + 2 * size);
+      levels[node_level].makeHole(getNodeOffset(p), getDataHeaderSize() + 2 * size);
       setNodeOffset(p, newoffset);
 #endif
       // address[p].cache_count does not change
@@ -806,11 +805,11 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
 
   // Fill in address[result].
   address[result].level = lh;
-  address[result].offset = getHole(lh, minNodeSize, true);
+  address[result].offset = levels[lh].getHole(minNodeSize, true);
   address[result].cache_count = 0;
 
   // Start filling in the actual node data
-  int* nodeData = level[mapLevel(lh)].data + address[result].offset;
+  int* nodeData = levels[lh].data + address[result].offset;
   nodeData[0] = 1;                      // in-count (# incoming pointers)
   nodeData[1] = getTempNodeId();
   nodeData[minNodeSize - 1] = result;   // pointer back to address[result]
@@ -880,9 +879,9 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
     }
     // Code from deleteTempNode(result) adapted to work here
     {
-      makeHole(lh, getNodeOffset(result), minNodeSize);
+      levels[lh].makeHole(getNodeOffset(result), minNodeSize);
       freeNode(result);
-      if (level[mapLevel(lh)].compactLevel) compactLevel(lh);
+      if (levels[lh].compactLevel) levels[lh].compact(address);
     }
     result = sharedCopy(found);
   }
@@ -1073,7 +1072,7 @@ void MEDDLY::evt_mdd_real::normalizeAndReduceNode(int& p, float& ev)
   // right now, tie goes to truncated full.
   if (3*nnz < 2*truncsize) {
     // sparse is better; convert
-    int newoffset = getHole(node_level, getDataHeaderSize()+3*nnz, true);
+    int newoffset = levels[node_level].getHole(getDataHeaderSize()+3*nnz, true);
     // can't rely on previous dptr, re-point to p
     int* full_ptr = getNodeAddress(p);
     int* sparse_ptr = getAddress(node_level, newoffset);
@@ -1107,7 +1106,7 @@ void MEDDLY::evt_mdd_real::normalizeAndReduceNode(int& p, float& ev)
     setNodeOffset(p, newoffset);
     makeHole(node_level, saved_offset, getDataHeaderSize() + 2 * size);
 #else
-    makeHole(node_level, getNodeOffset(p), getDataHeaderSize() + 2 * size);
+    levels[node_level].makeHole(getNodeOffset(p), getDataHeaderSize() + 2 * size);
     setNodeOffset(p, newoffset);
 #endif
     // address[p].cache_count does not change
@@ -1115,7 +1114,7 @@ void MEDDLY::evt_mdd_real::normalizeAndReduceNode(int& p, float& ev)
     // full is better
     if (truncsize < size) {
       // truncate the trailing 0s
-      int newoffset = getHole(node_level, getDataHeaderSize()+2*truncsize, true);
+      int newoffset = levels[node_level].getHole(getDataHeaderSize()+2*truncsize, true);
       // can't rely on previous ptr, re-point to p
       int* full_ptr = getNodeAddress(p);
       int* trunc_ptr = getAddress(node_level, newoffset);
@@ -1137,7 +1136,7 @@ void MEDDLY::evt_mdd_real::normalizeAndReduceNode(int& p, float& ev)
       setNodeOffset(p, newoffset);
       makeHole(node_level, saved_offset, getDataHeaderSize() + 2 * size);
 #else
-      makeHole(node_level, getNodeOffset(p), getDataHeaderSize() + 2 * size);
+      levels[node_level].makeHole(getNodeOffset(p), getDataHeaderSize() + 2 * size);
       setNodeOffset(p, newoffset);
 #endif
       // address[p].cache_count does not change
@@ -1297,11 +1296,11 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
 
   // Fill in address[result].
   address[result].level = lh;
-  address[result].offset = getHole(lh, minNodeSize, true);
+  address[result].offset = levels[lh].getHole(minNodeSize, true);
   address[result].cache_count = 0;
 
   // Start filling in the actual node data
-  int* nodeData = level[mapLevel(lh)].data + address[result].offset;
+  int* nodeData = levels[lh].data + address[result].offset;
   nodeData[0] = 1;                      // in-count (# incoming pointers)
   nodeData[1] = getTempNodeId();
   nodeData[minNodeSize - 1] = result;   // pointer back to address[result]
@@ -1371,9 +1370,9 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
     }
     // Code from deleteTempNode(result) adapted to work here
     {
-      makeHole(lh, getNodeOffset(result), minNodeSize);
+      levels[lh].makeHole(getNodeOffset(result), minNodeSize);
       freeNode(result);
-      if (level[mapLevel(lh)].compactLevel) compactLevel(lh);
+      if (levels[lh].compactLevel) levels[lh].compact(address);
     }
     result = sharedCopy(found);
   }

@@ -549,6 +549,31 @@ class MEDDLY::expert_forest : public forest
     inline bool areHolesRecycled() const {
       return deflt.recycleHolesInLevelData;
     }
+    inline bool isValidLevel(int k) const {
+      return (k>=getMinLevelIndex()) && (k<=getNumVariables());
+    }
+
+  // ------------------------------------------------------------
+  // non-virtual, handy methods.
+  public:
+    /** Build a list of nodes in the subgraph below the given node.
+        This for example is used to determine which nodes must
+        be printed to display a subgraph.
+        Terminal nodes are NOT included.
+
+          @param  root    Root node in the forest.
+                          Will be included in the list, unless it
+                          is a terminal node.
+
+          @param  sort    If true, the list will be in increasing order.
+                          Otherwise, the list will be in some convenient order
+                          (currently, it is the order that nodes 
+                          are discovered).
+
+          @return   A malloc'd array of non-terminal nodes, terminated by 0.
+                    Or, a null pointer, if the list is empty.
+    */
+    int* markNodesInSubgraph(int root, bool sort) const;
 
   // ------------------------------------------------------------
   // virtual, with default implementation.
@@ -851,11 +876,15 @@ class MEDDLY::expert_forest : public forest
     /// to be active nodes.
     bool isActiveNode(int node) const;
 
-    /// If the node is at a primed level, it returns (2 * node_height - 1).
-    /// Otherwise, it returns (2 * node_height).
-    int getMappedNodeHeight(int node) const;
-
   protected:
+    // A node's data is composed of the downpointers and if applicable
+    // indexes and edge-values.
+    // Additionally some header information is stored for maintenance.
+    // This variable stores the size of this header data (the number of
+    // integers required to store it).
+    int dataHeaderSize;
+    inline int getDataHeaderSize() const { return dataHeaderSize; }
+
     int getInternalNodeSize(int node) const;
     int* getNodeAddress(int node) const;
     int* getAddress(int k, int offset) const;
@@ -865,7 +894,6 @@ class MEDDLY::expert_forest : public forest
 
     // the following virtual functions are implemented in node_manager
     virtual bool isValidNodeIndex(int node) const = 0;
-    virtual bool isValidLevel(int level) const = 0;
     virtual void reclaimOrphanNode(int node) = 0;     // for linkNode()
     virtual void handleNewOrphanNode(int node) = 0;   // for unlinkNode()
     virtual void deleteOrphanNode(int node) = 0;      // for uncacheNode()
@@ -897,6 +925,15 @@ class MEDDLY::expert_forest : public forest
 
     /// address info for nodes
     mdd_node_data *address;
+    /// Size of address/next array.
+    int a_size;
+    /// Last used address.
+    int a_last;
+    /// Pointer to unused address list.
+    int a_unused;
+    /// Peak nodes;
+    int peak_nodes;
+
 
   // ------------------------------------------------------------
   // |
@@ -906,6 +943,7 @@ class MEDDLY::expert_forest : public forest
 
     /// Level data for each level in a MDD
     struct level_data {
+      static const int add_size = 1024;
       static const int non_index_hole = -2;
 
       expert_forest* parent;
@@ -958,9 +996,7 @@ class MEDDLY::expert_forest : public forest
       }
 
     // --------------------------------------------------------
-    // |
     // |  Hole management
-    // |
     public:
 
       // returns offset to the hole found in level
@@ -986,7 +1022,7 @@ class MEDDLY::expert_forest : public forest
         MEDDLY_DCASSERT(parent);
         if (hole_slots <= 100)  return false;
         if (hole_slots > 10000) return true;
-        return hole_slots * 100 > last * parent->deflt.compaction;
+        return hole_slots * 100u > last * parent->deflt.compaction;
       }
 
       // Compact this level.  (Rearrange, to remove all holes.)
@@ -1653,38 +1689,6 @@ int MEDDLY::expert_forest::getNodeOffset(int p) const
   return  (address[p].offset);
 }
 
-// map the level value (which could be primed) to the correct index in
-// the level[]
-// map logical level to physical level (index of level in the level vector)
-/*
-inline
-int MEDDLY::expert_forest::mapLevel(int k) const
-{
-  return (k >= 0)? 2 * k: ((-2 * k) - 1);
-}
-*/
-
-// map physical level to logical level (level in terms of prime, unprime)
-
-/*
-inline
-int MEDDLY::expert_forest::unmapLevel(int k) const
-{
-  return (k%2 == 0)? k/2: -(k + 1)/2;
-}
-*/
-
-
-inline
-int MEDDLY::expert_forest::getMappedNodeHeight(int p) const
-{
-  return
-    getNodeLevel(p) >= 0
-    ? 2 * getNodeHeight(p)        // 2n
-    : 2 * getNodeHeight(p) - 1;   // 2n-1
-}
-
-
 inline
 bool MEDDLY::expert_forest::isActiveNode(int p) const
 {
@@ -1824,7 +1828,6 @@ int MEDDLY::expert_forest::createTempNodeMaxSize(int lh, bool clear)
 inline
 int MEDDLY::expert_forest::getLevelSize(int lh) const {
   MEDDLY_DCASSERT(isValidLevel(lh));
-  MEDDLY_DCASSERT(lh == 0 || levels[lh].data != NULL);
   if (lh < 0) {
     return getExpertDomain()->getVariableBound(-lh, true);
   } else {

@@ -172,8 +172,8 @@ int MEDDLY::union_mxd::computeIdent(int a, int b)
   // Search compute table
   int result = 0;
 #ifdef IGNORE_MAPPED_HEIGHT
-  int aHeight = arg1F->getMappedNodeHeight(a);
-  int bHeight = arg2F->getMappedNodeHeight(b);
+  int aHeight = arg1F->getNodeHeight(a);
+  int bHeight = arg2F->getNodeHeight(b);
   if (aHeight >= IGNORE_MAPPED_HEIGHT && bHeight >= IGNORE_MAPPED_HEIGHT) {
     if ((a > b
           ? owner->cc->find(owner, a, b, result)
@@ -186,8 +186,8 @@ int MEDDLY::union_mxd::computeIdent(int a, int b)
   if (findResult(a, b, result)) {
     return result;
   }
-  int aHeight = arg1F->getMappedNodeHeight(a);
-  int bHeight = arg2F->getMappedNodeHeight(b);
+  int aHeight = arg1F->getNodeHeight(a);
+  int bHeight = arg2F->getNodeHeight(b);
 #endif
 
   result = 0;

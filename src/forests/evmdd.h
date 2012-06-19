@@ -452,7 +452,7 @@ void MEDDLY::evmdd_forest::createSparseNode(int k, int index,
 
   const int nodeSize = getDataHeaderSize() + 3;
   address[p].level = k;
-  address[p].offset = getHole(k, nodeSize, true);
+  address[p].offset = levels[k].getHole(nodeSize, true);
   address[p].cache_count = 0;
 
 #ifdef DEBUG_MDD_H
@@ -460,7 +460,7 @@ void MEDDLY::evmdd_forest::createSparseNode(int k, int index,
   fflush(stdout);
 #endif
 
-  int* foo = level[mapLevel(k)].data + address[p].offset;
+  int* foo = levels[k].data + address[p].offset;
   foo[0] = 1;                     // #incoming
   foo[1] = getTempNodeId();
   foo[2] = -1;                    // size
@@ -495,9 +495,9 @@ void MEDDLY::evmdd_forest::createSparseNode(int k, int index,
     unlinkNode(dptr);
     // code from deleteTempNode(p) adapted to work here
     {
-      makeHole(k, getNodeOffset(p), nodeSize);
+      levels[k].makeHole(getNodeOffset(p), nodeSize);
       freeNode(p);
-      if (level[mapLevel(k)].compactLevel) compactLevel(k);
+      if (levels[k].compactLevel) levels[k].compact(address);
     }
     res = sharedCopy(q);
   }

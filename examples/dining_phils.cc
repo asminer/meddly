@@ -96,6 +96,7 @@
 using namespace MEDDLY;
 
 // #define NAME_VARIABLES
+// #define SHOW_MXD
 
 void printmem(long m)
 {
@@ -532,8 +533,9 @@ int main(int argc, char *argv[])
 #if 0
   printf("Initial states:\n");
   initialStates.show(stdout, 2);
-
-  printf("\nNext-State Function:\n");
+#endif
+#ifdef SHOW_MXD
+  printf("Next-State Function:\n");
   nsf.show(stdout, 2);
 #endif
 
