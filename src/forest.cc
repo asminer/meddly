@@ -29,6 +29,9 @@
 #include <vector>
 
 // #define DEBUG_CLEANUP
+// #define MERGE_RIGHT
+// #define MERGE_LEFT
+// #define ENABLE_BREAKING_UP_HOLES
 
 // ******************************************************************
 // *                                                                *
@@ -318,7 +321,7 @@ void MEDDLY::forest::registerEdge(dd_edge& e)
       int new_sz = sz * 2;
       edge_data* new_edge =
           (edge_data*) realloc(edge, new_sz * sizeof(edge_data));
-      if (NULL == new_edge) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
+      if (0 == new_edge) throw error(error::INSUFFICIENT_MEMORY);
       edge = new_edge;
       for (int i = sz; i < new_sz; ++i)
       {
@@ -381,8 +384,21 @@ void MEDDLY::forest::unregisterDDEdges()
 // *                                                                *
 // ******************************************************************
 
-void MEDDLY::expert_forest::level_data::clear()
+MEDDLY::expert_forest::level_data::level_data()
 {
+  parent = 0;
+}
+
+MEDDLY::expert_forest::level_data::~level_data()
+{
+  printf("Destroying level; max hole chain: %d\n", max_hole_chain);
+  if (parent) parent->stats.decMemAlloc(size*sizeof(int));
+  free(data);
+}
+
+void MEDDLY::expert_forest::level_data::clear(expert_forest* p)
+{
+  parent = p;
   data = 0;
   size = 0;
   last = 0;
@@ -396,11 +412,409 @@ void MEDDLY::expert_forest::level_data::clear()
   num_compactions = 0;
 }
 
-void MEDDLY::expert_forest::level_data::destroy(statset &s)
+int MEDDLY::expert_forest::level_data::getHole(int slots, bool search_holes)
 {
-  printf("Destroying level; max hole chain: %d\n", max_hole_chain);
-  s.decMemAlloc(size*sizeof(int));
-  free(data);
+  MEDDLY_DCASSERT(parent);
+  MEDDLY_DCASSERT(data);
+  parent->stats.incMemUsed(slots * sizeof(int));
+
+  if (search_holes && parent->areHolesRecycled()) {
+    // First, try for a hole exactly of this size
+    // by traversing the index nodes in the hole grid
+    int chain = 0;
+    int curr = holes_bottom;
+    while (curr) {
+      if (slots == -(data[curr])) break;
+      if (slots < -(data[curr])) {
+        // no exact match possible
+        curr = 0;
+        break;
+      }
+      // move up the hole grid
+      curr = data[curr+1];
+      chain++;
+    }
+
+    // update max hole chain for the level and the entire mdd
+    max_hole_chain = MAX(max_hole_chain, chain);
+
+    if (curr) {
+      // perfect fit
+      hole_slots -= slots;
+      // try to not remove the "index" node
+      int next = data[curr + 3];
+      if (next) {
+        midRemove(k, next);
+#ifdef MEMORY_TRACE
+        cout << "Removed Non-Index Hole " << next << "\n";
+        dumpInternal(stdout);
+#endif
+        return next;
+      }
+      indexRemove(k, curr);
+#ifdef MEMORY_TRACE
+      cout << "Removed Index Hole " << curr << "\n";
+      dumpInternal(stdout);
+#endif
+      return curr;
+    }
+
+#ifdef ENABLE_BREAKING_UP_HOLES
+    // No hole with exact size, try the largest hole
+    const int min_node_size = 5;  // TBD!!!
+    /*
+      isEVPlus()
+        ? 7
+        : isEVTimes()
+          ? 6
+          : 5;
+          */
+
+    curr = holes_top;
+    if (slots < -(data[curr]) - min_node_size) {
+      // we have a hole large enough
+      hole_slots -= slots;
+      if (data[curr + 3]) {
+        // remove middle node
+        curr = data[curr + 3];
+        midRemove(k, curr);
+      } else {
+        // remove index node
+        indexRemove(k, curr);
+      }
+      // create a hole for the leftovers
+      int newhole = curr + slots;
+      int newsize = -(data[curr]) - slots;
+      data[newhole] = -newsize;
+      data[newhole + newsize - 1] = -newsize;
+      gridInsert(k, newhole); 
+#ifdef MEMORY_TRACE
+      // data[curr] = -slots;  // only necessary for display
+      cout << "Removed part of hole " << curr << "\n";
+      dumpInternal(stdout);
+#endif
+      return curr;
+    }
+#endif
+  }
+
+  // can't recycle; grab from the end
+  if (last + slots >= size) {
+    // not enough space, extend
+    int old_size = size;
+
+    // new size is 50% more than previous (37.5% * 4 = 1.5 => 50% growth)
+    size = MAX( old_size, last + slots ) * 1.5;
+
+    data = (int*) realloc(data, size * sizeof(int));
+    if (0 == data) {
+      // TBD: garbage collect and try again
+      throw error(error::INSUFFICIENT_MEMORY);
+    } else {
+      parent->stats.incMemAlloc((size - old_size) * sizeof(int));
+      memset(data + old_size, 0, (size - old_size) * sizeof(int));
+    }
+  }
+  int h = last + 1;
+  last += slots;
+  return h;
+}
+
+void MEDDLY::expert_forest::level_data::makeHole(int p_offset, int slots)
+{
+#ifdef MEMORY_TRACE
+  cout << "Calling makeHole(" p_offset << ", " << slots << ")\n";
+#endif
+  MEDDLY_DCASSERT(parent);
+
+  parent->stats.decMemUsed(slots * sizeof(int));
+
+  hole_slots += slots;
+  data[addr] = data[addr+slots-1] = -slots;
+
+  if (!parent->areHolesRecycled()) return;
+
+  // Check for a hole to the left
+#ifdef MERGE_LEFT
+  if (data[addr-1] < 0) {
+    // Merge!
+    int lefthole = addr + data[addr-1];
+    MEDDLY_DCASSERT(data[lefthole] == data[addr-1]);
+    if (data[lefthole+1] == non_index_hole) midRemove(k, lefthole);
+    else indexRemove(k, lefthole);
+    slots += (-data[lefthole]);
+    addr = lefthole;
+    data[addr] = data[addr+slots-1] = -slots;
+  }
+#endif
+
+  // if addr is the last hole, absorb into free part of array
+  MEDDLY_DCASSERT(addr + slots - 1 <= last);
+  if (addr+slots-1 == last) {
+    last -= slots;
+    hole_slots -= slots;
+    if (size > add_size && (last + 1) < size/2) {
+      int new_size = size/2;
+      while (new_size > (last + 1) * 2) new_size /= 2;
+      if (new_size < add_size) new_size = add_size;
+      parent->stats.incMemAlloc((new_size - size) * sizeof(int));
+      data = (int *) realloc(data, new_size * sizeof(int));
+      if (0 == data) throw error(error::INSUFFICIENT_MEMORY);
+      size = new_size;
+#ifdef MEMORY_TRACE
+      printf("Reduced data[]. New size: %d, Last: %d.\n", size, last);
+#endif
+    }
+#ifdef MEMORY_TRACE
+    cout << "Level " << k << ", Made Last Hole " << addr << "\n";
+    dumpInternal(stdout);
+#endif
+    return;
+  }
+
+#ifdef MERGE_RIGHT
+  // Check for a hole to the right
+  if (data[addr+slots]<0) {
+    // Merge!
+    int righthole = addr+slots;
+    if (data[righthole+1] == non_index_hole) midRemove(k, righthole);
+    else indexRemove(k, righthole);
+    slots += (-data[righthole]);
+    data[addr] = data[addr+slots-1] = -slots;
+  }
+#endif
+
+  // Add hole to grid
+  gridInsert(k, addr); 
+
+#ifdef MEMORY_TRACE
+  cout << "Level " << k << ", Made Last Hole " << addr << "\n";
+  dumpInternal(stdout);
+#endif
+}
+
+void MEDDLY::expert_forest::level_data::gridInsert(int p_offset)
+{
+  // sanity check to make sure that the first and last slots in this hole
+  // have the same value, i.e. -(# of slots in the hole)
+  MEDDLY_DCASSERT(data[p_offset] == data[p_offset - data[p_offset] - 1]);
+  // special case: empty
+  if (0 == holes_bottom) {
+    // index hole
+    data[p_offset + 1] = data[p_offset + 2] = data[p_offset + 3] = 0;
+    holes_top = holes_bottom = p_offset;
+    return;
+  }
+  // special case: at top
+  if (data[p_offset] < data[holes_top]) {
+    // index hole
+    data[p_offset + 1] = data[p_offset + 3] = 0;
+    data[p_offset + 2] = holes_top;
+    data[holes_top + 1] = p_offset;
+    holes_top = p_offset;
+    return;
+  }
+  int above = holes_bottom;
+  int below = 0;
+  while (data[p_offset] < data[above]) {
+    below = above;
+    above = data[below + 1];
+    MEDDLY_DCASSERT(data[above + 2] == below);
+    MEDDLY_DCASSERT(above);  
+  }
+  if (data[p_offset] == data[above]) {
+    // Found, add this to chain
+    // making a non-index hole
+    int right = data[above + 3];
+    data[p_offset + 1] = non_index_hole;
+    data[p_offset + 2] = above;
+    data[p_offset + 3] = right;
+    if (right) data[right + 2] = p_offset;
+    data[above + 3] = p_offset;
+    return; 
+  }
+  // we should have above < p_offset < below  (remember, -sizes)
+  // create an index hole since there were no holes of this size
+  data[p_offset + 1] = above;
+  data[p_offset + 2] = below;
+  data[p_offset + 3] = 0;
+  data[above + 2] = p_offset;
+  if (below) {
+    data[below + 1] = p_offset;
+  } else {
+    MEDDLY_DCASSERT(above == holes_bottom);
+    holes_bottom = p_offset;
+  }
+}
+
+void MEDDLY::expert_forest::level_data::midRemove(int p_offset)
+{
+  MEDDLY_DCASSERT(isHoleNonIndex(p_offset));
+  int left = data[p_offset+2];
+  MEDDLY_DCASSERT(left);
+  int right = data[p_offset+3];
+
+  data[left + 3] = right;
+  if (right) data[right + 2] = left;
+}
+
+void MEDDLY::expert_forest::level_data::indexRemove(int p_offset)
+{
+#ifdef MEMORY_TRACE
+  cout << __func__ << "(" << k << ", " << p_offset << ")\n";
+#endif
+
+  MEDDLY_DCASSERT(!isHoleNonIndex(p_offset));
+  int above = data[p_offset + 1];
+  int below = data[p_offset + 2];
+  int right = data[p_offset + 3];
+
+  if (right >= 1) {
+    // there are nodes to the right!
+    MEDDLY_DCASSERT(data[right + 1] < 0);
+    data[right + 1] = above;
+    data[right + 2] = below;
+
+    // update the pointers of the holes (index) above and below it
+    if (above) {
+      data[above + 2] = right;
+    } else {
+      holes_top = right;
+    }
+
+    if (below) {
+      data[below + 1] = right;
+    } else {
+      holes_bottom = right;
+    }
+    
+  } else {
+    // there are no non-index nodes
+    MEDDLY_DCASSERT(right < 1);
+
+    // this was the last node of its size
+    // update the pointers of the holes (index) above and below it
+    if (above) {
+      data[above + 2] = below;
+    } else {
+      holes_top = below;
+    }
+
+    if (below) {
+      data[below + 1] = above;
+    } else {
+      holes_bottom = above;
+    }
+  }
+}
+
+void MEDDLY::expert_forest::level_data::compact(mdd_node_data* address)
+{
+  if (0==data) {
+    compactLevel = false;
+    return;
+  }
+  // mapped p_level
+  if (0 == hole_slots ||  // Already compact
+      !needsCompaction(k)) {  // Level is compact enough!
+    compactLevel = false;
+#if 0
+    printf("%s: level %d... compact enough\n", __func__, k);
+#endif
+    return;
+  }
+
+  if (0 < temp_nodes) return;   // Temp nodes; do not compact
+#if 0
+  printf("%s: level %d\n", __func__, k);
+#endif
+
+#if 0
+  printf("Before compaction:\n");
+  dumpInternalLevel(stdout, k);
+  printf("\n");
+#endif
+
+#ifdef DEBUG_SLOW
+  fprintf(stderr, "Compacting forest level %d\n", k);
+#endif
+
+  // alternate algorithm -- since we now have the node ids in the node data
+  int *node_ptr = data + 1;  // since we leave [0] empty
+  int *end_ptr = data + last + 1;
+  int *curr_ptr = node_ptr;
+  int node_size = 0;
+  int curr_node = 0;
+
+  int sparseMultiplier = parent->isMultiTerminal() ? -2 : -3;
+  int fullMultiplier = parent->isMultiTerminal() ? 1 : 2;
+
+  while (node_ptr != end_ptr) {
+    // find new node
+    if (*node_ptr < 0) {
+      // found a hole, advance
+      MEDDLY_DCASSERT(node_ptr[0] == node_ptr[-(*node_ptr)-1]);
+      node_size = -(*node_ptr);
+      memset(node_ptr, 0, node_size * sizeof(int));
+    } else {
+      // found an existing node
+      MEDDLY_DCASSERT(!parent->isPessimistic() || *node_ptr != 0);
+
+      node_size = *(node_ptr + 2);  // [2] = size
+      MEDDLY_DCASSERT (node_size != 0);      // assuming zombies have been deleted
+
+      node_size = getDataHeaderSize() +
+        (node_size * (node_size < 0? sparseMultiplier: fullMultiplier));
+
+      curr_node = node_ptr[node_size - 1];
+      MEDDLY_DCASSERT(getNodeOffset(curr_node) == (node_ptr - level[p_level].data));
+      if (node_ptr != curr_ptr) {
+#if 1
+        for (int i = 0; i < node_size; ++i) {
+          curr_ptr[i] = node_ptr[i];
+          node_ptr[i] = 0;
+        }
+#else
+        // copy node_ptr to curr_ptr
+        memmove(curr_ptr, node_ptr, node_size * sizeof(int));
+#endif
+        // change node offset
+        address[curr_node].offset = (curr_ptr - data);
+      }
+      MEDDLY_DCASSERT(getNodeOffset(curr_node) == (curr_ptr - data));
+      curr_ptr += node_size;
+    }
+    node_ptr += node_size;
+  }
+
+  last = (curr_ptr - 1 - data);
+
+  // set up hole pointers and such
+  holes_top = holes_bottom = 0;
+  hole_slots = 0;
+
+  stats.num_compactions++;
+  num_compactions++;
+  compactLevel = false;
+
+  if (size > add_size && last < level[p_level].size/2) {
+    int new_size = size/2;
+    while (new_size > add_size && new_size > last * 3) { new_size /= 2; }
+    parent->stats.decMemAlloc((size - new_size) * sizeof(int));
+    data = (int *) realloc(data, new_size * sizeof(int));
+    if (0 == data) throw error(error::INSUFFICIENT_MEMORY);
+    size = new_size;
+#ifdef MEMORY_TRACE
+    printf("Reduced data[] by a factor of 2. New size: %d, Last: %d.\n",
+        size, last);
+#endif
+  }
+
+#if 0
+  printf("After compaction:\n");
+  dumpInternalLevel(stdout, k);
+  printf("\n");
+#endif
 }
 
 
@@ -436,9 +850,11 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
 
 MEDDLY::expert_forest::~expert_forest() 
 {
+  /*
   for (int i=getMinLevelIndex(); i<=getNumVariables(); i++) {
     levels[i].destroy(stats);
   }
+  */
   delete[] raw_levels;
 }
 

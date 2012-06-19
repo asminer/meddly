@@ -545,7 +545,10 @@ class MEDDLY::expert_forest : public forest
     inline int getMinLevelIndex() const {
       return isForRelations() ? -getDomain()->getNumVariables() : 0;
     }
-
+    // for convenience
+    inline bool areHolesRecycled() const {
+      return deflt.recycleHolesInLevelData;
+    }
 
   // ------------------------------------------------------------
   // virtual, with default implementation.
@@ -905,6 +908,8 @@ class MEDDLY::expert_forest : public forest
     struct level_data {
       static const int non_index_hole = -2;
 
+      expert_forest* parent;
+
       /// data array
       int* data;
       /// Size of data array.
@@ -938,14 +943,11 @@ class MEDDLY::expert_forest : public forest
       int num_compactions;
 
     public:
-      level_data() { clear(); }
+      level_data();
+      ~level_data();
 
       /// Zero out the struct
-      void clear();
-
-      /// Destroy the level.
-      void destroy(statset &s);
-
+      void clear(expert_forest* p);
 
       inline void incrTempNodeCount() {
         temp_nodes++;
@@ -980,14 +982,15 @@ class MEDDLY::expert_forest : public forest
       // remove an index hole from the hole grid
       void indexRemove(int p_offset);
 
-      inline bool needsCompaction(const forest::policies &deflt) const {
+      inline bool needsCompaction() const {
+        MEDDLY_DCASSERT(parent);
         if (hole_slots <= 100)  return false;
         if (hole_slots > 10000) return true;
-        return hole_slots * 100 > last * deflt.compaction;
+        return hole_slots * 100 > last * parent->deflt.compaction;
       }
 
       // Compact this level.  (Rearrange, to remove all holes.)
-      void compact();
+      void compact(mdd_node_data* address);
 
     };
 
@@ -999,6 +1002,7 @@ class MEDDLY::expert_forest : public forest
     /// The array is shifted, so we can use level[k] with negative k.
     level_data *levels;
 
+    friend class level_data;
 };
 
 

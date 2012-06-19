@@ -582,6 +582,8 @@ class MEDDLY::forest {
       /// Should we run the memory compactor after garbage collection
       bool compactAfterGC;
 
+      /// Per-level node memory management parameter.
+      bool recycleHolesInLevelData;
 
       /// Constructor; sets reasonable defaults
       policies(bool rel) {
@@ -592,6 +594,7 @@ class MEDDLY::forest {
         zombieTrigger = 1000000;
         orphanTrigger = 500000;
         compactAfterGC = true;
+        recycleHolesInLevelData = true;
       }
 
       inline void setFullyReduced()     { reduction = FULLY_REDUCED; }

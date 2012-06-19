@@ -222,8 +222,8 @@ class MEDDLY::mt_forest : public expert_forest {
 
     // *************** override expert_forest class -- done ***************
 
-    bool areHolesRecycled() const;
-    void setHoleRecycling(bool policy);
+    // bool areHolesRecycled() const;
+    // void setHoleRecycling(bool policy);
     int sharedCopy(int p);
 
     // Dealing with slot 2 (node size)
@@ -399,7 +399,7 @@ class MEDDLY::mt_forest : public expert_forest {
     int replace(int node);
 
     // is k a level that has been initialized
-    bool isValidLevel(int k) const;
+    // bool isValidLevel(int k) const;
 
     // get the id used to indicate temporary nodes
     int getTempNodeId() const;
@@ -425,7 +425,7 @@ class MEDDLY::mt_forest : public expert_forest {
     static const int temp_node = -5;
 
     /// Should we try to recycle holes.
-    bool holeRecycling;
+    // bool holeRecycling;
 
     /**
       Number of hole slots that trigger a compaction.
@@ -568,9 +568,11 @@ int MEDDLY::mt_forest::createTempNode(int lh, std::vector<int>& downPointers)
 }
 
 
+/*
 inline bool MEDDLY::mt_forest::areHolesRecycled() const {
   return holeRecycling;
 }
+*/
 
 /*
 inline unsigned MEDDLY::mt_forest::getCompactionThreshold() const {
@@ -820,25 +822,19 @@ inline bool MEDDLY::mt_forest::doesLevelNeedCompaction(int k)
 }
 */
 
+/*
 inline void MEDDLY::mt_forest::midRemove(int k, int p_offset) {
-  MEDDLY_DCASSERT(isHoleNonIndex(k, p_offset));
-  int p_level = mapLevel(k);
-  int left = level[p_level].data[p_offset+2];
-  MEDDLY_DCASSERT(left);
-  int right = level[p_level].data[p_offset+3];
-
-  level[p_level].data[left + 3] = right;
-  if (right) level[p_level].data[right + 2] = left;
 }
+*/
 
 inline void MEDDLY::mt_forest::incrTempNodeCount(int k) {
-  level[mapLevel(k)].incrTempNodeCount();
+  levels[k].incrTempNodeCount();
   stats.temp_nodes++;
 }
 
 
 inline void MEDDLY::mt_forest::decrTempNodeCount(int k) {
-  level[mapLevel(k)].decrTempNodeCount();
+  levels[k].decrTempNodeCount();
   stats.temp_nodes--;
 }
 
@@ -863,11 +859,13 @@ inline int MEDDLY::mt_forest::replace(int node) {
 }
 
 
+/*
 inline bool MEDDLY::mt_forest::isValidLevel(int k) const {
   int mapped_level = mapLevel(k);
   return (1 <= mapped_level && mapped_level < l_size &&
     level[mapped_level].data != NULL);
 }
+*/
 
 
 inline int MEDDLY::mt_forest::getTempNodeId() const {
@@ -892,7 +890,7 @@ inline void MEDDLY::mt_forest::showInfo(FILE* strm, int verbosity) {
 // *************** override expert_forest class -- done ***************
 
 inline int MEDDLY::mt_forest::getLevelNode(int k) const {
-  return level[mapLevel(k)].levelNode;
+  return levels[k].levelNode;
 }
 
 inline bool MEDDLY::mt_forest::isValidVariable(int vh) const {
