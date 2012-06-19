@@ -65,28 +65,9 @@ MEDDLY::mt_forest::mt_forest(int dsl, domain *d, bool rel, range_type t,
 {
   this->dataHeaderSize = dataHeaderSize;
 
-  /*
-  l_size = l_add_size;
-  level = (mdd_level_data *) malloc(l_size * sizeof(mdd_level_data));
-  if (NULL == level) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
-  stats.incMemAlloc(l_size * sizeof(mdd_level_data));
-  memset(level, 0, l_size * sizeof(mdd_level_data));
-  */
-
   unique = new mdd_hash_table<mt_forest> (this);
-  max_hole_chain = 0;
 
   delete_terminal_nodes = false;
-  /*
-#if 1
-  holeRecycling = true;
-#else
-  holeRecycling = false;
-#endif
-  */
-
-  // set level sizes
-  // setLevelBounds();
 
   counting = false;
 
@@ -263,57 +244,8 @@ void MEDDLY::mt_forest::clearLevelNodes()
   for (int i=getMinLevelIndex(); i<=getNumVariables(); i++) {
     clearLevelNode(i);
   }
-  /*
-  if (isForRelations()) {
-    for (int i = getExpertDomain()->getNumVariables(); i; i--)
-    {
-      clearLevelNode(i);
-      clearLevelNode(-i);
-    }
-  }
-  else {
-    for (int i = getExpertDomain()->getNumVariables(); i; i--)
-    {
-      clearLevelNode(i);
-    }
-  }
-  */
 }
 
-
-
-/*
-int* MEDDLY::mt_forest::getTerminalNodes(int n)
-{
-  // use the array that comes with object (saves having to alloc/dealloc)
-  if (dptrsSize < n) {
-    // array not large enough, expand
-    stats.incMemAlloc((n - dptrsSize) * sizeof(int));
-    dptrsSize = n;
-    dptrs = (int *) realloc(dptrs, dptrsSize * sizeof(int));
-    MEDDLY_DCASSERT(NULL != dptrs);
-  }
-
-  // store the terminals in the corresponding indexes
-  switch (getRangeType()) {
-    case BOOLEAN:
-      MEDDLY_DCASSERT(n == 2);
-      dptrs[0] = getTerminalNode(false);
-      dptrs[1] = getTerminalNode(true);
-      break;
-    case INTEGER:
-      for (int i = 0; i < n; ++i)
-        dptrs[i] = getTerminalNode(int(i));
-      break;
-    case REAL:
-      for (int i = 0; i < n; ++i)
-        dptrs[i] = getTerminalNode(float(i));
-      break;
-  }
-
-  return dptrs;
-}
-*/
 
 int* MEDDLY::mt_forest::getTerminalNodes(int n, bool* terms)
 {
@@ -520,81 +452,6 @@ void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
 
 #endif
 
-/*
-void MEDDLY::mt_forest::setLevelBounds()
-{
-  for (int i = getExpertDomain()->getNumVariables(); i >= 1; --i) {
-    setLevelBound(i, getExpertDomain()->getVariableBound(i, false));
-    if (isForRelations()) {
-      // primed level
-      setLevelBound(-i, getExpertDomain()->getVariableBound(i, true));
-    }
-  }
-}
-*/
-
-/*
-void MEDDLY::mt_forest::setLevelBound(int k, int sz)
-{
-  MEDDLY_DCASSERT(k != 0);
-  if (mapped_k >= l_size) {
-    // level doesn't exist, add additional levels
-    int old_l_size = l_size;
-    // l_size = l_size * 2;
-    l_size = mapped_k + 2;
-    level = (mdd_level_data *) realloc(level, l_size * sizeof(mdd_level_data));
-    if (0==level) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
-    long bytes = (l_size - old_l_size) * sizeof(mdd_level_data);
-    stats.incMemUsed(bytes);
-    stats.incMemAlloc(bytes);
-    // wipe new level data
-    memset(level + old_l_size, 0,
-        (l_size - old_l_size) * sizeof(mdd_level_data));
-  }
-  // level already defined
-  if (level[mapped_k].data) 
-    throw MEDDLY::error(MEDDLY::error::MISCELLANEOUS);
-  
-  MEDDLY_DCASSERT(mapped_k < l_size);
-  MEDDLY_DCASSERT(level[mapped_k].data == 0);
-  
-  level[mapped_k].size = add_size;
-  level[mapped_k].data = (int *) malloc(level[mapped_k].size * sizeof(int));
-  MEDDLY_DCASSERT(NULL != level[mapped_k].data);
-  if (level[mapped_k].data == 0) 
-    throw MEDDLY::error(MEDDLY::error::MISCELLANEOUS);
-  long bytes = level[mapped_k].size * sizeof(int);
-  stats.incMemUsed(bytes);
-  stats.incMemAlloc(bytes);
-  memset(level[mapped_k].data, 0, level[mapped_k].size * sizeof(int));
-  level[mapped_k].holes_top = level[mapped_k].holes_bottom =
-    level[mapped_k].hole_slots =
-    level[mapped_k].max_hole_chain = level[mapped_k].num_compactions = 0;
-  level[mapped_k].last = 0;
-
-  level[mapped_k].height = (k>0) ? k : -k;
-  level[mapped_k].temp_nodes = 0;
-  level[mapped_k].compactLevel = false;
-
-  level[mapped_k].levelNode = 0;
-}
-
-
-void MEDDLY::mt_forest::setHoleRecycling(bool policy)
-{
-  if (policy == holeRecycling) return;
-  if (policy) {
-    // if we don't compact, some holes will not be tracked.
-    compactAllLevels();
-  } else {
-    // trash hole tracking mechanism
-    for (int i=0; i<l_size; i++) {
-      level[i].holes_top = level[i].holes_bottom = 0;
-    }
-  }
-  holeRecycling = policy;
-}
-*/
 
 void MEDDLY::mt_forest::clearAllNodes()
 {
@@ -873,86 +730,6 @@ void MEDDLY::mt_forest::showNodeGraph(FILE *s, int p) const
   } // for k
 
   free(list);
-
-  /*
-  int NL = getNumVariables() - getMinLevelIndex() + 1;
-  std::vector< std::set<int> > discovered(NL);
-  std::queue<int> toExpand;
-
-  toExpand.push(p);
-  discovered[getNodeLevel(p)].insert(p);
-
-  // expand the front of toExpand;
-  // add newly discovered ones to discovered and toExpand
-
-  while (!toExpand.empty()) {
-    int p = toExpand.front();
-    toExpand.pop();
-    if (isTerminalNode(p)) continue;
-    // expand
-    if (isFullNode(p)) {
-      const int sz = getFullNodeSize(p);
-      for (int i = 0; i < sz; ++i)
-      {
-        int temp = getFullNodeDownPtr(p, i);
-        int k = getNodeLevel(temp);
-        // insert into discovered and toExpand if new
-        if (discovered[k].find(temp) == discovered[k].end()) {
-          toExpand.push(temp);
-          discovered[k].insert(temp);
-        }
-      }
-    }
-    else {
-      const int sz = getSparseNodeSize(p);
-      for (int i = 0; i < sz; ++i)
-      {
-        int temp = getSparseNodeDownPtr(p, i);
-        int k = getNodeLevel(temp);
-        // insert into discovered and toExpand if new
-        if (discovered[k].find(temp) == discovered[k].end()) {
-          toExpand.push(temp);
-          discovered[k].insert(temp);
-        }
-      }
-    }
-  }
-
-  // iterate through discovered and print
-  for (int k = getNumVariables(); k; k--)
-  {
-    if (!discovered[k].empty()) {
-      const variable* v = getDomain()->getVar(ABS(k));
-      if (v->getName()) {
-        fprintf(s, "Level: %s \n", v->getName());
-      } else {
-        fprintf(s, "Level: %d \n", ABS(k));
-      }
-      for (std::set<int>::iterator iter = discovered[k].begin();
-          iter != discovered[k].end(); iter++)
-      {
-        fprintf(s, "  ");
-        showNode(s, *iter);
-        fprintf(s, "\n");
-      }
-    }
-    if (!discovered[-k].empty()) {
-      const variable* v = getDomain()->getVar(ABS(k));
-      if (v->getName()) {
-        fprintf(s, "Level: %s'\n", v->getName());
-      } else {
-        fprintf(s, "Level: %d'\n", ABS(k));
-      }
-      for (std::set<int>::iterator iter = discovered[k].begin();
-          iter != discovered[k].end(); iter++)
-      {
-        fprintf(s, "  ");
-        showNode(s, *iter);
-        fprintf(s, "\n");
-      }
-    }
-  }
-  */
 }
 
 
@@ -1131,13 +908,6 @@ void MEDDLY::mt_forest::showNode(int p) const
     fprintf(stderr, "]");
   }
 }
-
-/*
-void MEDDLY::mt_forest::compactLevel(int k)
-{
-  if (k == 0) { level[0].compactLevel = false; return; }
-}
-*/
 
 void MEDDLY::mt_forest::compactAllLevels()
 {
@@ -1902,29 +1672,6 @@ void MEDDLY::mt_forest::freeNode(int p)
   }
 }
 
-/*
-void MEDDLY::mt_forest::gridInsert(int k, int p_offset)
-{
-}
-*/
-
-/*
-void MEDDLY::mt_forest::indexRemove(int k, int p_offset)
-{
-}
-*/
-/*
-int MEDDLY::mt_forest::getHole(int k, int slots, bool search_holes)
-{
-}
-*/
-
-/*
-void MEDDLY::mt_forest::makeHole(int k, int addr, int slots)
-{
-}
-*/
-
 void MEDDLY::mt_forest::reportMemoryUsage(FILE * s, const char filler) {
   fprintf(s, "%cPeak Nodes:             %ld\n", filler, getPeakNumNodes());
   fprintf(s, "%cActive Nodes:           %ld\n", filler, getCurrentNumNodes());
@@ -2102,9 +1849,6 @@ long MEDDLY::mt_forest::getHoleMemoryUsage() const {
     sum += levels[i].hole_slots;
   return sum * sizeof(int); 
 }
-
-int MEDDLY::mt_forest::getMaxHoleChain() const { return max_hole_chain; }
-// int MEDDLY::mt_forest::getCompactionsCount() const { return num_compactions; }
 
 void MEDDLY::mt_forest::validateDownPointers(int p, bool recursive)
 {

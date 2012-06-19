@@ -322,27 +322,11 @@ class MEDDLY::mt_forest : public expert_forest {
     void dumpInternal(FILE *s) const; 
     void dumpInternalLevel(FILE *s, int k) const; 
 
-    // void setLevelBounds();
-    // void setLevelBound(int k, int sz);
-
     long getUniqueTableMemoryUsed() const;
-    /*
-    long getTempNodeCount() const;
-    long getZombieNodeCount() const;
-    long getOrphanNodeCount() const;
-    */
     long getHoleMemoryUsage() const;
-
-    int getMaxHoleChain() const;
-    // int getCompactionsCount() const;
-
-    // level based operations
-    /// number of levels in the current mdd
-    // int getLevelCount() const;
 
     /// Move nodes so that all holes are at the end.
     void compactAllLevels();
-    // void compactLevel(int k);
 
     /// garbage collect
     bool gc(bool zombifyOrphanNodes = false);
@@ -359,25 +343,6 @@ class MEDDLY::mt_forest : public expert_forest {
 
     // find the next free node in address[]
     int getFreeNode(int k);
-
-    // int getHole(int k, int slots, bool search_holes);
-
-    // makes a hole of size == slots, at the specified level and offset
-    // void makeHole(int k, int p_offset, int slots);
-
-    // int p in these functions is p's offset in data
-    // change it to mean the mdd node handle
-
-    // add a hole to the hole grid
-    // void gridInsert(int k, int p_offset);
-
-    // bool isHoleNonIndex(int k, int p_offset);
-
-    // remove a non-index hole from the hole grid
-    //void midRemove(int k, int p_offset);
-
-    // remove an index hole from the hole grid
-    // void indexRemove(int k, int p_offset);
 
   protected:
 
@@ -424,34 +389,8 @@ class MEDDLY::mt_forest : public expert_forest {
     // Special next values
     static const int temp_node = -5;
 
-    /// Should we try to recycle holes.
-    // bool holeRecycling;
-
-    /**
-      Number of hole slots that trigger a compaction.
-      This is a number between 0 and 1 indicating percentage.
-      Compaction will occur if
-      level[i].hole_slots > (level[i].size * compactionThreshold) 
-      */
-    // float compactionThreshold;
-
     // performance stats
 
-    /// Number of alive nodes.
-    // long active_nodes;
-    /// Largest traversed height of holes grid
-    int max_hole_chain;
-    /// Number of zombie nodes
-    // long zombie_nodes;
-    /// These are just like zombies but they have not been zombified --
-    /// exist only in non-pessimistic caches
-    // long orphan_nodes;
-    /// Number of temporary nodes -- nodes that have not been reduced
-    // long temp_nodes;
-    /// Number reclaimed nodes
-    // long reclaimed_nodes;
-    /// Total number of compactions
-    // int num_compactions;
     /// Count of nodes created since last gc
     unsigned nodes_activated_since_gc;
 
@@ -550,33 +489,6 @@ int MEDDLY::mt_forest::createTempNode(int lh, std::vector<int>& downPointers)
   return tempNode;
 }
 
-
-/*
-inline bool MEDDLY::mt_forest::areHolesRecycled() const {
-  return holeRecycling;
-}
-*/
-
-/*
-inline unsigned MEDDLY::mt_forest::getCompactionThreshold() const {
-  return unsigned(compactionThreshold * 100.0);
-}
-
-inline void MEDDLY::mt_forest::setCompactionThreshold(unsigned t) {
-  if (t > 100) throw error(error::INVALID_ASSIGNMENT);
-  compactionThreshold = t/100.0;
-}
-*/
-
-// Dealing with cache count
-// Dealing with node level
-
-// use this to find out which level the node maps to
-/*
-inline int MEDDLY::mt_forest::getNodeLevelMapping(int p) const {
-  return mapLevel(getNodeLevel(p));
-}
-*/
 
 // Dealing with slot 0 (incount)
 
@@ -751,21 +663,6 @@ inline long MEDDLY::mt_forest::getUniqueTableMemoryUsed() const {
   return (unique->getSize() * sizeof(int));
 }
 
-/*
-inline long MEDDLY::mt_forest::getTempNodeCount() const {
-  return temp_nodes;
-}
-inline long MEDDLY::mt_forest::getZombieNodeCount() const {
-  return zombie_nodes;
-}
-inline long MEDDLY::mt_forest::getOrphanNodeCount() const {
-  return orphan_nodes;
-}
-*/
-
-/// number of levels in the current mdd
-// inline int MEDDLY::mt_forest::getLevelCount() const { return l_size; }
-
 /// garbage collect
 inline bool MEDDLY::mt_forest::isTimeToGc()
 {
@@ -783,32 +680,6 @@ inline bool MEDDLY::mt_forest::isTimeToGc()
   return isPessimistic()? false: (getOrphanNodeCount() > 500000);
 #endif
 }
-
-/*
-inline bool MEDDLY::mt_forest::isHoleNonIndex(int k, int p_offset) {
-  return (levels[k].data[p_offset + 1] == non_index_hole);
-}
-*/
-
-/*
-inline bool MEDDLY::mt_forest::doesLevelNeedCompaction(int k)
-{
-#if 0
-  return (level[mapLevel(k)].hole_slots >
-      (level[mapLevel(k)].size * compactionThreshold));
-#else
-  return ((levels[k].hole_slots > 10000) ||
-      ((levels[k].hole_slots > 100) && 
-       (levels[k].hole_slots * 100>
-        (levels[k].last * deflt.compaction))));
-#endif
-}
-*/
-
-/*
-inline void MEDDLY::mt_forest::midRemove(int k, int p_offset) {
-}
-*/
 
 inline void MEDDLY::mt_forest::incrTempNodeCount(int k) {
   levels[k].incrTempNodeCount();
@@ -840,16 +711,6 @@ inline int MEDDLY::mt_forest::insert(int node) {
 inline int MEDDLY::mt_forest::replace(int node) {
   return unique->replace(node);
 }
-
-
-/*
-inline bool MEDDLY::mt_forest::isValidLevel(int k) const {
-  int mapped_level = mapLevel(k);
-  return (1 <= mapped_level && mapped_level < l_size &&
-    level[mapped_level].data != NULL);
-}
-*/
-
 
 inline int MEDDLY::mt_forest::getTempNodeId() const {
   return temp_node;
