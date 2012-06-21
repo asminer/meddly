@@ -1261,13 +1261,6 @@ void MEDDLY::mt_forest::deleteNode(int p)
 
   // Recycle node memory
   levels[k].recycleNode(getNodeOffset(p));
-  /*
-  levels[k].makeHole(getNodeOffset(p), getDataHeaderSize() +
-      nDptrs * ((foo[2] < 0)
-        ? (isMultiTerminal() ? 2: 3)
-        : (isMultiTerminal() ? 1: 2)
-        ));
-  */
 
   // recycle the index
   freeNode(p);
@@ -1324,12 +1317,6 @@ void MEDDLY::mt_forest::zombifyNode(int p)
       unlinkNode(*downptr);
 #endif
     }
-    // Recycle node memory
-    levels[node_level].recycleNode(node_offset);
-    /*
-    levels[node_level].makeHole(node_offset, getDataHeaderSize()
-        - (isMultiTerminal() ? 2: 3) * foo[2]);  
-    */
   } else {
     // Full encoding
     int* downptr = foo + 3;
@@ -1343,13 +1330,9 @@ void MEDDLY::mt_forest::zombifyNode(int p)
       unlinkNode(*downptr);
 #endif
     }
-    // Recycle node memory
-    levels[node_level].recycleNode(node_offset);
-    /*
-    levels[node_level].makeHole(node_offset, getDataHeaderSize()
-        + (isMultiTerminal() ? 1: 2) * foo[2]);  
-    */
   }
+  // Recycle node memory
+  levels[node_level].recycleNode(node_offset);
 }
 
 
@@ -2238,7 +2221,6 @@ int MEDDLY::mt_forest::createTempNode(int k, int sz, bool clear)
 
   MEDDLY_DCASSERT(k);
   MEDDLY_DCASSERT(isValidLevel(k));
-  MEDDLY_CHECK_RANGE(1, sz, getLevelSize(k) + 1);
 
   // get a location in address[] to store the node
   int p = getFreeNode(k);
@@ -2251,7 +2233,6 @@ int MEDDLY::mt_forest::createTempNode(int k, int sz, bool clear)
   // fill in the location with p's address info
   MEDDLY_DCASSERT(isMultiTerminal());
   address[p].level = k;
-  // address[p].offset = levels[k].getHole(4 + sz, true);
   address[p].offset = levels[k].allocNode(sz, p, clear);
   address[p].cache_count = 0;
 
@@ -2259,17 +2240,6 @@ int MEDDLY::mt_forest::createTempNode(int k, int sz, bool clear)
   printf("%s: offset: %d\n", __func__, address[p].offset);
   fflush(stdout);
 #endif
-
-  /*
-  int* foo = levels[k].data + address[p].offset;
-  foo[0] = 1;                   // #incoming
-  foo[1] = temp_node;
-  foo[2] = sz;                  // size
-  foo[3 + sz] = p;              // pointer to this node in the address array
-
-  // initialize
-  if (clear) initDownPtrs(p);
-  */
 
 #ifdef TRACK_DELETIONS
   cout << "Creating node " << p << "\n";

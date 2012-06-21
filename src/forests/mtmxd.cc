@@ -89,10 +89,9 @@ void MEDDLY::mtmxd_forest::resizeNode(int p, int size)
   // (d) Update pointers
 
   // Create array of desired size
-  int oldDataArraySize = getDataHeaderSize() + nodeSize;
-  int newDataArraySize = oldDataArraySize - nodeSize + size;
   int nodeLevel = getNodeLevel(p);
-  // int newOffset = levels[nodeLevel].getHole(newDataArraySize, true);
+  int oldDataArraySize = levels[nodeLevel].slotsForNode(nodeSize);
+  int newDataArraySize = levels[nodeLevel].slotsForNode(size);
   int newOffset = levels[nodeLevel].allocNode(size, p, false);
 
   MEDDLY_DCASSERT(newDataArraySize > oldDataArraySize);
@@ -113,12 +112,6 @@ void MEDDLY::mtmxd_forest::resizeNode(int p, int size)
 
   // Discard the old array
   levels[nodeLevel].recycleNode(address[p].offset);
-
-  // Change the node size
-  // curr[2] = size;
-
-  // Set the back-pointer in the new array
-  // curr[newDataArraySize - 1] = p;
 
   // Update the offset field to point to the new array
   address[p].offset = newOffset;
@@ -212,11 +205,14 @@ int MEDDLY::mtmxd_forest::reduceNode(int p)
   if (!areSparseNodesEnabled())
     nnz = size;
 
+  int newoffset = 0;
   // right now, tie goes to truncated full.
-  if (2*nnz < truncsize) {
+  if (levels[node_level].slotsForNode(-nnz) 
+    < 
+    levels[node_level].slotsForNode(truncsize)) 
+  {
     // sparse is better; convert
-    // int newoffset = levels[node_level].getHole(4+2*nnz, true);
-    int newoffset = levels[node_level].allocNode(-nnz, p, false);
+    newoffset = levels[node_level].allocNode(-nnz, p, false);
     // can't rely on previous ptr, re-point to p
     int* full_ptr = getNodeAddress(p);
     int* sparse_ptr = getAddress(node_level, newoffset);
@@ -236,23 +232,12 @@ int MEDDLY::mtmxd_forest::reduceNode(int p)
         ++downptr;
       }
     }
-    // trash old node
-#ifdef MEMORY_TRACE
-    int saved_offset = getNodeOffset(p);
-    setNodeOffset(p, newoffset);
-    levels[node_level].recycleNode(saved_offset);
-#else
-    levels[node_level].recycleNode(getNodeOffset(p));
-    setNodeOffset(p, newoffset);
-#endif
-    // address[p].cache_count does not change
   } else {
     // full is better
-#ifndef TRUNCATED_REDUCE_IN_PLACE
     if (truncsize<size) {
       // truncate the trailing 0s
       //  int newoffset = levels[node_level].getHole(4+truncsize, true);
-      int newoffset = levels[node_level].allocNode(truncsize, p, false);
+      newoffset = levels[node_level].allocNode(truncsize, p, false);
       // can't rely on previous ptr, re-point to p
       int* full_ptr = getNodeAddress(p);
       int* trunc_ptr = getAddress(node_level, newoffset);
@@ -261,17 +246,17 @@ int MEDDLY::mtmxd_forest::reduceNode(int p)
       trunc_ptr[1] = full_ptr[1];
       // elements
       memcpy(trunc_ptr + 3, full_ptr + 3, truncsize * sizeof(int));
-      // trash old node
-#ifdef MEMORY_TRACE
-      int saved_offset = getNodeOffset(p);
-      setNodeOffset(p, newoffset);
-      levels[node_level].recycleNode(saved_offset);
-#else
-      levels[node_level].recycleNode(getNodeOffset(p));
-      setNodeOffset(p, newoffset);
-#endif
-      // address[p].cache_count does not change
     }
+  }
+  // trash old node
+  if (newoffset) {
+#ifdef MEMORY_TRACE
+    int saved_offset = getNodeOffset(p);
+    setNodeOffset(p, newoffset);
+    levels[node_level].recycleNode(saved_offset);
+#else
+    levels[node_level].recycleNode(getNodeOffset(p));
+    setNodeOffset(p, newoffset);
 #endif
   }
 
@@ -297,7 +282,7 @@ int MEDDLY::mtmxd_forest::createNode(int k, int index, int dptr)
   // a single downpointer points to dptr
   if (!areSparseNodesEnabled() || (areFullNodesEnabled() && index < 2)) {
     // Build a full node
-    int curr = createTempNode(k, index + 1);
+    int curr = createTempNode(k, index + 1, true);
     setDownPtrWoUnlink(curr, index, dptr);
     return reduceNode(curr);
   }
@@ -305,10 +290,8 @@ int MEDDLY::mtmxd_forest::createNode(int k, int index, int dptr)
     MEDDLY_DCASSERT (!areFullNodesEnabled() ||
         (areSparseNodesEnabled() && index >= 2));
     // Build a sparse node
-    int p = createTempNode(k, 2);
+    int p = createTempNode(k, -1, false);
     int* nodeData = getNodeAddress(p);
-    // For sparse nodes, size is -ve
-    nodeData[2] = -1;
     // indexes followed by downpointers -- here we have one index and one dptr
     nodeData[3] = index;
     nodeData[4] = sharedCopy(dptr);
@@ -322,11 +305,6 @@ int MEDDLY::mtmxd_forest::createNode(int k, int index, int dptr)
     }
     else {
       // duplicate found; discard this node and return the duplicate
-      // revert to full temp node before discarding
-      nodeData[2] = 2;
-      nodeData[3] = 0;
-      nodeData[4] = 0;
-      unlinkNode(dptr);
       unlinkNode(p);
       p = sharedCopy(q);
     }

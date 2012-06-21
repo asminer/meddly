@@ -462,16 +462,12 @@ void MEDDLY::evmdd_forest::createSparseNode(int k, int index,
 #endif
 
   int* foo = levels[k].data + address[p].offset;
-  // foo[0] = 1;                     // #incoming
-  // foo[1] = getTempNodeId();
-  // foo[2] = -1;                    // size
   foo[3] = index;                 // index
   foo[4] = sharedCopy(dptr);      // downpointer
   T identEv;
   getIdentityEdgeValue(identEv);
   foo[5] = toInt(identEv);        // this is the only ev, set resEv = ev
   foo[6] = -1;                    // cardinality (-1: not been computed)
-  // foo[7] = p;                     // pointer to this node in the address array
 
   resEv = ev;
 

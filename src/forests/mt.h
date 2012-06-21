@@ -158,7 +158,7 @@ class MEDDLY::mt_forest : public expert_forest {
     virtual int makeACopy(int node, int size = 0);
 
     /// Create a temporary node -- a node that can be modified by the user
-    virtual int createTempNode(int lh, int size, bool clear = true);
+    virtual int createTempNode(int lh, int size, bool clear);
 
     /// Create a temporary node with the given downpointers. Note that
     /// downPointers[i] corresponds to the downpointer at index i.
