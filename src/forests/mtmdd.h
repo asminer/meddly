@@ -51,8 +51,6 @@ namespace MEDDLY {
 
 // ******************************************************************
 
-const int mtmddDataHeaderSize = 4;
-
 class MEDDLY::mtmdd_forest : public mt_forest {
   // MTMDD data header:
   // { incount, next (unique table), size, ..., logical address}

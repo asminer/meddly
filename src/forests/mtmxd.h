@@ -51,8 +51,6 @@ namespace MEDDLY {
 
 // ******************************************************************
 
-const int mtmxdDataHeaderSize = 4;
-
 class MEDDLY::mtmxd_forest : public mt_forest {
   // TODO: mtmxds can only be forest::IDENTITY_REDUCED
   // MTMDD data header:

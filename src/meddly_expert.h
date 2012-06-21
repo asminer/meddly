@@ -884,13 +884,6 @@ class MEDDLY::expert_forest : public forest
     bool isActiveNode(int node) const;
 
   protected:
-    // A node's data is composed of the downpointers and if applicable
-    // indexes and edge-values.
-    // Additionally some header information is stored for maintenance.
-    // This variable stores the size of this header data (the number of
-    // integers required to store it).
-    int dataHeaderSize;
-    inline int getDataHeaderSize() const { return dataHeaderSize; }
 
     int getInternalNodeSize(int node) const;
     int* getNodeAddress(int node) const;
@@ -1104,6 +1097,11 @@ class MEDDLY::expert_forest : public forest
       // --------------------------------------------------------
       // |  inlines.
       public:
+        // TBD:
+        inline int trailerSize() const {
+          return unhashedHeader + hashedHeader;
+        }
+
         /// Recycle a node stored at the given offset.
         inline void recycleNode(int off) {
           makeHole(off, activeNodeActualSlots(off));

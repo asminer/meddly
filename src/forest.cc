@@ -33,6 +33,10 @@
 // #define MERGE_LEFT
 // #define ENABLE_BREAKING_UP_HOLES
 
+// #define DEBUG_SLOW
+
+// #define MEMORY_TRACE
+
 // ******************************************************************
 // *                                                                *
 // *                    forest::statset  methods                    *
@@ -416,9 +420,6 @@ void MEDDLY::expert_forest::level_data
   unhashedHeader = uH;
   hashedHeader = hH;
   compactLevel = false;
-
-  // transition only
-  MEDDLY_DCASSERT(parent->dataHeaderSize == unhashedHeader + hashedHeader + commonExtra);
 }
 
 
@@ -687,7 +688,7 @@ int MEDDLY::expert_forest::level_data::getHole(int slots)
 void MEDDLY::expert_forest::level_data::makeHole(int addr, int slots)
 {
 #ifdef MEMORY_TRACE
-  cout << "Calling makeHole(" addr << ", " << slots << ")\n";
+  printf("Calling makeHole(%d, %d)\n", addr, slots);
 #endif
   MEDDLY_DCASSERT(parent);
 
@@ -730,8 +731,8 @@ void MEDDLY::expert_forest::level_data::makeHole(int addr, int slots)
 #endif
     }
 #ifdef MEMORY_TRACE
-    cout << "Made Last Hole " << addr << "\n";
-    dumpInternal(stdout);
+    printf("Made Last Hole %d\n", addr);
+    dumpInternal(stdout, parent->levels - this);
 #endif
     return;
   }
@@ -752,8 +753,8 @@ void MEDDLY::expert_forest::level_data::makeHole(int addr, int slots)
   gridInsert(addr); 
 
 #ifdef MEMORY_TRACE
-  cout << "Made Last Hole " << addr << "\n";
-  dumpInternal(stdout);
+  printf("Made Last Hole %d\n", addr);
+  dumpInternal(stdout, parent->levels - this);
 #endif
 }
 
@@ -825,7 +826,7 @@ void MEDDLY::expert_forest::level_data::midRemove(int p_offset)
 void MEDDLY::expert_forest::level_data::indexRemove(int p_offset)
 {
 #ifdef MEMORY_TRACE
-  cout << __func__ << "(" << k << ", " << p_offset << ")\n";
+  printf("indexRemove(%d)\n", p_offset);
 #endif
 
   MEDDLY_DCASSERT(!isHoleNonIndex(p_offset));

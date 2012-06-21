@@ -55,15 +55,12 @@ namespace MEDDLY {
 
 // ******************************************************************
 
-const int evplusmddDataHeaderSize = 5;
-const int evtimesmddDataHeaderSize = 4;
-
 int binarySearch(const int* a, int sz, int find);
 
 class MEDDLY::evmdd_forest : public mt_forest {
   public:
     evmdd_forest(int dsl, domain *d, range_type t,
-        edge_labeling el, const policies &p, int dataHeaderSize);
+        edge_labeling el, const policies &p);
     ~evmdd_forest();
 
     virtual void getDefaultEdgeValue(int& n) const { n = INF; }
@@ -450,7 +447,6 @@ void MEDDLY::evmdd_forest::createSparseNode(int k, int index,
 
   // fill in the location with p's address info
 
-  const int nodeSize = getDataHeaderSize() + 3;
   address[p].level = k;
   // address[p].offset = levels[k].getHole(nodeSize, true);
   address[p].offset = levels[k].allocNode(-1, p, false);

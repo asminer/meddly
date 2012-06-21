@@ -49,6 +49,8 @@
 
 //#define TRACK_DELETIONS
 
+// #define MEMORY_TRACE
+
 const int add_size = 1024;
 // const int l_add_size = 24;
 
@@ -60,11 +62,9 @@ const int add_size = 1024;
 
 
 MEDDLY::mt_forest::mt_forest(int dsl, domain *d, bool rel, range_type t,
-  edge_labeling ev, const policies &p, int dataHeaderSize)
+  edge_labeling ev, const policies &p)
 : expert_forest(dsl, d, rel, t, ev, p)
 {
-  this->dataHeaderSize = dataHeaderSize;
-
   unique = new mdd_hash_table<mt_forest> (this);
 
   delete_terminal_nodes = false;

@@ -28,8 +28,8 @@
 
 MEDDLY::evmdd_forest
 ::evmdd_forest(int dsl, domain *d, range_type t, edge_labeling el, 
-  const policies &p, int dataHeaderSize)
-: mt_forest(dsl, d, false, t, el, p, dataHeaderSize)
+  const policies &p)
+: mt_forest(dsl, d, false, t, el, p)
 {
 }
 
@@ -134,9 +134,8 @@ void MEDDLY::evmdd_forest::resizeNode(int p, int size)
   }
 
   // (4) Copy the trailer -- part of the header stored at the end of the node.
-  int trailerSize = getDataHeaderSize() - 3;
-  memcpy(curr, prev, trailerSize * sizeof(int));
-  MEDDLY_DCASSERT(p == curr[trailerSize - 1]);
+  memcpy(curr, prev, levels[nodeLevel].trailerSize() * sizeof(int));
+  MEDDLY_DCASSERT(p == curr[levels[nodeLevel].trailerSize() - 1]);
 
   // (5) Discard the old array
   levels[nodeLevel].recycleNode(address[p].offset);
@@ -145,8 +144,6 @@ void MEDDLY::evmdd_forest::resizeNode(int p, int size)
   address[p].offset = newOffset;
 
   MEDDLY_DCASSERT(size == getFullNodeSize(p));
-  MEDDLY_DCASSERT(p == 
-      getNodeAddress(p)[getDataHeaderSize() + 2 * getFullNodeSize(p) - 1]);
 }
 
 
@@ -294,8 +291,7 @@ void MEDDLY::evmdd_forest::evaluate(const dd_edge& f, const int* vlist,
 // ********************************* EV+MDDs ********************************** 
 
 MEDDLY::evp_mdd_int::evp_mdd_int(int dsl, domain *d, const policies &p)
-: evmdd_forest(dsl, d, forest::INTEGER, forest::EVPLUS, p,
-  evplusmddDataHeaderSize)
+: evmdd_forest(dsl, d, forest::INTEGER, forest::EVPLUS, p)
 { 
   // Initalize level data
   for (int k=getMinLevelIndex(); k<=getNumVariables(); k++) {
@@ -343,9 +339,7 @@ int MEDDLY::evp_mdd_int::createTempNode(int k, int sz, bool clear)
   int* foo  = levels[k].data + address[p].offset;
   foo[3+2*sz] = -1; // cardinality
 
-  // initialize
   if (clear) {
-    initDownPtrs(p);
     initEdgeValues(p);
   }
 
@@ -868,8 +862,7 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
 // ********************************* EV*MDDs ********************************** 
 
 MEDDLY::evt_mdd_real::evt_mdd_real(int dsl, domain *d, const policies &p)
-: evmdd_forest(dsl, d, forest::REAL, forest::EVTIMES, p,
-  evtimesmddDataHeaderSize)
+: evmdd_forest(dsl, d, forest::REAL, forest::EVTIMES, p)
 { 
   // Initalize level data
   for (int k=getMinLevelIndex(); k<=getNumVariables(); k++) {

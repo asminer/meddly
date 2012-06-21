@@ -26,7 +26,7 @@
 MEDDLY::mtmxd_forest::mtmxd_forest(int dsl, domain *d,
     bool relation, forest::range_type t,
     forest::edge_labeling e, const policies &p)
-: mt_forest(dsl, d, relation, t, e, p, mtmxdDataHeaderSize)
+: mt_forest(dsl, d, relation, t, e, p)
 {
   unpList = 0;
   pList = 0;
@@ -117,8 +117,6 @@ void MEDDLY::mtmxd_forest::resizeNode(int p, int size)
   address[p].offset = newOffset;
 
   MEDDLY_DCASSERT(size == getFullNodeSize(p));
-  MEDDLY_DCASSERT(p == 
-      getNodeAddress(p)[getDataHeaderSize() + getFullNodeSize(p) - 1]);
 }
 
 

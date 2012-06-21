@@ -120,9 +120,41 @@ namespace MEDDLY {
 
 class MEDDLY::mt_forest : public expert_forest {
   public:
-    mt_forest(int dsl, domain *d, bool rel, range_type t, edge_labeling ev,
-        const policies &p, int dataHeaderSize);
+    mt_forest(int dsl, domain *d, bool rel, range_type t, edge_labeling ev, 
+      const policies &p);
     virtual ~mt_forest();
+
+  // ------------------------------------------------------------
+  // |
+  // |  Required for uniqueness hash table
+  // |
+  public:
+    inline int getNull() const { return -1; }
+    inline int getNext(int h) const {
+      MEDDLY_DCASSERT(isActiveNode(h));
+      MEDDLY_DCASSERT(!isTerminalNode(h));
+      // next pointer is at slot 1 (counting from 0)
+      MEDDLY_DCASSERT(getNodeAddress(h));
+      return *(getNodeAddress(h) + level_data::next_index);
+    }
+
+    inline void setNext(int h, int n) {
+      MEDDLY_DCASSERT(isActiveNode(h));
+      MEDDLY_DCASSERT(!isTerminalNode(h));
+      *(getNodeAddress(h) + level_data::next_index) = n; 
+    }
+
+    // For uniqueness table
+    // void cacheNode(int p);
+    // void uncacheNode(int p);
+    void show(FILE *s, int h) const;
+    unsigned hash(int h) const;
+    bool equals(int h1, int h2) const;
+    
+    bool equalsFF(int h1, int h2) const;
+    bool equalsSS(int h1, int h2) const;
+    bool equalsFS(int h1, int h2) const;
+
 
   public:
     using expert_forest::getDownPtrsAndEdgeValues;
@@ -241,7 +273,6 @@ class MEDDLY::mt_forest : public expert_forest {
 
     void setAllDownPtrs(int p, int value);
     void setAllDownPtrsWoUnlink(int p, int value);
-    void initDownPtrs(int p);
 
     // for EVMDDs
     int* getFullNodeEdgeValues(int p);
@@ -277,20 +308,6 @@ class MEDDLY::mt_forest : public expert_forest {
 
     // Remove zombies if more than max
     void removeZombies(int max = 100);
-
-    // For uniqueness table
-    int getNull() const;
-    int getNext(int h) const;
-    void setNext(int h, int n);
-    // void cacheNode(int p);
-    // void uncacheNode(int p);
-    void show(FILE *s, int h) const;
-    unsigned hash(int h) const;
-    bool equals(int h1, int h2) const;
-    
-    bool equalsFF(int h1, int h2) const;
-    bool equalsSS(int h1, int h2) const;
-    bool equalsFS(int h1, int h2) const;
 
     bool isCounting();
 
@@ -586,12 +603,6 @@ inline void MEDDLY::mt_forest::setAllDownPtrsWoUnlink(int p, int value) {
   if (!isTerminalNode(value)) getInCount(value) += size;
 }
 
-inline void MEDDLY::mt_forest::initDownPtrs(int p) {
-  MEDDLY_DCASSERT(!isReducedNode(p));
-  MEDDLY_DCASSERT(isFullNode(p));
-  memset(getFullNodeDownPtrs(p), 0, sizeof(int) * getFullNodeSize(p));
-}
-
 inline void MEDDLY::mt_forest::setAllEdgeValues(int p, int value) {
   MEDDLY_DCASSERT(isEVPlus() || isEVTimes());
   MEDDLY_DCASSERT(!isReducedNode(p));
@@ -618,21 +629,6 @@ inline bool MEDDLY::mt_forest::isPrimedNode(int p) const {
 }
 inline bool MEDDLY::mt_forest::isUnprimedNode(int p) const {
   return (getNodeLevel(p) > 0);
-}
-
-// For uniqueness table
-inline int MEDDLY::mt_forest::getNull() const { return -1; }
-inline int MEDDLY::mt_forest::getNext(int h) const { 
-  MEDDLY_DCASSERT(isActiveNode(h));
-  MEDDLY_DCASSERT(!isTerminalNode(h));
-  // next pointer is at slot 1 (counting from 0)
-  MEDDLY_DCASSERT(getNodeAddress(h));
-  return *(getNodeAddress(h) + 1);
-}
-inline void MEDDLY::mt_forest::setNext(int h, int n) { 
-  MEDDLY_DCASSERT(isActiveNode(h));
-  MEDDLY_DCASSERT(!isTerminalNode(h));
-  *(getNodeAddress(h) + 1) = n; 
 }
 
 inline bool MEDDLY::mt_forest::discardTemporaryNodesFromComputeCache() const {
