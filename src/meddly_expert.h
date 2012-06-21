@@ -575,6 +575,12 @@ class MEDDLY::expert_forest : public forest
     */
     int* markNodesInSubgraph(int root, bool sort) const;
 
+    // Debug output
+    void dump(FILE *s) const; 
+    void dumpInternal(FILE *s) const; 
+    void dumpInternalLevel(FILE *s, int k) const; 
+
+
   // ------------------------------------------------------------
   // virtual, with default implementation.
   public:
@@ -589,6 +595,7 @@ class MEDDLY::expert_forest : public forest
 
   // here down --- needs organizing
   public:
+
     /// Create a temporary node -- a node that can be modified by the user.
     /// If \a clear is true, downpointers are initialized to 0.
     virtual int createTempNode(int lh, int size, bool clear = true) = 0;
@@ -893,6 +900,7 @@ class MEDDLY::expert_forest : public forest
     bool isZombieNode(int node) const;
 
     // the following virtual functions are implemented in node_manager
+    virtual void dumpUniqueTable(FILE* s) const = 0;
     virtual bool isValidNodeIndex(int node) const = 0;
     virtual void reclaimOrphanNode(int node) = 0;     // for linkNode()
     virtual void handleNewOrphanNode(int node) = 0;   // for unlinkNode()
@@ -943,92 +951,182 @@ class MEDDLY::expert_forest : public forest
 
     /// Level data for each level in a MDD
     struct level_data {
-      static const int add_size = 1024;
-      static const int non_index_hole = -2;
+        /// Growth parameter
+        static const int add_size = 1024;
 
-      expert_forest* parent;
+        /// Special values
+        static const int non_index_hole = -2;
+        static const int temp_node_value = -5;
 
-      /// data array
-      int* data;
-      /// Size of data array.
-      int size;
-      /// Last used data slot.  Also total number of ints "allocated"
-      int last;
-      /// Mark for compaction
-      bool compactLevel;
-      /// Node representing a variable at this level pointing to terminals
-      /// based on index
-      int levelNode;
+        // header indexes
+        static const int count_index = 0;
+        static const int next_index = 1;    
+        static const int size_index = 2;
 
-      // Holes grid info
+        // Counts for extra slots
+        static const int commonHeaderLength = 3;
+        static const int commonTailLength = 1;
+        static const int commonExtra = commonHeaderLength + commonTailLength;
 
-      /// Pointer to top of holes grid
-      int holes_top;
-      /// Pointer to bottom of holes grid
-      int holes_bottom;
-      /// Total ints in holes
-      int hole_slots;
+        // Parent forest.
+        expert_forest* parent;
 
-      // performance stats
+        /// data array
+        int* data;
+        /// Size of data array.
+        int size;
+        /// Last used data slot.  Also total number of ints "allocated"
+        int last;
+        /// Node representing a variable at this level pointing to terminals
+        /// based on index
+        int levelNode;
 
-      /// Largest traversed height of holes grid
-      int max_hole_chain;
-      /// Number of zombie nodes
-      int zombie_nodes;
-      /// Number of temporary nodes -- nodes that have not been reduced
-      int temp_nodes;
-      /// Total number of compactions
-      int num_compactions;
+        // Holes grid info
+      public:
+        /// Pointer to top of holes grid
+        int holes_top;
+        /// Pointer to bottom of holes grid
+        int holes_bottom;
+        /// Total ints in holes
+        int hole_slots;
 
-    public:
-      level_data();
-      ~level_data();
+        // performance stats
+      public:
+        /// Largest traversed height of holes grid
+        int max_hole_chain;
+        /// Number of zombie nodes
+        int zombie_nodes;
+        /// Number of temporary nodes -- nodes that have not been reduced
+        int temp_nodes;
+        /// Total number of compactions
+        int num_compactions;
 
-      /// Zero out the struct
-      void clear(expert_forest* p);
+      // header sizes; vary by forest.
+      public:
+        /// Size of each outgoing edge's value (can be 0).
+        char edgeSize;
+        /// Size of extra unhashed data (typically 0).
+        char unhashedHeader;
+        /// Size of extra hashed data (typically 0).
+        char hashedHeader;
 
-      inline void incrTempNodeCount() {
-        temp_nodes++;
-      }
+        /// Mark for compaction
+        bool compactLevel;
 
-      inline void decrTempNodeCount() {
-        temp_nodes--;
-      }
+      // --------------------------------------------------------
+      // |  Public interface.
+      public:
+        level_data();
+        ~level_data();
 
-    // --------------------------------------------------------
-    // |  Hole management
-    public:
+        /// Zero out the struct
+        void init(expert_forest* p, char eS, char uH, char hH);
 
-      // returns offset to the hole found in level
-      int getHole(int slots, bool search_holes);
+        /** Allocate enough slots to store a node with given size.
+            Also, stores the node size in the node.
+              @param  sz      negative for sparse storage, otherwise full.
+              @param  tail    Node id
+              @param  clear   Should the node be zeroed.
+              @return         Offset in the data array.
+        */
+        int allocNode(int sz, int tail, bool clear);
 
-      // makes a hole of size == slots, at the specified offset
-      void makeHole(int p_offset, int slots);
+      // --------------------------------------------------------
+      // |  inlines.
+      public:
+        inline void incrTempNodeCount() {
+          temp_nodes++;
+        }
 
-      // add a hole to the hole grid
-      void gridInsert(int p_offset);
+        inline void decrTempNodeCount() {
+          temp_nodes--;
+        }
 
-      inline bool isHoleNonIndex(int p_offset) {
-        return (data[p_offset + 1] == non_index_hole);
-      }
+        /// How many slots would be required for a node with given size.
+        ///   @param  sz  negative for sparse storage, otherwise full.
+        inline int slotsForNode(int sz) const {
+          int edges = (sz<0) ? (2+edgeSize) * (-sz) : (1+edgeSize) * sz;
+          return commonExtra + unhashedHeader + hashedHeader + edges;
+        }
 
-      // remove a non-index hole from the hole grid
-      void midRemove(int p_offset);
+        inline int getHoleSlots() const { return hole_slots; }
 
-      // remove an index hole from the hole grid
-      void indexRemove(int p_offset);
+        inline int& countOf(int addr) {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_CHECK_RANGE(1, addr, last+1);
+          return data[addr + count_index];
+        }
+        inline int countOf(int addr) const {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_CHECK_RANGE(1, addr, last+1);
+          return data[addr + count_index];
+        }
+        inline int& nextOf(int addr)  { 
+          MEDDLY_DCASSERT(data);
+          MEDDLY_CHECK_RANGE(1, addr, last+1);
+          return data[addr + next_index];
+        }
+        inline int nextOf(int addr) const {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_CHECK_RANGE(1, addr, last+1);
+          return data[addr + next_index];
+        }
+        inline bool isReduced(int addr) const {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_CHECK_RANGE(1, addr, last+1);
+          return data[addr + next_index] >= 0;
+        }
+        inline bool isTempNode(int addr) const {
+          return temp_node_value == nextOf(addr);
+        }
+        inline void setTempNode(int addr) { 
+          nextOf(addr) = temp_node_value; 
+        }
+        inline int& sizeOf(int addr) {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_CHECK_RANGE(1, addr, last+1);
+          return data[addr + size_index];
+        }
+        inline int sizeOf(int addr) const {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_CHECK_RANGE(1, addr, last+1);
+          return data[addr + size_index];
+        }
 
-      inline bool needsCompaction() const {
-        MEDDLY_DCASSERT(parent);
-        if (hole_slots <= 100)  return false;
-        if (hole_slots > 10000) return true;
-        return hole_slots * 100u > last * parent->deflt.compaction;
-      }
+      // --------------------------------------------------------
+      // |  Hole management helpers.
+      private:
+        // returns offset to the hole found in level
+        int getHole(int slots, bool search_holes);
 
-      // Compact this level.  (Rearrange, to remove all holes.)
-      void compact(mdd_node_data* address);
+      public:
+        // makes a hole of size == slots, at the specified offset
+        void makeHole(int p_offset, int slots);
 
-    };
+        // add a hole to the hole grid
+        void gridInsert(int p_offset);
+
+        inline bool isHoleNonIndex(int p_offset) {
+          return (data[p_offset + 1] == non_index_hole);
+        }
+
+        // remove a non-index hole from the hole grid
+        void midRemove(int p_offset);
+
+        // remove an index hole from the hole grid
+        void indexRemove(int p_offset);
+
+        inline bool needsCompaction() const {
+          MEDDLY_DCASSERT(parent);
+          if (hole_slots <= 100)  return false;
+          if (hole_slots > 10000) return true;
+          return hole_slots * 100u > last * parent->deflt.compaction;
+        }
+
+        // Compact this level.  (Rearrange, to remove all holes.)
+        void compact(mdd_node_data* address);
+
+    }; // end of level_data struct
 
   private:
     level_data* raw_levels;

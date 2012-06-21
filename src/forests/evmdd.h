@@ -452,7 +452,8 @@ void MEDDLY::evmdd_forest::createSparseNode(int k, int index,
 
   const int nodeSize = getDataHeaderSize() + 3;
   address[p].level = k;
-  address[p].offset = levels[k].getHole(nodeSize, true);
+  // address[p].offset = levels[k].getHole(nodeSize, true);
+  address[p].offset = levels[k].allocNode(-1, p, false);
   address[p].cache_count = 0;
 
 #ifdef DEBUG_MDD_H
@@ -461,16 +462,16 @@ void MEDDLY::evmdd_forest::createSparseNode(int k, int index,
 #endif
 
   int* foo = levels[k].data + address[p].offset;
-  foo[0] = 1;                     // #incoming
-  foo[1] = getTempNodeId();
-  foo[2] = -1;                    // size
+  // foo[0] = 1;                     // #incoming
+  // foo[1] = getTempNodeId();
+  // foo[2] = -1;                    // size
   foo[3] = index;                 // index
   foo[4] = sharedCopy(dptr);      // downpointer
   T identEv;
   getIdentityEdgeValue(identEv);
   foo[5] = toInt(identEv);        // this is the only ev, set resEv = ev
   foo[6] = -1;                    // cardinality (-1: not been computed)
-  foo[7] = p;                     // pointer to this node in the address array
+  // foo[7] = p;                     // pointer to this node in the address array
 
   resEv = ev;
 

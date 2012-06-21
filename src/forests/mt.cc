@@ -84,6 +84,11 @@ MEDDLY::mt_forest::mt_forest(int dsl, domain *d, bool rel, range_type t,
 // *                                                                *
 // ******************************************************************
 
+void MEDDLY::mt_forest::dumpUniqueTable(FILE* s) const
+{
+  fprintf(s, "Uniqueness table:\n");
+  unique->show(s);
+}
 
 // ******************************************************************
 // *                                                                *
@@ -591,111 +596,10 @@ int MEDDLY::mt_forest::getLevelMaxBound(int k) const
             getMddLevelMaxBound(k);
 }
 
-int digits(int a) 
-{
-  int d = 1;
-  while (a) { d++; a/=10; }
-  return d;
-}
-
-void MEDDLY::mt_forest::dump(FILE *s) const
-{
-  int nwidth = digits(a_last);
-  for (int p=0; p<=a_last; p++) {
-    fprintf(s, "%*d\t", nwidth, p);
-    showNode(s, p, 1);
-    fprintf(s, "\n");
-    fflush(s);
-  }
-}
-
 void MEDDLY::mt_forest::showAll() const
 {
   dumpInternal(stderr);
 }
-
-void MEDDLY::mt_forest::dumpInternal(FILE *s) const
-{
-  fprintf(s, "Internal forest storage\n");
-  fprintf(s, "First unused node index: %d\n", a_unused);
-  int awidth = digits(a_last);
-  fprintf(s, " Node# :  ");
-  for (int p=1; p<=a_last; p++) {
-    if (p) fprintf(s, " ");
-    fprintf(s, "%*d", awidth, p);
-  }
-  fprintf(s, "\nLevel  : [");
-  for (int p=1; p<=a_last; p++) {
-    if (p) fprintf(s, "|");
-    fprintf(s, "%*d", awidth, address[p].level);
-  }
-  fprintf(s, "]\n");
-  fprintf(s, "\nOffset : [");
-  for (int p=1; p<=a_last; p++) {
-    if (p) fprintf(s, "|");
-    fprintf(s, "%*d", awidth, address[p].offset);
-  }
-  fprintf(s, "]\n");
-  fprintf(s, "\nCache  : [");
-  for (int p=1; p<=a_last; p++) {
-    if (p) fprintf(s, "|");
-    fprintf(s, "%*d", awidth, address[p].cache_count);
-  }
-  fprintf(s, "]\n\n");
-
-  for (int i=1; i<=getNumVariables(); i++) {
-    dumpInternalLevel(s, i);
-    if (isForRelations()) dumpInternalLevel(s, -i);
-  }
-  
-  fprintf(s, "Uniqueness table:\n");
-  unique->show(s); 
-  fflush(s);
-}
-
-void MEDDLY::mt_forest::dumpInternalLevel(FILE *s, int k) const
-{
-  int* data = levels[k].data;
-
-  if (data == NULL) return; // nothing to display
-  
-  fprintf(s, "Level %d: ", k);
-  // fprintf(s, "Height %d: ", l_info->height);
-  fprintf(s, "Last slot used: %d\n", levels[k].last);
-  fprintf(s, "Grid: top = %d bottom = %d\n",
-      levels[k].holes_top, levels[k].holes_bottom);
-
-  fprintf(s, "Data array by record: \n");
-  int awidth = digits(a_last);
-  int a;
-  for (a=1; a<=levels[k].last; ) {
-    fflush(s);
-    fprintf(s, "%*d : [%d", awidth, a, data[a]);
-    for (int i=1; i<3; i++) {
-      fprintf(s, "|%d", data[a+i]);
-    }
-    if (data[a]<0) { 
-      // hole
-      fprintf(s, "| ... ");
-      a -= data[a];  
-    } else {
-      // proper node
-      int nElements =
-        data[a + 2] > 0
-        ? (isMultiTerminal()? 1: 2) * data[a + 2]   // Full
-        : -(isMultiTerminal()? 2: 3) * data[a + 2]; // Sparse
-      for (int i=0; i < nElements; i++) {
-        fprintf(s, "|%d", data[a+3+i]);
-      }
-      a += getDataHeaderSize() + nElements;
-    }
-    fprintf(s, "|%d]\n", data[a-1]);
-  } // for a
-  fprintf(s, "%*d : free slots\n", awidth, a);
-  fflush(s);
-  MEDDLY_DCASSERT(a == ((levels[k].last)+1));
-}
-
 
 void MEDDLY::mt_forest::showNodeGraph(FILE *s, int p) const
 {
@@ -2353,7 +2257,8 @@ int MEDDLY::mt_forest::createTempNode(int k, int sz, bool clear)
   // fill in the location with p's address info
   MEDDLY_DCASSERT(isMultiTerminal());
   address[p].level = k;
-  address[p].offset = levels[k].getHole(4 + sz, true);
+  // address[p].offset = levels[k].getHole(4 + sz, true);
+  address[p].offset = levels[k].allocNode(sz, p, clear);
   address[p].cache_count = 0;
 
 #ifdef DEBUG_MDD_H
@@ -2361,6 +2266,7 @@ int MEDDLY::mt_forest::createTempNode(int k, int sz, bool clear)
   fflush(stdout);
 #endif
 
+  /*
   int* foo = levels[k].data + address[p].offset;
   foo[0] = 1;                   // #incoming
   foo[1] = temp_node;
@@ -2369,6 +2275,7 @@ int MEDDLY::mt_forest::createTempNode(int k, int sz, bool clear)
 
   // initialize
   if (clear) initDownPtrs(p);
+  */
 
 #ifdef TRACK_DELETIONS
   cout << "Creating node " << p << "\n";

@@ -38,6 +38,12 @@ MEDDLY::mtmdd_forest::mtmdd_forest(int dsl, domain *d,
   count = 0;
   slot = 0;
   countSize = 0;
+
+  // TBD: this eventually belongs in mt_forest.
+  // Initalize level data
+  for (int k=getMinLevelIndex(); k<=getNumVariables(); k++) {
+    levels[k].init(this, 0, 0, 0);
+  }
 }
 
 
@@ -89,7 +95,8 @@ void MEDDLY::mtmdd_forest::resizeNode(int p, int size)
   int oldDataArraySize = getDataHeaderSize() + nodeSize;
   int newDataArraySize = oldDataArraySize - nodeSize + size;
   int nodeLevel = getNodeLevel(p);
-  int newOffset = levels[nodeLevel].getHole(newDataArraySize, true);
+  // int newOffset = levels[nodeLevel].getHole(newDataArraySize, true);
+  int newOffset = levels[nodeLevel].allocNode(size, p, false);
 
   MEDDLY_DCASSERT(newDataArraySize > oldDataArraySize);
 
@@ -111,10 +118,10 @@ void MEDDLY::mtmdd_forest::resizeNode(int p, int size)
   levels[nodeLevel].makeHole(address[p].offset, oldDataArraySize);
 
   // Change the node size
-  curr[2] = size;
+  // curr[2] = size;
 
   // Set the back-pointer in the new array
-  curr[newDataArraySize - 1] = p;
+  // curr[newDataArraySize - 1] = p;
 
   // Update the offset field to point to the new array
   address[p].offset = newOffset;
@@ -228,17 +235,14 @@ int MEDDLY::mtmdd_forest::reduceNode(int p)
   // right now, tie goes to truncated full.
   if (2*nnz < truncsize) {
     // sparse is better; convert
-    int newoffset = levels[node_level].getHole(4+2*nnz, true);
+    // int newoffset = levels[node_level].getHole(4+2*nnz, true);
+    int newoffset = levels[node_level].allocNode(-nnz, p, false);
     // can't rely on previous ptr, re-point to p
     int* full_ptr = getNodeAddress(p);
     int* sparse_ptr = getAddress(node_level, newoffset);
     // copy first 2 integers: incount, next
     sparse_ptr[0] = full_ptr[0];
     sparse_ptr[1] = full_ptr[1];
-    // size
-    sparse_ptr[2] = -nnz;
-    // copy index into address[]
-    sparse_ptr[3 + 2*nnz] = p;
     // get pointers to the new sparse node
     int* indexptr = sparse_ptr + 3;
     int* downptr = indexptr + nnz;
@@ -266,17 +270,14 @@ int MEDDLY::mtmdd_forest::reduceNode(int p)
     // full is better
     if (truncsize<size) {
       // truncate the trailing 0s
-      int newoffset = levels[node_level].getHole(4+truncsize, true);
+      // int newoffset = levels[node_level].getHole(4+truncsize, true);
+      int newoffset = levels[node_level].allocNode(truncsize, p, false);
       // can't rely on previous ptr, re-point to p
       int* full_ptr = getNodeAddress(p);
       int* trunc_ptr = getAddress(node_level, newoffset);
       // copy first 2 integers: incount, next
       trunc_ptr[0] = full_ptr[0];
       trunc_ptr[1] = full_ptr[1];
-      // size
-      trunc_ptr[2] = truncsize;
-      // copy index into address[]
-      trunc_ptr[3 + truncsize] = p;
       // elements
       memcpy(trunc_ptr + 3, full_ptr + 3, truncsize * sizeof(int));
       // trash old node

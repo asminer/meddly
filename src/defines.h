@@ -86,6 +86,14 @@ namespace MEDDLY {
   /// POSITIVE "macro".
   template <class T> inline bool POSITIVE(T X) { return (X>0) ? true : false; }
 
+  // Number of digits
+  inline int digits(int a) {
+    int d;
+    for (d=1; a; d++) { a /= 10; }
+    return d;
+  }
+
+
   // maxUlps would be a small +ve integer.
   inline bool isAlmostEqual(int A, int B) {
     static const int maxUlps = 16;

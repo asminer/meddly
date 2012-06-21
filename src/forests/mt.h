@@ -199,6 +199,7 @@ class MEDDLY::mt_forest : public expert_forest {
     /// Has the node been reduced
     bool isReducedNode(int node) const;
 
+    virtual void dumpUniqueTable(FILE* s) const;
     bool isValidNodeIndex(int node) const;
     void reclaimOrphanNode(int node);     // for linkNode()
     void handleNewOrphanNode(int node);   // for unlinkNode()
@@ -316,11 +317,6 @@ class MEDDLY::mt_forest : public expert_forest {
 
     // Dealing with node status
     bool isDeletedNode(int p) const;
-
-    // Debug output
-    void dump(FILE *s) const; 
-    void dumpInternal(FILE *s) const; 
-    void dumpInternalLevel(FILE *s, int k) const; 
 
     long getUniqueTableMemoryUsed() const;
     long getHoleMemoryUsage() const;
