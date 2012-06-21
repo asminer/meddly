@@ -496,7 +496,7 @@ void MEDDLY::evmdd_forest::createSparseNode(int k, int index,
     unlinkNode(dptr);
     // code from deleteTempNode(p) adapted to work here
     {
-      levels[k].makeHole(getNodeOffset(p), nodeSize);
+      levels[k].recycleNode(getNodeOffset(p));
       freeNode(p);
       if (levels[k].compactLevel) levels[k].compact(address);
     }

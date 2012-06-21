@@ -142,7 +142,8 @@ void MEDDLY::evmdd_forest::resizeNode(int p, int size)
   MEDDLY_DCASSERT(p == curr[trailerSize - 1]);
 
   // (5) Discard the old array
-  levels[nodeLevel].makeHole(address[p].offset, oldDataArraySize);
+  // levels[nodeLevel].makeHole(address[p].offset, oldDataArraySize);
+  levels[nodeLevel].recycleNode(address[p].offset);
 
   // (6) Update the offset field
   address[p].offset = newOffset;
@@ -556,9 +557,9 @@ void MEDDLY::evp_mdd_int::normalizeAndReduceNode(int& p, int& ev)
 #ifdef MEMORY_TRACE
     int saved_offset = getNodeOffset(p);
     setNodeOffset(p, newoffset);
-    makeHole(node_level, saved_offset, getDataHeaderSize() + 2 * size);
+    levels[node_level].recycleNode(node_level);
 #else
-    levels[node_level].makeHole(getNodeOffset(p), getDataHeaderSize() + 2 * size);
+    levels[node_level].recycleNode(getNodeOffset(p));
     setNodeOffset(p, newoffset);
 #endif
     // address[p].cache_count does not change
@@ -587,9 +588,9 @@ void MEDDLY::evp_mdd_int::normalizeAndReduceNode(int& p, int& ev)
 #ifdef MEMORY_TRACE
       int saved_offset = getNodeOffset(p);
       setNodeOffset(p, newoffset);
-      makeHole(node_level, saved_offset, getDataHeaderSize() + 2 * size);
+      levels[node_level].recycleNode(saved_offset);
 #else
-      levels[node_level].makeHole(getNodeOffset(p), getDataHeaderSize() + 2 * size);
+      levels[node_level].recycleNode(getNodeOffset(p));
       setNodeOffset(p, newoffset);
 #endif
       // address[p].cache_count does not change
@@ -883,7 +884,7 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
       int fullNodeSize = (largestIndex + 1) * 2 + getDataHeaderSize();
       int sparseNodeSize = index.size() * 3 + getDataHeaderSize();
       int minNodeSize = MIN(fullNodeSize, sparseNodeSize);
-      levels[lh].makeHole(getNodeOffset(result), minNodeSize);
+      levels[lh].recycleNode(getNodeOffset(result));
       freeNode(result);
       if (levels[lh].compactLevel) levels[lh].compact(address);
     }
@@ -1114,9 +1115,9 @@ void MEDDLY::evt_mdd_real::normalizeAndReduceNode(int& p, float& ev)
 #ifdef MEMORY_TRACE
     int saved_offset = getNodeOffset(p);
     setNodeOffset(p, newoffset);
-    makeHole(node_level, saved_offset, getDataHeaderSize() + 2 * size);
+    levels[node_level].recycleNode(saved_offset);
 #else
-    levels[node_level].makeHole(getNodeOffset(p), getDataHeaderSize() + 2 * size);
+    levels[node_level].recycleNode(getNodeOffset(p));
     setNodeOffset(p, newoffset);
 #endif
     // address[p].cache_count does not change
@@ -1145,9 +1146,9 @@ void MEDDLY::evt_mdd_real::normalizeAndReduceNode(int& p, float& ev)
 #ifdef MEMORY_TRACE
       int saved_offset = getNodeOffset(p);
       setNodeOffset(p, newoffset);
-      makeHole(node_level, saved_offset, getDataHeaderSize() + 2 * size);
+      levels[node_level].recycleNode(saved_offset);
 #else
-      levels[node_level].makeHole(getNodeOffset(p), getDataHeaderSize() + 2 * size);
+      levels[node_level].recycleNode(getNodeOffset(p));
       setNodeOffset(p, newoffset);
 #endif
       // address[p].cache_count does not change
@@ -1389,7 +1390,7 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
       int fullNodeSize = (largestIndex + 1) * 2 + getDataHeaderSize();
       int sparseNodeSize = index.size() * 3 + getDataHeaderSize();
       int minNodeSize = MIN(fullNodeSize, sparseNodeSize);
-      levels[lh].makeHole(getNodeOffset(result), minNodeSize);
+      levels[lh].recycleNode(getNodeOffset(result));
       freeNode(result);
       if (levels[lh].compactLevel) levels[lh].compact(address);
     }

@@ -115,7 +115,7 @@ void MEDDLY::mtmdd_forest::resizeNode(int p, int size)
       (newDataArraySize - oldDataArraySize) * sizeof(int));
 
   // Discard the old array
-  levels[nodeLevel].makeHole(address[p].offset, oldDataArraySize);
+  levels[nodeLevel].recycleNode(address[p].offset);
 
   // Change the node size
   // curr[2] = size;
@@ -260,9 +260,9 @@ int MEDDLY::mtmdd_forest::reduceNode(int p)
 #ifdef MEMORY_TRACE
     int saved_offset = getNodeOffset(p);
     setNodeOffset(p, newoffset);
-    makeHole(node_level, saved_offset, 4 + size);
+    levels[node_level].recycleNode(saved_offset);
 #else
-    levels[node_level].makeHole(getNodeOffset(p), 4 + size);
+    levels[node_level].recycleNode(getNodeOffset(p));
     setNodeOffset(p, newoffset);
 #endif
     // address[p].cache_count does not change
@@ -284,9 +284,9 @@ int MEDDLY::mtmdd_forest::reduceNode(int p)
 #ifdef MEMORY_TRACE
       int saved_offset = getNodeOffset(p);
       setNodeOffset(p, newoffset);
-      makeHole(node_level, saved_offset, 4 + size);
+      levels[node_level].recycleNode(saved_offset);
 #else
-      levels[node_level].makeHole(getNodeOffset(p), 4 + size);
+      levels[node_level].recycleNode(getNodeOffset(p));
       setNodeOffset(p, newoffset);
 #endif
       // address[p].cache_count does not change

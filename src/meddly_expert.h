@@ -949,7 +949,68 @@ class MEDDLY::expert_forest : public forest
   // |
   protected:
 
-    /// Level data for each level in a MDD
+    /** Actual node storage in a forest, by level.
+        Details of node storage are left to the derived forests.
+        However, every active node is stored in the following format.
+          
+          common   {  slot[0] : incoming count, >= 0.
+          header --{  slot[1] : next pointer in unique table or special value.
+                   {  slot[2] : size.  >=0 for full storage, <0 for sparse.
+
+          unhashed    {       : slots used for any extra information
+          header    --{       : as needed on a forest-by-forest basis.
+          (optional)  {       : Info does NOT affect node uniqueness.
+
+          hashed      {       : slots used for any extra information
+          header    --{       : as needed on a forest-by-forest basis.
+          (optional)  {       : Info DOES affect node uniqueness.
+
+                      {       : Downward pointers.
+                      {       : If full storage, there are size pointers
+          down -------{       : and entry i gives downward pointer i.
+                      {       : If sparse storage, there are -size pointers
+                      {       : and entry i gives a pointer but the index
+                      {       : corresponds to index[i], below.
+          
+                      {       : Index entries.
+                      {       : Unused for full storage.
+          index ------{       : If sparse storage, entry i gives the
+          (sparse)    {       : index for outgoing edge i, and there are
+                      {       : -size entries.
+
+                      {       : Edge values.
+          edge        {       : If full storage, there are size * edgeSize
+          values -----{       : slots; otherwise there are -size * edgeSize
+                      {       : slots.  Derived forests are responsible
+                      {       : for packing information into these slots.
+
+                    { -padlen : Any node padding to allow for future
+                    {         : expansion, or for memory management purposes
+                    {         : (e.g., memory hold is larger than requested).
+          padding --{         : padlen is number of padded slots.  If the
+                    {         : first entry after the node proper is negative,
+                    {         : then it specifies the number of padding slots;
+                    {         : otherwise, there is no padding.
+
+          tail    --{ slot[L] : The last slot gives the forest node number,
+                                guaranteed to be non-negative.
+
+
+        When nodes are deleted, the memory slots are marked as a "hole",
+        using the following format.
+
+          slot[0] : -numslots, the number of slots in the hole
+            .
+            .
+            .
+          slot[L] : -numslots, with L = numslots-1
+        
+        The first few slots of the hole are used for a hole management
+        data structure, whose details are important only for implementation
+        of this class (in forests.cc).  
+        Note that a hole is guaranteed to be at least 5 slots long
+        (assuming a node of size 0, with no extra header info, is impossible).
+    */
     struct level_data {
         /// Growth parameter
         static const int add_size = 1024;
@@ -1031,9 +1092,20 @@ class MEDDLY::expert_forest : public forest
         */
         int allocNode(int sz, int tail, bool clear);
 
+        /// For debugging.
+        void dumpInternal(FILE* s) const;
+
+        /// For performance stats.
+        void addToChainCounts(std::map<int, int> &chainLengths) const;
+
       // --------------------------------------------------------
       // |  inlines.
       public:
+        /// Recycle a node stored at the given offset.
+        inline void recycleNode(int off) {
+          makeHole(off, activeNodeActualSlots(off));
+        }
+
         inline void incrTempNodeCount() {
           temp_nodes++;
         }
@@ -1096,10 +1168,22 @@ class MEDDLY::expert_forest : public forest
       // --------------------------------------------------------
       // |  Hole management helpers.
       private:
+        /// Find actual number of slots used for this active node.
+        inline int activeNodeActualSlots(int off) const {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_CHECK_RANGE(1, off, last+1);
+          MEDDLY_DCASSERT(data[off + count_index] >= 0);
+          int end = off + slotsForNode(sizeOf(off))-1;
+          // account for any padding
+          if (data[end] < 0) {
+            end -= data[end];
+          }
+          return end - off + 1;
+        }
+
         // returns offset to the hole found in level
         int getHole(int slots, bool search_holes);
 
-      public:
         // makes a hole of size == slots, at the specified offset
         void makeHole(int p_offset, int slots);
 
@@ -1116,6 +1200,7 @@ class MEDDLY::expert_forest : public forest
         // remove an index hole from the hole grid
         void indexRemove(int p_offset);
 
+      public:
         inline bool needsCompaction() const {
           MEDDLY_DCASSERT(parent);
           if (hole_slots <= 100)  return false;

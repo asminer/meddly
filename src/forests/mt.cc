@@ -1260,11 +1260,14 @@ void MEDDLY::mt_forest::deleteNode(int p)
 #endif
 
   // Recycle node memory
+  levels[k].recycleNode(getNodeOffset(p));
+  /*
   levels[k].makeHole(getNodeOffset(p), getDataHeaderSize() +
       nDptrs * ((foo[2] < 0)
         ? (isMultiTerminal() ? 2: 3)
         : (isMultiTerminal() ? 1: 2)
         ));
+  */
 
   // recycle the index
   freeNode(p);
@@ -1322,8 +1325,11 @@ void MEDDLY::mt_forest::zombifyNode(int p)
 #endif
     }
     // Recycle node memory
+    levels[node_level].recycleNode(node_offset);
+    /*
     levels[node_level].makeHole(node_offset, getDataHeaderSize()
         - (isMultiTerminal() ? 2: 3) * foo[2]);  
+    */
   } else {
     // Full encoding
     int* downptr = foo + 3;
@@ -1338,8 +1344,11 @@ void MEDDLY::mt_forest::zombifyNode(int p)
 #endif
     }
     // Recycle node memory
+    levels[node_level].recycleNode(node_offset);
+    /*
     levels[node_level].makeHole(node_offset, getDataHeaderSize()
         + (isMultiTerminal() ? 1: 2) * foo[2]);  
+    */
   }
 }
 
