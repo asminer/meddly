@@ -428,7 +428,7 @@ int MEDDLY::expert_forest::level_data::allocNode(int sz, int tail, bool clear)
   int slots = slotsForNode(sz);
   MEDDLY_DCASSERT(slots >= commonExtra + unhashedHeader + hashedHeader);
 
-  int off = getHole(slots, true);
+  int off = getHole(slots);
   if (clear) memset(data+off, 0, slots*sizeof(int));
   countOf(off) = 1;                       // #incoming
   nextOf(off) = temp_node_value;          // mark as a temp node
@@ -439,6 +439,93 @@ int MEDDLY::expert_forest::level_data::allocNode(int sz, int tail, bool clear)
   dumpInternal(stdout, parent->levels - this);
 #endif
   return off;
+}
+
+void MEDDLY::expert_forest::level_data::compact(mdd_node_data* address)
+{
+  if (0==data) {
+    compactLevel = false;
+    return;
+  }
+  if (0 == hole_slots || !needsCompaction()) {  // Level is compact enough!
+    compactLevel = false;
+    return;
+  }
+
+  if (0 < temp_nodes) return;   // Temp nodes; do not compact
+
+#ifdef DEBUG_SLOW
+  fprintf(stderr, "Compacting forest level\n");
+#endif
+
+  // alternate algorithm -- since we now have the node ids in the node data
+  int *node_ptr = data + 1;  // since we leave [0] empty
+  int *end_ptr = data + last + 1;
+  int *curr_ptr = node_ptr;
+  int node_size = 0;
+  int curr_node = 0;
+
+  while (node_ptr != end_ptr) {
+    // find new node
+    if (*node_ptr < 0) {
+      // found a hole, advance
+      MEDDLY_DCASSERT(node_ptr[0] == node_ptr[-(*node_ptr)-1]);
+      node_size = -(*node_ptr);
+      memset(node_ptr, 0, node_size * sizeof(int));
+    } else {
+      // found an existing node
+      MEDDLY_DCASSERT(!parent->isPessimistic() || *node_ptr != 0);
+
+      node_size = activeNodeActualSlots(node_ptr - data); 
+      curr_node = node_ptr[node_size - 1];
+      MEDDLY_DCASSERT(parent->getNodeOffset(curr_node) == (node_ptr - data));
+      if (node_ptr != curr_ptr) {
+#if 1
+        for (int i = 0; i < node_size; ++i) {
+          curr_ptr[i] = node_ptr[i];
+          node_ptr[i] = 0;
+        }
+#else
+        // copy node_ptr to curr_ptr
+        memmove(curr_ptr, node_ptr, node_size * sizeof(int));
+#endif
+        // change node offset
+        address[curr_node].offset = (curr_ptr - data);
+      }
+      MEDDLY_DCASSERT(parent->getNodeOffset(curr_node) == (curr_ptr - data));
+      curr_ptr += node_size;
+    }
+    node_ptr += node_size;
+  }
+
+  last = (curr_ptr - 1 - data);
+
+  // set up hole pointers and such
+  holes_top = holes_bottom = 0;
+  hole_slots = 0;
+
+  parent->stats.num_compactions++;
+  num_compactions++;
+  compactLevel = false;
+
+  if (size > add_size && last < size/2) {
+    int new_size = size/2;
+    while (new_size > add_size && new_size > last * 3) { new_size /= 2; }
+    parent->stats.decMemAlloc((size - new_size) * sizeof(int));
+    data = (int *) realloc(data, new_size * sizeof(int));
+    if (0 == data) throw error(error::INSUFFICIENT_MEMORY);
+    size = new_size;
+#ifdef MEMORY_TRACE
+    printf("Reduced data[] by a factor of 2. New size: %d, Last: %d.\n",
+        size, last);
+#endif
+  }
+
+#if 0
+  printf("After compaction:\n");
+  dumpInternalLevel(stdout, k);
+  printf("\n");
+#endif
 }
 
 void MEDDLY::expert_forest::level_data::dumpInternal(FILE *s) const
@@ -499,90 +586,81 @@ void MEDDLY::expert_forest::level_data
 //
 //
 
-int MEDDLY::expert_forest::level_data::getHole(int slots, bool search_holes)
+int MEDDLY::expert_forest::level_data::getHole(int slots)
 {
   MEDDLY_DCASSERT(parent);
   parent->stats.incMemUsed(slots * sizeof(int));
 
-  if (search_holes && parent->areHolesRecycled()) {
-    // First, try for a hole exactly of this size
-    // by traversing the index nodes in the hole grid
-    int chain = 0;
-    int curr = holes_bottom;
-    while (curr) {
-      if (slots == -(data[curr])) break;
-      if (slots < -(data[curr])) {
-        // no exact match possible
-        curr = 0;
-        break;
-      }
-      // move up the hole grid
-      curr = data[curr+1];
-      chain++;
+  // First, try for a hole exactly of this size
+  // by traversing the index nodes in the hole grid
+  int chain = 0;
+  int curr = holes_bottom;
+  while (curr) {
+    if (slots == -(data[curr])) break;
+    if (slots < -(data[curr])) {
+      // no exact match possible
+      curr = 0;
+      break;
     }
+    // move up the hole grid
+    curr = data[curr+1];
+    chain++;
+  }
 
-    // update max hole chain for the level and the entire mdd
-    max_hole_chain = MAX(max_hole_chain, chain);
+  // update max hole chain for the level and the entire mdd
+  max_hole_chain = MAX(max_hole_chain, chain);
 
-    if (curr) {
-      // perfect fit
-      hole_slots -= slots;
-      // try to not remove the "index" node
-      int next = data[curr + 3];
-      if (next) {
-        midRemove(next);
+  if (curr) {
+    // perfect fit
+    hole_slots -= slots;
+    // try to not remove the "index" node
+    int next = data[curr + 3];
+    if (next) {
+      midRemove(next);
 #ifdef MEMORY_TRACE
-        cout << "Removed Non-Index Hole " << next << "\n";
-        dumpInternal(stdout);
-#endif
-        return next;
-      }
-      indexRemove(curr);
-#ifdef MEMORY_TRACE
-      cout << "Removed Index Hole " << curr << "\n";
+      cout << "Removed Non-Index Hole " << next << "\n";
       dumpInternal(stdout);
 #endif
-      return curr;
+      return next;
     }
+    indexRemove(curr);
+#ifdef MEMORY_TRACE
+    cout << "Removed Index Hole " << curr << "\n";
+    dumpInternal(stdout);
+#endif
+    return curr;
+  }
 
 #ifdef ENABLE_BREAKING_UP_HOLES
-    // No hole with exact size, try the largest hole
-    const int min_node_size = 5;  // TBD!!!
-    /*
-      isEVPlus()
-        ? 7
-        : isEVTimes()
-          ? 6
-          : 5;
-          */
+  // No hole with exact size, try the largest hole
+  const int min_node_size = slotsForNode(0);
 
-    curr = holes_top;
-    if (slots < -(data[curr]) - min_node_size) {
-      // we have a hole large enough
-      hole_slots -= slots;
-      if (data[curr + 3]) {
-        // remove middle node
-        curr = data[curr + 3];
-        midRemove(k, curr);
-      } else {
-        // remove index node
-        indexRemove(k, curr);
-      }
-      // create a hole for the leftovers
-      int newhole = curr + slots;
-      int newsize = -(data[curr]) - slots;
-      data[newhole] = -newsize;
-      data[newhole + newsize - 1] = -newsize;
-      gridInsert(k, newhole); 
-#ifdef MEMORY_TRACE
-      // data[curr] = -slots;  // only necessary for display
-      cout << "Removed part of hole " << curr << "\n";
-      dumpInternal(stdout);
-#endif
-      return curr;
+  curr = holes_top;
+  if (slots < -(data[curr]) - min_node_size) {
+    // we have a hole large enough
+    hole_slots -= slots;
+    if (data[curr + 3]) {
+      // remove middle node
+      curr = data[curr + 3];
+      midRemove(k, curr);
+    } else {
+      // remove index node
+      indexRemove(k, curr);
     }
+    // create a hole for the leftovers
+    int newhole = curr + slots;
+    int newsize = -(data[curr]) - slots;
+    data[newhole] = -newsize;
+    data[newhole + newsize - 1] = -newsize;
+    gridInsert(k, newhole); 
+#ifdef MEMORY_TRACE
+    // data[curr] = -slots;  // only necessary for display
+    cout << "Removed part of hole " << curr << "\n";
+    dumpInternal(stdout);
 #endif
+    return curr;
   }
+#endif
 
   // can't recycle; grab from the end
   if (last + slots >= size) {
@@ -793,115 +871,6 @@ void MEDDLY::expert_forest::level_data::indexRemove(int p_offset)
     }
   }
 }
-
-void MEDDLY::expert_forest::level_data::compact(mdd_node_data* address)
-{
-  if (0==data) {
-    compactLevel = false;
-    return;
-  }
-  if (0 == hole_slots ||  // Already compact
-      !needsCompaction()) {  // Level is compact enough!
-    compactLevel = false;
-#if 0
-    printf("%s: level %d... compact enough\n", __func__, k);
-#endif
-    return;
-  }
-
-  if (0 < temp_nodes) return;   // Temp nodes; do not compact
-#if 0
-  printf("%s: level %d\n", __func__, k);
-#endif
-
-#if 0
-  printf("Before compaction:\n");
-  dumpInternalLevel(stdout, k);
-  printf("\n");
-#endif
-
-#ifdef DEBUG_SLOW
-  fprintf(stderr, "Compacting forest level %d\n", k);
-#endif
-
-  // alternate algorithm -- since we now have the node ids in the node data
-  int *node_ptr = data + 1;  // since we leave [0] empty
-  int *end_ptr = data + last + 1;
-  int *curr_ptr = node_ptr;
-  int node_size = 0;
-  int curr_node = 0;
-
-  int sparseMultiplier = parent->isMultiTerminal() ? -2 : -3;
-  int fullMultiplier = parent->isMultiTerminal() ? 1 : 2;
-
-  while (node_ptr != end_ptr) {
-    // find new node
-    if (*node_ptr < 0) {
-      // found a hole, advance
-      MEDDLY_DCASSERT(node_ptr[0] == node_ptr[-(*node_ptr)-1]);
-      node_size = -(*node_ptr);
-      memset(node_ptr, 0, node_size * sizeof(int));
-    } else {
-      // found an existing node
-      MEDDLY_DCASSERT(!parent->isPessimistic() || *node_ptr != 0);
-
-      node_size = *(node_ptr + 2);  // [2] = size
-      MEDDLY_DCASSERT (node_size != 0);      // assuming zombies have been deleted
-
-      node_size = parent->getDataHeaderSize() +
-        (node_size * (node_size < 0? sparseMultiplier: fullMultiplier));
-
-      curr_node = node_ptr[node_size - 1];
-      MEDDLY_DCASSERT(parent->getNodeOffset(curr_node) == (node_ptr - data));
-      if (node_ptr != curr_ptr) {
-#if 1
-        for (int i = 0; i < node_size; ++i) {
-          curr_ptr[i] = node_ptr[i];
-          node_ptr[i] = 0;
-        }
-#else
-        // copy node_ptr to curr_ptr
-        memmove(curr_ptr, node_ptr, node_size * sizeof(int));
-#endif
-        // change node offset
-        address[curr_node].offset = (curr_ptr - data);
-      }
-      MEDDLY_DCASSERT(parent->getNodeOffset(curr_node) == (curr_ptr - data));
-      curr_ptr += node_size;
-    }
-    node_ptr += node_size;
-  }
-
-  last = (curr_ptr - 1 - data);
-
-  // set up hole pointers and such
-  holes_top = holes_bottom = 0;
-  hole_slots = 0;
-
-  parent->stats.num_compactions++;
-  num_compactions++;
-  compactLevel = false;
-
-  if (size > add_size && last < size/2) {
-    int new_size = size/2;
-    while (new_size > add_size && new_size > last * 3) { new_size /= 2; }
-    parent->stats.decMemAlloc((size - new_size) * sizeof(int));
-    data = (int *) realloc(data, new_size * sizeof(int));
-    if (0 == data) throw error(error::INSUFFICIENT_MEMORY);
-    size = new_size;
-#ifdef MEMORY_TRACE
-    printf("Reduced data[] by a factor of 2. New size: %d, Last: %d.\n",
-        size, last);
-#endif
-  }
-
-#if 0
-  printf("After compaction:\n");
-  dumpInternalLevel(stdout, k);
-  printf("\n");
-#endif
-}
-
 
 // ******************************************************************
 // *                                                                *

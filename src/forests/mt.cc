@@ -1623,22 +1623,7 @@ void MEDDLY::mt_forest::reportMemoryUsage(FILE * s, const char filler) {
 
   for (int k=getMinLevelIndex(); k<=getNumVariables(); k++) 
   {
-    if (levels[k].hole_slots == 0) continue;
-    int currHoleChain = levels[k].holes_bottom;
-    while (currHoleChain != 0)
-    {
-      int currHoleOffset = currHoleChain;
-      // count the number of holes in this chain
-      int count = 0;
-      for (count = 0; currHoleOffset != 0; count++)
-      {
-        currHoleOffset = levels[k].data[currHoleOffset + 3];
-      }
-      int currHoleSize = -levels[k].data[currHoleChain];
-      chainLengths[currHoleSize] += count;
-      // on to the next chain (above) for this level
-      currHoleChain = levels[k].data[currHoleChain + 1];
-    }
+    levels[k].addToChainCounts(chainLengths);
   }
 
   fprintf(s, "Hole Chains (size, count):\n");
@@ -1759,7 +1744,7 @@ void MEDDLY::mt_forest::show(FILE *s, int h) const { fprintf(s, "%d", h); }
 long MEDDLY::mt_forest::getHoleMemoryUsage() const {
   long sum = 0;
   for (int i=getMinLevelIndex(); i<=getNumVariables(); i++)
-    sum += levels[i].hole_slots;
+    sum += levels[i].getHoleSlots();
   return sum * sizeof(int); 
 }
 

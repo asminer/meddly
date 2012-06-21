@@ -1039,11 +1039,11 @@ class MEDDLY::expert_forest : public forest
         /// Last used data slot.  Also total number of ints "allocated"
         int last;
         /// Node representing a variable at this level pointing to terminals
-        /// based on index
+        /// based on index.  TBD: remove this
         int levelNode;
 
-        // Holes grid info
-      public:
+      // Holes grid info
+      private:
         /// Pointer to top of holes grid
         int holes_top;
         /// Pointer to bottom of holes grid
@@ -1051,7 +1051,7 @@ class MEDDLY::expert_forest : public forest
         /// Total ints in holes
         int hole_slots;
 
-        // performance stats
+      // performance stats
       public:
         /// Largest traversed height of holes grid
         int max_hole_chain;
@@ -1092,6 +1092,9 @@ class MEDDLY::expert_forest : public forest
         */
         int allocNode(int sz, int tail, bool clear);
 
+        /// Compact this level.  (Rearrange, to remove all holes.)
+        void compact(mdd_node_data* address);
+
         /// For debugging.
         void dumpInternal(FILE* s) const;
 
@@ -1112,6 +1115,13 @@ class MEDDLY::expert_forest : public forest
 
         inline void decrTempNodeCount() {
           temp_nodes--;
+        }
+
+        inline bool needsCompaction() const {
+          MEDDLY_DCASSERT(parent);
+          if (hole_slots <= 100)  return false;
+          if (hole_slots > 10000) return true;
+          return hole_slots * 100u > last * parent->deflt.compaction;
         }
 
         /// How many slots would be required for a node with given size.
@@ -1182,7 +1192,7 @@ class MEDDLY::expert_forest : public forest
         }
 
         // returns offset to the hole found in level
-        int getHole(int slots, bool search_holes);
+        int getHole(int slots);
 
         // makes a hole of size == slots, at the specified offset
         void makeHole(int p_offset, int slots);
@@ -1200,16 +1210,6 @@ class MEDDLY::expert_forest : public forest
         // remove an index hole from the hole grid
         void indexRemove(int p_offset);
 
-      public:
-        inline bool needsCompaction() const {
-          MEDDLY_DCASSERT(parent);
-          if (hole_slots <= 100)  return false;
-          if (hole_slots > 10000) return true;
-          return hole_slots * 100u > last * parent->deflt.compaction;
-        }
-
-        // Compact this level.  (Rearrange, to remove all holes.)
-        void compact(mdd_node_data* address);
 
     }; // end of level_data struct
 
