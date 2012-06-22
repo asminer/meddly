@@ -580,6 +580,23 @@ class MEDDLY::expert_forest : public forest
     void dumpInternal(FILE *s) const; 
     void dumpInternalLevel(FILE *s, int k) const; 
 
+    /** Show stats about memory usage for this forest.
+          @param  s     Output stream to write to
+          @param  pad   Padding string, written at the start of 
+                        each output line.
+          @param  verb  Level of detail, between 0 (least detailed)
+                        and 9 (most detailed).
+    */
+    void reportMemoryUsage(FILE * s, const char* pad, int verb);
+
+
+  // ------------------------------------------------------------
+  // virtual in the base class, but implemented here.
+  // See meddly.h for descriptions of these methods.
+  public:
+    virtual void garbageCollect();
+    virtual void compactMemory();
+    virtual void showInfo(FILE* strm, int verbosity);
 
   // ------------------------------------------------------------
   // virtual, with default implementation.
@@ -592,6 +609,14 @@ class MEDDLY::expert_forest : public forest
     virtual void normalizeAndReduceNode(int& node, int& ev);
     virtual void normalizeAndReduceNode(int& node, float& ev);
 
+  // ------------------------------------------------------------
+  // helpers for derived classes
+  protected:
+    // void deleteNode(int p);
+
+  // ------------------------------------------------------------
+  // helpers for this class
+  private:
 
   // here down --- needs organizing
   public:
@@ -897,9 +922,14 @@ class MEDDLY::expert_forest : public forest
     virtual void reclaimOrphanNode(int node) = 0;     // for linkNode()
     virtual void handleNewOrphanNode(int node) = 0;   // for unlinkNode()
     virtual void deleteOrphanNode(int node) = 0;      // for uncacheNode()
-    virtual void freeZombieNode(int node) = 0;        // for uncacheNode()
     // for isStale()
     virtual bool discardTemporaryNodesFromComputeCache() const = 0;
+
+    inline bool isTimeToGc() const {
+      return isPessimistic() 
+        ? (stats.zombie_nodes > deflt.zombieTrigger)
+        : (stats.orphan_nodes > deflt.orphanTrigger);
+    }
 
   // ----------------------------------------------------------------- 
   // | 
@@ -987,6 +1017,23 @@ class MEDDLY::expert_forest : public forest
       }
       MEDDLY_DCASSERT(a_last < a_size);
       return a_last;
+    }
+
+    inline void freeActiveNode(int p) {
+      MEDDLY_DCASSERT(address);
+      MEDDLY_DCASSERT(isValidNonterminalIndex(p));
+      MEDDLY_DCASSERT(address[p].isActive());
+      stats.decActive(1);
+      recycleNodeHandle(p);
+    }
+
+    inline void freeZombieNode(int p) {
+      MEDDLY_DCASSERT(address);
+      MEDDLY_DCASSERT(isValidNonterminalIndex(p));
+      MEDDLY_DCASSERT(address[p].level);
+      stats.zombie_nodes--;
+      levels[address[p].level].zombie_nodes--;
+      recycleNodeHandle(p);
     }
 
     inline void recycleNodeHandle(int p) {
@@ -1304,6 +1351,17 @@ class MEDDLY::expert_forest : public forest
     level_data *levels;
 
     friend class level_data;
+
+
+
+  // ------------------------------------------------------------
+  // |
+  // |  Other private data
+  // |
+  private:
+    // Garbage collection in progress
+    bool performing_gc;
+
 };
 
 

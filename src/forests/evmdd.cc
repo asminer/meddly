@@ -42,7 +42,7 @@ int MEDDLY::evmdd_forest::createTempNode(int k, int sz, bool clear)
 {
   MEDDLY_DCASSERT(k != 0);
 
-  if (isTimeToGc()) { gc(); }
+  if (isTimeToGc()) { garbageCollect(); }
 
   MEDDLY_CHECK_RANGE(getMinLevelIndex(), k, getNumVariables()+1);
   MEDDLY_DCASSERT(levels[k].data);
@@ -314,7 +314,7 @@ void MEDDLY::evp_mdd_int::initEdgeValues(int p) {
 int MEDDLY::evp_mdd_int::createTempNode(int k, int sz, bool clear)
 {
   MEDDLY_DCASSERT(k != 0);
-  if (isTimeToGc()) { gc(); }
+  if (isTimeToGc()) { garbageCollect(); }
   MEDDLY_DCASSERT(isValidLevel(k));
   MEDDLY_CHECK_RANGE(1, sz, getLevelSize(k) + 1);
   // get a location in address[] to store the node
@@ -852,7 +852,7 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
     // Code from deleteTempNode(result) adapted to work here
     {
       levels[lh].recycleNode(getNodeOffset(result));
-      freeNode(result);
+      freeActiveNode(result);
       if (levels[lh].compactLevel) levels[lh].compact(address);
     }
     result = sharedCopy(found);
@@ -1333,7 +1333,7 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
     // Code from deleteTempNode(result) adapted to work here
     {
       levels[lh].recycleNode(getNodeOffset(result));
-      freeNode(result);
+      freeActiveNode(result);
       if (levels[lh].compactLevel) levels[lh].compact(address);
     }
     result = sharedCopy(found);

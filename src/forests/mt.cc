@@ -813,6 +813,7 @@ void MEDDLY::mt_forest::showNode(int p) const
   }
 }
 
+/*
 void MEDDLY::mt_forest::compactAllLevels()
 {
   for (int i=getMinLevelIndex(); i<=getNumVariables(); i++) {
@@ -820,7 +821,7 @@ void MEDDLY::mt_forest::compactAllLevels()
     levels[i].compact(address);
   }
 }
-
+*/
 
 // ------------------------------------------------------------------
 //  For uniqueness table
@@ -1263,7 +1264,7 @@ void MEDDLY::mt_forest::deleteNode(int p)
   levels[k].recycleNode(getNodeOffset(p));
 
   // recycle the index
-  freeNode(p);
+  freeActiveNode(p);
 
   if (levels[k].compactLevel) levels[k].compact(address);
 
@@ -1336,6 +1337,7 @@ void MEDDLY::mt_forest::zombifyNode(int p)
 }
 
 
+/*
 void MEDDLY::mt_forest::garbageCollect() {
   gc();
 }
@@ -1439,7 +1441,7 @@ bool MEDDLY::mt_forest::gc(bool zombifyOrphanNodes) {
 
 #endif // ENABLE_GC
 }
-
+*/
 
 void MEDDLY::mt_forest::removeZombies(int max_zombies) {
 #if 1
@@ -1470,6 +1472,7 @@ void MEDDLY::mt_forest::removeZombies(int max_zombies) {
 #endif
 }
 
+/*
 void MEDDLY::mt_forest::freeZombieNode(int p)
 {
   MEDDLY_DCASSERT(address[p].level != 0);
@@ -1494,56 +1497,7 @@ void MEDDLY::mt_forest::freeNode(int p)
   printf("reclaimed active %d\n", p);
 #endif
 }
-
-void MEDDLY::mt_forest::reportMemoryUsage(FILE * s, const char filler) {
-  fprintf(s, "%cPeak Nodes:             %ld\n", filler, getPeakNumNodes());
-  fprintf(s, "%cActive Nodes:           %ld\n", filler, getCurrentNumNodes());
-#if 0
-  unsigned count = 0;
-  for (int i = 1; i <= getLastNode(); ++i) if (isActiveNode(i)) ++count;
-  fprintf(s, "%cActive Nodes (manual):\t\t%d\n", filler, count);
-  fprintf(s, "%c%cZombie Nodes:\t\t%d\n", filler, filler,
-      getZombieNodeCount());
-  fprintf(s, "%c%cTemp Nodes:\t\t%d\n", filler, filler, getTempNodeCount());
-  fprintf(s, "%c%cOrphan Nodes:\t\t%d\n", filler, filler,
-      getOrphanNodeCount());
-#endif
-  fprintf(s, "%cReclaimed Nodes:        %ld\n", filler, stats.reclaimed_nodes);
-  fprintf(s, "%cMem Used:               %ld\n", filler,
-      getCurrentMemoryUsed());
-  fprintf(s, "%cPeak Mem Used:          %ld\n", filler, getPeakMemoryUsed());
-  fprintf(s, "%cMem Allocated:          %ld\n", filler,
-      getCurrentMemoryAllocated());
-  fprintf(s, "%cPeak Mem Allocated:     %ld\n",
-      filler, getPeakMemoryAllocated());
-  fprintf(s, "%cUnique Tbl Mem Used:    %ld\n", filler,
-      getUniqueTableMemoryUsed());
-  fprintf(s, "%cCompactions:            %ld\n", filler, stats.num_compactions);
-#if 0
-  fprintf(s, "%cHole Memory Usage:\t%d\n", filler, getHoleMemoryUsage());
-  fprintf(s, "%cMax Hole Chain:\t%d\n", filler, getMaxHoleChain());
-  fprintf(s, "%cCompactions:\t\t%d\n", filler, getCompactionsCount());
-  // compareCacheCounts();
-#endif
-
-#if 1
-  // Print hole-recyling info
-  // Compute chain lengths
-  std::map<int, int> chainLengths;
-
-  for (int k=getMinLevelIndex(); k<=getNumVariables(); k++) 
-  {
-    levels[k].addToChainCounts(chainLengths);
-  }
-
-  fprintf(s, "Hole Chains (size, count):\n");
-  for (std::map<int, int>::iterator iter = chainLengths.begin();
-    iter != chainLengths.end(); ++iter)
-  {
-    fprintf(s, "\t%d: %d\n", iter->first, iter->second);
-  }
-#endif
-}
+*/
 
 void MEDDLY::mt_forest::compareCacheCounts(int p)
 {
@@ -1643,11 +1597,14 @@ void MEDDLY::mt_forest::validateIncounts()
 void MEDDLY::mt_forest::showLevel(FILE *s, int k) const {
   dumpInternalLevel(s, k);
 }
+
+/*
 void MEDDLY::mt_forest::showAll(FILE *s, int verb) const { 
   if (0==verb)  return;
   if (1==verb)  dump(s);
   else          dumpInternal(s); 
 }
+*/
 
 void MEDDLY::mt_forest::show(FILE *s, int h) const { fprintf(s, "%d", h); }
 
@@ -2142,7 +2099,7 @@ int MEDDLY::mt_forest::createTempNode(int k, int sz, bool clear)
 
   if (isTimeToGc()) {
     fprintf(stderr, "Started forest garbage collector.\n");
-    gc();
+    garbageCollect();
     fprintf(stderr, "Stopped forest garbage collector.\n");
   }
 

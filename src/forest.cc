@@ -35,6 +35,7 @@
 
 // #define DEBUG_SLOW
 // #define DEBUG_ADDRESS_RESIZE
+// #define DEBUG_GC
 
 // #define MEMORY_TRACE
 
@@ -915,6 +916,12 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
     levels = raw_levels;
     stats.incMemAlloc(N+1 * sizeof(level_data));
   }
+
+
+  //
+  // Initialize misc. private data
+  //
+  performing_gc = false;
 }
 
 
@@ -1067,6 +1074,137 @@ void MEDDLY::expert_forest::dumpInternalLevel(FILE *s, int k) const
   levels[k].dumpInternal(s);
 }
 
+void MEDDLY::expert_forest
+::reportMemoryUsage(FILE * s, const char* pad, int verb)
+{
+  if (verb>0) {
+    fprintf(s, "%sPeak Nodes:             %ld\n", pad, getPeakNumNodes());
+    fprintf(s, "%sActive Nodes:           %ld\n", pad, getCurrentNumNodes());
+  }
+#if 0
+  unsigned count = 0;
+  for (int i = 1; i <= getLastNode(); ++i) if (isActiveNode(i)) ++count;
+  fprintf(s, "%cActive Nodes (manual):\t\t%d\n", pad, count);
+  fprintf(s, "%c%cZombie Nodes:\t\t%d\n", pad, filler,
+      getZombieNodeCount());
+  fprintf(s, "%c%cTemp Nodes:\t\t%d\n", pad, filler, getTempNodeCount());
+  fprintf(s, "%c%cOrphan Nodes:\t\t%d\n", pad, filler,
+      getOrphanNodeCount());
+#endif
+  if (verb>2) {
+    fprintf(s, "%sReclaimed Nodes:        %ld\n", pad, stats.reclaimed_nodes);
+  }
+  fprintf(s, "%sMem Used:               %ld\n", pad, getCurrentMemoryUsed());
+  fprintf(s, "%sPeak Mem Used:          %ld\n", pad, getPeakMemoryUsed());
+  if (verb>1) {
+    fprintf(s, "%sMem Allocated:          %ld\n", pad,
+      getCurrentMemoryAllocated());
+    fprintf(s, "%sPeak Mem Allocated:     %ld\n",
+      pad, getPeakMemoryAllocated());
+  }
+  if (verb>3) {
+    // fprintf(s, "%sUnique Tbl Mem Used:    %ld\n", pad, 
+      // getUniqueTableMemoryUsed());
+    // TBD
+  }
+  if (verb>5) {
+    fprintf(s, "%sCompactions:            %ld\n", pad, stats.num_compactions);
+  }
+  if (verb>7) {
+    long holemem = 0;
+    for (int i=getMinLevelIndex(); i<=getNumVariables(); i++) {
+      holemem += levels[i].getHoleSlots();
+    }
+    holemem *= sizeof(int);
+    fprintf(s, "%sHole Memory Usage:\t%ld\n", pad, holemem);
+  }
+
+  if (verb>6) {
+    // Print hole-recyling info
+    // Compute chain lengths
+    std::map<int, int> chainLengths;
+
+    for (int k=getMinLevelIndex(); k<=getNumVariables(); k++) 
+    {
+      levels[k].addToChainCounts(chainLengths);
+    }
+
+    fprintf(s, "Hole Chains (size, count):\n");
+    for (std::map<int, int>::iterator iter = chainLengths.begin();
+      iter != chainLengths.end(); ++iter)
+    {
+      fprintf(s, "\t%d: %d\n", iter->first, iter->second);
+    }
+  }
+}
+
+
+void MEDDLY::expert_forest::garbageCollect()
+{
+  if (performing_gc) return;
+  performing_gc = true;
+
+#ifdef DEBUG_GC
+  printf("Garbage collection in progress... \n");
+  fflush(stdout);
+#endif
+
+  if (isPessimistic()) {
+#ifdef DEBUG_GC
+    printf("Zombie nodes: %ld\n", zombie_nodes);
+#endif
+    // remove the stale nodes entries from caches
+    removeStaleComputeTableEntries();
+#ifdef DEBUG_GC
+    printf("Zombie nodes: %ld\n", zombie_nodes);
+#endif
+#ifdef DEVELOPMENT_CODE
+    if (stats.zombie_nodes != 0) {
+      showInfo(stderr, 1);
+      showComputeTable(stderr, 6);
+    }
+    MEDDLY_DCASSERT(stats.zombie_nodes == 0);
+#endif
+  } else {
+    // remove the stale nodes entries from caches
+    removeStaleComputeTableEntries();
+  }
+
+#ifdef DEBUG_GC
+  printf("Compacting levels...\n");
+  fflush(stdout);
+#endif
+
+  compactMemory(); // might want to remove this
+
+#ifdef DEBUG_GC
+  printf("  done compacting.\n");
+  fflush(stdout);
+#endif
+
+  performing_gc = false;
+}
+
+void MEDDLY::expert_forest::compactMemory()
+{
+  for (int i=getMinLevelIndex(); i<=getNumVariables(); i++) {
+    levels[i].compactLevel = true;
+    levels[i].compact(address);
+  }
+}
+
+void MEDDLY::expert_forest::showInfo(FILE* s, int verb)
+{
+  // Show forest with appropriate level of detail
+  if (1==verb)  dump(s);
+  else          dumpInternal(s); 
+  fprintf(s, "DD stats:\n");
+  reportMemoryUsage(s, "    ", verb);
+  /*
+  fprintf(strm, "Unique table stats:\n");
+  unique->showInfo(s);
+  */
+}
 
 int MEDDLY::expert_forest::reduceNode(int node)
 {
@@ -1082,6 +1220,19 @@ void MEDDLY::expert_forest::normalizeAndReduceNode(int& node, float& ev)
 {
   throw error(error::TYPE_MISMATCH);
 }
+
+// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+// '                                                                '
+// '                       Protected  methods                       '
+// '                                                                '
+// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+
+//
+// ------------------------------------------------------------------
+//  Still need to be organized:
+// ------------------------------------------------------------------
+//
 
 // TODO: make use of pointers to speed this up.
 int MEDDLY::expert_forest::getDownPtr(int p, int i) const {

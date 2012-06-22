@@ -235,13 +235,12 @@ class MEDDLY::mt_forest : public expert_forest {
     void reclaimOrphanNode(int node);     // for linkNode()
     void handleNewOrphanNode(int node);   // for unlinkNode()
     void deleteOrphanNode(int node);      // for uncacheNode()
-    void freeZombieNode(int node);        // for uncacheNode()
+    // void freeZombieNode(int node);        // for uncacheNode()
 
     bool discardTemporaryNodesFromComputeCache() const;   // for isStale()
 
     void showNode(FILE *s, int p, int verbose = 0) const;
     void showNodeGraph(FILE *s, int p) const;
-    void showInfo(FILE* strm, int verbosity);
 
     // Compaction threshold is a percentage value.
     // To set compaction threshold to 45%, call setCompactionThreshold(45).
@@ -249,8 +248,6 @@ class MEDDLY::mt_forest : public expert_forest {
     // level[i].hole_slots > (level[i].size * compactionThreshold / 100) 
     // unsigned getCompactionThreshold() const;
     // void setCompactionThreshold(unsigned p);
-    void compactMemory();
-    void garbageCollect();
 
     // *************** override expert_forest class -- done ***************
 
@@ -294,12 +291,10 @@ class MEDDLY::mt_forest : public expert_forest {
     int buildQuasiReducedNodeAtLevel(int k, int p);
 
     void showLevel(FILE *s, int k) const;
-    void showAll(FILE *s, int verb) const;
+    // void showAll(FILE *s, int verb) const;
 
     void showNode(int p) const;
     void showAll() const;
-
-    void reportMemoryUsage(FILE * s, const char filler=' ');
 
     void compareCacheCounts(int p = -1);
     void validateIncounts();
@@ -338,11 +333,11 @@ class MEDDLY::mt_forest : public expert_forest {
     long getHoleMemoryUsage() const;
 
     /// Move nodes so that all holes are at the end.
-    void compactAllLevels();
+    // void compactAllLevels();
 
     /// garbage collect
-    bool gc(bool zombifyOrphanNodes = false);
-    bool isTimeToGc();
+    // bool gc(bool zombifyOrphanNodes = false);
+    // bool isTimeToGc();
 
     // zombify node p
     void zombifyNode(int p);
@@ -351,7 +346,7 @@ class MEDDLY::mt_forest : public expert_forest {
     void deleteNode(int p);
 
     // free node p
-    void freeNode(int p);
+    // void freeNode(int p);
 
   protected:
 
@@ -399,9 +394,6 @@ class MEDDLY::mt_forest : public expert_forest {
 
     /// Count of nodes created since last gc
     unsigned nodes_activated_since_gc;
-
-    // Garbage collection in progress
-    bool performing_gc;
 
     // Deleting terminal nodes (used in isStale() -- this enables
     // the removal of compute cache entries which refer to terminal nodes)
@@ -647,6 +639,7 @@ inline long MEDDLY::mt_forest::getUniqueTableMemoryUsed() const {
 }
 
 /// garbage collect
+/*
 inline bool MEDDLY::mt_forest::isTimeToGc()
 {
 #if 1
@@ -663,6 +656,7 @@ inline bool MEDDLY::mt_forest::isTimeToGc()
   return isPessimistic()? false: (getOrphanNodeCount() > 500000);
 #endif
 }
+*/
 
 inline void MEDDLY::mt_forest::incrTempNodeCount(int k) {
   levels[k].incrTempNodeCount();
@@ -702,10 +696,13 @@ inline int MEDDLY::mt_forest::getTempNodeId() const {
 // ****************** override expert_forest class ****************** 
 
 
+/*
 inline void MEDDLY::mt_forest::compactMemory() {
   compactAllLevels();
 }
+*/
 
+/*
 inline void MEDDLY::mt_forest::showInfo(FILE* strm, int verbosity) {
   showAll(strm, verbosity);
   fprintf(strm, "DD stats:\n");
@@ -713,6 +710,7 @@ inline void MEDDLY::mt_forest::showInfo(FILE* strm, int verbosity) {
   fprintf(strm, "Unique table stats:\n");
   unique->showInfo(strm);
 }
+*/
 
 // *************** override expert_forest class -- done ***************
 
