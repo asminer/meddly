@@ -34,7 +34,7 @@
 // #define ENABLE_BREAKING_UP_HOLES
 
 // #define DEBUG_SLOW
-#define DEBUG_ADDRESS_RESIZE
+// #define DEBUG_ADDRESS_RESIZE
 
 // #define MEMORY_TRACE
 
@@ -1307,22 +1307,33 @@ void MEDDLY::expert_forest::expandHandleList()
 
 void MEDDLY::expert_forest::shrinkHandleList()
 {
-  // decrease size by 1/3 (reverses a 50% increase)
-  // but don't shrink below minimum size.
-  int delta = MIN(a_size / 3, a_size - a_min_size);
+  // Determine new size
+  int new_size = a_min_size;
+  while (a_last > new_size) new_size += new_size/2;
+  int delta = a_size - new_size;
   if (0==delta) {
     a_next_shrink = 0;
     return;
   }
+  // shrink the array
   MEDDLY_DCASSERT(delta>=0);
   MEDDLY_DCASSERT(a_size-delta>=a_min_size);
-  address = (node_data*) realloc(address, (a_size-delta) * sizeof(node_data));
+  address = (node_data*) realloc(address, new_size * sizeof(node_data));
   if (0==address) {
     throw error(error::INSUFFICIENT_MEMORY);
   }
   stats.decMemAlloc(delta * sizeof(node_data));
   a_size -= delta;
   a_next_shrink = a_size / 2;
+  MEDDLY_DCASSERT(a_last < a_size);
+  // rebuild the free list
+  a_unused = 0;
+  for (int i=a_last; i; i--) {
+    if (address[i].isDeleted()) {
+      address[i].setNextDeleted(a_unused);
+      a_unused = i;
+    }
+  }
 #ifdef DEBUG_ADDRESS_RESIZE
   printf("Shrank address array, new size %d\n", a_size);
 #endif

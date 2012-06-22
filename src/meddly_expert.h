@@ -938,8 +938,10 @@ class MEDDLY::expert_forest : public forest
 
       inline bool isActive() const  { return offset > 0; }
       inline bool isZombie() const  { return cache_count < 0; }
-      inline bool isDeleted() const { return offset <= 0; }
 
+      inline bool isDeleted() const { return 0 == level; }
+      inline void setDeleted()      { level = 0; }
+      
       inline int getNextDeleted() const { return -offset; }
       inline void setNextDeleted(int n) { offset = -n; }
 
@@ -970,6 +972,9 @@ class MEDDLY::expert_forest : public forest
     inline int getFreeNodeHandle() {
       MEDDLY_DCASSERT(address);
       stats.incActive(1);
+      while (a_unused > a_last) {
+        a_unused = address[a_unused].getNextDeleted();
+      }
       if (a_unused) {     // get a recycled one
         int p = a_unused;
         MEDDLY_DCASSERT(address[p].isDeleted());
@@ -986,14 +991,16 @@ class MEDDLY::expert_forest : public forest
 
     inline void recycleNodeHandle(int p) {
       MEDDLY_DCASSERT(address);
-      MEDDLY_DCASSERT(!isTerminalNode(p));
+      MEDDLY_DCASSERT(p>0);
       MEDDLY_DCASSERT(0==address[p].cache_count);
+      address[p].setDeleted();
+      address[p].setNextDeleted(a_unused);
+      a_unused = p;
       if (p == a_last) {
-        a_last--;
+        while (a_last && address[a_last].isDeleted()) {
+          a_last--;
+        }
         if (a_last < a_next_shrink) shrinkHandleList();
-      } else {
-        address[p].setNextDeleted(a_unused);
-        a_unused = p;
       }
     }
 
