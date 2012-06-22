@@ -1495,21 +1495,21 @@ int MEDDLY::mt_forest::getFreeNode(int k)
     int new_a_size = min_size * 4;
 #endif
 
-    mdd_node_data *temp = (mdd_node_data*) realloc(address,
-        new_a_size * sizeof(mdd_node_data));
+    node_data *temp;
+    temp = (node_data*) realloc(address, new_a_size * sizeof(node_data));
     // MEDDLY_DCASSERT(NULL != temp);
     if (NULL == temp) {
       fprintf(stderr, "Memory allocation error while allocating MDD nodes.\n");
       exit(1);
     }
-    stats.incMemAlloc((new_a_size - a_size) * sizeof(mdd_node_data));
+    stats.incMemAlloc((new_a_size - a_size) * sizeof(node_data));
     address = temp;
-    memset(address + a_size, 0, (new_a_size - a_size) * sizeof(mdd_node_data));
+    memset(address + a_size, 0, (new_a_size - a_size) * sizeof(node_data));
     a_size = new_a_size;
   }
   a_last++;
   stats.incActive(1);
-  if (getCurrentNumNodes() > peak_nodes) peak_nodes = getCurrentNumNodes();
+  // if (getCurrentNumNodes() > peak_nodes) peak_nodes = getCurrentNumNodes();
   return a_last;
 }
 
@@ -1553,11 +1553,10 @@ void MEDDLY::mt_forest::freeNode(int p)
     address[p].offset = 0;
     a_last--;
     if (a_size > add_size && a_last < a_size/2) {
-      address = (mdd_node_data *)
-          realloc(address, a_size/2 * sizeof(mdd_node_data));
+      address = (node_data *) realloc(address, a_size/2 * sizeof(node_data));
       if (NULL == address) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
       a_size /= 2;
-      stats.decMemAlloc(a_size * sizeof(mdd_node_data));
+      stats.decMemAlloc(a_size * sizeof(node_data));
 #ifdef MEMORY_TRACE
       printf("Reduced node[] by a factor of 2. New size: %d.\n", a_size);
 #endif

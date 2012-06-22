@@ -442,7 +442,7 @@ int MEDDLY::expert_forest::level_data::allocNode(int sz, int tail, bool clear)
   return off;
 }
 
-void MEDDLY::expert_forest::level_data::compact(mdd_node_data* address)
+void MEDDLY::expert_forest::level_data::compact(node_data* address)
 {
   if (0==data) {
     compactLevel = false;
@@ -891,11 +891,12 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   // Inltialize address array
   //
   a_size = 1024;
-  address = (mdd_node_data *) malloc(a_size * sizeof(mdd_node_data));
+  address = (node_data *) malloc(a_size * sizeof(node_data));
   if (0 == address) throw error(error::INSUFFICIENT_MEMORY);
-  stats.incMemAlloc(a_size * sizeof(mdd_node_data));
-  memset(address, 0, a_size * sizeof(mdd_node_data));
-  a_last = peak_nodes = a_unused = 0;
+  stats.incMemAlloc(a_size * sizeof(node_data));
+  memset(address, 0, a_size * sizeof(node_data));
+  a_last = a_unused = 0;
+  // peak_nodes 0;
   
 
   //

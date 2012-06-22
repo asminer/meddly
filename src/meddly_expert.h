@@ -902,8 +902,20 @@ class MEDDLY::expert_forest : public forest
     // for isStale()
     virtual bool discardTemporaryNodesFromComputeCache() const = 0;
 
-    /// Address of each node.
-    typedef struct {
+  // ----------------------------------------------------------------- 
+  // | 
+  // |  Storage mechanism for "node indexes".
+  // | 
+  protected:
+
+    // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    /** Address of each node.
+        The node handles (integers) need to keep some
+        information about the node they point to,
+        both for addressing and for bookkeeping purposes.
+        This struct holds that information.
+    */
+    struct node_data {
       /**
         Node level
         If the node is active, this indicates node level.
@@ -922,18 +934,36 @@ class MEDDLY::expert_forest : public forest
         table). If this node is a zombie, cache_count is negative.
         */
       int cache_count;
-    } mdd_node_data;
+
+      // Handy functions, in case our internal storage changes.
+
+      inline bool isActive() const  { return offset > 0; }
+      inline bool isZombie() const  { return cache_count < 0; }
+      inline bool isDeleted() const { return offset < 0; }
+
+      inline int getNextDeleted() const { return -offset; }
+      inline void setNextDeleted(int n) { offset = -n; }
+
+      inline void makeZombie() { 
+        MEDDLY_DCASSERT(cache_count > 0);
+        cache_count *= -1; 
+        offset = 0;
+      }
+    };  // End of node_data struct
+    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     /// address info for nodes
-    mdd_node_data *address;
+    node_data *address;
+
+  // TBD: these will eventually become private
+  protected:
     /// Size of address/next array.
     int a_size;
     /// Last used address.
     int a_last;
     /// Pointer to unused address list.
     int a_unused;
-    /// Peak nodes;
-    int peak_nodes;
+
 
 
   // ------------------------------------------------------------
@@ -942,6 +972,7 @@ class MEDDLY::expert_forest : public forest
   // |
   protected:
 
+    // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
     /** Actual node storage in a forest, by level.
         Details of node storage are left to the derived forests.
         However, every active node is stored in the following format.
@@ -1086,7 +1117,7 @@ class MEDDLY::expert_forest : public forest
         int allocNode(int sz, int tail, bool clear);
 
         /// Compact this level.  (Rearrange, to remove all holes.)
-        void compact(mdd_node_data* address);
+        void compact(node_data* address);
 
         /// For debugging.
         void dumpInternal(FILE* s) const;
@@ -1210,6 +1241,7 @@ class MEDDLY::expert_forest : public forest
 
 
     }; // end of level_data struct
+    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
   private:
     level_data* raw_levels;
