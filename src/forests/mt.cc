@@ -464,7 +464,7 @@ void MEDDLY::mt_forest::clearAllNodes()
   while (level > 0 && stats.active_nodes > 0)
   {
     // find all nodes at curr level and make them into orphans
-    for (int i = 1; i < a_last; i++)
+    for (int i = 1; i < getLastNode(); i++)
     {
       if (isActiveNode(i) && getNodeLevel(i) == level && getInCount(i) > 0) {
         getInCount(i) = 1;
@@ -475,7 +475,7 @@ void MEDDLY::mt_forest::clearAllNodes()
     if (stats.active_nodes > 0 && isForRelations()) {
       level = -level;
       // find all nodes at curr level and make them into orphans
-      for (int i = 1; i < a_last; i++)
+      for (int i = 1; i < getLastNode(); i++)
       {
         if (isActiveNode(i) && getNodeLevel(i) == level && getInCount(i) > 0) {
           getInCount(i) = 1;
@@ -659,7 +659,7 @@ void MEDDLY::mt_forest::showNode(FILE *s, int p, int verbose) const
   int a = getNodeOffset(p);
   int l = getNodeLevel(p);
 #if 0
-  int p_width = digits(a_last);
+  int p_width = digits(getLastNode());
   int l_width = digits(l_size);
 #endif
   int* data = levels[l].data;
@@ -782,7 +782,7 @@ void MEDDLY::mt_forest::showNode(int p) const
   }
   int a = getNodeOffset(p);
   int l = getNodeLevel(p);
-  int p_width = digits(a_last);
+  int p_width = digits(getLastNode());
   int l_width = digits(getNumVariables());
   int* data = levels[l].data;
   fprintf(stderr, "node: %*d level: %*d", p_width, p, l_width, ABS(l));
@@ -1385,7 +1385,7 @@ bool MEDDLY::mt_forest::gc(bool zombifyOrphanNodes) {
       // nodeDeletionPolicy = forest::PESSIMISTIC_DELETION;
       stats.orphan_nodes = 0;
       MEDDLY_DCASSERT(stats.zombie_nodes == 0);
-      for (int i = 1; i <= a_last; i++) {
+      for (int i = 1; i <= getLastNode(); i++) {
         MEDDLY_DCASSERT(!isTerminalNode(i));
         if (isActiveNode(i) && getInCount(i) == 0) {
           MEDDLY_DCASSERT(getCacheCount(i) > 0);
@@ -1448,7 +1448,7 @@ void MEDDLY::mt_forest::removeZombies(int max_zombies) {
   // too many zombies? kill em!
   if (zombie_nodes > max_zombies && stats.active_nodes/zombie_nodes < 3) {
 #if 0
-    for (int i = 1; i <= a_last; i++) {
+    for (int i = 1; i <= getLastNode(); i++) {
       if (isActiveNode(i) && isZombieNode(i)) {
         showNode(stdout, i); printf("\n");
       }
@@ -1458,7 +1458,7 @@ void MEDDLY::mt_forest::removeZombies(int max_zombies) {
     removeStaleComputeTableEntries();
 #if 0
     if (zombie_nodes > 0) {
-      for (int i = 1; i <= a_last; i++) {
+      for (int i = 1; i <= getLastNode(); i++) {
         if (isActiveNode(i) && isZombieNode(i)) {
           showNode(stdout, i); printf("\n");
         }
@@ -1470,65 +1470,13 @@ void MEDDLY::mt_forest::removeZombies(int max_zombies) {
 #endif
 }
 
-int MEDDLY::mt_forest::getFreeNode(int k)
-{
-  if (a_unused) {
-    // grab a recycled index
-    int p = a_unused;
-    MEDDLY_DCASSERT(address[p].offset < 1);
-    a_unused = -address[p].offset;
-    stats.incActive(1);
-    return p;
-  }
-  // new index
-  // TODO:
-  if (a_last + 1 >= a_size) {
-    // compactLevel(k);
-    // if (a_last + 1 < a_size) return getFreeNode(k);
-    // int new_a_size = (a_size > 16384)? a_size + 16384: a_size * 2;
-
-#if 0
-    int new_a_size = (a_size > 1024)? a_size + 1024: a_size * 2;
-#else
-    // increase size by 50%
-    int min_size = (a_last + 1) * 0.375;
-    int new_a_size = min_size * 4;
-#endif
-
-    node_data *temp;
-    temp = (node_data*) realloc(address, new_a_size * sizeof(node_data));
-    // MEDDLY_DCASSERT(NULL != temp);
-    if (NULL == temp) {
-      fprintf(stderr, "Memory allocation error while allocating MDD nodes.\n");
-      exit(1);
-    }
-    stats.incMemAlloc((new_a_size - a_size) * sizeof(node_data));
-    address = temp;
-    memset(address + a_size, 0, (new_a_size - a_size) * sizeof(node_data));
-    a_size = new_a_size;
-  }
-  a_last++;
-  stats.incActive(1);
-  // if (getCurrentNumNodes() > peak_nodes) peak_nodes = getCurrentNumNodes();
-  return a_last;
-}
-
 void MEDDLY::mt_forest::freeZombieNode(int p)
 {
   MEDDLY_DCASSERT(address[p].level != 0);
   MEDDLY_DCASSERT(address[p].cache_count == 0);
   stats.zombie_nodes--;
   levels[address[p].level].zombie_nodes--;
-  address[p].level = 0;
-  address[p].cache_count = 0;
-  if (p == a_last) { 
-    // special case
-    address[p].offset = 0;
-    a_last--;
-  } else {
-    address[p].offset = -a_unused;
-    a_unused = p;
-  }
+  recycleNodeHandle(p);
 #ifdef TRACK_DELETIONS
   printf("reclaimed zombie %d\n", p);
 #endif
@@ -1536,35 +1484,15 @@ void MEDDLY::mt_forest::freeZombieNode(int p)
 
 void MEDDLY::mt_forest::freeNode(int p)
 {
-#ifdef TRACE_REDUCE
-  printf("%s: p = %d, a_last = %d\n", __func__, p, a_last);
-#endif
-
   MEDDLY_DCASSERT(!isTerminalNode(p));
   MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
   MEDDLY_DCASSERT(address[p].cache_count == 0);
 
   stats.decActive(1);
-
-  address[p].level = 0;
-  address[p].cache_count = 0;
-  if (p == a_last) { 
-    // special case
-    address[p].offset = 0;
-    a_last--;
-    if (a_size > add_size && a_last < a_size/2) {
-      address = (node_data *) realloc(address, a_size/2 * sizeof(node_data));
-      if (NULL == address) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
-      a_size /= 2;
-      stats.decMemAlloc(a_size * sizeof(node_data));
-#ifdef MEMORY_TRACE
-      printf("Reduced node[] by a factor of 2. New size: %d.\n", a_size);
+  recycleNodeHandle(p);
+#ifdef TRACK_DELETIONS
+  printf("reclaimed active %d\n", p);
 #endif
-    }
-  } else {
-    address[p].offset = -a_unused;
-    a_unused = p;
-  }
 }
 
 void MEDDLY::mt_forest::reportMemoryUsage(FILE * s, const char filler) {
@@ -1572,7 +1500,7 @@ void MEDDLY::mt_forest::reportMemoryUsage(FILE * s, const char filler) {
   fprintf(s, "%cActive Nodes:           %ld\n", filler, getCurrentNumNodes());
 #if 0
   unsigned count = 0;
-  for (int i = 1; i <= a_last; ++i) if (isActiveNode(i)) ++count;
+  for (int i = 1; i <= getLastNode(); ++i) if (isActiveNode(i)) ++count;
   fprintf(s, "%cActive Nodes (manual):\t\t%d\n", filler, count);
   fprintf(s, "%c%cZombie Nodes:\t\t%d\n", filler, filler,
       getZombieNodeCount());
@@ -1623,7 +1551,7 @@ void MEDDLY::mt_forest::compareCacheCounts(int p)
   counting = true;
   if (p == -1) {
     // get cache counts
-    unsigned sz = a_last + 1;
+    unsigned sz = getLastNode() + 1;
     unsigned count[sz];
     memset(count, 0, sizeof(unsigned) * sz);
     for (unsigned i = 0; i < nm_users.size(); i++) {
@@ -1634,7 +1562,7 @@ void MEDDLY::mt_forest::compareCacheCounts(int p)
       assert(false);
     } else {
       // active nodes count should match and inactive nodes' count must be 0.
-      for (int i = 0; i < (a_last + 1); ++i) {
+      for (int i = 0; i < (getLastNode() + 1); ++i) {
         if (isActiveNode(i)) {
           if (!isTerminalNode(i)) {
 #if USE_MDD_HASH_TABLE
@@ -1674,7 +1602,7 @@ void MEDDLY::mt_forest::validateIncounts()
   // Inspect every active node's down pointers to determine
   // the incoming count for every active node.
   
-  unsigned sz = a_last + 1;
+  unsigned sz = getLastNode() + 1;
   unsigned in_count[sz];
   memset(in_count, 0, sizeof(unsigned) * sz);
   const int *dptrs = NULL;
@@ -2222,7 +2150,7 @@ int MEDDLY::mt_forest::createTempNode(int k, int sz, bool clear)
   MEDDLY_DCASSERT(isValidLevel(k));
 
   // get a location in address[] to store the node
-  int p = getFreeNode(k);
+  int p = getFreeNodeHandle();  // getFreeNode(k);
 
 #ifdef DEBUG_MDD_H
   printf("%s: k: %d, sz: %d, new p: %d\n", __func__, k, sz, p);

@@ -438,7 +438,7 @@ void MEDDLY::evmdd_forest::createSparseNode(int k, int index,
   MEDDLY_CHECK_RANGE(0, index, getLevelSize(k));
 
   // get a location in address[] to store the node
-  int p = getFreeNode(k);
+  int p = getFreeNodeHandle();
 
 #ifdef DEBUG_MDD_H
   printf("%s: k: %d, index: %d, new p: %d\n", __func__, k, index, p);

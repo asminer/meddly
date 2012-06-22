@@ -49,7 +49,7 @@ int MEDDLY::evmdd_forest::createTempNode(int k, int sz, bool clear)
   MEDDLY_CHECK_RANGE(1, sz, getLevelSize(k) + 1);
 
   // get a location in address[] to store the node
-  int p = getFreeNode(k);
+  int p = getFreeNodeHandle();
 
 #ifdef DEBUG_MDD_H
   printf("%s: k: %d, sz: %d, new p: %d\n", __func__, k, sz, p);
@@ -318,7 +318,7 @@ int MEDDLY::evp_mdd_int::createTempNode(int k, int sz, bool clear)
   MEDDLY_DCASSERT(isValidLevel(k));
   MEDDLY_CHECK_RANGE(1, sz, getLevelSize(k) + 1);
   // get a location in address[] to store the node
-  int p = getFreeNode(k);
+  int p = getFreeNodeHandle();
 
 #ifdef DEBUG_MDD_H
   printf("%s: k: %d, sz: %d, new p: %d\n", __func__, k, sz, p);
@@ -768,7 +768,7 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
     levels[lh].slotsForNode(largestIndex+1);
 
   // Get a logical address for result (an index in address[]).
-  result = getFreeNode(lh);
+  result = getFreeNodeHandle();
 
   // Fill in address[result].
   address[result].level = lh;
@@ -1256,7 +1256,7 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
     levels[lh].slotsForNode(largestIndex+1);
 
   // Get a logical address for result (an index in address[]).
-  result = getFreeNode(lh);
+  result = getFreeNodeHandle();
 
   // Fill in address[result].
   address[result].level = lh;

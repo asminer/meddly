@@ -34,8 +34,11 @@
 // #define ENABLE_BREAKING_UP_HOLES
 
 // #define DEBUG_SLOW
+#define DEBUG_ADDRESS_RESIZE
 
 // #define MEMORY_TRACE
+
+const int a_min_size = 1024;
 
 // ******************************************************************
 // *                                                                *
@@ -890,12 +893,12 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   //
   // Inltialize address array
   //
-  a_size = 1024;
+  a_size = a_min_size;
   address = (node_data *) malloc(a_size * sizeof(node_data));
   if (0 == address) throw error(error::INSUFFICIENT_MEMORY);
   stats.incMemAlloc(a_size * sizeof(node_data));
   memset(address, 0, a_size * sizeof(node_data));
-  a_last = a_unused = 0;
+  a_last = a_unused = a_next_shrink = 0;
   // peak_nodes 0;
   
 
@@ -1278,4 +1281,50 @@ unsigned MEDDLY::expert_forest::getEdgeCount(int p, bool countZeroes) const
   return count;
 }
 
+// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+// '                                                                '
+// '          Methods for managing  available node handles          '
+// '                                                                '
+// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+void MEDDLY::expert_forest::expandHandleList()
+{
+  // increase size by 50%
+  int delta = a_size / 2;
+  MEDDLY_DCASSERT(delta>=0);
+  address = (node_data*) realloc(address, (a_size+delta) * sizeof(node_data));
+  if (0==address) {
+    throw error(error::INSUFFICIENT_MEMORY);
+  }
+  stats.incMemAlloc(delta * sizeof(node_data));
+  memset(address + a_size, 0, delta * sizeof(node_data));
+  a_size += delta;
+  a_next_shrink = a_size / 2;
+#ifdef DEBUG_ADDRESS_RESIZE
+  printf("Enlarged address array, new size %d\n", a_size);
+#endif
+}
+
+void MEDDLY::expert_forest::shrinkHandleList()
+{
+  // decrease size by 1/3 (reverses a 50% increase)
+  // but don't shrink below minimum size.
+  int delta = MIN(a_size / 3, a_size - a_min_size);
+  if (0==delta) {
+    a_next_shrink = 0;
+    return;
+  }
+  MEDDLY_DCASSERT(delta>=0);
+  MEDDLY_DCASSERT(a_size-delta>=a_min_size);
+  address = (node_data*) realloc(address, (a_size-delta) * sizeof(node_data));
+  if (0==address) {
+    throw error(error::INSUFFICIENT_MEMORY);
+  }
+  stats.decMemAlloc(delta * sizeof(node_data));
+  a_size -= delta;
+  a_next_shrink = a_size / 2;
+#ifdef DEBUG_ADDRESS_RESIZE
+  printf("Shrank address array, new size %d\n", a_size);
+#endif
+}
 

@@ -530,7 +530,7 @@ class MEDDLY::expert_forest : public forest
     virtual ~expert_forest();  
 
   // ------------------------------------------------------------
-  // inlines.
+  // inlined helpers.
   public:
     inline const expert_domain* getExpertDomain() const {
       return (expert_domain*) getDomain();
@@ -894,7 +894,6 @@ class MEDDLY::expert_forest : public forest
 
     // the following virtual functions are implemented in node_manager
     virtual void dumpUniqueTable(FILE* s) const = 0;
-    virtual bool isValidNodeIndex(int node) const = 0;
     virtual void reclaimOrphanNode(int node) = 0;     // for linkNode()
     virtual void handleNewOrphanNode(int node) = 0;   // for unlinkNode()
     virtual void deleteOrphanNode(int node) = 0;      // for uncacheNode()
@@ -939,7 +938,7 @@ class MEDDLY::expert_forest : public forest
 
       inline bool isActive() const  { return offset > 0; }
       inline bool isZombie() const  { return cache_count < 0; }
-      inline bool isDeleted() const { return offset < 0; }
+      inline bool isDeleted() const { return offset <= 0; }
 
       inline int getNextDeleted() const { return -offset; }
       inline void setNextDeleted(int n) { offset = -n; }
@@ -949,22 +948,68 @@ class MEDDLY::expert_forest : public forest
         cache_count *= -1; 
         offset = 0;
       }
+
     };  // End of node_data struct
     // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     /// address info for nodes
     node_data *address;
 
-  // TBD: these will eventually become private
-  protected:
+  private:
     /// Size of address/next array.
     int a_size;
     /// Last used address.
     int a_last;
     /// Pointer to unused address list.
     int a_unused;
+    /// Next time we shink the address list.
+    int a_next_shrink;
 
+  // For managing node handles within forests.
+  protected:
+    inline int getFreeNodeHandle() {
+      MEDDLY_DCASSERT(address);
+      stats.incActive(1);
+      if (a_unused) {     // get a recycled one
+        int p = a_unused;
+        MEDDLY_DCASSERT(address[p].isDeleted());
+        a_unused = address[p].getNextDeleted();
+        return p;
+      }
+      a_last++;
+      if (a_last >= a_size) {
+        expandHandleList();
+      }
+      MEDDLY_DCASSERT(a_last < a_size);
+      return a_last;
+    }
 
+    inline void recycleNodeHandle(int p) {
+      MEDDLY_DCASSERT(address);
+      MEDDLY_DCASSERT(!isTerminalNode(p));
+      MEDDLY_DCASSERT(0==address[p].cache_count);
+      if (p == a_last) {
+        a_last--;
+        if (a_last < a_next_shrink) shrinkHandleList();
+      } else {
+        address[p].setNextDeleted(a_unused);
+        a_unused = p;
+      }
+    }
+
+    inline bool isValidNonterminalIndex(int node) const {
+      return (node>0) && (node <= a_last);
+    }
+    inline bool isValidNodeIndex(int node) const {
+      return node <= a_last;
+    }
+    inline int getLastNode() const {
+      return a_last;
+    }
+
+  private:
+    void expandHandleList();
+    void shrinkHandleList();
 
   // ------------------------------------------------------------
   // |

@@ -232,7 +232,6 @@ class MEDDLY::mt_forest : public expert_forest {
     bool isReducedNode(int node) const;
 
     virtual void dumpUniqueTable(FILE* s) const;
-    bool isValidNodeIndex(int node) const;
     void reclaimOrphanNode(int node);     // for linkNode()
     void handleNewOrphanNode(int node);   // for unlinkNode()
     void deleteOrphanNode(int node);      // for uncacheNode()
@@ -354,9 +353,6 @@ class MEDDLY::mt_forest : public expert_forest {
     // free node p
     void freeNode(int p);
 
-    // find the next free node in address[]
-    int getFreeNode(int k);
-
   protected:
 
     // modify temp nodes count for level k as well as the global count
@@ -375,9 +371,6 @@ class MEDDLY::mt_forest : public expert_forest {
     int find(int node);
     int insert(int node);
     int replace(int node);
-
-    // is k a level that has been initialized
-    // bool isValidLevel(int k) const;
 
     // get the id used to indicate temporary nodes
     int getTempNodeId() const;
@@ -440,10 +433,6 @@ class MEDDLY::mt_forest : public expert_forest {
 
 
 /// Inline functions implemented here
-
-inline bool MEDDLY::mt_forest::isValidNodeIndex(int node) const {
-  return node <= a_last;
-}
 
 inline void MEDDLY::mt_forest::reclaimOrphanNode(int p) {
   MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
@@ -639,15 +628,17 @@ inline bool MEDDLY::mt_forest::isCounting() { return counting; }
 
 // Dealing with node addressing
 
-inline void MEDDLY::mt_forest::setNodeOffset(int p, int offset) {
-  MEDDLY_CHECK_RANGE(1, p, a_last+1);
+inline void MEDDLY::mt_forest::setNodeOffset(int p, int offset) 
+{
+  MEDDLY_DCASSERT(isValidNonterminalIndex(p));
   address[p].offset = offset;
 }
 
 // Dealing with node status
 
-inline bool MEDDLY::mt_forest::isDeletedNode(int p) const {
-  MEDDLY_CHECK_RANGE(1, p, a_last+1);
+inline bool MEDDLY::mt_forest::isDeletedNode(int p) const 
+{
+  MEDDLY_DCASSERT(isValidNonterminalIndex(p));
   return !(isActiveNode(p) || isZombieNode(p));
 }
 
