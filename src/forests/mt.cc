@@ -813,15 +813,6 @@ void MEDDLY::mt_forest::showNode(int p) const
   }
 }
 
-/*
-void MEDDLY::mt_forest::compactAllLevels()
-{
-  for (int i=getMinLevelIndex(); i<=getNumVariables(); i++) {
-    levels[i].compactLevel = true;
-    levels[i].compact(address);
-  }
-}
-*/
 
 // ------------------------------------------------------------------
 //  For uniqueness table
@@ -1337,112 +1328,6 @@ void MEDDLY::mt_forest::zombifyNode(int p)
 }
 
 
-/*
-void MEDDLY::mt_forest::garbageCollect() {
-  gc();
-}
-
-
-bool MEDDLY::mt_forest::gc(bool zombifyOrphanNodes) {
-#if ENABLE_GC
-  // change isStale such that all nodes with (incount == 0)
-  // are considered to be stale
-  if (performing_gc) return false;
-
-  performing_gc = true;
-
-  bool freed_some = false;
-  nodes_activated_since_gc = 0;
-
-#ifdef DEBUG_GC
-  printf("Garbage collection in progress... \n");
-  fflush(stdout);
-#endif
-
-  if (isPessimistic()) {
-#ifdef DEBUG_GC
-    printf("Zombie nodes: %ld\n", zombie_nodes);
-#endif
-    // remove the stale nodes entries from caches
-    removeStaleComputeTableEntries();
-#ifdef DEBUG_GC
-    printf("Zombie nodes: %ld\n", zombie_nodes);
-#endif
-#ifdef DEVELOPMENT_CODE
-    if (stats.zombie_nodes != 0) {
-      showInfo(stderr, 1);
-      showComputeTable(stderr, 6);
-    }
-    MEDDLY_DCASSERT(stats.zombie_nodes == 0);
-#endif
-    freed_some = true;
-  } else {
-
-    if (zombifyOrphanNodes) {
-#ifdef DEBUG_GC
-      fprintf(stderr, "Active: %ld, Zombie: %ld, Orphan: %ld\n",
-          stats.active_nodes, stats.zombie_nodes, stats.orphan_nodes);
-#endif
-      // convert orphans to zombies
-      // nodeDeletionPolicy = forest::PESSIMISTIC_DELETION;
-      stats.orphan_nodes = 0;
-      MEDDLY_DCASSERT(stats.zombie_nodes == 0);
-      for (int i = 1; i <= getLastNode(); i++) {
-        MEDDLY_DCASSERT(!isTerminalNode(i));
-        if (isActiveNode(i) && getInCount(i) == 0) {
-          MEDDLY_DCASSERT(getCacheCount(i) > 0);
-          zombifyNode(i);
-        }
-      }
-#ifdef DEBUG_GC
-      fprintf(stderr, "Active: %ld, Zombie: %ld, Orphan: %ld\n",
-          stats.active_nodes, zombie_nodes, orphan_nodes);
-#endif
-      // remove the stale nodes entries from caches
-      removeStaleComputeTableEntries();
-#ifdef DEVELOPMENT_CODE
-      if (stats.zombie_nodes != 0) {
-        showInfo(stderr, 1);
-        showComputeTable(stderr, 5);
-      }
-      // TBD: better error message here
-#endif
-      MEDDLY_DCASSERT(stats.zombie_nodes == 0);
-      // nodeDeletionPolicy = forest::OPTIMISTIC_DELETION;
-    } else {
-
-      // remove the stale nodes entries from caches
-      removeStaleComputeTableEntries();
-
-    }
-
-    freed_some = true;
-  }
-
-#ifdef DEBUG_GC
-  printf("Compacting levels...\n");
-  fflush(stdout);
-#endif
-
-  compactAllLevels();
-
-#ifdef DEBUG_GC
-  printf("  done compacting.\n");
-  fflush(stdout);
-#endif
-
-  performing_gc = false;
-
-  return freed_some;
-
-#else // ENABLE_GC
-
-  return false;
-
-#endif // ENABLE_GC
-}
-*/
-
 void MEDDLY::mt_forest::removeZombies(int max_zombies) {
 #if 1
   return;
@@ -1471,33 +1356,6 @@ void MEDDLY::mt_forest::removeZombies(int max_zombies) {
   }
 #endif
 }
-
-/*
-void MEDDLY::mt_forest::freeZombieNode(int p)
-{
-  MEDDLY_DCASSERT(address[p].level != 0);
-  MEDDLY_DCASSERT(address[p].cache_count == 0);
-  stats.zombie_nodes--;
-  levels[address[p].level].zombie_nodes--;
-  recycleNodeHandle(p);
-#ifdef TRACK_DELETIONS
-  printf("reclaimed zombie %d\n", p);
-#endif
-}
-
-void MEDDLY::mt_forest::freeNode(int p)
-{
-  MEDDLY_DCASSERT(!isTerminalNode(p));
-  MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
-  MEDDLY_DCASSERT(address[p].cache_count == 0);
-
-  stats.decActive(1);
-  recycleNodeHandle(p);
-#ifdef TRACK_DELETIONS
-  printf("reclaimed active %d\n", p);
-#endif
-}
-*/
 
 void MEDDLY::mt_forest::compareCacheCounts(int p)
 {
@@ -1597,14 +1455,6 @@ void MEDDLY::mt_forest::validateIncounts()
 void MEDDLY::mt_forest::showLevel(FILE *s, int k) const {
   dumpInternalLevel(s, k);
 }
-
-/*
-void MEDDLY::mt_forest::showAll(FILE *s, int verb) const { 
-  if (0==verb)  return;
-  if (1==verb)  dump(s);
-  else          dumpInternal(s); 
-}
-*/
 
 void MEDDLY::mt_forest::show(FILE *s, int h) const { fprintf(s, "%d", h); }
 
