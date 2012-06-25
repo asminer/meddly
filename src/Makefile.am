@@ -29,6 +29,8 @@ libmeddly_la_SOURCES = \
 	forest.cc \
   compute_table.h \
   compute_table.cc \
+  unique_table.h \
+  unique_table.cc
 	defines.h \
 	mdd_hash.h \
 	timer.h 

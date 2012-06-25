@@ -69,6 +69,11 @@
 #else
 #define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX)
 #endif
+
+//
+// Design decision: should we remember the hashes for a reduced node?
+//
+// #define SAVE_HASHES
  
 namespace MEDDLY {
 
@@ -100,6 +105,7 @@ namespace MEDDLY {
 
   // classes defined elsewhere
   class base_table;
+  class unique_table;
 
   // ******************************************************************
   // *                   Named numerical operations                   *
@@ -552,6 +558,30 @@ class MEDDLY::expert_forest : public forest
     inline bool isValidLevel(int k) const {
       return (k>=getMinLevelIndex()) && (k<=getNumVariables());
     }
+    // Used by the unique table
+    inline int getNext(int p) const {
+      MEDDLY_DCASSERT(address);
+      MEDDLY_DCASSERT(levels);
+      MEDDLY_DCASSERT(isValidNonterminalIndex(p));
+      MEDDLY_DCASSERT(address[p].level);
+      return levels[address[p].level].nextOf(address[p].offset);
+    }
+    inline void setNext(int p, int n) {
+      MEDDLY_DCASSERT(address);
+      MEDDLY_DCASSERT(levels);
+      MEDDLY_DCASSERT(isValidNonterminalIndex(p));
+      MEDDLY_DCASSERT(address[p].level);
+      levels[address[p].level].nextOf(address[p].offset) = n;
+    }
+    inline unsigned hash(int p) const {
+      MEDDLY_DCASSERT(address);
+      MEDDLY_DCASSERT(isValidNonterminalIndex(p));
+#ifdef SAVE_HASH
+      return address[p].hash;
+#else
+      return hashNode(p);
+#endif
+    }
 
   // ------------------------------------------------------------
   // non-virtual, handy methods.
@@ -589,6 +619,8 @@ class MEDDLY::expert_forest : public forest
     */
     void reportMemoryUsage(FILE * s, const char* pad, int verb);
 
+    /// Compute a hash for a node.
+    unsigned hashNode(int p) const;
 
   // ------------------------------------------------------------
   // virtual in the base class, but implemented here.
@@ -609,9 +641,42 @@ class MEDDLY::expert_forest : public forest
     virtual void normalizeAndReduceNode(int& node, int& ev);
     virtual void normalizeAndReduceNode(int& node, float& ev);
 
+
+  // ------------------------------------------------------------
+  // Temporary - until we eliminate createTempNode
+  //
+  protected:
+    class nodeFinder {
+        const expert_forest* parent;
+        int node; 
+        int nodeLevel;
+        unsigned h;
+      public:
+        nodeFinder(const expert_forest* p, int n);
+        inline unsigned hash() const { return h; }
+        inline bool equals(int p) const {
+            MEDDLY_DCASSERT(p);
+            MEDDLY_DCASSERT(parent->isActiveNode(p));
+            MEDDLY_DCASSERT(!parent->isTerminalNode(p));
+
+            if (nodeLevel != parent->getNodeLevel(p)) { 
+              return false; 
+            }
+
+            return
+              parent->isFullNode(node)
+              ? (parent->isFullNode(p) ? equalsFF(node, p) : equalsFS(node, p))
+              : (parent->isFullNode(p) ? equalsFS(p, node) : equalsSS(node, p));
+        }
+      protected:
+        bool equalsFF(int p1, int p2) const;
+        bool equalsFS(int p1, int p2) const;
+        bool equalsSS(int p1, int p2) const;
+    };
+
   // ------------------------------------------------------------
   // helpers for derived classes
-  protected:
+  // protected:
     // void deleteNode(int p);
 
   // ------------------------------------------------------------
@@ -918,7 +983,7 @@ class MEDDLY::expert_forest : public forest
     bool isZombieNode(int node) const;
 
     // the following virtual functions are implemented in node_manager
-    virtual void dumpUniqueTable(FILE* s) const = 0;
+    // virtual void dumpUniqueTable(FILE* s) const = 0;
     virtual void reclaimOrphanNode(int node) = 0;     // for linkNode()
     virtual void handleNewOrphanNode(int node) = 0;   // for unlinkNode()
     virtual void deleteOrphanNode(int node) = 0;      // for uncacheNode()
@@ -964,6 +1029,11 @@ class MEDDLY::expert_forest : public forest
         */
       int cache_count;
 
+#ifdef SAVE_HASH
+      /// Remember the hash for speed.
+      unsigned hash;
+#endif
+
       // Handy functions, in case our internal storage changes.
 
       inline bool isActive() const  { return offset > 0; }
@@ -1002,6 +1072,7 @@ class MEDDLY::expert_forest : public forest
     inline int getFreeNodeHandle() {
       MEDDLY_DCASSERT(address);
       stats.incActive(1);
+      stats.incMemUsed(sizeof(node_data));
       while (a_unused > a_last) {
         a_unused = address[a_unused].getNextDeleted();
       }
@@ -1040,6 +1111,7 @@ class MEDDLY::expert_forest : public forest
       MEDDLY_DCASSERT(address);
       MEDDLY_DCASSERT(p>0);
       MEDDLY_DCASSERT(0==address[p].cache_count);
+      stats.decMemUsed(sizeof(node_data));
       address[p].setDeleted();
       address[p].setNextDeleted(a_unused);
       a_unused = p;
@@ -1354,6 +1426,47 @@ class MEDDLY::expert_forest : public forest
 
 
 
+  // ----------------------------------------------------------------- 
+  // | 
+  // |  New temporary node mechanism.
+  // | 
+  protected:
+    // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    /** Class for building nodes.
+        Effectively, a reserved chunk of memory for storing down pointers
+        and edge values.
+    */
+    class nodeBuilder {
+        expert_forest* parent;
+        int* down;
+        int* edges;
+        int level;
+        int size;
+        int alloc;
+        // TBD: need "extra" header stuff
+      public:
+        nodeBuilder();
+        ~nodeBuilder();
+        void init(level_data &ld);
+        void resize(int s, bool clear);
+        inline int& d(int i) {
+          MEDDLY_DCASSERT(down);
+          MEDDLY_CHECK_RANGE(0, i, size);
+          return down[i];
+        }
+        inline int& v(int i) {
+          MEDDLY_DCASSERT(edges);
+          MEDDLY_CHECK_RANGE(0, i, size);
+          return edges[i];
+        }
+        // for unique table
+        unsigned hash() const;
+        bool equals(int p) const;
+
+    }; // end of nodeBuilder struct
+    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  
+
   // ------------------------------------------------------------
   // |
   // |  Other private data
@@ -1362,6 +1475,11 @@ class MEDDLY::expert_forest : public forest
     // Garbage collection in progress
     bool performing_gc;
 
+
+  // TBD: make this private
+  protected:  
+    // uniqueness table
+    unique_table* unique;
 };
 
 

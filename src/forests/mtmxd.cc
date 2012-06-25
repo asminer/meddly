@@ -21,7 +21,7 @@
 
 
 #include "mtmxd.h"
-
+#include "../unique_table.h"
 
 MEDDLY::mtmxd_forest::mtmxd_forest(int dsl, domain *d,
     bool relation, forest::range_type t,
@@ -173,28 +173,14 @@ int MEDDLY::mtmxd_forest::reduceNode(int p)
     return temp;
   }
 
-#if 0
   // check unique table
-  int q = find(p);
-  if (getNull() != q) {
-    // duplicate found
-#ifdef TRACE_REDUCE
-    printf("\tReducing %d, got %d\n", p, q);
-#endif
+  nodeFinder key(this, p);
+  int q = unique->find(key);
+  if (q) {
     unlinkNode(p);
     return sharedCopy(q);
   }
-
-  // insert into unique table
-  insert(p);
-#else
-  int q = replace(p);
-  if (q != p) {
-    // duplicate found
-    unlinkNode(p);
-    return sharedCopy(q);
-  }
-#endif
+  unique->add(key.hash(), p);
 
 #ifdef TRACE_REDUCE
   printf("\tReducing %d: unique, compressing\n", p);
@@ -261,7 +247,7 @@ int MEDDLY::mtmxd_forest::reduceNode(int p)
   // address[p].cache_count does not change
   MEDDLY_DCASSERT(getCacheCount(p) == 0);
   // Sanity check that the hash value is unchanged
-  MEDDLY_DCASSERT(find(p) == p);
+  MEDDLY_DCASSERT(unique->find(key) == p);
 
   // Temporary node has been transformed to a reduced node; decrement
   // temporary node count.
@@ -294,12 +280,13 @@ int MEDDLY::mtmxd_forest::createNode(int k, int index, int dptr)
     nodeData[3] = index;
     nodeData[4] = sharedCopy(dptr);
     // search in unique table
-    int q = find(p);
-    if (getNull() == q) {
+    nodeFinder key(this, p);
+    int q = unique->find(key);
+    if (0==q) {
       // no duplicate found; insert into unique table
-      insert(p);
+      unique->add(key.hash(), p);
       MEDDLY_DCASSERT(getCacheCount(p) == 0);
-      MEDDLY_DCASSERT(find(p) == p);
+      MEDDLY_DCASSERT(unique->find(key) == p);
     }
     else {
       // duplicate found; discard this node and return the duplicate

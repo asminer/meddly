@@ -24,6 +24,7 @@
 // TODO: Testing
 
 #include "defines.h"
+#include "unique_table.h"
 #include <set>
 #include <queue>
 #include <vector>
@@ -385,6 +386,166 @@ void MEDDLY::forest::unregisterDDEdges()
 }
 
 
+
+// ******************************************************************
+// *                                                                *
+// *               expert_forest::nodeFinder  methods               *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::expert_forest::nodeFinder::nodeFinder(const expert_forest* p, int n)
+{
+  parent = p;
+  node = n;
+  nodeLevel = parent->getNodeLevel(node);
+  h = parent->hashNode(node);
+  MEDDLY_DCASSERT(node);
+  MEDDLY_DCASSERT(!parent->isTerminalNode(node));
+  MEDDLY_DCASSERT(parent->isActiveNode(node));
+}
+
+bool MEDDLY::expert_forest::nodeFinder::equalsFF(int h1, int h2) const
+{
+  MEDDLY_DCASSERT(parent->isFullNode(h1));
+  MEDDLY_DCASSERT(parent->isFullNode(h2));
+
+  int *ptr1 = parent->getNodeAddress(h1) + 2;
+  int *ptr2 = parent->getNodeAddress(h2) + 2;
+  int sz1 = *ptr1++;
+  int sz2 = *ptr2++;
+
+  int* h1Stop = ptr1 + sz1;
+  int* h2Stop = ptr2 + sz2;
+
+  if (sz1 > sz2) {
+    while (ptr2 != h2Stop) { if (*ptr1++ != *ptr2++) return false; }
+    while (ptr1 != h1Stop) { if (*ptr1++ != 0) return false; }
+  }
+  else {
+    MEDDLY_DCASSERT(sz1 <= sz2);
+    while (ptr1 != h1Stop) { if (*ptr1++ != *ptr2++) return false; }
+    while (ptr2 != h2Stop) { if (*ptr2++ != 0) return false; }
+  }
+
+  if (parent->isMultiTerminal()) return true;
+
+  // Check edge-values
+  MEDDLY_DCASSERT(ptr1 == h1Stop);
+  MEDDLY_DCASSERT(ptr2 == h2Stop);
+
+  h1Stop += MIN(sz1, sz2);
+  if (parent->isEVPlus()) {
+    while (ptr1 != h1Stop) { if (*ptr1++ != *ptr2++) return false; }
+  } else {
+    MEDDLY_DCASSERT(parent->isEVTimes());
+    while (ptr1 != h1Stop) {
+      if (!isAlmostEqual(*ptr1++, *ptr2++)) return false;
+    }
+  }
+  return true;
+}
+
+
+bool MEDDLY::expert_forest::nodeFinder::equalsSS(int h1, int h2) const
+{
+  MEDDLY_DCASSERT(parent->isSparseNode(h1));
+  MEDDLY_DCASSERT(parent->isSparseNode(h2));
+
+  int *ptr1 = parent->getNodeAddress(h1) + 2;
+  int *ptr2 = parent->getNodeAddress(h2) + 2;
+  int sz1 = -(*ptr1++);
+  int sz2 = -(*ptr2++);
+
+  if (sz1 != sz2) return false;
+
+  int* h1Stop = ptr1 + sz1 + sz1;
+  while (ptr1 != h1Stop) { if (*ptr1++ != *ptr2++) return false; }
+
+  if (parent->isMultiTerminal()) return true;
+
+  // Check edge-values
+  MEDDLY_DCASSERT(ptr1 == h1Stop);
+  MEDDLY_DCASSERT(ptr2 == (parent->getNodeAddress(h2) + 3 + sz1 + sz1));
+
+  h1Stop += sz1;
+  if (parent->isEVPlus()) {
+    while (ptr1 != h1Stop) { if (*ptr1++ != *ptr2++) return false; }
+  } else {
+    MEDDLY_DCASSERT(parent->isEVTimes());
+    while (ptr1 != h1Stop) {
+      if (!isAlmostEqual(*ptr1++, *ptr2++)) return false;
+    }
+  }
+  return true;
+}
+
+
+bool MEDDLY::expert_forest::nodeFinder::equalsFS(int h1, int h2) const
+{
+  MEDDLY_DCASSERT(parent->isFullNode(h1));
+  MEDDLY_DCASSERT(parent->isSparseNode(h2));
+
+  int *ptr1 = parent->getNodeAddress(h1) + 2;
+  int *ptr2 = parent->getNodeAddress(h2) + 2;
+  int sz1 = *ptr1++;
+  int sz2 = -(*ptr2++);
+
+  int* h1Start = ptr1;
+  int* h1Stop = ptr1 + sz1;
+  int* h2Stop = ptr2 + sz2;
+  int* down2 = h2Stop;
+
+  // If the last index in h2 does not exist in h1, return false.
+  // Otherwise, h1 is either the same "size" as h2 or larger than h2.
+
+  if (h2Stop[-1] >= sz1) {
+    // Last index of h2 does not exist in h1.
+    return false;
+  }
+
+  while (ptr2 != h2Stop) {
+    int index = *ptr2++;
+    MEDDLY_DCASSERT(index < sz1);
+    int* stop = h1Start + index;
+    while (ptr1 != stop) { if (*ptr1++ != 0) return false; }
+    if (*ptr1++ != *down2++) return false;
+  }
+
+  while (ptr1 != h1Stop) {
+    if (*ptr1++ != 0) return false;
+  }
+
+  if (parent->isMultiTerminal()) return true;
+
+  // Check edge-values
+  MEDDLY_DCASSERT(ptr1 == h1Stop);
+  MEDDLY_DCASSERT(ptr2 == h2Stop);
+  MEDDLY_DCASSERT(down2 == h2Stop + sz2);
+
+  // ptr1 and down2 are pointing at the start of edge-values
+  // Reset the index pointer for h2 (sparse node).
+  ptr2 -= sz2;
+  if (parent->isEVPlus()) {
+    while (ptr2 != h2Stop) {
+      if (ptr1[*ptr2++] != *down2++) return false;
+    }
+  } else {
+    MEDDLY_DCASSERT(parent->isEVTimes());
+    while (ptr2 != h2Stop) {
+      if (!isAlmostEqual(ptr1[*ptr2++], *down2++)) return false;
+    }
+  }
+  return true;
+}
+
+
+
+
+// ******************************************************************
+// *                                                                *
+// *               expert_forest::nodeBuilder methods               *
+// *                                                                *
+// ******************************************************************
 
 // ******************************************************************
 // *                                                                *
@@ -921,6 +1082,7 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   //
   // Initialize misc. private data
   //
+  unique = new unique_table(this);
   performing_gc = false;
 }
 
@@ -932,6 +1094,9 @@ MEDDLY::expert_forest::~expert_forest()
 
   // Level array
   delete[] raw_levels;
+
+  // unique table
+  delete unique;
 }
 
 
@@ -1064,8 +1229,8 @@ void MEDDLY::expert_forest::dumpInternal(FILE *s) const
     dumpInternalLevel(s, i);
     if (isForRelations()) dumpInternalLevel(s, -i);
   }
-  
-  dumpUniqueTable(s);
+ 
+  unique->show(s);
   fflush(s);
 }
 
@@ -1103,9 +1268,8 @@ void MEDDLY::expert_forest
       pad, getPeakMemoryAllocated());
   }
   if (verb>3) {
-    // fprintf(s, "%sUnique Tbl Mem Used:    %ld\n", pad, 
-      // getUniqueTableMemoryUsed());
-    // TBD
+    fprintf(s, "%sUnique Tbl Mem Used:    %u\n", pad, 
+      unique->getMemUsed());
   }
   if (verb>5) {
     fprintf(s, "%sCompactions:            %ld\n", pad, stats.num_compactions);
@@ -1138,6 +1302,93 @@ void MEDDLY::expert_forest
   }
 }
 
+// ----
+// TEMP: old implementation here, still need to update
+
+/*
+ * Bob Jenkin's Hash
+ * Free to use for educational or commerical purposes
+ * http://burtleburtle.net/bob/hash/doobs.html
+ */
+#define rot(x,k) (((x)<<(k)) | ((x)>>(32-(k))))
+#define mix(a,b,c) \
+  { \
+      a -= c;  a ^= rot(c, 4);  c += b; \
+      b -= a;  b ^= rot(a, 6);  a += c; \
+      c -= b;  c ^= rot(b, 8);  b += a; \
+      a -= c;  a ^= rot(c,16);  c += b; \
+      b -= a;  b ^= rot(a,19);  a += c; \
+      c -= b;  c ^= rot(b, 4);  b += a; \
+  }
+#define final(a,b,c) \
+  { \
+      c ^= b; c -= rot(b,14); \
+      a ^= c; a -= rot(c,11); \
+      b ^= a; b -= rot(a,25); \
+      c ^= b; c -= rot(b,16); \
+      a ^= c; a -= rot(c,4);  \
+      b ^= a; b -= rot(a,14); \
+      c ^= b; c -= rot(b,24); \
+  }
+
+unsigned MEDDLY::expert_forest::hashNode(int h) const 
+{
+  int* k = getNodeAddress(h);
+  int length = k[2];
+  MEDDLY_DCASSERT(length != 0);
+  k += 3;
+
+  uint32_t a[] = { uint32_t(getNodeLevel(h)), 0, 0xdeadbeef };
+
+  if (length > 0) {
+    // Full node
+    int* ptr = k;
+    int* stop = k + length;
+    unsigned nnz = 1;
+    for (int i = 0; ptr != stop; ) {
+      if (*ptr == 0) { ++ptr; ++i; continue; }
+      a[nnz++] += i++;
+      if (nnz == 3) {
+        mix(a[0], a[1], a[2]);
+        nnz = 0;
+      }
+      a[nnz++] += *ptr++;
+      if (nnz == 3) {
+        mix(a[0], a[1], a[2]);
+        nnz = 0;
+      }
+    }
+  }
+  else {
+    // Sparse node
+    int* indexes = k;
+    int* ptr = k - length;
+    int* stop = ptr - length;
+    unsigned nnz = 1;
+    for ( ; ptr != stop; ) {
+      a[nnz++] += *indexes++;
+      if (nnz == 3) {
+        mix(a[0], a[1], a[2]);
+        nnz = 0;
+      }
+      a[nnz++] += *ptr++;
+      if (nnz == 3) {
+        mix(a[0], a[1], a[2]);
+        nnz = 0;
+      }
+    }
+  }
+
+  //if (nnz > 0) {
+    final(a[0], a[1], a[2]);
+  //}
+
+  // report the result
+  return a[2];
+}
+
+
+// ---
 
 void MEDDLY::expert_forest::garbageCollect()
 {
@@ -1200,10 +1451,9 @@ void MEDDLY::expert_forest::showInfo(FILE* s, int verb)
   else          dumpInternal(s); 
   fprintf(s, "DD stats:\n");
   reportMemoryUsage(s, "    ", verb);
-  /*
-  fprintf(strm, "Unique table stats:\n");
-  unique->showInfo(s);
-  */
+  fprintf(s, "Unique table stats:\n");
+  fprintf(s, "\t%-24s%u\n", "Current size:", unique->getSize());
+  fprintf(s, "\t%-24s%u\n", "Current entries:", unique->getNumEntries());
 }
 
 int MEDDLY::expert_forest::reduceNode(int node)

@@ -1,5 +1,5 @@
 
-// $Id: meddly_expert.h 283 2011-08-24 21:12:12Z asminer $
+// $Id$
 
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.

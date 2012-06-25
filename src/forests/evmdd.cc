@@ -20,6 +20,7 @@
 */
 
 
+#include "../unique_table.h"
 #include "evmdd.h"
 
 
@@ -484,8 +485,9 @@ void MEDDLY::evp_mdd_int::normalizeAndReduceNode(int& p, int& ev)
   }
 
   // check unique table
-  int q = find(p);
-  if (getNull() != q) {
+  nodeFinder key(this, p);
+  int q = unique->find(key);
+  if (q) {
     // duplicate found
 #ifdef TRACE_REDUCE
     printf("\tReducing %d, got %d\n", p, q);
@@ -497,7 +499,7 @@ void MEDDLY::evp_mdd_int::normalizeAndReduceNode(int& p, int& ev)
   }
 
   // insert into unique table
-  insert(p);
+  unique->add(key.hash(), p);
 
 #ifdef TRACE_REDUCE
   printf("\tReducing %d: unique, compressing\n", p);
@@ -570,7 +572,7 @@ void MEDDLY::evp_mdd_int::normalizeAndReduceNode(int& p, int& ev)
   // address[p].cache_count does not change
   MEDDLY_DCASSERT(getCacheCount(p) == 0);
   // Sanity check that the hash value is unchanged
-  MEDDLY_DCASSERT(find(p) == p);
+  MEDDLY_DCASSERT(unique->find(key) == p);
 
   // Temporary node has been transformed to a reduced node; decrement
   // temporary node count.
@@ -836,12 +838,13 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
   }
 
   // Search in unique table
-  int found = find(result);
-  if (getNull() == found) {
+  nodeFinder key(this, result);
+  int found = unique->find(key);
+  if (0 == found) {
     // No duplicate found; insert into unique table
-    insert(result);
+    unique->add(key.hash(), result);
     MEDDLY_DCASSERT(getCacheCount(result) == 0);
-    MEDDLY_DCASSERT(find(result) == result);
+    MEDDLY_DCASSERT(unique->find(key) == result);
   }
   else {
     // Duplicate found; unlink all dptr[] and return the duplicate
@@ -1023,8 +1026,9 @@ void MEDDLY::evt_mdd_real::normalizeAndReduceNode(int& p, float& ev)
   }
 
   // check unique table
-  int q = find(p);
-  if (getNull() != q) {
+  nodeFinder key(this, p);
+  int q = unique->find(key);
+  if (q) {
     // duplicate found
 #ifdef TRACE_REDUCE
     printf("\tReducing %d, got %d\n", p, q);
@@ -1036,7 +1040,7 @@ void MEDDLY::evt_mdd_real::normalizeAndReduceNode(int& p, float& ev)
   }
 
   // insert into unique table
-  insert(p);
+  unique->add(key.hash(), p);
 
 #ifdef TRACE_REDUCE
   printf("\tReducing %d: unique, compressing\n", p);
@@ -1109,7 +1113,7 @@ void MEDDLY::evt_mdd_real::normalizeAndReduceNode(int& p, float& ev)
   // address[p].cache_count does not change
   MEDDLY_DCASSERT(getCacheCount(p) == 0);
   // Sanity check that the hash value is unchanged
-  MEDDLY_DCASSERT(find(p) == p);
+  MEDDLY_DCASSERT(unique->find(key) == p);
 
   // Temporary node has been transformed to a reduced node; decrement
   // temporary node count.
@@ -1317,12 +1321,13 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
   }
 
   // Search in unique table
-  int found = find(result);
-  if (getNull() == found) {
+  nodeFinder key(this, result);
+  int found = unique->find(key);
+  if (0 == found) {
     // No duplicate found; insert into unique table
-    insert(result);
+    unique->add(key.hash(), result);
     MEDDLY_DCASSERT(getCacheCount(result) == 0);
-    MEDDLY_DCASSERT(find(result) == result);
+    MEDDLY_DCASSERT(unique->find(key) == result);
   }
   else {
     // Duplicate found; unlink all dptr[] and return the duplicate

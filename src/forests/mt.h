@@ -33,7 +33,7 @@
 #include <vector>
 
 #include "../defines.h"
-#include "../mdd_hash.h"
+// #include "../mdd_hash.h"
 
 namespace MEDDLY {
   class mt_forest;
@@ -130,6 +130,7 @@ class MEDDLY::mt_forest : public expert_forest {
   // |
   public:
     inline int getNull() const { return -1; }
+    /*
     inline int getNext(int h) const {
       MEDDLY_DCASSERT(isActiveNode(h));
       MEDDLY_DCASSERT(!isTerminalNode(h));
@@ -143,18 +144,20 @@ class MEDDLY::mt_forest : public expert_forest {
       MEDDLY_DCASSERT(!isTerminalNode(h));
       *(getNodeAddress(h) + level_data::next_index) = n; 
     }
+    */
 
     // For uniqueness table
     // void cacheNode(int p);
     // void uncacheNode(int p);
     void show(FILE *s, int h) const;
-    unsigned hash(int h) const;
+  //   unsigned hash(int h) const;
+    /*
     bool equals(int h1, int h2) const;
     
     bool equalsFF(int h1, int h2) const;
     bool equalsSS(int h1, int h2) const;
     bool equalsFS(int h1, int h2) const;
-
+*/
 
   public:
     using expert_forest::getDownPtrsAndEdgeValues;
@@ -231,7 +234,7 @@ class MEDDLY::mt_forest : public expert_forest {
     /// Has the node been reduced
     bool isReducedNode(int node) const;
 
-    virtual void dumpUniqueTable(FILE* s) const;
+    // virtual void dumpUniqueTable(FILE* s) const;
     void reclaimOrphanNode(int node);     // for linkNode()
     void handleNewOrphanNode(int node);   // for unlinkNode()
     void deleteOrphanNode(int node);      // for uncacheNode()
@@ -329,7 +332,7 @@ class MEDDLY::mt_forest : public expert_forest {
     // Dealing with node status
     bool isDeletedNode(int p) const;
 
-    long getUniqueTableMemoryUsed() const;
+    // long getUniqueTableMemoryUsed() const;
     long getHoleMemoryUsage() const;
 
     /// Move nodes so that all holes are at the end.
@@ -363,9 +366,11 @@ class MEDDLY::mt_forest : public expert_forest {
     void incrNodesActivatedSinceGc();
 
     // find, insert nodes into the unique table
+    /*
     int find(int node);
     int insert(int node);
     int replace(int node);
+    */
 
     // get the id used to indicate temporary nodes
     int getTempNodeId() const;
@@ -400,7 +405,7 @@ class MEDDLY::mt_forest : public expert_forest {
     bool delete_terminal_nodes;
 
     /// Uniqueness table
-    mdd_hash_table <mt_forest> *unique;
+    // mdd_hash_table <mt_forest> *unique;
 
     // long curr_mem_alloc;
     // long max_mem_alloc;
@@ -634,9 +639,11 @@ inline bool MEDDLY::mt_forest::isDeletedNode(int p) const
   return !(isActiveNode(p) || isZombieNode(p));
 }
 
+/*
 inline long MEDDLY::mt_forest::getUniqueTableMemoryUsed() const {
   return (unique->getSize() * sizeof(int));
 }
+*/
 
 /// garbage collect
 /*
@@ -675,10 +682,10 @@ inline void MEDDLY::mt_forest::incrNodesActivatedSinceGc() {
 }
 
 
+/*
 inline int MEDDLY::mt_forest::find(int node) {
   return unique->find(node);
 }
-
 
 inline int MEDDLY::mt_forest::insert(int node) {
   return unique->insert(node);
@@ -688,6 +695,7 @@ inline int MEDDLY::mt_forest::insert(int node) {
 inline int MEDDLY::mt_forest::replace(int node) {
   return unique->replace(node);
 }
+*/
 
 inline int MEDDLY::mt_forest::getTempNodeId() const {
   return temp_node;

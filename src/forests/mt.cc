@@ -26,6 +26,7 @@
 
 
 #include "mt.h"
+#include "../unique_table.h"
 
 // #include <map>    // for getCardinality()
 // #include <queue>  // for showNodeGraph
@@ -65,7 +66,7 @@ MEDDLY::mt_forest::mt_forest(int dsl, domain *d, bool rel, range_type t,
   edge_labeling ev, const policies &p)
 : expert_forest(dsl, d, rel, t, ev, p)
 {
-  unique = new mdd_hash_table<mt_forest> (this);
+  // unique = new mdd_hash_table<mt_forest> (this);
 
   delete_terminal_nodes = false;
 
@@ -76,18 +77,6 @@ MEDDLY::mt_forest::mt_forest(int dsl, domain *d, bool rel, range_type t,
 
   nodeA = 0;
   nodeB = 0;
-}
-
-// ******************************************************************
-// *                                                                *
-// *                       protected  methods                       *
-// *                                                                *
-// ******************************************************************
-
-void MEDDLY::mt_forest::dumpUniqueTable(FILE* s) const
-{
-  fprintf(s, "Uniqueness table:\n");
-  unique->show(s);
 }
 
 // ******************************************************************
@@ -527,7 +516,7 @@ MEDDLY::mt_forest::~mt_forest()
     dptrs = 0;
   }
 
-  delete unique;
+  // delete unique;
 #if DEBUG_DELETE_NM
   printf("Deleted unique table\n");
   fflush(stdout);
@@ -818,6 +807,8 @@ void MEDDLY::mt_forest::showNode(int p) const
 //  For uniqueness table
 // ------------------------------------------------------------------
 
+#if 0
+
 /*
  * Bob Jenkin's Hash
  * Free to use for educational or commerical purposes
@@ -1031,143 +1022,9 @@ unsigned MEDDLY::mt_forest::hash(int h) const
 }
 
 #endif
+#endif
 
-
-bool MEDDLY::mt_forest::equalsFF(int h1, int h2) const
-{
-  MEDDLY_DCASSERT(isFullNode(h1));
-  MEDDLY_DCASSERT(isFullNode(h2));
-
-  int *ptr1 = getNodeAddress(h1) + 2;
-  int *ptr2 = getNodeAddress(h2) + 2;
-  int sz1 = *ptr1++;
-  int sz2 = *ptr2++;
-
-  int* h1Stop = ptr1 + sz1;
-  int* h2Stop = ptr2 + sz2;
-
-  if (sz1 > sz2) {
-    while (ptr2 != h2Stop) { if (*ptr1++ != *ptr2++) return false; }
-    while (ptr1 != h1Stop) { if (*ptr1++ != 0) return false; }
-  }
-  else {
-    MEDDLY_DCASSERT(sz1 <= sz2);
-    while (ptr1 != h1Stop) { if (*ptr1++ != *ptr2++) return false; }
-    while (ptr2 != h2Stop) { if (*ptr2++ != 0) return false; }
-  }
-
-  if (isMultiTerminal()) return true;
-
-  // Check edge-values
-  MEDDLY_DCASSERT(ptr1 == h1Stop);
-  MEDDLY_DCASSERT(ptr2 == h2Stop);
-
-  h1Stop += MIN(sz1, sz2);
-  if (isEVPlus()) {
-    while (ptr1 != h1Stop) { if (*ptr1++ != *ptr2++) return false; }
-  } else {
-    MEDDLY_DCASSERT(isEVTimes());
-    while (ptr1 != h1Stop) {
-      if (!isAlmostEqual(*ptr1++, *ptr2++)) return false;
-    }
-  }
-  return true;
-}
-
-
-bool MEDDLY::mt_forest::equalsSS(int h1, int h2) const
-{
-  MEDDLY_DCASSERT(isSparseNode(h1));
-  MEDDLY_DCASSERT(isSparseNode(h2));
-
-  int *ptr1 = getNodeAddress(h1) + 2;
-  int *ptr2 = getNodeAddress(h2) + 2;
-  int sz1 = -(*ptr1++);
-  int sz2 = -(*ptr2++);
-
-  if (sz1 != sz2) return false;
-
-  int* h1Stop = ptr1 + sz1 + sz1;
-  while (ptr1 != h1Stop) { if (*ptr1++ != *ptr2++) return false; }
-
-  if (isMultiTerminal()) return true;
-
-  // Check edge-values
-  MEDDLY_DCASSERT(ptr1 == h1Stop);
-  MEDDLY_DCASSERT(ptr2 == (getNodeAddress(h2) + 3 + sz1 + sz1));
-
-  h1Stop += sz1;
-  if (isEVPlus()) {
-    while (ptr1 != h1Stop) { if (*ptr1++ != *ptr2++) return false; }
-  } else {
-    MEDDLY_DCASSERT(isEVTimes());
-    while (ptr1 != h1Stop) {
-      if (!isAlmostEqual(*ptr1++, *ptr2++)) return false;
-    }
-  }
-  return true;
-}
-
-
-bool MEDDLY::mt_forest::equalsFS(int h1, int h2) const
-{
-  MEDDLY_DCASSERT(isFullNode(h1));
-  MEDDLY_DCASSERT(isSparseNode(h2));
-
-  int *ptr1 = getNodeAddress(h1) + 2;
-  int *ptr2 = getNodeAddress(h2) + 2;
-  int sz1 = *ptr1++;
-  int sz2 = -(*ptr2++);
-
-  int* h1Start = ptr1;
-  int* h1Stop = ptr1 + sz1;
-  int* h2Stop = ptr2 + sz2;
-  int* down2 = h2Stop;
-
-  // If the last index in h2 does not exist in h1, return false.
-  // Otherwise, h1 is either the same "size" as h2 or larger than h2.
-
-  if (h2Stop[-1] >= sz1) {
-    // Last index of h2 does not exist in h1.
-    return false;
-  }
-
-  while (ptr2 != h2Stop) {
-    int index = *ptr2++;
-    MEDDLY_DCASSERT(index < sz1);
-    int* stop = h1Start + index;
-    while (ptr1 != stop) { if (*ptr1++ != 0) return false; }
-    if (*ptr1++ != *down2++) return false;
-  }
-
-  while (ptr1 != h1Stop) {
-    if (*ptr1++ != 0) return false;
-  }
-
-  if (isMultiTerminal()) return true;
-
-  // Check edge-values
-  MEDDLY_DCASSERT(ptr1 == h1Stop);
-  MEDDLY_DCASSERT(ptr2 == h2Stop);
-  MEDDLY_DCASSERT(down2 == h2Stop + sz2);
-
-  // ptr1 and down2 are pointing at the start of edge-values
-  // Reset the index pointer for h2 (sparse node).
-  ptr2 -= sz2;
-  if (isEVPlus()) {
-    while (ptr2 != h2Stop) {
-      if (ptr1[*ptr2++] != *down2++) return false;
-    }
-  } else {
-    MEDDLY_DCASSERT(isEVTimes());
-    while (ptr2 != h2Stop) {
-      if (!isAlmostEqual(ptr1[*ptr2++], *down2++)) return false;
-    }
-  }
-  return true;
-}
-
-
+/*
 bool MEDDLY::mt_forest::equals(int h1, int h2) const 
 {
   MEDDLY_DCASSERT(h1);	
@@ -1184,7 +1041,7 @@ bool MEDDLY::mt_forest::equals(int h1, int h2) const
     ? (isFullNode(h2) ? equalsFF(h1, h2) : equalsFS(h1, h2))
     : (isFullNode(h2) ? equalsFS(h2, h1) : equalsSS(h1, h2));
 }
-
+*/
 
 // ------------------------------------------------------------------
 //  Protected methods
@@ -1205,18 +1062,17 @@ void MEDDLY::mt_forest::deleteNode(int p)
 
   // remove from unique table (only applicable to reduced nodes)
   if (isReducedNode(p)) {
-#ifdef DEVELOPMENT_CODE
-    MEDDLY_DCASSERT(unique->find(p) == p);
-#endif
+    nodeFinder key(this, p);
+    MEDDLY_DCASSERT(unique->find(key) == p);
 
 #ifdef TRACK_DELETIONS
     showNode(stdout, p);
 #endif
 
 #ifdef DEVELOPMENT_CODE
-    int x = unique->remove(p);
+    int x = unique->remove(key.hash(), p);
 #else
-    unique->remove(p);
+    unique->remove(key.hash(), p);
 #endif
 
 #ifdef TRACK_DELETIONS
@@ -1281,12 +1137,13 @@ void MEDDLY::mt_forest::zombifyNode(int p)
   // mark node as zombie
   address[p].cache_count = -address[p].cache_count;
 
-  MEDDLY_DCASSERT(unique->find(p) == p);
+  nodeFinder key(this, p);
+  MEDDLY_DCASSERT(unique->find(key) == p);
 #ifdef DEVELOPMENT_CODE 
-  int x = unique->remove(p);
+  int x = unique->remove(key.hash(), p);
   MEDDLY_DCASSERT(x==p);
 #else
-  unique->remove(p);
+  unique->remove(key.hash(), p);
 #endif
 
   int node_level = getNodeLevel(p);

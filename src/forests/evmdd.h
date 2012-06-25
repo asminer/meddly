@@ -475,12 +475,13 @@ void MEDDLY::evmdd_forest::createSparseNode(int k, int index,
   incrNodesActivatedSinceGc();
 
   // search in unique table
-  int q = find(p);
-  if (getNull() == q) {
+  nodeFinder key(this, p);
+  int q = unique->find(key);
+  if (0 == q) {
     // no duplicate found; insert into unique table
-    insert(p);
+    unique->add(key.hash(), p);
     MEDDLY_DCASSERT(getCacheCount(p) == 0);
-    MEDDLY_DCASSERT(find(p) == p);
+    MEDDLY_DCASSERT(unique->find(key) == p);
     res = p;
   }
   else {

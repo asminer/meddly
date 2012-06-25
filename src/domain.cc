@@ -26,6 +26,9 @@
 
 
 #include "defines.h"
+
+#include "unique_table.h"
+
 #if 0
 #include "forests/mdds_ext.h"
 #else
