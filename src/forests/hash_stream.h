@@ -1,0 +1,134 @@
+
+// $Id: meddly_expert.h 283 2011-08-24 21:12:12Z asminer $
+
+/*
+    Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
+    Copyright (C) 2009, Iowa State University Research Foundation, Inc.
+
+    This library is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published 
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this library.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef HASH_STREAM_H
+
+#include "meddly_expert.h"
+
+/**
+    Class to hash a stream of unsigned integers.
+    Length of the stream can be unknown.
+    Based on Bob Jenkin's Hash; see
+    http://burtleburtle.net/bob/hash/doobs.html
+*/
+class hash_stream {
+    unsigned z[3];
+    int slot;
+  public:
+    hash_stream() { }
+  protected:
+    inline static unsigned rot(unsigned x, int k) { 
+      return (((x)<<(k)) | ((x)>>(32-(k))));
+    }
+    inline static void mix(unsigned &a, unsigned &b, unsigned &c) {
+        a -= c;  a ^= rot(c, 4);  c += b; 
+        b -= a;  b ^= rot(a, 6);  a += c;
+        c -= b;  c ^= rot(b, 8);  b += a;
+        a -= c;  a ^= rot(c,16);  c += b;
+        b -= a;  b ^= rot(a,19);  a += c;
+        c -= b;  c ^= rot(b, 4);  b += a;
+    }
+    inline static void final(unsigned &a, unsigned &b, unsigned &c) {
+        c ^= b; c -= rot(b,14);
+        a ^= c; a -= rot(c,11);
+        b ^= a; b -= rot(a,25);
+        c ^= b; c -= rot(b,16);
+        a ^= c; a -= rot(c,4); 
+        b ^= a; b -= rot(a,14);
+        c ^= b; c -= rot(b,24);
+    }
+    inline void mix()   { mix(z[2], z[1], z[0]); }
+    inline void final() { final(z[2], z[1], z[0]); }
+  public:
+    inline void start(unsigned init) {
+        z[2] = init;
+        z[1] = 0;
+        z[0] = 0xdeadbeef;
+        slot = 2;
+    }
+    inline unsigned finish() {
+        final();
+        return z[0];
+    }
+    inline void push(unsigned v) {
+        if (slot) {
+          slot--;
+          z[slot] += v;
+        } else {
+          mix();
+          z[2] += v;
+          slot = 2;
+        }
+    }
+    inline void push(unsigned v1, unsigned v2) {
+        switch (slot) {
+            case 0: 
+                mix();  
+                z[2] += v1;
+                z[1] += v2;
+                slot = 1;
+                return;
+
+            case 1: 
+                z[0] += v1;
+                mix();
+                z[2] += v2;
+                slot = 2;
+                return;
+
+            case 2: 
+                z[1] += v1;
+                z[0] += v2;
+                slot = 0;
+                return;
+
+            default: throw error(error::MISCELLANEOUS);
+        };
+    }
+    inline void push(unsigned v1, unsigned v2, unsigned v3) {
+        switch (slot) {
+            case 0: 
+                mix();  
+                z[2] += v1;
+                z[1] += v2;
+                z[0] += v3; 
+                return;
+
+            case 1: 
+                z[0] += v1;
+                mix();
+                z[2] += v2;
+                z[1] += v3;
+                return;
+
+            case 2: 
+                z[1] += v1;
+                z[0] += v2;
+                mix(); 
+                z[2] += v3;
+                return;
+
+            default: throw error(error::MISCELLANEOUS);
+        };
+    }
+}; 
+
+#endif
