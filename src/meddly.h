@@ -574,11 +574,11 @@ class MEDDLY::forest {
       node_deletion deletion;
 
       /// Compaction threshold for all variables in the forest.
-      unsigned compaction;
+      int compaction;
       /// Number of zombie nodes to trigger garbage collection
-      unsigned zombieTrigger;
+      int zombieTrigger;
       /// Number of orphan nodes to trigger garbage collection
-      unsigned orphanTrigger;
+      int orphanTrigger;
       /// Should we run the memory compactor after garbage collection
       bool compactAfterGC;
 

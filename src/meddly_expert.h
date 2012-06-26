@@ -1321,7 +1321,7 @@ class MEDDLY::expert_forest : public forest
           MEDDLY_DCASSERT(parent);
           if (hole_slots <= 100)  return false;
           if (hole_slots > 10000) return true;
-          return hole_slots * 100u > last * parent->deflt.compaction;
+          return hole_slots * 100 > last * parent->deflt.compaction;
         }
 
         /// How many slots would be required for a node with given size.
