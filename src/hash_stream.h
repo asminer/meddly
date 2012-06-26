@@ -23,13 +23,17 @@
 
 #include "meddly_expert.h"
 
+namespace MEDDLY {
+  class hash_stream;
+};
+
 /**
     Class to hash a stream of unsigned integers.
     Length of the stream can be unknown.
     Based on Bob Jenkin's Hash; see
     http://burtleburtle.net/bob/hash/doobs.html
 */
-class hash_stream {
+class MEDDLY::hash_stream {
     unsigned z[3];
     int slot;
   public:

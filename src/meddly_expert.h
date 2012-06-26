@@ -609,6 +609,7 @@ class MEDDLY::expert_forest : public forest
     void dump(FILE *s) const; 
     void dumpInternal(FILE *s) const; 
     void dumpInternalLevel(FILE *s, int k) const; 
+    void dumpUniqueTable(FILE *s) const;
 
     /** Show stats about memory usage for this forest.
           @param  s     Output stream to write to
@@ -622,6 +623,8 @@ class MEDDLY::expert_forest : public forest
     /// Compute a hash for a node.
     unsigned hashNode(int p) const;
 
+    // for now
+    unsigned hashNode2(int p) const;
   // ------------------------------------------------------------
   // virtual in the base class, but implemented here.
   // See meddly.h for descriptions of these methods.

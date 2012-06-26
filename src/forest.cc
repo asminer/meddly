@@ -25,6 +25,7 @@
 
 #include "defines.h"
 #include "unique_table.h"
+#include "hash_stream.h"
 #include <set>
 #include <queue>
 #include <vector>
@@ -733,7 +734,7 @@ void MEDDLY::expert_forest::level_data::dumpInternal(FILE *s) const
   if (0==data) return; // nothing to display
   
   // super clever hack:
-  fprintf(s, "Level %ld: ", parent->levels - this);
+  fprintf(s, "Level %d: ", parent->levels - this);
   fprintf(s, "Last slot used: %d\n", last);
   fprintf(s, "Grid: top = %d bottom = %d\n", holes_top, holes_bottom);
 
@@ -1328,6 +1329,11 @@ void MEDDLY::expert_forest::dumpInternalLevel(FILE *s, int k) const
   levels[k].dumpInternal(s);
 }
 
+void MEDDLY::expert_forest::dumpUniqueTable(FILE *s) const
+{
+  unique->show(s);
+}
+
 void MEDDLY::expert_forest
 ::reportMemoryUsage(FILE * s, const char* pad, int verb)
 {
@@ -1391,8 +1397,40 @@ void MEDDLY::expert_forest
   }
 }
 
-// ----
-// TEMP: old implementation here, still need to update
+unsigned MEDDLY::expert_forest::hashNode(int h) const 
+{
+  int* d = getNodeAddress(h);
+  int length = d[2];
+  MEDDLY_DCASSERT(length != 0);
+  d += 3;
+
+  hash_stream s;
+  s.start(getNodeLevel(h));
+
+  if (length > 0) {
+    // Full node
+    for (int i=0; i<length; i++) {
+      if (0==d[i]) continue;
+      s.push(i, d[i]);
+    } 
+  } else {
+    int* indexes = d - length;
+    for (int i=0; i<-length; i++) {
+      s.push(d[i], indexes[i]); // currently, nodes are stored "indexes first"
+      // s.push(indexes[i], d[i]);
+    }
+  }
+#ifdef DEVELOPMENT_CODE
+  unsigned answer = s.finish();
+  MEDDLY_DCASSERT(answer = hashNode2(h));
+  return answer;
+#else
+  return s.finish();
+#endif
+}
+
+// ---
+// TEMP: old implementation here, for comparing
 
 /*
  * Bob Jenkin's Hash
@@ -1420,7 +1458,7 @@ void MEDDLY::expert_forest
       c ^= b; c -= rot(b,24); \
   }
 
-unsigned MEDDLY::expert_forest::hashNode(int h) const 
+unsigned MEDDLY::expert_forest::hashNode2(int h) const 
 {
   int* k = getNodeAddress(h);
   int length = k[2];
@@ -1476,8 +1514,6 @@ unsigned MEDDLY::expert_forest::hashNode(int h) const
   return a[2];
 }
 
-
-// ---
 
 void MEDDLY::expert_forest::garbageCollect()
 {
