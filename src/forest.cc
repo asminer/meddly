@@ -1544,36 +1544,6 @@ unsigned MEDDLY::expert_forest::hashNode(int h) const
   return s.finish();
 }
 
-/*
-void MEDDLY::expert_forest::copyDownPtrs(int node, int* buffer) const
-{
-      const node_data& n = getNode(node);
-      level_data& ld = levels[n.level];
-      int nsize = getLevelSize(n.level);
-      if (ld.isFull(n.offset)) {
-        int i;
-        int stop = ld.fullSizeOf(n.offset);
-        const int* dn = ld.fullDownOf(n.offset);
-        for (i=0; i<stop; i++) {
-          buffer[i] = dn[i];
-        }
-        for (; i<nsize; i++) {
-          buffer[i] = 0;
-        }
-      } else {
-        int i = 0;
-        int nnz = ld.sparseSizeOf(n.offset);
-        const int* dn = ld.sparseDownOf(n.offset);
-        const int* ix = ld.sparseIndexesOf(n.offset);
-        for (int z=0; z<nnz; z++) {
-          for (; i<ix[z]; i++) buffer[i] = 0;
-          buffer[i] = dn[z];
-          i++;
-        }
-        for (; i<nsize; i++) buffer[i] = 0;
-      }
-}
-*/
 
 MEDDLY::expert_forest::nodeReader*
 MEDDLY::expert_forest::initNodeReader(int node)
@@ -1612,6 +1582,43 @@ MEDDLY::expert_forest::initNodeReader(int node)
     }
     for (; i<nsize; i++) nr->buffer[i] = 0;
   }
+  return nr;
+}
+
+MEDDLY::expert_forest::nodeReader*
+MEDDLY::expert_forest::initRedundantReader(int k, int node)
+{
+  int nsize = getLevelSize(k);
+  nodeReader* nr;
+  if (free_reader[k]) {
+    nr = free_reader[k];
+    free_reader[k] = nr->next;
+    nr->next = 0;
+  } else {
+    nr = new nodeReader(k);
+  }
+  if (nr->size < nsize) nr->resize(nsize);
+  for (int i=0; i<nsize; i++) 
+    nr->buffer[i] = node;
+  return nr;
+}
+
+MEDDLY::expert_forest::nodeReader*
+MEDDLY::expert_forest::initIdentityReader(int k, int i, int node)
+{
+  int nsize = getLevelSize(k);
+  nodeReader* nr;
+  if (free_reader[k]) {
+    nr = free_reader[k];
+    free_reader[k] = nr->next;
+    nr->next = 0;
+  } else {
+    nr = new nodeReader(k);
+  }
+  if (nr->size < nsize) nr->resize(nsize);
+  for (int j=0; j<i; j++) nr->buffer[j] = 0;
+  nr->buffer[i] = node;
+  for (int j=i+1; j<nsize; j++) nr->buffer[j] = 0;
   return nr;
 }
 
@@ -1756,6 +1763,7 @@ int MEDDLY::expert_forest::getDownPtr(int p, int i) const {
 }
 
 
+#ifdef USE_OLD_ACCESS
 bool MEDDLY::expert_forest::getDownPtrs(int p, std::vector<int>& dptrs) const {
   if (!isActiveNode(p) || isTerminalNode(p)) return false;
 
@@ -1782,6 +1790,7 @@ bool MEDDLY::expert_forest::getDownPtrs(int p, std::vector<int>& dptrs) const {
   }
   return true;
 }
+#endif
 
 bool MEDDLY::expert_forest::isStale(int h) const {
   return

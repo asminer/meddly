@@ -91,6 +91,21 @@ int MEDDLY::generic_binary_mdd::compute(int a, int b)
   int resultSize = resF->getLevelSize(resultLevel);
   expert_forest::nodeBuilder& nb = resF->useNodeBuilder(resultLevel, resultSize);
 
+  expert_forest::nodeReader* A = (aLevel < resultLevel) 
+    ? arg1F->initRedundantReader(resultLevel, a)
+    : arg1F->initNodeReader(a);
+
+  expert_forest::nodeReader* B = (bLevel < resultLevel) 
+    ? arg2F->initRedundantReader(resultLevel, b)
+    : arg2F->initNodeReader(b);
+
+  for (int i=0; i<resultSize; i++) {
+    nb.d(i) = compute((*A)[i], (*B)[i]);
+  }
+  arg2F->recycle(B);
+  arg1F->recycle(A);
+
+  /*
   if (aLevel < resultLevel) {
     // expand b
     // result[i] = a op b[i]
@@ -120,8 +135,8 @@ int MEDDLY::generic_binary_mdd::compute(int a, int b)
     arg2F->recycle(B);
     arg1F->recycle(A);
   }
+  */
 
-  // result = resF->createTempNode(resultLevel, C);
   result = resF->createReducedNode(nb);
 
   // save result in compute cache and return it

@@ -70,6 +70,8 @@
 #define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX)
 #endif
 
+#define USE_OLD_ACCESS
+
 //
 // Design decision: should we remember the hashes for a reduced node?
 //
@@ -639,21 +641,31 @@ class MEDDLY::expert_forest : public forest
     /// Compute a hash for a node.
     unsigned hashNode(int p) const;
 
-    /** Copy downward pointers.
-          @param  node    A non-terminal node
-          @param  buffer  An array that is large enough;
-                          downward pointers are written here.
-    */
-    // void copyDownPtrs(int node, int* buffer) const;
-
     /** Build a node reader.
+        Safe to use wherever we want to "read" node data.
           @param  node    A non-terminal node
           @return         A node reader struct.
     */
     nodeReader* initNodeReader(int node);
 
-    /** Recycle a node reader.
+    /** Build a redundant node reader.
+        For convenience.
+          @param  k       Level that was skipped.
+          @param  node    Downward pointer to use.
+          @return         A node reader struct.
     */
+    nodeReader* initRedundantReader(int k, int node);
+
+    /** Build an identity node reader.
+        For convenience.
+          @param  k       Level that was skipped.
+          @param  i       Index of identity reduction
+          @param  node    Downward pointer to use.
+          @return         A node reader struct.
+    */
+    nodeReader* initIdentityReader(int k, int i, int node);
+
+    /// Recycle a node reader.
     void recycle(nodeReader *);
 
   // ------------------------------------------------------------
@@ -736,12 +748,20 @@ class MEDDLY::expert_forest : public forest
     /// If \a clear is true, downpointers are initialized to 0.
     int createTempNodeMaxSize(int lh, bool clear = true);
 
+#ifdef USE_OLD_ACCESS
     /// Create a temporary node with the given downpointers. Note that
     /// downPointers[i] corresponds to the downpointer at index i.
     /// IMPORTANT: The incounts for the downpointers are not incremented.
     /// The returned value is the handle for the temporary node.
     virtual int createTempNode(int lh, std::vector<int>& downPointers) = 0;
-    // HERE - WORKING ON REPLACING THIS ONE
+
+    /// Get the nodes pointed to by this node (works with Full or Sparse nodes.
+    /// The vector downPointers is increased in size if necessary (but
+    /// never reduced in size).
+    /// Returns false is operation is not possible. Possible reasons are:
+    /// node does not exist; node is a terminal; or node has not been reduced.
+    bool getDownPtrs(int node, std::vector<int>& downPointers) const;
+#endif
 
     /// Same as createTempNode(int, vector<int>) except this is for EV+MDDs.
     virtual int createTempNode(int lh, std::vector<int>& downPointers,
@@ -871,13 +891,6 @@ class MEDDLY::expert_forest : public forest
     /// returns the downpointer associated with the index. Note that this
     /// is not the same as calling getSparseNodeDownPtr(int node, int index).
     int getDownPtr(int node, int index) const;
-
-    /// Get the nodes pointed to by this node (works with Full or Sparse nodes.
-    /// The vector downPointers is increased in size if necessary (but
-    /// never reduced in size).
-    /// Returns false is operation is not possible. Possible reasons are:
-    /// node does not exist; node is a terminal; or node has not been reduced.
-    bool getDownPtrs(int node, std::vector<int>& downPointers) const;
 
     /// Similar to getDownPtrs() except for EV+MDDs.
     /// If successful (return value true), the vectors hold the
