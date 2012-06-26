@@ -543,15 +543,49 @@ bool MEDDLY::expert_forest::nodeFinder::equalsFS(int h1, int h2) const
 
 // ******************************************************************
 // *                                                                *
-// *               expert_forest::nodeBuilder methods               *
-// *                                                                *
-// ******************************************************************
-
-// ******************************************************************
-// *                                                                *
 // *               expert_forest::level_data  methods               *
 // *                                                                *
 // ******************************************************************
+
+/*
+
+  Hole management.
+  ==============================================================
+  There are two kinds of holes depending on their location in the "hole grid":
+  Index Holes and Non-index Holes.
+
+  The hole grid structure:
+  ------------------------
+  (holes_bottom)
+  holes_of_size_0 (index) -- holes_of_size_0 (non_index) -- (non_index) -- NULL
+  |
+  holes_of_size_1 -- ""
+  |
+  :
+  :
+  (holes_top)
+
+  Index holes are represented as follows:
+  ---------------------------------------
+  [0] -size (number of slots in hole)     
+  [1] up
+  [2] down 
+  [3] next pointer (nodes of same size)
+  [4..size-2] Unused
+  :
+  :
+  [size-1] -size
+
+  Non-index holes are represented as follows:
+  [0] -size (number of slots in hole)     
+  [1] flag (<0, indicates non-index node)
+  [2] prev pointer (nodes of same size)
+  [3] next pointer (nodes of same size)
+  [4..size-2] Unused
+  :
+  :
+  [size-1] -size
+*/
 
 MEDDLY::expert_forest::level_data::level_data()
 {
@@ -1040,6 +1074,47 @@ void MEDDLY::expert_forest::level_data::indexRemove(int p_offset)
 
 // ******************************************************************
 // *                                                                *
+// *               expert_forest::nodeBuilder methods               *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::expert_forest::nodeBuilder::nodeBuilder()
+{
+  parent = 0;
+  down = 0;
+  edges = 0;
+}
+
+MEDDLY::expert_forest::nodeBuilder::~nodeBuilder()
+{
+  free(down);
+  free(edges);
+}
+
+void MEDDLY::expert_forest::nodeBuilder::init(int k, level_data* ld)
+{
+  MEDDLY_DCASSERT(ld);
+  parent = ld;
+  level = k;
+  size = 0;
+  alloc = 0;
+  lock = false;
+}
+
+void MEDDLY::expert_forest::nodeBuilder::resize(int s)
+{
+  size = s;
+  if (size <= alloc) return;
+  alloc = ((size / 8)+1) * 8;
+  MEDDLY_DCASSERT(alloc > size);
+  down = (int*) realloc(down, alloc * sizeof(int));
+  if (parent->edgeSize>0) {
+    edges = (int*) realloc(down, alloc * parent->edgeSize * sizeof(int));
+  }
+}
+
+// ******************************************************************
+// *                                                                *
 // *                                                                *
 // *                     expert_forest  methods                     *
 // *                                                                *
@@ -1076,6 +1151,20 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
     raw_levels = new level_data[N+1];
     levels = raw_levels;
     stats.incMemAlloc(N+1 * sizeof(level_data));
+  }
+
+  //
+  // Initialize builders array
+  //
+  if (rel) {
+    raw_builders = new nodeBuilder[2*N+1];
+    builders = raw_builders + N;
+  } else {
+    raw_builders = new nodeBuilder[N+1];
+    builders = raw_builders;
+  }
+  for (int k=getMinLevelIndex(); k<=N; k++) {
+    builders[k].init(k, levels+k);
   }
 
 
@@ -1738,5 +1827,10 @@ void MEDDLY::expert_forest::shrinkHandleList()
 #ifdef DEBUG_ADDRESS_RESIZE
   printf("Shrank address array, new size %d\n", a_size);
 #endif
+}
+
+int MEDDLY::expert_forest::reduce(const nodeBuilder &nb)
+{
+  throw error(error::TYPE_MISMATCH);
 }
 

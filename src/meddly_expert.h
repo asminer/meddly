@@ -983,7 +983,6 @@ class MEDDLY::expert_forest : public forest
     bool isZombieNode(int node) const;
 
     // the following virtual functions are implemented in node_manager
-    // virtual void dumpUniqueTable(FILE* s) const = 0;
     virtual void reclaimOrphanNode(int node) = 0;     // for linkNode()
     virtual void handleNewOrphanNode(int node) = 0;   // for unlinkNode()
     virtual void deleteOrphanNode(int node) = 0;      // for uncacheNode()
@@ -1430,14 +1429,14 @@ class MEDDLY::expert_forest : public forest
   // | 
   // |  New temporary node mechanism.
   // | 
-  protected:
+  public:
     // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
     /** Class for building nodes.
         Effectively, a reserved chunk of memory for storing down pointers
         and edge values.
     */
     class nodeBuilder {
-        expert_forest* parent;
+        level_data* parent;
         int* down;
         int* edges;
         int level;
@@ -1445,10 +1444,18 @@ class MEDDLY::expert_forest : public forest
         int alloc;
         // TBD: need "extra" header stuff
       public:
+        bool lock;
+      public:
         nodeBuilder();
         ~nodeBuilder();
-        void init(level_data &ld);
-        void resize(int s, bool clear);
+        void init(int k, level_data* ld);
+        void resize(int s);
+        inline int getSize() const { 
+          return size; 
+        }
+        inline int getLevel() const { 
+          return level;
+        }
         inline int& d(int i) {
           MEDDLY_DCASSERT(down);
           MEDDLY_CHECK_RANGE(0, i, size);
@@ -1459,28 +1466,60 @@ class MEDDLY::expert_forest : public forest
           MEDDLY_CHECK_RANGE(0, i, size);
           return edges[i];
         }
-        // for unique table
+      public: // for unique table
         unsigned hash() const;
         bool equals(int p) const;
 
     }; // end of nodeBuilder struct
     // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  private:
+    nodeBuilder* raw_builders;
+    nodeBuilder* builders;
+
+  public:
+    inline nodeBuilder& useNodeBuilder(int level, int tsz) {
+      MEDDLY_DCASSERT(isValidLevel(level));
+      MEDDLY_DCASSERT(!builders[level].lock);
+      builders[level].resize(tsz);
+      builders[level].lock = true;
+      return builders[level];
+    }
+    inline void doneNodeBuilder(nodeBuilder& nb) {
+      MEDDLY_DCASSERT(nb.lock);
+      nb.lock = false;
+    }
+    virtual int reduce(const nodeBuilder& nb);
+    
+    
   
 
   // ------------------------------------------------------------
   // |
-  // |  Other private data
+  // |  Miscellaneous data
   // |
+  protected:  
+    /// uniqueness table, still used by derived classes.
+    unique_table* unique;
+
   private:
     // Garbage collection in progress
     bool performing_gc;
-
-
-  // TBD: make this private
-  protected:  
-    // uniqueness table
-    unique_table* unique;
 };
+// end of expert_forest class.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /** A bare-bones class for the construction of temporary dd_edges.
