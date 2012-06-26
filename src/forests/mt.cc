@@ -79,6 +79,218 @@ MEDDLY::mt_forest::mt_forest(int dsl, domain *d, bool rel, range_type t,
   nodeB = 0;
 }
 
+
+MEDDLY::mt_forest::~mt_forest()
+{
+  if (nodeA) delete nodeA;
+  if (nodeB) delete nodeB;
+
+  // setting delete_terminal_nodes will ensure that all nodes in compute
+  // tables are removed during garbage collection.
+  delete_terminal_nodes = true;
+  // unlink all nodes that are being stored at the respective levels
+  clearLevelNodes();
+
+  /*
+
+  // All these things should now be unnecessary...
+
+  // remove all disconnected nodes
+  gc(true);
+
+  if (stats.active_nodes != 0) {
+    printf("MEDDLY ALERT: In %s, active_nodes > 0.\n", __func__);
+    printf("This usually means that your application is still referring\n");
+    printf("to one or more MDD nodes. ");
+    printf("Fixing this may benefit your application.\n");
+#ifdef DEBUG_GC
+    printf("%p: active %ld, zombie %ld, orphan %ld\n",
+        this, active_nodes, zombie_nodes, orphan_nodes);
+#endif
+    clearAllNodes();
+    gc(true);
+  }
+  */
+
+  if (dptrsSize > 0) {
+    free(dptrs);
+    dptrsSize = 0;
+    dptrs = 0;
+  }
+
+  // delete unique;
+#if DEBUG_DELETE_NM
+  printf("Deleted unique table\n");
+  fflush(stdout);
+#endif
+}
+
+
+// ******************************************************************
+// *                                                                *
+// *            virtual  and overriding default behavior            *
+// *                                                                *
+// ******************************************************************
+
+
+void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
+    bool* terms, dd_edge& result)
+{
+  if (!isValidVariable(vh)) 
+    throw error(error::INVALID_VARIABLE);
+  if (result.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
+  if (getRangeType() != forest::BOOLEAN) 
+    throw error(error::INVALID_OPERATION);
+  if (getLevelSize(vh) != 2) 
+    throw error(error::INVALID_OPERATION);
+
+  int k = primedLevel? -vh: vh;
+  MEDDLY_DCASSERT(isValidLevel(k));
+
+  if (!isForRelations() && primedLevel) 
+    throw error(error::INVALID_ASSIGNMENT);
+  if (getEdgeLabeling() != MULTI_TERMINAL)
+    throw error(error::INVALID_OPERATION);
+  int *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
+  int node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
+
+  result.set(node, 0, getNodeLevel(node));
+}
+
+
+void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
+    int* terms, dd_edge& result)
+{
+  if (!isValidVariable(vh)) 
+    throw error(error::INVALID_VARIABLE);
+  if (result.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
+  if (getRangeType() != forest::INTEGER) 
+    throw error(error::INVALID_OPERATION);
+
+  int k = primedLevel? -vh: vh;
+  MEDDLY_DCASSERT(isValidLevel(k));
+
+  if (!isForRelations() && primedLevel) 
+    throw error(error::INVALID_ASSIGNMENT);
+  if (getEdgeLabeling() != MULTI_TERMINAL)
+    throw error(error::INVALID_OPERATION);
+  int *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
+  int node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
+
+  result.set(node, 0, getNodeLevel(node));
+}
+
+
+void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
+    float* terms, dd_edge& result)
+{
+  if (!isValidVariable(vh)) 
+    throw error(error::INVALID_VARIABLE);
+  if (result.getForest() != this) 
+    throw error(error::INVALID_OPERATION);
+  if (getRangeType() != forest::REAL) 
+    throw error(error::INVALID_OPERATION);
+
+  int k = primedLevel? -vh: vh;
+  MEDDLY_DCASSERT(isValidLevel(k));
+
+  if (!isForRelations() && primedLevel) 
+    throw error(error::INVALID_ASSIGNMENT);
+  if (getEdgeLabeling() != MULTI_TERMINAL)
+    throw error(error::INVALID_OPERATION);
+  int *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
+  int node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
+
+  result.set(node, 0, getNodeLevel(node));
+}
+
+int MEDDLY::mt_forest::createReducedHelper(const nodeBuilder &nb)
+{
+
+  // TBD:
+  // #ifdef DEVELOPMENT_CODE
+  // validateDownPointers(nb);
+  // #endif
+
+  // get sparse, truncated full sizes for this node
+  int nnz = 0;
+  int truncsize = -1;
+  for (int i=0; i<nb.getSize(); i++) {
+    if (nb.d(i)) {
+      nnz++;
+      truncsize = i;
+    }
+  } // for i
+  truncsize++;
+
+  // Check for zero node
+  if (0==nnz) {
+    MEDDLY_DCASSERT(0==truncsize);
+    return 0;
+  }
+
+  // check for reductions
+  int q;
+  if (checkForReductions(nb, nnz, q)) {
+    return linkNode(q);
+  }
+  
+  // check for duplicates in unique table
+  q = unique->find(nb);
+  if (q) {
+    return linkNode(q);
+  }
+
+  // 
+  // Not eliminated by reduction rule.
+  // Not a duplicate.
+  //
+  // We need to create a new node for this.
+  int p = getFreeNodeHandle();
+  address[p].level = nb.getLevel();
+  MEDDLY_DCASSERT(0 == address[p].cache_count);
+  level_data &ld = levels[nb.getLevel()];
+
+  // First, determine if it should be full or sparse
+  if (ld.slotsForNode(-nnz) < ld.slotsForNode(truncsize)) { 
+    // sparse node wins
+    address[p].offset = ld.allocNode(-nnz, p, false);
+    MEDDLY_DCASSERT(1==ld.countOf(address[p].offset));
+    int* index = ld.sparseIndexesOf(address[p].offset);
+    int* down  = ld.sparseDownOf(address[p].offset);
+    int z = 0;
+    for (int i=0; i<truncsize; i++) {
+      if (nb.d(i)) {
+        index[z] = i;
+        down[z] = nb.d(i);
+        z++;
+      }
+    } // for i
+    MEDDLY_DCASSERT(z == nnz);
+  } else {
+    // full node wins
+    address[p].offset = ld.allocNode(truncsize, p, false);
+    MEDDLY_DCASSERT(1==ld.countOf(address[p].offset));
+    int* down = ld.fullDownOf(address[p].offset);
+    for (int i=0; i<truncsize; i++) {
+      down[i] = nb.d(i);
+    }
+  } // if 
+
+  // add to UT 
+  unique->add(nb.hash(), p);
+  
+#ifdef DEVELOPMENT_CODE
+  nodeFinder key(this, p);
+  MEDDLY_DCASSERT(key.hash() == nb.hash());
+  MEDDLY_DCASSERT(unique->find(key) == p);
+#endif
+  return p;
+}
+
+
 // ******************************************************************
 // *                                                                *
 // *                      disorganized methods                      *
@@ -311,32 +523,6 @@ int* MEDDLY::mt_forest::getTerminalNodes(int n, float* terms)
 }
 
 
-void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
-    bool* terms, dd_edge& result)
-{
-  if (!isValidVariable(vh)) 
-    throw error(error::INVALID_VARIABLE);
-  if (result.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-  if (getRangeType() != forest::BOOLEAN) 
-    throw error(error::INVALID_OPERATION);
-  if (getLevelSize(vh) != 2) 
-    throw error(error::INVALID_OPERATION);
-
-  int k = primedLevel? -vh: vh;
-  MEDDLY_DCASSERT(isValidLevel(k));
-
-  if (!isForRelations() && primedLevel) 
-    throw error(error::INVALID_ASSIGNMENT);
-  if (getEdgeLabeling() != MULTI_TERMINAL)
-    throw error(error::INVALID_OPERATION);
-  int *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
-  int node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
-
-  result.set(node, 0, getNodeLevel(node));
-}
-
-
 void MEDDLY::mt_forest::createSubMatrix(const dd_edge& rows,
     const dd_edge& cols, const dd_edge& a, dd_edge& result)
 {
@@ -389,61 +575,6 @@ void MEDDLY::mt_forest::createSubMatrix(const bool* const* vlist,
 }
 
 
-void MEDDLY::mt_forest::getElement(const dd_edge& a,
-    int index, int* e)
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-
-void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
-    int* terms, dd_edge& result)
-{
-  if (!isValidVariable(vh)) 
-    throw error(error::INVALID_VARIABLE);
-  if (result.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-  if (getRangeType() != forest::INTEGER) 
-    throw error(error::INVALID_OPERATION);
-
-  int k = primedLevel? -vh: vh;
-  MEDDLY_DCASSERT(isValidLevel(k));
-
-  if (!isForRelations() && primedLevel) 
-    throw error(error::INVALID_ASSIGNMENT);
-  if (getEdgeLabeling() != MULTI_TERMINAL)
-    throw error(error::INVALID_OPERATION);
-  int *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
-  int node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
-
-  result.set(node, 0, getNodeLevel(node));
-}
-
-
-void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
-    float* terms, dd_edge& result)
-{
-  if (!isValidVariable(vh)) 
-    throw error(error::INVALID_VARIABLE);
-  if (result.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-  if (getRangeType() != forest::REAL) 
-    throw error(error::INVALID_OPERATION);
-
-  int k = primedLevel? -vh: vh;
-  MEDDLY_DCASSERT(isValidLevel(k));
-
-  if (!isForRelations() && primedLevel) 
-    throw error(error::INVALID_ASSIGNMENT);
-  if (getEdgeLabeling() != MULTI_TERMINAL)
-    throw error(error::INVALID_OPERATION);
-  int *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
-  int node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
-
-  result.set(node, 0, getNodeLevel(node));
-}
-
-
 #endif
 
 
@@ -477,51 +608,6 @@ void MEDDLY::mt_forest::clearAllNodes()
   }
 }
 
-
-MEDDLY::mt_forest::~mt_forest()
-{
-  if (nodeA) delete nodeA;
-  if (nodeB) delete nodeB;
-
-  // setting delete_terminal_nodes will ensure that all nodes in compute
-  // tables are removed during garbage collection.
-  delete_terminal_nodes = true;
-  // unlink all nodes that are being stored at the respective levels
-  clearLevelNodes();
-
-  /*
-
-  // All these things should now be unnecessary...
-
-  // remove all disconnected nodes
-  gc(true);
-
-  if (stats.active_nodes != 0) {
-    printf("MEDDLY ALERT: In %s, active_nodes > 0.\n", __func__);
-    printf("This usually means that your application is still referring\n");
-    printf("to one or more MDD nodes. ");
-    printf("Fixing this may benefit your application.\n");
-#ifdef DEBUG_GC
-    printf("%p: active %ld, zombie %ld, orphan %ld\n",
-        this, active_nodes, zombie_nodes, orphan_nodes);
-#endif
-    clearAllNodes();
-    gc(true);
-  }
-  */
-
-  if (dptrsSize > 0) {
-    free(dptrs);
-    dptrsSize = 0;
-    dptrs = 0;
-  }
-
-  // delete unique;
-#if DEBUG_DELETE_NM
-  printf("Deleted unique table\n");
-  fflush(stdout);
-#endif
-}
 
 // *********************************************************************
 // TODO: test this out
@@ -898,8 +984,12 @@ void MEDDLY::mt_forest::zombifyNode(int p)
   address[p].cache_count = -address[p].cache_count;
 
   nodeFinder key(this, p);
-  MEDDLY_DCASSERT(unique->find(key) == p);
 #ifdef DEVELOPMENT_CODE 
+  if (unique->find(key) != p) {
+    fprintf(stderr, "Fail: can't find reduced node %d; got %d\n", p, unique->find(key));
+    dumpInternal(stderr);
+    MEDDLY_DCASSERT(false);
+  }
   int x = unique->remove(key.hash(), p);
   MEDDLY_DCASSERT(x==p);
 #else
@@ -1715,6 +1805,46 @@ bool MEDDLY::mt_forest::checkForReductions(int p, int nnz, int& result)
   }
 
   return true;
+}
+
+
+bool MEDDLY::mt_forest
+::checkForReductions(const nodeBuilder& nb, int nnz, int& result)
+{
+  if (isQuasiReduced()) return false;
+  if (nnz != getLevelSize(nb.getLevel())) return false;
+
+  switch (getReductionRule()) {
+
+    case policies::FULLY_REDUCED:
+      // check for redundant node
+      result = nb.d(0);
+      for (int i = 1; i < nb.getSize(); ++i) {
+        if (nb.d(i) != result) return false;
+      }
+      return true;
+
+    case policies::IDENTITY_REDUCED:
+      MEDDLY_DCASSERT(isForRelations());
+        if (nb.getLevel()<0) return false;
+        if (isFullNode(nb.d(0))) {
+          result = getFullNodeDownPtr(nb.d(0), 0);
+          if (result == 0) return false;
+        } else {
+          int index = getSparseNodeIndex(nb.d(0), 0);
+          if (index != 0) return false;
+          result = getSparseNodeDownPtr(nb.d(0), 0);
+          MEDDLY_DCASSERT(result != 0);
+        }
+        for (int i = 0; i < nb.getSize(); i++) {
+          if (!singleNonZeroAt(nb.d(i), result, i)) return false;
+        }
+      return true;
+
+    default:
+      return false;
+  }
+  return false;
 }
 
 

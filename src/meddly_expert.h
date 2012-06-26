@@ -534,6 +534,12 @@ class MEDDLY::expert_forest : public forest
   protected:
     /// Destructor.
     virtual ~expert_forest();  
+  
+  // ------------------------------------------------------------
+  // forward subclass declarations
+  public:
+    class nodeBuilder;
+    class nodeReader;
 
   // ------------------------------------------------------------
   // inlined helpers.
@@ -582,6 +588,16 @@ class MEDDLY::expert_forest : public forest
       return hashNode(p);
 #endif
     }
+    /// The maximum size (number of indices) a node at this level can have
+    inline int getLevelSize(int lh) const {
+      MEDDLY_DCASSERT(isValidLevel(lh));
+      if (lh < 0) {
+        return getDomain()->getVariableBound(-lh, true);
+      } else {
+        return getDomain()->getVariableBound(lh, false);
+      }
+    }
+
 
   // ------------------------------------------------------------
   // non-virtual, handy methods.
@@ -623,8 +639,23 @@ class MEDDLY::expert_forest : public forest
     /// Compute a hash for a node.
     unsigned hashNode(int p) const;
 
-    // for now
-    unsigned hashNode2(int p) const;
+    /** Copy downward pointers.
+          @param  node    A non-terminal node
+          @param  buffer  An array that is large enough;
+                          downward pointers are written here.
+    */
+    // void copyDownPtrs(int node, int* buffer) const;
+
+    /** Build a node reader.
+          @param  node    A non-terminal node
+          @return         A node reader struct.
+    */
+    nodeReader* initNodeReader(int node);
+
+    /** Recycle a node reader.
+    */
+    void recycle(nodeReader *);
+
   // ------------------------------------------------------------
   // virtual in the base class, but implemented here.
   // See meddly.h for descriptions of these methods.
@@ -643,6 +674,14 @@ class MEDDLY::expert_forest : public forest
     /// Reduce and finalize an node with an incoming edge value
     virtual void normalizeAndReduceNode(int& node, int& ev);
     virtual void normalizeAndReduceNode(int& node, float& ev);
+
+  // ------------------------------------------------------------
+  // virtual, with default implementation; should be overridden.
+  protected:
+    /// Apply reduction rule to the temporary node and finalize it. Once
+    /// a node is reduced, its contents cannot be modified.
+    virtual int createReducedHelper(const nodeBuilder &nb);
+
 
 
   // ------------------------------------------------------------
@@ -702,6 +741,7 @@ class MEDDLY::expert_forest : public forest
     /// IMPORTANT: The incounts for the downpointers are not incremented.
     /// The returned value is the handle for the temporary node.
     virtual int createTempNode(int lh, std::vector<int>& downPointers) = 0;
+    // HERE - WORKING ON REPLACING THIS ONE
 
     /// Same as createTempNode(int, vector<int>) except this is for EV+MDDs.
     virtual int createTempNode(int lh, std::vector<int>& downPointers,
@@ -718,9 +758,6 @@ class MEDDLY::expert_forest : public forest
     /// Build a copy of the given node.
     /// The new node's size will be equal to max(sizeof(a), size).
     virtual int makeACopy(int node, int size = 0) = 0;
-
-    /// The maximum size (number of indices) a node at this level can have
-    int getLevelSize(int lh) const;
 
     /// A is a temporary node, and B is a reduced node.
     /// Accumulate B into A, i.e. A += B.
@@ -1002,7 +1039,7 @@ class MEDDLY::expert_forest : public forest
   // | 
   // |  Storage mechanism for "node indexes".
   // | 
-  protected:
+  public:
 
     // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
     /** Address of each node.
@@ -1056,6 +1093,7 @@ class MEDDLY::expert_forest : public forest
     };  // End of node_data struct
     // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+  protected:
     /// address info for nodes
     node_data *address;
 
@@ -1125,6 +1163,8 @@ class MEDDLY::expert_forest : public forest
       }
     }
 
+  // For querying nodes 
+  public:
     inline bool isValidNonterminalIndex(int node) const {
       return (node>0) && (node <= a_last);
     }
@@ -1133,6 +1173,11 @@ class MEDDLY::expert_forest : public forest
     }
     inline int getLastNode() const {
       return a_last;
+    }
+    inline const node_data& getNode(int p) const {
+      MEDDLY_DCASSERT(address);
+      MEDDLY_CHECK_RANGE(1, p, 1+a_last);
+      return address[p];
     }
 
   private:
@@ -1150,6 +1195,11 @@ class MEDDLY::expert_forest : public forest
         Details of node storage are left to the derived forests.
         However, every active node is stored in the following format.
           
+        TBD: haven't quite gotten to this format yet.
+            sparse: indexes then down pointers
+            ev+mdds: unhashed header is at the tail
+
+
           common   {  slot[0] : incoming count, >= 0.
           header --{  slot[1] : next pointer in unique table or special value.
                    {  slot[2] : size.  >=0 for full storage, <0 for sparse.
@@ -1376,6 +1426,54 @@ class MEDDLY::expert_forest : public forest
           MEDDLY_CHECK_RANGE(1, addr, last+1);
           return data[addr + size_index];
         }
+        inline int fullSizeOf(int addr) const {
+          return sizeOf(addr);
+        }
+        inline int sparseSizeOf(int addr) const {
+          return -sizeOf(addr);
+        }
+        inline int isFull(int addr) const {
+          return sizeOf(addr) >= 0;
+        }
+        inline int isSparse(int addr) const {
+          return sizeOf(addr) < 0;
+        }
+        inline int* fullDownOf(int addr) {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_DCASSERT(isFull(addr));
+          return data + addr + commonHeaderLength;
+          // + unhashedHeader + hashedHeader // TBD
+        }
+        inline const int* fullDownOf(int addr) const {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_DCASSERT(isFull(addr));
+          return data + addr + commonHeaderLength;
+          // + unhashedHeader + hashedHeader // TBD
+        }
+        inline int* sparseDownOf(int addr) {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_DCASSERT(isSparse(addr));
+          // return data + addr + commonHeaderLength;  // TBD
+          return data + addr + commonHeaderLength + sparseSizeOf(addr);
+        }
+        inline const int* sparseDownOf(int addr) const {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_DCASSERT(isSparse(addr));
+          // return data + addr + commonHeaderLength;  // TBD
+          return data + addr + commonHeaderLength + sparseSizeOf(addr);
+        }
+        inline int* sparseIndexesOf(int addr) {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_DCASSERT(isSparse(addr));
+          return data + addr + commonHeaderLength;  
+          // + sparseSizeOf(addr);  // TBD
+        }
+        inline const int* sparseIndexesOf(int addr) const {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_DCASSERT(isSparse(addr));
+          return data + addr + commonHeaderLength;  
+          // + sparseSizeOf(addr);  // TBD
+        }
 
       // --------------------------------------------------------
       // |  Hole management helpers.
@@ -1430,6 +1528,45 @@ class MEDDLY::expert_forest : public forest
 
   // ----------------------------------------------------------------- 
   // | 
+  // |  Interface for reading nodes.
+  // | 
+  public:
+    // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    /** Class for reading nodes.
+        Ideally - used anywhere we want to read node data.
+        Backend implementation may change :^)
+    */
+    class nodeReader {
+      public:
+        inline int operator[](int n) const {
+          MEDDLY_CHECK_RANGE(0, n, size);
+          return buffer[n];
+        }
+
+        inline int getLevel() const {
+          return level;
+        }
+
+      private:
+        int* buffer;
+        int size;
+        int level;
+        nodeReader* next;  // free list
+        nodeReader(int k);
+        ~nodeReader();
+        void resize(int ns);
+
+        friend class expert_forest;
+    };
+    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  private:
+    nodeReader** raw_readers;
+    /// Free node readers, by level.  The array is shifted.
+    nodeReader** free_reader;
+
+  // ----------------------------------------------------------------- 
+  // | 
   // |  New temporary node mechanism.
   // | 
   public:
@@ -1439,39 +1576,57 @@ class MEDDLY::expert_forest : public forest
         and edge values.
     */
     class nodeBuilder {
-        level_data* parent;
+        const level_data* parent;
         int* down;
         int* edges;
         int level;
         int size;
         int alloc;
         // TBD: need "extra" header stuff
+        unsigned h;
+        bool has_hash;
       public:
         bool lock;
       public:
         nodeBuilder();
         ~nodeBuilder();
-        void init(int k, level_data* ld);
+        void init(int k, const level_data* ld);
         void resize(int s);
         inline int getSize() const { 
-          return size; 
+          return size;
         }
         inline int getLevel() const { 
           return level;
         }
         inline int& d(int i) {
+          MEDDLY_DCASSERT(!has_hash);
+          MEDDLY_DCASSERT(down);
+          MEDDLY_CHECK_RANGE(0, i, size);
+          return down[i];
+        }
+        inline int d(int i) const {
           MEDDLY_DCASSERT(down);
           MEDDLY_CHECK_RANGE(0, i, size);
           return down[i];
         }
         inline int& v(int i) {
+          MEDDLY_DCASSERT(!has_hash);
+          MEDDLY_DCASSERT(edges);
+          MEDDLY_CHECK_RANGE(0, i, size);
+          return edges[i];
+        }
+        inline int v(int i) const {
           MEDDLY_DCASSERT(edges);
           MEDDLY_CHECK_RANGE(0, i, size);
           return edges[i];
         }
       public: // for unique table
-        unsigned hash() const;
+        inline unsigned hash() const {
+          MEDDLY_DCASSERT(has_hash);
+          return h;
+        }
         bool equals(int p) const;
+        void computeHash();
 
     }; // end of nodeBuilder struct
     // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1491,7 +1646,13 @@ class MEDDLY::expert_forest : public forest
       MEDDLY_DCASSERT(nb.lock);
       nb.lock = false;
     }
-    virtual int reduce(const nodeBuilder& nb);
+    inline int createReducedNode(nodeBuilder& nb) {
+      nb.computeHash();
+      int q = createReducedHelper(nb);
+      MEDDLY_DCASSERT(nb.lock);
+      nb.lock = false;
+      return q;
+    }
     
     
   
@@ -2306,16 +2467,6 @@ inline
 int MEDDLY::expert_forest::createTempNodeMaxSize(int lh, bool clear)
 {
   return createTempNode(lh, getLevelSize(lh), clear);
-}
-
-inline
-int MEDDLY::expert_forest::getLevelSize(int lh) const {
-  MEDDLY_DCASSERT(isValidLevel(lh));
-  if (lh < 0) {
-    return getExpertDomain()->getVariableBound(-lh, true);
-  } else {
-    return getExpertDomain()->getVariableBound(lh, false);
-  }
 }
 
 inline

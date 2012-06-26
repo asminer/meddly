@@ -51,28 +51,35 @@ class MEDDLY::mt_forest : public expert_forest {
       const policies &p);
     virtual ~mt_forest();
 
+
+  // ------------------------------------------------------------
+  // virtual and overriding default behavior
+  public: 
+
+    virtual void createEdgeForVar(int vh, bool pr, bool* terms, dd_edge& a);
+    virtual void createEdgeForVar(int vh, bool pr, int* terms, dd_edge& a);
+    virtual void createEdgeForVar(int vh, bool pr, float* terms, dd_edge& a);
+
+  // ------------------------------------------------------------
+  // virtual and overriding default behavior
+  protected:
+    virtual int createReducedHelper(const nodeBuilder& nb);
+
+  
+
+
+
+  // ------------------------------------------------------------
+  // still to be organized:
   public:
     using expert_forest::getDownPtrsAndEdgeValues;
     using expert_forest::getSparseNodeIndexes;
 
     /// Refer to meddly.h
-    void createEdgeForVar(int vh, bool primedLevel,
-        bool* terms, dd_edge& a);
-    void createEdgeForVar(int vh, bool primedLevel,
-        int* terms, dd_edge& a);
-    void createEdgeForVar(int vh, bool primedLevel,
-        float* terms, dd_edge& a);
-
     void createSubMatrix(const bool* const* vlist,
         const bool* const* vplist, const dd_edge a, dd_edge& b);
     void createSubMatrix(const dd_edge& rows, const dd_edge& cols,
         const dd_edge& a, dd_edge& b);
-
-    virtual void getElement(const dd_edge& a, int index, int* e);
-
-    virtual void findFirstElement(const dd_edge& f, int* vlist) const;
-    virtual void findFirstElement(const dd_edge& f, int* vlist,
-        int* vplist) const;
 
     virtual void accumulate(int& a, int b);
     virtual bool accumulate(int& tempNode, int* element);
@@ -245,6 +252,8 @@ class MEDDLY::mt_forest : public expert_forest {
     // If the node can be reduced to an existing node, the existing node
     // is returned.
     bool checkForReductions(int p, int nnz, int& result);
+
+    bool checkForReductions(const nodeBuilder &nb, int nnz, int& result);
 
     // Checks if the node has a single downpointer enabled and at
     // the given index.
@@ -523,18 +532,6 @@ inline int MEDDLY::mt_forest::getLevelNode(int k) const {
 inline bool MEDDLY::mt_forest::isValidVariable(int vh) const {
   return (vh > 0) && (vh <= getExpertDomain()->getNumVariables());
   //return expertDomain->getVariableHeight(vh) != -1;
-}
-
-inline void
-MEDDLY::mt_forest::findFirstElement(const dd_edge& f, int* vlist) const
-{
-  throw error(error::INVALID_OPERATION);
-}
-
-inline void
-MEDDLY::mt_forest::findFirstElement(const dd_edge& f, int* vlist, int* vplist) const
-{
-  throw error(error::INVALID_OPERATION);
 }
 
 

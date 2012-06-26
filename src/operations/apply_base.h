@@ -86,15 +86,6 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
       CT->addEntry();
     }
 
-    // not sure about these...
-
-    virtual void expandA(int a, int b, int result, int resultSize);
-    virtual void expandB(int a, int b, int result, int resultSize);
-    virtual void fullFull(int a, int b, int result, int resultSize);
-    virtual void fullSparse(int a, int b, int result, int resultSize);
-    virtual void sparseFull(int a, int b, int result, int resultSize);
-    virtual void sparseSparse(int a, int b, int result, int resultSize);
-
   protected:
     // If terminal condition is reached, returns true and the result in c.
     // Must be provided in derived classes.

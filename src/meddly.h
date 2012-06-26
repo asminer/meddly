@@ -1283,6 +1283,38 @@ class MEDDLY::forest {
     virtual void evaluate(const dd_edge& f, const int* vlist,
       const int* vplist, float &term) const;
 
+    /** Returns element \a e at index \a i from an Index Set EV+MDD.
+    
+        size(e) = number of variables in the forest + 1 (for terminals).
+        TODO: complete this description
+
+        @throws       INVALID_OPERATION, if this is not an Index Set EV+MDD.
+    */
+    virtual void getElement(const dd_edge& a, int index, int* e);
+
+    /** Returns a state from the MDD represented by \a f.
+        @param  f       Edge.
+        @param  vlist   Output parameter used to return a state from \a f.
+
+        @throws       TYPE_MISMATCH, if this forest is for relations,
+                        or is edge-valued.
+    */
+    virtual void findFirstElement(const dd_edge& f, int* vlist) const;
+
+
+    /** Returns a transition from the MXD represented by \a f.
+        @param  f       Edge.
+        @param  vlist   Output parameter used to return a 
+                        transition from \a f.
+        @param  vplist  Output parameter used to return a 
+                        transition from \a f.
+
+        @throws       TYPE_MISMATCH, if this forest is not for relations,
+                        or is edge-valued.
+    */
+    virtual void findFirstElement(const dd_edge& f, int* vlist, int* vplist)
+      const;
+
 
   // ------------------------------------------------------------
   // abstract virtual.
@@ -1313,30 +1345,7 @@ class MEDDLY::forest {
       const bool* const* vplist, const dd_edge a, dd_edge& b) = 0;
 
 
-    /** Returns element \a e at index \a i from an Index Set EV+MDD.
-    
-        size(e) = number of variables in the forest + 1 (for terminals).
-        TODO: complete this description
-    */
-    virtual void getElement(const dd_edge& a, int index, int* e) = 0;
 
-
-    /** Returns a state from the MDD represented by \a f.
-        @param  f       Edge.
-        @param  vlist   Output parameter used to return a state from \a f.
-    */
-    virtual void findFirstElement(const dd_edge& f, int* vlist) const = 0;
-
-
-    /** Returns a transition from the MXD represented by \a f.
-        @param  f       Edge.
-        @param  vlist   Output parameter used to return a 
-                        transition from \a f.
-        @param  vplist  Output parameter used to return a 
-                        transition from \a f.
-    */
-    virtual void findFirstElement(const dd_edge& f, int* vlist, int* vplist)
-      const = 0;
 
     /** Display all active (i.e., connected) nodes in the forest.
         This is primarily for aid in debugging.
