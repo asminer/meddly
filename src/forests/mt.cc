@@ -218,13 +218,17 @@ int MEDDLY::mt_forest::createReducedHelper(int in, const nodeBuilder &nb)
   int nnz = 0;
   int truncsize = -1;
   bool redundant = true;
+#ifdef CIARDO_IDENTITY
   int common = nb.d(0);
+#endif
   for (int i=0; i<nb.getSize(); i++) {
     if (nb.d(i)) {
       nnz++;
       truncsize = i;
     }
+#ifdef CIARDO_IDENTITY
     if (nb.d(i) != common) redundant = false;
+#endif
   } // for i
   truncsize++;
 
