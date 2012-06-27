@@ -30,7 +30,7 @@
 
 using namespace MEDDLY;
 
-#define DEBUG_RANDSET
+// #define DEBUG_RANDSET
 
 // #define DEBUG_SEGV
 
