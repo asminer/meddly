@@ -105,42 +105,7 @@ int MEDDLY::generic_binary_mdd::compute(int a, int b)
   arg2F->recycle(B);
   arg1F->recycle(A);
 
-  /*
-  if (aLevel < resultLevel) {
-    // expand b
-    // result[i] = a op b[i]
-    expert_forest::nodeReader* B = arg2F->initNodeReader(b);
-    for (int i=0; i<resultSize; i++) {
-      nb.d(i) = compute(a, (*B)[i]);
-    }
-    arg2F->recycle(B);
-  }
-  else if (bLevel < resultLevel) {
-    // expand a
-    // result[i] = a[i] op b
-    expert_forest::nodeReader* A = arg1F->initNodeReader(a);
-    for (int i=0; i<resultSize; i++) {
-      nb.d(i) = compute((*A)[i], b);
-    }
-    arg1F->recycle(A);
-  }
-  else {
-    // expand both a and b
-    // result[i] = a[i] op b[i]
-    expert_forest::nodeReader* A = arg1F->initNodeReader(a);
-    expert_forest::nodeReader* B = arg2F->initNodeReader(b);
-    for (int i=0; i<resultSize; i++) {
-      nb.d(i) = compute((*A)[i], (*B)[i]);
-    }
-    arg2F->recycle(B);
-    arg1F->recycle(A);
-  }
-  */
-
   result = resF->createReducedNode(nb);
-
-  // save result in compute cache and return it
-  result = resF->reduceNode(result);
 
   saveResult(a, b, result);
 #ifdef TRACE_ALL_OPS
