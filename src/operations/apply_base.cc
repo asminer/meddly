@@ -86,7 +86,8 @@ int MEDDLY::generic_binary_mdd::compute(int a, int b)
 
   int resultLevel = MAX(aLevel, bLevel);
   int resultSize = resF->getLevelSize(resultLevel);
-  expert_forest::nodeBuilder& nb = resF->useNodeBuilder(resultLevel, resultSize);
+  expert_forest::nodeBuilder& 
+    nb = resF->useNodeBuilder(resultLevel, resultSize);
 
   // Initialize readers
   expert_forest::nodeReader* A = (aLevel < resultLevel) 
@@ -107,7 +108,7 @@ int MEDDLY::generic_binary_mdd::compute(int a, int b)
   arg1F->recycle(A);
 
   // reduce and save result
-  result = resF->createReducedNode(nb);
+  result = resF->createReducedNode(0, nb);
   saveResult(a, b, result);
 
 #ifdef TRACE_ALL_OPS
@@ -133,6 +134,8 @@ MEDDLY::generic_binary_mxd::~generic_binary_mxd()
 {
 }
 
+#ifdef USE_NEW_OP
+
 int MEDDLY::generic_binary_mxd::compute(int a, int b) 
 {
   return compute(0, a, b);
@@ -143,22 +146,26 @@ int MEDDLY::generic_binary_mxd::compute(int i, int a, int b)
   int result = 0;
   if (checkTerminals(a, b, result))
     return result;
-  if (findResult(a, b, result))
+
+  int resultLevel = topLevel(aLevel, bLevel);
+  if (resultLevel > 0) i = 0; 
+  if (findResult(i, a, b, result))
     return result;
 
   // Get level information
   const int aLevel = arg1F->getNodeLevel(a);
   const int bLevel = arg2F->getNodeLevel(b);
 
-  int resultLevel = MAX(aLevel, bLevel);
+
   int resultSize = resF->getLevelSize(resultLevel);
-  expert_forest::nodeBuilder& nb = resF->useNodeBuilder(resultLevel, resultSize);
+  expert_forest::nodeBuilder& 
+    nb = resF->useNodeBuilder(resultLevel, resultSize);
 
   // Initialize readers
   expert_forest::nodeReader* A;
   if (aLevel == resultLevel) {
     A = arg1F->initNodeReader(a);
-  } else if (resultLevel>0 || arg1F->isIdentityReduced()) {
+  } else if (resultLevel>0 || arg1F->isFullyReduced()) {
     A = arg1F->initRedundantReader(resultLevel, a);
   } else {
     A = arg1F->initIdentityReader(resultLevel, i, a);
@@ -167,17 +174,13 @@ int MEDDLY::generic_binary_mxd::compute(int i, int a, int b)
   expert_forest::nodeReader* B;
   if (bLevel == resultLevel) {
     B = arg2F->initNodeReader(b);
-  } else if (resultLevel>0 || arg2F->isIdentityReduced()) {
+  } else if (resultLevel>0 || arg2F->isFullyReduced()) {
     B = arg2F->initRedundantReader(resultLevel, b);
   } else {
     B = arg2F->initIdentityReader(resultLevel, i, b);
   }
 
-  // do computation
   for (int j=0; j<resultSize; j++) {
-#ifdef TRACE_ALL_OPS
-    printf("    recurse (%d, %d, %d)\n", j, (*A)[j], (*B)[j]);
-#endif
     nb.d(j) = compute(j, (*A)[j], (*B)[j]);
   }
 
@@ -186,22 +189,23 @@ int MEDDLY::generic_binary_mxd::compute(int i, int a, int b)
   arg1F->recycle(A);
 
   // reduce and save result
-  result = resF->createReducedNode(nb);
+  result = resF->createReducedNode(i, nb);
   saveResult(a, b, result);
 
 #ifdef TRACE_ALL_OPS
-  printf("computed %s(%d, %d) = %d\n", getName(), a, b, result);
+  printf("computed %s(%d, %d, %d) = %d\n", getName(), i, a, b, result);
 #endif
 
   return result;
 }
 
-#if 0
+#else 
 
-int MEDDLY::generic_binary_mxd::compute(int a, int b) {
+int MEDDLY::generic_binary_mxd::compute(int a, int b) 
+{
   return arg1F->isIdentityReduced()
-      ? computeIdent(a, b)
-      : computeNonIdent(a, b);
+    ? computeIdent(a, b)
+    : computeNonIdent(a, b);
 }
 
 int MEDDLY::generic_binary_mxd::computeIdent(int a, int b)

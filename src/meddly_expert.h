@@ -692,7 +692,10 @@ class MEDDLY::expert_forest : public forest
   protected:
     /// Apply reduction rule to the temporary node and finalize it. Once
     /// a node is reduced, its contents cannot be modified.
-    virtual int createReducedHelper(const nodeBuilder &nb);
+    ///   @param  i   Index of pointer to this node, for identity reductions.
+    ///   @param  nb  Array of downward pointers.
+    ///   @return     Handle to a node that encodes the same thing.
+    virtual int createReducedHelper(int i, const nodeBuilder &nb);
 
 
 
@@ -1667,9 +1670,9 @@ class MEDDLY::expert_forest : public forest
       MEDDLY_DCASSERT(nb.lock);
       nb.lock = false;
     }
-    inline int createReducedNode(nodeBuilder& nb) {
+    inline int createReducedNode(int i, nodeBuilder& nb) {
       nb.computeHash();
-      int q = createReducedHelper(nb);
+      int q = createReducedHelper(i, nb);
       MEDDLY_DCASSERT(nb.lock);
       nb.lock = false;
       return q;

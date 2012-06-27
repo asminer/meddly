@@ -93,6 +93,13 @@ namespace MEDDLY {
     return d;
   }
 
+  /// Get the "top level" of an operation.  Works for primed & unprimed.
+  inline int topLevel(int k1, int k2) {
+    if (ABS(k1) > ABS(k2)) return k1;
+    if (ABS(k2) > ABS(k1)) return k2;
+    return MAX(k1, k2);
+  }
+
 
   // maxUlps would be a small +ve integer.
   inline bool isAlmostEqual(int A, int B) {

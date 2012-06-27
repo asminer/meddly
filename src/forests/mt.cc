@@ -206,7 +206,7 @@ void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
   result.set(node, 0, getNodeLevel(node));
 }
 
-int MEDDLY::mt_forest::createReducedHelper(const nodeBuilder &nb)
+int MEDDLY::mt_forest::createReducedHelper(int in, const nodeBuilder &nb)
 {
 
   // TBD:
@@ -217,11 +217,14 @@ int MEDDLY::mt_forest::createReducedHelper(const nodeBuilder &nb)
   // get sparse, truncated full sizes for this node
   int nnz = 0;
   int truncsize = -1;
+  bool redundant = true;
+  int common = nb.d(0);
   for (int i=0; i<nb.getSize(); i++) {
     if (nb.d(i)) {
       nnz++;
       truncsize = i;
     }
+    if (nb.d(i) != common) redundant = false;
   } // for i
   truncsize++;
 
@@ -231,14 +234,29 @@ int MEDDLY::mt_forest::createReducedHelper(const nodeBuilder &nb)
     return 0;
   }
 
+#ifdef CIARDO_IDENTITY
   // check for reductions
-  int q;
-  if (checkForReductions(nb, nnz, q)) {
-    return linkNode(q);
+  if (redundant) {
+    // Redundant node: should we eliminate it?
+    if (isFullyReduced() || (isIdentityReduced() && nb.getLevel()>0)) {
+      return linkNode(common);
+    }
   }
-  
+  if (1==nnz && nb.d(in)) {
+    // Identity node; should we eliminate it?
+    if (isIdentityReduced() && nb.getLevel()<0) {
+      return linkNode(nb.d(in));
+    }
+  }
+#else
+  int qq;
+  if (checkForReductions(nb, nnz, qq)) {
+    return linkNode(qq);
+  }
+#endif
+
   // check for duplicates in unique table
-  q = unique->find(nb);
+  int q = unique->find(nb);
   if (q) {
     return linkNode(q);
   }
@@ -690,10 +708,11 @@ void MEDDLY::mt_forest::showNodeGraph(FILE *s, int p) const
 
       if (!printed) {
         const variable* v = getDomain()->getVar(ABS(k));
+        char primed = (k>0) ? ' ' : '\'';
         if (v->getName()) {
-          fprintf(s, "Level: %s \n", v->getName());
+          fprintf(s, "Level: %s%c\n", v->getName(), primed);
         } else {
-          fprintf(s, "Level: %d \n", ABS(k));
+          fprintf(s, "Level: %d%c\n", ABS(k), primed);
         }
         printed = true;
       }
@@ -1756,6 +1775,25 @@ bool MEDDLY::mt_forest::singleNonZeroAt(int p, int val, int index) const
   return true;
 }
 
+int MEDDLY::mt_forest::singleNonZeroAt(int p, int index) const
+{
+  MEDDLY_DCASSERT(isActiveNode(p));
+  MEDDLY_DCASSERT(!isTerminalNode(p));
+  MEDDLY_DCASSERT(!isZombieNode(p));
+  if (isFullNode(p)) {
+    const int* dptr = getFullNodeDownPtrsReadOnly(p);
+    const int sz = getFullNodeSize(p);
+    if (index >= sz) return 0;
+    int i = 0;
+    for ( ; i < index; ++i) { if (dptr[i] != 0) return 0; }
+    for (i = index + 1 ; i < sz; ++i) { if (dptr[i] != 0) return 0; }
+    return dptr[index];
+  } 
+  if (getSparseNodeSize(p) != 1) return 0;
+  if (getSparseNodeIndex(p, 0) != index) return 0;
+  return getSparseNodeDownPtr(p, 0);
+}
+
 
 bool MEDDLY::mt_forest::checkForReductions(int p, int nnz, int& result)
 {
@@ -1808,6 +1846,7 @@ bool MEDDLY::mt_forest::checkForReductions(int p, int nnz, int& result)
 }
 
 
+#ifndef CIARDO_IDENTITY
 bool MEDDLY::mt_forest
 ::checkForReductions(const nodeBuilder& nb, int nnz, int& result)
 {
@@ -1826,19 +1865,12 @@ bool MEDDLY::mt_forest
 
     case policies::IDENTITY_REDUCED:
       MEDDLY_DCASSERT(isForRelations());
-        if (nb.getLevel()<0) return false;
-        if (isFullNode(nb.d(0))) {
-          result = getFullNodeDownPtr(nb.d(0), 0);
-          if (result == 0) return false;
-        } else {
-          int index = getSparseNodeIndex(nb.d(0), 0);
-          if (index != 0) return false;
-          result = getSparseNodeDownPtr(nb.d(0), 0);
-          MEDDLY_DCASSERT(result != 0);
-        }
-        for (int i = 0; i < nb.getSize(); i++) {
-          if (!singleNonZeroAt(nb.d(i), result, i)) return false;
-        }
+      if (nb.getLevel()<0) return false;
+      result = singleNonZeroAt(nb.d(0), 0);
+      if (0==result) return false;
+      for (int i = 1; i < nb.getSize(); i++) {
+        if (singleNonZeroAt(nb.d(i), i) != result) return false;
+      }
       return true;
 
     default:
@@ -1846,5 +1878,5 @@ bool MEDDLY::mt_forest
   }
   return false;
 }
-
+#endif
 

@@ -24,6 +24,8 @@
 
 #define VERBOSE
 
+// #define DEBUG_EVENTS
+
 inline int MAX(int a, int b) {
   return (a>b) ? a : b;
 }
@@ -163,7 +165,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
 
 #ifdef DEBUG_EVENTS
   printf("Complete NSF:\n");
-  nsf.show(stdout, 2);
+  nsf.show(stdout, 2); 
 #endif
 }
 

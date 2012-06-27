@@ -22,6 +22,8 @@
 #ifndef APPLY_BASE_H
 #define APPLY_BASE_H
 
+// #define USE_NEW_OP
+
 /*
     Useful base classes for binary apply operations.
 */
@@ -107,9 +109,10 @@ class MEDDLY::generic_binary_mxd : public generic_binary_mdd {
     virtual int compute(int a, int b);
 
   protected:
+#ifdef USE_NEW_OP
     // new identity reduction trick
     int compute(int i, int a, int b);
-    /*
+#else
     virtual int computeIdent(int a, int b);
     virtual int computeNonIdent(int a, int b);
 
@@ -121,7 +124,7 @@ class MEDDLY::generic_binary_mxd : public generic_binary_mdd {
       int resultLevel, int resultSize);
     virtual void singleExpandB(int a, int b, int result, 
       int resultLevel, int resultSize);
-    */
+#endif 
 };
 
 // ******************************************************************

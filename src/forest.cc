@@ -1992,7 +1992,7 @@ void MEDDLY::expert_forest::shrinkHandleList()
 #endif
 }
 
-int MEDDLY::expert_forest::createReducedHelper(const nodeBuilder &nb)
+int MEDDLY::expert_forest::createReducedHelper(int i, const nodeBuilder &nb)
 {
   throw error(error::TYPE_MISMATCH);
 }
