@@ -40,7 +40,6 @@ namespace MEDDLY {
 // ******************************************************************
 
 class MEDDLY::generic_binary_mdd : public binary_operation {
-    bool can_commute;
   public:
     generic_binary_mdd(const binary_opname* code, expert_forest* arg1, 
       expert_forest* arg2, expert_forest* res);
@@ -57,9 +56,6 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
 
   protected:
     virtual bool isStaleEntry(const int* entryData);
-    inline void operationCommutes() {
-      can_commute = (arg1F == arg2F);
-    }
 
     inline bool findResult(int a, int b, int &c) {
       if (can_commute && a > b) {
@@ -97,7 +93,7 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
 
 // ******************************************************************
 
-class MEDDLY::generic_binary_mxd : public generic_binary_mdd {
+class MEDDLY::generic_binary_mxd : public binary_operation {
   public:
     generic_binary_mxd(const binary_opname* code, expert_forest* arg1, 
       expert_forest* arg2, expert_forest* res);
@@ -106,6 +102,10 @@ class MEDDLY::generic_binary_mxd : public generic_binary_mdd {
     virtual ~generic_binary_mxd();
 
   public:
+    virtual void discardEntry(const int* entryData);
+    virtual void showEntry(FILE* strm, const int *entryData) const;
+    virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
+
     virtual int compute(int a, int b);
 
   protected:
@@ -125,6 +125,41 @@ class MEDDLY::generic_binary_mxd : public generic_binary_mdd {
     virtual void singleExpandB(int a, int b, int result, 
       int resultLevel, int resultSize);
 #endif 
+
+  protected:
+    virtual bool isStaleEntry(const int* entryData);
+
+    inline bool findResult(int a, int b, int &c) {
+      if (can_commute && a > b) {
+        CTsrch.key(0) = b;
+        CTsrch.key(1) = a;
+      } else {
+        CTsrch.key(0) = a;
+        CTsrch.key(1) = b;
+      }
+      const int* cacheFind = CT->find(CTsrch);
+      if (0==cacheFind) return false;
+      c = resF->linkNode(cacheFind[2]);
+      return true;
+    }
+
+    inline void saveResult(int a, int b, int c) {
+      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      if (can_commute && a > b) {
+        entry.key(0) = arg2F->cacheNode(b);
+        entry.key(1) = arg1F->cacheNode(a);
+      } else {
+        entry.key(0) = arg1F->cacheNode(a);
+        entry.key(1) = arg2F->cacheNode(b);
+      }
+      entry.result(0) = resF->cacheNode(c);
+      CT->addEntry();
+    }
+
+  protected:
+    // If terminal condition is reached, returns true and the result in c.
+    // Must be provided in derived classes.
+    virtual bool checkTerminals(int a, int b, int& c) = 0;
 };
 
 // ******************************************************************
@@ -147,9 +182,6 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
 
   protected:
     virtual bool isStaleEntry(const int* entryData);
-    inline void operationCommutes() {
-      can_commute = (arg1F == arg2F);
-    }
 
     inline bool findResult(int k, int a, int b, int &c) {
       CTsrch.key(0) = k;

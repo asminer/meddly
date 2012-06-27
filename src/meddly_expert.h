@@ -2214,6 +2214,7 @@ class MEDDLY::unary_operation : public operation {
 */
 class MEDDLY::binary_operation : public operation {
   protected:
+    bool can_commute;
     expert_forest* arg1F;
     expert_forest* arg2F;
     expert_forest* resF;
@@ -2241,6 +2242,11 @@ class MEDDLY::binary_operation : public operation {
     virtual int compute(int a, int b);
     /// Low-level compute at level k on nodes a and b, return result.
     virtual int compute(int k, int a, int b);
+
+  protected:
+    inline void operationCommutes() {
+      can_commute = (arg1F == arg2F);
+    }
 };
 
 // ******************************************************************

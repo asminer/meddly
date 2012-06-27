@@ -37,7 +37,6 @@ MEDDLY::generic_binary_mdd::generic_binary_mdd(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : binary_operation(code, 2, 1, arg1, arg2, res)
 {
-  can_commute = false;
 }
 
 MEDDLY::generic_binary_mdd::~generic_binary_mdd()
@@ -126,13 +125,41 @@ int MEDDLY::generic_binary_mdd::compute(int a, int b)
 
 MEDDLY::generic_binary_mxd::generic_binary_mxd(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-  : generic_binary_mdd(code, arg1, arg2, res)
+  : binary_operation(code, 2, 1, arg1, arg2, res)
 {
 }
 
 MEDDLY::generic_binary_mxd::~generic_binary_mxd()
 {
 }
+
+bool MEDDLY::generic_binary_mxd::isStaleEntry(const int* data)
+{
+  return arg1F->isStale(data[0]) ||
+         arg2F->isStale(data[1]) ||
+         resF->isStale(data[2]);
+}
+
+void MEDDLY::generic_binary_mxd::discardEntry(const int* data)
+{
+  arg1F->uncacheNode(data[0]);
+  arg2F->uncacheNode(data[1]);
+  resF->uncacheNode(data[2]);
+}
+
+void
+MEDDLY::generic_binary_mxd ::showEntry(FILE* strm, const int *data) const
+{
+  fprintf(strm, "[%s(%d, %d): %d]", getName(), data[0], data[1], data[2]);
+}
+
+void MEDDLY::generic_binary_mxd::compute(const dd_edge &a, const dd_edge &b, 
+  dd_edge &c)
+{
+  int cnode = compute(a.getNode(), b.getNode());
+  c.set(cnode, 0, resF->getNodeLevel(cnode));
+}
+
 
 #ifdef USE_NEW_OP
 

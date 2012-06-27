@@ -322,6 +322,7 @@ MEDDLY::binary_operation::binary_operation(const binary_opname* op, int kl,
   registerInForest(res);
 
   setAnswerForest(resF);
+  can_commute = false;
 }
 
 MEDDLY::binary_operation::~binary_operation()
