@@ -1870,12 +1870,27 @@ bool MEDDLY::mt_forest
     case policies::IDENTITY_REDUCED:
       MEDDLY_DCASSERT(isForRelations());
       if (nb.getLevel()<0) return false;
+      /* TOO SLOW, THIS
       result = singleNonZeroAt(nb.d(0), 0);
       if (0==result) return false;
       for (int i = 1; i < nb.getSize(); i++) {
         if (singleNonZeroAt(nb.d(i), i) != result) return false;
       }
       return true;
+      */
+        if (isFullNode(nb.d(0))) {
+          result = getFullNodeDownPtr(nb.d(0), 0);
+          if (result == 0) return false;
+        } else {
+          int index = getSparseNodeIndex(nb.d(0), 0);
+          if (index != 0) return false;
+          result = getSparseNodeDownPtr(nb.d(0), 0);
+          MEDDLY_DCASSERT(result != 0);
+        }
+        for (int i = 0; i < nb.getSize(); i++) {
+          if (!singleNonZeroAt(nb.d(i), result, i)) return false;
+        }
+        return true;
 
     default:
       return false;
