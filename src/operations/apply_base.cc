@@ -25,6 +25,9 @@
 #include "../defines.h"
 #include "apply_base.h"
 
+#define TRACE_ALL_OPS
+#define WTF_DEBUG
+
 // ******************************************************************
 // *                                                                *
 // *                   generic_binary_mdd methods                   *
@@ -156,23 +159,32 @@ int MEDDLY::generic_binary_mxd::compute(int i, int a, int b)
   expert_forest::nodeReader* A;
   if (aLevel == resultLevel) {
     A = arg1F->initNodeReader(a);
+    printf("A1\n");
   } else if (resultLevel>0 || arg1F->isIdentityReduced()) {
     A = arg1F->initRedundantReader(resultLevel, a);
+    printf("A2\n");
   } else {
     A = arg1F->initIdentityReader(resultLevel, i, a);
+    printf("A3\n");
   }
 
   expert_forest::nodeReader* B;
   if (bLevel == resultLevel) {
     B = arg2F->initNodeReader(a);
+    printf("B1\n");
   } else if (resultLevel>0 || arg2F->isIdentityReduced()) {
     B = arg2F->initRedundantReader(resultLevel, b);
+    printf("B2\n");
   } else {
     B = arg2F->initIdentityReader(resultLevel, i, b);
+    printf("B3\n");
   }
 
   // do computation
   for (int j=0; j<resultSize; j++) {
+#ifdef TRACE_ALL_OPS
+    printf("    recurse (%d, %d, %d)\n", j, (*A)[j], (*B)[j]);
+#endif
     nb.d(j) = compute(j, (*A)[j], (*B)[j]);
   }
 
@@ -187,6 +199,16 @@ int MEDDLY::generic_binary_mxd::compute(int i, int a, int b)
 #ifdef TRACE_ALL_OPS
   printf("computed %s(%d, %d) = %d\n", getName(), a, b, result);
 #endif
+#ifdef WTF_DEBUG
+  printf("\t%d: ", a);
+  A->dump(stdout);
+  printf("  (level %d, size %d, forest %lu)\n", aLevel, A->getSize(), arg1F);
+  printf("\t%d: ", b);
+  B->dump(stdout);
+  printf("  (level %d, size %d, forest %lu)\n", bLevel, B->getSize(), arg2F);
+  printf("result: level %d size %d\n", resultLevel, resultSize);
+#endif
+
   return result;
 }
 

@@ -1560,8 +1560,16 @@ class MEDDLY::expert_forest : public forest
           return level;
         }
 
+        inline int getSize() const {
+          return size;
+        }
+
+        // For debudding
+        void dump(FILE*) const;
+
       private:
         int* buffer;
+        int alloc;
         int size;
         int level;
         nodeReader* next;  // free list
