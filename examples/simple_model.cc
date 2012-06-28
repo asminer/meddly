@@ -24,7 +24,8 @@
 
 #define VERBOSE
 
-// #define DEBUG_EVENTS
+//#define DEBUG_EVENTS
+//#define DEBUG_EVENTS_LONG
 
 inline int MAX(int a, int b) {
   return (a>b) ? a : b;
@@ -144,6 +145,10 @@ void buildNextStateFunction(const char* const* events, int nEvents,
 #endif
     if (verb>2) fputc(' ', stderr);
     nsf += nsf_ev;
+#ifdef DEBUG_EVENTS_LONG
+    printf("Complete after adding event %d:\n", e);
+    nsf.show(stdout, 2);
+#endif
 
     if (verb>2) fputc('\n', stderr);
   } // for e

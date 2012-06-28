@@ -107,7 +107,7 @@ int MEDDLY::generic_binary_mdd::compute(int a, int b)
   arg1F->recycle(A);
 
   // reduce and save result
-  result = resF->createReducedNode(0, nb);
+  result = resF->createReducedNode(-1, nb);
   saveResult(a, b, result);
 
 #ifdef TRACE_ALL_OPS
@@ -165,28 +165,28 @@ void MEDDLY::generic_binary_mxd::compute(const dd_edge &a, const dd_edge &b,
 
 int MEDDLY::generic_binary_mxd::compute(int a, int b) 
 {
-  return compute(0, a, b);
+  return compute(-1, a, b);
 }
 
-int MEDDLY::generic_binary_mxd::compute(int i, int a, int b)
+int MEDDLY::generic_binary_mxd::compute(int in, int a, int b)
 {
   int result = 0;
   if (checkTerminals(a, b, result))
     return result;
 
-  int resultLevel = topLevel(aLevel, bLevel);
-  if (resultLevel > 0) i = 0; 
-  if (findResult(i, a, b, result))
+  if (findResult(a, b, result))
     return result;
 
   // Get level information
   const int aLevel = arg1F->getNodeLevel(a);
   const int bLevel = arg2F->getNodeLevel(b);
-
+  int resultLevel = topLevel(aLevel, bLevel);
 
   int resultSize = resF->getLevelSize(resultLevel);
   expert_forest::nodeBuilder& 
     nb = resF->useNodeBuilder(resultLevel, resultSize);
+
+  bool canSaveResult = true;
 
   // Initialize readers
   expert_forest::nodeReader* A;
@@ -195,7 +195,8 @@ int MEDDLY::generic_binary_mxd::compute(int i, int a, int b)
   } else if (resultLevel>0 || arg1F->isFullyReduced()) {
     A = arg1F->initRedundantReader(resultLevel, a);
   } else {
-    A = arg1F->initIdentityReader(resultLevel, i, a);
+    A = arg1F->initIdentityReader(resultLevel, in, a);
+    canSaveResult = false;
   }
 
   expert_forest::nodeReader* B;
@@ -204,7 +205,8 @@ int MEDDLY::generic_binary_mxd::compute(int i, int a, int b)
   } else if (resultLevel>0 || arg2F->isFullyReduced()) {
     B = arg2F->initRedundantReader(resultLevel, b);
   } else {
-    B = arg2F->initIdentityReader(resultLevel, i, b);
+    B = arg2F->initIdentityReader(resultLevel, in, b);
+    canSaveResult = false;
   }
 
   for (int j=0; j<resultSize; j++) {
@@ -216,11 +218,11 @@ int MEDDLY::generic_binary_mxd::compute(int i, int a, int b)
   arg1F->recycle(A);
 
   // reduce and save result
-  result = resF->createReducedNode(i, nb);
-  saveResult(a, b, result);
+  result = resF->createReducedNode(in, nb);
+  if (canSaveResult) saveResult(a, b, result);
 
 #ifdef TRACE_ALL_OPS
-  printf("computed %s(%d, %d, %d) = %d\n", getName(), i, a, b, result);
+  printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
 #endif
 
   return result;

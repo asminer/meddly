@@ -1641,6 +1641,25 @@ void MEDDLY::expert_forest::recycle(nodeReader *r)
   free_reader[r->level] = r;
 }
 
+int MEDDLY::expert_forest::getSingletonDown(int n, int index) const
+{
+  const node_data& node = getNode(n);
+  MEDDLY_DCASSERT(node.level);
+  const level_data &ld = levels[node.level];
+  if (ld.isFull(node.offset)) {
+    // full node
+    if (ld.fullSizeOf(node.offset) != 1+index) return 0;
+    const int* dn = ld.fullDownOf(node.offset);
+    for (int i=index-1; i>=0; i--) if (dn[i]) return 0;
+    return dn[index];
+  } else {
+    // sparse node --- easy
+    if (ld.sparseSizeOf(node.offset) != 1) return 0;
+    if (ld.sparseIndexesOf(node.offset)[0] != index) return 0;
+    return ld.sparseDownOf(node.offset)[0];
+  }
+}
+
 void MEDDLY::expert_forest::garbageCollect()
 {
   if (performing_gc) return;
@@ -1992,7 +2011,7 @@ void MEDDLY::expert_forest::shrinkHandleList()
 #endif
 }
 
-int MEDDLY::expert_forest::createReducedHelper(int i, const nodeBuilder &nb)
+int MEDDLY::expert_forest::createReducedHelper(int in, const nodeBuilder &nb)
 {
   throw error(error::TYPE_MISMATCH);
 }

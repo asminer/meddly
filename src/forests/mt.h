@@ -34,9 +34,6 @@
 
 #include "../defines.h"
 
-// #define CIARDO_IDENTITY
-
-
 namespace MEDDLY {
   class mt_forest;
 };
@@ -66,7 +63,7 @@ class MEDDLY::mt_forest : public expert_forest {
   // ------------------------------------------------------------
   // virtual and overriding default behavior
   protected:
-    virtual int createReducedHelper(int i, const nodeBuilder& nb);
+    virtual int createReducedHelper(int in, const nodeBuilder& nb);
 
   
 
@@ -257,17 +254,11 @@ class MEDDLY::mt_forest : public expert_forest {
     // OBSOLETE
     bool checkForReductions(int p, int nnz, int& result);
 
-#ifndef CIARDO_IDENTITY
     bool checkForReductions(const nodeBuilder &nb, int nnz, int& result);
-#endif
 
     // Checks if the node has a single downpointer enabled and at
     // the given index.
     bool singleNonZeroAt(int p, int val, int index) const;
-
-    // Returns zero, or the downward pointer if this is a
-    // node with one downward pointer at the given index.
-    int singleNonZeroAt(int p, int index) const;
 
     // Checks if the node satisfies the forests reduction rules.
     // If it does not, an assert violation occurs.

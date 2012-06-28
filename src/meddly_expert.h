@@ -668,6 +668,17 @@ class MEDDLY::expert_forest : public forest
     /// Recycle a node reader.
     void recycle(nodeReader *);
 
+    /** Check and get a single downward pointer.
+
+          @param  node    Node we care about
+          @param  index   Index we're trying to match
+
+          @return   If the only non-zero downward pointer for
+                    this node happens at \a index, then return the pointer.
+                    Otherwise, return 0.
+    */
+    int getSingletonDown(int node, int index) const;
+
   // ------------------------------------------------------------
   // virtual in the base class, but implemented here.
   // See meddly.h for descriptions of these methods.
@@ -692,10 +703,11 @@ class MEDDLY::expert_forest : public forest
   protected:
     /// Apply reduction rule to the temporary node and finalize it. Once
     /// a node is reduced, its contents cannot be modified.
-    ///   @param  i   Index of pointer to this node, for identity reductions.
+    ///   @param  in  Incoming index, used only for identity reduction;
+    ///               Or -1.
     ///   @param  nb  Array of downward pointers.
     ///   @return     Handle to a node that encodes the same thing.
-    virtual int createReducedHelper(int i, const nodeBuilder &nb);
+    virtual int createReducedHelper(int in, const nodeBuilder &nb);
 
 
 
@@ -1670,9 +1682,9 @@ class MEDDLY::expert_forest : public forest
       MEDDLY_DCASSERT(nb.lock);
       nb.lock = false;
     }
-    inline int createReducedNode(int i, nodeBuilder& nb) {
+    inline int createReducedNode(int in, nodeBuilder& nb) {
       nb.computeHash();
-      int q = createReducedHelper(i, nb);
+      int q = createReducedHelper(in, nb);
       MEDDLY_DCASSERT(nb.lock);
       nb.lock = false;
       return q;

@@ -218,17 +218,11 @@ int MEDDLY::mt_forest::createReducedHelper(int in, const nodeBuilder &nb)
   int nnz = 0;
   int truncsize = -1;
   bool redundant = true;
-#ifdef CIARDO_IDENTITY
-  int common = nb.d(0);
-#endif
   for (int i=0; i<nb.getSize(); i++) {
     if (nb.d(i)) {
       nnz++;
       truncsize = i;
     }
-#ifdef CIARDO_IDENTITY
-    if (nb.d(i) != common) redundant = false;
-#endif
   } // for i
   truncsize++;
 
@@ -238,26 +232,10 @@ int MEDDLY::mt_forest::createReducedHelper(int in, const nodeBuilder &nb)
     return 0;
   }
 
-#ifdef CIARDO_IDENTITY
-  // check for reductions
-  if (redundant) {
-    // Redundant node: should we eliminate it?
-    if (isFullyReduced() || (isIdentityReduced() && nb.getLevel()>0)) {
-      return linkNode(common);
-    }
-  }
-  if (1==nnz && nb.d(in)) {
-    // Identity node; should we eliminate it?
-    if (isIdentityReduced() && nb.getLevel()<0) {
-      return linkNode(nb.d(in));
-    }
-  }
-#else
   int qq;
   if (checkForReductions(nb, nnz, qq)) {
     return linkNode(qq);
   }
-#endif
 
   // check for duplicates in unique table
   int q = unique->find(nb);
@@ -1779,26 +1757,6 @@ bool MEDDLY::mt_forest::singleNonZeroAt(int p, int val, int index) const
   return true;
 }
 
-int MEDDLY::mt_forest::singleNonZeroAt(int p, int index) const
-{
-  MEDDLY_DCASSERT(isActiveNode(p));
-  MEDDLY_DCASSERT(!isTerminalNode(p));
-  MEDDLY_DCASSERT(!isZombieNode(p));
-  if (isFullNode(p)) {
-    const int* dptr = getFullNodeDownPtrsReadOnly(p);
-    const int sz = getFullNodeSize(p);
-    if (index >= sz) return 0;
-    int i = 0;
-    for ( ; i < index; ++i) { if (dptr[i] != 0) return 0; }
-    for (i = index + 1 ; i < sz; ++i) { if (dptr[i] != 0) return 0; }
-    return dptr[index];
-  } 
-  if (getSparseNodeSize(p) != 1) return 0;
-  if (getSparseNodeIndex(p, 0) != index) return 0;
-  return getSparseNodeDownPtr(p, 0);
-}
-
-
 bool MEDDLY::mt_forest::checkForReductions(int p, int nnz, int& result)
 {
   if (isQuasiReduced()) return false;
@@ -1850,7 +1808,6 @@ bool MEDDLY::mt_forest::checkForReductions(int p, int nnz, int& result)
 }
 
 
-#ifndef CIARDO_IDENTITY
 bool MEDDLY::mt_forest
 ::checkForReductions(const nodeBuilder& nb, int nnz, int& result)
 {
@@ -1870,32 +1827,16 @@ bool MEDDLY::mt_forest
     case policies::IDENTITY_REDUCED:
       MEDDLY_DCASSERT(isForRelations());
       if (nb.getLevel()<0) return false;
-      /* TOO SLOW, THIS
-      result = singleNonZeroAt(nb.d(0), 0);
+      result = getSingletonDown(nb.d(0), 0);
       if (0==result) return false;
       for (int i = 1; i < nb.getSize(); i++) {
-        if (singleNonZeroAt(nb.d(i), i) != result) return false;
+        if (getSingletonDown(nb.d(i), i) != result) return false;
       }
       return true;
-      */
-        if (isFullNode(nb.d(0))) {
-          result = getFullNodeDownPtr(nb.d(0), 0);
-          if (result == 0) return false;
-        } else {
-          int index = getSparseNodeIndex(nb.d(0), 0);
-          if (index != 0) return false;
-          result = getSparseNodeDownPtr(nb.d(0), 0);
-          MEDDLY_DCASSERT(result != 0);
-        }
-        for (int i = 0; i < nb.getSize(); i++) {
-          if (!singleNonZeroAt(nb.d(i), result, i)) return false;
-        }
-        return true;
 
     default:
       return false;
   }
   return false;
 }
-#endif
 
