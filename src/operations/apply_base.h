@@ -165,7 +165,6 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
 // ******************************************************************
 
 class MEDDLY::generic_binbylevel_mxd : public binary_operation {
-    bool can_commute;
   public:
     generic_binbylevel_mxd(const binary_opname* code, expert_forest* arg1, 
       expert_forest* arg2, expert_forest* res);
@@ -236,8 +235,6 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
 // ******************************************************************
 
 class MEDDLY::generic_binary_ev : public binary_operation {
-  protected:
-    bool can_commute;
   public:
     generic_binary_ev(const binary_opname* code, expert_forest* arg1, 
       expert_forest* arg2, expert_forest* res);
@@ -250,9 +247,6 @@ class MEDDLY::generic_binary_ev : public binary_operation {
 
   protected:
     virtual bool isStaleEntry(const int* entryData);
-    inline void operationCommutes() {
-      can_commute = (arg1F == arg2F);
-    }
 };
 
 // ******************************************************************
