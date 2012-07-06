@@ -668,6 +668,18 @@ class MEDDLY::expert_forest : public forest
     /// Recycle a node reader.
     void recycle(nodeReader *);
 
+    /** Check and find the index of a single downward pointer.
+
+          @param  node    Node we care about
+          @param  down    Output:
+                          The singleton downward pointer, or undefined.
+
+          @return   If the node has only one non-zero downward pointer,
+                    then return the index for that pointer.
+                    Otherwise, return a negative value.
+    */
+    int getSingletonIndex(int node, int &down) const;
+
     /** Check and get a single downward pointer.
 
           @param  node    Node we care about
@@ -677,7 +689,12 @@ class MEDDLY::expert_forest : public forest
                     this node happens at \a index, then return the pointer.
                     Otherwise, return 0.
     */
-    int getSingletonDown(int node, int index) const;
+    inline int getSingletonDown(int node, int index) const {
+      int down;
+      if (getSingletonIndex(node, down) == index) return down;
+      return 0;
+    }
+
 
   // ------------------------------------------------------------
   // virtual in the base class, but implemented here.
@@ -706,8 +723,10 @@ class MEDDLY::expert_forest : public forest
     ///   @param  in  Incoming index, used only for identity reduction;
     ///               Or -1.
     ///   @param  nb  Array of downward pointers.
+    ///   @param  u   Does the caller need to unlink the pointers.
+    ///               Will be false iff a new node was created.
     ///   @return     Handle to a node that encodes the same thing.
-    virtual int createReducedHelper(int in, const nodeBuilder &nb);
+    virtual int createReducedHelper(int in, const nodeBuilder &nb, bool &u);
 
 
 
@@ -755,6 +774,7 @@ class MEDDLY::expert_forest : public forest
   // here down --- needs organizing
   public:
 
+#ifdef USE_OLD_ACCESS
     /// Create a temporary node -- a node that can be modified by the user.
     /// If \a clear is true, downpointers are initialized to 0.
     virtual int createTempNode(int lh, int size, bool clear = true) = 0;
@@ -763,7 +783,6 @@ class MEDDLY::expert_forest : public forest
     /// If \a clear is true, downpointers are initialized to 0.
     int createTempNodeMaxSize(int lh, bool clear = true);
 
-#ifdef USE_OLD_ACCESS
     /// Create a temporary node with the given downpointers. Note that
     /// downPointers[i] corresponds to the downpointer at index i.
     /// IMPORTANT: The incounts for the downpointers are not incremented.
@@ -1614,6 +1633,7 @@ class MEDDLY::expert_forest : public forest
     class nodeBuilder {
         const level_data* parent;
         int* down;
+        int* indexes;
         int* edges;
         int level;
         int size;
@@ -1621,14 +1641,31 @@ class MEDDLY::expert_forest : public forest
         // TBD: need "extra" header stuff
         unsigned h;
         bool has_hash;
+        bool is_sparse;
       public:
         bool lock;
       public:
         nodeBuilder();
         ~nodeBuilder();
         void init(int k, const level_data* ld);
-        void resize(int s);
+        inline void resize(int s) {
+          is_sparse = false;
+          has_hash = false;
+          size = s;
+          if (size > alloc) enlarge();
+        }
+        inline void resparse(int s) {
+          is_sparse = true;
+          has_hash = false;
+          size = s;
+          if (size > alloc) enlarge();
+        }
         inline int getSize() const { 
+          MEDDLY_DCASSERT(!is_sparse);
+          return size;
+        }
+        inline int getNNZs() const {
+          MEDDLY_DCASSERT(is_sparse);
           return size;
         }
         inline int getLevel() const { 
@@ -1645,6 +1682,19 @@ class MEDDLY::expert_forest : public forest
           MEDDLY_CHECK_RANGE(0, i, size);
           return down[i];
         }
+        inline int& i(int i) {
+          MEDDLY_DCASSERT(!has_hash);
+          MEDDLY_DCASSERT(indexes);
+          MEDDLY_DCASSERT(is_sparse);
+          MEDDLY_CHECK_RANGE(0, i, size);
+          return indexes[i];
+        }
+        inline int i(int i) const {
+          MEDDLY_DCASSERT(indexes);
+          MEDDLY_DCASSERT(is_sparse);
+          MEDDLY_CHECK_RANGE(0, i, size);
+          return indexes[i];
+        }
         inline int& v(int i) {
           MEDDLY_DCASSERT(!has_hash);
           MEDDLY_DCASSERT(edges);
@@ -1656,6 +1706,9 @@ class MEDDLY::expert_forest : public forest
           MEDDLY_CHECK_RANGE(0, i, size);
           return edges[i];
         }
+        inline bool isSparse() const {
+          return is_sparse;
+        }
       public: // for unique table
         inline unsigned hash() const {
           MEDDLY_DCASSERT(has_hash);
@@ -1663,6 +1716,18 @@ class MEDDLY::expert_forest : public forest
         }
         bool equals(int p) const;
         void computeHash();
+
+      public: // helpers for copying
+        void copyIntoFull(int* down, int N) const;
+        void copyIntoSparse(int* down, int* indexes, int Z) const;
+
+      public: // helper for reducing
+        void unlink(expert_forest &f) const {
+          for (int i=0; i<size; i++) f.unlinkNode(down[i]);
+        }
+
+      protected:
+        void enlarge();
 
     }; // end of nodeBuilder struct
     // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1678,15 +1743,24 @@ class MEDDLY::expert_forest : public forest
       builders[level].lock = true;
       return builders[level];
     }
+    inline nodeBuilder& useSparseBuilder(int level, int nnz) {
+      MEDDLY_DCASSERT(isValidLevel(level));
+      MEDDLY_DCASSERT(!builders[level].lock);
+      builders[level].resparse(nnz);
+      builders[level].lock = true;
+      return builders[level];
+    }
     inline void doneNodeBuilder(nodeBuilder& nb) {
       MEDDLY_DCASSERT(nb.lock);
       nb.lock = false;
     }
     inline int createReducedNode(int in, nodeBuilder& nb) {
       nb.computeHash();
-      int q = createReducedHelper(in, nb);
+      bool u;
+      int q = createReducedHelper(in, nb, u);
       MEDDLY_DCASSERT(nb.lock);
       nb.lock = false;
+      if (u) nb.unlink(*this);
       return q;
     }
     
@@ -2505,11 +2579,13 @@ int MEDDLY::expert_forest::getTerminalNode(float a) const
 
 #endif
 
+#ifdef USE_OLD_ACCESS
 inline
 int MEDDLY::expert_forest::createTempNodeMaxSize(int lh, bool clear)
 {
   return createTempNode(lh, getLevelSize(lh), clear);
 }
+#endif
 
 inline
 int MEDDLY::expert_forest::getNodeLevel(int p) const

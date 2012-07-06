@@ -100,6 +100,12 @@ namespace MEDDLY {
     return MAX(k1, k2);
   }
 
+  /// Determine if level k1 is above k2.  Works for primed & unprimed.
+  inline bool isLevelAbove(int k1, int k2) {
+    if (ABS(k1) > ABS(k2)) return true;
+    if (ABS(k2) > ABS(k1)) return false;
+    return k1 > k2;
+  }
 
   // maxUlps would be a small +ve integer.
   inline bool isAlmostEqual(int A, int B) {

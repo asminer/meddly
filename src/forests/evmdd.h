@@ -397,7 +397,7 @@ void MEDDLY::evmdd_forest::createNode(int k, int index, int dptr, T ev,
     // equivalent to say that they are all 0 (since we subtract the minimum
     // anyway).
     if (isFullyReduced()) {
-      res = sharedCopy(dptr);
+      res = linkNode(dptr);
       resEv = ev;
       return;
     }
@@ -459,7 +459,7 @@ void MEDDLY::evmdd_forest::createSparseNode(int k, int index,
 
   int* foo = levels[k].data + address[p].offset;
   foo[3] = index;                 // index
-  foo[4] = sharedCopy(dptr);      // downpointer
+  foo[4] = linkNode(dptr);      // downpointer
   T identEv;
   getIdentityEdgeValue(identEv);
   foo[5] = toInt(identEv);        // this is the only ev, set resEv = ev
@@ -493,7 +493,7 @@ void MEDDLY::evmdd_forest::createSparseNode(int k, int index,
       freeActiveNode(p);
       if (levels[k].compactLevel) levels[k].compact(address);
     }
-    res = sharedCopy(q);
+    res = linkNode(q);
   }
 }
 

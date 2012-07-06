@@ -1003,6 +1003,79 @@ void MEDDLY::generic_binbylevel_mxd
   c.set(result, 0, resF->getNodeLevel(result));
 }
 
+#ifdef USE_NEW_OP
+
+int MEDDLY::generic_binbylevel_mxd::compute(int level, int a, int b) 
+{
+  return compute(-1, level, a, b);
+}
+
+int MEDDLY::generic_binbylevel_mxd
+::compute(int in, int resultLevel, int a, int b)
+{
+  int result = 0;
+  if (0==resultLevel) {
+    if (checkTerminals(a, b, result))
+      return result;
+  }
+
+  if (findResult(resultLevel, a, b, result))
+    return result;
+
+  // Get level information
+  const int aLevel = arg1F->getNodeLevel(a);
+  const int bLevel = arg2F->getNodeLevel(b);
+
+  int resultSize = resF->getLevelSize(resultLevel);
+  expert_forest::nodeBuilder& 
+    nb = resF->useNodeBuilder(resultLevel, resultSize);
+
+  bool canSaveResult = true;
+
+  // Initialize readers
+  expert_forest::nodeReader* A;
+  if (aLevel == resultLevel) {
+    A = arg1F->initNodeReader(a);
+  } else if (resultLevel>0 || arg1F->isFullyReduced()) {
+    A = arg1F->initRedundantReader(resultLevel, a);
+  } else {
+    A = arg1F->initIdentityReader(resultLevel, in, a);
+    canSaveResult = false;
+  }
+
+  expert_forest::nodeReader* B;
+  if (bLevel == resultLevel) {
+    B = arg2F->initNodeReader(b);
+  } else if (resultLevel>0 || arg2F->isFullyReduced()) {
+    B = arg2F->initRedundantReader(resultLevel, b);
+  } else {
+    B = arg2F->initIdentityReader(resultLevel, in, b);
+    canSaveResult = false;
+  }
+
+  int nextLevel = (resultLevel > 0)? -resultLevel: -resultLevel-1;
+  for (int j=0; j<resultSize; j++) {
+    nb.d(j) = compute(j, nextLevel, (*A)[j], (*B)[j]);
+  }
+
+  // cleanup
+  arg2F->recycle(B);
+  arg1F->recycle(A);
+
+  // reduce and save result
+  result = resF->createReducedNode(in, nb);
+  if (canSaveResult) saveResult(resultLevel, a, b, result);
+
+#ifdef TRACE_ALL_OPS
+  printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
+#endif
+
+  return result;
+}
+
+
+#else
+
 int MEDDLY::generic_binbylevel_mxd
 ::compute(int resultLevel, int a, int b)
 {
@@ -1834,7 +1907,7 @@ void MEDDLY::generic_binbylevel_mxd::singleExpandB(int a, int b,
 }
 
 
-
+#endif
 
 
 // ******************************************************************

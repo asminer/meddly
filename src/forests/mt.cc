@@ -46,6 +46,8 @@
 
 #define DEBUG_DELETE_NM 0
 
+#define USE_CIARDO_IDENTITY
+
 // #define DEBUG_CARD
 
 //#define TRACK_DELETIONS
@@ -206,13 +208,80 @@ void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
   result.set(node, 0, getNodeLevel(node));
 }
 
-int MEDDLY::mt_forest::createReducedHelper(int in, const nodeBuilder &nb)
+int MEDDLY::mt_forest
+::createReducedHelper(int in, const nodeBuilder &nb, bool &u)
 {
-
+  u = true;
   // TBD:
   // #ifdef DEVELOPMENT_CODE
   // validateDownPointers(nb);
   // #endif
+
+#ifdef USE_CIARDO_IDENTITY
+
+  // get sparse, truncated full sizes and check
+  // for redundant / identity reductions.
+  int nnz;
+  int truncsize;
+  if (nb.isSparse()) {
+    // Reductions for sparse nodes
+    truncsize = -1;
+    nnz = nb.getNNZs();
+    for (int z=0; z<nnz; z++) {
+      MEDDLY_DCASSERT(nb.d(z));
+      truncsize = MAX(truncsize, nb.i(z));
+    } // for z
+
+    // Is this an identity node, and should we eliminate it?
+    if (1==nnz && nb.getLevel()<0 && in==nb.i(0)) {
+      if (isIdentityReduced()) {
+        return linkNode(nb.d(0));
+      }
+    }
+
+  } else {
+    // Reductions for full nodes
+    bool redundant = true;
+    int common = nb.d(0);
+    if (common) {
+      nnz = 1;
+      truncsize = 0;
+    } else {
+      nnz = 0;
+      truncsize = -1;
+    }
+    for (int i=1; i<nb.getSize(); i++) {
+      if (redundant) {
+        redundant = (nb.d(i) == common);
+      }
+      if (nb.d(i)) {
+        nnz++;
+        truncsize = i;
+      }
+    } // for i
+
+    // Is this a redundant node, and should we eliminate it?
+    if (redundant) {
+      if (isFullyReduced() || (isIdentityReduced() && nb.getLevel()>0))
+        return linkNode(common);
+    }
+
+    // Is this an identity node, and should we eliminate it?
+    if (in>=0 && 1==nnz && nb.getLevel()<0 && nb.d(in)) {
+      if (isIdentityReduced())
+        return linkNode(nb.d(in));
+    }
+  }
+  truncsize++;
+
+  // Is this a zero node?
+  if (0==nnz) {
+    MEDDLY_DCASSERT(0==truncsize);  // sanity check
+    return 0;
+  }
+
+
+#else
 
   // get sparse, truncated full sizes for this node
   int nnz = 0;
@@ -237,6 +306,8 @@ int MEDDLY::mt_forest::createReducedHelper(int in, const nodeBuilder &nb)
     return linkNode(qq);
   }
 
+#endif
+
   // check for duplicates in unique table
   int q = unique->find(nb);
   if (q) {
@@ -248,6 +319,7 @@ int MEDDLY::mt_forest::createReducedHelper(int in, const nodeBuilder &nb)
   // Not a duplicate.
   //
   // We need to create a new node for this.
+  u = false;
   int p = getFreeNodeHandle();
   address[p].level = nb.getLevel();
   MEDDLY_DCASSERT(0 == address[p].cache_count);
@@ -260,23 +332,13 @@ int MEDDLY::mt_forest::createReducedHelper(int in, const nodeBuilder &nb)
     MEDDLY_DCASSERT(1==ld.countOf(address[p].offset));
     int* index = ld.sparseIndexesOf(address[p].offset);
     int* down  = ld.sparseDownOf(address[p].offset);
-    int z = 0;
-    for (int i=0; i<truncsize; i++) {
-      if (nb.d(i)) {
-        index[z] = i;
-        down[z] = nb.d(i);
-        z++;
-      }
-    } // for i
-    MEDDLY_DCASSERT(z == nnz);
+    nb.copyIntoSparse(down, index, nnz);
   } else {
     // full node wins
     address[p].offset = ld.allocNode(truncsize, p, false);
     MEDDLY_DCASSERT(1==ld.countOf(address[p].offset));
     int* down = ld.fullDownOf(address[p].offset);
-    for (int i=0; i<truncsize; i++) {
-      down[i] = nb.d(i);
-    }
+    nb.copyIntoFull(down, truncsize);
   } // if 
 
   // add to UT 
@@ -315,22 +377,16 @@ int MEDDLY::mt_forest::buildLevelNodeHelper(int lh, int* dptrs, int sz)
     //      do for primed first and then unprimed
 
     if (!isFullyReduced()) {
-      for (int i = 1; i < absLh; ++i)
+      for (int k = 1; k < absLh; ++k)
       {
         for (int j = 0; j < sz; ++j)
         {
           // primed
-          int temp = createTempNodeMaxSize(-i, false);
-          setAllDownPtrsWoUnlink(temp, dptrs[j]);
-          unlinkNode(dptrs[j]);
-          dptrs[j] = reduceNode(temp);
+          insertRedundantNode(-k, dptrs[j]);
           // unprimed
-          temp = createTempNodeMaxSize(i, false);
-          setAllDownPtrsWoUnlink(temp, dptrs[j]);
-          unlinkNode(dptrs[j]);
-          dptrs[j] = reduceNode(temp);
-        }
-      }
+          insertRedundantNode(k, dptrs[j]);
+        } // for j
+      } // for k
 
       // Finally, deal with lh level
       // if lh is unprimed, need to create nodes at primed level
@@ -340,10 +396,7 @@ int MEDDLY::mt_forest::buildLevelNodeHelper(int lh, int* dptrs, int sz)
         for (int j = 0; j < sz; ++j)
         {
           // primed
-          int temp = createTempNodeMaxSize(-lh, false);
-          setAllDownPtrsWoUnlink(temp, dptrs[j]);
-          unlinkNode(dptrs[j]);
-          dptrs[j] = reduceNode(temp);
+          insertRedundantNode(-lh, dptrs[j]);
         }
       }
     }
@@ -359,22 +412,17 @@ int MEDDLY::mt_forest::buildLevelNodeHelper(int lh, int* dptrs, int sz)
     {
       for (int j = 0; j < sz; ++j)
       {
-        int temp = createTempNodeMaxSize(i, false);
-        setAllDownPtrsWoUnlink(temp, dptrs[j]);
-        unlinkNode(dptrs[j]);
-        dptrs[j] = reduceNode(temp);
+        insertRedundantNode(i, dptrs[j]);
       }
     }
   }
 
   // Now, deal with lh level
-  int node = createTempNode(lh, sz, false);
-  int* curr = getFullNodeDownPtrs(node);
-  int* stop = curr + getFullNodeSize(node);
-  // no need to link/unlink nodes since we pass the link
-  // from dptrs[] to curr[]
-  for ( ; curr != stop; ++curr, ++dptrs) { *curr = *dptrs; }
-  node = reduceNode(node);
+  nodeBuilder& nb = useNodeBuilder(lh, sz);
+  for (int i=0; i<sz; i++) {
+    nb.d(i) = dptrs[i];
+  }
+  int node = createReducedNode(-1, nb);
 
   // now build the levels above this node
   if (isForRelations()) {
@@ -382,10 +430,7 @@ int MEDDLY::mt_forest::buildLevelNodeHelper(int lh, int* dptrs, int sz)
       // build additional node at lh level if necessary
       if (lh < 0) {
         // build unprimed node at level ABS(lh)
-        int temp = createTempNodeMaxSize(absLh, false);
-        setAllDownPtrsWoUnlink(temp, node);
-        unlinkNode(node);
-        node = reduceNode(temp);
+        insertRedundantNode(absLh, node);
       }
 
       // build primed and unprimed nodes for levels lh+1 to topLevel
@@ -393,15 +438,9 @@ int MEDDLY::mt_forest::buildLevelNodeHelper(int lh, int* dptrs, int sz)
       for (int i = absLh + 1; i <= topHeight; ++i)
       {
         // primed
-        int temp = createTempNodeMaxSize(-i, false);
-        setAllDownPtrsWoUnlink(temp, node);
-        unlinkNode(node);
-        node = reduceNode(temp);
+        insertRedundantNode(-i, node);
         // unprimed
-        temp = createTempNodeMaxSize(i, false);
-        setAllDownPtrsWoUnlink(temp, node);
-        unlinkNode(node);
-        node = reduceNode(temp);
+        insertRedundantNode(i, node);
       }
     }
     // done building node for Relations
@@ -412,10 +451,7 @@ int MEDDLY::mt_forest::buildLevelNodeHelper(int lh, int* dptrs, int sz)
     int topHeight = getDomain()->getNumVariables();
     for (int i = absLh + 1; i <= topHeight; ++i)
     {
-      int temp = createTempNodeMaxSize(i, false);
-      setAllDownPtrsWoUnlink(temp, node);
-      unlinkNode(node);
-      node = reduceNode(temp);
+      insertRedundantNode(i, node);
     }
     // done building node for (MT)MDDs
   }
@@ -548,23 +584,21 @@ void MEDDLY::mt_forest::createSubMatrix(const bool* const* vlist,
   {
     // create node at prime level
     int nodeSize = getExpertDomain()->getVariableBound(level, true);
-    int node = createTempNode(-level, nodeSize, false);
-    for (int i = 0; i < nodeSize; i++)
-    {
-      setDownPtrWoUnlink(node, i, (vplist[level][i]? mask: 0));
+    nodeBuilder& nb = useNodeBuilder(-level, nodeSize);
+    for (int i=0; i<nodeSize; i++) {
+      nb.d(i) = vplist[level][i] ? linkNode(mask) : 0;
     }
     unlinkNode(mask);
-    mask = reduceNode(node);
+    mask = createReducedNode(-1, nb);
 
     // create node at unprime level
     nodeSize = getExpertDomain()->getVariableBound(level, false);
-    node = createTempNode(level, nodeSize, false);
-    for (int i = 0; i < nodeSize; i++)
-    {
-      setDownPtrWoUnlink(node, i, (vlist[level][i]? mask: 0));
+    nb = useNodeBuilder(level, nodeSize);
+    for (int i=0; i<nodeSize; i++) {
+      nb.d(i) = vlist[level][i] ? linkNode(mask) : 0;
     }
     unlinkNode(mask);
-    mask = reduceNode(node);
+    mask = createReducedNode(-1, nb);
   }
 
   b.set(mask, 0, getNodeLevel(mask));
@@ -618,9 +652,7 @@ int MEDDLY::mt_forest::buildQuasiReducedNodeAtLevel(int k, int p)
   int p_level = getNodeLevel(p);
   for (int i = p_level + 1; i <= k; i++)
   {
-    int n = createTempNodeMaxSize(i);
-    setAllDownPtrs(n, curr);
-    curr = reduceNode(n);
+    insertRedundantNode(i, curr);
   }
   return curr;
 }
@@ -910,7 +942,14 @@ void MEDDLY::mt_forest::deleteNode(int p)
   // remove from unique table (only applicable to reduced nodes)
   if (isReducedNode(p)) {
     nodeFinder key(this, p);
-    MEDDLY_DCASSERT(unique->find(key) == p);
+#ifdef DEVELOPMENT_CODE
+    if (unique->find(key) != p) {
+      fprintf(stderr, "Error in deleteNode\nFind: %d\np: %d\n",
+        unique->find(key), p);
+      dumpInternal(stdout);
+      MEDDLY_DCASSERT(false);
+    }
+#endif
 
 #ifdef TRACK_DELETIONS
     showNode(stdout, p);
@@ -918,6 +957,7 @@ void MEDDLY::mt_forest::deleteNode(int p)
 
 #ifdef DEVELOPMENT_CODE
     int x = unique->remove(key.hash(), p);
+    MEDDLY_DCASSERT(p == x);
 #else
     unique->remove(key.hash(), p);
 #endif
@@ -927,8 +967,6 @@ void MEDDLY::mt_forest::deleteNode(int p)
     fflush(stdout);
 #endif
 
-    MEDDLY_DCASSERT(x != -1);
-    MEDDLY_DCASSERT(p == x);
     MEDDLY_DCASSERT(address[p].cache_count == 0);
   }
   else {
@@ -1274,7 +1312,7 @@ int MEDDLY::mt_forest::addReducedNodes(int a, int b)
   B.set(b, 0, getNodeLevel(b));
 
   A += B;
-  int result = sharedCopy(A.getNode());
+  int result = linkNode(A.getNode());
   A.clear();
   B.clear();
 
@@ -1298,7 +1336,7 @@ int MEDDLY::mt_forest::makeACopy(int a, int size)
     const int* aDptrs = 0;
     assert(getDownPtrs(a, aDptrs));
     for (const int* end = aDptrs + aSize; aDptrs != end; ) {
-      *rDptrs++ = sharedCopy(*aDptrs++);
+      *rDptrs++ = linkNode(*aDptrs++);
     }
     for (const int* end = rDptrs + (newSize - aSize); rDptrs != end; ) {
       *rDptrs++ = 0;
@@ -1316,7 +1354,7 @@ int MEDDLY::mt_forest::makeACopy(int a, int size)
     const int* aIndexes = 0;
     assert(getSparseNodeIndexes(a, aIndexes));
     for (const int* end = aDptrs + nDptrs; aDptrs != end; ) {
-      rDptrs[*aIndexes++] = sharedCopy(*aDptrs++);
+      rDptrs[*aIndexes++] = linkNode(*aDptrs++);
     }
   }
   return result;
@@ -1360,7 +1398,7 @@ int MEDDLY::mt_forest::accumulateExpandA(int a, int b, bool cBM)
     unlinkNode(result);
   }
 
-  return savedTempNode == a? sharedCopy(a): a;
+  return savedTempNode == a? linkNode(a): a;
 }
 
 
@@ -1370,8 +1408,8 @@ int MEDDLY::mt_forest::accumulateMdd(int a, int b, bool cBM)
   MEDDLY_DCASSERT(isReducedNode(b));
 
   // Terminal nodes
-  if (a == 0 || b == 0) { return sharedCopy(a + b); }
-  if (a == -1 || b == -1) { return sharedCopy(-1); }
+  if (a == 0 || b == 0) { return linkNode(a + b); }
+  if (a == -1 || b == -1) { return linkNode(-1); }
 
   MEDDLY_DCASSERT(!isTerminalNode(a) && !isTerminalNode(b));
 
@@ -1465,7 +1503,7 @@ int MEDDLY::mt_forest::accumulateMdd(int a, int b, bool cBM)
     }
   }
 
-  return savedTempNode == a? sharedCopy(a): a;
+  return savedTempNode == a? linkNode(a): a;
 }
 
 
@@ -1807,7 +1845,7 @@ bool MEDDLY::mt_forest::checkForReductions(int p, int nnz, int& result)
   return true;
 }
 
-
+/*
 bool MEDDLY::mt_forest
 ::checkForReductions(const nodeBuilder& nb, int nnz, int& result)
 {
@@ -1839,4 +1877,4 @@ bool MEDDLY::mt_forest
   }
   return false;
 }
-
+*/

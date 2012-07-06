@@ -92,12 +92,8 @@ class MEDDLY::mtmdd_forest : public mt_forest {
 
         // construct the edge bottom-up
         int result = terminalNode;
-        int curr = 0;
         for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
-          curr = createTempNodeMaxSize(i, false);
-          setAllDownPtrsWoUnlink(curr, result);
-          unlinkNode(result);
-          result = reduceNode(curr);
+          insertRedundantNode(i, result);
         }
         e.set(result, 0, getNodeLevel(result));
     }

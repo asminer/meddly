@@ -63,9 +63,39 @@ class MEDDLY::mt_forest : public expert_forest {
   // ------------------------------------------------------------
   // virtual and overriding default behavior
   protected:
-    virtual int createReducedHelper(int in, const nodeBuilder& nb);
+    virtual int createReducedHelper(int in, const nodeBuilder& nb, bool &u);
 
   
+  // ------------------------------------------------------------
+  // virtual and overriding default behavior
+  protected:
+    /// Add a redundant node at level k.
+    /// On input: d is the node "below" us, to point to.
+    /// On output: d is the redundant node.
+    inline void insertRedundantNode(int k, int& d) {
+      MEDDLY_DCASSERT(!isFullyReduced());
+      bool useIdentity = false;
+      if (isIdentityReduced()) {
+        useIdentity = getNodeLevel(d) < 0; 
+      }
+      int sz = getLevelSize(k);
+      nodeBuilder& nb = useNodeBuilder(k, sz);
+      if (useIdentity) {
+        // check for identity reductions with d
+        int sd;
+        int si = getSingletonIndex(d, sd);
+        for (int i=0; i<sz; i++) {
+          nb.d(i) = linkNode(
+            (i==si) ? sd : d
+          );
+        }
+      } else {
+        // easy - just set all the pointers
+        for (int i=0; i<sz; i++) nb.d(i) = linkNode(d);
+      }
+      unlinkNode(d);
+      d = createReducedNode(-1, nb);
+    }
 
 
 
@@ -145,8 +175,6 @@ class MEDDLY::mt_forest : public expert_forest {
     void showNodeGraph(FILE *s, int p) const;
 
     // *************** override expert_forest class -- done ***************
-
-    int sharedCopy(int p);
 
     // Dealing with slot 2 (node size)
     int getLargestIndex(int p) const;
@@ -254,7 +282,7 @@ class MEDDLY::mt_forest : public expert_forest {
     // OBSOLETE
     bool checkForReductions(int p, int nnz, int& result);
 
-    bool checkForReductions(const nodeBuilder &nb, int nnz, int& result);
+    // bool checkForReductions(const nodeBuilder &nb, int nnz, int& result);
 
     // Checks if the node has a single downpointer enabled and at
     // the given index.
@@ -356,13 +384,6 @@ int MEDDLY::mt_forest::createTempNode(int lh, std::vector<int>& downPointers)
 
 
 // Dealing with slot 0 (incount)
-
-// linkNodeing and unlinkNodeing nodes
-
-inline int MEDDLY::mt_forest::sharedCopy(int p) {
-  linkNode(p);
-  return p;
-}
 
 // Dealing with slot 1 (next pointer)
 

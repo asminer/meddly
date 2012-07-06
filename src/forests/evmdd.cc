@@ -477,7 +477,7 @@ void MEDDLY::evp_mdd_int::normalizeAndReduceNode(int& p, int& ev)
     for ( ; i < size && dptr[i] == dptr[0] && eptr[i] == 0; i++);
     if (i == size ) {
       // for all i, dptr[i] == dptr[0] and eptr[i] == 0
-      int temp = sharedCopy(dptr[0]);
+      int temp = linkNode(dptr[0]);
       unlinkNode(p);
       p = temp;
       return;
@@ -858,7 +858,7 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
       freeActiveNode(result);
       if (levels[lh].compactLevel) levels[lh].compact(address);
     }
-    result = sharedCopy(found);
+    result = linkNode(found);
   }
 }
 
@@ -1017,7 +1017,7 @@ void MEDDLY::evt_mdd_real::normalizeAndReduceNode(int& p, float& ev)
       for (i = 1; i < size && eptr[i] == src; i++);
       if (i == size ) {
         // for all i, dptr[i] == dptr[0] and eptr[i] == eptr[0]
-        int temp = sharedCopy(dptr[0]);
+        int temp = linkNode(dptr[0]);
         unlinkNode(p);
         p = temp;
         return;
@@ -1341,7 +1341,7 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
       freeActiveNode(result);
       if (levels[lh].compactLevel) levels[lh].compact(address);
     }
-    result = sharedCopy(found);
+    result = linkNode(found);
   }
 }
 

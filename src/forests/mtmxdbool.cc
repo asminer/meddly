@@ -125,7 +125,7 @@ int MEDDLY::mt_mxd_bool::accumulateExpandA(int a, int b, bool cBM)
     if (isReducedNode(dptr)) {
       MEDDLY_DCASSERT(-1 != dptr);
       int pDptr = dptr == 0? 0: getDownPtr(dptr, i);
-      int acc = pDptr == 0? sharedCopy(b): addReducedNodes(pDptr, b);
+      int acc = pDptr == 0? linkNode(b): addReducedNodes(pDptr, b);
       if (pDptr != acc) {
         int pNode = dptr == 0
           ? createTempNode(-aLevel, i + 1, true)
@@ -141,7 +141,7 @@ int MEDDLY::mt_mxd_bool::accumulateExpandA(int a, int b, bool cBM)
       int pDptr = getFullNodeDownPtr(dptr, i);
       int acc =
         pDptr == 0
-        ? sharedCopy(b)
+        ? linkNode(b)
         : accumulateMxd(pDptr, b,
             (pDptr == -1? false: (getInCount(pDptr) > 1)));
       MEDDLY_DCASSERT(isReducedNode(acc));
@@ -228,7 +228,7 @@ int MEDDLY::mt_mxd_bool::accumulateMxdPrime(int a, int b, bool cBM)
   // Terminal nodes
   if (a == 0 || b == 0) {
     int result = a + b;
-    return isReducedNode(result)? sharedCopy(result): reduceNode(result);
+    return isReducedNode(result)? linkNode(result): reduceNode(result);
   }
 
   MEDDLY_DCASSERT(getNodeLevel(a) == getNodeLevel(b));
@@ -255,7 +255,7 @@ int MEDDLY::mt_mxd_bool::accumulateMxd(int a, int b, bool cBM)
   // Terminal nodes
   if (a == 0 || b == 0) { 
     int result = a + b;
-    return isReducedNode(result)? sharedCopy(result): reduceNode(result);
+    return isReducedNode(result)? linkNode(result): reduceNode(result);
   }
 
   // a is a reduced node
@@ -339,7 +339,7 @@ int MEDDLY::mt_mxd_bool::accumulateExpandA(int a, int b, bool cBM)
       else {
         if (getFullNodeSize(dptr) < pNodeSize)
           assert(forest::SUCCESS == resizeNode(dptr, pNodeSize));
-        pNode = sharedCopy(dptr);
+        pNode = linkNode(dptr);
       }
 
       setDownPtr(pNode, i, result);
@@ -356,7 +356,7 @@ int MEDDLY::mt_mxd_bool::accumulateExpandA(int a, int b, bool cBM)
     unlinkNode(result);
   }
 
-  return savedTempNode == a? sharedCopy(a): a;
+  return savedTempNode == a? linkNode(a): a;
 }
 
 
@@ -440,7 +440,7 @@ int MEDDLY::mt_mxd_bool::accumulateMxdPrime(int a, int b, bool cBM)
   MEDDLY_DCASSERT(b != -1);
 
   // Terminal nodes
-  if (a == 0 || b == 0) { return sharedCopy(a + b); }
+  if (a == 0 || b == 0) { return linkNode(a + b); }
 
   MEDDLY_DCASSERT(getNodeLevel(a) == getNodeLevel(b));
 
@@ -455,7 +455,7 @@ int MEDDLY::mt_mxd_bool::accumulateMxdPrime(int a, int b, bool cBM)
   accumulateMxdHelper(a, b, cBM, needsToMakeACopy, 
       &MEDDLY::mt_mxd_bool::accumulateMxd);
 
-  return savedTempNode == a? sharedCopy(a): a;
+  return savedTempNode == a? linkNode(a): a;
 }
 
 
@@ -466,7 +466,7 @@ int MEDDLY::mt_mxd_bool::accumulateMxd(int a, int b, bool cBM)
   MEDDLY_DCASSERT(isReducedNode(b));
 
   // Terminal nodes
-  if (a == 0 || b == 0) { return sharedCopy(a + b); }
+  if (a == 0 || b == 0) { return linkNode(a + b); }
 
   // a is a reduced node
   if (isReducedNode(a)) { return addReducedNodes(a, b); }
@@ -498,7 +498,7 @@ int MEDDLY::mt_mxd_bool::accumulateMxd(int a, int b, bool cBM)
   accumulateMxdHelper(a, b, cBM, needsToMakeACopy,
       &MEDDLY::mt_mxd_bool::accumulateMxdPrime);
 
-  return savedTempNode == a? sharedCopy(a): a;
+  return savedTempNode == a? linkNode(a): a;
 }
 
 

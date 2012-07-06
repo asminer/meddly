@@ -178,7 +178,7 @@ int MEDDLY::mtmxd_forest::reduceNode(int p)
   int q = unique->find(key);
   if (q) {
     unlinkNode(p);
-    return sharedCopy(q);
+    return linkNode(q);
   }
   unique->add(key.hash(), p);
 
@@ -263,6 +263,14 @@ int MEDDLY::mtmxd_forest::createNode(int k, int index, int dptr)
 
   if (dptr == 0) return 0;
 
+  nodeBuilder& nb = useSparseBuilder(k, 1);
+  nb.d(0) = dptr;
+  nb.i(0) = index;
+  return createReducedNode(-1, nb);
+
+  // OLD
+  /*
+
   // a single downpointer points to dptr
   if (!areSparseNodesEnabled() || (areFullNodesEnabled() && index < 2)) {
     // Build a full node
@@ -295,6 +303,7 @@ int MEDDLY::mtmxd_forest::createNode(int k, int index, int dptr)
     }
     return p;
   }
+  */
 }
 
 int MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, int dptr)
@@ -309,27 +318,24 @@ int MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, int dptr)
 
     if (index1 == -2) {
       // "don't change"
-      result = sharedCopy(dptr);
+      result = dptr;
     }
     else {
       int p = 0;
       if (index2 == -1) {
         // represents "don't care"
-        p = createTempNodeMaxSize(-k, false);
-        setAllDownPtrsWoUnlink(p, dptr);
-        p = reduceNode(p);
+        insertRedundantNode(-k, dptr);
+        p = dptr;
       } else {
         p = createNode(-k, index2, dptr);
       }
       if (index1 == -1) {
         // represents "don't care"
-        result = createTempNodeMaxSize(k, false);
-        setAllDownPtrsWoUnlink(result, p);
-        result = reduceNode(result);
+        insertRedundantNode(k, p);
+        result = p;
       } else {
         result = createNode(k, index1, p);
       }
-      unlinkNode(p);
     }
 
   }
@@ -338,44 +344,36 @@ int MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, int dptr)
     // "don't change"
     MEDDLY_DCASSERT(isQuasiReduced() || isFullyReduced());
     int sz = getLevelSize(k);
-    result = createTempNode(k, sz, false);
-    int* unprimedDptrs = getFullNodeDownPtrs(result);
-    for (int i = 0; i != sz; ++i)
-    {
-      unprimedDptrs[i] = createNode(-k, i, dptr);
+    nodeBuilder &nb = useNodeBuilder(k, sz);
+    for (int i=0; i<sz; i++) {
+      nb.d(i) = createNode(-k, i, dptr);
     }
-    result = reduceNode(result);
-
+    result = createReducedNode(-1, nb);
   }
   else if (isQuasiReduced()) {
 
     int p = 0;
     if (index2 == -1) {
       // represents "don't care"
-      p = createTempNodeMaxSize(-k, false);
-      setAllDownPtrsWoUnlink(p, dptr);
-      p = reduceNode(p);
+      insertRedundantNode(-k, dptr);
+      p = dptr;
     } else {
       p = createNode(-k, index2, dptr);
     }
     if (index1 == -1) {
       // represents "don't care"
-      result = createTempNodeMaxSize(k, false);
-      setAllDownPtrsWoUnlink(result, p);
-      result = reduceNode(result);
+      insertRedundantNode(k, p);
+      result = p;
     } else {
       result = createNode(k, index1, p);
     }
-    unlinkNode(p);
-
   }
   else {
 
     // deal with "don't care" for primed level
-    int p = index2 == -1? sharedCopy(dptr): createNode(-k, index2, dptr);
+    int p = (index2 == -1) ? dptr : createNode(-k, index2, dptr);
     // deal with "don't care" for unprimed level
-    result = index1 == -1? sharedCopy(p): createNode(k, index1, p);
-    unlinkNode(p);
+    result = (index1 == -1) ? p : createNode(k, index1, p);
 
   }
 
@@ -388,23 +386,17 @@ int MEDDLY::mtmxd_forest::createNode(const int* v, const int* vp, int term,
 {
   // construct the edge bottom-up
   for (int k=1; k<startAtHeight; k++) {
-    int prev = term;
     term = createNode(k, v[k], vp[k], term);
-    unlinkNode(prev);
   } // for k
 
   // deal with height == startAtHeight
   // handle primed level first
   if (primedLevel) {
     // only primed level to be handled at this height
-    int prev = term;
     term = createNode(-startAtHeight, vp[startAtHeight], term);
-    unlinkNode(prev);
   } else {
     // both primed and unprimed levels to be handled at this height
-    int prev = term;
     term = createNode(startAtHeight, v[startAtHeight], vp[startAtHeight], term);
-    unlinkNode(prev);
   }
 
   return term;
@@ -431,15 +423,12 @@ int MEDDLY::mtmxd_forest::createEdgeTo(int dptr)
   MEDDLY_DCASSERT(isTerminalNode(dptr));
   if (dptr == 0) return 0;
 
-  if (isFullyReduced()) return sharedCopy(dptr);
+  if (isFullyReduced()) return linkNode(dptr);
 
   // construct the edge bottom-up
   int curr = dptr;
-  int prev = 0;
   for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
-    prev = curr;
-    curr = createNode(i, -1, -1, prev);
-    unlinkNode(prev);
+    curr = createNode(i, -1, -1, curr);
   }
   return curr;
 }

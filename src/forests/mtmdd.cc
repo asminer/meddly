@@ -199,7 +199,7 @@ int MEDDLY::mtmdd_forest::reduceNode(int p)
   int q = unique->find(key);
   if (q) {
     unlinkNode(p);
-    return sharedCopy(q);
+    return linkNode(q);
   }
   unique->add(key.hash(), p);
 
@@ -318,11 +318,18 @@ int MEDDLY::mtmdd_forest::createNode(int k, int index, int dptr)
   if (dptr == 0) return 0;
   if (index == -1) {
     // all downpointers should point to dptr
-    if (isFullyReduced()) return sharedCopy(dptr);
-    int curr = createTempNodeMaxSize(k, false);
-    setAllDownPtrsWoUnlink(curr, dptr);
-    return reduceNode(curr);
+    if (isFullyReduced()) return dptr;
+    insertRedundantNode(k, dptr);
+    return dptr;
   }
+
+  nodeBuilder& nb = useSparseBuilder(k, 1);
+  nb.d(0) = dptr;
+  nb.i(0) = index;
+  return createReducedNode(-1, nb);
+
+  // OLD
+  /*
 
   // a single downpointer points to dptr
   if (!areSparseNodesEnabled() || (areFullNodesEnabled() && index < 2)) {
@@ -339,7 +346,7 @@ int MEDDLY::mtmdd_forest::createNode(int k, int index, int dptr)
     int* nodeData = getNodeAddress(p);
     // indexes followed by downpointers -- here we have one index and one dptr
     nodeData[3] = index;
-    nodeData[4] = sharedCopy(dptr);
+    nodeData[4] = linkNode(dptr);
     // search in unique table
     nodeFinder key(this, p);
     int q = unique->find(key);
@@ -352,10 +359,11 @@ int MEDDLY::mtmdd_forest::createNode(int k, int index, int dptr)
     else {
       // duplicate found; discard this node and return the duplicate
       unlinkNode(p);
-      p = sharedCopy(q);
+      p = linkNode(q);
     }
     return p;
   }
+  */
 }
 
 
@@ -366,9 +374,7 @@ void MEDDLY::mtmdd_forest::createEdge(const int* v, int term, dd_edge& e)
   int result = term;
   int curr = 0;
   for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
-    curr = createNode(i, v[i], result);
-    unlinkNode(result);
-    result = curr;
+    result = createNode(i, v[i], result);
   }
   e.set(result, 0, getNodeLevel(result));
   // e.show(stderr, 2);

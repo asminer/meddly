@@ -30,6 +30,8 @@
 #include <map>
 #include <set>
 
+#define NEW_REDUCTIONS
+
 #define ALT_SATURATE_HELPER
 
 namespace MEDDLY {
@@ -130,10 +132,22 @@ class MEDDLY::forwd_dfs_mt : public common_dfs_mt {
 
     virtual void splitMxd(int mxd);
     virtual int saturate(int mdd);
-#ifndef ALT_SATURATE_HELPER
+
+#ifdef NEW_REDUCTIONS
+    
+    void saturateHelper(expert_forest::nodeBuilder& mdd);
+    int recFire(int mdd, int mxd);
+
+    expert_forest::nodeBuilder& recFireExpandMdd(int mdd, int mxd);
+    expert_forest::nodeBuilder& recFireExpandMxd(int mdd, int mxd);
+    expert_forest::nodeBuilder& recFireExpand(int mdd, int mxd);
+
+#else
+
+  #ifndef ALT_SATURATE_HELPER
     virtual void saturateHelper(int mddLevel, std::vector<int>& mdd);
     virtual int recFire(int mdd, int mxd);
-#else
+  #else
     void saturateHelper(int mdd);
     int recFire(int mdd, int mxd);
 
@@ -141,6 +155,7 @@ class MEDDLY::forwd_dfs_mt : public common_dfs_mt {
     void recFireExpandMxd(int mdd, int mxd, int& result);
     void recFireExpand(int mdd, int mxd, int& result);
 
+  #endif
 #endif
 
     bool getMxdAsVec(int mxd, int**& vec, int& size);
@@ -562,6 +577,18 @@ int MEDDLY::forwd_dfs_mt::saturate(int mdd)
   printf("mdd: %d, level: %d, size: %d\n", mdd, k, sz);
 #endif
 
+#ifdef NEW_REDUCTIONS
+  expert_forest::nodeBuilder& nb = resF->useNodeBuilder(k, sz);
+  expert_forest::nodeReader* mddDptrs = arg1F->initNodeReader(mdd);
+  for (int i=0; i<sz; i++) {
+    nb.d(i) = (*mddDptrs)[i] ? saturate((*mddDptrs)[i]) : 0;
+  }
+  arg1F->recycle(mddDptrs);
+  saturateHelper(nb);
+  n = resF->createReducedNode(-1, nb);
+
+#else // OLD STUFF
+
 #ifndef ALT_SATURATE_HELPER
   std::vector<int> nDptrs(sz, 0);
   assert(arg1F->getDownPtrs(mdd, nDptrs));
@@ -604,6 +631,7 @@ int MEDDLY::forwd_dfs_mt::saturate(int mdd)
   // reduce and return
   n = resF->reduceNode(n);
 #endif
+#endif // END OF OLD STUFF
 
   // save in compute table
   saveSaturateResult(mdd, n);
@@ -614,6 +642,315 @@ int MEDDLY::forwd_dfs_mt::saturate(int mdd)
 
   return n;
 }
+
+#ifdef NEW_REDUCTIONS
+
+void MEDDLY::forwd_dfs_mt::saturateHelper(expert_forest::nodeBuilder& nb)
+{
+  // MEDDLY_DCASSERT(!resF->isReducedNode(mdd));
+  // int mddLevel = resF->getNodeLevel(mdd);
+  // int levelSize = resF->getLevelSize(mddLevel);
+  // MEDDLY_DCASSERT(levelSize == resF->getFullNodeSize(mdd));
+
+  int mxd = splits[nb.getLevel()];
+  if (mxd == 0) return;
+
+  MEDDLY_DCASSERT(arg2F->getNodeLevel(mxd) == nb.getLevel());
+
+  int** mxdVec = 0;
+  int mxdSize = 0;
+  assert(getMxdAsVec(mxd, mxdVec, mxdSize));
+
+  // int* mddDptrs = 0;
+  // assert(resF->getDownPtrs(mdd, mddDptrs));
+  // int mddSize = resF->getFullNodeSize(mdd);
+
+  MEDDLY_DCASSERT(nb.getSize() == mxdSize);
+
+  // For each mdd[i] != 0 && mxd[i][j] != 0,
+  //    mdd[j] += recfire(mdd[i], mxd[i][j])
+
+  std::set<int> enabledIndexes;
+  std::set<int>::iterator iter;
+
+  for (int i = 0; i < mxdSize; enabledIndexes.insert(i++));
+
+  while (!enabledIndexes.empty()) {
+    iter = enabledIndexes.begin();
+    int i = *iter;
+    enabledIndexes.erase(iter);
+
+    // const int* mddI = mddDptrs + i;
+    const int* mxdI = mxdVec[i];
+    if (0 == nb.d(i) || mxdI == 0) continue;
+
+    for (int j = 0; j < mxdSize; ++j) {
+
+      if (0 == mxdI[j]) continue;
+      if (-1 == nb.d(j)) continue;
+
+      int rec = recFire(nb.d(i), mxdI[j]);
+
+      if (rec == 0) continue;
+      if (rec == nb.d(j)) { resF->unlinkNode(rec); continue; }
+
+      bool updated = true;
+
+      if (0 == nb.d(j)) {
+        nb.d(j) = rec;
+      }
+      else if (rec == -1) {
+        resF->unlinkNode(nb.d(j));
+        nb.d(j) = -1;
+      }
+      else {
+        int acc = getMddUnion(nb.d(j), rec);
+        resF->unlinkNode(rec);
+        if (acc != nb.d(j)) {
+          resF->unlinkNode(nb.d(j));
+          nb.d(j) = acc;
+        } else {
+          resF->unlinkNode(acc);
+          updated = false;
+        }
+      }
+
+      if (updated) {
+        if (j == i) {
+          // Re-run inner for-loop.
+          j = -1;
+        } else {
+          enabledIndexes.insert(j);
+        }
+      }
+
+    } // For each i in enabledIndexes
+
+  } // For each mdd[i] and mxd[i]
+
+}
+
+int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
+{
+  MEDDLY_DCASSERT(resF->isReducedNode(mdd));
+  MEDDLY_DCASSERT(arg2F->isReducedNode(mxd));
+
+  if (mxd == -1) {
+    resF->linkNode(mdd);
+    return mdd;
+  }
+  if (mxd == 0 || mdd == 0) return 0;
+
+  MEDDLY_DCASSERT(mdd == -1 || resF->getNodeLevel(mdd) > 0);
+  MEDDLY_DCASSERT(arg2F->getNodeLevel(mxd) > 0);
+
+  int result = 0;
+  if (findResult(mdd, mxd, result)) {
+    return result;
+  }
+
+  int mxdLevel = arg2F->getNodeLevel(mxd);
+  int mddLevel = resF->getNodeLevel(mdd);
+  expert_forest::nodeBuilder& nb = 
+    (mxdLevel < mddLevel) ? recFireExpandMdd(mdd, mxd) :
+    (mddLevel < mxdLevel) ? recFireExpandMxd(mdd, mxd) :
+    recFireExpand(mdd, mxd);
+  /*
+  result = 0;
+  if (mxdLevel < mddLevel) {
+    recFireExpandMdd(mdd, mxd, result);
+  } else if (mddLevel < mxdLevel) {
+    recFireExpandMxd(mdd, mxd, result);
+  } else {
+    MEDDLY_DCASSERT(mxdLevel == mddLevel);
+    recFireExpand(mdd, mxd, result);
+  }
+  */
+
+/*
+  // If any result[i] != 0, call saturateHelper()
+  int* rDptrs = 0;
+  assert(resF->getDownPtrs(result, rDptrs));
+  int* rStop = rDptrs + resF->getFullNodeSize(result);
+  for ( ; rDptrs != rStop && *rDptrs == 0; ++rDptrs);
+
+  if (rDptrs == rStop) {
+    // All result[i] == 0. This nodes will reduce to 0.
+    // Instead of calling reduceNode(), unlink it and set result to 0.
+    resF->unlinkNode(result);
+    result = 0;
+  } else {
+    // Some result[i] != 0.
+    // Saturate the node, and then reduce it.
+    saturateHelper(result);
+    result = resF->reduceNode(result);
+  }
+*/
+  // TBD: check for all zeroes?
+  saturateHelper(nb);
+  result = resF->createReducedNode(-1, nb);
+
+  // Save result and return it.
+  saveResult(mdd, mxd, result);
+  return result;
+}
+
+
+MEDDLY::expert_forest::nodeBuilder& 
+MEDDLY::forwd_dfs_mt::recFireExpandMdd(int mdd, int mxd)
+{
+  // for i = 0 to levelSize-1
+  //   result[i] = mdd[i] == 0? 0: recFire(mdd[i], mxd);
+  MEDDLY_DCASSERT(resF->isReducedNode(mdd));
+  MEDDLY_DCASSERT(!resF->isTerminalNode(mdd));
+
+  int rLevel = resF->getNodeLevel(mdd);
+  int rSize = resF->getLevelSize(rLevel);
+  expert_forest::nodeBuilder& 
+    result = resF->useNodeBuilder(rLevel, rSize);
+
+  expert_forest::nodeReader* m = resF->initNodeReader(mdd);
+  for (int i=0; i<m->getSize(); i++) {
+    result.d(i) = ((*m)[i]) ? recFire((*m)[i], mxd) : 0;
+  }
+  resF->recycle(m);
+  return result;
+}
+
+
+MEDDLY::expert_forest::nodeBuilder& 
+MEDDLY::forwd_dfs_mt::recFireExpandMxd(int mdd, int mxd)
+{
+  // for i = 0 to levelSize-1
+  //    if (mdd[i] != 0 && mxd[i] != 0)
+  //      for j = 0 to levelSize-1
+  //        result[j] += recFire(mdd[i], mxd[i][j])
+  //
+  // In this case, mdd[i] == mdd. Therefore,
+  //
+  // for i = 0 to levelSize-1
+  //    if (mxd[i] != 0)
+  //      for j = 0 to levelSize-1
+  //        result[j] += recFire(mdd, mxd[i][j])
+  //
+
+  MEDDLY_DCASSERT(arg2F->isReducedNode(mxd) && !arg2F->isTerminalNode(mxd));
+  MEDDLY_DCASSERT(arg2F->getNodeLevel(mxd) > 0);
+
+  int rLevel = arg2F->getNodeLevel(mxd);
+  int rSize = resF->getLevelSize(rLevel);
+
+  expert_forest::nodeBuilder& 
+    result = resF->useNodeBuilder(rLevel, rSize);
+  for (int i=0; i<rSize; i++) result.d(i) = 0;
+
+  int** mxdVec = 0;
+  int mxdSize = 0;
+  assert(getMxdAsVec(mxd, mxdVec, mxdSize));
+  assert(mxdSize == rSize);
+
+  for (int i = 0; i < mxdSize; ++i) {
+    const int* mxdI = mxdVec[i];
+    if (mxdI == 0) continue;
+
+    for (int j = 0; j < mxdSize; ++j) {
+      if (0 == mxdI[j])       continue;
+      if (-1 == result.d(j))  continue;
+      int rec = recFire(mdd, mxdI[j]);
+      if (0 == rec)           continue;
+      if (rec == result.d(j)) { 
+        resF->unlinkNode(rec); 
+        continue;
+      }
+      if (0 == result.d(j)) { 
+        result.d(j) = rec; 
+        continue;
+      }
+      if (-1 == rec) { 
+        resF->unlinkNode(result.d(j)); 
+        result.d(j) = -1; 
+        continue;
+      }
+      int acc = getMddUnion(result.d(j), rec);
+      resF->unlinkNode(rec);
+      resF->unlinkNode(result.d(j));
+      result.d(j) = acc;
+    } // for j
+  } // for i
+
+  return result;
+}
+
+
+MEDDLY::expert_forest::nodeBuilder &
+MEDDLY::forwd_dfs_mt::recFireExpand(int mdd, int mxd)
+{
+  // for i = 0 to levelSize-1
+  //    if (mdd[i] != 0 && mxd[i] != 0)
+  //      for j = 0 to levelSize-1
+  //        result[j] += recFire(mdd[i], mxd[i][j])
+
+  MEDDLY_DCASSERT(resF->isReducedNode(mdd) && !resF->isTerminalNode(mdd));
+  MEDDLY_DCASSERT(arg2F->isReducedNode(mxd) && !arg2F->isTerminalNode(mxd));
+  MEDDLY_DCASSERT(resF->getNodeLevel(mdd) == arg2F->getNodeLevel(mxd));
+  MEDDLY_DCASSERT(resF->getNodeLevel(mdd) > 0);
+
+  int rLevel = resF->getNodeLevel(mdd);
+  int rSize = resF->getLevelSize(rLevel);
+  expert_forest::nodeBuilder& 
+    result = resF->useNodeBuilder(rLevel, rSize);
+  for (int i=0; i<rSize; i++) result.d(i) = 0;
+
+  expert_forest::nodeReader* m = resF->initNodeReader(mdd);
+
+  int** mxdVec = 0;
+  int mxdSize = 0;
+  assert(getMxdAsVec(mxd, mxdVec, mxdSize));
+  assert(mxdSize == rSize);
+
+  // recFireExpandMxdPrime(mdd, mxd, result[])
+  // At the primed level
+  // for i = 0 to mxdSize-1
+  //    if (mxd[i]) result[i] = UNION(result[i], recFire(mdd, mxd[i]));
+
+  for (int i=0; i<rSize; i++) {
+    if (0 == (*m)[i]) continue;
+    const int* mxdI = mxdVec[i];
+    if (0 == mxdI) continue;
+
+    for (int j = 0; j < mxdSize; ++j) {
+      if (0 == mxdI[j])       continue;
+      if (-1 == result.d(j))  continue;
+      int rec = recFire((*m)[i], mxdI[j]);
+      if (0 == rec)           continue;
+      if (rec == result.d(j)) { 
+        resF->unlinkNode(rec); 
+        continue;
+      }
+      if (0 == result.d(j)) { 
+        result.d(j) = rec; 
+        continue;
+      }
+      if (-1 == rec) { 
+        resF->unlinkNode(result.d(j)); 
+        result.d(j) = -1; 
+        continue;
+      }
+      int acc = getMddUnion(result.d(j), rec);
+      resF->unlinkNode(rec);
+      resF->unlinkNode(result.d(j));
+      result.d(j) = acc;
+    } // for j
+
+  } // for i
+
+
+  resF->recycle(m);
+  return result;
+}
+
+
+#else // OLD CODE...
 
 #ifndef ALT_SATURATE_HELPER
 
@@ -1236,6 +1573,10 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
   return result;
 }
 
+#endif
+#endif // ...OLD CODE
+
+
 // Returns an mxd as array of int[]
 // If mxd[i] == 0, vec[i] = 0
 // Otherwise, (vec[i])[j] = mxd[i][j]
@@ -1334,8 +1675,6 @@ bool MEDDLY::forwd_dfs_mt::getMxdAsVec(int mxd, int**& vec, int& size)
   return true;
 }
 
-#endif
-
 
 int** MEDDLY::forwd_dfs_mt::getMatrix(unsigned nodeLevel,
     unsigned size, bool clear)
@@ -1411,6 +1750,8 @@ int** MEDDLY::forwd_dfs_mt::getMatrix(unsigned nodeLevel,
 // *                       bckwd_dfs_mt class                       *
 // *                                                                *
 // ******************************************************************
+
+#if 0
 
 class MEDDLY::bckwd_dfs_mt : public forwd_dfs_mt {
   public:
@@ -1719,7 +2060,7 @@ int MEDDLY::bckwd_dfs_mt::reverseRecFire(int mdd, int mxd)
   saveResult(mdd, mxd, result);
   return result;
 }
-
+#endif
 
 // ******************************************************************
 // *                                                                *
@@ -1810,7 +2151,8 @@ MEDDLY::bckwd_dfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   )
     throw error(error::TYPE_MISMATCH);
 
-  return new bckwd_dfs_mt(this, a1, a2, r);
+  // return new bckwd_dfs_mt(this, a1, a2, r);
+  throw error(error::NOT_IMPLEMENTED);
 }
 
 // ******************************************************************

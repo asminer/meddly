@@ -22,7 +22,7 @@
 #ifndef APPLY_BASE_H
 #define APPLY_BASE_H
 
-// #define USE_NEW_OP
+#define USE_NEW_OP
 
 /*
     Useful base classes for binary apply operations.
@@ -211,6 +211,9 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
       CT->addEntry();
     }
 
+#ifdef USE_NEW_OP
+    int compute(int i, int level, int a, int b);
+#else
     virtual int computeIdent(int level, int a, int b);
     virtual int computeNonIdent(int level, int a, int b);
 
@@ -224,6 +227,7 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
         int result, int resultLevel, int resultSize);
     virtual void singleExpandB(int a, int b,
         int result, int resultLevel, int resultSize);
+#endif
 
   protected:
     // If terminal condition is reached, returns true and the result in c.
