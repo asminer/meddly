@@ -181,13 +181,15 @@ int MEDDLY::generic_binary_mxd::compute(int in, int a, int b)
   const int aLevel = arg1F->getNodeLevel(a);
   const int bLevel = arg2F->getNodeLevel(b);
   int resultLevel = topLevel(aLevel, bLevel);
+  // trick: make sure we "start" at an unprimed level
+  if (in<0) resultLevel = ABS(resultLevel);
 
   int resultSize = resF->getLevelSize(resultLevel);
   expert_forest::nodeBuilder& 
     nb = resF->useNodeBuilder(resultLevel, resultSize);
 
   bool canSaveResult = true;
-
+ 
   // Initialize readers
   expert_forest::nodeReader* A;
   if (aLevel == resultLevel) {

@@ -26,6 +26,9 @@
 #include "../defines.h"
 #include "prepostimage.h"
 
+// #define TRACE_ALL_OPS
+#define NEW_REDUCTIONS
+
 namespace MEDDLY {
   class image_op;
 
@@ -133,17 +136,122 @@ class MEDDLY::preimage_mdd : public image_op {
 
   protected:
     virtual int compute_rec(int a, int b);
+#ifndef NEW_REDUCTIONS
     int expandMxdByOneLevel(int a, int b);
     int expandMxd(int a, int b);
     int expandMdd(int a, int b);
     int expandByOneLevel(int a, int b);
     int expand(int a, int b);
+#endif
 };
 
 MEDDLY::preimage_mdd::preimage_mdd(const binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res) : image_op(oc, a1, a2, res)
 {
 }
+
+#ifdef NEW_REDUCTIONS
+
+int MEDDLY::preimage_mdd::compute_rec(int mdd, int mxd)
+{
+  // termination conditions
+  if (mxd == 0 || mdd == 0) return 0;
+  if (arg2F->isTerminalNode(mxd)) {
+    if (arg1F->isTerminalNode(mdd)) {
+      return resF->getTerminalNode(true);
+    }
+    // mxd is identity
+    if (arg1F == resF)
+      return resF->linkNode(mdd);
+  }
+
+  // check the cache
+  int result = 0;
+  if (findResult(mdd, mxd, result)) {
+    return result;
+  }
+
+  // check if mxd and mdd are at the same level
+  int mddLevel = arg1F->getNodeLevel(mdd);
+  int mxdLevel = arg2F->getNodeLevel(mxd);
+  int rLevel = MAX(ABS(mxdLevel), mddLevel);
+  int rSize = resF->getLevelSize(rLevel);
+  expert_forest::nodeBuilder& nb = resF->useNodeBuilder(rLevel, rSize);
+
+  // Initialize mdd reader
+  expert_forest::nodeReader* A = (mddLevel < rLevel)
+    ? arg1F->initRedundantReader(rLevel, mdd)
+    : arg1F->initNodeReader(mdd);
+
+  if (mddLevel > ABS(mxdLevel)) {
+    //
+    // Skipped levels in the MXD,
+    // that's an important special case that we can handle quickly.
+
+    expert_forest::nodeReader* A = arg1F->initNodeReader(mdd);
+    for (int i=0; i<rSize; i++) {
+      nb.d(i) = compute_rec((*A)[i], mxd);
+    }
+
+    arg1F->recycle(A);
+  } else {
+    // 
+    // Need to process this level in the MXD.
+    MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
+
+    // clear out result (important!)
+    for (int i=0; i<rSize; i++) nb.d(i) = 0;
+
+    // Initialize mxd reader, note we might skip the unprimed level
+    expert_forest::nodeReader* Ru = (mxdLevel < 0)
+      ? arg2F->initRedundantReader(rLevel, mxd)
+      : arg2F->initNodeReader(mxd);
+
+    // loop over mxd "rows"
+    for (int i=0; i<rSize; i++) {
+      if (0==(*Ru)[i])  continue; 
+      expert_forest::nodeReader* Rp;
+      Rp = (isLevelAbove(-rLevel, arg2F->getNodeLevel((*Ru)[i])))
+        ? arg2F->initIdentityReader(rLevel, i, (*Ru)[i])
+        : arg2F->initNodeReader((*Ru)[i]);
+
+      // loop over mxd "columns"
+      for (int j=0; j<rSize; j++) {
+        if (0==(*Rp)[j])  continue;
+        if (0==(*A)[j])   continue; 
+        // ok, there is an i->j "edge".
+        // determine new states to be added (recursively)
+        // and add them
+        int newstates = compute_rec((*A)[j], (*Rp)[j]);
+        if (0==newstates) continue;
+        if (0==nb.d(i)) {
+          nb.d(i) = newstates;
+          continue;
+        }
+        // there's new states and existing states; union them.
+        int oldi = nb.d(i);
+        nb.d(i) = unionOp->compute(newstates, oldi);
+        resF->unlinkNode(oldi);
+        resF->unlinkNode(newstates);
+      } // for j
+  
+      arg2F->recycle(Rp);
+    } // for i
+
+    arg2F->recycle(Ru);
+  } // else
+
+  // cleanup mdd reader
+  arg1F->recycle(A);
+
+  result = resF->createReducedNode(-1, nb);
+#ifdef TRACE_ALL_OPS
+  printf("computed preimage(%d, %d) = %d\n", mdd, mxd, result);
+#endif
+  return saveResult(mdd, mxd, result); 
+}
+
+#else // OLD CODE HERE
 
 int MEDDLY::preimage_mdd::compute_rec(int mdd, int mxd)
 {
@@ -404,7 +512,7 @@ int MEDDLY::preimage_mdd::expand(int mdd, int mxd)
   return resF->reduceNode(result);
 }
 
-
+#endif
 
 // ******************************************************************
 // *                                                                *
@@ -419,6 +527,7 @@ class MEDDLY::postimage_mdd : public image_op {
 
   protected:
     virtual int compute_rec(int a, int b);
+#ifndef NEW_REDUCTIONS
     int fullFull(int mdd, int mxd);
     int fullSparse(int mdd, int mxd);
     int sparseFull(int mdd, int mxd);
@@ -426,6 +535,7 @@ class MEDDLY::postimage_mdd : public image_op {
     int expandMdd(int mdd, int mxd);
     int expandMxd(int mdd, int mxd);
     void expandMxdHelper(int mdd, int iMxd, int result);
+#endif
 };
 
 MEDDLY::postimage_mdd::postimage_mdd(const binary_opname* oc, 
@@ -433,6 +543,109 @@ MEDDLY::postimage_mdd::postimage_mdd(const binary_opname* oc,
 : image_op(oc, a1, a2, res)
 {
 }
+
+#ifdef NEW_REDUCTIONS
+
+int MEDDLY::postimage_mdd::compute_rec(int mdd, int mxd)
+{
+  // termination conditions
+  if (mxd == 0 || mdd == 0) return 0;
+  if (arg2F->isTerminalNode(mxd)) {
+    if (arg1F->isTerminalNode(mdd)) {
+      return resF->getTerminalNode(true);
+    }
+    // mxd is identity
+    if (arg1F == resF)
+      return resF->linkNode(mdd);
+  }
+
+  // check the cache
+  int result = 0;
+  if (findResult(mdd, mxd, result)) {
+    return result;
+  }
+
+  // check if mxd and mdd are at the same level
+  int mddLevel = arg1F->getNodeLevel(mdd);
+  int mxdLevel = arg2F->getNodeLevel(mxd);
+  int rLevel = MAX(ABS(mxdLevel), mddLevel);
+  int rSize = resF->getLevelSize(rLevel);
+  expert_forest::nodeBuilder& nb = resF->useNodeBuilder(rLevel, rSize);
+
+  // Initialize mdd reader
+  expert_forest::nodeReader* A = (mddLevel < rLevel)
+    ? arg1F->initRedundantReader(rLevel, mdd)
+    : arg1F->initNodeReader(mdd);
+
+  if (mddLevel > ABS(mxdLevel)) {
+    //
+    // Skipped levels in the MXD,
+    // that's an important special case that we can handle quickly.
+
+    expert_forest::nodeReader* A = arg1F->initNodeReader(mdd);
+    for (int i=0; i<rSize; i++) {
+      nb.d(i) = compute_rec((*A)[i], mxd);
+    }
+
+    arg1F->recycle(A);
+  } else {
+    // 
+    // Need to process this level in the MXD.
+    MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
+
+    // clear out result (important!)
+    for (int i=0; i<rSize; i++) nb.d(i) = 0;
+
+    // Initialize mxd reader, note we might skip the unprimed level
+    expert_forest::nodeReader* Ru = (mxdLevel < 0)
+      ? arg2F->initRedundantReader(rLevel, mxd)
+      : arg2F->initNodeReader(mxd);
+
+    // loop over mxd "rows"
+    for (int i=0; i<rSize; i++) {
+      if (0==(*A)[i])   continue; 
+      if (0==(*Ru)[i])  continue; 
+      expert_forest::nodeReader* Rp;
+      Rp = (isLevelAbove(-rLevel, arg2F->getNodeLevel((*Ru)[i])))
+        ? arg2F->initIdentityReader(rLevel, i, (*Ru)[i])
+        : arg2F->initNodeReader((*Ru)[i]);
+
+      // loop over mxd "columns"
+      for (int j=0; j<rSize; j++) {
+        if (0==(*Rp)[j])  continue;
+        // ok, there is an i->j "edge".
+        // determine new states to be added (recursively)
+        // and add them
+        int newstates = compute_rec((*A)[i], (*Rp)[j]);
+        if (0==newstates) continue;
+        if (0==nb.d(j)) {
+          nb.d(j) = newstates;
+          continue;
+        }
+        // there's new states and existing states; union them.
+        int oldj = nb.d(j);
+        nb.d(j) = unionOp->compute(newstates, oldj);
+        resF->unlinkNode(oldj);
+        resF->unlinkNode(newstates);
+      } // for j
+  
+      arg2F->recycle(Rp);
+    } // for i
+
+    arg2F->recycle(Ru);
+  } // else
+
+  // cleanup mdd reader
+  arg1F->recycle(A);
+
+  result = resF->createReducedNode(-1, nb);
+#ifdef TRACE_ALL_OPS
+  printf("computed new postimage(%d, %d) = %d\n", mdd, mxd, result);
+#endif
+  return saveResult(mdd, mxd, result); 
+}
+
+#else // OLD CODE HERE
 
 int MEDDLY::postimage_mdd::compute_rec(int mdd, int mxd)
 {
@@ -682,7 +895,7 @@ void MEDDLY::postimage_mdd::expandMxdHelper(int mdd, int iMxd, int result)
     }
   }
 }
-
+#endif
 
 // ******************************************************************
 // *                                                                *

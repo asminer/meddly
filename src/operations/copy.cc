@@ -25,6 +25,8 @@
 #include "../defines.h"
 #include "copy.h"
 
+#define NEW_REDUCTIONS
+
 namespace MEDDLY {
   class copy_MT;
 
@@ -53,6 +55,21 @@ class MEDDLY::copy_MT : public unary_operation {
     virtual void compute(const dd_edge &arg, dd_edge &res);
   protected:
     virtual int compute(int a) = 0;
+
+    inline bool findResult(int a, int &b) {
+      CTsrch.key(0) = a;
+      const int* cacheFind = CT->find(CTsrch);
+      if (0==cacheFind) return false;
+      b = resF->linkNode(cacheFind[1]);
+      return true;
+    }
+    inline int saveResult(int a, int b) {
+      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      entry.key(0) = argF->cacheNode(a);
+      entry.result(0) = resF->cacheNode(b);
+      CT->addEntry();
+      return b;
+    }
 };
 
 MEDDLY::copy_MT
@@ -97,7 +114,61 @@ class MEDDLY::copy_bool2MT : public copy_MT {
       : copy_MT(N, A, R) { }
   protected:
     virtual int compute(int a);
+#ifdef NEW_REDUCTIONS
+    int compute(int in, int a);
+#endif
 };
+
+#ifdef NEW_REDUCTIONS
+
+int MEDDLY::copy_bool2MT::compute(int a)
+{
+  return compute(-1, a);
+}
+
+int MEDDLY::copy_bool2MT::compute(int in, int a)
+{
+  // Check terminals
+  if (argF->isTerminalNode(a)) {
+    int aTerm = argF->getBoolean(a) ? 1 : 0;
+    if (resF->getRangeType() == forest::INTEGER) {
+      return resF->getTerminalNode(aTerm);
+    } else {
+      return resF->getTerminalNode(float(aTerm));
+    }
+  }
+
+  // See if we can ignore "in"
+  if (!resF->isIdentityReduced()) in = -1;
+
+  // Check compute table
+  int b;
+  if (findResult(a, b)) return b;
+
+  // Initialize node builder
+  const int level = argF->getNodeLevel(a);
+  const int size = resF->getLevelSize(level);
+  expert_forest::nodeBuilder& nb = resF->useNodeBuilder(level, size);
+
+  // Initialize node reader
+  expert_forest::nodeReader* A = argF->initNodeReader(a);
+
+  // recurse
+  for (int i=0; i<size; i++) {
+    nb.d(i) = compute(i, (*A)[i]);
+  }
+
+  // Cleanup
+  argF->recycle(A);
+
+  // Reduce
+  b = resF->createReducedNode(in, nb);
+
+  // Add to compute table
+  return saveResult(a, b);
+}
+
+#else // OLD IMPLEMENTATION
 
 int MEDDLY::copy_bool2MT::compute(int a)
 {
@@ -166,6 +237,8 @@ int MEDDLY::copy_bool2MT::compute(int a)
   return b;
 }
 
+#endif
+
 // ******************************************************************
 // *                                                                *
 // *                       copy_MT2bool class                       *
@@ -178,7 +251,60 @@ class MEDDLY::copy_MT2bool : public copy_MT {
       : copy_MT(N, A, R) { }
   protected:
     virtual int compute(int a);
+#ifdef NEW_REDUCTIONS
+    int compute(int in, int a);
+#endif
 };
+
+#ifdef NEW_REDUCTIONS
+
+int MEDDLY::copy_MT2bool::compute(int a)
+{
+  return compute(-1, a);
+}
+
+int MEDDLY::copy_MT2bool::compute(int in, int a)
+{
+  // Check terminals
+  if (argF->isTerminalNode(a)) {
+    bool aTerm = (argF->getRangeType() == forest::INTEGER)
+      ? (argF->getInteger(a) != 0)
+      : (argF->getReal(a) !=0);
+    return resF->getTerminalNode(aTerm);
+  }
+
+  // See if we can ignore "in"
+  if (!resF->isIdentityReduced()) in = -1;
+
+  // Check compute table
+  int b;
+  if (findResult(a, b)) return b;
+
+  // Initialize node builder
+  const int level = argF->getNodeLevel(a);
+  const int size = resF->getLevelSize(level);
+  expert_forest::nodeBuilder& nb = resF->useNodeBuilder(level, size);
+
+  // Initialize node reader
+  expert_forest::nodeReader* A = argF->initNodeReader(a);
+
+  // recurse
+  for (int i=0; i<size; i++) {
+    nb.d(i) = compute(i, (*A)[i]);
+  }
+
+  // Cleanup
+  argF->recycle(A);
+
+  // Reduce
+  b = resF->createReducedNode(in, nb);
+
+  // Add to compute table
+  return saveResult(a, b);
+}
+
+
+#else // OLD IMPLEMENTATION
 
 int MEDDLY::copy_MT2bool::compute(int a)
 {
@@ -243,6 +369,8 @@ int MEDDLY::copy_MT2bool::compute(int a)
 
   return b;
 }
+
+#endif
 
 // ******************************************************************
 // *                                                                *

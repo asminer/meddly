@@ -95,6 +95,7 @@ int main(int argc, const char** argv)
   forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge nsf(mxd);
   buildNextStateFunction(kanban, 16, mxd, nsf, 4);
+//  buildNextStateFunction(kanban, 1, mxd, nsf, 4);
 
   printf("Building reachable states\n");
   fflush(stdout);

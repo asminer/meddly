@@ -211,11 +211,11 @@ void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
 int MEDDLY::mt_forest
 ::createReducedHelper(int in, const nodeBuilder &nb, bool &u)
 {
+#ifdef DEVELOPMENT_CODE
+  validateDownPointers(nb);
+#endif
+
   u = true;
-  // TBD:
-  // #ifdef DEVELOPMENT_CODE
-  // validateDownPointers(nb);
-  // #endif
 
 #ifdef USE_CIARDO_IDENTITY
 
@@ -352,6 +352,51 @@ int MEDDLY::mt_forest
   return p;
 }
 
+
+// ******************************************************************
+// *                                                                *
+// *                         Helper methods                         *
+// *                                                                *
+// ******************************************************************
+
+void MEDDLY::mt_forest::validateDownPointers(const nodeBuilder &nb) const
+{
+  int nextLevel;
+  switch (getReductionRule()) {
+    case policies::IDENTITY_REDUCED:
+    case policies::FULLY_REDUCED:
+      if (nb.isSparse()) {
+        for (int z=0; z<nb.getNNZs(); z++) {
+          MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(z))));
+        } 
+      } else {
+        for (int i=0; i<nb.getSize(); i++) {
+          MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(i))));
+        }
+      }
+      break;
+
+    case policies::QUASI_REDUCED:
+      if (isForRelations()) 
+        nextLevel = (nb.getLevel()<0) ? -(nb.getLevel()+1) : -nb.getLevel();
+      else
+        nextLevel = nb.getLevel()-1;
+      if (nb.isSparse()) {
+        for (int z=0; z<nb.getNNZs(); z++) {
+          MEDDLY_DCASSERT(getNodeLevel(nb.d(z)) == nextLevel);
+        } 
+      } else {
+        for (int i=0; i<nb.getSize(); i++) {
+          MEDDLY_DCASSERT(getNodeLevel(nb.d(i)) == nextLevel);
+        }
+      }
+      break;
+
+    default:
+      throw error(error::NOT_IMPLEMENTED);
+  }
+
+}
 
 // ******************************************************************
 // *                                                                *
@@ -932,7 +977,7 @@ void MEDDLY::mt_forest::deleteNode(int p)
   MEDDLY_DCASSERT(getInCount(p) == 0);
   MEDDLY_DCASSERT(isActiveNode(p));
 
-#if 0
+#ifdef DEVELOPMENT_CODE
   validateIncounts();
 #endif
 
@@ -1000,7 +1045,7 @@ void MEDDLY::mt_forest::deleteNode(int p)
 
   if (levels[k].compactLevel) levels[k].compact(address);
 
-#if 0
+#ifdef DEVELOPMENT_CODE
   validateIncounts();
 #endif
 
@@ -1209,6 +1254,9 @@ long MEDDLY::mt_forest::getHoleMemoryUsage() const {
   return sum * sizeof(int); 
 }
 
+
+#ifdef USE_OLD_ACCESS
+
 void MEDDLY::mt_forest::validateDownPointers(int p, bool recursive)
 {
   if (isTerminalNode(p)) return;
@@ -1289,6 +1337,7 @@ void MEDDLY::mt_forest::validateDownPointers(int p, bool recursive)
   }
 }
 
+#endif
 
 int MEDDLY::mt_forest::addReducedNodes(int a, int b)
 {

@@ -647,11 +647,6 @@ int MEDDLY::forwd_dfs_mt::saturate(int mdd)
 
 void MEDDLY::forwd_dfs_mt::saturateHelper(expert_forest::nodeBuilder& nb)
 {
-  // MEDDLY_DCASSERT(!resF->isReducedNode(mdd));
-  // int mddLevel = resF->getNodeLevel(mdd);
-  // int levelSize = resF->getLevelSize(mddLevel);
-  // MEDDLY_DCASSERT(levelSize == resF->getFullNodeSize(mdd));
-
   int mxd = splits[nb.getLevel()];
   if (mxd == 0) return;
 
@@ -660,10 +655,6 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(expert_forest::nodeBuilder& nb)
   int** mxdVec = 0;
   int mxdSize = 0;
   assert(getMxdAsVec(mxd, mxdVec, mxdSize));
-
-  // int* mddDptrs = 0;
-  // assert(resF->getDownPtrs(mdd, mddDptrs));
-  // int mddSize = resF->getFullNodeSize(mdd);
 
   MEDDLY_DCASSERT(nb.getSize() == mxdSize);
 
@@ -755,37 +746,7 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
     (mxdLevel < mddLevel) ? recFireExpandMdd(mdd, mxd) :
     (mddLevel < mxdLevel) ? recFireExpandMxd(mdd, mxd) :
     recFireExpand(mdd, mxd);
-  /*
-  result = 0;
-  if (mxdLevel < mddLevel) {
-    recFireExpandMdd(mdd, mxd, result);
-  } else if (mddLevel < mxdLevel) {
-    recFireExpandMxd(mdd, mxd, result);
-  } else {
-    MEDDLY_DCASSERT(mxdLevel == mddLevel);
-    recFireExpand(mdd, mxd, result);
-  }
-  */
 
-/*
-  // If any result[i] != 0, call saturateHelper()
-  int* rDptrs = 0;
-  assert(resF->getDownPtrs(result, rDptrs));
-  int* rStop = rDptrs + resF->getFullNodeSize(result);
-  for ( ; rDptrs != rStop && *rDptrs == 0; ++rDptrs);
-
-  if (rDptrs == rStop) {
-    // All result[i] == 0. This nodes will reduce to 0.
-    // Instead of calling reduceNode(), unlink it and set result to 0.
-    resF->unlinkNode(result);
-    result = 0;
-  } else {
-    // Some result[i] != 0.
-    // Saturate the node, and then reduce it.
-    saturateHelper(result);
-    result = resF->reduceNode(result);
-  }
-*/
   // TBD: check for all zeroes?
   saturateHelper(nb);
   result = resF->createReducedNode(-1, nb);

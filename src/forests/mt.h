@@ -67,7 +67,7 @@ class MEDDLY::mt_forest : public expert_forest {
 
   
   // ------------------------------------------------------------
-  // virtual and overriding default behavior
+  // Helpers for this and derived classes
   protected:
     /// Add a redundant node at level k.
     /// On input: d is the node "below" us, to point to.
@@ -97,6 +97,8 @@ class MEDDLY::mt_forest : public expert_forest {
       d = createReducedNode(-1, nb);
     }
 
+    // Sanity check for development code.
+    void validateDownPointers(const nodeBuilder &nb) const;
 
 
   // ------------------------------------------------------------
@@ -288,9 +290,11 @@ class MEDDLY::mt_forest : public expert_forest {
     // the given index.
     bool singleNonZeroAt(int p, int val, int index) const;
 
+#ifdef USE_OLD_ACCESS
     // Checks if the node satisfies the forests reduction rules.
     // If it does not, an assert violation occurs.
     void validateDownPointers(int p, bool recursive = false);
+#endif
 
     // Special next values
     static const int temp_node = -5;
