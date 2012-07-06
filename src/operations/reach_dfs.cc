@@ -30,6 +30,8 @@
 #include <map>
 #include <set>
 
+// #define DEBUG_RECFIRE
+
 #define NEW_REDUCTIONS
 
 #define ALT_SATURATE_HELPER
@@ -650,40 +652,48 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(expert_forest::nodeBuilder& nb)
   int mxd = splits[nb.getLevel()];
   if (mxd == 0) return;
 
-  MEDDLY_DCASSERT(arg2F->getNodeLevel(mxd) == nb.getLevel());
+  int mxdLevel = arg2F->getNodeLevel(mxd);
+  MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
 
-  int** mxdVec = 0;
-  int mxdSize = 0;
-  assert(getMxdAsVec(mxd, mxdVec, mxdSize));
+  // Initialize mxd row reader, note we might skip the unprimed level
+  expert_forest::nodeReader* Ru = (mxdLevel<0)
+    ? arg2F->initRedundantReader(nb.getLevel(), mxd)
+    : arg2F->initNodeReader(mxd);
 
-  MEDDLY_DCASSERT(nb.getSize() == mxdSize);
-
-  // For each mdd[i] != 0 && mxd[i][j] != 0,
-  //    mdd[j] += recfire(mdd[i], mxd[i][j])
-
+  // indexes to explore (TBD: write a fast class for this)
   std::set<int> enabledIndexes;
   std::set<int>::iterator iter;
+  for (int i = 0; i < nb.getSize(); i++) {
+    if (nb.d(i)) enabledIndexes.insert(i);
+  }
 
-  for (int i = 0; i < mxdSize; enabledIndexes.insert(i++));
-
+  // explore indexes
   while (!enabledIndexes.empty()) {
     iter = enabledIndexes.begin();
     int i = *iter;
     enabledIndexes.erase(iter);
 
-    // const int* mddI = mddDptrs + i;
-    const int* mxdI = mxdVec[i];
-    if (0 == nb.d(i) || mxdI == 0) continue;
+    MEDDLY_DCASSERT(nb.d(i));
+    if (0==(*Ru)[i]) continue;  // row i is empty
 
-    for (int j = 0; j < mxdSize; ++j) {
+    // grab column (TBD: build these ahead of time?)
+    int dlevel = arg2F->getNodeLevel((*Ru)[i]);
 
-      if (0 == mxdI[j]) continue;
-      if (-1 == nb.d(j)) continue;
+    expert_forest::nodeReader* Rp = (dlevel == -nb.getLevel())
+      ? arg2F->initNodeReader((*Ru)[i])
+      : arg2F->initIdentityReader(-nb.getLevel(), i, (*Ru)[i]);
 
-      int rec = recFire(nb.d(i), mxdI[j]);
+    for (int j=0; j<nb.getSize(); j++) {
+      if (0==(*Rp)[j]) continue;
+      if (-1==nb.d(j)) continue;  // nothing can be added to this set
+
+      int rec = recFire(nb.d(i), (*Rp)[j]);
 
       if (rec == 0) continue;
-      if (rec == nb.d(j)) { resF->unlinkNode(rec); continue; }
+      if (rec == nb.d(j)) { 
+        resF->unlinkNode(rec); 
+        continue; 
+      }
 
       bool updated = true;
 
@@ -708,17 +718,21 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(expert_forest::nodeBuilder& nb)
 
       if (updated) {
         if (j == i) {
-          // Re-run inner for-loop.
+          // Restart inner for-loop.
           j = -1;
         } else {
           enabledIndexes.insert(j);
         }
       }
 
-    } // For each i in enabledIndexes
+    } // for j
 
-  } // For each mdd[i] and mxd[i]
+    // cleanup
+    arg2F->recycle(Rp);
+  } // while there are indexes to explore
 
+  // cleanup
+  arg2F->recycle(Ru);
 }
 
 int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
@@ -731,6 +745,10 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
     return mdd;
   }
   if (mxd == 0 || mdd == 0) return 0;
+
+#ifdef DEBUG_RECFIRE
+  printf("calling recFire(%d, %d)\n", mdd, mxd);
+#endif
 
   MEDDLY_DCASSERT(mdd == -1 || resF->getNodeLevel(mdd) > 0);
   MEDDLY_DCASSERT(arg2F->getNodeLevel(mxd) > 0);
