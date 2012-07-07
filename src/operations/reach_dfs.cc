@@ -737,6 +737,109 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(expert_forest::nodeBuilder& nb)
 
 int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
 {
+  // termination conditions
+  if (mxd == 0 || mdd == 0) return 0;
+  if (arg2F->isTerminalNode(mxd)) {
+    if (arg1F->isTerminalNode(mdd)) {
+      return resF->getTerminalNode(true);
+    }
+    // mxd is identity
+    if (arg1F == resF)
+      return resF->linkNode(mdd);
+  }
+
+  // check the cache
+  int result = 0;
+  if (findResult(mdd, mxd, result)) {
+    return result;
+  }
+
+  // check if mxd and mdd are at the same level
+  int mddLevel = arg1F->getNodeLevel(mdd);
+  int mxdLevel = arg2F->getNodeLevel(mxd);
+  int rLevel = MAX(ABS(mxdLevel), mddLevel);
+  int rSize = resF->getLevelSize(rLevel);
+  expert_forest::nodeBuilder& nb = resF->useNodeBuilder(rLevel, rSize);
+
+  // Initialize mdd reader
+  expert_forest::nodeReader* A = (mddLevel < rLevel)
+    ? arg1F->initRedundantReader(rLevel, mdd)
+    : arg1F->initNodeReader(mdd);
+
+  if (mddLevel > ABS(mxdLevel)) {
+    //
+    // Skipped levels in the MXD,
+    // that's an important special case that we can handle quickly.
+
+    expert_forest::nodeReader* A = arg1F->initNodeReader(mdd);
+    for (int i=0; i<rSize; i++) {
+      nb.d(i) = recFire((*A)[i], mxd);
+    }
+
+    arg1F->recycle(A);
+  } else {
+    // 
+    // Need to process this level in the MXD.
+    MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
+
+    // clear out result (important!)
+    for (int i=0; i<rSize; i++) nb.d(i) = 0;
+
+    // Initialize mxd reader, note we might skip the unprimed level
+    expert_forest::nodeReader* Ru = (mxdLevel < 0)
+      ? arg2F->initRedundantReader(rLevel, mxd)
+      : arg2F->initNodeReader(mxd);
+
+    // loop over mxd "rows"
+    for (int i=0; i<rSize; i++) {
+      if (0==(*A)[i])   continue; 
+      if (0==(*Ru)[i])  continue; 
+      expert_forest::nodeReader* Rp;
+      Rp = (isLevelAbove(-rLevel, arg2F->getNodeLevel((*Ru)[i])))
+        ? arg2F->initIdentityReader(rLevel, i, (*Ru)[i])
+        : arg2F->initNodeReader((*Ru)[i]);
+
+      // loop over mxd "columns"
+      for (int j=0; j<rSize; j++) {
+        if (0==(*Rp)[j])  continue;
+        // ok, there is an i->j "edge".
+        // determine new states to be added (recursively)
+        // and add them
+        int newstates = recFire((*A)[i], (*Rp)[j]);
+        if (0==newstates) continue;
+        if (0==nb.d(j)) {
+          nb.d(j) = newstates;
+          continue;
+        }
+        // there's new states and existing states; union them.
+        int oldj = nb.d(j);
+        nb.d(j) = mddUnion->compute(newstates, oldj);
+        resF->unlinkNode(oldj);
+        resF->unlinkNode(newstates);
+      } // for j
+  
+      arg2F->recycle(Rp);
+    } // for i
+
+    arg2F->recycle(Ru);
+  } // else
+
+  // cleanup mdd reader
+  arg1F->recycle(A);
+
+  saturateHelper(nb);
+  result = resF->createReducedNode(-1, nb);
+#ifdef TRACE_ALL_OPS
+  printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);
+#endif
+  return saveResult(mdd, mxd, result); 
+}
+
+/*
+// OLD ONES HERE:
+
+int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
+{
   MEDDLY_DCASSERT(resF->isReducedNode(mdd));
   MEDDLY_DCASSERT(arg2F->isReducedNode(mxd));
 
@@ -927,7 +1030,7 @@ MEDDLY::forwd_dfs_mt::recFireExpand(int mdd, int mxd)
   resF->recycle(m);
   return result;
 }
-
+*/
 
 #else // OLD CODE...
 
