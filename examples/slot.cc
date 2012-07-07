@@ -228,9 +228,6 @@ int main(int argc, const char** argv)
   printf(" peak memory allocated\n");
   fflush(stdout);
 
-  printf("Building reachable states\n");
-  fflush(stdout);
-
   dd_edge reachable(mdd);
   if (useSaturation) {
     printf("Building reachability set using saturation\n");
