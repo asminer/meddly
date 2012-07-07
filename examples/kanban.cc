@@ -57,6 +57,33 @@ int usage(const char* name)
   return 1;
 }
 
+void printmem(long m)
+{
+  if (m<1024) {
+    printf("%ld bytes", m);
+    return;
+  }
+  double approx = m;
+  approx /= 1024;
+  if (approx < 1024) {
+    printf("%3.2lf Kbytes", approx);
+    return;
+  }
+  approx /= 1024;
+  if (approx < 1024) {
+    printf("%3.2lf Mbytes", approx);
+    return;
+  }
+  approx /= 1024;
+  if (approx < 1024) {
+    printf("%3.2lf Gbytes", approx);
+    return;
+  }
+  approx /= 1024;
+  printf("%3.2lf Tbytes", approx);
+}
+
+
 int main(int argc, const char** argv)
 {
   int N = -1;
@@ -96,21 +123,50 @@ int main(int argc, const char** argv)
   dd_edge nsf(mxd);
   buildNextStateFunction(kanban, 16, mxd, nsf, 4);
 
-  printf("Building reachable states\n");
+  printf("MxD stats:\n");
+  printf("\t%ld current nodes\n", mxd->getCurrentNumNodes());
+  printf("\t%ld peak nodes\n", mxd->getPeakNumNodes());
+  printf("\t");
+  printmem(mxd->getCurrentMemoryUsed());
+  printf(" current memory used\n\t");
+  printmem(mxd->getPeakMemoryUsed());
+  printf(" peak memory used\n\t");
+  printmem(mxd->getCurrentMemoryAllocated());
+  printf(" current memory allocated\n\t");
+  printmem(mxd->getPeakMemoryAllocated());
+  printf(" peak memory allocated\n");
+  
   fflush(stdout);
 
   dd_edge reachable(mdd);
-  if (useSaturation)
+  if (useSaturation) {
+    printf("Building reachability set using saturation\n");
     apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
-  else
+  } else {
+    printf("Building reachability set using traditional algorithm\n");
     apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
-
+  }
   printf("Done\n");
+
+  printf("MDD stats:\n");
+  printf("\t%ld current nodes\n", mdd->getCurrentNumNodes());
+  printf("\t%ld peak nodes\n", mdd->getPeakNumNodes());
+  printf("\t");
+  printmem(mdd->getCurrentMemoryUsed());
+  printf(" current memory used\n\t");
+  printmem(mdd->getPeakMemoryUsed());
+  printf(" peak memory used\n\t");
+  printmem(mdd->getCurrentMemoryAllocated());
+  printf(" current memory allocated\n\t");
+  printmem(mdd->getPeakMemoryAllocated());
+  printf(" peak memory allocated\n");
+  fflush(stdout);
+
   double c;
   apply(CARDINALITY, reachable, c);
-  printf("Approx. %g reachable states\n", c);
-  
   operation::showAllComputeTables(stdout, 1);
+
+  printf("Approx. %g reachable states\n", c);
   
   // cleanup
   MEDDLY::cleanup();
