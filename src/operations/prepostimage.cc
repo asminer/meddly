@@ -187,13 +187,9 @@ int MEDDLY::preimage_mdd::compute_rec(int mdd, int mxd)
     //
     // Skipped levels in the MXD,
     // that's an important special case that we can handle quickly.
-
-    expert_forest::nodeReader* A = arg1F->initNodeReader(mdd);
     for (int i=0; i<rSize; i++) {
       nb.d(i) = compute_rec((*A)[i], mxd);
     }
-
-    arg1F->recycle(A);
   } else {
     // 
     // Need to process this level in the MXD.
@@ -581,13 +577,9 @@ int MEDDLY::postimage_mdd::compute_rec(int mdd, int mxd)
     //
     // Skipped levels in the MXD,
     // that's an important special case that we can handle quickly.
-
-    expert_forest::nodeReader* A = arg1F->initNodeReader(mdd);
     for (int i=0; i<rSize; i++) {
       nb.d(i) = compute_rec((*A)[i], mxd);
     }
-
-    arg1F->recycle(A);
   } else {
     // 
     // Need to process this level in the MXD.
