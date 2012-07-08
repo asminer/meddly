@@ -30,7 +30,8 @@
 #include <map>
 #include <set>
 
-// #define DEBUG_RECFIRE
+// #define TRACE_RECFIRE
+// #define DEBUG_DFS
 
 #define NEW_REDUCTIONS
 
@@ -395,6 +396,70 @@ void MEDDLY::forwd_dfs_mt::clearSplitMxdComputeTableEntries()
     mxdDifference->removeAllComputeTableEntries();
 }
 
+#ifdef NEW_REDUCTIONS
+
+// Partition the nsf based on "top level"
+void MEDDLY::forwd_dfs_mt::splitMxd(int mxd)
+{
+  MEDDLY_DCASSERT(arg2F);
+
+  // we'll be unlinking later, so...
+  arg2F->linkNode(mxd);
+
+  // Build from top down
+  for (int level = arg2F->getNumVariables(); level; level--) {
+
+    if (0==mxd) {
+      // common and easy special case
+      splits[level] = 0;
+      continue;
+    }
+
+    int mxdLevel = arg2F->getNodeLevel(mxd);
+    MEDDLY_DCASSERT(ABS(mxdLevel <= level));
+
+    // Initialize row reader
+    expert_forest::nodeReader* Mu = isLevelAbove(level, mxdLevel)
+      ? arg2F->initRedundantReader(level, mxd)
+      : arg2F->initNodeReader(mxd);
+
+    bool first = true;
+    int maxDiag;
+
+    // Read "rows"
+    for (int i=0; i<Mu->getSize(); i++) {
+      // Initialize column reader
+      int mxdPLevel = arg2F->getNodeLevel((*Mu)[i]);
+      expert_forest::nodeReader* Mp = isLevelAbove(-level, mxdPLevel)
+        ? arg2F->initIdentityReader(-level, i, (*Mu)[i])
+        : arg2F->initNodeReader((*Mu)[i]);
+
+      // Intersect along the diagonal
+      if (first) {
+        maxDiag = arg2F->linkNode((*Mp)[i]);
+        first = false;
+      } else {
+        int nmd = mxdIntersection->compute(maxDiag, (*Mp)[i]);
+        arg2F->unlinkNode(maxDiag);
+        maxDiag = nmd;
+      }
+
+      // cleanup
+      arg2F->recycle(Mp);
+    } // for i
+
+    // maxDiag is what we can split from here
+    splits[level] = mxdDifference->compute(mxd, maxDiag);
+    arg2F->unlinkNode(mxd);
+    mxd = maxDiag;
+
+    // Cleanup
+    arg2F->recycle(Mu);
+  } // for level
+}
+
+#else // OLD IMPLEMENTATION
+
 // split is used to split a mxd for the saturation algorithm
 void MEDDLY::forwd_dfs_mt::splitMxd(int mxd)
 {
@@ -550,6 +615,8 @@ void MEDDLY::forwd_dfs_mt::splitMxd(int mxd)
   arg2F->unlinkNode(mxd);
 #endif
 }
+
+#endif
 
 int MEDDLY::forwd_dfs_mt::saturate(int mdd)
 {
@@ -753,6 +820,15 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
   if (findResult(mdd, mxd, result)) {
     return result;
   }
+
+#ifdef TRACE_RECFIRE
+  printf("computing recFire(%d, %d)\n", mdd, mxd);
+  printf("  node %3d ", mdd);
+  arg1F->showNode(stdout, mdd, 1);
+  printf("\n  node %3d ", mxd);
+  arg2F->showNode(stdout, mxd, 1);
+  printf("\n");
+#endif
 
   // check if mxd and mdd are at the same level
   int mddLevel = arg1F->getNodeLevel(mdd);
