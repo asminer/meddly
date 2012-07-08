@@ -30,6 +30,9 @@
 #include <map>
 #include <set>
 
+// #define TRACE_RECFIRE
+// #define DEBUG_DFS
+
 #define ALT_SATURATE_HELPER
 
 namespace MEDDLY {
@@ -1200,6 +1203,15 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
   if (findResult(mdd, mxd, result)) {
     return result;
   }
+
+#ifdef TRACE_RECFIRE
+  printf("computing recFire(%d, %d)\n", mdd, mxd);
+  printf("  node %3d ", mdd);
+  arg1F->showNode(stdout, mdd, 1);
+  printf("\n  node %3d ", mxd);
+  arg2F->showNode(stdout, mxd, 1);
+  printf("\n");
+#endif
 
   int mxdLevel = arg2F->getNodeLevel(mxd);
   int mddLevel = resF->getNodeLevel(mdd);
