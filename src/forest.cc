@@ -1705,27 +1705,6 @@ void MEDDLY::expert_forest::recycle(nodeReader *r)
   free_reader[r->level] = r;
 }
 
-/*
-int MEDDLY::expert_forest::getSingletonDown(int n, int index) const
-{
-  const node_data& node = getNode(n);
-  MEDDLY_DCASSERT(node.level);
-  const level_data &ld = levels[node.level];
-  if (ld.isFull(node.offset)) {
-    // full node
-    if (ld.fullSizeOf(node.offset) != 1+index) return 0;
-    const int* dn = ld.fullDownOf(node.offset);
-    for (int i=index-1; i>=0; i--) if (dn[i]) return 0;
-    return dn[index];
-  } else {
-    // sparse node --- easy
-    if (ld.sparseSizeOf(node.offset) != 1) return 0;
-    if (ld.sparseIndexesOf(node.offset)[0] != index) return 0;
-    return ld.sparseDownOf(node.offset)[0];
-  }
-}
-*/
-
 int MEDDLY::expert_forest::getSingletonIndex(int n, int &down) const
 {
   const node_data& node = getNode(n);
@@ -1880,7 +1859,6 @@ int MEDDLY::expert_forest::getDownPtr(int p, int i) const {
 }
 
 
-#ifdef USE_OLD_ACCESS
 bool MEDDLY::expert_forest::getDownPtrs(int p, std::vector<int>& dptrs) const {
   if (!isActiveNode(p) || isTerminalNode(p)) return false;
 
@@ -1907,7 +1885,6 @@ bool MEDDLY::expert_forest::getDownPtrs(int p, std::vector<int>& dptrs) const {
   }
   return true;
 }
-#endif
 
 bool MEDDLY::expert_forest::isStale(int h) const {
   return

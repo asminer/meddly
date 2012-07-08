@@ -25,8 +25,6 @@
 #include "../defines.h"
 #include "copy.h"
 
-#define NEW_REDUCTIONS
-
 namespace MEDDLY {
   class copy_MT;
 
@@ -114,12 +112,8 @@ class MEDDLY::copy_bool2MT : public copy_MT {
       : copy_MT(N, A, R) { }
   protected:
     virtual int compute(int a);
-#ifdef NEW_REDUCTIONS
     int compute(int in, int a);
-#endif
 };
-
-#ifdef NEW_REDUCTIONS
 
 int MEDDLY::copy_bool2MT::compute(int a)
 {
@@ -168,76 +162,6 @@ int MEDDLY::copy_bool2MT::compute(int in, int a)
   return saveResult(a, b);
 }
 
-#else // OLD IMPLEMENTATION
-
-int MEDDLY::copy_bool2MT::compute(int a)
-{
-  // Check terminals
-  if (argF->isTerminalNode(a)) {
-    int aTerm = argF->getBoolean(a) ? 1 : 0;
-    if (resF->getRangeType() == forest::INTEGER) {
-      return resF->getTerminalNode(aTerm);
-    } else {
-      return resF->getTerminalNode(float(aTerm));
-    }
-  }
-
-  // Check compute table
-  CTsrch.key(0) = a;
-  const int* cacheFind = CT->find(CTsrch);
-  if (cacheFind) {
-    return resF->linkNode(cacheFind[1]);
-  }
-
-  // Make new node for answer
-  const int aLevel = argF->getNodeLevel(a);
-  int bSize = resF->getLevelSize(aLevel);
-  int b = resF->createTempNode(aLevel, bSize, false);
-  int zero = (resF->getRangeType()==forest::INTEGER) 
-    ? resF->getTerminalNode(0)
-    : resF->getTerminalNode(float(0));
-
-  // Recurse
-  int i;
-  if (argF->isFullNode(a)) {
-    const int aSize = argF->getFullNodeSize(a);
-    MEDDLY_DCASSERT(aSize <= bSize);
-    for (i=0; i<aSize; i++) {
-      int temp = compute(argF->getFullNodeDownPtr(a, i));
-      resF->setDownPtrWoUnlink(b, i, temp);
-      resF->unlinkNode(temp);
-    }
-  } // a is full
-  else {
-    const int aSize = argF->getSparseNodeSize(a);
-    MEDDLY_DCASSERT(argF->getSparseNodeIndex(a, aSize - 1) < bSize);
-    i = 0;
-    for (int z=0; z<aSize; z++) {
-      int aIndex = argF->getSparseNodeIndex(a, z);
-      for (; i<aIndex; i++) {
-        resF->setDownPtrWoUnlink(b, i, zero);
-      }
-      MEDDLY_DCASSERT(i == aIndex && i < bSize);
-      int temp = compute(argF->getSparseNodeDownPtr(a, z));
-      resF->setDownPtrWoUnlink(b, i, temp);
-      resF->unlinkNode(temp);
-    }
-  } // a is sparse
-  for (; i<bSize; i++) {
-    resF->setDownPtrWoUnlink(b, i, zero);
-  }
-
-  // Reduce, add to compute table
-  b = resF->reduceNode(b);
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
-  entry.key(0) = argF->cacheNode(a);
-  entry.result(0) = resF->cacheNode(b);
-  CT->addEntry();
-
-  return b;
-}
-
-#endif
 
 // ******************************************************************
 // *                                                                *
@@ -251,12 +175,8 @@ class MEDDLY::copy_MT2bool : public copy_MT {
       : copy_MT(N, A, R) { }
   protected:
     virtual int compute(int a);
-#ifdef NEW_REDUCTIONS
     int compute(int in, int a);
-#endif
 };
-
-#ifdef NEW_REDUCTIONS
 
 int MEDDLY::copy_MT2bool::compute(int a)
 {
@@ -303,74 +223,6 @@ int MEDDLY::copy_MT2bool::compute(int in, int a)
   return saveResult(a, b);
 }
 
-
-#else // OLD IMPLEMENTATION
-
-int MEDDLY::copy_MT2bool::compute(int a)
-{
-  // Check terminals
-  if (argF->isTerminalNode(a)) {
-    bool aTerm = (argF->getRangeType() == forest::INTEGER)
-      ? (argF->getInteger(a) != 0)
-      : (argF->getReal(a) !=0);
-    return resF->getTerminalNode(aTerm);
-  }
-
-  // Check compute table
-  CTsrch.key(0) = a;
-  const int* cacheFind = CT->find(CTsrch);
-  if (cacheFind) {
-    return resF->linkNode(cacheFind[1]);
-  }
-
-  // Make new node for answer
-  const int aLevel = argF->getNodeLevel(a);
-  int bSize = resF->getLevelSize(aLevel);
-  int b = resF->createTempNode(aLevel, bSize, false);
-  int zero = resF->getTerminalNode(false);
-
-  // Recurse
-  int i;
-  if (argF->isFullNode(a)) {
-    const int aSize = argF->getFullNodeSize(a);
-    MEDDLY_DCASSERT(aSize <= bSize);
-    for (i=0; i<aSize; i++) {
-      int temp = compute(argF->getFullNodeDownPtr(a, i));
-      resF->setDownPtrWoUnlink(b, i, temp);
-      resF->unlinkNode(temp);
-    }
-  } // a is full
-  else {
-    const int aSize = argF->getSparseNodeSize(a);
-    MEDDLY_DCASSERT(argF->getSparseNodeIndex(a, aSize - 1) < bSize);
-    i = 0;
-    for (int z=0; z<aSize; z++) {
-      int aIndex = argF->getSparseNodeIndex(a, z);
-      for (; i<aIndex; i++) {
-        resF->setDownPtrWoUnlink(b, i, zero);
-      }
-      MEDDLY_DCASSERT(i == aIndex && i < bSize);
-      int temp = compute(argF->getSparseNodeDownPtr(a, z));
-      resF->setDownPtrWoUnlink(b, i, temp);
-      resF->unlinkNode(temp);
-      i++;
-    }
-  } // a is sparse
-  for (; i<bSize; i++) {
-    resF->setDownPtrWoUnlink(b, i, zero);
-  }
-
-  // Reduce, add to compute table
-  b = resF->reduceNode(b);
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
-  entry.key(0) = argF->cacheNode(a);
-  entry.result(0) = resF->cacheNode(b);
-  CT->addEntry();
-
-  return b;
-}
-
-#endif
 
 // ******************************************************************
 // *                                                                *

@@ -25,8 +25,6 @@
 #include "../defines.h"
 #include "cross.h"
 
-#define NEW_REDUCTIONS
-
 // #define TRACE_ALL_OPS
 // #define DEBUG_CROSS
 
@@ -56,13 +54,8 @@ class MEDDLY::cross_bool : public binary_operation {
     virtual void showEntry(FILE* strm, const int *entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
-#ifdef NEW_REDUCTIONS
     int compute_pr(int in, int ht, int a, int b);
     int compute_un(int ht, int a, int b);
-#else
-    int compute_pr(int ht, int a, int b);
-    int compute_un(int ht, int a, int b);
-#endif
 };
 
 MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
@@ -107,8 +100,6 @@ MEDDLY::cross_bool::compute(const dd_edge &a, const dd_edge &b, dd_edge &c)
   int cnode = compute_un(L, a.getNode(), b.getNode());
   c.set(cnode, 0, resF->getNodeLevel(cnode));
 }
-
-#ifdef NEW_REDUCTIONS
 
 int MEDDLY::cross_bool::compute_un(int k, int a, int b)
 {
@@ -221,139 +212,6 @@ int MEDDLY::cross_bool::compute_pr(int in, int k, int a, int b)
   return c;
 }
 
-
-#else
-
-int MEDDLY::cross_bool::compute_un(int lh, int a, int b)
-{
-  if (0==lh) {
-    return resF->getTerminalNode(
-      arg1F->getBoolean(a)
-    );
-  }
-  if (0==a || 0==b) return resF->getTerminalNode(0);
-
-  // check compute table
-  CTsrch.key(LEVEL_INDEX) = lh;
-  CTsrch.key(OPNDA_INDEX) = a;
-  CTsrch.key(OPNDB_INDEX) = b;
-  const int* cacheFind = CT->find(CTsrch);
-  if (cacheFind) {
-    return resF->linkNode(cacheFind[RESLT_INDEX]);
-  }
-
-  // build new result node
-  int c = resF->createTempNodeMaxSize(lh, true);
-
-  // recurse
-  if (arg1F->getNodeHeight(a) < lh) {
-    // skipped level
-    int d = compute_pr(lh, a, b);
-    for (int i=resF->getLevelSize(lh)-1; i>=0; i--) {
-      resF->setDownPtrWoUnlink(c, i, d);
-    } 
-    resF->unlinkNode(d);
-  } else {
-    // not skipped level
-    if (arg1F->isFullNode(a)) {
-      // Full storage
-      for (int i=arg1F->getFullNodeSize(a)-1; i>=0; i--) {
-        int ai = arg1F->getFullNodeDownPtr(a, i);
-        if (0==ai) continue;
-        int d = compute_pr(lh, ai, b);
-        resF->setDownPtrWoUnlink(c, i, d);
-        resF->unlinkNode(d);
-      }
-    } else {
-      // Sparse storage
-      for (int z=arg1F->getSparseNodeSize(a)-1; z>=0; z--) {
-        int i = arg1F->getSparseNodeIndex(a, z);
-        int ai = arg1F->getSparseNodeDownPtr(a, z);
-        int d = compute_pr(lh, ai, b);
-        resF->setDownPtrWoUnlink(c, i, d);
-        resF->unlinkNode(d);
-      }
-    }
-  }
-
-  // reduce, save in compute table
-  c = resF->reduceNode(c);
-
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
-  entry.key(LEVEL_INDEX) = lh;
-  entry.key(OPNDA_INDEX) = arg1F->cacheNode(a);
-  entry.key(OPNDB_INDEX) = arg2F->cacheNode(b);
-  entry.result(0) = resF->cacheNode(c);
-  CT->addEntry();
-
-  return c;
-}
-
-int MEDDLY::cross_bool::compute_pr(int ht, int a, int b)
-{
-  if (0==a || 0==b) return resF->getTerminalNode(0);
-
-  // convert height to level handle
-  int lh = -ht; 
-  ht--;
-
-  // check compute table
-  CTsrch.key(LEVEL_INDEX) = lh;
-  CTsrch.key(OPNDA_INDEX) = a;
-  CTsrch.key(OPNDB_INDEX) = b;
-  const int* cacheFind = CT->find(CTsrch);
-  if (cacheFind) {
-    return resF->linkNode(cacheFind[RESLT_INDEX]);
-  }
-
-  // build new result node
-  int c = resF->createTempNodeMaxSize(lh, true);
-
-  // recurse
-  if (arg2F->getNodeHeight(b) <= ht) {
-    // skipped level
-    int d = compute_un(ht, a, b);
-    for (int i=resF->getLevelSize(lh)-1; i>=0; i--) {
-      resF->setDownPtrWoUnlink(c, i, d);
-    } 
-    resF->unlinkNode(d);
-  } else {
-    // not skipped level
-    if (arg2F->isFullNode(b)) {
-      // Full storage
-      for (int i=arg2F->getFullNodeSize(b)-1; i>=0; i--) {
-        int bi = arg2F->getFullNodeDownPtr(b, i);
-        if (0==bi) continue;
-        int d = compute_un(ht, a, bi);
-        resF->setDownPtrWoUnlink(c, i, d);
-        resF->unlinkNode(d);
-      }
-    } else {
-      // Sparse storage
-      for (int z=arg2F->getSparseNodeSize(b)-1; z>=0; z--) {
-        int i = arg2F->getSparseNodeIndex(b, z);
-        int bi = arg2F->getSparseNodeDownPtr(b, z);
-        int d = compute_un(ht, a, bi);
-        resF->setDownPtrWoUnlink(c, i, d);
-        resF->unlinkNode(d);
-      }
-    }
-  }
-
-  // reduce, save in compute table
-  c = resF->reduceNode(c);
-
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
-  entry.key(LEVEL_INDEX) = lh;
-  entry.key(OPNDA_INDEX) = arg1F->cacheNode(a);
-  entry.key(OPNDB_INDEX) = arg2F->cacheNode(b);
-  entry.result(0) = resF->cacheNode(c);
-  CT->addEntry();
-
-  return c;
-}
-
-#endif // old code
 
 // ******************************************************************
 // *                                                                *

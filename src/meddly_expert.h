@@ -70,7 +70,7 @@
 #define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX)
 #endif
 
-#define USE_OLD_ACCESS
+#define USE_OLD_TEMPNODES
 
 //
 // Design decision: should we remember the hashes for a reduced node?
@@ -774,28 +774,22 @@ class MEDDLY::expert_forest : public forest
   // here down --- needs organizing
   public:
 
-#ifdef USE_OLD_ACCESS
+#ifdef USE_OLD_TEMPNODES
     /// Create a temporary node -- a node that can be modified by the user.
     /// If \a clear is true, downpointers are initialized to 0.
     virtual int createTempNode(int lh, int size, bool clear = true) = 0;
 
     /// Create a temporary node with the maximum size allowed for this level.
     /// If \a clear is true, downpointers are initialized to 0.
-    int createTempNodeMaxSize(int lh, bool clear = true);
+    inline int createTempNodeMaxSize(int lh, bool clear = true) {
+      return createTempNode(lh, getLevelSize(lh), clear);
+    }
 
     /// Create a temporary node with the given downpointers. Note that
     /// downPointers[i] corresponds to the downpointer at index i.
     /// IMPORTANT: The incounts for the downpointers are not incremented.
     /// The returned value is the handle for the temporary node.
     virtual int createTempNode(int lh, std::vector<int>& downPointers) = 0;
-
-    /// Get the nodes pointed to by this node (works with Full or Sparse nodes.
-    /// The vector downPointers is increased in size if necessary (but
-    /// never reduced in size).
-    /// Returns false is operation is not possible. Possible reasons are:
-    /// node does not exist; node is a terminal; or node has not been reduced.
-    bool getDownPtrs(int node, std::vector<int>& downPointers) const;
-#endif
 
     /// Same as createTempNode(int, vector<int>) except this is for EV+MDDs.
     virtual int createTempNode(int lh, std::vector<int>& downPointers,
@@ -804,6 +798,14 @@ class MEDDLY::expert_forest : public forest
     /// Same as createTempNode(int, vector<int>) except this is for EV*MDDs.
     virtual int createTempNode(int lh, std::vector<int>& downPointers,
         std::vector<float>& edgeValues) = 0;
+#endif
+
+    /// Get the nodes pointed to by this node (works with Full or Sparse nodes.
+    /// The vector downPointers is increased in size if necessary (but
+    /// never reduced in size).
+    /// Returns false is operation is not possible. Possible reasons are:
+    /// node does not exist; node is a terminal; or node has not been reduced.
+    bool getDownPtrs(int node, std::vector<int>& downPointers) const;
 
     /// Increase the size of the temporary node.
     /// The maximum size is dictated by domain to which this forest belongs to.
@@ -2577,14 +2579,6 @@ int MEDDLY::expert_forest::getTerminalNode(float a) const
 #endif
 }
 
-#endif
-
-#ifdef USE_OLD_ACCESS
-inline
-int MEDDLY::expert_forest::createTempNodeMaxSize(int lh, bool clear)
-{
-  return createTempNode(lh, getLevelSize(lh), clear);
-}
 #endif
 
 inline

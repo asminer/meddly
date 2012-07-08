@@ -136,14 +136,14 @@ int main(int argc, const char** argv)
   printmem(mxd->getPeakMemoryAllocated());
   printf(" peak memory allocated\n");
   
-  fflush(stdout);
-
   dd_edge reachable(mdd);
   if (useSaturation) {
     printf("Building reachability set using saturation\n");
+    fflush(stdout);
     apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
   } else {
     printf("Building reachability set using traditional algorithm\n");
+    fflush(stdout);
     apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
   }
   printf("Done\n");

@@ -290,7 +290,7 @@ class MEDDLY::mt_forest : public expert_forest {
     // the given index.
     bool singleNonZeroAt(int p, int val, int index) const;
 
-#ifdef USE_OLD_ACCESS
+#ifdef USE_OLD_TEMPNODES
     // Checks if the node satisfies the forests reduction rules.
     // If it does not, an assert violation occurs.
     void validateDownPointers(int p, bool recursive = false);

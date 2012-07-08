@@ -46,8 +46,6 @@
 
 #define DEBUG_DELETE_NM 0
 
-#define USE_CIARDO_IDENTITY
-
 // #define DEBUG_CARD
 
 //#define TRACK_DELETIONS
@@ -217,8 +215,6 @@ int MEDDLY::mt_forest
 
   u = true;
 
-#ifdef USE_CIARDO_IDENTITY
-
   // get sparse, truncated full sizes and check
   // for redundant / identity reductions.
   int nnz;
@@ -267,8 +263,8 @@ int MEDDLY::mt_forest
     }
 
     // Is this an identity node, and should we eliminate it?
-    if (in>=0 && 1==nnz && nb.getLevel()<0 && nb.d(in)) {
-      if (isIdentityReduced())
+    if (isIdentityReduced()) {
+      if (in>=0 && 1==nnz && nb.getLevel()<0 && nb.d(in)) 
         return linkNode(nb.d(in));
     }
   }
@@ -279,34 +275,6 @@ int MEDDLY::mt_forest
     MEDDLY_DCASSERT(0==truncsize);  // sanity check
     return 0;
   }
-
-
-#else
-
-  // get sparse, truncated full sizes for this node
-  int nnz = 0;
-  int truncsize = -1;
-  bool redundant = true;
-  for (int i=0; i<nb.getSize(); i++) {
-    if (nb.d(i)) {
-      nnz++;
-      truncsize = i;
-    }
-  } // for i
-  truncsize++;
-
-  // Check for zero node
-  if (0==nnz) {
-    MEDDLY_DCASSERT(0==truncsize);
-    return 0;
-  }
-
-  int qq;
-  if (checkForReductions(nb, nnz, qq)) {
-    return linkNode(qq);
-  }
-
-#endif
 
   // check for duplicates in unique table
   int q = unique->find(nb);
@@ -1255,7 +1223,7 @@ long MEDDLY::mt_forest::getHoleMemoryUsage() const {
 }
 
 
-#ifdef USE_OLD_ACCESS
+#ifdef USE_OLD_TEMPNODES
 
 void MEDDLY::mt_forest::validateDownPointers(int p, bool recursive)
 {
@@ -1894,36 +1862,3 @@ bool MEDDLY::mt_forest::checkForReductions(int p, int nnz, int& result)
   return true;
 }
 
-/*
-bool MEDDLY::mt_forest
-::checkForReductions(const nodeBuilder& nb, int nnz, int& result)
-{
-  if (isQuasiReduced()) return false;
-  if (nnz != getLevelSize(nb.getLevel())) return false;
-
-  switch (getReductionRule()) {
-
-    case policies::FULLY_REDUCED:
-      // check for redundant node
-      result = nb.d(0);
-      for (int i = 1; i < nb.getSize(); ++i) {
-        if (nb.d(i) != result) return false;
-      }
-      return true;
-
-    case policies::IDENTITY_REDUCED:
-      MEDDLY_DCASSERT(isForRelations());
-      if (nb.getLevel()<0) return false;
-      result = getSingletonDown(nb.d(0), 0);
-      if (0==result) return false;
-      for (int i = 1; i < nb.getSize(); i++) {
-        if (getSingletonDown(nb.d(i), i) != result) return false;
-      }
-      return true;
-
-    default:
-      return false;
-  }
-  return false;
-}
-*/
