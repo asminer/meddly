@@ -72,6 +72,10 @@
 
 #define USE_OLD_TEMPNODES
 
+// #define ACCUMULATE_ON
+
+#define USE_OLD_NODE_BUILDING
+
 //
 // Design decision: should we remember the hashes for a reduced node?
 //
@@ -628,6 +632,7 @@ class MEDDLY::expert_forest : public forest
     void dumpInternal(FILE *s) const; 
     void dumpInternalLevel(FILE *s, int k) const; 
     void dumpUniqueTable(FILE *s) const;
+    void showNodeGraph(FILE* s, int node) const;
 
     /** Show stats about memory usage for this forest.
           @param  s     Output stream to write to
@@ -706,6 +711,7 @@ class MEDDLY::expert_forest : public forest
 
   // ------------------------------------------------------------
   // virtual, with default implementation.
+  // Should be overridden in appropriate derived classes.
   public:
     /// Apply reduction rule to the temporary node and finalize it. Once
     /// a node is reduced, its contents cannot be modified.
@@ -715,9 +721,6 @@ class MEDDLY::expert_forest : public forest
     virtual void normalizeAndReduceNode(int& node, int& ev);
     virtual void normalizeAndReduceNode(int& node, float& ev);
 
-  // ------------------------------------------------------------
-  // virtual, with default implementation; should be overridden.
-  protected:
     /// Apply reduction rule to the temporary node and finalize it. Once
     /// a node is reduced, its contents cannot be modified.
     ///   @param  in  Incoming index, used only for identity reduction;
@@ -727,6 +730,13 @@ class MEDDLY::expert_forest : public forest
     ///               Will be false iff a new node was created.
     ///   @return     Handle to a node that encodes the same thing.
     virtual int createReducedHelper(int in, const nodeBuilder &nb, bool &u);
+
+  // ------------------------------------------------------------
+  // additional, "expert" interface.
+  // Must be overridden in derived classes.
+  public:
+    /// Display the contents of node
+    virtual void showNode(FILE* s, int node, int verbose = 0) const = 0;
 
 
 
@@ -807,6 +817,7 @@ class MEDDLY::expert_forest : public forest
     /// node does not exist; node is a terminal; or node has not been reduced.
     bool getDownPtrs(int node, std::vector<int>& downPointers) const;
 
+#ifdef ACCUMULATE_ON
     /// Increase the size of the temporary node.
     /// The maximum size is dictated by domain to which this forest belongs to.
     virtual void resizeNode(int node, int size) = 0;
@@ -836,6 +847,7 @@ class MEDDLY::expert_forest : public forest
     /// vlist and vplist constitute the unprimed and primed levels
     /// in the minterm.
     virtual bool accumulate(int& A, int* vlist, int* vplist);
+#endif
 
     /// Has the node been reduced
     /// Terminal nodes are also considered to be reduced nodes.
@@ -894,6 +906,7 @@ class MEDDLY::expert_forest : public forest
     /// Get the number of entries in a sparse nodes
     int getSparseNodeSize(int node) const;
 
+#ifdef USE_OLD_NODE_BUILDING
     /// Sets the specified index of this node to point to down.
     /// The old downpointer at this index is unlinked (via unlinkNode()).
     /// This index now points to the new downpointer. The reference count
@@ -916,6 +929,7 @@ class MEDDLY::expert_forest : public forest
     ///         forest's node storage policy.
     void setEdgeValue(int node, int index, int edge);
     void setEdgeValue(int node, int index, float edge);
+#endif
 
     /// Get the node pointed to at the given index -- only for Full nodes
     int getFullNodeDownPtr(int node, int index) const;
@@ -1012,10 +1026,6 @@ class MEDDLY::expert_forest : public forest
     /// Returns the edge count for this node. The edge count is the number
     /// of unique edges in the decision diagram represented by this node.
     unsigned getEdgeCount(int node, bool countZeroes) const;
-
-    /// Display the contents of node
-    virtual void showNode(FILE* s, int node, int verbose = 0) const = 0;
-    virtual void showNodeGraph(FILE* s, int node) const = 0;
 
     /// Is this forest an MDD?
     bool isMdd() const;
@@ -2649,6 +2659,7 @@ printf("%s: p: %d\n", __func__, p);
 }
 
 
+#ifdef USE_OLD_NODE_BUILDING
 inline
 void MEDDLY::expert_forest::setDownPtr(int p, int i, int value)
 {
@@ -2696,7 +2707,7 @@ void MEDDLY::expert_forest::setEdgeValue(int node, int index, float ev)
   MEDDLY_CHECK_RANGE(0, index, getFullNodeSize(node));
   *(getNodeAddress(node) + 3 + getFullNodeSize(node) + index) = toInt(ev);
 }
-
+#endif
 
 inline
 bool MEDDLY::expert_forest::getDownPtrs(int node, int*& dptrs)
@@ -3023,6 +3034,7 @@ void MEDDLY::expert_forest::setIndexSetCardinality(int node, int c) {
 }
 
 
+#ifdef ACCUMULATE_ON
 inline
 bool MEDDLY::expert_forest::accumulate(int& A, int* vlist, int* vplist) {
   return false;
@@ -3032,7 +3044,7 @@ inline
 bool MEDDLY::expert_forest::accumulate(int& A, int* B) {
   return false;
 }
-
+#endif
 
 inline
 float MEDDLY::toFloat(int a) {

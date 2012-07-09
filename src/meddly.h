@@ -1341,8 +1341,10 @@ class MEDDLY::forest {
         
         TODO: write a better description (an example might also help).
     */
+    /*
     virtual void createSubMatrix(const bool* const* vlist,
       const bool* const* vplist, const dd_edge a, dd_edge& b) = 0;
+      */
 
 
 

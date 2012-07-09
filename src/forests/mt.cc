@@ -572,6 +572,7 @@ int* MEDDLY::mt_forest::getTerminalNodes(int n, float* terms)
 }
 
 
+/*
 void MEDDLY::mt_forest::createSubMatrix(const dd_edge& rows,
     const dd_edge& cols, const dd_edge& a, dd_edge& result)
 {
@@ -620,7 +621,7 @@ void MEDDLY::mt_forest::createSubMatrix(const bool* const* vlist,
 #endif
   b *= a;
 }
-
+*/
 
 #endif
 
@@ -716,47 +717,12 @@ int MEDDLY::mt_forest::getLevelMaxBound(int k) const
             getMddLevelMaxBound(k);
 }
 
+/*
 void MEDDLY::mt_forest::showAll() const
 {
   dumpInternal(stderr);
 }
-
-void MEDDLY::mt_forest::showNodeGraph(FILE *s, int p) const
-{
-  int* list = markNodesInSubgraph(p, true);
-  if (0==list) return;
-
-  // Print by levels
-  for (int k = getNumVariables(); k; )
-  {
-    bool printed = false;
-    for (int i=0; list[i]; i++) {
-      if (getNodeLevel(list[i]) != k) continue;
-
-      if (!printed) {
-        const variable* v = getDomain()->getVar(ABS(k));
-        char primed = (k>0) ? ' ' : '\'';
-        if (v->getName()) {
-          fprintf(s, "Level: %s%c\n", v->getName(), primed);
-        } else {
-          fprintf(s, "Level: %d%c\n", ABS(k), primed);
-        }
-        printed = true;
-      }
-
-      fprintf(s, "  ");
-      showNode(s, list[i]);
-      fprintf(s, "\n");
-    }
-    
-    // next level
-    k *= -1;
-    if (k>0) k--;
-  } // for k
-
-  free(list);
-}
-
+*/
 
 int ifTermGetInt(const MEDDLY::mt_forest *nm, int node)
 {
@@ -890,6 +856,7 @@ void MEDDLY::mt_forest::showNode(FILE *s, int p, int verbose) const
   }
 }
 
+/*
 void MEDDLY::mt_forest::showNode(int p) const
 {
   MEDDLY_DCASSERT(isEVPlus() || isEVTimes());
@@ -933,7 +900,7 @@ void MEDDLY::mt_forest::showNode(int p) const
     fprintf(stderr, "]");
   }
 }
-
+*/
 
 // ------------------------------------------------------------------
 //  Protected methods
@@ -1211,9 +1178,11 @@ void MEDDLY::mt_forest::validateIncounts()
 }
 
 
+/*
 void MEDDLY::mt_forest::showLevel(FILE *s, int k) const {
   dumpInternalLevel(s, k);
 }
+*/
 
 long MEDDLY::mt_forest::getHoleMemoryUsage() const {
   long sum = 0;
@@ -1306,6 +1275,8 @@ void MEDDLY::mt_forest::validateDownPointers(int p, bool recursive)
 }
 
 #endif
+
+#ifdef ACCUMULATE_ON
 
 int MEDDLY::mt_forest::addReducedNodes(int a, int b)
 {
@@ -1641,7 +1612,9 @@ bool MEDDLY::mt_forest::accumulate(int& tempNode, int* element)
   return accumulateMintermAddedElement;
 }
 
+#endif
 
+/*
 int MEDDLY::mt_forest::recursiveReduceNode(std::map<int, int>& cache,
     int root)
 {
@@ -1702,7 +1675,7 @@ int MEDDLY::mt_forest::recursiveReduceNode(int tempNode, bool clearCache)
   if (clearCache) cache.clear();
   return recursiveReduceNode(cache, tempNode);
 }
-
+*/
 
 int MEDDLY::mt_forest::createTempNode(int k, int sz, bool clear)
 {

@@ -267,43 +267,6 @@ int MEDDLY::mtmxd_forest::createNode(int k, int index, int dptr)
   nb.d(0) = dptr;
   nb.i(0) = index;
   return createReducedNode(-1, nb);
-
-  // OLD
-  /*
-
-  // a single downpointer points to dptr
-  if (!areSparseNodesEnabled() || (areFullNodesEnabled() && index < 2)) {
-    // Build a full node
-    int curr = createTempNode(k, index + 1, true);
-    setDownPtrWoUnlink(curr, index, dptr);
-    return reduceNode(curr);
-  }
-  else {
-    MEDDLY_DCASSERT (!areFullNodesEnabled() ||
-        (areSparseNodesEnabled() && index >= 2));
-    // Build a sparse node
-    int p = createTempNode(k, -1, false);
-    int* nodeData = getNodeAddress(p);
-    // indexes followed by downpointers -- here we have one index and one dptr
-    nodeData[3] = index;
-    nodeData[4] = sharedCopy(dptr);
-    // search in unique table
-    nodeFinder key(this, p);
-    int q = unique->find(key);
-    if (0==q) {
-      // no duplicate found; insert into unique table
-      unique->add(key.hash(), p);
-      MEDDLY_DCASSERT(getCacheCount(p) == 0);
-      MEDDLY_DCASSERT(unique->find(key) == p);
-    }
-    else {
-      // duplicate found; discard this node and return the duplicate
-      unlinkNode(p);
-      p = sharedCopy(q);
-    }
-    return p;
-  }
-  */
 }
 
 int MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, int dptr)

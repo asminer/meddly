@@ -73,6 +73,7 @@ void MEDDLY::mt_mxd_bool::evaluate(const dd_edge& f, const int* vlist,
   term = getBoolean(getTerminalNodeForEdge(f.getNode(), vlist, vplist));
 }
 
+#ifdef ACCUMULATE_ON
 
 #if 1
 
@@ -912,3 +913,4 @@ bool MEDDLY::mt_mxd_bool::accumulate(int& tempNode,
 }
 #endif
 
+#endif

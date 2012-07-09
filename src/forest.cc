@@ -1531,6 +1531,42 @@ void MEDDLY::expert_forest::dumpUniqueTable(FILE *s) const
   unique->show(s);
 }
 
+void MEDDLY::expert_forest::showNodeGraph(FILE *s, int p) const
+{
+  int* list = markNodesInSubgraph(p, true);
+  if (0==list) return;
+
+  // Print by levels
+  for (int k = getNumVariables(); k; )
+  {
+    bool printed = false;
+    for (int i=0; list[i]; i++) {
+      if (getNodeLevel(list[i]) != k) continue;
+
+      if (!printed) {
+        const variable* v = getDomain()->getVar(ABS(k));
+        char primed = (k>0) ? ' ' : '\'';
+        if (v->getName()) {
+          fprintf(s, "Level: %s%c\n", v->getName(), primed);
+        } else {
+          fprintf(s, "Level: %d%c\n", ABS(k), primed);
+        }
+        printed = true;
+      }
+
+      fprintf(s, "  ");
+      showNode(s, list[i]);
+      fprintf(s, "\n");
+    }
+    
+    // next level
+    k *= -1;
+    if (k>0) k--;
+  } // for k
+
+  free(list);
+}
+
 void MEDDLY::expert_forest
 ::reportMemoryUsage(FILE * s, const char* pad, int verb)
 {

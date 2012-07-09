@@ -51,6 +51,7 @@ class MEDDLY::mt_mxd_bool : public mtmxd_forest {
     using mtmxd_forest::createEdge;
     using mtmxd_forest::evaluate;
 
+#ifdef ACCUMULATE_ON
     virtual bool accumulate(int& tempNode, int* element, int* pelement);
     virtual void accumulate(int& a, int b);
 
@@ -68,6 +69,7 @@ class MEDDLY::mt_mxd_bool : public mtmxd_forest {
     virtual void accumulateMxdHelper(int& a, int b, bool cBM,
         bool needsToMakeACopy,
         int (mt_mxd_bool::*function)(int, int, bool));
+#endif
 
 };
 

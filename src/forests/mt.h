@@ -108,11 +108,14 @@ class MEDDLY::mt_forest : public expert_forest {
     using expert_forest::getSparseNodeIndexes;
 
     /// Refer to meddly.h
+    /*
     void createSubMatrix(const bool* const* vlist,
         const bool* const* vplist, const dd_edge a, dd_edge& b);
     void createSubMatrix(const dd_edge& rows, const dd_edge& cols,
         const dd_edge& a, dd_edge& b);
+*/
 
+#ifdef ACCUMULATE_ON
     virtual void accumulate(int& a, int b);
     virtual bool accumulate(int& tempNode, int* element);
 
@@ -122,6 +125,7 @@ class MEDDLY::mt_forest : public expert_forest {
     virtual int accumulateExpandA(int a, int b, bool cBM);
     int accumulate(int tempNode, bool cBM, int* element, int level);
     virtual int makeACopy(int node, int size = 0);
+#endif
 
     /// Create a temporary node -- a node that can be modified by the user
     virtual int createTempNode(int lh, int size, bool clear);
@@ -149,8 +153,8 @@ class MEDDLY::mt_forest : public expert_forest {
     // temporary node is reduced only once.
     // Note: The same cache can be used across consecutive reduce
     // operations by specifying clearCache to false.
-    int recursiveReduceNode(int tempNode, bool clearCache = true);
-    int recursiveReduceNode(std::map<int, int>& cache, int root);
+    // int recursiveReduceNode(int tempNode, bool clearCache = true);
+    // int recursiveReduceNode(std::map<int, int>& cache, int root);
 
     // Similar to getDownPtrs() but for EV+MDDs
     virtual bool getDownPtrsAndEdgeValues(int node,
@@ -173,8 +177,7 @@ class MEDDLY::mt_forest : public expert_forest {
 
     bool discardTemporaryNodesFromComputeCache() const;   // for isStale()
 
-    void showNode(FILE *s, int p, int verbose = 0) const;
-    void showNodeGraph(FILE *s, int p) const;
+    virtual void showNode(FILE *s, int p, int verbose = 0) const;
 
     // *************** override expert_forest class -- done ***************
 
@@ -213,10 +216,10 @@ class MEDDLY::mt_forest : public expert_forest {
     bool isUnprimedNode(int p) const;
     int buildQuasiReducedNodeAtLevel(int k, int p);
 
-    void showLevel(FILE *s, int k) const;
+    // void showLevel(FILE *s, int k) const;
 
-    void showNode(int p) const;
-    void showAll() const;
+    // void showNode(int p) const;
+    // void showAll() const;
 
     void compareCacheCounts(int p = -1);
     void validateIncounts();
@@ -319,7 +322,7 @@ class MEDDLY::mt_forest : public expert_forest {
 
   private:
     // Cache for recursiveReduceNode()
-    std::map<int, int> recursiveReduceCache;
+    // std::map<int, int> recursiveReduceCache;
 
     // Persistant variables used in addReducedNodes()
     dd_edge* nodeA;

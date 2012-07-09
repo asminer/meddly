@@ -358,6 +358,7 @@ dd_edge testPostImage(const dd_edge& mdd, const dd_edge& mxd)
 
 
 // Test SubMatrix
+/*
 dd_edge testSubMatrix(int* bounds, int nLevels, const dd_edge& nsf)
 {
   bool** vlist = (bool **) malloc((nLevels + 1) * sizeof(bool *));
@@ -399,7 +400,7 @@ dd_edge testSubMatrix(int* bounds, int nLevels, const dd_edge& nsf)
 
   return subMatrix;
 }
-
+*/
 
 int main(int argc, char *argv[])
 {

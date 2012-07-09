@@ -13,7 +13,6 @@ test_union_mxd \
 test_mtmdd \
 test_mtmxd \
 test_evmdd \
-test_temporary_nodes \
 test_user_operation \
 build_expression \
 kan1_batch \
@@ -23,6 +22,7 @@ nqueens \
 queen_cover \
 kanban \
 slot
+# test_temporary_nodes 
 
 AM_CPPFLAGS = -I../src -I../src/operations
 AM_CXXFLAGS = -Wall
@@ -61,9 +61,6 @@ rubiks_cube_LDADD = ../src/libmeddly.la
 test_evmdd_SOURCES = test_evmdd.cc
 test_evmdd_LDADD = ../src/libmeddly.la
 
-test_temporary_nodes_SOURCES = test_temporary_nodes.cc
-test_temporary_nodes_LDADD = ../src/libmeddly.la
-
 nqueens_SOURCES = nqueens.cc
 nqueens_LDADD = ../src/libmeddly.la
 
@@ -78,4 +75,7 @@ slot_LDADD = ../src/libmeddly.la
 
 test_user_operation_SOURCES = test_user_operation.cc
 test_user_operation_LDADD = ../src/libmeddly.la
+
+# test_temporary_nodes_SOURCES = test_temporary_nodes.cc
+# test_temporary_nodes_LDADD = ../src/libmeddly.la
 

@@ -22,8 +22,6 @@
 #ifndef APPLY_BASE_H
 #define APPLY_BASE_H
 
-#define USE_NEW_OP
-
 /*
     Useful base classes for binary apply operations.
 */
@@ -109,48 +107,35 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
     virtual int compute(int a, int b);
 
   protected:
-#ifdef USE_NEW_OP
-    // new identity reduction trick
     int compute(int i, int a, int b);
-#else
-    virtual int computeIdent(int a, int b);
-    virtual int computeNonIdent(int a, int b);
-
-    virtual void expandA(int a, int b, int result, 
-      int resultLevel, int resultSize);
-    virtual void singleExpandA( int a, int b, int result, 
-      int resultLevel, int resultSize);
-    virtual void expandB(int a, int b, int result, 
-      int resultLevel, int resultSize);
-    virtual void singleExpandB(int a, int b, int result, 
-      int resultLevel, int resultSize);
-#endif 
 
   protected:
     virtual bool isStaleEntry(const int* entryData);
 
-    inline bool findResult(int a, int b, int &c) {
+    inline bool findResult(int in, int a, int b, int &c) {
+      CTsrch.key(0) = in;
       if (can_commute && a > b) {
-        CTsrch.key(0) = b;
-        CTsrch.key(1) = a;
-      } else {
-        CTsrch.key(0) = a;
         CTsrch.key(1) = b;
+        CTsrch.key(2) = a;
+      } else {
+        CTsrch.key(1) = a;
+        CTsrch.key(2) = b;
       }
       const int* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
-      c = resF->linkNode(cacheFind[2]);
+      c = resF->linkNode(cacheFind[3]);
       return true;
     }
 
-    inline void saveResult(int a, int b, int c) {
+    inline void saveResult(int in, int a, int b, int c) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
+      entry.key(0) = in;
       if (can_commute && a > b) {
-        entry.key(0) = arg2F->cacheNode(b);
-        entry.key(1) = arg1F->cacheNode(a);
-      } else {
-        entry.key(0) = arg1F->cacheNode(a);
         entry.key(1) = arg2F->cacheNode(b);
+        entry.key(2) = arg1F->cacheNode(a);
+      } else {
+        entry.key(1) = arg1F->cacheNode(a);
+        entry.key(2) = arg2F->cacheNode(b);
       }
       entry.result(0) = resF->cacheNode(c);
       CT->addEntry();
@@ -211,23 +196,7 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
       CT->addEntry();
     }
 
-#ifdef USE_NEW_OP
     int compute(int i, int level, int a, int b);
-#else
-    virtual int computeIdent(int level, int a, int b);
-    virtual int computeNonIdent(int level, int a, int b);
-
-    virtual void expandSkippedLevel(int a, int b,
-        int result, int resultLevel, int resultSize);
-    virtual void expandA(int a, int b,
-        int result, int resultLevel, int resultSize);
-    virtual void singleExpandA(int a, int b,
-        int result, int resultLevel, int resultSize);
-    virtual void expandB(int a, int b,
-        int result, int resultLevel, int resultSize);
-    virtual void singleExpandB(int a, int b,
-        int result, int resultLevel, int resultSize);
-#endif
 
   protected:
     // If terminal condition is reached, returns true and the result in c.
