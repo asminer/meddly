@@ -276,7 +276,6 @@ int MEDDLY::mtmdd_forest::sortBuild(int** list, T* tList,
     int n = sortBuild(list, tList, nextHeight, begin, end);
     int index = list[begin][level];
     int result = createNode(level, index, n);
-    unlinkNode(n);
     return result;
   }
 
@@ -625,7 +624,6 @@ int mtmdd_forest::inPlaceSortBuild(int height, int begin, int end)
     int n = inPlaceSortBuild<T>(nextHeight, begin, end);
     int index = list[begin][height];
     int result = createNode(height, index, n);
-    unlinkNode(n);
     return result;
   }
 
