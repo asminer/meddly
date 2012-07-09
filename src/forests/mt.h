@@ -130,12 +130,6 @@ class MEDDLY::mt_forest : public expert_forest {
     /// Create a temporary node -- a node that can be modified by the user
     virtual int createTempNode(int lh, int size, bool clear);
 
-    /// Create a temporary node with the given downpointers. Note that
-    /// downPointers[i] corresponds to the downpointer at index i.
-    /// IMPORTANT: The incounts for the downpointers are not incremented.
-    /// The returned value is the handle for the temporary node.
-    virtual int createTempNode(int lh, std::vector<int>& downPointers);
-
     /// Same as createTempNode(int, vector<int>) except this is for EV+MDDs.
     virtual int createTempNode(int lh, std::vector<int>& downPointers,
         std::vector<int>& edgeValues) { return 0; }
@@ -376,6 +370,7 @@ inline int MEDDLY::mt_forest::getDownPtrAfterIndex(int p, int i, int &index)
 }
 
 
+/*
 inline
 int MEDDLY::mt_forest::createTempNode(int lh, std::vector<int>& downPointers)
 {
@@ -388,7 +383,7 @@ int MEDDLY::mt_forest::createTempNode(int lh, std::vector<int>& downPointers)
   }
   return tempNode;
 }
-
+*/
 
 // Dealing with slot 0 (incount)
 

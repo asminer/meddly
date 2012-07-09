@@ -13,7 +13,6 @@ test_union_mxd \
 test_mtmdd \
 test_mtmxd \
 test_evmdd \
-test_user_operation \
 build_expression \
 kan1_batch \
 dining_phils \
@@ -22,6 +21,7 @@ nqueens \
 queen_cover \
 kanban \
 slot
+# test_user_operation \
 # test_temporary_nodes 
 
 AM_CPPFLAGS = -I../src -I../src/operations
@@ -73,8 +73,8 @@ kanban_LDADD = ../src/libmeddly.la
 slot_SOURCES = slot.cc simple_model.h simple_model.cc
 slot_LDADD = ../src/libmeddly.la
 
-test_user_operation_SOURCES = test_user_operation.cc
-test_user_operation_LDADD = ../src/libmeddly.la
+# test_user_operation_SOURCES = test_user_operation.cc
+# test_user_operation_LDADD = ../src/libmeddly.la
 
 # test_temporary_nodes_SOURCES = test_temporary_nodes.cc
 # test_temporary_nodes_LDADD = ../src/libmeddly.la

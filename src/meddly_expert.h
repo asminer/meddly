@@ -734,6 +734,32 @@ class MEDDLY::expert_forest : public forest
     ///   @return     Handle to a node that encodes the same thing.
     virtual int createReducedHelper(int in, const nodeBuilder &nb, bool &u);
 
+    /** Normalize a node.
+        Used only for "edge valued" DDs with range type: integer.
+        Different forest types will have different normalization rules,
+        so the default behavior given here (throw an error) will need
+        to be overridden by all edge-valued forests.
+
+          @param  nb    Array of downward pointers and edge values;
+                        may be modified.
+          @param  ev    The incoming edge value, may be modified
+                        as appropriate to normalize the node.
+    */
+    virtual void normalize(nodeBuilder &nb, int& ev);
+
+    /** Normalize a node.
+        Used only for "edge valued" DDs with range type: real.
+        Different forest types will have different normalization rules,
+        so the default behavior given here (throw an error) will need
+        to be overridden by all edge-valued forests.
+
+          @param  nb    Array of downward pointers and edge values;
+                        may be modified.
+          @param  ev    The incoming edge value, may be modified
+                        as appropriate to normalize the node.
+    */
+    virtual void normalize(nodeBuilder &nb, float& ev);
+
   // ------------------------------------------------------------
   // additional, "expert" interface.
   // Must be overridden in derived classes.
@@ -782,7 +808,8 @@ class MEDDLY::expert_forest : public forest
 
   // ------------------------------------------------------------
   // helpers for this class
-  private:
+  // private:
+
 
   // here down --- needs organizing
   public:
@@ -797,12 +824,6 @@ class MEDDLY::expert_forest : public forest
     inline int createTempNodeMaxSize(int lh, bool clear = true) {
       return createTempNode(lh, getLevelSize(lh), clear);
     }
-
-    /// Create a temporary node with the given downpointers. Note that
-    /// downPointers[i] corresponds to the downpointer at index i.
-    /// IMPORTANT: The incounts for the downpointers are not incremented.
-    /// The returned value is the handle for the temporary node.
-    virtual int createTempNode(int lh, std::vector<int>& downPointers) = 0;
 
     /// Same as createTempNode(int, vector<int>) except this is for EV+MDDs.
     virtual int createTempNode(int lh, std::vector<int>& downPointers,
@@ -1500,6 +1521,11 @@ class MEDDLY::expert_forest : public forest
         inline int isSparse(int addr) const {
           return sizeOf(addr) < 0;
         }
+        inline const int* hashedHeaderOf(int addr) const {
+          MEDDLY_DCASSERT(data);
+          return data + addr + commonHeaderLength + unhashedHeader;
+          // TBD
+        }
         inline int* fullDownOf(int addr) {
           MEDDLY_DCASSERT(data);
           MEDDLY_DCASSERT(isFull(addr));
@@ -1627,15 +1653,17 @@ class MEDDLY::expert_forest : public forest
         void dump(FILE*) const;
 
       private:
+        int* extra;
         int* down;
         int* index;
+        int extra_size;
         int alloc;
         int size;
         int nnzs;
         int level;
         bool is_full;
         nodeReader* next;  // free list
-        nodeReader(int k);
+        nodeReader(int k, int es);
         ~nodeReader();
         void resize(int ns, bool full);
 
@@ -1647,6 +1675,20 @@ class MEDDLY::expert_forest : public forest
     nodeReader** raw_readers;
     /// Free node readers, by level.  The array is shifted.
     nodeReader** free_reader;
+
+  private:
+    inline nodeReader* grabNodeReader(int k) {
+      nodeReader* nr;
+      if (free_reader[k]) {
+        nr = free_reader[k];
+        free_reader[k] = nr->next;
+        nr->next = 0;
+      } else {
+        level_data& ld = levels[k];
+        nr = new nodeReader(k, ld.unhashedHeader + ld.hashedHeader);
+      }
+      return nr;
+    }
 
   // ----------------------------------------------------------------- 
   // | 
@@ -1660,9 +1702,11 @@ class MEDDLY::expert_forest : public forest
     */
     class nodeBuilder {
         const level_data* parent;
+        int* extra_hashed;
+        int* extra_unhashed;
         int* down;
         int* indexes;
-        int* edges;
+        void* edges;
         int level;
         int size;
         int alloc;
@@ -1699,6 +1743,17 @@ class MEDDLY::expert_forest : public forest
         inline int getLevel() const { 
           return level;
         }
+        inline int& hh(int i) {
+          MEDDLY_DCASSERT(!has_hash);
+          MEDDLY_CHECK_RANGE(0, i, parent->hashedHeader);
+          MEDDLY_DCASSERT(extra_hashed);
+          return extra_hashed[i];
+        }
+        inline int& uh(int i) {
+          MEDDLY_CHECK_RANGE(0, i, parent->unhashedHeader);
+          MEDDLY_DCASSERT(extra_unhashed);
+          return extra_unhashed[i];
+        }
         inline int& d(int i) {
           MEDDLY_DCASSERT(!has_hash);
           MEDDLY_DCASSERT(down);
@@ -1723,16 +1778,17 @@ class MEDDLY::expert_forest : public forest
           MEDDLY_CHECK_RANGE(0, i, size);
           return indexes[i];
         }
-        inline int& v(int i) {
+        inline int& vi(int i) {
           MEDDLY_DCASSERT(!has_hash);
           MEDDLY_DCASSERT(edges);
           MEDDLY_CHECK_RANGE(0, i, size);
-          return edges[i];
+          return ((int*)edges)[i];
         }
-        inline int v(int i) const {
+        inline float& vr(int i) {
+          MEDDLY_DCASSERT(!has_hash);
           MEDDLY_DCASSERT(edges);
           MEDDLY_CHECK_RANGE(0, i, size);
-          return edges[i];
+          return ((float*)edges)[i];
         }
         inline bool isSparse() const {
           return is_sparse;
@@ -1791,7 +1847,16 @@ class MEDDLY::expert_forest : public forest
       if (u) nb.unlink(*this);
       return q;
     }
-    
+    template <class T>
+    inline void createReducedNode(int in, nodeBuilder& nb, int& node, T& ev) {
+      normalize(nb, ev);
+      nb.computeHash();
+      bool u;
+      node = createReducedHelper(in, nb, u);
+      MEDDLY_DCASSERT(nb.lock);
+      nb.lock = false;
+      if (u) nb.unlink(*this);
+    }
     
   
 

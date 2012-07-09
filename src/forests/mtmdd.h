@@ -125,13 +125,6 @@ class MEDDLY::mtmdd_forest : public mt_forest {
     // If i is -1, all indices of the node will point to dptr.
     int createNode(int k, int i, int dptr);
 
-    // Create a node at level k, such that dptr[i] is the downpointer
-    // corresponding to index[i].
-    // Important note: no node linking performed because the links
-    // are "transferred" from the dptr vector.
-    int createNode(int lh, std::vector<int>& index, std::vector<int>& dptr);
-
-
     template <typename T>
     T handleMultipleTerminalValues(const T* tList, int begin, int end);
 

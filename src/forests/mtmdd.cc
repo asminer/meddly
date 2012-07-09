@@ -277,36 +277,6 @@ int MEDDLY::mtmdd_forest::reduceNode(int p)
 }
 
 
-int MEDDLY::mtmdd_forest::createNode(int lh,
-    std::vector<int>& index, std::vector<int>& dptr)
-{
-  // last index in index[] should be the largest.
-#ifdef DEVELOPMENT_CODE
-  int max = 0;
-  for (std::vector<int>::iterator iter = index.begin();
-      iter != index.end(); ++iter)
-  {
-    if (max < *iter) max = *iter;
-  }
-  assert(max == index[index.size()-1]);
-#endif
-
-  int largestIndex = index[index.size()-1];
-  int result = createTempNode(lh, largestIndex+1, true);
-  int* ptr = getFullNodeDownPtrs(result);
-
-  for (std::vector<int>::iterator iIter = index.begin(), dIter = dptr.begin();
-      iIter != index.end(); )
-  {
-    // no need to for any linking because the links are "transferred"
-    // from the vector
-    ptr[*iIter++] = *dIter++;
-  }
-
-  return reduceNode(result);
-}
-
-
 int MEDDLY::mtmdd_forest::createNode(int k, int index, int dptr)
 {
   MEDDLY_DCASSERT(index >= -1);
