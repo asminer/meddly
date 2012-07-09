@@ -292,9 +292,9 @@ int MEDDLY::saturation_op::saturate(int mdd)
 #endif
 
   expert_forest::nodeBuilder& nb = resF->useNodeBuilder(k, sz);
-  expert_forest::nodeReader* mddDptrs = argF->initNodeReader(mdd);
+  expert_forest::nodeReader* mddDptrs = argF->initNodeReader(mdd, true);
   for (int i=0; i<sz; i++) {
-    nb.d(i) = (*mddDptrs)[i] ? saturate((*mddDptrs)[i]) : 0;
+    nb.d(i) = mddDptrs->d(i) ? saturate(mddDptrs->d(i)) : 0;
   }
   argF->recycle(mddDptrs);
   parent->saturateHelper(nb);
@@ -429,8 +429,8 @@ void MEDDLY::common_dfs_mt::splitMxd(int mxd)
 
     // Initialize row reader
     expert_forest::nodeReader* Mu = isLevelAbove(level, mxdLevel)
-      ? arg2F->initRedundantReader(level, mxd)
-      : arg2F->initNodeReader(mxd);
+      ? arg2F->initRedundantReader(level, mxd, true)
+      : arg2F->initNodeReader(mxd, true);
 
     bool first = true;
     int maxDiag;
@@ -438,17 +438,17 @@ void MEDDLY::common_dfs_mt::splitMxd(int mxd)
     // Read "rows"
     for (int i=0; i<Mu->getSize(); i++) {
       // Initialize column reader
-      int mxdPLevel = arg2F->getNodeLevel((*Mu)[i]);
+      int mxdPLevel = arg2F->getNodeLevel(Mu->d(i));
       expert_forest::nodeReader* Mp = isLevelAbove(-level, mxdPLevel)
-        ? arg2F->initIdentityReader(-level, i, (*Mu)[i])
-        : arg2F->initNodeReader((*Mu)[i]);
+        ? arg2F->initIdentityReader(-level, i, Mu->d(i), true)
+        : arg2F->initNodeReader(Mu->d(i), true);
 
       // Intersect along the diagonal
       if (first) {
-        maxDiag = arg2F->linkNode((*Mp)[i]);
+        maxDiag = arg2F->linkNode(Mp->d(i));
         first = false;
       } else {
-        int nmd = mxdIntersection->compute(maxDiag, (*Mp)[i]);
+        int nmd = mxdIntersection->compute(maxDiag, Mp->d(i));
         arg2F->unlinkNode(maxDiag);
         maxDiag = nmd;
       }
@@ -524,8 +524,8 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(expert_forest::nodeBuilder& nb)
 
   // Initialize mxd row reader, note we might skip the unprimed level
   expert_forest::nodeReader* Ru = (mxdLevel<0)
-    ? arg2F->initRedundantReader(nb.getLevel(), mxd)
-    : arg2F->initNodeReader(mxd);
+    ? arg2F->initRedundantReader(nb.getLevel(), mxd, true)
+    : arg2F->initNodeReader(mxd, true);
 
   // indexes to explore
   indexq* queue = useIndexQueue(nb.getSize());
@@ -538,20 +538,20 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(expert_forest::nodeBuilder& nb)
     int i = queue->remove();
 
     MEDDLY_DCASSERT(nb.d(i));
-    if (0==(*Ru)[i]) continue;  // row i is empty
+    if (0==Ru->d(i)) continue;  // row i is empty
 
     // grab column (TBD: build these ahead of time?)
-    int dlevel = arg2F->getNodeLevel((*Ru)[i]);
+    int dlevel = arg2F->getNodeLevel(Ru->d(i));
 
     expert_forest::nodeReader* Rp = (dlevel == -nb.getLevel())
-      ? arg2F->initNodeReader((*Ru)[i])
-      : arg2F->initIdentityReader(-nb.getLevel(), i, (*Ru)[i]);
+      ? arg2F->initNodeReader(Ru->d(i), false)
+      : arg2F->initIdentityReader(-nb.getLevel(), i, Ru->d(i), false);
 
-    for (int j=0; j<nb.getSize(); j++) {
-      if (0==(*Rp)[j]) continue;
+    for (int jz=0; jz<Rp->getNNZs(); jz++) {
+      int j = Rp->i(jz);
       if (-1==nb.d(j)) continue;  // nothing can be added to this set
 
-      int rec = recFire(nb.d(i), (*Rp)[j]);
+      int rec = recFire(nb.d(i), Rp->d(jz));
 
       if (rec == 0) continue;
       if (rec == nb.d(j)) { 
@@ -638,8 +638,8 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
 
   // Initialize mdd reader
   expert_forest::nodeReader* A = (mddLevel < rLevel)
-    ? arg1F->initRedundantReader(rLevel, mdd)
-    : arg1F->initNodeReader(mdd);
+    ? arg1F->initRedundantReader(rLevel, mdd, true)
+    : arg1F->initNodeReader(mdd, true);
 
   if (mddLevel > ABS(mxdLevel)) {
     //
@@ -647,7 +647,7 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
     // that's an important special case that we can handle quickly.
 
     for (int i=0; i<rSize; i++) {
-      nb.d(i) = recFire((*A)[i], mxd);
+      nb.d(i) = recFire(A->d(i), mxd);
     }
 
   } else {
@@ -660,25 +660,25 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
 
     // Initialize mxd reader, note we might skip the unprimed level
     expert_forest::nodeReader* Ru = (mxdLevel < 0)
-      ? arg2F->initRedundantReader(rLevel, mxd)
-      : arg2F->initNodeReader(mxd);
+      ? arg2F->initRedundantReader(rLevel, mxd, false)
+      : arg2F->initNodeReader(mxd, false);
 
     // loop over mxd "rows"
-    for (int i=0; i<rSize; i++) {
-      if (0==(*A)[i])   continue; 
-      if (0==(*Ru)[i])  continue; 
+    for (int iz=0; iz<Ru->getNNZs(); iz++) {
+      int i = Ru->i(iz);
+      if (0==A->d(i))   continue; 
       expert_forest::nodeReader* Rp;
-      Rp = (isLevelAbove(-rLevel, arg2F->getNodeLevel((*Ru)[i])))
-        ? arg2F->initIdentityReader(rLevel, i, (*Ru)[i])
-        : arg2F->initNodeReader((*Ru)[i]);
+      Rp = (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz))))
+        ? arg2F->initIdentityReader(rLevel, i, Ru->d(iz), false)
+        : arg2F->initNodeReader(Ru->d(iz), false);
 
       // loop over mxd "columns"
-      for (int j=0; j<rSize; j++) {
-        if (0==(*Rp)[j])  continue;
+      for (int jz=0; jz<Rp->getNNZs(); jz++) {
+        int j = Rp->i(jz);
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
         // and add them
-        int newstates = recFire((*A)[i], (*Rp)[j]);
+        int newstates = recFire(A->d(i), Rp->d(jz));
         if (0==newstates) continue;
         if (0==nb.d(j)) {
           nb.d(j) = newstates;
@@ -742,8 +742,8 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(expert_forest::nodeBuilder& nb)
 
   // Initialize mxd row reader, note we might skip the unprimed level
   expert_forest::nodeReader* Ru = (mxdLevel<0)
-    ? arg2F->initRedundantReader(nb.getLevel(), mxd)
-    : arg2F->initNodeReader(mxd);
+    ? arg2F->initRedundantReader(nb.getLevel(), mxd, false)
+    : arg2F->initNodeReader(mxd, false);
 
   // indexes to explore
   charbuf* expl = useCharBuf(nb.getSize());
@@ -757,20 +757,21 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(expert_forest::nodeBuilder& nb)
     repeat = false;
 
     // explore all rows
-    for (int i=0; i<nb.getSize(); i++) {
+    for (int iz=0; iz<Ru->getNNZs(); iz++) {
+      int i = Ru->i(iz);
       // grab column (TBD: build these ahead of time?)
-      int dlevel = arg2F->getNodeLevel((*Ru)[i]);
+      int dlevel = arg2F->getNodeLevel(Ru->d(i));
 
       expert_forest::nodeReader* Rp = (dlevel == -nb.getLevel())
-        ? arg2F->initNodeReader((*Ru)[i])
-        : arg2F->initIdentityReader(-nb.getLevel(), i, (*Ru)[i]);
+        ? arg2F->initNodeReader(Ru->d(iz), false)
+        : arg2F->initIdentityReader(-nb.getLevel(), i, Ru->d(iz), false);
 
-      for (int j=0; j<nb.getSize(); j++) {
+      for (int jz=0; jz<Rp->getNNZs(); jz++) {
+        int j = Rp->i(jz);
         if (0==expl->data[j]) continue;
-        if (0==(*Rp)[j])      continue;
         if (0==nb.d(j))       continue;
         // We have an i->j edge to explore
-        int rec = recFire(nb.d(j), (*Rp)[j]);
+        int rec = recFire(nb.d(j), Rp->d(jz));
 
         if (0==rec) continue;
         if (rec == nb.d(i)) {
@@ -836,15 +837,15 @@ int MEDDLY::bckwd_dfs_mt::recFire(int mdd, int mxd)
 
   // Initialize mdd reader
   expert_forest::nodeReader* A = (mddLevel < rLevel)
-    ? arg1F->initRedundantReader(rLevel, mdd)
-    : arg1F->initNodeReader(mdd);
+    ? arg1F->initRedundantReader(rLevel, mdd, true)
+    : arg1F->initNodeReader(mdd, true);
 
   if (mddLevel > ABS(mxdLevel)) {
     //
     // Skipped levels in the MXD,
     // that's an important special case that we can handle quickly.
     for (int i=0; i<rSize; i++) {
-      nb.d(i) = recFire((*A)[i], mxd);
+      nb.d(i) = recFire(A->d(i), mxd);
     }
   } else {
     // 
@@ -856,25 +857,25 @@ int MEDDLY::bckwd_dfs_mt::recFire(int mdd, int mxd)
 
     // Initialize mxd reader, note we might skip the unprimed level
     expert_forest::nodeReader* Ru = (mxdLevel < 0)
-      ? arg2F->initRedundantReader(rLevel, mxd)
-      : arg2F->initNodeReader(mxd);
+      ? arg2F->initRedundantReader(rLevel, mxd, false)
+      : arg2F->initNodeReader(mxd, false);
 
     // loop over mxd "rows"
-    for (int i=0; i<rSize; i++) {
-      if (0==(*Ru)[i])  continue; 
+    for (int iz=0; iz<Ru->getNNZs(); iz++) {
+      int i = Ru->i(iz);
       expert_forest::nodeReader* Rp;
-      Rp = (isLevelAbove(-rLevel, arg2F->getNodeLevel((*Ru)[i])))
-        ? arg2F->initIdentityReader(rLevel, i, (*Ru)[i])
-        : arg2F->initNodeReader((*Ru)[i]);
+      Rp = (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz))))
+        ? arg2F->initIdentityReader(rLevel, i, Ru->d(iz), false)
+        : arg2F->initNodeReader(Ru->d(iz), false);
 
       // loop over mxd "columns"
-      for (int j=0; j<rSize; j++) {
-        if (0==(*Rp)[j])  continue;
-        if (0==(*A)[j])   continue; 
+      for (int jz=0; jz<Rp->getNNZs(); jz++) {
+        int j = Rp->i(jz);
+        if (0==A->d(j))   continue; 
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
         // and add them
-        int newstates = recFire((*A)[j], (*Rp)[j]);
+        int newstates = recFire(A->d(j), Rp->d(jz));
         if (0==newstates) continue;
         if (0==nb.d(i)) {
           nb.d(i) = newstates;

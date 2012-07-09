@@ -145,11 +145,11 @@ int MEDDLY::copy_bool2MT::compute(int in, int a)
   expert_forest::nodeBuilder& nb = resF->useNodeBuilder(level, size);
 
   // Initialize node reader
-  expert_forest::nodeReader* A = argF->initNodeReader(a);
+  expert_forest::nodeReader* A = argF->initNodeReader(a, true);
 
   // recurse
   for (int i=0; i<size; i++) {
-    nb.d(i) = compute(i, (*A)[i]);
+    nb.d(i) = compute(i, A->d(i));
   }
 
   // Cleanup
@@ -206,11 +206,11 @@ int MEDDLY::copy_MT2bool::compute(int in, int a)
   expert_forest::nodeBuilder& nb = resF->useNodeBuilder(level, size);
 
   // Initialize node reader
-  expert_forest::nodeReader* A = argF->initNodeReader(a);
+  expert_forest::nodeReader* A = argF->initNodeReader(a, true);
 
   // recurse
   for (int i=0; i<size; i++) {
-    nb.d(i) = compute(i, (*A)[i]);
+    nb.d(i) = compute(i, A->d(i));
   }
 
   // Cleanup

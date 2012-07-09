@@ -114,11 +114,11 @@ int MEDDLY::compl_mdd::compute(int a)
   expert_forest::nodeBuilder& nb = resF->useNodeBuilder(level, size);
 
   // Initialize node reader
-  expert_forest::nodeReader* A = argF->initNodeReader(a);
+  expert_forest::nodeReader* A = argF->initNodeReader(a, true);
 
   // recurse
   for (int i=0; i<size; i++) {
-    nb.d(i) = compute((*A)[i]);
+    nb.d(i) = compute(A->d(i));
   }
 
   // Cleanup
@@ -216,12 +216,12 @@ int MEDDLY::compl_mxd::compute(int in, int k, int a)
   expert_forest::nodeReader* A;
   bool canSave = true;
   if (aLevel == k) {
-    A = argF->initNodeReader(a);
+    A = argF->initNodeReader(a, true);
   } else if (k>0 || argF->isFullyReduced()) {
-    A = argF->initRedundantReader(k, a);
+    A = argF->initRedundantReader(k, a, true);
   } else {
     MEDDLY_DCASSERT(in>=0);
-    A = argF->initIdentityReader(k, in, a);
+    A = argF->initIdentityReader(k, in, a, true);
     canSave = false;
   }
   
@@ -229,7 +229,7 @@ int MEDDLY::compl_mxd::compute(int in, int k, int a)
   int nextLevel = (k>0) ? -k : -k-1;
   int nnz = 0;
   for (int i=0; i<size; i++) {
-    int d = compute(i, nextLevel, (*A)[i]);
+    int d = compute(i, nextLevel, A->d(i));
     nb.d(i) = d;
     if (d) nnz++;
   }

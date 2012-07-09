@@ -90,16 +90,16 @@ int MEDDLY::generic_binary_mdd::compute(int a, int b)
 
   // Initialize readers
   expert_forest::nodeReader* A = (aLevel < resultLevel) 
-    ? arg1F->initRedundantReader(resultLevel, a)
-    : arg1F->initNodeReader(a);
+    ? arg1F->initRedundantReader(resultLevel, a, true)
+    : arg1F->initNodeReader(a, true);
 
   expert_forest::nodeReader* B = (bLevel < resultLevel) 
-    ? arg2F->initRedundantReader(resultLevel, b)
-    : arg2F->initNodeReader(b);
+    ? arg2F->initRedundantReader(resultLevel, b, true)
+    : arg2F->initNodeReader(b, true);
 
   // do computation
   for (int i=0; i<resultSize; i++) {
-    nb.d(i) = compute((*A)[i], (*B)[i]);
+    nb.d(i) = compute(A->d(i), B->d(i));
   }
 
   // cleanup
@@ -198,27 +198,27 @@ int MEDDLY::generic_binary_mxd::compute(int in, int a, int b)
   // Initialize readers
   expert_forest::nodeReader* A;
   if (aLevel == resultLevel) {
-    A = arg1F->initNodeReader(a);
+    A = arg1F->initNodeReader(a, true);
   } else if (resultLevel>0 || arg1F->isFullyReduced()) {
-    A = arg1F->initRedundantReader(resultLevel, a);
+    A = arg1F->initRedundantReader(resultLevel, a, true);
   } else {
-    A = arg1F->initIdentityReader(resultLevel, in, a);
+    A = arg1F->initIdentityReader(resultLevel, in, a, true);
     needsIndex = true;
   }
 
   expert_forest::nodeReader* B;
   if (bLevel == resultLevel) {
-    B = arg2F->initNodeReader(b);
+    B = arg2F->initNodeReader(b, true);
   } else if (resultLevel>0 || arg2F->isFullyReduced()) {
-    B = arg2F->initRedundantReader(resultLevel, b);
+    B = arg2F->initRedundantReader(resultLevel, b, true);
   } else {
-    B = arg2F->initIdentityReader(resultLevel, in, b);
+    B = arg2F->initIdentityReader(resultLevel, in, b, true);
     needsIndex = true;
   }
 
   int nnz = 0;
   for (int j=0; j<resultSize; j++) {
-    int d = compute(j, (*A)[j], (*B)[j]);
+    int d = compute(j, A->d(j), B->d(j));
     nb.d(j) = d;
     if (d) nnz++;
   }
@@ -324,28 +324,28 @@ int MEDDLY::generic_binbylevel_mxd
   // Initialize readers
   expert_forest::nodeReader* A;
   if (aLevel == resultLevel) {
-    A = arg1F->initNodeReader(a);
+    A = arg1F->initNodeReader(a, true);
   } else if (resultLevel>0 || arg1F->isFullyReduced()) {
-    A = arg1F->initRedundantReader(resultLevel, a);
+    A = arg1F->initRedundantReader(resultLevel, a, true);
   } else {
-    A = arg1F->initIdentityReader(resultLevel, in, a);
+    A = arg1F->initIdentityReader(resultLevel, in, a, true);
     canSaveResult = false;
   }
 
   expert_forest::nodeReader* B;
   if (bLevel == resultLevel) {
-    B = arg2F->initNodeReader(b);
+    B = arg2F->initNodeReader(b, true);
   } else if (resultLevel>0 || arg2F->isFullyReduced()) {
-    B = arg2F->initRedundantReader(resultLevel, b);
+    B = arg2F->initRedundantReader(resultLevel, b, true);
   } else {
-    B = arg2F->initIdentityReader(resultLevel, in, b);
+    B = arg2F->initIdentityReader(resultLevel, in, b, true);
     canSaveResult = false;
   }
 
   int nextLevel = (resultLevel > 0)? -resultLevel: -resultLevel-1;
   int nnz = 0;
   for (int j=0; j<resultSize; j++) {
-    int d = compute(j, nextLevel, (*A)[j], (*B)[j]);
+    int d = compute(j, nextLevel, A->d(j), B->d(j));
     nb.d(j) = d;
     if (d) nnz++;
   }

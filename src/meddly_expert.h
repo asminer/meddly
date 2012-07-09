@@ -649,26 +649,29 @@ class MEDDLY::expert_forest : public forest
     /** Build a node reader.
         Safe to use wherever we want to "read" node data.
           @param  node    A non-terminal node
+          @param  full    Use a full reader or sparse.
           @return         A node reader struct.
     */
-    nodeReader* initNodeReader(int node);
+    nodeReader* initNodeReader(int node, bool full);
 
     /** Build a redundant node reader.
         For convenience.
           @param  k       Level that was skipped.
           @param  node    Downward pointer to use.
+          @param  full    Use a full reader or sparse.
           @return         A node reader struct.
     */
-    nodeReader* initRedundantReader(int k, int node);
+    nodeReader* initRedundantReader(int k, int node, bool full);
 
     /** Build an identity node reader.
         For convenience.
           @param  k       Level that was skipped.
           @param  i       Index of identity reduction
           @param  node    Downward pointer to use.
+          @param  full    Use a full reader or sparse.
           @return         A node reader struct.
     */
-    nodeReader* initIdentityReader(int k, int i, int node);
+    nodeReader* initIdentityReader(int k, int i, int node, bool full);
 
     /// Recycle a node reader.
     void recycle(nodeReader *);
@@ -1597,9 +1600,14 @@ class MEDDLY::expert_forest : public forest
     */
     class nodeReader {
       public:
-        inline int operator[](int n) const {
-          MEDDLY_CHECK_RANGE(0, n, size);
-          return buffer[n];
+        inline int d(int n) const {
+          MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
+          return down[n];
+        }
+        inline int i(int n) const {
+          MEDDLY_DCASSERT(!is_full);
+          MEDDLY_CHECK_RANGE(0, n, nnzs);
+          return index[n];
         }
 
         inline int getLevel() const {
@@ -1607,21 +1615,29 @@ class MEDDLY::expert_forest : public forest
         }
 
         inline int getSize() const {
+          MEDDLY_DCASSERT(is_full);
           return size;
+        }
+        inline int getNNZs() const {
+          MEDDLY_DCASSERT(!is_full);
+          return nnzs;
         }
 
         // For debudding
         void dump(FILE*) const;
 
       private:
-        int* buffer;
+        int* down;
+        int* index;
         int alloc;
         int size;
+        int nnzs;
         int level;
+        bool is_full;
         nodeReader* next;  // free list
         nodeReader(int k);
         ~nodeReader();
-        void resize(int ns);
+        void resize(int ns, bool full);
 
         friend class expert_forest;
     };

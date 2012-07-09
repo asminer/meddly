@@ -170,15 +170,15 @@ int MEDDLY::preimage_mdd::compute_rec(int mdd, int mxd)
 
   // Initialize mdd reader
   expert_forest::nodeReader* A = (mddLevel < rLevel)
-    ? arg1F->initRedundantReader(rLevel, mdd)
-    : arg1F->initNodeReader(mdd);
+    ? arg1F->initRedundantReader(rLevel, mdd, true)
+    : arg1F->initNodeReader(mdd, true);
 
   if (mddLevel > ABS(mxdLevel)) {
     //
     // Skipped levels in the MXD,
     // that's an important special case that we can handle quickly.
     for (int i=0; i<rSize; i++) {
-      nb.d(i) = compute_rec((*A)[i], mxd);
+      nb.d(i) = compute_rec(A->d(i), mxd);
     }
   } else {
     // 
@@ -190,25 +190,25 @@ int MEDDLY::preimage_mdd::compute_rec(int mdd, int mxd)
 
     // Initialize mxd reader, note we might skip the unprimed level
     expert_forest::nodeReader* Ru = (mxdLevel < 0)
-      ? arg2F->initRedundantReader(rLevel, mxd)
-      : arg2F->initNodeReader(mxd);
+      ? arg2F->initRedundantReader(rLevel, mxd, false)
+      : arg2F->initNodeReader(mxd, false);
 
     // loop over mxd "rows"
-    for (int i=0; i<rSize; i++) {
-      if (0==(*Ru)[i])  continue; 
+    for (int iz=0; iz<Ru->getNNZs(); iz++) {
+      int i = Ru->i(iz);
       expert_forest::nodeReader* Rp;
-      Rp = (isLevelAbove(-rLevel, arg2F->getNodeLevel((*Ru)[i])))
-        ? arg2F->initIdentityReader(rLevel, i, (*Ru)[i])
-        : arg2F->initNodeReader((*Ru)[i]);
+      Rp = (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz))))
+        ? arg2F->initIdentityReader(rLevel, i, Ru->d(iz), false)
+        : arg2F->initNodeReader(Ru->d(iz), false);
 
       // loop over mxd "columns"
-      for (int j=0; j<rSize; j++) {
-        if (0==(*Rp)[j])  continue;
-        if (0==(*A)[j])   continue; 
+      for (int jz=0; jz<Rp->getNNZs(); jz++) {
+        int j = Rp->i(jz);
+        if (0==A->d(j))   continue; 
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
         // and add them
-        int newstates = compute_rec((*A)[j], (*Rp)[j]);
+        int newstates = compute_rec(A->d(j), Rp->d(jz));
         if (0==newstates) continue;
         if (0==nb.d(i)) {
           nb.d(i) = newstates;
@@ -287,15 +287,15 @@ int MEDDLY::postimage_mdd::compute_rec(int mdd, int mxd)
 
   // Initialize mdd reader
   expert_forest::nodeReader* A = (mddLevel < rLevel)
-    ? arg1F->initRedundantReader(rLevel, mdd)
-    : arg1F->initNodeReader(mdd);
+    ? arg1F->initRedundantReader(rLevel, mdd, true)
+    : arg1F->initNodeReader(mdd, true);
 
   if (mddLevel > ABS(mxdLevel)) {
     //
     // Skipped levels in the MXD,
     // that's an important special case that we can handle quickly.
     for (int i=0; i<rSize; i++) {
-      nb.d(i) = compute_rec((*A)[i], mxd);
+      nb.d(i) = compute_rec(A->d(i), mxd);
     }
   } else {
     // 
@@ -307,25 +307,25 @@ int MEDDLY::postimage_mdd::compute_rec(int mdd, int mxd)
 
     // Initialize mxd reader, note we might skip the unprimed level
     expert_forest::nodeReader* Ru = (mxdLevel < 0)
-      ? arg2F->initRedundantReader(rLevel, mxd)
-      : arg2F->initNodeReader(mxd);
+      ? arg2F->initRedundantReader(rLevel, mxd, false)
+      : arg2F->initNodeReader(mxd, false);
 
     // loop over mxd "rows"
-    for (int i=0; i<rSize; i++) {
-      if (0==(*A)[i])   continue; 
-      if (0==(*Ru)[i])  continue; 
+    for (int iz=0; iz<Ru->getNNZs(); iz++) {
+      int i = Ru->i(iz);
+      if (0==A->d(i))   continue; 
       expert_forest::nodeReader* Rp;
-      Rp = (isLevelAbove(-rLevel, arg2F->getNodeLevel((*Ru)[i])))
-        ? arg2F->initIdentityReader(rLevel, i, (*Ru)[i])
-        : arg2F->initNodeReader((*Ru)[i]);
+      Rp = (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz))))
+        ? arg2F->initIdentityReader(rLevel, i, Ru->d(iz), false)
+        : arg2F->initNodeReader(Ru->d(iz), false);
 
       // loop over mxd "columns"
-      for (int j=0; j<rSize; j++) {
-        if (0==(*Rp)[j])  continue;
+      for (int jz=0; jz<Rp->getNNZs(); jz++) {
+        int j = Rp->i(jz);
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
         // and add them
-        int newstates = compute_rec((*A)[i], (*Rp)[j]);
+        int newstates = compute_rec(A->d(i), Rp->d(jz));
         if (0==newstates) continue;
         if (0==nb.d(j)) {
           nb.d(j) = newstates;

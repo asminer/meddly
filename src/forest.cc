@@ -1100,35 +1100,47 @@ void MEDDLY::expert_forest::level_data::indexRemove(int p_offset)
 
 MEDDLY::expert_forest::nodeReader::nodeReader(int k)
 {
-  buffer = 0;
+  down = 0;
+  index = 0;
   alloc = 0;
   size = 0;
+  nnzs = 0;
   level = k;
 }
 
 MEDDLY::expert_forest::nodeReader::~nodeReader()
 {
-  free(buffer);
+  free(down);
 }
 
 void MEDDLY::expert_forest::nodeReader::dump(FILE* s) const
 {
-  fprintf(s, "[%d", buffer[0]);
-  for (int i=1; i<size; i++)
-    fprintf(s, ", %d", buffer[i]);
-  fprintf(s, "]");
+  if (is_full) {
+    fprintf(s, "[%d", down[0]);
+    for (int i=1; i<size; i++)
+      fprintf(s, ", %d", down[i]);
+    fprintf(s, "]");
+  } else {
+    fprintf(s, "(%d:%d", index[0], down[0]);
+    for (int z=1; z<nnzs; z++) 
+      fprintf(s, ", %d:%d", index[z], down[z]);
+    fprintf(s, ")");
+  }
 }
 
-void MEDDLY::expert_forest::nodeReader::resize(int ns)
+void MEDDLY::expert_forest::nodeReader::resize(int ns, bool full)
 {
+  is_full = full;
   size = ns;
   if (size <= alloc) return;
   int nalloc = ((ns/8)+1)*8;
   MEDDLY_DCASSERT(nalloc > ns);
   MEDDLY_DCASSERT(nalloc>0);
   MEDDLY_DCASSERT(nalloc>alloc);
-  buffer = (int*) realloc(buffer, nalloc*sizeof(int));
-  if (0==buffer) throw error(error::INSUFFICIENT_MEMORY);
+  down = (int*) realloc(down, nalloc*sizeof(int));
+  if (0==down) throw error(error::INSUFFICIENT_MEMORY);
+  index = (int*) realloc(index, nalloc*sizeof(int));
+  if (0==index) throw error(error::INSUFFICIENT_MEMORY);
   alloc = nalloc;
 }
 
@@ -1658,7 +1670,7 @@ unsigned MEDDLY::expert_forest::hashNode(int h) const
 
 
 MEDDLY::expert_forest::nodeReader*
-MEDDLY::expert_forest::initNodeReader(int node)
+MEDDLY::expert_forest::initNodeReader(int node, bool full)
 {
   const node_data& n = getNode(node);
   int nsize = getLevelSize(n.level);
@@ -1670,35 +1682,53 @@ MEDDLY::expert_forest::initNodeReader(int node)
   } else {
     nr = new nodeReader(n.level);
   }
-  nr->resize(nsize);
+  nr->resize(nsize, full);
   level_data& ld = levels[n.level];
   if (ld.isFull(n.offset)) {
     int i;
     int stop = ld.fullSizeOf(n.offset);
     const int* dn = ld.fullDownOf(n.offset);
-    for (i=0; i<stop; i++) {
-      nr->buffer[i] = dn[i];
-    }
-    for (; i<nsize; i++) {
-      nr->buffer[i] = 0;
+    if (full) {
+      for (i=0; i<stop; i++) {
+        nr->down[i] = dn[i];
+      }
+      for (; i<nsize; i++) {
+        nr->down[i] = 0;
+      }
+    } else {
+      int& z = nr->nnzs;
+      z = 0;
+      for (i=0; i<stop; i++) if (dn[i]) {
+        nr->down[z] = dn[i];
+        nr->index[z] = i;
+        z++;
+      }
     }
   } else {
     int i = 0;
     int nnz = ld.sparseSizeOf(n.offset);
     const int* dn = ld.sparseDownOf(n.offset);
     const int* ix = ld.sparseIndexesOf(n.offset);
-    for (int z=0; z<nnz; z++) {
-      for (; i<ix[z]; i++) nr->buffer[i] = 0;
-      nr->buffer[i] = dn[z];
-      i++;
+    if (full) {
+      for (int z=0; z<nnz; z++) {
+        for (; i<ix[z]; i++) nr->down[i] = 0;
+        nr->down[i] = dn[z];
+        i++;
+      }
+      for (; i<nsize; i++) nr->down[i] = 0;
+    } else {
+      for (int z=0; z<nnz; z++) {
+        nr->down[z] = dn[z];
+        nr->index[z] = ix[z];
+      }
+      nr->nnzs = nnz;
     }
-    for (; i<nsize; i++) nr->buffer[i] = 0;
   }
   return nr;
 }
 
 MEDDLY::expert_forest::nodeReader*
-MEDDLY::expert_forest::initRedundantReader(int k, int node)
+MEDDLY::expert_forest::initRedundantReader(int k, int node, bool full)
 {
   int nsize = getLevelSize(k);
   nodeReader* nr;
@@ -1709,14 +1739,18 @@ MEDDLY::expert_forest::initRedundantReader(int k, int node)
   } else {
     nr = new nodeReader(k);
   }
-  nr->resize(nsize);
+  nr->resize(nsize, full);
   for (int i=0; i<nsize; i++) 
-    nr->buffer[i] = node;
+    nr->down[i] = node;
+  if (!full) {
+    for (int i=0; i<nsize; i++) nr->index[i] = i;
+    nr->nnzs = nsize;
+  }
   return nr;
 }
 
 MEDDLY::expert_forest::nodeReader*
-MEDDLY::expert_forest::initIdentityReader(int k, int i, int node)
+MEDDLY::expert_forest::initIdentityReader(int k, int i, int node, bool full)
 {
   int nsize = getLevelSize(k);
   nodeReader* nr;
@@ -1727,10 +1761,17 @@ MEDDLY::expert_forest::initIdentityReader(int k, int i, int node)
   } else {
     nr = new nodeReader(k);
   }
-  nr->resize(nsize);
-  for (int j=0; j<i; j++) nr->buffer[j] = 0;
-  nr->buffer[i] = node;
-  for (int j=i+1; j<nsize; j++) nr->buffer[j] = 0;
+  if (full) {
+    nr->resize(nsize, full);
+    for (int j=0; j<i; j++) nr->down[j] = 0;
+    nr->down[i] = node;
+    for (int j=i+1; j<nsize; j++) nr->down[j] = 0;
+  } else {
+    nr->resize(1, full);
+    nr->nnzs = 1;
+    nr->down[0] = node;
+    nr->index[0] = i;
+  }
   return nr;
 }
 
