@@ -701,8 +701,14 @@ class MEDDLY::expert_forest : public forest
       MEDDLY_DCASSERT(0==r->next);
       r->refcount--;
       if (0==r->refcount) {
-        r->next = free_reader[r->level];
-        free_reader[r->level] = r;
+        if (0==free_reader) {
+          // Don't try to recycle.
+          delete r;
+        } else {
+          MEDDLY_DCASSERT(free_reader);
+          r->next = free_reader[r->level];
+          free_reader[r->level] = r;
+        }
       }
     }
 

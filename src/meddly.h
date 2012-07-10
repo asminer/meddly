@@ -1680,13 +1680,26 @@ class MEDDLY::dd_edge {
     */
     dd_edge(forest* p);
 
-    /// Destructor.  Will notify parent as appropriate.
-    ~dd_edge();
-
     /** Copy Constructor.
         @param  e       dd_edge to copy.
     */
     dd_edge(const dd_edge &e);
+
+    /** Assignment operator.
+        @param  e       dd_edge to copy.
+        @return         the new dd_edge.
+    */
+    dd_edge& operator=(const dd_edge &e);
+
+    /// Destructor.  Will notify parent as appropriate.
+    ~dd_edge();
+
+  private:
+    void init(const dd_edge &e);
+    void destroy();
+
+
+  public:
 
     /** Clears the contents of this edge. It will belong to the same
         forest as before.
@@ -1769,8 +1782,8 @@ class MEDDLY::dd_edge {
 #else
           DEFAULT=0,
 #endif
-          ROW,      // the row is fixed
-          COLUMN    // the column is fixed
+          ROW,      // enumerate the rows (column is fixed)
+          COLUMN    // enumerate the columns (row is fixed)
         };
         iterator();
         iterator(dd_edge* e, iter_type t, const int* minterm);
@@ -1830,8 +1843,8 @@ class MEDDLY::dd_edge {
 #ifdef NEW_ITERATORS
         void firstSetElement(int k, int down);
         void firstRelElement(int k, int down);
-        void firstRow(int k, int down);
-        void firstColumn(int k, int down);
+        bool firstRow(int k, int down);
+        bool firstColumn(int k, int down);
 #else
         void incrNonIdentRow();
         void incrNonIdentColumn();
@@ -1916,12 +1929,6 @@ class MEDDLY::dd_edge {
         @return         an iterator pointing to the first element.
     */
     const_iterator beginColumn(const int* minterm);
-
-    /** Assignment operator.
-        @param  e       dd_edge to copy.
-        @return         the new dd_edge.
-    */
-    dd_edge& operator=(const dd_edge &e);
 
     /** Check for equality.
         @return true    iff this edge has the same parent and refers to

@@ -62,6 +62,9 @@ MEDDLY::variable::variable(int b, char* n)
 
 MEDDLY::variable::~variable()
 {
+#ifdef DEBUG_CLEANUP
+  printf("destroying variable %s\n", name);
+#endif
   delete[] name;
 }
 

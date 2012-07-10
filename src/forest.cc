@@ -1115,6 +1115,7 @@ MEDDLY::expert_forest::nodeReader::~nodeReader()
 {
   delete[] extra;
   free(down);
+  free(index);
 }
 
 void MEDDLY::expert_forest::nodeReader::dump(FILE* s) const
@@ -1426,6 +1427,7 @@ MEDDLY::expert_forest::~expert_forest()
     }
   }
   delete[] raw_readers;
+  free_reader = 0;  // for sanity checks
 
   // unique table
   delete unique;

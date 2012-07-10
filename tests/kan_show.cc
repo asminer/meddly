@@ -74,7 +74,8 @@ dd_edge buildReachset(domain* d, int N)
 
   dd_edge reachable(mdd);
   apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
-
+  
+  delete[] initial;
   return reachable;
 }
 
