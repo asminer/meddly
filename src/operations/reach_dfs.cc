@@ -494,6 +494,29 @@ void MEDDLY::common_dfs_mt::indexq::resize(int sz)
 }
 
 // ******************************************************************
+// *                 common_dfs_mt::charbuf methods                 *
+// ******************************************************************
+
+MEDDLY::common_dfs_mt::charbuf::charbuf()
+{
+  data = 0;
+  size = 0;
+}
+
+MEDDLY::common_dfs_mt::charbuf::~charbuf()
+{
+  free(data);
+}
+
+void MEDDLY::common_dfs_mt::charbuf::resize(int sz)
+{
+  if (sz <= size) return;
+  data = (char*) realloc(data, sz * sizeof(char));
+  if (0==data)
+    throw error(error::INSUFFICIENT_MEMORY);
+}
+
+// ******************************************************************
 // *                                                                *
 // *                       forwd_dfs_mt class                       *
 // *                                                                *
