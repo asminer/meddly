@@ -647,8 +647,15 @@ void MEDDLY::dd_edge::iterator::incrRelation()
   firstRelElement( (k>0) ? -k : -k-1, down);
 }
 
+void MEDDLY::dd_edge::iterator::incrRow()
+{
+  throw error(error::NOT_IMPLEMENTED);
+}
 
-// stuff goes here
+void MEDDLY::dd_edge::iterator::incrColumn()
+{
+  throw error(error::NOT_IMPLEMENTED);
+}
 
 void MEDDLY::dd_edge::iterator::firstSetElement(int k, int down)
 {
@@ -709,6 +716,16 @@ void MEDDLY::dd_edge::iterator::firstRelElement(int k, int down)
   }
   // save the terminal value
   index[0] = down;
+}
+
+void MEDDLY::dd_edge::iterator::firstRow(int k, int down)
+{
+  throw error(error::NOT_IMPLEMENTED);
+}
+
+void MEDDLY::dd_edge::iterator::firstColumn(int k, int down)
+{
+  throw error(error::NOT_IMPLEMENTED);
 }
 
 
