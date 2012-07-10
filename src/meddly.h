@@ -42,6 +42,8 @@
 #include <cstdio>
 #include <cassert>
 
+#define NEW_ITERATORS
+
 namespace MEDDLY {
 
   // Classes
@@ -1760,51 +1762,110 @@ class MEDDLY::dd_edge {
     class iterator {
       public:
         enum iter_type {
+#ifdef NEW_ITERATORS
+          EMPTY=0,
+          SET,
+          RELATION,
+#else
           DEFAULT=0,
-          ROW,
-          COLUMN
+#endif
+          ROW,      // the row is fixed
+          COLUMN    // the column is fixed
         };
         iterator();
-        ~iterator();
+        iterator(dd_edge* e, iter_type t, const int* minterm);
         iterator(const iterator& iter);
+        ~iterator();
         iterator& operator=(const iterator& iter);
+#ifdef NEW_ITERATORS
+      private:
+        void destroy();
+        void initEmpty();
+        void init(const iterator& iter);
+      public:
+        inline operator bool() const { return path && path[maxLevel]; }
+#else
         inline operator bool() const { return nodes && nodes[0]; }
         void operator--();
+#endif
         void operator++();
-        bool operator!=(const iterator& iter) const;
         bool operator==(const iterator& iter) const;
+        inline bool operator!=(const iterator& iter) const {
+          return !(this->operator==(iter));
+        }
+        /** Get the current variable assignments.
+            For variable i, use index i for the
+            unprimed variable, and index -i for the primed variable.
+        */
+#ifdef NEW_ITERATORS
+        inline const int* getAssignments() const {
+          return index;
+        }
+#else
         const int* getAssignments() const;
         const int* getPrimedAssignments() const;
+#endif
+#ifdef NEW_ITERATORS
+#else
         // Highest level at which the current minterm differs
         // from the previous minterm.
         inline int getLevel() const { return foundPathAtLevel; }
+#endif
         void getValue(int& edgeValue) const;
         void getValue(float& edgeValue) const;
         
-        iterator(dd_edge* e, iter_type t, const int* minterm);
+#ifndef NEW_ITERATORS
         bool findFirstColumn(int height, int node);
-        bool findNextColumn(int height);
         bool findFirstRow(int height, int node);
+        bool findNextColumn(int height);
         bool findNextRow(int height);
+#endif
 
       private:
         friend class dd_edge;
         void incrNonRelation();
         void incrRelation();
-        void incrNonIdentRelation();
         void incrRow();
         void incrColumn();
+#ifdef NEW_ITERATORS
+        void firstSetElement(int k, int down);
+        void firstRelElement(int k, int down);
+        void firstRow(int k, int down);
+        void firstColumn(int k, int down);
+#else
         void incrNonIdentRow();
         void incrNonIdentColumn();
+        void incrNonIdentRelation();
+#endif
 
         dd_edge*  e;
+        iter_type type;
+
+#ifdef NEW_ITERATORS
+        // Path, as list of node readers
+        void**    rawpath;
+        void**    path;   // rawpath, shifted so we can use path[-k]
+        // Path nnz pointers
+        int*      rawnzp;
+        int*      nzp;   // rawnzp, shifted so we can use nzp[-k]
+        // Path indexes
+        int*      rawindex;
+        int*      index;  // rawindex, shifted so we can use index[-k]
+        // If part of the path is fixed
+        int*      rawfixed;
+        int*      fixed;  // rawfixed, shifted so we can use fixed[-k]
+        // 
+        int       minLevel; // 1 or -#vars, depending.
+        int       maxLevel; // #vars
+#else
+        // Old stuff
         unsigned  size;
         int*      element;
         int*      nodes;
         int*      pelement;
         int*      pnodes;
-        iter_type type;
         int       foundPathAtLevel;
+#endif
     };
 
     typedef iterator const_iterator;

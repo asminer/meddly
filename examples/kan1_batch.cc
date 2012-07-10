@@ -601,6 +601,17 @@ void testMTMXDIterator(const dd_edge& mtmxd)
   unsigned counter = 0;
   for (dd_edge::const_iterator iter = copy.begin(); iter; ++iter, ++counter)
   {
+#ifdef NEW_ITERATORS
+    const int* element = iter.getAssignments();
+    assert(element != 0);
+
+    fprintf(stderr, "%d: [%d", counter, element[1]);
+    for (int i=2; i<=N; i++) { fprintf(stderr, " %d", element[i]); }
+
+    fprintf(stderr, "] --> [%d", element[-1]);
+    for (int i=2; i<=N; i++) { fprintf(stderr, " %d", element[-i]); }
+    fprintf(stderr, "]\n");
+#else
     const int* element = iter.getAssignments();
     const int* pelement = iter.getPrimedAssignments();
     assert(element != 0 && pelement != 0);
@@ -615,6 +626,7 @@ void testMTMXDIterator(const dd_edge& mtmxd)
     fprintf(stderr, "] --> [%d", *curr--);
     while (curr != end) { fprintf(stderr, " %d", *curr--); }
     fprintf(stderr, "]\n");
+#endif
   }
   fprintf(stderr, "Iterator traversal: %0.4e elements\n", double(counter));
   fprintf(stderr, "Cardinality: %0.4e\n", copy.getCardinality());

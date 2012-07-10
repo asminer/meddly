@@ -27,6 +27,9 @@
 #include "meddly_expert.h"
 #include "simple_model.h"
 
+// #define DUMP_NSF
+// #define DUMP_REACHABLE
+
 const char* kanban[] = {
   "X-+..............",  // Tin1
   "X.-+.............",  // Tr1
@@ -123,6 +126,11 @@ int main(int argc, const char** argv)
   dd_edge nsf(mxd);
   buildNextStateFunction(kanban, 16, mxd, nsf, 4);
 
+#ifdef DUMP_NSF
+  printf("Next-state function:\n");
+  nsf.show(stdout, 2);
+#endif
+
   printf("MxD stats:\n");
   printf("\t%ld current nodes\n", mxd->getCurrentNumNodes());
   printf("\t%ld peak nodes\n", mxd->getPeakNumNodes());
@@ -147,6 +155,11 @@ int main(int argc, const char** argv)
     apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
   }
   printf("Done\n");
+
+#ifdef DUMP_REACHABLE
+  printf("Reachable states:\n");
+  reachable.show(stdout, 2);
+#endif
 
   printf("MDD stats:\n");
   printf("\t%ld current nodes\n", mdd->getCurrentNumNodes());

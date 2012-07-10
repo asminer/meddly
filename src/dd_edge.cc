@@ -303,9 +303,418 @@ void MEDDLY::dd_edge::updateIterators()
 {
   // update beginIterator
   if (beginIterator != 0) delete beginIterator;
-
+  
+#ifdef NEW_ITERATORS
+  if (parent->isForRelations()) {
+    beginIterator = new iterator(this, iterator::RELATION, 0);
+  } else {
+    beginIterator = new iterator(this, iterator::SET, 0);
+  }
+#else
   beginIterator = new iterator(this, iterator::DEFAULT, 0);
+#endif
 }
+
+#ifdef NEW_ITERATORS
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+MEDDLY::dd_edge::iterator::iterator()
+{
+  initEmpty();
+}
+
+MEDDLY::dd_edge::iterator::iterator(dd_edge* _e, iter_type t, const int* minterm)
+{
+  if (_e == 0) {
+    initEmpty();
+    return;
+  }
+  if (t == ROW || t == COLUMN) {
+    if (!e->parent->isForRelations()) {
+      throw error(error::TYPE_MISMATCH);
+    } 
+  }
+  e = _e;
+  type = t;
+
+  // Set up arrays
+  int N = e->parent->getDomain()->getNumVariables();
+  maxLevel = N;
+  if (e->parent->isForRelations()) {
+    rawpath = new void*[2*N+1];
+    rawnzp = new int[2*N+1];
+    rawindex = new int[2*N+1];
+    rawfixed = new int[2*N+1];
+    for (int i=2*N; i>=0; i--) {
+      rawpath[i] = 0;
+      rawnzp[i] = -1;
+      rawindex[i] = -1;
+      rawfixed[i] = -1;
+    }
+    path = rawpath + N;
+    nzp = rawnzp + N;
+    index = rawindex + N;
+    fixed = rawfixed + N;
+    minLevel = -N;
+  } else {
+    rawpath = new void*[N+1];
+    rawnzp = new int[N+1];
+    rawindex = new int[N+1];
+    rawfixed = new int[N+1];
+    for (int i=N; i>=0; i--) {
+      rawpath[i] = 0;
+      rawnzp[i] = -1;
+      rawindex[i] = -1;
+      rawfixed[i] = -1;
+    }
+    path = rawpath;
+    nzp = rawnzp;
+    index = rawindex;
+    fixed = rawfixed;
+    minLevel = 1;
+  }
+
+  // Go to the first element.
+  switch (type) {
+    case SET:
+      firstSetElement(maxLevel, e->node);
+      break;
+
+    case RELATION:
+      firstRelElement(maxLevel, e->node);
+      break;
+
+    case ROW:
+      MEDDLY_DCASSERT(e->parent->isForRelations());
+      for (int k=1; k<N; k++) {
+        fixed[k] = minterm[k];
+      }
+      firstColumn(maxLevel, e->node);
+      break;
+
+    case COLUMN:
+      MEDDLY_DCASSERT(e->parent->isForRelations());
+      for (int k=1; k<N; k++) {
+        fixed[-k] = minterm[k];
+      }
+      firstRow(maxLevel, e->node);
+      break;
+
+    default:
+      throw error(error::MISCELLANEOUS);
+  }
+}
+
+MEDDLY::dd_edge::iterator::iterator(const iterator& iter)
+{
+  init(iter);
+}
+
+MEDDLY::dd_edge::iterator::~iterator()
+{
+  destroy();
+}
+
+MEDDLY::dd_edge::iterator& 
+MEDDLY::dd_edge::iterator::operator=(const iterator& iter)
+{
+  if (this == &iter) return *this;
+  destroy();
+  init(iter);
+  return *this;
+}
+
+void MEDDLY::dd_edge::iterator::destroy()
+{
+  if (e) {
+    expert_forest* f = (expert_forest*) e->parent;
+    for (int k=minLevel; k<=maxLevel; k++) {
+      if (path[k]) {
+        printf("recycling %x at level %d\n", path[k], k);
+        expert_forest::nodeReader* nlk = (expert_forest::nodeReader*) path[k];
+        f->recycle(nlk);
+      }
+      path[k] = 0;
+    }
+  }
+  delete[] rawpath;
+  delete[] rawnzp;
+  delete[] rawindex;
+  delete[] rawfixed;
+  rawpath = 0;
+  rawnzp = 0;
+  rawindex = 0;
+  rawfixed = 0;
+}
+
+void MEDDLY::dd_edge::iterator::initEmpty()
+{
+  e = 0;
+  type = EMPTY;
+  rawpath = path = 0;
+  rawnzp = nzp = 0;
+  rawindex = index = 0;
+  rawfixed = fixed = 0;
+  minLevel = maxLevel = 0;
+}
+
+void MEDDLY::dd_edge::iterator::init(const iterator& iter)
+{
+  if (0==iter.e) {
+    initEmpty();
+    return;
+  }
+  MEDDLY_DCASSERT(iter.type != EMPTY);
+  e = iter.e;
+  type = iter.type;
+
+  // Set up arrays
+  expert_forest* f = smart_cast <expert_forest*>(e->parent);
+  MEDDLY_DCASSERT(f);
+  int N = f->getNumVariables();
+  maxLevel = N;
+  if (f->isForRelations()) {
+    rawpath = new void*[2*N+1];
+    rawnzp = new int[2*N+1];
+    rawindex = new int[2*N+1];
+    rawfixed = new int[2*N+1];
+    for (int i=2*N; i>=0; i--) {
+      rawpath[i] = f->copyNodeReader((expert_forest::nodeReader*)iter.rawpath[i]);
+    }
+    memcpy(rawnzp, iter.rawnzp, (2*N+1)*sizeof(int));
+    memcpy(rawindex, iter.rawindex, (2*N+1)*sizeof(int));
+    memcpy(rawfixed, iter.rawfixed, (2*N+1)*sizeof(int));
+    path = rawpath + N;
+    nzp = rawnzp + N;
+    index = rawindex + N;
+    fixed = rawfixed + N;
+    minLevel = -N;
+  } else {
+    rawpath = new void*[N+1];
+    rawnzp = new int[N+1];
+    rawindex = new int[N+1];
+    rawfixed = new int[N+1];
+    for (int i=N; i>=0; i--) {
+      rawpath[i] = f->copyNodeReader((expert_forest::nodeReader*)iter.rawpath[i]);
+    }
+    memcpy(rawnzp, iter.rawnzp, (N+1)*sizeof(int));
+    memcpy(rawindex, iter.rawindex, (N+1)*sizeof(int));
+    memcpy(rawfixed, iter.rawfixed, (N+1)*sizeof(int));
+    path = rawpath;
+    nzp = rawnzp;
+    index = rawindex;
+    fixed = rawfixed;
+    minLevel = 1;
+  }
+  MEDDLY_DCASSERT(iter.maxLevel == maxLevel);
+  MEDDLY_DCASSERT(iter.minLevel == minLevel);
+}
+
+void MEDDLY::dd_edge::iterator::operator++()
+{
+  switch (type) {
+    case EMPTY:
+        return;
+
+    case SET:
+        MEDDLY_DCASSERT(e);
+        MEDDLY_DCASSERT(path && path[maxLevel]);
+        incrNonRelation();
+        return;
+
+    case RELATION:
+        MEDDLY_DCASSERT(e);
+        MEDDLY_DCASSERT(path && path[maxLevel]);
+        incrRelation();
+        return;
+
+    case ROW:
+        MEDDLY_DCASSERT(path && path[maxLevel]);
+        incrColumn();
+        return;
+
+    case COLUMN:
+        MEDDLY_DCASSERT(path && path[maxLevel]);
+        incrRow();
+        return;
+
+    default:
+        throw error(error::MISCELLANEOUS);
+  };
+}
+
+bool MEDDLY::dd_edge::iterator::operator==(const iterator& iter) const
+{
+  if (e != iter.e) return false;
+  if (type != iter.type) return false;
+  if (e == 0) return true;
+  MEDDLY_DCASSERT(iter.minLevel == minLevel);
+  MEDDLY_DCASSERT(iter.maxLevel == maxLevel);
+  for (int k=minLevel; k<=maxLevel; k++) {
+    if (iter.index[k] != index[k]) return false;
+  }
+}
+
+void MEDDLY::dd_edge::iterator::getValue(int& val) const
+{
+  if (e == 0) return;
+  if (e->parent->isMultiTerminal()) {
+    val = static_cast<expert_forest*>(e->parent)->getInteger(index[0]);
+  } else {
+    // return the value using evaluate
+    e->parent->evaluate(*e, index, val);
+  }
+}
+
+
+void MEDDLY::dd_edge::iterator::getValue(float& val) const
+{
+  if (e == 0) return;
+  if (e->parent->isMultiTerminal()) {
+    val = static_cast<expert_forest*>(e->parent)->getReal(index[0]);
+  } else {
+    // return the value using evaluate
+    e->parent->evaluate(*e, index, val);
+  }
+}
+
+
+
+void MEDDLY::dd_edge::iterator::incrNonRelation()
+{
+  MEDDLY_DCASSERT(e != 0);
+  MEDDLY_DCASSERT(e->node != 0);
+  MEDDLY_DCASSERT(type == SET);
+
+  expert_forest* f = smart_cast<expert_forest*>(e->parent);
+  MEDDLY_DCASSERT(f);
+  MEDDLY_DCASSERT(!f->isForRelations());
+
+  int k;
+  int down = 0;
+  for (k=1; k<=maxLevel; k++) {
+    nzp[k]++;
+    expert_forest::nodeReader* nlk = (expert_forest::nodeReader*) path[k];
+    if (nzp[k] < nlk->getNNZs()) {
+      index[k] = nlk->i(nzp[k]);
+      down = nlk->d(nzp[k]);
+      MEDDLY_DCASSERT(down);
+      break;
+    }
+    f->recycle(nlk);
+    path[k] = 0;
+  }
+  if (k>maxLevel) {
+    return;
+  }
+
+  firstSetElement(k-1, down);
+}
+
+
+void MEDDLY::dd_edge::iterator::incrRelation()
+{
+  MEDDLY_DCASSERT(e != 0);
+  MEDDLY_DCASSERT(e->node != 0);
+  MEDDLY_DCASSERT(type == RELATION);
+
+  expert_forest* f = smart_cast<expert_forest*>(e->parent);
+  MEDDLY_DCASSERT(f);
+  MEDDLY_DCASSERT(f->isForRelations());
+  bool isFully = f->isFullyReduced();
+
+  int k = -1;
+  int down = 0;
+  for (;;) { 
+    nzp[k]++;
+    expert_forest::nodeReader* nlk = (expert_forest::nodeReader*) path[k];
+    if (nzp[k] < nlk->getNNZs()) {
+      index[k] = nlk->i(nzp[k]);
+      down = nlk->d(nzp[k]);
+      MEDDLY_DCASSERT(down);
+      break;
+    }
+    f->recycle(nlk);
+    path[k] = 0;
+    if (k<0) {
+      k = -k;
+    } else {
+      if (maxLevel == k) return;  
+      k = -k-1;
+    }
+  }
+
+  firstRelElement( (k>0) ? -k : -k-1, down);
+}
+
+
+// stuff goes here
+
+void MEDDLY::dd_edge::iterator::firstSetElement(int k, int down)
+{
+  MEDDLY_DCASSERT(e != 0);
+  MEDDLY_DCASSERT(e->node != 0);
+  MEDDLY_DCASSERT(type == SET);
+
+  expert_forest* f = smart_cast<expert_forest*>(e->parent);
+  MEDDLY_DCASSERT(f);
+  MEDDLY_DCASSERT(!f->isForRelations());
+
+  for ( ; k; k--) {
+    MEDDLY_DCASSERT(down);
+    int kdn = f->getNodeLevel(down);
+    MEDDLY_DCASSERT(kdn <= k);
+    expert_forest::nodeReader* nlk = (kdn < k)
+      ? f->initRedundantReader(k, down, false)
+      : f->initNodeReader(down, false);
+    path[k] = nlk;
+    nzp[k] = 0;
+    index[k] = nlk->i(0);
+    down = nlk->d(0);
+  }
+  // save the terminal value
+  index[0] = down;
+}
+
+void MEDDLY::dd_edge::iterator::firstRelElement(int k, int down)
+{
+  MEDDLY_DCASSERT(e != 0);
+  MEDDLY_DCASSERT(e->node != 0);
+  MEDDLY_DCASSERT(type == RELATION);
+
+  expert_forest* f = smart_cast<expert_forest*>(e->parent);
+  MEDDLY_DCASSERT(f);
+  MEDDLY_DCASSERT(f->isForRelations());
+  bool isFully = f->isFullyReduced();
+
+  for ( ; k; k= (k>0) ? (-k) : (-k-1) ) {
+    MEDDLY_DCASSERT(down);
+    int kdn = f->getNodeLevel(down);
+    MEDDLY_DCASSERT(!isLevelAbove(kdn, k));
+
+    expert_forest::nodeReader* nlk;
+    if (isLevelAbove(k, kdn)) {
+      if (k>0 || isFully) {
+        nlk = f->initRedundantReader(k, down, false);
+      } else {
+        nlk = f->initIdentityReader(k, index[-k], down, false);
+      }
+    } else {
+      nlk = f->initNodeReader(down, false);
+    }
+    path[k] = nlk;
+    nzp[k] = 0;
+    index[k] = nlk->i(0);
+    down = nlk->d(0);
+  }
+  // save the terminal value
+  index[0] = down;
+}
+
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+#else 
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 
 MEDDLY::dd_edge::iterator::iterator()
@@ -360,11 +769,13 @@ MEDDLY::dd_edge::iterator::iterator(dd_edge* e, iter_type t, const int* minterm)
       break;
 
     case ROW:
+      MEDDLY_DCASSERT(e->parent->isForRelations());
       memcpy(element, minterm, size * sizeof(int));
       findFirstColumn(e->parent->getDomain()->getNumVariables(), e->node);
       break;
 
     case COLUMN:
+      MEDDLY_DCASSERT(e->parent->isForRelations());
       memcpy(pelement, minterm, size * sizeof(int));
       findFirstRow(e->parent->getDomain()->getNumVariables(), e->node);
       break;
@@ -1411,33 +1822,6 @@ void MEDDLY::dd_edge::iterator::operator--()
 }
 
 
-bool MEDDLY::dd_edge::iterator::operator!=(const iterator& iter) const
-{
-#if 0
-  MEDDLY_DCASSERT((e != iter.e) || (size == iter.size));
-
-  // if terminals are different, return true.
-  // else if terminals are 0, return false.
-  // else return (element != iter.element)
-  return e == 0
-          ? true
-          : e != iter.e
-            ? true
-            : type != iter.type
-              ? true
-              : (nodes[0] != iter.nodes[0])
-                ? true
-                : (nodes[0] == 0)
-                  ? false
-                  : e->parent->isForRelations()
-                    ? (0 != memcmp(element, iter.element, size) ||
-                      0 != memcmp(pelement, iter.pelement, size))
-                    : 0 != memcmp(element, iter.element, size);
-#else
-  return !(this->operator==(iter));
-#endif
-}
-
 
 bool MEDDLY::dd_edge::iterator::operator==(const iterator& iter) const
 {
@@ -1499,3 +1883,5 @@ const int* MEDDLY::dd_edge::iterator::getPrimedAssignments() const
           : nodes[0] == 0? 0: e->parent->isForRelations()? pelement: 0;
 }
 
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+#endif

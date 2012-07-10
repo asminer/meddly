@@ -1108,6 +1108,7 @@ MEDDLY::expert_forest::nodeReader::nodeReader(int k, int es)
   size = 0;
   nnzs = 0;
   level = k;
+  refcount = 0;
 }
 
 MEDDLY::expert_forest::nodeReader::~nodeReader()
@@ -1431,7 +1432,7 @@ MEDDLY::expert_forest::~expert_forest()
 }
 
 
-int* MEDDLY::expert_forest::markNodesInSubgraph(int root, bool sort) const
+int* MEDDLY::expert_forest::markNodesInSubgraph(int root, bool sort)
 {
   if (isTerminalNode(root)) return 0;
 
@@ -1451,48 +1452,24 @@ int* MEDDLY::expert_forest::markNodesInSubgraph(int root, bool sort) const
   // Breadth-first search
   for (int mexpl=0; mexpl<mlen; mexpl++) {
     // explore node marked[mexpl]
-    if (isFullNode(marked[mexpl])) {
-      const int sz = getFullNodeSize(marked[mexpl]);
-      for (int i = 0; i < sz; ++i)
-      {
-        int dn = getFullNodeDownPtr(marked[mexpl], i);
-        if (isTerminalNode(dn)) continue;
-        MEDDLY_CHECK_RANGE(0, dn-1, a_last);
-        if (inList[dn]) continue;
-        // add dn to list
-        if (mlen+1 >= msize) { 
+    nodeReader* M = initNodeReader(marked[mexpl], false);
+    for (int i=0; i<M->getNNZs(); i++) {
+      if (isTerminalNode(M->d(i))) continue;
+      MEDDLY_CHECK_RANGE(0, M->d(i)-1, a_last);
+      if (inList[M->d(i)]) continue;
+      // add dn to list
+      if (mlen+1 >= msize) { 
           // expand.  Note we're leaving an extra slot
           // at the end, for the terminal 0.
           msize += 1024;
           marked = (int*) realloc(marked, msize*sizeof(int));
           if (0==marked) throw error(error::INSUFFICIENT_MEMORY);
-        }
-        inList[dn] = true;
-        marked[mlen] = dn;
-        mlen++;
-      } // for i
-    }
-    else { 
-      const int sz = getSparseNodeSize(marked[mexpl]);
-      for (int i = 0; i < sz; ++i)
-      {
-        int dn = getSparseNodeDownPtr(marked[mexpl], i);
-        if (isTerminalNode(dn)) continue;
-        MEDDLY_CHECK_RANGE(0, dn-1, a_last);
-        if (inList[dn]) continue;
-        // add dn to list
-        if (mlen+1 >= msize) { 
-          // expand.  Note we're leaving an extra slot
-          // at the end, for the terminal 0.
-          msize += 1024;
-          marked = (int*) realloc(marked, msize*sizeof(int));
-          if (0==marked) throw error(error::INSUFFICIENT_MEMORY);
-        }
-        inList[dn] = true;
-        marked[mlen] = dn;
-        mlen++;
-      } // for i
-    }
+      }
+      inList[M->d(i)] = true;
+      marked[mlen] = M->d(i);
+      mlen++;
+    } // for i
+    recycle(M);
   } // for mexpl
 
   // sort
@@ -1514,6 +1491,30 @@ int* MEDDLY::expert_forest::markNodesInSubgraph(int root, bool sort) const
   // add 0 to the list
   marked[mlen] = 0;
   return marked;
+}
+
+int MEDDLY::expert_forest::getNodeCount(int p) 
+{
+  int* list = markNodesInSubgraph(p, true);
+  if (0==list) return 0;
+  int i;
+  for (i=0; list[i]; i++) { }
+  free(list);
+  return i;
+}
+
+int MEDDLY::expert_forest::getEdgeCount(int p, bool countZeroes)
+{
+  int* list = markNodesInSubgraph(p, true);
+  if (0==list) return 0;
+  int ec=0;
+  for (int i=0; list[i]; i++) {
+    nodeReader* M = initNodeReader(list[i], countZeroes);
+    ec += countZeroes ? M->getSize() : M->getNNZs();
+    recycle(M);
+  }
+  free(list);
+  return ec;
 }
 
 void MEDDLY::expert_forest::dump(FILE *s) const
@@ -1575,7 +1576,7 @@ void MEDDLY::expert_forest::dumpUniqueTable(FILE *s) const
   unique->show(s);
 }
 
-void MEDDLY::expert_forest::showNodeGraph(FILE *s, int p) const
+void MEDDLY::expert_forest::showNodeGraph(FILE *s, int p)
 {
   int* list = markNodesInSubgraph(p, true);
   if (0==list) return;
@@ -1786,12 +1787,6 @@ MEDDLY::expert_forest::initIdentityReader(int k, int i, int node, bool full)
   return nr;
 }
 
-void MEDDLY::expert_forest::recycle(nodeReader *r)
-{
-  MEDDLY_DCASSERT(r);
-  r->next = free_reader[r->level];
-  free_reader[r->level] = r;
-}
 
 int MEDDLY::expert_forest::getSingletonIndex(int n, int &down) const
 {
@@ -1946,33 +1941,6 @@ int MEDDLY::expert_forest::getDownPtr(int p, int i) const {
 }
 
 
-bool MEDDLY::expert_forest::getDownPtrs(int p, std::vector<int>& dptrs) const {
-  if (!isActiveNode(p) || isTerminalNode(p)) return false;
-
-  const int* ptrs = 0;
-  assert(getDownPtrs(p, ptrs));
-
-  if (isFullNode(p)) {
-    int size = getFullNodeSize(p);
-    if (dptrs.size() < unsigned(size)) dptrs.resize(size, 0);
-    const int* end = ptrs + size;
-    std::vector<int>::iterator iter = dptrs.begin();
-    while (ptrs != end) { *iter++ = *ptrs++; }
-  }
-  else {
-    int nnz = getSparseNodeSize(p);
-    const int* index = 0;
-    assert(getSparseNodeIndexes(p, index));
-    const int* end = ptrs + nnz;
-
-    int size = index[nnz-1] + 1;
-    if (dptrs.size() < unsigned(size)) dptrs.resize(size, 0);
-
-    while (ptrs != end) { dptrs[*index++] = *ptrs++; }
-  }
-  return true;
-}
-
 bool MEDDLY::expert_forest::isStale(int h) const {
   return
     isMarkedForDeletion() || (
@@ -1998,110 +1966,6 @@ int MEDDLY::expert_forest::getTerminalNode(float a) const
 
 #endif
 
-
-unsigned MEDDLY::expert_forest::getNodeCount(int p) const
-{
-  std::set<int> discovered;
-  std::queue<int> toExpand;
-
-  if (p != 0 && p != -1) {
-    toExpand.push(p);
-    discovered.insert(p);
-  }
-
-  // expand the front of toExpand;
-  // add newly discovered ones to discovered and toExpand
-
-  while (!toExpand.empty()) {
-    int p = toExpand.front();
-    toExpand.pop();
-    if (isTerminalNode(p)) continue;
-    // expand
-    if (isFullNode(p)) {
-      const int sz = getFullNodeSize(p);
-      for (int i = 0; i < sz; ++i)
-      {
-        int temp = getFullNodeDownPtr(p, i);
-        if (temp == 0 || temp == -1) continue;
-        // insert into discovered and toExpand if new
-        if (discovered.find(temp) == discovered.end()) {
-          toExpand.push(temp);
-          discovered.insert(temp);
-        }
-      }
-    }
-    else {
-      const int sz = getSparseNodeSize(p);
-      for (int i = 0; i < sz; ++i)
-      {
-        int temp = getSparseNodeDownPtr(p, i);
-        if (temp == 0 || temp == -1) continue;
-        // insert into discovered and toExpand if new
-        if (discovered.find(temp) == discovered.end()) {
-          toExpand.push(temp);
-          discovered.insert(temp);
-        }
-      }
-    }
-  }
-
-  // Add 2 to discovered.size() for terminals 0 and -1.
-  return discovered.size() + 2;
-}
-
-
-unsigned MEDDLY::expert_forest::getEdgeCount(int p, bool countZeroes) const
-{
-  std::set<int> discovered;
-  std::queue<int> toExpand;
-
-  toExpand.push(p);
-  discovered.insert(p);
-
-  unsigned count = 0;
-
-  // expand the front of toExpand;
-  // add newly discovered ones to discovered and toExpand
-
-  while (!toExpand.empty()) {
-    int p = toExpand.front();
-    toExpand.pop();
-    if (isTerminalNode(p)) continue;
-    // expand
-    if (isFullNode(p)) {
-      const int sz = getFullNodeSize(p);
-      for (int i = 0; i < sz; ++i)
-      {
-        int temp = getFullNodeDownPtr(p, i);
-        if (countZeroes) count++;
-        else if (temp != 0) count++;
-        if (temp == 0 || temp == -1)  continue;
-        // insert into discovered and toExpand if new
-        if (discovered.find(temp) == discovered.end()) {
-          toExpand.push(temp);
-          discovered.insert(temp);
-        }
-      }
-    }
-    else {
-      const int sz = getSparseNodeSize(p);
-      for (int i = 0; i < sz; ++i)
-      {
-        int temp = getSparseNodeDownPtr(p, i);
-        if (countZeroes) count++;
-        else if (temp != 0) count++;
-        if (temp == 0 || temp == -1)  continue;
-        // insert into discovered and toExpand if new
-        if (discovered.find(temp) == discovered.end()) {
-          toExpand.push(temp);
-          discovered.insert(temp);
-        }
-      }
-    }
-  }
-
-  return count;
-}
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // '                                                                '

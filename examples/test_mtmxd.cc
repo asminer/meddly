@@ -230,6 +230,34 @@ void printUsage(FILE *outputStream)
       "Usage: test_union_mtmxd <#Variables> <VariableBound> <#Elements>\n");
 }
 
+void printAssignment(unsigned count, const int* element, const int* pelement, int nVariables)
+{
+  assert(element != 0 && pelement != 0);
+
+  const int* curr = element + nVariables;
+  const int* end = element - 1;
+  printf("%d: [%d", count, *curr--);
+  while (curr != end) { printf(" %d", *curr--); }
+
+  curr = pelement + nVariables;
+  end = pelement - 1;
+  printf("] --> [%d", *curr--);
+  while (curr != end) { printf(" %d", *curr--); }
+  printf("]\n");
+}
+
+void printAssignment(unsigned count, const int* element, int nVariables)
+{
+  printf("%d: [%d", count, element[1]);
+  for (int k=2; k<=nVariables; k++) {
+    printf(", %d", element[k]);
+  }
+  printf("] --> [%d", element[-1]);
+  for (int k=2; k<=nVariables; k++) {
+    printf(", %d", element[-k]);
+  }
+  printf("]\n");
+}
 
 int main(int argc, char *argv[])
 {
@@ -357,20 +385,11 @@ int main(int argc, char *argv[])
     for (dd_edge::const_iterator iter = result.begin();
         iter; ++iter, ++counter)
     {
-      const int* element = iter.getAssignments();
-      const int* pelement = iter.getPrimedAssignments();
-      assert(element != 0 && pelement != 0);
-
-      const int* curr = element + nVariables;
-      const int* end = element - 1;
-      printf("%d: [%d", counter, *curr--);
-      while (curr != end) { printf(" %d", *curr--); }
-
-      curr = pelement + nVariables;
-      end = pelement - 1;
-      printf("] --> [%d", *curr--);
-      while (curr != end) { printf(" %d", *curr--); }
-      printf("]\n");
+#ifdef NEW_ITERATORS
+      printAssignment(counter, iter.getAssignments(), nVariables);
+#else
+      printAssignment(counter, iter.getAssignments(), iter.getPrimedAssignments(), nVariables);
+#endif
     }
     printf("Iterator traversal: %0.4e elements\n", double(counter));
     double c;
@@ -379,7 +398,7 @@ int main(int argc, char *argv[])
   }
 
   // Test Row and Column Iterators
-#if 1
+#if 0
   if (true) {
     dd_edge::const_iterator beginIter = result.begin();
     const int* element = beginIter.getAssignments();

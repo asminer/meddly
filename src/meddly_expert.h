@@ -625,14 +625,27 @@ class MEDDLY::expert_forest : public forest
           @return   A malloc'd array of non-terminal nodes, terminated by 0.
                     Or, a null pointer, if the list is empty.
     */
-    int* markNodesInSubgraph(int root, bool sort) const;
+    int* markNodesInSubgraph(int root, bool sort);
+
+    /** Count and return the number of non-terminal nodes
+        in the subgraph below the given node.
+    */
+    int getNodeCount(int node);
+
+    /** Count and return the number of edges
+        in the subgraph below the given node.
+    */
+    int getEdgeCount(int node, bool countZeroes);
+
 
     // Debug output
     void dump(FILE *s) const; 
     void dumpInternal(FILE *s) const; 
     void dumpInternalLevel(FILE *s, int k) const; 
     void dumpUniqueTable(FILE *s) const;
-    void showNodeGraph(FILE* s, int node) const;
+
+    /// Show all the nodes in the subgraph below the given node.
+    void showNodeGraph(FILE* s, int node);
 
     /** Show stats about memory usage for this forest.
           @param  s     Output stream to write to
@@ -673,8 +686,25 @@ class MEDDLY::expert_forest : public forest
     */
     nodeReader* initIdentityReader(int k, int i, int node, bool full);
 
+    /** Copy a node reader.
+    */
+    inline nodeReader* copyNodeReader(nodeReader *r) {
+      if (0==r) return 0;
+      r->refcount++;
+      return r;
+    }
+
     /// Recycle a node reader.
-    void recycle(nodeReader *);
+    inline void recycle(nodeReader *r) {
+      if (0==r) return;
+      MEDDLY_DCASSERT(r->refcount);
+      MEDDLY_DCASSERT(0==r->next);
+      r->refcount--;
+      if (0==r->refcount) {
+        r->next = free_reader[r->level];
+        free_reader[r->level] = r;
+      }
+    }
 
     /** Check and find the index of a single downward pointer.
 
@@ -833,13 +863,6 @@ class MEDDLY::expert_forest : public forest
     virtual int createTempNode(int lh, std::vector<int>& downPointers,
         std::vector<float>& edgeValues) = 0;
 #endif
-
-    /// Get the nodes pointed to by this node (works with Full or Sparse nodes.
-    /// The vector downPointers is increased in size if necessary (but
-    /// never reduced in size).
-    /// Returns false is operation is not possible. Possible reasons are:
-    /// node does not exist; node is a terminal; or node has not been reduced.
-    bool getDownPtrs(int node, std::vector<int>& downPointers) const;
 
 #ifdef ACCUMULATE_ON
     /// Increase the size of the temporary node.
@@ -1042,14 +1065,6 @@ class MEDDLY::expert_forest : public forest
     /// Pessimistic deletion: A node is said to be stale when the in-count
     ///  is zero regardless of the cache-count.
     bool isStale(int node) const;
-
-    /// Returns the node count for this node. The node count is the number
-    /// of unique nodes in the decision diagram represented by this node.
-    unsigned getNodeCount(int node) const;
-
-    /// Returns the edge count for this node. The edge count is the number
-    /// of unique edges in the decision diagram represented by this node.
-    unsigned getEdgeCount(int node, bool countZeroes) const;
 
     /// Is this forest an MDD?
     bool isMdd() const;
@@ -1661,6 +1676,7 @@ class MEDDLY::expert_forest : public forest
         int size;
         int nnzs;
         int level;
+        unsigned refcount;
         bool is_full;
         nodeReader* next;  // free list
         nodeReader(int k, int es);
@@ -1682,11 +1698,12 @@ class MEDDLY::expert_forest : public forest
       if (free_reader[k]) {
         nr = free_reader[k];
         free_reader[k] = nr->next;
-        nr->next = 0;
       } else {
         level_data& ld = levels[k];
         nr = new nodeReader(k, ld.unhashedHeader + ld.hashedHeader);
       }
+      nr->next = 0;
+      nr->refcount = 1;
       return nr;
     }
 
