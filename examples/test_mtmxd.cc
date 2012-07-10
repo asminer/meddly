@@ -398,7 +398,7 @@ int main(int argc, char *argv[])
   }
 
   // Test Row and Column Iterators
-#if 0
+#if 1
   if (true) {
     dd_edge::const_iterator beginIter = result.begin();
     const int* element = beginIter.getAssignments();
@@ -424,6 +424,16 @@ int main(int argc, char *argv[])
 
       // Print columns
       dd_edge::const_iterator colIter = result.beginRow(element);
+#ifdef NEW_ITERATORS
+      element = colIter.getAssignments();
+      while (colIter) {
+        printf(" --> [%d", element[-1]);
+        for (int i=2; i<nVariables; i++) printf(" %d", element[-i]);
+        printf("]\n");
+        ++colIter;
+        element = colIter.getAssignments();
+      }
+#else
       element = colIter.getPrimedAssignments();
 
       while (colIter) {
@@ -435,6 +445,7 @@ int main(int argc, char *argv[])
         ++colIter;
         element = colIter.getPrimedAssignments();
       }
+#endif
 
       // Print column
       element = beginIter.getAssignments();

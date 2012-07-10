@@ -1845,6 +1845,13 @@ class MEDDLY::dd_edge {
         void firstRelElement(int k, int down);
         bool firstRow(int k, int down);
         bool firstColumn(int k, int down);
+
+        static inline int downLevel(int k) {
+          return (k>0) ? (-k) : (-k-1);
+        }
+        static inline int upLevel(int k) {
+          return (k<0) ? (-k) : (-k-1);
+        }
 #else
         void incrNonIdentRow();
         void incrNonIdentColumn();
@@ -1864,9 +1871,6 @@ class MEDDLY::dd_edge {
         // Path indexes
         int*      rawindex;
         int*      index;  // rawindex, shifted so we can use index[-k]
-        // If part of the path is fixed
-        int*      rawfixed;
-        int*      fixed;  // rawfixed, shifted so we can use fixed[-k]
         // 
         int       minLevel; // 1 or -#vars, depending.
         int       maxLevel; // #vars
