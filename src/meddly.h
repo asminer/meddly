@@ -1775,13 +1775,9 @@ class MEDDLY::dd_edge {
     class iterator {
       public:
         enum iter_type {
-#ifdef NEW_ITERATORS
           EMPTY=0,
           SET,
           RELATION,
-#else
-          DEFAULT=0,
-#endif
           ROW,      // enumerate with a fixed ROW
           COLUMN    // enumerate with a fixed COLUMN
         };
@@ -1790,17 +1786,12 @@ class MEDDLY::dd_edge {
         iterator(const iterator& iter);
         ~iterator();
         iterator& operator=(const iterator& iter);
-#ifdef NEW_ITERATORS
       private:
         void destroy();
         void initEmpty();
         void init(const iterator& iter);
       public:
         inline operator bool() const { return isValid; }
-#else
-        inline operator bool() const { return nodes && nodes[0]; }
-        void operator--();
-#endif
         void operator++();
         bool operator==(const iterator& iter) const;
         inline bool operator!=(const iterator& iter) const {
@@ -1810,7 +1801,6 @@ class MEDDLY::dd_edge {
             For variable i, use index i for the
             unprimed variable, and index -i for the primed variable.
         */
-#ifdef NEW_ITERATORS
         inline const int* getAssignments() const {
           return index;
         }
@@ -1820,29 +1810,11 @@ class MEDDLY::dd_edge {
             however, this works.
         */
         const int* getPrimedAssignments();
-#else
-        const int* getAssignments() const;
-        const int* getPrimedAssignments() const;
-#endif
-#ifdef NEW_ITERATORS
-#else
-        // Highest level at which the current minterm differs
-        // from the previous minterm.
-        inline int getLevel() const { return foundPathAtLevel; }
-#endif
         void getValue(int& edgeValue) const;
         void getValue(float& edgeValue) const;
         
-#ifndef NEW_ITERATORS
-        bool findFirstColumn(int height, int node);
-        bool findFirstRow(int height, int node);
-        bool findNextColumn(int height);
-        bool findNextRow(int height);
-#endif
-
       private:
         friend class dd_edge;
-#ifdef NEW_ITERATORS
         bool incrNonRelation();
         bool incrRelation();
         bool incrRow();
@@ -1858,20 +1830,10 @@ class MEDDLY::dd_edge {
         static inline int upLevel(int k) {
           return (k<0) ? (-k) : (-k-1);
         }
-#else
-        void incrNonRelation();
-        void incrRelation();
-        void incrRow();
-        void incrColumn();
-        void incrNonIdentRow();
-        void incrNonIdentColumn();
-        void incrNonIdentRelation();
-#endif
 
         dd_edge*  e;
         iter_type type;
 
-#ifdef NEW_ITERATORS
         // Path, as list of node readers
         void**    rawpath;
         void**    path;   // rawpath, shifted so we can use path[-k]
@@ -1888,15 +1850,6 @@ class MEDDLY::dd_edge {
         int       maxLevel; // #vars
         //
         bool      isValid;
-#else
-        // Old stuff
-        unsigned  size;
-        int*      element;
-        int*      nodes;
-        int*      pelement;
-        int*      pnodes;
-        int       foundPathAtLevel;
-#endif
     };
 
     typedef iterator const_iterator;

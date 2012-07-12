@@ -385,11 +385,7 @@ int main(int argc, char *argv[])
     for (dd_edge::const_iterator iter = result.begin();
         iter; ++iter, ++counter)
     {
-#ifdef NEW_ITERATORS
       printAssignment(counter, iter.getAssignments(), nVariables);
-#else
-      printAssignment(counter, iter.getAssignments(), iter.getPrimedAssignments(), nVariables);
-#endif
     }
     printf("Iterator traversal: %0.4e elements\n", double(counter));
     double c;
@@ -424,7 +420,6 @@ int main(int argc, char *argv[])
 
       // Print columns
       dd_edge::const_iterator colIter = result.beginRow(element);
-#ifdef NEW_ITERATORS
       while (colIter) {
         element = colIter.getAssignments();
         printf(" --> [%d", element[-1]);
@@ -432,19 +427,6 @@ int main(int argc, char *argv[])
         printf("]\n");
         ++colIter;
       }
-#else
-      element = colIter.getPrimedAssignments();
-
-      while (colIter) {
-        curr = element + nVariables;
-        end = element - 1;
-        printf(" --> [%d", *curr--);
-        while (curr != end) { printf(" %d", *curr--); }
-        printf("]\n");
-        ++colIter;
-        element = colIter.getPrimedAssignments();
-      }
-#endif
 
       // Print column
       element = beginIter.getPrimedAssignments();
