@@ -1782,8 +1782,8 @@ class MEDDLY::dd_edge {
 #else
           DEFAULT=0,
 #endif
-          ROW,      // enumerate the rows (column is fixed)
-          COLUMN    // enumerate the columns (row is fixed)
+          ROW,      // enumerate with a fixed ROW
+          COLUMN    // enumerate with a fixed COLUMN
         };
         iterator();
         iterator(dd_edge* e, iter_type t, const int* minterm);
@@ -1796,7 +1796,7 @@ class MEDDLY::dd_edge {
         void initEmpty();
         void init(const iterator& iter);
       public:
-        inline operator bool() const { return path && path[maxLevel]; }
+        inline operator bool() const { return isValid; }
 #else
         inline operator bool() const { return nodes && nodes[0]; }
         void operator--();
@@ -1814,6 +1814,12 @@ class MEDDLY::dd_edge {
         inline const int* getAssignments() const {
           return index;
         }
+        /** Get primed assignments.
+            It is much faster to use getAssigments()
+            and look at the negative indexes;
+            however, this works.
+        */
+        const int* getPrimedAssignments();
 #else
         const int* getAssignments() const;
         const int* getPrimedAssignments() const;
@@ -1836,13 +1842,13 @@ class MEDDLY::dd_edge {
 
       private:
         friend class dd_edge;
-        void incrNonRelation();
-        void incrRelation();
-        void incrRow();
-        void incrColumn();
 #ifdef NEW_ITERATORS
-        void firstSetElement(int k, int down);
-        void firstRelElement(int k, int down);
+        bool incrNonRelation();
+        bool incrRelation();
+        bool incrRow();
+        bool incrColumn();
+        bool firstSetElement(int k, int down);
+        bool firstRelElement(int k, int down);
         bool firstRow(int k, int down);
         bool firstColumn(int k, int down);
 
@@ -1853,6 +1859,10 @@ class MEDDLY::dd_edge {
           return (k<0) ? (-k) : (-k-1);
         }
 #else
+        void incrNonRelation();
+        void incrRelation();
+        void incrRow();
+        void incrColumn();
         void incrNonIdentRow();
         void incrNonIdentColumn();
         void incrNonIdentRelation();
@@ -1871,9 +1881,13 @@ class MEDDLY::dd_edge {
         // Path indexes
         int*      rawindex;
         int*      index;  // rawindex, shifted so we can use index[-k]
+        // Used only by getPrimedAssignments.
+        int*      prindex;
         // 
         int       minLevel; // 1 or -#vars, depending.
         int       maxLevel; // #vars
+        //
+        bool      isValid;
 #else
         // Old stuff
         unsigned  size;

@@ -408,9 +408,9 @@ int main(int argc, char *argv[])
     while (beginIter) {
       // Print minterm
       curr = element + nVariables;
-      end = element - 1;
-      printf("[%d", *curr--);
-      while (curr != end) { printf(" %d", *curr--); }
+      end = element + 1;
+      printf("[%d", element[1]);
+      for (int i=2; i<=nVariables; i++) printf(" %d", element[i]);
       printf("]\n");
 
 #if 0
@@ -425,13 +425,12 @@ int main(int argc, char *argv[])
       // Print columns
       dd_edge::const_iterator colIter = result.beginRow(element);
 #ifdef NEW_ITERATORS
-      element = colIter.getAssignments();
       while (colIter) {
+        element = colIter.getAssignments();
         printf(" --> [%d", element[-1]);
-        for (int i=2; i<nVariables; i++) printf(" %d", element[-i]);
+        for (int i=2; i<=nVariables; i++) printf(" %d", element[-i]);
         printf("]\n");
         ++colIter;
-        element = colIter.getAssignments();
       }
 #else
       element = colIter.getPrimedAssignments();
@@ -448,28 +447,18 @@ int main(int argc, char *argv[])
 #endif
 
       // Print column
-      element = beginIter.getAssignments();
+      element = beginIter.getPrimedAssignments();
+      printf("[%d", element[1]);
+      for (int i=2; i<=nVariables; i++) printf(" %d", element[i]);
+      printf("]\n");
       colIter = result.beginColumn(element);
 
-      if (colIter) {
-        // Print minterm
-        curr = element + nVariables;
-        end = element - 1;
-        printf("[%d", *curr--);
-        while (curr != end) { printf(" %d", *curr--); }
-        printf("]\n");
-
+      while (colIter) {
         element = colIter.getAssignments();
-
-        while (colIter) {
-          curr = element + nVariables;
-          end = element - 1;
-          printf(" <-- [%d", *curr--);
-          while (curr != end) { printf(" %d", *curr--); }
-          printf("]\n");
-          ++colIter;
-          element = colIter.getAssignments();
-        }
+        printf(" <-- [%d", element[1]);
+        for (int i=2; i<=nVariables; i++) printf(" %d", element[i]);
+        printf("]\n");
+        ++colIter;
       }
 
       ++beginIter;

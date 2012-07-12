@@ -739,6 +739,19 @@ class MEDDLY::expert_forest : public forest
       return 0;
     }
 
+    /** For a given node, get a specified downward pointer.
+
+        This is designed to be used for one or two indexes only.
+        For reading all or several downward pointers, a
+        nodeReader should be used instead.
+
+          @param  node    Node to look at
+          @param  index   Index of the pointer we want.
+
+    */
+    int getDownPtr(int node, int index) const;
+
+
 
   // ------------------------------------------------------------
   // virtual in the base class, but implemented here.
@@ -986,14 +999,6 @@ class MEDDLY::expert_forest : public forest
 
     /// Get the node pointed to at the given index -- only for Full nodes
     int getFullNodeDownPtr(int node, int index) const;
-
-    /// Get the node pointed to at the given index -- works for Full and
-    /// Sparse nodes. For Full nodes, this is the same as calling
-    /// getFullNodeDownPtr(node, index). For Sparse nodes, this searches
-    /// the sparse node's indexes for the given index and if found, it
-    /// returns the downpointer associated with the index. Note that this
-    /// is not the same as calling getSparseNodeDownPtr(int node, int index).
-    int getDownPtr(int node, int index) const;
 
     /// Similar to getDownPtrs() except for EV+MDDs.
     /// If successful (return value true), the vectors hold the

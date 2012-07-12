@@ -1810,6 +1810,37 @@ int MEDDLY::expert_forest::getSingletonIndex(int n, int &down) const
   }
 }
 
+
+int MEDDLY::expert_forest::getDownPtr(int p, int i) const 
+{
+  MEDDLY_DCASSERT(i>=0);
+  const node_data& node = getNode(p);
+  MEDDLY_DCASSERT(node.level);
+  const level_data &ld = levels[node.level];
+  if (ld.isFull(node.offset)) {
+    // full node - super easy
+    int fs = ld.fullSizeOf(node.offset);
+    if (i>=fs) return 0;
+    const int* dn = ld.fullDownOf(node.offset);
+    return dn[i];
+  }
+  // Node must be sparse; do a binary search
+  int low = 0;  // smallest where i might be
+  int high = ld.sparseSizeOf(node.offset);  // smallest where i isn't
+  const int* ix = ld.sparseIndexesOf(node.offset);
+  while (low < high) {
+    int mid = (low+high)/2;
+    if (ix[mid] == i) {
+      return ld.sparseDownOf(node.offset)[mid];
+    }
+    if (ix[mid] < i)  low = mid+1;
+    else              high = mid;
+  }
+  return 0;
+}
+
+
+
 void MEDDLY::expert_forest::garbageCollect()
 {
   if (performing_gc) return;
@@ -1902,46 +1933,6 @@ void MEDDLY::expert_forest::normalizeAndReduceNode(int& node, float& ev)
 //  Still need to be organized:
 // ------------------------------------------------------------------
 //
-
-// TODO: make use of pointers to speed this up.
-int MEDDLY::expert_forest::getDownPtr(int p, int i) const {
-  MEDDLY_DCASSERT(isActiveNode(p));
-  if (isTerminalNode(p)) return p;
-  MEDDLY_DCASSERT(i >= 0);
-  if (isFullNode(p)) {
-    // full or trunc-full node
-    if (getFullNodeSize(p) > i) return getFullNodeDownPtr(p, i);
-
-    // full or trunc-full node, but i lies after the last non-zero downpointer
-    return 0;
-  } else {
-    // sparse node
-    // binary search to find the index ptr corresponding to i
-    int start = 0;
-    int stop = getSparseNodeSize(p) - 1;
-    
-    // the index ptr corresponding to i has been compressed i.e. its a zero.
-    if (getSparseNodeIndex(p, start) > i) return 0;
-    if (getSparseNodeIndex(p, stop) < i) return 0;
-
-    int mid = (start + stop)/2;
-    while(start < stop) {
-      if (getSparseNodeIndex(p, mid) == i)
-        return getSparseNodeDownPtr(p, mid);
-      if (getSparseNodeIndex(p, mid) > i)
-        stop = mid - 1;
-      else
-        start = mid + 1;
-      mid = (start + stop)/2;
-    }
-    if (getSparseNodeIndex(p, mid) == i)
-      return getSparseNodeDownPtr(p, mid);
-   
-    // index ptr not found - it was compressed because it was a zero.
-    return 0;
-  }
-}
-
 
 bool MEDDLY::expert_forest::isStale(int h) const {
   return
