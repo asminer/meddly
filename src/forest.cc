@@ -41,6 +41,11 @@
 
 // #define MEMORY_TRACE
 
+
+// Thoroughly check reference counts.
+// Very slow.  Use only for debugging.
+#define VALIDATE_INCOUNTS
+
 const int a_min_size = 1024;
 
 // ******************************************************************
@@ -405,7 +410,15 @@ void MEDDLY::forest::unregisterDDEdges()
   firstFree = 0;
 }
 
+// ******************************************************************
 
+MEDDLY::forest::edge_visitor::edge_visitor()
+{
+}
+
+MEDDLY::forest::edge_visitor::~edge_visitor()
+{
+}
 
 // ******************************************************************
 // *                                                                *
@@ -1332,6 +1345,28 @@ void MEDDLY::expert_forest::nodeBuilder::enlarge()
 
 // ******************************************************************
 // *                                                                *
+// *               expert_forest::nodecounter methods               *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::expert_forest::nodecounter::nodecounter(int* c)
+ : edge_visitor()
+{
+  counts = c;
+}
+
+MEDDLY::expert_forest::nodecounter::~nodecounter()
+{
+  // DO NOT delete counts.
+}
+
+void MEDDLY::expert_forest::nodecounter::visit(dd_edge &e)
+{
+  counts[e.getNode()]++;
+}
+
+// ******************************************************************
+// *                                                                *
 // *                                                                *
 // *                     expert_forest  methods                     *
 // *                                                                *
@@ -1399,10 +1434,17 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   }
 
   //
+  // Initialize misc. protected data
+  //
+  terminalNodesAreStale = false;
+
+  //
   // Initialize misc. private data
   //
   unique = new unique_table(this);
   performing_gc = false;
+  in_validate = 0;
+  in_val_size = 0;
 }
 
 
@@ -1431,6 +1473,9 @@ MEDDLY::expert_forest::~expert_forest()
 
   // unique table
   delete unique;
+
+  // Misc. private data
+  free(in_validate);
 }
 
 
@@ -1922,11 +1967,282 @@ void MEDDLY::expert_forest::normalizeAndReduceNode(int& node, float& ev)
   throw error(error::TYPE_MISMATCH);
 }
 
+int MEDDLY::expert_forest
+::createReducedHelper(int in, const nodeBuilder &nb, bool &u)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::expert_forest::normalize(nodeBuilder &nb, int& ev)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::expert_forest::normalize(nodeBuilder &nb, float& ev)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+
+
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // '                                                                '
-// '                       Protected  methods                       '
+// '                        private  methods                        '
 // '                                                                '
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+void MEDDLY::expert_forest::handleNewOrphanNode(int p)
+{
+  MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
+  MEDDLY_DCASSERT(isActiveNode(p));
+  MEDDLY_DCASSERT(!isTerminalNode(p));
+  MEDDLY_DCASSERT(readInCount(p) == 0);
+
+  // insted of orphan_nodes++ here; do it only when the orphan is not going
+  // to get deleted or converted into a zombie
+
+  // Two possible scenarios:
+  // (1) a reduced node, or
+  // (2) a temporary node ready to be deleted.
+  MEDDLY_DCASSERT(isReducedNode(p) || getCacheCount(p) == 0);
+
+  if (getCacheCount(p) == 0) {
+    // delete node
+    // this should take care of the temporary nodes also
+#ifdef TRACK_DELETIONS
+    cout << "Deleting node " << p << " from unlinkNode\t";
+    showNode(stdout, p);
+    cout << "\n";
+    cout.flush();
+#endif
+    deleteNode(p);
+  }
+  else if (isPessimistic()) {
+    // zombify node
+    zombifyNode(p);
+  }
+  else {
+    stats.orphan_nodes++;
+  }
+
+#if 0
+  if (getOrphanNodeCount() > 100000)
+    smart_cast<expert_compute_manager*>(MEDDLY::getComputeManager())
+      ->removeStales(this);
+#endif
+}
+
+void MEDDLY::expert_forest::deleteOrphanNode(int p) 
+{
+  MEDDLY_DCASSERT(!isPessimistic());
+  MEDDLY_DCASSERT(getCacheCount(p) == 0 && readInCount(p) == 0);
+#ifdef TRACK_DELETIONS
+  cout << "Deleting node " << p << " from uncacheNode\t";
+  showNode(stdout, p);
+  cout << "\n";
+  cout.flush();
+#endif
+  stats.orphan_nodes--;
+  deleteNode(p);
+}
+
+void MEDDLY::expert_forest::deleteNode(int p)
+{
+  MEDDLY_DCASSERT(!isTerminalNode(p));
+  MEDDLY_DCASSERT(readInCount(p) == 0);
+  MEDDLY_DCASSERT(isActiveNode(p));
+
+#ifdef DEVELOPMENT_CODE
+  validateIncounts();
+#endif
+
+  int* foo = getNodeAddress(p);
+  int k = getNodeLevel(p);
+
+  // remove from unique table (only applicable to reduced nodes)
+  if (isReducedNode(p)) {
+    nodeFinder key(this, p);
+#ifdef DEVELOPMENT_CODE
+    if (unique->find(key) != p) {
+      fprintf(stderr, "Error in deleteNode\nFind: %d\np: %d\n",
+        unique->find(key), p);
+      dumpInternal(stdout);
+      MEDDLY_DCASSERT(false);
+    }
+#endif
+
+#ifdef TRACK_DELETIONS
+    showNode(stdout, p);
+#endif
+
+#ifdef DEVELOPMENT_CODE
+    int x = unique->remove(key.hash(), p);
+    MEDDLY_DCASSERT(p == x);
+#else
+    unique->remove(key.hash(), p);
+#endif
+
+#ifdef TRACK_DELETIONS
+    printf("%s: p = %d, unique->remove(p) = %d\n", __func__, p, x);
+    fflush(stdout);
+#endif
+
+    MEDDLY_DCASSERT(address[p].cache_count == 0);
+  }
+  else {
+    // Temporary node
+    // TODO:
+    // clear cache of corresponding temporary node?
+    decrTempNodeCount(k);
+  }
+
+  // unlink children
+  const int nDptrs = ABS(foo[2]);
+  int* downptr = foo + 3 + (foo[2] < 0? nDptrs: 0);
+  int* stop = downptr + nDptrs;
+#ifdef VALIDATE_INCOUNTS
+  while (downptr < stop) {
+    int temp = *downptr;
+    *downptr++ = 0;
+    unlinkNode(temp);
+  }
+#else
+  while (downptr < stop) {
+    unlinkNode(*downptr++);
+  }
+#endif
+
+  // Recycle node memory
+  levels[k].recycleNode(getNodeOffset(p));
+
+  // recycle the index
+  freeActiveNode(p);
+
+  if (levels[k].compactLevel) levels[k].compact(address);
+
+#ifdef VALIDATE_INCOUNTS
+  validateIncounts();
+#endif
+
+}
+
+void MEDDLY::expert_forest::zombifyNode(int p)
+{
+  MEDDLY_DCASSERT(isActiveNode(p));
+  MEDDLY_DCASSERT(!isTerminalNode(p));
+  MEDDLY_DCASSERT(isReducedNode(p));
+  MEDDLY_DCASSERT(getCacheCount(p) > 0);  // otherwise this node should be deleted
+  MEDDLY_DCASSERT(readInCount(p) == 0);
+  MEDDLY_DCASSERT(address[p].cache_count > 0);
+
+  stats.zombie_nodes++;
+  levels[getNodeLevel(p)].zombie_nodes++;
+  stats.decActive(1);
+
+  // mark node as zombie
+  address[p].cache_count = -address[p].cache_count;
+
+  nodeFinder key(this, p);
+#ifdef DEVELOPMENT_CODE 
+  if (unique->find(key) != p) {
+    fprintf(stderr, "Fail: can't find reduced node %d; got %d\n", p, unique->find(key));
+    dumpInternal(stderr);
+    MEDDLY_DCASSERT(false);
+  }
+  int x = unique->remove(key.hash(), p);
+  MEDDLY_DCASSERT(x==p);
+#else
+  unique->remove(key.hash(), p);
+#endif
+
+  int node_level = getNodeLevel(p);
+  int node_offset = getNodeOffset(p);
+  int* foo = getNodeAddress(p);
+
+  address[p].offset = 0;
+
+  // unlinkNode children
+  if (foo[2] < 0) {
+    // Sparse encoding
+    int* downptr = foo + 3 - foo[2];
+    int* stop = downptr - foo[2];
+    for (; downptr < stop; ++downptr) {
+#ifdef VALIDATE_INCOUNTS
+      int temp = *downptr;
+      *downptr = 0;
+      unlinkNode(temp);
+#else
+      unlinkNode(*downptr);
+#endif
+    }
+  } else {
+    // Full encoding
+    int* downptr = foo + 3;
+    int* stop = downptr + foo[2];
+    for (; downptr < stop; ++downptr) {
+#ifdef VALIDATE_INCOUNTS
+      int temp = *downptr;
+      *downptr = 0;
+      unlinkNode(temp);
+#else
+      unlinkNode(*downptr);
+#endif
+    }
+  }
+  // Recycle node memory
+  levels[node_level].recycleNode(node_offset);
+}
+
+void MEDDLY::expert_forest::validateIncounts()
+{
+  // Inspect every active node's down pointers to determine
+  // the incoming count for every active node.
+  
+  int sz = getLastNode() + 1;
+  if (sz > in_val_size) {
+    in_validate = (int*) realloc(in_validate, a_size * sizeof(int));
+    in_val_size = a_size;
+  }
+  MEDDLY_DCASSERT(sz <= in_val_size);
+  memset(in_validate, 0, sizeof(int) * sz);
+  for (int i = 1; i < sz; ++i) {
+    MEDDLY_DCASSERT(!isTerminalNode(i));
+    if (!isActiveNode(i)) continue;
+    nodeReader* P = initNodeReader(i, false);
+
+    // add to reference counts
+    for (int z=0; z<P->getNNZs(); z++) {
+      if (isTerminalNode(P->d(z))) continue;
+      MEDDLY_CHECK_RANGE(0, P->d(z), sz);
+      in_validate[P->d(z)]++;
+    }
+  } // for i
+
+  // Add counts for registered dd_edges
+  nodecounter foo(in_validate);
+  visitRegisteredEdges(foo);
+  
+
+  // Validate the incoming count stored with each active node using the
+  // in_count array computed above
+  for (int i = 1; i < sz; ++i) {
+    MEDDLY_DCASSERT(!isTerminalNode(i));
+    if (!isActiveNode(i)) continue;
+    if (in_validate[i] != readInCount(i)) {
+      printf("For node %d\n    we got %d\n    node says %d\n",
+        i, in_validate[i], readInCount(i));
+      dump(stdout);
+      throw error(error::MISCELLANEOUS);
+    }
+    // Note - might not be exactly equal
+    // because there could be dd_edges that refer to nodes
+    // and we didn't count them.
+  }
+}
+
+
+
+
 
 //
 // ------------------------------------------------------------------
@@ -1938,10 +2254,10 @@ bool MEDDLY::expert_forest::isStale(int h) const {
   return
     isMarkedForDeletion() || (
       isTerminalNode(h)
-      ? discardTemporaryNodesFromComputeCache()
+      ? terminalNodesAreStale
       : isPessimistic()
         ? isZombieNode(h)
-        : (getInCount(h) == 0)
+        : (readInCount(h) == 0)
     );
 }
 
@@ -2018,19 +2334,37 @@ void MEDDLY::expert_forest::shrinkHandleList()
 #endif
 }
 
+#ifdef USE_OLD_TEMPNODES
+
+int MEDDLY::expert_forest::createTempNode(int lh, int size, bool clear)
+{
+  throw error(error::NOT_IMPLEMENTED);
+}
+
 int MEDDLY::expert_forest
-::createReducedHelper(int in, const nodeBuilder &nb, bool &u)
+::createTempNode(int lh, std::vector<int>&, std::vector<int>&)
 {
   throw error(error::TYPE_MISMATCH);
 }
 
-void MEDDLY::expert_forest::normalize(nodeBuilder &nb, int& ev)
+int MEDDLY::expert_forest
+::createTempNode(int lh, std::vector<int>&, std::vector<float>&)
 {
   throw error(error::TYPE_MISMATCH);
 }
 
-void MEDDLY::expert_forest::normalize(nodeBuilder &nb, float& ev)
+bool MEDDLY::expert_forest
+::getDownPtrsAndEdgeValues(int, std::vector<int>&, std::vector<int>&) const
 {
   throw error(error::TYPE_MISMATCH);
 }
+
+bool MEDDLY::expert_forest
+::getDownPtrsAndEdgeValues(int, std::vector<int>&, std::vector<float>&) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+#endif
+
 

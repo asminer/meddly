@@ -39,6 +39,53 @@ MEDDLY::evmdd_forest::~evmdd_forest()
 { }
 
 
+inline void MEDDLY::evmdd_forest::setAllDownPtrs(int p, int value) {
+  MEDDLY_DCASSERT(!isReducedNode(p));
+  MEDDLY_DCASSERT(isFullNode(p));
+  MEDDLY_DCASSERT(isActiveNode(value));
+  int* curr = getFullNodeDownPtrs(p);
+  int size = getFullNodeSize(p);
+  for (int* end = curr + size; curr != end; )
+  {
+    unlinkNode(*curr);
+    *curr++ = value;
+  }
+  if (!isTerminalNode(value)) getInCount(value) += size;
+}
+
+inline void MEDDLY::evmdd_forest::setAllDownPtrsWoUnlink(int p, int value) {
+  MEDDLY_DCASSERT(!isReducedNode(p));
+  MEDDLY_DCASSERT(isFullNode(p));
+  MEDDLY_DCASSERT(isActiveNode(value));
+  int* curr = getFullNodeDownPtrs(p);
+  int size = getFullNodeSize(p);
+  for (int* end = curr + size; curr != end; )
+  {
+    *curr++ = value;
+  }
+  if (!isTerminalNode(value)) getInCount(value) += size;
+}
+
+inline void MEDDLY::evmdd_forest::setAllEdgeValues(int p, int value) {
+  MEDDLY_DCASSERT(isEVPlus() || isEVTimes());
+  MEDDLY_DCASSERT(!isReducedNode(p));
+  MEDDLY_DCASSERT(isFullNode(p));
+  int *edgeptr = getFullNodeEdgeValues(p);
+  int *last = edgeptr + getFullNodeSize(p);
+  for ( ; edgeptr != last; ++edgeptr) *edgeptr = value;
+}
+
+
+inline void MEDDLY::evmdd_forest::setAllEdgeValues(int p, float fvalue) {
+  MEDDLY_DCASSERT(isEVPlus() || isEVTimes());
+  MEDDLY_DCASSERT(!isReducedNode(p));
+  MEDDLY_DCASSERT(isFullNode(p));
+  int *edgeptr = getFullNodeEdgeValues(p);
+  int *last = edgeptr + getFullNodeSize(p);
+  int value = toInt(fvalue);
+  for ( ; edgeptr != last; ++edgeptr) *edgeptr = value;
+}
+
 int MEDDLY::evmdd_forest::createTempNode(int k, int sz, bool clear)
 {
   MEDDLY_DCASSERT(k != 0);
@@ -77,7 +124,7 @@ int MEDDLY::evmdd_forest::createTempNode(int k, int sz, bool clear)
   return p;
 }
 
-
+#ifdef ACCUMULATE_ON
 void MEDDLY::evmdd_forest::resizeNode(int p, int size)
 {
   // This operation can only be performed on Temporary nodes.
@@ -146,7 +193,7 @@ void MEDDLY::evmdd_forest::resizeNode(int p, int size)
 
   MEDDLY_DCASSERT(size == getFullNodeSize(p));
 }
-
+#endif
 
 // returns index with a[]; -1 if not found
 int binarySearch(const int* a, int sz, int find)
@@ -561,11 +608,11 @@ void MEDDLY::evp_mdd_int::normalizeAndReduceNode(int& p, int& ev)
   if (newoffset) {
 #ifdef MEMORY_TRACE
     int saved_offset = getNodeOffset(p);
-    setNodeOffset(p, newoffset);
+    address[p].offset = newoffset;
     levels[node_level].recycleNode(saved_offset);
 #else
     levels[node_level].recycleNode(getNodeOffset(p));
-    setNodeOffset(p, newoffset);
+    address[p].offset = newoffset;
 #endif
   }
 
@@ -1102,11 +1149,11 @@ void MEDDLY::evt_mdd_real::normalizeAndReduceNode(int& p, float& ev)
   if (newoffset) {
 #ifdef MEMORY_TRACE
     int saved_offset = getNodeOffset(p);
-    setNodeOffset(p, newoffset);
+    address[p].offset = newoffset;
     levels[node_level].recycleNode(saved_offset);
 #else
     levels[node_level].recycleNode(getNodeOffset(p));
-    setNodeOffset(p, newoffset);
+    address[p].offset = newoffset;
 #endif
   }
 

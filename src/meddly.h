@@ -42,8 +42,6 @@
 #include <cstdio>
 #include <cassert>
 
-#define NEW_ITERATORS
-
 namespace MEDDLY {
 
   // Classes
@@ -1417,6 +1415,19 @@ class MEDDLY::forest {
     void registerEdge(dd_edge& e);
     void unregisterEdge(dd_edge& e);
     void unregisterDDEdges();
+
+  protected:
+    class edge_visitor {
+      public:
+        edge_visitor();
+        virtual ~edge_visitor();
+        virtual void visit(dd_edge &e) = 0;
+    };
+    inline void visitRegisteredEdges(edge_visitor &ev) {
+      for (unsigned i = 0; i < firstFree; ++i) {
+        if (edge[i].edge) ev.visit(*(edge[i].edge));
+      }
+    }
 
   private:
     bool isRelation;

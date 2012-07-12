@@ -27,6 +27,7 @@
 
 #include "defines.h"
 
+#ifdef USE_EXPERIMENTAL_TEMPEDGES
 
 MEDDLY::temp_dd_edge::temp_dd_edge()
 : levelHandle(0), forestHandle(0), iValue(0), rValue(0), size(0),
@@ -256,4 +257,4 @@ void MEDDLY::temp_dd_edge::add(const int* vlist, const int* vplist)
   downpointers[index]->add(vlist, vplist);
 }
 
-
+#endif

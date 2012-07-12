@@ -135,7 +135,7 @@ MEDDLY::domain::domain(variable** v, int N)
 {
   vars = v;
   nVars = N;
-  for (int i=1; i<N; i++) {
+  for (int i=1; i<=N; i++) {
     ((expert_variable*)vars[i])->addToList(this);
   }
   is_marked_for_deletion = false;
@@ -165,7 +165,7 @@ MEDDLY::domain::~domain()
   fprintf(stderr, "Deleting domain #%d\n", my_index);
 #endif
 
-  for (int i=1; i<nVars; i++) {
+  for (int i=1; i<=nVars; i++) {
     ((expert_variable*)vars[i])->removeFromList(this);
   }
   free(vars);

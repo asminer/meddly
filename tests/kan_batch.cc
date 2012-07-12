@@ -65,6 +65,7 @@ dd_edge buildReachsetSAT(forest* mdd, forest* mxd, int N)
   initial[1] = initial[5] = initial[9] = initial[13] = N;
   dd_edge init_state(mdd);
   mdd->createEdge(&initial, 1, init_state);
+  delete[] initial;
 
   // Build next-state function
   dd_edge nsf(mxd);
@@ -109,6 +110,12 @@ dd_edge buildReachsetBatch(int b, forest* mdd, const char* rs[], long states)
     mdd->createEdge(batch, i, tmp);
     reachable += tmp;
   }
+
+  // cleanup the batch
+  for (int i=0; i<b; i++) {
+    delete[] batch[i];
+  }
+  delete[] batch;
   return reachable;
 }
 

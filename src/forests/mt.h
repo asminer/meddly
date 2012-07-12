@@ -125,51 +125,19 @@ class MEDDLY::mt_forest : public expert_forest {
     virtual int accumulateExpandA(int a, int b, bool cBM);
     int accumulate(int tempNode, bool cBM, int* element, int level);
     virtual int makeACopy(int node, int size = 0);
-#endif
-
     /// Create a temporary node -- a node that can be modified by the user
     virtual int createTempNode(int lh, int size, bool clear);
 
-    /// Same as createTempNode(int, vector<int>) except this is for EV+MDDs.
-    virtual int createTempNode(int lh, std::vector<int>& downPointers,
-        std::vector<int>& edgeValues) { return 0; }
-
-    /// Same as createTempNode(int, vector<int>) except this is for EV*MDDs.
-    virtual int createTempNode(int lh, std::vector<int>& downPointers,
-        std::vector<float>& edgeValues) { return 0; }
-
-    // Helpers for reduceNode().
-    // These method assume that the top leve node is a temporary node
-    // whose children may be either reduced or temporary nodes
-    // (with an incount >= 1).
-    // Since there is a possibility of a temporary node being referred
-    // to multiple times, these methods use a cache to ensure that each
-    // temporary node is reduced only once.
-    // Note: The same cache can be used across consecutive reduce
-    // operations by specifying clearCache to false.
-    // int recursiveReduceNode(int tempNode, bool clearCache = true);
-    // int recursiveReduceNode(std::map<int, int>& cache, int root);
-
-    // Similar to getDownPtrs() but for EV+MDDs
-    virtual bool getDownPtrsAndEdgeValues(int node,
-        std::vector<int>& dptrs, std::vector<int>& evs) const
-    { return false; }
-
-    // Similar to getDownPtrs() but for EV*MDDs
-    virtual bool getDownPtrsAndEdgeValues(int node,
-        std::vector<int>& dptrs, std::vector<float>& evs) const
-    { return false; }
+#endif
 
     /// Has the node been reduced
     bool isReducedNode(int node) const;
 
     // virtual void dumpUniqueTable(FILE* s) const;
-    void reclaimOrphanNode(int node);     // for linkNode()
-    void handleNewOrphanNode(int node);   // for unlinkNode()
-    void deleteOrphanNode(int node);      // for uncacheNode()
+    // void reclaimOrphanNode(int node);     // for linkNode()
+    // void handleNewOrphanNode(int node);   // for unlinkNode()
+    // void deleteOrphanNode(int node);      // for uncacheNode()
     // void freeZombieNode(int node);        // for uncacheNode()
-
-    bool discardTemporaryNodesFromComputeCache() const;   // for isStale()
 
     virtual void showNode(FILE *s, int p, int verbose = 0) const;
 
@@ -187,15 +155,11 @@ class MEDDLY::mt_forest : public expert_forest {
     const int* getSparseNodeDownPtrs(int p) const;
     int getSparseNodeLargestIndex(int p) const;
 
-    void setAllDownPtrs(int p, int value);
-    void setAllDownPtrsWoUnlink(int p, int value);
-
     // for EVMDDs
     int* getFullNodeEdgeValues(int p);
     const int* getFullNodeEdgeValuesReadOnly(int p) const;
     const int* getSparseNodeEdgeValues(int p) const;
-    void setAllEdgeValues(int p, int value);
-    void setAllEdgeValues(int p, float fvalue);
+
 
     // p: node
     // i: the ith downpointer.
@@ -206,21 +170,14 @@ class MEDDLY::mt_forest : public expert_forest {
     int getMxdLevelMaxBound(int k) const;
     int getLevelMaxBound(int k) const;
 
-    bool isPrimedNode(int p) const;
-    bool isUnprimedNode(int p) const;
     int buildQuasiReducedNodeAtLevel(int k, int p);
-
-    // void showLevel(FILE *s, int k) const;
-
-    // void showNode(int p) const;
-    // void showAll() const;
 
     void compareCacheCounts(int p = -1);
     void validateIncounts();
 
 
     // Remove zombies if more than max
-    void removeZombies(int max = 100);
+    // void removeZombies(int max = 100);
 
     bool isCounting();
 
@@ -231,7 +188,7 @@ class MEDDLY::mt_forest : public expert_forest {
     void buildLevelNode(int lh, int* terminalNodes, int sz);
     void clearLevelNode(int lh);
     void clearLevelNodes();
-    void clearAllNodes();
+    // void clearAllNodes();
 
     // Building custom level nodes
     // int* getTerminalNodes(int n);
@@ -243,7 +200,7 @@ class MEDDLY::mt_forest : public expert_forest {
     bool doesLevelNeedCompaction(int k);
 
     // Dealing with node addressing
-    void setNodeOffset(int p, int offset);
+    // void setNodeOffset(int p, int offset);
 
     // Dealing with node status
     bool isDeletedNode(int p) const;
@@ -251,11 +208,7 @@ class MEDDLY::mt_forest : public expert_forest {
     // long getUniqueTableMemoryUsed() const;
     long getHoleMemoryUsage() const;
 
-    // zombify node p
-    void zombifyNode(int p);
 
-    // delete node p
-    void deleteNode(int p);
 
   protected:
 
@@ -265,8 +218,6 @@ class MEDDLY::mt_forest : public expert_forest {
     // decrTempNodeCount() should be called by any method that changes a
     // temporary node to a reduced node.
     // Note: deleting a temp node automatically calls decrTempNodeCount().
-    void incrTempNodeCount(int k);
-    void decrTempNodeCount(int k);
 
     // increment the count for "nodes activated since last garbage collection"
     void incrNodesActivatedSinceGc();
@@ -279,19 +230,15 @@ class MEDDLY::mt_forest : public expert_forest {
     // If the node can be reduced to an existing node, the existing node
     // is returned.
     // OBSOLETE
-    bool checkForReductions(int p, int nnz, int& result);
-
-    // bool checkForReductions(const nodeBuilder &nb, int nnz, int& result);
+    // bool checkForReductions(int p, int nnz, int& result);
 
     // Checks if the node has a single downpointer enabled and at
     // the given index.
-    bool singleNonZeroAt(int p, int val, int index) const;
+    // bool singleNonZeroAt(int p, int val, int index) const;
 
-#ifdef USE_OLD_TEMPNODES
     // Checks if the node satisfies the forests reduction rules.
     // If it does not, an assert violation occurs.
-    void validateDownPointers(int p, bool recursive = false);
-#endif
+    // void validateDownPointers(int p, bool recursive = false);
 
     // Special next values
     static const int temp_node = -5;
@@ -300,10 +247,6 @@ class MEDDLY::mt_forest : public expert_forest {
 
     /// Count of nodes created since last gc
     unsigned nodes_activated_since_gc;
-
-    // Deleting terminal nodes (used in isStale() -- this enables
-    // the removal of compute cache entries which refer to terminal nodes)
-    bool delete_terminal_nodes;
 
     bool counting;
 
@@ -315,17 +258,17 @@ class MEDDLY::mt_forest : public expert_forest {
     bool accumulateMintermAddedElement;
 
   private:
-    // Cache for recursiveReduceNode()
-    // std::map<int, int> recursiveReduceCache;
-
+#ifdef ACCUMULATE_ON
     // Persistant variables used in addReducedNodes()
     dd_edge* nodeA;
     dd_edge* nodeB;
+#endif
 };
 
 
 /// Inline functions implemented here
 
+/*
 inline void MEDDLY::mt_forest::reclaimOrphanNode(int p) {
   MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
   MEDDLY_DCASSERT(isActiveNode(p));
@@ -334,19 +277,7 @@ inline void MEDDLY::mt_forest::reclaimOrphanNode(int p) {
   stats.reclaimed_nodes++;
   stats.orphan_nodes--;
 }  
-
-inline void MEDDLY::mt_forest::deleteOrphanNode(int p) {
-  MEDDLY_DCASSERT(!isPessimistic());
-  MEDDLY_DCASSERT(getCacheCount(p) == 0 && getInCount(p) == 0);
-#ifdef TRACK_DELETIONS
-  cout << "Deleting node " << p << " from uncacheNode\t";
-  showNode(stdout, p);
-  cout << "\n";
-  cout.flush();
-#endif
-  stats.orphan_nodes--;
-  deleteNode(p);
-}
+*/
 
 inline int MEDDLY::mt_forest::getDownPtrAfterIndex(int p, int i, int &index)
   const {
@@ -451,74 +382,17 @@ inline int MEDDLY::mt_forest::getSparseNodeLargestIndex(int p) const {
   return getSparseNodeIndex(p, getSparseNodeSize(p) - 1);
 }
 
-inline void MEDDLY::mt_forest::setAllDownPtrs(int p, int value) {
-  MEDDLY_DCASSERT(!isReducedNode(p));
-  MEDDLY_DCASSERT(isFullNode(p));
-  MEDDLY_DCASSERT(isActiveNode(value));
-  int* curr = getFullNodeDownPtrs(p);
-  int size = getFullNodeSize(p);
-  for (int* end = curr + size; curr != end; )
-  {
-    unlinkNode(*curr);
-    *curr++ = value;
-  }
-  if (!isTerminalNode(value)) getInCount(value) += size;
-}
-
-inline void MEDDLY::mt_forest::setAllDownPtrsWoUnlink(int p, int value) {
-  MEDDLY_DCASSERT(!isReducedNode(p));
-  MEDDLY_DCASSERT(isFullNode(p));
-  MEDDLY_DCASSERT(isActiveNode(value));
-  int* curr = getFullNodeDownPtrs(p);
-  int size = getFullNodeSize(p);
-  for (int* end = curr + size; curr != end; )
-  {
-    *curr++ = value;
-  }
-  if (!isTerminalNode(value)) getInCount(value) += size;
-}
-
-inline void MEDDLY::mt_forest::setAllEdgeValues(int p, int value) {
-  MEDDLY_DCASSERT(isEVPlus() || isEVTimes());
-  MEDDLY_DCASSERT(!isReducedNode(p));
-  MEDDLY_DCASSERT(isFullNode(p));
-  int *edgeptr = getFullNodeEdgeValues(p);
-  int *last = edgeptr + getFullNodeSize(p);
-  for ( ; edgeptr != last; ++edgeptr) *edgeptr = value;
-}
-
-
-inline void MEDDLY::mt_forest::setAllEdgeValues(int p, float fvalue) {
-  MEDDLY_DCASSERT(isEVPlus() || isEVTimes());
-  MEDDLY_DCASSERT(!isReducedNode(p));
-  MEDDLY_DCASSERT(isFullNode(p));
-  int *edgeptr = getFullNodeEdgeValues(p);
-  int *last = edgeptr + getFullNodeSize(p);
-  int value = toInt(fvalue);
-  for ( ; edgeptr != last; ++edgeptr) *edgeptr = value;
-}
-
-
-inline bool MEDDLY::mt_forest::isPrimedNode(int p) const {
-  return (getNodeLevel(p) < 0);
-}
-inline bool MEDDLY::mt_forest::isUnprimedNode(int p) const {
-  return (getNodeLevel(p) > 0);
-}
-
-inline bool MEDDLY::mt_forest::discardTemporaryNodesFromComputeCache() const {
-  return delete_terminal_nodes;
-}
-
 inline bool MEDDLY::mt_forest::isCounting() { return counting; }
 
 // Dealing with node addressing
 
+/*
 inline void MEDDLY::mt_forest::setNodeOffset(int p, int offset) 
 {
   MEDDLY_DCASSERT(isValidNonterminalIndex(p));
   address[p].offset = offset;
 }
+*/
 
 // Dealing with node status
 
@@ -528,17 +402,6 @@ inline bool MEDDLY::mt_forest::isDeletedNode(int p) const
   return !(isActiveNode(p) || isZombieNode(p));
 }
 
-
-inline void MEDDLY::mt_forest::incrTempNodeCount(int k) {
-  levels[k].incrTempNodeCount();
-  stats.temp_nodes++;
-}
-
-
-inline void MEDDLY::mt_forest::decrTempNodeCount(int k) {
-  levels[k].decrTempNodeCount();
-  stats.temp_nodes--;
-}
 
 inline void MEDDLY::mt_forest::incrNodesActivatedSinceGc() {
   nodes_activated_since_gc++;

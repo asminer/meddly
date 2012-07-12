@@ -70,6 +70,8 @@
 #define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX)
 #endif
 
+// #define USE_EXPERIMENTAL_TEMPEDGES
+
 #define USE_OLD_TEMPNODES
 
 // #define ACCUMULATE_ON
@@ -93,7 +95,9 @@ namespace MEDDLY {
   class expert_variable;
   class expert_domain;
   class expert_forest;
+#ifdef USE_EXPERIMENTAL_TEMPEDGES
   class temp_dd_edge;
+#endif
 
   class opname;
   class unary_opname;
@@ -303,6 +307,18 @@ struct MEDDLY::settings {
     settings() : computeTable(), mddDefaults(0), mxdDefaults(1) {
       operationBuilder = makeBuiltinInitializer();
     }
+    /// Copy constructor.
+    settings(const settings &s) : mddDefaults(0), mxdDefaults(1) { 
+      init(s); 
+    }
+    /// Destructor
+    ~settings() { clear(); }
+    inline void operator=(const settings &s) {
+      if (&s != this) {
+        clear();
+        init(s);
+      }
+    }
     /// super handly
     inline bool usesMonolithicComputeTable() {
       return (
@@ -310,6 +326,9 @@ struct MEDDLY::settings {
        computeTableSettings::MonolithicUnchainedHash == computeTable.style 
       );
     }
+  private:
+    void init(const settings &s);
+    void clear();
 };
   
 // ******************************************************************
@@ -570,7 +589,18 @@ class MEDDLY::expert_forest : public forest
     inline bool isValidLevel(int k) const {
       return (k>=getMinLevelIndex()) && (k<=getNumVariables());
     }
+    /// The maximum size (number of indices) a node at this level can have
+    inline int getLevelSize(int lh) const {
+      MEDDLY_DCASSERT(isValidLevel(lh));
+      if (lh < 0) {
+        return getDomain()->getVariableBound(-lh, true);
+      } else {
+        return getDomain()->getVariableBound(lh, false);
+      }
+    }
+    // --------------------------------------------------
     // Used by the unique table
+    // --------------------------------------------------
     inline int getNext(int p) const {
       MEDDLY_DCASSERT(address);
       MEDDLY_DCASSERT(levels);
@@ -594,15 +624,57 @@ class MEDDLY::expert_forest : public forest
       return hashNode(p);
 #endif
     }
-    /// The maximum size (number of indices) a node at this level can have
-    inline int getLevelSize(int lh) const {
-      MEDDLY_DCASSERT(isValidLevel(lh));
-      if (lh < 0) {
-        return getDomain()->getVariableBound(-lh, true);
-      } else {
-        return getDomain()->getVariableBound(lh, false);
-      }
+    // --------------------------------------------------
+    // Managing reference counts
+    // --------------------------------------------------
+
+    /** Increase the link count to this node. Call this when another node is
+        made to point to this node.
+          @return p, for convenience.
+    */
+    inline int linkNode(int p) {
+        MEDDLY_DCASSERT(isActiveNode(p));
+        if (isTerminalNode(p)) return p;
+        MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
+
+        int& count = getInCount(p);
+        count++;
+
+        if (1 == count) {
+          // Reclaim an orphan node
+          stats.reclaimed_nodes++;
+          stats.orphan_nodes--;
+        }
+#ifdef TRACK_DELETIONS
+        fprintf(stdout, "\t+Node %d count now %d\n", p, count);
+        fflush(stdout);
+#endif
+        return p;
     }
+
+    /** Decrease the link count to this node. If link count reduces to 0, this
+        node may get marked for deletion. Call this when another node releases
+        its connection to this node.
+    */
+    inline void unlinkNode(int p) {
+        MEDDLY_DCASSERT(isActiveNode(p));
+        if (isTerminalNode(p)) return;
+        MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
+        MEDDLY_DCASSERT(getInCount(p) > 0);
+
+        int& count = getInCount(p);
+        count--;
+  
+#ifdef TRACK_DELETIONS
+        fprintf(stdout, "\t+Node %d count now %d\n", p, count);
+        fflush(stdout);
+#endif
+        if (count) return;
+
+        handleNewOrphanNode(p);
+    }
+
+    
 
 
   // ------------------------------------------------------------
@@ -851,14 +923,13 @@ class MEDDLY::expert_forest : public forest
     };
 
   // ------------------------------------------------------------
-  // helpers for derived classes
-  // protected:
-    // void deleteNode(int p);
-
-  // ------------------------------------------------------------
   // helpers for this class
-  // private:
-
+  private:
+    void handleNewOrphanNode(int node);   
+    void deleteOrphanNode(int node);     
+    void deleteNode(int p);
+    void zombifyNode(int p);
+    void validateIncounts();
 
   // here down --- needs organizing
   public:
@@ -866,7 +937,7 @@ class MEDDLY::expert_forest : public forest
 #ifdef USE_OLD_TEMPNODES
     /// Create a temporary node -- a node that can be modified by the user.
     /// If \a clear is true, downpointers are initialized to 0.
-    virtual int createTempNode(int lh, int size, bool clear = true) = 0;
+    virtual int createTempNode(int lh, int size, bool clear = true);
 
     /// Create a temporary node with the maximum size allowed for this level.
     /// If \a clear is true, downpointers are initialized to 0.
@@ -876,11 +947,11 @@ class MEDDLY::expert_forest : public forest
 
     /// Same as createTempNode(int, vector<int>) except this is for EV+MDDs.
     virtual int createTempNode(int lh, std::vector<int>& downPointers,
-        std::vector<int>& edgeValues) = 0;
+        std::vector<int>& edgeValues);
 
     /// Same as createTempNode(int, vector<int>) except this is for EV*MDDs.
     virtual int createTempNode(int lh, std::vector<int>& downPointers,
-        std::vector<float>& edgeValues) = 0;
+        std::vector<float>& edgeValues);
 #endif
 
 #ifdef ACCUMULATE_ON
@@ -960,12 +1031,6 @@ class MEDDLY::expert_forest : public forest
     /// Get the terminal node representing this real (float) value.
     int getTerminalNode(float realValue) const;
 
-    /// Get the node's level handle
-    int getNodeLevel(int node) const;
-
-    /// Get the node's height
-    int getNodeHeight(int node) const;
-
     /// Get the number of entries in a full node
     int getFullNodeSize(int node) const;
 
@@ -1004,15 +1069,13 @@ class MEDDLY::expert_forest : public forest
     /// If successful (return value true), the vectors hold the
     /// downpointers and edge-values.
     virtual bool getDownPtrsAndEdgeValues(int node,
-        std::vector<int>& downPointers, std::vector<int>& edgeValues) const
-        = 0;
+        std::vector<int>& downPointers, std::vector<int>& edgeValues) const;
 
     /// Similar to getDownPtrs() except for EV*MDDs.
     /// If successful (return value true), the vectors hold the
     /// downpointers and edge-values.
     virtual bool getDownPtrsAndEdgeValues(int node,
-        std::vector<int>& downPointers, std::vector<float>& edgeValues) const
-        = 0;
+        std::vector<int>& downPointers, std::vector<float>& edgeValues) const;
 
     /// Get the edge value for the given index -- only for Full nodes
     void getFullNodeEdgeValue(int node, int index, int& ev) const;
@@ -1037,16 +1100,6 @@ class MEDDLY::expert_forest : public forest
     bool getEdgeValues(int node, float*& edgeValues);
     bool getEdgeValues(int node, int*& edgeValues);
 
-    /// Increase the link count to this node. Call this when another node is
-    /// made to point (down-pointer) to this node.
-    ///   @return node, for convenience.
-    int linkNode(int node);
-
-    /// Decrease the link count to this node. If link count reduces to 0, this
-    /// node may get marked for deletion. Call this when another node releases
-    /// its connection to this node.
-    void unlinkNode(int node);
-
     /// Increase the cache count for this node. Call this whenever this node
     /// is added to a cache. 
     ///   @return node, for convenience.
@@ -1055,13 +1108,6 @@ class MEDDLY::expert_forest : public forest
     /// Decrease the cache count for this node. Call this whenever this node
     /// is removed from a cache.
     void uncacheNode(int node);
-
-    /// Returns the in-count for a node. This indicates the number of MDD
-    /// nodes that link to this node. A node is never deleted when its
-    /// in-count is more than zero.
-    /// Note that a reference to the in-count is returned. Therefore, the
-    /// in-count of the node can be modified by modifying the reference.
-    int& getInCount(int node) const;
 
     /// Returns the cache-count for a node. This indicates the number of
     /// compute cache entries that link to this node.
@@ -1132,11 +1178,9 @@ class MEDDLY::expert_forest : public forest
     bool isZombieNode(int node) const;
 
     // the following virtual functions are implemented in node_manager
-    virtual void reclaimOrphanNode(int node) = 0;     // for linkNode()
-    virtual void handleNewOrphanNode(int node) = 0;   // for unlinkNode()
-    virtual void deleteOrphanNode(int node) = 0;      // for uncacheNode()
-    // for isStale()
-    virtual bool discardTemporaryNodesFromComputeCache() const = 0;
+    // virtual void reclaimOrphanNode(int node) = 0;     // for linkNode()
+    // virtual void handleNewOrphanNode(int node) = 0;   // for unlinkNode()
+    // virtual void deleteOrphanNode(int node) = 0;      // for uncacheNode()
 
     inline bool isTimeToGc() const {
       return isPessimistic() 
@@ -1288,6 +1332,39 @@ class MEDDLY::expert_forest : public forest
       MEDDLY_CHECK_RANGE(1, p, 1+a_last);
       return address[p];
     }
+    /** Get the node's level as an integer.
+        Negative values are used for primed levels.
+    */
+    inline int getNodeLevel(int p) const {
+      if (isTerminalNode(p)) return 0;
+      MEDDLY_DCASSERT(address);
+      MEDDLY_CHECK_RANGE(1, p, 1+a_last);
+      return address[p].level;
+    }
+
+    inline bool isPrimedNode(int p) const {
+      return getNodeLevel(p) < 0;
+    }
+
+    inline bool isUnprimedNode(int p) const {
+      return getNodeLevel(p) > 0;
+    }
+
+    /** Get the node's height.
+        For convenience.  Height is the total
+        number of levels until terminal nodes.
+    */
+    inline int getNodeHeight(int p) const {
+      if (isForRelations()) {
+        int k = getNodeLevel(p);
+        return (k<0) ? (-2*k-1) : 2*k;
+      } else {
+        return getNodeLevel(p);
+      }
+    }
+
+
+
 
   private:
     void expandHandleList();
@@ -1639,6 +1716,33 @@ class MEDDLY::expert_forest : public forest
     friend class level_data;
 
 
+  // ------------------------------------------------------------
+  // |
+  // |  Critical helpers.
+  // |
+  protected:  // TBD - make this private
+    /// Returns the in-count for a node.
+    inline int& getInCount(int p) {
+      const node_data& node = getNode(p);
+      return levels[node.level].countOf(node.offset);
+    }
+    inline void incrTempNodeCount(int k) {
+      levels[k].incrTempNodeCount();
+      stats.temp_nodes++;
+    }
+    inline void decrTempNodeCount(int k) {
+      levels[k].decrTempNodeCount();
+      stats.temp_nodes--;
+    }
+
+
+  public:
+    /// Returns the in-count for a node.
+    inline int readInCount(int p) const {
+      const node_data& node = getNode(p);
+      return levels[node.level].countOf(node.offset);
+    }
+
 
   // ----------------------------------------------------------------- 
   // | 
@@ -1759,6 +1863,11 @@ class MEDDLY::expert_forest : public forest
           has_hash = false;
           size = s;
           if (size > alloc) enlarge();
+        }
+        // used when we don't know exactly the sparse size
+        inline void shrinkSparse(int ns) {
+          MEDDLY_CHECK_RANGE(0, ns, size+1);
+          size = ns;
         }
         inline int getSize() const { 
           MEDDLY_DCASSERT(!is_sparse);
@@ -1896,9 +2005,25 @@ class MEDDLY::expert_forest : public forest
     /// uniqueness table, still used by derived classes.
     unique_table* unique;
 
+    /// Should a terminal node be considered a stale entry in the compute table.
+    /// per-forest policy, derived classes may change as appropriate.
+    bool terminalNodesAreStale;
+
   private:
     // Garbage collection in progress
     bool performing_gc;
+
+    // memory for validating incounts
+    int* in_validate;
+    int  in_val_size;
+
+    class nodecounter : public edge_visitor {
+        int* counts;
+      public:
+        nodecounter(int* c);
+        virtual ~nodecounter();
+        virtual void visit(dd_edge &e);
+    };
 };
 // end of expert_forest class.
 
@@ -1915,7 +2040,7 @@ class MEDDLY::expert_forest : public forest
 
 
 
-
+#ifdef USE_EXPERIMENTAL_TEMPEDGES
 
 /** A bare-bones class for the construction of temporary dd_edges.
 
@@ -1986,7 +2111,7 @@ class MEDDLY::temp_dd_edge {
     bool reduce(int& result) const;
     bool reduce(std::map<temp_dd_edge*, int>& ct, int zero, int& result) const;
 };
-
+#endif
 
 
 // ******************************************************************
@@ -2478,20 +2603,33 @@ class MEDDLY::numerical_operation : public operation {
 
 /** Preferred mechanism for users to initialize their own operations.
     Derive a class from this one, provide the \a execute method.
+    Implementation in ops.cc
 */
 class MEDDLY::op_initializer {
+  unsigned refcount;
   op_initializer* before;
 public:
   /// Constructor.
   ///   @param  bef   initializer(s) to execute before this one.
   op_initializer(op_initializer* bef);
 
-  virtual ~op_initializer();
-
   void initChain(const settings &s);
   void cleanupChain();
 
+  inline static void recycle(op_initializer *I) {
+    if (0==I) return;
+    MEDDLY_DCASSERT(I->refcount);
+    I->refcount--;
+    if (0==I->refcount) delete I;
+  }
+
+  inline static op_initializer* copy(op_initializer *I) { 
+    if (I) I->refcount++;
+    return I;
+  }
+
 protected:
+  virtual ~op_initializer();
 
   virtual void init(const settings &s) = 0;
   virtual void cleanup() = 0;
@@ -2583,14 +2721,6 @@ bool MEDDLY::expert_forest::isZombieNode(int p) const
   MEDDLY_DCASSERT(isValidNodeIndex(p));
   MEDDLY_DCASSERT(!isTerminalNode(p));
   return (getCacheCount(p) < 0);
-}
-
-
-inline
-int& MEDDLY::expert_forest::getInCount(int p) const
-{
-  MEDDLY_DCASSERT(isActiveNode(p) && !isTerminalNode(p));
-  return *(getNodeAddress(p));
 }
 
 
@@ -2699,30 +2829,6 @@ int MEDDLY::expert_forest::getTerminalNode(float a) const
 }
 
 #endif
-
-inline
-int MEDDLY::expert_forest::getNodeLevel(int p) const
-{
-#ifdef DEBUG_MDD_H
-  printf("%s: p: %d\n", __func__, p);
-#endif
-  MEDDLY_DCASSERT(isActiveNode(p) || isZombieNode(p));
-  return (isTerminalNode(p)? 0: address[p].level);
-}
-
-
-inline
-int MEDDLY::expert_forest::getNodeHeight(int p) const
-{
-  MEDDLY_DCASSERT(isActiveNode(p));
-  if (isForRelations()) {
-    int k = getNodeLevel(p);
-    return (k<0) ? (-2*k-1) : 2*k;
-  } else {
-    return getNodeLevel(p);
-  }
-}
-
 
 inline
 bool MEDDLY::expert_forest::isFullNode(int p) const
@@ -2966,50 +3072,6 @@ void MEDDLY::expert_forest
 
 
 inline
-int MEDDLY::expert_forest::linkNode(int p)
-{ 
-  MEDDLY_DCASSERT(isActiveNode(p));
-  if (isTerminalNode(p)) return p;
-  MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
-
-  // increase incount
-  ++getInCount(p);
-
-  if (getInCount(p) == 1) {
-    reclaimOrphanNode(p);
-  }
-
-#ifdef TRACK_DELETIONS
-  fprintf(stdout, "\t+Node %d count now %d\n", p, getInCount(p));
-  fflush(stdout);
-#endif
-  return p;
-}  
-
-
-
-inline
-void MEDDLY::expert_forest::unlinkNode(int p)
-{
-  MEDDLY_DCASSERT(isActiveNode(p));
-  if (isTerminalNode(p)) return;
-  MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
-  MEDDLY_DCASSERT(getInCount(p) > 0);
-  
-  // decrement incoming count
-  --getInCount(p);
-
-#ifdef TRACK_DELETIONS
-  fprintf(stdout, "\t-Node %d count now %d\n", p, getInCount(p));
-  fflush(stdout);
-#endif
-
-  if (getInCount(p) == 0) { handleNewOrphanNode(p); }
-}
-
-
-
-inline
 int MEDDLY::expert_forest::cacheNode(int p)
 {
   MEDDLY_DCASSERT(isActiveNode(p));
@@ -3048,7 +3110,7 @@ void MEDDLY::expert_forest::uncacheNode(int p)
   fflush(stdout);
 #endif
 
-  if (getCacheCount(p) == 0 && getInCount(p) == 0) {
+  if (getCacheCount(p) == 0 && readInCount(p) == 0) {
     deleteOrphanNode(p);
   }
 }

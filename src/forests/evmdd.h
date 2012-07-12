@@ -40,7 +40,11 @@
 #ifndef EVMDD_H
 #define EVMDD_H
 
+// #define PROPER_INHERITANCE
+
+#ifndef PROPER_INHERITANCE
 #include "mt.h"
+#endif
 
 #define SORT_BUILD
 
@@ -57,12 +61,18 @@ namespace MEDDLY {
 
 int binarySearch(const int* a, int sz, int find);
 
+#ifdef PROPER_INHERITANCE
+class MEDDLY::evmdd_forest : public expert_forest {
+#else
 class MEDDLY::evmdd_forest : public mt_forest {
+#endif
   public:
     evmdd_forest(int dsl, domain *d, range_type t,
         edge_labeling el, const policies &p);
-    ~evmdd_forest();
+    virtual ~evmdd_forest();
 
+  // ------------------------------------------------------------
+  // still to be organized:
     virtual void getDefaultEdgeValue(int& n) const { n = INF; }
     virtual void getIdentityEdgeValue(int& n) const { n = 0; }
     virtual void getDefaultEdgeValue(float& n) const { n = NAN; }
@@ -71,11 +81,20 @@ class MEDDLY::evmdd_forest : public mt_forest {
     virtual void initEdgeValues(int p) = 0;
 
   protected:
+    void setAllEdgeValues(int p, int value);
+    void setAllEdgeValues(int p, float fvalue);
+    void setAllDownPtrs(int p, int value);
+    void setAllDownPtrsWoUnlink(int p, int value);
+
+#ifndef PROPER_INHERITANCE
     using mt_forest::createTempNode;
+#endif
     virtual int createTempNode(int k, int sz, bool clear = true);
 
+#ifdef ACCUMULATE_ON
     // Enlarges a temporary node, if new size is greater than old size.
     virtual void resizeNode(int node, int size);
+#endif
 
     virtual int doOp(int a, int b) const = 0;
     virtual float doOp(float a, float b) const = 0;

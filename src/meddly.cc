@@ -391,6 +391,19 @@ MEDDLY::op_initializer* MEDDLY::makeBuiltinInitializer()
   return new builtin_initializer(0);
 }
 
+void MEDDLY::settings::init(const settings &s)
+{
+  operationBuilder = op_initializer::copy(s.operationBuilder);
+  computeTable = s.computeTable;
+  mddDefaults = s.mddDefaults;
+  mxdDefaults = s.mxdDefaults;
+}
+
+void MEDDLY::settings::clear()
+{
+  op_initializer::recycle(operationBuilder);
+}
+
 //----------------------------------------------------------------------
 // front end - initialize and cleanup of library
 //----------------------------------------------------------------------
@@ -452,8 +465,9 @@ void MEDDLY::cleanup()
   delete operation::Monolithic_CT;
   operation::Monolithic_CT = 0;
 
-  if (meddlySettings.operationBuilder) 
+  if (meddlySettings.operationBuilder) {
     meddlySettings.operationBuilder->cleanupChain();
+  }
 
   libraryRunning = 0;
 }

@@ -72,6 +72,7 @@ void MEDDLY::mtmdd_forest::expandCountAndSlotArrays(int size)
   countSize = newCountSize;
 }
 
+#ifdef ACCUMULATE_ON
 
 void MEDDLY::mtmdd_forest::resizeNode(int p, int size)
 {
@@ -123,6 +124,7 @@ void MEDDLY::mtmdd_forest::resizeNode(int p, int size)
   MEDDLY_DCASSERT(size == getFullNodeSize(p));
 }
 
+#if 0
 
 int MEDDLY::mtmdd_forest::reduceNode(int p)
 {
@@ -276,6 +278,8 @@ int MEDDLY::mtmdd_forest::reduceNode(int p)
   return p;
 }
 
+#endif
+#endif
 
 int MEDDLY::mtmdd_forest::createNode(int k, int index, int dptr)
 {

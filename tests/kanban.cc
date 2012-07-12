@@ -66,6 +66,7 @@ long buildReachset(int N, bool useSat)
   forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge init_state(mdd);
   mdd->createEdge(&initial, 1, init_state);
+  delete[] initial;
 
   // Build next-state function
   forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);

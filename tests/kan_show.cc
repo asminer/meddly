@@ -66,6 +66,7 @@ dd_edge buildReachset(domain* d, int N)
   forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge init_state(mdd);
   mdd->createEdge(&initial, 1, init_state);
+  delete[] initial;
 
   // Build next-state function
   forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
@@ -75,7 +76,6 @@ dd_edge buildReachset(domain* d, int N)
   dd_edge reachable(mdd);
   apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
   
-  delete[] initial;
   return reachable;
 }
 

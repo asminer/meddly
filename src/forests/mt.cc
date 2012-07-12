@@ -66,51 +66,26 @@ MEDDLY::mt_forest::mt_forest(int dsl, domain *d, bool rel, range_type t,
   edge_labeling ev, const policies &p)
 : expert_forest(dsl, d, rel, t, ev, p)
 {
-  // unique = new mdd_hash_table<mt_forest> (this);
-
-  delete_terminal_nodes = false;
-
   counting = false;
 
   dptrsSize = 0;
   dptrs = 0;
 
+#ifdef ACCUMULATE_ON
   nodeA = 0;
   nodeB = 0;
+#endif
 }
 
 
 MEDDLY::mt_forest::~mt_forest()
 {
+#ifdef ACCUMULATE_ON
   if (nodeA) delete nodeA;
   if (nodeB) delete nodeB;
-
-  // setting delete_terminal_nodes will ensure that all nodes in compute
-  // tables are removed during garbage collection.
-  delete_terminal_nodes = true;
-  // unlink all nodes that are being stored at the respective levels
-  clearLevelNodes();
-
-  /*
-
-  // All these things should now be unnecessary...
-
-  // remove all disconnected nodes
-  gc(true);
-
-  if (stats.active_nodes != 0) {
-    printf("MEDDLY ALERT: In %s, active_nodes > 0.\n", __func__);
-    printf("This usually means that your application is still referring\n");
-    printf("to one or more MDD nodes. ");
-    printf("Fixing this may benefit your application.\n");
-#ifdef DEBUG_GC
-    printf("%p: active %ld, zombie %ld, orphan %ld\n",
-        this, active_nodes, zombie_nodes, orphan_nodes);
 #endif
-    clearAllNodes();
-    gc(true);
-  }
-  */
+
+  clearLevelNodes();
 
   if (dptrsSize > 0) {
     free(dptrs);
@@ -626,6 +601,7 @@ void MEDDLY::mt_forest::createSubMatrix(const bool* const* vlist,
 #endif
 
 
+/*
 void MEDDLY::mt_forest::clearAllNodes()
 {
   int level = getExpertDomain()->getNumVariables();
@@ -655,7 +631,7 @@ void MEDDLY::mt_forest::clearAllNodes()
     level--;
   }
 }
-
+*/
 
 // *********************************************************************
 // TODO: test this out
@@ -716,13 +692,6 @@ int MEDDLY::mt_forest::getLevelMaxBound(int k) const
             getMxdLevelMaxBound(k):
             getMddLevelMaxBound(k);
 }
-
-/*
-void MEDDLY::mt_forest::showAll() const
-{
-  dumpInternal(stderr);
-}
-*/
 
 int ifTermGetInt(const MEDDLY::mt_forest *nm, int node)
 {
@@ -856,204 +825,11 @@ void MEDDLY::mt_forest::showNode(FILE *s, int p, int verbose) const
   }
 }
 
-/*
-void MEDDLY::mt_forest::showNode(int p) const
-{
-  MEDDLY_DCASSERT(isEVPlus() || isEVTimes());
-  if (isTerminalNode(p)) {
-    fprintf(stderr, "(terminal)");
-    return;
-  }
-  if (isDeletedNode(p)) {
-    fprintf(stderr, "DELETED");
-    return;
-  }
-  int a = getNodeOffset(p);
-  int l = getNodeLevel(p);
-  int p_width = digits(getLastNode());
-  int l_width = digits(getNumVariables());
-  int* data = levels[l].data;
-  fprintf(stderr, "node: %*d level: %*d", p_width, p, l_width, ABS(l));
-  if (getNodeLevel(p) < 0)
-    fprintf(stderr, "'");
-  else
-    fprintf(stderr, " ");
-  fprintf(stderr, " in: %*d", p_width, data[a]);
-  if (isSparseNode(p)) {
-    // sparse
-    fprintf(stderr, " nnz : %*d down: (", p_width, getSparseNodeSize(p));
-    for (int z=0; z<getSparseNodeSize(p); z++) {
-      if (z) fprintf(stderr, ", ");
-      fprintf(stderr, "%*d:%*d",
-          p_width, getSparseNodeIndex(p, z),
-          p_width, getSparseNodeDownPtr(p, z));
-    }
-    fprintf(stderr, ")");
-  } else {
-    int size = *(getNodeAddress(p) + 2);
-    // fprintf(stderr, " size: %*d down: [", p_width, getFullNodeSize(p));
-    fprintf(stderr, " size: %*d down: [", p_width, size);
-    for (int i=0; i<getFullNodeSize(p); i++) {
-      if (i) fprintf(stderr, "|");
-      fprintf(stderr, "%*d", p_width, getFullNodeDownPtr(p, i));
-    }
-    fprintf(stderr, "]");
-  }
-}
-*/
-
 // ------------------------------------------------------------------
 //  Protected methods
 // ------------------------------------------------------------------
 
-void MEDDLY::mt_forest::deleteNode(int p)
-{
-  MEDDLY_DCASSERT(!isTerminalNode(p));
-  MEDDLY_DCASSERT(getInCount(p) == 0);
-  MEDDLY_DCASSERT(isActiveNode(p));
-
-#ifdef DEVELOPMENT_CODE
-  validateIncounts();
-#endif
-
-  int* foo = getNodeAddress(p);
-  int k = getNodeLevel(p);
-
-  // remove from unique table (only applicable to reduced nodes)
-  if (isReducedNode(p)) {
-    nodeFinder key(this, p);
-#ifdef DEVELOPMENT_CODE
-    if (unique->find(key) != p) {
-      fprintf(stderr, "Error in deleteNode\nFind: %d\np: %d\n",
-        unique->find(key), p);
-      dumpInternal(stdout);
-      MEDDLY_DCASSERT(false);
-    }
-#endif
-
-#ifdef TRACK_DELETIONS
-    showNode(stdout, p);
-#endif
-
-#ifdef DEVELOPMENT_CODE
-    int x = unique->remove(key.hash(), p);
-    MEDDLY_DCASSERT(p == x);
-#else
-    unique->remove(key.hash(), p);
-#endif
-
-#ifdef TRACK_DELETIONS
-    printf("%s: p = %d, unique->remove(p) = %d\n", __func__, p, x);
-    fflush(stdout);
-#endif
-
-    MEDDLY_DCASSERT(address[p].cache_count == 0);
-  }
-  else {
-    // Temporary node
-    // TODO:
-    // clear cache of corresponding temporary node?
-    decrTempNodeCount(k);
-  }
-
-  // unlink children
-  const int nDptrs = ABS(foo[2]);
-  int* downptr = foo + 3 + (foo[2] < 0? nDptrs: 0);
-  int* stop = downptr + nDptrs;
-#if ENABLE_IN_COUNTING
-  while (downptr < stop) {
-    int temp = *downptr;
-    *downptr++ = 0;
-    unlinkNode(temp);
-  }
-#else
-  while (downptr < stop) {
-    unlinkNode(*downptr++);
-  }
-#endif
-
-  // Recycle node memory
-  levels[k].recycleNode(getNodeOffset(p));
-
-  // recycle the index
-  freeActiveNode(p);
-
-  if (levels[k].compactLevel) levels[k].compact(address);
-
-#ifdef DEVELOPMENT_CODE
-  validateIncounts();
-#endif
-
-}
-
-void MEDDLY::mt_forest::zombifyNode(int p)
-{
-  MEDDLY_DCASSERT(isActiveNode(p));
-  MEDDLY_DCASSERT(!isTerminalNode(p));
-  MEDDLY_DCASSERT(isReducedNode(p));
-  MEDDLY_DCASSERT(getCacheCount(p) > 0);  // otherwise this node should be deleted
-  MEDDLY_DCASSERT(getInCount(p) == 0);
-  MEDDLY_DCASSERT(address[p].cache_count > 0);
-
-  stats.zombie_nodes++;
-  levels[getNodeLevel(p)].zombie_nodes++;
-  stats.decActive(1);
-
-  // mark node as zombie
-  address[p].cache_count = -address[p].cache_count;
-
-  nodeFinder key(this, p);
-#ifdef DEVELOPMENT_CODE 
-  if (unique->find(key) != p) {
-    fprintf(stderr, "Fail: can't find reduced node %d; got %d\n", p, unique->find(key));
-    dumpInternal(stderr);
-    MEDDLY_DCASSERT(false);
-  }
-  int x = unique->remove(key.hash(), p);
-  MEDDLY_DCASSERT(x==p);
-#else
-  unique->remove(key.hash(), p);
-#endif
-
-  int node_level = getNodeLevel(p);
-  int node_offset = getNodeOffset(p);
-  int* foo = getNodeAddress(p);
-
-  address[p].offset = 0;
-
-  // unlinkNode children
-  if (foo[2] < 0) {
-    // Sparse encoding
-    int* downptr = foo + 3 - foo[2];
-    int* stop = downptr - foo[2];
-    for (; downptr < stop; ++downptr) {
-#if ENABLE_IN_COUNTING
-      int temp = *downptr;
-      *downptr = 0;
-      unlinkNode(temp);
-#else
-      unlinkNode(*downptr);
-#endif
-    }
-  } else {
-    // Full encoding
-    int* downptr = foo + 3;
-    int* stop = downptr + foo[2];
-    for (; downptr < stop; ++downptr) {
-#if ENABLE_IN_COUNTING
-      int temp = *downptr;
-      *downptr = 0;
-      unlinkNode(temp);
-#else
-      unlinkNode(*downptr);
-#endif
-    }
-  }
-  // Recycle node memory
-  levels[node_level].recycleNode(node_offset);
-}
-
-
+/*
 void MEDDLY::mt_forest::removeZombies(int max_zombies) {
 #if 1
   return;
@@ -1082,6 +858,7 @@ void MEDDLY::mt_forest::removeZombies(int max_zombies) {
   }
 #endif
 }
+*/
 
 void MEDDLY::mt_forest::compareCacheCounts(int p)
 {
@@ -1133,57 +910,6 @@ void MEDDLY::mt_forest::compareCacheCounts(int p)
 }
 
 
-void MEDDLY::mt_forest::validateIncounts()
-{
-#if ENABLE_IN_COUNTING
-
-  // Inspect every active node's down pointers to determine
-  // the incoming count for every active node.
-  
-  unsigned sz = getLastNode() + 1;
-  unsigned in_count[sz];
-  memset(in_count, 0, sizeof(unsigned) * sz);
-  const int *dptrs = NULL;
-  for (int i = 0; i < sz; ++i) {
-    if (isActiveNode(i) && !(isTerminalNode(i))) {
-      // count down-pointers
-      if (isFullNode(i)) {
-        dptrs = getFullNodeDownPtrsReadOnly(i);
-        for (int j = getFullNodeSize(i) - 1; j >=0 ; --j) {
-          if (isTerminalNode(dptrs[j])) continue;
-          MEDDLY_CHECK_RANGE(0, dptrs[j], sz);
-          in_count[dptrs[j]]++;
-        }
-      } else {
-        MEDDLY_DCASSERT(isSparseNode(i));
-        dptrs = getSparseNodeDownPtrs(i);
-        for (int j = getSparseNodeSize(i) - 1; j >= 0; --j) {
-          if (isTerminalNode(dptrs[j])) continue;
-          MEDDLY_CHECK_RANGE(0, dptrs[j], sz);
-          in_count[dptrs[j]]++;
-        }
-      }
-    }
-  }
-
-  // Validate the incoming count stored with each active node using the
-  // in_count array computed above
-  for (int i = 0; i < sz; ++i) {
-    if (isActiveNode(i) && !(isTerminalNode(i))) {
-      assert(in_count[i] <= getInCount(i));
-    }
-  }
-  
-#endif
-}
-
-
-/*
-void MEDDLY::mt_forest::showLevel(FILE *s, int k) const {
-  dumpInternalLevel(s, k);
-}
-*/
-
 long MEDDLY::mt_forest::getHoleMemoryUsage() const {
   long sum = 0;
   for (int i=getMinLevelIndex(); i<=getNumVariables(); i++)
@@ -1194,6 +920,7 @@ long MEDDLY::mt_forest::getHoleMemoryUsage() const {
 
 #ifdef USE_OLD_TEMPNODES
 
+/*
 void MEDDLY::mt_forest::validateDownPointers(int p, bool recursive)
 {
   if (isTerminalNode(p)) return;
@@ -1273,6 +1000,7 @@ void MEDDLY::mt_forest::validateDownPointers(int p, bool recursive)
     }
   }
 }
+*/
 
 #endif
 
@@ -1410,7 +1138,7 @@ int MEDDLY::mt_forest::accumulateMdd(int a, int b, bool cBM)
   int aHeight = getNodeHeight(a);
   int bHeight = getNodeHeight(b);
 
-  if (getInCount(a) > 1) cBM = true;
+  if (readInCount(a) > 1) cBM = true;
 
   if (aHeight > bHeight) {
     // b's levels were skipped.
@@ -1532,7 +1260,7 @@ int MEDDLY::mt_forest::accumulate(int tempNode, bool cBM,
   int inCount = 0;
 
   if (level == nodeLevel) {
-    inCount = getInCount(tempNode);
+    inCount = readInCount(tempNode);
     dptr = getDownPtr(tempNode, index);
   }
   else {
@@ -1612,71 +1340,6 @@ bool MEDDLY::mt_forest::accumulate(int& tempNode, int* element)
   return accumulateMintermAddedElement;
 }
 
-#endif
-
-/*
-int MEDDLY::mt_forest::recursiveReduceNode(std::map<int, int>& cache,
-    int root)
-{
-  MEDDLY_DCASSERT(!isReducedNode(root));
-  MEDDLY_DCASSERT(isFullNode(root));
-
-  // Check cache for result
-  std::map<int, int>::iterator iter = cache.find(root);
-  if (iter != cache.end()) {
-    // Cache hit
-    linkNode(iter->second);
-    unlinkNode(root);
-    return iter->second;
-  }
-
-  int size = getFullNodeSize(root);
-
-  for (int i = 0; i < size; ++i)
-  {
-    int dptr = getFullNodeDownPtr(root, i);
-
-    // Ignore terminal nodes and reduced nodes
-    if (isReducedNode(dptr)) continue;
-
-    int temp = recursiveReduceNode(cache, dptr);
-    // At this point, temp's incount has been increased and
-    // dptr's incount has been decreased by 1.
-
-    MEDDLY_DCASSERT(isReducedNode(temp));
-
-    // Using WoUnlink, since dptr's has already been decreased
-    setDownPtrWoUnlink(root, i, temp);
-    // Unlinking temp because setDownPtr increases temp's incount by 1
-    unlinkNode(temp);
-  }
-
-  int result = reduceNode(root);
-
-  // Save result in cache
-  if (isActiveNode(root)) cache[root] = result;
-
-  return result;
-}
-
-
-int MEDDLY::mt_forest::recursiveReduceNode(int tempNode, bool clearCache)
-{
-  // Recursive procedure:
-  // Start at root (i.e. tempNode).
-  // Build a temporary node for root.
-  // -- Build reduced nodes for each child(root).
-  // Keep track of duplicates via a compute cache which maps
-  //   each temporary node to a reduced node.
-
-  MEDDLY_DCASSERT(!isReducedNode(tempNode));
-
-  std::map<int, int>& cache = recursiveReduceCache;
-  if (clearCache) cache.clear();
-  return recursiveReduceNode(cache, tempNode);
-}
-*/
-
 int MEDDLY::mt_forest::createTempNode(int k, int sz, bool clear)
 {
   MEDDLY_DCASSERT(k != 0);
@@ -1720,50 +1383,14 @@ int MEDDLY::mt_forest::createTempNode(int k, int sz, bool clear)
   return p;
 }
 
+#endif // ACCUMULATE_ON
 
-void MEDDLY::mt_forest::handleNewOrphanNode(int p) {
-  MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
-  MEDDLY_DCASSERT(isActiveNode(p));
-  MEDDLY_DCASSERT(!isTerminalNode(p));
-  MEDDLY_DCASSERT(getInCount(p) == 0);
 
-  // insted of orphan_nodes++ here; do it only when the orphan is not going
-  // to get deleted or converted into a zombie
-
-  // Two possible scenarios:
-  // (1) a reduced node, or
-  // (2) a temporary node ready to be deleted.
-  MEDDLY_DCASSERT(isReducedNode(p) || getCacheCount(p) == 0);
-
-  if (getCacheCount(p) == 0) {
-    // delete node
-    // this should take care of the temporary nodes also
-#ifdef TRACK_DELETIONS
-    cout << "Deleting node " << p << " from unlinkNode\t";
-    showNode(stdout, p);
-    cout << "\n";
-    cout.flush();
-#endif
-    deleteNode(p);
-  }
-  else if (isPessimistic()) {
-    // zombify node
-    zombifyNode(p);
-  }
-  else {
-    stats.orphan_nodes++;
-  }
-
-#if 0
-  if (getOrphanNodeCount() > 100000)
-    smart_cast<expert_compute_manager*>(MEDDLY::getComputeManager())
-      ->removeStales(this);
-#endif
-}
 
 
 // ********************* utils ************************
 
+/*
 bool MEDDLY::mt_forest::singleNonZeroAt(int p, int val, int index) const
 {
   MEDDLY_DCASSERT(isActiveNode(p));
@@ -1834,4 +1461,4 @@ bool MEDDLY::mt_forest::checkForReductions(int p, int nnz, int& result)
 
   return true;
 }
-
+*/

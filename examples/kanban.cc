@@ -112,6 +112,7 @@ int main(int argc, const char** argv)
   int* sizes = new int[16];
   for (int i=15; i>=0; i--) sizes[i] = N+1;
   domain* d = createDomainBottomUp(sizes, 16);
+  delete[] sizes;
 
   // Build initial state
   int* initial = new int[17];
@@ -120,6 +121,7 @@ int main(int argc, const char** argv)
   forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge init_state(mdd);
   mdd->createEdge(&initial, 1, init_state);
+  delete[] initial;
 
   // Build next-state function
   forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);

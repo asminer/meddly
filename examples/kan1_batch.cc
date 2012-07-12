@@ -539,7 +539,7 @@ void testIndexSet(domain* d, const dd_edge& mdd)
     {
       fprintf(stderr, "Node %d: Cardinality %d, Height: %d, InCount: %d\n",
           *iter, ef->getIndexSetCardinality(*iter),
-          ef->getNodeHeight(*iter), ef->getInCount(*iter));
+          ef->getNodeHeight(*iter), ef->readInCount(*iter));
     }
   }
 }

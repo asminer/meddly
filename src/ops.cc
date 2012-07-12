@@ -366,11 +366,13 @@ void MEDDLY::numerical_operation::compute(double* y, const double* x)
 
 MEDDLY::op_initializer::op_initializer(op_initializer* bef)
 {
+  refcount = 1;
   before = bef;
 }
 
 MEDDLY::op_initializer::~op_initializer()
 {
+  MEDDLY_DCASSERT(0==refcount);
   delete before;
 }
 
