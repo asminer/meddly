@@ -169,7 +169,7 @@ int MEDDLY::preimage_mdd::compute_rec(int mdd, int mxd)
   expert_forest::nodeBuilder& nb = resF->useNodeBuilder(rLevel, rSize);
 
   // Initialize mdd reader
-  expert_forest::nodeReader* A = (mddLevel < rLevel)
+  node_reader* A = (mddLevel < rLevel)
     ? arg1F->initRedundantReader(rLevel, mdd, true)
     : arg1F->initNodeReader(mdd, true);
 
@@ -189,14 +189,14 @@ int MEDDLY::preimage_mdd::compute_rec(int mdd, int mxd)
     for (int i=0; i<rSize; i++) nb.d(i) = 0;
 
     // Initialize mxd reader, note we might skip the unprimed level
-    expert_forest::nodeReader* Ru = (mxdLevel < 0)
+    node_reader* Ru = (mxdLevel < 0)
       ? arg2F->initRedundantReader(rLevel, mxd, false)
       : arg2F->initNodeReader(mxd, false);
 
     // loop over mxd "rows"
     for (int iz=0; iz<Ru->getNNZs(); iz++) {
       int i = Ru->i(iz);
-      expert_forest::nodeReader* Rp;
+      node_reader* Rp;
       Rp = (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz))))
         ? arg2F->initIdentityReader(rLevel, i, Ru->d(iz), false)
         : arg2F->initNodeReader(Ru->d(iz), false);
@@ -286,7 +286,7 @@ int MEDDLY::postimage_mdd::compute_rec(int mdd, int mxd)
   expert_forest::nodeBuilder& nb = resF->useNodeBuilder(rLevel, rSize);
 
   // Initialize mdd reader
-  expert_forest::nodeReader* A = (mddLevel < rLevel)
+  node_reader* A = (mddLevel < rLevel)
     ? arg1F->initRedundantReader(rLevel, mdd, true)
     : arg1F->initNodeReader(mdd, true);
 
@@ -306,7 +306,7 @@ int MEDDLY::postimage_mdd::compute_rec(int mdd, int mxd)
     for (int i=0; i<rSize; i++) nb.d(i) = 0;
 
     // Initialize mxd reader, note we might skip the unprimed level
-    expert_forest::nodeReader* Ru = (mxdLevel < 0)
+    node_reader* Ru = (mxdLevel < 0)
       ? arg2F->initRedundantReader(rLevel, mxd, false)
       : arg2F->initNodeReader(mxd, false);
 
@@ -314,7 +314,7 @@ int MEDDLY::postimage_mdd::compute_rec(int mdd, int mxd)
     for (int iz=0; iz<Ru->getNNZs(); iz++) {
       int i = Ru->i(iz);
       if (0==A->d(i))   continue; 
-      expert_forest::nodeReader* Rp;
+      node_reader* Rp;
       Rp = (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz))))
         ? arg2F->initIdentityReader(rLevel, i, Ru->d(iz), false)
         : arg2F->initNodeReader(Ru->d(iz), false);

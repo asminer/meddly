@@ -96,6 +96,7 @@ namespace MEDDLY {
   struct settings;
   class expert_variable;
   class expert_domain;
+  class node_reader;
   class expert_forest;
 #ifdef USE_EXPERIMENTAL_TEMPEDGES
   class temp_dd_edge;
@@ -120,7 +121,9 @@ namespace MEDDLY {
   class unique_table;
 
   // ******************************************************************
+  // *                                                                *
   // *                   Named numerical operations                   *
+  // *                                                                *
   // ******************************************************************
 
   /** Computes y = y + xA.
@@ -138,7 +141,9 @@ namespace MEDDLY {
   extern const numerical_opname* MATR_VECT_MULT;
 
   // ******************************************************************
+  // *                                                                *
   // *                      Operation management                      *
+  // *                                                                *
   // ******************************************************************
 
   /// Remove an existing operation from the operation cache.
@@ -230,7 +235,9 @@ namespace MEDDLY {
 
 
 // ******************************************************************
+// *                                                                *
 // *                         ct_object class                        *
+// *                                                                *
 // ******************************************************************
 
 /** Generic objects in compute tables.
@@ -245,7 +252,9 @@ class MEDDLY::ct_object {
 };
 
 // ******************************************************************
+// *                                                                *
 // *                         settings  class                        *
+// *                                                                *
 // ******************************************************************
 
 /** "Global" settings for MEDDLY.
@@ -334,7 +343,9 @@ struct MEDDLY::settings {
 };
   
 // ******************************************************************
+// *                                                                *
 // *                     expert_variable  class                     *
+// *                                                                *
 // ******************************************************************
 
 class MEDDLY::expert_variable : public variable {
@@ -377,7 +388,9 @@ class MEDDLY::expert_variable : public variable {
 
 
 // ******************************************************************
+// *                                                                *
 // *                      expert_domain  class                      *
+// *                                                                *
 // ******************************************************************
 
 class MEDDLY::expert_domain : public domain {
@@ -541,7 +554,102 @@ class MEDDLY::expert_domain : public domain {
 
 
 // ******************************************************************
+// *                                                                *
+// *                       node_reader  class                       *
+// *                                                                *
+// ******************************************************************
+
+/** Class for reading nodes.
+    Ideally - used anywhere we want to read node data.
+    Backend implementation may change :^)
+    For now, implementation is in forest.cc.
+    Readers may be "full" or "sparse",
+    regardless of how the actual node is stored.
+*/
+class MEDDLY::node_reader {
+    public:
+        /** Constructor.
+            The class must be "filled" by a forest befure
+            it can be used, however.
+        */  
+        node_reader();
+
+        /// Destructor.
+        ~node_reader();
+
+        /// Free memory, but don't delete.
+        void clear();
+
+        /// TEMPORARY: for copying
+        void copyFrom(const node_reader &);
+
+        /** Get a downward pointer.
+              @param  n   Which pointer.
+              @return     If this is a full reader, 
+                          return pointer with index n.
+                          If this is a sparse reader,
+                          return the nth non-zero pointer.
+        */
+        inline int d(int n) const {
+          MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
+          return down[n];
+        }
+
+        /** Get the index of the nth non-zero pointer.
+            Use only for sparse readers.
+        */
+        inline int i(int n) const {
+          MEDDLY_DCASSERT(!is_full);
+          MEDDLY_CHECK_RANGE(0, n, nnzs);
+          return index[n];
+        }
+
+        /// Get the level number of this node.
+        inline int getLevel() const {
+          return level;
+        }
+
+        /// Get the size of this node (full readers only).
+        inline int getSize() const {
+          MEDDLY_DCASSERT(is_full);
+          return size;
+        }
+        /// Get the number of nonzeroes of this node (sparse readers only).
+        inline int getNNZs() const {
+          MEDDLY_DCASSERT(!is_full);
+          return nnzs;
+        }
+
+        // For debudding
+        void dump(FILE*) const;
+
+    private:
+        int* down;
+        int* index;
+        int alloc;
+        int size;
+        int nnzs;
+        int level;
+        bool is_full;
+
+        // TBD: eliminate this
+        node_reader* next;    // for recycled list
+
+        /// Called within expert_forest to allocate space.
+        ///   @param  k     Level number.
+        ///   @param  ns    Size of node
+        ///   @param  full  If true, we'll be filling a full reader.
+        ///                 Otherwise it is a sparse one.
+        void resize(int k, int ns, bool full);
+
+        friend class expert_forest; 
+};
+
+
+// ******************************************************************
+// *                                                                *
 // *                      expert_forest  class                      *
+// *                                                                *
 // ******************************************************************
 
 class MEDDLY::expert_forest : public forest
@@ -565,8 +673,8 @@ class MEDDLY::expert_forest : public forest
   // ------------------------------------------------------------
   // forward subclass declarations
   public:
+    class nodeData;
     class nodeBuilder;
-    class nodeReader;
 
   // ------------------------------------------------------------
   // inlined helpers.
@@ -737,59 +845,6 @@ class MEDDLY::expert_forest : public forest
     /// Compute a hash for a node.
     unsigned hashNode(int p) const;
 
-    /** Build a node reader.
-        Safe to use wherever we want to "read" node data.
-          @param  node    A non-terminal node
-          @param  full    Use a full reader or sparse.
-          @return         A node reader struct.
-    */
-    nodeReader* initNodeReader(int node, bool full);
-
-    /** Build a redundant node reader.
-        For convenience.
-          @param  k       Level that was skipped.
-          @param  node    Downward pointer to use.
-          @param  full    Use a full reader or sparse.
-          @return         A node reader struct.
-    */
-    nodeReader* initRedundantReader(int k, int node, bool full);
-
-    /** Build an identity node reader.
-        For convenience.
-          @param  k       Level that was skipped.
-          @param  i       Index of identity reduction
-          @param  node    Downward pointer to use.
-          @param  full    Use a full reader or sparse.
-          @return         A node reader struct.
-    */
-    nodeReader* initIdentityReader(int k, int i, int node, bool full);
-
-    /** Copy a node reader.
-    */
-    inline nodeReader* copyNodeReader(nodeReader *r) {
-      if (0==r) return 0;
-      r->refcount++;
-      return r;
-    }
-
-    /// Recycle a node reader.
-    inline void recycle(nodeReader *r) {
-      if (0==r) return;
-      MEDDLY_DCASSERT(r->refcount);
-      MEDDLY_DCASSERT(0==r->next);
-      r->refcount--;
-      if (0==r->refcount) {
-        if (0==free_reader) {
-          // Don't try to recycle.
-          delete r;
-        } else {
-          MEDDLY_DCASSERT(free_reader);
-          r->next = free_reader[r->level];
-          free_reader[r->level] = r;
-        }
-      }
-    }
-
     /** Check and find the index of a single downward pointer.
 
           @param  node    Node we care about
@@ -821,7 +876,7 @@ class MEDDLY::expert_forest : public forest
 
         This is designed to be used for one or two indexes only.
         For reading all or several downward pointers, a
-        nodeReader should be used instead.
+        node_reader should be used instead.
 
           @param  node    Node to look at
           @param  index   Index of the pointer we want.
@@ -830,6 +885,81 @@ class MEDDLY::expert_forest : public forest
     int getDownPtr(int node, int index) const;
 
 
+
+  // ------------------------------------------------------------
+  // Preferred mechanism for reading nodes
+  public:
+    /** Initialize a node reader.
+          @param  nr      Node reader to fill.
+          @param  node    The node to use.
+          @param  full    true:   Use a full reader.
+                          false:  Use a sparse reader.
+    */
+    void initNodeReader(node_reader &nr, int node, bool full);
+
+    /// Allocate and initialize a node reader.
+    inline node_reader* initNodeReader(int node, bool full) {
+      node_reader* nr = useNodeReader();
+      MEDDLY_DCASSERT(nr);
+      initNodeReader(*nr, node, full);
+      return nr;
+    }
+
+    /** Initialize a redundant node reader.
+        For convenience.
+          @param  nr      Node reader to fill.
+          @param  k       Level that was skipped.
+          @param  node    Downward pointer to use.
+          @param  full    Use a full reader or sparse.
+    */
+    void initRedundantReader(node_reader &nr, int k, int node, bool full);
+
+    /// Allocate and initialize a redundant node reader.
+    inline node_reader* initRedundantReader(int k, int node, bool full) {
+      node_reader* nr = useNodeReader();
+      MEDDLY_DCASSERT(nr);
+      initRedundantReader(*nr, k, node, full);
+      return nr;
+    }
+
+    /** Initialize an identity node reader.
+        For convenience.
+          @param  nr      Node reader to fill.
+          @param  k       Level that was skipped.
+          @param  i       Index of identity reduction
+          @param  node    Downward pointer to use.
+          @param  full    Use a full reader or sparse.
+    */
+    void initIdentityReader(node_reader &nr, int k, int i, int node, bool full);
+
+    /// Allocate and initialize an identity node reader.
+    inline node_reader* initIdentityReader(int k, int i, int node, bool full) {
+      node_reader* nr = useNodeReader();
+      MEDDLY_DCASSERT(nr);
+      initIdentityReader(*nr, k, i, node, full);
+      return nr;
+    }
+
+    /// Reserve memory for a node reader.
+    inline node_reader* useNodeReader() {
+      node_reader* nr;
+      if (free_reader) {
+        nr = free_reader;
+        free_reader = nr->next;
+      } else {
+        nr = new node_reader;
+      }
+      nr->next = 0;
+      return nr;
+    }
+
+    /// Recycle a node reader.
+    inline void recycle(node_reader *r) {
+      if (0==r) return;
+      MEDDLY_DCASSERT(0==r->next);
+      r->next = free_reader;
+      free_reader = r;
+    }
 
   // ------------------------------------------------------------
   // virtual in the base class, but implemented here.
@@ -907,6 +1037,7 @@ class MEDDLY::expert_forest : public forest
         unsigned h;
       public:
         nodeFinder(const expert_forest* p, int n);
+        ~nodeFinder();
         inline unsigned hash() const { return h; }
         inline bool equals(int p) const {
             MEDDLY_DCASSERT(p);
@@ -1206,7 +1337,7 @@ class MEDDLY::expert_forest : public forest
         both for addressing and for bookkeeping purposes.
         This struct holds that information.
     */
-    struct node_data {
+    struct nodeData {
       /**
         Node level
         If the node is active, this indicates node level.
@@ -1248,12 +1379,12 @@ class MEDDLY::expert_forest : public forest
         offset = 0;
       }
 
-    };  // End of node_data struct
+    };  // End of nodeData struct
     // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
   protected:
     /// address info for nodes
-    node_data *address;
+    nodeData *address;
 
   private:
     /// Size of address/next array.
@@ -1270,7 +1401,7 @@ class MEDDLY::expert_forest : public forest
     inline int getFreeNodeHandle() {
       MEDDLY_DCASSERT(address);
       stats.incActive(1);
-      stats.incMemUsed(sizeof(node_data));
+      stats.incMemUsed(sizeof(nodeData));
       while (a_unused > a_last) {
         a_unused = address[a_unused].getNextDeleted();
       }
@@ -1309,7 +1440,7 @@ class MEDDLY::expert_forest : public forest
       MEDDLY_DCASSERT(address);
       MEDDLY_DCASSERT(p>0);
       MEDDLY_DCASSERT(0==address[p].cache_count);
-      stats.decMemUsed(sizeof(node_data));
+      stats.decMemUsed(sizeof(nodeData));
       address[p].setDeleted();
       address[p].setNextDeleted(a_unused);
       a_unused = p;
@@ -1332,7 +1463,7 @@ class MEDDLY::expert_forest : public forest
     inline int getLastNode() const {
       return a_last;
     }
-    inline const node_data& getNode(int p) const {
+    inline const nodeData& getNode(int p) const {
       MEDDLY_DCASSERT(address);
       MEDDLY_CHECK_RANGE(1, p, 1+a_last);
       return address[p];
@@ -1531,7 +1662,7 @@ class MEDDLY::expert_forest : public forest
         int allocNode(int sz, int tail, bool clear);
 
         /// Compact this level.  (Rearrange, to remove all holes.)
-        void compact(node_data* address);
+        void compact(nodeData* address);
 
         /// For debugging.
         void dumpInternal(FILE* s) const;
@@ -1728,7 +1859,7 @@ class MEDDLY::expert_forest : public forest
   protected:  // TBD - make this private
     /// Returns the in-count for a node.
     inline int& getInCount(int p) {
-      const node_data& node = getNode(p);
+      const nodeData& node = getNode(p);
       return levels[node.level].countOf(node.offset);
     }
     inline void incrTempNodeCount(int k) {
@@ -1744,88 +1875,10 @@ class MEDDLY::expert_forest : public forest
   public:
     /// Returns the in-count for a node.
     inline int readInCount(int p) const {
-      const node_data& node = getNode(p);
+      const nodeData& node = getNode(p);
       return levels[node.level].countOf(node.offset);
     }
 
-
-  // ----------------------------------------------------------------- 
-  // | 
-  // |  Interface for reading nodes.
-  // | 
-  public:
-    // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
-    /** Class for reading nodes.
-        Ideally - used anywhere we want to read node data.
-        Backend implementation may change :^)
-    */
-    class nodeReader {
-      public:
-        inline int d(int n) const {
-          MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
-          return down[n];
-        }
-        inline int i(int n) const {
-          MEDDLY_DCASSERT(!is_full);
-          MEDDLY_CHECK_RANGE(0, n, nnzs);
-          return index[n];
-        }
-
-        inline int getLevel() const {
-          return level;
-        }
-
-        inline int getSize() const {
-          MEDDLY_DCASSERT(is_full);
-          return size;
-        }
-        inline int getNNZs() const {
-          MEDDLY_DCASSERT(!is_full);
-          return nnzs;
-        }
-
-        // For debudding
-        void dump(FILE*) const;
-
-      private:
-        int* extra;
-        int* down;
-        int* index;
-        int extra_size;
-        int alloc;
-        int size;
-        int nnzs;
-        int level;
-        unsigned refcount;
-        bool is_full;
-        nodeReader* next;  // free list
-        nodeReader(int k, int es);
-        ~nodeReader();
-        void resize(int ns, bool full);
-
-        friend class expert_forest;
-    };
-    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-  private:
-    nodeReader** raw_readers;
-    /// Free node readers, by level.  The array is shifted.
-    nodeReader** free_reader;
-
-  private:
-    inline nodeReader* grabNodeReader(int k) {
-      nodeReader* nr;
-      if (free_reader[k]) {
-        nr = free_reader[k];
-        free_reader[k] = nr->next;
-      } else {
-        level_data& ld = levels[k];
-        nr = new nodeReader(k, ld.unhashedHeader + ld.hashedHeader);
-      }
-      nr->next = 0;
-      nr->refcount = 1;
-      return nr;
-    }
 
   // ----------------------------------------------------------------- 
   // | 
@@ -2023,6 +2076,9 @@ class MEDDLY::expert_forest : public forest
     bool terminalNodesAreStale;
 
   private:
+    /// List of recycled node readers.
+    node_reader* free_reader;
+
     // Garbage collection in progress
     bool performing_gc;
 
@@ -2031,9 +2087,10 @@ class MEDDLY::expert_forest : public forest
     int  in_val_size;
 
     class nodecounter : public edge_visitor {
+        expert_forest* parent;
         int* counts;
       public:
-        nodecounter(int* c);
+        nodecounter(expert_forest*p, int* c);
         virtual ~nodecounter();
         virtual void visit(dd_edge &e);
     };
@@ -2128,7 +2185,9 @@ class MEDDLY::temp_dd_edge {
 
 
 // ******************************************************************
+// *                                                                *
 // *                          opname class                          *
+// *                                                                *
 // ******************************************************************
 
 /// Class for names of operations.
@@ -2148,7 +2207,9 @@ class MEDDLY::opname {
 };
 
 // ******************************************************************
+// *                                                                *
 // *                       unary_opname class                       *
+// *                                                                *
 // ******************************************************************
 
 /// Unary operation names.
@@ -2165,7 +2226,9 @@ class MEDDLY::unary_opname : public opname {
 };
 
 // ******************************************************************
+// *                                                                *
 // *                      binary_opname  class                      *
+// *                                                                *
 // ******************************************************************
 
 /// Binary operation names.
@@ -2180,7 +2243,9 @@ class MEDDLY::binary_opname : public opname {
 
 
 // ******************************************************************
+// *                                                                *
 // *                     numerical_opname class                     *
+// *                                                                *
 // ******************************************************************
 
 /// Numerical operation names.
@@ -2201,7 +2266,9 @@ class MEDDLY::numerical_opname : public opname {
 
 
 // ******************************************************************
+// *                                                                *
 // *                      compute_table  class                      *
+// *                                                                *
 // ******************************************************************
 
 /** Interface for compute tables.
@@ -2354,7 +2421,9 @@ class MEDDLY::compute_table {
 };
 
 // ******************************************************************
+// *                                                                *
 // *                        operation  class                        *
+// *                                                                *
 // ******************************************************************
 
 /** Generic operation.
@@ -2507,7 +2576,9 @@ class MEDDLY::operation {
 };
 
 // ******************************************************************
+// *                                                                *
 // *                     unary_operation  class                     *
+// *                                                                *
 // ******************************************************************
 
 /** Mechanism to apply a unary operation in a specific forest.
@@ -2551,7 +2622,9 @@ class MEDDLY::unary_operation : public operation {
 };
 
 // ******************************************************************
+// *                                                                *
 // *                     binary_operation class                     *
+// *                                                                *
 // ******************************************************************
 
 /** Mechanism to apply a binary operation in a specific forest.
@@ -2595,7 +2668,9 @@ class MEDDLY::binary_operation : public operation {
 };
 
 // ******************************************************************
+// *                                                                *
 // *                   numerical_operation  class                   *
+// *                                                                *
 // ******************************************************************
 
 /** Mechanism to apply numerical operations to specific edges.
@@ -2611,7 +2686,9 @@ class MEDDLY::numerical_operation : public operation {
 };
 
 // ******************************************************************
+// *                                                                *
 // *                      op_initializer class                      *
+// *                                                                *
 // ******************************************************************
 
 /** Preferred mechanism for users to initialize their own operations.

@@ -96,11 +96,11 @@ int MEDDLY::generic_binary_mdd::compute(int a, int b)
     nb = resF->useNodeBuilder(resultLevel, resultSize);
 
   // Initialize readers
-  expert_forest::nodeReader* A = (aLevel < resultLevel) 
+  node_reader* A = (aLevel < resultLevel) 
     ? arg1F->initRedundantReader(resultLevel, a, true)
     : arg1F->initNodeReader(a, true);
 
-  expert_forest::nodeReader* B = (bLevel < resultLevel) 
+  node_reader* B = (bLevel < resultLevel) 
     ? arg2F->initRedundantReader(resultLevel, b, true)
     : arg2F->initNodeReader(b, true);
 
@@ -206,7 +206,7 @@ int MEDDLY::generic_binary_mxd::compute(int in, int a, int b)
   bool needsIndex = false;
  
   // Initialize readers
-  expert_forest::nodeReader* A;
+  node_reader* A;
   if (aLevel == resultLevel) {
     A = arg1F->initNodeReader(a, true);
   } else if (resultLevel>0 || arg1F->isFullyReduced()) {
@@ -216,7 +216,7 @@ int MEDDLY::generic_binary_mxd::compute(int in, int a, int b)
     needsIndex = true;
   }
 
-  expert_forest::nodeReader* B;
+  node_reader* B;
   if (bLevel == resultLevel) {
     B = arg2F->initNodeReader(b, true);
   } else if (resultLevel>0 || arg2F->isFullyReduced()) {
@@ -335,7 +335,7 @@ int MEDDLY::generic_binbylevel_mxd
   bool canSaveResult = true;
 
   // Initialize readers
-  expert_forest::nodeReader* A;
+  node_reader* A;
   if (aLevel == resultLevel) {
     A = arg1F->initNodeReader(a, true);
   } else if (resultLevel>0 || arg1F->isFullyReduced()) {
@@ -345,7 +345,7 @@ int MEDDLY::generic_binbylevel_mxd
     canSaveResult = false;
   }
 
-  expert_forest::nodeReader* B;
+  node_reader* B;
   if (bLevel == resultLevel) {
     B = arg2F->initNodeReader(b, true);
   } else if (resultLevel>0 || arg2F->isFullyReduced()) {

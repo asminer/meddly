@@ -51,6 +51,7 @@ namespace MEDDLY {
   struct statistics;
   class forest;
   class expert_forest;
+  class node_reader;
   class variable;
   class domain;
   class dd_edge;
@@ -1842,12 +1843,15 @@ class MEDDLY::dd_edge {
           return (k<0) ? (-k) : (-k-1);
         }
 
+        // Parent edge.
         dd_edge*  e;
+
+        // Iterator type.
         iter_type type;
 
         // Path, as list of node readers
-        void**    rawpath;
-        void**    path;   // rawpath, shifted so we can use path[-k]
+        node_reader*    rawpath;
+        node_reader*    path;   // rawpath, shifted so we can use path[-k]
         // Path nnz pointers
         int*      rawnzp;
         int*      nzp;   // rawnzp, shifted so we can use nzp[-k]

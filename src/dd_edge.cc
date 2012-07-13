@@ -51,7 +51,6 @@ inline void unlinkNode(MEDDLY::forest* p, int node)
 // *                                                                *
 // ******************************************************************
 
-
 // Constructor.
 MEDDLY::dd_edge::dd_edge(forest* p)
 : parent(p),
@@ -363,11 +362,10 @@ MEDDLY::dd_edge::iterator::iterator(dd_edge* _e, iter_type t, const int* minterm
   int N = e->parent->getDomain()->getNumVariables();
   maxLevel = N;
   if (e->parent->isForRelations()) {
-    rawpath = new void*[2*N+1];
+    rawpath = new node_reader[2*N+1];
     rawnzp = new int[2*N+1];
     rawindex = new int[2*N+1];
     for (int i=2*N; i>=0; i--) {
-      rawpath[i] = 0;
       rawnzp[i] = -1;
       rawindex[i] = -1;
     }
@@ -376,11 +374,10 @@ MEDDLY::dd_edge::iterator::iterator(dd_edge* _e, iter_type t, const int* minterm
     index = rawindex + N;
     minLevel = -N;
   } else {
-    rawpath = new void*[N+1];
+    rawpath = new node_reader[N+1];
     rawnzp = new int[N+1];
     rawindex = new int[N+1];
     for (int i=N; i>=0; i--) {
-      rawpath[i] = 0;
       rawnzp[i] = -1;
       rawindex[i] = -1;
     }
@@ -445,15 +442,6 @@ MEDDLY::dd_edge::iterator::operator=(const iterator& iter)
 
 void MEDDLY::dd_edge::iterator::destroy()
 {
-  if (e) {
-    expert_forest* f = (expert_forest*) e->parent;
-    MEDDLY_DCASSERT(f);
-    for (int k=minLevel; k<=maxLevel; k++) {
-      expert_forest::nodeReader* nlk = (expert_forest::nodeReader*) path[k];
-      f->recycle(nlk);
-      path[k] = 0;
-    }
-  }
   delete[] rawpath;
   delete[] rawnzp;
   delete[] rawindex;
@@ -492,11 +480,11 @@ void MEDDLY::dd_edge::iterator::init(const iterator& iter)
   int N = f->getNumVariables();
   maxLevel = N;
   if (f->isForRelations()) {
-    rawpath = new void*[2*N+1];
+    rawpath = new node_reader[2*N+1];
     rawnzp = new int[2*N+1];
     rawindex = new int[2*N+1];
     for (int i=2*N; i>=0; i--) {
-      rawpath[i] = f->copyNodeReader((expert_forest::nodeReader*)iter.rawpath[i]);
+      rawpath[i].copyFrom(iter.rawpath[i]);
     }
     memcpy(rawnzp, iter.rawnzp, (2*N+1)*sizeof(int));
     memcpy(rawindex, iter.rawindex, (2*N+1)*sizeof(int));
@@ -505,11 +493,11 @@ void MEDDLY::dd_edge::iterator::init(const iterator& iter)
     index = rawindex + N;
     minLevel = -N;
   } else {
-    rawpath = new void*[N+1];
+    rawpath = new node_reader[N+1];
     rawnzp = new int[N+1];
     rawindex = new int[N+1];
     for (int i=N; i>=0; i--) {
-      rawpath[i] = f->copyNodeReader((expert_forest::nodeReader*)iter.rawpath[i]);
+      rawpath[i].copyFrom(iter.rawpath[i]);
     }
     memcpy(rawnzp, iter.rawnzp, (N+1)*sizeof(int));
     memcpy(rawindex, iter.rawindex, (N+1)*sizeof(int));
@@ -621,15 +609,12 @@ bool MEDDLY::dd_edge::iterator::incrNonRelation()
   int down = 0;
   for (k=1; k<=maxLevel; k++) {
     nzp[k]++;
-    expert_forest::nodeReader* nlk = (expert_forest::nodeReader*) path[k];
-    if (nzp[k] < nlk->getNNZs()) {
-      index[k] = nlk->i(nzp[k]);
-      down = nlk->d(nzp[k]);
+    if (nzp[k] < path[k].getNNZs()) {
+      index[k] = path[k].i(nzp[k]);
+      down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
       break;
     }
-    f->recycle(nlk);
-    path[k] = 0;
   }
   if (k>maxLevel) {
     return false;
@@ -653,15 +638,12 @@ bool MEDDLY::dd_edge::iterator::incrRelation()
   int down = 0;
   for (;;) { 
     nzp[k]++;
-    expert_forest::nodeReader* nlk = (expert_forest::nodeReader*) path[k];
-    if (nzp[k] < nlk->getNNZs()) {
-      index[k] = nlk->i(nzp[k]);
-      down = nlk->d(nzp[k]);
+    if (nzp[k] < path[k].getNNZs()) {
+      index[k] = path[k].i(nzp[k]);
+      down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
       break;
     }
-    f->recycle(nlk);
-    path[k] = 0;
     if (k<0) {
       k = -k;
     } else {
@@ -686,15 +668,12 @@ bool MEDDLY::dd_edge::iterator::incrRow()
   int down = 0;
   // Only try to advance the row, because the column is fixed.
   for (int k=1; k<=maxLevel; k++) { 
-    expert_forest::nodeReader* nlk = (expert_forest::nodeReader*) path[k];
-    for (nzp[k]++; nzp[k] < nlk->getNNZs(); nzp[k]++) {
-      index[k] = nlk->i(nzp[k]);
-      down = nlk->d(nzp[k]);
+    for (nzp[k]++; nzp[k] < path[k].getNNZs(); nzp[k]++) {
+      index[k] = path[k].i(nzp[k]);
+      down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
       if (firstRow(downLevel(k), down)) return true;
     }
-    f->recycle(nlk);
-    path[k] = 0;
   } // for
 
   return false;
@@ -713,15 +692,12 @@ bool MEDDLY::dd_edge::iterator::incrColumn()
   int down = 0;
   // Only try to advance the column, because the row is fixed.
   for (int k=-1; k>=-maxLevel; k--) { 
-    expert_forest::nodeReader* nlk = (expert_forest::nodeReader*) path[k];
-    for (nzp[k]++; nzp[k] < nlk->getNNZs(); nzp[k]++) {
-      index[k] = nlk->i(nzp[k]);
-      down = nlk->d(nzp[k]);
+    for (nzp[k]++; nzp[k] < path[k].getNNZs(); nzp[k]++) {
+      index[k] = path[k].i(nzp[k]);
+      down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
       if (firstColumn(downLevel(k), down)) return true;
     }
-    f->recycle(nlk);
-    path[k] = 0;
   } // for
 
   return false;
@@ -740,13 +716,11 @@ bool MEDDLY::dd_edge::iterator::firstSetElement(int k, int down)
     MEDDLY_DCASSERT(down);
     int kdn = f->getNodeLevel(down);
     MEDDLY_DCASSERT(kdn <= k);
-    expert_forest::nodeReader* nlk = (kdn < k)
-      ? f->initRedundantReader(k, down, false)
-      : f->initNodeReader(down, false);
-    path[k] = nlk;
+    if (kdn < k)  f->initRedundantReader(path[k], k, down, false);
+    else          f->initNodeReader(path[k], down, false);
     nzp[k] = 0;
-    index[k] = nlk->i(0);
-    down = nlk->d(0);
+    index[k] = path[k].i(0);
+    down = path[k].d(0);
   }
   // save the terminal value
   index[0] = down;
@@ -768,20 +742,18 @@ bool MEDDLY::dd_edge::iterator::firstRelElement(int k, int down)
     int kdn = f->getNodeLevel(down);
     MEDDLY_DCASSERT(!isLevelAbove(kdn, k));
 
-    expert_forest::nodeReader* nlk;
     if (isLevelAbove(k, kdn)) {
       if (k>0 || isFully) {
-        nlk = f->initRedundantReader(k, down, false);
+        f->initRedundantReader(path[k], k, down, false);
       } else {
-        nlk = f->initIdentityReader(k, index[-k], down, false);
+        f->initIdentityReader(path[k], k, index[-k], down, false);
       }
     } else {
-      nlk = f->initNodeReader(down, false);
+      f->initNodeReader(path[k], down, false);
     }
-    path[k] = nlk;
     nzp[k] = 0;
-    index[k] = nlk->i(0);
-    down = nlk->d(0);
+    index[k] = path[k].i(0);
+    down = path[k].d(0);
   }
   // save the terminal value
   index[0] = down;
@@ -829,7 +801,7 @@ bool MEDDLY::dd_edge::iterator::firstRow(int k, int down)
       // See if there is a valid path below.
       if (!firstRow(downLevel(kpr), down)) return false;
       // There's one below, set up the one at these levels.
-      path[k] = f->initRedundantReader(k, down, false);
+      f->initRedundantReader(path[k], k, down, false);
       if (f->isFullyReduced()) {
         nzp[k] = 0;
         index[k] = 0;
@@ -844,25 +816,22 @@ bool MEDDLY::dd_edge::iterator::firstRow(int k, int down)
     int cdown = f->getDownPtr(down, index[kpr]);
     if (0==cdown) return false;
     if (!firstRow(kpr, cdown)) return false;
-    path[k] = f->initRedundantReader(k, down, false);
+    f->initRedundantReader(path[k], k, down, false);
     nzp[k] = 0;
     index[k] = 0;
     return true;
   }
 
   // Level is not skipped.
-  expert_forest::nodeReader* nlk = f->initNodeReader(down, false);
+  f->initNodeReader(path[k], down, false);
   
-  for (int z=0; z<nlk->getNNZs(); z++) {
-    index[k] = nlk->i(z);
-    if (firstRow(downLevel(k), nlk->d(z))) {
-      path[k] = nlk;
+  for (int z=0; z<path[k].getNNZs(); z++) {
+    index[k] = path[k].i(z);
+    if (firstRow(downLevel(k), path[k].d(z))) {
       nzp[k] = z;
       return true;
     }
   }
-
-  f->recycle(nlk);
   return false;
 }
 
@@ -905,11 +874,11 @@ bool MEDDLY::dd_edge::iterator::firstColumn(int k, int down)
     // Set up this level.
     nzp[k] = 0;
     if (f->isFullyReduced()) {
-      path[k] = f->initRedundantReader(k, cdown, false);
+      f->initRedundantReader(path[k], k, cdown, false);
       index[k] = 0;
     } else {
       index[k] = index[upLevel(k)];
-      path[k] = f->initIdentityReader(k, index[k], cdown, false);
+      f->initIdentityReader(path[k], k, index[k], cdown, false);
     }
     return true;
   } 
@@ -917,18 +886,16 @@ bool MEDDLY::dd_edge::iterator::firstColumn(int k, int down)
   // Proper node here.
   // cycle through it and recurse... 
 
-  expert_forest::nodeReader* nlk = f->initNodeReader(cdown, false);
+  f->initNodeReader(path[k], cdown, false);
 
-  for (int z=0; z<nlk->getNNZs(); z++) {
-    if (firstColumn(downLevel(k), nlk->d(z))) {
-      path[k] = nlk;
+  for (int z=0; z<path[k].getNNZs(); z++) {
+    if (firstColumn(downLevel(k), path[k].d(z))) {
       nzp[k] = z;
-      index[k] = nlk->i(z);
+      index[k] = path[k].i(z);
       return true;
     }
   }
 
-  f->recycle(nlk);
   return false;
 }
 

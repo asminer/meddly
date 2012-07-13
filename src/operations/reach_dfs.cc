@@ -292,7 +292,7 @@ int MEDDLY::saturation_op::saturate(int mdd)
 #endif
 
   expert_forest::nodeBuilder& nb = resF->useNodeBuilder(k, sz);
-  expert_forest::nodeReader* mddDptrs = argF->initNodeReader(mdd, true);
+  node_reader* mddDptrs = argF->initNodeReader(mdd, true);
   for (int i=0; i<sz; i++) {
     nb.d(i) = mddDptrs->d(i) ? saturate(mddDptrs->d(i)) : 0;
   }
@@ -428,7 +428,7 @@ void MEDDLY::common_dfs_mt::splitMxd(int mxd)
     MEDDLY_DCASSERT(ABS(mxdLevel <= level));
 
     // Initialize row reader
-    expert_forest::nodeReader* Mu = isLevelAbove(level, mxdLevel)
+    node_reader* Mu = isLevelAbove(level, mxdLevel)
       ? arg2F->initRedundantReader(level, mxd, true)
       : arg2F->initNodeReader(mxd, true);
 
@@ -439,7 +439,7 @@ void MEDDLY::common_dfs_mt::splitMxd(int mxd)
     for (int i=0; i<Mu->getSize(); i++) {
       // Initialize column reader
       int mxdPLevel = arg2F->getNodeLevel(Mu->d(i));
-      expert_forest::nodeReader* Mp = isLevelAbove(-level, mxdPLevel)
+      node_reader* Mp = isLevelAbove(-level, mxdPLevel)
         ? arg2F->initIdentityReader(-level, i, Mu->d(i), true)
         : arg2F->initNodeReader(Mu->d(i), true);
 
@@ -546,7 +546,7 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(expert_forest::nodeBuilder& nb)
   MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
 
   // Initialize mxd row reader, note we might skip the unprimed level
-  expert_forest::nodeReader* Ru = (mxdLevel<0)
+  node_reader* Ru = (mxdLevel<0)
     ? arg2F->initRedundantReader(nb.getLevel(), mxd, true)
     : arg2F->initNodeReader(mxd, true);
 
@@ -566,7 +566,7 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(expert_forest::nodeBuilder& nb)
     // grab column (TBD: build these ahead of time?)
     int dlevel = arg2F->getNodeLevel(Ru->d(i));
 
-    expert_forest::nodeReader* Rp = (dlevel == -nb.getLevel())
+    node_reader* Rp = (dlevel == -nb.getLevel())
       ? arg2F->initNodeReader(Ru->d(i), false)
       : arg2F->initIdentityReader(-nb.getLevel(), i, Ru->d(i), false);
 
@@ -660,7 +660,7 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
   expert_forest::nodeBuilder& nb = resF->useNodeBuilder(rLevel, rSize);
 
   // Initialize mdd reader
-  expert_forest::nodeReader* A = (mddLevel < rLevel)
+  node_reader* A = (mddLevel < rLevel)
     ? arg1F->initRedundantReader(rLevel, mdd, true)
     : arg1F->initNodeReader(mdd, true);
 
@@ -682,7 +682,7 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
     for (int i=0; i<rSize; i++) nb.d(i) = 0;
 
     // Initialize mxd reader, note we might skip the unprimed level
-    expert_forest::nodeReader* Ru = (mxdLevel < 0)
+    node_reader* Ru = (mxdLevel < 0)
       ? arg2F->initRedundantReader(rLevel, mxd, false)
       : arg2F->initNodeReader(mxd, false);
 
@@ -690,7 +690,7 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
     for (int iz=0; iz<Ru->getNNZs(); iz++) {
       int i = Ru->i(iz);
       if (0==A->d(i))   continue; 
-      expert_forest::nodeReader* Rp;
+      node_reader* Rp;
       Rp = (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz))))
         ? arg2F->initIdentityReader(rLevel, i, Ru->d(iz), false)
         : arg2F->initNodeReader(Ru->d(iz), false);
@@ -764,7 +764,7 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(expert_forest::nodeBuilder& nb)
   MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
 
   // Initialize mxd row reader, note we might skip the unprimed level
-  expert_forest::nodeReader* Ru = (mxdLevel<0)
+  node_reader* Ru = (mxdLevel<0)
     ? arg2F->initRedundantReader(nb.getLevel(), mxd, false)
     : arg2F->initNodeReader(mxd, false);
 
@@ -785,7 +785,7 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(expert_forest::nodeBuilder& nb)
       // grab column (TBD: build these ahead of time?)
       int dlevel = arg2F->getNodeLevel(Ru->d(i));
 
-      expert_forest::nodeReader* Rp = (dlevel == -nb.getLevel())
+      node_reader* Rp = (dlevel == -nb.getLevel())
         ? arg2F->initNodeReader(Ru->d(iz), false)
         : arg2F->initIdentityReader(-nb.getLevel(), i, Ru->d(iz), false);
 
@@ -859,7 +859,7 @@ int MEDDLY::bckwd_dfs_mt::recFire(int mdd, int mxd)
   expert_forest::nodeBuilder& nb = resF->useNodeBuilder(rLevel, rSize);
 
   // Initialize mdd reader
-  expert_forest::nodeReader* A = (mddLevel < rLevel)
+  node_reader* A = (mddLevel < rLevel)
     ? arg1F->initRedundantReader(rLevel, mdd, true)
     : arg1F->initNodeReader(mdd, true);
 
@@ -879,14 +879,14 @@ int MEDDLY::bckwd_dfs_mt::recFire(int mdd, int mxd)
     for (int i=0; i<rSize; i++) nb.d(i) = 0;
 
     // Initialize mxd reader, note we might skip the unprimed level
-    expert_forest::nodeReader* Ru = (mxdLevel < 0)
+    node_reader* Ru = (mxdLevel < 0)
       ? arg2F->initRedundantReader(rLevel, mxd, false)
       : arg2F->initNodeReader(mxd, false);
 
     // loop over mxd "rows"
     for (int iz=0; iz<Ru->getNNZs(); iz++) {
       int i = Ru->i(iz);
-      expert_forest::nodeReader* Rp;
+      node_reader* Rp;
       Rp = (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz))))
         ? arg2F->initIdentityReader(rLevel, i, Ru->d(iz), false)
         : arg2F->initNodeReader(Ru->d(iz), false);

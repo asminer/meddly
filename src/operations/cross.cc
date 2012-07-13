@@ -129,7 +129,7 @@ int MEDDLY::cross_bool::compute_un(int k, int a, int b)
   expert_forest::nodeBuilder& nb = resF->useNodeBuilder(k, resultSize);
 
   // Initialize node reader
-  expert_forest::nodeReader* A = (arg1F->getNodeLevel(a) < k) 
+  node_reader* A = (arg1F->getNodeLevel(a) < k) 
     ? arg1F->initRedundantReader(k, a, true)
     : arg1F->initNodeReader(a, true);
 
@@ -182,7 +182,7 @@ int MEDDLY::cross_bool::compute_pr(int in, int k, int a, int b)
   expert_forest::nodeBuilder& nb = resF->useNodeBuilder(k, resultSize);
 
   // Initialize node reader
-  expert_forest::nodeReader* B = (arg2F->getNodeLevel(b) < -k) 
+  node_reader* B = (arg2F->getNodeLevel(b) < -k) 
     ? arg2F->initRedundantReader(-k, b, true)
     : arg2F->initNodeReader(b, true);
 

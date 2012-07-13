@@ -114,7 +114,7 @@ int MEDDLY::compl_mdd::compute(int a)
   expert_forest::nodeBuilder& nb = resF->useNodeBuilder(level, size);
 
   // Initialize node reader
-  expert_forest::nodeReader* A = argF->initNodeReader(a, true);
+  node_reader* A = argF->initNodeReader(a, true);
 
   // recurse
   for (int i=0; i<size; i++) {
@@ -213,7 +213,7 @@ int MEDDLY::compl_mxd::compute(int in, int k, int a)
   // Initialize node reader
   const int aLevel = argF->getNodeLevel(a);
   MEDDLY_DCASSERT(!isLevelAbove(aLevel, k));
-  expert_forest::nodeReader* A;
+  node_reader* A;
   bool canSave = true;
   if (aLevel == k) {
     A = argF->initNodeReader(a, true);
