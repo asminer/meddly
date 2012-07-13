@@ -2035,21 +2035,19 @@ void MEDDLY::expert_forest::deleteNode(int p)
 
   // remove from unique table (only applicable to reduced nodes)
   if (isReducedNode(p)) {
-    nodeFinder key(this, p);
+    unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE
+    nodeFinder key(this, p);
     if (unique->find(key) != p) {
       fprintf(stderr, "Error in deleteNode\nFind: %d\np: %d\n",
         unique->find(key), p);
       dumpInternal(stdout);
       MEDDLY_DCASSERT(false);
     }
-#endif
-
-#ifdef DEVELOPMENT_CODE
-    int x = unique->remove(key.hash(), p);
+    int x = unique->remove(h, p);
     MEDDLY_DCASSERT(p == x);
 #else
-    unique->remove(key.hash(), p);
+    unique->remove(h, p);
 #endif
 
 #ifdef TRACK_DELETIONS
@@ -2112,17 +2110,18 @@ void MEDDLY::expert_forest::zombifyNode(int p)
   // mark node as zombie
   address[p].cache_count = -address[p].cache_count;
 
-  nodeFinder key(this, p);
+  unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE 
+  nodeFinder key(this, p);
   if (unique->find(key) != p) {
     fprintf(stderr, "Fail: can't find reduced node %d; got %d\n", p, unique->find(key));
     dumpInternal(stderr);
     MEDDLY_DCASSERT(false);
   }
-  int x = unique->remove(key.hash(), p);
+  int x = unique->remove(h, p);
   MEDDLY_DCASSERT(x==p);
 #else
-  unique->remove(key.hash(), p);
+  unique->remove(h, p);
 #endif
 
   int node_level = getNodeLevel(p);
