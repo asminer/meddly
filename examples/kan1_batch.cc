@@ -581,7 +581,7 @@ void testMTMDDIterator(const dd_edge& mtmdd)
 {
   dd_edge copy(mtmdd);
   unsigned counter = 0;
-  for (dd_edge::const_iterator iter = copy.begin(); iter; ++iter, ++counter)
+  for (enumerator iter(copy); iter; ++iter, ++counter)
   {
     const int* element = iter.getAssignments();
     const int* curr = element + N - 1;
@@ -599,7 +599,7 @@ void testMTMXDIterator(const dd_edge& mtmxd)
 {
   dd_edge copy(mtmxd);
   unsigned counter = 0;
-  for (dd_edge::const_iterator iter = copy.begin(); iter; ++iter, ++counter)
+  for (enumerator iter(copy); iter; ++iter, ++counter)
   {
 #ifdef NEW_ITERATORS
     const int* element = iter.getAssignments();

@@ -328,7 +328,7 @@ int main(int argc, char *argv[])
     dd_edge reachableStates(result);
     start.note_time();
     unsigned counter = 0;
-    for (dd_edge::const_iterator iter = reachableStates.begin();
+    for (enumerator iter(reachableStates);
         iter; ++iter, ++counter)
     {
       const int* element = iter.getAssignments();

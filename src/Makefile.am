@@ -24,6 +24,7 @@ libmeddly_la_SOURCES = \
   meddly.cc \
   ops.cc \
 	dd_edge.cc \
+  enumerator.cc \
 	temp_dd_edge.cc \
 	domain.cc \
 	forest.cc \

@@ -97,8 +97,7 @@ long checkRS(int N, const char* rs[])
 
   // enumerate states
   long c = 0;
-  dd_edge::iterator i = reachable.begin();
-  for (; i; ++i) {
+  for (enumerator i(reachable); i; ++i) {
     if (c>=expected[N]) {
       c++;
       break;
@@ -125,8 +124,7 @@ void showRS(int N)
 
   // enumerate states
   long c = 0;
-  dd_edge::iterator i = reachable.begin();
-  for (; i; ++i) {
+  for (enumerator i(reachable); i; ++i) {
     const int* minterm = i.getAssignments();
     printf("%5ld: %d", c, minterm[1]);
     for (int l=2; l<=16; l++) printf(", %d", minterm[l]);

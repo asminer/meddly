@@ -51,12 +51,27 @@ inline void unlinkNode(MEDDLY::forest* p, int node)
 // *                                                                *
 // ******************************************************************
 
+MEDDLY::dd_edge::dd_edge()
+: parent(0),
+  node(0), value(0), level(0), index(-1),
+  opPlus(0), opStar(0), opMinus(0), opDivide(0)
+#ifdef ITERATORS_ON
+  , updateNeeded(true), beginIterator(0)
+#endif
+{
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Creating dd_edge %x\n", this);
+#endif
+}
+
 // Constructor.
 MEDDLY::dd_edge::dd_edge(forest* p)
 : parent(p),
   node(0), value(0), level(0), index(-1),
-  opPlus(0), opStar(0), opMinus(0), opDivide(0),
-  updateNeeded(true), beginIterator(0)
+  opPlus(0), opStar(0), opMinus(0), opDivide(0)
+#ifdef ITERATORS_ON
+  , updateNeeded(true), beginIterator(0)
+#endif
 {
 #ifdef DEBUG_CLEANUP
   fprintf(stderr, "Creating dd_edge %x\n", this);
@@ -110,18 +125,20 @@ void MEDDLY::dd_edge::init(const dd_edge &e)
 
   linkNode(parent, node);
 
-  updateNeeded = e.updateNeeded;
-  
   opPlus = e.opPlus;
   opStar = e.opStar;
   opMinus = e.opMinus;
   opDivide = e.opDivide;
 
+#ifdef ITERATORS_ON
+  updateNeeded = e.updateNeeded;
+  
   if (updateNeeded) {
     beginIterator = 0;
   } else {
     beginIterator = new const_iterator(*(e.beginIterator));
   }
+#endif
 
   if (parent) parent->registerEdge(*this);
   MEDDLY_DCASSERT(index != -1);
@@ -132,7 +149,9 @@ void MEDDLY::dd_edge::init(const dd_edge &e)
 //
 void MEDDLY::dd_edge::destroy()
 {
+#ifdef ITERATORS_ON
   if (beginIterator != 0) delete beginIterator;
+#endif
   if (index != -1) {
     // still registered; unregister before discarding
     int old = node;
@@ -150,7 +169,9 @@ void MEDDLY::dd_edge::getEdgeValue(float& ev) const
 
 void MEDDLY::dd_edge::set(int n, int v, int l)
 {
+#ifdef ITERATORS_ON
   if (node != n) { updateNeeded = true; }
+#endif
   int old = node;
   node = n;
   unlinkNode(parent, old);
@@ -161,7 +182,9 @@ void MEDDLY::dd_edge::set(int n, int v, int l)
 
 void MEDDLY::dd_edge::set(int n, float v, int l)
 {
+#ifdef ITERATORS_ON
   if (node != n) { updateNeeded = true; }
+#endif
   int old = node;
   node = n;
   unlinkNode(parent, old);
@@ -193,7 +216,9 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator+=(const dd_edge& e)
   }
   opPlus->compute(*this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
+#ifdef ITERATORS_ON
   MEDDLY_DCASSERT(updateNeeded == true);
+#endif
   return *this;
 }
 
@@ -210,7 +235,9 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator*=(const dd_edge& e)
   }
   opStar->compute(*this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
+#ifdef ITERATORS_ON
   MEDDLY_DCASSERT(updateNeeded == true);
+#endif
   return *this;
 }
 
@@ -227,7 +254,9 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator-=(const dd_edge& e)
   }
   opMinus->compute(*this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
+#ifdef ITERATORS_ON
   MEDDLY_DCASSERT(updateNeeded == true);
+#endif
   return *this;
 }
 
@@ -240,7 +269,9 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator/=(const dd_edge& e)
   }
   opDivide->compute(*this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
+#ifdef ITERATORS_ON
   MEDDLY_DCASSERT(updateNeeded == true);
+#endif
   return *this;
 }
 
@@ -282,6 +313,7 @@ void MEDDLY::dd_edge::show(FILE* strm, int verbosity) const
   }
 }
 
+#ifdef ITERATORS_ON
 
 MEDDLY::dd_edge::iterator MEDDLY::dd_edge::begin()
 {
@@ -898,4 +930,6 @@ bool MEDDLY::dd_edge::iterator::firstColumn(int k, int down)
 
   return false;
 }
+
+#endif
 

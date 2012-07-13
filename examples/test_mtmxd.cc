@@ -382,7 +382,7 @@ int main(int argc, char *argv[])
   // Use iterator to display elements
   if (true) {
     unsigned counter = 0;
-    for (dd_edge::const_iterator iter = result.begin();
+    for (enumerator iter(result);
         iter; ++iter, ++counter)
     {
       printAssignment(counter, iter.getAssignments(), nVariables);
@@ -396,7 +396,7 @@ int main(int argc, char *argv[])
   // Test Row and Column Iterators
 #if 1
   if (true) {
-    dd_edge::const_iterator beginIter = result.begin();
+    enumerator beginIter(result);
     const int* element = beginIter.getAssignments();
     const int* curr = 0;
     const int* end = 0;
@@ -419,7 +419,8 @@ int main(int argc, char *argv[])
 #endif
 
       // Print columns
-      dd_edge::const_iterator colIter = result.beginRow(element);
+      enumerator colIter;
+      colIter.startFixedRow(result, element);
       while (colIter) {
         element = colIter.getAssignments();
         printf(" --> [%d", element[-1]);
@@ -433,7 +434,7 @@ int main(int argc, char *argv[])
       printf("[%d", element[1]);
       for (int i=2; i<=nVariables; i++) printf(" %d", element[i]);
       printf("]\n");
-      colIter = result.beginColumn(element);
+      colIter.startFixedColumn(result, element);
 
       while (colIter) {
         element = colIter.getAssignments();
