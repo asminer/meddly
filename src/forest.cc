@@ -501,10 +501,7 @@ MEDDLY::expert_forest::nodeFinder::nodeFinder(const expert_forest* p, int n)
 {
   parent = p;
   node = n;
-  MEDDLY_DCASSERT(node);
-  MEDDLY_DCASSERT(!parent->isTerminalNode(node));
-  MEDDLY_DCASSERT(parent->isActiveNode(node));
-  nodeLevel = parent->getNodeLevel(node);
+  parent->initNodeReader(thisnode, node, false);
   h = parent->hashNode(node);
 }
 
@@ -512,140 +509,21 @@ MEDDLY::expert_forest::nodeFinder::~nodeFinder()
 {
 }
 
-bool MEDDLY::expert_forest::nodeFinder::equalsFF(int h1, int h2) const
+bool MEDDLY::expert_forest::nodeFinder::equals(int p)
 {
-  MEDDLY_DCASSERT(parent->isFullNode(h1));
-  MEDDLY_DCASSERT(parent->isFullNode(h2));
+  parent->initNodeReader(compare, p, false);
 
-  int *ptr1 = parent->getNodeAddress(h1) + 2;
-  int *ptr2 = parent->getNodeAddress(h2) + 2;
-  int sz1 = *ptr1++;
-  int sz2 = *ptr2++;
+  if (thisnode.getLevel() != compare.getLevel()) return false;
+  if (thisnode.getNNZs() != compare.getNNZs()) return false;
 
-  int* h1Stop = ptr1 + sz1;
-  int* h2Stop = ptr2 + sz2;
-
-  if (sz1 > sz2) {
-    while (ptr2 != h2Stop) { if (*ptr1++ != *ptr2++) return false; }
-    while (ptr1 != h1Stop) { if (*ptr1++ != 0) return false; }
+  for (int z=0; z<thisnode.getNNZs(); z++) {
+    if (thisnode.d(z) != compare.d(z)) return false;
+    if (thisnode.i(z) != compare.i(z)) return false;
   }
-  else {
-    MEDDLY_DCASSERT(sz1 <= sz2);
-    while (ptr1 != h1Stop) { if (*ptr1++ != *ptr2++) return false; }
-    while (ptr2 != h2Stop) { if (*ptr2++ != 0) return false; }
-  }
+  // TBD : edge values
 
-  if (parent->isMultiTerminal()) return true;
-
-  // Check edge-values
-  MEDDLY_DCASSERT(ptr1 == h1Stop);
-  MEDDLY_DCASSERT(ptr2 == h2Stop);
-
-  h1Stop += MIN(sz1, sz2);
-  if (parent->isEVPlus()) {
-    while (ptr1 != h1Stop) { if (*ptr1++ != *ptr2++) return false; }
-  } else {
-    MEDDLY_DCASSERT(parent->isEVTimes());
-    while (ptr1 != h1Stop) {
-      if (!isAlmostEqual(*ptr1++, *ptr2++)) return false;
-    }
-  }
   return true;
 }
-
-
-bool MEDDLY::expert_forest::nodeFinder::equalsSS(int h1, int h2) const
-{
-  MEDDLY_DCASSERT(parent->isSparseNode(h1));
-  MEDDLY_DCASSERT(parent->isSparseNode(h2));
-
-  int *ptr1 = parent->getNodeAddress(h1) + 2;
-  int *ptr2 = parent->getNodeAddress(h2) + 2;
-  int sz1 = -(*ptr1++);
-  int sz2 = -(*ptr2++);
-
-  if (sz1 != sz2) return false;
-
-  int* h1Stop = ptr1 + sz1 + sz1;
-  while (ptr1 != h1Stop) { if (*ptr1++ != *ptr2++) return false; }
-
-  if (parent->isMultiTerminal()) return true;
-
-  // Check edge-values
-  MEDDLY_DCASSERT(ptr1 == h1Stop);
-  MEDDLY_DCASSERT(ptr2 == (parent->getNodeAddress(h2) + 3 + sz1 + sz1));
-
-  h1Stop += sz1;
-  if (parent->isEVPlus()) {
-    while (ptr1 != h1Stop) { if (*ptr1++ != *ptr2++) return false; }
-  } else {
-    MEDDLY_DCASSERT(parent->isEVTimes());
-    while (ptr1 != h1Stop) {
-      if (!isAlmostEqual(*ptr1++, *ptr2++)) return false;
-    }
-  }
-  return true;
-}
-
-
-bool MEDDLY::expert_forest::nodeFinder::equalsFS(int h1, int h2) const
-{
-  MEDDLY_DCASSERT(parent->isFullNode(h1));
-  MEDDLY_DCASSERT(parent->isSparseNode(h2));
-
-  int *ptr1 = parent->getNodeAddress(h1) + 2;
-  int *ptr2 = parent->getNodeAddress(h2) + 2;
-  int sz1 = *ptr1++;
-  int sz2 = -(*ptr2++);
-
-  int* h1Start = ptr1;
-  int* h1Stop = ptr1 + sz1;
-  int* h2Stop = ptr2 + sz2;
-  int* down2 = h2Stop;
-
-  // If the last index in h2 does not exist in h1, return false.
-  // Otherwise, h1 is either the same "size" as h2 or larger than h2.
-
-  if (h2Stop[-1] >= sz1) {
-    // Last index of h2 does not exist in h1.
-    return false;
-  }
-
-  while (ptr2 != h2Stop) {
-    int index = *ptr2++;
-    MEDDLY_DCASSERT(index < sz1);
-    int* stop = h1Start + index;
-    while (ptr1 != stop) { if (*ptr1++ != 0) return false; }
-    if (*ptr1++ != *down2++) return false;
-  }
-
-  while (ptr1 != h1Stop) {
-    if (*ptr1++ != 0) return false;
-  }
-
-  if (parent->isMultiTerminal()) return true;
-
-  // Check edge-values
-  MEDDLY_DCASSERT(ptr1 == h1Stop);
-  MEDDLY_DCASSERT(ptr2 == h2Stop);
-  MEDDLY_DCASSERT(down2 == h2Stop + sz2);
-
-  // ptr1 and down2 are pointing at the start of edge-values
-  // Reset the index pointer for h2 (sparse node).
-  ptr2 -= sz2;
-  if (parent->isEVPlus()) {
-    while (ptr2 != h2Stop) {
-      if (ptr1[*ptr2++] != *down2++) return false;
-    }
-  } else {
-    MEDDLY_DCASSERT(parent->isEVTimes());
-    while (ptr2 != h2Stop) {
-      if (!isAlmostEqual(ptr1[*ptr2++], *down2++)) return false;
-    }
-  }
-  return true;
-}
-
 
 
 // ******************************************************************
@@ -1888,7 +1766,7 @@ int MEDDLY::expert_forest::getDownPtr(int p, int i) const
 
 
 void MEDDLY::expert_forest
-::initNodeReader(node_reader &nr, int node, bool full)
+::initNodeReader(node_reader &nr, int node, bool full) const
 {
   const nodeData &n = getNode(node);
   int nsize = getLevelSize(n.level);
@@ -1937,7 +1815,7 @@ void MEDDLY::expert_forest
 }
 
 void MEDDLY::expert_forest
-::initRedundantReader(node_reader &nr, int k, int node, bool full)
+::initRedundantReader(node_reader &nr, int k, int node, bool full) const
 {
   int nsize = getLevelSize(k);
   nr.resize(k, nsize, full);
@@ -1950,7 +1828,7 @@ void MEDDLY::expert_forest
 }
 
 void MEDDLY::expert_forest
-::initIdentityReader(node_reader &nr, int k, int i, int node, bool full)
+::initIdentityReader(node_reader &nr, int k, int i, int node, bool full) const
 {
   int nsize = getLevelSize(k);
   if (full) {

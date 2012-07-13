@@ -80,7 +80,7 @@ class MEDDLY::unique_table {
           bool equals(int p): return true iff this item equals node p.
      */
     template <class T>
-    inline int find(const T &key) {
+    inline int find(T &key) {
       unsigned h = key.hash() % size;
       MEDDLY_CHECK_RANGE(0, h, size);
       int prev = 0;

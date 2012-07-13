@@ -892,7 +892,7 @@ class MEDDLY::expert_forest : public forest
           @param  full    true:   Use a full reader.
                           false:  Use a sparse reader.
     */
-    void initNodeReader(node_reader &nr, int node, bool full);
+    void initNodeReader(node_reader &nr, int node, bool full) const;
 
     /// Allocate and initialize a node reader.
     inline node_reader* initNodeReader(int node, bool full) {
@@ -909,7 +909,7 @@ class MEDDLY::expert_forest : public forest
           @param  node    Downward pointer to use.
           @param  full    Use a full reader or sparse.
     */
-    void initRedundantReader(node_reader &nr, int k, int node, bool full);
+    void initRedundantReader(node_reader &nr, int k, int node, bool full) const;
 
     /// Allocate and initialize a redundant node reader.
     inline node_reader* initRedundantReader(int k, int node, bool full) {
@@ -924,10 +924,10 @@ class MEDDLY::expert_forest : public forest
           @param  nr      Node reader to fill.
           @param  k       Level that was skipped.
           @param  i       Index of identity reduction
-          @param  node    Downward pointer to use.
-          @param  full    Use a full reader or sparse.
+          @param  n       Downward pointer to use.
+          @param  f       Use a full reader or sparse.
     */
-    void initIdentityReader(node_reader &nr, int k, int i, int node, bool full);
+    void initIdentityReader(node_reader &nr, int k, int i, int n, bool f) const;
 
     /// Allocate and initialize an identity node reader.
     inline node_reader* initIdentityReader(int k, int i, int node, bool full) {
@@ -1030,30 +1030,14 @@ class MEDDLY::expert_forest : public forest
     class nodeFinder {
         const expert_forest* parent;
         int node; 
-        int nodeLevel;
-        unsigned h;
+        node_reader thisnode;
+        node_reader compare;
+        unsigned h; 
       public:
         nodeFinder(const expert_forest* p, int n);
         ~nodeFinder();
         inline unsigned hash() const { return h; }
-        inline bool equals(int p) const {
-            MEDDLY_DCASSERT(p);
-            MEDDLY_DCASSERT(parent->isActiveNode(p));
-            MEDDLY_DCASSERT(!parent->isTerminalNode(p));
-
-            if (nodeLevel != parent->getNodeLevel(p)) { 
-              return false; 
-            }
-
-            return
-              parent->isFullNode(node)
-              ? (parent->isFullNode(p) ? equalsFF(node, p) : equalsFS(node, p))
-              : (parent->isFullNode(p) ? equalsFS(p, node) : equalsSS(node, p));
-        }
-      protected:
-        bool equalsFF(int p1, int p2) const;
-        bool equalsFS(int p1, int p2) const;
-        bool equalsSS(int p1, int p2) const;
+        bool equals(int p);
     };
 
   // ------------------------------------------------------------
