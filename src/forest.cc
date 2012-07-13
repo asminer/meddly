@@ -1568,20 +1568,18 @@ void MEDDLY::expert_forest::validateIncounts(bool exact)
   }
   MEDDLY_DCASSERT(sz <= in_val_size);
   memset(in_validate, 0, sizeof(int) * sz);
+  node_reader P;
   for (int i = 1; i < sz; ++i) {
     MEDDLY_DCASSERT(!isTerminalNode(i));
     if (!isActiveNode(i)) continue;
-    node_reader* P = initNodeReader(i, false);
+    initNodeReader(P, i, false);
 
     // add to reference counts
-    for (int z=0; z<P->getNNZs(); z++) {
-      if (isTerminalNode(P->d(z))) continue;
-      MEDDLY_CHECK_RANGE(0, P->d(z), sz);
-      in_validate[P->d(z)]++;
+    for (int z=0; z<P.getNNZs(); z++) {
+      if (isTerminalNode(P.d(z))) continue;
+      MEDDLY_CHECK_RANGE(0, P.d(z), sz);
+      in_validate[P.d(z)]++;
     }
-
-    // cleanup
-    recycle(P);
   } // for i
 
   // Add counts for registered dd_edges
@@ -1638,14 +1636,16 @@ int* MEDDLY::expert_forest::markNodesInSubgraph(int root, bool sort)
   mlen++;
   inList[root] = true;
 
+  node_reader M;
+
   // Breadth-first search
   for (int mexpl=0; mexpl<mlen; mexpl++) {
     // explore node marked[mexpl]
-    node_reader* M = initNodeReader(marked[mexpl], false);
-    for (int i=0; i<M->getNNZs(); i++) {
-      if (isTerminalNode(M->d(i))) continue;
-      MEDDLY_CHECK_RANGE(0, M->d(i)-1, a_last);
-      if (inList[M->d(i)]) continue;
+    initNodeReader(M, marked[mexpl], false);
+    for (int i=0; i<M.getNNZs(); i++) {
+      if (isTerminalNode(M.d(i))) continue;
+      MEDDLY_CHECK_RANGE(0, M.d(i)-1, a_last);
+      if (inList[M.d(i)]) continue;
       // add dn to list
       if (mlen+1 >= msize) { 
           // expand.  Note we're leaving an extra slot
@@ -1654,11 +1654,10 @@ int* MEDDLY::expert_forest::markNodesInSubgraph(int root, bool sort)
           marked = (int*) realloc(marked, msize*sizeof(int));
           if (0==marked) throw error(error::INSUFFICIENT_MEMORY);
       }
-      inList[M->d(i)] = true;
-      marked[mlen] = M->d(i);
+      inList[M.d(i)] = true;
+      marked[mlen] = M.d(i);
       mlen++;
     } // for i
-    recycle(M);
   } // for mexpl
 
   // sort
@@ -1697,10 +1696,10 @@ int MEDDLY::expert_forest::getEdgeCount(int p, bool countZeroes)
   int* list = markNodesInSubgraph(p, true);
   if (0==list) return 0;
   int ec=0;
+  node_reader M;
   for (int i=0; list[i]; i++) {
-    node_reader* M = initNodeReader(list[i], countZeroes);
-    ec += countZeroes ? M->getSize() : M->getNNZs();
-    recycle(M);
+    initNodeReader(M, list[i], countZeroes);
+    ec += countZeroes ? M.getSize() : M.getNNZs();
   }
   free(list);
   return ec;
