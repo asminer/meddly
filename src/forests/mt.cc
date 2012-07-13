@@ -51,6 +51,8 @@
 //#define MERGE_LEFT
 //#define TRACK_DELETIONS
 
+// #define MEMORY_TRACE
+
 const int add_size = 1024;
 const int l_add_size = 24;
 
@@ -2033,7 +2035,7 @@ void MEDDLY::mt_forest::gridInsert(int k, int p_offset)
 void MEDDLY::mt_forest::indexRemove(int k, int p_offset)
 {
 #ifdef MEMORY_TRACE
-  cout << __func__ << "(" << k << ", " << p_offset << ")\n";
+  printf("indexRemove(%d)\n", p_offset);
 #endif
 
   int p_level = mapLevel(k);
@@ -2141,14 +2143,14 @@ int MEDDLY::mt_forest::getHole(int k, int slots, bool search_holes)
       if (next) {
         midRemove(k, next);
 #ifdef MEMORY_TRACE
-        cout << "Removed Non-Index Hole " << next << "\n";
+        printf("Removed Non-Index Hole %d\n", next);
         dumpInternal(stdout);
 #endif
         return next;
       }
       indexRemove(k, curr);
 #ifdef MEMORY_TRACE
-      cout << "Removed Index Hole " << curr << "\n";
+      printf("Removed Index Hole %d\n", curr);
       dumpInternal(stdout);
 #endif
       return curr;
@@ -2183,7 +2185,7 @@ int MEDDLY::mt_forest::getHole(int k, int slots, bool search_holes)
       gridInsert(k, newhole); 
 #ifdef MEMORY_TRACE
       // level[p_level].data[curr] = -slots;  // only necessary for display
-      cout << "Removed part of hole " << curr << "\n";
+      printf("Removed part of hole %d\n", curr);
       dumpInternal(stdout);
 #endif
       return curr;
@@ -2225,7 +2227,7 @@ void MEDDLY::mt_forest::makeHole(int k, int addr, int slots)
   // need to map level
   int mapped_k = mapLevel(k);
 #ifdef MEMORY_TRACE
-  cout << "Calling makeHole(" << k << ", " << addr << ", " << slots << ")\n";
+  printf("Calling makeHole(%d, %d)\n", addr, slots);
 #endif
 
   stats.decMemUsed(slots * sizeof(int));
@@ -2271,7 +2273,7 @@ void MEDDLY::mt_forest::makeHole(int k, int addr, int slots)
 #endif
     }
 #ifdef MEMORY_TRACE
-    cout << "Level " << k << ", Made Last Hole " << addr << "\n";
+    printf("Made Last Hole %d\n", addr);
     dumpInternal(stdout);
 #endif
     return;
@@ -2293,7 +2295,7 @@ void MEDDLY::mt_forest::makeHole(int k, int addr, int slots)
   gridInsert(k, addr); 
 
 #ifdef MEMORY_TRACE
-  cout << "Level " << k << ", Made Last Hole " << addr << "\n";
+  printf("Made Last Hole %d\n", addr);
   dumpInternal(stdout);
 #endif
 }
