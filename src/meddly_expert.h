@@ -580,9 +580,6 @@ class MEDDLY::node_reader {
         /// Free memory, but don't delete.
         void clear();
 
-        /// TEMPORARY: for copying
-        void copyFrom(const node_reader &);
-
         /** Get a downward pointer.
               @param  n   Which pointer.
               @return     If this is a full reader, 

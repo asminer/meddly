@@ -458,20 +458,6 @@ void MEDDLY::node_reader::clear()
   level = 0;
 }
 
-void MEDDLY::node_reader::copyFrom(const node_reader &nr)
-{
-  if (&nr == this) return;
-  clear();
-  resize(nr.level, nr.size, nr.is_full);
-  if (is_full) {
-    memcpy(down, nr.down, size * sizeof(int));
-  } else {
-    nnzs = nr.nnzs;
-    memcpy(down, nr.down, nnzs * sizeof(int));
-    memcpy(index, nr.index, nnzs * sizeof(int));
-  }
-}
-
 void MEDDLY::node_reader::dump(FILE* s) const
 {
   if (is_full) {

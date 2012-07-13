@@ -42,8 +42,6 @@
 #include <cstdio>
 #include <cassert>
 
-// #define ITERATORS_ON
-
 namespace MEDDLY {
 
   // Classes
@@ -1725,9 +1723,6 @@ class MEDDLY::dd_edge {
     inline void clear() {
       assert(index != -1);
       set(0, 0, 0);
-#ifdef ITERATORS_ON
-      updateNeeded = true;
-#endif
     }
 
     /** Obtain a modifiable copy of the forest owning this edge.
@@ -1791,140 +1786,6 @@ class MEDDLY::dd_edge {
     */
     void set(int node, int value, int level);
     void set(int node, float value, int level);
-
-#ifdef ITERATORS_ON
-    class iterator {
-      public:
-        enum iter_type {
-          EMPTY=0,
-          SET,
-          RELATION,
-          ROW,      // enumerate with a fixed ROW
-          COLUMN    // enumerate with a fixed COLUMN
-        };
-        iterator();
-        iterator(dd_edge* e, iter_type t, const int* minterm);
-        iterator(const iterator& iter);
-        ~iterator();
-        iterator& operator=(const iterator& iter);
-      private:
-        void destroy();
-        void initEmpty();
-        void init(const iterator& iter);
-      public:
-        inline operator bool() const { return isValid; }
-        void operator++();
-        bool operator==(const iterator& iter) const;
-        inline bool operator!=(const iterator& iter) const {
-          return !(this->operator==(iter));
-        }
-        /** Get the current variable assignments.
-            For variable i, use index i for the
-            unprimed variable, and index -i for the primed variable.
-        */
-        inline const int* getAssignments() const {
-          return index;
-        }
-        /** Get primed assignments.
-            It is much faster to use getAssigments()
-            and look at the negative indexes;
-            however, this works.
-        */
-        const int* getPrimedAssignments();
-        void getValue(int& edgeValue) const;
-        void getValue(float& edgeValue) const;
-        
-      private:
-        friend class dd_edge;
-        bool incrNonRelation();
-        bool incrRelation();
-        bool incrRow();
-        bool incrColumn();
-        bool firstSetElement(int k, int down);
-        bool firstRelElement(int k, int down);
-        bool firstRow(int k, int down);
-        bool firstColumn(int k, int down);
-
-        static inline int downLevel(int k) {
-          return (k>0) ? (-k) : (-k-1);
-        }
-        static inline int upLevel(int k) {
-          return (k<0) ? (-k) : (-k-1);
-        }
-
-        // Parent edge.
-        dd_edge*  e;
-
-        // Iterator type.
-        iter_type type;
-
-        // Path, as list of node readers
-        node_reader*    rawpath;
-        node_reader*    path;   // rawpath, shifted so we can use path[-k]
-        // Path nnz pointers
-        int*      rawnzp;
-        int*      nzp;   // rawnzp, shifted so we can use nzp[-k]
-        // Path indexes
-        int*      rawindex;
-        int*      index;  // rawindex, shifted so we can use index[-k]
-        // Used only by getPrimedAssignments.
-        int*      prindex;
-        // 
-        int       minLevel; // 1 or -#vars, depending.
-        int       maxLevel; // #vars
-        //
-        bool      isValid;
-    };
-
-    typedef iterator const_iterator;
-
-    /** Returns an iterator to the first element of the dd_edge.
-        The iterator can be used to visit the elements in the DD in
-        lexicographic order.
-        @return         an iterator pointing to the first element.
-    */
-    const_iterator begin();
-
-    /** Returns an iterator to the first element of the dd_edge
-        with minterm as the "from" component of the element
-        (the entire element being from->to).
-
-        This iterator can then be used to visit the elements
-        in the DD with the same "from" component.
-        The elements are visited in lexicographic order of the
-        "to" component.
-        
-        This is only valid for DD that store relations.
-
-        If the relation is thought of as a matrix with the Y-axis
-        representing the "from" components and the X-axis representing
-        the "to" components, this iterator is useful for visiting all
-        the "to"s that correspond to a single "from".
-
-        @return         an iterator pointing to the first element.
-    */
-    const_iterator beginRow(const int* minterm);
-
-    /** Returns an iterator to the first element of the dd_edge
-        with minterm as the "to" component of the element
-        (the entire element being to->from).
-
-        This iterator can then be used to visit the elements
-        in the DD with the same "to" component.
-        The elements are visited in lexicographic order of the
-        "from" component.
-        
-        This is only valid for DD that store relations.
-
-        If the relation is thought of as a matrix with the Y-axis
-        representing the "from" components and the X-axis representing
-        the "to" components, this iterator is useful for visiting all
-        the "from"s that correspond to a single "to".
-
-        @return         an iterator pointing to the first element.
-    */
-    const_iterator beginColumn(const int* minterm);
-#endif
 
     /** Check for equality.
         @return true    iff this edge has the same parent and refers to
@@ -2062,13 +1923,6 @@ class MEDDLY::dd_edge {
     binary_operation* opMinus;
     binary_operation* opDivide;
 
-#ifdef ITERATORS_ON
-    void updateIterators();
-
-    bool            updateNeeded;
-    const_iterator* beginIterator;
-#endif
-
     // called when the parent is destroyed
     inline void orphan() {
       parent = 0;
@@ -2156,7 +2010,12 @@ class MEDDLY::enumerator {
     void startFixed(const dd_edge &e, const int* allvars);
 
     inline operator bool() const { return isValid; }
-    void operator++();
+    inline void operator++() {
+#ifdef DEVELOPMENT_CODE
+      if (0==incr) throw error(error::MISCELLANEOUS);
+#endif
+      isValid &= (this->*incr)();
+    }
 
     /** Get the current variable assignments.
         For variable i, use index i for the
@@ -2195,6 +2054,9 @@ class MEDDLY::enumerator {
     static inline int upLevel(int k) {
       return (k<0) ? (-k) : (-k-1);
     }
+
+    /// pointer to increment method, which returns a boolean.
+    bool (enumerator::* incr) ();
 
     // Current edge.  Used only for getValue.
     dd_edge e;

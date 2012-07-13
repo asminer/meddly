@@ -82,6 +82,7 @@ void MEDDLY::enumerator::initEmpty()
   rawindex = index = 0;
   minLevel = maxLevel = 0;
   isValid = false;
+  incr = 0;
 }
 
 void MEDDLY::enumerator::newForest(expert_forest* f)
@@ -123,9 +124,11 @@ void MEDDLY::enumerator::start(const dd_edge &_e)
   if (F->isForRelations()) {
     type = RELATION;
     isValid = firstRelElement(maxLevel, e.getNode());
+    incr = &enumerator::incrRelation;
   } else {
     type = SET;
     isValid = firstSetElement(maxLevel, e.getNode());
+    incr = &enumerator::incrNonRelation;
   }
 }
 
@@ -146,6 +149,7 @@ void MEDDLY::enumerator::startFixedRow(const dd_edge &_e, const int* minterm)
   }
 
   isValid = firstColumn(maxLevel, e.getNode());
+  incr = &enumerator::incrColumn;
 }
 
 void MEDDLY::enumerator::startFixedColumn(const dd_edge &_e, const int* minterm)
@@ -165,6 +169,7 @@ void MEDDLY::enumerator::startFixedColumn(const dd_edge &_e, const int* minterm)
   }
 
   isValid = firstRow(maxLevel, e.getNode());
+  incr = &enumerator::incrRow;
 }
 
 void MEDDLY::enumerator::startFixed(const dd_edge &_e, const int* allvars)
@@ -172,38 +177,6 @@ void MEDDLY::enumerator::startFixed(const dd_edge &_e, const int* allvars)
   e = _e;
   throw error(error::NOT_IMPLEMENTED);
 }
-
-void MEDDLY::enumerator::operator++()
-{
-  switch (type) {
-    case EMPTY:
-        return;
-
-    case SET:
-        MEDDLY_DCASSERT(isValid);
-        isValid &= incrNonRelation();
-        return;
-
-    case RELATION:
-        MEDDLY_DCASSERT(isValid);
-        isValid &= incrRelation();
-        return;
-
-    case ROW:
-        MEDDLY_DCASSERT(isValid);
-        isValid &= incrColumn();
-        return;
-
-    case COLUMN:
-        MEDDLY_DCASSERT(isValid);
-        isValid &= incrRow();
-        return;
-
-    default:
-        throw error(error::MISCELLANEOUS);
-  };
-}
-
 
 const int* MEDDLY::enumerator::getPrimedAssignments()
 {
