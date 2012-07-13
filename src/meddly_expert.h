@@ -55,6 +55,8 @@
 #endif
 #endif
 
+// #define TRACK_DELETIONS
+
 // Use this for assertions that will fail only when your
 // code is wrong.  Handy for debugging.
 #ifdef DCASSERTS_ON
@@ -666,7 +668,7 @@ class MEDDLY::expert_forest : public forest
         count--;
   
 #ifdef TRACK_DELETIONS
-        fprintf(stdout, "\t+Node %d count now %d\n", p, count);
+        fprintf(stdout, "\t-Node %d count now %d\n", p, count);
         fflush(stdout);
 #endif
         if (count) return;
@@ -675,6 +677,16 @@ class MEDDLY::expert_forest : public forest
     }
 
     
+
+
+  // ------------------------------------------------------------
+  // non-virtual, handy methods for debugging.
+  public:
+    void dump(FILE *s) const; 
+    void dumpInternal(FILE *s) const; 
+    void dumpInternalLevel(FILE *s, int k) const; 
+    void dumpUniqueTable(FILE *s) const;
+    void validateIncounts(bool exact);
 
 
   // ------------------------------------------------------------
@@ -709,12 +721,6 @@ class MEDDLY::expert_forest : public forest
     */
     int getEdgeCount(int node, bool countZeroes);
 
-
-    // Debug output
-    void dump(FILE *s) const; 
-    void dumpInternal(FILE *s) const; 
-    void dumpInternalLevel(FILE *s, int k) const; 
-    void dumpUniqueTable(FILE *s) const;
 
     /// Show all the nodes in the subgraph below the given node.
     void showNodeGraph(FILE* s, int node);
@@ -929,7 +935,6 @@ class MEDDLY::expert_forest : public forest
     void deleteOrphanNode(int node);     
     void deleteNode(int p);
     void zombifyNode(int p);
-    void validateIncounts();
 
   // here down --- needs organizing
   public:
@@ -1982,6 +1987,10 @@ class MEDDLY::expert_forest : public forest
       MEDDLY_DCASSERT(nb.lock);
       nb.lock = false;
       if (u) nb.unlink(*this);
+#ifdef TRACK_DELETIONS
+      if (u) printf("Created node that matched %d\n", q);
+      else   printf("Created new node %d\n", q);
+#endif
       return q;
     }
     template <class T>
@@ -1993,6 +2002,10 @@ class MEDDLY::expert_forest : public forest
       MEDDLY_DCASSERT(nb.lock);
       nb.lock = false;
       if (u) nb.unlink(*this);
+#ifdef TRACK_DELETIONS
+      if (u) printf("Created node that matched %d\n", node);
+      else   printf("Created new node %d\n", node);
+#endif
     }
     
   

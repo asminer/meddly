@@ -136,7 +136,9 @@ void MEDDLY::dd_edge::destroy()
   if (beginIterator != 0) delete beginIterator;
   if (index != -1) {
     // still registered; unregister before discarding
-    unlinkNode(parent, node);
+    int old = node;
+    node = 0;
+    unlinkNode(parent, old);
     if (parent) parent->unregisterEdge(*this);
   }
 }
@@ -150,8 +152,9 @@ void MEDDLY::dd_edge::getEdgeValue(float& ev) const
 void MEDDLY::dd_edge::set(int n, int v, int l)
 {
   if (node != n) { updateNeeded = true; }
-  unlinkNode(parent, node);
+  int old = node;
   node = n;
+  unlinkNode(parent, old);
   value = v;
   level = l;
 }
@@ -160,8 +163,9 @@ void MEDDLY::dd_edge::set(int n, int v, int l)
 void MEDDLY::dd_edge::set(int n, float v, int l)
 {
   if (node != n) { updateNeeded = true; }
-  unlinkNode(parent, node);
+  int old = node;
   node = n;
+  unlinkNode(parent, old);
   value = toInt(v);
   level = l;
 }

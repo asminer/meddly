@@ -40,11 +40,14 @@
 // #define DEBUG_GC
 
 // #define MEMORY_TRACE
+// #define TRACK_DELETIONS
+
 
 
 // Thoroughly check reference counts.
 // Very slow.  Use only for debugging.
 #define VALIDATE_INCOUNTS
+// #define VALIDATE_INCOUNTS_ON_DELETE
 
 const int a_min_size = 1024;
 
@@ -1479,6 +1482,140 @@ MEDDLY::expert_forest::~expert_forest()
 }
 
 
+// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+// '                                                                '
+// '                   public debugging   methods                   '
+// '                                                                '
+// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+void MEDDLY::expert_forest::dump(FILE *s) const
+{
+  int nwidth = digits(a_last);
+  for (int p=0; p<=a_last; p++) {
+    fprintf(s, "%*d\t", nwidth, p);
+    showNode(s, p, 1);
+    fprintf(s, "\n");
+    fflush(s);
+  }
+}
+
+void MEDDLY::expert_forest::dumpInternal(FILE *s) const
+{
+  fprintf(s, "Internal forest storage\n");
+  fprintf(s, "First unused node index: %d\n", a_unused);
+  int awidth = digits(a_last);
+  fprintf(s, " Node# :  ");
+  for (int p=1; p<=a_last; p++) {
+    if (p) fprintf(s, " ");
+    fprintf(s, "%*d", awidth, p);
+  }
+  fprintf(s, "\nLevel  : [");
+  for (int p=1; p<=a_last; p++) {
+    if (p) fprintf(s, "|");
+    fprintf(s, "%*d", awidth, address[p].level);
+  }
+  fprintf(s, "]\n");
+  fprintf(s, "\nOffset : [");
+  for (int p=1; p<=a_last; p++) {
+    if (p) fprintf(s, "|");
+    fprintf(s, "%*d", awidth, address[p].offset);
+  }
+  fprintf(s, "]\n");
+  fprintf(s, "\nCache  : [");
+  for (int p=1; p<=a_last; p++) {
+    if (p) fprintf(s, "|");
+    fprintf(s, "%*d", awidth, address[p].cache_count);
+  }
+  fprintf(s, "]\n\n");
+
+  for (int i=1; i<=getNumVariables(); i++) {
+    dumpInternalLevel(s, i);
+    if (isForRelations()) dumpInternalLevel(s, -i);
+  }
+ 
+  unique->show(s);
+  fflush(s);
+}
+
+void MEDDLY::expert_forest::dumpInternalLevel(FILE *s, int k) const
+{
+  levels[k].dumpInternal(s);
+}
+
+void MEDDLY::expert_forest::dumpUniqueTable(FILE *s) const
+{
+  unique->show(s);
+}
+
+void MEDDLY::expert_forest::validateIncounts(bool exact)
+{
+#ifdef VALIDATE_INCOUNTS
+  static int idnum = 0;
+  idnum++;
+
+  // Inspect every active node's down pointers to determine
+  // the incoming count for every active node.
+  
+  int sz = getLastNode() + 1;
+  if (sz > in_val_size) {
+    in_validate = (int*) realloc(in_validate, a_size * sizeof(int));
+    in_val_size = a_size;
+  }
+  MEDDLY_DCASSERT(sz <= in_val_size);
+  memset(in_validate, 0, sizeof(int) * sz);
+  for (int i = 1; i < sz; ++i) {
+    MEDDLY_DCASSERT(!isTerminalNode(i));
+    if (!isActiveNode(i)) continue;
+    nodeReader* P = initNodeReader(i, false);
+
+    // add to reference counts
+    for (int z=0; z<P->getNNZs(); z++) {
+      if (isTerminalNode(P->d(z))) continue;
+      MEDDLY_CHECK_RANGE(0, P->d(z), sz);
+      in_validate[P->d(z)]++;
+    }
+
+    // cleanup
+    recycle(P);
+  } // for i
+
+  // Add counts for registered dd_edges
+  nodecounter foo(in_validate);
+  visitRegisteredEdges(foo);
+  
+  // Validate the incoming count stored with each active node using the
+  // in_count array computed above
+  for (int i = 1; i < sz; ++i) {
+    MEDDLY_DCASSERT(!isTerminalNode(i));
+    if (!isActiveNode(i)) continue;
+    bool fail = exact
+      ?  in_validate[i] != readInCount(i)
+      :  in_validate[i] >  readInCount(i);
+    if (fail) {
+      printf("Validation #%d failed\n", idnum);
+      printf("For node %d\n    we got %d\n    node says %d\n",
+        i, in_validate[i], readInCount(i));
+      dump(stdout);
+      throw error(error::MISCELLANEOUS);
+    }
+    // Note - might not be exactly equal
+    // because there could be dd_edges that refer to nodes
+    // and we didn't count them.
+  }
+
+#ifdef TRACK_DELETIONS
+  printf("Incounts validated #%d\n", idnum);
+#endif
+#endif
+}
+
+
+// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+// '                                                                '
+// '                      public handy methods                      '
+// '                                                                '
+// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 int* MEDDLY::expert_forest::markNodesInSubgraph(int root, bool sort)
 {
   if (isTerminalNode(root)) return 0;
@@ -1562,65 +1699,6 @@ int MEDDLY::expert_forest::getEdgeCount(int p, bool countZeroes)
   }
   free(list);
   return ec;
-}
-
-void MEDDLY::expert_forest::dump(FILE *s) const
-{
-  int nwidth = digits(a_last);
-  for (int p=0; p<=a_last; p++) {
-    fprintf(s, "%*d\t", nwidth, p);
-    showNode(s, p, 1);
-    fprintf(s, "\n");
-    fflush(s);
-  }
-}
-
-void MEDDLY::expert_forest::dumpInternal(FILE *s) const
-{
-  fprintf(s, "Internal forest storage\n");
-  fprintf(s, "First unused node index: %d\n", a_unused);
-  int awidth = digits(a_last);
-  fprintf(s, " Node# :  ");
-  for (int p=1; p<=a_last; p++) {
-    if (p) fprintf(s, " ");
-    fprintf(s, "%*d", awidth, p);
-  }
-  fprintf(s, "\nLevel  : [");
-  for (int p=1; p<=a_last; p++) {
-    if (p) fprintf(s, "|");
-    fprintf(s, "%*d", awidth, address[p].level);
-  }
-  fprintf(s, "]\n");
-  fprintf(s, "\nOffset : [");
-  for (int p=1; p<=a_last; p++) {
-    if (p) fprintf(s, "|");
-    fprintf(s, "%*d", awidth, address[p].offset);
-  }
-  fprintf(s, "]\n");
-  fprintf(s, "\nCache  : [");
-  for (int p=1; p<=a_last; p++) {
-    if (p) fprintf(s, "|");
-    fprintf(s, "%*d", awidth, address[p].cache_count);
-  }
-  fprintf(s, "]\n\n");
-
-  for (int i=1; i<=getNumVariables(); i++) {
-    dumpInternalLevel(s, i);
-    if (isForRelations()) dumpInternalLevel(s, -i);
-  }
- 
-  unique->show(s);
-  fflush(s);
-}
-
-void MEDDLY::expert_forest::dumpInternalLevel(FILE *s, int k) const
-{
-  levels[k].dumpInternal(s);
-}
-
-void MEDDLY::expert_forest::dumpUniqueTable(FILE *s) const
-{
-  unique->show(s);
 }
 
 void MEDDLY::expert_forest::showNodeGraph(FILE *s, int p)
@@ -2010,10 +2088,10 @@ void MEDDLY::expert_forest::handleNewOrphanNode(int p)
     // delete node
     // this should take care of the temporary nodes also
 #ifdef TRACK_DELETIONS
-    cout << "Deleting node " << p << " from unlinkNode\t";
+    printf("Deleting node %d\n\t", p);
     showNode(stdout, p);
-    cout << "\n";
-    cout.flush();
+    printf("\n");
+    fflush(stdout);
 #endif
     deleteNode(p);
   }
@@ -2037,10 +2115,10 @@ void MEDDLY::expert_forest::deleteOrphanNode(int p)
   MEDDLY_DCASSERT(!isPessimistic());
   MEDDLY_DCASSERT(getCacheCount(p) == 0 && readInCount(p) == 0);
 #ifdef TRACK_DELETIONS
-  cout << "Deleting node " << p << " from uncacheNode\t";
+  printf("Deleting node %d\n\t", p);
   showNode(stdout, p);
-  cout << "\n";
-  cout.flush();
+  printf("\n");
+  fflush(stdout);
 #endif
   stats.orphan_nodes--;
   deleteNode(p);
@@ -2052,8 +2130,8 @@ void MEDDLY::expert_forest::deleteNode(int p)
   MEDDLY_DCASSERT(readInCount(p) == 0);
   MEDDLY_DCASSERT(isActiveNode(p));
 
-#ifdef DEVELOPMENT_CODE
-  validateIncounts();
+#ifdef VALIADE_INCOUNTS_ON_DELETE
+  validateIncounts(false);
 #endif
 
   int* foo = getNodeAddress(p);
@@ -2069,10 +2147,6 @@ void MEDDLY::expert_forest::deleteNode(int p)
       dumpInternal(stdout);
       MEDDLY_DCASSERT(false);
     }
-#endif
-
-#ifdef TRACK_DELETIONS
-    showNode(stdout, p);
 #endif
 
 #ifdef DEVELOPMENT_CODE
@@ -2120,8 +2194,8 @@ void MEDDLY::expert_forest::deleteNode(int p)
 
   if (levels[k].compactLevel) levels[k].compact(address);
 
-#ifdef VALIDATE_INCOUNTS
-  validateIncounts();
+#ifdef VALIDATE_INCOUNTS_ON_DELETE
+  validateIncounts(false);
 #endif
 
 }
@@ -2192,55 +2266,6 @@ void MEDDLY::expert_forest::zombifyNode(int p)
   // Recycle node memory
   levels[node_level].recycleNode(node_offset);
 }
-
-void MEDDLY::expert_forest::validateIncounts()
-{
-  // Inspect every active node's down pointers to determine
-  // the incoming count for every active node.
-  
-  int sz = getLastNode() + 1;
-  if (sz > in_val_size) {
-    in_validate = (int*) realloc(in_validate, a_size * sizeof(int));
-    in_val_size = a_size;
-  }
-  MEDDLY_DCASSERT(sz <= in_val_size);
-  memset(in_validate, 0, sizeof(int) * sz);
-  for (int i = 1; i < sz; ++i) {
-    MEDDLY_DCASSERT(!isTerminalNode(i));
-    if (!isActiveNode(i)) continue;
-    nodeReader* P = initNodeReader(i, false);
-
-    // add to reference counts
-    for (int z=0; z<P->getNNZs(); z++) {
-      if (isTerminalNode(P->d(z))) continue;
-      MEDDLY_CHECK_RANGE(0, P->d(z), sz);
-      in_validate[P->d(z)]++;
-    }
-  } // for i
-
-  // Add counts for registered dd_edges
-  nodecounter foo(in_validate);
-  visitRegisteredEdges(foo);
-  
-
-  // Validate the incoming count stored with each active node using the
-  // in_count array computed above
-  for (int i = 1; i < sz; ++i) {
-    MEDDLY_DCASSERT(!isTerminalNode(i));
-    if (!isActiveNode(i)) continue;
-    if (in_validate[i] != readInCount(i)) {
-      printf("For node %d\n    we got %d\n    node says %d\n",
-        i, in_validate[i], readInCount(i));
-      dump(stdout);
-      throw error(error::MISCELLANEOUS);
-    }
-    // Note - might not be exactly equal
-    // because there could be dd_edges that refer to nodes
-    // and we didn't count them.
-  }
-}
-
-
 
 
 

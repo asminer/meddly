@@ -487,8 +487,8 @@ void MEDDLY::evmdd_forest::createSparseNode(int k, int index,
   resEv = ev;
 
 #ifdef TRACK_DELETIONS
-  cout << "Creating node " << p << "\n";
-  cout.flush();
+  printf("Creating node %d\n", p);
+  fflush(stdout);
 #endif
 
   incrNodesActivatedSinceGc();

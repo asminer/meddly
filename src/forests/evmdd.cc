@@ -114,8 +114,8 @@ int MEDDLY::evmdd_forest::createTempNode(int k, int sz, bool clear)
 #endif
 
 #ifdef TRACK_DELETIONS
-  cout << "Creating node " << p << "\n";
-  cout.flush();
+  printf("Creating node %d\n", p);
+  fflush(stdout);
 #endif
 
   incrTempNodeCount(k);
@@ -392,8 +392,8 @@ int MEDDLY::evp_mdd_int::createTempNode(int k, int sz, bool clear)
   }
 
 #ifdef TRACK_DELETIONS
-  cout << "Creating node " << p << "\n";
-  cout.flush();
+  printf("Creating node %d\n", p);
+  fflush(stdout);
 #endif
 
   incrTempNodeCount(k);

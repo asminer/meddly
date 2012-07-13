@@ -48,8 +48,6 @@
 
 // #define DEBUG_CARD
 
-//#define TRACK_DELETIONS
-
 // #define MEMORY_TRACE
 
 const int add_size = 1024;

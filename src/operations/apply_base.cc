@@ -68,6 +68,13 @@ void MEDDLY::generic_binary_mdd::compute(const dd_edge &a, const dd_edge &b,
 {
   int cnode = compute(a.getNode(), b.getNode());
   c.set(cnode, 0, resF->getNodeLevel(cnode));
+#ifdef TRACE_ALL_OPS
+  printf("completed %s(%d, %d) = %d\n", 
+    getName(), a.getNode(), b.getNode(), cnode);
+#endif
+#ifdef DEVELOPMENT_CODE
+  resF->validateIncounts(true);
+#endif
 }
 
 
@@ -163,6 +170,9 @@ void MEDDLY::generic_binary_mxd::compute(const dd_edge &a, const dd_edge &b,
 {
   int cnode = compute(a.getNode(), b.getNode());
   c.set(cnode, 0, resF->getNodeLevel(cnode));
+#ifdef DEVELOPMENT_CODE
+  resF->validateIncounts(true);
+#endif
 }
 
 int MEDDLY::generic_binary_mxd::compute(int a, int b) 
@@ -292,6 +302,9 @@ void MEDDLY::generic_binbylevel_mxd
     resF->getDomain()->getNumVariables(), a.getNode(), b.getNode()
   );
   c.set(result, 0, resF->getNodeLevel(result));
+#ifdef DEVELOPMENT_CODE
+  resF->validateIncounts(true);
+#endif
 }
 
 int MEDDLY::generic_binbylevel_mxd::compute(int level, int a, int b) 
@@ -430,6 +443,9 @@ void MEDDLY::generic_binary_evplus
   b.getEdgeValue(bev);
   compute(aev, a.getNode(), bev, b.getNode(), ev, result);
   c.set(result, ev, resF->getNodeLevel(result));
+#ifdef DEVELOPMENT_CODE
+  resF->validateIncounts(true);
+#endif
 }
 
 
@@ -613,6 +629,9 @@ void MEDDLY::generic_binary_evtimes
   b.getEdgeValue(bev);
   compute(aev, a.getNode(), bev, b.getNode(), ev, result);
   c.set(result, ev, resF->getNodeLevel(result));
+#ifdef DEVELOPMENT_CODE
+  resF->validateIncounts(true);
+#endif
 }
 
 void MEDDLY::generic_binary_evtimes
