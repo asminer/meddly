@@ -427,10 +427,11 @@ void MEDDLY::common_dfs_mt::splitMxd(int mxd)
     int mxdLevel = arg2F->getNodeLevel(mxd);
     MEDDLY_DCASSERT(ABS(mxdLevel <= level));
 
-    // Initialize row reader
+    // Initialize readers
     node_reader* Mu = isLevelAbove(level, mxdLevel)
       ? arg2F->initRedundantReader(level, mxd, true)
       : arg2F->initNodeReader(mxd, true);
+    node_reader* Mp = arg2F->useNodeReader();
 
     bool first = true;
     int maxDiag;
@@ -439,9 +440,11 @@ void MEDDLY::common_dfs_mt::splitMxd(int mxd)
     for (int i=0; i<Mu->getSize(); i++) {
       // Initialize column reader
       int mxdPLevel = arg2F->getNodeLevel(Mu->d(i));
-      node_reader* Mp = isLevelAbove(-level, mxdPLevel)
-        ? arg2F->initIdentityReader(-level, i, Mu->d(i), true)
-        : arg2F->initNodeReader(Mu->d(i), true);
+      if (isLevelAbove(-level, mxdPLevel)) {
+        arg2F->initIdentityReader(*Mp, -level, i, Mu->d(i), true);
+      } else {
+        arg2F->initNodeReader(*Mp, Mu->d(i), true);
+      }
 
       // Intersect along the diagonal
       if (first) {
@@ -454,7 +457,6 @@ void MEDDLY::common_dfs_mt::splitMxd(int mxd)
       }
 
       // cleanup
-      arg2F->recycle(Mp);
     } // for i
 
     // maxDiag is what we can split from here
@@ -463,6 +465,7 @@ void MEDDLY::common_dfs_mt::splitMxd(int mxd)
     mxd = maxDiag;
 
     // Cleanup
+    arg2F->recycle(Mp);
     arg2F->recycle(Mu);
   } // for level
 }
@@ -545,10 +548,11 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(expert_forest::nodeBuilder& nb)
   int mxdLevel = arg2F->getNodeLevel(mxd);
   MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
 
-  // Initialize mxd row reader, note we might skip the unprimed level
+  // Initialize mxd readers, note we might skip the unprimed level
   node_reader* Ru = (mxdLevel<0)
     ? arg2F->initRedundantReader(nb.getLevel(), mxd, true)
     : arg2F->initNodeReader(mxd, true);
+  node_reader* Rp = arg2F->useNodeReader();
 
   // indexes to explore
   indexq* queue = useIndexQueue(nb.getSize());
@@ -566,9 +570,11 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(expert_forest::nodeBuilder& nb)
     // grab column (TBD: build these ahead of time?)
     int dlevel = arg2F->getNodeLevel(Ru->d(i));
 
-    node_reader* Rp = (dlevel == -nb.getLevel())
-      ? arg2F->initNodeReader(Ru->d(i), false)
-      : arg2F->initIdentityReader(-nb.getLevel(), i, Ru->d(i), false);
+    if (dlevel == -nb.getLevel()) {
+      arg2F->initNodeReader(*Rp, Ru->d(i), false);
+    } else {
+      arg2F->initIdentityReader(*Rp, -nb.getLevel(), i, Ru->d(i), false);
+    }
 
     for (int jz=0; jz<Rp->getNNZs(); jz++) {
       int j = Rp->i(jz);
@@ -614,11 +620,10 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(expert_forest::nodeBuilder& nb)
 
     } // for j
 
-    // cleanup
-    arg2F->recycle(Rp);
   } // while there are indexes to explore
 
   // cleanup
+  arg2F->recycle(Rp);
   arg2F->recycle(Ru);
   recycle(queue);
 }
@@ -681,19 +686,21 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
     // clear out result (important!)
     for (int i=0; i<rSize; i++) nb.d(i) = 0;
 
-    // Initialize mxd reader, note we might skip the unprimed level
+    // Initialize mxd readers, note we might skip the unprimed level
     node_reader* Ru = (mxdLevel < 0)
       ? arg2F->initRedundantReader(rLevel, mxd, false)
       : arg2F->initNodeReader(mxd, false);
+    node_reader* Rp = arg2F->useNodeReader();
 
     // loop over mxd "rows"
     for (int iz=0; iz<Ru->getNNZs(); iz++) {
       int i = Ru->i(iz);
       if (0==A->d(i))   continue; 
-      node_reader* Rp;
-      Rp = (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz))))
-        ? arg2F->initIdentityReader(rLevel, i, Ru->d(iz), false)
-        : arg2F->initNodeReader(Ru->d(iz), false);
+      if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz)))) {
+        arg2F->initIdentityReader(*Rp, rLevel, i, Ru->d(iz), false);
+      } else {
+        arg2F->initNodeReader(*Rp, Ru->d(iz), false);
+      }
 
       // loop over mxd "columns"
       for (int jz=0; jz<Rp->getNNZs(); jz++) {
@@ -714,9 +721,9 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
         resF->unlinkNode(newstates);
       } // for j
   
-      arg2F->recycle(Rp);
     } // for i
 
+    arg2F->recycle(Rp);
     arg2F->recycle(Ru);
   } // else
 
@@ -763,10 +770,11 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(expert_forest::nodeBuilder& nb)
   int mxdLevel = arg2F->getNodeLevel(mxd);
   MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
 
-  // Initialize mxd row reader, note we might skip the unprimed level
+  // Initialize mxd readers, note we might skip the unprimed level
   node_reader* Ru = (mxdLevel<0)
     ? arg2F->initRedundantReader(nb.getLevel(), mxd, false)
     : arg2F->initNodeReader(mxd, false);
+  node_reader* Rp = arg2F->useNodeReader();
 
   // indexes to explore
   charbuf* expl = useCharBuf(nb.getSize());
@@ -785,9 +793,11 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(expert_forest::nodeBuilder& nb)
       // grab column (TBD: build these ahead of time?)
       int dlevel = arg2F->getNodeLevel(Ru->d(i));
 
-      node_reader* Rp = (dlevel == -nb.getLevel())
-        ? arg2F->initNodeReader(Ru->d(iz), false)
-        : arg2F->initIdentityReader(-nb.getLevel(), i, Ru->d(iz), false);
+      if (dlevel == -nb.getLevel()) {
+        arg2F->initNodeReader(*Rp, Ru->d(iz), false); 
+      } else {
+        arg2F->initIdentityReader(*Rp, -nb.getLevel(), i, Ru->d(iz), false);
+      }
 
       for (int jz=0; jz<Rp->getNNZs(); jz++) {
         int j = Rp->i(jz);
@@ -824,10 +834,10 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(expert_forest::nodeBuilder& nb)
         }
         if (updated) expl->data[i] = 2;
       } // for j
-      arg2F->recycle(Rp);
     } // for i
   } // while repeat
   // cleanup
+  arg2F->recycle(Rp);
   arg2F->recycle(Ru);
   recycle(expl);
 }
@@ -878,18 +888,20 @@ int MEDDLY::bckwd_dfs_mt::recFire(int mdd, int mxd)
     // clear out result (important!)
     for (int i=0; i<rSize; i++) nb.d(i) = 0;
 
-    // Initialize mxd reader, note we might skip the unprimed level
+    // Initialize mxd readers, note we might skip the unprimed level
     node_reader* Ru = (mxdLevel < 0)
       ? arg2F->initRedundantReader(rLevel, mxd, false)
       : arg2F->initNodeReader(mxd, false);
+    node_reader* Rp = arg2F->useNodeReader();
 
     // loop over mxd "rows"
     for (int iz=0; iz<Ru->getNNZs(); iz++) {
       int i = Ru->i(iz);
-      node_reader* Rp;
-      Rp = (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz))))
-        ? arg2F->initIdentityReader(rLevel, i, Ru->d(iz), false)
-        : arg2F->initNodeReader(Ru->d(iz), false);
+      if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz)))) {
+        arg2F->initIdentityReader(*Rp, rLevel, i, Ru->d(iz), false);
+      } else {
+        arg2F->initNodeReader(*Rp, Ru->d(iz), false);
+      }
 
       // loop over mxd "columns"
       for (int jz=0; jz<Rp->getNNZs(); jz++) {
@@ -911,9 +923,9 @@ int MEDDLY::bckwd_dfs_mt::recFire(int mdd, int mxd)
         resF->unlinkNode(newstates);
       } // for j
   
-      arg2F->recycle(Rp);
     } // for i
 
+    arg2F->recycle(Rp);
     arg2F->recycle(Ru);
   } // else
 

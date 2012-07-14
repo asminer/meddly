@@ -188,18 +188,21 @@ int MEDDLY::preimage_mdd::compute_rec(int mdd, int mxd)
     // clear out result (important!)
     for (int i=0; i<rSize; i++) nb.d(i) = 0;
 
-    // Initialize mxd reader, note we might skip the unprimed level
+    // Initialize mxd readers, note we might skip the unprimed level
     node_reader* Ru = (mxdLevel < 0)
       ? arg2F->initRedundantReader(rLevel, mxd, false)
       : arg2F->initNodeReader(mxd, false);
 
+    node_reader* Rp = arg2F->useNodeReader();
+
     // loop over mxd "rows"
     for (int iz=0; iz<Ru->getNNZs(); iz++) {
       int i = Ru->i(iz);
-      node_reader* Rp;
-      Rp = (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz))))
-        ? arg2F->initIdentityReader(rLevel, i, Ru->d(iz), false)
-        : arg2F->initNodeReader(Ru->d(iz), false);
+      if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz)))) {
+        arg2F->initIdentityReader(*Rp, rLevel, i, Ru->d(iz), false);
+      } else {
+        arg2F->initNodeReader(*Rp, Ru->d(iz), false);
+      }
 
       // loop over mxd "columns"
       for (int jz=0; jz<Rp->getNNZs(); jz++) {
@@ -221,9 +224,9 @@ int MEDDLY::preimage_mdd::compute_rec(int mdd, int mxd)
         resF->unlinkNode(newstates);
       } // for j
   
-      arg2F->recycle(Rp);
     } // for i
 
+    arg2F->recycle(Rp);
     arg2F->recycle(Ru);
   } // else
 
@@ -305,19 +308,22 @@ int MEDDLY::postimage_mdd::compute_rec(int mdd, int mxd)
     // clear out result (important!)
     for (int i=0; i<rSize; i++) nb.d(i) = 0;
 
-    // Initialize mxd reader, note we might skip the unprimed level
+    // Initialize mxd readers, note we might skip the unprimed level
     node_reader* Ru = (mxdLevel < 0)
       ? arg2F->initRedundantReader(rLevel, mxd, false)
       : arg2F->initNodeReader(mxd, false);
+
+    node_reader* Rp = arg2F->useNodeReader();
 
     // loop over mxd "rows"
     for (int iz=0; iz<Ru->getNNZs(); iz++) {
       int i = Ru->i(iz);
       if (0==A->d(i))   continue; 
-      node_reader* Rp;
-      Rp = (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz))))
-        ? arg2F->initIdentityReader(rLevel, i, Ru->d(iz), false)
-        : arg2F->initNodeReader(Ru->d(iz), false);
+      if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz)))) {
+        arg2F->initIdentityReader(*Rp, rLevel, i, Ru->d(iz), false);
+      } else {
+        arg2F->initNodeReader(*Rp, Ru->d(iz), false);
+      }
 
       // loop over mxd "columns"
       for (int jz=0; jz<Rp->getNNZs(); jz++) {
@@ -338,9 +344,9 @@ int MEDDLY::postimage_mdd::compute_rec(int mdd, int mxd)
         resF->unlinkNode(newstates);
       } // for j
   
-      arg2F->recycle(Rp);
     } // for i
 
+    arg2F->recycle(Rp);
     arg2F->recycle(Ru);
   } // else
 
