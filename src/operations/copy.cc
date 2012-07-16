@@ -153,7 +153,7 @@ int MEDDLY::copy_bool2MT::compute(int in, int a)
   }
 
   // Cleanup
-  argF->recycle(A);
+  node_reader::recycle(A);
 
   // Reduce
   b = resF->createReducedNode(in, nb);
@@ -214,7 +214,7 @@ int MEDDLY::copy_MT2bool::compute(int in, int a)
   }
 
   // Cleanup
-  argF->recycle(A);
+  node_reader::recycle(A);
 
   // Reduce
   b = resF->createReducedNode(in, nb);

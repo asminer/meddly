@@ -164,7 +164,7 @@ class MEDDLY::mt_forest : public expert_forest {
     // p: node
     // i: the ith downpointer.
     // note: for sparse nodes this may not be the same as the ith index pointer.
-    int getDownPtrAfterIndex(int p, int i, int &index) const;
+    // int getDownPtrAfterIndex(int p, int i, int &index) const;
 
     int getMddLevelMaxBound(int k) const;
     int getMxdLevelMaxBound(int k) const;
@@ -179,7 +179,7 @@ class MEDDLY::mt_forest : public expert_forest {
     // Remove zombies if more than max
     // void removeZombies(int max = 100);
 
-    bool isCounting();
+    // bool isCounting();
 
   protected:
     // Building level nodes
@@ -279,6 +279,7 @@ inline void MEDDLY::mt_forest::reclaimOrphanNode(int p) {
 }  
 */
 
+/*
 inline int MEDDLY::mt_forest::getDownPtrAfterIndex(int p, int i, int &index)
   const {
   MEDDLY_DCASSERT(isActiveNode(p));
@@ -299,6 +300,7 @@ inline int MEDDLY::mt_forest::getDownPtrAfterIndex(int p, int i, int &index)
         getSparseNodeDownPtr(p, index): 0;
   }
 }
+*/
 
 
 /*
@@ -382,7 +384,7 @@ inline int MEDDLY::mt_forest::getSparseNodeLargestIndex(int p) const {
   return getSparseNodeIndex(p, getSparseNodeSize(p) - 1);
 }
 
-inline bool MEDDLY::mt_forest::isCounting() { return counting; }
+// inline bool MEDDLY::mt_forest::isCounting() { return counting; }
 
 // Dealing with node addressing
 

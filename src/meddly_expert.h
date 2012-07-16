@@ -620,6 +620,33 @@ class MEDDLY::node_reader {
         // For debudding
         void dump(FILE*) const;
 
+    // Centralized recycling
+    public:
+        inline static node_reader* useReader() {
+          node_reader* nr;
+          if (freeList) {
+            nr = freeList;
+            freeList = nr->next;
+          } else {
+            nr = new node_reader;
+          }
+          return nr;
+        }
+        inline static void recycle(node_reader* r) {
+          if (r) {
+            r->next = freeList;
+            freeList = r;
+          }
+        }
+    private:
+        inline static void freeRecycled() {
+          while (freeList) {
+            node_reader* n = freeList->next;
+            delete freeList;
+            freeList = n;
+          }
+        }
+
     private:
         int* down;
         int* index;
@@ -628,9 +655,8 @@ class MEDDLY::node_reader {
         int nnzs;
         int level;
         bool is_full;
-
-        // TBD: eliminate this
         node_reader* next;    // for recycled list
+        static node_reader* freeList;
 
         /// Called within expert_forest to allocate space.
         ///   @param  k     Level number.
@@ -640,6 +666,8 @@ class MEDDLY::node_reader {
         void resize(int k, int ns, bool full);
 
         friend class expert_forest; 
+        friend void cleanup();
+
 };
 
 
@@ -896,7 +924,7 @@ class MEDDLY::expert_forest : public forest
 
     /// Allocate and initialize a node reader.
     inline node_reader* initNodeReader(int node, bool full) {
-      node_reader* nr = useNodeReader();
+      node_reader* nr = node_reader::useReader();
       MEDDLY_DCASSERT(nr);
       initNodeReader(*nr, node, full);
       return nr;
@@ -913,7 +941,7 @@ class MEDDLY::expert_forest : public forest
 
     /// Allocate and initialize a redundant node reader.
     inline node_reader* initRedundantReader(int k, int node, bool full) {
-      node_reader* nr = useNodeReader();
+      node_reader* nr = node_reader::useReader();
       MEDDLY_DCASSERT(nr);
       initRedundantReader(*nr, k, node, full);
       return nr;
@@ -931,31 +959,10 @@ class MEDDLY::expert_forest : public forest
 
     /// Allocate and initialize an identity node reader.
     inline node_reader* initIdentityReader(int k, int i, int node, bool full) {
-      node_reader* nr = useNodeReader();
+      node_reader* nr = node_reader::useReader();
       MEDDLY_DCASSERT(nr);
       initIdentityReader(*nr, k, i, node, full);
       return nr;
-    }
-
-    /// Reserve memory for a node reader.
-    inline node_reader* useNodeReader() {
-      node_reader* nr;
-      if (free_reader) {
-        nr = free_reader;
-        free_reader = nr->next;
-      } else {
-        nr = new node_reader;
-      }
-      nr->next = 0;
-      return nr;
-    }
-
-    /// Recycle a node reader.
-    inline void recycle(node_reader *r) {
-      if (0==r) return;
-      MEDDLY_DCASSERT(0==r->next);
-      r->next = free_reader;
-      free_reader = r;
     }
 
   // ------------------------------------------------------------
@@ -2057,9 +2064,6 @@ class MEDDLY::expert_forest : public forest
     bool terminalNodesAreStale;
 
   private:
-    /// List of recycled node readers.
-    node_reader* free_reader;
-
     // Garbage collection in progress
     bool performing_gc;
 

@@ -139,7 +139,7 @@ int MEDDLY::cross_bool::compute_un(int k, int a, int b)
   }
 
   // cleanup node reader
-  arg1F->recycle(A);
+  node_reader::recycle(A);
 
   // reduce, save in compute table
   int c = resF->createReducedNode(-1, nb);
@@ -192,7 +192,7 @@ int MEDDLY::cross_bool::compute_pr(int in, int k, int a, int b)
   }
 
   // cleanup node reader
-  arg2F->recycle(B);
+  node_reader::recycle(B);
 
   // reduce, save in compute table
   int c = resF->createReducedNode(in, nb);

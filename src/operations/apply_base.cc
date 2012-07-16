@@ -110,8 +110,8 @@ int MEDDLY::generic_binary_mdd::compute(int a, int b)
   }
 
   // cleanup
-  arg2F->recycle(B);
-  arg1F->recycle(A);
+  node_reader::recycle(B);
+  node_reader::recycle(A);
 
   // reduce and save result
   result = resF->createReducedNode(-1, nb);
@@ -234,8 +234,8 @@ int MEDDLY::generic_binary_mxd::compute(int in, int a, int b)
   }
 
   // cleanup
-  arg2F->recycle(B);
-  arg1F->recycle(A);
+  node_reader::recycle(B);
+  node_reader::recycle(A);
 
   // reduce and save result
   result = resF->createReducedNode(in, nb);
@@ -364,8 +364,8 @@ int MEDDLY::generic_binbylevel_mxd
   }
 
   // cleanup
-  arg2F->recycle(B);
-  arg1F->recycle(A);
+  node_reader::recycle(B);
+  node_reader::recycle(A);
 
   // reduce and save result
   result = resF->createReducedNode(in, nb);

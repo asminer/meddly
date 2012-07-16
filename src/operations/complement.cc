@@ -122,7 +122,7 @@ int MEDDLY::compl_mdd::compute(int a)
   }
 
   // Cleanup
-  argF->recycle(A);
+  node_reader::recycle(A);
 
   // Reduce
   b = resF->createReducedNode(-1, nb);
@@ -235,7 +235,7 @@ int MEDDLY::compl_mxd::compute(int in, int k, int a)
   }
 
   // cleanup
-  argF->recycle(A);
+  node_reader::recycle(A);
 
   // reduce, save in CT
   int result = resF->createReducedNode(in, nb);

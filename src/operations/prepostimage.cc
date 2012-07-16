@@ -193,7 +193,7 @@ int MEDDLY::preimage_mdd::compute_rec(int mdd, int mxd)
       ? arg2F->initRedundantReader(rLevel, mxd, false)
       : arg2F->initNodeReader(mxd, false);
 
-    node_reader* Rp = arg2F->useNodeReader();
+    node_reader* Rp = node_reader::useReader();
 
     // loop over mxd "rows"
     for (int iz=0; iz<Ru->getNNZs(); iz++) {
@@ -226,12 +226,12 @@ int MEDDLY::preimage_mdd::compute_rec(int mdd, int mxd)
   
     } // for i
 
-    arg2F->recycle(Rp);
-    arg2F->recycle(Ru);
+    node_reader::recycle(Rp);
+    node_reader::recycle(Ru);
   } // else
 
   // cleanup mdd reader
-  arg1F->recycle(A);
+  node_reader::recycle(A);
 
   result = resF->createReducedNode(-1, nb);
 #ifdef TRACE_ALL_OPS
@@ -313,7 +313,7 @@ int MEDDLY::postimage_mdd::compute_rec(int mdd, int mxd)
       ? arg2F->initRedundantReader(rLevel, mxd, false)
       : arg2F->initNodeReader(mxd, false);
 
-    node_reader* Rp = arg2F->useNodeReader();
+    node_reader* Rp = node_reader::useReader();
 
     // loop over mxd "rows"
     for (int iz=0; iz<Ru->getNNZs(); iz++) {
@@ -346,12 +346,12 @@ int MEDDLY::postimage_mdd::compute_rec(int mdd, int mxd)
   
     } // for i
 
-    arg2F->recycle(Rp);
-    arg2F->recycle(Ru);
+    node_reader::recycle(Rp);
+    node_reader::recycle(Ru);
   } // else
 
   // cleanup mdd reader
-  arg1F->recycle(A);
+  node_reader::recycle(A);
 
   result = resF->createReducedNode(-1, nb);
 #ifdef TRACE_ALL_OPS

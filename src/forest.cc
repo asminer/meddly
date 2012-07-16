@@ -1320,11 +1320,6 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   }
 
   //
-  // Initialize node readers free list
-  //
-  free_reader = 0;
-
-  //
   // Initialize misc. protected data
   //
   terminalNodesAreStale = false;
@@ -1349,13 +1344,6 @@ MEDDLY::expert_forest::~expert_forest()
 
   // builders array
   delete[] raw_builders;
-
-  // node readers
-  while (free_reader) {
-    node_reader* nr = free_reader;
-    free_reader = nr->next;
-    delete nr;
-  }
 
   // unique table
   delete unique;
