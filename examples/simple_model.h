@@ -38,5 +38,19 @@
 void buildNextStateFunction(const char* const* events, int nEvents, 
   MEDDLY::forest* f, MEDDLY::dd_edge &e, int verb);
 
+/** Use explicit search to build the reachability set.
+      @param  events    Array of dimension \a nEvents.
+                        Same format as buildNextStateFunction().
+      @param  nEvents   Size of events array.
+      @param  f         The forest to use for the reachability set.
+      @param  init      The initial state to use; belongs to f.
+      @param  e         Edge for storing the result.
+      @param  batchsize Number of states to accumulate before each
+                        union operation.  If this is less than 1,
+                        we use a default size of 256.
+*/
+void explicitReachset(const char* const* events, int nEvents, 
+  MEDDLY::forest* f, MEDDLY::dd_edge &init, MEDDLY::dd_edge &e, int batchsize);
+
 #endif
 

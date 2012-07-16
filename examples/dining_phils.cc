@@ -324,84 +324,6 @@ void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
 #endif
 }
 
-
-// Test Pre-Image
-dd_edge testPreImage(const dd_edge& mdd, const dd_edge& mxd)
-{
-  dd_edge preImage(mdd.getForest());
-  apply(PRE_IMAGE, mdd, mxd, preImage);
-
-#if 1
-  preImage.show(stdout, 3);
-#else
-  preImage.show(stdout, 1);
-#endif
-
-  return preImage;
-}
-
-
-// Test Post-Image
-dd_edge testPostImage(const dd_edge& mdd, const dd_edge& mxd)
-{
-  dd_edge postImage(mdd.getForest());
-  apply(POST_IMAGE, mdd, mxd, postImage);
-
-#if 1
-  postImage.show(stdout, 3);
-#else
-  postImage.show(stdout, 1);
-#endif
-
-  return postImage;
-}
-
-
-// Test SubMatrix
-/*
-dd_edge testSubMatrix(int* bounds, int nLevels, const dd_edge& nsf)
-{
-  bool** vlist = (bool **) malloc((nLevels + 1) * sizeof(bool *));
-  bool** vplist = (bool **) malloc((nLevels + 1) * sizeof(bool *));
-  for (int i = 0; i <= nLevels; i++)
-  {
-    int levelSize = (i == 0)? 2: bounds[i - 1];
-    unsigned arraySize = levelSize * sizeof(bool);
-    vlist[i] = (bool *) malloc(arraySize);
-    vplist[i] = (bool *) malloc(arraySize);
-    memset(vlist[i], 0, arraySize);
-    memset(vplist[i], 0, arraySize);
-  }
-  for (int i = 1; i <= nLevels; i++)
-  {
-    int levelSize = bounds[i - 1];
-    for (int j = 0; j < levelSize - 1; j++)
-    {
-      vlist[i][j] = true;
-      vplist[i][j] = true;
-    }
-  }
-
-#if 1
-  nsf.show(stdout, 3);
-#else
-  nsf.show(stdout, 1);
-#endif
-
-  forest* mxd = nsf.getForest();
-  dd_edge subMatrix(mxd);
-  mxd->createSubMatrix(vlist, vplist, nsf, subMatrix);
-
-#if 1
-  subMatrix.show(stdout, 3);
-#else
-  subMatrix.show(stdout, 1);
-#endif
-
-  return subMatrix;
-}
-*/
-
 int main(int argc, char *argv[])
 {
   timer start;
@@ -468,12 +390,6 @@ int main(int argc, char *argv[])
 
   // Set up MDD options
   forest::policies pmdd(false);
-#if 1
-  // nothing
-#else
-  pmdd.setQuasiReduced();
-  pmdd.setFullStorage();
-#endif
   if (pessimistic)  pmdd.setPessimistic();
   else              pmdd.setOptimistic();
 
@@ -484,11 +400,6 @@ int main(int argc, char *argv[])
 
   // Set up MXD options
   forest::policies pmxd(true);
-#if 1
-  // nothing
-#else
-  pmxd.setFullStorage();
-#endif
   if (pessimistic)  pmdd.setPessimistic();
   else              pmdd.setOptimistic();
 
@@ -535,19 +446,12 @@ int main(int argc, char *argv[])
   
   fflush(stdout);
 
-#if 0
-  printf("Initial states:\n");
-  initialStates.show(stdout, 2);
-#endif
 #ifdef SHOW_MXD
   printf("Next-State Function:\n");
   nsf.show(stdout, 2);
 #endif
 
   dd_edge reachableStates(initialStates);
-
-
-#if 1
 
   printf("Building reachability set using %s\n", 
     dfs
@@ -567,50 +471,6 @@ int main(int argc, char *argv[])
   printf("#Nodes: %d\n", reachableStates.getNodeCount());
   printf("#Edges: %d\n", reachableStates.getEdgeCount());
 
-#else
-
-  printf("Building reachability set\n");
-  start.note_time();
-
-  // set up aliases
-  // traditional reachability analysis:
-  // reachableStates = initialStates
-  // postImage = getPostImage(reachableStates, nextStateFunction)
-  // while (postImage - reachableStates != empty)
-  // do
-  //   reachableStates += postImage
-  //   postImage = getPostImage(postImage)
-  //
-
-  const int nOperands = 3;
-  forest* forests[nOperands] = {mdd, mdd, mdd};
-  op_info* unionOp =
-    ecm->getOpInfo(compute_manager::UNION, forests, nOperands);
-  assert(unionOp != 0);
-  forests[1] = mxd;
-  op_info* postImageOp =
-    ecm->getOpInfo(compute_manager::POST_IMAGE, forests, nOperands);
-  assert(postImageOp != 0);
-
-  dd_edge prevReachableStates(mdd);
-  dd_edge postImage(mdd);
-
-  ecm->apply(postImageOp, reachableStates, nsf, postImage);
-  prevReachableStates = reachableStates;
-  ecm->apply(unionOp, reachableStates, postImage, reachableStates);
-
-  while(prevReachableStates != reachableStates)
-  {
-    ecm->apply(postImageOp, postImage, nsf, postImage);
-    prevReachableStates = reachableStates;
-    ecm->apply(unionOp, reachableStates, postImage, reachableStates);
-  }
-
-  start.note_time();
-  printf("Time interval: %.4e seconds\n",
-      start.get_last_interval()/1000000.0);
-
-#endif
 
   // Show stats for rs construction
 
@@ -629,65 +489,9 @@ int main(int argc, char *argv[])
   
   operation::showAllComputeTables(stdout, 1);
 
-#if 0   // determine verbosity of output
-  reachableStates.show(stdout, 2);
-#else
   double c;
   apply(CARDINALITY, reachableStates, c);
   printf("Approximately %e reachable states\n", c);
-#endif
-
-#if 0
-  printf("\nCompute table info:\n");
-  ecm->showComputeTable(stdout);
-#endif
-
-#if 0
-
-  printf("\nMDD forest info:\n");
-  mdd->showInfo(stdout);
-  printf("\nMXD forest info:\n");
-  mxd->showInfo(stdout);
-  printf("\nCompute table info:\n");
-  ecm->showComputeTable(stdout);
-
-  start.note_time();
-
-
-#if 1
-  printf("\nClearing compute table... ");
-  ecm->clearComputeTable();
-  printf("done.\n");
-#else
-  printf("\nForcing garbage collection on MDD forest... ");
-  mdd->garbageCollect();
-  mxd->garbageCollect();
-  printf("done.\n");
-#endif
-
-  start.note_time();
-  printf("Time interval: %.4e seconds\n",
-      start.get_last_interval()/1000000.0);
-
-  printf("\nMDD forest info:\n");
-  mdd->showInfo(stdout);
-  printf("\nMXD forest info:\n");
-  mxd->showInfo(stdout);
-  printf("\nCompute table info:\n");
-  ecm->showComputeTable(stdout);
-
-#endif
-
-#if 0
-  // Test Pre-Image
-  dd_edge preImage = testPreImage(initialStates, nsf);
-
-  // Test Post-Image
-  dd_edge postImage = testPostImage(initialStates, nsf);
-
-  // Test SubMatrix
-  dd_edge subMatrix = testSubMatrix(bounds, nLevels, nsf);
-#endif
 
 
   if (printReachableStates) {
@@ -736,68 +540,6 @@ int main(int argc, char *argv[])
         double(counter), start.get_last_interval()/double(1000000.0));
   }
 
-  if (false) {
-    // Test findFirstElement()
-    int* element = (int *) malloc((nLevels + 1) * sizeof(int));
-    int** elements = &element;
-    dd_edge rsCopy(reachableStates);
-    start.note_time();
-    double cardinality = rsCopy.getCardinality();
-    for (int index = 0; index < cardinality; index++)
-    {
-      // memset(element, 0, (nLevels + 1) * sizeof(int));
-      mdd->findFirstElement(rsCopy, element);
-#if 0
-      printf("Element at index %d: [ ", index);
-      for (int i = N - 1; i > 0; i--)
-      {
-        printf("%d ", element[i]);
-      }
-      printf("]\n");
-#endif
-      dd_edge temp(mdd);
-      mdd->createEdge(elements, 1, temp);
-      rsCopy -= temp;
-    }
-    start.note_time();
-    printf("findFirstElement traversal time (%0.4e elements): %0.4e seconds\n",
-        cardinality, start.get_last_interval()/double(1000000.0));
-    free(element);
-  }
-
-  if (false) {
-    // Create a EV+MDD forest in this domain (to store index set)
-    forest* evplusmdd = d->createForest(false, forest::INTEGER, forest::EVPLUS);
-    assert(evplusmdd != NULL);
-
-    // Convert MDD to Index Set EV+MDD and print the states
-    int* element = (int *) malloc((nLevels + 1) * sizeof(int));
-    dd_edge indexSet(evplusmdd);
-    start.note_time();
-    apply(CONVERT_TO_INDEX_SET, reachableStates, indexSet);
-    double cardinality = indexSet.getCardinality();
-    for (int index = 0, card = int(cardinality); index < card; index++)
-    {
-      evplusmdd->getElement(indexSet, index, element);
-#if 0
-      printf("Element at index %d: [ ", index);
-      for (int i = N - 1; i > 0; i--)
-      {
-        printf("%d ", element[i]);
-      }
-      printf("]\n");
-#endif
-    }
-    start.note_time();
-    printf("Index Set traversal time (%0.4e elements): %0.4e seconds\n",
-        cardinality, start.get_last_interval()/double(1000000.0));
-    free(element);
-  }
-
-#if 0
-  mdd->showInfo(stdout);
-  MEDDLY::operation::showMonolithicComputeTable(stdout, false);
-#endif
   // Cleanup
   MEDDLY::destroyDomain(d);
   MEDDLY::cleanup();
