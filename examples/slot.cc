@@ -232,23 +232,25 @@ int main(int argc, const char** argv)
     printf(" current memory allocated\n\t");
     printmem(mxd->getPeakMemoryAllocated());
     printf(" peak memory allocated\n");
-    fflush(stdout);
   }
 
   dd_edge reachable(mdd);
   switch (method) {
     case 'b':
         printf("Building reachability set using traditional algorithm\n");
+        fflush(stdout);
         apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
         break;
 
     case 'd':
         printf("Building reachability set using saturation\n");
+        fflush(stdout);
         apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
         break;
 
     case 'e':
         printf("Building reachability set using explicit search\n");
+        fflush(stdout);
         explicitReachset(events, 8*N, mdd, init_state, reachable, 256);
         break;
 
