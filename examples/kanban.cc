@@ -169,8 +169,6 @@ int main(int argc, const char** argv)
   };
   printf("Done\n");
   fflush(stdout);
-  mdd->removeAllComputeTableEntries();
-  mdd->garbageCollect();
 
   printf("MDD stats:\n");
   printf("\t%ld current nodes\n", mdd->getCurrentNumNodes());

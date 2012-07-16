@@ -260,8 +260,6 @@ int main(int argc, const char** argv)
   }
   printf("Done\n");
   fflush(stdout);
-  mdd->removeAllComputeTableEntries();
-  mdd->garbageCollect();
 
 #ifdef SHOW_STATES
   int count = 0;
