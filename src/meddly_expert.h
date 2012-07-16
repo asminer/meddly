@@ -600,6 +600,19 @@ class MEDDLY::node_reader {
           MEDDLY_CHECK_RANGE(0, n, nnzs);
           return index[n];
         }
+        
+        /// Get the edge value, as an integer.
+        inline int ei(int n) const {
+          MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
+          return edges[n];
+        }
+
+        /// Get the edge value, as a float.
+        inline float ef(int n) const {
+          MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
+          MEDDLY_DCASSERT(sizeof(int) == sizeof(float));
+          return ((float*)edges)[n];
+        }
 
         /// Get the level number of this node.
         inline int getLevel() const {
@@ -647,23 +660,27 @@ class MEDDLY::node_reader {
           }
         }
 
+        static node_reader* freeList;
     private:
+        node_reader* next;    // for recycled list
         int* down;
         int* index;
+        int* edges;
         int alloc;
+        int ealloc;
         int size;
         int nnzs;
         int level;
+        char edge_size;
         bool is_full;
-        node_reader* next;    // for recycled list
-        static node_reader* freeList;
 
         /// Called within expert_forest to allocate space.
         ///   @param  k     Level number.
         ///   @param  ns    Size of node
+        ///   @param  es    Edge size, per pointer.
         ///   @param  full  If true, we'll be filling a full reader.
         ///                 Otherwise it is a sparse one.
-        void resize(int k, int ns, bool full);
+        void resize(int k, int ns, char es, bool full);
 
         friend class expert_forest; 
         friend void cleanup();

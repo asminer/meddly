@@ -435,7 +435,9 @@ MEDDLY::node_reader::node_reader()
 {
   down = 0;
   index = 0;
+  edges = 0;
   alloc = 0;
+  ealloc = 0;
   size = 0;
   nnzs = 0;
   level = 0;
@@ -450,9 +452,12 @@ void MEDDLY::node_reader::clear()
 {
   free(down);
   free(index);
+  free(edges);
   down = 0;
   index = 0;
+  edges = 0;
   alloc = 0;
+  ealloc = 0;
   size = 0;
   nnzs = 0;
   level = 0;
@@ -473,21 +478,31 @@ void MEDDLY::node_reader::dump(FILE* s) const
   }
 }
 
-void MEDDLY::node_reader::resize(int k, int ns, bool full)
+void MEDDLY::node_reader::resize(int k, int ns, char es, bool full)
 {
   level = k;
   is_full = full;
   size = ns;
-  if (size <= alloc) return;
-  int nalloc = ((ns/8)+1)*8;
-  MEDDLY_DCASSERT(nalloc > ns);
-  MEDDLY_DCASSERT(nalloc>0);
-  MEDDLY_DCASSERT(nalloc>alloc);
-  down = (int*) realloc(down, nalloc*sizeof(int));
-  if (0==down) throw error(error::INSUFFICIENT_MEMORY);
-  index = (int*) realloc(index, nalloc*sizeof(int));
-  if (0==index) throw error(error::INSUFFICIENT_MEMORY);
-  alloc = nalloc;
+  edge_size = es;
+  if (size > alloc) {
+    int nalloc = ((ns/8)+1)*8;
+    MEDDLY_DCASSERT(nalloc > ns);
+    MEDDLY_DCASSERT(nalloc>0);
+    MEDDLY_DCASSERT(nalloc>alloc);
+    down = (int*) realloc(down, nalloc*sizeof(int));
+    if (0==down) throw error(error::INSUFFICIENT_MEMORY);
+    index = (int*) realloc(index, nalloc*sizeof(int));
+    if (0==index) throw error(error::INSUFFICIENT_MEMORY);
+    alloc = nalloc;
+  }
+  if (edge_size * size > ealloc) {
+    int nalloc = ((edge_size * size)/8+1)*8;
+    MEDDLY_DCASSERT(nalloc>0);
+    MEDDLY_DCASSERT(nalloc>alloc);
+    edges = (int*) realloc(edges, nalloc*sizeof(int));
+    if (0==edges) throw error(error::INSUFFICIENT_MEMORY);
+    ealloc = nalloc;
+  }
 }
 
 
@@ -1758,8 +1773,8 @@ void MEDDLY::expert_forest
 {
   const nodeData &n = getNode(node);
   int nsize = getLevelSize(n.level);
-  nr.resize(n.level, nsize, full);
   level_data& ld = levels[n.level];
+  nr.resize(n.level, nsize, ld.edgeSize, full);
   if (ld.isFull(n.offset)) {
     int i;
     int stop = ld.fullSizeOf(n.offset);
@@ -1806,7 +1821,7 @@ void MEDDLY::expert_forest
 ::initRedundantReader(node_reader &nr, int k, int node, bool full) const
 {
   int nsize = getLevelSize(k);
-  nr.resize(k, nsize, full);
+  nr.resize(k, nsize, levels[k].edgeSize, full);
   for (int i=0; i<nsize; i++) 
     nr.down[i] = node;
   if (!full) {
@@ -1820,12 +1835,12 @@ void MEDDLY::expert_forest
 {
   int nsize = getLevelSize(k);
   if (full) {
-    nr.resize(k, nsize, full);
+    nr.resize(k, nsize, levels[k].edgeSize, full);
     for (int j=0; j<i; j++) nr.down[j] = 0;
     nr.down[i] = node;
     for (int j=i+1; j<nsize; j++) nr.down[j] = 0;
   } else {
-    nr.resize(k, 1, full);
+    nr.resize(k, 1, levels[k].edgeSize, full);
     nr.nnzs = 1;
     nr.down[0] = node;
     nr.index[0] = i;
