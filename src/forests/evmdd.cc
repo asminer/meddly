@@ -39,6 +39,11 @@ MEDDLY::evmdd_forest::~evmdd_forest()
 { }
 
 
+void MEDDLY::evmdd_forest::showTerminal(FILE* s, int tnode) const
+{
+  fprintf(s, "t%d", -tnode);
+}
+
 inline void MEDDLY::evmdd_forest::setAllDownPtrs(int p, int value) {
   MEDDLY_DCASSERT(!isReducedNode(p));
   MEDDLY_DCASSERT(isFullNode(p));
@@ -909,6 +914,11 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
   }
 }
 
+void MEDDLY::evp_mdd_int::showEdgeValue(FILE* s, const void* edge, int i) const
+{
+  fprintf(s, "%d", ((const int*)edge)[i]);
+}
+
 // ********************************* EV*MDDs ********************************** 
 
 MEDDLY::evt_mdd_real::evt_mdd_real(int dsl, domain *d, const policies &p)
@@ -1390,5 +1400,10 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
     }
     result = linkNode(found);
   }
+}
+
+void MEDDLY::evt_mdd_real::showEdgeValue(FILE* s, const void* edge, int i) const
+{
+  fprintf(s, "%f", ((const float*)edge)[i]);
 }
 

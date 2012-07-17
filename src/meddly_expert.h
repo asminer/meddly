@@ -614,6 +614,11 @@ class MEDDLY::node_reader {
           return ((float*)edge)[n];
         }
 
+        /// Get the raw edge array.
+        inline const void* rawEdges() const {
+          return edge;
+        }
+
         /// Get the level number of this node.
         inline int getLevel() const {
           return level;
@@ -629,9 +634,21 @@ class MEDDLY::node_reader {
           MEDDLY_DCASSERT(!is_full);
           return nnzs;
         }
+        /// Is this a sparse reader?
+        inline bool isSparse() const { 
+          return !is_full;
+        }
+        /// Is this a full reader?
+        inline bool isFull() const {
+          return is_full;
+        }
+        /// Does this node have edge values?
+        inline bool hasEdges() const {
+          return edge_size;
+        }
 
-        // For debudding
-        void dump(FILE*) const;
+        // For debugging
+        // void dump(FILE*) const;
 
     // Centralized recycling
     public:
@@ -712,6 +729,12 @@ class MEDDLY::expert_forest : public forest
     /// Destructor.
     virtual ~expert_forest();  
   
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  // |                                                                |
+  // |                         public methods                         |
+  // |                                                                |
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   // ------------------------------------------------------------
   // forward subclass declarations
   public:
@@ -750,6 +773,57 @@ class MEDDLY::expert_forest : public forest
         return getDomain()->getVariableBound(lh, false);
       }
     }
+    /// Is this a terminal node?
+    inline static bool isTerminalNode(int p) {
+      return (p < 1);
+    }
+    /// Sanity check: is this a valid nonterminal node index.
+    inline bool isValidNonterminalIndex(int node) const {
+      return (node>0) && (node <= a_last);
+    }
+    /// Sanity check: is this a valid node index.
+    inline bool isValidNodeIndex(int node) const {
+      return node <= a_last;
+    }
+    inline int getLastNode() const {
+      return a_last;
+    }
+    /// Get data for a given nonterminal node.
+    inline const nodeData& getNode(int p) const {
+      MEDDLY_DCASSERT(address);
+      MEDDLY_CHECK_RANGE(1, p, 1+a_last);
+      return address[p];
+    }
+    /** Get the node's level as an integer.
+        Negative values are used for primed levels.
+    */
+    inline int getNodeLevel(int p) const {
+      if (isTerminalNode(p)) return 0;
+      MEDDLY_DCASSERT(address);
+      MEDDLY_CHECK_RANGE(1, p, 1+a_last);
+      return address[p].level;
+    }
+    inline bool isPrimedNode(int p) const {
+      return getNodeLevel(p) < 0;
+    }
+    inline bool isUnprimedNode(int p) const {
+      return getNodeLevel(p) > 0;
+    }
+
+    /** Get the node's height.
+        For convenience.  Height is the total
+        number of levels until terminal nodes.
+    */
+    inline int getNodeHeight(int p) const {
+      if (isForRelations()) {
+        int k = getNodeLevel(p);
+        return (k<0) ? (-2*k-1) : 2*k;
+      } else {
+        return getNodeLevel(p);
+      }
+    }
+
+
     // --------------------------------------------------
     // Used by the unique table
     // --------------------------------------------------
@@ -859,21 +933,23 @@ class MEDDLY::expert_forest : public forest
           @return   A malloc'd array of non-terminal nodes, terminated by 0.
                     Or, a null pointer, if the list is empty.
     */
-    int* markNodesInSubgraph(int root, bool sort);
+    int* markNodesInSubgraph(int root, bool sort) const;
 
     /** Count and return the number of non-terminal nodes
         in the subgraph below the given node.
     */
-    int getNodeCount(int node);
+    int getNodeCount(int node) const;
 
     /** Count and return the number of edges
         in the subgraph below the given node.
     */
-    int getEdgeCount(int node, bool countZeroes);
+    int getEdgeCount(int node, bool countZeroes) const;
 
+    /// Display the contents of a single node.
+    void showNode(FILE* s, int node, int verbose = 0) const;
 
     /// Show all the nodes in the subgraph below the given node.
-    void showNodeGraph(FILE* s, int node);
+    void showNodeGraph(FILE* s, int node) const;
 
     /** Show stats about memory usage for this forest.
           @param  s     Output stream to write to
@@ -882,7 +958,7 @@ class MEDDLY::expert_forest : public forest
           @param  verb  Level of detail, between 0 (least detailed)
                         and 9 (most detailed).
     */
-    void reportMemoryUsage(FILE * s, const char* pad, int verb);
+    void reportMemoryUsage(FILE * s, const char* pad, int verb) const;
 
     /// Compute a hash for a node.
     unsigned hashNode(int p) const;
@@ -940,7 +1016,7 @@ class MEDDLY::expert_forest : public forest
     void initNodeReader(node_reader &nr, int node, bool full) const;
 
     /// Allocate and initialize a node reader.
-    inline node_reader* initNodeReader(int node, bool full) {
+    inline node_reader* initNodeReader(int node, bool full) const {
       node_reader* nr = node_reader::useReader();
       MEDDLY_DCASSERT(nr);
       initNodeReader(*nr, node, full);
@@ -971,7 +1047,7 @@ class MEDDLY::expert_forest : public forest
       bool full) const;
 
     /// Allocate and initialize a redundant node reader.
-    inline node_reader* initRedundantReader(int k, int node, bool full) {
+    inline node_reader* initRedundantReader(int k, int node, bool full) const {
       node_reader* nr = node_reader::useReader();
       MEDDLY_DCASSERT(nr);
       initRedundantReader(*nr, k, node, full);
@@ -1004,7 +1080,9 @@ class MEDDLY::expert_forest : public forest
       bool f) const;
 
     /// Allocate and initialize an identity node reader.
-    inline node_reader* initIdentityReader(int k, int i, int node, bool full) {
+    inline node_reader* initIdentityReader(int k, int i, int node, 
+      bool full) const 
+    {
       node_reader* nr = node_reader::useReader();
       MEDDLY_DCASSERT(nr);
       initIdentityReader(*nr, k, i, node, full);
@@ -1031,6 +1109,37 @@ class MEDDLY::expert_forest : public forest
     virtual void normalizeAndReduceNode(int& node, int& ev);
     virtual void normalizeAndReduceNode(int& node, float& ev);
 
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  // |                                                                |
+  // |                 protected and private  methods                 |
+  // |                                                                |
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  // ------------------------------------------------------------
+  // inlined helpers.
+  protected:
+    inline bool isZombieNode(int p) const {
+      MEDDLY_DCASSERT(isValidNodeIndex(p));
+      MEDDLY_DCASSERT(!isTerminalNode(p));
+      return (getCacheCount(p) < 0);
+    }
+
+    inline bool isActiveNode(int p) const {
+      return 
+      (isValidNodeIndex(p) && (isTerminalNode(p) || getNodeOffset(p) > 0));
+    }
+
+    inline bool isDeletedNode(int p) const {
+      MEDDLY_DCASSERT(isValidNonterminalIndex(p));
+      return !(isActiveNode(p) || isZombieNode(p));
+    }
+
+
+
+  // ------------------------------------------------------------
+  // virtual, with default implementation.
+  // Should be overridden in appropriate derived classes.
+  protected:
     /// Apply reduction rule to the temporary node and finalize it. Once
     /// a node is reduced, its contents cannot be modified.
     ///   @param  in  Incoming index, used only for identity reduction;
@@ -1067,14 +1176,18 @@ class MEDDLY::expert_forest : public forest
     */
     virtual void normalize(nodeBuilder &nb, float& ev);
 
-  // ------------------------------------------------------------
-  // additional, "expert" interface.
-  // Must be overridden in derived classes.
-  public:
-    /// Display the contents of node
-    virtual void showNode(FILE* s, int node, int verbose = 0) const = 0;
+    /** Show a terminal node.
+          @param  s       Stream to write to.
+          @param  tnode   Handle to a terminal node.
+    */
+    virtual void showTerminal(FILE* s, int tnode) const;
 
-
+    /** Show an edge value.
+          @param  s       Stream to write to.
+          @param  edge    Array of all edge values.
+          @param  i       Index of the one we want to display.
+    */
+    virtual void showEdgeValue(FILE* s, const void* edge, int i) const;
 
   // ------------------------------------------------------------
   // Temporary - until we eliminate createTempNode
@@ -1174,14 +1287,6 @@ class MEDDLY::expert_forest : public forest
     /// getSparseNodeIndex(n, 1) returns 2
     /// getSparseNodeDownPtr(n, 1) returns 234
     bool isSparseNode(int node) const;
-
-    /// Is this a terminal node?
-    /// Note: terminal nodes have a handle <= 0.
-    /// (i) represented node handle i.
-    /// In MDDs/EVMDDs: (0) = false, (-1) = true.
-    /// In MTMDDs: (-i) = i; i.e. a terminal value of i is represented
-    ///            internally using a node handle of -i.
-    bool isTerminalNode(int node) const;
 
     /// Get the integer value represented by this terminal node.
     bool getBoolean(int terminalNode) const;
@@ -1336,7 +1441,7 @@ class MEDDLY::expert_forest : public forest
     /// An active node is a node that has not yet been recycled (i.e. dead).
     /// Temporary nodes, Reduced nodes and Terminal nodes are considered
     /// to be active nodes.
-    bool isActiveNode(int node) const;
+    // bool isActiveNode(int node) const;
 
   protected:
 
@@ -1344,8 +1449,6 @@ class MEDDLY::expert_forest : public forest
     int* getNodeAddress(int node) const;
     int* getAddress(int k, int offset) const;
     int getNodeOffset(int node) const;
-
-    bool isZombieNode(int node) const;
 
     // the following virtual functions are implemented in node_manager
     // virtual void reclaimOrphanNode(int node) = 0;     // for linkNode()
@@ -1485,56 +1588,6 @@ class MEDDLY::expert_forest : public forest
         if (a_last < a_next_shrink) shrinkHandleList();
       }
     }
-
-  // For querying nodes 
-  public:
-    inline bool isValidNonterminalIndex(int node) const {
-      return (node>0) && (node <= a_last);
-    }
-    inline bool isValidNodeIndex(int node) const {
-      return node <= a_last;
-    }
-    inline int getLastNode() const {
-      return a_last;
-    }
-    inline const nodeData& getNode(int p) const {
-      MEDDLY_DCASSERT(address);
-      MEDDLY_CHECK_RANGE(1, p, 1+a_last);
-      return address[p];
-    }
-    /** Get the node's level as an integer.
-        Negative values are used for primed levels.
-    */
-    inline int getNodeLevel(int p) const {
-      if (isTerminalNode(p)) return 0;
-      MEDDLY_DCASSERT(address);
-      MEDDLY_CHECK_RANGE(1, p, 1+a_last);
-      return address[p].level;
-    }
-
-    inline bool isPrimedNode(int p) const {
-      return getNodeLevel(p) < 0;
-    }
-
-    inline bool isUnprimedNode(int p) const {
-      return getNodeLevel(p) > 0;
-    }
-
-    /** Get the node's height.
-        For convenience.  Height is the total
-        number of levels until terminal nodes.
-    */
-    inline int getNodeHeight(int p) const {
-      if (isForRelations()) {
-        int k = getNodeLevel(p);
-        return (k<0) ? (-2*k-1) : 2*k;
-      } else {
-        return getNodeLevel(p);
-      }
-    }
-
-
-
 
   private:
     void expandHandleList();
@@ -2830,33 +2883,11 @@ int MEDDLY::expert_forest::getNodeOffset(int p) const
 }
 
 inline
-bool MEDDLY::expert_forest::isActiveNode(int p) const
-{
-  return (isValidNodeIndex(p) && (isTerminalNode(p) || getNodeOffset(p) > 0));
-}
-
-
-inline
-bool MEDDLY::expert_forest::isZombieNode(int p) const
-{
-  MEDDLY_DCASSERT(isValidNodeIndex(p));
-  MEDDLY_DCASSERT(!isTerminalNode(p));
-  return (getCacheCount(p) < 0);
-}
-
-
-inline
 int& MEDDLY::expert_forest::getCacheCount(int p) const
 {
   MEDDLY_DCASSERT(isValidNodeIndex(p));
   MEDDLY_DCASSERT(!isTerminalNode(p));
   return address[p].cache_count;
-}
-
-inline
-bool MEDDLY::expert_forest::isTerminalNode(int p) const
-{
-  return (p < 1);
 }
 
 inline

@@ -56,3 +56,8 @@ void MEDDLY::mt_mdd_bool::evaluate(const dd_edge &f, const int* vlist,
   term = getBoolean(getTerminalNodeForEdge(f.getNode(), vlist));
 }
 
+
+void MEDDLY::mt_mdd_bool::showTerminal(FILE* s, int tnode) const
+{
+  fprintf(s, "%c", tnode ? 'T' : 'F'); 
+}

@@ -73,6 +73,11 @@ void MEDDLY::mt_mxd_bool::evaluate(const dd_edge& f, const int* vlist,
   term = getBoolean(getTerminalNodeForEdge(f.getNode(), vlist, vplist));
 }
 
+void MEDDLY::mt_mxd_bool::showTerminal(FILE* s, int tnode) const
+{
+  fprintf(s, "%c", tnode ? 'T' : 'F'); 
+}
+
 #ifdef ACCUMULATE_ON
 
 #if 1

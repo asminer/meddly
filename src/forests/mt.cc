@@ -696,6 +696,7 @@ int ifTermGetInt(const MEDDLY::mt_forest *nm, int node)
   return nm->isTerminalNode(node) ? nm->getInteger(node) : node;
 }
 
+/*
 void MEDDLY::mt_forest::showNode(FILE *s, int p, int verbose) const
 {
   if (isTerminalNode(p)) {
@@ -822,6 +823,7 @@ void MEDDLY::mt_forest::showNode(FILE *s, int p, int verbose) const
     fprintf(s, "]");
   }
 }
+*/
 
 // ------------------------------------------------------------------
 //  Protected methods

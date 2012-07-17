@@ -139,7 +139,7 @@ class MEDDLY::mt_forest : public expert_forest {
     // void deleteOrphanNode(int node);      // for uncacheNode()
     // void freeZombieNode(int node);        // for uncacheNode()
 
-    virtual void showNode(FILE *s, int p, int verbose = 0) const;
+    // virtual void showNode(FILE *s, int p, int verbose = 0) const;
 
     // *************** override expert_forest class -- done ***************
 
@@ -203,7 +203,7 @@ class MEDDLY::mt_forest : public expert_forest {
     // void setNodeOffset(int p, int offset);
 
     // Dealing with node status
-    bool isDeletedNode(int p) const;
+    // bool isDeletedNode(int p) const;
 
     // long getUniqueTableMemoryUsed() const;
     long getHoleMemoryUsage() const;
@@ -397,13 +397,6 @@ inline void MEDDLY::mt_forest::setNodeOffset(int p, int offset)
 */
 
 // Dealing with node status
-
-inline bool MEDDLY::mt_forest::isDeletedNode(int p) const 
-{
-  MEDDLY_DCASSERT(isValidNonterminalIndex(p));
-  return !(isActiveNode(p) || isZombieNode(p));
-}
-
 
 inline void MEDDLY::mt_forest::incrNodesActivatedSinceGc() {
   nodes_activated_since_gc++;

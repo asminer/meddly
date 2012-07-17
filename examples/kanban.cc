@@ -178,6 +178,11 @@ int main(int argc, const char** argv)
   printf("Done\n");
   fflush(stdout);
 
+#ifdef DUMP_REACHABLE
+  printf("Reachable states:\n");
+  reachable.show(stdout, 2);
+#endif
+
   printf("MDD stats:\n");
   printf("\t%ld current nodes\n", mdd->getCurrentNumNodes());
   printf("\t%ld peak nodes\n", mdd->getPeakNumNodes());

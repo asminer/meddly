@@ -46,6 +46,9 @@ class MEDDLY::mt_mxd_bool : public mtmxd_forest {
     virtual void evaluate(const dd_edge& f, const int* vlist,
         const int* vplist, bool &term) const;
 
+  protected:
+    virtual void showTerminal(FILE* s, int tnode) const;
+
   // still to be reorganized 
   public:
     using mtmxd_forest::createEdge;

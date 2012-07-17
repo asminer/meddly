@@ -56,4 +56,7 @@ void MEDDLY::mt_mdd_real::evaluate(const dd_edge &f,
   term = getReal(getTerminalNodeForEdge(f.getNode(), vlist));
 }
 
-
+void MEDDLY::mt_mdd_real::showTerminal(FILE* s, int tnode) const
+{
+  fprintf(s, "t%d", getReal(tnode)); 
+}

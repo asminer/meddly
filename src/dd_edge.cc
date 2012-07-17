@@ -268,8 +268,22 @@ void MEDDLY::dd_edge::show(FILE* strm, int verbosity) const
     fprintf(strm, "value: %d, level: %d)\n", value, level);
   }
   if (verbosity == 2 || verbosity == 3) {
-    fprintf(strm, "MDD rooted at this node:\n");
-    smart_cast<expert_forest*>(parent)->showNodeGraph(strm, node);
+    if (eParent->isMultiTerminal()) {
+      fprintf(strm, "MT");
+    } 
+    if (eParent->isEVPlus()) {
+      fprintf(strm, "EV+");
+    }
+    if (eParent->isEVTimes()) {
+      fprintf(strm, "EV*");
+    }
+    if (eParent->isForRelations()) {
+      fprintf(strm, "MxD");
+    } else {
+      fprintf(strm, "MDD");
+    }
+    fprintf(strm, " rooted at this node:\n");
+    eParent->showNodeGraph(strm, node);
   }
   if (verbosity == 1 || verbosity == 3) {
     fprintf(strm, "Cardinality of node %d: %0.8e\n", node, getCardinality());

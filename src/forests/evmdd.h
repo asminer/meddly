@@ -81,6 +81,7 @@ class MEDDLY::evmdd_forest : public mt_forest {
     virtual void initEdgeValues(int p) = 0;
 
   protected:
+    virtual void showTerminal(FILE* s, int tnode) const;
     void setAllEdgeValues(int p, int value);
     void setAllEdgeValues(int p, float fvalue);
     void setAllDownPtrs(int p, int value);
@@ -240,6 +241,8 @@ class MEDDLY::evp_mdd_int : public evmdd_forest {
         std::vector<int>& dptrs, std::vector<int>& evs) const;
     virtual void normalizeAndReduceNode(int& p, int& ev);
     virtual void normalizeAndReduceNode(int& p, float& ev) { }
+  protected:
+    virtual void showEdgeValue(FILE* s, const void* edge, int i) const;
 };
 
 
@@ -284,6 +287,8 @@ class MEDDLY::evt_mdd_real : public evmdd_forest {
         std::vector<int>& dptrs, std::vector<float>& evs) const;
     virtual void normalizeAndReduceNode(int& p, int& ev) { }
     virtual void normalizeAndReduceNode(int& p, float& ev);
+  protected:
+    virtual void showEdgeValue(FILE* s, const void* edge, int i) const;
 };
 
 

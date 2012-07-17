@@ -43,6 +43,9 @@ class MEDDLY::mt_mdd_bool : public mtmdd_forest {
     virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
     virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
       const;
+
+  protected:
+    virtual void showTerminal(FILE* s, int tnode) const;
 };
 
 #endif

@@ -463,6 +463,7 @@ void MEDDLY::node_reader::clear()
   level = 0;
 }
 
+/*
 void MEDDLY::node_reader::dump(FILE* s) const
 {
   if (is_full) {
@@ -477,6 +478,7 @@ void MEDDLY::node_reader::dump(FILE* s) const
     fprintf(s, ")");
   }
 }
+*/
 
 void MEDDLY::node_reader::resize(int k, int ns, char es, bool full)
 {
@@ -1500,7 +1502,7 @@ void MEDDLY::expert_forest::validateIncounts(bool exact)
 // '                                                                '
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-int* MEDDLY::expert_forest::markNodesInSubgraph(int root, bool sort)
+int* MEDDLY::expert_forest::markNodesInSubgraph(int root, bool sort) const
 {
   if (isTerminalNode(root)) return 0;
 
@@ -1562,7 +1564,7 @@ int* MEDDLY::expert_forest::markNodesInSubgraph(int root, bool sort)
   return marked;
 }
 
-int MEDDLY::expert_forest::getNodeCount(int p) 
+int MEDDLY::expert_forest::getNodeCount(int p) const
 {
   int* list = markNodesInSubgraph(p, true);
   if (0==list) return 0;
@@ -1572,7 +1574,7 @@ int MEDDLY::expert_forest::getNodeCount(int p)
   return i;
 }
 
-int MEDDLY::expert_forest::getEdgeCount(int p, bool countZeroes)
+int MEDDLY::expert_forest::getEdgeCount(int p, bool countZeroes) const
 {
   int* list = markNodesInSubgraph(p, true);
   if (0==list) return 0;
@@ -1586,7 +1588,87 @@ int MEDDLY::expert_forest::getEdgeCount(int p, bool countZeroes)
   return ec;
 }
 
-void MEDDLY::expert_forest::showNodeGraph(FILE *s, int p)
+void MEDDLY::expert_forest::showNode(FILE* s, int p, int verbose) const
+{
+  if (isTerminalNode(p)) {
+    fprintf(s, "(terminal)");
+    return;
+  }
+  if (isDeletedNode(p)) {
+    fprintf(s, "DELETED");
+    return;
+  }
+  if (isZombieNode(p)) {
+    fprintf(s, "Zombie cc: %d", -address[p].cache_count);
+    return;
+  }
+  const nodeData& node = getNode(p);
+  const level_data &ld = levels[node.level];
+  if (verbose) {
+    // node: was already written.
+    const variable* v = getDomain()->getVar(ABS(node.level));
+    if (v->getName()) {
+      fprintf(s, " level: %s", v->getName());
+    } else {
+      fprintf(s, " level: %d", ABS(node.level));
+    }
+    if (getNodeLevel(p) < 0)
+      fprintf(s, "'");
+    else
+      fprintf(s, " ");
+    fprintf(s, " in: %d", ld.countOf(node.offset));
+    fprintf(s, " cc: %d", node.cache_count);
+  } else {
+    fprintf(s, "node: %d", p);
+  }
+  node_reader *R = node_reader::useReader();
+  initNodeReader(*R, p, ld.isFull(node.offset));
+  if (R->isFull()) {
+    // Full node
+    int size = ld.fullSizeOf(node.offset);
+    if (verbose) fprintf(s, " size: %d", size);
+    fprintf(s, " down: [");
+    for (int i=0; i<size; i++) {
+      if (i) fprintf(s, "|"); 
+      if (R->hasEdges()) {
+        fprintf(s, "<");
+        showEdgeValue(s, R->rawEdges(), i);
+        fprintf(s, ", ");
+      } 
+      if (isTerminalNode(R->d(i))) {
+        showTerminal(s, R->d(i));
+      } else {
+        fprintf(s, "%d", R->d(i));
+      }
+      if (R->hasEdges()) fprintf(s, ">");
+    } // for i
+    fprintf(s, "]");
+  } else {
+    // Sparse node
+    int nnz = ld.sparseSizeOf(node.offset);
+    if (verbose) fprintf(s, " nnz : %d", nnz);
+    fprintf(s, " down: (");
+    for (int z=0; z<nnz; z++) {
+      if (z) fprintf(s, ", ");
+      fprintf(s, "%d:", R->i(z));
+      if (R->hasEdges()) {
+        fprintf(s, "<");
+        showEdgeValue(s, R->rawEdges(), z);
+        fprintf(s, ", ");
+      } 
+      if (isTerminalNode(R->d(z))) {
+        showTerminal(s, R->d(z));
+      } else {
+        fprintf(s, "%d", R->d(z));
+      }
+      if (R->hasEdges()) fprintf(s, ">");
+    } // for z
+    fprintf(s, ")");
+  }
+  node_reader::recycle(R);
+}
+
+void MEDDLY::expert_forest::showNodeGraph(FILE *s, int p) const
 {
   int* list = markNodesInSubgraph(p, true);
   if (0==list) return;
@@ -1623,7 +1705,7 @@ void MEDDLY::expert_forest::showNodeGraph(FILE *s, int p)
 }
 
 void MEDDLY::expert_forest
-::reportMemoryUsage(FILE * s, const char* pad, int verb)
+::reportMemoryUsage(FILE * s, const char* pad, int verb) const
 {
   if (verb>0) {
     fprintf(s, "%sPeak Nodes:             %ld\n", pad, getPeakNumNodes());
@@ -2006,7 +2088,15 @@ void MEDDLY::expert_forest::normalize(nodeBuilder &nb, float& ev)
   throw error(error::TYPE_MISMATCH);
 }
 
+void MEDDLY::expert_forest::showTerminal(FILE* s, int tnode) const
+{
+  throw error(error::NOT_IMPLEMENTED);
+}
 
+void MEDDLY::expert_forest::showEdgeValue(FILE* s, const void* edge, int i) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // '                                                                '

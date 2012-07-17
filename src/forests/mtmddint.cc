@@ -56,3 +56,7 @@ void MEDDLY::mt_mdd_int::evaluate(const dd_edge &f,
   term = getInteger(getTerminalNodeForEdge(f.getNode(), vlist));
 }
 
+void MEDDLY::mt_mdd_int::showTerminal(FILE* s, int tnode) const
+{
+  fprintf(s, "t%d", getInteger(tnode)); 
+}
