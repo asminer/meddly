@@ -604,14 +604,14 @@ class MEDDLY::node_reader {
         /// Get the edge value, as an integer.
         inline int ei(int n) const {
           MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
-          return edges[n];
+          return edge[n];
         }
 
         /// Get the edge value, as a float.
         inline float ef(int n) const {
           MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
           MEDDLY_DCASSERT(sizeof(int) == sizeof(float));
-          return ((float*)edges)[n];
+          return ((float*)edge)[n];
         }
 
         /// Get the level number of this node.
@@ -665,7 +665,7 @@ class MEDDLY::node_reader {
         node_reader* next;    // for recycled list
         int* down;
         int* index;
-        int* edges;
+        int* edge;
         int alloc;
         int ealloc;
         int size;
@@ -948,6 +948,7 @@ class MEDDLY::expert_forest : public forest
     }
 
     /** Initialize a redundant node reader.
+        Use for multi-terminal forests.
         For convenience.
           @param  nr      Node reader to fill.
           @param  k       Level that was skipped.
@@ -955,6 +956,19 @@ class MEDDLY::expert_forest : public forest
           @param  full    Use a full reader or sparse.
     */
     void initRedundantReader(node_reader &nr, int k, int node, bool full) const;
+
+    /** Initialize a redundant node reader.
+        Use for edge-valued forests, whose edge values
+        require a single integer slot.
+        For convenience.
+          @param  nr      Node reader to fill.
+          @param  k       Level that was skipped.
+          @param  ev      Edge value to use.
+          @param  node    Downward pointer to use.
+          @param  full    Use a full reader or sparse.
+    */
+    void initRedundantReader(node_reader &nr, int k, int ev, int node, 
+      bool full) const;
 
     /// Allocate and initialize a redundant node reader.
     inline node_reader* initRedundantReader(int k, int node, bool full) {
@@ -965,6 +979,7 @@ class MEDDLY::expert_forest : public forest
     }
 
     /** Initialize an identity node reader.
+        Use for multi-terminal forests.
         For convenience.
           @param  nr      Node reader to fill.
           @param  k       Level that was skipped.
@@ -973,6 +988,20 @@ class MEDDLY::expert_forest : public forest
           @param  f       Use a full reader or sparse.
     */
     void initIdentityReader(node_reader &nr, int k, int i, int n, bool f) const;
+
+    /** Initialize an identity node reader.
+        Use for edge-valued forests, whose edge values
+        require a single integer slot.
+        For convenience.
+          @param  nr      Node reader to fill.
+          @param  k       Level that was skipped.
+          @param  i       Index of identity reduction
+          @param  ev      Edge value.
+          @param  n       Downward pointer to use.
+          @param  f       Use a full reader or sparse.
+    */
+    void initIdentityReader(node_reader &nr, int k, int i, int ev, int n, 
+      bool f) const;
 
     /// Allocate and initialize an identity node reader.
     inline node_reader* initIdentityReader(int k, int i, int node, bool full) {
