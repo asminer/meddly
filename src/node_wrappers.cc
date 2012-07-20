@@ -45,7 +45,9 @@ MEDDLY::node_reader::node_reader()
   size = 0;
   nnzs = 0;
   level = 0;
+#ifdef DEVELOPMENT_CODE
   has_hash = false;
+#endif
 }
 
 MEDDLY::node_reader::~node_reader()
@@ -126,12 +128,13 @@ void MEDDLY::node_reader::dump(FILE* s) const
 */
 
 void MEDDLY::node_reader
-::resize(const expert_forest* p, int k, int ns, bool full)
+// ::resize(const expert_forest* p, int k, int ns, bool full)
+::resize(int k, int ns, char eb, bool full)
 {
   level = k;
   is_full = full;
   size = ns;
-  edge_bytes = p->edgeSize(k) * sizeof(int);
+  edge_bytes = eb;
   if (size > alloc) {
     int nalloc = ((ns/8)+1)*8;
     MEDDLY_DCASSERT(nalloc > ns);
@@ -267,7 +270,9 @@ bool MEDDLY::node_builder::equals(int p) const
 
 void MEDDLY::node_builder::computeHash()
 {
+#ifdef DEVELOPMENT_CODE
   MEDDLY_DCASSERT(!has_hash);
+#endif
   
   hash_stream s;
   s.start(level);
@@ -305,7 +310,9 @@ void MEDDLY::node_builder::computeHash()
     }
   }
   h = s.finish();
+#ifdef DEVELOPMENT_CODE
   has_hash = true;
+#endif
 }
 
 

@@ -666,13 +666,17 @@ class MEDDLY::node_reader {
 
         // For debugging unique table.
         inline unsigned hash() const {
+#ifdef DEVELOPMENT_CODE
           MEDDLY_DCASSERT(has_hash);
+#endif
           return h;
         }
         inline void setHash(unsigned H) {
+#ifdef DEVELOPMENT_CODE
           MEDDLY_DCASSERT(!has_hash);
-          h = H;
           has_hash = true;
+#endif
+          h = H;
         };
 
     // Centralized recycling
@@ -685,7 +689,9 @@ class MEDDLY::node_reader {
           } else {
             nr = new node_reader;
           }
+#ifdef DEVELOPMENT_CODE
           nr->has_hash = false;
+#endif
           return nr;
         }
         inline static void recycle(node_reader* r) {
@@ -717,15 +723,19 @@ class MEDDLY::node_reader {
         unsigned h;
         char edge_bytes;  // number of bytes for an edge value.
         bool is_full;
+#ifdef DEVELOPMENT_CODE
         bool has_hash;
+#endif
 
         /// Called within expert_forest to allocate space.
         ///   @param  p     Parent.
         ///   @param  k     Level number.
-        ///   @param  ns    Size of node
+        ///   @param  ns    Size of node.
+        ///   @param  eb    Bytes for each edge.
         ///   @param  full  If true, we'll be filling a full reader.
         ///                 Otherwise it is a sparse one.
-        void resize(const expert_forest* p, int k, int ns, bool full);
+        // void resize(const expert_forest* p, int k, int ns, bool full);
+        void resize(int k, int ns, char eb, bool full);
 
         friend class expert_forest; 
         friend void cleanup();
@@ -759,7 +769,9 @@ class MEDDLY::node_builder {
         // TBD: need "extra" header stuff
         unsigned h;
         char edge_bytes;
+#ifdef DEVELOPMENT_CODE
         bool has_hash;
+#endif
         bool is_sparse;
         bool hashEdgeValues;
     public:
@@ -773,13 +785,17 @@ class MEDDLY::node_builder {
         }
         inline void resize(int s) {
           is_sparse = false;
+#ifdef DEVELOPMENT_CODE
           has_hash = false;
+#endif
           size = s;
           if (size > alloc) enlarge();
         }
         inline void resparse(int s) {
           is_sparse = true;
+#ifdef DEVELOPMENT_CODE
           has_hash = false;
+#endif
           size = s;
           if (size > alloc) enlarge();
         }
@@ -794,6 +810,9 @@ class MEDDLY::node_builder {
         }
         inline bool isFull() const {
           return !is_sparse;
+        }
+        inline int rawSize() const {
+          return size;
         }
         inline int getSize() const { 
           MEDDLY_DCASSERT(!is_sparse);
@@ -867,7 +886,9 @@ class MEDDLY::node_builder {
         }
     public: // for unique table
         inline unsigned hash() const {
+#ifdef DEVELOPMENT_CODE
           MEDDLY_DCASSERT(has_hash);
+#endif
           return h;
         }
         // bool equals(int p) const;
@@ -1441,39 +1462,57 @@ class MEDDLY::expert_forest : public forest
       MEDDLY_DCASSERT(nb.lock);
       nb.lock = false;
     }
+
+    /** Return a forest node equal to the one given.
+        The node is constructed as necessary.
+        This version should be used only for
+        multi terminal forests.
+          @param  in    Incoming pointer index;
+                        used for identity reductions.
+          @param  nb    Constructed node.
+
+          @return       A node handle equivalent
+                        to nb, taking into account
+                        the forest reduction rules
+                        and if a duplicate node exists.
+    */
     inline int createReducedNode(int in, node_builder& nb) {
       nb.computeHash();
-      bool u;
-      int q = createReducedHelper(in, nb, u);
+      int q = createReducedHelper(in, nb);
       MEDDLY_DCASSERT(nb.lock);
       nb.lock = false;
-      if (u) {
-        int i = nb.isSparse() ? nb.getNNZs() : nb.getSize();
-        for (i--; i>=0; i--)  unlinkNode(nb.d(i));
-      }
 #ifdef TRACK_DELETIONS
-      if (u) printf("Created node that matched %d\n", q);
-      else   printf("Created new node %d\n", q);
+      printf("Created node %d\n", q);
 #endif
       return q;
     }
+
+    /** Return a forest node equal to the one given.
+        The node is constructed as necessary.
+        This version should be used only for
+        edge valuded forests.
+          @param  in    Incoming pointer index;
+                        used for identity reductions.
+          @param  nb    Constructed node.
+          @param  ev    Output: edge value
+          @param  node  Output: node handle.
+                        On exit, the edge value and the node
+                        handle together are equivalent to nb;
+                        taking into account the forest reduction rules 
+                        and if a duplicate node exists.
+    */
     template <class T>
     inline void createReducedNode(int in, node_builder& nb, T& ev, int& node) {
       normalize(nb, ev);
       nb.computeHash();
-      bool u;
-      node = createReducedHelper(in, nb, u);
+      node = createReducedHelper(in, nb);
       MEDDLY_DCASSERT(nb.lock);
       nb.lock = false;
-      if (u) {
-        int i = nb.isSparse() ? nb.getNNZs() : nb.getSize();
-        for (i--; i>=0; i--)  unlinkNode(nb.d(i));
-      }
 #ifdef TRACK_DELETIONS
-      if (u) printf("Created node that matched %d\n", node);
-      else   printf("Created new node %d\n", node);
+      printf("Created node %d\n", node);
 #endif
     }
+
     
   // ------------------------------------------------------------
   // virtual in the base class, but implemented here.
@@ -1618,14 +1657,12 @@ class MEDDLY::expert_forest : public forest
 
     /** Apply reduction rule to the temporary node and finalize it. 
         Once a node is reduced, its contents cannot be modified.
-          @param  in  Incoming index, used only for identity reduction;
-                      Or -1.
-          @param  nb  Array of downward pointers.
-          @param  u   Does the caller need to unlink the pointers.
-                      Will be false iff a new node was created.
-          @return     Handle to a node that encodes the same thing.
+          @param  in    Incoming index, used only for identity reduction;
+                        Or -1.
+          @param  nb    Array of downward pointers.
+          @return       Handle to a node that encodes the same thing.
     */
-    int createReducedHelper(int in, const node_builder &nb, bool &u);
+    int createReducedHelper(int in, const node_builder &nb);
 
     // Sanity check; used in development code.
     void validateDownPointers(const node_builder &nb) const;

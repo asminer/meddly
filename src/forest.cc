@@ -1782,7 +1782,7 @@ void MEDDLY::expert_forest
 {
   const nodeData &n = getNode(node);
   level_data& ld = levels[n.level];
-  nr.resize(this, n.level, getLevelSize(n.level), full);
+  nr.resize(n.level, getLevelSize(n.level), ld.edgeSize * sizeof(int), full);
   if (ld.isFull(n.offset)) {
     int i;
     int stop = ld.fullSizeOf(n.offset);
@@ -1860,7 +1860,7 @@ void MEDDLY::expert_forest
 {
   MEDDLY_DCASSERT(0==levels[k].edgeSize);
   int nsize = getLevelSize(k);
-  nr.resize(this, k, nsize, full);
+  nr.resize(k, nsize, 0, full);
   for (int i=0; i<nsize; i++) 
     nr.down[i] = node;
   if (!full) {
@@ -1874,7 +1874,7 @@ void MEDDLY::expert_forest
 {
   MEDDLY_DCASSERT(1==levels[k].edgeSize);
   int nsize = getLevelSize(k);
-  nr.resize(this, k, nsize, full);
+  nr.resize(k, nsize, sizeof(int), full);
   for (int i=0; i<nsize; i++) {
     nr.down[i] = np;
     ((int*)nr.edge)[i] = ev;
@@ -1891,11 +1891,11 @@ void MEDDLY::expert_forest
   MEDDLY_DCASSERT(0==levels[k].edgeSize);
   int nsize = getLevelSize(k);
   if (full) {
-    nr.resize(this, k, nsize, full);
+    nr.resize(k, nsize, 0, full);
     memset(nr.down, 0, nsize * sizeof(int));
     nr.down[i] = node;
   } else {
-    nr.resize(this, k, 1, full);
+    nr.resize(k, 1, 0, full);
     nr.nnzs = 1;
     nr.down[0] = node;
     nr.index[0] = i;
@@ -1910,13 +1910,13 @@ void MEDDLY::expert_forest
   MEDDLY_DCASSERT(1==levels[k].edgeSize);
   int nsize = getLevelSize(k);
   if (full) {
-    nr.resize(this, k, nsize, full);
+    nr.resize(k, nsize, sizeof(int), full);
     memset(nr.down, 0, nsize * sizeof(int));
     memset(nr.edge, 0, nsize * sizeof(int));
     nr.down[i] = node;
     ((int*)nr.edge)[i] = ev;
   } else {
-    nr.resize(this, k, 1, full);
+    nr.resize(k, 1, sizeof(int), full);
     nr.nnzs = 1;
     nr.down[0] = node;
     ((int*)nr.edge)[0] = ev;
@@ -2281,13 +2281,11 @@ void MEDDLY::expert_forest::zombifyNode(int p)
 }
 
 int MEDDLY::expert_forest
-::createReducedHelper(int in, const node_builder &nb, bool &u)
+::createReducedHelper(int in, const node_builder &nb)
 {
 #ifdef DEVELOPMENT_CODE
   validateDownPointers(nb);
 #endif
-
-  u = true;
 
   // get sparse, truncated full sizes and check
   // for redundant / identity reductions.
@@ -2305,7 +2303,9 @@ int MEDDLY::expert_forest
     // Is this an identity node, and should we eliminate it?
     if (1==nnz && nb.getLevel()<0 && in==nb.i(0)) {
       if (isIdentityReduced()) {
-        return linkNode(nb.d(0));
+        // unlink downward pointers, except the one we're returning.
+        for (int i = 1; i<nb.rawSize(); i++)  unlinkNode(nb.d(i));
+        return nb.d(0);
       }
     }
 
@@ -2332,14 +2332,19 @@ int MEDDLY::expert_forest
 
     // Is this a redundant node, and should we eliminate it?
     if (redundant) {
-      if (isFullyReduced() || (isIdentityReduced() && nb.getLevel()>0))
-        return linkNode(common);
+      if (isFullyReduced() || (isIdentityReduced() && nb.getLevel()>0)) {
+        // unlink downward pointers, except the one we're returning.
+        for (int i = 1; i<nb.rawSize(); i++)  unlinkNode(nb.d(i));
+        return nb.d(0);
+      }
     }
 
     // Is this an identity node, and should we eliminate it?
     if (isIdentityReduced()) {
-      if (in>=0 && 1==nnz && nb.getLevel()<0 && nb.d(in)) 
-        return linkNode(nb.d(in));
+      if (in>=0 && 1==nnz && nb.getLevel()<0 && nb.d(in)) {
+        // no need to unlink, other values are 0
+        return nb.d(in);
+      }
     }
   }
   truncsize++;
@@ -2347,12 +2352,15 @@ int MEDDLY::expert_forest
   // Is this a zero node?
   if (0==nnz) {
     MEDDLY_DCASSERT(0==truncsize);  // sanity check
+    // no need to unlink
     return 0;
   }
 
   // check for duplicates in unique table
   int q = unique->find(nb);
   if (q) {
+    // unlink all downward pointers
+    for (int i = 0; i<nb.rawSize(); i++)  unlinkNode(nb.d(i));
     return linkNode(q);
   }
 
@@ -2361,7 +2369,6 @@ int MEDDLY::expert_forest
   // Not a duplicate.
   //
   // We need to create a new node for this.
-  u = false;
   int p = getFreeNodeHandle();
   address[p].level = nb.getLevel();
   MEDDLY_DCASSERT(0 == address[p].cache_count);
