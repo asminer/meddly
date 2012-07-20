@@ -14,7 +14,6 @@ test_mtmdd \
 test_mtmxd \
 test_evmdd \
 build_expression \
-kan1_batch \
 dining_phils \
 rubiks_cube \
 nqueens \
@@ -48,9 +47,6 @@ test_mtmxd_LDADD = ../src/libmeddly.la
 
 build_expression_SOURCES = build_expression.cc
 build_expression_LDADD = ../src/libmeddly.la
-
-kan1_batch_SOURCES = kan1_batch.cc
-kan1_batch_LDADD = ../src/libmeddly.la
 
 dining_phils_SOURCES = dining_phils.cc
 dining_phils_LDADD = ../src/libmeddly.la

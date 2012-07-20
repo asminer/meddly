@@ -35,12 +35,6 @@ MEDDLY::mtmxd_forest::mtmxd_forest(int dsl, domain *d,
   count = 0;
   slot = 0;
   countSize = 0;
-
-  // TBD: this eventually belongs in mt_forest.
-  // Initalize level data
-  for (int k=getMinLevelIndex(); k<=getNumVariables(); k++) {
-    levels[k].init(this, 0, 0, 0);
-  }
 }
 
 
@@ -267,7 +261,7 @@ int MEDDLY::mtmxd_forest::createNode(int k, int index, int dptr)
 
   if (dptr == 0) return 0;
 
-  nodeBuilder& nb = useSparseBuilder(k, 1);
+  node_builder& nb = useSparseBuilder(k, 1);
   nb.d(0) = dptr;
   nb.i(0) = index;
   return createReducedNode(-1, nb);
@@ -311,7 +305,7 @@ int MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, int dptr)
     // "don't change"
     MEDDLY_DCASSERT(isQuasiReduced() || isFullyReduced());
     int sz = getLevelSize(k);
-    nodeBuilder &nb = useNodeBuilder(k, sz);
+    node_builder &nb = useNodeBuilder(k, sz);
     for (int i=0; i<sz; i++) {
       nb.d(i) = createNode(-k, i, dptr);
     }
@@ -449,122 +443,4 @@ int MEDDLY::mtmxd_forest::getTerminalNodeForEdge(int n, const int* vlist,
   }
   return n;
 }
-
-
-void MEDDLY::mtmxd_forest::findFirstElement(const dd_edge& f,
-    int* vlist, int* vplist) const
-{
-  // assumption: vlist does not contain any special values (-1, -2, etc).
-  // vlist contains a single element.
-  // vlist is based on level handles.
-  int node = f.getNode();
-  if (node == 0) 
-    throw error(error::INVALID_ASSIGNMENT);
-
-  if (isIdentityReduced()) {
-
-    for (int level = getExpertDomain()->getNumVariables(); level; level--)
-    {
-      MEDDLY_DCASSERT(node != 0);
-      MEDDLY_DCASSERT(isUnprimedNode(node));
-      if (level != getNodeLevel(node)) {
-        // level is "higher" than node, and has been skipped.
-        // Since this is a mxd, reduced nodes enable "don't change" paths
-        // at the skipped level.
-        vlist[level] = 0;   // picking the first index
-        vplist[level] = 0;
-      } else {
-        // find a valid path at this unprime level
-        if (isFullNode(node)) {
-          int size = getFullNodeSize(node);
-          for (int i = 0; i < size; i++)
-          {
-            int n = getFullNodeDownPtr(node, i);
-            if (n != 0) {
-              node = n;
-              vlist[level] = i;
-              break;
-            }
-          }
-        } else {
-          vlist[level] = getSparseNodeIndex(node, 0);
-          node = getSparseNodeDownPtr(node, 0);
-        }
-
-        MEDDLY_DCASSERT(!isTerminalNode(node));
-        // can't be -1 because that violates MXD properties
-        // can't be 0 because node cannot be set to 0 in the above construct.
-        MEDDLY_DCASSERT(isPrimedNode(node));
-        // find a valid path at this prime level
-        if (isFullNode(node)) {
-          int size = getFullNodeSize(node);
-          for (int i = 0; i < size; i++)
-          {
-            int n = getFullNodeDownPtr(node, i);
-            if (n != 0) {
-              node = n;
-              vplist[level] = i;
-              break;
-            }
-          }
-        } else {
-          vplist[level] = getSparseNodeIndex(node, 0);
-          node = getSparseNodeDownPtr(node, 0);
-        }
-      }
-    } // for level
-
-  }
-  else {
-
-    // !IDENTITY_REDUCED
-    for (int currLevel = getExpertDomain()->getNumVariables(); currLevel; )
-    {
-      MEDDLY_DCASSERT(node != 0);
-      if (currLevel != getNodeLevel(node)) {
-        // currLevel been skipped. !IDENTITY_REDUCED ==> reduced nodes
-        // enable all paths at the skipped level. Pick the first index.
-        if (currLevel < 0) {
-          vplist[-currLevel] = 0;
-        } else {
-          vlist[currLevel] = 0;
-        }
-      } else {
-        // find a valid path at this level
-        if (isFullNode(node)) {
-          int size = getFullNodeSize(node);
-          for (int i = 0; i < size; i++)
-          {
-            int n = getFullNodeDownPtr(node, i);
-            if (n != 0) {
-              node = n;
-              if (currLevel < 0) {
-                vplist[-currLevel] = i;
-              } else {
-                vlist[currLevel] = i;
-              }
-              break;
-            }
-          }
-          // Note: since n is not an empty node the for loop is
-          // guaranteed to overwrite "node".
-        } else {
-          if (currLevel < 0) {
-            vplist[-currLevel] = getSparseNodeIndex(node, 0);
-          } else {
-            vlist[currLevel] = getSparseNodeIndex(node, 0);
-          }
-          node = getSparseNodeDownPtr(node, 0);
-        }
-      }
-      // Set next level
-      currLevel = currLevel < 0
-                    ? (-currLevel)-1
-                    : -currLevel;
-    } // currlevel
-
-
-  }
-}
-
 

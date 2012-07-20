@@ -179,8 +179,19 @@ void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
   result.set(node, 0, getNodeLevel(node));
 }
 
+bool MEDDLY::mt_forest::areDuplicates(int p, const node_builder &nb) const
+{
+  return areDupsInternal(p, nb);
+}
+
+bool MEDDLY::mt_forest::areDuplicates(int p, const node_reader &nr) const
+{
+  return areDupsInternal(p, nr);
+}
+
+/*
 int MEDDLY::mt_forest
-::createReducedHelper(int in, const nodeBuilder &nb, bool &u)
+::createReducedHelper(int in, const node_builder &nb, bool &u)
 {
 #ifdef DEVELOPMENT_CODE
   validateDownPointers(nb);
@@ -286,13 +297,13 @@ int MEDDLY::mt_forest
   unique->add(nb.hash(), p);
   
 #ifdef DEVELOPMENT_CODE
-  nodeFinder key(this, p);
+  node_finder key(this, p);
   MEDDLY_DCASSERT(key.hash() == nb.hash());
   MEDDLY_DCASSERT(unique->find(key) == p);
 #endif
   return p;
 }
-
+*/
 
 // ******************************************************************
 // *                                                                *
@@ -300,7 +311,8 @@ int MEDDLY::mt_forest
 // *                                                                *
 // ******************************************************************
 
-void MEDDLY::mt_forest::validateDownPointers(const nodeBuilder &nb) const
+/*
+void MEDDLY::mt_forest::validateDownPointers(const node_builder &nb) const
 {
   int nextLevel;
   switch (getReductionRule()) {
@@ -338,6 +350,7 @@ void MEDDLY::mt_forest::validateDownPointers(const nodeBuilder &nb) const
   }
 
 }
+*/
 
 // ******************************************************************
 // *                                                                *
@@ -404,7 +417,7 @@ int MEDDLY::mt_forest::buildLevelNodeHelper(int lh, int* dptrs, int sz)
   }
 
   // Now, deal with lh level
-  nodeBuilder& nb = useNodeBuilder(lh, sz);
+  node_builder& nb = useNodeBuilder(lh, sz);
   for (int i=0; i<sz; i++) {
     nb.d(i) = dptrs[i];
   }
@@ -646,6 +659,7 @@ int MEDDLY::mt_forest::buildQuasiReducedNodeAtLevel(int k, int p)
 }
 // *********************************************************************
 
+#if 0
 int MEDDLY::mt_forest::getMddLevelMaxBound(int k) const
 {
   // Go through each node in this level and check its size - in terms of 
@@ -690,11 +704,14 @@ int MEDDLY::mt_forest::getLevelMaxBound(int k) const
             getMxdLevelMaxBound(k):
             getMddLevelMaxBound(k);
 }
+#endif
 
+/*
 int ifTermGetInt(const MEDDLY::mt_forest *nm, int node)
 {
   return nm->isTerminalNode(node) ? nm->getInteger(node) : node;
 }
+*/
 
 /*
 void MEDDLY::mt_forest::showNode(FILE *s, int p, int verbose) const

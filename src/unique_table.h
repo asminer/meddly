@@ -20,33 +20,6 @@
 */
 
 
-
-/*
-	MDD Hash table template class.
-
-	Operations are performed on a "node manager" object, where nodes are indexed
-  by handles.  Several hash tables can share a single node manager if desired.
-
-  This class is used meant to be used by node managers only since this does
-  not discard any nodes unless explicitly asked to do so by calling remove().
-
-	The node manager must provide the following methods 
-	(preferably inlined for speed):
-
-	int getNull();                   // which integer handle to use for NULL.
-
-  int getNext(int h);              // next node in this chain
-
-  void setNext(int h);             // set the "next node" field for h
-
-	unsigned hash(int h);             // compute hash value
-
-	bool equals(int h1, int h2);      // is h1 == h2?
-
-	for debugging:
-	show(FILE *s, int h);
-*/
-
 #ifndef UNIQUE_TABLE_H
 #define UNIQUE_TABLE_H
 
@@ -58,6 +31,8 @@ namespace MEDDLY {
 
 /** Unique table for discovering duplicate nodes.
 
+    This is now a stand-alone, non-template class
+    designed specifically for expert_forests.
 */
 class MEDDLY::unique_table {
   public:
@@ -80,12 +55,12 @@ class MEDDLY::unique_table {
           bool equals(int p): return true iff this item equals node p.
      */
     template <class T>
-    inline int find(T &key) {
+    inline int find(const T &key) {
       unsigned h = key.hash() % size;
       MEDDLY_CHECK_RANGE(0, h, size);
       int prev = 0;
       for (int ptr = table[h]; ptr; ptr = parent->getNext(ptr)) {
-        if (key.equals(ptr)) {
+        if (parent->areDuplicates(ptr, key)) { // key.equals(ptr)) {
           // MATCH
           if (ptr != table[h]) {
             // Move to front

@@ -25,6 +25,8 @@
 #include "../defines.h"
 #include "mdd2evplus.h"
 
+// #define TRACE_ALL_OPS
+
 namespace MEDDLY {
   class mdd2evplus_operation;
   class mdd2evplus_opname;
@@ -47,7 +49,7 @@ class MEDDLY::mdd2evplus_operation : public unary_operation {
 
     virtual void compute(const dd_edge &arg, dd_edge &res);
 
-    void compute(int ht, int a, int &bdn, int &bcard);
+    void compute(int k, int a, int &bdn, int &bcard);
 };
 
 MEDDLY::mdd2evplus_operation::mdd2evplus_operation(const unary_opname* oc, 
@@ -90,7 +92,7 @@ MEDDLY::mdd2evplus_operation
   MEDDLY_DCASSERT(arg.getForest() == argF);
   MEDDLY_DCASSERT(res.getForest() == resF);
   MEDDLY_DCASSERT(resF->getTerminalNode(false) == 0);
-  MEDDLY_DCASSERT(argF->getTerminalNode(true) == -1);
+  MEDDLY_DCASSERT(argF->getTerminalNode(true) < 0);
   MEDDLY_DCASSERT(argF->getTerminalNode(false) == 0);
   int down, card;
   int nVars = argF->getDomain()->getNumVariables();
@@ -100,26 +102,25 @@ MEDDLY::mdd2evplus_operation
 
 void
 MEDDLY::mdd2evplus_operation
-::compute(int height, int a, int &bdn, int &bcard)
+::compute(int k, int a, int &bdn, int &bcard)
 {
   // Deal with terminals
-  if (a == 0) {
+  if (0 == a) {
     bdn = 0;
     bcard = 0;
     return;
   }
-  if (height == 0) {
-    MEDDLY_DCASSERT(argF->getTerminalNode(true) == a);
+  if (0 == k) {
     bdn = resF->getTerminalNode(true);
     bcard = 1;
     return;
   }
 
-  int aHeight = argF->getNodeHeight(a);
-  MEDDLY_DCASSERT(aHeight <= height);
+  int aLevel = argF->getNodeLevel(a);
+  MEDDLY_DCASSERT(aLevel <= k);
 
   // Check compute table
-  if (aHeight == height) {
+  if (aLevel == k) {
     CTsrch.key(0) = a;
     const int* cacheEntry = CT->find(CTsrch);
     if (cacheEntry) {
@@ -129,63 +130,48 @@ MEDDLY::mdd2evplus_operation
     }
   }
 
-  // Create node at appropriate height 
-  const int resultSize = resF->getLevelSize(height);
-  bdn = resF->createTempNode(height, resultSize, true);
+#ifdef TRACE_ALL_OPS
+  printf("calling mdd2evplus::compute(%d, %d)\n", height, a);
+#endif
+
+  // Initialize node builder
+  const int size = resF->getLevelSize(k);
+  node_builder& nb = resF->useNodeBuilder(k, size);
+  
+  // Initialize node reader
+  node_reader* A = (aLevel < k)
+    ? argF->initRedundantReader(k, a, true)
+    : argF->initNodeReader(a, true);
+
+  // recurse
   bcard = 0;
-
-  if (aHeight < height) {
+  for (int i=0; i<size; i++) {
     int ddn, dcard;
-    compute(height-1, a, ddn, dcard);
-    if (ddn) {
-      for (int i=0; i<resultSize; i++) {
-        resF->setDownPtrWoUnlink(bdn, i, ddn);
-        resF->setEdgeValue(bdn, i, bcard);
-        bcard += dcard;
-      } // for i
-      resF->unlinkNode(ddn);
-    } // if ddn
-  } // aHeight < height
-  else {
-    if (argF->isFullNode(a)) {
-      int aSize = argF->getFullNodeSize(a);
-      for (int i=0; i<aSize; i++) {
-        int ddn, dcard;
-        compute(height-1, argF->getFullNodeDownPtr(a, i), ddn, dcard);
-        if (0==ddn) continue;
-        resF->setDownPtrWoUnlink(bdn, i, ddn);
-        resF->setEdgeValue(bdn, i, bcard);
-        resF->unlinkNode(ddn);
-        bcard += dcard;
-      } // for i
-    } // a is full
-    else {
-      int aNnz = argF->getSparseNodeSize(a);
-      for (int i=0; i<aNnz; i++) {
-        int ddn, dcard;
-        compute(height-1, argF->getSparseNodeDownPtr(a, i), ddn, dcard);
-        if (0==ddn) continue;
-        int ii = argF->getSparseNodeIndex(a, i);
-        resF->setDownPtrWoUnlink(bdn, ii, ddn);
-        resF->setEdgeValue(bdn, ii, bcard);
-        resF->unlinkNode(ddn);
-        bcard += dcard;
-      } // for i
-    } // a is sparse
-  } // aHeight == height
+    compute(k-1, A->d(i), nb.d(i), dcard);
+    if (nb.d(i)) {
+      nb.ei(i) = bcard;
+      bcard += dcard;
+    } else {
+      MEDDLY_DCASSERT(0 == dcard);
+      nb.ei(i) = 0;
+    }
+  }
 
-  // reduce, save in compute table
+  // Cleanup
+  node_reader::recycle(A);
+
+  // Reduce
+  nb.uh(0) = bcard;
   int dummy;
-  resF->normalizeAndReduceNode(bdn, dummy);
-  MEDDLY_DCASSERT((bdn==0 && dummy==INF) || (bdn!= 0 && dummy==0));
+  resF->createReducedNode(-1, nb, dummy, bdn);
+  MEDDLY_DCASSERT(0==dummy);
 
+  // Add to compute table
   compute_table::temp_entry &entry = CT->startNewEntry(this);
   entry.key(0) = argF->cacheNode(a);
   entry.result(0) = resF->cacheNode(bdn);
   entry.result(1) = bcard;
   CT->addEntry();
-
-  resF->setIndexSetCardinality(bdn, bcard);
 }
 
 // ******************************************************************

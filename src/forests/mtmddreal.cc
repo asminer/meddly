@@ -25,7 +25,9 @@
 
 MEDDLY::mt_mdd_real::mt_mdd_real(int dsl, domain *d, const policies &p)
 : MEDDLY::mtmdd_forest(dsl, d, false, REAL, MULTI_TERMINAL, p)
-{ }
+{ 
+  initializeForest();
+}
 
 
 MEDDLY::mt_mdd_real::~mt_mdd_real()
@@ -58,5 +60,5 @@ void MEDDLY::mt_mdd_real::evaluate(const dd_edge &f,
 
 void MEDDLY::mt_mdd_real::showTerminal(FILE* s, int tnode) const
 {
-  fprintf(s, "t%d", getReal(tnode)); 
+  fprintf(s, "t%f", getReal(tnode)); 
 }

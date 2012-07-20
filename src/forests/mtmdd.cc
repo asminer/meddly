@@ -39,12 +39,6 @@ MEDDLY::mtmdd_forest::mtmdd_forest(int dsl, domain *d,
   count = 0;
   slot = 0;
   countSize = 0;
-
-  // TBD: this eventually belongs in mt_forest.
-  // Initalize level data
-  for (int k=getMinLevelIndex(); k<=getNumVariables(); k++) {
-    levels[k].init(this, 0, 0, 0);
-  }
 }
 
 
@@ -297,7 +291,7 @@ int MEDDLY::mtmdd_forest::createNode(int k, int index, int dptr)
     return dptr;
   }
 
-  nodeBuilder& nb = useSparseBuilder(k, 1);
+  node_builder& nb = useSparseBuilder(k, 1);
   nb.d(0) = dptr;
   nb.i(0) = index;
   return createReducedNode(-1, nb);
@@ -316,45 +310,4 @@ void MEDDLY::mtmdd_forest::createEdge(const int* v, int term, dd_edge& e)
   e.set(result, 0, getNodeLevel(result));
   // e.show(stderr, 2);
 }
-
-
-void
-MEDDLY::mtmdd_forest::findFirstElement(const dd_edge& f, int* vlist) const
-{
-  // assumption: vlist does not contain any special values (-1, -2, etc).
-  // vlist contains a single element.
-  // vlist is based on level handles.
-  int node = f.getNode();
-  if (node == 0) 
-    throw error(error::INVALID_ASSIGNMENT);
-
-  for (int currLevel = getExpertDomain()->getNumVariables(); currLevel; currLevel--)
-  {
-    MEDDLY_DCASSERT(node != 0);
-    if (currLevel != getNodeLevel(node)) {
-      // currLevel is "higher" than node, and has been skipped.
-      // Since this is a mdd, reduced nodes enable all paths at the
-      // skipped level.
-      vlist[currLevel] = 0;   // picking the first index
-    } else {
-      // find a valid path at this level
-      if (isFullNode(node)) {
-        int size = getFullNodeSize(node);
-        for (int i = 0; i < size; i++)
-        {
-          int n = getFullNodeDownPtr(node, i);
-          if (n != 0) {
-            node = n;
-            vlist[currLevel] = i;
-            break;
-          }
-        }
-      } else {
-        vlist[currLevel] = getSparseNodeIndex(node, 0);
-        node = getSparseNodeDownPtr(node, 0);
-      }
-    }
-  } // for currLevel
-}
-
 

@@ -30,7 +30,7 @@
 MEDDLY::evmdd_forest
 ::evmdd_forest(int dsl, domain *d, range_type t, edge_labeling el, 
   const policies &p)
-: mt_forest(dsl, d, false, t, el, p)
+: expert_forest(dsl, d, false, t, el, p)
 {
 }
 
@@ -44,6 +44,7 @@ void MEDDLY::evmdd_forest::showTerminal(FILE* s, int tnode) const
   fprintf(s, "t%d", -tnode);
 }
 
+/*
 inline void MEDDLY::evmdd_forest::setAllDownPtrs(int p, int value) {
   MEDDLY_DCASSERT(!isReducedNode(p));
   MEDDLY_DCASSERT(isFullNode(p));
@@ -90,7 +91,9 @@ inline void MEDDLY::evmdd_forest::setAllEdgeValues(int p, float fvalue) {
   int value = toInt(fvalue);
   for ( ; edgeptr != last; ++edgeptr) *edgeptr = value;
 }
+*/
 
+/*
 int MEDDLY::evmdd_forest::createTempNode(int k, int sz, bool clear)
 {
   MEDDLY_DCASSERT(k != 0);
@@ -128,6 +131,7 @@ int MEDDLY::evmdd_forest::createTempNode(int k, int sz, bool clear)
 
   return p;
 }
+*/
 
 #ifdef ACCUMULATE_ON
 void MEDDLY::evmdd_forest::resizeNode(int p, int size)
@@ -200,6 +204,7 @@ void MEDDLY::evmdd_forest::resizeNode(int p, int size)
 }
 #endif
 
+/*
 // returns index with a[]; -1 if not found
 int binarySearch(const int* a, int sz, int find)
 {
@@ -225,16 +230,16 @@ int binarySearch(const int* a, int sz, int find)
   }
   return (*begin == find)? begin - a: -1;
 }
+*/
 
-
+/*
+void
 int MEDDLY::evmdd_forest::reduceNode(int p)
 {
   assert(false);
   return 0;
 }
 
-
-void
 MEDDLY::evmdd_forest::
 createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e)
 {
@@ -339,22 +344,20 @@ void MEDDLY::evmdd_forest::evaluate(const dd_edge& f, const int* vlist,
 {
   throw error(error::INVALID_OPERATION);
 }
-
+*/
 
 // ********************************* EV+MDDs ********************************** 
 
 MEDDLY::evp_mdd_int::evp_mdd_int(int dsl, domain *d, const policies &p)
 : evmdd_forest(dsl, d, forest::INTEGER, forest::EVPLUS, p)
 { 
-  // Initalize level data
-  for (int k=getMinLevelIndex(); k<=getNumVariables(); k++) {
-    levels[k].init(this, 1, 1, 0);
-  }
+  initializeForest();
 }
 
 MEDDLY::evp_mdd_int::~evp_mdd_int()
 { }
 
+/*
 void MEDDLY::evp_mdd_int::initEdgeValues(int p) {
   MEDDLY_DCASSERT(!isReducedNode(p));
   MEDDLY_DCASSERT(isFullNode(p));
@@ -362,8 +365,9 @@ void MEDDLY::evp_mdd_int::initEdgeValues(int p) {
   int *last = edgeptr + getFullNodeSize(p);
   for ( ; edgeptr != last; ++edgeptr) *edgeptr = INF;
 }
+*/
 
-
+/*
 int MEDDLY::evp_mdd_int::createTempNode(int k, int sz, bool clear)
 {
   MEDDLY_DCASSERT(k != 0);
@@ -406,9 +410,10 @@ int MEDDLY::evp_mdd_int::createTempNode(int k, int sz, bool clear)
 
   return p;
 }
-
+*/
 
 // Similar to getDownPtrs() but for EV+MDDs
+/*
 bool MEDDLY::evp_mdd_int::getDownPtrsAndEdgeValues(int p,
     std::vector<int>& dptrs, std::vector<int>& evs) const
 {
@@ -451,8 +456,9 @@ bool MEDDLY::evp_mdd_int::getDownPtrsAndEdgeValues(int p,
   }
   return true;
 }
+*/
 
-
+/*
 void MEDDLY::evp_mdd_int::normalizeAndReduceNode(int& p, int& ev)
 {
   MEDDLY_DCASSERT(isActiveNode(p));
@@ -632,8 +638,9 @@ void MEDDLY::evp_mdd_int::normalizeAndReduceNode(int& p, int& ev)
 
   return;
 }
+*/
 
-
+#if 0
 void MEDDLY::evp_mdd_int::getElement(int a, int index, int* e)
 {
   if (a == 0) throw error(error::INVALID_VARIABLE);
@@ -685,6 +692,45 @@ void MEDDLY::evp_mdd_int::getElement(const dd_edge& a,
   return getElement(a.getNode(), index, e);
 }
 
+#else
+
+void MEDDLY::evp_mdd_int::getElement(const dd_edge& a, int index, int* e)
+{
+  if (e == 0) throw error(error::INVALID_VARIABLE);
+  if (index < 0) {
+    e[0] = 0;
+    return;
+  }
+  int p = a.getNode();
+  node_reader* R = node_reader::useReader();
+  for (int k=getNumVariables(); k; k--) {
+    MEDDLY_DCASSERT(index >= 0);
+    if (p <= 0) {
+      e[k] = 0;
+      continue;
+    }
+    initNodeReader(*R, p, false);
+    MEDDLY_DCASSERT(R->getLevel() <= k);
+    if (R->getLevel() < k) {
+      e[k] = 0;
+      continue; 
+    }
+    // Find largest i such that edge value i is not greater than index
+    e[k] = 0;
+    p = 0;
+    for (int z=R->getNNZs()-1; z>=0; z--) {
+      if (index < R->ei(z)) continue;
+      e[k] = R->i(z);
+      p = R->d(z);
+      index -= R->ei(z);
+      break;
+    } // for z
+  } // for k
+  if (index)    e[0] = 0;
+  else          e[0] = -p;
+  node_reader::recycle(R);
+}
+#endif
 
 void
 MEDDLY::evp_mdd_int::
@@ -709,7 +755,17 @@ evaluate(const dd_edge &f, const int* vlist, int &term) const
   return evaluateInternal(f, vlist, term);
 }
 
+bool MEDDLY::evp_mdd_int::areDuplicates(int node, const node_builder &nb) const
+{
+  return areDupsInternal(node, nb);
+}
 
+bool MEDDLY::evp_mdd_int::areDuplicates(int node, const node_reader &nr) const
+{
+  return areDupsInternal(node, nr);
+}
+
+/*
 int
 MEDDLY::evp_mdd_int::
 createTempNode(int lh, std::vector<int>& downPointers,
@@ -913,10 +969,34 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
     result = linkNode(found);
   }
 }
+*/
+
+void MEDDLY::evp_mdd_int::normalize(node_builder &nb, int &ev) const
+{
+  int minindex = -1;
+  int stop = nb.isSparse() ? nb.getNNZs() : nb.getSize();
+  for (int i=0; i<stop; i++) {
+    if (0==nb.d(i)) continue;
+    if ((minindex < 0) || (nb.ei(i) < nb.ei(minindex))) {
+      minindex = i;
+    }
+  }
+  if (minindex < 0) return; // this node will eventually be reduced to "0".
+  ev = nb.ei(minindex);
+  for (int i=0; i<stop; i++) {
+    if (0==nb.d(i)) continue;
+    nb.ei(i) -= ev;
+  }
+}
 
 void MEDDLY::evp_mdd_int::showEdgeValue(FILE* s, const void* edge, int i) const
 {
   fprintf(s, "%d", ((const int*)edge)[i]);
+}
+
+void MEDDLY::evp_mdd_int::showUnhashedHeader(FILE* s, const int* uh) const
+{
+  fprintf(s, " card: %d", uh[0]);
 }
 
 // ********************************* EV*MDDs ********************************** 
@@ -924,15 +1004,13 @@ void MEDDLY::evp_mdd_int::showEdgeValue(FILE* s, const void* edge, int i) const
 MEDDLY::evt_mdd_real::evt_mdd_real(int dsl, domain *d, const policies &p)
 : evmdd_forest(dsl, d, forest::REAL, forest::EVTIMES, p)
 { 
-  // Initalize level data
-  for (int k=getMinLevelIndex(); k<=getNumVariables(); k++) {
-    levels[k].init(this, 1, 1, 0);
-  }
+  initializeForest();
 }
 
 MEDDLY::evt_mdd_real::~evt_mdd_real()
 { }
 
+/*
 void MEDDLY::evt_mdd_real::initEdgeValues(int p) {
   MEDDLY_DCASSERT(!isReducedNode(p));
   MEDDLY_DCASSERT(isFullNode(p));
@@ -946,9 +1024,10 @@ void MEDDLY::evt_mdd_real::initEdgeValues(int p) {
   for (int *last = edgeptr + getFullNodeSize(p); edgeptr != last; )
     *edgeptr++ = intDefaultEV;
 }
-
+*/
 
 // Similar to getDownPtrs() but for EV*MDDs
+/*
 bool MEDDLY::evt_mdd_real::getDownPtrsAndEdgeValues(int p,
     std::vector<int>& dptrs, std::vector<float>& evs) const
 {
@@ -993,8 +1072,9 @@ bool MEDDLY::evt_mdd_real::getDownPtrsAndEdgeValues(int p,
   }
   return true;
 }
+*/
 
-
+/*
 void MEDDLY::evt_mdd_real::normalizeAndReduceNode(int& p, float& ev)
 {
   MEDDLY_DCASSERT(isActiveNode(p));
@@ -1178,7 +1258,7 @@ void MEDDLY::evt_mdd_real::normalizeAndReduceNode(int& p, float& ev)
 
   return;
 }
-
+*/
 
 void
 MEDDLY::evt_mdd_real::
@@ -1204,6 +1284,7 @@ evaluate(const dd_edge &f, const int* vlist, float &term) const
 }
 
 
+/*
 int
 MEDDLY::evt_mdd_real::
 createTempNode(int lh, std::vector<int>& downPointers,
@@ -1401,9 +1482,40 @@ createNode(int lh, std::vector<int>& index, std::vector<int>& dptr,
     result = linkNode(found);
   }
 }
+*/
+
+void MEDDLY::evt_mdd_real::normalize(node_builder &nb, float &ev) const
+{
+  int maxindex = -1;
+  int stop = nb.isSparse() ? nb.getNNZs() : nb.getSize();
+  for (int i=0; i<stop; i++) {
+    if (0==nb.d(i)) continue;
+    if ((maxindex < 0) || (nb.ef(i) < nb.ef(maxindex))) {
+      maxindex = i;
+    }
+  }
+  if (maxindex < 0) return; // this node will eventually be reduced to "0".
+  ev = nb.ef(maxindex);
+  MEDDLY_DCASSERT(ev);
+  for (int i=0; i<stop; i++) {
+    if (0==nb.d(i)) continue;
+    nb.ef(i) /= ev;
+  }
+}
+
 
 void MEDDLY::evt_mdd_real::showEdgeValue(FILE* s, const void* edge, int i) const
 {
   fprintf(s, "%f", ((const float*)edge)[i]);
+}
+
+bool MEDDLY::evt_mdd_real::areDuplicates(int node, const node_builder &nb) const
+{
+  return areDupsInternal(node, nb);
+}
+
+bool MEDDLY::evt_mdd_real::areDuplicates(int node, const node_reader &nr) const
+{
+  return areDupsInternal(node, nr);
 }
 

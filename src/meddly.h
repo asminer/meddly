@@ -1290,33 +1290,11 @@ class MEDDLY::forest {
         size(e) = number of variables in the forest + 1 (for terminals).
         TODO: complete this description
 
+        on return: e[0] will be 1 if the element could be found, 0 otherwise.
+
         @throws       INVALID_OPERATION, if this is not an Index Set EV+MDD.
     */
     virtual void getElement(const dd_edge& a, int index, int* e);
-
-    /** Returns a state from the MDD represented by \a f.
-        @param  f       Edge.
-        @param  vlist   Output parameter used to return a state from \a f.
-
-        @throws       TYPE_MISMATCH, if this forest is for relations,
-                        or is edge-valued.
-    */
-    virtual void findFirstElement(const dd_edge& f, int* vlist) const;
-
-
-    /** Returns a transition from the MXD represented by \a f.
-        @param  f       Edge.
-        @param  vlist   Output parameter used to return a 
-                        transition from \a f.
-        @param  vplist  Output parameter used to return a 
-                        transition from \a f.
-
-        @throws       TYPE_MISMATCH, if this forest is not for relations,
-                        or is edge-valued.
-    */
-    virtual void findFirstElement(const dd_edge& f, int* vlist, int* vplist)
-      const;
-
 
   // ------------------------------------------------------------
   // abstract virtual.

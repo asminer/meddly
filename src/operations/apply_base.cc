@@ -92,8 +92,7 @@ int MEDDLY::generic_binary_mdd::compute(int a, int b)
 
   int resultLevel = MAX(aLevel, bLevel);
   int resultSize = resF->getLevelSize(resultLevel);
-  expert_forest::nodeBuilder& 
-    nb = resF->useNodeBuilder(resultLevel, resultSize);
+  node_builder& nb = resF->useNodeBuilder(resultLevel, resultSize);
 
   // Initialize readers
   node_reader* A = (aLevel < resultLevel) 
@@ -200,8 +199,7 @@ int MEDDLY::generic_binary_mxd::compute(int in, int a, int b)
   if (in<0) resultLevel = ABS(resultLevel);
 
   int resultSize = resF->getLevelSize(resultLevel);
-  expert_forest::nodeBuilder& 
-    nb = resF->useNodeBuilder(resultLevel, resultSize);
+  node_builder& nb = resF->useNodeBuilder(resultLevel, resultSize);
 
   bool needsIndex = false;
  
@@ -329,8 +327,7 @@ int MEDDLY::generic_binbylevel_mxd
   const int bLevel = arg2F->getNodeLevel(b);
 
   int resultSize = resF->getLevelSize(resultLevel);
-  expert_forest::nodeBuilder& 
-    nb = resF->useNodeBuilder(resultLevel, resultSize);
+  node_builder& nb = resF->useNodeBuilder(resultLevel, resultSize);
 
   bool canSaveResult = true;
 
@@ -448,6 +445,8 @@ void MEDDLY::generic_binary_evplus
 #endif
 }
 
+
+#ifdef USE_OLD_EVMDDS
 
 void MEDDLY::generic_binary_evplus
 ::compute(int aev, int a, int bev, int b, int& cev, int& c)
@@ -591,6 +590,54 @@ void MEDDLY::generic_binary_evplus
   saveResult(aev, a, bev, b, cev, c);
 }
 
+#else
+
+void MEDDLY::generic_binary_evplus
+::compute(int aev, int a, int bev, int b, int& cev, int& c)
+{
+  if (checkTerminals(aev, a, bev, b, cev, c))
+    return;
+  if (findResult(aev, a, bev, b, cev, c))
+    return;
+
+  // Get level information
+  const int aLevel = arg1F->getNodeLevel(a);
+  const int bLevel = arg2F->getNodeLevel(b);
+
+  int resultLevel = aLevel > bLevel? aLevel: bLevel;
+  int resultSize = resF->getLevelSize(resultLevel);
+
+  // Initialize result
+  node_builder& nb = resF->useNodeBuilder(resultLevel, resultSize);
+
+  // Initialize readers
+  node_reader* A = (aLevel < resultLevel)
+    ? arg1F->initRedundantReader(resultLevel, 0, a, true)
+    : arg1F->initNodeReader(a, true);
+
+  node_reader* B = (bLevel < resultLevel)
+    ? arg2F->initRedundantReader(resultLevel, 0, b, true)
+    : arg2F->initNodeReader(b, true);
+
+  // do computation
+  for (int i=0; i<resultSize; i++) {
+    compute(aev + A->ei(i), A->d(i), 
+            bev + B->ei(i), B->d(i), 
+            nb.ei(i), nb.d(i));
+  }
+
+  // cleanup
+  node_reader::recycle(B);
+  node_reader::recycle(A);
+
+  // Reduce
+  resF->createReducedNode(-1, nb, cev, c);
+
+  // Add to CT
+  saveResult(aev, a, bev, b, cev, c);
+}
+
+#endif
 
 // ******************************************************************
 // *                                                                *
@@ -633,6 +680,8 @@ void MEDDLY::generic_binary_evtimes
   resF->validateIncounts(true);
 #endif
 }
+
+#ifdef USE_OLD_EVMDDS
 
 void MEDDLY::generic_binary_evtimes
 ::compute(float aev, int a, float bev, int b, float& cev, int& c)
@@ -780,4 +829,53 @@ void MEDDLY::generic_binary_evtimes
 }
 
 
+#else
+
+void MEDDLY::generic_binary_evtimes
+::compute(float aev, int a, float bev, int b, float& cev, int& c)
+{
+  if (checkTerminals(aev, a, bev, b, cev, c))
+    return;
+  if (findResult(aev, a, bev, b, cev, c))
+    return;
+
+  // Get level information
+  const int aLevel = arg1F->getNodeLevel(a);
+  const int bLevel = arg2F->getNodeLevel(b);
+
+  int resultLevel = aLevel > bLevel? aLevel: bLevel;
+  int resultSize = resF->getLevelSize(resultLevel);
+
+  // Initialize result
+  node_builder& nb = resF->useNodeBuilder(resultLevel, resultSize);
+
+  // Initialize readers
+  node_reader* A = (aLevel < resultLevel)
+    ? arg1F->initRedundantReader(resultLevel, 0, a, true)
+    : arg1F->initNodeReader(a, true);
+
+  node_reader* B = (bLevel < resultLevel)
+    ? arg2F->initRedundantReader(resultLevel, 0, b, true)
+    : arg2F->initNodeReader(b, true);
+
+  // do computation
+  for (int i=0; i<resultSize; i++) {
+    compute(aev * A->ef(i), A->d(i), 
+            bev * B->ef(i), B->d(i), 
+            nb.ef(i), nb.d(i));
+  }
+
+  // cleanup
+  node_reader::recycle(B);
+  node_reader::recycle(A);
+
+  // Reduce
+  resF->createReducedNode(-1, nb, cev, c);
+
+  // Add to CT
+  saveResult(aev, a, bev, b, cev, c);
+}
+
+
+#endif
 

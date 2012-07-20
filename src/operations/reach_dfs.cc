@@ -123,7 +123,7 @@ class MEDDLY::common_dfs_mt : public binary_operation {
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int* entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
-    virtual void saturateHelper(expert_forest::nodeBuilder& mdd) = 0;
+    virtual void saturateHelper(node_builder& mdd) = 0;
 
   protected:
     inline bool findResult(int a, int b, int &c) {
@@ -272,7 +272,7 @@ int MEDDLY::saturation_op::saturate(int mdd)
   printf("mdd: %d\n", mdd);
 #endif
 
-  MEDDLY_DCASSERT(argF->isReducedNode(mdd));
+  // MEDDLY_DCASSERT(argF->isReducedNode(mdd));
 
   // terminal condition for recursion
   if (argF->isTerminalNode(mdd)) return mdd;
@@ -291,7 +291,7 @@ int MEDDLY::saturation_op::saturate(int mdd)
   printf("mdd: %d, level: %d, size: %d\n", mdd, k, sz);
 #endif
 
-  expert_forest::nodeBuilder& nb = resF->useNodeBuilder(k, sz);
+  node_builder& nb = resF->useNodeBuilder(k, sz);
   node_reader* mddDptrs = argF->initNodeReader(mdd, true);
   for (int i=0; i<sz; i++) {
     nb.d(i) = mddDptrs->d(i) ? saturate(mddDptrs->d(i)) : 0;
@@ -530,7 +530,7 @@ class MEDDLY::forwd_dfs_mt : public common_dfs_mt {
     forwd_dfs_mt(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
   protected:
-    virtual void saturateHelper(expert_forest::nodeBuilder& mdd);
+    virtual void saturateHelper(node_builder& mdd);
     int recFire(int mdd, int mxd);
 };
 
@@ -540,7 +540,7 @@ MEDDLY::forwd_dfs_mt::forwd_dfs_mt(const binary_opname* opcode,
 {
 }
 
-void MEDDLY::forwd_dfs_mt::saturateHelper(expert_forest::nodeBuilder& nb)
+void MEDDLY::forwd_dfs_mt::saturateHelper(node_builder& nb)
 {
   int mxd = splits[nb.getLevel()];
   if (mxd == 0) return;
@@ -662,7 +662,7 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
   int mxdLevel = arg2F->getNodeLevel(mxd);
   int rLevel = MAX(ABS(mxdLevel), mddLevel);
   int rSize = resF->getLevelSize(rLevel);
-  expert_forest::nodeBuilder& nb = resF->useNodeBuilder(rLevel, rSize);
+  node_builder& nb = resF->useNodeBuilder(rLevel, rSize);
 
   // Initialize mdd reader
   node_reader* A = (mddLevel < rLevel)
@@ -752,7 +752,7 @@ class MEDDLY::bckwd_dfs_mt : public common_dfs_mt {
     bckwd_dfs_mt(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
   protected:
-    virtual void saturateHelper(expert_forest::nodeBuilder& mdd);
+    virtual void saturateHelper(node_builder& mdd);
     int recFire(int mdd, int mxd);
 };
 
@@ -762,7 +762,7 @@ MEDDLY::bckwd_dfs_mt::bckwd_dfs_mt(const binary_opname* opcode,
 {
 }
 
-void MEDDLY::bckwd_dfs_mt::saturateHelper(expert_forest::nodeBuilder& nb)
+void MEDDLY::bckwd_dfs_mt::saturateHelper(node_builder& nb)
 {
   int mxd = splits[nb.getLevel()];
   if (mxd == 0) return;
@@ -866,7 +866,7 @@ int MEDDLY::bckwd_dfs_mt::recFire(int mdd, int mxd)
   int mxdLevel = arg2F->getNodeLevel(mxd);
   int rLevel = MAX(ABS(mxdLevel), mddLevel);
   int rSize = resF->getLevelSize(rLevel);
-  expert_forest::nodeBuilder& nb = resF->useNodeBuilder(rLevel, rSize);
+  node_builder& nb = resF->useNodeBuilder(rLevel, rSize);
 
   // Initialize mdd reader
   node_reader* A = (mddLevel < rLevel)

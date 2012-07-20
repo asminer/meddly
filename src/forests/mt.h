@@ -60,10 +60,81 @@ class MEDDLY::mt_forest : public expert_forest {
     virtual void createEdgeForVar(int vh, bool pr, int* terms, dd_edge& a);
     virtual void createEdgeForVar(int vh, bool pr, float* terms, dd_edge& a);
 
+    
+    virtual char edgeSize(int k) const {
+        return 0;
+    }
+    virtual char unhashedHeaderSize(int k) const {
+        return 0;
+    }
+    virtual char hashedHeaderSize(int k) const {
+        return 0;
+    }
+    virtual bool areEdgeValuesHashed(int k) const {
+        return false;
+    }
+    virtual bool areDuplicates(int node, const node_builder &nb) const;
+    virtual bool areDuplicates(int node, const node_reader &nr) const;
+
+  private:
+    template <class T>
+    inline bool areDupsInternal(int p, const T &nb) const {
+        const nodeData &node = getNode(p);
+        if (node.level != nb.getLevel()) return false;
+        const level_data &ld = levels[node.level];
+        if (ld.isFull(node.offset)) {
+          //
+          // p is full
+          //
+          int fs = ld.fullSizeOf(node.offset);
+          const int* pd = ld.fullDownOf(node.offset);
+          if (nb.isFull()) {
+            int i;
+            for (i=0; i<fs; i++) if (pd[i] != nb.d(i)) return false;
+            for (; i<nb.getSize(); i++) if (nb.d(i)) return false;
+            return true;
+          }
+          MEDDLY_DCASSERT(nb.isSparse()); 
+          int i = 0;
+          for (int z=0; z<nb.getNNZs(); z++) {
+            if (nb.i(z) >= fs) return false;
+            for (; i<nb.i(z); i++) if (pd[i]) return false;
+            if (pd[i] != nb.d(z)) return false;
+            i++;
+          } // for z
+          for (; i<fs; i++) if (pd[i]) return false;
+          return true;
+        }
+        //
+        // p is sparse
+        //
+        int nnz = ld.sparseSizeOf(node.offset);
+        const int* pd = ld.sparseDownOf(node.offset);
+        const int* pi = ld.sparseIndexesOf(node.offset);
+
+        if (nb.isSparse()) {
+          if (nnz != nb.getNNZs()) return false;
+          for (int z=0; z<nnz; z++) {
+            if (nb.d(z) != pd[z]) return false;
+            if (nb.i(z) != pi[z]) return false;
+          }
+          return true;
+        }
+        MEDDLY_DCASSERT(nb.isFull()); 
+        int i = 0;
+        for (int z=0; z<nnz; z++) {
+          for (; i<pi[z]; i++) if (nb.d(i)) return false;
+          if (nb.d(i) != pd[z]) return false;
+          i++;
+        }
+        for (; i<nb.getSize(); i++) if (nb.d(i)) return false;
+        return true;
+    }
+
   // ------------------------------------------------------------
   // virtual and overriding default behavior
   protected:
-    virtual int createReducedHelper(int in, const nodeBuilder& nb, bool &u);
+    // virtual int createReducedHelper(int in, const node_builder& nb, bool &u);
 
   
   // ------------------------------------------------------------
@@ -79,7 +150,7 @@ class MEDDLY::mt_forest : public expert_forest {
         useIdentity = getNodeLevel(d) < 0; 
       }
       int sz = getLevelSize(k);
-      nodeBuilder& nb = useNodeBuilder(k, sz);
+      node_builder& nb = useNodeBuilder(k, sz);
       if (useIdentity) {
         // check for identity reductions with d
         int sd;
@@ -98,14 +169,14 @@ class MEDDLY::mt_forest : public expert_forest {
     }
 
     // Sanity check for development code.
-    void validateDownPointers(const nodeBuilder &nb) const;
+    // void validateDownPointers(const node_builder &nb) const;
 
 
   // ------------------------------------------------------------
   // still to be organized:
   public:
-    using expert_forest::getDownPtrsAndEdgeValues;
-    using expert_forest::getSparseNodeIndexes;
+    // using expert_forest::getDownPtrsAndEdgeValues;
+    // using expert_forest::getSparseNodeIndexes;
 
     /// Refer to meddly.h
     /*
@@ -142,7 +213,7 @@ class MEDDLY::mt_forest : public expert_forest {
     // virtual void showNode(FILE *s, int p, int verbose = 0) const;
 
     // *************** override expert_forest class -- done ***************
-
+#if 0
     // Dealing with slot 2 (node size)
     int getLargestIndex(int p) const;
 
@@ -169,7 +240,7 @@ class MEDDLY::mt_forest : public expert_forest {
     int getMddLevelMaxBound(int k) const;
     int getMxdLevelMaxBound(int k) const;
     int getLevelMaxBound(int k) const;
-
+#endif
     int buildQuasiReducedNodeAtLevel(int k, int p);
 
     void compareCacheCounts(int p = -1);
@@ -330,6 +401,8 @@ inline bool MEDDLY::mt_forest::isReducedNode(int p) const {
   return (isTerminalNode(p) || (getNext(p)>=0));
 }
 
+/*
+
 // Dealing with slot 2 (node size)
 inline int MEDDLY::mt_forest::getLargestIndex(int p) const {
   MEDDLY_DCASSERT(isActiveNode(p) && !isTerminalNode(p));
@@ -383,6 +456,7 @@ inline int MEDDLY::mt_forest::getSparseNodeLargestIndex(int p) const {
   MEDDLY_DCASSERT(isSparseNode(p));
   return getSparseNodeIndex(p, getSparseNodeSize(p) - 1);
 }
+*/
 
 // inline bool MEDDLY::mt_forest::isCounting() { return counting; }
 

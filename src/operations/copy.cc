@@ -142,7 +142,7 @@ int MEDDLY::copy_bool2MT::compute(int in, int a)
   // Initialize node builder
   const int level = argF->getNodeLevel(a);
   const int size = resF->getLevelSize(level);
-  expert_forest::nodeBuilder& nb = resF->useNodeBuilder(level, size);
+  node_builder& nb = resF->useNodeBuilder(level, size);
 
   // Initialize node reader
   node_reader* A = argF->initNodeReader(a, true);
@@ -203,7 +203,7 @@ int MEDDLY::copy_MT2bool::compute(int in, int a)
   // Initialize node builder
   const int level = argF->getNodeLevel(a);
   const int size = resF->getLevelSize(level);
-  expert_forest::nodeBuilder& nb = resF->useNodeBuilder(level, size);
+  node_builder& nb = resF->useNodeBuilder(level, size);
 
   // Initialize node reader
   node_reader* A = argF->initNodeReader(a, true);
@@ -283,52 +283,29 @@ void MEDDLY::copy_MT2Evplus::compute(int a, int &b, int &bev)
     return;
   }
 
-  // Make new node for answer
-  const int aLevel = argF->getNodeLevel(a);
-  int bSize = resF->getLevelSize(aLevel);
-  b = resF->createTempNode(aLevel, bSize, false);
-  int zero, zev;
-  compute(0, zero, zev);
+  // Initialize node builder
+  const int level = argF->getNodeLevel(a);
+  const int size = resF->getLevelSize(level);
+  node_builder& nb = resF->useNodeBuilder(level, size);
 
-  // Recurse
-  int i;
-  if (argF->isFullNode(a)) {
-    const int aSize = argF->getFullNodeSize(a);
-    MEDDLY_DCASSERT(aSize <= bSize);
-    for (i=0; i<aSize; i++) {
-      int d, dev;
-      compute(argF->getFullNodeDownPtr(a, i), d, dev);
-      resF->setDownPtrWoUnlink(b, i, d);
-      resF->unlinkNode(d);
-      resF->setEdgeValue(b, i, dev);
-    }
-  } // a is full
-  else {
-    const int aSize = argF->getSparseNodeSize(a);
-    MEDDLY_DCASSERT(argF->getSparseNodeIndex(a, aSize - 1) < bSize);
-    i = 0;
-    for (int z=0; z<aSize; z++) {
-      int aIndex = argF->getSparseNodeIndex(a, z);
-      for (; i<aIndex; i++) {
-        resF->setDownPtrWoUnlink(b, i, zero);
-        resF->setEdgeValue(b, i, zev);
-      }
-      MEDDLY_DCASSERT(i == aIndex && i < bSize);
-      int d, dev;
-      compute(argF->getSparseNodeDownPtr(a, z), d, dev);
-      resF->setDownPtrWoUnlink(b, i, d);
-      resF->unlinkNode(d);
-      resF->setEdgeValue(b, i, dev);
-    }
-  } // a is sparse
-  for (; i<bSize; i++) {
-    resF->setDownPtrWoUnlink(b, i, zero);
-    resF->setEdgeValue(b, i, zev);
+  // Initialize node reader
+  node_reader* A = argF->initNodeReader(a, true);
+
+  // recurse
+  for (int i=0; i<size; i++) {
+    int d, dev;
+    compute(A->d(i), d, dev);
+    nb.d(i) = d;
+    nb.ei(i) = dev;
   }
 
-  // Reduce, add to compute table
-  bev = 0;
-  resF->normalizeAndReduceNode(b, bev);
+  // Cleanup
+  node_reader::recycle(A);
+
+  // Reduce
+  resF->createReducedNode(-1, nb, bev, b);
+
+  // Add to compute table
   compute_table::temp_entry &entry = CT->startNewEntry(this);
   entry.key(0) = argF->cacheNode(a);
   entry.result(0) = bev;

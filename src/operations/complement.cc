@@ -111,7 +111,7 @@ int MEDDLY::compl_mdd::compute(int a)
   // Initialize node builder
   const int level = argF->getNodeLevel(a);
   const int size = resF->getLevelSize(level);
-  expert_forest::nodeBuilder& nb = resF->useNodeBuilder(level, size);
+  node_builder& nb = resF->useNodeBuilder(level, size);
 
   // Initialize node reader
   node_reader* A = argF->initNodeReader(a, true);
@@ -208,7 +208,7 @@ int MEDDLY::compl_mxd::compute(int in, int k, int a)
 
   // Initialize node builder
   const int size = resF->getLevelSize(k);
-  expert_forest::nodeBuilder& nb = resF->useNodeBuilder(k, size);
+  node_builder& nb = resF->useNodeBuilder(k, size);
 
   // Initialize node reader
   const int aLevel = argF->getNodeLevel(a);

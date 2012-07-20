@@ -25,7 +25,9 @@
 
 MEDDLY::mt_mdd_int::mt_mdd_int(int dsl, domain *d, const policies &p)
 : MEDDLY::mtmdd_forest(dsl, d, false, INTEGER, MULTI_TERMINAL, p)
-{ }
+{ 
+  initializeForest();
+}
 
 
 MEDDLY::mt_mdd_int::~mt_mdd_int()

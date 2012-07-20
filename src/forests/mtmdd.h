@@ -61,8 +61,6 @@ class MEDDLY::mtmdd_forest : public mt_forest {
     // mtmdd_forest(int dsl, domain *d, range_type t, const policies &p);
     ~mtmdd_forest();
 
-    virtual void findFirstElement(const dd_edge& f, int* vlist) const;
-
 #ifdef ACCUMULATE_ON
     // Enlarges a temporary node, if new size is greater than old size.
     virtual void resizeNode(int node, int size);
@@ -453,7 +451,7 @@ int mtmdd_forest::inPlaceSortBuild(int height, int begin, int end)
   int nodeSize = 1 + inPlaceSort<T>(height, begin, end);
 
   // build node
-  nodeBuilder& nb = useSparseBuilder(height, nodeSize);
+  node_builder& nb = useSparseBuilder(height, nodeSize);
   int z = 0;
   for (int i = begin; i < end; ) {
     int index = list[i][height];

@@ -42,7 +42,7 @@
 // #define MEMORY_TRACE
 // #define TRACK_DELETIONS
 
-
+// #define DEBUG_CREATE_REDUCED
 
 // Thoroughly check reference counts.
 // Very slow.  Use only for debugging.
@@ -260,20 +260,6 @@ void MEDDLY::forest::getElement(const dd_edge& a, int index, int* e)
   throw error(error::INVALID_OPERATION);
 }
 
-void MEDDLY::forest::findFirstElement(const dd_edge& f, int* vlist) const
-{
-  throw error(error::TYPE_MISMATCH);
-}
-
-void MEDDLY::forest
-::findFirstElement(const dd_edge& f, int* vlist, int* vplist) const
-{
-  throw error(error::TYPE_MISMATCH);
-}
-
-
-
-
 void MEDDLY::forest::removeStaleComputeTableEntries()
 {
   if (operation::useMonolithicComputeTable()) {
@@ -423,6 +409,7 @@ MEDDLY::forest::edge_visitor::~edge_visitor()
 {
 }
 
+#if 0
 // ******************************************************************
 // *                                                                *
 // *                                                                *
@@ -485,7 +472,7 @@ void MEDDLY::node_reader::resize(int k, int ns, char es, bool full)
   level = k;
   is_full = full;
   size = ns;
-  edge_size = es;
+  edge_bytes = es;
   if (size > alloc) {
     int nalloc = ((ns/8)+1)*8;
     MEDDLY_DCASSERT(nalloc > ns);
@@ -497,11 +484,11 @@ void MEDDLY::node_reader::resize(int k, int ns, char es, bool full)
     if (0==index) throw error(error::INSUFFICIENT_MEMORY);
     alloc = nalloc;
   }
-  if (edge_size * size > ealloc) {
-    int nalloc = ((edge_size * size)/8+1)*8;
+  if (edge_bytes * size > ealloc) {
+    int nalloc = ((edge_bytes * size)/8+1)*8;
     MEDDLY_DCASSERT(nalloc>0);
     MEDDLY_DCASSERT(nalloc>ealloc);
-    edge = (int*) realloc(edge, nalloc*sizeof(int));
+    edge = realloc(edge, nalloc);
     if (0==edge) throw error(error::INSUFFICIENT_MEMORY);
     ealloc = nalloc;
   }
@@ -541,7 +528,7 @@ bool MEDDLY::expert_forest::nodeFinder::equals(int p)
 
   return true;
 }
-
+#endif
 
 // ******************************************************************
 // *                                                                *
@@ -602,7 +589,7 @@ MEDDLY::expert_forest::level_data::~level_data()
 }
 
 void MEDDLY::expert_forest::level_data
-::init(expert_forest* p, char eS, char uH, char hH)
+::init(expert_forest* p, int k)
 {
   MEDDLY_DCASSERT(0==parent);
   parent = p;
@@ -617,9 +604,9 @@ void MEDDLY::expert_forest::level_data
   temp_nodes = 0;
   num_compactions = 0;
   levelNode = 0;
-  edgeSize = eS;
-  unhashedHeader = uH;
-  hashedHeader = hH;
+  edgeSize = parent->edgeSize(k);
+  unhashedHeader = parent->unhashedHeaderSize(k);
+  hashedHeader = parent->hashedHeaderSize(k);
   compactLevel = false;
 }
 
@@ -1076,187 +1063,6 @@ void MEDDLY::expert_forest::level_data::indexRemove(int p_offset)
 
 // ******************************************************************
 // *                                                                *
-// *               expert_forest::nodeBuilder methods               *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::expert_forest::nodeBuilder::nodeBuilder()
-{
-  parent = 0;
-  extra_hashed = 0;
-  extra_unhashed = 0;
-  down = 0;
-  indexes = 0;
-  edges = 0;
-}
-
-MEDDLY::expert_forest::nodeBuilder::~nodeBuilder()
-{
-  free(extra_hashed);
-  free(extra_unhashed);
-  free(down);
-  free(indexes);
-  free(edges);
-}
-
-void MEDDLY::expert_forest::nodeBuilder::init(int k, const level_data* ld)
-{
-  MEDDLY_DCASSERT(ld);
-  parent = ld;
-  level = k;
-  size = 0;
-  alloc = 0;
-  lock = false;
-}
-
-bool MEDDLY::expert_forest::nodeBuilder::equals(int p) const
-{
-  const nodeData &node = parent->parent->getNode(p);
-  if (node.level != level) return false;
-
-  MEDDLY_DCASSERT(0==edges);  // edge value stuff not implemented yet
-
-  if (parent->hashedHeader) {
-    const int* hh = parent->hashedHeaderOf(p);
-    if (memcmp(extra_hashed, hh, parent->hashedHeader * sizeof(int)))
-      return false;
-  }
-
-  // p is full:
-  if (parent->isFull(node.offset)) {
-    int fs = parent->fullSizeOf(node.offset);
-    const int* pd = parent->fullDownOf(node.offset);
-    if (is_sparse) {
-      int i = 0;
-      for (int z=0; z<size; z++) {
-        if (indexes[z] >= fs) return false;
-        for (; i<indexes[z]; i++) if (pd[i]) return false;
-        if (down[z] != pd[i]) return false;
-        i++;
-      } // for z
-      for (; i<fs; i++) if (pd[i]) return false;
-      return true;
-    }
-    // we're also full
-    if (fs > size) return false;
-    if (memcmp(down, pd, fs * sizeof(int))) return false;
-    for (int i=fs; i<size; i++) if (down[i]) return false;
-    return true;
-  }
-
-  // p is sparse:
-  int nnz = parent->sparseSizeOf(node.offset);
-  const int* pd = parent->sparseDownOf(node.offset);
-  const int* pi = parent->sparseIndexesOf(node.offset);
-
-  if (is_sparse) {
-    if (nnz != size) return false;
-    if (memcmp(down, pd, nnz * sizeof(int))) return false;
-    if (memcmp(indexes, pi, nnz * sizeof(int))) return false;
-    return true;
-  }
-
-  // We must be full
-  int i = 0;
-  for (int z=0; z<nnz; z++) {
-    for (; i<pi[z]; i++) if (down[i]) return false;
-    if (down[i] != pd[z]) return false;
-    i++;
-  }
-  for (; i<size; i++) if (down[i]) return false;
-  return true;
-}
-
-void MEDDLY::expert_forest::nodeBuilder::computeHash()
-{
-  MEDDLY_DCASSERT(!has_hash);
-  
-  hash_stream s;
-  s.start(level);
-
-  for (int e=0; e<parent->hashedHeader; e++) {
-    MEDDLY_DCASSERT(extra_hashed);
-    s.push(extra_hashed[e]);
-  }
-  
-  if (is_sparse) {
-    for (int z=0; z<size; z++) {
-      MEDDLY_DCASSERT(down[z]);
-      s.push(indexes[z], down[z]);
-    }
-  } else {
-    for (int i=0; i<size; i++) {
-      if (0==down[i]) continue;
-      s.push(i, down[i]);
-    }
-  }
-  h = s.finish();
-  has_hash = true;
-}
-
-void MEDDLY::expert_forest::nodeBuilder::copyIntoFull(int* d, int N) const
-{
-  MEDDLY_DCASSERT(0==edges);
-  if (is_sparse) {
-    memset(d, 0, N * sizeof(int));
-    for (int z=0; z<size; z++) {
-      if (indexes[z] < N) d[indexes[z]] = down[z];
-    }
-  } else {
-    memcpy(d, down, N * sizeof(int));
-  }
-}
-
-void MEDDLY::expert_forest::nodeBuilder
-::copyIntoSparse(int* d, int* ix, int Z) const
-{
-  MEDDLY_DCASSERT(0==edges);
-  if (is_sparse) {
-    memcpy(d, down, Z * sizeof(int));
-    memcpy(ix, indexes, Z * sizeof(int));
-  } else {
-    int z=0;
-    MEDDLY_DCASSERT(Z>0);
-    for (int i=0; i<size; i++)
-      if (down[i]) {
-        d[z] = down[i];
-        ix[z] = i;
-        z++;
-        if (z>=Z) return;
-      }
-  }
-}
-
-void MEDDLY::expert_forest::nodeBuilder::enlarge()
-{
-  if (size <= alloc) return;
-  alloc = ((size / 8)+1) * 8;
-  MEDDLY_DCASSERT(alloc > size);
-  down = (int*) realloc(down, alloc * sizeof(int));
-  if (0==down) throw error(error::INSUFFICIENT_MEMORY);
-  indexes = (int*) realloc(indexes, alloc * sizeof(int));
-  if (0==indexes) throw error(error::INSUFFICIENT_MEMORY);
-  if (parent->edgeSize>0) {
-    edges = realloc(down, alloc * parent->edgeSize * sizeof(int));
-    if (0==edges) throw error(error::INSUFFICIENT_MEMORY);
-  }
-
-  // can't do this in inlt() because parent is not complete yet.
-  if (parent->unhashedHeader && 0==extra_unhashed) {
-    extra_unhashed = (int*) malloc(parent->unhashedHeader * sizeof(int));
-    if (0==extra_unhashed)
-      throw error(error::INSUFFICIENT_MEMORY);
-  }
-  if (parent->hashedHeader && 0==extra_hashed) {
-    extra_hashed = (int*) malloc(parent->hashedHeader * sizeof(int));
-    if (0==extra_hashed)
-      throw error(error::INSUFFICIENT_MEMORY);
-  }
-}
-
-
-// ******************************************************************
-// *                                                                *
 // *               expert_forest::nodecounter methods               *
 // *                                                                *
 // ******************************************************************
@@ -1326,14 +1132,11 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   // Initialize builders array
   //
   if (rel) {
-    raw_builders = new nodeBuilder[2*N+1];
+    raw_builders = new node_builder[2*N+1];
     builders = raw_builders + N;
   } else {
-    raw_builders = new nodeBuilder[N+1];
+    raw_builders = new node_builder[N+1];
     builders = raw_builders;
-  }
-  for (int k=getMinLevelIndex(); k<=N; k++) {
-    builders[k].init(k, levels+k);
   }
 
   //
@@ -1369,6 +1172,22 @@ MEDDLY::expert_forest::~expert_forest()
   free(in_validate);
 }
 
+void MEDDLY::expert_forest::initializeForest()
+{
+  //
+  // Initialize level array
+  //
+  for (int k=getMinLevelIndex(); k<=getNumVariables(); k++) {
+    levels[k].init(this, k);
+  }
+
+  //
+  // Initialize builders array
+  //
+  for (int k=getMinLevelIndex(); k<=getNumVariables(); k++) {
+    builders[k].init(k, this);
+  }
+}
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // '                                                                '
@@ -1666,6 +1485,14 @@ void MEDDLY::expert_forest::showNode(FILE* s, int p, int verbose) const
     fprintf(s, ")");
   }
   node_reader::recycle(R);
+
+  // show extra header stuff
+  if (ld.unhashedHeader) {
+    showUnhashedHeader(s, ld.unhashedHeaderOf(node.offset));
+  }
+  if (ld.hashedHeader) {
+    showHashedHeader(s, ld.hashedHeaderOf(node.offset));
+  }
 }
 
 void MEDDLY::expert_forest::showNodeGraph(FILE *s, int p) const
@@ -1767,27 +1594,52 @@ void MEDDLY::expert_forest
   }
 }
 
-unsigned MEDDLY::expert_forest::hashNode(int h) const 
+unsigned MEDDLY::expert_forest::hashNode(int p) const 
 {
-  int* d = getNodeAddress(h);
-  int length = d[2];
-  MEDDLY_DCASSERT(length != 0);
-  d += 3;
-
   hash_stream s;
-  s.start(getNodeLevel(h));
+  const nodeData& node = getNode(p);
+  MEDDLY_DCASSERT(node.level);
+  const level_data &ld = levels[node.level];
+  s.start(node.level);
 
-  if (length > 0) {
-    // Full node
-    for (int i=0; i<length; i++) {
-      if (0==d[i]) continue;
-      s.push(i, d[i]);
-    } 
+  for (int e=0; e<ld.hashedHeader; e++) {
+    s.push(ld.hashedHeaderOf(node.offset)[e]);
+  }
+  
+  if (ld.isSparse(node.offset)) {
+    int nnzs = ld.sparseSizeOf(node.offset);
+    const int* down = ld.sparseDownOf(node.offset);
+    const int* indexes = ld.sparseIndexesOf(node.offset);
+    if (areEdgeValuesHashed(node.level)) {
+      int edge_bytes = edgeSize(node.level) * sizeof(int);
+      const char* edge = (const char*) ld.sparseEdgeOf(node.offset);
+      for (int z=0; z<nnzs; z++) {
+        MEDDLY_DCASSERT(down[z]);
+        int* ep = (int*) (edge + z * edge_bytes);
+        s.push(indexes[z], down[z], *ep);
+      }
+    } else {
+      for (int z=0; z<nnzs; z++) {
+        MEDDLY_DCASSERT(down[z]);
+        s.push(indexes[z], down[z]);
+      }
+    }
   } else {
-    int* indexes = d - length;
-    for (int i=0; i<-length; i++) {
-      s.push(d[i], indexes[i]); // currently, nodes are stored "indexes first"
-      // s.push(indexes[i], d[i]);
+    int size = ld.fullSizeOf(node.offset);
+    const int* down = ld.fullDownOf(node.offset);
+    if (areEdgeValuesHashed(node.level)) {
+      int edge_bytes = edgeSize(node.level) * sizeof(int);
+      const char* edge = (const char*) ld.fullEdgeOf(node.offset);
+      for (int i=0; i<size; i++) {
+        if (0==down[i]) continue;
+        int* ep = (int*) (edge + i * edge_bytes);
+        s.push(i, down[i], *ep);
+      }
+    } else {
+      for (int i=0; i<size; i++) {
+        if (0==down[i]) continue;
+        s.push(i, down[i]);
+      }
     }
   }
   return s.finish();
@@ -1843,6 +1695,81 @@ int MEDDLY::expert_forest::getDownPtr(int p, int i) const
 }
 
 
+void MEDDLY::expert_forest::getDownPtr(int p, int i, int& ev, int& dn) const 
+{
+  MEDDLY_DCASSERT(i>=0);
+  const nodeData& node = getNode(p);
+  MEDDLY_DCASSERT(node.level);
+  const level_data &ld = levels[node.level];
+  if (ld.isFull(node.offset)) {
+    // full node - super easy
+    int fs = ld.fullSizeOf(node.offset);
+    if (i<fs) {
+      dn = (ld.fullDownOf(node.offset))[i];
+      ev = ((const int*)ld.fullEdgeOf(node.offset))[i];
+    } else {
+      dn = 0;
+      ev = 0;
+    }
+    return;
+  }
+  // Node must be sparse; do a binary search
+  int low = 0;  // smallest where i might be
+  int high = ld.sparseSizeOf(node.offset);  // smallest where i isn't
+  const int* ix = ld.sparseIndexesOf(node.offset);
+  while (low < high) {
+    int mid = (low+high)/2;
+    if (ix[mid] == i) {
+      dn = ld.sparseDownOf(node.offset)[mid];
+      ev = ((const int*)ld.sparseEdgeOf(node.offset))[mid];
+      return;
+    }
+    if (ix[mid] < i)  low = mid+1;
+    else              high = mid;
+  }
+  dn = 0;
+  ev = 0;
+}
+
+
+void MEDDLY::expert_forest::getDownPtr(int p, int i, float& ev, int& dn) const
+{
+  MEDDLY_DCASSERT(i>=0);
+  const nodeData& node = getNode(p);
+  MEDDLY_DCASSERT(node.level);
+  const level_data &ld = levels[node.level];
+  if (ld.isFull(node.offset)) {
+    // full node - super easy
+    int fs = ld.fullSizeOf(node.offset);
+    if (i<fs) {
+      dn = (ld.fullDownOf(node.offset))[i];
+      ev = ((const float*)ld.fullEdgeOf(node.offset))[i];
+    } else {
+      dn = 0;
+      ev = 0;
+    }
+    return;
+  }
+  // Node must be sparse; do a binary search
+  int low = 0;  // smallest where i might be
+  int high = ld.sparseSizeOf(node.offset);  // smallest where i isn't
+  const int* ix = ld.sparseIndexesOf(node.offset);
+  while (low < high) {
+    int mid = (low+high)/2;
+    if (ix[mid] == i) {
+      dn = ld.sparseDownOf(node.offset)[mid];
+      ev = ((const float*)ld.sparseEdgeOf(node.offset))[mid];
+      return;
+    }
+    if (ix[mid] < i)  low = mid+1;
+    else              high = mid;
+  }
+  dn = 0;
+  ev = 0;
+}
+
+
+
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // '                                                                '
 // '                   methods for  reading nodes                   '
@@ -1854,28 +1781,43 @@ void MEDDLY::expert_forest
 ::initNodeReader(node_reader &nr, int node, bool full) const
 {
   const nodeData &n = getNode(node);
-  int nsize = getLevelSize(n.level);
   level_data& ld = levels[n.level];
-  nr.resize(n.level, nsize, ld.edgeSize, full);
+  nr.resize(this, n.level, getLevelSize(n.level), full);
   if (ld.isFull(n.offset)) {
     int i;
     int stop = ld.fullSizeOf(n.offset);
     const int* dn = ld.fullDownOf(n.offset);
     if (full) {
-      for (i=0; i<stop; i++) {
-        nr.down[i] = dn[i];
-      }
-      for (; i<nsize; i++) {
-        nr.down[i] = 0;
+      memcpy(nr.down, dn, stop * sizeof(int));
+      int* nrdext = nr.down + stop;
+      memset(nrdext, 0, (nr.size-stop) * sizeof(int));
+      if (nr.edge_bytes) {
+        const void* ev = ld.fullEdgeOf(n.offset);
+        memcpy(nr.edge, ev, stop * nr.edge_bytes);
+        void* evext = (char*)nr.edge + (stop * nr.edge_bytes);
+        memset(evext, 0, (nr.size-stop) * nr.edge_bytes);
       }
     } else {
       int& z = nr.nnzs;
       z = 0;
-      for (i=0; i<stop; i++) if (dn[i]) {
-        nr.down[z] = dn[i];
-        nr.index[z] = i;
-        z++;
-      }
+      if (nr.edge_bytes) {
+        void* nev = nr.edge;
+        for (i=0; i<stop; i++) {
+          if (0==dn[i]) continue;
+          nr.down[z] = dn[i];
+          nr.index[z] = i;
+          const void* ev = (char*)ld.fullEdgeOf(n.offset) + i * nr.edge_bytes;
+          memcpy(nev, ev, nr.edge_bytes);
+          nev = (char*)nev + nr.edge_bytes;
+          z++;
+        } // for i
+      } else {
+        for (i=0; i<stop; i++) if (dn[i]) {
+          nr.down[z] = dn[i];
+          nr.index[z] = i;
+          z++;
+        } // for i
+      } // if ev
     }
   } else {
     int i = 0;
@@ -1883,18 +1825,32 @@ void MEDDLY::expert_forest
     const int* dn = ld.sparseDownOf(n.offset);
     const int* ix = ld.sparseIndexesOf(n.offset);
     if (full) {
-      for (int z=0; z<nnz; z++) {
-        for (; i<ix[z]; i++) nr.down[i] = 0;
-        nr.down[i] = dn[z];
-        i++;
-      }
-      for (; i<nsize; i++) nr.down[i] = 0;
+      if (nr.edge_bytes) {
+        const void* ev = ld.sparseEdgeOf(n.offset);
+        memset(nr.down, 0, nr.size * sizeof(int));
+        memset(nr.edge, 0, nr.size * nr.edge_bytes);
+        for (int z=0; z<nnz; z++) {
+          nr.down[ix[z]] = dn[z];
+          int off = ix[z] * nr.edge_bytes;
+          memcpy((char*)nr.edge + off, (char*)ev + off, nr.edge_bytes);
+          i++;
+        }
+      } else {
+        for (int z=0; z<nnz; z++) {
+          for (; i<ix[z]; i++) nr.down[i] = 0;
+          nr.down[i] = dn[z];
+          i++;
+        }
+        for (; i<nr.size; i++) nr.down[i] = 0;
+      } // if ev
     } else {
-      for (int z=0; z<nnz; z++) {
-        nr.down[z] = dn[z];
-        nr.index[z] = ix[z];
-      }
       nr.nnzs = nnz;
+      memcpy(nr.down, dn, nnz * sizeof(int));
+      memcpy(nr.index, ix, nnz * sizeof(int));
+      if (nr.edge_bytes) {
+        memcpy(nr.edge, ld.sparseEdgeOf(n.offset), 
+          nnz * nr.edge_bytes);
+      }
     }
   }
 }
@@ -1904,7 +1860,7 @@ void MEDDLY::expert_forest
 {
   MEDDLY_DCASSERT(0==levels[k].edgeSize);
   int nsize = getLevelSize(k);
-  nr.resize(k, nsize, 0, full);
+  nr.resize(this, k, nsize, full);
   for (int i=0; i<nsize; i++) 
     nr.down[i] = node;
   if (!full) {
@@ -1918,10 +1874,10 @@ void MEDDLY::expert_forest
 {
   MEDDLY_DCASSERT(1==levels[k].edgeSize);
   int nsize = getLevelSize(k);
-  nr.resize(k, nsize, 1, full);
+  nr.resize(this, k, nsize, full);
   for (int i=0; i<nsize; i++) {
     nr.down[i] = np;
-    nr.edge[i] = ev;
+    ((int*)nr.edge)[i] = ev;
   }
   if (!full) {
     for (int i=0; i<nsize; i++) nr.index[i] = i;
@@ -1935,12 +1891,11 @@ void MEDDLY::expert_forest
   MEDDLY_DCASSERT(0==levels[k].edgeSize);
   int nsize = getLevelSize(k);
   if (full) {
-    nr.resize(k, nsize, 0, full);
-    for (int j=0; j<i; j++) nr.down[j] = 0;
+    nr.resize(this, k, nsize, full);
+    memset(nr.down, 0, nsize * sizeof(int));
     nr.down[i] = node;
-    for (int j=i+1; j<nsize; j++) nr.down[j] = 0;
   } else {
-    nr.resize(k, 1, 0, full);
+    nr.resize(this, k, 1, full);
     nr.nnzs = 1;
     nr.down[0] = node;
     nr.index[0] = i;
@@ -1955,22 +1910,16 @@ void MEDDLY::expert_forest
   MEDDLY_DCASSERT(1==levels[k].edgeSize);
   int nsize = getLevelSize(k);
   if (full) {
-    nr.resize(k, nsize, 1, full);
-    for (int j=0; j<i; j++) {
-      nr.down[j] = 0;
-      nr.edge[j] = 0;
-    }
+    nr.resize(this, k, nsize, full);
+    memset(nr.down, 0, nsize * sizeof(int));
+    memset(nr.edge, 0, nsize * sizeof(int));
     nr.down[i] = node;
-    nr.edge[i] = ev;
-    for (int j=i+1; j<nsize; j++) {
-      nr.down[j] = 0;
-      nr.edge[j] = 0;
-    }
+    ((int*)nr.edge)[i] = ev;
   } else {
-    nr.resize(k, 1, 1, full);
+    nr.resize(this, k, 1, full);
     nr.nnzs = 1;
     nr.down[0] = node;
-    nr.edge[0] = ev;
+    ((int*)nr.edge)[0] = ev;
     nr.index[0] = i;
   }
 }
@@ -2057,6 +2006,7 @@ void MEDDLY::expert_forest::showInfo(FILE* s, int verb)
 // '                                                                '
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
+/*
 int MEDDLY::expert_forest::reduceNode(int node)
 {
   throw error(error::TYPE_MISMATCH);
@@ -2073,17 +2023,28 @@ void MEDDLY::expert_forest::normalizeAndReduceNode(int& node, float& ev)
 }
 
 int MEDDLY::expert_forest
-::createReducedHelper(int in, const nodeBuilder &nb, bool &u)
+::createReducedHelper(int in, const node_builder &nb, bool &u)
 {
   throw error(error::TYPE_MISMATCH);
 }
 
-void MEDDLY::expert_forest::normalize(nodeBuilder &nb, int& ev)
+bool MEDDLY::expert_forest::areDuplicates(int, const node_builder&) const
+{
+  throw error(error::NOT_IMPLEMENTED);
+}
+
+bool MEDDLY::expert_forest::areDuplicates(int, const node_reader&) const
+{
+  throw error(error::NOT_IMPLEMENTED);
+}
+*/
+
+void MEDDLY::expert_forest::normalize(node_builder &nb, int& ev) const
 {
   throw error(error::TYPE_MISMATCH);
 }
 
-void MEDDLY::expert_forest::normalize(nodeBuilder &nb, float& ev)
+void MEDDLY::expert_forest::normalize(node_builder &nb, float& ev) const
 {
   throw error(error::TYPE_MISMATCH);
 }
@@ -2094,6 +2055,16 @@ void MEDDLY::expert_forest::showTerminal(FILE* s, int tnode) const
 }
 
 void MEDDLY::expert_forest::showEdgeValue(FILE* s, const void* edge, int i) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::expert_forest::showHashedHeader(FILE* s, const int* hh) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::expert_forest::showUnhashedHeader(FILE* s, const int* uh) const
 {
   throw error(error::TYPE_MISMATCH);
 }
@@ -2117,7 +2088,7 @@ void MEDDLY::expert_forest::handleNewOrphanNode(int p)
   // Two possible scenarios:
   // (1) a reduced node, or
   // (2) a temporary node ready to be deleted.
-  MEDDLY_DCASSERT(isReducedNode(p) || getCacheCount(p) == 0);
+  // MEDDLY_DCASSERT(isReducedNode(p) || getCacheCount(p) == 0);
 
   if (getCacheCount(p) == 0) {
     // delete node
@@ -2173,10 +2144,13 @@ void MEDDLY::expert_forest::deleteNode(int p)
   int k = getNodeLevel(p);
 
   // remove from unique table (only applicable to reduced nodes)
-  if (isReducedNode(p)) {
+  // if (isReducedNode(p)) {
     unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE
-    nodeFinder key(this, p);
+    // node_finder key(this, p);
+    node_reader key;
+    initNodeReader(key, p, false);
+    key.setHash(hashNode(p));
     if (unique->find(key) != p) {
       fprintf(stderr, "Error in deleteNode\nFind: %d\np: %d\n",
         unique->find(key), p);
@@ -2195,13 +2169,15 @@ void MEDDLY::expert_forest::deleteNode(int p)
 #endif
 
     MEDDLY_DCASSERT(address[p].cache_count == 0);
-  }
+  // }
+  /*
   else {
     // Temporary node
     // TODO:
     // clear cache of corresponding temporary node?
     decrTempNodeCount(k);
   }
+  */
 
   // unlink children
   const int nDptrs = ABS(foo[2]);
@@ -2237,7 +2213,7 @@ void MEDDLY::expert_forest::zombifyNode(int p)
 {
   MEDDLY_DCASSERT(isActiveNode(p));
   MEDDLY_DCASSERT(!isTerminalNode(p));
-  MEDDLY_DCASSERT(isReducedNode(p));
+  // MEDDLY_DCASSERT(isReducedNode(p));
   MEDDLY_DCASSERT(getCacheCount(p) > 0);  // otherwise this node should be deleted
   MEDDLY_DCASSERT(readInCount(p) == 0);
   MEDDLY_DCASSERT(address[p].cache_count > 0);
@@ -2251,7 +2227,10 @@ void MEDDLY::expert_forest::zombifyNode(int p)
 
   unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE 
-  nodeFinder key(this, p);
+  // node_finder key(this, p);
+  node_reader key;
+  initNodeReader(key, p, false);
+  key.setHash(hashNode(p));
   if (unique->find(key) != p) {
     fprintf(stderr, "Fail: can't find reduced node %d; got %d\n", p, unique->find(key));
     dumpInternal(stderr);
@@ -2301,7 +2280,173 @@ void MEDDLY::expert_forest::zombifyNode(int p)
   levels[node_level].recycleNode(node_offset);
 }
 
+int MEDDLY::expert_forest
+::createReducedHelper(int in, const node_builder &nb, bool &u)
+{
+#ifdef DEVELOPMENT_CODE
+  validateDownPointers(nb);
+#endif
 
+  u = true;
+
+  // get sparse, truncated full sizes and check
+  // for redundant / identity reductions.
+  int nnz;
+  int truncsize;
+  if (nb.isSparse()) {
+    // Reductions for sparse nodes
+    truncsize = -1;
+    nnz = nb.getNNZs();
+    for (int z=0; z<nnz; z++) {
+      MEDDLY_DCASSERT(nb.d(z));
+      truncsize = MAX(truncsize, nb.i(z));
+    } // for z
+
+    // Is this an identity node, and should we eliminate it?
+    if (1==nnz && nb.getLevel()<0 && in==nb.i(0)) {
+      if (isIdentityReduced()) {
+        return linkNode(nb.d(0));
+      }
+    }
+
+  } else {
+    // Reductions for full nodes
+    bool redundant = true;
+    int common = nb.d(0);
+    if (common) {
+      nnz = 1;
+      truncsize = 0;
+    } else {
+      nnz = 0;
+      truncsize = -1;
+    }
+    for (int i=1; i<nb.getSize(); i++) {
+      if (redundant) {
+        redundant = (nb.d(i) == common);
+      }
+      if (nb.d(i)) {
+        nnz++;
+        truncsize = i;
+      }
+    } // for i
+
+    // Is this a redundant node, and should we eliminate it?
+    if (redundant) {
+      if (isFullyReduced() || (isIdentityReduced() && nb.getLevel()>0))
+        return linkNode(common);
+    }
+
+    // Is this an identity node, and should we eliminate it?
+    if (isIdentityReduced()) {
+      if (in>=0 && 1==nnz && nb.getLevel()<0 && nb.d(in)) 
+        return linkNode(nb.d(in));
+    }
+  }
+  truncsize++;
+
+  // Is this a zero node?
+  if (0==nnz) {
+    MEDDLY_DCASSERT(0==truncsize);  // sanity check
+    return 0;
+  }
+
+  // check for duplicates in unique table
+  int q = unique->find(nb);
+  if (q) {
+    return linkNode(q);
+  }
+
+  // 
+  // Not eliminated by reduction rule.
+  // Not a duplicate.
+  //
+  // We need to create a new node for this.
+  u = false;
+  int p = getFreeNodeHandle();
+  address[p].level = nb.getLevel();
+  MEDDLY_DCASSERT(0 == address[p].cache_count);
+  level_data &ld = levels[nb.getLevel()];
+
+  // First, determine if it should be full or sparse
+  if (ld.slotsForNode(-nnz) < ld.slotsForNode(truncsize)) { 
+    // sparse node wins
+    address[p].offset = ld.allocNode(-nnz, p, false);
+    MEDDLY_DCASSERT(1==ld.countOf(address[p].offset));
+    int* index = ld.sparseIndexesOf(address[p].offset);
+    int* down  = ld.sparseDownOf(address[p].offset);
+    if (nb.hasEdges()) {
+      nb.copyIntoSparse(down, index, ld.sparseEdgeOf(address[p].offset), nnz);
+    } else {
+      nb.copyIntoSparse(down, index, nnz);
+    }
+  } else {
+    // full node wins
+    address[p].offset = ld.allocNode(truncsize, p, false);
+    MEDDLY_DCASSERT(1==ld.countOf(address[p].offset));
+    int* down = ld.fullDownOf(address[p].offset);
+    if (nb.hasEdges()) {
+      nb.copyIntoFull(down, ld.fullEdgeOf(address[p].offset), truncsize);
+    } else {
+      nb.copyIntoFull(down, truncsize);
+    }
+  } // if 
+
+  // add to UT 
+  unique->add(nb.hash(), p);
+  
+#ifdef DEVELOPMENT_CODE
+  // node_finder key(this, p);
+  node_reader key;
+  initNodeReader(key, p, false);
+  key.setHash(hashNode(p));
+  MEDDLY_DCASSERT(key.hash() == nb.hash());
+  MEDDLY_DCASSERT(unique->find(key) == p);
+#endif
+#ifdef DEBUG_CREATE_REDUCED
+  printf("Created node %d\n", p);
+  dump(stdout);
+#endif
+  return p;
+}
+
+void MEDDLY::expert_forest::validateDownPointers(const node_builder &nb) const
+{
+  int nextLevel;
+  switch (getReductionRule()) {
+    case policies::IDENTITY_REDUCED:
+    case policies::FULLY_REDUCED:
+      if (nb.isSparse()) {
+        for (int z=0; z<nb.getNNZs(); z++) {
+          MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(z))));
+        } 
+      } else {
+        for (int i=0; i<nb.getSize(); i++) {
+          MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(i))));
+        }
+      }
+      break;
+
+    case policies::QUASI_REDUCED:
+      if (isForRelations()) 
+        nextLevel = (nb.getLevel()<0) ? -(nb.getLevel()+1) : -nb.getLevel();
+      else
+        nextLevel = nb.getLevel()-1;
+      if (nb.isSparse()) {
+        for (int z=0; z<nb.getNNZs(); z++) {
+          MEDDLY_DCASSERT(getNodeLevel(nb.d(z)) == nextLevel);
+        } 
+      } else {
+        for (int i=0; i<nb.getSize(); i++) {
+          MEDDLY_DCASSERT(getNodeLevel(nb.d(i)) == nextLevel);
+        }
+      }
+      break;
+
+    default:
+      throw error(error::NOT_IMPLEMENTED);
+  }
+
+}
 
 //
 // ------------------------------------------------------------------
@@ -2320,6 +2465,7 @@ bool MEDDLY::expert_forest::isStale(int h) const {
     );
 }
 
+/*
 #ifndef INLINED_REALS
 
 float MEDDLY::expert_forest::getReal(int term) const
@@ -2333,6 +2479,7 @@ int MEDDLY::expert_forest::getTerminalNode(float a) const
 }
 
 #endif
+*/
 
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -2400,18 +2547,10 @@ int MEDDLY::expert_forest::createTempNode(int lh, int size, bool clear)
   throw error(error::NOT_IMPLEMENTED);
 }
 
-int MEDDLY::expert_forest
-::createTempNode(int lh, std::vector<int>&, std::vector<int>&)
-{
-  throw error(error::TYPE_MISMATCH);
-}
+#endif
 
-int MEDDLY::expert_forest
-::createTempNode(int lh, std::vector<int>&, std::vector<float>&)
-{
-  throw error(error::TYPE_MISMATCH);
-}
 
+#ifdef USE_OLD_EVMDDS
 bool MEDDLY::expert_forest
 ::getDownPtrsAndEdgeValues(int, std::vector<int>&, std::vector<int>&) const
 {
@@ -2424,6 +2563,17 @@ bool MEDDLY::expert_forest
   throw error(error::TYPE_MISMATCH);
 }
 
+int MEDDLY::expert_forest
+::createTempNode(int lh, std::vector<int>&, std::vector<int>&)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+int MEDDLY::expert_forest
+::createTempNode(int lh, std::vector<int>&, std::vector<float>&)
+{
+  throw error(error::TYPE_MISMATCH);
+}
 #endif
 
 

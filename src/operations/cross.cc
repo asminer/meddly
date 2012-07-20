@@ -126,7 +126,7 @@ int MEDDLY::cross_bool::compute_un(int k, int a, int b)
 
   // build new result node
   int resultSize = resF->getLevelSize(k);
-  expert_forest::nodeBuilder& nb = resF->useNodeBuilder(k, resultSize);
+  node_builder& nb = resF->useNodeBuilder(k, resultSize);
 
   // Initialize node reader
   node_reader* A = (arg1F->getNodeLevel(a) < k) 
@@ -179,7 +179,7 @@ int MEDDLY::cross_bool::compute_pr(int in, int k, int a, int b)
 
   // build new result node
   int resultSize = resF->getLevelSize(k);
-  expert_forest::nodeBuilder& nb = resF->useNodeBuilder(k, resultSize);
+  node_builder& nb = resF->useNodeBuilder(k, resultSize);
 
   // Initialize node reader
   node_reader* B = (arg2F->getNodeLevel(b) < -k) 

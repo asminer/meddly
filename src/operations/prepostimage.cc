@@ -166,7 +166,7 @@ int MEDDLY::preimage_mdd::compute_rec(int mdd, int mxd)
   int mxdLevel = arg2F->getNodeLevel(mxd);
   int rLevel = MAX(ABS(mxdLevel), mddLevel);
   int rSize = resF->getLevelSize(rLevel);
-  expert_forest::nodeBuilder& nb = resF->useNodeBuilder(rLevel, rSize);
+  node_builder& nb = resF->useNodeBuilder(rLevel, rSize);
 
   // Initialize mdd reader
   node_reader* A = (mddLevel < rLevel)
@@ -286,7 +286,7 @@ int MEDDLY::postimage_mdd::compute_rec(int mdd, int mxd)
   int mxdLevel = arg2F->getNodeLevel(mxd);
   int rLevel = MAX(ABS(mxdLevel), mddLevel);
   int rSize = resF->getLevelSize(rLevel);
-  expert_forest::nodeBuilder& nb = resF->useNodeBuilder(rLevel, rSize);
+  node_builder& nb = resF->useNodeBuilder(rLevel, rSize);
 
   // Initialize mdd reader
   node_reader* A = (mddLevel < rLevel)

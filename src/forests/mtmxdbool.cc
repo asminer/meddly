@@ -30,7 +30,9 @@
 
 MEDDLY::mt_mxd_bool::mt_mxd_bool(int dsl, domain *d, const policies &p)
 : MEDDLY::mtmxd_forest(dsl, d, true, BOOLEAN, MULTI_TERMINAL, p)
-{ }
+{ 
+  initializeForest();
+}
 
 
 MEDDLY::mt_mxd_bool::~mt_mxd_bool()

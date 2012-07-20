@@ -26,6 +26,8 @@
 #include "meddly.h"
 #include "simple_model.h"
 
+#define SHOW_INDEXES
+
 const char* kanban[] = {
   "X-+..............",  // Tin1
   "X.-+.............",  // Tr1
@@ -54,13 +56,13 @@ bool checkReachset(int N)
   int sizes[16];
 
   for (int i=15; i>=0; i--) sizes[i] = N+1;
-  domain* d = createDomainBottomUp(sizes, 16);
+  domain* dom = createDomainBottomUp(sizes, 16);
 
   // Build initial state
   int* initial = new int[17];
   for (int i=16; i; i--) initial[i] = 0;
   initial[1] = initial[5] = initial[9] = initial[13] = N;
-  forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mdd = dom->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge init_state(mdd);
   mdd->createEdge(&initial, 1, init_state);
   delete[] initial;
@@ -68,7 +70,7 @@ bool checkReachset(int N)
   fflush(stdout);
 
   // Build next-state function
-  forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mxd = dom->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge nsf(mxd);
   buildNextStateFunction(kanban, 16, mxd, nsf); 
   printf("\tbuilt next-state function\n");
@@ -81,10 +83,15 @@ bool checkReachset(int N)
   fflush(stdout);
 
   // Build index set for reachable states
-  forest* evmdd = d->createForest(0, forest::INTEGER, forest::EVPLUS);
+  forest* evmdd = dom->createForest(0, forest::INTEGER, forest::EVPLUS);
   dd_edge reach_index(evmdd);
   apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
+#ifdef SHOW_INDEXES
+  printf("\tbuilt index set:\n");
+  reach_index.show(stdout, 2);
+#else
   printf("\tbuilt index set\n");
+#endif
   fflush(stdout);
 
   // Verify indexes
@@ -99,10 +106,27 @@ bool checkReachset(int N)
     }
     c++;
   } // for s
+
+  // verify the other way
+  int d = 0;
+  for (enumerator s(reach_index); s; ++s) {
+    const int* state = s.getAssignments();
+    bool ok;
+    mdd->evaluate(reachable, state, ok);
+    if (!ok) {
+      printf("\nIndex number %d does not appear in reachability set\n", d);
+      return false;
+    }
+    d++;
+  }
+  if (c!=d) {
+    printf("\nCardinality mismatch\n");
+    return false;
+  }
   printf("\tchecked indexes\n");
   fflush(stdout);
 
-  destroyDomain(d);
+  destroyDomain(dom);
   
   return true;
 }

@@ -22,6 +22,7 @@ libmeddly_la_SOURCES = \
 	meddly.h \
 	meddly_expert.h \
   meddly.cc \
+  node_wrappers.cc \
   ops.cc \
 	dd_edge.cc \
   enumerator.cc \

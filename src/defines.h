@@ -107,6 +107,7 @@ namespace MEDDLY {
     return k1 > k2;
   }
 
+  /*
   // maxUlps would be a small +ve integer.
   inline bool isAlmostEqual(int A, int B) {
     static const int maxUlps = 16;
@@ -140,6 +141,7 @@ namespace MEDDLY {
     return ABS(A - B) <= maxUlps;
 #endif
   }
+  */
 
 }
 
