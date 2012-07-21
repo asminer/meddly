@@ -94,7 +94,7 @@ namespace MEDDLY {
   // Functions for reinterpreting an int to a float and vice-versa
   float   toFloat (int a);
   int     toInt   (float a);
-  float*  toFloat (int* a);
+  // float*  toFloat (int* a);
 
   // classes defined here
   struct settings;
@@ -754,7 +754,6 @@ class MEDDLY::node_reader {
     and edge values.
 */
 class MEDDLY::node_builder {
-        // const level_data* parent;
         const expert_forest* parent;
         int* extra_hashed;
         int* extra_unhashed;
@@ -774,6 +773,39 @@ class MEDDLY::node_builder {
 #endif
         bool is_sparse;
         bool hashEdgeValues;
+    private:
+        // These cheat; let's see if any compiler complains.
+        inline int& raw_hh(int i) const {
+          MEDDLY_CHECK_RANGE(0, i, hhsize);
+          MEDDLY_DCASSERT(extra_hashed);
+          return extra_hashed[i];
+        }
+        inline int& raw_uh(int i) const {
+          MEDDLY_CHECK_RANGE(0, i, uhsize);
+          MEDDLY_DCASSERT(extra_unhashed);
+          return extra_unhashed[i];
+        }
+        inline int& raw_d(int i) const {
+          MEDDLY_DCASSERT(down);
+          MEDDLY_CHECK_RANGE(0, i, size);
+          return down[i];
+        }
+        inline int& raw_i(int i) const {
+          MEDDLY_DCASSERT(indexes);
+          MEDDLY_DCASSERT(is_sparse);
+          MEDDLY_CHECK_RANGE(0, i, size);
+          return indexes[i];
+        }
+        inline int& raw_ei(int i) const {
+          MEDDLY_DCASSERT(edge);
+          MEDDLY_CHECK_RANGE(0, i, size);
+          return ((int*)edge)[i];
+        }
+        inline float& raw_ef(int i) const {
+          MEDDLY_DCASSERT(edge);
+          MEDDLY_CHECK_RANGE(0, i, size);
+          return ((float*)edge)[i];
+        }
     public:
         bool lock;
     public:
@@ -825,58 +857,18 @@ class MEDDLY::node_builder {
         inline int getLevel() const { 
           return level;
         }
-        inline int& hh(int i) {
-          MEDDLY_CHECK_RANGE(0, i, hhsize);
-          MEDDLY_DCASSERT(extra_hashed);
-          return extra_hashed[i];
-        }
-        inline int& uh(int i) {
-          MEDDLY_CHECK_RANGE(0, i, uhsize);
-          MEDDLY_DCASSERT(extra_unhashed);
-          return extra_unhashed[i];
-        }
-        inline int& d(int i) {
-          MEDDLY_DCASSERT(down);
-          MEDDLY_CHECK_RANGE(0, i, size);
-          return down[i];
-        }
-        inline int d(int i) const {
-          MEDDLY_DCASSERT(down);
-          MEDDLY_CHECK_RANGE(0, i, size);
-          return down[i];
-        }
-        inline int& i(int i) {
-          MEDDLY_DCASSERT(indexes);
-          MEDDLY_DCASSERT(is_sparse);
-          MEDDLY_CHECK_RANGE(0, i, size);
-          return indexes[i];
-        }
-        inline int i(int i) const {
-          MEDDLY_DCASSERT(indexes);
-          MEDDLY_DCASSERT(is_sparse);
-          MEDDLY_CHECK_RANGE(0, i, size);
-          return indexes[i];
-        }
-        inline int& ei(int i) {
-          MEDDLY_DCASSERT(edge);
-          MEDDLY_CHECK_RANGE(0, i, size);
-          return ((int*)edge)[i];
-        }
-        inline int ei(int i) const {
-          MEDDLY_DCASSERT(edge);
-          MEDDLY_CHECK_RANGE(0, i, size);
-          return ((int*)edge)[i];
-        }
-        inline float& ef(int i) {
-          MEDDLY_DCASSERT(edge);
-          MEDDLY_CHECK_RANGE(0, i, size);
-          return ((float*)edge)[i];
-        }
-        inline float ef(int i) const {
-          MEDDLY_DCASSERT(edge);
-          MEDDLY_CHECK_RANGE(0, i, size);
-          return ((float*)edge)[i];
-        }
+        inline int& hh(int i)         { return raw_hh(i); }
+        inline int  hh(int i) const   { return raw_hh(i); }
+        inline int& uh(int i)         { return raw_uh(i); }
+        inline int  uh(int i) const   { return raw_uh(i); }
+        inline int&  d(int i)         { return  raw_d(i); }
+        inline int   d(int i) const   { return  raw_d(i); }
+        inline int&  i(int i)         { return  raw_i(i); }
+        inline int   i(int i) const   { return  raw_i(i); }
+        inline int& ei(int i)         { return raw_ei(i); }
+        inline int  ei(int i) const   { return raw_ei(i); }
+        inline float& ef(int i)       { return raw_ef(i); }
+        inline float  ef(int i) const { return raw_ef(i); }
         // edge setting - for templates
         inline void setEdge(int i, int ev) {
           ei(i) = ev;
@@ -981,6 +973,8 @@ class MEDDLY::expert_forest : public forest
   // forward subclass declarations
   public:
     class nodeData;
+  protected:
+    class level_data;
 
   // ------------------------------------------------------------
   // inlined helpers.
@@ -1065,6 +1059,10 @@ class MEDDLY::expert_forest : public forest
       } else {
         return getDomain()->getVariableBound(lh, false);
       }
+    }
+    /// used by level_data, for displaying.
+    inline long getLevelNumber(const level_data* L) const {
+      return long(L - levels);
     }
     /// Is this a terminal node?
     inline static bool isTerminalNode(int p) {
@@ -1215,6 +1213,91 @@ class MEDDLY::expert_forest : public forest
 
         handleNewOrphanNode(p);
     }
+
+    // --------------------------------------------------
+    // Managing cache entries
+    // --------------------------------------------------
+
+    /** Returns the cache-count for a node. This indicates the number of
+        compute cache entries that link to this node.
+        This version returns a reference to the cache-count. Therefore, the
+        cache-count of the node can be modified by modifying the reference.
+    */
+    inline int& getCacheCount(int p) {
+      MEDDLY_DCASSERT(isValidNodeIndex(p));
+      MEDDLY_DCASSERT(!isTerminalNode(p));
+      return address[p].cache_count;
+    }
+
+    /** Returns the cache-count for a node. This indicates the number of
+        compute cache entries that link to this node.
+        This version returns a copy of the count.
+    */
+    inline int getCacheCount(int p) const {
+      MEDDLY_DCASSERT(isValidNodeIndex(p));
+      MEDDLY_DCASSERT(!isTerminalNode(p));
+      return address[p].cache_count;
+    }
+
+    /** Increase the cache count for this node. Call this whenever this node
+        is added to a cache. 
+          @param  p     Node we care about.
+          @return p, for convenience.
+    */
+    inline int cacheNode(int p) {
+      MEDDLY_DCASSERT(isActiveNode(p));
+      if (isTerminalNode(p)) return p;
+      getCacheCount(p)++;
+#ifdef TRACK_CACHECOUNT
+      fprintf(stdout, "\t+Node %d is in %d caches\n", p, getCacheCount(p));
+      fflush(stdout);
+#endif
+      return p;
+    }
+
+    /** Increase the cache count for this node. Call this whenever this node
+        is added to a cache. 
+          @param  p     Node we care about.
+    */
+    inline void uncacheNode(int p) {
+      if (isTerminalNode(p)) return;
+      MEDDLY_DCASSERT(isActiveNode(p) ||
+          (!isActiveNode(p) && isPessimistic() && isZombieNode(p)));
+      int& cc = getCacheCount(p);
+      if (isPessimistic() && isZombieNode(p)) {
+        // special case: we store the negative of the count.
+        MEDDLY_DCASSERT(cc < 0);
+        cc++;
+        if (0 == cc) {
+          freeZombieNode(p);
+        }
+        return;
+      }
+      // we store the actual count.
+      MEDDLY_DCASSERT(cc > 0);
+      cc--;
+#ifdef TRACK_CACHECOUNT
+      fprintf(stdout, "\t-Node %d is in %d caches\n", p, cc);
+      fflush(stdout);
+#endif
+
+      if (cc == 0 && readInCount(p) == 0) {
+        deleteOrphanNode(p);
+      }
+    }
+
+
+
+
+
+
+    /// A node can be discarded once it goes stale. Whether a node is
+    /// considered stale depends on the forest's deletion policy.
+    /// Optimistic deletion: A node is said to be stale only when both the
+    ///   in-count and cache-count are zero.
+    /// Pessimistic deletion: A node is said to be stale when the in-count
+    ///  is zero regardless of the cache-count.
+    bool isStale(int node) const;
 
     
 
@@ -1584,7 +1667,7 @@ class MEDDLY::expert_forest : public forest
 
     inline bool isActiveNode(int p) const {
       return 
-      (isValidNodeIndex(p) && (isTerminalNode(p) || getNodeOffset(p) > 0));
+      (isValidNodeIndex(p) && (isTerminalNode(p) || getNode(p).offset > 0));
     }
 
     inline bool isDeletedNode(int p) const {
@@ -1825,29 +1908,6 @@ class MEDDLY::expert_forest : public forest
     bool getEdgeValues(int node, int*& edgeValues);
 #endif
 
-    /// Increase the cache count for this node. Call this whenever this node
-    /// is added to a cache. 
-    ///   @return node, for convenience.
-    int cacheNode(int node);
-
-    /// Decrease the cache count for this node. Call this whenever this node
-    /// is removed from a cache.
-    void uncacheNode(int node);
-
-    /// Returns the cache-count for a node. This indicates the number of
-    /// compute cache entries that link to this node.
-    /// Note that a reference to the cache-count is returned. Therefore, the
-    /// cache-count of the node can be modified by modifying the reference.
-    int& getCacheCount(int node) const;
-
-    /// A node can be discarded once it goes stale. Whether a node is
-    /// considered stale depends on the forest's deletion policy.
-    /// Optimistic deletion: A node is said to be stale only when both the
-    ///   in-count and cache-count are zero.
-    /// Pessimistic deletion: A node is said to be stale when the in-count
-    ///  is zero regardless of the cache-count.
-    bool isStale(int node) const;
-
     /// Is this forest an MDD?
     /*
     inline bool isMdd() const {
@@ -1909,10 +1969,10 @@ class MEDDLY::expert_forest : public forest
 
   protected:
 
-    int getInternalNodeSize(int node) const;
-    int* getNodeAddress(int node) const;
-    int* getAddress(int k, int offset) const;
-    int getNodeOffset(int node) const;
+    // int getInternalNodeSize(int node) const;
+    // int* getNodeAddress(int node) const;
+    // int* getAddress(int k, int offset) const;
+    // int getNodeOffset(int node) const;
 
     // the following virtual functions are implemented in node_manager
     // virtual void reclaimOrphanNode(int node) = 0;     // for linkNode()
@@ -2131,7 +2191,7 @@ class MEDDLY::expert_forest : public forest
         Note that a hole is guaranteed to be at least 5 slots long
         (assuming a node of size 0, with no extra header info, is impossible).
     */
-    struct level_data {
+    class level_data {
         /// Growth parameter
         static const int add_size = 1024;
 
@@ -2158,8 +2218,10 @@ class MEDDLY::expert_forest : public forest
         int size;
         /// Last used data slot.  Also total number of ints "allocated"
         int last;
+
+      public: // TBD! REMOVE THIS!
         /// Node representing a variable at this level pointing to terminals
-        /// based on index.  TBD: remove this
+        /// based on index.
         int levelNode;
 
       // Holes grid info
@@ -2212,6 +2274,10 @@ class MEDDLY::expert_forest : public forest
         */
         int allocNode(int sz, int tail, bool clear);
 
+        /// Unlink the downward pointers.
+        void unlinkDown(int addr);
+        
+
         /// Compact this level.  (Rearrange, to remove all holes.)
         void compact(nodeData* address);
 
@@ -2220,6 +2286,56 @@ class MEDDLY::expert_forest : public forest
 
         /// For performance stats.
         void addToChainCounts(std::map<int, int> &chainLengths) const;
+
+      // --------------------------------------------------------
+      // |  helpers for inlines.
+      private:
+        inline int& rawCountOf(int addr) const {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_CHECK_RANGE(1, addr, last+1);
+          return data[addr + count_index];
+        }
+        inline int& rawNextOf(int addr) const { 
+          MEDDLY_DCASSERT(data);
+          MEDDLY_CHECK_RANGE(1, addr, last+1);
+          return data[addr + next_index];
+        }
+        inline int& rawSizeOf(int addr) const {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_CHECK_RANGE(1, addr, last+1);
+          return data[addr + size_index];
+        }
+        inline int* UH(int addr) const {
+          MEDDLY_DCASSERT(data);
+          return data + addr + commonHeaderLength;
+        }
+        inline int* HH(int addr) const {
+          MEDDLY_DCASSERT(data);
+          return data + addr + commonHeaderLength + unhashedHeader;
+        }
+        inline int* FD(int addr) const {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_DCASSERT(isFull(addr));
+          return data + addr + commonHeaderLength
+           + unhashedHeader + hashedHeader;
+        }
+        inline int* FE(int addr) const {
+          return FD(addr) + rawSizeOf(addr);
+        }
+        inline int* SD(int addr) const {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_DCASSERT(isSparse(addr));
+          return data + addr + commonHeaderLength
+           + unhashedHeader + hashedHeader;
+        }
+        inline int* SI(int addr) const {
+          MEDDLY_DCASSERT(isSparse(addr));
+          return SD(addr) - rawSizeOf(addr);  // sparse size is negative
+        }
+        inline int* SE(int addr) const {
+          MEDDLY_DCASSERT(isSparse(addr));
+          return SD(addr) - 2*rawSizeOf(addr);  // sparse size is negative
+        }
 
       // --------------------------------------------------------
       // |  inlines.
@@ -2258,26 +2374,12 @@ class MEDDLY::expert_forest : public forest
 
         inline int getHoleSlots() const { return hole_slots; }
 
-        inline int& countOf(int addr) {
-          MEDDLY_DCASSERT(data);
-          MEDDLY_CHECK_RANGE(1, addr, last+1);
-          return data[addr + count_index];
-        }
-        inline int countOf(int addr) const {
-          MEDDLY_DCASSERT(data);
-          MEDDLY_CHECK_RANGE(1, addr, last+1);
-          return data[addr + count_index];
-        }
-        inline int& nextOf(int addr)  { 
-          MEDDLY_DCASSERT(data);
-          MEDDLY_CHECK_RANGE(1, addr, last+1);
-          return data[addr + next_index];
-        }
-        inline int nextOf(int addr) const {
-          MEDDLY_DCASSERT(data);
-          MEDDLY_CHECK_RANGE(1, addr, last+1);
-          return data[addr + next_index];
-        }
+        inline int& countOf(int addr)       { return rawCountOf(addr); }
+        inline int  countOf(int addr) const { return rawCountOf(addr); }
+
+        inline int& nextOf(int addr)       { return rawNextOf(addr); }
+        inline int  nextOf(int addr) const { return rawNextOf(addr); }
+
         inline bool isReduced(int addr) const {
           MEDDLY_DCASSERT(data);
           MEDDLY_CHECK_RANGE(1, addr, last+1);
@@ -2289,94 +2391,40 @@ class MEDDLY::expert_forest : public forest
         inline void setTempNode(int addr) { 
           nextOf(addr) = temp_node_value; 
         }
-        inline int& sizeOf(int addr) {
-          MEDDLY_DCASSERT(data);
-          MEDDLY_CHECK_RANGE(1, addr, last+1);
-          return data[addr + size_index];
-        }
-        inline int sizeOf(int addr) const {
-          MEDDLY_DCASSERT(data);
-          MEDDLY_CHECK_RANGE(1, addr, last+1);
-          return data[addr + size_index];
-        }
-        inline int fullSizeOf(int addr) const {
-          return sizeOf(addr);
-        }
-        inline int sparseSizeOf(int addr) const {
-          return -sizeOf(addr);
-        }
+
+        inline int& sizeOf(int addr)              { return rawSizeOf(addr); }
+        inline int  sizeOf(int addr) const        { return rawSizeOf(addr); }
+
+        inline int fullSizeOf(int addr) const     { return rawSizeOf(addr); }
+        inline int sparseSizeOf(int addr) const   { return -rawSizeOf(addr); }
+
         inline int isFull(int addr) const {
           return sizeOf(addr) >= 0;
         }
         inline int isSparse(int addr) const {
           return sizeOf(addr) < 0;
         }
-        inline const int* unhashedHeaderOf(int addr) const {
-          MEDDLY_DCASSERT(data);
-          return data + addr + commonHeaderLength;
-          // TBD
-        }
-        inline const int* hashedHeaderOf(int addr) const {
-          MEDDLY_DCASSERT(data);
-          return data + addr + commonHeaderLength + unhashedHeader;
-          // TBD
-        }
-        inline int* fullDownOf(int addr) {
-          MEDDLY_DCASSERT(data);
-          MEDDLY_DCASSERT(isFull(addr));
-          return data + addr + commonHeaderLength;
-          // + unhashedHeader + hashedHeader // TBD
-        }
-        inline const int* fullDownOf(int addr) const {
-          MEDDLY_DCASSERT(data);
-          MEDDLY_DCASSERT(isFull(addr));
-          return data + addr + commonHeaderLength;
-          // + unhashedHeader + hashedHeader // TBD
-        }
-        inline void* fullEdgeOf(int addr) {
-          MEDDLY_DCASSERT(data);
-          return data + addr + commonHeaderLength + fullSizeOf(addr);
-          // + unhashedHeader + hashedHeader // TBD
-        }
-        inline const int* fullEdgeOf(int addr) const {
-          MEDDLY_DCASSERT(data);
-          return data + addr + commonHeaderLength + fullSizeOf(addr);
-          // + unhashedHeader + hashedHeader // TBD
-        }
-        inline int* sparseDownOf(int addr) {
-          MEDDLY_DCASSERT(data);
-          MEDDLY_DCASSERT(isSparse(addr));
-          // return data + addr + commonHeaderLength;  // TBD
-          return data + addr + commonHeaderLength + sparseSizeOf(addr);
-        }
-        inline const int* sparseDownOf(int addr) const {
-          MEDDLY_DCASSERT(data);
-          MEDDLY_DCASSERT(isSparse(addr));
-          // return data + addr + commonHeaderLength;  // TBD
-          return data + addr + commonHeaderLength + sparseSizeOf(addr);
-        }
-        inline int* sparseIndexesOf(int addr) {
-          MEDDLY_DCASSERT(data);
-          MEDDLY_DCASSERT(isSparse(addr));
-          return data + addr + commonHeaderLength;  
-          // + sparseSizeOf(addr);  // TBD
-        }
-        inline const int* sparseIndexesOf(int addr) const {
-          MEDDLY_DCASSERT(data);
-          MEDDLY_DCASSERT(isSparse(addr));
-          return data + addr + commonHeaderLength;  
-          // + sparseSizeOf(addr);  // TBD
-        }
-        inline void* sparseEdgeOf(int addr) {
-          MEDDLY_DCASSERT(data);
-          MEDDLY_DCASSERT(isSparse(addr));
-          return data + addr + commonHeaderLength + 2*sparseSizeOf(addr);
-        }
-        inline const int* sparseEdgeOf(int addr) const {
-          MEDDLY_DCASSERT(data);
-          MEDDLY_DCASSERT(isSparse(addr));
-          return data + addr + commonHeaderLength + 2*sparseSizeOf(addr);
-        }
+
+        inline       int* unhashedHeaderOf(int addr)       { return UH(addr); }
+        inline const int* unhashedHeaderOf(int addr) const { return UH(addr); }
+
+        inline       int* hashedHeaderOf(int addr)       { return HH(addr); }
+        inline const int* hashedHeaderOf(int addr) const { return HH(addr); }
+
+        inline       int* fullDownOf(int addr)       { return FD(addr); }
+        inline const int* fullDownOf(int addr) const { return FD(addr); }
+
+        inline       int* fullEdgeOf(int addr)       { return FE(addr); }
+        inline const int* fullEdgeOf(int addr) const { return FE(addr); }
+
+        inline       int* sparseDownOf(int addr)       { return SD(addr); }
+        inline const int* sparseDownOf(int addr) const { return SD(addr); }
+
+        inline       int* sparseIndexesOf(int addr)       { return SI(addr); }
+        inline const int* sparseIndexesOf(int addr) const { return SI(addr); }
+
+        inline       int* sparseEdgeOf(int addr)       { return SE(addr); }
+        inline const int* sparseEdgeOf(int addr) const { return SE(addr); }
 
       // --------------------------------------------------------
       // |  Hole management helpers.
@@ -2424,8 +2472,6 @@ class MEDDLY::expert_forest : public forest
     /// Level data. Each level maintains its own data array and hole grid.
     /// The array is shifted, so we can use level[k] with negative k.
     level_data *levels;
-
-    friend class level_data;
 
 
   // ------------------------------------------------------------
@@ -3163,6 +3209,7 @@ MEDDLY::getOperation(const binary_opname* code, const dd_edge& arg1,
 
 // ****************************************************************************
 
+/*
 inline
 int MEDDLY::expert_forest::getInternalNodeSize(int p) const
 {
@@ -3193,14 +3240,7 @@ int MEDDLY::expert_forest::getNodeOffset(int p) const
   MEDDLY_DCASSERT(isValidNodeIndex(p));
   return  (address[p].offset);
 }
-
-inline
-int& MEDDLY::expert_forest::getCacheCount(int p) const
-{
-  MEDDLY_DCASSERT(isValidNodeIndex(p));
-  MEDDLY_DCASSERT(!isTerminalNode(p));
-  return address[p].cache_count;
-}
+*/
 
 #ifdef USE_OLD_NODE_ACCESS
 
@@ -3470,50 +3510,6 @@ void MEDDLY::expert_forest
 }
 #endif
 
-inline
-int MEDDLY::expert_forest::cacheNode(int p)
-{
-  MEDDLY_DCASSERT(isActiveNode(p));
-  if (isTerminalNode(p)) return p;
-  // MEDDLY_DCASSERT(isReducedNode(p));
-  getCacheCount(p)++;
-#ifdef TRACK_CACHECOUNT
-  fprintf(stdout, "\t+Node %d is in %d caches\n", p, getCacheCount(p));
-  fflush(stdout);
-#endif
-  return p;
-}
-
-
-
-inline
-void MEDDLY::expert_forest::uncacheNode(int p)
-{
-  if (isTerminalNode(p)) return;
-  MEDDLY_DCASSERT(isActiveNode(p) ||
-      (!isActiveNode(p) && isPessimistic() && isZombieNode(p)));
-
-  if (isPessimistic() && isZombieNode(p)) {
-    MEDDLY_DCASSERT(getCacheCount(p) < 0);
-    getCacheCount(p)++;                           // special case; stored -ve
-    if (getCacheCount(p) == 0) {
-      freeZombieNode(p);
-    }
-    return;
-  }
-
-  MEDDLY_DCASSERT(getCacheCount(p) > 0);
-  getCacheCount(p)--;
-#ifdef TRACK_CACHECOUNT
-  fprintf(stdout, "\t-Node %d is in %d caches\n", p, getCacheCount(p));
-  fflush(stdout);
-#endif
-
-  if (getCacheCount(p) == 0 && readInCount(p) == 0) {
-    deleteOrphanNode(p);
-  }
-}
-
 #ifdef ACCUMULATE_ON
 inline
 bool MEDDLY::expert_forest::accumulate(int& A, int* vlist, int* vplist) {
@@ -3539,12 +3535,12 @@ int MEDDLY::toInt(float a) {
   return n.i;
 }
 
-
+/*
 inline
 float* MEDDLY::toFloat(int* a) {
   union { int* i; float* f; } n = {a};
   return n.f;
 }
-
+*/
 
 #endif

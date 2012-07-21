@@ -630,6 +630,34 @@ int MEDDLY::expert_forest::level_data::allocNode(int sz, int tail, bool clear)
   return off;
 }
 
+void MEDDLY::expert_forest::level_data::unlinkDown(int addr)
+{
+#ifdef VALIDATE_INCOUNTS
+  int* downptr;
+#else
+  const int* downptr;
+#endif
+  int size;
+  if (isSparse(addr)) {
+    downptr = sparseDownOf(addr);
+    size = sparseSizeOf(addr); 
+  } else {
+    downptr = fullDownOf(addr);
+    size = fullSizeOf(addr);
+  }
+#ifdef VALIDATE_INCOUNTS
+  for (int i=0; i<size; i++) {
+    int temp = downptr[i];
+    downptr[i] = 0;
+    parent->unlinkNode(temp);
+  }
+#else
+  for (int i=0; i<size; i++) {
+    parent->unlinkNode(downptr[i]);
+  }
+#endif
+}
+
 void MEDDLY::expert_forest::level_data::compact(nodeData* address)
 {
   if (0==data) {
@@ -667,7 +695,7 @@ void MEDDLY::expert_forest::level_data::compact(nodeData* address)
 
       node_size = activeNodeActualSlots(node_ptr - data); 
       curr_node = node_ptr[node_size - 1];
-      MEDDLY_DCASSERT(parent->getNodeOffset(curr_node) == (node_ptr - data));
+      MEDDLY_DCASSERT(parent->getNode(curr_node).offset == (node_ptr - data));
       if (node_ptr != curr_ptr) {
 #if 1
         for (int i = 0; i < node_size; ++i) {
@@ -681,7 +709,7 @@ void MEDDLY::expert_forest::level_data::compact(nodeData* address)
         // change node offset
         address[curr_node].offset = (curr_ptr - data);
       }
-      MEDDLY_DCASSERT(parent->getNodeOffset(curr_node) == (curr_ptr - data));
+      MEDDLY_DCASSERT(parent->getNode(curr_node).offset == (curr_ptr - data));
       curr_ptr += node_size;
     }
     node_ptr += node_size;
@@ -722,7 +750,7 @@ void MEDDLY::expert_forest::level_data::dumpInternal(FILE *s) const
   if (0==data) return; // nothing to display
   
   // super clever hack:
-  fprintf(s, "Level %ld: ", long(this - parent->levels));
+  fprintf(s, "Level %ld: ", parent->getLevelNumber(this));
   fprintf(s, "Last slot used: %d\n", last);
   fprintf(s, "Grid: top = %d bottom = %d\n", holes_top, holes_bottom);
 
@@ -2140,9 +2168,6 @@ void MEDDLY::expert_forest::deleteNode(int p)
   validateIncounts(false);
 #endif
 
-  int* foo = getNodeAddress(p);
-  int k = getNodeLevel(p);
-
   // remove from unique table (only applicable to reduced nodes)
   // if (isReducedNode(p)) {
     unsigned h = hashNode(p);
@@ -2179,24 +2204,14 @@ void MEDDLY::expert_forest::deleteNode(int p)
   }
   */
 
+  int k = getNode(p).level;
+  int addr = getNode(p).offset;
+
   // unlink children
-  const int nDptrs = ABS(foo[2]);
-  int* downptr = foo + 3 + (foo[2] < 0? nDptrs: 0);
-  int* stop = downptr + nDptrs;
-#ifdef VALIDATE_INCOUNTS
-  while (downptr < stop) {
-    int temp = *downptr;
-    *downptr++ = 0;
-    unlinkNode(temp);
-  }
-#else
-  while (downptr < stop) {
-    unlinkNode(*downptr++);
-  }
-#endif
+  levels[k].unlinkDown(addr);
 
   // Recycle node memory
-  levels[k].recycleNode(getNodeOffset(p));
+  levels[k].recycleNode(addr);
 
   // recycle the index
   freeActiveNode(p);
@@ -2242,42 +2257,14 @@ void MEDDLY::expert_forest::zombifyNode(int p)
   unique->remove(h, p);
 #endif
 
-  int node_level = getNodeLevel(p);
-  int node_offset = getNodeOffset(p);
-  int* foo = getNodeAddress(p);
+  int k = getNode(p).level;
+  int addr = getNode(p).offset;
 
-  address[p].offset = 0;
+  // unlink children
+  levels[k].unlinkDown(addr);
 
-  // unlinkNode children
-  if (foo[2] < 0) {
-    // Sparse encoding
-    int* downptr = foo + 3 - foo[2];
-    int* stop = downptr - foo[2];
-    for (; downptr < stop; ++downptr) {
-#ifdef VALIDATE_INCOUNTS
-      int temp = *downptr;
-      *downptr = 0;
-      unlinkNode(temp);
-#else
-      unlinkNode(*downptr);
-#endif
-    }
-  } else {
-    // Full encoding
-    int* downptr = foo + 3;
-    int* stop = downptr + foo[2];
-    for (; downptr < stop; ++downptr) {
-#ifdef VALIDATE_INCOUNTS
-      int temp = *downptr;
-      *downptr = 0;
-      unlinkNode(temp);
-#else
-      unlinkNode(*downptr);
-#endif
-    }
-  }
   // Recycle node memory
-  levels[node_level].recycleNode(node_offset);
+  levels[k].recycleNode(addr);
 }
 
 int MEDDLY::expert_forest
@@ -2397,6 +2384,20 @@ int MEDDLY::expert_forest
       nb.copyIntoFull(down, truncsize);
     }
   } // if 
+
+  // copy extra header info, if any
+  if (ld.unhashedHeader) {
+    int* uh = ld.unhashedHeaderOf(address[p].offset);
+    for (int i=0; i<ld.unhashedHeader; i++) {
+      uh[i] = nb.uh(i);
+    }
+  }
+  if (ld.hashedHeader) {
+    int* hh = ld.hashedHeaderOf(address[p].offset);
+    for (int i=0; i<ld.hashedHeader; i++) {
+      hh[i] = nb.hh(i);
+    }
+  }
 
   // add to UT 
   unique->add(nb.hash(), p);

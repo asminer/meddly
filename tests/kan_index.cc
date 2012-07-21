@@ -26,7 +26,7 @@
 #include "meddly.h"
 #include "simple_model.h"
 
-#define SHOW_INDEXES
+// #define SHOW_INDEXES
 
 const char* kanban[] = {
   "X-+..............",  // Tin1
