@@ -62,23 +62,9 @@ class MEDDLY::evmdd_forest : public expert_forest {
     virtual void getDefaultEdgeValue(float& n) const { n = NAN; }
     virtual void getIdentityEdgeValue(float& n) const { n = 1; }
 
-    // virtual void initEdgeValues(int p) = 0;
 
   protected:
     virtual void showTerminal(FILE* s, int tnode) const;
-    /*
-    void setAllEdgeValues(int p, int value);
-    void setAllEdgeValues(int p, float fvalue);
-    void setAllDownPtrs(int p, int value);
-    void setAllDownPtrsWoUnlink(int p, int value);
-    */
-
-    // virtual int createTempNode(int k, int sz, bool clear = true);
-
-#ifdef ACCUMULATE_ON
-    // Enlarges a temporary node, if new size is greater than old size.
-    virtual void resizeNode(int node, int size);
-#endif
 
     virtual int doOp(int a, int b) const = 0;
     virtual float doOp(float a, float b) const = 0;
@@ -105,29 +91,6 @@ class MEDDLY::evmdd_forest : public expert_forest {
     template <typename T>
     void createNode(int k, int index, int dptr, T ev, int& res, T& resEv);
 
-    // Create a sparse node, at level k, whose ith index points to dptr with
-    // edge value ev.
-    // 0 <= i < level bound.
-    // Used by createNode(k, i, dptr, ev, res, resEv).
-    /*
-    template<typename T>
-    void createSparseNode(int k, int index, int dptr, T ev,
-        int& res, T& resEv);
-    */
-
-    // Create a reduced node, at level k such that ith non-zero edge is
-    // represented by {index[i], dptr[i] and ev[i]}.
-
-    /*
-    virtual void createNode(int lh, std::vector<int>& index,
-        std::vector<int>& dptr, std::vector<int>& ev,
-        int& result, int& resultEv) { }
-
-    virtual void createNode(int lh, std::vector<int>& index,
-        std::vector<int>& dptr, std::vector<float>& ev,
-        int& result, float& resultEv) { }
-        */
-
     // If the element represented by vlist exists, return the value
     // corresponding to it.
     template <typename T>
@@ -150,70 +113,13 @@ class MEDDLY::evmdd_forest : public expert_forest {
     template <typename T>
     T handleMultipleTerminalValues(const T* tList, int begin, int end);
 
-  public:
-
-    // Refer to meddly_expert.h
-    // The following will either abort or return an error since they are not
-    // applicable to this forest.
-    // virtual int reduceNode(int p);
-
-    // Refer to meddly.h:
-    // The following will either abort or return an error since they are not
-    // applicable to this forest.
-
-    /*
-    virtual void createEdge(const int* const* vlist, const int* terms,
-        int N, dd_edge &e);
-    virtual void createEdge(int val, dd_edge &e);
-    virtual void evaluate(const dd_edge &f, const int* vlist, int &term)
-      const;
-
-    virtual void createEdge(const int* const* vlist, const float* terms,
-        int N, dd_edge &e);
-    virtual void createEdge(float val, dd_edge &e);
-    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
-      const;
-
-    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-        int N, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-        const int* terms, int N, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-        const float* terms, int N, dd_edge &e);
-    virtual void createEdge(bool val, dd_edge &e);
-    virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
-      const;
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, bool &term) const;
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, int &term) const;
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-        const int* vplist, float &term) const;
-        */
 };
 
 
 class MEDDLY::evp_mdd_int : public evmdd_forest {
-  // EV+MDD data header:
-  // { incount, next (unique table), size, ..., cardinality, logical address }
-  // Data Header Size: 5
-
   public:
     evp_mdd_int(int dsl, domain *d, const policies &p);
     ~evp_mdd_int();
-
-    /*
-    virtual int createTempNode(int k, int sz, bool clear = true);
-    virtual int createTempNode(int lh, std::vector<int>& downPointers,
-        std::vector<int>& edgeValues);
-    */
-
-    /*
-    virtual void createNode(int lh, std::vector<int>& index,
-        std::vector<int>& dptr, std::vector<int>& ev,
-        int& result, int& resultEv);
-    */
 
     virtual void createEdge(const int* const* vlist, const int* terms,
         int N, dd_edge &e);
@@ -222,7 +128,6 @@ class MEDDLY::evp_mdd_int : public evmdd_forest {
       const;
 
     virtual void getElement(const dd_edge& a, int index, int* e);
-    // virtual void getElement(int a, int index, int* e);
 
     virtual int doOp(int a, int b) const { return a + b; }
     virtual float doOp(float a, float b) const {
@@ -244,12 +149,6 @@ class MEDDLY::evp_mdd_int : public evmdd_forest {
     virtual bool areDuplicates(int node, const node_builder &nb) const;
     virtual bool areDuplicates(int node, const node_reader &nr) const;
 
-
-    // virtual void initEdgeValues(int p);
-    // virtual bool getDownPtrsAndEdgeValues(int node,
-    //    std::vector<int>& dptrs, std::vector<int>& evs) const;
-    // virtual void normalizeAndReduceNode(int& p, int& ev);
-    // virtual void normalizeAndReduceNode(int& p, float& ev) { }
   protected:
     virtual void normalize(node_builder &nb, int& ev) const;
     virtual void showEdgeValue(FILE* s, const void* edge, int i) const;
@@ -322,10 +221,6 @@ class MEDDLY::evp_mdd_int : public evmdd_forest {
 
 
 class MEDDLY::evt_mdd_real : public evmdd_forest {
-  // EV*MDD data header:
-  // { incount, next (unique table), size, ..., logical address }
-  // Data Header Size: 4
-
   public:
     evt_mdd_real(int dsl, domain *d, const policies &p);
     ~evt_mdd_real();
@@ -340,17 +235,6 @@ class MEDDLY::evt_mdd_real : public evmdd_forest {
       static int ev = toInt(1.0f);
       n = ev;
     }
-
-    /*
-    virtual int createTempNode(int lh, std::vector<int>& downPointers,
-        std::vector<float>& edgeValues);
-    */
-
-    /*
-    virtual void createNode(int lh, std::vector<int>& index,
-        std::vector<int>& dptr, std::vector<float>& ev,
-        int& result, float& resultEv);
-    */
 
     virtual void createEdge(const int* const* vlist, const float* terms,
         int N, dd_edge &e);
@@ -376,12 +260,6 @@ class MEDDLY::evt_mdd_real : public evmdd_forest {
     virtual bool areDuplicates(int node, const node_builder &nb) const;
     virtual bool areDuplicates(int node, const node_reader &nr) const;
 
-
-    // virtual void initEdgeValues(int p);
-    // virtual bool getDownPtrsAndEdgeValues(int node,
-    //    std::vector<int>& dptrs, std::vector<float>& evs) const;
-    // virtual void normalizeAndReduceNode(int& p, int& ev) { }
-    // virtual void normalizeAndReduceNode(int& p, float& ev);
   protected:
     virtual void normalize(node_builder &nb, float& ev) const;
     virtual void showEdgeValue(FILE* s, const void* edge, int i) const;
@@ -573,7 +451,6 @@ MEDDLY::evmdd_forest::createEdgeInternal(const int* v, T term, dd_edge &e)
     prev = curr;
     prevEv = currEv;
     createNode(i, v[i], prev, prevEv, curr, currEv);
-    // unlinkNode(prev);
   }
   e.set(curr, currEv, getNodeLevel(curr));
 }
@@ -603,14 +480,6 @@ void MEDDLY::evmdd_forest::createNode(int k, int index, int dptr, T ev,
     unlinkNode(dptr);
     createReducedNode(-1, nb, ev, res);
     return;
-    /*
-
-    res = createTempNodeMaxSize(k, false);
-    setAllDownPtrsWoUnlink(res, dptr);
-    setAllEdgeValues(res, ev);
-    normalizeAndReduceNode(res, resEv);
-    return;
-    */
   }
 
   // a single downpointer points to dptr
@@ -619,98 +488,8 @@ void MEDDLY::evmdd_forest::createNode(int k, int index, int dptr, T ev,
   nb.i(0) = index;
   nb.setEdge(0, ev);
   createReducedNode(-1, nb, resEv, res);
-
-/*
-  if (!areSparseNodesEnabled() || (areFullNodesEnabled() && index < 2)) {
-    // Build a full node
-    res = createTempNode(k, index + 1);
-    setDownPtrWoUnlink(res, index, dptr);
-    setEdgeValue(res, index, ev);
-    normalizeAndReduceNode(res, resEv);
-  }
-  else {
-    MEDDLY_DCASSERT (!areFullNodesEnabled() ||
-        (areSparseNodesEnabled() && index >= 2));
-    // Build a sparse node
-    createSparseNode(k, index, dptr, ev, res, resEv);
-    // res, resEv set by createSparseNode(..); do not call normalizeAndReduce
-  }
-  */
 }
 
-
-/*
-template <typename T>
-void MEDDLY::evmdd_forest::createSparseNode(int k, int index,
-    int dptr, T ev, int& res, T& resEv)
-{
-  MEDDLY_DCASSERT(k != 0);
-
-  if (isTimeToGc()) { garbageCollect(); }
-
-  MEDDLY_DCASSERT(isValidLevel(k));
-  MEDDLY_CHECK_RANGE(0, index, getLevelSize(k));
-
-  // get a location in address[] to store the node
-  int p = getFreeNodeHandle();
-
-#ifdef DEBUG_MDD_H
-  printf("%s: k: %d, index: %d, new p: %d\n", __func__, k, index, p);
-  fflush(stdout);
-#endif
-
-  // fill in the location with p's address info
-
-  address[p].level = k;
-  // address[p].offset = levels[k].getHole(nodeSize, true);
-  address[p].offset = levels[k].allocNode(-1, p, false);
-  address[p].cache_count = 0;
-
-#ifdef DEBUG_MDD_H
-  printf("%s: offset: %d\n", __func__, address[p].offset);
-  fflush(stdout);
-#endif
-
-  int* foo = levels[k].data + address[p].offset;
-  foo[3] = index;                 // index
-  foo[4] = linkNode(dptr);      // downpointer
-  T identEv;
-  getIdentityEdgeValue(identEv);
-  foo[5] = toInt(identEv);        // this is the only ev, set resEv = ev
-  foo[6] = -1;                    // cardinality (-1: not been computed)
-
-  resEv = ev;
-
-#ifdef TRACK_DELETIONS
-  printf("Creating node %d\n", p);
-  fflush(stdout);
-#endif
-
-  incrNodesActivatedSinceGc();
-
-  // search in unique table
-  nodeFinder key(this, p);
-  int q = unique->find(key);
-  if (0 == q) {
-    // no duplicate found; insert into unique table
-    unique->add(key.hash(), p);
-    MEDDLY_DCASSERT(getCacheCount(p) == 0);
-    MEDDLY_DCASSERT(unique->find(key) == p);
-    res = p;
-  }
-  else {
-    // duplicate found; discard this node and return the duplicate
-    unlinkNode(dptr);
-    // code from deleteTempNode(p) adapted to work here
-    {
-      levels[k].recycleNode(getNodeOffset(p));
-      freeActiveNode(p);
-      if (levels[k].compactLevel) levels[k].compact(address);
-    }
-    res = linkNode(q);
-  }
-}
-*/
 
 template <typename T>
 void MEDDLY::evmdd_forest::evaluateInternal(const dd_edge &f,
@@ -879,31 +658,6 @@ void MEDDLY::evmdd_forest::sortBuild(int** list, T* tList,
   }
   nb.shrinkSparse(z);
   createReducedNode(-1, nb, edgeValue, node);
-  /*
-
-  // call sortBuild for each index and store result
-  // as (index, node, edge-value).
-  std::vector<int> indices;
-  std::vector<int> dptrs;
-  std::vector<T> edgeValues;
-  for (int i = 0; i < levelSize; i++)
-  {
-    if (count[i+1] > count[i]) {
-      int n;
-      T ev;
-      sortBuild(list, tList, nextHeight, begin + count[i] + 1,
-          begin + count[i+1] + 1, n, ev);
-      indices.push_back(i);
-      dptrs.push_back(n);
-      edgeValues.push_back(ev);
-    }
-  }
-
-  // build node from indices, dptrs and edgeValues
-
-  MEDDLY_DCASSERT(dptrs.size() > 0);
-  createNode(height, indices, dptrs, edgeValues, node, edgeValue);
-  */
 }
 
 namespace MEDDLY {

@@ -409,126 +409,6 @@ MEDDLY::forest::edge_visitor::~edge_visitor()
 {
 }
 
-#if 0
-// ******************************************************************
-// *                                                                *
-// *                                                                *
-// *                      node_reader  methods                      *
-// *                                                                *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::node_reader::node_reader()
-{
-  down = 0;
-  index = 0;
-  edge = 0;
-  alloc = 0;
-  ealloc = 0;
-  size = 0;
-  nnzs = 0;
-  level = 0;
-}
-
-MEDDLY::node_reader::~node_reader()
-{
-  clear();
-}
-
-void MEDDLY::node_reader::clear()
-{
-  free(down);
-  free(index);
-  free(edge);
-  down = 0;
-  index = 0;
-  edge = 0;
-  alloc = 0;
-  ealloc = 0;
-  size = 0;
-  nnzs = 0;
-  level = 0;
-}
-
-/*
-void MEDDLY::node_reader::dump(FILE* s) const
-{
-  if (is_full) {
-    fprintf(s, "[%d", down[0]);
-    for (int i=1; i<size; i++)
-      fprintf(s, ", %d", down[i]);
-    fprintf(s, "]");
-  } else {
-    fprintf(s, "(%d:%d", index[0], down[0]);
-    for (int z=1; z<nnzs; z++) 
-      fprintf(s, ", %d:%d", index[z], down[z]);
-    fprintf(s, ")");
-  }
-}
-*/
-
-void MEDDLY::node_reader::resize(int k, int ns, char es, bool full)
-{
-  level = k;
-  is_full = full;
-  size = ns;
-  edge_bytes = es;
-  if (size > alloc) {
-    int nalloc = ((ns/8)+1)*8;
-    MEDDLY_DCASSERT(nalloc > ns);
-    MEDDLY_DCASSERT(nalloc>0);
-    MEDDLY_DCASSERT(nalloc>alloc);
-    down = (int*) realloc(down, nalloc*sizeof(int));
-    if (0==down) throw error(error::INSUFFICIENT_MEMORY);
-    index = (int*) realloc(index, nalloc*sizeof(int));
-    if (0==index) throw error(error::INSUFFICIENT_MEMORY);
-    alloc = nalloc;
-  }
-  if (edge_bytes * size > ealloc) {
-    int nalloc = ((edge_bytes * size)/8+1)*8;
-    MEDDLY_DCASSERT(nalloc>0);
-    MEDDLY_DCASSERT(nalloc>ealloc);
-    edge = realloc(edge, nalloc);
-    if (0==edge) throw error(error::INSUFFICIENT_MEMORY);
-    ealloc = nalloc;
-  }
-}
-
-
-// ******************************************************************
-// *                                                                *
-// *               expert_forest::nodeFinder  methods               *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::expert_forest::nodeFinder::nodeFinder(const expert_forest* p, int n)
-{
-  parent = p;
-  node = n;
-  parent->initNodeReader(thisnode, node, false);
-  h = parent->hashNode(node);
-}
-
-MEDDLY::expert_forest::nodeFinder::~nodeFinder()
-{
-}
-
-bool MEDDLY::expert_forest::nodeFinder::equals(int p)
-{
-  parent->initNodeReader(compare, p, false);
-
-  if (thisnode.getLevel() != compare.getLevel()) return false;
-  if (thisnode.getNNZs() != compare.getNNZs()) return false;
-
-  for (int z=0; z<thisnode.getNNZs(); z++) {
-    if (thisnode.d(z) != compare.d(z)) return false;
-    if (thisnode.i(z) != compare.i(z)) return false;
-  }
-  // TBD : edge values
-
-  return true;
-}
-#endif
 
 // ******************************************************************
 // *                                                                *
@@ -604,7 +484,6 @@ void MEDDLY::expert_forest::level_data
   zombie_nodes = 0;
   temp_nodes = 0;
   num_compactions = 0;
-  levelNode = 0;
   edgeSize = parent->edgeSize(k);
   unhashedHeader = parent->unhashedHeaderSize(k);
   hashedHeader = parent->hashedHeaderSize(k);
@@ -730,16 +609,6 @@ void MEDDLY::expert_forest::level_data::compact(nodeData* address)
     int new_size = size/2;
     while (new_size > add_size && new_size > last * 3) { new_size /= 2; }
     resize(new_size);
-/*
-    parent->stats.decMemAlloc((size - new_size) * sizeof(int));
-    data = (int *) realloc(data, new_size * sizeof(int));
-    if (0 == data) throw error(error::INSUFFICIENT_MEMORY);
-    size = new_size;
-#ifdef MEMORY_TRACE
-    printf("Reduced data[] by a factor of 2. New size: %d, Last: %d.\n",
-        size, last);
-#endif
-    */
   }
 
 #if 0
@@ -890,15 +759,6 @@ int MEDDLY::expert_forest::level_data::getHole(int slots)
     int new_size = MAX( size, last + slots ) * 1.5;
 
     resize(new_size);
-   /* 
-    data = (int*) realloc(data, size * sizeof(int));
-    if (0 == data) {
-      // TBD: garbage collect and try again
-      throw error(error::INSUFFICIENT_MEMORY);
-    } else {
-      parent->stats.incMemAlloc((size - old_size) * sizeof(int));
-    }
-    */
   }
   int h = last + 1;
   last += slots;
@@ -942,15 +802,6 @@ void MEDDLY::expert_forest::level_data::makeHole(int addr, int slots)
       int new_size = size/2;
       while (new_size > (last + 1) * 2) new_size /= 2;
       if (new_size < add_size) new_size = add_size;
-      /*
-      parent->stats.incMemAlloc((new_size - size) * sizeof(int));
-      data = (int *) realloc(data, new_size * sizeof(int));
-      if (0 == data) throw error(error::INSUFFICIENT_MEMORY);
-      size = new_size;
-#ifdef MEMORY_TRACE
-      printf("Reduced data[]. New size: %d, Last: %d.\n", size, last);
-#endif
-      */
       resize(new_size);
     }
 #ifdef MEMORY_TRACE
@@ -2065,39 +1916,6 @@ void MEDDLY::expert_forest::showInfo(FILE* s, int verb)
 // '                                                                '
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-/*
-int MEDDLY::expert_forest::reduceNode(int node)
-{
-  throw error(error::TYPE_MISMATCH);
-}
-
-void MEDDLY::expert_forest::normalizeAndReduceNode(int& node, int& ev)
-{
-  throw error(error::TYPE_MISMATCH);
-}
-
-void MEDDLY::expert_forest::normalizeAndReduceNode(int& node, float& ev)
-{
-  throw error(error::TYPE_MISMATCH);
-}
-
-int MEDDLY::expert_forest
-::createReducedHelper(int in, const node_builder &nb, bool &u)
-{
-  throw error(error::TYPE_MISMATCH);
-}
-
-bool MEDDLY::expert_forest::areDuplicates(int, const node_builder&) const
-{
-  throw error(error::NOT_IMPLEMENTED);
-}
-
-bool MEDDLY::expert_forest::areDuplicates(int, const node_reader&) const
-{
-  throw error(error::NOT_IMPLEMENTED);
-}
-*/
-
 void MEDDLY::expert_forest::normalize(node_builder &nb, int& ev) const
 {
   throw error(error::TYPE_MISMATCH);
@@ -2504,23 +2322,6 @@ bool MEDDLY::expert_forest::isStale(int h) const {
     );
 }
 
-/*
-#ifndef INLINED_REALS
-
-float MEDDLY::expert_forest::getReal(int term) const
-{
-  return (term == 0)? 0.0: *((float*)&(term <<= 1));
-}
-
-int MEDDLY::expert_forest::getTerminalNode(float a) const
-{
-  return (a == 0.0)? 0: (*((int*)((void*)&a)) >> 1) | 0x80000000;
-}
-
-#endif
-*/
-
-
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // '                                                                '
 // '          Methods for managing  available node handles          '
@@ -2578,41 +2379,4 @@ void MEDDLY::expert_forest::shrinkHandleList()
   printf("Shrank address array, new size %d\n", a_size);
 #endif
 }
-
-#ifdef USE_OLD_TEMPNODES
-
-int MEDDLY::expert_forest::createTempNode(int lh, int size, bool clear)
-{
-  throw error(error::NOT_IMPLEMENTED);
-}
-
-#endif
-
-
-#ifdef USE_OLD_EVMDDS
-bool MEDDLY::expert_forest
-::getDownPtrsAndEdgeValues(int, std::vector<int>&, std::vector<int>&) const
-{
-  throw error(error::TYPE_MISMATCH);
-}
-
-bool MEDDLY::expert_forest
-::getDownPtrsAndEdgeValues(int, std::vector<int>&, std::vector<float>&) const
-{
-  throw error(error::TYPE_MISMATCH);
-}
-
-int MEDDLY::expert_forest
-::createTempNode(int lh, std::vector<int>&, std::vector<int>&)
-{
-  throw error(error::TYPE_MISMATCH);
-}
-
-int MEDDLY::expert_forest
-::createTempNode(int lh, std::vector<int>&, std::vector<float>&)
-{
-  throw error(error::TYPE_MISMATCH);
-}
-#endif
-
 

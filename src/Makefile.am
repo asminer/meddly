@@ -26,7 +26,6 @@ libmeddly_la_SOURCES = \
   ops.cc \
 	dd_edge.cc \
   enumerator.cc \
-	temp_dd_edge.cc \
 	domain.cc \
 	forest.cc \
   compute_table.h \

@@ -58,13 +58,6 @@ class MEDDLY::mtmxd_forest : public mt_forest {
   public:
     ~mtmxd_forest();
 
-#ifdef ACCUMULATE_ON
-    // Enlarges a temporary node, if new size is greater than old size.
-    virtual void resizeNode(int node, int size);
-
-//    virtual int reduceNode(int p);
-#endif
-
   protected:
 
     // Used by derived classes for initialization

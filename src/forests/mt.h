@@ -78,6 +78,25 @@ class MEDDLY::mt_forest : public expert_forest {
 
   private:
     template <class T>
+    inline void edgeForVarInternal(int vh, bool pr, T* terms, dd_edge& result) {
+        if (vh < 0 || vh > getNumVariables())
+            throw error(error::INVALID_VARIABLE);
+        if (result.getForest() != this) 
+            throw error(error::INVALID_OPERATION);
+        int k = pr ? -vh: vh;
+        MEDDLY_DCASSERT(isValidLevel(k));
+
+        if (!isForRelations() && pr) 
+            throw error(error::INVALID_ASSIGNMENT);
+        if (getEdgeLabeling() != MULTI_TERMINAL)
+            throw error(error::INVALID_OPERATION);
+        int *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
+        int node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
+
+        result.set(node, 0, getNodeLevel(node));
+    }
+
+    template <class T>
     inline bool areDupsInternal(int p, const T &nb) const {
         const nodeData &node = getNode(p);
         if (node.level != nb.getLevel()) return false;
@@ -132,12 +151,6 @@ class MEDDLY::mt_forest : public expert_forest {
     }
 
   // ------------------------------------------------------------
-  // virtual and overriding default behavior
-  protected:
-    // virtual int createReducedHelper(int in, const node_builder& nb, bool &u);
-
-  
-  // ------------------------------------------------------------
   // Helpers for this and derived classes
   protected:
     /// Add a redundant node at level k.
@@ -168,156 +181,22 @@ class MEDDLY::mt_forest : public expert_forest {
       d = createReducedNode(-1, nb);
     }
 
-    // Sanity check for development code.
-    // void validateDownPointers(const node_builder &nb) const;
-
-
   // ------------------------------------------------------------
   // still to be organized:
   public:
-    // using expert_forest::getDownPtrsAndEdgeValues;
-    // using expert_forest::getSparseNodeIndexes;
-
-    /// Refer to meddly.h
-    /*
-    void createSubMatrix(const bool* const* vlist,
-        const bool* const* vplist, const dd_edge a, dd_edge& b);
-    void createSubMatrix(const dd_edge& rows, const dd_edge& cols,
-        const dd_edge& a, dd_edge& b);
-*/
-
-#ifdef ACCUMULATE_ON
-    virtual void accumulate(int& a, int b);
-    virtual bool accumulate(int& tempNode, int* element);
-
-    // cBM: Copy before modifying.
-    virtual int accumulateMdd(int a, int b, bool cBM);
-    virtual int addReducedNodes(int a, int b);
-    virtual int accumulateExpandA(int a, int b, bool cBM);
-    int accumulate(int tempNode, bool cBM, int* element, int level);
-    virtual int makeACopy(int node, int size = 0);
-    /// Create a temporary node -- a node that can be modified by the user
-    virtual int createTempNode(int lh, int size, bool clear);
-
-#endif
-
-    /// Has the node been reduced
-    bool isReducedNode(int node) const;
-
-    // virtual void dumpUniqueTable(FILE* s) const;
-    // void reclaimOrphanNode(int node);     // for linkNode()
-    // void handleNewOrphanNode(int node);   // for unlinkNode()
-    // void deleteOrphanNode(int node);      // for uncacheNode()
-    // void freeZombieNode(int node);        // for uncacheNode()
-
-    // virtual void showNode(FILE *s, int p, int verbose = 0) const;
-
-    // *************** override expert_forest class -- done ***************
-#if 0
-    // Dealing with slot 2 (node size)
-    int getLargestIndex(int p) const;
-
-    // Dealing with entries
-
-    // full node: entries start in the 4th slot (location 3, counting from 0)
-    int* getFullNodeDownPtrs(int p);
-    const int* getFullNodeDownPtrsReadOnly(int p) const;
-    const int* getSparseNodeIndexes(int p) const;
-    const int* getSparseNodeDownPtrs(int p) const;
-    int getSparseNodeLargestIndex(int p) const;
-
-    // for EVMDDs
-    int* getFullNodeEdgeValues(int p);
-    const int* getFullNodeEdgeValuesReadOnly(int p) const;
-    const int* getSparseNodeEdgeValues(int p) const;
-
-
-    // p: node
-    // i: the ith downpointer.
-    // note: for sparse nodes this may not be the same as the ith index pointer.
-    // int getDownPtrAfterIndex(int p, int i, int &index) const;
-
-    int getMddLevelMaxBound(int k) const;
-    int getMxdLevelMaxBound(int k) const;
-    int getLevelMaxBound(int k) const;
-#endif
-    int buildQuasiReducedNodeAtLevel(int k, int p);
-
     void compareCacheCounts(int p = -1);
-    void validateIncounts();
 
-
-    // Remove zombies if more than max
-    // void removeZombies(int max = 100);
-
-    // bool isCounting();
 
   protected:
     // Building level nodes
-    int getLevelNode(int lh) const;
     int buildLevelNodeHelper(int lh, int* terminalNodes, int sz);
-    void buildLevelNode(int lh, int* terminalNodes, int sz);
-    void clearLevelNode(int lh);
-    void clearLevelNodes();
-    // void clearAllNodes();
 
     // Building custom level nodes
-    // int* getTerminalNodes(int n);
     int* getTerminalNodes(int n, bool* terms);
     int* getTerminalNodes(int n, int* terms);
     int* getTerminalNodes(int n, float* terms);
 
-    bool isValidVariable(int vh) const;
-    bool doesLevelNeedCompaction(int k);
-
-    // Dealing with node addressing
-    // void setNodeOffset(int p, int offset);
-
-    // Dealing with node status
-    // bool isDeletedNode(int p) const;
-
-    // long getUniqueTableMemoryUsed() const;
-    long getHoleMemoryUsage() const;
-
-
-
   protected:
-
-    // modify temp nodes count for level k as well as the global count
-    // the temporary node count should be incremented only within
-    // createTempNode() or variants.
-    // decrTempNodeCount() should be called by any method that changes a
-    // temporary node to a reduced node.
-    // Note: deleting a temp node automatically calls decrTempNodeCount().
-
-    // increment the count for "nodes activated since last garbage collection"
-    void incrNodesActivatedSinceGc();
-
-    // get the id used to indicate temporary nodes
-    int getTempNodeId() const;
-
-    // Checks if one of the following reductions is satisfied:
-    // Fully, Quasi, Identity Reduced.
-    // If the node can be reduced to an existing node, the existing node
-    // is returned.
-    // OBSOLETE
-    // bool checkForReductions(int p, int nnz, int& result);
-
-    // Checks if the node has a single downpointer enabled and at
-    // the given index.
-    // bool singleNonZeroAt(int p, int val, int index) const;
-
-    // Checks if the node satisfies the forests reduction rules.
-    // If it does not, an assert violation occurs.
-    // void validateDownPointers(int p, bool recursive = false);
-
-    // Special next values
-    static const int temp_node = -5;
-
-    // performance stats
-
-    /// Count of nodes created since last gc
-    unsigned nodes_activated_since_gc;
 
     bool counting;
 
@@ -325,170 +204,7 @@ class MEDDLY::mt_forest : public expert_forest {
     int* dptrs;
     int dptrsSize;
 
-    // Place holder for accumulate-minterm result.
-    bool accumulateMintermAddedElement;
-
-  private:
-#ifdef ACCUMULATE_ON
-    // Persistant variables used in addReducedNodes()
-    dd_edge* nodeA;
-    dd_edge* nodeB;
-#endif
 };
-
-
-/// Inline functions implemented here
-
-/*
-inline void MEDDLY::mt_forest::reclaimOrphanNode(int p) {
-  MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
-  MEDDLY_DCASSERT(isActiveNode(p));
-  MEDDLY_DCASSERT(!isTerminalNode(p));
-  MEDDLY_DCASSERT(isReducedNode(p));
-  stats.reclaimed_nodes++;
-  stats.orphan_nodes--;
-}  
-*/
-
-/*
-inline int MEDDLY::mt_forest::getDownPtrAfterIndex(int p, int i, int &index)
-  const {
-  MEDDLY_DCASSERT(isActiveNode(p));
-  MEDDLY_DCASSERT(i >= 0);
-  if (isTerminalNode(p)) return p;
-  MEDDLY_DCASSERT(i < getLevelSize(getNodeLevel(p)));
-  if (isFullNode(p)) {
-    // full or trunc-full node
-    // full or trunc-full node, but i lies after the last non-zero downpointer
-    // index = i;
-    return (i < getFullNodeSize(p))? getFullNodeDownPtr(p, i): 0;
-  } else {
-    // sparse node
-    // binary search to find the index ptr corresponding to i
-    int stop = getSparseNodeSize(p);
-    while (index < stop && i > getSparseNodeIndex(p, index)) index++;
-    return (index < stop && i == getSparseNodeIndex(p, index))?
-        getSparseNodeDownPtr(p, index): 0;
-  }
-}
-*/
-
-
-/*
-inline
-int MEDDLY::mt_forest::createTempNode(int lh, std::vector<int>& downPointers)
-{
-  int tempNode = createTempNode(lh, downPointers.size(), false);
-  int* dptrs = getFullNodeDownPtrs(tempNode);
-  std::vector<int>::iterator iter = downPointers.begin();
-  while (iter != downPointers.end())
-  {
-    *dptrs++ = *iter++;
-  }
-  return tempNode;
-}
-*/
-
-// Dealing with slot 0 (incount)
-
-// Dealing with slot 1 (next pointer)
-
-inline bool MEDDLY::mt_forest::isReducedNode(int p) const {
-#ifdef DEBUG_MDD_H
-  printf("%s: p: %d\n", __func__, p);
-#endif
-  MEDDLY_DCASSERT(isActiveNode(p));
-  return (isTerminalNode(p) || (getNext(p)>=0));
-}
-
-/*
-
-// Dealing with slot 2 (node size)
-inline int MEDDLY::mt_forest::getLargestIndex(int p) const {
-  MEDDLY_DCASSERT(isActiveNode(p) && !isTerminalNode(p));
-  return isFullNode(p)? getFullNodeSize(p) - 1: getSparseNodeLargestIndex(p);
-}
-
-// Dealing with entries
-
-// full node: entries start in the 4th slot (location 3, counting from 0)
-inline int* MEDDLY::mt_forest::getFullNodeDownPtrs(int p) {
-#ifdef DEBUG_MDD_H
-  printf("%s: p: %d\n", __func__, p);
-#endif
-  MEDDLY_DCASSERT(isFullNode(p));
-  MEDDLY_DCASSERT(!isReducedNode(p));
-  return (getNodeAddress(p) + 3);
-}
-
-inline const int* MEDDLY::mt_forest::getFullNodeDownPtrsReadOnly(int p) const {
-  MEDDLY_DCASSERT(isFullNode(p));
-  return (getNodeAddress(p) + 3);
-}
-
-inline const int* MEDDLY::mt_forest::getFullNodeEdgeValuesReadOnly(int p) const {
-  MEDDLY_DCASSERT(isFullNode(p));
-  return (getNodeAddress(p) + 3 + getFullNodeSize(p));
-}
-
-inline int* MEDDLY::mt_forest::getFullNodeEdgeValues(int p) {
-  MEDDLY_DCASSERT(isFullNode(p));
-  MEDDLY_DCASSERT(!isReducedNode(p));
-  return (getNodeAddress(p) + 3 + getFullNodeSize(p));
-}
-
-inline const int* MEDDLY::mt_forest::getSparseNodeIndexes(int p) const {
-  MEDDLY_DCASSERT(isSparseNode(p));
-  return (getNodeAddress(p) + 3);
-}
-
-inline const int* MEDDLY::mt_forest::getSparseNodeDownPtrs(int p) const {
-  MEDDLY_DCASSERT(isSparseNode(p));
-  return (getNodeAddress(p) + 3 + getSparseNodeSize(p));
-}
-
-inline const int* MEDDLY::mt_forest::getSparseNodeEdgeValues(int p) const {
-  MEDDLY_DCASSERT(isSparseNode(p));
-  return (getNodeAddress(p) + 3 + 2 * getSparseNodeSize(p));
-}
-
-inline int MEDDLY::mt_forest::getSparseNodeLargestIndex(int p) const {
-  MEDDLY_DCASSERT(isSparseNode(p));
-  return getSparseNodeIndex(p, getSparseNodeSize(p) - 1);
-}
-*/
-
-// inline bool MEDDLY::mt_forest::isCounting() { return counting; }
-
-// Dealing with node addressing
-
-/*
-inline void MEDDLY::mt_forest::setNodeOffset(int p, int offset) 
-{
-  MEDDLY_DCASSERT(isValidNonterminalIndex(p));
-  address[p].offset = offset;
-}
-*/
-
-// Dealing with node status
-
-inline void MEDDLY::mt_forest::incrNodesActivatedSinceGc() {
-  nodes_activated_since_gc++;
-}
-
-
-inline int MEDDLY::mt_forest::getTempNodeId() const {
-  return temp_node;
-}
-
-inline int MEDDLY::mt_forest::getLevelNode(int k) const {
-  return levels[k].levelNode;
-}
-
-inline bool MEDDLY::mt_forest::isValidVariable(int vh) const {
-  return (vh > 0) && (vh <= getExpertDomain()->getNumVariables());
-  //return expertDomain->getVariableHeight(vh) != -1;
-}
 
 
 #endif
