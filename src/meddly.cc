@@ -489,12 +489,12 @@ const char* MEDDLY::getLibraryInfo(int what)
         title = new char[80];
         if (REVISION_NUMBER) {
           snprintf(title, 80, 
-            "%s version %s.%d (32-bit and 64-bit compatible)", 
+            "%s version %s.%d", 
             PACKAGE_NAME, VERSION, REVISION_NUMBER
           );
         } else {
           snprintf(title, 80, 
-            "%s version %s (32-bit and 64-bit compatible)", 
+            "%s version %s", 
             PACKAGE_NAME, VERSION
           );
         }

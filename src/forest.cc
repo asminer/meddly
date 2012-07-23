@@ -49,6 +49,10 @@
 // #define VALIDATE_INCOUNTS
 // #define VALIDATE_INCOUNTS_ON_DELETE
 
+// #define GC_OFF
+// #define DEBUG_GC
+// #define DEBUG_COMPACTION
+
 const int a_min_size = 1024;
 
 // ******************************************************************
@@ -482,7 +486,6 @@ void MEDDLY::expert_forest::level_data
   hole_slots = 0;
   max_hole_chain = 0;
   zombie_nodes = 0;
-  temp_nodes = 0;
   num_compactions = 0;
   edgeSize = parent->edgeSize(k);
   unhashedHeader = parent->unhashedHeaderSize(k);
@@ -505,7 +508,7 @@ int MEDDLY::expert_forest::level_data::allocNode(int sz, int tail, bool clear)
   data[off+slots-1] = tail;               // tail entry
 #ifdef MEMORY_TRACE
   printf("Allocated new node size %d, position %d\n", sz, off);
-  dumpInternal(stdout, parent->levels - this);
+  dumpInternal(stdout);
 #endif
   return off;
 }
@@ -549,8 +552,6 @@ void MEDDLY::expert_forest::level_data::compact(nodeData* address)
     return;
   }
 
-  if (0 < temp_nodes) return;   // Temp nodes; do not compact
-
 #ifdef DEBUG_SLOW
   fprintf(stderr, "Compacting forest level\n");
 #endif
@@ -568,7 +569,7 @@ void MEDDLY::expert_forest::level_data::compact(nodeData* address)
       // found a hole, advance
       MEDDLY_DCASSERT(node_ptr[0] == node_ptr[-(*node_ptr)-1]);
       node_size = -(*node_ptr);
-      memset(node_ptr, 0, node_size * sizeof(int));
+//      memset(node_ptr, 0, node_size * sizeof(int));
     } else {
       // found an existing node
       MEDDLY_DCASSERT(!parent->isPessimistic() || *node_ptr != 0);
@@ -611,9 +612,9 @@ void MEDDLY::expert_forest::level_data::compact(nodeData* address)
     resize(new_size);
   }
 
-#if 0
+#ifdef DEBUG_COMPACTION
   printf("After compaction:\n");
-  dumpInternalLevel(stdout, k);
+  dumpInternal(stdout);
   printf("\n");
 #endif
 }
@@ -708,14 +709,14 @@ int MEDDLY::expert_forest::level_data::getHole(int slots)
     if (next) {
       midRemove(next);
 #ifdef MEMORY_TRACE
-      cout << "Removed Non-Index Hole " << next << "\n";
+      printf("Removed Non-Index hole %d\n", next);
       dumpInternal(stdout);
 #endif
       return next;
     }
     indexRemove(curr);
 #ifdef MEMORY_TRACE
-    cout << "Removed Index Hole " << curr << "\n";
+    printf("Removed Index hole %d\n", curr);
     dumpInternal(stdout);
 #endif
     return curr;
@@ -745,7 +746,7 @@ int MEDDLY::expert_forest::level_data::getHole(int slots)
     gridInsert(k, newhole); 
 #ifdef MEMORY_TRACE
     // data[curr] = -slots;  // only necessary for display
-    cout << "Removed part of hole " << curr << "\n";
+    printf("Removed part of hole %d\n", curr);
     dumpInternal(stdout);
 #endif
     return curr;
@@ -777,7 +778,7 @@ void MEDDLY::expert_forest::level_data::makeHole(int addr, int slots)
   hole_slots += slots;
   data[addr] = data[addr+slots-1] = -slots;
 
-  if (!parent->areHolesRecycled()) return;
+  if (!parent->deflt.recycleHolesInLevelData) return;
 
   // Check for a hole to the left
 #ifdef MERGE_LEFT
@@ -806,7 +807,7 @@ void MEDDLY::expert_forest::level_data::makeHole(int addr, int slots)
     }
 #ifdef MEMORY_TRACE
     printf("Made Last Hole %d\n", addr);
-    dumpInternal(stdout, parent->levels - this);
+    dumpInternal(stdout);
 #endif
     return;
   }
@@ -828,7 +829,7 @@ void MEDDLY::expert_forest::level_data::makeHole(int addr, int slots)
 
 #ifdef MEMORY_TRACE
   printf("Made Last Hole %d\n", addr);
-  dumpInternal(stdout, parent->levels - this);
+  dumpInternal(stdout);
 #endif
 }
 
@@ -1855,12 +1856,12 @@ void MEDDLY::expert_forest::garbageCollect()
 
   if (isPessimistic()) {
 #ifdef DEBUG_GC
-    printf("Zombie nodes: %ld\n", zombie_nodes);
+    printf("Zombie nodes: %ld\n", stats.zombie_nodes);
 #endif
     // remove the stale nodes entries from caches
     removeStaleComputeTableEntries();
 #ifdef DEBUG_GC
-    printf("Zombie nodes: %ld\n", zombie_nodes);
+    printf("Zombie nodes: %ld\n", stats.zombie_nodes);
 #endif
 #ifdef DEVELOPMENT_CODE
     if (stats.zombie_nodes != 0) {
@@ -1874,23 +1875,32 @@ void MEDDLY::expert_forest::garbageCollect()
     removeStaleComputeTableEntries();
   }
 
+  if (deflt.compactAfterGC) {
 #ifdef DEBUG_GC
-  printf("Compacting levels...\n");
-  fflush(stdout);
+    printf("Compacting levels...\n");
+    fflush(stdout);
 #endif
 
-  compactMemory(); // might want to remove this
+    compactMemory(); 
 
 #ifdef DEBUG_GC
-  printf("  done compacting.\n");
-  fflush(stdout);
+    printf("  done compacting.\n");
+    fflush(stdout);
 #endif
+  }
 
   performing_gc = false;
 }
 
 void MEDDLY::expert_forest::compactMemory()
 {
+#ifdef DEBUG_COMPACTION
+  printf("Compacting memory:\n");
+  for (int i=getMinLevelIndex(); i<=getNumVariables(); i++) {
+    levels[i].dumpInternal(stdout);
+    printf("\n");
+  }
+#endif
   for (int i=getMinLevelIndex(); i<=getNumVariables(); i++) {
     levels[i].compactLevel = true;
     levels[i].compact(address);
@@ -1980,17 +1990,16 @@ void MEDDLY::expert_forest::handleNewOrphanNode(int p)
   }
   else if (isPessimistic()) {
     // zombify node
+#ifdef TRACK_DELETIONS
+    printf("Zombifying node %d\n", p);
+    fflush(stdout);
+#endif
     zombifyNode(p);
   }
   else {
     stats.orphan_nodes++;
   }
 
-#if 0
-  if (getOrphanNodeCount() > 100000)
-    smart_cast<expert_compute_manager*>(MEDDLY::getComputeManager())
-      ->removeStales(this);
-#endif
 }
 
 void MEDDLY::expert_forest::deleteOrphanNode(int p) 
@@ -2017,41 +2026,29 @@ void MEDDLY::expert_forest::deleteNode(int p)
   validateIncounts(false);
 #endif
 
-  // remove from unique table (only applicable to reduced nodes)
-  // if (isReducedNode(p)) {
-    unsigned h = hashNode(p);
+  unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE
-    // node_finder key(this, p);
-    node_reader key;
-    initNodeReader(key, p, false);
-    key.setHash(hashNode(p));
-    if (unique->find(key) != p) {
-      fprintf(stderr, "Error in deleteNode\nFind: %d\np: %d\n",
-        unique->find(key), p);
-      dumpInternal(stdout);
-      MEDDLY_DCASSERT(false);
-    }
-    int x = unique->remove(h, p);
-    MEDDLY_DCASSERT(p == x);
+  node_reader key;
+  initNodeReader(key, p, false);
+  key.setHash(hashNode(p));
+  if (unique->find(key) != p) {
+    fprintf(stderr, "Error in deleteNode\nFind: %d\np: %d\n",
+      unique->find(key), p);
+    dumpInternal(stdout);
+    MEDDLY_DCASSERT(false);
+  }
+  int x = unique->remove(h, p);
+  MEDDLY_DCASSERT(p == x);
 #else
-    unique->remove(h, p);
+  unique->remove(h, p);
 #endif
 
 #ifdef TRACK_DELETIONS
-    printf("%s: p = %d, unique->remove(p) = %d\n", __func__, p, x);
-    fflush(stdout);
+  printf("%s: p = %d, unique->remove(p) = %d\n", __func__, p, x);
+  fflush(stdout);
 #endif
 
-    MEDDLY_DCASSERT(address[p].cache_count == 0);
-  // }
-  /*
-  else {
-    // Temporary node
-    // TODO:
-    // clear cache of corresponding temporary node?
-    decrTempNodeCount(k);
-  }
-  */
+  MEDDLY_DCASSERT(address[p].cache_count == 0);
 
   int k = getNode(p).level;
   int addr = getNode(p).offset;
@@ -2077,7 +2074,6 @@ void MEDDLY::expert_forest::zombifyNode(int p)
 {
   MEDDLY_DCASSERT(isActiveNode(p));
   MEDDLY_DCASSERT(!isTerminalNode(p));
-  // MEDDLY_DCASSERT(isReducedNode(p));
   MEDDLY_DCASSERT(getCacheCount(p) > 0);  // otherwise this node should be deleted
   MEDDLY_DCASSERT(readInCount(p) == 0);
   MEDDLY_DCASSERT(address[p].cache_count > 0);
@@ -2091,7 +2087,6 @@ void MEDDLY::expert_forest::zombifyNode(int p)
 
   unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE 
-  // node_finder key(this, p);
   node_reader key;
   initNodeReader(key, p, false);
   key.setHash(hashNode(p));
@@ -2205,6 +2200,13 @@ int MEDDLY::expert_forest
   // Not a duplicate.
   //
   // We need to create a new node for this.
+
+  // NOW is the best time to run the garbage collector, if necessary.
+#ifndef GC_OFF
+  if (isTimeToGc()) garbageCollect();
+#endif
+
+  // Grab a new node
   int p = getFreeNodeHandle();
   address[p].level = nb.getLevel();
   MEDDLY_DCASSERT(0 == address[p].cache_count);
@@ -2303,23 +2305,6 @@ void MEDDLY::expert_forest::validateDownPointers(const node_builder &nb) const
       throw error(error::NOT_IMPLEMENTED);
   }
 
-}
-
-//
-// ------------------------------------------------------------------
-//  Still need to be organized:
-// ------------------------------------------------------------------
-//
-
-bool MEDDLY::expert_forest::isStale(int h) const {
-  return
-    isMarkedForDeletion() || (
-      isTerminalNode(h)
-      ? terminalNodesAreStale
-      : isPessimistic()
-        ? isZombieNode(h)
-        : (readInCount(h) == 0)
-    );
 }
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''

@@ -47,12 +47,9 @@
 #ifdef DEVELOPMENT_CODE
 #define RANGE_CHECK_ON
 #define DCASSERTS_ON
-//#define DEBUG_PRINTS_ON
-#ifdef DEBUG_PRINTS_ON
-#define DEBUG_MDD_H
-#define TRACK_DELETIONS
-#define TRACK_CACHECOUNT
-#endif
+// #define DEBUG_MDD_H
+// #define TRACK_DELETIONS
+// #define TRACK_CACHECOUNT
 #endif
 
 // #define TRACK_DELETIONS
@@ -877,13 +874,6 @@ class MEDDLY::node_builder {
         void copyIntoSparse(int* down, int* indexes, int Z) const;
         void copyIntoSparse(int* down, int* indexes, void* edge, int N) const;
 
-    /*
-    public: // helper for reducing
-        inline void unlink(expert_forest &f) const {
-          for (int i=0; i<size; i++) f.unlinkNode(down[i]);
-        }
-    */
-
     protected:
         void enlarge();
 
@@ -1001,10 +991,6 @@ class MEDDLY::expert_forest : public forest
     }
     inline int getMinLevelIndex() const {
       return isForRelations() ? -getNumVariables() : 0;
-    }
-    // for convenience
-    inline bool areHolesRecycled() const {
-      return deflt.recycleHolesInLevelData;
     }
     inline bool isValidLevel(int k) const {
       return (k>=getMinLevelIndex()) && (k<=getNumVariables());
@@ -1245,17 +1231,22 @@ class MEDDLY::expert_forest : public forest
     }
 
 
-
-
-
-
     /// A node can be discarded once it goes stale. Whether a node is
     /// considered stale depends on the forest's deletion policy.
     /// Optimistic deletion: A node is said to be stale only when both the
     ///   in-count and cache-count are zero.
     /// Pessimistic deletion: A node is said to be stale when the in-count
     ///  is zero regardless of the cache-count.
-    bool isStale(int node) const;
+    inline bool isStale(int node) const {
+      return
+        isMarkedForDeletion() || (
+          isTerminalNode(node)
+          ? terminalNodesAreStale
+          : isPessimistic()
+            ? isZombieNode(node)
+            : (readInCount(node) == 0)
+        );
+    }
 
     
 
@@ -1680,6 +1671,12 @@ class MEDDLY::expert_forest : public forest
   // ------------------------------------------------------------
   // helpers for this class
   private:
+    inline bool isTimeToGc() const {
+      return isPessimistic() 
+        ? (stats.zombie_nodes > deflt.zombieTrigger)
+        : (stats.orphan_nodes > deflt.orphanTrigger);
+    }
+
     void handleNewOrphanNode(int node);   
     void deleteOrphanNode(int node);     
     void deleteNode(int p);
@@ -1696,16 +1693,6 @@ class MEDDLY::expert_forest : public forest
 
     // Sanity check; used in development code.
     void validateDownPointers(const node_builder &nb) const;
-
-
-  // here down --- needs organizing
-  protected:
-
-    inline bool isTimeToGc() const {
-      return isPessimistic() 
-        ? (stats.zombie_nodes > deflt.zombieTrigger)
-        : (stats.orphan_nodes > deflt.orphanTrigger);
-    }
 
   // ----------------------------------------------------------------- 
   // | 
@@ -1958,8 +1945,6 @@ class MEDDLY::expert_forest : public forest
         int max_hole_chain;
         /// Number of zombie nodes
         int zombie_nodes;
-        /// Number of temporary nodes -- nodes that have not been reduced
-        int temp_nodes;
         /// Total number of compactions
         int num_compactions;
 
@@ -2065,14 +2050,6 @@ class MEDDLY::expert_forest : public forest
         /// Recycle a node stored at the given offset.
         inline void recycleNode(int off) {
           makeHole(off, activeNodeActualSlots(off));
-        }
-
-        inline void incrTempNodeCount() {
-          temp_nodes++;
-        }
-
-        inline void decrTempNodeCount() {
-          temp_nodes--;
         }
 
         inline bool needsCompaction() const {
@@ -2204,15 +2181,6 @@ class MEDDLY::expert_forest : public forest
       const nodeData& node = getNode(p);
       return levels[node.level].countOf(node.offset);
     }
-    inline void incrTempNodeCount(int k) {
-      levels[k].incrTempNodeCount();
-      stats.temp_nodes++;
-    }
-    inline void decrTempNodeCount(int k) {
-      levels[k].decrTempNodeCount();
-      stats.temp_nodes--;
-    }
-
 
   public:
     /// Returns the in-count for a node.
