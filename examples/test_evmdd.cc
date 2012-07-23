@@ -371,7 +371,7 @@ int main(int argc, char *argv[])
     dd_edge reachableStates(result);
     start.note_time();
     unsigned counter = 0;
-    for (dd_edge::const_iterator iter = reachableStates.begin();
+    for (enumerator iter(reachableStates);
         iter; ++iter, ++counter)
     {
       const int* element = iter.getAssignments();
@@ -412,7 +412,7 @@ int main(int argc, char *argv[])
 #if 1
   // print the elements
   {
-    dd_edge::iterator iter = mddResult.begin();
+    enumerator iter(mddResult);
     while (iter) {
       const int* elem = iter.getAssignments();
       int val = 0;
@@ -447,7 +447,7 @@ int main(int argc, char *argv[])
 #if 1
   // print the elements
   {
-    dd_edge::iterator iter = indexSet.begin();
+    enumerator iter(indexSet);
     while (iter) {
       const int* elem = iter.getAssignments();
       int val = 0;

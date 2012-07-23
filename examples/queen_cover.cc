@@ -318,7 +318,7 @@ int main(int argc, const char** argv)
   
   fprintf(outfile, "%d # Board dimension\n\n", N);
   // show the solutions
-  dd_edge::const_iterator iter = solutions.begin();
+  enumerator iter(solutions);
   long counter;
   for (counter = 1; iter; ++iter, ++counter) {
     fprintf(outfile, "solution %5ld:  ", counter);

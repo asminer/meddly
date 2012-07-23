@@ -40,8 +40,6 @@ namespace MEDDLY {
 
   settings meddlySettings;
 
-  statistics meddlyStats;
-
   bool libraryRunning = 0;
 
   // unary operation "codes"
@@ -111,16 +109,14 @@ namespace MEDDLY {
   int domain::dom_list_size = 0;
   int domain::free_list = -1;
 
+  //
+  // List of free node readers
+  node_reader* node_reader::freeList = 0;
+
   // helper functions
   void purgeMarkedOperations();
   void destroyOpInternal(operation* op);
 };
-
-// helpers
-
-void initStats(MEDDLY::statistics &s)
-{
-}
 
 //----------------------------------------------------------------------
 // front end - unary operations
@@ -391,6 +387,19 @@ MEDDLY::op_initializer* MEDDLY::makeBuiltinInitializer()
   return new builtin_initializer(0);
 }
 
+void MEDDLY::settings::init(const settings &s)
+{
+  operationBuilder = op_initializer::copy(s.operationBuilder);
+  computeTable = s.computeTable;
+  mddDefaults = s.mddDefaults;
+  mxdDefaults = s.mxdDefaults;
+}
+
+void MEDDLY::settings::clear()
+{
+  op_initializer::recycle(operationBuilder);
+}
+
 //----------------------------------------------------------------------
 // front end - initialize and cleanup of library
 //----------------------------------------------------------------------
@@ -399,7 +408,7 @@ void MEDDLY::initialize(const settings &s)
 {
   if (libraryRunning) throw error(error::ALREADY_INITIALIZED);
   meddlySettings = s;
-  initStats(meddlyStats);
+  // initStats(meddlyStats);
 
   // set up monolithic compute table, if needed
   if (meddlySettings.usesMonolithicComputeTable()) {
@@ -452,8 +461,12 @@ void MEDDLY::cleanup()
   delete operation::Monolithic_CT;
   operation::Monolithic_CT = 0;
 
-  if (meddlySettings.operationBuilder) 
+  if (meddlySettings.operationBuilder) {
     meddlySettings.operationBuilder->cleanupChain();
+  }
+
+  // clean up recycled node readers
+  node_reader::freeRecycled();
 
   libraryRunning = 0;
 }
@@ -467,11 +480,6 @@ const MEDDLY::settings& MEDDLY::getLibrarySettings()
   return meddlySettings;
 }
 
-const MEDDLY::statistics& MEDDLY::getLibraryStats()
-{
-  return meddlyStats;
-}
-
 const char* MEDDLY::getLibraryInfo(int what)
 {
   static char* title = 0;
@@ -481,12 +489,12 @@ const char* MEDDLY::getLibraryInfo(int what)
         title = new char[80];
         if (REVISION_NUMBER) {
           snprintf(title, 80, 
-            "%s version %s.%d (32-bit and 64-bit compatible)", 
+            "%s version %s.%d", 
             PACKAGE_NAME, VERSION, REVISION_NUMBER
           );
         } else {
           snprintf(title, 80, 
-            "%s version %s (32-bit and 64-bit compatible)", 
+            "%s version %s", 
             PACKAGE_NAME, VERSION
           );
         }

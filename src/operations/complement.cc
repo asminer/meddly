@@ -48,7 +48,23 @@ class MEDDLY::compl_mdd : public unary_operation {
     virtual void showEntry(FILE* strm, const int *entryData) const;
     virtual void compute(const dd_edge& a, dd_edge& b);
 
+  protected:
     int compute(int a);
+
+    inline bool findResult(int a, int &b) {
+      CTsrch.key(0) = a;
+      const int* cacheFind = CT->find(CTsrch);
+      if (0==cacheFind) return false;
+      b = resF->linkNode(cacheFind[1]);
+      return true;
+    }
+    inline int saveResult(int a, int b) {
+      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      entry.key(0) = argF->cacheNode(a);
+      entry.result(0) = resF->cacheNode(b);
+      CT->addEntry();
+      return b;
+    }
 };
 
 MEDDLY::compl_mdd
@@ -83,61 +99,36 @@ void MEDDLY::compl_mdd::compute(const dd_edge& a, dd_edge& b)
 
 int MEDDLY::compl_mdd::compute(int a)
 {
+  // Check terminals
   if (argF->isTerminalNode(a)) {
     return resF->getTerminalNode(a==0);
   }
+
   // Check compute table
-  CTsrch.key(0) = a;
-  const int* cacheFind = CT->find(CTsrch);
-  if (cacheFind) {
-    return resF->linkNode(cacheFind[1]);
+  int b;
+  if (findResult(a, b)) return b;
+
+  // Initialize node builder
+  const int level = argF->getNodeLevel(a);
+  const int size = resF->getLevelSize(level);
+  node_builder& nb = resF->useNodeBuilder(level, size);
+
+  // Initialize node reader
+  node_reader* A = argF->initNodeReader(a, true);
+
+  // recurse
+  for (int i=0; i<size; i++) {
+    nb.d(i) = compute(A->d(i));
   }
 
-  const int aLevel = argF->getNodeLevel(a);
-  int bSize = resF->getLevelSize(aLevel);
-  int b = resF->createTempNode(aLevel, bSize, false);
+  // Cleanup
+  node_reader::recycle(A);
 
-  if (argF->isFullNode(a)) {
-    const int aSize = argF->getFullNodeSize(a);
-    MEDDLY_DCASSERT(aSize <= bSize);
-    int i, temp;
-    for (i=0; i<aSize; i++) {
-      temp = compute(argF->getFullNodeDownPtr(a, i));
-      resF->setDownPtrWoUnlink(b, i, temp);
-      resF->unlinkNode(temp);
-    }
-    temp = resF->getTerminalNode(true);
-    for (; i<bSize; i++) {
-      resF->setDownPtrWoUnlink(b, i, temp);
-    }
-  } // a is full
-  else {
-    const int aNnz = argF->getSparseNodeSize(a);
-    int i, zero;
-    i=0;
-    zero = resF->getTerminalNode(true);
-    for (int z=0; z<aNnz; z++) {
-      int aIndex = argF->getSparseNodeIndex(a, z);
-      for (; i<aIndex; i++) {
-        resF->setDownPtrWoUnlink(b, i, zero);
-      }
-      int temp = compute(argF->getSparseNodeDownPtr(a, z));
-      resF->setDownPtrWoUnlink(b, i, temp);
-      resF->unlinkNode(temp);
-    } // for z
-    for (; i<bSize; i++) {
-      resF->setDownPtrWoUnlink(b, i, zero);
-    }
-  } // a is sparse
+  // Reduce
+  b = resF->createReducedNode(-1, nb);
 
-  // reduce, save in compute table
-  b = resF->reduceNode(b);
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
-  entry.key(0) = argF->cacheNode(a);
-  entry.result(0) = resF->cacheNode(b);
-  CT->addEntry();
-
-  return b;
+  // Add to compute table
+  return saveResult(a, b);
 }
 
 
@@ -156,7 +147,7 @@ class MEDDLY::compl_mxd : public unary_operation {
     virtual void showEntry(FILE* strm, const int *entryData) const;
     virtual void compute(const dd_edge& a, dd_edge& b);
 
-    int compute(int ht, int a);
+    int compute(int in, int k, int a);
 };
 
 MEDDLY::compl_mxd
@@ -186,13 +177,13 @@ void MEDDLY::compl_mxd::showEntry(FILE* strm, const int *data) const
 
 void MEDDLY::compl_mxd::compute(const dd_edge& a, dd_edge& b) 
 {
-  int result = compute(argF->getDomain()->getNumVariables(), a.getNode());
+  int result = compute(-1, argF->getDomain()->getNumVariables(), a.getNode());
   b.set(result, 0, resF->getNodeLevel(result));
 }
 
-int MEDDLY::compl_mxd::compute(int ht, int a)
+int MEDDLY::compl_mxd::compute(int in, int k, int a)
 {
-  if (0==ht) {
+  if (0==k) {
     return resF->getTerminalNode(a==0);
   }
   if (argF->isTerminalNode(a) && 
@@ -201,7 +192,7 @@ int MEDDLY::compl_mxd::compute(int ht, int a)
     return resF->getTerminalNode(a==0);
   }
   // Check compute table
-  CTsrch.key(0) = ht;
+  CTsrch.key(0) = k;
   CTsrch.key(1) = a;
   const int* cacheFind = CT->find(CTsrch);
   if (cacheFind) {
@@ -215,104 +206,49 @@ int MEDDLY::compl_mxd::compute(int ht, int a)
   fprintf(stderr, "\tstarting compl_mxd(%d, %d)\n", ht, a);
 #endif
 
+  // Initialize node builder
+  const int size = resF->getLevelSize(k);
+  node_builder& nb = resF->useNodeBuilder(k, size);
+
+  // Initialize node reader
   const int aLevel = argF->getNodeLevel(a);
-  int bSize = resF->getLevelSize(ht);
-  int b = resF->createTempNode(ht, bSize, false);
-  int htm1 = (ht > 0) ? -ht : (-ht)-1;
+  MEDDLY_DCASSERT(!isLevelAbove(aLevel, k));
+  node_reader* A;
+  bool canSave = true;
+  if (aLevel == k) {
+    A = argF->initNodeReader(a, true);
+  } else if (k>0 || argF->isFullyReduced()) {
+    A = argF->initRedundantReader(k, a, true);
+  } else {
+    MEDDLY_DCASSERT(in>=0);
+    A = argF->initIdentityReader(k, in, a, true);
+    canSave = false;
+  }
+  
+  // recurse
+  int nextLevel = (k>0) ? -k : -k-1;
+  int nnz = 0;
+  for (int i=0; i<size; i++) {
+    int d = compute(i, nextLevel, A->d(i));
+    nb.d(i) = d;
+    if (d) nnz++;
+  }
 
-  if (aLevel != ht) {
-    // All result[i] = compute(htm1, a)
-    // Special case: expand both levels at skipped identity-reduced level.
-    if (ht > 0 &&
-        resF->isIdentityReduced()) {
-      MEDDLY_DCASSERT(ht > 0);
-      MEDDLY_DCASSERT(htm1 < 0);
-      int htm2 = (-htm1)-1;
-      int zero = compute(htm2, 0);
-      int temp = compute(htm2, a);
-      for (int i = 0; i < bSize; ++i) {
-        // Build node at nextLevel
-        // such that n[i==j] = compute(owner, nextNextLevel, a)
-        //       and n[i!=j] = compute(owner, nextNextLevel, 0)
-        int n = resF->createTempNode(htm1, bSize, false);
-        for (int j = 0; j < bSize; ++j) {
-          resF->setDownPtrWoUnlink(n, j, (i == j)? temp: zero);
-        }
-        n = resF->reduceNode(n);
-        resF->setDownPtrWoUnlink(b, i, n);
-        resF->unlinkNode(n);
-      }
-      resF->unlinkNode(temp);
-      resF->unlinkNode(zero);
-    }
-    else {
-      // For Fully and Quasi. Also for prime ht for Identity reduced.
-      int temp = compute(htm1, a);
-      for (int i = 0; i < bSize; ++i) {
-        resF->setDownPtrWoUnlink(b, i, temp);
-      }
-      resF->unlinkNode(temp);
-    }
-  } // skipped level
-  else if (argF->isFullNode(a)) {
-    // a is a full-node
-    const int aSize = argF->getFullNodeSize(a);
-    MEDDLY_DCASSERT(aSize <= bSize);
-    int i = 0;
-    for ( ; i < aSize; ++i) {
-      int temp = compute(htm1, argF->getFullNodeDownPtr(a, i));
-      resF->setDownPtrWoUnlink(b, i, temp);
-      resF->unlinkNode(temp);
-    }
-    if (i < bSize) {
-      int zero = compute(htm1, 0);
-      do {
-        resF->setDownPtrWoUnlink(b, i++, zero);
-      } while (i < bSize);
-      resF->unlinkNode(zero);
-    }
-  } // not skipped, a full
-  else {
-    // a is a sparse-node
-    MEDDLY_DCASSERT(argF->isSparseNode(a));
-    const int aSize = argF->getSparseNodeSize(a);
-    MEDDLY_DCASSERT(argF->getSparseNodeIndex(a, aSize - 1) < bSize);
-    int i = 0;        // goes from 0..bSize
-    int aIndex = 0;   // j is the sparse index; aIndex is the equiv full index
-    int zero = compute(htm1, 0);
-    for (int j = 0; j < aSize; ++i, ++j) {
-      aIndex = argF->getSparseNodeIndex(a, j);
-      while (i < aIndex) {
-        // a[i] is 0
-        resF->setDownPtrWoUnlink(b, i++, zero);
-      }
-      MEDDLY_DCASSERT(i == aIndex && i < bSize);
-      int temp = compute(htm1, argF->getSparseNodeDownPtr(a, j));
-      resF->setDownPtrWoUnlink(b, i, temp);
-      resF->unlinkNode(temp);
-    }
-    while (i < bSize) {
-      // a[i] is 0
-      resF->setDownPtrWoUnlink(b, i++, zero);
-    }
-    resF->unlinkNode(zero);
-  } // not skipped, a sparse
+  // cleanup
+  node_reader::recycle(A);
 
-  // reduce, save in compute table
-  b = resF->reduceNode(b);
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
-  entry.key(0) = ht;
-  entry.key(1) = argF->cacheNode(a);
-  entry.result(0) = resF->cacheNode(b);
-  CT->addEntry();
-
-#ifdef DEBUG_MXD_COMPL
-  fprintf(stderr, "\tfinished compl_mxd(%d, %d) : %d\n", ht, a, b);
-#endif
-
-  return b;
+  // reduce, save in CT
+  int result = resF->createReducedNode(in, nb);
+  if (k<0 && 1==nnz) canSave = false;
+  if (canSave) {
+    compute_table::temp_entry &entry = CT->startNewEntry(this);
+    entry.key(0) = k;
+    entry.key(1) = argF->cacheNode(a);
+    entry.result(0) = resF->cacheNode(result);
+    CT->addEntry();
+  }
+  return result;
 }
-
 
 
 // ******************************************************************

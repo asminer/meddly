@@ -55,10 +55,26 @@ class MEDDLY::range_int : public unary_operation {
     virtual bool isStaleEntry(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
+  
+  protected:
+    inline bool findResult(int a, int &b) {
+      CTsrch.key(0) = a;
+      const int* cacheFind = CT->find(CTsrch);
+      if (0==cacheFind) return false;
+      b = cacheFind[1];
+      return true;
+    }
+    inline int saveResult(int a, int &b) {
+      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      entry.key(0) = argF->cacheNode(a);
+      entry.result(0) = b;
+      CT->addEntry();
+      return b;
+    }
 };
 
 MEDDLY::range_int::range_int(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, 1, sizeof(long) / sizeof(int), arg, INTEGER)
+ : unary_operation(oc, 1, 1, arg, INTEGER)
 {
 }
 
@@ -74,9 +90,7 @@ void MEDDLY::range_int::discardEntry(const int* data)
 
 void MEDDLY::range_int::showEntry(FILE* strm, const int *data) const
 {
-  long answer;
-  memcpy(&answer, data+1, sizeof(long));
-  fprintf(strm, "[%s(%d): %ld(L)]", getName(), data[0], answer);
+  fprintf(strm, "[%s(%d): %d(L)]", getName(), data[0], data[1]);
 }
 
 
@@ -95,10 +109,25 @@ class MEDDLY::range_real : public unary_operation {
     virtual bool isStaleEntry(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
+
+  protected:
+    inline bool findResult(int a, float &b) {
+      CTsrch.key(0) = a;
+      const int* cacheFind = CT->find(CTsrch);
+      if (0==cacheFind) return false;
+      b = ((float*)(cacheFind+1))[0];
+      return true;
+    }
+    inline int saveResult(int a, float &b) {
+      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      entry.key(0) = argF->cacheNode(a);
+      entry.copyResult(0, &b, sizeof(float));
+      return b;
+    }
 };
 
 MEDDLY::range_real::range_real(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, 1, sizeof(double) / sizeof(int), arg, INTEGER)
+ : unary_operation(oc, 1, sizeof(float) / sizeof(int), arg, INTEGER)
 {
 }
 
@@ -134,49 +163,32 @@ public:
   virtual void compute(const dd_edge &arg, long &res) {
     res = compute(arg.getNode());
   }
-  long compute(int a);
+  int compute(int a);
 };
 
-long MEDDLY::maxrange_int::compute(int a)
+int MEDDLY::maxrange_int::compute(int a)
 {
   // Terminal case
   if (argF->isTerminalNode(a)) return argF->getInteger(a);
   
   // Check compute table
-  CTsrch.key(0) = a;
-  const int* cacheEntry = CT->find(CTsrch);
-  if (cacheEntry) {
-    // ugly but portable
-    long answer;
-    memcpy(&answer, cacheEntry+1, sizeof(long));
-    return answer;
-  }
+  int max;
+  if (findResult(a, max)) return max;
+
+  // Initialize node reader
+  node_reader* A = argF->initNodeReader(a, true);
 
   // recurse
-  long max;
-  if (argF->isFullNode(a)) {
-    // Full node
-    int asize = argF->getFullNodeSize(a);
-    max = compute(argF->getFullNodeDownPtr(a, 0));
-    for (int i = 1; i < asize; ++i) {
-      max = MAX(max, compute(argF->getFullNodeDownPtr(a, i)));
-    } // for i
-  } else {
-    // Sparse node
-    int asize = argF->getSparseNodeSize(a);
-    max = compute(argF->getSparseNodeDownPtr(a, 0));
-    for (int i = 1; i < asize; ++i) {
-      max = MAX(max, compute(argF->getSparseNodeDownPtr(a, i)));
-    } // for i
-  } 
+  max = compute(A->d(0));
+  for (int i=1; i<A->getSize(); i++) {
+    max = MAX(max, compute(A->d(i)));
+  }
+
+  // Cleanup
+  node_reader::recycle(A);
 
   // Add entry to compute table
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
-  entry.key(0) = argF->cacheNode(a);
-  entry.copyResult(0, &max, sizeof(long));
-  CT->addEntry();
-
-  return max;
+  return saveResult(a, max);
 }
 
 
@@ -195,49 +207,32 @@ public:
   virtual void compute(const dd_edge &arg, long &res) {
     res = compute(arg.getNode());
   }
-  long compute(int a);
+  int compute(int a);
 };
 
-long MEDDLY::minrange_int::compute(int a)
+int MEDDLY::minrange_int::compute(int a)
 {
   // Terminal case
   if (argF->isTerminalNode(a)) return argF->getInteger(a);
   
   // Check compute table
-  CTsrch.key(0) = a; 
-  const int* cacheEntry = CT->find(CTsrch);
-  if (cacheEntry) {
-    // ugly but portable
-    long answer;
-    memcpy(&answer, cacheEntry+1, sizeof(long));
-    return answer;
-  }
+  int min;
+  if (findResult(a, min)) return min;
+
+  // Initialize node reader
+  node_reader* A = argF->initNodeReader(a, true);
 
   // recurse
-  long min;
-  if (argF->isFullNode(a)) {
-    // Full node
-    int asize = argF->getFullNodeSize(a);
-    min = compute(argF->getFullNodeDownPtr(a, 0));
-    for (int i = 1; i < asize; ++i) {
-      min = MIN(min, compute(argF->getFullNodeDownPtr(a, i)));
-    } // for i
-  } else {
-    // Sparse node
-    int asize = argF->getSparseNodeSize(a);
-    min = compute(argF->getSparseNodeDownPtr(a, 0));
-    for (int i = 1; i < asize; ++i) {
-      min = MIN(min, compute(argF->getSparseNodeDownPtr(a, i)));
-    } // for i
-  } 
+  min = compute(A->d(0));
+  for (int i=1; i<A->getSize(); i++) {
+    min = MIN(min, compute(A->d(i)));
+  }
+
+  // Cleanup
+  node_reader::recycle(A);
 
   // Add entry to compute table
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
-  entry.key(0) = argF->cacheNode(a);
-  entry.copyResult(0, &min, sizeof(long));
-  CT->addEntry();
-
-  return min;
+  return saveResult(a, min);
 }
 
 
@@ -256,49 +251,32 @@ public:
   virtual void compute(const dd_edge &arg, double &res) {
     res = compute(arg.getNode());
   }
-  double compute(int a);
+  float compute(int a);
 };
 
-double MEDDLY::maxrange_real::compute(int a)
+float MEDDLY::maxrange_real::compute(int a)
 {
   // Terminal case
-  if (argF->isTerminalNode(a)) return argF->getReal(a);
+  if (argF->isTerminalNode(a)) return argF->getInteger(a);
   
   // Check compute table
-  CTsrch.key(0) = a; 
-  const int* cacheEntry = CT->find(CTsrch);
-  if (cacheEntry) {
-    // ugly but portable
-    double answer;
-    memcpy(&answer, cacheEntry+1, sizeof(double));
-    return answer;
-  }
+  float max;
+  if (findResult(a, max)) return max;
+
+  // Initialize node reader
+  node_reader* A = argF->initNodeReader(a, true);
 
   // recurse
-  double max;
-  if (argF->isFullNode(a)) {
-    // Full node
-    int asize = argF->getFullNodeSize(a);
-    max = compute(argF->getFullNodeDownPtr(a, 0));
-    for (int i = 1; i < asize; ++i) {
-      max = MAX(max, compute(argF->getFullNodeDownPtr(a, i)));
-    } // for i
-  } else {
-    // Sparse node
-    int asize = argF->getSparseNodeSize(a);
-    max = compute(argF->getSparseNodeDownPtr(a, 0));
-    for (int i = 1; i < asize; ++i) {
-      max = MAX(max, compute(argF->getSparseNodeDownPtr(a, i)));
-    } // for i
-  } 
+  max = compute(A->d(0));
+  for (int i=1; i<A->getSize(); i++) {
+    max = MAX(max, compute(A->d(i)));
+  }
+
+  // Cleanup
+  node_reader::recycle(A);
 
   // Add entry to compute table
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
-  entry.key(0) = argF->cacheNode(a);
-  entry.copyResult(0, &max, sizeof(double));
-  CT->addEntry();
-
-  return max;
+  return saveResult(a, max);
 }
 
 
@@ -317,49 +295,32 @@ public:
   virtual void compute(const dd_edge &arg, double &res) {
     res = compute(arg.getNode());
   }
-  double compute(int a);
+  float compute(int a);
 };
 
-double MEDDLY::minrange_real::compute(int a)
+float MEDDLY::minrange_real::compute(int a)
 {
   // Terminal case
-  if (argF->isTerminalNode(a)) return argF->getReal(a);
+  if (argF->isTerminalNode(a)) return argF->getInteger(a);
   
   // Check compute table
-  CTsrch.key(0) = a; 
-  const int* cacheEntry = CT->find(CTsrch);
-  if (cacheEntry) {
-    // ugly but portable
-    double answer;
-    memcpy(&answer, cacheEntry+1, sizeof(double));
-    return answer;
-  }
+  float min;
+  if (findResult(a, min)) return min;
+
+  // Initialize node reader
+  node_reader* A = argF->initNodeReader(a, true);
 
   // recurse
-  double min;
-  if (argF->isFullNode(a)) {
-    // Full node
-    int asize = argF->getFullNodeSize(a);
-    min = compute(argF->getFullNodeDownPtr(a, 0));
-    for (int i = 1; i < asize; ++i) {
-      min = MIN(min, compute(argF->getFullNodeDownPtr(a, i)));
-    } // for i
-  } else {
-    // Sparse node
-    int asize = argF->getSparseNodeSize(a);
-    min = compute(argF->getSparseNodeDownPtr(a, 0));
-    for (int i = 1; i < asize; ++i) {
-      min = MIN(min, compute(argF->getSparseNodeDownPtr(a, i)));
-    } // for i
-  } 
+  min = compute(A->d(0));
+  for (int i=1; i<A->getSize(); i++) {
+    min = MIN(min, compute(A->d(i)));
+  }
+
+  // Cleanup
+  node_reader::recycle(A);
 
   // Add entry to compute table
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
-  entry.key(0) = argF->cacheNode(a);
-  entry.copyResult(0, &min, sizeof(double));
-  CT->addEntry();
-
-  return min;
+  return saveResult(a, min);
 }
 
 

@@ -26,6 +26,8 @@
 #include "../defines.h"
 #include "prepostimage.h"
 
+// #define TRACE_ALL_OPS
+
 namespace MEDDLY {
   class image_op;
 
@@ -133,11 +135,6 @@ class MEDDLY::preimage_mdd : public image_op {
 
   protected:
     virtual int compute_rec(int a, int b);
-    int expandMxdByOneLevel(int a, int b);
-    int expandMxd(int a, int b);
-    int expandMdd(int a, int b);
-    int expandByOneLevel(int a, int b);
-    int expand(int a, int b);
 };
 
 MEDDLY::preimage_mdd::preimage_mdd(const binary_opname* oc, expert_forest* a1,
@@ -167,243 +164,81 @@ int MEDDLY::preimage_mdd::compute_rec(int mdd, int mxd)
   // check if mxd and mdd are at the same level
   int mddLevel = arg1F->getNodeLevel(mdd);
   int mxdLevel = arg2F->getNodeLevel(mxd);
+  int rLevel = MAX(ABS(mxdLevel), mddLevel);
+  int rSize = resF->getLevelSize(rLevel);
+  node_builder& nb = resF->useNodeBuilder(rLevel, rSize);
 
-  if (mddLevel < mxdLevel) {
-    // expand mxd
-    result = expandMxd(mdd, mxd);
-  } else if (mddLevel > mxdLevel) {
-    // expand mdd
-    result = expandMdd(mdd, mxd);
-  } else {
-    // same level
-    MEDDLY_DCASSERT(arg1F->getNodeLevel(mdd) == arg2F->getNodeLevel(mxd));
-    result = expand(mdd, mxd);
-  } // same level
+  // Initialize mdd reader
+  node_reader* A = (mddLevel < rLevel)
+    ? arg1F->initRedundantReader(rLevel, mdd, true)
+    : arg1F->initNodeReader(mdd, true);
 
-  MEDDLY_DCASSERT(resF->isReducedNode(result));
-
-  // save result in compute cache and return it
-  return saveResult(mdd, mxd, result);
-}
-
-// result += pre_image(mdd, iMxd[j])
-int MEDDLY::preimage_mdd::expandMxdByOneLevel(int mdd, int iMxd)
-{
-  if (iMxd == 0) return 0;
-
-  MEDDLY_DCASSERT(!arg2F->isTerminalNode(iMxd));
-
-  int result = 0;
-  int tempResult = 0;
-  if (arg2F->isFullNode(iMxd)) {
-    int iMxdSize = arg2F->getFullNodeSize(iMxd);
-    for (int j = 0; j < iMxdSize; j++) {
-      int ijMxd = arg2F->getFullNodeDownPtr(iMxd, j);
-      if (ijMxd == 0) continue;
-      int jResult = compute_rec(mdd, ijMxd);
-      if (jResult == 0) continue;
-      tempResult = result;
-      result = unionOp->compute(result, jResult);
-      resF->unlinkNode(jResult);
-      resF->unlinkNode(tempResult);
+  if (mddLevel > ABS(mxdLevel)) {
+    //
+    // Skipped levels in the MXD,
+    // that's an important special case that we can handle quickly.
+    for (int i=0; i<rSize; i++) {
+      nb.d(i) = compute_rec(A->d(i), mxd);
     }
   } else {
-    // iMxd is a sparse node
-    int iMxdSize = arg2F->getSparseNodeSize(iMxd);
-    for (int j = 0; j < iMxdSize; j++) {
-      int jResult = compute_rec(mdd, arg2F->getSparseNodeDownPtr(iMxd, j));
-      if (jResult == 0) continue;
-      tempResult = result;
-      result = unionOp->compute(result, jResult);
-      resF->unlinkNode(jResult);
-      resF->unlinkNode(tempResult);
-    }
-  }
-  return result;
-}
+    // 
+    // Need to process this level in the MXD.
+    MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
-// result[j] += pre_image(mdd[i], mxd[j][i])
-// becomes
-// result[j] += pre_image(mdd, mxd[j][i])
-int MEDDLY::preimage_mdd::expandMxd(int mdd, int mxd)
-{
-  // create new node
-  int result = 0;
-  if (arg2F->isFullNode(mxd)) {
-    // full mxd node
-    int mxdSize = arg2F->getFullNodeSize(mxd);
-    result = resF->createTempNode(arg2F->getNodeLevel(mxd), mxdSize, false);
-    for (int i = 0; i < mxdSize; i++) {
-      int temp = expandMxdByOneLevel(mdd, arg2F->getFullNodeDownPtr(mxd, i));
-      resF->setDownPtrWoUnlink(result, i, temp);
-      resF->unlinkNode(temp);
-    } // for mxdSize
-  } else {
-    // sparse mxd node
-    int mxdSize = arg2F->getSparseNodeSize(mxd);
-    result = resF->createTempNode(arg2F->getNodeLevel(mxd),
-        arg2F->getSparseNodeIndex(mxd, mxdSize-1) + 1
-    );
-    for (int i = 0; i < mxdSize; i++) {
-      int tR = expandMxdByOneLevel(mdd, arg2F->getSparseNodeDownPtr(mxd, i));
-      resF->setDownPtrWoUnlink(result, arg2F->getSparseNodeIndex(mxd, i), tR);
-      resF->unlinkNode(tR);
-    } // for mxdSize
-  }
-  return resF->reduceNode(result);
-}
+    // clear out result (important!)
+    for (int i=0; i<rSize; i++) nb.d(i) = 0;
 
-int MEDDLY::preimage_mdd::expandMdd(int mdd, int mxd)
-{
-  // create new node
-  int result = resF->createTempNodeMaxSize(arg1F->getNodeLevel(mdd));
-  if (arg1F->isFullNode(mdd)) {
-    // mdd is a full node
-    int mddSize = arg1F->getFullNodeSize(mdd);
-    for (int i = 0; i < mddSize; i++) {
-      int tempResult = compute_rec(arg1F->getFullNodeDownPtr(mdd, i), mxd);
-      resF->setDownPtr(result, i, tempResult);
-      resF->unlinkNode(tempResult);
-    }
-  } else {
-    // mdd is a sparse node
-    int mddSize = arg1F->getSparseNodeSize(mdd);
-    for (int i = 0; i < mddSize; i++) {
-      int tempResult = compute_rec(arg1F->getSparseNodeDownPtr(mdd, i), mxd);
-      resF->setDownPtr(result, arg1F->getSparseNodeIndex(mdd, i), tempResult);
-      resF->unlinkNode(tempResult);
-    }
-  }
-  return resF->reduceNode(result);
-}
+    // Initialize mxd readers, note we might skip the unprimed level
+    node_reader* Ru = (mxdLevel < 0)
+      ? arg2F->initRedundantReader(rLevel, mxd, false)
+      : arg2F->initNodeReader(mxd, false);
 
-// result += pre_image(mdd[j], iMxd[j])
-int MEDDLY::preimage_mdd::expandByOneLevel(int mdd, int iMxd)
-{
-  if (iMxd == 0) return 0;
-  MEDDLY_DCASSERT(!arg2F->isTerminalNode(iMxd));
-  int result = 0;
-  int tempResult = 0;
-  if (arg2F->isFullNode(iMxd)) {
-    if (arg1F->isFullNode(mdd)) {
-      int minSize =
-        MIN(arg1F->getFullNodeSize(mdd), arg2F->getFullNodeSize(iMxd));
-      for (int j = 0; j < minSize; j++) {
-        int ijMxd = arg2F->getFullNodeDownPtr(iMxd, j);
-        int jMdd = arg1F->getFullNodeDownPtr(mdd, j);
-        if (ijMxd == 0 || jMdd == 0) continue;
-        int jResult = compute_rec(jMdd, ijMxd);
-        if (jResult == 0) continue;
-        tempResult = result;
-        result = unionOp->compute(result, jResult);
-        resF->unlinkNode(jResult);
-        resF->unlinkNode(tempResult);
+    node_reader* Rp = node_reader::useReader();
+
+    // loop over mxd "rows"
+    for (int iz=0; iz<Ru->getNNZs(); iz++) {
+      int i = Ru->i(iz);
+      if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz)))) {
+        arg2F->initIdentityReader(*Rp, rLevel, i, Ru->d(iz), false);
+      } else {
+        arg2F->initNodeReader(*Rp, Ru->d(iz), false);
       }
-    } // mdd is a full node
-    else {
-      MEDDLY_DCASSERT(arg1F->isSparseNode(mdd));
-      int iMxdSize = arg2F->getFullNodeSize(iMxd);
-      int mddSize = arg1F->getSparseNodeSize(mdd);
-      for (int j = 0; j < mddSize; j++) {
-        int jIndex = arg1F->getSparseNodeIndex(mdd, j);
-        if (jIndex >= iMxdSize) break;
-        int ijMxd = arg2F->getFullNodeDownPtr(iMxd, jIndex);
-        if (ijMxd == 0) continue;
-        int jMdd = arg1F->getSparseNodeDownPtr(mdd, j);
-        int jResult = compute_rec(jMdd, ijMxd);
-        if (jResult == 0) continue;
-        tempResult = result;
-        result = unionOp->compute(result, jResult);
-        resF->unlinkNode(jResult);
-        resF->unlinkNode(tempResult);
-      }
-    } // mdd is a sparse node
-  } // iMxd is a full node
-  else {
-    MEDDLY_DCASSERT(arg2F->isSparseNode(iMxd));
-    if (arg1F->isFullNode(mdd)) {
-      int iMxdSize = arg2F->getSparseNodeSize(iMxd);
-      int mddSize = arg1F->getFullNodeSize(mdd);
-      for (int j = 0; j < iMxdSize; j++) {
-        int jIndex = arg2F->getSparseNodeIndex(iMxd, j);
-        if (jIndex >= mddSize) break;
-        int jMdd = arg1F->getFullNodeDownPtr(mdd, jIndex);
-        if (jMdd == 0) continue;
-        int ijMxd = arg2F->getSparseNodeDownPtr(iMxd, j);
-        int jResult = compute_rec(jMdd, ijMxd);
-        if (jResult == 0) continue;
-        tempResult = result;
-        result = unionOp->compute(result, jResult);
-        resF->unlinkNode(jResult);
-        resF->unlinkNode(tempResult);
-      }
-    } // mdd is a full node
-    else {
-      MEDDLY_DCASSERT(arg1F->isSparseNode(mdd));
-      int iMxdLargestIndex = arg2F->getSparseNodeIndex(iMxd,
-        arg2F->getSparseNodeSize(iMxd) - 1);
-      int mddSize = arg1F->getSparseNodeSize(mdd);
-      // k: traverses iMxd, j: traverses mdd
-      int j = 0;
-      int k = 0;
-      int iMxdIndex = arg2F->getSparseNodeIndex(iMxd, k);
-      for ( ; j < mddSize; ) {
-        int mddIndex = arg1F->getSparseNodeIndex(mdd, j);
-        if (mddIndex > iMxdLargestIndex) break;
-        iMxdIndex = arg2F->getSparseNodeIndex(iMxd, k);
-        while (iMxdIndex < mddIndex) {
-          k++;
-          MEDDLY_DCASSERT(k < arg2F->getSparseNodeSize(iMxd));
-          iMxdIndex = arg2F->getSparseNodeIndex(iMxd, k);
+
+      // loop over mxd "columns"
+      for (int jz=0; jz<Rp->getNNZs(); jz++) {
+        int j = Rp->i(jz);
+        if (0==A->d(j))   continue; 
+        // ok, there is an i->j "edge".
+        // determine new states to be added (recursively)
+        // and add them
+        int newstates = compute_rec(A->d(j), Rp->d(jz));
+        if (0==newstates) continue;
+        if (0==nb.d(i)) {
+          nb.d(i) = newstates;
+          continue;
         }
-        if (mddIndex < iMxdIndex) { ++j; continue; }
-        MEDDLY_DCASSERT(mddIndex == iMxdIndex);
-        int jResult = compute_rec(
-            arg1F->getSparseNodeDownPtr(mdd, j),
-            arg2F->getSparseNodeDownPtr(iMxd, k)
-        );
-        ++j; ++k;
-        if (jResult == 0) continue;
-        tempResult = result;
-        result = unionOp->compute(result, jResult);
-        resF->unlinkNode(jResult);
-        resF->unlinkNode(tempResult);
-      }
-    } // mdd is a sparse node
-  } // iMxd is a sparse node
+        // there's new states and existing states; union them.
+        int oldi = nb.d(i);
+        nb.d(i) = unionOp->compute(newstates, oldi);
+        resF->unlinkNode(oldi);
+        resF->unlinkNode(newstates);
+      } // for j
+  
+    } // for i
 
-  return result;
+    node_reader::recycle(Rp);
+    node_reader::recycle(Ru);
+  } // else
+
+  // cleanup mdd reader
+  node_reader::recycle(A);
+
+  result = resF->createReducedNode(-1, nb);
+#ifdef TRACE_ALL_OPS
+  printf("computed preimage(%d, %d) = %d\n", mdd, mxd, result);
+#endif
+  return saveResult(mdd, mxd, result); 
 }
-
-// result[j] += pre_image(mdd[i], mxd[j][i])
-int MEDDLY::preimage_mdd::expand(int mdd, int mxd)
-{
-  // create new node
-  int result = 0;
-  if (arg2F->isFullNode(mxd)) {
-    // full mxd node
-    int mxdSize = arg2F->getFullNodeSize(mxd);
-    result = resF->createTempNode(arg2F->getNodeLevel(mxd), mxdSize, false);
-    for (int i = 0; i < mxdSize; i++) {
-      int tR = expandByOneLevel(mdd, arg2F->getFullNodeDownPtr(mxd, i));
-      resF->setDownPtrWoUnlink(result, i, tR);
-      resF->unlinkNode(tR);
-    } // for mxdSize
-  } else {
-    // sparse mxd node
-    int mxdSize = arg2F->getSparseNodeSize(mxd);
-    result = resF->createTempNode(arg2F->getNodeLevel(mxd),
-        arg2F->getSparseNodeIndex(mxd, mxdSize - 1) + 1
-    );
-    for (int i = 0; i < mxdSize; i++) {
-      int tR = expandByOneLevel(mdd, arg2F->getSparseNodeDownPtr(mxd, i));
-      resF->setDownPtrWoUnlink(result, arg2F->getSparseNodeIndex(mxd, i), tR);
-      resF->unlinkNode(tR);
-    } // for mxdSize
-  }
-  return resF->reduceNode(result);
-}
-
 
 
 // ******************************************************************
@@ -419,13 +254,6 @@ class MEDDLY::postimage_mdd : public image_op {
 
   protected:
     virtual int compute_rec(int a, int b);
-    int fullFull(int mdd, int mxd);
-    int fullSparse(int mdd, int mxd);
-    int sparseFull(int mdd, int mxd);
-    int sparseSparse(int mdd, int mxd);
-    int expandMdd(int mdd, int mxd);
-    int expandMxd(int mdd, int mxd);
-    void expandMxdHelper(int mdd, int iMxd, int result);
 };
 
 MEDDLY::postimage_mdd::postimage_mdd(const binary_opname* oc, 
@@ -438,8 +266,6 @@ int MEDDLY::postimage_mdd::compute_rec(int mdd, int mxd)
 {
   // termination conditions
   if (mxd == 0 || mdd == 0) return 0;
-
-  // skipped level means identity matrix
   if (arg2F->isTerminalNode(mxd)) {
     if (arg1F->isTerminalNode(mdd)) {
       return resF->getTerminalNode(true);
@@ -458,229 +284,80 @@ int MEDDLY::postimage_mdd::compute_rec(int mdd, int mxd)
   // check if mxd and mdd are at the same level
   int mddLevel = arg1F->getNodeLevel(mdd);
   int mxdLevel = arg2F->getNodeLevel(mxd);
+  int rLevel = MAX(ABS(mxdLevel), mddLevel);
+  int rSize = resF->getLevelSize(rLevel);
+  node_builder& nb = resF->useNodeBuilder(rLevel, rSize);
 
-  if (mddLevel < mxdLevel) {
-    // expand mxd
-    result = expandMxd(mdd, mxd);
-  } else if (mddLevel > mxdLevel) {
-    // expand mdd
-    result = expandMdd(mdd, mxd);
-  } else {
-    // same level
-    MEDDLY_DCASSERT(arg1F->getNodeLevel(mdd) == arg2F->getNodeLevel(mxd));
-    if (arg1F->isFullNode(mdd)) {
-      if (arg2F->isFullNode(mxd))
-        result = fullFull(mdd, mxd);
-      else
-        result = fullSparse(mdd, mxd);
-    } else {
-      if (arg2F->isFullNode(mxd))
-        result = sparseFull(mdd, mxd);
-      else
-        result = sparseSparse(mdd, mxd);
+  // Initialize mdd reader
+  node_reader* A = (mddLevel < rLevel)
+    ? arg1F->initRedundantReader(rLevel, mdd, true)
+    : arg1F->initNodeReader(mdd, true);
+
+  if (mddLevel > ABS(mxdLevel)) {
+    //
+    // Skipped levels in the MXD,
+    // that's an important special case that we can handle quickly.
+    for (int i=0; i<rSize; i++) {
+      nb.d(i) = compute_rec(A->d(i), mxd);
     }
-  } // same level
+  } else {
+    // 
+    // Need to process this level in the MXD.
+    MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
-  MEDDLY_DCASSERT(resF->isReducedNode(result));
+    // clear out result (important!)
+    for (int i=0; i<rSize; i++) nb.d(i) = 0;
 
+    // Initialize mxd readers, note we might skip the unprimed level
+    node_reader* Ru = (mxdLevel < 0)
+      ? arg2F->initRedundantReader(rLevel, mxd, false)
+      : arg2F->initNodeReader(mxd, false);
+
+    node_reader* Rp = node_reader::useReader();
+
+    // loop over mxd "rows"
+    for (int iz=0; iz<Ru->getNNZs(); iz++) {
+      int i = Ru->i(iz);
+      if (0==A->d(i))   continue; 
+      if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz)))) {
+        arg2F->initIdentityReader(*Rp, rLevel, i, Ru->d(iz), false);
+      } else {
+        arg2F->initNodeReader(*Rp, Ru->d(iz), false);
+      }
+
+      // loop over mxd "columns"
+      for (int jz=0; jz<Rp->getNNZs(); jz++) {
+        int j = Rp->i(jz);
+        // ok, there is an i->j "edge".
+        // determine new states to be added (recursively)
+        // and add them
+        int newstates = compute_rec(A->d(i), Rp->d(jz));
+        if (0==newstates) continue;
+        if (0==nb.d(j)) {
+          nb.d(j) = newstates;
+          continue;
+        }
+        // there's new states and existing states; union them.
+        int oldj = nb.d(j);
+        nb.d(j) = unionOp->compute(newstates, oldj);
+        resF->unlinkNode(oldj);
+        resF->unlinkNode(newstates);
+      } // for j
+  
+    } // for i
+
+    node_reader::recycle(Rp);
+    node_reader::recycle(Ru);
+  } // else
+
+  // cleanup mdd reader
+  node_reader::recycle(A);
+
+  result = resF->createReducedNode(-1, nb);
 #ifdef TRACE_ALL_OPS
-  printf("computed postimage(%d, %d) = %d\n", mdd, mxd, result);
+  printf("computed new postimage(%d, %d) = %d\n", mdd, mxd, result);
 #endif
-  // save result in compute cache and return it
-  return saveResult(mdd, mxd, result);
-}
-
-int MEDDLY::postimage_mdd::fullFull(int mdd, int mxd)
-{
-  MEDDLY_DCASSERT(arg1F->isFullNode(mdd));
-  MEDDLY_DCASSERT(arg2F->isFullNode(mxd));
-
-  // for each mxd[i]
-  //   for each mxd[i][j]
-  //     dptrs[j] += postimage(mdd[i],mxd[i][j])
-
-  // create new node
-  int minSize = MIN(arg1F->getFullNodeSize(mdd), arg2F->getFullNodeSize(mxd));
-  // need to create result of max size since post image computation may
-  // write to result[i] where i >= minSize
-  int result = resF->createTempNodeMaxSize(arg1F->getNodeLevel(mdd));
-
-  int iMdd = 0;
-  int iMxd = 0;
-  for (int i = 0; i < minSize; i++) {
-    iMdd = arg1F->getFullNodeDownPtr(mdd, i);
-    if (iMdd == 0) continue;
-    iMxd = arg2F->getFullNodeDownPtr(mxd, i);
-    expandMxdHelper(iMdd, iMxd, result);
-  }
-  return resF->reduceNode(result);
-}
-
-
-int MEDDLY::postimage_mdd::fullSparse(int mdd, int mxd)
-{
-  MEDDLY_DCASSERT(arg1F->isFullNode(mdd));
-  MEDDLY_DCASSERT(arg2F->isSparseNode(mxd));
-
-  // create new node
-  int result = resF->createTempNodeMaxSize(arg1F->getNodeLevel(mdd));
-  int mxdSize = arg2F->getSparseNodeSize(mxd);
-  int mddSize = arg1F->getFullNodeSize(mdd);
-  int iMdd = 0;
-  int index = 0;
-  for (int i = 0; i < mxdSize; i++) {
-    index = arg2F->getSparseNodeIndex(mxd, i);
-    if (index >= mddSize) break;
-    iMdd = arg1F->getFullNodeDownPtr(mdd, index);
-    expandMxdHelper(iMdd, arg2F->getSparseNodeDownPtr(mxd, i), result);
-  }
-  return resF->reduceNode(result);
-}
-
-
-int MEDDLY::postimage_mdd::sparseFull(int mdd, int mxd)
-{
-  MEDDLY_DCASSERT(arg1F->isSparseNode(mdd));
-  MEDDLY_DCASSERT(arg2F->isFullNode(mxd));
-
-  // create new node
-  int result = resF->createTempNodeMaxSize(arg1F->getNodeLevel(mdd));
-  int mddSize = arg1F->getSparseNodeSize(mdd);
-  int mxdSize = arg2F->getFullNodeSize(mxd);
-  int iMxd = 0;
-  int index = 0;
-  for (int i = 0; i < mddSize; i++) {
-    index = arg1F->getSparseNodeIndex(mdd, i);
-    if (index >= mxdSize) break;
-    iMxd = arg2F->getFullNodeDownPtr(mxd, index);
-    expandMxdHelper(arg1F->getSparseNodeDownPtr(mdd, i), iMxd, result);
-  }
-  return resF->reduceNode(result);
-}
-
-
-int MEDDLY::postimage_mdd::sparseSparse(int mdd, int mxd)
-{
-  MEDDLY_DCASSERT(arg1F->isSparseNode(mdd));
-  MEDDLY_DCASSERT(arg2F->isSparseNode(mxd));
-
-  // create new node
-  int result = resF->createTempNodeMaxSize(arg1F->getNodeLevel(mdd));
-  int mddSize = arg1F->getSparseNodeSize(mdd);
-  int mxdSize = arg2F->getSparseNodeSize(mxd);
-  int i = 0;
-  int j = 0;
-  int mddIndex = arg1F->getSparseNodeIndex(mdd, i);
-  int mxdIndex = arg2F->getSparseNodeIndex(mxd, j);
-  for ( ; i < mddSize && j < mxdSize; ) {
-    if (mxdIndex < mddIndex) {
-      ++j;
-      if (j < mxdSize) mxdIndex = arg2F->getSparseNodeIndex(mxd, j);
-    }
-    else if (mxdIndex > mddIndex) {
-      ++i;
-      if (i < mddSize) mddIndex = arg1F->getSparseNodeIndex(mdd, i);
-    }
-    else {
-      expandMxdHelper(arg1F->getSparseNodeDownPtr(mdd, i),
-          arg2F->getSparseNodeDownPtr(mxd, j), result);
-      ++i, ++j;
-      if (i < mddSize) mddIndex = arg1F->getSparseNodeIndex(mdd, i);
-      if (j < mxdSize) mxdIndex = arg2F->getSparseNodeIndex(mxd, j);
-    }
-  }
-  return resF->reduceNode(result);
-}
-
-
-int MEDDLY::postimage_mdd::expandMdd(int mdd, int mxd)
-{
-  // create new node
-  int result = resF->createTempNodeMaxSize(arg1F->getNodeLevel(mdd));
-  if (arg1F->isFullNode(mdd)) {
-    // mdd is a full node
-    int mddSize = arg1F->getFullNodeSize(mdd);
-    for (int i = 0; i < mddSize; i++) {
-      int tempResult = compute_rec(arg1F->getFullNodeDownPtr(mdd, i), mxd);
-      resF->setDownPtr(result, i, tempResult);
-      resF->unlinkNode(tempResult);
-    }
-  } else {
-    // mdd is a sparse node
-    int mddSize = arg1F->getSparseNodeSize(mdd);
-    for (int i = 0; i < mddSize; i++) {
-      int tempResult = compute_rec(arg1F->getSparseNodeDownPtr(mdd, i), mxd);
-      resF->setDownPtr(result, arg1F->getSparseNodeIndex(mdd, i), tempResult);
-      resF->unlinkNode(tempResult);
-    }
-  }
-  return resF->reduceNode(result);
-}
-
-
-int MEDDLY::postimage_mdd::expandMxd(int mdd, int mxd)
-{
-  // create new node
-  int result = resF->createTempNodeMaxSize(arg2F->getNodeLevel(mxd));
-  if (arg2F->isFullNode(mxd)) {
-    // full mxd node
-    int mxdSize = arg2F->getFullNodeSize(mxd);
-    for (int i = 0; i < mxdSize; i++) {
-      expandMxdHelper(mdd, arg2F->getFullNodeDownPtr(mxd, i), result);
-    } // for mxdSize
-  } else {
-    // sparse mxd node
-    int mxdSize = arg2F->getSparseNodeSize(mxd);
-    for (int i = 0; i < mxdSize; i++) {
-      expandMxdHelper(mdd, arg2F->getSparseNodeDownPtr(mxd, i), result);
-    } // for mxdSize
-  }
-  return resF->reduceNode(result);
-}
-
-
-void MEDDLY::postimage_mdd::expandMxdHelper(int mdd, int iMxd, int result)
-{
-  if (iMxd == 0) return;
-
-  MEDDLY_DCASSERT(unionOp != 0);
-  MEDDLY_DCASSERT(!arg2F->isTerminalNode(iMxd));
-  MEDDLY_DCASSERT(!resF->isReducedNode(result));
-
-  int tempResult = 0;
-  if (arg2F->isFullNode(iMxd)) {
-    int jResult = 0;
-    int ijMxd = 0;
-    int iMxdSize = arg2F->getFullNodeSize(iMxd);
-    for (int j = 0; j < iMxdSize; j++) {
-      ijMxd = arg2F->getFullNodeDownPtr(iMxd, j);
-      if (ijMxd == 0) continue;
-      tempResult = compute_rec(mdd, ijMxd);
-      if (tempResult == 0) continue;
-      jResult = unionOp->compute( 
-        arg1F->getFullNodeDownPtr(result, j), tempResult
-      );
-      resF->unlinkNode(tempResult);
-      resF->setDownPtr(result, j, jResult);
-      resF->unlinkNode(jResult);
-    }
-  } else {
-    // iMxd is a sparse node
-    int tempIndex = 0;
-    int iMxdSize = arg2F->getSparseNodeSize(iMxd);
-    int tempIndexResult = 0;
-    for (int j = 0; j < iMxdSize; j++) {
-      tempResult = compute_rec(mdd, arg2F->getSparseNodeDownPtr(iMxd, j));
-      if (tempResult == 0) continue;
-      tempIndex = arg2F->getSparseNodeIndex(iMxd, j);
-      tempIndexResult = unionOp->compute(
-          arg1F->getFullNodeDownPtr(result, tempIndex), tempResult
-      );
-      resF->unlinkNode(tempResult);
-      resF->setDownPtr(result, tempIndex, tempIndexResult);
-      resF->unlinkNode(tempIndexResult);
-    }
-  }
+  return saveResult(mdd, mxd, result); 
 }
 
 

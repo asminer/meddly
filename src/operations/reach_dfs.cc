@@ -26,17 +26,15 @@
 #include "../defines.h"
 #include "reach_dfs.h"
 
-#include <vector>
-#include <map>
-#include <set>
-
 // #define TRACE_RECFIRE
 // #define DEBUG_DFS
 
-#define ALT_SATURATE_HELPER
-
 namespace MEDDLY {
+  class saturation_opname;
+  class saturation_op;
+
   class common_dfs_mt;
+
   class forwd_dfs_mt;
   class bckwd_dfs_mt;
 
@@ -44,6 +42,71 @@ namespace MEDDLY {
   class bckwd_dfs_opname;
 };
 
+
+// ******************************************************************
+// *                                                                *
+// *                    saturation_opname  class                    *
+// *                                                                *
+// ******************************************************************
+
+/** Simple class to keep compute table happy.
+*/
+class MEDDLY::saturation_opname : public unary_opname {
+  static saturation_opname* instance;
+  public:
+    saturation_opname();
+
+    static const saturation_opname* getInstance();
+ 
+};
+
+MEDDLY::saturation_opname* MEDDLY::saturation_opname::instance = 0;
+
+MEDDLY::saturation_opname::saturation_opname()
+ : unary_opname("Saturate")
+{
+}
+
+const MEDDLY::saturation_opname* MEDDLY::saturation_opname::getInstance()
+{
+  if (0==instance) instance = new saturation_opname;
+  return instance;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                      saturation_op  class                      *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::saturation_op : public unary_operation {
+    common_dfs_mt* parent;
+  public:
+    saturation_op(common_dfs_mt* p, expert_forest* argF, expert_forest* resF);
+    virtual ~saturation_op();
+
+    int saturate(int mdd);
+
+    virtual bool isStaleEntry(const int* entryData);
+    virtual void discardEntry(const int* entryData);
+    virtual void showEntry(FILE* strm, const int* entryData) const;
+
+  protected:
+    inline bool findSaturateResult(int a, int& b) {
+      CTsrch.key(0) = a;
+      const int* cacheFind = CT->find(CTsrch);
+      if (0==cacheFind) return false;
+      b = resF->linkNode(cacheFind[2]);
+      return true;
+    }
+    inline int saveSaturateResult(int a, int b) {
+      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      entry.key(0) = argF->cacheNode(a);
+      entry.result(0) = resF->cacheNode(b);
+      CT->addEntry();
+      return b;
+    }
+};
 
 // ******************************************************************
 // *                                                                *
@@ -60,7 +123,7 @@ class MEDDLY::common_dfs_mt : public binary_operation {
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int* entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
-    virtual int compute(int a, int b) = 0;
+    virtual void saturateHelper(node_builder& mdd) = 0;
 
   protected:
     inline bool findResult(int a, int b, int &c) {
@@ -79,12 +142,208 @@ class MEDDLY::common_dfs_mt : public binary_operation {
       CT->addEntry();
       return c;
     }
+    void splitMxd(int mxd);
+
+  protected:
+    int* splits;
+    binary_operation* mddUnion;
+    binary_operation* mxdIntersection;
+    binary_operation* mxdDifference;
+
+  protected:
+    class indexq {
+        static const int NULPTR = -1;
+        static const int NOTINQ = -2;
+        int* data;
+        int size;
+        int head;
+        int tail;
+      public:
+        // used by parent for recycling
+        indexq* next;
+      public:
+        indexq();
+        ~indexq();
+        void resize(int sz);
+        inline bool isEmpty() const {
+          return NULPTR == head;
+        }
+        inline void add(int i) {
+          MEDDLY_CHECK_RANGE(0, i, size);
+          if (NOTINQ != data[i]) return;
+          if (NULPTR == head) {
+            // empty list
+            head = i;
+          } else {
+            // not empty list
+            MEDDLY_CHECK_RANGE(0, tail, size);
+            data[tail] = i;
+          }
+          tail = i;
+          data[i] = NULPTR;
+        }
+        inline int remove() {
+          MEDDLY_CHECK_RANGE(0, head, size);
+          int ans = head;
+          head = data[head];
+          data[ans] = NOTINQ;
+          MEDDLY_CHECK_RANGE(0, ans, size);
+          return ans;
+        }
+    };
+
+  protected:
+    class charbuf {
+      public:
+        char* data;
+        int size;
+        charbuf* next;
+      public:
+        charbuf();
+        ~charbuf();
+        void resize(int sz);
+    };
+
+  private:
+    indexq* freeqs;
+    charbuf* freebufs;
+
+  protected:
+    inline indexq* useIndexQueue(int sz) {
+      indexq* ans;
+      if (freeqs) {
+        ans = freeqs;
+        freeqs = freeqs->next;
+      } else {
+        ans = new indexq();
+      }
+      MEDDLY_DCASSERT(ans);
+      ans->resize(sz);
+      ans->next = 0;
+      return ans;
+    }
+    inline void recycle(indexq* a) {
+      MEDDLY_DCASSERT(a);
+      MEDDLY_DCASSERT(a->isEmpty());
+      a->next = freeqs;
+      freeqs = a;
+    }
+
+    inline charbuf* useCharBuf(int sz) {
+      charbuf* ans;
+      if (freebufs) {
+        ans = freebufs;
+        freebufs = freebufs->next;
+      } else {
+        ans = new charbuf();
+      }
+      MEDDLY_DCASSERT(ans);
+      ans->resize(sz);
+      ans->next = 0;
+      return ans;
+    }
+    inline void recycle(charbuf* a) {
+      MEDDLY_DCASSERT(a);
+      a->next = freebufs;
+      freebufs = a;
+    }
 };
+
+// ******************************************************************
+// *                                                                *
+// *                     saturation_op  methods                     *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::saturation_op
+::saturation_op(common_dfs_mt* p, expert_forest* argF, expert_forest* resF)
+  : unary_operation(saturation_opname::getInstance(), 1, 1, argF, resF)
+{
+  parent = p;
+}
+
+MEDDLY::saturation_op::~saturation_op()
+{
+}
+
+int MEDDLY::saturation_op::saturate(int mdd)
+{
+#ifdef DEBUG_DFS
+  printf("mdd: %d\n", mdd);
+#endif
+
+  // MEDDLY_DCASSERT(argF->isReducedNode(mdd));
+
+  // terminal condition for recursion
+  if (argF->isTerminalNode(mdd)) return mdd;
+
+  // search compute table
+  int n = 0;
+  if (findSaturateResult(mdd, n)) {
+    resF->linkNode(n);
+    return n;
+  }
+
+  int k = argF->getNodeLevel(mdd);      // level
+  int sz = argF->getLevelSize(k);       // size
+
+#ifdef DEBUG_DFS
+  printf("mdd: %d, level: %d, size: %d\n", mdd, k, sz);
+#endif
+
+  node_builder& nb = resF->useNodeBuilder(k, sz);
+  node_reader* mddDptrs = argF->initNodeReader(mdd, true);
+  for (int i=0; i<sz; i++) {
+    nb.d(i) = mddDptrs->d(i) ? saturate(mddDptrs->d(i)) : 0;
+  }
+  node_reader::recycle(mddDptrs);
+  parent->saturateHelper(nb);
+  n = resF->createReducedNode(-1, nb);
+
+  // save in compute table
+  saveSaturateResult(mdd, n);
+
+#ifdef DEBUG_DFS
+  resF->showNodeGraph(stdout, n);
+#endif
+
+  return n;
+}
+
+bool MEDDLY::saturation_op::isStaleEntry(const int* data)
+{
+  return argF->isStale(data[0]) ||
+         resF->isStale(data[1]);
+}
+
+void MEDDLY::saturation_op::discardEntry(const int* data)
+{
+  argF->uncacheNode(data[0]);
+  resF->uncacheNode(data[1]);
+}
+
+void MEDDLY::saturation_op::showEntry(FILE* strm, const int* data) const
+{
+  fprintf(strm, "[%s(%d): %d]", getName(), data[0], data[1]);
+}
+
+
+// ******************************************************************
+// *                                                                *
+// *                     common_dfs_mt  methods                     *
+// *                                                                *
+// ******************************************************************
 
 MEDDLY::common_dfs_mt::common_dfs_mt(const binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res)
 : binary_operation(oc, 2, 1, a1, a2, res)
 {
+  splits = 0;
+  binary_operation* mddUnion = 0;
+  binary_operation* mxdIntersection = 0;
+  binary_operation* mxdDifference = 0;
+  freeqs = 0;
+  freebufs = 0;
 }
 
 bool MEDDLY::common_dfs_mt::isStaleEntry(const int* data)
@@ -109,10 +368,156 @@ void MEDDLY::common_dfs_mt::showEntry(FILE* strm, const int* data) const
 void MEDDLY::common_dfs_mt
 ::compute(const dd_edge &a, const dd_edge &b, dd_edge &c)
 {
-  int cnode = compute(a.getNode(), b.getNode());
+  // Initialize operations
+  mddUnion = getOperation(UNION, resF, resF, resF);
+  MEDDLY_DCASSERT(mddUnion);
+
+  mxdIntersection = getOperation(INTERSECTION, arg2F, arg2F, arg2F);
+  MEDDLY_DCASSERT(mxdIntersection);
+
+  mxdDifference = getOperation(DIFFERENCE, arg2F, arg2F, arg2F);
+  MEDDLY_DCASSERT(mxdDifference);
+
+  // Partition NSF by levels
+  splitMxd(b.getNode());
+
+  // Execute saturation operation
+  saturation_op *so = new saturation_op(this, arg1F, resF);
+  int cnode = so->saturate(a.getNode());
   c.set(cnode, 0, resF->getNodeLevel(cnode));
+
+  // Cleanup
+  while (freeqs) {
+    indexq* t = freeqs;
+    freeqs = t->next;
+    delete t;
+  }
+  while (freebufs) {
+    charbuf* t = freebufs;
+    freebufs = t->next;
+    delete t;
+  }
+  so->removeAllComputeTableEntries();
+  for (int i = arg2F->getNumVariables(); i; i--) arg2F->unlinkNode(splits[i]);
+  delete[] splits;
+  splits = 0;
+  delete so;
 }
 
+// Partition the nsf based on "top level"
+void MEDDLY::common_dfs_mt::splitMxd(int mxd)
+{
+  MEDDLY_DCASSERT(arg2F);
+  MEDDLY_DCASSERT(0==splits);
+  splits = new int[arg2F->getNumVariables()+1];
+  splits[0] = 0;
+
+  // we'll be unlinking later, so...
+  arg2F->linkNode(mxd);
+
+  // Build from top down
+  for (int level = arg2F->getNumVariables(); level; level--) {
+
+    if (0==mxd) {
+      // common and easy special case
+      splits[level] = 0;
+      continue;
+    }
+
+    int mxdLevel = arg2F->getNodeLevel(mxd);
+    MEDDLY_DCASSERT(ABS(mxdLevel <= level));
+
+    // Initialize readers
+    node_reader* Mu = isLevelAbove(level, mxdLevel)
+      ? arg2F->initRedundantReader(level, mxd, true)
+      : arg2F->initNodeReader(mxd, true);
+    node_reader* Mp = node_reader::useReader();
+
+    bool first = true;
+    int maxDiag;
+
+    // Read "rows"
+    for (int i=0; i<Mu->getSize(); i++) {
+      // Initialize column reader
+      int mxdPLevel = arg2F->getNodeLevel(Mu->d(i));
+      if (isLevelAbove(-level, mxdPLevel)) {
+        arg2F->initIdentityReader(*Mp, -level, i, Mu->d(i), true);
+      } else {
+        arg2F->initNodeReader(*Mp, Mu->d(i), true);
+      }
+
+      // Intersect along the diagonal
+      if (first) {
+        maxDiag = arg2F->linkNode(Mp->d(i));
+        first = false;
+      } else {
+        int nmd = mxdIntersection->compute(maxDiag, Mp->d(i));
+        arg2F->unlinkNode(maxDiag);
+        maxDiag = nmd;
+      }
+
+      // cleanup
+    } // for i
+
+    // maxDiag is what we can split from here
+    splits[level] = mxdDifference->compute(mxd, maxDiag);
+    arg2F->unlinkNode(mxd);
+    mxd = maxDiag;
+
+    // Cleanup
+    node_reader::recycle(Mp);
+    node_reader::recycle(Mu);
+  } // for level
+}
+
+// ******************************************************************
+// *                 common_dfs_mt::indexq  methods                 *
+// ******************************************************************
+
+MEDDLY::common_dfs_mt::indexq::indexq()
+{
+  data = 0;
+  size = 0;
+  head = NULPTR;
+}
+
+MEDDLY::common_dfs_mt::indexq::~indexq()
+{
+  free(data);
+}
+
+void MEDDLY::common_dfs_mt::indexq::resize(int sz)
+{
+  if (sz <= size) return;
+  data = (int*) realloc(data, sz * sizeof(int));
+  if (0==data)
+    throw error(error::INSUFFICIENT_MEMORY);
+
+  for (; size < sz; size++) data[size] = NOTINQ;
+}
+
+// ******************************************************************
+// *                 common_dfs_mt::charbuf methods                 *
+// ******************************************************************
+
+MEDDLY::common_dfs_mt::charbuf::charbuf()
+{
+  data = 0;
+  size = 0;
+}
+
+MEDDLY::common_dfs_mt::charbuf::~charbuf()
+{
+  free(data);
+}
+
+void MEDDLY::common_dfs_mt::charbuf::resize(int sz)
+{
+  if (sz <= size) return;
+  data = (char*) realloc(data, sz * sizeof(char));
+  if (0==data)
+    throw error(error::INSUFFICIENT_MEMORY);
+}
 
 // ******************************************************************
 // *                                                                *
@@ -125,856 +530,79 @@ class MEDDLY::forwd_dfs_mt : public common_dfs_mt {
     forwd_dfs_mt(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
   protected:
-    virtual int compute(int a, int b);
-
-    virtual void initialize();
-    virtual void clear();
-    virtual void clearSplitMxdComputeTableEntries();
-
-    virtual void splitMxd(int mxd);
-    virtual int saturate(int mdd);
-#ifndef ALT_SATURATE_HELPER
-    virtual void saturateHelper(int mddLevel, std::vector<int>& mdd);
-    virtual int recFire(int mdd, int mxd);
-#else
-    void saturateHelper(int mdd);
+    virtual void saturateHelper(node_builder& mdd);
     int recFire(int mdd, int mxd);
-
-    void recFireExpandMdd(int mdd, int mxd, int& result);
-    void recFireExpandMxd(int mdd, int mxd, int& result);
-    void recFireExpand(int mdd, int mxd, int& result);
-
-#endif
-
-    bool getMxdAsVec(int mxd, int**& vec, int& size);
-
-    // Helper for getMxdAsVec().
-    // Use getMxd(0, 0, true) to clear the static arrays in getMxd().
-    int** getMatrix(unsigned nodeLevel, unsigned size, bool clear);
-
-
-    inline int getMddUnion(int a, int b) {
-      MEDDLY_DCASSERT(resF->isTerminalNode(a) || resF->isReducedNode(a));
-      MEDDLY_DCASSERT(resF->isTerminalNode(b) || resF->isReducedNode(b));
-      MEDDLY_DCASSERT(mddUnion);
-      return mddUnion->compute(a, b);
-    };
-    inline int getMxdIntersection(int a, int b) {
-      MEDDLY_DCASSERT(arg2F->isTerminalNode(a) || arg2F->isReducedNode(a));
-      MEDDLY_DCASSERT(arg2F->isTerminalNode(b) || arg2F->isReducedNode(b));
-      MEDDLY_DCASSERT(mxdIntersection);
-      return mxdIntersection->compute(a, b);
-    }
-    inline int getMxdDifference(int a, int b) {
-      MEDDLY_DCASSERT(arg2F->isTerminalNode(a) || arg2F->isReducedNode(a));
-      MEDDLY_DCASSERT(arg2F->isTerminalNode(b) || arg2F->isReducedNode(b));
-      MEDDLY_DCASSERT(mxdDifference);
-      return mxdDifference->compute(a, b);
-    }
-
-    inline bool findSaturateResult(int a, int& b) {
-      std::map<int, int>::iterator iter = saturateCT.find(a);
-      if (iter == saturateCT.end()) return false;
-      if (resF->isStale(iter->second)) {
-        arg1F->uncacheNode(iter->first);
-        resF->uncacheNode(iter->second);
-        saturateCT.erase(iter);
-        return false;
-      }
-      b = iter->second;
-      return true;
-    }
-    inline void saveSaturateResult(int a, int b) {
-      MEDDLY_DCASSERT(! findSaturateResult(a, b));
-      saturateCT[a] = b;
-      arg1F->cacheNode(a);
-      resF->cacheNode(b);
-    }
-    inline void clearSaturateCT() {
-      std::map<int, int>::iterator iter = saturateCT.begin();
-      std::map<int, int>::iterator end = saturateCT.end();
-      while (iter != end) {
-        arg1F->uncacheNode(iter->first);
-        resF->uncacheNode(iter->second);
-        saturateCT.erase(iter++);
-      }
-    }
-
-  protected:
-
-    expert_domain* ed;            // domain
-
-    // Next-state function is split and stored here (see Saturation algorithm).
-    std::vector<int> splits;
-
-    // scratch.size () == number of variable handles in the domain
-    // scratch[level_handle].size() == level_bound(level_handle)
-    int**             scratch0;
-    int**             scratch1;
-    int**             scratch2;
-    int               scratchSize;
-
-    binary_operation* mddUnion;
-    binary_operation* mxdIntersection;
-    binary_operation* mxdDifference;
-
-    std::map<int, int>  saturateCT;
 };
 
 MEDDLY::forwd_dfs_mt::forwd_dfs_mt(const binary_opname* opcode, 
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-  : common_dfs_mt(opcode, arg1, arg2, res), 
-    scratch0(0), scratch1(0), scratch2(0), scratchSize(0)
+  : common_dfs_mt(opcode, arg1, arg2, res)
 {
 }
 
-int MEDDLY::forwd_dfs_mt::compute(int mdd, int mxd)
+void MEDDLY::forwd_dfs_mt::saturateHelper(node_builder& nb)
 {
-  // Initialize class members and helper operations
-  initialize();
-
-  // Depth-first reachability analysis (Saturation)
-
-#ifdef DEBUG_DFS
-  printf("Consolidated Next-State Function:\n");
-  arg2F->showNodeGraph(stdout, mxd);
-  printf("\n");
-
-  printf("Initial State:\n");
-  arg1F->showNodeGraph(stdout, mdd);
-  printf("\n");
-#endif
-
-  // Split the next-state function: each level has its own next-state function
-  // The nsf is stored into the vector splits
-  splitMxd(mxd);
-  
-  // Clear the splitMxd() related compute table entries
-  clearSplitMxdComputeTableEntries();
-
-#ifdef DEBUG_DFS
-  printf("Split Next-State Function:\n");
-  for (int i = splits.size() - 1; i >= 0; i--)
-  {
-    printf("Level %d, Node %d\n", i, splits[i]);
-    arg2F->showNodeGraph(stdout, splits[i]);
-    printf("\n");
-  }
-
-  fflush(stdout);
-#endif
-
-#ifdef DEBUG_SPLITS
-  for (unsigned i = 0; i < splits.size(); i++) {
-    fprintf(stdout, "# of nodes in the next-state function: %1.6e\n",
-        double(arg2F->getNodeCount(splits[i])));
-  }
-
-  for (unsigned i = 0; i < splits.size(); i++) {
-    fprintf(stdout, "# of edges in the next-state function: %1.6e\n",
-        double(arg2F->getEdgeCount(splits[i], false)));
-  }
-#endif
-
-  // Saturate the node
-  int result = saturate(mdd);
-
-  // clear pointers to dd nodes, class members and operation pointers
-  clear();
-
-  return result;
-}
-
-void MEDDLY::forwd_dfs_mt::initialize()
-{
-  // set up aliases
-  ed = smart_cast<expert_domain*>(resF->useDomain());
-  assert(ed != 0);
-
-  // set up mdd operation: union
-  mddUnion = getOperation(UNION, resF, resF, resF);
-  assert(mddUnion != 0);
-
-  // set up mxd operations: intersection and difference
-  mxdIntersection = getOperation(INTERSECTION, arg2F, arg2F, arg2F);
-  assert(mxdIntersection != 0);
-
-  mxdDifference = getOperation(DIFFERENCE, arg2F, arg2F, arg2F);
-  assert(mxdDifference != 0);
-
-  // Intialize the scratch 2-D vector (i.e. make it the correct size)
-  int nLevels = ed->getNumVariables() + 1;
-
-  // Initialize the splits vector
-  splits.resize(nLevels, 0);
-
-  // Initialize the scratch arrays to be used during saturation.
-  assert(scratchSize == 0);
-  assert(scratch0 == 0);
-  assert(scratch1 == 0);
-  assert(scratch2 == 0);
-  scratchSize = nLevels;
-  scratch0 = (int**) malloc(scratchSize * sizeof(int*));
-  scratch1 = (int**) malloc(scratchSize * sizeof(int*));
-  scratch2 = (int**) malloc(scratchSize * sizeof(int*));
-  memset(scratch0, 0, scratchSize * sizeof(int*));
-  memset(scratch1, 0, scratchSize * sizeof(int*));
-  memset(scratch2, 0, scratchSize * sizeof(int*));
-  for (unsigned height = ed->getNumVariables(); height > 0; --height)
-  {
-    int sz = ed->getVariableBound(height);
-    assert(height < scratchSize);
-    scratch0[height] = (int*) malloc(sz * sizeof(int));
-    scratch1[height] = (int*) malloc(sz * sizeof(int));
-    scratch2[height] = (int*) malloc(sz * sizeof(int));
-    memset(scratch0[height], 0, sz * sizeof(int));
-    memset(scratch1[height], 0, sz * sizeof(int));
-    memset(scratch2[height], 0, sz * sizeof(int));
-  }
-}
-
-void MEDDLY::forwd_dfs_mt::clear()
-{
-  clearSplitMxdComputeTableEntries();
-
-  // Clear compute table for saturate()
-  // (not the same as the one used by recFire)
-  clearSaturateCT();
-
-  // Clear compute table for recFire()
-  removeAllComputeTableEntries();
-
-  // Clear mdd union compute table entries
-  if (mddUnion) mddUnion->removeAllComputeTableEntries();
-
-  // clear pointer to dd nodes
-  for (unsigned i = 0u; i < splits.size(); i++) arg2F->unlinkNode(splits[i]);
-
-  // clear class members and pointers to operations
-  splits.clear();
-  if (scratchSize > 0) {
-    for (int i = 0; i < scratchSize; i++)
-    {
-      if (scratch0[i]) free(scratch0[i]);
-      if (scratch1[i]) free(scratch1[i]);
-      if (scratch2[i]) free(scratch2[i]);
-    }
-    if (scratch0) { free(scratch0); scratch0 = 0; }
-    if (scratch1) { free(scratch1); scratch1 = 0; }
-    if (scratch2) { free(scratch2); scratch2 = 0; }
-    scratchSize = 0;
-  }
-  ed = 0;
-  mddUnion = 0;
-  mxdIntersection = 0;
-  mxdDifference = 0;
-
-  // Clear the memory allocated within getMatrix()'s static vectors.
-  getMatrix(0, 0, true);
-}
-
-void MEDDLY::forwd_dfs_mt::clearSplitMxdComputeTableEntries()
-{
-  if (mxdIntersection)
-    mxdIntersection->removeAllComputeTableEntries();
-  if (mxdDifference)
-    mxdDifference->removeAllComputeTableEntries();
-}
-
-// split is used to split a mxd for the saturation algorithm
-void MEDDLY::forwd_dfs_mt::splitMxd(int mxd)
-{
-#if 0
-  arg2F->linkNode(mxd);
-  splits[arg2F->getNodeLevel(mxd)] = mxd;
-#else
-  MEDDLY_DCASSERT(arg2F != 0);
-
-  int falseNode = arg2F->getTerminalNode(false);
-  int trueNode = arg2F->getTerminalNode(true);
-
-  // find intersection for all mxd[i][i]
-  // -- if mxd is smaller than max level size, then some mxd[i] is zero,
-  //    therefore intersection is 0.
-  //    -- if node is sparse, then there is some mxd[i] = 0,
-  //       therefore intersection is 0.
-  //    -- if node is full, if size < max level size, intersection is 0.
-  // 
-  // if intersection == 0, add mxd to level_mxd[level], return.
-  // otherwise, 
-  // -- create mxdSize nodes at primed level with a copy of corresponding
-  //    mxd[i].
-  // -- for each new_mxd[i][i],
-  //    -- mxd[i][i] = mxd[i][i] - intersection 
-  // -- set new_mxd[i] after reducing the primed level nodes
-  //    note that new_mxd will never be 0 since mxd is not an identity node
-  //
-  // add new_mxd to level_mxd[level]
-  // 
-  // repeat the above for intersection
-  //
-  int level = 0;
-  int intersection = falseNode;
-  int mxdSize = 0;
-  int mxdI = falseNode;
-
-  arg2F->linkNode(mxd);
-
-  while (!arg2F->isTerminalNode(mxd)) {
-    level = arg2F->getNodeLevel(mxd);
-    MEDDLY_DCASSERT(level > 0); // we only deal with unprimed levels
-
-    // Find intersection for all mxd[i][i]
-    // Note: only do this if mxd is a full node; when it is sparse, some
-    // mxd[i] is 0 therefore the intersection will always be 0 (falseNode).
-    intersection = falseNode;
-    if (arg2F->isFullNode(mxd)) {
-      mxdSize = arg2F->getFullNodeSize(mxd);
-      if (mxdSize == arg2F->getLevelSize(level)) {
-        // for all i, mxd[i] != 0
-        intersection = trueNode;
-        bool first = true;
-        for (int i = 0; i < mxdSize && intersection != falseNode; ++i)
-        {
-          mxdI = arg2F->getFullNodeDownPtr(mxd, i);
-
-          // If any mxd[i] is a terminal (according to Identity Reduced rules)
-          // it must be node 0, and mxd[i][i] is also 0. Therefore,
-          // the intersection is 0. So check for this condition, and break
-          // out of the loop it true.
-
-          // if mxdI is a terminal node it must be a 0 (falseNode)
-          MEDDLY_DCASSERT((arg2F->isTerminalNode(mxdI) && mxdI == falseNode) ||
-              !arg2F->isTerminalNode(mxdI));
-
-          int mxdII = falseNode;
-
-          if (!arg2F->isTerminalNode(mxdI)) {
-            if (arg2F->isFullNode(mxdI)) {
-              if (arg2F->getFullNodeSize(mxdI) > i)
-                mxdII = arg2F->getFullNodeDownPtr(mxdI, i);
-            } else {
-              MEDDLY_DCASSERT(arg2F->isSparseNode(mxdI));
-              // search for ith index
-              int found = -1;
-              int mxdINnz = arg2F->getSparseNodeSize(mxdI);
-
-              if (mxdINnz > 8) {
-                // binary search
-                int start = 0;
-                int stop = mxdINnz - 1;
-
-                while (start < stop) {
-                  int mid = (start + stop) / 2;
-                  int midIndex = arg2F->getSparseNodeIndex(mxdI, mid);
-                  if (midIndex < i) {
-                    start = (mid == start)? mid + 1: mid;
-                  } else {
-                    stop = mid;
-                  }
-                }
-
-                assert(start == stop);
-                if (arg2F->getSparseNodeIndex(mxdI, start) == i) {
-                  found = start;
-                }
-              }
-              else {
-                // linear search
-                for (int j = 0; j < mxdINnz; ++j)
-                {
-                  if (arg2F->getSparseNodeIndex(mxdI, j) == i) {
-                    found = j;
-                    break;
-                  }
-                }
-              }
-
-              if (found != -1)
-                mxdII = arg2F->getSparseNodeDownPtr(mxdI, found);
-            }
-          }
-
-          if (!first) {
-            int temp = getMxdIntersection(intersection, mxdII);
-            arg2F->unlinkNode(intersection);
-            intersection = temp;
-          } else {
-            first = false;
-            arg2F->linkNode(mxdII);
-            arg2F->unlinkNode(intersection);
-            intersection = mxdII;
-          }
-
-#ifdef DEBUG_DFS
-          printf("intersection: %d level: %d\n",
-              intersection, arg2F->getNodeLevel(intersection));
-#endif
-        }
-      }
-    }
-
-    MEDDLY_DCASSERT(splits[level] == falseNode);
-
-    MEDDLY_DCASSERT(intersection == falseNode ||
-        arg2F->getNodeLevel(mxd) > arg2F->getNodeLevel(intersection));
-
-    if (intersection != falseNode) {
-      splits[level] = getMxdDifference(mxd, intersection);
-        // mxdDifference->compute(mxdDifferenceOp, mxd, intersection);
-    } else {
-      splits[level] = mxd;
-      arg2F->linkNode(mxd);
-    }
-
-    // intersection becomes the mxd for the next iteration
-    arg2F->unlinkNode(mxd);
-    mxd = intersection;
-  }
-
-  MEDDLY_DCASSERT(arg2F->isTerminalNode(mxd));
-  arg2F->unlinkNode(mxd);
-#endif
-}
-
-int MEDDLY::forwd_dfs_mt::saturate(int mdd)
-{
-#ifdef DEBUG_DFS
-  printf("mdd: %d\n", mdd);
-#endif
-
-  // how does saturateHelper get called?
-  // bottom-up i.e. call helper on children before calling helper for parent
-
-  MEDDLY_DCASSERT(arg1F->isReducedNode(mdd));
-
-  // terminal condition for recursion
-  if (arg1F->isTerminalNode(mdd)) return mdd;
-
-  // search compute table
-  int n = 0;
-  if (findSaturateResult(mdd, n)) {
-    resF->linkNode(n);
-    return n;
-  }
-
-  int k = arg1F->getNodeLevel(mdd);      // level
-  int sz = arg1F->getLevelSize(k);       // size
-
-#ifdef DEBUG_DFS
-  printf("mdd: %d, level: %d, size: %d\n", mdd, k, sz);
-#endif
-
-#ifndef ALT_SATURATE_HELPER
-  std::vector<int> nDptrs(sz, 0);
-  assert(arg1F->getDownPtrs(mdd, nDptrs));
-  for (std::vector<int>::iterator iter = nDptrs.begin();
-      iter != nDptrs.end(); ++iter) {
-    if (*iter) *iter = saturate(*iter);
-  }
-  saturateHelper(k, nDptrs);
-  n = resF->reduceNode(resF->createTempNode(k, nDptrs));
-#else
-  n = resF->createTempNode(k, sz, true);
-  int * nDptrs = 0;
-  assert(resF->getDownPtrs(n, nDptrs));
-  const int* mddDptrs = 0;
-  assert(arg1F->getDownPtrs(mdd, mddDptrs));
-
-  if (arg1F->isFullNode(mdd)) {
-    int mddSize = arg1F->getFullNodeSize(mdd);
-    for (int i = 0; i < mddSize; ++i) {
-      if (mddDptrs[i]) nDptrs[i] = saturate(mddDptrs[i]);
-    }
-  }
-  else {
-    int mddNDptrs = arg1F->getSparseNodeSize(mdd);
-    const int* mddIndexes = 0;
-    assert(arg1F->getSparseNodeIndexes(mdd, mddIndexes));
-    for (int i = 0; i < mddNDptrs; ++i) {
-      MEDDLY_DCASSERT(mddDptrs[i]);
-      nDptrs[mddIndexes[i]] = saturate(mddDptrs[i]);
-    }
-  }
-
-  // call saturateHelper for n
-#ifdef DEBUG_DFS
-  printf("Calling saturate: level %d\n", k);
-#endif
-
-  saturateHelper(n);
-
-  // reduce and return
-  n = resF->reduceNode(n);
-#endif
-
-  // save in compute table
-  saveSaturateResult(mdd, n);
-
-#ifdef DEBUG_DFS
-  resF->showNodeGraph(stdout, n);
-#endif
-
-  return n;
-}
-
-#ifndef ALT_SATURATE_HELPER
-
-// ----------------------------------------------------
-//
-//    Vector-based implementation -- works but slow
-//
-// ----------------------------------------------------
-
-void MEDDLY::forwd_dfs_mt::saturateHelper(int mddLevel, std::vector<int>& mdd)
-{
-  MEDDLY_DCASSERT(unsigned(resF->getLevelSize(mddLevel)) == mdd.size());
-
-  int mxd = splits[mddLevel];
-  if (arg2F->isTerminalNode(mxd)) return;
-
-  std::vector<int> mxdDptrs;
-  if (!arg2F->getDownPtrs(mxd, mxdDptrs)) return;
-
-  // Get hold of the arrays for this level
-  int levelSize = resF->getLevelSize(mddLevel);
-  int* curr = scratch1[mddLevel];
-  int* next = scratch2[mddLevel];
-  assert(unsigned(levelSize) == mdd.size());
-  for (int i = 0; i < levelSize; i) next[i++] = 1;
-
-  bool repeat = true;
-  while (repeat)
-  {
-    int* temp = curr;
-    curr = next;
-    next = temp;
-    memset(next, 0, levelSize * sizeof(int));
-
-    // for each mxd[i1 != 0
-    for (unsigned i = 0u; i < mxdDptrs.size(); i++)
-    {
-      if (mxdDptrs[i] == 0 || mdd[i] == 0 || curr[i] == 0) continue;
-      MEDDLY_DCASSERT(!arg2F->isTerminalNode(mxdDptrs[i]));
-
-      // Breaking it up into two cases (a) mxd[i] is full, or (b) sparse.
-      const int* mxdIDptrs = 0;
-      assert(arg2F->getDownPtrs(mxdDptrs[i], mxdIDptrs));
-
-      if (arg2F->isFullNode(mxdDptrs[i])) {
-        // Full node
-        unsigned mxdISize = arg2F->getFullNodeSize(mxdDptrs[i]);
-        // For each mxd[i][j] != 0
-        for (unsigned j = 0; j < mxdISize; j++)
-        {
-          if (mxdIDptrs[j] != 0) {
-            int f = recFire(mdd[i], mxdIDptrs[j]);
-            if (f != 0) {
-              int u = getMddUnion(mdd[j], f);
-              resF->unlinkNode(f);
-              if (u != mdd[j]) {
-                // update mdd[j] and mark for next iteration
-                resF->unlinkNode(mdd[j]);
-                mdd[j] = u;
-                next[j] = 1;
-              }
-              else {
-                resF->unlinkNode(u);
-              }
-            }
-          }
-        }
-      }
-      else {
-        // Sparse node
-        unsigned mxdISize = arg2F->getSparseNodeSize(mxdDptrs[i]);
-        const int* mxdIIptrs = 0;
-        assert(arg2F->getSparseNodeIndexes(mxdDptrs[i], mxdIIptrs));
-        // For each mxd[i][j] != 0
-        for (int k = 0; k < mxdISize; k++)
-        {
-          MEDDLY_DCASSERT(0 != mxdIDptrs[k]);
-          int f = recFire(mdd[i], mxdIDptrs[k]);
-          if (f != 0) {
-            unsigned j = mxdIIptrs[k];
-            int u = getMddUnion(mdd[j], f);
-            resF->unlinkNode(f);
-            if (u != mdd[j]) {
-              // Update mdd[j] and mark for next iteration
-              resF->unlinkNode(mdd[j]);
-              mdd[j] = u;
-              next[j] = 1;
-            }
-            else {
-              resF->unlinkNode(u);
-            }
-          }
-        }
-      }
-    }
-
-    // Check if the loop should repeat.
-    repeat = false;
-    int* nextEnd = next + levelSize;
-    for (int* iter = next; iter != nextEnd; )
-    {
-      if (*iter++ != 0) {
-        repeat = true;
-        break;
-      }
-    }
-  }
-}
-
-
-int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
-{
-  MEDDLY_DCASSERT(resF->isReducedNode(mdd));
-  MEDDLY_DCASSERT(arg2F->isReducedNode(mxd));
-
-  if (mxd == -1) {
-    resF->linkNode(mdd);
-    return mdd;
-  }
-  if (mxd == 0 || mdd == 0) return 0;
-
-  int result = 0;
-  if (findResult(owner, mdd, mxd, result)) {
-    return result;
-  }
-
-  int mxdHeight = arg2F->getNodeHeight(mxd);
-  int mddHeight = resF->getNodeHeight(mdd);
-  int nodeHeight = MAX(mxdHeight, mddHeight);
-  int newSize = resF->getLevelSize(nodeHeight);
-  std::vector<int> node(newSize, 0);
-
-  if (mxdHeight < mddHeight) {
-    std::vector<int> mddDptrs;
-    resF->getDownPtrs(mdd, mddDptrs);
-    for (unsigned i = 0; i < mddDptrs.size(); i++)
-    {
-      if (mddDptrs[i] != 0) node[i] = recFire(mddDptrs[i], mxd);
-    }
-  } else if (mxdHeight > mddHeight) {
-    std::vector<int> mxdIDptrs;
-    std::vector<int> mxdDptrs;
-    arg2F->getDownPtrs(mxd, mxdDptrs);
-    for (unsigned i = 0; i < mxdDptrs.size(); i++)
-    {
-      if (mxdDptrs[i] == 0) continue;
-
-#ifdef USE_GET_VECTOR_DOWN_POINTERS
-      unsigned mxdISize = getNodeSize(arg2F, mxdDptrs[i]);
-      clearVector(mxdIDptrs, mxdISize);
-      if (!arg2F->getDownPtrs(mxdDptrs[i], mxdIDptrs)) continue;
-      assert(mxdISize <= mxdIDptrs.size());
-
-      for (unsigned j = 0; j < mxdISize; j++)
-      {
-        if (mxdIDptrs[j] == 0) continue;
-        int f = recFire(mdd, mxdIDptrs[j]);
-        if (f == 0) continue;
-        int u = getMddUnion(node[j], f);
-        resF->unlinkNode(f);
-        resF->unlinkNode(node[j]);
-        node[j] = u;
-      }
-#else
-      // Breaking it up into two cases (a) mxd[i] is full, or (b) sparse.
-      const int* mxdIDptrs = 0;
-      assert(arg2F->getDownPtrs(mxdDptrs[i], mxdIDptrs));
-
-      if (arg2F->isFullNode(mxdDptrs[i])) {
-        // Full node
-        unsigned mxdISize = arg2F->getFullNodeSize(mxdDptrs[i]);
-        for (unsigned j = 0; j < mxdISize; j++)
-        {
-          if (mxdIDptrs[j] != 0) {
-            int f = recFire(mdd, mxdIDptrs[j]);
-            if (f != 0) {
-              int u = getMddUnion(node[j], f);
-              resF->unlinkNode(f);
-              resF->unlinkNode(node[j]);
-              node[j] = u;
-            }
-          }
-        }
-      }
-      else {
-        // Sparse node
-        unsigned mxdISize = arg2F->getSparseNodeSize(mxdDptrs[i]);
-        const int* mxdIIptrs = 0;
-        assert(arg2F->getSparseNodeIndexes(mxdDptrs[i], mxdIIptrs));
-        for (int k = 0; k < mxdISize; k++)
-        {
-          MEDDLY_DCASSERT(0 != mxdIDptrs[k]);
-          int f = recFire(mdd, mxdIDptrs[k]);
-          if (f != 0) {
-            unsigned j = mxdIIptrs[k];
-            int u = getMddUnion(node[j], f);
-            resF->unlinkNode(f);
-            resF->unlinkNode(node[j]);
-            node[j] = u;
-          }
-        }
-      }
-#endif
-    }
-  } else {
-    MEDDLY_DCASSERT(mxdHeight == mddHeight);
-    std::vector<int> mddDptrs;
-    std::vector<int> mxdDptrs;
-    std::vector<int> mxdIDptrs;
-    resF->getDownPtrs(mdd, mddDptrs);
-    arg2F->getDownPtrs(mxd, mxdDptrs);
-    unsigned min = MIN(mddDptrs.size(), mxdDptrs.size());
-    for (unsigned i = 0; i < min; i++)
-    {
-      if (mxdDptrs[i] == 0 || mddDptrs[i] == 0) continue;
-
-#ifdef USE_GET_VECTOR_DOWN_POINTERS
-      unsigned mxdISize = getNodeSize(arg2F, mxdDptrs[i]);
-      clearVector(mxdIDptrs, mxdISize);
-      if (!arg2F->getDownPtrs(mxdDptrs[i], mxdIDptrs)) continue;
-      assert(mxdISize <= mxdIDptrs.size());
-
-      for (unsigned j = 0; j < mxdISize; j++)
-      {
-        if (mxdIDptrs[j] == 0) continue;
-        int f = recFire(mddDptrs[i], mxdIDptrs[j]);
-        if (f == 0) continue;
-        int u = getMddUnion(node[j], f);
-        resF->unlinkNode(f);
-        resF->unlinkNode(node[j]);
-        node[j] = u;
-      }
-#else
-      // Breaking it up into two cases (a) mxd[i] is full, or (b) sparse.
-      const int* mxdIDptrs = 0;
-      assert(arg2F->getDownPtrs(mxdDptrs[i], mxdIDptrs));
-      if (arg2F->isFullNode(mxdDptrs[i])) {
-        // Full node
-        unsigned mxdISize = arg2F->getFullNodeSize(mxdDptrs[i]);
-        for (unsigned j = 0; j < mxdISize; j++)
-        {
-          if (mxdIDptrs[j] != 0) {
-            int f = recFire(mddDptrs[i], mxdIDptrs[j]);
-            if (f != 0) {
-              int u = getMddUnion(node[j], f);
-              resF->unlinkNode(f);
-              resF->unlinkNode(node[j]);
-              node[j] = u;
-            }
-          }
-        }
-      }
-      else {
-        // Sparse node
-        unsigned mxdISize = arg2F->getSparseNodeSize(mxdDptrs[i]);
-        const int* mxdIIptrs = 0;
-        assert(arg2F->getSparseNodeIndexes(mxdDptrs[i], mxdIIptrs));
-        for (int k = 0; k < mxdISize; k++)
-        {
-          MEDDLY_DCASSERT(0 != mxdIDptrs[k]);
-          int f = recFire(mddDptrs[i], mxdIDptrs[k]);
-          if (f != 0) {
-            unsigned j = mxdIIptrs[k];
-            int u = getMddUnion(node[j], f);
-            resF->unlinkNode(f);
-            resF->unlinkNode(node[j]);
-            node[j] = u;
-          }
-        }
-      }
-#endif
-    }
-  }
-
-  unsigned i = 0u;
-  for ( ; i < node.size() && node[i] == 0; i++);
-  if (i != node.size()) saturateHelper(nodeHeight, node);
-
-  int n = resF->createTempNode(nodeHeight, node);
-  result = resF->reduceNode(n);
-
-  saveResult(owner, mdd, mxd, result);
-  return result;
-}
-
-
-#else
-
-// ----------------------------------------------------
-//
-//            getMxdAsVec() + sets for curr[]
-//
-// ----------------------------------------------------
-
-void MEDDLY::forwd_dfs_mt::saturateHelper(int mdd)
-{
-  MEDDLY_DCASSERT(!resF->isReducedNode(mdd));
-  int mddLevel = resF->getNodeLevel(mdd);
-  int levelSize = resF->getLevelSize(mddLevel);
-  MEDDLY_DCASSERT(levelSize == resF->getFullNodeSize(mdd));
-
-  int mxd = splits[mddLevel];
+  int mxd = splits[nb.getLevel()];
   if (mxd == 0) return;
 
-  MEDDLY_DCASSERT(arg2F->getNodeLevel(mxd) == mddLevel);
+  int mxdLevel = arg2F->getNodeLevel(mxd);
+  MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
 
-  int** mxdVec = 0;
-  int mxdSize = 0;
-  assert(getMxdAsVec(mxd, mxdVec, mxdSize));
+  // Initialize mxd readers, note we might skip the unprimed level
+  node_reader* Ru = (mxdLevel<0)
+    ? arg2F->initRedundantReader(nb.getLevel(), mxd, true)
+    : arg2F->initNodeReader(mxd, true);
+  node_reader* Rp = node_reader::useReader();
 
-  int* mddDptrs = 0;
-  assert(resF->getDownPtrs(mdd, mddDptrs));
-  int mddSize = resF->getFullNodeSize(mdd);
+  // indexes to explore
+  indexq* queue = useIndexQueue(nb.getSize());
+  for (int i = 0; i < nb.getSize(); i++) {
+    if (nb.d(i)) queue->add(i);
+  }
 
-  MEDDLY_DCASSERT(mddSize == mxdSize);
+  // explore indexes
+  while (!queue->isEmpty()) {
+    int i = queue->remove();
 
-  // For each mdd[i] != 0 && mxd[i][j] != 0,
-  //    mdd[j] += recfire(mdd[i], mxd[i][j])
+    MEDDLY_DCASSERT(nb.d(i));
+    if (0==Ru->d(i)) continue;  // row i is empty
 
-  std::set<int> enabledIndexes;
-  std::set<int>::iterator iter;
+    // grab column (TBD: build these ahead of time?)
+    int dlevel = arg2F->getNodeLevel(Ru->d(i));
 
-  for (int i = 0; i < mxdSize; enabledIndexes.insert(i++));
+    if (dlevel == -nb.getLevel()) {
+      arg2F->initNodeReader(*Rp, Ru->d(i), false);
+    } else {
+      arg2F->initIdentityReader(*Rp, -nb.getLevel(), i, Ru->d(i), false);
+    }
 
-  while (!enabledIndexes.empty()) {
-    iter = enabledIndexes.begin();
-    int i = *iter;
-    enabledIndexes.erase(iter);
+    for (int jz=0; jz<Rp->getNNZs(); jz++) {
+      int j = Rp->i(jz);
+      if (-1==nb.d(j)) continue;  // nothing can be added to this set
 
-    const int* mddI = mddDptrs + i;
-    const int* mxdI = mxdVec[i];
-    if (*mddI == 0 || mxdI == 0) continue;
-
-    for (int j = 0; j < mxdSize; ++j) {
-
-      if (mxdI[j] == 0) continue;
-      if (mddDptrs[j] == -1) continue;
-
-      int rec = recFire(*mddI, mxdI[j]);
+      int rec = recFire(nb.d(i), Rp->d(jz));
 
       if (rec == 0) continue;
-      if (rec == mddDptrs[j]) { resF->unlinkNode(rec); continue; }
+      if (rec == nb.d(j)) { 
+        resF->unlinkNode(rec); 
+        continue; 
+      }
 
       bool updated = true;
 
-      if (0 == mddDptrs[j]) {
-        mddDptrs[j] = rec;
+      if (0 == nb.d(j)) {
+        nb.d(j) = rec;
       }
       else if (rec == -1) {
-        resF->unlinkNode(mddDptrs[j]);
-        mddDptrs[j] = -1;
+        resF->unlinkNode(nb.d(j));
+        nb.d(j) = -1;
       }
       else {
-        int acc = getMddUnion(mddDptrs[j], rec);
+        int acc = mddUnion->compute(nb.d(j), rec);
         resF->unlinkNode(rec);
-        if (acc != mddDptrs[j]) {
-          resF->unlinkNode(mddDptrs[j]);
-          mddDptrs[j] = acc;
+        if (acc != nb.d(j)) {
+          resF->unlinkNode(nb.d(j));
+          nb.d(j) = acc;
         } else {
           resF->unlinkNode(acc);
           updated = false;
@@ -983,222 +611,38 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(int mdd)
 
       if (updated) {
         if (j == i) {
-          // Re-run inner for-loop.
+          // Restart inner for-loop.
           j = -1;
         } else {
-          enabledIndexes.insert(j);
+          queue->add(j);
         }
       }
 
-    } // For each i in enabledIndexes
+    } // for j
 
-  } // For each mdd[i] and mxd[i]
+  } // while there are indexes to explore
 
+  // cleanup
+  node_reader::recycle(Rp);
+  node_reader::recycle(Ru);
+  recycle(queue);
 }
 
-
-void MEDDLY::forwd_dfs_mt::recFireExpandMdd(int mdd, int mxd, int& result)
-{
-  // for i = 0 to levelSize-1
-  //   result[i] = mdd[i] == 0? 0: recFire(mdd[i], mxd);
-  MEDDLY_DCASSERT(resF->isReducedNode(mdd));
-  MEDDLY_DCASSERT(!resF->isTerminalNode(mdd));
-  MEDDLY_DCASSERT(result == 0);
-
-  int rLevel = resF->getNodeLevel(mdd);
-  int rSize = resF->getLevelSize(rLevel);
-  result = resF->createTempNode(rLevel, rSize, true);
-
-  int* rDptrs = 0;
-  assert(resF->getDownPtrs(result, rDptrs));
-
-  const int* mddDptrs = 0;
-  assert(resF->getDownPtrs(mdd, mddDptrs));
-
-  if (resF->isFullNode(mdd)) {
-    int mddSize = resF->getFullNodeSize(mdd);
-    const int* mddStop = mddDptrs + mddSize;
-    for ( ; mddDptrs != mddStop; ++rDptrs, ++mddDptrs) {
-      if (*mddDptrs) *rDptrs = recFire(*mddDptrs, mxd);
-    }
-  }
-  else {
-    MEDDLY_DCASSERT(resF->isSparseNode(mdd));
-    int mddNDptrs = resF->getSparseNodeSize(mdd);
-    const int* mddStop = mddDptrs + mddNDptrs; 
-    const int* mddIndexes = 0;
-    assert(resF->getSparseNodeIndexes(mdd, mddIndexes));
-    for ( ; mddDptrs != mddStop; ++mddIndexes, ++mddDptrs) {
-      MEDDLY_DCASSERT(*mddDptrs != 0);
-      rDptrs[*mddIndexes] = recFire(*mddDptrs, mxd);
-    }
-  }
-}
-
-
-void MEDDLY::forwd_dfs_mt::recFireExpandMxd(int mdd, int mxd, int& result)
-{
-  // for i = 0 to levelSize-1
-  //    if (mdd[i] != 0 && mxd[i] != 0)
-  //      for j = 0 to levelSize-1
-  //        result[j] += recFire(mdd[i], mxd[i][j])
-  //
-  // In this case, mdd[i] == mdd. Therefore,
-  //
-  // for i = 0 to levelSize-1
-  //    if (mxd[i] != 0)
-  //      for j = 0 to levelSize-1
-  //        result[j] += recFire(mdd, mxd[i][j])
-  //
-
-  MEDDLY_DCASSERT(arg2F->isReducedNode(mxd) && !arg2F->isTerminalNode(mxd));
-  MEDDLY_DCASSERT(arg2F->getNodeLevel(mxd) > 0);
-  MEDDLY_DCASSERT(result == 0);
-
-  int rLevel = arg2F->getNodeLevel(mxd);
-  int rSize = resF->getLevelSize(rLevel);
-  result = resF->createTempNode(rLevel, rSize, true);
-
-  int* rDptrs = 0;
-  assert(resF->getDownPtrs(result, rDptrs));
-
-  int** mxdVec = 0;
-  int mxdSize = 0;
-  assert(getMxdAsVec(mxd, mxdVec, mxdSize));
-  assert(mxdSize == rSize);
-
-  for (int i = 0; i < mxdSize; ++i) {
-    const int* mxdI = mxdVec[i];
-    if (mxdI == 0) continue;
-
-    for (int j = 0; j < mxdSize; ++j) {
-      if (mxdI[j] == 0) {}
-      else if (rDptrs[j] == -1) {}
-      else {
-        int rec = recFire(mdd, mxdI[j]);
-        if (rec == 0) {}
-        else if (rec == rDptrs[j]) { resF->unlinkNode(rec); }
-        else if (0 == rDptrs[j]) { rDptrs[j] = rec; }
-        else if (rec == -1) { resF->unlinkNode(rDptrs[j]); rDptrs[j] = -1; }
-        else {
-          int acc = getMddUnion(rDptrs[j], rec);
-          resF->unlinkNode(rec);
-          resF->unlinkNode(rDptrs[j]);
-          rDptrs[j] = acc;
-        }
-      }
-    }
-  }
-
-}
-
-
-void MEDDLY::forwd_dfs_mt::recFireExpand(int mdd, int mxd, int& result)
-{
-  // for i = 0 to levelSize-1
-  //    if (mdd[i] != 0 && mxd[i] != 0)
-  //      for j = 0 to levelSize-1
-  //        result[j] += recFire(mdd[i], mxd[i][j])
-
-  MEDDLY_DCASSERT(resF->isReducedNode(mdd) && !resF->isTerminalNode(mdd));
-  MEDDLY_DCASSERT(arg2F->isReducedNode(mxd) && !arg2F->isTerminalNode(mxd));
-  MEDDLY_DCASSERT(resF->getNodeLevel(mdd) == arg2F->getNodeLevel(mxd));
-  MEDDLY_DCASSERT(resF->getNodeLevel(mdd) > 0);
-  MEDDLY_DCASSERT(result == 0);
-
-  int rLevel = resF->getNodeLevel(mdd);
-  int rSize = resF->getLevelSize(rLevel);
-  result = resF->createTempNode(rLevel, rSize, true);
-
-  int* rDptrs = 0;
-  const int* mddDptrs = 0;
-
-  assert(resF->getDownPtrs(result, rDptrs));
-  assert(resF->getDownPtrs(mdd, mddDptrs));
-
-  int** mxdVec = 0;
-  int mxdSize = 0;
-  assert(getMxdAsVec(mxd, mxdVec, mxdSize));
-  assert(mxdSize == rSize);
-
-  // recFireExpandMxdPrime(mdd, mxd, result[])
-  // At the primed level
-  // for i = 0 to mxdSize-1
-  //    if (mxd[i]) result[i] = UNION(result[i], recFire(mdd, mxd[i]));
-
-  if (resF->isFullNode(mdd)) {
-    int mddSize = resF->getFullNodeSize(mdd);
-    for (int i = 0; i < mddSize; ++i) {
-      const int mddI = mddDptrs[i];
-      const int* mxdI = mxdVec[i];
-      if (mddI == 0 || mxdI == 0) continue;
-
-      for (int j = 0; j < mxdSize; ++j) {
-        if (mxdI[j] == 0) {}
-        else if (rDptrs[j] == -1) {}
-        else {
-          int rec = recFire(mddI, mxdI[j]);
-          if (rec == 0) {}
-          else if (rec == rDptrs[j]) { resF->unlinkNode(rec); }
-          else if (0 == rDptrs[j]) { rDptrs[j] = rec; }
-          else if (rec == -1) { resF->unlinkNode(rDptrs[j]); rDptrs[j] = -1; }
-          else {
-            int acc = getMddUnion(rDptrs[j], rec);
-            resF->unlinkNode(rec);
-            resF->unlinkNode(rDptrs[j]);
-            rDptrs[j] = acc;
-          }
-        }
-      }
-    }
-  } else {
-    MEDDLY_DCASSERT(resF->isSparseNode(mdd));
-    int mddNDptrs = resF->getSparseNodeSize(mdd);
-    const int* mddIndexes = 0;
-    assert(resF->getSparseNodeIndexes(mdd, mddIndexes));
-
-    for (int i = 0; i < mddNDptrs; ++i) {
-      const int mddI = mddDptrs[i];
-      const int* mxdI = mxdVec[mddIndexes[i]];
-      if (mddI == 0 || mxdI == 0) continue;
-
-      for (int j = 0; j < mxdSize; ++j) {
-        if (mxdI[j] == 0) {}
-        else if (rDptrs[j] == -1) {}
-        else {
-          int rec = recFire(mddI, mxdI[j]);
-          if (rec == 0) {}
-          else if (rec == rDptrs[j]) { resF->unlinkNode(rec); }
-          else if (0 == rDptrs[j]) { rDptrs[j] = rec; }
-          else if (rec == -1) { resF->unlinkNode(rDptrs[j]); rDptrs[j] = -1; }
-          else {
-            int acc = getMddUnion(rDptrs[j], rec);
-            resF->unlinkNode(rec);
-            resF->unlinkNode(rDptrs[j]);
-            rDptrs[j] = acc;
-          }
-        }
-      }
-    }
-  }
-
-}
-
-
+// Same as post-image, except we saturate before reducing.
 int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
 {
-  MEDDLY_DCASSERT(resF->isReducedNode(mdd));
-  MEDDLY_DCASSERT(arg2F->isReducedNode(mxd));
-
-  if (mxd == -1) {
-    resF->linkNode(mdd);
-    return mdd;
-  }
+  // termination conditions
   if (mxd == 0 || mdd == 0) return 0;
+  if (arg2F->isTerminalNode(mxd)) {
+    if (arg1F->isTerminalNode(mdd)) {
+      return resF->getTerminalNode(true);
+    }
+    // mxd is identity
+    if (arg1F == resF)
+      return resF->linkNode(mdd);
+  }
 
-  MEDDLY_DCASSERT(mdd == -1 || resF->getNodeLevel(mdd) > 0);
-  MEDDLY_DCASSERT(arg2F->getNodeLevel(mxd) > 0);
-
+  // check the cache
   int result = 0;
   if (findResult(mdd, mxd, result)) {
     return result;
@@ -1213,207 +657,86 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
   printf("\n");
 #endif
 
+  // check if mxd and mdd are at the same level
+  int mddLevel = arg1F->getNodeLevel(mdd);
   int mxdLevel = arg2F->getNodeLevel(mxd);
-  int mddLevel = resF->getNodeLevel(mdd);
-  result = 0;
-  if (mxdLevel < mddLevel) {
-    recFireExpandMdd(mdd, mxd, result);
-  } else if (mddLevel < mxdLevel) {
-    recFireExpandMxd(mdd, mxd, result);
+  int rLevel = MAX(ABS(mxdLevel), mddLevel);
+  int rSize = resF->getLevelSize(rLevel);
+  node_builder& nb = resF->useNodeBuilder(rLevel, rSize);
+
+  // Initialize mdd reader
+  node_reader* A = (mddLevel < rLevel)
+    ? arg1F->initRedundantReader(rLevel, mdd, true)
+    : arg1F->initNodeReader(mdd, true);
+
+  if (mddLevel > ABS(mxdLevel)) {
+    //
+    // Skipped levels in the MXD,
+    // that's an important special case that we can handle quickly.
+
+    for (int i=0; i<rSize; i++) {
+      nb.d(i) = recFire(A->d(i), mxd);
+    }
+
   } else {
-    MEDDLY_DCASSERT(mxdLevel == mddLevel);
-    recFireExpand(mdd, mxd, result);
-  }
+    // 
+    // Need to process this level in the MXD.
+    MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
-  // If any result[i] != 0, call saturateHelper()
-  int* rDptrs = 0;
-  assert(resF->getDownPtrs(result, rDptrs));
-  int* rStop = rDptrs + resF->getFullNodeSize(result);
-  for ( ; rDptrs != rStop && *rDptrs == 0; ++rDptrs);
+    // clear out result (important!)
+    for (int i=0; i<rSize; i++) nb.d(i) = 0;
 
-  if (rDptrs == rStop) {
-    // All result[i] == 0. This nodes will reduce to 0.
-    // Instead of calling reduceNode(), unlink it and set result to 0.
-    resF->unlinkNode(result);
-    result = 0;
-  } else {
-    // Some result[i] != 0.
-    // Saturate the node, and then reduce it.
-    saturateHelper(result);
-    result = resF->reduceNode(result);
-  }
+    // Initialize mxd readers, note we might skip the unprimed level
+    node_reader* Ru = (mxdLevel < 0)
+      ? arg2F->initRedundantReader(rLevel, mxd, false)
+      : arg2F->initNodeReader(mxd, false);
+    node_reader* Rp = node_reader::useReader();
 
-  // Save result and return it.
-  saveResult(mdd, mxd, result);
-  return result;
-}
-
-// Returns an mxd as array of int[]
-// If mxd[i] == 0, vec[i] = 0
-// Otherwise, (vec[i])[j] = mxd[i][j]
-// size is sizeof(int[])
-bool MEDDLY::forwd_dfs_mt::getMxdAsVec(int mxd, int**& vec, int& size)
-{
-  assert(vec == 0);
-  if (arg2F->isTerminalNode(mxd)) return false;
-
-  MEDDLY_DCASSERT(arg2F->getNodeLevel(mxd) > 0);
-
-  // Build the arrays
-  size = arg2F->getLevelSize(arg2F->getNodeLevel(mxd));
-  vec = getMatrix(arg2F->getNodeLevel(mxd), size, false);
-
-  // Build the mxd
-  const int* mxdDptrs = 0;
-  assert(arg2F->getDownPtrs(mxd, mxdDptrs));
-
-  if (arg2F->isFullNode(mxd)) {
-
-    int mxdSize = arg2F->getFullNodeSize(mxd);
-    memset(vec + mxdSize, 0, (size - mxdSize) * sizeof(int*));
-
-    for (int i = 0; i < mxdSize; ++i) {
-      int mxdI = mxdDptrs[i];
-
-      if (mxdI == 0) {
-        vec[i] = 0;
-        continue;
+    // loop over mxd "rows"
+    for (int iz=0; iz<Ru->getNNZs(); iz++) {
+      int i = Ru->i(iz);
+      if (0==A->d(i))   continue; 
+      if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz)))) {
+        arg2F->initIdentityReader(*Rp, rLevel, i, Ru->d(iz), false);
+      } else {
+        arg2F->initNodeReader(*Rp, Ru->d(iz), false);
       }
 
-      // Build mxd[i]
-      int* currVec = vec[i];
-      const int* mxdIDptrs = 0;
-      assert(arg2F->getDownPtrs(mxdI, mxdIDptrs));
-
-      if (arg2F->isFullNode(mxdI)) {
-        int mxdISize = arg2F->getFullNodeSize(mxdI);
-        memcpy(currVec, mxdIDptrs, mxdISize * sizeof(int));
-      } else {
-        MEDDLY_DCASSERT(arg2F->isSparseNode(mxdI));
-        int mxdINDptrs = arg2F->getSparseNodeSize(mxdI);
-        const int* mxdIIndexes = 0;
-        assert(arg2F->getSparseNodeIndexes(mxdI, mxdIIndexes));
-        for (int j = 0 ; j < mxdINDptrs; ++j) {
-          currVec[mxdIIndexes[j]] = mxdIDptrs[j];
+      // loop over mxd "columns"
+      for (int jz=0; jz<Rp->getNNZs(); jz++) {
+        int j = Rp->i(jz);
+        // ok, there is an i->j "edge".
+        // determine new states to be added (recursively)
+        // and add them
+        int newstates = recFire(A->d(i), Rp->d(jz));
+        if (0==newstates) continue;
+        if (0==nb.d(j)) {
+          nb.d(j) = newstates;
+          continue;
         }
+        // there's new states and existing states; union them.
+        int oldj = nb.d(j);
+        nb.d(j) = mddUnion->compute(newstates, oldj);
+        resF->unlinkNode(oldj);
+        resF->unlinkNode(newstates);
+      } // for j
+  
+    } // for i
 
-      } // End Build mxd[i]
-    } // End for each mxd[i]
+    node_reader::recycle(Rp);
+    node_reader::recycle(Ru);
+  } // else
 
-  } else {
+  // cleanup mdd reader
+  node_reader::recycle(A);
 
-    MEDDLY_DCASSERT(arg2F->isSparseNode(mxd));
-    int mxdNDptrs = arg2F->getSparseNodeSize(mxd);
-    const int* mxdIndexes = 0;
-    assert(arg2F->getSparseNodeIndexes(mxd, mxdIndexes));
-
-    int mxdSize = mxdIndexes[mxdNDptrs - 1] + 1;
-    memset(vec + mxdSize, 0, (size - mxdSize) * sizeof(int*));
-
-    int expectedIndex = 0;
-    for (int i = 0; i < mxdNDptrs; ++i) {
-      MEDDLY_DCASSERT(mxdDptrs[i] != 0);
-
-      if (mxdIndexes[i] > expectedIndex) {
-        memset(vec + expectedIndex, 0,
-            (mxdIndexes[i] - expectedIndex) * sizeof(int*));
-        expectedIndex = mxdIndexes[i] + 1;
-      }
-
-      // Build mxd[i]
-      int* currVec = vec[mxdIndexes[i]];
-      int mxdI = mxdDptrs[i];
-      const int* mxdIDptrs = 0;
-      assert(arg2F->getDownPtrs(mxdI, mxdIDptrs));
-
-      if (arg2F->isFullNode(mxdI)) {
-        int mxdISize = arg2F->getFullNodeSize(mxdI);
-        memcpy(currVec, mxdIDptrs, mxdISize * sizeof(int));
-      } else {
-        MEDDLY_DCASSERT(arg2F->isSparseNode(mxdI));
-        int mxdINDptrs = arg2F->getSparseNodeSize(mxdI);
-        const int* mxdIIndexes = 0;
-        assert(arg2F->getSparseNodeIndexes(mxdI, mxdIIndexes));
-        for (int j = 0 ; j < mxdINDptrs; ++j) {
-          currVec[mxdIIndexes[j]] = mxdIDptrs[j];
-        }
-
-      } // End Build mxd[i]
-    } // End for each mxd[i]
-
-  }
-
-  return true;
-}
-
+  saturateHelper(nb);
+  result = resF->createReducedNode(-1, nb);
+#ifdef TRACE_ALL_OPS
+  printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);
 #endif
-
-
-int** MEDDLY::forwd_dfs_mt::getMatrix(unsigned nodeLevel,
-    unsigned size, bool clear)
-{
-  // Enlarge static arrays.
-  static std::vector< int** > temp;
-  static std::vector< int > sizes;
-  static std::vector< int** > matrices;
-
-  if (clear) {
-    for (unsigned i = 0; i < temp.size(); i++) {
-      if (temp[i]) {
-        for (unsigned j = 0; j < sizes[i]; j++) {
-          free(temp[i][j]);
-        }
-        free(temp[i]);
-        temp[i] = 0;
-        sizes[i] = 0;
-        free(matrices[i]);
-        matrices[i] = 0;
-      }
-    }
-    return 0;
-  }
-
-  // Resize temp and sizes
-  if (temp.size() <= nodeLevel) {
-    temp.resize(nodeLevel + 1, 0);
-    sizes.resize(nodeLevel + 1, 0);
-    matrices.resize(nodeLevel + 1, 0);
-  }
-
-  // Resize the matrix at temp[nodeLevel]
-  if (sizes[nodeLevel] < size) {
-
-    // Update temp
-    temp[nodeLevel] =
-      (int**) realloc(temp[nodeLevel], size * sizeof(int*));
-    assert(temp[nodeLevel] != 0);
-    memset(temp[nodeLevel] + sizes[nodeLevel], 0,
-        (size - sizes[nodeLevel]) * sizeof(int*));
-
-    for (int i = 0; i < size; i++) {
-      temp[nodeLevel][i] =
-        (int*) realloc(temp[nodeLevel][i], size * sizeof(int));
-      assert(temp[nodeLevel][i] != 0);
-    }
-
-    // Update sizes
-    sizes[nodeLevel] = size;
-
-    // Update matrices
-    matrices[nodeLevel] = 
-      (int**) realloc(matrices[nodeLevel], size * sizeof(int*));
-    assert(matrices[nodeLevel] != 0);
-  }
-
-  // Clear the matrix at temp[nodeLevel]
-  for (int i = 0; i < size; i++) {
-    memset(temp[nodeLevel][i], 0, size * sizeof(int));
-  }
-  memcpy(matrices[nodeLevel], temp[nodeLevel], size * sizeof(int*));
-
-  return matrices[nodeLevel];
+  return saveResult(mdd, mxd, result); 
 }
-
 
 
 
@@ -1424,312 +747,197 @@ int** MEDDLY::forwd_dfs_mt::getMatrix(unsigned nodeLevel,
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::bckwd_dfs_mt : public forwd_dfs_mt {
+class MEDDLY::bckwd_dfs_mt : public common_dfs_mt {
   public:
     bckwd_dfs_mt(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
-
-    virtual ~bckwd_dfs_mt() { }
   protected:
-    virtual int saturate(int mdd);
-    virtual void saturateHelper(int mddLevel, std::vector<int>& mdd) {
-      reverseSaturateHelper(mddLevel, mdd);
-    }
-    virtual void reverseSaturateHelper(int mddLevel, std::vector<int>& mdd);
-    virtual int reverseRecFire(int mdd, int mxd);
+    virtual void saturateHelper(node_builder& mdd);
+    int recFire(int mdd, int mxd);
 };
 
 MEDDLY::bckwd_dfs_mt::bckwd_dfs_mt(const binary_opname* opcode, 
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-  : forwd_dfs_mt(opcode, arg1, arg2, res)
+  : common_dfs_mt(opcode, arg1, arg2, res)
 {
 }
 
-int MEDDLY::bckwd_dfs_mt::saturate(int mdd)
+void MEDDLY::bckwd_dfs_mt::saturateHelper(node_builder& nb)
 {
-#ifdef DEBUG_DFS
-  printf("mdd: %d\n", mdd);
-#endif
+  int mxd = splits[nb.getLevel()];
+  if (mxd == 0) return;
 
-  // how does saturateHelper get called?
-  // bottom-up i.e. call helper on children before calling helper for parent
+  int mxdLevel = arg2F->getNodeLevel(mxd);
+  MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
 
-  MEDDLY_DCASSERT(resF->isReducedNode(mdd));
+  // Initialize mxd readers, note we might skip the unprimed level
+  node_reader* Ru = (mxdLevel<0)
+    ? arg2F->initRedundantReader(nb.getLevel(), mxd, false)
+    : arg2F->initNodeReader(mxd, false);
+  node_reader* Rp = node_reader::useReader();
 
-  // terminal condition for recursion
-  if (resF->isTerminalNode(mdd)) return mdd;
-
-  // search compute table
-  int n = 0;
-  if (findSaturateResult(mdd, n)) {
-    resF->linkNode(n);
-    return n;
-  }
-
-  int k = resF->getNodeLevel(mdd);      // level
-  int sz = resF->getLevelSize(k);       // size
-
-#ifdef DEBUG_DFS
-  printf("mdd: %d, level: %d, size: %d\n", mdd, k, sz);
-#endif
-
-  std::vector<int> nDptrs(sz, 0);
-  assert(resF->getDownPtrs(mdd, nDptrs));
-  for (std::vector<int>::iterator iter = nDptrs.begin();
-      iter != nDptrs.end(); ++iter) {
-    if (*iter) *iter = saturate(*iter);
-  }
-  saturateHelper(k, nDptrs);
-  n = resF->reduceNode(resF->createTempNode(k, nDptrs));
-
-  // save in compute table
-  saveSaturateResult(mdd, n);
-
-#ifdef DEBUG_DFS
-  resF->showNodeGraph(stdout, n);
-#endif
-
-  return n;
-}
-
-
-void MEDDLY::bckwd_dfs_mt::reverseSaturateHelper(int mddLevel,
-    std::vector<int>& mdd)
-{
-  MEDDLY_DCASSERT(unsigned(resF->getLevelSize(mddLevel)) == mdd.size());
-
-  int mxd = splits[mddLevel];
-  if (arg2F->isTerminalNode(mxd)) return;
-
-  std::vector<int> mxdDptrs;
-  if (!arg2F->getDownPtrs(mxd, mxdDptrs)) return;
-
-  // Get hold of the arrays for this level
-  int levelSize = resF->getLevelSize(mddLevel);
-  int* curr = scratch1[mddLevel];
-  int* next = scratch2[mddLevel];
-  assert(unsigned(levelSize) == mdd.size());
-  for (int i = 0; i < levelSize; i++) next[i] = 1;
-
+  // indexes to explore
+  charbuf* expl = useCharBuf(nb.getSize());
+  for (int i = 0; i < nb.getSize(); i++) expl->data[i] = 2;
   bool repeat = true;
-  while (repeat)
-  {
-    int* temp = curr;
-    curr = next;
-    next = temp;
-    memset(next, 0, levelSize * sizeof(int));
 
-    // For each mxd[i][j] != 0,
-    //    If mdd[j] != 0 AND curr[j] == true
-    //      mdd[i] += reverseRecFire(mdd[j], mxd[i][j])
-    //      If mdd[i] is updated,
-    //        next[i] = true
-
-    // for each mxd[i] != 0
-    for (unsigned i = 0u; i < mxdDptrs.size(); i++)
-    {
-      if (mxdDptrs[i] == 0) continue;
-      MEDDLY_DCASSERT(!arg2F->isTerminalNode(mxdDptrs[i]));
-
-      // Breaking it up into two cases (a) mxd[i] is full, or (b) sparse.
-      const int* mxdIDptrs = 0;
-      assert(arg2F->getDownPtrs(mxdDptrs[i], mxdIDptrs));
-
-      // For each mxd[i][j] != 0
-      // mdd[i] += reverseRecFire(mdd[j], mxd[i][j])
-
-      if (arg2F->isFullNode(mxdDptrs[i])) {
-        // Full node
-        unsigned mxdISize = arg2F->getFullNodeSize(mxdDptrs[i]);
-        for (unsigned j = 0; j < mxdISize; j++)
-        {
-          if (mxdIDptrs[j] == 0 || mdd[j] == 0 || curr[j] == 0) continue;
-          int f = reverseRecFire(mdd[j], mxdIDptrs[j]);
-          if (f == 0) continue;
-          int u = getMddUnion(mdd[i], f);
-          resF->unlinkNode(f);
-          if (u != mdd[i]) {
-            // update mdd[i] and mark for next iteration
-            resF->unlinkNode(mdd[i]);
-            mdd[i] = u;
-            next[i] = 1;
-          }
-          else {
-            resF->unlinkNode(u);
-          }
-        }
-      }
-      else {
-        // Sparse node
-        unsigned mxdISize = arg2F->getSparseNodeSize(mxdDptrs[i]);
-        const int* mxdIIptrs = 0;
-        assert(arg2F->getSparseNodeIndexes(mxdDptrs[i], mxdIIptrs));
-        for (int k = 0; k < mxdISize; k++)
-        {
-          MEDDLY_DCASSERT(0 != mxdIDptrs[k]);
-          unsigned j = mxdIIptrs[k];
-          if (mdd[j] == 0 || curr[j] == 0) continue;
-          int f = reverseRecFire(mdd[j], mxdIDptrs[k]);
-          if (f == 0) continue;
-          int u = getMddUnion(mdd[i], f);
-          resF->unlinkNode(f);
-          if (u != mdd[i]) {
-            // Update mdd[i] and mark for next iteration
-            resF->unlinkNode(mdd[i]);
-            mdd[i] = u;
-            next[i] = 1;
-          }
-          else {
-            resF->unlinkNode(u);
-          }
-        }
-      }
-    }
-
-    // Check if the loop should repeat.
+  // explore 
+  while (repeat) {
+    // "advance" the explore list
+    for (int i=0; i<nb.getSize(); i++) if (expl->data[i]) expl->data[i]--;
     repeat = false;
-    int* nextEnd = next + levelSize;
-    for (int* iter = next; iter != nextEnd; )
-    {
-      if (*iter++ != 0) {
-        repeat = true;
-        break;
+
+    // explore all rows
+    for (int iz=0; iz<Ru->getNNZs(); iz++) {
+      int i = Ru->i(iz);
+      // grab column (TBD: build these ahead of time?)
+      int dlevel = arg2F->getNodeLevel(Ru->d(i));
+
+      if (dlevel == -nb.getLevel()) {
+        arg2F->initNodeReader(*Rp, Ru->d(iz), false); 
+      } else {
+        arg2F->initIdentityReader(*Rp, -nb.getLevel(), i, Ru->d(iz), false);
       }
-    }
-  }
+
+      for (int jz=0; jz<Rp->getNNZs(); jz++) {
+        int j = Rp->i(jz);
+        if (0==expl->data[j]) continue;
+        if (0==nb.d(j))       continue;
+        // We have an i->j edge to explore
+        int rec = recFire(nb.d(j), Rp->d(jz));
+
+        if (0==rec) continue;
+        if (rec == nb.d(i)) {
+          resF->unlinkNode(rec);
+          continue;
+        }
+
+        bool updated = true;
+
+        if (0 == nb.d(i)) {
+          nb.d(i) = rec;
+        }
+        else if (-1 == rec) {
+          resF->unlinkNode(nb.d(i));
+          nb.d(i) = -1;
+        } 
+        else {
+          int acc = mddUnion->compute(nb.d(i), rec);
+          resF->unlinkNode(rec);
+          if (acc != nb.d(i)) {
+            resF->unlinkNode(nb.d(i));
+            nb.d(i) = acc;
+          } else {
+            resF->unlinkNode(acc);
+            updated = false;
+          }
+        }
+        if (updated) expl->data[i] = 2;
+      } // for j
+    } // for i
+  } // while repeat
+  // cleanup
+  node_reader::recycle(Rp);
+  node_reader::recycle(Ru);
+  recycle(expl);
 }
 
-
-int MEDDLY::bckwd_dfs_mt::reverseRecFire(int mdd, int mxd)
+int MEDDLY::bckwd_dfs_mt::recFire(int mdd, int mxd)
 {
-  MEDDLY_DCASSERT(resF->isReducedNode(mdd));
-  MEDDLY_DCASSERT(arg2F->isReducedNode(mxd));
-
-  if (mxd == -1) {
-    resF->linkNode(mdd);
-    return mdd;
-  }
+  // termination conditions
   if (mxd == 0 || mdd == 0) return 0;
+  if (arg2F->isTerminalNode(mxd)) {
+    if (arg1F->isTerminalNode(mdd)) {
+      return resF->getTerminalNode(true);
+    }
+    // mxd is identity
+    if (arg1F == resF)
+      return resF->linkNode(mdd);
+  }
 
+  // check the cache
   int result = 0;
   if (findResult(mdd, mxd, result)) {
     return result;
   }
 
-  int mxdHeight = arg2F->getNodeHeight(mxd);
-  int mddHeight = resF->getNodeHeight(mdd);
-  int nodeHeight = MAX(mxdHeight, mddHeight);
-  int newSize = resF->getLevelSize(nodeHeight);
-  std::vector<int> node(newSize, 0);
+  // check if mxd and mdd are at the same level
+  int mddLevel = arg1F->getNodeLevel(mdd);
+  int mxdLevel = arg2F->getNodeLevel(mxd);
+  int rLevel = MAX(ABS(mxdLevel), mddLevel);
+  int rSize = resF->getLevelSize(rLevel);
+  node_builder& nb = resF->useNodeBuilder(rLevel, rSize);
 
-  if (mxdHeight < mddHeight) {
-    std::vector<int> mddDptrs;
-    resF->getDownPtrs(mdd, mddDptrs);
-    for (unsigned i = 0; i < mddDptrs.size(); i++)
-    {
-      if (mddDptrs[i] != 0) node[i] = reverseRecFire(mddDptrs[i], mxd);
-    }
-  } else if (mxdHeight > mddHeight) {
-    std::vector<int> mxdIDptrs;
-    std::vector<int> mxdDptrs;
-    arg2F->getDownPtrs(mxd, mxdDptrs);
-    for (unsigned i = 0; i < mxdDptrs.size(); i++)
-    {
-      if (mxdDptrs[i] == 0) continue;
+  // Initialize mdd reader
+  node_reader* A = (mddLevel < rLevel)
+    ? arg1F->initRedundantReader(rLevel, mdd, true)
+    : arg1F->initNodeReader(mdd, true);
 
-      // Breaking it up into two cases (a) mxd[i] is full, or (b) sparse.
-      const int* mxdIDptrs = 0;
-      assert(arg2F->getDownPtrs(mxdDptrs[i], mxdIDptrs));
-
-      if (arg2F->isFullNode(mxdDptrs[i])) {
-        // Full node
-        unsigned mxdISize = arg2F->getFullNodeSize(mxdDptrs[i]);
-        for (unsigned j = 0; j < mxdISize; j++)
-        {
-          if (mxdIDptrs[j] != 0) continue;
-          int f = reverseRecFire(mdd, mxdIDptrs[j]);
-          if (f == 0) continue;
-          int u = getMddUnion(node[i], f);
-          resF->unlinkNode(f);
-          resF->unlinkNode(node[i]);
-          node[i] = u;
-        }
-      }
-      else {
-        // Sparse node
-        unsigned mxdISize = arg2F->getSparseNodeSize(mxdDptrs[i]);
-        for (unsigned k = 0; k < mxdISize; k++)
-        {
-          MEDDLY_DCASSERT(0 != mxdIDptrs[k]);
-          int f = reverseRecFire(mdd, mxdIDptrs[k]);
-          if (f == 0) continue;
-          int u = getMddUnion(node[i], f);
-          resF->unlinkNode(f);
-          resF->unlinkNode(node[i]);
-          node[i] = u;
-        }
-      }
+  if (mddLevel > ABS(mxdLevel)) {
+    //
+    // Skipped levels in the MXD,
+    // that's an important special case that we can handle quickly.
+    for (int i=0; i<rSize; i++) {
+      nb.d(i) = recFire(A->d(i), mxd);
     }
   } else {
-    MEDDLY_DCASSERT(mxdHeight == mddHeight);
-    std::vector<int> mddDptrs;
-    std::vector<int> mxdDptrs;
-    std::vector<int> mxdIDptrs;
-    resF->getDownPtrs(mdd, mddDptrs);
-    arg2F->getDownPtrs(mxd, mxdDptrs);
+    // 
+    // Need to process this level in the MXD.
+    MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
-    for (unsigned i = 0; i < mxdDptrs.size(); i++)
-    {
-      if (mxdDptrs[i] == 0) continue;
+    // clear out result (important!)
+    for (int i=0; i<rSize; i++) nb.d(i) = 0;
 
-      // Breaking it up into two cases (a) mxd[i] is full, or (b) sparse.
-      const int* mxdIDptrs = 0;
-      assert(arg2F->getDownPtrs(mxdDptrs[i], mxdIDptrs));
-      if (arg2F->isFullNode(mxdDptrs[i])) {
-        // Full node
-        unsigned mxdISize = arg2F->getFullNodeSize(mxdDptrs[i]);
-        unsigned min = mddDptrs.size() < mxdISize? mddDptrs.size(): mxdISize;
-        for (unsigned j = 0; j < min; j++)
-        {
-          if (mxdIDptrs[j] == 0 || mddDptrs[j] == 0) continue;
-          int f = reverseRecFire(mddDptrs[j], mxdIDptrs[j]);
-          if (f == 0) continue;
-          int u = getMddUnion(node[i], f);
-          resF->unlinkNode(f);
-          resF->unlinkNode(node[i]);
-          node[i] = u;
-        }
+    // Initialize mxd readers, note we might skip the unprimed level
+    node_reader* Ru = (mxdLevel < 0)
+      ? arg2F->initRedundantReader(rLevel, mxd, false)
+      : arg2F->initNodeReader(mxd, false);
+    node_reader* Rp = node_reader::useReader();
+
+    // loop over mxd "rows"
+    for (int iz=0; iz<Ru->getNNZs(); iz++) {
+      int i = Ru->i(iz);
+      if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz)))) {
+        arg2F->initIdentityReader(*Rp, rLevel, i, Ru->d(iz), false);
+      } else {
+        arg2F->initNodeReader(*Rp, Ru->d(iz), false);
       }
-      else {
-        // Sparse node
-        unsigned mxdISize = arg2F->getSparseNodeSize(mxdDptrs[i]);
-        const int* mxdIIptrs = 0;
-        assert(arg2F->getSparseNodeIndexes(mxdDptrs[i], mxdIIptrs));
-        for (int k = 0; k < mxdISize; k++)
-        {
-          MEDDLY_DCASSERT(0 != mxdIDptrs[k]);
-          unsigned j = mxdIIptrs[k];
-          if (j >= mddDptrs.size()) break;
-          int f = reverseRecFire(mddDptrs[j], mxdIDptrs[k]);
-          if (f == 0) continue;
-          int u = getMddUnion(node[i], f);
-          resF->unlinkNode(f);
-          resF->unlinkNode(node[i]);
-          node[i] = u;
+
+      // loop over mxd "columns"
+      for (int jz=0; jz<Rp->getNNZs(); jz++) {
+        int j = Rp->i(jz);
+        if (0==A->d(j))   continue; 
+        // ok, there is an i->j "edge".
+        // determine new states to be added (recursively)
+        // and add them
+        int newstates = recFire(A->d(j), Rp->d(jz));
+        if (0==newstates) continue;
+        if (0==nb.d(i)) {
+          nb.d(i) = newstates;
+          continue;
         }
-      }
-    }
-  }
+        // there's new states and existing states; union them.
+        int oldi = nb.d(i);
+        nb.d(i) = mddUnion->compute(newstates, oldi);
+        resF->unlinkNode(oldi);
+        resF->unlinkNode(newstates);
+      } // for j
+  
+    } // for i
 
-  unsigned i = 0u;
-  for ( ; i < node.size() && node[i] == 0; i++);
-  if (i != node.size()) reverseSaturateHelper(nodeHeight, node);
+    node_reader::recycle(Rp);
+    node_reader::recycle(Ru);
+  } // else
 
-  int n = resF->createTempNode(nodeHeight, node);
-  result = resF->reduceNode(n);
+  // cleanup mdd reader
+  node_reader::recycle(A);
 
-  saveResult(mdd, mxd, result);
-  return result;
+  saturateHelper(nb);
+  result = resF->createReducedNode(-1, nb);
+#ifdef TRACE_ALL_OPS
+  printf("computed recFire(%d, %d) = %d\n", mdd, mxd, result);
+#endif
+  return saveResult(mdd, mxd, result); 
 }
 
 
@@ -1822,7 +1030,8 @@ MEDDLY::bckwd_dfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   )
     throw error(error::TYPE_MISMATCH);
 
-  return new bckwd_dfs_mt(this, a1, a2, r);
+  // return new bckwd_dfs_mt(this, a1, a2, r);
+  throw error(error::NOT_IMPLEMENTED);
 }
 
 // ******************************************************************

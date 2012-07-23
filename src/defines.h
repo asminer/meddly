@@ -86,6 +86,28 @@ namespace MEDDLY {
   /// POSITIVE "macro".
   template <class T> inline bool POSITIVE(T X) { return (X>0) ? true : false; }
 
+  // Number of digits
+  inline int digits(int a) {
+    int d;
+    for (d=1; a; d++) { a /= 10; }
+    return d;
+  }
+
+  /// Get the "top level" of an operation.  Works for primed & unprimed.
+  inline int topLevel(int k1, int k2) {
+    if (ABS(k1) > ABS(k2)) return k1;
+    if (ABS(k2) > ABS(k1)) return k2;
+    return MAX(k1, k2);
+  }
+
+  /// Determine if level k1 is above k2.  Works for primed & unprimed.
+  inline bool isLevelAbove(int k1, int k2) {
+    if (ABS(k1) > ABS(k2)) return true;
+    if (ABS(k2) > ABS(k1)) return false;
+    return k1 > k2;
+  }
+
+  /*
   // maxUlps would be a small +ve integer.
   inline bool isAlmostEqual(int A, int B) {
     static const int maxUlps = 16;
@@ -119,6 +141,7 @@ namespace MEDDLY {
     return ABS(A - B) <= maxUlps;
 #endif
   }
+  */
 
 }
 

@@ -21,12 +21,12 @@
 
 
 #include "mtmxd.h"
-
+#include "../unique_table.h"
 
 MEDDLY::mtmxd_forest::mtmxd_forest(int dsl, domain *d,
     bool relation, forest::range_type t,
     forest::edge_labeling e, const policies &p)
-: mt_forest(dsl, d, relation, t, e, p, mtmxdDataHeaderSize)
+: mt_forest(dsl, d, relation, t, e, p)
 {
   unpList = 0;
   pList = 0;
@@ -62,275 +62,16 @@ void MEDDLY::mtmxd_forest::expandCountAndSlotArrays(int size)
   countSize = newCountSize;
 }
 
-
-void MEDDLY::mtmxd_forest::resizeNode(int p, int size)
-{
-  // This operation can only be performed on Temporary nodes.
-  if (!isActiveNode(p) || isTerminalNode(p) || isReducedNode(p)) {
-    throw error(error::INVALID_OPERATION);
-  }
-
-  // If node is already large enough, do nothing, and return SUCCESS.
-  int nodeSize = getFullNodeSize(p);
-  if (size <= nodeSize) return;
-
-  MEDDLY_DCASSERT(size > nodeSize);
-
-  // Expand node:
-  // (a) Create array of desired size;
-  // (b) Copy over data from the old array to the new array;
-  // (c) Discard the old array
-  // (d) Update pointers
-
-  // Create array of desired size
-  int oldDataArraySize = getDataHeaderSize() + nodeSize;
-  int newDataArraySize = oldDataArraySize - nodeSize + size;
-  int nodeLevel = getNodeLevel(p);
-  int newOffset = getHole(nodeLevel, newDataArraySize, true);
-
-  MEDDLY_DCASSERT(newDataArraySize > oldDataArraySize);
-
-  // Pointers to old and new data arrays
-  int* prev = getNodeAddress(p);
-  int* curr = level[mapLevel(nodeLevel)].data + newOffset;
-
-  // Copy old array to new array
-  // Don't copy last location from the old array to the new array
-  // -- last location stores the pointer to node p.
-  memcpy(curr, prev, (oldDataArraySize - 1) * sizeof(int));
-
-  // Clear out the trailing portion of the new array
-  // -- except the last location.
-  memset(curr + oldDataArraySize - 1, 0,
-      (newDataArraySize - oldDataArraySize) * sizeof(int));
-
-  // Discard the old array
-  makeHole(nodeLevel, address[p].offset, oldDataArraySize);
-
-  // Change the node size
-  curr[2] = size;
-
-  // Set the back-pointer in the new array
-  curr[newDataArraySize - 1] = p;
-
-  // Update the offset field to point to the new array
-  address[p].offset = newOffset;
-
-  MEDDLY_DCASSERT(size == getFullNodeSize(p));
-  MEDDLY_DCASSERT(p == 
-      getNodeAddress(p)[getDataHeaderSize() + getFullNodeSize(p) - 1]);
-}
-
-
-int MEDDLY::mtmxd_forest::reduceNode(int p)
-{
-  MEDDLY_DCASSERT(isActiveNode(p));
-
-#ifdef DEVELOPMENT_CODE
-  validateDownPointers(p);
-#endif
-
-  if (isReducedNode(p)) return p; 
-
-  MEDDLY_DCASSERT(!isTerminalNode(p));
-  MEDDLY_DCASSERT(isFullNode(p));
-
-  int size = getFullNodeSize(p);
-  int* ptr = getFullNodeDownPtrs(p);
-  int node_level = getNodeLevel(p);
-
-  // quick scan: is this node zero?
-  int nnz = 0;
-  int truncsize = 0;
-  {
-    int* curr = ptr;
-    int* last = curr + size;
-    while (curr != last) {
-      if (!isReducedNode(*curr)) {
-        MEDDLY_DCASSERT(getInCount(*curr) == 1);
-        *curr = reduceNode(*curr);
-      }
-      MEDDLY_DCASSERT(isReducedNode(*curr));
-      if (0 != *curr++) {
-        ++nnz;
-        truncsize = curr - ptr;
-      }
-    }
-  }
-
-  if (0 == nnz) {
-    // duplicate of 0
-    unlinkNode(p);
-#ifdef TRACE_REDUCE
-    printf("\tReducing %d, got 0\n", p);
-#endif
-    return 0;
-  }
-
-  // check for possible reductions
-  int temp = 0;
-  if (checkForReductions(p, nnz, temp)) {
-    linkNode(temp);
-    unlinkNode(p);
-    return temp;
-  }
-
-#if 0
-  // check unique table
-  int q = find(p);
-  if (getNull() != q) {
-    // duplicate found
-#ifdef TRACE_REDUCE
-    printf("\tReducing %d, got %d\n", p, q);
-#endif
-    unlinkNode(p);
-    return sharedCopy(q);
-  }
-
-  // insert into unique table
-  insert(p);
-#else
-  int q = replace(p);
-  if (q != p) {
-    // duplicate found
-    unlinkNode(p);
-    return sharedCopy(q);
-  }
-#endif
-
-#ifdef TRACE_REDUCE
-  printf("\tReducing %d: unique, compressing\n", p);
-#endif
-
-  if (!areSparseNodesEnabled())
-    nnz = size;
-
-  // right now, tie goes to truncated full.
-  if (2*nnz < truncsize) {
-    // sparse is better; convert
-    int newoffset = getHole(node_level, 4+2*nnz, true);
-    // can't rely on previous ptr, re-point to p
-    int* full_ptr = getNodeAddress(p);
-    int* sparse_ptr = getAddress(node_level, newoffset);
-    // copy first 2 integers: incount, next
-    sparse_ptr[0] = full_ptr[0];
-    sparse_ptr[1] = full_ptr[1];
-    // size
-    sparse_ptr[2] = -nnz;
-    // copy index into address[]
-    sparse_ptr[3 + 2*nnz] = p;
-    // get pointers to the new sparse node
-    int* indexptr = sparse_ptr + 3;
-    int* downptr = indexptr + nnz;
-    ptr = full_ptr + 3;
-    // copy downpointers
-    for (int i=0; i<size; i++, ++ptr) {
-      if (*ptr) {
-        *indexptr = i;
-        *downptr = *ptr;
-        ++indexptr;
-        ++downptr;
-      }
-    }
-    // trash old node
-#ifdef MEMORY_TRACE
-    int saved_offset = getNodeOffset(p);
-    setNodeOffset(p, newoffset);
-    makeHole(node_level, saved_offset, 4 + size);
-#else
-    makeHole(node_level, getNodeOffset(p), 4 + size);
-    setNodeOffset(p, newoffset);
-#endif
-    // address[p].cache_count does not change
-  } else {
-    // full is better
-#ifndef TRUNCATED_REDUCE_IN_PLACE
-    if (truncsize<size) {
-      // truncate the trailing 0s
-      int newoffset = getHole(node_level, 4+truncsize, true);
-      // can't rely on previous ptr, re-point to p
-      int* full_ptr = getNodeAddress(p);
-      int* trunc_ptr = getAddress(node_level, newoffset);
-      // copy first 2 integers: incount, next
-      trunc_ptr[0] = full_ptr[0];
-      trunc_ptr[1] = full_ptr[1];
-      // size
-      trunc_ptr[2] = truncsize;
-      // copy index into address[]
-      trunc_ptr[3 + truncsize] = p;
-      // elements
-      memcpy(trunc_ptr + 3, full_ptr + 3, truncsize * sizeof(int));
-      // trash old node
-#ifdef MEMORY_TRACE
-      int saved_offset = getNodeOffset(p);
-      setNodeOffset(p, newoffset);
-      makeHole(node_level, saved_offset, 4 + size);
-#else
-      makeHole(node_level, getNodeOffset(p), 4 + size);
-      setNodeOffset(p, newoffset);
-#endif
-      // address[p].cache_count does not change
-    }
-#endif
-  }
-
-  // address[p].cache_count does not change
-  MEDDLY_DCASSERT(getCacheCount(p) == 0);
-  // Sanity check that the hash value is unchanged
-  MEDDLY_DCASSERT(find(p) == p);
-
-  // Temporary node has been transformed to a reduced node; decrement
-  // temporary node count.
-  decrTempNodeCount(node_level);
-
-  return p;
-}
-
-
 int MEDDLY::mtmxd_forest::createNode(int k, int index, int dptr)
 {
   MEDDLY_DCASSERT(index >= 0 && index < getLevelSize(k) && isValidNodeIndex(dptr));
 
   if (dptr == 0) return 0;
 
-  // a single downpointer points to dptr
-  if (!areSparseNodesEnabled() || (areFullNodesEnabled() && index < 2)) {
-    // Build a full node
-    int curr = createTempNode(k, index + 1);
-    setDownPtrWoUnlink(curr, index, dptr);
-    return reduceNode(curr);
-  }
-  else {
-    MEDDLY_DCASSERT (!areFullNodesEnabled() ||
-        (areSparseNodesEnabled() && index >= 2));
-    // Build a sparse node
-    int p = createTempNode(k, 2);
-    int* nodeData = getNodeAddress(p);
-    // For sparse nodes, size is -ve
-    nodeData[2] = -1;
-    // indexes followed by downpointers -- here we have one index and one dptr
-    nodeData[3] = index;
-    nodeData[4] = sharedCopy(dptr);
-    // search in unique table
-    int q = find(p);
-    if (getNull() == q) {
-      // no duplicate found; insert into unique table
-      insert(p);
-      MEDDLY_DCASSERT(getCacheCount(p) == 0);
-      MEDDLY_DCASSERT(find(p) == p);
-    }
-    else {
-      // duplicate found; discard this node and return the duplicate
-      // revert to full temp node before discarding
-      nodeData[2] = 2;
-      nodeData[3] = 0;
-      nodeData[4] = 0;
-      unlinkNode(dptr);
-      unlinkNode(p);
-      p = sharedCopy(q);
-    }
-    return p;
-  }
+  node_builder& nb = useSparseBuilder(k, 1);
+  nb.d(0) = dptr;
+  nb.i(0) = index;
+  return createReducedNode(-1, nb);
 }
 
 int MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, int dptr)
@@ -345,27 +86,24 @@ int MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, int dptr)
 
     if (index1 == -2) {
       // "don't change"
-      result = sharedCopy(dptr);
+      result = dptr;
     }
     else {
       int p = 0;
       if (index2 == -1) {
         // represents "don't care"
-        p = createTempNodeMaxSize(-k, false);
-        setAllDownPtrsWoUnlink(p, dptr);
-        p = reduceNode(p);
+        insertRedundantNode(-k, dptr);
+        p = dptr;
       } else {
         p = createNode(-k, index2, dptr);
       }
       if (index1 == -1) {
         // represents "don't care"
-        result = createTempNodeMaxSize(k, false);
-        setAllDownPtrsWoUnlink(result, p);
-        result = reduceNode(result);
+        insertRedundantNode(k, p);
+        result = p;
       } else {
         result = createNode(k, index1, p);
       }
-      unlinkNode(p);
     }
 
   }
@@ -374,44 +112,36 @@ int MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, int dptr)
     // "don't change"
     MEDDLY_DCASSERT(isQuasiReduced() || isFullyReduced());
     int sz = getLevelSize(k);
-    result = createTempNode(k, sz, false);
-    int* unprimedDptrs = getFullNodeDownPtrs(result);
-    for (int i = 0; i != sz; ++i)
-    {
-      unprimedDptrs[i] = createNode(-k, i, dptr);
+    node_builder &nb = useNodeBuilder(k, sz);
+    for (int i=0; i<sz; i++) {
+      nb.d(i) = createNode(-k, i, dptr);
     }
-    result = reduceNode(result);
-
+    result = createReducedNode(-1, nb);
   }
   else if (isQuasiReduced()) {
 
     int p = 0;
     if (index2 == -1) {
       // represents "don't care"
-      p = createTempNodeMaxSize(-k, false);
-      setAllDownPtrsWoUnlink(p, dptr);
-      p = reduceNode(p);
+      insertRedundantNode(-k, dptr);
+      p = dptr;
     } else {
       p = createNode(-k, index2, dptr);
     }
     if (index1 == -1) {
       // represents "don't care"
-      result = createTempNodeMaxSize(k, false);
-      setAllDownPtrsWoUnlink(result, p);
-      result = reduceNode(result);
+      insertRedundantNode(k, p);
+      result = p;
     } else {
       result = createNode(k, index1, p);
     }
-    unlinkNode(p);
-
   }
   else {
 
     // deal with "don't care" for primed level
-    int p = index2 == -1? sharedCopy(dptr): createNode(-k, index2, dptr);
+    int p = (index2 == -1) ? dptr : createNode(-k, index2, dptr);
     // deal with "don't care" for unprimed level
-    result = index1 == -1? sharedCopy(p): createNode(k, index1, p);
-    unlinkNode(p);
+    result = (index1 == -1) ? p : createNode(k, index1, p);
 
   }
 
@@ -424,23 +154,17 @@ int MEDDLY::mtmxd_forest::createNode(const int* v, const int* vp, int term,
 {
   // construct the edge bottom-up
   for (int k=1; k<startAtHeight; k++) {
-    int prev = term;
     term = createNode(k, v[k], vp[k], term);
-    unlinkNode(prev);
   } // for k
 
   // deal with height == startAtHeight
   // handle primed level first
   if (primedLevel) {
     // only primed level to be handled at this height
-    int prev = term;
     term = createNode(-startAtHeight, vp[startAtHeight], term);
-    unlinkNode(prev);
   } else {
     // both primed and unprimed levels to be handled at this height
-    int prev = term;
     term = createNode(startAtHeight, v[startAtHeight], vp[startAtHeight], term);
-    unlinkNode(prev);
   }
 
   return term;
@@ -467,15 +191,12 @@ int MEDDLY::mtmxd_forest::createEdgeTo(int dptr)
   MEDDLY_DCASSERT(isTerminalNode(dptr));
   if (dptr == 0) return 0;
 
-  if (isFullyReduced()) return sharedCopy(dptr);
+  if (isFullyReduced()) return linkNode(dptr);
 
   // construct the edge bottom-up
   int curr = dptr;
-  int prev = 0;
   for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
-    prev = curr;
-    curr = createNode(i, -1, -1, prev);
-    unlinkNode(prev);
+    curr = createNode(i, -1, -1, curr);
   }
   return curr;
 }
@@ -529,122 +250,4 @@ int MEDDLY::mtmxd_forest::getTerminalNodeForEdge(int n, const int* vlist,
   }
   return n;
 }
-
-
-void MEDDLY::mtmxd_forest::findFirstElement(const dd_edge& f,
-    int* vlist, int* vplist) const
-{
-  // assumption: vlist does not contain any special values (-1, -2, etc).
-  // vlist contains a single element.
-  // vlist is based on level handles.
-  int node = f.getNode();
-  if (node == 0) 
-    throw error(error::INVALID_ASSIGNMENT);
-
-  if (isIdentityReduced()) {
-
-    for (int level = getExpertDomain()->getNumVariables(); level; level--)
-    {
-      MEDDLY_DCASSERT(node != 0);
-      MEDDLY_DCASSERT(isUnprimedNode(node));
-      if (level != getNodeLevel(node)) {
-        // level is "higher" than node, and has been skipped.
-        // Since this is a mxd, reduced nodes enable "don't change" paths
-        // at the skipped level.
-        vlist[level] = 0;   // picking the first index
-        vplist[level] = 0;
-      } else {
-        // find a valid path at this unprime level
-        if (isFullNode(node)) {
-          int size = getFullNodeSize(node);
-          for (int i = 0; i < size; i++)
-          {
-            int n = getFullNodeDownPtr(node, i);
-            if (n != 0) {
-              node = n;
-              vlist[level] = i;
-              break;
-            }
-          }
-        } else {
-          vlist[level] = getSparseNodeIndex(node, 0);
-          node = getSparseNodeDownPtr(node, 0);
-        }
-
-        MEDDLY_DCASSERT(!isTerminalNode(node));
-        // can't be -1 because that violates MXD properties
-        // can't be 0 because node cannot be set to 0 in the above construct.
-        MEDDLY_DCASSERT(isPrimedNode(node));
-        // find a valid path at this prime level
-        if (isFullNode(node)) {
-          int size = getFullNodeSize(node);
-          for (int i = 0; i < size; i++)
-          {
-            int n = getFullNodeDownPtr(node, i);
-            if (n != 0) {
-              node = n;
-              vplist[level] = i;
-              break;
-            }
-          }
-        } else {
-          vplist[level] = getSparseNodeIndex(node, 0);
-          node = getSparseNodeDownPtr(node, 0);
-        }
-      }
-    } // for level
-
-  }
-  else {
-
-    // !IDENTITY_REDUCED
-    for (int currLevel = getExpertDomain()->getNumVariables(); currLevel; )
-    {
-      MEDDLY_DCASSERT(node != 0);
-      if (currLevel != getNodeLevel(node)) {
-        // currLevel been skipped. !IDENTITY_REDUCED ==> reduced nodes
-        // enable all paths at the skipped level. Pick the first index.
-        if (currLevel < 0) {
-          vplist[-currLevel] = 0;
-        } else {
-          vlist[currLevel] = 0;
-        }
-      } else {
-        // find a valid path at this level
-        if (isFullNode(node)) {
-          int size = getFullNodeSize(node);
-          for (int i = 0; i < size; i++)
-          {
-            int n = getFullNodeDownPtr(node, i);
-            if (n != 0) {
-              node = n;
-              if (currLevel < 0) {
-                vplist[-currLevel] = i;
-              } else {
-                vlist[currLevel] = i;
-              }
-              break;
-            }
-          }
-          // Note: since n is not an empty node the for loop is
-          // guaranteed to overwrite "node".
-        } else {
-          if (currLevel < 0) {
-            vplist[-currLevel] = getSparseNodeIndex(node, 0);
-          } else {
-            vlist[currLevel] = getSparseNodeIndex(node, 0);
-          }
-          node = getSparseNodeDownPtr(node, 0);
-        }
-      }
-      // Set next level
-      currLevel = currLevel < 0
-                    ? (-currLevel)-1
-                    : -currLevel;
-    } // currlevel
-
-
-  }
-}
-
 

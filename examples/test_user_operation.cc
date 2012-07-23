@@ -366,7 +366,7 @@ int AndSum(int n1, int n2)
 void printElements(FILE* strm, dd_edge& e)
 {
   int nLevels = ((e.getForest())->getDomain())->getNumVariables();
-  for (dd_edge::const_iterator iter = e.begin(); iter; ++iter) {
+  for (enumerator iter(e); iter; ++iter) {
     const int* minterm = iter.getAssignments();
     fprintf(strm, "[");
     for (int i = nLevels; i > 0; i--) {

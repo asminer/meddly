@@ -38,7 +38,6 @@ namespace MEDDLY {
 // ******************************************************************
 
 class MEDDLY::generic_binary_mdd : public binary_operation {
-    bool can_commute;
   public:
     generic_binary_mdd(const binary_opname* code, expert_forest* arg1, 
       expert_forest* arg2, expert_forest* res);
@@ -55,9 +54,6 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
 
   protected:
     virtual bool isStaleEntry(const int* entryData);
-    inline void operationCommutes() {
-      can_commute = (arg1F == arg2F);
-    }
 
     inline bool findResult(int a, int b, int &c) {
       if (can_commute && a > b) {
@@ -86,15 +82,6 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
       CT->addEntry();
     }
 
-    // not sure about these...
-
-    virtual void expandA(int a, int b, int result, int resultSize);
-    virtual void expandB(int a, int b, int result, int resultSize);
-    virtual void fullFull(int a, int b, int result, int resultSize);
-    virtual void fullSparse(int a, int b, int result, int resultSize);
-    virtual void sparseFull(int a, int b, int result, int resultSize);
-    virtual void sparseSparse(int a, int b, int result, int resultSize);
-
   protected:
     // If terminal condition is reached, returns true and the result in c.
     // Must be provided in derived classes.
@@ -104,7 +91,7 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
 
 // ******************************************************************
 
-class MEDDLY::generic_binary_mxd : public generic_binary_mdd {
+class MEDDLY::generic_binary_mxd : public binary_operation {
   public:
     generic_binary_mxd(const binary_opname* code, expert_forest* arg1, 
       expert_forest* arg2, expert_forest* res);
@@ -113,26 +100,56 @@ class MEDDLY::generic_binary_mxd : public generic_binary_mdd {
     virtual ~generic_binary_mxd();
 
   public:
+    virtual void discardEntry(const int* entryData);
+    virtual void showEntry(FILE* strm, const int *entryData) const;
+    virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
+
     virtual int compute(int a, int b);
 
   protected:
-    virtual int computeIdent(int a, int b);
-    virtual int computeNonIdent(int a, int b);
+    int compute(int i, int a, int b);
 
-    virtual void expandA(int a, int b, int result, 
-      int resultLevel, int resultSize);
-    virtual void singleExpandA( int a, int b, int result, 
-      int resultLevel, int resultSize);
-    virtual void expandB(int a, int b, int result, 
-      int resultLevel, int resultSize);
-    virtual void singleExpandB(int a, int b, int result, 
-      int resultLevel, int resultSize);
+  protected:
+    virtual bool isStaleEntry(const int* entryData);
+
+    inline bool findResult(int in, int a, int b, int &c) {
+      CTsrch.key(0) = in;
+      if (can_commute && a > b) {
+        CTsrch.key(1) = b;
+        CTsrch.key(2) = a;
+      } else {
+        CTsrch.key(1) = a;
+        CTsrch.key(2) = b;
+      }
+      const int* cacheFind = CT->find(CTsrch);
+      if (0==cacheFind) return false;
+      c = resF->linkNode(cacheFind[3]);
+      return true;
+    }
+
+    inline void saveResult(int in, int a, int b, int c) {
+      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      entry.key(0) = in;
+      if (can_commute && a > b) {
+        entry.key(1) = arg2F->cacheNode(b);
+        entry.key(2) = arg1F->cacheNode(a);
+      } else {
+        entry.key(1) = arg1F->cacheNode(a);
+        entry.key(2) = arg2F->cacheNode(b);
+      }
+      entry.result(0) = resF->cacheNode(c);
+      CT->addEntry();
+    }
+
+  protected:
+    // If terminal condition is reached, returns true and the result in c.
+    // Must be provided in derived classes.
+    virtual bool checkTerminals(int a, int b, int& c) = 0;
 };
 
 // ******************************************************************
 
 class MEDDLY::generic_binbylevel_mxd : public binary_operation {
-    bool can_commute;
   public:
     generic_binbylevel_mxd(const binary_opname* code, expert_forest* arg1, 
       expert_forest* arg2, expert_forest* res);
@@ -149,9 +166,6 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
 
   protected:
     virtual bool isStaleEntry(const int* entryData);
-    inline void operationCommutes() {
-      can_commute = (arg1F == arg2F);
-    }
 
     inline bool findResult(int k, int a, int b, int &c) {
       CTsrch.key(0) = k;
@@ -182,19 +196,7 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
       CT->addEntry();
     }
 
-    virtual int computeIdent(int level, int a, int b);
-    virtual int computeNonIdent(int level, int a, int b);
-
-    virtual void expandSkippedLevel(int a, int b,
-        int result, int resultLevel, int resultSize);
-    virtual void expandA(int a, int b,
-        int result, int resultLevel, int resultSize);
-    virtual void singleExpandA(int a, int b,
-        int result, int resultLevel, int resultSize);
-    virtual void expandB(int a, int b,
-        int result, int resultLevel, int resultSize);
-    virtual void singleExpandB(int a, int b,
-        int result, int resultLevel, int resultSize);
+    int compute(int i, int level, int a, int b);
 
   protected:
     // If terminal condition is reached, returns true and the result in c.
@@ -206,8 +208,6 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
 // ******************************************************************
 
 class MEDDLY::generic_binary_ev : public binary_operation {
-  protected:
-    bool can_commute;
   public:
     generic_binary_ev(const binary_opname* code, expert_forest* arg1, 
       expert_forest* arg2, expert_forest* res);
@@ -220,9 +220,6 @@ class MEDDLY::generic_binary_ev : public binary_operation {
 
   protected:
     virtual bool isStaleEntry(const int* entryData);
-    inline void operationCommutes() {
-      can_commute = (arg1F == arg2F);
-    }
 };
 
 // ******************************************************************

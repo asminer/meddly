@@ -48,12 +48,13 @@ namespace MEDDLY {
 
   class error;
   struct settings;
-  struct statistics;
   class forest;
   class expert_forest;
+  class node_reader;
   class variable;
   class domain;
   class dd_edge;
+  class enumerator;
   class ct_object;
   class unary_opname;
   class binary_opname;
@@ -71,16 +72,6 @@ namespace MEDDLY {
     FLOATVECT   = 5,
     DOUBLEVECT  = 6
   };
-
-  // ******************************************************************
-  // *                        statistics  class                       *
-  // ******************************************************************
-  
-  /// Various performance measures for MEDDLY.
-  struct statistics {
-    // TBD
-  };
-
 
   // ******************************************************************
   // *                    miscellaneous  functions                    *
@@ -217,9 +208,6 @@ namespace MEDDLY {
 
   /// Get the current library settings.
   const settings& getLibrarySettings();
-
-  /// Get the current library stats.
-  const statistics& getLibraryStats();
 
   /** Get the information about the library.
       @param  what  Determines the type of information to obtain.
@@ -574,14 +562,16 @@ class MEDDLY::forest {
       node_deletion deletion;
 
       /// Compaction threshold for all variables in the forest.
-      unsigned compaction;
+      int compaction;
       /// Number of zombie nodes to trigger garbage collection
-      unsigned zombieTrigger;
+      int zombieTrigger;
       /// Number of orphan nodes to trigger garbage collection
-      unsigned orphanTrigger;
+      int orphanTrigger;
       /// Should we run the memory compactor after garbage collection
       bool compactAfterGC;
 
+      /// Per-level node memory management parameter.
+      bool recycleHolesInLevelData;
 
       /// Constructor; sets reasonable defaults
       policies(bool rel) {
@@ -592,6 +582,7 @@ class MEDDLY::forest {
         zombieTrigger = 1000000;
         orphanTrigger = 500000;
         compactAfterGC = true;
+        recycleHolesInLevelData = true;
       }
 
       inline void setFullyReduced()     { reduction = FULLY_REDUCED; }
@@ -1280,6 +1271,16 @@ class MEDDLY::forest {
     virtual void evaluate(const dd_edge& f, const int* vlist,
       const int* vplist, float &term) const;
 
+    /** Returns element \a e at index \a i from an Index Set EV+MDD.
+    
+        size(e) = number of variables in the forest + 1 (for terminals).
+        TODO: complete this description
+
+        on return: e[0] will be 1 if the element could be found, 0 otherwise.
+
+        @throws       INVALID_OPERATION, if this is not an Index Set EV+MDD.
+    */
+    virtual void getElement(const dd_edge& a, int index, int* e);
 
   // ------------------------------------------------------------
   // abstract virtual.
@@ -1306,34 +1307,13 @@ class MEDDLY::forest {
         
         TODO: write a better description (an example might also help).
     */
+    /*
     virtual void createSubMatrix(const bool* const* vlist,
       const bool* const* vplist, const dd_edge a, dd_edge& b) = 0;
+      */
 
 
-    /** Returns element \a e at index \a i from an Index Set EV+MDD.
-    
-        size(e) = number of variables in the forest + 1 (for terminals).
-        TODO: complete this description
-    */
-    virtual void getElement(const dd_edge& a, int index, int* e) = 0;
 
-
-    /** Returns a state from the MDD represented by \a f.
-        @param  f       Edge.
-        @param  vlist   Output parameter used to return a state from \a f.
-    */
-    virtual void findFirstElement(const dd_edge& f, int* vlist) const = 0;
-
-
-    /** Returns a transition from the MXD represented by \a f.
-        @param  f       Edge.
-        @param  vlist   Output parameter used to return a 
-                        transition from \a f.
-        @param  vplist  Output parameter used to return a 
-                        transition from \a f.
-    */
-    virtual void findFirstElement(const dd_edge& f, int* vlist, int* vplist)
-      const = 0;
 
     /** Display all active (i.e., connected) nodes in the forest.
         This is primarily for aid in debugging.
@@ -1401,6 +1381,19 @@ class MEDDLY::forest {
     void registerEdge(dd_edge& e);
     void unregisterEdge(dd_edge& e);
     void unregisterDDEdges();
+
+  protected:
+    class edge_visitor {
+      public:
+        edge_visitor();
+        virtual ~edge_visitor();
+        virtual void visit(dd_edge &e) = 0;
+    };
+    inline void visitRegisteredEdges(edge_visitor &ev) {
+      for (unsigned i = 0; i < firstFree; ++i) {
+        if (edge[i].edge) ev.visit(*(edge[i].edge));
+      }
+    }
 
   private:
     bool isRelation;
@@ -1658,19 +1651,35 @@ class MEDDLY::domain {
 */
 class MEDDLY::dd_edge {
   public:
+    /// Empty constructor.
+    dd_edge();
+
     /** Constructor.
         Creates an empty edge in forest \a p.
         @param  p     forest to which this dd_edge will belong to.
     */
     dd_edge(forest* p);
 
-    /// Destructor.  Will notify parent as appropriate.
-    ~dd_edge();
-
     /** Copy Constructor.
         @param  e       dd_edge to copy.
     */
     dd_edge(const dd_edge &e);
+
+    /** Assignment operator.
+        @param  e       dd_edge to copy.
+        @return         the new dd_edge.
+    */
+    dd_edge& operator=(const dd_edge &e);
+
+    /// Destructor.  Will notify parent as appropriate.
+    ~dd_edge();
+
+  private:
+    void init(const dd_edge &e);
+    void destroy();
+
+
+  public:
 
     /** Clears the contents of this edge. It will belong to the same
         forest as before.
@@ -1678,7 +1687,6 @@ class MEDDLY::dd_edge {
     inline void clear() {
       assert(index != -1);
       set(0, 0, 0);
-      updateNeeded = true;
     }
 
     /** Obtain a modifiable copy of the forest owning this edge.
@@ -1742,111 +1750,6 @@ class MEDDLY::dd_edge {
     */
     void set(int node, int value, int level);
     void set(int node, float value, int level);
-
-    class iterator {
-      public:
-        enum iter_type {
-          DEFAULT=0,
-          ROW,
-          COLUMN
-        };
-        iterator();
-        ~iterator();
-        iterator(const iterator& iter);
-        iterator& operator=(const iterator& iter);
-        inline operator bool() const { return nodes && nodes[0]; }
-        void operator--();
-        void operator++();
-        bool operator!=(const iterator& iter) const;
-        bool operator==(const iterator& iter) const;
-        const int* getAssignments() const;
-        const int* getPrimedAssignments() const;
-        // Highest level at which the current minterm differs
-        // from the previous minterm.
-        inline int getLevel() const { return foundPathAtLevel; }
-        void getValue(int& edgeValue) const;
-        void getValue(float& edgeValue) const;
-        
-        iterator(dd_edge* e, iter_type t, const int* minterm);
-        bool findFirstColumn(int height, int node);
-        bool findNextColumn(int height);
-        bool findFirstRow(int height, int node);
-        bool findNextRow(int height);
-
-      private:
-        friend class dd_edge;
-        void incrNonRelation();
-        void incrRelation();
-        void incrNonIdentRelation();
-        void incrRow();
-        void incrColumn();
-        void incrNonIdentRow();
-        void incrNonIdentColumn();
-
-        dd_edge*  e;
-        unsigned  size;
-        int*      element;
-        int*      nodes;
-        int*      pelement;
-        int*      pnodes;
-        iter_type type;
-        int       foundPathAtLevel;
-    };
-
-    typedef iterator const_iterator;
-
-    /** Returns an iterator to the first element of the dd_edge.
-        The iterator can be used to visit the elements in the DD in
-        lexicographic order.
-        @return         an iterator pointing to the first element.
-    */
-    const_iterator begin();
-
-    /** Returns an iterator to the first element of the dd_edge
-        with minterm as the "from" component of the element
-        (the entire element being from->to).
-
-        This iterator can then be used to visit the elements
-        in the DD with the same "from" component.
-        The elements are visited in lexicographic order of the
-        "to" component.
-        
-        This is only valid for DD that store relations.
-
-        If the relation is thought of as a matrix with the Y-axis
-        representing the "from" components and the X-axis representing
-        the "to" components, this iterator is useful for visiting all
-        the "to"s that correspond to a single "from".
-
-        @return         an iterator pointing to the first element.
-    */
-    const_iterator beginRow(const int* minterm);
-
-    /** Returns an iterator to the first element of the dd_edge
-        with minterm as the "to" component of the element
-        (the entire element being to->from).
-
-        This iterator can then be used to visit the elements
-        in the DD with the same "to" component.
-        The elements are visited in lexicographic order of the
-        "from" component.
-        
-        This is only valid for DD that store relations.
-
-        If the relation is thought of as a matrix with the Y-axis
-        representing the "from" components and the X-axis representing
-        the "to" components, this iterator is useful for visiting all
-        the "from"s that correspond to a single "to".
-
-        @return         an iterator pointing to the first element.
-    */
-    const_iterator beginColumn(const int* minterm);
-
-    /** Assignment operator.
-        @param  e       dd_edge to copy.
-        @return         the new dd_edge.
-    */
-    dd_edge& operator=(const dd_edge &e);
 
     /** Check for equality.
         @return true    iff this edge has the same parent and refers to
@@ -1984,15 +1887,166 @@ class MEDDLY::dd_edge {
     binary_operation* opMinus;
     binary_operation* opDivide;
 
-    void updateIterators();
-
-    bool            updateNeeded;
-    const_iterator* beginIterator;
-
     // called when the parent is destroyed
     inline void orphan() {
       parent = 0;
     }
+};
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                        enumerator class                        *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+/** Class for enumerating all non-zero values
+    encoded by a dd_edge.
+    Basically, these are iterators.
+*/
+class MEDDLY::enumerator {
+  public:
+    enum iter_type {
+      EMPTY=0,
+      SET,
+      RELATION,
+      ROW,      // enumerate with a fixed ROW
+      COLUMN    // enumerate with a fixed COLUMN
+    };
+  public:
+    /// Empty constructor.
+    enumerator();
+    /// Constructor - start iterating through edge e.
+    enumerator(const dd_edge &e);
+    /// Constructor - start iterating through edge e,
+    /// but fix some variables.  See startFixed().
+    enumerator(const dd_edge &e, const int* allvars);
+    /// Destructor.
+    ~enumerator();
+  private:
+    void destroy();
+    void initEmpty();
+    void newForest(expert_forest* f);
+  public:
+    /// Start iterating through edge e.
+    void start(const dd_edge &e);
+
+    /** Start iterating through edge e.
+        The unprimed variables will be fixed to
+        the given values.
+          @param  e         Edge to iterate.
+                            Must be a relation.
+          @param  minterm   Array of dimension 1+vars in e.
+                            minterm[k] gives the fixed variable
+                            assignment for (unprimed) variable k.
+    */
+    void startFixedRow(const dd_edge &e, const int* minterm);
+
+    /** Start iterating through edge e.
+        The primed variables will be fixed to
+        the given values.
+          @param  e         Edge to iterate.
+                            Must be a relation.
+          @param  minterm   Array of dimension 1+vars in e.
+                            minterm[k] gives the fixed variable
+                            assignment for (unprimed) variable k.
+    */
+    void startFixedColumn(const dd_edge &e, const int* minterm);
+
+    /** Start iterating through edge e.
+        Either the primed or unprimed variables
+        will be fixed, based on the parameter allvars.
+          @param  e         Edge to iterate.
+                            Must be a relation.
+          @param  allvars   Array of dimension 2*vars+1 in e,
+                            but shifted so that
+                            allvars[-k] gives the assignment
+                            for primed variable k, and
+                            allvars[k] gives the assignment
+                            for unprimed variable k.
+                            If all unprimed variables are
+                            set to -1, then we fix the primed ones;
+                            otherwise, all primed variables
+                            should be set to -1, and we fix the
+                            unprimed ones.
+    */
+    void startFixed(const dd_edge &e, const int* allvars);
+
+    inline operator bool() const { return isValid; }
+    inline void operator++() {
+#ifdef DEVELOPMENT_CODE
+      if (0==incr) throw error(error::MISCELLANEOUS);
+#endif
+      isValid &= (this->*incr)();
+    }
+
+    /** Get the current variable assignments.
+        For variable i, use index i for the
+        unprimed variable, and index -i for the primed variable.
+    */
+    inline const int* getAssignments() const {
+      return index;
+    }
+
+    /** Get primed assignments.
+        It is much faster to use getAssigments()
+        and look at the negative indexes;
+        however, this works.
+    */
+    const int* getPrimedAssignments();
+
+    /// For integer-ranged edges, get the current non-zero value.
+    void getValue(int& edgeValue) const;
+
+    /// For real-ranged edges, get the current non-zero value.
+    void getValue(float& edgeValue) const;
+        
+  private:
+    bool incrNonRelation();
+    bool incrRelation();
+    bool incrRow();
+    bool incrColumn();
+    bool firstSetElement(int k, int down);
+    bool firstRelElement(int k, int down);
+    bool firstRow(int k, int down);
+    bool firstColumn(int k, int down);
+
+    static inline int downLevel(int k) {
+      return (k>0) ? (-k) : (-k-1);
+    }
+    static inline int upLevel(int k) {
+      return (k<0) ? (-k) : (-k-1);
+    }
+
+    /// pointer to increment method, which returns a boolean.
+    bool (enumerator::* incr) ();
+
+    // Current edge.  Used only for getValue.
+    dd_edge e;
+
+    // Current parent forest.
+    expert_forest* F;
+
+    // Iterator type.
+    iter_type type;
+
+    // Path, as list of node readers
+    node_reader*    rawpath;
+    node_reader*    path;   // rawpath, shifted so we can use path[-k]
+    // Path nnz pointers
+    int*      rawnzp;
+    int*      nzp;   // rawnzp, shifted so we can use nzp[-k]
+    // Path indexes
+    int*      rawindex;
+    int*      index;  // rawindex, shifted so we can use index[-k]
+    // Used only by getPrimedAssignments.
+    int*      prindex;
+    // 
+    int       minLevel; // 1 or -#vars, depending.
+    int       maxLevel; // #vars
+    //
+    bool      isValid;
 };
 
 

@@ -23,8 +23,10 @@
 #include "simple_model.h"
 
 #define VERBOSE
-// #define DEBUG_GENERATE
 
+//#define DEBUG_GENERATE
+//#define DEBUG_EVENTS
+//#define DEBUG_EVENTS_LONG
 
 inline int MAX(int a, int b) {
   return (a>b) ? a : b;
@@ -144,6 +146,10 @@ void buildNextStateFunction(const char* const* events, int nEvents,
 #endif
     if (verb>2) fputc(' ', stderr);
     nsf += nsf_ev;
+#ifdef DEBUG_EVENTS_LONG
+    printf("Complete after adding event %d:\n", e);
+    nsf.show(stdout, 2);
+#endif
 
     if (verb>2) fputc('\n', stderr);
   } // for e
@@ -165,7 +171,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
 
 #ifdef DEBUG_EVENTS
   printf("Complete NSF:\n");
-  nsf.show(stdout, 2);
+  nsf.show(stdout, 2); 
 #endif
 }
 
@@ -218,7 +224,7 @@ void explicitReachset(const char* const* events, int nEvents,
   // exploration loop.
   for (;;) {
     unexplored.clear();
-    MEDDLY::dd_edge::iterator I = expl.begin();
+    MEDDLY::enumerator I(expl);
     if (!I) break;    // nothing left to explore, bail out
     // explore everything in expl
     for (; I; ++I) {

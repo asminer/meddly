@@ -25,7 +25,9 @@
 
 MEDDLY::mt_mxd_int::mt_mxd_int(int dsl, domain *d, const policies &p)
 : MEDDLY::mtmxd_forest(dsl, d, true, INTEGER, MULTI_TERMINAL, p)
-{ }
+{ 
+  initializeForest();
+}
 
 
 MEDDLY::mt_mxd_int::~mt_mxd_int()
@@ -68,3 +70,7 @@ void MEDDLY::mt_mxd_int::evaluate(const dd_edge& f, const int* vlist,
   term = getInteger(getTerminalNodeForEdge(f.getNode(), vlist, vplist));
 }
 
+void MEDDLY::mt_mxd_int::showTerminal(FILE* s, int tnode) const
+{
+  fprintf(s, "t%d", getInteger(tnode)); 
+}

@@ -26,9 +26,7 @@
 #include "meddly.h"
 #include "simple_model.h"
 
-#include "kan_rs1.h"
-#include "kan_rs2.h"
-#include "kan_rs3.h"
+// #define SHOW_INDEXES
 
 const char* kanban[] = {
   "X-+..............",  // Tin1
@@ -49,112 +47,97 @@ const char* kanban[] = {
   "X.............-.+"   // Tg4
 };
 
-// 160 states for N=1
-long expected[] = { 
-  1, 160, 4600, 58400, 454475, 2546432, 11261376, 
-  41644800, 133865325, 384392800, 1005927208 
-};
-
 using namespace MEDDLY;
 
-dd_edge buildReachset(domain* d, int N)
+bool checkReachset(int N)
 {
+  printf("Running test for N=%d...\n", N);
+
+  int sizes[16];
+
+  for (int i=15; i>=0; i--) sizes[i] = N+1;
+  domain* dom = createDomainBottomUp(sizes, 16);
+
   // Build initial state
   int* initial = new int[17];
   for (int i=16; i; i--) initial[i] = 0;
   initial[1] = initial[5] = initial[9] = initial[13] = N;
-  forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mdd = dom->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge init_state(mdd);
   mdd->createEdge(&initial, 1, init_state);
   delete[] initial;
+  printf("\tbuilt initial state\n");
+  fflush(stdout);
 
   // Build next-state function
-  forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mxd = dom->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge nsf(mxd);
   buildNextStateFunction(kanban, 16, mxd, nsf); 
+  printf("\tbuilt next-state function\n");
+  fflush(stdout);
 
+  // Build reachable states
   dd_edge reachable(mdd);
   apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+  printf("\tbuilt reachable states\n");
+  fflush(stdout);
+
+  // Build index set for reachable states
+  forest* evmdd = dom->createForest(0, forest::INTEGER, forest::EVPLUS);
+  dd_edge reach_index(evmdd);
+  apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
+#ifdef SHOW_INDEXES
+  printf("\tbuilt index set:\n");
+  reach_index.show(stdout, 2);
+#else
+  printf("\tbuilt index set\n");
+#endif
+  fflush(stdout);
+
+  // Verify indexes
+  int c = 0;
+  for (enumerator s(reachable); s; ++s) {
+    const int* state = s.getAssignments();
+    int index;
+    evmdd->evaluate(reach_index, state, index);
+    if (c != index) {
+      printf("\nState number %d has index %d\n", c, index);
+      return false;
+    }
+    c++;
+  } // for s
+
+  // verify the other way
+  int d = 0;
+  for (enumerator s(reach_index); s; ++s) {
+    const int* state = s.getAssignments();
+    bool ok;
+    mdd->evaluate(reachable, state, ok);
+    if (!ok) {
+      printf("\nIndex number %d does not appear in reachability set\n", d);
+      return false;
+    }
+    d++;
+  }
+  if (c!=d) {
+    printf("\nCardinality mismatch\n");
+    return false;
+  }
+  printf("\tchecked indexes\n");
+  fflush(stdout);
+
+  destroyDomain(dom);
   
-  return reachable;
-}
-
-bool matches(const char* mark, const int* minterm, int np)
-{
-  for (int i=0; i<np; i++) 
-    if (mark[i]-48 != minterm[i]) return false;
   return true;
-}
-
-long checkRS(int N, const char* rs[]) 
-{
-  int sizes[16];
-
-  for (int i=15; i>=0; i--) sizes[i] = N+1;
-  domain* d = createDomainBottomUp(sizes, 16);
-
-  dd_edge reachable = buildReachset(d, N);
-
-  // enumerate states
-  long c = 0;
-  for (enumerator i(reachable); i; ++i) {
-    if (c>=expected[N]) {
-      c++;
-      break;
-    }
-    if (!matches(rs[c], i.getAssignments()+1, 16)) {
-      fprintf(stderr, "Marking %ld mismatched\n", c);
-      break;
-    }
-    c++;
-  }
-
-  destroyDomain(d);
-  return c;
-}
-
-void showRS(int N)
-{
-  int sizes[16];
-
-  for (int i=15; i>=0; i--) sizes[i] = N+1;
-  domain* d = createDomainBottomUp(sizes, 16);
-
-  dd_edge reachable = buildReachset(d, N);
-
-  // enumerate states
-  long c = 0;
-  for (enumerator i(reachable); i; ++i) {
-    const int* minterm = i.getAssignments();
-    printf("%5ld: %d", c, minterm[1]);
-    for (int l=2; l<=16; l++) printf(", %d", minterm[l]);
-    printf("\n");
-    c++;
-  }
-
-  destroyDomain(d);
 }
 
 int main()
 {
   MEDDLY::initialize();
 
-  long c;
-
-  printf("Checking Kanban reachability set, N=1\n");
-  c = checkRS(1, kanban_rs1);
-  if (c != expected[1]) return 1;
-  printf("\t%ld markings checked out\n", c);
-
-  printf("Checking Kanban reachability set, N=2\n");
-  c = checkRS(2, kanban_rs2);
-  if (c != expected[2]) return 1;
-  printf("\t%ld markings checked out\n", c);
-
-  printf("Checking Kanban reachability set, N=3\n");
-  c = checkRS(3, kanban_rs3);
-  if (c != expected[3]) return 1;
-  printf("\t%ld markings checked out\n", c);
+  for (int n=1; n<4; n++) {
+    if (!checkReachset(n)) return 1;
+  }
 
   MEDDLY::cleanup();
   printf("Done\n");

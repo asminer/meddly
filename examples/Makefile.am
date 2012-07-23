@@ -13,16 +13,14 @@ test_union_mxd \
 test_mtmdd \
 test_mtmxd \
 test_evmdd \
-test_temporary_nodes \
-test_user_operation \
 build_expression \
-kan1_batch \
 dining_phils \
 rubiks_cube \
 nqueens \
 queen_cover \
 kanban \
 slot
+# test_user_operation 
 
 AM_CPPFLAGS = -I../src -I../src/operations
 AM_CXXFLAGS = -Wall
@@ -49,9 +47,6 @@ test_mtmxd_LDADD = ../src/libmeddly.la
 build_expression_SOURCES = build_expression.cc
 build_expression_LDADD = ../src/libmeddly.la
 
-kan1_batch_SOURCES = kan1_batch.cc
-kan1_batch_LDADD = ../src/libmeddly.la
-
 dining_phils_SOURCES = dining_phils.cc
 dining_phils_LDADD = ../src/libmeddly.la
 
@@ -60,9 +55,6 @@ rubiks_cube_LDADD = ../src/libmeddly.la
 
 test_evmdd_SOURCES = test_evmdd.cc
 test_evmdd_LDADD = ../src/libmeddly.la
-
-test_temporary_nodes_SOURCES = test_temporary_nodes.cc
-test_temporary_nodes_LDADD = ../src/libmeddly.la
 
 nqueens_SOURCES = nqueens.cc
 nqueens_LDADD = ../src/libmeddly.la
@@ -76,6 +68,6 @@ kanban_LDADD = ../src/libmeddly.la
 slot_SOURCES = slot.cc simple_model.h simple_model.cc
 slot_LDADD = ../src/libmeddly.la
 
-test_user_operation_SOURCES = test_user_operation.cc
-test_user_operation_LDADD = ../src/libmeddly.la
+# test_user_operation_SOURCES = test_user_operation.cc
+# test_user_operation_LDADD = ../src/libmeddly.la
 

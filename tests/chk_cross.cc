@@ -190,7 +190,15 @@ void test(forest* mdd, forest* mxd, int nmt)
 
   // intersection of rr and cr should equal rs x cs.
   apply(CROSS, rs, cs, rcr);
+#ifdef DEBUG_RANDSET
+  printf("rs x cs:\n");
+  rcr.show(stdout, 2);
+#endif
   tmp = rr * cr;
+#ifdef DEBUG_RANDSET
+  printf("rr * cr:\n");
+  tmp.show(stdout, 2);
+#endif
   assert(tmp == rcr);
 }
 

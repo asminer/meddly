@@ -262,7 +262,7 @@ int main(int argc, const char** argv)
   apply(CARDINALITY, *solutions, c);
   printf("\nThere are %ld solutions to the %d-queens problem\n\n", c, N);
 
-  dd_edge::const_iterator first = solutions->begin();
+  enumerator first(*solutions);
 #ifdef SHOW_ALL_SOLUTIONS
   c = 0;
   for (; first; ++first) {

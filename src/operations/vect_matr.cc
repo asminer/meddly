@@ -107,11 +107,11 @@ class MEDDLY::VM_evplus_mt : public base_evplus_mt {
     VM_evplus_mt(const numerical_opname* code, const dd_edge &x_ind,
       const dd_edge& A, const dd_edge &y_ind);
 
-    virtual void compute(int ht, double* y, int y_ind, const double* x, 
+    virtual void compute(int k, double* y, int y_ind, const double* x, 
       int x_ind, int A);
 
-    void comp_pr(int ht, double* y, int y_ind, const double* x, 
-      int x_ind, int A);
+    void comp_pr(int k, double* y, int y_ind, const double* x, 
+      int x_ind, int ain, int A);
 
 };
 
@@ -120,6 +120,154 @@ MEDDLY::VM_evplus_mt::VM_evplus_mt(const numerical_opname* code,
   : base_evplus_mt(code, x_ind, A, y_ind)
 {
 }
+
+#if 1
+
+void MEDDLY::VM_evplus_mt::compute(int k, double* y, int y_ind, 
+  const double* x, int x_ind, int a)
+{
+  // Handles the unprimed levels of a
+  if (0==k) {
+    y[0] += x[0] * fA->getReal(a);
+    return;
+  }
+
+  // It should be impossible for an indexing function to skip levels, right?   
+  MEDDLY_DCASSERT(fx->getNodeHeight(x_ind) == k);
+  MEDDLY_DCASSERT(fy->getNodeHeight(y_ind) == k);
+  int aLevel = fA->getNodeLevel(a);
+
+  //
+  // A is identity matrix times a constant; exploit that if we can
+  //
+  if (0==aLevel && (x_ind == y_ind)) {
+    if (fx == fy) {
+      MEDDLY_DCASSERT(fx->isIndexSet(x_ind));
+      // yes we can
+      float v = fA->getReal(a);
+      for (long i = fx->getIndexSetCardinality(x_ind)-1; i>=0; i--) {
+        y[i] += x[i] * v;
+      }
+      return;
+    }
+  }
+
+  //
+  // Check if A is an identity node
+  //
+  if (ABS(aLevel) < k) {
+    // Init sparse readers
+    node_reader* xR = fx->initNodeReader(x_ind, false);
+    node_reader* yR = fy->initNodeReader(y_ind, false);
+
+    int xp = 0;
+    int yp = 0;
+    for (;;) {
+      if (xR->i(xp) < yR->i(yp)) {
+        xp++;
+        if (xp >= xR->getNNZs()) break;
+        continue;
+      }
+      if (xR->i(xp) > yR->i(yp)) {
+        yp++;
+        if (yp >= yR->getNNZs()) break;
+        continue;
+      }
+      // match, need to recurse
+      compute(k-1, y + yR->ei(yp), yR->d(yp), x + xR->ei(xp), xR->d(xp), a);
+      xp++;
+      if (xp >= xR->getNNZs()) break;
+      yp++;
+      if (yp >= yR->getNNZs()) break;
+    } // for (;;)
+    
+    // Cleanup
+    node_reader::recycle(yR);
+    node_reader::recycle(xR);
+
+    // Done
+    return;
+  }
+
+  //
+  // A is not an identity node.
+  //
+
+  // Init sparse readers
+  node_reader* aR = (aLevel == k) 
+    ? fA->initNodeReader(a, false)
+    : fA->initRedundantReader(k, a, false);
+  node_reader* xR = fx->initNodeReader(x_ind, false);
+
+  int xp = 0;
+  int ap = 0;
+  for (;;) {
+    if (aR->i(ap) < xR->i(xp)) {
+      ap++;
+      if (ap >= aR->getNNZs()) break;
+      continue;
+    }
+    if (aR->i(ap) > xR->i(xp)) {
+      xp++;
+      if (xp >= xR->getNNZs()) break;
+      continue;
+    }
+    // match, need to recurse
+    comp_pr(k, y, y_ind, x + xR->ei(xp), xR->d(xp), aR->i(ap), aR->d(ap));
+    ap++;
+    if (ap >= aR->getNNZs()) break;
+    xp++;
+    if (xp >= xR->getNNZs()) break;
+  } // for (;;)
+
+  // Cleanup
+  node_reader::recycle(xR);
+  node_reader::recycle(aR);
+}
+
+void MEDDLY::VM_evplus_mt::comp_pr(int k, double* y, int y_ind, 
+  const double* x, int x_ind, int ain, int a)
+{
+  // Handles the primed levels of A
+  if (0==k) {
+    y[0] += x[0] * fA->getReal(a);
+    return;
+  }
+
+  // Init sparse readers
+  node_reader* aR = (fA->getNodeLevel(a) == -k) 
+    ? fA->initNodeReader(a, false)
+    : fA->initIdentityReader(k, ain, a, false);
+  node_reader* yR = fy->initNodeReader(y_ind, false);
+
+  int yp = 0;
+  int ap = 0;
+  for (;;) {
+    if (aR->i(ap) < yR->i(yp)) {
+      ap++;
+      if (ap >= aR->getNNZs()) break;
+      continue;
+    }
+    if (aR->i(ap) > yR->i(yp)) {
+      yp++;
+      if (yp >= yR->getNNZs()) break;
+      continue;
+    }
+    // match, need to recurse
+    compute(k-1, y + yR->ei(yp), yR->d(yp), x, x_ind, aR->d(ap));
+    ap++;
+    if (ap >= aR->getNNZs()) break;
+    yp++;
+    if (yp >= yR->getNNZs()) break;
+  } // for (;;)
+
+  // Cleanup
+  node_reader::recycle(yR);
+  node_reader::recycle(aR);
+}
+
+
+#else
 
 void MEDDLY::VM_evplus_mt::compute(int ht, double* y, int y_ind, 
   const double* x, int x_ind, int A)
@@ -441,7 +589,7 @@ void MEDDLY::VM_evplus_mt::comp_pr(int ht, double* y, int y_ind,
   } // for i
 }
 
-
+#endif
 
 
 // ******************************************************************
@@ -455,11 +603,11 @@ class MEDDLY::MV_evplus_mt : public base_evplus_mt {
     MV_evplus_mt(const numerical_opname* code, const dd_edge &x_ind,
       const dd_edge& A, const dd_edge &y_ind);
 
-    virtual void compute(int ht, double* y, int y_ind, const double* x, 
+    virtual void compute(int k, double* y, int y_ind, const double* x, 
       int x_ind, int A);
 
-    void comp_pr(int ht, double* y, int y_ind, const double* x, 
-      int x_ind, int A);
+    void comp_pr(int k, double* y, int y_ind, const double* x, 
+      int x_ind, int ain, int A);
 
 };
 
@@ -468,6 +616,153 @@ MEDDLY::MV_evplus_mt::MV_evplus_mt(const numerical_opname* code,
   : base_evplus_mt(code, x_ind, A, y_ind)
 {
 }
+
+#if 1
+
+void MEDDLY::MV_evplus_mt::compute(int k, double* y, int y_ind, 
+  const double* x, int x_ind, int a)
+{
+  // Handles the unprimed levels of a
+  if (0==k) {
+    y[0] += x[0] * fA->getReal(a);
+    return;
+  }
+
+  // It should be impossible for an indexing function to skip levels, right?   
+  MEDDLY_DCASSERT(fx->getNodeHeight(x_ind) == k);
+  MEDDLY_DCASSERT(fy->getNodeHeight(y_ind) == k);
+  int aLevel = fA->getNodeLevel(a);
+
+  //
+  // A is identity matrix times a constant; exploit that if we can
+  //
+  if (0==aLevel && (x_ind == y_ind)) {
+    if (fx == fy) {
+      MEDDLY_DCASSERT(fy->isIndexSet(y_ind));
+      // yes we can
+      float v = fA->getReal(a);
+      for (long i = fy->getIndexSetCardinality(y_ind)-1; i>=0; i--) {
+        y[i] += x[i] * v;
+      }
+      return;
+    }
+  }
+
+  //
+  // Check if a is an identity node
+  //
+  if (ABS(aLevel) < k) {
+    // Init sparse readers
+    node_reader* xR = fx->initNodeReader(x_ind, false);
+    node_reader* yR = fy->initNodeReader(y_ind, false);
+
+    int xp = 0;
+    int yp = 0;
+    for (;;) {
+      if (xR->i(xp) < yR->i(yp)) {
+        xp++;
+        if (xp >= xR->getNNZs()) break;
+        continue;
+      }
+      if (xR->i(xp) > yR->i(yp)) {
+        yp++;
+        if (yp >= yR->getNNZs()) break;
+        continue;
+      }
+      // match, need to recurse
+      compute(k-1, y + yR->ei(yp), yR->d(yp), x + xR->ei(xp), xR->d(xp), a);
+      xp++;
+      if (xp >= xR->getNNZs()) break;
+      yp++;
+      if (yp >= yR->getNNZs()) break;
+    } // for (;;)
+    
+    // Cleanup
+    node_reader::recycle(yR);
+    node_reader::recycle(xR);
+
+    // Done
+    return;
+  }
+
+  //
+  // A is not an identity node.
+  //
+
+  // Init sparse readers
+  node_reader* aR = (aLevel == k) 
+    ? fA->initNodeReader(a, false)
+    : fA->initRedundantReader(k, a, false);
+  node_reader* yR = fy->initNodeReader(y_ind, false);
+
+  int yp = 0;
+  int ap = 0;
+  for (;;) {
+    if (aR->i(ap) < yR->i(yp)) {
+      ap++;
+      if (ap >= aR->getNNZs()) break;
+      continue;
+    }
+    if (aR->i(ap) > yR->i(yp)) {
+      yp++;
+      if (yp >= yR->getNNZs()) break;
+      continue;
+    }
+    // match, need to recurse
+    comp_pr(k, y + yR->ei(yp), yR->d(yp), x, x_ind, aR->i(ap), aR->d(ap));
+    ap++;
+    if (ap >= aR->getNNZs()) break;
+    yp++;
+    if (yp >= yR->getNNZs()) break;
+  } // for (;;)
+
+  // Cleanup
+  node_reader::recycle(yR);
+  node_reader::recycle(aR);
+}
+
+void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, int y_ind, 
+  const double* x, int x_ind, int ain, int a)
+{
+  // Handles the primed levels of A
+  if (0==k) {
+    y[0] += x[0] * fA->getReal(a);
+    return;
+  }
+
+  // Init sparse readers
+  node_reader* aR = (fA->getNodeLevel(a) == -k) 
+    ? fA->initNodeReader(a, false)
+    : fA->initIdentityReader(k, ain, a, false);
+  node_reader* xR = fx->initNodeReader(x_ind, false);
+
+  int xp = 0;
+  int ap = 0;
+  for (;;) {
+    if (aR->i(ap) < xR->i(xp)) {
+      ap++;
+      if (ap >= aR->getNNZs()) break;
+      continue;
+    }
+    if (aR->i(ap) > xR->i(xp)) {
+      xp++;
+      if (xp >= xR->getNNZs()) break;
+      continue;
+    }
+    // match, need to recurse
+    compute(k-1, y, y_ind, x + xR->ei(xp), xR->d(xp), aR->d(ap));
+    ap++;
+    if (ap >= aR->getNNZs()) break;
+    xp++;
+    if (xp >= xR->getNNZs()) break;
+  } // for (;;)
+
+  // Cleanup
+  node_reader::recycle(xR);
+  node_reader::recycle(aR);
+}
+
+#else
 
 void MEDDLY::MV_evplus_mt::compute(int ht, double* y, int y_ind, 
   const double* x, int X_ind, int A)
@@ -792,7 +1087,7 @@ void MEDDLY::MV_evplus_mt::comp_pr(int ht, double* y, int y_ind,
 
 }
 
-
+#endif
 
 // ******************************************************************
 // *                                                                *

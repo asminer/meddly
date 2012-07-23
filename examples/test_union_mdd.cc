@@ -244,7 +244,7 @@ int main(int argc, char *argv[])
   apply(CONVERT_TO_INDEX_SET, initial_state, evmdd_states);
   evmdd_states.show(stdout, 3);
 
-  dd_edge::const_iterator iter = evmdd_states.begin();
+  enumerator iter(evmdd_states);
   int currentIndex = 0;
   while (iter) {
     const int* elem = iter.getAssignments();

@@ -539,7 +539,7 @@ void testIndexSet(domain* d, const dd_edge& mdd)
     {
       fprintf(stderr, "Node %d: Cardinality %d, Height: %d, InCount: %d\n",
           *iter, ef->getIndexSetCardinality(*iter),
-          ef->getNodeHeight(*iter), ef->getInCount(*iter));
+          ef->getNodeHeight(*iter), ef->readInCount(*iter));
     }
   }
 }
@@ -581,7 +581,7 @@ void testMTMDDIterator(const dd_edge& mtmdd)
 {
   dd_edge copy(mtmdd);
   unsigned counter = 0;
-  for (dd_edge::const_iterator iter = copy.begin(); iter; ++iter, ++counter)
+  for (enumerator iter(copy); iter; ++iter, ++counter)
   {
     const int* element = iter.getAssignments();
     const int* curr = element + N - 1;
@@ -599,8 +599,19 @@ void testMTMXDIterator(const dd_edge& mtmxd)
 {
   dd_edge copy(mtmxd);
   unsigned counter = 0;
-  for (dd_edge::const_iterator iter = copy.begin(); iter; ++iter, ++counter)
+  for (enumerator iter(copy); iter; ++iter, ++counter)
   {
+#ifdef NEW_ITERATORS
+    const int* element = iter.getAssignments();
+    assert(element != 0);
+
+    fprintf(stderr, "%d: [%d", counter, element[1]);
+    for (int i=2; i<=N; i++) { fprintf(stderr, " %d", element[i]); }
+
+    fprintf(stderr, "] --> [%d", element[-1]);
+    for (int i=2; i<=N; i++) { fprintf(stderr, " %d", element[-i]); }
+    fprintf(stderr, "]\n");
+#else
     const int* element = iter.getAssignments();
     const int* pelement = iter.getPrimedAssignments();
     assert(element != 0 && pelement != 0);
@@ -615,6 +626,7 @@ void testMTMXDIterator(const dd_edge& mtmxd)
     fprintf(stderr, "] --> [%d", *curr--);
     while (curr != end) { fprintf(stderr, " %d", *curr--); }
     fprintf(stderr, "]\n");
+#endif
   }
   fprintf(stderr, "Iterator traversal: %0.4e elements\n", double(counter));
   fprintf(stderr, "Cardinality: %0.4e\n", copy.getCardinality());

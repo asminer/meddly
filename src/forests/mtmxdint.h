@@ -44,6 +44,9 @@ class MEDDLY::mt_mxd_int : public mtmxd_forest {
         const int* terms, int N, dd_edge& e);
     void evaluate(const dd_edge& f, const int* vlist, const int* vplist,
         int &term) const;
+
+  protected:
+    virtual void showTerminal(FILE* s, int tnode) const;
 };
 
 #endif

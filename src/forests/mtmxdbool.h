@@ -46,28 +46,13 @@ class MEDDLY::mt_mxd_bool : public mtmxd_forest {
     virtual void evaluate(const dd_edge& f, const int* vlist,
         const int* vplist, bool &term) const;
 
+  protected:
+    virtual void showTerminal(FILE* s, int tnode) const;
+
   // still to be reorganized 
   public:
     using mtmxd_forest::createEdge;
     using mtmxd_forest::evaluate;
-
-    virtual bool accumulate(int& tempNode, int* element, int* pelement);
-    virtual void accumulate(int& a, int b);
-
-    virtual int accumulate(int tempNode, bool cBM,
-        int* element, int* pelement, int level);
-    virtual int accumulateSkippedLevel(int tempNode,
-        int* element, int* pelement, int level);
-
-    virtual int accumulateMxd(int a, int b, bool cBM);
-    virtual int accumulateMxdPrime(int a, int b, bool cBM);
-    virtual int addPrimeReducedNodes(int a, int b);
-    virtual int accumulateExpandA(int a, int b, bool cBM);
-    virtual int buildQRIdentityNode(int node, int level);
-
-    virtual void accumulateMxdHelper(int& a, int b, bool cBM,
-        bool needsToMakeACopy,
-        int (mt_mxd_bool::*function)(int, int, bool));
 
 };
 

@@ -27,6 +27,9 @@
 #include "meddly_expert.h"
 #include "simple_model.h"
 
+// #define DUMP_NSF
+// #define DUMP_REACHABLE
+
 const char* kanban[] = {
   "X-+..............",  // Tin1
   "X.-+.............",  // Tr1
@@ -114,6 +117,7 @@ int main(int argc, const char** argv)
   int* sizes = new int[16];
   for (int i=15; i>=0; i--) sizes[i] = N+1;
   domain* d = createDomainBottomUp(sizes, 16);
+  delete[] sizes;
 
   // Build initial state
   int* initial = new int[17];
@@ -122,13 +126,17 @@ int main(int argc, const char** argv)
   forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge init_state(mdd);
   mdd->createEdge(&initial, 1, init_state);
+  delete[] initial;
 
   // Build next-state function
   forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge nsf(mxd);
   if ('e' != method) {
     buildNextStateFunction(kanban, 16, mxd, nsf, 4);
-
+#ifdef DUMP_NSF
+    printf("Next-state function:\n");
+    nsf.show(stdout, 2);
+#endif
     printf("MxD stats:\n");
     printf("\t%ld current nodes\n", mxd->getCurrentNumNodes());
     printf("\t%ld peak nodes\n", mxd->getPeakNumNodes());
@@ -169,6 +177,11 @@ int main(int argc, const char** argv)
   };
   printf("Done\n");
   fflush(stdout);
+
+#ifdef DUMP_REACHABLE
+  printf("Reachable states:\n");
+  reachable.show(stdout, 2);
+#endif
 
   printf("MDD stats:\n");
   printf("\t%ld current nodes\n", mdd->getCurrentNumNodes());

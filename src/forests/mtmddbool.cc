@@ -25,7 +25,9 @@
 
 MEDDLY::mt_mdd_bool::mt_mdd_bool(int dsl, domain *d, const policies &p)
 : MEDDLY::mtmdd_forest(dsl, d, false, BOOLEAN, MULTI_TERMINAL, p)
-{ }
+{ 
+  initializeForest();
+}
 
 
 MEDDLY::mt_mdd_bool::~mt_mdd_bool()
@@ -56,3 +58,8 @@ void MEDDLY::mt_mdd_bool::evaluate(const dd_edge &f, const int* vlist,
   term = getBoolean(getTerminalNodeForEdge(f.getNode(), vlist));
 }
 
+
+void MEDDLY::mt_mdd_bool::showTerminal(FILE* s, int tnode) const
+{
+  fprintf(s, "%c", tnode ? 'T' : 'F'); 
+}

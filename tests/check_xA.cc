@@ -30,6 +30,9 @@
 #include "meddly.h"
 #include "meddly_expert.h"
 
+// #define SHOW_INDEXES
+// #define SHOW_MATRIX
+
 using namespace MEDDLY;
 
 const int vars[] = {10, 10, 10};
@@ -53,6 +56,11 @@ bool build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
     return false;
   }
 
+#ifdef SHOW_INDEXES
+  printf("Indexes:\n");
+  ss.show(stdout, 2);
+#endif
+
   // Build matrix elements
 
   const int* fromlist[] = {
@@ -72,6 +80,11 @@ bool build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
     printf("Couldn't build matrix: %s\n", fe.getName());
     return false;
   }
+
+#ifdef SHOW_MATRIX
+  printf("Matrix:\n");
+  P.show(stdout, 2);
+#endif
 
   return true;
 }

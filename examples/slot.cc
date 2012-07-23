@@ -219,7 +219,6 @@ int main(int argc, const char** argv)
 
   if (method != 'e') {
     buildNextStateFunction(events, 8*N, mxd, nsf, 2);
-
     printf("MxD stats:\n");
     printf("\t%ld current nodes\n", mxd->getCurrentNumNodes());
     printf("\t%ld peak nodes\n", mxd->getPeakNumNodes());
@@ -263,7 +262,7 @@ int main(int argc, const char** argv)
 
 #ifdef SHOW_STATES
   int count = 0;
-  for (dd_edge::const_iterator i = reachable.begin(); i; ++i, ++count) {
+  for (enumerator i(reachable); i; ++i, ++count) {
     const int* element = i.getAssignments();
     printf("State %4d: [%d", count, element[1]);
     for (int j=2; j<=8*N; j++) {

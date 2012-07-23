@@ -43,15 +43,11 @@
 
 #include "mt.h"
 
-#define IN_PLACE_SORT
-
 namespace MEDDLY {
   class mtmxd_forest;
 };
 
 // ******************************************************************
-
-const int mtmxdDataHeaderSize = 4;
 
 class MEDDLY::mtmxd_forest : public mt_forest {
   // TODO: mtmxds can only be forest::IDENTITY_REDUCED
@@ -61,14 +57,6 @@ class MEDDLY::mtmxd_forest : public mt_forest {
 
   public:
     ~mtmxd_forest();
-
-    virtual void findFirstElement(const dd_edge& f, int* vlist, int* vplist)
-      const;
-
-    // Enlarges a temporary node, if new size is greater than old size.
-    virtual void resizeNode(int node, int size);
-
-    virtual int reduceNode(int p);
 
   protected:
 
@@ -123,27 +111,10 @@ class MEDDLY::mtmxd_forest : public mt_forest {
     template <typename T>
       T handleMultipleTerminalValues(const T* tList, int begin, int end);
 
-#ifndef IN_PLACE_SORT
     template <typename T>
-      int sortBuild(int** unpList, int** pList, T* tList,
-          int height, int begin, int end);
-
+      int inPlaceSort(int k, int begin, int end);
     template <typename T>
-      int sort(int** list, int** otherList, T* tList,
-          int absLevel, int begin, int end);
-
-    // Persistant storage for sort()
-    vector<int*> sortedList;
-    vector<int*> sortedOtherList;
-    vector<T> sortedtList;
-    vector<int> countVector;
-
-#else
-    template <typename T>
-      int inPlaceSort(int level, bool isPrime, int begin, int end);
-    template <typename T>
-      int inPlaceSortBuild(int height, bool isPrime, int begin, int end);
-#endif
+      int inPlaceSortBuild(int in, int k, int begin, int end);
 
     // Methods and data for batch addition via sorting
     template <typename T> void copyLists(const int* const* vlist,
@@ -244,235 +215,26 @@ MEDDLY::mtmxd_forest::createEdgeInternal(const int* const* vlist,
     copyLists(vlist, vplist, terms, N);
 
     // call sort-based procedure for building the DD
-#ifdef IN_PLACE_SORT
-    int result = inPlaceSortBuild<T>(getExpertDomain()->getNumVariables(),
-        false, 0, N);
-#else
-    int result = sortBuild(unpList, pList, (T*)(terms == 0? 0: tList),
-        getExpertDomain()->getNumVariables(), 0, N);
-#endif
+    int result = inPlaceSortBuild<T>(-1, getExpertDomain()->getNumVariables(), 0, N);
 
     e.set(result, 0, getNodeLevel(result));
   }
 }
 
 
-#ifndef IN_PLACE_SORT
-
-template <typename T>
-int MEDDLY::mtmxd_forest::sort(int** list, int** otherList, T* tList,
-    int absLevel, int begin, int end)
-{
-  MEDDLY_DCASSERT(tList != 0);
-
-  vector<int>& count = countVector;
-
-  int N = end - begin;
-  int levelSize = 0;
-
-  if (int(sortedList.size()) < N) {
-    sortedList.resize(N);
-    sortedOtherList.resize(N);
-    sortedtList.resize(N);
-  }
-
-  // determine size for count[]
-  for (int i = begin; i < end; i++) {
-    int index = list[i][absLevel];
-    if (index > levelSize) { levelSize = index; }
-  }
-  // levelSize refers to the maximum index found so far,
-  // add 1 to convert to maximum size.
-  levelSize++;
-  // an extra space is needed at the end for the radix sort algorithm
-  if (int(count.size()) < 1 + levelSize) {
-    count.resize(levelSize + 1);
-  }
-  fill_n(count.begin(), 1 + levelSize, 0);
-
-  // go through list and count the number of entries in each "bucket"
-  for (int i = begin; i < end; i++) { count[list[i][absLevel]]++; }
-
-  // find starting index for each "bucket" in sorted lists
-  // levelSize == number of buckets
-  vector<int>::iterator last = count.begin() + levelSize;
-  for (vector<int>::iterator iter = count.begin(); iter != last; ++iter)
-  {
-    *(iter+1) += *iter;
-    --*iter;
-  }
-  --*last;
-
-  // insert into correct positions in sorted lists
-  // go from last to first to preserve order
-  int** listPtr = list + end - 1;
-  int** firstListPtr = list + begin - 1;
-  int** otherListPtr = otherList + end - 1;
-  T* tListPtr = tList + end - 1;
-  for ( ; listPtr != firstListPtr; )
-  {
-    // getting index and get count[] ready for next insert
-    int index = count[(*listPtr)[absLevel]]--;
-    // insert at index
-    sortedList[index] = *listPtr--;
-    sortedOtherList[index] = *otherListPtr--;
-    sortedtList[index] = *tListPtr--;
-  }
-
-  // write sorted lists to the original lists
-  memcpy(list + begin, &sortedList[0], N * sizeof(int*));
-  memcpy(otherList + begin, &sortedOtherList[0], N * sizeof(int*));
-  memcpy(tList + begin, &sortedtList[0], N * sizeof(T));
-  return levelSize;
-}
-
-
-template <>
-inline
-int MEDDLY::mtmxd_forest::sort(int** list, int** otherList, bool* tList,
-    int absLevel, int begin, int end)
-{
-  int N = end - begin;
-  int levelSize = 0;
-
-  // same as tList != 0, except that there is no tList to deal with
-
-  vector<int>& count = countVector;
-
-  if (int(sortedList.size()) < N) {
-    sortedList.resize(N);
-    sortedOtherList.resize(N);
-  }
-
-  // determine size for count[]
-  for (int i = begin; i < end; i++) {
-    int index = list[i][absLevel];
-    if (index > levelSize) { levelSize = index; }
-  }
-  // levelSize refers to the maximum index found so far,
-  // add 1 to convert to maximum size.
-  levelSize++;
-  // an extra space is needed at the end for the radix sort algorithm
-  if (int(count.size()) < 1 + levelSize) {
-    count.resize(levelSize + 1);
-  }
-  fill_n(count.begin(), 1 + levelSize, 0);
-
-  // go through list and count the number of entries in each "bucket"
-  for (int i = begin; i < end; i++) { count[list[i][absLevel]]++; }
-
-  // find starting index for each "bucket" in sorted lists
-  // levelSize == number of buckets
-  vector<int>::iterator last = count.begin() + levelSize;
-  for (vector<int>::iterator iter = count.begin(); iter != last; ++iter)
-  {
-    *(iter+1) += *iter;
-    --*iter;
-  }
-  --*last;
-
-  // insert into correct positions in sorted lists
-  // go from last to first to preserve order
-  int** listPtr = list + end - 1;
-  int** firstListPtr = list + begin - 1;
-  int** otherListPtr = otherList + end - 1;
-  for ( ; listPtr != firstListPtr; )
-  {
-    // getting index and get count[] ready for next insert
-    int index = count[(*listPtr)[absLevel]]--;
-    // insert at index
-    sortedList[index] = *listPtr--;
-    sortedOtherList[index] = *otherListPtr--;
-  }
-
-  // write sorted lists to the original lists
-  memcpy(list + begin, &sortedList[0], N * sizeof(int*));
-  memcpy(otherList + begin, &sortedOtherList[0], N * sizeof(int*));
-  return levelSize;
-}
-
-
-template <typename T>
-int MEDDLY::mtmxd_forest::sortBuild(int** unpList, int** pList, T* tList,
-    int height, int begin, int end)
-{
-  // [begin, end)
-
-  // terminal condition
-  if (height == 0) {
-    return getTerminalNode(handleMultipleTerminalValues(tList, begin, end));
-  }
-
-  if (begin + 1 == end) {
-    return createNode(unpList[begin], pList[begin],
-        getTerminalNode(handleMultipleTerminalValues(tList, begin, end)),
-        ABS(height), height < 0);
-  }
-
-  int** list = 0;
-  int** otherList = 0;
-  int nextHeight = 0;
-  int level = 0;
-  if (height > 0) {
-    list = unpList;
-    otherList = pList;
-    nextHeight = -height;
-    level = getExpertDomain()->getVariableWithHeight(height);
-  } else {
-    list = pList;
-    otherList = unpList;
-    nextHeight = -height-1;
-    level = -(getExpertDomain()->getVariableWithHeight(-height));
-  }
-  int absLevel = level < 0? -level: level;
-
-  int levelSize = sort(list, otherList, tList, absLevel, begin, end);
-
-#ifdef DEVELOPMENT_CODE
-  // find largest index
-  int largestIndex = list[begin][absLevel];
-  for (int i = begin + 1; i < end; )
-  {
-    MEDDLY_DCASSERT(largestIndex <= list[i][absLevel]);
-    largestIndex = list[i][absLevel];
-    // skip the elements with the same index at this level
-    for (++i; i < end && list[i][absLevel] == largestIndex; ++i);
-  }
-  if (largestIndex + 1 != levelSize) {
-    printf("largest index: %d, levelSize: %d\n", largestIndex, levelSize);
-    assert(false);
-  }
-#endif
-
-  // build node
-  int result = createTempNode(level, levelSize, true);
-  int* ptr = getFullNodeDownPtrs(result);
-  for (int i = begin; i < end; )
-  {
-    int index = list[i][absLevel];
-    int start = i++;
-    // skip the elements with the same index at this level
-    for ( ; i < end && list[i][absLevel] == index; ++i);
-    ptr[index] = sortBuild(unpList, pList, tList, nextHeight, start, i);
-  }
-
-  return reduceNode(result);
-}
-
-#endif
 
 namespace MEDDLY {
 
 template<typename T>
 inline
-int mtmxd_forest::inPlaceSort(int level, bool isPrime,
-    int begin, int end)
+int mtmxd_forest::inPlaceSort(int k, int begin, int end)
 {
   // plist, unpList, tList
   // list, otherList, tList
 
-  int **list = isPrime? pList: unpList;
-  int** otherList = isPrime? unpList: pList;
+  int **list = (k<0)? pList: unpList;
+  int** otherList = (k<0)? unpList: pList;
+  int level = ABS(k);
 
   // Determine range of values
   int min = list[begin][level];
@@ -569,14 +331,14 @@ int mtmxd_forest::inPlaceSort(int level, bool isPrime,
 
 template<>
 inline
-int mtmxd_forest::inPlaceSort<bool>(int level, bool isPrime,
-    int begin, int end)
+int mtmxd_forest::inPlaceSort<bool>(int k, int begin, int end)
 {
   // plist, unpList, tList
   // list, otherList, tList
 
-  int **list = isPrime? pList: unpList;
-  int** otherList = isPrime? unpList: pList;
+  int **list = (k<0)? pList: unpList;
+  int** otherList = (k<0)? unpList: pList;
+  int level = ABS(k);
 
   // Determine range of values
   int min = list[begin][level];
@@ -667,13 +429,12 @@ int mtmxd_forest::inPlaceSort<bool>(int level, bool isPrime,
 
 
 template <typename T>
-int mtmxd_forest::inPlaceSortBuild(int height, bool isPrime,
-    int begin, int end)
+int mtmxd_forest::inPlaceSortBuild(int in, int k, int begin, int end)
 {
   // [begin, end)
 
   // terminal condition
-  if (height == 0) {
+  if (0 == k) {
     return getTerminalNode(
         handleMultipleTerminalValues((T*)tList, begin, end));
   }
@@ -681,29 +442,31 @@ int mtmxd_forest::inPlaceSortBuild(int height, bool isPrime,
   if (begin + 1 == end) {
     return createNode(unpList[begin], pList[begin],
         getTerminalNode(handleMultipleTerminalValues((T*)tList, begin, end)),
-        height, isPrime);
+        ABS(k), (k<0));
   }
 
   // Sort elements at this level
-  int nodeSize = 1 + inPlaceSort<T>(height, isPrime, begin, end);
+  int nodeSize = 1 + inPlaceSort<T>(k, begin, end);
 
-  int nextHeight = isPrime? height - 1: height;
-  bool nextIsPrime = !isPrime;
-  int** list = isPrime? pList: unpList;
+  int nextK = (k>0) ? (-k) : (-k-1);
+  int** list = (k<0)? pList: unpList;
 
   // build node
-  int result = createTempNode(isPrime? -height: height, nodeSize, true);
-  int* ptr = getFullNodeDownPtrs(result);
+  node_builder& nb = useSparseBuilder(k, nodeSize);
+  int height = ABS(k);
+  int z = 0;
   for (int i = begin; i < end; )
   {
     int index = list[i][height];
     int start = i++;
     // skip the elements with the same index at this level
     for ( ; i < end && list[i][height] == index; ++i);
-    ptr[index] = inPlaceSortBuild<T>(nextHeight, nextIsPrime, start, i);
+    nb.i(z) = index;
+    nb.d(z) = inPlaceSortBuild<T>(index, nextK, start, i);
+    z++;
   }
-
-  return reduceNode(result);
+  nb.shrinkSparse(z);
+  return createReducedNode(in, nb);
 }
 
 

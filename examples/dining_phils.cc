@@ -96,6 +96,7 @@
 using namespace MEDDLY;
 
 // #define NAME_VARIABLES
+// #define SHOW_MXD
 
 void printmem(long m)
 {
@@ -435,11 +436,20 @@ int main(int argc, char *argv[])
   printf("\t%ld peak nodes\n", mxd->getPeakNumNodes());
   printf("\t");
   printmem(mxd->getCurrentMemoryUsed());
-  printf(" current memory\n\t");
+  printf(" current memory used\n\t");
   printmem(mxd->getPeakMemoryUsed());
-  printf(" peak memory\n");
+  printf(" peak memory used\n\t");
+  printmem(mxd->getCurrentMemoryAllocated());
+  printf(" current memory allocated\n\t");
+  printmem(mxd->getPeakMemoryAllocated());
+  printf(" peak memory allocated\n");
   
   fflush(stdout);
+
+#ifdef SHOW_MXD
+  printf("Next-State Function:\n");
+  nsf.show(stdout, 2);
+#endif
 
   dd_edge reachableStates(initialStates);
 
@@ -469,9 +479,13 @@ int main(int argc, char *argv[])
   printf("\t%ld peak nodes\n", mdd->getPeakNumNodes());
   printf("\t");
   printmem(mdd->getCurrentMemoryUsed());
-  printf(" current memory\n\t");
+  printf(" current memory used\n\t");
   printmem(mdd->getPeakMemoryUsed());
-  printf(" peak memory\n");
+  printf(" peak memory used\n\t");
+  printmem(mdd->getCurrentMemoryAllocated());
+  printf(" current memory allocated\n\t");
+  printmem(mdd->getPeakMemoryAllocated());
+  printf(" peak memory allocated\n");
   
   operation::showAllComputeTables(stdout, 1);
 
@@ -507,7 +521,7 @@ int main(int argc, char *argv[])
   if (false) {
     start.note_time();
     unsigned counter = 0;
-    for (dd_edge::const_iterator iter = reachableStates.begin();
+    for (enumerator iter(reachableStates); 
         iter; ++iter, ++counter)
     {
       const int* element = iter.getAssignments();

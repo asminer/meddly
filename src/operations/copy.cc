@@ -53,6 +53,21 @@ class MEDDLY::copy_MT : public unary_operation {
     virtual void compute(const dd_edge &arg, dd_edge &res);
   protected:
     virtual int compute(int a) = 0;
+
+    inline bool findResult(int a, int &b) {
+      CTsrch.key(0) = a;
+      const int* cacheFind = CT->find(CTsrch);
+      if (0==cacheFind) return false;
+      b = resF->linkNode(cacheFind[1]);
+      return true;
+    }
+    inline int saveResult(int a, int b) {
+      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      entry.key(0) = argF->cacheNode(a);
+      entry.result(0) = resF->cacheNode(b);
+      CT->addEntry();
+      return b;
+    }
 };
 
 MEDDLY::copy_MT
@@ -97,9 +112,15 @@ class MEDDLY::copy_bool2MT : public copy_MT {
       : copy_MT(N, A, R) { }
   protected:
     virtual int compute(int a);
+    int compute(int in, int a);
 };
 
 int MEDDLY::copy_bool2MT::compute(int a)
+{
+  return compute(-1, a);
+}
+
+int MEDDLY::copy_bool2MT::compute(int in, int a)
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
@@ -111,60 +132,36 @@ int MEDDLY::copy_bool2MT::compute(int a)
     }
   }
 
+  // See if we can ignore "in"
+  if (!resF->isIdentityReduced()) in = -1;
+
   // Check compute table
-  CTsrch.key(0) = a;
-  const int* cacheFind = CT->find(CTsrch);
-  if (cacheFind) {
-    return resF->linkNode(cacheFind[1]);
+  int b;
+  if (findResult(a, b)) return b;
+
+  // Initialize node builder
+  const int level = argF->getNodeLevel(a);
+  const int size = resF->getLevelSize(level);
+  node_builder& nb = resF->useNodeBuilder(level, size);
+
+  // Initialize node reader
+  node_reader* A = argF->initNodeReader(a, true);
+
+  // recurse
+  for (int i=0; i<size; i++) {
+    nb.d(i) = compute(i, A->d(i));
   }
 
-  // Make new node for answer
-  const int aLevel = argF->getNodeLevel(a);
-  int bSize = resF->getLevelSize(aLevel);
-  int b = resF->createTempNode(aLevel, bSize, false);
-  int zero = (resF->getRangeType()==forest::INTEGER) 
-    ? resF->getTerminalNode(0)
-    : resF->getTerminalNode(float(0));
+  // Cleanup
+  node_reader::recycle(A);
 
-  // Recurse
-  int i;
-  if (argF->isFullNode(a)) {
-    const int aSize = argF->getFullNodeSize(a);
-    MEDDLY_DCASSERT(aSize <= bSize);
-    for (i=0; i<aSize; i++) {
-      int temp = compute(argF->getFullNodeDownPtr(a, i));
-      resF->setDownPtrWoUnlink(b, i, temp);
-      resF->unlinkNode(temp);
-    }
-  } // a is full
-  else {
-    const int aSize = argF->getSparseNodeSize(a);
-    MEDDLY_DCASSERT(argF->getSparseNodeIndex(a, aSize - 1) < bSize);
-    i = 0;
-    for (int z=0; z<aSize; z++) {
-      int aIndex = argF->getSparseNodeIndex(a, z);
-      for (; i<aIndex; i++) {
-        resF->setDownPtrWoUnlink(b, i, zero);
-      }
-      MEDDLY_DCASSERT(i == aIndex && i < bSize);
-      int temp = compute(argF->getSparseNodeDownPtr(a, z));
-      resF->setDownPtrWoUnlink(b, i, temp);
-      resF->unlinkNode(temp);
-    }
-  } // a is sparse
-  for (; i<bSize; i++) {
-    resF->setDownPtrWoUnlink(b, i, zero);
-  }
+  // Reduce
+  b = resF->createReducedNode(in, nb);
 
-  // Reduce, add to compute table
-  b = resF->reduceNode(b);
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
-  entry.key(0) = argF->cacheNode(a);
-  entry.result(0) = resF->cacheNode(b);
-  CT->addEntry();
-
-  return b;
+  // Add to compute table
+  return saveResult(a, b);
 }
+
 
 // ******************************************************************
 // *                                                                *
@@ -178,9 +175,15 @@ class MEDDLY::copy_MT2bool : public copy_MT {
       : copy_MT(N, A, R) { }
   protected:
     virtual int compute(int a);
+    int compute(int in, int a);
 };
 
 int MEDDLY::copy_MT2bool::compute(int a)
+{
+  return compute(-1, a);
+}
+
+int MEDDLY::copy_MT2bool::compute(int in, int a)
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
@@ -190,59 +193,36 @@ int MEDDLY::copy_MT2bool::compute(int a)
     return resF->getTerminalNode(aTerm);
   }
 
+  // See if we can ignore "in"
+  if (!resF->isIdentityReduced()) in = -1;
+
   // Check compute table
-  CTsrch.key(0) = a;
-  const int* cacheFind = CT->find(CTsrch);
-  if (cacheFind) {
-    return resF->linkNode(cacheFind[1]);
+  int b;
+  if (findResult(a, b)) return b;
+
+  // Initialize node builder
+  const int level = argF->getNodeLevel(a);
+  const int size = resF->getLevelSize(level);
+  node_builder& nb = resF->useNodeBuilder(level, size);
+
+  // Initialize node reader
+  node_reader* A = argF->initNodeReader(a, true);
+
+  // recurse
+  for (int i=0; i<size; i++) {
+    nb.d(i) = compute(i, A->d(i));
   }
 
-  // Make new node for answer
-  const int aLevel = argF->getNodeLevel(a);
-  int bSize = resF->getLevelSize(aLevel);
-  int b = resF->createTempNode(aLevel, bSize, false);
-  int zero = resF->getTerminalNode(false);
+  // Cleanup
+  node_reader::recycle(A);
 
-  // Recurse
-  int i;
-  if (argF->isFullNode(a)) {
-    const int aSize = argF->getFullNodeSize(a);
-    MEDDLY_DCASSERT(aSize <= bSize);
-    for (i=0; i<aSize; i++) {
-      int temp = compute(argF->getFullNodeDownPtr(a, i));
-      resF->setDownPtrWoUnlink(b, i, temp);
-      resF->unlinkNode(temp);
-    }
-  } // a is full
-  else {
-    const int aSize = argF->getSparseNodeSize(a);
-    MEDDLY_DCASSERT(argF->getSparseNodeIndex(a, aSize - 1) < bSize);
-    i = 0;
-    for (int z=0; z<aSize; z++) {
-      int aIndex = argF->getSparseNodeIndex(a, z);
-      for (; i<aIndex; i++) {
-        resF->setDownPtrWoUnlink(b, i, zero);
-      }
-      MEDDLY_DCASSERT(i == aIndex && i < bSize);
-      int temp = compute(argF->getSparseNodeDownPtr(a, z));
-      resF->setDownPtrWoUnlink(b, i, temp);
-      resF->unlinkNode(temp);
-      i++;
-    }
-  } // a is sparse
-  for (; i<bSize; i++) {
-    resF->setDownPtrWoUnlink(b, i, zero);
-  }
+  // Reduce
+  b = resF->createReducedNode(in, nb);
 
-  // Reduce, add to compute table
-  b = resF->reduceNode(b);
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
-  entry.key(0) = argF->cacheNode(a);
-  entry.result(0) = resF->cacheNode(b);
-  CT->addEntry();
-
-  return b;
+  // Add to compute table
+  return saveResult(a, b);
 }
+
 
 // ******************************************************************
 // *                                                                *
@@ -303,52 +283,29 @@ void MEDDLY::copy_MT2Evplus::compute(int a, int &b, int &bev)
     return;
   }
 
-  // Make new node for answer
-  const int aLevel = argF->getNodeLevel(a);
-  int bSize = resF->getLevelSize(aLevel);
-  b = resF->createTempNode(aLevel, bSize, false);
-  int zero, zev;
-  compute(0, zero, zev);
+  // Initialize node builder
+  const int level = argF->getNodeLevel(a);
+  const int size = resF->getLevelSize(level);
+  node_builder& nb = resF->useNodeBuilder(level, size);
 
-  // Recurse
-  int i;
-  if (argF->isFullNode(a)) {
-    const int aSize = argF->getFullNodeSize(a);
-    MEDDLY_DCASSERT(aSize <= bSize);
-    for (i=0; i<aSize; i++) {
-      int d, dev;
-      compute(argF->getFullNodeDownPtr(a, i), d, dev);
-      resF->setDownPtrWoUnlink(b, i, d);
-      resF->unlinkNode(d);
-      resF->setEdgeValue(b, i, dev);
-    }
-  } // a is full
-  else {
-    const int aSize = argF->getSparseNodeSize(a);
-    MEDDLY_DCASSERT(argF->getSparseNodeIndex(a, aSize - 1) < bSize);
-    i = 0;
-    for (int z=0; z<aSize; z++) {
-      int aIndex = argF->getSparseNodeIndex(a, z);
-      for (; i<aIndex; i++) {
-        resF->setDownPtrWoUnlink(b, i, zero);
-        resF->setEdgeValue(b, i, zev);
-      }
-      MEDDLY_DCASSERT(i == aIndex && i < bSize);
-      int d, dev;
-      compute(argF->getSparseNodeDownPtr(a, z), d, dev);
-      resF->setDownPtrWoUnlink(b, i, d);
-      resF->unlinkNode(d);
-      resF->setEdgeValue(b, i, dev);
-    }
-  } // a is sparse
-  for (; i<bSize; i++) {
-    resF->setDownPtrWoUnlink(b, i, zero);
-    resF->setEdgeValue(b, i, zev);
+  // Initialize node reader
+  node_reader* A = argF->initNodeReader(a, true);
+
+  // recurse
+  for (int i=0; i<size; i++) {
+    int d, dev;
+    compute(A->d(i), d, dev);
+    nb.d(i) = d;
+    nb.ei(i) = dev;
   }
 
-  // Reduce, add to compute table
-  bev = 0;
-  resF->normalizeAndReduceNode(b, bev);
+  // Cleanup
+  node_reader::recycle(A);
+
+  // Reduce
+  resF->createReducedNode(-1, nb, bev, b);
+
+  // Add to compute table
   compute_table::temp_entry &entry = CT->startNewEntry(this);
   entry.key(0) = argF->cacheNode(a);
   entry.result(0) = bev;

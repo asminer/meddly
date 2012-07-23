@@ -47,13 +47,12 @@
 #ifdef DEVELOPMENT_CODE
 #define RANGE_CHECK_ON
 #define DCASSERTS_ON
-//#define DEBUG_PRINTS_ON
-#ifdef DEBUG_PRINTS_ON
-#define DEBUG_MDD_H
-#define TRACK_DELETIONS
-#define TRACK_CACHECOUNT
+// #define DEBUG_MDD_H
+// #define TRACK_DELETIONS
+// #define TRACK_CACHECOUNT
 #endif
-#endif
+
+// #define TRACK_DELETIONS
 
 // Use this for assertions that will fail only when your
 // code is wrong.  Handy for debugging.
@@ -69,20 +68,30 @@
 #else
 #define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX)
 #endif
+
+//
+// Design decision: should we remember the hashes for a reduced node?
+//
+// #define SAVE_HASHES
  
 namespace MEDDLY {
 
   // Functions for reinterpreting an int to a float and vice-versa
   float   toFloat (int a);
   int     toInt   (float a);
-  float*  toFloat (int* a);
+  // float*  toFloat (int* a);
 
   // classes defined here
   struct settings;
   class expert_variable;
   class expert_domain;
+
+  // wrappers for nodes
+  class node_reader;
+  class node_builder;
+  // class node_finder;
+
   class expert_forest;
-  class temp_dd_edge;
 
   class opname;
   class unary_opname;
@@ -100,9 +109,12 @@ namespace MEDDLY {
 
   // classes defined elsewhere
   class base_table;
+  class unique_table;
 
   // ******************************************************************
+  // *                                                                *
   // *                   Named numerical operations                   *
+  // *                                                                *
   // ******************************************************************
 
   /** Computes y = y + xA.
@@ -120,7 +132,9 @@ namespace MEDDLY {
   extern const numerical_opname* MATR_VECT_MULT;
 
   // ******************************************************************
+  // *                                                                *
   // *                      Operation management                      *
+  // *                                                                *
   // ******************************************************************
 
   /// Remove an existing operation from the operation cache.
@@ -212,7 +226,9 @@ namespace MEDDLY {
 
 
 // ******************************************************************
+// *                                                                *
 // *                         ct_object class                        *
+// *                                                                *
 // ******************************************************************
 
 /** Generic objects in compute tables.
@@ -227,7 +243,9 @@ class MEDDLY::ct_object {
 };
 
 // ******************************************************************
+// *                                                                *
 // *                         settings  class                        *
+// *                                                                *
 // ******************************************************************
 
 /** "Global" settings for MEDDLY.
@@ -291,6 +309,18 @@ struct MEDDLY::settings {
     settings() : computeTable(), mddDefaults(0), mxdDefaults(1) {
       operationBuilder = makeBuiltinInitializer();
     }
+    /// Copy constructor.
+    settings(const settings &s) : mddDefaults(0), mxdDefaults(1) { 
+      init(s); 
+    }
+    /// Destructor
+    ~settings() { clear(); }
+    inline void operator=(const settings &s) {
+      if (&s != this) {
+        clear();
+        init(s);
+      }
+    }
     /// super handly
     inline bool usesMonolithicComputeTable() {
       return (
@@ -298,10 +328,15 @@ struct MEDDLY::settings {
        computeTableSettings::MonolithicUnchainedHash == computeTable.style 
       );
     }
+  private:
+    void init(const settings &s);
+    void clear();
 };
   
 // ******************************************************************
+// *                                                                *
 // *                     expert_variable  class                     *
+// *                                                                *
 // ******************************************************************
 
 class MEDDLY::expert_variable : public variable {
@@ -344,7 +379,9 @@ class MEDDLY::expert_variable : public variable {
 
 
 // ******************************************************************
+// *                                                                *
 // *                      expert_domain  class                      *
+// *                                                                *
 // ******************************************************************
 
 class MEDDLY::expert_domain : public domain {
@@ -508,7 +545,345 @@ class MEDDLY::expert_domain : public domain {
 
 
 // ******************************************************************
+// *                                                                *
+// *                       node_reader  class                       *
+// *                                                                *
+// ******************************************************************
+
+/** Class for reading nodes.
+    Ideally - used anywhere we want to read node data.
+    Backend implementation may change :^)
+    Implemented in node_wrappers.cc.
+    Readers may be "full" or "sparse",
+    regardless of how the actual node is stored.
+*/
+class MEDDLY::node_reader {
+    public:
+        /** Constructor.
+            The class must be "filled" by a forest befure
+            it can be used, however.
+        */  
+        node_reader();
+
+        /// Destructor.
+        ~node_reader();
+
+        /// Free memory, but don't delete.
+        void clear();
+
+        /** Get a downward pointer.
+              @param  n   Which pointer.
+              @return     If this is a full reader, 
+                          return pointer with index n.
+                          If this is a sparse reader,
+                          return the nth non-zero pointer.
+        */
+        inline int d(int n) const {
+          MEDDLY_DCASSERT(down);
+          MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
+          return down[n];
+        }
+
+        /** Get the index of the nth non-zero pointer.
+            Use only for sparse readers.
+        */
+        inline int i(int n) const {
+          MEDDLY_DCASSERT(index);
+          MEDDLY_DCASSERT(!is_full);
+          MEDDLY_CHECK_RANGE(0, n, nnzs);
+          return index[n];
+        }
+        
+        /// Get the edge value, as an integer.
+        inline int ei(int n) const {
+          MEDDLY_DCASSERT(edge);
+          MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
+          MEDDLY_DCASSERT(sizeof(int) == edge_bytes);
+          return ((int*)edge)[n];
+        }
+
+        /// Get the edge value, as a float.
+        inline float ef(int n) const {
+          MEDDLY_DCASSERT(edge);
+          MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
+          MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
+          return ((float*)edge)[n];
+        }
+
+        /// Get the raw edge array.
+        inline const void* rawEdges() const {
+          return edge;
+        }
+
+        /// Get the level number of this node.
+        inline int getLevel() const {
+          return level;
+        }
+
+        /// Get the size of this node (full readers only).
+        inline int getSize() const {
+          MEDDLY_DCASSERT(is_full);
+          return size;
+        }
+        /// Get the number of nonzeroes of this node (sparse readers only).
+        inline int getNNZs() const {
+          MEDDLY_DCASSERT(!is_full);
+          return nnzs;
+        }
+        /// Is this a sparse reader?
+        inline bool isSparse() const { 
+          return !is_full;
+        }
+        /// Is this a full reader?
+        inline bool isFull() const {
+          return is_full;
+        }
+        /// Does this node have edge values?
+        inline bool hasEdges() const {
+          return edge_bytes;
+        }
+
+        // For debugging
+        // void dump(FILE*) const;
+
+        // For debugging unique table.
+        inline unsigned hash() const {
+#ifdef DEVELOPMENT_CODE
+          MEDDLY_DCASSERT(has_hash);
+#endif
+          return h;
+        }
+        inline void setHash(unsigned H) {
+#ifdef DEVELOPMENT_CODE
+          MEDDLY_DCASSERT(!has_hash);
+          has_hash = true;
+#endif
+          h = H;
+        };
+
+    // Centralized recycling
+    public:
+        inline static node_reader* useReader() {
+          node_reader* nr;
+          if (freeList) {
+            nr = freeList;
+            freeList = nr->next;
+          } else {
+            nr = new node_reader;
+          }
+#ifdef DEVELOPMENT_CODE
+          nr->has_hash = false;
+#endif
+          return nr;
+        }
+        inline static void recycle(node_reader* r) {
+          if (r) {
+            r->next = freeList;
+            freeList = r;
+          }
+        }
+    private:
+        inline static void freeRecycled() {
+          while (freeList) {
+            node_reader* n = freeList->next;
+            delete freeList;
+            freeList = n;
+          }
+        }
+
+        static node_reader* freeList;
+    private:
+        node_reader* next;    // for recycled list
+        int* down;
+        int* index;
+        void* edge;
+        int alloc;
+        int ealloc;
+        int size;
+        int nnzs;
+        int level;
+        unsigned h;
+        char edge_bytes;  // number of bytes for an edge value.
+        bool is_full;
+#ifdef DEVELOPMENT_CODE
+        bool has_hash;
+#endif
+
+        /// Called within expert_forest to allocate space.
+        ///   @param  p     Parent.
+        ///   @param  k     Level number.
+        ///   @param  ns    Size of node.
+        ///   @param  eb    Bytes for each edge.
+        ///   @param  full  If true, we'll be filling a full reader.
+        ///                 Otherwise it is a sparse one.
+        // void resize(const expert_forest* p, int k, int ns, bool full);
+        void resize(int k, int ns, char eb, bool full);
+
+        friend class expert_forest; 
+        friend void cleanup();
+
+};
+
+
+// ******************************************************************
+// *                                                                *
+// *                       node_builder class                       *
+// *                                                                *
+// ******************************************************************
+
+/** Class for building nodes.
+    Effectively, a reserved chunk of memory for storing down pointers
+    and edge values.
+*/
+class MEDDLY::node_builder {
+        const expert_forest* parent;
+        int* extra_hashed;
+        int* extra_unhashed;
+        int* down;
+        int* indexes;
+        void* edge;
+        int level;  // level of this node.
+        int hhsize; // extra_hashed size.
+        int uhsize; // extra_unhashed size.
+        int size;
+        int alloc;
+        // TBD: need "extra" header stuff
+        unsigned h;
+        char edge_bytes;
+#ifdef DEVELOPMENT_CODE
+        bool has_hash;
+#endif
+        bool is_sparse;
+        bool hashEdgeValues;
+    private:
+        // These cheat; let's see if any compiler complains.
+        inline int& raw_hh(int i) const {
+          MEDDLY_CHECK_RANGE(0, i, hhsize);
+          MEDDLY_DCASSERT(extra_hashed);
+          return extra_hashed[i];
+        }
+        inline int& raw_uh(int i) const {
+          MEDDLY_CHECK_RANGE(0, i, uhsize);
+          MEDDLY_DCASSERT(extra_unhashed);
+          return extra_unhashed[i];
+        }
+        inline int& raw_d(int i) const {
+          MEDDLY_DCASSERT(down);
+          MEDDLY_CHECK_RANGE(0, i, size);
+          return down[i];
+        }
+        inline int& raw_i(int i) const {
+          MEDDLY_DCASSERT(indexes);
+          MEDDLY_DCASSERT(is_sparse);
+          MEDDLY_CHECK_RANGE(0, i, size);
+          return indexes[i];
+        }
+        inline int& raw_ei(int i) const {
+          MEDDLY_DCASSERT(edge);
+          MEDDLY_CHECK_RANGE(0, i, size);
+          return ((int*)edge)[i];
+        }
+        inline float& raw_ef(int i) const {
+          MEDDLY_DCASSERT(edge);
+          MEDDLY_CHECK_RANGE(0, i, size);
+          return ((float*)edge)[i];
+        }
+    public:
+        bool lock;
+    public:
+        node_builder();
+        ~node_builder();
+        void init(int k, const expert_forest* p);
+        inline bool hasEdges() const {
+          return edge_bytes > 0;
+        }
+        inline void resize(int s) {
+          is_sparse = false;
+#ifdef DEVELOPMENT_CODE
+          has_hash = false;
+#endif
+          size = s;
+          if (size > alloc) enlarge();
+        }
+        inline void resparse(int s) {
+          is_sparse = true;
+#ifdef DEVELOPMENT_CODE
+          has_hash = false;
+#endif
+          size = s;
+          if (size > alloc) enlarge();
+        }
+        // used when we don't know exactly the sparse size
+        inline void shrinkSparse(int ns) {
+          MEDDLY_DCASSERT(is_sparse);
+          MEDDLY_CHECK_RANGE(0, ns, size+1);
+          size = ns;
+        }
+        inline bool isSparse() const {
+          return is_sparse;
+        }
+        inline bool isFull() const {
+          return !is_sparse;
+        }
+        inline int rawSize() const {
+          return size;
+        }
+        inline int getSize() const { 
+          MEDDLY_DCASSERT(!is_sparse);
+          return size;
+        }
+        inline int getNNZs() const {
+          MEDDLY_DCASSERT(is_sparse);
+          return size;
+        }
+        inline int getLevel() const { 
+          return level;
+        }
+        inline int& hh(int i)         { return raw_hh(i); }
+        inline int  hh(int i) const   { return raw_hh(i); }
+        inline int& uh(int i)         { return raw_uh(i); }
+        inline int  uh(int i) const   { return raw_uh(i); }
+        inline int&  d(int i)         { return  raw_d(i); }
+        inline int   d(int i) const   { return  raw_d(i); }
+        inline int&  i(int i)         { return  raw_i(i); }
+        inline int   i(int i) const   { return  raw_i(i); }
+        inline int& ei(int i)         { return raw_ei(i); }
+        inline int  ei(int i) const   { return raw_ei(i); }
+        inline float& ef(int i)       { return raw_ef(i); }
+        inline float  ef(int i) const { return raw_ef(i); }
+        // edge setting - for templates
+        inline void setEdge(int i, int ev) {
+          ei(i) = ev;
+        }
+        inline void setEdge(int i, float ev) {
+          ef(i) = ev;
+        }
+    public: // for unique table
+        inline unsigned hash() const {
+#ifdef DEVELOPMENT_CODE
+          MEDDLY_DCASSERT(has_hash);
+#endif
+          return h;
+        }
+        // bool equals(int p) const;
+        void computeHash();
+
+    public: // helpers for copying
+        void copyIntoFull(int* down, int N) const;
+        void copyIntoFull(int* down, void* edge, int N) const;
+        void copyIntoSparse(int* down, int* indexes, int Z) const;
+        void copyIntoSparse(int* down, int* indexes, void* edge, int N) const;
+
+    protected:
+        void enlarge();
+
+}; // end of node_builder class
+
+
+// ******************************************************************
+// *                                                                *
 // *                      expert_forest  class                      *
+// *                                                                *
 // ******************************************************************
 
 class MEDDLY::expert_forest : public forest
@@ -529,251 +904,332 @@ class MEDDLY::expert_forest : public forest
     /// Destructor.
     virtual ~expert_forest();  
 
+    /** Initialize data.
+        Should be called in the child class constructors.
+        Allows us to use class properties to initialize the data.
+    */
+    void initializeForest();
+    
+  
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  // |                                                                |
+  // |                         public methods                         |
+  // |                                                                |
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   // ------------------------------------------------------------
-  // inlines.
+  // forward subclass declarations
   public:
+    class nodeData;
+  protected:
+    class level_data;
+
+  // ------------------------------------------------------------
+  // inlined helpers.
+  public:
+// TBD: MOVE THESE TO MT CLASS?
+
+    /// Get the integer value represented by this terminal node.
+    static inline bool getBoolean(int terminalNode) {
+      MEDDLY_DCASSERT(terminalNode <= 0);
+      return terminalNode;
+    }
+
+    /// Get the terminal node representing this boolean value.
+    static inline int getTerminalNode(bool booleanValue) {
+      return booleanValue ? -1 : 0;
+    }
+
+    /// Get the integer value represented by this terminal node.
+    static inline int getInteger(int terminalNode) {
+      MEDDLY_DCASSERT(terminalNode <= 0);
+      // set 32nd bit based on 31st bit.  << gets rid of MSB; >> sign extends.
+      return terminalNode << 1 >> 1;
+    }
+
+    /// Get the terminal node representing this integer value.
+    static inline int getTerminalNode(int integerValue) {
+      // value has to fit within 31 bits (incl. sign)
+      // int(0xc0000000) == -1073741824
+      // int(0x3fffffff) == +1073741823
+      // MEDDLY_DCASSERT(-1073741824 <= integerValue && integerValue <= 1073741823);
+      MEDDLY_DCASSERT(-1073741824 <= integerValue && integerValue <= 1073741823);
+      return integerValue == 0? 0: integerValue | 0x80000000;
+    }
+
+    /// Get the real (float) value represented by this terminal node.
+    static inline float getReal(int term) {
+      MEDDLY_DCASSERT(term <= 0);
+      MEDDLY_DCASSERT(sizeof(float) <= sizeof(int));
+      if (0 == term) return 0.0;
+      term <<= 1;
+      float ret;
+      memcpy(&ret, &term, sizeof(float));
+      return ret;
+    }
+
+    /// Get the terminal node representing this real (float) value.
+    static inline int getTerminalNode(float a) {
+      if (0.0 == a) return 0;
+      int node;
+      memcpy(&node, &a, sizeof(int));
+      return (node >> 1) | 0x80000000;
+    }
+// TO HERE
+
+
+
     inline const expert_domain* getExpertDomain() const {
       return (expert_domain*) getDomain();
     }
     inline expert_domain* useExpertDomain() {
       return (expert_domain*) useDomain();
     }
-
-  // ------------------------------------------------------------
-  // virtual, with default implementation.
-  public:
-    /// Apply reduction rule to the temporary node and finalize it. Once
-    /// a node is reduced, its contents cannot be modified.
-    virtual int reduceNode(int node);
-
-    /// Reduce and finalize an node with an incoming edge value
-    virtual void normalizeAndReduceNode(int& node, int& ev);
-    virtual void normalizeAndReduceNode(int& node, float& ev);
-
-
-  // here down --- needs organizing
-  public:
-    /// Create a temporary node -- a node that can be modified by the user.
-    /// If \a clear is true, downpointers are initialized to 0.
-    virtual int createTempNode(int lh, int size, bool clear = true) = 0;
-
-    /// Create a temporary node with the maximum size allowed for this level.
-    /// If \a clear is true, downpointers are initialized to 0.
-    int createTempNodeMaxSize(int lh, bool clear = true);
-
-    /// Create a temporary node with the given downpointers. Note that
-    /// downPointers[i] corresponds to the downpointer at index i.
-    /// IMPORTANT: The incounts for the downpointers are not incremented.
-    /// The returned value is the handle for the temporary node.
-    virtual int createTempNode(int lh, std::vector<int>& downPointers) = 0;
-
-    /// Same as createTempNode(int, vector<int>) except this is for EV+MDDs.
-    virtual int createTempNode(int lh, std::vector<int>& downPointers,
-        std::vector<int>& edgeValues) = 0;
-
-    /// Same as createTempNode(int, vector<int>) except this is for EV*MDDs.
-    virtual int createTempNode(int lh, std::vector<int>& downPointers,
-        std::vector<float>& edgeValues) = 0;
-
-    /// Increase the size of the temporary node.
-    /// The maximum size is dictated by domain to which this forest belongs to.
-    virtual void resizeNode(int node, int size) = 0;
-
-    /// Build a copy of the given node.
-    /// The new node's size will be equal to max(sizeof(a), size).
-    virtual int makeACopy(int node, int size = 0) = 0;
-
+    /// Ignores prime/unprime.
+    inline int getNumVariables() const {
+      return getDomain()->getNumVariables();
+    }
+    inline int getMinLevelIndex() const {
+      return isForRelations() ? -getNumVariables() : 0;
+    }
+    inline bool isValidLevel(int k) const {
+      return (k>=getMinLevelIndex()) && (k<=getNumVariables());
+    }
     /// The maximum size (number of indices) a node at this level can have
-    int getLevelSize(int lh) const;
-
-    /// A is a temporary node, and B is a reduced node.
-    /// Accumulate B into A, i.e. A += B.
-    /// A still remains a temporary node.
-    /// B is not modified.
-    /// throws error::INVALID_OPERATION if A or B are inactive nodes.
-    virtual void accumulate(int& A, int B) = 0;
-
-    /// A is a temporary node, and B is a minterm.
-    /// Accumulate B into A, i.e. A += B.
-    /// A still remains a temporary node.
-    /// B is not modified.
-    /// Assert violation will occur if A is not an active node,
-    /// or if B is 0.
-    /// Returns true if a new element was added to MDD, false otherwise.
-    virtual bool accumulate(int& A, int* B);
-
-    /// Accumuluate a minterm into a MXD.
-    /// A is a temporary node.
-    /// vlist and vplist constitute the unprimed and primed levels
-    /// in the minterm.
-    virtual bool accumulate(int& A, int* vlist, int* vplist);
-
-    /// Has the node been reduced
-    /// Terminal nodes are also considered to be reduced nodes.
-    virtual bool isReducedNode(int node) const = 0;
-
-    /// Is this a full or truncated-full node?
-    /// A full node of size 6
-    /// Example: n = [0, 3, 234, -1, 0, 344223]
-    /// getFullNodeSize(n) returns 6
-    /// getFullNodeDownPtr(n, 2) returns 234
-    bool isFullNode(int node) const;
-
-    /// Is this a sparse node?
-    /// A sparse node of size 6
-    /// Example: n = [(1:3), (2:234), (3:-1), (5:344223)]
-    /// getSparseNodeSize(n) returns 4
-    /// getSparseNodeIndex(n, 1) returns 2
-    /// getSparseNodeDownPtr(n, 1) returns 234
-    bool isSparseNode(int node) const;
-
+    inline int getLevelSize(int lh) const {
+      MEDDLY_DCASSERT(isValidLevel(lh));
+      if (lh < 0) {
+        return getDomain()->getVariableBound(-lh, true);
+      } else {
+        return getDomain()->getVariableBound(lh, false);
+      }
+    }
+    /// used by level_data, for displaying.
+    inline long getLevelNumber(const level_data* L) const {
+      return long(L - levels);
+    }
     /// Is this a terminal node?
-    /// Note: terminal nodes have a handle <= 0.
-    /// (i) represented node handle i.
-    /// In MDDs/EVMDDs: (0) = false, (-1) = true.
-    /// In MTMDDs: (-i) = i; i.e. a terminal value of i is represented
-    ///            internally using a node handle of -i.
-    bool isTerminalNode(int node) const;
+    inline static bool isTerminalNode(int p) {
+      return (p < 1);
+    }
+    /// Sanity check: is this a valid nonterminal node index.
+    inline bool isValidNonterminalIndex(int node) const {
+      return (node>0) && (node <= a_last);
+    }
+    /// Sanity check: is this a valid node index.
+    inline bool isValidNodeIndex(int node) const {
+      return node <= a_last;
+    }
+    inline int getLastNode() const {
+      return a_last;
+    }
+    /// Get data for a given nonterminal node.
+    inline const nodeData& getNode(int p) const {
+      MEDDLY_DCASSERT(address);
+      MEDDLY_CHECK_RANGE(1, p, 1+a_last);
+      return address[p];
+    }
+    /** Get the node's level as an integer.
+        Negative values are used for primed levels.
+    */
+    inline int getNodeLevel(int p) const {
+      if (isTerminalNode(p)) return 0;
+      MEDDLY_DCASSERT(address);
+      MEDDLY_CHECK_RANGE(1, p, 1+a_last);
+      return address[p].level;
+    }
+    inline bool isPrimedNode(int p) const {
+      return getNodeLevel(p) < 0;
+    }
+    inline bool isUnprimedNode(int p) const {
+      return getNodeLevel(p) > 0;
+    }
 
-    /// Get the integer value represented by this terminal node.
-    bool getBoolean(int terminalNode) const;
+    /** Get the node's height.
+        For convenience.  Height is the total
+        number of levels until terminal nodes.
+    */
+    inline int getNodeHeight(int p) const {
+      if (isForRelations()) {
+        int k = getNodeLevel(p);
+        return (k<0) ? (-2*k-1) : 2*k;
+      } else {
+        return getNodeLevel(p);
+      }
+    }
 
-    /// Get the integer value represented by this terminal node.
-    int getInteger(int terminalNode) const;
+    /** Does this node represent an Index Set?
+        Note: Only applicable to EV+MDDs.
+    */
+    inline bool isIndexSet(int node) const {
+      if (!isEVPlus()) return false;
+      if (isTerminalNode(node)) return node;
+      // yes iff the unhashed extra header is non-zero.
+      const nodeData& nd = getNode(node);
+      const level_data& ld = levels[nd.level];
+      return (ld.unhashedHeaderOf(nd.offset))[0] > 0;
+    }
 
-    /// Get the real (float) value represented by this terminal node.
-    float getReal(int terminalNode) const;
+    /// Get the cardinality of an Index Set.
+    inline int getIndexSetCardinality(int node) const {
+      MEDDLY_DCASSERT(isEVPlus());
+      if (isTerminalNode(node)) return (node != 0) ? 1 : 0;
+      // yes iff the unhashed extra header is non-zero.
+      const nodeData& nd = getNode(node);
+      const level_data& ld = levels[nd.level];
+      MEDDLY_DCASSERT((ld.unhashedHeaderOf(nd.offset))[0] > 0);
+      return (ld.unhashedHeaderOf(nd.offset))[0];
+    }
 
-    /// Get the terminal node representing this boolean value.
-    int getTerminalNode(bool booleanValue) const;
+    // --------------------------------------------------
+    // Used by the unique table
+    // --------------------------------------------------
+    inline int getNext(int p) const {
+      MEDDLY_DCASSERT(address);
+      MEDDLY_DCASSERT(levels);
+      MEDDLY_DCASSERT(isValidNonterminalIndex(p));
+      MEDDLY_DCASSERT(address[p].level);
+      return levels[address[p].level].nextOf(address[p].offset);
+    }
+    inline void setNext(int p, int n) {
+      MEDDLY_DCASSERT(address);
+      MEDDLY_DCASSERT(levels);
+      MEDDLY_DCASSERT(isValidNonterminalIndex(p));
+      MEDDLY_DCASSERT(address[p].level);
+      levels[address[p].level].nextOf(address[p].offset) = n;
+    }
+    inline unsigned hash(int p) const {
+      MEDDLY_DCASSERT(address);
+      MEDDLY_DCASSERT(isValidNonterminalIndex(p));
+#ifdef SAVE_HASH
+      return address[p].hash;
+#else
+      return hashNode(p);
+#endif
+    }
 
-    /// Get the terminal node representing this integer value.
-    int getTerminalNode(int integerValue) const;
+    // --------------------------------------------------
+    // Managing reference counts
+    // --------------------------------------------------
 
-    /// Get the terminal node representing this real (float) value.
-    int getTerminalNode(float realValue) const;
+    /** Increase the link count to this node. Call this when another node is
+        made to point to this node.
+          @return p, for convenience.
+    */
+    inline int linkNode(int p) {
+        MEDDLY_DCASSERT(isActiveNode(p));
+        if (isTerminalNode(p)) return p;
+        MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
 
-    /// Get the node's level handle
-    int getNodeLevel(int node) const;
+        int& count = getInCount(p);
+        count++;
 
-    /// Get the node's height
-    int getNodeHeight(int node) const;
+        if (1 == count) {
+          // Reclaim an orphan node
+          stats.reclaimed_nodes++;
+          stats.orphan_nodes--;
+        }
+#ifdef TRACK_DELETIONS
+        fprintf(stdout, "\t+Node %d count now %d\n", p, count);
+        fflush(stdout);
+#endif
+        return p;
+    }
 
-    /// Get the number of entries in a full node
-    int getFullNodeSize(int node) const;
+    /** Decrease the link count to this node. If link count reduces to 0, this
+        node may get marked for deletion. Call this when another node releases
+        its connection to this node.
+    */
+    inline void unlinkNode(int p) {
+        MEDDLY_DCASSERT(isActiveNode(p));
+        if (isTerminalNode(p)) return;
+        MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
+        MEDDLY_DCASSERT(getInCount(p) > 0);
 
-    /// Get the number of entries in a sparse nodes
-    int getSparseNodeSize(int node) const;
+        int& count = getInCount(p);
+        count--;
+  
+#ifdef TRACK_DELETIONS
+        fprintf(stdout, "\t-Node %d count now %d\n", p, count);
+        fflush(stdout);
+#endif
+        if (count) return;
 
-    /// Sets the specified index of this node to point to down.
-    /// The old downpointer at this index is unlinked (via unlinkNode()).
-    /// This index now points to the new downpointer. The reference count
-    /// to the new downpointer is incremented (via linkNode()).
-    /// Note 1: Only non-reduced nodes can be modified.
-    /// Note 2: Non-reduced nodes are always Full nodes regardless of the
-    ///         forest's node storage policy.
-    void setDownPtr(int node, int index, int down);
+        handleNewOrphanNode(p);
+    }
 
-    /// Sets the specified index of this node to point to down.
-    /// Same as setDownPtr(), except that the previous downpointer is
-    /// discarded without unlinking. This is useful if you are using
-    /// nodes with uninitialized downpointers created by calling
-    /// createTempNode(level, size, false) (i.e. clear flag is false).
-    void setDownPtrWoUnlink(int node, int index, int down);
+    // --------------------------------------------------
+    // Managing cache entries
+    // --------------------------------------------------
 
-    /// Sets the specified index's edge value -- only for Edge-valued MDDs
-    /// Note 1: Only non-reduced nodes can be modified.
-    /// Note 2: Non-reduced nodes are always Full nodes regardless of the
-    ///         forest's node storage policy.
-    void setEdgeValue(int node, int index, int edge);
-    void setEdgeValue(int node, int index, float edge);
+    /** Returns the cache-count for a node. This indicates the number of
+        compute cache entries that link to this node.
+        This version returns a reference to the cache-count. Therefore, the
+        cache-count of the node can be modified by modifying the reference.
+    */
+    inline int& getCacheCount(int p) {
+      MEDDLY_DCASSERT(isValidNodeIndex(p));
+      MEDDLY_DCASSERT(!isTerminalNode(p));
+      return address[p].cache_count;
+    }
 
-    /// Get the node pointed to at the given index -- only for Full nodes
-    int getFullNodeDownPtr(int node, int index) const;
+    /** Returns the cache-count for a node. This indicates the number of
+        compute cache entries that link to this node.
+        This version returns a copy of the count.
+    */
+    inline int getCacheCount(int p) const {
+      MEDDLY_DCASSERT(isValidNodeIndex(p));
+      MEDDLY_DCASSERT(!isTerminalNode(p));
+      return address[p].cache_count;
+    }
 
-    /// Get the node pointed to at the given index -- works for Full and
-    /// Sparse nodes. For Full nodes, this is the same as calling
-    /// getFullNodeDownPtr(node, index). For Sparse nodes, this searches
-    /// the sparse node's indexes for the given index and if found, it
-    /// returns the downpointer associated with the index. Note that this
-    /// is not the same as calling getSparseNodeDownPtr(int node, int index).
-    int getDownPtr(int node, int index) const;
+    /** Increase the cache count for this node. Call this whenever this node
+        is added to a cache. 
+          @param  p     Node we care about.
+          @return p, for convenience.
+    */
+    inline int cacheNode(int p) {
+      MEDDLY_DCASSERT(isActiveNode(p));
+      if (isTerminalNode(p)) return p;
+      getCacheCount(p)++;
+#ifdef TRACK_CACHECOUNT
+      fprintf(stdout, "\t+Node %d is in %d caches\n", p, getCacheCount(p));
+      fflush(stdout);
+#endif
+      return p;
+    }
 
-    /// Get the nodes pointed to by this node (works with Full or Sparse nodes.
-    /// The vector downPointers is increased in size if necessary (but
-    /// never reduced in size).
-    /// Returns false is operation is not possible. Possible reasons are:
-    /// node does not exist; node is a terminal; or node has not been reduced.
-    bool getDownPtrs(int node, std::vector<int>& downPointers) const;
+    /** Increase the cache count for this node. Call this whenever this node
+        is added to a cache. 
+          @param  p     Node we care about.
+    */
+    inline void uncacheNode(int p) {
+      if (isTerminalNode(p)) return;
+      MEDDLY_DCASSERT(isActiveNode(p) ||
+          (!isActiveNode(p) && isPessimistic() && isZombieNode(p)));
+      int& cc = getCacheCount(p);
+      if (isPessimistic() && isZombieNode(p)) {
+        // special case: we store the negative of the count.
+        MEDDLY_DCASSERT(cc < 0);
+        cc++;
+        if (0 == cc) {
+          freeZombieNode(p);
+        }
+        return;
+      }
+      // we store the actual count.
+      MEDDLY_DCASSERT(cc > 0);
+      cc--;
+#ifdef TRACK_CACHECOUNT
+      fprintf(stdout, "\t-Node %d is in %d caches\n", p, cc);
+      fflush(stdout);
+#endif
 
-    /// Similar to getDownPtrs() except for EV+MDDs.
-    /// If successful (return value true), the vectors hold the
-    /// downpointers and edge-values.
-    virtual bool getDownPtrsAndEdgeValues(int node,
-        std::vector<int>& downPointers, std::vector<int>& edgeValues) const
-        = 0;
+      if (cc == 0 && readInCount(p) == 0) {
+        deleteOrphanNode(p);
+      }
+    }
 
-    /// Similar to getDownPtrs() except for EV*MDDs.
-    /// If successful (return value true), the vectors hold the
-    /// downpointers and edge-values.
-    virtual bool getDownPtrsAndEdgeValues(int node,
-        std::vector<int>& downPointers, std::vector<float>& edgeValues) const
-        = 0;
-
-    /// Get the edge value for the given index -- only for Full nodes
-    void getFullNodeEdgeValue(int node, int index, int& ev) const;
-    void getFullNodeEdgeValue(int node, int index, float& ev) const;
-
-    /// Get the real index at the given index -- only for Sparse nodes
-    int getSparseNodeIndex(int node, int index) const;
-
-    /// Get the node pointed to at the given index -- only for Sparse nodes
-    int getSparseNodeDownPtr(int node, int index) const;
-
-    /// Get the edge value at the given index -- only for Sparse nodes
-    void getSparseNodeEdgeValue(int node, int index, int& ev) const;
-    void getSparseNodeEdgeValue(int node, int index, float& ev) const;
-
-    bool getDownPtrs(int node, const int*& dptrs) const;
-    bool getSparseNodeIndexes(int node, const int*& indexes) const;
-    bool getEdgeValues(int node, const float*& edgeValues) const;
-    bool getEdgeValues(int node, const int*& edgeValues) const;
-
-    bool getDownPtrs(int node, int*& dptrs);
-    bool getEdgeValues(int node, float*& edgeValues);
-    bool getEdgeValues(int node, int*& edgeValues);
-
-    /// Increase the link count to this node. Call this when another node is
-    /// made to point (down-pointer) to this node.
-    ///   @return node, for convenience.
-    int linkNode(int node);
-
-    /// Decrease the link count to this node. If link count reduces to 0, this
-    /// node may get marked for deletion. Call this when another node releases
-    /// its connection to this node.
-    void unlinkNode(int node);
-
-    /// Increase the cache count for this node. Call this whenever this node
-    /// is added to a cache. 
-    ///   @return node, for convenience.
-    int cacheNode(int node);
-
-    /// Decrease the cache count for this node. Call this whenever this node
-    /// is removed from a cache.
-    void uncacheNode(int node);
-
-    /// Returns the in-count for a node. This indicates the number of MDD
-    /// nodes that link to this node. A node is never deleted when its
-    /// in-count is more than zero.
-    /// Note that a reference to the in-count is returned. Therefore, the
-    /// in-count of the node can be modified by modifying the reference.
-    int& getInCount(int node) const;
-
-    /// Returns the cache-count for a node. This indicates the number of
-    /// compute cache entries that link to this node.
-    /// Note that a reference to the cache-count is returned. Therefore, the
-    /// cache-count of the node can be modified by modifying the reference.
-    int& getCacheCount(int node) const;
 
     /// A node can be discarded once it goes stale. Whether a node is
     /// considered stale depends on the forest's deletion policy.
@@ -781,92 +1237,477 @@ class MEDDLY::expert_forest : public forest
     ///   in-count and cache-count are zero.
     /// Pessimistic deletion: A node is said to be stale when the in-count
     ///  is zero regardless of the cache-count.
-    bool isStale(int node) const;
+    inline bool isStale(int node) const {
+      return
+        isMarkedForDeletion() || (
+          isTerminalNode(node)
+          ? terminalNodesAreStale
+          : isPessimistic()
+            ? isZombieNode(node)
+            : (readInCount(node) == 0)
+        );
+    }
 
-    /// Returns the node count for this node. The node count is the number
-    /// of unique nodes in the decision diagram represented by this node.
-    unsigned getNodeCount(int node) const;
+    
 
-    /// Returns the edge count for this node. The edge count is the number
-    /// of unique edges in the decision diagram represented by this node.
-    unsigned getEdgeCount(int node, bool countZeroes) const;
 
-    /// Display the contents of node
-    virtual void showNode(FILE* s, int node, int verbose = 0) const = 0;
-    virtual void showNodeGraph(FILE* s, int node) const = 0;
+  // ------------------------------------------------------------
+  // non-virtual, handy methods for debugging.
+  public:
+    void dump(FILE *s) const; 
+    void dumpInternal(FILE *s) const; 
+    void dumpInternalLevel(FILE *s, int k) const; 
+    void dumpUniqueTable(FILE *s) const;
+    void validateIncounts(bool exact);
 
-    /// Is this forest an MDD?
-    bool isMdd() const;
 
-    /// Is this forest an Multi-Terminal MDD?
-    bool isMtMdd() const;
+  // ------------------------------------------------------------
+  // non-virtual, handy methods.
+  public:
+    /** Build a list of nodes in the subgraph below the given node.
+        This for example is used to determine which nodes must
+        be printed to display a subgraph.
+        Terminal nodes are NOT included.
 
-    /// Is this forest an Matrix Diagram?
-    bool isMxd() const;
+          @param  root    Root node in the forest.
+                          Will be included in the list, unless it
+                          is a terminal node.
 
-    /// Is this forest an Multi-terminal Matrix Diagram?
-    bool isMtMxd() const;
+          @param  sort    If true, the list will be in increasing order.
+                          Otherwise, the list will be in some convenient order
+                          (currently, it is the order that nodes 
+                          are discovered).
 
-    /// Is this forest an EV+ MDD? In EV+, edge-valued are summed
-    /// as we move down a path in the MDD.
-    bool isEvplusMdd() const;
+          @return   A malloc'd array of non-terminal nodes, terminated by 0.
+                    Or, a null pointer, if the list is empty.
+    */
+    int* markNodesInSubgraph(int root, bool sort) const;
 
-    /// Is this forest an EV* MDD? In EV*, edge-valued are multiplied
-    /// as we move down a path in the MDD.
-    bool isEvtimesMdd() const;
+    /** Count and return the number of non-terminal nodes
+        in the subgraph below the given node.
+    */
+    int getNodeCount(int node) const;
 
-    /// Does this node represent an Index Set?
-    /// Note: Only applicable to EV+MDDs.
-    bool isIndexSet(int node) const;
+    /** Count and return the number of edges
+        in the subgraph below the given node.
+    */
+    int getEdgeCount(int node, bool countZeroes) const;
 
-    /// Returns an Index Set's cardinality.
-    /// Note: Only applicable to Index Sets (which are
-    /// implemented using EV+MDDs).
-    /// Returns:
-    /// -1     Don't know yet
-    /// 0      Invalid node
-    /// > 0    Cardinality of the Index Set
-    int getIndexSetCardinality(int node) const;
+    /// Display the contents of a single node.
+    void showNode(FILE* s, int node, int verbose = 0) const;
 
-    /// Sets an Index Set's cardinality.
-    /// Note: Only applicable to Index Sets (which are
-    /// implemented using EV+MDDs).
-    /// Throws INVALID_OPERATION if the operation is not valid for this forest.
-    void setIndexSetCardinality(int node, int c);
+    /// Show all the nodes in the subgraph below the given node.
+    void showNodeGraph(FILE* s, int node) const;
 
-    /// Is this node an active node?
-    /// An active node is a node that has not yet been recycled (i.e. dead).
-    /// Temporary nodes, Reduced nodes and Terminal nodes are considered
-    /// to be active nodes.
-    bool isActiveNode(int node) const;
+    /** Show stats about memory usage for this forest.
+          @param  s     Output stream to write to
+          @param  pad   Padding string, written at the start of 
+                        each output line.
+          @param  verb  Level of detail, between 0 (least detailed)
+                        and 9 (most detailed).
+    */
+    void reportMemoryUsage(FILE * s, const char* pad, int verb) const;
 
-    /// If the node is at a primed level, it returns (2 * node_height - 1).
-    /// Otherwise, it returns (2 * node_height).
-    int getMappedNodeHeight(int node) const;
+    /// Compute a hash for a node.
+    unsigned hashNode(int p) const;
 
+    /** Check and find the index of a single downward pointer.
+
+          @param  node    Node we care about
+          @param  down    Output:
+                          The singleton downward pointer, or undefined.
+
+          @return   If the node has only one non-zero downward pointer,
+                    then return the index for that pointer.
+                    Otherwise, return a negative value.
+    */
+    int getSingletonIndex(int node, int &down) const;
+
+    /** Check and get a single downward pointer.
+
+          @param  node    Node we care about
+          @param  index   Index we're trying to match
+
+          @return   If the only non-zero downward pointer for
+                    this node happens at \a index, then return the pointer.
+                    Otherwise, return 0.
+    */
+    inline int getSingletonDown(int node, int index) const {
+      int down;
+      if (getSingletonIndex(node, down) == index) return down;
+      return 0;
+    }
+
+    /** For a given node, get a specified downward pointer.
+
+        This is designed to be used for one or two indexes only.
+        For reading all or several downward pointers, a
+        node_reader should be used instead.
+
+          @param  node    Node to look at
+          @param  index   Index of the pointer we want.
+
+          @return         The downward pointer at that index.
+    */
+    int getDownPtr(int node, int index) const;
+
+    /** For a given node, get a specified downward pointer.
+
+        This is designed to be used for one or two indexes only.
+        For reading all or several downward pointers, a
+        node_reader should be used instead.
+
+          @param  node    Node to look at
+          @param  index   Index of the pointer we want.
+
+          @param  ev      Output: edge value at that index.
+          @param  dn      Output: downward pointer at that index.
+    */
+    void getDownPtr(int node, int index, int& ev, int& dn) const;
+
+    /** For a given node, get a specified downward pointer.
+
+        This is designed to be used for one or two indexes only.
+        For reading all or several downward pointers, a
+        node_reader should be used instead.
+
+          @param  node    Node to look at
+          @param  index   Index of the pointer we want.
+
+          @param  ev      Output: edge value at that index.
+          @param  dn      Output: downward pointer at that index.
+    */
+    void getDownPtr(int node, int index, float& ev, int& dn) const;
+
+
+  // ------------------------------------------------------------
+  // Preferred mechanism for reading nodes
+  public:
+    /** Initialize a node reader.
+          @param  nr      Node reader to fill.
+          @param  node    The node to use.
+          @param  full    true:   Use a full reader.
+                          false:  Use a sparse reader.
+    */
+    void initNodeReader(node_reader &nr, int node, bool full) const;
+
+    /// Allocate and initialize a node reader.
+    inline node_reader* initNodeReader(int node, bool full) const {
+      node_reader* nr = node_reader::useReader();
+      MEDDLY_DCASSERT(nr);
+      initNodeReader(*nr, node, full);
+      return nr;
+    }
+
+    /** Initialize a redundant node reader.
+        Use for multi-terminal forests.
+        For convenience.
+          @param  nr      Node reader to fill.
+          @param  k       Level that was skipped.
+          @param  node    Downward pointer to use.
+          @param  full    Use a full reader or sparse.
+    */
+    void initRedundantReader(node_reader &nr, int k, int node, bool full) const;
+
+    /// Allocate and initialize a redundant node reader.
+    inline node_reader* initRedundantReader(int k, int node, bool full) const {
+      node_reader* nr = node_reader::useReader();
+      MEDDLY_DCASSERT(nr);
+      initRedundantReader(*nr, k, node, full);
+      return nr;
+    }
+
+    /** Initialize a redundant node reader.
+        Use for edge-valued forests, whose edge values
+        require a single integer slot.
+        For convenience.
+          @param  nr      Node reader to fill.
+          @param  k       Level that was skipped.
+          @param  ev      Edge value to use.
+          @param  node    Downward pointer to use.
+          @param  full    Use a full reader or sparse.
+    */
+    void initRedundantReader(node_reader &nr, int k, int ev, int node, 
+      bool full) const;
+
+    /// Allocate and initialize a redundant node reader.
+    inline node_reader* initRedundantReader(int k, int ev, int nd, bool full) const {
+      node_reader* nr = node_reader::useReader();
+      MEDDLY_DCASSERT(nr);
+      initRedundantReader(*nr, k, ev, nd, full);
+      return nr;
+    }
+
+    /** Initialize an identity node reader.
+        Use for multi-terminal forests.
+        For convenience.
+          @param  nr      Node reader to fill.
+          @param  k       Level that was skipped.
+          @param  i       Index of identity reduction
+          @param  n       Downward pointer to use.
+          @param  f       Use a full reader or sparse.
+    */
+    void initIdentityReader(node_reader &nr, int k, int i, int n, bool f) const;
+
+    /** Initialize an identity node reader.
+        Use for edge-valued forests, whose edge values
+        require a single integer slot.
+        For convenience.
+          @param  nr      Node reader to fill.
+          @param  k       Level that was skipped.
+          @param  i       Index of identity reduction
+          @param  ev      Edge value.
+          @param  n       Downward pointer to use.
+          @param  f       Use a full reader or sparse.
+    */
+    void initIdentityReader(node_reader &nr, int k, int i, int ev, int n, 
+      bool f) const;
+
+    /// Allocate and initialize an identity node reader.
+    inline node_reader* initIdentityReader(int k, int i, int node, 
+      bool full) const 
+    {
+      node_reader* nr = node_reader::useReader();
+      MEDDLY_DCASSERT(nr);
+      initIdentityReader(*nr, k, i, node, full);
+      return nr;
+    }
+
+  // ------------------------------------------------------------
+  // Preferred mechanism for building nodes
+  public:
+    inline node_builder& useNodeBuilder(int level, int tsz) {
+      MEDDLY_DCASSERT(isValidLevel(level));
+      MEDDLY_DCASSERT(!builders[level].lock);
+      builders[level].resize(tsz);
+      builders[level].lock = true;
+      return builders[level];
+    }
+    inline node_builder& useSparseBuilder(int level, int nnz) {
+      MEDDLY_DCASSERT(isValidLevel(level));
+      MEDDLY_DCASSERT(!builders[level].lock);
+      builders[level].resparse(nnz);
+      builders[level].lock = true;
+      return builders[level];
+    }
+    inline void doneNodeBuilder(node_builder& nb) {
+      MEDDLY_DCASSERT(nb.lock);
+      nb.lock = false;
+    }
+
+    /** Return a forest node equal to the one given.
+        The node is constructed as necessary.
+        This version should be used only for
+        multi terminal forests.
+          @param  in    Incoming pointer index;
+                        used for identity reductions.
+          @param  nb    Constructed node.
+
+          @return       A node handle equivalent
+                        to nb, taking into account
+                        the forest reduction rules
+                        and if a duplicate node exists.
+    */
+    inline int createReducedNode(int in, node_builder& nb) {
+      nb.computeHash();
+      int q = createReducedHelper(in, nb);
+      MEDDLY_DCASSERT(nb.lock);
+      nb.lock = false;
+#ifdef TRACK_DELETIONS
+      printf("Created node %d\n", q);
+#endif
+      return q;
+    }
+
+    /** Return a forest node equal to the one given.
+        The node is constructed as necessary.
+        This version should be used only for
+        edge valuded forests.
+          @param  in    Incoming pointer index;
+                        used for identity reductions.
+          @param  nb    Constructed node.
+          @param  ev    Output: edge value
+          @param  node  Output: node handle.
+                        On exit, the edge value and the node
+                        handle together are equivalent to nb;
+                        taking into account the forest reduction rules 
+                        and if a duplicate node exists.
+    */
+    template <class T>
+    inline void createReducedNode(int in, node_builder& nb, T& ev, int& node) {
+      normalize(nb, ev);
+      nb.computeHash();
+      node = createReducedHelper(in, nb);
+      MEDDLY_DCASSERT(nb.lock);
+      nb.lock = false;
+#ifdef TRACK_DELETIONS
+      printf("Created node %d\n", node);
+#endif
+    }
+
+    
+  // ------------------------------------------------------------
+  // virtual in the base class, but implemented here.
+  // See meddly.h for descriptions of these methods.
+  public:
+    virtual void garbageCollect();
+    virtual void compactMemory();
+    virtual void showInfo(FILE* strm, int verbosity);
+
+  // ------------------------------------------------------------
+  // abstract virtual, must be overridden.
+  // 
+  public:
+    /// Number of integer slots for an edge at level k.
+    virtual char edgeSize(int k) const = 0;
+    /// Extra unhashed node slots at level k.
+    virtual char unhashedHeaderSize(int k) const = 0;
+    /// Extra hashed node slots at level k.
+    virtual char hashedHeaderSize(int k) const = 0;
+    /// Are edge values included when computing the hash, at level k.
+    virtual bool areEdgeValuesHashed(int k) const = 0;
+
+    /** Discover duplicate nodes.
+        Required for the unique table. 
+        Default behavior is to throw an exception.
+          @param  node    Handle to a node.
+          @param  nb      Node we've just built.
+          
+          @return   true, iff the nodes are duplicates.
+    */
+    virtual bool areDuplicates(int node, const node_builder &nb) const = 0;
+
+    /** Discover duplicate nodes.
+        Right now, used for sanity checks only.
+        Default behavior is to throw an exception.
+          @param  node    Handle to a node.
+          @param  nr      Some other node.
+          
+          @return   true, iff the nodes are duplicates.
+    */
+    virtual bool areDuplicates(int node, const node_reader &nr) const = 0;
+
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  // |                                                                |
+  // |                 protected and private  methods                 |
+  // |                                                                |
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  // ------------------------------------------------------------
+  // inlined helpers.
   protected:
-    int getInternalNodeSize(int node) const;
-    int* getNodeAddress(int node) const;
-    int* getAddress(int k, int offset) const;
-    int getNodeOffset(int node) const;
+    inline bool isZombieNode(int p) const {
+      MEDDLY_DCASSERT(isValidNodeIndex(p));
+      MEDDLY_DCASSERT(!isTerminalNode(p));
+      return (getCacheCount(p) < 0);
+    }
 
-    int mapLevel(int level) const;
-    int unmapLevel(int level) const;
+    inline bool isActiveNode(int p) const {
+      return 
+      (isValidNodeIndex(p) && (isTerminalNode(p) || getNode(p).offset > 0));
+    }
 
-    bool isZombieNode(int node) const;
+    inline bool isDeletedNode(int p) const {
+      MEDDLY_DCASSERT(isValidNonterminalIndex(p));
+      return !(isActiveNode(p) || isZombieNode(p));
+    }
 
-    // the following virtual functions are implemented in node_manager
-    virtual bool isValidNodeIndex(int node) const = 0;
-    virtual bool isValidLevel(int level) const = 0;
-    virtual void reclaimOrphanNode(int node) = 0;     // for linkNode()
-    virtual void handleNewOrphanNode(int node) = 0;   // for unlinkNode()
-    virtual void deleteOrphanNode(int node) = 0;      // for uncacheNode()
-    virtual void freeZombieNode(int node) = 0;        // for uncacheNode()
-    // for isStale()
-    virtual bool discardTemporaryNodesFromComputeCache() const = 0;
+  // ------------------------------------------------------------
+  // virtual, with default implementation.
+  // Should be overridden in appropriate derived classes.
+  protected:
+    /** Normalize a node.
+        Used only for "edge valued" DDs with range type: integer.
+        Different forest types will have different normalization rules,
+        so the default behavior given here (throw an error) will need
+        to be overridden by all edge-valued forests.
 
-    /// Address of each node.
-    typedef struct {
+          @param  nb    Array of downward pointers and edge values;
+                        may be modified.
+          @param  ev    The incoming edge value, may be modified
+                        as appropriate to normalize the node.
+    */
+    virtual void normalize(node_builder &nb, int& ev) const;
+
+    /** Normalize a node.
+        Used only for "edge valued" DDs with range type: real.
+        Different forest types will have different normalization rules,
+        so the default behavior given here (throw an error) will need
+        to be overridden by all edge-valued forests.
+
+          @param  nb    Array of downward pointers and edge values;
+                        may be modified.
+          @param  ev    The incoming edge value, may be modified
+                        as appropriate to normalize the node.
+    */
+    virtual void normalize(node_builder &nb, float& ev) const;
+
+    /** Show a terminal node.
+          @param  s       Stream to write to.
+          @param  tnode   Handle to a terminal node.
+    */
+    virtual void showTerminal(FILE* s, int tnode) const;
+
+    /** Show an edge value.
+          @param  s       Stream to write to.
+          @param  edge    Array of all edge values.
+          @param  i       Index of the one we want to display.
+    */
+    virtual void showEdgeValue(FILE* s, const void* edge, int i) const;
+
+    /** Show the hashed header values.
+          @param  s       Stream to write to.
+          @param  hh      Array of all hashed header values.
+    */
+    virtual void showHashedHeader(FILE* s, const int* hh) const;
+
+    /** Show the unhashed header values.
+          @param  s       Stream to write to.
+          @param  uh      Array of all unhashed header values.
+    */
+    virtual void showUnhashedHeader(FILE* s, const int* uh) const;
+
+  // ------------------------------------------------------------
+  // helpers for this class
+  private:
+    inline bool isTimeToGc() const {
+      return isPessimistic() 
+        ? (stats.zombie_nodes > deflt.zombieTrigger)
+        : (stats.orphan_nodes > deflt.orphanTrigger);
+    }
+
+    void handleNewOrphanNode(int node);   
+    void deleteOrphanNode(int node);     
+    void deleteNode(int p);
+    void zombifyNode(int p);
+
+    /** Apply reduction rule to the temporary node and finalize it. 
+        Once a node is reduced, its contents cannot be modified.
+          @param  in    Incoming index, used only for identity reduction;
+                        Or -1.
+          @param  nb    Array of downward pointers.
+          @return       Handle to a node that encodes the same thing.
+    */
+    int createReducedHelper(int in, const node_builder &nb);
+
+    // Sanity check; used in development code.
+    void validateDownPointers(const node_builder &nb) const;
+
+  // ----------------------------------------------------------------- 
+  // | 
+  // |  Storage mechanism for "node indexes".
+  // | 
+  public:
+
+    // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    /** Address of each node.
+        The node handles (integers) need to keep some
+        information about the node they point to,
+        both for addressing and for bookkeeping purposes.
+        This struct holds that information.
+    */
+    struct nodeData {
       /**
         Node level
         If the node is active, this indicates node level.
@@ -885,222 +1726,524 @@ class MEDDLY::expert_forest : public forest
         table). If this node is a zombie, cache_count is negative.
         */
       int cache_count;
-    } mdd_node_data;
 
-    /// address info for nodes
-    mdd_node_data *address;
-
-    /// Level data for each level in a MDD
-    typedef struct {
-      /// level height
-      int height;
-      /// data array
-      int* data;
-      /// Size of data array.
-      int size;
-      /// Last used data slot.  Also total number of ints "allocated"
-      int last;
-      /// Mark for compaction
-      bool compactLevel;
-      /// Node representing a variable at this level pointing to terminals
-      /// based on index
-      int levelNode;
-
-      // Holes grid info
-
-      /// Pointer to top of holes grid
-      int holes_top;
-      /// Pointer to bottom of holes grid
-      int holes_bottom;
-      /// Total ints in holes
-      int hole_slots;
-
-      // performance stats
-
-      /// Largest traversed height of holes grid
-      int max_hole_chain;
-      /// Number of zombie nodes
-      int zombie_nodes;
-      /// Number of temporary nodes -- nodes that have not been reduced
-      int temp_nodes;
-      /// Total number of compactions
-      int num_compactions;
-    } mdd_level_data;
-
-    /// Level data. Each level maintains its own data array and hole grid.
-    mdd_level_data *level;
-
-
-#if 0
-  // TODO: 
-
-  public:
-
-    /** Set the specified reduction rule for one variable.
-      @param  r   Desired reduction rule.
-      @param  vh  Variable handle where the rule will be applied. 
-      @return     An appropriate error code.
-     */
-    virtual error setReductionRuleForVariable(reduction_rule r, int vh) = 0;
-
-    /** Get the current reduction rule for the specified variable.
-      @param  vh  Variable handle.
-      @return     The reduction rule for the variable.
-      TODO: dealing with errors?
-     */
-    virtual reduction_rule getReductionRuleForVariable(int vh) const = 0;
-
-    /** Set the node storage meachanism for one variable.
-      @param  ns  Desired node storage mechanism.
-      @param  vh  Variable handle where the meachanism will be applied. 
-      @return     An appropriate error code.
-     */
-    virtual error setNodeStorageForVariable(node_storage ns, int vh) = 0;
-
-    /** Get the current node storage meachanism for one variable.
-      @param  vh  Variable handle.  
-      @return     The reduction rule for the variable.
-      TODO: dealing with errors?
-     */
-    virtual node_storage getNodeStorageForVariable(int vh) const = 0;
-
-    /** Get the current memory allocation for a given variable.
-      I.e., the total amount of memory allocated for nodes
-      for the given variable, including memory space currently
-      unused (e.g., holes from deleted nodes).
-      @param  vh  Variable handle.
-      @return     The memory usage in bytes, or -1 on error.
-     */
-    virtual int getMemoryAllocationForVariable(int vh) const = 0;
-
-    /** Get the current memory usage for a given variable.
-      Like getMemoryAllocationForVariable(), except we
-      report only the memory actually in use.
-      @param  vh  Variable handle.
-      @return     The memory usage in bytes, or -1 on error.
-     */
-    virtual int getMemoryUsedForVariable(int vh) const = 0;
-
-    /** Compact the memory for a given variable.
-      Can be expensive.
-      @param  vh  Variable handle.
-      @return     An appropriate error code.
-     */
-    virtual error compactMemoryForVariable(int vh) = 0;
-
-    /** Set a compaction threshold for a given variable.
-      The threshold is set as a percentage * 100.
-      Whenever the \b unused memory for this variable exceeds the threshold
-      (as a percentage), a compaction operation is performed automatically.
-      @param  vh  Variable handle.
-      @param  p   Percentage * 100, i.e., use 50 for 50\%.
-      @return     An appropriate error code.
-     */    
-    virtual error setCompactionThresholdForVariable(int vh, int p) = 0;
-
-    /** Get the compaction threshold currently set for a given variable.
-      @param  vh  Variable handle.
-      @return     The threshold, or -1 on error.
-     */    
-    virtual int getCompactionThresholdForVariable(int vh) const = 0;
-
-    /** Set the node deletion policy for a given variable.
-      Determines how aggressively node memory should be reclaimed when
-      nodes become disconnected.
-      @param  vh  Variable handle.
-      @param  np  Policy to use.
-      @return     An appropriate error code.
-      TODO: need to specify what happens when the policy is changed.
-     */
-    virtual error 
-      setNodeDeletionForVariable(int vh, node_deletion_policy np) = 0;
-
-    /** Get the node deletion policy for a given variable.
-      @param  vh  Variable handle.
-      @return     The current policy.
-      TODO: errors?
-     */
-    virtual node_deletion_policy getNodeDeletionForVariable(int vh) const = 0;
-
+#ifdef SAVE_HASH
+      /// Remember the hash for speed.
+      unsigned hash;
 #endif
 
-};
+      // Handy functions, in case our internal storage changes.
 
+      inline bool isActive() const  { return offset > 0; }
+      inline bool isZombie() const  { return cache_count < 0; }
 
-/** A bare-bones class for the construction of temporary dd_edges.
+      inline bool isDeleted() const { return 0 == level; }
+      inline void setDeleted()      { level = 0; }
+      
+      inline int getNextDeleted() const { return -offset; }
+      inline void setNextDeleted(int n) { offset = -n; }
 
-    The motivation behind offering this class is to speed up construction
-    of DDs, especially in the explicit addition of edges to the DD.
+      inline void makeZombie() { 
+        MEDDLY_DCASSERT(cache_count > 0);
+        cache_count *= -1; 
+        offset = 0;
+      }
 
-    WARNING: THE USER IS COMPLETELY IN CHARGE OF MEMORY ALLOCATION.
+    };  // End of nodeData struct
+    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    Intended usage:
-    (1) Create an empty temp_dd_edge.
-    (2) Assign it a forest.
-    (3) Assign it to a level handle (-ve for primed levels).
-    (4) If this is a terminal node:
-        (a) Set levelHandle to 0.
-        (b) If MDD or EVMDD, the terminal is assumed to be TRUE.
-        (c) If MTMDD, set terminal value using either iValue or rValue,
-            depending on the range of the MTMDD.
-    (5) If this is a non-terminal node:
-        (a) Set levelHandle != 0.
-        (b) Set size > 0, and allocate memory for downpointer[].
-        (c) If EV+MDD, also allocate memory for iEdgeValue[].
-        (d) If EV*MDD, also allocate memory for rEdgeValue[].
-    (6) All downpointers point to either 0 (null) or other temp_dd_edges.
-    (7) The downpointers may point to any temp_dd_edge as long as they
-        belong to the same forest and maintain the variable ordering of the
-        associated domain.
-    (8) Note that the downpointers DO NOT have to point to distinct
-        temp_dd_edges (i.e. sharing is allowed).
-    (9) The user is in charge of creating, keeping track of and
-        deleting temp_dd_edges. Meddly is not monitoring any of this.
-    
-    (10) When the temp_dd_edge is ready, use convertToDDEdge() to convert
-         to a dd_edge based on the forest's reduction rules.
-         NOTE: The temp_dd_edge is left unchanged and the user is
-         responsible for deleting the temp_dd_edges after this conversion.
-*/
-class MEDDLY::temp_dd_edge {
-  public:
-    temp_dd_edge();
-    // Deallocates downpointers[], iEdgeValues[] and rEdgeValues[].
-    // It DOES NOT DEALLOCATE any temp_dd_edges referred to by the
-    // downpointers.
-    ~temp_dd_edge();
-
-    // Adds an element to the temporary dd_edge.
-    // void add(const int* vlist);
-    void add(const int* vlist, const int* vplist);
-
-    // Converts the temporary dd_edge to a reduced dd_edge.
-    // Returns false if conversion fails (please refer to the intended
-    // usage rules listed above).
-    // 
-    // NOTE: The temp_dd_edge is left unchanged and the user is
-    // responsible for deleting the temp_dd_edges after this conversion.
-    //
-    bool convertToDDEdge(dd_edge& e) const;
-
-    int             levelHandle;
-    expert_forest*  forestHandle;
-    long            iValue;
-    double          rValue;
-    int             size;
-    temp_dd_edge**  downpointers;
-    long*           iEdgeValues;
-    double*         rEdgeValues;
+  protected:
+    /// address info for nodes
+    nodeData *address;
 
   private:
-    bool reduce(int& result) const;
-    bool reduce(std::map<temp_dd_edge*, int>& ct, int zero, int& result) const;
+    /// Size of address/next array.
+    int a_size;
+    /// Last used address.
+    int a_last;
+    /// Pointer to unused address list.
+    int a_unused;
+    /// Next time we shink the address list.
+    int a_next_shrink;
+
+  // For managing node handles within forests.
+  protected:
+    inline int getFreeNodeHandle() {
+      MEDDLY_DCASSERT(address);
+      stats.incActive(1);
+      stats.incMemUsed(sizeof(nodeData));
+      while (a_unused > a_last) {
+        a_unused = address[a_unused].getNextDeleted();
+      }
+      if (a_unused) {     // get a recycled one
+        int p = a_unused;
+        MEDDLY_DCASSERT(address[p].isDeleted());
+        a_unused = address[p].getNextDeleted();
+        return p;
+      }
+      a_last++;
+      if (a_last >= a_size) {
+        expandHandleList();
+      }
+      MEDDLY_DCASSERT(a_last < a_size);
+      return a_last;
+    }
+
+    inline void freeActiveNode(int p) {
+      MEDDLY_DCASSERT(address);
+      MEDDLY_DCASSERT(isValidNonterminalIndex(p));
+      MEDDLY_DCASSERT(address[p].isActive());
+      stats.decActive(1);
+      recycleNodeHandle(p);
+    }
+
+    inline void freeZombieNode(int p) {
+      MEDDLY_DCASSERT(address);
+      MEDDLY_DCASSERT(isValidNonterminalIndex(p));
+      MEDDLY_DCASSERT(address[p].level);
+      stats.zombie_nodes--;
+      levels[address[p].level].zombie_nodes--;
+      recycleNodeHandle(p);
+    }
+
+    inline void recycleNodeHandle(int p) {
+      MEDDLY_DCASSERT(address);
+      MEDDLY_DCASSERT(p>0);
+      MEDDLY_DCASSERT(0==address[p].cache_count);
+      stats.decMemUsed(sizeof(nodeData));
+      address[p].setDeleted();
+      address[p].setNextDeleted(a_unused);
+      a_unused = p;
+      if (p == a_last) {
+        while (a_last && address[a_last].isDeleted()) {
+          a_last--;
+        }
+        if (a_last < a_next_shrink) shrinkHandleList();
+      }
+    }
+
+  private:
+    void expandHandleList();
+    void shrinkHandleList();
+
+  // ------------------------------------------------------------
+  // |
+  // |  Storage mechanism for "node data".
+  // |
+  protected:
+
+    // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    /** Actual node storage in a forest, by level.
+        Details of node storage are left to the derived forests.
+        However, every active node is stored in the following format.
+          
+        TBD: haven't quite gotten to this format yet.
+            sparse: indexes then down pointers
+            ev+mdds: unhashed header is at the tail
+
+
+          common   {  slot[0] : incoming count, >= 0.
+          header --{  slot[1] : next pointer in unique table or special value.
+                   {  slot[2] : size.  >=0 for full storage, <0 for sparse.
+
+          unhashed    {       : slots used for any extra information
+          header    --{       : as needed on a forest-by-forest basis.
+          (optional)  {       : Info does NOT affect node uniqueness.
+
+          hashed      {       : slots used for any extra information
+          header    --{       : as needed on a forest-by-forest basis.
+          (optional)  {       : Info DOES affect node uniqueness.
+
+                      {       : Downward pointers.
+                      {       : If full storage, there are size pointers
+          down -------{       : and entry i gives downward pointer i.
+                      {       : If sparse storage, there are -size pointers
+                      {       : and entry i gives a pointer but the index
+                      {       : corresponds to index[i], below.
+          
+                      {       : Index entries.
+                      {       : Unused for full storage.
+          index ------{       : If sparse storage, entry i gives the
+          (sparse)    {       : index for outgoing edge i, and there are
+                      {       : -size entries.
+
+                      {       : Edge values.
+          edge        {       : If full storage, there are size * edgeSize
+          values -----{       : slots; otherwise there are -size * edgeSize
+                      {       : slots.  Derived forests are responsible
+                      {       : for packing information into these slots.
+
+                    { -padlen : Any node padding to allow for future
+                    {         : expansion, or for memory management purposes
+                    {         : (e.g., memory hold is larger than requested).
+          padding --{         : padlen is number of padded slots.  If the
+                    {         : first entry after the node proper is negative,
+                    {         : then it specifies the number of padding slots;
+                    {         : otherwise, there is no padding.
+
+          tail    --{ slot[L] : The last slot gives the forest node number,
+                                guaranteed to be non-negative.
+
+
+        When nodes are deleted, the memory slots are marked as a "hole",
+        using the following format.
+
+          slot[0] : -numslots, the number of slots in the hole
+            .
+            .
+            .
+          slot[L] : -numslots, with L = numslots-1
+        
+        The first few slots of the hole are used for a hole management
+        data structure, whose details are important only for implementation
+        of this class (in forests.cc).  
+        Note that a hole is guaranteed to be at least 5 slots long
+        (assuming a node of size 0, with no extra header info, is impossible).
+    */
+    class level_data {
+        /// Growth parameter
+        static const int add_size = 1024;
+
+        /// Special values
+        static const int non_index_hole = -2;
+        static const int temp_node_value = -5;
+
+        // header indexes
+        static const int count_index = 0;
+        static const int next_index = 1;    
+        static const int size_index = 2;
+
+        // Counts for extra slots
+        static const int commonHeaderLength = 3;
+        static const int commonTailLength = 1;
+        static const int commonExtra = commonHeaderLength + commonTailLength;
+
+        // Parent forest.
+        expert_forest* parent;
+
+        /// data array
+        int* data;
+        /// shifted data array, for "node start"
+        int* data_down;
+        /// Size of data array.
+        int size;
+        /// Last used data slot.  Also total number of ints "allocated"
+        int last;
+
+      // Holes grid info
+      private:
+        /// Pointer to top of holes grid
+        int holes_top;
+        /// Pointer to bottom of holes grid
+        int holes_bottom;
+        /// Total ints in holes
+        int hole_slots;
+
+      // performance stats
+      public:
+        /// Largest traversed height of holes grid
+        int max_hole_chain;
+        /// Number of zombie nodes
+        int zombie_nodes;
+        /// Total number of compactions
+        int num_compactions;
+
+      // header sizes; vary by forest.
+      public:
+        /// Size of each outgoing edge's value (can be 0).
+        char edgeSize;
+        /// Size of extra unhashed data (typically 0).
+        char unhashedHeader;
+        /// Size of extra hashed data (typically 0).
+        char hashedHeader;
+
+        /// Mark for compaction
+        bool compactLevel;
+
+      // --------------------------------------------------------
+      // |  Public interface.
+      public:
+        level_data();
+        ~level_data();
+
+        /// Zero out the struct
+        void init(expert_forest* p, int k);
+
+        /** Allocate enough slots to store a node with given size.
+            Also, stores the node size in the node.
+              @param  sz      negative for sparse storage, otherwise full.
+              @param  tail    Node id
+              @param  clear   Should the node be zeroed.
+              @return         Offset in the data array.
+        */
+        int allocNode(int sz, int tail, bool clear);
+
+        /// Unlink the downward pointers.
+        void unlinkDown(int addr);
+        
+
+        /// Compact this level.  (Rearrange, to remove all holes.)
+        void compact(nodeData* address);
+
+        /// For debugging.
+        void dumpInternal(FILE* s) const;
+
+        /// For performance stats.
+        void addToChainCounts(std::map<int, int> &chainLengths) const;
+
+      // --------------------------------------------------------
+      // |  helpers for inlines.
+      private:
+        inline int& rawCountOf(int addr) const {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_CHECK_RANGE(1, addr, last+1);
+          return data[addr + count_index];
+        }
+        inline int& rawNextOf(int addr) const { 
+          MEDDLY_DCASSERT(data);
+          MEDDLY_CHECK_RANGE(1, addr, last+1);
+          return data[addr + next_index];
+        }
+        inline int& rawSizeOf(int addr) const {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_CHECK_RANGE(1, addr, last+1);
+          return data[addr + size_index];
+        }
+        inline int* UH(int addr) const {
+          MEDDLY_DCASSERT(data);
+          return data + addr + commonHeaderLength;
+        }
+        inline int* HH(int addr) const {
+          MEDDLY_DCASSERT(data);
+          return data + addr + commonHeaderLength + unhashedHeader;
+        }
+        inline int* FD(int addr) const {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_DCASSERT(isFull(addr));
+          return data_down + addr;
+        }
+        inline int* FE(int addr) const {
+          return FD(addr) + rawSizeOf(addr);
+        }
+        inline int* SD(int addr) const {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_DCASSERT(isSparse(addr));
+          return data_down + addr;
+        }
+        inline int* SI(int addr) const {
+          MEDDLY_DCASSERT(isSparse(addr));
+          return SD(addr) - rawSizeOf(addr);  // sparse size is negative
+        }
+        inline int* SE(int addr) const {
+          MEDDLY_DCASSERT(isSparse(addr));
+          return SD(addr) - 2*rawSizeOf(addr);  // sparse size is negative
+        }
+
+      // --------------------------------------------------------
+      // |  inlines.
+      public:
+        // TBD:
+        inline int trailerSize() const {
+          return unhashedHeader + hashedHeader;
+        }
+
+        /// Recycle a node stored at the given offset.
+        inline void recycleNode(int off) {
+          makeHole(off, activeNodeActualSlots(off));
+        }
+
+        inline bool needsCompaction() const {
+          MEDDLY_DCASSERT(parent);
+          if (hole_slots <= 100)  return false;
+          if (hole_slots > 10000) return true;
+          return hole_slots * 100 > last * parent->deflt.compaction;
+        }
+
+        /// How many slots would be required for a node with given size.
+        ///   @param  sz  negative for sparse storage, otherwise full.
+        inline int slotsForNode(int sz) const {
+          int edges = (sz<0) ? (2+edgeSize) * (-sz) : (1+edgeSize) * sz;
+          return commonExtra + unhashedHeader + hashedHeader + edges;
+        }
+
+        inline int getHoleSlots() const { return hole_slots; }
+
+        inline int& countOf(int addr)       { return rawCountOf(addr); }
+        inline int  countOf(int addr) const { return rawCountOf(addr); }
+
+        inline int& nextOf(int addr)       { return rawNextOf(addr); }
+        inline int  nextOf(int addr) const { return rawNextOf(addr); }
+
+        inline bool isReduced(int addr) const {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_CHECK_RANGE(1, addr, last+1);
+          return data[addr + next_index] >= 0;
+        }
+        inline bool isTempNode(int addr) const {
+          return temp_node_value == nextOf(addr);
+        }
+        inline void setTempNode(int addr) { 
+          nextOf(addr) = temp_node_value; 
+        }
+
+        inline int& sizeOf(int addr)              { return rawSizeOf(addr); }
+        inline int  sizeOf(int addr) const        { return rawSizeOf(addr); }
+
+        inline int fullSizeOf(int addr) const     { return rawSizeOf(addr); }
+        inline int sparseSizeOf(int addr) const   { return -rawSizeOf(addr); }
+
+        inline int isFull(int addr) const {
+          return sizeOf(addr) >= 0;
+        }
+        inline int isSparse(int addr) const {
+          return sizeOf(addr) < 0;
+        }
+
+        inline       int* unhashedHeaderOf(int addr)       { return UH(addr); }
+        inline const int* unhashedHeaderOf(int addr) const { return UH(addr); }
+
+        inline       int* hashedHeaderOf(int addr)       { return HH(addr); }
+        inline const int* hashedHeaderOf(int addr) const { return HH(addr); }
+
+        inline       int* fullDownOf(int addr)       { return FD(addr); }
+        inline const int* fullDownOf(int addr) const { return FD(addr); }
+
+        inline       int* fullEdgeOf(int addr)       { return FE(addr); }
+        inline const int* fullEdgeOf(int addr) const { return FE(addr); }
+
+        inline       int* sparseDownOf(int addr)       { return SD(addr); }
+        inline const int* sparseDownOf(int addr) const { return SD(addr); }
+
+        inline       int* sparseIndexesOf(int addr)       { return SI(addr); }
+        inline const int* sparseIndexesOf(int addr) const { return SI(addr); }
+
+        inline       int* sparseEdgeOf(int addr)       { return SE(addr); }
+        inline const int* sparseEdgeOf(int addr) const { return SE(addr); }
+
+      // --------------------------------------------------------
+      // |  Hole management helpers.
+      private:
+        /// Find actual number of slots used for this active node.
+        inline int activeNodeActualSlots(int off) const {
+          MEDDLY_DCASSERT(data);
+          MEDDLY_CHECK_RANGE(1, off, last+1);
+          MEDDLY_DCASSERT(data[off + count_index] >= 0);
+          int end = off + slotsForNode(sizeOf(off))-1;
+          // account for any padding
+          if (data[end] < 0) {
+            end -= data[end];
+          }
+          return end - off + 1;
+        }
+
+        // returns offset to the hole found in level
+        int getHole(int slots);
+
+        // makes a hole of size == slots, at the specified offset
+        void makeHole(int p_offset, int slots);
+
+        // add a hole to the hole grid
+        void gridInsert(int p_offset);
+
+        inline bool isHoleNonIndex(int p_offset) {
+          return (data[p_offset + 1] == non_index_hole);
+        }
+
+        // remove a non-index hole from the hole grid
+        void midRemove(int p_offset);
+
+        // remove an index hole from the hole grid
+        void indexRemove(int p_offset);
+
+        // resize the data array.
+        void resize(int new_slots);
+
+
+    }; // end of level_data struct
+    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  private:
+    level_data* raw_levels;
+
+  protected:
+    /// Level data. Each level maintains its own data array and hole grid.
+    /// The array is shifted, so we can use level[k] with negative k.
+    level_data *levels;
+
+
+  // ------------------------------------------------------------
+  // |
+  // |  Critical helpers.
+  // |
+  protected:  // TBD - make this private
+    /// Returns the in-count for a node.
+    inline int& getInCount(int p) {
+      const nodeData& node = getNode(p);
+      return levels[node.level].countOf(node.offset);
+    }
+
+  public:
+    /// Returns the in-count for a node.
+    inline int readInCount(int p) const {
+      const nodeData& node = getNode(p);
+      return levels[node.level].countOf(node.offset);
+    }
+
+
+  
+
+  // ------------------------------------------------------------
+  // |
+  // |  Miscellaneous data
+  // |
+  protected:  
+    /// uniqueness table, still used by derived classes.
+    unique_table* unique;
+
+    /// Should a terminal node be considered a stale entry in the compute table.
+    /// per-forest policy, derived classes may change as appropriate.
+    bool terminalNodesAreStale;
+
+  private:
+    // Keep a node_builder for each level.
+    node_builder* raw_builders;
+    node_builder* builders;
+
+    // Garbage collection in progress
+    bool performing_gc;
+
+    // memory for validating incounts
+    int* in_validate;
+    int  in_val_size;
+
+    class nodecounter : public edge_visitor {
+        expert_forest* parent;
+        int* counts;
+      public:
+        nodecounter(expert_forest*p, int* c);
+        virtual ~nodecounter();
+        virtual void visit(dd_edge &e);
+    };
 };
+// end of expert_forest class.
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 // ******************************************************************
+// *                                                                *
 // *                          opname class                          *
+// *                                                                *
 // ******************************************************************
 
 /// Class for names of operations.
@@ -1120,7 +2263,9 @@ class MEDDLY::opname {
 };
 
 // ******************************************************************
+// *                                                                *
 // *                       unary_opname class                       *
+// *                                                                *
 // ******************************************************************
 
 /// Unary operation names.
@@ -1137,7 +2282,9 @@ class MEDDLY::unary_opname : public opname {
 };
 
 // ******************************************************************
+// *                                                                *
 // *                      binary_opname  class                      *
+// *                                                                *
 // ******************************************************************
 
 /// Binary operation names.
@@ -1152,7 +2299,9 @@ class MEDDLY::binary_opname : public opname {
 
 
 // ******************************************************************
+// *                                                                *
 // *                     numerical_opname class                     *
+// *                                                                *
 // ******************************************************************
 
 /// Numerical operation names.
@@ -1173,7 +2322,9 @@ class MEDDLY::numerical_opname : public opname {
 
 
 // ******************************************************************
+// *                                                                *
 // *                      compute_table  class                      *
+// *                                                                *
 // ******************************************************************
 
 /** Interface for compute tables.
@@ -1326,7 +2477,9 @@ class MEDDLY::compute_table {
 };
 
 // ******************************************************************
+// *                                                                *
 // *                        operation  class                        *
+// *                                                                *
 // ******************************************************************
 
 /** Generic operation.
@@ -1479,7 +2632,9 @@ class MEDDLY::operation {
 };
 
 // ******************************************************************
+// *                                                                *
 // *                     unary_operation  class                     *
+// *                                                                *
 // ******************************************************************
 
 /** Mechanism to apply a unary operation in a specific forest.
@@ -1523,7 +2678,9 @@ class MEDDLY::unary_operation : public operation {
 };
 
 // ******************************************************************
+// *                                                                *
 // *                     binary_operation class                     *
+// *                                                                *
 // ******************************************************************
 
 /** Mechanism to apply a binary operation in a specific forest.
@@ -1531,6 +2688,7 @@ class MEDDLY::unary_operation : public operation {
 */
 class MEDDLY::binary_operation : public operation {
   protected:
+    bool can_commute;
     expert_forest* arg1F;
     expert_forest* arg2F;
     expert_forest* resF;
@@ -1558,10 +2716,17 @@ class MEDDLY::binary_operation : public operation {
     virtual int compute(int a, int b);
     /// Low-level compute at level k on nodes a and b, return result.
     virtual int compute(int k, int a, int b);
+
+  protected:
+    inline void operationCommutes() {
+      can_commute = (arg1F == arg2F);
+    }
 };
 
 // ******************************************************************
+// *                                                                *
 // *                   numerical_operation  class                   *
+// *                                                                *
 // ******************************************************************
 
 /** Mechanism to apply numerical operations to specific edges.
@@ -1577,25 +2742,40 @@ class MEDDLY::numerical_operation : public operation {
 };
 
 // ******************************************************************
+// *                                                                *
 // *                      op_initializer class                      *
+// *                                                                *
 // ******************************************************************
 
 /** Preferred mechanism for users to initialize their own operations.
     Derive a class from this one, provide the \a execute method.
+    Implementation in ops.cc
 */
 class MEDDLY::op_initializer {
+  unsigned refcount;
   op_initializer* before;
 public:
   /// Constructor.
   ///   @param  bef   initializer(s) to execute before this one.
   op_initializer(op_initializer* bef);
 
-  virtual ~op_initializer();
-
   void initChain(const settings &s);
   void cleanupChain();
 
+  inline static void recycle(op_initializer *I) {
+    if (0==I) return;
+    MEDDLY_DCASSERT(I->refcount);
+    I->refcount--;
+    if (0==I->refcount) delete I;
+  }
+
+  inline static op_initializer* copy(op_initializer *I) { 
+    if (I) I->refcount++;
+    return I;
+  }
+
 protected:
+  virtual ~op_initializer();
 
   virtual void init(const settings &s) = 0;
   virtual void cleanup() = 0;
@@ -1643,659 +2823,6 @@ MEDDLY::getOperation(const binary_opname* code, const dd_edge& arg1,
 
 // ****************************************************************************
 
-inline
-int MEDDLY::expert_forest::getInternalNodeSize(int p) const
-{
-  MEDDLY_DCASSERT(isActiveNode(p) && !isTerminalNode(p));
-  return *(getNodeAddress(p) + 2);
-}
-
-
-inline
-int* MEDDLY::expert_forest::getAddress(int k, int offset) const
-{
-  MEDDLY_DCASSERT(level != 0 && level[mapLevel(k)].data != 0);
-  return  (level[mapLevel(k)].data + offset);
-}
-
-
-inline
-int* MEDDLY::expert_forest::getNodeAddress(int p) const
-{
-  MEDDLY_DCASSERT(isActiveNode(p) && !isTerminalNode(p));
-  return getAddress(getNodeLevel(p), getNodeOffset(p));
-}
-
-
-inline
-int MEDDLY::expert_forest::getNodeOffset(int p) const
-{
-  MEDDLY_DCASSERT(isValidNodeIndex(p));
-  return  (address[p].offset);
-}
-
-// map the level value (which could be primed) to the correct index in
-// the level[]
-// map logical level to physical level (index of level in the level vector)
-inline
-int MEDDLY::expert_forest::mapLevel(int k) const
-{
-  return (k >= 0)? 2 * k: ((-2 * k) - 1);
-}
-
-// map physical level to logical level (level in terms of prime, unprime)
-
-inline
-int MEDDLY::expert_forest::unmapLevel(int k) const
-{
-  return (k%2 == 0)? k/2: -(k + 1)/2;
-}
-
-
-inline
-int MEDDLY::expert_forest::getMappedNodeHeight(int p) const
-{
-  return
-    getNodeLevel(p) >= 0
-    ? 2 * getNodeHeight(p)        // 2n
-    : 2 * getNodeHeight(p) - 1;   // 2n-1
-}
-
-
-inline
-bool MEDDLY::expert_forest::isActiveNode(int p) const
-{
-  return (isValidNodeIndex(p) && (isTerminalNode(p) || getNodeOffset(p) > 0));
-}
-
-
-inline
-bool MEDDLY::expert_forest::isZombieNode(int p) const
-{
-  MEDDLY_DCASSERT(isValidNodeIndex(p));
-  MEDDLY_DCASSERT(!isTerminalNode(p));
-  return (getCacheCount(p) < 0);
-}
-
-
-inline
-int& MEDDLY::expert_forest::getInCount(int p) const
-{
-  MEDDLY_DCASSERT(isActiveNode(p) && !isTerminalNode(p));
-  return *(getNodeAddress(p));
-}
-
-
-inline
-int& MEDDLY::expert_forest::getCacheCount(int p) const
-{
-  MEDDLY_DCASSERT(isValidNodeIndex(p));
-  MEDDLY_DCASSERT(!isTerminalNode(p));
-  return address[p].cache_count;
-}
-
-inline
-bool MEDDLY::expert_forest::isTerminalNode(int p) const
-{
-  return (p < 1);
-}
-
-inline
-bool MEDDLY::expert_forest::getBoolean(int terminalNode) const
-{
-  MEDDLY_DCASSERT(getRangeType() == forest::BOOLEAN ||
-      getEdgeLabeling() != forest::MULTI_TERMINAL);
-  MEDDLY_DCASSERT(terminalNode == 0 || terminalNode == -1);
-  return (terminalNode == 0)? false: true;
-}
-
-inline
-int MEDDLY::expert_forest::getTerminalNode(bool booleanValue) const
-{
-  MEDDLY_DCASSERT(getRangeType() == forest::BOOLEAN ||
-      getEdgeLabeling() != forest::MULTI_TERMINAL);
-  return booleanValue? -1: 0;
-}
-
-inline
-int MEDDLY::expert_forest::getInteger(int terminalNode) const
-{
-  MEDDLY_DCASSERT(getRangeType() == forest::INTEGER);
-  MEDDLY_DCASSERT(isTerminalNode(terminalNode) && terminalNode <= 0);
-  // set 32nd bit based on 31st bit.  << gets rid of MSB; >> sign extends.
-  return terminalNode << 1 >> 1;
-}
-
-inline
-int MEDDLY::expert_forest::getTerminalNode(int integerValue) const
-{
-  MEDDLY_DCASSERT(getRangeType() == forest::INTEGER);
-  // value has to fit within 31 bits (incl. sign)
-  // int(0xc0000000) == -1073741824
-  // int(0x3fffffff) == +1073741823
-  // MEDDLY_DCASSERT(-1073741824 <= integerValue && integerValue <= 1073741823);
-  MEDDLY_DCASSERT(-1073741824 <= integerValue && integerValue <= 1073741823);
-  return integerValue == 0? 0: integerValue | 0x80000000;
-}
-
-#define INLINED_REALS 1 // Inlining getReal and getTerminalNode(float)
-
-#ifdef INLINED_REALS
-// Warning: Optimizing (-O2) with inlined functions with gcc vers 4.1.3
-//          produced errors in output. Assembly output showed incorrect
-//          sequence of operations that caused errors. This does not occur
-//          with lower optimization (-O0 and -O1). This also does not occur
-//          if these two operations (getReal(int), getTerminalNode(float))
-//          are made non-inlined. To overcome this issue (while keeping
-//          -O2 optimization and inlined functions), memcpy is used instead
-//          of typecasting.
-
-inline
-float MEDDLY::expert_forest::getReal(int term) const
-{
-  MEDDLY_DCASSERT(getRangeType() == forest::REAL);
-#if 0
-  // Warning: does not work when compiled with -O2 with gcc 4.1.3
-  return *(float*)((void*)&(term <<= 1));
-#else
-  if (term == 0) return 0.0;
-  term <<= 1;
-#if 1
-  float ret;
-  memcpy(&ret, &term, sizeof(float));
-  return ret;
-#else
-  return toFloat(term);
-#endif
-#endif
-}
-
-inline
-int MEDDLY::expert_forest::getTerminalNode(float a) const
-{
-  MEDDLY_DCASSERT(getRangeType() == forest::REAL);
-#if 0
-  // Warning: does not work when compiled with -O2 with gcc 4.1.3
-  return (a == 0.0)? 0: (*((int*)((void*)&a)) >> 1) | 0x80000000;
-#else
-  if (a == 0.0) return 0;
-#if 1
-  int node;
-  memcpy(&node, &a, sizeof(int));
-  // printf("%x\n", node);
-  return (node >> 1) | 0x80000000;
-#else
-  return (toInt(a) >> 1) | 0x80000000;
-#endif
-#endif
-}
-
-#endif
-
-inline
-int MEDDLY::expert_forest::createTempNodeMaxSize(int lh, bool clear)
-{
-  return createTempNode(lh, getLevelSize(lh), clear);
-}
-
-inline
-int MEDDLY::expert_forest::getLevelSize(int lh) const {
-  MEDDLY_DCASSERT(isValidLevel(lh));
-  MEDDLY_DCASSERT(lh == 0 || level[mapLevel(lh)].data != NULL);
-  if (lh < 0) {
-    return getExpertDomain()->getVariableBound(-lh, true);
-  } else {
-    return getExpertDomain()->getVariableBound(lh, false);
-  }
-}
-
-inline
-int MEDDLY::expert_forest::getNodeLevel(int p) const
-{
-#ifdef DEBUG_MDD_H
-  printf("%s: p: %d\n", __func__, p);
-#endif
-  MEDDLY_DCASSERT(isActiveNode(p) || isZombieNode(p));
-  return (isTerminalNode(p)? 0: address[p].level);
-}
-
-
-inline
-int MEDDLY::expert_forest::getNodeHeight(int p) const
-{
-  MEDDLY_DCASSERT(isActiveNode(p));
-  return level[mapLevel(getNodeLevel(p))].height;
-}
-
-
-inline
-bool MEDDLY::expert_forest::isFullNode(int p) const
-{
-#ifdef DEBUG_MDD_H
-  printf("%s: p: %d, size: %d\n", __func__, p, getInternalNodeSize(p));
-#endif
-  MEDDLY_DCASSERT(isActiveNode(p) && !isTerminalNode(p));
-  return (getInternalNodeSize(p) > 0);
-}
-
-
-inline
-bool MEDDLY::expert_forest::isSparseNode(int p) const
-{
-#ifdef DEBUG_MDD_H
-  printf("%s: p: %d, size: %d\n", __func__, p, getInternalNodeSize(p));
-#endif
-  MEDDLY_DCASSERT(isActiveNode(p) && !isTerminalNode(p));
-  return (getInternalNodeSize(p) < 0);
-}
-
-
-inline
-int MEDDLY::expert_forest::getFullNodeSize(int p) const
-{
-#ifdef DEBUG_MDD_H
-  printf("%s: p: %d\n", __func__, p);
-#endif
-  MEDDLY_DCASSERT(isFullNode(p));
-  return getInternalNodeSize(p);
-}
-
-
-inline
-int MEDDLY::expert_forest::getSparseNodeSize(int p) const
-{
-#ifdef DEBUG_MDD_H
-printf("%s: p: %d\n", __func__, p);
-#endif
-  MEDDLY_DCASSERT(isSparseNode(p));
-  return -getInternalNodeSize(p);
-}
-
-
-inline
-void MEDDLY::expert_forest::setDownPtr(int p, int i, int value)
-{
-  MEDDLY_DCASSERT(!isReducedNode(p));
-  MEDDLY_DCASSERT(isFullNode(p));
-  MEDDLY_DCASSERT(isActiveNode(value));
-  MEDDLY_CHECK_RANGE(0, i, getFullNodeSize(p));
-  int temp = *(getNodeAddress(p) + 3 + i);
-  // linkNode to new node
-  linkNode(value);
-  *(getNodeAddress(p) + 3 + i) = value;
-  // unlinkNode old node
-  unlinkNode(temp);
-}
-
-
-inline
-void MEDDLY::expert_forest::setDownPtrWoUnlink(int p, int i, int value)
-{
-  MEDDLY_DCASSERT(!isReducedNode(p));
-  MEDDLY_DCASSERT(isFullNode(p));
-  MEDDLY_DCASSERT(isActiveNode(value));
-  MEDDLY_CHECK_RANGE(0, i, getFullNodeSize(p));
-  // linkNode to new node
-  linkNode(value);
-  *(getNodeAddress(p) + 3 + i) = value;
-}
-
-
-inline
-void MEDDLY::expert_forest::setEdgeValue(int node, int index, int ev)
-{
-  MEDDLY_DCASSERT(!isReducedNode(node));
-  MEDDLY_DCASSERT(isFullNode(node));
-  MEDDLY_CHECK_RANGE(0, index, getFullNodeSize(node));
-  *(getNodeAddress(node) + 3 + getFullNodeSize(node) + index) = ev;
-}
-
-
-inline
-void MEDDLY::expert_forest::setEdgeValue(int node, int index, float ev)
-{
-  MEDDLY_DCASSERT(!isReducedNode(node));
-  MEDDLY_DCASSERT(isFullNode(node));
-  MEDDLY_CHECK_RANGE(0, index, getFullNodeSize(node));
-  *(getNodeAddress(node) + 3 + getFullNodeSize(node) + index) = toInt(ev);
-}
-
-
-inline
-bool MEDDLY::expert_forest::getDownPtrs(int node, int*& dptrs)
-{
-  MEDDLY_DCASSERT(isActiveNode(node));
-  if (isTerminalNode(node) || isReducedNode(node)) return false;
-  MEDDLY_DCASSERT(isFullNode(node));
-  dptrs = getNodeAddress(node) + 3;
-  return true;
-}
-
-
-inline
-bool MEDDLY::expert_forest::getEdgeValues(int node, int*& evs)
-{
-  MEDDLY_DCASSERT(isActiveNode(node));
-  if (isTerminalNode(node) || isReducedNode(node)) return false;
-  MEDDLY_DCASSERT(isFullNode(node));
-  evs = getNodeAddress(node) + 3 + getFullNodeSize(node);
-  return true;
-}
-
-
-inline
-bool MEDDLY::expert_forest::getEdgeValues(int node, float*& evs)
-{
-  MEDDLY_DCASSERT(isActiveNode(node));
-  if (isTerminalNode(node) || isReducedNode(node)) return false;
-  MEDDLY_DCASSERT(isFullNode(node));
-  evs = toFloat(getNodeAddress(node) + 3 + getFullNodeSize(node));
-  return true;
-}
-
-
-inline
-bool MEDDLY::expert_forest::getDownPtrs(int node, const int*& dptrs) const
-{
-  if (isTerminalNode(node)) return false;
-  dptrs = isFullNode(node)
-    ? getNodeAddress(node) + 3
-    : getNodeAddress(node) + 3 + getSparseNodeSize(node);
-  return true;
-}
-
-
-inline
-bool MEDDLY::expert_forest
-::getSparseNodeIndexes(int node, const int*& indexes) const
-{
-  MEDDLY_DCASSERT(isSparseNode(node));
-  if (!isSparseNode(node)) return false;
-  indexes = getNodeAddress(node) + 3;
-  return true;
-}
-
-
-inline
-bool MEDDLY::expert_forest::getEdgeValues(int node, const int*& evs) const
-{
-  MEDDLY_DCASSERT(isReducedNode(node));
-  if (isTerminalNode(node)) return false;
-  evs = isFullNode(node)
-    ? getNodeAddress(node) + 3 + getFullNodeSize(node)
-    : getNodeAddress(node) + 3 + (getSparseNodeSize(node) * 2);
-  return true;
-}
-
-
-inline
-bool MEDDLY::expert_forest::getEdgeValues(int node, const float*& evs) const
-{
-  MEDDLY_DCASSERT(isReducedNode(node));
-  if (isTerminalNode(node)) return false;
-  evs = toFloat(isFullNode(node)
-    ? getNodeAddress(node) + 3 + getFullNodeSize(node)
-    : getNodeAddress(node) + 3 + (getSparseNodeSize(node) * 2));
-  return true;
-}
-
-
-inline
-int MEDDLY::expert_forest::getFullNodeDownPtr(int p, int i) const
-{
-  MEDDLY_DCASSERT(isFullNode(p));
-  MEDDLY_CHECK_RANGE(0, i, getFullNodeSize(p));
-  return getNodeAddress(p)[3 + i];
-}
-
-
-inline
-int MEDDLY::expert_forest::getSparseNodeDownPtr(int p, int i) const
-{
-  MEDDLY_DCASSERT(isSparseNode(p));
-  MEDDLY_CHECK_RANGE(0, i, getSparseNodeSize(p));
-  return *(getNodeAddress(p) + 3 + getSparseNodeSize(p) + i);
-}
-
-
-inline
-int MEDDLY::expert_forest::getSparseNodeIndex(int p, int i) const
-{
-  MEDDLY_DCASSERT(isSparseNode(p));
-  MEDDLY_CHECK_RANGE(0, i, getSparseNodeSize(p));
-  return *(getNodeAddress(p) + 3 + i);
-}
-
-
-inline
-void MEDDLY::expert_forest
-::getFullNodeEdgeValue(int node, int index, int& ev) const
-{
-  MEDDLY_DCASSERT(isFullNode(node));
-  MEDDLY_CHECK_RANGE(0, index, getFullNodeSize(node));
-  ev = *(getNodeAddress(node) + 3 + getFullNodeSize(node) + index);
-}
-
-
-inline
-void MEDDLY::expert_forest
-::getSparseNodeEdgeValue(int node, int index, int& ev) const
-{
-  MEDDLY_DCASSERT(isSparseNode(node));
-  MEDDLY_CHECK_RANGE(0, index, getSparseNodeSize(node));
-  ev = *(getNodeAddress(node) + 3 + (getSparseNodeSize(node) * 2) + index);
-}
-
-
-inline
-void MEDDLY::expert_forest
-::getFullNodeEdgeValue(int node, int index, float& ev) const
-{
-  MEDDLY_DCASSERT(isFullNode(node));
-  MEDDLY_CHECK_RANGE(0, index, getFullNodeSize(node));
-  ev = toFloat(*(getNodeAddress(node) + 3 + getFullNodeSize(node) + index));
-}
-
-
-inline
-void MEDDLY::expert_forest
-::getSparseNodeEdgeValue(int node, int index, float& ev) const
-{
-  MEDDLY_DCASSERT(isSparseNode(node));
-  MEDDLY_CHECK_RANGE(0, index, getSparseNodeSize(node));
-  ev = toFloat(*(getNodeAddress(node) + 3 +
-        (getSparseNodeSize(node) * 2) + index));
-}
-
-
-inline
-int MEDDLY::expert_forest::linkNode(int p)
-{ 
-  MEDDLY_DCASSERT(isActiveNode(p));
-  if (isTerminalNode(p)) return p;
-  MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
-
-  // increase incount
-  ++getInCount(p);
-
-  if (getInCount(p) == 1) {
-    reclaimOrphanNode(p);
-  }
-
-#ifdef TRACK_DELETIONS
-  fprintf(stdout, "\t+Node %d count now %d\n", p, getInCount(p));
-  fflush(stdout);
-#endif
-  return p;
-}  
-
-
-
-inline
-void MEDDLY::expert_forest::unlinkNode(int p)
-{
-  MEDDLY_DCASSERT(isActiveNode(p));
-  if (isTerminalNode(p)) return;
-  MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
-  MEDDLY_DCASSERT(getInCount(p) > 0);
-  
-  // decrement incoming count
-  --getInCount(p);
-
-#ifdef TRACK_DELETIONS
-  fprintf(stdout, "\t-Node %d count now %d\n", p, getInCount(p));
-  fflush(stdout);
-#endif
-
-  if (getInCount(p) == 0) { handleNewOrphanNode(p); }
-}
-
-
-
-inline
-int MEDDLY::expert_forest::cacheNode(int p)
-{
-  MEDDLY_DCASSERT(isActiveNode(p));
-  if (isTerminalNode(p)) return p;
-  MEDDLY_DCASSERT(isReducedNode(p));
-  getCacheCount(p)++;
-#ifdef TRACK_CACHECOUNT
-  fprintf(stdout, "\t+Node %d is in %d caches\n", p, getCacheCount(p));
-  fflush(stdout);
-#endif
-  return p;
-}
-
-
-
-inline
-void MEDDLY::expert_forest::uncacheNode(int p)
-{
-  if (isTerminalNode(p)) return;
-  MEDDLY_DCASSERT(isActiveNode(p) ||
-      (!isActiveNode(p) && isPessimistic() && isZombieNode(p)));
-
-  if (isPessimistic() && isZombieNode(p)) {
-    MEDDLY_DCASSERT(getCacheCount(p) < 0);
-    getCacheCount(p)++;                           // special case; stored -ve
-    if (getCacheCount(p) == 0) {
-      freeZombieNode(p);
-    }
-    return;
-  }
-
-  MEDDLY_DCASSERT(getCacheCount(p) > 0);
-  getCacheCount(p)--;
-#ifdef TRACK_CACHECOUNT
-  fprintf(stdout, "\t-Node %d is in %d caches\n", p, getCacheCount(p));
-  fflush(stdout);
-#endif
-
-  if (getCacheCount(p) == 0 && getInCount(p) == 0) {
-    deleteOrphanNode(p);
-  }
-}
-
-inline
-bool MEDDLY::expert_forest::isMdd() const {
-  return !isForRelations() &&
-         getRangeType() == forest::BOOLEAN &&
-         getEdgeLabeling() == forest::MULTI_TERMINAL;
-}
-
-
-inline
-bool MEDDLY::expert_forest::isMtMdd() const {
-  return !isForRelations() &&
-         // same as == INTEGER || == REAL
-         getRangeType() != forest::BOOLEAN &&
-         getEdgeLabeling() == forest::MULTI_TERMINAL;
-}
-
-
-inline
-bool MEDDLY::expert_forest::isMxd() const {
-  return isForRelations() &&
-         getRangeType() == forest::BOOLEAN &&
-         getEdgeLabeling() == forest::MULTI_TERMINAL;
-}
-
-
-inline
-bool MEDDLY::expert_forest::isMtMxd() const {
-  return isForRelations() &&
-         // same as == INTEGER || == REAL
-         getRangeType() != forest::BOOLEAN &&
-         getEdgeLabeling() == forest::MULTI_TERMINAL;
-}
-
-
-inline
-bool MEDDLY::expert_forest::isEvplusMdd() const {
-  return !isForRelations() &&
-         getEdgeLabeling() == forest::EVPLUS;
-}
-
-
-inline
-bool MEDDLY::expert_forest::isEvtimesMdd() const {
-  return !isForRelations() &&
-         getEdgeLabeling() == forest::EVTIMES;
-}
-
-
-inline
-bool MEDDLY::expert_forest::isIndexSet(int node) const {
-  return getIndexSetCardinality(node) > 0;
-}
-
-
-inline
-int MEDDLY::expert_forest::getIndexSetCardinality(int node) const {
-  MEDDLY_DCASSERT(isEvplusMdd());
-  MEDDLY_DCASSERT(isActiveNode(node));
-  // Cardinality is stored just after the downpointers and edge-values
-  return
-    isTerminalNode(node)
-    ? node == 0? 0: 1
-    : *(
-        getNodeAddress(node) +
-        3 +
-        (isFullNode(node)
-         ? 2 * getFullNodeSize(node)
-         : 3 * getSparseNodeSize(node))
-       );
-}
-
-
-inline
-void MEDDLY::expert_forest::setIndexSetCardinality(int node, int c) {
-  MEDDLY_DCASSERT(isEvplusMdd());
-  MEDDLY_DCASSERT(isActiveNode(node));
-  if (isEvplusMdd() && isActiveNode(node) && !isTerminalNode(node)) {
-    *(
-        getNodeAddress(node) +
-        3 +
-        (isFullNode(node)
-         ? 2 * getFullNodeSize(node)
-         : 3 * getSparseNodeSize(node))
-     ) = c;
-     return;
-  }
-  throw error(error::INVALID_OPERATION);
-}
-
-
-inline
-bool MEDDLY::expert_forest::accumulate(int& A, int* vlist, int* vplist) {
-  return false;
-}
-
-inline
-bool MEDDLY::expert_forest::accumulate(int& A, int* B) {
-  return false;
-}
-
 
 inline
 float MEDDLY::toFloat(int a) {
@@ -2309,13 +2836,5 @@ int MEDDLY::toInt(float a) {
   union { float f; int i; } n = {a};
   return n.i;
 }
-
-
-inline
-float* MEDDLY::toFloat(int* a) {
-  union { int* i; float* f; } n = {a};
-  return n.f;
-}
-
 
 #endif
