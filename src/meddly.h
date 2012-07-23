@@ -48,7 +48,6 @@ namespace MEDDLY {
 
   class error;
   struct settings;
-  struct statistics;
   class forest;
   class expert_forest;
   class node_reader;
@@ -73,16 +72,6 @@ namespace MEDDLY {
     FLOATVECT   = 5,
     DOUBLEVECT  = 6
   };
-
-  // ******************************************************************
-  // *                        statistics  class                       *
-  // ******************************************************************
-  
-  /// Various performance measures for MEDDLY.
-  struct statistics {
-    // TBD
-  };
-
 
   // ******************************************************************
   // *                    miscellaneous  functions                    *
@@ -219,9 +208,6 @@ namespace MEDDLY {
 
   /// Get the current library settings.
   const settings& getLibrarySettings();
-
-  /// Get the current library stats.
-  const statistics& getLibraryStats();
 
   /** Get the information about the library.
       @param  what  Determines the type of information to obtain.

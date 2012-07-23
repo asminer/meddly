@@ -20,8 +20,7 @@ nqueens \
 queen_cover \
 kanban \
 slot
-# test_user_operation \
-# test_temporary_nodes 
+# test_user_operation 
 
 AM_CPPFLAGS = -I../src -I../src/operations
 AM_CXXFLAGS = -Wall
@@ -71,7 +70,4 @@ slot_LDADD = ../src/libmeddly.la
 
 # test_user_operation_SOURCES = test_user_operation.cc
 # test_user_operation_LDADD = ../src/libmeddly.la
-
-# test_temporary_nodes_SOURCES = test_temporary_nodes.cc
-# test_temporary_nodes_LDADD = ../src/libmeddly.la
 

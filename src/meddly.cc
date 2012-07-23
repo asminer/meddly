@@ -40,8 +40,6 @@ namespace MEDDLY {
 
   settings meddlySettings;
 
-  statistics meddlyStats;
-
   bool libraryRunning = 0;
 
   // unary operation "codes"
@@ -119,12 +117,6 @@ namespace MEDDLY {
   void purgeMarkedOperations();
   void destroyOpInternal(operation* op);
 };
-
-// helpers
-
-void initStats(MEDDLY::statistics &s)
-{
-}
 
 //----------------------------------------------------------------------
 // front end - unary operations
@@ -416,7 +408,7 @@ void MEDDLY::initialize(const settings &s)
 {
   if (libraryRunning) throw error(error::ALREADY_INITIALIZED);
   meddlySettings = s;
-  initStats(meddlyStats);
+  // initStats(meddlyStats);
 
   // set up monolithic compute table, if needed
   if (meddlySettings.usesMonolithicComputeTable()) {
@@ -486,11 +478,6 @@ void MEDDLY::cleanup()
 const MEDDLY::settings& MEDDLY::getLibrarySettings()
 {
   return meddlySettings;
-}
-
-const MEDDLY::statistics& MEDDLY::getLibraryStats()
-{
-  return meddlyStats;
 }
 
 const char* MEDDLY::getLibraryInfo(int what)
