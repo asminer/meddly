@@ -30,8 +30,8 @@
 #include "meddly.h"
 #include "meddly_expert.h"
 
-#define SHOW_INDEXES
-#define SHOW_MATRIX
+// #define SHOW_INDEXES
+// #define SHOW_MATRIX
 
 using namespace MEDDLY;
 

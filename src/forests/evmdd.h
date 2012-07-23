@@ -618,7 +618,7 @@ void MEDDLY::evmdd_forest::createNode(int k, int index, int dptr, T ev,
   nb.d(0) = dptr;
   nb.i(0) = index;
   nb.setEdge(0, ev);
-  createReducedNode(-1, nb, ev, res);
+  createReducedNode(-1, nb, resEv, res);
 
 /*
   if (!areSparseNodesEnabled() || (areFullNodesEnabled() && index < 2)) {

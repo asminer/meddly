@@ -594,6 +594,7 @@ void MEDDLY::expert_forest::level_data
   MEDDLY_DCASSERT(0==parent);
   parent = p;
   data = 0;
+  data_down = 0;
   size = 0;
   last = 0;
   holes_top = 0;
@@ -728,6 +729,8 @@ void MEDDLY::expert_forest::level_data::compact(nodeData* address)
   if (size > add_size && last < size/2) {
     int new_size = size/2;
     while (new_size > add_size && new_size > last * 3) { new_size /= 2; }
+    resize(new_size);
+/*
     parent->stats.decMemAlloc((size - new_size) * sizeof(int));
     data = (int *) realloc(data, new_size * sizeof(int));
     if (0 == data) throw error(error::INSUFFICIENT_MEMORY);
@@ -736,6 +739,7 @@ void MEDDLY::expert_forest::level_data::compact(nodeData* address)
     printf("Reduced data[] by a factor of 2. New size: %d, Last: %d.\n",
         size, last);
 #endif
+    */
   }
 
 #if 0
@@ -882,19 +886,19 @@ int MEDDLY::expert_forest::level_data::getHole(int slots)
   // can't recycle; grab from the end
   if (last + slots >= size) {
     // not enough space, extend
-    int old_size = size;
-
     // new size is 50% more than previous (37.5% * 4 = 1.5 => 50% growth)
-    size = MAX( old_size, last + slots ) * 1.5;
+    int new_size = MAX( size, last + slots ) * 1.5;
 
+    resize(new_size);
+   /* 
     data = (int*) realloc(data, size * sizeof(int));
     if (0 == data) {
       // TBD: garbage collect and try again
       throw error(error::INSUFFICIENT_MEMORY);
     } else {
       parent->stats.incMemAlloc((size - old_size) * sizeof(int));
-      memset(data + old_size, 0, (size - old_size) * sizeof(int));
     }
+    */
   }
   int h = last + 1;
   last += slots;
@@ -938,6 +942,7 @@ void MEDDLY::expert_forest::level_data::makeHole(int addr, int slots)
       int new_size = size/2;
       while (new_size > (last + 1) * 2) new_size /= 2;
       if (new_size < add_size) new_size = add_size;
+      /*
       parent->stats.incMemAlloc((new_size - size) * sizeof(int));
       data = (int *) realloc(data, new_size * sizeof(int));
       if (0 == data) throw error(error::INSUFFICIENT_MEMORY);
@@ -945,6 +950,8 @@ void MEDDLY::expert_forest::level_data::makeHole(int addr, int slots)
 #ifdef MEMORY_TRACE
       printf("Reduced data[]. New size: %d, Last: %d.\n", size, last);
 #endif
+      */
+      resize(new_size);
     }
 #ifdef MEMORY_TRACE
     printf("Made Last Hole %d\n", addr);
@@ -1086,6 +1093,30 @@ void MEDDLY::expert_forest::level_data::indexRemove(int p_offset)
     } else {
       holes_bottom = above;
     }
+  }
+}
+
+void MEDDLY::expert_forest::level_data::resize(int new_size)
+{
+  int* new_data = (int *) realloc(data, new_size * sizeof(int));
+  if (0 == new_data) throw error(error::INSUFFICIENT_MEMORY);
+  if (new_size > size) {
+    parent->stats.incMemAlloc((new_size - size) * sizeof(int));
+    // Zero the new part of the array
+    // memset(new_data + size, 0, (new_size - size) * sizeof(int));
+  } else {
+    parent->stats.decMemAlloc((size - new_size) * sizeof(int));
+  }
+#ifdef MEMORY_TRACE
+    printf("Resized data[]. Old size: %d, New size: %d, Last: %d.\n", 
+      size, new_size, last
+    );
+#endif
+  size = new_size;
+  if (data != new_data) {
+    // update pointers
+    data = new_data;
+    data_down = data + commonHeaderLength + unhashedHeader + hashedHeader;
   }
 }
 

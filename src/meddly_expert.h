@@ -2214,6 +2214,8 @@ class MEDDLY::expert_forest : public forest
 
         /// data array
         int* data;
+        /// shifted data array, for "node start"
+        int* data_down;
         /// Size of data array.
         int size;
         /// Last used data slot.  Also total number of ints "allocated"
@@ -2316,8 +2318,7 @@ class MEDDLY::expert_forest : public forest
         inline int* FD(int addr) const {
           MEDDLY_DCASSERT(data);
           MEDDLY_DCASSERT(isFull(addr));
-          return data + addr + commonHeaderLength
-           + unhashedHeader + hashedHeader;
+          return data_down + addr;
         }
         inline int* FE(int addr) const {
           return FD(addr) + rawSizeOf(addr);
@@ -2325,8 +2326,7 @@ class MEDDLY::expert_forest : public forest
         inline int* SD(int addr) const {
           MEDDLY_DCASSERT(data);
           MEDDLY_DCASSERT(isSparse(addr));
-          return data + addr + commonHeaderLength
-           + unhashedHeader + hashedHeader;
+          return data_down + addr;
         }
         inline int* SI(int addr) const {
           MEDDLY_DCASSERT(isSparse(addr));
@@ -2460,6 +2460,9 @@ class MEDDLY::expert_forest : public forest
 
         // remove an index hole from the hole grid
         void indexRemove(int p_offset);
+
+        // resize the data array.
+        void resize(int new_slots);
 
 
     }; // end of level_data struct
