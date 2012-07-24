@@ -2121,64 +2121,60 @@ int MEDDLY::expert_forest
   // get sparse, truncated full sizes and check
   // for redundant / identity reductions.
   int nnz;
-  int truncsize;
+  int truncsize = -1;
   if (nb.isSparse()) {
     // Reductions for sparse nodes
-    truncsize = -1;
     nnz = nb.getNNZs();
     for (int z=0; z<nnz; z++) {
       MEDDLY_DCASSERT(nb.d(z));
       truncsize = MAX(truncsize, nb.i(z));
     } // for z
+    truncsize++;
 
-    // Is this an identity node, and should we eliminate it?
-    if (1==nnz && nb.getLevel()<0 && in==nb.i(0)) {
-      if (isIdentityReduced()) {
+    // Check for identity nodes
+    if (1==nnz && in==nb.i(0)) {
+      if (isIdentityEdge(nb, 0)) {
+        return nb.d(0);
+      }
+    }
+
+    // Check for redundant nodes
+    if (nnz == getLevelSize(nb.getLevel())) {
+      if (isRedundant(nb)) {
         // unlink downward pointers, except the one we're returning.
-        for (int i = 1; i<nb.rawSize(); i++)  unlinkNode(nb.d(i));
+        for (int i = 1; i<nb.getNNZs(); i++)  unlinkNode(nb.d(i));
         return nb.d(0);
       }
     }
 
   } else {
     // Reductions for full nodes
-    bool redundant = true;
-    int common = nb.d(0);
-    if (common) {
-      nnz = 1;
-      truncsize = 0;
-    } else {
-      nnz = 0;
-      truncsize = -1;
-    }
-    for (int i=1; i<nb.getSize(); i++) {
-      if (redundant) {
-        redundant = (nb.d(i) == common);
-      }
+    MEDDLY_DCASSERT(nb.getSize() == getLevelSize(nb.getLevel()));
+    nnz = 0;
+    for (int i=0; i<nb.getSize(); i++) {
       if (nb.d(i)) {
         nnz++;
         truncsize = i;
       }
     } // for i
+    truncsize++;
 
-    // Is this a redundant node, and should we eliminate it?
-    if (redundant) {
-      if (isFullyReduced() || (isIdentityReduced() && nb.getLevel()>0)) {
-        // unlink downward pointers, except the one we're returning.
-        for (int i = 1; i<nb.rawSize(); i++)  unlinkNode(nb.d(i));
-        return nb.d(0);
-      }
-    }
-
-    // Is this an identity node, and should we eliminate it?
-    if (isIdentityReduced()) {
-      if (in>=0 && 1==nnz && nb.getLevel()<0 && nb.d(in)) {
-        // no need to unlink, other values are 0
+    // Check for identity nodes
+    if (1==nnz) {
+      if (isIdentityEdge(nb, in)) {
         return nb.d(in);
       }
     }
+
+    // Check for redundant nodes
+    if (nnz == nb.getSize()) {
+      if (isRedundant(nb)) {
+        // unlink downward pointers, except the one we're returning.
+        for (int i = 1; i<nb.getSize(); i++)  unlinkNode(nb.d(i));
+        return nb.d(0);
+      }
+    }
   }
-  truncsize++;
 
   // Is this a zero node?
   if (0==nnz) {
@@ -2296,6 +2292,7 @@ void MEDDLY::expert_forest::validateDownPointers(const node_builder &nb) const
         } 
       } else {
         for (int i=0; i<nb.getSize(); i++) {
+          if (0==nb.d(i)) continue;
           MEDDLY_DCASSERT(getNodeLevel(nb.d(i)) == nextLevel);
         }
       }

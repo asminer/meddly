@@ -156,6 +156,23 @@ void MEDDLY::evp_mdd_int::showUnhashedHeader(FILE* s, const int* uh) const
   fprintf(s, " card: %d", uh[0]);
 }
 
+bool MEDDLY::evp_mdd_int::isRedundant(const node_builder &nb) const
+{
+  if (isQuasiReduced()) return false;
+  int common = nb.d(0);
+  for (int i=1; i<nb.rawSize(); i++) {
+    if (nb.d(i) != common)  return false;
+    if (nb.ei(i) != 0)      return false;
+  }
+  return true;
+}
+
+bool MEDDLY::evp_mdd_int::isIdentityEdge(const node_builder &nb, int i) const
+{
+  return false;
+}
+
+
 // ********************************* EV*MDDs ********************************** 
 
 MEDDLY::evt_mdd_real::evt_mdd_real(int dsl, domain *d, const policies &p)
@@ -225,4 +242,21 @@ bool MEDDLY::evt_mdd_real::areDuplicates(int node, const node_reader &nr) const
 {
   return areDupsInternal(node, nr);
 }
+
+bool MEDDLY::evt_mdd_real::isRedundant(const node_builder &nb) const
+{
+  if (isQuasiReduced()) return false;
+  int common = nb.d(0);
+  for (int i=1; i<nb.rawSize(); i++) {
+    if (nb.d(i) != common)  return false;
+    if (nb.ef(i) != 1)      return false;
+  }
+  return true;
+}
+
+bool MEDDLY::evt_mdd_real::isIdentityEdge(const node_builder &nb, int i) const
+{
+  return false;
+}
+
 

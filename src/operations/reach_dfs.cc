@@ -28,6 +28,9 @@
 
 // #define TRACE_RECFIRE
 // #define DEBUG_DFS
+// #define DEBUG_INITIAL
+// #define DEBUG_NSF
+// #define DEBUG_SPLIT
 
 namespace MEDDLY {
   class saturation_opname;
@@ -378,6 +381,15 @@ void MEDDLY::common_dfs_mt
   mxdDifference = getOperation(DIFFERENCE, arg2F, arg2F, arg2F);
   MEDDLY_DCASSERT(mxdDifference);
 
+#ifdef DEBUG_INITIAL
+  printf("Calling saturate for states:\n");
+  a.show(stdout, 2);
+#endif
+#ifdef DEBUG_NSF
+  printf("Calling saturate for NSF:\n");
+  b.show(stdout, 2);
+#endif
+
   // Partition NSF by levels
   splitMxd(b.getNode());
 
@@ -468,6 +480,17 @@ void MEDDLY::common_dfs_mt::splitMxd(int mxd)
     node_reader::recycle(Mp);
     node_reader::recycle(Mu);
   } // for level
+
+#ifdef DEBUG_SPLIT
+  for (int k=arg2F->getNumVariables(); k; k--) {
+    if (splits[k]) {
+      printf("------------------------------------------------------------\n");
+      printf("Level %d nsf: %d\n", k, splits[k]);
+      printf("------------------------------------------------------------\n");
+      arg2F->showNodeGraph(stdout, splits[k]);
+    }
+  }
+#endif
 }
 
 // ******************************************************************
@@ -791,7 +814,7 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(node_builder& nb)
     for (int iz=0; iz<Ru->getNNZs(); iz++) {
       int i = Ru->i(iz);
       // grab column (TBD: build these ahead of time?)
-      int dlevel = arg2F->getNodeLevel(Ru->d(i));
+      int dlevel = arg2F->getNodeLevel(Ru->d(iz));
 
       if (dlevel == -nb.getLevel()) {
         arg2F->initNodeReader(*Rp, Ru->d(iz), false); 
@@ -832,7 +855,10 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(node_builder& nb)
             updated = false;
           }
         }
-        if (updated) expl->data[i] = 2;
+        if (updated) {
+          expl->data[i] = 2;
+          repeat = true;
+        }
       } // for j
     } // for i
   } // while repeat
@@ -1030,8 +1056,7 @@ MEDDLY::bckwd_dfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   )
     throw error(error::TYPE_MISMATCH);
 
-  // return new bckwd_dfs_mt(this, a1, a2, r);
-  throw error(error::NOT_IMPLEMENTED);
+  return new bckwd_dfs_mt(this, a1, a2, r);
 }
 
 // ******************************************************************

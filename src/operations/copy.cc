@@ -176,11 +176,15 @@ class MEDDLY::copy_MT2bool : public copy_MT {
   protected:
     virtual int compute(int a);
     int compute(int in, int a);
+    int compute(int in, int k, int a);
 };
 
 int MEDDLY::copy_MT2bool::compute(int a)
 {
-  return compute(-1, a);
+  if (resF->isQuasiReduced())
+    return compute(-1, resF->getNumVariables(), a);
+  else 
+    return compute(-1, a);
 }
 
 int MEDDLY::copy_MT2bool::compute(int in, int a)
@@ -223,6 +227,67 @@ int MEDDLY::copy_MT2bool::compute(int in, int a)
   return saveResult(a, b);
 }
 
+int MEDDLY::copy_MT2bool::compute(int in, int k, int a)
+{
+  // Check terminals
+  if (0==k) {
+    bool aTerm = (argF->getRangeType() == forest::INTEGER)
+      ? (argF->getInteger(a) != 0)
+      : (argF->getReal(a) !=0);
+    return resF->getTerminalNode(aTerm);
+  }
+
+  // See if we can ignore "in"
+  if (resF->isIdentityReduced()) {
+    if (k>0) in = -1;
+  } else {
+    in = -1;
+  }
+
+  // Get level number
+  const int aLevel = argF->getNodeLevel(a);
+
+  // Check compute table
+  int b;
+  if (k == aLevel) if (findResult(a, b)) return b;
+  int nextk;
+  if (resF->isForRelations()) {
+    nextk = (k>0) ? -k : -k-1;
+  } else {
+    nextk = k-1;
+  }
+
+  // Initialize node builder
+  const int size = resF->getLevelSize(k);
+  node_builder& nb = resF->useNodeBuilder(k, size);
+
+  // Initialize node reader
+  node_reader* A;
+  if (isLevelAbove(k, aLevel)) {
+    if (k<0 && argF->isIdentityReduced()) {
+      A = argF->initIdentityReader(k, in, a, true);
+    } else {
+      A = argF->initRedundantReader(k, a, true);
+    }
+  } else {
+    A = argF->initNodeReader(a, true);
+  }
+
+  // recurse
+  for (int i=0; i<size; i++) {
+    nb.d(i) = compute(i, nextk, A->d(i));
+  }
+
+  // Cleanup
+  node_reader::recycle(A);
+
+  // Reduce
+  b = resF->createReducedNode(in, nb);
+
+  // Add to compute table
+  if (k == aLevel) saveResult(a, b);
+  return b;
+}
 
 // ******************************************************************
 // *                                                                *

@@ -31,7 +31,6 @@
 using namespace MEDDLY;
 
 // #define DEBUG_RANDSET
-
 // #define DEBUG_SEGV
 
 const int vars[] = {4, 4, 4, 4, 4, 4};

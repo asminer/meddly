@@ -149,6 +149,9 @@ class MEDDLY::evp_mdd_int : public evmdd_forest {
     virtual bool areDuplicates(int node, const node_builder &nb) const;
     virtual bool areDuplicates(int node, const node_reader &nr) const;
 
+    virtual bool isRedundant(const node_builder &nb) const;
+    virtual bool isIdentityEdge(const node_builder &nb, int i) const;
+
   protected:
     virtual void normalize(node_builder &nb, int& ev) const;
     virtual void showEdgeValue(FILE* s, const void* edge, int i) const;
@@ -259,6 +262,9 @@ class MEDDLY::evt_mdd_real : public evmdd_forest {
     }
     virtual bool areDuplicates(int node, const node_builder &nb) const;
     virtual bool areDuplicates(int node, const node_reader &nr) const;
+
+    virtual bool isRedundant(const node_builder &nb) const;
+    virtual bool isIdentityEdge(const node_builder &nb, int i) const;
 
   protected:
     virtual void normalize(node_builder &nb, float& ev) const;

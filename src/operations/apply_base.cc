@@ -176,11 +176,8 @@ void MEDDLY::generic_binary_mxd::compute(const dd_edge &a, const dd_edge &b,
 
 int MEDDLY::generic_binary_mxd::compute(int a, int b) 
 {
-  return compute(-1, a, b);
-}
-
-int MEDDLY::generic_binary_mxd::compute(int in, int a, int b)
-{
+  //  Compute for the unprimed levels.
+  //
   int result = 0;
   if (checkTerminals(a, b, result))
     return result;
@@ -188,47 +185,31 @@ int MEDDLY::generic_binary_mxd::compute(int in, int a, int b)
   if (findResult(-1, a, b, result))
     return result;
 
-  if (in>=0) if (findResult(in, a, b, result))
-    return result;
-
   // Get level information
   const int aLevel = arg1F->getNodeLevel(a);
   const int bLevel = arg2F->getNodeLevel(b);
-  int resultLevel = topLevel(aLevel, bLevel);
-  // trick: make sure we "start" at an unprimed level
-  if (in<0) resultLevel = ABS(resultLevel);
+  int resultLevel = ABS(topLevel(aLevel, bLevel));
 
   int resultSize = resF->getLevelSize(resultLevel);
   node_builder& nb = resF->useNodeBuilder(resultLevel, resultSize);
 
-  bool needsIndex = false;
- 
   // Initialize readers
   node_reader* A;
   if (aLevel == resultLevel) {
     A = arg1F->initNodeReader(a, true);
-  } else if (resultLevel>0 || arg1F->isFullyReduced()) {
-    A = arg1F->initRedundantReader(resultLevel, a, true);
   } else {
-    A = arg1F->initIdentityReader(resultLevel, in, a, true);
-    needsIndex = true;
-  }
+    A = arg1F->initRedundantReader(resultLevel, a, true);
+  } 
 
   node_reader* B;
   if (bLevel == resultLevel) {
     B = arg2F->initNodeReader(b, true);
-  } else if (resultLevel>0 || arg2F->isFullyReduced()) {
-    B = arg2F->initRedundantReader(resultLevel, b, true);
   } else {
-    B = arg2F->initIdentityReader(resultLevel, in, b, true);
-    needsIndex = true;
-  }
+    B = arg2F->initRedundantReader(resultLevel, b, true);
+  } 
 
-  int nnz = 0;
   for (int j=0; j<resultSize; j++) {
-    int d = compute(j, A->d(j), B->d(j));
-    nb.d(j) = d;
-    if (d) nnz++;
+    nb.d(j) = compute(j, -resultLevel, A->d(j), B->d(j));
   }
 
   // cleanup
@@ -236,15 +217,58 @@ int MEDDLY::generic_binary_mxd::compute(int in, int a, int b)
   node_reader::recycle(A);
 
   // reduce and save result
-  result = resF->createReducedNode(in, nb);
+  result = resF->createReducedNode(-1, nb);
+  saveResult(-1, a, b, result);
 
-  if (resultLevel < 0 && 1==nnz) needsIndex = true;
+#ifdef TRACE_ALL_OPS
+  printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
+#endif
 
-  if (needsIndex) {
-    saveResult(in, a, b, result);
+  return result;
+}
+
+int MEDDLY::generic_binary_mxd::compute(int in, int k, int a, int b)
+{
+  //  Compute for the primed levels.
+  //
+  MEDDLY_DCASSERT(k<0);
+
+  // Get level information
+  const int aLevel = arg1F->getNodeLevel(a);
+  const int bLevel = arg2F->getNodeLevel(b);
+
+  int resultSize = resF->getLevelSize(k);
+  node_builder& nb = resF->useNodeBuilder(k, resultSize);
+
+  // Initialize readers
+  node_reader* A;
+  if (aLevel == k) {
+    A = arg1F->initNodeReader(a, true);
+  } else if (arg1F->isFullyReduced()) {
+    A = arg1F->initRedundantReader(k, a, true);
   } else {
-    saveResult(-1, a, b, result);
+    A = arg1F->initIdentityReader(k, in, a, true);
   }
+
+  node_reader* B;
+  if (bLevel == k) {
+    B = arg2F->initNodeReader(b, true);
+  } else if (arg2F->isFullyReduced()) {
+    B = arg2F->initRedundantReader(k, b, true);
+  } else {
+    B = arg2F->initIdentityReader(k, in, b, true);
+  }
+
+  for (int j=0; j<resultSize; j++) {
+    nb.d(j) = compute(A->d(j), B->d(j));
+  }
+
+  // cleanup
+  node_reader::recycle(B);
+  node_reader::recycle(A);
+
+  // reduce 
+  int result = resF->createReducedNode(in, nb);
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);

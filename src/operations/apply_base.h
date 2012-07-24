@@ -107,7 +107,7 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
     virtual int compute(int a, int b);
 
   protected:
-    int compute(int i, int a, int b);
+    int compute(int i, int k, int a, int b);
 
   protected:
     virtual bool isStaleEntry(const int* entryData);

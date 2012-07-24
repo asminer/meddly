@@ -1587,6 +1587,31 @@ class MEDDLY::expert_forest : public forest
     */
     virtual bool areDuplicates(int node, const node_reader &nr) const = 0;
 
+    /** Is this a redundant node that can be eliminated?
+        Must be implemented in derived forests
+        to deal with the default edge value.
+          @param  nr    Node we're trying to build.
+
+          @return   True, if nr is a redundant node 
+                          AND it should be eliminated.
+    */
+    virtual bool isRedundant(const node_builder &nb) const = 0;
+
+    /** Is the specified edge an identity edge, that can be eliminated?
+        Must be implemented in derived forests
+        to deal with the default edge value.
+
+          @param  nr    Node we're trying to build.
+                        We know there is a single non-zero downward pointer.
+
+          @param  i     Candidate edge (or edge index for sparse nodes).
+
+          @return True, if nr[i] is an identity edge, and the
+                        identity node should be eliminated.
+    */
+    virtual bool isIdentityEdge(const node_builder &nb, int i) const = 0;
+        
+
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   // |                                                                |

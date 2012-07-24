@@ -76,6 +76,9 @@ class MEDDLY::mt_forest : public expert_forest {
     virtual bool areDuplicates(int node, const node_builder &nb) const;
     virtual bool areDuplicates(int node, const node_reader &nr) const;
 
+    virtual bool isRedundant(const node_builder &nb) const;
+    virtual bool isIdentityEdge(const node_builder &nb, int i) const;
+
   private:
     template <class T>
     inline void edgeForVarInternal(int vh, bool pr, T* terms, dd_edge& result) {
