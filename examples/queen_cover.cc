@@ -298,43 +298,44 @@ int main(int argc, const char** argv)
 
   printf("\n%lg seconds CPU time elapsed\n", stopwatch.elapsed());
   printf("Forest stats:\n");
-  printf("\t%ld current nodes\n", f->getCurrentNumNodes());
-  printf("\t%ld peak nodes\n", f->getPeakNumNodes());
+  const forest::statset& stats = f->getStats();
+  printf("\t%ld current nodes\n", stats.active_nodes);
+  printf("\t%ld peak nodes\n", stats.peak_active);
   printf("\t");
-  printmem(f->getCurrentMemoryUsed());
+  printmem(stats.memory_used);
   printf(" current memory used\n\t");
-  printmem(f->getPeakMemoryUsed());
+  printmem(stats.peak_memory_used);
   printf(" peak memory used\n\t");
-  printmem(f->getCurrentMemoryAllocated());
+  printmem(stats.memory_alloc);
   printf(" current memory allocated\n\t");
-  printmem(f->getPeakMemoryAllocated());
-  printf(" peak memory allocated\n");
+  printmem(stats.peak_memory_alloc);
+  printf(" peak memory allocated\n\t");
+  printf("%ld compactions\n", stats.num_compactions);
 
   long c;
   apply(CARDINALITY, solutions, c);
   printf("\nFor a %dx%d chessboard, ", N, N);
   printf("there are %ld covers with %d queens\n\n", c, q);
 
-  if (!outfile) return 0;
-
-
-  printf("Writing solutions to file %s\n", argv[2]);
+  if (outfile) {
+    printf("Writing solutions to file %s\n", argv[2]);
   
-  fprintf(outfile, "%d # Board dimension\n\n", N);
-  // show the solutions
-  enumerator iter(solutions);
-  long counter;
-  for (counter = 1; iter; ++iter, ++counter) {
-    fprintf(outfile, "solution %5ld:  ", counter);
-    const int* minterm = iter.getAssignments();
-    for (int i=0; i<N; i++) for (int j=0; j<N; j++) {
-      if (minterm[ijmap(i,j)]) {
-        fprintf(outfile, "(%2d, %2d) ", i+1, j+1);
+    fprintf(outfile, "%d # Board dimension\n\n", N);
+    // show the solutions
+    enumerator iter(solutions);
+    long counter;
+    for (counter = 1; iter; ++iter, ++counter) {
+      fprintf(outfile, "solution %5ld:  ", counter);
+      const int* minterm = iter.getAssignments();
+      for (int i=0; i<N; i++) for (int j=0; j<N; j++) {
+        if (minterm[ijmap(i,j)]) {
+          fprintf(outfile, "(%2d, %2d) ", i+1, j+1);
+        }
       }
-    }
+      fprintf(outfile, "\n");
+    } // for iter
     fprintf(outfile, "\n");
-  } // for iter
-  fprintf(outfile, "\n");
+  }
   cleanup();
   return 0;
 }

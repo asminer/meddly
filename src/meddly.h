@@ -604,6 +604,8 @@ class MEDDLY::forest {
       long reclaimed_nodes;
       /// Number of times the forest storage array was compacted
       long num_compactions;
+      /// Number of times the garbage collector ran.
+      long garbage_collections;
       /// Current number of zombie nodes (waiting for deletion)
       long zombie_nodes;
       /// Current number of orphan nodes (disconnected)
@@ -1832,31 +1834,6 @@ class MEDDLY::dd_edge {
         @return         \a this / \a e.
     */
     dd_edge& operator/=(const dd_edge &e);
-
-#if 0
-    //  Not implemented
-    /** Less-than operator.
-        BOOLEAN forests: INVALID; INTEGER/REAL forests: Less-than.
-        This returns an MTMDD containing all elements whose terminal value
-        in \a this dd_edge is less than the terminal value in dd_edge \a e.
-
-        Example:
-        Let's assume A and B are dd_edges belonging to the same forest with
-        INTEGERs for terminal values. Let there be two variables in this
-        forest and each variable can take up values 0 and 1. An element is
-        represented as (2nd variable, 1st variable, terminal value)
-
-        Assuming,
-        A = {(0, 0, 1), (0, 1, 4), (1, 0, 0), (1, 1, -1)}
-        B = {(0, 0, 2), (0, 1, 0), (1, 0, 3), (1, 1, 0)}
-        A < B = {(0, 0, 1), (0, 1, 0), (1, 0, 1), (1, 1, 1)}
-        where 0 and 1 represent False and True respectively.
-
-        @param  e       dd_edge for less-than.
-        @return         dd_edge representing \a this < \a e.
-    */
-    const dd_edge operator<(const dd_edge& e) const;
-#endif
 
     /** Display the edge information.
         This is primarily for aid in debugging.

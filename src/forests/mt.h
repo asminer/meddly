@@ -28,8 +28,8 @@
 #ifndef MT_FOREST
 #define MT_FOREST
 
-#include <fstream>
-#include <iostream>
+// #include <fstream>
+// #include <iostream>
 #include <vector>
 
 #include "../defines.h"
@@ -61,16 +61,16 @@ class MEDDLY::mt_forest : public expert_forest {
     virtual void createEdgeForVar(int vh, bool pr, float* terms, dd_edge& a);
 
     
-    virtual char edgeSize(int k) const {
+    virtual char edgeSize() const {
         return 0;
     }
-    virtual char unhashedHeaderSize(int k) const {
+    virtual char unhashedHeaderSize() const {
         return 0;
     }
-    virtual char hashedHeaderSize(int k) const {
+    virtual char hashedHeaderSize() const {
         return 0;
     }
-    virtual bool areEdgeValuesHashed(int k) const {
+    virtual bool areEdgeValuesHashed() const {
         return false;
     }
     virtual bool areDuplicates(int node, const node_builder &nb) const;
@@ -103,13 +103,15 @@ class MEDDLY::mt_forest : public expert_forest {
     inline bool areDupsInternal(int p, const T &nb) const {
         const node_header &node = getNode(p);
         if (node.level != nb.getLevel()) return false;
-        const node_storage &ld = levels[node.level];
-        if (ld.isFull(node.offset)) {
+#ifdef NODE_STORAGE_PER_LEVEL
+        const node_storage &nodeMan = levels[node.level];
+#endif
+        if (nodeMan.isFull(node.offset)) {
           //
           // p is full
           //
-          int fs = ld.fullSizeOf(node.offset);
-          const int* pd = ld.fullDownOf(node.offset);
+          int fs = nodeMan.fullSizeOf(node.offset);
+          const int* pd = nodeMan.fullDownOf(node.offset);
           if (nb.isFull()) {
             int i;
             for (i=0; i<fs; i++) if (pd[i] != nb.d(i)) return false;
@@ -130,9 +132,9 @@ class MEDDLY::mt_forest : public expert_forest {
         //
         // p is sparse
         //
-        int nnz = ld.sparseSizeOf(node.offset);
-        const int* pd = ld.sparseDownOf(node.offset);
-        const int* pi = ld.sparseIndexesOf(node.offset);
+        int nnz = nodeMan.sparseSizeOf(node.offset);
+        const int* pd = nodeMan.sparseDownOf(node.offset);
+        const int* pi = nodeMan.sparseIndexesOf(node.offset);
 
         if (nb.isSparse()) {
           if (nnz != nb.getNNZs()) return false;

@@ -39,20 +39,16 @@
 #define MEDDLY_EXPERT_H
 
 #include <map>
-#include <vector>
-#include <string.h>	// For memcpy
-
 
 // Flags for development version only. Significant reduction in performance.
 #ifdef DEVELOPMENT_CODE
 #define RANGE_CHECK_ON
 #define DCASSERTS_ON
+#endif
+
 // #define DEBUG_MDD_H
 // #define TRACK_DELETIONS
 // #define TRACK_CACHECOUNT
-#endif
-
-// #define TRACK_DELETIONS
 
 // Use this for assertions that will fail only when your
 // code is wrong.  Handy for debugging.
@@ -73,6 +69,8 @@
 // Design decision: should we remember the hashes for a reduced node?
 //
 // #define SAVE_HASHES
+
+#define NODE_STORAGE_PER_LEVEL
  
 namespace MEDDLY {
 
@@ -894,17 +892,17 @@ class MEDDLY::node_builder {
     This struct holds that information.
 */
 struct MEDDLY::node_header {
-    /** Node level
-        If the node is active, this indicates node level.
-    */
-    int level;
-
     /** Offset to node's data in the corresponding node storage structure.
         If the node is active, this is the offset (>0) in the data array.
         If the node is deleted, this is -next deleted node
         (part of the unused address list).
     */
     int offset;
+
+    /** Node level
+        If the node is active, this indicates node level.
+    */
+    int level;
 
     /** Cache count
         The number of cache entries that refer to this node (excl. unique
@@ -1006,8 +1004,7 @@ struct MEDDLY::node_header {
     (assuming a node of size 0, with no extra header info, is impossible).
 */
 class MEDDLY::node_storage {
-      /// Growth parameter
-      static const int add_size = 1024;
+      static const int min_size = 1024;
 
       /// Special values
       static const int non_index_hole = -2;
@@ -1046,12 +1043,8 @@ class MEDDLY::node_storage {
 
   // performance stats
   public:
-      /// Largest traversed height of holes grid
-      int max_hole_chain;
       /// Number of zombie nodes
       int zombie_nodes;
-      /// Total number of compactions
-      // int num_compactions;
 
   // header sizes; vary by forest.
   public:
@@ -1071,8 +1064,8 @@ class MEDDLY::node_storage {
       node_storage();
       ~node_storage();
 
-      /// Bind this to a particular level in a particular forest.
-      void init(expert_forest* p, int k);
+      /// Bind this to a particular forest.
+      void init(expert_forest* p);
 
       /** Allocate enough slots to store a node with given size.
           Also, stores the node size in the node.
@@ -1182,12 +1175,6 @@ class MEDDLY::node_storage {
           MEDDLY_DCASSERT(data);
           MEDDLY_CHECK_RANGE(1, addr, last+1);
           return data[addr + next_index] >= 0;
-      }
-      inline bool isTempNode(int addr) const {
-          return temp_node_value == nextOf(addr);
-      }
-      inline void setTempNode(int addr) { 
-          nextOf(addr) = temp_node_value; 
       }
 
       inline int& sizeOf(int addr)              { return rawSizeOf(addr); }
@@ -1384,9 +1371,11 @@ class MEDDLY::expert_forest : public forest
       }
     }
     /// used by node_storage, for displaying.
+#ifdef NODE_STORAGE_PER_LEVEL
     inline long getLevelNumber(const node_storage* L) const {
       return long(L - levels);
     }
+#endif
     /// Is this a terminal node?
     inline static bool isTerminalNode(int p) {
       return (p < 1);
@@ -1445,8 +1434,10 @@ class MEDDLY::expert_forest : public forest
       if (isTerminalNode(node)) return node;
       // yes iff the unhashed extra header is non-zero.
       const node_header& nd = getNode(node);
-      const node_storage& ld = levels[nd.level];
-      return (ld.unhashedHeaderOf(nd.offset))[0] > 0;
+#ifdef NODE_STORAGE_PER_LEVEL
+      const node_storage& nodeMan = levels[nd.level];
+#endif
+      return (nodeMan.unhashedHeaderOf(nd.offset))[0] > 0;
     }
 
     /// Get the cardinality of an Index Set.
@@ -1455,9 +1446,11 @@ class MEDDLY::expert_forest : public forest
       if (isTerminalNode(node)) return (node != 0) ? 1 : 0;
       // yes iff the unhashed extra header is non-zero.
       const node_header& nd = getNode(node);
-      const node_storage& ld = levels[nd.level];
-      MEDDLY_DCASSERT((ld.unhashedHeaderOf(nd.offset))[0] > 0);
-      return (ld.unhashedHeaderOf(nd.offset))[0];
+#ifdef NODE_STORAGE_PER_LEVEL
+      const node_storage& nodeMan = levels[nd.level];
+#endif
+      MEDDLY_DCASSERT((nodeMan.unhashedHeaderOf(nd.offset))[0] > 0);
+      return (nodeMan.unhashedHeaderOf(nd.offset))[0];
     }
 
     // --------------------------------------------------
@@ -1465,17 +1458,25 @@ class MEDDLY::expert_forest : public forest
     // --------------------------------------------------
     inline int getNext(int p) const {
       MEDDLY_DCASSERT(address);
-      MEDDLY_DCASSERT(levels);
       MEDDLY_DCASSERT(isValidNonterminalIndex(p));
+#ifdef NODE_STORAGE_PER_LEVEL
+      MEDDLY_DCASSERT(levels);
       MEDDLY_DCASSERT(address[p].level);
       return levels[address[p].level].nextOf(address[p].offset);
+#else
+      return nodeMan.nextOf(address[p].offset);
+#endif
     }
     inline void setNext(int p, int n) {
       MEDDLY_DCASSERT(address);
-      MEDDLY_DCASSERT(levels);
       MEDDLY_DCASSERT(isValidNonterminalIndex(p));
+#ifdef NODE_STORAGE_PER_LEVEL
+      MEDDLY_DCASSERT(levels);
       MEDDLY_DCASSERT(address[p].level);
       levels[address[p].level].nextOf(address[p].offset) = n;
+#else
+      nodeMan.nextOf(address[p].offset) = n;
+#endif
     }
     inline unsigned hash(int p) const {
       MEDDLY_DCASSERT(address);
@@ -1493,8 +1494,12 @@ class MEDDLY::expert_forest : public forest
 
     /// Returns the in-count for a node.
     inline int readInCount(int p) const {
+#ifdef NODE_STORAGE_PER_LEVEL
       const node_header& node = getNode(p);
       return levels[node.level].countOf(node.offset);
+#else
+      return nodeMan.countOf(getNode(p).offset);
+#endif
     }
 
     /** Increase the link count to this node. Call this when another node is
@@ -1943,14 +1948,14 @@ class MEDDLY::expert_forest : public forest
   // abstract virtual, must be overridden.
   // 
   public:
-    /// Number of integer slots for an edge at level k.
-    virtual char edgeSize(int k) const = 0;
-    /// Extra unhashed node slots at level k.
-    virtual char unhashedHeaderSize(int k) const = 0;
-    /// Extra hashed node slots at level k.
-    virtual char hashedHeaderSize(int k) const = 0;
-    /// Are edge values included when computing the hash, at level k.
-    virtual bool areEdgeValuesHashed(int k) const = 0;
+    /// Number of integer slots for an edge.
+    virtual char edgeSize() const = 0;
+    /// Extra unhashed node slots.
+    virtual char unhashedHeaderSize() const = 0;
+    /// Extra hashed node slots.
+    virtual char hashedHeaderSize() const = 0;
+    /// Are edge values included when computing the hash.
+    virtual bool areEdgeValuesHashed() const = 0;
 
     /** Discover duplicate nodes.
         Required for the unique table. 
@@ -2060,9 +2065,13 @@ class MEDDLY::expert_forest : public forest
     inline void freeZombieNode(int p) {
       MEDDLY_DCASSERT(address);
       MEDDLY_DCASSERT(isValidNonterminalIndex(p));
-      MEDDLY_DCASSERT(address[p].level);
       stats.zombie_nodes--;
+#ifdef NODE_STORAGE_PER_LEVEL
+      MEDDLY_DCASSERT(address[p].level);
       levels[address[p].level].zombie_nodes--;
+#else
+      nodeMan.zombie_nodes--;
+#endif
       recycleNodeHandle(p);
     }
 
@@ -2153,8 +2162,12 @@ class MEDDLY::expert_forest : public forest
     }
     /// Returns the in-count for a node.
     inline int& getInCount(int p) {
+#ifdef NODE_STORAGE_PER_LEVEL
       const node_header& node = getNode(p);
       return levels[node.level].countOf(node.offset);
+#else
+      return nodeMan.countOf(getNode(p).offset);
+#endif
     }
 
   // ------------------------------------------------------------
@@ -2197,9 +2210,13 @@ class MEDDLY::expert_forest : public forest
     /// per-forest policy, derived classes may change as appropriate.
     bool terminalNodesAreStale;
 
+#ifdef NODE_STORAGE_PER_LEVEL
     /// Level data. Each level maintains its own data array and hole grid.
     /// The array is shifted, so we can use level[k] with negative k.
     node_storage *levels;
+#else
+    node_storage nodeMan;
+#endif
 
   private:
     // Keep a node_builder for each level.
@@ -2213,8 +2230,10 @@ class MEDDLY::expert_forest : public forest
     int* in_validate;
     int  in_val_size;
 
+#ifdef NODE_STORAGE_PER_LEVEL
     // Raw level data
     node_storage* raw_levels;
+#endif
 
 
     /// address info for nodes

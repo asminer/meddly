@@ -34,6 +34,7 @@
 #include <cstdio>
 
 #include "meddly.h"
+#include "meddly_expert.h"
 #include "timer.h"
 
 // #define SHOW_ALL_SOLUTIONS
@@ -249,18 +250,21 @@ int main(int argc, const char** argv)
   printf("Done.\n\n");
 
   printf("Set of solutions requires %d nodes\n", solutions->getNodeCount());
+  expert_forest* ef = dynamic_cast <expert_forest*> (f);
   printf("Forest stats:\n");
-  printf("\t%ld current nodes\n", f->getCurrentNumNodes());
-  printf("\t%ld peak nodes\n", f->getPeakNumNodes());
+  const forest::statset& stats = f->getStats();
+  printf("\t%ld current nodes\n", stats.active_nodes);
+  printf("\t%ld peak nodes\n", stats.peak_active);
   printf("\t");
-  printmem(f->getCurrentMemoryUsed());
+  printmem(stats.memory_used);
   printf(" current memory used\n\t");
-  printmem(f->getPeakMemoryUsed());
+  printmem(stats.peak_memory_used);
   printf(" peak memory used\n\t");
-  printmem(f->getCurrentMemoryAllocated());
+  printmem(stats.memory_alloc);
   printf(" current memory allocated\n\t");
-  printmem(f->getPeakMemoryAllocated());
-  printf(" peak memory allocated\n");
+  printmem(stats.peak_memory_alloc);
+  printf(" peak memory allocated\n\t");
+  printf("%ld compactions\n", stats.num_compactions);
 
   long c;
   apply(CARDINALITY, *solutions, c);

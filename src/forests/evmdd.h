@@ -34,6 +34,8 @@
 #ifndef EVMDD_H
 #define EVMDD_H
 
+#include <vector>
+
 #define SORT_BUILD
 
 //#define TREE_SORT
@@ -134,16 +136,16 @@ class MEDDLY::evp_mdd_int : public evmdd_forest {
       assert(false); return a + b;
     }
 
-    virtual char edgeSize(int k) const {
+    virtual char edgeSize() const {
         return 1;
     }
-    virtual char unhashedHeaderSize(int k) const {
+    virtual char unhashedHeaderSize() const {
         return 1;
     }
-    virtual char hashedHeaderSize(int k) const {
+    virtual char hashedHeaderSize() const {
         return 0;
     }
-    virtual bool areEdgeValuesHashed(int k) const {
+    virtual bool areEdgeValuesHashed() const {
         return true;
     }
     virtual bool areDuplicates(int node, const node_builder &nb) const;
@@ -162,14 +164,16 @@ class MEDDLY::evp_mdd_int : public evmdd_forest {
     inline bool areDupsInternal(int p, const T &nb) const {
         const node_header &node = getNode(p);
         if (node.level != nb.getLevel()) return false;
-        const node_storage &ld = levels[node.level];
-        if (ld.isFull(node.offset)) {
+#ifdef NODE_STORAGE_PER_LEVEL
+        const node_storage &nodeMan = levels[node.level];
+#endif
+        if (nodeMan.isFull(node.offset)) {
           //
           // p is full
           //
-          int fs = ld.fullSizeOf(node.offset);
-          const int* pd = ld.fullDownOf(node.offset);
-          const int* pe = ld.fullEdgeOf(node.offset);
+          int fs = nodeMan.fullSizeOf(node.offset);
+          const int* pd = nodeMan.fullDownOf(node.offset);
+          const int* pe = nodeMan.fullEdgeOf(node.offset);
           if (nb.isFull()) {
             int i;
             for (i=0; i<fs; i++) {
@@ -194,10 +198,10 @@ class MEDDLY::evp_mdd_int : public evmdd_forest {
         //
         // p is sparse
         //
-        int nnz = ld.sparseSizeOf(node.offset);
-        const int* pd = ld.sparseDownOf(node.offset);
-        const int* pe = ld.sparseEdgeOf(node.offset);
-        const int* pi = ld.sparseIndexesOf(node.offset);
+        int nnz = nodeMan.sparseSizeOf(node.offset);
+        const int* pd = nodeMan.sparseDownOf(node.offset);
+        const int* pe = nodeMan.sparseEdgeOf(node.offset);
+        const int* pi = nodeMan.sparseIndexesOf(node.offset);
 
         if (nb.isSparse()) {
           if (nnz != nb.getNNZs()) return false;
@@ -248,16 +252,16 @@ class MEDDLY::evt_mdd_real : public evmdd_forest {
     virtual int doOp(int a, int b) const { assert(false); return a * b; }
     virtual float doOp(float a, float b) const { return a * b; }
 
-    virtual char edgeSize(int k) const {
+    virtual char edgeSize() const {
         return sizeof(float) / sizeof(int);
     }
-    virtual char unhashedHeaderSize(int k) const {
+    virtual char unhashedHeaderSize() const {
         return 0;
     }
-    virtual char hashedHeaderSize(int k) const {
+    virtual char hashedHeaderSize() const {
         return 0;
     }
-    virtual bool areEdgeValuesHashed(int k) const {
+    virtual bool areEdgeValuesHashed() const {
         return false; // we need to do a "within epsilon" comparison.
     }
     virtual bool areDuplicates(int node, const node_builder &nb) const;
@@ -284,14 +288,16 @@ class MEDDLY::evt_mdd_real : public evmdd_forest {
     inline bool areDupsInternal(int p, const T &nb) const {
         const node_header &node = getNode(p);
         if (node.level != nb.getLevel()) return false;
-        const node_storage &ld = levels[node.level];
-        if (ld.isFull(node.offset)) {
+#ifdef NODE_STORAGE_PER_LEVEL
+        const node_storage &nodeMan = levels[node.level];
+#endif
+        if (nodeMan.isFull(node.offset)) {
           //
           // p is full
           //
-          int fs = ld.fullSizeOf(node.offset);
-          const int* pd = ld.fullDownOf(node.offset);
-          const float* pf = (float*) ld.fullEdgeOf(node.offset);
+          int fs = nodeMan.fullSizeOf(node.offset);
+          const int* pd = nodeMan.fullDownOf(node.offset);
+          const float* pf = (float*) nodeMan.fullEdgeOf(node.offset);
           if (nb.isFull()) {
             int i;
             for (i=0; i<fs; i++) {
@@ -316,10 +322,10 @@ class MEDDLY::evt_mdd_real : public evmdd_forest {
         //
         // p is sparse
         //
-        int nnz = ld.sparseSizeOf(node.offset);
-        const int* pd = ld.sparseDownOf(node.offset);
-        const float* pf = (float*) ld.sparseEdgeOf(node.offset);
-        const int* pi = ld.sparseIndexesOf(node.offset);
+        int nnz = nodeMan.sparseSizeOf(node.offset);
+        const int* pd = nodeMan.sparseDownOf(node.offset);
+        const float* pf = (float*) nodeMan.sparseEdgeOf(node.offset);
+        const int* pi = nodeMan.sparseIndexesOf(node.offset);
 
         if (nb.isSparse()) {
           if (nnz != nb.getNNZs()) return false;

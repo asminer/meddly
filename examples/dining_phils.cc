@@ -124,6 +124,23 @@ void printmem(long m)
   printf("%3.2lf Tbytes", approx);
 }
 
+void printStats(const char* who, const forest::statset& stats)
+{
+  printf("%s stats:\n", who);
+  printf("\t%ld current nodes\n", stats.active_nodes);
+  printf("\t%ld peak nodes\n", stats.peak_active);
+  printf("\t");
+  printmem(stats.memory_used);
+  printf(" current memory used\n\t");
+  printmem(stats.peak_memory_used);
+  printf(" peak memory used\n\t");
+  printmem(stats.memory_alloc);
+  printf(" current memory allocated\n\t");
+  printmem(stats.peak_memory_alloc);
+  printf(" peak memory allocated\n\t");
+  printf("%ld compactions\n", stats.num_compactions);
+}
+
 variable** initializeVariables(int nLevels)
 {
   // set bounds for each variable
@@ -430,20 +447,7 @@ int main(int argc, char *argv[])
           start.get_last_interval()/1000000.0);
 
   // Show stats for nsf construction
-
-  printf("MxD stats:\n");
-  printf("\t%ld current nodes\n", mxd->getCurrentNumNodes());
-  printf("\t%ld peak nodes\n", mxd->getPeakNumNodes());
-  printf("\t");
-  printmem(mxd->getCurrentMemoryUsed());
-  printf(" current memory used\n\t");
-  printmem(mxd->getPeakMemoryUsed());
-  printf(" peak memory used\n\t");
-  printmem(mxd->getCurrentMemoryAllocated());
-  printf(" current memory allocated\n\t");
-  printmem(mxd->getPeakMemoryAllocated());
-  printf(" peak memory allocated\n");
-  
+  printStats("MxD", mxd->getStats());
   fflush(stdout);
 
 #ifdef SHOW_MXD
@@ -473,19 +477,7 @@ int main(int argc, char *argv[])
 
 
   // Show stats for rs construction
-
-  printf("MDD stats:\n");
-  printf("\t%ld current nodes\n", mdd->getCurrentNumNodes());
-  printf("\t%ld peak nodes\n", mdd->getPeakNumNodes());
-  printf("\t");
-  printmem(mdd->getCurrentMemoryUsed());
-  printf(" current memory used\n\t");
-  printmem(mdd->getPeakMemoryUsed());
-  printf(" peak memory used\n\t");
-  printmem(mdd->getCurrentMemoryAllocated());
-  printf(" current memory allocated\n\t");
-  printmem(mdd->getPeakMemoryAllocated());
-  printf(" peak memory allocated\n");
+  printStats("MDD", mdd->getStats());
   
   operation::showAllComputeTables(stdout, 1);
 

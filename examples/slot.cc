@@ -65,6 +65,24 @@ void printmem(long m)
   printf("%3.2lf Tbytes", approx);
 }
 
+void printStats(const char* who, const forest::statset& stats)
+{
+  printf("%s stats:\n", who);
+  printf("\t%ld current nodes\n", stats.active_nodes);
+  printf("\t%ld peak nodes\n", stats.peak_active);
+  printf("\t");
+  printmem(stats.memory_used);
+  printf(" current memory used\n\t");
+  printmem(stats.peak_memory_used);
+  printf(" peak memory used\n\t");
+  printmem(stats.memory_alloc);
+  printf(" current memory allocated\n\t");
+  printmem(stats.peak_memory_alloc);
+  printf(" peak memory allocated\n\t");
+  printf("%ld compactions\n", stats.num_compactions);
+}
+
+
 inline char* newEvent(int N)
 {
   char* ev = new char[N*8+1];
@@ -219,18 +237,7 @@ int main(int argc, const char** argv)
 
   if (method != 'e') {
     buildNextStateFunction(events, 8*N, mxd, nsf, 2);
-    printf("MxD stats:\n");
-    printf("\t%ld current nodes\n", mxd->getCurrentNumNodes());
-    printf("\t%ld peak nodes\n", mxd->getPeakNumNodes());
-    printf("\t");
-    printmem(mxd->getCurrentMemoryUsed());
-    printf(" current memory used\n\t");
-    printmem(mxd->getPeakMemoryUsed());
-    printf(" peak memory used\n\t");
-    printmem(mxd->getCurrentMemoryAllocated());
-    printf(" current memory allocated\n\t");
-    printmem(mxd->getPeakMemoryAllocated());
-    printf(" peak memory allocated\n");
+    printStats("MxD", mxd->getStats());
   }
 
   dd_edge reachable(mdd);
@@ -272,18 +279,7 @@ int main(int argc, const char** argv)
   }  // for i
 #endif
 
-  printf("MDD stats:\n");
-  printf("\t%ld current nodes\n", mdd->getCurrentNumNodes());
-  printf("\t%ld peak nodes\n", mdd->getPeakNumNodes());
-  printf("\t");
-  printmem(mdd->getCurrentMemoryUsed());
-  printf(" current memory used\n\t");
-  printmem(mdd->getPeakMemoryUsed());
-  printf(" peak memory used\n\t");
-  printmem(mdd->getCurrentMemoryAllocated());
-  printf(" current memory allocated\n\t");
-  printmem(mdd->getPeakMemoryAllocated());
-  printf(" peak memory allocated\n");
+  printStats("MDD", mdd->getStats());
   fflush(stdout);
 
   double c;

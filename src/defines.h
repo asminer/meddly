@@ -107,42 +107,6 @@ namespace MEDDLY {
     return k1 > k2;
   }
 
-  /*
-  // maxUlps would be a small +ve integer.
-  inline bool isAlmostEqual(int A, int B) {
-    static const int maxUlps = 16;
-  
-    if (isNan(A) && isNan(B)) return true;
-  
-    // Make sure maxUlps is non-negative and small enough that the
-    // default NAN won't compare as equal to anything.
-    MEDDLY_CHECK_RANGE(1, maxUlps, 4 * 1024 * 1024);
-  
-    // Make aInt lexicographically ordered as a twos-complement int
-    // int aInt = *(int*)&A;
-    // if (aInt < 0) aInt = 0x80000000 - aInt;
-  
-    // Make bInt lexicographically ordered as a twos-complement int
-    // int bInt = *(int*)&B;
-    // if (bInt < 0) bInt = 0x80000000 - bInt;
-  
-    // return ABS(aInt - bInt) <= maxUlps;
-  
-    // return A < 0
-    //         ? B < 0 ? ABS(B - A) <= maxUlps: ABS(mask - A - B) <= maxUlps
-    //         : B < 0 ? ABS(A - mask + B) <= maxUlps: ABS(A - B) <= maxUlps;
-#if 0
-    static const int mask = 0x80000000;
-    return ABS(A < 0? B < 0? B - A: mask - A - B: B < 0? A - mask + B: A - B)
-            <= maxUlps;
-#else
-    if (A < 0) A = 0x80000000 - A;
-    if (B < 0) B = 0x80000000 - B;
-    return ABS(A - B) <= maxUlps;
-#endif
-  }
-  */
-
 }
 
 /*

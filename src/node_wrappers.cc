@@ -189,13 +189,13 @@ void MEDDLY::node_builder::init(int k, const expert_forest* p)
   MEDDLY_DCASSERT(p);
   parent = p;
   level = k;
-  hhsize = parent->hashedHeaderSize(k);
+  hhsize = parent->hashedHeaderSize();
   if (hhsize) {
     extra_hashed = (int*) malloc(uhsize * sizeof(int));
     if (0==extra_hashed)
       throw error(error::INSUFFICIENT_MEMORY);
   }
-  uhsize = parent->unhashedHeaderSize(k);
+  uhsize = parent->unhashedHeaderSize();
   if (uhsize) {
     extra_unhashed = (int*) malloc(hhsize * sizeof(int));
     if (0==extra_unhashed)
@@ -204,69 +204,10 @@ void MEDDLY::node_builder::init(int k, const expert_forest* p)
   size = 0;
   alloc = 0;
   lock = false;
-  hashEdgeValues = parent->areEdgeValuesHashed(k);
-  edge_bytes = parent->edgeSize(k) * sizeof(int);
+  hashEdgeValues = parent->areEdgeValuesHashed();
+  edge_bytes = parent->edgeSize() * sizeof(int);
 }
 
-/*
-bool MEDDLY::node_builder::equals(int p) const
-{
-  const expert_forest::nodeData &node = parent->getNode(p);
-  if (node.level != level) return false;
-
-  MEDDLY_DCASSERT(0==edge);  // edge value stuff not implemented yet
-
-  if (parent->hashedHeader) {
-    const int* hh = parent->hashedHeaderOf(p);
-    if (memcmp(extra_hashed, hh, parent->hashedHeader * sizeof(int)))
-      return false;
-  }
-
-  // p is full:
-  if (parent->isFull(node.offset)) {
-    int fs = parent->fullSizeOf(node.offset);
-    const int* pd = parent->fullDownOf(node.offset);
-    if (is_sparse) {
-      int i = 0;
-      for (int z=0; z<size; z++) {
-        if (indexes[z] >= fs) return false;
-        for (; i<indexes[z]; i++) if (pd[i]) return false;
-        if (down[z] != pd[i]) return false;
-        i++;
-      } // for z
-      for (; i<fs; i++) if (pd[i]) return false;
-      return true;
-    }
-    // we're also full
-    if (fs > size) return false;
-    if (memcmp(down, pd, fs * sizeof(int))) return false;
-    for (int i=fs; i<size; i++) if (down[i]) return false;
-    return true;
-  }
-
-  // p is sparse:
-  int nnz = parent->sparseSizeOf(node.offset);
-  const int* pd = parent->sparseDownOf(node.offset);
-  const int* pi = parent->sparseIndexesOf(node.offset);
-
-  if (is_sparse) {
-    if (nnz != size) return false;
-    if (memcmp(down, pd, nnz * sizeof(int))) return false;
-    if (memcmp(indexes, pi, nnz * sizeof(int))) return false;
-    return true;
-  }
-
-  // We must be full
-  int i = 0;
-  for (int z=0; z<nnz; z++) {
-    for (; i<pi[z]; i++) if (down[i]) return false;
-    if (down[i] != pd[z]) return false;
-    i++;
-  }
-  for (; i<size; i++) if (down[i]) return false;
-  return true;
-}
-*/
 
 void MEDDLY::node_builder::computeHash()
 {
@@ -399,7 +340,7 @@ void MEDDLY::node_builder::enlarge()
   if (0==down) throw error(error::INSUFFICIENT_MEMORY);
   indexes = (int*) realloc(indexes, alloc * sizeof(int));
   if (0==indexes) throw error(error::INSUFFICIENT_MEMORY);
-  int es = parent->edgeSize(level);
+  int es = parent->edgeSize();
   if (es>0) {
     edge = realloc(edge, alloc * es * sizeof(int));
     if (0==edge) throw error(error::INSUFFICIENT_MEMORY);
@@ -407,39 +348,3 @@ void MEDDLY::node_builder::enlarge()
 }
 
 
-// ******************************************************************
-// *                                                                *
-// *                      node_finder  methods                      *
-// *                                                                *
-// ******************************************************************
-
-/*
-MEDDLY::node_finder::node_finder(const expert_forest* p, int n)
-{
-  parent = p;
-  node = n;
-  parent->initNodeReader(thisnode, node, false);
-  h = parent->hashNode(node);
-}
-
-MEDDLY::node_finder::~node_finder()
-{
-}
-
-bool MEDDLY::node_finder::equals(int p)
-{
-  parent->initNodeReader(compare, p, false);
-
-  if (thisnode.getLevel() != compare.getLevel()) return false;
-  if (thisnode.getNNZs() != compare.getNNZs()) return false;
-
-  for (int z=0; z<thisnode.getNNZs(); z++) {
-    if (thisnode.d(z) != compare.d(z)) return false;
-    if (thisnode.i(z) != compare.i(z)) return false;
-  }
-  // TBD : edge values
-
-  return true;
-}
-
-*/

@@ -113,3 +113,14 @@ Short-term:
 
 Long-term:
 
+C. Current limits of MEDDLY:
+-----------------------------------
+
+Maximum number of non-terminal nodes in a forest: 2^31 -1
+    why: 
+    32-bit signed integers are used numerous places to represent 
+    non-terminal nodes.  If we increase this to 64-bit, the
+    memory requirements for every node will double.
+
+
+
