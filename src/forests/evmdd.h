@@ -160,9 +160,9 @@ class MEDDLY::evp_mdd_int : public evmdd_forest {
   private:
     template <class T>
     inline bool areDupsInternal(int p, const T &nb) const {
-        const nodeData &node = getNode(p);
+        const node_header &node = getNode(p);
         if (node.level != nb.getLevel()) return false;
-        const level_data &ld = levels[node.level];
+        const node_storage &ld = levels[node.level];
         if (ld.isFull(node.offset)) {
           //
           // p is full
@@ -282,9 +282,9 @@ class MEDDLY::evt_mdd_real : public evmdd_forest {
     
     template <class T>
     inline bool areDupsInternal(int p, const T &nb) const {
-        const nodeData &node = getNode(p);
+        const node_header &node = getNode(p);
         if (node.level != nb.getLevel()) return false;
-        const level_data &ld = levels[node.level];
+        const node_storage &ld = levels[node.level];
         if (ld.isFull(node.offset)) {
           //
           // p is full

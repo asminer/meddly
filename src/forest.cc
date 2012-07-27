@@ -64,7 +64,7 @@ const int a_min_size = 1024;
 MEDDLY::forest::statset::statset()
 {
   reclaimed_nodes = 0;
-  num_compactions = 0;
+  // num_compactions = 0;
   zombie_nodes = 0;
   orphan_nodes = 0;
   active_nodes = 0;
@@ -416,7 +416,7 @@ MEDDLY::forest::edge_visitor::~edge_visitor()
 
 // ******************************************************************
 // *                                                                *
-// *               expert_forest::level_data  methods               *
+// *                      node_storage methods                      *
 // *                                                                *
 // ******************************************************************
 
@@ -460,20 +460,19 @@ MEDDLY::forest::edge_visitor::~edge_visitor()
   [size-1] -size
 */
 
-MEDDLY::expert_forest::level_data::level_data()
+MEDDLY::node_storage::node_storage()
 {
   parent = 0;
 }
 
-MEDDLY::expert_forest::level_data::~level_data()
+MEDDLY::node_storage::~node_storage()
 {
-  // printf("Destroying level; max hole chain: %d\n", max_hole_chain);
-  if (parent) parent->stats.decMemAlloc(size*sizeof(int));
+  // use clear() to free memory
+  if (parent) parent->changeStats().decMemAlloc(size*sizeof(int));
   free(data);
 }
 
-void MEDDLY::expert_forest::level_data
-::init(expert_forest* p, int k)
+void MEDDLY::node_storage::init(expert_forest* p, int k)
 {
   MEDDLY_DCASSERT(0==parent);
   parent = p;
@@ -486,15 +485,14 @@ void MEDDLY::expert_forest::level_data
   hole_slots = 0;
   max_hole_chain = 0;
   zombie_nodes = 0;
-  num_compactions = 0;
+  // num_compactions = 0;
   edgeSize = parent->edgeSize(k);
   unhashedHeader = parent->unhashedHeaderSize(k);
   hashedHeader = parent->hashedHeaderSize(k);
   compactLevel = false;
 }
 
-
-int MEDDLY::expert_forest::level_data::allocNode(int sz, int tail, bool clear)
+int MEDDLY::node_storage::allocNode(int sz, int tail, bool clear)
 {
   MEDDLY_DCASSERT(parent);
   int slots = slotsForNode(sz);
@@ -513,7 +511,7 @@ int MEDDLY::expert_forest::level_data::allocNode(int sz, int tail, bool clear)
   return off;
 }
 
-void MEDDLY::expert_forest::level_data::unlinkDown(int addr)
+void MEDDLY::node_storage::unlinkDown(int addr)
 {
 #ifdef VALIDATE_INCOUNTS
   int* downptr;
@@ -541,13 +539,14 @@ void MEDDLY::expert_forest::level_data::unlinkDown(int addr)
 #endif
 }
 
-void MEDDLY::expert_forest::level_data::compact(nodeData* address)
+void MEDDLY::node_storage::compact(node_header* address)
 {
   if (0==data) {
     compactLevel = false;
     return;
   }
-  if (0 == hole_slots || !needsCompaction()) {  // Level is compact enough!
+  if (0 == hole_slots || !needsCompaction(parent->getPolicies().compaction)) {  
+    // Level is compact enough!
     compactLevel = false;
     return;
   }
@@ -602,8 +601,8 @@ void MEDDLY::expert_forest::level_data::compact(nodeData* address)
   holes_top = holes_bottom = 0;
   hole_slots = 0;
 
-  parent->stats.num_compactions++;
-  num_compactions++;
+  parent->changeStats().num_compactions++;
+  // num_compactions++;
   compactLevel = false;
 
   if (size > add_size && last < size/2) {
@@ -619,7 +618,7 @@ void MEDDLY::expert_forest::level_data::compact(nodeData* address)
 #endif
 }
 
-void MEDDLY::expert_forest::level_data::dumpInternal(FILE *s) const
+void MEDDLY::node_storage::dumpInternal(FILE *s) const
 {
   if (0==data) return; // nothing to display
   
@@ -629,7 +628,7 @@ void MEDDLY::expert_forest::level_data::dumpInternal(FILE *s) const
   fprintf(s, "Grid: top = %d bottom = %d\n", holes_top, holes_bottom);
 
   fprintf(s, "Data array by record: \n");
-  int awidth = digits(parent->a_last);
+  int awidth = digits(parent->getLastNode());
   int a;
   for (a=1; a<=last; ) {
     fflush(s);
@@ -656,7 +655,7 @@ void MEDDLY::expert_forest::level_data::dumpInternal(FILE *s) const
   MEDDLY_DCASSERT(a == (last)+1);
 }
 
-void MEDDLY::expert_forest::level_data
+void MEDDLY::node_storage
 ::addToChainCounts(std::map<int, int> &chainLengths) const
 {
   for (int curr = holes_bottom; curr; curr = data[curr + 1]) {
@@ -677,10 +676,10 @@ void MEDDLY::expert_forest::level_data
 //
 //
 
-int MEDDLY::expert_forest::level_data::getHole(int slots)
+int MEDDLY::node_storage::getHole(int slots)
 {
   MEDDLY_DCASSERT(parent);
-  parent->stats.incMemUsed(slots * sizeof(int));
+  parent->changeStats().incMemUsed(slots * sizeof(int));
 
   // First, try for a hole exactly of this size
   // by traversing the index nodes in the hole grid
@@ -766,19 +765,19 @@ int MEDDLY::expert_forest::level_data::getHole(int slots)
   return h;
 }
 
-void MEDDLY::expert_forest::level_data::makeHole(int addr, int slots)
+void MEDDLY::node_storage::makeHole(int addr, int slots)
 {
 #ifdef MEMORY_TRACE
   printf("Calling makeHole(%d, %d)\n", addr, slots);
 #endif
   MEDDLY_DCASSERT(parent);
 
-  parent->stats.decMemUsed(slots * sizeof(int));
+  parent->changeStats().decMemUsed(slots * sizeof(int));
 
   hole_slots += slots;
   data[addr] = data[addr+slots-1] = -slots;
 
-  if (!parent->deflt.recycleHolesInLevelData) return;
+  if (!parent->getPolicies().recycleHolesInLevelData) return;
 
   // Check for a hole to the left
 #ifdef MERGE_LEFT
@@ -833,7 +832,7 @@ void MEDDLY::expert_forest::level_data::makeHole(int addr, int slots)
 #endif
 }
 
-void MEDDLY::expert_forest::level_data::gridInsert(int p_offset)
+void MEDDLY::node_storage::gridInsert(int p_offset)
 {
   // sanity check to make sure that the first and last slots in this hole
   // have the same value, i.e. -(# of slots in the hole)
@@ -887,7 +886,7 @@ void MEDDLY::expert_forest::level_data::gridInsert(int p_offset)
   }
 }
 
-void MEDDLY::expert_forest::level_data::midRemove(int p_offset)
+void MEDDLY::node_storage::midRemove(int p_offset)
 {
   MEDDLY_DCASSERT(isHoleNonIndex(p_offset));
   int left = data[p_offset+2];
@@ -898,7 +897,7 @@ void MEDDLY::expert_forest::level_data::midRemove(int p_offset)
   if (right) data[right + 2] = left;
 }
 
-void MEDDLY::expert_forest::level_data::indexRemove(int p_offset)
+void MEDDLY::node_storage::indexRemove(int p_offset)
 {
 #ifdef MEMORY_TRACE
   printf("indexRemove(%d)\n", p_offset);
@@ -948,16 +947,16 @@ void MEDDLY::expert_forest::level_data::indexRemove(int p_offset)
   }
 }
 
-void MEDDLY::expert_forest::level_data::resize(int new_size)
+void MEDDLY::node_storage::resize(int new_size)
 {
   int* new_data = (int *) realloc(data, new_size * sizeof(int));
   if (0 == new_data) throw error(error::INSUFFICIENT_MEMORY);
   if (new_size > size) {
-    parent->stats.incMemAlloc((new_size - size) * sizeof(int));
+    parent->changeStats().incMemAlloc((new_size - size) * sizeof(int));
     // Zero the new part of the array
     // memset(new_data + size, 0, (new_size - size) * sizeof(int));
   } else {
-    parent->stats.decMemAlloc((size - new_size) * sizeof(int));
+    parent->changeStats().decMemAlloc((size - new_size) * sizeof(int));
   }
 #ifdef MEMORY_TRACE
     printf("Resized data[]. Old size: %d, New size: %d, Last: %d.\n", 
@@ -970,33 +969,6 @@ void MEDDLY::expert_forest::level_data::resize(int new_size)
     data = new_data;
     data_down = data + commonHeaderLength + unhashedHeader + hashedHeader;
   }
-}
-
-// ******************************************************************
-// *                                                                *
-// *               expert_forest::nodecounter methods               *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::expert_forest::nodecounter::nodecounter(expert_forest *p, int* c)
- : edge_visitor()
-{
-  parent = p;
-  counts = c;
-}
-
-MEDDLY::expert_forest::nodecounter::~nodecounter()
-{
-  // DO NOT delete counts.
-}
-
-void MEDDLY::expert_forest::nodecounter::visit(dd_edge &e)
-{
-  int n = e.getNode();
-  if (parent->isTerminalNode(n)) return;
-  MEDDLY_DCASSERT(n>0);
-  MEDDLY_DCASSERT(n<=parent->getLastNode());
-  counts[n]++;
 }
 
 // ******************************************************************
@@ -1017,10 +989,10 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   // Inltialize address array
   //
   a_size = a_min_size;
-  address = (nodeData *) malloc(a_size * sizeof(nodeData));
+  address = (node_header *) malloc(a_size * sizeof(node_header));
   if (0 == address) throw error(error::INSUFFICIENT_MEMORY);
-  stats.incMemAlloc(a_size * sizeof(nodeData));
-  memset(address, 0, a_size * sizeof(nodeData));
+  stats.incMemAlloc(a_size * sizeof(node_header));
+  memset(address, 0, a_size * sizeof(node_header));
   a_last = a_unused = a_next_shrink = 0;
   // peak_nodes 0;
   
@@ -1030,13 +1002,13 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   //
   int N = getNumVariables();
   if (rel) {
-    raw_levels = new level_data[2*N+1];
+    raw_levels = new node_storage[2*N+1];
     levels = raw_levels + N;
-    stats.incMemAlloc(2*N+1 * sizeof(level_data));
+    stats.incMemAlloc(2*N+1 * sizeof(node_storage));
   } else {
-    raw_levels = new level_data[N+1];
+    raw_levels = new node_storage[N+1];
     levels = raw_levels;
-    stats.incMemAlloc(N+1 * sizeof(level_data));
+    stats.incMemAlloc(N+1 * sizeof(node_storage));
   }
 
   //
@@ -1332,8 +1304,8 @@ void MEDDLY::expert_forest::showNode(FILE* s, int p, int verbose) const
     fprintf(s, "Zombie cc: %d", -address[p].cache_count);
     return;
   }
-  const nodeData& node = getNode(p);
-  const level_data &ld = levels[node.level];
+  const node_header& node = getNode(p);
+  const node_storage &ld = levels[node.level];
   if (verbose) {
     // node: was already written.
     const variable* v = getDomain()->getVar(ABS(node.level));
@@ -1508,9 +1480,9 @@ void MEDDLY::expert_forest
 unsigned MEDDLY::expert_forest::hashNode(int p) const 
 {
   hash_stream s;
-  const nodeData& node = getNode(p);
+  const node_header& node = getNode(p);
   MEDDLY_DCASSERT(node.level);
-  const level_data &ld = levels[node.level];
+  const node_storage &ld = levels[node.level];
   s.start(node.level);
 
   for (int e=0; e<ld.hashedHeader; e++) {
@@ -1558,9 +1530,9 @@ unsigned MEDDLY::expert_forest::hashNode(int p) const
 
 int MEDDLY::expert_forest::getSingletonIndex(int n, int &down) const
 {
-  const nodeData& node = getNode(n);
+  const node_header& node = getNode(n);
   MEDDLY_DCASSERT(node.level);
-  const level_data &ld = levels[node.level];
+  const node_storage &ld = levels[node.level];
   if (ld.isFull(node.offset)) {
     // full node
     int fs = ld.fullSizeOf(node.offset);
@@ -1580,9 +1552,9 @@ int MEDDLY::expert_forest::getSingletonIndex(int n, int &down) const
 int MEDDLY::expert_forest::getDownPtr(int p, int i) const 
 {
   MEDDLY_DCASSERT(i>=0);
-  const nodeData& node = getNode(p);
+  const node_header& node = getNode(p);
   MEDDLY_DCASSERT(node.level);
-  const level_data &ld = levels[node.level];
+  const node_storage &ld = levels[node.level];
   if (ld.isFull(node.offset)) {
     // full node - super easy
     int fs = ld.fullSizeOf(node.offset);
@@ -1609,9 +1581,9 @@ int MEDDLY::expert_forest::getDownPtr(int p, int i) const
 void MEDDLY::expert_forest::getDownPtr(int p, int i, int& ev, int& dn) const 
 {
   MEDDLY_DCASSERT(i>=0);
-  const nodeData& node = getNode(p);
+  const node_header& node = getNode(p);
   MEDDLY_DCASSERT(node.level);
-  const level_data &ld = levels[node.level];
+  const node_storage &ld = levels[node.level];
   if (ld.isFull(node.offset)) {
     // full node - super easy
     int fs = ld.fullSizeOf(node.offset);
@@ -1646,9 +1618,9 @@ void MEDDLY::expert_forest::getDownPtr(int p, int i, int& ev, int& dn) const
 void MEDDLY::expert_forest::getDownPtr(int p, int i, float& ev, int& dn) const
 {
   MEDDLY_DCASSERT(i>=0);
-  const nodeData& node = getNode(p);
+  const node_header& node = getNode(p);
   MEDDLY_DCASSERT(node.level);
-  const level_data &ld = levels[node.level];
+  const node_storage &ld = levels[node.level];
   if (ld.isFull(node.offset)) {
     // full node - super easy
     int fs = ld.fullSizeOf(node.offset);
@@ -1691,8 +1663,8 @@ void MEDDLY::expert_forest::getDownPtr(int p, int i, float& ev, int& dn) const
 void MEDDLY::expert_forest
 ::initNodeReader(node_reader &nr, int node, bool full) const
 {
-  const nodeData &n = getNode(node);
-  level_data& ld = levels[n.level];
+  const node_header &n = getNode(node);
+  node_storage& ld = levels[n.level];
   nr.resize(n.level, getLevelSize(n.level), ld.edgeSize * sizeof(int), full);
   if (ld.isFull(n.offset)) {
     int i;
@@ -2206,7 +2178,7 @@ int MEDDLY::expert_forest
   int p = getFreeNodeHandle();
   address[p].level = nb.getLevel();
   MEDDLY_DCASSERT(0 == address[p].cache_count);
-  level_data &ld = levels[nb.getLevel()];
+  node_storage &ld = levels[nb.getLevel()];
 
   // First, determine if it should be full or sparse
   if (ld.slotsForNode(-nnz) < ld.slotsForNode(truncsize)) { 
@@ -2315,12 +2287,12 @@ void MEDDLY::expert_forest::expandHandleList()
   // increase size by 50%
   int delta = a_size / 2;
   MEDDLY_DCASSERT(delta>=0);
-  address = (nodeData*) realloc(address, (a_size+delta) * sizeof(nodeData));
+  address = (node_header*) realloc(address, (a_size+delta) * sizeof(node_header));
   if (0==address) {
     throw error(error::INSUFFICIENT_MEMORY);
   }
-  stats.incMemAlloc(delta * sizeof(nodeData));
-  memset(address + a_size, 0, delta * sizeof(nodeData));
+  stats.incMemAlloc(delta * sizeof(node_header));
+  memset(address + a_size, 0, delta * sizeof(node_header));
   a_size += delta;
   a_next_shrink = a_size / 2;
 #ifdef DEBUG_ADDRESS_RESIZE
@@ -2341,11 +2313,11 @@ void MEDDLY::expert_forest::shrinkHandleList()
   // shrink the array
   MEDDLY_DCASSERT(delta>=0);
   MEDDLY_DCASSERT(a_size-delta>=a_min_size);
-  address = (nodeData*) realloc(address, new_size * sizeof(nodeData));
+  address = (node_header*) realloc(address, new_size * sizeof(node_header));
   if (0==address) {
     throw error(error::INSUFFICIENT_MEMORY);
   }
-  stats.decMemAlloc(delta * sizeof(nodeData));
+  stats.decMemAlloc(delta * sizeof(node_header));
   a_size -= delta;
   a_next_shrink = a_size / 2;
   MEDDLY_DCASSERT(a_last < a_size);
@@ -2360,5 +2332,32 @@ void MEDDLY::expert_forest::shrinkHandleList()
 #ifdef DEBUG_ADDRESS_RESIZE
   printf("Shrank address array, new size %d\n", a_size);
 #endif
+}
+
+// ******************************************************************
+// *                                                                *
+// *               expert_forest::nodecounter methods               *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::expert_forest::nodecounter::nodecounter(expert_forest *p, int* c)
+ : edge_visitor()
+{
+  parent = p;
+  counts = c;
+}
+
+MEDDLY::expert_forest::nodecounter::~nodecounter()
+{
+  // DO NOT delete counts.
+}
+
+void MEDDLY::expert_forest::nodecounter::visit(dd_edge &e)
+{
+  int n = e.getNode();
+  if (parent->isTerminalNode(n)) return;
+  MEDDLY_DCASSERT(n>0);
+  MEDDLY_DCASSERT(n<=parent->getLastNode());
+  counts[n]++;
 }
 
