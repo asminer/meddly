@@ -254,9 +254,13 @@ int main(int argc, const char** argv)
   printf("\t%ld peak nodes\n", f->getPeakNumNodes());
   printf("\t");
   printmem(f->getCurrentMemoryUsed());
-  printf(" current memory\n\t");
+  printf(" current memory used\n\t");
   printmem(f->getPeakMemoryUsed());
-  printf(" peak memory\n");
+  printf(" peak memory used\n\t");
+  printmem(f->getCurrentMemoryAllocated());
+  printf(" current memory allocated\n\t");
+  printmem(f->getPeakMemoryAllocated());
+  printf(" peak memory allocated\n");
 
   long c;
   apply(CARDINALITY, *solutions, c);

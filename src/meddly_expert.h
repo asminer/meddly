@@ -79,7 +79,6 @@ namespace MEDDLY {
   // Functions for reinterpreting an int to a float and vice-versa
   float   toFloat (int a);
   int     toInt   (float a);
-  // float*  toFloat (int* a);
 
   // classes defined here
   struct settings;
@@ -1492,6 +1491,12 @@ class MEDDLY::expert_forest : public forest
     // Managing reference counts
     // --------------------------------------------------
 
+    /// Returns the in-count for a node.
+    inline int readInCount(int p) const {
+      const node_header& node = getNode(p);
+      return levels[node.level].countOf(node.offset);
+    }
+
     /** Increase the link count to this node. Call this when another node is
         made to point to this node.
           @return p, for convenience.
@@ -2139,14 +2144,22 @@ class MEDDLY::expert_forest : public forest
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   // ------------------------------------------------------------
-  // helpers for this class
+  // inlined helpers for this class
   private:
     inline bool isTimeToGc() const {
       return isPessimistic() 
         ? (stats.zombie_nodes > deflt.zombieTrigger)
         : (stats.orphan_nodes > deflt.orphanTrigger);
     }
+    /// Returns the in-count for a node.
+    inline int& getInCount(int p) {
+      const node_header& node = getNode(p);
+      return levels[node.level].countOf(node.offset);
+    }
 
+  // ------------------------------------------------------------
+  // helpers for this class
+  private:
     void handleNewOrphanNode(int node);   
     void deleteOrphanNode(int node);     
     void deleteNode(int p);
@@ -2164,61 +2177,18 @@ class MEDDLY::expert_forest : public forest
     // Sanity check; used in development code.
     void validateDownPointers(const node_builder &nb) const;
 
-  // ----------------------------------------------------------------- 
-  // | 
-  // |  Dealing with "node handles".
-  // | 
-  private:
-    /// address info for nodes
-    node_header *address;
-    /// Size of address/next array.
-    int a_size;
-    /// Last used address.
-    int a_last;
-    /// Pointer to unused address list.
-    int a_unused;
-    /// Next time we shink the address list.
-    int a_next_shrink;
-
-
-  private:
+    /// Increase the number of node handles.
     void expandHandleList();
+
+    /// Decrease the number of node handles.
     void shrinkHandleList();
 
-  private:
-    node_storage* raw_levels;
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  // |                                                                |
+  // |                              Data                              |
+  // |                                                                |
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  protected:
-    /// Level data. Each level maintains its own data array and hole grid.
-    /// The array is shifted, so we can use level[k] with negative k.
-    node_storage *levels;
-
-
-  // ------------------------------------------------------------
-  // |
-  // |  Critical helpers.
-  // |
-  protected:  // TBD - make this private
-    /// Returns the in-count for a node.
-    inline int& getInCount(int p) {
-      const node_header& node = getNode(p);
-      return levels[node.level].countOf(node.offset);
-    }
-
-  public:
-    /// Returns the in-count for a node.
-    inline int readInCount(int p) const {
-      const node_header& node = getNode(p);
-      return levels[node.level].countOf(node.offset);
-    }
-
-
-  
-
-  // ------------------------------------------------------------
-  // |
-  // |  Miscellaneous data
-  // |
   protected:  
     /// uniqueness table, still used by derived classes.
     unique_table* unique;
@@ -2226,6 +2196,10 @@ class MEDDLY::expert_forest : public forest
     /// Should a terminal node be considered a stale entry in the compute table.
     /// per-forest policy, derived classes may change as appropriate.
     bool terminalNodesAreStale;
+
+    /// Level data. Each level maintains its own data array and hole grid.
+    /// The array is shifted, so we can use level[k] with negative k.
+    node_storage *levels;
 
   private:
     // Keep a node_builder for each level.
@@ -2239,8 +2213,24 @@ class MEDDLY::expert_forest : public forest
     int* in_validate;
     int  in_val_size;
 
-    class nodecounter;
+    // Raw level data
+    node_storage* raw_levels;
 
+
+    /// address info for nodes
+    node_header *address;
+    /// Size of address/next array.
+    int a_size;
+    /// Last used address.
+    int a_last;
+    /// Pointer to unused address list.
+    int a_unused;
+    /// Next time we shink the address list.
+    int a_next_shrink;
+
+
+  private:
+    class nodecounter;
 };
 // end of expert_forest class.
 
