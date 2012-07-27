@@ -1034,6 +1034,10 @@ class MEDDLY::node_storage {
 
   // Holes grid info
   private:
+      /// Largest hole ever requested
+      int max_request;
+      /// List of large holes
+      int large_holes;
       /// Pointer to top of holes grid
       int holes_top;
       /// Pointer to bottom of holes grid
@@ -1210,6 +1214,44 @@ class MEDDLY::node_storage {
   // --------------------------------------------------------
   // |  Hole management helpers.
   private:
+      inline int& h_up(int off) const {
+        MEDDLY_DCASSERT(data);
+        MEDDLY_CHECK_RANGE(1, off, last+1);
+        MEDDLY_DCASSERT(data[off] < 0);  // it's a hole
+        return data[off+1];
+      }
+      inline int& h_down(int off) const {
+        MEDDLY_DCASSERT(data);
+        MEDDLY_CHECK_RANGE(1, off, last+1);
+        MEDDLY_DCASSERT(data[off] < 0);  // it's a hole
+        return data[off+2];
+      }
+      inline int& h_prev(int off) const {
+        MEDDLY_DCASSERT(data);
+        MEDDLY_CHECK_RANGE(1, off, last+1);
+        MEDDLY_DCASSERT(data[off] < 0);  // it's a hole
+        return data[off+2];
+      }
+      inline int& h_next(int off) const {
+        MEDDLY_DCASSERT(data);
+        MEDDLY_CHECK_RANGE(1, off, last+1);
+        MEDDLY_DCASSERT(data[off] < 0);  // it's a hole
+        return data[off+3];
+      }
+
+      inline int& holeUp(int off)       { return h_up(off); }
+      inline int  holeUp(int off) const { return h_up(off); }
+
+      inline int& holeDown(int off)       { return h_down(off); }
+      inline int  holeDown(int off) const { return h_down(off); }
+
+      inline int& holePrev(int off)       { return h_prev(off); }
+      inline int  holePrev(int off) const { return h_prev(off); }
+
+      inline int& holeNext(int off)       { return h_next(off); }
+      inline int  holeNext(int off) const { return h_next(off); }
+
+
       /// Find actual number of slots used for this active node.
       inline int activeNodeActualSlots(int off) const {
           MEDDLY_DCASSERT(data);

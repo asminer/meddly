@@ -53,7 +53,7 @@
 // #define DEBUG_GC
 // #define DEBUG_COMPACTION
 
-#define REPORT_ON_DESTROY
+// #define REPORT_ON_DESTROY
 
 const int a_min_size = 1024;
 
@@ -441,6 +441,10 @@ MEDDLY::forest::edge_visitor::~edge_visitor()
   :
   (holes_top)
 
+  TBD:
+  Note that the grid only stores holes up to the largest hole
+  requested.  Larger holes are stored in the "large holes list".
+
   Index holes are represented as follows:
   ---------------------------------------
   [0] -size (number of slots in hole)     
@@ -483,6 +487,8 @@ void MEDDLY::node_storage::init(expert_forest* p)
   data_down = 0;
   size = 0;
   last = 0;
+  max_request = 0;
+  large_holes = 0;
   holes_top = 0;
   holes_bottom = 0;
   hole_slots = 0;
@@ -661,16 +667,22 @@ void MEDDLY::node_storage::dumpInternal(FILE *s) const
 void MEDDLY::node_storage
 ::addToChainCounts(std::map<int, int> &chainLengths) const
 {
-  for (int curr = holes_bottom; curr; curr = data[curr + 1]) {
+  for (int curr = holes_bottom; curr; curr = holeUp(curr)) {
     int currHoleOffset = curr;
     int count = 0;
     // traverse this chain to get its length
     for (count = 0; currHoleOffset; count++) {
-      currHoleOffset = data[currHoleOffset + 3];
+      currHoleOffset = holeNext(currHoleOffset);  // data[currHoleOffset + 3];
     }
     int currHoleSize = -data[curr];
     chainLengths[currHoleSize] += count;
   }
+  // add the large hole list
+  int count = 0;
+  for (int curr = large_holes; curr; curr = holeNext(curr)) {
+    count++;
+  }
+  chainLengths[-1] += count;
 }
 
 //
@@ -684,6 +696,11 @@ int MEDDLY::node_storage::getHole(int slots)
   MEDDLY_DCASSERT(parent);
   parent->changeStats().incMemUsed(slots * sizeof(int));
 
+  // TBD: if we enlarge this, then we'll need to
+  // traverse the large hole list and yank out
+  // anything that's smaller than the new limit.
+  max_request = MAX(max_request, slots);
+
   // First, try for a hole exactly of this size
   // by traversing the index nodes in the hole grid
   int chain = 0;
@@ -696,7 +713,7 @@ int MEDDLY::node_storage::getHole(int slots)
       break;
     }
     // move up the hole grid
-    curr = data[curr+1];
+    curr = holeUp(curr);
     chain++;
   }
 
@@ -704,7 +721,7 @@ int MEDDLY::node_storage::getHole(int slots)
     // perfect fit
     hole_slots -= slots;
     // try to not remove the "index" node
-    int next = data[curr + 3];
+    int next = holeNext(curr);
     if (next) {
       midRemove(next);
 #ifdef MEMORY_TRACE
@@ -729,9 +746,9 @@ int MEDDLY::node_storage::getHole(int slots)
   if (slots < -(data[curr]) - min_node_size) {
     // we have a hole large enough
     hole_slots -= slots;
-    if (data[curr + 3]) {
+    if (holeNext(curr)) {
       // remove middle node
-      curr = data[curr + 3];
+      curr = holeNext(curr);
       midRemove(k, curr);
     } else {
       // remove index node
@@ -837,19 +854,34 @@ void MEDDLY::node_storage::gridInsert(int p_offset)
   // sanity check to make sure that the first and last slots in this hole
   // have the same value, i.e. -(# of slots in the hole)
   MEDDLY_DCASSERT(data[p_offset] == data[p_offset - data[p_offset] - 1]);
+
+  // Check if we belong in the grid, or the large hole list
+  if (-data[p_offset] > max_request) {
+    // add to the large hole list
+    holeNext(p_offset) = large_holes;
+    holePrev(p_offset) = 0;
+    if (large_holes) holePrev(large_holes) = p_offset;
+    large_holes = p_offset;
+    return;
+  }
+
   // special case: empty
   if (0 == holes_bottom) {
     // index hole
-    data[p_offset + 1] = data[p_offset + 2] = data[p_offset + 3] = 0;
+    holeUp(p_offset) = 0;
+    holeDown(p_offset) = 0;
+    holeNext(p_offset) = 0;
+    // data[p_offset + 1] = data[p_offset + 2] = data[p_offset + 3] = 0;
     holes_top = holes_bottom = p_offset;
     return;
   }
   // special case: at top
   if (data[p_offset] < data[holes_top]) {
     // index hole
-    data[p_offset + 1] = data[p_offset + 3] = 0;
-    data[p_offset + 2] = holes_top;
-    data[holes_top + 1] = p_offset;
+    holeUp(p_offset) = 0;
+    holeNext(p_offset) = 0;
+    holeDown(p_offset) = holes_top;
+    holeUp(holes_top) = p_offset;
     holes_top = p_offset;
     return;
   }
@@ -857,29 +889,29 @@ void MEDDLY::node_storage::gridInsert(int p_offset)
   int below = 0;
   while (data[p_offset] < data[above]) {
     below = above;
-    above = data[below + 1];
-    MEDDLY_DCASSERT(data[above + 2] == below);
+    above = holeUp(below);
+    MEDDLY_DCASSERT(holeDown(above) == below);
     MEDDLY_DCASSERT(above);  
   }
   if (data[p_offset] == data[above]) {
     // Found, add this to chain
     // making a non-index hole
-    int right = data[above + 3];
-    data[p_offset + 1] = non_index_hole;
-    data[p_offset + 2] = above;
-    data[p_offset + 3] = right;
-    if (right) data[right + 2] = p_offset;
-    data[above + 3] = p_offset;
+    int right = holeNext(above);
+    holeUp(p_offset) = non_index_hole;
+    holePrev(p_offset) = above;
+    holeNext(p_offset) = right;
+    if (right) holePrev(right) = p_offset;
+    holeNext(above) = p_offset;
     return; 
   }
   // we should have above < p_offset < below  (remember, -sizes)
   // create an index hole since there were no holes of this size
-  data[p_offset + 1] = above;
-  data[p_offset + 2] = below;
-  data[p_offset + 3] = 0;
-  data[above + 2] = p_offset;
+  holeUp(p_offset) = above;
+  holeDown(p_offset) = below;
+  holeNext(p_offset) = 0;
+  holeDown(above) = p_offset;
   if (below) {
-    data[below + 1] = p_offset;
+    holeUp(below) = p_offset;
   } else {
     MEDDLY_DCASSERT(above == holes_bottom);
     holes_bottom = p_offset;
@@ -889,12 +921,12 @@ void MEDDLY::node_storage::gridInsert(int p_offset)
 void MEDDLY::node_storage::midRemove(int p_offset)
 {
   MEDDLY_DCASSERT(isHoleNonIndex(p_offset));
-  int left = data[p_offset+2];
+  int left = holePrev(p_offset); 
   MEDDLY_DCASSERT(left);
-  int right = data[p_offset+3];
+  int right = holeNext(p_offset);
 
-  data[left + 3] = right;
-  if (right) data[right + 2] = left;
+  holeNext(left) = right;
+  if (right) holePrev(right) = left;
 }
 
 void MEDDLY::node_storage::indexRemove(int p_offset)
@@ -904,25 +936,24 @@ void MEDDLY::node_storage::indexRemove(int p_offset)
 #endif
 
   MEDDLY_DCASSERT(!isHoleNonIndex(p_offset));
-  int above = data[p_offset + 1];
-  int below = data[p_offset + 2];
-  int right = data[p_offset + 3];
+  int above = holeUp(p_offset); 
+  int below = holeDown(p_offset); 
+  int right = holeNext(p_offset); 
 
   if (right >= 1) {
     // there are nodes to the right!
-    MEDDLY_DCASSERT(data[right + 1] < 0);
-    data[right + 1] = above;
-    data[right + 2] = below;
-
+    MEDDLY_DCASSERT(holeUp(right) < 0);
+    holeUp(right) = above;
+    holeDown(right) = below;
     // update the pointers of the holes (index) above and below it
     if (above) {
-      data[above + 2] = right;
+      holeDown(above) = right;
     } else {
       holes_top = right;
     }
 
     if (below) {
-      data[below + 1] = right;
+      holeUp(below) = right;
     } else {
       holes_bottom = right;
     }
@@ -934,13 +965,13 @@ void MEDDLY::node_storage::indexRemove(int p_offset)
     // this was the last node of its size
     // update the pointers of the holes (index) above and below it
     if (above) {
-      data[above + 2] = below;
+      holeDown(above) = below;
     } else {
       holes_top = below;
     }
 
     if (below) {
-      data[below + 1] = above;
+      holeUp(below) = above;
     } else {
       holes_bottom = above;
     }
@@ -1499,7 +1530,10 @@ void MEDDLY::expert_forest
     for (std::map<int, int>::iterator iter = chainLengths.begin();
       iter != chainLengths.end(); ++iter)
     {
-      fprintf(s, "%s\t%d: %d\n", pad, iter->first, iter->second);
+      if (iter->first<0)
+        fprintf(s, "%s\tlarge: %d\n", pad, iter->second);
+      else
+        fprintf(s, "%s\t%5d: %d\n", pad, iter->first, iter->second);
     }
   }
 }
