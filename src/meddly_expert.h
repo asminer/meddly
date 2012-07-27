@@ -70,7 +70,7 @@
 //
 // #define SAVE_HASHES
 
-#define NODE_STORAGE_PER_LEVEL
+// #define NODE_STORAGE_PER_LEVEL
  
 namespace MEDDLY {
 

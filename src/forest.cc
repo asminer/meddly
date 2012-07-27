@@ -30,16 +30,16 @@
 #include <queue>
 #include <vector>
 
+#define MERGE_AND_SPLIT_HOLES
 // #define DEBUG_CLEANUP
-// #define MERGE_RIGHT
-// #define MERGE_LEFT
 // #define ENABLE_BREAKING_UP_HOLES
 
 // #define DEBUG_SLOW
 // #define DEBUG_ADDRESS_RESIZE
 // #define DEBUG_GC
 
-// #define MEMORY_TRACE
+#define MEMORY_TRACE
+#define DEEP_MEMORY_TRACE
 // #define TRACK_DELETIONS
 
 // #define DEBUG_CREATE_REDUCED
@@ -53,7 +53,7 @@
 // #define DEBUG_GC
 // #define DEBUG_COMPACTION
 
-// #define REPORT_ON_DESTROY
+#define REPORT_ON_DESTROY
 
 const int a_min_size = 1024;
 
@@ -506,14 +506,19 @@ int MEDDLY::node_storage::allocNode(int sz, int tail, bool clear)
   MEDDLY_DCASSERT(slots >= commonExtra + unhashedHeader + hashedHeader);
 
   int off = getHole(slots);
+  int got = data[off];
+  MEDDLY_DCASSERT(got >= slots);
   if (clear) memset(data+off, 0, slots*sizeof(int));
   countOf(off) = 1;                       // #incoming
   nextOf(off) = temp_node_value;          // mark as a temp node
   sizeOf(off) = sz;                       // size
-  data[off+slots-1] = tail;               // tail entry
+  data[off+slots-1] = slots - got;        // negative padding
+  data[off+got-1] = tail;                 // tail entry
 #ifdef MEMORY_TRACE
-  printf("Allocated new node size %d, position %d\n", sz, off);
+  printf("Allocated new node, asked %d, got %d, position %d (size %d)\n", slots, got, off, sz);
+#ifdef DEEP_MEMORY_TRACE
   dumpInternal(stdout);
+#endif
 #endif
   return off;
 }
@@ -575,7 +580,6 @@ void MEDDLY::node_storage::compact(node_header* address)
       // found a hole, advance
       MEDDLY_DCASSERT(node_ptr[0] == node_ptr[-(*node_ptr)-1]);
       node_size = -(*node_ptr);
-//      memset(node_ptr, 0, node_size * sizeof(int));
     } else {
       // found an existing node
       MEDDLY_DCASSERT(!parent->isPessimistic() || *node_ptr != 0);
@@ -609,7 +613,6 @@ void MEDDLY::node_storage::compact(node_header* address)
   hole_slots = 0;
 
   parent->changeStats().num_compactions++;
-  // num_compactions++;
   compactLevel = false;
 
   if (size > min_size && last < size/2) {
@@ -634,6 +637,7 @@ void MEDDLY::node_storage::dumpInternal(FILE *s) const
   fprintf(s, "Level %ld: ", parent->getLevelNumber(this));
 #endif
   fprintf(s, "Last slot used: %d\n", last);
+  fprintf(s, "large_holes: %d\n", large_holes);
   fprintf(s, "Grid: top = %d bottom = %d\n", holes_top, holes_bottom);
 
   fprintf(s, "Data array by record: \n");
@@ -651,9 +655,13 @@ void MEDDLY::node_storage::dumpInternal(FILE *s) const
       a -= data[a];  
     } else {
       // proper node
+      int reqd = slotsForNode(sizeOf(a));
       int nElements = activeNodeActualSlots(a);
-      for (int i=3; i<nElements-1; i++) {
+      for (int i=3; i<reqd-1; i++) {
         fprintf(s, "|%d", data[a+i]);
+      }
+      if (reqd < nElements) {
+        fprintf(s, "| ... %d unused ... ", -data[a+reqd-1]);
       }
       a += activeNodeActualSlots(a);
     }
@@ -672,7 +680,7 @@ void MEDDLY::node_storage
     int count = 0;
     // traverse this chain to get its length
     for (count = 0; currHoleOffset; count++) {
-      currHoleOffset = holeNext(currHoleOffset);  // data[currHoleOffset + 3];
+      currHoleOffset = holeNext(currHoleOffset);
     }
     int currHoleSize = -data[curr];
     chainLengths[currHoleSize] += count;
@@ -726,20 +734,36 @@ int MEDDLY::node_storage::getHole(int slots)
       midRemove(next);
 #ifdef MEMORY_TRACE
       printf("Removed Non-Index hole %d\n", next);
+#ifdef DEEP_MEMORY_TRACE
       dumpInternal(stdout);
 #endif
+#endif
+      data[next] = slots;
       return next;
     }
     indexRemove(curr);
 #ifdef MEMORY_TRACE
     printf("Removed Index hole %d\n", curr);
+#ifdef DEEP_MEMORY_TRACE
     dumpInternal(stdout);
 #endif
+#endif
+    data[curr] = slots;
     return curr;
   }
 
 #ifdef ENABLE_BREAKING_UP_HOLES
-  // No hole with exact size, try the largest hole
+  // No hole with exact size.
+  // Take the first large hole.
+  if (large_holes) {
+    curr = large_holes;
+    large_holes = holeNext(curr);
+    MEDDLY_DCASSERT(slots < -data[curr]);
+    
+    // Is there space for a leftover hole?
+
+  }
+
   const int min_node_size = slotsForNode(0);
 
   curr = holes_top;
@@ -763,8 +787,11 @@ int MEDDLY::node_storage::getHole(int slots)
 #ifdef MEMORY_TRACE
     // data[curr] = -slots;  // only necessary for display
     printf("Removed part of hole %d\n", curr);
+#ifdef DEEP_MEMORY_TRACE
     dumpInternal(stdout);
 #endif
+#endif
+    data[curr] = slots;   // TBD
     return curr;
   }
 #endif
@@ -779,6 +806,7 @@ int MEDDLY::node_storage::getHole(int slots)
   }
   int h = last + 1;
   last += slots;
+  data[h] = slots;
   return h;
 }
 
@@ -797,13 +825,16 @@ void MEDDLY::node_storage::makeHole(int addr, int slots)
   if (!parent->getPolicies().recycleHolesInLevelData) return;
 
   // Check for a hole to the left
-#ifdef MERGE_LEFT
+#ifdef MERGE_AND_SPLIT_HOLES
   if (data[addr-1] < 0) {
     // Merge!
+#ifdef MEMORY_TRACE
+    printf("Left merging\n");
+#endif
     int lefthole = addr + data[addr-1];
     MEDDLY_DCASSERT(data[lefthole] == data[addr-1]);
-    if (data[lefthole+1] == non_index_hole) midRemove(k, lefthole);
-    else indexRemove(k, lefthole);
+    if (non_index_hole == holeUp(lefthole)) midRemove(lefthole);
+    else indexRemove(lefthole);
     slots += (-data[lefthole]);
     addr = lefthole;
     data[addr] = data[addr+slots-1] = -slots;
@@ -822,19 +853,24 @@ void MEDDLY::node_storage::makeHole(int addr, int slots)
       resize(new_size);
     }
 #ifdef MEMORY_TRACE
-    printf("Made Last Hole %d\n", addr);
+    printf("Made Last Hole %d, last %d\n", addr, last);
+#ifdef DEEP_MEMORY_TRACE
     dumpInternal(stdout);
+#endif
 #endif
     return;
   }
 
-#ifdef MERGE_RIGHT
+#ifdef MERGE_AND_SPLIT_HOLES
   // Check for a hole to the right
   if (data[addr+slots]<0) {
     // Merge!
+#ifdef MEMORY_TRACE
+    printf("Right merging\n");
+#endif
     int righthole = addr+slots;
-    if (data[righthole+1] == non_index_hole) midRemove(k, righthole);
-    else indexRemove(k, righthole);
+    if (non_index_hole == holeUp(righthole)) midRemove(righthole);
+    else indexRemove(righthole);
     slots += (-data[righthole]);
     data[addr] = data[addr+slots-1] = -slots;
   }
@@ -844,8 +880,10 @@ void MEDDLY::node_storage::makeHole(int addr, int slots)
   gridInsert(addr); 
 
 #ifdef MEMORY_TRACE
-  printf("Made Last Hole %d\n", addr);
+  printf("Made Hole %d\n", addr);
+#ifdef DEEP_MEMORY_TRACE
   dumpInternal(stdout);
+#endif
 #endif
 }
 
@@ -858,6 +896,7 @@ void MEDDLY::node_storage::gridInsert(int p_offset)
   // Check if we belong in the grid, or the large hole list
   if (-data[p_offset] > max_request) {
     // add to the large hole list
+    holeUp(p_offset) = non_index_hole;
     holeNext(p_offset) = large_holes;
     holePrev(p_offset) = 0;
     if (large_holes) holePrev(large_holes) = p_offset;
@@ -871,7 +910,6 @@ void MEDDLY::node_storage::gridInsert(int p_offset)
     holeUp(p_offset) = 0;
     holeDown(p_offset) = 0;
     holeNext(p_offset) = 0;
-    // data[p_offset + 1] = data[p_offset + 2] = data[p_offset + 3] = 0;
     holes_top = holes_bottom = p_offset;
     return;
   }
@@ -920,12 +958,25 @@ void MEDDLY::node_storage::gridInsert(int p_offset)
 
 void MEDDLY::node_storage::midRemove(int p_offset)
 {
+#ifdef MEMORY_TRACE
+  printf("midRemove(%d)\n", p_offset);
+#endif
+
+  // Remove a "middle" node, either in the grid
+  // or in the large hole list.
+  //
   MEDDLY_DCASSERT(isHoleNonIndex(p_offset));
+
   int left = holePrev(p_offset); 
-  MEDDLY_DCASSERT(left);
   int right = holeNext(p_offset);
 
-  holeNext(left) = right;
+  if (left) {
+    holeNext(left) = right;
+  } else {
+    // MUST be head of the large hole ist
+    MEDDLY_DCASSERT(large_holes == p_offset);
+    large_holes = right;
+  }
   if (right) holePrev(right) = left;
 }
 
@@ -982,10 +1033,9 @@ void MEDDLY::node_storage::resize(int new_size)
 {
   int* new_data = (int *) realloc(data, new_size * sizeof(int));
   if (0 == new_data) throw error(error::INSUFFICIENT_MEMORY);
+  if (0== data) new_data[0] = 0;
   if (new_size > size) {
     parent->changeStats().incMemAlloc((new_size - size) * sizeof(int));
-    // Zero the new part of the array
-    // memset(new_data + size, 0, (new_size - size) * sizeof(int));
   } else {
     parent->changeStats().decMemAlloc((size - new_size) * sizeof(int));
   }
