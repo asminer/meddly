@@ -250,7 +250,6 @@ int main(int argc, const char** argv)
   printf("Done.\n\n");
 
   printf("Set of solutions requires %d nodes\n", solutions->getNodeCount());
-  expert_forest* ef = dynamic_cast <expert_forest*> (f);
   printf("Forest stats:\n");
   const forest::statset& stats = f->getStats();
   printf("\t%ld current nodes\n", stats.active_nodes);

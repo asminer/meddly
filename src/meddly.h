@@ -44,6 +44,9 @@
 
 namespace MEDDLY {
 
+  // Typedefs
+  typedef nodeptr int;
+
   // Classes
 
   class error;
