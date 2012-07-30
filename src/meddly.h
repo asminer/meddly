@@ -561,28 +561,38 @@ class MEDDLY::forest {
       /// Default deletion policy for all levels in the forest.
       node_deletion deletion;
 
-      /// Compaction threshold for all variables in the forest.
-      int compaction;
+
+      /// Should we try to recycle node memory.
+      bool recycleNodeStorageHoles;
+      /// Memory compactor: never run if fewer than this many unused slots.
+      int compact_min;
+      /// Memory compactor: always run if more than this many unused slots.
+      int compact_max;
+      /// Memory compactor: fraction of unused slots to trigger.
+      int compact_frac;
+
       /// Number of zombie nodes to trigger garbage collection
       int zombieTrigger;
       /// Number of orphan nodes to trigger garbage collection
       int orphanTrigger;
       /// Should we run the memory compactor after garbage collection
       bool compactAfterGC;
-
-      /// Per-level node memory management parameter.
-      bool recycleHolesInLevelData;
+      /// Should we run the memory compactor before trying to expand
+      bool compactBeforeExpand;
 
       /// Constructor; sets reasonable defaults
       policies(bool rel) {
         reduction = rel ? IDENTITY_REDUCED : FULLY_REDUCED;
         storage = FULL_OR_SPARSE_STORAGE;
         deletion = OPTIMISTIC_DELETION;
-        compaction = 40;
+        recycleNodeStorageHoles = true;
+        compact_min = 100;
+        compact_max = 100000;
+        compact_frac = 40;
         zombieTrigger = 1000000;
         orphanTrigger = 500000;
         compactAfterGC = true;
-        recycleHolesInLevelData = true;
+        compactBeforeExpand = true;
       }
 
       inline void setFullyReduced()     { reduction = FULLY_REDUCED; }

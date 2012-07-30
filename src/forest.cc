@@ -53,7 +53,7 @@
 // #define DEBUG_GC
 // #define DEBUG_COMPACTION
 
-#define REPORT_ON_DESTROY
+// #define REPORT_ON_DESTROY
 
 const int a_min_size = 1024;
 
@@ -496,7 +496,7 @@ void MEDDLY::node_storage::init(expert_forest* p)
   edgeSize = parent->edgeSize();
   unhashedHeader = parent->unhashedHeaderSize();
   hashedHeader = parent->hashedHeaderSize();
-  compactLevel = false;
+  // compactLevel = false;
 }
 
 int MEDDLY::node_storage::allocNode(int sz, int tail, bool clear)
@@ -519,6 +519,8 @@ int MEDDLY::node_storage::allocNode(int sz, int tail, bool clear)
   printf("Allocated new node, asked %d, got %d, position %d (size %d)\n", slots, got, off, sz);
 #ifdef DEEP_MEMORY_TRACE
   dumpInternal(stdout);
+#else
+  dumpInternal(stdout, off);
 #endif
 #endif
   return off;
@@ -552,16 +554,21 @@ void MEDDLY::node_storage::unlinkDown(int addr)
 #endif
 }
 
-void MEDDLY::node_storage::compact(node_header* address)
+void MEDDLY::node_storage::compact(bool shrink)
 {
-  if (0==data) {
-    compactLevel = false;
-    return;
-  }
-  if (0 == hole_slots || !needsCompaction(parent->getPolicies().compaction)) {  
-    // Level is compact enough!
-    compactLevel = false;
-    return;
+  //
+  // Should we even bother?
+  //
+  if (0==data || 0==hole_slots) return;
+
+  if (hole_slots <= parent->getPolicies().compact_min)  return;
+
+  if (hole_slots <  parent->getPolicies().compact_max) {
+
+    // If percentage of holes is below trigger, then don't compact
+
+    if (100 * hole_slots < last * parent->getPolicies().compact_frac) return;
+
   }
 
 #ifdef DEBUG_SLOW
@@ -571,7 +578,9 @@ void MEDDLY::node_storage::compact(node_header* address)
   printf("Compacting\n");
 #endif
 
-  // alternate algorithm -- since we now have the node ids in the node data
+  //
+  // Scan the whole array of data, copying over itself and skipping holes.
+  // 
   int *node_ptr = data + 1;  // since we leave [0] empty
   int *end_ptr = data + last + 1;
   int *curr_ptr = node_ptr;
@@ -602,7 +611,7 @@ void MEDDLY::node_storage::compact(node_header* address)
         memmove(curr_ptr, node_ptr, node_size * sizeof(int));
 #endif
         // change node offset
-        address[curr_node].offset = (curr_ptr - data);
+        parent->moveNodeOffset(curr_node, node_ptr - data, curr_ptr - data);
       }
       MEDDLY_DCASSERT(parent->getNode(curr_node).offset == (curr_ptr - data));
       curr_ptr += node_size;
@@ -618,9 +627,9 @@ void MEDDLY::node_storage::compact(node_header* address)
   large_holes = 0;
 
   parent->changeStats().num_compactions++;
-  compactLevel = false;
+  // compactLevel = false;
 
-  if (size > min_size && last < size/2) {
+  if (shrink && size > min_size && last < size/2) {
     int new_size = size/2;
     while (new_size > min_size && new_size > last * 3) { new_size /= 2; }
     resize(new_size);
@@ -637,7 +646,6 @@ void MEDDLY::node_storage::dumpInternal(FILE *s) const
 {
   if (0==data) return; // nothing to display
   
-  // super clever hack:
 #ifdef NODE_STORAGE_PER_LEVEL
   fprintf(s, "Level %ld: ", parent->getLevelNumber(this));
 #endif
@@ -675,6 +683,42 @@ void MEDDLY::node_storage::dumpInternal(FILE *s) const
   fprintf(s, "%*d : free slots\n", awidth, a);
   fflush(s);
   MEDDLY_DCASSERT(a == (last)+1);
+}
+
+void MEDDLY::node_storage::dumpInternal(FILE *s, int a) const
+{
+  MEDDLY_DCASSERT(data);
+  
+#ifdef NODE_STORAGE_PER_LEVEL
+  fprintf(s, "Level %ld: ", parent->getLevelNumber(this));
+#endif
+  fprintf(s, "Last slot used: %d\n", last);
+  fprintf(s, "large_holes: %d\n", large_holes);
+  fprintf(s, "Grid: top = %d bottom = %d\n", holes_top, holes_bottom);
+
+  if (0==a) return;
+  int awidth = digits(parent->getLastNode());
+  fprintf(s, "%*d : [%d", awidth, a, data[a]);
+  for (int i=1; i<3; i++) {
+    fprintf(s, "|%d", data[a+i]);
+  }
+  if (data[a]<0) { 
+    // hole
+    fprintf(s, "| ... ");
+    a -= data[a];  
+  } else {
+    // proper node
+    int reqd = slotsForNode(sizeOf(a));
+    int nElements = activeNodeActualSlots(a);
+    for (int i=3; i<reqd-1; i++) {
+      fprintf(s, "|%d", data[a+i]);
+    }
+    if (reqd < nElements) {
+      fprintf(s, "| ... %d unused ... ", -data[a+reqd-1]);
+    }
+    a += activeNodeActualSlots(a);
+  }
+  fprintf(s, "|%d]\n", data[a-1]);
 }
 
 void MEDDLY::node_storage
@@ -754,6 +798,8 @@ int MEDDLY::node_storage::getHole(int slots)
       printf("Removed Non-Index hole %d\n", next);
 #ifdef DEEP_MEMORY_TRACE
       dumpInternal(stdout);
+#else 
+      dumpInternal(stdout, next);
 #endif
 #endif
       return next;
@@ -763,6 +809,8 @@ int MEDDLY::node_storage::getHole(int slots)
     printf("Removed Index hole %d\n", curr);
 #ifdef DEEP_MEMORY_TRACE
     dumpInternal(stdout);
+#else 
+    dumpInternal(stdout, curr);
 #endif
 #endif
     return curr;
@@ -774,6 +822,7 @@ int MEDDLY::node_storage::getHole(int slots)
   if (large_holes) {
     curr = large_holes;
     large_holes = holeNext(curr);
+    if (large_holes) holePrev(large_holes) = 0;
 
     // Sanity check: the hole is large enough
     MEDDLY_DCASSERT(slots < -data[curr]);
@@ -787,6 +836,8 @@ int MEDDLY::node_storage::getHole(int slots)
       printf("Removed entire large hole %d\n", curr);
 #ifdef DEEP_MEMORY_TRACE
       dumpInternal(stdout);
+#else 
+      dumpInternal(stdout, curr);
 #endif
 #endif
       hole_slots += data[curr]; // SUBTRACTS the number of slots
@@ -804,6 +855,8 @@ int MEDDLY::node_storage::getHole(int slots)
     printf("Removed part of hole %d\n", curr);
 #ifdef DEEP_MEMORY_TRACE
     dumpInternal(stdout);
+#else 
+    dumpInternal(stdout, curr);
 #endif
 #endif
     data[curr] = -slots;
@@ -812,23 +865,30 @@ int MEDDLY::node_storage::getHole(int slots)
   }
 #endif
 
-  // can't recycle; grab from the end
+  // 
+  // Still here?  We couldn't recycle a node.
+  // 
+
+  //
+  // First -- try to compact if we need to expand
+  //
+  if (parent->getPolicies().compactBeforeExpand) {
+    if (last + slots >= size) compact(false);
+  }
+
+  //
+  // Do we need to expand?
+  //
   if (last + slots >= size) {
-    // not enough space, extend
-
-    // TBD: compact instead if it makes sense?
-    /*
-    if (needsCompaction(40)) {
-      printf("Enlarging when we could compact instead\n");
-    }
-    */
-
-
     // new size is 50% more than previous (37.5% * 4 = 1.5 => 50% growth)
     int new_size = MAX( size, last + slots ) * 1.5;
 
     resize(new_size);
   }
+
+  // 
+  // Grab node from the end
+  //
   int h = last + 1;
   last += slots;
   data[h] = -slots;
@@ -847,7 +907,7 @@ void MEDDLY::node_storage::makeHole(int addr, int slots)
   hole_slots += slots;
   data[addr] = data[addr+slots-1] = -slots;
 
-  if (!parent->getPolicies().recycleHolesInLevelData) return;
+  if (!parent->getPolicies().recycleNodeStorageHoles) return;
 
   // Check for a hole to the left
 #ifdef MERGE_AND_SPLIT_HOLES
@@ -881,6 +941,8 @@ void MEDDLY::node_storage::makeHole(int addr, int slots)
     printf("Made Last Hole %d, last %d\n", addr, last);
 #ifdef DEEP_MEMORY_TRACE
     dumpInternal(stdout);
+#else 
+    dumpInternal(stdout, 0);
 #endif
 #endif
     return;
@@ -908,6 +970,8 @@ void MEDDLY::node_storage::makeHole(int addr, int slots)
   printf("Made Hole %d\n", addr);
 #ifdef DEEP_MEMORY_TRACE
   dumpInternal(stdout);
+#else
+  dumpInternal(stdout, addr);
 #endif
 #endif
 }
@@ -2068,11 +2132,11 @@ void MEDDLY::expert_forest::compactMemory()
 #endif
 #ifdef NODE_STORAGE_PER_LEVEL
   for (int i=getMinLevelIndex(); i<=getNumVariables(); i++) {
-    levels[i].compactLevel = true;
-    levels[i].compact(address);
+    // levels[i].compactLevel = true;
+    levels[i].compact(true);
   }
 #else 
-  nodeMan.compact(address);
+  nodeMan.compact(true);
 #endif
 }
 
@@ -2233,7 +2297,7 @@ void MEDDLY::expert_forest::deleteNode(int p)
   // recycle the index
   freeActiveNode(p);
 
-  if (nodeMan.compactLevel) nodeMan.compact(address);
+  // if (nodeMan.compactLevel) nodeMan.compact(false);
 
 #ifdef VALIDATE_INCOUNTS_ON_DELETE
   validateIncounts(false);

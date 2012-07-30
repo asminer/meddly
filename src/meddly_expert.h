@@ -1059,9 +1059,6 @@ class MEDDLY::node_storage {
       /// Size of extra hashed data (typically 0).
       char hashedHeader;
 
-      /// Mark for compaction
-      bool compactLevel;
-
   // --------------------------------------------------------
   // |  Public interface.
   public:
@@ -1084,10 +1081,13 @@ class MEDDLY::node_storage {
       void unlinkDown(int addr);
 
       /// Compact this level.  (Rearrange, to remove all holes.)
-      void compact(node_header* address);
+      void compact(bool shrink);
 
-      /// For debugging.
+      /// For debugging: dump everything.
       void dumpInternal(FILE* s) const;
+
+      /// For debugging: dump entry starting at given slot.
+      void dumpInternal(FILE* s, int a) const;
 
       /// For performance stats.
       void addToChainCounts(std::map<int, int> &chainLengths) const;
@@ -1151,13 +1151,6 @@ class MEDDLY::node_storage {
       /// Recycle a node stored at the given offset.
       inline void recycleNode(int off) {
           makeHole(off, activeNodeActualSlots(off));
-      }
-
-      inline bool needsCompaction(int compactPercent) const {
-          MEDDLY_DCASSERT(parent);
-          if (hole_slots <= 100)  return false;
-          if (hole_slots > 10000) return true;
-          return hole_slots * 100 > last * compactPercent;
       }
 
       /// How many slots would be required for a node with given size.
@@ -1679,8 +1672,6 @@ class MEDDLY::expert_forest : public forest
             : (readInCount(node) == 0)
         );
     }
-
-    
 
 
   // ------------------------------------------------------------
@@ -2211,6 +2202,22 @@ class MEDDLY::expert_forest : public forest
       return nodeMan.countOf(getNode(p).offset);
 #endif
     }
+
+    /** Change the location of a node.
+        Used by node_storage during compaction.
+        Should not be called by anything else.
+          @param  node        Node we're moving
+          @param  old_addr    Current address of node, for sanity check
+          @param  new_addr    Where we're moving the node to
+    */
+    inline void moveNodeOffset(int node, int old_addr, int new_addr) 
+    {
+      MEDDLY_DCASSERT(address);
+      MEDDLY_DCASSERT(old_addr == address[node].offset);
+      address[node].offset = new_addr;
+    }
+    friend void MEDDLY::node_storage::compact(bool);
+
 
   // ------------------------------------------------------------
   // helpers for this class
