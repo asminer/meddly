@@ -38,8 +38,8 @@
 // #define DEBUG_ADDRESS_RESIZE
 // #define DEBUG_GC
 
-#define MEMORY_TRACE
-#define DEEP_MEMORY_TRACE
+// #define MEMORY_TRACE
+// #define DEEP_MEMORY_TRACE
 // #define TRACK_DELETIONS
 
 // #define DEBUG_CREATE_REDUCED
@@ -566,6 +566,9 @@ void MEDDLY::node_storage::compact(node_header* address)
 #ifdef DEBUG_SLOW
   fprintf(stderr, "Compacting forest level\n");
 #endif
+#ifdef MEMORY_TRACE
+  printf("Compacting\n");
+#endif
 
   // alternate algorithm -- since we now have the node ids in the node data
   int *node_ptr = data + 1;  // since we leave [0] empty
@@ -611,6 +614,7 @@ void MEDDLY::node_storage::compact(node_header* address)
   // set up hole pointers and such
   holes_top = holes_bottom = 0;
   hole_slots = 0;
+  large_holes = 0;
 
   parent->changeStats().num_compactions++;
   compactLevel = false;
@@ -889,12 +893,19 @@ void MEDDLY::node_storage::makeHole(int addr, int slots)
 
 void MEDDLY::node_storage::gridInsert(int p_offset)
 {
+#ifdef MEMORY_TRACE
+  printf("gridInsert(%d)\n", p_offset);
+#endif
+
   // sanity check to make sure that the first and last slots in this hole
   // have the same value, i.e. -(# of slots in the hole)
   MEDDLY_DCASSERT(data[p_offset] == data[p_offset - data[p_offset] - 1]);
 
   // Check if we belong in the grid, or the large hole list
   if (-data[p_offset] > max_request) {
+#ifdef MEMORY_TRACE
+    printf("\tAdding to large_holes: %d\n", large_holes);
+#endif
     // add to the large hole list
     holeUp(p_offset) = non_index_hole;
     holeNext(p_offset) = large_holes;
@@ -906,6 +917,9 @@ void MEDDLY::node_storage::gridInsert(int p_offset)
 
   // special case: empty
   if (0 == holes_bottom) {
+#ifdef MEMORY_TRACE
+    printf("\tAdding to empty grid\n");
+#endif
     // index hole
     holeUp(p_offset) = 0;
     holeDown(p_offset) = 0;
@@ -915,6 +929,9 @@ void MEDDLY::node_storage::gridInsert(int p_offset)
   }
   // special case: at top
   if (data[p_offset] < data[holes_top]) {
+#ifdef MEMORY_TRACE
+    printf("\tAdding new chain at top\n");
+#endif
     // index hole
     holeUp(p_offset) = 0;
     holeNext(p_offset) = 0;
@@ -932,6 +949,9 @@ void MEDDLY::node_storage::gridInsert(int p_offset)
     MEDDLY_DCASSERT(above);  
   }
   if (data[p_offset] == data[above]) {
+#ifdef MEMORY_TRACE
+    printf("\tAdding to chain\n");
+#endif
     // Found, add this to chain
     // making a non-index hole
     int right = holeNext(above);
@@ -942,6 +962,9 @@ void MEDDLY::node_storage::gridInsert(int p_offset)
     holeNext(above) = p_offset;
     return; 
   }
+#ifdef MEMORY_TRACE
+  printf("\tAdding new chain\n");
+#endif
   // we should have above < p_offset < below  (remember, -sizes)
   // create an index hole since there were no holes of this size
   holeUp(p_offset) = above;
@@ -970,14 +993,32 @@ void MEDDLY::node_storage::midRemove(int p_offset)
   int left = holePrev(p_offset); 
   int right = holeNext(p_offset);
 
+#ifdef MEMORY_TRACE
+  printf("\tIN left: %d  right: %d  large_holes: %d\n", 
+    left, right, large_holes
+  );
+#endif
+
   if (left) {
     holeNext(left) = right;
   } else {
-    // MUST be head of the large hole ist
+    // MUST be head of the large hole list
     MEDDLY_DCASSERT(large_holes == p_offset);
     large_holes = right;
   }
   if (right) holePrev(right) = left;
+
+#ifdef MEMORY_TRACE
+  printf("\tOUT large_holes: %d\n", large_holes);
+#endif
+
+  // Sanity checks
+#ifdef DEVELOPMENT_CODE
+  if (large_holes) {
+    MEDDLY_CHECK_RANGE(1, large_holes, last+1);
+    MEDDLY_DCASSERT(data[large_holes] < 0);
+  }
+#endif
 }
 
 void MEDDLY::node_storage::indexRemove(int p_offset)
@@ -1027,6 +1068,13 @@ void MEDDLY::node_storage::indexRemove(int p_offset)
       holes_bottom = above;
     }
   }
+  // Sanity checks
+#ifdef DEVELOPMENT_CODE
+  if (large_holes) {
+    MEDDLY_CHECK_RANGE(1, large_holes, last+1);
+    MEDDLY_DCASSERT(data[large_holes] < 0);
+  }
+#endif
 }
 
 void MEDDLY::node_storage::resize(int new_size)
