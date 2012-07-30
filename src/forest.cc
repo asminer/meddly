@@ -506,7 +506,8 @@ int MEDDLY::node_storage::allocNode(int sz, int tail, bool clear)
   MEDDLY_DCASSERT(slots >= commonExtra + unhashedHeader + hashedHeader);
 
   int off = getHole(slots);
-  int got = data[off];
+  int got = -data[off];
+  parent->changeStats().incMemUsed(got * sizeof(int));
   MEDDLY_DCASSERT(got >= slots);
   if (clear) memset(data+off, 0, slots*sizeof(int));
   countOf(off) = 1;                       // #incoming
@@ -703,15 +704,28 @@ void MEDDLY::node_storage
 //
 //
 
+//
+//  NOTE: we set the first slot to contain
+//  the NEGATIVE of the number of slots in the hole.
+//  For recycled holes, usually that's a no-op :^)
+//
 int MEDDLY::node_storage::getHole(int slots)
 {
   MEDDLY_DCASSERT(parent);
-  parent->changeStats().incMemUsed(slots * sizeof(int));
 
-  // TBD: if we enlarge this, then we'll need to
-  // traverse the large hole list and yank out
-  // anything that's smaller than the new limit.
-  max_request = MAX(max_request, slots);
+  if (slots > max_request) {
+    max_request = slots;
+    // Traverse the large hole list, and re-insert
+    // all the holes, in case some are now smaller
+    // than max_request.
+    int curr = large_holes;
+    large_holes = 0;
+    for (; curr; ) {
+      int next = holeNext(curr);
+      gridInsert(curr);
+      curr = next;
+    }
+  }
 
   // First, try for a hole exactly of this size
   // by traversing the index nodes in the hole grid
@@ -742,7 +756,6 @@ int MEDDLY::node_storage::getHole(int slots)
       dumpInternal(stdout);
 #endif
 #endif
-      data[next] = slots;
       return next;
     }
     indexRemove(curr);
@@ -752,50 +765,49 @@ int MEDDLY::node_storage::getHole(int slots)
     dumpInternal(stdout);
 #endif
 #endif
-    data[curr] = slots;
     return curr;
   }
 
-#ifdef ENABLE_BREAKING_UP_HOLES
+#ifdef MERGE_AND_SPLIT_HOLES
   // No hole with exact size.
   // Take the first large hole.
   if (large_holes) {
     curr = large_holes;
     large_holes = holeNext(curr);
+
+    // Sanity check: the hole is large enough
     MEDDLY_DCASSERT(slots < -data[curr]);
     
     // Is there space for a leftover hole?
-
-  }
-
-  const int min_node_size = slotsForNode(0);
-
-  curr = holes_top;
-  if (slots < -(data[curr]) - min_node_size) {
-    // we have a hole large enough
-    hole_slots -= slots;
-    if (holeNext(curr)) {
-      // remove middle node
-      curr = holeNext(curr);
-      midRemove(k, curr);
-    } else {
-      // remove index node
-      indexRemove(k, curr);
+    const int min_node_size = slotsForNode(0);
+    if (slots + min_node_size >= -data[curr]) {
+      // leftover space is too small to be useful,
+      // just send the whole thing.
+#ifdef MEMORY_TRACE
+      printf("Removed entire large hole %d\n", curr);
+#ifdef DEEP_MEMORY_TRACE
+      dumpInternal(stdout);
+#endif
+#endif
+      hole_slots += data[curr]; // SUBTRACTS the number of slots
+      return curr;
     }
-    // create a hole for the leftovers
+
+    // This is a large hole, save the leftovers
     int newhole = curr + slots;
     int newsize = -(data[curr]) - slots;
     data[newhole] = -newsize;
     data[newhole + newsize - 1] = -newsize;
-    gridInsert(k, newhole); 
+    gridInsert(newhole);
+
 #ifdef MEMORY_TRACE
-    // data[curr] = -slots;  // only necessary for display
     printf("Removed part of hole %d\n", curr);
 #ifdef DEEP_MEMORY_TRACE
     dumpInternal(stdout);
 #endif
 #endif
-    data[curr] = slots;   // TBD
+    data[curr] = -slots;
+    hole_slots -= slots;
     return curr;
   }
 #endif
@@ -803,6 +815,15 @@ int MEDDLY::node_storage::getHole(int slots)
   // can't recycle; grab from the end
   if (last + slots >= size) {
     // not enough space, extend
+
+    // TBD: compact instead if it makes sense?
+    /*
+    if (needsCompaction(40)) {
+      printf("Enlarging when we could compact instead\n");
+    }
+    */
+
+
     // new size is 50% more than previous (37.5% * 4 = 1.5 => 50% growth)
     int new_size = MAX( size, last + slots ) * 1.5;
 
@@ -810,7 +831,7 @@ int MEDDLY::node_storage::getHole(int slots)
   }
   int h = last + 1;
   last += slots;
-  data[h] = slots;
+  data[h] = -slots;
   return h;
 }
 
