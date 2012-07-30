@@ -32,7 +32,6 @@
 
 #define MERGE_AND_SPLIT_HOLES
 // #define DEBUG_CLEANUP
-// #define ENABLE_BREAKING_UP_HOLES
 
 // #define DEBUG_SLOW
 // #define DEBUG_ADDRESS_RESIZE
@@ -577,6 +576,11 @@ void MEDDLY::node_storage::compact(bool shrink)
 #ifdef MEMORY_TRACE
   printf("Compacting\n");
 #endif
+#ifdef DEBUG_COMPACTION
+  printf("Before compaction:\n");
+  dumpInternal(stdout);
+  printf("\n");
+#endif
 
   //
   // Scan the whole array of data, copying over itself and skipping holes.
@@ -584,40 +588,47 @@ void MEDDLY::node_storage::compact(bool shrink)
   int *node_ptr = data + 1;  // since we leave [0] empty
   int *end_ptr = data + last + 1;
   int *curr_ptr = node_ptr;
-  int node_size = 0;
-  int curr_node = 0;
 
-  while (node_ptr != end_ptr) {
-    // find new node
+  while (node_ptr < end_ptr) {
     if (*node_ptr < 0) {
-      // found a hole, advance
-      MEDDLY_DCASSERT(node_ptr[0] == node_ptr[-(*node_ptr)-1]);
-      node_size = -(*node_ptr);
-    } else {
-      // found an existing node
-      MEDDLY_DCASSERT(!parent->isPessimistic() || *node_ptr != 0);
+      //
+      // This is a hole, skip it
+      // 
+      MEDDLY_DCASSERT(*node_ptr == node_ptr[-(*node_ptr)-1]);
+      node_ptr += -(*node_ptr);
+      continue;
+    } 
+    //
+    // A real node, move it
+    //
+    MEDDLY_DCASSERT(!parent->isPessimistic() || *node_ptr != 0);
+    
+    int old_off = node_ptr - data;
+    int new_off = curr_ptr - data;
 
-      node_size = activeNodeActualSlots(node_ptr - data); 
-      curr_node = node_ptr[node_size - 1];
-      MEDDLY_DCASSERT(parent->getNode(curr_node).offset == (node_ptr - data));
-      if (node_ptr != curr_ptr) {
-#if 1
-        for (int i = 0; i < node_size; ++i) {
-          curr_ptr[i] = node_ptr[i];
-          node_ptr[i] = 0;
-        }
-#else
-        // copy node_ptr to curr_ptr
-        memmove(curr_ptr, node_ptr, node_size * sizeof(int));
-#endif
-        // change node offset
-        parent->moveNodeOffset(curr_node, node_ptr - data, curr_ptr - data);
-      }
-      MEDDLY_DCASSERT(parent->getNode(curr_node).offset == (curr_ptr - data));
-      curr_ptr += node_size;
+    // copy the node, except for the padding.
+    int datalen = slotsForNode(sizeOf(node_ptr - data)) - 1;
+    if (node_ptr != curr_ptr) {
+      memmove(curr_ptr, node_ptr, datalen * sizeof(int));
     }
-    node_ptr += node_size;
-  }
+    node_ptr += datalen;
+    curr_ptr += datalen;
+    //
+    // Skip any padding
+    //
+    if (*node_ptr < 0) {
+      node_ptr -= *node_ptr;  
+    }
+    //
+    // Copy trailer, the node number
+    //
+    *curr_ptr = *node_ptr;
+    parent->moveNodeOffset(*curr_ptr, old_off, new_off);
+    curr_ptr++;
+    node_ptr++;
+
+  } // while
+  MEDDLY_DCASSERT(node_ptr == end_ptr);
 
   last = (curr_ptr - 1 - data);
 
@@ -2123,16 +2134,8 @@ void MEDDLY::expert_forest::garbageCollect()
 
 void MEDDLY::expert_forest::compactMemory()
 {
-#ifdef DEBUG_COMPACTION
-  printf("Compacting memory:\n");
-  for (int i=getMinLevelIndex(); i<=getNumVariables(); i++) {
-    levels[i].dumpInternal(stdout);
-    printf("\n");
-  }
-#endif
 #ifdef NODE_STORAGE_PER_LEVEL
   for (int i=getMinLevelIndex(); i<=getNumVariables(); i++) {
-    // levels[i].compactLevel = true;
     levels[i].compact(true);
   }
 #else 

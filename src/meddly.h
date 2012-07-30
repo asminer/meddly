@@ -587,11 +587,11 @@ class MEDDLY::forest {
         deletion = OPTIMISTIC_DELETION;
         recycleNodeStorageHoles = true;
         compact_min = 100;
-        compact_max = 100000;
+        compact_max = 1000000;
         compact_frac = 40;
         zombieTrigger = 1000000;
         orphanTrigger = 500000;
-        compactAfterGC = true;
+        compactAfterGC = false;
         compactBeforeExpand = true;
       }
 
