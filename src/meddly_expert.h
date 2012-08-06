@@ -734,6 +734,7 @@ class MEDDLY::node_reader {
 /** Class for building nodes.
     Effectively, a reserved chunk of memory for storing down pointers
     and edge values.
+    Implemented in node_wrappers.cc.
 */
 class MEDDLY::node_builder {
         const expert_forest* parent;
@@ -747,7 +748,6 @@ class MEDDLY::node_builder {
         int uhsize; // extra_unhashed size.
         int size;
         int alloc;
-        // TBD: need "extra" header stuff
         unsigned h;
         char edge_bytes;
 #ifdef DEVELOPMENT_CODE
@@ -940,7 +940,7 @@ struct MEDDLY::node_header {
 // ******************************************************************
 
 /** Actual node storage in a forest, by level.
-    Implemented in forest.cc
+    Implemented in node_wrappers.cc
     Details of node storage are left to the derived forests.
     However, every active node is stored in the following format.
       
@@ -1144,9 +1144,11 @@ class MEDDLY::node_storage {
   // |  inlines.
   public:
       // TBD:
+      /*
       inline int trailerSize() const {
           return unhashedHeader + hashedHeader;
       }
+      */
 
       /// Recycle a node stored at the given offset.
       inline void recycleNode(int off) {
