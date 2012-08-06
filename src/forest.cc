@@ -26,9 +26,9 @@
 #include "defines.h"
 #include "unique_table.h"
 #include "hash_stream.h"
-#include <set>
-#include <queue>
-#include <vector>
+//#include <set>
+//#include <queue>
+//#include <vector>
 
 // #define DEBUG_CLEANUP
 
@@ -776,7 +776,7 @@ void MEDDLY::expert_forest::showNode(FILE* s, int p, int verbose) const
       fprintf(s, "'");
     else
       fprintf(s, " ");
-    fprintf(s, " in: %d", nodeMan.countOf(node.offset));
+    fprintf(s, " in: %d", nodeMan.getCountOf(node.offset));
     fprintf(s, " cc: %d", node.cache_count);
   } else {
     fprintf(s, "node: %d", p);
@@ -1139,7 +1139,7 @@ void MEDDLY::expert_forest::getDownPtr(int p, int i, float& ev, int& dn) const
 // '                                                                '
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-
+/*
 void MEDDLY::expert_forest
 ::initNodeReader(node_reader &nr, int node, bool full) const
 {
@@ -1219,6 +1219,7 @@ void MEDDLY::expert_forest
     }
   }
 }
+*/
 
 void MEDDLY::expert_forest
 ::initRedundantReader(node_reader &nr, int k, int node, bool full) const
@@ -1581,15 +1582,14 @@ int MEDDLY::expert_forest
   // get sparse, truncated full sizes and check
   // for redundant / identity reductions.
   int nnz;
-  int truncsize = -1;
   if (nb.isSparse()) {
     // Reductions for sparse nodes
     nnz = nb.getNNZs();
+#ifdef DEVELOPMENT_CODE
     for (int z=0; z<nnz; z++) {
       MEDDLY_DCASSERT(nb.d(z));
-      truncsize = MAX(truncsize, nb.i(z));
     } // for z
-    truncsize++;
+#endif
 
     // Check for identity nodes
     if (1==nnz && in==nb.i(0)) {
@@ -1612,12 +1612,8 @@ int MEDDLY::expert_forest
     MEDDLY_DCASSERT(nb.getSize() == getLevelSize(nb.getLevel()));
     nnz = 0;
     for (int i=0; i<nb.getSize(); i++) {
-      if (nb.d(i)) {
-        nnz++;
-        truncsize = i;
-      }
+      if (nb.d(i)) nnz++;
     } // for i
-    truncsize++;
 
     // Check for identity nodes
     if (1==nnz) {
@@ -1638,7 +1634,6 @@ int MEDDLY::expert_forest
 
   // Is this a zero node?
   if (0==nnz) {
-    MEDDLY_DCASSERT(0==truncsize);  // sanity check
     // no need to unlink
     return 0;
   }
@@ -1670,49 +1665,13 @@ int MEDDLY::expert_forest
   node_storage &nodeMan = levels[nb.getLevel()];
 #endif
 
-  // First, determine if it should be full or sparse
-  if (nodeMan.slotsForNode(-nnz) < nodeMan.slotsForNode(truncsize)) { 
-    // sparse node wins
-    address[p].offset = nodeMan.allocNode(-nnz, p, false);
-    MEDDLY_DCASSERT(1==nodeMan.countOf(address[p].offset));
-    int* index = nodeMan.sparseIndexesOf(address[p].offset);
-    int* down  = nodeMan.sparseDownOf(address[p].offset);
-    if (nb.hasEdges()) {
-      nb.copyIntoSparse(down, index, nodeMan.sparseEdgeOf(address[p].offset), nnz);
-    } else {
-      nb.copyIntoSparse(down, index, nnz);
-    }
-  } else {
-    // full node wins
-    address[p].offset = nodeMan.allocNode(truncsize, p, false);
-    MEDDLY_DCASSERT(1==nodeMan.countOf(address[p].offset));
-    int* down = nodeMan.fullDownOf(address[p].offset);
-    if (nb.hasEdges()) {
-      nb.copyIntoFull(down, nodeMan.fullEdgeOf(address[p].offset), truncsize);
-    } else {
-      nb.copyIntoFull(down, truncsize);
-    }
-  } // if 
-
-  // copy extra header info, if any
-  if (nodeMan.unhashedHeader) {
-    int* uh = nodeMan.unhashedHeaderOf(address[p].offset);
-    for (int i=0; i<nodeMan.unhashedHeader; i++) {
-      uh[i] = nb.uh(i);
-    }
-  }
-  if (nodeMan.hashedHeader) {
-    int* hh = nodeMan.hashedHeaderOf(address[p].offset);
-    for (int i=0; i<nodeMan.hashedHeader; i++) {
-      hh[i] = nb.hh(i);
-    }
-  }
+  // All of the work is in nodeMan now :^)
+  address[p].offset = nodeMan.makeNode(p, nb, getNodeStorage());
 
   // add to UT 
   unique->add(nb.hash(), p);
   
 #ifdef DEVELOPMENT_CODE
-  // node_finder key(this, p);
   node_reader key;
   initNodeReader(key, p, false);
   key.setHash(hashNode(p));
