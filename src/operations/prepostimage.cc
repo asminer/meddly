@@ -108,7 +108,7 @@ void MEDDLY::image_op
 ::compute(const dd_edge &a, const dd_edge &b, dd_edge &c)
 {
   int cnode = compute(a.getNode(), b.getNode());
-  c.set(cnode, 0, resF->getNodeLevel(cnode));
+  c.set(cnode, 0);
 }
 
 int MEDDLY::image_op::compute(int a, int b)

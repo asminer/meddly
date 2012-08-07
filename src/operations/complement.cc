@@ -94,7 +94,7 @@ void MEDDLY::compl_mdd::showEntry(FILE* strm, const int *data) const
 void MEDDLY::compl_mdd::compute(const dd_edge& a, dd_edge& b) 
 {
   int result = compute(a.getNode());
-  b.set(result, 0, resF->getNodeLevel(result));
+  b.set(result, 0);
 }
 
 int MEDDLY::compl_mdd::compute(int a)
@@ -178,7 +178,7 @@ void MEDDLY::compl_mxd::showEntry(FILE* strm, const int *data) const
 void MEDDLY::compl_mxd::compute(const dd_edge& a, dd_edge& b) 
 {
   int result = compute(-1, argF->getDomain()->getNumVariables(), a.getNode());
-  b.set(result, 0, resF->getNodeLevel(result));
+  b.set(result, 0);
 }
 
 int MEDDLY::compl_mxd::compute(int in, int k, int a)

@@ -72,22 +72,22 @@ class MEDDLY::mtmxd_forest : public mt_forest {
 
     // Creates an edge representing v[] vp[] = terminal node (not value),
     // and stores it in e.
-    void createEdge(const int* v, const int* vp, int termNode, dd_edge& e);
+    void createEdge(const int* v, const int* vp, long termNode, dd_edge& e);
 
     // Starting at height given by {startAtHeight, primedLevel},
     // creates an edge representing v[] vp[] = terminal node (not value),
     // and stores it in e.
-    void createEdge(const int* v, const int* vp, int termNode,
+    void createEdge(const int* v, const int* vp, long termNode,
         int startAtHeight, bool primedLevel, dd_edge& e);
 
     // Creates a top-level node representing {-1, -1, ..., -1} = terminal node
     // (not value), and returns it (returned node is already linked to.
-    int createEdgeTo(int termNode);
+    long createEdgeTo(long termNode);
 
     // Starting at height given by {startAtHeight, primedLevel},
     // creates a node representing v[] vp[] = terminal node (not value)
     // and returns it. Used by createEdge().
-    int createNode(const int* v, const int* vp, int termNode,
+    long createNode(const int* v, const int* vp, long termNode,
         int startAtHeight, bool primedLevel);
 
     // Create a node n, at level -k, whose jth index points to dptr.
@@ -95,17 +95,17 @@ class MEDDLY::mtmxd_forest : public mt_forest {
     // If i or j is -1, all indices of n will point to dptr and all of m will
     //    point to n.
     // If i or j is -2, simply returns dptr.
-    int createNode(int k, int i, int j, int dptr);
+    long createNode(int k, int i, int j, long dptr);
 
     // Create a node, at level k, whose ith index points to dptr.
     // 0 <= i < level bound
     // Used by createNode(k, i, j, dptr)
-    int createNode(int k, int i, int dptr);
+    long createNode(int k, int i, long dptr);
 
     // Get the terminal node at the bottom of the edge with root n
     // and vlist and vplist representing the indexes for the levels.
     // Used by evaluate()
-    int getTerminalNodeForEdge(int n, const int* vlist, const int* vplist)
+    long getTerminalNodeForEdge(int n, const int* vlist, const int* vplist)
       const;
 
     template <typename T>
@@ -114,7 +114,7 @@ class MEDDLY::mtmxd_forest : public mt_forest {
     template <typename T>
       int inPlaceSort(int k, int begin, int end);
     template <typename T>
-      int inPlaceSortBuild(int in, int k, int begin, int end);
+      long inPlaceSortBuild(int in, int k, int begin, int end);
 
     // Methods and data for batch addition via sorting
     template <typename T> void copyLists(const int* const* vlist,
@@ -215,9 +215,9 @@ MEDDLY::mtmxd_forest::createEdgeInternal(const int* const* vlist,
     copyLists(vlist, vplist, terms, N);
 
     // call sort-based procedure for building the DD
-    int result = inPlaceSortBuild<T>(-1, getExpertDomain()->getNumVariables(), 0, N);
+    long result = inPlaceSortBuild<T>(-1, getExpertDomain()->getNumVariables(), 0, N);
 
-    e.set(result, 0, getNodeLevel(result));
+    e.set(result, 0);
   }
 }
 
@@ -429,7 +429,7 @@ int mtmxd_forest::inPlaceSort<bool>(int k, int begin, int end)
 
 
 template <typename T>
-int mtmxd_forest::inPlaceSortBuild(int in, int k, int begin, int end)
+long mtmxd_forest::inPlaceSortBuild(int in, int k, int begin, int end)
 {
   // [begin, end)
 

@@ -97,12 +97,12 @@ void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
   edgeForVarInternal(vh, primedLevel, terms, result);
 }
 
-bool MEDDLY::mt_forest::areDuplicates(int p, const node_builder &nb) const
+bool MEDDLY::mt_forest::areDuplicates(long p, const node_builder &nb) const
 {
   return areDupsInternal(p, nb);
 }
 
-bool MEDDLY::mt_forest::areDuplicates(int p, const node_reader &nr) const
+bool MEDDLY::mt_forest::areDuplicates(long p, const node_reader &nr) const
 {
   return areDupsInternal(p, nr);
 }
@@ -132,7 +132,7 @@ bool MEDDLY::mt_forest::isIdentityEdge(const node_builder &nb, int i) const
 // ******************************************************************
 
 
-int MEDDLY::mt_forest::buildLevelNodeHelper(int lh, int* dptrs, int sz)
+long MEDDLY::mt_forest::buildLevelNodeHelper(int lh, long* dptrs, int sz)
 {
   MEDDLY_DCASSERT(dptrs != 0);
   MEDDLY_DCASSERT(sz > 0);
@@ -192,7 +192,7 @@ int MEDDLY::mt_forest::buildLevelNodeHelper(int lh, int* dptrs, int sz)
   for (int i=0; i<sz; i++) {
     nb.d(i) = dptrs[i];
   }
-  int node = createReducedNode(-1, nb);
+  long node = createReducedNode(-1, nb);
 
   // now build the levels above this node
   if (isForRelations()) {
@@ -230,7 +230,7 @@ int MEDDLY::mt_forest::buildLevelNodeHelper(int lh, int* dptrs, int sz)
   return node;
 }
 
-int* MEDDLY::mt_forest::getTerminalNodes(int n, bool* terms)
+long* MEDDLY::mt_forest::getTerminalNodes(int n, bool* terms)
 {
   MEDDLY_DCASSERT(n == 2);
   MEDDLY_DCASSERT(getRangeType() == forest::BOOLEAN);
@@ -238,9 +238,9 @@ int* MEDDLY::mt_forest::getTerminalNodes(int n, bool* terms)
   // use the array that comes with object (saves having to alloc/dealloc)
   if (dptrsSize < n) {
     // array not large enough, expand
-    stats.incMemAlloc((n - dptrsSize) * sizeof(int));
+    stats.incMemAlloc((n - dptrsSize) * sizeof(long));
     dptrsSize = n;
-    dptrs = (int *) realloc(dptrs, dptrsSize * sizeof(int));
+    dptrs = (long *) realloc(dptrs, dptrsSize * sizeof(long));
     MEDDLY_DCASSERT(NULL != dptrs);
   }
 
@@ -255,16 +255,16 @@ int* MEDDLY::mt_forest::getTerminalNodes(int n, bool* terms)
 }
 
 
-int* MEDDLY::mt_forest::getTerminalNodes(int n, int* terms)
+long* MEDDLY::mt_forest::getTerminalNodes(int n, int* terms)
 {
   MEDDLY_DCASSERT(getRangeType() == forest::INTEGER);
 
   // use the array that comes with object (saves having to alloc/dealloc)
   if (dptrsSize < n) {
     // array not large enough, expand
-    stats.incMemAlloc((n - dptrsSize) * sizeof(int));
+    stats.incMemAlloc((n - dptrsSize) * sizeof(long));
     dptrsSize = n;
-    dptrs = (int *) realloc(dptrs, dptrsSize * sizeof(int));
+    dptrs = (long *) realloc(dptrs, dptrsSize * sizeof(long));
     MEDDLY_DCASSERT(NULL != dptrs);
   }
 
@@ -278,16 +278,16 @@ int* MEDDLY::mt_forest::getTerminalNodes(int n, int* terms)
 }
 
 
-int* MEDDLY::mt_forest::getTerminalNodes(int n, float* terms)
+long* MEDDLY::mt_forest::getTerminalNodes(int n, float* terms)
 {
   MEDDLY_DCASSERT(getRangeType() == forest::REAL);
 
   // use the array that comes with object (saves having to alloc/dealloc)
   if (dptrsSize < n) {
     // array not large enough, expand
-    stats.incMemAlloc((n - dptrsSize) * sizeof(int));
+    stats.incMemAlloc((n - dptrsSize) * sizeof(long));
     dptrsSize = n;
-    dptrs = (int *) realloc(dptrs, dptrsSize * sizeof(int));
+    dptrs = (long *) realloc(dptrs, dptrsSize * sizeof(long));
     MEDDLY_DCASSERT(NULL != dptrs);
   }
   // fill array with terminal nodes
@@ -304,6 +304,7 @@ int* MEDDLY::mt_forest::getTerminalNodes(int n, float* terms)
 //  Protected methods
 // ------------------------------------------------------------------
 
+/*
 void MEDDLY::mt_forest::compareCacheCounts(int p)
 {
 #if ENABLE_CACHE_COUNTING
@@ -353,5 +354,5 @@ void MEDDLY::mt_forest::compareCacheCounts(int p)
 #endif
 }
 
-
+*/
 

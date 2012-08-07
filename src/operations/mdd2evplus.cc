@@ -97,7 +97,7 @@ MEDDLY::mdd2evplus_operation
   int down, card;
   int nVars = argF->getDomain()->getNumVariables();
   compute(nVars, arg.getNode(), down, card);
-  res.set(down, 0, resF->getNodeLevel(down));
+  res.set(down, 0);
 }
 
 void
@@ -147,7 +147,8 @@ MEDDLY::mdd2evplus_operation
   bcard = 0;
   for (int i=0; i<size; i++) {
     int ddn, dcard;
-    compute(k-1, A->d(i), nb.d(i), dcard);
+    compute(k-1, A->d(i), ddn, dcard);
+    nb.d(i) = ddn;
     if (nb.d(i)) {
       nb.ei(i) = bcard;
       bcard += dcard;
@@ -163,7 +164,9 @@ MEDDLY::mdd2evplus_operation
   // Reduce
   nb.uh(0) = bcard;
   int dummy;
-  resF->createReducedNode(-1, nb, dummy, bdn);
+  long bl;
+  resF->createReducedNode(-1, nb, dummy, bl);
+  bdn = bl;
   MEDDLY_DCASSERT(0==dummy);
 
   // Add to compute table

@@ -87,7 +87,7 @@ namespace MEDDLY {
   template <class T> inline bool POSITIVE(T X) { return (X>0) ? true : false; }
 
   // Number of digits
-  inline int digits(int a) {
+  inline int digits(long a) {
     int d;
     for (d=1; a; d++) { a /= 10; }
     return d;

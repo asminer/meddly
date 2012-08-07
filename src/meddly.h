@@ -1698,7 +1698,7 @@ class MEDDLY::dd_edge {
     */
     inline void clear() {
       assert(index != -1);
-      set(0, 0, 0);
+      set(0, 0);
     }
 
     /** Obtain a modifiable copy of the forest owning this edge.
@@ -1709,7 +1709,7 @@ class MEDDLY::dd_edge {
     /** Get this dd_edge's node handle.
         @return         the node handle.
     */
-    inline int getNode() const { return node; }
+    inline long getNode() const { return node; }
 
     /** Get this dd_edge's edge value (only valid for edge-valued MDDs).
         Note: EV+MDDs use Integer edge-values while EV*MDDs use
@@ -1719,10 +1719,10 @@ class MEDDLY::dd_edge {
     inline void getEdgeValue(int& ev) const { ev = value; }
     void getEdgeValue(float& edgeValue) const;
 
-    /** Get this dd_edge's level handle.
-        @return         the level handle.
+    /** Get this dd_edge's level.
+        @return         the level.
     */
-    inline int getLevel() const { return level; }
+    int getLevel() const;
 
     /** Get node cardinality.
         Provided for backward compatibility.
@@ -1758,10 +1758,9 @@ class MEDDLY::dd_edge {
         @param  node    node handle.
         @param  value   value of edge coming into the node (only useful
                         for edge-valued MDDs)
-        @param  level   level handle.
     */
-    void set(int node, int value, int level);
-    void set(int node, float value, int level);
+    void set(long node, int value);
+    void set(long node, float value);
 
     /** Check for equality.
         @return true    iff this edge has the same parent and refers to
@@ -1769,7 +1768,7 @@ class MEDDLY::dd_edge {
     */
     inline bool operator==(const dd_edge& e) const {
       return (parent == e.parent && node == e.node 
-              && value == e.value && level == e.level);
+              && value == e.value);
     }
 
     /** Check for inequality.
@@ -1864,9 +1863,8 @@ class MEDDLY::dd_edge {
     inline int getIndex() const { return index; }
 
     forest *parent;
-    int node;
+    long node;
     int value;
-    int level;
     int index;
 
     binary_operation* opPlus;

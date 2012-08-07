@@ -97,7 +97,7 @@ void MEDDLY::copy_MT::showEntry(FILE* strm, const int *entryData) const
 void MEDDLY::copy_MT::compute(const dd_edge &arg, dd_edge &res)
 {
   int result = compute(arg.getNode());
-  res.set(result, 0, resF->getNodeLevel(result));
+  res.set(result, 0);
 }
 
 // ******************************************************************
@@ -316,7 +316,7 @@ class MEDDLY::copy_MT2Evplus : public unary_operation {
     virtual void compute(const dd_edge &arg, dd_edge &res) {
       int b, bev;
       compute(arg.getNode(), b, bev);
-      res.set(b, bev, resF->getNodeLevel(b));
+      res.set(b, bev);
     }
     virtual void compute(int a, int &b, int &bev);
 };
@@ -368,7 +368,9 @@ void MEDDLY::copy_MT2Evplus::compute(int a, int &b, int &bev)
   node_reader::recycle(A);
 
   // Reduce
-  resF->createReducedNode(-1, nb, bev, b);
+  long bl;
+  resF->createReducedNode(-1, nb, bev, bl);
+  b = bl;
 
   // Add to compute table
   compute_table::temp_entry &entry = CT->startNewEntry(this);

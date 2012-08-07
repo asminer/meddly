@@ -91,7 +91,7 @@ class MEDDLY::evmdd_forest : public expert_forest {
     // edge value ev. If i is -1, all indices of the node will point to dptr
     // with an edge value ev.
     template <typename T>
-    void createNode(int k, int index, int dptr, T ev, int& res, T& resEv);
+    void createNode(int k, int index, long dptr, T ev, long& res, T& resEv);
 
     // If the element represented by vlist exists, return the value
     // corresponding to it.
@@ -107,7 +107,7 @@ class MEDDLY::evmdd_forest : public expert_forest {
     // The sum of these edges is returned via node and edgeValue.
     template <typename T>
     void sortBuild(int** list, T* tList, int height, int begin, int end,
-        int& node, T& edgeValue);
+        long& node, T& edgeValue);
 
     // virtual void normalizeAndReduceNode(int& p, int& ev) = 0;
     // virtual void normalizeAndReduceNode(int& p, float& ev) = 0;
@@ -148,8 +148,8 @@ class MEDDLY::evp_mdd_int : public evmdd_forest {
     virtual bool areEdgeValuesHashed() const {
         return true;
     }
-    virtual bool areDuplicates(int node, const node_builder &nb) const;
-    virtual bool areDuplicates(int node, const node_reader &nr) const;
+    virtual bool areDuplicates(long node, const node_builder &nb) const;
+    virtual bool areDuplicates(long node, const node_reader &nr) const;
 
     virtual bool isRedundant(const node_builder &nb) const;
     virtual bool isIdentityEdge(const node_builder &nb, int i) const;
@@ -161,69 +161,61 @@ class MEDDLY::evp_mdd_int : public evmdd_forest {
 
   private:
     template <class T>
-    inline bool areDupsInternal(int p, const T &nb) const {
+    inline bool areDupsInternal(long p, const T &nb) const {
         const node_header &node = getNode(p);
         if (node.level != nb.getLevel()) return false;
 #ifdef NODE_STORAGE_PER_LEVEL
         const node_storage &nodeMan = levels[node.level];
 #endif
-        if (nodeMan.isFull(node.offset)) {
+        node_storage::scanner np;
+        nodeMan.initScanner(np, node.offset);
+        if (np.isFull()) {
           //
           // p is full
           //
-          int fs = nodeMan.fullSizeOf(node.offset);
-          const int* pd = nodeMan.fullDownOf(node.offset);
-          const int* pe = nodeMan.fullEdgeOf(node.offset);
           if (nb.isFull()) {
             int i;
-            for (i=0; i<fs; i++) {
-              if (pd[i] != nb.d(i)) return false;
-              if (pe[i] != nb.ei(i)) return false;
+            for (i=0; i<np.fullSize(); ++i, ++np) {
+              if (np.d() != nb.d(i)) return false;
+              if (np.ei() != nb.ei(i)) return false;
             }
             for (; i<nb.getSize(); i++) if (nb.d(i)) return false;
             return true;
           }
           MEDDLY_DCASSERT(nb.isSparse()); 
-          int i = 0;
           for (int z=0; z<nb.getNNZs(); z++) {
-            if (nb.i(z) >= fs) return false;
-            for (; i<nb.i(z); i++) if (pd[i]) return false;
-            if (pd[i] != nb.d(z)) return false;
-            if (pe[i] != nb.ei(z)) return false;
-            i++;
+            if (nb.i(z) >= np.fullSize()) return false;
+            for (; np.count()<nb.i(z); ++np) if (np.d()) return false;
+            if (np.d() != nb.d(z)) return false;
+            if (np.ei() != nb.ei(z)) return false;
+            ++np;
           } // for z
-          for (; i<fs; i++) if (pd[i]) return false;
+          for (; np; ++np) if (np.d()) return false;
           return true;
-        }
+        } 
         //
         // p is sparse
         //
-        int nnz = nodeMan.sparseSizeOf(node.offset);
-        const int* pd = nodeMan.sparseDownOf(node.offset);
-        const int* pe = nodeMan.sparseEdgeOf(node.offset);
-        const int* pi = nodeMan.sparseIndexesOf(node.offset);
-
         if (nb.isSparse()) {
-          if (nnz != nb.getNNZs()) return false;
-          for (int z=0; z<nnz; z++) {
-            if (nb.d(z) != pd[z]) return false;
-            if (nb.ei(z) != pe[z]) return false;
-            if (nb.i(z) != pi[z]) return false;
+          if (np.sparseSize() != nb.getNNZs()) return false;
+          for (int z=0; z<np.sparseSize(); ++z, ++np) {
+            if (nb.d(z) != np.d()) return false;
+            if (nb.i(z) != np.i()) return false;
+            if (nb.ei(z) != np.ei()) return false;
           }
           return true;
         }
         MEDDLY_DCASSERT(nb.isFull()); 
         int i = 0;
-        for (int z=0; z<nnz; z++) {
-          for (; i<pi[z]; i++) if (nb.d(i)) return false;
-          if (nb.d(i) != pd[z]) return false;
-          if (nb.ei(i) != pe[z]) return false;
+        for (; np; ++np) {
+          for (; i<np.i(); i++) if (nb.d(i)) return false;
+          if (nb.d(i) != np.d()) return false;
+          if (nb.ei(i) != np.ei()) return false;
           i++;
         }
         for (; i<nb.getSize(); i++) if (nb.d(i)) return false;
         return true;
     }
-
 };
 
 
@@ -264,8 +256,8 @@ class MEDDLY::evt_mdd_real : public evmdd_forest {
     virtual bool areEdgeValuesHashed() const {
         return false; // we need to do a "within epsilon" comparison.
     }
-    virtual bool areDuplicates(int node, const node_builder &nb) const;
-    virtual bool areDuplicates(int node, const node_reader &nr) const;
+    virtual bool areDuplicates(long node, const node_builder &nb) const;
+    virtual bool areDuplicates(long node, const node_reader &nr) const;
 
     virtual bool isRedundant(const node_builder &nb) const;
     virtual bool isIdentityEdge(const node_builder &nb, int i) const;
@@ -285,24 +277,23 @@ class MEDDLY::evt_mdd_real : public evmdd_forest {
     }
     
     template <class T>
-    inline bool areDupsInternal(int p, const T &nb) const {
+    inline bool areDupsInternal(long p, const T &nb) const {
         const node_header &node = getNode(p);
         if (node.level != nb.getLevel()) return false;
 #ifdef NODE_STORAGE_PER_LEVEL
         const node_storage &nodeMan = levels[node.level];
 #endif
-        if (nodeMan.isFull(node.offset)) {
+        node_storage::scanner np;
+        nodeMan.initScanner(np, node.offset);
+        if (np.isFull()) {
           //
           // p is full
           //
-          int fs = nodeMan.fullSizeOf(node.offset);
-          const int* pd = nodeMan.fullDownOf(node.offset);
-          const float* pf = (float*) nodeMan.fullEdgeOf(node.offset);
           if (nb.isFull()) {
             int i;
-            for (i=0; i<fs; i++) {
-              if (pd[i] != nb.d(i)) return false;
-              if (notClose(pf[i], nb.ef(i))) return false;
+            for (i=0; i<np.fullSize(); ++i, ++np) {
+              if (np.d() != nb.d(i)) return false;
+              if (notClose(np.ef(), nb.ef(i))) return false;
             }
             for (; i<nb.getSize(); i++) if (nb.d(i)) return false;
             return true;
@@ -310,38 +301,34 @@ class MEDDLY::evt_mdd_real : public evmdd_forest {
           MEDDLY_DCASSERT(nb.isSparse()); 
           int i = 0;
           for (int z=0; z<nb.getNNZs(); z++) {
-            if (nb.i(z) >= fs) return false;
-            for (; i<nb.i(z); i++) if (pd[i]) return false;
-            if (pd[i] != nb.d(z)) return false;
-            if (notClose(pf[i], nb.ef(z))) return false;
-            i++;
+            if (nb.i(z) >= np.fullSize()) return false;
+            for (; i<nb.i(z); ++i, ++np) if (np.d()) return false;
+            if (np.d() != nb.d(z)) return false;
+            if (notClose(np.ef(), nb.ef(z))) return false;
+            ++i;
+            ++np;
           } // for z
-          for (; i<fs; i++) if (pd[i]) return false;
+          for (; np; ++np) if (np.d()) return false;
           return true;
-        }
+        } 
         //
         // p is sparse
         //
-        int nnz = nodeMan.sparseSizeOf(node.offset);
-        const int* pd = nodeMan.sparseDownOf(node.offset);
-        const float* pf = (float*) nodeMan.sparseEdgeOf(node.offset);
-        const int* pi = nodeMan.sparseIndexesOf(node.offset);
-
         if (nb.isSparse()) {
-          if (nnz != nb.getNNZs()) return false;
-          for (int z=0; z<nnz; z++) {
-            if (nb.d(z) != pd[z]) return false;
-            if (nb.i(z) != pi[z]) return false;
-            if (notClose(nb.ef(z), pf[z])) return false;
+          if (np.sparseSize() != nb.getNNZs()) return false;
+          for (int z=0; z<np.sparseSize(); ++z, ++np) {
+            if (nb.d(z) != np.d()) return false;
+            if (nb.i(z) != np.i()) return false;
+            if (notClose(nb.ef(z), np.ef())) return false;
           }
           return true;
         }
         MEDDLY_DCASSERT(nb.isFull()); 
         int i = 0;
-        for (int z=0; z<nnz; z++) {
-          for (; i<pi[z]; i++) if (nb.d(i)) return false;
-          if (nb.d(i) != pd[z]) return false;
-          if (notClose(nb.ef(i), pf[z])) return false;
+        for (; np; ++np) {
+          for (; i<np.i(); i++) if (nb.d(i)) return false;
+          if (nb.d(i) != np.d()) return false;
+          if (notClose(nb.ef(i), np.ef())) return false;
           i++;
         }
         for (; i<nb.getSize(); i++) if (nb.d(i)) return false;
@@ -383,12 +370,12 @@ MEDDLY::evmdd_forest::createEdgeInternal(T term, dd_edge &e)
   if (e.getForest() != this) throw error(error::INVALID_OPERATION);
 
   if (isFullyReduced()) {
-    e.set(getTerminalNode(true), term, 0);
+    e.set(getTerminalNode(true), term);
   } else {
     // construct the edge bottom-up
-    int prev = getTerminalNode(false);
+    long prev = getTerminalNode(false);
     T prevEv = 0;
-    int curr = getTerminalNode(true);
+    long curr = getTerminalNode(true);
     T currEv = term;
     for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
       prev = curr;
@@ -396,7 +383,7 @@ MEDDLY::evmdd_forest::createEdgeInternal(T term, dd_edge &e)
       createNode(i, -1, prev, prevEv, curr, currEv);
       // unlinkNode(prev);
     }
-    e.set(curr, currEv, getNodeLevel(curr));
+    e.set(curr, currEv);
   }
 }
 
@@ -441,10 +428,10 @@ MEDDLY::evmdd_forest::createEdgeInternal(const int* const* vlist,
     memcpy(intList, terms, N * sizeof(int));
     int* temp = (int*)intList;
     T* tList = (T*)temp;
-    int node;
+    long node;
     T ev;
     sortBuild(list, tList, getDomain()->getNumVariables(), 0, N, node, ev);
-    e.set(node, ev, getNodeLevel(node));
+    e.set(node, ev);
   }
 }
 
@@ -454,22 +441,22 @@ void
 MEDDLY::evmdd_forest::createEdgeInternal(const int* v, T term, dd_edge &e)
 {
   // construct the edge bottom-up
-  int prev = getTerminalNode(false);
+  long prev = getTerminalNode(false);
   T prevEv;
   getIdentityEdgeValue(prevEv);
-  int curr = getTerminalNode(true);
+  long curr = getTerminalNode(true);
   T currEv = term;
   for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
     prev = curr;
     prevEv = currEv;
     createNode(i, v[i], prev, prevEv, curr, currEv);
   }
-  e.set(curr, currEv, getNodeLevel(curr));
+  e.set(curr, currEv);
 }
 
 template <typename T>
-void MEDDLY::evmdd_forest::createNode(int k, int index, int dptr, T ev,
-    int& res, T& resEv)
+void MEDDLY::evmdd_forest::createNode(int k, int index, long dptr, T ev,
+    long& res, T& resEv)
 {
   MEDDLY_DCASSERT(dptr >= -1 && ev >= 0);
   MEDDLY_DCASSERT(index >= -1);
@@ -512,7 +499,7 @@ void MEDDLY::evmdd_forest::evaluateInternal(const dd_edge &f,
 
   // assumption: vlist does not contain any special values (-1, -2, etc).
   // vlist contains a single element.
-  int node = f.getNode();
+  long node = f.getNode();
 
   f.getEdgeValue(term);
   while (!isTerminalNode(node)) {
@@ -525,7 +512,7 @@ void MEDDLY::evmdd_forest::evaluateInternal(const dd_edge &f,
 
 template <typename T>
 void MEDDLY::evmdd_forest::sortBuild(int** list, T* tList,
-    int height, int begin, int end, int& node, T& edgeValue)
+    int height, int begin, int end, long& node, T& edgeValue)
 {
   // [begin, end)
 
@@ -548,7 +535,7 @@ void MEDDLY::evmdd_forest::sortBuild(int** list, T* tList,
   if (N == 1) {
     // nothing to sort; just build a node starting at this level
     int index = list[begin][height];
-    int n;
+    long n;
     T ev;
     sortBuild(list, tList, nextHeight, begin, end, n, ev);
     createNode(height, index, n, ev, node, edgeValue);
@@ -658,7 +645,7 @@ void MEDDLY::evmdd_forest::sortBuild(int** list, T* tList,
   int z = 0;
   for (int i=0; i<levelSize; i++) {
     if (count[i+1] > count[i]) {
-      int n;
+      long n;
       T ev;
       sortBuild(list, tList, nextHeight, begin + count[i] + 1,
           begin + count[i+1] + 1, n, ev);

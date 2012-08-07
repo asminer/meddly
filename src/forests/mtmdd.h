@@ -75,26 +75,26 @@ class MEDDLY::mtmdd_forest : public mt_forest {
     // the equivalent node representation. This makes this method useful
     // for createEdge(int, e) or (float, e) or (bool, e) as long as the
     // terminal value can be converted into an equivalent node.
-    inline void createEdgeHelper(int terminalNode, dd_edge& e) {
+    inline void createEdgeHelper(long terminalNode, dd_edge& e) {
         MEDDLY_DCASSERT(isTerminalNode(terminalNode));
 
         if (isFullyReduced() || terminalNode == 0) {
-          e.set(terminalNode, 0, 0);
+          e.set(terminalNode, 0);
           return;
         }
 
         // construct the edge bottom-up
-        int result = terminalNode;
+        long result = terminalNode;
         for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
           insertRedundantNode(i, result);
         }
-        e.set(result, 0, getNodeLevel(result));
+        e.set(result, 0);
     }
 
     // Get the terminal node at the bottom of the edge with root n
     // and vlist representing the indexes for the levels.
     // Used by evaluate()
-    inline int getTerminalNodeForEdge(int n, const int* vlist) const {
+    inline long getTerminalNodeForEdge(int n, const int* vlist) const {
         // assumption: vlist does not contain any special values (-1, -2, etc).
         // vlist contains a single element.
         while (!isTerminalNode(n)) {
@@ -112,11 +112,11 @@ class MEDDLY::mtmdd_forest : public mt_forest {
   protected: // still to be organized
 
     // Create edge representing f(vlist[]) = term and store it in e
-    void createEdge(const int* vlist, int term, dd_edge& e);
+    void createEdge(const int* vlist, long term, dd_edge& e);
 
     // Create a node, at level k, whose ith index points to dptr.
     // If i is -1, all indices of the node will point to dptr.
-    int createNode(int k, int i, int dptr);
+    int createNode(int k, int i, long dptr);
 
     template <typename T>
     T handleMultipleTerminalValues(const T* tList, int begin, int end);
@@ -198,7 +198,7 @@ MEDDLY::mtmdd_forest::createEdgeInternal(const int* const* vlist,
     // call sort-based procedure for building the DD
     int result = inPlaceSortBuild<T>(getExpertDomain()->getNumVariables(), 0, N);
 
-    e.set(result, 0, getNodeLevel(result));
+    e.set(result, 0);
   }
 }
 

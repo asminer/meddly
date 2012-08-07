@@ -31,7 +31,6 @@
 // #define DEBUG_SLOW
 // #define MEMORY_TRACE
 // #define DEEP_MEMORY_TRACE
-// #define VALIDATE_INCOUNTS
 
 // ******************************************************************
 // *                                                                *
@@ -88,7 +87,7 @@ void MEDDLY::node_reader
     MEDDLY_DCASSERT(nalloc > ns);
     MEDDLY_DCASSERT(nalloc>0);
     MEDDLY_DCASSERT(nalloc>alloc);
-    down = (int*) realloc(down, nalloc*sizeof(int));
+    down = (long*) realloc(down, nalloc*sizeof(long));
     if (0==down) throw error(error::INSUFFICIENT_MEMORY);
     index = (int*) realloc(index, nalloc*sizeof(int));
     if (0==index) throw error(error::INSUFFICIENT_MEMORY);
@@ -210,7 +209,7 @@ void MEDDLY::node_builder::enlarge()
   if (size <= alloc) return;
   alloc = ((size / 8)+1) * 8;
   MEDDLY_DCASSERT(alloc > size);
-  down = (int*) realloc(down, alloc * sizeof(int));
+  down = (long*) realloc(down, alloc * sizeof(long));
   if (0==down) throw error(error::INSUFFICIENT_MEMORY);
   indexes = (int*) realloc(indexes, alloc * sizeof(int));
   if (0==indexes) throw error(error::INSUFFICIENT_MEMORY);
@@ -307,30 +306,12 @@ void MEDDLY::node_storage::init(expert_forest* p)
 
 void MEDDLY::node_storage::unlinkDown(int addr)
 {
-#ifdef VALIDATE_INCOUNTS
-  int* downptr;
-#else
-  const int* downptr;
-#endif
-  int size;
-  if (isSparse(addr)) {
-    downptr = sparseDownOf(addr);
-    size = sparseSizeOf(addr); 
-  } else {
-    downptr = fullDownOf(addr);
-    size = fullSizeOf(addr);
+  scanner ns;
+  initScanner(ns, addr);
+  for (; ns; ++ns) {
+    int dp = ns.d();
+    if (dp) parent->unlinkNode(dp);
   }
-#ifdef VALIDATE_INCOUNTS
-  for (int i=0; i<size; i++) {
-    int temp = downptr[i];
-    downptr[i] = 0;
-    parent->unlinkNode(temp);
-  }
-#else
-  for (int i=0; i<size; i++) {
-    parent->unlinkNode(downptr[i]);
-  }
-#endif
 }
 
 void MEDDLY::node_storage::compact(bool shrink)
@@ -534,75 +515,78 @@ void MEDDLY::node_storage
 
 void MEDDLY::node_storage::fillReader(int addr, node_reader &nr) const
 {
-  if (isFull(addr)) {
-    int i;
-    int stop = fullSizeOf(addr);
-    const int* dn = fullDownOf(addr);
+  scanner ns;
+  initScanner(ns, addr);
+
+  if (ns.isFull()) {
     if (nr.isFull()) {
-      memcpy(nr.down, dn, stop * sizeof(int));
-      int* nrdext = nr.down + stop;
-      memset(nrdext, 0, (nr.size-stop) * sizeof(int));
+      for (; ns; ++ns) {
+        nr.down[ns.count()] = ns.d();
+      }
+      for (int i=ns.fullSize(); i<nr.size; ++i) {
+        nr.down[i] = 0;
+      }
       if (nr.edge_bytes) {
-        const void* ev = fullEdgeOf(addr);
-        memcpy(nr.edge, ev, stop * nr.edge_bytes);
-        void* evext = (char*)nr.edge + (stop * nr.edge_bytes);
-        memset(evext, 0, (nr.size-stop) * nr.edge_bytes);
+        ns.restart();
+        memcpy(nr.edge, ns.eptr(), ns.sizeOf() * nr.edge_bytes);
+        void* evext = (char*)nr.edge + (ns.sizeOf() * nr.edge_bytes);
+        memset(evext, 0, (nr.size-ns.sizeOf()) * nr.edge_bytes);
+      }
+      return;
+    } 
+    int& z = nr.nnzs;
+    z = 0;
+    if (nr.edge_bytes) {
+      void* nev = nr.edge;
+      for (; ns; ++ns) {
+        if (0==ns.d()) continue;
+        nr.down[z] = ns.d();
+        nr.index[z] = ns.count();
+        memcpy(nev, ns.eptr(), nr.edge_bytes);
+        nev = (char*)nev + nr.edge_bytes;
+        z++;
+      } // for i
+    } else {
+      for (; ns; ++ns) if (ns.d()) {
+        nr.down[z] = ns.d();
+        nr.index[z] = ns.count();
+        z++;
+      } // for i
+    } // if ev
+    return; 
+  }
+  // 
+  // ns must be sparse
+
+  if (nr.isFull()) {
+    if (nr.edge_bytes) {
+      memset(nr.down, 0, nr.size * sizeof(int));
+      memset(nr.edge, 0, nr.size * nr.edge_bytes);
+      for (; ns; ++ns) {
+        nr.down[ns.i()] = ns.d();
+        int off = ns.i() * nr.edge_bytes;
+        memcpy((char*)nr.edge + off, ns.eptr(), nr.edge_bytes);
       }
     } else {
-      int& z = nr.nnzs;
-      z = 0;
-      if (nr.edge_bytes) {
-        void* nev = nr.edge;
-        for (i=0; i<stop; i++) {
-          if (0==dn[i]) continue;
-          nr.down[z] = dn[i];
-          nr.index[z] = i;
-          const void* ev = (const char*)fullEdgeOf(addr) + i * nr.edge_bytes;
-          memcpy(nev, ev, nr.edge_bytes);
-          nev = (char*)nev + nr.edge_bytes;
-          z++;
-        } // for i
-      } else {
-        for (i=0; i<stop; i++) if (dn[i]) {
-          nr.down[z] = dn[i];
-          nr.index[z] = i;
-          z++;
-        } // for i
-      } // if ev
-    }
-  } else {
-    int i = 0;
-    int nnz = sparseSizeOf(addr);
-    const int* dn = sparseDownOf(addr);
-    const int* ix = sparseIndexesOf(addr);
-    if (nr.isFull()) {
-      if (nr.edge_bytes) {
-        const void* ev = sparseEdgeOf(addr);
-        memset(nr.down, 0, nr.size * sizeof(int));
-        memset(nr.edge, 0, nr.size * nr.edge_bytes);
-        for (int z=0; z<nnz; z++) {
-          nr.down[ix[z]] = dn[z];
-          int off = ix[z] * nr.edge_bytes;
-          memcpy((char*)nr.edge + off, (char*)ev + off, nr.edge_bytes);
-          i++;
-        }
-      } else {
-        for (int z=0; z<nnz; z++) {
-          for (; i<ix[z]; i++) nr.down[i] = 0;
-          nr.down[i] = dn[z];
-          i++;
-        }
-        for (; i<nr.size; i++) nr.down[i] = 0;
-      } // if ev
-    } else {
-      nr.nnzs = nnz;
-      memcpy(nr.down, dn, nnz * sizeof(int));
-      memcpy(nr.index, ix, nnz * sizeof(int));
-      if (nr.edge_bytes) {
-        memcpy(nr.edge, sparseEdgeOf(addr), 
-          nnz * nr.edge_bytes);
+      int i=0; 
+      for (; ns; ++ns) {
+        for (; i<ns.i(); i++) nr.down[i] = 0;
+        nr.down[i] = ns.d();
+        i++;
       }
-    }
+      for (; i<nr.size; i++) nr.down[i] = 0;
+    } // if ev
+    return;
+  }
+
+  nr.nnzs = ns.sparseSize();
+  for (; ns; ++ns) {
+    nr.down[ns.count()] = ns.d();
+    nr.index[ns.count()] = ns.i();
+  }
+  if (nr.edge_bytes) {
+    ns.restart();
+    memcpy(nr.edge, ns.eptr(), ns.sizeOf() * nr.edge_bytes);
   }
 }
 
@@ -638,8 +622,8 @@ int MEDDLY::node_storage
           }
 
     case forest::policies::FULL_OR_SPARSE_STORAGE:
+          truncsize = -1;
           if (nb.isSparse()) {
-            truncsize = -1;
             nnz = nb.getNNZs();
             for (int z=0; z<nnz; z++) {
               truncsize = MAX(truncsize, nb.i(z));

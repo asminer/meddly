@@ -40,7 +40,7 @@ void MEDDLY::mt_mxd_real::createEdge(float val, dd_edge &e)
     throw error(error::INVALID_OPERATION);
 
   int node = createEdgeTo(getTerminalNode(val));
-  e.set(node, 0, getNodeLevel(node));
+  e.set(node, 0);
 }
 
 

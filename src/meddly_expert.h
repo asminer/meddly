@@ -578,7 +578,7 @@ class MEDDLY::node_reader {
                           If this is a sparse reader,
                           return the nth non-zero pointer.
         */
-        inline int d(int n) const {
+        inline long d(int n) const {
           MEDDLY_DCASSERT(down);
           MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
           return down[n];
@@ -694,7 +694,7 @@ class MEDDLY::node_reader {
         static node_reader* freeList;
     private:
         node_reader* next;    // for recycled list
-        int* down;
+        long* down;
         int* index;
         void* edge;
         int alloc;
@@ -741,7 +741,7 @@ class MEDDLY::node_builder {
         const expert_forest* parent;
         int* extra_hashed;
         int* extra_unhashed;
-        int* down;
+        long* down;
         int* indexes;
         void* edge;
         int level;  // level of this node.
@@ -768,7 +768,7 @@ class MEDDLY::node_builder {
           MEDDLY_DCASSERT(extra_unhashed);
           return extra_unhashed[i];
         }
-        inline int& raw_d(int i) const {
+        inline long& raw_d(int i) const {
           MEDDLY_DCASSERT(down);
           MEDDLY_CHECK_RANGE(0, i, size);
           return down[i];
@@ -844,8 +844,8 @@ class MEDDLY::node_builder {
         inline int  hh(int i) const   { return raw_hh(i); }
         inline int& uh(int i)         { return raw_uh(i); }
         inline int  uh(int i) const   { return raw_uh(i); }
-        inline int&  d(int i)         { return  raw_d(i); }
-        inline int   d(int i) const   { return  raw_d(i); }
+        inline long& d(int i)         { return  raw_d(i); }
+        inline long  d(int i) const   { return  raw_d(i); }
         inline int&  i(int i)         { return  raw_i(i); }
         inline int   i(int i) const   { return  raw_i(i); }
         inline int& ei(int i)         { return raw_ei(i); }
@@ -898,7 +898,7 @@ struct MEDDLY::node_header {
         If the node is deleted, this is -next deleted node
         (part of the unused address list).
     */
-    int offset;
+    long offset;
 
     /** Node level
         If the node is active, this indicates node level.
@@ -1124,6 +1124,88 @@ class MEDDLY::node_storage {
       void copyExtraHeader(int addr, const node_builder &nb);
 
   // --------------------------------------------------------
+  // | mechanism to read a node
+  public:
+      class scanner {
+        public:
+          inline bool isSparse() const  { return index; }
+          inline bool isFull() const    { return 0==index; }
+          inline int sizeOf() const     { return size; }
+          inline int fullSize() const { 
+            MEDDLY_DCASSERT(isFull());
+            return size;
+          }
+          inline int sparseSize() const { 
+            MEDDLY_DCASSERT(isSparse());
+            return size;
+          }
+          inline bool hasEdges() const { return edges; }
+          inline int count() const {
+            return p;
+          }
+          inline int d() const {
+            MEDDLY_CHECK_RANGE(0, p, size);
+            return down[p];
+          }
+          inline int i() const {
+            MEDDLY_CHECK_RANGE(0, p, size);
+            MEDDLY_DCASSERT(index);
+            return index[p];
+          }
+          inline int ei() const {
+            MEDDLY_CHECK_RANGE(0, p, size);
+            MEDDLY_DCASSERT(edges);
+            return ((int*)edges)[p];
+          }
+          inline float ef() const {
+            MEDDLY_CHECK_RANGE(0, p, size);
+            MEDDLY_DCASSERT(edges);
+            return ((float*)edges)[p];
+          }
+          inline void* eptr() const {
+            MEDDLY_CHECK_RANGE(0, p, size);
+            MEDDLY_DCASSERT(edges);
+            return ((char*)edges) + p * edge_bytes;
+          }
+          inline void restart() {
+            p = 0;
+          }
+          inline operator bool() const {
+            return p < size;
+          }
+          inline void operator++() {
+            p++;
+          }
+          // Move p so that index=i; return true on success
+          inline bool moveToIndex(int i) {
+            if (0==index) {
+              p = i;
+              return (p < size);
+            }
+            // sparse -- do a binary search
+            int low = 0;
+            int high = size;
+            while (low < high) {
+              p = (low+high) / 2;
+              MEDDLY_CHECK_RANGE(0, p, size);
+              if (index[p] == i) return true;
+              if (index[p] < i) low = p + 1;
+              else              high = p;
+            }
+            return false;
+          }
+        private:
+          const int* down;
+          const int* index;
+          const void* edges;
+          int size;
+          int p;
+          int edge_bytes;
+
+          friend class node_storage;
+      };
+
+  // --------------------------------------------------------
   // |  helpers for inlines.
   private:
       inline int& rawCountOf(int addr) const {
@@ -1141,6 +1223,8 @@ class MEDDLY::node_storage {
           MEDDLY_CHECK_RANGE(1, addr, last+1);
           return data[addr + size_index];
       }
+      inline int  sizeOf(int addr) const        { return rawSizeOf(addr); }
+      inline void setSizeOf(int addr, int sz)   { rawSizeOf(addr) = sz; }
       inline int* UH(int addr) const {
           MEDDLY_DCASSERT(data);
           return data + addr + commonHeaderLength;
@@ -1200,29 +1284,29 @@ class MEDDLY::node_storage {
           return data[addr + next_index] >= 0;
       }
 
-      inline int  sizeOf(int addr) const        { return rawSizeOf(addr); }
-      inline void setSizeOf(int addr, int sz)   { rawSizeOf(addr) = sz; }
+      inline void initScanner(scanner &s, int addr) const {
+        s.size = rawSizeOf(addr);
+        if (s.size < 0) {
+          // sparse
+          s.down = SD(addr);
+          s.index = SI(addr);
+          s.edges = edgeSize ? SE(addr) : 0;
+          s.edge_bytes = edgeSize * sizeof(int);
+          s.size = -s.size;
+        } else {
+          s.down = FD(addr);
+          s.index = 0;
+          s.edges = edgeSize ? FE(addr) : 0;
+          s.edge_bytes = edgeSize * sizeof(int);
+        }
+        s.restart();
+      }
 
-      inline int fullSizeOf(int addr) const     { return rawSizeOf(addr); }
-      inline int sparseSizeOf(int addr) const   { return -rawSizeOf(addr); }
-
-      inline int isFull(int addr) const       { return sizeOf(addr) >= 0; }
-      inline int isSparse(int addr) const     { return sizeOf(addr) < 0;  }
+  public:
 
       inline const int* unhashedHeaderOf(int addr) const { return UH(addr); }
 
       inline const int* hashedHeaderOf(int addr) const { return HH(addr); }
-
-      inline const int* fullDownOf(int addr) const { return FD(addr); }
-
-      inline const int* fullEdgeOf(int addr) const { return FE(addr); }
-
-      inline const int* sparseDownOf(int addr) const { return SD(addr); }
-
-      inline const int* sparseIndexesOf(int addr) const { return SI(addr); }
-
-      inline const int* sparseEdgeOf(int addr) const { return SE(addr); }
-
       
 
   // --------------------------------------------------------
@@ -1443,22 +1527,22 @@ class MEDDLY::expert_forest : public forest
     }
 #endif
     /// Is this a terminal node?
-    inline static bool isTerminalNode(int p) {
+    inline static bool isTerminalNode(long p) {
       return (p < 1);
     }
     /// Sanity check: is this a valid nonterminal node index.
-    inline bool isValidNonterminalIndex(int node) const {
+    inline bool isValidNonterminalIndex(long node) const {
       return (node>0) && (node <= a_last);
     }
     /// Sanity check: is this a valid node index.
-    inline bool isValidNodeIndex(int node) const {
+    inline bool isValidNodeIndex(long node) const {
       return node <= a_last;
     }
-    inline int getLastNode() const {
+    inline long getLastNode() const {
       return a_last;
     }
     /// Get data for a given nonterminal node.
-    inline const node_header& getNode(int p) const {
+    inline const node_header& getNode(long p) const {
       MEDDLY_DCASSERT(address);
       MEDDLY_CHECK_RANGE(1, p, 1+a_last);
       return address[p];
@@ -1466,16 +1550,16 @@ class MEDDLY::expert_forest : public forest
     /** Get the node's level as an integer.
         Negative values are used for primed levels.
     */
-    inline int getNodeLevel(int p) const {
+    inline int getNodeLevel(long p) const {
       if (isTerminalNode(p)) return 0;
       MEDDLY_DCASSERT(address);
       MEDDLY_CHECK_RANGE(1, p, 1+a_last);
       return address[p].level;
     }
-    inline bool isPrimedNode(int p) const {
+    inline bool isPrimedNode(long p) const {
       return getNodeLevel(p) < 0;
     }
-    inline bool isUnprimedNode(int p) const {
+    inline bool isUnprimedNode(long p) const {
       return getNodeLevel(p) > 0;
     }
 
@@ -1483,7 +1567,7 @@ class MEDDLY::expert_forest : public forest
         For convenience.  Height is the total
         number of levels until terminal nodes.
     */
-    inline int getNodeHeight(int p) const {
+    inline int getNodeHeight(long p) const {
       if (isForRelations()) {
         int k = getNodeLevel(p);
         return (k<0) ? (-2*k-1) : 2*k;
@@ -1495,7 +1579,7 @@ class MEDDLY::expert_forest : public forest
     /** Does this node represent an Index Set?
         Note: Only applicable to EV+MDDs.
     */
-    inline bool isIndexSet(int node) const {
+    inline bool isIndexSet(long node) const {
       if (!isEVPlus()) return false;
       if (isTerminalNode(node)) return node;
       // yes iff the unhashed extra header is non-zero.
@@ -1507,7 +1591,7 @@ class MEDDLY::expert_forest : public forest
     }
 
     /// Get the cardinality of an Index Set.
-    inline int getIndexSetCardinality(int node) const {
+    inline int getIndexSetCardinality(long node) const {
       MEDDLY_DCASSERT(isEVPlus());
       if (isTerminalNode(node)) return (node != 0) ? 1 : 0;
       // yes iff the unhashed extra header is non-zero.
@@ -1522,7 +1606,7 @@ class MEDDLY::expert_forest : public forest
     // --------------------------------------------------
     // Used by the unique table
     // --------------------------------------------------
-    inline int getNext(int p) const {
+    inline long getNext(long p) const {
       MEDDLY_DCASSERT(address);
       MEDDLY_DCASSERT(isValidNonterminalIndex(p));
 #ifdef NODE_STORAGE_PER_LEVEL
@@ -1533,7 +1617,7 @@ class MEDDLY::expert_forest : public forest
       return nodeMan.getNextOf(address[p].offset);
 #endif
     }
-    inline void setNext(int p, int n) {
+    inline void setNext(long p, long n) {
       MEDDLY_DCASSERT(address);
       MEDDLY_DCASSERT(isValidNonterminalIndex(p));
 #ifdef NODE_STORAGE_PER_LEVEL
@@ -1544,7 +1628,7 @@ class MEDDLY::expert_forest : public forest
       nodeMan.setNextOf(address[p].offset, n);
 #endif
     }
-    inline unsigned hash(int p) const {
+    inline unsigned hash(long p) const {
       MEDDLY_DCASSERT(address);
       MEDDLY_DCASSERT(isValidNonterminalIndex(p));
 #ifdef SAVE_HASH
@@ -1559,7 +1643,7 @@ class MEDDLY::expert_forest : public forest
     // --------------------------------------------------
 
     /// Returns the in-count for a node.
-    inline int readInCount(int p) const {
+    inline long readInCount(long p) const {
 #ifdef NODE_STORAGE_PER_LEVEL
       const node_header& node = getNode(p);
       return levels[node.level].getCountOf(node.offset);
@@ -1572,7 +1656,7 @@ class MEDDLY::expert_forest : public forest
         made to point to this node.
           @return p, for convenience.
     */
-    inline int linkNode(int p) {
+    inline long linkNode(long p) {
         MEDDLY_DCASSERT(isActiveNode(p));
         if (isTerminalNode(p)) return p;
         MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
@@ -1597,7 +1681,7 @@ class MEDDLY::expert_forest : public forest
         node may get marked for deletion. Call this when another node releases
         its connection to this node.
     */
-    inline void unlinkNode(int p) {
+    inline void unlinkNode(long p) {
         MEDDLY_DCASSERT(isActiveNode(p));
         if (isTerminalNode(p)) return;
         MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
@@ -1625,7 +1709,7 @@ class MEDDLY::expert_forest : public forest
         This version returns a reference to the cache-count. Therefore, the
         cache-count of the node can be modified by modifying the reference.
     */
-    inline int& getCacheCount(int p) {
+    inline int& getCacheCount(long p) {
       MEDDLY_DCASSERT(isValidNodeIndex(p));
       MEDDLY_DCASSERT(!isTerminalNode(p));
       return address[p].cache_count;
@@ -1635,7 +1719,7 @@ class MEDDLY::expert_forest : public forest
         compute cache entries that link to this node.
         This version returns a copy of the count.
     */
-    inline int getCacheCount(int p) const {
+    inline int getCacheCount(long p) const {
       MEDDLY_DCASSERT(isValidNodeIndex(p));
       MEDDLY_DCASSERT(!isTerminalNode(p));
       return address[p].cache_count;
@@ -1646,7 +1730,7 @@ class MEDDLY::expert_forest : public forest
           @param  p     Node we care about.
           @return p, for convenience.
     */
-    inline int cacheNode(int p) {
+    inline long cacheNode(long p) {
       MEDDLY_DCASSERT(isActiveNode(p));
       if (isTerminalNode(p)) return p;
       getCacheCount(p)++;
@@ -1661,7 +1745,7 @@ class MEDDLY::expert_forest : public forest
         is added to a cache. 
           @param  p     Node we care about.
     */
-    inline void uncacheNode(int p) {
+    inline void uncacheNode(long p) {
       if (isTerminalNode(p)) return;
       MEDDLY_DCASSERT(isActiveNode(p) ||
           (!isActiveNode(p) && isPessimistic() && isZombieNode(p)));
@@ -1695,7 +1779,7 @@ class MEDDLY::expert_forest : public forest
     ///   in-count and cache-count are zero.
     /// Pessimistic deletion: A node is said to be stale when the in-count
     ///  is zero regardless of the cache-count.
-    inline bool isStale(int node) const {
+    inline bool isStale(long node) const {
       return
         isMarkedForDeletion() || (
           isTerminalNode(node)
@@ -1737,23 +1821,23 @@ class MEDDLY::expert_forest : public forest
           @return   A malloc'd array of non-terminal nodes, terminated by 0.
                     Or, a null pointer, if the list is empty.
     */
-    int* markNodesInSubgraph(int root, bool sort) const;
+    long* markNodesInSubgraph(long root, bool sort) const;
 
     /** Count and return the number of non-terminal nodes
         in the subgraph below the given node.
     */
-    int getNodeCount(int node) const;
+    long getNodeCount(long node) const;
 
     /** Count and return the number of edges
         in the subgraph below the given node.
     */
-    int getEdgeCount(int node, bool countZeroes) const;
+    long getEdgeCount(long node, bool countZeroes) const;
 
     /// Display the contents of a single node.
-    void showNode(FILE* s, int node, int verbose = 0) const;
+    void showNode(FILE* s, long node, int verbose = 0) const;
 
     /// Show all the nodes in the subgraph below the given node.
-    void showNodeGraph(FILE* s, int node) const;
+    void showNodeGraph(FILE* s, long node) const;
 
     /** Show stats about memory usage for this forest.
           @param  s     Output stream to write to
@@ -1765,7 +1849,7 @@ class MEDDLY::expert_forest : public forest
     void reportMemoryUsage(FILE * s, const char* pad, int verb) const;
 
     /// Compute a hash for a node.
-    unsigned hashNode(int p) const;
+    unsigned hashNode(long p) const;
 
     /** Check and find the index of a single downward pointer.
 
@@ -1777,7 +1861,7 @@ class MEDDLY::expert_forest : public forest
                     then return the index for that pointer.
                     Otherwise, return a negative value.
     */
-    int getSingletonIndex(int node, int &down) const;
+    int getSingletonIndex(long node, long &down) const;
 
     /** Check and get a single downward pointer.
 
@@ -1788,8 +1872,8 @@ class MEDDLY::expert_forest : public forest
                     this node happens at \a index, then return the pointer.
                     Otherwise, return 0.
     */
-    inline int getSingletonDown(int node, int index) const {
-      int down;
+    inline long getSingletonDown(long node, int index) const {
+      long down;
       if (getSingletonIndex(node, down) == index) return down;
       return 0;
     }
@@ -1800,12 +1884,23 @@ class MEDDLY::expert_forest : public forest
         For reading all or several downward pointers, a
         node_reader should be used instead.
 
-          @param  node    Node to look at
+          @param  p       Node to look at
           @param  index   Index of the pointer we want.
 
           @return         The downward pointer at that index.
     */
-    int getDownPtr(int node, int index) const;
+    inline long getDownPtr(long p, int index) const {
+        MEDDLY_DCASSERT(index>=0);
+        node_storage::scanner ns;
+#ifdef NODE_STORAGE_PER_LEVEL
+        const node_header& node = getNode(p);
+        MEDDLY_DCASSERT(node.level);
+        levels[node.level].initScanner(ns, node.offset);
+#else
+        nodeMan.initScanner(ns, getNode(p).offset);
+#endif
+        return ns.moveToIndex(index) ? ns.d() : 0;
+    }
 
     /** For a given node, get a specified downward pointer.
 
@@ -1813,13 +1908,30 @@ class MEDDLY::expert_forest : public forest
         For reading all or several downward pointers, a
         node_reader should be used instead.
 
-          @param  node    Node to look at
+          @param  p       Node to look at
           @param  index   Index of the pointer we want.
 
           @param  ev      Output: edge value at that index.
           @param  dn      Output: downward pointer at that index.
     */
-    void getDownPtr(int node, int index, int& ev, int& dn) const;
+    inline void getDownPtr(long p, int index, int& ev, long& dn) const {
+        MEDDLY_DCASSERT(index>=0);
+        node_storage::scanner ns;
+#ifdef NODE_STORAGE_PER_LEVEL
+        const node_header& node = getNode(p);
+        MEDDLY_DCASSERT(node.level);
+        levels[node.level].initScanner(ns, node.offset);
+#else
+        nodeMan.initScanner(ns, getNode(p).offset);
+#endif
+        if (ns.moveToIndex(index)) {
+          dn = ns.d();
+          ev = ns.ei();
+        } else {
+          ev = 0;
+          dn = 0;
+        }
+    }
 
     /** For a given node, get a specified downward pointer.
 
@@ -1827,13 +1939,30 @@ class MEDDLY::expert_forest : public forest
         For reading all or several downward pointers, a
         node_reader should be used instead.
 
-          @param  node    Node to look at
+          @param  p       Node to look at
           @param  index   Index of the pointer we want.
 
           @param  ev      Output: edge value at that index.
           @param  dn      Output: downward pointer at that index.
     */
-    void getDownPtr(int node, int index, float& ev, int& dn) const;
+    inline void getDownPtr(long p, int index, float& ev, long& dn) const {
+        MEDDLY_DCASSERT(index>=0);
+        node_storage::scanner ns;
+#ifdef NODE_STORAGE_PER_LEVEL
+        const node_header& node = getNode(p);
+        MEDDLY_DCASSERT(node.level);
+        levels[node.level].initScanner(ns, node.offset);
+#else
+        nodeMan.initScanner(ns, getNode(p).offset);
+#endif
+        if (ns.moveToIndex(index)) {
+          dn = ns.d();
+          ev = ns.ef();
+        } else {
+          ev = 0;
+          dn = 0;
+        }
+    }
 
 
   // ------------------------------------------------------------
@@ -1845,7 +1974,7 @@ class MEDDLY::expert_forest : public forest
           @param  full    true:   Use a full reader.
                           false:  Use a sparse reader.
     */
-    inline void initNodeReader(node_reader &nr, int node, bool full) const {
+    inline void initNodeReader(node_reader &nr, long node, bool full) const {
       const node_header &n = getNode(node);
 #ifdef NODE_STORAGE_PER_LEVEL
       node_storage& nodeMan = levels[n.level];
@@ -1856,7 +1985,7 @@ class MEDDLY::expert_forest : public forest
     }
 
     /// Allocate and initialize a node reader.
-    inline node_reader* initNodeReader(int node, bool full) const {
+    inline node_reader* initNodeReader(long node, bool full) const {
       node_reader* nr = node_reader::useReader();
       MEDDLY_DCASSERT(nr);
       initNodeReader(*nr, node, full);
@@ -1871,10 +2000,11 @@ class MEDDLY::expert_forest : public forest
           @param  node    Downward pointer to use.
           @param  full    Use a full reader or sparse.
     */
-    void initRedundantReader(node_reader &nr, int k, int node, bool full) const;
+    void initRedundantReader(node_reader &nr, int k, long node, bool full)
+    const;
 
     /// Allocate and initialize a redundant node reader.
-    inline node_reader* initRedundantReader(int k, int node, bool full) const {
+    inline node_reader* initRedundantReader(int k, long node, bool full) const {
       node_reader* nr = node_reader::useReader();
       MEDDLY_DCASSERT(nr);
       initRedundantReader(*nr, k, node, full);
@@ -1891,11 +2021,12 @@ class MEDDLY::expert_forest : public forest
           @param  node    Downward pointer to use.
           @param  full    Use a full reader or sparse.
     */
-    void initRedundantReader(node_reader &nr, int k, int ev, int node, 
+    void initRedundantReader(node_reader &nr, int k, int ev, long node, 
       bool full) const;
 
     /// Allocate and initialize a redundant node reader.
-    inline node_reader* initRedundantReader(int k, int ev, int nd, bool full) const {
+    inline node_reader* initRedundantReader(int k, int ev, long nd, bool full) 
+    const {
       node_reader* nr = node_reader::useReader();
       MEDDLY_DCASSERT(nr);
       initRedundantReader(*nr, k, ev, nd, full);
@@ -1911,7 +2042,8 @@ class MEDDLY::expert_forest : public forest
           @param  n       Downward pointer to use.
           @param  f       Use a full reader or sparse.
     */
-    void initIdentityReader(node_reader &nr, int k, int i, int n, bool f) const;
+    void initIdentityReader(node_reader &nr, int k, int i, long n, bool f) 
+    const;
 
     /** Initialize an identity node reader.
         Use for edge-valued forests, whose edge values
@@ -1924,11 +2056,11 @@ class MEDDLY::expert_forest : public forest
           @param  n       Downward pointer to use.
           @param  f       Use a full reader or sparse.
     */
-    void initIdentityReader(node_reader &nr, int k, int i, int ev, int n, 
+    void initIdentityReader(node_reader &nr, int k, int i, int ev, long n, 
       bool f) const;
 
     /// Allocate and initialize an identity node reader.
-    inline node_reader* initIdentityReader(int k, int i, int node, 
+    inline node_reader* initIdentityReader(int k, int i, long node, 
       bool full) const 
     {
       node_reader* nr = node_reader::useReader();
@@ -1972,9 +2104,9 @@ class MEDDLY::expert_forest : public forest
                         the forest reduction rules
                         and if a duplicate node exists.
     */
-    inline int createReducedNode(int in, node_builder& nb) {
+    inline long createReducedNode(int in, node_builder& nb) {
       nb.computeHash();
-      int q = createReducedHelper(in, nb);
+      long q = createReducedHelper(in, nb);
       MEDDLY_DCASSERT(nb.lock);
       nb.lock = false;
 #ifdef TRACK_DELETIONS
@@ -1998,7 +2130,7 @@ class MEDDLY::expert_forest : public forest
                         and if a duplicate node exists.
     */
     template <class T>
-    inline void createReducedNode(int in, node_builder& nb, T& ev, int& node) {
+    inline void createReducedNode(int in, node_builder& nb, T& ev, long& node) {
       normalize(nb, ev);
       nb.computeHash();
       node = createReducedHelper(in, nb);
@@ -2039,7 +2171,7 @@ class MEDDLY::expert_forest : public forest
           
           @return   true, iff the nodes are duplicates.
     */
-    virtual bool areDuplicates(int node, const node_builder &nb) const = 0;
+    virtual bool areDuplicates(long node, const node_builder &nb) const = 0;
 
     /** Discover duplicate nodes.
         Right now, used for sanity checks only.
@@ -2049,7 +2181,7 @@ class MEDDLY::expert_forest : public forest
           
           @return   true, iff the nodes are duplicates.
     */
-    virtual bool areDuplicates(int node, const node_reader &nr) const = 0;
+    virtual bool areDuplicates(long node, const node_reader &nr) const = 0;
 
     /** Is this a redundant node that can be eliminated?
         Must be implemented in derived forests
@@ -2086,18 +2218,18 @@ class MEDDLY::expert_forest : public forest
   // ------------------------------------------------------------
   // inlined helpers.
   protected:
-    inline bool isZombieNode(int p) const {
+    inline bool isZombieNode(long p) const {
       MEDDLY_DCASSERT(isValidNodeIndex(p));
       MEDDLY_DCASSERT(!isTerminalNode(p));
       return (getCacheCount(p) < 0);
     }
 
-    inline bool isActiveNode(int p) const {
+    inline bool isActiveNode(long p) const {
       return 
       (isValidNodeIndex(p) && (isTerminalNode(p) || getNode(p).offset > 0));
     }
 
-    inline bool isDeletedNode(int p) const {
+    inline bool isDeletedNode(long p) const {
       MEDDLY_DCASSERT(isValidNonterminalIndex(p));
       return !(isActiveNode(p) || isZombieNode(p));
     }
@@ -2107,7 +2239,7 @@ class MEDDLY::expert_forest : public forest
   // |  Management of node headers.
   // | 
   protected:
-    inline int getFreeNodeHandle() {
+    inline long getFreeNodeHandle() {
       MEDDLY_DCASSERT(address);
       stats.incActive(1);
       stats.incMemUsed(sizeof(node_header));
@@ -2115,7 +2247,7 @@ class MEDDLY::expert_forest : public forest
         a_unused = address[a_unused].getNextDeleted();
       }
       if (a_unused) {     // get a recycled one
-        int p = a_unused;
+        long p = a_unused;
         MEDDLY_DCASSERT(address[p].isDeleted());
         a_unused = address[p].getNextDeleted();
         return p;
@@ -2128,7 +2260,7 @@ class MEDDLY::expert_forest : public forest
       return a_last;
     }
 
-    inline void freeActiveNode(int p) {
+    inline void freeActiveNode(long p) {
       MEDDLY_DCASSERT(address);
       MEDDLY_DCASSERT(isValidNonterminalIndex(p));
       MEDDLY_DCASSERT(address[p].isActive());
@@ -2136,7 +2268,7 @@ class MEDDLY::expert_forest : public forest
       recycleNodeHandle(p);
     }
 
-    inline void freeZombieNode(int p) {
+    inline void freeZombieNode(long p) {
       MEDDLY_DCASSERT(address);
       MEDDLY_DCASSERT(isValidNonterminalIndex(p));
       stats.zombie_nodes--;
@@ -2149,7 +2281,7 @@ class MEDDLY::expert_forest : public forest
       recycleNodeHandle(p);
     }
 
-    inline void recycleNodeHandle(int p) {
+    inline void recycleNodeHandle(long p) {
       MEDDLY_DCASSERT(address);
       MEDDLY_DCASSERT(p>0);
       MEDDLY_DCASSERT(0==address[p].cache_count);
@@ -2235,7 +2367,7 @@ class MEDDLY::expert_forest : public forest
         : (stats.orphan_nodes > deflt.orphanTrigger);
     }
     /// Returns the in-count for a node.
-    inline int getInCount(int p) {
+    inline int getInCount(long p) {
 #ifdef NODE_STORAGE_PER_LEVEL
       const node_header& node = getNode(p);
       return levels[node.level].getCountOf(node.offset);
@@ -2244,7 +2376,7 @@ class MEDDLY::expert_forest : public forest
 #endif
     }
     /// Sets the in-count for a node.
-    inline void setInCount(int p, int c) {
+    inline void setInCount(long p, int c) {
 #ifdef NODE_STORAGE_PER_LEVEL
       const node_header& node = getNode(p);
       levels[node.level].setCountOf(node.offset, c);
@@ -2260,7 +2392,7 @@ class MEDDLY::expert_forest : public forest
           @param  old_addr    Current address of node, for sanity check
           @param  new_addr    Where we're moving the node to
     */
-    inline void moveNodeOffset(int node, int old_addr, int new_addr) 
+    inline void moveNodeOffset(long node, long old_addr, long new_addr) 
     {
       MEDDLY_DCASSERT(address);
       MEDDLY_DCASSERT(old_addr == address[node].offset);
@@ -2272,10 +2404,10 @@ class MEDDLY::expert_forest : public forest
   // ------------------------------------------------------------
   // helpers for this class
   private:
-    void handleNewOrphanNode(int node);   
-    void deleteOrphanNode(int node);     
-    void deleteNode(int p);
-    void zombifyNode(int p);
+    void handleNewOrphanNode(long node);   
+    void deleteOrphanNode(long node);     
+    void deleteNode(long p);
+    void zombifyNode(long p);
 
     /** Apply reduction rule to the temporary node and finalize it. 
         Once a node is reduced, its contents cannot be modified.
@@ -2338,13 +2470,13 @@ class MEDDLY::expert_forest : public forest
     /// address info for nodes
     node_header *address;
     /// Size of address/next array.
-    int a_size;
+    long a_size;
     /// Last used address.
-    int a_last;
+    long a_last;
     /// Pointer to unused address list.
-    int a_unused;
+    long a_unused;
     /// Next time we shink the address list.
-    int a_next_shrink;
+    long a_next_shrink;
 
 
   private:

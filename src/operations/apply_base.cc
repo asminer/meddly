@@ -67,7 +67,7 @@ void MEDDLY::generic_binary_mdd::compute(const dd_edge &a, const dd_edge &b,
   dd_edge &c)
 {
   int cnode = compute(a.getNode(), b.getNode());
-  c.set(cnode, 0, resF->getNodeLevel(cnode));
+  c.set(cnode, 0);
 #ifdef TRACE_ALL_OPS
   printf("completed %s(%d, %d) = %d\n", 
     getName(), a.getNode(), b.getNode(), cnode);
@@ -168,7 +168,7 @@ void MEDDLY::generic_binary_mxd::compute(const dd_edge &a, const dd_edge &b,
   dd_edge &c)
 {
   int cnode = compute(a.getNode(), b.getNode());
-  c.set(cnode, 0, resF->getNodeLevel(cnode));
+  c.set(cnode, 0);
 #ifdef DEVELOPMENT_CODE
   resF->validateIncounts(true);
 #endif
@@ -323,7 +323,7 @@ void MEDDLY::generic_binbylevel_mxd
   int result = compute(
     resF->getDomain()->getNumVariables(), a.getNode(), b.getNode()
   );
-  c.set(result, 0, resF->getNodeLevel(result));
+  c.set(result, 0);
 #ifdef DEVELOPMENT_CODE
   resF->validateIncounts(true);
 #endif
@@ -463,7 +463,7 @@ void MEDDLY::generic_binary_evplus
   a.getEdgeValue(aev);
   b.getEdgeValue(bev);
   compute(aev, a.getNode(), bev, b.getNode(), ev, result);
-  c.set(result, ev, resF->getNodeLevel(result));
+  c.set(result, ev);
 #ifdef DEVELOPMENT_CODE
   resF->validateIncounts(true);
 #endif
@@ -498,9 +498,11 @@ void MEDDLY::generic_binary_evplus
 
   // do computation
   for (int i=0; i<resultSize; i++) {
+    int  d;
     compute(aev + A->ei(i), A->d(i), 
             bev + B->ei(i), B->d(i), 
-            nb.ei(i), nb.d(i));
+            nb.ei(i), d);
+    nb.d(i) = d;
   }
 
   // cleanup
@@ -508,7 +510,9 @@ void MEDDLY::generic_binary_evplus
   node_reader::recycle(A);
 
   // Reduce
-  resF->createReducedNode(-1, nb, cev, c);
+  long cl;
+  resF->createReducedNode(-1, nb, cev, cl);
+  c = cl;
 
   // Add to CT
   saveResult(aev, a, bev, b, cev, c);
@@ -551,7 +555,7 @@ void MEDDLY::generic_binary_evtimes
   a.getEdgeValue(aev);
   b.getEdgeValue(bev);
   compute(aev, a.getNode(), bev, b.getNode(), ev, result);
-  c.set(result, ev, resF->getNodeLevel(result));
+  c.set(result, ev);
 #ifdef DEVELOPMENT_CODE
   resF->validateIncounts(true);
 #endif
@@ -586,9 +590,11 @@ void MEDDLY::generic_binary_evtimes
 
   // do computation
   for (int i=0; i<resultSize; i++) {
+    int d;
     compute(aev * A->ef(i), A->d(i), 
             bev * B->ef(i), B->d(i), 
-            nb.ef(i), nb.d(i));
+            nb.ef(i), d);
+    nb.d(i) = d;
   }
 
   // cleanup
@@ -596,7 +602,9 @@ void MEDDLY::generic_binary_evtimes
   node_reader::recycle(A);
 
   // Reduce
-  resF->createReducedNode(-1, nb, cev, c);
+  long cl;
+  resF->createReducedNode(-1, nb, cev, cl);
+  c = cl;
 
   // Add to CT
   saveResult(aev, a, bev, b, cev, c);

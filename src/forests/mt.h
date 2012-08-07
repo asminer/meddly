@@ -73,8 +73,8 @@ class MEDDLY::mt_forest : public expert_forest {
     virtual bool areEdgeValuesHashed() const {
         return false;
     }
-    virtual bool areDuplicates(int node, const node_builder &nb) const;
-    virtual bool areDuplicates(int node, const node_reader &nr) const;
+    virtual bool areDuplicates(long node, const node_builder &nb) const;
+    virtual bool areDuplicates(long node, const node_reader &nr) const;
 
     virtual bool isRedundant(const node_builder &nb) const;
     virtual bool isIdentityEdge(const node_builder &nb, int i) const;
@@ -93,62 +93,59 @@ class MEDDLY::mt_forest : public expert_forest {
             throw error(error::INVALID_ASSIGNMENT);
         if (getEdgeLabeling() != MULTI_TERMINAL)
             throw error(error::INVALID_OPERATION);
-        int *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
-        int node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
+        long *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
+        long node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
 
-        result.set(node, 0, getNodeLevel(node));
+        result.set(node, 0);
     }
 
     template <class T>
-    inline bool areDupsInternal(int p, const T &nb) const {
+    inline bool areDupsInternal(long p, const T &nb) const {
         const node_header &node = getNode(p);
         if (node.level != nb.getLevel()) return false;
 #ifdef NODE_STORAGE_PER_LEVEL
         const node_storage &nodeMan = levels[node.level];
 #endif
-        if (nodeMan.isFull(node.offset)) {
+        node_storage::scanner np;
+        nodeMan.initScanner(np, node.offset);
+        if (np.isFull()) {
           //
           // p is full
           //
-          int fs = nodeMan.fullSizeOf(node.offset);
-          const int* pd = nodeMan.fullDownOf(node.offset);
           if (nb.isFull()) {
-            int i;
-            for (i=0; i<fs; i++) if (pd[i] != nb.d(i)) return false;
-            for (; i<nb.getSize(); i++) if (nb.d(i)) return false;
+            for (; np; ++np) {
+              if (np.d() != nb.d(np.count())) return false;
+            }
+            for (int i=np.count(); i<nb.getSize(); i++) 
+              if (nb.d(i)) return false;
             return true;
           }
           MEDDLY_DCASSERT(nb.isSparse()); 
-          int i = 0;
           for (int z=0; z<nb.getNNZs(); z++) {
-            if (nb.i(z) >= fs) return false;
-            for (; i<nb.i(z); i++) if (pd[i]) return false;
-            if (pd[i] != nb.d(z)) return false;
-            i++;
+            if (nb.i(z) >= np.fullSize()) return false;
+            for (; np.count()<nb.i(z); ++np) if (np.d()) return false;
+            if (np.d() != nb.d(z)) return false;
+            ++np;
           } // for z
-          for (; i<fs; i++) if (pd[i]) return false;
+          for (; np; ++np) if (np.d()) return false;
           return true;
-        }
+        } 
         //
         // p is sparse
         //
-        int nnz = nodeMan.sparseSizeOf(node.offset);
-        const int* pd = nodeMan.sparseDownOf(node.offset);
-        const int* pi = nodeMan.sparseIndexesOf(node.offset);
-
         if (nb.isSparse()) {
-          if (nnz != nb.getNNZs()) return false;
-          for (int z=0; z<nnz; z++) {
-            if (nb.d(z) != pd[z]) return false;
-            if (nb.i(z) != pi[z]) return false;
+          if (np.sparseSize() != nb.getNNZs()) return false;
+          for (int z=0; z<np.sparseSize(); ++z, ++np) {
+            if (nb.d(z) != np.d()) return false;
+            if (nb.i(z) != np.i()) return false;
           }
           return true;
         }
         MEDDLY_DCASSERT(nb.isFull()); 
         int i = 0;
-        for (int z=0; z<nnz; z++) {
-          for (; i<pi[z]; i++) if (nb.d(i)) return false;
-          if (nb.d(i) != pd[z]) return false;
+        for (; np; ++np) {
+          for (; i<np.i(); i++) if (nb.d(i)) return false;
+          if (nb.d(i) != np.d()) return false;
           i++;
         }
         for (; i<nb.getSize(); i++) if (nb.d(i)) return false;
@@ -161,7 +158,7 @@ class MEDDLY::mt_forest : public expert_forest {
     /// Add a redundant node at level k.
     /// On input: d is the node "below" us, to point to.
     /// On output: d is the redundant node.
-    inline void insertRedundantNode(int k, int& d) {
+    inline void insertRedundantNode(int k, long& d) {
       MEDDLY_DCASSERT(!isFullyReduced());
       bool useIdentity = false;
       if (isIdentityReduced()) {
@@ -171,7 +168,7 @@ class MEDDLY::mt_forest : public expert_forest {
       node_builder& nb = useNodeBuilder(k, sz);
       if (useIdentity) {
         // check for identity reductions with d
-        int sd;
+        long sd;
         int si = getSingletonIndex(d, sd);
         for (int i=0; i<sz; i++) {
           nb.d(i) = linkNode(
@@ -189,24 +186,24 @@ class MEDDLY::mt_forest : public expert_forest {
   // ------------------------------------------------------------
   // still to be organized:
   public:
-    void compareCacheCounts(int p = -1);
+    // void compareCacheCounts(int p = -1);
 
 
   protected:
     // Building level nodes
-    int buildLevelNodeHelper(int lh, int* terminalNodes, int sz);
+    long buildLevelNodeHelper(int lh, long* terminalNodes, int sz);
 
     // Building custom level nodes
-    int* getTerminalNodes(int n, bool* terms);
-    int* getTerminalNodes(int n, int* terms);
-    int* getTerminalNodes(int n, float* terms);
+    long* getTerminalNodes(int n, bool* terms);
+    long* getTerminalNodes(int n, int* terms);
+    long* getTerminalNodes(int n, float* terms);
 
   protected:
 
     bool counting;
 
     // scratch pad for buildLevelNode and getTerminalNodes
-    int* dptrs;
+    long* dptrs;
     int dptrsSize;
 
 };

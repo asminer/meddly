@@ -53,7 +53,7 @@ inline void unlinkNode(MEDDLY::forest* p, int node)
 
 MEDDLY::dd_edge::dd_edge()
 : parent(0),
-  node(0), value(0), level(0), index(-1),
+  node(0), value(0), index(-1),
   opPlus(0), opStar(0), opMinus(0), opDivide(0)
 {
 #ifdef DEBUG_CLEANUP
@@ -64,7 +64,7 @@ MEDDLY::dd_edge::dd_edge()
 // Constructor.
 MEDDLY::dd_edge::dd_edge(forest* p)
 : parent(p),
-  node(0), value(0), level(0), index(-1),
+  node(0), value(0), index(-1),
   opPlus(0), opStar(0), opMinus(0), opDivide(0)
 {
 #ifdef DEBUG_CLEANUP
@@ -115,7 +115,6 @@ void MEDDLY::dd_edge::init(const dd_edge &e)
   parent = e.parent;
   node = e.node;
   value = e.value;
-  level = e.level;
 
   linkNode(parent, node);
 
@@ -147,24 +146,30 @@ void MEDDLY::dd_edge::getEdgeValue(float& ev) const
   ev = toFloat(value);
 }
 
-
-void MEDDLY::dd_edge::set(int n, int v, int l)
+int MEDDLY::dd_edge::getLevel() const
 {
-  int old = node;
+  if (0==node) return 0;
+  MEDDLY_DCASSERT(parent);
+  const expert_forest* ef = dynamic_cast <expert_forest*>(parent);
+  MEDDLY_DCASSERT(ef);
+  return ef->getNodeLevel(node);
+}
+
+void MEDDLY::dd_edge::set(long n, int v)
+{
+  long old = node;
   node = n;
   unlinkNode(parent, old);
   value = v;
-  level = l;
 }
 
 
-void MEDDLY::dd_edge::set(int n, float v, int l)
+void MEDDLY::dd_edge::set(long n, float v)
 {
-  int old = node;
+  long old = node;
   node = n;
   unlinkNode(parent, old);
   value = toInt(v);
-  level = l;
 }
 
 
@@ -257,15 +262,14 @@ void MEDDLY::dd_edge::show(FILE* strm, int verbosity) const
     }
   }
   else {
-    fprintf(strm, "node: %d, ", node);
+    fprintf(strm, "node: %ld, ", node);
   }
   if (eParent->getEdgeLabeling() == forest::EVTIMES) {
-    // fprintf(strm, "value: %f, level: %d)\n", toFloat(value), level);
     float ev = 0;
     getEdgeValue(ev);
-    fprintf(strm, "value: %f, level: %d)\n", ev, level);
+    fprintf(strm, "value: %f, level: %d)\n", ev, getLevel());
   } else {
-    fprintf(strm, "value: %d, level: %d)\n", value, level);
+    fprintf(strm, "value: %d, level: %d)\n", value, getLevel());
   }
   if (verbosity == 2 || verbosity == 3) {
     if (eParent->isMultiTerminal()) {
@@ -286,7 +290,7 @@ void MEDDLY::dd_edge::show(FILE* strm, int verbosity) const
     eParent->showNodeGraph(strm, node);
   }
   if (verbosity == 1 || verbosity == 3) {
-    fprintf(strm, "Cardinality of node %d: %0.8e\n", node, getCardinality());
+    fprintf(strm, "Cardinality of node %ld: %0.8e\n", node, getCardinality());
   }
 }
 
