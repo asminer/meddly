@@ -32,6 +32,10 @@
 // #define MEMORY_TRACE
 // #define DEEP_MEMORY_TRACE
 
+
+
+#ifndef TEST_ENCODING // HACK - turn off lots of code, for testing
+
 // ******************************************************************
 // *                                                                *
 // *                                                                *
@@ -280,7 +284,6 @@ MEDDLY::node_storage::node_storage()
 
 MEDDLY::node_storage::~node_storage()
 {
-  // use clear() to free memory
   if (parent) parent->changeStats().decMemAlloc(size*sizeof(int));
   free(data);
 }
@@ -298,7 +301,6 @@ void MEDDLY::node_storage::init(expert_forest* p)
   holes_top = 0;
   holes_bottom = 0;
   hole_slots = 0;
-  zombie_nodes = 0;
   edgeSize = parent->edgeSize();
   unhashedHeader = parent->unhashedHeaderSize();
   hashedHeader = parent->hashedHeaderSize();
@@ -1227,4 +1229,313 @@ int MEDDLY::node_storage::allocNode(int sz, int tail, bool clear)
 #endif
   return off;
 }
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                     node_compacted helpers                     *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+#endif  // #ifndef TEST_ENCODING
+
+template <int bytes, class INT>
+inline void valToData(INT a, unsigned char* b)
+{
+  //
+  // The compiler is smart enough to optimize out these if's
+  //
+  b[0] = a & 0xff;
+  if (bytes > 1)  { a >>= 8;  b[1] = a & 0xff;  }
+  if (bytes > 2)  { a >>= 8;  b[2] = a & 0xff;  }
+  if (bytes > 3)  { a >>= 8;  b[3] = a & 0xff;  }
+  if (bytes > 4)  { a >>= 8;  b[4] = a & 0xff;  }
+  if (bytes > 5)  { a >>= 8;  b[5] = a & 0xff;  }
+  if (bytes > 6)  { a >>= 8;  b[6] = a & 0xff;  }
+  if (bytes > 7)  { a >>= 8;  b[7] = a & 0xff;  }
+}
+
+template <int bytes, class INT>
+inline void dataToVal(const unsigned char* b, INT &a)
+{
+  //
+  // The compiler is smart enough to optimize out these if's
+  //
+  if (bytes > 7)  { a |= b[7];  a <<= 8;  }
+  if (bytes > 6)  { a |= b[6];  a <<= 8;  }
+  if (bytes > 5)  { a |= b[5];  a <<= 8;  }
+  if (bytes > 4)  { a |= b[4];  a <<= 8;  }
+  if (bytes > 3)  { a |= b[3];  a <<= 8;  }
+  if (bytes > 2)  { a |= b[2];  a <<= 8;  }
+  if (bytes > 1)  { a |= b[1];  a <<= 8;  }
+  a |= b[0];
+}
+
+template <int bytes>
+inline void longToData(long L, unsigned char* d)
+{
+  valToData<bytes>(L, d);
+}
+
+template <int bytes>
+inline void dataToLong(const unsigned char* d, long& L)
+{
+  // deal with negatives properly
+  if (d[bytes-1] & 0x80) {
+    L = (~0L) << 8;
+  } else {
+    L = 0;
+  }
+  dataToVal<bytes>(d, L);
+}
+
+template <int bytes>
+inline void intToData(int L, unsigned char* d)
+{
+  valToData<bytes>(L, d);
+}
+
+template <int bytes>
+inline void dataToInt(const unsigned char* d, int& L)
+{
+  // deal with negatives properly
+  if (d[bytes-1] & 0x80) {
+    L = (~0) << 8;
+  } else {
+    L = 0;
+  }
+  dataToVal<bytes>(d, L);
+}
+
+template <int bytes>
+inline void downToData(long P, unsigned char* d)
+{
+  // positive P: as usual.
+  if (P >= 0) {
+    valToData<bytes>(P, d);
+    return;
+  }
+
+  // negative P: this is a terminal pointer.
+  //              next msb set - terminal value is negative.
+  //
+  //  No conversion necessary because msb propogates when we shift
+  static const unsigned long nmsb = (0x40L) << ((sizeof(long)-1)*8);
+  if (P & nmsb) {
+    valToData<bytes>(P, d);
+    return;
+  }
+
+  // negative P: this is a terminal pointer.
+  //              next msb clr - terminal value is positive.
+  //              
+  //  The thing to do here is deal with the msb manually:
+  //  clear msb, encode, set msb.
+  static const unsigned long msboff = ~ ((0x80L) << ((sizeof(long)-1)*8));
+  valToData<bytes>(P & msboff, d);
+  d[bytes-1] |= 0x80;
+}
+
+template <int bytes>
+inline void dataToDown(const unsigned char* d, long& P)
+{
+  // Is this a terminal value?
+  if (d[bytes-1] & 0x80) {
+    // YES.
+    // Is this a negative terminal value?
+    if (d[bytes-1] & 0x40) {
+      // YES.
+      // Easy case: same as ordinary negatives.
+      P = (~0L) << 8;
+      dataToVal<bytes>(d, P);
+      return;
+    }
+    // NO.
+    // Positive terminal value.
+    P = 0;
+    dataToVal<bytes>(d, P);
+    if (bytes != 8) {
+      // Move MSB
+      static const unsigned long bmsboff = ~ ((0x80L) << ((bytes-1)*8));
+      static const unsigned long msbon = (0x80L) << ((sizeof(long)-1)*8);
+      P = (P & bmsboff) | msbon;
+    }
+    return;
+  }
+
+  // non-terminal value: as usual
+  P = 0;
+  dataToVal<bytes>(d, P);
+}
+
+template <class INT>
+inline void bytesRequiredForVal(INT a, int& bytes)
+{
+  if (sizeof(INT) == bytes) return;
+  long la = (a<0) ? -(a<<1) : a<<1; 
+  static unsigned long msbyte = (0xffL) << (sizeof(INT)-1)*8;
+  unsigned long mask = msbyte;
+  for (int b=sizeof(INT); b>bytes; b--) {
+    if (la & mask) {
+      bytes = b;
+      return;
+    }
+    mask = (mask >> 8) & ~msbyte;
+  }
+}
+
+inline void bytesRequiredForDown(long a, int& bytes)
+{
+  if (a<0) {
+    // terminal value
+    a <<= 1;
+    if (a<0) {
+      a <<= 1;
+      a = -a;
+    } else {
+      a <<= 1;
+    }
+  } else {
+    a <<= 1;
+  }
+  static unsigned long msbyte = (0xffL) << (sizeof(long)-1)*8;
+  unsigned long mask = msbyte;
+  for (int b=sizeof(long); b>bytes; b--) {
+    if (a & mask) {
+      bytes = b;
+      return;
+    }
+    mask = (mask >> 8) & ~msbyte;
+  }
+}
+
+#ifndef TEST_ENCODING // turn off code
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                     node_compacted methods                     *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+/*
+    Data is stored in a char* array, so we have to copy stuff off
+    (since things might not be aligned properly).
+    Nodes are stored as follows (numbers are offsets into the "address").
+    Hole storage details follow.
+
+      long: >=0:  The incoming count; this is an active node.
+            < 0:  This is a hole; number of bytes in the hole.
+
+      long: >=0:  Next pointer in the unique table.
+            < 0:  This node is not in the unique table yet;
+                  some special value is here to indicate status.
+       
+      uint(32b):  Size.  Number of downward pointers stored.
+
+      uchar(8b):  Compression info.
+                  High 4 bits:  dpbytes, the number of bytes used 
+                                to store downward pointers.
+                                Range of possible values is 0-15, 
+                                but currently, only the values 1-8 are used.
+
+                  Low 4 bits:   ixbytes, number of bytes used to store indexes.
+                                Range of possible values is 0-15,
+                                but currently, only the values 0-4 are used.
+                                (Max node size is 2^31-1).
+                                A count of 0 means the node is stored in full;
+                                otherwise, the node is stored sparsely.
+
+      uhbytes:    Unhashed header info; might be 0 bytes.
+      hhbytes:    Hashed header info; might be 0 bytes.
+
+      dpbytes:    Down pointer [0]
+        :
+        :
+      dpbytes:    Down pointer [size-1]
+
+
+      ixbytes:    Index value [0]
+        :
+        :
+      ixbytes:    Index value [size-1]
+
+
+      evbytes:    Edge value [0]
+        :
+        :
+      evbytes:    Edge value [size-1]
+
+      long: < 0:  -padlen; number of unused bytes.
+                  (With hole recycling, we might use a hole that is
+                  a few bytes larger than needed.)
+
+                  (extra bytes here, if any)
+
+      long: > 0:  The very last slot is a non-negative long, giving
+                  the forest node number.
+                  (A negative value here indicates a hole.)
+
+
+      The absolute smallest number of bytes for a node,
+      assuming a zero size is allowed, is therefore:
+        2 longs + 1 int + 1 char + 1 long
+      
+
+      Holes are stored using a grid.
+      Currently, holes require more storage than the smallest possible
+      node.  If we switch to lists, we can save one long per hole,
+      and then they will be very close.
+
+      Holes are stored as follows.
+
+        long: < 0:  -number of bytes in the hole
+
+        long: >=0:  This is an index hole,
+                    and this is an upward pointer in the grid.
+              < 0:  This is a non-index hole.  Value is ignored.
+
+        long:       down or previous pointer.
+        long:       next pointer.
+          :
+          :         (unused bytes)
+          :
+        long: < 0:  -number of bytes in the hole
+
+
+
+*/
+
+MEDDLY::node_compacted::node_compacted()
+{
+  parent = 0;
+}
+
+MEDDLY::node_compacted::~node_compacted()
+{
+  if (parent) parent->changeStats().decMemAlloc(size);
+  free(data);
+}
+
+void MEDDLY::node_compacted::init(expert_forest* p)
+{
+  MEDDLY_DCASSERT(0==parent);
+  parent = p;
+  data = 0;
+  data_down = 0;
+  size = 0;
+  last = 0;
+  max_request = 0;
+  large_holes = 0;
+  holes_top = 0;
+  holes_bottom = 0;
+  hole_slots = 0;
+  evbytes = parent->edgeBytes();
+  uhbytes = parent->unhashedHeaderBytes();
+  hhbytes = parent->hashedHeaderBytes();
+}
+
+
+#endif  // ifndef TEST_ENCODING
 

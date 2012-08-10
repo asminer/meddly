@@ -90,6 +90,7 @@ namespace MEDDLY {
   // Actual node storage
   struct node_header;
   class node_storage;
+  class node_compacted;
 
   class expert_forest;
 
@@ -1046,11 +1047,6 @@ class MEDDLY::node_storage {
       /// Total ints in holes
       int hole_slots;
 
-  // performance stats
-  public:
-      /// Number of zombie nodes
-      int zombie_nodes;
-
   // header sizes; vary by forest.
   public:
       /// Size of each outgoing edge's value (can be 0).
@@ -1235,7 +1231,7 @@ class MEDDLY::node_storage {
       }
       inline int* FD(int addr) const {
           MEDDLY_DCASSERT(data);
-          MEDDLY_DCASSERT(isFull(addr));
+          MEDDLY_DCASSERT(rawSizeOf(addr)>0);
           return data_down + addr;
       }
       inline int* FE(int addr) const {
@@ -1243,15 +1239,13 @@ class MEDDLY::node_storage {
       }
       inline int* SD(int addr) const {
           MEDDLY_DCASSERT(data);
-          MEDDLY_DCASSERT(isSparse(addr));
+          MEDDLY_DCASSERT(rawSizeOf(addr)<0);
           return data_down + addr;
       }
       inline int* SI(int addr) const {
-          MEDDLY_DCASSERT(isSparse(addr));
           return SD(addr) - rawSizeOf(addr);  // sparse size is negative
       }
       inline int* SE(int addr) const {
-          MEDDLY_DCASSERT(isSparse(addr));
           return SD(addr) - 2*rawSizeOf(addr);  // sparse size is negative
       }
 
@@ -1396,6 +1390,87 @@ class MEDDLY::node_storage {
 
 }; 
 
+// ******************************************************************
+// *                                                                *
+// *                      node_compacted class                      *
+// *                                                                *
+// ******************************************************************
+
+/** Compacted node storage in a forest.
+    Experimental.
+    Implemented in node_wrappers.cc
+*/
+class MEDDLY::node_compacted {
+      static const int min_size = 1024;
+
+      /// Special values
+      static const long non_index_hole = -2;
+      static const long temp_node_value = -5;
+
+      // header indexes
+      static const int count_index = 0;
+      static const int next_index = 1;    
+      static const int size_index = 2;
+
+      // Counts for extra slots
+      static const int commonHeaderLength = 3;
+      static const int commonTailLength = 1;
+      static const int commonExtra = commonHeaderLength + commonTailLength;
+
+      // Parent forest.
+      expert_forest* parent;
+
+      /// data array
+      unsigned char* data;
+      /// shifted data array, for "node start"
+      unsigned char* data_down;
+      /// Size of data array.
+      long size;
+      /// Last used data slot.  Also total number of bytes "allocated"
+      long last;
+
+  // Holes grid info
+  private:
+      /// List of large holes
+      long large_holes;
+      /// Pointer to top of holes grid
+      long holes_top;
+      /// Pointer to bottom of holes grid
+      long holes_bottom;
+      /// Total bytes in holes
+      long hole_slots;
+      /// Largest hole ever requested
+      int max_request;
+
+  // header sizes; vary by forest.
+  public:
+      /// Size of each outgoing edge's value (can be 0).
+      char evbytes;
+      /// Size of extra unhashed data (typically 0).
+      char uhbytes;
+      /// Size of extra hashed data (typically 0).
+      char hhbytes;
+
+  // --------------------------------------------------------
+  // |  Public interface.
+  public:
+      node_compacted();
+      ~node_compacted();
+
+      /// Bind this to a particular forest.
+      void init(expert_forest* p);
+
+
+
+
+      /// For debugging: dump everything.
+      void dumpInternal(FILE* s) const;
+
+      /// For debugging: dump entry starting at given slot.
+      void dumpInternal(FILE* s, int a) const;
+
+
+};
 
 // ******************************************************************
 // *                                                                *
@@ -2163,6 +2238,12 @@ class MEDDLY::expert_forest : public forest
     /// Are edge values included when computing the hash.
     virtual bool areEdgeValuesHashed() const = 0;
 
+    // TBD: might replace the above ones, with these
+
+    inline char edgeBytes() const { return edgeSize() * sizeof(int); }
+    inline char unhashedHeaderBytes() const { return unhashedHeaderSize() * sizeof(int); }
+    inline char hashedHeaderBytes() const { return hashedHeaderSize() * sizeof(int); }
+
     /** Discover duplicate nodes.
         Required for the unique table. 
         Default behavior is to throw an exception.
@@ -2272,12 +2353,6 @@ class MEDDLY::expert_forest : public forest
       MEDDLY_DCASSERT(address);
       MEDDLY_DCASSERT(isValidNonterminalIndex(p));
       stats.zombie_nodes--;
-#ifdef NODE_STORAGE_PER_LEVEL
-      MEDDLY_DCASSERT(address[p].level);
-      levels[address[p].level].zombie_nodes--;
-#else
-      nodeMan.zombie_nodes--;
-#endif
       recycleNodeHandle(p);
     }
 

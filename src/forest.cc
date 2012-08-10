@@ -1339,11 +1339,6 @@ void MEDDLY::expert_forest::zombifyNode(long p)
   MEDDLY_DCASSERT(address[p].cache_count > 0);
 
   stats.zombie_nodes++;
-#ifdef NODE_STORAGE_PER_LEVEL
-  levels[getNodeLevel(p)].zombie_nodes++;
-#else
-  nodeMan.zombie_nodes++;
-#endif
   stats.decActive(1);
 
   // mark node as zombie
