@@ -942,7 +942,10 @@ struct MEDDLY::node_header {
 // ******************************************************************
 
 /** Actual node storage in a forest, by level.
-    Implemented in node_wrappers.cc
+    Limits: fewer than 2 billion nodes total
+      (next pointer and forest node number slots are only "ints").
+
+    Implemented in node_wrappers.cc.
     Details of node storage are left to the derived forests.
     However, every active node is stored in the following format.
       
@@ -1098,26 +1101,6 @@ class MEDDLY::node_storage {
       */
       int makeNode(int p, const node_builder &nb, 
         forest::policies::node_storage opt);
-  private:
-      /** Create a new node, stored as truncated full.
-          Space is allocated for the node, and data is copied.
-            @param  p     Node handle number.
-            @param  size  Number of downward pointers.
-            @param  nb    Node data is copied from here.
-            @return       The "address" of the new node.
-      */
-      int makeFullNode(int p, int size, const node_builder &nb);
-
-      /** Create a new node, stored sparsely.
-          Space is allocated for the node, and data is copied.
-            @param  p     Node handle number.
-            @param  size  Number of nonzero downward pointers.
-            @param  nb    Node data is copied from here.
-            @return       The "address" of the new node.
-      */
-      int makeSparseNode(int p, int size, const node_builder &nb);
-
-      void copyExtraHeader(int addr, const node_builder &nb);
 
   // --------------------------------------------------------
   // | mechanism to read a node
@@ -1304,6 +1287,32 @@ class MEDDLY::node_storage {
       
 
   // --------------------------------------------------------
+  // |  Misc. helpers.
+  private:
+      // Helper for dumpInternal
+      int dumpNode(FILE* s, int a) const;
+
+      /** Create a new node, stored as truncated full.
+          Space is allocated for the node, and data is copied.
+            @param  p     Node handle number.
+            @param  size  Number of downward pointers.
+            @param  nb    Node data is copied from here.
+            @return       The "address" of the new node.
+      */
+      int makeFullNode(int p, int size, const node_builder &nb);
+
+      /** Create a new node, stored sparsely.
+          Space is allocated for the node, and data is copied.
+            @param  p     Node handle number.
+            @param  size  Number of nonzero downward pointers.
+            @param  nb    Node data is copied from here.
+            @return       The "address" of the new node.
+      */
+      int makeSparseNode(int p, int size, const node_builder &nb);
+
+      void copyExtraHeader(int addr, const node_builder &nb);
+
+  // --------------------------------------------------------
   // |  Hole management helpers.
   private:
       inline int& h_up(int off) const {
@@ -1398,6 +1407,7 @@ class MEDDLY::node_storage {
 
 /** Compacted node storage in a forest.
     Experimental.
+    Note this allows for 64-bit pointers and node counts.
     Implemented in node_wrappers.cc
 */
 class MEDDLY::node_compacted {
@@ -1413,15 +1423,18 @@ class MEDDLY::node_compacted {
       static const int size_index = 2;
 
       // Counts for extra slots
-      static const int commonHeaderLength = 3;
-      static const int commonTailLength = 1;
-      static const int commonExtra = commonHeaderLength + commonTailLength;
+      static const int commonHeaderBytes = 2*sizeof(long) + sizeof(int) + 1;
+      static const int commonTailBytes = sizeof(long);
 
       // Parent forest.
       expert_forest* parent;
 
       /// data array
       unsigned char* data;
+      /// shifted data array, for node size
+      unsigned char* data_size;
+      /// shifted data array, for storage info
+      unsigned char* data_info;
       /// shifted data array, for "node start"
       unsigned char* data_down;
       /// Size of data array.
@@ -1460,6 +1473,8 @@ class MEDDLY::node_compacted {
       /// Bind this to a particular forest.
       void init(expert_forest* p);
 
+      /// Compact this level.  (Rearrange, to remove all holes.)
+      void compact(bool shrink);
 
 
 
@@ -1467,9 +1482,39 @@ class MEDDLY::node_compacted {
       void dumpInternal(FILE* s) const;
 
       /// For debugging: dump entry starting at given slot.
-      void dumpInternal(FILE* s, int a) const;
+      void dumpInternal(FILE* s, long a) const;
 
+  // --------------------------------------------------------
+  // |  inlined helpers.
+  private:
+      // get downward pointer bytes from a status value.
+      static inline int dpbytesOf(unsigned char d) {
+        return (d & 0xf0) >> 4;
+      }
+      // get index bytes from a status value.
+      static inline int ixbytesOf(unsigned char d) {
+        return (d & 0x0f);
+      }
+      // number of bytes used for downward pointers, for node a.
+      inline int dpbytes(long a) const {
+        MEDDLY_DCASSERT(data_info);
+        return dpbytesOf(data_info[a]);
+      }
+      // number of bytes used for index pointers, for node a.
+      // zero means the node is "full".
+      inline int ixbytes(long a) const {
+        MEDDLY_DCASSERT(data_info);
+        return ixbytesOf(data_info[a]);
+      }
 
+  // --------------------------------------------------------
+  // |  Misc. helpers.
+  private:
+      // Helper for dumpInternal
+      long dumpNode(FILE* s, long a) const;
+
+      // resize the data array.
+      void resize(long new_bytes);
 };
 
 // ******************************************************************
@@ -2474,6 +2519,7 @@ class MEDDLY::expert_forest : public forest
       address[node].offset = new_addr;
     }
     friend void MEDDLY::node_storage::compact(bool);
+    friend void MEDDLY::node_compacted::compact(bool);
 
 
   // ------------------------------------------------------------

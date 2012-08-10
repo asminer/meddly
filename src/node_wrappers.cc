@@ -431,27 +431,7 @@ void MEDDLY::node_storage::dumpInternal(FILE *s) const
   int a;
   for (a=1; a<=last; ) {
     fflush(s);
-    fprintf(s, "%*d : [%d", awidth, a, data[a]);
-    for (int i=1; i<3; i++) {
-      fprintf(s, "|%d", data[a+i]);
-    }
-    if (data[a]<0) { 
-      // hole
-      fprintf(s, "| ... ");
-      a -= data[a];  
-    } else {
-      // proper node
-      int reqd = slotsForNode(sizeOf(a));
-      int nElements = activeNodeActualSlots(a);
-      for (int i=3; i<reqd-1; i++) {
-        fprintf(s, "|%d", data[a+i]);
-      }
-      if (reqd < nElements) {
-        fprintf(s, "| ... %d unused ... ", -data[a+reqd-1]);
-      }
-      a += activeNodeActualSlots(a);
-    }
-    fprintf(s, "|%d]\n", data[a-1]);
+    a = dumpNode(s, a);
   } // for a
   fprintf(s, "%*d : free slots\n", awidth, a);
   fflush(s);
@@ -469,29 +449,7 @@ void MEDDLY::node_storage::dumpInternal(FILE *s, int a) const
   fprintf(s, "large_holes: %d\n", large_holes);
   fprintf(s, "Grid: top = %d bottom = %d\n", holes_top, holes_bottom);
 
-  if (0==a) return;
-  int awidth = digits(parent->getLastNode());
-  fprintf(s, "%*d : [%d", awidth, a, data[a]);
-  for (int i=1; i<3; i++) {
-    fprintf(s, "|%d", data[a+i]);
-  }
-  if (data[a]<0) { 
-    // hole
-    fprintf(s, "| ... ");
-    a -= data[a];  
-  } else {
-    // proper node
-    int reqd = slotsForNode(sizeOf(a));
-    int nElements = activeNodeActualSlots(a);
-    for (int i=3; i<reqd-1; i++) {
-      fprintf(s, "|%d", data[a+i]);
-    }
-    if (reqd < nElements) {
-      fprintf(s, "| ... %d unused ... ", -data[a+reqd-1]);
-    }
-    a += activeNodeActualSlots(a);
-  }
-  fprintf(s, "|%d]\n", data[a-1]);
+  dumpNode(s, a);
 }
 
 void MEDDLY::node_storage
@@ -651,6 +609,42 @@ int MEDDLY::node_storage
   }
 }
 
+//
+//
+// Private
+//
+//
+
+int MEDDLY::node_storage::dumpNode(FILE *s, int a) const
+{
+  MEDDLY_DCASSERT(data);
+  if (0==a) return 0;
+  int awidth = digits(parent->getLastNode());
+  fprintf(s, "%*d : [%d", awidth, a, data[a]);
+  for (int i=1; i<3; i++) {
+    fprintf(s, "|%d", data[a+i]);
+  }
+  if (data[a]<0) { 
+    // hole
+    fprintf(s, "| ... ");
+    a -= data[a];  
+  } else {
+    // proper node
+    int reqd = slotsForNode(sizeOf(a));
+    int nElements = activeNodeActualSlots(a);
+    for (int i=3; i<reqd-1; i++) {
+      fprintf(s, "|%d", data[a+i]);
+    }
+    if (reqd < nElements) {
+      fprintf(s, "| ... %d unused ... ", -data[a+reqd-1]);
+    }
+    a += activeNodeActualSlots(a);
+  }
+  fprintf(s, "|%d]\n", data[a-1]);
+  return a;
+}
+
+
 int MEDDLY::node_storage
 ::makeFullNode(int p, int size, const node_builder &nb)
 {
@@ -759,12 +753,6 @@ void MEDDLY::node_storage::copyExtraHeader(int addr, const node_builder &nb)
   }
 }
 
-
-//
-//
-// Private
-//
-//
 
 //
 //  NOTE: we set the first slot to contain
@@ -1467,9 +1455,8 @@ inline void bytesRequiredForDown(long a, int& bytes)
         :
       evbytes:    Edge value [size-1]
 
-      long: < 0:  -padlen; number of unused bytes.
-                  (With hole recycling, we might use a hole that is
-                  a few bytes larger than needed.)
+      uchar(8b):  Padding length (can be 0).
+                  Number of unused extra bytes, at most 255.
 
                   (extra bytes here, if any)
 
@@ -1480,7 +1467,7 @@ inline void bytesRequiredForDown(long a, int& bytes)
 
       The absolute smallest number of bytes for a node,
       assuming a zero size is allowed, is therefore:
-        2 longs + 1 int + 1 char + 1 long
+        2 longs + 1 int + 1 char + 1 char + 1 long
       
 
       Holes are stored using a grid.
@@ -1536,6 +1523,303 @@ void MEDDLY::node_compacted::init(expert_forest* p)
   hhbytes = parent->hashedHeaderBytes();
 }
 
+void MEDDLY::node_compacted::compact(bool shrink)
+{
+  //
+  // Should we even bother?
+  //
+  if (0==data || 0==hole_slots) return;
+
+  if (hole_slots <= parent->getPolicies().compact_min)  return;
+
+  if (hole_slots <  parent->getPolicies().compact_max) {
+
+    // If percentage of holes is below trigger, then don't compact
+
+    if (100 * hole_slots < last * parent->getPolicies().compact_frac) return;
+
+  }
+
+#ifdef DEBUG_SLOW
+  fprintf(stderr, "Compacting forest level\n");
+#endif
+#ifdef MEMORY_TRACE
+  printf("Compacting\n");
+#endif
+#ifdef DEBUG_COMPACTION
+  printf("Before compaction:\n");
+  dumpInternal(stdout);
+  printf("\n");
+#endif
+
+  //
+  // Scan the whole array of data, copying over itself and skipping holes.
+  // 
+  long node = 1;  // since we leave [0] empty
+  long curr = 1;
+
+  while (node < last) {
+    long L;
+    // read first slot; determine if we are a hole or not.
+    dataToLong<sizeof(long)>(data+node, L);
+    if (L<0) {
+      //
+      // This is a hole, skip it
+      // 
+      MEDDLY_DCASSERT(
+        0==memcmp(data+node, data+node-L-sizeof(long), sizeof(long))
+      );
+      node -= L;
+      continue;
+    }
+
+    //
+    // A real node, move it
+    //
+    long old_off = node;
+    long new_off = curr;
+    MEDDLY_DCASSERT(!parent->isPessimistic() || L>0);
+
+    int size;
+    dataToInt<sizeof(int)>(data_size + node, size);
+
+    long nodebytes = size;
+    nodebytes *= dpbytes(node) + ixbytes(node) + evbytes;
+    nodebytes += uhbytes + hhbytes + commonHeaderBytes;
+    
+    // move everything up to the padding value
+    if (node != curr) {
+      memmove(data + curr, data + node, nodebytes);
+    }
+    node += nodebytes;
+    curr += nodebytes;
+
+    // skip padding
+    data[curr] = 0;
+    node += data[node];
+    node++;
+
+    // copy trailer
+    memmove(data + curr, data + node, commonTailBytes);
+    node += commonTailBytes;
+    curr += commonTailBytes;
+    
+    // update node header
+    dataToLong<sizeof(long)>(data + curr - sizeof(long), L);
+    parent->moveNodeOffset(L, old_off, new_off);
+  } // while
+  MEDDLY_DCASSERT(node == 1+last);
+  last = curr-1;
+
+  // set up hole pointers and such
+  holes_top = holes_bottom = 0;
+  hole_slots = 0;
+  large_holes = 0;
+
+  parent->changeStats().num_compactions++;
+
+  if (shrink && size > min_size && last < size/2) {
+    long new_size = size/2;
+    while (new_size > min_size && new_size > last * 3) { new_size /= 2; }
+    resize(new_size);
+  }
+
+#ifdef DEBUG_COMPACTION
+  printf("After compaction:\n");
+  dumpInternal(stdout);
+  printf("\n");
+#endif
+}
+
+
+void MEDDLY::node_compacted::dumpInternal(FILE *s) const
+{
+  if (0==data) return; // nothing to display
+  
+  fprintf(s, "Last slot used: %ld\n", last);
+  fprintf(s, "large_holes: %ld\n", large_holes);
+  fprintf(s, "Grid: top = %ld bottom = %ld\n", holes_top, holes_bottom);
+
+  fprintf(s, "Data array by record: \n");
+  int awidth = digits(parent->getLastNode());
+  long a;
+  for (a=1; a<=last; ) {
+    fflush(s);
+    a = dumpNode(s, a);
+  } // for a
+  fprintf(s, "%*ld : free slots\n", awidth, a);
+  fflush(s);
+  MEDDLY_DCASSERT(a == (last)+1);
+}
+
+void MEDDLY::node_compacted::dumpInternal(FILE *s, long a) const
+{
+  MEDDLY_DCASSERT(data);
+  
+  fprintf(s, "Last slot used: %ld\n", last);
+  fprintf(s, "large_holes: %ld\n", large_holes);
+  fprintf(s, "Grid: top = %ld bottom = %ld\n", holes_top, holes_bottom);
+
+  dumpNode(s, a);
+}
+
+
+//
+//
+// Private
+//
+//
+
+long MEDDLY::node_compacted::dumpNode(FILE* s, long a) const
+{
+  MEDDLY_DCASSERT(data);
+  if (0==a) return 0;
+  int awidth = digits(parent->getLastNode());
+  fprintf(s, "%*ld : [", awidth, a);
+
+  const unsigned char* d = data + a;
+  const unsigned char* stop;
+
+  // first slot: definitely a long
+  long L;
+  dataToLong<sizeof(long)>(d, L);
+  fprintf(s, "%ld", L);
+  bool is_hole = (L<0);
+
+  if (is_hole) {
+    //
+    // Hole.
+    //
+    stop = d - L;
+    // get next 3 longs
+    for (int i=3; i; i--) {
+      d += sizeof(long);
+      dataToLong<sizeof(long)>(d, L);
+      fprintf(s, "|%ld", L);
+    }
+    fprintf(s, "| ... ");
+  } else {
+    //
+    // Node.
+    //
+    
+    // get next: long
+    d += sizeof(long);
+    dataToLong<sizeof(long)>(d, L);
+    fprintf(s, "|n=%ld", L);
+    d += sizeof(long);
+
+    // get size: int
+    int size;
+    dataToInt<sizeof(int)>(d, size);
+    fprintf(s, "|s=%d", size);
+    d += sizeof(int);
+
+    // get compression info
+    int dpb = dpbytesOf(d[0]);
+    MEDDLY_DCASSERT(dpbytes(a) == dpb);
+    int ixb = ixbytesOf(d[0]);
+    MEDDLY_DCASSERT(ixbytes(a) == ixb);
+    d++;
+    fprintf(s, "|dpb=%d, ixb=%d", dpb, ixb);
+
+    // show unhashed header
+    if (uhbytes) {
+      fprintf(s, "|uh");
+      for (int i=0; i<uhbytes; i++) {
+        fprintf(s, " %02x", d[0]);
+        d++;
+      }
+    }
+
+    // show hashed header
+    if (hhbytes) {
+      fprintf(s, "|hh");
+      for (int i=0; i<hhbytes; i++) {
+        fprintf(s, " %02x", d[0]);
+        d++;
+      }
+    }
+
+    // show next chunk: downward pointers
+    for (int i=0; i<size; i++) {
+      switch (dpb) {
+        case 1: dataToDown<1>(d, L);  break;
+        case 2: dataToDown<2>(d, L);  break;
+        case 3: dataToDown<3>(d, L);  break;
+        case 4: dataToDown<4>(d, L);  break;
+        case 5: dataToDown<5>(d, L);  break;
+        case 6: dataToDown<6>(d, L);  break;
+        case 7: dataToDown<7>(d, L);  break;
+        case 8: dataToDown<8>(d, L);  break;
+        default:
+          throw error(error::MISCELLANEOUS);
+      }
+      fprintf(s, "|d %ld", L);
+      d += dpb;
+    }
+
+    // show next chunk: indexes
+    if (ixb) for (int i=0; i<size; i++) {
+      int I;
+      switch (ixb) {
+        case 1: dataToInt<1>(d, I); break;
+        case 2: dataToInt<2>(d, I); break;
+        case 3: dataToInt<3>(d, I); break;
+        case 4: dataToInt<4>(d, I); break;
+        default:
+          throw error(error::MISCELLANEOUS);
+      }
+      fprintf(s, "|i %d", I);
+      d += ixb;
+    }
+
+    // show next chunk: edge values (raw)
+    if (evbytes) for (int i=0; i<size; i++) {
+      fprintf(s, "|e");
+      for (int b=0; b<evbytes; b++) {
+        fprintf(s, " %02x", d[0]);
+        d++;
+      }
+    }
+
+    // get the padding
+    unsigned int padding = d[0];
+    d++;
+    fprintf(s, "| ... %d unused ... ", padding);
+    stop = d + padding + sizeof(long);
+  }
+  // show the last, long slot
+  dataToLong<sizeof(long)>(stop-sizeof(long), L);
+  fprintf(s, "|%ld]\n", L);
+  return stop - (data+a);
+}
+
+
+void MEDDLY::node_compacted::resize(long new_size)
+{
+  unsigned char* new_data = (unsigned char *) realloc(data, new_size);
+  if (0 == new_data) throw error(error::INSUFFICIENT_MEMORY);
+  if (0== data) new_data[0] = 0;
+  if (new_size > size) {
+    parent->changeStats().incMemAlloc(new_size - size);
+  } else {
+    parent->changeStats().decMemAlloc(size - new_size);
+  }
+#ifdef MEMORY_TRACE
+    printf("Resized data[]. Old size: %ld, New size: %ld, Last: %ld.\n", 
+      size, new_size, last
+    );
+#endif
+  size = new_size;
+  if (data != new_data) {
+    // update pointers
+    data = new_data;
+    data_size = data + 2*sizeof(long);
+    data_info = data_size + sizeof(int);
+    data_down = data_info + 1 + uhbytes + hhbytes;
+  }
+}
 
 #endif  // ifndef TEST_ENCODING
 
