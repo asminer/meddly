@@ -121,10 +121,10 @@ public:
   virtual void compute(const dd_edge &arg, long &res) {
     res = compute(argF->getDomain()->getNumVariables(), arg.getNode());
   }
-  long compute(int k, int a);
+  long compute(int k, long a);
 };
 
-long MEDDLY::card_mdd_int::compute(int k, int a)
+long MEDDLY::card_mdd_int::compute(int k, long a)
 {
   // Terminal cases
   if (0==a) return 0;
@@ -185,10 +185,10 @@ public:
   virtual void compute(const dd_edge &arg, long &res) {
     res = compute(argF->getDomain()->getNumVariables(), arg.getNode());
   }
-  long compute(int k, int a);
+  long compute(int k, long a);
 };
 
-long MEDDLY::card_mxd_int::compute(int k, int a)
+long MEDDLY::card_mxd_int::compute(int k, long a)
 {
   // Terminal cases
   if (0==a) return 0;
@@ -294,10 +294,10 @@ public:
   virtual void compute(const dd_edge &arg, double &res) {
     res = compute(argF->getDomain()->getNumVariables(), arg.getNode());
   }
-  double compute(int ht, int a);
+  double compute(int ht, long a);
 };
 
-double MEDDLY::card_mdd_real::compute(int k, int a)
+double MEDDLY::card_mdd_real::compute(int k, long a)
 {
   // Terminal cases
   if (0==a) return 0.0;
@@ -359,10 +359,10 @@ public:
   virtual void compute(const dd_edge &arg, double &res) {
     res = compute(argF->getDomain()->getNumVariables(), arg.getNode());
   }
-  double compute(int k, int a);
+  double compute(int k, long a);
 };
 
-double MEDDLY::card_mxd_real::compute(int k, int a)
+double MEDDLY::card_mxd_real::compute(int k, long a)
 {
   // Terminal cases
   if (0==a) return 0.0;
@@ -481,10 +481,10 @@ public:
     mpz_object& mcard = dynamic_cast <mpz_object &> (res);
     compute(argF->getDomain()->getNumVariables(), a.getNode(), mcard);
   }
-  void compute(int k, int a, mpz_object &b);
+  void compute(int k, long a, mpz_object &b);
 };
 
-void MEDDLY::card_mdd_mpz::compute(int k, int a, mpz_object &card)
+void MEDDLY::card_mdd_mpz::compute(int k, long a, mpz_object &card)
 {
   // Terminal cases
   if (0==a) {
@@ -563,10 +563,10 @@ public:
     mpz_object& mcard = dynamic_cast <mpz_object &> (res);
     compute(argF->getDomain()->getNumVariables(), a.getNode(), mcard);
   }
-  void compute(int k, int a, mpz_object &b);
+  void compute(int k, long a, mpz_object &b);
 };
 
-void MEDDLY::card_mxd_mpz::compute(int k, int a, mpz_object &card)
+void MEDDLY::card_mxd_mpz::compute(int k, long a, mpz_object &card)
 {
   // Terminal cases
   if (0==a) {

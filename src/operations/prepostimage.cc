@@ -54,7 +54,7 @@ class MEDDLY::image_op : public binary_operation {
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int *entryData) const;
 
-    inline bool findResult(int a, int b, int &c) {
+    inline bool findResult(long a, long b, long &c) {
       CTsrch.key(0) = a;
       CTsrch.key(1) = b;
       const int* cacheFind = CT->find(CTsrch);
@@ -62,7 +62,7 @@ class MEDDLY::image_op : public binary_operation {
       c = resF->linkNode(cacheFind[2]);
       return true;
     }
-    inline int saveResult(int a, int b, int c) {
+    inline long saveResult(long a, long b, long c) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
       entry.key(0) = arg1F->cacheNode(a); 
       entry.key(1) = arg2F->cacheNode(b);
@@ -71,10 +71,10 @@ class MEDDLY::image_op : public binary_operation {
       return c;
     }
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
-    virtual int compute(int a, int b);
+    virtual long compute(long a, long b);
   protected:
     binary_operation* unionOp;
-    virtual int compute_rec(int a, int b) = 0;
+    virtual long compute_rec(long a, long b) = 0;
 };
 
 MEDDLY::image_op::image_op(const binary_opname* oc, expert_forest* a1,
@@ -107,11 +107,11 @@ MEDDLY::image_op::showEntry(FILE* strm, const int *data) const
 void MEDDLY::image_op
 ::compute(const dd_edge &a, const dd_edge &b, dd_edge &c)
 {
-  int cnode = compute(a.getNode(), b.getNode());
+  long cnode = compute(a.getNode(), b.getNode());
   c.set(cnode, 0, resF->getNodeLevel(cnode));
 }
 
-int MEDDLY::image_op::compute(int a, int b)
+long MEDDLY::image_op::compute(long a, long b)
 {
   if (resF->getRangeType() == forest::BOOLEAN) {
     unionOp = getOperation(UNION, resF, resF, resF);
@@ -134,7 +134,7 @@ class MEDDLY::preimage_mdd : public image_op {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual int compute_rec(int a, int b);
+    virtual long compute_rec(long a, long b);
 };
 
 MEDDLY::preimage_mdd::preimage_mdd(const binary_opname* oc, expert_forest* a1,
@@ -142,7 +142,7 @@ MEDDLY::preimage_mdd::preimage_mdd(const binary_opname* oc, expert_forest* a1,
 {
 }
 
-int MEDDLY::preimage_mdd::compute_rec(int mdd, int mxd)
+long MEDDLY::preimage_mdd::compute_rec(long mdd, long mxd)
 {
   // termination conditions
   if (mxd == 0 || mdd == 0) return 0;
@@ -156,7 +156,7 @@ int MEDDLY::preimage_mdd::compute_rec(int mdd, int mxd)
   }
 
   // check the cache
-  int result = 0;
+  long result = 0;
   if (findResult(mdd, mxd, result)) {
     return result;
   }
@@ -211,14 +211,14 @@ int MEDDLY::preimage_mdd::compute_rec(int mdd, int mxd)
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
         // and add them
-        int newstates = compute_rec(A->d(j), Rp->d(jz));
+        long newstates = compute_rec(A->d(j), Rp->d(jz));
         if (0==newstates) continue;
         if (0==nb.d(i)) {
           nb.d(i) = newstates;
           continue;
         }
         // there's new states and existing states; union them.
-        int oldi = nb.d(i);
+        long oldi = nb.d(i);
         nb.d(i) = unionOp->compute(newstates, oldi);
         resF->unlinkNode(oldi);
         resF->unlinkNode(newstates);
@@ -253,7 +253,7 @@ class MEDDLY::postimage_mdd : public image_op {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual int compute_rec(int a, int b);
+    virtual long compute_rec(long a, long b);
 };
 
 MEDDLY::postimage_mdd::postimage_mdd(const binary_opname* oc, 
@@ -262,7 +262,7 @@ MEDDLY::postimage_mdd::postimage_mdd(const binary_opname* oc,
 {
 }
 
-int MEDDLY::postimage_mdd::compute_rec(int mdd, int mxd)
+long MEDDLY::postimage_mdd::compute_rec(long mdd, long mxd)
 {
   // termination conditions
   if (mxd == 0 || mdd == 0) return 0;
@@ -276,7 +276,7 @@ int MEDDLY::postimage_mdd::compute_rec(int mdd, int mxd)
   }
 
   // check the cache
-  int result = 0;
+  long result = 0;
   if (findResult(mdd, mxd, result)) {
     return result;
   }
@@ -331,14 +331,14 @@ int MEDDLY::postimage_mdd::compute_rec(int mdd, int mxd)
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
         // and add them
-        int newstates = compute_rec(A->d(i), Rp->d(jz));
+        long newstates = compute_rec(A->d(i), Rp->d(jz));
         if (0==newstates) continue;
         if (0==nb.d(j)) {
           nb.d(j) = newstates;
           continue;
         }
         // there's new states and existing states; union them.
-        int oldj = nb.d(j);
+        long oldj = nb.d(j);
         nb.d(j) = unionOp->compute(newstates, oldj);
         resF->unlinkNode(oldj);
         resF->unlinkNode(newstates);

@@ -46,7 +46,7 @@ class MEDDLY::unequal_mdd : public generic_binary_mdd {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(int a, int b, int& c);
+    virtual bool checkTerminals(long a, long b, long& c);
 };
 
 MEDDLY::unequal_mdd::unequal_mdd(const binary_opname* opcode, 
@@ -56,7 +56,7 @@ MEDDLY::unequal_mdd::unequal_mdd(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::unequal_mdd::checkTerminals(int a, int b, int& c)
+bool MEDDLY::unequal_mdd::checkTerminals(long a, long b, long& c)
 {
   if (arg1F->isTerminalNode(a) &&
       arg2F->isTerminalNode(b)) {
@@ -85,7 +85,7 @@ class MEDDLY::unequal_mxd : public generic_binbylevel_mxd {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(int a, int b, int& c);
+    virtual bool checkTerminals(long a, long b, long& c);
 };
 
 MEDDLY::unequal_mxd::unequal_mxd(const binary_opname* opcode, 
@@ -95,7 +95,7 @@ MEDDLY::unequal_mxd::unequal_mxd(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::unequal_mxd::checkTerminals(int a, int b, int& c)
+bool MEDDLY::unequal_mxd::checkTerminals(long a, long b, long& c)
 {
   if (arg1F->isTerminalNode(a) &&
       arg2F->isTerminalNode(b)) {

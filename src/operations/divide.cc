@@ -46,7 +46,7 @@ class MEDDLY::divide_mdd : public generic_binary_mdd {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(int a, int b, int& c);
+    virtual bool checkTerminals(long a, long b, long& c);
 };
 
 MEDDLY::divide_mdd::divide_mdd(const binary_opname* opcode, 
@@ -55,7 +55,7 @@ MEDDLY::divide_mdd::divide_mdd(const binary_opname* opcode,
 {
 }
 
-bool MEDDLY::divide_mdd::checkTerminals(int a, int b, int& c)
+bool MEDDLY::divide_mdd::checkTerminals(long a, long b, long& c)
 {
   if (arg1F->isTerminalNode(a) &&
       arg2F->isTerminalNode(b)) {
@@ -87,7 +87,7 @@ class MEDDLY::divide_mxd : public generic_binbylevel_mxd {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(int a, int b, int& c);
+    virtual bool checkTerminals(long a, long b, long& c);
 };
 
 MEDDLY::divide_mxd::divide_mxd(const binary_opname* opcode, 
@@ -96,7 +96,7 @@ MEDDLY::divide_mxd::divide_mxd(const binary_opname* opcode,
 {
 }
 
-bool MEDDLY::divide_mxd::checkTerminals(int a, int b, int& c)
+bool MEDDLY::divide_mxd::checkTerminals(long a, long b, long& c)
 {
   if (arg1F->isTerminalNode(a) &&
       arg2F->isTerminalNode(b)) {

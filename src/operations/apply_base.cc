@@ -78,9 +78,9 @@ void MEDDLY::generic_binary_mdd::compute(const dd_edge &a, const dd_edge &b,
 }
 
 
-int MEDDLY::generic_binary_mdd::compute(int a, int b)
+long MEDDLY::generic_binary_mdd::compute(long a, long b)
 {
-  int result = 0;
+  long result = 0;
   if (checkTerminals(a, b, result))
     return result;
   if (findResult(a, b, result))
@@ -174,11 +174,11 @@ void MEDDLY::generic_binary_mxd::compute(const dd_edge &a, const dd_edge &b,
 #endif
 }
 
-int MEDDLY::generic_binary_mxd::compute(int a, int b) 
+long MEDDLY::generic_binary_mxd::compute(long a, long b) 
 {
   //  Compute for the unprimed levels.
   //
-  int result = 0;
+  long result = 0;
   if (checkTerminals(a, b, result))
     return result;
 
@@ -227,7 +227,7 @@ int MEDDLY::generic_binary_mxd::compute(int a, int b)
   return result;
 }
 
-int MEDDLY::generic_binary_mxd::compute(int in, int k, int a, int b)
+long MEDDLY::generic_binary_mxd::compute(int in, int k, long a, long b)
 {
   //  Compute for the primed levels.
   //
@@ -268,7 +268,7 @@ int MEDDLY::generic_binary_mxd::compute(int in, int k, int a, int b)
   node_reader::recycle(A);
 
   // reduce 
-  int result = resF->createReducedNode(in, nb);
+  long result = resF->createReducedNode(in, nb);
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
@@ -329,15 +329,15 @@ void MEDDLY::generic_binbylevel_mxd
 #endif
 }
 
-int MEDDLY::generic_binbylevel_mxd::compute(int level, int a, int b) 
+long MEDDLY::generic_binbylevel_mxd::compute(int level, long a, long b) 
 {
   return compute(-1, level, a, b);
 }
 
-int MEDDLY::generic_binbylevel_mxd
-::compute(int in, int resultLevel, int a, int b)
+long MEDDLY::generic_binbylevel_mxd
+::compute(int in, int resultLevel, long a, long b)
 {
-  int result = 0;
+  long result = 0;
   if (0==resultLevel) {
     if (checkTerminals(a, b, result))
       return result;
@@ -459,7 +459,8 @@ void MEDDLY::generic_binary_evplus::showEntry(FILE* strm, const int *data) const
 void MEDDLY::generic_binary_evplus
 ::compute(const dd_edge& a, const dd_edge& b, dd_edge& c)
 {
-  int result, ev, aev, bev;
+  long result;
+  int ev, aev, bev;
   a.getEdgeValue(aev);
   b.getEdgeValue(bev);
   compute(aev, a.getNode(), bev, b.getNode(), ev, result);
@@ -470,7 +471,7 @@ void MEDDLY::generic_binary_evplus
 }
 
 void MEDDLY::generic_binary_evplus
-::compute(int aev, int a, int bev, int b, int& cev, int& c)
+::compute(int aev, long a, int bev, long b, int& cev, long& c)
 {
   if (checkTerminals(aev, a, bev, b, cev, c))
     return;
@@ -498,9 +499,11 @@ void MEDDLY::generic_binary_evplus
 
   // do computation
   for (int i=0; i<resultSize; i++) {
+    long d;
     compute(aev + A->ei(i), A->d(i), 
             bev + B->ei(i), B->d(i), 
-            nb.ei(i), nb.d(i));
+            nb.ei(i), d);
+    nb.d(i) = d;
   }
 
   // cleanup
@@ -508,7 +511,9 @@ void MEDDLY::generic_binary_evplus
   node_reader::recycle(A);
 
   // Reduce
-  resF->createReducedNode(-1, nb, cev, c);
+  int intc;
+  resF->createReducedNode(-1, nb, cev, intc);
+  c = intc;
 
   // Add to CT
   saveResult(aev, a, bev, b, cev, c);
@@ -546,7 +551,7 @@ void MEDDLY::generic_binary_evtimes
 void MEDDLY::generic_binary_evtimes
 ::compute(const dd_edge& a, const dd_edge& b, dd_edge& c)
 {
-  int result; 
+  long result; 
   float ev, aev, bev;
   a.getEdgeValue(aev);
   b.getEdgeValue(bev);
@@ -558,7 +563,7 @@ void MEDDLY::generic_binary_evtimes
 }
 
 void MEDDLY::generic_binary_evtimes
-::compute(float aev, int a, float bev, int b, float& cev, int& c)
+::compute(float aev, long a, float bev, long b, float& cev, long& c)
 {
   if (checkTerminals(aev, a, bev, b, cev, c))
     return;
@@ -586,9 +591,11 @@ void MEDDLY::generic_binary_evtimes
 
   // do computation
   for (int i=0; i<resultSize; i++) {
+    long d;
     compute(aev * A->ef(i), A->d(i), 
             bev * B->ef(i), B->d(i), 
-            nb.ef(i), nb.d(i));
+            nb.ef(i), d);
+    nb.d(i) = d;
   }
 
   // cleanup
@@ -596,7 +603,9 @@ void MEDDLY::generic_binary_evtimes
   node_reader::recycle(A);
 
   // Reduce
-  resF->createReducedNode(-1, nb, cev, c);
+  int intc;
+  resF->createReducedNode(-1, nb, cev, intc);
+  c = intc;
 
   // Add to CT
   saveResult(aev, a, bev, b, cev, c);

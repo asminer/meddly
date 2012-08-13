@@ -88,21 +88,21 @@ class MEDDLY::saturation_op : public unary_operation {
     saturation_op(common_dfs_mt* p, expert_forest* argF, expert_forest* resF);
     virtual ~saturation_op();
 
-    int saturate(int mdd);
+    long saturate(long mdd);
 
     virtual bool isStaleEntry(const int* entryData);
     virtual void discardEntry(const int* entryData);
     virtual void showEntry(FILE* strm, const int* entryData) const;
 
   protected:
-    inline bool findSaturateResult(int a, int& b) {
+    inline bool findSaturateResult(long a, long& b) {
       CTsrch.key(0) = a;
       const int* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
       b = resF->linkNode(cacheFind[2]);
       return true;
     }
-    inline int saveSaturateResult(int a, int b) {
+    inline long saveSaturateResult(long a, long b) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
       entry.key(0) = argF->cacheNode(a);
       entry.result(0) = resF->cacheNode(b);
@@ -129,7 +129,7 @@ class MEDDLY::common_dfs_mt : public binary_operation {
     virtual void saturateHelper(node_builder& mdd) = 0;
 
   protected:
-    inline bool findResult(int a, int b, int &c) {
+    inline bool findResult(long a, long b, long &c) {
       CTsrch.key(0) = a;
       CTsrch.key(1) = b;
       const int* cacheFind = CT->find(CTsrch);
@@ -137,7 +137,7 @@ class MEDDLY::common_dfs_mt : public binary_operation {
       c = resF->linkNode(cacheFind[2]);
       return true;
     }
-    inline int saveResult(int a, int b, int c) {
+    inline long saveResult(long a, long b, long c) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
       entry.key(0) = arg1F->cacheNode(a); 
       entry.key(1) = arg2F->cacheNode(b);
@@ -145,10 +145,10 @@ class MEDDLY::common_dfs_mt : public binary_operation {
       CT->addEntry();
       return c;
     }
-    void splitMxd(int mxd);
+    void splitMxd(long mxd);
 
   protected:
-    int* splits;
+    long* splits;
     binary_operation* mddUnion;
     binary_operation* mxdIntersection;
     binary_operation* mxdDifference;
@@ -269,7 +269,7 @@ MEDDLY::saturation_op::~saturation_op()
 {
 }
 
-int MEDDLY::saturation_op::saturate(int mdd)
+long MEDDLY::saturation_op::saturate(long mdd)
 {
 #ifdef DEBUG_DFS
   printf("mdd: %d\n", mdd);
@@ -281,7 +281,7 @@ int MEDDLY::saturation_op::saturate(int mdd)
   if (argF->isTerminalNode(mdd)) return mdd;
 
   // search compute table
-  int n = 0;
+  long n = 0;
   if (findSaturateResult(mdd, n)) {
     resF->linkNode(n);
     return n;
@@ -395,7 +395,7 @@ void MEDDLY::common_dfs_mt
 
   // Execute saturation operation
   saturation_op *so = new saturation_op(this, arg1F, resF);
-  int cnode = so->saturate(a.getNode());
+  long cnode = so->saturate(a.getNode());
   c.set(cnode, 0, resF->getNodeLevel(cnode));
 
   // Cleanup
@@ -417,11 +417,11 @@ void MEDDLY::common_dfs_mt
 }
 
 // Partition the nsf based on "top level"
-void MEDDLY::common_dfs_mt::splitMxd(int mxd)
+void MEDDLY::common_dfs_mt::splitMxd(long mxd)
 {
   MEDDLY_DCASSERT(arg2F);
   MEDDLY_DCASSERT(0==splits);
-  splits = new int[arg2F->getNumVariables()+1];
+  splits = new long[arg2F->getNumVariables()+1];
   splits[0] = 0;
 
   // we'll be unlinking later, so...
@@ -446,7 +446,7 @@ void MEDDLY::common_dfs_mt::splitMxd(int mxd)
     node_reader* Mp = node_reader::useReader();
 
     bool first = true;
-    int maxDiag;
+    long maxDiag;
 
     // Read "rows"
     for (int i=0; i<Mu->getSize(); i++) {
@@ -463,7 +463,7 @@ void MEDDLY::common_dfs_mt::splitMxd(int mxd)
         maxDiag = arg2F->linkNode(Mp->d(i));
         first = false;
       } else {
-        int nmd = mxdIntersection->compute(maxDiag, Mp->d(i));
+        long nmd = mxdIntersection->compute(maxDiag, Mp->d(i));
         arg2F->unlinkNode(maxDiag);
         maxDiag = nmd;
       }
@@ -554,7 +554,7 @@ class MEDDLY::forwd_dfs_mt : public common_dfs_mt {
       expert_forest* arg2, expert_forest* res);
   protected:
     virtual void saturateHelper(node_builder& mdd);
-    int recFire(int mdd, int mxd);
+    long recFire(long mdd, long mxd);
 };
 
 MEDDLY::forwd_dfs_mt::forwd_dfs_mt(const binary_opname* opcode, 
@@ -565,7 +565,7 @@ MEDDLY::forwd_dfs_mt::forwd_dfs_mt(const binary_opname* opcode,
 
 void MEDDLY::forwd_dfs_mt::saturateHelper(node_builder& nb)
 {
-  int mxd = splits[nb.getLevel()];
+  long mxd = splits[nb.getLevel()];
   if (mxd == 0) return;
 
   int mxdLevel = arg2F->getNodeLevel(mxd);
@@ -603,7 +603,7 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(node_builder& nb)
       int j = Rp->i(jz);
       if (-1==nb.d(j)) continue;  // nothing can be added to this set
 
-      int rec = recFire(nb.d(i), Rp->d(jz));
+      long rec = recFire(nb.d(i), Rp->d(jz));
 
       if (rec == 0) continue;
       if (rec == nb.d(j)) { 
@@ -621,7 +621,7 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(node_builder& nb)
         nb.d(j) = -1;
       }
       else {
-        int acc = mddUnion->compute(nb.d(j), rec);
+        long acc = mddUnion->compute(nb.d(j), rec);
         resF->unlinkNode(rec);
         if (acc != nb.d(j)) {
           resF->unlinkNode(nb.d(j));
@@ -652,7 +652,7 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(node_builder& nb)
 }
 
 // Same as post-image, except we saturate before reducing.
-int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
+long MEDDLY::forwd_dfs_mt::recFire(long mdd, long mxd)
 {
   // termination conditions
   if (mxd == 0 || mdd == 0) return 0;
@@ -666,7 +666,7 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
   }
 
   // check the cache
-  int result = 0;
+  long result = 0;
   if (findResult(mdd, mxd, result)) {
     return result;
   }
@@ -731,7 +731,7 @@ int MEDDLY::forwd_dfs_mt::recFire(int mdd, int mxd)
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
         // and add them
-        int newstates = recFire(A->d(i), Rp->d(jz));
+        long newstates = recFire(A->d(i), Rp->d(jz));
         if (0==newstates) continue;
         if (0==nb.d(j)) {
           nb.d(j) = newstates;
@@ -776,7 +776,7 @@ class MEDDLY::bckwd_dfs_mt : public common_dfs_mt {
       expert_forest* arg2, expert_forest* res);
   protected:
     virtual void saturateHelper(node_builder& mdd);
-    int recFire(int mdd, int mxd);
+    long recFire(long mdd, long mxd);
 };
 
 MEDDLY::bckwd_dfs_mt::bckwd_dfs_mt(const binary_opname* opcode, 
@@ -787,7 +787,7 @@ MEDDLY::bckwd_dfs_mt::bckwd_dfs_mt(const binary_opname* opcode,
 
 void MEDDLY::bckwd_dfs_mt::saturateHelper(node_builder& nb)
 {
-  int mxd = splits[nb.getLevel()];
+  long mxd = splits[nb.getLevel()];
   if (mxd == 0) return;
 
   int mxdLevel = arg2F->getNodeLevel(mxd);
@@ -827,7 +827,7 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(node_builder& nb)
         if (0==expl->data[j]) continue;
         if (0==nb.d(j))       continue;
         // We have an i->j edge to explore
-        int rec = recFire(nb.d(j), Rp->d(jz));
+        long rec = recFire(nb.d(j), Rp->d(jz));
 
         if (0==rec) continue;
         if (rec == nb.d(i)) {
@@ -845,7 +845,7 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(node_builder& nb)
           nb.d(i) = -1;
         } 
         else {
-          int acc = mddUnion->compute(nb.d(i), rec);
+          long acc = mddUnion->compute(nb.d(i), rec);
           resF->unlinkNode(rec);
           if (acc != nb.d(i)) {
             resF->unlinkNode(nb.d(i));
@@ -868,7 +868,7 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(node_builder& nb)
   recycle(expl);
 }
 
-int MEDDLY::bckwd_dfs_mt::recFire(int mdd, int mxd)
+long MEDDLY::bckwd_dfs_mt::recFire(long mdd, long mxd)
 {
   // termination conditions
   if (mxd == 0 || mdd == 0) return 0;
@@ -882,7 +882,7 @@ int MEDDLY::bckwd_dfs_mt::recFire(int mdd, int mxd)
   }
 
   // check the cache
-  int result = 0;
+  long result = 0;
   if (findResult(mdd, mxd, result)) {
     return result;
   }
@@ -936,14 +936,14 @@ int MEDDLY::bckwd_dfs_mt::recFire(int mdd, int mxd)
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
         // and add them
-        int newstates = recFire(A->d(j), Rp->d(jz));
+        long newstates = recFire(A->d(j), Rp->d(jz));
         if (0==newstates) continue;
         if (0==nb.d(i)) {
           nb.d(i) = newstates;
           continue;
         }
         // there's new states and existing states; union them.
-        int oldi = nb.d(i);
+        long oldi = nb.d(i);
         nb.d(i) = mddUnion->compute(newstates, oldi);
         resF->unlinkNode(oldi);
         resF->unlinkNode(newstates);

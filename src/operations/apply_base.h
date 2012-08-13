@@ -50,12 +50,12 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
     virtual void showEntry(FILE* strm, const int *entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
-    virtual int compute(int a, int b);
+    virtual long compute(long a, long b);
 
   protected:
     virtual bool isStaleEntry(const int* entryData);
 
-    inline bool findResult(int a, int b, int &c) {
+    inline bool findResult(long a, long b, long &c) {
       if (can_commute && a > b) {
         CTsrch.key(0) = b;
         CTsrch.key(1) = a;
@@ -69,7 +69,7 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
       return true;
     }
 
-    inline void saveResult(int a, int b, int c) {
+    inline void saveResult(long a, long b, long c) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
       if (can_commute && a > b) {
         entry.key(0) = arg2F->cacheNode(b);
@@ -85,7 +85,7 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
   protected:
     // If terminal condition is reached, returns true and the result in c.
     // Must be provided in derived classes.
-    virtual bool checkTerminals(int a, int b, int& c) = 0;
+    virtual bool checkTerminals(long a, long b, long& c) = 0;
     
 };
 
@@ -104,15 +104,15 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
     virtual void showEntry(FILE* strm, const int *entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
-    virtual int compute(int a, int b);
+    virtual long compute(long a, long b);
 
   protected:
-    int compute(int i, int k, int a, int b);
+    long compute(int i, int k, long a, long b);
 
   protected:
     virtual bool isStaleEntry(const int* entryData);
 
-    inline bool findResult(int in, int a, int b, int &c) {
+    inline bool findResult(int in, long a, long b, long &c) {
       CTsrch.key(0) = in;
       if (can_commute && a > b) {
         CTsrch.key(1) = b;
@@ -127,7 +127,7 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
       return true;
     }
 
-    inline void saveResult(int in, int a, int b, int c) {
+    inline void saveResult(int in, long a, long b, long c) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
       entry.key(0) = in;
       if (can_commute && a > b) {
@@ -144,7 +144,7 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
   protected:
     // If terminal condition is reached, returns true and the result in c.
     // Must be provided in derived classes.
-    virtual bool checkTerminals(int a, int b, int& c) = 0;
+    virtual bool checkTerminals(long a, long b, long& c) = 0;
 };
 
 // ******************************************************************
@@ -162,12 +162,12 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
     virtual void showEntry(FILE* strm, const int *entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
-    virtual int compute(int level, int a, int b);
+    virtual long compute(int level, long a, long b);
 
   protected:
     virtual bool isStaleEntry(const int* entryData);
 
-    inline bool findResult(int k, int a, int b, int &c) {
+    inline bool findResult(int k, long a, long b, long &c) {
       CTsrch.key(0) = k;
       if (can_commute && a > b) {
         CTsrch.key(1) = b;
@@ -182,7 +182,7 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
       return true;
     }
 
-    inline void saveResult(int k, int a, int b, int c) {
+    inline void saveResult(int k, long a, long b, long c) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
       entry.key(0) = k;
       if (can_commute && a > b) {
@@ -196,12 +196,12 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
       CT->addEntry();
     }
 
-    int compute(int i, int level, int a, int b);
+    long compute(int i, int level, long a, long b);
 
   protected:
     // If terminal condition is reached, returns true and the result in c.
     // Must be provided in derived classes.
-    virtual bool checkTerminals(int a, int b, int& c) = 0;
+    virtual bool checkTerminals(long a, long b, long& c) = 0;
 };
     
 
@@ -236,10 +236,10 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
     virtual void showEntry(FILE* strm, const int *entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
-    virtual void compute(int aev, int a, int bev, int b, int& cev, int &c);
+    virtual void compute(int aev, long a, int bev, long b, int& cev, long &c);
 
   protected:
-    inline bool findResult(int aev, int a, int bev, int b, int& cev, int &c) {
+    inline bool findResult(int aev, long a, int bev, long b, int& cev, long &c) {
       if (can_commute && a > b) {
         CTsrch.key(0) = bev;
         CTsrch.key(1) = b;
@@ -258,7 +258,7 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
       return true;
     }
 
-    inline bool saveResult(int aev, int a, int bev, int b, int cev, int c) {
+    inline bool saveResult(int aev, long a, int bev, long b, int cev, long c) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
       if (can_commute && a > b) {
         entry.key(0) = bev;
@@ -279,8 +279,8 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
   protected:
     // If terminal condition is reached, returns true and the result in c.
     // Must be provided in derived classes.
-    virtual bool checkTerminals(int aev, int a, int bev, int b, 
-      int &cev, int &c) = 0;
+    virtual bool checkTerminals(int aev, long a, int bev, long b, 
+      int &cev, long &c) = 0;
 };
 
 // ******************************************************************
@@ -297,12 +297,12 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
     virtual void showEntry(FILE* strm, const int *entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
-    virtual void compute(float aev, int a, float bev, int b, 
-      float& cev, int &c);
+    virtual void compute(float aev, long a, float bev, long b, 
+      float& cev, long &c);
 
   protected:
-    inline bool findResult(float aev, int a, float bev, int b, 
-      float& cev, int &c) 
+    inline bool findResult(float aev, long a, float bev, long b, 
+      float& cev, long &c) 
     {
       if (can_commute && a > b) {
         CTsrch.key(0) = toInt(bev);
@@ -322,7 +322,7 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
       return true;
     }
 
-    inline bool saveResult(int aev, int a, int bev, int b, int cev, int c) {
+    inline bool saveResult(float aev, long a, float bev, long b, float cev, long c) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
       if (can_commute && a > b) {
         entry.key(0) = toInt(bev);
@@ -343,8 +343,8 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
   protected:
     // If terminal condition is reached, returns true and the result in c.
     // Must be provided in derived classes.
-    virtual bool checkTerminals(float aev, int a, float bev, int b, 
-      float &cev, int &c) = 0;
+    virtual bool checkTerminals(float aev, long a, float bev, long b, 
+      float &cev, long &c) = 0;
 };
 
 

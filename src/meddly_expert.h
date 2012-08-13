@@ -2738,9 +2738,9 @@ class MEDDLY::binary_operation : public operation {
     // low-level front ends
 
     /// Low-level compute on nodes a and b, return result.
-    virtual int compute(int a, int b);
+    virtual long compute(long a, long b);
     /// Low-level compute at level k on nodes a and b, return result.
-    virtual int compute(int k, int a, int b);
+    virtual long compute(int k, long a, long b);
 
   protected:
     inline void operationCommutes() {
