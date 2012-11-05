@@ -89,9 +89,15 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "../config.h"
+#if HAVE_LIBGMP
+  #include <gmp.h>
+#endif
+
 #include "meddly.h"
 #include "meddly_expert.h"
 #include "timer.h"
+
 
 using namespace MEDDLY;
 
@@ -302,6 +308,8 @@ void usage()
       number of philosophers\n");
   printf("-dfs : \
       use depth-first algorithm to compute reachable states\n");
+  printf("-exact : \
+      display the exact number of states\n");
   printf("-cs   : \
       set cache size (default is 262144).\n");
   printf("-nc   : \
@@ -329,6 +337,7 @@ int main(int argc, char *argv[])
   timer start;
   int nPhilosophers = 0; // number of philosophers
   bool pessimistic = false;
+  bool exact = false;
   bool dfs = false;
   int cacheSize = 0;
   bool chaining = true;
@@ -351,6 +360,7 @@ int main(int argc, char *argv[])
           }
         }
         else if (strncmp(cmd, "-dfs", 5) == 0) dfs = true;
+        else if (strncmp(cmd, "-exact", 7) == 0) exact = true;
         else if (strncmp(cmd, "-print", 7) == 0) printReachableStates = true;
         else if (strncmp(cmd, "-n", 2) == 0) {
           nPhilosophers = strtol(&cmd[2], NULL, 10);
@@ -492,7 +502,20 @@ int main(int argc, char *argv[])
   double c;
   apply(CARDINALITY, reachableStates, c);
   printf("Approximately %e reachable states\n", c);
+  fflush(stdout);
 
+#if HAVE_LIBGMP
+  if (exact) {
+    mpz_t nrs;
+    mpz_init(nrs);
+    apply(CARDINALITY, reachableStates, nrs);
+    printf("Exactly ");
+    mpz_out_str(0, 10, nrs);
+    printf(" reachable states\n");
+    fflush(stdout);
+    mpz_clear(nrs);
+  }
+#endif
 
   if (printReachableStates) {
     // Create a EV+MDD forest in this domain (to store index set)
