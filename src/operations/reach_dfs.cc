@@ -635,7 +635,7 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(node_builder& nb)
       if (updated) {
         if (j == i) {
           // Restart inner for-loop.
-          j = -1;
+          jz = -1;
         } else {
           queue->add(j);
         }
@@ -757,6 +757,12 @@ long MEDDLY::forwd_dfs_mt::recFire(long mdd, long mxd)
   result = resF->createReducedNode(-1, nb);
 #ifdef TRACE_ALL_OPS
   printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);
+#endif
+#ifdef TRACE_RECFIRE
+  printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);
+  printf("  node %3d ", result);
+  resF->showNode(stdout, result, 1);
+  printf("\n");
 #endif
   return saveResult(mdd, mxd, result); 
 }
