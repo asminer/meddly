@@ -4,6 +4,8 @@
 #include "meddly.h"
 #include "simple_model.h"
 
+// #define VERBOSE
+
 using namespace MEDDLY;
 
 const char* mdl[] = { "X-+." };
@@ -47,6 +49,7 @@ int main()
   apply(REACHABLE_STATES_BFS, init_state, nsf, reachable2);
 
   // Display everything
+#ifdef VERBOSE
   printf("Initial state:\n");
   init_state.show(stdout, 2);
 
@@ -58,15 +61,22 @@ int main()
 
   printf("BFS states:\n");
   reachable2.show(stdout, 2);
+#endif
 
   int retval;
   if (reachable1 == reachable2) {
     retval = 0;
-    printf("\nReachable states match\n\n");
   } else {
     retval = 1;
-    printf("\nReachable states DO NOT match\n\n");
   }
+
+#ifdef VERBOSE
+  if (retval) {
+    printf("\nReachable states DO NOT match\n\n");
+  } else {
+    printf("\nReachable states match\n\n");
+  }
+#endif
 
   // cleanup
   MEDDLY::cleanup();
