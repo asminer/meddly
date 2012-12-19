@@ -2332,7 +2332,7 @@ void MEDDLY::expert_forest::shrinkHandleList()
 {
   // Determine new size
   int new_size = a_min_size;
-  while (a_last > new_size) new_size += new_size/2;
+  while (a_last >= new_size) new_size += new_size/2;
   int delta = a_size - new_size;
   if (0==delta) {
     a_next_shrink = 0;
