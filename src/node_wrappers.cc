@@ -70,62 +70,6 @@ void MEDDLY::node_reader::clear()
   level = 0;
 }
 
-/*
-void MEDDLY::node_reader::computeHash()
-{
-  MEDDLY_DCASSERT(!has_hash);
-  
-  hash_stream s;
-  s.start(level);
-
-  if (is_full) {
-    if (parent->areEdgeValuesHashed(level)) {
-      for (int i=0; i<size; i++) {
-        if (0==down[i]) continue;
-        int* ep = (int*) ( (char*)edge + i * edge_bytes );
-        s.push(i, down[i], *ep);
-      }
-    } else {
-      for (int i=0; i<size; i++) {
-        if (0==down[i]) continue;
-        s.push(i, down[i]);
-      }
-    }
-  } else {
-    if (parent->areEdgeValuesHashed(level)) {
-      for (int z=0; z<nnzs; z++) {
-        MEDDLY_DCASSERT(down[z]);
-        int* ep = (int*) ( (char*)edge + z * edge_bytes );
-        s.push(index[z], down[z], *ep);
-      }
-    } else {
-      for (int z=0; z<nnzs; z++) {
-        MEDDLY_DCASSERT(down[z]);
-        s.push(index[z], down[z]);
-      }
-    }
-  }
-  h = s.finish();
-  has_hash = true;
-}
-*/
-
-/*
-void MEDDLY::node_reader::dump(FILE* s) const
-{
-  if (is_full) {
-    fprintf(s, "[%d", down[0]);
-    for (int i=1; i<size; i++)
-      fprintf(s, ", %d", down[i]);
-    fprintf(s, "]");
-  } else {
-    fprintf(s, "(%d:%d", index[0], down[0]);
-    for (int z=1; z<nnzs; z++) 
-      fprintf(s, ", %d:%d", index[z], down[z]);
-    fprintf(s, ")");
-  }
-}
-*/
 
 void MEDDLY::node_reader
 // ::resize(const expert_forest* p, int k, int ns, bool full)
@@ -407,39 +351,3 @@ void MEDDLY::node_builder::enlarge()
 }
 
 
-// ******************************************************************
-// *                                                                *
-// *                      node_finder  methods                      *
-// *                                                                *
-// ******************************************************************
-
-/*
-MEDDLY::node_finder::node_finder(const expert_forest* p, int n)
-{
-  parent = p;
-  node = n;
-  parent->initNodeReader(thisnode, node, false);
-  h = parent->hashNode(node);
-}
-
-MEDDLY::node_finder::~node_finder()
-{
-}
-
-bool MEDDLY::node_finder::equals(int p)
-{
-  parent->initNodeReader(compare, p, false);
-
-  if (thisnode.getLevel() != compare.getLevel()) return false;
-  if (thisnode.getNNZs() != compare.getNNZs()) return false;
-
-  for (int z=0; z<thisnode.getNNZs(); z++) {
-    if (thisnode.d(z) != compare.d(z)) return false;
-    if (thisnode.i(z) != compare.i(z)) return false;
-  }
-  // TBD : edge values
-
-  return true;
-}
-
-*/

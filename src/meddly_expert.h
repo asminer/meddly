@@ -89,7 +89,6 @@ namespace MEDDLY {
   // wrappers for nodes
   class node_reader;
   class node_builder;
-  // class node_finder;
 
   class expert_forest;
 
