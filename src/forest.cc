@@ -49,6 +49,8 @@
 
 // #define REPORT_ON_DESTROY
 
+// #define LAZY_NODE_HASHING
+
 const int a_min_size = 1024;
 
 // ******************************************************************
@@ -609,20 +611,19 @@ void MEDDLY::expert_forest::validateIncounts(bool exact)
   }
   MEDDLY_DCASSERT(sz <= in_val_size);
   memset(in_validate, 0, sizeof(int) * sz);
-  node_reader *P = node_reader::useReader();
+  node_reader P;
   for (int i = 1; i < sz; ++i) {
     MEDDLY_DCASSERT(!isTerminalNode(i));
     if (!isActiveNode(i)) continue;
-    initNodeReader(*P, i, false);
+    initNodeReader(P, i, false);
 
     // add to reference counts
-    for (int z=0; z<P->getNNZs(); z++) {
-      if (isTerminalNode(P->d(z))) continue;
-      MEDDLY_CHECK_RANGE(0, P->d(z), sz);
-      in_validate[P->d(z)]++;
+    for (int z=0; z<P.getNNZs(); z++) {
+      if (isTerminalNode(P.d(z))) continue;
+      MEDDLY_CHECK_RANGE(0, P.d(z), sz);
+      in_validate[P.d(z)]++;
     }
   } // for i
-  node_reader::recycle(P);
 
   // Add counts for registered dd_edges
   nodecounter foo(this, in_validate);
@@ -784,56 +785,7 @@ void MEDDLY::expert_forest::showNode(FILE* s, long p, int verbose) const
   } else {
     fprintf(s, "node: %ld", p);
   }
-  node_storage::scanner R;
-  nodeMan.initScanner(R, node.offset);
-  if (R.isFull()) {
-    // Full node
-    if (verbose) fprintf(s, " size: %d", R.fullSize());
-    fprintf(s, " down: [");
-    for (; R; ++R) {
-      if (R.count()) fprintf(s, "|"); 
-      if (R.hasEdges()) {
-        fprintf(s, "<");
-        showEdgeValue(s, R.eptr(), 0);
-        fprintf(s, ", ");
-      } 
-      if (isTerminalNode(R.d())) {
-        showTerminal(s, R.d());
-      } else {
-        fprintf(s, "%d", R.d());
-      }
-      if (R.hasEdges()) fprintf(s, ">");
-    } // for i
-    fprintf(s, "]");
-  } else {
-    // Sparse node
-    if (verbose) fprintf(s, " nnz : %d", R.sparseSize());
-    fprintf(s, " down: (");
-    for (; R; ++R) {
-      if (R.count()) fprintf(s, ", ");
-      fprintf(s, "%d:", R.i());
-      if (R.hasEdges()) {
-        fprintf(s, "<");
-        showEdgeValue(s, R.eptr(), 0);
-        fprintf(s, ", ");
-      } 
-      if (isTerminalNode(R.d())) {
-        showTerminal(s, R.d());
-      } else {
-        fprintf(s, "%d", R.d());
-      }
-      if (R.hasEdges()) fprintf(s, ">");
-    } // for z
-    fprintf(s, ")");
-  }
-
-  // show extra header stuff
-  if (nodeMan.unhashedHeader) {
-    showUnhashedHeader(s, nodeMan.unhashedHeaderOf(node.offset));
-  }
-  if (nodeMan.hashedHeader) {
-    showHashedHeader(s, nodeMan.hashedHeaderOf(node.offset));
-  }
+  nodeMan.showNode(s, node.offset, verbose);
 }
 
 void MEDDLY::expert_forest::showNodeGraph(FILE *s, long p) const
@@ -947,54 +899,7 @@ void MEDDLY::expert_forest
   }
 }
 
-unsigned MEDDLY::expert_forest::hashNode(long p) const 
-{
-  hash_stream s;
-  const node_header& node = getNode(p);
-  MEDDLY_DCASSERT(node.level);
-#ifdef NODE_STORAGE_PER_LEVEL
-  const node_storage &nodeMan = levels[node.level];
-#endif
-  s.start(node.level);
-
-  for (int e=0; e<nodeMan.hashedHeader; e++) {
-    s.push(nodeMan.hashedHeaderOf(node.offset)[e]);
-  }
-
-  node_storage::scanner ns;
-  nodeMan.initScanner(ns, node.offset);
-
-  if (ns.isSparse()) {
-    if (areEdgeValuesHashed()) {
-      for (; ns; ++ns) {
-        int ev;
-        memcpy(&ev, ns.eptr(), sizeof(int));
-        s.push(ns.i(), ns.d(), ev);
-      }
-    } else {
-      for (; ns; ++ns) {
-        MEDDLY_DCASSERT(ns.d());
-        s.push(ns.i(), ns.d());
-      }
-    }
-  } else {
-    if (areEdgeValuesHashed()) {
-      for (; ns; ++ns) {
-        if (0==ns.d()) continue;
-        int ev;
-        memcpy(&ev, ns.eptr(), sizeof(int));
-        s.push(ns.count(), ns.d(), ev);
-      }
-    } else {
-      for (; ns; ++ns) {
-        if (0==ns.d()) continue;
-        s.push(ns.count(), ns.d());
-      }
-    }
-  }
-  return s.finish();
-}
-
+/*
 int MEDDLY::expert_forest::getSingletonIndex(long n, long &down) const
 {
   const node_header& node = getNode(n);
@@ -1022,7 +927,7 @@ int MEDDLY::expert_forest::getSingletonIndex(long n, long &down) const
   if (ns) return -1;
   return i;
 }
-
+*/
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // '                                                                '
@@ -1289,18 +1194,17 @@ void MEDDLY::expert_forest::deleteNode(long p)
 
   unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE
-  node_reader *key = node_reader::useReader();
-  initNodeReader(*key, p, false);
-  key->setHash(hashNode(p));
-  if (unique->find(*key) != p) {
-    fprintf(stderr, "Error in deleteNode\nFind: %d\np: %d\n",
-      unique->find(*key), p);
+  node_reader key; 
+  initNodeReader(key, p, false);
+  key.computeHash(areEdgeValuesHashed());
+  if (unique->find(key) != p) {
+    fprintf(stderr, "Error in deleteNode\nFind: %ld\np: %ld\n",
+      unique->find(key), p);
     dumpInternal(stdout);
     MEDDLY_DCASSERT(false);
   }
   int x = unique->remove(h, p);
   MEDDLY_DCASSERT(p == x);
-  node_reader::recycle(key);
 #else
   unique->remove(h, p);
 #endif
@@ -1350,18 +1254,17 @@ void MEDDLY::expert_forest::zombifyNode(long p)
 
   unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE 
-  node_reader *key = node_reader::useReader();
-  initNodeReader(*key, p, false);
-  key->setHash(hashNode(p));
-  if (unique->find(*key) != p) {
-    fprintf(stderr, "Fail: can't find reduced node %d; got %d\n", 
-      p, unique->find(*key));
+  node_reader key; 
+  initNodeReader(key, p, false);
+  key.computeHash(areEdgeValuesHashed());
+  if (unique->find(key) != p) {
+    fprintf(stderr, "Fail: can't find reduced node %ld; got %ld\n", 
+      p, unique->find(key));
     dumpInternal(stderr);
     MEDDLY_DCASSERT(false);
   }
   int x = unique->remove(h, p);
   MEDDLY_DCASSERT(x==p);
-  node_reader::recycle(key);
 #else
   unique->remove(h, p);
 #endif
@@ -1475,13 +1378,17 @@ int MEDDLY::expert_forest
   // All of the work is in nodeMan now :^)
   address[p].offset = nodeMan.makeNode(p, nb, getNodeStorage());
 
+#ifdef SAVE_HASHES
+  address[p].hash = nb.hash();
+#endif
+  
   // add to UT 
   unique->add(nb.hash(), p);
-  
+
 #ifdef DEVELOPMENT_CODE
   node_reader key;
   initNodeReader(key, p, false);
-  key.setHash(hashNode(p));
+  key.computeHash(areEdgeValuesHashed());
   MEDDLY_DCASSERT(key.hash() == nb.hash());
   MEDDLY_DCASSERT(unique->find(key) == p);
 #endif

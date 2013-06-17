@@ -57,15 +57,15 @@ void MEDDLY::unique_table::show(FILE* s) const
 // Helpers (private)
 //
 
-int MEDDLY::unique_table::convertToList()
+long MEDDLY::unique_table::convertToList()
 {
   /*
   printf("Converting to list\n");
   show(stdout);
 */
-  int front = 0;
-  int next = 0;
-  int curr = 0;
+  long front = 0;
+  long next = 0;
+  long curr = 0;
   for (unsigned i = 0; i < size; i++) {
     for (curr = table[i]; curr; curr = next) {
       // add to head of list
@@ -79,9 +79,9 @@ int MEDDLY::unique_table::convertToList()
   return front;
 }
 
-void MEDDLY::unique_table::buildFromList(int front)
+void MEDDLY::unique_table::buildFromList(long front)
 {
-  int next = 0;
+  long next = 0;
   for ( ; front; front = next) {
     next = parent->getNext(front);
     unsigned h = parent->hash(front) % size;

@@ -10,10 +10,29 @@
 </li>
 </ul>
 
-<h4>SIMPLE INTERFACE CHANGES</h4>
+<h2>Still to do or next steps</h2>
+
 <ul>
+<li>  Support arbitrary node storage mechanisms.
+      Abstract base class with derived classes for
+      different storage schemes.
+      Factory class inside forest "policy" to
+      specify the node storage mechanism
+      (this allows user-defined storage!)
+</li>
+
+<li> Support <tt>long</tt> node handles
+     in unique tables
+</li>
+
+<li> Support <tt>long</tt> node handles
+     in compute tables
+</li>
+
+<li> Use compaction in compute tables.
+     Idea: entries of shorts, ints, and longs.
+     May need abstraction in the interface for this.
+</li>
+
 </ul>
 
-<h4>EXPERT INTERFACE CHANGES</h4>
-<ul>
-</ul>

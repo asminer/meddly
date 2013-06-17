@@ -46,6 +46,9 @@
 
 MEDDLY::node_reader::node_reader()
 {
+  extra_hashed = 0;
+  ext_alloc = 0;
+  ext_size = 0;
   down = 0;
   index = 0;
   edge = 0;
@@ -66,6 +69,7 @@ MEDDLY::node_reader::~node_reader()
 
 void MEDDLY::node_reader::clear()
 {
+  free(extra_hashed);
   free(down);
   free(index);
   free(edge);
@@ -107,6 +111,63 @@ void MEDDLY::node_reader
   }
 }
 
+void MEDDLY::node_reader
+::resize_header(int extra_slots)
+{
+  ext_size = extra_slots;
+  if (ext_size > ext_alloc) {
+    ext_alloc = ((ext_size/8)+1)*8;
+    MEDDLY_DCASSERT(ext_alloc > ext_size);
+    MEDDLY_DCASSERT(ext_alloc>0);
+    extra_hashed = (int*) realloc(extra_hashed, ext_alloc * sizeof(int));
+    if (0==extra_hashed) throw error(error::INSUFFICIENT_MEMORY);
+  }
+}
+
+void MEDDLY::node_reader::computeHash(bool hashEdgeValues)
+{
+#ifdef DEVELOPMENT_CODE
+  MEDDLY_DCASSERT(!has_hash);
+#endif
+  
+  hash_stream s;
+  s.start(level);
+
+  for (int e=0; e<ext_size; e++) {
+    MEDDLY_DCASSERT(extra_hashed);
+    s.push(extra_hashed[e]);
+  }
+  
+  if (isSparse()) {
+    if (hashEdgeValues) {
+      for (int z=0; z<nnzs; z++) {
+        MEDDLY_DCASSERT(d(z));
+        s.push(i(z), d(z), ei(z));
+      }
+    } else {
+      for (int z=0; z<nnzs; z++) {
+        MEDDLY_DCASSERT(d(z));
+        s.push(i(z), d(z));
+      }
+    }
+  } else {
+    if (hashEdgeValues) {
+      for (int n=0; n<size; n++) {
+        if (0==d(n)) continue;
+        s.push(n, d(n), ei(n));
+      }
+    } else {
+      for (int n=0; n<size; n++) {
+        if (0==d(n)) continue;
+        s.push(n, d(n));
+      }
+    }
+  }
+  h = s.finish();
+#ifdef DEVELOPMENT_CODE
+  has_hash = true;
+#endif
+}
 
 // ******************************************************************
 // *                                                                *
@@ -173,7 +234,7 @@ void MEDDLY::node_builder::computeHash()
     MEDDLY_DCASSERT(extra_hashed);
     s.push(extra_hashed[e]);
   }
-  
+ /* 
   if (is_sparse) {
     if (hashEdgeValues) {
       for (int z=0; z<size; z++) {
@@ -198,6 +259,32 @@ void MEDDLY::node_builder::computeHash()
       for (int i=0; i<size; i++) {
         if (0==down[i]) continue;
         s.push(i, down[i]);
+      }
+    }
+  }
+  */
+  if (isSparse()) {
+    if (hashEdgeValues) {
+      for (int z=0; z<size; z++) {
+        MEDDLY_DCASSERT(d(z));
+        s.push(i(z), d(z), ei(z));
+      }
+    } else {
+      for (int z=0; z<size; z++) {
+        MEDDLY_DCASSERT(d(z));
+        s.push(i(z), d(z));
+      }
+    }
+  } else {
+    if (hashEdgeValues) {
+      for (int n=0; n<size; n++) {
+        if (0==d(n)) continue;
+        s.push(n, d(n), ei(n));
+      }
+    } else {
+      for (int n=0; n<size; n++) {
+        if (0==d(n)) continue;
+        s.push(n, d(n));
       }
     }
   }
@@ -478,6 +565,15 @@ void MEDDLY::node_storage::fillReader(int addr, node_reader &nr) const
   scanner ns;
   initScanner(ns, addr);
 
+  // Copy hashed header
+
+  if (hashedHeader) {
+    nr.resize_header(hashedHeader);
+    memcpy(nr.extra_hashed, HH(addr), hashedHeader * sizeof(int));
+  }
+
+  // Copy everything else
+
   if (ns.isFull()) {
     if (nr.isFull()) {
       for (; ns; ++ns) {
@@ -606,6 +702,163 @@ int MEDDLY::node_storage
 
     default:
         throw error(error::MISCELLANEOUS);
+  }
+}
+
+unsigned MEDDLY::node_storage::hashNode(const node_header& node) const
+{
+  hash_stream s;
+  s.start(node.level);
+
+  for (int e=0; e<hashedHeader; e++) {
+    s.push(hashedHeaderOf(node.offset)[e]);
+  }
+
+  scanner ns;
+  initScanner(ns, node.offset);
+
+  if (ns.isSparse()) {
+    if (parent->areEdgeValuesHashed()) {
+      for (; ns; ++ns) {
+        int ev;
+        memcpy(&ev, ns.eptr(), sizeof(int));
+        s.push(ns.i(), ns.d(), ev);
+      }
+    } else {
+      for (; ns; ++ns) {
+        MEDDLY_DCASSERT(ns.d());
+        s.push(ns.i(), ns.d());
+      }
+    }
+  } else {
+    if (parent->areEdgeValuesHashed()) {
+      for (; ns; ++ns) {
+        if (0==ns.d()) continue;
+        int ev;
+        memcpy(&ev, ns.eptr(), sizeof(int));
+        s.push(ns.count(), ns.d(), ev);
+      }
+    } else {
+      for (; ns; ++ns) {
+        if (0==ns.d()) continue;
+        s.push(ns.count(), ns.d());
+      }
+    }
+  }
+  return s.finish();
+}
+
+int MEDDLY::node_storage::getSingletonIndex(int addr, long &down) const
+{
+  scanner ns;
+  initScanner(ns, addr);
+
+  if (ns.isFull()) {
+    // full node
+    for (; ns; ++ns) {
+      if (0==ns.d()) continue;
+      if (ns.count()+1 != ns.fullSize()) return -1;
+      down = ns.d();
+      return ns.count();
+    }
+    return -1;
+  }
+  // sparse node --- easy
+  down = ns.d();
+  int i = ns.i();
+  ++ns;
+  if (ns) return -1;
+  return i;
+}
+
+long MEDDLY::node_storage
+::getDownPtr(int addr, int index) const
+{
+  scanner ns;
+  initScanner(ns, addr);
+  return ns.moveToIndex(index) ? ns.d() : 0;
+}
+
+void MEDDLY::node_storage
+::getDownPtr(int addr, int index, int& ev, long& dn) const
+{
+  scanner ns;
+  initScanner(ns, addr);
+  if (ns.moveToIndex(index)) {
+    dn = ns.d();
+    ev = ns.ei();
+  } else {
+    ev = 0;
+    dn = 0;
+  }
+}
+
+void MEDDLY::node_storage
+::getDownPtr(int addr, int index, float& ev, long& dn) const
+{
+  scanner ns;
+  initScanner(ns, addr);
+  if (ns.moveToIndex(index)) {
+    dn = ns.d();
+    ev = ns.ef();
+  } else {
+    ev = 0;
+    dn = 0;
+  }
+}
+
+void MEDDLY::node_storage
+::showNode(FILE* s, int addr, bool verbose) const
+{
+  scanner R;
+  initScanner(R, addr);
+  if (R.isFull()) {
+    // Full node
+    if (verbose) fprintf(s, " size: %d", R.fullSize());
+    fprintf(s, " down: [");
+    for (; R; ++R) {
+      if (R.count()) fprintf(s, "|"); 
+      if (R.hasEdges()) {
+        fprintf(s, "<");
+        parent->showEdgeValue(s, R.eptr(), 0);
+        fprintf(s, ", ");
+      } 
+      if (parent->isTerminalNode(R.d())) {
+        parent->showTerminal(s, R.d());
+      } else {
+        fprintf(s, "%d", R.d());
+      }
+      if (R.hasEdges()) fprintf(s, ">");
+    } // for i
+    fprintf(s, "]");
+  } else {
+    // Sparse node
+    if (verbose) fprintf(s, " nnz : %d", R.sparseSize());
+    fprintf(s, " down: (");
+    for (; R; ++R) {
+      if (R.count()) fprintf(s, ", ");
+      fprintf(s, "%d:", R.i());
+      if (R.hasEdges()) {
+        fprintf(s, "<");
+        parent->showEdgeValue(s, R.eptr(), 0);
+        fprintf(s, ", ");
+      } 
+      if (parent->isTerminalNode(R.d())) {
+        parent->showTerminal(s, R.d());
+      } else {
+        fprintf(s, "%d", R.d());
+      }
+      if (R.hasEdges()) fprintf(s, ">");
+    } // for z
+    fprintf(s, ")");
+  }
+
+  // show extra header stuff
+  if (unhashedHeader) {
+    parent->showUnhashedHeader(s, unhashedHeaderOf(addr));
+  }
+  if (hashedHeader) {
+    parent->showHashedHeader(s, hashedHeaderOf(addr));
   }
 }
 

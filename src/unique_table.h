@@ -55,7 +55,7 @@ class MEDDLY::unique_table {
           bool equals(int p): return true iff this item equals node p.
      */
     template <class T>
-    inline int find(const T &key) {
+    inline long find(const T &key) {
       unsigned h = key.hash() % size;
       MEDDLY_CHECK_RANGE(0, h, size);
       int prev = 0;
@@ -81,7 +81,7 @@ class MEDDLY::unique_table {
     /** Add to the front of the list.
         Used when we KNOW that the item is not in the unique table already.
     */
-    inline void add(unsigned h, int item) {
+    inline void add(unsigned h, long item) {
       num_entries++;
       if (num_entries > next_expand) expand();
       MEDDLY_DCASSERT(item>0);
@@ -94,7 +94,7 @@ class MEDDLY::unique_table {
       I.e., the exact key.
       Otherwise, return 0.
     */
-    inline int remove(unsigned h, int key) {
+    inline long remove(unsigned h, long key) {
       h %= size;
       MEDDLY_CHECK_RANGE(0, h, size);
       int prev = 0;
@@ -119,9 +119,9 @@ class MEDDLY::unique_table {
 
   private:  // helper methods
     /// Empty the hash table into a list; returns the list.
-    int convertToList();
+    long convertToList();
     /// A series of inserts; doesn't check for duplicates or expand.
-    void buildFromList(int front);
+    void buildFromList(long front);
     /// Expand the hash table (if possible)
     void expand();
     /// Shrink the hash table

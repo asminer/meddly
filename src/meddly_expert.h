@@ -67,6 +67,8 @@
 
 //
 // Design decision: should we remember the hashes for a reduced node?
+// Tests so far indicate: doesn't save much, if any, time; and has
+// a noticeable increase in memory.
 //
 // #define SAVE_HASHES
 
@@ -662,6 +664,8 @@ class MEDDLY::node_reader {
           h = H;
         };
 
+        void computeHash(bool hashEdgeValues);
+
     // Centralized recycling
     public:
         inline static node_reader* useReader() {
@@ -695,6 +699,15 @@ class MEDDLY::node_reader {
         static node_reader* freeList;
     private:
         node_reader* next;    // for recycled list
+        /* 
+          Extra info that is hashed
+        */
+        int* extra_hashed;
+        int ext_alloc;
+        int ext_size;
+        /*
+          Down pointers, indexes, edge values.
+        */
         long* down;
         int* index;
         void* edge;
@@ -717,8 +730,10 @@ class MEDDLY::node_reader {
         ///   @param  eb    Bytes for each edge.
         ///   @param  full  If true, we'll be filling a full reader.
         ///                 Otherwise it is a sparse one.
-        // void resize(const expert_forest* p, int k, int ns, bool full);
         void resize(int k, int ns, char eb, bool full);
+
+        /// Allocate space for extra hashed info
+        void resize_header(int extra_slots);
 
         friend class expert_forest; 
         friend class node_storage; 
@@ -912,7 +927,7 @@ struct MEDDLY::node_header {
     */
     int cache_count;
 
-#ifdef SAVE_HASH
+#ifdef SAVE_HASHES
     /// Remember the hash for speed.
     unsigned hash;
 #endif
@@ -1102,9 +1117,64 @@ class MEDDLY::node_storage {
       int makeNode(int p, const node_builder &nb, 
         forest::policies::node_storage opt);
 
+      /** Compute the hash value for a node.
+            @param  p     Node of interest.
+      */
+      unsigned hashNode(const node_header& p) const;
+
+      /** Determine if this is a singleton node.
+          @param  addr    Address of the node we care about
+          @param  down    Output:
+                          The singleton downward pointer, or undefined.
+
+          @return   If the node has only one non-zero downward pointer,
+                    then return the index for that pointer.
+                    Otherwise, return a negative value.
+      */
+      int getSingletonIndex(int addr, long &down) const;
+
+      /** Get the specified downward pointer for a node.
+          Fast if we just want one.
+          @param  addr    Address of the node we care about
+          @param  index   Index of downward pointer
+          @return         Desired pointer
+      */
+      long getDownPtr(int addr, int index) const;
+
+      /** Get the specified outgoing edge for a node.
+          Fast if we just want one.
+
+          @param  addr    Address of the node we care about
+          @param  index   Index of the pointer we want.
+
+          @param  ev      Output: edge value at that index.
+          @param  dn      Output: downward pointer at that index.
+      */
+      void getDownPtr(int addr, int index, int& ev, long& dn) const;
+
+      /** Get the specified outgoing edge for a node.
+          Fast if we just want one.
+
+          @param  addr    Address of the node we care about
+          @param  index   Index of the pointer we want.
+
+          @param  ev      Output: edge value at that index.
+          @param  dn      Output: downward pointer at that index.
+      */
+      void getDownPtr(int addr, int index, float& ev, long& dn) const;
+
+      /** Write a node in human-readable format.
+          
+          @param  s       Output stream.
+          @param  addr    Address of the node we care about.
+          @param  verb    Verbose output or not.
+      */
+      void showNode(FILE* s, int addr, bool verb) const;
+
   // --------------------------------------------------------
   // | mechanism to read a node
-  public:
+  private:
+  // public:
       class scanner {
         public:
           inline bool isSparse() const  { return index; }
@@ -1751,7 +1821,7 @@ class MEDDLY::expert_forest : public forest
     inline unsigned hash(long p) const {
       MEDDLY_DCASSERT(address);
       MEDDLY_DCASSERT(isValidNonterminalIndex(p));
-#ifdef SAVE_HASH
+#ifdef SAVE_HASHES
       return address[p].hash;
 #else
       return hashNode(p);
@@ -1969,7 +2039,16 @@ class MEDDLY::expert_forest : public forest
     void reportMemoryUsage(FILE * s, const char* pad, int verb) const;
 
     /// Compute a hash for a node.
-    unsigned hashNode(long p) const;
+    inline unsigned hashNode(long p) const {
+#ifdef NODE_STORAGE_PER_LEVEL
+        const node_header& node = getNode(p);
+        MEDDLY_DCASSERT(node.level);
+        return levels[node.level].hashNode(node);
+#else
+        return nodeMan.hashNode(getNode(p));
+#endif
+    }
+
 
     /** Check and find the index of a single downward pointer.
 
@@ -1981,7 +2060,16 @@ class MEDDLY::expert_forest : public forest
                     then return the index for that pointer.
                     Otherwise, return a negative value.
     */
-    int getSingletonIndex(long node, long &down) const;
+    inline int getSingletonIndex(long p, long &down) const {
+#ifdef NODE_STORAGE_PER_LEVEL
+        const node_header& node = getNode(p);
+        MEDDLY_DCASSERT(node.level);
+        return levels[node.level].getSingletonIndex(node.offset, down);
+#else
+        return nodeMan.getSingletonIndex(getNode(p).offset, down);
+#endif
+
+    }
 
     /** Check and get a single downward pointer.
 
@@ -2010,16 +2098,13 @@ class MEDDLY::expert_forest : public forest
           @return         The downward pointer at that index.
     */
     inline long getDownPtr(long p, int index) const {
-        MEDDLY_DCASSERT(index>=0);
-        node_storage::scanner ns;
 #ifdef NODE_STORAGE_PER_LEVEL
         const node_header& node = getNode(p);
         MEDDLY_DCASSERT(node.level);
-        levels[node.level].initScanner(ns, node.offset);
+        return levels[node.level].getDownPtr(node.offset, index);
 #else
-        nodeMan.initScanner(ns, getNode(p).offset);
+        return nodeMan.getDownPtr(getNode(p).offset, index);
 #endif
-        return ns.moveToIndex(index) ? ns.d() : 0;
     }
 
     /** For a given node, get a specified downward pointer.
@@ -2035,22 +2120,13 @@ class MEDDLY::expert_forest : public forest
           @param  dn      Output: downward pointer at that index.
     */
     inline void getDownPtr(long p, int index, int& ev, long& dn) const {
-        MEDDLY_DCASSERT(index>=0);
-        node_storage::scanner ns;
 #ifdef NODE_STORAGE_PER_LEVEL
         const node_header& node = getNode(p);
         MEDDLY_DCASSERT(node.level);
-        levels[node.level].initScanner(ns, node.offset);
+        levels[node.level].getDownPtr(node.offset, index, ev, dn);
 #else
-        nodeMan.initScanner(ns, getNode(p).offset);
+        nodeMan.getDownPtr(getNode(p).offset, index, ev, dn);
 #endif
-        if (ns.moveToIndex(index)) {
-          dn = ns.d();
-          ev = ns.ei();
-        } else {
-          ev = 0;
-          dn = 0;
-        }
     }
 
     /** For a given node, get a specified downward pointer.
@@ -2066,22 +2142,13 @@ class MEDDLY::expert_forest : public forest
           @param  dn      Output: downward pointer at that index.
     */
     inline void getDownPtr(long p, int index, float& ev, long& dn) const {
-        MEDDLY_DCASSERT(index>=0);
-        node_storage::scanner ns;
 #ifdef NODE_STORAGE_PER_LEVEL
         const node_header& node = getNode(p);
         MEDDLY_DCASSERT(node.level);
-        levels[node.level].initScanner(ns, node.offset);
+        levels[node.level].getDownPtr(node.offset, index, ev, dn);
 #else
-        nodeMan.initScanner(ns, getNode(p).offset);
+        nodeMan.getDownPtr(getNode(p).offset, index, ev, dn);
 #endif
-        if (ns.moveToIndex(index)) {
-          dn = ns.d();
-          ev = ns.ef();
-        } else {
-          ev = 0;
-          dn = 0;
-        }
     }
 
 
@@ -2447,6 +2514,7 @@ class MEDDLY::expert_forest : public forest
     */
     virtual void normalize(node_builder &nb, float& ev) const;
 
+  public:
     /** Show a terminal node.
           @param  s       Stream to write to.
           @param  tnode   Handle to a terminal node.
