@@ -57,14 +57,14 @@ class MEDDLY::range_int : public unary_operation {
     virtual void showEntry(FILE* strm, const int *entryData) const;
   
   protected:
-    inline bool findResult(int a, int &b) {
+    inline bool findResult(long a, long &b) {
       CTsrch.key(0) = a;
       const int* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
       b = cacheFind[1];
       return true;
     }
-    inline int saveResult(int a, int &b) {
+    inline long saveResult(long a, long &b) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
       entry.key(0) = argF->cacheNode(a);
       entry.result(0) = b;
@@ -111,14 +111,14 @@ class MEDDLY::range_real : public unary_operation {
     virtual void showEntry(FILE* strm, const int *entryData) const;
 
   protected:
-    inline bool findResult(int a, float &b) {
+    inline bool findResult(long a, float &b) {
       CTsrch.key(0) = a;
       const int* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
       b = ((float*)(cacheFind+1))[0];
       return true;
     }
-    inline int saveResult(int a, float &b) {
+    inline long saveResult(long a, float &b) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
       entry.key(0) = argF->cacheNode(a);
       entry.copyResult(0, &b, sizeof(float));
@@ -163,16 +163,16 @@ public:
   virtual void compute(const dd_edge &arg, long &res) {
     res = compute(arg.getNode());
   }
-  int compute(int a);
+  long compute(long a);
 };
 
-int MEDDLY::maxrange_int::compute(int a)
+long MEDDLY::maxrange_int::compute(long a)
 {
   // Terminal case
   if (argF->isTerminalNode(a)) return argF->getInteger(a);
   
   // Check compute table
-  int max;
+  long max;
   if (findResult(a, max)) return max;
 
   // Initialize node reader
@@ -207,16 +207,16 @@ public:
   virtual void compute(const dd_edge &arg, long &res) {
     res = compute(arg.getNode());
   }
-  int compute(int a);
+  long compute(long a);
 };
 
-int MEDDLY::minrange_int::compute(int a)
+long MEDDLY::minrange_int::compute(long a)
 {
   // Terminal case
   if (argF->isTerminalNode(a)) return argF->getInteger(a);
   
   // Check compute table
-  int min;
+  long min;
   if (findResult(a, min)) return min;
 
   // Initialize node reader
@@ -251,10 +251,10 @@ public:
   virtual void compute(const dd_edge &arg, double &res) {
     res = compute(arg.getNode());
   }
-  float compute(int a);
+  float compute(long a);
 };
 
-float MEDDLY::maxrange_real::compute(int a)
+float MEDDLY::maxrange_real::compute(long a)
 {
   // Terminal case
   if (argF->isTerminalNode(a)) return argF->getInteger(a);
@@ -295,10 +295,10 @@ public:
   virtual void compute(const dd_edge &arg, double &res) {
     res = compute(arg.getNode());
   }
-  float compute(int a);
+  float compute(long a);
 };
 
-float MEDDLY::minrange_real::compute(int a)
+float MEDDLY::minrange_real::compute(long a)
 {
   // Terminal case
   if (argF->isTerminalNode(a)) return argF->getInteger(a);

@@ -332,12 +332,12 @@ MEDDLY::binary_operation::~binary_operation()
   unregisterInForest(resF);
 }
 
-int MEDDLY::binary_operation::compute(int a, int b)
+long MEDDLY::binary_operation::compute(long a, long b)
 {
   throw error(error::WRONG_NUMBER);
 }
 
-int MEDDLY::binary_operation::compute(int k, int a, int b)
+long MEDDLY::binary_operation::compute(int k, long a, long b)
 {
   throw error(error::WRONG_NUMBER);
 }

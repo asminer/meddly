@@ -49,16 +49,16 @@ class MEDDLY::compl_mdd : public unary_operation {
     virtual void compute(const dd_edge& a, dd_edge& b);
 
   protected:
-    int compute(int a);
+    long compute(long a);
 
-    inline bool findResult(int a, int &b) {
+    inline bool findResult(long a, long &b) {
       CTsrch.key(0) = a;
       const int* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
       b = resF->linkNode(cacheFind[1]);
       return true;
     }
-    inline int saveResult(int a, int b) {
+    inline long saveResult(long a, long b) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
       entry.key(0) = argF->cacheNode(a);
       entry.result(0) = resF->cacheNode(b);
@@ -97,7 +97,7 @@ void MEDDLY::compl_mdd::compute(const dd_edge& a, dd_edge& b)
   b.set(result, 0);
 }
 
-int MEDDLY::compl_mdd::compute(int a)
+long MEDDLY::compl_mdd::compute(long a)
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
@@ -105,7 +105,7 @@ int MEDDLY::compl_mdd::compute(int a)
   }
 
   // Check compute table
-  int b;
+  long b;
   if (findResult(a, b)) return b;
 
   // Initialize node builder
@@ -147,7 +147,7 @@ class MEDDLY::compl_mxd : public unary_operation {
     virtual void showEntry(FILE* strm, const int *entryData) const;
     virtual void compute(const dd_edge& a, dd_edge& b);
 
-    int compute(int in, int k, int a);
+    long compute(int in, int k, long a);
 };
 
 MEDDLY::compl_mxd
@@ -177,11 +177,11 @@ void MEDDLY::compl_mxd::showEntry(FILE* strm, const int *data) const
 
 void MEDDLY::compl_mxd::compute(const dd_edge& a, dd_edge& b) 
 {
-  int result = compute(-1, argF->getDomain()->getNumVariables(), a.getNode());
+  long result = compute(-1, argF->getDomain()->getNumVariables(), a.getNode());
   b.set(result, 0);
 }
 
-int MEDDLY::compl_mxd::compute(int in, int k, int a)
+long MEDDLY::compl_mxd::compute(int in, int k, long a)
 {
   if (0==k) {
     return resF->getTerminalNode(a==0);
@@ -238,7 +238,7 @@ int MEDDLY::compl_mxd::compute(int in, int k, int a)
   node_reader::recycle(A);
 
   // reduce, save in CT
-  int result = resF->createReducedNode(in, nb);
+  long result = resF->createReducedNode(in, nb);
   if (k<0 && 1==nnz) canSave = false;
   if (canSave) {
     compute_table::temp_entry &entry = CT->startNewEntry(this);

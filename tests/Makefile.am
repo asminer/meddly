@@ -5,9 +5,12 @@
 ## compile library
 
 check_PROGRAMS = \
-  enctest sat_test nqueens check_xA chk_cross kanban kan_show kan_batch kan_index
+  enctest \
+  bug_00 \
+  sat_test nqueens check_xA chk_cross kanban kan_show kan_batch kan_index
 
 TESTS = \
+  bug_00 \
   sat_test nqueens check_xA chk_cross kanban kan_show kan_batch kan_index
 
 AM_CPPFLAGS = -I../src -I../src/operations
@@ -15,6 +18,9 @@ AM_CXXFLAGS = -Wall
 
 enctest_SOURCES = enctest.cc
 enctest_LDADD =
+
+bug_00_SOURCES = bug_00.cc simple_model.h simple_model.cc
+bug_00_LDADD = ../src/libmeddly.la
 
 sat_test_SOURCES = sat_test.cc
 sat_test_LDADD = ../src/libmeddly.la

@@ -49,7 +49,7 @@ class MEDDLY::multiply_mdd : public generic_binary_mdd {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(int a, int b, int& c);
+    virtual bool checkTerminals(long a, long b, long& c);
 };
 
 MEDDLY::multiply_mdd::multiply_mdd(const binary_opname* opcode, 
@@ -59,7 +59,7 @@ MEDDLY::multiply_mdd::multiply_mdd(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::multiply_mdd::checkTerminals(int a, int b, int& c)
+bool MEDDLY::multiply_mdd::checkTerminals(long a, long b, long& c)
 {
   if (a == 0 || b == 0) {
     c = 0;
@@ -134,7 +134,7 @@ class MEDDLY::multiply_mxd : public generic_binary_mxd {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(int a, int b, int& c);
+    virtual bool checkTerminals(long a, long b, long& c);
 };
 
 MEDDLY::multiply_mxd::multiply_mxd(const binary_opname* opcode, 
@@ -144,7 +144,7 @@ MEDDLY::multiply_mxd::multiply_mxd(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::multiply_mxd::checkTerminals(int a, int b, int& c)
+bool MEDDLY::multiply_mxd::checkTerminals(long a, long b, long& c)
 {
   if (a == 0 || b == 0) {
     c = 0;
@@ -177,8 +177,8 @@ class MEDDLY::multiply_evplus : public generic_binary_evplus {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(int aev, int a, int bev, int b, 
-      int& cev, int& c);
+    virtual bool checkTerminals(int aev, long a, int bev, long b, 
+      int& cev, long& c);
 };
 
 MEDDLY::multiply_evplus::multiply_evplus(const binary_opname* opcode, 
@@ -188,8 +188,8 @@ MEDDLY::multiply_evplus::multiply_evplus(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::multiply_evplus::checkTerminals(int aev, int a, int bev, int b,
-  int& cev, int& c)
+bool MEDDLY::multiply_evplus::checkTerminals(int aev, long a, int bev, long b,
+  int& cev, long& c)
 {
   if (a == 0 || b == 0) {
     c = 0; cev = INF;
@@ -216,8 +216,8 @@ class MEDDLY::multiply_evtimes : public generic_binary_evtimes {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(float aev, int a, float bev, int b, 
-      float& cev, int& c);
+    virtual bool checkTerminals(float aev, long a, float bev, long b, 
+      float& cev, long& c);
 };
 
 MEDDLY::multiply_evtimes::multiply_evtimes(const binary_opname* opcode, 
@@ -227,8 +227,8 @@ MEDDLY::multiply_evtimes::multiply_evtimes(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::multiply_evtimes::checkTerminals(float aev, int a, 
-  float bev, int b, float& cev, int& c)
+bool MEDDLY::multiply_evtimes::checkTerminals(float aev, long a, 
+  float bev, long b, float& cev, long& c)
 {
   if (a == 0 || b == 0) {
     c = 0; cev = NAN;

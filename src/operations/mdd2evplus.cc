@@ -49,7 +49,7 @@ class MEDDLY::mdd2evplus_operation : public unary_operation {
 
     virtual void compute(const dd_edge &arg, dd_edge &res);
 
-    void compute(int k, int a, int &bdn, int &bcard);
+    void compute(int k, long a, long &bdn, int &bcard);
 };
 
 MEDDLY::mdd2evplus_operation::mdd2evplus_operation(const unary_opname* oc, 
@@ -94,7 +94,8 @@ MEDDLY::mdd2evplus_operation
   MEDDLY_DCASSERT(resF->getTerminalNode(false) == 0);
   MEDDLY_DCASSERT(argF->getTerminalNode(true) < 0);
   MEDDLY_DCASSERT(argF->getTerminalNode(false) == 0);
-  int down, card;
+  long down;
+  int card;
   int nVars = argF->getDomain()->getNumVariables();
   compute(nVars, arg.getNode(), down, card);
   res.set(down, 0);
@@ -102,7 +103,7 @@ MEDDLY::mdd2evplus_operation
 
 void
 MEDDLY::mdd2evplus_operation
-::compute(int k, int a, int &bdn, int &bcard)
+::compute(int k, long a, long &bdn, int &bcard)
 {
   // Deal with terminals
   if (0 == a) {
@@ -146,7 +147,8 @@ MEDDLY::mdd2evplus_operation
   // recurse
   bcard = 0;
   for (int i=0; i<size; i++) {
-    int ddn, dcard;
+    long ddn;
+    int dcard;
     compute(k-1, A->d(i), ddn, dcard);
     nb.d(i) = ddn;
     if (nb.d(i)) {

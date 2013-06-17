@@ -26,6 +26,7 @@
 #include "meddly.h"
 #include "meddly_expert.h"
 #include "simple_model.h"
+#include "timer.h"
 
 using namespace MEDDLY;
 
@@ -175,6 +176,7 @@ char* Go(int i, int N)
 
 int main(int argc, const char** argv)
 {
+  timer start;
   int N = -1;
   char method = 'd';
 
@@ -234,13 +236,19 @@ int main(int argc, const char** argv)
   // Build next-state function
   forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge nsf(mxd);
+  start.note_time();
 
   if (method != 'e') {
     buildNextStateFunction(events, 8*N, mxd, nsf, 2);
+    start.note_time();
+    printf("Next-state function construction took %.4e seconds\n",
+          start.get_last_interval()/1000000.0);
     printStats("MxD", mxd->getStats());
+    fflush(stdout);
   }
 
   dd_edge reachable(mdd);
+  start.note_time();
   switch (method) {
     case 'b':
         printf("Building reachability set using traditional algorithm\n");
@@ -264,7 +272,10 @@ int main(int argc, const char** argv)
         printf("Error - unknown method\n");
         exit(2);
   }
+  start.note_time();
   printf("Done\n");
+  printf("Reachability set construction took %.4e seconds\n",
+          start.get_last_interval()/1000000.0);
   fflush(stdout);
 
 #ifdef SHOW_STATES

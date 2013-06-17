@@ -54,8 +54,8 @@ class MEDDLY::cross_bool : public binary_operation {
     virtual void showEntry(FILE* strm, const int *entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
-    int compute_pr(int in, int ht, int a, int b);
-    int compute_un(int ht, int a, int b);
+    long compute_pr(int in, int ht, long a, long b);
+    long compute_un(int ht, long a, long b);
 };
 
 MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
@@ -97,11 +97,11 @@ void
 MEDDLY::cross_bool::compute(const dd_edge &a, const dd_edge &b, dd_edge &c)
 {
   int L = arg1F->getDomain()->getNumVariables();
-  int cnode = compute_un(L, a.getNode(), b.getNode());
+  long cnode = compute_un(L, a.getNode(), b.getNode());
   c.set(cnode, 0);
 }
 
-int MEDDLY::cross_bool::compute_un(int k, int a, int b)
+long MEDDLY::cross_bool::compute_un(int k, long a, long b)
 {
 #ifdef DEBUG_CROSS
   printf("calling compute_un(%d, %d, %d)\n", k, a, b);
@@ -142,7 +142,7 @@ int MEDDLY::cross_bool::compute_un(int k, int a, int b)
   node_reader::recycle(A);
 
   // reduce, save in compute table
-  int c = resF->createReducedNode(-1, nb);
+  long c = resF->createReducedNode(-1, nb);
 
   compute_table::temp_entry &entry = CT->startNewEntry(this);
   entry.key(INPTR_INDEX) = -1;
@@ -159,7 +159,7 @@ int MEDDLY::cross_bool::compute_un(int k, int a, int b)
   return c;
 }
 
-int MEDDLY::cross_bool::compute_pr(int in, int k, int a, int b)
+long MEDDLY::cross_bool::compute_pr(int in, int k, long a, long b)
 {
 #ifdef DEBUG_CROSS
   printf("calling compute_pr(%d, %d, %d, %d)\n", in, k, a, b);
@@ -195,7 +195,7 @@ int MEDDLY::cross_bool::compute_pr(int in, int k, int a, int b)
   node_reader::recycle(B);
 
   // reduce, save in compute table
-  int c = resF->createReducedNode(in, nb);
+  long c = resF->createReducedNode(in, nb);
 
   compute_table::temp_entry &entry = CT->startNewEntry(this);
   entry.key(INPTR_INDEX) = in;

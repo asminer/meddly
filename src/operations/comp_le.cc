@@ -46,7 +46,7 @@ class MEDDLY::lessequal_mdd : public generic_binary_mdd {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(int a, int b, int& c);
+    virtual bool checkTerminals(long a, long b, long& c);
 };
 
 MEDDLY::lessequal_mdd::lessequal_mdd(const binary_opname* opcode, 
@@ -55,7 +55,7 @@ MEDDLY::lessequal_mdd::lessequal_mdd(const binary_opname* opcode,
 {
 }
 
-bool MEDDLY::lessequal_mdd::checkTerminals(int a, int b, int& c)
+bool MEDDLY::lessequal_mdd::checkTerminals(long a, long b, long& c)
 {
   if (arg1F->isTerminalNode(a) &&
       arg2F->isTerminalNode(b)) {
@@ -85,7 +85,7 @@ class MEDDLY::lessequal_mxd : public generic_binbylevel_mxd {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(int a, int b, int& c);
+    virtual bool checkTerminals(long a, long b, long& c);
 };
 
 MEDDLY::lessequal_mxd::lessequal_mxd(const binary_opname* opcode, 
@@ -94,7 +94,7 @@ MEDDLY::lessequal_mxd::lessequal_mxd(const binary_opname* opcode,
 {
 }
 
-bool MEDDLY::lessequal_mxd::checkTerminals(int a, int b, int& c)
+bool MEDDLY::lessequal_mxd::checkTerminals(long a, long b, long& c)
 {
   if (arg1F->isTerminalNode(a) &&
       arg2F->isTerminalNode(b)) {

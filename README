@@ -76,30 +76,16 @@ Configuration Options
 Several environment variables may be set before running configure.
 For example, to build an optimized version of the library:
 
-$ CXXFLAGS="-O3"
-$ export CXXFLAGS 
-$ ./configure
-
-To build an optimized, 64-bit version of the library:
-
-$ CXXFLAGS="-m64 -O3"
-$ export CXXFLAGS
-$ ./configure
+$ ./configure CXXFLAGS="-O3"
 
 To build a debuggable version of the library:
 
-$ CPPFLAGS="-DDEVELOPMENT_CODE"
-$ CXXFLAGS="-ggdb"
-$ export CPPFLAGS CXXFLAGS
-$ ./configure
+$ ./configure CPPFLAGS="-DDEVELOPMENT_CODE" CXXFLAGS="-ggdb"
 
 To set the location of the gmp library, by hand 
 (only necessary if ./configure fails to find it):
 
-$ CPPFLAGS="-I/path-to-gmp-header"
-$ LDFLAGS="-L/path-to-gmp-lib"
-$ export CPPFLAGS LDFLAGS
-$ ./configure
+$ ./configure CPPFLAGS="-I/path/to/gmp/header" LDFLAGS="-L/path/to/gmp/lib"
 
 To disable gmp support in Meddly:
 
