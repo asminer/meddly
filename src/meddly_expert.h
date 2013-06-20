@@ -612,6 +612,13 @@ class MEDDLY::node_reader {
           return ((float*)edge)[n];
         }
 
+        /// Get a pointer to an edge
+        inline const void* eptr(int i) const {
+          MEDDLY_DCASSERT(edge);
+          MEDDLY_CHECK_RANGE(0, i, size);
+          return ((char*)edge) + i * edge_bytes;
+        }
+
         /// Get the raw edge array.
         inline const void* rawEdges() const {
           return edge;
@@ -1063,6 +1070,21 @@ class MEDDLY::node_storage {
 
     // various ways to read a node
 
+    /** Check for duplicates.
+          @param  addr    Node address in this structure
+          @param  nb      Node to compare against
+
+          @return true    iff the nodes are duplicates
+    */
+    virtual bool areDuplicates(long addr, const node_builder &nb) const = 0;
+
+    /** Check for duplicates.
+          @param  addr    Node address in this structure
+          @param  nr      Node to compare against
+
+          @return true    iff the nodes are duplicates
+    */
+    virtual bool areDuplicates(long addr, const node_reader &nr) const = 0;
 
     /** Fill a node reader.
         Useful if we want to read an entire node.
@@ -1673,7 +1695,6 @@ class MEDDLY::expert_forest : public forest
   public:
     void dump(FILE *s) const; 
     void dumpInternal(FILE *s) const; 
-    void dumpInternalLevel(FILE *s, int k) const; 
     void dumpUniqueTable(FILE *s) const;
     void validateIncounts(bool exact);
 
@@ -2043,25 +2064,17 @@ class MEDDLY::expert_forest : public forest
     inline char unhashedHeaderBytes() const { return unhashedHeaderSize() * sizeof(int); }
     inline char hashedHeaderBytes() const { return hashedHeaderSize() * sizeof(int); }
 
-    /** Discover duplicate nodes.
-        Required for the unique table.
-          @param  na      First node
-          @param  nb      Second node
-          
-          @return   true, iff the nodes are duplicates.
-    */
-    virtual bool areDuplicates(const node_reader &na, 
-        const node_builder &nb) const = 0;
+    /** Are the given edge values "duplicates".
+        I.e., when determining if two nodes are duplicates,
+        do the given edge values qualify as duplicate values.
+          @param  eva     Pointer to the first edge value
+          @param  evb     Pointer to the second edge value
 
-    /** Discover duplicate nodes.
-        Right now, used for sanity checks only.
-          @param  na      First node
-          @param  nb      Second node
-          
-          @return   true, iff the nodes are duplicates.
+          @return     true, iff the edge values are "equal".
+          @throws     A TYPE_MISMATCH error if the forest 
+                      does not store edge values.
     */
-    virtual bool areDuplicates(const node_reader &na, 
-        const node_reader &nb) const = 0;
+    virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const;
 
     /** Discover duplicate nodes.
         Required for the unique table. 
@@ -2075,10 +2088,11 @@ class MEDDLY::expert_forest : public forest
       MEDDLY_DCASSERT(address);
       MEDDLY_CHECK_RANGE(1, node, 1+a_last);
       if (address[node].level != nb.getLevel()) return false;
-      node_reader* na = initNodeReader(node, nb.isFull());
-      bool ans = areDuplicates(*na, nb);
-      node_reader::recycle(na);
-      return ans;
+#ifdef NODE_STORAGE_PER_LEVEL
+      return levels[node.level]->areDuplicates(address[node].offset, nb);
+#else
+      return nodeMan->areDuplicates(address[node].offset, nb);
+#endif
     };
 
     /** Discover duplicate nodes.
@@ -2093,10 +2107,11 @@ class MEDDLY::expert_forest : public forest
       MEDDLY_DCASSERT(address);
       MEDDLY_CHECK_RANGE(1, node, 1+a_last);
       if (address[node].level != nr.getLevel()) return false;
-      node_reader* na = initNodeReader(node, nr.isFull());
-      bool ans = areDuplicates(*na, nr);
-      node_reader::recycle(na);
-      return ans;
+#ifdef NODE_STORAGE_PER_LEVEL
+      return levels[node.level]->areDuplicates(address[node].offset, nr);
+#else
+      return nodeMan->areDuplicates(address[node].offset, nr);
+#endif
     }
 
     /** Is this a redundant node that can be eliminated?

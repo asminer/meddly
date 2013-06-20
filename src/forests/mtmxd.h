@@ -72,12 +72,12 @@ class MEDDLY::mtmxd_forest : public mt_forest {
 
     // Creates an edge representing v[] vp[] = terminal node (not value),
     // and stores it in e.
-    void createEdge(const int* v, const int* vp, long termNode, dd_edge& e);
+    void createEdgeTo(const int* v, const int* vp, long termNode, dd_edge& e);
 
     // Starting at height given by {startAtHeight, primedLevel},
     // creates an edge representing v[] vp[] = terminal node (not value),
     // and stores it in e.
-    void createEdge(const int* v, const int* vp, long termNode,
+    void createEdgeTo(const int* v, const int* vp, long termNode,
         int startAtHeight, bool primedLevel, dd_edge& e);
 
     // Creates a top-level node representing {-1, -1, ..., -1} = terminal node
@@ -187,21 +187,21 @@ MEDDLY::mtmxd_forest::createEdgeInternal(const int* const* vlist,
     // build using "standard" procedure
     if (terms == 0) {
       int trueNode = getTerminalNode(true);
-      createEdge(vlist[0], vplist[0], trueNode, e);
+      createEdgeTo(vlist[0], vplist[0], trueNode, e);
       if (N > 1) {
         dd_edge curr(this);
         for (int i=1; i<N; i++) {
-          createEdge(vlist[i], vplist[i], trueNode, curr);
+          createEdgeTo(vlist[i], vplist[i], trueNode, curr);
           e += curr;
         }
       }
     }
     else {
-      createEdge(vlist[0], vplist[0], getTerminalNode(terms[0]), e);
+      createEdgeTo(vlist[0], vplist[0], getTerminalNode(terms[0]), e);
       if (N > 1) {
         dd_edge curr(this);
         for (int i=1; i<N; i++) {
-          createEdge(vlist[i], vplist[i], getTerminalNode(terms[i]), curr);
+          createEdgeTo(vlist[i], vplist[i], getTerminalNode(terms[i]), curr);
           e += curr;
         }
       }

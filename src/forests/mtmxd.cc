@@ -171,7 +171,8 @@ long MEDDLY::mtmxd_forest::createNode(const int* v, const int* vp, long term,
 }
 
 
-void MEDDLY::mtmxd_forest::createEdge(const int* v, const int* vp, long term,
+void MEDDLY::mtmxd_forest
+::createEdgeTo(const int* v, const int* vp, long term,
     int startAtHeight, bool primedLevel, dd_edge& e)
 {
   term = createNode(v, vp, term, startAtHeight, primedLevel);
@@ -179,10 +180,10 @@ void MEDDLY::mtmxd_forest::createEdge(const int* v, const int* vp, long term,
 }
 
 
-void MEDDLY::mtmxd_forest::createEdge(const int* v, const int* vp, long term,
-    dd_edge& e)
+void MEDDLY::mtmxd_forest
+::createEdgeTo(const int* v, const int* vp, long term, dd_edge& e)
 {
-  createEdge(v, vp, term, getExpertDomain()->getNumVariables(), false, e);
+  createEdgeTo(v, vp, term, getExpertDomain()->getNumVariables(), false, e);
 }
 
 

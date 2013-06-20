@@ -89,7 +89,7 @@ int MEDDLY::mtmdd_forest::createNode(int k, int index, long dptr)
 }
 
 
-void MEDDLY::mtmdd_forest::createEdge(const int* v, long term, dd_edge& e)
+void MEDDLY::mtmdd_forest::createEdgeTo(const int* v, long term, dd_edge& e)
 {
   // construct the edge bottom-up
   MEDDLY_DCASSERT(isTerminalNode(term));

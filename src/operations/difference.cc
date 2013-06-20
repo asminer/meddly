@@ -65,13 +65,14 @@ bool MEDDLY::diffr_mdd::checkTerminals(long a, long b, long& c)
     c = -1;
     return true;
   }
-  if (a == b) 
+  if (a == b) {
     if (arg1F == arg2F) {
       c = 0;
       return true;
     } else {
       return false;
     }
+  }
   if (b == 0) {
     if (arg1F == resF) {
       c = resF->linkNode(a);
@@ -117,13 +118,14 @@ bool MEDDLY::diffr_mxd::checkTerminals(long a, long b, long& c)
     c = -1;
     return true;
   }
-  if (a == b) 
+  if (a == b) {
     if (arg1F == arg2F) {
       c = 0;
       return true;
     } else {
       return false;
     }
+  }
   if (b == 0) {
     if (arg1F == resF) {
       c = resF->linkNode(a);

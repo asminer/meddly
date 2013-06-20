@@ -118,16 +118,6 @@ evaluate(const dd_edge &f, const int* vlist, int &term) const
   return evaluateInternal(f, vlist, term);
 }
 
-bool MEDDLY::evp_mdd_int::areDuplicates(const node_reader &na, const node_builder &nb) const
-{
-  return areDupsInternal(na, nb);
-}
-
-bool MEDDLY::evp_mdd_int::areDuplicates(const node_reader &na, const node_reader &nr) const
-{
-  return areDupsInternal(na, nr);
-}
-
 void MEDDLY::evp_mdd_int::normalize(node_builder &nb, int &ev) const
 {
   int minindex = -1;
@@ -154,6 +144,12 @@ void MEDDLY::evp_mdd_int::showEdgeValue(FILE* s, const void* edge, int i) const
 void MEDDLY::evp_mdd_int::showUnhashedHeader(FILE* s, const int* uh) const
 {
   fprintf(s, " card: %d", uh[0]);
+}
+
+bool MEDDLY::evp_mdd_int
+::areEdgeValuesEqual(const void* eva, const void* evb) const
+{
+  return ((const int*)eva)[0] == ((const int*)evb)[0];
 }
 
 bool MEDDLY::evp_mdd_int::isRedundant(const node_builder &nb) const
@@ -233,14 +229,10 @@ void MEDDLY::evt_mdd_real::showEdgeValue(FILE* s, const void* edge, int i) const
   fprintf(s, "%f", ((const float*)edge)[i]);
 }
 
-bool MEDDLY::evt_mdd_real::areDuplicates(const node_reader &na, const node_builder &nb) const
+bool MEDDLY::evt_mdd_real
+::areEdgeValuesEqual(const void* eva, const void* evb) const
 {
-  return areDupsInternal(na, nb);
-}
-
-bool MEDDLY::evt_mdd_real::areDuplicates(const node_reader &na, const node_reader &nr) const
-{
-  return areDupsInternal(na, nr);
+  return !notClose( ((const float*)eva)[0], ((const float*)evb)[0] );
 }
 
 bool MEDDLY::evt_mdd_real::isRedundant(const node_builder &nb) const

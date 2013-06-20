@@ -131,13 +131,14 @@ bool MEDDLY::union_mxd::checkTerminals(long a, long b, long& c)
       return false;
     }
   }
-  if (a == b) 
+  if (a == b) {
     if (arg1F == arg2F && arg1F == resF) {
       c = resF->linkNode(b);
       return true;
     } else {
       return false;
     }
+  }
   if (b == 0) {
     if (arg1F == resF) {
       c = resF->linkNode(a);

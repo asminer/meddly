@@ -130,6 +130,11 @@ int main(int argc, const char** argv)
 
   MEDDLY::initialize();
 
+  printf("+-------------------------------------------+\n");
+  printf("|   Initializing Kanban model for N = %-4d  |\n", N);
+  printf("+-------------------------------------------+\n");
+  fflush(stdout);
+
   // Initialize domain
   int* sizes = new int[16];
   for (int i=15; i>=0; i--) sizes[i] = N+1;

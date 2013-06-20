@@ -258,7 +258,7 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
       return true;
     }
 
-    inline bool saveResult(int aev, long a, int bev, long b, int cev, long c) {
+    inline void saveResult(int aev, long a, int bev, long b, int cev, long c) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
       if (can_commute && a > b) {
         entry.key(0) = bev;
@@ -322,7 +322,7 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
       return true;
     }
 
-    inline bool saveResult(float aev, long a, float bev, long b, float cev, long c) {
+    inline void saveResult(float aev, long a, float bev, long b, float cev, long c) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
       if (can_commute && a > b) {
         entry.key(0) = toInt(bev);

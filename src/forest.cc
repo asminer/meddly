@@ -581,22 +581,17 @@ void MEDDLY::expert_forest::dumpInternal(FILE *s) const
   }
   fprintf(s, "]\n\n");
 
-  for (int i=1; i<=getNumVariables(); i++) {
-    dumpInternalLevel(s, i);
-    if (isForRelations()) dumpInternalLevel(s, -i);
-  }
- 
-  unique->show(s);
-  fflush(s);
-}
-
-void MEDDLY::expert_forest::dumpInternalLevel(FILE *s, int k) const
-{
 #ifdef NODE_STORAGE_PER_LEVEL
-  levels[k]->dumpInternal(s);
+  for (int i=1; i<=getNumVariables(); i++) {
+    levels[i]->dumpInternal(s);
+    if (isForRelations()) levels[-i]->dumpInternal(s);
+  }
 #else
   nodeMan->dumpInternal(s);
 #endif
+ 
+  unique->show(s);
+  fflush(s);
 }
 
 void MEDDLY::expert_forest::dumpUniqueTable(FILE *s) const
@@ -1040,6 +1035,12 @@ void MEDDLY::expert_forest::showInfo(FILE* s, int verb)
 // '    virtual methods to be overridden by some derived classes    '
 // '                                                                '
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+bool MEDDLY::expert_forest
+::areEdgeValuesEqual(const void* eva, const void* evb) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
 
 void MEDDLY::expert_forest::normalize(node_builder &nb, int& ev) const
 {

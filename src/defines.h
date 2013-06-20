@@ -71,7 +71,7 @@ namespace MEDDLY {
   const int INF = std::numeric_limits<int>::max();
   const float NAN = std::numeric_limits<float>::quiet_NaN();
   inline bool isNan(float t) { return t != t; }
-  inline bool isNan(int t) { return t != t; }
+  inline bool isNan(int t) { return false; }
 
   // Handy Macros
 

@@ -112,7 +112,7 @@ class MEDDLY::mtmdd_forest : public mt_forest {
   protected: // still to be organized
 
     // Create edge representing f(vlist[]) = term and store it in e
-    void createEdge(const int* vlist, long term, dd_edge& e);
+    void createEdgeTo(const int* vlist, long term, dd_edge& e);
 
     // Create a node, at level k, whose ith index points to dptr.
     // If i is -1, all indices of the node will point to dptr.
@@ -168,21 +168,21 @@ MEDDLY::mtmdd_forest::createEdgeInternal(const int* const* vlist,
     // build using "standard" procedure
     if (terms == 0) {
       int trueNode = getTerminalNode(true);
-      createEdge(vlist[0], trueNode, e);
+      createEdgeTo(vlist[0], trueNode, e);
       if (N > 1) {
         dd_edge curr(this);
         for (int i=1; i<N; i++) {
-          createEdge(vlist[i], trueNode, curr);
+          createEdgeTo(vlist[i], trueNode, curr);
           e += curr;
         }
       }
     }
     else {
-      createEdge(vlist[0], getTerminalNode(terms[0]), e);
+      createEdgeTo(vlist[0], getTerminalNode(terms[0]), e);
       if (N > 1) {
         dd_edge curr(this);
         for (int i=1; i<N; i++) {
-          createEdge(vlist[i], getTerminalNode(terms[i]), curr);
+          createEdgeTo(vlist[i], getTerminalNode(terms[i]), curr);
           e += curr;
         }
       }

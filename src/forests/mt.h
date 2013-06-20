@@ -73,8 +73,6 @@ class MEDDLY::mt_forest : public expert_forest {
     virtual bool areEdgeValuesHashed() const {
         return false;
     }
-    virtual bool areDuplicates(const node_reader &na, const node_builder &nb) const;
-    virtual bool areDuplicates(const node_reader &na, const node_reader &nr) const;
 
     virtual bool isRedundant(const node_builder &nb) const;
     virtual bool isIdentityEdge(const node_builder &nb, int i) const;
@@ -97,32 +95,6 @@ class MEDDLY::mt_forest : public expert_forest {
         long node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
 
         result.set(node, 0);
-    }
-
-    template <class T>
-    inline bool areDupsInternal(const node_reader& na, const T &nb) const {
-        if (na.getLevel() != nb.getLevel()) return false;
-        MEDDLY_DCASSERT(nb.isFull() == na.isFull());
-
-        if (nb.isFull()) {
-          //
-          // full
-          //
-          if (na.getSize() != nb.getSize()) return false;
-          for (int i=0; i<nb.getSize(); i++) {
-            if (na.d(i) != nb.d(i)) return false;
-          }
-          return true;
-        } 
-        //
-        //  sparse
-        //
-        if (na.getNNZs() != nb.getNNZs()) return false;
-        for (int z=0; z<na.getNNZs(); z++) {
-          if (nb.d(z) != na.d(z)) return false;
-          if (nb.i(z) != na.i(z)) return false;
-        }
-        return true;
     }
 
   // ------------------------------------------------------------

@@ -65,20 +65,22 @@ bool MEDDLY::inter_mdd::checkTerminals(long a, long b, long& c)
     c = -1;
     return true;
   }
-  if (a == -1) 
+  if (a == -1) {
     if (arg2F == resF) {
       c = resF->linkNode(b);
       return true;
     } else {
       return false;
     }
-  if (a == b) 
+  }
+  if (a == b) {
     if (arg1F == arg2F && arg1F == resF) {
       c = resF->linkNode(b);
       return true;
     } else {
       return false;
     }
+  }
   if (b == -1) {
     if (arg1F == resF) {
       c = resF->linkNode(a);
@@ -124,13 +126,14 @@ bool MEDDLY::inter_mxd::checkTerminals(long a, long b, long& c)
     c = -1;
     return true;
   }
-  if (a == b) 
+  if (a == b) {
     if (arg1F == arg2F && arg1F == resF) {
       c = resF->linkNode(b);
       return true;
     } else {
       return false;
     }
+  }
   return false;
 }
 

@@ -148,8 +148,8 @@ class MEDDLY::evp_mdd_int : public evmdd_forest {
     virtual bool areEdgeValuesHashed() const {
         return true;
     }
-    virtual bool areDuplicates(const node_reader &na, const node_builder &nb) const;
-    virtual bool areDuplicates(const node_reader &na, const node_reader &nr) const;
+
+    virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const;
 
     virtual bool isRedundant(const node_builder &nb) const;
     virtual bool isIdentityEdge(const node_builder &nb, int i) const;
@@ -159,34 +159,6 @@ class MEDDLY::evp_mdd_int : public evmdd_forest {
     virtual void showEdgeValue(FILE* s, const void* edge, int i) const;
     virtual void showUnhashedHeader(FILE* s, const int* uh) const;
 
-  private:
-    template <class T>
-    inline bool areDupsInternal(const node_reader &na, const T &nb) const {
-        if (na.getLevel() != nb.getLevel()) return false;
-        MEDDLY_DCASSERT(nb.isFull() == na.isFull());
-
-        if (nb.isFull()) {
-          //
-          // full
-          //
-          if (na.getSize() != nb.getSize()) return false;
-          for (int i=0; i<nb.getSize(); i++) {
-            if (na.d(i) != nb.d(i)) return false;
-            if (na.ei(i) != nb.ei(i)) return false;
-          }
-          return true;
-        } 
-        //
-        //  sparse
-        //
-        if (na.getNNZs() != nb.getNNZs()) return false;
-        for (int z=0; z<na.getNNZs(); z++) {
-          if (nb.d(z) != na.d(z)) return false;
-          if (nb.i(z) != na.i(z)) return false;
-          if (nb.ei(z) != na.ei(z)) return false;
-        }
-        return true;
-    }
 };
 
 
@@ -227,8 +199,8 @@ class MEDDLY::evt_mdd_real : public evmdd_forest {
     virtual bool areEdgeValuesHashed() const {
         return false; // we need to do a "within epsilon" comparison.
     }
-    virtual bool areDuplicates(const node_reader &na, const node_builder &nb) const;
-    virtual bool areDuplicates(const node_reader &na, const node_reader &nr) const;
+
+    virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const;
 
     virtual bool isRedundant(const node_builder &nb) const;
     virtual bool isIdentityEdge(const node_builder &nb, int i) const;
@@ -247,34 +219,6 @@ class MEDDLY::evt_mdd_real : public evmdd_forest {
       }
     }
     
-    template <class T>
-    inline bool areDupsInternal(const node_reader &na, const T &nb) const {
-        if (na.getLevel() != nb.getLevel()) return false;
-        MEDDLY_DCASSERT(nb.isFull() == na.isFull());
-
-        if (nb.isFull()) {
-          //
-          // full
-          //
-          if (na.getSize() != nb.getSize()) return false;
-          for (int i=0; i<nb.getSize(); i++) {
-            if (na.d(i) != nb.d(i)) return false;
-            if (notClose(na.ef(i), nb.ef(i))) return false;
-          }
-          return true;
-        } 
-        //
-        //  sparse
-        //
-        if (na.getNNZs() != nb.getNNZs()) return false;
-        for (int z=0; z<na.getNNZs(); z++) {
-          if (nb.d(z) != na.d(z)) return false;
-          if (nb.i(z) != na.i(z)) return false;
-          if (notClose(na.ef(z), nb.ef(z))) return false;
-        }
-        return true;
-    }
-
 };
 
 

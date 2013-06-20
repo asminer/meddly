@@ -171,6 +171,8 @@ class MEDDLY::old_node_storage : public node_storage {
 
     virtual void unlinkDownAndRecycle(long addr);
 
+    virtual bool areDuplicates(long addr, const node_builder &nb) const;
+    virtual bool areDuplicates(long addr, const node_reader &nr) const;
     virtual void fillReader(long addr, node_reader &nr) const;
     virtual unsigned hashNode(const node_header& p) const;
     virtual int getSingletonIndex(long addr, long &down) const;
@@ -427,6 +429,104 @@ class MEDDLY::old_node_storage : public node_storage {
       */
       long allocNode(int sz, long tail, bool clear);
 
+  // --------------------------------------------------------
+  // |  Node comparison as a template
+  private:
+    template <class nodetype>
+    inline bool areDupsTempl(long addr, const nodetype &n) const {
+      int size = sizeOf(addr);
+      if (size<0) {
+        //
+        // Node is sparse
+        //
+        int nnz = -size;
+        int* down = SD(addr);
+        int* index = SI(addr);
+        if (n.isFull()) {
+          // check that down matches
+          int i = 0;
+          for (int z=0; z<nnz; z++) {
+            if (index[z] >= n.getSize()) return false;
+            for (; i<index[z]; i++) if (n.d(i)) return false;
+            if (n.d(i) != down[z]) return false;
+            i++;
+          }
+          for (; i<n.getSize(); i++) if (n.d(i)) return false;
+          // check that edges match
+          if (n.hasEdges()) {
+            for (int z=0; z<nnz; z++) {
+              if (!getParent()->areEdgeValuesEqual( 
+                      SEP(addr, z),   n.eptr(index[z])
+                  )) return false;
+            } // for z
+          }
+          // must be equal
+          return true;
+        }
+        // n is sparse
+        if (n.getNNZs() != nnz) return false;
+        // check that down matches
+        for (int z=0; z<nnz; z++) {
+          if (index[z] != n.i(z)) return false;
+          if (down[z] != n.d(z))  return false;
+        }
+        // check that edges match
+        if (n.hasEdges()) {
+          for (int z=0; z<nnz; z++) {
+              if (!getParent()->areEdgeValuesEqual( 
+                      SEP(addr, z),   n.eptr(z)
+                  )) return false;
+          }
+        } 
+        // must be equal
+        return true;
+      }
+      //
+      // Node is truncated full
+      //
+      int* down = FD(addr);
+      if (n.isFull()) {
+        if (size > n.getSize()) return false;
+        // check down
+        int i;
+        for (i=0; i<size; i++) {
+          if (down[i] != n.d(i)) return false;
+        }
+        for ( ; i<n.getSize(); i++) {
+          if (n.d(i)) return false;
+        }
+        // check edges
+        if (n.hasEdges()) {
+          for (int i=0; i<size; i++) if (down[i]) {
+              if (!getParent()->areEdgeValuesEqual( 
+                      FEP(addr, i),   n.eptr(i)
+                  )) return false;
+          }
+        }
+        // must be equal
+        return true;
+      }
+      // n is sparse
+      int i = 0;
+      // check down
+      for (int z=0; z<n.getNNZs(); z++) {
+        if (n.i(z) >= size) return false;
+        for (; i<n.i(z); i++) if (down[i]) return false;
+        if (n.d(z) != down[i]) return false;
+        i++;
+      }
+      if (i<size) return false; // there WILL be a non-zero down
+      // check edges
+      if (n.hasEdges()) {
+        for (int z=0; z<n.getNNZs(); z++) {
+          if (!getParent()->areEdgeValuesEqual(
+                FEP(addr, n.i(z)),  n.eptr(z)
+              )) return false;
+        } // for z
+      }
+      // must be equal
+      return true;
+    }
 }; 
 
 #endif

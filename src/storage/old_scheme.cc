@@ -285,7 +285,7 @@ long MEDDLY::old_node_storage
   //
   // Easy case - sparse nodes disabled
   //
-  if (0==forest::policies::ALLOW_SPARSE_STORAGE & opt) {
+  if (0==(forest::policies::ALLOW_SPARSE_STORAGE & opt)) {
 
           if (nb.isSparse()) {
             truncsize = -1;
@@ -305,7 +305,7 @@ long MEDDLY::old_node_storage
   //
   // Easy case - full nodes disabled
   //
-  if (0==forest::policies::ALLOW_FULL_STORAGE & opt) {
+  if (0==(forest::policies::ALLOW_FULL_STORAGE & opt)) {
 
           if (nb.isSparse()) {
             return makeSparseNode(p, nb.getNNZs(), nb);
@@ -368,6 +368,17 @@ void MEDDLY::old_node_storage::unlinkDownAndRecycle(long addr)
   makeHole(addr, activeNodeActualLongSlots(addr));
 }
 
+bool MEDDLY::old_node_storage
+::areDuplicates(long addr, const node_builder &nb) const
+{
+  return areDupsTempl(addr, nb);
+}
+
+bool MEDDLY::old_node_storage
+::areDuplicates(long addr, const node_reader &nr) const
+{
+  return areDupsTempl(addr, nr);
+}
 
 void MEDDLY::old_node_storage::fillReader(long addr, node_reader &nr) const
 {
@@ -389,7 +400,7 @@ void MEDDLY::old_node_storage::fillReader(long addr, node_reader &nr) const
     int* down = SD(addr);
     int* index = SI(addr);
     if (nr.isFull()) {
-      if (nr.edgeBytes()) {
+      if (nr.hasEdges()) {
         memset(down_of(nr), 0, nr.getSize() * sizeof(long));
         memset(edge_of(nr), 0, nr.getSize() * nr.edgeBytes());
         for (int z=0; z<nnz; z++) {
@@ -414,7 +425,7 @@ void MEDDLY::old_node_storage::fillReader(long addr, node_reader &nr) const
       down_of(nr)[z] = down[z];
       index_of(nr)[z] = index[z];
     } // for z
-    if (nr.edgeBytes()) {
+    if (nr.hasEdges()) {
       memcpy(edge_of(nr), SE(addr), nnz * nr.edgeBytes());
     }
     return;
@@ -442,7 +453,7 @@ void MEDDLY::old_node_storage::fillReader(long addr, node_reader &nr) const
   // nr is sparse
   int& z = nnzs_of(nr);
   z = 0;
-  if (nr.edgeBytes()) {
+  if (nr.hasEdges()) {
     char* nev = edge_of(nr);
     for (int i=0; i<size; i++) if (down[i]) {
       down_of(nr)[z] = down[i];
