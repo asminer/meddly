@@ -10,15 +10,33 @@
 </li>
 </ul>
 
+<h4>SIMPLE INTERFACE CHANGES</h4>
+<ul>
+<li> The forest policy for specifying full vs sparse node storage has changed.
+     Now, this is specified via <tt>storage_flags</tt>
+     by combining flags <tt>ALLOW_FULL_STORAGE</tt>
+     and <tt>ALLOW_SPARSE_STORAGE</tt> as appropriate.
+</li>
+<li>  The node storage scheme may be changed on a per forest basis,
+      at runtime, by setting the forest <tt>policy</tt> as appropriate.
+</li>
+</ul>
+
+<h4>EXPERT INTERFACE CHANGES</h4>
+<ul>
+<li> The node storage interface has changed.
+     This is likely to affect forest implementations, and not much else.
+</li>
+<li>  Different node storage schemes are implemented in the
+      <tt>storage</tt> subdirectory.
+      Motivated users may invent and use their own schemes.
+</li>
+</ul>
+
 <h2>Still to do or next steps</h2>
 
 <ul>
-<li>  Support arbitrary node storage mechanisms.
-      Abstract base class with derived classes for
-      different storage schemes.
-      Factory class inside forest "policy" to
-      specify the node storage mechanism
-      (this allows user-defined storage!)
+<li>  Finish design of arbitrary node storage mechanisms.
 </li>
 
 <li> Support <tt>long</tt> node handles

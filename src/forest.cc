@@ -445,13 +445,13 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   int N = getNumVariables();
 #ifdef NODE_STORAGE_PER_LEVEL
   if (rel) {
-    raw_levels = new node_storage[2*N+1];
+    raw_levels = new node_storage*[2*N+1];
     levels = raw_levels + N;
-    stats.incMemAlloc(2*N+1 * sizeof(node_storage));
+    stats.incMemAlloc(2*N+1 * sizeof(void*));
   } else {
-    raw_levels = new node_storage[N+1];
+    raw_levels = new node_storage*[N+1];
     levels = raw_levels;
-    stats.incMemAlloc(N+1 * sizeof(node_storage));
+    stats.incMemAlloc(N+1 * sizeof(void*));
   }
 #endif
 
@@ -492,7 +492,12 @@ MEDDLY::expert_forest::~expert_forest()
 
 #ifdef NODE_STORAGE_PER_LEVEL
   // Level array
+  for (int k=getMinLevelIndex(); k<=getNumVariables(); k++) {
+    delete levels[k];
+  }
   delete[] raw_levels;
+#else
+  delete nodeMan;
 #endif
 
   // builders array
@@ -507,15 +512,19 @@ MEDDLY::expert_forest::~expert_forest()
 
 void MEDDLY::expert_forest::initializeForest()
 {
+  if (!deflt.nodestor) {
+    throw error(error::MISCELLANEOUS);
+  }
+
   //
   // Initialize node storage
   //
 #ifdef NODE_STORAGE_PER_LEVEL
   for (int k=getMinLevelIndex(); k<=getNumVariables(); k++) {
-    levels[k].init(this);
+    levels[k] = k ? deflt.nodestor->createForForest(this) : 0;
   }
 #else
-  nodeMan.init(this);
+  nodeMan = deflt.nodestor->createForForest(this);
 #endif
 
   //
@@ -584,9 +593,9 @@ void MEDDLY::expert_forest::dumpInternal(FILE *s) const
 void MEDDLY::expert_forest::dumpInternalLevel(FILE *s, int k) const
 {
 #ifdef NODE_STORAGE_PER_LEVEL
-  levels[k].dumpInternal(s);
+  levels[k]->dumpInternal(s);
 #else
-  nodeMan.dumpInternal(s);
+  nodeMan->dumpInternal(s);
 #endif
 }
 
@@ -766,7 +775,7 @@ void MEDDLY::expert_forest::showNode(FILE* s, long p, int verbose) const
   }
   const node_header& node = getNode(p);
 #ifdef NODE_STORAGE_PER_LEVEL
-  const node_storage &nodeMan = levels[node.level];
+  const node_storage* nodeMan = levels[node.level];
 #endif
   if (verbose) {
     // node: was already written.
@@ -780,12 +789,12 @@ void MEDDLY::expert_forest::showNode(FILE* s, long p, int verbose) const
       fprintf(s, "'");
     else
       fprintf(s, " ");
-    fprintf(s, " in: %d", nodeMan.getCountOf(node.offset));
+    fprintf(s, " in: %ld", nodeMan->getCountOf(node.offset));
     fprintf(s, " cc: %d", node.cache_count);
   } else {
     fprintf(s, "node: %ld", p);
   }
-  nodeMan.showNode(s, node.offset, verbose);
+  nodeMan->showNode(s, node.offset, verbose);
 }
 
 void MEDDLY::expert_forest::showNodeGraph(FILE *s, long p) const
@@ -860,74 +869,14 @@ void MEDDLY::expert_forest
     fprintf(s, "%sCompactions:            %ld\n", pad, stats.num_compactions);
     fprintf(s, "%sGarbage Collections:    %ld\n", pad, stats.garbage_collections);
   }
-  if (verb>7) {
-    long holemem = 0;
 #ifdef NODE_STORAGE_PER_LEVEL
-    for (int i=getMinLevelIndex(); i<=getNumVariables(); i++) {
-      holemem += levels[i].getHoleSlots();
-    }
+  for (int i=getMinLevelIndex(); i<=getNumVariables(); i++) {
+    if (levels[i]) levels[i]->reportMemoryUsage(s, pad, verb);
+  }
 #else
-    holemem += nodeMan.getHoleSlots();
+  nodeMan->reportMemoryUsage(s, pad, verb);
 #endif
-    holemem *= sizeof(int);
-    fprintf(s, "%sHole Memory Usage:\t%ld\n", pad, holemem);
-  }
-
-  if (verb>6) {
-    // Print hole-recyling info
-    // Compute chain lengths
-    std::map<int, int> chainLengths;
-
-#ifdef NODE_STORAGE_PER_LEVEL
-    for (int k=getMinLevelIndex(); k<=getNumVariables(); k++) 
-    {
-      levels[k].addToChainCounts(chainLengths);
-    }
-#else
-    nodeMan.addToChainCounts(chainLengths);
-#endif
-
-    fprintf(s, "%sHole Chains (size, count):\n", pad);
-    for (std::map<int, int>::iterator iter = chainLengths.begin();
-      iter != chainLengths.end(); ++iter)
-    {
-      if (iter->first<0)
-        fprintf(s, "%s\tlarge: %d\n", pad, iter->second);
-      else
-        fprintf(s, "%s\t%5d: %d\n", pad, iter->first, iter->second);
-    }
-  }
 }
-
-/*
-int MEDDLY::expert_forest::getSingletonIndex(long n, long &down) const
-{
-  const node_header& node = getNode(n);
-  MEDDLY_DCASSERT(node.level);
-#ifdef NODE_STORAGE_PER_LEVEL
-  const node_storage &nodeMan = levels[node.level];
-#endif
-  node_storage::scanner ns;
-  nodeMan.initScanner(ns, node.offset);
-
-  if (ns.isFull()) {
-    // full node
-    for (; ns; ++ns) {
-      if (0==ns.d()) continue;
-      if (ns.count()+1 != ns.fullSize()) return -1;
-      down = ns.d();
-      return ns.count();
-    }
-    return -1;
-  }
-  // sparse node --- easy
-  down = ns.d();
-  int i = ns.i();
-  ++ns;
-  if (ns) return -1;
-  return i;
-}
-*/
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // '                                                                '
@@ -1066,10 +1015,10 @@ void MEDDLY::expert_forest::compactMemory()
 {
 #ifdef NODE_STORAGE_PER_LEVEL
   for (int i=getMinLevelIndex(); i<=getNumVariables(); i++) {
-    levels[i].compact(true);
+    levels[i]->collectGarbage(true);
   }
 #else 
-  nodeMan.compact(true);
+  nodeMan->collectGarbage(true);
 #endif
 }
 
@@ -1219,13 +1168,11 @@ void MEDDLY::expert_forest::deleteNode(long p)
   int addr = getNode(p).offset;
 
 #ifdef NODE_STORAGE_PER_LEVEL
-  node_storage &nodeMan = levels[getNode(p).level];
+  node_storage* nodeMan = levels[getNode(p).level];
 #endif
-  // unlink children
-  nodeMan.unlinkDown(addr);
 
-  // Recycle node memory
-  nodeMan.recycleNode(addr);
+  // unlink children and recycle node memory
+  nodeMan->unlinkDownAndRecycle(addr);
 
   // recycle the index
   freeActiveNode(p);
@@ -1275,11 +1222,8 @@ void MEDDLY::expert_forest::zombifyNode(long p)
   node_storage &nodeMan = levels[getNode(p).level];
 #endif
 
-  // unlink children
-  nodeMan.unlinkDown(addr);
-
-  // Recycle node memory
-  nodeMan.recycleNode(addr);
+  // unlink children and recycle node memory
+  nodeMan->unlinkDownAndRecycle(addr);
 }
 
 int MEDDLY::expert_forest
@@ -1372,11 +1316,11 @@ int MEDDLY::expert_forest
   address[p].level = nb.getLevel();
   MEDDLY_DCASSERT(0 == address[p].cache_count);
 #ifdef NODE_STORAGE_PER_LEVEL
-  node_storage &nodeMan = levels[nb.getLevel()];
+  node_storage* nodeMan = levels[nb.getLevel()];
 #endif
 
   // All of the work is in nodeMan now :^)
-  address[p].offset = nodeMan.makeNode(p, nb, getNodeStorage());
+  address[p].offset = nodeMan->makeNode(p, nb, getNodeStorage());
 
 #ifdef SAVE_HASHES
   address[p].hash = nb.hash();

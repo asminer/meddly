@@ -148,8 +148,8 @@ class MEDDLY::evp_mdd_int : public evmdd_forest {
     virtual bool areEdgeValuesHashed() const {
         return true;
     }
-    virtual bool areDuplicates(long node, const node_builder &nb) const;
-    virtual bool areDuplicates(long node, const node_reader &nr) const;
+    virtual bool areDuplicates(const node_reader &na, const node_builder &nb) const;
+    virtual bool areDuplicates(const node_reader &na, const node_reader &nr) const;
 
     virtual bool isRedundant(const node_builder &nb) const;
     virtual bool isIdentityEdge(const node_builder &nb, int i) const;
@@ -161,59 +161,30 @@ class MEDDLY::evp_mdd_int : public evmdd_forest {
 
   private:
     template <class T>
-    inline bool areDupsInternal(long p, const T &nb) const {
-        const node_header &node = getNode(p);
-        if (node.level != nb.getLevel()) return false;
-#ifdef NODE_STORAGE_PER_LEVEL
-        const node_storage &nodeMan = levels[node.level];
-#endif
-        node_storage::scanner np;
-        nodeMan.initScanner(np, node.offset);
-        if (np.isFull()) {
+    inline bool areDupsInternal(const node_reader &na, const T &nb) const {
+        if (na.getLevel() != nb.getLevel()) return false;
+        MEDDLY_DCASSERT(nb.isFull() == na.isFull());
+
+        if (nb.isFull()) {
           //
-          // p is full
+          // full
           //
-          if (nb.isFull()) {
-            int i;
-            for (i=0; i<np.fullSize(); ++i, ++np) {
-              if (np.d() != nb.d(i)) return false;
-              if (np.ei() != nb.ei(i)) return false;
-            }
-            for (; i<nb.getSize(); i++) if (nb.d(i)) return false;
-            return true;
+          if (na.getSize() != nb.getSize()) return false;
+          for (int i=0; i<nb.getSize(); i++) {
+            if (na.d(i) != nb.d(i)) return false;
+            if (na.ei(i) != nb.ei(i)) return false;
           }
-          MEDDLY_DCASSERT(nb.isSparse()); 
-          for (int z=0; z<nb.getNNZs(); z++) {
-            if (nb.i(z) >= np.fullSize()) return false;
-            for (; np.count()<nb.i(z); ++np) if (np.d()) return false;
-            if (np.d() != nb.d(z)) return false;
-            if (np.ei() != nb.ei(z)) return false;
-            ++np;
-          } // for z
-          for (; np; ++np) if (np.d()) return false;
           return true;
         } 
         //
-        // p is sparse
+        //  sparse
         //
-        if (nb.isSparse()) {
-          if (np.sparseSize() != nb.getNNZs()) return false;
-          for (int z=0; z<np.sparseSize(); ++z, ++np) {
-            if (nb.d(z) != np.d()) return false;
-            if (nb.i(z) != np.i()) return false;
-            if (nb.ei(z) != np.ei()) return false;
-          }
-          return true;
+        if (na.getNNZs() != nb.getNNZs()) return false;
+        for (int z=0; z<na.getNNZs(); z++) {
+          if (nb.d(z) != na.d(z)) return false;
+          if (nb.i(z) != na.i(z)) return false;
+          if (nb.ei(z) != na.ei(z)) return false;
         }
-        MEDDLY_DCASSERT(nb.isFull()); 
-        int i = 0;
-        for (; np; ++np) {
-          for (; i<np.i(); i++) if (nb.d(i)) return false;
-          if (nb.d(i) != np.d()) return false;
-          if (nb.ei(i) != np.ei()) return false;
-          i++;
-        }
-        for (; i<nb.getSize(); i++) if (nb.d(i)) return false;
         return true;
     }
 };
@@ -256,8 +227,8 @@ class MEDDLY::evt_mdd_real : public evmdd_forest {
     virtual bool areEdgeValuesHashed() const {
         return false; // we need to do a "within epsilon" comparison.
     }
-    virtual bool areDuplicates(long node, const node_builder &nb) const;
-    virtual bool areDuplicates(long node, const node_reader &nr) const;
+    virtual bool areDuplicates(const node_reader &na, const node_builder &nb) const;
+    virtual bool areDuplicates(const node_reader &na, const node_reader &nr) const;
 
     virtual bool isRedundant(const node_builder &nb) const;
     virtual bool isIdentityEdge(const node_builder &nb, int i) const;
@@ -277,61 +248,30 @@ class MEDDLY::evt_mdd_real : public evmdd_forest {
     }
     
     template <class T>
-    inline bool areDupsInternal(long p, const T &nb) const {
-        const node_header &node = getNode(p);
-        if (node.level != nb.getLevel()) return false;
-#ifdef NODE_STORAGE_PER_LEVEL
-        const node_storage &nodeMan = levels[node.level];
-#endif
-        node_storage::scanner np;
-        nodeMan.initScanner(np, node.offset);
-        if (np.isFull()) {
+    inline bool areDupsInternal(const node_reader &na, const T &nb) const {
+        if (na.getLevel() != nb.getLevel()) return false;
+        MEDDLY_DCASSERT(nb.isFull() == na.isFull());
+
+        if (nb.isFull()) {
           //
-          // p is full
+          // full
           //
-          if (nb.isFull()) {
-            int i;
-            for (i=0; i<np.fullSize(); ++i, ++np) {
-              if (np.d() != nb.d(i)) return false;
-              if (notClose(np.ef(), nb.ef(i))) return false;
-            }
-            for (; i<nb.getSize(); i++) if (nb.d(i)) return false;
-            return true;
+          if (na.getSize() != nb.getSize()) return false;
+          for (int i=0; i<nb.getSize(); i++) {
+            if (na.d(i) != nb.d(i)) return false;
+            if (notClose(na.ef(i), nb.ef(i))) return false;
           }
-          MEDDLY_DCASSERT(nb.isSparse()); 
-          int i = 0;
-          for (int z=0; z<nb.getNNZs(); z++) {
-            if (nb.i(z) >= np.fullSize()) return false;
-            for (; i<nb.i(z); ++i, ++np) if (np.d()) return false;
-            if (np.d() != nb.d(z)) return false;
-            if (notClose(np.ef(), nb.ef(z))) return false;
-            ++i;
-            ++np;
-          } // for z
-          for (; np; ++np) if (np.d()) return false;
           return true;
         } 
         //
-        // p is sparse
+        //  sparse
         //
-        if (nb.isSparse()) {
-          if (np.sparseSize() != nb.getNNZs()) return false;
-          for (int z=0; z<np.sparseSize(); ++z, ++np) {
-            if (nb.d(z) != np.d()) return false;
-            if (nb.i(z) != np.i()) return false;
-            if (notClose(nb.ef(z), np.ef())) return false;
-          }
-          return true;
+        if (na.getNNZs() != nb.getNNZs()) return false;
+        for (int z=0; z<na.getNNZs(); z++) {
+          if (nb.d(z) != na.d(z)) return false;
+          if (nb.i(z) != na.i(z)) return false;
+          if (notClose(na.ef(z), nb.ef(z))) return false;
         }
-        MEDDLY_DCASSERT(nb.isFull()); 
-        int i = 0;
-        for (; np; ++np) {
-          for (; i<np.i(); i++) if (nb.d(i)) return false;
-          if (nb.d(i) != np.d()) return false;
-          if (notClose(nb.ef(i), np.ef())) return false;
-          i++;
-        }
-        for (; i<nb.getSize(); i++) if (nb.d(i)) return false;
         return true;
     }
 

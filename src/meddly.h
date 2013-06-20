@@ -44,6 +44,9 @@
 
 namespace MEDDLY {
 
+  // Typedefs
+  typedef unsigned char node_storage_flags;
+
   // Classes
 
   class error;
@@ -51,6 +54,7 @@ namespace MEDDLY {
   class forest;
   class expert_forest;
   class node_reader;
+  class node_storage;
   class variable;
   class domain;
   class dd_edge;
@@ -81,6 +85,15 @@ namespace MEDDLY {
   ct_object& get_mpz_wrapper();
   void unwrap(const ct_object &, mpz_t &value);
 #endif
+
+  // ******************************************************************
+  // *                     Node storage mechanisms                    *
+  // ******************************************************************
+
+  /** "Old" node storage mechanism.
+      The node storage mechanism from early versions of this library.
+  */
+  extern const node_storage* OLD_STORAGE;
 
   // ******************************************************************
   // *                     Named unary operations                     *
@@ -529,15 +542,9 @@ class MEDDLY::forest {
           IDENTITY_REDUCED
       };
 
-      /// Supported node storage meachanisms.
-      enum node_storage {
-          /// Truncated full storage.
-          FULL_STORAGE,
-          /// Sparse storage.
-          SPARSE_STORAGE,
-          /// For each node, either full or sparse, whichever is more compact.
-          FULL_OR_SPARSE_STORAGE
-      };
+      // Supported node storage meachanisms.
+      static const unsigned char  ALLOW_FULL_STORAGE      = 0x01;
+      static const unsigned char  ALLOW_SPARSE_STORAGE    = 0x02;
 
       /// Supported node deletion policies.
       enum node_deletion {
@@ -554,13 +561,15 @@ class MEDDLY::forest {
           PESSIMISTIC_DELETION
       };
 
+      /// Defaults: how may we store nodes for all levels in the forest.
+      node_storage_flags storage_flags;
       /// Default reduction rule for all levels in the forest.
       reduction_rule reduction;
-      /// Default storage rule for all levels in the forest.
-      node_storage storage;
       /// Default deletion policy for all levels in the forest.
       node_deletion deletion;
 
+      /// Backend storage mechanism for nodes.
+      const node_storage* nodestor;
 
       /// Should we try to recycle node memory.
       bool recycleNodeStorageHoles;
@@ -583,7 +592,7 @@ class MEDDLY::forest {
       /// Constructor; sets reasonable defaults
       policies(bool rel) {
         reduction = rel ? IDENTITY_REDUCED : FULLY_REDUCED;
-        storage = FULL_OR_SPARSE_STORAGE;
+        storage_flags = ALLOW_FULL_STORAGE | ALLOW_SPARSE_STORAGE;
         deletion = OPTIMISTIC_DELETION;
         recycleNodeStorageHoles = true;
         compact_min = 100;
@@ -593,15 +602,24 @@ class MEDDLY::forest {
         orphanTrigger = 500000;
         compactAfterGC = false;
         compactBeforeExpand = true;
+        nodestor = OLD_STORAGE;
+      }
+
+      inline void setFullStorage() { 
+        storage_flags = ALLOW_FULL_STORAGE; 
+      }
+
+      inline void setSparseStorage() { 
+        storage_flags = ALLOW_SPARSE_STORAGE;
+      }
+
+      inline void setFullOrSparse() { 
+        storage_flags = ALLOW_FULL_STORAGE | ALLOW_SPARSE_STORAGE;
       }
 
       inline void setFullyReduced()     { reduction = FULLY_REDUCED; }
       inline void setQuasiReduced()     { reduction = QUASI_REDUCED; }
       inline void setIdentityReduced()  { reduction = IDENTITY_REDUCED; }
-
-      inline void setFullStorage()      { storage = FULL_STORAGE; }
-      inline void setSparseStorage()    { storage = SPARSE_STORAGE; }
-      inline void setCompactStorage()   { storage = FULL_OR_SPARSE_STORAGE; }
 
       inline void setNeverDelete()      { deletion = NEVER_DELETE; }
       inline void setOptimistic()       { deletion = OPTIMISTIC_DELETION; }
@@ -780,8 +798,8 @@ class MEDDLY::forest {
     }
 
     /// Returns the storage mechanism used by this forest.
-    inline policies::node_storage getNodeStorage() const {
-      return deflt.storage;
+    inline node_storage_flags getNodeStorage() const {
+      return deflt.storage_flags;
     }
 
     /// Returns the node deletion policy used by this forest.
@@ -796,12 +814,12 @@ class MEDDLY::forest {
 
     /// Can we store nodes sparsely
     inline bool areSparseNodesEnabled() const {
-      return policies::FULL_STORAGE != deflt.storage;
+      return policies::ALLOW_SPARSE_STORAGE & deflt.storage_flags;
     }
 
     /// Can we store nodes fully
     inline bool areFullNodesEnabled() const {
-      return policies::SPARSE_STORAGE != deflt.storage;
+      return policies::ALLOW_FULL_STORAGE & deflt.storage_flags;
     }
 
     /// Get forest performance stats.

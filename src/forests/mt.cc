@@ -97,14 +97,14 @@ void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
   edgeForVarInternal(vh, primedLevel, terms, result);
 }
 
-bool MEDDLY::mt_forest::areDuplicates(long p, const node_builder &nb) const
+bool MEDDLY::mt_forest::areDuplicates(const node_reader& na, const node_builder &nb) const
 {
-  return areDupsInternal(p, nb);
+  return areDupsInternal(na, nb);
 }
 
-bool MEDDLY::mt_forest::areDuplicates(long p, const node_reader &nr) const
+bool MEDDLY::mt_forest::areDuplicates(const node_reader& na, const node_reader &nr) const
 {
-  return areDupsInternal(p, nr);
+  return areDupsInternal(na, nr);
 }
 
 bool MEDDLY::mt_forest::isRedundant(const node_builder &nb) const

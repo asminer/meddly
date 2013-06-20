@@ -12,7 +12,7 @@ libops_la_SOURCES = \
   mpz_object.h      mpz_object.cc   \
   \
   copy.h            copy.cc         \
-	cardinality.h     cardinality.cc  \
+  cardinality.h     cardinality.cc  \
   complement.h      complement.cc   \
   maxmin_range.h    maxmin_range.cc \
   mdd2evplus.h      mdd2evplus.cc   \

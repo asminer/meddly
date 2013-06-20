@@ -26,8 +26,7 @@
 
 // super hack
 
-#define TEST_ENCODING
-#include "../src/node_wrappers.cc"
+#include "../src/storage/compact.h"
 
 #define FULL_TEST
 

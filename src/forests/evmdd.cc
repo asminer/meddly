@@ -118,14 +118,14 @@ evaluate(const dd_edge &f, const int* vlist, int &term) const
   return evaluateInternal(f, vlist, term);
 }
 
-bool MEDDLY::evp_mdd_int::areDuplicates(long node, const node_builder &nb) const
+bool MEDDLY::evp_mdd_int::areDuplicates(const node_reader &na, const node_builder &nb) const
 {
-  return areDupsInternal(node, nb);
+  return areDupsInternal(na, nb);
 }
 
-bool MEDDLY::evp_mdd_int::areDuplicates(long node, const node_reader &nr) const
+bool MEDDLY::evp_mdd_int::areDuplicates(const node_reader &na, const node_reader &nr) const
 {
-  return areDupsInternal(node, nr);
+  return areDupsInternal(na, nr);
 }
 
 void MEDDLY::evp_mdd_int::normalize(node_builder &nb, int &ev) const
@@ -233,14 +233,14 @@ void MEDDLY::evt_mdd_real::showEdgeValue(FILE* s, const void* edge, int i) const
   fprintf(s, "%f", ((const float*)edge)[i]);
 }
 
-bool MEDDLY::evt_mdd_real::areDuplicates(long node, const node_builder &nb) const
+bool MEDDLY::evt_mdd_real::areDuplicates(const node_reader &na, const node_builder &nb) const
 {
-  return areDupsInternal(node, nb);
+  return areDupsInternal(na, nb);
 }
 
-bool MEDDLY::evt_mdd_real::areDuplicates(long node, const node_reader &nr) const
+bool MEDDLY::evt_mdd_real::areDuplicates(const node_reader &na, const node_reader &nr) const
 {
-  return areDupsInternal(node, nr);
+  return areDupsInternal(na, nr);
 }
 
 bool MEDDLY::evt_mdd_real::isRedundant(const node_builder &nb) const
