@@ -43,22 +43,22 @@ class MEDDLY::compl_mdd : public unary_operation {
   public:
     compl_mdd(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
-    virtual bool isStaleEntry(const int* entryData);
-    virtual void discardEntry(const int* entryData);
-    virtual void showEntry(FILE* strm, const int *entryData) const;
+    virtual bool isStaleEntry(const node_handle* entryData);
+    virtual void discardEntry(const node_handle* entryData);
+    virtual void showEntry(FILE* strm, const node_handle* entryData) const;
     virtual void compute(const dd_edge& a, dd_edge& b);
 
   protected:
-    long compute(long a);
+    node_handle compute(node_handle a);
 
-    inline bool findResult(long a, long &b) {
+    inline bool findResult(node_handle a, node_handle &b) {
       CTsrch.key(0) = a;
-      const int* cacheFind = CT->find(CTsrch);
+      const node_handle* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
       b = resF->linkNode(cacheFind[1]);
       return true;
     }
-    inline long saveResult(long a, long b) {
+    inline node_handle saveResult(node_handle a, node_handle b) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
       entry.key(0) = argF->cacheNode(a);
       entry.result(0) = resF->cacheNode(b);
@@ -75,18 +75,18 @@ MEDDLY::compl_mdd
   // ct entry 1: output node
 }
 
-bool MEDDLY::compl_mdd::isStaleEntry(const int* data)
+bool MEDDLY::compl_mdd::isStaleEntry(const node_handle* data)
 {
   return argF->isStale(data[0]) || resF->isStale(data[1]);
 }
 
-void MEDDLY::compl_mdd::discardEntry(const int* data)
+void MEDDLY::compl_mdd::discardEntry(const node_handle* data)
 {
   argF->uncacheNode(data[0]);
   resF->uncacheNode(data[1]);
 }
 
-void MEDDLY::compl_mdd::showEntry(FILE* strm, const int *data) const
+void MEDDLY::compl_mdd::showEntry(FILE* strm, const node_handle* data) const
 {
   fprintf(strm, "[%s(%d): %d]", getName(), data[0], data[1]);
 }
@@ -97,7 +97,7 @@ void MEDDLY::compl_mdd::compute(const dd_edge& a, dd_edge& b)
   b.set(result, 0);
 }
 
-long MEDDLY::compl_mdd::compute(long a)
+MEDDLY::node_handle MEDDLY::compl_mdd::compute(node_handle a)
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
@@ -105,7 +105,7 @@ long MEDDLY::compl_mdd::compute(long a)
   }
 
   // Check compute table
-  long b;
+  node_handle b;
   if (findResult(a, b)) return b;
 
   // Initialize node builder
@@ -142,12 +142,12 @@ class MEDDLY::compl_mxd : public unary_operation {
   public:
     compl_mxd(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
-    virtual bool isStaleEntry(const int* entryData);
-    virtual void discardEntry(const int* entryData);
-    virtual void showEntry(FILE* strm, const int *entryData) const;
+    virtual bool isStaleEntry(const node_handle* entryData);
+    virtual void discardEntry(const node_handle* entryData);
+    virtual void showEntry(FILE* strm, const node_handle* entryData) const;
     virtual void compute(const dd_edge& a, dd_edge& b);
 
-    long compute(int in, int k, long a);
+    node_handle compute(int in, int k, node_handle a);
 };
 
 MEDDLY::compl_mxd
@@ -159,29 +159,29 @@ MEDDLY::compl_mxd
   // ct entry 2: output node
 }
 
-bool MEDDLY::compl_mxd::isStaleEntry(const int* data)
+bool MEDDLY::compl_mxd::isStaleEntry(const node_handle* data)
 {
   return argF->isStale(data[1]) || resF->isStale(data[2]);
 }
 
-void MEDDLY::compl_mxd::discardEntry(const int* data)
+void MEDDLY::compl_mxd::discardEntry(const node_handle* data)
 {
   argF->uncacheNode(data[1]);
   resF->uncacheNode(data[2]);
 }
 
-void MEDDLY::compl_mxd::showEntry(FILE* strm, const int *data) const
+void MEDDLY::compl_mxd::showEntry(FILE* strm, const node_handle* data) const
 {
   fprintf(strm, "[%s(%d, %d): %d]", getName(), data[0], data[1], data[2]);
 }
 
 void MEDDLY::compl_mxd::compute(const dd_edge& a, dd_edge& b) 
 {
-  long result = compute(-1, argF->getDomain()->getNumVariables(), a.getNode());
+  node_handle result = compute(-1, argF->getDomain()->getNumVariables(), a.getNode());
   b.set(result, 0);
 }
 
-long MEDDLY::compl_mxd::compute(int in, int k, long a)
+MEDDLY::node_handle MEDDLY::compl_mxd::compute(int in, int k, node_handle a)
 {
   if (0==k) {
     return resF->getTerminalNode(a==0);
@@ -194,7 +194,7 @@ long MEDDLY::compl_mxd::compute(int in, int k, long a)
   // Check compute table
   CTsrch.key(0) = k;
   CTsrch.key(1) = a;
-  const int* cacheFind = CT->find(CTsrch);
+  const node_handle* cacheFind = CT->find(CTsrch);
   if (cacheFind) {
 #ifdef DEBUG_MXD_COMPL
     fprintf(stderr, "\tin CT:   compl_mxd(%d, %d) : %d\n", ht, a, cacheFind[2]);
@@ -238,7 +238,7 @@ long MEDDLY::compl_mxd::compute(int in, int k, long a)
   node_reader::recycle(A);
 
   // reduce, save in CT
-  long result = resF->createReducedNode(in, nb);
+  node_handle result = resF->createReducedNode(in, nb);
   if (k<0 && 1==nnz) canSave = false;
   if (canSave) {
     compute_table::temp_entry &entry = CT->startNewEntry(this);

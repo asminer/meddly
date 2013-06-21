@@ -75,7 +75,7 @@ class MEDDLY::mtmdd_forest : public mt_forest {
     // the equivalent node representation. This makes this method useful
     // for createEdge(int, e) or (float, e) or (bool, e) as long as the
     // terminal value can be converted into an equivalent node.
-    inline void createEdgeHelper(long terminalNode, dd_edge& e) {
+    inline void createEdgeHelper(node_handle terminalNode, dd_edge& e) {
         MEDDLY_DCASSERT(isTerminalNode(terminalNode));
 
         if (isFullyReduced() || terminalNode == 0) {
@@ -84,7 +84,7 @@ class MEDDLY::mtmdd_forest : public mt_forest {
         }
 
         // construct the edge bottom-up
-        long result = terminalNode;
+        node_handle result = terminalNode;
         for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
           insertRedundantNode(i, result);
         }
@@ -94,7 +94,7 @@ class MEDDLY::mtmdd_forest : public mt_forest {
     // Get the terminal node at the bottom of the edge with root n
     // and vlist representing the indexes for the levels.
     // Used by evaluate()
-    inline long getTerminalNodeForEdge(int n, const int* vlist) const {
+    inline node_handle getTerminalNodeForEdge(int n, const int* vlist) const {
         // assumption: vlist does not contain any special values (-1, -2, etc).
         // vlist contains a single element.
         while (!isTerminalNode(n)) {
@@ -112,19 +112,19 @@ class MEDDLY::mtmdd_forest : public mt_forest {
   protected: // still to be organized
 
     // Create edge representing f(vlist[]) = term and store it in e
-    void createEdgeTo(const int* vlist, long term, dd_edge& e);
+    void createEdgeTo(const int* vlist, node_handle term, dd_edge& e);
 
     // Create a node, at level k, whose ith index points to dptr.
     // If i is -1, all indices of the node will point to dptr.
-    int createNode(int k, int i, long dptr);
+    node_handle createNode(int k, int i, node_handle dptr);
 
     template <typename T>
     T handleMultipleTerminalValues(const T* tList, int begin, int end);
 
     template <typename T>
-    int inPlaceSort(int level, int begin, int end);
+    node_handle inPlaceSort(int level, int begin, int end);
     template <typename T>
-    int inPlaceSortBuild(int height, int begin, int end);
+    node_handle inPlaceSortBuild(int height, int begin, int end);
 
     // Methods and data for batch addition via sorting
     template <typename T> void copyLists(const int* const* vlist,
@@ -133,7 +133,7 @@ class MEDDLY::mtmdd_forest : public mt_forest {
     void expandCountAndSlotArrays(int size);
 
     int** list;
-    int*  termList;
+    node_handle*  termList;
     int   listSize;
 
     int* count;
@@ -167,7 +167,7 @@ MEDDLY::mtmdd_forest::createEdgeInternal(const int* const* vlist,
   if (N == 1 || specialCasesFound) {
     // build using "standard" procedure
     if (terms == 0) {
-      int trueNode = getTerminalNode(true);
+      node_handle trueNode = getTerminalNode(true);
       createEdgeTo(vlist[0], trueNode, e);
       if (N > 1) {
         dd_edge curr(this);
@@ -196,7 +196,7 @@ MEDDLY::mtmdd_forest::createEdgeInternal(const int* const* vlist,
     copyLists(vlist, terms, N);
 
     // call sort-based procedure for building the DD
-    int result = inPlaceSortBuild<T>(getExpertDomain()->getNumVariables(), 0, N);
+    node_handle result = inPlaceSortBuild<T>(getExpertDomain()->getNumVariables(), 0, N);
 
     e.set(result, 0);
   }
@@ -209,16 +209,16 @@ void MEDDLY::mtmdd_forest::copyLists(const int* const* vlist,
     const T* terms, int nElements)
 {
   if (listSize < nElements) {
-    list = (int**) realloc(list, sizeof(int*) * nElements);
+    list = (int**) realloc(list, sizeof(void*) * nElements);
     if (NULL == list) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
     if (terms) {
-      termList = (int*) realloc(termList, sizeof(T) * nElements);
+      termList = (node_handle*) realloc(termList, sizeof(node_handle) * nElements);
       if (NULL == termList) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
     }
     listSize = nElements;
   }
 
-  memcpy(list, vlist, nElements * sizeof(int*));
+  memcpy(list, vlist, nElements * sizeof(void*));
   if (terms) {
     T* tempTList = (T*)termList;
     // Not doing memcpy in case T is a class
@@ -233,7 +233,7 @@ namespace MEDDLY {
 
 template<typename T>
 inline
-int mtmdd_forest::inPlaceSort(int level, int begin, int end)
+node_handle mtmdd_forest::inPlaceSort(int level, int begin, int end)
 {
   // Determine range of values
   int min = list[begin][level];
@@ -329,7 +329,7 @@ int mtmdd_forest::inPlaceSort(int level, int begin, int end)
 
 template<>
 inline
-int mtmdd_forest::inPlaceSort<bool>(int level, int begin, int end)
+node_handle mtmdd_forest::inPlaceSort<bool>(int level, int begin, int end)
 {
   // Determine range of values
   int min = list[begin][level];
@@ -420,7 +420,7 @@ int mtmdd_forest::inPlaceSort<bool>(int level, int begin, int end)
 
 template <typename T>
 inline
-int mtmdd_forest::inPlaceSortBuild(int height, int begin, int end)
+MEDDLY::node_handle mtmdd_forest::inPlaceSortBuild(int height, int begin, int end)
 {
   // [begin, end)
 
@@ -434,9 +434,9 @@ int mtmdd_forest::inPlaceSortBuild(int height, int begin, int end)
 
   if (begin + 1 == end) {
     // nothing to sort; just build a node starting at this level
-    int n = inPlaceSortBuild<T>(nextHeight, begin, end);
-    int index = list[begin][height];
-    int result = createNode(height, index, n);
+    node_handle n = inPlaceSortBuild<T>(nextHeight, begin, end);
+    node_handle index = list[begin][height];
+    node_handle result = createNode(height, index, n);
     return result;
   }
 

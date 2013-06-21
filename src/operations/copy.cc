@@ -47,21 +47,21 @@ class MEDDLY::copy_MT : public unary_operation {
   public:
     copy_MT(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
-    virtual bool isStaleEntry(const int* entryData);
-    virtual void discardEntry(const int* entryData);
-    virtual void showEntry(FILE* strm, const int *entryData) const;
+    virtual bool isStaleEntry(const node_handle* entryData);
+    virtual void discardEntry(const node_handle* entryData);
+    virtual void showEntry(FILE* strm, const node_handle* entryData) const;
     virtual void compute(const dd_edge &arg, dd_edge &res);
   protected:
-    virtual long compute(long a) = 0;
+    virtual node_handle compute(node_handle a) = 0;
 
-    inline bool findResult(long a, long &b) {
+    inline bool findResult(node_handle a, node_handle &b) {
       CTsrch.key(0) = a;
-      const int* cacheFind = CT->find(CTsrch);
+      const node_handle* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
       b = resF->linkNode(cacheFind[1]);
       return true;
     }
-    inline long saveResult(long a, long b) {
+    inline node_handle saveResult(node_handle a, node_handle b) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
       entry.key(0) = argF->cacheNode(a);
       entry.result(0) = resF->cacheNode(b);
@@ -76,27 +76,27 @@ MEDDLY::copy_MT
 {
 }
 
-bool MEDDLY::copy_MT::isStaleEntry(const int* entryData)
+bool MEDDLY::copy_MT::isStaleEntry(const node_handle* entryData)
 {
   return 
     argF->isStale(entryData[0]) ||
     resF->isStale(entryData[1]);
 }
 
-void MEDDLY::copy_MT::discardEntry(const int* entryData)
+void MEDDLY::copy_MT::discardEntry(const node_handle* entryData)
 {
   argF->uncacheNode(entryData[0]);
   resF->uncacheNode(entryData[1]);
 }
 
-void MEDDLY::copy_MT::showEntry(FILE* strm, const int *entryData) const
+void MEDDLY::copy_MT::showEntry(FILE* strm, const node_handle* entryData) const
 {
   fprintf(strm, "[%s(%d) %d]", getName(), entryData[0], entryData[1]);
 }
 
 void MEDDLY::copy_MT::compute(const dd_edge &arg, dd_edge &res)
 {
-  long result = compute(arg.getNode());
+  node_handle result = compute(arg.getNode());
   res.set(result, 0);
 }
 
@@ -111,16 +111,16 @@ class MEDDLY::copy_bool2MT : public copy_MT {
     copy_bool2MT(const unary_opname* N, expert_forest* A, expert_forest* R)
       : copy_MT(N, A, R) { }
   protected:
-    virtual long compute(long a);
-    long compute(int in, long a);
+    virtual node_handle compute(node_handle a);
+    node_handle compute(int in, node_handle a);
 };
 
-long MEDDLY::copy_bool2MT::compute(long a)
+MEDDLY::node_handle MEDDLY::copy_bool2MT::compute(node_handle a)
 {
   return compute(-1, a);
 }
 
-long MEDDLY::copy_bool2MT::compute(int in, long a)
+MEDDLY::node_handle MEDDLY::copy_bool2MT::compute(int in, node_handle a)
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
@@ -136,7 +136,7 @@ long MEDDLY::copy_bool2MT::compute(int in, long a)
   if (!resF->isIdentityReduced()) in = -1;
 
   // Check compute table
-  long b;
+  node_handle b;
   if (findResult(a, b)) return b;
 
   // Initialize node builder
@@ -174,12 +174,12 @@ class MEDDLY::copy_MT2bool : public copy_MT {
     copy_MT2bool(const unary_opname* N, expert_forest* A, expert_forest* R)
       : copy_MT(N, A, R) { }
   protected:
-    virtual long compute(long a);
-    long compute(int in, long a);
-    long compute(int in, int k, long a);
+    virtual node_handle compute(node_handle a);
+    node_handle compute(int in, node_handle a);
+    node_handle compute(int in, int k, node_handle a);
 };
 
-long MEDDLY::copy_MT2bool::compute(long a)
+MEDDLY::node_handle MEDDLY::copy_MT2bool::compute(node_handle a)
 {
   if (resF->isQuasiReduced())
     return compute(-1, resF->getNumVariables(), a);
@@ -187,7 +187,7 @@ long MEDDLY::copy_MT2bool::compute(long a)
     return compute(-1, a);
 }
 
-long MEDDLY::copy_MT2bool::compute(int in, long a)
+MEDDLY::node_handle MEDDLY::copy_MT2bool::compute(int in, node_handle a)
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
@@ -201,7 +201,7 @@ long MEDDLY::copy_MT2bool::compute(int in, long a)
   if (!resF->isIdentityReduced()) in = -1;
 
   // Check compute table
-  long b;
+  node_handle b;
   if (findResult(a, b)) return b;
 
   // Initialize node builder
@@ -227,7 +227,7 @@ long MEDDLY::copy_MT2bool::compute(int in, long a)
   return saveResult(a, b);
 }
 
-long MEDDLY::copy_MT2bool::compute(int in, int k, long a)
+MEDDLY::node_handle MEDDLY::copy_MT2bool::compute(int in, int k, node_handle a)
 {
   // Check terminals
   if (0==k) {
@@ -248,7 +248,7 @@ long MEDDLY::copy_MT2bool::compute(int in, int k, long a)
   const int aLevel = argF->getNodeLevel(a);
 
   // Check compute table
-  long b;
+  node_handle b;
   if (k == aLevel) if (findResult(a, b)) return b;
   int nextk;
   if (resF->isForRelations()) {
@@ -300,26 +300,26 @@ class MEDDLY::copy_MT2Evplus : public unary_operation {
     copy_MT2Evplus(const unary_opname* oc, expert_forest* arg, 
       expert_forest* res);
 
-    virtual bool isStaleEntry(const int* entryData) {
+    virtual bool isStaleEntry(const node_handle* entryData) {
       return 
         argF->isStale(entryData[0]) ||
         resF->isStale(entryData[2]);
     }
-    virtual void discardEntry(const int* entryData) {
+    virtual void discardEntry(const node_handle* entryData) {
       argF->uncacheNode(entryData[0]);
       resF->uncacheNode(entryData[2]);
     }
-    virtual void showEntry(FILE* strm, const int *entryData) const {
+    virtual void showEntry(FILE* strm, const node_handle* entryData) const {
       fprintf(strm, "[%s(%d) <%d, %d>]", getName(), entryData[0], 
         entryData[1], entryData[2]);
     }
     virtual void compute(const dd_edge &arg, dd_edge &res) {
-      long b;
+      node_handle b;
       int bev;
       compute(arg.getNode(), b, bev);
       res.set(b, bev);
     }
-    virtual void compute(long a, long &b, int &bev);
+    virtual void compute(node_handle a, node_handle &b, int &bev);
 };
 
 MEDDLY::copy_MT2Evplus::copy_MT2Evplus(const unary_opname* oc, 
@@ -331,7 +331,7 @@ MEDDLY::copy_MT2Evplus::copy_MT2Evplus(const unary_opname* oc,
   // entry[2]: EV node
 }
 
-void MEDDLY::copy_MT2Evplus::compute(long a, long &b, int &bev)
+void MEDDLY::copy_MT2Evplus::compute(node_handle a, node_handle &b, int &bev)
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
@@ -342,7 +342,7 @@ void MEDDLY::copy_MT2Evplus::compute(long a, long &b, int &bev)
 
   // Check compute table
   CTsrch.key(0) = a;
-  const int* cacheFind = CT->find(CTsrch);
+  const node_handle* cacheFind = CT->find(CTsrch);
   if (cacheFind) {
     bev = cacheFind[1];
     b = resF->linkNode(cacheFind[2]);
@@ -359,7 +359,7 @@ void MEDDLY::copy_MT2Evplus::compute(long a, long &b, int &bev)
 
   // recurse
   for (int i=0; i<size; i++) {
-    long d;
+    node_handle d;
     int dev;
     compute(A->d(i), d, dev);
     nb.d(i) = d;
@@ -370,7 +370,7 @@ void MEDDLY::copy_MT2Evplus::compute(long a, long &b, int &bev)
   node_reader::recycle(A);
 
   // Reduce
-  long bl;
+  node_handle bl;
   resF->createReducedNode(-1, nb, bev, bl);
   b = bl;
 

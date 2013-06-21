@@ -49,18 +49,18 @@ class MEDDLY::common_bfs_mt : public binary_operation {
     common_bfs_mt(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
-    virtual bool isStaleEntry(const int* entryData);
-    virtual void discardEntry(const int* entryData);
-    virtual void showEntry(FILE* strm, const int* entryData) const;
+    virtual bool isStaleEntry(const node_handle* entryData);
+    virtual void discardEntry(const node_handle* entryData);
+    virtual void showEntry(FILE* strm, const node_handle* entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
-    virtual long compute(long a, long b) = 0;
+    virtual node_handle compute(node_handle a, node_handle b) = 0;
   protected:
     binary_operation* unionOp;
     binary_operation* imageOp;
 
-    inline long iterate(long init, long R) {
-      long reachableStates = arg1F->linkNode(init);
-      long prevReachable = 0;
+    inline node_handle iterate(node_handle init, node_handle R) {
+      node_handle reachableStates = arg1F->linkNode(init);
+      node_handle prevReachable = 0;
 #ifdef DEBUG_BFS
       fprintf(stderr, "Relation: %d\n", R);
       arg2F->showNodeGraph(stderr, R);
@@ -78,7 +78,7 @@ class MEDDLY::common_bfs_mt : public binary_operation {
 #endif
         resF->unlinkNode(prevReachable);
         prevReachable = reachableStates;
-        long front = imageOp->compute(reachableStates, R);
+        node_handle front = imageOp->compute(reachableStates, R);
 #ifdef VERBOSE_BFS
         fprintf(stderr, "\timage done %d\n", front);
 #endif
@@ -110,19 +110,19 @@ MEDDLY::common_bfs_mt::common_bfs_mt(const binary_opname* oc, expert_forest* a1,
   imageOp = 0;
 }
 
-bool MEDDLY::common_bfs_mt::isStaleEntry(const int* entryData)
+bool MEDDLY::common_bfs_mt::isStaleEntry(const node_handle* entryData)
 {
   throw error(error::MISCELLANEOUS);
   // this operation won't add any CT entries.
 }
 
-void MEDDLY::common_bfs_mt::discardEntry(const int* entryData)
+void MEDDLY::common_bfs_mt::discardEntry(const node_handle* entryData)
 {
   throw error(error::MISCELLANEOUS);
   // this operation won't add any CT entries.
 }
 
-void MEDDLY::common_bfs_mt::showEntry(FILE* strm, const int* entryData) const
+void MEDDLY::common_bfs_mt::showEntry(FILE* strm, const node_handle* entryData) const
 {
   throw error(error::MISCELLANEOUS);
   // this operation won't add any CT entries.
@@ -131,7 +131,7 @@ void MEDDLY::common_bfs_mt::showEntry(FILE* strm, const int* entryData) const
 void MEDDLY::common_bfs_mt
 ::compute(const dd_edge &a, const dd_edge &b, dd_edge &c)
 {
-  long cnode = compute(a.getNode(), b.getNode());
+  node_handle cnode = compute(a.getNode(), b.getNode());
   c.set(cnode, 0);
 }
 
@@ -146,7 +146,7 @@ class MEDDLY::forwd_bfs_mt : public common_bfs_mt {
     forwd_bfs_mt(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
-    virtual long compute(long a, long b);
+    virtual node_handle compute(node_handle a, node_handle b);
 };
 
 MEDDLY::forwd_bfs_mt::forwd_bfs_mt(const binary_opname* oc, expert_forest* a1,
@@ -154,7 +154,7 @@ MEDDLY::forwd_bfs_mt::forwd_bfs_mt(const binary_opname* oc, expert_forest* a1,
 {
 }
 
-long MEDDLY::forwd_bfs_mt::compute(long a, long b)
+MEDDLY::node_handle MEDDLY::forwd_bfs_mt::compute(node_handle a, node_handle b)
 {
   if (resF->getRangeType() == forest::BOOLEAN) {
     unionOp = getOperation(UNION, resF, resF, resF);
@@ -178,7 +178,7 @@ class MEDDLY::bckwd_bfs_mt : public common_bfs_mt {
     bckwd_bfs_mt(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
-    virtual long compute(long a, long b);
+    virtual node_handle compute(node_handle a, node_handle b);
 };
 
 MEDDLY::bckwd_bfs_mt::bckwd_bfs_mt(const binary_opname* oc, expert_forest* a1,
@@ -186,7 +186,7 @@ MEDDLY::bckwd_bfs_mt::bckwd_bfs_mt(const binary_opname* oc, expert_forest* a1,
 {
 }
 
-long MEDDLY::bckwd_bfs_mt::compute(long a, long b)
+MEDDLY::node_handle MEDDLY::bckwd_bfs_mt::compute(node_handle a, node_handle b)
 {
   if (resF->getRangeType() == forest::BOOLEAN) {
     unionOp = getOperation(UNION, resF, resF, resF);

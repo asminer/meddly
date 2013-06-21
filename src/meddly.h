@@ -47,6 +47,25 @@ namespace MEDDLY {
   // Typedefs
   typedef unsigned char node_storage_flags;
 
+  /** Handles for nodes.
+      This should be either int or long, and effectively limits
+      the number of possible nodes per forest.
+      As an int, we get 2^32-1 possible nodes per forest,
+      which should be enough for most applications.
+      As a long on a 64-bit machine, we get 2^64-1 possible nodes
+      per forest, at the expense of nearly doubling the memory used.
+      This also specifies the incoming count range for each node.
+  */
+  typedef int  node_handle;
+
+  /** Node addresses.
+      This is used for internal storage of a node,
+      and should probably not be changed.
+      The typedef is given simply to clarify the code
+      (hopefully :^)
+  */
+  typedef long node_address;
+
   // Classes
 
   class error;
@@ -1727,7 +1746,7 @@ class MEDDLY::dd_edge {
     /** Get this dd_edge's node handle.
         @return         the node handle.
     */
-    inline long getNode() const { return node; }
+    inline node_handle getNode() const { return node; }
 
     /** Get this dd_edge's edge value (only valid for edge-valued MDDs).
         Note: EV+MDDs use Integer edge-values while EV*MDDs use
@@ -1777,8 +1796,8 @@ class MEDDLY::dd_edge {
         @param  value   value of edge coming into the node (only useful
                         for edge-valued MDDs)
     */
-    void set(long node, int value);
-    void set(long node, float value);
+    void set(node_handle node, int value);
+    void set(node_handle node, float value);
 
     /** Check for equality.
         @return true    iff this edge has the same parent and refers to
@@ -1881,7 +1900,7 @@ class MEDDLY::dd_edge {
     inline int getIndex() const { return index; }
 
     forest *parent;
-    long node;
+    node_handle node;
     int value;
     int index;
 
@@ -2010,10 +2029,10 @@ class MEDDLY::enumerator {
     bool incrRelation();
     bool incrRow();
     bool incrColumn();
-    bool firstSetElement(int k, int down);
-    bool firstRelElement(int k, int down);
-    bool firstRow(int k, int down);
-    bool firstColumn(int k, int down);
+    bool firstSetElement(int k, node_handle down);
+    bool firstRelElement(int k, node_handle down);
+    bool firstRow(int k, node_handle down);
+    bool firstColumn(int k, node_handle down);
 
     static inline int downLevel(int k) {
       return (k>0) ? (-k) : (-k-1);

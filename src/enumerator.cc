@@ -223,7 +223,7 @@ bool MEDDLY::enumerator::incrNonRelation()
   MEDDLY_DCASSERT(!F->isForRelations());
 
   int k;
-  int down = 0;
+  node_handle down = 0;
   for (k=1; k<=maxLevel; k++) {
     nzp[k]++;
     if (nzp[k] < path[k].getNNZs()) {
@@ -248,7 +248,7 @@ bool MEDDLY::enumerator::incrRelation()
   MEDDLY_DCASSERT(F->isForRelations());
 
   int k = -1;
-  int down = 0;
+  node_handle down = 0;
   for (;;) { 
     nzp[k]++;
     if (nzp[k] < path[k].getNNZs()) {
@@ -274,7 +274,7 @@ bool MEDDLY::enumerator::incrRow()
   MEDDLY_DCASSERT(F);
   MEDDLY_DCASSERT(F->isForRelations());
 
-  int down = 0;
+  node_handle down = 0;
   // Only try to advance the row, because the column is fixed.
   for (int k=1; k<=maxLevel; k++) { 
     for (nzp[k]++; nzp[k] < path[k].getNNZs(); nzp[k]++) {
@@ -294,7 +294,7 @@ bool MEDDLY::enumerator::incrColumn()
   MEDDLY_DCASSERT(F);
   MEDDLY_DCASSERT(F->isForRelations());
 
-  int down = 0;
+  node_handle down = 0;
   // Only try to advance the column, because the row is fixed.
   for (int k=-1; k>=-maxLevel; k--) { 
     for (nzp[k]++; nzp[k] < path[k].getNNZs(); nzp[k]++) {
@@ -308,7 +308,7 @@ bool MEDDLY::enumerator::incrColumn()
   return false;
 }
 
-bool MEDDLY::enumerator::firstSetElement(int k, int down)
+bool MEDDLY::enumerator::firstSetElement(int k, node_handle down)
 {
   if (0==down) return false;
   MEDDLY_DCASSERT(SET == type);
@@ -330,7 +330,7 @@ bool MEDDLY::enumerator::firstSetElement(int k, int down)
   return true;
 }
 
-bool MEDDLY::enumerator::firstRelElement(int k, int down)
+bool MEDDLY::enumerator::firstRelElement(int k, node_handle down)
 {
   if (0==down) return false;
   MEDDLY_DCASSERT(RELATION == type);
@@ -362,7 +362,7 @@ bool MEDDLY::enumerator::firstRelElement(int k, int down)
   return true;
 }
 
-bool MEDDLY::enumerator::firstRow(int k, int down)
+bool MEDDLY::enumerator::firstRow(int k, node_handle down)
 {
   if (0==k) {
     index[0] = down;
@@ -433,7 +433,7 @@ bool MEDDLY::enumerator::firstRow(int k, int down)
   return false;
 }
 
-bool MEDDLY::enumerator::firstColumn(int k, int down)
+bool MEDDLY::enumerator::firstColumn(int k, node_handle down)
 {
   if (0==k) {
     index[0] = down;

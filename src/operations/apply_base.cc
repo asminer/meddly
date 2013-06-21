@@ -43,14 +43,14 @@ MEDDLY::generic_binary_mdd::~generic_binary_mdd()
 {
 }
 
-bool MEDDLY::generic_binary_mdd::isStaleEntry(const int* data)
+bool MEDDLY::generic_binary_mdd::isStaleEntry(const node_handle* data)
 {
   return arg1F->isStale(data[0]) ||
          arg2F->isStale(data[1]) ||
          resF->isStale(data[2]);
 }
 
-void MEDDLY::generic_binary_mdd::discardEntry(const int* data)
+void MEDDLY::generic_binary_mdd::discardEntry(const node_handle* data)
 {
   arg1F->uncacheNode(data[0]);
   arg2F->uncacheNode(data[1]);
@@ -58,7 +58,7 @@ void MEDDLY::generic_binary_mdd::discardEntry(const int* data)
 }
 
 void
-MEDDLY::generic_binary_mdd ::showEntry(FILE* strm, const int *data) const
+MEDDLY::generic_binary_mdd ::showEntry(FILE* strm, const node_handle *data) const
 {
   fprintf(strm, "[%s(%d, %d): %d]", getName(), data[0], data[1], data[2]);
 }
@@ -66,7 +66,7 @@ MEDDLY::generic_binary_mdd ::showEntry(FILE* strm, const int *data) const
 void MEDDLY::generic_binary_mdd::compute(const dd_edge &a, const dd_edge &b, 
   dd_edge &c)
 {
-  int cnode = compute(a.getNode(), b.getNode());
+  node_handle cnode = compute(a.getNode(), b.getNode());
   c.set(cnode, 0);
 #ifdef TRACE_ALL_OPS
   printf("completed %s(%d, %d) = %d\n", 
@@ -78,9 +78,10 @@ void MEDDLY::generic_binary_mdd::compute(const dd_edge &a, const dd_edge &b,
 }
 
 
-long MEDDLY::generic_binary_mdd::compute(long a, long b)
+MEDDLY::node_handle 
+MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
 {
-  long result = 0;
+  node_handle result = 0;
   if (checkTerminals(a, b, result))
     return result;
   if (findResult(a, b, result))
@@ -143,14 +144,14 @@ MEDDLY::generic_binary_mxd::~generic_binary_mxd()
 {
 }
 
-bool MEDDLY::generic_binary_mxd::isStaleEntry(const int* data)
+bool MEDDLY::generic_binary_mxd::isStaleEntry(const node_handle* data)
 {
   return arg1F->isStale(data[1]) ||
          arg2F->isStale(data[2]) ||
          resF->isStale(data[3]);
 }
 
-void MEDDLY::generic_binary_mxd::discardEntry(const int* data)
+void MEDDLY::generic_binary_mxd::discardEntry(const node_handle* data)
 {
   arg1F->uncacheNode(data[1]);
   arg2F->uncacheNode(data[2]);
@@ -158,7 +159,7 @@ void MEDDLY::generic_binary_mxd::discardEntry(const int* data)
 }
 
 void
-MEDDLY::generic_binary_mxd ::showEntry(FILE* strm, const int *data) const
+MEDDLY::generic_binary_mxd ::showEntry(FILE* strm, const node_handle *data) const
 {
   fprintf(strm, "[%s(in: %d, %d, %d): %d]", getName(), 
     data[0], data[1], data[2], data[3]);
@@ -167,18 +168,19 @@ MEDDLY::generic_binary_mxd ::showEntry(FILE* strm, const int *data) const
 void MEDDLY::generic_binary_mxd::compute(const dd_edge &a, const dd_edge &b, 
   dd_edge &c)
 {
-  int cnode = compute(a.getNode(), b.getNode());
+  node_handle cnode = compute(a.getNode(), b.getNode());
   c.set(cnode, 0);
 #ifdef DEVELOPMENT_CODE
   resF->validateIncounts(true);
 #endif
 }
 
-long MEDDLY::generic_binary_mxd::compute(long a, long b) 
+MEDDLY::node_handle 
+MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b) 
 {
   //  Compute for the unprimed levels.
   //
-  long result = 0;
+  node_handle result = 0;
   if (checkTerminals(a, b, result))
     return result;
 
@@ -227,7 +229,8 @@ long MEDDLY::generic_binary_mxd::compute(long a, long b)
   return result;
 }
 
-long MEDDLY::generic_binary_mxd::compute(int in, int k, long a, long b)
+MEDDLY::node_handle 
+MEDDLY::generic_binary_mxd::compute(int in, int k, node_handle a, node_handle b)
 {
   //  Compute for the primed levels.
   //
@@ -268,7 +271,7 @@ long MEDDLY::generic_binary_mxd::compute(int in, int k, long a, long b)
   node_reader::recycle(A);
 
   // reduce 
-  long result = resF->createReducedNode(in, nb);
+  node_handle result = resF->createReducedNode(in, nb);
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
@@ -295,14 +298,14 @@ MEDDLY::generic_binbylevel_mxd::~generic_binbylevel_mxd()
 {
 }
 
-bool MEDDLY::generic_binbylevel_mxd::isStaleEntry(const int* data)
+bool MEDDLY::generic_binbylevel_mxd::isStaleEntry(const node_handle* data)
 {
   return arg1F->isStale(data[1]) ||
          arg2F->isStale(data[2]) ||
          resF->isStale(data[3]);
 }
 
-void MEDDLY::generic_binbylevel_mxd::discardEntry(const int* data)
+void MEDDLY::generic_binbylevel_mxd::discardEntry(const node_handle* data)
 {
   arg1F->uncacheNode(data[1]);
   arg2F->uncacheNode(data[2]);
@@ -310,7 +313,8 @@ void MEDDLY::generic_binbylevel_mxd::discardEntry(const int* data)
 }
 
 void
-MEDDLY::generic_binbylevel_mxd::showEntry(FILE* strm, const int *data) const
+MEDDLY::generic_binbylevel_mxd
+::showEntry(FILE* strm, const node_handle *data) const
 {
   fprintf(strm, "[%s(%d, %d, %d): %d]", getName(), 
     data[0], data[1], data[2], data[3]
@@ -320,7 +324,7 @@ MEDDLY::generic_binbylevel_mxd::showEntry(FILE* strm, const int *data) const
 void MEDDLY::generic_binbylevel_mxd
 ::compute(const dd_edge& a, const dd_edge& b, dd_edge& c)
 {
-  int result = compute(
+  node_handle result = compute(
     resF->getDomain()->getNumVariables(), a.getNode(), b.getNode()
   );
   c.set(result, 0);
@@ -329,15 +333,17 @@ void MEDDLY::generic_binbylevel_mxd
 #endif
 }
 
-long MEDDLY::generic_binbylevel_mxd::compute(int level, long a, long b) 
+MEDDLY::node_handle 
+MEDDLY::generic_binbylevel_mxd::compute(int level, node_handle a, node_handle b) 
 {
   return compute(-1, level, a, b);
 }
 
-long MEDDLY::generic_binbylevel_mxd
-::compute(int in, int resultLevel, long a, long b)
+MEDDLY::node_handle 
+MEDDLY::generic_binbylevel_mxd
+::compute(int in, int resultLevel, node_handle a, node_handle b)
 {
-  long result = 0;
+  node_handle result = 0;
   if (0==resultLevel) {
     if (checkTerminals(a, b, result))
       return result;
@@ -418,14 +424,14 @@ MEDDLY::generic_binary_ev::~generic_binary_ev()
 {
 }
 
-bool MEDDLY::generic_binary_ev::isStaleEntry(const int* data)
+bool MEDDLY::generic_binary_ev::isStaleEntry(const node_handle* data)
 {
   return arg1F->isStale(data[1]) ||
          arg2F->isStale(data[3]) ||
          resF->isStale(data[5]);
 }
 
-void MEDDLY::generic_binary_ev::discardEntry(const int* data)
+void MEDDLY::generic_binary_ev::discardEntry(const node_handle* data)
 {
   arg1F->uncacheNode(data[1]);
   arg2F->uncacheNode(data[3]);
@@ -448,7 +454,8 @@ MEDDLY::generic_binary_evplus::~generic_binary_evplus()
 {
 }
 
-void MEDDLY::generic_binary_evplus::showEntry(FILE* strm, const int *data) const
+void MEDDLY::generic_binary_evplus
+::showEntry(FILE* strm, const node_handle *data) const
 {
   fprintf(strm, "[%s(<%d:%d>, <%d:%d>): <%d:%d>]",
       getName(),
@@ -459,7 +466,7 @@ void MEDDLY::generic_binary_evplus::showEntry(FILE* strm, const int *data) const
 void MEDDLY::generic_binary_evplus
 ::compute(const dd_edge& a, const dd_edge& b, dd_edge& c)
 {
-  long result;
+  node_handle result;
   int ev, aev, bev;
   a.getEdgeValue(aev);
   b.getEdgeValue(bev);
@@ -471,7 +478,8 @@ void MEDDLY::generic_binary_evplus
 }
 
 void MEDDLY::generic_binary_evplus
-::compute(int aev, long a, int bev, long b, int& cev, long& c)
+::compute(int aev, node_handle a, int bev, node_handle b, 
+  int& cev, node_handle& c)
 {
   if (checkTerminals(aev, a, bev, b, cev, c))
     return;
@@ -499,7 +507,7 @@ void MEDDLY::generic_binary_evplus
 
   // do computation
   for (int i=0; i<resultSize; i++) {
-    long d;
+    node_handle d;
     compute(aev + A->ei(i), A->d(i), 
             bev + B->ei(i), B->d(i), 
             nb.ei(i), d);
@@ -511,7 +519,7 @@ void MEDDLY::generic_binary_evplus
   node_reader::recycle(A);
 
   // Reduce
-  long cl;
+  node_handle cl;
   resF->createReducedNode(-1, nb, cev, cl);
   c = cl;
 
@@ -538,7 +546,7 @@ MEDDLY::generic_binary_evtimes::~generic_binary_evtimes()
 }
 
 void MEDDLY::generic_binary_evtimes
-::showEntry(FILE* strm, const int *data) const
+::showEntry(FILE* strm, const node_handle *data) const
 {
   fprintf(strm, "[%s(<%f:%d>, <%f:%d>): <%f:%d>]",
       getName(),
@@ -551,7 +559,7 @@ void MEDDLY::generic_binary_evtimes
 void MEDDLY::generic_binary_evtimes
 ::compute(const dd_edge& a, const dd_edge& b, dd_edge& c)
 {
-  long result; 
+  node_handle result; 
   float ev, aev, bev;
   a.getEdgeValue(aev);
   b.getEdgeValue(bev);
@@ -563,7 +571,8 @@ void MEDDLY::generic_binary_evtimes
 }
 
 void MEDDLY::generic_binary_evtimes
-::compute(float aev, long a, float bev, long b, float& cev, long& c)
+::compute(float aev, node_handle a, float bev, node_handle b, 
+  float& cev, node_handle& c)
 {
   if (checkTerminals(aev, a, bev, b, cev, c))
     return;
@@ -591,7 +600,7 @@ void MEDDLY::generic_binary_evtimes
 
   // do computation
   for (int i=0; i<resultSize; i++) {
-    long d;
+    node_handle d;
     compute(aev * A->ef(i), A->d(i), 
             bev * B->ef(i), B->d(i), 
             nb.ef(i), d);
@@ -603,7 +612,7 @@ void MEDDLY::generic_binary_evtimes
   node_reader::recycle(A);
 
   // Reduce
-  long cl;
+  node_handle cl;
   resF->createReducedNode(-1, nb, cev, cl);
   c = cl;
 

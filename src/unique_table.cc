@@ -28,7 +28,7 @@ MEDDLY::unique_table::unique_table(expert_forest* ef)
   parent = ef;
   size = minSize;
   num_entries = 0;
-  table = (int*) malloc(sizeof(int) * size);
+  table = (node_handle*) malloc(sizeof(node_handle) * size);
   if (0==table) throw error(error::INSUFFICIENT_MEMORY);
   for (unsigned i=0; i<size; i++) table[i] = 0;
   next_expand = 2*size;
@@ -57,15 +57,15 @@ void MEDDLY::unique_table::show(FILE* s) const
 // Helpers (private)
 //
 
-long MEDDLY::unique_table::convertToList()
+MEDDLY::node_handle MEDDLY::unique_table::convertToList()
 {
   /*
   printf("Converting to list\n");
   show(stdout);
 */
-  long front = 0;
-  long next = 0;
-  long curr = 0;
+  node_handle front = 0;
+  node_handle next = 0;
+  node_handle curr = 0;
   for (unsigned i = 0; i < size; i++) {
     for (curr = table[i]; curr; curr = next) {
       // add to head of list
@@ -79,9 +79,9 @@ long MEDDLY::unique_table::convertToList()
   return front;
 }
 
-void MEDDLY::unique_table::buildFromList(long front)
+void MEDDLY::unique_table::buildFromList(node_handle front)
 {
-  long next = 0;
+  node_handle next = 0;
   for ( ; front; front = next) {
     next = parent->getNext(front);
     unsigned h = parent->hash(front) % size;
@@ -98,10 +98,10 @@ void MEDDLY::unique_table::expand()
 #ifdef DEBUG_SLOW
   fprintf(stderr, "Enlarging unique table (current size: %d)\n", size);
 #endif
-  int ptr = convertToList();
+  node_handle ptr = convertToList();
   // length will the same as num_entries previously
   unsigned newSize = size * 2;
-  int *temp = (int*) realloc(table, sizeof(int) * newSize);
+  node_handle *temp = (node_handle*) realloc(table, sizeof(node_handle) * newSize);
   if (0==temp) throw error(error::INSUFFICIENT_MEMORY);
   table = temp;
   for (unsigned i = newSize-1; i>=size; i--) table[i] = 0;
@@ -118,10 +118,10 @@ void MEDDLY::unique_table::shrink()
 #ifdef DEBUG_SLOW
   fprintf(stderr, "Shrinking unique table (current size: %d)\n", size);
 #endif
-  int ptr = convertToList();
+  node_handle ptr = convertToList();
   // length will the same as num_entries previously
   unsigned newSize = size / 2;
-  int *temp = (int*) realloc(table, sizeof(int) * newSize);
+  node_handle *temp = (node_handle*) realloc(table, sizeof(node_handle) * newSize);
   if (0==temp) throw error(error::INSUFFICIENT_MEMORY);
   table = temp;
   next_expand = size;

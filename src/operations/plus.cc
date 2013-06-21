@@ -47,7 +47,7 @@ class MEDDLY::plus_mdd : public generic_binary_mdd {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(long a, long b, long& c);
+    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
 MEDDLY::plus_mdd::plus_mdd(const binary_opname* opcode, 
@@ -57,7 +57,7 @@ MEDDLY::plus_mdd::plus_mdd(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::plus_mdd::checkTerminals(long a, long b, long& c)
+bool MEDDLY::plus_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
   if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
     if (resF->getRangeType() == forest::INTEGER) {
@@ -99,7 +99,7 @@ class MEDDLY::plus_mxd : public generic_binary_mxd {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(long a, long b, long& c);
+    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
 MEDDLY::plus_mxd::plus_mxd(const binary_opname* opcode, 
@@ -109,7 +109,7 @@ MEDDLY::plus_mxd::plus_mxd(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::plus_mxd::checkTerminals(long a, long b, long& c)
+bool MEDDLY::plus_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
   if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
     if (resF->getRangeType() == forest::INTEGER) {
@@ -136,8 +136,8 @@ class MEDDLY::plus_evplus : public generic_binary_evplus {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(int aev, long a, int bev, long b, 
-      int& cev, long& c);
+    virtual bool checkTerminals(int aev, node_handle a, int bev, node_handle b, 
+      int& cev, node_handle& c);
 };
 
 MEDDLY::plus_evplus::plus_evplus(const binary_opname* opcode, 
@@ -147,8 +147,8 @@ MEDDLY::plus_evplus::plus_evplus(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::plus_evplus::checkTerminals(int aev, long a, int bev, long b,
-  int& cev, long& c)
+bool MEDDLY::plus_evplus::checkTerminals(int aev, node_handle a, int bev, node_handle b,
+  int& cev, node_handle& c)
 {
   if (a == -1 && b == -1) {
     c = -1; cev = aev + bev;
@@ -171,8 +171,8 @@ class MEDDLY::plus_evtimes : public generic_binary_evtimes {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(float aev, long a, float bev, long b, 
-      float& cev, long& c);
+    virtual bool checkTerminals(float aev, node_handle a, float bev, node_handle b, 
+      float& cev, node_handle& c);
 };
 
 MEDDLY::plus_evtimes::plus_evtimes(const binary_opname* opcode, 
@@ -182,8 +182,8 @@ MEDDLY::plus_evtimes::plus_evtimes(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::plus_evtimes::checkTerminals(float aev, long a, 
-  float bev, long b, float& cev, long& c)
+bool MEDDLY::plus_evtimes::checkTerminals(float aev, node_handle a, 
+  float bev, node_handle b, float& cev, node_handle& c)
 {
   if (a == -1 && b == -1) {
     c = -1; cev = aev + bev;

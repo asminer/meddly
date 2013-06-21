@@ -45,7 +45,7 @@ class MEDDLY::inter_mdd : public generic_binary_mdd {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(long a, long b, long& c);
+    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
 MEDDLY::inter_mdd::inter_mdd(const binary_opname* opcode, 
@@ -55,7 +55,7 @@ MEDDLY::inter_mdd::inter_mdd(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::inter_mdd::checkTerminals(long a, long b, long& c)
+bool MEDDLY::inter_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
   if (a == 0 || b == 0) {
     c = 0;
@@ -106,7 +106,7 @@ class MEDDLY::inter_mxd : public generic_binary_mxd {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(long a, long b, long& c);
+    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
 MEDDLY::inter_mxd::inter_mxd(const binary_opname* opcode, 
@@ -116,7 +116,7 @@ MEDDLY::inter_mxd::inter_mxd(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::inter_mxd::checkTerminals(long a, long b, long& c)
+bool MEDDLY::inter_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
   if (a == 0 || b == 0) {
     c = 0;

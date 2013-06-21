@@ -85,7 +85,7 @@ void MEDDLY::node_reader
     MEDDLY_DCASSERT(nalloc > ns);
     MEDDLY_DCASSERT(nalloc>0);
     MEDDLY_DCASSERT(nalloc>alloc);
-    down = (long*) realloc(down, nalloc*sizeof(long));
+    down = (node_handle*) realloc(down, nalloc*sizeof(node_handle));
     if (0==down) throw error(error::INSUFFICIENT_MEMORY);
     index = (int*) realloc(index, nalloc*sizeof(int));
     if (0==index) throw error(error::INSUFFICIENT_MEMORY);
@@ -102,14 +102,14 @@ void MEDDLY::node_reader
 }
 
 void MEDDLY::node_reader
-::resize_header(int extra_slots)
+::resize_header(int extra_bytes)
 {
-  ext_size = extra_slots;
+  ext_size = extra_bytes;
   if (ext_size > ext_alloc) {
     ext_alloc = ((ext_size/8)+1)*8;
     MEDDLY_DCASSERT(ext_alloc > ext_size);
     MEDDLY_DCASSERT(ext_alloc>0);
-    extra_hashed = (int*) realloc(extra_hashed, ext_alloc * sizeof(int));
+    extra_hashed =  realloc(extra_hashed, ext_alloc);
     if (0==extra_hashed) throw error(error::INSUFFICIENT_MEMORY);
   }
 }
@@ -123,10 +123,12 @@ void MEDDLY::node_reader::computeHash(bool hashEdgeValues)
   hash_stream s;
   s.start(level);
 
+  /*
   for (int e=0; e<ext_size; e++) {
     MEDDLY_DCASSERT(extra_hashed);
     s.push(extra_hashed[e]);
   }
+  */
   
   if (isSparse()) {
     if (hashEdgeValues) {
@@ -191,23 +193,20 @@ void MEDDLY::node_builder::init(int k, const expert_forest* p)
   MEDDLY_DCASSERT(p);
   parent = p;
   level = k;
-  hhsize = parent->hashedHeaderSize();
-  if (hhsize) {
-    extra_hashed = (int*) malloc(uhsize * sizeof(int));
+  if (parent->hashedHeaderBytes()) {
+    extra_hashed = malloc(parent->hashedHeaderBytes());
     if (0==extra_hashed)
       throw error(error::INSUFFICIENT_MEMORY);
   }
-  uhsize = parent->unhashedHeaderSize();
-  if (uhsize) {
-    extra_unhashed = (int*) malloc(hhsize * sizeof(int));
+  if (parent->unhashedHeaderBytes()) {
+    extra_unhashed = malloc(parent->unhashedHeaderBytes());
     if (0==extra_unhashed)
       throw error(error::INSUFFICIENT_MEMORY);
   }
   size = 0;
   alloc = 0;
   lock = false;
-  hashEdgeValues = parent->areEdgeValuesHashed();
-  edge_bytes = parent->edgeSize() * sizeof(int);
+  edge_bytes = parent->edgeBytes();
 }
 
 
@@ -220,12 +219,16 @@ void MEDDLY::node_builder::computeHash()
   hash_stream s;
   s.start(level);
 
+  // TBD:
+  /*
   for (int e=0; e<hhsize; e++) {
     MEDDLY_DCASSERT(extra_hashed);
     s.push(extra_hashed[e]);
   }
+  */
+
   if (isSparse()) {
-    if (hashEdgeValues) {
+    if (parent->areEdgeValuesHashed()) {
       for (int z=0; z<size; z++) {
         MEDDLY_DCASSERT(d(z));
         s.push(i(z), d(z), ei(z));
@@ -237,7 +240,7 @@ void MEDDLY::node_builder::computeHash()
       }
     }
   } else {
-    if (hashEdgeValues) {
+    if (parent->areEdgeValuesHashed()) {
       for (int n=0; n<size; n++) {
         if (0==d(n)) continue;
         s.push(n, d(n), ei(n));
@@ -261,13 +264,12 @@ void MEDDLY::node_builder::enlarge()
   if (size <= alloc) return;
   alloc = ((size / 8)+1) * 8;
   MEDDLY_DCASSERT(alloc > size);
-  down = (long*) realloc(down, alloc * sizeof(long));
+  down = (node_handle*) realloc(down, alloc * sizeof(node_handle));
   if (0==down) throw error(error::INSUFFICIENT_MEMORY);
   indexes = (int*) realloc(indexes, alloc * sizeof(int));
   if (0==indexes) throw error(error::INSUFFICIENT_MEMORY);
-  int es = parent->edgeSize();
-  if (es>0) {
-    edge = realloc(edge, alloc * es * sizeof(int));
+  if (parent->edgeBytes()>0) {
+    edge = realloc(edge, alloc * parent->edgeBytes());
     if (0==edge) throw error(error::INSUFFICIENT_MEMORY);
   }
 }
@@ -305,7 +307,7 @@ void MEDDLY::node_storage::dumpInternal(FILE* s) const
 {
   dumpInternalInfo(s);
   fprintf(s, "Data array by record:\n");
-  for (long a=1; a > 0; ) {
+  for (node_address a=1; a > 0; ) {
     fflush(s);
     a = dumpInternalNode(s, a);
   } // for a

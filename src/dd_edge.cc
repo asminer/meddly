@@ -155,18 +155,18 @@ int MEDDLY::dd_edge::getLevel() const
   return ef->getNodeLevel(node);
 }
 
-void MEDDLY::dd_edge::set(long n, int v)
+void MEDDLY::dd_edge::set(node_handle n, int v)
 {
-  long old = node;
+  node_handle old = node;
   node = n;
   unlinkNode(parent, old);
   value = v;
 }
 
 
-void MEDDLY::dd_edge::set(long n, float v)
+void MEDDLY::dd_edge::set(node_handle n, float v)
 {
-  long old = node;
+  node_handle old = node;
   node = n;
   unlinkNode(parent, old);
   value = toInt(v);
@@ -262,7 +262,7 @@ void MEDDLY::dd_edge::show(FILE* strm, int verbosity) const
     }
   }
   else {
-    fprintf(strm, "node: %ld, ", node);
+    fprintf(strm, "node: %ld, ", long(node));
   }
   if (eParent->getEdgeLabeling() == forest::EVTIMES) {
     float ev = 0;
@@ -290,7 +290,7 @@ void MEDDLY::dd_edge::show(FILE* strm, int verbosity) const
     eParent->showNodeGraph(strm, node);
   }
   if (verbosity == 1 || verbosity == 3) {
-    fprintf(strm, "Cardinality of node %ld: %0.8e\n", node, getCardinality());
+    fprintf(strm, "Cardinality of node %ld: %0.8e\n", long(node), getCardinality());
   }
 }
 

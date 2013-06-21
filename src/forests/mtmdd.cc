@@ -66,7 +66,8 @@ void MEDDLY::mtmdd_forest::expandCountAndSlotArrays(int size)
   countSize = newCountSize;
 }
 
-int MEDDLY::mtmdd_forest::createNode(int k, int index, long dptr)
+MEDDLY::node_handle 
+MEDDLY::mtmdd_forest::createNode(int k, int index, node_handle dptr)
 {
   MEDDLY_DCASSERT(index >= -1);
 
@@ -89,11 +90,11 @@ int MEDDLY::mtmdd_forest::createNode(int k, int index, long dptr)
 }
 
 
-void MEDDLY::mtmdd_forest::createEdgeTo(const int* v, long term, dd_edge& e)
+void MEDDLY::mtmdd_forest::createEdgeTo(const int* v, node_handle term, dd_edge& e)
 {
   // construct the edge bottom-up
   MEDDLY_DCASSERT(isTerminalNode(term));
-  long result = term;
+  node_handle result = term;
   for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
     result = createNode(i, v[i], result);
   }

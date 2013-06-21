@@ -66,7 +66,7 @@ class MEDDLY::evmdd_forest : public expert_forest {
 
 
   protected:
-    virtual void showTerminal(FILE* s, int tnode) const;
+    virtual void showTerminal(FILE* s, node_handle tnode) const;
 
     virtual int doOp(int a, int b) const = 0;
     virtual float doOp(float a, float b) const = 0;
@@ -91,7 +91,7 @@ class MEDDLY::evmdd_forest : public expert_forest {
     // edge value ev. If i is -1, all indices of the node will point to dptr
     // with an edge value ev.
     template <typename T>
-    void createNode(int k, int index, long dptr, T ev, long& res, T& resEv);
+    void createNode(int k, int index, node_handle dptr, T ev, node_handle& res, T& resEv);
 
     // If the element represented by vlist exists, return the value
     // corresponding to it.
@@ -107,7 +107,7 @@ class MEDDLY::evmdd_forest : public expert_forest {
     // The sum of these edges is returned via node and edgeValue.
     template <typename T>
     void sortBuild(int** list, T* tList, int height, int begin, int end,
-        long& node, T& edgeValue);
+        node_handle& node, T& edgeValue);
 
     // virtual void normalizeAndReduceNode(int& p, int& ev) = 0;
     // virtual void normalizeAndReduceNode(int& p, float& ev) = 0;
@@ -134,19 +134,6 @@ class MEDDLY::evp_mdd_int : public evmdd_forest {
     virtual int doOp(int a, int b) const { return a + b; }
     virtual float doOp(float a, float b) const {
       assert(false); return a + b;
-    }
-
-    virtual char edgeSize() const {
-        return 1;
-    }
-    virtual char unhashedHeaderSize() const {
-        return 1;
-    }
-    virtual char hashedHeaderSize() const {
-        return 0;
-    }
-    virtual bool areEdgeValuesHashed() const {
-        return true;
     }
 
     virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const;
@@ -186,19 +173,6 @@ class MEDDLY::evt_mdd_real : public evmdd_forest {
 
     virtual int doOp(int a, int b) const { assert(false); return a * b; }
     virtual float doOp(float a, float b) const { return a * b; }
-
-    virtual char edgeSize() const {
-        return sizeof(float) / sizeof(int);
-    }
-    virtual char unhashedHeaderSize() const {
-        return 0;
-    }
-    virtual char hashedHeaderSize() const {
-        return 0;
-    }
-    virtual bool areEdgeValuesHashed() const {
-        return false; // we need to do a "within epsilon" comparison.
-    }
 
     virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const;
 
@@ -257,9 +231,9 @@ MEDDLY::evmdd_forest::createEdgeInternal(T term, dd_edge &e)
     e.set(getTerminalNode(true), term);
   } else {
     // construct the edge bottom-up
-    long prev = getTerminalNode(false);
+    node_handle prev = getTerminalNode(false);
     T prevEv = 0;
-    long curr = getTerminalNode(true);
+    node_handle curr = getTerminalNode(true);
     T currEv = term;
     for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
       prev = curr;
@@ -312,7 +286,7 @@ MEDDLY::evmdd_forest::createEdgeInternal(const int* const* vlist,
     memcpy(intList, terms, N * sizeof(int));
     int* temp = (int*)intList;
     T* tList = (T*)temp;
-    long node;
+    node_handle node;
     T ev;
     sortBuild(list, tList, getDomain()->getNumVariables(), 0, N, node, ev);
     e.set(node, ev);
@@ -325,10 +299,10 @@ void
 MEDDLY::evmdd_forest::createEdgeInternal(const int* v, T term, dd_edge &e)
 {
   // construct the edge bottom-up
-  long prev = getTerminalNode(false);
+  node_handle prev = getTerminalNode(false);
   T prevEv;
   getIdentityEdgeValue(prevEv);
-  long curr = getTerminalNode(true);
+  node_handle curr = getTerminalNode(true);
   T currEv = term;
   for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
     prev = curr;
@@ -339,8 +313,8 @@ MEDDLY::evmdd_forest::createEdgeInternal(const int* v, T term, dd_edge &e)
 }
 
 template <typename T>
-void MEDDLY::evmdd_forest::createNode(int k, int index, long dptr, T ev,
-    long& res, T& resEv)
+void MEDDLY::evmdd_forest::createNode(int k, int index, node_handle dptr, T ev,
+    node_handle& res, T& resEv)
 {
   MEDDLY_DCASSERT(dptr >= -1 && ev >= 0);
   MEDDLY_DCASSERT(index >= -1);
@@ -383,7 +357,7 @@ void MEDDLY::evmdd_forest::evaluateInternal(const dd_edge &f,
 
   // assumption: vlist does not contain any special values (-1, -2, etc).
   // vlist contains a single element.
-  long node = f.getNode();
+  node_handle node = f.getNode();
 
   f.getEdgeValue(term);
   while (!isTerminalNode(node)) {
@@ -396,7 +370,7 @@ void MEDDLY::evmdd_forest::evaluateInternal(const dd_edge &f,
 
 template <typename T>
 void MEDDLY::evmdd_forest::sortBuild(int** list, T* tList,
-    int height, int begin, int end, long& node, T& edgeValue)
+    int height, int begin, int end, node_handle& node, T& edgeValue)
 {
   // [begin, end)
 
@@ -419,7 +393,7 @@ void MEDDLY::evmdd_forest::sortBuild(int** list, T* tList,
   if (N == 1) {
     // nothing to sort; just build a node starting at this level
     int index = list[begin][height];
-    long n;
+    node_handle n;
     T ev;
     sortBuild(list, tList, nextHeight, begin, end, n, ev);
     createNode(height, index, n, ev, node, edgeValue);
@@ -529,7 +503,7 @@ void MEDDLY::evmdd_forest::sortBuild(int** list, T* tList,
   int z = 0;
   for (int i=0; i<levelSize; i++) {
     if (count[i+1] > count[i]) {
-      long n;
+      node_handle n;
       T ev;
       sortBuild(list, tList, nextHeight, begin + count[i] + 1,
           begin + count[i+1] + 1, n, ev);

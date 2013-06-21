@@ -61,19 +61,6 @@ class MEDDLY::mt_forest : public expert_forest {
     virtual void createEdgeForVar(int vh, bool pr, float* terms, dd_edge& a);
 
     
-    virtual char edgeSize() const {
-        return 0;
-    }
-    virtual char unhashedHeaderSize() const {
-        return 0;
-    }
-    virtual char hashedHeaderSize() const {
-        return 0;
-    }
-    virtual bool areEdgeValuesHashed() const {
-        return false;
-    }
-
     virtual bool isRedundant(const node_builder &nb) const;
     virtual bool isIdentityEdge(const node_builder &nb, int i) const;
 
@@ -91,7 +78,7 @@ class MEDDLY::mt_forest : public expert_forest {
             throw error(error::INVALID_ASSIGNMENT);
         if (getEdgeLabeling() != MULTI_TERMINAL)
             throw error(error::INVALID_OPERATION);
-        long *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
+        node_handle *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
         long node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
 
         result.set(node, 0);
@@ -103,7 +90,7 @@ class MEDDLY::mt_forest : public expert_forest {
     /// Add a redundant node at level k.
     /// On input: d is the node "below" us, to point to.
     /// On output: d is the redundant node.
-    inline void insertRedundantNode(int k, long& d) {
+    inline void insertRedundantNode(int k, node_handle& d) {
       MEDDLY_DCASSERT(!isFullyReduced());
       bool useIdentity = false;
       if (isIdentityReduced()) {
@@ -113,7 +100,7 @@ class MEDDLY::mt_forest : public expert_forest {
       node_builder& nb = useNodeBuilder(k, sz);
       if (useIdentity) {
         // check for identity reductions with d
-        long sd;
+        node_handle sd;
         int si = getSingletonIndex(d, sd);
         for (int i=0; i<sz; i++) {
           nb.d(i) = linkNode(
@@ -130,25 +117,22 @@ class MEDDLY::mt_forest : public expert_forest {
 
   // ------------------------------------------------------------
   // still to be organized:
-  public:
-    // void compareCacheCounts(int p = -1);
-
 
   protected:
     // Building level nodes
-    long buildLevelNodeHelper(int lh, long* terminalNodes, int sz);
+    node_handle buildLevelNodeHelper(int lh, node_handle* terminalNodes, int sz);
 
     // Building custom level nodes
-    long* getTerminalNodes(int n, bool* terms);
-    long* getTerminalNodes(int n, int* terms);
-    long* getTerminalNodes(int n, float* terms);
+    node_handle* getTerminalNodes(int n, bool* terms);
+    node_handle* getTerminalNodes(int n, int* terms);
+    node_handle* getTerminalNodes(int n, float* terms);
 
   protected:
 
     bool counting;
 
     // scratch pad for buildLevelNode and getTerminalNodes
-    long* dptrs;
+    node_handle* dptrs;
     int dptrsSize;
 
 };

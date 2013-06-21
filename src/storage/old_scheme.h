@@ -37,20 +37,14 @@ namespace MEDDLY {
 
 /** Original node storage mechanism in a forest.
 
-    Limits: offsets must be ints, because the data structure
-    for holes uses ints.
+    Limits: offsets must be the same as node_handles, 
+    because the data structure uses those for hole data.
 
     Details of node storage are left to the derived forests.
     However, every active node is stored in the following format.
 
-    Below, slots are described as "ints"; note that some fields
-    are stored as longs, which could require 2 slots.
-    The long fields must be aligned properly, so we may need to
-    pad the node with an extra, empty slot to take care of this.
-      
-
-      common   {  slot[0] : long, incoming count, >= 0.
-      header --{  slot[1] : long, next pointer in unique table or special value.
+      common   {  slot[0] : incoming count, >= 0.
+      header --{  slot[1] : next pointer in unique table or special value.
                {  slot[2] : size.  >=0 for full storage, <0 for sparse.
 
       unhashed    {       : slots used for any extra information
@@ -80,7 +74,7 @@ namespace MEDDLY {
                   {       : slots.  Derived forests are responsible
                   {       : for packing information into these slots.
 
-                { -padlen : (long) Any node padding to allow for future
+                { -padlen : Any node padding to allow for future
                 {         : expansion, or for memory management purposes
                 {         : (e.g., memory hold is larger than requested).
       padding --{         : padlen is number of padded slots.  If the
@@ -88,7 +82,7 @@ namespace MEDDLY {
                 {         : then it specifies the number of long padding
                 {         : slots; otherwise, there is no padding.
 
-      tail    --{ slot[L] : long, the forest node number,
+      tail    --{ slot[L] : The forest node number,
                             guaranteed to be non-negative.
 
 
@@ -134,24 +128,24 @@ namespace MEDDLY {
 
     Index holes are represented as follows:
     ---------------------------------------
-    [0] long, -size (number of slots in hole)     
+    [0] -size (number of slots in hole)     
     [1] up
     [2] down 
     [3] next pointer (nodes of same size)
     [4..size-2] Unused
     :
     :
-    [size-1] long, -size
+    [size-1] -size
 
     Non-index holes are represented as follows:
-    [0] long, -size (number of slots in hole)     
+    [0] -size (number of slots in hole)     
     [1] flag (<0, indicates non-index node)
     [2] prev pointer (nodes of same size)
     [3] next pointer (nodes of same size)
     [4..size-2] Unused
     :
     :
-    [size-1] long, -size
+    [size-1] -size
 
 */
 class MEDDLY::old_node_storage : public node_storage {
@@ -164,150 +158,145 @@ class MEDDLY::old_node_storage : public node_storage {
     virtual void collectGarbage(bool shrink);
     virtual void reportMemoryUsage(FILE* s, const char* pad, int vL) const;
 
-    virtual void showNode(FILE* s, long addr, bool verb) const;
+    virtual void showNode(FILE* s, node_address addr, bool verb) const;
 
-    virtual long makeNode(long p, const node_builder &nb, 
+    virtual node_address makeNode(node_handle p, const node_builder &nb, 
         node_storage_flags opt);
 
-    virtual void unlinkDownAndRecycle(long addr);
+    virtual void unlinkDownAndRecycle(node_address addr);
 
-    virtual bool areDuplicates(long addr, const node_builder &nb) const;
-    virtual bool areDuplicates(long addr, const node_reader &nr) const;
-    virtual void fillReader(long addr, node_reader &nr) const;
+    virtual bool areDuplicates(node_address addr, const node_builder &nb) const;
+    virtual bool areDuplicates(node_address addr, const node_reader &nr) const;
+    virtual void fillReader(node_address addr, node_reader &nr) const;
     virtual unsigned hashNode(const node_header& p) const;
-    virtual int getSingletonIndex(long addr, long &down) const;
-    virtual long getDownPtr(long addr, int index) const;
-    virtual void getDownPtr(long addr, int ind, int& ev, long& dn) const;
-    virtual void getDownPtr(long addr, int ind, float& ev, long& dn) const;
-    virtual int getUnhashedHeaderOf(long addr, int ind) const;
-    virtual int getHashedHeaderOf(long addr, int ind) const;
+    virtual int getSingletonIndex(node_address addr, node_handle &down) const;
+    virtual node_handle getDownPtr(node_address addr, int index) const;
+    virtual void getDownPtr(node_address addr, int ind, int& ev, node_handle& dn) const;
+    virtual void getDownPtr(node_address addr, int ind, float& ev, node_handle& dn) const;
+    virtual const void* getUnhashedHeaderOf(node_address addr) const;
+    virtual const void* getHashedHeaderOf(node_address addr) const;
 
   protected:
     virtual void dumpInternalInfo(FILE*) const;
-    virtual long dumpInternalNode(FILE*, long addr) const;
+    virtual node_address dumpInternalNode(FILE*, node_address addr) const;
 
 
   private:
-      static const int slots_per_long = sizeof(long) / sizeof(int);
-
       static const int min_size = 1024;
 
       /// Special values
       static const int non_index_hole = -2;
       static const long temp_node_value = -5;
 
-      // long header indexes (relative to chunk start, as a long*)
+      // header indexes (relative to chunk start)
       static const int count_index = 0;
       static const int next_index = 1;    
-
-      // int header indexes (relative to chunk start, as an int*)
-      static const int size_index = 2 * slots_per_long;
-      static const int intHeaderSize = size_index+1;
+      static const int size_index = 2;
+      static const int headerSlots = size_index+1;
 
       // Counts for extra slots
-      static const int longTailSize = 1;
-      static const int intTailSize = longTailSize * slots_per_long;
-      static const int intExtra = intHeaderSize + intTailSize;
+      static const int tailSlots = 1;
+      static const int extraSlots = headerSlots + tailSlots;
 
       // hole indexes
-      static const int hole_up_index = slots_per_long;
+      static const int hole_up_index = 1;
       static const int hole_down_index = hole_up_index+1;
       static const int hole_prev_index = hole_down_index;
       static const int hole_next_index = hole_prev_index+1;
 
       /// data array
-      long* data;
+      node_handle* data;
       /// Size of data array.
-      int size;
+      node_handle size;
       /// Last used data slot.  Also total number of longs "allocated"
-      int last;
+      node_handle last;
 
   // Holes grid info
   private:
       /// Largest hole ever requested
-      int max_request;
+      node_handle max_request;
       /// List of large holes
-      int large_holes;
+      node_handle large_holes;
       /// Pointer to top of holes grid
-      int holes_top;
+      node_handle holes_top;
       /// Pointer to bottom of holes grid
-      int holes_bottom;
+      node_handle holes_bottom;
       /// Total ints in holes
-      int hole_slots;
+      node_handle hole_slots;
 
   // header sizes; vary by forest.
   private:
-      /// Size of each outgoing edge's value (can be 0).
-      char edgeSize;
-      /// Size of extra unhashed data (typically 0).
-      char unhashedHeader;
-      /// Size of extra hashed data (typically 0).
-      char hashedHeader;
+      /// Number of slots required for each outgoing edge's value (can be 0).
+      char edgeSlots;
+      /// Number of slots for extra unhashed data (typically 0).
+      char unhashedSlots;
+      /// Number of slots for extra hashed data (typically 0).
+      char hashedSlots;
 
 
   // --------------------------------------------------------
   // |  helpers for inlines.
   private:
-      inline int* chunkOf(int addr) const {
+      inline node_handle* chunkOf(node_handle addr) const {
         MEDDLY_DCASSERT(data);
         MEDDLY_CHECK_RANGE(1, addr, last+1);
         MEDDLY_DCASSERT(data[addr] >= 0);  // it's not a hole
-        return (int*)(data + addr);
+        return data + addr;
       }
-      inline int* holeOf(int addr) const {
+      inline node_handle* holeOf(node_handle addr) const {
         MEDDLY_DCASSERT(data);
         MEDDLY_CHECK_RANGE(1, addr, last+1);
         MEDDLY_DCASSERT(data[addr] < 0);  // it's a hole
-        return (int*)(data + addr);
+        return data + addr;
       }
-      inline int& rawSizeOf(int addr) const {
-          return chunkOf(addr)[size_index];
+      inline node_handle& rawSizeOf(node_handle addr) const {
+        return chunkOf(addr)[size_index];
       }
-      inline int  sizeOf(int addr) const        { return rawSizeOf(addr); }
-      inline void setSizeOf(int addr, int sz)   { rawSizeOf(addr) = sz; }
-      inline int* UH(int addr) const {
-          return chunkOf(addr) + intHeaderSize;
+      inline node_handle  sizeOf(node_handle addr) const      { return rawSizeOf(addr); }
+      inline void setSizeOf(node_handle addr, node_handle sz) { rawSizeOf(addr) = sz; }
+      inline node_handle* UH(node_handle addr) const {
+          return chunkOf(addr) + headerSlots;
       }
-      inline int* HH(int addr) const {
-          return chunkOf(addr) + intHeaderSize + unhashedHeader;
+      inline node_handle* HH(node_handle addr) const {
+          return UH(addr) + unhashedSlots;
       }
       // full down, as a pointer
-      inline int* FD(int addr) const {
+      inline node_handle* FD(node_handle addr) const {
           MEDDLY_DCASSERT(rawSizeOf(addr)>0);
-          return HH(addr) + hashedHeader;
+          return HH(addr) + hashedSlots;
       }
       // full edges, as a pointer
-      inline int* FE(int addr) const {
+      inline node_handle* FE(node_handle addr) const {
           return FD(addr) + rawSizeOf(addr);
       }
       // a particular full edge, as a pointer
-      inline void* FEP(int addr, int p) const {
-        return FE(addr) + p * edgeSize;
+      inline void* FEP(node_handle addr, int p) const {
+        return FE(addr) + p * edgeSlots;
       }
       // sparse down, as a pointer
-      inline int* SD(int addr) const {
+      inline node_handle* SD(node_handle addr) const {
           MEDDLY_DCASSERT(rawSizeOf(addr)<0);
-          return HH(addr) + hashedHeader;
+          return HH(addr) + hashedSlots;
       }
       // sparse indexes, as a pointer
-      inline int* SI(int addr) const {
+      inline node_handle* SI(node_handle addr) const {
           return SD(addr) - rawSizeOf(addr);  // sparse size is negative
       }
       // sparse edges, as a pointer
-      inline int* SE(int addr) const {
+      inline node_handle* SE(node_handle addr) const {
           return SD(addr) - 2*rawSizeOf(addr);  // sparse size is negative
       }
       // a particular sparse edge, as a pointer
-      inline void* SEP(int addr, int p) const {
-        return SE(addr) + p * edgeSize;
+      inline void* SEP(node_handle addr, int p) const {
+        return SE(addr) + p * edgeSlots;
       }
       // binary search for an index
-      inline int findSparseIndex(int addr, int i) const {
+      inline int findSparseIndex(node_handle addr, int i) const {
         int low = 0;
         int nnz = -rawSizeOf(addr);
         MEDDLY_DCASSERT(nnz>=0);
         int high = nnz;
-        int* index = SI(addr);
+        node_handle* index = SI(addr);
         while (low < high) {
           int z = (low+high)/2;
           MEDDLY_CHECK_RANGE(0, z, nnz);
@@ -324,16 +313,9 @@ class MEDDLY::old_node_storage : public node_storage {
   private:
       /// How many int slots would be required for a node with given size.
       ///   @param  sz  negative for sparse storage, otherwise full.
-      inline int intSlotsForNode(int sz) const {
-          int edges = (sz<0) ? (2+edgeSize) * (-sz) : (1+edgeSize) * sz;
-          return intExtra + unhashedHeader + hashedHeader + edges;
-      }
-      /// How many long slots would be required for a node with given size.
-      ///   @param  sz  negative for sparse storage, otherwise full.
-      inline int longSlotsForNode(int sz) const {
-        int is = intSlotsForNode(sz);
-        is += is % slots_per_long;
-        return is / slots_per_long;
+      inline int slotsForNode(int sz) const {
+          int nodeSlots = (sz<0) ? (2+edgeSlots) * (-sz) : (1+edgeSlots) * sz;
+          return extraSlots + unhashedSlots + hashedSlots + nodeSlots;
       }
 
 
@@ -347,7 +329,7 @@ class MEDDLY::old_node_storage : public node_storage {
             @param  nb    Node data is copied from here.
             @return       The "address" of the new node.
       */
-      long makeFullNode(long p, int size, const node_builder &nb);
+      node_handle makeFullNode(node_handle p, int size, const node_builder &nb);
 
       /** Create a new node, stored sparsely.
           Space is allocated for the node, and data is copied.
@@ -356,69 +338,69 @@ class MEDDLY::old_node_storage : public node_storage {
             @param  nb    Node data is copied from here.
             @return       The "address" of the new node.
       */
-      long makeSparseNode(long p, int size, const node_builder &nb);
+      node_handle makeSparseNode(node_handle p, int size, const node_builder &nb);
 
-      void copyExtraHeader(long addr, const node_builder &nb);
+      void copyExtraHeader(node_address addr, const node_builder &nb);
 
   // --------------------------------------------------------
   // |  Hole management helpers.
   private:
-      inline int& h_up(int off) const {
+      inline node_handle& h_up(node_handle off) const {
         return holeOf(off)[hole_up_index];
       }
-      inline int& h_down(int off) const {
+      inline node_handle& h_down(node_handle off) const {
         return holeOf(off)[hole_down_index];
       }
-      inline int& h_prev(int off) const {
+      inline node_handle& h_prev(node_handle off) const {
         return holeOf(off)[hole_prev_index];
       }
-      inline int& h_next(int off) const {
+      inline node_handle& h_next(node_handle off) const {
         return holeOf(off)[hole_next_index];
       }
 
-      inline int& holeUp(int off)       { return h_up(off); }
-      inline int  holeUp(int off) const { return h_up(off); }
+      inline node_handle& holeUp(node_handle off)       { return h_up(off); }
+      inline node_handle  holeUp(node_handle off) const { return h_up(off); }
 
-      inline int& holeDown(int off)       { return h_down(off); }
-      inline int  holeDown(int off) const { return h_down(off); }
+      inline node_handle& holeDown(node_handle off)       { return h_down(off); }
+      inline node_handle  holeDown(node_handle off) const { return h_down(off); }
 
-      inline int& holePrev(int off)       { return h_prev(off); }
-      inline int  holePrev(int off) const { return h_prev(off); }
+      inline node_handle& holePrev(node_handle off)       { return h_prev(off); }
+      inline node_handle  holePrev(node_handle off) const { return h_prev(off); }
 
-      inline int& holeNext(int off)       { return h_next(off); }
-      inline int  holeNext(int off) const { return h_next(off); }
+      inline node_handle& holeNext(node_handle off)       { return h_next(off); }
+      inline node_handle  holeNext(node_handle off) const { return h_next(off); }
 
-      inline bool isHoleNonIndex(int p_offset) const {
+      inline bool isHoleNonIndex(node_handle p_offset) const {
           return (non_index_hole == h_up(p_offset));
       }
 
       /// Find actual number of slots used for this active node.
-      inline long activeNodeActualLongSlots(long off) const {
-          long end = off + longSlotsForNode(sizeOf(off))-1;
+      inline int activeNodeActualSlots(node_handle addr) const {
+          int end = addr + slotsForNode(sizeOf(addr))-1;
           // account for any padding
           if (data[end] < 0) {
             end -= data[end];
           }
-          return end - off + 1;
+          return end - addr + 1;
       }
 
       // returns offset to the hole found in level
-      int getHole(int slots);
+      node_handle getHole(int slots);
 
       // makes a hole of size == slots, at the specified offset
-      void makeHole(int p_offset, int slots);
+      void makeHole(node_handle p_offset, int slots);
 
       // add a hole to the hole grid
-      void gridInsert(int p_offset);
+      void gridInsert(node_handle p_offset);
 
       // remove a non-index hole from the hole grid
-      void midRemove(int p_offset);
+      void midRemove(node_handle p_offset);
 
       // remove an index hole from the hole grid
-      void indexRemove(int p_offset);
+      void indexRemove(node_handle p_offset);
 
       // resize the data array.
-      void resize(int new_slots);
+      void resize(node_handle new_slots);
 
       /** Allocate enough slots to store a node with given size.
           Also, stores the node size in the node.
@@ -427,21 +409,21 @@ class MEDDLY::old_node_storage : public node_storage {
             @param  clear   Should the node be zeroed.
             @return         Offset in the data array.
       */
-      long allocNode(int sz, long tail, bool clear);
+      node_handle allocNode(int sz, node_handle tail, bool clear);
 
   // --------------------------------------------------------
   // |  Node comparison as a template
   private:
     template <class nodetype>
-    inline bool areDupsTempl(long addr, const nodetype &n) const {
+    inline bool areDupsTempl(node_handle addr, const nodetype &n) const {
       int size = sizeOf(addr);
       if (size<0) {
         //
         // Node is sparse
         //
         int nnz = -size;
-        int* down = SD(addr);
-        int* index = SI(addr);
+        const node_handle* down = SD(addr);
+        const node_handle* index = SI(addr);
         if (n.isFull()) {
           // check that down matches
           int i = 0;
@@ -484,7 +466,7 @@ class MEDDLY::old_node_storage : public node_storage {
       //
       // Node is truncated full
       //
-      int* down = FD(addr);
+      const node_handle* down = FD(addr);
       if (n.isFull()) {
         if (size > n.getSize()) return false;
         // check down

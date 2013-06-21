@@ -62,7 +62,8 @@ void MEDDLY::mtmxd_forest::expandCountAndSlotArrays(int size)
   countSize = newCountSize;
 }
 
-long MEDDLY::mtmxd_forest::createNode(int k, int index, long dptr)
+MEDDLY::node_handle 
+MEDDLY::mtmxd_forest::createNode(int k, int index, node_handle dptr)
 {
   MEDDLY_DCASSERT(index >= 0 && index < getLevelSize(k) && isValidNodeIndex(dptr));
 
@@ -74,13 +75,14 @@ long MEDDLY::mtmxd_forest::createNode(int k, int index, long dptr)
   return createReducedNode(-1, nb);
 }
 
-long MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, long dptr)
+MEDDLY::node_handle 
+MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, node_handle dptr)
 {
   MEDDLY_DCASSERT((index1 >= 0 && index2 >= 0) ||
       (index1 >= -1 && index2 >= -1) ||
       (index1 >= -2 && index2 >= -2 && index1 == index2));
 
-  long result = 0;
+  node_handle result = 0;
 
   if (isIdentityReduced()) {
 
@@ -89,7 +91,7 @@ long MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, long dptr)
       result = dptr;
     }
     else {
-      long p = 0;
+      node_handle p = 0;
       if (index2 == -1) {
         // represents "don't care"
         insertRedundantNode(-k, dptr);
@@ -120,7 +122,7 @@ long MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, long dptr)
   }
   else if (isQuasiReduced()) {
 
-    long p = 0;
+    node_handle p = 0;
     if (index2 == -1) {
       // represents "don't care"
       insertRedundantNode(-k, dptr);
@@ -139,7 +141,7 @@ long MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, long dptr)
   else {
 
     // deal with "don't care" for primed level
-    long p = (index2 == -1) ? dptr : createNode(-k, index2, dptr);
+    node_handle p = (index2 == -1) ? dptr : createNode(-k, index2, dptr);
     // deal with "don't care" for unprimed level
     result = (index1 == -1) ? p : createNode(k, index1, p);
 
@@ -149,7 +151,8 @@ long MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, long dptr)
 }
 
 
-long MEDDLY::mtmxd_forest::createNode(const int* v, const int* vp, long term,
+MEDDLY::node_handle 
+MEDDLY::mtmxd_forest::createNode(const int* v, const int* vp, node_handle term,
     int startAtHeight, bool primedLevel)
 {
   // construct the edge bottom-up
@@ -172,7 +175,7 @@ long MEDDLY::mtmxd_forest::createNode(const int* v, const int* vp, long term,
 
 
 void MEDDLY::mtmxd_forest
-::createEdgeTo(const int* v, const int* vp, long term,
+::createEdgeTo(const int* v, const int* vp, node_handle term,
     int startAtHeight, bool primedLevel, dd_edge& e)
 {
   term = createNode(v, vp, term, startAtHeight, primedLevel);
@@ -181,13 +184,13 @@ void MEDDLY::mtmxd_forest
 
 
 void MEDDLY::mtmxd_forest
-::createEdgeTo(const int* v, const int* vp, long term, dd_edge& e)
+::createEdgeTo(const int* v, const int* vp, node_handle term, dd_edge& e)
 {
   createEdgeTo(v, vp, term, getExpertDomain()->getNumVariables(), false, e);
 }
 
 
-long MEDDLY::mtmxd_forest::createEdgeTo(long dptr)
+MEDDLY::node_handle MEDDLY::mtmxd_forest::createEdgeTo(node_handle dptr)
 {
   MEDDLY_DCASSERT(isTerminalNode(dptr));
   if (dptr == 0) return 0;
@@ -203,7 +206,8 @@ long MEDDLY::mtmxd_forest::createEdgeTo(long dptr)
 }
 
 
-long MEDDLY::mtmxd_forest::getTerminalNodeForEdge(int n, const int* vlist,
+MEDDLY::node_handle 
+MEDDLY::mtmxd_forest::getTerminalNodeForEdge(int n, const int* vlist,
     const int* vplist) const
 {
   // assumption: vlist and vplist do not contain any special values

@@ -48,7 +48,7 @@ class MEDDLY::maximum_mdd : public generic_binary_mdd {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(long a, long b, long& c);
+    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
 MEDDLY::maximum_mdd::maximum_mdd(const binary_opname* opcode, 
@@ -58,7 +58,7 @@ MEDDLY::maximum_mdd::maximum_mdd(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::maximum_mdd::checkTerminals(long a, long b, long& c)
+bool MEDDLY::maximum_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
   if (arg1F->isTerminalNode(a) &&
       arg2F->isTerminalNode(b)) {
@@ -90,7 +90,7 @@ class MEDDLY::maximum_mxd : public generic_binary_mxd {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(long a, long b, long& c);
+    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
 MEDDLY::maximum_mxd::maximum_mxd(const binary_opname* opcode, 
@@ -100,7 +100,7 @@ MEDDLY::maximum_mxd::maximum_mxd(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::maximum_mxd::checkTerminals(long a, long b, long& c)
+bool MEDDLY::maximum_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
   if (arg1F->isTerminalNode(a) &&
       arg2F->isTerminalNode(b)) {
@@ -183,7 +183,7 @@ class MEDDLY::minimum_mdd : public generic_binary_mdd {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(long a, long b, long& c);
+    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
 MEDDLY::minimum_mdd::minimum_mdd(const binary_opname* opcode, 
@@ -193,7 +193,7 @@ MEDDLY::minimum_mdd::minimum_mdd(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::minimum_mdd::checkTerminals(long a, long b, long& c)
+bool MEDDLY::minimum_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
   if (arg1F->isTerminalNode(a) &&
       arg2F->isTerminalNode(b)) {
@@ -225,7 +225,7 @@ class MEDDLY::minimum_mxd : public generic_binary_mxd {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(long a, long b, long& c);
+    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
 MEDDLY::minimum_mxd::minimum_mxd(const binary_opname* opcode, 
@@ -235,7 +235,7 @@ MEDDLY::minimum_mxd::minimum_mxd(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::minimum_mxd::checkTerminals(long a, long b, long& c)
+bool MEDDLY::minimum_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
   if (arg1F->isTerminalNode(a) &&
       arg2F->isTerminalNode(b)) {

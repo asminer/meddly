@@ -2,12 +2,14 @@
 <h2>Repository updates since last release</h2>
 
 <ul>
-<li> Changing node handles from <tt>int</tt>
-     to <tt>long</tt> everywhere in the interface
+<li> Added <tt>typedef</tt>s for node handles and addresses,
+     updated the interface and code to use these.
 </li>
-<li> Experimenting with one pool of nodes per forest,
+
+<li> Switched to one pool of nodes per forest,
      instead of one pool per level.
 </li>
+
 </ul>
 
 <h4>SIMPLE INTERFACE CHANGES</h4>
@@ -39,17 +41,13 @@
 <li>  Finish design of arbitrary node storage mechanisms.
 </li>
 
-<li> Support <tt>long</tt> node handles
-     in unique tables
+<li>  Better handling of edge values in nodes 
+      i.e., really treat an edge value as a chunk of memory,
+      and concatenate the chunks when storing a node.
 </li>
 
-<li> Support <tt>long</tt> node handles
-     in compute tables
-</li>
-
-<li> Use compaction in compute tables.
-     Idea: entries of shorts, ints, and longs.
-     May need abstraction in the interface for this.
+<li>  Decide on a scheme for hashing the (now) raw chunks
+      of data in an edge value, and hashed headers.
 </li>
 
 </ul>

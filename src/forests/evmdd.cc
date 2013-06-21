@@ -24,7 +24,9 @@
 #include "evmdd.h"
 
 
+// ****************************************************************************
 // ********************************** EVMDDs ********************************** 
+// ****************************************************************************
 
 
 MEDDLY::evmdd_forest
@@ -39,18 +41,22 @@ MEDDLY::evmdd_forest::~evmdd_forest()
 { }
 
 
-void MEDDLY::evmdd_forest::showTerminal(FILE* s, int tnode) const
+void MEDDLY::evmdd_forest::showTerminal(FILE* s, node_handle tnode) const
 {
   fprintf(s, "t%d", -tnode);
 }
 
 
 
+// ****************************************************************************
 // ********************************* EV+MDDs ********************************** 
+// ****************************************************************************
 
 MEDDLY::evp_mdd_int::evp_mdd_int(int dsl, domain *d, const policies &p)
 : evmdd_forest(dsl, d, forest::INTEGER, forest::EVPLUS, p)
 { 
+  setEdgeSize(sizeof(int), true);
+  setUnhashedSize(sizeof(int));
   initializeForest();
 }
 
@@ -169,11 +175,14 @@ bool MEDDLY::evp_mdd_int::isIdentityEdge(const node_builder &nb, int i) const
 }
 
 
+// ****************************************************************************
 // ********************************* EV*MDDs ********************************** 
+// ****************************************************************************
 
 MEDDLY::evt_mdd_real::evt_mdd_real(int dsl, domain *d, const policies &p)
 : evmdd_forest(dsl, d, forest::REAL, forest::EVTIMES, p)
 { 
+  setEdgeSize(sizeof(float), false);
   initializeForest();
 }
 

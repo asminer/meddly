@@ -48,16 +48,16 @@ class MEDDLY::base_evplus_mt : public numerical_operation {
 
     virtual void compute(double* y, const double* x);
 
-    virtual void compute(int ht, double* y, long y_ind, const double* x, 
-      long x_ind, long A) = 0;
+    virtual void compute(int ht, double* y, node_handle y_ind, const double* x, 
+      node_handle x_ind, node_handle A) = 0;
 
-    virtual bool isStaleEntry(const int*) {
+    virtual bool isStaleEntry(const node_handle*) {
       throw error(error::MISCELLANEOUS);
     }
-    virtual void discardEntry(const int*) {
+    virtual void discardEntry(const node_handle*) {
       throw error(error::MISCELLANEOUS);
     }
-    virtual void showEntry(FILE*, const int*) const {
+    virtual void showEntry(FILE*, const node_handle*) const {
       throw error(error::MISCELLANEOUS);
     }
 
@@ -65,9 +65,9 @@ class MEDDLY::base_evplus_mt : public numerical_operation {
     const expert_forest* fx;
     const expert_forest* fA;
     const expert_forest* fy;
-    int x_root;
-    int A_root;
-    int y_root;
+    node_handle x_root;
+    node_handle A_root;
+    node_handle y_root;
     int L;
 };
 
@@ -107,11 +107,11 @@ class MEDDLY::VM_evplus_mt : public base_evplus_mt {
     VM_evplus_mt(const numerical_opname* code, const dd_edge &x_ind,
       const dd_edge& A, const dd_edge &y_ind);
 
-    virtual void compute(int k, double* y, long y_ind, const double* x, 
-      long x_ind, long A);
+    virtual void compute(int k, double* y, node_handle y_ind, const double* x, 
+      node_handle x_ind, node_handle A);
 
-    void comp_pr(int k, double* y, long y_ind, const double* x, 
-      long x_ind, int ain, long A);
+    void comp_pr(int k, double* y, node_handle y_ind, const double* x, 
+      node_handle x_ind, int ain, node_handle A);
 
 };
 
@@ -121,8 +121,8 @@ MEDDLY::VM_evplus_mt::VM_evplus_mt(const numerical_opname* code,
 {
 }
 
-void MEDDLY::VM_evplus_mt::compute(int k, double* y, long y_ind, 
-  const double* x, long x_ind, long a)
+void MEDDLY::VM_evplus_mt::compute(int k, double* y, node_handle y_ind, 
+  const double* x, node_handle x_ind, node_handle a)
 {
   // Handles the unprimed levels of a
   if (0==k) {
@@ -223,8 +223,8 @@ void MEDDLY::VM_evplus_mt::compute(int k, double* y, long y_ind,
   node_reader::recycle(aR);
 }
 
-void MEDDLY::VM_evplus_mt::comp_pr(int k, double* y, long y_ind, 
-  const double* x, long x_ind, int ain, long a)
+void MEDDLY::VM_evplus_mt::comp_pr(int k, double* y, node_handle y_ind, 
+  const double* x, node_handle x_ind, int ain, node_handle a)
 {
   // Handles the primed levels of A
   if (0==k) {
@@ -276,11 +276,11 @@ class MEDDLY::MV_evplus_mt : public base_evplus_mt {
     MV_evplus_mt(const numerical_opname* code, const dd_edge &x_ind,
       const dd_edge& A, const dd_edge &y_ind);
 
-    virtual void compute(int k, double* y, long y_ind, const double* x, 
-      long x_ind, long A);
+    virtual void compute(int k, double* y, node_handle y_ind, const double* x, 
+      node_handle x_ind, node_handle A);
 
-    void comp_pr(int k, double* y, long y_ind, const double* x, 
-      long x_ind, int ain, long A);
+    void comp_pr(int k, double* y, node_handle y_ind, const double* x, 
+      node_handle x_ind, int ain, node_handle A);
 
 };
 
@@ -290,8 +290,8 @@ MEDDLY::MV_evplus_mt::MV_evplus_mt(const numerical_opname* code,
 {
 }
 
-void MEDDLY::MV_evplus_mt::compute(int k, double* y, long y_ind, 
-  const double* x, long x_ind, long a)
+void MEDDLY::MV_evplus_mt::compute(int k, double* y, node_handle y_ind, 
+  const double* x, node_handle x_ind, node_handle a)
 {
   // Handles the unprimed levels of a
   if (0==k) {
@@ -392,8 +392,8 @@ void MEDDLY::MV_evplus_mt::compute(int k, double* y, long y_ind,
   node_reader::recycle(aR);
 }
 
-void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, long y_ind, 
-  const double* x, long x_ind, int ain, long a)
+void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, node_handle y_ind, 
+  const double* x, node_handle x_ind, int ain, node_handle a)
 {
   // Handles the primed levels of A
   if (0==k) {
