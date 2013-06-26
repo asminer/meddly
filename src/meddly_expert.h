@@ -902,6 +902,9 @@ class MEDDLY::node_builder {
 
 }; // end of node_builder class
 
+
+
+
 // ******************************************************************
 // *                                                                *
 // *                       node_header  class                       *
@@ -945,6 +948,7 @@ struct MEDDLY::node_header {
 
     inline bool isDeleted() const { return 0 == level; }
     inline void setDeleted()      { level = 0; }
+    inline void setNotDeleted()   { level = 1; }
       
     inline int getNextDeleted() const { return -offset; }
     inline void setNextDeleted(int n) { offset = -n; }
@@ -1618,27 +1622,6 @@ class MEDDLY::expert_forest : public forest
     // Managing cache entries
     // --------------------------------------------------
 
-    /** Returns the cache-count for a node. This indicates the number of
-        compute cache entries that link to this node.
-        This version returns a reference to the cache-count. Therefore, the
-        cache-count of the node can be modified by modifying the reference.
-    */
-    inline int& getCacheCount(node_handle p) {
-      MEDDLY_DCASSERT(isValidNodeIndex(p));
-      MEDDLY_DCASSERT(!isTerminalNode(p));
-      return address[p].cache_count;
-    }
-
-    /** Returns the cache-count for a node. This indicates the number of
-        compute cache entries that link to this node.
-        This version returns a copy of the count.
-    */
-    inline int getCacheCount(node_handle p) const {
-      MEDDLY_DCASSERT(isValidNodeIndex(p));
-      MEDDLY_DCASSERT(!isTerminalNode(p));
-      return address[p].cache_count;
-    }
-
     /** Increase the cache count for this node. Call this whenever this node
         is added to a cache. 
           @param  p     Node we care about.
@@ -1647,7 +1630,7 @@ class MEDDLY::expert_forest : public forest
     inline node_handle cacheNode(node_handle p) {
       MEDDLY_DCASSERT(isActiveNode(p));
       if (isTerminalNode(p)) return p;
-      getCacheCount(p)++;
+      cacheCount(p)++;
 #ifdef TRACK_CACHECOUNT
       fprintf(stdout, "\t+Node %d is in %d caches\n", p, getCacheCount(p));
       fflush(stdout);
@@ -1661,15 +1644,17 @@ class MEDDLY::expert_forest : public forest
     */
     inline void uncacheNode(node_handle p) {
       if (isTerminalNode(p)) return;
+      MEDDLY_DCASSERT(isValidNonterminalIndex(p));
       MEDDLY_DCASSERT(isActiveNode(p) ||
           (!isActiveNode(p) && isPessimistic() && isZombieNode(p)));
-      int& cc = getCacheCount(p);
+      int& cc = cacheCount(p);
       if (isPessimistic() && isZombieNode(p)) {
         // special case: we store the negative of the count.
         MEDDLY_DCASSERT(cc < 0);
         cc++;
         if (0 == cc) {
-          freeZombieNode(p);
+          stats.zombie_nodes--;
+          recycleNodeHandle(p);
         }
         return;
       }
@@ -1682,7 +1667,9 @@ class MEDDLY::expert_forest : public forest
 #endif
 
       if (cc == 0 && readInCount(p) == 0) {
-        deleteOrphanNode(p);
+        MEDDLY_DCASSERT(!isPessimistic());
+        stats.orphan_nodes--;
+        deleteNode(p);
       }
     }
 
@@ -2183,63 +2170,6 @@ class MEDDLY::expert_forest : public forest
       return !(isActiveNode(p) || isZombieNode(p));
     }
 
-  // ----------------------------------------------------------------- 
-  // | 
-  // |  Management of node headers.
-  // | 
-  protected:
-    inline node_handle getFreeNodeHandle() {
-      MEDDLY_DCASSERT(address);
-      stats.incActive(1);
-      stats.incMemUsed(sizeof(node_header));
-      while (a_unused > a_last) {
-        a_unused = address[a_unused].getNextDeleted();
-      }
-      if (a_unused) {     // get a recycled one
-        node_handle p = a_unused;
-        MEDDLY_DCASSERT(address[p].isDeleted());
-        a_unused = address[p].getNextDeleted();
-        return p;
-      }
-      a_last++;
-      if (a_last >= a_size) {
-        expandHandleList();
-      }
-      MEDDLY_DCASSERT(a_last < a_size);
-      return a_last;
-    }
-
-    inline void freeActiveNode(node_handle p) {
-      MEDDLY_DCASSERT(address);
-      MEDDLY_DCASSERT(isValidNonterminalIndex(p));
-      MEDDLY_DCASSERT(address[p].isActive());
-      stats.decActive(1);
-      recycleNodeHandle(p);
-    }
-
-    inline void freeZombieNode(node_handle p) {
-      MEDDLY_DCASSERT(address);
-      MEDDLY_DCASSERT(isValidNonterminalIndex(p));
-      stats.zombie_nodes--;
-      recycleNodeHandle(p);
-    }
-
-    inline void recycleNodeHandle(node_handle p) {
-      MEDDLY_DCASSERT(address);
-      MEDDLY_DCASSERT(p>0);
-      MEDDLY_DCASSERT(0==address[p].cache_count);
-      stats.decMemUsed(sizeof(node_header));
-      address[p].setDeleted();
-      address[p].setNextDeleted(a_unused);
-      a_unused = p;
-      if (p == a_last) {
-        while (a_last && address[a_last].isDeleted()) {
-          a_last--;
-        }
-        if (a_last < a_next_shrink) shrinkHandleList();
-      }
-    }
-
   // ------------------------------------------------------------
   // virtual, with default implementation.
   // Should be overridden in appropriate derived classes.
@@ -2338,6 +2268,20 @@ class MEDDLY::expert_forest : public forest
 #endif
     }
 
+    /// Returns the (modifiable) cache-count for a node
+    inline int& cacheCount(node_handle p) {
+      MEDDLY_DCASSERT(isValidNodeIndex(p));
+      MEDDLY_DCASSERT(!isTerminalNode(p));
+      return address[p].cache_count;
+    }
+
+    /// Returns the cache-count for a node
+    inline int getCacheCount(node_handle p) const {
+      MEDDLY_DCASSERT(isValidNodeIndex(p));
+      MEDDLY_DCASSERT(!isTerminalNode(p));
+      return address[p].cache_count;
+    }
+
 
     /** Change the location of a node.
         Used by node_storage during compaction.
@@ -2359,9 +2303,14 @@ class MEDDLY::expert_forest : public forest
   // helpers for this class
   private:
     void handleNewOrphanNode(node_handle node);   
-    void deleteOrphanNode(node_handle node);     
     void deleteNode(node_handle p);
     void zombifyNode(node_handle p);
+
+    /// Determine a node handle that we can use.
+    node_handle getFreeNodeHandle();
+
+    /// Release a node handle back to the free pool.
+    void recycleNodeHandle(node_handle p);
 
     /** Apply reduction rule to the temporary node and finalize it. 
         Once a node is reduced, its contents cannot be modified.

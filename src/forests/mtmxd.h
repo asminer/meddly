@@ -51,18 +51,14 @@ namespace MEDDLY {
 
 class MEDDLY::mtmxd_forest : public mt_forest {
   // TODO: mtmxds can only be forest::IDENTITY_REDUCED
-  // MTMDD data header:
-  // { incount, next (unique table), size, ..., logical address}
-  // Data Header Size: 4
-
-  public:
-    ~mtmxd_forest();
 
   protected:
 
     // Used by derived classes for initialization
     mtmxd_forest(int dsl, domain *d, bool relation, range_type t,
         edge_labeling e, const policies &p);
+    ~mtmxd_forest();
+
 
     // This create a MTMXD from a collection of edges (represented 
     // as vectors vlist and vplist).
@@ -122,6 +118,7 @@ class MEDDLY::mtmxd_forest : public mt_forest {
 
     void expandCountAndSlotArrays(int size);
 
+  private:
     int** unpList;
     int** pList;
     void* tList;

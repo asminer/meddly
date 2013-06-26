@@ -46,7 +46,7 @@ namespace MEDDLY {
  */
 
 class MEDDLY::mt_forest : public expert_forest {
-  public:
+  protected:
     mt_forest(int dsl, domain *d, bool rel, range_type t, edge_labeling ev, 
       const policies &p);
     virtual ~mt_forest();
@@ -127,7 +127,7 @@ class MEDDLY::mt_forest : public expert_forest {
     node_handle* getTerminalNodes(int n, int* terms);
     node_handle* getTerminalNodes(int n, float* terms);
 
-  protected:
+  private:  
 
     bool counting;
 

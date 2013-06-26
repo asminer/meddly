@@ -52,14 +52,6 @@ namespace MEDDLY {
 // ******************************************************************
 
 class MEDDLY::mtmdd_forest : public mt_forest {
-  // MTMDD data header:
-  // { incount, next (unique table), size, ..., logical address}
-  // Data Header Size: 4
-
-  public:
-
-    // mtmdd_forest(int dsl, domain *d, range_type t, const policies &p);
-    ~mtmdd_forest();
 
   protected:
 
@@ -67,6 +59,7 @@ class MEDDLY::mtmdd_forest : public mt_forest {
     mtmdd_forest(int dsl, domain *d, bool relation, range_type t,
         edge_labeling e, const policies &p);
 
+    ~mtmdd_forest();
 
   protected:
     // Creates an edge representing the terminal node given by
@@ -132,6 +125,7 @@ class MEDDLY::mtmdd_forest : public mt_forest {
 
     void expandCountAndSlotArrays(int size);
 
+  private:
     int** list;
     node_handle*  termList;
     int   listSize;

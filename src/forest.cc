@@ -31,13 +31,15 @@
 //#include <vector>
 
 // #define DEBUG_CLEANUP
-
 // #define DEBUG_ADDRESS_RESIZE
 // #define DEBUG_GC
+// #define DEBUG_CREATE_REDUCED
+// #define DEBUG_GC
+
+// #define DEBUG_HANDLE_FREELIST
+
 
 // #define TRACK_DELETIONS
-
-// #define DEBUG_CREATE_REDUCED
 
 // Thoroughly check reference counts.
 // Very slow.  Use only for debugging.
@@ -45,11 +47,8 @@
 // #define VALIDATE_INCOUNTS_ON_DELETE
 
 // #define GC_OFF
-// #define DEBUG_GC
 
 // #define REPORT_ON_DESTROY
-
-// #define LAZY_NODE_HASHING
 
 const int a_min_size = 1024;
 
@@ -1085,7 +1084,9 @@ void MEDDLY::expert_forest::showUnhashedHeader(FILE* s, const void* uh) const
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // '                                                                '
+// '                                                                '
 // '                        private  methods                        '
+// '                                                                '
 // '                                                                '
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
@@ -1107,12 +1108,6 @@ void MEDDLY::expert_forest::handleNewOrphanNode(node_handle p)
   if (getCacheCount(p) == 0) {
     // delete node
     // this should take care of the temporary nodes also
-#ifdef TRACK_DELETIONS
-    printf("Deleting node %d\n\t", p);
-    showNode(stdout, p);
-    printf("\n");
-    fflush(stdout);
-#endif
     deleteNode(p);
   }
   else if (isPessimistic()) {
@@ -1129,23 +1124,16 @@ void MEDDLY::expert_forest::handleNewOrphanNode(node_handle p)
 
 }
 
-void MEDDLY::expert_forest::deleteOrphanNode(node_handle p) 
+void MEDDLY::expert_forest::deleteNode(node_handle p)
 {
-  MEDDLY_DCASSERT(!isPessimistic());
-  MEDDLY_DCASSERT(getCacheCount(p) == 0 && readInCount(p) == 0);
 #ifdef TRACK_DELETIONS
   printf("Deleting node %d\n\t", p);
   showNode(stdout, p);
   printf("\n");
   fflush(stdout);
 #endif
-  stats.orphan_nodes--;
-  deleteNode(p);
-}
 
-void MEDDLY::expert_forest::deleteNode(node_handle p)
-{
-  MEDDLY_DCASSERT(!isTerminalNode(p));
+  MEDDLY_DCASSERT(isValidNonterminalIndex(p));
   MEDDLY_DCASSERT(readInCount(p) == 0);
   MEDDLY_DCASSERT(isActiveNode(p));
 
@@ -1187,7 +1175,9 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
   nodeMan->unlinkDownAndRecycle(addr);
 
   // recycle the index
-  freeActiveNode(p);
+  //
+  stats.decActive(1);
+  recycleNodeHandle(p);
 
   // if (nodeMan.compactLevel) nodeMan.compact(false);
 
@@ -1237,6 +1227,122 @@ void MEDDLY::expert_forest::zombifyNode(node_handle p)
   // unlink children and recycle node memory
   nodeMan->unlinkDownAndRecycle(addr);
 }
+
+
+#ifdef DEBUG_HANDLE_FREELIST
+void print_sequence(long a)
+{
+  static bool printed;
+  static long first = 0;
+  static long last = -1;
+  if (a<=0) {
+    if (first>last) return;
+    if (printed) printf(", "); 
+    printed = false;
+    if (first < last) {
+      if (first+1<last) {
+        printf("%ld ... %ld", first, last);
+      } else {
+        printf("%ld, %ld", first, last);
+      }
+    } else {
+      printf("%ld", first);
+    }
+    first = 0;
+    last = -1;
+    return;
+  }
+  // a > 0
+  if (0==first) {
+    first = last = a;
+    return;
+  }
+  if (last+1 == a) {
+    last++;
+    return;
+  }
+  // break in the sequence, we need to print
+  if (printed) printf(", "); else printed = true;
+  if (first < last) {
+    if (first+1<last) {
+      printf("%ld ... %ld", first, last);
+    } else {
+      printf("%ld, %ld", first, last);
+    }
+  } else {
+    printf("%ld", first);
+  }
+  first = last = a;
+}
+
+inline void dump_handle_info(const MEDDLY::node_header* A, long size)
+{
+  printf("Used handles:  ");
+  print_sequence(0);
+  for (long i=1; i<size; i++) if (!A[i].isDeleted()) {
+    print_sequence(i);
+  }
+  print_sequence(0);
+  printf("\nFree handles:  ");
+  for (long i=1; i<size; i++) if (A[i].isDeleted()) {
+    print_sequence(i);
+  }
+  print_sequence(0);
+  printf("\n");
+}
+#endif
+
+MEDDLY::node_handle MEDDLY::expert_forest::getFreeNodeHandle() 
+{
+  MEDDLY_DCASSERT(address);
+  stats.incActive(1);
+  stats.incMemUsed(sizeof(node_header));
+  while (a_unused > a_last) {
+    a_unused = address[a_unused].getNextDeleted();
+  }
+  if (a_unused) {     // get a recycled one
+    node_handle p = a_unused;
+    MEDDLY_DCASSERT(address[p].isDeleted());
+    a_unused = address[p].getNextDeleted();
+#ifdef DEBUG_HANDLE_FREELIST
+    address[p].setNotDeleted();
+    dump_handle_info(address, a_last+1);
+#endif
+    return p;
+  }
+  a_last++;
+  if (a_last >= a_size) {
+    expandHandleList();
+  }
+  MEDDLY_DCASSERT(a_last < a_size);
+#ifdef DEBUG_HANDLE_FREELIST
+  address[a_last].setNotDeleted();
+  dump_handle_info(address, a_last+1);
+#endif
+  return a_last;
+}
+
+
+void MEDDLY::expert_forest::recycleNodeHandle(node_handle p) 
+{
+  MEDDLY_DCASSERT(address);
+  MEDDLY_DCASSERT(p>0);
+  MEDDLY_DCASSERT(0==address[p].cache_count);
+  stats.decMemUsed(sizeof(node_header));
+  address[p].setDeleted();
+  address[p].setNextDeleted(a_unused);
+  a_unused = p;
+  if (p == a_last) {
+    while (a_last && address[a_last].isDeleted()) {
+      a_last--;
+    }
+    if (a_last < a_next_shrink) shrinkHandleList();
+  }
+#ifdef DEBUG_HANDLE_FREELIST
+  dump_handle_info(address, a_last+1);
+#endif
+}
+
 
 MEDDLY::node_handle MEDDLY::expert_forest
 ::createReducedHelper(int in, const node_builder &nb)
@@ -1395,11 +1501,6 @@ void MEDDLY::expert_forest::validateDownPointers(const node_builder &nb) const
 
 }
 
-// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-// '                                                                '
-// '          Methods for managing  available node handles          '
-// '                                                                '
-// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 void MEDDLY::expert_forest::expandHandleList()
 {
