@@ -443,6 +443,7 @@ int main(int argc, char *argv[])
 
   printf("Building next-state function for %d dining philosophers\n", 
           nPhilosophers);
+  fflush(stdout);
   start.note_time();
 
   // Create a matrix diagram to represent the next-state function
@@ -458,7 +459,6 @@ int main(int argc, char *argv[])
 
   // Show stats for nsf construction
   printStats("MxD", mxd->getStats());
-  fflush(stdout);
 
 #ifdef SHOW_MXD
   printf("Next-State Function:\n");
@@ -472,6 +472,7 @@ int main(int argc, char *argv[])
     ? "saturation"
     : "traditional iteration"
   );
+  fflush(stdout);
   start.note_time();
   apply(
       dfs?

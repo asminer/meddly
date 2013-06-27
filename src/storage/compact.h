@@ -210,7 +210,92 @@ inline void bytesRequiredForDown(long a, int& bytes)
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                      node_compacted class                      *
+// *                    new node_compacted class                    *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+/** New design for node storage in a forest.
+
+    Limits: node size fits in an "int".
+
+    Guarantees: nodes are "node_handle aligned" except for
+                portions that are "compacted".
+
+    ------------------------------------------------------------
+    Format, "outer", viewed as an array of node_handles:
+    ------------------------------------------------------------
+
+        slot[0]:    incoming count, will be >= 0
+        slot[1]:    next pointer in unique table, or special value
+
+          ... memory chunk, described below, with padding
+          at the end as necessary since the chunk is spread
+          over an array of node_handles ...
+
+        slot[N]:    tail (node handle number), will be >= 0
+
+        
+        Memory chunk:
+
+          int   size  :   node size.  >=0 for truncated full, <0 for sparse
+          byte  style :   how to compact the remaining arrays
+                  3 bits - (size of pointers in bytes) - 1
+                      000: 1 byte pointers
+                      001: 2 byte pointers
+                      ...
+                      111: 8 byte pointers (longs on 64-bit arch.)
+
+                  2 bits - (size of indexes in bytes) - 1
+                      00: 1 byte indexes
+                      ..
+                      11: 4 byte indexes (ints; max node size anyway)
+
+                  3 bits - unused, reserve for edge value compaction?
+
+          unhashed header info: raw bytes
+          hashed header info: raw bytes
+
+          compacted downward pointer array (size * #bytes per pointer)
+          compacted index array if sparse (size * #bytes per index)
+          compacted edge value array (size * #bytes per edge)
+
+          ignored bytes until we reach node_handle boundary
+
+
+    ------------------------------------------------------------
+    Format of "holes", viewed as an array of node_handles
+    ------------------------------------------------------------
+
+        slot[0]:    -size of hole,   <0
+
+        slot[1]:  }
+        slot[2]:  } used for hole management
+        slot[3]:  }
+
+        slot[N]:    -size of hole,   <0
+
+    ------------------------------------------------------------
+    
+    Minimum chunk size is 5 slots.
+
+    Alternative to the grid for holes: array of lists/heaps
+
+      small   [4..255]:  holes of exactly this size
+      medium  [4..255]:  slot i is for 64*i <= hole < 64*(i+1)
+      large   [4..255]:  slot i is for 4096*i <= hole < 4096*(i+1)
+
+      hugelist: holes of size 4096*256 = 1048576 and larger,
+                not organized by size
+
+*/
+
+// class goes here
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                    old node_compacted class                    *
 // *                                                                *
 // *                                                                *
 // ******************************************************************

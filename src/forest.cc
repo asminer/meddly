@@ -54,6 +54,81 @@ const int a_min_size = 1024;
 
 // ******************************************************************
 // *                                                                *
+// *                inlined extremely clever helpers                *
+// *                                                                *
+// ******************************************************************
+
+template <int N>
+inline int bytesRequiredForLong(long a);
+
+template <>
+inline int bytesRequiredForLong<4>(long a)
+{
+  // a must not be negative
+  static const long byte2 = 0x7f80;
+  static const long byte3 = byte2<<8;
+  static const long byte4 = byte3<<8;
+  if (a & (byte4 | byte3)) {
+    if (a & byte4) {
+      return 4;
+    } else {
+      return 3;
+    }
+  } else {
+    if (a & byte2) {
+      return 2;
+    } else {
+      return 1;
+    }
+  }
+}
+
+template <>
+inline int bytesRequiredForLong<8>(long a)
+{
+  // a must not be negative
+  static const long byte2 = 0x7f80;
+  static const long byte3 = byte2<<8;
+  static const long byte4 = byte3<<8;
+  static const long byte5 = byte4<<8;
+  static const long byte6 = byte5<<8;
+  static const long byte7 = byte6<<8;
+  static const long byte8 = byte7<<8;
+  if (a & (byte8 | byte7 | byte6 | byte5)) {
+    if (a & (byte8 | byte7)) {
+      if (a & byte8) {
+        return 8;
+      } else {
+        return 7;
+      }
+    } else {
+      if (a & byte6) {
+        return 6;
+      } else {
+        return 5;
+      }
+    }
+  } else {
+    if (a & (byte4 | byte3)) {
+      if (a & byte4) {
+        return 4;
+      } else {
+        return 3;
+      }
+    } else {
+      if (a & byte2) {
+        return 2;
+      } else {
+        return 1;
+      }
+    }
+  }
+}
+
+
+
+// ******************************************************************
+// *                                                                *
 // *                    forest::statset  methods                    *
 // *                                                                *
 // ******************************************************************
@@ -434,7 +509,13 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   if (0 == address) throw error(error::INSUFFICIENT_MEMORY);
   stats.incMemAlloc(a_size * sizeof(node_header));
   memset(address, 0, a_size * sizeof(node_header));
-  a_last = a_unused = a_next_shrink = 0;
+  a_last = a_next_shrink = 0;
+#ifdef ONE_NODE_FREELIST
+  a_unused = 0;
+#else
+  for (int i=0; i<8; i++) a_unused[i] = 0;
+  a_lowest_index = 8;
+#endif
   // peak_nodes 0;
   
 
@@ -562,7 +643,13 @@ void MEDDLY::expert_forest::dump(FILE *s) const
 void MEDDLY::expert_forest::dumpInternal(FILE *s) const
 {
   fprintf(s, "Internal forest storage\n");
+#ifdef ONE_NODE_FREELIST
   fprintf(s, "First unused node index: %ld\n", long(a_unused));
+#else
+  for (int i=0; i<8; i++) {
+    fprintf(s, "First %d-byte unused node index: %ld\n", i, long(a_unused[i]));
+  }
+#endif
   int awidth = digits(a_last);
   fprintf(s, " Node# :  ");
   for (node_handle p=1; p<=a_last; p++) {
@@ -1297,18 +1384,37 @@ MEDDLY::node_handle MEDDLY::expert_forest::getFreeNodeHandle()
   MEDDLY_DCASSERT(address);
   stats.incActive(1);
   stats.incMemUsed(sizeof(node_header));
+  node_handle found = 0;
+#ifdef ONE_NODE_FREELIST
   while (a_unused > a_last) {
     a_unused = address[a_unused].getNextDeleted();
   }
-  if (a_unused) {     // get a recycled one
-    node_handle p = a_unused;
-    MEDDLY_DCASSERT(address[p].isDeleted());
-    a_unused = address[p].getNextDeleted();
+  if (a_unused) { // get a recycled one
+    found = a_unused;
+    a_unused = address[a_unused].getNextDeleted();
+  }
+#else
+  for (int i=a_lowest_index; i<8; i++) {
+    // try the various lists
+    while (a_unused[i] > a_last) {
+      a_unused[i] = address[a_unused[i]].getNextDeleted();
+    }
+    if (a_unused[i]) {  // get a recycled one from list i
+      found = a_unused[i];
+      a_unused[i] = address[a_unused[i]].getNextDeleted();
+      break;
+    } else {
+      if (i == a_lowest_index) a_lowest_index++;
+    }
+  }
+#endif
+  if (found) {  
+    MEDDLY_DCASSERT(address[found].isDeleted());
 #ifdef DEBUG_HANDLE_FREELIST
-    address[p].setNotDeleted();
+    address[found].setNotDeleted();
     dump_handle_info(address, a_last+1);
 #endif
-    return p;
+    return found;
   }
   a_last++;
   if (a_last >= a_size) {
@@ -1330,8 +1436,23 @@ void MEDDLY::expert_forest::recycleNodeHandle(node_handle p)
   MEDDLY_DCASSERT(0==address[p].cache_count);
   stats.decMemUsed(sizeof(node_header));
   address[p].setDeleted();
+
+#ifdef ONE_NODE_FREELIST
+  // Add to free list
   address[p].setNextDeleted(a_unused);
   a_unused = p;
+#else
+  // Determine which list to add this into
+  int i = bytesRequiredForLong<sizeof(node_handle)>(p) -1;
+  address[p].setNextDeleted(a_unused[i]);
+  a_unused[i] = p;
+  a_lowest_index = MIN(a_lowest_index, (char)i);
+#endif
+
+  // if this was the last node, collapse nodes into the
+  // "not yet allocated" pile.  But, we don't remove them
+  // from the free list(s); we simply discard any too-large
+  // ones when we pull from the free list(s).
   if (p == a_last) {
     while (a_last && address[a_last].isDeleted()) {
       a_last--;
@@ -1542,6 +1663,7 @@ void MEDDLY::expert_forest::shrinkHandleList()
   a_next_shrink = a_size / 2;
   MEDDLY_DCASSERT(a_last < a_size);
   // rebuild the free list
+  /* Needed?
   a_unused = 0;
   for (int i=a_last; i; i--) {
     if (address[i].isDeleted()) {
@@ -1549,6 +1671,7 @@ void MEDDLY::expert_forest::shrinkHandleList()
       a_unused = i;
     }
   }
+  */
 #ifdef DEBUG_ADDRESS_RESIZE
   printf("Shrank address array, new size %d\n", a_size);
 #endif

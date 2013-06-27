@@ -74,6 +74,8 @@
 
 // #define NODE_STORAGE_PER_LEVEL
  
+// #define ONE_NODE_FREELIST
+
 namespace MEDDLY {
 
   // Functions for reinterpreting an int to a float and vice-versa
@@ -2376,8 +2378,15 @@ class MEDDLY::expert_forest : public forest
     node_handle a_size;
     /// Last used address.
     node_handle a_last;
+#ifdef ONE_NODE_FREELIST
     /// Pointer to unused address list.
     node_handle a_unused;
+#else
+    /// Pointer to unused address lists, based on size
+    node_handle a_unused[8];  // number of bytes per handle
+    /// Lowest non-empty address list
+    char a_lowest_index;
+#endif
     /// Next time we shink the address list.
     node_handle a_next_shrink;
 
