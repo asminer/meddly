@@ -28,6 +28,9 @@
 
 #include "../defines.h"
 #include "../hash_stream.h"
+#include "holeman.h"
+
+// #define INTEGRATED_HOLE_MANAGER
 
 namespace MEDDLY {
   // node storage mechanism used for versions < 0.10 of the library
@@ -177,15 +180,18 @@ class MEDDLY::old_node_storage : public node_storage {
     virtual const void* getHashedHeaderOf(node_address addr) const;
 
   protected:
+    virtual void updateData(node_handle* d);
+    virtual int smallestNode() const;
     virtual void dumpInternalInfo(FILE*) const;
     virtual node_address dumpInternalNode(FILE*, node_address addr) const;
 
 
   private:
+#ifdef INTEGRATED_HOLE_MANAGER
       static const int min_size = 1024;
 
-      /// Special values
       static const int non_index_hole = -2;
+#endif
       static const long temp_node_value = -5;
 
       // header indexes (relative to chunk start)
@@ -198,18 +204,24 @@ class MEDDLY::old_node_storage : public node_storage {
       static const int tailSlots = 1;
       static const int extraSlots = headerSlots + tailSlots;
 
+#ifdef INTEGRATED_HOLE_MANAGER
       // hole indexes
       static const int hole_up_index = 1;
       static const int hole_down_index = hole_up_index+1;
       static const int hole_prev_index = hole_down_index;
       static const int hole_next_index = hole_prev_index+1;
+#endif
 
-      /// data array
+      /// data array; could be just a copy
       node_handle* data;
+#ifdef INTEGRATED_HOLE_MANAGER
       /// Size of data array.
       node_handle size;
       /// Last used data slot.  Also total number of longs "allocated"
       node_handle last;
+#else
+      holeman*  holeManager;
+#endif
 
   // Holes grid info
   private:
@@ -239,13 +251,23 @@ class MEDDLY::old_node_storage : public node_storage {
   private:
       inline node_handle* chunkOf(node_handle addr) const {
         MEDDLY_DCASSERT(data);
+#ifdef INTEGRATED_HOLE_MANAGER
         MEDDLY_CHECK_RANGE(1, addr, last+1);
+#else
+        MEDDLY_DCASSERT(holeManager);
+        MEDDLY_CHECK_RANGE(1, addr, holeManager->lastSlot()+1);
+#endif
         MEDDLY_DCASSERT(data[addr] >= 0);  // it's not a hole
         return data + addr;
       }
       inline node_handle* holeOf(node_handle addr) const {
         MEDDLY_DCASSERT(data);
+#ifdef INTEGRATED_HOLE_MANAGER
         MEDDLY_CHECK_RANGE(1, addr, last+1);
+#else
+        MEDDLY_DCASSERT(holeManager);
+        MEDDLY_CHECK_RANGE(1, addr, holeManager->lastSlot()+1);
+#endif
         MEDDLY_DCASSERT(data[addr] < 0);  // it's a hole
         return data + addr;
       }
@@ -345,6 +367,7 @@ class MEDDLY::old_node_storage : public node_storage {
   // --------------------------------------------------------
   // |  Hole management helpers.
   private:
+#ifdef INTEGRATED_HOLE_MANAGER
       inline node_handle& h_up(node_handle off) const {
         return holeOf(off)[hole_up_index];
       }
@@ -374,16 +397,6 @@ class MEDDLY::old_node_storage : public node_storage {
           return (non_index_hole == h_up(p_offset));
       }
 
-      /// Find actual number of slots used for this active node.
-      inline int activeNodeActualSlots(node_handle addr) const {
-          int end = addr + slotsForNode(sizeOf(addr))-1;
-          // account for any padding
-          if (data[end] < 0) {
-            end -= data[end];
-          }
-          return end - addr + 1;
-      }
-
       // returns offset to the hole found in level
       node_handle getHole(int slots);
 
@@ -402,6 +415,7 @@ class MEDDLY::old_node_storage : public node_storage {
       // resize the data array.
       void resize(node_handle new_slots);
 
+#endif
       /** Allocate enough slots to store a node with given size.
           Also, stores the node size in the node.
             @param  sz      negative for sparse storage, otherwise full.
@@ -410,6 +424,17 @@ class MEDDLY::old_node_storage : public node_storage {
             @return         Offset in the data array.
       */
       node_handle allocNode(int sz, node_handle tail, bool clear);
+
+      /// Find actual number of slots used for this active node.
+      inline int activeNodeActualSlots(node_handle addr) const {
+          int end = addr + slotsForNode(sizeOf(addr))-1;
+          // account for any padding
+          if (data[end] < 0) {
+            end -= data[end];
+          }
+          return end - addr + 1;
+      }
+
 
   // --------------------------------------------------------
   // |  Node comparison as a template

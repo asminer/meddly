@@ -1285,6 +1285,18 @@ class MEDDLY::node_storage {
       nexts = nptr;
     }
 
+  //
+  // Hooks for hole managers
+  //
+  protected:
+    // Change the data array
+    virtual void updateData(node_handle* data) = 0;
+
+    // How small can a node be?
+    virtual int smallestNode() const = 0;
+
+    friend class holeman;
+
   private:
     /// Parent forest.
     expert_forest* parent;
