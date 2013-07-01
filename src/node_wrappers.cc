@@ -311,6 +311,7 @@ void MEDDLY::node_storage::dumpInternal(FILE* s) const
     fflush(s);
     a = dumpInternalNode(s, a);
   } // for a
+  dumpInternalTail(s);
   fflush(s);
 }
 

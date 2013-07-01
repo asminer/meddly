@@ -41,6 +41,8 @@
 // *                                                                *
 // ******************************************************************
 
+MEDDLY::node_handle MEDDLY::hm_grid::verify_hole_slots;
+
 MEDDLY::hm_grid::hm_grid(node_storage* p) : holeman(5, p)
 {
   data = 0;
@@ -296,8 +298,10 @@ MEDDLY::node_address MEDDLY::hm_grid::chunkAfterHole(node_address addr) const
 void MEDDLY::hm_grid::dumpInternalInfo(FILE* s) const
 {
   fprintf(s, "Last slot used: %ld\n", long(last_slot));
+  fprintf(s, "Total hole slots: %ld\n", long(hole_slots));
   fprintf(s, "large_holes: %ld\n", long(large_holes));
   fprintf(s, "Grid: top = %ld bottom = %ld\n", long(holes_top), long(holes_bottom));
+  verify_hole_slots = 0;
 }
 
 // ******************************************************************
@@ -314,6 +318,17 @@ void MEDDLY::hm_grid::dumpHole(FILE* s, node_address a) const
   }
   long aN = chunkAfterHole(a)-1;
   fprintf(s, "n: %ld, ..., %ld]\n", long(data[a+3]), long(data[aN]));
+  verify_hole_slots += aN+1-a;
+}
+
+// ******************************************************************
+
+void MEDDLY::hm_grid::dumpInternalTail(FILE* s) const
+{
+  if (verify_hole_slots != hole_slots) {
+    fprintf(s, "Counted hole slots: %ld\n", long(verify_hole_slots));
+    MEDDLY_DCASSERT(false);
+  }
 }
 
 // ******************************************************************

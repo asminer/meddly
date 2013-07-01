@@ -31,8 +31,6 @@ namespace MEDDLY {
 
 /** Abstract base class for hole management.
 
-    Let's see if this works :^)
-
     This class is responsible for allocating and
     recycling chunks of memory, for node storage.
 
@@ -140,6 +138,14 @@ class MEDDLY::holeman {
             @param  a   Starting index of the chunk that's a hole
     */
     virtual void dumpHole(FILE* s, node_address a) const = 0;
+
+    /**
+        Dump information for debugging.
+        Called after we dump all the nodes and holes.
+
+            @param  s   Output stream
+    */
+    virtual void dumpInternalTail(FILE* s) const = 0;
 
     /**
         Report memory usage.

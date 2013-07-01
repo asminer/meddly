@@ -26,16 +26,22 @@
 
 // super hack
 
-#include "../src/storage/compact.h"
-
-#define FULL_TEST
+#include "../src/storage/bytepack.h"
 
 // now, test those functions :^)
 
+// #define USE_OLD_FUNCTIONS
+
 unsigned char buffer[10];
+
+const int stop = 2147483647; 
+// const int stop = 134217728;
+// const int stop = 16777216;
+// const int stop = 1048576;
 
 void encodeInt(int a, int bytes)
 {
+#ifdef USE_OLD_FUNCTIONS
   switch (bytes) {
     case 1:   intToData<1>(a, buffer);  return;
     case 2:   intToData<2>(a, buffer);  return;
@@ -50,10 +56,27 @@ void encodeInt(int a, int bytes)
       fprintf(stderr, "Bad number of bytes for encoding: %d\n", bytes);
       exit(1);
   }
+#else
+  switch (bytes) {
+    case 1:   signedToData<1>(a, buffer);  return;
+    case 2:   signedToData<2>(a, buffer);  return;
+    case 3:   signedToData<3>(a, buffer);  return;
+    case 4:   signedToData<4>(a, buffer);  return;
+    case 5:   signedToData<5>(a, buffer);  return;
+    case 6:   signedToData<6>(a, buffer);  return;
+    case 7:   signedToData<7>(a, buffer);  return;
+    case 8:   signedToData<8>(a, buffer);  return;
+
+    default:
+      fprintf(stderr, "Bad number of bytes for encoding: %d\n", bytes);
+      exit(1);
+  }
+#endif
 }
 
 void decodeInt(int &a, int bytes)
 {
+#ifdef USE_OLD_FUNCTIONS
   switch (bytes) {
     case 1:   dataToInt<1>(buffer, a);  return;
     case 2:   dataToInt<2>(buffer, a);  return;
@@ -68,10 +91,27 @@ void decodeInt(int &a, int bytes)
       fprintf(stderr, "Bad number of bytes for encoding: %d\n", bytes);
       exit(1);
   }
+#else
+  switch (bytes) {
+    case 1:   dataToSigned<1>(buffer, a);  return;
+    case 2:   dataToSigned<2>(buffer, a);  return;
+    case 3:   dataToSigned<3>(buffer, a);  return;
+    case 4:   dataToSigned<4>(buffer, a);  return;
+    case 5:   dataToSigned<5>(buffer, a);  return;
+    case 6:   dataToSigned<6>(buffer, a);  return;
+    case 7:   dataToSigned<7>(buffer, a);  return;
+    case 8:   dataToSigned<8>(buffer, a);  return;
+
+    default:
+      fprintf(stderr, "Bad number of bytes for encoding: %d\n", bytes);
+      exit(1);
+  }
+#endif
 }
 
 void encodeLong(long a, int bytes)
 {
+#ifdef USE_OLD_FUNCTIONS
   switch (bytes) {
     case 1:   longToData<1>(a, buffer);  return;
     case 2:   longToData<2>(a, buffer);  return;
@@ -86,10 +126,27 @@ void encodeLong(long a, int bytes)
       fprintf(stderr, "Bad number of bytes for encoding: %d\n", bytes);
       exit(1);
   }
+#else
+  switch (bytes) {
+    case 1:   signedToData<1>(a, buffer);  return;
+    case 2:   signedToData<2>(a, buffer);  return;
+    case 3:   signedToData<3>(a, buffer);  return;
+    case 4:   signedToData<4>(a, buffer);  return;
+    case 5:   signedToData<5>(a, buffer);  return;
+    case 6:   signedToData<6>(a, buffer);  return;
+    case 7:   signedToData<7>(a, buffer);  return;
+    case 8:   signedToData<8>(a, buffer);  return;
+
+    default:
+      fprintf(stderr, "Bad number of bytes for encoding: %d\n", bytes);
+      exit(1);
+  }
+#endif
 }
 
 void decodeLong(long &a, int bytes)
 {
+#ifdef USE_OLD_FUNCTIONS
   switch (bytes) {
     case 1:   dataToLong<1>(buffer, a);  return;
     case 2:   dataToLong<2>(buffer, a);  return;
@@ -104,6 +161,22 @@ void decodeLong(long &a, int bytes)
       fprintf(stderr, "Bad number of bytes for encoding: %d\n", bytes);
       exit(1);
   }
+#else
+  switch (bytes) {
+    case 1:   dataToSigned<1>(buffer, a);  return;
+    case 2:   dataToSigned<2>(buffer, a);  return;
+    case 3:   dataToSigned<3>(buffer, a);  return;
+    case 4:   dataToSigned<4>(buffer, a);  return;
+    case 5:   dataToSigned<5>(buffer, a);  return;
+    case 6:   dataToSigned<6>(buffer, a);  return;
+    case 7:   dataToSigned<7>(buffer, a);  return;
+    case 8:   dataToSigned<8>(buffer, a);  return;
+
+    default:
+      fprintf(stderr, "Bad number of bytes for encoding: %d\n", bytes);
+      exit(1);
+  }
+#endif
 }
 
 void encodeDown(long a, int bytes)
@@ -149,8 +222,12 @@ inline void fprinthex(FILE* s, int i)
 
 void testInt(int a)
 {
+#ifdef USE_OLD_FUNCTIONS
   int br = 1;
   bytesRequiredForVal(a, br);
+#else
+  int br = bytesRequiredForSigned(a);
+#endif
   
   for (int b=sizeof(int); b>=br; b--) {
     int x;
@@ -167,8 +244,12 @@ void testInt(int a)
 
 void testLong(long a)
 {
+#ifdef USE_OLD_FUNCTIONS
   int br = 1;
   bytesRequiredForVal(a, br);
+#else
+  int br = bytesRequiredForSigned(a);
+#endif
   
   for (int b=sizeof(long); b>=br; b--) {
     long x;
@@ -185,8 +266,12 @@ void testLong(long a)
 
 void testDown(long a)
 {
+#ifdef USE_OLD_FUNCTIONS
   int br = 1;
   bytesRequiredForDown(a, br);
+#else
+  int br = bytesRequiredForDown(a);
+#endif
   
   for (int b=sizeof(long); b>=br; b--) {
     long x;
@@ -208,11 +293,7 @@ int main()
   int check = 1024;
   int count = check;
   timer foo;
-#ifdef FULL_TEST
-  for (int i=1; i!=2147483647; i++) {
-#else
-  for (int i=1; i<1048576; i++) {
-#endif
+  for (int i=1; i!=stop; i++) {
     testInt(i);
     testInt(-i);
     count--;
@@ -229,11 +310,7 @@ int main()
   check = 1024;
   count = check;
   foo.note_time();
-#ifdef FULL_TEST
-  for (int i=1; i!=2147483647; i++) {
-#else
-  for (int i=1; i<1048576; i++) {
-#endif
+  for (int i=1; i!=stop; i++) {
     long L = i;
     while (L << 1) {
       testLong(L);
@@ -254,11 +331,7 @@ int main()
   check = 1024;
   count = check;
   foo.note_time();
-#ifdef FULL_TEST
-  for (int i=1; i!=2147483647; i++) {
-#else
-  for (int i=1; i<1048576; i++) {
-#endif
+  for (int i=1; i!=stop; i++) {
     long L = i;
     while (L << 2) {
       testDown(L);

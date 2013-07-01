@@ -21,23 +21,34 @@
 
 
 
-#ifndef OLD_SCHEME_H
-#define OLD_SCHEME_H
+// TODO: Testing
+
+#ifndef SIMPLE_H
+#define SIMPLE_H
 
 #include "../defines.h"
 #include "../hash_stream.h"
 #include "holeman.h"
 
-#define INTEGRATED_HOLE_MANAGER
-
 namespace MEDDLY {
-  // node storage mechanism used for versions < 0.10 of the library
-  class old_node_storage;
+  class simple_storage;
+
+  class simple_grid;
+  class simple_array;
 };
 
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                      simple_storage class                      *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
 
 /** Original node storage mechanism in a forest.
-    The hole manager is integrated into this class.
+    The hole manager is separated from the class,
+    which makes this implementation a little different
+    from the original.
 
     Limits: offsets must be the same as node_handles, 
     because the data structure uses those for hole data.
@@ -102,61 +113,15 @@ namespace MEDDLY {
     Note that a hole is guaranteed to be at least 5 slots long
     (assuming a node of size 0, with no extra header info, is impossible).
 
-
-    Hole management.
-    ==============================================================
-    There are two kinds of holes depending on their location in the grid:
-    Index Holes and Non-index Holes.
-    Rows in the grid correspond to holes of the same size.
-    The left-most column of the grid is a (vertical) list,
-    and these are the index holes.
-    Nodes in the middle are not connected vertically,
-    and these are the non-index holes.
-
-    The hole grid structure:
-    ------------------------
-    (holes_bottom)
-    holes_of_size_0 (index) -- (non_index) -- (non_index) -- NULL
-    |
-    holes_of_size_1 -- ""
-    |
-    :
-    :
-    (holes_top)
-
-    TBD:
-    Note that the grid only stores holes up to the largest hole
-    requested.  Larger holes are stored in the "large holes list".
-
-    Index holes are represented as follows:
-    ---------------------------------------
-    [0] -size (number of slots in hole)     
-    [1] up
-    [2] down 
-    [3] next pointer (nodes of same size)
-    [4..size-2] Unused
-    :
-    :
-    [size-1] -size
-
-    Non-index holes are represented as follows:
-    [0] -size (number of slots in hole)     
-    [1] flag (<0, indicates non-index node)
-    [2] prev pointer (nodes of same size)
-    [3] next pointer (nodes of same size)
-    [4..size-2] Unused
-    :
-    :
-    [size-1] -size
+    Hole management details are handled by another class.
 
 */
-class MEDDLY::old_node_storage : public node_storage {
+class MEDDLY::simple_storage : public node_storage {
   // required interface
   public:
-    old_node_storage();
-    virtual ~old_node_storage();
+    simple_storage();
+    virtual ~simple_storage();
 
-    virtual node_storage* createForForest(expert_forest* f) const;
     virtual void collectGarbage(bool shrink);
     virtual void reportMemoryUsage(FILE* s, const char* pad, int vL) const;
 
@@ -178,6 +143,26 @@ class MEDDLY::old_node_storage : public node_storage {
     virtual const void* getUnhashedHeaderOf(node_address addr) const;
     virtual const void* getHashedHeaderOf(node_address addr) const;
 
+  // for derived classes to implement
+    virtual const char* getStorageName() const = 0;
+
+  // ugly - for children to initialize us
+  public:
+    inline void setHoleManager(holeman* hm) {
+      MEDDLY_DCASSERT(0==holeManager);
+      holeManager = hm;
+    }
+    inline void setSlotSizes(const expert_forest* f) {
+      edgeSlots = slotsForBytes(f->edgeBytes());
+      unhashedSlots = slotsForBytes(f->unhashedHeaderBytes());
+      hashedSlots = slotsForBytes(f->hashedHeaderBytes());
+    }
+    static inline char slotsForBytes(int bytes) {
+      int sl = bytes / sizeof(MEDDLY::node_handle);
+      if (bytes % sizeof(MEDDLY::node_handle)) sl++;
+      return sl;
+    }
+
   protected:
     virtual void updateData(node_handle* d);
     virtual int smallestNode() const;
@@ -185,11 +170,7 @@ class MEDDLY::old_node_storage : public node_storage {
     virtual node_address dumpInternalNode(FILE*, node_address addr) const;
     virtual void dumpInternalTail(FILE*) const;
 
-
   private:
-      static const int min_size = 1024;
-
-      static const int non_index_hole = -2;
       static const long temp_node_value = -5;
 
       // header indexes (relative to chunk start)
@@ -202,34 +183,9 @@ class MEDDLY::old_node_storage : public node_storage {
       static const int tailSlots = 1;
       static const int extraSlots = headerSlots + tailSlots;
 
-      // hole indexes
-      static const int hole_up_index = 1;
-      static const int hole_down_index = hole_up_index+1;
-      static const int hole_prev_index = hole_down_index;
-      static const int hole_next_index = hole_prev_index+1;
-
-      /// data array; could be just a copy
+      /// copy of the data array
       node_handle* data;
-      /// Size of data array.
-      node_handle size;
-      /// Last used data slot.  Also total number of longs "allocated"
-      node_handle last;
-
-  // Holes grid info
-  private:
-      /// Largest hole ever requested
-      node_handle max_request;
-      /// List of large holes
-      node_handle large_holes;
-      /// Pointer to top of holes grid
-      node_handle holes_top;
-      /// Pointer to bottom of holes grid
-      node_handle holes_bottom;
-      /// Total ints in holes
-      node_handle hole_slots;
-
-      /// for verifying hole_slots
-      static node_handle verify_hole_slots;
+      holeman*  holeManager;
 
   // header sizes; vary by forest.
   private:
@@ -246,13 +202,15 @@ class MEDDLY::old_node_storage : public node_storage {
   private:
       inline node_handle* chunkOf(node_handle addr) const {
         MEDDLY_DCASSERT(data);
-        MEDDLY_CHECK_RANGE(1, addr, last+1);
+        MEDDLY_DCASSERT(holeManager);
+        MEDDLY_CHECK_RANGE(1, addr, holeManager->lastSlot()+1);
         MEDDLY_DCASSERT(data[addr] >= 0);  // it's not a hole
         return data + addr;
       }
       inline node_handle* holeOf(node_handle addr) const {
         MEDDLY_DCASSERT(data);
-        MEDDLY_CHECK_RANGE(1, addr, last+1);
+        MEDDLY_DCASSERT(holeManager);
+        MEDDLY_CHECK_RANGE(1, addr, holeManager->lastSlot()+1);
         MEDDLY_DCASSERT(data[addr] < 0);  // it's a hole
         return data + addr;
       }
@@ -348,56 +306,6 @@ class MEDDLY::old_node_storage : public node_storage {
       node_handle makeSparseNode(node_handle p, int size, const node_builder &nb);
 
       void copyExtraHeader(node_address addr, const node_builder &nb);
-
-  // --------------------------------------------------------
-  // |  Hole management helpers.
-  private:
-      inline node_handle& h_up(node_handle off) const {
-        return holeOf(off)[hole_up_index];
-      }
-      inline node_handle& h_down(node_handle off) const {
-        return holeOf(off)[hole_down_index];
-      }
-      inline node_handle& h_prev(node_handle off) const {
-        return holeOf(off)[hole_prev_index];
-      }
-      inline node_handle& h_next(node_handle off) const {
-        return holeOf(off)[hole_next_index];
-      }
-
-      inline node_handle& holeUp(node_handle off)       { return h_up(off); }
-      inline node_handle  holeUp(node_handle off) const { return h_up(off); }
-
-      inline node_handle& holeDown(node_handle off)       { return h_down(off); }
-      inline node_handle  holeDown(node_handle off) const { return h_down(off); }
-
-      inline node_handle& holePrev(node_handle off)       { return h_prev(off); }
-      inline node_handle  holePrev(node_handle off) const { return h_prev(off); }
-
-      inline node_handle& holeNext(node_handle off)       { return h_next(off); }
-      inline node_handle  holeNext(node_handle off) const { return h_next(off); }
-
-      inline bool isHoleNonIndex(node_handle p_offset) const {
-          return (non_index_hole == h_up(p_offset));
-      }
-
-      // returns offset to the hole found in level
-      node_handle getHole(int slots);
-
-      // makes a hole of size == slots, at the specified offset
-      void makeHole(node_handle p_offset, int slots);
-
-      // add a hole to the hole grid
-      void gridInsert(node_handle p_offset);
-
-      // remove a non-index hole from the hole grid
-      void midRemove(node_handle p_offset);
-
-      // remove an index hole from the hole grid
-      void indexRemove(node_handle p_offset);
-
-      // resize the data array.
-      void resize(node_handle new_slots);
 
       /** Allocate enough slots to store a node with given size.
           Also, stores the node size in the node.
@@ -518,6 +426,43 @@ class MEDDLY::old_node_storage : public node_storage {
       return true;
     }
 }; 
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                       simple_grid  class                       *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+/** Simple storage using the original grid mechanism for holes.
+    Should be equivalent to old_node_storage; use to check for overheads.
+*/
+
+class MEDDLY::simple_grid : public simple_storage {
+  public:
+    simple_grid();
+    virtual ~simple_grid();
+    virtual node_storage* createForForest(expert_forest* f) const;
+    virtual const char* getStorageName() const;
+};
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                       simple_array class                       *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+/// Simple storage using a new array of lists mechanism for holes.
+class MEDDLY::simple_array : public simple_storage {
+  public:
+    simple_array();
+    virtual ~simple_array();
+    virtual node_storage* createForForest(expert_forest* f) const;
+    virtual const char* getStorageName() const;
+};
 
 #endif
 

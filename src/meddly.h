@@ -109,10 +109,20 @@ namespace MEDDLY {
   // *                     Node storage mechanisms                    *
   // ******************************************************************
 
-  /** "Old" node storage mechanism.
+  /** "Classic" node storage mechanism.
       The node storage mechanism from early versions of this library.
   */
-  extern const node_storage* OLD_STORAGE;
+  extern const node_storage* CLASSIC_STORAGE;
+
+  /** Similar to classic.
+      Differences are in class design, so we can measure overhead
+      (if any) of class design differences.
+  */
+  extern const node_storage* SIMPLE_GRID;
+
+  /** Like classic, but use an array of lists for hole management.
+  */
+  extern const node_storage* SIMPLE_ARRAY;
 
   // ******************************************************************
   // *                     Named unary operations                     *
@@ -621,7 +631,9 @@ class MEDDLY::forest {
         orphanTrigger = 500000;
         compactAfterGC = false;
         compactBeforeExpand = true;
-        nodestor = OLD_STORAGE;
+        // nodestor = CLASSIC_STORAGE;
+        nodestor = SIMPLE_GRID;
+        // nodestor = SIMPLE_ARRAY;
       }
 
       inline void setFullStorage() { 

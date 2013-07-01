@@ -184,7 +184,7 @@ int main(int argc, const char** argv)
   assert(d);
   forest::policies p(false);
   p.setPessimistic();
-  forest* f = 
+  expert_forest* f = (expert_forest*)
     d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL, p);
   assert(f);
 
@@ -291,7 +291,8 @@ int main(int argc, const char** argv)
 #endif
   delete solutions;
   operation::showAllComputeTables(stdout, 2);
-  // f->showInfo(stdout, 1);
+  // f->reportMemoryUsage(stdout, "", 9);
+  // f->dumpInternal(stdout);
   cleanup();
   return 0;
 }

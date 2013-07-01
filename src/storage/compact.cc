@@ -24,6 +24,7 @@
 // TODO: Testing
 
 #include "compact.h"
+#include "bytepack.h"
 
 #define MERGE_AND_SPLIT_HOLES
 // #define DEBUG_COMPACTION

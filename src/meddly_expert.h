@@ -1223,6 +1223,9 @@ class MEDDLY::node_storage {
     */
     virtual node_address dumpInternalNode(FILE*, node_address addr) const = 0;
 
+    /// Dump final info (after node info)
+    virtual void dumpInternalTail(FILE*) const = 0;
+
 
   // Hooks from other classes, so we don't need to make
   // all the derived classes "friends".

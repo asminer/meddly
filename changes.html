@@ -13,6 +13,13 @@
 <li> Changed free list representation for node handles.
 </li>
 
+<li>  The node storage mechanism is now loosely coupled,
+      and may be selected at runtime.
+</li>
+
+<li>  The node memory recycling mechanism is now loosely coupled.
+</li>
+
 </ul>
 
 <h4>SIMPLE INTERFACE CHANGES</h4>
@@ -41,8 +48,6 @@
 <h2>Still to do or next steps</h2>
 
 <ul>
-<li>  Finish design of arbitrary node storage mechanisms.
-</li>
 
 <li>  Better handling of edge values in nodes 
       i.e., really treat an edge value as a chunk of memory,

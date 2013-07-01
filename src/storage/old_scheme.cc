@@ -41,6 +41,7 @@ inline char slotsForBytes(int bytes)
   return sl;
 }
 
+MEDDLY::node_handle MEDDLY::old_node_storage::verify_hole_slots;
 
 // ******************************************************************
 // *                                                                *
@@ -57,12 +58,8 @@ MEDDLY::old_node_storage::old_node_storage() : node_storage()
 
 MEDDLY::old_node_storage::~old_node_storage()
 {
-#ifdef INTEGRATED_HOLE_MANAGER
   decMemAlloc(size*sizeof(node_handle));
   free(data);
-#else  
-  delete holeManager;
-#endif
 }
 
 MEDDLY::node_storage* MEDDLY::old_node_storage
@@ -70,7 +67,6 @@ MEDDLY::node_storage* MEDDLY::old_node_storage
 {
   old_node_storage* nns = new old_node_storage;
   nns->initForForest(f);
-#ifdef INTEGRATED_HOLE_MANAGER
   nns->data = 0;
   nns->size = 0;
   nns->last = 0;
@@ -79,16 +75,12 @@ MEDDLY::node_storage* MEDDLY::old_node_storage
   nns->holes_top = 0;
   nns->holes_bottom = 0;
   nns->hole_slots = 0;
-#else
-  nns->holeManager = new hm_grid(nns);
-#endif
   nns->edgeSlots = slotsForBytes(f->edgeBytes());
   nns->unhashedSlots = slotsForBytes(f->unhashedHeaderBytes());
   nns->hashedSlots = slotsForBytes(f->hashedHeaderBytes());
   return nns;
 }
 
-#ifdef INTEGRATED_HOLE_MANAGER
 // original version
 void MEDDLY::old_node_storage::collectGarbage(bool shrink)
 {
@@ -189,96 +181,6 @@ void MEDDLY::old_node_storage::collectGarbage(bool shrink)
   printf("\n");
 #endif
 }
-#else
-// new hole manager version
-void MEDDLY::old_node_storage::collectGarbage(bool shrink)
-{
-  //
-  // Should we even bother?
-  //
-  if (0==data || 0==holeManager->holeSlots()) return;
-  if (holeManager->holeSlots() <= getParent()->getPolicies().compact_min) {
-    return;
-  }
-  if (holeManager->holeSlots() <  getParent()->getPolicies().compact_max) {
-
-    // If percentage of holes is below trigger, then don't compact
-    if (100 * holeManager->holeSlots() < 
-        holeManager->lastSlot() * getParent()->getPolicies().compact_frac) 
-      return;
-
-  }
-
-#ifdef DEBUG_SLOW
-  fprintf(stderr, "Compacting forest level\n");
-#endif
-#ifdef MEMORY_TRACE
-  printf("Compacting\n");
-#endif
-#ifdef DEBUG_COMPACTION
-  printf("Before compaction:\n");
-  dumpInternal(stdout);
-  printf("\n");
-#endif
-
-  //
-  // Scan the whole array of data, copying over itself and skipping holes.
-  // 
-  node_handle* node_ptr = (data + 1);  // since we leave [0] empty
-  node_handle* end_ptr =  (data + holeManager->lastSlot() + 1);
-  node_handle* curr_ptr = node_ptr;
-
-  while (node_ptr < end_ptr) {
-    if (*node_ptr < 0) {
-      //
-      // This is a hole, skip it
-      // 
-      node_ptr = data + holeManager->chunkAfterHole(node_ptr - data);
-      continue;
-    } 
-    //
-    // A real node, move it
-    //
-    MEDDLY_DCASSERT(!getParent()->isPessimistic() || *node_ptr != 0);
-    
-    long old_off = node_ptr - data;
-    long new_off = curr_ptr - data;
-
-    // copy the node, except for the tail
-    int datalen = slotsForNode(sizeOf(old_off)) - 1;
-    if (node_ptr != curr_ptr) {
-      memmove(curr_ptr, node_ptr, datalen * sizeof(node_handle));
-    }
-    node_ptr += datalen;
-    curr_ptr += datalen;
-    //
-    // Skip any padding
-    //
-    if (*node_ptr < 0) {
-      node_ptr -= *node_ptr;  
-    }
-    //
-    // Copy trailer, the node number
-    //
-    *curr_ptr = *node_ptr;
-    moveNodeOffset(*curr_ptr, old_off, new_off);
-    curr_ptr++;
-    node_ptr++;
-
-  } // while
-  MEDDLY_DCASSERT(node_ptr == end_ptr);
-
-  holeManager->clearHolesAndShrink( (curr_ptr - 1 - data), shrink );
-
-  incCompactions(); 
-
-#ifdef DEBUG_COMPACTION
-  printf("After compaction:\n");
-  dumpInternal(stdout);
-  printf("\n");
-#endif
-}
-#endif  // INTEGRATED
 
 void MEDDLY::old_node_storage
 ::reportMemoryUsage(FILE* s, const char* pad, int verb) const
@@ -289,9 +191,8 @@ void MEDDLY::old_node_storage
 #ifdef NODE_STORAGE_PER_LEVEL
   fprintf(s, "Level %ld ", parent->getLevelNumber(this));
 #endif
-  fprintf(s, "Memory stats for node storage\n");
+  fprintf(s, "Memory stats for \"classic\" node storage\n");
 
-#ifdef INTEGRATED_HOLE_MANAGER
   if (verb>7) {
     long holemem = hole_slots * sizeof(node_handle);
     fprintf(s, "%s  Hole Memory Usage:\t%ld\n", pad, holemem);
@@ -328,9 +229,6 @@ void MEDDLY::old_node_storage
         fprintf(s, "%s\t%5d: %d\n", pad, iter->first, iter->second);
     }
   fprintf(s, "%s  End of Hole Chains\n", pad);
-#else
-  holeManager->reportMemoryUsage(s, pad, verb);
-#endif
 }
 
 void MEDDLY::old_node_storage::showNode(FILE* s, node_address addr, bool verb) const
@@ -477,11 +375,7 @@ void MEDDLY::old_node_storage::unlinkDownAndRecycle(node_address addr)
   //
   // Recycle
   //
-#ifdef INTEGRATED_HOLE_MANAGER
   makeHole(addr, activeNodeActualSlots(addr));
-#else
-  holeManager->recycleChunk(addr, activeNodeActualSlots(addr));
-#endif
 }
 
 bool MEDDLY::old_node_storage
@@ -746,11 +640,6 @@ const void* MEDDLY::old_node_storage
 
 void MEDDLY::old_node_storage::updateData(node_handle* d)
 {
-#ifndef INTEGRATED_HOLE_MANAGER
-  data = d;
-  updateCountArray(data + count_index);
-  updateNextArray(data + next_index);
-#endif
 }
 
 int MEDDLY::old_node_storage::smallestNode() const
@@ -764,46 +653,34 @@ void MEDDLY::old_node_storage::dumpInternalInfo(FILE* s) const
 #ifdef NODE_STORAGE_PER_LEVEL
   fprintf(s, "Level %ld: ", getParent()->getLevelNumber(this));
 #endif
-#ifdef INTEGRATED_HOLE_MANAGER
   fprintf(s, "Last slot used: %ld\n", long(last));
   fprintf(s, "large_holes: %ld\n", long(large_holes));
   fprintf(s, "Grid: top = %ld bottom = %ld\n", long(holes_top), long(holes_bottom));
-#else
-  holeManager->dumpInternalInfo(s);
-#endif
+  verify_hole_slots = 0;
 }
 
 
 MEDDLY::node_address 
 MEDDLY::old_node_storage::dumpInternalNode(FILE *s, node_address a) const
 {
-  MEDDLY_DCASSERT(data);
   if (a<=0) return 0;
   int awidth = digits(getParent()->getLastNode());
-#ifdef INTEGRATED_HOLE_MANAGER
   if (a > last) {
-#else
-  if (a > holeManager->lastSlot()) {
-#endif
     fprintf(s, "%*ld : free slots\n", awidth, long(a));
     return 0;
   }
   fprintf(s, "%*ld : ", awidth, a);
-
+  MEDDLY_DCASSERT(data);
   if (data[a]<0) { 
     // hole
-#ifdef INTEGRATED_HOLE_MANAGER
     fprintf(s, "[%ld", long(data[a]));
     for (int i=1; i<3; i++) {
       fprintf(s, "|%ld", long(data[a+i]));
     }
     fprintf(s, "| ... ");
+    verify_hole_slots += -data[a];
     a -= data[a];  
     fprintf(s, "%ld]\n", long(data[a-1]));
-#else 
-    holeManager->dumpHole(s, a);
-    a = holeManager->chunkAfterHole(a);
-#endif
   } else {
     // proper node
     int nElements = activeNodeActualSlots(a);
@@ -817,6 +694,13 @@ MEDDLY::old_node_storage::dumpInternalNode(FILE *s, node_address a) const
   return a;
 }
 
+void MEDDLY::old_node_storage::dumpInternalTail(FILE* s) const
+{
+  if (verify_hole_slots != hole_slots) {
+    fprintf(s, "Counted hole slots: %ld\n", long(verify_hole_slots));
+    MEDDLY_DCASSERT(false);
+  }
+}
 
 
 
@@ -932,7 +816,6 @@ void MEDDLY::old_node_storage
   }
 }
 
-#ifdef INTEGRATED_HOLE_MANAGER
 //
 //  NOTE: we set the first slot to contain
 //  the NEGATIVE of the number of slots in the hole.
@@ -1368,7 +1251,6 @@ void MEDDLY::old_node_storage::resize(node_handle new_size)
   }
 }
 
-#endif  // INTEGRATED_HOLE_MANAGER
 
 MEDDLY::node_handle 
 MEDDLY::old_node_storage::allocNode(int sz, node_handle tail, bool clear)
@@ -1376,11 +1258,7 @@ MEDDLY::old_node_storage::allocNode(int sz, node_handle tail, bool clear)
   int slots = slotsForNode(sz);
   MEDDLY_DCASSERT(slots >= extraSlots + unhashedSlots + hashedSlots);
 
-#ifdef INTEGRATED_HOLE_MANAGER
   node_handle off = getHole(slots);
-#else
-  node_handle off = holeManager->requestChunk(slots);
-#endif
   node_handle got = -data[off];
   incMemUsed(got * sizeof(node_handle));
   MEDDLY_DCASSERT(got >= slots);
@@ -1411,6 +1289,6 @@ namespace MEDDLY {
   // node storage mechanism used for versions < 0.10 of the library
   old_node_storage THE_OLD_NODE_STORAGE;
 
-  const node_storage* OLD_STORAGE = &THE_OLD_NODE_STORAGE;
+  const node_storage* CLASSIC_STORAGE = &THE_OLD_NODE_STORAGE;
 };
 
