@@ -75,6 +75,7 @@ MEDDLY::node_storage* MEDDLY::old_node_storage
   nns->holes_top = 0;
   nns->holes_bottom = 0;
   nns->hole_slots = 0;
+  nns->fragment_slots = 0;
   nns->edgeSlots = slotsForBytes(f->edgeBytes());
   nns->unhashedSlots = slotsForBytes(f->unhashedHeaderBytes());
   nns->hashedSlots = slotsForBytes(f->hashedHeaderBytes());
@@ -165,6 +166,7 @@ void MEDDLY::old_node_storage::collectGarbage(bool shrink)
   // set up hole pointers and such
   holes_top = holes_bottom = 0;
   hole_slots = 0;
+  fragment_slots = 0;
   large_holes = 0;
 
   incCompactions(); // parent->changeStats().num_compactions++;
@@ -183,20 +185,40 @@ void MEDDLY::old_node_storage::collectGarbage(bool shrink)
 }
 
 void MEDDLY::old_node_storage
-::reportMemoryUsage(FILE* s, const char* pad, int verb) const
+::reportStats(FILE* s, const char* pad, unsigned flags) const
 {
-  if (verb<=6) return;
+  static unsigned STORAGE =
+    expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED;
+  static unsigned HOLE_MANAGER =
+    expert_forest::HOLE_MANAGER_STATS | expert_forest::HOLE_MANAGER_DETAILED;
 
-  fprintf(s, "%s", pad);
+
+  if (flags & expert_forest::STORAGE_STATS) {
+    fprintf(s, "%s", pad);
 #ifdef NODE_STORAGE_PER_LEVEL
-  fprintf(s, "Level %ld ", parent->getLevelNumber(this));
+    fprintf(s, "Level %ld ", parent->getLevelNumber(this));
 #endif
-  fprintf(s, "Memory stats for \"classic\" node storage\n");
+    fprintf(s, "Stats for \"classic\" node storage:\n");
 
-  if (verb>7) {
-    long holemem = hole_slots * sizeof(node_handle);
-    fprintf(s, "%s  Hole Memory Usage:\t%ld\n", pad, holemem);
+    // anything?
   }
+
+  if (! (flags & HOLE_MANAGER)) return;
+
+  fprintf(s, "%sStats for \"classic\" hole management:\n", pad);
+
+  if (flags & expert_forest::HOLE_MANAGER_STATS) {
+    unsigned long holemem = hole_slots * sizeof(node_handle);
+    fprintf(s, "%s    ", pad);
+    fprintmem(s, holemem, flags & expert_forest::HUMAN_READABLE_MEMORY);
+    fprintf(s, " wasted in holes\n");
+    unsigned long fragmem = fragment_slots * sizeof(node_handle);
+    fprintf(s, "%s    ", pad);
+    fprintmem(s, fragmem, flags & expert_forest::HUMAN_READABLE_MEMORY);
+    fprintf(s, " wasted in fragments\n");
+  }
+
+  if (! (flags & expert_forest::HOLE_MANAGER_DETAILED)) return;
 
   // Compute chain length histogram
   std::map<int, int> chainLengths;
@@ -219,7 +241,7 @@ void MEDDLY::old_node_storage
 
   // Display the histogram
 
-  fprintf(s, "%s  Hole Chains (size, count):\n", pad);
+  fprintf(s, "%s    Hole Chains (size, count):\n", pad);
   for (std::map<int, int>::iterator iter = chainLengths.begin();
       iter != chainLengths.end(); ++iter)
     {
@@ -228,7 +250,7 @@ void MEDDLY::old_node_storage
       else
         fprintf(s, "%s\t%5d: %d\n", pad, iter->first, iter->second);
     }
-  fprintf(s, "%s  End of Hole Chains\n", pad);
+  fprintf(s, "%s    End of Hole Chains\n", pad);
 }
 
 void MEDDLY::old_node_storage::showNode(FILE* s, node_address addr, bool verb) const
@@ -375,7 +397,9 @@ void MEDDLY::old_node_storage::unlinkDownAndRecycle(node_address addr)
   //
   // Recycle
   //
-  makeHole(addr, activeNodeActualSlots(addr));
+  node_handle padding;
+  makeHole(addr, activeNodeActualSlots(addr, padding));
+  fragment_slots += padding;
 }
 
 bool MEDDLY::old_node_storage
@@ -1267,6 +1291,7 @@ MEDDLY::old_node_storage::allocNode(int sz, node_handle tail, bool clear)
   setNextOf(off, temp_node_value);        // mark as a temp node
   setSizeOf(off, sz);                     // size
   data[off+slots-1] = slots - got;        // negative padding
+  fragment_slots += got - slots;          
   data[off+got-1] = tail;                 // tail entry
 #ifdef MEMORY_TRACE
   printf("Allocated new node, asked %d, got %d, position %d (size %d)\n", slots, got, off, sz);

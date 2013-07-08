@@ -77,8 +77,16 @@ class MEDDLY::holeman {
       return parent->getParent();
     }
 
+    inline int numHoles() const {
+      return num_holes;
+    }
+
     inline node_address holeSlots() const {
       return hole_slots;
+    }
+
+    inline node_address fragmentSlots() const {
+      return fragment_slots;
     }
 
     inline node_address lastSlot() const {
@@ -87,6 +95,10 @@ class MEDDLY::holeman {
 
     inline int smallestChunk() const {
       return smallest;
+    }
+
+    inline void releaseFragment(int slots) {
+      fragment_slots -= slots;
     }
 
   public:
@@ -121,7 +133,7 @@ class MEDDLY::holeman {
 
           @param  addr    Starting index of the hole.
     */
-    virtual node_address chunkAfterHole(node_address addr) const = 0;
+    virtual node_address chunkAfterHole(node_address addr) const;
 
     /**
         Dump information for debugging.
@@ -147,26 +159,24 @@ class MEDDLY::holeman {
     */
     virtual void dumpInternalTail(FILE* s) const = 0;
 
-    /**
-        Report memory usage.
+    /** 
+        Print stats.
+            @param  s       Output stream
+            @param  pad     String printed at the start of each line
+            @param  flats   Controls what is displayed
 
-            @param  s     Output stream
-            @param  pad   String printed at the start of each line
-            @param  vL    verbosity level; higher means print more
-
+        Children can call this to save some code.
     */
-    virtual void reportMemoryUsage(FILE* s, const char* pad, int vL) const = 0;
+    virtual void reportStats(FILE* s, const char* pad, unsigned flags) const;
 
     /**
         Clear hole data structure and maybe shrink.
         Called after garbage collection in our parent.
+
+        Derived classes should call the parent's version.
     */
-    virtual void clearHolesAndShrink(node_address new_last, bool shrink) = 0;
+    virtual void clearHolesAndShrink(node_address new_last, bool shrink);
   protected:
-    inline void updateData(node_handle* d) {
-      MEDDLY_DCASSERT(parent);
-      parent->updateData(d);
-    }
     inline void incMemUsed(long delta) {
       MEDDLY_DCASSERT(parent);
       parent->incMemUsed(delta);
@@ -184,13 +194,114 @@ class MEDDLY::holeman {
       parent->decMemAlloc(delta);
     }
 
-    /// Total slots wasted in holes
-    node_address hole_slots;
+    inline void newHole(int slots) {
+      num_holes++;
+      if (num_holes > max_holes) {
+        max_holes = num_holes;
+      }
+      hole_slots += slots;
+      if (hole_slots > max_hole_slots) {
+        max_hole_slots = hole_slots;
+      }
+    }
+    inline void useHole(int slots) {
+      num_holes--;
+      hole_slots -= slots;
+    }
+    
+    inline void incFragments(int slots) {
+      fragment_slots += slots;
+      if (fragment_slots > max_fragment_slots) {
+        max_fragment_slots = fragment_slots;
+      }
+    }
+    inline void decFragments(int slots) {
+      fragment_slots -= slots;
+    }
+
+    inline node_address allocFromEnd(int slots) {
+#ifdef MEMORY_TRACE
+      printf("No hole available\n");
+#endif
+
+      //
+      // First -- try to compact if we need to expand
+      //
+      if (getForest()->getPolicies().compactBeforeExpand) {
+        if (last_slot + slots >= size) getParent()->collectGarbage(false);
+      }
+
+      //
+      // Do we need to expand?
+      //
+      if (last_slot + slots >= size) {
+        // new size is 50% more than previous 
+        node_address want_size = last_slot + slots;
+        node_handle new_size = MAX(size, want_size) * 1.5;  // TBD: WTF?
+
+        resize(new_size);
+      }
+
+      // 
+      // Grab node from the end
+      //
+      node_handle h = last_slot + 1;
+      last_slot += slots;
+      data[h] = -slots;
+      return h;
+    }
+
+    inline void releaseToEnd(node_address h, int slots) {
+      last_slot -= slots;
+      useHole(slots);
+      if (size > min_size && (last_slot + 1) < size/2) {
+        node_handle new_size = size/2;
+        while (new_size > (last_slot + 1) * 2) new_size /= 2;
+        if (new_size < min_size) new_size = min_size;
+        resize(new_size);
+      }
+#ifdef MEMORY_TRACE
+      printf("Made Last Hole %ld, last %ld\n", long(addr), long(last_slot));
+#ifdef DEEP_MEMORY_TRACE
+      getParent()->dumpInternal(stdout);
+#endif
+#endif
+    }
+
+  protected:
+    /// data array; we manage this
+    node_handle* data;
+
+  private:
+    void resize(node_address new_slots);
+
+  private:
+    /// Size of data array.
+    node_address size;
     /// Last used data slot
     node_address last_slot;
-  private:
+    
     node_storage* parent;
     int smallest;
+
+    /// Total number of holes
+    int num_holes;
+    /// Max number of holes
+    int max_holes;
+    
+    /// Total slots wasted in holes
+    node_address hole_slots;
+    /// Maximum hole slots seen
+    node_address max_hole_slots;
+
+    /// Total slots wasted in fragments 
+    node_address fragment_slots;
+    /// Maximum fragment slots seen
+    node_address max_fragment_slots;
+
+  private:
+    /// Don't shrink below this
+    static const int min_size = 1024;
 };
 
 #endif

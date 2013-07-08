@@ -12,6 +12,7 @@ libstorage_la_SOURCES = \
   holeman.h       holeman.cc \
   hm_array.h      hm_array.cc \
   hm_grid.h       hm_grid.cc \
+  hm_heap.h       hm_heap.cc \
   old_scheme.h    old_scheme.cc \
   simple.h        simple.cc \
   compact.h       compact.cc

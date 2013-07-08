@@ -31,6 +31,8 @@ namespace MEDDLY {
 
 #define MEASURE_LARGE_HOLE_STATS
 
+// #define ORDERED_LISTS
+
 /** Array-based hole management.
 
     Small holes are stored by size in an array of lists.
@@ -55,17 +57,16 @@ class MEDDLY::hm_array : public holeman {
   public:
     virtual node_address requestChunk(int slots);
     virtual void recycleChunk(node_address addr, int slots);
-    virtual node_address chunkAfterHole(node_address addr) const;
     virtual void dumpInternalInfo(FILE* s) const;
     virtual void dumpHole(FILE* s, node_address a) const;
     virtual void dumpInternalTail(FILE* s) const;
-    virtual void reportMemoryUsage(FILE* s, const char* pad, int vL) const;
+    virtual void reportStats(FILE* s, const char* pad, unsigned flags) const;
     virtual void clearHolesAndShrink(node_address new_last, bool shrink);
 
   private:
       inline node_handle* holeOf(node_handle addr) const {
         MEDDLY_DCASSERT(data);
-        MEDDLY_CHECK_RANGE(1, addr, last_slot+1);
+        MEDDLY_CHECK_RANGE(1, addr, lastSlot()+1);
         MEDDLY_DCASSERT(data[addr] < 0);  // it's a hole
         return data + addr;
       }
@@ -82,10 +83,37 @@ class MEDDLY::hm_array : public holeman {
       inline node_handle& Next(node_handle off)       { return h_next(off); }
       inline node_handle  Next(node_handle off) const { return h_next(off); }
 
-      // resize the data array.
-      void resize(node_handle new_slots);
-
       // Insert a node
+#ifdef ORDERED_LISTS
+      inline void listInsert(node_handle& list, node_handle node) {
+        node_handle prev = 0;
+        for (node_handle curr=list; curr; curr=Next(curr)) {
+          if (node < curr) {
+            // add here!
+            Next(node) = curr;
+            Prev(node) = prev;
+            Prev(curr) = node;
+            if (prev) {
+              Next(prev) = node;
+            } else {
+              list = node;
+            }
+            return;
+          }
+          prev = curr;
+        }
+        // add to the end
+        if (prev) {
+          Next(node) = 0;
+          Prev(node) = prev;
+          Next(prev) = node;
+        } else {
+          Next(node) = 0;
+          Prev(node) = 0;
+          list = node;
+        }
+      }
+#else
       inline void listInsert(node_handle& list, node_handle node) {
         Next(node) = list;
         Prev(node) = 0;
@@ -94,6 +122,7 @@ class MEDDLY::hm_array : public holeman {
         } 
         list = node; 
       }
+#endif
 
       // Remove a node
       inline void listRemove(node_handle& list, node_handle node) {
@@ -115,7 +144,6 @@ class MEDDLY::hm_array : public holeman {
       }
 
   private:
-      static const int min_size = 1024;
       // hole indexes
       static const int hole_prev_index = 1;
       static const int hole_next_index = 2;
@@ -125,11 +153,6 @@ class MEDDLY::hm_array : public holeman {
       // static const int LARGE_SIZE = 1;  // extreme - everything is "large"
 
   private:
-      /// data array; we manage this
-      node_handle* data;
-      /// Size of data array.
-      node_handle size;
-
       /// List of large holes
       node_handle large_holes;
       /// Lists of holes by size

@@ -123,7 +123,7 @@ class MEDDLY::simple_storage : public node_storage {
     virtual ~simple_storage();
 
     virtual void collectGarbage(bool shrink);
-    virtual void reportMemoryUsage(FILE* s, const char* pad, int vL) const;
+    virtual void reportStats(FILE* s, const char* pad, unsigned flags) const;
 
     virtual void showNode(FILE* s, node_address addr, bool verb) const;
 
@@ -316,6 +316,11 @@ class MEDDLY::simple_storage : public node_storage {
       */
       node_handle allocNode(int sz, node_handle tail, bool clear);
 
+
+#ifdef DEVELOPMENT_CODE
+      void verifyStats() const;
+#endif
+
       /// Find actual number of slots used for this active node.
       inline int activeNodeActualSlots(node_handle addr) const {
           int end = addr + slotsForNode(sizeOf(addr))-1;
@@ -326,6 +331,19 @@ class MEDDLY::simple_storage : public node_storage {
           return end - addr + 1;
       }
 
+
+      /// Find actual number of slots used for this active node.
+      inline int activeNodeActualSlots(node_handle addr, int& pad) const {
+          int end = addr + slotsForNode(sizeOf(addr))-1;
+          // account for any padding
+          if (data[end] < 0) {
+            pad = -data[end];
+            end += pad;
+          } else {
+            pad = 0;
+          }
+          return end - addr + 1;
+      }
 
   // --------------------------------------------------------
   // |  Node comparison as a template
@@ -425,6 +443,7 @@ class MEDDLY::simple_storage : public node_storage {
       // must be equal
       return true;
     }
+
 }; 
 
 // ******************************************************************

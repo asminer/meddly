@@ -1021,6 +1021,14 @@ class MEDDLY::node_storage {
     */
     virtual void collectGarbage(bool shrink) = 0;
 
+    /** Show various stats.
+          @param  s       Output stream to write to
+          @param  pad     Padding string, written at the start of 
+                          each output line.
+          @param  flags   Controls what is displated.
+    */
+    virtual void reportStats(FILE* s, const char* pad, unsigned flags) const = 0;
+
     /** Show stats about memory usage.
           @param  s     Output stream to write to
           @param  pad   Padding string, written at the start of 
@@ -1028,7 +1036,7 @@ class MEDDLY::node_storage {
           @param  vL    "verbosity level", between 0 (least detailed)
                         and 9 (most detailed).
     */
-    virtual void reportMemoryUsage(FILE* s, const char* pad, int vL) const = 0;
+    // virtual void reportMemoryUsage(FILE* s, const char* pad, int vL) const = 0;
 
 
     /** Write a node in human-readable format.
@@ -1325,6 +1333,29 @@ class MEDDLY::node_storage {
 
 class MEDDLY::expert_forest : public forest
 {
+  // flags for reporting; DO NOT rely on specific values
+  public:
+      /// Should memory be reported in a human readable format
+      static const unsigned HUMAN_READABLE_MEMORY   = 0x0001;
+      /// Basic forest stats
+      static const unsigned BASIC_STATS             = 0x0002;
+      /// Extra forest stats
+      static const unsigned EXTRA_STATS             = 0x0004;
+      /// Specific forest stats, dependent on forest type
+      static const unsigned FOREST_STATS            = 0x0008;
+      /// Stats specific to the node storage mechanism.
+      static const unsigned STORAGE_STATS           = 0x0010;
+      /// Detailed stats for the node storage mechanism.
+      static const unsigned STORAGE_DETAILED        = 0x0020;
+      /// Stats specific to the unique table.
+      static const unsigned UNIQUE_TABLE_STATS      = 0x0040;
+      /// Stats specific to the unique table.
+      static const unsigned UNIQUE_TABLE_DETAILED   = 0x0080;
+      /// Stats specific to the hole manager.
+      static const unsigned HOLE_MANAGER_STATS      = 0x0100;
+      /// Stats specific to the hole manager.
+      static const unsigned HOLE_MANAGER_DETAILED   = 0x0200;
+
   public:
     /** Constructor.
       @param  dslot   slot used to store the forest, in the domain
@@ -1756,6 +1787,18 @@ class MEDDLY::expert_forest : public forest
     /// Show all the nodes in the subgraph below the given node.
     void showNodeGraph(FILE* s, node_handle node) const;
 
+
+    /** Show various stats for this forest.
+          @param  s       Output stream to write to
+          @param  pad     Padding string, written at the start of 
+                          each output line.
+          @param  flags   Which stats to display, as "flags";
+                          use bitwise or to combine values.
+                          For example, BASIC_STATS | FOREST_STATS.
+    */
+    void reportStats(FILE* s, const char* pad, unsigned flags) const;
+
+
     /** Show stats about memory usage for this forest.
           @param  s     Output stream to write to
           @param  pad   Padding string, written at the start of 
@@ -1763,7 +1806,7 @@ class MEDDLY::expert_forest : public forest
           @param  verb  Level of detail, between 0 (least detailed)
                         and 9 (most detailed).
     */
-    void reportMemoryUsage(FILE * s, const char* pad, int verb) const;
+    // void reportMemoryUsage(FILE * s, const char* pad, int verb) const;
 
     /// Compute a hash for a node.
     inline unsigned hashNode(node_handle p) const {
@@ -2216,6 +2259,12 @@ class MEDDLY::expert_forest : public forest
                         as appropriate to normalize the node.
     */
     virtual void normalize(node_builder &nb, float& ev) const;
+
+    /** Show forest-specific stats.
+          @param  s     Output stream to use
+          @param  pad   String to display at the beginning of each line.
+    */
+    virtual void reportForestStats(FILE* s, const char* pad) const;
 
   public:
     /** Show a terminal node.

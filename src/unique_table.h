@@ -43,6 +43,8 @@ class MEDDLY::unique_table {
     inline unsigned getNumEntries() const   { return num_entries; }
     inline unsigned getMemUsed() const      { return size * sizeof(node_handle); }
 
+    void reportStats(FILE* s, const char* pad, unsigned flags) const;
+
     /// For debugging
     void show(FILE *s) const;
 

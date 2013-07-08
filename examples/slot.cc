@@ -40,48 +40,17 @@ int usage(const char* name)
   return 1;
 }
 
-void printmem(long m)
-{
-  if (m<1024) {
-    printf("%ld bytes", m);
-    return;
-  }
-  double approx = m;
-  approx /= 1024;
-  if (approx < 1024) {
-    printf("%3.2lf Kbytes", approx);
-    return;
-  }
-  approx /= 1024;
-  if (approx < 1024) {
-    printf("%3.2lf Mbytes", approx);
-    return;
-  }
-  approx /= 1024;
-  if (approx < 1024) {
-    printf("%3.2lf Gbytes", approx);
-    return;
-  }
-  approx /= 1024;
-  printf("%3.2lf Tbytes", approx);
-}
-
-void printStats(const char* who, const forest::statset& stats)
+void printStats(const char* who, const forest* f)
 {
   printf("%s stats:\n", who);
-  printf("\t%ld current nodes\n", stats.active_nodes);
-  printf("\t%ld peak nodes\n", stats.peak_active);
-  printf("\t");
-  printmem(stats.memory_used);
-  printf(" current memory used\n\t");
-  printmem(stats.peak_memory_used);
-  printf(" peak memory used\n\t");
-  printmem(stats.memory_alloc);
-  printf(" current memory allocated\n\t");
-  printmem(stats.peak_memory_alloc);
-  printf(" peak memory allocated\n\t");
-  printf("%ld compactions\n", stats.num_compactions);
+  const expert_forest* ef = (expert_forest*) f;
+  ef->reportStats(stdout, "\t",
+    expert_forest::HUMAN_READABLE_MEMORY  |
+    expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
+    expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
+  );
 }
+
 
 
 inline char* newEvent(int N)
@@ -243,7 +212,7 @@ int main(int argc, const char** argv)
     start.note_time();
     printf("Next-state function construction took %.4e seconds\n",
           start.get_last_interval()/1000000.0);
-    printStats("MxD", mxd->getStats());
+    printStats("MxD", mxd);
     fflush(stdout);
   }
 
@@ -290,7 +259,7 @@ int main(int argc, const char** argv)
   }  // for i
 #endif
 
-  printStats("MDD", mdd->getStats());
+  printStats("MDD", mdd);
   fflush(stdout);
 
   double c;

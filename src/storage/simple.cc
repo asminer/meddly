@@ -59,14 +59,15 @@ void MEDDLY::simple_storage::collectGarbage(bool shrink)
   //
   // Should we even bother?
   //
-  if (0==data || 0==holeManager->holeSlots()) return;
-  if (holeManager->holeSlots() <= getParent()->getPolicies().compact_min) {
+  node_handle wasted = holeManager->holeSlots() + holeManager->fragmentSlots();
+  if (0==data || 0==wasted) return;
+  if (wasted <= getParent()->getPolicies().compact_min) {
     return;
   }
-  if (holeManager->holeSlots() <  getParent()->getPolicies().compact_max) {
+  if (wasted <  getParent()->getPolicies().compact_max) {
 
-    // If percentage of holes is below trigger, then don't compact
-    if (100 * holeManager->holeSlots() < 
+    // If percentage of wasted slots is below trigger, then don't compact
+    if (100 * wasted < 
         holeManager->lastSlot() * getParent()->getPolicies().compact_frac) 
       return;
 
@@ -132,6 +133,8 @@ void MEDDLY::simple_storage::collectGarbage(bool shrink)
   MEDDLY_DCASSERT(node_ptr == end_ptr);
 
   holeManager->clearHolesAndShrink( (curr_ptr - 1 - data), shrink );
+  MEDDLY_DCASSERT(0==holeManager->holeSlots());
+  MEDDLY_DCASSERT(0==holeManager->fragmentSlots());
 
   incCompactions(); 
 
@@ -143,17 +146,26 @@ void MEDDLY::simple_storage::collectGarbage(bool shrink)
 }
 
 void MEDDLY::simple_storage
-::reportMemoryUsage(FILE* s, const char* pad, int verb) const
+::reportStats(FILE* s, const char* pad, unsigned flags) const
 {
-  if (verb<=6) return;
+  static unsigned STORAGE = 
+    expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED;
 
-  fprintf(s, "%s", pad);
+  if (flags & STORAGE) {
+    fprintf(s, "%s", pad);
 #ifdef NODE_STORAGE_PER_LEVEL
-  fprintf(s, "Level %ld ", parent->getLevelNumber(this));
+    fprintf(s, "Level %ld ", parent->getLevelNumber(this));
 #endif
-  fprintf(s, "Memory stats for %s\n", getStorageName());
+    fprintf(s, "Stats for %s\n", getStorageName());
 
-  holeManager->reportMemoryUsage(s, pad, verb);
+    // anything for us?
+  }
+
+  holeManager->reportStats(s, pad, flags);
+
+#ifdef DEVELOPMENT_CODE
+  verifyStats();
+#endif
 }
 
 void MEDDLY::simple_storage::showNode(FILE* s, node_address addr, bool verb) const
@@ -300,7 +312,9 @@ void MEDDLY::simple_storage::unlinkDownAndRecycle(node_address addr)
   //
   // Recycle
   //
-  holeManager->recycleChunk(addr, activeNodeActualSlots(addr));
+  int pad;
+  holeManager->recycleChunk(addr, activeNodeActualSlots(addr, pad));
+  holeManager->releaseFragment(pad);
 }
 
 bool MEDDLY::simple_storage
@@ -760,6 +774,49 @@ MEDDLY::simple_storage::allocNode(int sz, node_handle tail, bool clear)
 #endif
   return off;
 }
+
+
+#ifdef DEVELOPMENT_CODE
+void MEDDLY::simple_storage::verifyStats() const
+{
+  int holes = 0;
+  node_address hole_count = 0;
+  node_address frag_count = 0;
+  for (node_address a=1; a<=holeManager->lastSlot(); ) {
+    if (data[a]<0) {
+      // hole
+      node_address anext = holeManager->chunkAfterHole(a);
+      hole_count += (anext - a);
+      holes++;
+      a = anext;
+      continue;
+    }
+    // not hole
+    int pad;
+    a += activeNodeActualSlots(a, pad);
+    frag_count += pad;
+  }
+  // done scan, compare stats
+
+  if ((hole_count == holeManager->holeSlots()) &&
+     (frag_count == holeManager->fragmentSlots()) &&
+     (holes == holeManager->numHoles())
+     )   return;
+
+  printf("Counted holes: %d stat: %d\n", 
+    holes, holeManager->numHoles()
+  );
+  
+  printf("Counted hole slots: %ld stat: %ld\n", 
+    hole_count, holeManager->holeSlots()
+  );
+  
+  printf("Counted fragments: %ld stat: %ld\n", 
+    frag_count, holeManager->fragmentSlots()
+  );
+  MEDDLY_DCASSERT(0);
+}
+#endif
 
 // ******************************************************************
 // *                                                                *

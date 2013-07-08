@@ -925,6 +925,42 @@ void MEDDLY::expert_forest::showNodeGraph(FILE *s, node_handle p) const
 }
 
 void MEDDLY::expert_forest
+::reportStats(FILE* s, const char* pad, unsigned flags) const
+{
+  if (flags & BASIC_STATS) {
+    bool human = flags & HUMAN_READABLE_MEMORY;
+    fprintf(s, "%s%ld current nodes\n", pad, getCurrentNumNodes());
+    fprintf(s, "%s%ld peak nodes\n%s", pad, getPeakNumNodes(), pad);
+    fprintmem(s, getCurrentMemoryUsed(), human);
+    fprintf(s, " current memory used\n%s", pad);
+    fprintmem(s, getPeakMemoryUsed(), human);
+    fprintf(s, " peak memory used\n%s", pad);
+    fprintmem(s, getCurrentMemoryAllocated(), human);
+    fprintf(s, " current memory allocated\n%s", pad);
+    fprintmem(s, getPeakMemoryAllocated(), human);
+    fprintf(s, " peak memory allocated\n");
+  }
+  if (flags & EXTRA_STATS) {
+    fprintf(s, "%s%ld reclaimed nodes\n", pad, stats.reclaimed_nodes);
+    fprintf(s, "%s%ld compactions\n", pad, stats.num_compactions);
+    fprintf(s, "%s%ld garbage collections\n", pad, stats.garbage_collections);
+  }
+  // forest specific
+  reportForestStats(s, pad);
+  // node storage
+#ifdef NODE_STORAGE_PER_LEVEL
+  for (int i=getMinLevelIndex(); i<=getNumVariables(); i++) {
+    if (levels[i]) levels[i]->reportStats(s, pad, flags);
+  }
+#else
+  nodeMan->reportStats(s, pad, flags);
+#endif
+  // unique table
+  unique->reportStats(s, pad, flags);
+}
+
+/*
+void MEDDLY::expert_forest
 ::reportMemoryUsage(FILE * s, const char* pad, int verb) const
 {
   if (verb>0) {
@@ -968,6 +1004,7 @@ void MEDDLY::expert_forest
   nodeMan->reportMemoryUsage(s, pad, verb);
 #endif
 }
+*/
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // '                                                                '
@@ -1120,7 +1157,8 @@ void MEDDLY::expert_forest::showInfo(FILE* s, int verb)
   if (1==verb)  dump(s);
   else          dumpInternal(s); 
   fprintf(s, "DD stats:\n");
-  reportMemoryUsage(s, "    ", verb);
+  reportStats(s, "    ", ~0);
+  // reportMemoryUsage(s, "    ", verb);
   fprintf(s, "Unique table stats:\n");
   fprintf(s, "\t%-24s%u\n", "Current size:", unique->getSize());
   fprintf(s, "\t%-24s%u\n", "Current entries:", unique->getNumEntries());
@@ -1147,6 +1185,11 @@ void MEDDLY::expert_forest::normalize(node_builder &nb, int& ev) const
 void MEDDLY::expert_forest::normalize(node_builder &nb, float& ev) const
 {
   throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::expert_forest::reportForestStats(FILE* s, const char* pad) const
+{
+  // default - do nothing
 }
 
 void MEDDLY::expert_forest::showTerminal(FILE* s, node_handle tnode) const
@@ -1230,15 +1273,15 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 
   unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE
-  node_reader key; 
-  initNodeReader(key, p, false);
-  key.computeHash(areEdgeValuesHashed());
-  if (unique->find(key) != p) {
+  node_reader* key = initNodeReader(p, false);
+  key->computeHash(areEdgeValuesHashed());
+  if (unique->find(*key) != p) {
     fprintf(stderr, "Error in deleteNode\nFind: %ld\np: %ld\n",
-      long(unique->find(key)), long(p));
+      long(unique->find(*key)), long(p));
     dumpInternal(stdout);
     MEDDLY_DCASSERT(false);
   }
+  node_reader::recycle(key);
   node_handle x = unique->remove(h, p);
   MEDDLY_DCASSERT(p == x);
 #else
@@ -1290,15 +1333,15 @@ void MEDDLY::expert_forest::zombifyNode(node_handle p)
 
   unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE 
-  node_reader key; 
-  initNodeReader(key, p, false);
-  key.computeHash(areEdgeValuesHashed());
-  if (unique->find(key) != p) {
+  node_reader* key = initNodeReader(p, false);
+  key->computeHash(areEdgeValuesHashed());
+  if (unique->find(*key) != p) {
     fprintf(stderr, "Fail: can't find reduced node %ld; got %ld\n", 
-      long(p), long(unique->find(key)));
+      long(p), long(unique->find(*key)));
     dumpInternal(stderr);
     MEDDLY_DCASSERT(false);
   }
+  node_reader::recycle(key);
   node_handle x = unique->remove(h, p);
   MEDDLY_DCASSERT(x==p);
 #else

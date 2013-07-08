@@ -158,7 +158,7 @@ class MEDDLY::old_node_storage : public node_storage {
 
     virtual node_storage* createForForest(expert_forest* f) const;
     virtual void collectGarbage(bool shrink);
-    virtual void reportMemoryUsage(FILE* s, const char* pad, int vL) const;
+    virtual void reportStats(FILE* s, const char* pad, unsigned flags) const;
 
     virtual void showNode(FILE* s, node_address addr, bool verb) const;
 
@@ -227,6 +227,8 @@ class MEDDLY::old_node_storage : public node_storage {
       node_handle holes_bottom;
       /// Total ints in holes
       node_handle hole_slots;
+      /// Total ints in fragments
+      node_handle fragment_slots;
 
       /// for verifying hole_slots
       static node_handle verify_hole_slots;
@@ -408,12 +410,27 @@ class MEDDLY::old_node_storage : public node_storage {
       */
       node_handle allocNode(int sz, node_handle tail, bool clear);
 
+      
       /// Find actual number of slots used for this active node.
       inline int activeNodeActualSlots(node_handle addr) const {
           int end = addr + slotsForNode(sizeOf(addr))-1;
           // account for any padding
           if (data[end] < 0) {
             end -= data[end];
+          }
+          return end - addr + 1;
+      }
+
+      /// Find actual number of slots used for this active node.
+      inline 
+      int activeNodeActualSlots(node_handle addr, node_handle &pad) const {
+          int end = addr + slotsForNode(sizeOf(addr))-1;
+          // account for any padding
+          if (data[end] < 0) {
+            pad = -data[end];
+            end += pad;
+          } else {
+            pad = 0;
           }
           return end - addr + 1;
       }

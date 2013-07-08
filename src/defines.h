@@ -107,6 +107,32 @@ namespace MEDDLY {
     return k1 > k2;
   }
 
+  /// Print human-readable memory usage
+  inline void fprintmem(FILE* s, unsigned long m, bool human) {
+    if ((!human) || (m<1024)) {
+      fprintf(s, "%lu bytes", m);
+      return;
+    }
+    double approx = m;
+    approx /= 1024;
+    if (approx < 1024) {
+      fprintf(s, "%3.2lf Kbytes", approx);
+      return;
+    }
+    approx /= 1024;
+    if (approx < 1024) {
+      fprintf(s, "%3.2lf Mbytes", approx);
+      return;
+    }
+    approx /= 1024;
+    if (approx < 1024) {
+      fprintf(s, "%3.2lf Gbytes", approx);
+      return;
+    }
+    approx /= 1024;
+    fprintf(s, "%3.2lf Tbytes", approx);
+  }
+
 }
 
 /*

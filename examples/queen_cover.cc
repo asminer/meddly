@@ -36,6 +36,7 @@
 #include <unistd.h>
 
 #include "meddly.h"
+#include "meddly_expert.h"
 
 using namespace MEDDLY;
 
@@ -67,32 +68,6 @@ public:
   }
 };
 
-
-void printmem(long m)
-{
-  if (m<1024) {
-    printf("%ld bytes", m);
-    return;
-  }
-  double approx = m;
-  approx /= 1024;
-  if (approx < 1024) {
-    printf("%3.2lf Kbytes", approx);
-    return;
-  }
-  approx /= 1024;
-  if (approx < 1024) {
-    printf("%3.2lf Mbytes", approx);
-    return;
-  }
-  approx /= 1024;
-  if (approx < 1024) {
-    printf("%3.2lf Gbytes", approx);
-    return;
-  }
-  approx /= 1024;
-  printf("%3.2lf Tbytes", approx);
-}
 
 forest* buildQueenForest()
 {
@@ -298,19 +273,12 @@ int main(int argc, const char** argv)
 
   printf("\n%lg seconds CPU time elapsed\n", stopwatch.elapsed());
   printf("Forest stats:\n");
-  const forest::statset& stats = f->getStats();
-  printf("\t%ld current nodes\n", stats.active_nodes);
-  printf("\t%ld peak nodes\n", stats.peak_active);
-  printf("\t");
-  printmem(stats.memory_used);
-  printf(" current memory used\n\t");
-  printmem(stats.peak_memory_used);
-  printf(" peak memory used\n\t");
-  printmem(stats.memory_alloc);
-  printf(" current memory allocated\n\t");
-  printmem(stats.peak_memory_alloc);
-  printf(" peak memory allocated\n\t");
-  printf("%ld compactions\n", stats.num_compactions);
+  expert_forest* ef = (expert_forest*)f;
+  ef->reportStats(stdout, "\t", 
+    expert_forest::HUMAN_READABLE_MEMORY  |
+    expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
+    expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
+  );
 
   long c;
   apply(CARDINALITY, solutions, c);

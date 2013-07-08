@@ -40,6 +40,16 @@ MEDDLY::unique_table::~unique_table()
   free(table);
 }
 
+void MEDDLY::unique_table
+::reportStats(FILE* s, const char* pad, unsigned flags) const
+{
+  if (flags & expert_forest::UNIQUE_TABLE_STATS) {
+    fprintf(s, "%sUnique table stats:\n", pad);
+    fprintf(s, "%s    %u current size\n", pad, getSize());
+    fprintf(s, "%s    %u current entries\n", pad, getNumEntries());
+  }
+}
+
 void MEDDLY::unique_table::show(FILE* s) const
 {
   fprintf(s, "Unique table:\n");

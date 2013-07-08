@@ -29,6 +29,8 @@ namespace MEDDLY {
   class hm_grid;
 };
 
+
+
 /** Grid-based hole management.
     Scheme from early versions of this library.
 
@@ -68,7 +70,7 @@ namespace MEDDLY {
     :
     (holes_top)
 
-    TBD:
+    
     Note that the grid only stores holes up to the largest hole
     requested.  Larger holes are stored in the "large holes list".
 
@@ -102,17 +104,16 @@ class MEDDLY::hm_grid : public holeman {
   public:
     virtual node_address requestChunk(int slots);
     virtual void recycleChunk(node_address addr, int slots);
-    virtual node_address chunkAfterHole(node_address addr) const;
     virtual void dumpInternalInfo(FILE* s) const;
     virtual void dumpHole(FILE* s, node_address a) const;
     virtual void dumpInternalTail(FILE* s) const;
-    virtual void reportMemoryUsage(FILE* s, const char* pad, int vL) const;
+    virtual void reportStats(FILE* s, const char* pad, unsigned flags) const;
     virtual void clearHolesAndShrink(node_address new_last, bool shrink);
 
   private:
       inline node_handle* holeOf(node_handle addr) const {
         MEDDLY_DCASSERT(data);
-        MEDDLY_CHECK_RANGE(1, addr, last_slot+1);
+        MEDDLY_CHECK_RANGE(1, addr, lastSlot()+1);
         MEDDLY_DCASSERT(data[addr] < 0);  // it's a hole
         return data + addr;
       }
@@ -141,25 +142,82 @@ class MEDDLY::hm_grid : public holeman {
       inline node_handle& Next(node_handle off)       { return h_next(off); }
       inline node_handle  Next(node_handle off) const { return h_next(off); }
 
-      inline bool isHoleNonIndex(node_handle p_offset) const {
+      inline bool isIndexHole(node_handle p_offset) const {
+          return (non_index_hole != h_up(p_offset));
+      }
+      inline bool isNotIndexHole(node_handle p_offset) const {
           return (non_index_hole == h_up(p_offset));
       }
 
-      // add a hole to the hole grid
-      void gridInsert(node_handle p_offset);
+      // get middle ptrs
+      inline void getMiddle(node_handle p_offset, node_handle &prev, 
+        node_handle &next) const
+      {
+         node_handle* hole = holeOf(p_offset);
+         MEDDLY_DCASSERT(non_index_hole == hole[hole_up_index]);
+         prev = hole[hole_prev_index];
+         next = hole[hole_next_index];
+      }
 
-      // remove a non-index hole from the hole grid
-      void midRemove(node_handle p_offset);
+      // get index ptrs
+      inline void getIndex(node_handle p_offset, node_handle &up,
+        node_handle &down, node_handle &next) const 
+      {
+         node_handle* hole = holeOf(p_offset);
+         up = hole[hole_up_index];
+         MEDDLY_DCASSERT(up != non_index_hole);
+         down = hole[hole_down_index];
+         next = hole[hole_next_index];
+      }
 
-      // remove an index hole from the hole grid
-      void indexRemove(node_handle p_offset);
+      // set a middle node
+      inline void makeMiddle(node_handle p_offset, node_handle prev, 
+        node_handle next) 
+      {
+         node_handle* hole = holeOf(p_offset);
+         hole[hole_up_index] = non_index_hole;
+         hole[hole_prev_index] = prev;
+         hole[hole_next_index] = next;
+      }
 
-      // resize the data array.
-      void resize(node_handle new_slots);
+      // set an index node
+      inline void makeIndex(node_handle p_offset, node_handle up, 
+        node_handle down, node_handle next) 
+      {
+         node_handle* hole = holeOf(p_offset);
+         hole[hole_up_index] = up;
+         hole[hole_down_index] = down;
+         hole[hole_next_index] = next;
+      }
+
+      // convert a node from index to non-index
+      inline void index2middle(node_handle p_offset, node_handle prev)
+      {
+        node_handle* hole = holeOf(p_offset);
+        MEDDLY_DCASSERT(non_index_hole != hole[hole_up_index]);
+        hole[hole_up_index] = non_index_hole;
+        hole[hole_prev_index] = prev;
+        // next doesn't change!
+      }
+
+      // convert a node from non-index to index
+      inline void middle2index(node_handle p_offset, node_handle up, 
+        node_handle down)
+      {
+        node_handle* hole = holeOf(p_offset);
+        MEDDLY_DCASSERT(non_index_hole == hole[hole_up_index]);
+        hole[hole_up_index] = up;
+        hole[hole_down_index] = down;
+      }
+
+      // add a hole to the grid or large hole list, as appropriate
+      void insertHole(node_handle p_offset);
+
+      // remove a hole from the grid
+      void removeHole(node_handle p_offset);
 
 
   private:
-      static const int min_size = 1024;
       static const int non_index_hole = -2;   // any negative will do
       // hole indexes
       static const int hole_up_index = 1;
@@ -168,11 +226,6 @@ class MEDDLY::hm_grid : public holeman {
       static const int hole_next_index = hole_prev_index+1;
 
   private:
-      /// data array; we manage this
-      node_handle* data;
-      /// Size of data array.
-      node_handle size;
-
       /// Largest hole ever requested
       node_handle max_request;
       /// List of large holes

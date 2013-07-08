@@ -21,8 +21,6 @@
 
 
 
-// TODO: Testing
-
 #include "hm_grid.h"
 
 
@@ -45,24 +43,26 @@ MEDDLY::node_handle MEDDLY::hm_grid::verify_hole_slots;
 
 MEDDLY::hm_grid::hm_grid(node_storage* p) : holeman(5, p)
 {
-  data = 0;
-  size = 0;
   max_request = 0;
   large_holes = 0;
   holes_top = 0;
   holes_bottom = 0;
-  updateData(data);
 }
 
 MEDDLY::hm_grid::~hm_grid()
 {
-  decMemAlloc(size*sizeof(node_handle));
-  free(data);
 }
 
 MEDDLY::node_address MEDDLY::hm_grid::requestChunk(int slots)
 {
+#ifdef MEMORY_TRACE
+  printf("Requesting %d slots\n", slots);
+#endif
+
   if (slots > max_request) {
+#ifdef MEMORY_TRACE
+    printf("New max request; shifting holes from large list to grid\n");
+#endif
     max_request = slots;
     // Traverse the large hole list, and re-insert
     // all the holes, in case some are now smaller
@@ -71,17 +71,27 @@ MEDDLY::node_address MEDDLY::hm_grid::requestChunk(int slots)
     large_holes = 0;
     for (; curr; ) {
       node_handle next = Next(curr);
-      gridInsert(curr);
+      insertHole(curr);
       curr = next;
     }
   }
+
+  // find us a good hole
+  node_handle found = 0;
 
   // First, try for a hole exactly of this size
   // by traversing the index nodes in the hole grid
   node_handle chain = 0;
   node_handle curr = holes_bottom;
   while (curr) {
-    if (slots == -(data[curr])) break;
+    if (slots == -(data[curr])) {
+      if (Next(curr)) {
+        found = Next(curr);
+      } else {
+        found = curr;
+      }
+      break;
+    }
     if (slots < -(data[curr])) {
       // no exact match possible
       curr = 0;
@@ -92,113 +102,57 @@ MEDDLY::node_address MEDDLY::hm_grid::requestChunk(int slots)
     chain++;
   }
 
-  if (curr) {
-    // perfect fit
-    hole_slots -= slots;
-    // try to not remove the "index" node
-    node_handle next = Next(curr);
-    if (next) {
-      midRemove(next);
-#ifdef MEMORY_TRACE
-      printf("Removed Non-Index hole %d\n", next);
-#ifdef DEEP_MEMORY_TRACE
-      dumpInternal(stdout);
-#else 
-      dumpInternal(stdout, next);
-#endif
-#endif
-      return next;
-    }
-    indexRemove(curr);
-#ifdef MEMORY_TRACE
-    printf("Removed Index hole %d\n", curr);
-#ifdef DEEP_MEMORY_TRACE
-    dumpInternal(stdout);
-#else 
-    dumpInternal(stdout, curr);
-#endif
-#endif
-    return curr;
+#ifdef MERGE_AND_SPLIT_HOLES
+  // If that failed, try the large hole list
+  if (!found && large_holes) {
+    // should be large enough
+    found = large_holes;
   }
 
-#ifdef MERGE_AND_SPLIT_HOLES
-  // No hole with exact size.
-  // Take the first large hole.
-  if (large_holes) {
-    curr = large_holes;
-    large_holes = Next(curr);
-    if (large_holes) Prev(large_holes) = 0;
+  // If that failed, try the largest hole in the grid
+  if (!found && holes_top) if (slots < -data[holes_top]) {
+    if (Next(holes_top)) {
+      found = Next(holes_top);
+    } else {
+      found = holes_top;
+    }
+  }
+#endif
 
-    // Sanity check: the hole is large enough
-    MEDDLY_DCASSERT(slots < -data[curr]);
-    
+  if (found) {
+    // We have a hole to recycle
+    // Sanity check:
+    MEDDLY_DCASSERT(slots <= -data[found]);
+
+    // Remove the hole
+    removeHole(found);
+    useHole(-data[found]);
+
+    // hole might be larger than requested; decide what to do with leftovers.
     // Is there space for a leftover hole?
     const int min_node_size = smallestChunk();
-    if (slots + min_node_size >= -data[curr]) {
+    if (slots + min_node_size >= -data[found]) {
       // leftover space is too small to be useful,
       // just send the whole thing.
-#ifdef MEMORY_TRACE
-      printf("Removed entire large hole %d\n", curr);
-#ifdef DEEP_MEMORY_TRACE
-      dumpInternal(stdout);
-#else 
-      dumpInternal(stdout, curr);
-#endif
-#endif
-      hole_slots += data[curr]; // SUBTRACTS the number of slots
-      return curr;
+      incFragments(-data[found] - slots);
+      return found;
     }
 
-    // This is a large hole, save the leftovers
-    node_handle newhole = curr + slots;
-    node_handle newsize = -(data[curr]) - slots;
+    // Save the leftovers - make a new hole!
+    node_handle newhole = found + slots;
+    node_handle newsize = -(data[found]) - slots;
+    data[found] = -slots;
     data[newhole] = -newsize;
     data[newhole + newsize - 1] = -newsize;
-    gridInsert(newhole);
-
-#ifdef MEMORY_TRACE
-    printf("Removed part of hole %d\n", curr);
-#ifdef DEEP_MEMORY_TRACE
-    dumpInternal(stdout);
-#else 
-    dumpInternal(stdout, curr);
-#endif
-#endif
-    data[curr] = -slots;
-    hole_slots -= slots;
-    return curr;
+    insertHole(newhole);
+    newHole(newsize);
+    return found;
   }
-#endif
-
+  
   // 
   // Still here?  We couldn't recycle a node.
   // 
-
-  //
-  // First -- try to compact if we need to expand
-  //
-  if (getForest()->getPolicies().compactBeforeExpand) {
-    if (last_slot + slots >= size) getParent()->collectGarbage(false);
-  }
-
-  //
-  // Do we need to expand?
-  //
-  if (last_slot + slots >= size) {
-    // new size is 50% more than previous 
-    node_handle want_size = last_slot + slots;
-    node_handle new_size = MAX(size, want_size) * 1.5;  // TBD: WTF?
-
-    resize(new_size);
-  }
-
-  // 
-  // Grab node from the end
-  //
-  node_handle h = last_slot + 1;
-  last_slot += slots;
-  data[h] = -slots;
-  return h;
+  return allocFromEnd(slots);
 }
 
 // ******************************************************************
@@ -211,7 +165,7 @@ void MEDDLY::hm_grid::recycleChunk(node_address addr, int slots)
 
   decMemUsed(slots * sizeof(node_handle));
 
-  hole_slots += slots;
+  newHole(slots);
   data[addr] = data[addr+slots-1] = -slots;
 
   if (!getForest()->getPolicies().recycleNodeStorageHoles) return;
@@ -225,33 +179,18 @@ void MEDDLY::hm_grid::recycleChunk(node_address addr, int slots)
 #endif
     node_handle lefthole = addr + data[addr-1];
     MEDDLY_DCASSERT(data[lefthole] == data[addr-1]);
-    if (non_index_hole == Up(lefthole)) midRemove(lefthole);
-    else indexRemove(lefthole);
+    removeHole(lefthole);
     slots += (-data[lefthole]);
     addr = lefthole;
     data[addr] = data[addr+slots-1] = -slots;
+    useHole(0);
   }
 #endif
 
   // if addr is the last hole, absorb into free part of array
-  MEDDLY_DCASSERT(addr + slots - 1 <= last_slot);
-  if (addr+slots-1 == last_slot) {
-    last_slot -= slots;
-    hole_slots -= slots;
-    if (size > min_size && (last_slot + 1) < size/2) {
-      node_handle new_size = size/2;
-      while (new_size > (last_slot + 1) * 2) new_size /= 2;
-      if (new_size < min_size) new_size = min_size;
-      resize(new_size);
-    }
-#ifdef MEMORY_TRACE
-    printf("Made Last Hole %d, last %d\n", addr, last);
-#ifdef DEEP_MEMORY_TRACE
-    dumpInternal(stdout);
-#else 
-    dumpInternal(stdout, 0);
-#endif
-#endif
+  MEDDLY_DCASSERT(addr + slots - 1 <= lastSlot());
+  if (addr+slots-1 == lastSlot()) {
+    releaseToEnd(addr, slots);
     return;
   }
 
@@ -263,15 +202,15 @@ void MEDDLY::hm_grid::recycleChunk(node_address addr, int slots)
     printf("Right merging\n");
 #endif
     node_handle righthole = addr+slots;
-    if (non_index_hole == Up(righthole)) midRemove(righthole);
-    else indexRemove(righthole);
+    removeHole(righthole);
     slots += (-data[righthole]);
     data[addr] = data[addr+slots-1] = -slots;
+    useHole(0);
   }
 #endif
 
   // Add hole to grid
-  gridInsert(addr); 
+  insertHole(addr);
 
 #ifdef MEMORY_TRACE
   printf("Made Hole %d\n", addr);
@@ -285,20 +224,10 @@ void MEDDLY::hm_grid::recycleChunk(node_address addr, int slots)
 
 // ******************************************************************
 
-MEDDLY::node_address MEDDLY::hm_grid::chunkAfterHole(node_address addr) const
-{
-  MEDDLY_DCASSERT(data);
-  MEDDLY_DCASSERT(data[addr]<0);
-  MEDDLY_DCASSERT(data[addr-data[addr]-1] == data[addr]);
-  return addr - data[addr];
-}
-
-// ******************************************************************
-
 void MEDDLY::hm_grid::dumpInternalInfo(FILE* s) const
 {
-  fprintf(s, "Last slot used: %ld\n", long(last_slot));
-  fprintf(s, "Total hole slots: %ld\n", long(hole_slots));
+  fprintf(s, "Last slot used: %ld\n", long(lastSlot()));
+  fprintf(s, "Total hole slots: %ld\n", holeSlots());
   fprintf(s, "large_holes: %ld\n", long(large_holes));
   fprintf(s, "Grid: top = %ld bottom = %ld\n", long(holes_top), long(holes_bottom));
   verify_hole_slots = 0;
@@ -309,7 +238,7 @@ void MEDDLY::hm_grid::dumpInternalInfo(FILE* s) const
 void MEDDLY::hm_grid::dumpHole(FILE* s, node_address a) const
 {
   MEDDLY_DCASSERT(data);
-  MEDDLY_CHECK_RANGE(1, a, last_slot);
+  MEDDLY_CHECK_RANGE(1, a, lastSlot());
   fprintf(s, "[%ld, ", long(data[a]));
   if (data[a+1]<0)  {
     fprintf(s, "non-index, p: %ld, ", long(data[a+2]));
@@ -325,7 +254,7 @@ void MEDDLY::hm_grid::dumpHole(FILE* s, node_address a) const
 
 void MEDDLY::hm_grid::dumpInternalTail(FILE* s) const
 {
-  if (verify_hole_slots != hole_slots) {
+  if (verify_hole_slots != holeSlots()) {
     fprintf(s, "Counted hole slots: %ld\n", long(verify_hole_slots));
     MEDDLY_DCASSERT(false);
   }
@@ -334,12 +263,18 @@ void MEDDLY::hm_grid::dumpInternalTail(FILE* s) const
 // ******************************************************************
 
 void MEDDLY::hm_grid
-::reportMemoryUsage(FILE* s, const char* pad, int verb) const
+::reportStats(FILE* s, const char* pad, unsigned flags) const
 {
-  if (verb>7) {
-    long holemem = hole_slots * sizeof(node_handle);
-    fprintf(s, "%s  Hole Memory Usage:\t%ld\n", pad, holemem);
-  }
+  static unsigned HOLE_MANAGER =
+    expert_forest::HOLE_MANAGER_STATS | expert_forest::HOLE_MANAGER_DETAILED;
+
+  if (! (flags & HOLE_MANAGER)) return;
+
+  fprintf(s, "%sStats for grid hole management\n", pad);
+
+  holeman::reportStats(s, pad, flags);
+
+  if (! (flags & expert_forest::HOLE_MANAGER_DETAILED)) return;
 
   // Compute chain length histogram
   std::map<int, int> chainLengths;
@@ -362,7 +297,7 @@ void MEDDLY::hm_grid
 
   // Display the histogram
 
-  fprintf(s, "%s  Hole Chains (size, count):\n", pad);
+  fprintf(s, "%s    Hole Chains (size, count):\n", pad);
   for (std::map<int, int>::iterator iter = chainLengths.begin();
       iter != chainLengths.end(); ++iter)
     {
@@ -371,25 +306,18 @@ void MEDDLY::hm_grid
       else
         fprintf(s, "%s\t%5d: %d\n", pad, iter->first, iter->second);
     }
-  fprintf(s, "%s  End of Hole Chains\n", pad);
+  fprintf(s, "%s    End of Hole Chains\n", pad);
 }
 
 // ******************************************************************
 
 void MEDDLY::hm_grid::clearHolesAndShrink(node_address new_last, bool shrink)
 {
-  last_slot = new_last;
+  holeman::clearHolesAndShrink(new_last, shrink);
 
   // set up hole pointers and such
   holes_top = holes_bottom = 0;
-  hole_slots = 0;
   large_holes = 0;
-
-  if (shrink && size > min_size && last_slot < size/2) {
-    node_handle new_size = size/2;
-    while (new_size > min_size && new_size > last_slot * 3) { new_size /= 2; }
-    resize(new_size);
-  }
 }
 
 // ******************************************************************
@@ -398,10 +326,10 @@ void MEDDLY::hm_grid::clearHolesAndShrink(node_address new_last, bool shrink)
 // *                                                                *
 // ******************************************************************
 
-void MEDDLY::hm_grid::gridInsert(node_handle p_offset)
+void MEDDLY::hm_grid::insertHole(node_handle p_offset)
 {
 #ifdef MEMORY_TRACE
-  printf("gridInsert(%d)\n", p_offset);
+  printf("insertHole(%ld)\n", long(p_offset));
 #endif
 
   // sanity check to make sure that the first and last slots in this hole
@@ -414,9 +342,7 @@ void MEDDLY::hm_grid::gridInsert(node_handle p_offset)
     printf("\tAdding to large_holes: %d\n", large_holes);
 #endif
     // add to the large hole list
-    Up(p_offset) = non_index_hole;
-    Next(p_offset) = large_holes;
-    Prev(p_offset) = 0;
+    makeMiddle(p_offset, 0, large_holes);
     if (large_holes) Prev(large_holes) = p_offset;
     large_holes = p_offset;
     return;
@@ -428,25 +354,24 @@ void MEDDLY::hm_grid::gridInsert(node_handle p_offset)
     printf("\tAdding to empty grid\n");
 #endif
     // index hole
-    Up(p_offset) = 0;
-    Down(p_offset) = 0;
-    Next(p_offset) = 0;
+    makeIndex(p_offset, 0, 0, 0);
     holes_top = holes_bottom = p_offset;
     return;
   }
+
   // special case: at top
   if (data[p_offset] < data[holes_top]) {
 #ifdef MEMORY_TRACE
     printf("\tAdding new chain at top\n");
 #endif
     // index hole
-    Up(p_offset) = 0;
-    Next(p_offset) = 0;
-    Down(p_offset) = holes_top;
+    makeIndex(p_offset, 0, holes_top, 0);
     Up(holes_top) = p_offset;
     holes_top = p_offset;
     return;
   }
+
+  // find our vertical position in the grid
   node_handle above = holes_bottom;
   node_handle below = 0;
   while (data[p_offset] < data[above]) {
@@ -462,9 +387,7 @@ void MEDDLY::hm_grid::gridInsert(node_handle p_offset)
     // Found, add this to chain
     // making a non-index hole
     node_handle right = Next(above);
-    Up(p_offset) = non_index_hole;
-    Prev(p_offset) = above;
-    Next(p_offset) = right;
+    makeMiddle(p_offset, above, right);
     if (right) Prev(right) = p_offset;
     Next(above) = p_offset;
     return; 
@@ -474,9 +397,7 @@ void MEDDLY::hm_grid::gridInsert(node_handle p_offset)
 #endif
   // we should have above < p_offset < below  (remember, -sizes)
   // create an index hole since there were no holes of this size
-  Up(p_offset) = above;
-  Down(p_offset) = below;
-  Next(p_offset) = 0;
+  makeIndex(p_offset, above, below, 0);
   Down(above) = p_offset;
   if (below) {
     Up(below) = p_offset;
@@ -488,130 +409,92 @@ void MEDDLY::hm_grid::gridInsert(node_handle p_offset)
 
 // ******************************************************************
 
-void MEDDLY::hm_grid::midRemove(node_handle p_offset)
+void MEDDLY::hm_grid::removeHole(node_handle p_offset)
 {
+  if (isIndexHole(p_offset)) {
+      //
+      // Index node
+      //
 #ifdef MEMORY_TRACE
-  printf("midRemove(%d)\n", p_offset);
+      printf("indexRemove(%ld)\n", long(p_offset));
 #endif
+      node_handle above, below, right;
+      getIndex(p_offset, above, below, right);
 
-  // Remove a "middle" node, either in the grid
-  // or in the large hole list.
-  //
-  MEDDLY_DCASSERT(isHoleNonIndex(p_offset));
+      if (right) {
+        // convert right into an index node
+        middle2index(right, above, below);
 
-  node_handle left = Prev(p_offset); 
-  node_handle right = Next(p_offset);
+        // update the pointers of the holes (index) above and below it
+        if (above) {
+          Down(above) = right;
+        } else {
+          holes_top = right;
+        }
 
-#ifdef MEMORY_TRACE
-  printf("\tIN left: %d  right: %d  large_holes: %d\n", 
-    left, right, large_holes
-  );
-#endif
-
-  if (left) {
-    Next(left) = right;
-  } else {
-    // MUST be head of the large hole list
-    MEDDLY_DCASSERT(large_holes == p_offset);
-    large_holes = right;
-  }
-  if (right) Prev(right) = left;
-
-#ifdef MEMORY_TRACE
-  printf("\tOUT large_holes: %d\n", large_holes);
-#endif
-
-  // Sanity checks
-#ifdef DEVELOPMENT_CODE
-  if (large_holes) {
-    MEDDLY_CHECK_RANGE(1, large_holes, last_slot+1);
-    MEDDLY_DCASSERT(data[large_holes] < 0);
-  }
-#endif
-}
-
-// ******************************************************************
-
-void MEDDLY::hm_grid::indexRemove(node_handle p_offset)
-{
-#ifdef MEMORY_TRACE
-  printf("indexRemove(%d)\n", p_offset);
-#endif
-
-  MEDDLY_DCASSERT(!isHoleNonIndex(p_offset));
-  node_handle above = Up(p_offset); 
-  node_handle below = Down(p_offset); 
-  node_handle right = Next(p_offset); 
-
-  if (right >= 1) {
-    // there are nodes to the right!
-    MEDDLY_DCASSERT(Up(right) < 0);
-    Up(right) = above;
-    Down(right) = below;
-    // update the pointers of the holes (index) above and below it
-    if (above) {
-      Down(above) = right;
-    } else {
-      holes_top = right;
-    }
-
-    if (below) {
-      Up(below) = right;
-    } else {
-      holes_bottom = right;
-    }
+        if (below) {
+          Up(below) = right;
+        } else {
+          holes_bottom = right;
+        }
     
-  } else {
-    // there are no non-index nodes
-    MEDDLY_DCASSERT(right < 1);
+      } else {
+        // remove this row completely
 
-    // this was the last node of its size
-    // update the pointers of the holes (index) above and below it
-    if (above) {
-      Down(above) = below;
-    } else {
-      holes_top = below;
-    }
+        // update the pointers of the holes (index) above and below it
+        if (above) {
+          Down(above) = below;
+        } else {
+          holes_top = below;
+        }
 
-    if (below) {
-      Up(below) = above;
-    } else {
-      holes_bottom = above;
-    }
-  }
-  // Sanity checks
-#ifdef DEVELOPMENT_CODE
-  if (large_holes) {
-    MEDDLY_CHECK_RANGE(1, large_holes, last_slot+1);
-    MEDDLY_DCASSERT(data[large_holes] < 0);
-  }
-#endif
-}
-
-// ******************************************************************
-
-void MEDDLY::hm_grid::resize(node_handle new_slots)
-{
-  node_handle* new_data 
-    = (node_handle*) realloc(data, new_slots * sizeof(node_handle));
-
-  if (0 == new_data) throw error(error::INSUFFICIENT_MEMORY);
-  if (0 == data) new_data[0] = 0;
-  if (new_slots > size) {
-    incMemAlloc((new_slots - size) * sizeof(node_handle));
-  } else {
-    decMemAlloc((size - new_slots) * sizeof(node_handle));
-  }
+        if (below) {
+          Up(below) = above;
+        } else {
+          holes_bottom = above;
+        }
+      }
 #ifdef MEMORY_TRACE
-    printf("Resized data[]. Old size: %d, New size: %d, Last: %d.\n", 
-      size, new_slots, last
-    );
+      printf("Removed Index hole %ld\n", long(p_offset));
+#ifdef DEEP_MEMORY_TRACE
+      dumpInternal(stdout);
+#else 
+      dumpInternal(stdout, p_offset);
 #endif
-  size = new_slots;
-  if (data != new_data) {
-    // update pointers
-    data = new_data;
-    updateData(data);
+#endif
+      //
+      // Done with index node removal
+      //
+  } else {
+      //
+      // Not an index node
+      //
+#ifdef MEMORY_TRACE
+      printf("midRemove(%ld)\n", long(p_offset));
+#endif
+      // Remove a "middle" node, either in the grid
+      // or in the large hole list.
+      //
+      node_handle left, right;
+      getMiddle(p_offset, left, right);
+
+      if (left) {
+        Next(left) = right;
+      } else {
+        // MUST be head of the large hole list
+        MEDDLY_DCASSERT(large_holes == p_offset);
+        large_holes = right;
+      }
+      if (right) Prev(right) = left;
+
+#ifdef MEMORY_TRACE
+      printf("Removed Non-Index hole %ld\n", long(p_offset));
+#ifdef DEEP_MEMORY_TRACE
+      dumpInternal(stdout);
+#else 
+      dumpInternal(stdout, p_offset);
+#endif
+#endif
   }
 }
 
