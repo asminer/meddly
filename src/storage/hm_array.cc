@@ -39,8 +39,6 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::node_handle MEDDLY::hm_array::verify_hole_slots;
-
 MEDDLY::hm_array::hm_array(node_storage* p) : holeman(4, p)
 {
   large_holes = 0;
@@ -105,42 +103,21 @@ MEDDLY::node_address MEDDLY::hm_array::requestChunk(int slots)
     dumpHole(stdout, found);
 #endif
 #endif
+    // Sanity check:
+    MEDDLY_DCASSERT(slots <= -data[found]);
     
-    // Is there space for a leftover hole?
-    const int min_node_size = smallestChunk();
-    if (slots + min_node_size >= -data[found]) {
-      // leftover space is too small to be useful (or 0),
-      // just send the whole thing.
+    // Update stats
+    useHole(-data[found]);
 
-      // Update stats
-      incFragments(-data[found] - slots);  
-      useHole(-data[found]);
-    } else {
-      // There is space for the leftover slots to make a hole
-      // This is a large hole, save the leftovers
-      node_handle newhole = found + slots;
-      node_handle newsize = -(data[found]) - slots;
+    node_handle newhole = found + slots;
+    node_handle newsize = -(data[found]) - slots;
+    data[found] = -slots;
+    if (newsize > 0) {
+      // Save the leftovers - make a new hole!
       data[newhole] = -newsize;
       data[newhole + newsize - 1] = -newsize;
-      if (newsize < LARGE_SIZE) {
-        listInsert(small_holes[newsize], newhole);
-      } else {
-        listInsert(large_holes, newhole);
-      }
-#ifdef MEMORY_TRACE
-      printf("Made leftover hole %ld\n", long(newhole));
-#ifdef DEEP_MEMORY_TRACE
-      getParent()->dumpInternal(stdout);
-#else
-      dumpHole(stdout, newhole);
-#endif
-#endif
-      // set size of allocated memory to exactly what was requested
-      data[found] = -slots;
-
-      // Update stats
-      useHole(slots);
-      newHole(0);
+      newHole(newsize);
+      insertHole(newhole);
     }
     return found;
   }
@@ -176,19 +153,17 @@ void MEDDLY::hm_array::recycleChunk(node_address addr, int slots)
     // find the left hole address
     node_handle lefthole = addr + data[addr-1];
     MEDDLY_DCASSERT(data[lefthole] == data[addr-1]);
+    useHole(slots);
+    useHole(-data[lefthole]);
 
     // remove the left hole
-    if (-data[lefthole] < LARGE_SIZE) {
-      listRemove(small_holes[-data[lefthole]], lefthole);
-    } else {
-      listRemove(large_holes, lefthole);
-    }
+    removeHole(lefthole);
 
     // merge with us
-    useHole(0); // hole slots unchanged, number of holes decreases
     slots += (-data[lefthole]);
     addr = lefthole;
     data[addr] = data[addr+slots-1] = -slots;
+    newHole(slots);
   }
 #endif
 
@@ -211,26 +186,21 @@ void MEDDLY::hm_array::recycleChunk(node_address addr, int slots)
     // find the right hole address
     node_handle righthole = addr+slots;
 
+    useHole(slots);
+    useHole(-data[righthole]);
+
     // remove the right hole
-    if (-data[righthole] < LARGE_SIZE) {
-      listRemove(small_holes[-data[righthole]], righthole);
-    } else {
-      listRemove(large_holes, righthole);
-    }
+    removeHole(righthole);
     
     // merge with us
-    useHole(0);
     slots += (-data[righthole]);
     data[addr] = data[addr+slots-1] = -slots;
+    newHole(slots);
   }
 #endif
 
   // Add hole to the proper list
-  if (-data[addr] < LARGE_SIZE) {
-    listInsert(small_holes[-data[addr]], addr);
-  } else {
-    listInsert(large_holes, addr);
-  }
+  insertHole(addr);
 
 #ifdef MEMORY_TRACE
   printf("Made Hole %ld\n", long(addr));
@@ -257,7 +227,6 @@ void MEDDLY::hm_array::dumpInternalInfo(FILE* s) const
   }
   fprintf(s, ")\n");
   fprintf(s, "large_holes: %ld\n", long(large_holes));
-  verify_hole_slots = 0;
 }
 
 // ******************************************************************
@@ -270,17 +239,6 @@ void MEDDLY::hm_array::dumpHole(FILE* s, node_address a) const
   fprintf(s, "[%ld, p: %ld, n: %ld, ..., %ld]\n", 
       long(data[a]), long(data[a+1]), long(data[a+2]), long(data[aN])
   );
-  verify_hole_slots += aN+1-a;
-}
-
-// ******************************************************************
-
-void MEDDLY::hm_array::dumpInternalTail(FILE* s) const
-{
-  if (verify_hole_slots != holeSlots()) {
-    fprintf(s, "Counted hole slots: %ld\n", long(verify_hole_slots));
-    MEDDLY_DCASSERT(false);
-  }
 }
 
 // ******************************************************************

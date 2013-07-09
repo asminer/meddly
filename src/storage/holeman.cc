@@ -32,10 +32,10 @@ MEDDLY::holeman::holeman(int smallestHole, node_storage* p)
   parent = p;
   num_holes = 0;
   max_holes = 0;
+  num_untracked = 0;
   hole_slots = 0;
   max_hole_slots = 0;
-  fragment_slots = 0;
-  max_fragment_slots = 0;
+  untracked_slots = 0;
   last_slot = 0;
   MEDDLY_DCASSERT(parent);
   smallest = MAX(smallestHole, parent->smallestNode());
@@ -74,28 +74,31 @@ void MEDDLY::holeman
 ::reportStats(FILE* s, const char* pad, unsigned flags) const
 {
   if (flags & expert_forest::HOLE_MANAGER_STATS) {
+    bool human_readable = flags & expert_forest::HUMAN_READABLE_MEMORY;
     fprintf(s, "%s    %d holes currently\n", pad, num_holes);
+    if (num_untracked) {
+      fprintf(s, "%s        (%d untracked, %d tracked)\n", pad, num_untracked, 
+        num_holes-num_untracked);
+    }
     fprintf(s, "%s    %d max holes seen\n", pad, max_holes);
 
     unsigned long holemem = hole_slots * sizeof(node_handle);
     fprintf(s, "%s    ", pad);
-    fprintmem(s, holemem, flags & expert_forest::HUMAN_READABLE_MEMORY);
-    fprintf(s, " wasted in holes\n");
+    fprintmem(s, holemem, human_readable);
+    fprintf(s, " wasted in holes (total)\n");
+    unsigned long untrackedmem = untracked_slots * sizeof(node_handle);
+    if (untrackedmem) {
+      fprintf(s, "%s        (", pad);
+      fprintmem(s, untrackedmem, human_readable);
+      fprintf(s, " untracked, ");
+      fprintmem(s, holemem-untrackedmem, human_readable);
+      fprintf(s, " tracked)\n");
+    }
 
     holemem = max_hole_slots * sizeof(node_handle);
     fprintf(s, "%s    ", pad);
-    fprintmem(s, holemem, flags & expert_forest::HUMAN_READABLE_MEMORY);
+    fprintmem(s, holemem, human_readable);
     fprintf(s, " max in holes\n");
-
-    unsigned long fragmem = fragment_slots * sizeof(node_handle);
-    fprintf(s, "%s    ", pad);
-    fprintmem(s, fragmem, flags & expert_forest::HUMAN_READABLE_MEMORY);
-    fprintf(s, " wasted in fragments\n");
-
-    fragmem = max_fragment_slots * sizeof(node_handle);
-    fprintf(s, "%s    ", pad);
-    fprintmem(s, fragmem, flags & expert_forest::HUMAN_READABLE_MEMORY);
-    fprintf(s, " max in fragments\n");
   }
 }
 
@@ -106,7 +109,8 @@ void MEDDLY::holeman::clearHolesAndShrink(node_address new_last, bool shrink)
   last_slot = new_last;
   num_holes = 0;
   hole_slots = 0;
-  fragment_slots = 0;
+  num_untracked = 0;
+  untracked_slots = 0;
 
   if (shrink && size > min_size && last_slot < size/2) {
     node_address new_size = size/2;

@@ -34,6 +34,13 @@
 // #define MEMORY_TRACE
 // #define DEEP_MEMORY_TRACE
 
+inline char slotsForBytes(int bytes) 
+{
+  int sl = bytes / sizeof(MEDDLY::node_handle);
+  if (bytes % sizeof(MEDDLY::node_handle)) sl++;
+  return sl;
+}
+
 
 // ******************************************************************
 // *                                                                *
@@ -59,7 +66,7 @@ void MEDDLY::simple_storage::collectGarbage(bool shrink)
   //
   // Should we even bother?
   //
-  node_handle wasted = holeManager->holeSlots() + holeManager->fragmentSlots();
+  node_handle wasted = holeManager->holeSlots();
   if (0==data || 0==wasted) return;
   if (wasted <= getParent()->getPolicies().compact_min) {
     return;
@@ -134,7 +141,6 @@ void MEDDLY::simple_storage::collectGarbage(bool shrink)
 
   holeManager->clearHolesAndShrink( (curr_ptr - 1 - data), shrink );
   MEDDLY_DCASSERT(0==holeManager->holeSlots());
-  MEDDLY_DCASSERT(0==holeManager->fragmentSlots());
 
   incCompactions(); 
 
@@ -312,9 +318,7 @@ void MEDDLY::simple_storage::unlinkDownAndRecycle(node_address addr)
   //
   // Recycle
   //
-  int pad;
-  holeManager->recycleChunk(addr, activeNodeActualSlots(addr, pad));
-  holeManager->releaseFragment(pad);
+  holeManager->recycleChunk(addr, activeNodeActualSlots(addr));
 }
 
 bool MEDDLY::simple_storage
@@ -576,6 +580,12 @@ const void* MEDDLY::simple_storage
 }
 
 
+void MEDDLY::simple_storage::localInitForForest(const expert_forest* f)
+{
+  edgeSlots = slotsForBytes(f->edgeBytes());
+  unhashedSlots = slotsForBytes(f->unhashedHeaderBytes());
+  hashedSlots = slotsForBytes(f->hashedHeaderBytes());
+}
 
 void MEDDLY::simple_storage::updateData(node_handle* d)
 {
@@ -787,7 +797,6 @@ void MEDDLY::simple_storage::verifyStats() const
 {
   int holes = 0;
   node_address hole_count = 0;
-  node_address frag_count = 0;
   for (node_address a=1; a<=holeManager->lastSlot(); ) {
     if (data[a]<0) {
       // hole
@@ -798,14 +807,11 @@ void MEDDLY::simple_storage::verifyStats() const
       continue;
     }
     // not hole
-    int pad;
-    a += activeNodeActualSlots(a, pad);
-    frag_count += pad;
+    a += activeNodeActualSlots(a);
   }
   // done scan, compare stats
 
   if ((hole_count == holeManager->holeSlots()) &&
-     (frag_count == holeManager->fragmentSlots()) &&
      (holes == holeManager->numHoles())
      )   return;
 
@@ -816,10 +822,9 @@ void MEDDLY::simple_storage::verifyStats() const
   printf("Counted hole slots: %ld stat: %ld\n", 
     hole_count, holeManager->holeSlots()
   );
+
+  dumpInternal(stdout, 0x03);
   
-  printf("Counted fragments: %ld stat: %ld\n", 
-    frag_count, holeManager->fragmentSlots()
-  );
   MEDDLY_DCASSERT(0);
 }
 #endif
@@ -847,7 +852,6 @@ MEDDLY::node_storage* MEDDLY::simple_grid
   simple_storage* nns = new simple_grid;
   nns->initForForest(f);
   nns->setHoleManager(new hm_grid(nns));
-  nns->setSlotSizes(f);
   return nns;
 }
 
@@ -880,7 +884,6 @@ MEDDLY::node_storage* MEDDLY::simple_array
   simple_storage* nns = new simple_array;
   nns->initForForest(f);
   nns->setHoleManager(new hm_array(nns));
-  nns->setSlotSizes(f);
   return nns;
 }
 
@@ -912,7 +915,6 @@ MEDDLY::node_storage* MEDDLY::simple_heap
   simple_storage* nns = new simple_grid;
   nns->initForForest(f);
   nns->setHoleManager(new hm_heap(nns));
-  nns->setSlotSizes(f);
   return nns;
 }
 

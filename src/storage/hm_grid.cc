@@ -37,8 +37,6 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::node_handle MEDDLY::hm_grid::verify_hole_slots;
-
 MEDDLY::hm_grid::hm_grid(node_storage* p) : holeman(5, p)
 {
   max_request = 0;
@@ -51,12 +49,14 @@ MEDDLY::hm_grid::~hm_grid()
 {
 }
 
-MEDDLY::node_address MEDDLY::hm_grid::requestChunk(int req_slots)
+MEDDLY::node_address MEDDLY::hm_grid::requestChunk(int slots)
 {
-  const int min_node_size = smallestChunk();
-  int slots = MAX(min_node_size, req_slots);
 #ifdef MEMORY_TRACE
-  printf("Requesting %d slots, adjusted to %d\n", req_slots, slots);
+  printf("Requesting %d slots\n", slots);
+#endif
+#ifdef DEEP_MEMORY_TRACE
+  printf("-------------------------------------------\n", slots);
+  dumpInternal(stdout, 0x03);
 #endif
 
   if (slots > max_request) {
@@ -128,28 +128,19 @@ MEDDLY::node_address MEDDLY::hm_grid::requestChunk(int req_slots)
     removeHole(found);
     useHole(-data[found]);
 
-    // hole might be larger than requested; decide what to do with leftovers.
-    // Is there space for a leftover hole?
-    if (slots + min_node_size >= -data[found]) {
-      // leftover space is too small to be useful,
-      // just send the whole thing.
-      if (-data[found] > req_slots) {
-        incFragments(-data[found] - req_slots);
-      }
-      return found;
-    }
-
-    // Save the leftovers - make a new hole!
     node_handle newhole = found + slots;
     node_handle newsize = -(data[found]) - slots;
     data[found] = -slots;
-    data[newhole] = -newsize;
-    data[newhole + newsize - 1] = -newsize;
-    insertHole(newhole);
-    newHole(newsize);
-    if (-data[found] > req_slots) {
-      incFragments(-data[found] - req_slots);
+    if (newsize > 0) {
+      // Save the leftovers - make a new hole!
+      data[newhole] = -newsize;
+      data[newhole + newsize - 1] = -newsize;
+      insertHole(newhole);
+      newHole(newsize);
     }
+#ifdef MEMORY_TRACE
+    printf("\trecycled %d slots, addr %ld\n", -data[found], long(found));
+#endif
     return found;
   }
   
@@ -157,9 +148,6 @@ MEDDLY::node_address MEDDLY::hm_grid::requestChunk(int req_slots)
   // Still here?  We couldn't recycle a node.
   // 
   found = allocFromEnd(slots);
-  if (-data[found] > req_slots) {
-    incFragments(-data[found] - req_slots);
-  }
   return found;
 }
 
@@ -168,7 +156,14 @@ MEDDLY::node_address MEDDLY::hm_grid::requestChunk(int req_slots)
 void MEDDLY::hm_grid::recycleChunk(node_address addr, int slots)
 {
 #ifdef MEMORY_TRACE
-  printf("Calling recycleChunk(%d, %d)\n", addr, slots);
+  printf("Calling recycleChunk(%ld, %d)\n", addr, slots);
+#ifdef DEEP_MEMORY_TRACE
+  printf("-------------------------------------------\n", slots);
+  dumpInternal(stdout, 0x03);
+#else
+  printf("Node %ld: ", addr);
+  dumpInternalNode(stdout, addr, 0x03);
+#endif
 #endif
 
   decMemUsed(slots * sizeof(node_handle));
@@ -187,11 +182,13 @@ void MEDDLY::hm_grid::recycleChunk(node_address addr, int slots)
 #endif
     node_handle lefthole = addr + data[addr-1];
     MEDDLY_DCASSERT(data[lefthole] == data[addr-1]);
+    useHole(slots);
+    useHole(-data[lefthole]);
     removeHole(lefthole);
     slots += (-data[lefthole]);
     addr = lefthole;
     data[addr] = data[addr+slots-1] = -slots;
-    useHole(0);
+    newHole(slots);
   }
 #endif
 
@@ -210,10 +207,12 @@ void MEDDLY::hm_grid::recycleChunk(node_address addr, int slots)
     printf("Right merging\n");
 #endif
     node_handle righthole = addr+slots;
+    useHole(slots);
+    useHole(-data[righthole]);
     removeHole(righthole);
     slots += (-data[righthole]);
     data[addr] = data[addr+slots-1] = -slots;
-    useHole(0);
+    newHole(slots);
   }
 #endif
 
@@ -221,12 +220,7 @@ void MEDDLY::hm_grid::recycleChunk(node_address addr, int slots)
   insertHole(addr);
 
 #ifdef MEMORY_TRACE
-  printf("Made Hole %d\n", addr);
-#ifdef DEEP_MEMORY_TRACE
-  dumpInternal(stdout);
-#else
-  dumpInternal(stdout, addr);
-#endif
+  printf("Made Hole %ld\n", addr);
 #endif
 }
 
@@ -238,7 +232,6 @@ void MEDDLY::hm_grid::dumpInternalInfo(FILE* s) const
   fprintf(s, "Total hole slots: %ld\n", holeSlots());
   fprintf(s, "large_holes: %ld\n", long(large_holes));
   fprintf(s, "Grid: top = %ld bottom = %ld\n", long(holes_top), long(holes_bottom));
-  verify_hole_slots = 0;
 }
 
 // ******************************************************************
@@ -247,27 +240,26 @@ void MEDDLY::hm_grid::dumpHole(FILE* s, node_address a) const
 {
   MEDDLY_DCASSERT(data);
   MEDDLY_CHECK_RANGE(1, a, lastSlot());
-  fprintf(s, "[%ld, ", long(data[a]));
-  if (isIndexHole(a)) {
-    node_handle up, down, next;
-    getIndex(a, up, down, next);
-    fprintf(s, "u: %ld, d: %ld, n: %ld", long(up), long(down), long(next));
+  fprintf(s, "[%ld", long(data[a]));
+  if (-data[a] <  smallestChunk()) {
+    // not tracked
+    for (int i=1; i<-data[a]; i++) {
+      fprintf(s, ", %ld", long(data[a+i]));
+    }
+    fprintf(s, "]\n");
   } else {
-    node_handle next, prev;
-    getMiddle(a, prev, next);
-    fprintf(s, "non-index, p: %ld, n: %ld", long(prev), long(next));
-  }
-  long aN = chunkAfterHole(a)-1;
-  fprintf(s, ", ..., %ld]\n", long(data[aN]));
-}
-
-// ******************************************************************
-
-void MEDDLY::hm_grid::dumpInternalTail(FILE* s) const
-{
-  if (verify_hole_slots != holeSlots()) {
-    fprintf(s, "Counted hole slots: %ld\n", long(verify_hole_slots));
-    MEDDLY_DCASSERT(false);
+    // tracked hole
+    if (isIndexHole(a)) {
+      node_handle up, down, next;
+      getIndex(a, up, down, next);
+      fprintf(s, ", u: %ld, d: %ld, n: %ld, ", long(up), long(down), long(next));
+    } else {
+      node_handle next, prev;
+      getMiddle(a, prev, next);
+      fprintf(s, ", non-index, p: %ld, n: %ld, ", long(prev), long(next));
+    }
+    long aN = chunkAfterHole(a)-1;
+    fprintf(s, "..., %ld]\n", long(data[aN]));
   }
 }
 
@@ -347,6 +339,16 @@ void MEDDLY::hm_grid::insertHole(node_handle p_offset)
   // have the same value, i.e. -(# of slots in the hole)
   MEDDLY_DCASSERT(data[p_offset] == data[p_offset - data[p_offset] - 1]);
 
+  // If the hole is too small, don't bother to track it
+  if (-data[p_offset] < smallestChunk()) {
+#ifdef MEMORY_TRACE
+    printf("\thole size %d, too small to track\n", -data[p_offset]);
+#endif
+    return; 
+    // This memory can still be reclaimed 
+    // when it is merged with neighboring holes :^)
+  }
+
   // Check if we belong in the grid, or the large hole list
   if (-data[p_offset] > max_request) {
 #ifdef MEMORY_TRACE
@@ -412,6 +414,11 @@ void MEDDLY::hm_grid::insertHole(node_handle p_offset)
 
 void MEDDLY::hm_grid::removeHole(node_handle p_offset)
 {
+  MEDDLY_DCASSERT(data);
+  MEDDLY_DCASSERT(data[p_offset] < 0);
+
+  if (-data[p_offset] < smallestChunk()) return; // not tracked
+
   if (isIndexHole(p_offset)) {
       //
       // Index node
@@ -445,9 +452,9 @@ void MEDDLY::hm_grid::removeHole(node_handle p_offset)
 #ifdef MEMORY_TRACE
       printf("Removed Index hole %ld\n", long(p_offset));
 #ifdef DEEP_MEMORY_TRACE
-      dumpInternal(stdout);
+      dumpInternal(stdout, 0x03);
 #else 
-      dumpInternal(stdout, p_offset);
+      dumpInternalNode(stdout, p_offset, 0x03);
 #endif
 #endif
       //
@@ -478,9 +485,9 @@ void MEDDLY::hm_grid::removeHole(node_handle p_offset)
 #ifdef MEMORY_TRACE
       printf("Removed Non-Index hole %ld\n", long(p_offset));
 #ifdef DEEP_MEMORY_TRACE
-      dumpInternal(stdout);
+      dumpInternal(stdout, 0x03);
 #else 
-      dumpInternal(stdout, p_offset);
+      dumpInternalNode(stdout, p_offset, 0x03);
 #endif
 #endif
   }

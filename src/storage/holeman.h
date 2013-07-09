@@ -59,7 +59,9 @@ namespace MEDDLY {
         [  negative  ]
 
     Some of the other slots may be used to manage holes,
-    and the hole manager can determine the size of each hole.
+    and the hole manager can determine the minimum size of each hole.
+    Holes smaller than this are allowed, but will not be
+    tracked.
 */
 class MEDDLY::holeman {
   public:
@@ -85,20 +87,12 @@ class MEDDLY::holeman {
       return hole_slots;
     }
 
-    inline node_address fragmentSlots() const {
-      return fragment_slots;
-    }
-
     inline node_address lastSlot() const {
       return last_slot;
     };
 
     inline int smallestChunk() const {
       return smallest;
-    }
-
-    inline void releaseFragment(int slots) {
-      fragment_slots -= slots;
     }
 
   public:
@@ -203,22 +197,20 @@ class MEDDLY::holeman {
       if (hole_slots > max_hole_slots) {
         max_hole_slots = hole_slots;
       }
+      if (slots < smallestChunk()) {
+        num_untracked++;
+        untracked_slots += slots;
+      }
     }
     inline void useHole(int slots) {
       num_holes--;
       hole_slots -= slots;
-    }
-    
-    inline void incFragments(int slots) {
-      fragment_slots += slots;
-      if (fragment_slots > max_fragment_slots) {
-        max_fragment_slots = fragment_slots;
+      if (slots < smallestChunk()) {
+        num_untracked--;
+        untracked_slots -= slots;
       }
     }
-    inline void decFragments(int slots) {
-      fragment_slots -= slots;
-    }
-
+    
     inline void dumpInternal(FILE* s, unsigned flags) {
       if (parent) parent->dumpInternal(s, flags);
     }
@@ -291,20 +283,21 @@ class MEDDLY::holeman {
     node_storage* parent;
     int smallest;
 
-    /// Total number of holes
+    /// Total number of holes (includes untracked)
     int num_holes;
     /// Max number of holes
     int max_holes;
+
+    /// Number of untracked holes
+    int num_untracked;
     
     /// Total slots wasted in holes
     node_address hole_slots;
     /// Maximum hole slots seen
     node_address max_hole_slots;
 
-    /// Total slots wasted in fragments 
-    node_address fragment_slots;
-    /// Maximum fragment slots seen
-    node_address max_fragment_slots;
+    /// Slots wasted in untracked holes
+    node_address untracked_slots;
 
   private:
     /// Don't shrink below this

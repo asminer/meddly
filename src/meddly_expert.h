@@ -1296,6 +1296,15 @@ class MEDDLY::node_storage {
       nexts = nptr;
     }
 
+  protected:
+    /** Initialization hook for derived classes.
+        Allowes derived classes to initialize themselves
+        for a particular forest.
+        Called by initForForest().
+        Default behavior is to do nothing.
+    */
+    virtual void localInitForForest(const expert_forest* f);
+
   //
   // Hooks for hole managers
   //

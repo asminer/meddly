@@ -153,18 +153,8 @@ class MEDDLY::simple_storage : public node_storage {
       MEDDLY_DCASSERT(0==holeManager);
       holeManager = hm;
     }
-    inline void setSlotSizes(const expert_forest* f) {
-      edgeSlots = slotsForBytes(f->edgeBytes());
-      unhashedSlots = slotsForBytes(f->unhashedHeaderBytes());
-      hashedSlots = slotsForBytes(f->hashedHeaderBytes());
-    }
-    static inline char slotsForBytes(int bytes) {
-      int sl = bytes / sizeof(MEDDLY::node_handle);
-      if (bytes % sizeof(MEDDLY::node_handle)) sl++;
-      return sl;
-    }
-
   protected:
+    virtual void localInitForForest(const expert_forest* f);
     virtual void updateData(node_handle* d);
     virtual int smallestNode() const;
     virtual void dumpInternalInfo(FILE*) const;
@@ -335,6 +325,7 @@ class MEDDLY::simple_storage : public node_storage {
 
 
       /// Find actual number of slots used for this active node.
+      /*
       inline int activeNodeActualSlots(node_handle addr, int& pad) const {
           int end = addr + slotsForNode(sizeOf(addr))-1;
           // account for any padding
@@ -346,6 +337,7 @@ class MEDDLY::simple_storage : public node_storage {
           }
           return end - addr + 1;
       }
+      */
 
   // --------------------------------------------------------
   // |  Node comparison as a template

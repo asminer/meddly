@@ -106,7 +106,6 @@ class MEDDLY::hm_grid : public holeman {
     virtual void recycleChunk(node_address addr, int slots);
     virtual void dumpInternalInfo(FILE* s) const;
     virtual void dumpHole(FILE* s, node_address a) const;
-    virtual void dumpInternalTail(FILE* s) const;
     virtual void reportStats(FILE* s, const char* pad, unsigned flags) const;
     virtual void clearHolesAndShrink(node_address new_last, bool shrink);
 
@@ -256,8 +255,6 @@ class MEDDLY::hm_grid : public holeman {
       node_handle holes_top;
       /// Pointer to bottom of holes grid
       node_handle holes_bottom;
-
-      static node_handle verify_hole_slots;
 };
 
 #endif

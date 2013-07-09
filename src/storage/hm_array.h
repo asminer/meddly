@@ -59,7 +59,6 @@ class MEDDLY::hm_array : public holeman {
     virtual void recycleChunk(node_address addr, int slots);
     virtual void dumpInternalInfo(FILE* s) const;
     virtual void dumpHole(FILE* s, node_address a) const;
-    virtual void dumpInternalTail(FILE* s) const;
     virtual void reportStats(FILE* s, const char* pad, unsigned flags) const;
     virtual void clearHolesAndShrink(node_address new_last, bool shrink);
 
@@ -143,6 +142,31 @@ class MEDDLY::hm_array : public holeman {
         return count;
       }
 
+  protected:
+      // "front end" hole creation
+      inline void insertHole(node_handle hole) {
+        MEDDLY_DCASSERT(data);
+        // Don't track holes smaller than smallestChunk():
+        if (-data[hole] < smallestChunk()) return;
+        if (-data[hole] < LARGE_SIZE) {
+          listInsert(small_holes[-data[hole]], hole);
+        } else {
+          listInsert(large_holes, hole);
+        }
+      }
+      // "front end" hole grab
+      inline void removeHole(node_handle hole) {
+        MEDDLY_DCASSERT(data);
+        // Don't track holes smaller than smallestChunk():
+        if (-data[hole] < smallestChunk()) return;
+        if (-data[hole] < LARGE_SIZE) {
+          listRemove(small_holes[-data[hole]], hole);
+        } else {
+          listRemove(large_holes, hole);
+        }
+      }
+
+
   private:
       // hole indexes
       static const int hole_prev_index = 1;
@@ -162,8 +186,6 @@ class MEDDLY::hm_array : public holeman {
       long num_large_hole_traversals;
       long count_large_hole_visits;
 #endif
-
-      static node_handle verify_hole_slots;
 };
 
 #endif

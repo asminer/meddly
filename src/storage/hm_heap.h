@@ -112,7 +112,7 @@ class MEDDLY::hm_heap : public holeman {
       inline node_handle* holeOf(node_handle addr) const {
         MEDDLY_DCASSERT(data);
         MEDDLY_CHECK_RANGE(1, addr, lastSlot()+1);
-        MEDDLY_DCASSERT(data[addr] < -5);  // it's a hole, and large enough
+        MEDDLY_DCASSERT(data[addr] < 0);  // it's a hole
         return data + addr;
       }
       inline bool isIndexHole(node_handle addr) const {

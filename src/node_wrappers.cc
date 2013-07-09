@@ -300,6 +300,7 @@ void MEDDLY::node_storage::initForForest(expert_forest* f)
   MEDDLY_DCASSERT(0==parent);
   parent = f;
   stats = &parent->changeStats();
+  localInitForForest(f);
 }
 
 
@@ -315,3 +316,7 @@ void MEDDLY::node_storage::dumpInternal(FILE* s, unsigned flags) const
   fflush(s);
 }
 
+void MEDDLY::node_storage::localInitForForest(const expert_forest* f)
+{
+  // default - do nothing
+}
