@@ -27,8 +27,6 @@
 
 
 #define MERGE_AND_SPLIT_HOLES
-// #define DEBUG_COMPACTION
-// #define DEBUG_SLOW
 // #define MEMORY_TRACE
 // #define DEEP_MEMORY_TRACE
 

@@ -681,7 +681,7 @@ void MEDDLY::expert_forest::dumpInternal(FILE *s) const
     if (isForRelations()) levels[-i]->dumpInternal(s);
   }
 #else
-  nodeMan->dumpInternal(s);
+  nodeMan->dumpInternal(s, 0x03);
 #endif
  
   unique->show(s);

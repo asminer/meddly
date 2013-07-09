@@ -182,7 +182,8 @@ class MEDDLY::old_node_storage : public node_storage {
     virtual void updateData(node_handle* d);
     virtual int smallestNode() const;
     virtual void dumpInternalInfo(FILE*) const;
-    virtual node_address dumpInternalNode(FILE*, node_address addr) const;
+    virtual node_address 
+    dumpInternalNode(FILE*, node_address addr, unsigned flags) const;
     virtual void dumpInternalTail(FILE*) const;
 
 

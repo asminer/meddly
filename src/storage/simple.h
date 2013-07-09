@@ -35,6 +35,7 @@ namespace MEDDLY {
 
   class simple_grid;
   class simple_array;
+  class simple_heap;
 };
 
 // ******************************************************************
@@ -167,7 +168,8 @@ class MEDDLY::simple_storage : public node_storage {
     virtual void updateData(node_handle* d);
     virtual int smallestNode() const;
     virtual void dumpInternalInfo(FILE*) const;
-    virtual node_address dumpInternalNode(FILE*, node_address addr) const;
+    virtual node_address 
+    dumpInternalNode(FILE*, node_address addr, unsigned flags) const;
     virtual void dumpInternalTail(FILE*) const;
 
   private:
@@ -482,6 +484,27 @@ class MEDDLY::simple_array : public simple_storage {
     virtual node_storage* createForForest(expert_forest* f) const;
     virtual const char* getStorageName() const;
 };
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                       simple_heap  class                       *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+/** Simple storage using a clever grid of heaps mechanism for holes.
+    This allows us to use "earliest holes first".
+*/
+
+class MEDDLY::simple_heap : public simple_storage {
+  public:
+    simple_heap();
+    virtual ~simple_heap();
+    virtual node_storage* createForForest(expert_forest* f) const;
+    virtual const char* getStorageName() const;
+};
+
 
 #endif
 

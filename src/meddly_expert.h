@@ -1029,16 +1029,6 @@ class MEDDLY::node_storage {
     */
     virtual void reportStats(FILE* s, const char* pad, unsigned flags) const = 0;
 
-    /** Show stats about memory usage.
-          @param  s     Output stream to write to
-          @param  pad   Padding string, written at the start of 
-                        each output line.
-          @param  vL    "verbosity level", between 0 (least detailed)
-                        and 9 (most detailed).
-    */
-    // virtual void reportMemoryUsage(FILE* s, const char* pad, int vL) const = 0;
-
-
     /** Write a node in human-readable format.
 
         Ideally, the output format for each node is the same
@@ -1053,8 +1043,13 @@ class MEDDLY::node_storage {
 
     /** Dump the internal storage details.
         Primarily used for debugging.
+
+          @param  s       Output stream to use
+          @param  flags   What to show.               
+                            0x01  Show active memory
+                            0x02  Show memory "holes"
     */
-    void dumpInternal(FILE*) const;
+    void dumpInternal(FILE* s, unsigned flags) const;
 
  
 
@@ -1227,9 +1222,14 @@ class MEDDLY::node_storage {
     virtual void dumpInternalInfo(FILE*) const = 0;
 
     /** Dump the node/hole information at the given address.
+          @param  s       Output stream to use
+          @param  addr    Address
+          @param  flags   What chunks should be displayed
+
           @return   Next interesting address.
     */
-    virtual node_address dumpInternalNode(FILE*, node_address addr) const = 0;
+    virtual node_address 
+    dumpInternalNode(FILE* s, node_address addr, unsigned flags) const = 0;
 
     /// Dump final info (after node info)
     virtual void dumpInternalTail(FILE*) const = 0;

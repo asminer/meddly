@@ -83,19 +83,18 @@ class MEDDLY::hm_heap : public holeman {
     virtual ~hm_heap();
 
   public:
-    // virtual node_address requestChunk(int slots);
-    // virtual void recycleChunk(node_address addr, int slots);
-    // virtual void dumpInternalInfo(FILE* s) const;
-    // virtual void dumpHole(FILE* s, node_address a) const;
-    // virtual void dumpInternalTail(FILE* s) const;
-    // virtual void reportStats(FILE* s, const char* pad, unsigned flags) const;
-    // virtual void clearHolesAndShrink(node_address new_last, bool shrink);
+    virtual node_address requestChunk(int slots);
+    virtual void recycleChunk(node_address addr, int slots);
+    virtual void dumpInternalInfo(FILE* s) const;
+    virtual void dumpHole(FILE* s, node_address a) const;
+    virtual void reportStats(FILE* s, const char* pad, unsigned flags) const;
+    virtual void clearHolesAndShrink(node_address new_last, bool shrink);
 
   private:
     // add a hole to the grid or large hole list, as appropriate
     void insertHole(node_handle p_offset);
 
-    // remove a hole from the grid
+    // remove a hole from the grid or large hole list, as appropriate
     void removeHole(node_handle p_offset);
 
   private:
@@ -113,43 +112,37 @@ class MEDDLY::hm_heap : public holeman {
       inline node_handle* holeOf(node_handle addr) const {
         MEDDLY_DCASSERT(data);
         MEDDLY_CHECK_RANGE(1, addr, lastSlot()+1);
-        MEDDLY_DCASSERT(data[addr] < 0);  // it's a hole
+        MEDDLY_DCASSERT(data[addr] < -5);  // it's a hole, and large enough
         return data + addr;
       }
-      inline bool isIndexHandle(node_handle addr) const {
+      inline bool isIndexHole(node_handle addr) const {
         return holeOf(addr)[size_index] <= 0;
       }
-      inline bool isNotIndexHandle(node_handle addr) const {
+      inline bool isNotIndexHole(node_handle addr) const {
         return holeOf(addr)[ID_index] > 0;
       }
 
       inline node_handle& rawLeft(node_handle addr) const {
-        MEDDLY_DCASSERT(isNotIndexHandle(addr));
+        MEDDLY_DCASSERT(isNotIndexHole(addr));
         return holeOf(addr)[left_index];
       }
       inline node_handle& rawRight(node_handle addr) const {
-        MEDDLY_DCASSERT(isNotIndexHandle(addr));
+        MEDDLY_DCASSERT(isNotIndexHole(addr));
         return holeOf(addr)[right_index];
       }
       inline node_handle& rawParent(node_handle addr) const {
-        MEDDLY_DCASSERT(isNotIndexHandle(addr));
+        MEDDLY_DCASSERT(isNotIndexHole(addr));
         return holeOf(addr)[parent_index];
       }
       inline node_handle& rawID(node_handle addr) const {
-        MEDDLY_DCASSERT(isNotIndexHandle(addr));
+        MEDDLY_DCASSERT(isNotIndexHole(addr));
         return holeOf(addr)[ID_index];
       }
 
       inline node_handle Left(node_handle addr) const {
         return rawLeft(addr); 
       }
-      inline node_handle& Left(node_handle addr) {
-        return rawLeft(addr); 
-      }
       inline node_handle Right(node_handle addr) const {
-        return rawRight(addr); 
-      }
-      inline node_handle& Right(node_handle addr) {
         return rawRight(addr); 
       }
       inline node_handle Parent(node_handle addr) const {
@@ -159,51 +152,100 @@ class MEDDLY::hm_heap : public holeman {
         return rawID(addr); 
       }
 
+      inline void setLeft(node_handle addr, node_handle left) {
+        rawLeft(addr) = left;
+        if (left) rawParent(left) = addr;
+      }
+      inline void setRight(node_handle addr, node_handle right) {
+        rawRight(addr) = right;
+        if (right) rawParent(right) = addr;
+      }
+
       inline node_handle& rawUp(node_handle addr) const {
-        MEDDLY_DCASSERT(isIndexHandle(addr));
+        MEDDLY_DCASSERT(isIndexHole(addr));
         return holeOf(addr)[up_index];
       }
       inline node_handle& rawDown(node_handle addr) const {
-        MEDDLY_DCASSERT(isIndexHandle(addr));
+        MEDDLY_DCASSERT(isIndexHole(addr));
         return holeOf(addr)[down_index];
       }
       inline node_handle& rawRoot(node_handle addr) const {
-        MEDDLY_DCASSERT(isIndexHandle(addr));
+        MEDDLY_DCASSERT(isIndexHole(addr));
         return holeOf(addr)[root_index];
       }
       inline node_handle& rawSize(node_handle addr) const {
-        MEDDLY_DCASSERT(isIndexHandle(addr));
+        MEDDLY_DCASSERT(isIndexHole(addr));
         return holeOf(addr)[size_index];
       }
 
-      inline node_handle Up(node_handle addr) const {
-        return rawUp(addr); 
-      }
-      inline node_handle Down(node_handle addr) const {
-        return rawDown(addr); 
-      }
-      inline node_handle Root(node_handle addr) const {
-        return rawRoot(addr); 
-      }
-      inline node_handle Size(node_handle addr) const {
-        return rawSize(addr); 
+      inline node_handle Up(node_handle addr) const   { return rawUp(addr); }
+      inline node_handle Down(node_handle addr) const { return rawDown(addr); }
+      inline node_handle Root(node_handle addr) const { return rawRoot(addr); }
+      inline node_handle Size(node_handle addr) const { return rawSize(addr); }
+
+      inline node_handle& Up(node_handle addr)    { return rawUp(addr); }
+      inline node_handle& Down(node_handle addr)  { return rawDown(addr); }
+      inline node_handle& Root(node_handle addr)  { return rawRoot(addr); }
+      inline node_handle& Size(node_handle addr)  { return rawSize(addr); }
+
+      // get index ptrs
+      inline void getIndex(node_handle p_offset, node_handle &up,
+        node_handle &down, node_handle &heap, node_handle &size) const 
+      {
+        node_handle* hole = holeOf(p_offset);
+        up = hole[up_index];
+        down = hole[down_index];
+        heap = hole[root_index];
+        size = hole[size_index];
+        MEDDLY_DCASSERT(size<=0);
       }
 
-      // set all heap pointers at once
-      inline void fillHeapNode(node_handle* node, node_handle ID,
-        node_handle parent, node_handle left, node_handle right) 
+      // get all heap pointers at once
+      inline void getHeapNode(node_handle p_offset, node_handle& ID,
+        node_handle& parent, node_handle& left, node_handle& right) const
       {
-        node[left_index] = left;
-        node[right_index] = right;
-        node[parent_index] = parent;
-        node[ID_index] = ID;
+        node_handle* node = holeOf(p_offset);
+        left = node[left_index];
+        right = node[right_index];
+        parent = node[parent_index];
+        ID = node[ID_index];
         MEDDLY_DCASSERT(node[ID_index] > 0);
       }
-      // set all heap pointers at once
-      inline void makeHeapNode(node_handle addr, node_handle ID, 
-        node_handle parent, node_handle left, node_handle right) 
+
+      // set an index node
+      inline void makeIndex(node_handle p_offset, node_handle up, 
+        node_handle down, node_handle heap, node_handle size) 
       {
-        fillHeapNode(holeOf(addr), ID, parent, left, right);
+        MEDDLY_DCASSERT(size<=0);
+        node_handle* hole = holeOf(p_offset);
+        hole[up_index] = up;
+        hole[down_index] = down;
+        hole[root_index] = heap;
+        hole[size_index] = size;
+        // nice - set the above and below pointers to us
+        if (up) {
+          Down(up) = p_offset;
+        } else {
+          holes_top = p_offset;
+        }
+        if (down) {
+          Up(down) = p_offset;
+        } else {
+          holes_bottom = p_offset;
+        }
+      }
+
+      // set all heap pointers (except parent) at once
+      inline void makeHeapNode(node_handle addr, node_handle ID, 
+        node_handle left, node_handle right) 
+      {
+        node_handle* node = holeOf(addr);
+        node[left_index] = left;
+        node[right_index] = right;
+        node[ID_index] = ID;
+        MEDDLY_DCASSERT(node[ID_index] > 0);
+        if (left) rawParent(left) = addr;
+        if (right) rawParent(right) = addr;
       }
 
   private:
@@ -211,12 +253,13 @@ class MEDDLY::hm_heap : public holeman {
       // find the last non-null node on the path to the given ID.
       inline node_handle takePathToID(node_handle root, unsigned long ID) const
       {
+        if (0==root) return 0;
         // ID bit pattern gives the path :^)
         // determine which bit to start from...
         unsigned long two2b = 0x1;
         int bit = 0;
         for (; two2b <= ID; two2b <<=1) { bit++; }
-        two2b >= 1;
+        two2b >>= 1;
         // now, traverse
         for (node_handle n=root; n; ) {
           two2b >>= 1;
@@ -227,16 +270,37 @@ class MEDDLY::hm_heap : public holeman {
         }
       }
 
-      // add node (already with the proper ID) to the given heap
+      // add node to the given heap
       void addToHeap(node_handle& root, node_handle& size, node_handle p);
 
       // remove a node known to be in this heap
       void removeFromHeap(node_handle& root, node_handle& size, node_handle p);
 
+      // repair heap upwards
+      void upHeap(node_handle& root, node_handle pp, node_handle p);
+
       // repair heap downwards
-      node_handle downHeap(node_handle parent, node_handle ID, 
+      node_handle downHeap(node_handle ID, 
         node_handle left, node_handle right, node_handle replace);
 
+      // convert a heap into a singly-linked list (using the "parent" pointer)
+      void heapToList(node_handle root);
+
+#ifdef DEVELOPMENT_CODE
+      void verifyHeap(node_handle ptr, node_handle node) const;
+#endif
+
+  private:  // data
+      /// Largest hole ever requested
+      node_handle max_request;
+      /// Heap of large holes
+      node_handle large_holes;
+      /// Size of large holes heap (negative, for consistency)
+      node_handle large_holes_size;
+      /// Pointer to top of holes grid
+      node_handle holes_top;
+      /// Pointer to bottom of holes grid
+      node_handle holes_bottom;
 };
 
 #endif

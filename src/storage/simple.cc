@@ -27,8 +27,8 @@
 
 #include "hm_grid.h"
 #include "hm_array.h"
+#include "hm_heap.h"
 
-#define MERGE_AND_SPLIT_HOLES
 // #define DEBUG_COMPACTION
 // #define DEBUG_SLOW
 // #define MEMORY_TRACE
@@ -605,7 +605,8 @@ void MEDDLY::simple_storage::dumpInternalTail(FILE* s) const
 
 
 MEDDLY::node_address 
-MEDDLY::simple_storage::dumpInternalNode(FILE *s, node_address a) const
+MEDDLY::simple_storage
+::dumpInternalNode(FILE *s, node_address a, unsigned flags) const
 {
   if (a<=0) return 0;
   int awidth = digits(getParent()->getLastNode());
@@ -613,21 +614,26 @@ MEDDLY::simple_storage::dumpInternalNode(FILE *s, node_address a) const
     fprintf(s, "%*ld : free slots\n", awidth, long(a));
     return 0;
   }
-  fprintf(s, "%*ld : ", awidth, a);
   MEDDLY_DCASSERT(data);
   if (data[a]<0) { 
     // hole
-    holeManager->dumpHole(s, a);
+    if (flags & 0x02) {
+      fprintf(s, "%*ld : ", awidth, a);
+      holeManager->dumpHole(s, a);
+    }
     a = holeManager->chunkAfterHole(a);
   } else {
     // proper node
-    int nElements = activeNodeActualSlots(a);
-    fprintf(s, "[%ld", long(data[a]));
-    for (int i=1; i<nElements-1; i++) {
-      fprintf(s, "|%ld", long(data[a+i]));
+    if (flags & 0x01) {
+      fprintf(s, "%*ld : ", awidth, a);
+      int nElements = activeNodeActualSlots(a);
+      fprintf(s, "[%ld", long(data[a]));
+      for (int i=1; i<nElements; i++) {
+        fprintf(s, "|%ld", long(data[a+i]));
+      }
+      fprintf(s, "]\n");
     }
     a += activeNodeActualSlots(a);
-    fprintf(s, "%ld]\n", long(data[a-1]));
   }
   return a;
 }
@@ -885,6 +891,39 @@ const char* MEDDLY::simple_array::getStorageName() const
 
 // ******************************************************************
 // *                                                                *
+// *                                                                *
+// *                      simple_heap  methods                      *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+
+MEDDLY::simple_heap::simple_heap() : simple_storage()
+{
+}
+
+MEDDLY::simple_heap::~simple_heap()
+{
+}
+
+MEDDLY::node_storage* MEDDLY::simple_heap
+::createForForest(expert_forest* f) const
+{
+  simple_storage* nns = new simple_grid;
+  nns->initForForest(f);
+  nns->setHoleManager(new hm_heap(nns));
+  nns->setSlotSizes(f);
+  return nns;
+}
+
+const char* MEDDLY::simple_heap::getStorageName() const
+{
+  return "simple node storage with heaps for holes";
+}
+
+
+// ******************************************************************
+// *                                                                *
 // *                   front-end global variables                   *
 // *                                                                *
 // ******************************************************************
@@ -892,8 +931,10 @@ const char* MEDDLY::simple_array::getStorageName() const
 namespace MEDDLY {
   simple_grid THE_SIMPLE_GRID;
   simple_array THE_SIMPLE_ARRAY;
+  simple_heap THE_SIMPLE_HEAP;
 
   const node_storage* SIMPLE_GRID = &THE_SIMPLE_GRID;
   const node_storage* SIMPLE_ARRAY = &THE_SIMPLE_ARRAY;
+  const node_storage* SIMPLE_HEAP = &THE_SIMPLE_HEAP;
 };
 

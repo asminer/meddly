@@ -25,8 +25,6 @@
 
 
 #define MERGE_AND_SPLIT_HOLES
-// #define DEBUG_COMPACTION
-// #define DEBUG_SLOW
 // #define MEMORY_TRACE
 // #define DEEP_MEMORY_TRACE
 
@@ -53,10 +51,12 @@ MEDDLY::hm_grid::~hm_grid()
 {
 }
 
-MEDDLY::node_address MEDDLY::hm_grid::requestChunk(int slots)
+MEDDLY::node_address MEDDLY::hm_grid::requestChunk(int req_slots)
 {
+  const int min_node_size = smallestChunk();
+  int slots = MAX(min_node_size, req_slots);
 #ifdef MEMORY_TRACE
-  printf("Requesting %d slots\n", slots);
+  printf("Requesting %d slots, adjusted to %d\n", req_slots, slots);
 #endif
 
   if (slots > max_request) {
@@ -130,11 +130,12 @@ MEDDLY::node_address MEDDLY::hm_grid::requestChunk(int slots)
 
     // hole might be larger than requested; decide what to do with leftovers.
     // Is there space for a leftover hole?
-    const int min_node_size = smallestChunk();
     if (slots + min_node_size >= -data[found]) {
       // leftover space is too small to be useful,
       // just send the whole thing.
-      incFragments(-data[found] - slots);
+      if (-data[found] > req_slots) {
+        incFragments(-data[found] - req_slots);
+      }
       return found;
     }
 
@@ -146,13 +147,20 @@ MEDDLY::node_address MEDDLY::hm_grid::requestChunk(int slots)
     data[newhole + newsize - 1] = -newsize;
     insertHole(newhole);
     newHole(newsize);
+    if (-data[found] > req_slots) {
+      incFragments(-data[found] - req_slots);
+    }
     return found;
   }
   
   // 
   // Still here?  We couldn't recycle a node.
   // 
-  return allocFromEnd(slots);
+  found = allocFromEnd(slots);
+  if (-data[found] > req_slots) {
+    incFragments(-data[found] - req_slots);
+  }
+  return found;
 }
 
 // ******************************************************************
@@ -240,14 +248,17 @@ void MEDDLY::hm_grid::dumpHole(FILE* s, node_address a) const
   MEDDLY_DCASSERT(data);
   MEDDLY_CHECK_RANGE(1, a, lastSlot());
   fprintf(s, "[%ld, ", long(data[a]));
-  if (data[a+1]<0)  {
-    fprintf(s, "non-index, p: %ld, ", long(data[a+2]));
+  if (isIndexHole(a)) {
+    node_handle up, down, next;
+    getIndex(a, up, down, next);
+    fprintf(s, "u: %ld, d: %ld, n: %ld", long(up), long(down), long(next));
   } else {
-    fprintf(s, "u: %ld, d: %ld, ", long(data[a+1]), long(data[a+2])); 
+    node_handle next, prev;
+    getMiddle(a, prev, next);
+    fprintf(s, "non-index, p: %ld, n: %ld", long(prev), long(next));
   }
   long aN = chunkAfterHole(a)-1;
-  fprintf(s, "n: %ld, ..., %ld]\n", long(data[a+3]), long(data[aN]));
-  verify_hole_slots += aN+1-a;
+  fprintf(s, ", ..., %ld]\n", long(data[aN]));
 }
 
 // ******************************************************************
@@ -355,7 +366,6 @@ void MEDDLY::hm_grid::insertHole(node_handle p_offset)
 #endif
     // index hole
     makeIndex(p_offset, 0, 0, 0);
-    holes_top = holes_bottom = p_offset;
     return;
   }
 
@@ -366,8 +376,6 @@ void MEDDLY::hm_grid::insertHole(node_handle p_offset)
 #endif
     // index hole
     makeIndex(p_offset, 0, holes_top, 0);
-    Up(holes_top) = p_offset;
-    holes_top = p_offset;
     return;
   }
 
@@ -398,13 +406,6 @@ void MEDDLY::hm_grid::insertHole(node_handle p_offset)
   // we should have above < p_offset < below  (remember, -sizes)
   // create an index hole since there were no holes of this size
   makeIndex(p_offset, above, below, 0);
-  Down(above) = p_offset;
-  if (below) {
-    Up(below) = p_offset;
-  } else {
-    MEDDLY_DCASSERT(above == holes_bottom);
-    holes_bottom = p_offset;
-  }
 }
 
 // ******************************************************************
@@ -425,19 +426,6 @@ void MEDDLY::hm_grid::removeHole(node_handle p_offset)
         // convert right into an index node
         middle2index(right, above, below);
 
-        // update the pointers of the holes (index) above and below it
-        if (above) {
-          Down(above) = right;
-        } else {
-          holes_top = right;
-        }
-
-        if (below) {
-          Up(below) = right;
-        } else {
-          holes_bottom = right;
-        }
-    
       } else {
         // remove this row completely
 

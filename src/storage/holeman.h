@@ -157,7 +157,7 @@ class MEDDLY::holeman {
 
             @param  s   Output stream
     */
-    virtual void dumpInternalTail(FILE* s) const = 0;
+    virtual void dumpInternalTail(FILE* s) const;
 
     /** 
         Print stats.
@@ -219,6 +219,13 @@ class MEDDLY::holeman {
       fragment_slots -= slots;
     }
 
+    inline void dumpInternal(FILE* s, unsigned flags) {
+      if (parent) parent->dumpInternal(s, flags);
+    }
+    inline void dumpInternalNode(FILE* s, node_address addr, unsigned flags) {
+      if (parent) parent->dumpInternalNode(s, addr, flags);
+    }
+
     inline node_address allocFromEnd(int slots) {
 #ifdef MEMORY_TRACE
       printf("No hole available\n");
@@ -263,7 +270,7 @@ class MEDDLY::holeman {
 #ifdef MEMORY_TRACE
       printf("Made Last Hole %ld, last %ld\n", long(addr), long(last_slot));
 #ifdef DEEP_MEMORY_TRACE
-      getParent()->dumpInternal(stdout);
+      dumpInternal(stdout, 0x03);
 #endif
 #endif
     }

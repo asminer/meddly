@@ -22,12 +22,10 @@
 
 #include "hm_heap.h"
 
-
-#define MERGE_AND_SPLIT_HOLES
-// #define DEBUG_COMPACTION
-// #define DEBUG_SLOW
-// #define MEMORY_TRACE
+#define VERIFY_HEAP
+#define MEMORY_TRACE
 // #define DEEP_MEMORY_TRACE
+// #define INTERNAL_CODE 0x02
 
 // ******************************************************************
 // *                                                                *
@@ -39,18 +37,258 @@
 
 MEDDLY::hm_heap::hm_heap(node_storage* p) : holeman(6, p)
 {
-  /*
   max_request = 0;
   large_holes = 0;
+  large_holes_size = 0;
   holes_top = 0;
   holes_bottom = 0;
-  */
 }
 
 // ******************************************************************
 
 MEDDLY::hm_heap::~hm_heap()
 {
+}
+
+// ******************************************************************
+
+MEDDLY::node_address
+MEDDLY::hm_heap::requestChunk(int req_slots)
+{
+  const int min_node_size = smallestChunk();
+  int slots = MAX(min_node_size, req_slots);
+#ifdef MEMORY_TRACE
+  printf("Requesting %d slots, adjusted to %d\n", req_slots, slots);
+#endif
+
+  if (slots > max_request) {
+#ifdef MEMORY_TRACE
+    printf("New max request; shifting holes from large list to grid\n");
+#endif
+    max_request = slots;
+
+    // Convert large hole heap into a list
+    heapToList(large_holes);
+    node_handle curr = large_holes;
+    large_holes = 0;
+    large_holes_size = 0;
+
+    // Traverse the large hole list, and re-insert
+    // all the holes, in case some are now smaller
+    // than max_request.
+    for (; curr; ) {
+      node_handle next = Parent(curr);
+      insertHole(curr);
+      curr = next;
+    }
+  }
+
+  // Find earliest hole that is large enough for us
+  node_handle found = large_holes;
+  node_handle curr = holes_top;
+  while (curr) {
+    if (slots > -data[curr]) {
+      break;
+    }
+    if (slots == -data[curr]) {
+      found = curr;
+      break;
+    }
+    if (found) {
+      if (curr < found) {
+        if (slots + min_node_size < -data[curr]) {  // won't cause a fragment
+          found = curr;
+        }
+      }
+    } else {
+      found = curr;
+    }
+    curr = Down(curr);
+  } // while curr
+
+
+  if (found) {
+    // We have a hole to recycle
+    // Sanity check:
+    MEDDLY_DCASSERT(slots <= -data[found]);
+
+    // Remove the hole
+    removeHole(found);
+    useHole(-data[found]);
+
+    // hole might be larger than requested; decide what to do with leftovers.
+    // Is there space for a leftover hole?
+    if (slots + min_node_size >= -data[found]) {
+      // leftover space is too small to be useful,
+      // just send the whole thing.
+      if (-data[found] > req_slots) {
+        incFragments(-data[found] - req_slots);
+      }
+#ifdef MEMORY_TRACE
+      printf("\trecycled %d slots, addr %ld\n", -data[found], long(found));
+#endif
+      return found;
+    }
+
+    // Save the leftovers - make a new hole!
+    node_handle newhole = found + slots;
+    node_handle newsize = -(data[found]) - slots;
+    data[found] = -slots;
+    data[newhole] = -newsize;
+    data[newhole + newsize - 1] = -newsize;
+    insertHole(newhole);
+    newHole(newsize);
+#ifdef MEMORY_TRACE
+    printf("\trecycled %d slots, addr %ld\n", -data[found], long(found));
+#endif
+    if (-data[found] > req_slots) {
+      incFragments(-data[found] - req_slots);
+    }
+    return found;
+  }
+  
+  // 
+  // Still here?  We couldn't recycle a node.
+  // 
+  found = allocFromEnd(slots);
+  if (-data[found] > req_slots) {
+    incFragments(-data[found] - req_slots);
+  }
+#ifdef MEMORY_TRACE
+  printf("\tallocated %d slots, addr %ld\n", -data[found], long(found));
+#endif
+  return found;
+}
+
+// ******************************************************************
+
+void MEDDLY::hm_heap::recycleChunk(node_address addr, int slots)
+{
+#ifdef MEMORY_TRACE
+  printf("Calling recycleChunk(%ld, %d)\n\tchunk contains ", addr, slots);
+  dumpInternalNode(stdout, addr, 0x03);
+#endif
+  MEDDLY_DCASSERT(slots >= smallestChunk());
+
+  decMemUsed(slots * sizeof(node_handle));
+
+  newHole(slots);
+  data[addr] = data[addr+slots-1] = -slots;
+
+  if (!getForest()->getPolicies().recycleNodeStorageHoles) return;
+
+  // Check for a hole to the left
+  if (data[addr-1] < 0) {
+    // Merge!
+#ifdef MEMORY_TRACE
+    printf("Left merging\n");
+#endif
+    node_handle lefthole = addr + data[addr-1];
+    MEDDLY_DCASSERT(data[lefthole] == data[addr-1]);
+    removeHole(lefthole);
+    slots += (-data[lefthole]);
+    addr = lefthole;
+    data[addr] = data[addr+slots-1] = -slots;
+    useHole(0);
+  }
+
+  // if addr is the last hole, absorb into free part of array
+  MEDDLY_DCASSERT(addr + slots - 1 <= lastSlot());
+  if (addr+slots-1 == lastSlot()) {
+    releaseToEnd(addr, slots);
+    return;
+  }
+
+  // Check for a hole to the right
+  if (data[addr+slots]<0) {
+    // Merge!
+#ifdef MEMORY_TRACE
+    printf("Right merging\n");
+#endif
+    node_handle righthole = addr+slots;
+    removeHole(righthole);
+    slots += (-data[righthole]);
+    data[addr] = data[addr+slots-1] = -slots;
+    useHole(0);
+  }
+
+  // Add hole to grid
+  insertHole(addr);
+
+#ifdef MEMORY_TRACE
+  printf("Made Hole %ld\n", addr);
+#ifdef DEEP_MEMORY_TRACE
+  dumpInternal(stdout, INTERNAL_CODE);
+#else
+  dumpHole(stdout, addr);
+#endif
+#endif
+}
+
+// ******************************************************************
+
+void MEDDLY::hm_heap::dumpInternalInfo(FILE* s) const
+{
+  fprintf(s, "Last slot used: %ld\n", long(lastSlot()));
+  fprintf(s, "Total hole slots: %ld\n", holeSlots());
+  fprintf(s, "large_holes: %ld\n", long(large_holes));
+  fprintf(s, "large_holes_size: %ld\n", long(large_holes_size));
+  fprintf(s, "Grid: top = %ld bottom = %ld\n", long(holes_top), long(holes_bottom));
+}
+
+// ******************************************************************
+
+void MEDDLY::hm_heap::dumpHole(FILE* s, node_address a) const
+{
+  MEDDLY_DCASSERT(data);
+  MEDDLY_CHECK_RANGE(1, a, lastSlot());
+  fprintf(s, "[%ld, ", long(data[a]));
+  if (isIndexHole(a)) {
+    node_handle up, down, root, size;
+    getIndex(a, up, down, root, size);
+    fprintf(s, "u: %ld, d: %ld, r: %ld, s: %ld", 
+      long(up), long(down), long(root), long(size)
+    );
+  } else {
+    node_handle left, right, parent, id;
+    getHeapNode(a, id, parent, left, right);
+    fprintf(s, "l: %ld, r: %ld, p: %ld, id: %ld",
+      long(left), long(right), long(parent), long(id)
+    );
+  }
+  long aN = chunkAfterHole(a)-1;
+  fprintf(s, ", ..., %ld]\n", long(data[aN]));
+}
+
+// ******************************************************************
+
+void MEDDLY::hm_heap
+::reportStats(FILE* s, const char* pad, unsigned flags) const
+{
+  static unsigned HOLE_MANAGER =
+    expert_forest::HOLE_MANAGER_STATS | expert_forest::HOLE_MANAGER_DETAILED;
+
+  if (! (flags & HOLE_MANAGER)) return;
+
+  fprintf(s, "%sStats for grid hole management\n", pad);
+
+  holeman::reportStats(s, pad, flags);
+
+  if (! (flags & expert_forest::HOLE_MANAGER_DETAILED)) return;
+
+  // Any detailed info?
+}
+
+// ******************************************************************
+
+void MEDDLY::hm_heap::clearHolesAndShrink(node_address new_last, bool shrink)
+{
+  holeman::clearHolesAndShrink(new_last, shrink);
+
+  // set up hole pointers and such
+  holes_top = holes_bottom = 0;
+  large_holes = 0;
+  large_holes_size = 0;
 }
 
 // ******************************************************************
@@ -61,14 +299,186 @@ MEDDLY::hm_heap::~hm_heap()
 
 void MEDDLY::hm_heap::insertHole(node_handle p_offset)
 {
-  // TBD
+#ifdef MEMORY_TRACE
+  printf("insertHole(%ld): ", long(p_offset));
+  dumpInternalNode(stdout, p_offset, 0x03);
+#endif
+
+  // sanity check to make sure that the first and last slots in this hole
+  // have the same value, i.e. -(# of slots in the hole)
+  MEDDLY_DCASSERT(data[p_offset] == data[p_offset - data[p_offset] - 1]);
+
+  // Check if we belong in the grid, or the large hole heap
+  if (-data[p_offset] > max_request) {
+#ifdef MEMORY_TRACE
+    printf("\tAdding to large_holes: %d\n", large_holes);
+#endif
+
+    addToHeap(large_holes, large_holes_size, p_offset);
+    return;
+  }
+
+  // special case: empty
+  if (0 == holes_bottom) {
+#ifdef MEMORY_TRACE
+    printf("\tAdding to empty grid\n");
+#endif
+    // index hole
+    makeIndex(p_offset, 0, 0, 0, 0);
+    return;
+  }
+
+  // special case: at top
+  if (data[p_offset] < data[holes_top]) {
+#ifdef MEMORY_TRACE
+    printf("\tAdding new chain at top\n");
+#endif
+    // index hole
+    makeIndex(p_offset, 0, holes_top, 0, 0);
+    return;
+  }
+
+  // find our vertical position in the grid
+  node_handle above = holes_bottom;
+  node_handle below = 0;
+  while (data[p_offset] < data[above]) {
+    below = above;
+    above = Up(below);
+    MEDDLY_DCASSERT(Down(above) == below);
+    MEDDLY_DCASSERT(above);  
+  }
+  if (data[p_offset] == data[above]) {
+#ifdef MEMORY_TRACE
+    printf("\tAdding to chain\n");
+#endif
+    // Found, add this to chain
+
+    if (p_offset < above) {
+      // This node is smaller than the index node.
+      // Make this the new index node, and add the current index node
+      // to the heap.
+
+      node_handle root = Root(above);
+      node_handle size = Size(above);
+      node_handle upptr = Up(above);
+      addToHeap(root, size, above);
+      makeIndex(p_offset, upptr, below, root, size);
+
+    } else {
+      // This node is larger than the index node.
+      // Add it to the heap.
+
+      addToHeap(Root(above), Size(above), p_offset); 
+    }
+    return; 
+  }
+#ifdef MEMORY_TRACE
+  printf("\tAdding new chain\n");
+#endif
+  // we should have above < p_offset < below  (remember, -sizes)
+  // create an index hole since there were no holes of this size
+  makeIndex(p_offset, above, below, 0, 0);
 }
 
 // ******************************************************************
 
 void MEDDLY::hm_heap::removeHole(node_handle p_offset)
 {
-  // TBD
+#ifdef MEMORY_TRACE
+  printf("removeHole(%ld): ", long(p_offset));
+  dumpHole(stdout, p_offset);
+#endif
+  if (isIndexHole(p_offset)) {
+    //
+    // Index hole.
+    // Positive: no need to search for our location.
+    // Negative: need to build another index node
+    //
+#ifdef MEMORY_TRACE
+    printf("\tremoving index hole\n");
+#endif
+    node_handle above, below, root, size;
+    getIndex(p_offset, above, below, root, size);
+
+    if (root) {
+      // Heap is not empty.
+      // Remove smallest from the heap,
+      // and make that the new index node.
+
+      node_handle newindex = root;
+      removeFromHeap(root, size, root);
+      makeIndex(newindex, above, below, root, size);
+
+#ifdef MEMORY_TRACE
+      printf("New index %ld: ", long(newindex));
+      dumpHole(stdout, newindex);
+#endif
+
+    } else {
+      // Heap is empty.
+      // No more holes of this size; remove the row completely
+
+      // update the pointers of the holes (index) above and below it
+      if (above) {
+        Down(above) = below;
+      } else {
+        holes_top = below;
+      }
+
+      if (below) {
+        Up(below) = above;
+      } else {
+        holes_bottom = above;
+      }
+    }
+#ifdef MEMORY_TRACE
+    printf("Removed Index hole %ld\n", long(p_offset));
+#endif
+    //
+    // Done removing index hole.
+    //
+  } else {
+    //
+    // Hole is in some heap.
+    // Positive: no need to update index node
+    // Negative: need to determine the index node that holds the 
+    //           heap we're in (unless we're in the large_holes heap)
+    //
+
+    if (-data[p_offset] > max_request) {
+      // Easy case!
+#ifdef MEMORY_TRACE
+      printf("removing large hole\n");
+#endif
+      removeFromHeap(large_holes, large_holes_size, p_offset);
+
+    } else {
+      // Hard case
+#ifdef MEMORY_TRACE
+      printf("removing from heap\n");
+#endif
+      // Find the correct heap
+      node_handle curr;
+      for (curr = holes_bottom; curr; curr = Up(curr)) {
+        if (data[p_offset] == data[curr]) break;
+      }
+      MEDDLY_DCASSERT(curr);
+
+      removeFromHeap(Root(curr), Size(curr), p_offset);
+
+    }
+
+#ifdef MEMORY_TRACE
+    printf("Removed Heap hole %ld\n", long(p_offset));
+#endif
+    //
+    // Done removing heap hole.
+    //
+  }
+
+#ifdef DEEP_MEMORY_TRACE
+  dumpInternal(stdout, INTERNAL_CODE);
+#endif
 }
 
 // ******************************************************************
@@ -76,7 +486,11 @@ void MEDDLY::hm_heap::removeHole(node_handle p_offset)
 void MEDDLY::hm_heap
 ::addToHeap(node_handle& root, node_handle& size, node_handle p)
 {
+#ifdef MEMORY_TRACE
+  printf("    addToHeap(%ld, %ld, %ld)\n", long(root), long(size), long(p));
+#endif
   MEDDLY_DCASSERT(p);
+  MEDDLY_DCASSERT(size<=0);
   // size remains negative
   size--;
   node_handle IDp = -size;
@@ -84,52 +498,17 @@ void MEDDLY::hm_heap
   if (!pp) {
     // empty heap
     MEDDLY_DCASSERT(1==IDp);
-    makeHeapNode(p, IDp, 0, 0, 0);
+    makeHeapNode(p, IDp, 0, 0);
+    rawParent(p) = 0;
     root = p;
     return;
   }
-  MEDDLY_DCASSERT(ID(pp) == IDp);
-  makeHeapNode(p, IDp, pp, 0, 0);
-  if (IDp % 2) {
-    Right(pp) = p;
-  } else {
-    Left(pp) = p;
-  }
-  // p is in position; now perform an "upheap" operation
-  node_handle* node = holeOf(p);
-  while (pp) {
-    if (pp < p) return; // heap condition is satisfied; stop
-
-    // "swap" p with pp
-    node_handle* pptr = holeOf(pp);
-
-    // sanity checks
-    MEDDLY_DCASSERT(pptr[ID_index] > 0);
-    MEDDLY_DCASSERT(node[ID_index] > 0);
-    MEDDLY_DCASSERT(node[ID_index] / 2 == pptr[ID_index]);
-    MEDDLY_DCASSERT(node[parent_index] == pp);
-    // determine which child
-    if (node[ID_index] % 2) {
-      // node is a right child
-      MEDDLY_DCASSERT(pptr[right_index] == p);
-      pptr[right_index] = node[right_index];
-      node[right_index] = pp;
-      SWAP(pptr[left_index], node[left_index]);
-    } else {
-      // node is a left child
-      MEDDLY_DCASSERT(pptr[left_index] == p);
-      pptr[left_index] = node[left_index];
-      node[left_index] = pp;
-      SWAP(pptr[right_index], node[right_index]);
-    }
-    // update the rest of the node
-    pp = node[parent_index] = pptr[parent_index];
-    pptr[parent_index] = p;
-    pptr[ID_index] = node[ID_index];
-    node[ID_index] /= 2;
-  }
-  // we made it all the way to the root
-  root = p;
+  MEDDLY_DCASSERT(ID(pp) == IDp/2);
+  makeHeapNode(p, IDp, 0, 0);
+  upHeap(root, pp, p);
+#ifdef DEVELOPMENT_CODE
+  verifyHeap(0, root);
+#endif
 }
 
 // ******************************************************************
@@ -137,6 +516,10 @@ void MEDDLY::hm_heap
 void MEDDLY::hm_heap
 ::removeFromHeap(node_handle& root, node_handle& size, node_handle p)
 {
+#ifdef MEMORY_TRACE
+  printf("    removeFromHeap(%ld, %ld, %ld)\n", long(root), long(size), long(p));
+  verifyHeap(0, root);
+#endif
   MEDDLY_DCASSERT(p);
   MEDDLY_DCASSERT(p == takePathToID(root, ID(p)));
 
@@ -148,10 +531,10 @@ void MEDDLY::hm_heap
   node_handle rmp = Parent(replace);
   if (rmp) {
     if (replace == Right(rmp)) {
-      Right(rmp) = 0;
+      setRight(rmp, 0);
     } else {
       MEDDLY_DCASSERT(replace = Left(rmp));
-      Left(rmp) = 0;
+      setLeft(rmp, 0);
     }
   }
 
@@ -165,26 +548,71 @@ void MEDDLY::hm_heap
   // repair the heap downward:
   // where p was, put either left child, right child, or replacement
   node_handle* pptr = holeOf(p);
-  node_handle newp = downHeap(pptr[parent_index], pptr[ID_index], 
+  node_handle newp = downHeap(pptr[ID_index], 
     pptr[left_index], pptr[right_index], replace);
 
-  // link this to where it goes
-  if (0==pptr[parent_index]) {
-    // p is the root; this is a common case
-    root = newp;
-  } else if (Right(pptr[parent_index]) == p) {
-    // p was the right child
-    Right(pptr[parent_index]) = newp;
-  } else {
-    // p was the left child
-    MEDDLY_DCASSERT(Left(pptr[parent_index]) == p);
-    Left(pptr[parent_index]) = newp;
+  // repair the heap upward
+  upHeap(root, pptr[parent_index], newp);
+
+#ifdef DEVELOPMENT_CODE
+  verifyHeap(0, root);
+#endif
+}
+
+// ******************************************************************
+
+void MEDDLY::hm_heap::upHeap(node_handle& root, node_handle pp, node_handle p)
+{
+  // p is in position; now perform an "upheap" operation
+  while (pp) {
+    bool right_child = ID(p) % 2;
+
+    if (right_child) {
+      setRight(pp, p);
+    } else {
+      setLeft(pp, p);
+    }
+
+    if (pp < p) break;  
+
+    // sanity checks
+    MEDDLY_DCASSERT(ID(pp) > 0);
+    MEDDLY_DCASSERT(ID(p) > 0);
+    MEDDLY_DCASSERT(ID(p) / 2 == ID(pp));
+    MEDDLY_DCASSERT(Parent(p) == pp);
+
+    // rotate
+    node_handle newpp = Parent(pp);
+    if (right_child) {
+      MEDDLY_DCASSERT(Right(pp) == p);
+      node_handle L = Left(pp);
+      setLeft(pp, Left(p));
+      setRight(pp, Right(p));
+      setLeft(p, L);
+      setRight(p, pp);
+    } else {
+      MEDDLY_DCASSERT(Left(pp) == p);
+      node_handle R = Right(pp);
+      setLeft(pp, Left(p));
+      setRight(pp, Right(p));
+      setLeft(p, pp);
+      setRight(p, R);
+    }
+    rawID(pp) = ID(p);
+    rawID(p) /= 2;
+
+    pp = newpp;
+  }
+
+  if (0==pp) {
+    root = p;
+    rawParent(p) = 0;
   }
 }
 
 // ******************************************************************
 
-MEDDLY::node_handle MEDDLY::hm_heap::downHeap(node_handle parent,
+MEDDLY::node_handle MEDDLY::hm_heap::downHeap(
   node_handle ID, node_handle left, node_handle right, node_handle replace)
 {
   MEDDLY_DCASSERT(replace);
@@ -194,31 +622,69 @@ MEDDLY::node_handle MEDDLY::hm_heap::downHeap(node_handle parent,
   if (kl < kr) {
     if (replace < kl) {
         // replace is smallest
-        makeHeapNode(replace, ID, parent, left, right);
+        makeHeapNode(replace, ID, left, right);
         return replace;
     } else {
         // kl is smallest
-        node_handle* lptr = holeOf(left);
         node_handle newleft = 
-          downHeap(left, 2*ID, lptr[left_index], lptr[right_index], replace);
-        fillHeapNode(lptr, ID, parent, newleft, right);
+          downHeap(2*ID, Left(left), Right(left), replace);
+        makeHeapNode(left, ID, newleft, right);
         return left;
       }
   } else {
       if (replace < kr) {
         // replace is smallest
-        makeHeapNode(replace, ID, parent, left, right);
+        makeHeapNode(replace, ID, left, right);
         return replace;
       } else {
         // kr is smallest
-        node_handle* rptr = holeOf(right);
         node_handle newright = 
-          downHeap(right, 2*ID+1, rptr[left_index], rptr[right_index], replace);
-        fillHeapNode(rptr, ID, parent, left, newright);
+          downHeap(2*ID+1, Left(right), Right(right), replace);
+        makeHeapNode(right, ID, left, newright);
         return right;
       }
   }
 }
 
+// ******************************************************************
 
+void MEDDLY::hm_heap::heapToList(node_handle root)
+{
+  node_handle front, back;
+  back = root;
+  node_handle* bptr;
+  for (front = root; front; front = Parent(front)) {
+    if (Left(front)) {
+      bptr = holeOf(back);
+      back = ( bptr[parent_index] = Left(front) );
+      if (Right(front)) {
+        bptr = holeOf(back);
+        back = ( bptr[parent_index] = Right(front) );
+      } // if right child
+    } // if left child
+  }
+  if (back) {
+    bptr = holeOf(back);
+    bptr[parent_index] = 0;
+  }
+}
 
+// ******************************************************************
+
+#ifdef DEVELOPMENT_CODE
+void MEDDLY::hm_heap::verifyHeap(node_handle parent, node_handle node) const
+{
+#ifdef VERIFY_HEAP
+  if (0==node) return;
+  MEDDLY_DCASSERT(parent < node);
+  MEDDLY_DCASSERT(Parent(node) == parent);
+  if (parent) {
+    MEDDLY_DCASSERT(ID(parent) == ID(node)/2);
+  } else {
+    MEDDLY_DCASSERT(1 == ID(node));
+  }
+  verifyHeap(node, Left(node));
+  verifyHeap(node, Right(node));
+#endif
+}
+#endif

@@ -64,6 +64,11 @@ MEDDLY::node_address MEDDLY::holeman::chunkAfterHole(node_address addr) const
 }
 
 // ******************************************************************
+void MEDDLY::holeman::dumpInternalTail(FILE*) const
+{
+}
+
+// ******************************************************************
 
 void MEDDLY::holeman
 ::reportStats(FILE* s, const char* pad, unsigned flags) const

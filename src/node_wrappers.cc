@@ -303,13 +303,13 @@ void MEDDLY::node_storage::initForForest(expert_forest* f)
 }
 
 
-void MEDDLY::node_storage::dumpInternal(FILE* s) const
+void MEDDLY::node_storage::dumpInternal(FILE* s, unsigned flags) const
 {
   dumpInternalInfo(s);
   fprintf(s, "Data array by record:\n");
   for (node_address a=1; a > 0; ) {
     fflush(s);
-    a = dumpInternalNode(s, a);
+    a = dumpInternalNode(s, a, flags);
   } // for a
   dumpInternalTail(s);
   fflush(s);

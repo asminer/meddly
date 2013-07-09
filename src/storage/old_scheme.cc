@@ -685,7 +685,8 @@ void MEDDLY::old_node_storage::dumpInternalInfo(FILE* s) const
 
 
 MEDDLY::node_address 
-MEDDLY::old_node_storage::dumpInternalNode(FILE *s, node_address a) const
+MEDDLY::old_node_storage
+::dumpInternalNode(FILE *s, node_address a, unsigned flags) const
 {
   if (a<=0) return 0;
   int awidth = digits(getParent()->getLastNode());
@@ -693,27 +694,33 @@ MEDDLY::old_node_storage::dumpInternalNode(FILE *s, node_address a) const
     fprintf(s, "%*ld : free slots\n", awidth, long(a));
     return 0;
   }
-  fprintf(s, "%*ld : ", awidth, a);
   MEDDLY_DCASSERT(data);
+  bool print = (data[a] < 0) ? (flags & 0x02) : (flags & 0x01);
+  if (print) fprintf(s, "%*ld : ", awidth, a);
   if (data[a]<0) { 
     // hole
-    fprintf(s, "[%ld", long(data[a]));
-    for (int i=1; i<3; i++) {
-      fprintf(s, "|%ld", long(data[a+i]));
+    if (print) {
+      fprintf(s, "[%ld", long(data[a]));
+      for (int i=1; i<3; i++) {
+        fprintf(s, "|%ld", long(data[a+i]));
+      }
+      fprintf(s, "| ... ");
     }
-    fprintf(s, "| ... ");
     verify_hole_slots += -data[a];
     a -= data[a];  
-    fprintf(s, "%ld]\n", long(data[a-1]));
+    if (print) fprintf(s, "%ld]\n", long(data[a-1]));
   } else {
     // proper node
-    int nElements = activeNodeActualSlots(a);
-    fprintf(s, "[%ld", long(data[a]));
-    for (int i=1; i<nElements-1; i++) {
-      fprintf(s, "|%ld", long(data[a+i]));
+    if (print) {
+      fprintf(s, "%*ld : ", awidth, a);
+      int nElements = activeNodeActualSlots(a);
+      fprintf(s, "[%ld", long(data[a]));
+      for (int i=1; i<nElements-1; i++) {
+        fprintf(s, "|%ld", long(data[a+i]));
+      }
     }
     a += activeNodeActualSlots(a);
-    fprintf(s, "%ld]\n", long(data[a-1]));
+    if (print) fprintf(s, "%ld]\n", long(data[a-1]));
   }
   return a;
 }

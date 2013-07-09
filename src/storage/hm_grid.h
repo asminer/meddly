@@ -184,10 +184,21 @@ class MEDDLY::hm_grid : public holeman {
       inline void makeIndex(node_handle p_offset, node_handle up, 
         node_handle down, node_handle next) 
       {
-         node_handle* hole = holeOf(p_offset);
-         hole[hole_up_index] = up;
-         hole[hole_down_index] = down;
-         hole[hole_next_index] = next;
+        node_handle* hole = holeOf(p_offset);
+        hole[hole_up_index] = up;
+        hole[hole_down_index] = down;
+        hole[hole_next_index] = next;
+        // update the pointers of the holes (index) above and below it
+        if (up) {
+          Down(up) = p_offset;
+        } else {
+          holes_top = p_offset;
+        }
+        if (down) {
+          Up(down) = p_offset;
+        } else {
+          holes_bottom = p_offset;
+        }
       }
 
       // convert a node from index to non-index
@@ -208,6 +219,17 @@ class MEDDLY::hm_grid : public holeman {
         MEDDLY_DCASSERT(non_index_hole == hole[hole_up_index]);
         hole[hole_up_index] = up;
         hole[hole_down_index] = down;
+        // update the pointers of the holes (index) above and below it
+        if (up) {
+          Down(up) = p_offset;
+        } else {
+          holes_top = p_offset;
+        }
+        if (down) {
+          Up(down) = p_offset;
+        } else {
+          holes_bottom = p_offset;
+        }
       }
 
       // add a hole to the grid or large hole list, as appropriate
