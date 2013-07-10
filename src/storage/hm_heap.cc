@@ -450,6 +450,7 @@ void MEDDLY::hm_heap::removeHole(node_handle p_offset)
 #ifdef MEMORY_TRACE
       printf("removing large hole\n");
 #endif
+      MEDDLY_DCASSERT(large_holes);
       removeFromHeap(large_holes, large_holes_size, p_offset);
 
     } else {
@@ -650,23 +651,31 @@ MEDDLY::node_handle MEDDLY::hm_heap::downHeap(
 
 void MEDDLY::hm_heap::heapToList(node_handle root)
 {
+#ifdef MEMORY_TRACE
+  printf("Converting heap into list...\n");
+#endif
   node_handle front, back;
   back = root;
-  node_handle* bptr;
+  if (back) {
+    rawParent(back) = 0;
+  }
   for (front = root; front; front = Parent(front)) {
     if (Left(front)) {
-      bptr = holeOf(back);
-      back = ( bptr[parent_index] = Left(front) );
+      back = ( rawParent(back) = Left(front) );
       if (Right(front)) {
-        bptr = holeOf(back);
-        back = ( bptr[parent_index] = Right(front) );
+        back = ( rawParent(back) = Right(front) );
       } // if right child
+      rawParent(back) = 0;
     } // if left child
   }
-  if (back) {
-    bptr = holeOf(back);
-    bptr[parent_index] = 0;
+#ifdef MEMORY_TRACE
+  printf("Done.  List:  ");
+  for (node_handle ptr = root; ptr; ptr = Parent(ptr)) {
+    if (ptr != root) printf(", ");
+    printf("%ld", long(ptr));
   }
+  printf("\n");
+#endif
 }
 
 // ******************************************************************
