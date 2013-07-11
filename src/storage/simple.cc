@@ -912,7 +912,7 @@ MEDDLY::simple_heap::~simple_heap()
 MEDDLY::node_storage* MEDDLY::simple_heap
 ::createForForest(expert_forest* f) const
 {
-  simple_storage* nns = new simple_grid;
+  simple_storage* nns = new simple_heap;
   nns->initForForest(f);
   nns->setHoleManager(new hm_heap(nns));
   return nns;
