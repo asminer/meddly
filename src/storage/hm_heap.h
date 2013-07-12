@@ -98,6 +98,101 @@ class MEDDLY::hm_heap : public holeman {
     // remove a hole from the grid or large hole list, as appropriate
     void removeHole(node_handle p_offset);
 
+  private:  // helpers for recycleChunk
+
+      // Add to the end of a hole
+      //  @param  hole    Existing hole, already in grid
+      //  @param  extra   New hole immediately after, not in grid
+      //  @param  slots   Size of the new hole
+      inline void appendHole(node_handle hole, node_handle extra, int slots) 
+      {
+        // Sanity checks
+        MEDDLY_DCASSERT(data[hole] < 0);
+        MEDDLY_DCASSERT(data[hole] == data[extra-1]);
+        MEDDLY_DCASSERT(hole - extra == data[hole]);
+
+        if (-data[hole] > max_request) {
+          // Hole is large, modify it in place :^)
+          useHole(-data[hole]);
+          slots += -data[hole];
+          data[hole] = data[hole+slots-1] = -slots;
+          newHole(slots);
+          return;
+        }
+
+        // Still here?  Hole is small, meaning it is 
+        // somewhere in the grid according to its size.
+        // So, we need to (1) Remove the hole
+        removeHole(hole);
+
+        // (2) Increase its size
+        slots += -data[hole];
+        data[hole] = data[hole+slots-1] = -slots;
+
+        // (3) Insert it again
+        if (insertHole(hole)) {
+          newHole(slots);
+        } else {
+          newUntracked(slots);
+        }
+      }
+
+      // Add to the start of a hole
+      //  @param  extra   New hole immediately before, not in grid
+      //  @param  hole    Existing hole, already in grid
+      inline void prependHole(node_handle extra, node_handle hole)
+      {
+        int slots = (hole - extra) -data[hole]; // total #slots now
+
+        if (-data[hole] > max_request) {
+          // Hole is large, modify it in place :^)
+          useHole(-data[hole]);
+          data[extra] = data[extra+slots-1] = -slots;
+          newHole(slots);
+
+          // shift the node data over
+          shiftNode(extra, hole);
+          return;
+        }
+
+        // Small hole - do the usual
+
+        // (1) Remove
+        removeHole(hole);
+
+        // (2) Enlarge
+        data[extra] = data[extra+slots-1] = -slots;
+
+        // (3) Insert
+        if (insertHole(extra)) {
+          newHole(slots);
+        } else {
+          newUntracked(slots);
+        }
+      }
+
+      // Group two holes with a new hole in the middle
+      //  @param  left    Existing hole, already in the grid
+      //  @param  mid     New hole in between
+      //  @param  right   Existing hole, already in the grid
+      inline void groupHoles(node_handle left, node_handle mid, 
+        node_handle right)
+      {
+        // Do our best to modify things in place
+        if ((-data[right] > max_request) && (-data[left] <= max_request)) {
+          // left is small, right is large
+          // merge everything into the right hole
+          removeHole(left);
+          prependHole(left, right);
+        } else {
+          // Merge everything into the left hole
+          // (note - merging into the left is faster,
+          //  so that's why we do this most of the time)
+          removeHole(right);
+          appendHole(left, mid, (right-mid) - data[right]); 
+        }
+      }
+
   private:
     static const int left_index = 1;
     static const int right_index = 2;
@@ -247,6 +342,28 @@ class MEDDLY::hm_heap : public holeman {
         MEDDLY_DCASSERT(node[ID_index] > 0);
         if (left) rawParent(left) = addr;
         if (right) rawParent(right) = addr;
+      }
+
+      // shift a node
+      inline void shiftNode(node_handle newaddr, node_handle oldaddr) {
+          node_handle left, right, parent, ID;
+          getHeapNode(oldaddr, ID, parent, left, right);
+          makeHeapNode(newaddr, ID, left, right);
+
+          // update our parent
+          if (parent) {
+            if (ID % 2) {
+              MEDDLY_DCASSERT(Right(parent) == oldaddr);
+              setRight(parent, newaddr);
+            } else {
+              MEDDLY_DCASSERT(Left(parent) == oldaddr);
+              setLeft(parent, newaddr);
+            }
+          } else {
+            MEDDLY_DCASSERT(large_holes == oldaddr);
+            large_holes = newaddr;
+            rawParent(newaddr) = 0;
+          }
       }
 
   private:

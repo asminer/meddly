@@ -138,8 +138,6 @@ void MEDDLY::hm_array::recycleChunk(node_address addr, int slots)
 
   data[addr] = data[addr+slots-1] = -slots;
 
-  if (!getForest()->getPolicies().recycleNodeStorageHoles) return;
-
   // Check for a hole to the left
 #ifdef MERGE_AND_SPLIT_HOLES
   if (data[addr-1] < 0) {

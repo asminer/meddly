@@ -1003,8 +1003,6 @@ void MEDDLY::old_node_storage::makeHole(node_handle addr, int slots)
   hole_slots += slots;
   data[addr] = data[addr+slots-1] = -slots;
 
-  if (!getParent()->getPolicies().recycleNodeStorageHoles) return;
-
   // Check for a hole to the left
 #ifdef MERGE_AND_SPLIT_HOLES
   if (data[addr-1] < 0) {

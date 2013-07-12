@@ -238,6 +238,76 @@ class MEDDLY::hm_grid : public holeman {
       // remove a hole from the grid
       void removeHole(node_handle p_offset);
 
+  private:  // helpers for recycleChunk
+
+      // Add to the end of a hole
+      //  @param  hole    Existing hole, already in grid
+      //  @param  extra   New hole immediately after, not in grid
+      //  @param  slots   Size of the new hole
+      inline void appendHole(node_handle hole, node_handle extra, int slots) 
+      {
+        // Sanity checks
+        MEDDLY_DCASSERT(data[hole] < 0);
+        MEDDLY_DCASSERT(data[hole] == data[extra-1]);
+        MEDDLY_DCASSERT(hole - extra == data[hole]);
+
+        if (-data[hole] > max_request) {
+          // Hole is large, modify it in place :^)
+          useHole(-data[hole]);
+          slots += -data[hole];
+          data[hole] = data[hole+slots-1] = -slots;
+          newHole(slots);
+          return;
+        }
+
+        // Still here?  Hole is small, meaning it is 
+        // somewhere in the grid according to its size.
+        // So, we need to (1) Remove the hole
+        removeHole(hole);
+
+        // (2) Increase its size
+        slots += -data[hole];
+        data[hole] = data[hole+slots-1] = -slots;
+
+        // (3) Insert it again
+        if (insertHole(hole)) {
+          newHole(slots);
+        } else {
+          newUntracked(slots);
+        }
+      }
+
+      // Add to the start of a hole
+      //  @param  extra   New hole immediately before, not in grid
+      //  @param  hole    Existing hole, already in grid
+      inline void prependHole(node_handle extra, node_handle hole) {
+        // With this data structure, this operation is identical to
+        // (1) Remove
+        removeHole(hole);
+
+        // (2) Enlarge
+        int slots = (hole - extra) -data[hole]; // total #slots now
+        data[extra] = data[extra+slots-1] = -slots;
+
+        // (3) Insert
+        if (insertHole(extra)) {
+          newHole(slots);
+        } else {
+          newUntracked(slots);
+        }
+      }
+
+      // Group two holes with a new hole in the middle
+      //  @param  left    Existing hole, already in the grid
+      //  @param  mid     New hole in between
+      //  @param  right   Existing hole, already in the grid
+      inline void groupHoles(node_handle left, node_handle mid, 
+        node_handle right)
+      {
+        // In this data structure, this operation is the same as:
+        removeHole(right);
+        appendHole(left, mid, (right-mid) - data[right]); 
+      }
 
   private:
       static const int non_index_hole = -2;   // any negative will do

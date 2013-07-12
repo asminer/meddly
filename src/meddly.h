@@ -608,8 +608,6 @@ class MEDDLY::forest {
       /// Backend storage mechanism for nodes.
       const node_storage* nodestor;
 
-      /// Should we try to recycle node memory.
-      bool recycleNodeStorageHoles;
       /// Memory compactor: never run if fewer than this many unused slots.
       int compact_min;
       /// Memory compactor: always run if more than this many unused slots.
@@ -631,7 +629,6 @@ class MEDDLY::forest {
         reduction = rel ? IDENTITY_REDUCED : FULLY_REDUCED;
         storage_flags = ALLOW_FULL_STORAGE | ALLOW_SPARSE_STORAGE;
         deletion = OPTIMISTIC_DELETION;
-        recycleNodeStorageHoles = true;
         compact_min = 100;
         compact_max = 1000000;
         compact_frac = 40;

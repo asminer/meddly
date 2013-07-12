@@ -108,25 +108,34 @@ MEDDLY::hm_heap::requestChunk(int req_slots)
 
   if (found) {
     // We have a hole to recycle
-    // Sanity check:
-    MEDDLY_DCASSERT(slots <= -data[found]);
-
-    // Remove the hole
-    removeHole(found);
-
     node_handle newhole = found + slots;
     node_handle newsize = -(data[found]) - slots;
-    data[found] = -slots;
-    if (newsize > 0) {
-      // Save the leftovers - make a new hole!
-      data[newhole] = -newsize;
-      data[newhole + newsize - 1] = -newsize;
-      if (insertHole(newhole)) {
-        newHole(newsize);
-      } else {
-        newUntracked(newsize);
+    // Sanity check:
+    MEDDLY_DCASSERT(newsize >= 0);
+
+    if (newsize > max_request) {
+      // Our hole is large, so is the leftover hole.
+      // Modify things in place :^)
+      MEDDLY_DCASSERT(slots > ID_index);
+      useHole(-data[found]);
+      newHole(newsize);
+      data[newhole] = data[newhole + newsize - 1] = -newsize;
+      shiftNode(newhole, found);
+    } else {
+      // Remove the old hole
+      removeHole(found);
+
+      if (newsize>0) {
+        // Save the leftovers into a new hole
+        data[newhole] = data[newhole + newsize - 1] = -newsize;
+        if (insertHole(newhole)) {
+          newHole(newsize);
+        } else {
+          newUntracked(newsize);
+        }
       }
-    }
+    } 
+    data[found] = -slots;
 #ifdef MEMORY_TRACE
     printf("\trecycled %d slots, addr %ld\n", -data[found], long(found));
 #endif
@@ -149,64 +158,80 @@ MEDDLY::hm_heap::requestChunk(int req_slots)
 void MEDDLY::hm_heap::recycleChunk(node_address addr, int slots)
 {
 #ifdef MEMORY_TRACE
-  printf("Calling recycleChunk(%ld, %d)\n\tchunk contains ", addr, slots);
+  printf("Calling recycleChunk(%ld, %d)\n", addr, slots);
+#ifdef DEEP_MEMORY_TRACE
+  printf("-------------------------------------------\n", slots);
+  dumpInternal(stdout, 0x03);
+#else
+  printf("Node %ld: ", addr);
   dumpInternalNode(stdout, addr, 0x03);
+#endif
 #endif
 
   decMemUsed(slots * sizeof(node_handle));
 
-  data[addr] = data[addr+slots-1] = -slots;
-
-  if (!getForest()->getPolicies().recycleNodeStorageHoles) return;
-
-  // Check for a hole to the left
-  if (data[addr-1] < 0) {
-    // Merge!
-#ifdef MEMORY_TRACE
-    printf("Left merging\n");
-#endif
-    node_handle lefthole = addr + data[addr-1];
-    MEDDLY_DCASSERT(data[lefthole] == data[addr-1]);
-    removeHole(lefthole);
-    slots += (-data[lefthole]);
-    addr = lefthole;
-    data[addr] = data[addr+slots-1] = -slots;
-  }
-
-  // if addr is the last hole, absorb into free part of array
-  MEDDLY_DCASSERT(addr + slots - 1 <= lastSlot());
+  // Can we absorb this hole at the end?
   if (addr+slots-1 == lastSlot()) {
+    // YES!
     releaseToEnd(addr, slots);
+    // Check for a hole to our left
+    if (data[lastSlot()]<0) {
+      // it's a hole; absorb it at the end too
+      slots = -data[lastSlot()];
+      addr = lastSlot() - slots + 1;
+      removeHole(addr);
+      releaseToEnd(addr, slots);
+    }
     return;
   }
 
-  // Check for a hole to the right
-  if (data[addr+slots]<0) {
-    // Merge!
-#ifdef MEMORY_TRACE
-    printf("Right merging\n");
-#endif
-    node_handle righthole = addr+slots;
-    removeHole(righthole);
-    slots += (-data[righthole]);
-    data[addr] = data[addr+slots-1] = -slots;
-  }
+  //
+  // Still here.  The hole is not at the end.
+  // See if we are adjacent to other holes,
+  // and if so, merge with those.
+  //
 
-  // Add hole to grid
-  if (insertHole(addr)) {
-    newHole(slots);
+  if (data[addr-1] < 0) {
+    // There's a hole to our immediate left.
+
+    if (data[addr+slots] < 0) {
+      // Hole to the left and right
+      groupHoles(addr + data[addr-1], addr, addr + slots);
+#ifdef MEMORY_TRACE
+      printf("Grouped holes %ld, %ld, %ld\n", 
+        addr + data[addr-1], addr, addr + slots
+      );
+#endif
+    } else {
+      // Hole to the left only
+      appendHole(addr + data[addr-1], addr, slots);
+#ifdef MEMORY_TRACE
+      printf("Merged %ld with new hole %ld\n", addr + data[addr-1], addr);
+#endif
+    }
   } else {
-    newUntracked(slots);
-  }
+    // No hole to our immediate left.
 
+    if (data[addr+slots] < 0) {
+      // Hole to the right only
+      prependHole(addr, addr + slots);
 #ifdef MEMORY_TRACE
-  printf("Made Hole %ld\n", addr);
-#ifdef DEEP_MEMORY_TRACE
-  dumpInternal(stdout, INTERNAL_CODE);
-#else
-  dumpHole(stdout, addr);
+      printf("New hole %ld, merged with %ld\n", addr, addr + slots);
 #endif
+    } else {
+      // No nearby holes
+      data[addr] = data[addr+slots-1] = -slots;
+      // Add hole to grid
+      if (insertHole(addr)) {
+        newHole(slots);
+      } else {
+        newUntracked(slots);
+      }
+#ifdef MEMORY_TRACE
+      printf("Made Hole %ld\n", addr);
 #endif
+    }
+  }
 }
 
 // ******************************************************************

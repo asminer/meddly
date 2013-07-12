@@ -24,7 +24,6 @@
 #include "hm_grid.h"
 
 
-#define MERGE_AND_SPLIT_HOLES
 // #define MEMORY_TRACE
 // #define DEEP_MEMORY_TRACE
 
@@ -102,7 +101,6 @@ MEDDLY::node_address MEDDLY::hm_grid::requestChunk(int slots)
     chain++;
   }
 
-#ifdef MERGE_AND_SPLIT_HOLES
   // If that failed, try the large hole list
   if (!found && large_holes) {
     // should be large enough
@@ -117,7 +115,6 @@ MEDDLY::node_address MEDDLY::hm_grid::requestChunk(int slots)
       found = holes_top;
     }
   }
-#endif
 
   if (found) {
     // We have a hole to recycle
@@ -170,57 +167,68 @@ void MEDDLY::hm_grid::recycleChunk(node_address addr, int slots)
 
   decMemUsed(slots * sizeof(node_handle));
 
-  data[addr] = data[addr+slots-1] = -slots;
-
-  if (!getForest()->getPolicies().recycleNodeStorageHoles) return;
-
-  // Check for a hole to the left
-#ifdef MERGE_AND_SPLIT_HOLES
-  if (data[addr-1] < 0) {
-    // Merge!
-#ifdef MEMORY_TRACE
-    printf("Left merging\n");
-#endif
-    node_handle lefthole = addr + data[addr-1];
-    MEDDLY_DCASSERT(data[lefthole] == data[addr-1]);
-    removeHole(lefthole);
-    slots += (-data[lefthole]);
-    addr = lefthole;
-    data[addr] = data[addr+slots-1] = -slots;
-  }
-#endif
-
-  // if addr is the last hole, absorb into free part of array
-  MEDDLY_DCASSERT(addr + slots - 1 <= lastSlot());
+  // Can we absorb this hole at the end?
   if (addr+slots-1 == lastSlot()) {
+    // YES!
     releaseToEnd(addr, slots);
+    // Check for a hole to our left
+    if (data[lastSlot()]<0) {
+      // it's a hole; absorb it at the end too
+      slots = -data[lastSlot()];
+      addr = lastSlot() - slots + 1;
+      removeHole(addr);
+      releaseToEnd(addr, slots);
+    }
     return;
   }
 
-#ifdef MERGE_AND_SPLIT_HOLES
-  // Check for a hole to the right
-  if (data[addr+slots]<0) {
-    // Merge!
-#ifdef MEMORY_TRACE
-    printf("Right merging\n");
-#endif
-    node_handle righthole = addr+slots;
-    removeHole(righthole);
-    slots += (-data[righthole]);
-    data[addr] = data[addr+slots-1] = -slots;
-  }
-#endif
+  //
+  // Still here.  The hole is not at the end.
+  // See if we are adjacent to other holes,
+  // and if so, merge with those.
+  //
 
-  // Add hole to grid
-  if (insertHole(addr)) {
-    newHole(slots);
+  if (data[addr-1] < 0) {
+    // There's a hole to our immediate left.
+
+    if (data[addr+slots] < 0) {
+      // Hole to the left and right
+      groupHoles(addr + data[addr-1], addr, addr + slots);
+#ifdef MEMORY_TRACE
+      printf("Grouped holes %ld, %ld, %ld\n", 
+        addr + data[addr-1], addr, addr + slots
+      );
+#endif
+    } else {
+      // Hole to the left only
+      appendHole(addr + data[addr-1], addr, slots);
+#ifdef MEMORY_TRACE
+      printf("Merged %ld with new hole %ld\n", addr + data[addr-1], addr);
+#endif
+    }
   } else {
-    newUntracked(slots);
-  }
+    // No hole to our immediate left.
 
+    if (data[addr+slots] < 0) {
+      // Hole to the right only
+      prependHole(addr, addr + slots);
 #ifdef MEMORY_TRACE
-  printf("Made Hole %ld\n", addr);
+      printf("New hole %ld, merged wth %ld\n", addr, addr + slots);
 #endif
+    } else {
+      // No nearby holes
+      data[addr] = data[addr+slots-1] = -slots;
+      // Add hole to grid
+      if (insertHole(addr)) {
+        newHole(slots);
+      } else {
+        newUntracked(slots);
+      }
+#ifdef MEMORY_TRACE
+      printf("Made Hole %ld\n", addr);
+#endif
+    }
+  }
 }
 
 // ******************************************************************
@@ -498,4 +506,5 @@ void MEDDLY::hm_grid::removeHole(node_handle p_offset)
   }
 }
 
+// ******************************************************************
 

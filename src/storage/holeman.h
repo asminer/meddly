@@ -214,10 +214,11 @@ class MEDDLY::holeman {
       untracked_slots -= slots;
     }
     
-    inline void dumpInternal(FILE* s, unsigned flags) {
+    inline void dumpInternal(FILE* s, unsigned flags) const {
       if (parent) parent->dumpInternal(s, flags);
     }
-    inline void dumpInternalNode(FILE* s, node_address addr, unsigned flags) {
+    inline void 
+    dumpInternalNode(FILE* s, node_address addr, unsigned flags) const {
       if (parent) parent->dumpInternalNode(s, addr, flags);
     }
 
