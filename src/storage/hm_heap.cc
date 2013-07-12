@@ -113,7 +113,6 @@ MEDDLY::hm_heap::requestChunk(int req_slots)
 
     // Remove the hole
     removeHole(found);
-    useHole(-data[found]);
 
     node_handle newhole = found + slots;
     node_handle newsize = -(data[found]) - slots;
@@ -122,8 +121,11 @@ MEDDLY::hm_heap::requestChunk(int req_slots)
       // Save the leftovers - make a new hole!
       data[newhole] = -newsize;
       data[newhole + newsize - 1] = -newsize;
-      insertHole(newhole);
-      newHole(newsize);
+      if (insertHole(newhole)) {
+        newHole(newsize);
+      } else {
+        newUntracked(newsize);
+      }
     }
 #ifdef MEMORY_TRACE
     printf("\trecycled %d slots, addr %ld\n", -data[found], long(found));
@@ -153,7 +155,6 @@ void MEDDLY::hm_heap::recycleChunk(node_address addr, int slots)
 
   decMemUsed(slots * sizeof(node_handle));
 
-  newHole(slots);
   data[addr] = data[addr+slots-1] = -slots;
 
   if (!getForest()->getPolicies().recycleNodeStorageHoles) return;
@@ -166,13 +167,10 @@ void MEDDLY::hm_heap::recycleChunk(node_address addr, int slots)
 #endif
     node_handle lefthole = addr + data[addr-1];
     MEDDLY_DCASSERT(data[lefthole] == data[addr-1]);
-    useHole(slots);
-    useHole(-data[lefthole]);
     removeHole(lefthole);
     slots += (-data[lefthole]);
     addr = lefthole;
     data[addr] = data[addr+slots-1] = -slots;
-    newHole(slots);
   }
 
   // if addr is the last hole, absorb into free part of array
@@ -189,16 +187,17 @@ void MEDDLY::hm_heap::recycleChunk(node_address addr, int slots)
     printf("Right merging\n");
 #endif
     node_handle righthole = addr+slots;
-    useHole(slots);
-    useHole(-data[righthole]);
     removeHole(righthole);
     slots += (-data[righthole]);
     data[addr] = data[addr+slots-1] = -slots;
-    newHole(slots);
   }
 
   // Add hole to grid
-  insertHole(addr);
+  if (insertHole(addr)) {
+    newHole(slots);
+  } else {
+    newUntracked(slots);
+  }
 
 #ifdef MEMORY_TRACE
   printf("Made Hole %ld\n", addr);
@@ -282,7 +281,7 @@ void MEDDLY::hm_heap::clearHolesAndShrink(node_address new_last, bool shrink)
 // *                                                                *
 // ******************************************************************
 
-void MEDDLY::hm_heap::insertHole(node_handle p_offset)
+bool MEDDLY::hm_heap::insertHole(node_handle p_offset)
 {
 #ifdef MEMORY_TRACE
   printf("insertHole(%ld): ", long(p_offset));
@@ -298,7 +297,7 @@ void MEDDLY::hm_heap::insertHole(node_handle p_offset)
 #ifdef MEMORY_TRACE
     printf("\thole size %d, too small to track\n", -data[p_offset]);
 #endif
-    return; 
+    return false; 
     // This memory can still be reclaimed 
     // when it is merged with neighboring holes :^)
   }
@@ -310,7 +309,7 @@ void MEDDLY::hm_heap::insertHole(node_handle p_offset)
 #endif
 
     addToHeap(large_holes, large_holes_size, p_offset);
-    return;
+    return true;
   }
 
   // special case: empty
@@ -320,7 +319,7 @@ void MEDDLY::hm_heap::insertHole(node_handle p_offset)
 #endif
     // index hole
     makeIndex(p_offset, 0, 0, 0, 0);
-    return;
+    return true;
   }
 
   // special case: at top
@@ -330,7 +329,7 @@ void MEDDLY::hm_heap::insertHole(node_handle p_offset)
 #endif
     // index hole
     makeIndex(p_offset, 0, holes_top, 0, 0);
-    return;
+    return true;
   }
 
   // find our vertical position in the grid
@@ -365,7 +364,7 @@ void MEDDLY::hm_heap::insertHole(node_handle p_offset)
 
       addToHeap(Root(above), Size(above), p_offset); 
     }
-    return; 
+    return true;
   }
 #ifdef MEMORY_TRACE
   printf("\tAdding new chain\n");
@@ -373,6 +372,7 @@ void MEDDLY::hm_heap::insertHole(node_handle p_offset)
   // we should have above < p_offset < below  (remember, -sizes)
   // create an index hole since there were no holes of this size
   makeIndex(p_offset, above, below, 0, 0);
+  return true;
 }
 
 // ******************************************************************
@@ -382,7 +382,12 @@ void MEDDLY::hm_heap::removeHole(node_handle p_offset)
   MEDDLY_DCASSERT(data);
   MEDDLY_DCASSERT(data[p_offset] < 0);
 
-  if (-data[p_offset] < smallestChunk()) return; // not tracked
+  if (-data[p_offset] < smallestChunk()) {
+    useUntracked(-data[p_offset]);
+    return; // not tracked
+  }
+
+  useHole(-data[p_offset]);
 
 #ifdef MEMORY_TRACE
   printf("removeHole(%ld): ", long(p_offset));
@@ -495,15 +500,15 @@ void MEDDLY::hm_heap
   // size remains negative
   size--;
   node_handle IDp = -size;
-  node_handle pp = takePathToID(root, IDp);
-  if (!pp) {
+  if (1==IDp) {
     // empty heap
-    MEDDLY_DCASSERT(1==IDp);
     makeHeapNode(p, IDp, 0, 0);
     rawParent(p) = 0;
     root = p;
     return;
   }
+  node_handle pp = takePathToID(root, IDp);
+  MEDDLY_DCASSERT(pp);
   MEDDLY_DCASSERT(ID(pp) == IDp/2);
   makeHeapNode(p, IDp, 0, 0);
   upHeap(root, pp, p);

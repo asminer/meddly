@@ -197,18 +197,21 @@ class MEDDLY::holeman {
       if (hole_slots > max_hole_slots) {
         max_hole_slots = hole_slots;
       }
-      if (slots < smallestChunk()) {
-        num_untracked++;
-        untracked_slots += slots;
-      }
     }
     inline void useHole(int slots) {
       num_holes--;
       hole_slots -= slots;
-      if (slots < smallestChunk()) {
-        num_untracked--;
-        untracked_slots -= slots;
-      }
+    }
+
+    inline void newUntracked(int slots) {
+      newHole(slots);
+      num_untracked++;
+      untracked_slots += slots;
+    }
+    inline void useUntracked(int slots) {
+      useHole(slots);
+      num_untracked--;
+      untracked_slots -= slots;
     }
     
     inline void dumpInternal(FILE* s, unsigned flags) {
@@ -252,7 +255,6 @@ class MEDDLY::holeman {
 
     inline void releaseToEnd(node_address h, int slots) {
       last_slot -= slots;
-      useHole(slots);
       if (size > min_size && (last_slot + 1) < size/2) {
         node_handle new_size = size/2;
         while (new_size > (last_slot + 1) * 2) new_size /= 2;

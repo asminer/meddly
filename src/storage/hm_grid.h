@@ -232,7 +232,8 @@ class MEDDLY::hm_grid : public holeman {
       }
 
       // add a hole to the grid or large hole list, as appropriate
-      void insertHole(node_handle p_offset);
+      //    @return true if the hole was tracked
+      bool insertHole(node_handle p_offset);
 
       // remove a hole from the grid
       void removeHole(node_handle p_offset);

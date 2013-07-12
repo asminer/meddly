@@ -36,6 +36,7 @@ namespace MEDDLY {
   class simple_grid;
   class simple_array;
   class simple_heap;
+  class simple_none;
 };
 
 // ******************************************************************
@@ -493,6 +494,25 @@ class MEDDLY::simple_heap : public simple_storage {
   public:
     simple_heap();
     virtual ~simple_heap();
+    virtual node_storage* createForForest(expert_forest* f) const;
+    virtual const char* getStorageName() const;
+};
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                       simple_none  class                       *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+/** Simple storage using no hole management whatsoever.
+*/
+
+class MEDDLY::simple_none : public simple_storage {
+  public:
+    simple_none();
+    virtual ~simple_none();
     virtual node_storage* createForForest(expert_forest* f) const;
     virtual const char* getStorageName() const;
 };

@@ -70,6 +70,7 @@ MEDDLY::node_address MEDDLY::hm_array::requestChunk(int slots)
     if (small_holes[slots]) {
       found = small_holes[slots];
       listRemove(small_holes[slots], found);
+      useHole(slots);
       MEDDLY_DCASSERT(data[found] = -slots);
     }
   }
@@ -88,6 +89,7 @@ MEDDLY::node_address MEDDLY::hm_array::requestChunk(int slots)
         found = curr;
         // remove the hole from the list
         listRemove(large_holes, found);
+        useHole(-data[curr]);
         break;
       }
     }
@@ -106,9 +108,6 @@ MEDDLY::node_address MEDDLY::hm_array::requestChunk(int slots)
     // Sanity check:
     MEDDLY_DCASSERT(slots <= -data[found]);
     
-    // Update stats
-    useHole(-data[found]);
-
     node_handle newhole = found + slots;
     node_handle newsize = -(data[found]) - slots;
     data[found] = -slots;
@@ -116,7 +115,6 @@ MEDDLY::node_address MEDDLY::hm_array::requestChunk(int slots)
       // Save the leftovers - make a new hole!
       data[newhole] = -newsize;
       data[newhole + newsize - 1] = -newsize;
-      newHole(newsize);
       insertHole(newhole);
     }
     return found;
@@ -138,7 +136,6 @@ void MEDDLY::hm_array::recycleChunk(node_address addr, int slots)
 
   decMemUsed(slots * sizeof(node_handle));
 
-  newHole(slots);
   data[addr] = data[addr+slots-1] = -slots;
 
   if (!getForest()->getPolicies().recycleNodeStorageHoles) return;
@@ -153,8 +150,6 @@ void MEDDLY::hm_array::recycleChunk(node_address addr, int slots)
     // find the left hole address
     node_handle lefthole = addr + data[addr-1];
     MEDDLY_DCASSERT(data[lefthole] == data[addr-1]);
-    useHole(slots);
-    useHole(-data[lefthole]);
 
     // remove the left hole
     removeHole(lefthole);
@@ -163,7 +158,6 @@ void MEDDLY::hm_array::recycleChunk(node_address addr, int slots)
     slots += (-data[lefthole]);
     addr = lefthole;
     data[addr] = data[addr+slots-1] = -slots;
-    newHole(slots);
   }
 #endif
 
@@ -186,16 +180,12 @@ void MEDDLY::hm_array::recycleChunk(node_address addr, int slots)
     // find the right hole address
     node_handle righthole = addr+slots;
 
-    useHole(slots);
-    useHole(-data[righthole]);
-
     // remove the right hole
     removeHole(righthole);
     
     // merge with us
     slots += (-data[righthole]);
     data[addr] = data[addr+slots-1] = -slots;
-    newHole(slots);
   }
 #endif
 

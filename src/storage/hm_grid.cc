@@ -126,7 +126,6 @@ MEDDLY::node_address MEDDLY::hm_grid::requestChunk(int slots)
 
     // Remove the hole
     removeHole(found);
-    useHole(-data[found]);
 
     node_handle newhole = found + slots;
     node_handle newsize = -(data[found]) - slots;
@@ -135,8 +134,11 @@ MEDDLY::node_address MEDDLY::hm_grid::requestChunk(int slots)
       // Save the leftovers - make a new hole!
       data[newhole] = -newsize;
       data[newhole + newsize - 1] = -newsize;
-      insertHole(newhole);
-      newHole(newsize);
+      if (insertHole(newhole)) {
+        newHole(newsize);
+      } else {
+        newUntracked(newsize);
+      }
     }
 #ifdef MEMORY_TRACE
     printf("\trecycled %d slots, addr %ld\n", -data[found], long(found));
@@ -168,7 +170,6 @@ void MEDDLY::hm_grid::recycleChunk(node_address addr, int slots)
 
   decMemUsed(slots * sizeof(node_handle));
 
-  newHole(slots);
   data[addr] = data[addr+slots-1] = -slots;
 
   if (!getForest()->getPolicies().recycleNodeStorageHoles) return;
@@ -182,13 +183,10 @@ void MEDDLY::hm_grid::recycleChunk(node_address addr, int slots)
 #endif
     node_handle lefthole = addr + data[addr-1];
     MEDDLY_DCASSERT(data[lefthole] == data[addr-1]);
-    useHole(slots);
-    useHole(-data[lefthole]);
     removeHole(lefthole);
     slots += (-data[lefthole]);
     addr = lefthole;
     data[addr] = data[addr+slots-1] = -slots;
-    newHole(slots);
   }
 #endif
 
@@ -207,17 +205,18 @@ void MEDDLY::hm_grid::recycleChunk(node_address addr, int slots)
     printf("Right merging\n");
 #endif
     node_handle righthole = addr+slots;
-    useHole(slots);
-    useHole(-data[righthole]);
     removeHole(righthole);
     slots += (-data[righthole]);
     data[addr] = data[addr+slots-1] = -slots;
-    newHole(slots);
   }
 #endif
 
   // Add hole to grid
-  insertHole(addr);
+  if (insertHole(addr)) {
+    newHole(slots);
+  } else {
+    newUntracked(slots);
+  }
 
 #ifdef MEMORY_TRACE
   printf("Made Hole %ld\n", addr);
@@ -329,7 +328,7 @@ void MEDDLY::hm_grid::clearHolesAndShrink(node_address new_last, bool shrink)
 // *                                                                *
 // ******************************************************************
 
-void MEDDLY::hm_grid::insertHole(node_handle p_offset)
+bool MEDDLY::hm_grid::insertHole(node_handle p_offset)
 {
 #ifdef MEMORY_TRACE
   printf("insertHole(%ld)\n", long(p_offset));
@@ -344,7 +343,7 @@ void MEDDLY::hm_grid::insertHole(node_handle p_offset)
 #ifdef MEMORY_TRACE
     printf("\thole size %d, too small to track\n", -data[p_offset]);
 #endif
-    return; 
+    return false;
     // This memory can still be reclaimed 
     // when it is merged with neighboring holes :^)
   }
@@ -358,7 +357,7 @@ void MEDDLY::hm_grid::insertHole(node_handle p_offset)
     makeMiddle(p_offset, 0, large_holes);
     if (large_holes) Prev(large_holes) = p_offset;
     large_holes = p_offset;
-    return;
+    return true;
   }
 
   // special case: empty
@@ -368,7 +367,7 @@ void MEDDLY::hm_grid::insertHole(node_handle p_offset)
 #endif
     // index hole
     makeIndex(p_offset, 0, 0, 0);
-    return;
+    return true;
   }
 
   // special case: at top
@@ -378,7 +377,7 @@ void MEDDLY::hm_grid::insertHole(node_handle p_offset)
 #endif
     // index hole
     makeIndex(p_offset, 0, holes_top, 0);
-    return;
+    return true;
   }
 
   // find our vertical position in the grid
@@ -400,7 +399,7 @@ void MEDDLY::hm_grid::insertHole(node_handle p_offset)
     makeMiddle(p_offset, above, right);
     if (right) Prev(right) = p_offset;
     Next(above) = p_offset;
-    return; 
+    return true;
   }
 #ifdef MEMORY_TRACE
   printf("\tAdding new chain\n");
@@ -408,6 +407,7 @@ void MEDDLY::hm_grid::insertHole(node_handle p_offset)
   // we should have above < p_offset < below  (remember, -sizes)
   // create an index hole since there were no holes of this size
   makeIndex(p_offset, above, below, 0);
+  return true;
 }
 
 // ******************************************************************
@@ -417,7 +417,12 @@ void MEDDLY::hm_grid::removeHole(node_handle p_offset)
   MEDDLY_DCASSERT(data);
   MEDDLY_DCASSERT(data[p_offset] < 0);
 
-  if (-data[p_offset] < smallestChunk()) return; // not tracked
+  if (-data[p_offset] < smallestChunk()) {
+    useUntracked(-data[p_offset]);
+    return; // not tracked
+  }
+
+  useHole(-data[p_offset]);
 
   if (isIndexHole(p_offset)) {
       //

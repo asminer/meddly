@@ -128,6 +128,10 @@ namespace MEDDLY {
   */
   extern const node_storage* SIMPLE_HEAP;
 
+  /** Classic node storage but no hole management.
+  */
+  extern const node_storage* SIMPLE_NONE;
+
   // ******************************************************************
   // *                     Named unary operations                     *
   // ******************************************************************
@@ -639,6 +643,7 @@ class MEDDLY::forest {
         nodestor = SIMPLE_GRID;
         // nodestor = SIMPLE_ARRAY;
         // nodestor = SIMPLE_HEAP;
+        // nodestor = SIMPLE_NONE;
       }
 
       inline void setFullStorage() { 

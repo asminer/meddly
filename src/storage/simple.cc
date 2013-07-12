@@ -28,6 +28,7 @@
 #include "hm_grid.h"
 #include "hm_array.h"
 #include "hm_heap.h"
+#include "hm_none.h"
 
 // #define DEBUG_COMPACTION
 // #define DEBUG_SLOW
@@ -926,6 +927,38 @@ const char* MEDDLY::simple_heap::getStorageName() const
 
 // ******************************************************************
 // *                                                                *
+// *                                                                *
+// *                      simple_none  methods                      *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+
+MEDDLY::simple_none::simple_none() : simple_storage()
+{
+}
+
+MEDDLY::simple_none::~simple_none()
+{
+}
+
+MEDDLY::node_storage* MEDDLY::simple_none
+::createForForest(expert_forest* f) const
+{
+  simple_storage* nns = new simple_none;
+  nns->initForForest(f);
+  nns->setHoleManager(new hm_none(nns));
+  return nns;
+}
+
+const char* MEDDLY::simple_none::getStorageName() const
+{
+  return "simple node storage with no hole management";
+}
+
+
+// ******************************************************************
+// *                                                                *
 // *                   front-end global variables                   *
 // *                                                                *
 // ******************************************************************
@@ -934,9 +967,11 @@ namespace MEDDLY {
   simple_grid THE_SIMPLE_GRID;
   simple_array THE_SIMPLE_ARRAY;
   simple_heap THE_SIMPLE_HEAP;
+  simple_none THE_SIMPLE_NONE;
 
   const node_storage* SIMPLE_GRID = &THE_SIMPLE_GRID;
   const node_storage* SIMPLE_ARRAY = &THE_SIMPLE_ARRAY;
   const node_storage* SIMPLE_HEAP = &THE_SIMPLE_HEAP;
+  const node_storage* SIMPLE_NONE = &THE_SIMPLE_NONE;
 };
 

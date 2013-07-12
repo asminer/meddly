@@ -92,7 +92,8 @@ class MEDDLY::hm_heap : public holeman {
 
   private:
     // add a hole to the grid or large hole list, as appropriate
-    void insertHole(node_handle p_offset);
+    //  @return   true if this hole is tracked
+    bool insertHole(node_handle p_offset);
 
     // remove a hole from the grid or large hole list, as appropriate
     void removeHole(node_handle p_offset);

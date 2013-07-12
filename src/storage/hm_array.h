@@ -31,8 +31,6 @@ namespace MEDDLY {
 
 #define MEASURE_LARGE_HOLE_STATS
 
-// #define ORDERED_LISTS
-
 /** Array-based hole management.
 
     Small holes are stored by size in an array of lists.
@@ -83,36 +81,6 @@ class MEDDLY::hm_array : public holeman {
       inline node_handle  Next(node_handle off) const { return h_next(off); }
 
       // Insert a node
-#ifdef ORDERED_LISTS
-      inline void listInsert(node_handle& list, node_handle node) {
-        node_handle prev = 0;
-        for (node_handle curr=list; curr; curr=Next(curr)) {
-          if (node < curr) {
-            // add here!
-            Next(node) = curr;
-            Prev(node) = prev;
-            Prev(curr) = node;
-            if (prev) {
-              Next(prev) = node;
-            } else {
-              list = node;
-            }
-            return;
-          }
-          prev = curr;
-        }
-        // add to the end
-        if (prev) {
-          Next(node) = 0;
-          Prev(node) = prev;
-          Next(prev) = node;
-        } else {
-          Next(node) = 0;
-          Prev(node) = 0;
-          list = node;
-        }
-      }
-#else
       inline void listInsert(node_handle& list, node_handle node) {
         Next(node) = list;
         Prev(node) = 0;
@@ -121,7 +89,6 @@ class MEDDLY::hm_array : public holeman {
         } 
         list = node; 
       }
-#endif
 
       // Remove a node
       inline void listRemove(node_handle& list, node_handle node) {
@@ -147,7 +114,11 @@ class MEDDLY::hm_array : public holeman {
       inline void insertHole(node_handle hole) {
         MEDDLY_DCASSERT(data);
         // Don't track holes smaller than smallestChunk():
-        if (-data[hole] < smallestChunk()) return;
+        if (-data[hole] < smallestChunk()) {
+          newUntracked(-data[hole]);
+          return;
+        }
+        newHole(-data[hole]);
         if (-data[hole] < LARGE_SIZE) {
           listInsert(small_holes[-data[hole]], hole);
         } else {
@@ -158,7 +129,11 @@ class MEDDLY::hm_array : public holeman {
       inline void removeHole(node_handle hole) {
         MEDDLY_DCASSERT(data);
         // Don't track holes smaller than smallestChunk():
-        if (-data[hole] < smallestChunk()) return;
+        if (-data[hole] < smallestChunk()) {
+          useUntracked(-data[hole]);
+          return;
+        }
+        useHole(-data[hole]);
         if (-data[hole] < LARGE_SIZE) {
           listRemove(small_holes[-data[hole]], hole);
         } else {
