@@ -30,8 +30,13 @@
 
 using namespace MEDDLY;
 
-int usage(const char* name)
+int usage(const char* who)
 {
+  /* Strip leading directory, if any: */
+  const char* name = who;
+  for (const char* ptr=who; *ptr; ptr++) {
+    if ('/' == *ptr) name = ptr+1;
+  }
   printf("\nUsage: %s nnnn (-bfs) (-dfs) (-exp) \n\n", name);
   printf("\tnnnn: number of network nodes\n");
   printf("\t-bfs: use traditional iterations\n");

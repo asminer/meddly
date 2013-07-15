@@ -125,24 +125,46 @@ void createQueenNodes(forest* f, int q, dd_edge &col, dd_edge &cp, dd_edge &cm)
   f->createEdgeForVar(q, false, scratch, cm);
 }
 
-bool processArgs(int argc, const char** argv)
+bool processArgs(int argc, const char** argv, forest::policies &p)
 {
-  if (argc<2) return false;
-  if (argc>3) return false;
-  N = atoi(argv[1]); 
-  if (N<1) return false;
+  p.setPessimistic();
+  bool setN = false;
+  for (int i=1; i<argc; i++) {
+    if (strcmp("-opt", argv[i])==0) {
+      p.setOptimistic();
+      continue;
+    }
+    if (strcmp("-pess", argv[i])==0) {
+      p.setPessimistic();
+      continue;
+    }
+    if (setN) return false;
+    N = atoi(argv[i]);
+    setN = true;
+  }
+
+  if (!setN || N<1) return false;
   return true;
 }
 
 int usage(const char* who)
 {
-  printf("Usage: %s N\n\n\t        N:  board dimension\n\n", who);
+  /* Strip leading directory, if any: */
+  const char* name = who;
+  for (const char* ptr=who; *ptr; ptr++) {
+    if ('/' == *ptr) name = ptr+1;
+  }
+  printf("Usage: %s <-opt> <-pess> N\n\n", name);
+  printf("\t    N:  board dimension\n");
+  printf("\t -opt:  Optimistic node deletion\n");
+  printf("\t-pess:  Pessimistic node deletion (default)\n\n");
   return 1;
 }
 
 int main(int argc, const char** argv)
 {
-  if (!processArgs(argc, argv)) return usage(argv[0]);
+  forest::policies p(false);
+  if (!processArgs(argc, argv, p)) return usage(argv[0]);
   timer watch;
   initialize();
   printf("Using %s\n", getLibraryInfo(0));
@@ -151,14 +173,27 @@ int main(int argc, const char** argv)
   
   watch.note_time();
   printf("Initializing domain and forest\n");
+  const char* ndp = "unknown node deletion";
+  switch (p.deletion) {
+    case forest::policies::NEVER_DELETE:
+        ndp = "never delete";
+        break;
+
+    case forest::policies::OPTIMISTIC_DELETION:
+        ndp = "optimistic node deletion";
+        break;
+
+    case forest::policies::PESSIMISTIC_DELETION:
+        ndp = "pessimistic node deletion";
+        break;
+  }
+  printf("\tUsing %s policy\n", ndp);
 
   for (int i=0; i<N; i++) {
     scratch[i] = N;
   }
   domain* d = createDomainBottomUp(scratch, N);
   assert(d);
-  forest::policies p(false);
-  p.setPessimistic();
   expert_forest* f = (expert_forest*)
     d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL, p);
   assert(f);

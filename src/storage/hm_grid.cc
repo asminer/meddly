@@ -23,6 +23,7 @@
 
 #include "hm_grid.h"
 
+#include <map>
 
 // #define MEMORY_TRACE
 // #define DEEP_MEMORY_TRACE

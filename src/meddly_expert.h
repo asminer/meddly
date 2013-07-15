@@ -38,7 +38,7 @@
 #ifndef MEDDLY_EXPERT_H
 #define MEDDLY_EXPERT_H
 
-#include <map>
+#include <string.h>
 
 // Flags for development version only. Significant reduction in performance.
 #ifdef DEVELOPMENT_CODE

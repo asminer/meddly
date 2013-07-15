@@ -25,7 +25,7 @@
 
 #include "old_scheme.h"
 
-#include "hm_grid.h"
+#include <map>
 
 #define MERGE_AND_SPLIT_HOLES
 // #define DEBUG_COMPACTION
