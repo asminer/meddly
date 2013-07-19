@@ -45,7 +45,7 @@ namespace MEDDLY {
 */
 class MEDDLY::hm_none : public holeman {
   public:
-    hm_none(node_storage* p);
+    hm_none();
     virtual ~hm_none();
 
   public:

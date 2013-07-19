@@ -39,7 +39,7 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::hm_array::hm_array(node_storage* p) : holeman(4, p)
+MEDDLY::hm_array::hm_array() : holeman(4)
 {
   large_holes = 0;
   for (int i=0; i<LARGE_SIZE; i++) {

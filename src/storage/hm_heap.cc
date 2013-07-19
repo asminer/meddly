@@ -35,7 +35,7 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::hm_heap::hm_heap(node_storage* p) : holeman(6, p)
+MEDDLY::hm_heap::hm_heap() : holeman(6)
 {
   max_request = 0;
   large_holes = 0;

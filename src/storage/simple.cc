@@ -30,6 +30,7 @@
 #include "hm_heap.h"
 #include "hm_none.h"
 
+#define DEBUG_ENCODING
 // #define DEBUG_COMPACTION
 // #define DEBUG_SLOW
 // #define MEMORY_TRACE
@@ -52,9 +53,10 @@ inline char slotsForBytes(int bytes)
 // ******************************************************************
 
 
-MEDDLY::simple_storage::simple_storage() : node_storage()
+MEDDLY::simple_storage::simple_storage(holeman* hm) : node_storage()
 {
-  holeManager = 0;
+  holeManager = hm;
+  data = 0;
 }
 
 MEDDLY::simple_storage::~simple_storage()
@@ -234,6 +236,10 @@ void MEDDLY::simple_storage::showNode(FILE* s, node_address addr, bool verb) con
 MEDDLY::node_address MEDDLY::simple_storage
 ::makeNode(node_handle p, const node_builder &nb, node_storage_flags opt)
 {
+#ifdef DEBUG_ENCODING
+  printf("simple_storage making node\n        temp:  ");
+  nb.show(stdout, true);
+#endif
   int nnz, truncsize;
 
   //
@@ -336,6 +342,12 @@ bool MEDDLY::simple_storage
 
 void MEDDLY::simple_storage::fillReader(node_address addr, node_reader &nr) const
 {
+#ifdef DEBUG_ENCODING
+  printf("simple_storage filling reader\n    internal: ");
+  dumpInternalNode(stdout, addr, 0x03);
+  printf("        node: ");
+  showNode(stdout, addr, true);
+#endif
   /*
   // Copy hashed header
 
@@ -372,6 +384,11 @@ void MEDDLY::simple_storage::fillReader(node_address addr, node_reader &nr) cons
           down_of(nr)[i] = down[z];
         }
       } // if ev
+#ifdef DEBUG_ENCODING
+      printf("\n        temp:  ");
+      nr.show(stdout, getParent(), true);
+      printf("\n");
+#endif
       return;
     }
 
@@ -384,6 +401,11 @@ void MEDDLY::simple_storage::fillReader(node_address addr, node_reader &nr) cons
     if (nr.hasEdges()) {
       memcpy(edge_of(nr), SE(addr), nnz * nr.edgeBytes());
     }
+#ifdef DEBUG_ENCODING
+    printf("\n        temp:  ");
+    nr.show(stdout, getParent(), true);
+    printf("\n");
+#endif
     return;
   } 
   //
@@ -404,6 +426,11 @@ void MEDDLY::simple_storage::fillReader(node_address addr, node_reader &nr) cons
       void* evext = edge_of(nr) + bytes;
       memset(evext, 0, (nr.getSize()-size) * nr.edgeBytes());
     }
+#ifdef DEBUG_ENCODING
+    printf("\n        temp:  ");
+    nr.show(stdout, getParent(), true);
+    printf("\n");
+#endif
     return;
   }
   // nr is sparse
@@ -425,6 +452,11 @@ void MEDDLY::simple_storage::fillReader(node_address addr, node_reader &nr) cons
       z++;
     } // for i
   } // if ev
+#ifdef DEBUG_ENCODING
+  printf("\n        temp:  ");
+  nr.show(stdout, getParent(), true);
+  printf("\n");
+#endif
   return; 
 }
 
@@ -581,11 +613,19 @@ const void* MEDDLY::simple_storage
 }
 
 
+//
+//
+// Protected
+//
+//
+
 void MEDDLY::simple_storage::localInitForForest(const expert_forest* f)
 {
   edgeSlots = slotsForBytes(f->edgeBytes());
   unhashedSlots = slotsForBytes(f->unhashedHeaderBytes());
   hashedSlots = slotsForBytes(f->hashedHeaderBytes());
+  MEDDLY_DCASSERT(holeManager);
+  holeManager->setParent(this);
 }
 
 void MEDDLY::simple_storage::updateData(node_handle* d)
@@ -665,6 +705,7 @@ MEDDLY::simple_storage
 MEDDLY::node_handle MEDDLY::simple_storage
 ::makeFullNode(node_handle p, int size, const node_builder &nb)
 {
+#if 0
   node_address addr = allocNode(size, p, false);
   MEDDLY_DCASSERT(1==getCountOf(addr));
   node_handle* down = FD(addr);
@@ -698,7 +739,45 @@ MEDDLY::node_handle MEDDLY::simple_storage
         for (int i=0; i<size; i++) down[i] = nb.d(i);
       }
   }
+#else
+  node_address addr = allocNode(size, p, true);
+  MEDDLY_DCASSERT(1==getCountOf(addr));
+  node_handle* down = FD(addr);
+  if (edgeSlots) {
+      MEDDLY_DCASSERT(nb.hasEdges());
+      char* edge = (char*) FE(addr);
+      int edge_bytes = edgeSlots * sizeof(node_handle);
+      if (nb.isSparse()) {
+        for (int z=0; z<nb.getNNZs(); z++) {
+          int i = nb.i(z);
+          MEDDLY_CHECK_RANGE(0, i, size);
+          down[i] = nb.d(z);
+          memcpy(edge + i * edge_bytes, nb.eptr(z), edge_bytes);
+        }
+      } else {
+        for (int i=0; i<size; i++) down[i] = nb.d(i);
+        // kinda hacky
+        memcpy(edge, nb.eptr(0), size * edge_bytes);
+      }
+  } else {
+      MEDDLY_DCASSERT(!nb.hasEdges());
+      if (nb.isSparse()) {
+        for (int z=0; z<nb.getNNZs(); z++) {
+          MEDDLY_CHECK_RANGE(0, nb.i(z), size);
+          down[nb.i(z)] = nb.d(z);
+        }
+      } else {
+        for (int i=0; i<size; i++) down[i] = nb.d(i);
+      }
+  }
+#endif
   copyExtraHeader(addr, nb);
+#ifdef DEBUG_ENCODING
+  printf("\n        made: ");
+  showNode(stdout, addr, true);
+  printf("\n    internal: ");
+  dumpInternalNode(stdout, addr, 0x03);
+#endif
   return addr;
 }
 
@@ -748,6 +827,12 @@ MEDDLY::node_handle MEDDLY::simple_storage
       }
   }
   copyExtraHeader(addr, nb);
+#ifdef DEBUG_ENCODING
+  printf("\n        made: ");
+  showNode(stdout, addr, true);
+  printf("\n    internal: ");
+  dumpInternalNode(stdout, addr, 0x03);
+#endif
   return addr;
 }
 
@@ -839,7 +924,7 @@ void MEDDLY::simple_storage::verifyStats() const
 // ******************************************************************
 
 
-MEDDLY::simple_grid::simple_grid() : simple_storage()
+MEDDLY::simple_grid::simple_grid(holeman* hm) : simple_storage(hm)
 {
 }
 
@@ -850,9 +935,8 @@ MEDDLY::simple_grid::~simple_grid()
 MEDDLY::node_storage* MEDDLY::simple_grid
 ::createForForest(expert_forest* f) const
 {
-  simple_storage* nns = new simple_grid;
+  simple_storage* nns = new simple_grid(new hm_grid);
   nns->initForForest(f);
-  nns->setHoleManager(new hm_grid(nns));
   return nns;
 }
 
@@ -871,7 +955,7 @@ const char* MEDDLY::simple_grid::getStorageName() const
 // ******************************************************************
 
 
-MEDDLY::simple_array::simple_array() : simple_storage()
+MEDDLY::simple_array::simple_array(holeman* hm) : simple_storage(hm)
 {
 }
 
@@ -882,9 +966,8 @@ MEDDLY::simple_array::~simple_array()
 MEDDLY::node_storage* MEDDLY::simple_array
 ::createForForest(expert_forest* f) const
 {
-  simple_storage* nns = new simple_array;
+  simple_storage* nns = new simple_array(new hm_array);
   nns->initForForest(f);
-  nns->setHoleManager(new hm_array(nns));
   return nns;
 }
 
@@ -902,7 +985,7 @@ const char* MEDDLY::simple_array::getStorageName() const
 // ******************************************************************
 
 
-MEDDLY::simple_heap::simple_heap() : simple_storage()
+MEDDLY::simple_heap::simple_heap(holeman* hm) : simple_storage(hm)
 {
 }
 
@@ -913,9 +996,8 @@ MEDDLY::simple_heap::~simple_heap()
 MEDDLY::node_storage* MEDDLY::simple_heap
 ::createForForest(expert_forest* f) const
 {
-  simple_storage* nns = new simple_heap;
+  simple_storage* nns = new simple_heap(new hm_heap);
   nns->initForForest(f);
-  nns->setHoleManager(new hm_heap(nns));
   return nns;
 }
 
@@ -934,7 +1016,7 @@ const char* MEDDLY::simple_heap::getStorageName() const
 // ******************************************************************
 
 
-MEDDLY::simple_none::simple_none() : simple_storage()
+MEDDLY::simple_none::simple_none(holeman* hm) : simple_storage(hm)
 {
 }
 
@@ -945,9 +1027,8 @@ MEDDLY::simple_none::~simple_none()
 MEDDLY::node_storage* MEDDLY::simple_none
 ::createForForest(expert_forest* f) const
 {
-  simple_storage* nns = new simple_none;
+  simple_storage* nns = new simple_none(new hm_none);
   nns->initForForest(f);
-  nns->setHoleManager(new hm_none(nns));
   return nns;
 }
 
@@ -964,10 +1045,10 @@ const char* MEDDLY::simple_none::getStorageName() const
 // ******************************************************************
 
 namespace MEDDLY {
-  simple_grid THE_SIMPLE_GRID;
-  simple_array THE_SIMPLE_ARRAY;
-  simple_heap THE_SIMPLE_HEAP;
-  simple_none THE_SIMPLE_NONE;
+  simple_grid THE_SIMPLE_GRID(0);
+  simple_array THE_SIMPLE_ARRAY(0);
+  simple_heap THE_SIMPLE_HEAP(0);
+  simple_none THE_SIMPLE_NONE(0);
 
   const node_storage* SIMPLE_GRID = &THE_SIMPLE_GRID;
   const node_storage* SIMPLE_ARRAY = &THE_SIMPLE_ARRAY;

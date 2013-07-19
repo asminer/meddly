@@ -65,10 +65,19 @@ namespace MEDDLY {
 */
 class MEDDLY::holeman {
   public:
-    holeman(int smallestHole, node_storage* p);
+    holeman(int smallestHole);
     virtual ~holeman();
 
   public:
+    inline void setParent(node_storage* ns) {
+      // This should only be called once, close to construction time
+      MEDDLY_DCASSERT(0==parent);
+      parent = ns;
+      if (parent) {
+        smallest = MAX(smallest, parent->smallestNode());
+        parent->updateData(data);
+      }
+    }
     inline node_storage* getParent() const { 
       MEDDLY_DCASSERT(parent);
       return parent; 

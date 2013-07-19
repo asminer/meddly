@@ -26,155 +26,63 @@
 #include "compact.h"
 #include "bytepack.h"
 
-#define MERGE_AND_SPLIT_HOLES
+#include "hm_grid.h"
+
+#define DEBUG_ENCODING
 // #define DEBUG_COMPACTION
 // #define DEBUG_SLOW
 // #define MEMORY_TRACE
 // #define DEEP_MEMORY_TRACE
 
 
-
-
-#if 0
+inline void fprintRaw(FILE* s, const char* what, unsigned char* x, int bytes)
+{
+  if (bytes<1) return;
+  fputs(what, s);
+  for (int i=0; i<bytes; i++) {
+    fprintf(s, " %x", x[i]);
+  }
+}
 
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                     node_compacted methods                     *
+// *                    compact_storage  methods                    *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
 
-/*
-    Data is stored in a char* array, so we have to copy stuff off
-    (since things might not be aligned properly).
-    Nodes are stored as follows (numbers are offsets into the "address").
-    Hole storage details follow.
-
-      long: >=0:  The incoming count; this is an active node.
-            < 0:  This is a hole; number of bytes in the hole.
-
-      long: >=0:  Next pointer in the unique table.
-            < 0:  This node is not in the unique table yet;
-                  some special value is here to indicate status.
-       
-      uint(32b):  Size.  Number of downward pointers stored.
-
-      uchar(8b):  Compression info.
-                  High 4 bits:  dpbytes, the number of bytes used 
-                                to store downward pointers.
-                                Range of possible values is 0-15, 
-                                but currently, only the values 1-8 are used.
-
-                  Low 4 bits:   ixbytes, number of bytes used to store indexes.
-                                Range of possible values is 0-15,
-                                but currently, only the values 0-4 are used.
-                                (Max node size is 2^31-1).
-                                A count of 0 means the node is stored in full;
-                                otherwise, the node is stored sparsely.
-
-      uhbytes:    Unhashed header info; might be 0 bytes.
-      hhbytes:    Hashed header info; might be 0 bytes.
-
-      dpbytes:    Down pointer [0]
-        :
-        :
-      dpbytes:    Down pointer [size-1]
-
-
-      ixbytes:    Index value [0]
-        :
-        :
-      ixbytes:    Index value [size-1]
-
-
-      evbytes:    Edge value [0]
-        :
-        :
-      evbytes:    Edge value [size-1]
-
-      uchar(8b):  Padding length (can be 0).
-                  Number of unused extra bytes, at most 255.
-
-                  (extra bytes here, if any)
-
-      long: > 0:  The very last slot is a non-negative long, giving
-                  the forest node number.
-                  (A negative value here indicates a hole.)
-
-
-      The absolute smallest number of bytes for a node,
-      assuming a zero size is allowed, is therefore:
-        2 longs + 1 int + 1 char + 1 char + 1 long
-      
-
-      Holes are stored using a grid.
-      Currently, holes require more storage than the smallest possible
-      node.  If we switch to lists, we can save one long per hole,
-      and then they will be very close.
-
-      Holes are stored as follows.
-
-        long: < 0:  -number of bytes in the hole
-
-        long: >=0:  This is an index hole,
-                    and this is an upward pointer in the grid.
-              < 0:  This is a non-index hole.  Value is ignored.
-
-        long:       down or previous pointer.
-        long:       next pointer.
-          :
-          :         (unused bytes)
-          :
-        long: < 0:  -number of bytes in the hole
-
-
-
-*/
-
-MEDDLY::node_compacted::node_compacted()
+MEDDLY::compact_storage::compact_storage(holeman* hm) : node_storage()
 {
-  parent = 0;
-}
-
-MEDDLY::node_compacted::~node_compacted()
-{
-  if (parent) parent->changeStats().decMemAlloc(size);
-  free(data);
-}
-
-void MEDDLY::node_compacted::init(expert_forest* p)
-{
-  MEDDLY_DCASSERT(0==parent);
-  parent = p;
+  holeManager = hm;
   data = 0;
-  data_down = 0;
-  size = 0;
-  last = 0;
-  max_request = 0;
-  large_holes = 0;
-  holes_top = 0;
-  holes_bottom = 0;
-  hole_slots = 0;
-  evbytes = parent->edgeBytes();
-  uhbytes = parent->unhashedHeaderBytes();
-  hhbytes = parent->hashedHeaderBytes();
+  memchunk = 0;
 }
 
-void MEDDLY::node_compacted::compact(bool shrink)
+// ******************************************************************
+
+MEDDLY::compact_storage::~compact_storage()
+{
+  delete holeManager;
+}
+
+// ******************************************************************
+void MEDDLY::compact_storage::collectGarbage(bool shrink)
 {
   //
   // Should we even bother?
   //
-  if (0==data || 0==hole_slots) return;
+  node_handle wasted = holeManager->holeSlots();
+  if (0==data || 0==wasted) return;
+  if (wasted <= getParent()->getPolicies().compact_min) {
+    return;
+  }
+  if (wasted <  getParent()->getPolicies().compact_max) {
 
-  if (hole_slots <= parent->getPolicies().compact_min)  return;
-
-  if (hole_slots <  parent->getPolicies().compact_max) {
-
-    // If percentage of holes is below trigger, then don't compact
-
-    if (100 * hole_slots < last * parent->getPolicies().compact_frac) return;
+    // If percentage of wasted slots is below trigger, then don't compact
+    if (100 * wasted < 
+        holeManager->lastSlot() * getParent()->getPolicies().compact_frac) 
+      return;
 
   }
 
@@ -193,74 +101,56 @@ void MEDDLY::node_compacted::compact(bool shrink)
   //
   // Scan the whole array of data, copying over itself and skipping holes.
   // 
-  long node = 1;  // since we leave [0] empty
-  long curr = 1;
+  node_handle* node_ptr = (data + 1);  // since we leave [0] empty
+  node_handle* end_ptr =  (data + holeManager->lastSlot() + 1);
+  node_handle* curr_ptr = node_ptr;
 
-  while (node < last) {
-    long L;
-    // read first slot; determine if we are a hole or not.
-    dataToLong<sizeof(long)>(data+node, L);
-    if (L<0) {
+  while (node_ptr < end_ptr) {
+    if (*node_ptr < 0) {
       //
       // This is a hole, skip it
       // 
-      MEDDLY_DCASSERT(
-        0==memcmp(data+node, data+node-L-sizeof(long), sizeof(long))
-      );
-      node -= L;
+      node_ptr = data + holeManager->chunkAfterHole(node_ptr - data);
       continue;
-    }
-
+    } 
     //
     // A real node, move it
     //
-    long old_off = node;
-    long new_off = curr;
-    MEDDLY_DCASSERT(!parent->isPessimistic() || L>0);
-
-    int size;
-    dataToInt<sizeof(int)>(data_size + node, size);
-
-    long nodebytes = size;
-    nodebytes *= dpbytes(node) + ixbytes(node) + evbytes;
-    nodebytes += uhbytes + hhbytes + commonHeaderBytes;
+    MEDDLY_DCASSERT(!getParent()->isPessimistic() || *node_ptr != 0);
     
-    // move everything up to the padding value
-    if (node != curr) {
-      memmove(data + curr, data + node, nodebytes);
+    long old_off = node_ptr - data;
+    long new_off = curr_ptr - data;
+
+    // copy the node, except for the tail
+    int pbytes, ibytes;
+    getStyleOf(old_off, pbytes, ibytes);
+    int datalen = slotsForNode(sizeOf(old_off), pbytes, ibytes) - 1;
+    if (node_ptr != curr_ptr) {
+      memmove(curr_ptr, node_ptr, datalen * sizeof(node_handle));
     }
-    node += nodebytes;
-    curr += nodebytes;
+    node_ptr += datalen;
+    curr_ptr += datalen;
+    //
+    // Skip any padding
+    //
+    if (*node_ptr < 0) {
+      node_ptr -= *node_ptr;  
+    }
+    //
+    // Copy trailer, the node number
+    //
+    *curr_ptr = *node_ptr;
+    moveNodeOffset(*curr_ptr, old_off, new_off);
+    curr_ptr++;
+    node_ptr++;
 
-    // skip padding
-    data[curr] = 0;
-    node += data[node];
-    node++;
-
-    // copy trailer
-    memmove(data + curr, data + node, commonTailBytes);
-    node += commonTailBytes;
-    curr += commonTailBytes;
-    
-    // update node header
-    dataToLong<sizeof(long)>(data + curr - sizeof(long), L);
-    moveNodeOffset(L, old_off, new_off);
   } // while
-  MEDDLY_DCASSERT(node == 1+last);
-  last = curr-1;
+  MEDDLY_DCASSERT(node_ptr == end_ptr);
 
-  // set up hole pointers and such
-  holes_top = holes_bottom = 0;
-  hole_slots = 0;
-  large_holes = 0;
+  holeManager->clearHolesAndShrink( (curr_ptr - 1 - data), shrink );
+  MEDDLY_DCASSERT(0==holeManager->holeSlots());
 
-  parent->changeStats().num_compactions++;
-
-  if (shrink && size > min_size && last < size/2) {
-    long new_size = size/2;
-    while (new_size > min_size && new_size > last * 3) { new_size /= 2; }
-    resize(new_size);
-  }
+  incCompactions(); 
 
 #ifdef DEBUG_COMPACTION
   printf("After compaction:\n");
@@ -269,196 +159,668 @@ void MEDDLY::node_compacted::compact(bool shrink)
 #endif
 }
 
-
-void MEDDLY::node_compacted::dumpInternal(FILE *s) const
+// ******************************************************************
+void MEDDLY::compact_storage
+::reportStats(FILE* s, const char* pad, unsigned flags) const
 {
-  if (0==data) return; // nothing to display
-  
-  fprintf(s, "Last slot used: %ld\n", last);
-  fprintf(s, "large_holes: %ld\n", large_holes);
-  fprintf(s, "Grid: top = %ld bottom = %ld\n", holes_top, holes_bottom);
+  static unsigned STORAGE = 
+    expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED;
 
-  fprintf(s, "Data array by record: \n");
-  int awidth = digits(parent->getLastNode());
-  long a;
-  for (a=1; a<=last; ) {
-    fflush(s);
-    a = dumpNode(s, a);
-  } // for a
-  fprintf(s, "%*ld : free slots\n", awidth, a);
-  fflush(s);
-  MEDDLY_DCASSERT(a == (last)+1);
+  if (flags & STORAGE) {
+    fprintf(s, "%s", pad);
+#ifdef NODE_STORAGE_PER_LEVEL
+    fprintf(s, "Level %ld ", parent->getLevelNumber(this));
+#endif
+    fprintf(s, "Stats for %s\n", getStorageName());
+
+    // anything for us?
+  }
+
+  holeManager->reportStats(s, pad, flags);
+
+#ifdef DEVELOPMENT_CODE
+  // verifyStats();
+#endif
 }
 
-void MEDDLY::node_compacted::dumpInternal(FILE *s, long a) const
+// ******************************************************************
+void MEDDLY::compact_storage
+::showNode(FILE* s, node_address addr, bool verb) const
 {
+  int pbytes, ibytes;
+  getStyleOf(addr, pbytes, ibytes);
+  if (verb) {
+    fprintf(s, " pb : %d", pbytes);
+    fprintf(s, " ib : %d", ibytes);
+  }
+  if (sizeOf(addr) < 0) {
+    //
+    // Sparse node
+    //
+    int nnz = -sizeOf(addr);
+    if (verb)  fprintf(s, " nnz : %d", nnz);
+    fprintf(s, " down: (");
+    unsigned char* rawd = sparseDown(addr);
+    unsigned char* rawi = sparseIndex(addr);
+    unsigned char* rawe = sparseEdge(addr);
+    for (int i=0; i<nnz; i++) {
+      if (i) fprintf(s, ", ");
+
+      long down, index;
+      dataToDown(rawd, pbytes, down);
+      dataToRaw(rawi, ibytes, down);
+
+      fprintf(s, "%ld:", index);
+      if (edgeBytes) {
+        fprintf(s, "<");
+        getParent()->showEdgeValue(s, rawe, 0);
+        fprintf(s, ", ");
+      }
+      if (getParent()->isTerminalNode(down)) {
+        getParent()->showTerminal(s, down);
+      } else {
+        fprintf(s, "%ld", down);
+      }
+      if (edgeBytes) {
+        fprintf(s, ">");
+        rawe += edgeBytes;
+      }
+      rawd += pbytes;
+      rawi += ibytes;
+    } // for i
+    fprintf(s, ")");
+  } else {
+    //
+    // Full node
+    //
+    int size = sizeOf(addr);
+    if (verb) fprintf(s, " size: %d", size);
+    fprintf(s, " down: [");
+    unsigned char* rawd = fullDown(addr);
+    unsigned char* rawe = fullEdge(addr);
+    for (int i=0; i<size; i++) {
+      if (i) fprintf(s, "|"); 
+      long down, index;
+      dataToDown(rawd, pbytes, down);
+
+      if (edgeBytes) {
+        fprintf(s, "<");
+        getParent()->showEdgeValue(s, rawe, 0);
+        fprintf(s, ", ");
+      } 
+      if (getParent()->isTerminalNode(down)) {
+        getParent()->showTerminal(s, down);
+      } else {
+        fprintf(s, "%ld", down);
+      }
+      if (edgeBytes) {
+        fprintf(s, ">");
+        rawe += edgeBytes;
+      }
+      rawd += pbytes;
+    } // for i
+    fprintf(s, "]");
+  }
+
+
+  // show extra header stuff
+  if (unhashedBytes) {
+    getParent()->showUnhashedHeader(s, UH(addr));
+  }
+  if (hashedBytes) {
+    getParent()->showHashedHeader(s, HH(addr));
+  }
+}
+
+// ******************************************************************
+MEDDLY::node_address 
+MEDDLY::compact_storage
+::makeNode(node_handle p, const node_builder &nb, node_storage_flags opt)
+{
+#ifdef DEBUG_ENCODING
+  printf("compact_storage making node\n        temp:  ");
+  nb.show(stdout, true);
+#endif
+  int nnz;
+  node_handle pmax = 0;
+  int imax = -1;
+
+  //
+  // Scan node, get node stats
+  //
+
+  if (nb.isSparse()) {
+    nnz = nb.getNNZs();
+    for (int z=0; z<nnz; z++) {
+      MEDDLY_DCASSERT(nb.d(z));
+      pmax = MAX(pmax, nb.d(z));
+      MEDDLY_DCASSERT(nb.i(z) > imax);
+      imax = nb.i(z);
+    } 
+  } else {
+    nnz = 0;
+    for (int i=0; i<nb.getSize(); i++) {
+      if (nb.d(i)) {
+        pmax = MAX(pmax, nb.d(i));
+        imax = i;
+        nnz++;
+      }
+    }
+  }
+
+  //
+  // Determine byte requirements for downward pointers
+  //
+  int pbytes = bytesRequiredForDown(pmax);
+
+  node_address addr;
+  //
+  // Easy case - sparse nodes disabled
+  //
+  if (0==(forest::policies::ALLOW_SPARSE_STORAGE & opt)) {
+
+      addr = makeFullNode(p, imax+1, pbytes, nb);
+#ifdef DEBUG_ENCODING
+      printf("\n        made: ");
+      showNode(stdout, addr, true);
+      printf("\n    internal: ");
+      dumpInternalNode(stdout, addr, 0x03);
+#endif
+      return addr;
+  }
+
+  //
+  // Determine byte requirements for indexes
+  //
+  int ibytes = bytesRequired4(imax);
+
+  //
+  // Easy case - full nodes disabled
+  //
+  if (0==(forest::policies::ALLOW_FULL_STORAGE & opt)) {
+
+      addr = makeSparseNode(p, nnz, pbytes, ibytes, nb);
+#ifdef DEBUG_ENCODING
+      printf("\n        made: ");
+      showNode(stdout, addr, true);
+      printf("\n    internal: ");
+      dumpInternalNode(stdout, addr, 0x03);
+#endif
+      return addr;
+  }
+
+  //
+  // Full and sparse are allowed, determine which is more compact
+  //
+  if (slotsForNode(-nnz, pbytes, ibytes) < slotsForNode(imax+1, pbytes, ibytes))
+  {
+      addr = makeSparseNode(p, nnz, pbytes, ibytes, nb);
+  } else {
+      addr = makeFullNode(p, imax+1, pbytes, nb);
+  }
+#ifdef DEBUG_ENCODING
+  printf("\n        made: ");
+  showNode(stdout, addr, true);
+  printf("\n    internal: ");
+  dumpInternalNode(stdout, addr, 0x03);
+#endif
+  return addr;
+}
+
+// ******************************************************************
+
+void MEDDLY::compact_storage::unlinkDownAndRecycle(node_address addr)
+{
+  //
+  // Unlink down pointers
+  //
+  int size = sizeOf(addr);
+  int pbytes = pointerBytesOf(addr);
+  unsigned char* down;
+  if (size < 0) {
+    size = -size;
+    down = fullDown(addr);
+  } else {
+    down = sparseDown(addr);
+  }
+  unlinkDown(pbytes, down, size);
+
+  //
+  // Recycle
+  //
+  holeManager->recycleChunk(addr, activeNodeActualSlots(addr));
+}
+
+// ******************************************************************
+
+bool MEDDLY::compact_storage
+::areDuplicates(node_address addr, const node_builder &nb) const
+{
+  return areDupsTempl(addr, nb);
+}
+
+// ******************************************************************
+
+bool MEDDLY::compact_storage::
+areDuplicates(node_address addr, const node_reader &nr) const
+{
+  return areDupsTempl(addr, nr);
+}
+
+// ******************************************************************
+
+void MEDDLY::compact_storage
+::fillReader(node_address addr, node_reader &nr) const
+{
+#ifdef DEBUG_ENCODING
+  printf("compact_storage filling reader\n    internal: ");
+  dumpInternalNode(stdout, addr, 0x03);
+  printf("        node: ");
+  showNode(stdout, addr, true);
+#endif
+  // TBD: Copy hashed header
+
+  int size = sizeOf(addr);
+  if (size < 0) {
+    //
+    // Node is sparse
+    //
+    int pbytes;
+    int ibytes;
+    setStyleOf(addr, pbytes, ibytes);
+    if (nr.isFull()) {
+      readFullFromSparse(pbytes, ibytes, addr, -size, nr);
+    } else {
+      readSparseFromSparse(pbytes, ibytes, addr, -size, nr);
+    }
+  } else {
+    //
+    // Node is full
+    //
+    if (nr.isFull()) {
+      readFullFromFull(pointerBytesOf(addr), addr, size, nr);
+    } else {
+      readSparseFromFull(pointerBytesOf(addr), addr, size, nr);
+    }
+  }
+#ifdef DEBUG_ENCODING
+  printf("\n        temp:  ");
+  nr.show(stdout, getParent(), true);
+  printf("\n");
+#endif
+}
+
+// ******************************************************************
+
+unsigned MEDDLY::compact_storage::hashNode(const node_header& node) const
+{
+  hash_stream s;
+  s.start(node.level);
+
+  // Do the hashed header part, if any
+  // TBD
+
+  //
+  // Hash the node itself
+  int size = sizeOf(node.offset);
+  if (size < 0) {
+    hashSparse(s, node.offset, -size);
+  } else {
+    hashFull(s, node.offset, size);
+  }
+
+  return s.finish();
+}
+
+// ******************************************************************
+
+int MEDDLY::compact_storage::
+getSingletonIndex(node_address addr, node_handle &down) const
+{
+  int size = sizeOf(addr);
+  if (size < 0) {
+    int pbytes, ibytes;
+    getStyleOf(addr, pbytes, ibytes);
+    dataToDown(sparseDown(addr), pbytes, down);
+    int index;
+    dataToRaw(sparseIndex(addr), ibytes, index);
+    return index;
+  } else {
+    return getSingletonFull(pointerBytesOf(addr), addr, size, down);
+  }
+}
+
+// ******************************************************************
+
+MEDDLY::node_handle 
+MEDDLY::compact_storage::getDownPtr(node_address addr, int index) const
+{
+  int size = sizeOf(addr);
+  if (size<0) {
+    int pbytes, ibytes;
+    getStyleOf(addr, pbytes, ibytes);
+    int z = findSparseIndex(ibytes, addr, -size, index);
+    if (z<0) return 0;
+    node_handle down;
+    dataToDown(sparseDown(addr) + z*pbytes, pbytes, down);
+    return down;
+  } else {
+    if (index < size) {
+      int pbytes = pointerBytesOf(addr);
+      node_handle down;
+      dataToDown(fullDown(addr) + index*pbytes, pbytes, down);
+      return down;
+    } else {
+      return 0;
+    }
+  }
+}
+
+// ******************************************************************
+
+void MEDDLY::compact_storage
+::getDownPtr(node_address addr, int index, int& ev, node_handle& dn) const
+{
+  int size = sizeOf(addr);
+  if (size<0) {
+    int pbytes, ibytes;
+    getStyleOf(addr, pbytes, ibytes);
+    int z = findSparseIndex(ibytes, addr, -size, index);
+    if (z<0) {
+      dn = 0;
+      ev = 0;
+    } else {
+      dataToDown(sparseDown(addr) + z*pbytes, pbytes, dn);
+      ev = ((int*)(sparseEdge(addr) + z*edgeBytes))[0];
+    }
+  } else {
+    if (index < size) {
+      int pbytes = pointerBytesOf(addr);
+      dataToDown(fullDown(addr) + index*pbytes, pbytes, dn);
+      ev = ((int*)(sparseEdge(addr) + index*edgeBytes))[0];
+    } else {
+      dn = 0;
+      ev = 0;
+    }
+  }
+}
+
+// ******************************************************************
+
+void MEDDLY::compact_storage
+::getDownPtr(node_address addr, int index, float& ev, node_handle& dn) const
+{
+  int size = sizeOf(addr);
+  if (size<0) {
+    int pbytes, ibytes;
+    getStyleOf(addr, pbytes, ibytes);
+    int z = findSparseIndex(ibytes, addr, -size, index);
+    if (z<0) {
+      dn = 0;
+      ev = 0;
+    } else {
+      dataToDown(sparseDown(addr) + z*pbytes, pbytes, dn);
+      ev = ((float*)(sparseEdge(addr) + z*edgeBytes))[0];
+    }
+  } else {
+    if (index < size) {
+      int pbytes = pointerBytesOf(addr);
+      dataToDown(fullDown(addr) + index*pbytes, pbytes, dn);
+      ev = ((float*)(sparseEdge(addr) + index*edgeBytes))[0];
+    } else {
+      dn = 0;
+      ev = 0;
+    }
+  }
+}
+
+// ******************************************************************
+
+const void* MEDDLY::compact_storage
+::getUnhashedHeaderOf(node_address addr) const
+{
+  return UH(addr);
+}
+
+// ******************************************************************
+
+const void* MEDDLY::compact_storage
+::getHashedHeaderOf(node_address addr) const
+{
+  return HH(addr);
+}
+
+//
+//
+// Protected
+//
+//
+
+void MEDDLY::compact_storage::localInitForForest(const expert_forest* f)
+{
+  edgeBytes = f->edgeBytes();
+  unhashedBytes = f->unhashedHeaderBytes();
+  hashedBytes = f->hashedHeaderBytes();
+  MEDDLY_DCASSERT(holeManager);
+  holeManager->setParent(this);
+}
+
+// ******************************************************************
+
+void MEDDLY::compact_storage::updateData(node_handle* d)
+{
+  data = d;
+  updateCountArray(data + count_index);
+  updateNextArray(data + next_index);
+  memchunk = data + mem_index;
+}
+
+// ******************************************************************
+
+int MEDDLY::compact_storage::smallestNode() const
+{
+  return slotsForNode(0, 0, 0);
+}
+
+// ******************************************************************
+
+void MEDDLY::compact_storage::dumpInternalInfo(FILE* s) const
+{
+#ifdef NODE_STORAGE_PER_LEVEL
+  fprintf(s, "Level %ld: ", getParent()->getLevelNumber(this));
+#endif
+  holeManager->dumpInternalInfo(s);
+}
+
+// ******************************************************************
+
+void MEDDLY::compact_storage::dumpInternalTail(FILE* s) const
+{
+  holeManager->dumpInternalTail(s);
+}
+
+// ******************************************************************
+
+MEDDLY::node_address 
+MEDDLY::compact_storage
+::dumpInternalNode(FILE *s, node_address a, unsigned flags) const
+{
+  if (a<=0) return 0;
+  int awidth = digits(getParent()->getLastNode());
+  if (a > holeManager->lastSlot()) {
+    fprintf(s, "%*ld : free slots\n", awidth, long(a));
+    return 0;
+  }
   MEDDLY_DCASSERT(data);
-  
-  fprintf(s, "Last slot used: %ld\n", last);
-  fprintf(s, "large_holes: %ld\n", large_holes);
-  fprintf(s, "Grid: top = %ld bottom = %ld\n", holes_top, holes_bottom);
+  if (data[a]<0) { 
+    // hole
+    if (flags & 0x02) {
+      fprintf(s, "%*ld : ", awidth, a);
+      holeManager->dumpHole(s, a);
+    }
+    a = holeManager->chunkAfterHole(a);
+  } else {
+    // proper node
+    if (flags & 0x01) {
+      fprintf(s, "%*ld : ", awidth, a);
+      int nElements = activeNodeActualSlots(a) - 1;
+      fprintf(s, "[in %ld, next %ld", long(data[a]), long(data[a+1]));
+      int sz = sizeOf(a);
+      fprintf(s, ", size %d", sz);
+      unsigned char x = rawStyleOf(a);
+      fprintf(s, ", style %c%c%c:%c%c:%c%c%c",
+        (x & 0x80) ? '1' : '0',
+        (x & 0x40) ? '1' : '0',
+        (x & 0x20) ? '1' : '0',
+        (x & 0x10) ? '1' : '0',
+        (x & 0x08) ? '1' : '0',
+        (x & 0x04) ? '1' : '0',
+        (x & 0x02) ? '1' : '0',
+        (x & 0x01) ? '1' : '0'
+      );
+      fprintRaw(s, ", uh", UH(a), unhashedBytes);
+      fprintRaw(s, ", hh", HH(a), hashedBytes);
 
-  dumpNode(s, a);
+      unsigned char* end;
+      if (sz<0) {
+        // sparse
+        fprintRaw(s, ", down", sparseDown(a), -sz * pointerBytesOf(a));
+        fprintRaw(s, ", index", sparseIndex(a), -sz * indexBytesOf(a));
+        fprintRaw(s, ", edge", sparseEdge(a), -sz * edgeBytes);
+        end = sparseEdge(a) - sz * edgeBytes;
+      } else {
+        // full
+        fprintRaw(s, ", down", fullDown(a), sz * pointerBytesOf(a));
+        fprintRaw(s, ", edge", fullEdge(a), sz * edgeBytes);
+        end = fullEdge(a) + sz * edgeBytes;
+      }
+
+      unsigned char* tail = (unsigned char*) (data + a + nElements);
+      fprintRaw(s, ", pad", end, tail-end);
+      fprintf(s, ", tail %ld]\n", long(data[a+nElements]));
+    }
+    a += activeNodeActualSlots(a);
+  }
+  return a;
 }
 
-
+// ******************************************************************
 //
 //
 // Private
 //
 //
+// ******************************************************************
 
-void MEDDLY::node_compacted::resize(long new_size)
+MEDDLY::node_address
+MEDDLY::compact_storage
+::makeFullNode(node_handle p, int size, int pbytes, const node_builder &nb)
 {
-  unsigned char* new_data = (unsigned char *) realloc(data, new_size);
-  if (0 == new_data) throw error(error::INSUFFICIENT_MEMORY);
-  if (0== data) new_data[0] = 0;
-  if (new_size > size) {
-    parent->changeStats().incMemAlloc(new_size - size);
+  int slots = slotsForNode(size, pbytes, 0);
+  node_address addr = allocNode(slots, p, true);
+  MEDDLY_DCASSERT(1==getCountOf(addr));
+
+  setSizeOf(addr, size);
+  setStyleOf(addr, pbytes, 0);
+  copyExtraHeader(addr, nb);
+
+  if (nb.isSparse()) {
+    return copySparseIntoFull(pbytes, nb, size, addr);
   } else {
-    parent->changeStats().decMemAlloc(size - new_size);
+    return copyFullIntoFull(pbytes, nb, size, addr);
   }
+}
+
+// ******************************************************************
+
+MEDDLY::node_address
+MEDDLY::compact_storage::makeSparseNode(node_handle p, int size, 
+  int pbytes, int ibytes, const node_builder &nb)
+{
+  int slots = slotsForNode(-size, pbytes, ibytes);
+  node_address addr = allocNode(slots, p, true);
+  MEDDLY_DCASSERT(1==getCountOf(addr));
+
+  setSizeOf(addr, -size);
+  setStyleOf(addr, pbytes, ibytes);
+  copyExtraHeader(addr, nb);
+
+  if (nb.isSparse()) {
+    return copySparseIntoSparse(pbytes, ibytes, nb, size, addr);
+  } else {
+    return copyFullIntoSparse(pbytes, ibytes, nb, size, addr);
+  }
+}
+
+// ******************************************************************
+
+MEDDLY::node_address
+MEDDLY::compact_storage::allocNode(int slots, node_handle tail, bool clear)
+{
+  node_handle off = holeManager->requestChunk(slots);
+  node_handle got = -data[off];
+  incMemUsed(got * sizeof(node_handle));
+  MEDDLY_DCASSERT(got >= slots);
+  if (clear) memset(data+off, 0, slots*sizeof(node_handle));
+  setCountOf(off, 1);                     // #incoming
+  setNextOf(off, -1);                     // mark as a temp node
+  data[off+slots-1] = slots - got;        // negative padding
+  data[off+got-1] = tail;                 // tail entry
 #ifdef MEMORY_TRACE
-    printf("Resized data[]. Old size: %ld, New size: %ld, Last: %ld.\n", 
-      size, new_size, last
-    );
+  printf("Allocated new node, asked %d, got %d, position %d\n", slots, got, off);
+#ifdef DEEP_MEMORY_TRACE
+  dumpInternal(stdout);
+#else
+  dumpInternal(stdout, off);
 #endif
-  size = new_size;
-  if (data != new_data) {
-    // update pointers
-    data = new_data;
-    data_size = data + 2*sizeof(long);
-    data_info = data_size + sizeof(int);
-    data_down = data_info + 1 + uhbytes + hhbytes;
-  }
+#endif
+  return off;
 }
 
-long MEDDLY::node_compacted::dumpNode(FILE* s, long a) const
+
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                      compact_grid methods                      *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+
+MEDDLY::compact_grid::compact_grid(holeman* hm) : compact_storage(hm)
 {
-  MEDDLY_DCASSERT(data);
-  if (0==a) return 0;
-  int awidth = digits(parent->getLastNode());
-  fprintf(s, "%*ld : [", awidth, a);
+}
 
-  const unsigned char* d = data + a;
-  const unsigned char* stop;
+MEDDLY::compact_grid::~compact_grid()
+{
+}
 
-  // first slot: definitely a long
-  long L;
-  dataToLong<sizeof(long)>(d, L);
-  fprintf(s, "%ld", L);
-  bool is_hole = (L<0);
+MEDDLY::node_storage* MEDDLY::compact_grid
+::createForForest(expert_forest* f) const
+{
+  compact_storage* nns = new compact_grid(new hm_grid);
+  nns->initForForest(f);
+  return nns;
+}
 
-  if (is_hole) {
-    //
-    // Hole.
-    //
-    stop = d - L;
-    // get next 3 longs
-    for (int i=3; i; i--) {
-      d += sizeof(long);
-      dataToLong<sizeof(long)>(d, L);
-      fprintf(s, "|%ld", L);
-    }
-    fprintf(s, "| ... ");
-  } else {
-    //
-    // Node.
-    //
-    
-    // get next: long
-    d += sizeof(long);
-    dataToLong<sizeof(long)>(d, L);
-    fprintf(s, "|n=%ld", L);
-    d += sizeof(long);
-
-    // get size: int
-    int size;
-    dataToInt<sizeof(int)>(d, size);
-    fprintf(s, "|s=%d", size);
-    d += sizeof(int);
-
-    // get compression info
-    int dpb = dpbytesOf(d[0]);
-    MEDDLY_DCASSERT(dpbytes(a) == dpb);
-    int ixb = ixbytesOf(d[0]);
-    MEDDLY_DCASSERT(ixbytes(a) == ixb);
-    d++;
-    fprintf(s, "|dpb=%d, ixb=%d", dpb, ixb);
-
-    // show unhashed header
-    if (uhbytes) {
-      fprintf(s, "|uh");
-      for (int i=0; i<uhbytes; i++) {
-        fprintf(s, " %02x", d[0]);
-        d++;
-      }
-    }
-
-    // show hashed header
-    if (hhbytes) {
-      fprintf(s, "|hh");
-      for (int i=0; i<hhbytes; i++) {
-        fprintf(s, " %02x", d[0]);
-        d++;
-      }
-    }
-
-    // show next chunk: downward pointers
-    for (int i=0; i<size; i++) {
-      switch (dpb) {
-        case 1: dataToDown<1>(d, L);  break;
-        case 2: dataToDown<2>(d, L);  break;
-        case 3: dataToDown<3>(d, L);  break;
-        case 4: dataToDown<4>(d, L);  break;
-        case 5: dataToDown<5>(d, L);  break;
-        case 6: dataToDown<6>(d, L);  break;
-        case 7: dataToDown<7>(d, L);  break;
-        case 8: dataToDown<8>(d, L);  break;
-        default:
-          throw error(error::MISCELLANEOUS);
-      }
-      fprintf(s, "|d %ld", L);
-      d += dpb;
-    }
-
-    // show next chunk: indexes
-    if (ixb) for (int i=0; i<size; i++) {
-      int I;
-      switch (ixb) {
-        case 1: dataToInt<1>(d, I); break;
-        case 2: dataToInt<2>(d, I); break;
-        case 3: dataToInt<3>(d, I); break;
-        case 4: dataToInt<4>(d, I); break;
-        default:
-          throw error(error::MISCELLANEOUS);
-      }
-      fprintf(s, "|i %d", I);
-      d += ixb;
-    }
-
-    // show next chunk: edge values (raw)
-    if (evbytes) for (int i=0; i<size; i++) {
-      fprintf(s, "|e");
-      for (int b=0; b<evbytes; b++) {
-        fprintf(s, " %02x", d[0]);
-        d++;
-      }
-    }
-
-    // get the padding
-    unsigned int padding = d[0];
-    d++;
-    fprintf(s, "| ... %d unused ... ", padding);
-    stop = d + padding + sizeof(long);
-  }
-  // show the last, long slot
-  dataToLong<sizeof(long)>(stop-sizeof(long), L);
-  fprintf(s, "|%ld]\n", L);
-  return stop - (data+a);
+const char* MEDDLY::compact_grid::getStorageName() const
+{
+  return "compact node storage with grid for holes";
 }
 
 
-#endif  // if 0
+// ******************************************************************
+// *                                                                *
+// *                   front-end global variables                   *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+  compact_grid THE_COMPACT_GRID(0);
+
+  const node_storage* COMPACT_GRID = &THE_COMPACT_GRID;
+};
+
 
 

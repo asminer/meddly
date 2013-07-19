@@ -580,6 +580,9 @@ class MEDDLY::node_reader {
         /// Free memory, but don't delete.
         void clear();
 
+        /// Display this node
+        void show(FILE* s, const expert_forest* parent, bool verb) const;
+
         /** Get a downward pointer.
               @param  n   Which pointer.
               @return     If this is a full reader, 
@@ -820,8 +823,12 @@ class MEDDLY::node_builder {
         node_builder();
         ~node_builder();
         void init(int k, const expert_forest* p);
+        void show(FILE* s, bool verb) const;
         inline bool hasEdges() const {
           return edge_bytes > 0;
+        }
+        inline int edgeBytes() const {
+          return edge_bytes;
         }
         inline void resize(int s) {
           is_sparse = false;

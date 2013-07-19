@@ -98,7 +98,7 @@ namespace MEDDLY {
 */
 class MEDDLY::hm_grid : public holeman {
   public:
-    hm_grid(node_storage* p);
+    hm_grid();
     virtual ~hm_grid();
 
   public:

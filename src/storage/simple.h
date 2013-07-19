@@ -121,7 +121,7 @@ namespace MEDDLY {
 class MEDDLY::simple_storage : public node_storage {
   // required interface
   public:
-    simple_storage();
+    simple_storage(holeman* hm);
     virtual ~simple_storage();
 
     virtual void collectGarbage(bool shrink);
@@ -148,12 +148,6 @@ class MEDDLY::simple_storage : public node_storage {
   // for derived classes to implement
     virtual const char* getStorageName() const = 0;
 
-  // ugly - for children to initialize us
-  public:
-    inline void setHoleManager(holeman* hm) {
-      MEDDLY_DCASSERT(0==holeManager);
-      holeManager = hm;
-    }
   protected:
     virtual void localInitForForest(const expert_forest* f);
     virtual void updateData(node_handle* d);
@@ -176,6 +170,7 @@ class MEDDLY::simple_storage : public node_storage {
       static const int tailSlots = 1;
       static const int extraSlots = headerSlots + tailSlots;
 
+  private:
       /// copy of the data array
       node_handle* data;
       holeman*  holeManager;
@@ -200,6 +195,7 @@ class MEDDLY::simple_storage : public node_storage {
         MEDDLY_DCASSERT(data[addr] >= 0);  // it's not a hole
         return data + addr;
       }
+      /*
       inline node_handle* holeOf(node_handle addr) const {
         MEDDLY_DCASSERT(data);
         MEDDLY_DCASSERT(holeManager);
@@ -207,11 +203,17 @@ class MEDDLY::simple_storage : public node_storage {
         MEDDLY_DCASSERT(data[addr] < 0);  // it's a hole
         return data + addr;
       }
+      */
       inline node_handle& rawSizeOf(node_handle addr) const {
         return chunkOf(addr)[size_index];
       }
-      inline node_handle  sizeOf(node_handle addr) const      { return rawSizeOf(addr); }
-      inline void setSizeOf(node_handle addr, node_handle sz) { rawSizeOf(addr) = sz; }
+      inline node_handle  sizeOf(node_handle addr) const { 
+        return rawSizeOf(addr); 
+      }
+      inline void setSizeOf(node_handle addr, node_handle sz) { 
+        rawSizeOf(addr) = sz; 
+      }
+
       inline node_handle* UH(node_handle addr) const {
           return chunkOf(addr) + headerSlots;
       }
@@ -276,6 +278,17 @@ class MEDDLY::simple_storage : public node_storage {
           return extraSlots + unhashedSlots + hashedSlots + nodeSlots;
       }
 
+      /// Find actual number of slots used for this active node.
+      inline int activeNodeActualSlots(node_handle addr) const {
+          int end = addr + slotsForNode(sizeOf(addr))-1;
+          // account for any padding
+          if (data[end] < 0) {
+            end -= data[end];
+          }
+          return end - addr + 1;
+      }
+
+
 
   // --------------------------------------------------------
   // |  Misc. helpers.
@@ -296,7 +309,8 @@ class MEDDLY::simple_storage : public node_storage {
             @param  nb    Node data is copied from here.
             @return       The "address" of the new node.
       */
-      node_handle makeSparseNode(node_handle p, int size, const node_builder &nb);
+      node_handle makeSparseNode(node_handle p, int size, 
+        const node_builder &nb);
 
       void copyExtraHeader(node_address addr, const node_builder &nb);
 
@@ -313,32 +327,6 @@ class MEDDLY::simple_storage : public node_storage {
 #ifdef DEVELOPMENT_CODE
       void verifyStats() const;
 #endif
-
-      /// Find actual number of slots used for this active node.
-      inline int activeNodeActualSlots(node_handle addr) const {
-          int end = addr + slotsForNode(sizeOf(addr))-1;
-          // account for any padding
-          if (data[end] < 0) {
-            end -= data[end];
-          }
-          return end - addr + 1;
-      }
-
-
-      /// Find actual number of slots used for this active node.
-      /*
-      inline int activeNodeActualSlots(node_handle addr, int& pad) const {
-          int end = addr + slotsForNode(sizeOf(addr))-1;
-          // account for any padding
-          if (data[end] < 0) {
-            pad = -data[end];
-            end += pad;
-          } else {
-            pad = 0;
-          }
-          return end - addr + 1;
-      }
-      */
 
   // --------------------------------------------------------
   // |  Node comparison as a template
@@ -455,7 +443,7 @@ class MEDDLY::simple_storage : public node_storage {
 
 class MEDDLY::simple_grid : public simple_storage {
   public:
-    simple_grid();
+    simple_grid(holeman* hm);
     virtual ~simple_grid();
     virtual node_storage* createForForest(expert_forest* f) const;
     virtual const char* getStorageName() const;
@@ -472,7 +460,7 @@ class MEDDLY::simple_grid : public simple_storage {
 /// Simple storage using a new array of lists mechanism for holes.
 class MEDDLY::simple_array : public simple_storage {
   public:
-    simple_array();
+    simple_array(holeman* hm);
     virtual ~simple_array();
     virtual node_storage* createForForest(expert_forest* f) const;
     virtual const char* getStorageName() const;
@@ -492,7 +480,7 @@ class MEDDLY::simple_array : public simple_storage {
 
 class MEDDLY::simple_heap : public simple_storage {
   public:
-    simple_heap();
+    simple_heap(holeman* hm);
     virtual ~simple_heap();
     virtual node_storage* createForForest(expert_forest* f) const;
     virtual const char* getStorageName() const;
@@ -511,7 +499,7 @@ class MEDDLY::simple_heap : public simple_storage {
 
 class MEDDLY::simple_none : public simple_storage {
   public:
-    simple_none();
+    simple_none(holeman* hm);
     virtual ~simple_none();
     virtual node_storage* createForForest(expert_forest* f) const;
     virtual const char* getStorageName() const;

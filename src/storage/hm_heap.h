@@ -79,7 +79,7 @@ namespace MEDDLY {
 */
 class MEDDLY::hm_heap : public holeman {
   public:
-    hm_heap(node_storage* p);
+    hm_heap();
     virtual ~hm_heap();
 
   public:

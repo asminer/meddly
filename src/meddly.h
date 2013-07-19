@@ -132,6 +132,12 @@ namespace MEDDLY {
   */
   extern const node_storage* SIMPLE_NONE;
 
+  /** Nodes are stored in a compressed form.
+      Holes are managed using the original grid structure.
+  */
+  extern const node_storage* COMPACT_GRID;
+
+
   // ******************************************************************
   // *                     Named unary operations                     *
   // ******************************************************************
@@ -641,6 +647,7 @@ class MEDDLY::forest {
         // nodestor = SIMPLE_ARRAY;
         // nodestor = SIMPLE_HEAP;
         // nodestor = SIMPLE_NONE;
+        // nodestor = COMPACT_GRID;
       }
 
       inline void setFullStorage() { 

@@ -21,7 +21,7 @@
 
 
 #ifndef BYTEPACK_H
-#define BYTEPACK_STORAGE_H
+#define BYTEPACK_H
 
 // ******************************************************************
 // *                                                                *
@@ -207,6 +207,7 @@ inline int bytesRequiredForSigned(long a)
 template <int bytes, class INT>
 inline void rawToData(INT a, unsigned char* b)
 {
+  MEDDLY_DCASSERT(bytes <= sizeof(INT));
   //
   // The compiler is smart enough to optimize out these if's
   //
@@ -223,12 +224,14 @@ inline void rawToData(INT a, unsigned char* b)
 template <int bytes, class INT>
 inline void signedToData(INT L, unsigned char* d)
 {
+  MEDDLY_DCASSERT(bytes <= sizeof(INT));
   rawToData<bytes>(L, d);
 }
 
 template <int bytes, class INT>
 inline void downToData(INT  P, unsigned char* d)
 {
+  MEDDLY_DCASSERT(bytes <= sizeof(INT));
   // positive P: as usual.
   if (P >= 0) {
     rawToData<bytes>(P, d);
@@ -265,6 +268,7 @@ inline void downToData(INT  P, unsigned char* d)
 template <int bytes, class INT>
 inline void dataToRaw(const unsigned char* b, INT &a)
 {
+  MEDDLY_DCASSERT(bytes <= sizeof(INT));
   //
   // The compiler is smart enough to optimize out these if's
   //
@@ -278,9 +282,28 @@ inline void dataToRaw(const unsigned char* b, INT &a)
   a |= b[0];
 }
 
+template <class INT>
+inline void dataToRaw(const unsigned char* d, int bytes, INT& L)
+{
+  switch (bytes) {
+    case 1:   dataToRaw<1>(d, L);     return;
+    case 2:   dataToRaw<2>(d, L);     return;
+    case 3:   dataToRaw<3>(d, L);     return;
+    case 4:   dataToRaw<4>(d, L);     return;
+    case 5:   dataToRaw<5>(d, L);     return;
+    case 6:   dataToRaw<6>(d, L);     return;
+    case 7:   dataToRaw<7>(d, L);     return;
+    case 8:   dataToRaw<8>(d, L);     return;
+
+    default:
+      MEDDLY_DCASSERT(0);
+  }
+}
+
 template <int bytes, class INT>
 inline void dataToSigned(const unsigned char* d, INT& L)
 {
+  MEDDLY_DCASSERT(bytes <= sizeof(INT));
   // deal with negatives properly
   if (d[bytes-1] & 0x80) {
     L = (~0L) << 8;
@@ -290,10 +313,30 @@ inline void dataToSigned(const unsigned char* d, INT& L)
   dataToRaw<bytes>(d, L);
 }
 
+template <class INT>
+inline void dataToSigned(const unsigned char* d, int bytes, INT& L)
+{
+  switch (bytes) {
+    case 1:   dataToSigned<1>(d, L);    return;
+    case 2:   dataToSigned<2>(d, L);    return;
+    case 3:   dataToSigned<3>(d, L);    return;
+    case 4:   dataToSigned<4>(d, L);    return;
+    case 5:   dataToSigned<5>(d, L);    return;
+    case 6:   dataToSigned<6>(d, L);    return;
+    case 7:   dataToSigned<7>(d, L);    return;
+    case 8:   dataToSigned<8>(d, L);    return;
 
-template <int bytes, class INT>
+    default:
+      MEDDLY_DCASSERT(0);
+  }
+}
+
+
+template <int bytes, int sizeofint, class INT>
 inline void dataToDown(const unsigned char* d, INT& P)
 {
+  MEDDLY_DCASSERT(sizeofint == sizeof(INT));
+  MEDDLY_DCASSERT(bytes <= sizeofint);
   // Is this a terminal value?
   if (d[bytes-1] & 0x80) {
     // YES.
@@ -309,12 +352,13 @@ inline void dataToDown(const unsigned char* d, INT& P)
     // Positive terminal value.
     P = 0;
     dataToRaw<bytes>(d, P);
-    if (bytes != 8) {
-      // Move MSB
-      static const unsigned long bmsboff = ~ ((0x80L) << ((bytes-1)*8));
-      static const unsigned long msbon = (0x80L) << ((sizeof(INT)-1)*8);
-      P = (P & bmsboff) | msbon;
+
+    // Move MSB if necessary
+    if (bytes < sizeofint) {
+      P = (P & ~(0x80L << ((bytes-1)*8)) )    // old msb off
+          | ((0x80L) << ((sizeofint-1)*8));   // new msb on
     }
+
     return;
   }
 
@@ -323,88 +367,31 @@ inline void dataToDown(const unsigned char* d, INT& P)
   dataToRaw<bytes>(d, P);
 }
 
-// ******************************************************************
-// *                                                                *
-// *                           Old  stuff                           *
-// *                                                                *
-// ******************************************************************
-
-template <int bytes>
-inline void longToData(long L, unsigned char* d)
+template <int bytes, class INT>
+inline void dataToDown(const unsigned char* d, INT& P)
 {
-  rawToData<bytes>(L, d);
-}
-
-template <int bytes>
-inline void dataToLong(const unsigned char* d, long& L)
-{
-  // deal with negatives properly
-  if (d[bytes-1] & 0x80) {
-    L = (~0L) << 8;
-  } else {
-    L = 0;
-  }
-  dataToRaw<bytes>(d, L);
-}
-
-template <int bytes>
-inline void intToData(int L, unsigned char* d)
-{
-  rawToData<bytes>(L, d);
-}
-
-template <int bytes>
-inline void dataToInt(const unsigned char* d, int& L)
-{
-  // deal with negatives properly
-  if (d[bytes-1] & 0x80) {
-    L = (~0) << 8;
-  } else {
-    L = 0;
-  }
-  dataToRaw<bytes>(d, L);
+  dataToDown<bytes, sizeof(INT)>(d, P);
 }
 
 template <class INT>
-inline void bytesRequiredForVal(INT a, int& bytes)
+inline void dataToDown(const unsigned char* d, int bytes, INT& L)
 {
-  if (sizeof(INT) == bytes) return;
-  long la = (a<0) ? -(a<<1) : a<<1; 
-  static unsigned long msbyte = (0xffL) << (sizeof(INT)-1)*8;
-  unsigned long mask = msbyte;
-  for (int b=sizeof(INT); b>bytes; b--) {
-    if (la & mask) {
-      bytes = b;
-      return;
-    }
-    mask = (mask >> 8) & ~msbyte;
+  switch (bytes) {
+    case 1:   dataToDown<1>(d, L);    return;
+    case 2:   dataToDown<2>(d, L);    return;
+    case 3:   dataToDown<3>(d, L);    return;
+    case 4:   dataToDown<4>(d, L);    return;
+    case 5:   dataToDown<5>(d, L);    return;
+    case 6:   dataToDown<6>(d, L);    return;
+    case 7:   dataToDown<7>(d, L);    return;
+    case 8:   dataToDown<8>(d, L);    return;
+
+    default:
+      MEDDLY_DCASSERT(0);
   }
 }
 
-inline void bytesRequiredForDown(long a, int& bytes)
-{
-  if (a<0) {
-    // terminal value
-    a <<= 1;
-    if (a<0) {
-      a <<= 1;
-      a = -a;
-    } else {
-      a <<= 1;
-    }
-  } else {
-    a <<= 1;
-  }
-  static unsigned long msbyte = (0xffL) << (sizeof(long)-1)*8;
-  unsigned long mask = msbyte;
-  for (int b=sizeof(long); b>bytes; b--) {
-    if (a & mask) {
-      bytes = b;
-      return;
-    }
-    mask = (mask >> 8) & ~msbyte;
-  }
-}
+
 
 #endif  // include guard
 

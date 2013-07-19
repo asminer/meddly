@@ -37,7 +37,7 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::hm_grid::hm_grid(node_storage* p) : holeman(5, p)
+MEDDLY::hm_grid::hm_grid() : holeman(5)
 {
   max_request = 0;
   large_holes = 0;

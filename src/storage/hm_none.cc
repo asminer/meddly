@@ -37,7 +37,7 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::hm_none::hm_none(node_storage* p) : holeman(2, p)
+MEDDLY::hm_none::hm_none() : holeman(2)
 {
 }
 

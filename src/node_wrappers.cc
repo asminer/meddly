@@ -74,6 +74,47 @@ void MEDDLY::node_reader::clear()
 }
 
 void MEDDLY::node_reader
+::show(FILE* s, const expert_forest* parent, bool verb) const
+{
+  int stop;
+  if (isSparse()) {
+    if (verb) fprintf(s, "nnzs: %d ", size);
+    fprintf(s, "down: (");
+    stop = nnzs;
+  } else {
+    if (verb) fprintf(s, "size: %d ", size);
+    fprintf(s, "down: [");
+    stop = size;
+  }
+
+  for (int z=0; z<stop; z++) {
+    if (isSparse()) {
+      if (z) fprintf(s, ", ");
+      fprintf(s, "%d:", i(z));
+    } else {
+      if (z) fprintf(s, "|");
+    }
+    if (parent->edgeBytes()) {
+      fprintf(s, "<");
+      parent->showEdgeValue(s, eptr(z), 0);
+      fprintf(s, ", ");
+    }
+    if (parent->isTerminalNode(d(z))) {
+      parent->showTerminal(s, d(z));
+    } else {
+      fprintf(s, "%ld", long(d(z)));
+    }
+    if (parent->edgeBytes()) fprintf(s, ">");
+  }
+
+  if (isSparse()) {
+    fputc(')', s);
+  } else {
+    fputc(']', s);
+  }
+}
+
+void MEDDLY::node_reader
 ::resize(int k, int ns, char eb, bool full)
 {
   level = k;
@@ -209,6 +250,42 @@ void MEDDLY::node_builder::init(int k, const expert_forest* p)
   edge_bytes = parent->edgeBytes();
 }
 
+void MEDDLY::node_builder::show(FILE* s, bool verb) const
+{
+  if (isSparse()) {
+    if (verb) fprintf(s, "nnzs: %d ", size);
+    fprintf(s, "down: (");
+  } else {
+    if (verb) fprintf(s, "size: %d ", size);
+    fprintf(s, "down: [");
+  }
+
+  for (int z=0; z<size; z++) {
+    if (isSparse()) {
+      if (z) fprintf(s, ", ");
+      fprintf(s, "%d:", i(z));
+    } else {
+      if (z) fprintf(s, "|");
+    }
+    if (parent->edgeBytes()) {
+      fprintf(s, "<");
+      parent->showEdgeValue(s, eptr(z), 0);
+      fprintf(s, ", ");
+    }
+    if (parent->isTerminalNode(d(z))) {
+      parent->showTerminal(s, d(z));
+    } else {
+      fprintf(s, "%ld", long(d(z)));
+    }
+    if (parent->edgeBytes()) fprintf(s, ">");
+  }
+
+  if (isSparse()) {
+    fputc(')', s);
+  } else {
+    fputc(']', s);
+  }
+}
 
 void MEDDLY::node_builder::computeHash()
 {

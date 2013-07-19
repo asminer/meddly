@@ -27,9 +27,9 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::holeman::holeman(int smallestHole, node_storage* p)
+MEDDLY::holeman::holeman(int smallestHole)
 {
-  parent = p;
+  parent = 0;
   num_holes = 0;
   max_holes = 0;
   num_untracked = 0;
@@ -37,11 +37,9 @@ MEDDLY::holeman::holeman(int smallestHole, node_storage* p)
   max_hole_slots = 0;
   untracked_slots = 0;
   last_slot = 0;
-  MEDDLY_DCASSERT(parent);
-  smallest = MAX(smallestHole, parent->smallestNode());
   data = 0;
   size = 0;
-  parent->updateData(data);
+  smallest = smallestHole;
 }
 
 // ******************************************************************

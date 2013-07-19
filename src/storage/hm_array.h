@@ -49,7 +49,7 @@ namespace MEDDLY {
 */
 class MEDDLY::hm_array : public holeman {
   public:
-    hm_array(node_storage* p);
+    hm_array();
     virtual ~hm_array();
 
   public:

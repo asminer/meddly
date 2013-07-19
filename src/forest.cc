@@ -26,6 +26,8 @@
 #include "defines.h"
 #include "unique_table.h"
 #include "hash_stream.h"
+#include "storage/bytepack.h"
+
 //#include <set>
 //#include <queue>
 //#include <vector>
@@ -51,80 +53,6 @@
 // #define REPORT_ON_DESTROY
 
 const int a_min_size = 1024;
-
-// ******************************************************************
-// *                                                                *
-// *                inlined extremely clever helpers                *
-// *                                                                *
-// ******************************************************************
-
-template <int N>
-inline int bytesRequiredForLong(long a);
-
-template <>
-inline int bytesRequiredForLong<4>(long a)
-{
-  // a must not be negative
-  static const long byte2 = 0x7f80;
-  static const long byte3 = byte2<<8;
-  static const long byte4 = byte3<<8;
-  if (a & (byte4 | byte3)) {
-    if (a & byte4) {
-      return 4;
-    } else {
-      return 3;
-    }
-  } else {
-    if (a & byte2) {
-      return 2;
-    } else {
-      return 1;
-    }
-  }
-}
-
-template <>
-inline int bytesRequiredForLong<8>(long a)
-{
-  // a must not be negative
-  static const long byte2 = 0x7f80;
-  static const long byte3 = byte2<<8;
-  static const long byte4 = byte3<<8;
-  static const long byte5 = byte4<<8;
-  static const long byte6 = byte5<<8;
-  static const long byte7 = byte6<<8;
-  static const long byte8 = byte7<<8;
-  if (a & (byte8 | byte7 | byte6 | byte5)) {
-    if (a & (byte8 | byte7)) {
-      if (a & byte8) {
-        return 8;
-      } else {
-        return 7;
-      }
-    } else {
-      if (a & byte6) {
-        return 6;
-      } else {
-        return 5;
-      }
-    }
-  } else {
-    if (a & (byte4 | byte3)) {
-      if (a & byte4) {
-        return 4;
-      } else {
-        return 3;
-      }
-    } else {
-      if (a & byte2) {
-        return 2;
-      } else {
-        return 1;
-      }
-    }
-  }
-}
-
 
 
 // ******************************************************************
@@ -516,7 +444,6 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   for (int i=0; i<8; i++) a_unused[i] = 0;
   a_lowest_index = 8;
 #endif
-  // peak_nodes 0;
   
 
   //
@@ -958,53 +885,6 @@ void MEDDLY::expert_forest
   // unique table
   unique->reportStats(s, pad, flags);
 }
-
-/*
-void MEDDLY::expert_forest
-::reportMemoryUsage(FILE * s, const char* pad, int verb) const
-{
-  if (verb>0) {
-    fprintf(s, "%sPeak Nodes:             %ld\n", pad, getPeakNumNodes());
-    fprintf(s, "%sActive Nodes:           %ld\n", pad, getCurrentNumNodes());
-  }
-#if 0
-  unsigned count = 0;
-  for (int i = 1; i <= getLastNode(); ++i) if (isActiveNode(i)) ++count;
-  fprintf(s, "%cActive Nodes (manual):\t\t%d\n", pad, count);
-  fprintf(s, "%c%cZombie Nodes:\t\t%d\n", pad, filler,
-      getZombieNodeCount());
-  fprintf(s, "%c%cTemp Nodes:\t\t%d\n", pad, filler, getTempNodeCount());
-  fprintf(s, "%c%cOrphan Nodes:\t\t%d\n", pad, filler,
-      getOrphanNodeCount());
-#endif
-  if (verb>2) {
-    fprintf(s, "%sReclaimed Nodes:        %ld\n", pad, stats.reclaimed_nodes);
-  }
-  fprintf(s, "%sMem Used:               %ld\n", pad, getCurrentMemoryUsed());
-  fprintf(s, "%sPeak Mem Used:          %ld\n", pad, getPeakMemoryUsed());
-  if (verb>1) {
-    fprintf(s, "%sMem Allocated:          %ld\n", pad,
-      getCurrentMemoryAllocated());
-    fprintf(s, "%sPeak Mem Allocated:     %ld\n",
-      pad, getPeakMemoryAllocated());
-  }
-  if (verb>3) {
-    fprintf(s, "%sUnique Tbl Mem Used:    %u\n", pad, 
-      unique->getMemUsed());
-  }
-  if (verb>5) {
-    fprintf(s, "%sCompactions:            %ld\n", pad, stats.num_compactions);
-    fprintf(s, "%sGarbage Collections:    %ld\n", pad, stats.garbage_collections);
-  }
-#ifdef NODE_STORAGE_PER_LEVEL
-  for (int i=getMinLevelIndex(); i<=getNumVariables(); i++) {
-    if (levels[i]) levels[i]->reportMemoryUsage(s, pad, verb);
-  }
-#else
-  nodeMan->reportMemoryUsage(s, pad, verb);
-#endif
-}
-*/
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // '                                                                '
@@ -1486,7 +1366,7 @@ void MEDDLY::expert_forest::recycleNodeHandle(node_handle p)
   a_unused = p;
 #else
   // Determine which list to add this into
-  int i = bytesRequiredForLong<sizeof(node_handle)>(p) -1;
+  int i = bytesRequiredForDown(p) -1;
   address[p].setNextDeleted(a_unused[i]);
   a_unused[i] = p;
   a_lowest_index = MIN(a_lowest_index, (char)i);
@@ -1705,16 +1585,6 @@ void MEDDLY::expert_forest::shrinkHandleList()
   a_size -= delta;
   a_next_shrink = a_size / 2;
   MEDDLY_DCASSERT(a_last < a_size);
-  // rebuild the free list
-  /* Needed?
-  a_unused = 0;
-  for (int i=a_last; i; i--) {
-    if (address[i].isDeleted()) {
-      address[i].setNextDeleted(a_unused);
-      a_unused = i;
-    }
-  }
-  */
 #ifdef DEBUG_ADDRESS_RESIZE
   printf("Shrank address array, new size %d\n", a_size);
 #endif
