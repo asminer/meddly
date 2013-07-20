@@ -1497,7 +1497,8 @@ MEDDLY::node_handle MEDDLY::expert_forest
   initNodeReader(key, p, false);
   key.computeHash(areEdgeValuesHashed());
   MEDDLY_DCASSERT(key.hash() == nb.hash());
-  MEDDLY_DCASSERT(unique->find(key) == p);
+  node_handle f = unique->find(key);
+  MEDDLY_DCASSERT(f == p);
 #endif
 #ifdef DEBUG_CREATE_REDUCED
   printf("Created node %d\n", p);

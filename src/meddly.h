@@ -643,11 +643,11 @@ class MEDDLY::forest {
         compactAfterGC = false;
         compactBeforeExpand = true;
         // nodestor = CLASSIC_STORAGE;
-        nodestor = SIMPLE_GRID;
+        // nodestor = SIMPLE_GRID;
         // nodestor = SIMPLE_ARRAY;
         // nodestor = SIMPLE_HEAP;
         // nodestor = SIMPLE_NONE;
-        // nodestor = COMPACT_GRID;
+        nodestor = COMPACT_GRID;
       }
 
       inline void setFullStorage() { 

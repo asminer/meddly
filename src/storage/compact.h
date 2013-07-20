@@ -502,11 +502,11 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <int pbytes, int ibytes, class nodetype>
       inline bool 
-      sparseEqualsFull(node_address addr, int size, const nodetype &n) const 
+      sparseEqualsFull(node_address addr, int nnzs, const nodetype &n) const 
       {
         MEDDLY_DCASSERT(n.isFull());
         MEDDLY_DCASSERT(sizeOf(addr) < 0);
-        MEDDLY_DCASSERT(sizeOf(addr) == size);
+        MEDDLY_DCASSERT(sizeOf(addr) == -nnzs);
 
         const unsigned char* down = sparseDown(addr);
         const unsigned char* index = sparseIndex(addr);
@@ -514,9 +514,9 @@ class MEDDLY::compact_storage : public node_storage {
         if (n.hasEdges()) {
           MEDDLY_DCASSERT(edgeBytes == n.edgeBytes());
           const unsigned char* edge = sparseEdge(addr);
-          for (int z=0; z<size; z++) {
+          for (int z=0; z<nnzs; z++) {
             int indz;
-            dataToRaw<ibytes>(index, indz);
+            dataToUnsigned<ibytes>(index, indz);
             index += ibytes;
             if (indz >= n.getSize()) return false;
             for (; i<indz; i++) if (n.d(i)) return false;
@@ -530,9 +530,9 @@ class MEDDLY::compact_storage : public node_storage {
             i++;
           } // for z
         } else {
-          for (int z=0; z<size; z++) {
+          for (int z=0; z<nnzs; z++) {
             int indz;
-            dataToRaw<ibytes>(index, indz);
+            dataToUnsigned<ibytes>(index, indz);
             index += ibytes;
             if (indz >= n.getSize()) return false;
             for (; i<indz; i++) if (n.d(i)) return false;
@@ -550,13 +550,13 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <int pbytes, class nodetype>
       inline bool sparseEqualsFull(int ibytes, node_address addr,
-        int size, const nodetype &n) const
+        int nnzs, const nodetype &n) const
       {
         switch (ibytes) {
-            case 1:   return  sparseEqualsFull<pbytes, 1>(addr, size, n);
-            case 2:   return  sparseEqualsFull<pbytes, 2>(addr, size, n);
-            case 3:   return  sparseEqualsFull<pbytes, 3>(addr, size, n);
-            case 4:   return  sparseEqualsFull<pbytes, 4>(addr, size, n);
+            case 1:   return  sparseEqualsFull<pbytes, 1>(addr, nnzs, n);
+            case 2:   return  sparseEqualsFull<pbytes, 2>(addr, nnzs, n);
+            case 3:   return  sparseEqualsFull<pbytes, 3>(addr, nnzs, n);
+            case 4:   return  sparseEqualsFull<pbytes, 4>(addr, nnzs, n);
             default:
                 MEDDLY_DCASSERT(0);
                 throw error(error::MISCELLANEOUS);
@@ -565,19 +565,19 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <class nodetype>
       inline bool 
-      sparseEqualsFull(node_address addr, int size, const nodetype &n) const 
+      sparseEqualsFull(node_address addr, int nnzs, const nodetype &n) const 
       {
         int pbytes, ibytes;
         getStyleOf(addr, pbytes, ibytes);
         switch (pbytes) {
-            case 1:   return sparseEqualsFull<1>(ibytes, addr, size, n);
-            case 2:   return sparseEqualsFull<2>(ibytes, addr, size, n);
-            case 3:   return sparseEqualsFull<3>(ibytes, addr, size, n);
-            case 4:   return sparseEqualsFull<4>(ibytes, addr, size, n);
-            case 5:   return sparseEqualsFull<5>(ibytes, addr, size, n);
-            case 6:   return sparseEqualsFull<6>(ibytes, addr, size, n);
-            case 7:   return sparseEqualsFull<7>(ibytes, addr, size, n);
-            case 8:   return sparseEqualsFull<8>(ibytes, addr, size, n);
+            case 1:   return sparseEqualsFull<1>(ibytes, addr, nnzs, n);
+            case 2:   return sparseEqualsFull<2>(ibytes, addr, nnzs, n);
+            case 3:   return sparseEqualsFull<3>(ibytes, addr, nnzs, n);
+            case 4:   return sparseEqualsFull<4>(ibytes, addr, nnzs, n);
+            case 5:   return sparseEqualsFull<5>(ibytes, addr, nnzs, n);
+            case 6:   return sparseEqualsFull<6>(ibytes, addr, nnzs, n);
+            case 7:   return sparseEqualsFull<7>(ibytes, addr, nnzs, n);
+            case 8:   return sparseEqualsFull<8>(ibytes, addr, nnzs, n);
             default:
                 MEDDLY_DCASSERT(0);
                 throw error(error::MISCELLANEOUS);
@@ -590,25 +590,25 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <int pbytes, int ibytes, class nodetype>
       inline bool 
-      sparseEqualsSparse(node_address addr, int size, const nodetype &n) const 
+      sparseEqualsSparse(node_address addr, int nnzs, const nodetype &n) const 
       {
         MEDDLY_DCASSERT(n.isSparse());
         MEDDLY_DCASSERT(sizeOf(addr) < 0);
-        MEDDLY_DCASSERT(sizeOf(addr) == size);
+        MEDDLY_DCASSERT(sizeOf(addr) == -nnzs);
 
         const unsigned char* down = sparseDown(addr);
         const unsigned char* index = sparseIndex(addr);
         if (n.hasEdges()) {
           MEDDLY_DCASSERT(edgeBytes == n.edgeBytes());
           const unsigned char* edge = sparseEdge(addr);
-          for (int z=0; z<size; z++) {
+          for (int z=0; z<nnzs; z++) {
             node_handle dv;
             dataToDown<pbytes>(down, dv);
             down += pbytes;
             if (dv != n.d(z)) return false;
             MEDDLY_DCASSERT(dv);
             int iv;
-            dataToRaw<ibytes>(index, iv);
+            dataToUnsigned<ibytes>(index, iv);
             index += ibytes;
             if (iv != n.i(z)) return false;
             if (!getParent()->areEdgeValuesEqual(edge, n.eptr(z))) {
@@ -617,14 +617,14 @@ class MEDDLY::compact_storage : public node_storage {
             edge += edgeBytes;
           } // for z
         } else {
-          for (int z=0; z<size; z++) {
+          for (int z=0; z<nnzs; z++) {
             node_handle dv;
             dataToDown<pbytes>(down, dv);
             down += pbytes;
             if (dv != n.d(z)) return false;
             MEDDLY_DCASSERT(dv);
             int iv;
-            dataToRaw<ibytes>(index, iv);
+            dataToUnsigned<ibytes>(index, iv);
             index += ibytes;
             if (iv != n.i(z)) return false;
           } // for z
@@ -634,13 +634,13 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <int pbytes, class nodetype>
       inline bool sparseEqualsSparse(int ibytes, node_address addr,
-        int size, const nodetype &n) const
+        int nnzs, const nodetype &n) const
       {
         switch (ibytes) {
-            case 1:   return  sparseEqualsSparse<pbytes, 1>(addr, size, n);
-            case 2:   return  sparseEqualsSparse<pbytes, 2>(addr, size, n);
-            case 3:   return  sparseEqualsSparse<pbytes, 3>(addr, size, n);
-            case 4:   return  sparseEqualsSparse<pbytes, 4>(addr, size, n);
+            case 1:   return  sparseEqualsSparse<pbytes, 1>(addr, nnzs, n);
+            case 2:   return  sparseEqualsSparse<pbytes, 2>(addr, nnzs, n);
+            case 3:   return  sparseEqualsSparse<pbytes, 3>(addr, nnzs, n);
+            case 4:   return  sparseEqualsSparse<pbytes, 4>(addr, nnzs, n);
             default:
                 MEDDLY_DCASSERT(0);
                 throw error(error::MISCELLANEOUS);
@@ -649,21 +649,21 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <class nodetype>
       inline bool 
-      sparseEqualsSparse(node_address addr, int size, const nodetype &n) const 
+      sparseEqualsSparse(node_address addr, int nnzs, const nodetype &n) const 
       {
-        if (n.getNNZs() != size) return false;
+        if (n.getNNZs() != nnzs) return false;
 
         int pbytes, ibytes;
         getStyleOf(addr, pbytes, ibytes);
         switch (pbytes) {
-            case 1:   return sparseEqualsSparse<1>(ibytes, addr, size, n);
-            case 2:   return sparseEqualsSparse<2>(ibytes, addr, size, n);
-            case 3:   return sparseEqualsSparse<3>(ibytes, addr, size, n);
-            case 4:   return sparseEqualsSparse<4>(ibytes, addr, size, n);
-            case 5:   return sparseEqualsSparse<5>(ibytes, addr, size, n);
-            case 6:   return sparseEqualsSparse<6>(ibytes, addr, size, n);
-            case 7:   return sparseEqualsSparse<7>(ibytes, addr, size, n);
-            case 8:   return sparseEqualsSparse<8>(ibytes, addr, size, n);
+            case 1:   return sparseEqualsSparse<1>(ibytes, addr, nnzs, n);
+            case 2:   return sparseEqualsSparse<2>(ibytes, addr, nnzs, n);
+            case 3:   return sparseEqualsSparse<3>(ibytes, addr, nnzs, n);
+            case 4:   return sparseEqualsSparse<4>(ibytes, addr, nnzs, n);
+            case 5:   return sparseEqualsSparse<5>(ibytes, addr, nnzs, n);
+            case 6:   return sparseEqualsSparse<6>(ibytes, addr, nnzs, n);
+            case 7:   return sparseEqualsSparse<7>(ibytes, addr, nnzs, n);
+            case 8:   return sparseEqualsSparse<8>(ibytes, addr, nnzs, n);
             default:
                 MEDDLY_DCASSERT(0);
                 throw error(error::MISCELLANEOUS);
@@ -918,11 +918,11 @@ class MEDDLY::compact_storage : public node_storage {
       //--------------------------------------------------------------
       template <int pbytes, int ibytes>
       inline void 
-      readFullFromSparse(node_address addr, int size, node_reader &nr) const
+      readFullFromSparse(node_address addr, int nnzs, node_reader &nr) const
       {
         MEDDLY_DCASSERT(nr.isFull());
         MEDDLY_DCASSERT(sizeOf(addr) < 0);
-        MEDDLY_DCASSERT(sizeOf(addr) == -size);
+        MEDDLY_DCASSERT(sizeOf(addr) == -nnzs);
 
         const unsigned char* down = sparseDown(addr);
         const unsigned char* index = sparseIndex(addr);
@@ -933,9 +933,9 @@ class MEDDLY::compact_storage : public node_storage {
           MEDDLY_DCASSERT(edgeBytes>0);
           MEDDLY_DCASSERT(nr.edgeBytes() == edgeBytes);
           memset(edge_of(nr), 0, nr.getSize() * edgeBytes);
-          for (int z=0; z<size; z++) {
+          for (int z=0; z<nnzs; z++) {
             int i;
-            dataToRaw<ibytes>(index, i);
+            dataToUnsigned<ibytes>(index, i);
             index += ibytes;
             dataToDown<pbytes>(down, down_of(nr)[i]);
             down += pbytes;
@@ -944,9 +944,9 @@ class MEDDLY::compact_storage : public node_storage {
             edge += edgeBytes;
           } // for z
         } else {
-          for (int z=0; z<size; z++) {
+          for (int z=0; z<nnzs; z++) {
             int i;
-            dataToRaw<ibytes>(index, i);
+            dataToUnsigned<ibytes>(index, i);
             index += ibytes;
             dataToDown<pbytes>(down, down_of(nr)[i]);
             down += pbytes;
@@ -956,13 +956,13 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <int pbytes>
       inline void readFullFromSparse(int ibytes, node_address addr, 
-        int size, node_reader &nr) const
+        int nnzs, node_reader &nr) const
       {
         switch (ibytes) {
-            case 1:   return  readFullFromSparse<pbytes, 1>(addr, size, nr);
-            case 2:   return  readFullFromSparse<pbytes, 2>(addr, size, nr);
-            case 3:   return  readFullFromSparse<pbytes, 3>(addr, size, nr);
-            case 4:   return  readFullFromSparse<pbytes, 4>(addr, size, nr);
+            case 1:   return  readFullFromSparse<pbytes, 1>(addr, nnzs, nr);
+            case 2:   return  readFullFromSparse<pbytes, 2>(addr, nnzs, nr);
+            case 3:   return  readFullFromSparse<pbytes, 3>(addr, nnzs, nr);
+            case 4:   return  readFullFromSparse<pbytes, 4>(addr, nnzs, nr);
             default:
                 MEDDLY_DCASSERT(0);
                 throw error(error::MISCELLANEOUS);
@@ -970,17 +970,17 @@ class MEDDLY::compact_storage : public node_storage {
       }
 
       inline void readFullFromSparse(int pbytes, int ibytes, 
-        node_address addr, int size, node_reader &nr) const
+        node_address addr, int nnzs, node_reader &nr) const
       {
           switch (pbytes) {
-              case 1:   return readFullFromSparse<1>(ibytes, addr, size, nr);
-              case 2:   return readFullFromSparse<2>(ibytes, addr, size, nr);
-              case 3:   return readFullFromSparse<3>(ibytes, addr, size, nr);
-              case 4:   return readFullFromSparse<4>(ibytes, addr, size, nr);
-              case 5:   return readFullFromSparse<5>(ibytes, addr, size, nr);
-              case 6:   return readFullFromSparse<6>(ibytes, addr, size, nr);
-              case 7:   return readFullFromSparse<7>(ibytes, addr, size, nr);
-              case 8:   return readFullFromSparse<8>(ibytes, addr, size, nr);
+              case 1:   return readFullFromSparse<1>(ibytes, addr, nnzs, nr);
+              case 2:   return readFullFromSparse<2>(ibytes, addr, nnzs, nr);
+              case 3:   return readFullFromSparse<3>(ibytes, addr, nnzs, nr);
+              case 4:   return readFullFromSparse<4>(ibytes, addr, nnzs, nr);
+              case 5:   return readFullFromSparse<5>(ibytes, addr, nnzs, nr);
+              case 6:   return readFullFromSparse<6>(ibytes, addr, nnzs, nr);
+              case 7:   return readFullFromSparse<7>(ibytes, addr, nnzs, nr);
+              case 8:   return readFullFromSparse<8>(ibytes, addr, nnzs, nr);
               default:
                   MEDDLY_DCASSERT(0);
                   throw error(error::MISCELLANEOUS);
@@ -993,35 +993,37 @@ class MEDDLY::compact_storage : public node_storage {
       //--------------------------------------------------------------
       template <int pbytes, int ibytes>
       inline void 
-      readSparseFromSparse(node_address addr, int size, node_reader &nr) const
+      readSparseFromSparse(node_address addr, int nnzs, node_reader &nr) const
       {
         MEDDLY_DCASSERT(nr.isSparse());
         MEDDLY_DCASSERT(sizeOf(addr) < 0);
-        MEDDLY_DCASSERT(sizeOf(addr) == -size);
+        MEDDLY_DCASSERT(sizeOf(addr) == -nnzs);
 
         const unsigned char* down = sparseDown(addr);
         const unsigned char* index = sparseIndex(addr);
-        nnzs_of(nr) = size;
-        for (int z=0; z<size; z++) {
+        nnzs_of(nr) = nnzs;
+        for (int z=0; z<nnzs; z++) {
           dataToDown<pbytes>(down, down_of(nr)[z]);
-          dataToRaw<ibytes>(index, index_of(nr)[z]);
+          down += pbytes;
+          dataToUnsigned<ibytes>(index, index_of(nr)[z]);
+          index += ibytes;
         }
         if (nr.hasEdges()) {
           MEDDLY_DCASSERT(edgeBytes>0);
           MEDDLY_DCASSERT(nr.edgeBytes() == edgeBytes);
-          memcpy(edge_of(nr), sparseEdge(addr), size * edgeBytes);
+          memcpy(edge_of(nr), sparseEdge(addr), nnzs * edgeBytes);
         }
       }
 
       template <int pbytes>
       inline void readSparseFromSparse(int ibytes, node_address addr, 
-        int size, node_reader &nr) const
+        int nnzs, node_reader &nr) const
       {
         switch (ibytes) {
-            case 1:   return  readSparseFromSparse<pbytes, 1>(addr, size, nr);
-            case 2:   return  readSparseFromSparse<pbytes, 2>(addr, size, nr);
-            case 3:   return  readSparseFromSparse<pbytes, 3>(addr, size, nr);
-            case 4:   return  readSparseFromSparse<pbytes, 4>(addr, size, nr);
+            case 1:   return  readSparseFromSparse<pbytes, 1>(addr, nnzs, nr);
+            case 2:   return  readSparseFromSparse<pbytes, 2>(addr, nnzs, nr);
+            case 3:   return  readSparseFromSparse<pbytes, 3>(addr, nnzs, nr);
+            case 4:   return  readSparseFromSparse<pbytes, 4>(addr, nnzs, nr);
             default:
                 MEDDLY_DCASSERT(0);
                 throw error(error::MISCELLANEOUS);
@@ -1029,17 +1031,17 @@ class MEDDLY::compact_storage : public node_storage {
       }
 
       inline void readSparseFromSparse(int pbytes, int ibytes, 
-        node_address addr, int size, node_reader &nr) const
+        node_address addr, int nnzs, node_reader &nr) const
       {
           switch (pbytes) {
-              case 1:   return readSparseFromSparse<1>(ibytes, addr, size, nr);
-              case 2:   return readSparseFromSparse<2>(ibytes, addr, size, nr);
-              case 3:   return readSparseFromSparse<3>(ibytes, addr, size, nr);
-              case 4:   return readSparseFromSparse<4>(ibytes, addr, size, nr);
-              case 5:   return readSparseFromSparse<5>(ibytes, addr, size, nr);
-              case 6:   return readSparseFromSparse<6>(ibytes, addr, size, nr);
-              case 7:   return readSparseFromSparse<7>(ibytes, addr, size, nr);
-              case 8:   return readSparseFromSparse<8>(ibytes, addr, size, nr);
+              case 1:   return readSparseFromSparse<1>(ibytes, addr, nnzs, nr);
+              case 2:   return readSparseFromSparse<2>(ibytes, addr, nnzs, nr);
+              case 3:   return readSparseFromSparse<3>(ibytes, addr, nnzs, nr);
+              case 4:   return readSparseFromSparse<4>(ibytes, addr, nnzs, nr);
+              case 5:   return readSparseFromSparse<5>(ibytes, addr, nnzs, nr);
+              case 6:   return readSparseFromSparse<6>(ibytes, addr, nnzs, nr);
+              case 7:   return readSparseFromSparse<7>(ibytes, addr, nnzs, nr);
+              case 8:   return readSparseFromSparse<8>(ibytes, addr, nnzs, nr);
               default:
                   MEDDLY_DCASSERT(0);
                   throw error(error::MISCELLANEOUS);
@@ -1050,30 +1052,30 @@ class MEDDLY::compact_storage : public node_storage {
       // Helpers - hashSparse
       //--------------------------------------------------------------
       template <int pbytes, int ibytes>
-      inline void hashSparse(hash_stream& s, node_address addr, int size) const
+      inline void hashSparse(hash_stream& s, node_address addr, int nnzs) const
       {
         const unsigned char* down = sparseDown(addr);
         const unsigned char* index = sparseIndex(addr);
         if (getParent()->areEdgeValuesHashed()) {
           MEDDLY_DCASSERT(edgeBytes>0);
           const unsigned char* edge = sparseEdge(addr);
-          for (int z=0; z<size; z++) {
+          for (int z=0; z<nnzs; z++) {
             node_handle dv;
             dataToDown<pbytes>(down, dv);
             down += pbytes;
             int iv;
-            dataToRaw<ibytes>(index, iv);
+            dataToUnsigned<ibytes>(index, iv);
             index += ibytes;
             s.push(iv, dv, ((int*)edge)[0]);
             edge += edgeBytes;
           } // for z
         } else {
-          for (int z=0; z<size; z++) {
+          for (int z=0; z<nnzs; z++) {
             node_handle dv;
             dataToDown<pbytes>(down, dv);
             down += pbytes;
             int iv;
-            dataToRaw<ibytes>(index, iv);
+            dataToUnsigned<ibytes>(index, iv);
             index += ibytes;
             s.push(iv, dv);
           } // for z
@@ -1082,32 +1084,32 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <int pbytes>
       inline void hashSparse(int ibytes, hash_stream& s, node_address addr, 
-        int size) const
+        int nnzs) const
       {
         switch (ibytes) {
-            case 1:   return  hashSparse<pbytes, 1>(s, addr, size);
-            case 2:   return  hashSparse<pbytes, 2>(s, addr, size);
-            case 3:   return  hashSparse<pbytes, 3>(s, addr, size);
-            case 4:   return  hashSparse<pbytes, 4>(s, addr, size);
+            case 1:   return  hashSparse<pbytes, 1>(s, addr, nnzs);
+            case 2:   return  hashSparse<pbytes, 2>(s, addr, nnzs);
+            case 3:   return  hashSparse<pbytes, 3>(s, addr, nnzs);
+            case 4:   return  hashSparse<pbytes, 4>(s, addr, nnzs);
             default:
                 MEDDLY_DCASSERT(0);
                 throw error(error::MISCELLANEOUS);
         }
       }
       
-      inline void hashSparse(hash_stream& s, node_address addr, int size) const
+      inline void hashSparse(hash_stream& s, node_address addr, int nnzs) const
       {
         int pbytes, ibytes;
         getStyleOf(addr, pbytes, ibytes);
         switch (pbytes) {
-            case 1:   return hashSparse<1>(ibytes, s, addr, size);
-            case 2:   return hashSparse<2>(ibytes, s, addr, size);
-            case 3:   return hashSparse<3>(ibytes, s, addr, size);
-            case 4:   return hashSparse<4>(ibytes, s, addr, size);
-            case 5:   return hashSparse<5>(ibytes, s, addr, size);
-            case 6:   return hashSparse<6>(ibytes, s, addr, size);
-            case 7:   return hashSparse<7>(ibytes, s, addr, size);
-            case 8:   return hashSparse<8>(ibytes, s, addr, size);
+            case 1:   return hashSparse<1>(ibytes, s, addr, nnzs);
+            case 2:   return hashSparse<2>(ibytes, s, addr, nnzs);
+            case 3:   return hashSparse<3>(ibytes, s, addr, nnzs);
+            case 4:   return hashSparse<4>(ibytes, s, addr, nnzs);
+            case 5:   return hashSparse<5>(ibytes, s, addr, nnzs);
+            case 6:   return hashSparse<6>(ibytes, s, addr, nnzs);
+            case 7:   return hashSparse<7>(ibytes, s, addr, nnzs);
+            case 8:   return hashSparse<8>(ibytes, s, addr, nnzs);
             default:
                 MEDDLY_DCASSERT(0);
                 throw error(error::MISCELLANEOUS);
@@ -1215,7 +1217,7 @@ class MEDDLY::compact_storage : public node_storage {
           int z = (low+high)/2;
           MEDDLY_CHECK_RANGE(0, z, nnz);
           int indz;
-          dataToRaw<ibytes>(index + z*ibytes, indz);
+          dataToUnsigned<ibytes>(index + z*ibytes, indz);
           if (indz == i)  return z;
           if (indz < i)   low = z + 1;
           else            high = z;
@@ -1263,7 +1265,7 @@ class MEDDLY::compact_storage : public node_storage {
         return (chunkOf(addr) + sizeof(int))[0];
       }
 
-      inline void setStyleOf(node_address addr, int ptrb, int idxb) const {
+      inline void setStyleOf(node_address addr, int ptrb, int idxb) {
         rawStyleOf(addr) = ((ptrb-1) & 0x07) | (((idxb-1) & 0x03) << 3);
       }
 
@@ -1302,10 +1304,10 @@ class MEDDLY::compact_storage : public node_storage {
         return HH(addr) + hashedBytes;
       }
       inline unsigned char* sparseIndex(node_address addr) const {
-        return sparseDown(addr) + sizeOf(addr) * pointerBytesOf(addr);
+        return sparseDown(addr) - sizeOf(addr) * pointerBytesOf(addr);
       }
       inline unsigned char* sparseEdge(node_address addr) const {
-        return sparseIndex(addr) + sizeOf(addr) * indexBytesOf(addr);
+        return sparseIndex(addr) - sizeOf(addr) * indexBytesOf(addr);
       }
 
 

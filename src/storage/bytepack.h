@@ -331,6 +331,20 @@ inline void dataToSigned(const unsigned char* d, int bytes, INT& L)
   }
 }
 
+template <int bytes, class INT>
+inline void dataToUnsigned(const unsigned char* b, INT &a)
+{
+  a = 0;
+  dataToRaw<bytes>(b, a);
+}
+
+template <class INT>
+inline void dataToUnsigned(const unsigned char* b, int bytes, INT &a)
+{
+  a = 0;
+  dataToRaw(b, bytes, a);
+}
+
 //
 // This business is annoying but
 // it prevents several compiler warnings about

@@ -28,7 +28,7 @@
 
 #include "hm_grid.h"
 
-#define DEBUG_ENCODING
+// #define DEBUG_ENCODING
 // #define DEBUG_COMPACTION
 // #define DEBUG_SLOW
 // #define MEMORY_TRACE
@@ -206,11 +206,12 @@ void MEDDLY::compact_storage
     for (int i=0; i<nnz; i++) {
       if (i) fprintf(s, ", ");
 
-      long down, index;
+      node_handle down; 
+      int index;
       dataToDown(rawd, pbytes, down);
-      dataToRaw(rawi, ibytes, down);
+      dataToUnsigned(rawi, ibytes, index);
 
-      fprintf(s, "%ld:", index);
+      fprintf(s, "%d:", index);
       if (edgeBytes) {
         fprintf(s, "<");
         getParent()->showEdgeValue(s, rawe, 0);
@@ -219,7 +220,7 @@ void MEDDLY::compact_storage
       if (getParent()->isTerminalNode(down)) {
         getParent()->showTerminal(s, down);
       } else {
-        fprintf(s, "%ld", down);
+        fprintf(s, "%ld", long(down));
       }
       if (edgeBytes) {
         fprintf(s, ">");
@@ -240,7 +241,8 @@ void MEDDLY::compact_storage
     unsigned char* rawe = fullEdge(addr);
     for (int i=0; i<size; i++) {
       if (i) fprintf(s, "|"); 
-      long down, index;
+      node_handle down;
+      int index;
       dataToDown(rawd, pbytes, down);
 
       if (edgeBytes) {
@@ -251,7 +253,7 @@ void MEDDLY::compact_storage
       if (getParent()->isTerminalNode(down)) {
         getParent()->showTerminal(s, down);
       } else {
-        fprintf(s, "%ld", down);
+        fprintf(s, "%ld", long(down));
       }
       if (edgeBytes) {
         fprintf(s, ">");
@@ -325,6 +327,7 @@ MEDDLY::compact_storage
       showNode(stdout, addr, true);
       printf("\n    internal: ");
       dumpInternalNode(stdout, addr, 0x03);
+      MEDDLY_DCASSERT(areDuplicates(addr, nb));
 #endif
       return addr;
   }
@@ -332,6 +335,7 @@ MEDDLY::compact_storage
   //
   // Determine byte requirements for indexes
   //
+  MEDDLY_DCASSERT(imax>=0);
   int ibytes = bytesRequired4(imax);
 
   //
@@ -345,6 +349,7 @@ MEDDLY::compact_storage
       showNode(stdout, addr, true);
       printf("\n    internal: ");
       dumpInternalNode(stdout, addr, 0x03);
+      MEDDLY_DCASSERT(areDuplicates(addr, nb));
 #endif
       return addr;
   }
@@ -363,6 +368,7 @@ MEDDLY::compact_storage
   showNode(stdout, addr, true);
   printf("\n    internal: ");
   dumpInternalNode(stdout, addr, 0x03);
+  MEDDLY_DCASSERT(areDuplicates(addr, nb));
 #endif
   return addr;
 }
@@ -427,7 +433,7 @@ void MEDDLY::compact_storage
     //
     int pbytes;
     int ibytes;
-    setStyleOf(addr, pbytes, ibytes);
+    getStyleOf(addr, pbytes, ibytes);
     if (nr.isFull()) {
       readFullFromSparse(pbytes, ibytes, addr, -size, nr);
     } else {
@@ -447,6 +453,7 @@ void MEDDLY::compact_storage
   printf("\n        temp:  ");
   nr.show(stdout, getParent(), true);
   printf("\n");
+  MEDDLY_DCASSERT(areDuplicates(addr, nr));
 #endif
 }
 
@@ -483,7 +490,7 @@ getSingletonIndex(node_address addr, node_handle &down) const
     getStyleOf(addr, pbytes, ibytes);
     dataToDown(sparseDown(addr), pbytes, down);
     int index;
-    dataToRaw(sparseIndex(addr), ibytes, index);
+    dataToUnsigned(sparseIndex(addr), ibytes, index);
     return index;
   } else {
     return getSingletonFull(pointerBytesOf(addr), addr, size, down);
