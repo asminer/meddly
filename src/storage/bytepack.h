@@ -331,6 +331,54 @@ inline void dataToSigned(const unsigned char* d, int bytes, INT& L)
   }
 }
 
+//
+// This business is annoying but
+// it prevents several compiler warnings about
+// "left shift count >= width of type".
+// Since we set this up, might as well use it nicely.
+//
+template <int bytes, int sizeofint, class INT>
+inline void moveMSB(INT& P);
+
+// These can't ever happen
+
+template <> inline void moveMSB<5, 4>(int& P)   { MEDDLY_DCASSERT(0); }
+template <> inline void moveMSB<6, 4>(int& P)   { MEDDLY_DCASSERT(0); }
+template <> inline void moveMSB<7, 4>(int& P)   { MEDDLY_DCASSERT(0); }
+template <> inline void moveMSB<8, 4>(int& P)   { MEDDLY_DCASSERT(0); }
+
+// These can't ever happen
+
+template <> inline void moveMSB<5, 4>(long& P)  { MEDDLY_DCASSERT(0); }
+template <> inline void moveMSB<6, 4>(long& P)  { MEDDLY_DCASSERT(0); }
+template <> inline void moveMSB<7, 4>(long& P)  { MEDDLY_DCASSERT(0); }
+template <> inline void moveMSB<8, 4>(long& P)  { MEDDLY_DCASSERT(0); }
+
+// These are no-ops
+
+template <> inline void moveMSB<4, 4>(int& P) { 
+  MEDDLY_DCASSERT(sizeof(int) == 4); // sanity check
+}
+
+template <> inline void moveMSB<4, 4>(long& P) { 
+  MEDDLY_DCASSERT(sizeof(long) == 4); // sanity check
+}
+
+template <> inline void moveMSB<8, 8>(long& P) {
+  MEDDLY_DCASSERT(sizeof(long) == 8); // sanity check
+}
+
+// Everything else
+
+template <int bytes, int sizeofint, class INT>
+inline void moveMSB(INT& P)
+{
+  MEDDLY_DCASSERT(sizeof(INT) == sizeofint);
+  // if (bytes < sizeofint) {
+    P = (P & ~(0x80L << ((bytes-1)*8)) )      // old msb off
+        | ((0x80L) << ((sizeofint-1)*8));     // new msb on
+  // }
+}
 
 template <int bytes, int sizeofint, class INT>
 inline void dataToDown(const unsigned char* d, INT& P)
@@ -354,10 +402,7 @@ inline void dataToDown(const unsigned char* d, INT& P)
     dataToRaw<bytes>(d, P);
 
     // Move MSB if necessary
-    if (bytes < sizeofint) {
-      P = (P & ~(0x80L << ((bytes-1)*8)) )    // old msb off
-          | ((0x80L) << ((sizeofint-1)*8));   // new msb on
-    }
+    moveMSB<bytes, sizeofint>(P);
 
     return;
   }

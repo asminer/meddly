@@ -30,7 +30,7 @@
 #include "hm_heap.h"
 #include "hm_none.h"
 
-#define DEBUG_ENCODING
+// #define DEBUG_ENCODING
 // #define DEBUG_COMPACTION
 // #define DEBUG_SLOW
 // #define MEMORY_TRACE

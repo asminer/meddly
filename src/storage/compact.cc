@@ -379,9 +379,9 @@ void MEDDLY::compact_storage::unlinkDownAndRecycle(node_address addr)
   unsigned char* down;
   if (size < 0) {
     size = -size;
-    down = fullDown(addr);
-  } else {
     down = sparseDown(addr);
+  } else {
+    down = fullDown(addr);
   }
   unlinkDown(pbytes, down, size);
 
@@ -721,7 +721,7 @@ MEDDLY::compact_storage
   MEDDLY_DCASSERT(1==getCountOf(addr));
 
   setSizeOf(addr, size);
-  setStyleOf(addr, pbytes, 0);
+  setStyleOf(addr, pbytes, 1);
   copyExtraHeader(addr, nb);
 
   if (nb.isSparse()) {

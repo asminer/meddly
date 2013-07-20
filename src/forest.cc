@@ -1215,6 +1215,7 @@ void MEDDLY::expert_forest::zombifyNode(node_handle p)
 #ifdef DEVELOPMENT_CODE 
   node_reader* key = initNodeReader(p, false);
   key->computeHash(areEdgeValuesHashed());
+  MEDDLY_DCASSERT(key->hash() == h);
   if (unique->find(*key) != p) {
     fprintf(stderr, "Fail: can't find reduced node %ld; got %ld\n", 
       long(p), long(unique->find(*key)));

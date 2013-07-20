@@ -1050,7 +1050,7 @@ class MEDDLY::compact_storage : public node_storage {
       // Helpers - hashSparse
       //--------------------------------------------------------------
       template <int pbytes, int ibytes>
-      inline void hashSparse(hash_stream s, node_address addr, int size) const
+      inline void hashSparse(hash_stream& s, node_address addr, int size) const
       {
         const unsigned char* down = sparseDown(addr);
         const unsigned char* index = sparseIndex(addr);
@@ -1081,7 +1081,7 @@ class MEDDLY::compact_storage : public node_storage {
       }
 
       template <int pbytes>
-      inline void hashSparse(int ibytes, hash_stream s, node_address addr, 
+      inline void hashSparse(int ibytes, hash_stream& s, node_address addr, 
         int size) const
       {
         switch (ibytes) {
@@ -1095,7 +1095,7 @@ class MEDDLY::compact_storage : public node_storage {
         }
       }
       
-      inline void hashSparse(hash_stream s, node_address addr, int size) const
+      inline void hashSparse(hash_stream& s, node_address addr, int size) const
       {
         int pbytes, ibytes;
         getStyleOf(addr, pbytes, ibytes);
@@ -1119,7 +1119,7 @@ class MEDDLY::compact_storage : public node_storage {
       //--------------------------------------------------------------
 
       template <int pbytes>
-      inline void hashFull(hash_stream s, node_address addr, int size) const
+      inline void hashFull(hash_stream& s, node_address addr, int size) const
       {
         const unsigned char* down = fullDown(addr);
         if (getParent()->areEdgeValuesHashed()) {
@@ -1146,7 +1146,7 @@ class MEDDLY::compact_storage : public node_storage {
         }
       }
 
-      inline void hashFull(hash_stream s, node_address addr, int size) const
+      inline void hashFull(hash_stream& s, node_address addr, int size) const
       {
         switch (pointerBytesOf(addr)) {
             case 1:   return hashFull<1>(s, addr, size);
@@ -1294,7 +1294,6 @@ class MEDDLY::compact_storage : public node_storage {
         return HH(addr) + hashedBytes;
       }
       inline unsigned char* fullEdge(node_address addr) const {
-        MEDDLY_DCASSERT(edgeBytes>0);
         return fullDown(addr) + sizeOf(addr) * pointerBytesOf(addr);
       }
 
@@ -1306,7 +1305,6 @@ class MEDDLY::compact_storage : public node_storage {
         return sparseDown(addr) + sizeOf(addr) * pointerBytesOf(addr);
       }
       inline unsigned char* sparseEdge(node_address addr) const {
-        MEDDLY_DCASSERT(edgeBytes>0);
         return sparseIndex(addr) + sizeOf(addr) * indexBytesOf(addr);
       }
 

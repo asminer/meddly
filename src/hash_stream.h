@@ -27,6 +27,8 @@ namespace MEDDLY {
   class hash_stream;
 };
 
+// #define DEBUG_HASH
+
 /**
     Class to hash a stream of unsigned integers.
     Length of the stream can be unknown.
@@ -63,6 +65,9 @@ class MEDDLY::hash_stream {
     inline void final() { final(z[2], z[1], z[0]); }
   public:
     inline void start(unsigned init) {
+#ifdef DEBUG_HASH
+        printf("hash_stream::start %u\n", init);
+#endif
         z[2] = init;
         z[1] = 0;
         z[0] = 0xdeadbeef;
@@ -70,9 +75,15 @@ class MEDDLY::hash_stream {
     }
     inline unsigned finish() {
         final();
+#ifdef DEBUG_HASH
+        printf("hash_stream::finish: %u\n", z[0]);
+#endif
         return z[0];
     }
     inline void push(unsigned v) {
+#ifdef DEBUG_HASH
+        printf("    push %u\n", v);
+#endif
         if (slot) {
           slot--;
           z[slot] += v;
@@ -83,6 +94,9 @@ class MEDDLY::hash_stream {
         }
     }
     inline void push(unsigned v1, unsigned v2) {
+#ifdef DEBUG_HASH
+        printf("    push %u, %u\n", v1, v2);
+#endif
         switch (slot) {
             case 0: 
                 mix();  
@@ -108,6 +122,9 @@ class MEDDLY::hash_stream {
         };
     }
     inline void push(unsigned v1, unsigned v2, unsigned v3) {
+#ifdef DEBUG_HASH
+        printf("    push %u, %u, %u\n", v1, v2, v3);
+#endif
         switch (slot) {
             case 0: 
                 mix();  
