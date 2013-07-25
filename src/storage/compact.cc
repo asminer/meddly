@@ -28,6 +28,7 @@
 
 #include "hm_grid.h"
 
+// #define DEBUG_SINGLETONS
 // #define DEBUG_ENCODING
 // #define DEBUG_COMPACTION
 // #define DEBUG_SLOW
@@ -479,6 +480,10 @@ unsigned MEDDLY::compact_storage::hashNode(const node_header& node) const
 int MEDDLY::compact_storage::
 getSingletonIndex(node_address addr, node_handle &down) const
 {
+#ifdef DEBUG_SINGLETONS
+  printf("getSingletonIndex for node: ");
+  dumpInternalNode(stdout, addr, 0x03);
+#endif
   int size = sizeOf(addr);
   if (size < 0) {
     int pbytes, ibytes;
@@ -486,9 +491,16 @@ getSingletonIndex(node_address addr, node_handle &down) const
     dataToDown(sparseDown(addr), pbytes, down);
     int index;
     dataToUnsigned(sparseIndex(addr), ibytes, index);
+#ifdef DEBUG_SINGLETONS
+    printf("\tindex: %d down: %ld\n", index, long(down));
+#endif
     return index;
   } else {
-    return getSingletonFull(pointerBytesOf(addr), addr, size, down);
+    int index = getSingletonFull(pointerBytesOf(addr), addr, size, down);
+#ifdef DEBUG_SINGLETONS
+    printf("\tindex: %d down: %ld\n", index, long(down));
+#endif
+    return index;
   }
 }
 
@@ -539,7 +551,7 @@ void MEDDLY::compact_storage
     if (index < size) {
       int pbytes = pointerBytesOf(addr);
       dataToDown(fullDown(addr) + index*pbytes, pbytes, dn);
-      ev = ((int*)(sparseEdge(addr) + index*edgeBytes))[0];
+      ev = ((int*)(fullEdge(addr) + index*edgeBytes))[0];
     } else {
       dn = 0;
       ev = 0;

@@ -449,8 +449,8 @@ class MEDDLY::compact_storage : public node_storage {
         for (int i=0; i<size; i++) {
           node_handle downval;
           dataToDown<pbytes>(down, downval);
-          getParent()->unlinkNode(downval);
           down += pbytes;
+          getParent()->unlinkNode(downval);
         }
       }
 
@@ -1178,6 +1178,7 @@ class MEDDLY::compact_storage : public node_storage {
         const unsigned char* down = fullDown(addr);
         for (int i=0; i<size; i++) {
           dataToDown<pbytes>(down, dv);
+          down += pbytes;
           if (0==dv) continue;
           if (i+1 != size) return -1;
           return i;
