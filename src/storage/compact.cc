@@ -284,8 +284,8 @@ MEDDLY::compact_storage
   nb.show(stdout, true);
 #endif
   int nnz;
-  node_handle pmax = 0;
   int imax = -1;
+  int pbytes = 1;
 
   //
   // Scan node, get node stats
@@ -295,7 +295,7 @@ MEDDLY::compact_storage
     nnz = nb.getNNZs();
     for (int z=0; z<nnz; z++) {
       MEDDLY_DCASSERT(nb.d(z));
-      pmax = MAX(pmax, nb.d(z));
+      pbytes = MAX(pbytes, bytesRequiredForDown(nb.d(z)));
       MEDDLY_DCASSERT(nb.i(z) > imax);
       imax = nb.i(z);
     } 
@@ -303,17 +303,12 @@ MEDDLY::compact_storage
     nnz = 0;
     for (int i=0; i<nb.getSize(); i++) {
       if (nb.d(i)) {
-        pmax = MAX(pmax, nb.d(i));
+        pbytes = MAX(pbytes, bytesRequiredForDown(nb.d(i)));
         imax = i;
         nnz++;
       }
     }
   }
-
-  //
-  // Determine byte requirements for downward pointers
-  //
-  int pbytes = bytesRequiredForDown(pmax);
 
   node_address addr;
   //
