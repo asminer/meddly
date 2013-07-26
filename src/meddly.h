@@ -483,6 +483,10 @@ class MEDDLY::error {
       INVALID_POLICY,
       /// Bad value for something.
       INVALID_ASSIGNMENT,
+      /// File format error.
+      INVALID_FILE,
+      /// File output error.
+      COULDNT_WRITE,
       /// Miscellaneous error
       MISCELLANEOUS
     };
@@ -508,6 +512,8 @@ class MEDDLY::error {
           case  OVERFLOW:             return "Overflow";
           case  INVALID_POLICY:       return "Invalid policy";
           case  INVALID_ASSIGNMENT:   return "Invalid assignment";
+          case  INVALID_FILE:         return "Invalid file";
+          case  COULDNT_WRITE:        return "Couldn't write to file";
           case  MISCELLANEOUS:        return "Miscellaneous";
           default:                    return "Unknown error";
       }
@@ -643,11 +649,11 @@ class MEDDLY::forest {
         compactAfterGC = false;
         compactBeforeExpand = true;
         // nodestor = CLASSIC_STORAGE;
-        // nodestor = SIMPLE_GRID;
+        nodestor = SIMPLE_GRID;
         // nodestor = SIMPLE_ARRAY;
         // nodestor = SIMPLE_HEAP;
         // nodestor = SIMPLE_NONE;
-        nodestor = COMPACT_GRID;
+        // nodestor = COMPACT_GRID;
       }
 
       inline void setFullStorage() { 
@@ -1360,6 +1366,31 @@ class MEDDLY::forest {
   // ------------------------------------------------------------
   // abstract virtual.
   public:
+    /** Write edges to a file in a format that can be read back later.
+        This implies that all nodes "below" those edges are also
+        written to the file.
+          @param  s   Stream to write to
+          @param  E   Array of edges
+          @param  n   Dimension of the edge array
+
+          @throws     COULDNT_WRITE, if writing failed
+    */
+    virtual void writeEdges(FILE* s, const dd_edge* E, int n) const = 0;
+
+    /** Read edges from a file.
+        Allows reconstruction of edges that we
+        saved using \a writeEdges().
+        The forest does not need to be empty;
+        the edges are added to the forest as necessary.
+          @param  s   Stream to read from
+          @param  E   Array of edges
+          @param  n   Dimension of the edge array
+          
+          @throws     INVALID_FILE, if the file does not match what we expect,
+                      including different number of edges specified.
+    */
+    virtual void readEdges(FILE* s, dd_edge* E, int n) = 0;
+
     /** Force garbage collection.
         All disconnected nodes in this forest are discarded along with any
         compute table entries that may include them.
@@ -1642,6 +1673,23 @@ class MEDDLY::domain {
       return vh-1;
     }
 
+    /** Write the domain to a file in a format that can be read back later.
+          @param  s   Stream to write to
+
+          @throws     COULDNT_WRITE, if writing failed
+    */
+    virtual void write(FILE* s) const = 0;
+
+    /** Initialize the domain from data in a file.
+        Allows reconstruction of a domain that 
+        we saved using \a write().
+        The domain should be empty.
+          @param  s   Stream to read from
+          
+          @throws     INVALID_FILE, if the file does not match what we expect 
+    */
+    virtual void read(FILE* s) = 0;
+
     /** Display lots of information about the domain.
         This is primarily for aid in debugging.
         @param  strm    File stream to write to.
@@ -1918,6 +1966,12 @@ class MEDDLY::dd_edge {
     */
     void show(FILE* strm, int verbosity = 0) const;
 
+    /// Write to a file
+    void write(FILE* s, const node_handle* map) const;
+
+    /// Read from a file
+    void read(forest* p, FILE* s, const node_handle* map);
+
   private:
     friend class forest;
     friend class iterator;
@@ -1926,9 +1980,10 @@ class MEDDLY::dd_edge {
     inline int getIndex() const { return index; }
 
     forest *parent;
+    int index;  //  our slot number in the parent forest's list
+
     node_handle node;
     int value;
-    int index;
 
     binary_operation* opPlus;
     binary_operation* opStar;

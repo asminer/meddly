@@ -396,6 +396,9 @@ class MEDDLY::expert_domain : public domain {
     ~expert_domain();
 
   public:
+    virtual void createVariablesBottomUp(const int* bounds, int N);
+
+
     /** Create all variables at once, from the top down.
       Requires the domain to be "empty" (containing no variables or forests).
       @param  bounds  Current variable bounds.
@@ -544,7 +547,8 @@ class MEDDLY::expert_domain : public domain {
       getExpertVar(vh)->shrinkBound(b, force);
     }
 
-    virtual void createVariablesBottomUp(const int* bounds, int N);
+    virtual void write(FILE* s) const;
+    virtual void read(FILE* s);
 };
 
 
@@ -892,6 +896,11 @@ class MEDDLY::node_builder {
           ef(i) = ev;
         }
         // raw edge info
+        inline void* eptr(int i) {
+          MEDDLY_DCASSERT(edge);
+          MEDDLY_CHECK_RANGE(0, i, size);
+          return ((char*)edge) + i * edge_bytes;
+        }
         inline const void* eptr(int i) const {
           MEDDLY_DCASSERT(edge);
           MEDDLY_CHECK_RANGE(0, i, size);
@@ -1047,6 +1056,20 @@ class MEDDLY::node_storage {
     */
     virtual void showNode(FILE* s, node_address addr, bool verb) const = 0;
 
+
+    /** Write a node in machine-readable format.
+
+        Ideally, the output format for each node is the same
+        regardless of how it is stored.
+          
+        @param  s       Output stream.
+        @param  addr    Address of the node we care about.
+        @param  map     Translation to use on node handles.
+                        Allows us to renumber nodes as we write them.
+    */
+    virtual void writeNode(FILE* s, node_address addr, const node_handle* map)
+    // const = 0;
+    const;  // for now, default is throw an exception.
 
     /** Dump the internal storage details.
         Primarily used for debugging.
@@ -1445,13 +1468,17 @@ class MEDDLY::expert_forest : public forest
       return terminalNode << 1 >> 1;
     }
 
-    /// Get the terminal node representing this integer value.
-    static inline node_handle getTerminalNode(int integerValue) {
+    /// Is this a valid value for a terminal node?
+    static inline bool isValidTerminalValue(int integerValue) {
       // value has to fit within 31 bits (incl. sign)
       // int(0xc0000000) == -1073741824
       // int(0x3fffffff) == +1073741823
-      // MEDDLY_DCASSERT(-1073741824 <= integerValue && integerValue <= 1073741823);
-      MEDDLY_DCASSERT(-1073741824 <= integerValue && integerValue <= 1073741823);
+      return (-1073741824 <= integerValue && integerValue <= 1073741823);
+    }
+
+    /// Get the terminal node representing this integer value.
+    static inline node_handle getTerminalNode(int integerValue) {
+      MEDDLY_DCASSERT(isValidTerminalValue(integerValue));
       return integerValue == 0? 0: integerValue | 0x80000000;
     }
 
@@ -1773,9 +1800,11 @@ class MEDDLY::expert_forest : public forest
         be printed to display a subgraph.
         Terminal nodes are NOT included.
 
-          @param  root    Root node in the forest.
-                          Will be included in the list, unless it
-                          is a terminal node.
+          @param  roots   Array of root nodes in the forest.
+                          Each root node will be included in the list,
+                          except for terminal nodes.
+
+          @param  N       Dimension of \a roots array.
 
           @param  sort    If true, the list will be in increasing order.
                           Otherwise, the list will be in some convenient order
@@ -1785,7 +1814,8 @@ class MEDDLY::expert_forest : public forest
           @return   A malloc'd array of non-terminal nodes, terminated by 0.
                     Or, a null pointer, if the list is empty.
     */
-    node_handle* markNodesInSubgraph(node_handle root, bool sort) const;
+    node_handle* 
+    markNodesInSubgraph(const node_handle* roots, int N, bool sort) const;
 
     /** Count and return the number of non-terminal nodes
         in the subgraph below the given node.
@@ -1800,8 +1830,8 @@ class MEDDLY::expert_forest : public forest
     /// Display the contents of a single node.
     void showNode(FILE* s, node_handle node, int verbose = 0) const;
 
-    /// Show all the nodes in the subgraph below the given node.
-    void showNodeGraph(FILE* s, node_handle node) const;
+    /// Show all the nodes in the subgraph below the given nodes.
+    void showNodeGraph(FILE* s, const node_handle* node, int n) const;
 
 
     /** Show various stats for this forest.
@@ -1814,15 +1844,6 @@ class MEDDLY::expert_forest : public forest
     */
     void reportStats(FILE* s, const char* pad, unsigned flags) const;
 
-
-    /** Show stats about memory usage for this forest.
-          @param  s     Output stream to write to
-          @param  pad   Padding string, written at the start of 
-                        each output line.
-          @param  verb  Level of detail, between 0 (least detailed)
-                        and 9 (most detailed).
-    */
-    // void reportMemoryUsage(FILE * s, const char* pad, int verb) const;
 
     /// Compute a hash for a node.
     inline unsigned hashNode(node_handle p) const {
@@ -2119,6 +2140,8 @@ class MEDDLY::expert_forest : public forest
   // virtual in the base class, but implemented here.
   // See meddly.h for descriptions of these methods.
   public:
+    virtual void writeEdges(FILE* s, const dd_edge* E, int n) const;
+    virtual void readEdges(FILE* s, dd_edge* E, int n);
     virtual void garbageCollect();
     virtual void compactMemory();
     virtual void showInfo(FILE* strm, int verbosity);
@@ -2127,6 +2150,14 @@ class MEDDLY::expert_forest : public forest
   // abstract virtual, must be overridden.
   // 
   public:
+    /** "save" a node to a file.
+        Called by \a writeEdges(). 
+          @param  s     File stream
+          @param  nr    Node to write is stored here
+          @param  map   Translation to use on node handles.
+    virtual void writeNode(FILE* s, const node_reader& nr, 
+      const node_handle* map) const;
+    */
 
     /** Are the given edge values "duplicates".
         I.e., when determining if two nodes are duplicates,
@@ -2147,7 +2178,7 @@ class MEDDLY::expert_forest : public forest
           
           @return   true, iff the nodes are duplicates.
     */
-    inline bool areDuplicates(long node, const node_builder &nb) const {
+    inline bool areDuplicates(node_handle node, const node_builder &nb) const {
       MEDDLY_DCASSERT(node>0);
       MEDDLY_DCASSERT(address);
       MEDDLY_CHECK_RANGE(1, node, 1+a_last);
@@ -2166,7 +2197,7 @@ class MEDDLY::expert_forest : public forest
           
           @return   true, iff the nodes are duplicates.
     */
-    inline bool areDuplicates(long node, const node_reader &nr) const {
+    inline bool areDuplicates(node_handle node, const node_reader &nr) const {
       MEDDLY_DCASSERT(node>0);
       MEDDLY_DCASSERT(address);
       MEDDLY_CHECK_RANGE(1, node, 1+a_last);
@@ -2250,6 +2281,9 @@ class MEDDLY::expert_forest : public forest
   // virtual, with default implementation.
   // Should be overridden in appropriate derived classes.
   protected:
+    /// Character sequence used when writing forests to files.
+    virtual const char* codeChars() const;
+
     /** Normalize a node.
         Used only for "edge valued" DDs with range type: integer.
         Different forest types will have different normalization rules,
@@ -2289,12 +2323,37 @@ class MEDDLY::expert_forest : public forest
     */
     virtual void showTerminal(FILE* s, node_handle tnode) const;
 
+    /** Write a terminal node in machine-readable format.
+          @param  s       Stream to write to.
+          @param  tnode   Handle to a terminal node.
+    */
+    virtual void writeTerminal(FILE* s, node_handle tnode) const;
+
+    /** Read a terminal node in machine-readable format.
+          @param  s       Stream to read from.
+          @return         Handle to a terminal node.
+          @throws         An invalid file exception if the stream does not
+                          contain a valid terminal node.
+    */
+    virtual node_handle readTerminal(FILE* s);
+
     /** Show an edge value.
           @param  s       Stream to write to.
-          @param  edge    Array of all edge values.
-          @param  i       Index of the one we want to display.
+          @param  edge    Pointer to edge value chunk
     */
-    virtual void showEdgeValue(FILE* s, const void* edge, int i) const;
+    virtual void showEdgeValue(FILE* s, const void* edge) const;
+
+    /** Write an edge value in machine-readable format.
+          @param  s       Stream to write to.
+          @param  edge    Pointer to edge value chunk
+    */
+    virtual void writeEdgeValue(FILE* s, const void* edge) const;
+
+    /** Read an edge value in machine-readable format.
+          @param  s       Stream to read from.
+          @param  edge    Pointer to edge value chunk
+    */
+    virtual void readEdgeValue(FILE* s, void* edge);
 
     /** Show the hashed header values.
           @param  s       Stream to write to.
@@ -2307,6 +2366,8 @@ class MEDDLY::expert_forest : public forest
           @param  uh      Array of all unhashed header values.
     */
     virtual void showUnhashedHeader(FILE* s, const void* uh) const;
+
+        
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   // |                                                                |

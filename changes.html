@@ -24,6 +24,8 @@
 <li>  Added a new node storage mechanism that uses compression.
 </li>
 
+<li>  Added ability to read and write DDs to a file.
+
 </ul>
 
 <h4>SIMPLE INTERFACE CHANGES</h4>
@@ -42,6 +44,16 @@
       allows to specify how nodes are stored and how holes are
       tracked (if at all).
 </li>
+<li>  In the <tt>forest</tt> class, added methods
+  <ul>
+  <li>  <tt>writeEdges</tt>, to write one or more edges
+        (and all nodes below) to a file in a machine readable format
+  </li>
+  <li>  <tt>readEdges</tt>, to read one or more edges
+        (and all nodes below) from a file
+  </li>
+  </ul> 
+</li>
 </ul>
 
 <h4>EXPERT INTERFACE CHANGES</h4>
@@ -55,6 +67,10 @@
 </li>
 <li>  In the <tt>expert_forest</tt> class, method <tt>reportMemoryUsage</tt>
       has been replaced by method <tt>reportStats</tt>.
+</li>
+<li>  <tt>expert_forest::markNodesInSubgraph</tt> and
+      <tt>expert_forest::showNodeGraph</tt>
+      now take an array of root nodes, instead of a single one.
 </li>
 </ul>
 

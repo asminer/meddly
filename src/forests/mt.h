@@ -61,6 +61,8 @@ class MEDDLY::mt_forest : public expert_forest {
     virtual void createEdgeForVar(int vh, bool pr, float* terms, dd_edge& a);
 
     
+    virtual void writeNode(FILE* s, const node_reader& nr, 
+      const node_handle* map) const;
     virtual bool isRedundant(const node_builder &nb) const;
     virtual bool isIdentityEdge(const node_builder &nb, int i) const;
 

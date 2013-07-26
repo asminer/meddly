@@ -215,7 +215,7 @@ void MEDDLY::compact_storage
       fprintf(s, "%d:", index);
       if (edgeBytes) {
         fprintf(s, "<");
-        getParent()->showEdgeValue(s, rawe, 0);
+        getParent()->showEdgeValue(s, rawe);
         fprintf(s, ", ");
       }
       if (getParent()->isTerminalNode(down)) {
@@ -248,7 +248,7 @@ void MEDDLY::compact_storage
 
       if (edgeBytes) {
         fprintf(s, "<");
-        getParent()->showEdgeValue(s, rawe, 0);
+        getParent()->showEdgeValue(s, rawe);
         fprintf(s, ", ");
       } 
       if (getParent()->isTerminalNode(down)) {

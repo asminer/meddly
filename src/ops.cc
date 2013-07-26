@@ -177,7 +177,7 @@ MEDDLY::operation::operation(const opname* n, int kl, int al)
 MEDDLY::operation::~operation()
 {
   if (CT && (CT!=Monolithic_CT)) delete CT;
-  delete next;
+  // delete next;  // Seriously, WTF?
   if (oplist_index >= 0) {
     MEDDLY_DCASSERT(op_list[oplist_index] == this);
     op_list[oplist_index] = 0;

@@ -128,6 +128,8 @@ class MEDDLY::simple_storage : public node_storage {
     virtual void reportStats(FILE* s, const char* pad, unsigned flags) const;
 
     virtual void showNode(FILE* s, node_address addr, bool verb) const;
+    virtual void writeNode(FILE* s, node_address addr, const node_handle* map)
+    const;
 
     virtual node_address makeNode(node_handle p, const node_builder &nb, 
         node_storage_flags opt);

@@ -62,3 +62,29 @@ void MEDDLY::mt_mdd_int::showTerminal(FILE* s, int tnode) const
 {
   fprintf(s, "t%d", getInteger(tnode)); 
 }
+
+void MEDDLY::mt_mdd_int::writeTerminal(FILE* s, int tnode) const
+{
+  th_fprintf(s, "t%d", getInteger(tnode)); 
+}
+
+MEDDLY::node_handle MEDDLY::mt_mdd_int::readTerminal(FILE* s)
+{
+  stripWS(s);
+  char c = fgetc(s);
+  if ('t' == c) {
+    int N;
+    if (1==fscanf(s, "%d", &N)) {
+      if (isValidTerminalValue(N)) {
+        return getTerminalNode(N);
+      }
+    }
+  }
+  throw error(error::INVALID_FILE);
+}
+
+const char* MEDDLY::mt_mdd_int::codeChars() const
+{
+  return "dd_tvi";
+}
+

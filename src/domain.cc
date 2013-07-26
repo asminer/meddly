@@ -425,3 +425,42 @@ int MEDDLY::expert_domain::findVariableBound(int vh) const
   return getVariableBound(vh, false);
 }
 
+void MEDDLY::expert_domain::write(FILE* s) const
+{
+  th_fprintf(s, "dom\n%d\n", nVars);
+  for (int i=nVars; i; i--) {
+   th_fprintf(s, "%d ", vars[i]->getBound(false));
+   MEDDLY_DCASSERT(vars[i]->getBound(false) == vars[i]->getBound(true));
+  }
+  th_fprintf(s, "\nmod\n");
+}
+
+void MEDDLY::expert_domain::read(FILE* s)
+{
+  // domain must be empty -- no variables defined so far
+  if (hasForests() || nVars != 0)
+    throw error(error::DOMAIN_NOT_EMPTY);
+
+  stripWS(s);
+  consumeKeyword(s, "dom");
+  stripWS(s);
+  fscanf(s, "%d", &nVars);
+  if (nVars < 0) throw error(error::INVALID_FILE);
+  if (nVars) {
+    vars = (variable**) malloc((1+nVars) * sizeof(void*));
+    if (0==vars) throw error(error::INSUFFICIENT_MEMORY);
+  } else {
+    vars = 0;
+  }
+  vars[0] = 0;
+  for (int i=nVars; i; i--) {
+    int bound;
+    stripWS(s);
+    fscanf(s, "%d", &bound);
+    vars[nVars-i+1] = MEDDLY::createVariable(bound, 0);
+    ((expert_variable*)vars[i])->addToList(this);
+  }
+  stripWS(s);
+  consumeKeyword(s, "mod");
+}
+

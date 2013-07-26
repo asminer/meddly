@@ -50,6 +50,7 @@
 #include <cassert>
 #include <cstring>
 #include <cstdio>
+#include <cstdarg>
 #include <limits>
 
 // Meddly
@@ -133,6 +134,54 @@ namespace MEDDLY {
     fprintf(s, "%3.2lf Tbytes", approx);
   }
 
+  /// throw wrapper around fprintf
+  inline void th_fprintf(FILE* s, const char* fmt, ...) {
+    va_list argptr;
+    va_start(argptr, fmt);
+    if (vfprintf(s, fmt, argptr)<0) throw error(error::COULDNT_WRITE);
+    va_end(argptr);
+  }
+
+  /// throw wrapper around fscanf
+  inline void th_fscanf(int n, FILE* s, const char* fmt, ...) {
+    va_list argptr;
+    va_start(argptr, fmt);
+    if (vfscanf(s, fmt, argptr)!=n) throw error(error::INVALID_FILE);
+    va_end(argptr);
+  }
+
+  /// Consume whitespace (if any) from a file stream
+  /// including comments of the form #....\n
+  inline void stripWS(FILE* s) {
+    bool comment = false;
+    for (;;) {
+      int c = fgetc(s);
+      if (EOF == c) throw error(error::INVALID_FILE);
+      if ('\n'== c) {
+        comment = false;
+        continue;
+      }
+      if (comment) continue;
+      if (' ' == c) continue;
+      if ('\t' == c) continue;
+      if ('\r' == c) continue;
+      if ('#' == c) {
+        comment = true;
+        continue;
+      }
+      // not whitespace
+      ungetc(c, s);
+      return;
+    }
+  }
+
+  /// Consume a keyword from a file stream
+  inline void consumeKeyword(FILE* s, const char* keyword) {
+    for ( ; *keyword; keyword++) {
+      int c = fgetc(s);
+      if (c != *keyword) throw error(error::INVALID_FILE);
+    }
+  }
 }
 
 /*

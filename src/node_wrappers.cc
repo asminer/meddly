@@ -96,7 +96,7 @@ void MEDDLY::node_reader
     }
     if (parent->edgeBytes()) {
       fprintf(s, "<");
-      parent->showEdgeValue(s, eptr(z), 0);
+      parent->showEdgeValue(s, eptr(z));
       fprintf(s, ", ");
     }
     if (parent->isTerminalNode(d(z))) {
@@ -269,7 +269,7 @@ void MEDDLY::node_builder::show(FILE* s, bool verb) const
     }
     if (parent->edgeBytes()) {
       fprintf(s, "<");
-      parent->showEdgeValue(s, eptr(z), 0);
+      parent->showEdgeValue(s, eptr(z));
       fprintf(s, ", ");
     }
     if (parent->isTerminalNode(d(z))) {
@@ -380,6 +380,11 @@ void MEDDLY::node_storage::initForForest(expert_forest* f)
   localInitForForest(f);
 }
 
+void MEDDLY::node_storage
+::writeNode(FILE* s, node_address, const node_handle*) const
+{
+  throw error(error::NOT_IMPLEMENTED);
+}
 
 void MEDDLY::node_storage::dumpInternal(FILE* s, unsigned flags) const
 {

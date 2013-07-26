@@ -265,7 +265,7 @@ void MEDDLY::old_node_storage::showNode(FILE* s, node_address addr, bool verb) c
       fprintf(s, "%ld:", long(SI(addr)[z]));
       if (edgeSlots) {
         fprintf(s, "<");
-        getParent()->showEdgeValue(s, SEP(addr, z), 0);
+        getParent()->showEdgeValue(s, SEP(addr, z));
         fprintf(s, ", ");
       } 
       node_handle d = SD(addr)[z];
@@ -286,7 +286,7 @@ void MEDDLY::old_node_storage::showNode(FILE* s, node_address addr, bool verb) c
       if (i) fprintf(s, "|"); 
       if (edgeSlots) {
         fprintf(s, "<");
-        getParent()->showEdgeValue(s, FEP(addr, i), 0);
+        getParent()->showEdgeValue(s, FEP(addr, i));
         fprintf(s, ", ");
       } 
       node_handle d = FD(addr)[i];

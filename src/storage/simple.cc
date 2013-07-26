@@ -189,7 +189,7 @@ void MEDDLY::simple_storage::showNode(FILE* s, node_address addr, bool verb) con
       fprintf(s, "%ld:", long(SI(addr)[z]));
       if (edgeSlots) {
         fprintf(s, "<");
-        getParent()->showEdgeValue(s, SEP(addr, z), 0);
+        getParent()->showEdgeValue(s, SEP(addr, z));
         fprintf(s, ", ");
       } 
       node_handle d = SD(addr)[z];
@@ -210,7 +210,7 @@ void MEDDLY::simple_storage::showNode(FILE* s, node_address addr, bool verb) con
       if (i) fprintf(s, "|"); 
       if (edgeSlots) {
         fprintf(s, "<");
-        getParent()->showEdgeValue(s, FEP(addr, i), 0);
+        getParent()->showEdgeValue(s, FEP(addr, i));
         fprintf(s, ", ");
       } 
       node_handle d = FD(addr)[i];
@@ -231,6 +231,77 @@ void MEDDLY::simple_storage::showNode(FILE* s, node_address addr, bool verb) con
   if (hashedSlots) {
     getParent()->showHashedHeader(s, HH(addr));
   }
+}
+
+void MEDDLY::simple_storage
+::writeNode(FILE* s, node_address addr, const node_handle* map) const
+{
+  th_fprintf(s, "%d\n", sizeOf(addr));
+  if (sizeOf(addr) < 0) {
+    // Sparse node
+    int nnz = -sizeOf(addr);
+    // write indexes
+    th_fprintf(s, "\t");
+    for (int z=0; z<nnz; z++) {
+      th_fprintf(s, " %d", SI(addr)[z]);
+    }
+    th_fprintf(s, "\n\t");
+    // write down pointers
+    for (int z=0; z<nnz; z++) {
+      th_fprintf(s, " ");
+      node_handle d = SD(addr)[z];
+      if (getParent()->isTerminalNode(d)) {
+        getParent()->writeTerminal(s, d);
+      } else {
+        if (map) d = map[d];
+        th_fprintf(s, "%ld", long(d));
+      }
+    }
+    // write edges
+    if (edgeSlots) {
+      th_fprintf(s, "\n\t");
+      for (int z=0; z<nnz; z++) {
+        th_fprintf(s, " ");
+        getParent()->showEdgeValue(s, SEP(addr, z));
+      }
+    } 
+    th_fprintf(s, "\n");
+  } else {
+    // Full node
+    int size = sizeOf(addr);
+    th_fprintf(s, "\t");
+    // write down pointers
+    for (int i=0; i<size; i++) {
+      th_fprintf(s, " ");
+      node_handle d = FD(addr)[i];
+      if (getParent()->isTerminalNode(d)) {
+        getParent()->writeTerminal(s, d);
+      } else {
+        if (map) d = map[d];
+        th_fprintf(s, "%ld", long(d));
+      }
+    }
+    // write edges
+    if (edgeSlots) {
+      th_fprintf(s, "\n\t");
+      for (int i=0; i<size; i++) {
+        th_fprintf(s, " ");
+        getParent()->showEdgeValue(s, FEP(addr, i));
+      }
+    } 
+    th_fprintf(s, "\n");
+  }
+
+  // TBD:
+  // show extra header stuff
+  /*
+  if (unhashedSlots) {
+    getParent()->showUnhashedHeader(s, UH(addr));
+  }
+  if (hashedSlots) {
+    getParent()->showHashedHeader(s, HH(addr));
+  }
+  */
 }
 
 MEDDLY::node_address MEDDLY::simple_storage

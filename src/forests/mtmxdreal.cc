@@ -74,3 +74,28 @@ void MEDDLY::mt_mxd_real::showTerminal(FILE* s, int tnode) const
 {
   fprintf(s, "t%f", getReal(tnode)); 
 }
+
+void MEDDLY::mt_mxd_real::writeTerminal(FILE* s, int tnode) const
+{
+  th_fprintf(s, "t%8e", getReal(tnode)); 
+}
+
+MEDDLY::node_handle MEDDLY::mt_mxd_real::readTerminal(FILE* s)
+{
+  stripWS(s);
+  char c = fgetc(s);
+  if ('t' == c) {
+    float T;
+    if (1==fscanf(s, "%8e", &T)) {
+      return getTerminalNode(T); 
+    }
+  }
+  throw error(error::INVALID_FILE);
+}
+
+
+const char* MEDDLY::mt_mxd_real::codeChars() const
+{
+  return "dd_txr";
+}
+

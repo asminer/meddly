@@ -97,6 +97,11 @@ void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
   edgeForVarInternal(vh, primedLevel, terms, result);
 }
 
+void MEDDLY::mt_forest::writeNode(FILE* s, const node_reader& nr,
+  const node_handle* map) const
+{
+}
+
 bool MEDDLY::mt_forest::isRedundant(const node_builder &nb) const
 {
   if (isQuasiReduced()) return false;

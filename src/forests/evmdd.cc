@@ -46,7 +46,25 @@ void MEDDLY::evmdd_forest::showTerminal(FILE* s, node_handle tnode) const
   fprintf(s, "t%d", -tnode);
 }
 
+void MEDDLY::evmdd_forest::writeTerminal(FILE* s, node_handle tnode) const
+{
+  th_fprintf(s, "t%d", -tnode);
+}
 
+MEDDLY::node_handle MEDDLY::evmdd_forest::readTerminal(FILE* s)
+{
+  stripWS(s);
+  char c = fgetc(s);
+  if ('t' == c) {
+    int N;
+    if (1==fscanf(s, "%d", &N)) {
+      if (N>=0) {
+        return -N;
+      }
+    }
+  }
+  throw error(error::INVALID_FILE);
+}
 
 // ****************************************************************************
 // ********************************* EV+MDDs ********************************** 
@@ -124,6 +142,11 @@ evaluate(const dd_edge &f, const int* vlist, int &term) const
   return evaluateInternal(f, vlist, term);
 }
 
+const char* MEDDLY::evp_mdd_int::codeChars() const
+{
+  return "dd_epvi";
+}
+
 void MEDDLY::evp_mdd_int::normalize(node_builder &nb, int &ev) const
 {
   int minindex = -1;
@@ -142,9 +165,19 @@ void MEDDLY::evp_mdd_int::normalize(node_builder &nb, int &ev) const
   }
 }
 
-void MEDDLY::evp_mdd_int::showEdgeValue(FILE* s, const void* edge, int i) const
+void MEDDLY::evp_mdd_int::showEdgeValue(FILE* s, const void* edge) const
 {
-  fprintf(s, "%d", ((const int*)edge)[i]);
+  fprintf(s, "%d", ((const int*)edge)[0]);
+}
+
+void MEDDLY::evp_mdd_int::writeEdgeValue(FILE* s, const void* edge) const
+{
+  th_fprintf(s, "%d", ((const int*)edge)[0]);
+}
+
+void MEDDLY::evp_mdd_int::readEdgeValue(FILE* s, void* edge)
+{
+  th_fscanf(1, s, "%d", (int*)edge);
 }
 
 void MEDDLY::evp_mdd_int::showUnhashedHeader(FILE* s, const int* uh) const
@@ -212,6 +245,10 @@ evaluate(const dd_edge &f, const int* vlist, float &term) const
   return evaluateInternal(f, vlist, term);
 }
 
+const char* MEDDLY::evt_mdd_real::codeChars() const
+{
+  return "dd_etvr";
+}
 
 void MEDDLY::evt_mdd_real::normalize(node_builder &nb, float &ev) const
 {
@@ -233,9 +270,19 @@ void MEDDLY::evt_mdd_real::normalize(node_builder &nb, float &ev) const
 }
 
 
-void MEDDLY::evt_mdd_real::showEdgeValue(FILE* s, const void* edge, int i) const
+void MEDDLY::evt_mdd_real::showEdgeValue(FILE* s, const void* edge) const
 {
-  fprintf(s, "%f", ((const float*)edge)[i]);
+  fprintf(s, "%f", ((const float*)edge)[0]);
+}
+
+void MEDDLY::evt_mdd_real::writeEdgeValue(FILE* s, const void* edge) const
+{
+  th_fprintf(s, "%8e", ((const float*)edge)[0]);
+}
+
+void MEDDLY::evt_mdd_real::readEdgeValue(FILE* s, void* edge)
+{
+  th_fscanf(1, s, "%8e", (float*)edge);
 }
 
 bool MEDDLY::evt_mdd_real

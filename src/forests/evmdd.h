@@ -67,6 +67,8 @@ class MEDDLY::evmdd_forest : public expert_forest {
 
   protected:
     virtual void showTerminal(FILE* s, node_handle tnode) const;
+    virtual void writeTerminal(FILE* s, node_handle tnode) const;
+    virtual node_handle readTerminal(FILE* s);
 
     virtual int doOp(int a, int b) const = 0;
     virtual float doOp(float a, float b) const = 0;
@@ -142,8 +144,11 @@ class MEDDLY::evp_mdd_int : public evmdd_forest {
     virtual bool isIdentityEdge(const node_builder &nb, int i) const;
 
   protected:
+    virtual const char* codeChars() const;
     virtual void normalize(node_builder &nb, int& ev) const;
-    virtual void showEdgeValue(FILE* s, const void* edge, int i) const;
+    virtual void showEdgeValue(FILE* s, const void* edge) const;
+    virtual void writeEdgeValue(FILE* s, const void* edge) const;
+    virtual void readEdgeValue(FILE* s, void* edge);
     virtual void showUnhashedHeader(FILE* s, const int* uh) const;
 
 };
@@ -180,8 +185,11 @@ class MEDDLY::evt_mdd_real : public evmdd_forest {
     virtual bool isIdentityEdge(const node_builder &nb, int i) const;
 
   protected:
+    virtual const char* codeChars() const;
     virtual void normalize(node_builder &nb, float& ev) const;
-    virtual void showEdgeValue(FILE* s, const void* edge, int i) const;
+    virtual void showEdgeValue(FILE* s, const void* edge) const;
+    virtual void writeEdgeValue(FILE* s, const void* edge) const;
+    virtual void readEdgeValue(FILE* s, void* edge);
 
   private:
     static inline bool notClose(float a, float b) {

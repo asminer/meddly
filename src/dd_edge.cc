@@ -52,8 +52,8 @@ inline void unlinkNode(MEDDLY::forest* p, int node)
 // ******************************************************************
 
 MEDDLY::dd_edge::dd_edge()
-: parent(0),
-  node(0), value(0), index(-1),
+: parent(0), index(-1),
+  node(0), value(0), 
   opPlus(0), opStar(0), opMinus(0), opDivide(0)
 {
 #ifdef DEBUG_CLEANUP
@@ -63,8 +63,8 @@ MEDDLY::dd_edge::dd_edge()
 
 // Constructor.
 MEDDLY::dd_edge::dd_edge(forest* p)
-: parent(p),
-  node(0), value(0), index(-1),
+: parent(p), index(-1),
+  node(0), value(0), 
   opPlus(0), opStar(0), opMinus(0), opDivide(0)
 {
 #ifdef DEBUG_CLEANUP
@@ -260,7 +260,7 @@ void MEDDLY::dd_edge::show(FILE* strm, int verbosity) const
       MEDDLY_DCASSERT(eParent->getRangeType() == forest::BOOLEAN);
       fprintf(strm, "node: %s*, ",(eParent->getBoolean(node)? "true": "false"));
     }
-  }
+}
   else {
     fprintf(strm, "node: %ld, ", long(node));
   }
@@ -287,10 +287,57 @@ void MEDDLY::dd_edge::show(FILE* strm, int verbosity) const
       fprintf(strm, "MDD");
     }
     fprintf(strm, " rooted at this node:\n");
-    eParent->showNodeGraph(strm, node);
+    eParent->showNodeGraph(strm, &node, 1);
   }
   if (verbosity == 1 || verbosity == 3) {
     fprintf(strm, "Cardinality of node %ld: %0.8e\n", long(node), getCardinality());
   }
+}
+
+void MEDDLY::dd_edge::write(FILE* s, const node_handle* map) const
+{
+  expert_forest* eParent = smart_cast<expert_forest*>(parent);
+
+  if (!eParent->isMultiTerminal()) {
+    eParent->writeEdgeValue(s, &value);
+    th_fprintf(s, " ");
+  }
+  if (node > 0) {
+    th_fprintf(s, "%ld\n", long(map[node]));
+  } else {
+    th_fprintf(s, "%ld\n", long(node));
+  }
+}
+
+void MEDDLY::dd_edge::read(forest* p, FILE* s, const node_handle* map)
+{
+  destroy();
+
+  parent = p;
+  expert_forest* eParent = smart_cast<expert_forest*>(parent);
+
+  if (!eParent->isMultiTerminal()) {
+    stripWS(s);
+    eParent->readEdgeValue(s, &value);
+  }
+
+  stripWS(s);
+  long lnode;
+  th_fscanf(1, s, "%ld", &lnode);
+  if (lnode <= 0) {
+    node = lnode;
+  } else {
+    node = map[lnode];
+  }
+
+  linkNode(parent, node);
+
+  opPlus = 0;
+  opStar = 0;
+  opMinus = 0;
+  opDivide = 0;
+
+  if (parent) parent->registerEdge(*this);
+  MEDDLY_DCASSERT(index != -1);
 }
 
