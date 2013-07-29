@@ -62,7 +62,8 @@ void MEDDLY::mtmxd_forest::expandCountAndSlotArrays(int size)
   countSize = newCountSize;
 }
 
-int MEDDLY::mtmxd_forest::createNode(int k, int index, int dptr)
+MEDDLY::node_handle 
+MEDDLY::mtmxd_forest::createNode(int k, int index, node_handle dptr)
 {
   MEDDLY_DCASSERT(index >= 0 && index < getLevelSize(k) && isValidNodeIndex(dptr));
 
@@ -74,13 +75,14 @@ int MEDDLY::mtmxd_forest::createNode(int k, int index, int dptr)
   return createReducedNode(-1, nb);
 }
 
-int MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, int dptr)
+MEDDLY::node_handle 
+MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, node_handle dptr)
 {
   MEDDLY_DCASSERT((index1 >= 0 && index2 >= 0) ||
       (index1 >= -1 && index2 >= -1) ||
       (index1 >= -2 && index2 >= -2 && index1 == index2));
 
-  int result = 0;
+  node_handle result = 0;
 
   if (isIdentityReduced()) {
 
@@ -89,7 +91,7 @@ int MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, int dptr)
       result = dptr;
     }
     else {
-      int p = 0;
+      node_handle p = 0;
       if (index2 == -1) {
         // represents "don't care"
         insertRedundantNode(-k, dptr);
@@ -120,7 +122,7 @@ int MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, int dptr)
   }
   else if (isQuasiReduced()) {
 
-    int p = 0;
+    node_handle p = 0;
     if (index2 == -1) {
       // represents "don't care"
       insertRedundantNode(-k, dptr);
@@ -139,7 +141,7 @@ int MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, int dptr)
   else {
 
     // deal with "don't care" for primed level
-    int p = (index2 == -1) ? dptr : createNode(-k, index2, dptr);
+    node_handle p = (index2 == -1) ? dptr : createNode(-k, index2, dptr);
     // deal with "don't care" for unprimed level
     result = (index1 == -1) ? p : createNode(k, index1, p);
 
@@ -149,7 +151,8 @@ int MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, int dptr)
 }
 
 
-int MEDDLY::mtmxd_forest::createNode(const int* v, const int* vp, int term,
+MEDDLY::node_handle 
+MEDDLY::mtmxd_forest::createNode(const int* v, const int* vp, node_handle term,
     int startAtHeight, bool primedLevel)
 {
   // construct the edge bottom-up
@@ -171,22 +174,23 @@ int MEDDLY::mtmxd_forest::createNode(const int* v, const int* vp, int term,
 }
 
 
-void MEDDLY::mtmxd_forest::createEdge(const int* v, const int* vp, int term,
+void MEDDLY::mtmxd_forest
+::createEdgeTo(const int* v, const int* vp, node_handle term,
     int startAtHeight, bool primedLevel, dd_edge& e)
 {
   term = createNode(v, vp, term, startAtHeight, primedLevel);
-  e.set(term, 0, getNodeLevel(term));
+  e.set(term, 0);
 }
 
 
-void MEDDLY::mtmxd_forest::createEdge(const int* v, const int* vp, int term,
-    dd_edge& e)
+void MEDDLY::mtmxd_forest
+::createEdgeTo(const int* v, const int* vp, node_handle term, dd_edge& e)
 {
-  createEdge(v, vp, term, getExpertDomain()->getNumVariables(), false, e);
+  createEdgeTo(v, vp, term, getExpertDomain()->getNumVariables(), false, e);
 }
 
 
-int MEDDLY::mtmxd_forest::createEdgeTo(int dptr)
+MEDDLY::node_handle MEDDLY::mtmxd_forest::createEdgeTo(node_handle dptr)
 {
   MEDDLY_DCASSERT(isTerminalNode(dptr));
   if (dptr == 0) return 0;
@@ -194,7 +198,7 @@ int MEDDLY::mtmxd_forest::createEdgeTo(int dptr)
   if (isFullyReduced()) return linkNode(dptr);
 
   // construct the edge bottom-up
-  int curr = dptr;
+  long curr = dptr;
   for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
     curr = createNode(i, -1, -1, curr);
   }
@@ -202,7 +206,8 @@ int MEDDLY::mtmxd_forest::createEdgeTo(int dptr)
 }
 
 
-int MEDDLY::mtmxd_forest::getTerminalNodeForEdge(int n, const int* vlist,
+MEDDLY::node_handle 
+MEDDLY::mtmxd_forest::getTerminalNodeForEdge(int n, const int* vlist,
     const int* vplist) const
 {
   // assumption: vlist and vplist do not contain any special values
@@ -214,7 +219,7 @@ int MEDDLY::mtmxd_forest::getTerminalNodeForEdge(int n, const int* vlist,
       int nLevel = getNodeLevel(n);
       if (nLevel < 0) {
         // Primed Node
-        int next = getDownPtr(n, vplist[-nLevel]);
+        long next = getDownPtr(n, vplist[-nLevel]);
         MEDDLY_DCASSERT(isTerminalNode(next) || isUnprimedNode(next));
         int currHeight = getNodeHeight(n) - 1;
         int nextHeight = getNodeHeight(next);

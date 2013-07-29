@@ -21,6 +21,8 @@ You will need g++, autoconf, automake and libtool.
 0. If you obtained the library via svn:
    $ ./autogen.sh
    This will create the configure script and Makefiles.
+   Run this the first time, and whenever the source code has changes in
+   its file or directory layout.
 
 1. $ ./configure
    This will setup the build files.

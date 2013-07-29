@@ -49,13 +49,13 @@ class MEDDLY::cross_bool : public binary_operation {
     cross_bool(const binary_opname* oc, expert_forest* a1,
       expert_forest* a2, expert_forest* res);
 
-    virtual bool isStaleEntry(const int* entryData);
-    virtual void discardEntry(const int* entryData);
-    virtual void showEntry(FILE* strm, const int *entryData) const;
+    virtual bool isStaleEntry(const node_handle* entryData);
+    virtual void discardEntry(const node_handle* entryData);
+    virtual void showEntry(FILE* strm, const node_handle* entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
-    long compute_pr(int in, int ht, long a, long b);
-    long compute_un(int ht, long a, long b);
+    node_handle compute_pr(int in, int ht, node_handle a, node_handle b);
+    node_handle compute_un(int ht, node_handle a, node_handle b);
 };
 
 MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
@@ -69,7 +69,7 @@ MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
   // data[RESLT_INDEX] : c
 }
 
-bool MEDDLY::cross_bool::isStaleEntry(const int* data)
+bool MEDDLY::cross_bool::isStaleEntry(const node_handle* data)
 {
   // data[0] is the level number
   return arg1F->isStale(data[OPNDA_INDEX]) ||
@@ -77,7 +77,7 @@ bool MEDDLY::cross_bool::isStaleEntry(const int* data)
          resF->isStale(data[RESLT_INDEX]);
 }
 
-void MEDDLY::cross_bool::discardEntry(const int* data)
+void MEDDLY::cross_bool::discardEntry(const node_handle* data)
 {
   // data[0] is the level number
   arg1F->uncacheNode(data[OPNDA_INDEX]);
@@ -86,7 +86,7 @@ void MEDDLY::cross_bool::discardEntry(const int* data)
 }
 
 void
-MEDDLY::cross_bool ::showEntry(FILE* strm, const int *data) const
+MEDDLY::cross_bool ::showEntry(FILE* strm, const node_handle* data) const
 {
   fprintf(strm, "[%s(in: %d, level: %d, %d, %d): %d]", 
     getName(), data[0], data[1], data[2], data[3], data[4]
@@ -97,11 +97,11 @@ void
 MEDDLY::cross_bool::compute(const dd_edge &a, const dd_edge &b, dd_edge &c)
 {
   int L = arg1F->getDomain()->getNumVariables();
-  long cnode = compute_un(L, a.getNode(), b.getNode());
-  c.set(cnode, 0, resF->getNodeLevel(cnode));
+  node_handle cnode = compute_un(L, a.getNode(), b.getNode());
+  c.set(cnode, 0);
 }
 
-long MEDDLY::cross_bool::compute_un(int k, long a, long b)
+MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_handle b)
 {
 #ifdef DEBUG_CROSS
   printf("calling compute_un(%d, %d, %d)\n", k, a, b);
@@ -119,7 +119,7 @@ long MEDDLY::cross_bool::compute_un(int k, long a, long b)
   CTsrch.key(LEVEL_INDEX) = k;
   CTsrch.key(OPNDA_INDEX) = a;
   CTsrch.key(OPNDB_INDEX) = b;
-  const int* cacheFind = CT->find(CTsrch);
+  const node_handle* cacheFind = CT->find(CTsrch);
   if (cacheFind) {
     return resF->linkNode(cacheFind[RESLT_INDEX]);
   }
@@ -142,7 +142,7 @@ long MEDDLY::cross_bool::compute_un(int k, long a, long b)
   node_reader::recycle(A);
 
   // reduce, save in compute table
-  long c = resF->createReducedNode(-1, nb);
+  node_handle c = resF->createReducedNode(-1, nb);
 
   compute_table::temp_entry &entry = CT->startNewEntry(this);
   entry.key(INPTR_INDEX) = -1;
@@ -159,7 +159,7 @@ long MEDDLY::cross_bool::compute_un(int k, long a, long b)
   return c;
 }
 
-long MEDDLY::cross_bool::compute_pr(int in, int k, long a, long b)
+MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(int in, int k, node_handle a, node_handle b)
 {
 #ifdef DEBUG_CROSS
   printf("calling compute_pr(%d, %d, %d, %d)\n", in, k, a, b);
@@ -172,7 +172,7 @@ long MEDDLY::cross_bool::compute_pr(int in, int k, long a, long b)
   CTsrch.key(LEVEL_INDEX) = k;
   CTsrch.key(OPNDA_INDEX) = a;
   CTsrch.key(OPNDB_INDEX) = b;
-  const int* cacheFind = CT->find(CTsrch);
+  const node_handle* cacheFind = CT->find(CTsrch);
   if (cacheFind) {
     return resF->linkNode(cacheFind[RESLT_INDEX]);
   }
@@ -195,7 +195,7 @@ long MEDDLY::cross_bool::compute_pr(int in, int k, long a, long b)
   node_reader::recycle(B);
 
   // reduce, save in compute table
-  long c = resF->createReducedNode(in, nb);
+  node_handle c = resF->createReducedNode(in, nb);
 
   compute_table::temp_entry &entry = CT->startNewEntry(this);
   entry.key(INPTR_INDEX) = in;

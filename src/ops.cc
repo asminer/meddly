@@ -177,7 +177,7 @@ MEDDLY::operation::operation(const opname* n, int kl, int al)
 MEDDLY::operation::~operation()
 {
   if (CT && (CT!=Monolithic_CT)) delete CT;
-  delete next;
+  // delete next;  // Seriously, WTF?
   if (oplist_index >= 0) {
     MEDDLY_DCASSERT(op_list[oplist_index] == this);
     op_list[oplist_index] = 0;
@@ -332,12 +332,14 @@ MEDDLY::binary_operation::~binary_operation()
   unregisterInForest(resF);
 }
 
-long MEDDLY::binary_operation::compute(long a, long b)
+MEDDLY::node_handle 
+MEDDLY::binary_operation::compute(node_handle a, node_handle b)
 {
   throw error(error::WRONG_NUMBER);
 }
 
-long MEDDLY::binary_operation::compute(int k, long a, long b)
+MEDDLY::node_handle 
+MEDDLY::binary_operation::compute(int k, node_handle a, node_handle b)
 {
   throw error(error::WRONG_NUMBER);
 }

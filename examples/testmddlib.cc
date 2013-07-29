@@ -187,16 +187,16 @@ int main(int argc, char *argv[])
   while(prevReachableStates != reachableStates)
   {
     prevReachableStates = reachableStates;
-    printf("\nPost-Image (mdd:%d, mxd:%d): ",
-        reachableStates.getNode(), xd.getNode());
+    printf("\nPost-Image (mdd:%ld, mxd:%ld): ",
+        long(reachableStates.getNode()), long(xd.getNode()));
     apply(POST_IMAGE, reachableStates, xd, postImage);
-    printf("%d\n", postImage.getNode());
+    printf("%ld\n", long(postImage.getNode()));
     // postImage.show(stdout, 2);
-    printf("\nUnion (mdd:%d, mdd:%d): ",
-        reachableStates.getNode(), postImage.getNode());
+    printf("\nUnion (mdd:%ld, mdd:%ld): ",
+        long(reachableStates.getNode()), long(postImage.getNode()));
     apply(UNION, reachableStates, postImage,
         reachableStates);
-    printf("%d\n", reachableStates.getNode());
+    printf("%ld\n", long(reachableStates.getNode()));
   }
   reachableStates.show(stdout, 2);
 

@@ -45,7 +45,7 @@ class MEDDLY::union_mdd : public generic_binary_mdd {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(long a, long b, long& c);
+    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
 MEDDLY::union_mdd::union_mdd(const binary_opname* opcode, 
@@ -55,7 +55,7 @@ MEDDLY::union_mdd::union_mdd(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::union_mdd::checkTerminals(long a, long b, long& c)
+bool MEDDLY::union_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
   if (a == -1 || b == -1) {
     c = -1;
@@ -103,7 +103,7 @@ class MEDDLY::union_mxd : public generic_binary_mxd {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(long a, long b, long& c);
+    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
 MEDDLY::union_mxd::union_mxd(const binary_opname* opcode, 
@@ -113,7 +113,7 @@ MEDDLY::union_mxd::union_mxd(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::union_mxd::checkTerminals(long a, long b, long& c)
+bool MEDDLY::union_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
   if (a == -1 && b == -1) {
     c = -1;
@@ -131,13 +131,14 @@ bool MEDDLY::union_mxd::checkTerminals(long a, long b, long& c)
       return false;
     }
   }
-  if (a == b) 
+  if (a == b) {
     if (arg1F == arg2F && arg1F == resF) {
       c = resF->linkNode(b);
       return true;
     } else {
       return false;
     }
+  }
   if (b == 0) {
     if (arg1F == resF) {
       c = resF->linkNode(a);

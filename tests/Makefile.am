@@ -5,15 +5,21 @@
 ## compile library
 
 check_PROGRAMS = \
+  enctest \
   bug_00 \
-  sat_test nqueens check_xA chk_cross kanban kan_show kan_batch kan_index
+  sat_test nqueens check_xA chk_cross \
+  kanban kan_show kan_batch kan_index kan_io
 
 TESTS = \
   bug_00 \
-  sat_test nqueens check_xA chk_cross kanban kan_show kan_batch kan_index
+  sat_test nqueens check_xA chk_cross \
+  kanban kan_show kan_batch kan_index kan_io
 
 AM_CPPFLAGS = -I../src -I../src/operations
 AM_CXXFLAGS = -Wall
+
+enctest_SOURCES = enctest.cc
+enctest_LDADD =
 
 bug_00_SOURCES = bug_00.cc simple_model.h simple_model.cc
 bug_00_LDADD = ../src/libmeddly.la
@@ -44,3 +50,5 @@ kan_batch_LDADD = ../src/libmeddly.la
 kan_index_SOURCES = kan_index.cc simple_model.h simple_model.cc
 kan_index_LDADD = ../src/libmeddly.la
 
+kan_io_SOURCES = kan_io.cc simple_model.h simple_model.cc
+kan_io_LDADD = ../src/libmeddly.la

@@ -57,6 +57,7 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/forests/Makefile
                  src/operations/Makefile
+                 src/storage/Makefile
                  tests/Makefile])
 
 AC_OUTPUT

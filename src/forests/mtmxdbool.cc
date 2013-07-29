@@ -41,7 +41,7 @@ void MEDDLY::mt_mxd_bool::createEdge(bool val, dd_edge &e)
     throw error(error::INVALID_OPERATION);
 
   int node = createEdgeTo(getTerminalNode(val));
-  e.set(node, 0, getNodeLevel(node));
+  e.set(node, 0);
 }
 
 
@@ -73,5 +73,24 @@ void MEDDLY::mt_mxd_bool::evaluate(const dd_edge& f, const int* vlist,
 void MEDDLY::mt_mxd_bool::showTerminal(FILE* s, int tnode) const
 {
   fprintf(s, "%c", tnode ? 'T' : 'F'); 
+}
+
+void MEDDLY::mt_mxd_bool::writeTerminal(FILE* s, int tnode) const
+{
+  th_fprintf(s, "%c", tnode ? 'T' : 'F'); 
+}
+
+MEDDLY::node_handle MEDDLY::mt_mxd_bool::readTerminal(FILE* s)
+{
+  stripWS(s);
+  char c = fgetc(s);
+  if ('T' == c) return -1;
+  if ('F' == c) return  0;
+  throw error(error::INVALID_FILE);
+}
+
+const char* MEDDLY::mt_mxd_bool::codeChars() const
+{
+  return "dd_txb";
 }
 

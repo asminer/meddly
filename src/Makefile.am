@@ -4,7 +4,7 @@
 
 ## compile library
 
-SUBDIRS = forests operations .
+SUBDIRS = forests operations storage .
 
 lib_LTLIBRARIES = libmeddly.la
 
@@ -18,27 +18,27 @@ BUILT_SOURCES = _revision revision.h
 CLEANFILES = revision.h
 
 libmeddly_la_SOURCES = \
-	defines.h \
-	meddly.h \
-	meddly_expert.h \
+  defines.h \
+  meddly.h \
+  meddly_expert.h \
   meddly.cc \
   node_wrappers.cc \
   ops.cc \
-	dd_edge.cc \
+  dd_edge.cc \
   enumerator.cc \
-	domain.cc \
-	forest.cc \
+  domain.cc \
+  forest.cc \
   compute_table.h \
   compute_table.cc \
   unique_table.h \
-  unique_table.cc
-	defines.h \
+  unique_table.cc \
   hash_stream.h \
-	timer.h 
+  timer.h 
 
 libmeddly_la_LIBADD = \
-	forests/libforests.la \
-	operations/libops.la
+  forests/libforests.la \
+  operations/libops.la \
+  storage/libstorage.la
 
 ## compile apps
 

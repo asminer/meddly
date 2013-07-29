@@ -489,12 +489,20 @@ const char* MEDDLY::getLibraryInfo(int what)
         title = new char[80];
         if (REVISION_NUMBER) {
           snprintf(title, 80, 
+#ifdef DEVELOPMENT_CODE
+            "%s version %s.%d.dev", 
+#else
             "%s version %s.%d", 
+#endif
             PACKAGE_NAME, VERSION, REVISION_NUMBER
           );
         } else {
           snprintf(title, 80, 
+#ifdef DEVELOPMENT_CODE
+            "%s version %s.dev", 
+#else
             "%s version %s", 
+#endif
             PACKAGE_NAME, VERSION
           );
         }

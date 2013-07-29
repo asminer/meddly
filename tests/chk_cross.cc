@@ -25,6 +25,8 @@
 
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 #include "meddly.h"
 
@@ -39,7 +41,7 @@ int minterm[7];
 const int* mtaddr[] = { minterm };
 const int* dcaddr[] = { dontcare };
 
-long seed = 123456789L;
+long seed = -1;
 
 double Random()
 {
@@ -202,8 +204,32 @@ void test(forest* mdd, forest* mxd, int nmt)
 }
 
 
-int main()
+int processArgs(int argc, const char** argv)
 {
+  if (argc>2) {
+    /* Strip leading directory, if any: */
+    const char* name = argv[0];
+    for (const char* ptr=name; *ptr; ptr++) {
+    if ('/' == *ptr) name = ptr+1;
+  }
+    printf("Usage: %s <seed>\n", name);
+    return 0;
+  }
+  if (argc>1) {
+    seed = atol(argv[1]);
+  }
+  if (seed < 1) {
+    seed = time(0);
+  }
+  
+  printf("Using rng seed %ld\n", seed);
+  return 1;
+}
+
+int main(int argc, const char** argv)
+{
+  if (!processArgs(argc, argv)) return 1;
+
   initialize();
 
   domain* myd = createDomainBottomUp(vars, 6);

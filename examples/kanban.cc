@@ -51,8 +51,13 @@ const char* kanban[] = {
 
 using namespace MEDDLY;
 
-int usage(const char* name)
+int usage(const char* who)
 {
+  /* Strip leading directory, if any: */
+  const char* name = who;
+  for (const char* ptr=who; *ptr; ptr++) {
+    if ('/' == *ptr) name = ptr+1;
+  }
   printf("\nUsage: %s nnnn (-bfs) (-dfs) (-exp)\n\n", name);
   printf("\tnnnn: number of parts\n");
   printf("\t-bfs: use traditional iterations\n");
@@ -61,31 +66,17 @@ int usage(const char* name)
   return 1;
 }
 
-void printmem(long m)
+void printStats(const char* who, const forest* f)
 {
-  if (m<1024) {
-    printf("%ld bytes", m);
-    return;
-  }
-  double approx = m;
-  approx /= 1024;
-  if (approx < 1024) {
-    printf("%3.2lf Kbytes", approx);
-    return;
-  }
-  approx /= 1024;
-  if (approx < 1024) {
-    printf("%3.2lf Mbytes", approx);
-    return;
-  }
-  approx /= 1024;
-  if (approx < 1024) {
-    printf("%3.2lf Gbytes", approx);
-    return;
-  }
-  approx /= 1024;
-  printf("%3.2lf Tbytes", approx);
+  printf("%s stats:\n", who);
+  const expert_forest* ef = (expert_forest*) f;
+  ef->reportStats(stdout, "\t",
+    expert_forest::HUMAN_READABLE_MEMORY  |
+    expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
+    expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
+  );
 }
+
 
 
 int main(int argc, const char** argv)
@@ -113,6 +104,11 @@ int main(int argc, const char** argv)
 
   MEDDLY::initialize();
 
+  printf("+-------------------------------------------+\n");
+  printf("|   Initializing Kanban model for N = %-4d  |\n", N);
+  printf("+-------------------------------------------+\n");
+  fflush(stdout);
+
   // Initialize domain
   int* sizes = new int[16];
   for (int i=15; i>=0; i--) sizes[i] = N+1;
@@ -137,18 +133,7 @@ int main(int argc, const char** argv)
     printf("Next-state function:\n");
     nsf.show(stdout, 2);
 #endif
-    printf("MxD stats:\n");
-    printf("\t%ld current nodes\n", mxd->getCurrentNumNodes());
-    printf("\t%ld peak nodes\n", mxd->getPeakNumNodes());
-    printf("\t");
-    printmem(mxd->getCurrentMemoryUsed());
-    printf(" current memory used\n\t");
-    printmem(mxd->getPeakMemoryUsed());
-    printf(" peak memory used\n\t");
-    printmem(mxd->getCurrentMemoryAllocated());
-    printf(" current memory allocated\n\t");
-    printmem(mxd->getPeakMemoryAllocated());
-    printf(" peak memory allocated\n");
+    printStats("MxD", mxd);
   }
 
   dd_edge reachable(mdd);
@@ -183,18 +168,7 @@ int main(int argc, const char** argv)
   reachable.show(stdout, 2);
 #endif
 
-  printf("MDD stats:\n");
-  printf("\t%ld current nodes\n", mdd->getCurrentNumNodes());
-  printf("\t%ld peak nodes\n", mdd->getPeakNumNodes());
-  printf("\t");
-  printmem(mdd->getCurrentMemoryUsed());
-  printf(" current memory used\n\t");
-  printmem(mdd->getPeakMemoryUsed());
-  printf(" peak memory used\n\t");
-  printmem(mdd->getCurrentMemoryAllocated());
-  printf(" current memory allocated\n\t");
-  printmem(mdd->getPeakMemoryAllocated());
-  printf(" peak memory allocated\n");
+  printStats("MDD", mdd);
   fflush(stdout);
 
   double c;

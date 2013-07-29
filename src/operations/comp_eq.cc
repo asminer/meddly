@@ -47,7 +47,7 @@ class MEDDLY::equal_mdd : public generic_binary_mdd {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(long a, long b, long& c);
+    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
 MEDDLY::equal_mdd::equal_mdd(const binary_opname* opcode, 
@@ -57,7 +57,7 @@ MEDDLY::equal_mdd::equal_mdd(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::equal_mdd::checkTerminals(long a, long b, long& c)
+bool MEDDLY::equal_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
   if (arg1F->isTerminalNode(a) &&
       arg2F->isTerminalNode(b)) {
@@ -86,7 +86,7 @@ class MEDDLY::equal_mxd : public generic_binbylevel_mxd {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(long a, long b, long& c);
+    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
 MEDDLY::equal_mxd::equal_mxd(const binary_opname* opcode, 
@@ -96,7 +96,7 @@ MEDDLY::equal_mxd::equal_mxd(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::equal_mxd::checkTerminals(long a, long b, long& c)
+bool MEDDLY::equal_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
   if (arg1F->isTerminalNode(a) &&
       arg2F->isTerminalNode(b)) {
@@ -125,8 +125,8 @@ class MEDDLY::equal_evtimes : public generic_binary_evtimes {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(float av, long a, float bv, long b, 
-      float &cv, long& c);
+    virtual bool checkTerminals(float av, node_handle a, float bv, node_handle b, 
+      float &cv, node_handle& c);
 };
 
 MEDDLY::equal_evtimes::equal_evtimes(const binary_opname* opcode, 
@@ -137,7 +137,7 @@ MEDDLY::equal_evtimes::equal_evtimes(const binary_opname* opcode,
 }
 
 bool MEDDLY::equal_evtimes
-::checkTerminals(float aev, long a, float bev, long b, float &cev, long& c)
+::checkTerminals(float aev, node_handle a, float bev, node_handle b, float &cev, node_handle& c)
 {
   if (arg1F->isTerminalNode(a) &&
       arg2F->isTerminalNode(b)) {

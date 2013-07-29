@@ -69,9 +69,9 @@ public:
   card_int(const unary_opname* oc, expert_forest* arg);
 
   // common
-  virtual bool isStaleEntry(const int* entryData);
-  virtual void discardEntry(const int* entryData);
-  virtual void showEntry(FILE* strm, const int *entryData) const;
+  virtual bool isStaleEntry(const node_handle* entryData);
+  virtual void discardEntry(const node_handle* entryData);
+  virtual void showEntry(FILE* strm, const node_handle* entryData) const;
 
 protected:
   static inline void overflow_acc(long &a, long x) {
@@ -90,17 +90,17 @@ MEDDLY::card_int::card_int(const unary_opname* oc, expert_forest* arg)
 {
 }
 
-bool MEDDLY::card_int::isStaleEntry(const int* data)
+bool MEDDLY::card_int::isStaleEntry(const node_handle* data)
 {
   return argF->isStale(data[0]);
 }
 
-void MEDDLY::card_int::discardEntry(const int* data)
+void MEDDLY::card_int::discardEntry(const node_handle* data)
 {
   argF->uncacheNode(data[0]);
 }
 
-void MEDDLY::card_int::showEntry(FILE* strm, const int *data) const
+void MEDDLY::card_int::showEntry(FILE* strm, const node_handle* data) const
 {
   long answer;
   memcpy(&answer, data+1, sizeof(long));
@@ -121,10 +121,10 @@ public:
   virtual void compute(const dd_edge &arg, long &res) {
     res = compute(argF->getDomain()->getNumVariables(), arg.getNode());
   }
-  long compute(int k, long a);
+  long compute(int k, node_handle a);
 };
 
-long MEDDLY::card_mdd_int::compute(int k, long a)
+long MEDDLY::card_mdd_int::compute(int k, node_handle a)
 {
   // Terminal cases
   if (0==a) return 0;
@@ -137,7 +137,7 @@ long MEDDLY::card_mdd_int::compute(int k, long a)
   
   // Check compute table
   CTsrch.key(0) = a; 
-  const int* cacheEntry = CT->find(CTsrch);
+  const node_handle* cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
     // ugly but portable
     long answer;
@@ -185,10 +185,10 @@ public:
   virtual void compute(const dd_edge &arg, long &res) {
     res = compute(argF->getDomain()->getNumVariables(), arg.getNode());
   }
-  long compute(int k, long a);
+  long compute(int k, node_handle a);
 };
 
-long MEDDLY::card_mxd_int::compute(int k, long a)
+long MEDDLY::card_mxd_int::compute(int k, node_handle a)
 {
   // Terminal cases
   if (0==a) return 0;
@@ -206,7 +206,7 @@ long MEDDLY::card_mxd_int::compute(int k, long a)
   
   // Check compute table
   CTsrch.key(0) = a; 
-  const int* cacheEntry = CT->find(CTsrch);
+  const node_handle* cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
     // ugly but portable
     long answer;
@@ -252,9 +252,9 @@ public:
   card_real(const unary_opname* oc, expert_forest* arg);
 
   // common
-  virtual bool isStaleEntry(const int* entryData);
-  virtual void discardEntry(const int* entryData);
-  virtual void showEntry(FILE* strm, const int *entryData) const;
+  virtual bool isStaleEntry(const node_handle* entryData);
+  virtual void discardEntry(const node_handle* entryData);
+  virtual void showEntry(FILE* strm, const node_handle* entryData) const;
 };
 
 MEDDLY::card_real::card_real(const unary_opname* oc, expert_forest* arg)
@@ -262,17 +262,17 @@ MEDDLY::card_real::card_real(const unary_opname* oc, expert_forest* arg)
 {
 }
 
-bool MEDDLY::card_real::isStaleEntry(const int* data)
+bool MEDDLY::card_real::isStaleEntry(const node_handle* data)
 {
   return argF->isStale(data[0]);
 }
 
-void MEDDLY::card_real::discardEntry(const int* data)
+void MEDDLY::card_real::discardEntry(const node_handle* data)
 {
   argF->uncacheNode(data[0]);
 }
 
-void MEDDLY::card_real::showEntry(FILE* strm, const int *data) const
+void MEDDLY::card_real::showEntry(FILE* strm, const node_handle* data) const
 {
   double answer;
   memcpy(&answer, data+1, sizeof(double));
@@ -294,10 +294,10 @@ public:
   virtual void compute(const dd_edge &arg, double &res) {
     res = compute(argF->getDomain()->getNumVariables(), arg.getNode());
   }
-  double compute(int ht, long a);
+  double compute(int ht, node_handle a);
 };
 
-double MEDDLY::card_mdd_real::compute(int k, long a)
+double MEDDLY::card_mdd_real::compute(int k, node_handle a)
 {
   // Terminal cases
   if (0==a) return 0.0;
@@ -310,7 +310,7 @@ double MEDDLY::card_mdd_real::compute(int k, long a)
   
   // Check compute table
   CTsrch.key(0) = a; 
-  const int* cacheEntry = CT->find(CTsrch);
+  const node_handle* cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
     // ugly but portable
     double answer;
@@ -359,10 +359,10 @@ public:
   virtual void compute(const dd_edge &arg, double &res) {
     res = compute(argF->getDomain()->getNumVariables(), arg.getNode());
   }
-  double compute(int k, long a);
+  double compute(int k, node_handle a);
 };
 
-double MEDDLY::card_mxd_real::compute(int k, long a)
+double MEDDLY::card_mxd_real::compute(int k, node_handle a)
 {
   // Terminal cases
   if (0==a) return 0.0;
@@ -380,7 +380,7 @@ double MEDDLY::card_mxd_real::compute(int k, long a)
   
   // Check compute table
   CTsrch.key(0) = a; 
-  const int* cacheEntry = CT->find(CTsrch);
+  const node_handle* cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
     // ugly but portable
     double answer;
@@ -430,9 +430,9 @@ public:
   card_mpz(const unary_opname* oc, expert_forest* arg);
 
   // common
-  virtual bool isStaleEntry(const int* entryData);
-  virtual void discardEntry(const int* entryData);
-  virtual void showEntry(FILE* strm, const int *entryData) const;
+  virtual bool isStaleEntry(const node_handle* entryData);
+  virtual void discardEntry(const node_handle* entryData);
+  virtual void showEntry(FILE* strm, const node_handle* entryData) const;
 };
 
 MEDDLY::card_mpz::card_mpz(const unary_opname* oc, expert_forest* arg)
@@ -440,12 +440,12 @@ MEDDLY::card_mpz::card_mpz(const unary_opname* oc, expert_forest* arg)
 {
 }
 
-bool MEDDLY::card_mpz::isStaleEntry(const int* data)
+bool MEDDLY::card_mpz::isStaleEntry(const node_handle* data)
 {
   return argF->isStale(data[0]);
 }
 
-void MEDDLY::card_mpz::discardEntry(const int* data)
+void MEDDLY::card_mpz::discardEntry(const node_handle* data)
 {
   argF->uncacheNode(data[0]);
   mpz_object* answer;
@@ -453,7 +453,7 @@ void MEDDLY::card_mpz::discardEntry(const int* data)
   delete answer;
 }
 
-void MEDDLY::card_mpz::showEntry(FILE* strm, const int *entryData) const
+void MEDDLY::card_mpz::showEntry(FILE* strm, const node_handle* entryData) const
 {
   mpz_object* answer;
   memcpy(&answer, entryData+1, sizeof(mpz_object*));
@@ -481,10 +481,10 @@ public:
     mpz_object& mcard = dynamic_cast <mpz_object &> (res);
     compute(argF->getDomain()->getNumVariables(), a.getNode(), mcard);
   }
-  void compute(int k, long a, mpz_object &b);
+  void compute(int k, node_handle a, mpz_object &b);
 };
 
-void MEDDLY::card_mdd_mpz::compute(int k, long a, mpz_object &card)
+void MEDDLY::card_mdd_mpz::compute(int k, node_handle a, mpz_object &card)
 {
   // Terminal cases
   if (0==a) {
@@ -506,7 +506,7 @@ void MEDDLY::card_mdd_mpz::compute(int k, long a, mpz_object &card)
   
   // Check compute table
   CTsrch.key(0) = a;
-  const int* cacheEntry = CT->find(CTsrch);
+  const node_handle* cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
     mpz_object* answer;
     memcpy(&answer, cacheEntry+1, sizeof(mpz_object*));
@@ -563,10 +563,10 @@ public:
     mpz_object& mcard = dynamic_cast <mpz_object &> (res);
     compute(argF->getDomain()->getNumVariables(), a.getNode(), mcard);
   }
-  void compute(int k, long a, mpz_object &b);
+  void compute(int k, node_handle a, mpz_object &b);
 };
 
-void MEDDLY::card_mxd_mpz::compute(int k, long a, mpz_object &card)
+void MEDDLY::card_mxd_mpz::compute(int k, node_handle a, mpz_object &card)
 {
   // Terminal cases
   if (0==a) {
@@ -593,7 +593,7 @@ void MEDDLY::card_mxd_mpz::compute(int k, long a, mpz_object &card)
   
   // Check compute table
   CTsrch.key(0) = a;
-  const int* cacheEntry = CT->find(CTsrch);
+  const node_handle* cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
     mpz_object* answer;
     memcpy(&answer, cacheEntry+1, sizeof(mpz_object*));

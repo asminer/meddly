@@ -41,7 +41,9 @@ class MEDDLY::unique_table {
 
     inline unsigned getSize() const         { return size; }
     inline unsigned getNumEntries() const   { return num_entries; }
-    inline unsigned getMemUsed() const      { return size * sizeof(int); }
+    inline unsigned getMemUsed() const      { return size * sizeof(node_handle); }
+
+    void reportStats(FILE* s, const char* pad, unsigned flags) const;
 
     /// For debugging
     void show(FILE *s) const;
@@ -55,11 +57,11 @@ class MEDDLY::unique_table {
           bool equals(int p): return true iff this item equals node p.
      */
     template <class T>
-    inline int find(const T &key) {
+    inline node_handle find(const T &key) {
       unsigned h = key.hash() % size;
       MEDDLY_CHECK_RANGE(0, h, size);
-      int prev = 0;
-      for (int ptr = table[h]; ptr; ptr = parent->getNext(ptr)) {
+      node_handle prev = 0;
+      for (node_handle ptr = table[h]; ptr; ptr = parent->getNext(ptr)) {
         if (parent->areDuplicates(ptr, key)) { // key.equals(ptr)) {
           // MATCH
           if (ptr != table[h]) {
@@ -81,7 +83,7 @@ class MEDDLY::unique_table {
     /** Add to the front of the list.
         Used when we KNOW that the item is not in the unique table already.
     */
-    inline void add(unsigned h, int item) {
+    inline void add(unsigned h, node_handle item) {
       num_entries++;
       if (num_entries > next_expand) expand();
       MEDDLY_DCASSERT(item>0);
@@ -94,11 +96,11 @@ class MEDDLY::unique_table {
       I.e., the exact key.
       Otherwise, return 0.
     */
-    inline int remove(unsigned h, int key) {
+    inline node_handle remove(unsigned h, node_handle key) {
       h %= size;
       MEDDLY_CHECK_RANGE(0, h, size);
-      int prev = 0;
-      int ptr = table[h];
+      node_handle prev = 0;
+      node_handle ptr = table[h];
       for ( ; ptr; ptr = parent->getNext(ptr)) {
         if (key == ptr) {
           if (ptr != table[h]) {
@@ -119,9 +121,9 @@ class MEDDLY::unique_table {
 
   private:  // helper methods
     /// Empty the hash table into a list; returns the list.
-    int convertToList();
+    node_handle convertToList();
     /// A series of inserts; doesn't check for duplicates or expand.
-    void buildFromList(int front);
+    void buildFromList(node_handle front);
     /// Expand the hash table (if possible)
     void expand();
     /// Shrink the hash table
@@ -133,7 +135,7 @@ class MEDDLY::unique_table {
     unsigned num_entries;
     unsigned next_expand;
     unsigned next_shrink;
-    int* table;
+    node_handle* table;
 
     static const unsigned maxSize = 1073741824;
     static const unsigned minSize = 8;

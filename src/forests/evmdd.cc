@@ -24,7 +24,9 @@
 #include "evmdd.h"
 
 
+// ****************************************************************************
 // ********************************** EVMDDs ********************************** 
+// ****************************************************************************
 
 
 MEDDLY::evmdd_forest
@@ -39,18 +41,40 @@ MEDDLY::evmdd_forest::~evmdd_forest()
 { }
 
 
-void MEDDLY::evmdd_forest::showTerminal(FILE* s, int tnode) const
+void MEDDLY::evmdd_forest::showTerminal(FILE* s, node_handle tnode) const
 {
   fprintf(s, "t%d", -tnode);
 }
 
+void MEDDLY::evmdd_forest::writeTerminal(FILE* s, node_handle tnode) const
+{
+  th_fprintf(s, "t%d", -tnode);
+}
 
+MEDDLY::node_handle MEDDLY::evmdd_forest::readTerminal(FILE* s)
+{
+  stripWS(s);
+  char c = fgetc(s);
+  if ('t' == c) {
+    int N;
+    if (1==fscanf(s, "%d", &N)) {
+      if (N>=0) {
+        return -N;
+      }
+    }
+  }
+  throw error(error::INVALID_FILE);
+}
 
+// ****************************************************************************
 // ********************************* EV+MDDs ********************************** 
+// ****************************************************************************
 
 MEDDLY::evp_mdd_int::evp_mdd_int(int dsl, domain *d, const policies &p)
 : evmdd_forest(dsl, d, forest::INTEGER, forest::EVPLUS, p)
 { 
+  setEdgeSize(sizeof(node_handle), true);
+  setUnhashedSize(sizeof(node_handle));
   initializeForest();
 }
 
@@ -118,14 +142,9 @@ evaluate(const dd_edge &f, const int* vlist, int &term) const
   return evaluateInternal(f, vlist, term);
 }
 
-bool MEDDLY::evp_mdd_int::areDuplicates(int node, const node_builder &nb) const
+const char* MEDDLY::evp_mdd_int::codeChars() const
 {
-  return areDupsInternal(node, nb);
-}
-
-bool MEDDLY::evp_mdd_int::areDuplicates(int node, const node_reader &nr) const
-{
-  return areDupsInternal(node, nr);
+  return "dd_epvi";
 }
 
 void MEDDLY::evp_mdd_int::normalize(node_builder &nb, int &ev) const
@@ -146,14 +165,40 @@ void MEDDLY::evp_mdd_int::normalize(node_builder &nb, int &ev) const
   }
 }
 
-void MEDDLY::evp_mdd_int::showEdgeValue(FILE* s, const void* edge, int i) const
+void MEDDLY::evp_mdd_int::showEdgeValue(FILE* s, const void* edge) const
 {
-  fprintf(s, "%d", ((const int*)edge)[i]);
+  fprintf(s, "%d", ((const node_handle*)edge)[0]);
 }
 
-void MEDDLY::evp_mdd_int::showUnhashedHeader(FILE* s, const int* uh) const
+void MEDDLY::evp_mdd_int::writeEdgeValue(FILE* s, const void* edge) const
 {
-  fprintf(s, " card: %d", uh[0]);
+  th_fprintf(s, "%d", ((const node_handle*)edge)[0]);
+}
+
+void MEDDLY::evp_mdd_int::readEdgeValue(FILE* s, void* edge)
+{
+  th_fscanf(1, s, "%d", (node_handle*)edge);
+}
+
+void MEDDLY::evp_mdd_int::showUnhashedHeader(FILE* s, const void* vh) const
+{
+  fprintf(s, " card: %d", ((const node_handle*)vh)[0]);
+}
+
+void MEDDLY::evp_mdd_int::writeUnhashedHeader(FILE* s, const void* vh) const
+{
+  fprintf(s, "\t %d\n", ((const node_handle*)vh)[0]);
+}
+
+void MEDDLY::evp_mdd_int::readUnhashedHeader(FILE* s, node_builder &nb) const
+{
+  th_fscanf(1, s, "%d", (node_handle*)nb.UHptr());
+}
+
+bool MEDDLY::evp_mdd_int
+::areEdgeValuesEqual(const void* eva, const void* evb) const
+{
+  return ((const int*)eva)[0] == ((const int*)evb)[0];
 }
 
 bool MEDDLY::evp_mdd_int::isRedundant(const node_builder &nb) const
@@ -173,11 +218,14 @@ bool MEDDLY::evp_mdd_int::isIdentityEdge(const node_builder &nb, int i) const
 }
 
 
+// ****************************************************************************
 // ********************************* EV*MDDs ********************************** 
+// ****************************************************************************
 
 MEDDLY::evt_mdd_real::evt_mdd_real(int dsl, domain *d, const policies &p)
 : evmdd_forest(dsl, d, forest::REAL, forest::EVTIMES, p)
 { 
+  setEdgeSize(sizeof(float), false);
   initializeForest();
 }
 
@@ -207,6 +255,10 @@ evaluate(const dd_edge &f, const int* vlist, float &term) const
   return evaluateInternal(f, vlist, term);
 }
 
+const char* MEDDLY::evt_mdd_real::codeChars() const
+{
+  return "dd_etvr";
+}
 
 void MEDDLY::evt_mdd_real::normalize(node_builder &nb, float &ev) const
 {
@@ -228,19 +280,25 @@ void MEDDLY::evt_mdd_real::normalize(node_builder &nb, float &ev) const
 }
 
 
-void MEDDLY::evt_mdd_real::showEdgeValue(FILE* s, const void* edge, int i) const
+void MEDDLY::evt_mdd_real::showEdgeValue(FILE* s, const void* edge) const
 {
-  fprintf(s, "%f", ((const float*)edge)[i]);
+  fprintf(s, "%f", ((const float*)edge)[0]);
 }
 
-bool MEDDLY::evt_mdd_real::areDuplicates(int node, const node_builder &nb) const
+void MEDDLY::evt_mdd_real::writeEdgeValue(FILE* s, const void* edge) const
 {
-  return areDupsInternal(node, nb);
+  th_fprintf(s, "%8e", ((const float*)edge)[0]);
 }
 
-bool MEDDLY::evt_mdd_real::areDuplicates(int node, const node_reader &nr) const
+void MEDDLY::evt_mdd_real::readEdgeValue(FILE* s, void* edge)
 {
-  return areDupsInternal(node, nr);
+  th_fscanf(1, s, "%8e", (float*)edge);
+}
+
+bool MEDDLY::evt_mdd_real
+::areEdgeValuesEqual(const void* eva, const void* evb) const
+{
+  return !notClose( ((const float*)eva)[0], ((const float*)evb)[0] );
 }
 
 bool MEDDLY::evt_mdd_real::isRedundant(const node_builder &nb) const

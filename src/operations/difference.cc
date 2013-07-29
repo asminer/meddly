@@ -45,7 +45,7 @@ class MEDDLY::diffr_mdd : public generic_binary_mdd {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(long a, long b, long& c);
+    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
 MEDDLY::diffr_mdd::diffr_mdd(const binary_opname* opcode, 
@@ -55,7 +55,7 @@ MEDDLY::diffr_mdd::diffr_mdd(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::diffr_mdd::checkTerminals(long a, long b, long& c)
+bool MEDDLY::diffr_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
   if (a == 0 || b == -1) {
     c = 0;
@@ -65,13 +65,14 @@ bool MEDDLY::diffr_mdd::checkTerminals(long a, long b, long& c)
     c = -1;
     return true;
   }
-  if (a == b) 
+  if (a == b) {
     if (arg1F == arg2F) {
       c = 0;
       return true;
     } else {
       return false;
     }
+  }
   if (b == 0) {
     if (arg1F == resF) {
       c = resF->linkNode(a);
@@ -97,7 +98,7 @@ class MEDDLY::diffr_mxd : public generic_binary_mxd {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(long a, long b, long& c);
+    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
 MEDDLY::diffr_mxd::diffr_mxd(const binary_opname* opcode, 
@@ -107,7 +108,7 @@ MEDDLY::diffr_mxd::diffr_mxd(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::diffr_mxd::checkTerminals(long a, long b, long& c)
+bool MEDDLY::diffr_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
   if (a == 0) {
     c = 0;
@@ -117,13 +118,14 @@ bool MEDDLY::diffr_mxd::checkTerminals(long a, long b, long& c)
     c = -1;
     return true;
   }
-  if (a == b) 
+  if (a == b) {
     if (arg1F == arg2F) {
       c = 0;
       return true;
     } else {
       return false;
     }
+  }
   if (b == 0) {
     if (arg1F == resF) {
       c = resF->linkNode(a);

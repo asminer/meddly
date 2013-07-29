@@ -36,6 +36,7 @@
 #include <unistd.h>
 
 #include "meddly.h"
+#include "meddly_expert.h"
 
 using namespace MEDDLY;
 
@@ -68,43 +69,32 @@ public:
 };
 
 
-void printmem(long m)
-{
-  if (m<1024) {
-    printf("%ld bytes", m);
-    return;
-  }
-  double approx = m;
-  approx /= 1024;
-  if (approx < 1024) {
-    printf("%3.2lf Kbytes", approx);
-    return;
-  }
-  approx /= 1024;
-  if (approx < 1024) {
-    printf("%3.2lf Mbytes", approx);
-    return;
-  }
-  approx /= 1024;
-  if (approx < 1024) {
-    printf("%3.2lf Gbytes", approx);
-    return;
-  }
-  approx /= 1024;
-  printf("%3.2lf Tbytes", approx);
-}
-
-forest* buildQueenForest()
+forest* buildQueenForest(forest::policies &p)
 {
   printf("Initializing domain and forest\n");
+  const char* ndp = "unknown node deletion";
+  switch (p.deletion) {
+    case forest::policies::NEVER_DELETE:
+        ndp = "never delete";
+        break;
+
+    case forest::policies::OPTIMISTIC_DELETION:
+        ndp = "optimistic node deletion";
+        break;
+
+    case forest::policies::PESSIMISTIC_DELETION:
+        ndp = "pessimistic node deletion";
+        break;
+  }
+  printf("\tUsing %s policy\n", ndp);
+
+
   int* vars = new int[N*N];
   for (int i=0; i<N*N; i++) {
     vars[i] = 2;
   }
   domain* d = createDomainBottomUp(vars, N*N);
   assert(d);
-  forest::policies p(false);
-  p.setPessimistic();
   forest* f = 
     d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL, p);
   assert(f);
@@ -182,13 +172,25 @@ void queenInDiagM(forest* f, int d, dd_edge &e)
   qidm[d+N-1] = new dd_edge(e);
 }
 
-bool processArgs(int argc, const char** argv)
+bool processArgs(int argc, const char** argv, forest::policies &p)
 {
-  if (argc<2) return false;
-  if (argc>3) return false;
-  N = atoi(argv[1]); 
+  p.setPessimistic();
+  N = -1;
+  int i;
+  for (i=1; i<argc; i++) {
+    if (strcmp("-opt", argv[i])==0) {
+      p.setOptimistic();
+      continue;
+    }
+    if (strcmp("-pess", argv[i])==0) {
+      p.setPessimistic();
+      continue;
+    }
+    N = atoi(argv[i]);
+    break;
+  }
   if (N<1) return false;
-  if (argc>2) {
+  if (++i < argc) {
     outfile = fopen(argv[2], "w");
     if (0==outfile) {
       printf("Couldn't open %s for writing, no solutions will be written\n", argv[2]);
@@ -201,21 +203,30 @@ bool processArgs(int argc, const char** argv)
 
 int usage(const char* who)
 {
-  printf("Usage: %s N <outfile>\n\n\t        N:  board dimension\n", who);
-  printf("\t<outfile>: if specified, we write all solutions to this file\n\n");
+  /* Strip leading directory, if any: */
+  const char* name = who;
+  for (const char* ptr=who; *ptr; ptr++) {
+    if ('/' == *ptr) name = ptr+1;
+  }
+  printf("Usage: %s <-opt> <-pess> N <outfile>\n\n", name);
+  printf("\t        N:  board dimension\n");
+  printf("\t     -opt:  Optimistic node deletion\n");
+  printf("\t    -pess:  Pessimistic node deletion (default)\n");
+  printf("\t<outfile>:  if specified, we write all solutions to this file\n\n");
   return 1;
 }
 
 int main(int argc, const char** argv)
 {
-  if (!processArgs(argc, argv)) return usage(argv[0]);
+  forest::policies p(false);
+  if (!processArgs(argc, argv, p)) return usage(argv[0]);
   initialize();
   printf("Using %s\n", getLibraryInfo(0));
 
   timer stopwatch;
   printf("\nDetermining queen covers for %dx%d chessboard.\n", N, N);
 
-  forest* f = buildQueenForest();
+  forest* f = buildQueenForest(p);
 
   dd_edge num_queens(f);
   f->createEdge(int(0), num_queens);
@@ -298,39 +309,37 @@ int main(int argc, const char** argv)
 
   printf("\n%lg seconds CPU time elapsed\n", stopwatch.elapsed());
   printf("Forest stats:\n");
-  printf("\t%ld current nodes\n", f->getCurrentNumNodes());
-  printf("\t%ld peak nodes\n", f->getPeakNumNodes());
-  printf("\t");
-  printmem(f->getCurrentMemoryUsed());
-  printf(" current memory\n\t");
-  printmem(f->getPeakMemoryUsed());
-  printf(" peak memory\n");
+  expert_forest* ef = (expert_forest*)f;
+  ef->reportStats(stdout, "\t", 
+    expert_forest::HUMAN_READABLE_MEMORY  |
+    expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
+    expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
+  );
 
   long c;
   apply(CARDINALITY, solutions, c);
   printf("\nFor a %dx%d chessboard, ", N, N);
   printf("there are %ld covers with %d queens\n\n", c, q);
 
-  if (!outfile) return 0;
-
-
-  printf("Writing solutions to file %s\n", argv[2]);
+  if (outfile) {
+    printf("Writing solutions to file %s\n", argv[2]);
   
-  fprintf(outfile, "%d # Board dimension\n\n", N);
-  // show the solutions
-  enumerator iter(solutions);
-  long counter;
-  for (counter = 1; iter; ++iter, ++counter) {
-    fprintf(outfile, "solution %5ld:  ", counter);
-    const int* minterm = iter.getAssignments();
-    for (int i=0; i<N; i++) for (int j=0; j<N; j++) {
-      if (minterm[ijmap(i,j)]) {
-        fprintf(outfile, "(%2d, %2d) ", i+1, j+1);
+    fprintf(outfile, "%d # Board dimension\n\n", N);
+    // show the solutions
+    enumerator iter(solutions);
+    long counter;
+    for (counter = 1; iter; ++iter, ++counter) {
+      fprintf(outfile, "solution %5ld:  ", counter);
+      const int* minterm = iter.getAssignments();
+      for (int i=0; i<N; i++) for (int j=0; j<N; j++) {
+        if (minterm[ijmap(i,j)]) {
+          fprintf(outfile, "(%2d, %2d) ", i+1, j+1);
+        }
       }
-    }
+      fprintf(outfile, "\n");
+    } // for iter
     fprintf(outfile, "\n");
-  } // for iter
-  fprintf(outfile, "\n");
+  }
   cleanup();
   return 0;
 }

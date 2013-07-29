@@ -28,8 +28,8 @@
 #ifndef MT_FOREST
 #define MT_FOREST
 
-#include <fstream>
-#include <iostream>
+// #include <fstream>
+// #include <iostream>
 #include <vector>
 
 #include "../defines.h"
@@ -46,7 +46,7 @@ namespace MEDDLY {
  */
 
 class MEDDLY::mt_forest : public expert_forest {
-  public:
+  protected:
     mt_forest(int dsl, domain *d, bool rel, range_type t, edge_labeling ev, 
       const policies &p);
     virtual ~mt_forest();
@@ -61,21 +61,8 @@ class MEDDLY::mt_forest : public expert_forest {
     virtual void createEdgeForVar(int vh, bool pr, float* terms, dd_edge& a);
 
     
-    virtual char edgeSize(int k) const {
-        return 0;
-    }
-    virtual char unhashedHeaderSize(int k) const {
-        return 0;
-    }
-    virtual char hashedHeaderSize(int k) const {
-        return 0;
-    }
-    virtual bool areEdgeValuesHashed(int k) const {
-        return false;
-    }
-    virtual bool areDuplicates(int node, const node_builder &nb) const;
-    virtual bool areDuplicates(int node, const node_reader &nr) const;
-
+    virtual void writeNode(FILE* s, const node_reader& nr, 
+      const node_handle* map) const;
     virtual bool isRedundant(const node_builder &nb) const;
     virtual bool isIdentityEdge(const node_builder &nb, int i) const;
 
@@ -93,64 +80,10 @@ class MEDDLY::mt_forest : public expert_forest {
             throw error(error::INVALID_ASSIGNMENT);
         if (getEdgeLabeling() != MULTI_TERMINAL)
             throw error(error::INVALID_OPERATION);
-        int *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
-        int node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
+        node_handle *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
+        long node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
 
-        result.set(node, 0, getNodeLevel(node));
-    }
-
-    template <class T>
-    inline bool areDupsInternal(int p, const T &nb) const {
-        const nodeData &node = getNode(p);
-        if (node.level != nb.getLevel()) return false;
-        const level_data &ld = levels[node.level];
-        if (ld.isFull(node.offset)) {
-          //
-          // p is full
-          //
-          int fs = ld.fullSizeOf(node.offset);
-          const int* pd = ld.fullDownOf(node.offset);
-          if (nb.isFull()) {
-            int i;
-            for (i=0; i<fs; i++) if (pd[i] != nb.d(i)) return false;
-            for (; i<nb.getSize(); i++) if (nb.d(i)) return false;
-            return true;
-          }
-          MEDDLY_DCASSERT(nb.isSparse()); 
-          int i = 0;
-          for (int z=0; z<nb.getNNZs(); z++) {
-            if (nb.i(z) >= fs) return false;
-            for (; i<nb.i(z); i++) if (pd[i]) return false;
-            if (pd[i] != nb.d(z)) return false;
-            i++;
-          } // for z
-          for (; i<fs; i++) if (pd[i]) return false;
-          return true;
-        }
-        //
-        // p is sparse
-        //
-        int nnz = ld.sparseSizeOf(node.offset);
-        const int* pd = ld.sparseDownOf(node.offset);
-        const int* pi = ld.sparseIndexesOf(node.offset);
-
-        if (nb.isSparse()) {
-          if (nnz != nb.getNNZs()) return false;
-          for (int z=0; z<nnz; z++) {
-            if (nb.d(z) != pd[z]) return false;
-            if (nb.i(z) != pi[z]) return false;
-          }
-          return true;
-        }
-        MEDDLY_DCASSERT(nb.isFull()); 
-        int i = 0;
-        for (int z=0; z<nnz; z++) {
-          for (; i<pi[z]; i++) if (nb.d(i)) return false;
-          if (nb.d(i) != pd[z]) return false;
-          i++;
-        }
-        for (; i<nb.getSize(); i++) if (nb.d(i)) return false;
-        return true;
+        result.set(node, 0);
     }
 
   // ------------------------------------------------------------
@@ -159,7 +92,7 @@ class MEDDLY::mt_forest : public expert_forest {
     /// Add a redundant node at level k.
     /// On input: d is the node "below" us, to point to.
     /// On output: d is the redundant node.
-    inline void insertRedundantNode(int k, int& d) {
+    inline void insertRedundantNode(int k, node_handle& d) {
       MEDDLY_DCASSERT(!isFullyReduced());
       bool useIdentity = false;
       if (isIdentityReduced()) {
@@ -169,7 +102,7 @@ class MEDDLY::mt_forest : public expert_forest {
       node_builder& nb = useNodeBuilder(k, sz);
       if (useIdentity) {
         // check for identity reductions with d
-        int sd;
+        node_handle sd;
         int si = getSingletonIndex(d, sd);
         for (int i=0; i<sz; i++) {
           nb.d(i) = linkNode(
@@ -186,25 +119,22 @@ class MEDDLY::mt_forest : public expert_forest {
 
   // ------------------------------------------------------------
   // still to be organized:
-  public:
-    void compareCacheCounts(int p = -1);
-
 
   protected:
     // Building level nodes
-    int buildLevelNodeHelper(int lh, int* terminalNodes, int sz);
+    node_handle buildLevelNodeHelper(int lh, node_handle* terminalNodes, int sz);
 
     // Building custom level nodes
-    int* getTerminalNodes(int n, bool* terms);
-    int* getTerminalNodes(int n, int* terms);
-    int* getTerminalNodes(int n, float* terms);
+    node_handle* getTerminalNodes(int n, bool* terms);
+    node_handle* getTerminalNodes(int n, int* terms);
+    node_handle* getTerminalNodes(int n, float* terms);
 
-  protected:
+  private:  
 
     bool counting;
 
     // scratch pad for buildLevelNode and getTerminalNodes
-    int* dptrs;
+    node_handle* dptrs;
     int dptrsSize;
 
 };

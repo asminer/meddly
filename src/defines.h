@@ -50,6 +50,7 @@
 #include <cassert>
 #include <cstring>
 #include <cstdio>
+#include <cstdarg>
 #include <limits>
 
 // Meddly
@@ -71,7 +72,7 @@ namespace MEDDLY {
   const int INF = std::numeric_limits<int>::max();
   const float NAN = std::numeric_limits<float>::quiet_NaN();
   inline bool isNan(float t) { return t != t; }
-  inline bool isNan(int t) { return t != t; }
+  inline bool isNan(int t) { return false; }
 
   // Handy Macros
 
@@ -87,7 +88,7 @@ namespace MEDDLY {
   template <class T> inline bool POSITIVE(T X) { return (X>0) ? true : false; }
 
   // Number of digits
-  inline int digits(int a) {
+  inline int digits(long a) {
     int d;
     for (d=1; a; d++) { a /= 10; }
     return d;
@@ -107,42 +108,80 @@ namespace MEDDLY {
     return k1 > k2;
   }
 
-  /*
-  // maxUlps would be a small +ve integer.
-  inline bool isAlmostEqual(int A, int B) {
-    static const int maxUlps = 16;
-  
-    if (isNan(A) && isNan(B)) return true;
-  
-    // Make sure maxUlps is non-negative and small enough that the
-    // default NAN won't compare as equal to anything.
-    MEDDLY_CHECK_RANGE(1, maxUlps, 4 * 1024 * 1024);
-  
-    // Make aInt lexicographically ordered as a twos-complement int
-    // int aInt = *(int*)&A;
-    // if (aInt < 0) aInt = 0x80000000 - aInt;
-  
-    // Make bInt lexicographically ordered as a twos-complement int
-    // int bInt = *(int*)&B;
-    // if (bInt < 0) bInt = 0x80000000 - bInt;
-  
-    // return ABS(aInt - bInt) <= maxUlps;
-  
-    // return A < 0
-    //         ? B < 0 ? ABS(B - A) <= maxUlps: ABS(mask - A - B) <= maxUlps
-    //         : B < 0 ? ABS(A - mask + B) <= maxUlps: ABS(A - B) <= maxUlps;
-#if 0
-    static const int mask = 0x80000000;
-    return ABS(A < 0? B < 0? B - A: mask - A - B: B < 0? A - mask + B: A - B)
-            <= maxUlps;
-#else
-    if (A < 0) A = 0x80000000 - A;
-    if (B < 0) B = 0x80000000 - B;
-    return ABS(A - B) <= maxUlps;
-#endif
+  /// Print human-readable memory usage
+  inline void fprintmem(FILE* s, unsigned long m, bool human) {
+    if ((!human) || (m<1024)) {
+      fprintf(s, "%lu bytes", m);
+      return;
+    }
+    double approx = m;
+    approx /= 1024;
+    if (approx < 1024) {
+      fprintf(s, "%3.2lf Kbytes", approx);
+      return;
+    }
+    approx /= 1024;
+    if (approx < 1024) {
+      fprintf(s, "%3.2lf Mbytes", approx);
+      return;
+    }
+    approx /= 1024;
+    if (approx < 1024) {
+      fprintf(s, "%3.2lf Gbytes", approx);
+      return;
+    }
+    approx /= 1024;
+    fprintf(s, "%3.2lf Tbytes", approx);
   }
-  */
 
+  /// throw wrapper around fprintf
+  inline void th_fprintf(FILE* s, const char* fmt, ...) {
+    va_list argptr;
+    va_start(argptr, fmt);
+    if (vfprintf(s, fmt, argptr)<0) throw error(error::COULDNT_WRITE);
+    va_end(argptr);
+  }
+
+  /// throw wrapper around fscanf
+  inline void th_fscanf(int n, FILE* s, const char* fmt, ...) {
+    va_list argptr;
+    va_start(argptr, fmt);
+    if (vfscanf(s, fmt, argptr)!=n) throw error(error::INVALID_FILE);
+    va_end(argptr);
+  }
+
+  /// Consume whitespace (if any) from a file stream
+  /// including comments of the form #....\n
+  inline void stripWS(FILE* s) {
+    bool comment = false;
+    for (;;) {
+      int c = fgetc(s);
+      if (EOF == c) throw error(error::INVALID_FILE);
+      if ('\n'== c) {
+        comment = false;
+        continue;
+      }
+      if (comment) continue;
+      if (' ' == c) continue;
+      if ('\t' == c) continue;
+      if ('\r' == c) continue;
+      if ('#' == c) {
+        comment = true;
+        continue;
+      }
+      // not whitespace
+      ungetc(c, s);
+      return;
+    }
+  }
+
+  /// Consume a keyword from a file stream
+  inline void consumeKeyword(FILE* s, const char* keyword) {
+    for ( ; *keyword; keyword++) {
+      int c = fgetc(s);
+      if (c != *keyword) throw error(error::INVALID_FILE);
+    }
+  }
 }
 
 /*

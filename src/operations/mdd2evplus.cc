@@ -43,13 +43,13 @@ class MEDDLY::mdd2evplus_operation : public unary_operation {
     mdd2evplus_operation(const unary_opname* oc, expert_forest* arg, 
       expert_forest* res);
 
-    virtual bool isStaleEntry(const int* entryData);
-    virtual void discardEntry(const int* entryData);
-    virtual void showEntry(FILE* strm, const int *entryData) const;
+    virtual bool isStaleEntry(const node_handle* entryData);
+    virtual void discardEntry(const node_handle* entryData);
+    virtual void showEntry(FILE* strm, const node_handle* entryData) const;
 
     virtual void compute(const dd_edge &arg, dd_edge &res);
 
-    void compute(int k, long a, long &bdn, int &bcard);
+    void compute(int k, node_handle a, node_handle &bdn, int &bcard);
 };
 
 MEDDLY::mdd2evplus_operation::mdd2evplus_operation(const unary_opname* oc, 
@@ -62,7 +62,7 @@ MEDDLY::mdd2evplus_operation::mdd2evplus_operation(const unary_opname* oc,
 
 bool 
 MEDDLY::mdd2evplus_operation
-::isStaleEntry(const int* entryData)
+::isStaleEntry(const node_handle* entryData)
 {
   return 
     argF->isStale(entryData[0]) ||
@@ -71,7 +71,7 @@ MEDDLY::mdd2evplus_operation
 
 void 
 MEDDLY::mdd2evplus_operation
-::discardEntry(const int* entryData)
+::discardEntry(const node_handle* entryData)
 {
   argF->uncacheNode(entryData[0]);
   resF->uncacheNode(entryData[1]);
@@ -79,7 +79,7 @@ MEDDLY::mdd2evplus_operation
 
 void 
 MEDDLY::mdd2evplus_operation
-::showEntry(FILE* strm, const int *entryData) const
+::showEntry(FILE* strm, const node_handle* entryData) const
 {
   fprintf(strm, "[%s %d %d (card %d)]", getName(), entryData[0], 
     entryData[1], entryData[2]);
@@ -94,16 +94,16 @@ MEDDLY::mdd2evplus_operation
   MEDDLY_DCASSERT(resF->getTerminalNode(false) == 0);
   MEDDLY_DCASSERT(argF->getTerminalNode(true) < 0);
   MEDDLY_DCASSERT(argF->getTerminalNode(false) == 0);
-  long down;
+  node_handle down;
   int card;
   int nVars = argF->getDomain()->getNumVariables();
   compute(nVars, arg.getNode(), down, card);
-  res.set(down, 0, resF->getNodeLevel(down));
+  res.set(down, 0);
 }
 
 void
 MEDDLY::mdd2evplus_operation
-::compute(int k, long a, long &bdn, int &bcard)
+::compute(int k, node_handle a, node_handle &bdn, int &bcard)
 {
   // Deal with terminals
   if (0 == a) {
@@ -123,7 +123,7 @@ MEDDLY::mdd2evplus_operation
   // Check compute table
   if (aLevel == k) {
     CTsrch.key(0) = a;
-    const int* cacheEntry = CT->find(CTsrch);
+    const node_handle* cacheEntry = CT->find(CTsrch);
     if (cacheEntry) {
       bdn = resF->linkNode(cacheEntry[1]);
       bcard = cacheEntry[2];
@@ -147,7 +147,7 @@ MEDDLY::mdd2evplus_operation
   // recurse
   bcard = 0;
   for (int i=0; i<size; i++) {
-    long ddn;
+    node_handle ddn;
     int dcard;
     compute(k-1, A->d(i), ddn, dcard);
     nb.d(i) = ddn;
@@ -164,11 +164,11 @@ MEDDLY::mdd2evplus_operation
   node_reader::recycle(A);
 
   // Reduce
-  nb.uh(0) = bcard;
+  nb.setUH(&bcard);
   int dummy;
-  int intb;
-  resF->createReducedNode(-1, nb, dummy, intb);
-  bdn = intb;
+  node_handle bl;
+  resF->createReducedNode(-1, nb, dummy, bl);
+  bdn = bl;
   MEDDLY_DCASSERT(0==dummy);
 
   // Add to compute table

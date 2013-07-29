@@ -52,19 +52,19 @@ class MEDDLY::range_int : public unary_operation {
     range_int(const unary_opname* oc, expert_forest* arg);
 
     // common
-    virtual bool isStaleEntry(const int* entryData);
-    virtual void discardEntry(const int* entryData);
-    virtual void showEntry(FILE* strm, const int *entryData) const;
+    virtual bool isStaleEntry(const node_handle* entryData);
+    virtual void discardEntry(const node_handle* entryData);
+    virtual void showEntry(FILE* strm, const node_handle* entryData) const;
   
   protected:
-    inline bool findResult(long a, long &b) {
+    inline bool findResult(node_handle a, long &b) {
       CTsrch.key(0) = a;
-      const int* cacheFind = CT->find(CTsrch);
+      const node_handle* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
       b = cacheFind[1];
       return true;
     }
-    inline long saveResult(long a, long &b) {
+    inline long saveResult(node_handle a, long &b) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
       entry.key(0) = argF->cacheNode(a);
       entry.result(0) = b;
@@ -78,17 +78,17 @@ MEDDLY::range_int::range_int(const unary_opname* oc, expert_forest* arg)
 {
 }
 
-bool MEDDLY::range_int::isStaleEntry(const int* data)
+bool MEDDLY::range_int::isStaleEntry(const node_handle* data)
 {
   return argF->isStale(data[0]);
 }
 
-void MEDDLY::range_int::discardEntry(const int* data)
+void MEDDLY::range_int::discardEntry(const node_handle* data)
 {
   argF->uncacheNode(data[0]);
 }
 
-void MEDDLY::range_int::showEntry(FILE* strm, const int *data) const
+void MEDDLY::range_int::showEntry(FILE* strm, const node_handle* data) const
 {
   fprintf(strm, "[%s(%d): %d(L)]", getName(), data[0], data[1]);
 }
@@ -106,19 +106,19 @@ class MEDDLY::range_real : public unary_operation {
     range_real(const unary_opname* oc, expert_forest* arg);
 
     // common
-    virtual bool isStaleEntry(const int* entryData);
-    virtual void discardEntry(const int* entryData);
-    virtual void showEntry(FILE* strm, const int *entryData) const;
+    virtual bool isStaleEntry(const node_handle* entryData);
+    virtual void discardEntry(const node_handle* entryData);
+    virtual void showEntry(FILE* strm, const node_handle* entryData) const;
 
   protected:
-    inline bool findResult(long a, float &b) {
+    inline bool findResult(node_handle a, float &b) {
       CTsrch.key(0) = a;
-      const int* cacheFind = CT->find(CTsrch);
+      const node_handle* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
       b = ((float*)(cacheFind+1))[0];
       return true;
     }
-    inline long saveResult(long a, float &b) {
+    inline float saveResult(node_handle a, float &b) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
       entry.key(0) = argF->cacheNode(a);
       entry.copyResult(0, &b, sizeof(float));
@@ -131,17 +131,17 @@ MEDDLY::range_real::range_real(const unary_opname* oc, expert_forest* arg)
 {
 }
 
-bool MEDDLY::range_real::isStaleEntry(const int* data)
+bool MEDDLY::range_real::isStaleEntry(const node_handle* data)
 {
   return argF->isStale(data[0]);
 }
 
-void MEDDLY::range_real::discardEntry(const int* data)
+void MEDDLY::range_real::discardEntry(const node_handle* data)
 {
   argF->uncacheNode(data[0]);
 }
 
-void MEDDLY::range_real::showEntry(FILE* strm, const int *data) const
+void MEDDLY::range_real::showEntry(FILE* strm, const node_handle* data) const
 {
   double answer;
   memcpy(&answer, data+1, sizeof(double));
@@ -163,10 +163,10 @@ public:
   virtual void compute(const dd_edge &arg, long &res) {
     res = compute(arg.getNode());
   }
-  long compute(long a);
+  long compute(node_handle a);
 };
 
-long MEDDLY::maxrange_int::compute(long a)
+long MEDDLY::maxrange_int::compute(node_handle a)
 {
   // Terminal case
   if (argF->isTerminalNode(a)) return argF->getInteger(a);
@@ -207,10 +207,10 @@ public:
   virtual void compute(const dd_edge &arg, long &res) {
     res = compute(arg.getNode());
   }
-  long compute(long a);
+  long compute(node_handle a);
 };
 
-long MEDDLY::minrange_int::compute(long a)
+long MEDDLY::minrange_int::compute(node_handle a)
 {
   // Terminal case
   if (argF->isTerminalNode(a)) return argF->getInteger(a);
@@ -251,10 +251,10 @@ public:
   virtual void compute(const dd_edge &arg, double &res) {
     res = compute(arg.getNode());
   }
-  float compute(long a);
+  float compute(node_handle a);
 };
 
-float MEDDLY::maxrange_real::compute(long a)
+float MEDDLY::maxrange_real::compute(node_handle a)
 {
   // Terminal case
   if (argF->isTerminalNode(a)) return argF->getInteger(a);
@@ -295,10 +295,10 @@ public:
   virtual void compute(const dd_edge &arg, double &res) {
     res = compute(arg.getNode());
   }
-  float compute(long a);
+  float compute(node_handle a);
 };
 
-float MEDDLY::minrange_real::compute(long a)
+float MEDDLY::minrange_real::compute(node_handle a)
 {
   // Terminal case
   if (argF->isTerminalNode(a)) return argF->getInteger(a);

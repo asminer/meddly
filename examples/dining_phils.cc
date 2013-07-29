@@ -104,30 +104,15 @@ using namespace MEDDLY;
 // #define NAME_VARIABLES
 // #define SHOW_MXD
 
-void printmem(long m)
+void printStats(const char* who, const forest* f)
 {
-  if (m<1024) {
-    printf("%ld bytes", m);
-    return;
-  }
-  double approx = m;
-  approx /= 1024;
-  if (approx < 1024) {
-    printf("%3.2lf Kbytes", approx);
-    return;
-  }
-  approx /= 1024;
-  if (approx < 1024) {
-    printf("%3.2lf Mbytes", approx);
-    return;
-  }
-  approx /= 1024;
-  if (approx < 1024) {
-    printf("%3.2lf Gbytes", approx);
-    return;
-  }
-  approx /= 1024;
-  printf("%3.2lf Tbytes", approx);
+  printf("%s stats:\n", who);
+  const expert_forest* ef = (expert_forest*) f;
+  ef->reportStats(stdout, "\t",
+    expert_forest::HUMAN_READABLE_MEMORY  |
+    expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
+    expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
+  );
 }
 
 variable** initializeVariables(int nLevels)
@@ -426,6 +411,7 @@ int main(int argc, char *argv[])
 
   printf("Building next-state function for %d dining philosophers\n", 
           nPhilosophers);
+  fflush(stdout);
   start.note_time();
 
   // Create a matrix diagram to represent the next-state function
@@ -440,21 +426,7 @@ int main(int argc, char *argv[])
           start.get_last_interval()/1000000.0);
 
   // Show stats for nsf construction
-
-  printf("MxD stats:\n");
-  printf("\t%ld current nodes\n", mxd->getCurrentNumNodes());
-  printf("\t%ld peak nodes\n", mxd->getPeakNumNodes());
-  printf("\t");
-  printmem(mxd->getCurrentMemoryUsed());
-  printf(" current memory used\n\t");
-  printmem(mxd->getPeakMemoryUsed());
-  printf(" peak memory used\n\t");
-  printmem(mxd->getCurrentMemoryAllocated());
-  printf(" current memory allocated\n\t");
-  printmem(mxd->getPeakMemoryAllocated());
-  printf(" peak memory allocated\n");
-  
-  fflush(stdout);
+  printStats("MxD", mxd);
 
 #ifdef SHOW_MXD
   printf("Next-State Function:\n");
@@ -468,6 +440,7 @@ int main(int argc, char *argv[])
     ? "saturation"
     : "traditional iteration"
   );
+  fflush(stdout);
   start.note_time();
   apply(
       dfs?
@@ -483,19 +456,7 @@ int main(int argc, char *argv[])
 
 
   // Show stats for rs construction
-
-  printf("MDD stats:\n");
-  printf("\t%ld current nodes\n", mdd->getCurrentNumNodes());
-  printf("\t%ld peak nodes\n", mdd->getPeakNumNodes());
-  printf("\t");
-  printmem(mdd->getCurrentMemoryUsed());
-  printf(" current memory used\n\t");
-  printmem(mdd->getPeakMemoryUsed());
-  printf(" peak memory used\n\t");
-  printmem(mdd->getCurrentMemoryAllocated());
-  printf(" current memory allocated\n\t");
-  printmem(mdd->getPeakMemoryAllocated());
-  printf(" peak memory allocated\n");
+  printStats("MDD", mdd);
   
   operation::showAllComputeTables(stdout, 1);
 

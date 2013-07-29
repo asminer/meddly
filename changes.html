@@ -2,34 +2,90 @@
 <h2>Repository updates since last release</h2>
 
 <ul>
-<li> New unique table.
+<li> Added <tt>typedef</tt>s for node handles and addresses,
+     updated the interface and code to use these.
 </li>
-<li> New iterator implementation for dd_edge class.
+
+<li> Switched to one pool of nodes per forest,
+     instead of one pool per level.
 </li>
-<li> Switching to "ciardo--style" identity reductions.
+
+<li> Changed free list representation for node handles.
 </li>
-<li> Lots of code reorganization and cleanup.
+
+<li>  The node storage mechanism is now loosely coupled,
+      and may be selected at runtime.
 </li>
+
+<li>  The node memory recycling mechanism is now loosely coupled.
+      There are a few mechanisms to choose from.
+</li>
+
+<li>  Added a new node storage mechanism that uses compression.
+</li>
+
+<li>  Added ability to read and write DDs to a file.
+
 </ul>
 
 <h4>SIMPLE INTERFACE CHANGES</h4>
 <ul>
-<li> Iterators replaced with enumerators.
+<li> The forest policy for specifying full vs sparse node storage has changed.
+     Now, this is specified via <tt>storage_flags</tt>
+     by combining flags <tt>ALLOW_FULL_STORAGE</tt>
+     and <tt>ALLOW_SPARSE_STORAGE</tt> as appropriate.
 </li>
-<li> Removed <tt>findFirstElement</tt> methods,
-the same behavior can be obtained with enumerators.
+<li>  The node storage scheme may be changed on a per forest basis,
+      at runtime, by setting the forest <tt>policy</tt> as appropriate.
+</li>
+<li>
+      Removed forest policy <tt>recycleNodeStorageHoles</tt>,
+      since the new policy <tt>nodestor</tt> 
+      allows to specify how nodes are stored and how holes are
+      tracked (if at all).
+</li>
+<li>  In the <tt>forest</tt> class, added methods
+  <ul>
+  <li>  <tt>writeEdges</tt>, to write one or more edges
+        (and all nodes below) to a file in a machine readable format
+  </li>
+  <li>  <tt>readEdges</tt>, to read one or more edges
+        (and all nodes below) from a file
+  </li>
+  </ul> 
 </li>
 </ul>
 
 <h4>EXPERT INTERFACE CHANGES</h4>
 <ul>
-<li> Added <tt>node_builder</tt> subclass, updated operations to use it.
+<li> The node storage interface has changed.
+     This is likely to affect forest implementations, and not much else.
 </li>
-<li> Added <tt>node_reader</tt> subclass, updated operations to use it.
+<li>  Different node storage schemes are implemented in the
+      <tt>storage</tt> subdirectory.
+      Motivated users may invent and use their own schemes.
 </li>
-<li> Removed most of the old interface for accessing nodes.
+<li>  In the <tt>expert_forest</tt> class, method <tt>reportMemoryUsage</tt>
+      has been replaced by method <tt>reportStats</tt>.
 </li>
-<li> Removed temporary edges.
+<li>  <tt>expert_forest::markNodesInSubgraph</tt> and
+      <tt>expert_forest::showNodeGraph</tt>
+      now take an array of root nodes, instead of a single one.
+</li>
+</ul>
+
+<h2>Still to do or next steps</h2>
+
+<ul>
+
+<li>  Better handling of edge values in nodes 
+      i.e., really treat an edge value as a chunk of memory,
+      and concatenate the chunks when storing a node.
+</li>
+
+<li>  Decide on a scheme for hashing the (now) raw chunks
+      of data in an edge value, and hashed headers.
 </li>
 
 </ul>
+

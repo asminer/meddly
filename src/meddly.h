@@ -44,6 +44,28 @@
 
 namespace MEDDLY {
 
+  // Typedefs
+  typedef unsigned char node_storage_flags;
+
+  /** Handles for nodes.
+      This should be either int or long, and effectively limits
+      the number of possible nodes per forest.
+      As an int, we get 2^32-1 possible nodes per forest,
+      which should be enough for most applications.
+      As a long on a 64-bit machine, we get 2^64-1 possible nodes
+      per forest, at the expense of nearly doubling the memory used.
+      This also specifies the incoming count range for each node.
+  */
+  typedef int  node_handle;
+
+  /** Node addresses.
+      This is used for internal storage of a node,
+      and should probably not be changed.
+      The typedef is given simply to clarify the code
+      (hopefully :^)
+  */
+  typedef long node_address;
+
   // Classes
 
   class error;
@@ -51,6 +73,7 @@ namespace MEDDLY {
   class forest;
   class expert_forest;
   class node_reader;
+  class node_storage;
   class variable;
   class domain;
   class dd_edge;
@@ -81,6 +104,39 @@ namespace MEDDLY {
   ct_object& get_mpz_wrapper();
   void unwrap(const ct_object &, mpz_t &value);
 #endif
+
+  // ******************************************************************
+  // *                     Node storage mechanisms                    *
+  // ******************************************************************
+
+  /** "Classic" node storage mechanism.
+      The node storage mechanism from early versions of this library.
+  */
+  extern const node_storage* CLASSIC_STORAGE;
+
+  /** Similar to classic.
+      Differences are in class design, so we can measure overhead
+      (if any) of class design differences.
+  */
+  extern const node_storage* SIMPLE_GRID;
+
+  /** Like classic, but use an array of lists for hole management.
+  */
+  extern const node_storage* SIMPLE_ARRAY;
+
+  /** Like classic, but use heaps for hole management.
+  */
+  extern const node_storage* SIMPLE_HEAP;
+
+  /** Classic node storage but no hole management.
+  */
+  extern const node_storage* SIMPLE_NONE;
+
+  /** Nodes are stored in a compressed form.
+      Holes are managed using the original grid structure.
+  */
+  extern const node_storage* COMPACT_GRID;
+
 
   // ******************************************************************
   // *                     Named unary operations                     *
@@ -431,6 +487,10 @@ class MEDDLY::error {
       INVALID_POLICY,
       /// Bad value for something.
       INVALID_ASSIGNMENT,
+      /// File format error.
+      INVALID_FILE,
+      /// File output error.
+      COULDNT_WRITE,
       /// Miscellaneous error
       MISCELLANEOUS
     };
@@ -456,6 +516,8 @@ class MEDDLY::error {
           case  OVERFLOW:             return "Overflow";
           case  INVALID_POLICY:       return "Invalid policy";
           case  INVALID_ASSIGNMENT:   return "Invalid assignment";
+          case  INVALID_FILE:         return "Invalid file";
+          case  COULDNT_WRITE:        return "Couldn't write to file";
           case  MISCELLANEOUS:        return "Miscellaneous";
           default:                    return "Unknown error";
       }
@@ -533,15 +595,9 @@ class MEDDLY::forest {
           IDENTITY_REDUCED
       };
 
-      /// Supported node storage meachanisms.
-      enum node_storage {
-          /// Truncated full storage.
-          FULL_STORAGE,
-          /// Sparse storage.
-          SPARSE_STORAGE,
-          /// For each node, either full or sparse, whichever is more compact.
-          FULL_OR_SPARSE_STORAGE
-      };
+      // Supported node storage meachanisms.
+      static const unsigned char  ALLOW_FULL_STORAGE      = 0x01;
+      static const unsigned char  ALLOW_SPARSE_STORAGE    = 0x02;
 
       /// Supported node deletion policies.
       enum node_deletion {
@@ -558,44 +614,67 @@ class MEDDLY::forest {
           PESSIMISTIC_DELETION
       };
 
+      /// Defaults: how may we store nodes for all levels in the forest.
+      node_storage_flags storage_flags;
       /// Default reduction rule for all levels in the forest.
       reduction_rule reduction;
-      /// Default storage rule for all levels in the forest.
-      node_storage storage;
       /// Default deletion policy for all levels in the forest.
       node_deletion deletion;
 
-      /// Compaction threshold for all variables in the forest.
-      int compaction;
+      /// Backend storage mechanism for nodes.
+      const node_storage* nodestor;
+
+      /// Memory compactor: never run if fewer than this many unused slots.
+      int compact_min;
+      /// Memory compactor: always run if more than this many unused slots.
+      int compact_max;
+      /// Memory compactor: fraction of unused slots to trigger.
+      int compact_frac;
+
       /// Number of zombie nodes to trigger garbage collection
       int zombieTrigger;
       /// Number of orphan nodes to trigger garbage collection
       int orphanTrigger;
       /// Should we run the memory compactor after garbage collection
       bool compactAfterGC;
-
-      /// Per-level node memory management parameter.
-      bool recycleHolesInLevelData;
+      /// Should we run the memory compactor before trying to expand
+      bool compactBeforeExpand;
 
       /// Constructor; sets reasonable defaults
       policies(bool rel) {
         reduction = rel ? IDENTITY_REDUCED : FULLY_REDUCED;
-        storage = FULL_OR_SPARSE_STORAGE;
+        storage_flags = ALLOW_FULL_STORAGE | ALLOW_SPARSE_STORAGE;
         deletion = OPTIMISTIC_DELETION;
-        compaction = 40;
+        compact_min = 100;
+        compact_max = 1000000;
+        compact_frac = 40;
         zombieTrigger = 1000000;
         orphanTrigger = 500000;
-        compactAfterGC = true;
-        recycleHolesInLevelData = true;
+        compactAfterGC = false;
+        compactBeforeExpand = true;
+        // nodestor = CLASSIC_STORAGE;
+        nodestor = SIMPLE_GRID;
+        // nodestor = SIMPLE_ARRAY;
+        // nodestor = SIMPLE_HEAP;
+        // nodestor = SIMPLE_NONE;
+        // nodestor = COMPACT_GRID;
+      }
+
+      inline void setFullStorage() { 
+        storage_flags = ALLOW_FULL_STORAGE; 
+      }
+
+      inline void setSparseStorage() { 
+        storage_flags = ALLOW_SPARSE_STORAGE;
+      }
+
+      inline void setFullOrSparse() { 
+        storage_flags = ALLOW_FULL_STORAGE | ALLOW_SPARSE_STORAGE;
       }
 
       inline void setFullyReduced()     { reduction = FULLY_REDUCED; }
       inline void setQuasiReduced()     { reduction = QUASI_REDUCED; }
       inline void setIdentityReduced()  { reduction = IDENTITY_REDUCED; }
-
-      inline void setFullStorage()      { storage = FULL_STORAGE; }
-      inline void setSparseStorage()    { storage = SPARSE_STORAGE; }
-      inline void setCompactStorage()   { storage = FULL_OR_SPARSE_STORAGE; }
 
       inline void setNeverDelete()      { deletion = NEVER_DELETE; }
       inline void setOptimistic()       { deletion = OPTIMISTIC_DELETION; }
@@ -608,6 +687,8 @@ class MEDDLY::forest {
       long reclaimed_nodes;
       /// Number of times the forest storage array was compacted
       long num_compactions;
+      /// Number of times the garbage collector ran.
+      long garbage_collections;
       /// Current number of zombie nodes (waiting for deletion)
       long zombie_nodes;
       /// Current number of orphan nodes (disconnected)
@@ -772,8 +853,8 @@ class MEDDLY::forest {
     }
 
     /// Returns the storage mechanism used by this forest.
-    inline policies::node_storage getNodeStorage() const {
-      return deflt.storage;
+    inline node_storage_flags getNodeStorage() const {
+      return deflt.storage_flags;
     }
 
     /// Returns the node deletion policy used by this forest.
@@ -788,12 +869,12 @@ class MEDDLY::forest {
 
     /// Can we store nodes sparsely
     inline bool areSparseNodesEnabled() const {
-      return policies::FULL_STORAGE != deflt.storage;
+      return policies::ALLOW_SPARSE_STORAGE & deflt.storage_flags;
     }
 
     /// Can we store nodes fully
     inline bool areFullNodesEnabled() const {
-      return policies::SPARSE_STORAGE != deflt.storage;
+      return policies::ALLOW_FULL_STORAGE & deflt.storage_flags;
     }
 
     /// Get forest performance stats.
@@ -1289,6 +1370,31 @@ class MEDDLY::forest {
   // ------------------------------------------------------------
   // abstract virtual.
   public:
+    /** Write edges to a file in a format that can be read back later.
+        This implies that all nodes "below" those edges are also
+        written to the file.
+          @param  s   Stream to write to
+          @param  E   Array of edges
+          @param  n   Dimension of the edge array
+
+          @throws     COULDNT_WRITE, if writing failed
+    */
+    virtual void writeEdges(FILE* s, const dd_edge* E, int n) const = 0;
+
+    /** Read edges from a file.
+        Allows reconstruction of edges that we
+        saved using \a writeEdges().
+        The forest does not need to be empty;
+        the edges are added to the forest as necessary.
+          @param  s   Stream to read from
+          @param  E   Array of edges
+          @param  n   Dimension of the edge array
+          
+          @throws     INVALID_FILE, if the file does not match what we expect,
+                      including different number of edges specified.
+    */
+    virtual void readEdges(FILE* s, dd_edge* E, int n) = 0;
+
     /** Force garbage collection.
         All disconnected nodes in this forest are discarded along with any
         compute table entries that may include them.
@@ -1580,6 +1686,23 @@ class MEDDLY::domain {
     }
     */
 
+    /** Write the domain to a file in a format that can be read back later.
+          @param  s   Stream to write to
+
+          @throws     COULDNT_WRITE, if writing failed
+    */
+    virtual void write(FILE* s) const = 0;
+
+    /** Initialize the domain from data in a file.
+        Allows reconstruction of a domain that 
+        we saved using \a write().
+        The domain should be empty.
+          @param  s   Stream to read from
+          
+          @throws     INVALID_FILE, if the file does not match what we expect 
+    */
+    virtual void read(FILE* s) = 0;
+
     /** Display lots of information about the domain.
         This is primarily for aid in debugging.
         @param  strm    File stream to write to.
@@ -1699,7 +1822,7 @@ class MEDDLY::dd_edge {
     */
     inline void clear() {
       assert(index != -1);
-      set(0, 0, 0);
+      set(0, 0);
     }
 
     /** Obtain a modifiable copy of the forest owning this edge.
@@ -1710,7 +1833,7 @@ class MEDDLY::dd_edge {
     /** Get this dd_edge's node handle.
         @return         the node handle.
     */
-    inline int getNode() const { return node; }
+    inline node_handle getNode() const { return node; }
 
     /** Get this dd_edge's edge value (only valid for edge-valued MDDs).
         Note: EV+MDDs use Integer edge-values while EV*MDDs use
@@ -1720,10 +1843,10 @@ class MEDDLY::dd_edge {
     inline void getEdgeValue(int& ev) const { ev = value; }
     void getEdgeValue(float& edgeValue) const;
 
-    /** Get this dd_edge's level handle.
-        @return         the level handle.
+    /** Get this dd_edge's level.
+        @return         the level.
     */
-    inline int getLevel() const { return level; }
+    int getLevel() const;
 
     /** Get node cardinality.
         Provided for backward compatibility.
@@ -1759,10 +1882,9 @@ class MEDDLY::dd_edge {
         @param  node    node handle.
         @param  value   value of edge coming into the node (only useful
                         for edge-valued MDDs)
-        @param  level   level handle.
     */
-    void set(int node, int value, int level);
-    void set(int node, float value, int level);
+    void set(node_handle node, int value);
+    void set(node_handle node, float value);
 
     /** Check for equality.
         @return true    iff this edge has the same parent and refers to
@@ -1770,7 +1892,7 @@ class MEDDLY::dd_edge {
     */
     inline bool operator==(const dd_edge& e) const {
       return (parent == e.parent && node == e.node 
-              && value == e.value && level == e.level);
+              && value == e.value);
     }
 
     /** Check for inequality.
@@ -1846,31 +1968,6 @@ class MEDDLY::dd_edge {
     */
     dd_edge& operator/=(const dd_edge &e);
 
-#if 0
-    //  Not implemented
-    /** Less-than operator.
-        BOOLEAN forests: INVALID; INTEGER/REAL forests: Less-than.
-        This returns an MTMDD containing all elements whose terminal value
-        in \a this dd_edge is less than the terminal value in dd_edge \a e.
-
-        Example:
-        Let's assume A and B are dd_edges belonging to the same forest with
-        INTEGERs for terminal values. Let there be two variables in this
-        forest and each variable can take up values 0 and 1. An element is
-        represented as (2nd variable, 1st variable, terminal value)
-
-        Assuming,
-        A = {(0, 0, 1), (0, 1, 4), (1, 0, 0), (1, 1, -1)}
-        B = {(0, 0, 2), (0, 1, 0), (1, 0, 3), (1, 1, 0)}
-        A < B = {(0, 0, 1), (0, 1, 0), (1, 0, 1), (1, 1, 1)}
-        where 0 and 1 represent False and True respectively.
-
-        @param  e       dd_edge for less-than.
-        @return         dd_edge representing \a this < \a e.
-    */
-    const dd_edge operator<(const dd_edge& e) const;
-#endif
-
     /** Display the edge information.
         This is primarily for aid in debugging.
         Note that cardinality only works for MDDs, MTMDDs, MXDs and MTMXDs.
@@ -1882,6 +1979,12 @@ class MEDDLY::dd_edge {
     */
     void show(FILE* strm, int verbosity = 0) const;
 
+    /// Write to a file
+    void write(FILE* s, const node_handle* map) const;
+
+    /// Read from a file
+    void read(forest* p, FILE* s, const node_handle* map);
+
   private:
     friend class forest;
     friend class iterator;
@@ -1890,10 +1993,10 @@ class MEDDLY::dd_edge {
     inline int getIndex() const { return index; }
 
     forest *parent;
-    int node;
+    int index;  //  our slot number in the parent forest's list
+
+    node_handle node;
     int value;
-    int level;
-    int index;
 
     binary_operation* opPlus;
     binary_operation* opStar;
@@ -2020,10 +2123,10 @@ class MEDDLY::enumerator {
     bool incrRelation();
     bool incrRow();
     bool incrColumn();
-    bool firstSetElement(int k, int down);
-    bool firstRelElement(int k, int down);
-    bool firstRow(int k, int down);
-    bool firstColumn(int k, int down);
+    bool firstSetElement(int k, node_handle down);
+    bool firstRelElement(int k, node_handle down);
+    bool firstRow(int k, node_handle down);
+    bool firstColumn(int k, node_handle down);
 
     static inline int downLevel(int k) {
       return (k>0) ? (-k) : (-k-1);

@@ -58,8 +58,27 @@ void MEDDLY::mt_mdd_bool::evaluate(const dd_edge &f, const int* vlist,
   term = getBoolean(getTerminalNodeForEdge(f.getNode(), vlist));
 }
 
-
 void MEDDLY::mt_mdd_bool::showTerminal(FILE* s, int tnode) const
 {
   fprintf(s, "%c", tnode ? 'T' : 'F'); 
 }
+
+void MEDDLY::mt_mdd_bool::writeTerminal(FILE* s, int tnode) const
+{
+  th_fprintf(s, "%c", tnode ? 'T' : 'F'); 
+}
+
+MEDDLY::node_handle MEDDLY::mt_mdd_bool::readTerminal(FILE* s)
+{
+  stripWS(s);
+  char c = fgetc(s);
+  if ('T' == c) return -1;
+  if ('F' == c) return  0;
+  throw error(error::INVALID_FILE);
+}
+
+const char* MEDDLY::mt_mdd_bool::codeChars() const
+{
+  return "dd_tvb";
+}
+

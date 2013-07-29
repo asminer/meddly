@@ -15,7 +15,7 @@ int main()
   MEDDLY::initialize();
 
   // Initialize domain
-  int* tmp = new int[3];
+  int* tmp = new int[4];
   tmp[0] = 3;
   tmp[1] = 3;
   tmp[2] = 3;
