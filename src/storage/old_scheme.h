@@ -124,7 +124,7 @@ namespace MEDDLY {
     :
     (holes_top)
 
-    TBD:
+
     Note that the grid only stores holes up to the largest hole
     requested.  Larger holes are stored in the "large holes list".
 
@@ -161,6 +161,8 @@ class MEDDLY::old_node_storage : public node_storage {
     virtual void reportStats(FILE* s, const char* pad, unsigned flags) const;
 
     virtual void showNode(FILE* s, node_address addr, bool verb) const;
+    virtual void writeNode(FILE* s, node_address addr, const node_handle* map)
+    const;
 
     virtual node_address makeNode(node_handle p, const node_builder &nb, 
         node_storage_flags opt);
@@ -440,8 +442,17 @@ class MEDDLY::old_node_storage : public node_storage {
   // --------------------------------------------------------
   // |  Node comparison as a template
   private:
+    inline bool headersMatch(node_handle addr, const void* hh, int bytes) const {
+      if (0== bytes) return true;
+      return 0 == memcmp(HH(addr), hh, bytes);
+    }
+
     template <class nodetype>
     inline bool areDupsTempl(node_handle addr, const nodetype &n) const {
+      if (!headersMatch(addr, n.HHptr(), n.HHbytes())) {
+        return false;
+      }
+
       int size = sizeOf(addr);
       if (size<0) {
         //

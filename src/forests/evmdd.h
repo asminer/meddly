@@ -149,8 +149,9 @@ class MEDDLY::evp_mdd_int : public evmdd_forest {
     virtual void showEdgeValue(FILE* s, const void* edge) const;
     virtual void writeEdgeValue(FILE* s, const void* edge) const;
     virtual void readEdgeValue(FILE* s, void* edge);
-    virtual void showUnhashedHeader(FILE* s, const int* uh) const;
-
+    virtual void showUnhashedHeader(FILE* s, const void* uh) const;
+    virtual void writeUnhashedHeader(FILE* s, const void* uh) const;
+    virtual void readUnhashedHeader(FILE* s, node_builder &nb) const;
 };
 
 

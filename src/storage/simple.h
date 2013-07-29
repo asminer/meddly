@@ -333,8 +333,17 @@ class MEDDLY::simple_storage : public node_storage {
   // --------------------------------------------------------
   // |  Node comparison as a template
   private:
+    inline bool headersMatch(node_handle addr, const void* hh, int bytes) const {
+      if (0== bytes) return true;
+      return 0 == memcmp(HH(addr), hh, bytes);
+    }
+
     template <class nodetype>
     inline bool areDupsTempl(node_handle addr, const nodetype &n) const {
+      if (!headersMatch(addr, n.HHptr(), n.HHbytes())) {
+        return false;
+      }
+
       int size = sizeOf(addr);
       if (size<0) {
         //

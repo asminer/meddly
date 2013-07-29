@@ -265,7 +265,6 @@ void MEDDLY::compact_storage
     fprintf(s, "]");
   }
 
-
   // show extra header stuff
   if (unhashedBytes) {
     getParent()->showUnhashedHeader(s, UH(addr));
@@ -273,6 +272,84 @@ void MEDDLY::compact_storage
   if (hashedBytes) {
     getParent()->showHashedHeader(s, HH(addr));
   }
+}
+
+// ******************************************************************
+void MEDDLY::compact_storage
+::writeNode(FILE* s, node_address addr, const node_handle* map) const
+{
+  int pbytes, ibytes, size;
+  getStyleOf(addr, pbytes, ibytes);
+  unsigned char* rawd = 0;
+  unsigned char* rawe = 0;
+
+  th_fprintf(s, "%d\n", sizeOf(addr));
+  if (sizeOf(addr) < 0) {
+    //
+    // Sparse node
+    //
+    size = -sizeOf(addr);
+    rawd = sparseDown(addr);
+    unsigned char* rawi = sparseIndex(addr);
+    rawe = sparseEdge(addr);
+    //
+    // write indexes
+    //
+    th_fprintf(s, "\t");
+    for (int z=0; z<size; z++) {
+      int index;
+      dataToUnsigned(rawi, ibytes, index);
+      rawi += ibytes;
+      th_fprintf(s, " %d", index);
+    }
+    th_fprintf(s, "\n\t");
+  } else {
+    //
+    // Full node
+    //
+    size = sizeOf(addr);
+    rawd = fullDown(addr);
+    rawe = fullEdge(addr);
+  }
+
+  //
+  // write down pointers
+  //
+  for (int z=0; z<size; z++) {
+    th_fprintf(s, " ");
+    node_handle down;
+    dataToDown(rawd, pbytes, down);
+    rawd += pbytes;
+    if (getParent()->isTerminalNode(down)) {
+      getParent()->writeTerminal(s, down);
+    } else {
+      if (map) down = map[down];
+      th_fprintf(s, "%ld", long(down));
+    }
+  }
+
+  //
+  // write edges
+  //
+  if (edgeBytes) {
+    th_fprintf(s, "\n\t");
+    for (int z=0; z<size; z++) {
+      th_fprintf(s, " ");
+      getParent()->showEdgeValue(s, rawe);
+      rawe += edgeBytes;
+    }
+  } 
+  th_fprintf(s, "\n");
+
+  // write extra header stuff
+  // this goes LAST so we can read it into a built node
+  if (unhashedBytes) {
+    getParent()->writeUnhashedHeader(s, UH(addr));
+  }
+  if (hashedBytes) {
+    getParent()->writeHashedHeader(s, HH(addr));
+  }
+
 }
 
 // ******************************************************************
@@ -420,7 +497,13 @@ void MEDDLY::compact_storage
   printf("        node: ");
   showNode(stdout, addr, true);
 #endif
-  // TBD: Copy hashed header
+
+  // Copy hashed header
+
+  if (hashedBytes) {
+    resize_header(nr, hashedBytes);
+    memcpy(extra_hashed(nr), HH(addr), hashedBytes);
+  }
 
   int size = sizeOf(addr);
   if (size < 0) {
@@ -461,7 +544,9 @@ unsigned MEDDLY::compact_storage::hashNode(const node_header& node) const
   s.start(node.level);
 
   // Do the hashed header part, if any
-  // TBD
+  if (hashedBytes) {
+    s.push(HH(node.offset), hashedBytes);
+  }
 
   //
   // Hash the node itself

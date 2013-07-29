@@ -1075,141 +1075,173 @@ void MEDDLY::expert_forest
 
 void MEDDLY::expert_forest::readEdges(FILE* s, dd_edge* E, int n)
 {
-  const char* block = codeChars();
+  try {
+    const char* block = codeChars();
 
-  stripWS(s);
-  consumeKeyword(s, block);
-  stripWS(s);
-  int num_nodes;
-  th_fscanf(1, s, "%d", &num_nodes);
+    stripWS(s);
+    consumeKeyword(s, block);
+    stripWS(s);
+    int num_nodes;
+    th_fscanf(1, s, "%d", &num_nodes);
 #ifdef DEBUG_READ
-  printf("Reading %d nodes in forest %s\n", num_nodes, codeChars());
+    printf("Reading %d nodes in forest %s\n", num_nodes, codeChars());
 #endif
 
-  // start a mapping
-  node_handle* map = new node_handle[num_nodes+1];
-  for (int i=0; i<=num_nodes; i++) map[i] = 0;
+    // start a mapping
+    node_handle* map = new node_handle[num_nodes+1];
+    for (int i=0; i<=num_nodes; i++) map[i] = 0;
 
-  for (int node_index=1; node_index<=num_nodes; node_index++) {
-    // read the level number
-    int k;
-    stripWS(s);
-    th_fscanf(1, s, "%d", &k);
-    if (!isValidLevel(k)) {
-      throw error(error::INVALID_LEVEL);
-    }
+    for (int node_index=1; node_index<=num_nodes; node_index++) {
+      // Read this node
 
-    // read the node size (sparse/full)
-    int rawsize; 
-    stripWS(s);
-    th_fscanf(1, s, "%d", &rawsize);
-    int n;
-    node_builder &nb = (rawsize < 0)
-      ? useSparseBuilder(k, n=-rawsize)
-      : useNodeBuilder(k, n=rawsize);
-
-    // read indexes (sparse only)
-    if (rawsize<0) {
-      for (int i=0; i<n; i++) {
-        stripWS(s);
-        th_fscanf(1, s, "%d", &nb.i(i));
-      }
-    }
-
-    // read down
-    for (int i=0; i<n; i++) {
+      // read the level number
+      int k;
       stripWS(s);
-      char c = fgetc(s);
-      ungetc(c, s);
-      if (c>='0' && c<='9') {
-        // a regular non-terminal node
-        long down;
-        th_fscanf(1, s, "%ld", &down);
-        MEDDLY_DCASSERT(down>=0);
-        if (down >= node_index) {
-          throw error(error::INVALID_ASSIGNMENT);
-        }
-        nb.d(i) = map[down];
-      } else {
-        // must be a terminal node
-        nb.d(i) = readTerminal(s);
+      th_fscanf(1, s, "%d", &k);
+      if (!isValidLevel(k)) {
+        throw error(error::INVALID_LEVEL);
       }
-    }
-
-    // read edges
-    if (nb.hasEdges()) {
-      for (int i=0; i<n; i++) {
-        stripWS(s);
-        readEdgeValue(s, nb.eptr(i));
-      }
-    }
-
-    // ok, done reading; time to reduce it
-    map[node_index] = createReducedNode(-1, nb); 
 
 #ifdef DEBUG_READ
-    printf("Node index %d reduced to %d", node_index, map[node_index]);
-    showNode(stdout, map[node_index], 1);
-    printf("\n");
+      printf("Reading %d ", k);
+#endif
+
+      // read the node size (sparse/full)
+      int rawsize; 
+      stripWS(s);
+      th_fscanf(1, s, "%d", &rawsize);
+      int n;
+      node_builder &nb = (rawsize < 0)
+        ? useSparseBuilder(k, n=-rawsize)
+        : useNodeBuilder(k, n=rawsize);
+
+#ifdef DEBUG_READ
+      printf("%d ", rawsize);
+#endif
+
+      // read indexes (sparse only)
+      if (rawsize<0) {
+        for (int i=0; i<n; i++) {
+          stripWS(s);
+          th_fscanf(1, s, "%d", &nb.i(i));
+        }
+#ifdef DEBUG_READ
+        printf("indexes ");
+#endif
+      }
+
+      // read down
+      for (int i=0; i<n; i++) {
+        stripWS(s);
+        char c = fgetc(s);
+        ungetc(c, s);
+        if (c>='0' && c<='9') {
+          // a regular non-terminal node
+          long down;
+          th_fscanf(1, s, "%ld", &down);
+          MEDDLY_DCASSERT(down>=0);
+          if (down >= node_index) {
+            throw error(error::INVALID_ASSIGNMENT);
+          }
+          nb.d(i) = map[down];
+        } else {
+          // must be a terminal node
+          nb.d(i) = readTerminal(s);
+        }
+      }
+#ifdef DEBUG_READ
+      printf("down ");
+#endif
+
+      // read edges
+      if (nb.hasEdges()) {
+        for (int i=0; i<n; i++) {
+          stripWS(s);
+          readEdgeValue(s, nb.eptr(i));
+        }
+#ifdef DEBUG_READ
+        printf("edges ");
+#endif
+      }
+
+      // any extra header info?  read it
+      if (unhashedHeaderBytes()) {
+        stripWS(s);
+        readUnhashedHeader(s, nb);
+      }
+      if (hashedHeaderBytes()) {
+        stripWS(s);
+        readHashedHeader(s, nb);
+      }
+
+      // ok, done reading; time to reduce it
+      map[node_index] = createReducedNode(-1, nb); 
+
+#ifdef DEBUG_READ
+      printf("\nNode index %d reduced to %d", node_index, map[node_index]);
+      showNode(stdout, map[node_index], 1);
+      printf("\n");
 #endif
 
   } // for node_index
 
-  // reverse the block
-  static char buffer[40];
-  int blocklen = strlen(block);
-  MEDDLY_DCASSERT(blocklen < 40);
-  for (int i=0; i<blocklen; i++) {
-    buffer[i] = block[blocklen-i-1];
-  }
-  buffer[blocklen] = 0;
+    // reverse the block
+    static char buffer[40];
+    int blocklen = strlen(block);
+    MEDDLY_DCASSERT(blocklen < 40);
+    for (int i=0; i<blocklen; i++) {
+      buffer[i] = block[blocklen-i-1];
+    }
+    buffer[blocklen] = 0;
 #ifdef DEBUG_READ
-  printf("Done reading, expecting %s keyword\n", buffer);
+    printf("Done reading, expecting %s keyword\n", buffer);
 #endif
 
-  // match the reversed block
-  stripWS(s);
-  consumeKeyword(s, buffer);
+    // match the reversed block
+    stripWS(s);
+    consumeKeyword(s, buffer);
 #ifdef DEBUG_READ
-  printf("Got %s\n", buffer);
+    printf("Got %s\n", buffer);
 #endif
 
-  // Read the pointers
-  stripWS(s);
-  try {
+    // Read the pointers
+    stripWS(s);
     consumeKeyword(s, "ptrs");
 #ifdef DEBUG_READ
     printf("Got ptrs\n");
 #endif
-  }
-  catch (...) {
+
+    stripWS(s);
+    int num_ptrs;
+    th_fscanf(1, s, "%d", &num_ptrs);
+#ifdef DEBUG_READ
+    printf("Reading %d pointers\n", num_ptrs);
+#endif
+    for (int i=0; i<num_ptrs; i++) {
+      E[i].read(this, s, map);
+    }
+
+    stripWS(s);
+    consumeKeyword(s, "srtp");
+  
+    delete[] map;
+  } // try
+  catch (error e) {
+#ifdef DEBUG_READ
+    printf("Read failed (error: %s)\n", e.getName());
     printf("Failed, next few characters of file:\n");
     for (int i=0; i<10; i++) {
       int c = fgetc(s);
       if (EOF == c) {
-        printf("EOF\n");
-        throw;
+        printf("EOF");
+        break;
       }
-      fputc(c, stdout);
+      printf("%c (%d) ", c, c);
     }
     fputc('\n', stdout);
-    throw;
-  }
-
-  stripWS(s);
-  int num_ptrs;
-  th_fscanf(1, s, "%d", &num_ptrs);
-#ifdef DEBUG_READ
-  printf("Reading %d pointers\n", num_ptrs);
 #endif
-  for (int i=0; i<num_ptrs; i++) {
-    E[i].read(this, s, map);
+    throw e;
   }
-
-  stripWS(s);
-  consumeKeyword(s, "srtp");
-
-  delete[] map;
 }
 
 void MEDDLY::expert_forest::garbageCollect()
@@ -1361,7 +1393,27 @@ void MEDDLY::expert_forest::showHashedHeader(FILE* s, const void* hh) const
   throw error(error::TYPE_MISMATCH);
 }
 
+void MEDDLY::expert_forest::writeHashedHeader(FILE* s, const void* hh) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::expert_forest::readHashedHeader(FILE* s, node_builder &nb) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
 void MEDDLY::expert_forest::showUnhashedHeader(FILE* s, const void* uh) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::expert_forest::writeUnhashedHeader(FILE* s, const void* uh) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::expert_forest::readUnhashedHeader(FILE* s, node_builder &nb) const
 {
   throw error(error::TYPE_MISMATCH);
 }

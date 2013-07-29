@@ -309,6 +309,76 @@ void MEDDLY::old_node_storage::showNode(FILE* s, node_address addr, bool verb) c
   }
 }
 
+void MEDDLY::old_node_storage
+::writeNode(FILE* s, node_address addr, const node_handle* map) const
+{
+  th_fprintf(s, "%d\n", sizeOf(addr));
+  if (sizeOf(addr) < 0) {
+    // Sparse node
+    int nnz = -sizeOf(addr);
+    // write indexes
+    th_fprintf(s, "\t");
+    for (int z=0; z<nnz; z++) {
+      th_fprintf(s, " %d", SI(addr)[z]);
+    }
+    th_fprintf(s, "\n\t");
+    // write down pointers
+    for (int z=0; z<nnz; z++) {
+      th_fprintf(s, " ");
+      node_handle d = SD(addr)[z];
+      if (getParent()->isTerminalNode(d)) {
+        getParent()->writeTerminal(s, d);
+      } else {
+        if (map) d = map[d];
+        th_fprintf(s, "%ld", long(d));
+      }
+    }
+    // write edges
+    if (edgeSlots) {
+      th_fprintf(s, "\n\t");
+      for (int z=0; z<nnz; z++) {
+        th_fprintf(s, " ");
+        getParent()->showEdgeValue(s, SEP(addr, z));
+      }
+    } 
+    th_fprintf(s, "\n");
+  } else {
+    // Full node
+    int size = sizeOf(addr);
+    th_fprintf(s, "\t");
+    // write down pointers
+    for (int i=0; i<size; i++) {
+      th_fprintf(s, " ");
+      node_handle d = FD(addr)[i];
+      if (getParent()->isTerminalNode(d)) {
+        getParent()->writeTerminal(s, d);
+      } else {
+        if (map) d = map[d];
+        th_fprintf(s, "%ld", long(d));
+      }
+    }
+    // write edges
+    if (edgeSlots) {
+      th_fprintf(s, "\n\t");
+      for (int i=0; i<size; i++) {
+        th_fprintf(s, " ");
+        getParent()->showEdgeValue(s, FEP(addr, i));
+      }
+    } 
+    th_fprintf(s, "\n");
+  }
+
+  // write extra header stuff
+  // this goes LAST so we can read it into a built node
+  if (unhashedSlots) {
+    getParent()->writeUnhashedHeader(s, UH(addr));
+  }
+  if (hashedSlots) {
+    getParent()->writeHashedHeader(s, HH(addr));
+  }
+
+}
+
 MEDDLY::node_address MEDDLY::old_node_storage
 ::makeNode(node_handle p, const node_builder &nb, node_storage_flags opt)
 {
@@ -416,14 +486,12 @@ bool MEDDLY::old_node_storage
 
 void MEDDLY::old_node_storage::fillReader(node_address addr, node_reader &nr) const
 {
-  /*
   // Copy hashed header
 
   if (hashedSlots) {
-    resize_header(nr, hashedHeader);
-    memcpy(extra_hashed(nr), HH(addr), hashedHeader * sizeof(int));
+    resize_header(nr, getParent()->hashedHeaderBytes());
+    memcpy(extra_hashed(nr), HH(addr), getParent()->hashedHeaderBytes());
   }
-  */
 
   // Copy everything else
 
@@ -515,14 +583,10 @@ unsigned MEDDLY::old_node_storage::hashNode(const node_header& node) const
   s.start(node.level);
 
   // Do the hashed header part, if any
-  /*
-  if (hashedHeader) {
-    int* hhptr = HH(node.offset);
-    for (int e=0; e<hashedHeader; e++) {
-      s.push(hhptr[e]);
-    }
+
+  if (hashedSlots) {
+    s.push(HH(node.offset), getParent()->hashedHeaderBytes());
   }
-  */
 
   //
   // Hash the node itself

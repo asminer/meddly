@@ -73,8 +73,8 @@ MEDDLY::node_handle MEDDLY::evmdd_forest::readTerminal(FILE* s)
 MEDDLY::evp_mdd_int::evp_mdd_int(int dsl, domain *d, const policies &p)
 : evmdd_forest(dsl, d, forest::INTEGER, forest::EVPLUS, p)
 { 
-  setEdgeSize(sizeof(int), true);
-  setUnhashedSize(sizeof(int));
+  setEdgeSize(sizeof(node_handle), true);
+  setUnhashedSize(sizeof(node_handle));
   initializeForest();
 }
 
@@ -167,22 +167,32 @@ void MEDDLY::evp_mdd_int::normalize(node_builder &nb, int &ev) const
 
 void MEDDLY::evp_mdd_int::showEdgeValue(FILE* s, const void* edge) const
 {
-  fprintf(s, "%d", ((const int*)edge)[0]);
+  fprintf(s, "%d", ((const node_handle*)edge)[0]);
 }
 
 void MEDDLY::evp_mdd_int::writeEdgeValue(FILE* s, const void* edge) const
 {
-  th_fprintf(s, "%d", ((const int*)edge)[0]);
+  th_fprintf(s, "%d", ((const node_handle*)edge)[0]);
 }
 
 void MEDDLY::evp_mdd_int::readEdgeValue(FILE* s, void* edge)
 {
-  th_fscanf(1, s, "%d", (int*)edge);
+  th_fscanf(1, s, "%d", (node_handle*)edge);
 }
 
-void MEDDLY::evp_mdd_int::showUnhashedHeader(FILE* s, const int* uh) const
+void MEDDLY::evp_mdd_int::showUnhashedHeader(FILE* s, const void* vh) const
 {
-  fprintf(s, " card: %d", uh[0]);
+  fprintf(s, " card: %d", ((const node_handle*)vh)[0]);
+}
+
+void MEDDLY::evp_mdd_int::writeUnhashedHeader(FILE* s, const void* vh) const
+{
+  fprintf(s, "\t %d\n", ((const node_handle*)vh)[0]);
+}
+
+void MEDDLY::evp_mdd_int::readUnhashedHeader(FILE* s, node_builder &nb) const
+{
+  th_fscanf(1, s, "%d", (node_handle*)nb.UHptr());
 }
 
 bool MEDDLY::evp_mdd_int

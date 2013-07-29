@@ -587,6 +587,16 @@ class MEDDLY::node_reader {
         /// Display this node
         void show(FILE* s, const expert_forest* parent, bool verb) const;
 
+        /// Get a pointer to the hashed header data.
+        inline const void* HHptr() const {
+          return extra_hashed;
+        }
+
+        /// Get the number of bytes of hashed header data.
+        inline int HHbytes() const {
+          return ext_size;
+        }
+
         /** Get a downward pointer.
               @param  n   Which pointer.
               @return     If this is a full reader, 
@@ -781,6 +791,7 @@ class MEDDLY::node_builder {
         node_handle* down;
         int* indexes;
         void* edge;
+        int hhbytes;  // number of bytes in hashed header
         int level;  // level of this node.
         int size;
         int alloc;
@@ -906,6 +917,24 @@ class MEDDLY::node_builder {
           MEDDLY_CHECK_RANGE(0, i, size);
           return ((char*)edge) + i * edge_bytes;
         }
+        /// Get a pointer to the unhashed header data.
+        inline void* UHptr() {
+          return extra_unhashed;
+        }
+
+        /// Get a pointer to the hashed header data.
+        inline const void* HHptr() const {
+          return extra_hashed;
+        }
+        inline void* HHptr() {
+          return extra_hashed;
+        }
+
+        /// Get the number of bytes of hashed header data.
+        inline int HHbytes() const {
+          return hhbytes;
+        }
+
     public: // for unique table
         inline unsigned hash() const {
 #ifdef DEVELOPMENT_CODE
@@ -2357,15 +2386,40 @@ class MEDDLY::expert_forest : public forest
 
     /** Show the hashed header values.
           @param  s       Stream to write to.
-          @param  hh      Array of all hashed header values.
+          @param  hh      Pointer to hashed header data.
     */
     virtual void showHashedHeader(FILE* s, const void* hh) const;
+
+    /** Write the hashed header in machine-readable format.
+          @param  s       Stream to write to.
+          @param  hh      Pointer to hashed header data.
+    */
+    virtual void writeHashedHeader(FILE* s, const void* hh) const;
+
+    /** Read the hashed header in machine-readable format.
+          @param  s       Stream to write to.
+          @param  nb      Node we're building.
+    */
+    virtual void readHashedHeader(FILE* s, node_builder &nb) const;
 
     /** Show the unhashed header values.
           @param  s       Stream to write to.
           @param  uh      Array of all unhashed header values.
     */
     virtual void showUnhashedHeader(FILE* s, const void* uh) const;
+
+    /** Write the unhashed header in machine-readable format.
+          @param  s       Stream to write to.
+          @param  hh      Pointer to unhashed header data.
+    */
+    virtual void writeUnhashedHeader(FILE* s, const void* uh) const;
+
+    /** Read the unhashed header in machine-readable format.
+          @param  s       Stream to write to.
+          @param  nb      Node we're building.
+    */
+    virtual void readUnhashedHeader(FILE* s, node_builder &nb) const;
+
 
         
 

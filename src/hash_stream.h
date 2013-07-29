@@ -150,6 +150,102 @@ class MEDDLY::hash_stream {
             default: throw error(error::MISCELLANEOUS);
         };
     }
+    inline void push(const void* data, size_t bytes) {
+      const unsigned* hack = (const unsigned*) data;
+      size_t num_unsigneds = (bytes / sizeof(unsigned));
+      const unsigned* hackend = hack + num_unsigneds;
+      for (; hack < hackend; hack++) {
+        push(*hack);
+      }
+      const unsigned char* lastfew = (const unsigned char*) hackend;
+      unsigned leftover;
+      switch (bytes % sizeof(unsigned)) {
+        case 0:
+            return;
+
+        case 1:
+            push(lastfew[0]);
+            return;
+
+        case 2:
+            leftover = lastfew[0];
+            leftover <<= 8;
+            leftover |= lastfew[1];
+            push(leftover);
+            return;
+
+        case 3:
+            leftover = lastfew[0];
+            leftover <<= 8;
+            leftover |= lastfew[1];
+            leftover <<= 8;
+            leftover |= lastfew[2];
+            push(leftover);
+            return;
+
+        // how large can an unsigned be?
+        // just to be sure:
+
+        case 4:
+            leftover = lastfew[0];
+            leftover <<= 8;
+            leftover |= lastfew[1];
+            leftover <<= 8;
+            leftover |= lastfew[2];
+            leftover <<= 8;
+            leftover |= lastfew[3];
+            push(leftover);
+            return;
+
+        case 5:
+            leftover = lastfew[0];
+            leftover <<= 8;
+            leftover |= lastfew[1];
+            leftover <<= 8;
+            leftover |= lastfew[2];
+            leftover <<= 8;
+            leftover |= lastfew[3];
+            leftover <<= 8;
+            leftover |= lastfew[4];
+            push(leftover);
+            return;
+
+        case 6:
+            leftover = lastfew[0];
+            leftover <<= 8;
+            leftover |= lastfew[1];
+            leftover <<= 8;
+            leftover |= lastfew[2];
+            leftover <<= 8;
+            leftover |= lastfew[3];
+            leftover <<= 8;
+            leftover |= lastfew[4];
+            leftover <<= 8;
+            leftover |= lastfew[5];
+            push(leftover);
+            return;
+
+        case 7:
+            leftover = lastfew[0];
+            leftover <<= 8;
+            leftover |= lastfew[1];
+            leftover <<= 8;
+            leftover |= lastfew[2];
+            leftover <<= 8;
+            leftover |= lastfew[3];
+            leftover <<= 8;
+            leftover |= lastfew[4];
+            leftover <<= 8;
+            leftover |= lastfew[5];
+            leftover <<= 8;
+            leftover |= lastfew[6];
+            push(leftover);
+            return;
+
+        default:
+            throw error(error::MISCELLANEOUS);
+      }
+    }
 }; 
 
 #endif

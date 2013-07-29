@@ -292,16 +292,15 @@ void MEDDLY::simple_storage
     th_fprintf(s, "\n");
   }
 
-  // TBD:
-  // show extra header stuff
-  /*
+  // write extra header stuff
+  // this goes LAST so we can read it into a built node
   if (unhashedSlots) {
-    getParent()->showUnhashedHeader(s, UH(addr));
+    getParent()->writeUnhashedHeader(s, UH(addr));
   }
   if (hashedSlots) {
-    getParent()->showHashedHeader(s, HH(addr));
+    getParent()->writeHashedHeader(s, HH(addr));
   }
-  */
+
 }
 
 MEDDLY::node_address MEDDLY::simple_storage
@@ -419,14 +418,13 @@ void MEDDLY::simple_storage::fillReader(node_address addr, node_reader &nr) cons
   printf("        node: ");
   showNode(stdout, addr, true);
 #endif
-  /*
+  
   // Copy hashed header
 
   if (hashedSlots) {
-    resize_header(nr, hashedHeader);
-    memcpy(extra_hashed(nr), HH(addr), hashedHeader * sizeof(int));
+    resize_header(nr, getParent()->hashedHeaderBytes());
+    memcpy(extra_hashed(nr), HH(addr), getParent()->hashedHeaderBytes());
   }
-  */
 
   // Copy everything else
 
@@ -538,14 +536,10 @@ unsigned MEDDLY::simple_storage::hashNode(const node_header& node) const
   s.start(node.level);
 
   // Do the hashed header part, if any
-  /*
-  if (hashedHeader) {
-    int* hhptr = HH(node.offset);
-    for (int e=0; e<hashedHeader; e++) {
-      s.push(hhptr[e]);
-    }
+
+  if (hashedSlots) {
+    s.push(HH(node.offset), getParent()->hashedHeaderBytes());
   }
-  */
 
   //
   // Hash the node itself

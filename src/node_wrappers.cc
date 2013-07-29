@@ -164,12 +164,9 @@ void MEDDLY::node_reader::computeHash(bool hashEdgeValues)
   hash_stream s;
   s.start(level);
 
-  /*
-  for (int e=0; e<ext_size; e++) {
-    MEDDLY_DCASSERT(extra_hashed);
-    s.push(extra_hashed[e]);
+  if (ext_size) {
+    s.push(extra_hashed, ext_size);
   }
-  */
   
   if (isSparse()) {
     if (hashEdgeValues) {
@@ -214,6 +211,7 @@ MEDDLY::node_builder::node_builder()
 {
   parent = 0;
   extra_hashed = 0;
+  hhbytes = 0;
   extra_unhashed = 0;
   down = 0;
   indexes = 0;
@@ -234,8 +232,9 @@ void MEDDLY::node_builder::init(int k, const expert_forest* p)
   MEDDLY_DCASSERT(p);
   parent = p;
   level = k;
-  if (parent->hashedHeaderBytes()) {
-    extra_hashed = malloc(parent->hashedHeaderBytes());
+  hhbytes = parent->hashedHeaderBytes();
+  if (hhbytes) {
+    extra_hashed = malloc(hhbytes);
     if (0==extra_hashed)
       throw error(error::INSUFFICIENT_MEMORY);
   }
@@ -296,13 +295,9 @@ void MEDDLY::node_builder::computeHash()
   hash_stream s;
   s.start(level);
 
-  // TBD:
-  /*
-  for (int e=0; e<hhsize; e++) {
-    MEDDLY_DCASSERT(extra_hashed);
-    s.push(extra_hashed[e]);
+  if (hhbytes) {
+    s.push(extra_hashed, hhbytes);
   }
-  */
 
   if (isSparse()) {
     if (parent->areEdgeValuesHashed()) {
