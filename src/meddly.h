@@ -222,6 +222,7 @@ namespace MEDDLY {
   */
   const char* getLibraryInfo(int what = 0);
 
+/*  Commented out as of version 0.10
 #ifdef _MSC_VER
   __declspec(deprecated)
 #endif
@@ -233,6 +234,7 @@ namespace MEDDLY {
   inline const char* MEDDLY_getLibraryInfo(int what = 0) {
     return getLibraryInfo(what);
   };
+*/
 
   // ******************************************************************
   // *                   object creation  functions                   *
@@ -277,6 +279,7 @@ namespace MEDDLY {
   */
   domain* createDomainBottomUp(const int* bounds, int N);
 
+/* Commented out as of version 0.10
 #ifdef _MSC_VER
   __declspec(deprecated)
 #endif
@@ -288,6 +291,7 @@ namespace MEDDLY {
   inline domain* MEDDLY_createDomain() {
     return createDomain();
   }
+*/
 
 
   // ******************************************************************
@@ -1521,11 +1525,13 @@ class MEDDLY::domain {
     /// @return The variable at level \a lev.
     inline variable* useVar(int lev) { return vars[lev]; }
 
-    /** Get the topmost variable.
+    /*  Get the topmost variable.
+        Commented out as of version 0.10.
         Deprecated as of version 0.5.
         @return         The variable handle for the top-most variable.
                         If there are no variables, returns 0.
     */
+    /*
 #ifdef _MSC_VER
     __declspec(deprecated)
 #endif
@@ -1533,13 +1539,16 @@ class MEDDLY::domain {
     __attribute__ ((deprecated))
 #endif
     inline int getTopVariable() const { return nVars; }
+    */
 
-    /** Get the variable immediately above this one.
+    /*  Get the variable immediately above this one.
+        Commented out as of version 0.10.
         Deprecated as of version 0.5.
         @param  vh      Any variable handle.
         @return         The variable appearing on top of this one. If \a vh
                         is already the top-most variable, returns -1.
     */
+    /*
 #ifdef _MSC_VER
     __declspec(deprecated)
 #endif
@@ -1549,14 +1558,17 @@ class MEDDLY::domain {
     inline int getVariableAbove(int vh) const {
       return (vh>=nVars) ? -1 : vh+1;
     }
+    */
 
-    /** Get the variable immediately below this one.
+    /*  Get the variable immediately below this one.
+        Commented out as of version 0.10.
         Depracated as of version 0.5.
         @param  vh      Any variable handle.
         @return         The variable appearing below this one. If \a vh is 
                         the bottom-most variable, returns \a TERMINALS. If 
                         \a vh is \a TERMINALS, returns -1.
     */
+    /*
 #ifdef _MSC_VER
     __declspec(deprecated)
 #endif
@@ -1566,6 +1578,7 @@ class MEDDLY::domain {
     inline int getVariableBelow(int vh) const {
       return vh-1;
     }
+    */
 
     /** Display lots of information about the domain.
         This is primarily for aid in debugging.
