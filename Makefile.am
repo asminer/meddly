@@ -5,4 +5,4 @@
 ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = src examples tests
-DIST_SUBDIRS = src examples tests docs docs-devel
+DIST_SUBDIRS = $(SUBDIRS) docs docs-devel
