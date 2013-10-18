@@ -44,12 +44,10 @@ using namespace MEDDLY;
 int N;
 int* scratch;
 
+bool use_folding;
 
 
-#define LINEAR_INTERSECTIONS
-#ifdef  LINEAR_INTERSECTIONS
-
-void intersect(dd_edge** A, int L)
+void intersect_acc(expert_forest* f, dd_edge** A, int L)
 {
   if (0==A[0]) {
     // find first non-zero and swap
@@ -75,20 +73,18 @@ void intersect(dd_edge** A, int L)
   fprintf(stderr, "\n");
 }
 
-#else 
 
-void intersect(dd_edge** A, int L)
+void intersect_fold(expert_forest* f, dd_edge** A, int L)
 {
   while (L>1) {
-    printf("\t%2d terms to combine ", L);
+    fprintf(stderr, "\t%2d terms to combine ", L);
     // combine adjacent pairs
     for (int i=0; i<L; i+=2) {
       if (A[i] && A[i+1]) {
         apply(MULTIPLY, *A[i], *A[i+1], *A[i]);
         delete A[i+1];
         A[i+1] = 0;
-        printf(".");
-        fflush(stdout);
+        fprintf(stderr, ".");
       }
     } // for i
     fprintf(stderr, "\n");
@@ -107,7 +103,14 @@ void intersect(dd_edge** A, int L)
   } // while
 }
 
-#endif
+
+inline void intersect(expert_forest* f, dd_edge** A, int L)
+{
+  if (use_folding)
+    intersect_fold(f, A, L);
+  else
+    intersect_acc(f, A, L);
+}
 
 
 void createQueenNodes(forest* f, int q, dd_edge &col, dd_edge &cp, dd_edge &cm)
@@ -129,14 +132,26 @@ bool processArgs(int argc, const char** argv, forest::policies &p)
 {
   p.setPessimistic();
   bool setN = false;
+  use_folding = false;
   for (int i=1; i<argc; i++) {
-    if (strcmp("-opt", argv[i])==0) {
-      p.setOptimistic();
-      continue;
-    }
-    if (strcmp("-pess", argv[i])==0) {
-      p.setPessimistic();
-      continue;
+    if ('-' == argv[i][0]) {
+      if (strcmp("-acc", argv[i])==0) {
+        use_folding = false;
+        continue;
+      }
+      if (strcmp("-fold", argv[i])==0) {
+        use_folding = true;
+        continue;
+      }
+      if (strcmp("-opt", argv[i])==0) {
+        p.setOptimistic();
+        continue;
+      }
+      if (strcmp("-pess", argv[i])==0) {
+        p.setPessimistic();
+        continue;
+      }
+      return false;
     }
     if (setN) return false;
     N = atoi(argv[i]);
@@ -156,6 +171,8 @@ int usage(const char* who)
   }
   printf("Usage: %s <-opt> <-pess> N\n\n", name);
   printf("\t    N:  board dimension\n");
+  printf("\t -acc:  Accumulate constraints in order (default)\n");
+  printf("\t-fold:  Accumulate constraints in pairs\n");
   printf("\t -opt:  Optimistic node deletion\n");
   printf("\t-pess:  Pessimistic node deletion (default)\n\n");
   return 1;
@@ -237,7 +254,7 @@ int main(int argc, const char** argv)
 
   printf("Building solutions\n");
   fflush(stdout);
-  intersect(constr, N);
+  intersect(f, constr, N);
   assert(constr[0]);
   dd_edge* solutions = constr[0];
   constr[0] = 0;

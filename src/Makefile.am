@@ -5,6 +5,7 @@
 ## compile library
 
 SUBDIRS = forests operations storage .
+DIST_SUBDIRS = forests operations storage .
 
 lib_LTLIBRARIES = libmeddly.la
 
