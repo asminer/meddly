@@ -19,7 +19,8 @@ rubiks_cube \
 nqueens \
 queen_cover \
 kanban \
-slot
+slot \
+life
 # test_user_operation 
 
 AM_CPPFLAGS = -I../src -I../src/operations
@@ -67,6 +68,9 @@ kanban_LDADD = ../src/libmeddly.la
 
 slot_SOURCES = slot.cc simple_model.h simple_model.cc
 slot_LDADD = ../src/libmeddly.la
+
+life_SOURCES = life.cc
+life_LDADD = ../src/libmeddly.la
 
 # test_user_operation_SOURCES = test_user_operation.cc
 # test_user_operation_LDADD = ../src/libmeddly.la
