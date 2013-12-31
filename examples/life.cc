@@ -88,22 +88,6 @@ inline bool isAlive(char c)
   return 1;
 }
 
-int helpScreen(const char* who)
-{
-  using namespace std;
-  cerr << "\n    Usage: " << stripPath(who) << " [switches]\n";
-  cerr << "\n    Reads a grid, from standard input, representing a generation\n";
-  cerr << "    of Conway's Game of Life.  Then...\n";
-  cerr << "\n";
-  cerr << "        -h       This help screen\n";
-  cerr << "\n";
-  cerr << "        -a       Show ALL possible previous generations\n";
-  cerr << "        -m       Show all minimal previous generations\n";
-  cerr << "        -s       Show some minimal previous generation (default)\n";
-  cerr << "\n";
-  return 0;
-}
-
 void parseInput(lifegrid &G)
 {
   using namespace std;
@@ -454,20 +438,60 @@ int sum(const int* minterm, int N)
   return a;
 }
 
+
+
+int helpScreen(const char* who)
+{
+  using namespace std;
+  cerr << "\n    Usage: " << stripPath(who) << " [switches]\n";
+  cerr << "\n    Reads a grid, from standard input, representing a generation\n";
+  cerr << "    of Conway's Game of Life.  Then...\n";
+  cerr << "\n";
+  cerr << "        -h       This help screen\n";
+  cerr << "\n";
+  cerr << "        -a       Show ALL possible previous generations\n";
+  cerr << "        -m       Show all minimal previous generations\n";
+  cerr << "        -s       Show some minimal previous generation (default)\n";
+  cerr << "\n";
+  cerr << "        -o       Optimistic node policy\n";
+  cerr << "        -p       Pessimistic node policy (default)\n";
+  cerr << "\n";
+  cerr << "        --hist   Show histogram of alive cells\n";
+  cerr << "        --stats  Show library stats\n";
+  cerr << "\n";
+  return 0;
+}
+
+
 int main(int argc, const char** argv)
 {
+  //
+  // Switch variables
+  //
   enum {
     all_previous, all_minimal, some_minimal
   } display = some_minimal;
+  bool show_stats = false;
+  bool show_hist = false;
+  forest::policies p(false);
+  p.setPessimistic();
+
   using namespace std;
   initialize();
   cerr << "Using " << getLibraryInfo(0) << "\n";
 
   for (int i=1; i<argc; i++) {
-    if (argv[i][0] != '-' || argv[i][2] != 0) {
+    if (argv[i][0] != '-') {
       return 1+helpScreen(argv[0]);
     }
+    if (argv[i][1] != '-' && argv[i][2] != 0) {
+      return 1+helpScreen(argv[0]);
+    }
+
     switch (argv[i][1]) {
+      //
+      // Short switches
+      //
       case 'h': return helpScreen(argv[0]);
       case 'a':
           display = all_previous;
@@ -477,6 +501,23 @@ int main(int argc, const char** argv)
           break;
       case 's':
           display = some_minimal;
+          break;
+
+      case 'o':
+          p.setOptimistic();
+          break;
+      case 'p':
+          p.setPessimistic();
+          break;
+
+      //
+      // Long switches
+      //
+
+      case '-':
+          if (0==strcmp("stats", argv[i]+2))    show_stats = true;
+          if (0==strcmp("hist", argv[i]+2))     show_hist = true;
+
           break;
 
       default : return 1+helpScreen(argv[0]);
@@ -509,7 +550,7 @@ int main(int argc, const char** argv)
   domain* d = createDomainBottomUp(scratch, N);
   assert(d);
   forest* f = 
-    d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL);
+    d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL, p);
   assert(f);
 
   //
@@ -552,56 +593,91 @@ int main(int argc, const char** argv)
   }
 
   //
-  // Compute stats and maybe show all (selected by a switch)
-  // 
+  // Filter based on total number of alive cells
+  //
+  for (int i=0; i<=N; i++) scratch[i] = N-i;
+  dd_edge ansmin(f);
 
-  int min = N;
-  int max = 0;
-  int num_max = 0;
-  int num_min = 0;
-  enumerator first(answer);
-  long n = 0;
-  for (; first; ++first) {
-      const int* minterm = first.getAssignments();
-      int alive = sum(minterm, N);
-      if (alive==max) num_max++;
-      if (alive>max) {
-        max = alive;
-        num_max = 1;
-      }
-      if (alive==min) num_min++;
-      if (alive<min) {
-        min = alive;
-        num_min = 1;
-      }
-      n++;
-      if (all_previous == display) {
-        cout << "Previous #" << n << "\n";
-        showGeneration(G, minterm, 0);      
-      }
-  }
-  cerr << "Max alive cells: " << max << " (" << num_max << " ways)\n";
-  cerr << "Min alive cells: " << min << " (" << num_min << " ways)\n";
-
-  if (all_minimal == display || some_minimal == display) {
-    first.start(answer);
-    n=0;
-    for (; first; ++first) {
-      const int* minterm = first.getAssignments();
-      int alive = sum(minterm, N);
-      if (alive > min) continue;
-      if (all_minimal == display) {
-        n++;
-        cout << "Minimal previous #" << n << "\n";
-      } else {
-        cerr << "One minimal previous generation:\n";
-      }
-      showGeneration(G, minterm, 0);      
-      if (some_minimal == display) break;
+  if (show_hist) {
+    for (int min=0; min<=N; min++) {
+      dd_edge mask(f);
+      numTrueEquals(scratch, min, mask);
+      apply(INTERSECTION, answer, mask, ansmin);
+      long c;
+      apply(CARDINALITY, ansmin, c);
+      if (0==c) continue;
+      cerr << "  previous gens with " << min << " alive cells: " << c << "\n";
+      cerr.flush();
     }
   }
 
+  if (all_previous != display) {
+    for (int min=0; min<=N; ++min) {
+      dd_edge mask(f);
+      numTrueEquals(scratch, min, mask);
+      apply(INTERSECTION, answer, mask, ansmin);
+      long c;
+      apply(CARDINALITY, ansmin, c);
+      if (0==c) continue;
+      cerr << c << " minimal previous generations with ";
+      cerr << min << " alive cells\n";
+      break;
+    }
+    if (0==c) {
+      cerr << "Cardinality error\n";
+      return 43;
+    }
+  }
+
+  //
+  // Cycle through and show solutions
+  //
+
+  enumerator first(answer);
+  if (all_previous != display) {
+    first.start(ansmin);
+  }
+  long n = 0;
+  for (; first; ++first) {
+    const int* minterm = first.getAssignments();
+    ++n;
+    switch (display) {
+      case all_previous:
+        cout << "Previous #" << n << " (alive=" << sum(minterm, N) << ")\n";
+        break;
+
+      case all_minimal:
+        cout << "Previous #" << n << "\n";
+        break;
+
+      case some_minimal:
+        cerr << "One minimal previous generation:\n";
+        break;
+
+      default:
+        return 42;
+    }
+    showGeneration(G, minterm, 0);
+    if (some_minimal == display) break;
+  }
+
+  //
+  // Show library stats
+  //
+  if (show_stats) {
+    cerr << "Library stats:\n";
+    const expert_forest* ef = (expert_forest*) f;
+    ef->reportStats(stderr, "\t",
+      expert_forest::HUMAN_READABLE_MEMORY  |
+      expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
+      expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
+    );
+    cerr << "Operation stats:\n";
+    operation::showAllComputeTables(stderr, 1);
+  }
+
   // Done!
+  delete[] scratch;
   cleanup();
   return 0;
 }
