@@ -143,6 +143,11 @@ bool MEDDLY::minus_evplus::checkTerminals(int aev, node_handle a, int bev, node_
     c = -1; cev = aev - bev;
     return true;
   }
+  if (0 == a && 0 == b) {
+    c = 0; 
+    cev = 0;
+    return true;
+  }
   return false;
 }
 
@@ -175,6 +180,11 @@ bool MEDDLY::minus_evtimes::checkTerminals(float aev, node_handle a,
 {
   if (a == -1 && b == -1) {
     c = -1; cev = aev - bev;
+    return true;
+  }
+  if (0 == a && 0 == b) {
+    c = 0; 
+    cev = 0;
     return true;
   }
   return false;

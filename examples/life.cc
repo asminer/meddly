@@ -30,6 +30,7 @@
 
 #include "meddly.h"
 #include "meddly_expert.h"
+#include "timer.h"
 
 // #define DEBUG_INPUT
 // #define DEBUG_NUM_TRUE
@@ -464,6 +465,7 @@ int helpScreen(const char* who)
 }
 
 
+
 int main(int argc, const char** argv)
 {
   //
@@ -494,6 +496,7 @@ int main(int argc, const char** argv)
       // Short switches
       //
       case 'h': return helpScreen(argv[0]);
+
       case 'a':
           display = all_previous;
           break;
@@ -509,16 +512,6 @@ int main(int argc, const char** argv)
           break;
       case 'p':
           p.setPessimistic();
-          break;
-
-      //
-      // Long switches
-      //
-
-      case '-':
-          if (0==strcmp("stats", argv[i]+2))    show_stats = true;
-          if (0==strcmp("hist", argv[i]+2))     show_hist = true;
-
           break;
 
       default : return 1+helpScreen(argv[0]);
@@ -550,8 +543,9 @@ int main(int argc, const char** argv)
   for (int i=0; i<=N; i++) scratch[i] = 2;
   domain* d = createDomainBottomUp(scratch, N);
   assert(d);
-  forest* f = 
-    d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL, p);
+  expert_forest* f = dynamic_cast <expert_forest*> (
+    d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL, p)
+  );
   assert(f);
 
   //
@@ -573,15 +567,37 @@ int main(int argc, const char** argv)
   //
   // Combine constraints
   //
+  timer watch;
+  watch.note_time();
   AndAlongColsThenRows(C, G);
   answer = C[N];
   C[N].clear();
   delete[] C;
+  watch.note_time();
+  cerr << "Constraint combination took " << watch.get_last_interval()/1000000.0;
+  cerr << " seconds\nSet of solutions requires " << answer.getNodeCount();
+  cerr << " nodes.\nForest stats:\n";
+  cerr.flush();
+  f->garbageCollect();
+  f->compactMemory();
+  f->reportStats(stderr, "\t", 
+    expert_forest::HUMAN_READABLE_MEMORY  |
+    expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
+    expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
+  );
 
   //
   //
   // Outputs
   //
+  //
+
+  //
+  // TBD - find a "symbolic" way to do this
+  //
+  // Idea - build numTrueEquals(all levels, n)
+  // for increasing n, intersect with solutions,
+  // check for empty
   //
 
   long c;
