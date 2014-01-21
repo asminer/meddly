@@ -531,6 +531,9 @@ const char* MEDDLY::getLibraryInfo(int what)
     Logical: <, <=, >, >=, ==, !=.\n\
     Conversion to and from MXDs.\n\
 ";
+
+    case 5:
+      return REVISION_DATE;
   }
   return 0;
 }

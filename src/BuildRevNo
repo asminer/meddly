@@ -7,12 +7,15 @@
 #
 
 rev=`svn info | awk '/Revision/{print $2}' | head -n1`
+rdate=`svn info | awk '/Last Changed Date/{print $4}' | head -n1`
+
 if [ -z "$rev" ]; then
   if [ -e revision.h ]; then
     printf "Leaving old revision number\n"
   else
     printf "Using bogus revision number\n";
     printf "const int REVISION_NUMBER = 0 ;\n" > revision.h
+    printf "const char* REVISION_DATE = \"%s\";\n" $rdate >> revision.h
   fi
   exit 0
 fi
@@ -25,3 +28,4 @@ if [ -e revision.h ]; then
 fi
 printf "Updating revision number to %d\n" $rev
 printf "const int REVISION_NUMBER = $rev ;\n" > revision.h
+printf "const char* REVISION_DATE = \"%s\";\n" $rdate >> revision.h

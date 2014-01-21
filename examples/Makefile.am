@@ -20,7 +20,9 @@ nqueens \
 queen_cover \
 kanban \
 slot \
-life
+life \
+libinfo
+
 # test_user_operation 
 
 AM_CPPFLAGS = -I../src -I../src/operations
@@ -71,6 +73,9 @@ slot_LDADD = ../src/libmeddly.la
 
 life_SOURCES = life.cc
 life_LDADD = ../src/libmeddly.la
+
+libinfo_SOURCES = libinfo.cc
+libinfo_LDADD = ../src/libmeddly.la
 
 # test_user_operation_SOURCES = test_user_operation.cc
 # test_user_operation_LDADD = ../src/libmeddly.la

@@ -274,6 +274,7 @@ namespace MEDDLY {
               2: License string
               3: Reference url
               4: String with library features
+              5: Release date
               Anything else: null string.
   */
   const char* getLibraryInfo(int what = 0);

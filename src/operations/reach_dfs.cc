@@ -99,7 +99,7 @@ class MEDDLY::saturation_op : public unary_operation {
       CTsrch.key(0) = a;
       const node_handle* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
-      b = resF->linkNode(cacheFind[2]);
+      b = resF->linkNode(cacheFind[1]); // Elvio
       return true;
     }
     inline node_handle saveSaturateResult(node_handle a, node_handle b) {
