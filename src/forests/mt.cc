@@ -31,6 +31,42 @@
 #define ENABLE_CACHE_COUNTING 0
 #define ENABLE_IN_COUNTING 0
 
+#ifdef NEW_MT
+
+// ******************************************************************
+// *                                                                *
+// *                     mt_base_forest methods                     *
+// *                                                                *
+// ******************************************************************
+
+
+MEDDLY::mt_base_forest::mt_base_forest(int dsl, domain *d, bool rel,
+  range_type t, const policies &p)
+: expert_forest(dsl, d, rel, t, MULTI_TERMINAL, p)
+{
+}
+
+bool MEDDLY::mt_base_forest::isRedundant(const node_builder &nb) const
+{
+  if (isQuasiReduced()) return false;
+  if (nb.getLevel() < 0 && isIdentityReduced()) return false;
+  int common = nb.d(0);
+  for (int i=1; i<nb.rawSize(); i++) 
+    if (nb.d(i) != common) return false;
+  return true;
+}
+
+bool MEDDLY::mt_base_forest::isIdentityEdge(const node_builder &nb, int i) const
+{
+  if (nb.getLevel() > 0) return false;
+  if (!isIdentityReduced()) return false;
+  if (i<0) return false;
+  return nb.d(i) != 0;
+}
+
+
+#else 
+
 // ******************************************************************
 // *                                                                *
 // *                         public methods                         *
@@ -67,7 +103,7 @@ MEDDLY::mt_forest::~mt_forest()
 
 
 void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
-    bool* terms, dd_edge& result)
+    const bool* terms, dd_edge& result)
 {
   if (getRangeType() != forest::BOOLEAN) 
       throw error(error::INVALID_OPERATION);
@@ -79,7 +115,7 @@ void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
 
 
 void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
-    int* terms, dd_edge& result)
+    const int* terms, dd_edge& result)
 {
   if (getRangeType() != forest::INTEGER) 
       throw error(error::INVALID_OPERATION);
@@ -89,7 +125,7 @@ void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
 
 
 void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
-    float* terms, dd_edge& result)
+    const float* terms, dd_edge& result)
 {
   if (getRangeType() != forest::REAL) 
       throw error(error::INVALID_OPERATION);
@@ -97,10 +133,6 @@ void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
   edgeForVarInternal(vh, primedLevel, terms, result);
 }
 
-void MEDDLY::mt_forest::writeNode(FILE* s, const node_reader& nr,
-  const node_handle* map) const
-{
-}
 
 bool MEDDLY::mt_forest::isRedundant(const node_builder &nb) const
 {
@@ -227,7 +259,7 @@ MEDDLY::mt_forest::buildLevelNodeHelper(int lh, node_handle* dptrs, int sz)
 }
 
 MEDDLY::node_handle* 
-MEDDLY::mt_forest::getTerminalNodes(int n, bool* terms)
+MEDDLY::mt_forest::getTerminalNodes(int n, const bool* terms)
 {
   MEDDLY_DCASSERT(n == 2);
   MEDDLY_DCASSERT(getRangeType() == forest::BOOLEAN);
@@ -253,7 +285,7 @@ MEDDLY::mt_forest::getTerminalNodes(int n, bool* terms)
 
 
 MEDDLY::node_handle* 
-MEDDLY::mt_forest::getTerminalNodes(int n, int* terms)
+MEDDLY::mt_forest::getTerminalNodes(int n, const int* terms)
 {
   MEDDLY_DCASSERT(getRangeType() == forest::INTEGER);
 
@@ -277,7 +309,7 @@ MEDDLY::mt_forest::getTerminalNodes(int n, int* terms)
 
 
 MEDDLY::node_handle* 
-MEDDLY::mt_forest::getTerminalNodes(int n, float* terms)
+MEDDLY::mt_forest::getTerminalNodes(int n, const float* terms)
 {
   MEDDLY_DCASSERT(getRangeType() == forest::REAL);
 
@@ -298,4 +330,5 @@ MEDDLY::mt_forest::getTerminalNodes(int n, float* terms)
   return dptrs;
 }
 
+#endif
 

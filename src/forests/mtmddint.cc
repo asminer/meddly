@@ -22,6 +22,36 @@
 
 #include "mtmddint.h"
 
+#ifdef NEW_MT
+
+MEDDLY::mt_mdd_int::mt_mdd_int(int dsl, domain *d, const policies &p)
+: mtmdd_forest<int_terminal>(dsl, d, INTEGER, p)
+{ 
+  initializeForest();
+}
+
+MEDDLY::mt_mdd_int::~mt_mdd_int()
+{ }
+
+void MEDDLY::mt_mdd_int::createEdge(int term, dd_edge& e)
+{
+  createEdgeTempl(term, e);
+}
+
+void MEDDLY::mt_mdd_int::createEdge(int** vlist, int* terms, int N, dd_edge &e)
+{
+  e.set(createEdgeRT(getDomain()->getNumVariables(), vlist, terms, N), 0);
+}
+
+void MEDDLY::mt_mdd_int
+::evaluate(const dd_edge &f, const int* vlist, int &term) const
+{
+  evaluateTempl(f, vlist, term);
+}
+
+
+
+#else
 
 MEDDLY::mt_mdd_int::mt_mdd_int(int dsl, domain *d, const policies &p)
 : MEDDLY::mtmdd_forest(dsl, d, false, INTEGER, MULTI_TERMINAL, p)
@@ -39,8 +69,7 @@ void MEDDLY::mt_mdd_int::createEdge(int term, dd_edge& e)
   createEdgeHelper(getTerminalNode(term), e);
 }
 
-void MEDDLY::mt_mdd_int::createEdge(const int* const* vlist,
-    const int* terms, int N, dd_edge& e)
+void MEDDLY::mt_mdd_int::createEdge(int** vlist, int* terms, int N, dd_edge& e)
 {
   if (e.getForest() != this) 
     throw error(error::INVALID_OPERATION);
@@ -82,6 +111,8 @@ MEDDLY::node_handle MEDDLY::mt_mdd_int::readTerminal(FILE* s)
   }
   throw error(error::INVALID_FILE);
 }
+
+#endif
 
 const char* MEDDLY::mt_mdd_int::codeChars() const
 {

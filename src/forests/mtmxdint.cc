@@ -44,8 +44,8 @@ void MEDDLY::mt_mxd_int::createEdge(int val, dd_edge &e)
 }
 
 
-void MEDDLY::mt_mxd_int::createEdge(const int* const* vlist,
-    const int* const* vplist, const int* terms, int N, dd_edge& e)
+void MEDDLY::mt_mxd_int::createEdge(int** vlist,
+    int** vplist, int* terms, int N, dd_edge& e)
 {
   if (e.getForest() != this) 
     throw error(error::INVALID_OPERATION);

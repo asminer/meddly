@@ -22,6 +22,37 @@
 
 #include "mtmddbool.h"
 
+#ifdef NEW_MT
+
+MEDDLY::mt_mdd_bool::mt_mdd_bool(int dsl, domain *d, const policies &p)
+: mtmdd_forest<int_terminal>(dsl, d, BOOLEAN, p)
+{ 
+  initializeForest();
+}
+
+MEDDLY::mt_mdd_bool::~mt_mdd_bool()
+{ }
+
+void MEDDLY::mt_mdd_bool::createEdge(bool term, dd_edge& e)
+{
+  createEdgeTempl(term, e);
+}
+
+void MEDDLY::mt_mdd_bool::createEdge(int** vlist, int N, dd_edge &e)
+{
+  e.set(createEdgeRT(getDomain()->getNumVariables(), vlist, (bool*) 0, N), 0);
+}
+
+void MEDDLY::mt_mdd_bool
+::evaluate(const dd_edge &f, const int* vlist, bool &term) const
+{
+  evaluateTempl(f, vlist, term);
+}
+
+
+
+#else
+
 
 MEDDLY::mt_mdd_bool::mt_mdd_bool(int dsl, domain *d, const policies &p)
 : MEDDLY::mtmdd_forest(dsl, d, false, BOOLEAN, MULTI_TERMINAL, p)
@@ -41,8 +72,7 @@ void MEDDLY::mt_mdd_bool::createEdge(bool term, dd_edge& e)
 }
 
 
-void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist,
-    int N, dd_edge &e)
+void MEDDLY::mt_mdd_bool::createEdge(int** vlist, int N, dd_edge &e)
 {
   if (e.getForest() != this) 
     throw error(error::INVALID_OPERATION);
@@ -77,8 +107,9 @@ MEDDLY::node_handle MEDDLY::mt_mdd_bool::readTerminal(FILE* s)
   throw error(error::INVALID_FILE);
 }
 
+#endif
+
 const char* MEDDLY::mt_mdd_bool::codeChars() const
 {
   return "dd_tvb";
 }
-

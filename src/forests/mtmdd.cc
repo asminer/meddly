@@ -23,6 +23,12 @@
 #include "mtmdd.h"
 #include "../unique_table.h"
 
+#ifdef NEW_MT
+
+// anything?  I think everything will be a template
+
+#else
+
 // TODO: Add option to create temporary nodes of max size when
 //       accumulating minterms.
 
@@ -102,3 +108,4 @@ void MEDDLY::mtmdd_forest::createEdgeTo(const int* v, node_handle term, dd_edge&
   // e.show(stderr, 2);
 }
 
+#endif

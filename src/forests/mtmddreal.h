@@ -30,6 +30,28 @@ namespace MEDDLY {
 
 // ******************************************************************
 
+#ifdef NEW_MT
+
+/** 
+    Forest for multi-terminal, mdd, real range.
+*/
+class MEDDLY::mt_mdd_real : public mtmdd_forest<real_terminal> {
+  public:
+
+    mt_mdd_real(int dsl, domain *d, const policies &p);
+    ~mt_mdd_real();
+
+    virtual void createEdge(float val, dd_edge &e);
+    virtual void createEdge(int** vlist, float* terms, int N, dd_edge &e);
+    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
+      const;
+
+  protected:
+    virtual const char* codeChars() const;
+};
+
+#else
+
 /** 
     Forest for multi-terminal, mdd, real range.
 */
@@ -40,8 +62,7 @@ class MEDDLY::mt_mdd_real : public mtmdd_forest {
     ~mt_mdd_real();
 
     virtual void createEdge(float val, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const float* terms,
-        int N, dd_edge &e);
+    virtual void createEdge(int** vlist, float* terms, int N, dd_edge &e);
     virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
       const;
 
@@ -51,6 +72,8 @@ class MEDDLY::mt_mdd_real : public mtmdd_forest {
   protected:
     virtual const char* codeChars() const;
 };
+
+#endif
 
 #endif
 

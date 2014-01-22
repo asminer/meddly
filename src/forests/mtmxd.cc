@@ -23,6 +23,12 @@
 #include "mtmxd.h"
 #include "../unique_table.h"
 
+#ifdef NEW_MT
+
+// Everything is a template now
+
+#else
+
 MEDDLY::mtmxd_forest::mtmxd_forest(int dsl, domain *d,
     bool relation, forest::range_type t,
     forest::edge_labeling e, const policies &p)
@@ -256,3 +262,4 @@ MEDDLY::mtmxd_forest::getTerminalNodeForEdge(int n, const int* vlist,
   return n;
 }
 
+#endif

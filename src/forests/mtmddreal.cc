@@ -22,6 +22,36 @@
 
 #include "mtmddreal.h"
 
+#ifdef NEW_MT
+
+MEDDLY::mt_mdd_real::mt_mdd_real(int dsl, domain *d, const policies &p)
+: mtmdd_forest<real_terminal>(dsl, d, REAL, p)
+{ 
+  initializeForest();
+}
+
+MEDDLY::mt_mdd_real::~mt_mdd_real()
+{ }
+
+void MEDDLY::mt_mdd_real::createEdge(float term, dd_edge& e)
+{
+  createEdgeTempl(term, e);
+}
+
+void MEDDLY::mt_mdd_real::createEdge(int** vlist, float* terms, int N, dd_edge &e)
+{
+  e.set(createEdgeRT(getDomain()->getNumVariables(), vlist, terms, N), 0);
+}
+
+void MEDDLY::mt_mdd_real
+::evaluate(const dd_edge &f, const int* vlist, float &term) const
+{
+  evaluateTempl(f, vlist, term);
+}
+
+
+
+#else
 
 MEDDLY::mt_mdd_real::mt_mdd_real(int dsl, domain *d, const policies &p)
 : MEDDLY::mtmdd_forest(dsl, d, false, REAL, MULTI_TERMINAL, p)
@@ -39,8 +69,7 @@ void MEDDLY::mt_mdd_real::createEdge(float term, dd_edge& e)
   createEdgeHelper(getTerminalNode(term), e);
 }
 
-void MEDDLY::mt_mdd_real::createEdge(const int* const* vlist,
-    const float* terms, int N, dd_edge& e)
+void MEDDLY::mt_mdd_real::createEdge(int** vlist, float* terms, int N, dd_edge& e)
 {
   if (e.getForest() != this) 
     throw error(error::INVALID_OPERATION);
@@ -80,6 +109,8 @@ MEDDLY::node_handle MEDDLY::mt_mdd_real::readTerminal(FILE* s)
   }
   throw error(error::INVALID_FILE);
 }
+
+#endif
 
 const char* MEDDLY::mt_mdd_real::codeChars() const
 {

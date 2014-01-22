@@ -43,6 +43,66 @@
 
 #include "mt.h"
 
+#ifdef NEW_MT
+
+namespace MEDDLY {
+
+  /**
+      Base class for all multi-terminal MxDs.
+      I.e., everything multi-terminal and for relations.
+  */
+  template <class TTERM>
+  class mtmxd_forest : public mt_forest<TTERM> {
+    protected:
+      mtmxd_forest(int dsl, domain* d, forest::range_type t, 
+        const forest::policies &p) : mt_forest<TTERM>(dsl, d, true, t, p)
+      {
+        // nothing to construct
+      }
+
+    protected:
+      /**
+          Template implementation of evaluate().
+          Derived classes should call this.
+      */
+      template <typename T>
+      inline void evaluateTempl(const dd_edge &f, const int* vlist, 
+        const int* vplist, T &term) const
+      {
+        // TBD
+        /*
+        node_handle p = f.getNode();
+        while (!mt_forest<TTERM>::isTerminalNode(p)) {
+          int i = vlist[mt_forest<TTERM>::getNodeHeight(p)];
+          p = mt_forest<TTERM>::getDownPtr(p, i);
+        }
+        TTERM tnode;
+        tnode.setFromHandle(p);
+        term = tnode;
+        */
+      }
+
+      /**
+          Recursive template implementation of createEdge(),
+          the one that uses an array of minterms.
+          Derived classes should call this.
+          Note: null array of return values
+          corresponds to "all 1s".
+      */
+      template <typename T>
+      inline node_handle createEdgeRT(int k, int** vlist, 
+        int** vplist, T* terms, int N) 
+      {
+        // TBD
+      }
+
+
+  }; // class
+
+}; // namespace
+
+#else
+
 namespace MEDDLY {
   class mtmxd_forest;
 };
@@ -491,4 +551,7 @@ bool mtmxd_forest::handleMultipleTerminalValues(const bool* tList,
 } // namespace
 
 #endif
+
+#endif
+
 

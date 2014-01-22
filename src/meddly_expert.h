@@ -1190,6 +1190,7 @@ class MEDDLY::node_storage {
           @param  addr    Address of the node we care about
           @param  index   Index of downward pointer
           @return         Desired pointer
+          @throw          INVALID_VARIABLE, if index is negative.
     */
     virtual node_handle getDownPtr(node_address addr, int index) const = 0;
 

@@ -161,54 +161,52 @@ void MEDDLY::forest::markForDeletion()
   unregisterDDEdges();
 }
 
-void MEDDLY::forest::createEdgeForVar(int vh, bool vp, bool* terms, dd_edge& a)
+void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 {
   throw error(error::TYPE_MISMATCH);
 }
 
-void MEDDLY::forest::createEdgeForVar(int vh, bool vp, int* terms, dd_edge& a)
+void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const int* terms, dd_edge& a)
 {
   throw error(error::TYPE_MISMATCH);
 }
 
-void MEDDLY::forest::createEdgeForVar(int vh, bool vp, float* terms, dd_edge& a)
+void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
 {
   throw error(error::TYPE_MISMATCH);
 }
 
-void MEDDLY::forest::createEdge(const int* const* vlist, int N, dd_edge &e)
-{
-  throw error(error::TYPE_MISMATCH);
-}
-
-void MEDDLY::forest
-::createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e)
+void MEDDLY::forest::createEdge(int** vlist, int N, dd_edge &e)
 {
   throw error(error::TYPE_MISMATCH);
 }
 
 void MEDDLY::forest
-::createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
+::createEdge(int** vlist, int* terms, int N, dd_edge &e)
 {
   throw error(error::TYPE_MISMATCH);
 }
 
 void MEDDLY::forest
-::createEdge(const int* const* vl, const int* const* vpl, int N, dd_edge &e)
+::createEdge(int** vlist, float* terms, int N, dd_edge &e)
 {
   throw error(error::TYPE_MISMATCH);
 }
 
 void MEDDLY::forest
-::createEdge(const int* const* vlist, const int* const* vplist,
-      const int* terms, int N, dd_edge &e)
+::createEdge(int** vl, int** vpl, int N, dd_edge &e)
 {
   throw error(error::TYPE_MISMATCH);
 }
 
 void MEDDLY::forest
-::createEdge(const int* const* vlist, const int* const* vplist,
-      const float* terms, int N, dd_edge &e)
+::createEdge(int** vlist, int** vplist, int* terms, int N, dd_edge &e)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest
+::createEdge(int** vlist, int** vplist, float* terms, int N, dd_edge &e)
 {
   throw error(error::TYPE_MISMATCH);
 }
@@ -1323,14 +1321,6 @@ void MEDDLY::expert_forest::showInfo(FILE* s, int verb)
 // '    virtual methods to be overridden by some derived classes    '
 // '                                                                '
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-/*
-void MEDDLY::expert_forest
-::writeNode(FILE* s, const node_reader &nr, const node_handle* map) const
-{
-  throw error(error::NOT_IMPLEMENTED);
-}
-*/
 
 bool MEDDLY::expert_forest
 ::areEdgeValuesEqual(const void* eva, const void* evb) const

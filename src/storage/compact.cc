@@ -594,6 +594,7 @@ getSingletonIndex(node_address addr, node_handle &down) const
 MEDDLY::node_handle 
 MEDDLY::compact_storage::getDownPtr(node_address addr, int index) const
 {
+  if (index<0) throw error(error::INVALID_VARIABLE);
   int size = sizeOf(addr);
   if (size<0) {
     int pbytes, ibytes;
@@ -620,6 +621,7 @@ MEDDLY::compact_storage::getDownPtr(node_address addr, int index) const
 void MEDDLY::compact_storage
 ::getDownPtr(node_address addr, int index, int& ev, node_handle& dn) const
 {
+  if (index<0) throw error(error::INVALID_VARIABLE);
   int size = sizeOf(addr);
   if (size<0) {
     int pbytes, ibytes;
@@ -649,6 +651,7 @@ void MEDDLY::compact_storage
 void MEDDLY::compact_storage
 ::getDownPtr(node_address addr, int index, float& ev, node_handle& dn) const
 {
+  if (index<0) throw error(error::INVALID_VARIABLE);
   int size = sizeOf(addr);
   if (size<0) {
     int pbytes, ibytes;

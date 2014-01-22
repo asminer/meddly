@@ -973,7 +973,7 @@ class MEDDLY::forest {
 
         @throws       TYPE_MISMATCH, if the forest's range is not BOOLEAN.
     */
-    virtual void createEdgeForVar(int vh, bool vp, bool* terms, dd_edge& a);
+    virtual void createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a);
 
     /** Create an edge such that
         f(v_1, ..., vh=i, ..., v_n) = terms[i] for 0 <= i < size(vh).
@@ -1001,7 +1001,7 @@ class MEDDLY::forest {
         
         @throws       TYPE_MISMATCH, if the forest's range is not INTEGER.
     */
-    virtual void createEdgeForVar(int vh, bool vp, int* terms, dd_edge& a);
+    virtual void createEdgeForVar(int vh, bool vp, const int* terms, dd_edge& a);
 
     /** Create an edge such that
         f(v_1, ..., vh=i, ..., v_n) = terms[i] for 0 <= i < size(vh).
@@ -1029,7 +1029,7 @@ class MEDDLY::forest {
 
         @throws       TYPE_MISMATCH, if the forest's range is not REAL.
     */
-    virtual void createEdgeForVar(int vh, bool vp, float* terms, dd_edge& a);
+    virtual void createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a);
 
     /** Create an edge such that
         f(v_1, ..., vh=i, ..., v_n) = i for 0 <= i < size(vh).
@@ -1064,6 +1064,7 @@ class MEDDLY::forest {
 
 
     /** Create an edge as the union of several explicit vectors.
+        The given vectors will be reordered as necessary for efficiency.
         @param  vlist Array of vectors. Each vector has dimension equal
                       to one plus the largest variable handle in the domain.
                       A vector \a x indicates a set of variable assignments,
@@ -1080,9 +1081,11 @@ class MEDDLY::forest {
                         the range type of the forest is not BOOLEAN, 
                         or the forest is for relations.
     */
-    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
+    virtual void createEdge(int** vlist, int N, dd_edge &e);
 
     /** Create an edge as the union of several vectors and return values.
+        The given vectors and return values will be reordered as necessary
+        for efficiency.
         @param  vlist Array of vectors. Each vector has dimension equal
                       to one plus the largest variable handle in the domain.
                       A vector \a x indicates a set of variable assignments,
@@ -1101,10 +1104,11 @@ class MEDDLY::forest {
                         the range type of the forest is not INTEGER,
                         or the forest is for relations.
     */
-    virtual void createEdge(const int* const* vlist, const int* terms, int N,
-      dd_edge &e);
+    virtual void createEdge(int** vlist, int* terms, int N, dd_edge &e);
 
     /** Create an edge as the union of several vectors and return values.
+        The given vectors and return values will be reordered as necessary
+        for efficiency.
         @param  vlist Array of vectors. Each vector has dimension equal
                       to one plus the largest variable handle in the domain.
                       A vector \a x indicates a set of variable assignments,
@@ -1123,11 +1127,11 @@ class MEDDLY::forest {
                         the range type of the forest is not REAL,
                         or the forest is for relations.
     */
-    virtual void createEdge(const int* const* vlist, const float* terms,
-      int N, dd_edge &e);
+    virtual void createEdge(int** vlist, float* terms, int N, dd_edge &e);
 
 
     /** Create an edge as the union of several explicit matrices.
+        The given matrices will be reordered as necessary for efficiency.
         @param  vlist   Array of vectors. Each vector has dimension equal to
                         one plus the largest variable handle in the domain.
                         A vector \a x indicates a set of unprimed variable
@@ -1156,11 +1160,12 @@ class MEDDLY::forest {
                         the range type of the forest is not BOOLEAN, 
                         or the forest is not for relations.
     */
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-      int N, dd_edge &e);
+    virtual void createEdge(int** vlist, int** vplist, int N, dd_edge &e);
 
 
     /** Create an edge as the union of several explicit matrices.
+        The given matrices and return values will be reordered as necessary 
+        for efficiency.
         @param  vlist   Array of vectors. Each vector has dimension equal to
                         one plus the largest variable handle in the domain.
                         A vector \a x indicates a set of unprimed variable
@@ -1190,11 +1195,13 @@ class MEDDLY::forest {
                         the range type of the forest is not INTEGER, 
                         or the forest is not for relations.
     */
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-      const int* terms, int N, dd_edge &e);
+    virtual void createEdge(int** vlist, int** vplist, 
+        int* terms, int N, dd_edge &e);
 
 
     /** Create an edge as the union of several explicit matrices.
+        The given matrices and return values will be reordered as necessary 
+        for efficiency.
         @param  vlist   Array of vectors. Each vector has dimension equal to
                         one plus the largest variable handle in the domain.
                         A vector \a x indicates a set of unprimed variable
@@ -1224,8 +1231,8 @@ class MEDDLY::forest {
                         the range type of the forest is not REAL, 
                         or the forest is not for relations.
     */
-    virtual void createEdge(const int* const* vlist, 
-      const int* const* vplist, const float* terms, int N, dd_edge &e);
+    virtual void createEdge(int** vlist, int** vplist, 
+        float* terms, int N, dd_edge &e);
 
 
     /** Create an edge for a boolean constant.

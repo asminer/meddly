@@ -1,0 +1,22 @@
+<html>
+<body>
+<h2>New in this branch</h2>
+
+<h3>Simple interface</h3>
+
+<ul>
+  <li> Added <tt>const</tt> to array of terminal values,
+       in parameter to <tt>createEdgeForVar</tt> methods.
+       This should have minimal, if any, impact on applications.
+  </li>
+
+  <li> <b>Removed</b> <tt>const</tt> from arrays in parameters
+       to <tt>createEdge</tt> methods, as the implementation will
+       now reorder these arrays in place as needed for speed.
+       If you expect these arrays to remain untouched, then you
+       will need to copy them before calling the method.
+  </li>
+</ul>
+
+</body>
+</html>

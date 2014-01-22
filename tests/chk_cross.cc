@@ -35,11 +35,11 @@ using namespace MEDDLY;
 // #define DEBUG_RANDSET
 // #define DEBUG_SEGV
 
-const int vars[] = {4, 4, 4, 4, 4, 4};
-const int dontcare[] = {0, -1, -1, -1, -1, -1, -1};
+int vars[] = {4, 4, 4, 4, 4, 4};
+int dontcare[] = {0, -1, -1, -1, -1, -1, -1};
 int minterm[7];
-const int* mtaddr[] = { minterm };
-const int* dcaddr[] = { dontcare };
+int* mtaddr[] = { minterm };
+int* dcaddr[] = { dontcare };
 
 long seed = -1;
 

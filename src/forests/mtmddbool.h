@@ -30,6 +30,28 @@ namespace MEDDLY {
 
 // ******************************************************************
 
+#ifdef NEW_MT
+
+/** 
+    Forest for multi-terminal, mdd, boolean range.
+*/
+class MEDDLY::mt_mdd_bool : public mtmdd_forest<int_terminal> {
+  public:
+
+    mt_mdd_bool(int dsl, domain *d, const policies &p);
+    ~mt_mdd_bool();
+
+    virtual void createEdge(bool val, dd_edge &e);
+    virtual void createEdge(int** vlist, int N, dd_edge &e);
+    virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
+      const;
+
+  protected:
+    virtual const char* codeChars() const;
+};
+
+#else
+
 /** 
     Forest for multi-terminal, mdd, boolean range.
 */
@@ -40,7 +62,7 @@ class MEDDLY::mt_mdd_bool : public mtmdd_forest {
     ~mt_mdd_bool();
 
     virtual void createEdge(bool val, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
+    virtual void createEdge(int** vlist, int N, dd_edge &e);
     virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
       const;
 
@@ -50,6 +72,8 @@ class MEDDLY::mt_mdd_bool : public mtmdd_forest {
   protected:
     virtual const char* codeChars() const;
 };
+
+#endif
 
 #endif
 
