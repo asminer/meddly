@@ -43,6 +43,12 @@ void MEDDLY::mt_mdd_bool::createEdge(int** vlist, int N, dd_edge &e)
   e.set(createEdgeRT(getDomain()->getNumVariables(), vlist, (bool*) 0, N), 0);
 }
 
+void MEDDLY::mt_mdd_bool::
+createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
+{
+  createEdgeForVarTempl(vh, vp, terms, a);
+}
+
 void MEDDLY::mt_mdd_bool
 ::evaluate(const dd_edge &f, const int* vlist, bool &term) const
 {

@@ -22,6 +22,47 @@
 
 #include "mtmxdint.h"
 
+#ifdef NEW_MT
+
+MEDDLY::mt_mxd_int::mt_mxd_int(int dsl, domain *d, const policies &p)
+: mtmxd_forest<int_terminal>(dsl, d, INTEGER, p)
+{ 
+  initializeForest();
+}
+
+MEDDLY::mt_mxd_int::~mt_mxd_int()
+{ }
+
+void MEDDLY::mt_mxd_int::createEdge(int term, dd_edge& e)
+{
+  createEdgeTempl(term, e);
+}
+
+void MEDDLY::mt_mxd_int
+::createEdge(int** vlist, int** vplist, int* terms, int N, dd_edge &e)
+{
+  e.set(
+    createEdgeRT(-1, getDomain()->getNumVariables(), vlist, vplist, terms, N)
+    , 
+    0
+  );
+}
+
+void MEDDLY::mt_mxd_int::
+createEdgeForVar(int vh, bool vp, const int* terms, dd_edge& a)
+{
+  createEdgeForVarTempl(vh, vp, terms, a);
+}
+
+void MEDDLY::mt_mxd_int::evaluate(const dd_edge &f, const int* vlist, 
+  const int* vplist, int &term) const
+{
+  evaluateTempl(f, vlist, vplist, term);
+}
+
+
+
+#else
 
 MEDDLY::mt_mxd_int::mt_mxd_int(int dsl, domain *d, const policies &p)
 : MEDDLY::mtmxd_forest(dsl, d, true, INTEGER, MULTI_TERMINAL, p)
@@ -95,6 +136,7 @@ MEDDLY::node_handle MEDDLY::mt_mxd_int::readTerminal(FILE* s)
   throw error(error::INVALID_FILE);
 }
 
+#endif
 
 const char* MEDDLY::mt_mxd_int::codeChars() const
 {

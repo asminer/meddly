@@ -69,32 +69,191 @@ namespace MEDDLY {
       inline void evaluateTempl(const dd_edge &f, const int* vlist, 
         const int* vplist, T &term) const
       {
-        // TBD
-        /*
         node_handle p = f.getNode();
         while (!mt_forest<TTERM>::isTerminalNode(p)) {
-          int i = vlist[mt_forest<TTERM>::getNodeHeight(p)];
+          int k = mt_forest<TTERM>::getNodeLevel(p);
+          int i = (k<0) ? vplist[-k] : vlist[k];
           p = mt_forest<TTERM>::getDownPtr(p, i);
-        }
+        } 
         TTERM tnode;
         tnode.setFromHandle(p);
         term = tnode;
-        */
       }
 
       /**
           Recursive template implementation of createEdge(),
           the one that uses an array of minterms.
           Derived classes should call this.
-          Note: null array of return values
-          corresponds to "all 1s".
+            @param  in      Index of incoming edge.  
+                            Only matters for primed levels.
+            @param  k       Level
+            @param  vlist   Array of "from" minterms
+            @param  vplist  Array of "to" minterms
+            @param  terms   Array of terminal values, or null
+                            to indicate "all true"
+            @param  N       Dimension of vlist/vplist/terms arrays.
+            @return         New node handle
       */
       template <typename T>
-      inline node_handle createEdgeRT(int k, int** vlist, 
+      inline node_handle createEdgeRT(int in, int k, int** vlist, 
         int** vplist, T* terms, int N) 
       {
-        // TBD
-      }
+        //
+        // Check terminal case
+        //
+        if (0==k) {
+          TTERM tnode;
+          if (terms) {
+            tnode.setFromValue(terms[0]);
+            for (int i=1; i<N; i++) {
+              tnode.unionValue(terms[i]);
+            }
+          } else {
+            tnode.setFromValue(true);
+          }
+          return tnode.toHandle();
+        }
+
+        //
+        // Which minterm array is "active"?
+        //
+        int** minterms = (k<0) ? vplist : vlist;
+        int absk = ABS(k);
+
+        //
+        // Start new node at level k
+        //
+        int lastV = mt_forest<TTERM>::getDomain()->getVariableBound(absk, k<0);
+        node_builder& nb = mt_forest<TTERM>::useSparseBuilder(k, lastV);
+
+        //
+        // Sort the entries based on variable value at level k
+        // and recurse.
+
+        // first, move any "don't cares"/"don't changes" to the front, 
+        // and count them
+        int dontcares = 0;
+        for (int i=1; i<N; i++) {
+          if (-1 == minterms[i][absk]) {
+            SWAP(vlist[dontcares], vlist[i]);
+            SWAP(vplist[dontcares], vplist[i]);
+            if (terms) SWAP(terms[dontcares], terms[i]);
+            dontcares++;
+          }
+        }
+
+        // process values one at a time, from 0 to max variable setting
+
+        int vm1P = 0;         // pointer to start of v-1 values
+        int vP = dontcares;   // pointer to start of (possible) v values
+        int z = 0;            // number of nonzero edges in our node
+        for (int v=0; v<lastV; v++) {
+          //
+          //  At the beginning of this loop, the array is as follows:
+          //
+          //           vm1P                  vP
+          //             |                    |
+          //  a b c d | v-1  ?  ?  v-1 v-1 |  w x y z
+          //  . . . . |  .   .  .   .   .  |  . . . .
+          //  . . . . |  .   .  .   .   .  |  . . . .
+          //
+          // We've just processed the middle batch, which has
+          // values all equal to v-1 OR don't care.
+          // The batch before has values less than v-1, and
+          // the batch after has values greater than v-1.
+
+          //
+          // (1) re-arrange so v-1 values are at the beginning, 
+          //     and don't cares are at the end, of "middle batch"
+          //     
+          int left = vm1P;
+          int right = vP-1;
+          for (int d=dontcares; d>0; d--) {
+            // loop in a clever way, so that it's skipped when
+            // there are no don't cares.
+
+            // increase left to first ? 
+            if (k>=0) {
+              // anything negative is don't care
+              while (minterms[left][absk]>=0) left++;
+            } else {
+              // -1 only is don't care
+              while (-1 != minterms[left][absk]) left++;
+            }
+
+            if (right+1 - left <= d) break; 
+
+            // decrease right to first v-1
+            if (k>=0) {
+              // anything negative is don't care
+              while (minterms[right][absk]<0) right--;
+            } else {
+              // -1 only is don't care
+              while (-1 == minterms[right][absk]) right--;
+            }
+
+            SWAP(vlist[left], vlist[right]);
+            SWAP(vplist[left], vplist[right]);
+            if (terms) SWAP(terms[left], terms[right]);
+          }
+
+          //
+          // (2) arrange right batch so that the first
+          //     elements are those with value v (if any),
+          //     and from vp1P onward, elements have value
+          //     larger than v
+          //
+          left = vP;
+          right = N;
+          while (left+1 < right) {
+            int mtl = minterms[left][absk];
+            if (-2 == mtl && k<0) mtl = in;    // don't change
+            if (mtl == v) {
+              left++;
+              continue;
+            }
+            int mtr = minterms[right-1][absk];
+            if (-2 == mtr && k<0) mtr = in;    // don't change
+            if (mtr > v) {
+              right--;
+              continue;
+            }
+            SWAP(vlist[left], vlist[right-1]);
+            SWAP(vplist[left], vplist[right-1]);
+            if (terms) SWAP(terms[left], terms[right-1]);
+          }
+
+          //
+          // (3) get pointers ready for next iteration
+          //
+          vm1P = vP - dontcares;
+          vP = right;
+
+          //
+          // Current array picture:
+          //
+          //                      vm1P       vP
+          //                        |         |
+          //  a b c d v-1 v-1 v-1 | ? ? v v | w x y z
+          //  . . . .  .   .   .  | . . . . | . . . .
+          //  . . . .  .   .   .  | . . . . | . . . .
+          //
+          // 
+          // (4) recurse
+          //
+          if (vm1P >= vP) continue; // nothing to do!
+          nb.i(z) = v;
+          int km1 = (k>0) ? (-k) : (-k)-1;
+          if (terms) {
+            nb.d(z) = createEdgeRT(v, km1, vlist+vm1P, vplist+vm1P, terms+vm1P, vP - vm1P);
+          } else {
+            nb.d(z) = createEdgeRT(v, km1, vlist+vm1P, vplist+vm1P, terms, vP - vm1P);
+          }
+          z++;
+        } // for v
+        nb.shrinkSparse(z);
+        return mt_forest<TTERM>::createReducedNode(-1, nb);
+      } // createEdgeRT
 
 
   }; // class

@@ -173,7 +173,7 @@ namespace MEDDLY {
           //
           left = vP;
           right = N;
-          while (left < right) {
+          while (left+1 < right) {
             if (vlist[left][k] == v) {
               left++;
               continue;
@@ -183,7 +183,7 @@ namespace MEDDLY {
               continue;
             }
             SWAP(vlist[left], vlist[right-1]);
-            SWAP(terms[left], terms[right-1]);
+            if (terms) SWAP(terms[left], terms[right-1]);
           }
 
           //
@@ -207,9 +207,9 @@ namespace MEDDLY {
           if (vm1P >= vP) continue; // nothing to do!
           nb.i(z) = v;
           if (terms) {
-            nb.d(z) = createEdgeRT(k+1, vlist+vm1P, terms+vm1P, vP - vm1P);
+            nb.d(z) = createEdgeRT(k-1, vlist+vm1P, terms+vm1P, vP - vm1P);
           } else {
-            nb.d(z) = createEdgeRT(k+1, vlist+vm1P, terms, vP - vm1P);
+            nb.d(z) = createEdgeRT(k-1, vlist+vm1P, terms, vP - vm1P);
           }
           z++;
         } // for v

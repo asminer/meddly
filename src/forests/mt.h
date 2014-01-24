@@ -34,7 +34,7 @@
 
 #include "../defines.h"
 
-#define NEW_MT
+// #define NEW_MT
 
 namespace MEDDLY {
   class int_terminal;
@@ -198,9 +198,10 @@ class MEDDLY::mt_base_forest : public expert_forest {
     /// Add redundant nodes from level k to the given node.
     inline node_handle makeNodeAtLevel(int k, node_handle d) {
       MEDDLY_DCASSERT(abs(k) >= abs(getNodeLevel(d)));
+      if (0==d) return d;
       if (isFullyReduced()) return d;
-      int dk;
-      while ((dk = getNodeLevel(d)) != k) {
+      int dk = getNodeLevel(d); 
+      while (dk != k) {
         int up;
         if (dk<0) up = -dk;
         else up = isForRelations() ? -(dk+1) : dk+1;
@@ -212,7 +213,7 @@ class MEDDLY::mt_base_forest : public expert_forest {
         if (isIdentityReduced() && (dk<0)) {
           // make identity reductions below as necessary
           node_handle sd;
-          int si = getSingletonIndex(d, sd);
+          int si = isTerminalNode(d) ? -1 : getSingletonIndex(d, sd);
           for (int i=0; i<sz; i++) {
             nb.d(i) = linkNode( (i==si) ? sd : d );
           }
@@ -224,6 +225,7 @@ class MEDDLY::mt_base_forest : public expert_forest {
         }
         unlinkNode(d);
         d = createReducedNode(-1, nb);
+        dk = up;
       } // while
       return d;
     }
@@ -298,6 +300,12 @@ createEdgeForVarTempl(int vh, bool pr, const T* termvals, dd_edge& result)
         Get info for node we're building
     */
     int k = pr ? -vh: vh;
+    int km1;
+    if (isForRelations()) {
+      km1 = (k<0) ? (-k)-1 : -k;
+    } else {
+      km1 = k-1;
+    }
     int sz = getLevelSize(vh);
 
     /*
@@ -311,7 +319,7 @@ createEdgeForVarTempl(int vh, bool pr, const T* termvals, dd_edge& result)
       } else {
         termnode.setFromValue(i);
       }
-      nb.d(i) = makeNodeAtLevel(k, termnode.toHandle());
+      nb.d(i) = makeNodeAtLevel(km1, termnode.toHandle());
     }
 
     /*

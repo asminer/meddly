@@ -43,6 +43,7 @@ class MEDDLY::mt_mdd_bool : public mtmdd_forest<int_terminal> {
 
     virtual void createEdge(bool val, dd_edge &e);
     virtual void createEdge(int** vlist, int N, dd_edge &e);
+    virtual void createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a);
     virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
       const;
 

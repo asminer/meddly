@@ -30,6 +30,29 @@ namespace MEDDLY {
 
 // ******************************************************************
 
+#ifdef NEW_MT
+
+/** 
+    Forest for multi-terminal, mxd, integer range.
+*/
+class MEDDLY::mt_mxd_int : public mtmxd_forest<int_terminal> {
+  public:
+
+    mt_mxd_int(int dsl, domain *d, const policies &p);
+    ~mt_mxd_int();
+
+    void createEdge(int val, dd_edge &e);
+    void createEdge(int** vlist, int** vplist, int* terms, int N, dd_edge& e);
+    virtual void createEdgeForVar(int vh, bool vp, const int* terms, dd_edge& a);
+    void evaluate(const dd_edge& f, const int* vlist, const int* vplist,
+        int &term) const;
+
+  protected:
+    virtual const char* codeChars() const;
+};
+
+#else
+
 /** 
     Forest for multi-terminal, mxd, integer range.
 */
@@ -50,6 +73,8 @@ class MEDDLY::mt_mxd_int : public mtmxd_forest {
   protected:
     virtual const char* codeChars() const;
 };
+
+#endif
 
 #endif
 
