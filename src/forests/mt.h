@@ -34,7 +34,7 @@
 
 #include "../defines.h"
 
-// #define NEW_MT
+#define NEW_MT
 
 namespace MEDDLY {
   class int_terminal;
@@ -55,6 +55,10 @@ class MEDDLY::int_terminal {
         // Can't fit in 31 bits (signed)
         throw error(error::OVERFLOW);
       }
+    }
+    inline void setFromValue(bool b) {
+      MEDDLY_DCASSERT(4 == sizeof(node_handle));
+      value = b ? -1 : 0;
     }
     inline void setFromHandle(node_handle h) {
       // << 1 kills the sign bit

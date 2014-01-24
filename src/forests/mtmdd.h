@@ -115,10 +115,12 @@ namespace MEDDLY {
 
         // first, move any "don't cares" to the front, and count them
         int dontcares = 0;
-        for (int i=1; i<N; i++) {
+        for (int i=0; i<N; i++) {
           if (vlist[i][k] < 0) {
-            SWAP(vlist[dontcares], vlist[i]);
-            if (terms) SWAP(terms[dontcares], terms[i]);
+            if (dontcares != i) {
+              SWAP(vlist[dontcares], vlist[i]);
+              if (terms) SWAP(terms[dontcares], terms[i]);
+            }
             dontcares++;
           }
         }
@@ -190,7 +192,9 @@ namespace MEDDLY {
           // (3) get pointers ready for next iteration
           //
           vm1P = vP - dontcares;
-          vP = right;
+          for (vP=vm1P; vP<N; vP++) {
+            if (vlist[vP][k] > v) break;
+          }
 
           //
           // Current array picture:

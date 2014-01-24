@@ -551,6 +551,16 @@ class MEDDLY::error {
 */
 class MEDDLY::forest {
   public:
+    /** Special value for minterms in createEdge(): don't care what this variable does.
+        I.e., do the same thing for all possible assignments for a variable.
+    */
+    static const int DONT_CARE  = -1;
+    /** Special value for primed minterms in createEdge(): don't change this variable.
+        Forces the primed value to equal the unprimed value for a variable.
+        May cause an exception when used for unprimed variables.
+    */
+    static const int DONT_CHANGE = -2;
+
     /** Types of values that we can currently store in forests.
         I.e., if every node in a forest is a function,
         these are the possible ranges for a function.
@@ -1068,9 +1078,8 @@ class MEDDLY::forest {
         @param  vlist Array of vectors. Each vector has dimension equal
                       to one plus the largest variable handle in the domain.
                       A vector \a x indicates a set of variable assignments,
-                      where x[vh] less than 0 means
-                      "don't care for variable vh", otherwise x[vh] gives
-                      the variable assignment for vh.
+                      where x[vh] may have a value of DONT_CARE;
+                      otherwise x[vh] gives the variable assignment for vh.
         @param  N     Number of vectors (dimension of \a vlist).
         @param  e     returns a handle to a node in the forest, such that
                       f(v_1, ..., v_n) = 1, iff there is a vector
@@ -1089,9 +1098,8 @@ class MEDDLY::forest {
         @param  vlist Array of vectors. Each vector has dimension equal
                       to one plus the largest variable handle in the domain.
                       A vector \a x indicates a set of variable assignments,
-                      where x[vh] less than 0 means
-                      "don't care for variable vh", otherwise x[vh] gives
-                      the variable assignment for vh.
+                      where x[vh] may have a value of DONT_CARE;
+                      otherwise x[vh] gives the variable assignment for vh.
         @param  terms Array of return values, same dimension as \a vlist.
         @param  N     Number of vectors (dimension of \a vlist).
         @param  e     returns a handle to a node in the forest that encodes
@@ -1112,9 +1120,8 @@ class MEDDLY::forest {
         @param  vlist Array of vectors. Each vector has dimension equal
                       to one plus the largest variable handle in the domain.
                       A vector \a x indicates a set of variable assignments,
-                      where x[vh] less than 0 means
-                      "don't care for variable vh", otherwise x[vh] gives
-                      the variable assignment for vh.
+                      where x[vh] may have a value of DONT_CARE;
+                      otherwise x[vh] gives the variable assignment for vh.
         @param  terms Array of return values, same dimension as \a vlist.
         @param  N     Number of vectors (dimension of \a vlist).
         @param  e     returns a handle to a node in the forest that encodes
@@ -1134,12 +1141,11 @@ class MEDDLY::forest {
         The given matrices will be reordered as necessary for efficiency.
         @param  vlist   Array of vectors. Each vector has dimension equal to
                         one plus the largest variable handle in the domain.
-                        A vector \a x indicates a set of unprimed variable
-                        assignments, where x[vh] equal to -1 means
-                        "don't care for unprimed variable vh", x[vh] equal
-                        to -2 means "don't change for variable vh",
-                        otherwise x[vh] gives the variable assignment for
-                        unprimed variable vh.
+                        Vector vlist indicates the set of unprimed variable
+                        assignments, and vector vplist indicates the set of
+                        primed variable assignments.  Both vlist and vplist
+                        may have elements equal to DONT_CARE, and vplist
+                        may have elements equal to DONT_CHANGE.
         @param  vplist  Array of vectors, same dimension as \a vlist.
                         A vector \a x = vplist[i] indicates a set of primed
                         variable assignments, where x[vh] less than 0 means
@@ -1168,12 +1174,11 @@ class MEDDLY::forest {
         for efficiency.
         @param  vlist   Array of vectors. Each vector has dimension equal to
                         one plus the largest variable handle in the domain.
-                        A vector \a x indicates a set of unprimed variable
-                        assignments, where x[vh] equal to -1 means
-                        "don't care for unprimed variable vh", x[vh] equal
-                        to -2 means "don't change for variable vh",
-                        otherwise x[vh] gives the variable assignment for
-                        unprimed variable vh.
+                        Vector vlist indicates the set of unprimed variable
+                        assignments, and vector vplist indicates the set of
+                        primed variable assignments.  Both vlist and vplist
+                        may have elements equal to DONT_CARE, and vplist
+                        may have elements equal to DONT_CHANGE.
         @param  vplist  Array of vectors, same dimension as \a vlist.
                         A vector \a x = vplist[i] indicates a set of primed
                         variable assignments, where x[vh] less than 0 means
@@ -1204,12 +1209,11 @@ class MEDDLY::forest {
         for efficiency.
         @param  vlist   Array of vectors. Each vector has dimension equal to
                         one plus the largest variable handle in the domain.
-                        A vector \a x indicates a set of unprimed variable
-                        assignments, where x[vh] equal to -1 means
-                        "don't care for unprimed variable vh", x[vh] equal
-                        to -2 means "don't change for variable vh",
-                        otherwise x[vh] gives the variable assignment for
-                        unprimed variable vh.
+                        Vector vlist indicates the set of unprimed variable
+                        assignments, and vector vplist indicates the set of
+                        primed variable assignments.  Both vlist and vplist
+                        may have elements equal to DONT_CARE, and vplist
+                        may have elements equal to DONT_CHANGE.
         @param  vplist  Array of vectors, same dimension as \a vlist.
                         A vector \a x = vplist[i] indicates a set of primed
                         variable assignments, where x[vh] less than 0 means

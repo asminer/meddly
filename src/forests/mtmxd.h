@@ -133,11 +133,13 @@ namespace MEDDLY {
         // first, move any "don't cares"/"don't changes" to the front, 
         // and count them
         int dontcares = 0;
-        for (int i=1; i<N; i++) {
+        for (int i=0; i<N; i++) {
           if (-1 == minterms[i][absk]) {
-            SWAP(vlist[dontcares], vlist[i]);
-            SWAP(vplist[dontcares], vplist[i]);
-            if (terms) SWAP(terms[dontcares], terms[i]);
+            if (dontcares != i) {
+              SWAP(vlist[dontcares], vlist[i]);
+              SWAP(vplist[dontcares], vplist[i]);
+              if (terms) SWAP(terms[dontcares], terms[i]);
+            }
             dontcares++;
           }
         }
@@ -227,7 +229,10 @@ namespace MEDDLY {
           // (3) get pointers ready for next iteration
           //
           vm1P = vP - dontcares;
-          vP = right;
+          for (vP=vm1P; vP<N; vP++) {
+            if (minterms[vP][absk] > v) break;
+          }
+
 
           //
           // Current array picture:
@@ -252,7 +257,9 @@ namespace MEDDLY {
           z++;
         } // for v
         nb.shrinkSparse(z);
-        return mt_forest<TTERM>::createReducedNode(-1, nb);
+        // return mt_forest<TTERM>::createReducedNode(in, nb);
+        int answer = mt_forest<TTERM>::createReducedNode(in, nb);
+        return answer;
       } // createEdgeRT
 
 
