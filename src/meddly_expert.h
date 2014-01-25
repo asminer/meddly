@@ -46,6 +46,7 @@
 #define DCASSERTS_ON
 #endif
 
+// #define DEBUG_NODE_BUILDERS
 // #define DEBUG_MDD_H
 // #define TRACK_DELETIONS
 // #define TRACK_CACHECOUNT
@@ -2101,6 +2102,9 @@ class MEDDLY::expert_forest : public forest
       MEDDLY_DCASSERT(!builders[level].lock);
       builders[level].resize(tsz);
       builders[level].lock = true;
+#ifdef DEBUG_NODE_BUILDERS
+      fprintf(stderr, "using node builder at level %d\n", level);
+#endif
       return builders[level];
     }
     inline node_builder& useSparseBuilder(int level, int nnz) {
@@ -2108,11 +2112,17 @@ class MEDDLY::expert_forest : public forest
       MEDDLY_DCASSERT(!builders[level].lock);
       builders[level].resparse(nnz);
       builders[level].lock = true;
+#ifdef DEBUG_NODE_BUILDERS
+      fprintf(stderr, "using sparse builder at level %d\n", level);
+#endif
       return builders[level];
     }
     inline void doneNodeBuilder(node_builder& nb) {
       MEDDLY_DCASSERT(nb.lock);
       nb.lock = false;
+#ifdef DEBUG_NODE_BUILDERS
+      fprintf(stderr, "releasing builder at level %d\n", nb.getLevel());
+#endif
     }
 
     /** Return a forest node equal to the one given.
@@ -2135,6 +2145,9 @@ class MEDDLY::expert_forest : public forest
       nb.lock = false;
 #ifdef TRACK_DELETIONS
       printf("Created node %d\n", q);
+#endif
+#ifdef DEBUG_NODE_BUILDERS
+      fprintf(stderr, "releasing builder at level %d\n", nb.getLevel());
 #endif
       return q;
     }
@@ -2162,6 +2175,9 @@ class MEDDLY::expert_forest : public forest
       nb.lock = false;
 #ifdef TRACK_DELETIONS
       printf("Created node %d\n", node);
+#endif
+#ifdef DEBUG_NODE_BUILDERS
+      fprintf(stderr, "releasing builder at level %d\n", nb.getLevel());
 #endif
     }
 

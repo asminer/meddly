@@ -42,11 +42,7 @@ void MEDDLY::mt_mxd_int
 ::createEdge(int** vlist, int** vplist, int* terms, int N, dd_edge &e)
 {
   unionOp = getOperation(PLUS, this, this, this);
-  e.set(
-    createEdgeRT(-1, getDomain()->getNumVariables(), vlist, vplist, terms, N)
-    , 
-    0
-  );
+  e.set(createEdgeRT(getDomain()->getNumVariables(), vlist, vplist, terms, N), 0);
 }
 
 void MEDDLY::mt_mxd_int::

@@ -34,7 +34,7 @@
 
 #include "../defines.h"
 
-// #define NEW_MT
+#define NEW_MT
 
 namespace MEDDLY {
   class int_terminal;

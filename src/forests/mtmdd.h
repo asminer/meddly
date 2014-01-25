@@ -104,12 +104,15 @@ namespace MEDDLY {
           return tnode.toHandle();
         }
 
+        // size of variables at level k
+        int lastV = mt_forest<TTERM>::getDomain()->getVariableBound(k, false);
         // current batch size
         int batchP = 0;
 
         //
         // Move any "don't cares" to the front, and process them
         //
+        int nextV = lastV;
         for (int i=0; i<N; i++) {
           if (forest::DONT_CARE == vlist[i][k]) {
             if (batchP != i) {
@@ -117,6 +120,8 @@ namespace MEDDLY {
               if (terms) SWAP(terms[batchP], terms[i]);
             }
             batchP++;
+          } else {
+            nextV = MIN(nextV, vlist[i][k]);
           }
         }
         node_handle dontcares;
@@ -129,7 +134,6 @@ namespace MEDDLY {
         //
         // Start new node at level k
         //
-        int lastV = mt_forest<TTERM>::getDomain()->getVariableBound(k, false);
         node_builder& nb = mt_forest<TTERM>::useSparseBuilder(k, lastV);
         int z = 0; // number of nonzero edges in our sparse node
 
@@ -139,8 +143,9 @@ namespace MEDDLY {
         //  (2) process them, if any
         //  (3) union with don't cares
         //
-        for (int v=0; v<lastV; v++) {
-
+        int v = (dontcares) ? 0 : nextV;
+        for (int v=0; v<lastV; v = (dontcares) ? v+1 : nextV) {
+          nextV = lastV;
           //
           // neat trick!
           // shift the array over, because we're done with the previous batch
@@ -160,6 +165,8 @@ namespace MEDDLY {
                 if (terms) SWAP(terms[batchP], terms[i]);
               }
               batchP++;
+            } else {
+              nextV = MIN(nextV, vlist[i][k]);
             }
           }
 
