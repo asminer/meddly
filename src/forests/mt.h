@@ -34,7 +34,7 @@
 
 #include "../defines.h"
 
-#define NEW_MT
+// #define NEW_MT
 
 namespace MEDDLY {
   class int_terminal;
@@ -240,6 +240,8 @@ class MEDDLY::mt_base_forest : public expert_forest {
     }
 
 
+    // set, and used, in derived classes for createEdge()
+    binary_operation* unionOp;
 };
 
 

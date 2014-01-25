@@ -41,6 +41,7 @@ void MEDDLY::mt_mxd_bool::createEdge(bool term, dd_edge& e)
 void MEDDLY::mt_mxd_bool
 ::createEdge(int** vlist, int** vplist, int N, dd_edge &e)
 {
+  unionOp = getOperation(UNION, this, this, this);
   e.set(
     createEdgeRT(-1, getDomain()->getNumVariables(), vlist, vplist, (bool*) 0, N)
     , 

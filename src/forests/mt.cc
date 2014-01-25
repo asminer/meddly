@@ -44,6 +44,7 @@ MEDDLY::mt_base_forest::mt_base_forest(int dsl, domain *d, bool rel,
   range_type t, const policies &p)
 : expert_forest(dsl, d, rel, t, MULTI_TERMINAL, p)
 {
+  unionOp = 0;
 }
 
 bool MEDDLY::mt_base_forest::isRedundant(const node_builder &nb) const

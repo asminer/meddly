@@ -118,150 +118,167 @@ namespace MEDDLY {
         // Which minterm array is "active"?
         //
         int** minterms = (k<0) ? vplist : vlist;
-        int absk = ABS(k);
+        int absk;
+        int km1;
+        if (k>0) {
+          absk = k;
+          km1 = -k;
+        } else {
+          absk = -k;
+          km1 = absk-1;
+        }
+
+        // current batch size
+        int batchP = 0;
+
+        //
+        // Move any "don't cares" to the front, and process them
+        //
+        for (int i=0; i<N; i++) {
+          if (forest::DONT_CARE == minterms[i][absk]) {
+            if (batchP != i) {
+              SWAP(vlist[batchP], vlist[i]);
+              SWAP(vplist[batchP], vplist[i]);
+              if (terms) SWAP(terms[batchP], terms[i]);
+            }
+          }
+          batchP++;
+        }
+        node_handle dontcares = 0;
+        //
+        // If we're unprimed, now need to move any "don't changes"
+        // below the "don't cares" to the front, and process those
+        if (k>0) {
+          int dch = 0;
+          for (int i=0; i<batchP; i++) {
+            if (forest::DONT_CHANGE == vplist[i][absk]) {
+              if (dch != i) {
+                SWAP(vlist[dch], vlist[i]);
+                SWAP(vplist[dch], vplist[i]);
+                if (terms) SWAP(terms[dch], terms[i]);
+              }
+            }
+          } 
+          // process "don't care, don't change" pairs
+          if (dch) {
+            node_handle below = createEdgeRT(-1, k-1, vlist, vplist, terms, dch);
+            dontcares = makeIdentityEdge(k, below);
+            mt_forest<TTERM>::unlinkNode(below);
+            // done with those
+            minterms += dch;
+            vlist += dch;
+            vplist += dch;
+            if (terms) terms += dch;
+            N -= dch;
+            batchP -= dch;
+          }
+        }
+        //
+        // process the don't cares
+        //
+        if (batchP) {
+          node_handle dcnormal = createEdgeRT(-1, km1, vlist, vplist, terms, batchP);
+          MEDDLY_DCASSERT(mt_forest<TTERM>::unionOp);
+          node_handle total 
+          = mt_forest<TTERM>::unionOp->compute(dontcares, dcnormal);
+          mt_forest<TTERM>::unlinkNode(dcnormal);
+          mt_forest<TTERM>::unlinkNode(dontcares);
+          dontcares = total;
+        }
 
         //
         // Start new node at level k
         //
         int lastV = mt_forest<TTERM>::getDomain()->getVariableBound(absk, k<0);
         node_builder& nb = mt_forest<TTERM>::useSparseBuilder(k, lastV);
+        int z = 0; // number of nonzero edges in our sparse node
 
         //
-        // Sort the entries based on variable value at level k
-        // and recurse.
-
-        // first, move any "don't cares"/"don't changes" to the front, 
-        // and count them
-        int dontcares = 0;
-        for (int i=0; i<N; i++) {
-          if (-1 == minterms[i][absk]) {
-            if (dontcares != i) {
-              SWAP(vlist[dontcares], vlist[i]);
-              SWAP(vplist[dontcares], vplist[i]);
-              if (terms) SWAP(terms[dontcares], terms[i]);
-            }
-            dontcares++;
-          }
-        }
-
-        // process values one at a time, from 0 to max variable setting
-
-        int vm1P = 0;         // pointer to start of v-1 values
-        int vP = dontcares;   // pointer to start of (possible) v values
-        int z = 0;            // number of nonzero edges in our node
+        // For each value v, 
+        //  (1) move those values to the front
+        //  (2) process them, if any
+        //  (3) union with don't cares
+        //
         for (int v=0; v<lastV; v++) {
-          //
-          //  At the beginning of this loop, the array is as follows:
-          //
-          //           vm1P                  vP
-          //             |                    |
-          //  a b c d | v-1  ?  ?  v-1 v-1 |  w x y z
-          //  . . . . |  .   .  .   .   .  |  . . . .
-          //  . . . . |  .   .  .   .   .  |  . . . .
-          //
-          // We've just processed the middle batch, which has
-          // values all equal to v-1 OR don't care.
-          // The batch before has values less than v-1, and
-          // the batch after has values greater than v-1.
 
           //
-          // (1) re-arrange so v-1 values are at the beginning, 
-          //     and don't cares are at the end, of "middle batch"
-          //     
-          int left = vm1P;
-          int right = vP-1;
-          for (int d=dontcares; d>0; d--) {
-            // loop in a clever way, so that it's skipped when
-            // there are no don't cares.
+          // neat trick!
+          // shift the array over, because we're done with the previous batch
+          //
+          minterms += batchP;
+          vlist += batchP;
+          vplist += batchP;
+          if (terms) terms += batchP;
+          N -= batchP;
+          batchP = 0;
 
-            // increase left to first ? 
-            if (k>=0) {
-              // anything negative is don't care
-              while (minterms[left][absk]>=0) left++;
-            } else {
-              // -1 only is don't care
-              while (-1 != minterms[left][absk]) left++;
+          //
+          // (1) move anything with value v, to the "new" front
+          //
+          for (int i=0; i<N; i++) {
+            if (v == minterms[i][absk]
+                || (forest::DONT_CHANGE == minterms[i][absk] && in==v) ) 
+            {
+              if (batchP != i) {
+                SWAP(vlist[batchP], vlist[i]);
+                SWAP(vplist[batchP], vplist[i]);
+                if (terms) SWAP(terms[batchP], terms[i]);
+              }
+              batchP++;
             }
-
-            if (right+1 - left <= d) break; 
-
-            // decrease right to first v-1
-            if (k>=0) {
-              // anything negative is don't care
-              while (minterms[right][absk]<0) right--;
-            } else {
-              // -1 only is don't care
-              while (-1 == minterms[right][absk]) right--;
-            }
-
-            SWAP(vlist[left], vlist[right]);
-            SWAP(vplist[left], vplist[right]);
-            if (terms) SWAP(terms[left], terms[right]);
           }
 
           //
-          // (2) arrange right batch so that the first
-          //     elements are those with value v (if any),
-          //     and from vp1P onward, elements have value
-          //     larger than v
+          // (2) recurse if necessary
           //
-          left = vP;
-          right = N;
-          while (left+1 < right) {
-            int mtl = minterms[left][absk];
-            if (-2 == mtl && k<0) mtl = in;    // don't change
-            if (mtl == v) {
-              left++;
-              continue;
-            }
-            int mtr = minterms[right-1][absk];
-            if (-2 == mtr && k<0) mtr = in;    // don't change
-            if (mtr > v) {
-              right--;
-              continue;
-            }
-            SWAP(vlist[left], vlist[right-1]);
-            SWAP(vplist[left], vplist[right-1]);
-            if (terms) SWAP(terms[left], terms[right-1]);
-          }
-
-          //
-          // (3) get pointers ready for next iteration
-          //
-          vm1P = vP - dontcares;
-          for (vP=vm1P; vP<N; vP++) {
-            if (minterms[vP][absk] > v) break;
-          }
-
-
-          //
-          // Current array picture:
-          //
-          //                      vm1P       vP
-          //                        |         |
-          //  a b c d v-1 v-1 v-1 | ? ? v v | w x y z
-          //  . . . .  .   .   .  | . . . . | . . . .
-          //  . . . .  .   .   .  | . . . . | . . . .
-          //
-          // 
-          // (4) recurse
-          //
-          if (vm1P >= vP) continue; // nothing to do!
-          nb.i(z) = v;
-          int km1 = (k>0) ? (-k) : (-k)-1;
-          if (terms) {
-            nb.d(z) = createEdgeRT(v, km1, vlist+vm1P, vplist+vm1P, terms+vm1P, vP - vm1P);
+          node_handle these;
+          if (batchP) {
+            these = createEdgeRT(v, km1, vlist, vplist, terms, batchP);
           } else {
-            nb.d(z) = createEdgeRT(v, km1, vlist+vm1P, vplist+vm1P, terms, vP - vm1P);
+            these = 0;
           }
+
+          //
+          // (3) union with don't cares
+          //
+          MEDDLY_DCASSERT(mt_forest<TTERM>::unionOp);
+          node_handle total = mt_forest<TTERM>::unionOp->compute(dontcares, these);
+          mt_forest<TTERM>::unlinkNode(these);
+
+          //
+          // add to sparse node, unless empty
+          //
+          if (0==total) continue;
+          nb.i(z) = v;
+          nb.d(z) = total;
           z++;
         } // for v
+
+        //
+        // Cleanup
+        //
+        mt_forest<TTERM>::unlinkNode(dontcares);
         nb.shrinkSparse(z);
-        // return mt_forest<TTERM>::createReducedNode(in, nb);
-        int answer = mt_forest<TTERM>::createReducedNode(in, nb);
-        return answer;
+        return mt_forest<TTERM>::createReducedNode(in, nb);
       } // createEdgeRT
 
+    private:
+      //
+      // Helper for createEdgeRT
+      //
+      inline node_handle makeIdentityEdge(int k, node_handle p) {
+        if (mt_forest<TTERM>::isIdentityReduced()) return p;
+        // build an identity node by hand
+        int lastV = mt_forest<TTERM>::getDomain()->getVariableBound(k, false);
+        node_builder& nb = mt_forest<TTERM>::useNodeBuilder(k, lastV);
+        for (int v=0; v<lastV; v++) {
+          node_builder& nbp = mt_forest<TTERM>::useSparseBuilder(-k, 1);
+          nbp.i(0) = v;
+          nbp.d(0) = mt_forest<TTERM>::linkNode(p);
+          nb.d(v) = mt_forest<TTERM>::createReducedNode(v, nbp);
+        } // for v
+        return mt_forest<TTERM>::createReducedNode(-1, nb);
+      }
 
   }; // class
 
