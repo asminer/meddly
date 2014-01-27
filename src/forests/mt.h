@@ -200,7 +200,9 @@ class MEDDLY::mt_base_forest : public expert_forest {
   // ------------------------------------------------------------
   // Helpers for this and derived classes
   protected:
-    /// Add redundant nodes from level k to the given node.
+    /**
+        Add redundant nodes from level k to the given node.
+    */
     inline node_handle makeNodeAtLevel(int k, node_handle d) {
       MEDDLY_DCASSERT(abs(k) >= abs(getNodeLevel(d)));
       if (0==d) return d;
@@ -240,6 +242,125 @@ class MEDDLY::mt_base_forest : public expert_forest {
       return makeNodeAtLevel(getDomain()->getNumVariables(), d);
     }
 
+    /**
+        Special case for createEdge(), with only one minterm.
+        For sets; used in mtmdd.h 
+    */
+    inline node_handle createEdgePath(int k, int* vlist, node_handle bottom) {
+        MEDDLY_DCASSERT(!isForRelations());
+        if (0==bottom) return bottom;
+        for (int i=1; i<=k; i++) {
+          if (DONT_CARE == vlist[i]) {
+            // make a redundant node
+            if (isFullyReduced()) continue; 
+            int sz = getLevelSize(i);
+            node_builder& nb = useNodeBuilder(i, sz);
+            nb.d(0) = bottom;
+            for (int v=1; v<sz; v++) {
+              nb.d(v) = linkNode(bottom);
+            }
+            bottom = createReducedNode(-1, nb);
+          } else {
+            // make a singleton node
+            node_builder& nb = useSparseBuilder(i, 1);
+            nb.i(0) = vlist[i];
+            nb.d(0) = bottom;
+            bottom = createReducedNode(-1, nb);
+          }
+        } // for i
+        return bottom;
+    }
+
+    /**
+        Special case for createEdge(), with only one minterm.
+        For relations; used in mtmxd.h
+    */
+    inline 
+    node_handle createEdgePath(int k, int* vlist, int* vplist, node_handle next) 
+    {
+        MEDDLY_DCASSERT(isForRelations());
+        if (0==next) return next;
+        for (int i=1; i<=k; i++) {
+          if (DONT_CHANGE == vplist[i]) {
+            //
+            // Identity node
+            //
+            MEDDLY_DCASSERT(DONT_CARE == vlist[i]);
+            if (isIdentityReduced()) continue;
+            // Build an identity node by hand
+            int sz = getLevelSize(i);
+            node_builder& nb = useNodeBuilder(i, sz);
+            for (int v=0; v<sz; v++) {
+              node_builder& nbp = useSparseBuilder(-i, 1);
+              nbp.i(0) = v;
+              nbp.d(0) = linkNode(next);
+              nb.d(v) = createReducedNode(v, nbp);
+            }
+            unlinkNode(next);
+            next = createReducedNode(-1, nb);
+            continue;
+          }
+          //
+          // process primed level
+          //
+          node_handle nextpr;
+          if (DONT_CARE == vplist[i]) {
+            if (isFullyReduced()) {
+              // DO NOTHING
+              nextpr = next;
+            } else {
+              // build redundant node
+              int sz = getLevelSize(-i);
+              node_builder& nb = useNodeBuilder(-i, sz);
+              for (int v=0; v<sz; v++) {
+                nb.d(v) = linkNode(next);
+              }
+              unlinkNode(next);
+              nextpr = createReducedNode(-1, nb);
+            }
+          } else {
+            // sane value
+            node_builder& nb = useSparseBuilder(-i, 1);
+            nb.i(0) = vplist[i];
+            nb.d(0) = next;
+            nextpr = createReducedNode(vlist[i], nb);
+          }
+          //
+          // process unprimed level
+          //
+          if (DONT_CARE == vlist[i]) {
+            if (isFullyReduced()) continue;
+            // build redundant node
+            int sz = getLevelSize(i);
+            node_builder& nb = useNodeBuilder(i, sz);
+            if (isIdentityReduced()) {
+              // Below is likely a singleton, so check for identity reduction
+              // on the appropriate v value
+              for (int v=0; v<sz; v++) {
+                node_handle dpr = (v == vplist[i]) ? next : nextpr;
+                nb.d(v) = linkNode(dpr);
+              }
+            } else {
+              // Doesn't matter what happened below
+              for (int v=0; v<sz; v++) {
+                nb.d(v) = linkNode(nextpr);
+              }
+            }
+            unlinkNode(nextpr);
+            next = createReducedNode(-1, nb);
+          } else {
+            // sane value
+            node_builder& nb = useSparseBuilder(i, 1);
+            nb.i(0) = vlist[i];
+            nb.d(0) = nextpr;
+            next = createReducedNode(-1, nb);
+          }
+        } // for i
+        return next;
+    }
+    
+
+  protected:
 
     // set, and used, in derived classes for createEdge()
     binary_operation* unionOp;

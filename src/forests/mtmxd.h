@@ -97,7 +97,18 @@ namespace MEDDLY {
         int** vplist, T* terms, int N) 
       {
         MEDDLY_DCASSERT(k>=0);
-
+        // 
+        // Fast special case
+        //
+        if (1==N) {
+          TTERM tnode;
+          if (terms) {
+            tnode.setFromValue(terms[0]);
+          } else {
+            tnode.setFromValue(true);
+          }
+          return createEdgePath(k, vlist[0], vplist[0], tnode.toHandle());
+        }
         //
         // Check terminal case
         //
@@ -114,12 +125,15 @@ namespace MEDDLY {
           return tnode.toHandle();
         }
 
+        // size of variables at level k
+        int lastV = mt_forest<TTERM>::getLevelSize(k);
         // current batch size
         int batchP = 0;
 
         //
         // Move any "don't cares" to the front, and process them
         //
+        int nextV = lastV;
         for (int i=0; i<N; i++) {
           if (forest::DONT_CARE == vlist[i][k]) {
             if (batchP != i) {
@@ -130,6 +144,7 @@ namespace MEDDLY {
             batchP++;
           } else {
             MEDDLY_DCASSERT(vlist[i][k] >= 0);
+            nextV = MIN(nextV, vlist[i][k]);
           }
         }
         node_handle dontcares = 0;
@@ -183,7 +198,6 @@ namespace MEDDLY {
         //
         // Start new node at level k
         //
-        int lastV = mt_forest<TTERM>::getDomain()->getVariableBound(k, false);
         node_builder& nb = mt_forest<TTERM>::useSparseBuilder(k, lastV);
         int z = 0; // number of nonzero edges in our sparse node
 
@@ -193,8 +207,8 @@ namespace MEDDLY {
         //  (2) process them, if any
         // Then when we are done, union with any don't cares
         //
-        for (int v=0; v<lastV; v++) {
-
+        for (int v=nextV; v<lastV; v=nextV) {
+          nextV = lastV;
           //
           // neat trick!
           // shift the array over, because we're done with the previous batch
@@ -216,6 +230,8 @@ namespace MEDDLY {
                 if (terms) SWAP(terms[batchP], terms[i]);
               }
               batchP++;
+            } else {
+              nextV = MIN(nextV, vlist[i][k]);
             }
           }
 
@@ -266,7 +282,7 @@ namespace MEDDLY {
         //
 
         // size of variables at level k
-        int lastV = mt_forest<TTERM>::getDomain()->getVariableBound(-k, true);
+        int lastV = mt_forest<TTERM>::getLevelSize(k);
         // current batch size
         int batchP = 0;
 
@@ -380,7 +396,7 @@ namespace MEDDLY {
           return p;
         }
         // build an identity node by hand
-        int lastV = mt_forest<TTERM>::getDomain()->getVariableBound(k, false);
+        int lastV = mt_forest<TTERM>::getLevelSize(k);
         node_builder& nb = mt_forest<TTERM>::useNodeBuilder(k, lastV);
         for (int v=0; v<lastV; v++) {
           node_builder& nbp = mt_forest<TTERM>::useSparseBuilder(-k, 1);
@@ -391,6 +407,7 @@ namespace MEDDLY {
         mt_forest<TTERM>::unlinkNode(p);
         return mt_forest<TTERM>::createReducedNode(-1, nb);
       }
+
 
   }; // class
 

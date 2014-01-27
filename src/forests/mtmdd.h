@@ -87,10 +87,22 @@ namespace MEDDLY {
       */
       template <typename T>
       inline node_handle createEdgeRT(int k, int** vlist, T* terms, int N) {
+        MEDDLY_DCASSERT(k>=0);
+        // 
+        // Fast special case
+        //
+        if (1==N) {
+          TTERM tnode;
+          if (terms) {
+            tnode.setFromValue(terms[0]);
+          } else {
+            tnode.setFromValue(true);
+          }
+          return createEdgePath(k, vlist[0], tnode.toHandle());
+        }
         //
         // Check terminal case
         //
-        MEDDLY_DCASSERT(k>=0);
         if (0==k) {
           TTERM tnode;
           if (terms) {
@@ -105,7 +117,7 @@ namespace MEDDLY {
         }
 
         // size of variables at level k
-        int lastV = mt_forest<TTERM>::getDomain()->getVariableBound(k, false);
+        int lastV = mt_forest<TTERM>::getLevelSize(k);
         // current batch size
         int batchP = 0;
 
@@ -204,10 +216,6 @@ namespace MEDDLY {
         nb.shrinkSparse(z);
         return mt_forest<TTERM>::createReducedNode(-1, nb);
       };
-    
-
-    
-
   }; // class
 
 };  // namespace

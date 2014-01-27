@@ -211,8 +211,8 @@ dd_edge MakeSynchP_Forks(int philosopher, int nPhilosophers, forest* mxd)
 #endif
 
   /* I(ph) -> WB(ph) */
-  SetIntArray(from+1, sz-1, -2);
-  SetIntArray(to+1, sz-1, -2);
+  SetIntArray(from+1, sz-1, forest::DONT_CARE);
+  SetIntArray(to+1, sz-1, forest::DONT_CHANGE);
   from[ph] = 0;
   to[ph] = 1;
   temp.clear();
@@ -221,8 +221,8 @@ dd_edge MakeSynchP_Forks(int philosopher, int nPhilosophers, forest* mxd)
   nsf += temp;
 
   /* WB(ph) -> HR(ph), A(rf) -> NA(rf) */
-  SetIntArray(from+1, sz-1, -2);
-  SetIntArray(to+1, sz-1, -2);
+  SetIntArray(from+1, sz-1, forest::DONT_CARE);
+  SetIntArray(to+1, sz-1, forest::DONT_CHANGE);
   from[ph] = 1;
   to[ph] = 3;
   from[rf] = 0;
@@ -233,8 +233,8 @@ dd_edge MakeSynchP_Forks(int philosopher, int nPhilosophers, forest* mxd)
   nsf += temp;
 
   /* WB(ph) -> HL(ph), A(lf) -> NA(lf) */
-  SetIntArray(from+1, sz-1, -2);
-  SetIntArray(to+1, sz-1, -2);
+  SetIntArray(from+1, sz-1, forest::DONT_CARE);
+  SetIntArray(to+1, sz-1, forest::DONT_CHANGE);
   from[ph] = 1;
   to[ph] = 2;
   from[lf] = 0;
@@ -245,8 +245,8 @@ dd_edge MakeSynchP_Forks(int philosopher, int nPhilosophers, forest* mxd)
   nsf += temp;
 
   /* HR(ph) -> E(ph), A(lf) -> NA(lf) */
-  SetIntArray(from+1, sz-1, -2);
-  SetIntArray(to+1, sz-1, -2);
+  SetIntArray(from+1, sz-1, forest::DONT_CARE);
+  SetIntArray(to+1, sz-1, forest::DONT_CHANGE);
   from[ph] = 3;
   to[ph] = 4;
   from[lf] = 0;
@@ -257,8 +257,8 @@ dd_edge MakeSynchP_Forks(int philosopher, int nPhilosophers, forest* mxd)
   nsf += temp;
 
   /* HL(ph) -> E(ph), A(rf) -> NA(rf) */
-  SetIntArray(from+1, sz-1, -2);
-  SetIntArray(to+1, sz-1, -2);
+  SetIntArray(from+1, sz-1, forest::DONT_CARE);
+  SetIntArray(to+1, sz-1, forest::DONT_CHANGE);
   from[ph] = 2;
   to[ph] = 4;
   from[rf] = 0;
@@ -269,8 +269,8 @@ dd_edge MakeSynchP_Forks(int philosopher, int nPhilosophers, forest* mxd)
   nsf += temp;
 
   /* E(ph) -> I(ph), NA(rf) -> A(rf), NA(lf) -> A(lf) */
-  SetIntArray(from+1, sz-1, -2);
-  SetIntArray(to+1, sz-1, -2);
+  SetIntArray(from+1, sz-1, forest::DONT_CARE);
+  SetIntArray(to+1, sz-1, forest::DONT_CHANGE);
   from[ph] = 4;
   to[ph] = 0;
   from[rf] = 1;
