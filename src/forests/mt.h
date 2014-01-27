@@ -45,6 +45,7 @@ namespace MEDDLY {
 /** Wrapper around integers as terminal values.
 */
 class MEDDLY::int_terminal {
+    static const int true_val = -1;
     int value;
   public:
     inline void setFromValue(int v) {
@@ -58,7 +59,7 @@ class MEDDLY::int_terminal {
     }
     inline void setFromValue(bool b) {
       MEDDLY_DCASSERT(4 == sizeof(node_handle));
-      value = b ? -1 : 0;
+      value = b ? true_val : 0;
     }
     inline void setFromHandle(node_handle h) {
       // << 1 kills the sign bit
@@ -104,7 +105,7 @@ class MEDDLY::int_terminal {
       switch (r) {
         case forest::BOOLEAN: 
             if ('T' == c || 'F' == c) {
-              value = ('T' == c);
+              value = ('T' == c) ? true_val : 0;
               return;
             }
             throw error(error::INVALID_FILE);

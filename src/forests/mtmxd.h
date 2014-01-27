@@ -128,6 +128,8 @@ namespace MEDDLY {
               if (terms) SWAP(terms[batchP], terms[i]);
             }
             batchP++;
+          } else {
+            MEDDLY_DCASSERT(vlist[i][k] >= 0);
           }
         }
         node_handle dontcares = 0;
@@ -142,13 +144,13 @@ namespace MEDDLY {
               SWAP(vplist[dch], vplist[i]);
               if (terms) SWAP(terms[dch], terms[i]);
             }
+            dch++;
           }
         } 
         // process "don't care, don't change" pairs
         if (dch) {
           node_handle below = createEdgeRT(k-1, vlist, vplist, terms, dch);
           dontcares = makeIdentityEdge(k, below);
-          mt_forest<TTERM>::unlinkNode(below);
           // done with those
           vlist += dch;
           vplist += dch;
@@ -374,7 +376,9 @@ namespace MEDDLY {
       // Helper for createEdgeRT
       //
       inline node_handle makeIdentityEdge(int k, node_handle p) {
-        if (mt_forest<TTERM>::isIdentityReduced()) return p;
+        if (mt_forest<TTERM>::isIdentityReduced()) {
+          return p;
+        }
         // build an identity node by hand
         int lastV = mt_forest<TTERM>::getDomain()->getVariableBound(k, false);
         node_builder& nb = mt_forest<TTERM>::useNodeBuilder(k, lastV);
@@ -384,6 +388,7 @@ namespace MEDDLY {
           nbp.d(0) = mt_forest<TTERM>::linkNode(p);
           nb.d(v) = mt_forest<TTERM>::createReducedNode(v, nbp);
         } // for v
+        mt_forest<TTERM>::unlinkNode(p);
         return mt_forest<TTERM>::createReducedNode(-1, nb);
       }
 

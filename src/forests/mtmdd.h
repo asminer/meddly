@@ -121,6 +121,7 @@ namespace MEDDLY {
             }
             batchP++;
           } else {
+            MEDDLY_DCASSERT(vlist[i][k] >= 0);
             nextV = MIN(nextV, vlist[i][k]);
           }
         }

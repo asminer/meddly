@@ -94,11 +94,11 @@ void buildNextStateFunction(const char* const* events, int nEvents,
     //
     for (int i=1; i<=nVars; i++) {
       if ('.' == ev[i]) {
-        minterm[i] = -2;
-        mtprime[i] = -2;
+        minterm[i] = forest::DONT_CARE;
+        mtprime[i] = forest::DONT_CHANGE;
       } else {
-        minterm[i] = -1;
-        mtprime[i] = -1;
+        minterm[i] = forest::DONT_CARE;
+        mtprime[i] = forest::DONT_CARE;
       }
     }
     mxd->createEdge(&minterm, &mtprime, 1, nsf_ev);
