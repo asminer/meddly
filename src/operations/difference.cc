@@ -52,7 +52,7 @@ MEDDLY::diffr_mdd::diffr_mdd(const binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_mdd(opcode, arg1, arg2, res)
 {
-  operationCommutes();
+  //  difference does NOT commute
 }
 
 bool MEDDLY::diffr_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
@@ -105,7 +105,7 @@ MEDDLY::diffr_mxd::diffr_mxd(const binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_mxd(opcode, arg1, arg2, res)
 {
-  operationCommutes();
+  //  difference does NOT commute
 }
 
 bool MEDDLY::diffr_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
