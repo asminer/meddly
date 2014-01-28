@@ -42,6 +42,8 @@ void MEDDLY::mt_mxd_bool
 ::createEdge(int** vlist, int** vplist, int N, dd_edge &e)
 {
   unionOp = getOperation(UNION, this, this, this);
+  enlargeVariables(vlist, N, false);
+  enlargeVariables(vplist, N, true);
   bool* Z = 0;
   e.set(createEdgeRT(getDomain()->getNumVariables(), vlist, vplist, Z, N), 0);
 }

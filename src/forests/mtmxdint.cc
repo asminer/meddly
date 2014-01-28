@@ -42,6 +42,8 @@ void MEDDLY::mt_mxd_int
 ::createEdge(int** vlist, int** vplist, int* terms, int N, dd_edge &e)
 {
   unionOp = getOperation(PLUS, this, this, this);
+  enlargeVariables(vlist, N, false);
+  enlargeVariables(vplist, N, true);
   e.set(createEdgeRT(getDomain()->getNumVariables(), vlist, vplist, terms, N), 0);
 }
 

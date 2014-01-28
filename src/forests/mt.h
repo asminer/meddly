@@ -359,6 +359,21 @@ class MEDDLY::mt_base_forest : public expert_forest {
         return next;
     }
     
+    /**
+        Enlarge variables to include all given minterms.
+    */
+    inline node_handle enlargeVariables(int** const vlist, int N, bool primed) {
+      for (int k=1; k<=getDomain()->getNumVariables(); k++) {
+        int maxv = vlist[0][k];
+        for (int i=1; i<N; i++) {
+          maxv = MAX(maxv, vlist[i][k]);
+        }
+        if (maxv >= getLevelSize(k)) {
+          useExpertDomain()->enlargeVariableBound(k, primed, maxv+1);
+        }
+      }
+    }
+
 
   protected:
 
