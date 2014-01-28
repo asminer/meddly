@@ -368,7 +368,8 @@ class MEDDLY::mt_base_forest : public expert_forest {
         for (int i=1; i<N; i++) {
           maxv = MAX(maxv, vlist[i][k]);
         }
-        if (maxv >= getLevelSize(k)) {
+        if (maxv < 1) continue;
+        if (maxv >= getDomain()->getVariableBound(k, primed)) {
           useExpertDomain()->enlargeVariableBound(k, primed, maxv+1);
         }
       }
