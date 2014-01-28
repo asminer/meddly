@@ -135,7 +135,7 @@ namespace MEDDLY {
         //
         int nextV = lastV;
         for (int i=0; i<N; i++) {
-          if (forest::DONT_CARE == vlist[i][k]) {
+          if (DONT_CARE == vlist[i][k]) {
             if (batchP != i) {
               SWAP(vlist[batchP], vlist[i]);
               SWAP(vplist[batchP], vplist[i]);
@@ -153,7 +153,7 @@ namespace MEDDLY {
         // and process them to construct a new level-k node.
         int dch = 0;
         for (int i=0; i<batchP; i++) {
-          if (forest::DONT_CHANGE == vplist[i][k]) {
+          if (DONT_CHANGE == vplist[i][k]) {
             if (dch != i) {
               SWAP(vlist[dch], vlist[i]);
               SWAP(vplist[dch], vplist[i]);
@@ -291,7 +291,7 @@ namespace MEDDLY {
         //
         int nextV = lastV;
         for (int i=0; i<N; i++) {
-          if (forest::DONT_CARE == vplist[i][-k]) {
+          if (DONT_CARE == vplist[i][-k]) {
             if (batchP != i) {
               SWAP(vlist[batchP], vlist[i]);
               SWAP(vplist[batchP], vplist[i]);
@@ -340,7 +340,7 @@ namespace MEDDLY {
           //
           bool veqin = (v==in);
           for (int i=0; i<N; i++) {
-            if (v == vplist[i][-k] || (veqin && forest::DONT_CHANGE==vplist[i][-k])) {
+            if (v == vplist[i][-k] || (veqin && DONT_CHANGE==vplist[i][-k])) {
               if (batchP != i) {
                 SWAP(vlist[batchP], vlist[i]);
                 SWAP(vplist[batchP], vplist[i]);

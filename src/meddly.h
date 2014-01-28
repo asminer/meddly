@@ -43,6 +43,16 @@
 #include <cassert>
 
 namespace MEDDLY {
+  /** Special value for minterms: don't care what this variable does.
+      I.e., do the same thing for all possible assignments for a variable.
+  */
+  const int DONT_CARE  = -1;
+  /** Special value for primed minterms: don't change this variable.
+      Forces the primed value to equal the unprimed value for a variable.
+      Undefined for unprimed variables.
+  */
+  const int DONT_CHANGE = -2;
+
 
   // Typedefs
   typedef unsigned char node_storage_flags;
@@ -551,16 +561,6 @@ class MEDDLY::error {
 */
 class MEDDLY::forest {
   public:
-    /** Special value for minterms in createEdge(): don't care what this variable does.
-        I.e., do the same thing for all possible assignments for a variable.
-    */
-    static const int DONT_CARE  = -1;
-    /** Special value for primed minterms in createEdge(): don't change this variable.
-        Forces the primed value to equal the unprimed value for a variable.
-        May cause an exception when used for unprimed variables.
-    */
-    static const int DONT_CHANGE = -2;
-
     /** Types of values that we can currently store in forests.
         I.e., if every node in a forest is a function,
         these are the possible ranges for a function.

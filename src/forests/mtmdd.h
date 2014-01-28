@@ -126,7 +126,7 @@ namespace MEDDLY {
         //
         int nextV = lastV;
         for (int i=0; i<N; i++) {
-          if (forest::DONT_CARE == vlist[i][k]) {
+          if (DONT_CARE == vlist[i][k]) {
             if (batchP != i) {
               SWAP(vlist[batchP], vlist[i]);
               if (terms) SWAP(terms[batchP], terms[i]);
