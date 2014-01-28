@@ -43,6 +43,15 @@
 #include <cassert>
 
 namespace MEDDLY {
+  /** Special value for minterms: don't care what this variable does.
+      I.e., do the same thing for all possible assignments for a variable.
+  */
+  const int DONT_CARE  = -1;
+  /** Special value for primed minterms: don't change this variable.
+      Forces the primed value to equal the unprimed value for a variable.
+      Undefined for unprimed variables.
+  */
+  const int DONT_CHANGE = -2;
 
   // Typedefs
   typedef unsigned char node_storage_flags;
