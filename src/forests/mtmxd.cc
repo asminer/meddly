@@ -78,6 +78,10 @@ MEDDLY::mtmxd_forest::createNode(int k, int index, node_handle dptr)
 MEDDLY::node_handle 
 MEDDLY::mtmxd_forest::createNode(int k, int index1, int index2, node_handle dptr)
 {
+  // HACK for old implementation, for now
+  if (index1 == DONT_CARE && index2 == DONT_CHANGE) {
+    index1 = DONT_CHANGE;
+  }
   MEDDLY_DCASSERT((index1 >= 0 && index2 >= 0) ||
       (index1 >= -1 && index2 >= -1) ||
       (index1 >= -2 && index2 >= -2 && index1 == index2));
