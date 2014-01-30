@@ -61,16 +61,16 @@ bool MEDDLY::plus_mdd::checkTerminals(node_handle a, node_handle b, node_handle&
 {
   if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
     if (resF->getRangeType() == forest::INTEGER) {
-      c = expert_forest::int_encoder::value2handle(
-            expert_forest::int_encoder::handle2value(a)
-          + expert_forest::int_encoder::handle2value(b)
-      );
+      int av, bv;
+      arg1F->getValueFromHandle(a, av);
+      arg2F->getValueFromHandle(b, bv);
+      c = resF->handleForValue(av + bv);
     } else {
       MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-      c = expert_forest::float_encoder::value2handle(
-            expert_forest::float_encoder::handle2value(a)
-          + expert_forest::float_encoder::handle2value(b)
-      );
+      float av, bv;
+      arg1F->getValueFromHandle(a, av);
+      arg2F->getValueFromHandle(b, bv);
+      c = resF->handleForValue(av + bv);
     }
     return true;
   }
@@ -119,16 +119,16 @@ bool MEDDLY::plus_mxd::checkTerminals(node_handle a, node_handle b, node_handle&
 {
   if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
     if (resF->getRangeType() == forest::INTEGER) {
-      c = expert_forest::int_encoder::value2handle(
-            expert_forest::int_encoder::handle2value(a)
-          + expert_forest::int_encoder::handle2value(b)
-      );
+      int av, bv;
+      arg1F->getValueFromHandle(a, av);
+      arg2F->getValueFromHandle(b, bv);
+      c = resF->handleForValue(av + bv);
     } else {
       MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-      c = expert_forest::float_encoder::value2handle(
-            expert_forest::float_encoder::handle2value(a)
-          + expert_forest::float_encoder::handle2value(b)
-      );
+      float av, bv;
+      arg1F->getValueFromHandle(a, av);
+      arg2F->getValueFromHandle(b, bv);
+      c = resF->handleForValue(av + bv);
     }
     return true;
   }
@@ -281,8 +281,6 @@ MEDDLY::plus_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   if (
     (a1->isForRelations() != r->isForRelations()) ||
     (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getRangeType() != r->getRangeType()) ||
-    (a2->getRangeType() != r->getRangeType()) ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
     (a2->getEdgeLabeling() != r->getEdgeLabeling()) ||
     (r->getRangeType() == forest::BOOLEAN)
@@ -295,6 +293,13 @@ MEDDLY::plus_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     else
       return new plus_mdd(this, a1, a2, r);
   }
+
+  if (
+    (a1->getRangeType() != r->getRangeType()) ||
+    (a2->getRangeType() != r->getRangeType()) 
+  )
+    throw error(error::TYPE_MISMATCH);
+
 
   if (r->getEdgeLabeling() == forest::EVPLUS)
     return new plus_evplus(this, a1, a2, r);

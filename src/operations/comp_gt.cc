@@ -27,9 +27,6 @@
 #include "apply_base.h"
 
 namespace MEDDLY {
-  class morethan_mdd;
-  class morethan_mxd;
-
   class morethan_opname;
 };
 
@@ -40,40 +37,34 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::morethan_mdd : public generic_binary_mdd {
+namespace MEDDLY {
+
+template <typename T>
+class morethan_mdd : public generic_binary_mdd {
   public:
     morethan_mdd(const binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+      expert_forest* arg2, expert_forest* res)
+      : generic_binary_mdd(opcode, arg1, arg2, res) { }
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::morethan_mdd::morethan_mdd(const binary_opname* opcode, 
-  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-  : generic_binary_mdd(opcode, arg1, arg2, res)
+template <typename T>
+bool morethan_mdd<T>
+::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
-}
-
-bool MEDDLY::morethan_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (arg1F->isTerminalNode(a) &&
-      arg2F->isTerminalNode(b)) {
-    if (resF->getRangeType() == forest::INTEGER) {
-      bool lt = expert_forest::int_encoder::handle2value(a)
-                >  expert_forest::int_encoder::handle2value(b);
-      c = expert_forest::int_encoder::value2handle(lt);
-    } else {
-      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-      bool lt = expert_forest::float_encoder::handle2value(a)
-                >  expert_forest::float_encoder::handle2value(b);
-      c = expert_forest::float_encoder::value2handle(lt);
-    }
+  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
+    T av, bv;
+    arg1F->getValueFromHandle(a, av);
+    arg2F->getValueFromHandle(b, bv);
+    c = resF->handleForValue( av > bv );
     return true;
   }
   return false;
 }
 
+};  // namespace MEDDLY
 
 // ******************************************************************
 // *                                                                *
@@ -81,40 +72,34 @@ bool MEDDLY::morethan_mdd::checkTerminals(node_handle a, node_handle b, node_han
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::morethan_mxd : public generic_binbylevel_mxd {
+namespace MEDDLY {
+
+template <typename T>
+class morethan_mxd : public generic_binbylevel_mxd {
   public:
     morethan_mxd(const binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+      expert_forest* arg2, expert_forest* res)
+      : generic_binbylevel_mxd(opcode, arg1, arg2, res) { }
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::morethan_mxd::morethan_mxd(const binary_opname* opcode, 
-  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-  : generic_binbylevel_mxd(opcode, arg1, arg2, res)
+template <typename T>
+bool morethan_mxd<T>
+::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
-}
-
-bool MEDDLY::morethan_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (arg1F->isTerminalNode(a) &&
-      arg2F->isTerminalNode(b)) {
-    if (resF->getRangeType() == forest::INTEGER) {
-      bool lt = expert_forest::int_encoder::handle2value(a)
-                >  expert_forest::int_encoder::handle2value(b);
-      c = expert_forest::int_encoder::value2handle(lt);
-    } else {
-      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-      bool lt = expert_forest::float_encoder::handle2value(a)
-                >  expert_forest::float_encoder::handle2value(b);
-      c = expert_forest::float_encoder::value2handle(lt);
-    }
+  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
+    T av, bv;
+    arg1F->getValueFromHandle(a, av);
+    arg2F->getValueFromHandle(b, bv);
+    c = resF->handleForValue( av > bv );
     return true;
   }
   return false;
 }
 
+};  // namespace MEDDLY
 
 // ******************************************************************
 // *                                                                *
@@ -149,19 +134,26 @@ MEDDLY::morethan_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   if (
     (a1->isForRelations() != r->isForRelations()) ||
     (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getRangeType() != r->getRangeType()) ||
-    (a2->getRangeType() != r->getRangeType()) ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (r->getRangeType() == forest::BOOLEAN)
+    (a2->getEdgeLabeling() != r->getEdgeLabeling())
   )
     throw error(error::TYPE_MISMATCH);
 
+  bool use_reals = (
+    a1->getRangeType() == forest::REAL || a2->getRangeType() == forest::REAL 
+  );
   if (r->getEdgeLabeling() == forest::MULTI_TERMINAL) {
-    if (r->isForRelations())
-      return new morethan_mxd(this, a1, a2, r);
-    else
-      return new morethan_mdd(this, a1, a2, r);
+    if (use_reals) {
+      if (r->isForRelations())
+        return new morethan_mxd<float>(this, a1, a2, r);
+      else
+        return new morethan_mdd<float>(this, a1, a2, r);
+    } else {
+      if (r->isForRelations())
+        return new morethan_mxd<int>(this, a1, a2, r);
+      else
+        return new morethan_mdd<int>(this, a1, a2, r);
+    }
   }
 
   throw error(error::NOT_IMPLEMENTED);

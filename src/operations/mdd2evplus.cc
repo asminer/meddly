@@ -91,9 +91,9 @@ MEDDLY::mdd2evplus_operation
 {
   MEDDLY_DCASSERT(arg.getForest() == argF);
   MEDDLY_DCASSERT(res.getForest() == resF);
-  MEDDLY_DCASSERT(resF->getTerminalNode(false) == 0);
-  MEDDLY_DCASSERT(argF->getTerminalNode(true) < 0);
-  MEDDLY_DCASSERT(argF->getTerminalNode(false) == 0);
+  MEDDLY_DCASSERT(resF->handleForValue(false) == 0);
+  MEDDLY_DCASSERT(argF->handleForValue(true) < 0);
+  MEDDLY_DCASSERT(argF->handleForValue(false) == 0);
   node_handle down;
   int card;
   int nVars = argF->getDomain()->getNumVariables();
@@ -214,9 +214,7 @@ MEDDLY::mdd2evplus_opname
       res->getEdgeLabeling() != forest::EVPLUS
   ) throw error(error::TYPE_MISMATCH);
 
-  return new mdd2evplus_operation(
-    this,  arg,  res
-  );
+  return new mdd2evplus_operation(this, arg, res);
 }
 
 // ******************************************************************

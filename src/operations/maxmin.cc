@@ -60,21 +60,18 @@ MEDDLY::maximum_mdd::maximum_mdd(const binary_opname* opcode,
 
 bool MEDDLY::maximum_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
-  if (arg1F->isTerminalNode(a) &&
-      arg2F->isTerminalNode(b)) {
+  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
     if (resF->getRangeType() == forest::INTEGER) {
-      c = expert_forest::int_encoder::value2handle(
-        MAX(expert_forest::int_encoder::handle2value(a),
-            expert_forest::int_encoder::handle2value(b)
-        )
-      );
+      int av, bv;
+      arg1F->getValueFromHandle(a, av);
+      arg2F->getValueFromHandle(b, bv);
+      c = resF->handleForValue(MAX(av, bv));
     } else {
       MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-      c = expert_forest::float_encoder::value2handle(
-        MAX(expert_forest::float_encoder::handle2value(a),
-            expert_forest::float_encoder::handle2value(b)
-        )
-      );
+      float av, bv;
+      arg1F->getValueFromHandle(a, av);
+      arg2F->getValueFromHandle(b, bv);
+      c = resF->handleForValue(MAX(av, bv));
     }
     return true;
   }
@@ -106,21 +103,18 @@ MEDDLY::maximum_mxd::maximum_mxd(const binary_opname* opcode,
 
 bool MEDDLY::maximum_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
-  if (arg1F->isTerminalNode(a) &&
-      arg2F->isTerminalNode(b)) {
+  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
     if (resF->getRangeType() == forest::INTEGER) {
-      c = expert_forest::int_encoder::value2handle(
-        MAX(expert_forest::int_encoder::handle2value(a),
-            expert_forest::int_encoder::handle2value(b)
-        )
-      );
+      int av, bv;
+      arg1F->getValueFromHandle(a, av);
+      arg2F->getValueFromHandle(b, bv);
+      c = resF->handleForValue(MAX(av, bv));
     } else {
       MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-      c = expert_forest::float_encoder::value2handle(
-        MAX(expert_forest::float_encoder::handle2value(a),
-            expert_forest::float_encoder::handle2value(b)
-        )
-      );
+      float av, bv;
+      arg1F->getValueFromHandle(a, av);
+      arg2F->getValueFromHandle(b, bv);
+      c = resF->handleForValue(MAX(av, bv));
     }
     return true;
   }
@@ -161,8 +155,6 @@ MEDDLY::maximum_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   if (
     (a1->isForRelations() != r->isForRelations()) ||
     (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getRangeType() != r->getRangeType()) ||
-    (a2->getRangeType() != r->getRangeType()) ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
     (a2->getEdgeLabeling() != r->getEdgeLabeling()) ||
     (r->getRangeType() == forest::BOOLEAN)
@@ -203,21 +195,18 @@ MEDDLY::minimum_mdd::minimum_mdd(const binary_opname* opcode,
 
 bool MEDDLY::minimum_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
-  if (arg1F->isTerminalNode(a) &&
-      arg2F->isTerminalNode(b)) {
+  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
     if (resF->getRangeType() == forest::INTEGER) {
-      c = expert_forest::int_encoder::value2handle(
-        MIN(expert_forest::int_encoder::handle2value(a),
-            expert_forest::int_encoder::handle2value(b)
-        )
-      );
+      int av, bv;
+      arg1F->getValueFromHandle(a, av);
+      arg2F->getValueFromHandle(b, bv);
+      c = resF->handleForValue(MIN(av, bv));
     } else {
       MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-      c = expert_forest::float_encoder::value2handle(
-        MIN(expert_forest::float_encoder::handle2value(a),
-            expert_forest::float_encoder::handle2value(b)
-        )
-      );
+      float av, bv;
+      arg1F->getValueFromHandle(a, av);
+      arg2F->getValueFromHandle(b, bv);
+      c = resF->handleForValue(MIN(av, bv));
     }
     return true;
   }
@@ -249,21 +238,18 @@ MEDDLY::minimum_mxd::minimum_mxd(const binary_opname* opcode,
 
 bool MEDDLY::minimum_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
-  if (arg1F->isTerminalNode(a) &&
-      arg2F->isTerminalNode(b)) {
+  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
     if (resF->getRangeType() == forest::INTEGER) {
-      c = expert_forest::int_encoder::value2handle(
-        MIN(expert_forest::int_encoder::handle2value(a),
-            expert_forest::int_encoder::handle2value(b)
-        )
-      );
+      int av, bv;
+      arg1F->getValueFromHandle(a, av);
+      arg2F->getValueFromHandle(b, bv);
+      c = resF->handleForValue(MIN(av, bv));
     } else {
       MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-      c = expert_forest::float_encoder::value2handle(
-        MIN(expert_forest::float_encoder::handle2value(a),
-            expert_forest::float_encoder::handle2value(b)
-        )
-      );
+      float av, bv;
+      arg1F->getValueFromHandle(a, av);
+      arg2F->getValueFromHandle(b, bv);
+      c = resF->handleForValue(MIN(av, bv));
     }
     return true;
   }
@@ -304,8 +290,6 @@ MEDDLY::minimum_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   if (
     (a1->isForRelations() != r->isForRelations()) ||
     (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getRangeType() != r->getRangeType()) ||
-    (a2->getRangeType() != r->getRangeType()) ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
     (a2->getEdgeLabeling() != r->getEdgeLabeling()) ||
     (r->getRangeType() == forest::BOOLEAN)

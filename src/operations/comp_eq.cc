@@ -27,8 +27,6 @@
 #include "apply_base.h"
 
 namespace MEDDLY {
-  class equal_mdd;
-  class equal_mxd;
   class equal_evtimes;
 
   class equal_opname;
@@ -41,38 +39,37 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::equal_mdd : public generic_binary_mdd {
+namespace MEDDLY {
+
+template <typename T>
+class equal_mdd : public generic_binary_mdd {
   public:
     equal_mdd(const binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+      expert_forest* arg2, expert_forest* res)
+      : generic_binary_mdd(opcode, arg1, arg2, res)
+      {
+        operationCommutes();
+      }
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::equal_mdd::equal_mdd(const binary_opname* opcode, 
-  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-  : generic_binary_mdd(opcode, arg1, arg2, res)
+template <typename T>
+bool equal_mdd<T>
+::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
-  operationCommutes();
-}
-
-bool MEDDLY::equal_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (arg1F->isTerminalNode(a) &&
-      arg2F->isTerminalNode(b)) {
-    int term = (a==b) ? 1 : 0;
-    if (resF->getRangeType() == forest::INTEGER) {
-      c = expert_forest::int_encoder::value2handle(term);
-    } else {
-      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-      c = expert_forest::float_encoder::value2handle(term);
-    }
+  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
+    T av, bv;
+    arg1F->getValueFromHandle(a, av);
+    arg2F->getValueFromHandle(b, bv);
+    c = resF->handleForValue( av == bv );
     return true;
   }
   return false;
 }
 
+};  // namespace MEDDLY
 
 // ******************************************************************
 // *                                                                *
@@ -80,38 +77,37 @@ bool MEDDLY::equal_mdd::checkTerminals(node_handle a, node_handle b, node_handle
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::equal_mxd : public generic_binbylevel_mxd {
+namespace MEDDLY {
+
+template <typename T>
+class equal_mxd : public generic_binbylevel_mxd {
   public:
     equal_mxd(const binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+      expert_forest* arg2, expert_forest* res)
+      : generic_binbylevel_mxd(opcode, arg1, arg2, res)
+      {
+        operationCommutes();
+      }
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::equal_mxd::equal_mxd(const binary_opname* opcode, 
-  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-  : generic_binbylevel_mxd(opcode, arg1, arg2, res)
+template <typename T>
+bool equal_mxd<T>
+::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
-  operationCommutes();
-}
-
-bool MEDDLY::equal_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (arg1F->isTerminalNode(a) &&
-      arg2F->isTerminalNode(b)) {
-    int term = (a==b) ? 1 : 0;
-    if (resF->getRangeType() == forest::INTEGER) {
-      c = expert_forest::int_encoder::value2handle(term);
-    } else {
-      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-      c = expert_forest::float_encoder::value2handle(term);
-    }
+  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
+    T av, bv;
+    arg1F->getValueFromHandle(a, av);
+    arg2F->getValueFromHandle(b, bv);
+    c = resF->handleForValue( av == bv );
     return true;
   }
   return false;
 }
 
+};  // namespace MEDDLY
 
 // ******************************************************************
 // *                                                                *
@@ -186,23 +182,38 @@ MEDDLY::equal_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   if (
     (a1->isForRelations() != r->isForRelations()) ||
     (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getRangeType() != r->getRangeType()) ||
-    (a2->getRangeType() != r->getRangeType()) ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (r->getRangeType() == forest::BOOLEAN)
+    (a2->getEdgeLabeling() != r->getEdgeLabeling()) 
   )
     throw error(error::TYPE_MISMATCH);
 
   if (r->getEdgeLabeling() == forest::MULTI_TERMINAL) {
-    if (r->isForRelations())
-      return new equal_mxd(this, a1, a2, r);
-    else
-      return new equal_mdd(this, a1, a2, r);
+    bool use_reals = (
+      a1->getRangeType() == forest::REAL || a2->getRangeType() == forest::REAL 
+    );
+    if (use_reals) {
+      if (r->isForRelations())
+        return new equal_mxd<float>(this, a1, a2, r);
+      else
+        return new equal_mdd<float>(this, a1, a2, r);
+    } else {
+      if (r->isForRelations())
+        return new equal_mxd<int>(this, a1, a2, r);
+      else
+        return new equal_mdd<int>(this, a1, a2, r);
+    }
   }
 
-  if (r->getEdgeLabeling() == forest::EVTIMES)
+  if (r->getEdgeLabeling() == forest::EVTIMES) {
+    if (
+      (a1->getRangeType() != r->getRangeType()) ||
+      (a1->getRangeType() != r->getRangeType())
+    )
+    {
+      throw error(error::TYPE_MISMATCH);
+    }
     return new equal_evtimes(this, a1, a2, r);
+  }
 
   throw error(error::NOT_IMPLEMENTED);
 }

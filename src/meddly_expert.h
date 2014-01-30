@@ -1477,6 +1477,7 @@ class MEDDLY::expert_forest : public forest
         static inline node_handle value2handle(float v) {
           MEDDLY_DCASSERT(4==sizeof(node_handle));
           MEDDLY_DCASSERT(sizeof(float) <= sizeof(node_handle));
+          if (0.0 == v) return 0;
           intfloat x;
           x.real = v;
           // strip lsb in fraction, and add sign bit
@@ -1485,6 +1486,7 @@ class MEDDLY::expert_forest : public forest
         static inline float handle2value(node_handle h) {
           MEDDLY_DCASSERT(4==sizeof(node_handle));
           MEDDLY_DCASSERT(sizeof(float) <= sizeof(node_handle));
+          if (0 == h) return 0.0;
           intfloat x;
           x.integer = (h << 1); // remove sign bit
           return x.real;
@@ -1525,6 +1527,57 @@ class MEDDLY::expert_forest : public forest
   // ------------------------------------------------------------
   // inlined helpers.
   public:
+    template <typename T>
+    inline node_handle handleForValue(T v) const {
+      switch (getRangeType()) {
+        case BOOLEAN:   return bool_encoder::value2handle(v);
+        case INTEGER:   return int_encoder::value2handle(v);
+        case REAL:      return float_encoder::value2handle(v);
+        default:
+          throw error(error::MISCELLANEOUS);
+      }
+    }
+    template <typename T>
+    inline void getValueFromHandle(node_handle n, T& v) const {
+      MEDDLY_DCASSERT(isTerminalNode(n));
+      switch (getRangeType()) {
+        case BOOLEAN:   v = bool_encoder::handle2value(n);    return;
+        case INTEGER:   v = int_encoder::handle2value(n);     return;
+        case REAL:      v = float_encoder::handle2value(n);   return;
+        default:
+          throw error(error::MISCELLANEOUS);
+      }
+    }
+    inline bool getBooleanFromHandle(node_handle n) const {
+      MEDDLY_DCASSERT(isTerminalNode(n));
+      switch (getRangeType()) {
+        case BOOLEAN:   return bool_encoder::handle2value(n);
+        case INTEGER:   return int_encoder::handle2value(n);
+        case REAL:      return float_encoder::handle2value(n);
+        default:
+          throw error(error::MISCELLANEOUS);
+      }
+    }
+    inline int getIntegerFromHandle(node_handle n) const {
+      MEDDLY_DCASSERT(isTerminalNode(n));
+      switch (getRangeType()) {
+        case BOOLEAN:   return bool_encoder::handle2value(n);
+        case INTEGER:   return int_encoder::handle2value(n);
+        case REAL:      return float_encoder::handle2value(n);
+        default:
+          throw error(error::MISCELLANEOUS);
+      }
+    }
+    inline float getRealFromHandle(node_handle n) const {
+      MEDDLY_DCASSERT(isTerminalNode(n));
+      switch (getRangeType()) {
+        case BOOLEAN:   return bool_encoder::handle2value(n);
+        case INTEGER:   return int_encoder::handle2value(n);
+        case REAL:      return float_encoder::handle2value(n);
+        default:
+          throw error(error::MISCELLANEOUS);
+      }
+    }
     inline statset& changeStats() {
       return stats;
     }

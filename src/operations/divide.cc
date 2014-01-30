@@ -27,9 +27,6 @@
 #include "apply_base.h"
 
 namespace MEDDLY {
-  class divide_mdd;
-  class divide_mxd;
-
   class divide_opname;
 };
 
@@ -40,43 +37,35 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::divide_mdd : public generic_binary_mdd {
+namespace MEDDLY {
+
+template <typename REAL>
+class divide_mdd : public generic_binary_mdd {
   public:
     divide_mdd(const binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+      expert_forest* arg2, expert_forest* res)
+      : generic_binary_mdd(opcode, arg1, arg2, res) { }
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::divide_mdd::divide_mdd(const binary_opname* opcode, 
-  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-  : generic_binary_mdd(opcode, arg1, arg2, res)
+template <typename REAL>
+bool divide_mdd<REAL>
+::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
-}
-
-bool MEDDLY::divide_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (arg1F->isTerminalNode(a) &&
-      arg2F->isTerminalNode(b)) 
+  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) 
   {
-      if (resF->getRangeType() == forest::INTEGER) {
-        c = expert_forest::int_encoder::value2handle(
-              expert_forest::int_encoder::handle2value(a)
-            / expert_forest::int_encoder::handle2value(b)
-        );
-      } else {
-        MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-        c = expert_forest::float_encoder::value2handle(
-              expert_forest::float_encoder::handle2value(a)
-            / expert_forest::float_encoder::handle2value(b)
-        );
-      }
+    REAL av, bv;
+    arg1F->getValueFromHandle(a, av);
+    arg2F->getValueFromHandle(b, bv);
+    c = resF->handleForValue( av / bv );
     return true;
   }
   return false;
 }
 
+};  // namespace MEDDLY
 
 // ******************************************************************
 // *                                                                *
@@ -84,43 +73,35 @@ bool MEDDLY::divide_mdd::checkTerminals(node_handle a, node_handle b, node_handl
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::divide_mxd : public generic_binbylevel_mxd {
+namespace MEDDLY {
+
+template <typename REAL>
+class divide_mxd : public generic_binbylevel_mxd {
   public:
     divide_mxd(const binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+      expert_forest* arg2, expert_forest* res)
+      : generic_binbylevel_mxd(opcode, arg1, arg2, res) { }
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::divide_mxd::divide_mxd(const binary_opname* opcode, 
-  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-  : generic_binbylevel_mxd(opcode, arg1, arg2, res)
+template <typename REAL>
+bool divide_mxd<REAL>
+::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
-}
-
-bool MEDDLY::divide_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (arg1F->isTerminalNode(a) &&
-      arg2F->isTerminalNode(b)) 
+  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) 
   {
-      if (resF->getRangeType() == forest::INTEGER) {
-        c = expert_forest::int_encoder::value2handle(
-              expert_forest::int_encoder::handle2value(a)
-            / expert_forest::int_encoder::handle2value(b)
-        );
-      } else {
-        MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-        c = expert_forest::float_encoder::value2handle(
-              expert_forest::float_encoder::handle2value(a)
-            / expert_forest::float_encoder::handle2value(b)
-        );
-      }
+    REAL av, bv;
+    arg1F->getValueFromHandle(a, av);
+    arg2F->getValueFromHandle(b, bv);
+    c = resF->handleForValue( av / bv );
     return true;
   }
   return false;
 }
 
+};  // namespace MEDDLY
 
 // ******************************************************************
 // *                                                                *
@@ -155,19 +136,30 @@ MEDDLY::divide_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   if (
     (a1->isForRelations() != r->isForRelations()) ||
     (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getRangeType() != r->getRangeType()) ||
-    (a2->getRangeType() != r->getRangeType()) ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (r->getRangeType() == forest::BOOLEAN)
+    (a2->getEdgeLabeling() != r->getEdgeLabeling()) 
   )
     throw error(error::TYPE_MISMATCH);
 
   if (r->getEdgeLabeling() == forest::MULTI_TERMINAL) {
-    if (r->isForRelations())
-      return new divide_mxd(this, a1, a2, r);
-    else
-      return new divide_mdd(this, a1, a2, r);
+    switch (r->getRangeType()) {
+
+      case forest::INTEGER:
+          if (r->isForRelations())
+            return new divide_mxd<int>(this, a1, a2, r);
+          else
+            return new divide_mdd<int>(this, a1, a2, r);
+
+      case forest::REAL:
+          if (r->isForRelations())
+            return new divide_mxd<float>(this, a1, a2, r);
+          else
+            return new divide_mdd<float>(this, a1, a2, r);
+
+      default:
+        throw error(error::TYPE_MISMATCH);
+    }
+    
   }
 
   throw error(error::NOT_IMPLEMENTED);

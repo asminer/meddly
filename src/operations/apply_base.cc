@@ -223,7 +223,7 @@ MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b)
   saveResult(-1, a, b, result);
 
 #ifdef TRACE_ALL_OPS
-  printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
+  printf("computed %s(%d, %d) = %d\n", getName(), a, b, result);
 #endif
 
   return result;

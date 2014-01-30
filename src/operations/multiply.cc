@@ -26,8 +26,6 @@
 #include "multiply.h"
 #include "apply_base.h"
 
-// #define OLD_MULTIPLY
-
 namespace MEDDLY {
   class multiply_mdd;
   class multiply_mxd;
@@ -65,43 +63,31 @@ bool MEDDLY::multiply_mdd::checkTerminals(node_handle a, node_handle b, node_han
     c = 0;
     return true;
   }
-#ifdef OLD_MULTIPLY
-  if (arg1F->isTerminalNode(a) &&
-      arg2F->isTerminalNode(b)) {
-    if (resF->getRangeType() == forest::INTEGER) {
-      c = resF->getTerminalNode(arg1F->getInteger(a) * arg2F->getInteger(b));
-    } else {
-      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-      c = resF->getTerminalNode(arg1F->getReal(a) * arg2F->getReal(b));
-    }
-    return true;
-  }
-#else
   if (arg1F->isTerminalNode(a)) {
     if (arg2F->isTerminalNode(b)) {
       if (resF->getRangeType() == forest::INTEGER) {
-        c = expert_forest::int_encoder::value2handle(
-              expert_forest::int_encoder::handle2value(a)
-            * expert_forest::int_encoder::handle2value(b)
-        );
+        int av, bv;
+        arg1F->getValueFromHandle(a, av);
+        arg2F->getValueFromHandle(b, bv);
+        c = resF->handleForValue(av * bv);
       } else {
         MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-        c = expert_forest::float_encoder::value2handle(
-              expert_forest::float_encoder::handle2value(a)
-            * expert_forest::float_encoder::handle2value(b)
-        );
+        float av, bv;
+        arg1F->getValueFromHandle(a, av);
+        arg2F->getValueFromHandle(b, bv);
+        c = resF->handleForValue(av * bv);
       }
       return true;
     }
     if (arg2F != resF) return false;
     if (resF->getRangeType() == forest::INTEGER) {
-      if (1==expert_forest::int_encoder::handle2value(a)) {
+      if (1==arg1F->getIntegerFromHandle(a)) {
         c = arg2F->linkNode(b);
         return true;
       }
     } else {
       MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-      if (1.0==expert_forest::float_encoder::handle2value(a)) {
+      if (1.0==arg1F->getRealFromHandle(a)) {
         c = arg2F->linkNode(b);
         return true;
       }
@@ -110,19 +96,18 @@ bool MEDDLY::multiply_mdd::checkTerminals(node_handle a, node_handle b, node_han
   if (arg2F->isTerminalNode(b)) {
     if (arg1F != resF) return false;
     if (resF->getRangeType() == forest::INTEGER) {
-      if (1==expert_forest::int_encoder::handle2value(b)) {
+      if (1==arg2F->getIntegerFromHandle(b)) {
         c = arg1F->linkNode(a);
         return true;
       }
     } else {
       MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-      if (1.0==expert_forest::float_encoder::handle2value(b)) {
+      if (1.0==arg2F->getRealFromHandle(b)) {
         c = arg1F->linkNode(a);
         return true;
       }
     }
   }
-#endif
   return false;
 }
 
@@ -157,22 +142,50 @@ bool MEDDLY::multiply_mxd::checkTerminals(node_handle a, node_handle b, node_han
     return true;
   }
 
-  if (arg1F->isTerminalNode(a) &&
-      arg2F->isTerminalNode(b)) 
-  {
+  if (arg1F->isTerminalNode(a)) {
+    if (arg2F->isTerminalNode(b)) {
       if (resF->getRangeType() == forest::INTEGER) {
-        c = expert_forest::int_encoder::value2handle(
-              expert_forest::int_encoder::handle2value(a)
-            * expert_forest::int_encoder::handle2value(b)
-        );
+        int av, bv;
+        arg1F->getValueFromHandle(a, av);
+        arg2F->getValueFromHandle(b, bv);
+        c = resF->handleForValue(av * bv);
       } else {
         MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-        c = expert_forest::float_encoder::value2handle(
-              expert_forest::float_encoder::handle2value(a)
-            * expert_forest::float_encoder::handle2value(b)
-        );
+        float av, bv;
+        arg1F->getValueFromHandle(a, av);
+        arg2F->getValueFromHandle(b, bv);
+        c = resF->handleForValue(av * bv);
       }
       return true;
+    }
+    if (arg2F != resF) return false;
+    if (resF->getRangeType() == forest::INTEGER) {
+      if (1==arg1F->getIntegerFromHandle(a)) {
+        c = arg2F->linkNode(b);
+        return true;
+      }
+    } else {
+      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
+      if (1.0==arg1F->getRealFromHandle(a)) {
+        c = arg2F->linkNode(b);
+        return true;
+      }
+    }
+  } // a is terminal
+  if (arg2F->isTerminalNode(b)) {
+    if (arg1F != resF) return false;
+    if (resF->getRangeType() == forest::INTEGER) {
+      if (1==arg2F->getIntegerFromHandle(b)) {
+        c = arg1F->linkNode(a);
+        return true;
+      }
+    } else {
+      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
+      if (1.0==arg2F->getRealFromHandle(b)) {
+        c = arg1F->linkNode(a);
+        return true;
+      }
+    }
   }
   return false;
 }
@@ -289,8 +302,6 @@ MEDDLY::multiply_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   if (
     (a1->isForRelations() != r->isForRelations()) ||
     (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getRangeType() != r->getRangeType()) ||
-    (a2->getRangeType() != r->getRangeType()) ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
     (a2->getEdgeLabeling() != r->getEdgeLabeling()) ||
     (r->getRangeType() == forest::BOOLEAN)
@@ -303,6 +314,12 @@ MEDDLY::multiply_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     else
       return new multiply_mdd(this, a1, a2, r);
   }
+
+  if (
+    (a1->getRangeType() != r->getRangeType()) ||
+    (a2->getRangeType() != r->getRangeType()) 
+  )
+    throw error(error::TYPE_MISMATCH);
 
   if (r->getEdgeLabeling() == forest::EVPLUS)
     return new multiply_evplus(this, a1, a2, r);

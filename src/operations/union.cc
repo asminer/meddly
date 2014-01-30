@@ -57,8 +57,8 @@ MEDDLY::union_mdd::union_mdd(const binary_opname* opcode,
 
 bool MEDDLY::union_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
-  if (a == -1 || b == -1) {
-    c = -1;
+  if (a < 0 || b < 0) {
+    c = resF->handleForValue(true);
     return true;
   }
   if (a == 0) {
@@ -115,8 +115,8 @@ MEDDLY::union_mxd::union_mxd(const binary_opname* opcode,
 
 bool MEDDLY::union_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
-  if (a == -1 && b == -1) {
-    c = -1;
+  if (a < 0 && b < 0) {
+    c = resF->handleForValue(true);
     return true;
   }
   if (0 == a) {
@@ -183,11 +183,8 @@ MEDDLY::union_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   if (
     (a1->isForRelations() != r->isForRelations()) ||
     (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getRangeType() != r->getRangeType()) ||
-    (a2->getRangeType() != r->getRangeType()) ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (r->getRangeType() != forest::BOOLEAN)
+    (a2->getEdgeLabeling() != r->getEdgeLabeling()) 
   )
     throw error(error::TYPE_MISMATCH);
 
