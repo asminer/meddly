@@ -35,6 +35,7 @@
 #define EVMDD_H
 
 #include <vector>
+#include "mt.h"
 
 #define SORT_BUILD
 
@@ -234,12 +235,12 @@ MEDDLY::evmdd_forest::createEdgeInternal(T term, dd_edge &e)
   if (e.getForest() != this) throw error(error::INVALID_OPERATION);
 
   if (isFullyReduced()) {
-    e.set(getTerminalNode(true), term);
+    e.set(bool_encoder::value2handle(true), term);
   } else {
     // construct the edge bottom-up
-    node_handle prev = getTerminalNode(false);
+    node_handle prev = bool_encoder::value2handle(false);
     T prevEv = 0;
-    node_handle curr = getTerminalNode(true);
+    node_handle curr = bool_encoder::value2handle(true);
     T currEv = term;
     for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
       prev = curr;
@@ -305,10 +306,10 @@ void
 MEDDLY::evmdd_forest::createEdgeInternal(const int* v, T term, dd_edge &e)
 {
   // construct the edge bottom-up
-  node_handle prev = getTerminalNode(false);
+  node_handle prev = bool_encoder::value2handle(false);
   T prevEv;
   getIdentityEdgeValue(prevEv);
-  node_handle curr = getTerminalNode(true);
+  node_handle curr = bool_encoder::value2handle(true); 
   T currEv = term;
   for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
     prev = curr;

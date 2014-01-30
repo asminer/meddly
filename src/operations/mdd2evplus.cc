@@ -112,7 +112,7 @@ MEDDLY::mdd2evplus_operation
     return;
   }
   if (0 == k) {
-    bdn = resF->getTerminalNode(true);
+    bdn = expert_forest::bool_encoder::value2handle(true);
     bcard = 1;
     return;
   }

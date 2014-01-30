@@ -35,7 +35,7 @@ namespace MEDDLY {
 /** 
     Forest for multi-terminal, mxd, boolean range.
 */
-class MEDDLY::mt_mxd_bool : public mtmxd_forest<int_terminal> {
+class MEDDLY::mt_mxd_bool : public mtmxd_forest<expert_forest::bool_encoder> {
   public:
 
     mt_mxd_bool(int dsl, domain *d, const policies &p);

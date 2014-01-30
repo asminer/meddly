@@ -25,7 +25,7 @@
 #ifdef NEW_MT
 
 MEDDLY::mt_mxd_bool::mt_mxd_bool(int dsl, domain *d, const policies &p)
-: mtmxd_forest<int_terminal>(dsl, d, BOOLEAN, p)
+: mtmxd_forest<expert_forest::bool_encoder>(dsl, d, BOOLEAN, p)
 { 
   initializeForest();
 }

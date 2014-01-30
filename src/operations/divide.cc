@@ -58,17 +58,20 @@ MEDDLY::divide_mdd::divide_mdd(const binary_opname* opcode,
 bool MEDDLY::divide_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
   if (arg1F->isTerminalNode(a) &&
-      arg2F->isTerminalNode(b)) {
-    if (resF->getRangeType() == forest::INTEGER) {
-      c = resF->getTerminalNode(
-        arg1F->getInteger(a) / arg2F->getInteger(b)
-      );
-    } else {
-      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-      c = resF->getTerminalNode(
-        arg1F->getReal(a) / arg2F->getReal(b)
-      );
-    }
+      arg2F->isTerminalNode(b)) 
+  {
+      if (resF->getRangeType() == forest::INTEGER) {
+        c = expert_forest::int_encoder::value2handle(
+              expert_forest::int_encoder::handle2value(a)
+            / expert_forest::int_encoder::handle2value(b)
+        );
+      } else {
+        MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
+        c = expert_forest::float_encoder::value2handle(
+              expert_forest::float_encoder::handle2value(a)
+            / expert_forest::float_encoder::handle2value(b)
+        );
+      }
     return true;
   }
   return false;
@@ -99,17 +102,20 @@ MEDDLY::divide_mxd::divide_mxd(const binary_opname* opcode,
 bool MEDDLY::divide_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
   if (arg1F->isTerminalNode(a) &&
-      arg2F->isTerminalNode(b)) {
-    if (resF->getRangeType() == forest::INTEGER) {
-      c = resF->getTerminalNode(
-        arg1F->getInteger(a) / arg2F->getInteger(b)
-      );
-    } else {
-      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-      c = resF->getTerminalNode(
-        arg1F->getReal(a) / arg2F->getReal(b)
-      );
-    }
+      arg2F->isTerminalNode(b)) 
+  {
+      if (resF->getRangeType() == forest::INTEGER) {
+        c = expert_forest::int_encoder::value2handle(
+              expert_forest::int_encoder::handle2value(a)
+            / expert_forest::int_encoder::handle2value(b)
+        );
+      } else {
+        MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
+        c = expert_forest::float_encoder::value2handle(
+              expert_forest::float_encoder::handle2value(a)
+            / expert_forest::float_encoder::handle2value(b)
+        );
+      }
     return true;
   }
   return false;

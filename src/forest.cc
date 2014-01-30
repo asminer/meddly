@@ -416,6 +416,71 @@ MEDDLY::forest::edge_visitor::~edge_visitor()
 
 // ******************************************************************
 // *                                                                *
+// *                 expert_forest encoder  methods                 *
+// *                                                                *
+// ******************************************************************
+
+void MEDDLY::expert_forest::bool_encoder::show(FILE* s, node_handle h)
+{
+  MEDDLY::th_fputc(handle2value(h) ? 'T' : 'F', s);
+}
+
+void MEDDLY::expert_forest::bool_encoder::write(FILE* s, node_handle h)
+{
+  MEDDLY::th_fputc(handle2value(h) ? 'T' : 'F', s);
+}
+
+MEDDLY::node_handle MEDDLY::expert_forest::bool_encoder::read(FILE* s)
+{
+  stripWS(s);
+  char c = fgetc(s);
+  if ('T' == c) return value2handle(true);
+  if ('F' == c) return value2handle(false);
+  throw error(error::INVALID_FILE);
+}
+
+void MEDDLY::expert_forest::int_encoder::show(FILE* s, node_handle h)
+{
+  th_fprintf(s, "t%d", handle2value(h));
+}
+
+void MEDDLY::expert_forest::int_encoder::write(FILE* s, node_handle h)
+{
+  th_fprintf(s, "t%d", handle2value(h));
+}
+
+MEDDLY::node_handle MEDDLY::expert_forest::int_encoder::read(FILE* s)
+{
+  stripWS(s);
+  char c = fgetc(s);
+  if ('t' != c) throw error(error::INVALID_FILE);
+  int value;
+  th_fscanf(1, s, "%d", &value);
+  return value2handle(value);
+}
+
+void MEDDLY::expert_forest::float_encoder::show(FILE* s, node_handle h)
+{
+  th_fprintf(s, "t%f", handle2value(h));
+}
+
+void MEDDLY::expert_forest::float_encoder::write(FILE* s, node_handle h)
+{
+  th_fprintf(s, "t%8e", handle2value(h));
+}
+
+MEDDLY::node_handle MEDDLY::expert_forest::float_encoder::read(FILE* s)
+{
+  stripWS(s);
+  char c = fgetc(s);
+  if ('t' != c) throw error(error::INVALID_FILE);
+  float value;
+  th_fscanf(1, s, "%8e", &value);
+  return value2handle(value);
+}
+
+// ******************************************************************
+// *                                                                *
 // *                                                                *
 // *                     expert_forest  methods                     *
 // *                                                                *

@@ -35,7 +35,7 @@ namespace MEDDLY {
 /** 
     Forest for multi-terminal, mxd, integer range.
 */
-class MEDDLY::mt_mxd_int : public mtmxd_forest<int_terminal> {
+class MEDDLY::mt_mxd_int : public mtmxd_forest<expert_forest::int_encoder> {
   public:
 
     mt_mxd_int(int dsl, domain *d, const policies &p);

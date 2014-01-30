@@ -25,7 +25,7 @@
 #ifdef NEW_MT
 
 MEDDLY::mt_mdd_int::mt_mdd_int(int dsl, domain *d, const policies &p)
-: mtmdd_forest<int_terminal>(dsl, d, INTEGER, p)
+: mtmdd_forest<expert_forest::int_encoder>(dsl, d, INTEGER, p)
 { 
   initializeForest();
 }

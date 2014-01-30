@@ -51,11 +51,11 @@ namespace MEDDLY {
       Base class for all multi-terminal MxDs.
       I.e., everything multi-terminal and for relations.
   */
-  template <class TTERM>
-  class mtmxd_forest : public mt_forest<TTERM> {
+  template <class ENCODER>
+  class mtmxd_forest : public mt_forest<ENCODER> {
     protected:
       mtmxd_forest(int dsl, domain* d, forest::range_type t, 
-        const forest::policies &p) : mt_forest<TTERM>(dsl, d, true, t, p)
+        const forest::policies &p) : mt_forest<ENCODER>(dsl, d, true, t, p)
       {
         // nothing to construct
       }
@@ -70,14 +70,12 @@ namespace MEDDLY {
         const int* vplist, T &term) const
       {
         node_handle p = f.getNode();
-        while (!mt_forest<TTERM>::isTerminalNode(p)) {
-          int k = mt_forest<TTERM>::getNodeLevel(p);
+        while (!mt_forest<ENCODER>::isTerminalNode(p)) {
+          int k = mt_forest<ENCODER>::getNodeLevel(p);
           int i = (k<0) ? vplist[-k] : vlist[k];
-          p = mt_forest<TTERM>::getDownPtr(p, i);
+          p = mt_forest<ENCODER>::getDownPtr(p, i);
         } 
-        TTERM tnode;
-        tnode.setFromHandle(p);
-        term = tnode;
+        term = ENCODER::handle2value(p);
       }
 
       /**
@@ -101,32 +99,28 @@ namespace MEDDLY {
         // Fast special case
         //
         if (1==N) {
-          TTERM tnode;
-          if (terms) {
-            tnode.setFromValue(terms[0]);
-          } else {
-            tnode.setFromValue(true);
-          }
-          return createEdgePath(k, vlist[0], vplist[0], tnode.toHandle());
+          return createEdgePath(k, vlist[0], vplist[0], 
+            ENCODER::value2handle(terms ? terms[0] : true)
+          );
         }
         //
         // Check terminal case
         //
         if (0==k) {
-          TTERM tnode;
+          T accumulate;
           if (terms) {
-            tnode.setFromValue(terms[0]);
+            accumulate = terms[0];
             for (int i=1; i<N; i++) {
-              tnode.unionValue(terms[i]);
+              accumulate += terms[i];
             }
           } else {
-            tnode.setFromValue(true);
+            accumulate = true;
           }
-          return tnode.toHandle();
+          return ENCODER::value2handle(accumulate);
         }
 
         // size of variables at level k
-        int lastV = mt_forest<TTERM>::getLevelSize(k);
+        int lastV = mt_forest<ENCODER>::getLevelSize(k);
         // current batch size
         int batchP = 0;
 
@@ -182,15 +176,15 @@ namespace MEDDLY {
         //
         if (batchP) {
           node_handle dcnormal = 
-            mt_forest<TTERM>::makeNodeAtLevel(k,
+            mt_forest<ENCODER>::makeNodeAtLevel(k,
               createEdgeRTpr(-1, -k, vlist, vplist, terms, batchP)
             );
 
-          MEDDLY_DCASSERT(mt_forest<TTERM>::unionOp);
+          MEDDLY_DCASSERT(mt_forest<ENCODER>::unionOp);
           node_handle total 
-          = mt_forest<TTERM>::unionOp->compute(dontcares, dcnormal);
-          mt_forest<TTERM>::unlinkNode(dcnormal);
-          mt_forest<TTERM>::unlinkNode(dontcares);
+          = mt_forest<ENCODER>::unionOp->compute(dontcares, dcnormal);
+          mt_forest<ENCODER>::unlinkNode(dcnormal);
+          mt_forest<ENCODER>::unlinkNode(dontcares);
           dontcares = total;
         }
 
@@ -198,7 +192,7 @@ namespace MEDDLY {
         //
         // Start new node at level k
         //
-        node_builder& nb = mt_forest<TTERM>::useSparseBuilder(k, lastV);
+        node_builder& nb = mt_forest<ENCODER>::useSparseBuilder(k, lastV);
         int z = 0; // number of nonzero edges in our sparse node
 
         //
@@ -247,12 +241,12 @@ namespace MEDDLY {
         //
         // Union with don't cares
         //
-        MEDDLY_DCASSERT(mt_forest<TTERM>::unionOp);
+        MEDDLY_DCASSERT(mt_forest<ENCODER>::unionOp);
         nb.shrinkSparse(z);
-        node_handle built = mt_forest<TTERM>::createReducedNode(-1, nb);
-        node_handle total = mt_forest<TTERM>::unionOp->compute(dontcares, built);
-        mt_forest<TTERM>::unlinkNode(dontcares);
-        mt_forest<TTERM>::unlinkNode(built);
+        node_handle built = mt_forest<ENCODER>::createReducedNode(-1, nb);
+        node_handle total = mt_forest<ENCODER>::unionOp->compute(dontcares, built);
+        mt_forest<ENCODER>::unlinkNode(dontcares);
+        mt_forest<ENCODER>::unlinkNode(built);
         return total; 
       } // createEdgeRT
 
@@ -282,7 +276,7 @@ namespace MEDDLY {
         //
 
         // size of variables at level k
-        int lastV = mt_forest<TTERM>::getLevelSize(k);
+        int lastV = mt_forest<ENCODER>::getLevelSize(k);
         // current batch size
         int batchP = 0;
 
@@ -312,7 +306,7 @@ namespace MEDDLY {
         //
         // Start new node at level k
         //
-        node_builder& nb = mt_forest<TTERM>::useSparseBuilder(k, lastV);
+        node_builder& nb = mt_forest<ENCODER>::useSparseBuilder(k, lastV);
         int z = 0; // number of nonzero edges in our sparse node
 
         //
@@ -365,9 +359,9 @@ namespace MEDDLY {
           //
           // (3) union with don't cares
           //
-          MEDDLY_DCASSERT(mt_forest<TTERM>::unionOp);
-          node_handle total = mt_forest<TTERM>::unionOp->compute(dontcares, these);
-          mt_forest<TTERM>::unlinkNode(these);
+          MEDDLY_DCASSERT(mt_forest<ENCODER>::unionOp);
+          node_handle total = mt_forest<ENCODER>::unionOp->compute(dontcares, these);
+          mt_forest<ENCODER>::unlinkNode(these);
 
           //
           // add to sparse node, unless empty
@@ -381,9 +375,9 @@ namespace MEDDLY {
         //
         // Cleanup
         //
-        mt_forest<TTERM>::unlinkNode(dontcares);
+        mt_forest<ENCODER>::unlinkNode(dontcares);
         nb.shrinkSparse(z);
-        return mt_forest<TTERM>::createReducedNode(in, nb);
+        return mt_forest<ENCODER>::createReducedNode(in, nb);
       };
 
 
@@ -392,20 +386,20 @@ namespace MEDDLY {
       // Helper for createEdgeRT
       //
       inline node_handle makeIdentityEdge(int k, node_handle p) {
-        if (mt_forest<TTERM>::isIdentityReduced()) {
+        if (mt_forest<ENCODER>::isIdentityReduced()) {
           return p;
         }
         // build an identity node by hand
-        int lastV = mt_forest<TTERM>::getLevelSize(k);
-        node_builder& nb = mt_forest<TTERM>::useNodeBuilder(k, lastV);
+        int lastV = mt_forest<ENCODER>::getLevelSize(k);
+        node_builder& nb = mt_forest<ENCODER>::useNodeBuilder(k, lastV);
         for (int v=0; v<lastV; v++) {
-          node_builder& nbp = mt_forest<TTERM>::useSparseBuilder(-k, 1);
+          node_builder& nbp = mt_forest<ENCODER>::useSparseBuilder(-k, 1);
           nbp.i(0) = v;
-          nbp.d(0) = mt_forest<TTERM>::linkNode(p);
-          nb.d(v) = mt_forest<TTERM>::createReducedNode(v, nbp);
+          nbp.d(0) = mt_forest<ENCODER>::linkNode(p);
+          nb.d(v) = mt_forest<ENCODER>::createReducedNode(v, nbp);
         } // for v
-        mt_forest<TTERM>::unlinkNode(p);
-        return mt_forest<TTERM>::createReducedNode(-1, nb);
+        mt_forest<ENCODER>::unlinkNode(p);
+        return mt_forest<ENCODER>::createReducedNode(-1, nb);
       }
 
 

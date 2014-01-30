@@ -1426,6 +1426,73 @@ class MEDDLY::expert_forest : public forest
       /// Stats specific to the hole manager.
       static const unsigned HOLE_MANAGER_DETAILED   = 0x0200;
 
+  // preferred way to encode and decode terminal values
+  // (classes so we can use them in template functions)
+  public:
+    /** Encoding for booleans into node handles */
+    class bool_encoder {
+      // -1 true
+      //  0 false
+      public:
+        static inline node_handle value2handle(bool v) {
+          return v ? -1 : 0;
+        }
+        static inline bool handle2value(node_handle h) {
+          if (-1 == h) return true;
+          if ( 0 == h) return false;
+          throw error(error::MISCELLANEOUS);
+        }
+        static void show(FILE* s, node_handle h);
+        static void write(FILE* s, node_handle h);
+        static node_handle read(FILE* s);
+    };
+    /** Encoding for integers into node handles */
+    class int_encoder {
+      public:
+        static inline node_handle value2handle(int v) {
+          MEDDLY_DCASSERT(4 == sizeof(node_handle));
+          if (v < -1073741824 || v > 1073741823) {
+            // Can't fit in 31 bits (signed)
+            throw error(error::OVERFLOW);
+          }
+          if (v) v |= 0x80000000; // sets the sign bit
+          return v;
+        }
+        static inline int handle2value(node_handle h) {
+          // << 1 kills the sign bit
+          // >> 1 puts us back, and extends the (new) sign bit
+          return (h << 1) >> 1;
+        }
+        static void show(FILE* s, node_handle h);
+        static void write(FILE* s, node_handle h);
+        static node_handle read(FILE* s);
+    };
+    /** Encoding for floats into node handles */
+    class float_encoder {
+        union intfloat {
+          float real;
+          int   integer;
+        }; 
+      public:
+        static inline node_handle value2handle(float v) {
+          MEDDLY_DCASSERT(4==sizeof(node_handle));
+          MEDDLY_DCASSERT(sizeof(float) <= sizeof(node_handle));
+          intfloat x;
+          x.real = v;
+          // strip lsb in fraction, and add sign bit
+          return (x.integer >> 1) | 0x80000000;
+        }
+        static inline float handle2value(node_handle h) {
+          MEDDLY_DCASSERT(4==sizeof(node_handle));
+          MEDDLY_DCASSERT(sizeof(float) <= sizeof(node_handle));
+          intfloat x;
+          x.integer = (h << 1); // remove sign bit
+          return x.real;
+        }
+        static void show(FILE* s, node_handle h);
+        static void write(FILE* s, node_handle h);
+        static node_handle read(FILE* s);
+    };
   public:
     /** Constructor.
       @param  dslot   slot used to store the forest, in the domain
@@ -1477,63 +1544,6 @@ class MEDDLY::expert_forest : public forest
     inline char hashedHeaderBytes() const {
       return hashed_bytes;
     }
-
-
-// TBD: MOVE THESE TO MT CLASS?
-
-    /// Get the integer value represented by this terminal node.
-    static inline bool getBoolean(node_handle terminalNode) {
-      MEDDLY_DCASSERT(terminalNode <= 0);
-      return terminalNode;
-    }
-
-    /// Get the terminal node representing this boolean value.
-    static inline node_handle getTerminalNode(bool booleanValue) {
-      return booleanValue ? -1 : 0;
-    }
-
-    /// Get the integer value represented by this terminal node.
-    static inline int getInteger(node_handle terminalNode) {
-      MEDDLY_DCASSERT(terminalNode <= 0);
-      // set 32nd bit based on 31st bit.  << gets rid of MSB; >> sign extends.
-      return terminalNode << 1 >> 1;
-    }
-
-    /// Is this a valid value for a terminal node?
-    static inline bool isValidTerminalValue(int integerValue) {
-      // value has to fit within 31 bits (incl. sign)
-      // int(0xc0000000) == -1073741824
-      // int(0x3fffffff) == +1073741823
-      return (-1073741824 <= integerValue && integerValue <= 1073741823);
-    }
-
-    /// Get the terminal node representing this integer value.
-    static inline node_handle getTerminalNode(int integerValue) {
-      MEDDLY_DCASSERT(isValidTerminalValue(integerValue));
-      return integerValue == 0? 0: integerValue | 0x80000000;
-    }
-
-    /// Get the real (float) value represented by this terminal node.
-    static inline float getReal(int term) {
-      MEDDLY_DCASSERT(term <= 0);
-      MEDDLY_DCASSERT(sizeof(float) <= sizeof(int));
-      if (0 == term) return 0.0;
-      term <<= 1;
-      float ret;
-      memcpy(&ret, &term, sizeof(float));
-      return ret;
-    }
-
-    /// Get the terminal node representing this real (float) value.
-    static inline node_handle getTerminalNode(float a) {
-      if (0.0 == a) return 0;
-      int node;
-      memcpy(&node, &a, sizeof(node_handle));
-      return (node >> 1) | 0x80000000;
-    }
-// TO HERE
-
-
 
     inline const expert_domain* getExpertDomain() const {
       return (expert_domain*) getDomain();

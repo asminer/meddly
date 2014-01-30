@@ -62,10 +62,10 @@ bool MEDDLY::unequal_mdd::checkTerminals(node_handle a, node_handle b, node_hand
       arg2F->isTerminalNode(b)) {
     int term = (a!=b) ? 1 : 0;
     if (resF->getRangeType() == forest::INTEGER) {
-      c = resF->getTerminalNode(term);
+      c = expert_forest::int_encoder::value2handle(term);
     } else {
       MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-      c = resF->getTerminalNode(float(term));
+      c = expert_forest::float_encoder::value2handle(term);
     }
     return true;
   }
@@ -101,10 +101,10 @@ bool MEDDLY::unequal_mxd::checkTerminals(node_handle a, node_handle b, node_hand
       arg2F->isTerminalNode(b)) {
     int term = (a!=b) ? 1 : 0;
     if (resF->getRangeType() == forest::INTEGER) {
-      c = resF->getTerminalNode(term);
+      c = expert_forest::int_encoder::value2handle(term);
     } else {
       MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-      c = resF->getTerminalNode(float(term));
+      c = expert_forest::float_encoder::value2handle(term);
     }
     return true;
   }

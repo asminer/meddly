@@ -35,7 +35,7 @@ namespace MEDDLY {
 /** 
     Forest for multi-terminal, mxd, real range.
 */
-class MEDDLY::mt_mxd_real : public mtmxd_forest<real_terminal> {
+class MEDDLY::mt_mxd_real : public mtmxd_forest<expert_forest::float_encoder> {
   public:
 
     mt_mxd_real(int dsl, domain *d, const policies &p);

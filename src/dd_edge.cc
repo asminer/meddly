@@ -250,17 +250,10 @@ void MEDDLY::dd_edge::show(FILE* strm, int verbosity) const
   expert_forest* eParent = smart_cast<expert_forest*>(parent);
   fprintf(strm, "(Forest Addr: %p, ", parent);
   if (eParent->isTerminalNode(node)) {
-    if (eParent->getRangeType() == forest::REAL) {
-      fprintf(strm, "node: %f*, ", eParent->getReal(node));
-    }
-    else if (eParent->getRangeType() == forest::INTEGER) {
-      fprintf(strm, "node: %d*, ", eParent->getInteger(node));
-    }
-    else {
-      MEDDLY_DCASSERT(eParent->getRangeType() == forest::BOOLEAN);
-      fprintf(strm, "node: %s*, ",(eParent->getBoolean(node)? "true": "false"));
-    }
-}
+    fprintf(strm, "node: ");
+    eParent->showTerminal(strm, node);
+    fprintf(strm, "*, ");
+  }
   else {
     fprintf(strm, "node: %ld, ", long(node));
   }

@@ -42,139 +42,6 @@ namespace MEDDLY {
 };
 
 
-/** Wrapper around integers as terminal values.
-*/
-class MEDDLY::int_terminal {
-    static const int true_val = -1;
-    int value;
-  public:
-    inline void setFromValue(int v) {
-      // Sanity check
-      MEDDLY_DCASSERT(4 == sizeof(node_handle));
-      value = v; 
-      if (v < -1073741824 || v > 1073741823) {
-        // Can't fit in 31 bits (signed)
-        throw error(error::OVERFLOW);
-      }
-    }
-    inline void setFromValue(bool b) {
-      MEDDLY_DCASSERT(4 == sizeof(node_handle));
-      value = b ? true_val : 0;
-    }
-    inline void setFromHandle(node_handle h) {
-      // << 1 kills the sign bit
-      // >> 1 puts us back, and extends the (new) sign bit
-      value = (h << 1) >> 1;
-    }
-    inline void unionValue(bool v) {
-      if (v) value = v;
-    }
-    inline void unionValue(int v) {
-      setFromValue(value + v);
-    }
-    inline node_handle toHandle() const {
-      // set the sign bit, unless we're 0
-      return (0==value) ? 0 : value | 0x80000000;
-    }
-    inline operator bool() const {
-      return value;
-    }
-    inline operator int() const {
-      return value;
-    }
-    inline void show(FILE* s, forest::range_type r) const {
-      switch (r) {
-        case forest::BOOLEAN:
-          th_fputc(value ? 'T' : 'F', s);
-          return;
-
-        case forest::INTEGER:
-          th_fprintf(s, "t%d", value);
-          return;
-
-        default:
-          throw error(error::TYPE_MISMATCH);
-      }
-    }
-    inline void write(FILE* s, forest::range_type r) const {
-      show(s, r);
-    }
-    inline void read(FILE* s, forest::range_type r) {
-      stripWS(s);
-      char c = fgetc(s);
-      switch (r) {
-        case forest::BOOLEAN: 
-            if ('T' == c || 'F' == c) {
-              value = ('T' == c) ? true_val : 0;
-              return;
-            }
-            throw error(error::INVALID_FILE);
-
-        case forest::INTEGER: 
-            if ('t' == c) {
-              th_fscanf(1, s, "%d", &value);
-              return;
-            }
-            throw error(error::INVALID_FILE);
-          
-        default:
-          throw error(error::TYPE_MISMATCH);
-      }
-    }
-};
-
-
-/** Wrapper around reals as terminal values.
-*/
-class MEDDLY::real_terminal {
-    union {
-      float value;
-      int ivalue;
-    };
-  public:
-    inline void setFromValue(float v) {
-      // Sanity checks
-      MEDDLY_DCASSERT(4 == sizeof(node_handle));
-      MEDDLY_DCASSERT(sizeof(float) <= sizeof(node_handle));
-      value = v;
-    }
-    inline void setFromHandle(node_handle h) {
-      // remove sign bit
-      ivalue = (h << 1);
-    }
-    inline void unionValue(float v) {
-      value += v;
-    }
-    inline node_handle toHandle() const {
-      if (0.0 == value) return 0;
-      // Strip lsb in fraction, and add sign bit
-      return (ivalue >> 1) | 0x80000000;
-    }
-    inline operator float() const {
-      return value;
-    }
-    inline void show(FILE* s, forest::range_type r) const {
-      if (r != forest::REAL)
-          throw error(error::TYPE_MISMATCH);
-      th_fprintf(s, "t%f", value);
-    }
-    inline void write(FILE* s, forest::range_type r) const {
-      if (r != forest::REAL)
-          throw error(error::TYPE_MISMATCH);
-      th_fprintf(s, "t%8e", value);
-    }
-    inline void read(FILE* s, forest::range_type r) {
-      if (r != forest::REAL)
-          throw error(error::TYPE_MISMATCH);
-      stripWS(s);
-      char c = fgetc(s);
-      if ('t' == c) {
-        th_fscanf(1, s, "%8e", &value);
-      }
-      throw error(error::INVALID_FILE);
-    }
-};
-
 
 #ifdef NEW_MT
 
@@ -196,7 +63,6 @@ class MEDDLY::mt_base_forest : public expert_forest {
     virtual bool isRedundant(const node_builder &nb) const;
     virtual bool isIdentityEdge(const node_builder &nb, int i) const;
   
-
   // ------------------------------------------------------------
   // Helpers for this and derived classes
   protected:
@@ -390,7 +256,7 @@ namespace MEDDLY {
     It's a template class, based on the terminal type,
     so we can implement certain things here, quickly.
 */
-template <class TTYPE>
+template <class ENCODER>
 class mt_forest : public mt_base_forest {
   protected:
     mt_forest(int dsl, domain *d, bool rel, range_type t, const policies &p);
@@ -401,23 +267,20 @@ class mt_forest : public mt_base_forest {
     template <class T>
     inline void createEdgeTempl(T term, dd_edge& e) {
       if (e.getForest() != this) throw error(error::INVALID_OPERATION);
-      TTYPE tnode;
-      tnode.setFromValue(term);
-      e.set(makeNodeAtTop(tnode.toHandle()), 0);
+      e.set(makeNodeAtTop(ENCODER::value2handle(term)), 0);
     }
 
   public:
     virtual void showTerminal(FILE* s, node_handle tnode) const;
     virtual void writeTerminal(FILE* s, node_handle tnode) const;
     virtual node_handle readTerminal(FILE* s);
-
 };
 
 //
 // Template implementation
 //
-template <class TTYPE>
-mt_forest<TTYPE>
+template <class ENCODER>
+mt_forest<ENCODER>
 ::mt_forest(int dsl, domain *d, bool rel, range_type t, const policies &p)
  : mt_base_forest(dsl, d, rel, t, p)
 {
@@ -425,9 +288,9 @@ mt_forest<TTYPE>
 }
 
 
-template <class TTYPE>
+template <class ENCODER>
 template <class T>
-void mt_forest<TTYPE>::
+void mt_forest<ENCODER>::
 createEdgeForVarTempl(int vh, bool pr, const T* termvals, dd_edge& result)
 {
     /*
@@ -457,13 +320,9 @@ createEdgeForVarTempl(int vh, bool pr, const T* termvals, dd_edge& result)
     */
     node_builder &nb = useNodeBuilder(k, sz);
     for (int i=0; i<sz; i++) {
-      TTYPE termnode;
-      if (termvals) {
-        termnode.setFromValue(termvals[i]);
-      } else {
-        termnode.setFromValue(i);
-      }
-      nb.d(i) = makeNodeAtLevel(km1, termnode.toHandle());
+      nb.d(i) = makeNodeAtLevel(km1, 
+        ENCODER::value2handle(termvals ? termvals[i] : i)
+      );
     }
 
     /*
@@ -476,28 +335,22 @@ createEdgeForVarTempl(int vh, bool pr, const T* termvals, dd_edge& result)
 
 
 
-template <class TTYPE>
-void mt_forest<TTYPE>::showTerminal(FILE* s, node_handle tnode) const
+template <class ENCODER>
+void mt_forest<ENCODER>::showTerminal(FILE* s, node_handle tnode) const
 {
-  TTYPE term;
-  term.setFromHandle(tnode);
-  term.show(s, getRangeType());
+  ENCODER::show(s, tnode);
 }
 
-template <class TTYPE>
-void mt_forest<TTYPE>::writeTerminal(FILE* s, node_handle tnode) const
+template <class ENCODER>
+void mt_forest<ENCODER>::writeTerminal(FILE* s, node_handle tnode) const
 {
-  TTYPE term;
-  term.setFromHandle(tnode);
-  term.write(s, getRangeType());
+  ENCODER::write(s, tnode);
 }
 
-template <class TTYPE>
-node_handle mt_forest<TTYPE>::readTerminal(FILE* s)
+template <class ENCODER>
+node_handle mt_forest<ENCODER>::readTerminal(FILE* s)
 {
-  TTYPE term;
-  term.read(s, getRangeType());
-  return term.toHandle();
+  return ENCODER::read(s);
 }
 
 

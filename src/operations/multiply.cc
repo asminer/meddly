@@ -80,22 +80,28 @@ bool MEDDLY::multiply_mdd::checkTerminals(node_handle a, node_handle b, node_han
   if (arg1F->isTerminalNode(a)) {
     if (arg2F->isTerminalNode(b)) {
       if (resF->getRangeType() == forest::INTEGER) {
-        c = resF->getTerminalNode(arg1F->getInteger(a) * arg2F->getInteger(b));
+        c = expert_forest::int_encoder::value2handle(
+              expert_forest::int_encoder::handle2value(a)
+            * expert_forest::int_encoder::handle2value(b)
+        );
       } else {
         MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-        c = resF->getTerminalNode(arg1F->getReal(a) * arg2F->getReal(b));
+        c = expert_forest::float_encoder::value2handle(
+              expert_forest::float_encoder::handle2value(a)
+            * expert_forest::float_encoder::handle2value(b)
+        );
       }
       return true;
     }
     if (arg2F != resF) return false;
     if (resF->getRangeType() == forest::INTEGER) {
-      if (1==arg1F->getInteger(a)) {
+      if (1==expert_forest::int_encoder::handle2value(a)) {
         c = arg2F->linkNode(b);
         return true;
       }
     } else {
       MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-      if (1.0==arg1F->getReal(a)) {
+      if (1.0==expert_forest::float_encoder::handle2value(a)) {
         c = arg2F->linkNode(b);
         return true;
       }
@@ -104,13 +110,13 @@ bool MEDDLY::multiply_mdd::checkTerminals(node_handle a, node_handle b, node_han
   if (arg2F->isTerminalNode(b)) {
     if (arg1F != resF) return false;
     if (resF->getRangeType() == forest::INTEGER) {
-      if (1==arg2F->getInteger(b)) {
+      if (1==expert_forest::int_encoder::handle2value(b)) {
         c = arg1F->linkNode(a);
         return true;
       }
     } else {
       MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-      if (1.0==arg2F->getReal(b)) {
+      if (1.0==expert_forest::float_encoder::handle2value(b)) {
         c = arg1F->linkNode(a);
         return true;
       }
@@ -152,14 +158,21 @@ bool MEDDLY::multiply_mxd::checkTerminals(node_handle a, node_handle b, node_han
   }
 
   if (arg1F->isTerminalNode(a) &&
-      arg2F->isTerminalNode(b)) {
-    if (resF->getRangeType() == forest::INTEGER) {
-      c = resF->getTerminalNode(arg1F->getInteger(a) * arg2F->getInteger(b));
-    } else {
-      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-      c = resF->getTerminalNode(arg1F->getReal(a) * arg2F->getReal(b));
-    }
-    return true;
+      arg2F->isTerminalNode(b)) 
+  {
+      if (resF->getRangeType() == forest::INTEGER) {
+        c = expert_forest::int_encoder::value2handle(
+              expert_forest::int_encoder::handle2value(a)
+            * expert_forest::int_encoder::handle2value(b)
+        );
+      } else {
+        MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
+        c = expert_forest::float_encoder::value2handle(
+              expert_forest::float_encoder::handle2value(a)
+            * expert_forest::float_encoder::handle2value(b)
+        );
+      }
+      return true;
   }
   return false;
 }

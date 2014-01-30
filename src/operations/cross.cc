@@ -109,9 +109,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   MEDDLY_DCASSERT(k>=0);
   if (0==a || 0==b) return 0;
   if (0==k) {
-    return resF->getTerminalNode(
-      arg1F->getBoolean(a)
-    );
+    return a; 
   }
 
   // check compute table

@@ -658,7 +658,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
   if (mxd == 0 || mdd == 0) return 0;
   if (arg2F->isTerminalNode(mxd)) {
     if (arg1F->isTerminalNode(mdd)) {
-      return resF->getTerminalNode(true);
+      return expert_forest::bool_encoder::value2handle(1);
     }
     // mxd is identity
     if (arg1F == resF)
@@ -880,7 +880,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
   if (mxd == 0 || mdd == 0) return 0;
   if (arg2F->isTerminalNode(mxd)) {
     if (arg1F->isTerminalNode(mdd)) {
-      return resF->getTerminalNode(true);
+      return expert_forest::bool_encoder::value2handle(1);
     }
     // mxd is identity
     if (arg1F == resF)

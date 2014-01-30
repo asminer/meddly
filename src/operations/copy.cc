@@ -124,11 +124,11 @@ MEDDLY::node_handle MEDDLY::copy_bool2MT::compute(int in, node_handle a)
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
-    int aTerm = argF->getBoolean(a) ? 1 : 0;
+    int aTerm = expert_forest::bool_encoder::handle2value(a) ? 1 : 0;
     if (resF->getRangeType() == forest::INTEGER) {
-      return resF->getTerminalNode(aTerm);
+      return expert_forest::int_encoder::value2handle(aTerm);
     } else {
-      return resF->getTerminalNode(float(aTerm));
+      return expert_forest::float_encoder::value2handle(float(aTerm));
     }
   }
 
@@ -192,9 +192,9 @@ MEDDLY::node_handle MEDDLY::copy_MT2bool::compute(int in, node_handle a)
   // Check terminals
   if (argF->isTerminalNode(a)) {
     bool aTerm = (argF->getRangeType() == forest::INTEGER)
-      ? (argF->getInteger(a) != 0)
-      : (argF->getReal(a) !=0);
-    return resF->getTerminalNode(aTerm);
+      ? expert_forest::int_encoder::handle2value(a)
+      : expert_forest::float_encoder::handle2value(a);
+    return expert_forest::bool_encoder::value2handle(aTerm);
   }
 
   // See if we can ignore "in"
@@ -232,9 +232,9 @@ MEDDLY::node_handle MEDDLY::copy_MT2bool::compute(int in, int k, node_handle a)
   // Check terminals
   if (0==k) {
     bool aTerm = (argF->getRangeType() == forest::INTEGER)
-      ? (argF->getInteger(a) != 0)
-      : (argF->getReal(a) !=0);
-    return resF->getTerminalNode(aTerm);
+      ? expert_forest::int_encoder::handle2value(a)
+      : expert_forest::float_encoder::handle2value(a);
+    return expert_forest::bool_encoder::value2handle(aTerm);
   }
 
   // See if we can ignore "in"
@@ -335,8 +335,8 @@ void MEDDLY::copy_MT2Evplus::compute(node_handle a, node_handle &b, int &bev)
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
-    bev = argF->getInteger(a);
-    b = resF->getTerminalNode(true);
+    bev = expert_forest::int_encoder::handle2value(a);
+    b = expert_forest::bool_encoder::value2handle(true);
     return;
   }
 

@@ -25,7 +25,7 @@
 #ifdef NEW_MT
 
 MEDDLY::mt_mxd_real::mt_mxd_real(int dsl, domain *d, const policies &p)
-: mtmxd_forest<real_terminal>(dsl, d, REAL, p)
+: mtmxd_forest<expert_forest::float_encoder>(dsl, d, REAL, p)
 { 
   initializeForest();
 }
