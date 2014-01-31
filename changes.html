@@ -15,6 +15,9 @@
        now reorder these arrays in place as needed for speed.
        If you expect these arrays to remain untouched, then you
        will need to copy them before calling the method.
+       <b>TBD:</b> try using heapsort on minterms at top level.
+       <b>TBD:</b> try a reordering array, if it's not slower, 
+       then put the const back.
   </li>
 
   <li> Added constants <tt>DONT_CARE</tt>
@@ -24,6 +27,35 @@
        In particular, <tt>DONT_CHANGE</tt> should <b>NOT</b>
        be used for unprimed levels.
   </li>
+
+</ul>
+
+<h3>Expert interface</h3>
+
+<p>
+The mechanism for encoding and decoding terminal nodes
+(for multi-terminal forests) has been changed.
+The following methods of <tt>expert_forest</tt> were removed:
+</p>
+<ul>
+  <li> <tt>getBoolean()</tt> </li>
+  <li> <tt>getInteger()</tt> </li>
+  <li> <tt>getReal()</tt> </li>
+  <li> <tt>getTerminalNode()</tt> </li>
+  <li> <tt>isValidTerminalValue()</tt> </li>
+</ul>
+<p>
+Terminal encoding is now handled by classes <tt>bool_encoder</tt>,
+<tt>int_encoder</tt>, and <tt>float_encoder</tt>
+inside <tt>expert_forest</tt>, allowing the use of templates if desired.
+The following methods have been added for convenience:
+</p>
+<ul>
+  <li> <tt>handleForValue()</tt> </li>
+  <li> <tt>getValueFromHandle()</tt> </li>
+  <li> <tt>getBooleanFromHandle()</tt> </li>
+  <li> <tt>getIntegerFromHandle()</tt> </li>
+  <li> <tt>getRealFromHandle()</tt> </li>
 </ul>
 
 </body>

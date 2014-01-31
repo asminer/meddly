@@ -1527,6 +1527,13 @@ class MEDDLY::expert_forest : public forest
   // ------------------------------------------------------------
   // inlined helpers.
   public:
+    /**
+        Convenience function.
+        Based on the forest type, convert the desired value
+        into a terminal node handle.
+          @param  v   Value to encode
+          @return     Handle for terminal node
+    */
     template <typename T>
     inline node_handle handleForValue(T v) const {
       switch (getRangeType()) {
@@ -1537,6 +1544,13 @@ class MEDDLY::expert_forest : public forest
           throw error(error::MISCELLANEOUS);
       }
     }
+    /**
+        Convenience function.
+        Based on the forest type, convert the terminal node handle
+        into its encoded value.
+          @param  n   Node handle
+          @param  v   Output: encoded value
+    */
     template <typename T>
     inline void getValueFromHandle(node_handle n, T& v) const {
       MEDDLY_DCASSERT(isTerminalNode(n));
@@ -1548,6 +1562,12 @@ class MEDDLY::expert_forest : public forest
           throw error(error::MISCELLANEOUS);
       }
     }
+    /**
+        Convenience function.
+        Based on the forest type, convert the terminal node handle
+        into its encoded boolean value.
+          @param  n   Node handle
+    */
     inline bool getBooleanFromHandle(node_handle n) const {
       MEDDLY_DCASSERT(isTerminalNode(n));
       switch (getRangeType()) {
@@ -1558,6 +1578,12 @@ class MEDDLY::expert_forest : public forest
           throw error(error::MISCELLANEOUS);
       }
     }
+    /**
+        Convenience function.
+        Based on the forest type, convert the terminal node handle
+        into its encoded integer value.
+          @param  n   Node handle
+    */
     inline int getIntegerFromHandle(node_handle n) const {
       MEDDLY_DCASSERT(isTerminalNode(n));
       switch (getRangeType()) {
@@ -1568,6 +1594,12 @@ class MEDDLY::expert_forest : public forest
           throw error(error::MISCELLANEOUS);
       }
     }
+    /**
+        Convenience function.
+        Based on the forest type, convert the terminal node handle
+        into its encoded real (float) value.
+          @param  n   Node handle
+    */
     inline float getRealFromHandle(node_handle n) const {
       MEDDLY_DCASSERT(isTerminalNode(n));
       switch (getRangeType()) {
