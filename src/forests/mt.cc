@@ -31,74 +31,36 @@
 #define ENABLE_CACHE_COUNTING 0
 #define ENABLE_IN_COUNTING 0
 
-// ******************************************************************
-// *                                                                *
-// *                         public methods                         *
-// *                                                                *
-// ******************************************************************
-
-
-MEDDLY::mt_forest::mt_forest(int dsl, domain *d, bool rel, range_type t,
-  edge_labeling ev, const policies &p)
-: expert_forest(dsl, d, rel, t, ev, p)
-{
-  counting = false;
-
-  dptrsSize = 0;
-  dptrs = 0;
-}
-
-
-MEDDLY::mt_forest::~mt_forest()
-{
-  if (dptrsSize > 0) {
-    free(dptrs);
-    dptrsSize = 0;
-    dptrs = 0;
-  }
-}
-
 
 // ******************************************************************
 // *                                                                *
-// *            virtual  and overriding default behavior            *
+// *                        mt_cleanup class                        *
 // *                                                                *
 // ******************************************************************
 
+class MEDDLY::mt_cleanup : public cleanup_procedure {
+  public:
+    mt_cleanup() : cleanup_procedure() { 
+      // nothing
+    }
+    virtual void execute() {
+      mt_forest::clearStatics();
+    }
+};
 
-void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
-    bool* terms, dd_edge& result)
-{
-  if (getRangeType() != forest::BOOLEAN) 
-      throw error(error::INVALID_OPERATION);
-  if (getLevelSize(vh) != 2) 
-      throw error(error::INVALID_OPERATION);
+// ******************************************************************
+// *                                                                *
+// *                       mt_forest  methods                       *
+// *                                                                *
+// ******************************************************************
 
-  edgeForVarInternal(vh, primedLevel, terms, result);
-}
+MEDDLY::mt_cleanup* MEDDLY::mt_forest::the_mt_cleaner = 0;
+int* MEDDLY::mt_forest::order = 0;
+int  MEDDLY::mt_forest::order_size = 0;
 
-
-void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
-    int* terms, dd_edge& result)
-{
-  if (getRangeType() != forest::INTEGER) 
-      throw error(error::INVALID_OPERATION);
-
-  edgeForVarInternal(vh, primedLevel, terms, result);
-}
-
-
-void MEDDLY::mt_forest::createEdgeForVar(int vh, bool primedLevel,
-    float* terms, dd_edge& result)
-{
-  if (getRangeType() != forest::REAL) 
-      throw error(error::INVALID_OPERATION);
-
-  edgeForVarInternal(vh, primedLevel, terms, result);
-}
-
-void MEDDLY::mt_forest::writeNode(FILE* s, const node_reader& nr,
-  const node_handle* map) const
+MEDDLY::mt_forest::mt_forest(int dsl, domain *d, bool rel,
+  range_type t, const policies &p)
+: expert_forest(dsl, d, rel, t, MULTI_TERMINAL, p)
 {
 }
 
@@ -120,182 +82,70 @@ bool MEDDLY::mt_forest::isIdentityEdge(const node_builder &nb, int i) const
   return nb.d(i) != 0;
 }
 
-// ******************************************************************
-// *                                                                *
-// *                      disorganized methods                      *
-// *                                                                *
-// ******************************************************************
+// protected
 
-
-MEDDLY::node_handle 
-MEDDLY::mt_forest::buildLevelNodeHelper(int lh, node_handle* dptrs, int sz)
+MEDDLY::node_handle MEDDLY::mt_forest::makeNodeAtLevel(int k, node_handle d) 
 {
-  MEDDLY_DCASSERT(dptrs != 0);
-  MEDDLY_DCASSERT(sz > 0);
+  MEDDLY_DCASSERT(abs(k) >= abs(getNodeLevel(d)));
+  if (0==d) return d;
+  if (isFullyReduced()) return d;
+  int dk = getNodeLevel(d); 
+  while (dk != k) {
+    int up;
+    if (dk<0) up = -dk;
+    else up = isForRelations() ? -(dk+1) : dk+1;
 
-  const int absLh = (lh < 0)? -lh: lh;
+    // make node at level "up"
+    int sz = getLevelSize(up);
+    node_builder& nb = useNodeBuilder(up, sz);
 
-  if (isForRelations()) {
-    // build from bottom up
-    // for i = 1 to lh-1
-    //    for j = 0 to sz
-    //      dptrs[j] = node at level i with all downpointers to prev dptrs[j]
-    //      do for primed first and then unprimed
-
-    if (!isFullyReduced()) {
-      for (int k = 1; k < absLh; ++k)
-      {
-        for (int j = 0; j < sz; ++j)
-        {
-          // primed
-          insertRedundantNode(-k, dptrs[j]);
-          // unprimed
-          insertRedundantNode(k, dptrs[j]);
-        } // for j
-      } // for k
-
-      // Finally, deal with lh level
-      // if lh is unprimed, need to create nodes at primed level
-
-      if (lh > 0) {
-        // create nodes at level -lh
-        for (int j = 0; j < sz; ++j)
-        {
-          // primed
-          insertRedundantNode(-lh, dptrs[j]);
-        }
+    if (isIdentityReduced() && (dk<0)) {
+      // make identity reductions below as necessary
+      node_handle sd;
+      int si = isTerminalNode(d) ? -1 : getSingletonIndex(d, sd);
+      for (int i=0; i<sz; i++) {
+        nb.d(i) = linkNode( (i==si) ? sd : d );
+      }
+    } else {
+      // don't worry about identity reductions
+      for (int i=0; i<sz; i++) {
+        nb.d(i) = linkNode(d);
       }
     }
-  }
-  else if (isQuasiReduced()) {
-    MEDDLY_DCASSERT(!isForRelations());
-    // build from bottom up
-    // for i = 1 to lh-1
-    //    for j = 0 to sz
-    //      dptrs[j] = node at level i with all downpointers to prev dptrs[j]
-
-    for (int i = 1; i < absLh; ++i)
-    {
-      for (int j = 0; j < sz; ++j)
-      {
-        insertRedundantNode(i, dptrs[j]);
-      }
-    }
-  }
-
-  // Now, deal with lh level
-  node_builder& nb = useNodeBuilder(lh, sz);
-  for (int i=0; i<sz; i++) {
-    nb.d(i) = dptrs[i];
-  }
-  node_handle node = createReducedNode(-1, nb);
-
-  // now build the levels above this node
-  if (isForRelations()) {
-    if (!isFullyReduced()) {
-      // build additional node at lh level if necessary
-      if (lh < 0) {
-        // build unprimed node at level ABS(lh)
-        insertRedundantNode(absLh, node);
-      }
-
-      // build primed and unprimed nodes for levels lh+1 to topLevel
-      int topHeight = getDomain()->getNumVariables();
-      for (int i = absLh + 1; i <= topHeight; ++i)
-      {
-        // primed
-        insertRedundantNode(-i, node);
-        // unprimed
-        insertRedundantNode(i, node);
-      }
-    }
-    // done building node for Relations
-  }
-  else if (isQuasiReduced()) {
-    MEDDLY_DCASSERT(!isForRelations());
-    // build nodes for levels above lh
-    int topHeight = getDomain()->getNumVariables();
-    for (int i = absLh + 1; i <= topHeight; ++i)
-    {
-      insertRedundantNode(i, node);
-    }
-    // done building node for (MT)MDDs
-  }
-
-  // MEDDLY_DCASSERT(isReducedNode(node));
-  return node;
+    unlinkNode(d);
+    d = createReducedNode(-1, nb);
+    dk = up;
+  } // while
+  return d;
 }
 
-MEDDLY::node_handle* 
-MEDDLY::mt_forest::getTerminalNodes(int n, bool* terms)
+// private
+
+void MEDDLY::mt_forest::enlargeStatics(int n)
 {
-  MEDDLY_DCASSERT(n == 2);
-  MEDDLY_DCASSERT(getRangeType() == forest::BOOLEAN);
-
-  // use the array that comes with object (saves having to alloc/dealloc)
-  if (dptrsSize < n) {
-    // array not large enough, expand
-    stats.incMemAlloc((n - dptrsSize) * sizeof(node_handle));
-    dptrsSize = n;
-    dptrs = (node_handle *) realloc(dptrs, dptrsSize * sizeof(node_handle));
-    MEDDLY_DCASSERT(NULL != dptrs);
+  MEDDLY_DCASSERT(n>0);
+  if (0==the_mt_cleaner) {
+    the_mt_cleaner = new mt_cleanup();
+    // DO NOT EVER DELETE the_mt_cleaner, it is done automatically :^)
   }
-
-  // fill array with terminal nodes
-  if (terms) {
-    for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(terms[i]);
-  } else {
-    dptrs[0] = getTerminalNode(false);
-    dptrs[1] = getTerminalNode(true);
+  if (n>order_size) {
+    order = (int*) realloc(order, n*sizeof(int));
+    //terminals = (node_handle*) realloc(terminals, n*sizeof(node_handle));
+    //if (0==order || 0==terminals) {
+    if (0==order) {
+      throw error(error::INSUFFICIENT_MEMORY);
+    }
+    order_size = n;
   }
-  return dptrs;
+  for (int i=0; i<n; i++) order[i] = i;
 }
 
-
-MEDDLY::node_handle* 
-MEDDLY::mt_forest::getTerminalNodes(int n, int* terms)
+void MEDDLY::mt_forest::clearStatics()
 {
-  MEDDLY_DCASSERT(getRangeType() == forest::INTEGER);
-
-  // use the array that comes with object (saves having to alloc/dealloc)
-  if (dptrsSize < n) {
-    // array not large enough, expand
-    stats.incMemAlloc((n - dptrsSize) * sizeof(node_handle));
-    dptrsSize = n;
-    dptrs = (node_handle *) realloc(dptrs, dptrsSize * sizeof(node_handle));
-    MEDDLY_DCASSERT(NULL != dptrs);
-  }
-
-  // fill array with terminal nodes
-  if (terms) {
-    for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(terms[i]);
-  } else {
-    for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(i);
-  }
-  return dptrs;
+  free(order);
+  order = 0;
+  order_size = 0;
+  // DO NOT delete the_mt_cleaner
+  the_mt_cleaner = 0; 
 }
-
-
-MEDDLY::node_handle* 
-MEDDLY::mt_forest::getTerminalNodes(int n, float* terms)
-{
-  MEDDLY_DCASSERT(getRangeType() == forest::REAL);
-
-  // use the array that comes with object (saves having to alloc/dealloc)
-  if (dptrsSize < n) {
-    // array not large enough, expand
-    stats.incMemAlloc((n - dptrsSize) * sizeof(node_handle));
-    dptrsSize = n;
-    dptrs = (node_handle *) realloc(dptrs, dptrsSize * sizeof(node_handle));
-    MEDDLY_DCASSERT(NULL != dptrs);
-  }
-  // fill array with terminal nodes
-  if (terms) {
-    for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(terms[i]);
-  } else {
-    for (int i = 0; i < n; ++i) dptrs[i] = getTerminalNode(float(i));
-  }
-  return dptrs;
-}
-
 

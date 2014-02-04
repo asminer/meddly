@@ -44,12 +44,15 @@ class MEDDLY::mt_mxd_real : public mtmxd_forest {
     void createEdge(const int* const* vlist, const int* const* vplist,
         const float* terms, int N, dd_edge& e);
 
+    virtual void createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a);
+
     void evaluate(const dd_edge& f, const int* vlist, const int* vplist,
         float &term) const;
 
     virtual void showTerminal(FILE* s, node_handle tnode) const;
     virtual void writeTerminal(FILE* s, node_handle tnode) const;
     virtual node_handle readTerminal(FILE* s);
+
   protected:
     virtual const char* codeChars() const;
 };

@@ -35,11 +35,11 @@
 #define EVMDD_H
 
 #include <vector>
+#include "mt.h"
 
 #define SORT_BUILD
 
 //#define TREE_SORT
-#define IN_PLACE_SORT
 
 namespace MEDDLY {
   class evmdd_forest;
@@ -125,8 +125,7 @@ class MEDDLY::evp_mdd_int : public evmdd_forest {
     evp_mdd_int(int dsl, domain *d, const policies &p);
     ~evp_mdd_int();
 
-    virtual void createEdge(const int* const* vlist, const int* terms,
-        int N, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e);
     virtual void createEdge(int val, dd_edge &e);
     virtual void evaluate(const dd_edge &f, const int* vlist, int &term)
       const;
@@ -171,8 +170,7 @@ class MEDDLY::evt_mdd_real : public evmdd_forest {
       n = ev;
     }
 
-    virtual void createEdge(const int* const* vlist, const float* terms,
-        int N, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e);
     virtual void createEdge(float val, dd_edge &e);
     virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
       const;
@@ -237,12 +235,12 @@ MEDDLY::evmdd_forest::createEdgeInternal(T term, dd_edge &e)
   if (e.getForest() != this) throw error(error::INVALID_OPERATION);
 
   if (isFullyReduced()) {
-    e.set(getTerminalNode(true), term);
+    e.set(bool_encoder::value2handle(true), term);
   } else {
     // construct the edge bottom-up
-    node_handle prev = getTerminalNode(false);
+    node_handle prev = bool_encoder::value2handle(false);
     T prevEv = 0;
-    node_handle curr = getTerminalNode(true);
+    node_handle curr = bool_encoder::value2handle(true);
     T currEv = term;
     for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
       prev = curr;
@@ -308,10 +306,10 @@ void
 MEDDLY::evmdd_forest::createEdgeInternal(const int* v, T term, dd_edge &e)
 {
   // construct the edge bottom-up
-  node_handle prev = getTerminalNode(false);
+  node_handle prev = bool_encoder::value2handle(false);
   T prevEv;
   getIdentityEdgeValue(prevEv);
-  node_handle curr = getTerminalNode(true);
+  node_handle curr = bool_encoder::value2handle(true); 
   T currEv = term;
   for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
     prev = curr;

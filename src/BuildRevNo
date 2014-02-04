@@ -6,8 +6,8 @@
 # Builds the revision number.
 #
 
-rev=`svn info | awk '/Revision/{print $2}' | head -n1`
-rdate=`svn info | awk '/Last Changed Date/{print $4}' | head -n1`
+rev=`svn info | awk '/Revision/{print $2}' | head -n 1`
+rdate=`svn info | awk '/Last Changed Date/{print $4}' | head -n 1`
 
 if [ -z "$rev" ]; then
   if [ -e revision.h ]; then
@@ -20,7 +20,7 @@ if [ -z "$rev" ]; then
   exit 0
 fi
 if [ -e revision.h ]; then
-  revlast=`awk '{print $5}' revision.h`
+  revlast=`awk '{print $5}' revision.h | head -n 1`
   if [ "$rev" -eq "$revlast" ]; then
     printf "No revision number change since last build\n";
     exit 0

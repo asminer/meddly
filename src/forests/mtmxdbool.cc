@@ -22,71 +22,58 @@
 
 #include "mtmxdbool.h"
 
-
 MEDDLY::mt_mxd_bool::mt_mxd_bool(int dsl, domain *d, const policies &p)
-: MEDDLY::mtmxd_forest(dsl, d, true, BOOLEAN, MULTI_TERMINAL, p)
+: mtmxd_forest(dsl, d, BOOLEAN, p)
 { 
   initializeForest();
 }
 
-
 MEDDLY::mt_mxd_bool::~mt_mxd_bool()
 { }
 
-
-void MEDDLY::mt_mxd_bool::createEdge(bool val, dd_edge &e)
+void MEDDLY::mt_mxd_bool::createEdge(bool term, dd_edge& e)
 {
-  MEDDLY_DCASSERT(getRangeType() == forest::BOOLEAN);
-  if (e.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-
-  int node = createEdgeTo(getTerminalNode(val));
-  e.set(node, 0);
+  createEdgeTempl<bool_encoder, bool>(term, e);
 }
 
-
-void MEDDLY::mt_mxd_bool::createEdge(const int* const* vlist,
-    const int* const* vplist, int N, dd_edge &e)
+void MEDDLY::mt_mxd_bool
+::createEdge(const int* const* vlist, const int* const* vplist, int N, dd_edge &e)
 {
-  if (e.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-  if (vlist == 0 || vplist == 0 || N <= 0) 
-    throw error(error::INVALID_VARIABLE);
-  createEdgeInternal(vlist, vplist, (bool*)0, N, e);
+  binary_operation* unionOp = getOperation(UNION, this, this, this);
+  enlargeStatics(N);
+  enlargeVariables(vlist, N, false);
+  enlargeVariables(vplist, N, true);
+  mtmxd_edgemaker<bool_encoder, bool>
+  EM(this, vlist, vplist, 0, order, N, getDomain()->getNumVariables(), unionOp);
+
+  e.set(EM.createEdge(), 0);
 }
 
-
-void MEDDLY::mt_mxd_bool::evaluate(const dd_edge& f, const int* vlist,
-    const int* vplist, bool &term) const
+void MEDDLY::mt_mxd_bool::
+createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 {
-  MEDDLY_DCASSERT(getRangeType() == forest::BOOLEAN);
-  if (f.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-  if (vlist == 0 || vplist == 0) 
-    throw error(error::INVALID_VARIABLE);
-
-  // assumption: vlist and vplist do not contain any special values
-  // (-1, -2, etc). vlist and vplist contains a single element.
-  term = getBoolean(getTerminalNodeForEdge(f.getNode(), vlist, vplist));
+  createEdgeForVarTempl<bool_encoder, bool>(vh, vp, terms, a);
 }
 
-void MEDDLY::mt_mxd_bool::showTerminal(FILE* s, int tnode) const
+void MEDDLY::mt_mxd_bool::evaluate(const dd_edge &f, const int* vlist, 
+  const int* vplist, bool &term) const
 {
-  fprintf(s, "%c", tnode ? 'T' : 'F'); 
+  term = bool_encoder::handle2value(evaluateRaw(f, vlist, vplist));
 }
 
-void MEDDLY::mt_mxd_bool::writeTerminal(FILE* s, int tnode) const
+void MEDDLY::mt_mxd_bool::showTerminal(FILE* s, node_handle tnode) const
 {
-  th_fprintf(s, "%c", tnode ? 'T' : 'F'); 
+  bool_encoder::show(s, tnode);
+}
+
+void MEDDLY::mt_mxd_bool::writeTerminal(FILE* s, node_handle tnode) const
+{
+  bool_encoder::write(s, tnode);
 }
 
 MEDDLY::node_handle MEDDLY::mt_mxd_bool::readTerminal(FILE* s)
 {
-  stripWS(s);
-  char c = fgetc(s);
-  if ('T' == c) return -1;
-  if ('F' == c) return  0;
-  throw error(error::INVALID_FILE);
+  return bool_encoder::read(s);
 }
 
 const char* MEDDLY::mt_mxd_bool::codeChars() const

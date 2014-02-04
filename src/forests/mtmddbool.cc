@@ -22,63 +22,60 @@
 
 #include "mtmddbool.h"
 
-
 MEDDLY::mt_mdd_bool::mt_mdd_bool(int dsl, domain *d, const policies &p)
-: MEDDLY::mtmdd_forest(dsl, d, false, BOOLEAN, MULTI_TERMINAL, p)
+: mtmdd_forest(dsl, d, BOOLEAN, p)
 { 
   initializeForest();
 }
 
-
 MEDDLY::mt_mdd_bool::~mt_mdd_bool()
 { }
 
-
 void MEDDLY::mt_mdd_bool::createEdge(bool term, dd_edge& e)
 {
-  if (e.getForest() != this) throw error(error::INVALID_OPERATION);
-  createEdgeHelper(getTerminalNode(term), e);
+  createEdgeTempl<bool_encoder, bool>(term, e);
 }
 
-
-void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist,
-    int N, dd_edge &e)
+void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist, int N, dd_edge &e)
 {
-  if (e.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-  if (vlist == 0 || N <= 0) 
-    throw error(error::INVALID_VARIABLE);
-  createEdgeInternal(vlist, (bool*)0, N, e);
+  binary_operation* unionOp = getOperation(UNION, this, this, this);
+  enlargeStatics(N);
+  enlargeVariables(vlist, N, false);
+  
+  mtmdd_edgemaker<bool_encoder, bool> 
+  EM(this, vlist, 0, order, N, getDomain()->getNumVariables(), unionOp);
+
+  e.set(EM.createEdge(), 0);
 }
 
-
-void MEDDLY::mt_mdd_bool::evaluate(const dd_edge &f, const int* vlist,
-    bool &term) const
+void MEDDLY::mt_mdd_bool::
+createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 {
-  term = getBoolean(getTerminalNodeForEdge(f.getNode(), vlist));
+  createEdgeForVarTempl<bool_encoder, bool>(vh, vp, terms, a);
 }
 
-void MEDDLY::mt_mdd_bool::showTerminal(FILE* s, int tnode) const
+void MEDDLY::mt_mdd_bool
+::evaluate(const dd_edge &f, const int* vlist, bool &term) const
 {
-  fprintf(s, "%c", tnode ? 'T' : 'F'); 
+  term = bool_encoder::handle2value(evaluateRaw(f, vlist));
 }
 
-void MEDDLY::mt_mdd_bool::writeTerminal(FILE* s, int tnode) const
+void MEDDLY::mt_mdd_bool::showTerminal(FILE* s, node_handle tnode) const
 {
-  th_fprintf(s, "%c", tnode ? 'T' : 'F'); 
+  bool_encoder::show(s, tnode);
+}
+
+void MEDDLY::mt_mdd_bool::writeTerminal(FILE* s, node_handle tnode) const
+{
+  bool_encoder::write(s, tnode);
 }
 
 MEDDLY::node_handle MEDDLY::mt_mdd_bool::readTerminal(FILE* s)
 {
-  stripWS(s);
-  char c = fgetc(s);
-  if ('T' == c) return -1;
-  if ('F' == c) return  0;
-  throw error(error::INVALID_FILE);
+  return bool_encoder::read(s);
 }
 
 const char* MEDDLY::mt_mdd_bool::codeChars() const
 {
   return "dd_tvb";
 }
-

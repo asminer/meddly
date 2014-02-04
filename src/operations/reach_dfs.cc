@@ -658,7 +658,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
   if (mxd == 0 || mdd == 0) return 0;
   if (arg2F->isTerminalNode(mxd)) {
     if (arg1F->isTerminalNode(mdd)) {
-      return resF->getTerminalNode(true);
+      return resF->handleForValue(1);
     }
     // mxd is identity
     if (arg1F == resF)
@@ -880,7 +880,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
   if (mxd == 0 || mdd == 0) return 0;
   if (arg2F->isTerminalNode(mxd)) {
     if (arg1F->isTerminalNode(mdd)) {
-      return resF->getTerminalNode(true);
+      return resF->handleForValue(1);
     }
     // mxd is identity
     if (arg1F == resF)
@@ -1007,8 +1007,6 @@ MEDDLY::forwd_dfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     a1->isForRelations()    ||
     !a2->isForRelations()   ||
     r->isForRelations()     ||
-    (a1->getRangeType() != r->getRangeType()) ||
-    (a2->getRangeType() != r->getRangeType()) ||
     (a1->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
     (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
     (r->getEdgeLabeling() != forest::MULTI_TERMINAL)
@@ -1056,7 +1054,6 @@ MEDDLY::bckwd_dfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   if (
     a1->isForRelations()    ||
     !a2->isForRelations()   ||
-    (a1->getRangeType() != a2->getRangeType()) ||
     (a1->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
     (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) 
   )

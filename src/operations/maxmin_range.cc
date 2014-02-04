@@ -169,7 +169,7 @@ public:
 long MEDDLY::maxrange_int::compute(node_handle a)
 {
   // Terminal case
-  if (argF->isTerminalNode(a)) return argF->getInteger(a);
+  if (argF->isTerminalNode(a)) return expert_forest::int_encoder::handle2value(a);
   
   // Check compute table
   long max;
@@ -213,7 +213,7 @@ public:
 long MEDDLY::minrange_int::compute(node_handle a)
 {
   // Terminal case
-  if (argF->isTerminalNode(a)) return argF->getInteger(a);
+  if (argF->isTerminalNode(a)) return expert_forest::int_encoder::handle2value(a);
   
   // Check compute table
   long min;
@@ -257,7 +257,7 @@ public:
 float MEDDLY::maxrange_real::compute(node_handle a)
 {
   // Terminal case
-  if (argF->isTerminalNode(a)) return argF->getInteger(a);
+  if (argF->isTerminalNode(a)) return expert_forest::float_encoder::handle2value(a);
   
   // Check compute table
   float max;
@@ -301,7 +301,7 @@ public:
 float MEDDLY::minrange_real::compute(node_handle a)
 {
   // Terminal case
-  if (argF->isTerminalNode(a)) return argF->getInteger(a);
+  if (argF->isTerminalNode(a)) return expert_forest::float_encoder::handle2value(a);
   
   // Check compute table
   float min;

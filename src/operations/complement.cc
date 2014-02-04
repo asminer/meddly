@@ -101,7 +101,9 @@ MEDDLY::node_handle MEDDLY::compl_mdd::compute(node_handle a)
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
-    return resF->getTerminalNode(a==0);
+    return expert_forest::bool_encoder::value2handle(
+      !expert_forest::bool_encoder::handle2value(a)
+    );
   }
 
   // Check compute table
@@ -184,12 +186,16 @@ void MEDDLY::compl_mxd::compute(const dd_edge& a, dd_edge& b)
 MEDDLY::node_handle MEDDLY::compl_mxd::compute(int in, int k, node_handle a)
 {
   if (0==k) {
-    return resF->getTerminalNode(a==0);
+    return expert_forest::bool_encoder::value2handle(
+      !expert_forest::bool_encoder::handle2value(a)
+    );
   }
   if (argF->isTerminalNode(a) && 
       resF->isFullyReduced()) 
   {
-    return resF->getTerminalNode(a==0);
+    return expert_forest::bool_encoder::value2handle(
+      !expert_forest::bool_encoder::handle2value(a)
+    );
   }
   // Check compute table
   CTsrch.key(0) = k;

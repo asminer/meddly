@@ -22,77 +22,60 @@
 
 #include "mtmxdreal.h"
 
-
 MEDDLY::mt_mxd_real::mt_mxd_real(int dsl, domain *d, const policies &p)
-: MEDDLY::mtmxd_forest(dsl, d, true, REAL, MULTI_TERMINAL, p)
+: mtmxd_forest(dsl, d, REAL, p)
 { 
   initializeForest();
 }
 
-
 MEDDLY::mt_mxd_real::~mt_mxd_real()
 { }
 
-void MEDDLY::mt_mxd_real::createEdge(float val, dd_edge &e)
+void MEDDLY::mt_mxd_real::createEdge(float term, dd_edge& e)
 {
-  MEDDLY_DCASSERT(getRangeType() == forest::REAL);
-  if (e.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-
-  int node = createEdgeTo(getTerminalNode(val));
-  e.set(node, 0);
+  createEdgeTempl<float_encoder, float>(term, e);
 }
 
-
-void MEDDLY::mt_mxd_real::createEdge(const int* const* vlist,
-    const int* const* vplist, const float* terms, int N, dd_edge& e)
+void MEDDLY::mt_mxd_real
+::createEdge(const int* const* vlist, const int* const* vplist, const float* terms, int N, dd_edge &e)
 {
-  if (e.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-  if (vlist == 0 || vplist == 0 || terms == 0 || N <= 0)
-    throw error(error::INVALID_VARIABLE);
+  binary_operation* unionOp = getOperation(PLUS, this, this, this);
+  enlargeStatics(N);
+  enlargeVariables(vlist, N, false);
+  enlargeVariables(vplist, N, true);
 
-  createEdgeInternal(vlist, vplist, terms, N, e);
+  mtmxd_edgemaker<float_encoder, float>
+  EM(this, vlist, vplist, terms, order, N, getDomain()->getNumVariables(), unionOp);
+
+  e.set(EM.createEdge(), 0);
 }
 
-
-void MEDDLY::mt_mxd_real::evaluate(const dd_edge& f, const int* vlist,
-    const int* vplist, float &term) const
+void MEDDLY::mt_mxd_real::
+createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
 {
-  MEDDLY_DCASSERT(getRangeType() == forest::REAL);
-  if (f.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-  if (vlist == 0 || vplist == 0) 
-    throw error(error::INVALID_VARIABLE);
-
-  // assumption: vlist and vplist do not contain any special values
-  // (-1, -2, etc). vlist and vplist contains a single element.
-  term = getReal(getTerminalNodeForEdge(f.getNode(), vlist, vplist));
+  createEdgeForVarTempl<float_encoder, float>(vh, vp, terms, a);
 }
 
-void MEDDLY::mt_mxd_real::showTerminal(FILE* s, int tnode) const
+void MEDDLY::mt_mxd_real::evaluate(const dd_edge &f, const int* vlist, 
+  const int* vplist, float &term) const
 {
-  fprintf(s, "t%f", getReal(tnode)); 
+  term = float_encoder::handle2value(evaluateRaw(f, vlist, vplist));
 }
 
-void MEDDLY::mt_mxd_real::writeTerminal(FILE* s, int tnode) const
+void MEDDLY::mt_mxd_real::showTerminal(FILE* s, node_handle tnode) const
 {
-  th_fprintf(s, "t%8e", getReal(tnode)); 
+  float_encoder::show(s, tnode);
+}
+
+void MEDDLY::mt_mxd_real::writeTerminal(FILE* s, node_handle tnode) const
+{
+  float_encoder::write(s, tnode);
 }
 
 MEDDLY::node_handle MEDDLY::mt_mxd_real::readTerminal(FILE* s)
 {
-  stripWS(s);
-  char c = fgetc(s);
-  if ('t' == c) {
-    float T;
-    if (1==fscanf(s, "%8e", &T)) {
-      return getTerminalNode(T); 
-    }
-  }
-  throw error(error::INVALID_FILE);
+  return float_encoder::read(s);
 }
-
 
 const char* MEDDLY::mt_mxd_real::codeChars() const
 {

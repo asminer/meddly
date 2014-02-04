@@ -410,6 +410,8 @@ void MEDDLY::initialize(const settings &s)
   meddlySettings = s;
   // initStats(meddlyStats);
 
+  cleanup_procedure::Initialize();
+
   // set up monolithic compute table, if needed
   if (meddlySettings.usesMonolithicComputeTable()) {
     operation::Monolithic_CT = createMonolithicTable(s.computeTable);
@@ -447,6 +449,9 @@ void MEDDLY::cleanup()
   }
 
 #endif
+
+  cleanup_procedure::ExecuteAll();
+
   domain::markDomList();
 
   operation::destroyAllOps();
@@ -467,6 +472,8 @@ void MEDDLY::cleanup()
 
   // clean up recycled node readers
   node_reader::freeRecycled();
+
+  cleanup_procedure::DeleteAll();
 
   libraryRunning = 0;
 }
@@ -538,4 +545,41 @@ const char* MEDDLY::getLibraryInfo(int what)
   return 0;
 }
 
+// ******************************************************************
+// *                                                                *
+// *                   cleanup_procedure  methods                   *
+// *                                                                *
+// ******************************************************************
 
+MEDDLY::cleanup_procedure* MEDDLY::cleanup_procedure::list;
+
+MEDDLY::cleanup_procedure::cleanup_procedure()
+{
+  next = list;
+  list = this;
+}
+
+MEDDLY::cleanup_procedure::~cleanup_procedure()
+{
+}
+
+void MEDDLY::cleanup_procedure::Initialize()
+{
+  list = 0;
+}
+
+void MEDDLY::cleanup_procedure::ExecuteAll()
+{
+  for (cleanup_procedure* L = list; L; L=L->next) {
+    L->execute();
+  }
+}
+
+void MEDDLY::cleanup_procedure::DeleteAll()
+{
+  while (list) {
+    cleanup_procedure* N = list->next;
+    delete list;
+    list = N;
+  }
+}

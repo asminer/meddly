@@ -19,86 +19,11 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #include "mtmdd.h"
-#include "../unique_table.h"
 
-// TODO: Add option to create temporary nodes of max size when
-//       accumulating minterms.
-
-// ********************************** MTMDDs **********************************
-
-MEDDLY::mtmdd_forest::mtmdd_forest(int dsl, domain *d,
-    bool relation, forest::range_type t,
-    forest::edge_labeling e, const policies &p)
-: mt_forest(dsl, d, relation, t, e, p)
+MEDDLY::mtmdd_forest
+::mtmdd_forest(int dsl, domain* d, range_type t, const policies &p)
+ : mt_forest(dsl, d, false, t, p)
 {
-  list = 0;
-  termList = 0;
-  listSize = 0;
-  count = 0;
-  slot = 0;
-  countSize = 0;
+  // anything to construct?
 }
-
-
-
-MEDDLY::mtmdd_forest::~mtmdd_forest()
-{
-  if (list) free(list);
-  if (termList) free(termList);
-  if (count) free(count);
-  if (slot) free(slot);
-}
-
-
-void MEDDLY::mtmdd_forest::expandCountAndSlotArrays(int size)
-{
-  if (size <= countSize) return;
-
-  int newCountSize = countSize == 0? 8: countSize;
-  while (newCountSize < size) { newCountSize *= 2; }
-
-  count = (int*) realloc(count, newCountSize * sizeof(int));
-  slot = (int*) realloc(slot, newCountSize * sizeof(int));
-  memset(count + countSize, 0, (newCountSize - countSize) * sizeof(int));
-  memset(slot + countSize, 0, (newCountSize - countSize) * sizeof(int));
-  countSize = newCountSize;
-}
-
-MEDDLY::node_handle 
-MEDDLY::mtmdd_forest::createNode(int k, int index, node_handle dptr)
-{
-  MEDDLY_DCASSERT(index >= -1);
-
-  if (index > -1 && getLevelSize(k) <= index) {
-    useExpertDomain()->enlargeVariableBound(k, false, index + 1);
-  }
-
-  if (dptr == 0) return 0;
-  if (index == -1) {
-    // all downpointers should point to dptr
-    if (isFullyReduced()) return dptr;
-    insertRedundantNode(k, dptr);
-    return dptr;
-  }
-
-  node_builder& nb = useSparseBuilder(k, 1);
-  nb.d(0) = dptr;
-  nb.i(0) = index;
-  return createReducedNode(-1, nb);
-}
-
-
-void MEDDLY::mtmdd_forest::createEdgeTo(const int* v, node_handle term, dd_edge& e)
-{
-  // construct the edge bottom-up
-  MEDDLY_DCASSERT(isTerminalNode(term));
-  node_handle result = term;
-  for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
-    result = createNode(i, v[i], result);
-  }
-  e.set(result, 0);
-  // e.show(stderr, 2);
-}
-

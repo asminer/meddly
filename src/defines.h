@@ -134,6 +134,11 @@ namespace MEDDLY {
     fprintf(s, "%3.2lf Tbytes", approx);
   }
 
+  /// throw wrapper around fputc
+  inline void th_fputc(int c, FILE* s) {
+    if (EOF==fputc(c, s)) throw error(error::COULDNT_WRITE);
+  }
+
   /// throw wrapper around fprintf
   inline void th_fprintf(FILE* s, const char* fmt, ...) {
     va_list argptr;

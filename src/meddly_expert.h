@@ -46,6 +46,7 @@
 #define DCASSERTS_ON
 #endif
 
+// #define DEBUG_NODE_BUILDERS
 // #define DEBUG_MDD_H
 // #define TRACK_DELETIONS
 // #define TRACK_CACHECOUNT
@@ -110,6 +111,8 @@ namespace MEDDLY {
   class numerical_operation;
 
   class op_initializer;
+
+  class cleanup_procedure;
 
   // classes defined elsewhere
   class base_table;
@@ -1190,6 +1193,7 @@ class MEDDLY::node_storage {
           @param  addr    Address of the node we care about
           @param  index   Index of downward pointer
           @return         Desired pointer
+          @throw          INVALID_VARIABLE, if index is negative.
     */
     virtual node_handle getDownPtr(node_address addr, int index) const = 0;
 
@@ -1424,6 +1428,75 @@ class MEDDLY::expert_forest : public forest
       /// Stats specific to the hole manager.
       static const unsigned HOLE_MANAGER_DETAILED   = 0x0200;
 
+  // preferred way to encode and decode terminal values
+  // (classes so we can use them in template functions)
+  public:
+    /** Encoding for booleans into node handles */
+    class bool_encoder {
+      // -1 true
+      //  0 false
+      public:
+        static inline node_handle value2handle(bool v) {
+          return v ? -1 : 0;
+        }
+        static inline bool handle2value(node_handle h) {
+          if (-1 == h) return true;
+          if ( 0 == h) return false;
+          throw error(error::MISCELLANEOUS);
+        }
+        static void show(FILE* s, node_handle h);
+        static void write(FILE* s, node_handle h);
+        static node_handle read(FILE* s);
+    };
+    /** Encoding for integers into node handles */
+    class int_encoder {
+      public:
+        static inline node_handle value2handle(int v) {
+          MEDDLY_DCASSERT(4 == sizeof(node_handle));
+          if (v < -1073741824 || v > 1073741823) {
+            // Can't fit in 31 bits (signed)
+            throw error(error::OVERFLOW);
+          }
+          if (v) v |= 0x80000000; // sets the sign bit
+          return v;
+        }
+        static inline int handle2value(node_handle h) {
+          // << 1 kills the sign bit
+          // >> 1 puts us back, and extends the (new) sign bit
+          return (h << 1) >> 1;
+        }
+        static void show(FILE* s, node_handle h);
+        static void write(FILE* s, node_handle h);
+        static node_handle read(FILE* s);
+    };
+    /** Encoding for floats into node handles */
+    class float_encoder {
+        union intfloat {
+          float real;
+          int   integer;
+        }; 
+      public:
+        static inline node_handle value2handle(float v) {
+          MEDDLY_DCASSERT(4==sizeof(node_handle));
+          MEDDLY_DCASSERT(sizeof(float) <= sizeof(node_handle));
+          if (0.0 == v) return 0;
+          intfloat x;
+          x.real = v;
+          // strip lsb in fraction, and add sign bit
+          return (x.integer >> 1) | 0x80000000;
+        }
+        static inline float handle2value(node_handle h) {
+          MEDDLY_DCASSERT(4==sizeof(node_handle));
+          MEDDLY_DCASSERT(sizeof(float) <= sizeof(node_handle));
+          if (0 == h) return 0.0;
+          intfloat x;
+          x.integer = (h << 1); // remove sign bit
+          return x.real;
+        }
+        static void show(FILE* s, node_handle h);
+        static void write(FILE* s, node_handle h);
+        static node_handle read(FILE* s);
+    };
   public:
     /** Constructor.
       @param  dslot   slot used to store the forest, in the domain
@@ -1456,6 +1529,89 @@ class MEDDLY::expert_forest : public forest
   // ------------------------------------------------------------
   // inlined helpers.
   public:
+    /**
+        Convenience function.
+        Based on the forest type, convert the desired value
+        into a terminal node handle.
+          @param  v   Value to encode
+          @return     Handle for terminal node
+    */
+    template <typename T>
+    inline node_handle handleForValue(T v) const {
+      switch (getRangeType()) {
+        case BOOLEAN:   return bool_encoder::value2handle(v);
+        case INTEGER:   return int_encoder::value2handle(v);
+        case REAL:      return float_encoder::value2handle(v);
+        default:
+          throw error(error::MISCELLANEOUS);
+      }
+    }
+    /**
+        Convenience function.
+        Based on the forest type, convert the terminal node handle
+        into its encoded value.
+          @param  n   Node handle
+          @param  v   Output: encoded value
+    */
+    template <typename T>
+    inline void getValueFromHandle(node_handle n, T& v) const {
+      MEDDLY_DCASSERT(isTerminalNode(n));
+      switch (getRangeType()) {
+        case BOOLEAN:   v = bool_encoder::handle2value(n);    return;
+        case INTEGER:   v = int_encoder::handle2value(n);     return;
+        case REAL:      v = float_encoder::handle2value(n);   return;
+        default:
+          throw error(error::MISCELLANEOUS);
+      }
+    }
+    /**
+        Convenience function.
+        Based on the forest type, convert the terminal node handle
+        into its encoded boolean value.
+          @param  n   Node handle
+    */
+    inline bool getBooleanFromHandle(node_handle n) const {
+      MEDDLY_DCASSERT(isTerminalNode(n));
+      switch (getRangeType()) {
+        case BOOLEAN:   return bool_encoder::handle2value(n);
+        case INTEGER:   return int_encoder::handle2value(n);
+        case REAL:      return float_encoder::handle2value(n);
+        default:
+          throw error(error::MISCELLANEOUS);
+      }
+    }
+    /**
+        Convenience function.
+        Based on the forest type, convert the terminal node handle
+        into its encoded integer value.
+          @param  n   Node handle
+    */
+    inline int getIntegerFromHandle(node_handle n) const {
+      MEDDLY_DCASSERT(isTerminalNode(n));
+      switch (getRangeType()) {
+        case BOOLEAN:   return bool_encoder::handle2value(n);
+        case INTEGER:   return int_encoder::handle2value(n);
+        case REAL:      return float_encoder::handle2value(n);
+        default:
+          throw error(error::MISCELLANEOUS);
+      }
+    }
+    /**
+        Convenience function.
+        Based on the forest type, convert the terminal node handle
+        into its encoded real (float) value.
+          @param  n   Node handle
+    */
+    inline float getRealFromHandle(node_handle n) const {
+      MEDDLY_DCASSERT(isTerminalNode(n));
+      switch (getRangeType()) {
+        case BOOLEAN:   return bool_encoder::handle2value(n);
+        case INTEGER:   return int_encoder::handle2value(n);
+        case REAL:      return float_encoder::handle2value(n);
+        default:
+          throw error(error::MISCELLANEOUS);
+      }
+    }
     inline statset& changeStats() {
       return stats;
     }
@@ -1475,63 +1631,6 @@ class MEDDLY::expert_forest : public forest
     inline char hashedHeaderBytes() const {
       return hashed_bytes;
     }
-
-
-// TBD: MOVE THESE TO MT CLASS?
-
-    /// Get the integer value represented by this terminal node.
-    static inline bool getBoolean(node_handle terminalNode) {
-      MEDDLY_DCASSERT(terminalNode <= 0);
-      return terminalNode;
-    }
-
-    /// Get the terminal node representing this boolean value.
-    static inline node_handle getTerminalNode(bool booleanValue) {
-      return booleanValue ? -1 : 0;
-    }
-
-    /// Get the integer value represented by this terminal node.
-    static inline int getInteger(node_handle terminalNode) {
-      MEDDLY_DCASSERT(terminalNode <= 0);
-      // set 32nd bit based on 31st bit.  << gets rid of MSB; >> sign extends.
-      return terminalNode << 1 >> 1;
-    }
-
-    /// Is this a valid value for a terminal node?
-    static inline bool isValidTerminalValue(int integerValue) {
-      // value has to fit within 31 bits (incl. sign)
-      // int(0xc0000000) == -1073741824
-      // int(0x3fffffff) == +1073741823
-      return (-1073741824 <= integerValue && integerValue <= 1073741823);
-    }
-
-    /// Get the terminal node representing this integer value.
-    static inline node_handle getTerminalNode(int integerValue) {
-      MEDDLY_DCASSERT(isValidTerminalValue(integerValue));
-      return integerValue == 0? 0: integerValue | 0x80000000;
-    }
-
-    /// Get the real (float) value represented by this terminal node.
-    static inline float getReal(int term) {
-      MEDDLY_DCASSERT(term <= 0);
-      MEDDLY_DCASSERT(sizeof(float) <= sizeof(int));
-      if (0 == term) return 0.0;
-      term <<= 1;
-      float ret;
-      memcpy(&ret, &term, sizeof(float));
-      return ret;
-    }
-
-    /// Get the terminal node representing this real (float) value.
-    static inline node_handle getTerminalNode(float a) {
-      if (0.0 == a) return 0;
-      int node;
-      memcpy(&node, &a, sizeof(node_handle));
-      return (node >> 1) | 0x80000000;
-    }
-// TO HERE
-
-
 
     inline const expert_domain* getExpertDomain() const {
       return (expert_domain*) getDomain();
@@ -2100,6 +2199,9 @@ class MEDDLY::expert_forest : public forest
       MEDDLY_DCASSERT(!builders[level].lock);
       builders[level].resize(tsz);
       builders[level].lock = true;
+#ifdef DEBUG_NODE_BUILDERS
+      fprintf(stderr, "using node builder at level %d\n", level);
+#endif
       return builders[level];
     }
     inline node_builder& useSparseBuilder(int level, int nnz) {
@@ -2107,11 +2209,17 @@ class MEDDLY::expert_forest : public forest
       MEDDLY_DCASSERT(!builders[level].lock);
       builders[level].resparse(nnz);
       builders[level].lock = true;
+#ifdef DEBUG_NODE_BUILDERS
+      fprintf(stderr, "using sparse builder at level %d\n", level);
+#endif
       return builders[level];
     }
     inline void doneNodeBuilder(node_builder& nb) {
       MEDDLY_DCASSERT(nb.lock);
       nb.lock = false;
+#ifdef DEBUG_NODE_BUILDERS
+      fprintf(stderr, "releasing builder at level %d\n", nb.getLevel());
+#endif
     }
 
     /** Return a forest node equal to the one given.
@@ -2134,6 +2242,9 @@ class MEDDLY::expert_forest : public forest
       nb.lock = false;
 #ifdef TRACK_DELETIONS
       printf("Created node %d\n", q);
+#endif
+#ifdef DEBUG_NODE_BUILDERS
+      fprintf(stderr, "releasing builder at level %d\n", nb.getLevel());
 #endif
       return q;
     }
@@ -2161,6 +2272,9 @@ class MEDDLY::expert_forest : public forest
       nb.lock = false;
 #ifdef TRACK_DELETIONS
       printf("Created node %d\n", node);
+#endif
+#ifdef DEBUG_NODE_BUILDERS
+      fprintf(stderr, "releasing builder at level %d\n", nb.getLevel());
 #endif
     }
 
@@ -3181,6 +3295,32 @@ protected:
   virtual void cleanup() = 0;
 };
 
+
+// ******************************************************************
+// *                                                                *
+// *                    cleanup_procedure  class                    *
+// *                                                                *
+// ******************************************************************
+
+/** Mechanism for registering actions to occur at library cleanup time.
+    This allows us to free certain memory when the library is closed.
+    Derive a class from this one, and provide the execute() method.
+    Implementation in meddly.cc
+*/
+class MEDDLY::cleanup_procedure {
+    static cleanup_procedure* list;
+    cleanup_procedure* next;
+  public:
+    cleanup_procedure();
+  protected:
+    virtual ~cleanup_procedure();
+  public:
+    virtual void execute() = 0;
+
+    static void Initialize();
+    static void ExecuteAll();
+    static void DeleteAll();
+};
 
 // ****************************************************************************
 // *                                                                          *

@@ -22,63 +22,58 @@
 
 #include "mtmddreal.h"
 
-
 MEDDLY::mt_mdd_real::mt_mdd_real(int dsl, domain *d, const policies &p)
-: MEDDLY::mtmdd_forest(dsl, d, false, REAL, MULTI_TERMINAL, p)
+: mtmdd_forest(dsl, d, REAL, p)
 { 
   initializeForest();
 }
-
 
 MEDDLY::mt_mdd_real::~mt_mdd_real()
 { }
 
 void MEDDLY::mt_mdd_real::createEdge(float term, dd_edge& e)
 {
-  if (e.getForest() != this) throw error(error::INVALID_OPERATION);
-  createEdgeHelper(getTerminalNode(term), e);
+  createEdgeTempl<float_encoder, float>(term, e);
 }
 
-void MEDDLY::mt_mdd_real::createEdge(const int* const* vlist,
-    const float* terms, int N, dd_edge& e)
+void MEDDLY::mt_mdd_real::createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
 {
-  if (e.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-  if (vlist == 0 || terms == 0 || N <= 0) 
-    throw error(error::INVALID_VARIABLE);
+  binary_operation* unionOp = getOperation(PLUS, this, this, this);
+  enlargeStatics(N);
+  enlargeVariables(vlist, N, false);
 
-  createEdgeInternal(vlist, terms, N, e);
+  mtmdd_edgemaker<float_encoder, float>
+  EM(this, vlist, terms, order, N, getDomain()->getNumVariables(), unionOp);
+
+  e.set(EM.createEdge(), 0);
 }
 
-void MEDDLY::mt_mdd_real::evaluate(const dd_edge &f,
-    const int* vlist, float &term) const
+void MEDDLY::mt_mdd_real::
+createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
 {
-  // assumption: vlist does not contain any special values (-1, -2, etc).
-  // vlist contains a single element.
-  term = getReal(getTerminalNodeForEdge(f.getNode(), vlist));
+  createEdgeForVarTempl<float_encoder, float>(vh, vp, terms, a);
 }
 
-void MEDDLY::mt_mdd_real::showTerminal(FILE* s, int tnode) const
+
+void MEDDLY::mt_mdd_real
+::evaluate(const dd_edge &f, const int* vlist, float &term) const
 {
-  fprintf(s, "t%f", getReal(tnode)); 
+  term = float_encoder::handle2value(evaluateRaw(f, vlist));
 }
 
-void MEDDLY::mt_mdd_real::writeTerminal(FILE* s, int tnode) const
+void MEDDLY::mt_mdd_real::showTerminal(FILE* s, node_handle tnode) const
 {
-  th_fprintf(s, "t%8e", getReal(tnode)); 
+  float_encoder::show(s, tnode);
+}
+
+void MEDDLY::mt_mdd_real::writeTerminal(FILE* s, node_handle tnode) const
+{
+  float_encoder::write(s, tnode);
 }
 
 MEDDLY::node_handle MEDDLY::mt_mdd_real::readTerminal(FILE* s)
 {
-  stripWS(s);
-  char c = fgetc(s);
-  if ('t' == c) {
-    float T;
-    if (1==fscanf(s, "%8e", &T)) {
-      return getTerminalNode(T); 
-    }
-  }
-  throw error(error::INVALID_FILE);
+  return float_encoder::read(s);
 }
 
 const char* MEDDLY::mt_mdd_real::codeChars() const

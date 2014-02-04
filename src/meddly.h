@@ -53,6 +53,7 @@ namespace MEDDLY {
   */
   const int DONT_CHANGE = -2;
 
+
   // Typedefs
   typedef unsigned char node_storage_flags;
 
@@ -982,7 +983,7 @@ class MEDDLY::forest {
 
         @throws       TYPE_MISMATCH, if the forest's range is not BOOLEAN.
     */
-    virtual void createEdgeForVar(int vh, bool vp, bool* terms, dd_edge& a);
+    virtual void createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a);
 
     /** Create an edge such that
         f(v_1, ..., vh=i, ..., v_n) = terms[i] for 0 <= i < size(vh).
@@ -1010,7 +1011,7 @@ class MEDDLY::forest {
         
         @throws       TYPE_MISMATCH, if the forest's range is not INTEGER.
     */
-    virtual void createEdgeForVar(int vh, bool vp, int* terms, dd_edge& a);
+    virtual void createEdgeForVar(int vh, bool vp, const int* terms, dd_edge& a);
 
     /** Create an edge such that
         f(v_1, ..., vh=i, ..., v_n) = terms[i] for 0 <= i < size(vh).
@@ -1038,7 +1039,7 @@ class MEDDLY::forest {
 
         @throws       TYPE_MISMATCH, if the forest's range is not REAL.
     */
-    virtual void createEdgeForVar(int vh, bool vp, float* terms, dd_edge& a);
+    virtual void createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a);
 
     /** Create an edge such that
         f(v_1, ..., vh=i, ..., v_n) = i for 0 <= i < size(vh).
@@ -1073,12 +1074,12 @@ class MEDDLY::forest {
 
 
     /** Create an edge as the union of several explicit vectors.
+        The given vectors will be reordered as necessary for efficiency.
         @param  vlist Array of vectors. Each vector has dimension equal
                       to one plus the largest variable handle in the domain.
                       A vector \a x indicates a set of variable assignments,
-                      where x[vh] less than 0 means
-                      "don't care for variable vh", otherwise x[vh] gives
-                      the variable assignment for vh.
+                      where x[vh] may have a value of DONT_CARE;
+                      otherwise x[vh] gives the variable assignment for vh.
         @param  N     Number of vectors (dimension of \a vlist).
         @param  e     returns a handle to a node in the forest, such that
                       f(v_1, ..., v_n) = 1, iff there is a vector
@@ -1092,12 +1093,13 @@ class MEDDLY::forest {
     virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
 
     /** Create an edge as the union of several vectors and return values.
+        The given vectors and return values will be reordered as necessary
+        for efficiency.
         @param  vlist Array of vectors. Each vector has dimension equal
                       to one plus the largest variable handle in the domain.
                       A vector \a x indicates a set of variable assignments,
-                      where x[vh] less than 0 means
-                      "don't care for variable vh", otherwise x[vh] gives
-                      the variable assignment for vh.
+                      where x[vh] may have a value of DONT_CARE;
+                      otherwise x[vh] gives the variable assignment for vh.
         @param  terms Array of return values, same dimension as \a vlist.
         @param  N     Number of vectors (dimension of \a vlist).
         @param  e     returns a handle to a node in the forest that encodes
@@ -1110,16 +1112,16 @@ class MEDDLY::forest {
                         the range type of the forest is not INTEGER,
                         or the forest is for relations.
     */
-    virtual void createEdge(const int* const* vlist, const int* terms, int N,
-      dd_edge &e);
+    virtual void createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e);
 
     /** Create an edge as the union of several vectors and return values.
+        The given vectors and return values will be reordered as necessary
+        for efficiency.
         @param  vlist Array of vectors. Each vector has dimension equal
                       to one plus the largest variable handle in the domain.
                       A vector \a x indicates a set of variable assignments,
-                      where x[vh] less than 0 means
-                      "don't care for variable vh", otherwise x[vh] gives
-                      the variable assignment for vh.
+                      where x[vh] may have a value of DONT_CARE;
+                      otherwise x[vh] gives the variable assignment for vh.
         @param  terms Array of return values, same dimension as \a vlist.
         @param  N     Number of vectors (dimension of \a vlist).
         @param  e     returns a handle to a node in the forest that encodes
@@ -1132,19 +1134,18 @@ class MEDDLY::forest {
                         the range type of the forest is not REAL,
                         or the forest is for relations.
     */
-    virtual void createEdge(const int* const* vlist, const float* terms,
-      int N, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e);
 
 
     /** Create an edge as the union of several explicit matrices.
+        The given matrices will be reordered as necessary for efficiency.
         @param  vlist   Array of vectors. Each vector has dimension equal to
                         one plus the largest variable handle in the domain.
-                        A vector \a x indicates a set of unprimed variable
-                        assignments, where x[vh] equal to -1 means
-                        "don't care for unprimed variable vh", x[vh] equal
-                        to -2 means "don't change for variable vh",
-                        otherwise x[vh] gives the variable assignment for
-                        unprimed variable vh.
+                        Vector vlist indicates the set of unprimed variable
+                        assignments, and vector vplist indicates the set of
+                        primed variable assignments.  Both vlist and vplist
+                        may have elements equal to DONT_CARE, and vplist
+                        may have elements equal to DONT_CHANGE.
         @param  vplist  Array of vectors, same dimension as \a vlist.
                         A vector \a x = vplist[i] indicates a set of primed
                         variable assignments, where x[vh] less than 0 means
@@ -1165,19 +1166,19 @@ class MEDDLY::forest {
                         the range type of the forest is not BOOLEAN, 
                         or the forest is not for relations.
     */
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-      int N, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, const int* const* vplist, int N, dd_edge &e);
 
 
     /** Create an edge as the union of several explicit matrices.
+        The given matrices and return values will be reordered as necessary 
+        for efficiency.
         @param  vlist   Array of vectors. Each vector has dimension equal to
                         one plus the largest variable handle in the domain.
-                        A vector \a x indicates a set of unprimed variable
-                        assignments, where x[vh] equal to -1 means
-                        "don't care for unprimed variable vh", x[vh] equal
-                        to -2 means "don't change for variable vh",
-                        otherwise x[vh] gives the variable assignment for
-                        unprimed variable vh.
+                        Vector vlist indicates the set of unprimed variable
+                        assignments, and vector vplist indicates the set of
+                        primed variable assignments.  Both vlist and vplist
+                        may have elements equal to DONT_CARE, and vplist
+                        may have elements equal to DONT_CHANGE.
         @param  vplist  Array of vectors, same dimension as \a vlist.
                         A vector \a x = vplist[i] indicates a set of primed
                         variable assignments, where x[vh] less than 0 means
@@ -1199,19 +1200,20 @@ class MEDDLY::forest {
                         the range type of the forest is not INTEGER, 
                         or the forest is not for relations.
     */
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-      const int* terms, int N, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, const int* const* vplist, 
+        const int* terms, int N, dd_edge &e);
 
 
     /** Create an edge as the union of several explicit matrices.
+        The given matrices and return values will be reordered as necessary 
+        for efficiency.
         @param  vlist   Array of vectors. Each vector has dimension equal to
                         one plus the largest variable handle in the domain.
-                        A vector \a x indicates a set of unprimed variable
-                        assignments, where x[vh] equal to -1 means
-                        "don't care for unprimed variable vh", x[vh] equal
-                        to -2 means "don't change for variable vh",
-                        otherwise x[vh] gives the variable assignment for
-                        unprimed variable vh.
+                        Vector vlist indicates the set of unprimed variable
+                        assignments, and vector vplist indicates the set of
+                        primed variable assignments.  Both vlist and vplist
+                        may have elements equal to DONT_CARE, and vplist
+                        may have elements equal to DONT_CHANGE.
         @param  vplist  Array of vectors, same dimension as \a vlist.
                         A vector \a x = vplist[i] indicates a set of primed
                         variable assignments, where x[vh] less than 0 means
@@ -1233,8 +1235,8 @@ class MEDDLY::forest {
                         the range type of the forest is not REAL, 
                         or the forest is not for relations.
     */
-    virtual void createEdge(const int* const* vlist, 
-      const int* const* vplist, const float* terms, int N, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, const int* const* vplist, 
+        const float* terms, int N, dd_edge &e);
 
 
     /** Create an edge for a boolean constant.

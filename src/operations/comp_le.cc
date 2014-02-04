@@ -27,9 +27,6 @@
 #include "apply_base.h"
 
 namespace MEDDLY {
-  class lessequal_mdd;
-  class lessequal_mxd;
-
   class lessequal_opname;
 };
 
@@ -40,38 +37,34 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::lessequal_mdd : public generic_binary_mdd {
+namespace MEDDLY {
+
+template <typename T>
+class lessequal_mdd : public generic_binary_mdd {
   public:
     lessequal_mdd(const binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+      expert_forest* arg2, expert_forest* res)
+      : generic_binary_mdd(opcode, arg1, arg2, res) { }
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::lessequal_mdd::lessequal_mdd(const binary_opname* opcode, 
-  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-  : generic_binary_mdd(opcode, arg1, arg2, res)
+template <typename T>
+bool lessequal_mdd<T>
+::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
-}
-
-bool MEDDLY::lessequal_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (arg1F->isTerminalNode(a) &&
-      arg2F->isTerminalNode(b)) {
-    if (resF->getRangeType() == forest::INTEGER) {
-      bool lt = arg1F->getInteger(a) <= arg2F->getInteger(b);
-      c = resF->getTerminalNode(lt ? 1 : 0);
-    } else {
-      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-      bool lt = arg1F->getReal(a) <= arg2F->getReal(b);
-      c = resF->getTerminalNode(float(lt ? 1 : 0));
-    }
+  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
+    T av, bv;
+    arg1F->getValueFromHandle(a, av);
+    arg2F->getValueFromHandle(b, bv);
+    c = resF->handleForValue( av <= bv );
     return true;
   }
   return false;
 }
 
+};  // namespace MEDDLY
 
 // ******************************************************************
 // *                                                                *
@@ -79,38 +72,34 @@ bool MEDDLY::lessequal_mdd::checkTerminals(node_handle a, node_handle b, node_ha
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::lessequal_mxd : public generic_binbylevel_mxd {
+namespace MEDDLY {
+
+template <typename T>
+class lessequal_mxd : public generic_binbylevel_mxd {
   public:
     lessequal_mxd(const binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+      expert_forest* arg2, expert_forest* res)
+      : generic_binbylevel_mxd(opcode, arg1, arg2, res) { }
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::lessequal_mxd::lessequal_mxd(const binary_opname* opcode, 
-  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-  : generic_binbylevel_mxd(opcode, arg1, arg2, res)
+template <typename T>
+bool lessequal_mxd<T>
+::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
-}
-
-bool MEDDLY::lessequal_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (arg1F->isTerminalNode(a) &&
-      arg2F->isTerminalNode(b)) {
-    if (resF->getRangeType() == forest::INTEGER) {
-      bool lt = arg1F->getInteger(a) <= arg2F->getInteger(b);
-      c = resF->getTerminalNode(lt ? 1 : 0);
-    } else {
-      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
-      bool lt = arg1F->getReal(a) <= arg2F->getReal(b);
-      c = resF->getTerminalNode(float(lt ? 1 : 0));
-    }
+  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
+    T av, bv;
+    arg1F->getValueFromHandle(a, av);
+    arg2F->getValueFromHandle(b, bv);
+    c = resF->handleForValue( av <= bv );
     return true;
   }
   return false;
 }
 
+};  // namespace MEDDLY
 
 // ******************************************************************
 // *                                                                *
@@ -145,19 +134,26 @@ MEDDLY::lessequal_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   if (
     (a1->isForRelations() != r->isForRelations()) ||
     (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getRangeType() != r->getRangeType()) ||
-    (a2->getRangeType() != r->getRangeType()) ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (r->getRangeType() == forest::BOOLEAN)
+    (a2->getEdgeLabeling() != r->getEdgeLabeling()) 
   )
     throw error(error::TYPE_MISMATCH);
 
+  bool use_reals = (
+    a1->getRangeType() == forest::REAL || a2->getRangeType() == forest::REAL 
+  );
   if (r->getEdgeLabeling() == forest::MULTI_TERMINAL) {
-    if (r->isForRelations())
-      return new lessequal_mxd(this, a1, a2, r);
-    else
-      return new lessequal_mdd(this, a1, a2, r);
+    if (use_reals) {
+      if (r->isForRelations()) 
+        return new lessequal_mxd<float>(this, a1, a2, r);
+      else
+        return new lessequal_mdd<float>(this, a1, a2, r);
+    } else {
+      if (r->isForRelations()) 
+        return new lessequal_mxd<int>(this, a1, a2, r);
+      else
+        return new lessequal_mdd<int>(this, a1, a2, r);
+    }
   }
 
   throw error(error::NOT_IMPLEMENTED);

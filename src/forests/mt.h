@@ -28,115 +28,121 @@
 #ifndef MT_FOREST
 #define MT_FOREST
 
-// #include <fstream>
-// #include <iostream>
-#include <vector>
-
 #include "../defines.h"
 
 namespace MEDDLY {
   class mt_forest;
+  class mt_cleanup;
 };
 
-
-/*
- * The MDD node handle is an integer.
- * The MDD node handle represents the offset in address[] where the node data
- * is stored.
- */
-
+/**
+    Base class for all multi-terminal DDs.
+    Common things, that do not depend on the terminal type,
+    are implemented here.
+*/
 class MEDDLY::mt_forest : public expert_forest {
   protected:
-    mt_forest(int dsl, domain *d, bool rel, range_type t, edge_labeling ev, 
-      const policies &p);
-    virtual ~mt_forest();
+    mt_forest(int dsl, domain *d, bool rel, range_type t, const policies &p);
 
-
-  // ------------------------------------------------------------
-  // virtual and overriding default behavior
-  public: 
-
-    virtual void createEdgeForVar(int vh, bool pr, bool* terms, dd_edge& a);
-    virtual void createEdgeForVar(int vh, bool pr, int* terms, dd_edge& a);
-    virtual void createEdgeForVar(int vh, bool pr, float* terms, dd_edge& a);
-
-    
-    virtual void writeNode(FILE* s, const node_reader& nr, 
-      const node_handle* map) const;
+  public:
     virtual bool isRedundant(const node_builder &nb) const;
     virtual bool isIdentityEdge(const node_builder &nb, int i) const;
 
-  private:
-    template <class T>
-    inline void edgeForVarInternal(int vh, bool pr, T* terms, dd_edge& result) {
-        if (vh < 0 || vh > getNumVariables())
-            throw error(error::INVALID_VARIABLE);
-        if (result.getForest() != this) 
-            throw error(error::INVALID_OPERATION);
-        int k = pr ? -vh: vh;
-        MEDDLY_DCASSERT(isValidLevel(k));
-
-        if (!isForRelations() && pr) 
-            throw error(error::INVALID_ASSIGNMENT);
-        if (getEdgeLabeling() != MULTI_TERMINAL)
-            throw error(error::INVALID_OPERATION);
-        node_handle *terminalNodes = getTerminalNodes(getLevelSize(vh), terms);
-        long node = buildLevelNodeHelper(k, terminalNodes, getLevelSize(vh));
-
-        result.set(node, 0);
-    }
-
   // ------------------------------------------------------------
   // Helpers for this and derived classes
+
+    /// Add redundant nodes from level k to the given node.
+    node_handle makeNodeAtLevel(int k, node_handle d);
+  
   protected:
-    /// Add a redundant node at level k.
-    /// On input: d is the node "below" us, to point to.
-    /// On output: d is the redundant node.
-    inline void insertRedundantNode(int k, node_handle& d) {
-      MEDDLY_DCASSERT(!isFullyReduced());
-      bool useIdentity = false;
-      if (isIdentityReduced()) {
-        useIdentity = getNodeLevel(d) < 0; 
-      }
-      int sz = getLevelSize(k);
-      node_builder& nb = useNodeBuilder(k, sz);
-      if (useIdentity) {
-        // check for identity reductions with d
-        node_handle sd;
-        int si = getSingletonIndex(d, sd);
-        for (int i=0; i<sz; i++) {
-          nb.d(i) = linkNode(
-            (i==si) ? sd : d
-          );
-        }
-      } else {
-        // easy - just set all the pointers
-        for (int i=0; i<sz; i++) nb.d(i) = linkNode(d);
-      }
-      unlinkNode(d);
-      d = createReducedNode(-1, nb);
+    /// make a node at the top level
+    inline node_handle makeNodeAtTop(node_handle d) {
+      return makeNodeAtLevel(getDomain()->getNumVariables(), d);
     }
 
-  // ------------------------------------------------------------
-  // still to be organized:
+    /**
+        Enlarge variables to include all given minterms.
+    */
+    inline void enlargeVariables(const int* const* vlist, int N, bool primed) {
+      for (int k=1; k<=getDomain()->getNumVariables(); k++) {
+        int maxv = vlist[0][k];
+        for (int i=1; i<N; i++) {
+          maxv = MAX(maxv, vlist[i][k]);
+        }
+        if (maxv < 1) continue;
+        if (maxv >= getDomain()->getVariableBound(k, primed)) {
+          useExpertDomain()->enlargeVariableBound(k, primed, maxv+1);
+        }
+      }
+    }
+
+    template <class ENCODER, typename T>
+    inline
+    void createEdgeForVarTempl(int vh, bool pr, const T* vals, dd_edge& result)
+    {
+      /*
+          Sanity checks
+      */
+      if (vh < 0 || vh > getNumVariables())
+          throw error(error::INVALID_VARIABLE);
+      if (result.getForest() != this) 
+          throw error(error::INVALID_OPERATION);
+      if (!isForRelations() && pr) 
+          throw error(error::INVALID_ASSIGNMENT);
+
+      /*
+          Get info for node we're building
+      */
+      int k = pr ? -vh: vh;
+      int km1;
+      if (isForRelations()) {
+        km1 = (k<0) ? (-k)-1 : -k;
+      } else {
+        km1 = k-1;
+      }
+      int sz = getLevelSize(vh);
+
+      /*
+          Make this node
+      */
+      node_builder &nb = useNodeBuilder(k, sz);
+      for (int i=0; i<sz; i++) {
+        nb.d(i) = makeNodeAtLevel(km1, 
+          ENCODER::value2handle(vals ? vals[i] : i)
+        );
+      }
+
+      /*
+          Reduce, add redundant as necessary, and set answer
+      */
+      node_handle node = createReducedNode(-1, nb);
+      node = makeNodeAtLevel(getDomain()->getNumVariables() , node); 
+      result.set(node, 0);
+  }
+
+
+  template <class ENCODER, class T>
+  inline void createEdgeTempl(T term, dd_edge& e) {
+      if (e.getForest() != this) throw error(error::INVALID_OPERATION);
+      e.set(makeNodeAtTop(ENCODER::value2handle(term)), 0);
+  }
+
+
+
+  // statics
+
+  public:
+    static void enlargeStatics(int n);
+  private:
+    static void clearStatics();
+
+    friend class mt_cleanup;
+
+    static mt_cleanup* the_mt_cleaner;
 
   protected:
-    // Building level nodes
-    node_handle buildLevelNodeHelper(int lh, node_handle* terminalNodes, int sz);
-
-    // Building custom level nodes
-    node_handle* getTerminalNodes(int n, bool* terms);
-    node_handle* getTerminalNodes(int n, int* terms);
-    node_handle* getTerminalNodes(int n, float* terms);
-
-  private:  
-
-    bool counting;
-
-    // scratch pad for buildLevelNode and getTerminalNodes
-    node_handle* dptrs;
-    int dptrsSize;
-
+    static int* order;
+    static int order_size;
 };
 
 

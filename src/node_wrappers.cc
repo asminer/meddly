@@ -216,6 +216,9 @@ MEDDLY::node_builder::node_builder()
   down = 0;
   indexes = 0;
   edge = 0;
+#ifdef DEVELOPMENT_CODE
+  has_hash = false;
+#endif
 }
 
 MEDDLY::node_builder::~node_builder()

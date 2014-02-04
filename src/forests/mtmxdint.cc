@@ -22,79 +22,60 @@
 
 #include "mtmxdint.h"
 
-
 MEDDLY::mt_mxd_int::mt_mxd_int(int dsl, domain *d, const policies &p)
-: MEDDLY::mtmxd_forest(dsl, d, true, INTEGER, MULTI_TERMINAL, p)
+: mtmxd_forest(dsl, d, INTEGER, p)
 { 
   initializeForest();
 }
 
-
 MEDDLY::mt_mxd_int::~mt_mxd_int()
 { }
 
-void MEDDLY::mt_mxd_int::createEdge(int val, dd_edge &e)
+void MEDDLY::mt_mxd_int::createEdge(int term, dd_edge& e)
 {
-  MEDDLY_DCASSERT(getRangeType() == forest::INTEGER);
-  if (e.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-
-  int node = createEdgeTo(getTerminalNode(val));
-  e.set(node, 0);
+  createEdgeTempl<int_encoder, int>(term, e);
 }
 
-
-void MEDDLY::mt_mxd_int::createEdge(const int* const* vlist,
-    const int* const* vplist, const int* terms, int N, dd_edge& e)
+void MEDDLY::mt_mxd_int
+::createEdge(const int* const* vlist, const int* const* vplist, const int* terms, int N, dd_edge &e)
 {
-  if (e.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-  if (vlist == 0 || vplist == 0 || terms == 0 || N <= 0)
-    throw error(error::INVALID_VARIABLE);
+  binary_operation* unionOp = getOperation(PLUS, this, this, this);
+  enlargeStatics(N);
+  enlargeVariables(vlist, N, false);
+  enlargeVariables(vplist, N, true);
 
-  createEdgeInternal(vlist, vplist, terms, N, e);
+  mtmxd_edgemaker<int_encoder, int>
+  EM(this, vlist, vplist, terms, order, N, getDomain()->getNumVariables(), unionOp);
+
+  e.set(EM.createEdge(), 0);
 }
 
-
-void MEDDLY::mt_mxd_int::evaluate(const dd_edge& f, const int* vlist,
-    const int* vplist, int &term) const
+void MEDDLY::mt_mxd_int::
+createEdgeForVar(int vh, bool vp, const int* terms, dd_edge& a)
 {
-  MEDDLY_DCASSERT(getRangeType() == forest::INTEGER);
-  if (f.getForest() != this) 
-    throw error(error::INVALID_OPERATION);
-  if (vlist == 0 || vplist == 0) 
-    throw error(error::INVALID_VARIABLE);
-
-  // assumption: vlist and vplist do not contain any special values
-  // (-1, -2, etc). vlist and vplist contains a single element.
-  term = getInteger(getTerminalNodeForEdge(f.getNode(), vlist, vplist));
+  createEdgeForVarTempl<int_encoder, int>(vh, vp, terms, a);
 }
 
-void MEDDLY::mt_mxd_int::showTerminal(FILE* s, int tnode) const
+void MEDDLY::mt_mxd_int::evaluate(const dd_edge &f, const int* vlist, 
+  const int* vplist, int &term) const
 {
-  fprintf(s, "t%d", getInteger(tnode)); 
+  term = int_encoder::handle2value(evaluateRaw(f, vlist, vplist));
 }
 
-void MEDDLY::mt_mxd_int::writeTerminal(FILE* s, int tnode) const
+void MEDDLY::mt_mxd_int::showTerminal(FILE* s, node_handle tnode) const
 {
-  th_fprintf(s, "t%d", getInteger(tnode)); 
+  int_encoder::show(s, tnode);
+}
+
+void MEDDLY::mt_mxd_int::writeTerminal(FILE* s, node_handle tnode) const
+{
+  int_encoder::write(s, tnode);
 }
 
 MEDDLY::node_handle MEDDLY::mt_mxd_int::readTerminal(FILE* s)
 {
-  stripWS(s);
-  char c = fgetc(s);
-  if ('t' == c) {
-    int N;
-    if (1==fscanf(s, "%d", &N)) {
-      if (isValidTerminalValue(N)) {
-        return getTerminalNode(N);
-      }
-    }
-  }
-  throw error(error::INVALID_FILE);
+  return int_encoder::read(s);
 }
-
 
 const char* MEDDLY::mt_mxd_int::codeChars() const
 {

@@ -39,14 +39,14 @@ const int vars[] = {10, 10, 10};
 
 bool build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
 {
-  const int R[] = {0, 3, 1, 4};
-  const int N[] = {0, 1, 4, 9};
-  const int S[] = {0, 2, 6, 5};
+  int R[] = {0, 3, 1, 4};
+  int N[] = {0, 1, 4, 9};
+  int S[] = {0, 2, 6, 5};
 
   // Build state indexes
 
-  const int* sslist[] = { R, N, S };
-  const int indexes[] = { 0, 1, 2 };
+  int* sslist[] = { R, N, S };
+  int indexes[] = { 0, 1, 2 };
 
   try {
     indf->createEdge(sslist, indexes, 3, ss);
@@ -63,13 +63,13 @@ bool build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
 
   // Build matrix elements
 
-  const int* fromlist[] = {
+  int* fromlist[] = {
     R,    R,    R,    N,    N,    S,    S,    S
   };
-  const int* tolist[] = {
+  int* tolist[] = {
     R,    N,    S,    R,    S,    R,    N,    S
   };
-  const float problist[] = {
+  float problist[] = {
     0.5,  0.25, 0.25, 0.5,  0.5,  0.25, 0.25, 0.5
   };
 

@@ -19,464 +19,234 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-
-// TODO: Testing
-// TODO: mdd_node_manager
-// TODO: mtmdd_node_manager
-
-// TODO: inPlaceSortBuild() must be modified to deal with don't care and
-//       don't change while building the node instead of deal with them
-//       separately (before the call to inPlaceSortBuild()).
-//       For this purpose, verify that compute_manager::UNION and PLUS
-//       work with nodes that are not at the top-level correctly.
-
-
-/* 
-  TODO: ensure this rule
-  All extensions must over-ride either reduceNode() or normalizeAndReduceNode().
-  Normalizing is only for edge-valued decision diagrams.
-*/
-  
 #ifndef MTMDD_H
 #define MTMDD_H
 
 #include "mt.h"
 
-#define IN_PLACE_SORT
-
 namespace MEDDLY {
   class mtmdd_forest;
 };
 
-// ******************************************************************
-
 class MEDDLY::mtmdd_forest : public mt_forest {
+  public:
+    mtmdd_forest(int dsl, domain* d, range_type t, const policies &p);
 
   protected:
-
-    // Used by derived classes for initialization
-    mtmdd_forest(int dsl, domain *d, bool relation, range_type t,
-        edge_labeling e, const policies &p);
-
-    ~mtmdd_forest();
-
-  protected:
-    // Creates an edge representing the terminal node given by
-    // terminalNode.
-    // Note: terminalNode is usually a terminal value converted into
-    // the equivalent node representation. This makes this method useful
-    // for createEdge(int, e) or (float, e) or (bool, e) as long as the
-    // terminal value can be converted into an equivalent node.
-    inline void createEdgeHelper(node_handle terminalNode, dd_edge& e) {
-        MEDDLY_DCASSERT(isTerminalNode(terminalNode));
-
-        if (isFullyReduced() || terminalNode == 0) {
-          e.set(terminalNode, 0);
-          return;
-        }
-
-        // construct the edge bottom-up
-        node_handle result = terminalNode;
-        for (int i=1; i<=getExpertDomain()->getNumVariables(); i++) {
-          insertRedundantNode(i, result);
-        }
-        e.set(result, 0);
+    inline node_handle evaluateRaw(const dd_edge &f, const int* vlist) const {
+      node_handle p = f.getNode();
+      while (!isTerminalNode(p)) {
+        p = getDownPtr(p, vlist[getNodeHeight(p)]);
+      }
+      return p;
+    }
+    
+  public:
+    /// Special case for createEdge(), with only one minterm.
+    inline node_handle 
+    createEdgePath(int k, const int* vlist, node_handle bottom) 
+    {
+        if (0==bottom) return bottom;
+        for (int i=1; i<=k; i++) {
+          if (DONT_CARE == vlist[i]) {
+            // make a redundant node
+            if (isFullyReduced()) continue; 
+            int sz = getLevelSize(i);
+            node_builder& nb = useNodeBuilder(i, sz);
+            nb.d(0) = bottom;
+            for (int v=1; v<sz; v++) {
+              nb.d(v) = linkNode(bottom);
+            }
+            bottom = createReducedNode(-1, nb);
+          } else {
+            // make a singleton node
+            node_builder& nb = useSparseBuilder(i, 1);
+            nb.i(0) = vlist[i];
+            nb.d(0) = bottom;
+            bottom = createReducedNode(-1, nb);
+          }
+        } // for i
+        return bottom;
     }
 
-    // Get the terminal node at the bottom of the edge with root n
-    // and vlist representing the indexes for the levels.
-    // Used by evaluate()
-    inline node_handle getTerminalNodeForEdge(int n, const int* vlist) const {
-        // assumption: vlist does not contain any special values (-1, -2, etc).
-        // vlist contains a single element.
-        while (!isTerminalNode(n)) {
-          n = getDownPtr(n, vlist[getNodeHeight(n)]);
-        }
-        return n;
-    }
-
-    // This create a MTMDD from a collection of edges (represented 
-    // as vectors).
-    template <typename T>
-      void createEdgeInternal(const int* const* vlist,
-          const T* terms, int N, dd_edge &e);
-
-  protected: // still to be organized
-
-    // Create edge representing f(vlist[]) = term and store it in e
-    void createEdgeTo(const int* vlist, node_handle term, dd_edge& e);
-
-    // Create a node, at level k, whose ith index points to dptr.
-    // If i is -1, all indices of the node will point to dptr.
-    node_handle createNode(int k, int i, node_handle dptr);
-
-    template <typename T>
-    T handleMultipleTerminalValues(const T* tList, int begin, int end);
-
-    template <typename T>
-    node_handle inPlaceSort(int level, int begin, int end);
-    template <typename T>
-    node_handle inPlaceSortBuild(int height, int begin, int end);
-
-    // Methods and data for batch addition via sorting
-    template <typename T> void copyLists(const int* const* vlist,
-        const T* terms, int nElements);
-
-    void expandCountAndSlotArrays(int size);
-
-  private:
-    int** list;
-    node_handle*  termList;
-    int   listSize;
-
-    int* count;
-    int* slot;
-    int countSize;
 };
 
 
-// ------------------------ Inline methods -----------------------------------
-
-
-template <typename T>
-inline
-void
-MEDDLY::mtmdd_forest::createEdgeInternal(const int* const* vlist,
-    const T* terms, int N, dd_edge &e)
-{
-  // check if the vlist contains valid indexes
-  bool specialCasesFound = false;
-  for (int i = 0; i < N; i++)
-  {
-    for (int level = getExpertDomain()->getNumVariables(); level; level--) {
-      int bound = vlist[i][level] + 1;
-      if (bound >= getLevelSize(level))
-        useExpertDomain()->enlargeVariableBound(level, false, bound);
-      else if (bound < 0)
-        specialCasesFound = true;
-    } // for level
-  } // for i
-
-  if (N == 1 || specialCasesFound) {
-    // build using "standard" procedure
-    if (terms == 0) {
-      node_handle trueNode = getTerminalNode(true);
-      createEdgeTo(vlist[0], trueNode, e);
-      if (N > 1) {
-        dd_edge curr(this);
-        for (int i=1; i<N; i++) {
-          createEdgeTo(vlist[i], trueNode, curr);
-          e += curr;
-        }
-      }
-    }
-    else {
-      createEdgeTo(vlist[0], getTerminalNode(terms[0]), e);
-      if (N > 1) {
-        dd_edge curr(this);
-        for (int i=1; i<N; i++) {
-          createEdgeTo(vlist[i], getTerminalNode(terms[i]), curr);
-          e += curr;
-        }
-      }
-    }
-  }
-  else {
-    // build using sort-based procedure
-    MEDDLY_DCASSERT(N > 0);
-
-    // copy elements into internal volatile storage
-    copyLists(vlist, terms, N);
-
-    // call sort-based procedure for building the DD
-    node_handle result = inPlaceSortBuild<T>(getExpertDomain()->getNumVariables(), 0, N);
-
-    e.set(result, 0);
-  }
-}
-
-
-template <typename T>
-inline
-void MEDDLY::mtmdd_forest::copyLists(const int* const* vlist,
-    const T* terms, int nElements)
-{
-  if (listSize < nElements) {
-    list = (int**) realloc(list, sizeof(void*) * nElements);
-    if (NULL == list) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
-    if (terms) {
-      termList = (node_handle*) realloc(termList, sizeof(node_handle) * nElements);
-      if (NULL == termList) throw MEDDLY::error(MEDDLY::error::INSUFFICIENT_MEMORY);
-    }
-    listSize = nElements;
-  }
-
-  memcpy(list, vlist, nElements * sizeof(void*));
-  if (terms) {
-    T* tempTList = (T*)termList;
-    // Not doing memcpy in case T is a class
-    for (int i = 0; i < nElements; i++) { tempTList[i] = terms[i]; }
-  }
-}
-
-
-
+//
+// Helper class for createEdge
+//
 
 namespace MEDDLY {
 
-template<typename T>
-inline
-node_handle mtmdd_forest::inPlaceSort(int level, int begin, int end)
-{
-  // Determine range of values
-  int min = list[begin][level];
-  int max = min;
-  for (int i = begin + 1; i < end; ++i) {
-    max = MAX(max, list[i][level]);
-    min = MIN(min, list[i][level]);
-  }
-
-  // Prepare arrays (expand them as necessary and clear them as necessary).
-  expandCountAndSlotArrays(max + 1 - min);
-
-#ifdef DEVELOPMENT_CODE
-  for (int i = 0; i < countSize; i++) { assert(0 == count[i]); }
-#endif
-
-  // c and s reduce the number of subtractions in indexes
-  int* c = count - min;
-  int* s = slot - min;
-
-  // Count the number of entries for each value
-  for (int i = begin; i < end; i++) {
-    c[list[i][level]]++;
-  }
-
-  // Determine the initial slot positions
-  s[min] = begin;
-  for (int i = min + 1; i <= max; ++i) {
-    s[i] = s[i-1] + c[i-1];
-  }
-
-  // We have the correct bucket sizes, now move items into
-  // appropriate buckets.
-
-  MEDDLY_DCASSERT(termList);
-  T* terms = (T*)termList;
-  MEDDLY_DCASSERT(terms);
-  
-  for (int i = min; i < max; ++i) {
-    // Move elements in bucket i to the correct slots.
-    // Repeat this until all the elements in bucket i belong in bucket i.
-    while (c[i] > 0) {
-      // Find appropriate slot for list[s[i]]
-      int* elem = list[s[i]];
-      int elemIndex = elem[level];
-      if (i == elemIndex) {
-        // Already in the correct slot
-        --c[i];
-        ++s[i];
+  template <class ENCODER, typename T>
+  class mtmdd_edgemaker {
+      mtmdd_forest* F;
+      const int* const* vlist;
+      const T* values;
+      int* order;
+      int N;
+      int K;
+      binary_operation* unionOp;
+    public:
+      mtmdd_edgemaker(mtmdd_forest* f, const int* const* mt, const T* v, 
+        int* o, int n, int k, binary_operation* unOp) 
+      {
+        F = f;
+        vlist = mt;
+        values = v;
+        order = o;
+        N = n;
+        K = k;
+        unionOp = unOp;
       }
-      else {
-        // Move elem to correct slot
-        MEDDLY_DCASSERT(elemIndex > i);
-        while (c[elemIndex] > 0 && elemIndex == list[s[elemIndex]][level]) {
-          // These elements are already in the correct slots; advance pointers.
-          --c[elemIndex];
-          ++s[elemIndex];
+
+      inline const int* unprimed(int i) const {
+        MEDDLY_CHECK_RANGE(0, i, N);
+        return vlist[order[i]];
+      }
+      inline int unprimed(int i, int k) const {
+        MEDDLY_CHECK_RANGE(0, i, N);
+        MEDDLY_CHECK_RANGE(1, k, K+1);
+        return vlist[order[i]][k];
+      }
+      inline T term(int i) const {
+        MEDDLY_CHECK_RANGE(0, i, N);
+        return values ? values[order[i]]: 1;
+      }
+      inline void swap(int i, int j) {
+        MEDDLY_CHECK_RANGE(0, i, N);
+        MEDDLY_CHECK_RANGE(0, j, N);
+        MEDDLY::SWAP(order[i], order[j]);
+      }
+
+      inline node_handle createEdge() {
+        return createEdge(K, 0, N);
+      }
+
+      /**
+          Recursive implementation of createEdge(),
+          for use by mtmdd_forest descendants.
+      */
+      node_handle createEdge(int k, int start, int stop) {
+        MEDDLY_DCASSERT(k>=0);
+        MEDDLY_DCASSERT(stop > start);
+        // 
+        // Fast special case
+        //
+        if (1==stop-start) {
+          return F->createEdgePath(k, unprimed(start),
+            ENCODER::value2handle(term(start))
+          );
         }
-        // At correct slot for elem
-        MEDDLY_DCASSERT(c[elemIndex] > 0);
-        MEDDLY_CHECK_RANGE(begin, s[elemIndex], end);
-        SWAP(list[s[i]], list[s[elemIndex]]);
-        SWAP(terms[s[i]], terms[s[elemIndex]]);
-        --c[elemIndex];
-        ++s[elemIndex];
-        // list[s[elemIndex]] now contains the correct element.
-        // Also, list[s[i]] now contains an unknown and this 
-        // will be handled in the next iteration.
-        // Note that we do not advance c[i] and s[i].
-      }
-    }
-    // Bucket i now contains only elements that belong in it.
-  }
-
-  c[max] = 0;
-
-#ifdef DEVELOPMENT_CODE
-  // Check if all buckets have been dealt with
-  for (int i = min; i <= max; i++) { assert(0 == c[i]); }
-#endif
-
-#ifdef DEVELOPMENT_CODE
-  // Check if sorted
-  for (int i = begin + 1; i < end; i++) {
-    assert(list[i-1][level] <= list[i][level]);
-  }
-#endif
-
-  // max represents the largest index
-  return max;
-}
-
-
-template<>
-inline
-node_handle mtmdd_forest::inPlaceSort<bool>(int level, int begin, int end)
-{
-  // Determine range of values
-  int min = list[begin][level];
-  int max = min;
-  for (int i = begin + 1; i < end; ++i) {
-    max = MAX(max, list[i][level]);
-    min = MIN(min, list[i][level]);
-  }
-
-  // Prepare arrays (expand them as necessary and clear them as necessary).
-  expandCountAndSlotArrays(max + 1 - min);
-
-#ifdef DEVELOPMENT_CODE
-  for (int i = 0; i < countSize; i++) { assert(0 == count[i]); }
-#endif
-
-  // c and s reduce the number of subtractions in indexes
-  int* c = count - min;
-  int* s = slot - min;
-
-  // Count the number of entries for each value
-  for (int i = begin; i < end; i++) {
-    ++c[list[i][level]];
-  }
-
-  // Determine the initial slot positions
-  s[min] = begin;
-  for (int i = min + 1; i <= max; ++i) {
-    s[i] = s[i-1] + c[i-1];
-  }
-
-  // We have the correct bucket sizes, now move items into
-  // appropriate buckets.
-
-  for (int i = min; i < max; ++i) {
-    // Move elements in bucket i to the correct slots.
-    // Repeat this until all the elements in bucket i belong in bucket i.
-    while (c[i] > 0) {
-      // Find appropriate slot for list[s[i]]
-      int* elem = list[s[i]];
-      int elemIndex = elem[level];
-      if (i == elemIndex) {
-        // Already in the correct slot
-        --c[i];
-        ++s[i];
-      }
-      else {
-        // Move elem to correct slot
-        MEDDLY_DCASSERT(elemIndex > i);
-        while (c[elemIndex] > 0 && elemIndex == list[s[elemIndex]][level]) {
-          // These elements are already in the correct slots; advance pointers.
-          --c[elemIndex];
-          ++s[elemIndex];
+        //
+        // Check terminal case
+        //
+        if (0==k) {
+          T accumulate = term(start);
+          for (int i=start; i<stop; i++) {
+            accumulate += term(i);
+          }
+          return ENCODER::value2handle(accumulate);
         }
-        // At correct slot for elem
-        MEDDLY_DCASSERT(c[elemIndex] > 0);
-        MEDDLY_CHECK_RANGE(begin, s[elemIndex], end);
-        SWAP(list[s[i]], list[s[elemIndex]]);
-        --c[elemIndex];
-        ++s[elemIndex];
-        // list[s[elemIndex]] now contains the correct element.
-        // Also, list[s[i]] now contains an unknown and this 
-        // will be handled in the next iteration.
-        // Note that we do not advance c[i] and s[i].
-      }
-    }
-    // Bucket i now contains only elements that belong in it.
-  }
 
-  c[max] = 0;
+        // size of variables at level k
+        int lastV = F->getLevelSize(k);
+        // index of end of current batch
+        int batchP = start;
 
-#ifdef DEVELOPMENT_CODE
-  // Check if all buckets have been dealt with
-  for (int i = min; i <= max; i++) { assert(0 == c[i]); }
+        //
+        // Move any "don't cares" to the front, and process them
+        //
+        int nextV = lastV;
+        for (int i=start; i<stop; i++) {
+          if (DONT_CARE == unprimed(i, k)) {
+            if (batchP != i) {
+              swap(batchP, i);
+            }
+            batchP++;
+          } else {
+            MEDDLY_DCASSERT(unprimed(i, k) >= 0);
+            nextV = MIN(nextV, unprimed(i, k));
+          }
+        }
+        node_handle dontcares;
+        if (batchP > start) {
+          dontcares = createEdge(k-1, start, batchP);
+        } else {
+          dontcares = 0;
+        }
+
+        //
+        // Start new node at level k
+        //
+        node_builder& nb = F->useSparseBuilder(k, lastV);
+        int z = 0; // number of nonzero edges in our sparse node
+
+        //
+        // For each value v, 
+        //  (1) move those values to the front
+        //  (2) process them, if any
+        //  (3) union with don't cares
+        //
+        int v = (dontcares) ? 0 : nextV;
+        for (int v=0; v<lastV; v = (dontcares) ? v+1 : nextV) {
+          nextV = lastV;
+          //
+          // neat trick!
+          // shift the array over, because we're done with the previous batch
+          //
+          start = batchP;
+
+          //
+          // (1) move anything with value v, to the "new" front
+          //
+          for (int i=start; i<stop; i++) {
+            if (v == unprimed(i, k)) {
+              if (batchP != i) {
+                swap(batchP, i);
+              }
+              batchP++;
+            } else {
+              nextV = MIN(nextV, unprimed(i, k));
+            }
+          }
+
+          //
+          // (2) recurse if necessary
+          //
+          node_handle these;
+          if (batchP > start) {
+            these = createEdge(k-1, start, batchP);
+          } else {
+            these = 0;
+          }
+
+          //
+          // (3) union with don't cares
+          //
+          MEDDLY_DCASSERT(unionOp);
+          node_handle total = unionOp->compute(dontcares, these);
+          F->unlinkNode(these);
+
+          //
+          // add to sparse node, unless empty
+          //
+          if (0==total) continue;
+          nb.i(z) = v;
+          nb.d(z) = total;
+          z++;
+        } // for v
+
+        //
+        // Cleanup
+        //
+        F->unlinkNode(dontcares);
+        nb.shrinkSparse(z);
+        return F->createReducedNode(-1, nb);
+      };
+
+  }; // class mtmdd_edgemaker
+
+}; // namespace MEDDLY
+
 #endif
-
-#ifdef DEVELOPMENT_CODE
-  // Check if sorted
-  for (int i = begin + 1; i < end; i++) {
-    assert(list[i-1][level] <= list[i][level]);
-  }
-#endif
-
-  // max represents the largest index
-  return max;
-}
-
-
-template <typename T>
-inline
-MEDDLY::node_handle mtmdd_forest::inPlaceSortBuild(int height, int begin, int end)
-{
-  // [begin, end)
-
-  // terminal condition
-  if (height == 0) {
-    return getTerminalNode(
-        handleMultipleTerminalValues((T*)termList, begin, end));
-  }
-
-  int nextHeight = height - 1;
-
-  if (begin + 1 == end) {
-    // nothing to sort; just build a node starting at this level
-    node_handle n = inPlaceSortBuild<T>(nextHeight, begin, end);
-    node_handle index = list[begin][height];
-    node_handle result = createNode(height, index, n);
-    return result;
-  }
-
-  // Sort elements at this level
-  int nodeSize = 1 + inPlaceSort<T>(height, begin, end);
-
-  // build node
-  node_builder& nb = useSparseBuilder(height, nodeSize);
-  int z = 0;
-  for (int i = begin; i < end; ) {
-    int index = list[i][height];
-    int start = i++;
-    // skip the elements with the same index at this level
-    for ( ; i < end && list[i][height] == index; ++i);
-    // set next downward pointer
-    nb.i(z) = index;
-    nb.d(z) = inPlaceSortBuild<T>(nextHeight, start, i);
-    z++;
-  }
-  nb.shrinkSparse(z);
-  return createReducedNode(-1, nb);
-}
-
-
-template <typename T>
-inline
-T mtmdd_forest::handleMultipleTerminalValues(const T* tList,
-    int begin, int end)
-{
-  MEDDLY_DCASSERT(begin < end);
-  T result = tList[begin++];
-  while (begin != end) result += tList[begin++];
-  return result;
-}
-
-
-template <>
-inline
-bool mtmdd_forest::handleMultipleTerminalValues(const bool* tList,
-    int begin, int end)
-{
-  MEDDLY_DCASSERT(begin < end);
-  return true;
-}
-
-} // namespace
-
-#endif
-
