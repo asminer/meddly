@@ -5,7 +5,7 @@
 
 ## AC_PREREQ(2.60)
 AC_PREREQ(2.59)
-AC_INIT([meddly (asm-templ)], [0.11], [asminer@iastate.edu])
+AC_INIT([meddly], [0.11], [asminer@iastate.edu])
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_SRCDIR([src/meddly.h])
