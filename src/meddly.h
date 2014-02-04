@@ -1090,7 +1090,7 @@ class MEDDLY::forest {
                         the range type of the forest is not BOOLEAN, 
                         or the forest is for relations.
     */
-    virtual void createEdge(int** vlist, int N, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
 
     /** Create an edge as the union of several vectors and return values.
         The given vectors and return values will be reordered as necessary
@@ -1112,7 +1112,7 @@ class MEDDLY::forest {
                         the range type of the forest is not INTEGER,
                         or the forest is for relations.
     */
-    virtual void createEdge(int** vlist, int* terms, int N, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e);
 
     /** Create an edge as the union of several vectors and return values.
         The given vectors and return values will be reordered as necessary
@@ -1134,7 +1134,7 @@ class MEDDLY::forest {
                         the range type of the forest is not REAL,
                         or the forest is for relations.
     */
-    virtual void createEdge(int** vlist, float* terms, int N, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e);
 
 
     /** Create an edge as the union of several explicit matrices.

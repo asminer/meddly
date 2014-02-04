@@ -19,6 +19,11 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-//
-// Everything is a template now...
-//
+#include "mtmxd.h"
+
+MEDDLY::mtmxd_forest
+::mtmxd_forest(int dsl, domain* d, range_type t, const policies &p)
+ : mt_forest(dsl, d, true, t, p)
+{
+  // anything to construct?
+}

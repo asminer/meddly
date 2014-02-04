@@ -23,7 +23,7 @@
 #include "mtmxdint.h"
 
 MEDDLY::mt_mxd_int::mt_mxd_int(int dsl, domain *d, const policies &p)
-: mtmxd_forest<expert_forest::int_encoder>(dsl, d, INTEGER, p)
+: mtmxd_forest(dsl, d, INTEGER, p)
 { 
   initializeForest();
 }
@@ -33,28 +33,48 @@ MEDDLY::mt_mxd_int::~mt_mxd_int()
 
 void MEDDLY::mt_mxd_int::createEdge(int term, dd_edge& e)
 {
-  createEdgeTempl(term, e);
+  createEdgeTempl<int_encoder, int>(term, e);
 }
 
 void MEDDLY::mt_mxd_int
 ::createEdge(int** vlist, int** vplist, int* terms, int N, dd_edge &e)
 {
-  unionOp = getOperation(PLUS, this, this, this);
+  binary_operation* unionOp = getOperation(PLUS, this, this, this);
+  enlargeStatics(N);
   enlargeVariables(vlist, N, false);
   enlargeVariables(vplist, N, true);
-  e.set(createEdgeRT(getDomain()->getNumVariables(), vlist, vplist, terms, N), 0);
+
+  mtmxd_edgemaker<int_encoder, int>
+  EM(this, vlist, vplist, terms, order, N, getDomain()->getNumVariables(), unionOp);
+
+  e.set(EM.createEdge(), 0);
 }
 
 void MEDDLY::mt_mxd_int::
 createEdgeForVar(int vh, bool vp, const int* terms, dd_edge& a)
 {
-  createEdgeForVarTempl(vh, vp, terms, a);
+  createEdgeForVarTempl<int_encoder, int>(vh, vp, terms, a);
 }
 
 void MEDDLY::mt_mxd_int::evaluate(const dd_edge &f, const int* vlist, 
   const int* vplist, int &term) const
 {
-  evaluateTempl(f, vlist, vplist, term);
+  term = int_encoder::handle2value(evaluateRaw(f, vlist, vplist));
+}
+
+void MEDDLY::mt_mxd_int::showTerminal(FILE* s, node_handle tnode) const
+{
+  int_encoder::show(s, tnode);
+}
+
+void MEDDLY::mt_mxd_int::writeTerminal(FILE* s, node_handle tnode) const
+{
+  int_encoder::write(s, tnode);
+}
+
+MEDDLY::node_handle MEDDLY::mt_mxd_int::readTerminal(FILE* s)
+{
+  return int_encoder::read(s);
 }
 
 const char* MEDDLY::mt_mxd_int::codeChars() const

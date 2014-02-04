@@ -121,7 +121,7 @@ void MEDDLY::evp_mdd_int::getElement(const dd_edge& a, int index, int* e)
 
 void
 MEDDLY::evp_mdd_int::
-createEdge(int** vlist, int* terms, int N, dd_edge &e)
+createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e)
 {
   return createEdgeInternal(vlist, terms, N, e);
 }
@@ -234,7 +234,7 @@ MEDDLY::evt_mdd_real::~evt_mdd_real()
 
 void
 MEDDLY::evt_mdd_real::
-createEdge(int** vlist, float* terms, int N, dd_edge &e)
+createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
 {
   return createEdgeInternal(vlist, terms, N, e);
 }

@@ -23,7 +23,7 @@
 #include "mtmddbool.h"
 
 MEDDLY::mt_mdd_bool::mt_mdd_bool(int dsl, domain *d, const policies &p)
-: mtmdd_forest<expert_forest::bool_encoder>(dsl, d, BOOLEAN, p)
+: mtmdd_forest(dsl, d, BOOLEAN, p)
 { 
   initializeForest();
 }
@@ -33,26 +33,46 @@ MEDDLY::mt_mdd_bool::~mt_mdd_bool()
 
 void MEDDLY::mt_mdd_bool::createEdge(bool term, dd_edge& e)
 {
-  createEdgeTempl(term, e);
+  createEdgeTempl<bool_encoder, bool>(term, e);
 }
 
-void MEDDLY::mt_mdd_bool::createEdge(int** vlist, int N, dd_edge &e)
+void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist, int N, dd_edge &e)
 {
-  unionOp = getOperation(UNION, this, this, this);
+  binary_operation* unionOp = getOperation(UNION, this, this, this);
+  enlargeStatics(N);
   enlargeVariables(vlist, N, false);
-  e.set(createEdgeRT(getDomain()->getNumVariables(), vlist, (bool*) 0, N), 0);
+  
+  mtmdd_edgemaker<bool_encoder, bool> 
+  EM(this, vlist, 0, order, N, getDomain()->getNumVariables(), unionOp);
+
+  e.set(EM.createEdge(), 0);
 }
 
 void MEDDLY::mt_mdd_bool::
 createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 {
-  createEdgeForVarTempl(vh, vp, terms, a);
+  createEdgeForVarTempl<bool_encoder, bool>(vh, vp, terms, a);
 }
 
 void MEDDLY::mt_mdd_bool
 ::evaluate(const dd_edge &f, const int* vlist, bool &term) const
 {
-  evaluateTempl(f, vlist, term);
+  term = bool_encoder::handle2value(evaluateRaw(f, vlist));
+}
+
+void MEDDLY::mt_mdd_bool::showTerminal(FILE* s, node_handle tnode) const
+{
+  bool_encoder::show(s, tnode);
+}
+
+void MEDDLY::mt_mdd_bool::writeTerminal(FILE* s, node_handle tnode) const
+{
+  bool_encoder::write(s, tnode);
+}
+
+MEDDLY::node_handle MEDDLY::mt_mdd_bool::readTerminal(FILE* s)
+{
+  return bool_encoder::read(s);
 }
 
 const char* MEDDLY::mt_mdd_bool::codeChars() const

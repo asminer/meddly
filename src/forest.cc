@@ -176,19 +176,19 @@ void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const float* terms, dd_ed
   throw error(error::TYPE_MISMATCH);
 }
 
-void MEDDLY::forest::createEdge(int** vlist, int N, dd_edge &e)
+void MEDDLY::forest::createEdge(const int* const* vlist, int N, dd_edge &e)
 {
   throw error(error::TYPE_MISMATCH);
 }
 
 void MEDDLY::forest
-::createEdge(int** vlist, int* terms, int N, dd_edge &e)
+::createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e)
 {
   throw error(error::TYPE_MISMATCH);
 }
 
 void MEDDLY::forest
-::createEdge(int** vlist, float* terms, int N, dd_edge &e)
+::createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
 {
   throw error(error::TYPE_MISMATCH);
 }

@@ -112,6 +112,8 @@ namespace MEDDLY {
 
   class op_initializer;
 
+  class cleanup_procedure;
+
   // classes defined elsewhere
   class base_table;
   class unique_table;
@@ -3293,6 +3295,32 @@ protected:
   virtual void cleanup() = 0;
 };
 
+
+// ******************************************************************
+// *                                                                *
+// *                    cleanup_procedure  class                    *
+// *                                                                *
+// ******************************************************************
+
+/** Mechanism for registering actions to occur at library cleanup time.
+    This allows us to free certain memory when the library is closed.
+    Derive a class from this one, and provide the execute() method.
+    Implementation in meddly.cc
+*/
+class MEDDLY::cleanup_procedure {
+    static cleanup_procedure* list;
+    cleanup_procedure* next;
+  public:
+    cleanup_procedure();
+  protected:
+    virtual ~cleanup_procedure();
+  public:
+    virtual void execute() = 0;
+
+    static void Initialize();
+    static void ExecuteAll();
+    static void DeleteAll();
+};
 
 // ****************************************************************************
 // *                                                                          *

@@ -23,7 +23,7 @@
 #include "mtmddreal.h"
 
 MEDDLY::mt_mdd_real::mt_mdd_real(int dsl, domain *d, const policies &p)
-: mtmdd_forest<expert_forest::float_encoder>(dsl, d, REAL, p)
+: mtmdd_forest(dsl, d, REAL, p)
 { 
   initializeForest();
 }
@@ -33,27 +33,47 @@ MEDDLY::mt_mdd_real::~mt_mdd_real()
 
 void MEDDLY::mt_mdd_real::createEdge(float term, dd_edge& e)
 {
-  createEdgeTempl(term, e);
+  createEdgeTempl<float_encoder, float>(term, e);
 }
 
-void MEDDLY::mt_mdd_real::createEdge(int** vlist, float* terms, int N, dd_edge &e)
+void MEDDLY::mt_mdd_real::createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
 {
-  unionOp = getOperation(PLUS, this, this, this);
+  binary_operation* unionOp = getOperation(PLUS, this, this, this);
+  enlargeStatics(N);
   enlargeVariables(vlist, N, false);
-  e.set(createEdgeRT(getDomain()->getNumVariables(), vlist, terms, N), 0);
+
+  mtmdd_edgemaker<float_encoder, float>
+  EM(this, vlist, terms, order, N, getDomain()->getNumVariables(), unionOp);
+
+  e.set(EM.createEdge(), 0);
 }
 
 void MEDDLY::mt_mdd_real::
 createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
 {
-  createEdgeForVarTempl(vh, vp, terms, a);
+  createEdgeForVarTempl<float_encoder, float>(vh, vp, terms, a);
 }
 
 
 void MEDDLY::mt_mdd_real
 ::evaluate(const dd_edge &f, const int* vlist, float &term) const
 {
-  evaluateTempl(f, vlist, term);
+  term = float_encoder::handle2value(evaluateRaw(f, vlist));
+}
+
+void MEDDLY::mt_mdd_real::showTerminal(FILE* s, node_handle tnode) const
+{
+  float_encoder::show(s, tnode);
+}
+
+void MEDDLY::mt_mdd_real::writeTerminal(FILE* s, node_handle tnode) const
+{
+  float_encoder::write(s, tnode);
+}
+
+MEDDLY::node_handle MEDDLY::mt_mdd_real::readTerminal(FILE* s)
+{
+  return float_encoder::read(s);
 }
 
 const char* MEDDLY::mt_mdd_real::codeChars() const

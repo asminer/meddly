@@ -19,178 +19,273 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-
-// TODO: Testing
-// TODO: mxd_node_manager
-// TODO: mtmxd_node_manager (??)
-
-// TODO: inPlaceSortBuild() must be modified to deal with don't care and
-//       don't change while building the node instead of deal with them
-//       separately (before the call to inPlaceSortBuild()).
-//       For this purpose, verify that compute_manager::UNION and PLUS
-//       work with nodes that are not at the top-level correctly.
-
-
-/* 
-  TODO: ensure this rule
-  All extensions must over-ride either reduceNode() or normalizeAndReduceNode().
-  Normalizing is only for edge-valued decision diagrams.
-*/
-  
 #ifndef MTMXD_H
 #define MTMXD_H
 
 #include "mt.h"
 
 namespace MEDDLY {
+  class mtmxd_forest;
+};
 
-  /**
-      Base class for all multi-terminal MxDs.
-      I.e., everything multi-terminal and for relations.
-  */
-  template <class ENCODER>
-  class mtmxd_forest : public mt_forest<ENCODER> {
-    protected:
-      mtmxd_forest(int dsl, domain* d, forest::range_type t, 
-        const forest::policies &p) : mt_forest<ENCODER>(dsl, d, true, t, p)
-      {
-        // nothing to construct
-      }
+class MEDDLY::mtmxd_forest : public mt_forest {
+  public:
+    mtmxd_forest(int dsl, domain* d, range_type t, const policies &p);
 
-    protected:
-      /**
-          Template implementation of evaluate().
-          Derived classes should call this.
-      */
-      template <typename T>
-      inline void evaluateTempl(const dd_edge &f, const int* vlist, 
-        const int* vplist, T &term) const
+  protected:
+      inline node_handle evaluateRaw(const dd_edge &f, const int* vlist, 
+        const int* vplist) const
       {
         node_handle p = f.getNode();
-        while (!mt_forest<ENCODER>::isTerminalNode(p)) {
-          int k = mt_forest<ENCODER>::getNodeLevel(p);
+        while (!isTerminalNode(p)) {
+          int k = getNodeLevel(p);
           int i = (k<0) ? vplist[-k] : vlist[k];
-          p = mt_forest<ENCODER>::getDownPtr(p, i);
+          p = getDownPtr(p, i);
         } 
-        term = ENCODER::handle2value(p);
+        return p;
+      }
+
+  public:
+    /// Special case for createEdge(), with only one minterm.
+    inline node_handle createEdgePath(int k, const int* vlist, 
+      const int* vplist, node_handle next) 
+    {
+        MEDDLY_DCASSERT(isForRelations());
+        if (0==next) return next;
+        for (int i=1; i<=k; i++) {
+          if (DONT_CHANGE == vplist[i]) {
+            //
+            // Identity node
+            //
+            MEDDLY_DCASSERT(DONT_CARE == vlist[i]);
+            if (isIdentityReduced()) continue;
+            // Build an identity node by hand
+            int sz = getLevelSize(i);
+            node_builder& nb = useNodeBuilder(i, sz);
+            for (int v=0; v<sz; v++) {
+              node_builder& nbp = useSparseBuilder(-i, 1);
+              nbp.i(0) = v;
+              nbp.d(0) = linkNode(next);
+              nb.d(v) = createReducedNode(v, nbp);
+            }
+            unlinkNode(next);
+            next = createReducedNode(-1, nb);
+            continue;
+          }
+          //
+          // process primed level
+          //
+          node_handle nextpr;
+          if (DONT_CARE == vplist[i]) {
+            if (isFullyReduced()) {
+              // DO NOTHING
+              nextpr = next;
+            } else {
+              // build redundant node
+              int sz = getLevelSize(-i);
+              node_builder& nb = useNodeBuilder(-i, sz);
+              for (int v=0; v<sz; v++) {
+                nb.d(v) = linkNode(next);
+              }
+              unlinkNode(next);
+              nextpr = createReducedNode(-1, nb);
+            }
+          } else {
+            // sane value
+            node_builder& nb = useSparseBuilder(-i, 1);
+            nb.i(0) = vplist[i];
+            nb.d(0) = next;
+            nextpr = createReducedNode(vlist[i], nb);
+          }
+          //
+          // process unprimed level
+          //
+          if (DONT_CARE == vlist[i]) {
+            if (isFullyReduced()) continue;
+            // build redundant node
+            int sz = getLevelSize(i);
+            node_builder& nb = useNodeBuilder(i, sz);
+            if (isIdentityReduced()) {
+              // Below is likely a singleton, so check for identity reduction
+              // on the appropriate v value
+              for (int v=0; v<sz; v++) {
+                node_handle dpr = (v == vplist[i]) ? next : nextpr;
+                nb.d(v) = linkNode(dpr);
+              }
+            } else {
+              // Doesn't matter what happened below
+              for (int v=0; v<sz; v++) {
+                nb.d(v) = linkNode(nextpr);
+              }
+            }
+            unlinkNode(nextpr);
+            next = createReducedNode(-1, nb);
+          } else {
+            // sane value
+            node_builder& nb = useSparseBuilder(i, 1);
+            nb.i(0) = vlist[i];
+            nb.d(0) = nextpr;
+            next = createReducedNode(-1, nb);
+          }
+        } // for i
+        return next;
+    }
+
+};
+
+//
+// Helper class for createEdge
+//
+
+namespace MEDDLY {
+
+  template <class ENCODER, typename T>
+  class mtmxd_edgemaker {
+      mtmxd_forest* F;
+      const int* const* vulist;
+      const int* const* vplist;
+      const T* values;
+      int* order;
+      int N;
+      int K;
+      binary_operation* unionOp;
+    public:
+      mtmxd_edgemaker(mtmxd_forest* f, 
+        const int* const* mt, const int* const* mp, const T* v, int* o, int n, 
+        int k, binary_operation* unOp) 
+      {
+        F = f;
+        vulist = mt;
+        vplist = mp;
+        values = v;
+        order = o;
+        N = n;
+        K = k;
+        unionOp = unOp;
+      }
+
+      inline const int* unprimed(int i) const {
+        MEDDLY_CHECK_RANGE(0, i, N);
+        return vulist[order[i]];
+      }
+      inline int unprimed(int i, int k) const {
+        MEDDLY_CHECK_RANGE(0, i, N);
+        MEDDLY_CHECK_RANGE(1, k, K+1);
+        return vulist[order[i]][k];
+      }
+      inline const int* primed(int i) const {
+        MEDDLY_CHECK_RANGE(0, i, N);
+        return vplist[order[i]];
+      }
+      inline int primed(int i, int k) const {
+        MEDDLY_CHECK_RANGE(0, i, N);
+        MEDDLY_CHECK_RANGE(1, k, K+1);
+        return vplist[order[i]][k];
+      }
+      inline T term(int i) const {
+        MEDDLY_CHECK_RANGE(0, i, N);
+        return values ? values[order[i]]: 1;
+      }
+      inline void swap(int i, int j) {
+        MEDDLY_CHECK_RANGE(0, i, N);
+        MEDDLY_CHECK_RANGE(0, j, N);
+        MEDDLY::SWAP(order[i], order[j]);
+      }
+
+      inline node_handle createEdge() {
+        return createEdgeUn(K, 0, N);
       }
 
       /**
-          Recursive template implementation of createEdge(),
-          the one that uses an array of minterms.
-          Derived classes should call this.
-            @param  k       Level, should be non-negative
-            @param  vlist   Array of "from" minterms
-            @param  vplist  Array of "to" minterms
-            @param  terms   Array of terminal values, or null
-                            to indicate "all true"
-            @param  N       Dimension of vlist/vplist/terms arrays.
-            @return         New node handle
+          Recursive implementation of createEdge(),
+          unprimed levels, for use by mtmdd_forest descendants.
       */
-      template <typename T>
-      inline node_handle createEdgeRT(int k, int** vlist, 
-        int** vplist, T* terms, int N) 
-      {
+      node_handle createEdgeUn(int k, int start, int stop) {
         MEDDLY_DCASSERT(k>=0);
+        MEDDLY_DCASSERT(stop > start);
         // 
         // Fast special case
         //
-        if (1==N) {
-          return createEdgePath(k, vlist[0], vplist[0], 
-            ENCODER::value2handle(terms ? terms[0] : true)
+        if (1==stop-start) {
+          return F->createEdgePath(k, unprimed(start), primed(start),
+            ENCODER::value2handle(term(start))
           );
         }
         //
         // Check terminal case
         //
         if (0==k) {
-          T accumulate;
-          if (terms) {
-            accumulate = terms[0];
-            for (int i=1; i<N; i++) {
-              accumulate += terms[i];
-            }
-          } else {
-            accumulate = true;
+          T accumulate = term(start);
+          for (int i=start; i<stop; i++) {
+            accumulate += term(i);
           }
           return ENCODER::value2handle(accumulate);
         }
 
         // size of variables at level k
-        int lastV = mt_forest<ENCODER>::getLevelSize(k);
-        // current batch size
-        int batchP = 0;
+        int lastV = F->getLevelSize(k);
+        // index of end of current batch
+        int batchP = start;
 
         //
         // Move any "don't cares" to the front, and process them
         //
         int nextV = lastV;
-        for (int i=0; i<N; i++) {
-          if (DONT_CARE == vlist[i][k]) {
+        for (int i=start; i<stop; i++) {
+          if (DONT_CARE == unprimed(i, k)) {
             if (batchP != i) {
-              SWAP(vlist[batchP], vlist[i]);
-              SWAP(vplist[batchP], vplist[i]);
-              if (terms) SWAP(terms[batchP], terms[i]);
+              swap(batchP, i);
             }
             batchP++;
           } else {
-            MEDDLY_DCASSERT(vlist[i][k] >= 0);
-            nextV = MIN(nextV, vlist[i][k]);
+            MEDDLY_DCASSERT(unprimed(i, k) >= 0);
+            nextV = MIN(nextV, unprimed(i, k));
           }
         }
         node_handle dontcares = 0;
+
         //
         // Move any "don't changes" below the "don't cares", to the front,
         // and process them to construct a new level-k node.
-        int dch = 0;
-        for (int i=0; i<batchP; i++) {
-          if (DONT_CHANGE == vplist[i][k]) {
+        int dch = start;
+        for (int i=start; i<batchP; i++) {
+          if (DONT_CHANGE == primed(i, k)) {
             if (dch != i) {
-              SWAP(vlist[dch], vlist[i]);
-              SWAP(vplist[dch], vplist[i]);
-              if (terms) SWAP(terms[dch], terms[i]);
+              swap(dch, i);
             }
             dch++;
           }
         } 
-        // process "don't care, don't change" pairs
-        if (dch) {
-          node_handle below = createEdgeRT(k-1, vlist, vplist, terms, dch);
+
+        //
+        // Process "don't care, don't change" pairs, if any
+        //
+        if (dch > start) {
+          node_handle below = createEdgeUn(k-1, start, dch);
           dontcares = makeIdentityEdge(k, below);
           // done with those
-          vlist += dch;
-          vplist += dch;
-          if (terms) terms += dch;
-          N -= dch;
-          batchP -= dch;
+          start = dch;
         }
-        
-
 
         //
-        // process the don't care, ordinary pairs
-        // (again, producing a level-k node.)
+        // Process "don't care, odrinary" pairs, if any
+        // (producing a level-k node)
         //
-        if (batchP) {
-          node_handle dcnormal = 
-            mt_forest<ENCODER>::makeNodeAtLevel(k,
-              createEdgeRTpr(-1, -k, vlist, vplist, terms, batchP)
-            );
-
-          MEDDLY_DCASSERT(mt_forest<ENCODER>::unionOp);
-          node_handle total 
-          = mt_forest<ENCODER>::unionOp->compute(dontcares, dcnormal);
-          mt_forest<ENCODER>::unlinkNode(dcnormal);
-          mt_forest<ENCODER>::unlinkNode(dontcares);
+        if (batchP > start) {
+          node_handle dcnormal = F->makeNodeAtLevel(
+              k, createEdgePr(-1, -k, start, batchP)
+          );
+          MEDDLY_DCASSERT(unionOp);
+          node_handle total = unionOp->compute(dontcares, dcnormal);
+          F->unlinkNode(dcnormal);
+          F->unlinkNode(dontcares);
           dontcares = total;
         }
-
 
         //
         // Start new node at level k
         //
-        node_builder& nb = mt_forest<ENCODER>::useSparseBuilder(k, lastV);
+        node_builder& nb = F->useSparseBuilder(k, lastV);
         int z = 0; // number of nonzero edges in our sparse node
 
         //
@@ -205,25 +300,19 @@ namespace MEDDLY {
           // neat trick!
           // shift the array over, because we're done with the previous batch
           //
-          vlist += batchP;
-          vplist += batchP;
-          if (terms) terms += batchP;
-          N -= batchP;
-          batchP = 0;
+          start = batchP;
 
           //
           // (1) move anything with value v, to the "new" front
           //
-          for (int i=0; i<N; i++) {
-            if (v == vlist[i][k]) {
+          for (int i=start; i<stop; i++) {
+            if (v == unprimed(i, k)) {
               if (batchP != i) {
-                SWAP(vlist[batchP], vlist[i]);
-                SWAP(vplist[batchP], vplist[i]);
-                if (terms) SWAP(terms[batchP], terms[i]);
+                swap(batchP, i);
               }
               batchP++;
             } else {
-              nextV = MIN(nextV, vlist[i][k]);
+              nextV = MIN(nextV, unprimed(i, k));
             }
           }
 
@@ -232,71 +321,58 @@ namespace MEDDLY {
           //
           if (0==batchP) continue;
           nb.i(z) = v;
-          nb.d(z) = createEdgeRTpr(v, -k, vlist, vplist, terms, batchP);
+          nb.d(z) = createEdgePr(v, -k, start, batchP);
           z++;
         } // for v
 
         //
         // Union with don't cares
         //
-        MEDDLY_DCASSERT(mt_forest<ENCODER>::unionOp);
+        MEDDLY_DCASSERT(unionOp);
         nb.shrinkSparse(z);
-        node_handle built = mt_forest<ENCODER>::createReducedNode(-1, nb);
-        node_handle total = mt_forest<ENCODER>::unionOp->compute(dontcares, built);
-        mt_forest<ENCODER>::unlinkNode(dontcares);
-        mt_forest<ENCODER>::unlinkNode(built);
+        node_handle built = F->createReducedNode(-1, nb);
+        node_handle total = unionOp->compute(dontcares, built);
+        F->unlinkNode(dontcares);
+        F->unlinkNode(built);
         return total; 
-      } // createEdgeRT
+      };
 
-    private:
+    protected:
+
       /**
-          Recursive template implementation of createEdge(),
-          the one that uses an array of minterms.
-          Helper function - for primed levels.
-            @param  in      Index of incoming edge.  
-                            Only matters for primed levels.
-            @param  k       Level, should be negative
-            @param  vlist   Array of "from" minterms
-            @param  vplist  Array of "to" minterms
-            @param  terms   Array of terminal values, or null
-                            to indicate "all true"
-            @param  N       Dimension of vlist/vplist/terms arrays.
-            @return         New node handle
+          Recursive implementation of createEdge(),
+          primed levels
       */
-      template <typename T>
-      inline node_handle createEdgeRTpr(int in, int k, int** vlist, 
-        int** vplist, T* terms, int N) 
-      {
+      node_handle createEdgePr(int in, int k, int start, int stop) {
         MEDDLY_DCASSERT(k<0);
+        MEDDLY_DCASSERT(stop > start);
 
         //
         // Don't need to check for terminals
         //
 
         // size of variables at level k
-        int lastV = mt_forest<ENCODER>::getLevelSize(k);
+        int lastV = F->getLevelSize(k);
         // current batch size
-        int batchP = 0;
+        int batchP = start;
 
         //
         // Move any "don't cares" to the front, and process them
         //
         int nextV = lastV;
-        for (int i=0; i<N; i++) {
-          if (DONT_CARE == vplist[i][-k]) {
+        for (int i=start; i<stop; i++) {
+          if (DONT_CARE == primed(i, -k)) {
             if (batchP != i) {
-              SWAP(vlist[batchP], vlist[i]);
-              SWAP(vplist[batchP], vplist[i]);
-              if (terms) SWAP(terms[batchP], terms[i]);
+              swap(batchP, i);
             }
             batchP++;
           } else {
-            nextV = MIN(nextV, vplist[i][-k]);
+            nextV = MIN(nextV, primed(i, -k));
           }
         }
         node_handle dontcares;
-        if (batchP) {
-          dontcares = createEdgeRT(-k-1, vlist, vplist, terms, batchP);
+        if (batchP > start) {
+          dontcares = createEdgeUn(-k-1, start, batchP);
         } else {
           dontcares = 0;
         }
@@ -304,7 +380,7 @@ namespace MEDDLY {
         //
         // Start new node at level k
         //
-        node_builder& nb = mt_forest<ENCODER>::useSparseBuilder(k, lastV);
+        node_builder& nb = F->useSparseBuilder(k, lastV);
         int z = 0; // number of nonzero edges in our sparse node
 
         //
@@ -320,27 +396,21 @@ namespace MEDDLY {
           // neat trick!
           // shift the array over, because we're done with the previous batch
           //
-          vlist += batchP;
-          vplist += batchP;
-          if (terms) terms += batchP;
-          N -= batchP;
-          batchP = 0;
+          start = batchP;
 
           //
           // (1) move anything with value v, or don't change if v=in,
           //     to the "new" front
           //
           bool veqin = (v==in);
-          for (int i=0; i<N; i++) {
-            if (v == vplist[i][-k] || (veqin && DONT_CHANGE==vplist[i][-k])) {
+          for (int i=start; i<stop; i++) {
+            if (v == primed(i, -k) || (veqin && DONT_CHANGE==primed(i, -k))) {
               if (batchP != i) {
-                SWAP(vlist[batchP], vlist[i]);
-                SWAP(vplist[batchP], vplist[i]);
-                if (terms) SWAP(terms[batchP], terms[i]);
+                swap(batchP, i);
               }
               batchP++;
             } else {
-              nextV = MIN(nextV, vplist[i][-k]);
+              nextV = MIN(nextV, primed(i, -k));
             }
           }
 
@@ -348,8 +418,8 @@ namespace MEDDLY {
           // (2) recurse if necessary
           //
           node_handle these;
-          if (batchP) {
-            these = createEdgeRT(-k-1, vlist, vplist, terms, batchP);
+          if (batchP > start) {
+            these = createEdgeUn(-k-1, start, batchP);
           } else {
             these = 0;
           }
@@ -357,9 +427,9 @@ namespace MEDDLY {
           //
           // (3) union with don't cares
           //
-          MEDDLY_DCASSERT(mt_forest<ENCODER>::unionOp);
-          node_handle total = mt_forest<ENCODER>::unionOp->compute(dontcares, these);
-          mt_forest<ENCODER>::unlinkNode(these);
+          MEDDLY_DCASSERT(unionOp);
+          node_handle total = unionOp->compute(dontcares, these);
+          F->unlinkNode(these);
 
           //
           // add to sparse node, unless empty
@@ -373,37 +443,38 @@ namespace MEDDLY {
         //
         // Cleanup
         //
-        mt_forest<ENCODER>::unlinkNode(dontcares);
+        F->unlinkNode(dontcares);
         nb.shrinkSparse(z);
-        return mt_forest<ENCODER>::createReducedNode(in, nb);
+        return F->createReducedNode(in, nb);
       };
 
 
+
       //
       //
-      // Helper for createEdgeRT
+      // Helper for createEdge
       //
       inline node_handle makeIdentityEdge(int k, node_handle p) {
-        if (mt_forest<ENCODER>::isIdentityReduced()) {
+        if (F->isIdentityReduced()) {
           return p;
         }
         // build an identity node by hand
-        int lastV = mt_forest<ENCODER>::getLevelSize(k);
-        node_builder& nb = mt_forest<ENCODER>::useNodeBuilder(k, lastV);
+        int lastV = F->getLevelSize(k);
+        node_builder& nb = F->useNodeBuilder(k, lastV);
         for (int v=0; v<lastV; v++) {
-          node_builder& nbp = mt_forest<ENCODER>::useSparseBuilder(-k, 1);
+          node_builder& nbp = F->useSparseBuilder(-k, 1);
           nbp.i(0) = v;
-          nbp.d(0) = mt_forest<ENCODER>::linkNode(p);
-          nb.d(v) = mt_forest<ENCODER>::createReducedNode(v, nbp);
+          nbp.d(0) = F->linkNode(p);
+          nb.d(v) = F->createReducedNode(v, nbp);
         } // for v
-        mt_forest<ENCODER>::unlinkNode(p);
-        return mt_forest<ENCODER>::createReducedNode(-1, nb);
+        F->unlinkNode(p);
+        return F->createReducedNode(-1, nb);
       }
 
 
-  }; // class
+  }; // class mtmxd_edgemaker
 
-}; // namespace
+};  // namespace MEDDLY
 
 #endif
 

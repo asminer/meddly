@@ -125,7 +125,7 @@ class MEDDLY::evp_mdd_int : public evmdd_forest {
     evp_mdd_int(int dsl, domain *d, const policies &p);
     ~evp_mdd_int();
 
-    virtual void createEdge(int** vlist, int* terms, int N, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e);
     virtual void createEdge(int val, dd_edge &e);
     virtual void evaluate(const dd_edge &f, const int* vlist, int &term)
       const;
@@ -170,7 +170,7 @@ class MEDDLY::evt_mdd_real : public evmdd_forest {
       n = ev;
     }
 
-    virtual void createEdge(int** vlist, float* terms, int N, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e);
     virtual void createEdge(float val, dd_edge &e);
     virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
       const;

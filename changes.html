@@ -10,16 +10,6 @@
        This should have minimal, if any, impact on applications.
   </li>
 
-  <li> <b>Removed</b> <tt>const</tt> from arrays in parameters
-       to <tt>createEdge</tt> methods, as the implementation will
-       now reorder these arrays in place as needed for speed.
-       If you expect these arrays to remain untouched, then you
-       will need to copy them before calling the method.
-       <b>TBD:</b> try using heapsort on minterms at top level.
-       <b>TBD:</b> try a reordering array, if it's not slower, 
-       then put the const back.
-  </li>
-
   <li> Added constants <tt>DONT_CARE</tt>
        and <tt>DONT_CHANGE</tt>,
        which should be used instead of raw values,
@@ -56,6 +46,11 @@ The following methods have been added for convenience:
   <li> <tt>getBooleanFromHandle()</tt> </li>
   <li> <tt>getIntegerFromHandle()</tt> </li>
   <li> <tt>getRealFromHandle()</tt> </li>
+</ul>
+
+<h3>Implementation</h3>
+<ul>
+  <li> Reorganized (and reimplemented) mutli-terminal hierarchy </li>
 </ul>
 
 </body>

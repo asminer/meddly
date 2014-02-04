@@ -33,7 +33,7 @@ namespace MEDDLY {
 /** 
     Forest for multi-terminal, mxd, boolean range.
 */
-class MEDDLY::mt_mxd_bool : public mtmxd_forest<expert_forest::bool_encoder> {
+class MEDDLY::mt_mxd_bool : public mtmxd_forest {
   public:
 
     mt_mxd_bool(int dsl, domain *d, const policies &p);
@@ -45,6 +45,10 @@ class MEDDLY::mt_mxd_bool : public mtmxd_forest<expert_forest::bool_encoder> {
     virtual void createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a);
     virtual void evaluate(const dd_edge& f, const int* vlist,
         const int* vplist, bool &term) const;
+
+    virtual void showTerminal(FILE* s, node_handle tnode) const;
+    virtual void writeTerminal(FILE* s, node_handle tnode) const;
+    virtual node_handle readTerminal(FILE* s);
 
   protected:
     virtual const char* codeChars() const;

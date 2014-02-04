@@ -42,6 +42,7 @@ int usage(const char* who)
   printf("\t-bfs: use traditional iterations\n");
   printf("\t-dfs: use saturation\n");
   printf("\t-exp: use explicit generation (very slow)\n\n");
+  printf("\t--batch b: specify explicit batch size\n\n");
   return 1;
 }
 
@@ -153,6 +154,7 @@ int main(int argc, const char** argv)
   timer start;
   int N = -1;
   char method = 'd';
+  int batchsize = 256;
 
   for (int i=1; i<argc; i++) {
     if (strcmp("-bfs", argv[i])==0) {
@@ -165,6 +167,11 @@ int main(int argc, const char** argv)
     }
     if (strcmp("-exp", argv[i])==0) {
       method = 'e';
+      continue;
+    }
+    if (strcmp("--batch", argv[i])==0) {
+      i++;
+      if (argv[i]) batchsize = atoi(argv[i]);
       continue;
     }
     N = atoi(argv[i]);
@@ -238,8 +245,9 @@ int main(int argc, const char** argv)
 
     case 'e':
         printf("Building reachability set using explicit search\n");
+        printf("Using batch size: %d\n", batchsize);
         fflush(stdout);
-        explicitReachset(events, 8*N, mdd, init_state, reachable, 256);
+        explicitReachset(events, 8*N, mdd, init_state, reachable, batchsize);
         break;
 
     default:
