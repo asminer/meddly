@@ -21,7 +21,8 @@ queen_cover \
 kanban \
 slot \
 life \
-libinfo
+libinfo \
+square1
 
 # test_user_operation 
 
@@ -76,6 +77,9 @@ life_LDADD = ../src/libmeddly.la
 
 libinfo_SOURCES = libinfo.cc
 libinfo_LDADD = ../src/libmeddly.la
+
+square1_SOURCES = square1.cc
+square1_LDADD = ../src/libmeddly.la
 
 # test_user_operation_SOURCES = test_user_operation.cc
 # test_user_operation_LDADD = ../src/libmeddly.la
