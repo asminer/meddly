@@ -22,7 +22,8 @@ kanban \
 slot \
 life \
 libinfo \
-square1
+square1 \
+swaps
 
 # test_user_operation 
 
@@ -80,6 +81,9 @@ libinfo_LDADD = ../src/libmeddly.la
 
 square1_SOURCES = square1.cc
 square1_LDADD = ../src/libmeddly.la
+
+swaps_SOURCES = swaps.cc
+swaps_LDADD = ../src/libmeddly.la
 
 # test_user_operation_SOURCES = test_user_operation.cc
 # test_user_operation_LDADD = ../src/libmeddly.la
