@@ -188,8 +188,10 @@ namespace MEDDLY {
         //  (2) process them, if any
         //  (3) union with don't cares
         //
-        int v = (dontcares) ? 0 : nextV;
-        for (int v=0; v<lastV; v = (dontcares) ? v+1 : nextV) {
+        for (int v = (dontcares) ? 0 : nextV; 
+             v<lastV; 
+             v = (dontcares) ? v+1 : nextV) 
+        {
           nextV = lastV;
           //
           // neat trick!

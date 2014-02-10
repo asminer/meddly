@@ -2355,7 +2355,7 @@ class MEDDLY::expert_forest : public forest
     /** Is this a redundant node that can be eliminated?
         Must be implemented in derived forests
         to deal with the default edge value.
-          @param  nr    Node we're trying to build.
+          @param  nb    Node we're trying to build.
 
           @return   True, if nr is a redundant node 
                           AND it should be eliminated.

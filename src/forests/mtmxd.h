@@ -101,7 +101,10 @@ class MEDDLY::mtmxd_forest : public mt_forest {
           // process unprimed level
           //
           if (DONT_CARE == vlist[i]) {
-            if (isFullyReduced()) continue;
+            if (isFullyReduced()) {
+              next = nextpr;
+              continue;
+            }
             // build redundant node
             int sz = getLevelSize(i);
             node_builder& nb = useNodeBuilder(i, sz);
@@ -389,8 +392,10 @@ namespace MEDDLY {
         //  (2) process them, if any
         //  (3) union with don't cares
         //
-        int v = (dontcares) ? 0 : nextV;
-        for (int v=0; v<lastV; v = (dontcares) ? v+1 : nextV) {
+        for (int v = (dontcares) ? 0 : nextV; 
+             v<lastV; 
+             v = (dontcares) ? v+1 : nextV) 
+        {
           nextV = lastV;
           //
           // neat trick!

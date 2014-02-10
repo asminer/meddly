@@ -68,6 +68,7 @@ bool MEDDLY::mt_forest::isRedundant(const node_builder &nb) const
 {
   if (isQuasiReduced()) return false;
   if (nb.getLevel() < 0 && isIdentityReduced()) return false;
+  if (nb.rawSize() < getLevelSize(nb.getLevel())) return false;
   int common = nb.d(0);
   for (int i=1; i<nb.rawSize(); i++) 
     if (nb.d(i) != common) return false;
