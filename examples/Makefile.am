@@ -23,7 +23,8 @@ slot \
 life \
 libinfo \
 square1 \
-swaps
+swaps \
+rubiks_rings
 
 # test_user_operation 
 
@@ -84,6 +85,9 @@ square1_LDADD = ../src/libmeddly.la
 
 swaps_SOURCES = swaps.cc
 swaps_LDADD = ../src/libmeddly.la
+
+rubiks_rings_SOURCES = rubiks_rings.cc
+rubiks_rings_LDADD = ../src/libmeddly.la
 
 # test_user_operation_SOURCES = test_user_operation.cc
 # test_user_operation_LDADD = ../src/libmeddly.la

@@ -38,164 +38,185 @@
 
 using namespace MEDDLY;
 
-/// "Global" array of minterms,
-/// used by Equals and NotEquals
-
-int** minterms;
-int** minprime;
-int mtlength;
-
-void InitMinterms()
-{
-  minterms = 0;
-  minprime = 0;
-  mtlength = 0;
-}
-
-void ExpandMinterms(int n, int K)
-{
-  if (n<mtlength) return;
-  minterms = (int**) realloc(minterms, n*sizeof(int*));
-  minprime = (int**) realloc(minprime, n*sizeof(int*));
-  if (0==minterms || 0==minprime) {
-    fprintf(stderr, "Couldn't resize minterms %d\n", n);
-    exit(1);
-  }
-  for (; mtlength < n; mtlength++) {
-    minterms[mtlength] = new int[K+1];
-    minprime[mtlength] = new int[K+1];
-  }
-}
+const int Vars = 25;
 
 /*
-  Builds the "constraint" va == vb,
-  for the given variables (levels).
-  Use negative to denote primed.
+    Set the variable number for each type of piece
 */
-void Equals(int va, int vb, dd_edge &answer)
+const int  wideLeft[8] = { 2, 5,  8, 11, 14, 17, 20, 23 };
+const int wideRight[8] = { 3, 6,  9, 12, 15, 18, 21, 24 };
+const int    narrow[8] = { 4, 7, 10, 13, 16, 19, 22, 25 };
+
+/*
+  For each variable number, what is it.
+*/
+bool isWideLeft[Vars+1];
+bool isWideRight[Vars+1];
+bool isNarrow[Vars+1];
+
+
+void rotateMove(const int* delta, int N, dd_edge &answer)
 {
   expert_forest* EF = (expert_forest*) answer.getForest();
-  int K = EF->getNumVariables();
-  int asz = EF->getLevelSize(va);
-  int bsz = EF->getLevelSize(vb);
-  int size = MIN(asz, bsz);
+  int K = Vars;
 
-  ExpandMinterms(size, K);
+  /*
+    Do the same thing at every level with size N:
+      change position i to position delta[i],
+      for i in {0..N-1}.
+  */
+  node_handle bottom = EF->handleForValue(1);
 
-  for (int i=0; i<size; i++) {
-    for (int k=1; k<=K; k++) {
-      minterms[i][k] = DONT_CARE;
-      minprime[i][k] = DONT_CARE;
+  for (int k=1; k<=K; k++) {
+    if (EF->getLevelSize(k) != N) {
+      // must be the exchange level
+      continue;
     }
-    if (va<0) minprime[i][-va] = i;
-    else      minterms[i][va]  = i;
-    if (vb<0) minprime[i][-vb] = i;
-    else      minterms[i][vb]  = i;
-  }
 
-  EF->createEdge(minterms, minprime, size, answer);
-}
+    node_builder& nk = EF->useNodeBuilder(k, N);
 
-/*
-  Builds the "constraint" va != vb,
-  for the given variables (levels).
-  Use negative to denote primed.
-*/
-void NotEquals(int va, int vb, dd_edge &answer)
-{
-  expert_forest* EF = (expert_forest*) answer.getForest();
-  int K = EF->getNumVariables();
-  int asz = EF->getLevelSize(va);
-  int bsz = EF->getLevelSize(vb);
-
-  ExpandMinterms(asz * bsz, K);
-
-  int mt = 0;
-  for (int ai=0; ai<asz; ai++) {
-    for (int bi=0; bi<bsz; bi++) if (ai != bi) {
-      for (int k=1; k<=K; k++) {
-        minterms[mt][k] = DONT_CARE;
-        minprime[mt][k] = DONT_CARE;
+    for (int i=0; i<N; i++) {
+      if (delta[i] < 0) {
+        nk.d(i) = EF->handleForValue(0);
+      } else {
+        node_builder& nkp = EF->useSparseBuilder(-k, 1);
+        nkp.i(0) = delta[i];
+        nkp.d(0) = EF->linkNode(bottom);
+        nk.d(i) = EF->createReducedNode(i, nkp);
       }
-      if (va<0) minprime[mt][-va] = ai;
-      else      minterms[mt][ va] = ai;
-      if (vb<0) minprime[mt][-vb] = bi;
-      else      minterms[mt][ vb] = bi;
-      mt++;
-    }
-  }
+    } // for i
 
-  EF->createEdge(minterms, minprime, mt, answer);
+    EF->unlinkNode(bottom);
+    bottom = EF->createReducedNode(-1, nk);
+  } // for k
+
+  answer.set(bottom, 0);
 }
 
-/*
-  "Rotates" a set of variables 
-    x0' == x0+r mod n
-    x1' == x1+r mod n
-    x2' == x2+r mod n
-    ...
-    xn-1' == xn-1+r mod n
-*/
-void Rotate(const int* vars, int nv, int r, dd_edge &answer)
+
+void exchangeMove(bool left, dd_edge &answer)
 {
   expert_forest* EF = (expert_forest*) answer.getForest();
+  int K = EF->getNumVariables();
 
-  int i=0;
-  int j = (i+r) % nv;
-  Equals(-vars[i], vars[j], answer);
+  node_handle bottom = EF->handleForValue(1);
 
-  for (i=1; i<nv; i++) {
-    j = (i+r) % nv;
-    dd_edge temp(EF);
-    Equals(-vars[i], vars[j], temp);
-    answer *= temp;
-  }
+  for (int k=1; k<=K; k++) {
+    if (EF->getLevelSize(k) == 2) {
+      // the exchange level
+      node_builder& nk = EF->useNodeBuilder(k, 2);
+      node_builder& nkp = EF->useSparseBuilder(-k, 1);
+      nkp.i(0) = 1;
+      nkp.d(0) = EF->linkNode(bottom);
+      nk.d(0) = EF->createReducedNode(0, nkp);
+      nkp = EF->useSparseBuilder(-k, 1);
+      nkp.i(0) = 0;
+      nkp.d(0) = EF->linkNode(bottom);
+      nk.d(1) = EF->createReducedNode(1, nkp);
+      EF->unlinkNode(bottom);
+      bottom = EF->createReducedNode(-1, nk);
+      continue;
+    }
+
+    node_builder& nk = EF->useNodeBuilder(k, 24);
+    for (int i=0; i<24; i++) {
+      if (isWideLeft[k] && 0==i%6) {
+        // can't rotate, wide piece is in the way
+        nk.d(i) = 0;
+        continue;
+      }
+      
+      if (i%12>5 == left) {
+        // exchange this piece
+        // i -> (i+12)%24
+        node_builder& nkp = EF->useSparseBuilder(-k, 1);
+        nkp.i(0) = (i+12)%24;
+        nkp.d(0) = EF->linkNode(bottom);
+        nk.d(i) = EF->createReducedNode(-1, nkp);
+      } else {
+        // this piece doesn't move
+        nk.d(i) = EF->linkNode(bottom);
+      }
+
+    } // for i
+    EF->unlinkNode(bottom);
+    bottom = EF->createReducedNode(-1, nk);
+  } //for k
+
+  answer.set(bottom, 0);
 }
+
 
 /*
   Builds next-state function for square1
 */
-void Square1NSF(const int* top, const int* bottom, const int exch, dd_edge &answer)
+void Square1NSF(dd_edge &answer)
 {
-  dd_edge topl(answer), topr(answer), botl(answer), botr(answer);
-
+  dd_edge topl(answer), topr(answer), botl(answer), botr(answer), 
+          exchl(answer), exchr(answer);
+  int rot[24];
 
   printf("Building event: rotate top by %d\n", 1);
   fflush(stdout);
-  Rotate(top, 12, 1, topl);
+  for (int i=0; i<12; i++) rot[i] = (i+1)%12;
+  for (int i=12; i<24; i++) rot[i] = i;
+  rotateMove(rot, 24, topl);
+
 #ifdef DEBUG_EVENTS
-  event.show(stdout, 2);
+  topl.show(stdout, 2);
   fflush(stdout);
 #endif
 
   printf("Building event: rotate top by %d\n", -1);
   fflush(stdout);
-  Rotate(top, 12, 11, topr);
+  for (int i=0; i<12; i++) rot[i] = (i+11)%12;
+  rotateMove(rot, 24, topr);
+
 #ifdef DEBUG_EVENTS
-  event.show(stdout, 2);
+  topr.show(stdout, 2);
   fflush(stdout);
 #endif
 
   printf("Building event: rotate bottom by %d\n", 1);
   fflush(stdout);
-  Rotate(bottom, 12, 1, botl);
+  for (int i=0; i<12; i++) rot[i] = i;
+  for (int i=12; i<24; i++) rot[i] = (i+1)%12+12;
+  rotateMove(rot, 24, botl);
+
 #ifdef DEBUG_EVENTS
-  event.show(stdout, 2);
+  botl.show(stdout, 2);
   fflush(stdout);
 #endif
 
   printf("Building event: rotate bottom by %d\n", -1);
   fflush(stdout);
-  Rotate(bottom, 12, 11, botr);
+  for (int i=12; i<24; i++) rot[i] = (i+11)%12+12;
+  rotateMove(rot, 24, botr);
 #ifdef DEBUG_EVENTS
-  event.show(stdout, 2);
+  botr.show(stdout, 2);
+  fflush(stdout);
+#endif
+
+  printf("Building event: exchange left\n");
+  fflush(stdout);
+  exchangeMove(true, exchl);
+#ifdef DEBUG_EVENTS
+  exchl.show(stdout, 2);
+  fflush(stdout);
+#endif
+
+  printf("Building event: exchange right\n");
+  fflush(stdout);
+  exchangeMove(false, exchr);
+#ifdef DEBUG_EVENTS
+  exchl.show(stdout, 2);
   fflush(stdout);
 #endif
 
   printf("Accumulating events...");
   fflush(stdout);
 
-  answer = topl + topr + botl + botr;
+  answer = topl + topr + botl + botr + exchl + exchr;
 
   printf("\n");
   fflush(stdout);
@@ -206,6 +227,7 @@ void Square1NSF(const int* top, const int* bottom, const int exch, dd_edge &answ
   fflush(stdout);
 #endif
 }
+
 
 void printStats(const char* who, const forest* f)
 {
@@ -221,51 +243,109 @@ void printStats(const char* who, const forest* f)
 
 int main()
 {
-  MEDDLY::initialize();
+  /*
+    Build the variable arrays
+  */
+  for (int i=0; i<=Vars; i++) {
+    isWideLeft[i] = isWideRight[i] = isNarrow[i] = false;
+  }
+  for (int i=0; i<8; i++) {
+    isWideLeft[wideLeft[i]] = true;
+    isWideRight[wideRight[i]] = true;
+    isNarrow[narrow[i]] = true;
+  }
 
-  // Variables for top piees
-  const int top[] = { 25, 23, 21, 19, 17, 15, 13, 11, 9, 7, 5, 3 };
-  // Variables for bottom pieces
-  const int bottom[] = { 24, 22, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2 };
-  // Variable for exchanged or not
-  const int exchange = 1;
+  MEDDLY::initialize();
 
   //
   // Build the domain
   //
-  int scratch[25];
-  for (int i=0; i<25; i++) scratch[i] = 0;
-  for (int i=0; i<12; i++) {
-    // set top and bottom sizes
-    if (scratch[top[i]-1]) {
-      fprintf(stderr, "Error - variable %d duplicated\n", top[i]);
+  int scratch[1+Vars];
+  for (int i=0; i<=Vars; i++) scratch[i] = 0;
+  for (int i=1; i<=Vars; i++) {
+    int iwl = isWideLeft[i];
+    int iwr = isWideRight[i];
+    int isn = isNarrow[i];
+    if (iwl + iwr + isn > 1) {
+      fprintf(stderr, "Error - variable %d duplicated\n", i);
       return 1;
     }
-    scratch[top[i]-1] = 16;   // There's 16 top/bottom pieces, total
-    if (scratch[bottom[i]-1]) {
-      fprintf(stderr, "Error - variable %d duplicated\n", bottom[i]);
-      return 1;
+    if (iwl + iwr + isn == 0) {
+      // exchanged or not
+      scratch[i-1] = 2;
+    } else {
+      scratch[i-1] = 24;  // total number of positions for each piece
     }
-    scratch[bottom[i]-1] = 16;
-  }
-  if (scratch[exchange-1]) {
-    fprintf(stderr, "Error - variable %d duplicated\n", exchange);
-    return 1;
-  }
-  scratch[exchange-1] = 2;  // exchanged or not
-  domain* D = createDomainBottomUp(scratch, 25);
+  } // for i
+
+  domain* D = createDomainBottomUp(scratch, Vars);
  
   //
   // Build NSF for possible "1-step" moves
   //
-  forest::policies p(true);
-  // p.setPessimistic();
-  // p.setFullyReduced();
-  forest* F = D->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL, p);
-  dd_edge nsf(F);
-  Square1NSF(top, bottom, exchange, nsf);
-  printStats("MxD", F);
+  timer watch;
+  forest* mxd = D->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  dd_edge nsf(mxd);
+  watch.note_time();
+  Square1NSF(nsf);
+  watch.note_time();
+  printf("Next-state function construction took %.4f seconds\n",
+          watch.get_last_interval()/1000000.0);
+  printf("Next-state function MxD has\n\t%d nodes\n\t\%d edges\n",
+    nsf.getNodeCount(), nsf.getEdgeCount());
+  printStats("MxD", mxd);
 
+  //
+  // Build initial configuration
+  //
+  forest::policies p(true);
+//  p.setPessimistic();
+  forest* mdd = D->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  dd_edge initial(mdd);
+  int perm = 0;
+  for (int i=1; i<=Vars; i++) {
+    if (isWideLeft[i] | isWideRight[i] | isNarrow[i]) {
+      scratch[i] = perm;
+      perm++;
+    } else {
+      scratch[i] = 0;
+    }
+  }
+  const int* foo = scratch;
+  mdd->createEdge(&foo, 1, initial);
+
+  //
+  // Saturate!
+  //
+  printf("Building reachability set using saturation\n");
+  fflush(stdout);
+  dd_edge reachable(mdd);
+  watch.note_time();
+  apply(REACHABLE_STATES_DFS, initial, nsf, reachable);
+  watch.note_time();
+  printf("Reachability set construction took %.4f seconds\n",
+          watch.get_last_interval()/1000000.0);
+  printf("Reachability set MDD has\n\t%d nodes\n\t\%d edges\n",
+    nsf.getNodeCount(), nsf.getEdgeCount());
+  printStats("MDD", mdd);
+  operation::showAllComputeTables(stdout, 1);
+  fflush(stdout);
+
+#ifdef DUMP_REACHABLE
+  printf("Reachable states:\n");
+  reachable.show(stdout, 2);
+#endif
+
+  //
+  // Determine cardinality
+  //
+  double c;
+  apply(CARDINALITY, reachable, c);
+  printf("Counted (approx) %g reachable states\n", c);
+
+  //
+  // Cleanup
+  //
   MEDDLY::cleanup();
   return 0;
 }

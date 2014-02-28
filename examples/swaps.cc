@@ -259,7 +259,7 @@ int main(int argc, const char** argv)
 
   printf("Next-state function construction took %.4f seconds\n",
           watch.get_last_interval()/1000000.0);
-  printf("Next-state function has\n\t%d nodes\n\t\%d edges\n",
+  printf("Next-state function MxD has\n\t%d nodes\n\t\%d edges\n",
     nsf.getNodeCount(), nsf.getEdgeCount());
 
 #ifdef DUMP_NSF
@@ -306,7 +306,7 @@ int main(int argc, const char** argv)
   watch.note_time();
   printf("Reachability set construction took %.4f seconds\n",
           watch.get_last_interval()/1000000.0);
-  printf("Reachability set function has\n\t%d nodes\n\t\%d edges\n",
+  printf("Reachability set MDD has\n\t%d nodes\n\t\%d edges\n",
     reachable.getNodeCount(), reachable.getEdgeCount());
   fflush(stdout);
 //  mdd->garbageCollect();
