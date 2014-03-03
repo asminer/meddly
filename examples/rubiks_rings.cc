@@ -48,48 +48,27 @@ const int COLORS = 3;
 
 /// Size of the left ring
 // const int leftring = 18;
-const int leftring = 14;
+int leftring;
 
 /// Size of the right ring
 // const int rightring = 18;
-const int rightring =  9;
+int rightring;
 
+/// Level number for the "left ring" slots.
+int* leftvar = 0;
 
-/** The level number for the "left ring".
-    Counting starts at the exchange position, and proceeds
-    clockwise (along the yellow balls), through the second
-    exchange position, along the red/blue balls.
-*/
-// int   leftvar[] = {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
-//                  XX   Y   Y   Y   Y   Y  XX   R   R   R   R   R   R   R   R   R   R   R
+/// Initial states for the "left ring" slots.
+int* leftinit = 0;
 
-int   leftvar[] = { 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1};
-//                  XX   Y   Y   Y   Y   Y  XX   R   R   R   R   R   R   R   R   R   R   R
+/// Level number for the "right ring" slots.
+int* rightvar = 0;
 
-/** The initial state for the "left ring".
-    Same ordering as the leftvar[] array.
-*/
-int  leftinit[] = { YY, YY, YY, YY, YY, YY, YY, RR, RR, RR, RR, RR, RR, RR, RR, RR, RR, RR};
-
-/** The level number for the "right ring".
-    Counting is symmetric to the left case: start at the exchange
-    position, proceed counter clockwise (along the yellow balls), 
-    through the second exchange position, along the red/blue balls.
-    Note that the exchange positions must be the same level!
-*/
-// int  rightvar[] = {  1, 19, 20, 21, 22, 23,  7, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34};
-//                  XX   Y   Y   Y   Y   Y  XX   B   B   B   B   B   B   B   B   B   B   B
-
-int  rightvar[] = { 14, 15, 16, 17, 18, 19,  8, 20, 21,  0,  0,  0,  0};
-//                  XX   Y   Y   Y   Y   Y  XX   B   B   B   B   B   B   B   B   B   B   B
-
-/** The initial state for the "right ring".
-    Same ordering as the rightvar[] array.
-*/
-int rightinit[] = { YY, YY, YY, YY, YY, YY, YY, BB, BB, BB, BB, BB, BB, BB, BB, BB, BB, BB};
+/// Initial states for the "right ring" slots.
+int* rightinit = 0;
 
 /// Total number of slots
-const int LEVELS = leftring + rightring - 2;
+int LEVELS;
+
 
 
 inline void bailout(const char* fmt, ...)
@@ -142,6 +121,65 @@ void sanityChecks()
     }
   }
 }
+
+
+/**
+    Use the following order:
+      left ring is decreasing down to 1.
+      right ring is increasing (except for second exchange slots).
+*/
+void decinc_order(int p_red, int p_blue)
+{
+  leftring = 7 + p_red;
+  rightring = 7 + p_blue;
+
+  LEVELS = leftring + rightring - 2;
+
+  leftvar = new int[leftring];
+  leftinit = new int[leftring];
+  rightvar = new int[rightring];
+  rightinit = new int[rightring];
+
+  for (int i=leftring; i; i--) leftvar[leftring-i] = i;
+
+  int k = leftring;
+  for (int i=0; i<rightring; i++) {
+    if (i != 6) {
+      rightvar[i] = k;
+      k++;
+    } else {
+      rightvar[6] = leftvar[6];
+    }
+  }
+
+  int yellow = -2;  // Correct for exchange positions
+  int blue = 0;
+  int red = 0;
+
+  for (int i=0; i<leftring; i++) {
+    if (i<7) {
+      leftinit[i] = YY;
+      yellow++;
+    } else {
+      leftinit[i] = RR;
+      red++;
+    }
+  }
+  for (int i=0; i<rightring; i++) {
+    if (i<7) {
+      rightinit[i] = YY;
+      yellow++;
+    } else {
+      rightinit[i] = BB;
+      blue++;
+    }
+  }
+  printf("Rubik's rings using:\n\t%2d yellow\n\t%2d red\n\t%2d blue\n",
+    yellow, red, blue);
+
+  sanityChecks();
+}
+
 
 
 /**
@@ -344,13 +382,16 @@ int usage(const char* who)
   printf("Usage: %s <options>\n\n", name);
   printf("\t -opt:  Optimistic node deletion (default)\n");
   printf("\t-pess:  Pessimistic node deletion \n\n");
+  printf("\t -r n:  Specify the number of red balls (default 11)\n");
+  printf("\t -b n:  Specify the number of blue balls (default 11)\n\n");
   return 1;
 }
 
 int main(int argc, const char** argv)
 {
-  sanityChecks();
 
+  int red = 11;
+  int blue = 11;
   forest::policies p(false);
   p.setOptimistic();
   for (int i=1; i<argc; i++) {
@@ -362,9 +403,20 @@ int main(int argc, const char** argv)
         p.setPessimistic();
         continue;
     }
+    if (strcmp("-r", argv[i])==0) {
+        i++;
+        red = atoi(argv[i]);
+        if (red>=0) continue;
+    }
+    if (strcmp("-b", argv[i])==0) {
+        i++;
+        blue = atoi(argv[i]);
+        if (blue>=0) continue;
+    }
     return usage(argv[0]);
   }
 
+  decinc_order(red, blue);
   MEDDLY::initialize();
 
   //
@@ -423,6 +475,7 @@ int main(int argc, const char** argv)
   //
   // Cleanup
   //
+  operation::showAllComputeTables(stdout, 1);
   MEDDLY::cleanup();
   return 0;
 }
