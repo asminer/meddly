@@ -389,7 +389,7 @@ void MEDDLY::forest::unregisterDDEdges()
   for (unsigned i = 0; i < firstFree; ++i) {
     if (edge[i].edge != 0) {
       MEDDLY_DCASSERT(edge[i].nextHole == -1);
-      edge[i].edge->set(0, 0);
+      edge[i].edge->clear();
       edge[i].edge->setIndex(-1);
     }
   }
@@ -420,17 +420,17 @@ MEDDLY::forest::edge_visitor::~edge_visitor()
 // *                                                                *
 // ******************************************************************
 
-void MEDDLY::expert_forest::bool_encoder::show(FILE* s, node_handle h)
+void MEDDLY::expert_forest::bool_Tencoder::show(FILE* s, node_handle h)
 {
   MEDDLY::th_fputc(handle2value(h) ? 'T' : 'F', s);
 }
 
-void MEDDLY::expert_forest::bool_encoder::write(FILE* s, node_handle h)
+void MEDDLY::expert_forest::bool_Tencoder::write(FILE* s, node_handle h)
 {
   MEDDLY::th_fputc(handle2value(h) ? 'T' : 'F', s);
 }
 
-MEDDLY::node_handle MEDDLY::expert_forest::bool_encoder::read(FILE* s)
+MEDDLY::node_handle MEDDLY::expert_forest::bool_Tencoder::read(FILE* s)
 {
   stripWS(s);
   char c = fgetc(s);
@@ -439,17 +439,19 @@ MEDDLY::node_handle MEDDLY::expert_forest::bool_encoder::read(FILE* s)
   throw error(error::INVALID_FILE);
 }
 
-void MEDDLY::expert_forest::int_encoder::show(FILE* s, node_handle h)
+// ******************************************************************
+
+void MEDDLY::expert_forest::int_Tencoder::show(FILE* s, node_handle h)
 {
   th_fprintf(s, "t%d", handle2value(h));
 }
 
-void MEDDLY::expert_forest::int_encoder::write(FILE* s, node_handle h)
+void MEDDLY::expert_forest::int_Tencoder::write(FILE* s, node_handle h)
 {
   th_fprintf(s, "t%d", handle2value(h));
 }
 
-MEDDLY::node_handle MEDDLY::expert_forest::int_encoder::read(FILE* s)
+MEDDLY::node_handle MEDDLY::expert_forest::int_Tencoder::read(FILE* s)
 {
   stripWS(s);
   char c = fgetc(s);
@@ -459,17 +461,19 @@ MEDDLY::node_handle MEDDLY::expert_forest::int_encoder::read(FILE* s)
   return value2handle(value);
 }
 
-void MEDDLY::expert_forest::float_encoder::show(FILE* s, node_handle h)
+// ******************************************************************
+
+void MEDDLY::expert_forest::float_Tencoder::show(FILE* s, node_handle h)
 {
   th_fprintf(s, "t%f", handle2value(h));
 }
 
-void MEDDLY::expert_forest::float_encoder::write(FILE* s, node_handle h)
+void MEDDLY::expert_forest::float_Tencoder::write(FILE* s, node_handle h)
 {
   th_fprintf(s, "t%8e", handle2value(h));
 }
 
-MEDDLY::node_handle MEDDLY::expert_forest::float_encoder::read(FILE* s)
+MEDDLY::node_handle MEDDLY::expert_forest::float_Tencoder::read(FILE* s)
 {
   stripWS(s);
   char c = fgetc(s);
@@ -477,6 +481,53 @@ MEDDLY::node_handle MEDDLY::expert_forest::float_encoder::read(FILE* s)
   float value;
   th_fscanf(1, s, "%8e", &value);
   return value2handle(value);
+}
+
+// ******************************************************************
+// ******************************************************************
+
+void MEDDLY::expert_forest::int_EVencoder::show(FILE* s, const void* ptr)
+{
+  int val;
+  readValue(ptr, val);
+  th_fprintf(s, "%d", val);
+}
+
+void MEDDLY::expert_forest::int_EVencoder::write(FILE* s, const void* ptr)
+{
+  int val;
+  readValue(ptr, val);
+  th_fprintf(s, "%d", val);
+}
+
+void MEDDLY::expert_forest::int_EVencoder::read(FILE* s, void* ptr)
+{
+  int val;
+  th_fscanf(1, s, "%d", &val);
+  writeValue(ptr, val);
+}
+
+// ******************************************************************
+
+void MEDDLY::expert_forest::float_EVencoder::show(FILE* s, const void* ptr)
+{
+  float val;
+  readValue(ptr, val);
+  th_fprintf(s, "%f", val);
+}
+
+void MEDDLY::expert_forest::float_EVencoder::write(FILE* s, const void* ptr)
+{
+  float val;
+  readValue(ptr, val);
+  th_fprintf(s, "%8e", val);
+}
+
+void MEDDLY::expert_forest::float_EVencoder::read(FILE* s, void* ptr)
+{
+  float val;
+  th_fscanf(1, s, "%8e", &val);
+  writeValue(ptr, val);
 }
 
 // ******************************************************************

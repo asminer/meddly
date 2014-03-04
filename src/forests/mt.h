@@ -116,15 +116,15 @@ class MEDDLY::mt_forest : public expert_forest {
           Reduce, add redundant as necessary, and set answer
       */
       node_handle node = createReducedNode(-1, nb);
-      node = makeNodeAtLevel(getDomain()->getNumVariables() , node); 
-      result.set(node, 0);
+      node = makeNodeAtTop(node); 
+      result.set(node);
   }
 
 
   template <class ENCODER, class T>
   inline void createEdgeTempl(T term, dd_edge& e) {
       if (e.getForest() != this) throw error(error::INVALID_OPERATION);
-      e.set(makeNodeAtTop(ENCODER::value2handle(term)), 0);
+      e.set(makeNodeAtTop(ENCODER::value2handle(term)));
   }
 
 

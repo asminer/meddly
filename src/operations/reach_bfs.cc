@@ -132,7 +132,7 @@ void MEDDLY::common_bfs_mt
 ::compute(const dd_edge &a, const dd_edge &b, dd_edge &c)
 {
   node_handle cnode = compute(a.getNode(), b.getNode());
-  c.set(cnode, 0);
+  c.set(cnode);
 }
 
 // ******************************************************************

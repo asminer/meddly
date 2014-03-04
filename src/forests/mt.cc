@@ -20,11 +20,6 @@
 */
 
 
-// TODO: implement changes made to mt_forest interface
-//
-// TODO: HERE: go through every function in mdds.h and mdds.cc
-
-
 #include "mt.h"
 #include "../unique_table.h"
 
@@ -83,7 +78,6 @@ bool MEDDLY::mt_forest::isIdentityEdge(const node_builder &nb, int i) const
   return nb.d(i) != 0;
 }
 
-// protected
 
 MEDDLY::node_handle MEDDLY::mt_forest::makeNodeAtLevel(int k, node_handle d) 
 {

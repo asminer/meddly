@@ -1,6 +1,32 @@
 <html>
 <body>
-<h2>New in this version</h2>
+<h2>Changes since last release</h2>
+
+<h3>Simple interface</h3>
+<ul>
+  <li>
+  More careful and more strict use of
+  <tt>set</tt> methods in class <tt>dd_edge</tt>:
+  for multi-terminal forests, use <tt>set</tt>
+  with a single argument;
+  for edge-valued forsts, use the appropriate
+  two-argument version of <tt>set</tt>.
+  </li>
+</ul>
+
+<h3>Expert interface</h3>
+<ul>
+  <li> 
+  Added classes <tt>int_EVencoder</tt> and <tt>float_EVencoder</tt>
+  for a centralized mechanism for storing edge values within nodes.
+  </li>
+
+  <li> 
+  Classes <tt>bool_encoder</tt>, <tt>int_encoder</tt>, and
+  <tt>float_encoder</tt> have been renamed <tt>bool_Tencoder</tt>,
+  <tt>int_Tencoder</tt>, and <tt>float_Tencoder</tt> for consistency.
+  </li>
+</ul>
 
 </body>
 </html>

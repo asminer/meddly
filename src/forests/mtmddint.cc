@@ -33,7 +33,7 @@ MEDDLY::mt_mdd_int::~mt_mdd_int()
 
 void MEDDLY::mt_mdd_int::createEdge(int term, dd_edge& e)
 {
-  createEdgeTempl<int_encoder, int>(term, e);
+  createEdgeTempl<int_Tencoder, int>(term, e);
 }
 
 void MEDDLY::mt_mdd_int::createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e)
@@ -42,37 +42,37 @@ void MEDDLY::mt_mdd_int::createEdge(const int* const* vlist, const int* terms, i
   enlargeStatics(N);
   enlargeVariables(vlist, N, false);
 
-  mtmdd_edgemaker<int_encoder, int>
+  mtmdd_edgemaker<int_Tencoder, int>
   EM(this, vlist, terms, order, N, getDomain()->getNumVariables(), unionOp);
 
-  e.set(EM.createEdge(), 0);
+  e.set(EM.createEdge());
 }
 
 void MEDDLY::mt_mdd_int::
 createEdgeForVar(int vh, bool vp, const int* terms, dd_edge& a)
 {
-  createEdgeForVarTempl<int_encoder, int>(vh, vp, terms, a);
+  createEdgeForVarTempl<int_Tencoder, int>(vh, vp, terms, a);
 }
 
 void MEDDLY::mt_mdd_int
 ::evaluate(const dd_edge &f, const int* vlist, int &term) const
 {
-  term = int_encoder::handle2value(evaluateRaw(f, vlist));
+  term = int_Tencoder::handle2value(evaluateRaw(f, vlist));
 }
 
 void MEDDLY::mt_mdd_int::showTerminal(FILE* s, node_handle tnode) const
 {
-  int_encoder::show(s, tnode);
+  int_Tencoder::show(s, tnode);
 }
 
 void MEDDLY::mt_mdd_int::writeTerminal(FILE* s, node_handle tnode) const
 {
-  int_encoder::write(s, tnode);
+  int_Tencoder::write(s, tnode);
 }
 
 MEDDLY::node_handle MEDDLY::mt_mdd_int::readTerminal(FILE* s)
 {
-  return int_encoder::read(s);
+  return int_Tencoder::read(s);
 }
 
 const char* MEDDLY::mt_mdd_int::codeChars() const

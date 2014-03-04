@@ -94,15 +94,15 @@ void MEDDLY::compl_mdd::showEntry(FILE* strm, const node_handle* data) const
 void MEDDLY::compl_mdd::compute(const dd_edge& a, dd_edge& b) 
 {
   int result = compute(a.getNode());
-  b.set(result, 0);
+  b.set(result);
 }
 
 MEDDLY::node_handle MEDDLY::compl_mdd::compute(node_handle a)
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
-    return expert_forest::bool_encoder::value2handle(
-      !expert_forest::bool_encoder::handle2value(a)
+    return expert_forest::bool_Tencoder::value2handle(
+      !expert_forest::bool_Tencoder::handle2value(a)
     );
   }
 
@@ -180,21 +180,21 @@ void MEDDLY::compl_mxd::showEntry(FILE* strm, const node_handle* data) const
 void MEDDLY::compl_mxd::compute(const dd_edge& a, dd_edge& b) 
 {
   node_handle result = compute(-1, argF->getDomain()->getNumVariables(), a.getNode());
-  b.set(result, 0);
+  b.set(result);
 }
 
 MEDDLY::node_handle MEDDLY::compl_mxd::compute(int in, int k, node_handle a)
 {
   if (0==k) {
-    return expert_forest::bool_encoder::value2handle(
-      !expert_forest::bool_encoder::handle2value(a)
+    return expert_forest::bool_Tencoder::value2handle(
+      !expert_forest::bool_Tencoder::handle2value(a)
     );
   }
   if (argF->isTerminalNode(a) && 
       resF->isFullyReduced()) 
   {
-    return expert_forest::bool_encoder::value2handle(
-      !expert_forest::bool_encoder::handle2value(a)
+    return expert_forest::bool_Tencoder::value2handle(
+      !expert_forest::bool_Tencoder::handle2value(a)
     );
   }
   // Check compute table

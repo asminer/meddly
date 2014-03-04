@@ -108,7 +108,7 @@ void MEDDLY::image_op
 ::compute(const dd_edge &a, const dd_edge &b, dd_edge &c)
 {
   node_handle cnode = compute(a.getNode(), b.getNode());
-  c.set(cnode, 0);
+  c.set(cnode);
 }
 
 MEDDLY::node_handle MEDDLY::image_op::compute(node_handle a, node_handle b)

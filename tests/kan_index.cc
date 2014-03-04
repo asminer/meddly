@@ -49,6 +49,13 @@ const char* kanban[] = {
 
 using namespace MEDDLY;
 
+bool equal(const int* a, const int* b, int N)
+{
+  for (int i=1; i<=N; i++)
+    if (a[i] != b[i]) return false;
+  return true;
+}
+
 bool checkReachset(int N)
 {
   printf("Running test for N=%d...\n", N);
@@ -106,6 +113,8 @@ bool checkReachset(int N)
     }
     c++;
   } // for s
+  printf("\tverified `forward'\n");
+  fflush(stdout);
 
   // verify the other way
   int d = 0;
@@ -119,12 +128,29 @@ bool checkReachset(int N)
     }
     d++;
   }
+  printf("\tverified `backward'\n");
+  fflush(stdout);
+
+  // Verify index search
+  c = 0;
+  int elem[17];
+  for (enumerator s(reachable); s; ++s) {
+    const int* state = s.getAssignments();
+    evmdd->getElement(reach_index, c, elem); 
+    if (!equal(state, elem, 16)) {
+      printf("\nFetch index %d got wrong state\n", c);
+      return false;
+    }
+    c++;
+  } // for s
+  printf("\tverified `getElement'\n");
+  fflush(stdout);
+
+
   if (c!=d) {
     printf("\nCardinality mismatch\n");
     return false;
   }
-  printf("\tchecked indexes\n");
-  fflush(stdout);
 
   destroyDomain(dom);
   

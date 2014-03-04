@@ -40,7 +40,8 @@
 #include "forests/mtmxdint.h"
 #include "forests/mtmxdreal.h"
 
-#include "forests/evmdd.h"
+#include "forests/evmdd_plusint.h"
+#include "forests/evmdd_timesreal.h"
 #endif
 
 // #define DEBUG_CLEANUP
@@ -252,11 +253,11 @@ MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t,
         break;
 
     case forest::EVPLUS:
-      f = new evp_mdd_int(slot, this, p);
+      f = new evmdd_plusint(slot, this, p);
       break;
 
     case forest::EVTIMES:
-      f = new evt_mdd_real(slot, this, p);
+      f = new evmdd_timesreal(slot, this, p);
       break;
 
     default:

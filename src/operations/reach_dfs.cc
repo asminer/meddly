@@ -396,7 +396,7 @@ void MEDDLY::common_dfs_mt
   // Execute saturation operation
   saturation_op *so = new saturation_op(this, arg1F, resF);
   node_handle cnode = so->saturate(a.getNode());
-  c.set(cnode, 0);
+  c.set(cnode);
 
   // Cleanup
   while (freeqs) {

@@ -126,7 +126,7 @@ void MEDDLY::VM_evplus_mt::compute(int k, double* y, node_handle y_ind,
 {
   // Handles the unprimed levels of a
   if (0==k) {
-    y[0] += x[0] * expert_forest::float_encoder::handle2value(a);
+    y[0] += x[0] * expert_forest::float_Tencoder::handle2value(a);
     return;
   }
 
@@ -142,7 +142,7 @@ void MEDDLY::VM_evplus_mt::compute(int k, double* y, node_handle y_ind,
     if (fx == fy) {
       MEDDLY_DCASSERT(fx->isIndexSet(x_ind));
       // yes we can
-      float v = expert_forest::float_encoder::handle2value(a);
+      float v = expert_forest::float_Tencoder::handle2value(a);
       for (long i = fx->getIndexSetCardinality(x_ind)-1; i>=0; i--) {
         y[i] += x[i] * v;
       }
@@ -228,7 +228,7 @@ void MEDDLY::VM_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
 {
   // Handles the primed levels of A
   if (0==k) {
-    y[0] += x[0] * expert_forest::float_encoder::handle2value(a);
+    y[0] += x[0] * expert_forest::float_Tencoder::handle2value(a);
     return;
   }
 
@@ -295,7 +295,7 @@ void MEDDLY::MV_evplus_mt::compute(int k, double* y, node_handle y_ind,
 {
   // Handles the unprimed levels of a
   if (0==k) {
-    y[0] += x[0] * expert_forest::float_encoder::handle2value(a);
+    y[0] += x[0] * expert_forest::float_Tencoder::handle2value(a);
     return;
   }
 
@@ -311,7 +311,7 @@ void MEDDLY::MV_evplus_mt::compute(int k, double* y, node_handle y_ind,
     if (fx == fy) {
       MEDDLY_DCASSERT(fy->isIndexSet(y_ind));
       // yes we can
-      float v = expert_forest::float_encoder::handle2value(a);
+      float v = expert_forest::float_Tencoder::handle2value(a);
       for (long i = fy->getIndexSetCardinality(y_ind)-1; i>=0; i--) {
         y[i] += x[i] * v;
       }
@@ -397,7 +397,7 @@ void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
 {
   // Handles the primed levels of A
   if (0==k) {
-    y[0] += x[0] * expert_forest::float_encoder::handle2value(a);
+    y[0] += x[0] * expert_forest::float_Tencoder::handle2value(a);
     return;
   }
 

@@ -195,7 +195,7 @@ void MEDDLY::enumerator::getValue(int& val) const
 {
   MEDDLY_DCASSERT(F);
   if (F->isMultiTerminal()) {
-    val = expert_forest::int_encoder::handle2value(index[0]);
+    val = expert_forest::int_Tencoder::handle2value(index[0]);
   } else {
     // return the value using evaluate
     F->evaluate(e, index, val);
@@ -207,7 +207,7 @@ void MEDDLY::enumerator::getValue(float& val) const
 {
   MEDDLY_DCASSERT(F);
   if (F->isMultiTerminal()) {
-    val = expert_forest::float_encoder::handle2value(index[0]);
+    val = expert_forest::float_Tencoder::handle2value(index[0]);
   } else {
     // return the value using evaluate
     F->evaluate(e, index, val);

@@ -53,7 +53,7 @@ inline void unlinkNode(MEDDLY::forest* p, int node)
 
 MEDDLY::dd_edge::dd_edge()
 : parent(0), index(-1),
-  node(0), value(0), 
+  node(0), raw_value(0),
   opPlus(0), opStar(0), opMinus(0), opDivide(0)
 {
 #ifdef DEBUG_CLEANUP
@@ -64,7 +64,7 @@ MEDDLY::dd_edge::dd_edge()
 // Constructor.
 MEDDLY::dd_edge::dd_edge(forest* p)
 : parent(p), index(-1),
-  node(0), value(0), 
+  node(0), raw_value(0),
   opPlus(0), opStar(0), opMinus(0), opDivide(0)
 {
 #ifdef DEBUG_CLEANUP
@@ -114,7 +114,7 @@ void MEDDLY::dd_edge::init(const dd_edge &e)
 {
   parent = e.parent;
   node = e.node;
-  value = e.value;
+  raw_value = e.raw_value;
 
   linkNode(parent, node);
 
@@ -141,9 +141,20 @@ void MEDDLY::dd_edge::destroy()
   }
 }
 
+void MEDDLY::dd_edge::getEdgeValue(int& ev) const
+{
+  MEDDLY_DCASSERT(parent);
+  MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
+  MEDDLY_DCASSERT(forest::INTEGER == parent->getRangeType());
+  expert_forest::int_EVencoder::readValue(&raw_value, ev);
+}
+
 void MEDDLY::dd_edge::getEdgeValue(float& ev) const
 {
-  ev = toFloat(value);
+  MEDDLY_DCASSERT(parent);
+  MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
+  MEDDLY_DCASSERT(forest::REAL == parent->getRangeType());
+  expert_forest::float_EVencoder::readValue(&raw_value, ev);
 }
 
 int MEDDLY::dd_edge::getLevel() const
@@ -155,21 +166,31 @@ int MEDDLY::dd_edge::getLevel() const
   return ef->getNodeLevel(node);
 }
 
-void MEDDLY::dd_edge::set(node_handle n, int v)
+void MEDDLY::dd_edge::set(node_handle n)
 {
+  MEDDLY_DCASSERT(parent);
   node_handle old = node;
   node = n;
   unlinkNode(parent, old);
-  value = v;
+}
+
+void MEDDLY::dd_edge::set(node_handle n, int v)
+{
+  MEDDLY_DCASSERT(parent);
+  MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
+  MEDDLY_DCASSERT(forest::INTEGER == parent->getRangeType());
+  set(n);
+  expert_forest::int_EVencoder::writeValue(&raw_value, v);
 }
 
 
 void MEDDLY::dd_edge::set(node_handle n, float v)
 {
-  node_handle old = node;
-  node = n;
-  unlinkNode(parent, old);
-  value = toInt(v);
+  MEDDLY_DCASSERT(parent);
+  MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
+  MEDDLY_DCASSERT(forest::REAL == parent->getRangeType());
+  set(n);
+  expert_forest::float_EVencoder::writeValue(&raw_value, v);
 }
 
 
@@ -257,12 +278,14 @@ void MEDDLY::dd_edge::show(FILE* strm, int verbosity) const
   else {
     fprintf(strm, "node: %ld, ", long(node));
   }
-  if (eParent->getEdgeLabeling() == forest::EVTIMES) {
-    float ev = 0;
+  if (eParent->getRangeType() == forest::REAL) {
+    float ev;
     getEdgeValue(ev);
     fprintf(strm, "value: %f, level: %d)\n", ev, getLevel());
   } else {
-    fprintf(strm, "value: %d, level: %d)\n", value, getLevel());
+    int iv;
+    getEdgeValue(iv);
+    fprintf(strm, "value: %d, level: %d)\n", iv, getLevel());
   }
   if (verbosity == 2 || verbosity == 3) {
     if (eParent->isMultiTerminal()) {
@@ -292,7 +315,7 @@ void MEDDLY::dd_edge::write(FILE* s, const node_handle* map) const
   expert_forest* eParent = smart_cast<expert_forest*>(parent);
 
   if (!eParent->isMultiTerminal()) {
-    eParent->writeEdgeValue(s, &value);
+    eParent->writeEdgeValue(s, &raw_value);
     th_fprintf(s, " ");
   }
   if (node > 0) {
@@ -311,7 +334,7 @@ void MEDDLY::dd_edge::read(forest* p, FILE* s, const node_handle* map)
 
   if (!eParent->isMultiTerminal()) {
     stripWS(s);
-    eParent->readEdgeValue(s, &value);
+    eParent->readEdgeValue(s, &raw_value);
   }
 
   stripWS(s);

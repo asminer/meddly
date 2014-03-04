@@ -286,6 +286,23 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
 // ******************************************************************
 
 class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
+  protected:
+    static inline node_handle float2entry(float f) {
+      union {
+        node_handle i;
+        float f;
+      } n;
+      n.f = f;
+      return n.i;
+    }
+    static inline float entry2float(node_handle i) {
+      union {
+        node_handle i;
+        float f;
+      } n;
+      n.i = i;
+      return n.f;
+    }
   public:
     generic_binary_evtimes(const binary_opname* code, expert_forest* arg1, 
       expert_forest* arg2, expert_forest* res);
@@ -305,19 +322,19 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
       float& cev, node_handle &c) 
     {
       if (can_commute && a > b) {
-        CTsrch.key(0) = toInt(bev);
+        CTsrch.key(0) = float2entry(bev);
         CTsrch.key(1) = b;
-        CTsrch.key(2) = toInt(aev);
+        CTsrch.key(2) = float2entry(aev);
         CTsrch.key(3) = a;
       } else {
-        CTsrch.key(0) = toInt(aev);
+        CTsrch.key(0) = float2entry(aev);
         CTsrch.key(1) = a;
-        CTsrch.key(2) = toInt(bev);
+        CTsrch.key(2) = float2entry(bev);
         CTsrch.key(3) = b;
       }
       const node_handle* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
-      cev = toFloat(cacheFind[4]);
+      cev = entry2float(cacheFind[4]);
       c = resF->linkNode(cacheFind[5]);
       return true;
     }
@@ -325,17 +342,17 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
     inline void saveResult(float aev, node_handle a, float bev, node_handle b, float cev, node_handle c) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
       if (can_commute && a > b) {
-        entry.key(0) = toInt(bev);
+        entry.key(0) = float2entry(bev);
         entry.key(1) = arg2F->cacheNode(b);
-        entry.key(2) = toInt(aev);
+        entry.key(2) = float2entry(aev);
         entry.key(3) = arg1F->cacheNode(a);
       } else {
-        entry.key(0) = toInt(aev);
+        entry.key(0) = float2entry(aev);
         entry.key(1) = arg1F->cacheNode(a);
-        entry.key(2) = toInt(bev);
+        entry.key(2) = float2entry(bev);
         entry.key(3) = arg2F->cacheNode(b);
       }
-      entry.result(0) = toInt(cev);
+      entry.result(0) = float2entry(cev);
       entry.result(1) = resF->cacheNode(c);
       CT->addEntry();
     }

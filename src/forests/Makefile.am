@@ -17,5 +17,9 @@ libforests_la_SOURCES = \
   mtmxdbool.h     mtmxdbool.cc \
   mtmxdint.h      mtmxdint.cc \
   mtmxdreal.h     mtmxdreal.cc \
-  evmdd.h \
-  evmdd.cc
+  ev.h                ev.cc \
+  evmdd.h             evmdd.cc \
+  evmdd_plusint.h     evmdd_plusint.cc \
+  evmdd_timesreal.h   evmdd_timesreal.cc 
+##  evmddold.h \
+##  evmddold.cc

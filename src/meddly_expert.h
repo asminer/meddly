@@ -79,10 +79,6 @@
 
 namespace MEDDLY {
 
-  // Functions for reinterpreting an int to a float and vice-versa
-  float   toFloat (int a);
-  int     toInt   (float a);
-
   // classes defined here
   struct settings;
   class expert_variable;
@@ -623,33 +619,33 @@ class MEDDLY::node_reader {
           return index[n];
         }
         
-        /// Get the edge value, as an integer.
-        inline int ei(int n) const {
-          MEDDLY_DCASSERT(edge);
-          MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
-          MEDDLY_DCASSERT(sizeof(int) == edge_bytes);
-          return ((int*)edge)[n];
-        }
-
-        /// Get the edge value, as a float.
-        inline float ef(int n) const {
-          MEDDLY_DCASSERT(edge);
-          MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
-          MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
-          return ((float*)edge)[n];
-        }
-
         /// Get a pointer to an edge
         inline const void* eptr(int i) const {
           MEDDLY_DCASSERT(edge);
-          MEDDLY_CHECK_RANGE(0, i, size);
+          MEDDLY_CHECK_RANGE(0, i, (is_full ? size : nnzs));
           return ((char*)edge) + i * edge_bytes;
         }
 
-        /// Get the raw edge array.
-        inline const void* rawEdges() const {
-          return edge;
+        /// Get the edge value, as an integer.
+        inline void getEdge(int i, int& ev) const;
+
+        /// Get the edge value, as a float.
+        inline void getEdge(int i, float& ev) const;
+
+        /// Get the edge value, as an integer.
+        inline int  ei(int i) const {
+          int ev;
+          getEdge(i, ev);
+          return ev;
         }
+
+        /// Get the edge value, as a float.
+        inline float  ef(int i) const {
+          float ev;
+          getEdge(i, ev);
+          return ev;
+        }
+
 
         /// Get the level number of this node.
         inline int getLevel() const {
@@ -825,16 +821,6 @@ class MEDDLY::node_builder {
           MEDDLY_CHECK_RANGE(0, i, size);
           return indexes[i];
         }
-        inline int& raw_ei(int i) const {
-          MEDDLY_DCASSERT(edge);
-          MEDDLY_CHECK_RANGE(0, i, size);
-          return ((int*)edge)[i];
-        }
-        inline float& raw_ef(int i) const {
-          MEDDLY_DCASSERT(edge);
-          MEDDLY_CHECK_RANGE(0, i, size);
-          return ((float*)edge)[i];
-        }
     public:
         bool lock;
     public:
@@ -898,17 +884,22 @@ class MEDDLY::node_builder {
         inline node_handle  d(int i) const  { return  raw_d(i); }
         inline int&  i(int i)               { return  raw_i(i); }
         inline int   i(int i) const         { return  raw_i(i); }
-        inline int& ei(int i)               { return raw_ei(i); }
-        inline int  ei(int i) const         { return raw_ei(i); }
-        inline float& ef(int i)             { return raw_ef(i); }
-        inline float  ef(int i) const       { return raw_ef(i); }
-        // edge setting - for templates
-        inline void setEdge(int i, int ev) {
-          ei(i) = ev;
+        // edge getting
+        inline void getEdge(int i, int& ev) const;
+        inline void getEdge(int i, float& ev) const;
+        inline int  ei(int i) const {
+          int ev;
+          getEdge(i, ev);
+          return ev;
         }
-        inline void setEdge(int i, float ev) {
-          ef(i) = ev;
+        inline float  ef(int i) const {
+          float ev;
+          getEdge(i, ev);
+          return ev;
         }
+        // edge setting
+        inline void setEdge(int i, int ev);
+        inline void setEdge(int i, float ev);
         // raw edge info
         inline void* eptr(int i) {
           MEDDLY_DCASSERT(edge);
@@ -1431,8 +1422,8 @@ class MEDDLY::expert_forest : public forest
   // preferred way to encode and decode terminal values
   // (classes so we can use them in template functions)
   public:
-    /** Encoding for booleans into node handles */
-    class bool_encoder {
+    /** Encoding for booleans into (terminal) node handles */
+    class bool_Tencoder {
       // -1 true
       //  0 false
       public:
@@ -1448,8 +1439,8 @@ class MEDDLY::expert_forest : public forest
         static void write(FILE* s, node_handle h);
         static node_handle read(FILE* s);
     };
-    /** Encoding for integers into node handles */
-    class int_encoder {
+    /** Encoding for integers into (terminal) node handles */
+    class int_Tencoder {
       public:
         static inline node_handle value2handle(int v) {
           MEDDLY_DCASSERT(4 == sizeof(node_handle));
@@ -1469,8 +1460,8 @@ class MEDDLY::expert_forest : public forest
         static void write(FILE* s, node_handle h);
         static node_handle read(FILE* s);
     };
-    /** Encoding for floats into node handles */
-    class float_encoder {
+    /** Encoding for floats into (terminal) node handles */
+    class float_Tencoder {
         union intfloat {
           float real;
           int   integer;
@@ -1496,6 +1487,41 @@ class MEDDLY::expert_forest : public forest
         static void show(FILE* s, node_handle h);
         static void write(FILE* s, node_handle h);
         static node_handle read(FILE* s);
+    };
+  // preferred way to encode and decode edge values
+  // (classes so we can use them in template functions)
+  public:
+    /** Encoding for ints into (edge value) node handles */
+    class int_EVencoder {
+      public:
+        static inline size_t edgeBytes()  { 
+          return sizeof(int); 
+        }
+        static inline void writeValue(void* ptr, int val) {
+          memcpy(ptr, &val, sizeof(int));
+        }
+        static inline void readValue(const void* ptr, int &val) {
+          memcpy(&val, ptr, sizeof(int));
+        }
+        static void show(FILE* s, const void* ptr);
+        static void write(FILE* s, const void* ptr);
+        static void read(FILE* s, void* ptr);
+    };
+    /** Encoding for floats into (edge value) node handles */
+    class float_EVencoder {
+      public:
+        static inline size_t edgeBytes()  { 
+          return sizeof(float); 
+        }
+        static inline void writeValue(void* ptr, float val) {
+          memcpy(ptr, &val, sizeof(float));
+        }
+        static inline void readValue(const void* ptr, float &val) {
+          memcpy(&val, ptr, sizeof(float));
+        }
+        static void show(FILE* s, const void* ptr);
+        static void write(FILE* s, const void* ptr);
+        static void read(FILE* s, void* ptr);
     };
   public:
     /** Constructor.
@@ -1539,9 +1565,9 @@ class MEDDLY::expert_forest : public forest
     template <typename T>
     inline node_handle handleForValue(T v) const {
       switch (getRangeType()) {
-        case BOOLEAN:   return bool_encoder::value2handle(v);
-        case INTEGER:   return int_encoder::value2handle(v);
-        case REAL:      return float_encoder::value2handle(v);
+        case BOOLEAN:   return bool_Tencoder::value2handle(v);
+        case INTEGER:   return int_Tencoder::value2handle(v);
+        case REAL:      return float_Tencoder::value2handle(v);
         default:
           throw error(error::MISCELLANEOUS);
       }
@@ -1557,9 +1583,9 @@ class MEDDLY::expert_forest : public forest
     inline void getValueFromHandle(node_handle n, T& v) const {
       MEDDLY_DCASSERT(isTerminalNode(n));
       switch (getRangeType()) {
-        case BOOLEAN:   v = bool_encoder::handle2value(n);    return;
-        case INTEGER:   v = int_encoder::handle2value(n);     return;
-        case REAL:      v = float_encoder::handle2value(n);   return;
+        case BOOLEAN:   v = bool_Tencoder::handle2value(n);    return;
+        case INTEGER:   v = int_Tencoder::handle2value(n);     return;
+        case REAL:      v = float_Tencoder::handle2value(n);   return;
         default:
           throw error(error::MISCELLANEOUS);
       }
@@ -1573,9 +1599,9 @@ class MEDDLY::expert_forest : public forest
     inline bool getBooleanFromHandle(node_handle n) const {
       MEDDLY_DCASSERT(isTerminalNode(n));
       switch (getRangeType()) {
-        case BOOLEAN:   return bool_encoder::handle2value(n);
-        case INTEGER:   return int_encoder::handle2value(n);
-        case REAL:      return float_encoder::handle2value(n);
+        case BOOLEAN:   return bool_Tencoder::handle2value(n);
+        case INTEGER:   return int_Tencoder::handle2value(n);
+        case REAL:      return float_Tencoder::handle2value(n);
         default:
           throw error(error::MISCELLANEOUS);
       }
@@ -1589,9 +1615,9 @@ class MEDDLY::expert_forest : public forest
     inline int getIntegerFromHandle(node_handle n) const {
       MEDDLY_DCASSERT(isTerminalNode(n));
       switch (getRangeType()) {
-        case BOOLEAN:   return bool_encoder::handle2value(n);
-        case INTEGER:   return int_encoder::handle2value(n);
-        case REAL:      return float_encoder::handle2value(n);
+        case BOOLEAN:   return bool_Tencoder::handle2value(n);
+        case INTEGER:   return int_Tencoder::handle2value(n);
+        case REAL:      return float_Tencoder::handle2value(n);
         default:
           throw error(error::MISCELLANEOUS);
       }
@@ -1605,9 +1631,9 @@ class MEDDLY::expert_forest : public forest
     inline float getRealFromHandle(node_handle n) const {
       MEDDLY_DCASSERT(isTerminalNode(n));
       switch (getRangeType()) {
-        case BOOLEAN:   return bool_encoder::handle2value(n);
-        case INTEGER:   return int_encoder::handle2value(n);
-        case REAL:      return float_encoder::handle2value(n);
+        case BOOLEAN:   return bool_Tencoder::handle2value(n);
+        case INTEGER:   return int_Tencoder::handle2value(n);
+        case REAL:      return float_Tencoder::handle2value(n);
         default:
           throw error(error::MISCELLANEOUS);
       }
@@ -3231,6 +3257,14 @@ class MEDDLY::binary_operation : public operation {
     /// Low-level compute at level k on nodes a and b, return result.
     virtual node_handle compute(int k, node_handle a, node_handle b);
 
+    /// Low-level compute on EV edges (av, ap) and (bv, bp), return result.
+    virtual void compute(int av, node_handle ap, int bv, node_handle bp, 
+      int &cv, node_handle &cp);
+
+    /// Low-level compute on EV edges (av, ap) and (bv, bp), return result.
+    virtual void compute(float av, node_handle ap, float bv, node_handle bp, 
+      float &cv, node_handle &cp);
+
   protected:
     inline void operationCommutes() {
       can_commute = (arg1F == arg2F);
@@ -3330,6 +3364,21 @@ class MEDDLY::cleanup_procedure {
 // *                                                                          *
 // ****************************************************************************
 
+inline void MEDDLY::node_reader::getEdge(int n, int &val) const
+{
+  MEDDLY_DCASSERT(sizeof(int) == edge_bytes);
+  expert_forest::int_EVencoder::readValue(eptr(n), val);
+}
+
+inline void MEDDLY::node_reader::getEdge(int n, float &val) const
+{
+  MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
+  expert_forest::float_EVencoder::readValue(eptr(n), val);
+}
+
+
+// ****************************************************************************
+
 inline void MEDDLY::node_builder::setUH(const void* x) 
 {
   memcpy(raw_uh(), x, parent->unhashedHeaderBytes());
@@ -3349,6 +3398,31 @@ inline void MEDDLY::node_builder::getHH(void* x) const
 {
   memcpy(x, raw_hh(), parent->hashedHeaderBytes());
 }
+
+inline void MEDDLY::node_builder::getEdge(int n, int &val) const
+{
+  MEDDLY_DCASSERT(sizeof(int) == edge_bytes);
+  expert_forest::int_EVencoder::readValue(eptr(n), val);
+}
+
+inline void MEDDLY::node_builder::getEdge(int n, float &val) const
+{
+  MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
+  expert_forest::float_EVencoder::readValue(eptr(n), val);
+}
+
+inline void MEDDLY::node_builder::setEdge(int n, int ev)
+{
+  MEDDLY_DCASSERT(sizeof(int) == edge_bytes);
+  expert_forest::int_EVencoder::writeValue(eptr(n), ev);
+}
+
+inline void MEDDLY::node_builder::setEdge(int n, float ev)
+{
+  MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
+  expert_forest::float_EVencoder::writeValue(eptr(n), ev);
+}
+
 
 // ****************************************************************************
 
@@ -3383,20 +3457,5 @@ MEDDLY::getOperation(const binary_opname* code, const dd_edge& arg1,
   );
 }
 
-// ****************************************************************************
-
-
-inline
-float MEDDLY::toFloat(int a) {
-  union { int i; float f; } n = {a};
-  return n.f;
-}
-
-
-inline
-int MEDDLY::toInt(float a) {
-  union { float f; int i; } n = {a};
-  return n.i;
-}
 
 #endif

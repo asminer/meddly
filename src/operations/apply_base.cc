@@ -67,7 +67,7 @@ void MEDDLY::generic_binary_mdd::compute(const dd_edge &a, const dd_edge &b,
   dd_edge &c)
 {
   node_handle cnode = compute(a.getNode(), b.getNode());
-  c.set(cnode, 0);
+  c.set(cnode);
 #ifdef TRACE_ALL_OPS
   printf("completed %s(%d, %d) = %d\n", 
     getName(), a.getNode(), b.getNode(), cnode);
@@ -169,7 +169,7 @@ void MEDDLY::generic_binary_mxd::compute(const dd_edge &a, const dd_edge &b,
   dd_edge &c)
 {
   node_handle cnode = compute(a.getNode(), b.getNode());
-  c.set(cnode, 0);
+  c.set(cnode);
 #ifdef DEVELOPMENT_CODE
   resF->validateIncounts(true);
 #endif
@@ -327,7 +327,7 @@ void MEDDLY::generic_binbylevel_mxd
   node_handle result = compute(
     resF->getDomain()->getNumVariables(), a.getNode(), b.getNode()
   );
-  c.set(result, 0);
+  c.set(result);
 #ifdef DEVELOPMENT_CODE
   resF->validateIncounts(true);
 #endif
@@ -507,11 +507,13 @@ void MEDDLY::generic_binary_evplus
 
   // do computation
   for (int i=0; i<resultSize; i++) {
-    node_handle d;
+    int ev;
+    node_handle ed;
     compute(aev + A->ei(i), A->d(i), 
             bev + B->ei(i), B->d(i), 
-            nb.ei(i), d);
-    nb.d(i) = d;
+            ev, ed);
+    nb.d(i) = ed;
+    nb.setEdge(i, ev);
   }
 
   // cleanup
@@ -550,9 +552,9 @@ void MEDDLY::generic_binary_evtimes
 {
   fprintf(strm, "[%s(<%f:%d>, <%f:%d>): <%f:%d>]",
       getName(),
-      toFloat(data[0]), data[1], 
-      toFloat(data[2]), data[3], 
-      toFloat(data[4]), data[5]
+      entry2float(data[0]), data[1], 
+      entry2float(data[2]), data[3], 
+      entry2float(data[4]), data[5]
   );
 }
 
@@ -600,11 +602,13 @@ void MEDDLY::generic_binary_evtimes
 
   // do computation
   for (int i=0; i<resultSize; i++) {
-    node_handle d;
+    float ev;
+    node_handle ed;
     compute(aev * A->ef(i), A->d(i), 
             bev * B->ef(i), B->d(i), 
-            nb.ef(i), d);
-    nb.d(i) = d;
+            ev, ed);
+    nb.d(i) = ed;
+    nb.setEdge(i, ev);
   }
 
   // cleanup

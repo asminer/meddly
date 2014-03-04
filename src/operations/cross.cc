@@ -98,7 +98,7 @@ MEDDLY::cross_bool::compute(const dd_edge &a, const dd_edge &b, dd_edge &c)
 {
   int L = arg1F->getDomain()->getNumVariables();
   node_handle cnode = compute_un(L, a.getNode(), b.getNode());
-  c.set(cnode, 0);
+  c.set(cnode);
 }
 
 MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_handle b)

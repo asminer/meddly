@@ -1834,7 +1834,8 @@ class MEDDLY::dd_edge {
     */
     inline void clear() {
       assert(index != -1);
-      set(0, 0);
+      set(0);
+      raw_value = 0;
     }
 
     /** Obtain a modifiable copy of the forest owning this edge.
@@ -1847,13 +1848,11 @@ class MEDDLY::dd_edge {
     */
     inline node_handle getNode() const { return node; }
 
-    /** Get this dd_edge's edge value (only valid for edge-valued MDDs).
-        Note: EV+MDDs use Integer edge-values while EV*MDDs use
-        Real edge-value, so use the appropriate method.
-        @return         edge value (if applicable).
-    */
-    inline void getEdgeValue(int& ev) const { ev = value; }
-    void getEdgeValue(float& edgeValue) const;
+    /// Get this dd_edge's edge value (only valid for edge-valued MDDs).
+    void getEdgeValue(int& ev) const;
+
+    /// Get this dd_edge's edge value (only valid for edge-valued MDDs).
+    void getEdgeValue(float& ev) const;
 
     /** Get this dd_edge's level.
         @return         the level.
@@ -1892,10 +1891,25 @@ class MEDDLY::dd_edge {
         The dd_edge is cleared (it will still belong to the same forest),
         and the dd_edge data is filled with the data provided.
         @param  node    node handle.
+    */
+    void set(node_handle node);
+
+    /** Modifies the dd_edge fields.
+        The dd_edge is cleared (it will still belong to the same forest),
+        and the dd_edge data is filled with the data provided.
+        @param  node    node handle.
         @param  value   value of edge coming into the node (only useful
                         for edge-valued MDDs)
     */
     void set(node_handle node, int value);
+
+    /** Modifies the dd_edge fields.
+        The dd_edge is cleared (it will still belong to the same forest),
+        and the dd_edge data is filled with the data provided.
+        @param  node    node handle.
+        @param  value   value of edge coming into the node (only useful
+                        for edge-valued MDDs)
+    */
     void set(node_handle node, float value);
 
     /** Check for equality.
@@ -1903,8 +1917,8 @@ class MEDDLY::dd_edge {
                         the same edge as \a e.
     */
     inline bool operator==(const dd_edge& e) const {
-      return (parent == e.parent && node == e.node 
-              && value == e.value);
+      if (parent != e.parent) return false;
+      return (node == e.node) && (raw_value == e.raw_value);
     }
 
     /** Check for inequality.
@@ -2008,7 +2022,7 @@ class MEDDLY::dd_edge {
     int index;  //  our slot number in the parent forest's list
 
     node_handle node;
-    int value;
+    node_handle raw_value;
 
     binary_operation* opPlus;
     binary_operation* opStar;

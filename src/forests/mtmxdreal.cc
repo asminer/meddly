@@ -33,7 +33,7 @@ MEDDLY::mt_mxd_real::~mt_mxd_real()
 
 void MEDDLY::mt_mxd_real::createEdge(float term, dd_edge& e)
 {
-  createEdgeTempl<float_encoder, float>(term, e);
+  createEdgeTempl<float_Tencoder, float>(term, e);
 }
 
 void MEDDLY::mt_mxd_real
@@ -44,37 +44,37 @@ void MEDDLY::mt_mxd_real
   enlargeVariables(vlist, N, false);
   enlargeVariables(vplist, N, true);
 
-  mtmxd_edgemaker<float_encoder, float>
+  mtmxd_edgemaker<float_Tencoder, float>
   EM(this, vlist, vplist, terms, order, N, getDomain()->getNumVariables(), unionOp);
 
-  e.set(EM.createEdge(), 0);
+  e.set(EM.createEdge());
 }
 
 void MEDDLY::mt_mxd_real::
 createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
 {
-  createEdgeForVarTempl<float_encoder, float>(vh, vp, terms, a);
+  createEdgeForVarTempl<float_Tencoder, float>(vh, vp, terms, a);
 }
 
 void MEDDLY::mt_mxd_real::evaluate(const dd_edge &f, const int* vlist, 
   const int* vplist, float &term) const
 {
-  term = float_encoder::handle2value(evaluateRaw(f, vlist, vplist));
+  term = float_Tencoder::handle2value(evaluateRaw(f, vlist, vplist));
 }
 
 void MEDDLY::mt_mxd_real::showTerminal(FILE* s, node_handle tnode) const
 {
-  float_encoder::show(s, tnode);
+  float_Tencoder::show(s, tnode);
 }
 
 void MEDDLY::mt_mxd_real::writeTerminal(FILE* s, node_handle tnode) const
 {
-  float_encoder::write(s, tnode);
+  float_Tencoder::write(s, tnode);
 }
 
 MEDDLY::node_handle MEDDLY::mt_mxd_real::readTerminal(FILE* s)
 {
-  return float_encoder::read(s);
+  return float_Tencoder::read(s);
 }
 
 const char* MEDDLY::mt_mxd_real::codeChars() const

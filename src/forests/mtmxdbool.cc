@@ -33,7 +33,7 @@ MEDDLY::mt_mxd_bool::~mt_mxd_bool()
 
 void MEDDLY::mt_mxd_bool::createEdge(bool term, dd_edge& e)
 {
-  createEdgeTempl<bool_encoder, bool>(term, e);
+  createEdgeTempl<bool_Tencoder, bool>(term, e);
 }
 
 void MEDDLY::mt_mxd_bool
@@ -43,37 +43,37 @@ void MEDDLY::mt_mxd_bool
   enlargeStatics(N);
   enlargeVariables(vlist, N, false);
   enlargeVariables(vplist, N, true);
-  mtmxd_edgemaker<bool_encoder, bool>
+  mtmxd_edgemaker<bool_Tencoder, bool>
   EM(this, vlist, vplist, 0, order, N, getDomain()->getNumVariables(), unionOp);
 
-  e.set(EM.createEdge(), 0);
+  e.set(EM.createEdge());
 }
 
 void MEDDLY::mt_mxd_bool::
 createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 {
-  createEdgeForVarTempl<bool_encoder, bool>(vh, vp, terms, a);
+  createEdgeForVarTempl<bool_Tencoder, bool>(vh, vp, terms, a);
 }
 
 void MEDDLY::mt_mxd_bool::evaluate(const dd_edge &f, const int* vlist, 
   const int* vplist, bool &term) const
 {
-  term = bool_encoder::handle2value(evaluateRaw(f, vlist, vplist));
+  term = bool_Tencoder::handle2value(evaluateRaw(f, vlist, vplist));
 }
 
 void MEDDLY::mt_mxd_bool::showTerminal(FILE* s, node_handle tnode) const
 {
-  bool_encoder::show(s, tnode);
+  bool_Tencoder::show(s, tnode);
 }
 
 void MEDDLY::mt_mxd_bool::writeTerminal(FILE* s, node_handle tnode) const
 {
-  bool_encoder::write(s, tnode);
+  bool_Tencoder::write(s, tnode);
 }
 
 MEDDLY::node_handle MEDDLY::mt_mxd_bool::readTerminal(FILE* s)
 {
-  return bool_encoder::read(s);
+  return bool_Tencoder::read(s);
 }
 
 const char* MEDDLY::mt_mxd_bool::codeChars() const

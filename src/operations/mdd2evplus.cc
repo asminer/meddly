@@ -98,7 +98,7 @@ MEDDLY::mdd2evplus_operation
   int card;
   int nVars = argF->getDomain()->getNumVariables();
   compute(nVars, arg.getNode(), down, card);
-  res.set(down, 0);
+  res.set(down);
 }
 
 void
@@ -112,7 +112,7 @@ MEDDLY::mdd2evplus_operation
     return;
   }
   if (0 == k) {
-    bdn = expert_forest::bool_encoder::value2handle(true);
+    bdn = expert_forest::bool_Tencoder::value2handle(true);
     bcard = 1;
     return;
   }
@@ -152,11 +152,11 @@ MEDDLY::mdd2evplus_operation
     compute(k-1, A->d(i), ddn, dcard);
     nb.d(i) = ddn;
     if (nb.d(i)) {
-      nb.ei(i) = bcard;
+      nb.setEdge(i, bcard);
       bcard += dcard;
     } else {
       MEDDLY_DCASSERT(0 == dcard);
-      nb.ei(i) = 0;
+      nb.setEdge(i, 0);
     }
   }
 

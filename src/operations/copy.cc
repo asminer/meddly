@@ -97,7 +97,7 @@ void MEDDLY::copy_MT::showEntry(FILE* strm, const node_handle* entryData) const
 void MEDDLY::copy_MT::compute(const dd_edge &arg, dd_edge &res)
 {
   node_handle result = compute(arg.getNode());
-  res.set(result, 0);
+  res.set(result);
 }
 
 // ******************************************************************
@@ -327,8 +327,8 @@ void MEDDLY::copy_MT2Evplus::compute(node_handle a, node_handle &b, int &bev)
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
-    bev = expert_forest::int_encoder::handle2value(a);
-    b = expert_forest::bool_encoder::value2handle(true);
+    bev = expert_forest::int_Tencoder::handle2value(a);
+    b = expert_forest::bool_Tencoder::value2handle(true);
     return;
   }
 
@@ -355,7 +355,7 @@ void MEDDLY::copy_MT2Evplus::compute(node_handle a, node_handle &b, int &bev)
     int dev;
     compute(A->d(i), d, dev);
     nb.d(i) = d;
-    nb.ei(i) = dev;
+    nb.setEdge(i, dev);
   }
 
   // Cleanup
