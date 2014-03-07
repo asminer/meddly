@@ -15,7 +15,7 @@ libops_la_SOURCES = \
   cardinality.h     cardinality.cc  \
   complement.h      complement.cc   \
   maxmin_range.h    maxmin_range.cc \
-  mdd2evplus.h      mdd2evplus.cc   \
+  mdd2index.h       mdd2index.cc    \
   \
   union.h           union.cc        \
   intersection.h    intersection.cc \

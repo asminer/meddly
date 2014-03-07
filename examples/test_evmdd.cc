@@ -435,7 +435,7 @@ int main(int argc, char *argv[])
   */
 
   // Create a EV+MDD forest in this domain (to store index set)
-  forest* evplusmdd = d->createForest(false, forest::INTEGER, forest::EVPLUS);
+  forest* evplusmdd = d->createForest(false, forest::INTEGER, forest::INDEX_SET);
   assert(evplusmdd != NULL);
 
   // Convert MDD to Index Set EV+MDD and print the states

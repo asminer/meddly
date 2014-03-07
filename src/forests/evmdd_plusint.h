@@ -26,6 +26,7 @@
 
 namespace MEDDLY {
   class evmdd_plusint;
+  class evmdd_index_set;
 };
 
 
@@ -54,16 +55,13 @@ class MEDDLY::evmdd_plusint : public evmdd_forest {
     };
 
   public:
-    evmdd_plusint(int dsl, domain *d, const policies &p);
+    evmdd_plusint(int dsl, domain *d, const policies &p, bool index_set=false);
     ~evmdd_plusint();
 
     virtual void createEdge(int val, dd_edge &e);
     virtual void createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e);
     virtual void createEdgeForVar(int vh, bool vp, const int* terms, dd_edge& a);
     virtual void evaluate(const dd_edge &f, const int* vlist, int &term) const;
-
-    // Particular to "index sets"
-    virtual void getElement(const dd_edge& a, int index, int* e);
 
     virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const;
     virtual bool isRedundant(const node_builder &nb) const;
@@ -78,6 +76,15 @@ class MEDDLY::evmdd_plusint : public evmdd_forest {
     virtual void writeUnhashedHeader(FILE* s, const void* uh) const;
     virtual void readUnhashedHeader(FILE* s, node_builder &nb) const;
     virtual const char* codeChars() const;
+};
+
+
+class MEDDLY::evmdd_index_set : public evmdd_plusint {
+  public:
+    evmdd_index_set(int dsl, domain *d, const policies &p);
+    ~evmdd_index_set();
+
+    virtual void getElement(const dd_edge& a, int index, int* e);
 };
 
 #endif

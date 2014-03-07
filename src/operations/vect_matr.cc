@@ -31,6 +31,10 @@ namespace MEDDLY {
 
   class VM_opname;
   class MV_opname;
+
+  inline bool isEvPlusStyle(const forest* f) {
+    return f->isEVPlus() || f->isIndexSet();
+  }
 };
 
 // ******************************************************************
@@ -139,8 +143,7 @@ void MEDDLY::VM_evplus_mt::compute(int k, double* y, node_handle y_ind,
   // A is identity matrix times a constant; exploit that if we can
   //
   if (0==aLevel && (x_ind == y_ind)) {
-    if (fx == fy) {
-      MEDDLY_DCASSERT(fx->isIndexSet(x_ind));
+    if (fx == fy && fx->isIndexSet()) {
       // yes we can
       float v = expert_forest::float_Tencoder::handle2value(a);
       for (long i = fx->getIndexSetCardinality(x_ind)-1; i>=0; i--) {
@@ -308,8 +311,7 @@ void MEDDLY::MV_evplus_mt::compute(int k, double* y, node_handle y_ind,
   // A is identity matrix times a constant; exploit that if we can
   //
   if (0==aLevel && (x_ind == y_ind)) {
-    if (fx == fy) {
-      MEDDLY_DCASSERT(fy->isIndexSet(y_ind));
+    if (fx == fy && fx->isIndexSet()) {
       // yes we can
       float v = expert_forest::float_Tencoder::handle2value(a);
       for (long i = fy->getIndexSetCardinality(y_ind)-1; i>=0; i--) {
@@ -484,9 +486,8 @@ MEDDLY::VM_opname::buildOperation(const dd_edge &x_ind, const dd_edge& A,
     throw error(error::TYPE_MISMATCH);
   }
 
-  // For now, fy and fx must be EV+MDDs.
-  if (     (fy->getEdgeLabeling() != forest::EVPLUS) 
-        || (fx->getEdgeLabeling() != forest::EVPLUS) )
+  // For now, fy and fx must be Indexed sets or EVPLUS forests.
+  if ( !isEvPlusStyle(fy) || !isEvPlusStyle(fx) )
   {
     throw error(error::NOT_IMPLEMENTED);
   }
@@ -553,9 +554,8 @@ MEDDLY::MV_opname::buildOperation(const dd_edge &x_ind, const dd_edge& A,
     throw error(error::TYPE_MISMATCH);
   }
 
-  // For now, fy and fx must be EV+MDDs.
-  if (     (fy->getEdgeLabeling() != forest::EVPLUS) 
-        || (fx->getEdgeLabeling() != forest::EVPLUS) )
+  // For now, fy and fx must be Indexed sets or EVPLUS forests.
+  if ( !isEvPlusStyle(fy) || !isEvPlusStyle(fx) )
   {
     throw error(error::NOT_IMPLEMENTED);
   }

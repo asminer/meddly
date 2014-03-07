@@ -475,7 +475,7 @@ void testIndexSet(domain* d, const dd_edge& mdd)
   assert(d);
 
   // Create a EV+MDD forest in this domain (to store index set)
-  forest* evplusmdd = d->createForest(false, forest::INTEGER, forest::EVPLUS);
+  forest* evplusmdd = d->createForest(false, forest::INTEGER, forest::INDEX_SET);
   assert(evplusmdd);
   expert_forest* ef = static_cast<expert_forest*>(evplusmdd);
 

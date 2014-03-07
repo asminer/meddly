@@ -253,11 +253,20 @@ MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t,
         break;
 
     case forest::EVPLUS:
-      f = new evmdd_plusint(slot, this, p);
+      if (forest::INTEGER != t) throw error(error::TYPE_MISMATCH);
+      if (rel)  throw error(error::NOT_IMPLEMENTED);
+      else      f = new evmdd_plusint(slot, this, p); 
+      break;
+
+    case forest::INDEX_SET:
+      if (forest::INTEGER != t || rel) throw error(error::TYPE_MISMATCH);
+      f = new evmdd_index_set(slot, this, p); 
       break;
 
     case forest::EVTIMES:
-      f = new evmdd_timesreal(slot, this, p);
+      if (forest::REAL != t) throw error(error::TYPE_MISMATCH);
+      if (rel)  throw error(error::NOT_IMPLEMENTED);
+      else      f = new evmdd_timesreal(slot, this, p);
       break;
 
     default:

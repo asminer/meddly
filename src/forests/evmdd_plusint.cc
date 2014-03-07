@@ -21,12 +21,21 @@
 
 #include "evmdd_plusint.h"
 
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                     evmdd_plusint  methods                     *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
 
-MEDDLY::evmdd_plusint::evmdd_plusint(int dsl, domain *d, const policies &p)
- : evmdd_forest(dsl, d, INTEGER, EVPLUS, p)
+
+MEDDLY::evmdd_plusint
+ ::evmdd_plusint(int dsl, domain *d, const policies &p, bool index_set)
+ : evmdd_forest(dsl, d, INTEGER, index_set ? INDEX_SET : EVPLUS, p)
 {
   setEdgeSize(sizeof(node_handle), true);
-  setUnhashedSize(sizeof(node_handle));
+  if (index_set) setUnhashedSize(sizeof(node_handle));
   initializeForest();
 }
 
@@ -65,43 +74,6 @@ void MEDDLY::evmdd_plusint
 ::evaluate(const dd_edge &f, const int* vlist, int &term) const
 {
   evaluateT<OP, int>(f, vlist, term);
-}
-
-void MEDDLY::evmdd_plusint::getElement(const dd_edge &a, int index, int* e)
-{
-  if (e == 0) throw error(error::INVALID_VARIABLE);
-  if (index < 0) {
-    e[0] = 0;
-    return;
-  }
-  int p = a.getNode();
-  node_reader* R = node_reader::useReader();
-  for (int k=getNumVariables(); k; k--) {
-    MEDDLY_DCASSERT(index >= 0);
-    if (p <= 0) {
-      e[k] = 0;
-      continue;
-    }
-    initNodeReader(*R, p, false);
-    MEDDLY_DCASSERT(R->getLevel() <= k);
-    if (R->getLevel() < k) {
-      e[k] = 0;
-      continue; 
-    }
-    // Find largest i such that edge value i is not greater than index
-    e[k] = 0;
-    p = 0;
-    for (int z=R->getNNZs()-1; z>=0; z--) {
-      if (index < R->ei(z)) continue;
-      e[k] = R->i(z);
-      p = R->d(z);
-      index -= R->ei(z);
-      break;
-    } // for z
-  } // for k
-  if (index)    e[0] = 0;
-  else          e[0] = -p;
-  node_reader::recycle(R);
 }
 
 bool MEDDLY::evmdd_plusint
@@ -180,5 +152,57 @@ void MEDDLY::evmdd_plusint::readUnhashedHeader(FILE* s, node_builder &nb) const
 const char* MEDDLY::evmdd_plusint::codeChars() const
 {
   return "dd_epvi";
+}
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                    evmdd_index_set  methods                    *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::evmdd_index_set::evmdd_index_set(int dsl, domain *d, const policies &p)
+ : evmdd_plusint(dsl, d, p, true)
+{ }
+
+MEDDLY::evmdd_index_set::~evmdd_index_set()
+{ }
+
+void MEDDLY::evmdd_index_set::getElement(const dd_edge &a, int index, int* e)
+{
+  if (e == 0) throw error(error::INVALID_VARIABLE);
+  if (index < 0) {
+    e[0] = 0;
+    return;
+  }
+  int p = a.getNode();
+  node_reader* R = node_reader::useReader();
+  for (int k=getNumVariables(); k; k--) {
+    MEDDLY_DCASSERT(index >= 0);
+    if (p <= 0) {
+      e[k] = 0;
+      continue;
+    }
+    initNodeReader(*R, p, false);
+    MEDDLY_DCASSERT(R->getLevel() <= k);
+    if (R->getLevel() < k) {
+      e[k] = 0;
+      continue; 
+    }
+    // Find largest i such that edge value i is not greater than index
+    e[k] = 0;
+    p = 0;
+    for (int z=R->getNNZs()-1; z>=0; z--) {
+      if (index < R->ei(z)) continue;
+      e[k] = R->i(z);
+      p = R->d(z);
+      index -= R->ei(z);
+      break;
+    } // for z
+  } // for k
+  if (index)    e[0] = 0;
+  else          e[0] = -p;
+  node_reader::recycle(R);
 }
 

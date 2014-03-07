@@ -139,7 +139,7 @@ class MEDDLY::ev_forest : public expert_forest {
         node_handle ed = bool_Tencoder::value2handle(true);
         makeNodeAtLevel<OPERATION, T>(km1, ev, ed);
         nb.d(i) = ed;
-        OPERATION::setEdge(nb.eptr(i), ev);
+        nb.setEdge(i, ev);
       }
 
       /*
@@ -209,13 +209,13 @@ namespace MEDDLY {
         int si = isTerminalNode(ed) ? -1 : getSingletonIndex(ed, sd);
         for (int i=0; i<sz; i++) {
           nb.d(i) = linkNode( (i==si) ? sd : ed );
-          OPERATION::setEdge(nb.eptr(i), ev);
+          nb.setEdge(i, ev);
         }
       } else {
         // don't worry about identity reductions
         for (int i=0; i<sz; i++) {
           nb.d(i) = linkNode(ed);
-          OPERATION::setEdge(nb.eptr(i), ev);
+          nb.setEdge(i, ev);
         }
       }
       unlinkNode(ed);

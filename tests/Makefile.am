@@ -7,12 +7,12 @@
 check_PROGRAMS = \
   enctest \
   bug_00 \
-  sat_test nqueens check_xA chk_cross \
+  sat_test nqueens check_xA chk_copy chk_cross \
   kanban kan_show kan_batch kan_index kan_io
 
 TESTS = \
   bug_00 \
-  sat_test nqueens check_xA chk_cross \
+  sat_test nqueens check_xA chk_copy chk_cross \
   kanban kan_show kan_batch kan_index kan_io
 
 AM_CPPFLAGS = -I../src -I../src/operations
@@ -32,6 +32,9 @@ nqueens_LDADD = ../src/libmeddly.la
 
 check_xA_SOURCES = check_xA.cc
 check_xA_LDADD = ../src/libmeddly.la
+
+chk_copy_SOURCES = chk_copy.cc
+chk_copy_LDADD = ../src/libmeddly.la
 
 chk_cross_SOURCES = chk_cross.cc
 chk_cross_LDADD = ../src/libmeddly.la

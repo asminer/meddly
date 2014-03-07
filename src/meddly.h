@@ -580,6 +580,8 @@ class MEDDLY::forest {
       MULTI_TERMINAL,
       /// Edges labeled, values summed along path.
       EVPLUS,
+      /// Special case of EVPLUS for indexed sets.
+      INDEX_SET,
       /// Edges labeled, values multiplied along path.
       EVTIMES
       // TBD: there may be others in the future :^)
@@ -828,6 +830,11 @@ class MEDDLY::forest {
       return EVPLUS == edgeLabel;
     }
 
+    /// Is the edge labeling "INDEX_SET".
+    inline bool isIndexSet() const {
+      return INDEX_SET == edgeLabel;
+    }
+
     /// Is the edge labeling "EV_TIMES".
     inline bool isEVTimes() const {
       return EVTIMES == edgeLabel;
@@ -1074,7 +1081,6 @@ class MEDDLY::forest {
 
 
     /** Create an edge as the union of several explicit vectors.
-        The given vectors will be reordered as necessary for efficiency.
         @param  vlist Array of vectors. Each vector has dimension equal
                       to one plus the largest variable handle in the domain.
                       A vector \a x indicates a set of variable assignments,
@@ -1093,8 +1099,6 @@ class MEDDLY::forest {
     virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
 
     /** Create an edge as the union of several vectors and return values.
-        The given vectors and return values will be reordered as necessary
-        for efficiency.
         @param  vlist Array of vectors. Each vector has dimension equal
                       to one plus the largest variable handle in the domain.
                       A vector \a x indicates a set of variable assignments,
@@ -1115,8 +1119,6 @@ class MEDDLY::forest {
     virtual void createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e);
 
     /** Create an edge as the union of several vectors and return values.
-        The given vectors and return values will be reordered as necessary
-        for efficiency.
         @param  vlist Array of vectors. Each vector has dimension equal
                       to one plus the largest variable handle in the domain.
                       A vector \a x indicates a set of variable assignments,
@@ -1138,7 +1140,6 @@ class MEDDLY::forest {
 
 
     /** Create an edge as the union of several explicit matrices.
-        The given matrices will be reordered as necessary for efficiency.
         @param  vlist   Array of vectors. Each vector has dimension equal to
                         one plus the largest variable handle in the domain.
                         Vector vlist indicates the set of unprimed variable
@@ -1170,8 +1171,6 @@ class MEDDLY::forest {
 
 
     /** Create an edge as the union of several explicit matrices.
-        The given matrices and return values will be reordered as necessary 
-        for efficiency.
         @param  vlist   Array of vectors. Each vector has dimension equal to
                         one plus the largest variable handle in the domain.
                         Vector vlist indicates the set of unprimed variable
@@ -1205,8 +1204,6 @@ class MEDDLY::forest {
 
 
     /** Create an edge as the union of several explicit matrices.
-        The given matrices and return values will be reordered as necessary 
-        for efficiency.
         @param  vlist   Array of vectors. Each vector has dimension equal to
                         one plus the largest variable handle in the domain.
                         Vector vlist indicates the set of unprimed variable

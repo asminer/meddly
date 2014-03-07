@@ -90,7 +90,7 @@ bool checkReachset(int N)
   fflush(stdout);
 
   // Build index set for reachable states
-  forest* evmdd = dom->createForest(0, forest::INTEGER, forest::EVPLUS);
+  forest* evmdd = dom->createForest(0, forest::INTEGER, forest::INDEX_SET);
   dd_edge reach_index(evmdd);
   apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
 #ifdef SHOW_INDEXES

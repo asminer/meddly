@@ -19,8 +19,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MDD2EVPLUS_H
-#define MDD2EVPLUS_H
+#ifndef MDD2INDEX_H
+#define MDD2INDEX_H
 
 namespace MEDDLY {
   class unary_opname;
@@ -28,7 +28,7 @@ namespace MEDDLY {
 
   /// Minimalist interface.
   /// Set up a unary_opname for the "convert to index set" operation.
-  unary_opname* initializeMDD2EVPLUS(const settings &s);
+  unary_opname* initializeMDD2INDEX(const settings &s);
 };
 
 #endif

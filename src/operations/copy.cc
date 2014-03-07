@@ -25,13 +25,10 @@
 #include "../defines.h"
 #include "copy.h"
 
+// #define DEBUG_COPY_COMPUTE_ALL
+
 namespace MEDDLY {
   class copy_MT;
-
-  class copy_bool2MT;
-  class copy_MT2bool;
-
-  class copy_MT2Evplus;
 
   class copy_opname;
 };
@@ -74,6 +71,7 @@ MEDDLY::copy_MT
 :: copy_MT(const unary_opname* oc, expert_forest* arg, expert_forest* res)
  : unary_operation(oc, 1, 1, arg, res)
 {
+  // mtres = res;
 }
 
 bool MEDDLY::copy_MT::isStaleEntry(const node_handle* entryData)
@@ -102,50 +100,59 @@ void MEDDLY::copy_MT::compute(const dd_edge &arg, dd_edge &res)
 
 // ******************************************************************
 // *                                                                *
-// *                       copy_bool2MT class                       *
+// *                       copy_MT_tmpl class                       *
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::copy_bool2MT : public copy_MT {
-  public:
-    copy_bool2MT(const unary_opname* N, expert_forest* A, expert_forest* R)
-      : copy_MT(N, A, R) { }
-  protected:
-    virtual node_handle compute(node_handle a);
-    node_handle compute(int in, node_handle a);
-};
+namespace MEDDLY {
 
-MEDDLY::node_handle MEDDLY::copy_bool2MT::compute(node_handle a)
-{
-  return compute(-1, a);
-}
+  template <typename RESULT>
+  class copy_MT_tmpl : public copy_MT {
+    public:
+      copy_MT_tmpl(const unary_opname* N, expert_forest* A, expert_forest* R)
+        : copy_MT(N, A, R) { }
+    protected:
+      virtual node_handle compute(node_handle a) {
+        if (argF->getReductionRule() == resF->getReductionRule()) {
+          return computeSkip(-1, a);  // same skipping rule, ok
+        } else {
+          // need to visit every level...
+          return computeAll(-1, resF->getNumVariables(), a);
+        }
+      }
+  
+      node_handle computeSkip(int in, node_handle a);
+      node_handle computeAll(int in, int k, node_handle a);
+  };
 
-MEDDLY::node_handle MEDDLY::copy_bool2MT::compute(int in, node_handle a)
+};  // namespace MEDDLY
+
+template <typename RESULT>
+MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeSkip(int in, node_handle a)
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
-    int aTerm = argF->getBooleanFromHandle(a);
+    RESULT aTerm;
+    argF->getValueFromHandle(a, aTerm);
     return resF->handleForValue(aTerm);
   }
-
-  // See if we can ignore "in"
-  if (!resF->isIdentityReduced()) in = -1;
 
   // Check compute table
   node_handle b;
   if (findResult(a, b)) return b;
 
+  // Initialize node reader
+  node_reader* A = argF->initNodeReader(a, false);
+
   // Initialize node builder
   const int level = argF->getNodeLevel(a);
-  const int size = resF->getLevelSize(level);
-  node_builder& nb = resF->useNodeBuilder(level, size);
+  node_builder& nb = resF->useSparseBuilder(level, A->getNNZs());
 
-  // Initialize node reader
-  node_reader* A = argF->initNodeReader(a, true);
 
   // recurse
-  for (int i=0; i<size; i++) {
-    nb.d(i) = compute(i, A->d(i));
+  for (int z=0; z<A->getNNZs(); z++) {
+    nb.i(z) = A->i(z);
+    nb.d(z) = computeSkip(A->i(z), A->d(z));
   }
 
   // Cleanup
@@ -159,89 +166,26 @@ MEDDLY::node_handle MEDDLY::copy_bool2MT::compute(int in, node_handle a)
 }
 
 
-// ******************************************************************
-// *                                                                *
-// *                       copy_MT2bool class                       *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::copy_MT2bool : public copy_MT {
-  public:
-    copy_MT2bool(const unary_opname* N, expert_forest* A, expert_forest* R)
-      : copy_MT(N, A, R) { }
-  protected:
-    virtual node_handle compute(node_handle a);
-    node_handle compute(int in, node_handle a);
-    node_handle compute(int in, int k, node_handle a);
-};
-
-MEDDLY::node_handle MEDDLY::copy_MT2bool::compute(node_handle a)
-{
-  if (resF->isQuasiReduced())
-    return compute(-1, resF->getNumVariables(), a);
-  else 
-    return compute(-1, a);
-}
-
-MEDDLY::node_handle MEDDLY::copy_MT2bool::compute(int in, node_handle a)
-{
-  // Check terminals
-  if (argF->isTerminalNode(a)) {
-    bool aTerm = argF->getBooleanFromHandle(a);
-    return resF->handleForValue(aTerm);
-  }
-
-  // See if we can ignore "in"
-  if (!resF->isIdentityReduced()) in = -1;
-
-  // Check compute table
-  node_handle b;
-  if (findResult(a, b)) return b;
-
-  // Initialize node builder
-  const int level = argF->getNodeLevel(a);
-  const int size = resF->getLevelSize(level);
-  node_builder& nb = resF->useNodeBuilder(level, size);
-
-  // Initialize node reader
-  node_reader* A = argF->initNodeReader(a, true);
-
-  // recurse
-  for (int i=0; i<size; i++) {
-    nb.d(i) = compute(i, A->d(i));
-  }
-
-  // Cleanup
-  node_reader::recycle(A);
-
-  // Reduce
-  b = resF->createReducedNode(in, nb);
-
-  // Add to compute table
-  return saveResult(a, b);
-}
-
-MEDDLY::node_handle MEDDLY::copy_MT2bool::compute(int in, int k, node_handle a)
+template <typename RESULT>
+MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node_handle a)
 {
   // Check terminals
   if (0==k) {
-    bool aTerm = argF->getBooleanFromHandle(a);
+    RESULT aTerm;
+    argF->getValueFromHandle(a, aTerm);
     return resF->handleForValue(aTerm);
   }
 
-  // See if we can ignore "in"
-  if (resF->isIdentityReduced()) {
-    if (k>0) in = -1;
-  } else {
-    in = -1;
-  }
+#ifdef DEBUG_COPY_COMPUTE_ALL
+  fprintf(stderr, "copy(%d, %d, %d)\n", in, k, a);
+#endif
 
   // Get level number
   const int aLevel = argF->getNodeLevel(a);
 
   // Check compute table
   node_handle b;
-  if (k == aLevel) if (findResult(a, b)) return b;
+  if (k == aLevel && k>0) if (findResult(a, b)) return b;
   int nextk;
   if (resF->isForRelations()) {
     nextk = (k>0) ? -k : -k-1;
@@ -249,25 +193,26 @@ MEDDLY::node_handle MEDDLY::copy_MT2bool::compute(int in, int k, node_handle a)
     nextk = k-1;
   }
 
-  // Initialize node builder
-  const int size = resF->getLevelSize(k);
-  node_builder& nb = resF->useNodeBuilder(k, size);
-
   // Initialize node reader
   node_reader* A;
   if (isLevelAbove(k, aLevel)) {
     if (k<0 && argF->isIdentityReduced()) {
-      A = argF->initIdentityReader(k, in, a, true);
+      A = argF->initIdentityReader(k, in, a, false);
     } else {
-      A = argF->initRedundantReader(k, a, true);
+      A = argF->initRedundantReader(k, a, false);
     }
   } else {
-    A = argF->initNodeReader(a, true);
+    A = argF->initNodeReader(a, false);
   }
 
+  // Initialize node builder
+  node_builder& nb = resF->useSparseBuilder(k, A->getNNZs());
+
+
   // recurse
-  for (int i=0; i<size; i++) {
-    nb.d(i) = compute(i, nextk, A->d(i));
+  for (int z=0; z<A->getNNZs(); z++) {
+    nb.i(z) = A->i(z);
+    nb.d(z) = computeAll(A->i(z), nextk, A->d(z));
   }
 
   // Cleanup
@@ -277,101 +222,625 @@ MEDDLY::node_handle MEDDLY::copy_MT2bool::compute(int in, int k, node_handle a)
   b = resF->createReducedNode(in, nb);
 
   // Add to compute table
-  if (k == aLevel) saveResult(a, b);
+  if (k == aLevel && k>0) saveResult(a, b);
   return b;
 }
 
+
+
 // ******************************************************************
 // *                                                                *
-// *                      copy_MT2Evplus class                      *
+// *                        copy_MT2EV class                        *
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::copy_MT2Evplus : public unary_operation {
-  public:
-    copy_MT2Evplus(const unary_opname* oc, expert_forest* arg, 
-      expert_forest* res);
+namespace MEDDLY {
 
-    virtual bool isStaleEntry(const node_handle* entryData) {
-      return 
-        argF->isStale(entryData[0]) ||
-        resF->isStale(entryData[2]);
-    }
-    virtual void discardEntry(const node_handle* entryData) {
-      argF->uncacheNode(entryData[0]);
-      resF->uncacheNode(entryData[2]);
-    }
-    virtual void showEntry(FILE* strm, const node_handle* entryData) const {
-      fprintf(strm, "[%s(%d) <%d, %d>]", getName(), entryData[0], 
-        entryData[1], entryData[2]);
-    }
-    virtual void compute(const dd_edge &arg, dd_edge &res) {
-      node_handle b;
-      int bev;
-      compute(arg.getNode(), b, bev);
-      res.set(b, bev);
-    }
-    virtual void compute(node_handle a, node_handle &b, int &bev);
-};
+  template <typename TYPE>
+  class copy_MT2EV : public unary_operation {
+    public:
+      copy_MT2EV(const unary_opname* oc, expert_forest* arg, 
+        expert_forest* res) : unary_operation(oc, 1, 2, arg, res)
+      {
+        // entry[0]: mt node 
+        // entry[1]: EV value (output)
+        // entry[2]: EV node (output)
+      }
 
-MEDDLY::copy_MT2Evplus::copy_MT2Evplus(const unary_opname* oc, 
-  expert_forest* arg, expert_forest* res)
-: unary_operation(oc, 1, 2, arg, res)
-{
-  // entry[0]: MT node
-  // entry[1]: EV value
-  // entry[2]: EV node
-}
+      virtual bool isStaleEntry(const node_handle* entryData) {
+        return 
+          argF->isStale(entryData[0]) ||
+          resF->isStale(entryData[2]);
+      }
+      virtual void discardEntry(const node_handle* entryData) {
+        argF->uncacheNode(entryData[0]);
+        resF->uncacheNode(entryData[2]);
+      }
+      virtual void showEntry(FILE* strm, const node_handle* entryData) const {
+        fprintf(strm, "[%s(%d) <", getName(), entryData[0]);
+        TYPE ev;
+        compute_table::readEV(entryData+1, ev);
+        show(strm, ev);
+        fprintf(strm, ", %d>]", entryData[2]);
+      }
+      virtual void compute(const dd_edge &arg, dd_edge &res) {
+        node_handle b;
+        TYPE bev;
+        if (argF->getReductionRule() == resF->getReductionRule()) {
+          computeSkip(-1, arg.getNode(), b, bev);  // same skipping rule, ok
+        } else {
+          // need to visit every level...
+          computeAll(-1, resF->getNumVariables(), arg.getNode(), b, bev);
+        }
+        res.set(b, bev);
+      }
+      void computeSkip(int in, node_handle a, node_handle &b, TYPE &bev);
+      void computeAll(int in, int k, node_handle a, node_handle &b, TYPE &bev);
 
-void MEDDLY::copy_MT2Evplus::compute(node_handle a, node_handle &b, int &bev)
+    protected:
+      inline bool inCache(node_handle a, node_handle &b, TYPE &bev) {
+        CTsrch.key(0) = a;
+        const node_handle* cacheFind = CT->find(CTsrch);
+        if (cacheFind) {
+          compute_table::readEV(cacheFind+1, bev);
+          b = resF->linkNode(cacheFind[2]);
+          return true;
+        }
+        return false;
+      }
+
+      inline void addToCache(node_handle a, node_handle b, TYPE bev) {
+        compute_table::temp_entry &entry = CT->startNewEntry(this);
+        entry.key(0) = argF->cacheNode(a);
+        entry.setResultEV(0, bev);
+        entry.result(1) = resF->cacheNode(b);
+        CT->addEntry();
+      }
+
+    private:
+      static inline void show(FILE* strm, int ev)    { fprintf(strm, "%d", ev); }
+      static inline void show(FILE* strm, float ev)  { fprintf(strm, "%f", ev); }
+  };
+
+};  // namespace MEDDLY
+
+template <typename TYPE>
+void MEDDLY::copy_MT2EV<TYPE>
+::computeSkip(int in, node_handle a, node_handle &b, TYPE &bev)
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
-    bev = expert_forest::int_Tencoder::handle2value(a);
+    argF->getValueFromHandle(a, bev);
     b = expert_forest::bool_Tencoder::value2handle(true);
     return;
   }
 
   // Check compute table
-  CTsrch.key(0) = a;
-  const node_handle* cacheFind = CT->find(CTsrch);
-  if (cacheFind) {
-    bev = cacheFind[1];
-    b = resF->linkNode(cacheFind[2]);
-    return;
-  }
+  if (inCache(a, b, bev)) return;
+
+  // Initialize sparse node reader
+  node_reader* A = argF->initNodeReader(a, false);
 
   // Initialize node builder
   const int level = argF->getNodeLevel(a);
-  const int size = resF->getLevelSize(level);
-  node_builder& nb = resF->useNodeBuilder(level, size);
-
-  // Initialize node reader
-  node_reader* A = argF->initNodeReader(a, true);
+  node_builder& nb = resF->useSparseBuilder(level, A->getNNZs());
 
   // recurse
-  for (int i=0; i<size; i++) {
+  for (int z=0; z<A->getNNZs(); z++) {
     node_handle d;
-    int dev;
-    compute(A->d(i), d, dev);
-    nb.d(i) = d;
-    nb.setEdge(i, dev);
+    TYPE dev;
+    computeSkip(A->i(z), A->d(z), d, dev);
+    nb.i(z) = A->i(z);
+    nb.d(z) = d;
+    nb.setEdge(z, dev);
   }
 
   // Cleanup
   node_reader::recycle(A);
 
   // Reduce
-  node_handle bl;
-  resF->createReducedNode(-1, nb, bev, bl);
-  b = bl;
+  resF->createReducedNode(in, nb, bev, b);
 
   // Add to compute table
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
-  entry.key(0) = argF->cacheNode(a);
-  entry.result(0) = bev;
-  entry.result(1) = resF->cacheNode(b);
-  CT->addEntry();
+  addToCache(a, b, bev);
+}
+
+template <typename TYPE>
+void MEDDLY::copy_MT2EV<TYPE>
+::computeAll(int in, int k, node_handle a, node_handle &b, TYPE &bev)
+{
+  // Check terminals
+  if (0==k) {
+    argF->getValueFromHandle(a, bev);
+    b = expert_forest::bool_Tencoder::value2handle(true);
+    return;
+  }
+
+  // Get level number
+  const int aLevel = argF->getNodeLevel(a);
+
+  // Check compute table
+  if (k == aLevel && k>0) {
+    if (inCache(a, b, bev)) return;
+  }
+
+  // What's below?
+  int nextk;
+  if (resF->isForRelations()) {
+    nextk = (k>0) ? -k : -k-1;
+  } else {
+    nextk = k-1;
+  }
+
+  // Initialize node reader
+  node_reader* A;
+  if (isLevelAbove(k, aLevel)) {
+    if (k<0 && argF->isIdentityReduced()) {
+      A = argF->initIdentityReader(k, in, a, false);
+    } else {
+      A = argF->initRedundantReader(k, a, false);
+    }
+  } else {
+    A = argF->initNodeReader(a, false);
+  }
+
+  // Initialize node builder
+  node_builder& nb = resF->useSparseBuilder(k, A->getNNZs());
+
+  // recurse
+  for (int z=0; z<A->getNNZs(); z++) {
+    TYPE dev;
+    nb.i(z) = A->i(z);
+    computeAll(A->i(z), nextk, A->d(z), nb.d(z), dev);
+    nb.setEdge(z, dev);
+  }
+
+  // Cleanup
+  node_reader::recycle(A);
+
+  // Reduce
+  resF->createReducedNode(in, nb, bev, b);
+
+  // Add to compute table
+  if (k == aLevel && k>0) {
+    addToCache(a, b, bev);
+  }
+}
+
+// ******************************************************************
+// *                                                                *
+// *                        copy_EV2MT class                        *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+
+  template <typename TYPE, class OP>
+  class copy_EV2MT : public unary_operation {
+    public:
+      copy_EV2MT(const unary_opname* oc, expert_forest* arg, 
+        expert_forest* res) : unary_operation(oc, 2, 1, arg, res)
+      {
+        // entry[0]: EV value
+        // entry[1]: EV node
+        // entry[2]: mt node (output)
+      }
+
+      virtual bool isStaleEntry(const node_handle* entryData) {
+        return 
+          argF->isStale(entryData[1]) ||
+          resF->isStale(entryData[2]);
+      }
+      virtual void discardEntry(const node_handle* entryData) {
+        argF->uncacheNode(entryData[1]);
+        resF->uncacheNode(entryData[2]);
+      }
+      virtual void showEntry(FILE* strm, const node_handle* entryData) const {
+        fprintf(strm, "[%s(<", getName());
+        TYPE ev;
+        compute_table::readEV(entryData, ev);
+        show(strm, ev);
+        fprintf(strm, ",%d> %d]", entryData[1], entryData[2]);
+      }
+      virtual void compute(const dd_edge &arg, dd_edge &res) {
+        TYPE ev;
+        node_handle b;
+        arg.getEdgeValue(ev);
+        if (argF->getReductionRule() == resF->getReductionRule()) {
+          b = computeSkip(-1, ev, arg.getNode());  // same skipping rule, ok
+        } else {
+          // need to visit every level...
+          b = computeAll(-1, resF->getNumVariables(), ev, arg.getNode());
+        }
+        res.set(b);
+      }
+      node_handle computeSkip(int in, TYPE ev, node_handle a);
+      node_handle computeAll(int in, int k, TYPE ev, node_handle a);
+
+    protected:
+      inline bool inCache(TYPE ev, node_handle a, node_handle &b) {
+        CTsrch.setKeyEV(0, ev);
+        CTsrch.key(1) = a;
+        const node_handle* cacheFind = CT->find(CTsrch);
+        if (cacheFind) {
+          b = resF->linkNode(cacheFind[2]);
+          return true;
+        }
+        return false;
+      }
+
+      inline void addToCache(TYPE ev, node_handle a, node_handle b) {
+        compute_table::temp_entry &entry = CT->startNewEntry(this);
+        entry.setKeyEV(0, ev);
+        entry.key(1) = argF->cacheNode(a);
+        entry.result(0) = resF->cacheNode(b);
+        CT->addEntry();
+      }
+
+    private:
+      static inline void show(FILE* strm, int ev)    { fprintf(strm, "%d", ev); }
+      static inline void show(FILE* strm, float ev)  { fprintf(strm, "%f", ev); }
+  };
+
+};  // namespace MEDDLY
+
+template <typename TYPE, class OP>
+MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
+::computeSkip(int in, TYPE ev, node_handle a)
+{
+  // Check terminals
+  if (argF->isTerminalNode(a)) {
+    return resF->handleForValue(ev);
+  }
+
+  // Check compute table
+  node_handle b;
+  if (inCache(ev, a, b)) return b;
+
+  // Initialize sparse node reader
+  node_reader* A = argF->initNodeReader(a, false);
+
+  // Initialize node builder
+  const int level = argF->getNodeLevel(a);
+  node_builder& nb = resF->useSparseBuilder(level, A->getNNZs());
+
+  // recurse
+  for (int z=0; z<A->getNNZs(); z++) {
+    TYPE aev;
+    A->getEdge(z, aev);
+    nb.i(z) = A->i(z);
+    nb.d(z) = computeSkip(A->i(z), OP::apply(ev, aev), A->d(z));
+  }
+
+  // Cleanup
+  node_reader::recycle(A);
+
+  // Reduce
+  b = resF->createReducedNode(in, nb);
+
+  // Add to compute table
+  addToCache(ev, a, b);
+  return b;
+}
+
+template <typename TYPE, class OP>
+MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
+::computeAll(int in, int k, TYPE ev, node_handle a)
+{
+  // Check terminals
+  if (0==k) {
+    return resF->handleForValue(ev);
+  }
+
+  // Get level number
+  const int aLevel = argF->getNodeLevel(a);
+
+  // Check compute table
+  node_handle b;
+  if (k == aLevel && k>0) {
+    if (inCache(ev, a, b)) return b;
+  }
+
+  // What's below?
+  int nextk;
+  if (resF->isForRelations()) {
+    nextk = (k>0) ? -k : -k-1;
+  } else {
+    nextk = k-1;
+  }
+
+  // Initialize node reader
+  node_reader* A;
+  if (isLevelAbove(k, aLevel)) {
+    if (k<0 && argF->isIdentityReduced()) {
+      A = argF->initIdentityReader(k, in, a, false);
+    } else {
+      TYPE rev;
+      OP::redundant(rev);
+      A = argF->initRedundantReader(k, rev, a, false);
+    }
+  } else {
+    A = argF->initNodeReader(a, false);
+  }
+
+  // Initialize node builder
+  node_builder& nb = resF->useSparseBuilder(k, A->getNNZs());
+
+  // recurse
+  for (int z=0; z<A->getNNZs(); z++) {
+    TYPE aev;
+    A->getEdge(z, aev);
+    nb.i(z) = A->i(z);
+    nb.d(z) = computeAll(A->i(z), nextk, OP::apply(ev, aev), A->d(z));
+  }
+
+  // Cleanup
+  node_reader::recycle(A);
+
+  // Reduce
+  b = resF->createReducedNode(in, nb);
+
+  // Add to compute table
+  if (k == aLevel && k>0) {
+    addToCache(ev, a, b);
+  }
+  return b;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                     copy_EV2EV_fast  class                     *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+
+  // 1-1 mapping between input edges and output edges
+  template <typename INTYPE, typename OUTTYPE>
+  class copy_EV2EV_fast : public unary_operation {
+    public:
+      copy_EV2EV_fast(const unary_opname* oc, expert_forest* arg, 
+        expert_forest* res) : unary_operation(oc, 1, 1, arg, res)
+      {
+        // entry[0]: EV node
+        // entry[1]: EV node 
+      }
+      virtual bool isStaleEntry(const node_handle* entryData) {
+        return 
+          argF->isStale(entryData[0]) ||
+          resF->isStale(entryData[1]);
+      }
+      virtual void discardEntry(const node_handle* entryData) {
+        argF->uncacheNode(entryData[0]);
+        resF->uncacheNode(entryData[1]);
+      }
+      virtual void showEntry(FILE* strm, const node_handle* entryData) const {
+        fprintf(strm, "[%s(<?,%d>) <?,%d>]", getName(), entryData[0], entryData[1]);
+      }
+      virtual void compute(const dd_edge &arg, dd_edge &res) {
+        INTYPE av;
+        node_handle bn;
+        arg.getEdgeValue(av);
+        bn = computeSkip(-1, arg.getNode());
+        OUTTYPE bv = av;
+        res.set(bn, bv);
+      }
+
+      node_handle computeSkip(int in, node_handle a);
+
+    protected:
+      inline bool findResult(node_handle a, node_handle &b) {
+        CTsrch.key(0) = a;
+        const node_handle* cacheFind = CT->find(CTsrch);
+        if (0==cacheFind) return false;
+        b = resF->linkNode(cacheFind[1]);
+        return true;
+      }
+      inline node_handle saveResult(node_handle a, node_handle b) {
+        compute_table::temp_entry &entry = CT->startNewEntry(this);
+        entry.key(0) = argF->cacheNode(a);
+        entry.result(0) = resF->cacheNode(b);
+        CT->addEntry();
+        return b;
+      }
+  };
+
+};  // namespace MEDDLY
+
+template <typename INTYPE, typename OUTTYPE>
+MEDDLY::node_handle 
+MEDDLY::copy_EV2EV_fast<INTYPE,OUTTYPE>::computeSkip(int in, node_handle a)
+{
+  // Check terminals
+  if (argF->isTerminalNode(a)) {
+    return expert_forest::bool_Tencoder::value2handle(true);
+  }
+
+  // Check compute table
+  node_handle b;
+  if (findResult(a, b)) return b;
+
+  // Initialize node reader
+  node_reader* A = argF->initNodeReader(a, false);
+
+  // Initialize node builder
+  const int level = argF->getNodeLevel(a);
+  node_builder& nb = resF->useSparseBuilder(level, A->getNNZs());
+
+
+  // recurse
+  for (int z=0; z<A->getNNZs(); z++) {
+    nb.i(z) = A->i(z);
+    nb.d(z) = computeSkip(A->i(z), A->d(z));
+    INTYPE av;
+    OUTTYPE bv;
+    A->getEdge(z, av);
+    bv = av;
+    nb.setEdge(z, bv);
+  }
+
+  // Cleanup
+  node_reader::recycle(A);
+
+  // Reduce
+  OUTTYPE bv;
+  resF->createReducedNode(in, nb, bv, b);
+  // bv should be the redundant/identity value
+
+  // Add to compute table
+  return saveResult(a, b);
+}
+
+
+// ******************************************************************
+// *                                                                *
+// *                     copy_EV2EV_slow  class                     *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+
+  template <typename INTYPE, class INOP, typename OUTTYPE>
+  class copy_EV2EV_slow : public unary_operation {
+    public:
+      copy_EV2EV_slow(const unary_opname* oc, expert_forest* arg, 
+        expert_forest* res) : unary_operation(oc, 2, 2, arg, res)
+      {
+        // entry[0]: EV value
+        // entry[1]: EV node
+        // entry[2]: EV value
+        // entry[3]: EV node 
+      }
+
+      virtual bool isStaleEntry(const node_handle* entryData) {
+        return 
+          argF->isStale(entryData[1]) ||
+          resF->isStale(entryData[3]);
+      }
+      virtual void discardEntry(const node_handle* entryData) {
+        argF->uncacheNode(entryData[1]);
+        resF->uncacheNode(entryData[3]);
+      }
+      virtual void showEntry(FILE* strm, const node_handle* entryData) const {
+        fprintf(strm, "[%s(<", getName());
+        INTYPE ev1;
+        compute_table::readEV(entryData, ev1);
+        show(strm, ev1);
+        fprintf(strm, ",%d> <", entryData[1]);
+        OUTTYPE ev2; 
+        compute_table::readEV(entryData+2, ev2);
+        show(strm, ev2);
+        fprintf(strm, ",%d>]", entryData[3]);
+      }
+      virtual void compute(const dd_edge &arg, dd_edge &res) {
+        INTYPE av;
+        node_handle an, bn;
+        OUTTYPE bv;
+        arg.getEdgeValue(av);
+        an = arg.getNode();
+        // need to visit every level...
+        computeAll(-1, resF->getNumVariables(), av, an, bv, bn);
+        res.set(bn, bv);
+      }
+      void computeAll(int in, int k, INTYPE av, node_handle an,
+        OUTTYPE &bv, node_handle &bn);
+
+    protected:
+      inline bool inCache(INTYPE av, node_handle an, OUTTYPE &bv, node_handle &bn) 
+      {
+        CTsrch.setKeyEV(0, av);
+        CTsrch.key(1) = an;
+        const node_handle* cacheFind = CT->find(CTsrch);
+        if (cacheFind) {
+          compute_table::readEV(cacheFind+2, bv);
+          bn = resF->linkNode(cacheFind[3]);
+          return true;
+        }
+        return false;
+      }
+
+      inline void addToCache(INTYPE av, node_handle an, OUTTYPE bv, node_handle &bn) 
+      {
+        compute_table::temp_entry &entry = CT->startNewEntry(this);
+        entry.setKeyEV(0, av);
+        entry.key(1) = argF->cacheNode(an);
+        entry.setResultEV(0, bv);
+        entry.result(1) = resF->cacheNode(bn);
+        CT->addEntry();
+      }
+
+    private:
+      static inline void show(FILE* strm, int ev)    { fprintf(strm, "%d", ev); }
+      static inline void show(FILE* strm, float ev)  { fprintf(strm, "%f", ev); }
+  };
+
+};  // namespace MEDDLY
+
+template <typename INTYPE, class INOP, typename OUTTYPE>
+void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
+::computeAll(int in, int k, INTYPE av, node_handle an, 
+  OUTTYPE &bv, node_handle &bn)
+{
+  // Check terminals
+  if (0==k) {
+    bv = av;
+    bn = expert_forest::bool_Tencoder::value2handle(true);
+    return;
+  }
+
+  // Get level number
+  const int aLevel = argF->getNodeLevel(an);
+
+  // Check compute table
+  if (k == aLevel && k>0) {
+    if (inCache(av, an, bv, bn)) return;
+  }
+
+  // What's below?
+  int nextk;
+  if (resF->isForRelations()) {
+    nextk = (k>0) ? -k : -k-1;
+  } else {
+    nextk = k-1;
+  }
+
+  // Initialize node reader
+  node_reader* A;
+  if (isLevelAbove(k, aLevel)) {
+    if (k<0 && argF->isIdentityReduced()) {
+      A = argF->initIdentityReader(k, in, an, false);
+    } else {
+      INTYPE rev;
+      INOP::redundant(rev);
+      A = argF->initRedundantReader(k, rev, an, false);
+    }
+  } else {
+    A = argF->initNodeReader(an, false);
+  }
+
+  // Initialize node builder
+  node_builder& nb = resF->useSparseBuilder(k, A->getNNZs());
+
+  // recurse
+  for (int z=0; z<A->getNNZs(); z++) {
+    INTYPE adv;
+    OUTTYPE bdv;
+    A->getEdge(z, adv);
+    nb.i(z) = A->i(z);
+    computeAll(A->i(z), nextk, INOP::apply(av, adv), A->d(z), bdv, nb.d(z));
+    nb.setEdge(z, bdv);
+  }
+
+  // Cleanup
+  node_reader::recycle(A);
+
+  // Reduce
+  resF->createReducedNode(in, nb, bv, bn);
+
+  // Add to compute table
+  if (k == aLevel && k>0) {
+    addToCache(av, an, bv, bn);
+  }
 }
 
 // ******************************************************************
@@ -385,6 +854,23 @@ class MEDDLY::copy_opname : public unary_opname {
     copy_opname();
     virtual unary_operation* 
       buildOperation(expert_forest* ar, expert_forest* res) const;
+
+
+  private:
+    class PLUS {
+      public:
+        template <typename T>
+        static inline T apply(T a, T b) { return a+b; }
+        template <typename T>
+        static inline void redundant(T &ev) { ev = 0; }
+    };
+    class TIMES {
+      public:
+        template <typename T>
+        static inline T apply(T a, T b) { return a*b; }
+        template <typename T>
+        static inline void redundant(T &ev) { ev = 1; }
+    };
 };
 
 MEDDLY::copy_opname::copy_opname()
@@ -404,30 +890,198 @@ MEDDLY::copy_opname
   if (arg->isForRelations() != res->isForRelations())
     throw error(error::TYPE_MISMATCH);
 
-  if (arg->getEdgeLabeling() != forest::MULTI_TERMINAL)
-    throw error(error::NOT_IMPLEMENTED);
+  if (arg->isMultiTerminal() && res->isMultiTerminal())
+  {
+    // 
+    // MT copies, handled by the new template class!
+    //
+    switch (res->getRangeType()) {
+      case forest::BOOLEAN:
+        return new copy_MT_tmpl<bool>(this, arg, res);
 
-  if (res->getEdgeLabeling() != forest::MULTI_TERMINAL) {
-    if (arg->getRangeType() != res->getRangeType())
-      throw error(error::TYPE_MISMATCH);
-   
-    if (res->getEdgeLabeling() == forest::EVPLUS) {
-      return new copy_MT2Evplus(this,  arg,  res);
+      case forest::INTEGER:
+        return new copy_MT_tmpl<int>(this, arg, res);
+
+      case forest::REAL:
+        return new copy_MT_tmpl<float>(this, arg, res);
+
+
+      default:  // any other types?
+        throw error(error::NOT_IMPLEMENTED);
+    };
+  }
+
+  //
+  // Must be at least one EV forest
+  //
+
+  if (arg->isMultiTerminal() && 
+    (res->isEVPlus() || res->isEVTimes())) 
+  {
+    // 
+    // MT to EV conversion
+    //
+    switch (res->getRangeType()) {
+      case forest::INTEGER:
+        return new copy_MT2EV<int>(this, arg, res);
+
+      case forest::REAL:
+        return new copy_MT2EV<float>(this, arg, res);
+
+      default:
+        throw error(error::TYPE_MISMATCH);
+    };
+  }
+
+  if (res->isMultiTerminal() && (arg->isEVPlus() || arg->isIndexSet()))
+  {
+    //
+    // EV+ to MT conversion
+    //
+    switch (arg->getRangeType()) {
+      case forest::INTEGER:
+        return new copy_EV2MT<int,PLUS>(this, arg, res);
+
+      case forest::REAL:
+        return new copy_EV2MT<float,PLUS>(this, arg, res);
+
+      default:
+        throw error(error::TYPE_MISMATCH);
+    };
+  }
+
+  if (res->isMultiTerminal() && arg->isEVTimes())
+  {
+    //
+    // EV* to MT conversion  (untested!)
+    //
+    switch (arg->getRangeType()) {
+      case forest::INTEGER:
+        return new copy_EV2MT<int,TIMES>(this, arg, res);
+
+      case forest::REAL:
+        return new copy_EV2MT<float,TIMES>(this, arg, res);
+
+      default:
+        throw error(error::TYPE_MISMATCH);
+    };
+  }
+
+  //
+  // That's it for any MT arguments
+  //
+  if (res->isMultiTerminal() || arg->isMultiTerminal()) {
+    throw error(error::NOT_IMPLEMENTED);
+  }
+
+  //
+  // "fast" EV to EV copies (same RR, same operation, no info loss)
+  //
+  if (arg->getReductionRule() == res->getReductionRule()) {
+
+    if ( ((arg->isEVPlus() || arg->isIndexSet()) && res->isEVPlus()) 
+       || (arg->isEVTimes() && res->isEVTimes()) )
+    {
+
+      switch (arg->getRangeType()) {
+        case forest::INTEGER:
+            switch (res->getRangeType()) {
+                case forest::INTEGER:
+                    return new copy_EV2EV_fast<int,int>(this, arg, res);
+                case forest::REAL:
+                    return new copy_EV2EV_fast<int,float>(this, arg, res);
+                default:
+                    throw error(error::TYPE_MISMATCH);
+            };
+            break;    // in case anything falls through
+
+        case forest::REAL:
+            switch (res->getRangeType()) {
+                case forest::INTEGER:
+                    break;    // not safe to go from real -> integer this way
+                case forest::REAL:
+                    return new copy_EV2EV_fast<float,float>(this, arg, res);
+                default:
+                    throw error(error::TYPE_MISMATCH);
+            };
+            break;    // things may fall through
+
+        default:
+            throw error(error::TYPE_MISMATCH);
+      };
     }
 
-    throw error(error::NOT_IMPLEMENTED);
   }
 
-  if (arg->getRangeType() == forest::BOOLEAN) {
-    if (res->getRangeType() == forest::BOOLEAN)
-      throw error(error::NOT_IMPLEMENTED);
-    return new copy_bool2MT(this,  arg,  res);
-  } // boolean
-  else {
-    if (res->getRangeType() != forest::BOOLEAN)
-      throw error(error::NOT_IMPLEMENTED);
-    return new copy_MT2bool(this,  arg,  res);
+  //
+  // Generic EV+ to EV, may be slow
+  //
+  if (arg->isEVPlus() || arg->isIndexSet()) {
+
+    switch (arg->getRangeType()) {
+
+      case forest::INTEGER:
+          switch (res->getRangeType()) {
+            case forest::INTEGER:
+                return new copy_EV2EV_slow<int,PLUS,int>(this, arg, res);
+            case forest::REAL:
+                return new copy_EV2EV_slow<int,PLUS,float>(this, arg, res);
+            default:
+                throw error(error::TYPE_MISMATCH);
+          };
+        
+      case forest::REAL:
+          switch (res->getRangeType()) {
+            case forest::INTEGER:
+                return new copy_EV2EV_slow<float,PLUS,int>(this, arg, res);
+            case forest::REAL:
+                return new copy_EV2EV_slow<float,PLUS,float>(this, arg, res);
+            default:
+                throw error(error::TYPE_MISMATCH);
+          };
+
+      default:
+          throw error(error::TYPE_MISMATCH);
+    }
   }
+
+  //
+  // Generic EV* to EV, may be slow
+  //
+  if (arg->isEVTimes()) {
+
+    switch (arg->getRangeType()) {
+
+      case forest::INTEGER:
+          switch (res->getRangeType()) {
+            case forest::INTEGER:
+                return new copy_EV2EV_slow<int,TIMES,int>(this, arg, res);
+            case forest::REAL:
+                return new copy_EV2EV_slow<int,TIMES,float>(this, arg, res);
+            default:
+                throw error(error::TYPE_MISMATCH);
+          };
+        
+      case forest::REAL:
+          switch (res->getRangeType()) {
+            case forest::INTEGER:
+                return new copy_EV2EV_slow<float,TIMES,int>(this, arg, res);
+            case forest::REAL:
+                return new copy_EV2EV_slow<float,TIMES,float>(this, arg, res);
+            default:
+                throw error(error::TYPE_MISMATCH);
+          };
+
+      default:
+          throw error(error::TYPE_MISMATCH);
+    }
+  }
+
+  //
+  // Catch all for any other cases
+  //
+  throw error(error::NOT_IMPLEMENTED);
+
 }
 
 // ******************************************************************

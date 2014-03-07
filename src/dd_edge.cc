@@ -278,15 +278,19 @@ void MEDDLY::dd_edge::show(FILE* strm, int verbosity) const
   else {
     fprintf(strm, "node: %ld, ", long(node));
   }
-  if (eParent->getRangeType() == forest::REAL) {
-    float ev;
-    getEdgeValue(ev);
-    fprintf(strm, "value: %f, level: %d)\n", ev, getLevel());
-  } else {
-    int iv;
-    getEdgeValue(iv);
-    fprintf(strm, "value: %d, level: %d)\n", iv, getLevel());
+  if (!eParent->isMultiTerminal()) {
+    if (eParent->getRangeType() == forest::REAL) {
+      float ev;
+      getEdgeValue(ev);
+      fprintf(strm, "value: %f, ", ev);
+    } else {
+      int iv;
+      getEdgeValue(iv);
+      fprintf(strm, "value: %d, ", iv);
+    }
   }
+  fprintf(strm, "level: %d)\n", getLevel());
+
   if (verbosity == 2 || verbosity == 3) {
     if (eParent->isMultiTerminal()) {
       fprintf(strm, "MT");

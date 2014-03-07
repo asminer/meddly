@@ -23,24 +23,24 @@
 #include "config.h"
 #endif
 #include "../defines.h"
-#include "mdd2evplus.h"
+#include "mdd2index.h"
 
 // #define TRACE_ALL_OPS
 
 namespace MEDDLY {
-  class mdd2evplus_operation;
-  class mdd2evplus_opname;
+  class mdd2index_operation;
+  class mdd2index_opname;
 };
 
 // ******************************************************************
 // *                                                                *
-// *                   mdd2evplus_operation class                   *
+// *                   mdd2index_operation  class                   *
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::mdd2evplus_operation : public unary_operation {
+class MEDDLY::mdd2index_operation : public unary_operation {
   public:
-    mdd2evplus_operation(const unary_opname* oc, expert_forest* arg, 
+    mdd2index_operation(const unary_opname* oc, expert_forest* arg, 
       expert_forest* res);
 
     virtual bool isStaleEntry(const node_handle* entryData);
@@ -52,7 +52,7 @@ class MEDDLY::mdd2evplus_operation : public unary_operation {
     void compute(int k, node_handle a, node_handle &bdn, int &bcard);
 };
 
-MEDDLY::mdd2evplus_operation::mdd2evplus_operation(const unary_opname* oc, 
+MEDDLY::mdd2index_operation::mdd2index_operation(const unary_opname* oc, 
   expert_forest* arg, expert_forest* res)
 : unary_operation(oc, 1, 2, arg, res)
 {
@@ -61,7 +61,7 @@ MEDDLY::mdd2evplus_operation::mdd2evplus_operation(const unary_opname* oc,
 }
 
 bool 
-MEDDLY::mdd2evplus_operation
+MEDDLY::mdd2index_operation
 ::isStaleEntry(const node_handle* entryData)
 {
   return 
@@ -70,7 +70,7 @@ MEDDLY::mdd2evplus_operation
 }
 
 void 
-MEDDLY::mdd2evplus_operation
+MEDDLY::mdd2index_operation
 ::discardEntry(const node_handle* entryData)
 {
   argF->uncacheNode(entryData[0]);
@@ -78,7 +78,7 @@ MEDDLY::mdd2evplus_operation
 }
 
 void 
-MEDDLY::mdd2evplus_operation
+MEDDLY::mdd2index_operation
 ::showEntry(FILE* strm, const node_handle* entryData) const
 {
   fprintf(strm, "[%s %d %d (card %d)]", getName(), entryData[0], 
@@ -86,7 +86,7 @@ MEDDLY::mdd2evplus_operation
 }
 
 void
-MEDDLY::mdd2evplus_operation
+MEDDLY::mdd2index_operation
 ::compute(const dd_edge &arg, dd_edge &res)
 {
   MEDDLY_DCASSERT(arg.getForest() == argF);
@@ -102,7 +102,7 @@ MEDDLY::mdd2evplus_operation
 }
 
 void
-MEDDLY::mdd2evplus_operation
+MEDDLY::mdd2index_operation
 ::compute(int k, node_handle a, node_handle &bdn, int &bcard)
 {
   // Deal with terminals
@@ -132,7 +132,7 @@ MEDDLY::mdd2evplus_operation
   }
 
 #ifdef TRACE_ALL_OPS
-  printf("calling mdd2evplus::compute(%d, %d)\n", height, a);
+  printf("calling mdd2index::compute(%d, %d)\n", height, a);
 #endif
 
   // Initialize node builder
@@ -181,24 +181,24 @@ MEDDLY::mdd2evplus_operation
 
 // ******************************************************************
 // *                                                                *
-// *                    mdd2evplus_opname  class                    *
+// *                     mdd2index_opname class                     *
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::mdd2evplus_opname : public unary_opname {
+class MEDDLY::mdd2index_opname : public unary_opname {
   public:
-    mdd2evplus_opname();
+    mdd2index_opname();
     virtual unary_operation* 
       buildOperation(expert_forest* ar, expert_forest* res) const;
 };
 
-MEDDLY::mdd2evplus_opname::mdd2evplus_opname()
+MEDDLY::mdd2index_opname::mdd2index_opname()
  : unary_opname("ConvertToIndexSet")
 {
 }
 
 MEDDLY::unary_operation*
-MEDDLY::mdd2evplus_opname
+MEDDLY::mdd2index_opname
 ::buildOperation(expert_forest* arg, expert_forest* res) const
 {
   if (0==arg || 0==res) return 0;
@@ -211,10 +211,10 @@ MEDDLY::mdd2evplus_opname
       arg->getEdgeLabeling() != forest::MULTI_TERMINAL ||
       res->isForRelations() ||
       res->getRangeType() != forest::INTEGER ||
-      res->getEdgeLabeling() != forest::EVPLUS
+      res->getEdgeLabeling() != forest::INDEX_SET
   ) throw error(error::TYPE_MISMATCH);
 
-  return new mdd2evplus_operation(this, arg, res);
+  return new mdd2index_operation(this, arg, res);
 }
 
 // ******************************************************************
@@ -223,8 +223,8 @@ MEDDLY::mdd2evplus_opname
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unary_opname* MEDDLY::initializeMDD2EVPLUS(const settings &s)
+MEDDLY::unary_opname* MEDDLY::initializeMDD2INDEX(const settings &s)
 {
-  return new mdd2evplus_opname;
+  return new mdd2index_opname;
 }
 

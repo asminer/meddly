@@ -66,10 +66,10 @@ class MEDDLY::evmdd_forest : public ev_forest {
             int sz = getLevelSize(i);
             node_builder& nb = useNodeBuilder(i, sz);
             nb.d(0) = ed;
-            OPERATION::setEdge(nb.eptr(0), ev);
+            nb.setEdge(0, ev);
             for (int v=1; v<sz; v++) {
               nb.d(v) = linkNode(ed);
-              OPERATION::setEdge(nb.eptr(0), ev);
+              nb.setEdge(v, ev);
             }
             createReducedNode(-1, nb, ev, ed);
           } else {
@@ -77,7 +77,7 @@ class MEDDLY::evmdd_forest : public ev_forest {
             node_builder& nb = useSparseBuilder(i, 1);
             nb.i(0) = vlist[i];
             nb.d(0) = ed;
-            OPERATION::setEdge(nb.eptr(0), ev);
+            nb.setEdge(0, ev);
             createReducedNode(-1, nb, ev, ed);
           }
         } // for i
@@ -270,7 +270,7 @@ namespace MEDDLY {
           if (0==total_ptr) continue;
           nb.i(z) = v;
           nb.d(z) = total_ptr;
-          OPERATION::setEdge(nb.eptr(z), total_val);
+          nb.setEdge(z, total_val);
           z++;
         } // for v
 

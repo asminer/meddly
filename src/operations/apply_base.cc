@@ -550,11 +550,14 @@ MEDDLY::generic_binary_evtimes::~generic_binary_evtimes()
 void MEDDLY::generic_binary_evtimes
 ::showEntry(FILE* strm, const node_handle *data) const
 {
+  float ev0;
+  float ev2;
+  float ev4;
+  compute_table::readEV(data+0, ev0);
+  compute_table::readEV(data+2, ev2);
+  compute_table::readEV(data+4, ev4);
   fprintf(strm, "[%s(<%f:%d>, <%f:%d>): <%f:%d>]",
-      getName(),
-      entry2float(data[0]), data[1], 
-      entry2float(data[2]), data[3], 
-      entry2float(data[4]), data[5]
+      getName(), ev0, data[1], ev2, data[3], ev4, data[5]
   );
 }
 

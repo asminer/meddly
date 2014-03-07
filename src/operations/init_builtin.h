@@ -30,7 +30,7 @@ class MEDDLY::builtin_initializer : public op_initializer {
   unary_opname* COMPL;
   unary_opname* MAXRANGE;
   unary_opname* MINRANGE;
-  unary_opname* MDD2EVPLUS;
+  unary_opname* MDD2INDEX;
 
   binary_opname* UNION;
   binary_opname* INTERSECT;

@@ -101,7 +101,7 @@ long writeReachset(FILE* s, int N)
   apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
 
   // Build index set for reachable states
-  forest* evmdd = d->createForest(0, forest::INTEGER, forest::EVPLUS);
+  forest* evmdd = d->createForest(0, forest::INTEGER, forest::INDEX_SET);
   dd_edge reach_index(evmdd);
   apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
 
@@ -155,7 +155,7 @@ bool generateAndRead(FILE* s, int N)
   apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
 
   // Build index set for reachable states
-  forest* evmdd = d->createForest(0, forest::INTEGER, forest::EVPLUS);
+  forest* evmdd = d->createForest(0, forest::INTEGER, forest::INDEX_SET);
   dd_edge reach_index(evmdd);
   apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
 
@@ -206,7 +206,7 @@ bool readAndGenerate(FILE* s, int N)
   // Build (empty) forests
   forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
   forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
-  forest* evmdd = d->createForest(0, forest::INTEGER, forest::EVPLUS);
+  forest* evmdd = d->createForest(0, forest::INTEGER, forest::INDEX_SET);
 
   dd_edge mxdfile;
   dd_edge mddfile[2];

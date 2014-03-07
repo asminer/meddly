@@ -1742,6 +1742,7 @@ class MEDDLY::expert_forest : public forest
       }
     }
 
+#if 0
     /** Does this node represent an Index Set?
         Note: Only applicable to EV+MDDs.
     */
@@ -1756,10 +1757,11 @@ class MEDDLY::expert_forest : public forest
       const int* uhh = (const int*) nodeMan->getUnhashedHeaderOf(nd.offset);
       return *uhh > 0;
     }
+#endif
 
     /// Get the cardinality of an Index Set.
     inline int getIndexSetCardinality(node_handle node) const {
-      MEDDLY_DCASSERT(isEVPlus());
+      MEDDLY_DCASSERT(isIndexSet());
       if (isTerminalNode(node)) return (node != 0) ? 1 : 0;
       // yes iff the unhashed extra header is non-zero.
       const node_header& nd = getNode(node);
@@ -2903,11 +2905,17 @@ class MEDDLY::compute_table {
           search_key();
           ~search_key();
           inline node_handle& key(int i) { 
-#ifdef DEVELOPMENT_CODE
-            assert(i>=0);
-            assert(i<keyLength);
-#endif
+            MEDDLY_CHECK_RANGE(0, i, keyLength);
             return key_data[i]; 
+          }
+          inline void setKeyEV(int i, int ev) {
+            MEDDLY_CHECK_RANGE(0, i, keyLength);
+            key_data[i] = ev;
+          }
+          inline void setKeyEV(int i, float ev) {
+            MEDDLY_CHECK_RANGE(0, i, keyLength);
+            float* f = (float*) (key_data+i);
+            f[0] = ev;
           }
           inline const node_handle* rawData() const { return data; }
           inline int dataLength() const { return hashLength; }
@@ -2926,18 +2934,30 @@ class MEDDLY::compute_table {
           int resLength;
         public:
           inline node_handle& key(int i) { 
-#ifdef DEVELOPMENT_CODE
-            assert(i>=0);
-            assert(i<keyLength);
-#endif
+            MEDDLY_CHECK_RANGE(0, i, keyLength);
             return key_entry[i]; 
           }
+          inline void setKeyEV(int i, int ev) {
+            MEDDLY_CHECK_RANGE(0, i, keyLength);
+            key_entry[i] = ev;
+          }
+          inline void setKeyEV(int i, float ev) {
+            MEDDLY_CHECK_RANGE(0, i, keyLength);
+            float* f = (float*) (key_entry+i);
+            f[0] = ev;
+          }
           inline node_handle& result(int i) { 
-#ifdef DEVELOPMENT_CODE
-            assert(i>=0);
-            assert(i<resLength);
-#endif
+            MEDDLY_CHECK_RANGE(0, i, resLength);
             return res_entry[i]; 
+          }
+          inline void setResultEV(int i, int ev) { 
+            MEDDLY_CHECK_RANGE(0, i, resLength);
+            res_entry[i] = ev;
+          }
+          inline void setResultEV(int i, float ev) {
+            MEDDLY_CHECK_RANGE(0, i, resLength);
+            float* f = (float*) (res_entry+i);
+            f[0] = ev;
           }
           inline void copyResult(int i, void* data, size_t bytes) {
 #ifdef DEVELOPMENT_CODE
@@ -2954,6 +2974,16 @@ class MEDDLY::compute_table {
             return entry[i];
           }
       };
+
+    public:
+      // convenience methods, for grabbing edge values
+      static inline void readEV(const node_handle* p, int &ev) {
+        ev = p[0];
+      }
+      static inline void readEV(const node_handle* p, float &ev) {
+        float* f = (float*) p;
+        ev = f[0];
+      }
 
     public:
       /// Constructor
