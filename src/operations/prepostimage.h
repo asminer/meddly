@@ -31,6 +31,12 @@ namespace MEDDLY {
 
   /// Set up a binary_opname for the "postimage" operation.
   binary_opname* initializePostImage(const settings &s);
+
+  /// Set up a binary_opname for vector matrix multiplication.
+  binary_opname* initializeVMmult(const settings &s);
+
+  /// Set up a binary_opname for matrix vector multiplication.
+  binary_opname* initializeMVmult(const settings &s);
 }
 
 #endif

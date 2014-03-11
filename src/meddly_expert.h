@@ -125,14 +125,16 @@ namespace MEDDLY {
       x_ind and y_ind specify how minterms are mapped to indexes
       for vectors x and y, respectively.
   */
-  extern const numerical_opname* VECT_MATR_MULT;
+  extern const numerical_opname* EXPLVECT_MATR_MULT;
+  // extern const numerical_opname* VECT_MATR_MULT; // renamed!
 
   /** Computes y = y + Ax.
       x and y are vectors, stored explicitly, and A is a matrix.
       x_ind and y_ind specify how minterms are mapped to indexes
       for vectors x and y, respectively.
   */
-  extern const numerical_opname* MATR_VECT_MULT;
+  extern const numerical_opname* MATR_EXPLVECT_MULT; 
+  // extern const numerical_opname* MATR_VECT_MULT; // renamed!
 
   // ******************************************************************
   // *                                                                *

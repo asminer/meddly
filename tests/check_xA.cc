@@ -37,12 +37,17 @@ using namespace MEDDLY;
 
 const int vars[] = {10, 10, 10};
 
+int R[] = {0, 3, 1, 4};
+int N[] = {0, 1, 4, 9};
+int S[] = {0, 2, 6, 5};
+
+// State indexes:
+//    R : 0
+//    N : 1
+//    S : 2
+
 bool build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
 {
-  int R[] = {0, 3, 1, 4};
-  int N[] = {0, 1, 4, 9};
-  int S[] = {0, 2, 6, 5};
-
   // Build state indexes
 
   int* sslist[] = { R, N, S };
@@ -120,15 +125,63 @@ bool equals(double *xgot, double *xans, int N)
   return true;
 }
 
-bool xA_check(dd_edge &ss, dd_edge &P)
+void readVector(const dd_edge &x, double* ans)
+{
+  forest* f = x.getForest();
+  float temp;
+  f->evaluate(x, R, temp);
+  ans[0] = temp;
+  f->evaluate(x, N, temp);
+  ans[1] = temp;
+  f->evaluate(x, S, temp);
+  ans[2] = temp;
+}
+
+bool impl_xA_check(dd_edge &x, const dd_edge &P)
+{
+  printf("xA multiplications (implicit):\n");
+
+  forest* f = x.getForest();
+  int* pinit[] = { N };
+  float v=1;
+  f->createEdge(pinit, &v, 1, x);
+
+  for (int i=0; ; i++) {
+    double ex[3];
+    double exP[3];
+    double test[3];
+    readVector(x, ex);
+    printf("p%d: [%lf, %lf, %lf]\n", i, ex[0], ex[1], ex[2]);
+    if (i>=9) break;
+    try {
+      apply(VM_MULTIPLY, x, P, x);
+    }
+    catch (MEDDLY::error ce) {
+      printf("Couldn't multiply: %s\n", ce.getName());
+      return false;
+    }
+    
+    // determine product by hand
+    exP[0] = exP[1] = exP[2] = 0; 
+    by_hand_oz_xA(exP, ex);
+
+    // Compare!
+    readVector(x, test);
+    if (!equals(test, exP, 3)) return false;
+
+  }
+  return true;
+}
+
+bool expl_xA_check(const dd_edge &ss, const dd_edge &P)
 {
   int i;
   double p[3];
   double q[3];
   double q_alt[3];
   p[0] = 0; p[1] = 1; p[2] = 0;
-  printf("xA multiplications:\n");
-  numerical_operation* VM = VECT_MATR_MULT->buildOperation(ss, P, ss);
+  printf("xA multiplications (explicit):\n");
+  numerical_operation* VM = EXPLVECT_MATR_MULT->buildOperation(ss, P, ss);
   for (i=0; i<9; i++) {
     printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
     q[0] = q[1] = q[2] = 0;
@@ -139,8 +192,12 @@ bool xA_check(dd_edge &ss, dd_edge &P)
       printf("Couldn't multiply: %s\n", ce.getName());
       return false;
     }
+
+    // determine product by hand
     q_alt[0] = q_alt[1] = q_alt[2] = 0;
     by_hand_oz_xA(q_alt, p);
+
+    // Compare!
     if (!equals(q, q_alt, 3)) return false;
     p[0] = q[0];
     p[1] = q[1];
@@ -151,15 +208,51 @@ bool xA_check(dd_edge &ss, dd_edge &P)
   return true;
 }
 
-bool Ax_check(dd_edge &ss, dd_edge &P)
+bool impl_Ax_check(dd_edge &x, const dd_edge &P)
+{
+  printf("Ax multiplications (implicit):\n");
+
+  forest* f = x.getForest();
+  int* pinit[] = { N };
+  float v=1;
+  f->createEdge(pinit, &v, 1, x);
+
+  for (int i=0; ; i++) {
+    double ex[3];
+    double exP[3];
+    double test[3];
+    readVector(x, ex);
+    printf("p%d: [%lf, %lf, %lf]\n", i, ex[0], ex[1], ex[2]);
+    if (i>=9) break;
+    try {
+      apply(MV_MULTIPLY, P, x, x);
+    }
+    catch (MEDDLY::error ce) {
+      printf("Couldn't multiply: %s\n", ce.getName());
+      return false;
+    }
+    
+    // determine product by hand
+    exP[0] = exP[1] = exP[2] = 0; 
+    by_hand_oz_Ax(exP, ex);
+
+    // Compare!
+    readVector(x, test);
+    if (!equals(test, exP, 3)) return false;
+
+  }
+  return true;
+}
+
+bool expl_Ax_check(const dd_edge &ss, const dd_edge &P)
 {
   int i;
   double p[3];
   double q[3];
   double q_alt[3];
   p[0] = 0; p[1] = 1; p[2] = 0;
-  printf("Ax multiplications:\n");
-  numerical_operation* MV = MATR_VECT_MULT->buildOperation(ss, P, ss);
+  printf("Ax multiplications (explicit):\n");
+  numerical_operation* MV = MATR_EXPLVECT_MULT->buildOperation(ss, P, ss);
   for (i=0; i<9; i++) {
     printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
     q[0] = q[1] = q[2] = 0;
@@ -192,13 +285,20 @@ int main(int argc, const char** argv)
   assert(evpmdds);
   forest* mtmxds = ozd->createForest(1, forest::REAL, forest::MULTI_TERMINAL);
   assert(mtmxds);
+  forest* mtmdds = ozd->createForest(0, forest::REAL, forest::MULTI_TERMINAL);
+  assert(mtmdds);
 
   dd_edge ss(evpmdds);
   dd_edge P(mtmxds);
+  dd_edge x(mtmdds);
 
   if (!build_oz(evpmdds, mtmxds, ss, P)) return 1;
-  if (!xA_check(ss, P)) return 1;
-  if (!Ax_check(ss, P)) return 1;
+
+  if (!expl_xA_check(ss, P)) return 1;
+  if (!impl_xA_check(x, P)) return 1;
+
+  if (!expl_Ax_check(ss, P)) return 1;
+  if (!impl_Ax_check(x, P)) return 1;
 
   // Avoid active node warning
   ss.clear();

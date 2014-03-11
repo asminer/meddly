@@ -36,8 +36,8 @@
 // #define DEBUG_MOVE_BALL
 // #define DEBUG_MAKE_ROTATION
 // #define DEBUG_BUILD_NSF
-
 // #define ALL_ROTATIONS
+#define SHOW_ORDER
 
 using namespace MEDDLY;
 
@@ -120,6 +120,14 @@ void sanityChecks()
       bailout("Illegal value for rightinit[%d]: %d\n", i, leftinit[i]);
     }
   }
+#ifdef SHOW_ORDER
+  printf("leftvar = {%d", leftvar[0]);
+  for (int i=1; i<leftring; i++) printf(", %d", leftvar[i]);
+  printf("}\n");
+  printf("rightvar = {%d", rightvar[0]);
+  for (int i=1; i<rightring; i++) printf(", %d", rightvar[i]);
+  printf("}\n");
+#endif
 }
 
 
@@ -147,6 +155,65 @@ void decinc_order(int p_red, int p_blue)
     if (i != 6) {
       rightvar[i] = k;
       k++;
+    } else {
+      rightvar[6] = leftvar[6];
+    }
+  }
+
+  int yellow = -2;  // Correct for exchange positions
+  int blue = 0;
+  int red = 0;
+
+  for (int i=0; i<leftring; i++) {
+    if (i<7) {
+      leftinit[i] = YY;
+      yellow++;
+    } else {
+      leftinit[i] = RR;
+      red++;
+    }
+  }
+  for (int i=0; i<rightring; i++) {
+    if (i<7) {
+      rightinit[i] = YY;
+      yellow++;
+    } else {
+      rightinit[i] = BB;
+      blue++;
+    }
+  }
+  printf("Rubik's rings using:\n\t%2d yellow\n\t%2d red\n\t%2d blue\n",
+    yellow, red, blue);
+
+  sanityChecks();
+}
+
+
+
+/**
+    Use the following order:
+      left ring is increasing up to max.
+      right ring is decreasing (except for second exchange slots).
+*/
+void incdec_order(int p_red, int p_blue)
+{
+  leftring = 7 + p_red;
+  rightring = 7 + p_blue;
+
+  LEVELS = leftring + rightring - 2;
+
+  leftvar = new int[leftring];
+  leftinit = new int[leftring];
+  rightvar = new int[rightring];
+  rightinit = new int[rightring];
+
+  for (int i=0; i<leftring; i++) leftvar[i] = i + rightring-1;
+
+  int k = leftvar[0];
+  for (int i=0; i<rightring; i++) {
+    if (i != 6) {
+      rightvar[i] = k;
+      k--;
     } else {
       rightvar[6] = leftvar[6];
     }
@@ -358,13 +425,6 @@ double theoretical()
     total++;
   }
 
-  /*
-  printf("Number of balls by color:\n");
-  for (int i=0; i<COLORS; i++) {
-    printf("\tcolor %d: %d\n", i, balls[i]);
-  }
-  */
-
   double denom = factorial(balls[0]);
   for (int i=1; i<COLORS; i++) {
     denom *= factorial(balls[i]);
@@ -380,10 +440,14 @@ int usage(const char* who)
     if ('/' == *ptr) name = ptr+1;
   }
   printf("Usage: %s <options>\n\n", name);
-  printf("\t -opt:  Optimistic node deletion (default)\n");
-  printf("\t-pess:  Pessimistic node deletion \n\n");
   printf("\t -r n:  Specify the number of red balls (default 11)\n");
   printf("\t -b n:  Specify the number of blue balls (default 11)\n\n");
+  printf("\t -bfs:  Traditional iteration\n");
+  printf("\t -dfs:  Saturation (default) \n\n");
+  printf("\t -opt:  Optimistic node deletion (default)\n");
+  printf("\t-pess:  Pessimistic node deletion \n\n");
+  printf("\t  -di:  Variable order should be 'decrement-increment'\n");
+  printf("\t  -id:  Variable order should be 'increment-decrement' (default)\n");
   return 1;
 }
 
@@ -394,7 +458,17 @@ int main(int argc, const char** argv)
   int blue = 11;
   forest::policies p(false);
   p.setOptimistic();
+  bool decinc = false;
+  bool saturate = true;
   for (int i=1; i<argc; i++) {
+    if (strcmp("-bfs", argv[i])==0) {
+        saturate = false;
+        continue;
+    }
+    if (strcmp("-dfs", argv[i])==0) {
+        saturate = true;
+        continue;
+    }
     if (strcmp("-opt", argv[i])==0) {
         p.setOptimistic();
         continue;
@@ -413,10 +487,19 @@ int main(int argc, const char** argv)
         blue = atoi(argv[i]);
         if (blue>=0) continue;
     }
+    if (strcmp("-di", argv[i])==0) {
+      decinc = true;
+      continue;
+    }
+    if (strcmp("-id", argv[i])==0) {
+      decinc = false;
+      continue;
+    }
     return usage(argv[0]);
   }
 
-  decinc_order(red, blue);
+  if (decinc) decinc_order(red, blue);
+  else        incdec_order(red, blue);
   MEDDLY::initialize();
 
   //
@@ -452,12 +535,14 @@ int main(int argc, const char** argv)
   //
   // Saturate!
   //
-  printf("Building reachability set using saturation\n");
+  printf("Building reachability set using %s\n",
+    saturate ? "saturation" : "traditional algorithm");
   fflush(stdout);
   dd_edge reachable(mdd);
 
   watch.note_time();
-  apply(REACHABLE_STATES_DFS, initial, nsf, reachable);
+  if (saturate) apply(REACHABLE_STATES_DFS, initial, nsf, reachable);
+  else          apply(REACHABLE_STATES_BFS, initial, nsf, reachable);
   watch.note_time();
 
   printStats("Reachability set", watch, reachable);

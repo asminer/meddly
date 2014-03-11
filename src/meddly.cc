@@ -79,10 +79,13 @@ namespace MEDDLY {
   const binary_opname* REVERSE_REACHABLE_DFS = 0;
   const binary_opname* REVERSE_REACHABLE_BFS = 0;
 
+  const binary_opname* VM_MULTIPLY = 0;
+  const binary_opname* MV_MULTIPLY = 0;
+
   // numerical operation "codes"
 
-  const numerical_opname* VECT_MATR_MULT = 0;
-  const numerical_opname* MATR_VECT_MULT = 0;
+  const numerical_opname* EXPLVECT_MATR_MULT = 0;
+  const numerical_opname* MATR_EXPLVECT_MULT = 0;
 
   // cache of operations
   operation** op_cache = 0;

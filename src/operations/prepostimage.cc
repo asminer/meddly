@@ -31,12 +31,25 @@
 namespace MEDDLY {
   class image_op;
 
-  class preimage_mdd;
-  class postimage_mdd;
+  class relXset_mdd;
+  class setXrel_mdd;
 
   class preimage_opname;
   class postimage_opname;
+
+  class VMmult_opname;
+  class MVmult_opname;
 };
+
+// ************************************************************************
+// *                                                                      *
+// *                                                                      *
+// *                                                                      *
+// *                          actual  operations                          *
+// *                                                                      *
+// *                                                                      *
+// *                                                                      *
+// ************************************************************************
 
 // ******************************************************************
 // *                                                                *
@@ -44,11 +57,11 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
-/// Abstract base class for all pre/post image operations.
+/// Abstract base class for all MT-based pre/post image operations.
 class MEDDLY::image_op : public binary_operation {
   public:
     image_op(const binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+      expert_forest* arg2, expert_forest* res, binary_operation* acc);
 
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
@@ -64,8 +77,8 @@ class MEDDLY::image_op : public binary_operation {
     }
     inline node_handle saveResult(node_handle a, node_handle b, node_handle c) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
-      entry.key(0) = arg1F->cacheNode(a); 
-      entry.key(1) = arg2F->cacheNode(b);
+      entry.key(0) = argV->cacheNode(a); 
+      entry.key(1) = argM->cacheNode(b);
       entry.result(0) = resF->cacheNode(c);
       CT->addEntry();
       return c;
@@ -73,28 +86,41 @@ class MEDDLY::image_op : public binary_operation {
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
     virtual node_handle compute(node_handle a, node_handle b);
   protected:
-    binary_operation* unionOp;
+    binary_operation* accumulateOp;
     virtual node_handle compute_rec(node_handle a, node_handle b) = 0;
+
+    expert_forest* argV;
+    expert_forest* argM;
 };
 
 MEDDLY::image_op::image_op(const binary_opname* oc, expert_forest* a1,
-  expert_forest* a2, expert_forest* res)
+  expert_forest* a2, expert_forest* res, binary_operation* acc)
 : binary_operation(oc, 2, 1, a1, a2, res)
 {
-  unionOp = 0;
+  accumulateOp = acc;
+
+  if (a1->isForRelations()) {
+    argM = a1;
+    argV = a2;
+    if (a2->isForRelations()) throw error(error::MISCELLANEOUS);
+  } else {
+    argM = a2;
+    argV = a1;
+    if (!a2->isForRelations()) throw error(error::MISCELLANEOUS);
+  }
 }
 
 bool MEDDLY::image_op::isStaleEntry(const node_handle* data)
 {
-  return arg1F->isStale(data[0]) ||
-         arg2F->isStale(data[1]) ||
+  return argV->isStale(data[0]) ||
+         argM->isStale(data[1]) ||
          resF->isStale(data[2]);
 }
 
 void MEDDLY::image_op::discardEntry(const node_handle* data)
 {
-  arg1F->uncacheNode(data[0]);
-  arg2F->uncacheNode(data[1]);
+  argV->uncacheNode(data[0]);
+  argM->uncacheNode(data[1]);
   resF->uncacheNode(data[2]);
 }
 
@@ -107,51 +133,57 @@ MEDDLY::image_op::showEntry(FILE* strm, const node_handle* data) const
 void MEDDLY::image_op
 ::compute(const dd_edge &a, const dd_edge &b, dd_edge &c)
 {
-  node_handle cnode = compute(a.getNode(), b.getNode());
+  node_handle cnode;
+  if (a.getForest() == argV) {
+    cnode = compute(a.getNode(), b.getNode());
+  } else {
+    cnode = compute(b.getNode(), a.getNode());
+  }
   c.set(cnode);
 }
 
 MEDDLY::node_handle MEDDLY::image_op::compute(node_handle a, node_handle b)
 {
-  if (resF->getRangeType() == forest::BOOLEAN) {
-    unionOp = getOperation(UNION, resF, resF, resF);
-  } else {
-    unionOp = getOperation(MAXIMUM, resF, resF, resF);
-  }
-  MEDDLY_DCASSERT(unionOp);
+  MEDDLY_DCASSERT(accumulateOp);
   return compute_rec(a, b);
 }
 
 // ******************************************************************
 // *                                                                *
-// *                       preimage_mdd class                       *
+// *                       relXset_mdd  class                       *
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::preimage_mdd : public image_op {
+/** Generic base for relation multiplied by set.
+    Changing what happens at the terminals can give
+    different meanings to this operation :^)
+*/
+class MEDDLY::relXset_mdd : public image_op {
   public:
-    preimage_mdd(const binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+    relXset_mdd(const binary_opname* opcode, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res, binary_operation* acc);
 
   protected:
     virtual node_handle compute_rec(node_handle a, node_handle b);
+    virtual node_handle processTerminals(node_handle mdd, node_handle mxd) = 0;
 };
 
-MEDDLY::preimage_mdd::preimage_mdd(const binary_opname* oc, expert_forest* a1,
-  expert_forest* a2, expert_forest* res) : image_op(oc, a1, a2, res)
+MEDDLY::relXset_mdd::relXset_mdd(const binary_opname* oc, expert_forest* a1,
+  expert_forest* a2, expert_forest* res, binary_operation* acc)
+: image_op(oc, a1, a2, res, acc)
 {
 }
 
-MEDDLY::node_handle MEDDLY::preimage_mdd::compute_rec(node_handle mdd, node_handle mxd)
+MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handle mxd)
 {
   // termination conditions
   if (mxd == 0 || mdd == 0) return 0;
-  if (arg2F->isTerminalNode(mxd)) {
-    if (arg1F->isTerminalNode(mdd)) {
-      return resF->handleForValue(1);
+  if (argM->isTerminalNode(mxd)) {
+    if (argV->isTerminalNode(mdd)) {
+      return processTerminals(mdd, mxd);
     }
     // mxd is identity
-    if (arg1F == resF)
+    if (argV == resF)
       return resF->linkNode(mdd);
   }
 
@@ -162,16 +194,16 @@ MEDDLY::node_handle MEDDLY::preimage_mdd::compute_rec(node_handle mdd, node_hand
   }
 
   // check if mxd and mdd are at the same level
-  int mddLevel = arg1F->getNodeLevel(mdd);
-  int mxdLevel = arg2F->getNodeLevel(mxd);
+  int mddLevel = argV->getNodeLevel(mdd);
+  int mxdLevel = argM->getNodeLevel(mxd);
   int rLevel = MAX(ABS(mxdLevel), mddLevel);
   int rSize = resF->getLevelSize(rLevel);
   node_builder& nb = resF->useNodeBuilder(rLevel, rSize);
 
   // Initialize mdd reader
   node_reader* A = (mddLevel < rLevel)
-    ? arg1F->initRedundantReader(rLevel, mdd, true)
-    : arg1F->initNodeReader(mdd, true);
+    ? argV->initRedundantReader(rLevel, mdd, true)
+    : argV->initNodeReader(mdd, true);
 
   if (mddLevel > ABS(mxdLevel)) {
     //
@@ -190,18 +222,18 @@ MEDDLY::node_handle MEDDLY::preimage_mdd::compute_rec(node_handle mdd, node_hand
 
     // Initialize mxd readers, note we might skip the unprimed level
     node_reader* Ru = (mxdLevel < 0)
-      ? arg2F->initRedundantReader(rLevel, mxd, false)
-      : arg2F->initNodeReader(mxd, false);
+      ? argM->initRedundantReader(rLevel, mxd, false)
+      : argM->initNodeReader(mxd, false);
 
     node_reader* Rp = node_reader::useReader();
 
     // loop over mxd "rows"
     for (int iz=0; iz<Ru->getNNZs(); iz++) {
       int i = Ru->i(iz);
-      if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz)))) {
-        arg2F->initIdentityReader(*Rp, rLevel, i, Ru->d(iz), false);
+      if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->d(iz)))) {
+        argM->initIdentityReader(*Rp, rLevel, i, Ru->d(iz), false);
       } else {
-        arg2F->initNodeReader(*Rp, Ru->d(iz), false);
+        argM->initNodeReader(*Rp, Ru->d(iz), false);
       }
 
       // loop over mxd "columns"
@@ -219,7 +251,7 @@ MEDDLY::node_handle MEDDLY::preimage_mdd::compute_rec(node_handle mdd, node_hand
         }
         // there's new states and existing states; union them.
         node_handle oldi = nb.d(i);
-        nb.d(i) = unionOp->compute(newstates, oldi);
+        nb.d(i) = accumulateOp->compute(newstates, oldi);
         resF->unlinkNode(oldi);
         resF->unlinkNode(newstates);
       } // for j
@@ -235,7 +267,7 @@ MEDDLY::node_handle MEDDLY::preimage_mdd::compute_rec(node_handle mdd, node_hand
 
   result = resF->createReducedNode(-1, nb);
 #ifdef TRACE_ALL_OPS
-  printf("computed preimage(%d, %d) = %d\n", mdd, mxd, result);
+  printf("computed relXset(%d, %d) = %d\n", mdd, mxd, result);
 #endif
   return saveResult(mdd, mxd, result); 
 }
@@ -243,35 +275,40 @@ MEDDLY::node_handle MEDDLY::preimage_mdd::compute_rec(node_handle mdd, node_hand
 
 // ******************************************************************
 // *                                                                *
-// *                      postimage_mdd  class                      *
+// *                       setXrel_mdd  class                       *
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::postimage_mdd : public image_op {
+/** Generic base for set multiplied by relation.
+    Changing what happens at the terminals can give
+    different meanings to this operation :^)
+*/
+class MEDDLY::setXrel_mdd : public image_op {
   public:
-    postimage_mdd(const binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+    setXrel_mdd(const binary_opname* opcode, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res, binary_operation* acc);
 
   protected:
     virtual node_handle compute_rec(node_handle a, node_handle b);
+    virtual node_handle processTerminals(node_handle mdd, node_handle mxd) = 0;
 };
 
-MEDDLY::postimage_mdd::postimage_mdd(const binary_opname* oc, 
-  expert_forest* a1, expert_forest* a2, expert_forest* res)
-: image_op(oc, a1, a2, res)
+MEDDLY::setXrel_mdd::setXrel_mdd(const binary_opname* oc, 
+  expert_forest* a1, expert_forest* a2, expert_forest* res, binary_operation* acc)
+: image_op(oc, a1, a2, res, acc)
 {
 }
 
-MEDDLY::node_handle MEDDLY::postimage_mdd::compute_rec(node_handle mdd, node_handle mxd)
+MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handle mxd)
 {
   // termination conditions
   if (mxd == 0 || mdd == 0) return 0;
-  if (arg2F->isTerminalNode(mxd)) {
-    if (arg1F->isTerminalNode(mdd)) {
-      return resF->handleForValue(1);
+  if (argM->isTerminalNode(mxd)) {
+    if (argV->isTerminalNode(mdd)) {
+      return processTerminals(mdd, mxd);
     }
     // mxd is identity
-    if (arg1F == resF)
+    if (argV == resF)
       return resF->linkNode(mdd);
   }
 
@@ -282,16 +319,16 @@ MEDDLY::node_handle MEDDLY::postimage_mdd::compute_rec(node_handle mdd, node_han
   }
 
   // check if mxd and mdd are at the same level
-  int mddLevel = arg1F->getNodeLevel(mdd);
-  int mxdLevel = arg2F->getNodeLevel(mxd);
+  int mddLevel = argV->getNodeLevel(mdd);
+  int mxdLevel = argM->getNodeLevel(mxd);
   int rLevel = MAX(ABS(mxdLevel), mddLevel);
   int rSize = resF->getLevelSize(rLevel);
   node_builder& nb = resF->useNodeBuilder(rLevel, rSize);
 
   // Initialize mdd reader
   node_reader* A = (mddLevel < rLevel)
-    ? arg1F->initRedundantReader(rLevel, mdd, true)
-    : arg1F->initNodeReader(mdd, true);
+    ? argV->initRedundantReader(rLevel, mdd, true)
+    : argV->initNodeReader(mdd, true);
 
   if (mddLevel > ABS(mxdLevel)) {
     //
@@ -310,8 +347,8 @@ MEDDLY::node_handle MEDDLY::postimage_mdd::compute_rec(node_handle mdd, node_han
 
     // Initialize mxd readers, note we might skip the unprimed level
     node_reader* Ru = (mxdLevel < 0)
-      ? arg2F->initRedundantReader(rLevel, mxd, false)
-      : arg2F->initNodeReader(mxd, false);
+      ? argM->initRedundantReader(rLevel, mxd, false)
+      : argM->initNodeReader(mxd, false);
 
     node_reader* Rp = node_reader::useReader();
 
@@ -319,10 +356,10 @@ MEDDLY::node_handle MEDDLY::postimage_mdd::compute_rec(node_handle mdd, node_han
     for (int iz=0; iz<Ru->getNNZs(); iz++) {
       int i = Ru->i(iz);
       if (0==A->d(i))   continue; 
-      if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz)))) {
-        arg2F->initIdentityReader(*Rp, rLevel, i, Ru->d(iz), false);
+      if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->d(iz)))) {
+        argM->initIdentityReader(*Rp, rLevel, i, Ru->d(iz), false);
       } else {
-        arg2F->initNodeReader(*Rp, Ru->d(iz), false);
+        argM->initNodeReader(*Rp, Ru->d(iz), false);
       }
 
       // loop over mxd "columns"
@@ -339,7 +376,7 @@ MEDDLY::node_handle MEDDLY::postimage_mdd::compute_rec(node_handle mdd, node_han
         }
         // there's new states and existing states; union them.
         node_handle oldj = nb.d(j);
-        nb.d(j) = unionOp->compute(newstates, oldj);
+        nb.d(j) = accumulateOp->compute(newstates, oldj);
         resF->unlinkNode(oldj);
         resF->unlinkNode(newstates);
       } // for j
@@ -355,11 +392,94 @@ MEDDLY::node_handle MEDDLY::postimage_mdd::compute_rec(node_handle mdd, node_han
 
   result = resF->createReducedNode(-1, nb);
 #ifdef TRACE_ALL_OPS
-  printf("computed new postimage(%d, %d) = %d\n", mdd, mxd, result);
+  printf("computed new setXrel(%d, %d) = %d\n", mdd, mxd, result);
 #endif
   return saveResult(mdd, mxd, result); 
 }
 
+// ******************************************************************
+// *                                                                *
+// *                      mtvect_mtmatr  class                      *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+
+  /** Matrix-vector multiplication.
+      Matrices are stored using MTMXDs,
+      and vectors are stored using MTMDDs.
+      If the template type is boolean, then this
+      is equivalent to pre-image computation.
+  */
+  template <typename RTYPE>
+  class mtmatr_mtvect : public relXset_mdd {
+    public:
+      mtmatr_mtvect(const binary_opname* opcode, expert_forest* arg1,
+        expert_forest* arg2, expert_forest* res, binary_operation* acc)
+        : relXset_mdd(opcode, arg1, arg2, res, acc) { }
+
+    protected:
+      virtual node_handle processTerminals(node_handle mdd, node_handle mxd)
+      {
+        RTYPE mddval;
+        RTYPE mxdval;
+        RTYPE rval;
+        argV->getValueFromHandle(mdd, mddval);
+        argM->getValueFromHandle(mxd, mxdval);
+        rval = mddval * mxdval;
+        return resF->handleForValue(rval);
+      }
+
+  };
+};
+
+
+// ******************************************************************
+// *                                                                *
+// *                      mtvect_mtmatr  class                      *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+
+  /** Vector-matrix multiplication.
+      Vectors are stored using MTMDDs, and matrices
+      are stored using MTMXDs.
+      If the template type is boolean, then this
+      is equivalent to post-image computation.
+  */
+  template <typename RTYPE>
+  class mtvect_mtmatr : public setXrel_mdd {
+    public:
+      mtvect_mtmatr(const binary_opname* opcode, expert_forest* arg1,
+        expert_forest* arg2, expert_forest* res, binary_operation* acc)
+        : setXrel_mdd(opcode, arg1, arg2, res, acc) { }
+
+    protected:
+      virtual node_handle processTerminals(node_handle mdd, node_handle mxd)
+      {
+        RTYPE mddval;
+        RTYPE mxdval;
+        RTYPE rval;
+        argV->getValueFromHandle(mdd, mddval);
+        argM->getValueFromHandle(mxd, mxdval);
+        rval = mddval * mxdval;
+        return resF->handleForValue(rval);
+      }
+
+  };
+};
+
+
+// ************************************************************************
+// *                                                                      *
+// *                                                                      *
+// *                                                                      *
+// *                           operation  names                           *
+// *                                                                      *
+// *                                                                      *
+// *                                                                      *
+// ************************************************************************
 
 // ******************************************************************
 // *                                                                *
@@ -403,7 +523,14 @@ MEDDLY::preimage_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   )
     throw error(error::TYPE_MISMATCH);
 
-  return new preimage_mdd(this, a1, a2, r);
+  binary_operation* acc = 0;
+  if (r->getRangeType() == forest::BOOLEAN) {
+    acc = getOperation(UNION, r, r, r);
+  } else {
+    acc = getOperation(MAXIMUM, r, r, r);
+  }
+
+  return new mtmatr_mtvect<bool>(this, a1, a2, r, acc);
 }
 
 
@@ -447,7 +574,134 @@ MEDDLY::postimage_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   )
     throw error(error::TYPE_MISMATCH);
 
-  return new postimage_mdd(this, a1, a2, r);
+  binary_operation* acc = 0;
+  if (r->getRangeType() == forest::BOOLEAN) {
+    acc = getOperation(UNION, r, r, r);
+  } else {
+    acc = getOperation(MAXIMUM, r, r, r);
+  }
+
+  return new mtvect_mtmatr<bool>(this, a1, a2, r, acc);
+}
+
+
+// ******************************************************************
+// *                                                                *
+// *                      VMmult_opname  class                      *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::VMmult_opname : public binary_opname {
+  public:
+    VMmult_opname();
+    virtual binary_operation* buildOperation(expert_forest* a1, 
+      expert_forest* a2, expert_forest* r) const;
+};
+
+MEDDLY::VMmult_opname::VMmult_opname()
+ : binary_opname("Vector-matrix multiply")
+{
+}
+
+MEDDLY::binary_operation* 
+MEDDLY::VMmult_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
+  expert_forest* r) const
+{
+  if (0==a1 || 0==a2 || 0==r) return 0;
+
+  if (  
+    (a1->getDomain() != r->getDomain()) || 
+    (a2->getDomain() != r->getDomain()) 
+  )
+    throw error(error::DOMAIN_MISMATCH);
+
+  if (
+    (a1->getRangeType() == forest::BOOLEAN) ||
+    (a2->getRangeType() == forest::BOOLEAN) ||
+    (r->getRangeType() == forest::BOOLEAN) ||
+    a1->isForRelations()    ||
+    !a2->isForRelations()   ||
+    r->isForRelations()     ||
+    (a1->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
+    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
+    (r->getEdgeLabeling() != forest::MULTI_TERMINAL) 
+  )
+    throw error(error::TYPE_MISMATCH);
+
+  binary_operation* acc = getOperation(PLUS, r, r, r);
+
+  switch (r->getRangeType()) {
+    case forest::INTEGER:
+      return new mtvect_mtmatr<int>(this, a1, a2, r, acc);
+
+    case forest::REAL:
+      return new mtvect_mtmatr<float>(this, a1, a2, r, acc);
+      
+    default:
+      throw error(error::TYPE_MISMATCH);
+  }
+}
+
+
+// ******************************************************************
+// *                                                                *
+// *                      MVmult_opname  class                      *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::MVmult_opname : public binary_opname {
+  public:
+    MVmult_opname();
+    virtual binary_operation* buildOperation(expert_forest* a1, 
+      expert_forest* a2, expert_forest* r) const;
+};
+
+MEDDLY::MVmult_opname::MVmult_opname()
+ : binary_opname("Matrix-vector multiply")
+{
+}
+
+MEDDLY::binary_operation* 
+MEDDLY::MVmult_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
+  expert_forest* r) const
+{
+  if (0==a1 || 0==a2 || 0==r) return 0;
+
+  if (  
+    (a1->getDomain() != r->getDomain()) || 
+    (a2->getDomain() != r->getDomain()) 
+  )
+    throw error(error::DOMAIN_MISMATCH);
+
+  if (
+    (a1->getRangeType() == forest::BOOLEAN) ||
+    (a2->getRangeType() == forest::BOOLEAN) ||
+    (r->getRangeType() == forest::BOOLEAN) ||
+    !a1->isForRelations()    ||
+    a2->isForRelations()   ||
+    r->isForRelations()     ||
+    (a1->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
+    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
+    (r->getEdgeLabeling() != forest::MULTI_TERMINAL) 
+  )
+    throw error(error::TYPE_MISMATCH);
+
+  binary_operation* acc = getOperation(PLUS, r, r, r);
+
+  //
+  // We're switching the order of the arguments
+  //
+
+  switch (r->getRangeType()) {
+    case forest::INTEGER:
+      return new mtmatr_mtvect<int>(this, a2, a1, r, acc);
+
+    case forest::REAL:
+      return new mtmatr_mtvect<float>(this, a2, a1, r, acc);
+      
+    default:
+      throw error(error::TYPE_MISMATCH);
+  }
 }
 
 
@@ -465,5 +719,15 @@ MEDDLY::binary_opname* MEDDLY::initializePreImage(const settings &s)
 MEDDLY::binary_opname* MEDDLY::initializePostImage(const settings &s)
 {
   return new postimage_opname;
+}
+
+MEDDLY::binary_opname* MEDDLY::initializeVMmult(const settings &s)
+{
+  return new VMmult_opname;
+}
+
+MEDDLY::binary_opname* MEDDLY::initializeMVmult(const settings &s)
+{
+  return new MVmult_opname;
 }
 

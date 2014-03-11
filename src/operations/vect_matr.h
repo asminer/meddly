@@ -27,10 +27,10 @@ namespace MEDDLY {
   class settings;
   
   /// Set up a numerical_opname for "vector matrix multiply".
-  numerical_opname* initVectorMatrixMult(const settings &s);
+  numerical_opname* initExplVectorMatrixMult(const settings &s);
 
   /// Set up a numerical_opname for "matrix vector multiply".
-  numerical_opname* initMatrixVectorMult(const settings &s);
+  numerical_opname* initMatrixExplVectorMult(const settings &s);
 }
 
 #endif

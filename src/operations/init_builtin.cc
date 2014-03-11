@@ -97,8 +97,11 @@ void MEDDLY::builtin_initializer::init(const settings &s)
   initP(MEDDLY::REVERSE_REACHABLE_DFS,BACKWARD_DFS, initializeBackwardDFS(s));
   initP(MEDDLY::REVERSE_REACHABLE_BFS,BACKWARD_BFS, initializeBackwardBFS(s));
 
-  initP(MEDDLY::VECT_MATR_MULT, VECT_MATR_MULT, initVectorMatrixMult(s));
-  initP(MEDDLY::MATR_VECT_MULT, MATR_VECT_MULT, initMatrixVectorMult(s));
+  initP(MEDDLY::VM_MULTIPLY,          VM_MULTIPLY,  initializeVMmult(s)     );
+  initP(MEDDLY::MV_MULTIPLY,          MV_MULTIPLY,  initializeMVmult(s)     );
+
+  initP(MEDDLY::EXPLVECT_MATR_MULT, EXPLVECT_MATR_MULT, initExplVectorMatrixMult(s));
+  initP(MEDDLY::MATR_EXPLVECT_MULT, MATR_EXPLVECT_MULT, initMatrixExplVectorMult(s));
 }
 
 template <class T>
@@ -143,7 +146,7 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(BACKWARD_DFS,   MEDDLY::REVERSE_REACHABLE_DFS);
   cleanPair(BACKWARD_BFS,   MEDDLY::REVERSE_REACHABLE_BFS);
 
-  cleanPair(VECT_MATR_MULT, MEDDLY::VECT_MATR_MULT);
-  cleanPair(MATR_VECT_MULT, MEDDLY::MATR_VECT_MULT);
+  cleanPair(EXPLVECT_MATR_MULT, MEDDLY::EXPLVECT_MATR_MULT);
+  cleanPair(MATR_EXPLVECT_MULT, MEDDLY::MATR_EXPLVECT_MULT);
 }
 

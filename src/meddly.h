@@ -251,6 +251,16 @@ namespace MEDDLY {
   extern const binary_opname* REVERSE_REACHABLE_DFS;
   extern const binary_opname* REVERSE_REACHABLE_BFS;
 
+  /** Vector matrix multiply, where the first argument is vector (MDD),
+      the second argument is a matrix (MXD), and the result is a vector (MDD).
+  */
+  extern const binary_opname* VM_MULTIPLY;
+
+  /** Matrix vector multiply, where the first argument is a matrix (MXD),
+      the second argument is a vector (MDD), and the result is a vector (MDD).
+  */
+  extern const binary_opname* MV_MULTIPLY;
+
   // ******************************************************************
   // *                  library management functions                  *
   // ******************************************************************

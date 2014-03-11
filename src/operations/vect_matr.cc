@@ -578,12 +578,12 @@ MEDDLY::MV_opname::buildOperation(const dd_edge &x_ind, const dd_edge& A,
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::numerical_opname* MEDDLY::initVectorMatrixMult(const settings &s)
+MEDDLY::numerical_opname* MEDDLY::initExplVectorMatrixMult(const settings &s)
 {
   return new VM_opname;
 }
 
-MEDDLY::numerical_opname* MEDDLY::initMatrixVectorMult(const settings &s)
+MEDDLY::numerical_opname* MEDDLY::initMatrixExplVectorMult(const settings &s)
 {
   return new MV_opname;
 }

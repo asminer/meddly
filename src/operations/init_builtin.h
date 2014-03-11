@@ -58,8 +58,11 @@ class MEDDLY::builtin_initializer : public op_initializer {
   binary_opname* BACKWARD_DFS;
   binary_opname* BACKWARD_BFS;
 
-  numerical_opname* VECT_MATR_MULT;
-  numerical_opname* MATR_VECT_MULT;
+  binary_opname* VM_MULTIPLY;
+  binary_opname* MV_MULTIPLY;
+
+  numerical_opname* EXPLVECT_MATR_MULT;
+  numerical_opname* MATR_EXPLVECT_MULT;
 
 public:
   builtin_initializer(op_initializer* b) : op_initializer(b) { }
