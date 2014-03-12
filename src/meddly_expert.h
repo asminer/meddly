@@ -73,10 +73,6 @@
 //
 // #define SAVE_HASHES
 
-// #define NODE_STORAGE_PER_LEVEL
- 
-// #define ONE_NODE_FREELIST
-
 namespace MEDDLY {
 
   // classes defined here
@@ -1685,15 +1681,6 @@ class MEDDLY::expert_forest : public forest
         return getDomain()->getVariableBound(lh, false);
       }
     }
-    /// used by node_storage, for displaying.
-#ifdef NODE_STORAGE_PER_LEVEL
-    inline long getLevelNumber(const node_storage* L) const {
-      for (long i=L; i>=-L; i--) {
-        if (levels[i] == L) return i;
-      }
-      return 0;
-    }
-#endif
     /// Is this a terminal node?
     inline static bool isTerminalNode(node_handle p) {
       return (p < 1);
@@ -1744,32 +1731,12 @@ class MEDDLY::expert_forest : public forest
       }
     }
 
-#if 0
-    /** Does this node represent an Index Set?
-        Note: Only applicable to EV+MDDs.
-    */
-    inline bool isIndexSet(node_handle node) const {
-      if (!isEVPlus()) return false;
-      if (isTerminalNode(node)) return node;
-      // yes iff the unhashed extra header is non-zero.
-      const node_header& nd = getNode(node);
-#ifdef NODE_STORAGE_PER_LEVEL
-      const node_storage* nodeMan = levels[nd.level];
-#endif
-      const int* uhh = (const int*) nodeMan->getUnhashedHeaderOf(nd.offset);
-      return *uhh > 0;
-    }
-#endif
-
     /// Get the cardinality of an Index Set.
     inline int getIndexSetCardinality(node_handle node) const {
       MEDDLY_DCASSERT(isIndexSet());
       if (isTerminalNode(node)) return (node != 0) ? 1 : 0;
       // yes iff the unhashed extra header is non-zero.
       const node_header& nd = getNode(node);
-#ifdef NODE_STORAGE_PER_LEVEL
-      const node_storage* nodeMan = levels[nd.level];
-#endif
       const int* uhh = (const int*) nodeMan->getUnhashedHeaderOf(nd.offset);
       MEDDLY_DCASSERT(*uhh > 0);
       return *uhh;
@@ -1781,24 +1748,12 @@ class MEDDLY::expert_forest : public forest
     inline node_handle getNext(node_handle p) const {
       MEDDLY_DCASSERT(address);
       MEDDLY_DCASSERT(isValidNonterminalIndex(p));
-#ifdef NODE_STORAGE_PER_LEVEL
-      MEDDLY_DCASSERT(levels);
-      MEDDLY_DCASSERT(address[p].level);
-      return levels[address[p].level]->getNextOf(address[p].offset);
-#else
       return nodeMan->getNextOf(address[p].offset);
-#endif
     }
     inline void setNext(node_handle p, node_handle n) {
       MEDDLY_DCASSERT(address);
       MEDDLY_DCASSERT(isValidNonterminalIndex(p));
-#ifdef NODE_STORAGE_PER_LEVEL
-      MEDDLY_DCASSERT(levels);
-      MEDDLY_DCASSERT(address[p].level);
-      levels[address[p].level]->setNextOf(address[p].offset, n);
-#else
       nodeMan->setNextOf(address[p].offset, n);
-#endif
     }
     inline unsigned hash(node_handle p) const {
       MEDDLY_DCASSERT(address);
@@ -1816,12 +1771,7 @@ class MEDDLY::expert_forest : public forest
 
     /// Returns the in-count for a node.
     inline long readInCount(node_handle p) const {
-#ifdef NODE_STORAGE_PER_LEVEL
-      const node_header& node = getNode(p);
-      return levels[node.level]->getCountOf(node.offset);
-#else
       return nodeMan->getCountOf(getNode(p).offset);
-#endif
     }
 
     /** Increase the link count to this node. Call this when another node is
@@ -2005,13 +1955,7 @@ class MEDDLY::expert_forest : public forest
 
     /// Compute a hash for a node.
     inline unsigned hashNode(node_handle p) const {
-#ifdef NODE_STORAGE_PER_LEVEL
-        const node_header& node = getNode(p);
-        MEDDLY_DCASSERT(node.level);
-        return levels[node.level]->hashNode(node);
-#else
         return nodeMan->hashNode(getNode(p));
-#endif
     }
 
 
@@ -2026,14 +1970,7 @@ class MEDDLY::expert_forest : public forest
                     Otherwise, return a negative value.
     */
     inline int getSingletonIndex(node_handle p, node_handle &down) const {
-#ifdef NODE_STORAGE_PER_LEVEL
-        const node_header& node = getNode(p);
-        MEDDLY_DCASSERT(node.level);
-        return levels[node.level]->getSingletonIndex(node.offset, down);
-#else
         return nodeMan->getSingletonIndex(getNode(p).offset, down);
-#endif
-
     }
 
     /** Check and get a single downward pointer.
@@ -2063,13 +2000,7 @@ class MEDDLY::expert_forest : public forest
           @return         The downward pointer at that index.
     */
     inline node_handle getDownPtr(node_handle p, int index) const {
-#ifdef NODE_STORAGE_PER_LEVEL
-        const node_header& node = getNode(p);
-        MEDDLY_DCASSERT(node.level);
-        return levels[node.level]->getDownPtr(node.offset, index);
-#else
         return nodeMan->getDownPtr(getNode(p).offset, index);
-#endif
     }
 
     /** For a given node, get a specified downward pointer.
@@ -2085,13 +2016,7 @@ class MEDDLY::expert_forest : public forest
           @param  dn      Output: downward pointer at that index.
     */
     inline void getDownPtr(node_handle p, int index, int& ev, node_handle& dn) const {
-#ifdef NODE_STORAGE_PER_LEVEL
-        const node_header& node = getNode(p);
-        MEDDLY_DCASSERT(node.level);
-        levels[node.level]->getDownPtr(node.offset, index, ev, dn);
-#else
         nodeMan->getDownPtr(getNode(p).offset, index, ev, dn);
-#endif
     }
 
     /** For a given node, get a specified downward pointer.
@@ -2107,13 +2032,7 @@ class MEDDLY::expert_forest : public forest
           @param  dn      Output: downward pointer at that index.
     */
     inline void getDownPtr(node_handle p, int index, float& ev, node_handle& dn) const {
-#ifdef NODE_STORAGE_PER_LEVEL
-        const node_header& node = getNode(p);
-        MEDDLY_DCASSERT(node.level);
-        levels[node.level]->getDownPtr(node.offset, index, ev, dn);
-#else
         nodeMan->getDownPtr(getNode(p).offset, index, ev, dn);
-#endif
     }
 
 
@@ -2128,9 +2047,6 @@ class MEDDLY::expert_forest : public forest
     */
     inline void initNodeReader(node_reader &nr, node_handle node, bool full) const {
       const node_header &n = getNode(node);
-#ifdef NODE_STORAGE_PER_LEVEL
-      node_storage& nodeMan = levels[n.level];
-#endif
       nr.resize(n.level, getLevelSize(n.level), 
         edgeBytes(), full);
       nodeMan->fillReader(n.offset, nr);
@@ -2356,11 +2272,7 @@ class MEDDLY::expert_forest : public forest
       MEDDLY_DCASSERT(address);
       MEDDLY_CHECK_RANGE(1, node, 1+a_last);
       if (address[node].level != nb.getLevel()) return false;
-#ifdef NODE_STORAGE_PER_LEVEL
-      return levels[node.level]->areDuplicates(address[node].offset, nb);
-#else
       return nodeMan->areDuplicates(address[node].offset, nb);
-#endif
     };
 
     /** Discover duplicate nodes.
@@ -2375,11 +2287,7 @@ class MEDDLY::expert_forest : public forest
       MEDDLY_DCASSERT(address);
       MEDDLY_CHECK_RANGE(1, node, 1+a_last);
       if (address[node].level != nr.getLevel()) return false;
-#ifdef NODE_STORAGE_PER_LEVEL
-      return levels[node.level]->areDuplicates(address[node].offset, nr);
-#else
       return nodeMan->areDuplicates(address[node].offset, nr);
-#endif
     }
 
     /** Is this a redundant node that can be eliminated?
@@ -2583,30 +2491,15 @@ class MEDDLY::expert_forest : public forest
     }
     /// Returns the in-count for a node.
     inline long getInCount(node_handle p) {
-#ifdef NODE_STORAGE_PER_LEVEL
-      const node_header& node = getNode(p);
-      return levels[node.level]->getCountOf(node.offset);
-#else
       return nodeMan->getCountOf(getNode(p).offset);
-#endif
     }
     /// Increment and return the in-count for a node
     inline long incInCount(node_handle p) {
-#ifdef NODE_STORAGE_PER_LEVEL
-      const node_header& node = getNode(p);
-      return levels[node.level]->incCountOf(node.offset);
-#else
       return nodeMan->incCountOf(getNode(p).offset);
-#endif
     }
     /// Decrement and return the in-count for a node
     inline long decInCount(node_handle p) {
-#ifdef NODE_STORAGE_PER_LEVEL
-      const node_header& node = getNode(p);
-      return levels[node.level]->decCountOf(node.offset);
-#else
       return nodeMan->decCountOf(getNode(p).offset);
-#endif
     }
 
     /// Returns the (modifiable) cache-count for a node
@@ -2685,13 +2578,8 @@ class MEDDLY::expert_forest : public forest
     /// per-forest policy, derived classes may change as appropriate.
     bool terminalNodesAreStale;
 
-#ifdef NODE_STORAGE_PER_LEVEL
-    /// Level data. Each level maintains its own data array and hole grid.
-    /// The array is shifted, so we can use level[k] with negative k.
-    node_storage** levels;
-#else
+    /// Class that stores nodes.
     node_storage* nodeMan;
-#endif
 
   private:
     // Keep a node_builder for each level.
@@ -2705,27 +2593,16 @@ class MEDDLY::expert_forest : public forest
     node_handle* in_validate;
     int  in_val_size;
 
-#ifdef NODE_STORAGE_PER_LEVEL
-    // Raw level data
-    node_storage** raw_levels;
-#endif
-
-
     /// address info for nodes
     node_header *address;
     /// Size of address/next array.
     node_handle a_size;
     /// Last used address.
     node_handle a_last;
-#ifdef ONE_NODE_FREELIST
-    /// Pointer to unused address list.
-    node_handle a_unused;
-#else
     /// Pointer to unused address lists, based on size
     node_handle a_unused[8];  // number of bytes per handle
     /// Lowest non-empty address list
     char a_lowest_index;
-#endif
     /// Next time we shink the address list.
     node_handle a_next_shrink;
 

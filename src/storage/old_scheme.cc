@@ -195,9 +195,6 @@ void MEDDLY::old_node_storage
 
   if (flags & expert_forest::STORAGE_STATS) {
     fprintf(s, "%s", pad);
-#ifdef NODE_STORAGE_PER_LEVEL
-    fprintf(s, "Level %ld ", parent->getLevelNumber(this));
-#endif
     fprintf(s, "Stats for \"classic\" node storage:\n");
 
     // anything?
@@ -741,9 +738,6 @@ int MEDDLY::old_node_storage::smallestNode() const
 void MEDDLY::old_node_storage::dumpInternalInfo(FILE* s) const
 {
   if (0==data) return; // nothing to display
-#ifdef NODE_STORAGE_PER_LEVEL
-  fprintf(s, "Level %ld: ", getParent()->getLevelNumber(this));
-#endif
   fprintf(s, "Last slot used: %ld\n", long(last));
   fprintf(s, "large_holes: %ld\n", long(large_holes));
   fprintf(s, "Grid: top = %ld bottom = %ld\n", long(holes_top), long(holes_bottom));

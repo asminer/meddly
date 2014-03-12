@@ -553,29 +553,14 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   stats.incMemAlloc(a_size * sizeof(node_header));
   memset(address, 0, a_size * sizeof(node_header));
   a_last = a_next_shrink = 0;
-#ifdef ONE_NODE_FREELIST
-  a_unused = 0;
-#else
   for (int i=0; i<8; i++) a_unused[i] = 0;
   a_lowest_index = 8;
-#endif
   
 
   //
   // Initialize level array
   //
   int N = getNumVariables();
-#ifdef NODE_STORAGE_PER_LEVEL
-  if (rel) {
-    raw_levels = new node_storage*[2*N+1];
-    levels = raw_levels + N;
-    stats.incMemAlloc(2*N+1 * sizeof(void*));
-  } else {
-    raw_levels = new node_storage*[N+1];
-    levels = raw_levels;
-    stats.incMemAlloc(N+1 * sizeof(void*));
-  }
-#endif
 
   //
   // Initialize builders array
@@ -620,15 +605,7 @@ MEDDLY::expert_forest::~expert_forest()
   // Address array
   free(address);
 
-#ifdef NODE_STORAGE_PER_LEVEL
-  // Level array
-  for (int k=getMinLevelIndex(); k<=getNumVariables(); k++) {
-    delete levels[k];
-  }
-  delete[] raw_levels;
-#else
   delete nodeMan;
-#endif
 
   // builders array
   delete[] raw_builders;
@@ -649,13 +626,7 @@ void MEDDLY::expert_forest::initializeForest()
   //
   // Initialize node storage
   //
-#ifdef NODE_STORAGE_PER_LEVEL
-  for (int k=getMinLevelIndex(); k<=getNumVariables(); k++) {
-    levels[k] = k ? deflt.nodestor->createForForest(this) : 0;
-  }
-#else
   nodeMan = deflt.nodestor->createForForest(this);
-#endif
 
   //
   // Initialize builders array
@@ -685,13 +656,9 @@ void MEDDLY::expert_forest::dump(FILE *s) const
 void MEDDLY::expert_forest::dumpInternal(FILE *s) const
 {
   fprintf(s, "Internal forest storage\n");
-#ifdef ONE_NODE_FREELIST
-  fprintf(s, "First unused node index: %ld\n", long(a_unused));
-#else
   for (int i=0; i<8; i++) {
     fprintf(s, "First %d-byte unused node index: %ld\n", i, long(a_unused[i]));
   }
-#endif
   int awidth = digits(a_last);
   fprintf(s, " Node# :  ");
   for (node_handle p=1; p<=a_last; p++) {
@@ -717,14 +684,7 @@ void MEDDLY::expert_forest::dumpInternal(FILE *s) const
   }
   fprintf(s, "]\n\n");
 
-#ifdef NODE_STORAGE_PER_LEVEL
-  for (int i=1; i<=getNumVariables(); i++) {
-    levels[i]->dumpInternal(s);
-    if (isForRelations()) levels[-i]->dumpInternal(s);
-  }
-#else
   nodeMan->dumpInternal(s, 0x03);
-#endif
  
   unique->show(s);
   fflush(s);
@@ -911,9 +871,6 @@ void MEDDLY::expert_forest::showNode(FILE* s, node_handle p, int verbose) const
     return;
   }
   const node_header& node = getNode(p);
-#ifdef NODE_STORAGE_PER_LEVEL
-  const node_storage* nodeMan = levels[node.level];
-#endif
   if (verbose) {
     // node: was already written.
     const variable* v = getDomain()->getVar(ABS(node.level));
@@ -995,13 +952,7 @@ void MEDDLY::expert_forest
   // forest specific
   reportForestStats(s, pad);
   // node storage
-#ifdef NODE_STORAGE_PER_LEVEL
-  for (int i=getMinLevelIndex(); i<=getNumVariables(); i++) {
-    if (levels[i]) levels[i]->reportStats(s, pad, flags);
-  }
-#else
   nodeMan->reportStats(s, pad, flags);
-#endif
   // unique table
   unique->reportStats(s, pad, flags);
 }
@@ -1409,13 +1360,7 @@ void MEDDLY::expert_forest::garbageCollect()
 
 void MEDDLY::expert_forest::compactMemory()
 {
-#ifdef NODE_STORAGE_PER_LEVEL
-  for (int i=getMinLevelIndex(); i<=getNumVariables(); i++) {
-    levels[i]->collectGarbage(true);
-  }
-#else 
   nodeMan->collectGarbage(true);
-#endif
 }
 
 void MEDDLY::expert_forest::showInfo(FILE* s, int verb)
@@ -1609,10 +1554,6 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 
   node_address addr = getNode(p).offset;
 
-#ifdef NODE_STORAGE_PER_LEVEL
-  node_storage* nodeMan = levels[getNode(p).level];
-#endif
-
   // unlink children and recycle node memory
   nodeMan->unlinkDownAndRecycle(addr);
 
@@ -1662,10 +1603,6 @@ void MEDDLY::expert_forest::zombifyNode(node_handle p)
 #endif
 
   node_address addr = getNode(p).offset;
-
-#ifdef NODE_STORAGE_PER_LEVEL
-  node_storage &nodeMan = levels[getNode(p).level];
-#endif
 
   // unlink children and recycle node memory
   nodeMan->unlinkDownAndRecycle(addr);
@@ -1741,15 +1678,6 @@ MEDDLY::node_handle MEDDLY::expert_forest::getFreeNodeHandle()
   stats.incActive(1);
   stats.incMemUsed(sizeof(node_header));
   node_handle found = 0;
-#ifdef ONE_NODE_FREELIST
-  while (a_unused > a_last) {
-    a_unused = address[a_unused].getNextDeleted();
-  }
-  if (a_unused) { // get a recycled one
-    found = a_unused;
-    a_unused = address[a_unused].getNextDeleted();
-  }
-#else
   for (int i=a_lowest_index; i<8; i++) {
     // try the various lists
     while (a_unused[i] > a_last) {
@@ -1763,7 +1691,6 @@ MEDDLY::node_handle MEDDLY::expert_forest::getFreeNodeHandle()
       if (i == a_lowest_index) a_lowest_index++;
     }
   }
-#endif
   if (found) {  
     MEDDLY_DCASSERT(address[found].isDeleted());
 #ifdef DEBUG_HANDLE_FREELIST
@@ -1793,17 +1720,11 @@ void MEDDLY::expert_forest::recycleNodeHandle(node_handle p)
   stats.decMemUsed(sizeof(node_header));
   address[p].setDeleted();
 
-#ifdef ONE_NODE_FREELIST
-  // Add to free list
-  address[p].setNextDeleted(a_unused);
-  a_unused = p;
-#else
   // Determine which list to add this into
   int i = bytesRequiredForDown(p) -1;
   address[p].setNextDeleted(a_unused[i]);
   a_unused[i] = p;
   a_lowest_index = MIN(a_lowest_index, (char)i);
-#endif
 
   // if this was the last node, collapse nodes into the
   // "not yet allocated" pile.  But, we don't remove them
@@ -1813,6 +1734,7 @@ void MEDDLY::expert_forest::recycleNodeHandle(node_handle p)
     while (a_last && address[a_last].isDeleted()) {
       a_last--;
     }
+
     if (a_last < a_next_shrink) shrinkHandleList();
   }
 #ifdef DEBUG_HANDLE_FREELIST
@@ -1910,9 +1832,6 @@ MEDDLY::node_handle MEDDLY::expert_forest
   node_handle p = getFreeNodeHandle();
   address[p].level = nb.getLevel();
   MEDDLY_DCASSERT(0 == address[p].cache_count);
-#ifdef NODE_STORAGE_PER_LEVEL
-  node_storage* nodeMan = levels[nb.getLevel()];
-#endif
 
   // All of the work is in nodeMan now :^)
   address[p].offset = nodeMan->makeNode(p, nb, getNodeStorage());
@@ -2008,6 +1927,31 @@ void MEDDLY::expert_forest::shrinkHandleList()
     a_next_shrink = 0;
     return;
   }
+
+  // clean out free lists, because we're about
+  // to trash memory beyond new_size.
+  for (int i=0; i<8; i++) {
+    //
+    // clean list i
+    //
+    node_handle prev = 0;
+    node_handle curr;
+    for (curr = a_unused[i]; curr; curr=address[curr].getNextDeleted()) 
+    {
+      if (curr > a_last) continue;  // don't add to the list
+      if (prev) {
+        address[prev].setNextDeleted(curr);
+      } else {
+        a_unused[i] = curr;
+      }
+    } 
+    if (prev) {
+      address[prev].setNextDeleted(0);
+    } else {
+      a_unused[i] = 0;
+    }
+  } // for i
+
   // shrink the array
   MEDDLY_DCASSERT(delta>=0);
   MEDDLY_DCASSERT(a_size-delta>=a_min_size);

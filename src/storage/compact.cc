@@ -169,9 +169,6 @@ void MEDDLY::compact_storage
 
   if (flags & STORAGE) {
     fprintf(s, "%s", pad);
-#ifdef NODE_STORAGE_PER_LEVEL
-    fprintf(s, "Level %ld ", parent->getLevelNumber(this));
-#endif
     fprintf(s, "Stats for %s\n", getStorageName());
 
     // anything for us?
@@ -728,9 +725,6 @@ int MEDDLY::compact_storage::smallestNode() const
 
 void MEDDLY::compact_storage::dumpInternalInfo(FILE* s) const
 {
-#ifdef NODE_STORAGE_PER_LEVEL
-  fprintf(s, "Level %ld: ", getParent()->getLevelNumber(this));
-#endif
   holeManager->dumpInternalInfo(s);
 }
 
