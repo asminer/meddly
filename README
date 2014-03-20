@@ -29,7 +29,7 @@ You will need g++, autoconf, automake and libtool.
    Can be used to set various compile options; 
    see "Configuration Options" below.
    An alternate would be:
-   $ ./configure --prefix=$PWD
+   $ ./configure --prefix=/other/install/location
    (See "make install" further down for reasons).
 
 2. $ make
@@ -38,9 +38,11 @@ You will need g++, autoconf, automake and libtool.
    sufficient for most users.
 
 3. $ make install
-   Library in /usr/lib/. Applications in /usr/bin/. This can be changed
-   in step (1) by selecting an alternate location. If you reconfigure,
-   make sure you run "make clean" before running "make".
+   Library in lib/, include files in include/.  This can be changed
+   in step (1) by selecting an alternate location, for example using
+    --prefix=/usr/local
+   will install libraries in /usr/local/lib and headers in /usr/local/include.
+   If you reconfigure, make sure you run "make clean" before running "make".
 
 4. $ make uninstall
    Removes the files installed in bin/ and lib/.
