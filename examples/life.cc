@@ -231,7 +231,7 @@ void numTrueGeneral(const int* levels, int* bottom, int n, int deflt, dd_edge &e
   //
   // bottom[0] is our answer, set it up
   //
-  e.set(bottom[0], 0);
+  e.set(bottom[0]);
 
   //
   // Recycle all other nodes

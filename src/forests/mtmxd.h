@@ -219,7 +219,7 @@ namespace MEDDLY {
         //
         if (0==k) {
           T accumulate = term(start);
-          for (int i=start; i<stop; i++) {
+          for (int i=start+1; i<stop; i++) {
             accumulate += term(i);
           }
           return ENCODER::value2handle(accumulate);
