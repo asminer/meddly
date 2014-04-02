@@ -61,6 +61,8 @@ class MEDDLY::builtin_initializer : public op_initializer {
   binary_opname* VM_MULTIPLY;
   binary_opname* MV_MULTIPLY;
 
+  binary_opname* MM_MULTIPLY;
+
   numerical_opname* EXPLVECT_MATR_MULT;
   numerical_opname* MATR_EXPLVECT_MULT;
 

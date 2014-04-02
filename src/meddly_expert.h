@@ -2172,6 +2172,7 @@ class MEDDLY::expert_forest : public forest
         The node is constructed as necessary.
         This version should be used only for
         multi terminal forests.
+        The node builder nb is recycled.
           @param  in    Incoming pointer index;
                         used for identity reductions.
           @param  nb    Constructed node.
@@ -2199,6 +2200,7 @@ class MEDDLY::expert_forest : public forest
         The node is constructed as necessary.
         This version should be used only for
         edge valuded forests.
+        The node builder nb is recycled.
           @param  in    Incoming pointer index;
                         used for identity reductions.
           @param  nb    Constructed node.

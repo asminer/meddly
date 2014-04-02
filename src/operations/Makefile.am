@@ -38,5 +38,7 @@ libops_la_SOURCES = \
   prepostimage.h    prepostimage.cc \
   reach_bfs.h       reach_bfs.cc    \
   reach_dfs.h       reach_dfs.cc    \
-  vect_matr.h       vect_matr.cc
+  vect_matr.h       vect_matr.cc    \
+  \
+  mm_mult.h         mm_mult.cc
 

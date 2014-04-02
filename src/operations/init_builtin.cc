@@ -56,6 +56,8 @@
 
 #include "vect_matr.h"
 
+#include "mm_mult.h"
+
 template <class T>
 inline void initP(const T* &global, T* &local, T* init)
 {
@@ -102,6 +104,8 @@ void MEDDLY::builtin_initializer::init(const settings &s)
 
   initP(MEDDLY::EXPLVECT_MATR_MULT, EXPLVECT_MATR_MULT, initExplVectorMatrixMult(s));
   initP(MEDDLY::MATR_EXPLVECT_MULT, MATR_EXPLVECT_MULT, initMatrixExplVectorMult(s));
+
+  initP(MEDDLY::MM_MULTIPLY,          MM_MULTIPLY,  initializeMMMultiply(s) );
 }
 
 template <class T>
@@ -148,5 +152,7 @@ void MEDDLY::builtin_initializer::cleanup()
 
   cleanPair(EXPLVECT_MATR_MULT, MEDDLY::EXPLVECT_MATR_MULT);
   cleanPair(MATR_EXPLVECT_MULT, MEDDLY::MATR_EXPLVECT_MULT);
+
+  cleanPair(MM_MULTIPLY,    MEDDLY::MM_MULTIPLY);
 }
 

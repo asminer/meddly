@@ -82,6 +82,8 @@ namespace MEDDLY {
   const binary_opname* VM_MULTIPLY = 0;
   const binary_opname* MV_MULTIPLY = 0;
 
+  const binary_opname* MM_MULTIPLY = 0;
+
   // numerical operation "codes"
 
   const numerical_opname* EXPLVECT_MATR_MULT = 0;

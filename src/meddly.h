@@ -261,6 +261,12 @@ namespace MEDDLY {
   */
   extern const binary_opname* MV_MULTIPLY;
 
+  /** Matrix multiplication, where the first argument is a matrix (MXD),
+      the second argument is a matrix (MXD), and the result is a matrix (MXD),
+      such that, C[m][n] += A[m][i] * B[i][n], for all m, n and i.
+  */
+  extern const binary_opname* MM_MULTIPLY;
+
   // ******************************************************************
   // *                  library management functions                  *
   // ******************************************************************
