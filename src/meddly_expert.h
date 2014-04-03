@@ -322,7 +322,7 @@ struct MEDDLY::settings {
         init(s);
       }
     }
-    /// super handly
+    /// super handy
     inline bool usesMonolithicComputeTable() {
       return (
        computeTableSettings::MonolithicChainedHash == computeTable.style ||
@@ -570,7 +570,7 @@ class MEDDLY::expert_domain : public domain {
 class MEDDLY::node_reader {
     public:
         /** Constructor.
-            The class must be "filled" by a forest befure
+            The class must be "filled" by a forest before
             it can be used, however.
         */  
         node_reader();
@@ -1062,7 +1062,7 @@ class MEDDLY::node_storage {
           @param  s       Output stream to write to
           @param  pad     Padding string, written at the start of 
                           each output line.
-          @param  flags   Controls what is displated.
+          @param  flags   Controls what is displayed.
     */
     virtual void reportStats(FILE* s, const char* pad, unsigned flags) const = 0;
 
@@ -1070,7 +1070,7 @@ class MEDDLY::node_storage {
 
         Ideally, the output format for each node is the same
         regardless of how it is stored.
-          
+
         @param  s       Output stream.
         @param  addr    Address of the node we care about.
         @param  verb    Verbose output or not.
@@ -1082,7 +1082,7 @@ class MEDDLY::node_storage {
 
         Ideally, the output format for each node is the same
         regardless of how it is stored.
-          
+
         @param  s       Output stream.
         @param  addr    Address of the node we care about.
         @param  map     Translation to use on node handles.

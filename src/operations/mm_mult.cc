@@ -305,6 +305,7 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
     for (int i = 0; i < nrb->getSize(); ++i) {
       if (0 != nrbp[i]) node_reader::recycle(nrbp[i]);
     }
+    free(nrbp);
     node_reader::recycle(nrb);
   }
 
