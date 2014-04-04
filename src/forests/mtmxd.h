@@ -201,7 +201,7 @@ namespace MEDDLY {
 
       /**
           Recursive implementation of createEdge(),
-          unprimed levels, for use by mtmdd_forest descendants.
+          unprimed levels, for use by mtmxd_forest descendants.
       */
       node_handle createEdgeUn(int k, int start, int stop) {
         MEDDLY_DCASSERT(k>=0);

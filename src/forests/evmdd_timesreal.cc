@@ -87,20 +87,18 @@ bool MEDDLY::evmdd_timesreal::isIdentityEdge(const node_builder &nb, int i) cons
 }
 
 
-
-
 void MEDDLY::evmdd_timesreal::normalize(node_builder &nb, float& ev) const
 {
   int minindex = -1;
   int stop = nb.isSparse() ? nb.getNNZs() : nb.getSize();
   for (int i=0; i<stop; i++) {
     if (0==nb.d(i)) continue;
-    if ((minindex < 0) || (nb.ei(i) < nb.ei(minindex))) {
+    if ((minindex < 0) || (nb.ef(i) < nb.ef(minindex))) {
       minindex = i;
     }
   }
   if (minindex < 0) return; // this node will eventually be reduced to "0".
-  ev = nb.ei(minindex);
+  ev = nb.ef(minindex);
   for (int i=0; i<stop; i++) {
     if (0==nb.d(i)) continue;
     float temp;
