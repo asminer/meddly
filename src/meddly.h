@@ -2136,6 +2136,13 @@ class MEDDLY::enumerator {
       isValid &= (this->*incr)();
     }
 
+    /**
+        Return the highest level changed during the last increment.
+    */
+    inline int levelChanged() const {
+      return level_change;
+    }
+
     /** Get the current variable assignments.
         For variable i, use index i for the
         unprimed variable, and index -i for the primed variable.
@@ -2200,6 +2207,8 @@ class MEDDLY::enumerator {
     // 
     int       minLevel; // 1 or -#vars, depending.
     int       maxLevel; // #vars
+    //
+    int       level_change; 
     //
     bool      isValid;
 };

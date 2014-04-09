@@ -83,6 +83,7 @@ void MEDDLY::enumerator::initEmpty()
   minLevel = maxLevel = 0;
   isValid = false;
   incr = 0;
+  level_change = 0;
 }
 
 void MEDDLY::enumerator::newForest(expert_forest* f)
@@ -110,6 +111,7 @@ void MEDDLY::enumerator::newForest(expert_forest* f)
     index = rawindex;
     minLevel = 1;
   }
+  level_change = N+1;
 }
 
 void MEDDLY::enumerator::start(const dd_edge &_e)
@@ -233,6 +235,7 @@ bool MEDDLY::enumerator::incrNonRelation()
       break;
     }
   }
+  level_change = k;
   if (k>maxLevel) {
     return false;
   }
@@ -260,10 +263,14 @@ bool MEDDLY::enumerator::incrRelation()
     if (k<0) {
       k = -k;
     } else {
-      if (maxLevel == k) return false;
+      if (maxLevel == k) {
+        level_change = k;
+        return false;
+      }
       k = -k-1;
     }
   }
+  level_change = k;
 
   return firstRelElement( (k>0) ? -k : -k-1, down);
 }
@@ -281,6 +288,7 @@ bool MEDDLY::enumerator::incrRow()
       index[k] = path[k].i(nzp[k]);
       down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
+      level_change = k;
       if (firstRow(downLevel(k), down)) return true;
     }
   } // for
@@ -301,6 +309,7 @@ bool MEDDLY::enumerator::incrColumn()
       index[k] = path[k].i(nzp[k]);
       down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
+      level_change = k;
       if (firstColumn(downLevel(k), down)) return true;
     }
   } // for
