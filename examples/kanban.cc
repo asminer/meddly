@@ -181,7 +181,7 @@ int main(int argc, const char** argv)
 
   double c;
   apply(CARDINALITY, reachable, c);
-  operation::showAllComputeTables(stdout, 1);
+  operation::showAllComputeTables(stdout, 2);
 
   printf("Approx. %g reachable states\n", c);
   

@@ -29,6 +29,7 @@
 // #define DEBUG_CT
 // #define DEBUG_TABLE2LIST
 // #define DEBUG_LIST2TABLE
+// #define DEBUG_CTALLOC
 
 // #define DEBUG_REMOVESTALES
 // #define SUMMARY_STALES
@@ -136,6 +137,9 @@ class MEDDLY::base_table : public compute_table {
     }
     int newEntry(int size);
     inline void recycleEntry(int h, int size) {
+#ifdef DEBUG_CTALLOC
+      fprintf(stderr, "Recycling entry %d size %d\n", h, size);
+#endif
       entries[h] = freeList[size];
       freeList[size] = h;
       perf.numEntries--;
@@ -268,6 +272,9 @@ int MEDDLY::base_table::newEntry(int size)
   if (freeList[size]) {
     int h = freeList[size];
     freeList[size] = entries[h];
+#ifdef DEBUG_CTALLOC
+    fprintf(stderr, "Re-used entry %d size %d\n", h, size);
+#endif
     return h;
   }
   if (entriesSize + size > entriesAlloc) {
@@ -283,6 +290,9 @@ int MEDDLY::base_table::newEntry(int size)
   MEDDLY_DCASSERT(entriesSize + size <= entriesAlloc);
   int h = entriesSize;
   entriesSize += size;
+#ifdef DEBUG_CTALLOC
+  fprintf(stderr, "New entry %d size %d\n", h, size);
+#endif
   return h;
 }
 
