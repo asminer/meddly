@@ -2773,34 +2773,20 @@ class MEDDLY::compute_table {
         int maxSearchLength;
       };
 
+      //
+      // This is an interface now!
+      //
       class search_key {
-          friend class MEDDLY::base_table;
-          int hashLength;
-          node_handle* data;
-          bool killData;
-          node_handle* key_data;
-          const operation* op;
-          /// used only for range checking during "development".
-          int keyLength;  
-        public:
+        protected:
           search_key();
-          ~search_key();
-          inline node_handle& key(int i) { 
-            MEDDLY_CHECK_RANGE(0, i, keyLength);
-            return key_data[i]; 
-          }
-          inline void setKeyEV(int i, int ev) {
-            MEDDLY_CHECK_RANGE(0, i, keyLength);
-            key_data[i] = ev;
-          }
-          inline void setKeyEV(int i, float ev) {
-            MEDDLY_CHECK_RANGE(0, i, keyLength);
-            float* f = (float*) (key_data+i);
-            f[0] = ev;
-          }
-          inline const node_handle* rawData() const { return data; }
-          inline int dataLength() const { return hashLength; }
-          inline const operation* getOp() const { return op; }
+        public:
+          virtual ~search_key();
+
+          // interface, for operations
+
+          virtual node_handle& key(int i) = 0;
+          virtual void setKeyEV(int i, int ev) = 0;
+          virtual void setKeyEV(int i, float ev) = 0;
       };
 
       class temp_entry {
@@ -2880,7 +2866,7 @@ class MEDDLY::compute_table {
       virtual bool isOperationTable() const = 0;
 
       /// Initialize a search key for a given operation.
-      virtual void initializeSearchKey(search_key &key, operation* op) = 0;
+      virtual search_key* initializeSearchKey(operation* op) = 0;
 
       /** Find an entry in the compute table based on the key provided.
           @param  key   Key to search for.
@@ -2888,7 +2874,7 @@ class MEDDLY::compute_table {
                         otherwise, an integer array of size 
                         op->getCacheEntryLength()
       */
-      virtual const node_handle* find(const search_key &key) = 0;
+      virtual const node_handle* find(const search_key *key) = 0;
 
       /** Start a new compute table entry.
           The operation should "fill in" the values for the entry,
@@ -2963,7 +2949,7 @@ class MEDDLY::operation {
     /// Compute table to use, if any.
     compute_table* CT;
     /// Struct for CT searches.
-    compute_table::search_key CTsrch;
+    compute_table::search_key* CTsrch;
     // for cache of operations.
     operation* next;
     // must stale compute table hits be discarded.

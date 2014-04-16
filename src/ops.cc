@@ -167,15 +167,17 @@ MEDDLY::operation::operation(const opname* n, int kl, int al)
     //
     // Initialize CT search structure
     //
-    CT->initializeSearchKey(CTsrch, this);
+    CTsrch = CT->initializeSearchKey(this);
   } else {
     MEDDLY_DCASSERT(0==ans_length);
     CT = 0;
+    CTsrch = 0;
   }
 }
 
 MEDDLY::operation::~operation()
 {
+  delete CTsrch;
   if (CT && (CT!=Monolithic_CT)) delete CT;
   // delete next;  // Seriously, WTF?
   if (oplist_index >= 0) {

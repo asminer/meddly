@@ -136,7 +136,8 @@ long MEDDLY::card_mdd_int::compute(int k, node_handle a)
   }
   
   // Check compute table
-  CTsrch.key(0) = a; 
+  MEDDLY_DCASSERT(CTsrch);
+  CTsrch->key(0) = a; 
   const node_handle* cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
     // ugly but portable
@@ -205,7 +206,8 @@ long MEDDLY::card_mxd_int::compute(int k, node_handle a)
   }
   
   // Check compute table
-  CTsrch.key(0) = a; 
+  MEDDLY_DCASSERT(CTsrch);
+  CTsrch->key(0) = a; 
   const node_handle* cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
     // ugly but portable
@@ -309,7 +311,8 @@ double MEDDLY::card_mdd_real::compute(int k, node_handle a)
   }
   
   // Check compute table
-  CTsrch.key(0) = a; 
+  MEDDLY_DCASSERT(CTsrch);
+  CTsrch->key(0) = a; 
   const node_handle* cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
     // ugly but portable
@@ -379,7 +382,8 @@ double MEDDLY::card_mxd_real::compute(int k, node_handle a)
   }
   
   // Check compute table
-  CTsrch.key(0) = a; 
+  MEDDLY_DCASSERT(CTsrch);
+  CTsrch->key(0) = a; 
   const node_handle* cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
     // ugly but portable
@@ -505,7 +509,8 @@ void MEDDLY::card_mdd_mpz::compute(int k, node_handle a, mpz_object &card)
   }
   
   // Check compute table
-  CTsrch.key(0) = a;
+  MEDDLY_DCASSERT(CTsrch);
+  CTsrch->key(0) = a;
   const node_handle* cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
     mpz_object* answer;
@@ -592,7 +597,8 @@ void MEDDLY::card_mxd_mpz::compute(int k, node_handle a, mpz_object &card)
   }
   
   // Check compute table
-  CTsrch.key(0) = a;
+  MEDDLY_DCASSERT(CTsrch);
+  CTsrch->key(0) = a;
   const node_handle* cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
     mpz_object* answer;

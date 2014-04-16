@@ -96,7 +96,8 @@ class MEDDLY::saturation_op : public unary_operation {
 
   protected:
     inline bool findSaturateResult(node_handle a, node_handle& b) {
-      CTsrch.key(0) = a;
+      MEDDLY_DCASSERT(CTsrch);
+      CTsrch->key(0) = a;
       const node_handle* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
       b = resF->linkNode(cacheFind[1]); // Elvio
@@ -130,8 +131,9 @@ class MEDDLY::common_dfs_mt : public binary_operation {
 
   protected:
     inline bool findResult(node_handle a, node_handle b, node_handle &c) {
-      CTsrch.key(0) = a;
-      CTsrch.key(1) = b;
+      MEDDLY_DCASSERT(CTsrch);
+      CTsrch->key(0) = a;
+      CTsrch->key(1) = b;
       const node_handle* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
       c = resF->linkNode(cacheFind[2]);

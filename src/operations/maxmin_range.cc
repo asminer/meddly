@@ -58,7 +58,8 @@ class MEDDLY::range_int : public unary_operation {
   
   protected:
     inline bool findResult(node_handle a, long &b) {
-      CTsrch.key(0) = a;
+      MEDDLY_DCASSERT(CTsrch);
+      CTsrch->key(0) = a;
       const node_handle* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
       b = cacheFind[1];
@@ -112,7 +113,8 @@ class MEDDLY::range_real : public unary_operation {
 
   protected:
     inline bool findResult(node_handle a, float &b) {
-      CTsrch.key(0) = a;
+      MEDDLY_DCASSERT(CTsrch);
+      CTsrch->key(0) = a;
       const node_handle* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
       b = ((float*)(cacheFind+1))[0];

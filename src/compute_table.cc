@@ -101,16 +101,10 @@ MEDDLY::compute_table::~compute_table()
 
 MEDDLY::compute_table::search_key::search_key()
 {
-  op = 0;
-  hashLength = 0;
-  data = 0;
-  key_data = 0;
-  killData = false;
 }
 
 MEDDLY::compute_table::search_key::~search_key()
 {
-  if (killData) delete[] data;
 }
 
 // **********************************************************************
@@ -122,6 +116,28 @@ MEDDLY::compute_table::search_key::~search_key()
 // **********************************************************************
 
 class MEDDLY::base_table : public compute_table {
+  protected:
+    class old_search_key : public compute_table::search_key {
+        friend class MEDDLY::base_table;
+        int hashLength;
+        node_handle* data;
+        bool killData;
+        node_handle* key_data;
+        const operation* op;
+        /// used only for range checking during "development".
+        int keyLength;  
+      public:
+        old_search_key();
+        virtual ~old_search_key();
+        virtual node_handle& key(int i);
+        virtual void setKeyEV(int i, int ev);
+        virtual void setKeyEV(int i, float ev);
+
+        inline node_handle* rawData() const { return data; }
+        inline int dataLength() const { return hashLength; }
+        inline const operation* getOp() const { return op; }
+    };
+
   public:
     base_table(const settings::computeTableSettings &s);
     virtual ~base_table();
@@ -163,31 +179,35 @@ class MEDDLY::base_table : public compute_table {
     }
 
     // M is 1 if we need a slot for the operation index, 0 otherwise.
-    static inline void init(search_key &key, operation* op, int M) {
-      MEDDLY_DCASSERT(0==key.data);
-      key.hashLength = op->getKeyLength() + M;
-      key.data = new int[key.hashLength];
-      key.killData = true;
-      key.key_data = key.data+M;
-      if (M) key.data[0] = op->getIndex();
-      key.op = op;
+    static inline search_key* init(operation* op, int M) {
+      old_search_key* key = new old_search_key;
+      MEDDLY_DCASSERT(0==key->data);
+      key->hashLength = op->getKeyLength() + M;
+      key->data = new int[key->hashLength];
+      key->killData = true;
+      key->key_data = key->data+M;
+      if (M) key->data[0] = op->getIndex();
+      key->op = op;
 #ifdef DEVELOPMENT_CODE
-      key.keyLength = op->getKeyLength();
+      key->keyLength = op->getKeyLength();
 #endif
+      return key;
     }
 
     // M is 1 if we need a slot for the operation index, 0 otherwise.
-    static inline void init(search_key &key, int* data, operation* op, int M) {
-      MEDDLY_DCASSERT(0==key.data);
-      key.hashLength = op->getKeyLength() + M;
-      key.data = data;
-      key.killData = false;
-      key.key_data = key.data+M;
-      if (M) key.data[0] = op->getIndex();
-      key.op = op;
+    static inline search_key* init(int* data, operation* op, int M) {
+      old_search_key* key = new old_search_key;
+      MEDDLY_DCASSERT(0==key->data);
+      key->hashLength = op->getKeyLength() + M;
+      key->data = data;
+      key->killData = false;
+      key->key_data = key->data+M;
+      if (M) key->data[0] = op->getIndex();
+      key->op = op;
 #ifdef DEVELOPMENT_CODE
-      key.keyLength = op->getKeyLength();
+      key->keyLength = op->getKeyLength();
 #endif
+      return key;
     }
     
     // C is the number of slots we need for "chaining".
@@ -233,6 +253,43 @@ class MEDDLY::base_table : public compute_table {
     static const int maxEntryBytes = sizeof(int) * maxEntrySize;
     int* freeList;
 };
+
+// **********************************************************************
+// *                 base_table::old_search_key methods                 *
+// **********************************************************************
+
+MEDDLY::base_table::old_search_key::old_search_key()
+{
+  op = 0;
+  hashLength = 0;
+  data = 0;
+  key_data = 0;
+  killData = false;
+}
+
+MEDDLY::base_table::old_search_key::~old_search_key()
+{
+  if (killData) delete[] data;
+}
+
+MEDDLY::node_handle& MEDDLY::base_table::old_search_key::key(int i)
+{
+  MEDDLY_CHECK_RANGE(0, i, keyLength);
+  return key_data[i]; 
+}
+
+void MEDDLY::base_table::old_search_key::setKeyEV(int i, int ev) 
+{
+  MEDDLY_CHECK_RANGE(0, i, keyLength);
+  key_data[i] = ev;
+}
+
+void MEDDLY::base_table::old_search_key::setKeyEV(int i, float ev) 
+{
+  MEDDLY_CHECK_RANGE(0, i, keyLength);
+  float* f = (float*) (key_data+i);
+  f[0] = ev;
+}
 
 // **********************************************************************
 // *                         base_table methods                         *
@@ -368,8 +425,10 @@ class MEDDLY::base_hash : public base_table {
     inline unsigned hash(const int* k, int length) const {
       return raw_hash(k, length) % tableSize;
     }
-    inline unsigned hash(const search_key &key) const {
-      return hash(key.rawData(), key.dataLength());
+    inline unsigned hash(const search_key* k) const {
+      const old_search_key* key = smart_cast<const old_search_key*>(k);
+      MEDDLY_DCASSERT(key);
+      return hash(key->rawData(), key->dataLength());
     }
     
     void dumpInternal(FILE* s, int verbLevel) const;
@@ -666,8 +725,8 @@ class MEDDLY::monolithic_chained : public base_chained {
     // required functions
 
     virtual bool isOperationTable() const   { return false; }
-    virtual void initializeSearchKey(search_key &key, operation* op);
-    virtual const int* find(const search_key &key);
+    virtual search_key* initializeSearchKey(operation* op);
+    virtual const int* find(const search_key *key);
     virtual temp_entry& startNewEntry(operation* op);
     virtual void removeAll();
 
@@ -709,14 +768,16 @@ MEDDLY::monolithic_chained::~monolithic_chained()
 {
 }
 
-void MEDDLY::monolithic_chained
-::initializeSearchKey(search_key &key, operation* op)
+MEDDLY::compute_table::search_key* 
+MEDDLY::monolithic_chained::initializeSearchKey(operation* op)
 {
-  init(key, op, 1);
+  return init(op, 1);
 }
 
-const int* MEDDLY::monolithic_chained::find(const search_key &key)
+const int* MEDDLY::monolithic_chained::find(const search_key *k)
 {
+  const old_search_key* key = smart_cast <const old_search_key*>(k);
+  MEDDLY_DCASSERT(key);
   perf.pings++;
   unsigned h = hash(key);
   int prev = 0;
@@ -727,9 +788,9 @@ const int* MEDDLY::monolithic_chained::find(const search_key &key)
     //
     // Check for match
     //
-    if (equal_sw(entries+curr+1, key.rawData(), key.dataLength())) {
+    if (equal_sw(entries+curr+1, key->rawData(), key->dataLength())) {
       sawSearch(chain);
-      if (key.getOp()->shouldStaleCacheHitsBeDiscarded()) {
+      if (key->getOp()->shouldStaleCacheHitsBeDiscarded()) {
         if (checkStale(h, prev, curr)) {
           // The match is stale.
           // Since there can NEVER be more than one match
@@ -747,7 +808,7 @@ const int* MEDDLY::monolithic_chained::find(const search_key &key)
       }
 #ifdef DEBUG_CT
       printf("Found CT entry ");
-      key.getOp()->showEntry(stdout, entries + curr + 2);
+      key->getOp()->showEntry(stdout, entries + curr + 2);
       // fprintf(stderr, " in slot %u", h);
       printf("\n");
 #endif
@@ -903,7 +964,7 @@ class MEDDLY::operation_chained : public base_chained {
     // required functions
 
     virtual bool isOperationTable() const   { return true; }
-    virtual void initializeSearchKey(search_key &key, operation* op);
+    virtual search_key* initializeSearchKey(operation* op);
     virtual temp_entry& startNewEntry(operation* op);
     virtual void removeAll();
 
@@ -948,12 +1009,12 @@ MEDDLY::operation_chained::~operation_chained()
 {
 }
 
-void MEDDLY::operation_chained
-::initializeSearchKey(search_key &key, operation* op)
+MEDDLY::compute_table::search_key* 
+MEDDLY::operation_chained::initializeSearchKey(operation* op)
 {
   if (op != global_op)
     throw error(error::UNKNOWN_OPERATION);
-  init(key, op, 0);
+  return init(op, 0);
 }
 
 MEDDLY::compute_table::temp_entry& 
@@ -1047,7 +1108,7 @@ namespace MEDDLY {
       operation_chained_fast(const settings::computeTableSettings &s, 
         operation* op) : operation_chained(s, op) { }
       virtual ~operation_chained_fast() { }
-      virtual const int* find(const search_key &key);
+      virtual const int* find(const search_key *key);
   };
 };
 
@@ -1056,8 +1117,10 @@ namespace MEDDLY {
 // **********************************************************************
 
 template <int N>
-const int* MEDDLY::operation_chained_fast<N>::find(const search_key &key)
+const int* MEDDLY::operation_chained_fast<N>::find(const search_key *k)
 {
+  const old_search_key* key = smart_cast <const old_search_key*>(k);
+  MEDDLY_DCASSERT(key);
   perf.pings++;
   unsigned h = hash(key);
   int prev = 0;
@@ -1068,7 +1131,7 @@ const int* MEDDLY::operation_chained_fast<N>::find(const search_key &key)
     //
     // Check for match
     //
-    if (equal_sw(entries+curr+1, key.rawData(), N)) {
+    if (equal_sw(entries+curr+1, key->rawData(), N)) {
       sawSearch(chain);
       if (global_op->shouldStaleCacheHitsBeDiscarded()) {
         if (checkStale(h, prev, curr)) {
@@ -1393,8 +1456,8 @@ class MEDDLY::monolithic_unchained : public base_unchained {
     // required functions
 
     virtual bool isOperationTable() const   { return false; }
-    virtual void initializeSearchKey(search_key &key, operation* op);
-    virtual const int* find(const search_key &key);
+    virtual search_key* initializeSearchKey(operation* op);
+    virtual const int* find(const search_key *key);
     virtual temp_entry& startNewEntry(operation* op);
     virtual void addEntry();
     virtual void removeStales();
@@ -1418,14 +1481,16 @@ MEDDLY::monolithic_unchained::~monolithic_unchained()
 {
 }
 
-void MEDDLY::monolithic_unchained
-::initializeSearchKey(search_key &key, operation* op)
+MEDDLY::compute_table::search_key* 
+MEDDLY::monolithic_unchained::initializeSearchKey(operation* op)
 {
-  init(key, op, 1);
+  return init(op, 1);
 }
 
-const int* MEDDLY::monolithic_unchained::find(const search_key &key)
+const int* MEDDLY::monolithic_unchained::find(const search_key *k)
 {
+  const old_search_key* key = smart_cast <const old_search_key*>(k);
+  MEDDLY_DCASSERT(key);
   perf.pings++;
   unsigned h = hash(key);
   unsigned hcurr = h;
@@ -1436,9 +1501,9 @@ const int* MEDDLY::monolithic_unchained::find(const search_key &key)
     //
     // Check for match
     //
-    if (equal_sw(entries+curr, key.rawData(), key.dataLength())) {
+    if (equal_sw(entries+curr, key->rawData(), key->dataLength())) {
       sawSearch(chain);
-      if (key.getOp()->shouldStaleCacheHitsBeDiscarded()) {
+      if (key->getOp()->shouldStaleCacheHitsBeDiscarded()) {
         if (checkStale<1>(hcurr, curr)) {
           // The match is stale.
           // Since there can NEVER be more than one match
@@ -1450,7 +1515,7 @@ const int* MEDDLY::monolithic_unchained::find(const search_key &key)
       perf.hits++;
 #ifdef DEBUG_CT
       printf("Found CT entry ");
-      key.getOp()->showEntry(stdout, entries + curr + 1);
+      key->getOp()->showEntry(stdout, entries + curr + 1);
       // fprintf(stderr, " in slot %u", h);
       printf("\n");
 #endif
@@ -1527,7 +1592,7 @@ class MEDDLY::operation_unchained : public base_unchained {
     // required functions
 
     virtual bool isOperationTable() const   { return true; }
-    virtual void initializeSearchKey(search_key &key, operation* op);
+    virtual search_key* initializeSearchKey(operation* op);
     virtual temp_entry& startNewEntry(operation* op);
     virtual void addEntry();
     virtual void removeStales();
@@ -1552,12 +1617,12 @@ MEDDLY::operation_unchained::~operation_unchained()
 {
 }
 
-void MEDDLY::operation_unchained
-::initializeSearchKey(search_key &key, operation* op)
+MEDDLY::compute_table::search_key* 
+MEDDLY::operation_unchained::initializeSearchKey(operation* op)
 {
   if (op != global_op)
     throw error(error::UNKNOWN_OPERATION);
-  init(key, op, 0);
+  return init(op, 0);
 }
 
 MEDDLY::compute_table::temp_entry& 
@@ -1614,7 +1679,7 @@ namespace MEDDLY {
       operation_unchained_fast(const settings::computeTableSettings &s, 
         operation* op) : operation_unchained(s, op) { }
       virtual ~operation_unchained_fast() { }
-      virtual const int* find(const search_key &key);
+      virtual const int* find(const search_key *key);
   };
 };
 
@@ -1623,8 +1688,10 @@ namespace MEDDLY {
 // **********************************************************************
 
 template <int N>
-const int* MEDDLY::operation_unchained_fast<N>::find(const search_key &key)
+const int* MEDDLY::operation_unchained_fast<N>::find(const search_key *k)
 {
+  const old_search_key* key = smart_cast <const old_search_key*>(k);
+  MEDDLY_DCASSERT(key);
   perf.pings++;
   unsigned h = hash(key);
   unsigned hcurr = h;
@@ -1635,9 +1702,9 @@ const int* MEDDLY::operation_unchained_fast<N>::find(const search_key &key)
     //
     // Check for match
     //
-    if (equal_sw(entries+curr, key.rawData(), N)) {
+    if (equal_sw(entries+curr, key->rawData(), N)) {
       sawSearch(chain);
-      if (key.getOp()->shouldStaleCacheHitsBeDiscarded()) {
+      if (key->getOp()->shouldStaleCacheHitsBeDiscarded()) {
         if (checkStale<0>(hcurr, curr)) {
           // The match is stale.
           // Since there can NEVER be more than one match
@@ -1705,7 +1772,7 @@ class MEDDLY::base_map : public base_table {
     base_map(const settings::computeTableSettings &s, operation *op);
     virtual ~base_map();
     virtual bool isOperationTable() const   { return true; }
-    virtual void initializeSearchKey(search_key &key, operation* op);
+    virtual search_key* initializeSearchKey(operation* op);
     virtual temp_entry& startNewEntry(operation* op);
   protected:
     inline void showEntry(FILE* s, int* h) const {
@@ -1742,12 +1809,12 @@ MEDDLY::base_map::~base_map()
   delete[] search;
 }
 
-void MEDDLY::base_map
-::initializeSearchKey(search_key &key, operation* op)
+MEDDLY::compute_table::search_key* 
+MEDDLY::base_map::initializeSearchKey(operation* op)
 {
   if (op != global_op)
     throw error(error::UNKNOWN_OPERATION);
-  init(key, search, op, 0);
+  return init(search, op, 0);
 }
 
 MEDDLY::compute_table::temp_entry& 
@@ -1775,7 +1842,7 @@ namespace MEDDLY {
       operation_map(const settings::computeTableSettings &s, operation* op);
       virtual ~operation_map();
 
-      virtual const int* find(const search_key &key);
+      virtual const int* find(const search_key *key);
 
       virtual void addEntry();
       virtual void removeStales();
@@ -1806,11 +1873,13 @@ MEDDLY::operation_map<K>
 
 template <int K>
 const int* MEDDLY::operation_map<K>
-::find(const search_key &key) 
+::find(const search_key *k) 
 {
+  const old_search_key* key = smart_cast <const old_search_key*>(k);
+  MEDDLY_DCASSERT(key);
   perf.pings++;
   typename std::map <int*, int*, less<K> >::iterator 
-    ans = ct.find(search);
+    ans = ct.find(key->rawData());
       
   if (ans == ct.end()) return 0;
   int* h = ans->second;

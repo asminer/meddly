@@ -56,12 +56,13 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
     virtual bool isStaleEntry(const node_handle* entryData);
 
     inline bool findResult(node_handle a, node_handle b, node_handle &c) {
+      MEDDLY_DCASSERT(CTsrch);
       if (can_commute && a > b) {
-        CTsrch.key(0) = b;
-        CTsrch.key(1) = a;
+        CTsrch->key(0) = b;
+        CTsrch->key(1) = a;
       } else {
-        CTsrch.key(0) = a;
-        CTsrch.key(1) = b;
+        CTsrch->key(0) = a;
+        CTsrch->key(1) = b;
       }
       const node_handle* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
@@ -113,13 +114,14 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
     virtual bool isStaleEntry(const node_handle* entryData);
 
     inline bool findResult(int in, node_handle a, node_handle b, node_handle &c) {
-      CTsrch.key(0) = in;
+      MEDDLY_DCASSERT(CTsrch);
+      CTsrch->key(0) = in;
       if (can_commute && a > b) {
-        CTsrch.key(1) = b;
-        CTsrch.key(2) = a;
+        CTsrch->key(1) = b;
+        CTsrch->key(2) = a;
       } else {
-        CTsrch.key(1) = a;
-        CTsrch.key(2) = b;
+        CTsrch->key(1) = a;
+        CTsrch->key(2) = b;
       }
       const node_handle* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
@@ -168,13 +170,14 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
     virtual bool isStaleEntry(const node_handle* entryData);
 
     inline bool findResult(int k, node_handle a, node_handle b, node_handle &c) {
-      CTsrch.key(0) = k;
+      MEDDLY_DCASSERT(CTsrch);
+      CTsrch->key(0) = k;
       if (can_commute && a > b) {
-        CTsrch.key(1) = b;
-        CTsrch.key(2) = a;
+        CTsrch->key(1) = b;
+        CTsrch->key(2) = a;
       } else {
-        CTsrch.key(1) = a;
-        CTsrch.key(2) = b;
+        CTsrch->key(1) = a;
+        CTsrch->key(2) = b;
       }
       const node_handle* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
@@ -240,16 +243,17 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
 
   protected:
     inline bool findResult(int aev, node_handle a, int bev, node_handle b, int& cev, node_handle &c) {
+      MEDDLY_DCASSERT(CTsrch);
       if (can_commute && a > b) {
-        CTsrch.setKeyEV(0, bev);
-        CTsrch.key(1) = b;
-        CTsrch.setKeyEV(2, aev);
-        CTsrch.key(3) = a;
+        CTsrch->setKeyEV(0, bev);
+        CTsrch->key(1) = b;
+        CTsrch->setKeyEV(2, aev);
+        CTsrch->key(3) = a;
       } else {
-        CTsrch.setKeyEV(0, aev);
-        CTsrch.key(1) = a;
-        CTsrch.setKeyEV(2, bev);
-        CTsrch.key(3) = b;
+        CTsrch->setKeyEV(0, aev);
+        CTsrch->key(1) = a;
+        CTsrch->setKeyEV(2, bev);
+        CTsrch->key(3) = b;
       }
       const node_handle* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
@@ -304,16 +308,17 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
     inline bool findResult(float aev, node_handle a, float bev, node_handle b, 
       float& cev, node_handle &c) 
     {
+      MEDDLY_DCASSERT(CTsrch);
       if (can_commute && a > b) {
-        CTsrch.setKeyEV(0, bev);
-        CTsrch.key(1) = b;
-        CTsrch.setKeyEV(2, bev);
-        CTsrch.key(3) = a;
+        CTsrch->setKeyEV(0, bev);
+        CTsrch->key(1) = b;
+        CTsrch->setKeyEV(2, bev);
+        CTsrch->key(3) = a;
       } else {
-        CTsrch.setKeyEV(0, aev);
-        CTsrch.key(1) = a;
-        CTsrch.setKeyEV(2, bev);
-        CTsrch.key(3) = b;
+        CTsrch->setKeyEV(0, aev);
+        CTsrch->key(1) = a;
+        CTsrch->setKeyEV(2, bev);
+        CTsrch->key(3) = b;
       }
       const node_handle* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;

@@ -113,10 +113,11 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   }
 
   // check compute table
-  CTsrch.key(INPTR_INDEX) = -1;
-  CTsrch.key(LEVEL_INDEX) = k;
-  CTsrch.key(OPNDA_INDEX) = a;
-  CTsrch.key(OPNDB_INDEX) = b;
+  MEDDLY_DCASSERT(CTsrch);
+  CTsrch->key(INPTR_INDEX) = -1;
+  CTsrch->key(LEVEL_INDEX) = k;
+  CTsrch->key(OPNDA_INDEX) = a;
+  CTsrch->key(OPNDB_INDEX) = b;
   const node_handle* cacheFind = CT->find(CTsrch);
   if (cacheFind) {
     return resF->linkNode(cacheFind[RESLT_INDEX]);
@@ -166,10 +167,11 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(int in, int k, node_handle a,
   if (0==a || 0==b) return 0;
 
   // check compute table
-  CTsrch.key(INPTR_INDEX) = in;
-  CTsrch.key(LEVEL_INDEX) = k;
-  CTsrch.key(OPNDA_INDEX) = a;
-  CTsrch.key(OPNDB_INDEX) = b;
+  MEDDLY_DCASSERT(CTsrch);
+  CTsrch->key(INPTR_INDEX) = in;
+  CTsrch->key(LEVEL_INDEX) = k;
+  CTsrch->key(OPNDA_INDEX) = a;
+  CTsrch->key(OPNDB_INDEX) = b;
   const node_handle* cacheFind = CT->find(CTsrch);
   if (cacheFind) {
     return resF->linkNode(cacheFind[RESLT_INDEX]);

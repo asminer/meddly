@@ -122,7 +122,8 @@ MEDDLY::mdd2index_operation
 
   // Check compute table
   if (aLevel == k) {
-    CTsrch.key(0) = a;
+    MEDDLY_DCASSERT(CTsrch);
+    CTsrch->key(0) = a;
     const node_handle* cacheEntry = CT->find(CTsrch);
     if (cacheEntry) {
       bdn = resF->linkNode(cacheEntry[1]);
