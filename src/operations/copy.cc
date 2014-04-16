@@ -53,7 +53,8 @@ class MEDDLY::copy_MT : public unary_operation {
 
     inline bool findResult(node_handle a, node_handle &b) {
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->key(0) = a;
+      CTsrch->reset();
+      CTsrch->writeNH(a);
       const node_handle* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
       b = resF->linkNode(cacheFind[1]);
@@ -281,7 +282,8 @@ namespace MEDDLY {
     protected:
       inline bool inCache(node_handle a, node_handle &b, TYPE &bev) {
         MEDDLY_DCASSERT(CTsrch);
-        CTsrch->key(0) = a;
+        CTsrch->reset();
+        CTsrch->writeNH(a);
         const node_handle* cacheFind = CT->find(CTsrch);
         if (cacheFind) {
           compute_table::readEV(cacheFind+1, bev);
@@ -462,8 +464,9 @@ namespace MEDDLY {
     protected:
       inline bool inCache(TYPE ev, node_handle a, node_handle &b) {
         MEDDLY_DCASSERT(CTsrch);
-        CTsrch->setKeyEV(0, ev);
-        CTsrch->key(1) = a;
+        CTsrch->reset();
+        CTsrch->write(ev);
+        CTsrch->writeNH(a);
         const node_handle* cacheFind = CT->find(CTsrch);
         if (cacheFind) {
           b = resF->linkNode(cacheFind[2]);
@@ -634,7 +637,8 @@ namespace MEDDLY {
     protected:
       inline bool findResult(node_handle a, node_handle &b) {
         MEDDLY_DCASSERT(CTsrch);
-        CTsrch->key(0) = a;
+        CTsrch->reset();
+        CTsrch->writeNH(a);
         const node_handle* cacheFind = CT->find(CTsrch);
         if (0==cacheFind) return false;
         b = resF->linkNode(cacheFind[1]);
@@ -753,8 +757,9 @@ namespace MEDDLY {
       inline bool inCache(INTYPE av, node_handle an, OUTTYPE &bv, node_handle &bn) 
       {
         MEDDLY_DCASSERT(CTsrch);
-        CTsrch->setKeyEV(0, av);
-        CTsrch->key(1) = an;
+        CTsrch->reset();
+        CTsrch->write(av);
+        CTsrch->writeNH(an);
         const node_handle* cacheFind = CT->find(CTsrch);
         if (cacheFind) {
           compute_table::readEV(cacheFind+2, bv);

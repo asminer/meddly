@@ -2783,10 +2783,15 @@ class MEDDLY::compute_table {
           virtual ~search_key();
 
           // interface, for operations
-
+          virtual void reset() = 0;
+          virtual void writeNH(node_handle nh) = 0;
+          virtual void write(int i) = 0;
+          virtual void write(float f) = 0;
+/*
           virtual node_handle& key(int i) = 0;
           virtual void setKeyEV(int i, int ev) = 0;
           virtual void setKeyEV(int i, float ev) = 0;
+*/
       };
 
       class temp_entry {

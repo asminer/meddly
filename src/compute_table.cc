@@ -124,17 +124,44 @@ class MEDDLY::base_table : public compute_table {
         bool killData;
         node_handle* key_data;
         const operation* op;
+        int currslot;
+#ifdef DEVELOPMENT_CODE
         /// used only for range checking during "development".
         int keyLength;  
+#endif
       public:
         old_search_key();
         virtual ~old_search_key();
+
+        virtual void reset() {
+          currslot = 0;
+        }
+
+        virtual void writeNH(node_handle nh) {
+          MEDDLY_CHECK_RANGE(0, currslot, keyLength);
+          key_data[currslot++] = nh;
+        }
+        virtual void write(int i) {
+          MEDDLY_CHECK_RANGE(0, currslot, keyLength);
+          key_data[currslot++] = i;
+        }
+        virtual void write(float f) {
+          MEDDLY_CHECK_RANGE(0, currslot, keyLength);
+          float* x = (float*) (key_data+currslot);
+          x[0] = f;
+          currslot++;
+        }
+
+      
+        /*
         virtual node_handle& key(int i);
         virtual void setKeyEV(int i, int ev);
         virtual void setKeyEV(int i, float ev);
+        */
 
         inline node_handle* rawData() const { return data; }
-        inline int dataLength() const { return hashLength; }
+        // inline int dataLength() const { return hashLength; }
+        inline int dataLength() const { return currslot + (key_data - data);}
         inline const operation* getOp() const { return op; }
     };
 
@@ -272,6 +299,7 @@ MEDDLY::base_table::old_search_key::~old_search_key()
   if (killData) delete[] data;
 }
 
+/*
 MEDDLY::node_handle& MEDDLY::base_table::old_search_key::key(int i)
 {
   MEDDLY_CHECK_RANGE(0, i, keyLength);
@@ -290,6 +318,7 @@ void MEDDLY::base_table::old_search_key::setKeyEV(int i, float ev)
   float* f = (float*) (key_data+i);
   f[0] = ev;
 }
+*/
 
 // **********************************************************************
 // *                         base_table methods                         *

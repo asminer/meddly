@@ -53,7 +53,8 @@ class MEDDLY::compl_mdd : public unary_operation {
 
     inline bool findResult(node_handle a, node_handle &b) {
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->key(0) = a;
+      CTsrch->reset();
+      CTsrch->writeNH(a);
       const node_handle* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
       b = resF->linkNode(cacheFind[1]);
@@ -200,8 +201,9 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute(int in, int k, node_handle a)
   }
   // Check compute table
   MEDDLY_DCASSERT(CTsrch);
-  CTsrch->key(0) = k;
-  CTsrch->key(1) = a;
+  CTsrch->reset();
+  CTsrch->write(k);
+  CTsrch->writeNH(a);
   const node_handle* cacheFind = CT->find(CTsrch);
   if (cacheFind) {
 #ifdef DEBUG_MXD_COMPL

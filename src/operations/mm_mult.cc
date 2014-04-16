@@ -64,8 +64,9 @@ class MEDDLY::mm_mult_op : public binary_operation {
 
     inline bool findResult(node_handle a, node_handle b, node_handle &c) {
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->key(0) = a;
-      CTsrch->key(1) = b;
+      CTsrch->reset();
+      CTsrch->writeNH(a);
+      CTsrch->writeNH(b);
       const node_handle* cacheFind = CT->find(CTsrch);
       if (0==cacheFind) return false;
       c = resF->linkNode(cacheFind[2]);
