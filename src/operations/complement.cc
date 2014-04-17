@@ -67,7 +67,7 @@ class MEDDLY::compl_mdd : public unary_operation {
       */
     }
     inline node_handle saveResult(node_handle a, node_handle b) {
-      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      compute_table::entry_builder &entry = CT->startNewEntry(this);
       entry.key(0) = argF->cacheNode(a);
       entry.result(0) = resF->cacheNode(b);
       CT->addEntry();
@@ -267,7 +267,7 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute(int in, int k, node_handle a)
   node_handle result = resF->createReducedNode(in, nb);
   if (k<0 && 1==nnz) canSave = false;
   if (canSave) {
-    compute_table::temp_entry &entry = CT->startNewEntry(this);
+    compute_table::entry_builder &entry = CT->startNewEntry(this);
     entry.key(0) = k;
     entry.key(1) = argF->cacheNode(a);
     entry.result(0) = resF->cacheNode(result);

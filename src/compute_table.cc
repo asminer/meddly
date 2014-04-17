@@ -119,6 +119,16 @@ MEDDLY::compute_table::search_result::~search_result()
 {
 }
 
+// **********************************************************************
+
+MEDDLY::compute_table::entry_builder::entry_builder()
+{
+
+}
+MEDDLY::compute_table::entry_builder::~entry_builder()
+{
+}
+
 
 // **********************************************************************
 // *                                                                    *
@@ -227,11 +237,77 @@ class MEDDLY::base_table : public compute_table {
 
     };
 
+
+
+    class old_temp_entry : public compute_table::entry_builder {
+          friend class MEDDLY::base_table;
+          int handle;
+          int hashLength;
+          node_handle* entry;
+          node_handle* key_entry;
+          node_handle* res_entry;
+          // The remaining entries are used only in development code
+          int keyLength;
+          int resLength;
+        public:
+          old_temp_entry() { }
+          virtual ~old_temp_entry() { }
+
+          virtual node_handle& key(int i) 
+          { 
+            MEDDLY_CHECK_RANGE(0, i, keyLength);
+            return key_entry[i]; 
+          }
+          virtual void setKeyEV(int i, int ev) 
+          {
+            MEDDLY_CHECK_RANGE(0, i, keyLength);
+            key_entry[i] = ev;
+          }
+          virtual void setKeyEV(int i, float ev) 
+          {
+            MEDDLY_CHECK_RANGE(0, i, keyLength);
+            float* f = (float*) (key_entry+i);
+            f[0] = ev;
+          }
+          virtual node_handle& result(int i) 
+          { 
+            MEDDLY_CHECK_RANGE(0, i, resLength);
+            return res_entry[i]; 
+          }
+          virtual void setResultEV(int i, int ev) 
+          { 
+            MEDDLY_CHECK_RANGE(0, i, resLength);
+            res_entry[i] = ev;
+          }
+          virtual void setResultEV(int i, float ev) 
+          {
+            MEDDLY_CHECK_RANGE(0, i, resLength);
+            float* f = (float*) (res_entry+i);
+            f[0] = ev;
+          }
+          virtual void copyResult(int i, void* data, size_t bytes) 
+          {
+            MEDDLY_DCASSERT(i>=0);
+            MEDDLY_DCASSERT(i+bytes<=resLength*sizeof(int));
+            memcpy(res_entry+i, data, bytes);
+          }
+          // The following are used by the compute table.
+          inline const node_handle* readEntry(int off) const { return entry+off; }
+          inline int readHandle() const { return handle; }
+          inline int readLength() const { return hashLength; }
+          inline node_handle& data(int i) {
+            return entry[i];
+          }
+    };
+
   public:
     base_table(const settings::computeTableSettings &s);
     virtual ~base_table();
 
   protected:
+    old_temp_entry currEntry;
+    
+
     inline void sawSearch(int c) {
       if (c>=stats::searchHistogramSize) {
         perf.numLargeSearches++;
@@ -798,7 +874,7 @@ class MEDDLY::monolithic_chained : public base_chained {
     virtual search_key* initializeSearchKey(operation* op);
     // virtual const int* find_old(const search_key *key);
     virtual search_result& find(const search_key *key);
-    virtual temp_entry& startNewEntry(operation* op);
+    virtual entry_builder& startNewEntry(operation* op);
     virtual void removeAll();
 
     virtual void show(FILE *s, int verbLevel);
@@ -959,7 +1035,7 @@ MEDDLY::monolithic_chained::find(const search_key *k)
 }
 
 
-MEDDLY::compute_table::temp_entry& 
+MEDDLY::compute_table::entry_builder& 
 MEDDLY::monolithic_chained::startNewEntry(operation* op)
 {
   startIndexedEntry(op, 1, 1);
@@ -1096,7 +1172,7 @@ class MEDDLY::operation_chained : public base_chained {
 
     virtual bool isOperationTable() const   { return true; }
     virtual search_key* initializeSearchKey(operation* op);
-    virtual temp_entry& startNewEntry(operation* op);
+    virtual entry_builder& startNewEntry(operation* op);
     virtual void removeAll();
 
     virtual void show(FILE *s, int verbLevel);
@@ -1148,7 +1224,7 @@ MEDDLY::operation_chained::initializeSearchKey(operation* op)
   return init(op, 0);
 }
 
-MEDDLY::compute_table::temp_entry& 
+MEDDLY::compute_table::entry_builder& 
 MEDDLY::operation_chained::startNewEntry(operation* op)
 {
   if (op != global_op)
@@ -1649,7 +1725,7 @@ class MEDDLY::monolithic_unchained : public base_unchained {
     virtual search_key* initializeSearchKey(operation* op);
     // virtual const int* find_old(const search_key *key);
     virtual search_result& find(const search_key *key);
-    virtual temp_entry& startNewEntry(operation* op);
+    virtual entry_builder& startNewEntry(operation* op);
     virtual void addEntry();
     virtual void removeStales();
     virtual void removeAll();
@@ -1773,7 +1849,7 @@ MEDDLY::monolithic_unchained::find(const search_key *k)
   return ANS;
 }
 
-MEDDLY::compute_table::temp_entry& 
+MEDDLY::compute_table::entry_builder& 
 MEDDLY::monolithic_unchained::startNewEntry(operation* op)
 {
   startIndexedEntry(op, 0, 1);
@@ -1834,7 +1910,7 @@ class MEDDLY::operation_unchained : public base_unchained {
 
     virtual bool isOperationTable() const   { return true; }
     virtual search_key* initializeSearchKey(operation* op);
-    virtual temp_entry& startNewEntry(operation* op);
+    virtual entry_builder& startNewEntry(operation* op);
     virtual void addEntry();
     virtual void removeStales();
     virtual void removeAll();
@@ -1866,7 +1942,7 @@ MEDDLY::operation_unchained::initializeSearchKey(operation* op)
   return init(op, 0);
 }
 
-MEDDLY::compute_table::temp_entry& 
+MEDDLY::compute_table::entry_builder& 
 MEDDLY::operation_unchained::startNewEntry(operation* op)
 {
   startIndexedEntry(op, 0, 0);
@@ -2066,7 +2142,7 @@ class MEDDLY::base_map : public base_table {
     virtual ~base_map();
     virtual bool isOperationTable() const   { return true; }
     virtual search_key* initializeSearchKey(operation* op);
-    virtual temp_entry& startNewEntry(operation* op);
+    virtual entry_builder& startNewEntry(operation* op);
   protected:
     inline void showEntry(FILE* s, int* h) const {
       global_op->showEntry(s, h);
@@ -2110,7 +2186,7 @@ MEDDLY::base_map::initializeSearchKey(operation* op)
   return init(search, op, 0);
 }
 
-MEDDLY::compute_table::temp_entry& 
+MEDDLY::compute_table::entry_builder& 
 MEDDLY::base_map::startNewEntry(operation* op)
 {
   if (op != global_op)

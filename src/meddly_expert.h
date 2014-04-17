@@ -2815,6 +2815,26 @@ class MEDDLY::compute_table {
           virtual void read(void* &ptr) = 0;
       };
 
+      //
+      // Building a new CT entry.
+      // This is an interface now!
+      //
+      class entry_builder {
+        protected:
+          entry_builder();
+          virtual ~entry_builder();
+          
+        public:
+          virtual node_handle& key(int i) = 0;
+          virtual void setKeyEV(int i, int ev) = 0;
+          virtual void setKeyEV(int i, float ev) = 0;
+          virtual node_handle& result(int i) = 0;
+          virtual void setResultEV(int i, int ev) = 0;
+          virtual void setResultEV(int i, float ev) = 0;
+          virtual void copyResult(int i, void* data, size_t bytes) = 0;
+      };
+
+/*
       class temp_entry {
           friend class MEDDLY::base_table;
           int handle;
@@ -2867,6 +2887,7 @@ class MEDDLY::compute_table {
             return entry[i];
           }
       };
+      */
 
     public:
       // convenience methods, for grabbing edge values
@@ -2916,7 +2937,7 @@ class MEDDLY::compute_table {
           The operation should "fill in" the values for the entry,
           then call \a addEntry().
       */
-      virtual temp_entry& startNewEntry(operation* op) = 0;
+      virtual entry_builder& startNewEntry(operation* op) = 0;
 
       /** Add the "current" new entry to the compute table.
           The entry may be specified by filling in the values 
@@ -2946,7 +2967,7 @@ class MEDDLY::compute_table {
 
     protected:
       stats perf;
-      temp_entry currEntry;
+      // temp_entry currEntry;
 };
 
 // ******************************************************************

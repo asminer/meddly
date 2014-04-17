@@ -169,7 +169,7 @@ long MEDDLY::card_mdd_int::compute(int k, node_handle a)
   node_reader::recycle(A);
 
   // Add entry to compute table
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  compute_table::entry_builder &entry = CT->startNewEntry(this);
   entry.key(0) = argF->cacheNode(a);
   entry.copyResult(0, &card, sizeof(long));
   CT->addEntry();
@@ -248,7 +248,7 @@ long MEDDLY::card_mxd_int::compute(int k, node_handle a)
   node_reader::recycle(A);
 
   // Add entry to compute table
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  compute_table::entry_builder &entry = CT->startNewEntry(this);
   entry.key(0) = argF->cacheNode(a);
   entry.copyResult(0, &card, sizeof(long));
   CT->addEntry();
@@ -362,7 +362,7 @@ double MEDDLY::card_mdd_real::compute(int k, node_handle a)
   node_reader::recycle(A);
 
   // Add entry to compute table
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  compute_table::entry_builder &entry = CT->startNewEntry(this);
   entry.key(0) = argF->cacheNode(a);
   entry.copyResult(0, &card, sizeof(double));
   CT->addEntry();
@@ -442,7 +442,7 @@ double MEDDLY::card_mxd_real::compute(int k, node_handle a)
   node_reader::recycle(A);
 
   // Add entry to compute table
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  compute_table::entry_builder &entry = CT->startNewEntry(this);
   entry.key(0) = argF->cacheNode(a);
   entry.copyResult(0, &card, sizeof(double));
   CT->addEntry();
@@ -583,7 +583,7 @@ void MEDDLY::card_mdd_mpz::compute(int k, node_handle a, mpz_object &card)
   node_reader::recycle(A);
 
   // Add entry to compute table
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  compute_table::entry_builder &entry = CT->startNewEntry(this);
   entry.key(0) = argF->cacheNode(a);
   mpz_object* answer = new mpz_object(card);
   entry.copyResult(0, &answer, sizeof(mpz_object*));
@@ -682,7 +682,7 @@ void MEDDLY::card_mxd_mpz::compute(int k, node_handle a, mpz_object &card)
   node_reader::recycle(A);
 
   // Add entry to compute table
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  compute_table::entry_builder &entry = CT->startNewEntry(this);
   entry.key(0) = argF->cacheNode(a);
   mpz_object* answer = new mpz_object(card);
   entry.copyResult(0, &answer, sizeof(mpz_object*));

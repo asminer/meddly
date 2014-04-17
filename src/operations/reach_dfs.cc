@@ -111,7 +111,7 @@ class MEDDLY::saturation_op : public unary_operation {
       */
     }
     inline node_handle saveSaturateResult(node_handle a, node_handle b) {
-      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      compute_table::entry_builder &entry = CT->startNewEntry(this);
       entry.key(0) = argF->cacheNode(a);
       entry.result(0) = resF->cacheNode(b);
       CT->addEntry();
@@ -154,7 +154,7 @@ class MEDDLY::common_dfs_mt : public binary_operation {
       */
     }
     inline node_handle saveResult(node_handle a, node_handle b, node_handle c) {
-      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      compute_table::entry_builder &entry = CT->startNewEntry(this);
       entry.key(0) = arg1F->cacheNode(a); 
       entry.key(1) = arg2F->cacheNode(b);
       entry.result(0) = resF->cacheNode(c);

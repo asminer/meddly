@@ -84,7 +84,7 @@ class MEDDLY::image_op : public binary_operation {
       */
     }
     inline node_handle saveResult(node_handle a, node_handle b, node_handle c) {
-      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      compute_table::entry_builder &entry = CT->startNewEntry(this);
       entry.key(0) = argV->cacheNode(a); 
       entry.key(1) = argM->cacheNode(b);
       entry.result(0) = resF->cacheNode(c);

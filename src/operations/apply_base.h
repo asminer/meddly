@@ -78,7 +78,7 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
     }
 
     inline void saveResult(node_handle a, node_handle b, node_handle c) {
-      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      compute_table::entry_builder &entry = CT->startNewEntry(this);
       if (can_commute && a > b) {
         entry.key(0) = arg2F->cacheNode(b);
         entry.key(1) = arg1F->cacheNode(a);
@@ -144,7 +144,7 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
     }
 
     inline void saveResult(int in, node_handle a, node_handle b, node_handle c) {
-      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      compute_table::entry_builder &entry = CT->startNewEntry(this);
       entry.key(0) = in;
       if (can_commute && a > b) {
         entry.key(1) = arg2F->cacheNode(b);
@@ -207,7 +207,7 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
     }
 
     inline void saveResult(int k, node_handle a, node_handle b, node_handle c) {
-      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      compute_table::entry_builder &entry = CT->startNewEntry(this);
       entry.key(0) = k;
       if (can_commute && a > b) {
         entry.key(1) = arg2F->cacheNode(b);
@@ -292,7 +292,7 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
     }
 
     inline void saveResult(int aev, node_handle a, int bev, node_handle b, int cev, node_handle c) {
-      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      compute_table::entry_builder &entry = CT->startNewEntry(this);
       if (can_commute && a > b) {
         entry.setKeyEV(0, bev);
         entry.key(1) = arg2F->cacheNode(b);
@@ -365,7 +365,7 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
     }
 
     inline void saveResult(float aev, node_handle a, float bev, node_handle b, float cev, node_handle c) {
-      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      compute_table::entry_builder &entry = CT->startNewEntry(this);
       if (can_commute && a > b) {
         entry.setKeyEV(0, bev);
         entry.key(1) = arg2F->cacheNode(b);

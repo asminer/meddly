@@ -182,7 +182,7 @@ MEDDLY::mdd2index_operation
   MEDDLY_DCASSERT(0==dummy);
 
   // Add to compute table
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  compute_table::entry_builder &entry = CT->startNewEntry(this);
   entry.key(0) = argF->cacheNode(a);
   entry.result(0) = resF->cacheNode(bdn);
   entry.result(1) = bcard;

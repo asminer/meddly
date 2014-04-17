@@ -150,7 +150,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   // reduce, save in compute table
   node_handle c = resF->createReducedNode(-1, nb);
 
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  compute_table::entry_builder &entry = CT->startNewEntry(this);
   entry.key(INPTR_INDEX) = -1;
   entry.key(LEVEL_INDEX) = k;
   entry.key(OPNDA_INDEX) = arg1F->cacheNode(a);
@@ -211,7 +211,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(int in, int k, node_handle a,
   // reduce, save in compute table
   node_handle c = resF->createReducedNode(in, nb);
 
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
+  compute_table::entry_builder &entry = CT->startNewEntry(this);
   entry.key(INPTR_INDEX) = in;
   entry.key(LEVEL_INDEX) = k;
   entry.key(OPNDA_INDEX) = arg1F->cacheNode(a);

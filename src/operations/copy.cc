@@ -67,7 +67,7 @@ class MEDDLY::copy_MT : public unary_operation {
       */
     }
     inline node_handle saveResult(node_handle a, node_handle b) {
-      compute_table::temp_entry &entry = CT->startNewEntry(this);
+      compute_table::entry_builder &entry = CT->startNewEntry(this);
       entry.key(0) = argF->cacheNode(a);
       entry.result(0) = resF->cacheNode(b);
       CT->addEntry();
@@ -308,7 +308,7 @@ namespace MEDDLY {
       }
 
       inline void addToCache(node_handle a, node_handle b, TYPE bev) {
-        compute_table::temp_entry &entry = CT->startNewEntry(this);
+        compute_table::entry_builder &entry = CT->startNewEntry(this);
         entry.key(0) = argF->cacheNode(a);
         entry.setResultEV(0, bev);
         entry.result(1) = resF->cacheNode(b);
@@ -497,7 +497,7 @@ namespace MEDDLY {
       }
 
       inline void addToCache(TYPE ev, node_handle a, node_handle b) {
-        compute_table::temp_entry &entry = CT->startNewEntry(this);
+        compute_table::entry_builder &entry = CT->startNewEntry(this);
         entry.setKeyEV(0, ev);
         entry.key(1) = argF->cacheNode(a);
         entry.result(0) = resF->cacheNode(b);
@@ -672,7 +672,7 @@ namespace MEDDLY {
         */
       }
       inline node_handle saveResult(node_handle a, node_handle b) {
-        compute_table::temp_entry &entry = CT->startNewEntry(this);
+        compute_table::entry_builder &entry = CT->startNewEntry(this);
         entry.key(0) = argF->cacheNode(a);
         entry.result(0) = resF->cacheNode(b);
         CT->addEntry();
@@ -806,7 +806,7 @@ namespace MEDDLY {
 
       inline void addToCache(INTYPE av, node_handle an, OUTTYPE bv, node_handle &bn) 
       {
-        compute_table::temp_entry &entry = CT->startNewEntry(this);
+        compute_table::entry_builder &entry = CT->startNewEntry(this);
         entry.setKeyEV(0, av);
         entry.key(1) = argF->cacheNode(an);
         entry.setResultEV(0, bv);
