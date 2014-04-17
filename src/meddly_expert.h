@@ -2825,6 +2825,18 @@ class MEDDLY::compute_table {
           virtual ~entry_builder();
           
         public:
+          virtual void writeKeyNH(node_handle) = 0;
+          virtual void writeKey(int) = 0;
+          virtual void writeKey(float) = 0;
+
+          virtual void writeResultNH(node_handle) = 0;
+          virtual void writeResult(int) = 0;
+          virtual void writeResult(float) = 0;
+          virtual void writeResult(long) = 0;
+          virtual void writeResult(double) = 0;
+          virtual void writeResult(void*) = 0;
+
+          /*
           virtual node_handle& key(int i) = 0;
           virtual void setKeyEV(int i, int ev) = 0;
           virtual void setKeyEV(int i, float ev) = 0;
@@ -2832,62 +2844,8 @@ class MEDDLY::compute_table {
           virtual void setResultEV(int i, int ev) = 0;
           virtual void setResultEV(int i, float ev) = 0;
           virtual void copyResult(int i, void* data, size_t bytes) = 0;
+          */
       };
-
-/*
-      class temp_entry {
-          friend class MEDDLY::base_table;
-          int handle;
-          int hashLength;
-          node_handle* entry;
-          node_handle* key_entry;
-          node_handle* res_entry;
-          // The remaining entries are used only in development code
-          int keyLength;
-          int resLength;
-        public:
-          inline node_handle& key(int i) { 
-            MEDDLY_CHECK_RANGE(0, i, keyLength);
-            return key_entry[i]; 
-          }
-          inline void setKeyEV(int i, int ev) {
-            MEDDLY_CHECK_RANGE(0, i, keyLength);
-            key_entry[i] = ev;
-          }
-          inline void setKeyEV(int i, float ev) {
-            MEDDLY_CHECK_RANGE(0, i, keyLength);
-            float* f = (float*) (key_entry+i);
-            f[0] = ev;
-          }
-          inline node_handle& result(int i) { 
-            MEDDLY_CHECK_RANGE(0, i, resLength);
-            return res_entry[i]; 
-          }
-          inline void setResultEV(int i, int ev) { 
-            MEDDLY_CHECK_RANGE(0, i, resLength);
-            res_entry[i] = ev;
-          }
-          inline void setResultEV(int i, float ev) {
-            MEDDLY_CHECK_RANGE(0, i, resLength);
-            float* f = (float*) (res_entry+i);
-            f[0] = ev;
-          }
-          inline void copyResult(int i, void* data, size_t bytes) {
-#ifdef DEVELOPMENT_CODE
-            assert(i>=0);
-            assert(i+bytes<=resLength*sizeof(int));
-#endif
-            memcpy(res_entry+i, data, bytes);
-          }
-          // The following are used by the compute table.
-          inline const node_handle* readEntry(int off) const { return entry+off; }
-          inline int readHandle() const { return handle; }
-          inline int readLength() const { return hashLength; }
-          inline node_handle& data(int i) {
-            return entry[i];
-          }
-      };
-      */
 
     public:
       // convenience methods, for grabbing edge values
@@ -2914,18 +2872,6 @@ class MEDDLY::compute_table {
 
       /// Initialize a search key for a given operation.
       virtual search_key* initializeSearchKey(operation* op) = 0;
-
-      // Old version
-
-      /** Find an entry in the compute table based on the key provided.
-          @param  key   Key to search for.
-          @return       0, if not found;
-                        otherwise, an integer array of size 
-                        op->getCacheEntryLength()
-      */
-      // virtual const node_handle* find_old(const search_key *key) = 0;
-
-      // New version!
 
       /** Find an entry in the compute table based on the key provided.
           @param  key   Key to search for.
@@ -2967,7 +2913,6 @@ class MEDDLY::compute_table {
 
     protected:
       stats perf;
-      // temp_entry currEntry;
 };
 
 // ******************************************************************
@@ -3021,7 +2966,6 @@ class MEDDLY::operation {
     /// @param  al  Answer length of compute table entries.
     ///             Use 0 if this operation does not use the compute table.
     operation(const opname* n, int kl, int al);
-    //operation(const opname* n, bool uses_CT);
 
   protected:
     virtual ~operation();

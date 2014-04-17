@@ -80,13 +80,13 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
     inline void saveResult(node_handle a, node_handle b, node_handle c) {
       compute_table::entry_builder &entry = CT->startNewEntry(this);
       if (can_commute && a > b) {
-        entry.key(0) = arg2F->cacheNode(b);
-        entry.key(1) = arg1F->cacheNode(a);
+        entry.writeKeyNH(arg2F->cacheNode(b));
+        entry.writeKeyNH(arg1F->cacheNode(a));
       } else {
-        entry.key(0) = arg1F->cacheNode(a);
-        entry.key(1) = arg2F->cacheNode(b);
+        entry.writeKeyNH(arg1F->cacheNode(a));
+        entry.writeKeyNH(arg2F->cacheNode(b));
       }
-      entry.result(0) = resF->cacheNode(c);
+      entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();
     }
 
@@ -145,15 +145,15 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
 
     inline void saveResult(int in, node_handle a, node_handle b, node_handle c) {
       compute_table::entry_builder &entry = CT->startNewEntry(this);
-      entry.key(0) = in;
+      entry.writeKey(in);
       if (can_commute && a > b) {
-        entry.key(1) = arg2F->cacheNode(b);
-        entry.key(2) = arg1F->cacheNode(a);
+        entry.writeKeyNH(arg2F->cacheNode(b));
+        entry.writeKeyNH(arg1F->cacheNode(a));
       } else {
-        entry.key(1) = arg1F->cacheNode(a);
-        entry.key(2) = arg2F->cacheNode(b);
+        entry.writeKeyNH(arg1F->cacheNode(a));
+        entry.writeKeyNH(arg2F->cacheNode(b));
       }
-      entry.result(0) = resF->cacheNode(c);
+      entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();
     }
 
@@ -208,15 +208,15 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
 
     inline void saveResult(int k, node_handle a, node_handle b, node_handle c) {
       compute_table::entry_builder &entry = CT->startNewEntry(this);
-      entry.key(0) = k;
+      entry.writeKey(k);
       if (can_commute && a > b) {
-        entry.key(1) = arg2F->cacheNode(b);
-        entry.key(2) = arg1F->cacheNode(a);
+        entry.writeKeyNH(arg2F->cacheNode(b));
+        entry.writeKeyNH(arg1F->cacheNode(a));
       } else {
-        entry.key(1) = arg1F->cacheNode(a);
-        entry.key(2) = arg2F->cacheNode(b);
+        entry.writeKeyNH(arg1F->cacheNode(a));
+        entry.writeKeyNH(arg2F->cacheNode(b));
       }
-      entry.result(0) = resF->cacheNode(c);
+      entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();
     }
 
@@ -294,18 +294,18 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
     inline void saveResult(int aev, node_handle a, int bev, node_handle b, int cev, node_handle c) {
       compute_table::entry_builder &entry = CT->startNewEntry(this);
       if (can_commute && a > b) {
-        entry.setKeyEV(0, bev);
-        entry.key(1) = arg2F->cacheNode(b);
-        entry.setKeyEV(2, aev);
-        entry.key(3) = arg1F->cacheNode(a);
+        entry.writeKey(bev);
+        entry.writeKeyNH(arg2F->cacheNode(b));
+        entry.writeKey(aev);
+        entry.writeKeyNH(arg1F->cacheNode(a));
       } else {
-        entry.setKeyEV(0, aev);
-        entry.key(1) = arg1F->cacheNode(a);
-        entry.setKeyEV(2, bev);
-        entry.key(3) = arg2F->cacheNode(b);
+        entry.writeKey(aev);
+        entry.writeKeyNH(arg1F->cacheNode(a));
+        entry.writeKey(bev);
+        entry.writeKeyNH(arg2F->cacheNode(b));
       }
-      entry.setResultEV(0, cev);
-      entry.result(1) = resF->cacheNode(c);
+      entry.writeResult(cev);
+      entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();
     }
 
@@ -367,18 +367,18 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
     inline void saveResult(float aev, node_handle a, float bev, node_handle b, float cev, node_handle c) {
       compute_table::entry_builder &entry = CT->startNewEntry(this);
       if (can_commute && a > b) {
-        entry.setKeyEV(0, bev);
-        entry.key(1) = arg2F->cacheNode(b);
-        entry.setKeyEV(2, aev);
-        entry.key(3) = arg1F->cacheNode(a);
+        entry.writeKey(bev);
+        entry.writeKeyNH(arg2F->cacheNode(b));
+        entry.writeKey(aev);
+        entry.writeKeyNH(arg1F->cacheNode(a));
       } else {
-        entry.setKeyEV(0, aev);
-        entry.key(1) = arg1F->cacheNode(a);
-        entry.setKeyEV(2, bev);
-        entry.key(3) = arg2F->cacheNode(b);
+        entry.writeKey(aev);
+        entry.writeKeyNH(arg1F->cacheNode(a));
+        entry.writeKey(bev);
+        entry.writeKeyNH(arg2F->cacheNode(b));
       }
-      entry.setResultEV(0, cev);
-      entry.result(1) = resF->cacheNode(c);
+      entry.writeResult(cev);
+      entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();
     }
 

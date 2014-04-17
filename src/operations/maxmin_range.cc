@@ -74,8 +74,8 @@ class MEDDLY::range_int : public unary_operation {
     }
     inline long saveResult(node_handle a, int &b) {
       compute_table::entry_builder &entry = CT->startNewEntry(this);
-      entry.key(0) = argF->cacheNode(a);
-      entry.result(0) = b;
+      entry.writeKeyNH(argF->cacheNode(a));
+      entry.writeResult(b);
       CT->addEntry();
       return b;
     }
@@ -136,8 +136,8 @@ class MEDDLY::range_real : public unary_operation {
     }
     inline float saveResult(node_handle a, float &b) {
       compute_table::entry_builder &entry = CT->startNewEntry(this);
-      entry.key(0) = argF->cacheNode(a);
-      entry.copyResult(0, &b, sizeof(float));
+      entry.writeKeyNH(argF->cacheNode(a));
+      entry.writeResult(b);
       return b;
     }
 };

@@ -183,9 +183,9 @@ class MEDDLY::base_table : public compute_table {
 
     class old_search_result : public compute_table::search_result {
         const node_handle* data;
-        int currslot;
+        unsigned currslot;
 #ifdef DEVELOPMENT_CODE
-        int ansLength;
+        unsigned ansLength;
 #endif
       public:
         old_search_result() {
@@ -246,6 +246,9 @@ class MEDDLY::base_table : public compute_table {
           node_handle* entry;
           node_handle* key_entry;
           node_handle* res_entry;
+          // writing positions
+          int keySlot;
+          int resSlot;
           // The remaining entries are used only in development code
           int keyLength;
           int resLength;
@@ -253,6 +256,66 @@ class MEDDLY::base_table : public compute_table {
           old_temp_entry() { }
           virtual ~old_temp_entry() { }
 
+          virtual void writeKeyNH(node_handle nh) 
+          {
+            MEDDLY_CHECK_RANGE(0, keySlot, keyLength);
+            key_entry[keySlot++] = nh;
+          }
+          virtual void writeKey(int i)
+          {
+            MEDDLY_CHECK_RANGE(0, keySlot, keyLength);
+            key_entry[keySlot++] = i;
+          }
+          virtual void writeKey(float f)
+          {
+            MEDDLY_CHECK_RANGE(0, keySlot, keyLength);
+            float* x = (float*) key_entry + keySlot;
+            x[0] = f;
+            keySlot++;
+          }
+
+          virtual void writeResultNH(node_handle nh)
+          {
+            MEDDLY_CHECK_RANGE(0, resSlot, resLength);
+            res_entry[resSlot++] = nh;
+          }
+          virtual void writeResult(int i)
+          {
+            MEDDLY_CHECK_RANGE(0, resSlot, resLength);
+            res_entry[resSlot++] = i;
+          }
+          virtual void writeResult(float f)
+          {
+            MEDDLY_CHECK_RANGE(0, resSlot, resLength);
+            float* x = (float*) res_entry + resSlot;
+            x[0] = f;
+            resSlot++;
+          }
+        protected:
+          inline void writeResult(void* data, size_t slots)
+          {
+            MEDDLY_DCASSERT(slots>0);
+            MEDDLY_DCASSERT(resSlot>=0);
+            MEDDLY_DCASSERT(resSlot+slots<=resLength);
+            memcpy(res_entry+resSlot, data, slots * sizeof(node_handle));
+            resSlot += slots;
+          }
+        public:
+          virtual void writeResult(long L)
+          {
+            writeResult(&L, sizeof(long) / sizeof(node_handle));
+          }
+          virtual void writeResult(double D)
+          {
+            writeResult(&D, sizeof(double) / sizeof(node_handle));
+          }
+          virtual void writeResult(void* P)
+          {
+            writeResult(&P, sizeof(void*) / sizeof(node_handle));
+          }
+
+
+          /*
           virtual node_handle& key(int i) 
           { 
             MEDDLY_CHECK_RANGE(0, i, keyLength);
@@ -291,6 +354,8 @@ class MEDDLY::base_table : public compute_table {
             MEDDLY_DCASSERT(i+bytes<=resLength*sizeof(int));
             memcpy(res_entry+i, data, bytes);
           }
+          */
+
           // The following are used by the compute table.
           inline const node_handle* readEntry(int off) const { return entry+off; }
           inline int readHandle() const { return handle; }
@@ -378,6 +443,8 @@ class MEDDLY::base_table : public compute_table {
     // C is the number of slots we need for "chaining".
     // M is 1 if we need a slot for the operation index, 0 otherwise.
     inline void startIndexedEntry(operation* op, int C, int M) {
+      currEntry.keySlot = 0;
+      currEntry.resSlot = 0;
       currEntry.handle = newEntry(op->getCacheEntryLength()+C+M);
       currEntry.hashLength = op->getKeyLength()+M;
       currEntry.entry = entries + currEntry.handle;
@@ -393,6 +460,8 @@ class MEDDLY::base_table : public compute_table {
     // C is the number of slots we need for "chaining".
     // M is 1 if we need a slot for the operation index, 0 otherwise.
     inline int* startPtrEntry(operation* op, int C, int M) {
+      currEntry.keySlot = 0;
+      currEntry.resSlot = 0;
       currEntry.hashLength = op->getKeyLength()+M;
       int* data = new int[currEntry.hashLength];
       currEntry.entry = data;

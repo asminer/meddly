@@ -183,9 +183,9 @@ MEDDLY::mdd2index_operation
 
   // Add to compute table
   compute_table::entry_builder &entry = CT->startNewEntry(this);
-  entry.key(0) = argF->cacheNode(a);
-  entry.result(0) = resF->cacheNode(bdn);
-  entry.result(1) = bcard;
+  entry.writeKeyNH(argF->cacheNode(a));
+  entry.writeResultNH(resF->cacheNode(bdn));
+  entry.writeResult(bcard);
   CT->addEntry();
 }
 
