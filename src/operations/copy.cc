@@ -55,10 +55,16 @@ class MEDDLY::copy_MT : public unary_operation {
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       CTsrch->writeNH(a);
-      const node_handle* cacheFind = CT->find(CTsrch);
+      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      if (!cacheFind) return false;
+      b = resF->linkNode(cacheFind.readNH());
+      return true;
+      /*
+      const node_handle* cacheFind = CT->find_old(CTsrch);
       if (0==cacheFind) return false;
       b = resF->linkNode(cacheFind[1]);
       return true;
+      */
     }
     inline node_handle saveResult(node_handle a, node_handle b) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
@@ -284,12 +290,20 @@ namespace MEDDLY {
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->reset();
         CTsrch->writeNH(a);
-        const node_handle* cacheFind = CT->find(CTsrch);
+        compute_table::search_result &cacheFind = CT->find(CTsrch);
+        if (cacheFind) {
+          cacheFind.read(bev);
+          b = resF->linkNode(cacheFind.readNH());
+          return true;
+        }
+        /*
+        const node_handle* cacheFind = CT->find_old(CTsrch);
         if (cacheFind) {
           compute_table::readEV(cacheFind+1, bev);
           b = resF->linkNode(cacheFind[2]);
           return true;
         }
+        */
         return false;
       }
 
@@ -467,11 +481,18 @@ namespace MEDDLY {
         CTsrch->reset();
         CTsrch->write(ev);
         CTsrch->writeNH(a);
-        const node_handle* cacheFind = CT->find(CTsrch);
+        compute_table::search_result &cacheFind = CT->find(CTsrch);
+        if (cacheFind) {
+          b = resF->linkNode(cacheFind.readNH());
+          return true;
+        }
+        /*
+        const node_handle* cacheFind = CT->find_old(CTsrch);
         if (cacheFind) {
           b = resF->linkNode(cacheFind[2]);
           return true;
         }
+        */
         return false;
       }
 
@@ -639,10 +660,16 @@ namespace MEDDLY {
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->reset();
         CTsrch->writeNH(a);
-        const node_handle* cacheFind = CT->find(CTsrch);
+        compute_table::search_result &cacheFind = CT->find(CTsrch);
+        if (!cacheFind) return false;
+        b = resF->linkNode(cacheFind.readNH());
+        return true;
+        /*
+        const node_handle* cacheFind = CT->find_old(CTsrch);
         if (0==cacheFind) return false;
         b = resF->linkNode(cacheFind[1]);
         return true;
+        */
       }
       inline node_handle saveResult(node_handle a, node_handle b) {
         compute_table::temp_entry &entry = CT->startNewEntry(this);
@@ -760,12 +787,20 @@ namespace MEDDLY {
         CTsrch->reset();
         CTsrch->write(av);
         CTsrch->writeNH(an);
-        const node_handle* cacheFind = CT->find(CTsrch);
+        compute_table::search_result &cacheFind = CT->find(CTsrch);
+        if (cacheFind) {
+          cacheFind.read(bv);
+          bn = resF->linkNode(cacheFind.readNH());
+          return true;
+        }
+        /*
+        const node_handle* cacheFind = CT->find_old(CTsrch);
         if (cacheFind) {
           compute_table::readEV(cacheFind+2, bv);
           bn = resF->linkNode(cacheFind[3]);
           return true;
         }
+        */
         return false;
       }
 

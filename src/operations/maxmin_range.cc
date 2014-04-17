@@ -57,16 +57,22 @@ class MEDDLY::range_int : public unary_operation {
     virtual void showEntry(FILE* strm, const node_handle* entryData) const;
   
   protected:
-    inline bool findResult(node_handle a, long &b) {
+    inline bool findResult(node_handle a, int &b) {
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       CTsrch->writeNH(a);
-      const node_handle* cacheFind = CT->find(CTsrch);
+      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      if (!cacheFind) return false;
+      cacheFind.read(b);
+      return true;
+      /*
+      const node_handle* cacheFind = CT->find_old(CTsrch);
       if (0==cacheFind) return false;
       b = cacheFind[1];
       return true;
+      */
     }
-    inline long saveResult(node_handle a, long &b) {
+    inline long saveResult(node_handle a, int &b) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
       entry.key(0) = argF->cacheNode(a);
       entry.result(0) = b;
@@ -117,10 +123,16 @@ class MEDDLY::range_real : public unary_operation {
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       CTsrch->writeNH(a);
-      const node_handle* cacheFind = CT->find(CTsrch);
+      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      if (!cacheFind) return false;
+      cacheFind.read(b);
+      return true;
+      /*
+      const node_handle* cacheFind = CT->find_old(CTsrch);
       if (0==cacheFind) return false;
       b = ((float*)(cacheFind+1))[0];
       return true;
+      */
     }
     inline float saveResult(node_handle a, float &b) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
@@ -167,16 +179,16 @@ public:
   virtual void compute(const dd_edge &arg, long &res) {
     res = compute(arg.getNode());
   }
-  long compute(node_handle a);
+  int compute(node_handle a);
 };
 
-long MEDDLY::maxrange_int::compute(node_handle a)
+int MEDDLY::maxrange_int::compute(node_handle a)
 {
   // Terminal case
   if (argF->isTerminalNode(a)) return expert_forest::int_Tencoder::handle2value(a);
   
   // Check compute table
-  long max;
+  int max;
   if (findResult(a, max)) return max;
 
   // Initialize node reader
@@ -211,16 +223,16 @@ public:
   virtual void compute(const dd_edge &arg, long &res) {
     res = compute(arg.getNode());
   }
-  long compute(node_handle a);
+  int compute(node_handle a);
 };
 
-long MEDDLY::minrange_int::compute(node_handle a)
+int MEDDLY::minrange_int::compute(node_handle a)
 {
   // Terminal case
   if (argF->isTerminalNode(a)) return expert_forest::int_Tencoder::handle2value(a);
   
   // Check compute table
-  long min;
+  int min;
   if (findResult(a, min)) return min;
 
   // Initialize node reader

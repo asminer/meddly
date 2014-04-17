@@ -55,10 +55,16 @@ class MEDDLY::compl_mdd : public unary_operation {
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       CTsrch->writeNH(a);
-      const node_handle* cacheFind = CT->find(CTsrch);
+      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      if (!cacheFind) return false;
+      b = resF->linkNode(cacheFind.readNH());
+      return true;
+      /*
+      const node_handle* cacheFind = CT->find_old(CTsrch);
       if (0==cacheFind) return false;
       b = resF->linkNode(cacheFind[1]);
       return true;
+      */
     }
     inline node_handle saveResult(node_handle a, node_handle b) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
@@ -204,13 +210,23 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute(int in, int k, node_handle a)
   CTsrch->reset();
   CTsrch->write(k);
   CTsrch->writeNH(a);
-  const node_handle* cacheFind = CT->find(CTsrch);
+  compute_table::search_result &cacheFind = CT->find(CTsrch);
+  if (cacheFind) {
+    node_handle ans = cacheFind.readNH();
+#ifdef DEBUG_MXD_COMPL
+    fprintf(stderr, "\tin CT:   compl_mxd(%d, %d) : %d\n", ht, a, ans);
+#endif
+    return resF->linkNode(ans);
+  }
+  /*
+  const node_handle* cacheFind = CT->find_old(CTsrch);
   if (cacheFind) {
 #ifdef DEBUG_MXD_COMPL
     fprintf(stderr, "\tin CT:   compl_mxd(%d, %d) : %d\n", ht, a, cacheFind[2]);
 #endif
     return resF->linkNode(cacheFind[2]);
   }
+  */
 
 #ifdef DEBUG_MXD_COMPL
   fprintf(stderr, "\tstarting compl_mxd(%d, %d)\n", ht, a);

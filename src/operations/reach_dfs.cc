@@ -99,10 +99,16 @@ class MEDDLY::saturation_op : public unary_operation {
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       CTsrch->writeNH(a);
-      const node_handle* cacheFind = CT->find(CTsrch);
-      if (0==cacheFind) return false;
-      b = resF->linkNode(cacheFind[1]); // Elvio
+      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      if (!cacheFind) return false;
+      b = resF->linkNode(cacheFind.readNH()); 
       return true;
+      /*
+      const node_handle* cacheFind = CT->find_old(CTsrch);
+      if (0==cacheFind) return false;
+      b = resF->linkNode(cacheFind[1]); 
+      return true;
+      */
     }
     inline node_handle saveSaturateResult(node_handle a, node_handle b) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
@@ -136,10 +142,16 @@ class MEDDLY::common_dfs_mt : public binary_operation {
       CTsrch->reset();
       CTsrch->writeNH(a);
       CTsrch->writeNH(b);
-      const node_handle* cacheFind = CT->find(CTsrch);
+      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      if (!cacheFind) return false;
+      c = resF->linkNode(cacheFind.readNH());
+      return true;
+      /*
+      const node_handle* cacheFind = CT->find_old(CTsrch);
       if (0==cacheFind) return false;
       c = resF->linkNode(cacheFind[2]);
       return true;
+      */
     }
     inline node_handle saveResult(node_handle a, node_handle b, node_handle c) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
@@ -286,10 +298,7 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd)
 
   // search compute table
   node_handle n = 0;
-  if (findSaturateResult(mdd, n)) {
-    resF->linkNode(n);
-    return n;
-  }
+  if (findSaturateResult(mdd, n)) return n;
 
   int k = argF->getNodeLevel(mdd);      // level
   int sz = argF->getLevelSize(k);       // size

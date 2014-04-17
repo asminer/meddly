@@ -86,7 +86,7 @@ protected:
 };
 
 MEDDLY::card_int::card_int(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, 1, sizeof(long) / sizeof(int), arg, INTEGER)
+ : unary_operation(oc, 1, sizeof(long) / sizeof(node_handle), arg, INTEGER)
 {
 }
 
@@ -139,13 +139,21 @@ long MEDDLY::card_mdd_int::compute(int k, node_handle a)
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->reset();
   CTsrch->writeNH(a); 
-  const node_handle* cacheEntry = CT->find(CTsrch);
+  compute_table::search_result &cacheEntry = CT->find(CTsrch);
+  if (cacheEntry) {
+    long answer;
+    cacheEntry.read(answer);
+    return answer;
+  }
+  /*
+  const node_handle* cacheEntry = CT->find_old(CTsrch);
   if (cacheEntry) {
     // ugly but portable
     long answer;
     memcpy(&answer, cacheEntry+1, sizeof(long));
     return answer;
   }
+  */
 
   // Initialize node reader
   node_reader* A = argF->initNodeReader(a, false);
@@ -210,13 +218,21 @@ long MEDDLY::card_mxd_int::compute(int k, node_handle a)
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->reset();
   CTsrch->writeNH(a); 
-  const node_handle* cacheEntry = CT->find(CTsrch);
+  compute_table::search_result &cacheEntry = CT->find(CTsrch);
+  if (cacheEntry) {
+    long answer;
+    cacheEntry.read(answer);
+    return answer;
+  }
+  /*
+  const node_handle* cacheEntry = CT->find_old(CTsrch);
   if (cacheEntry) {
     // ugly but portable
     long answer;
     memcpy(&answer, cacheEntry+1, sizeof(long));
     return answer;
   }
+  */
 
   // Initialize node reader
   node_reader* A = argF->initNodeReader(a, false);
@@ -262,7 +278,7 @@ public:
 };
 
 MEDDLY::card_real::card_real(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, 1, sizeof(double) / sizeof(int), arg, REAL)
+ : unary_operation(oc, 1, sizeof(double) / sizeof(node_handle), arg, REAL)
 {
 }
 
@@ -316,13 +332,21 @@ double MEDDLY::card_mdd_real::compute(int k, node_handle a)
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->reset();
   CTsrch->writeNH(a); 
-  const node_handle* cacheEntry = CT->find(CTsrch);
+  compute_table::search_result &cacheEntry = CT->find(CTsrch);
+  if (cacheEntry) {
+    double answer;
+    cacheEntry.read(answer);
+    return answer;
+  }
+  /*
+  const node_handle* cacheEntry = CT->find_old(CTsrch);
   if (cacheEntry) {
     // ugly but portable
     double answer;
     memcpy(&answer, cacheEntry+1, sizeof(double));
     return answer;
   }
+  */
 
   // Initialize node reader
   node_reader* A = argF->initNodeReader(a, false);
@@ -388,13 +412,21 @@ double MEDDLY::card_mxd_real::compute(int k, node_handle a)
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->reset();
   CTsrch->writeNH(a); 
-  const node_handle* cacheEntry = CT->find(CTsrch);
+  compute_table::search_result &cacheEntry = CT->find(CTsrch);
+  if (cacheEntry) {
+    double answer;
+    cacheEntry.read(answer);
+    return answer;
+  }
+  /*
+  const node_handle* cacheEntry = CT->find_old(CTsrch);
   if (cacheEntry) {
     // ugly but portable
     double answer;
     memcpy(&answer, cacheEntry+1, sizeof(double));
     return answer;
   }
+  */
 
   // Initialize node reader
   node_reader* A = argF->initNodeReader(a, false);
@@ -444,7 +476,7 @@ public:
 };
 
 MEDDLY::card_mpz::card_mpz(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, 1, sizeof(ct_object*) / sizeof(int), arg, HUGEINT)
+ : unary_operation(oc, 1, sizeof(ct_object*) / sizeof(node_handle), arg, HUGEINT)
 {
 }
 
@@ -516,13 +548,23 @@ void MEDDLY::card_mdd_mpz::compute(int k, node_handle a, mpz_object &card)
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->reset();
   CTsrch->writeNH(a);
-  const node_handle* cacheEntry = CT->find(CTsrch);
+  compute_table::search_result &cacheEntry = CT->find(CTsrch);
+  if (cacheEntry) {
+    void* P;
+    cacheEntry.read(P);
+    mpz_object* answer = (mpz_object*) P;
+    answer->copyInto(card);
+    return;
+  }
+  /*
+  const node_handle* cacheEntry = CT->find_old(CTsrch);
   if (cacheEntry) {
     mpz_object* answer;
     memcpy(&answer, cacheEntry+1, sizeof(mpz_object*));
     answer->copyInto(card);
     return;
   }
+  */
 
   // Initialize node reader
   node_reader* A = argF->initNodeReader(a, false);
@@ -605,13 +647,23 @@ void MEDDLY::card_mxd_mpz::compute(int k, node_handle a, mpz_object &card)
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->reset();
   CTsrch->writeNH(a);
-  const node_handle* cacheEntry = CT->find(CTsrch);
+  compute_table::search_result &cacheEntry = CT->find(CTsrch);
+  if (cacheEntry) {
+    void* P;
+    cacheEntry.read(P);
+    mpz_object* answer = (mpz_object*) P;
+    answer->copyInto(card);
+    return;
+  }
+  /*
+  const node_handle* cacheEntry = CT->find_old(CTsrch);
   if (cacheEntry) {
     mpz_object* answer;
     memcpy(&answer, cacheEntry+1, sizeof(mpz_object*));
     answer->copyInto(card);
     return;
   }
+  */
 
   // Initialize node reader
   node_reader* A = argF->initNodeReader(a, false);

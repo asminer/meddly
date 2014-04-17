@@ -65,10 +65,16 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
         CTsrch->writeNH(a);
         CTsrch->writeNH(b);
       }
-      const node_handle* cacheFind = CT->find(CTsrch);
+      compute_table::search_result& cacheFind = CT->find(CTsrch);
+      if (!cacheFind) return false;
+      c = resF->linkNode(cacheFind.readNH());
+      return true;
+/*
+      const node_handle* cacheFind = CT->find_old(CTsrch);
       if (0==cacheFind) return false;
       c = resF->linkNode(cacheFind[2]);
       return true;
+*/
     }
 
     inline void saveResult(node_handle a, node_handle b, node_handle c) {
@@ -125,10 +131,16 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
         CTsrch->writeNH(a);
         CTsrch->writeNH(b);
       }
-      const node_handle* cacheFind = CT->find(CTsrch);
+      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      if (!cacheFind) return false;
+      c = resF->linkNode(cacheFind.readNH());
+      return true;
+      /*
+      const node_handle* cacheFind = CT->find_old(CTsrch);
       if (0==cacheFind) return false;
       c = resF->linkNode(cacheFind[3]);
       return true;
+      */
     }
 
     inline void saveResult(int in, node_handle a, node_handle b, node_handle c) {
@@ -182,10 +194,16 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
         CTsrch->writeNH(a);
         CTsrch->writeNH(b);
       }
-      const node_handle* cacheFind = CT->find(CTsrch);
+      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      if (!cacheFind) return false;
+      c = resF->linkNode(cacheFind.readNH());
+      return true;
+      /*
+      const node_handle* cacheFind = CT->find_old(CTsrch);
       if (0==cacheFind) return false;
       c = resF->linkNode(cacheFind[3]);
       return true;
+      */
     }
 
     inline void saveResult(int k, node_handle a, node_handle b, node_handle c) {
@@ -259,11 +277,18 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
         CTsrch->write(bev);
         CTsrch->writeNH(b);
       }
-      const node_handle* cacheFind = CT->find(CTsrch);
+      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      if (!cacheFind) return false;
+      cacheFind.read(cev);
+      c = resF->linkNode(cacheFind.readNH());
+      return true;
+      /*
+      const node_handle* cacheFind = CT->find_old(CTsrch);
       if (0==cacheFind) return false;
       compute_table::readEV(cacheFind+4, cev);
       c = resF->linkNode(cacheFind[5]);
       return true;
+      */
     }
 
     inline void saveResult(int aev, node_handle a, int bev, node_handle b, int cev, node_handle c) {
@@ -325,11 +350,18 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
         CTsrch->write(bev);
         CTsrch->writeNH(b);
       }
-      const node_handle* cacheFind = CT->find(CTsrch);
+      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      if (!cacheFind) return false;
+      cacheFind.read(cev);
+      c = resF->linkNode(cacheFind.readNH());
+      return true;
+      /*
+      const node_handle* cacheFind = CT->find_old(CTsrch);
       if (0==cacheFind) return false;
       compute_table::readEV(cacheFind+4, cev);
       c = resF->linkNode(cacheFind[5]);
       return true;
+      */
     }
 
     inline void saveResult(float aev, node_handle a, float bev, node_handle b, float cev, node_handle c) {

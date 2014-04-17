@@ -67,10 +67,16 @@ class MEDDLY::mm_mult_op : public binary_operation {
       CTsrch->reset();
       CTsrch->writeNH(a);
       CTsrch->writeNH(b);
-      const node_handle* cacheFind = CT->find(CTsrch);
+      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      if (!cacheFind) return false;
+      c = resF->linkNode(cacheFind.readNH());
+      return true;
+      /*
+      const node_handle* cacheFind = CT->find_old(CTsrch);
       if (0==cacheFind) return false;
       c = resF->linkNode(cacheFind[2]);
       return true;
+      */
     }
     inline node_handle saveResult(node_handle a, node_handle b, node_handle c) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);

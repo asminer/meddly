@@ -119,10 +119,16 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   CTsrch->write(k);
   CTsrch->writeNH(a);
   CTsrch->writeNH(b);
-  const node_handle* cacheFind = CT->find(CTsrch);
+  compute_table::search_result &cacheFind = CT->find(CTsrch);
+  if (cacheFind) {
+    return resF->linkNode(cacheFind.readNH());
+  }
+  /*
+  const node_handle* cacheFind = CT->find_old(CTsrch);
   if (cacheFind) {
     return resF->linkNode(cacheFind[RESLT_INDEX]);
   }
+  */
 
   // build new result node
   int resultSize = resF->getLevelSize(k);
@@ -174,10 +180,16 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(int in, int k, node_handle a,
   CTsrch->write(k);
   CTsrch->writeNH(a);
   CTsrch->writeNH(b);
-  const node_handle* cacheFind = CT->find(CTsrch);
+  compute_table::search_result &cacheFind = CT->find(CTsrch);
+  if (cacheFind) {
+    return resF->linkNode(cacheFind.readNH());
+  }
+  /*
+  const node_handle* cacheFind = CT->find_old(CTsrch);
   if (cacheFind) {
     return resF->linkNode(cacheFind[RESLT_INDEX]);
   }
+  */
 
   // build new result node
   int resultSize = resF->getLevelSize(k);

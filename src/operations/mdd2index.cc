@@ -125,12 +125,20 @@ MEDDLY::mdd2index_operation
     MEDDLY_DCASSERT(CTsrch);
     CTsrch->reset();
     CTsrch->writeNH(a);
-    const node_handle* cacheEntry = CT->find(CTsrch);
+    compute_table::search_result &cacheEntry = CT->find(CTsrch);
+    if (cacheEntry) {
+      bdn = resF->linkNode(cacheEntry.readNH());
+      cacheEntry.read(bcard);
+      return;
+    }
+    /*
+    const node_handle* cacheEntry = CT->find_old(CTsrch);
     if (cacheEntry) {
       bdn = resF->linkNode(cacheEntry[1]);
       bcard = cacheEntry[2];
       return;
     }
+    */
   }
 
 #ifdef TRACE_ALL_OPS

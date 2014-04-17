@@ -2774,6 +2774,7 @@ class MEDDLY::compute_table {
       };
 
       //
+      // Something to search for in the CT.
       // This is an interface now!
       //
       class search_key {
@@ -2787,11 +2788,31 @@ class MEDDLY::compute_table {
           virtual void writeNH(node_handle nh) = 0;
           virtual void write(int i) = 0;
           virtual void write(float f) = 0;
-/*
-          virtual node_handle& key(int i) = 0;
-          virtual void setKeyEV(int i, int ev) = 0;
-          virtual void setKeyEV(int i, float ev) = 0;
-*/
+      };
+
+      //
+      // Result of a search
+      //
+      class search_result {
+          bool is_valid;
+
+        protected:
+          search_result();
+          virtual ~search_result();
+
+        public:
+          void setValid()     { is_valid = true; }
+          void setInvalid()   { is_valid = false; }
+
+        public:
+          inline operator bool() const { return is_valid; } 
+
+          virtual node_handle readNH() = 0;
+          virtual void read(int &i) = 0;
+          virtual void read(float &f) = 0;
+          virtual void read(long &l) = 0;
+          virtual void read(double &d) = 0;
+          virtual void read(void* &ptr) = 0;
       };
 
       class temp_entry {
@@ -2873,13 +2894,23 @@ class MEDDLY::compute_table {
       /// Initialize a search key for a given operation.
       virtual search_key* initializeSearchKey(operation* op) = 0;
 
+      // Old version
+
       /** Find an entry in the compute table based on the key provided.
           @param  key   Key to search for.
           @return       0, if not found;
                         otherwise, an integer array of size 
                         op->getCacheEntryLength()
       */
-      virtual const node_handle* find(const search_key *key) = 0;
+      // virtual const node_handle* find_old(const search_key *key) = 0;
+
+      // New version!
+
+      /** Find an entry in the compute table based on the key provided.
+          @param  key   Key to search for.
+          @return       An appropriate search_result.
+      */
+      virtual search_result& find(const search_key *key) = 0;
 
       /** Start a new compute table entry.
           The operation should "fill in" the values for the entry,
