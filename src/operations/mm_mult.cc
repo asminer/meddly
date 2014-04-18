@@ -62,26 +62,30 @@ class MEDDLY::mm_mult_op : public binary_operation {
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(FILE* strm, const node_handle* entryData) const;
 
-    inline bool findResult(node_handle a, node_handle b, node_handle &c) {
+    inline compute_table::search_key* 
+    findResult(node_handle a, node_handle b, node_handle &c) 
+    {
+      compute_table::search_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       CTsrch->writeNH(a);
       CTsrch->writeNH(b);
       compute_table::search_result &cacheFind = CT->find(CTsrch);
-      if (!cacheFind) return false;
+      if (!cacheFind) return CTsrch;
       c = resF->linkNode(cacheFind.readNH());
-      return true;
-      /*
-      const node_handle* cacheFind = CT->find_old(CTsrch);
-      if (0==cacheFind) return false;
-      c = resF->linkNode(cacheFind[2]);
-      return true;
-      */
+      doneCTkey(CTsrch);
+      return 0;
     }
-    inline node_handle saveResult(node_handle a, node_handle b, node_handle c) {
-      compute_table::entry_builder &entry = CT->startNewEntry(this);
+    inline node_handle saveResult(compute_table::search_key* Key, 
+      node_handle a, node_handle b, node_handle c) 
+    {
+      arg1->cacheNode(a);
+      arg2->cacheNode(b);
+      compute_table::entry_builder &entry = CT->startNewEntry(Key);
+      /*
       entry.writeKeyNH(arg1->cacheNode(a)); 
       entry.writeKeyNH(arg2->cacheNode(b));
+      */
       entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();
       return c;
@@ -180,7 +184,8 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
 
   // check the cache
   node_handle result = 0;
-  if (findResult(a, b, result)) return result;
+  compute_table::search_key* Key = findResult(a, b, result);
+  if (0==Key) return result;
 
   /**
    * Note: only one node builder can be used at a time for each level.
@@ -321,7 +326,7 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
 #ifdef TRACE_ALL_OPS
   printf("computed new mm_mult_mxd(%d, %d) = %d\n", a, b, result);
 #endif
-  return saveResult(a, b, result); 
+  return saveResult(Key, a, b, result); 
 }
 
 

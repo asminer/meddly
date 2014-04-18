@@ -113,6 +113,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   }
 
   // check compute table
+  compute_table::search_key* CTsrch = useCTkey();
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->reset();
   CTsrch->write(-1);
@@ -121,14 +122,9 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   CTsrch->writeNH(b);
   compute_table::search_result &cacheFind = CT->find(CTsrch);
   if (cacheFind) {
+    doneCTkey(CTsrch);
     return resF->linkNode(cacheFind.readNH());
   }
-  /*
-  const node_handle* cacheFind = CT->find_old(CTsrch);
-  if (cacheFind) {
-    return resF->linkNode(cacheFind[RESLT_INDEX]);
-  }
-  */
 
   // build new result node
   int resultSize = resF->getLevelSize(k);
@@ -150,11 +146,15 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   // reduce, save in compute table
   node_handle c = resF->createReducedNode(-1, nb);
 
-  compute_table::entry_builder &entry = CT->startNewEntry(this);
+  arg1F->cacheNode(a);
+  arg2F->cacheNode(b);
+  compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
+  /*
   entry.writeKey(-1);
   entry.writeKey(k);
   entry.writeKeyNH(arg1F->cacheNode(a));
   entry.writeKeyNH(arg2F->cacheNode(b));
+  */
   entry.writeResultNH(resF->cacheNode(c));
   CT->addEntry();
 
@@ -174,6 +174,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(int in, int k, node_handle a,
   if (0==a || 0==b) return 0;
 
   // check compute table
+  compute_table::search_key* CTsrch = useCTkey();
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->reset();
   CTsrch->write(in);
@@ -182,14 +183,9 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(int in, int k, node_handle a,
   CTsrch->writeNH(b);
   compute_table::search_result &cacheFind = CT->find(CTsrch);
   if (cacheFind) {
+    doneCTkey(CTsrch);
     return resF->linkNode(cacheFind.readNH());
   }
-  /*
-  const node_handle* cacheFind = CT->find_old(CTsrch);
-  if (cacheFind) {
-    return resF->linkNode(cacheFind[RESLT_INDEX]);
-  }
-  */
 
   // build new result node
   int resultSize = resF->getLevelSize(k);
@@ -211,11 +207,15 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(int in, int k, node_handle a,
   // reduce, save in compute table
   node_handle c = resF->createReducedNode(in, nb);
 
-  compute_table::entry_builder &entry = CT->startNewEntry(this);
+  arg1F->cacheNode(a);
+  arg2F->cacheNode(b);
+  compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
+  /*
   entry.writeKey(in);
   entry.writeKey(k);
   entry.writeKeyNH(arg1F->cacheNode(a));
   entry.writeKeyNH(arg2F->cacheNode(b));
+  */
   entry.writeResultNH(resF->cacheNode(c));
   CT->addEntry();
 

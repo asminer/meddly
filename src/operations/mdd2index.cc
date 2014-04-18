@@ -121,7 +121,9 @@ MEDDLY::mdd2index_operation
   MEDDLY_DCASSERT(aLevel <= k);
 
   // Check compute table
+  compute_table::search_key* CTsrch = 0;
   if (aLevel == k) {
+    CTsrch = useCTkey();
     MEDDLY_DCASSERT(CTsrch);
     CTsrch->reset();
     CTsrch->writeNH(a);
@@ -129,16 +131,9 @@ MEDDLY::mdd2index_operation
     if (cacheEntry) {
       bdn = resF->linkNode(cacheEntry.readNH());
       cacheEntry.read(bcard);
+      doneCTkey(CTsrch);
       return;
     }
-    /*
-    const node_handle* cacheEntry = CT->find_old(CTsrch);
-    if (cacheEntry) {
-      bdn = resF->linkNode(cacheEntry[1]);
-      bcard = cacheEntry[2];
-      return;
-    }
-    */
   }
 
 #ifdef TRACE_ALL_OPS
@@ -182,11 +177,14 @@ MEDDLY::mdd2index_operation
   MEDDLY_DCASSERT(0==dummy);
 
   // Add to compute table
-  compute_table::entry_builder &entry = CT->startNewEntry(this);
-  entry.writeKeyNH(argF->cacheNode(a));
-  entry.writeResultNH(resF->cacheNode(bdn));
-  entry.writeResult(bcard);
-  CT->addEntry();
+  if (CTsrch) {
+    argF->cacheNode(a);
+    compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
+    // entry.writeKeyNH(argF->cacheNode(a));
+    entry.writeResultNH(resF->cacheNode(bdn));
+    entry.writeResult(bcard);
+    CT->addEntry();
+  }
 }
 
 // ******************************************************************

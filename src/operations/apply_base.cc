@@ -84,8 +84,9 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
   node_handle result = 0;
   if (checkTerminals(a, b, result))
     return result;
-  if (findResult(a, b, result))
-    return result;
+
+  compute_table::search_key* Key = findResult(a, b, result);
+  if (0==Key) return result;
 
   // Get level information
   const int aLevel = arg1F->getNodeLevel(a);
@@ -115,7 +116,7 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
 
   // reduce and save result
   result = resF->createReducedNode(-1, nb);
-  saveResult(a, b, result);
+  saveResult(Key, a, b, result);
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(%d, %d) = %d\n", getName(), a, b, result);
@@ -184,8 +185,8 @@ MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b)
   if (checkTerminals(a, b, result))
     return result;
 
-  if (findResult(-1, a, b, result))
-    return result;
+  compute_table::search_key* Key = findResult(-1, a, b, result);
+  if (0==Key) return result;
 
   // Get level information
   const int aLevel = arg1F->getNodeLevel(a);
@@ -220,7 +221,7 @@ MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b)
 
   // reduce and save result
   result = resF->createReducedNode(-1, nb);
-  saveResult(-1, a, b, result);
+  saveResult(Key, -1, a, b, result);
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(%d, %d) = %d\n", getName(), a, b, result);
@@ -349,8 +350,8 @@ MEDDLY::generic_binbylevel_mxd
       return result;
   }
 
-  if (findResult(resultLevel, a, b, result))
-    return result;
+  compute_table::search_key* Key = findResult(resultLevel, a, b, result);
+  if (0==Key) return result;
 
   // Get level information
   const int aLevel = arg1F->getNodeLevel(a);
@@ -397,7 +398,8 @@ MEDDLY::generic_binbylevel_mxd
   // reduce and save result
   result = resF->createReducedNode(in, nb);
   if (resultLevel<0 && 1==nnz) canSaveResult = false;
-  if (canSaveResult) saveResult(resultLevel, a, b, result);
+  if (canSaveResult)  saveResult(Key, resultLevel, a, b, result);
+  else                doneCTkey(Key);
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
@@ -483,8 +485,9 @@ void MEDDLY::generic_binary_evplus
 {
   if (checkTerminals(aev, a, bev, b, cev, c))
     return;
-  if (findResult(aev, a, bev, b, cev, c))
-    return;
+
+  compute_table::search_key* Key = findResult(aev, a, bev, b, cev, c);
+  if (0==Key) return;
 
   // Get level information
   const int aLevel = arg1F->getNodeLevel(a);
@@ -526,7 +529,7 @@ void MEDDLY::generic_binary_evplus
   c = cl;
 
   // Add to CT
-  saveResult(aev, a, bev, b, cev, c);
+  saveResult(Key, aev, a, bev, b, cev, c);
 }
 
 
@@ -581,8 +584,9 @@ void MEDDLY::generic_binary_evtimes
 {
   if (checkTerminals(aev, a, bev, b, cev, c))
     return;
-  if (findResult(aev, a, bev, b, cev, c))
-    return;
+
+  compute_table::search_key* Key = findResult(aev, a, bev, b, cev, c);
+  if (0==Key) return;
 
   // Get level information
   const int aLevel = arg1F->getNodeLevel(a);
@@ -624,6 +628,6 @@ void MEDDLY::generic_binary_evtimes
   c = cl;
 
   // Add to CT
-  saveResult(aev, a, bev, b, cev, c);
+  saveResult(Key, aev, a, bev, b, cev, c);
 }
 

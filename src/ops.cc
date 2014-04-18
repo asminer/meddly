@@ -167,17 +167,25 @@ MEDDLY::operation::operation(const opname* n, int kl, int al)
     //
     // Initialize CT search structure
     //
-    CTsrch = CT->initializeSearchKey(this);
+    // CTsrch = CT->initializeSearchKey(this);
+
   } else {
     MEDDLY_DCASSERT(0==ans_length);
     CT = 0;
-    CTsrch = 0;
+    // CTsrch = 0;
   }
+  CT_free_keys = 0;
 }
 
 MEDDLY::operation::~operation()
 {
-  delete CTsrch;
+  while (CT_free_keys) {
+    compute_table::search_key* next = CT_free_keys->next;
+    delete CT_free_keys;
+    CT_free_keys = next;
+  }
+
+  // delete CTsrch;
   if (CT && (CT!=Monolithic_CT)) delete CT;
   // delete next;  // Seriously, WTF?
   if (oplist_index >= 0) {

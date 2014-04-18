@@ -2241,14 +2241,6 @@ class MEDDLY::expert_forest : public forest
   // abstract virtual, must be overridden.
   // 
   public:
-    /** "save" a node to a file.
-        Called by \a writeEdges(). 
-          @param  s     File stream
-          @param  nr    Node to write is stored here
-          @param  map   Translation to use on node handles.
-    virtual void writeNode(FILE* s, const node_reader& nr, 
-      const node_handle* map) const;
-    */
 
     /** Are the given edge values "duplicates".
         I.e., when determining if two nodes are duplicates,
@@ -2778,16 +2770,23 @@ class MEDDLY::compute_table {
       // This is an interface now!
       //
       class search_key {
+          operation* op;
         protected:
-          search_key();
+          search_key(operation* op);
         public:
           virtual ~search_key();
+
+          inline operation* getOp() const { return op; }
 
           // interface, for operations
           virtual void reset() = 0;
           virtual void writeNH(node_handle nh) = 0;
           virtual void write(int i) = 0;
           virtual void write(float f) = 0;
+
+        public:
+          /// Used for linked-list of recycled search keys in an operation.
+          search_key* next;
       };
 
       //
@@ -2825,9 +2824,11 @@ class MEDDLY::compute_table {
           virtual ~entry_builder();
           
         public:
+        /*
           virtual void writeKeyNH(node_handle) = 0;
           virtual void writeKey(int) = 0;
           virtual void writeKey(float) = 0;
+        */
 
           virtual void writeResultNH(node_handle) = 0;
           virtual void writeResult(int) = 0;
@@ -2835,16 +2836,6 @@ class MEDDLY::compute_table {
           virtual void writeResult(long) = 0;
           virtual void writeResult(double) = 0;
           virtual void writeResult(void*) = 0;
-
-          /*
-          virtual node_handle& key(int i) = 0;
-          virtual void setKeyEV(int i, int ev) = 0;
-          virtual void setKeyEV(int i, float ev) = 0;
-          virtual node_handle& result(int i) = 0;
-          virtual void setResultEV(int i, int ev) = 0;
-          virtual void setResultEV(int i, float ev) = 0;
-          virtual void copyResult(int i, void* data, size_t bytes) = 0;
-          */
       };
 
     public:
@@ -2877,13 +2868,13 @@ class MEDDLY::compute_table {
           @param  key   Key to search for.
           @return       An appropriate search_result.
       */
-      virtual search_result& find(const search_key *key) = 0;
+      virtual search_result& find(search_key *key) = 0;
 
       /** Start a new compute table entry.
           The operation should "fill in" the values for the entry,
           then call \a addEntry().
       */
-      virtual entry_builder& startNewEntry(operation* op) = 0;
+      virtual entry_builder& startNewEntry(search_key* k) = 0;
 
       /** Add the "current" new entry to the compute table.
           The entry may be specified by filling in the values 
@@ -2947,11 +2938,14 @@ class MEDDLY::operation {
     int key_length; 
     int ans_length; 
 
+    /// List of free search_keys
+    compute_table::search_key* CT_free_keys;
+
   protected:
     /// Compute table to use, if any.
     compute_table* CT;
     /// Struct for CT searches.
-    compute_table::search_key* CTsrch;
+    // compute_table::search_key* CTsrch;
     // for cache of operations.
     operation* next;
     // must stale compute table hits be discarded.
@@ -3048,6 +3042,25 @@ class MEDDLY::operation {
 
   protected:
     virtual bool isStaleEntry(const node_handle* entry) = 0;
+
+    inline compute_table::search_key* useCTkey() {
+      MEDDLY_DCASSERT(CT);
+      compute_table::search_key* ans;
+      if (CT_free_keys) {
+        ans = CT_free_keys;
+        CT_free_keys = ans->next;
+      } else {
+        ans = CT->initializeSearchKey(this);
+      }
+      return ans;
+    }
+
+  public:
+    inline void doneCTkey(compute_table::search_key* K) {
+      MEDDLY_DCASSERT(K);
+      K->next = CT_free_keys;
+      CT_free_keys = K;
+    }
 
   public:
     /// Removes the cache entry (in entryData[]) by informing the

@@ -51,24 +51,25 @@ class MEDDLY::compl_mdd : public unary_operation {
   protected:
     node_handle compute(node_handle a);
 
-    inline bool findResult(node_handle a, node_handle &b) {
+    inline compute_table::search_key* 
+    findResult(node_handle a, node_handle &b) 
+    {
+      compute_table::search_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       CTsrch->writeNH(a);
       compute_table::search_result &cacheFind = CT->find(CTsrch);
-      if (!cacheFind) return false;
+      if (!cacheFind) return CTsrch;
       b = resF->linkNode(cacheFind.readNH());
-      return true;
-      /*
-      const node_handle* cacheFind = CT->find_old(CTsrch);
-      if (0==cacheFind) return false;
-      b = resF->linkNode(cacheFind[1]);
-      return true;
-      */
+      doneCTkey(CTsrch);
+      return 0;
     }
-    inline node_handle saveResult(node_handle a, node_handle b) {
-      compute_table::entry_builder &entry = CT->startNewEntry(this);
-      entry.writeKeyNH(argF->cacheNode(a));
+    inline node_handle saveResult(compute_table::search_key* Key, 
+      node_handle a, node_handle b) 
+    {
+      argF->cacheNode(a);
+      compute_table::entry_builder &entry = CT->startNewEntry(Key);
+      // entry.writeKeyNH(argF->cacheNode(a));
       entry.writeResultNH(resF->cacheNode(b));
       CT->addEntry();
       return b;
@@ -116,7 +117,8 @@ MEDDLY::node_handle MEDDLY::compl_mdd::compute(node_handle a)
 
   // Check compute table
   node_handle b;
-  if (findResult(a, b)) return b;
+  compute_table::search_key* Key = findResult(a, b);
+  if (0==Key) return b;
 
   // Initialize node builder
   const int level = argF->getNodeLevel(a);
@@ -138,7 +140,7 @@ MEDDLY::node_handle MEDDLY::compl_mdd::compute(node_handle a)
   b = resF->createReducedNode(-1, nb);
 
   // Add to compute table
-  return saveResult(a, b);
+  return saveResult(Key, a, b);
 }
 
 
@@ -206,6 +208,7 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute(int in, int k, node_handle a)
     );
   }
   // Check compute table
+  compute_table::search_key* CTsrch = useCTkey();
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->reset();
   CTsrch->write(k);
@@ -216,17 +219,9 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute(int in, int k, node_handle a)
 #ifdef DEBUG_MXD_COMPL
     fprintf(stderr, "\tin CT:   compl_mxd(%d, %d) : %d\n", ht, a, ans);
 #endif
+    doneCTkey(CTsrch);
     return resF->linkNode(ans);
   }
-  /*
-  const node_handle* cacheFind = CT->find_old(CTsrch);
-  if (cacheFind) {
-#ifdef DEBUG_MXD_COMPL
-    fprintf(stderr, "\tin CT:   compl_mxd(%d, %d) : %d\n", ht, a, cacheFind[2]);
-#endif
-    return resF->linkNode(cacheFind[2]);
-  }
-  */
 
 #ifdef DEBUG_MXD_COMPL
   fprintf(stderr, "\tstarting compl_mxd(%d, %d)\n", ht, a);
@@ -267,11 +262,16 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute(int in, int k, node_handle a)
   node_handle result = resF->createReducedNode(in, nb);
   if (k<0 && 1==nnz) canSave = false;
   if (canSave) {
-    compute_table::entry_builder &entry = CT->startNewEntry(this);
+    argF->cacheNode(a);
+    compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
+    /*
     entry.writeKey(k);
     entry.writeKeyNH(argF->cacheNode(a));
+    */
     entry.writeResultNH(resF->cacheNode(result));
     CT->addEntry();
+  } else {
+    doneCTkey(CTsrch);
   }
   return result;
 }

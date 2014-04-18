@@ -51,24 +51,25 @@ class MEDDLY::copy_MT : public unary_operation {
   protected:
     virtual node_handle compute(node_handle a) = 0;
 
-    inline bool findResult(node_handle a, node_handle &b) {
+    inline compute_table::search_key* 
+    findResult(node_handle a, node_handle &b) 
+    {
+      compute_table::search_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       CTsrch->writeNH(a);
       compute_table::search_result &cacheFind = CT->find(CTsrch);
-      if (!cacheFind) return false;
+      if (!cacheFind) return CTsrch;
       b = resF->linkNode(cacheFind.readNH());
-      return true;
-      /*
-      const node_handle* cacheFind = CT->find_old(CTsrch);
-      if (0==cacheFind) return false;
-      b = resF->linkNode(cacheFind[1]);
-      return true;
-      */
+      doneCTkey(CTsrch);
+      return 0;
     }
-    inline node_handle saveResult(node_handle a, node_handle b) {
-      compute_table::entry_builder &entry = CT->startNewEntry(this);
-      entry.writeKeyNH(argF->cacheNode(a));
+    inline node_handle saveResult(compute_table::search_key* Key, 
+      node_handle a, node_handle b) 
+    {
+      argF->cacheNode(a);
+      compute_table::entry_builder &entry = CT->startNewEntry(Key);
+      // entry.writeKeyNH(argF->cacheNode(a));
       entry.writeResultNH(resF->cacheNode(b));
       CT->addEntry();
       return b;
@@ -147,7 +148,8 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeSkip(int in, node_handl
 
   // Check compute table
   node_handle b;
-  if (findResult(a, b)) return b;
+  compute_table::search_key* Key = findResult(a, b);
+  if (0==Key) return b;
 
   // Initialize node reader
   node_reader* A = argF->initNodeReader(a, false);
@@ -170,7 +172,7 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeSkip(int in, node_handl
   b = resF->createReducedNode(in, nb);
 
   // Add to compute table
-  return saveResult(a, b);
+  return saveResult(Key, a, b);
 }
 
 
@@ -193,7 +195,11 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
 
   // Check compute table
   node_handle b;
-  if (k == aLevel && k>0) if (findResult(a, b)) return b;
+  compute_table::search_key* Key = 0;
+  if (k == aLevel && k>0) {
+    Key = findResult(a, b);
+    if (0==Key) return b;
+  }
   int nextk;
   if (resF->isForRelations()) {
     nextk = (k>0) ? -k : -k-1;
@@ -230,7 +236,7 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
   b = resF->createReducedNode(in, nb);
 
   // Add to compute table
-  if (k == aLevel && k>0) saveResult(a, b);
+  if (Key) saveResult(Key, a, b);
   return b;
 }
 
@@ -286,7 +292,10 @@ namespace MEDDLY {
       void computeAll(int in, int k, node_handle a, node_handle &b, TYPE &bev);
 
     protected:
-      inline bool inCache(node_handle a, node_handle &b, TYPE &bev) {
+      inline compute_table::search_key* 
+      inCache(node_handle a, node_handle &b, TYPE &bev) 
+      {
+        compute_table::search_key* CTsrch = useCTkey();
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->reset();
         CTsrch->writeNH(a);
@@ -294,22 +303,18 @@ namespace MEDDLY {
         if (cacheFind) {
           cacheFind.read(bev);
           b = resF->linkNode(cacheFind.readNH());
-          return true;
+          doneCTkey(CTsrch);
+          return 0;
         }
-        /*
-        const node_handle* cacheFind = CT->find_old(CTsrch);
-        if (cacheFind) {
-          compute_table::readEV(cacheFind+1, bev);
-          b = resF->linkNode(cacheFind[2]);
-          return true;
-        }
-        */
-        return false;
+        return CTsrch;
       }
 
-      inline void addToCache(node_handle a, node_handle b, TYPE bev) {
-        compute_table::entry_builder &entry = CT->startNewEntry(this);
-        entry.writeKeyNH(argF->cacheNode(a));
+      inline void addToCache(compute_table::search_key* Key,
+        node_handle a, node_handle b, TYPE bev) 
+      {
+        argF->cacheNode(a);
+        compute_table::entry_builder &entry = CT->startNewEntry(Key);
+        // entry.writeKeyNH(argF->cacheNode(a));
         entry.writeResult(bev);
         entry.writeResultNH(resF->cacheNode(b));
         CT->addEntry();
@@ -334,7 +339,8 @@ void MEDDLY::copy_MT2EV<TYPE>
   }
 
   // Check compute table
-  if (inCache(a, b, bev)) return;
+  compute_table::search_key* Key = inCache(a, b, bev);
+  if (0==Key) return;
 
   // Initialize sparse node reader
   node_reader* A = argF->initNodeReader(a, false);
@@ -360,7 +366,7 @@ void MEDDLY::copy_MT2EV<TYPE>
   resF->createReducedNode(in, nb, bev, b);
 
   // Add to compute table
-  addToCache(a, b, bev);
+  addToCache(Key, a, b, bev);
 }
 
 template <typename TYPE>
@@ -378,8 +384,10 @@ void MEDDLY::copy_MT2EV<TYPE>
   const int aLevel = argF->getNodeLevel(a);
 
   // Check compute table
+  compute_table::search_key* Key = 0;
   if (k == aLevel && k>0) {
-    if (inCache(a, b, bev)) return;
+    Key = inCache(a, b, bev);
+    if (0==Key) return;
   }
 
   // What's below?
@@ -420,9 +428,7 @@ void MEDDLY::copy_MT2EV<TYPE>
   resF->createReducedNode(in, nb, bev, b);
 
   // Add to compute table
-  if (k == aLevel && k>0) {
-    addToCache(a, b, bev);
-  }
+  if (Key) addToCache(Key, a, b, bev);
 }
 
 // ******************************************************************
@@ -476,7 +482,10 @@ namespace MEDDLY {
       node_handle computeAll(int in, int k, TYPE ev, node_handle a);
 
     protected:
-      inline bool inCache(TYPE ev, node_handle a, node_handle &b) {
+      inline compute_table::search_key* 
+      inCache(TYPE ev, node_handle a, node_handle &b) 
+      {
+        compute_table::search_key* CTsrch = useCTkey();
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->reset();
         CTsrch->write(ev);
@@ -484,22 +493,21 @@ namespace MEDDLY {
         compute_table::search_result &cacheFind = CT->find(CTsrch);
         if (cacheFind) {
           b = resF->linkNode(cacheFind.readNH());
-          return true;
+          doneCTkey(CTsrch);
+          return 0;
         }
-        /*
-        const node_handle* cacheFind = CT->find_old(CTsrch);
-        if (cacheFind) {
-          b = resF->linkNode(cacheFind[2]);
-          return true;
-        }
-        */
-        return false;
+        return CTsrch;
       }
 
-      inline void addToCache(TYPE ev, node_handle a, node_handle b) {
-        compute_table::entry_builder &entry = CT->startNewEntry(this);
+      inline void addToCache(compute_table::search_key* Key, 
+        TYPE ev, node_handle a, node_handle b) 
+      {
+        argF->cacheNode(a);
+        compute_table::entry_builder &entry = CT->startNewEntry(Key);
+        /*
         entry.writeKey(ev);
         entry.writeKeyNH(argF->cacheNode(a));
+        */
         entry.writeResultNH(resF->cacheNode(b));
         CT->addEntry();
       }
@@ -522,7 +530,8 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
 
   // Check compute table
   node_handle b;
-  if (inCache(ev, a, b)) return b;
+  compute_table::search_key* Key = inCache(ev, a, b);
+  if (0==Key) return b;
 
   // Initialize sparse node reader
   node_reader* A = argF->initNodeReader(a, false);
@@ -546,7 +555,7 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   b = resF->createReducedNode(in, nb);
 
   // Add to compute table
-  addToCache(ev, a, b);
+  addToCache(Key, ev, a, b);
   return b;
 }
 
@@ -564,8 +573,10 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
 
   // Check compute table
   node_handle b;
+  compute_table::search_key* Key = 0;
   if (k == aLevel && k>0) {
-    if (inCache(ev, a, b)) return b;
+    Key = inCache(ev, a, b);
+    if (0==Key) return b;
   }
 
   // What's below?
@@ -608,9 +619,7 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   b = resF->createReducedNode(in, nb);
 
   // Add to compute table
-  if (k == aLevel && k>0) {
-    addToCache(ev, a, b);
-  }
+  if (Key) addToCache(Key, ev, a, b);
   return b;
 }
 
@@ -656,24 +665,27 @@ namespace MEDDLY {
       node_handle computeSkip(int in, node_handle a);
 
     protected:
-      inline bool findResult(node_handle a, node_handle &b) {
+      inline compute_table::search_key* 
+      findResult(node_handle a, node_handle &b) 
+      {
+        compute_table::search_key* CTsrch = useCTkey();
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->reset();
         CTsrch->writeNH(a);
         compute_table::search_result &cacheFind = CT->find(CTsrch);
-        if (!cacheFind) return false;
+        if (!cacheFind) return CTsrch;
         b = resF->linkNode(cacheFind.readNH());
-        return true;
-        /*
-        const node_handle* cacheFind = CT->find_old(CTsrch);
-        if (0==cacheFind) return false;
-        b = resF->linkNode(cacheFind[1]);
-        return true;
-        */
+        doneCTkey(CTsrch);
+        return 0;
       }
-      inline node_handle saveResult(node_handle a, node_handle b) {
-        compute_table::entry_builder &entry = CT->startNewEntry(this);
+      inline node_handle saveResult(compute_table::search_key* Key,
+        node_handle a, node_handle b) 
+      {
+        argF->cacheNode(a);
+        compute_table::entry_builder &entry = CT->startNewEntry(Key);
+        /*
         entry.writeKeyNH(argF->cacheNode(a));
+        */
         entry.writeResultNH(resF->cacheNode(b));
         CT->addEntry();
         return b;
@@ -693,7 +705,8 @@ MEDDLY::copy_EV2EV_fast<INTYPE,OUTTYPE>::computeSkip(int in, node_handle a)
 
   // Check compute table
   node_handle b;
-  if (findResult(a, b)) return b;
+  compute_table::search_key* Key = findResult(a, b);
+  if (0==Key) return b;
 
   // Initialize node reader
   node_reader* A = argF->initNodeReader(a, false);
@@ -723,7 +736,7 @@ MEDDLY::copy_EV2EV_fast<INTYPE,OUTTYPE>::computeSkip(int in, node_handle a)
   // bv should be the redundant/identity value
 
   // Add to compute table
-  return saveResult(a, b);
+  return saveResult(Key, a, b);
 }
 
 
@@ -781,8 +794,10 @@ namespace MEDDLY {
         OUTTYPE &bv, node_handle &bn);
 
     protected:
-      inline bool inCache(INTYPE av, node_handle an, OUTTYPE &bv, node_handle &bn) 
+      inline compute_table::search_key* 
+      inCache(INTYPE av, node_handle an, OUTTYPE &bv, node_handle &bn) 
       {
+        compute_table::search_key* CTsrch = useCTkey();
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->reset();
         CTsrch->write(av);
@@ -791,24 +806,21 @@ namespace MEDDLY {
         if (cacheFind) {
           cacheFind.read(bv);
           bn = resF->linkNode(cacheFind.readNH());
-          return true;
+          doneCTkey(CTsrch);
+          return 0;
         }
-        /*
-        const node_handle* cacheFind = CT->find_old(CTsrch);
-        if (cacheFind) {
-          compute_table::readEV(cacheFind+2, bv);
-          bn = resF->linkNode(cacheFind[3]);
-          return true;
-        }
-        */
-        return false;
+        return CTsrch;
       }
 
-      inline void addToCache(INTYPE av, node_handle an, OUTTYPE bv, node_handle &bn) 
+      inline void addToCache(compute_table::search_key* Key, 
+        INTYPE av, node_handle an, OUTTYPE bv, node_handle &bn) 
       {
-        compute_table::entry_builder &entry = CT->startNewEntry(this);
+        argF->cacheNode(an);
+        compute_table::entry_builder &entry = CT->startNewEntry(Key);
+        /*
         entry.writeKey(av);
         entry.writeKey(argF->cacheNode(an));
+        */
         entry.writeResult(bv);
         entry.writeResultNH(resF->cacheNode(bn));
         CT->addEntry();
@@ -837,8 +849,10 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
   const int aLevel = argF->getNodeLevel(an);
 
   // Check compute table
+  compute_table::search_key* Key = 0;
   if (k == aLevel && k>0) {
-    if (inCache(av, an, bv, bn)) return;
+    Key = inCache(av, an, bv, bn);
+    if (0==Key) return;
   }
 
   // What's below?
@@ -883,9 +897,7 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
   resF->createReducedNode(in, nb, bv, bn);
 
   // Add to compute table
-  if (k == aLevel && k>0) {
-    addToCache(av, an, bv, bn);
-  }
+  if (Key) addToCache(Key, av, an, bv, bn);
 }
 
 // ******************************************************************
