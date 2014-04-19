@@ -42,6 +42,9 @@ class MEDDLY::evmdd_plusint : public evmdd_forest {
           readValue(p, ev);
           return (0==ev);
         }
+        static inline int getRedundantEdge() {
+          return 0;
+        }
         static inline int apply(int a, int b) {
           return a+b;
         }

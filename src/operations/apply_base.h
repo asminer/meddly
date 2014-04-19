@@ -300,6 +300,9 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
     virtual void compute(float aev, node_handle a, float bev, node_handle b, 
       float& cev, node_handle &c);
 
+    virtual void compute(int in, int k, float aev, node_handle a,
+      float bev, node_handle b, float& cev, node_handle& c);
+
   protected:
     inline bool findResult(float aev, node_handle a, float bev, node_handle b, 
       float& cev, node_handle &c) 
@@ -322,7 +325,8 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
       return true;
     }
 
-    inline void saveResult(float aev, node_handle a, float bev, node_handle b, float cev, node_handle c) {
+    inline void saveResult(float aev, node_handle a, float bev, node_handle b,
+      float cev, node_handle c) {
       compute_table::temp_entry &entry = CT->startNewEntry(this);
       if (can_commute && a > b) {
         entry.setKeyEV(0, bev);
@@ -343,8 +347,8 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
   protected:
     // If terminal condition is reached, returns true and the result in c.
     // Must be provided in derived classes.
-    virtual bool checkTerminals(float aev, node_handle a, float bev, node_handle b, 
-      float &cev, node_handle &c) = 0;
+    virtual bool checkTerminals(float aev, node_handle a,
+      float bev, node_handle b, float &cev, node_handle &c) = 0;
 };
 
 

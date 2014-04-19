@@ -42,6 +42,8 @@
 
 #include "forests/evmdd_plusint.h"
 #include "forests/evmdd_timesreal.h"
+
+#include "forests/evmxd_timesreal.h"
 #endif
 
 // #define DEBUG_CLEANUP
@@ -264,9 +266,15 @@ MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t,
       break;
 
     case forest::EVTIMES:
-      if (forest::REAL != t) throw error(error::TYPE_MISMATCH);
-      if (rel)  throw error(error::NOT_IMPLEMENTED);
-      else      f = new evmdd_timesreal(slot, this, p);
+#if 0
+      if (forest::REAL != t || !rel ||
+        p.reduction != forest::policies::IDENTITY_REDUCED)
+        throw error(error::TYPE_MISMATCH);
+#else
+      if (forest::REAL != t || !rel)
+        throw error(error::TYPE_MISMATCH);
+#endif
+      f = new evmxd_timesreal(slot, this, p);
       break;
 
     default:

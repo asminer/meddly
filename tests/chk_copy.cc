@@ -34,6 +34,7 @@
 #define CHECK_ALL_MTMXDS
 #define CHECK_ALL_INTMDDS
 #define CHECK_ALL_REALMDDS
+#define CHECK_ALL_REALMXDS
 
 const int TERMS = 20;
 
@@ -123,6 +124,7 @@ void buildRandomFunc(long s, int terms, dd_edge &out)
     }
 
     out += temp;
+
   } // for i
 
   // cleanup
@@ -236,13 +238,13 @@ void testCopy(forest* srcF, forest* destF)
         printf("failed!\n\n");
   
         printf("Source (first forest):\n");
-        srcE.show(stdout, 2);
+        srcE.show(stdout, 3);
   
         printf("Destination (should get):\n");
-        destE.show(stdout, 2);
+        destE.show(stdout, 3);
 
         printf("Copy (built from source):\n");
-        copyE.show(stdout, 2);
+        copyE.show(stdout, 3);
         exit(1);
       }
 
@@ -342,10 +344,26 @@ void addRealMDDforests(int& i, domain* D, forest** list)
   // TBD
 }
 
+void addRealMXDforests(int& i, domain* D, forest** list)
+{
+  addMXDforests(D, list, i, forest::EVTIMES, forest::REAL);
+  addMXDforests(D, list, i, forest::MULTI_TERMINAL, forest::REAL);
+  // TBD - these are not supported yet
+//  addMXDforests(D, list, i, forest::EVPLUS, forest::REAL);
+  // TBD
+}
+
 int makeRealMDDforests(domain* D, forest** list)
 {
   int i = 0;
   addRealMDDforests(i, D, list);
+  return i;
+}
+
+int makeRealMXDforests(domain* D, forest** list)
+{
+  int i = 0;
+  addRealMXDforests(i, D, list);
   return i;
 }
 
@@ -437,7 +455,7 @@ int main(int argc, const char** argv)
 #endif
 
   //
-  // MD and EV part 2
+  // MT and EV part 2
   // (real only)
   //
 
@@ -445,6 +463,25 @@ int main(int argc, const char** argv)
   printf("Checking all possible copies for real MDD forests\n");
   slen = makeRealMDDforests(myd, srcs);
   dlen = makeRealMDDforests(myd, dests);
+
+  for (int i=0; i<slen; i++)
+    for (int j=0; j<dlen; j++)
+      testCopy(srcs[i], dests[j]);
+
+  clearForests(srcs, slen);
+  clearForests(dests, dlen);
+  printf("\n");
+#endif
+
+  //
+  // MT and EV part 3
+  // (real only)
+  //
+
+#ifdef CHECK_ALL_REALMXDS
+  printf("Checking all possible copies for real MXD forests\n");
+  slen = makeRealMXDforests(myd, srcs);
+  dlen = makeRealMXDforests(myd, dests);
 
   for (int i=0; i<slen; i++)
     for (int j=0; j<dlen; j++)

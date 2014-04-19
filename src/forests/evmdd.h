@@ -158,7 +158,7 @@ namespace MEDDLY {
         //
         if (0==k) {
           ev = term(start);
-          for (int i=start; i<stop; i++) {
+          for (int i=start+1; i<stop; i++) {
             OPERATION::unionEq(ev, term(i));
           }
           ed = expert_forest::bool_Tencoder::value2handle(true);

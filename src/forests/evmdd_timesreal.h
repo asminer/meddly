@@ -44,7 +44,7 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
           return !notClose(ev, 1.0);
         }
         static inline double apply(double a, double b) {
-          return a+b;
+          return a*b;
         }
         static inline void makeEmptyEdge(float &ev, node_handle &ep) {
           ev = 0;

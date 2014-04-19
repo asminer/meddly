@@ -2068,11 +2068,13 @@ class MEDDLY::expert_forest : public forest
           @param  node    Downward pointer to use.
           @param  full    Use a full reader or sparse.
     */
-    void initRedundantReader(node_reader &nr, int k, node_handle node, bool full)
-    const;
+    void initRedundantReader(node_reader &nr, int k, node_handle node,
+      bool full) const;
 
     /// Allocate and initialize a redundant node reader.
-    inline node_reader* initRedundantReader(int k, node_handle node, bool full) const {
+    inline node_reader* initRedundantReader(int k, node_handle node,
+      bool full) const
+    {
       node_reader* nr = node_reader::useReader();
       MEDDLY_DCASSERT(nr);
       initRedundantReader(*nr, k, node, full);
@@ -2093,8 +2095,32 @@ class MEDDLY::expert_forest : public forest
       bool full) const;
 
     /// Allocate and initialize a redundant node reader.
-    inline node_reader* initRedundantReader(int k, int ev, node_handle nd, bool full) 
-    const {
+    inline node_reader* initRedundantReader(int k, int ev, node_handle nd,
+      bool full) const
+    {
+      node_reader* nr = node_reader::useReader();
+      MEDDLY_DCASSERT(nr);
+      initRedundantReader(*nr, k, ev, nd, full);
+      return nr;
+    }
+
+    /** Initialize a redundant node reader.
+        Use for edge-valued forests, whose edge values
+        require a single float slot.
+        For convenience.
+          @param  nr      Node reader to fill.
+          @param  k       Level that was skipped.
+          @param  ev      Edge value to use.
+          @param  node    Downward pointer to use.
+          @param  full    Use a full reader or sparse.
+    */
+    void initRedundantReader(node_reader &nr, int k, float ev,
+      node_handle node, bool full) const;
+
+    /// Allocate and initialize a redundant node reader.
+    inline node_reader* initRedundantReader(int k, float ev,
+      node_handle nd, bool full) const
+    {
       node_reader* nr = node_reader::useReader();
       MEDDLY_DCASSERT(nr);
       initRedundantReader(*nr, k, ev, nd, full);
@@ -2110,8 +2136,8 @@ class MEDDLY::expert_forest : public forest
           @param  n       Downward pointer to use.
           @param  f       Use a full reader or sparse.
     */
-    void initIdentityReader(node_reader &nr, int k, int i, node_handle n, bool f) 
-    const;
+    void initIdentityReader(node_reader &nr, int k, int i, node_handle n,
+      bool f) const;
 
     /** Initialize an identity node reader.
         Use for edge-valued forests, whose edge values
@@ -2124,8 +2150,8 @@ class MEDDLY::expert_forest : public forest
           @param  n       Downward pointer to use.
           @param  f       Use a full reader or sparse.
     */
-    void initIdentityReader(node_reader &nr, int k, int i, int ev, node_handle n, 
-      bool f) const;
+    void initIdentityReader(node_reader &nr, int k, int i, int ev,
+      node_handle n, bool f) const;
 
     /// Allocate and initialize an identity node reader.
     inline node_reader* initIdentityReader(int k, int i, node_handle node, 
@@ -2134,6 +2160,40 @@ class MEDDLY::expert_forest : public forest
       node_reader* nr = node_reader::useReader();
       MEDDLY_DCASSERT(nr);
       initIdentityReader(*nr, k, i, node, full);
+      return nr;
+    }
+
+    /// Allocate and initialize an identity node reader.
+    inline node_reader* initIdentityReader(int k, int i, int ev, node_handle nd,
+      bool full) const
+    {
+      node_reader* nr = node_reader::useReader();
+      MEDDLY_DCASSERT(nr);
+      initIdentityReader(*nr, k, i, ev, nd, full);
+      return nr;
+    }
+
+    /** Initialize an identity node reader.
+        Use for edge-valued forests, whose edge values
+        require a single float slot.
+        For convenience.
+          @param  nr      Node reader to fill.
+          @param  k       Level that was skipped.
+          @param  i       Index of identity reduction
+          @param  ev      Edge value.
+          @param  n       Downward pointer to use.
+          @param  f       Use a full reader or sparse.
+    */
+    void initIdentityReader(node_reader &nr, int k, int i, float ev,
+      node_handle n, bool f) const;
+
+    /// Allocate and initialize an identity node reader.
+    inline node_reader* initIdentityReader(int k, int i, float ev,
+      node_handle nd, bool full) const
+    {
+      node_reader* nr = node_reader::useReader();
+      MEDDLY_DCASSERT(nr);
+      initIdentityReader(*nr, k, i, ev, nd, full);
       return nr;
     }
 
