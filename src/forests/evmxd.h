@@ -485,7 +485,7 @@ namespace MEDDLY {
           T total_val;
           if (0 == dc_ptr) {
             total_val = these_val;
-            total_ptr = F->linkNode(these_val);
+            total_ptr = F->linkNode(these_ptr);
           } else if (0 == these_val) {
             total_val = dc_val;
             total_ptr = F->linkNode(dc_ptr);
