@@ -218,13 +218,14 @@ MEDDLY::plus_evtimes::plus_evtimes(const binary_opname* opcode,
 bool MEDDLY::plus_evtimes::checkTerminals(float aev, node_handle a, 
   float bev, node_handle b, float& cev, node_handle& c)
 {
-  if (a == -1 && b == -1) {
-    c = -1; cev = aev + bev;
-    return true;
-  }
-  if (0 == a && 0 == b) {
-    c = 0; 
-    cev = 0;
+  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
+    if (0 == a) {
+      c = b;
+      cev = bev;
+    } else {
+      c = a;
+      if (0 == b) cev = aev; else cev = aev + bev;
+    }
     return true;
   }
   if (0 == a) {

@@ -26,7 +26,7 @@
 #include "apply_base.h"
 
 // #define TRACE_ALL_OPS
-// #define DISABLE_CACHE 1
+// #define DISABLE_CACHE
 
 // ******************************************************************
 // *                                                                *
@@ -576,7 +576,6 @@ void MEDDLY::generic_binary_evtimes
 #endif
 }
 
-
 void MEDDLY::generic_binary_evtimes
 ::compute(float aev, node_handle a, float bev, node_handle b, 
   float& cev, node_handle& c)
@@ -623,7 +622,6 @@ void MEDDLY::generic_binary_evtimes
         ev, ed);
     nb.d(i) = ed;
     nb.setEdge(i, ev);
-    MEDDLY_DCASSERT(ed == 0 || ev > 0.0f);
   }
 
   // cleanup
@@ -688,7 +686,6 @@ void MEDDLY::generic_binary_evtimes
         ev, ed);
     nb.d(i) = ed;
     nb.setEdge(i, ev);
-    MEDDLY_DCASSERT(ed == 0 || ev > 0.0f);
   }
 
   // cleanup

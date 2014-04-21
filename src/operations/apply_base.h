@@ -310,7 +310,7 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
       if (can_commute && a > b) {
         CTsrch.setKeyEV(0, bev);
         CTsrch.key(1) = b;
-        CTsrch.setKeyEV(2, bev);
+        CTsrch.setKeyEV(2, aev);
         CTsrch.key(3) = a;
       } else {
         CTsrch.setKeyEV(0, aev);
