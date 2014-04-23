@@ -91,6 +91,7 @@ bool MEDDLY::evmxd_timesreal::isIdentityEdge(const node_builder &nb, int i) cons
 
 void MEDDLY::evmxd_timesreal::normalize(node_builder &nb, float& ev) const
 {
+  ev = 0.0f;
   int index = -1;
   int stop = nb.isSparse() ? nb.getNNZs() : nb.getSize();
   for (int i=0; i<stop; i++) {
@@ -103,8 +104,12 @@ void MEDDLY::evmxd_timesreal::normalize(node_builder &nb, float& ev) const
     if (0==nb.d(i)) continue;
     float temp;
     nb.getEdge(i, temp);
-    temp /= ev;
-    nb.setEdge(i, temp);
+    if (OP::notClose(0.0f, temp)) {
+      temp = double(temp) / ev;
+      nb.setEdge(i, temp);
+    } else {
+      nb.setEdge(i, 0.0f);
+    }
   }
 }
 
