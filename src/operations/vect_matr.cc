@@ -135,8 +135,8 @@ void MEDDLY::VM_evplus_mt::compute(int k, double* y, node_handle y_ind,
   }
 
   // It should be impossible for an indexing function to skip levels, right?   
-  MEDDLY_DCASSERT(fx->getNodeHeight(x_ind) == k);
-  MEDDLY_DCASSERT(fy->getNodeHeight(y_ind) == k);
+  MEDDLY_DCASSERT(fx->getNodeLevel(x_ind) == k);
+  MEDDLY_DCASSERT(fy->getNodeLevel(y_ind) == k);
   int aLevel = fA->getNodeLevel(a);
 
   //
@@ -303,8 +303,8 @@ void MEDDLY::MV_evplus_mt::compute(int k, double* y, node_handle y_ind,
   }
 
   // It should be impossible for an indexing function to skip levels, right?   
-  MEDDLY_DCASSERT(fx->getNodeHeight(x_ind) == k);
-  MEDDLY_DCASSERT(fy->getNodeHeight(y_ind) == k);
+  MEDDLY_DCASSERT(fx->getNodeLevel(x_ind) == k);
+  MEDDLY_DCASSERT(fy->getNodeLevel(y_ind) == k);
   int aLevel = fA->getNodeLevel(a);
 
   //

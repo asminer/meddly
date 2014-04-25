@@ -48,6 +48,7 @@ class MEDDLY::ev_forest : public expert_forest {
     virtual node_handle readTerminal(FILE* s);
 
   public:
+
     template <class OPERATION>
     inline bool isRedundantTempl(const node_builder &nb) const {
       if (isQuasiReduced()) return false;

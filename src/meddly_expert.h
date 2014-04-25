@@ -1721,7 +1721,9 @@ class MEDDLY::expert_forest : public forest
     /** Get the node's height.
         For convenience.  Height is the total
         number of levels until terminal nodes.
+        OBSOLETE.  Should use getNodeLevel() instead.
     */
+    /*
     inline int getNodeHeight(node_handle p) const {
       if (isForRelations()) {
         int k = getNodeLevel(p);
@@ -1730,6 +1732,7 @@ class MEDDLY::expert_forest : public forest
         return getNodeLevel(p);
       }
     }
+    */
 
     /// Get the cardinality of an Index Set.
     inline int getIndexSetCardinality(node_handle node) const {
@@ -2376,6 +2379,24 @@ class MEDDLY::expert_forest : public forest
     */
     virtual bool isIdentityEdge(const node_builder &nb, int i) const = 0;
         
+
+    /**
+        Build an iterator.
+        Used by class enumerator.
+    */
+    virtual enumerator::iterator* makeFullIter() const = 0;
+
+    /**
+        Build an iterator with a fixed row.
+        Default behavior - throw an "INVALID_FOREST" error.
+    */
+    virtual enumerator::iterator* makeFixedRowIter() const;
+
+    /**
+        Build an iterator with a fixed column.
+        Default behavior - throw an "INVALID_FOREST" error.
+    */
+    virtual enumerator::iterator* makeFixedColumnIter() const;
 
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

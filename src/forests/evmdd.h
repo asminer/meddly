@@ -47,7 +47,7 @@ class MEDDLY::evmdd_forest : public ev_forest {
       f.getEdgeValue(val);
       while (!isTerminalNode(node)) {
         TYPE ev;
-        getDownPtr(node, vlist[getNodeHeight(node)], ev, node);
+        getDownPtr(node, vlist[getNodeLevel(node)], ev, node);
         val = (node) ? OPERATION::apply(val, ev) : ev;
       }
     }

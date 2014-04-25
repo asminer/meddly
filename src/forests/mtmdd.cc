@@ -27,3 +27,78 @@ MEDDLY::mtmdd_forest
 {
   // anything to construct?
 }
+
+// ******************************************************************
+// *                                                                *
+// *              mtmdd_forest::mtmdd_iterator methods              *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::mtmdd_forest::mtmdd_iterator::mtmdd_iterator(const expert_forest *F)
+ : mt_iterator(F)
+{
+}
+
+MEDDLY::mtmdd_forest::mtmdd_iterator::~mtmdd_iterator()
+{
+}
+
+bool MEDDLY::mtmdd_forest::mtmdd_iterator::start(const dd_edge &e)
+{
+  if (F != e.getForest()) {
+    throw error(error::FOREST_MISMATCH);
+  }
+  return first(maxLevel, e.getNode());
+}
+
+bool MEDDLY::mtmdd_forest::mtmdd_iterator::next()
+{
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(!F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
+
+  int k;
+  node_handle down = 0;
+  for (k=1; k<=maxLevel; k++) {
+    nzp[k]++;
+    if (nzp[k] < path[k].getNNZs()) {
+      index[k] = path[k].i(nzp[k]);
+      down = path[k].d(nzp[k]);
+      MEDDLY_DCASSERT(down);
+      break;
+    }
+  }
+  level_change = k;
+  if (k>maxLevel) {
+    return false;
+  }
+
+  return first(k-1, down);
+}
+
+bool MEDDLY::mtmdd_forest::mtmdd_iterator::first(int k, node_handle down)
+{
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(!F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
+
+  if (0==down) return false;
+
+  for ( ; k; k--) {
+    MEDDLY_DCASSERT(down);
+    int kdn = F->getNodeLevel(down);
+    MEDDLY_DCASSERT(kdn <= k);
+    if (kdn < k)  F->initRedundantReader(path[k], k, down, false);
+    else          F->initNodeReader(path[k], down, false);
+    nzp[k] = 0;
+    index[k] = path[k].i(0);
+    down = path[k].d(0);
+  }
+  // save the terminal value
+  index[0] = down;
+  return true;
+}

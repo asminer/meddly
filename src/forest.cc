@@ -1428,6 +1428,17 @@ bool MEDDLY::expert_forest
   throw error(error::TYPE_MISMATCH);
 }
 
+MEDDLY::enumerator::iterator* MEDDLY::expert_forest::makeFixedRowIter() const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+MEDDLY::enumerator::iterator*
+MEDDLY::expert_forest::makeFixedColumnIter() const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
 const char* MEDDLY::expert_forest::codeChars() const
 {
   return "unknown dd";

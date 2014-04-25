@@ -157,6 +157,105 @@ const char* MEDDLY::evmdd_plusint::codeChars() const
 // ******************************************************************
 // *                                                                *
 // *                                                                *
+// *            evmdd_plusint::evpimdd_iterator  methods            *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::evmdd_plusint::evpimdd_iterator::evpimdd_iterator(const expert_forest *F)
+: iterator(F)
+{
+  int N = F->getNumVariables();
+  acc_evs = new long[N+1];
+}
+
+MEDDLY::evmdd_plusint::evpimdd_iterator::~evpimdd_iterator()
+{
+  delete[] acc_evs;
+}
+
+void MEDDLY::evmdd_plusint::evpimdd_iterator::getValue(int &tv) const
+{
+  MEDDLY_DCASSERT(acc_evs);
+  tv = acc_evs[0];
+}
+
+bool MEDDLY::evmdd_plusint::evpimdd_iterator::start(const dd_edge &e)
+{
+  if (F != e.getForest()) {
+    throw error(error::FOREST_MISMATCH);
+  }
+
+  int ev;
+  e.getEdgeValue(ev);
+  acc_evs[maxLevel] = ev;
+
+  return first(maxLevel, e.getNode());
+}
+
+bool MEDDLY::evmdd_plusint::evpimdd_iterator::next()
+{
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(!F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
+  MEDDLY_DCASSERT(acc_evs);
+
+  int k;
+  node_handle down = 0;
+  for (k=1; k<=maxLevel; k++) {
+    nzp[k]++;
+    if (nzp[k] < path[k].getNNZs()) {
+      index[k] = path[k].i(nzp[k]);
+      down = path[k].d(nzp[k]);
+      MEDDLY_DCASSERT(down);
+      int ev;
+      path[k].getEdge(nzp[k], ev);
+      acc_evs[k-1] = acc_evs[k] + ev;
+      break;
+    }
+  }
+  level_change = k;
+  if (k>maxLevel) {
+    return false;
+  }
+
+  return first(k-1, down);
+}
+
+bool MEDDLY::evmdd_plusint::evpimdd_iterator::first(int k, node_handle down)
+{
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(!F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
+  MEDDLY_DCASSERT(acc_evs);
+
+  if (0==down) return false;
+
+  for ( ; k; k--) {
+    MEDDLY_DCASSERT(down);
+    int kdn = F->getNodeLevel(down);
+    MEDDLY_DCASSERT(kdn <= k);
+    if (kdn < k)  F->initRedundantReader(path[k], k, 0, down, false);
+    else          F->initNodeReader(path[k], down, false);
+    nzp[k] = 0;
+    index[k] = path[k].i(0);
+    down = path[k].d(0);
+    int ev;
+    path[k].getEdge(0, ev);
+    acc_evs[k-1] = acc_evs[k] + ev;
+  }
+  // save the terminal value
+  index[0] = down;
+  return true;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
 // *                    evmdd_index_set  methods                    *
 // *                                                                *
 // *                                                                *

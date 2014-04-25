@@ -21,6 +21,13 @@
 
 #include "evmxd_timesreal.h"
 
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                    evmxd_timesreal  methods                    *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
 
 MEDDLY::evmxd_timesreal::evmxd_timesreal(int dsl, domain *d, const policies &p)
  : evmxd_forest(dsl, d, REAL, EVTIMES, p)
@@ -133,3 +140,387 @@ const char* MEDDLY::evmxd_timesreal::codeChars() const
   return "dd_etxr";
 }
 
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *           evmxd_timesreal::evtrmxd_baseiter  methods           *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::evmxd_timesreal::evtrmxd_baseiter::evtrmxd_baseiter(const expert_forest *F)
+: iterator(F)
+{
+  int N = F->getNumVariables();
+  raw_acc_evs = new double[2*N+1];
+  acc_evs = raw_acc_evs + N;
+}
+
+MEDDLY::evmxd_timesreal::evtrmxd_baseiter::~evtrmxd_baseiter()
+{
+  delete[] raw_acc_evs;
+}
+
+void MEDDLY::evmxd_timesreal::evtrmxd_baseiter::getValue(float &tv) const
+{
+  MEDDLY_DCASSERT(acc_evs);
+  tv = acc_evs[0];
+}
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *           evmxd_timesreal::evtrmxd_iterator  methods           *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+bool MEDDLY::evmxd_timesreal::evtrmxd_iterator::start(const dd_edge &e)
+{
+  if (F != e.getForest()) {
+    throw error(error::FOREST_MISMATCH);
+  }
+
+  MEDDLY_DCASSERT(acc_evs);
+  float ev;
+  e.getEdgeValue(ev);
+  acc_evs[maxLevel] = ev;
+
+  return first(maxLevel, e.getNode());
+}
+
+bool MEDDLY::evmxd_timesreal::evtrmxd_iterator::next()
+{
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
+  MEDDLY_DCASSERT(acc_evs);
+
+  int k = -1;
+  node_handle down = 0;
+  for (;;) { 
+    nzp[k]++;
+    if (nzp[k] < path[k].getNNZs()) {
+      index[k] = path[k].i(nzp[k]);
+      down = path[k].d(nzp[k]);
+      MEDDLY_DCASSERT(down);
+      float ev;
+      path[k].getEdge(nzp[k], ev);
+      acc_evs[downLevel(k)] = acc_evs[k] * ev;
+      break;
+    }
+    if (maxLevel == k) {
+      level_change = k+1;
+    }
+    k = upLevel(k);
+  } // infinite loop
+  level_change = k;
+
+  return first( (k>0) ? -k : -k-1, down);
+}
+
+bool MEDDLY::evmxd_timesreal::evtrmxd_iterator::first(int k, node_handle down)
+{
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
+  MEDDLY_DCASSERT(acc_evs);
+
+  if (0==down) return false;
+
+  bool isFully = F->isFullyReduced();
+
+  for ( ; k; k = downLevel(k) ) {
+    MEDDLY_DCASSERT(down);
+    int kdn = F->getNodeLevel(down);
+    MEDDLY_DCASSERT(!isLevelAbove(kdn, k));
+
+    if (isLevelAbove(k, kdn)) {
+      if (k>0 || isFully) {
+        F->initRedundantReader(path[k], k, float(1), down, false);
+      } else {
+        F->initIdentityReader(path[k], k, index[-k], float(1), down, false);
+      }
+    } else {
+      F->initNodeReader(path[k], down, false);
+    }
+    nzp[k] = 0;
+    index[k] = path[k].i(0);
+    down = path[k].d(0);
+    float ev;
+    path[k].getEdge(0, ev);
+    acc_evs[downLevel(k)] = acc_evs[k] * ev;
+  }
+  // save the terminal value
+  index[0] = down;
+  return true;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *         evmxd_timesreal::evtrmxd_fixedrow_iter methods         *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+bool MEDDLY::evmxd_timesreal::evtrmxd_fixedrow_iter
+::start(const dd_edge &e, const int* minterm)
+{
+  if (F != e.getForest()) {
+    throw error(error::FOREST_MISMATCH);
+  }
+
+  MEDDLY_DCASSERT(acc_evs);
+  float ev;
+  e.getEdgeValue(ev);
+  acc_evs[maxLevel] = ev;
+
+  for (int k=1; k<=maxLevel; k++) {
+    index[k] = minterm[k];
+  }
+  return first(maxLevel, e.getNode());
+}
+
+bool MEDDLY::evmxd_timesreal::evtrmxd_fixedrow_iter::next()
+{
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
+  MEDDLY_DCASSERT(acc_evs);
+
+  node_handle down = 0;
+  // Only try to advance the column, because the row is fixed.
+  for (int k=-1; k>=-maxLevel; k--) { 
+    for (nzp[k]++; nzp[k] < path[k].getNNZs(); nzp[k]++) {
+      index[k] = path[k].i(nzp[k]);
+      down = path[k].d(nzp[k]);
+      MEDDLY_DCASSERT(down);
+      level_change = k;
+      float ev;
+      path[k].getEdge(nzp[k], ev);
+      acc_evs[downLevel(k)] = acc_evs[k] * ev;
+      if (first(downLevel(k), down)) return true;
+    }
+  } // for
+
+  return false;
+}
+
+
+bool MEDDLY::evmxd_timesreal::evtrmxd_fixedrow_iter::first(int k, node_handle down)
+{
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
+  MEDDLY_DCASSERT(acc_evs);
+
+  if (0==k) {
+    index[0] = down;
+    return true;
+  }
+
+  // Check that this "row" node has a non-zero pointer
+  // for the fixed index.
+  MEDDLY_DCASSERT(k>0);
+  int cdown;
+  if (isLevelAbove(k, F->getNodeLevel(down))) {
+    // skipped unprimed level, must be "fully" reduced
+    cdown = down;
+    if (0==cdown) return false;
+    acc_evs[-k] = acc_evs[k];
+  } else {
+    float ev;
+    F->getDownPtr(down, index[k], ev, cdown);
+    if (0==cdown) return false;
+    acc_evs[-k] = acc_evs[k] * ev;
+  }
+
+  //
+  // Ok, set up the "column" node below
+  k = downLevel(k);
+  MEDDLY_DCASSERT(k<0);
+
+  if (isLevelAbove(k, F->getNodeLevel(cdown))) {
+    // Skipped level, we can be fast about this.
+    acc_evs[downLevel(k)] = acc_evs[k];
+    // first, recurse.
+    if (!first(downLevel(k), cdown)) return false;
+    // Ok, there is a valid path.
+    // Set up this level.
+    nzp[k] = 0;
+    if (F->isFullyReduced()) {
+      F->initRedundantReader(path[k], k, float(1), cdown, false);
+      index[k] = 0;
+    } else {
+      index[k] = index[upLevel(k)];
+      F->initIdentityReader(path[k], k, index[k], float(1), cdown, false);
+    }
+    return true;
+  } 
+
+  // Proper node here.
+  // cycle through it and recurse... 
+
+  F->initNodeReader(path[k], cdown, false);
+
+  for (int z=0; z<path[k].getNNZs(); z++) {
+    float ev;
+    path[k].getEdge(z, ev);
+    acc_evs[downLevel(k)] = acc_evs[k] * ev;
+    if (first(downLevel(k), path[k].d(z))) {
+      nzp[k] = z;
+      index[k] = path[k].i(z);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *         evmxd_timesreal::evtrmxd_fixedcol_iter methods         *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter
+::start(const dd_edge &e, const int* minterm)
+{
+  if (F != e.getForest()) {
+    throw error(error::FOREST_MISMATCH);
+  }
+
+  MEDDLY_DCASSERT(acc_evs);
+  float ev;
+  e.getEdgeValue(ev);
+  acc_evs[maxLevel] = ev;
+
+  for (int k=1; k<=maxLevel; k++) {
+    index[-k] = minterm[k];
+  }
+  return first(maxLevel, e.getNode());
+}
+
+bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter::next()
+{
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
+  MEDDLY_DCASSERT(acc_evs);
+
+  node_handle down = 0;
+  // Only try to advance the row, because the column is fixed.
+  for (int k=1; k<=maxLevel; k++) { 
+    for (nzp[k]++; nzp[k] < path[k].getNNZs(); nzp[k]++) {
+      index[k] = path[k].i(nzp[k]);
+      down = path[k].d(nzp[k]);
+      MEDDLY_DCASSERT(down);
+      float ev;
+      path[k].getEdge(nzp[k], ev);
+      acc_evs[downLevel(k)] = acc_evs[k] * ev;
+      level_change = k;
+      if (first(downLevel(k), down)) return true;
+    }
+  } // for
+
+  return false;
+}
+
+bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter::first(int k, node_handle down)
+{
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
+  MEDDLY_DCASSERT(acc_evs);
+
+  if (0==k) {
+    index[0] = down;
+    return true;
+  }
+
+  if (k<0) {
+    // See if this "column node" has a path
+    // at the specified index.
+    if (isLevelAbove(k, F->getNodeLevel(down))) {
+      if (!F->isFullyReduced()) {
+        // Identity node here - check index
+        if (index[k] != index[upLevel(k)]) return false;
+      }
+      acc_evs[downLevel(k)] = acc_evs[k];
+      return first(downLevel(k), down);
+    }
+    float ev;
+    int cdown;
+    F->getDownPtr(down, index[k], ev, cdown);
+    if (0==cdown) return false;
+    acc_evs[downLevel(k)] = acc_evs[k] * ev;
+    return first(downLevel(k), cdown);
+  }
+
+  // Row node.  Find an index, if any,
+  // such that there is a valid path below.
+  MEDDLY_DCASSERT(k>0);
+  int kdn = F->getNodeLevel(down);
+  if (isLevelAbove(k, kdn)) {
+    // Skipped level, handle quickly
+    int kpr = downLevel(k);
+    if (isLevelAbove(kpr, F->getNodeLevel(kdn))) {
+      // next level is also skipped.
+      acc_evs[kpr] = acc_evs[k];
+      // See if there is a valid path below.
+      if (!first(downLevel(kpr), down)) return false;
+      // There's one below, set up the one at these levels.
+      F->initRedundantReader(path[k], k, float(1), down, false);
+      if (F->isFullyReduced()) {
+        nzp[k] = 0;
+        index[k] = 0;
+      } else {
+        nzp[k] = index[kpr];
+        index[k] = index[kpr];
+      }
+      return true;
+    }
+    // next level is not skipped.
+    // See if there is a valid path below.
+    float ev;
+    int cdown;
+    F->getDownPtr(down, index[kpr], ev, cdown);
+    if (0==cdown) return false;
+    acc_evs[downLevel(kpr)] = acc_evs[kpr] * ev;
+    if (!first(kpr, cdown)) return false;
+    F->initRedundantReader(path[k], k, float(1), down, false);
+    nzp[k] = 0;
+    index[k] = 0;
+    return true;
+  }
+
+  // Level is not skipped.
+  F->initNodeReader(path[k], down, false);
+  
+  for (int z=0; z<path[k].getNNZs(); z++) {
+    index[k] = path[k].i(z);
+    float ev;
+    path[k].getEdge(z, ev);
+    acc_evs[downLevel(k)] = acc_evs[k] * ev;
+    if (first(downLevel(k), path[k].d(z))) {
+      nzp[k] = z;
+      return true;
+    }
+  }
+  return false;
+}

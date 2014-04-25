@@ -51,7 +51,6 @@ class MEDDLY::evmxd_forest : public ev_forest {
       while (!isTerminalNode(node)) {
         TYPE ev;
         int k = getNodeLevel(node);
-        MEDDLY_DCASSERT( ABS(k) == getNodeHeight(node) );
         getDownPtr(node, ((k > 0) ? vlist[k] : vplist[-k]), ev, node);
         val = (node) ? OPERATION::apply(val, ev) : ev;
       }

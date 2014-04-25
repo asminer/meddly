@@ -32,6 +32,21 @@ class MEDDLY::mtmxd_forest : public mt_forest {
   public:
     mtmxd_forest(int dsl, domain* d, range_type t, const policies &p);
 
+    virtual enumerator::iterator* makeFullIter() const 
+    {
+      return new mtmxd_iterator(this);
+    }
+
+    virtual enumerator::iterator* makeFixedRowIter() const 
+    {
+      return new mtmxd_fixedrow_iter(this);
+    }
+
+    virtual enumerator::iterator* makeFixedColumnIter() const 
+    {
+      return new mtmxd_fixedcol_iter(this);
+    }
+
   protected:
       inline node_handle evaluateRaw(const dd_edge &f, const int* vlist, 
         const int* vplist) const
@@ -133,6 +148,37 @@ class MEDDLY::mtmxd_forest : public mt_forest {
         } // for i
         return next;
     }
+
+  protected:
+    class mtmxd_iterator : public mt_iterator {
+      public:
+        mtmxd_iterator(const expert_forest* F);
+        virtual ~mtmxd_iterator();
+        virtual bool start(const dd_edge &e);
+        virtual bool next();
+      private:
+        bool first(int k, node_handle p);
+    };
+
+    class mtmxd_fixedrow_iter : public mt_iterator {
+      public:
+        mtmxd_fixedrow_iter(const expert_forest* F);
+        virtual ~mtmxd_fixedrow_iter();
+        virtual bool start(const dd_edge &e, const int*);
+        virtual bool next();
+      private:
+        bool first(int k, node_handle p);
+    };
+
+    class mtmxd_fixedcol_iter : public mt_iterator {
+      public:
+        mtmxd_fixedcol_iter(const expert_forest* F);
+        virtual ~mtmxd_fixedcol_iter();
+        virtual bool start(const dd_edge &e, const int*);
+        virtual bool next();
+      private:
+        bool first(int k, node_handle p);
+    };
 
 };
 
