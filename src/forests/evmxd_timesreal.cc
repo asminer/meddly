@@ -32,7 +32,8 @@
 MEDDLY::evmxd_timesreal::evmxd_timesreal(int dsl, domain *d, const policies &p)
  : evmxd_forest(dsl, d, REAL, EVTIMES, p)
 {
-  setEdgeSize(sizeof(float), true);
+  // Edge's are floats and are NOT hashed.
+  setEdgeSize(sizeof(float), false);
   initializeForest();
 }
 
