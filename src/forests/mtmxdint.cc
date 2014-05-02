@@ -22,10 +22,12 @@
 
 #include "mtmxdint.h"
 
-MEDDLY::mt_mxd_int::mt_mxd_int(int dsl, domain *d, const policies &p)
+MEDDLY::mt_mxd_int::mt_mxd_int(int dsl, domain *d, const policies &p, int tv)
 : mtmxd_forest(dsl, d, INTEGER, p)
 { 
   initializeForest();
+
+  transparent=int_Tencoder::value2handle(tv);
 }
 
 MEDDLY::mt_mxd_int::~mt_mxd_int()

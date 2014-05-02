@@ -82,8 +82,11 @@ bool MEDDLY::mt_forest::isIdentityEdge(const node_builder &nb, int i) const
 MEDDLY::node_handle MEDDLY::mt_forest::makeNodeAtLevel(int k, node_handle d) 
 {
   MEDDLY_DCASSERT(abs(k) >= abs(getNodeLevel(d)));
-  if (0==d) return d;
+
   if (isFullyReduced()) return d;
+
+  if (isQuasiReduced() && d==getTransparentNode()) return d;
+
   int dk = getNodeLevel(d); 
   while (dk != k) {
     int up;

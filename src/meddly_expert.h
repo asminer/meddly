@@ -519,7 +519,7 @@ class MEDDLY::expert_domain : public domain {
     /** Enlarge the possible values for a variable.
       This could modify all nodes in all forests, depending on the
       choice of reduction rule.
-      @param  lev     Variable handle.
+      @param  vh     Variable handle.
       @param  prime   If prime is true, enlarge the bound for
                       the primed variable only, otherwise both
                       the primed and unprimed are enlarged.
@@ -692,7 +692,7 @@ class MEDDLY::node_reader {
           h = H;
         };
 
-        void computeHash(bool hashEdgeValues);
+        void computeHash(bool hashEdgeValues, node_handle tv);
 
     // Centralized recycling
     public:
@@ -1082,7 +1082,7 @@ class MEDDLY::node_storage {
 
         Ideally, the output format for each node is the same
         regardless of how it is stored.
-
+          
         @param  s       Output stream.
         @param  addr    Address of the node we care about.
         @param  map     Translation to use on node handles.
@@ -2038,6 +2038,9 @@ class MEDDLY::expert_forest : public forest
         nodeMan->getDownPtr(getNode(p).offset, index, ev, dn);
     }
 
+    inline node_handle getTransparentNode() const {
+    	return transparent;
+    }
 
   // ------------------------------------------------------------
   // Preferred mechanism for reading nodes
@@ -2071,12 +2074,10 @@ class MEDDLY::expert_forest : public forest
           @param  node    Downward pointer to use.
           @param  full    Use a full reader or sparse.
     */
-    void initRedundantReader(node_reader &nr, int k, node_handle node,
-      bool full) const;
+    void initRedundantReader(node_reader &nr, int k, node_handle node, bool full) const;
 
     /// Allocate and initialize a redundant node reader.
-    inline node_reader* initRedundantReader(int k, node_handle node,
-      bool full) const
+    inline node_reader* initRedundantReader(int k, node_handle node, bool full) const
     {
       node_reader* nr = node_reader::useReader();
       MEDDLY_DCASSERT(nr);
@@ -2098,8 +2099,7 @@ class MEDDLY::expert_forest : public forest
       bool full) const;
 
     /// Allocate and initialize a redundant node reader.
-    inline node_reader* initRedundantReader(int k, int ev, node_handle nd,
-      bool full) const
+    inline node_reader* initRedundantReader(int k, int ev, node_handle nd, bool full) const
     {
       node_reader* nr = node_reader::useReader();
       MEDDLY_DCASSERT(nr);
@@ -2139,8 +2139,7 @@ class MEDDLY::expert_forest : public forest
           @param  n       Downward pointer to use.
           @param  f       Use a full reader or sparse.
     */
-    void initIdentityReader(node_reader &nr, int k, int i, node_handle n,
-      bool f) const;
+    void initIdentityReader(node_reader &nr, int k, int i, node_handle n, bool f) const;
 
     /** Initialize an identity node reader.
         Use for edge-valued forests, whose edge values
@@ -2153,8 +2152,7 @@ class MEDDLY::expert_forest : public forest
           @param  n       Downward pointer to use.
           @param  f       Use a full reader or sparse.
     */
-    void initIdentityReader(node_reader &nr, int k, int i, int ev,
-      node_handle n, bool f) const;
+    void initIdentityReader(node_reader &nr, int k, int i, int ev, node_handle n, bool f) const;
 
     /// Allocate and initialize an identity node reader.
     inline node_reader* initIdentityReader(int k, int i, node_handle node, 
@@ -2289,7 +2287,6 @@ class MEDDLY::expert_forest : public forest
 #endif
     }
 
-    
   // ------------------------------------------------------------
   // virtual in the base class, but implemented here.
   // See meddly.h for descriptions of these methods.
@@ -2663,6 +2660,9 @@ class MEDDLY::expert_forest : public forest
 
     /// Class that stores nodes.
     node_storage* nodeMan;
+
+    /// Transparent value
+    node_handle transparent;
 
   private:
     // Keep a node_builder for each level.
@@ -3448,6 +3448,5 @@ MEDDLY::getOperation(const binary_opname* code, const dd_edge& arg1,
     (expert_forest*) res.getForest()
   );
 }
-
 
 #endif

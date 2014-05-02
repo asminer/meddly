@@ -23,6 +23,7 @@
 #include "config.h"
 #endif
 #include "../defines.h"
+#include "../forests/mt.h"
 #include "complement.h"
 
 namespace MEDDLY {
@@ -118,9 +119,15 @@ MEDDLY::node_handle MEDDLY::compl_mdd::compute(node_handle a)
   // Initialize node reader
   node_reader* A = argF->initNodeReader(a, true);
 
+  bool addRedundentNode=(resF->isQuasiReduced() && level>1);
+
   // recurse
   for (int i=0; i<size; i++) {
     nb.d(i) = compute(A->d(i));
+
+    if(addRedundentNode && resF->isTerminalNode(nb.d(i)) && nb.d(i)!=resF->getTransparentNode()){
+    	nb.d(i)=((mt_forest*)resF)->makeNodeAtLevel(level-1, nb.d(i));
+    }
   }
 
   // Cleanup
@@ -190,8 +197,8 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute(int in, int k, node_handle a)
       !expert_forest::bool_Tencoder::handle2value(a)
     );
   }
-  if (argF->isTerminalNode(a) && 
-      resF->isFullyReduced()) 
+  if (argF->isTerminalNode(a) &&
+      resF->isFullyReduced())
   {
     return expert_forest::bool_Tencoder::value2handle(
       !expert_forest::bool_Tencoder::handle2value(a)
@@ -230,14 +237,21 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute(int in, int k, node_handle a)
     A = argF->initIdentityReader(k, in, a, true);
     canSave = false;
   }
-  
+
   // recurse
   int nextLevel = (k>0) ? -k : -k-1;
   int nnz = 0;
+  bool addRedundentNode=(resF->isQuasiReduced() && (k>0 || k<-1));
+
+  // recurse
   for (int i=0; i<size; i++) {
     int d = compute(i, nextLevel, A->d(i));
     nb.d(i) = d;
-    if (d) nnz++;
+    if (d!=resF->getTransparentNode()) nnz++;
+
+    if(addRedundentNode && resF->isTerminalNode(nb.d(i)) && nb.d(i)!=resF->getTransparentNode()){
+      nb.d(i)=((mt_forest*)resF)->makeNodeAtLevel(nextLevel, nb.d(i));
+    }
   }
 
   // cleanup
@@ -266,7 +280,7 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute(int in, int k, node_handle a)
 class MEDDLY::compl_opname : public unary_opname {
   public:
     compl_opname();
-    virtual unary_operation* 
+    virtual unary_operation*
       buildOperation(expert_forest* ar, expert_forest* res) const;
 };
 
@@ -275,7 +289,7 @@ MEDDLY::compl_opname::compl_opname()
 {
 }
 
-MEDDLY::unary_operation* 
+MEDDLY::unary_operation*
 MEDDLY::compl_opname
 ::buildOperation(expert_forest* arg, expert_forest* res) const
 {

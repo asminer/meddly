@@ -22,10 +22,12 @@
 
 #include "mtmddbool.h"
 
-MEDDLY::mt_mdd_bool::mt_mdd_bool(int dsl, domain *d, const policies &p)
+MEDDLY::mt_mdd_bool::mt_mdd_bool(int dsl, domain *d, const policies &p, bool tv)
 : mtmdd_forest(dsl, d, BOOLEAN, p)
 { 
   initializeForest();
+
+  transparent=bool_Tencoder::value2handle(tv);
 }
 
 MEDDLY::mt_mdd_bool::~mt_mdd_bool()

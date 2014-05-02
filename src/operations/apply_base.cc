@@ -698,4 +698,3 @@ void MEDDLY::generic_binary_evtimes
   c = cl;
 }
 
-

@@ -155,7 +155,7 @@ void MEDDLY::node_reader
   }
 }
 
-void MEDDLY::node_reader::computeHash(bool hashEdgeValues)
+void MEDDLY::node_reader::computeHash(bool hashEdgeValues, node_handle tv)
 {
 #ifdef DEVELOPMENT_CODE
   MEDDLY_DCASSERT(!has_hash);
@@ -171,25 +171,27 @@ void MEDDLY::node_reader::computeHash(bool hashEdgeValues)
   if (isSparse()) {
     if (hashEdgeValues) {
       for (int z=0; z<nnzs; z++) {
-        MEDDLY_DCASSERT(d(z));
+        MEDDLY_DCASSERT(d(z)!=tv);
         s.push(i(z), d(z), ei(z));
       }
     } else {
       for (int z=0; z<nnzs; z++) {
-        MEDDLY_DCASSERT(d(z));
+        MEDDLY_DCASSERT(d(z)!=tv);
         s.push(i(z), d(z));
       }
     }
   } else {
     if (hashEdgeValues) {
       for (int n=0; n<size; n++) {
-        if (0==d(n)) continue;
-        s.push(n, d(n), ei(n));
+        if (d(n)!=tv) {
+          s.push(n, d(n), ei(n));
+        }
       }
     } else {
       for (int n=0; n<size; n++) {
-        if (0==d(n)) continue;
-        s.push(n, d(n));
+        if (d(n)!=tv) {
+          s.push(n, d(n));
+        }
       }
     }
   }
@@ -305,25 +307,28 @@ void MEDDLY::node_builder::computeHash()
   if (isSparse()) {
     if (parent->areEdgeValuesHashed()) {
       for (int z=0; z<size; z++) {
-        MEDDLY_DCASSERT(d(z));
+        MEDDLY_DCASSERT(d(z)!=parent->getTransparentNode());
         s.push(i(z), d(z), ei(z));
       }
     } else {
       for (int z=0; z<size; z++) {
-        MEDDLY_DCASSERT(d(z));
+        MEDDLY_DCASSERT(d(z)!=parent->getTransparentNode());
         s.push(i(z), d(z));
       }
     }
   } else {
+	node_handle tv=parent->getTransparentNode();
     if (parent->areEdgeValuesHashed()) {
       for (int n=0; n<size; n++) {
-        if (0==d(n)) continue;
-        s.push(n, d(n), ei(n));
+        if (d(n)!=tv) {
+          s.push(n, d(n), ei(n));
+        }
       }
     } else {
       for (int n=0; n<size; n++) {
-        if (0==d(n)) continue;
-        s.push(n, d(n));
+        if (d(n)!=tv) {
+          s.push(n, d(n));
+        }
       }
     }
   }
