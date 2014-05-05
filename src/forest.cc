@@ -995,6 +995,23 @@ void MEDDLY::expert_forest
 }
 
 void MEDDLY::expert_forest
+::initRedundantReader(node_reader &nr, int k, float ev, node_handle np,
+  bool full) const
+{
+  MEDDLY_DCASSERT(sizeof(float)==edgeBytes());
+  int nsize = getLevelSize(k);
+  nr.resize(k, nsize, sizeof(float), full);
+  for (int i=0; i<nsize; i++) {
+    nr.down[i] = np;
+    ((float*)nr.edge)[i] = ev;
+  }
+  if (!full) {
+    for (int i=0; i<nsize; i++) nr.index[i] = i;
+    nr.nnzs = nsize;
+  }
+}
+
+void MEDDLY::expert_forest
 ::initIdentityReader(node_reader &nr, int k, int i, node_handle node, bool full) const
 {
   MEDDLY_DCASSERT(0==edgeBytes());
@@ -1029,6 +1046,28 @@ void MEDDLY::expert_forest
     nr.nnzs = 1;
     nr.down[0] = node;
     ((int*)nr.edge)[0] = ev;
+    nr.index[0] = i;
+  }
+}
+
+
+void MEDDLY::expert_forest
+::initIdentityReader(node_reader &nr, int k, int i, float ev, node_handle node, 
+  bool full) const
+{
+  MEDDLY_DCASSERT(sizeof(float)==edgeBytes());
+  int nsize = getLevelSize(k);
+  if (full) {
+    nr.resize(k, nsize, sizeof(float), full);
+    memset(nr.down, 0, nsize * sizeof(node_handle));
+    memset(nr.edge, 0, nsize * sizeof(float));
+    nr.down[i] = node;
+    ((float*)nr.edge)[i] = ev;
+  } else {
+    nr.resize(k, 1, sizeof(float), full);
+    nr.nnzs = 1;
+    nr.down[0] = node;
+    ((float*)nr.edge)[0] = ev;
     nr.index[0] = i;
   }
 }
@@ -1385,6 +1424,17 @@ void MEDDLY::expert_forest::showInfo(FILE* s, int verb)
 
 bool MEDDLY::expert_forest
 ::areEdgeValuesEqual(const void* eva, const void* evb) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+MEDDLY::enumerator::iterator* MEDDLY::expert_forest::makeFixedRowIter() const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+MEDDLY::enumerator::iterator*
+MEDDLY::expert_forest::makeFixedColumnIter() const
 {
   throw error(error::TYPE_MISMATCH);
 }

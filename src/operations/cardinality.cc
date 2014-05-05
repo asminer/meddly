@@ -513,7 +513,7 @@ void MEDDLY::card_mdd_mpz::compute(int k, node_handle a, mpz_object &card)
   }
 
   // Quickly deal with skipped levels
-  if (argF->getNodeHeight(a) < k) {
+  if (argF->getNodeLevel(a) < k) {
     // skipped level
     compute(k-1, a, card);
     card.multiply(argF->getLevelSize(k));

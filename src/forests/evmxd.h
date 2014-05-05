@@ -19,168 +19,148 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MTMXD_H
-#define MTMXD_H
+#ifndef EVMXD_H
+#define EVMXD_H
 
-#include "mt.h"
+#include "ev.h"
 
 namespace MEDDLY {
-  class mtmxd_forest;
+  class evmxd_forest;
 };
 
-class MEDDLY::mtmxd_forest : public mt_forest {
+class MEDDLY::evmxd_forest : public ev_forest {
   public:
-    mtmxd_forest(int dsl, domain* d, range_type t, const policies &p);
-
-    virtual enumerator::iterator* makeFullIter() const 
-    {
-      return new mtmxd_iterator(this);
-    }
-
-    virtual enumerator::iterator* makeFixedRowIter() const 
-    {
-      return new mtmxd_fixedrow_iter(this);
-    }
-
-    virtual enumerator::iterator* makeFixedColumnIter() const 
-    {
-      return new mtmxd_fixedcol_iter(this);
-    }
+    evmxd_forest(int dsl, domain* d, range_type t, edge_labeling ev, 
+      const policies &p);
 
   protected:
-      inline node_handle evaluateRaw(const dd_edge &f, const int* vlist, 
-        const int* vplist) const
-      {
-        node_handle p = f.getNode();
-        while (!isTerminalNode(p)) {
-          int k = getNodeLevel(p);
-          int i = (k<0) ? vplist[-k] : vlist[k];
-          p = getDownPtr(p, i);
-        } 
-        return p;
-      }
+    template <class OPERATION, typename TYPE>
+    inline void evaluateT(const dd_edge &f, const int* vlist,
+      const int* vplist, TYPE &val) const 
+    {
+      if (f.getForest() != this) throw error(error::INVALID_OPERATION);
+      if (vlist == 0) throw error(error::INVALID_VARIABLE);
+      if (vplist == 0) throw error(error::INVALID_VARIABLE);
 
+      // Assumptions:
+      // (1) vlist and vplist do not contain special values (-1, -2, etc).
+      // (2) vlist and vplist contains a single element.
+      node_handle node = f.getNode();
+      f.getEdgeValue(val);
+
+      while (!isTerminalNode(node)) {
+        TYPE ev;
+        int k = getNodeLevel(node);
+        getDownPtr(node, ((k > 0) ? vlist[k] : vplist[-k]), ev, node);
+        val = (node) ? OPERATION::apply(val, ev) : ev;
+      }
+    }
+    
   public:
     /// Special case for createEdge(), with only one minterm.
-    inline node_handle createEdgePath(int k, const int* vlist, 
-      const int* vplist, node_handle next) 
+    template <class OPERATION, typename TYPE>
+    inline void 
+    createEdgePath(int k, const int* vlist, const int* vplist,
+      TYPE &ev, node_handle &ed) 
     {
-        MEDDLY_DCASSERT(isForRelations());
-        if (0==next) return next;
-        for (int i=1; i<=k; i++) {
-          if (DONT_CHANGE == vplist[i]) {
-            //
-            // Identity node
-            //
-            MEDDLY_DCASSERT(DONT_CARE == vlist[i]);
-            if (isIdentityReduced()) continue;
-            // Build an identity node by hand
-            int sz = getLevelSize(i);
-            node_builder& nb = useNodeBuilder(i, sz);
+      if (0==ed) return;
+
+      for (int i=1; i<=k; i++) {
+        if (DONT_CHANGE == vplist[i]) {
+          //
+          // Identity node
+          //
+          MEDDLY_DCASSERT(DONT_CARE == vlist[i]);
+          if (isIdentityReduced()) continue;
+          // Build an identity node by hand
+          int sz = getLevelSize(i);
+          node_builder& nb = useNodeBuilder(i, sz);
+          for (int v=0; v<sz; v++) {
+            node_builder& nbp = useSparseBuilder(-i, 1);
+            nbp.i(0) = v;
+            nbp.d(0) = linkNode(ed);
+            nbp.setEdge(0, ev);
+            TYPE pev;
+            node_handle pd;
+            createReducedNode(v, nbp, pev, pd);
+            nb.d(v) = pd;
+            nb.setEdge(v, pev);
+          }
+          unlinkNode(ed);
+          createReducedNode(-1, nb, ev, ed);
+          continue;
+        }
+        //
+        // process primed level
+        //
+        node_handle edpr;
+        TYPE evpr;
+        if (DONT_CARE == vplist[i]) {
+          if (isFullyReduced()) {
+            // DO NOTHING
+            edpr = ed;
+            evpr = ev;
+          } else {
+            // build redundant node
+            int sz = getLevelSize(-i);
+            node_builder& nb = useNodeBuilder(-i, sz);
             for (int v=0; v<sz; v++) {
-              node_builder& nbp = useSparseBuilder(-i, 1);
-              nbp.i(0) = v;
-              nbp.d(0) = linkNode(next);
-              nb.d(v) = createReducedNode(v, nbp);
+              nb.d(v) = linkNode(ed);
+              nb.setEdge(v, ev);
             }
-            unlinkNode(next);
-            next = createReducedNode(-1, nb);
+            unlinkNode(ed);
+            createReducedNode(-1, nb, evpr, edpr);
+          }
+        } else {
+          // sane value
+          node_builder& nb = useSparseBuilder(-i, 1);
+          nb.i(0) = vplist[i];
+          nb.d(0) = ed;
+          nb.setEdge(0, ev);
+          createReducedNode(vlist[i], nb, evpr, edpr);
+        }
+        //
+        // process unprimed level
+        //
+        if (DONT_CARE == vlist[i]) {
+          if (isFullyReduced()) {
+            ed = edpr;
+            ev = evpr;
             continue;
           }
-          //
-          // process primed level
-          //
-          node_handle nextpr;
-          if (DONT_CARE == vplist[i]) {
-            if (isFullyReduced()) {
-              // DO NOTHING
-              nextpr = next;
-            } else {
-              // build redundant node
-              int sz = getLevelSize(-i);
-              node_builder& nb = useNodeBuilder(-i, sz);
-              for (int v=0; v<sz; v++) {
-                nb.d(v) = linkNode(next);
-              }
-              unlinkNode(next);
-              nextpr = createReducedNode(-1, nb);
+          // build redundant node
+          int sz = getLevelSize(i);
+          node_builder& nb = useNodeBuilder(i, sz);
+          if (isIdentityReduced()) {
+            // Below is likely a singleton, so check for identity reduction
+            // on the appropriate v value
+            for (int v=0; v<sz; v++) {
+              node_handle dpr = (v == vplist[i]) ? ed : edpr;
+              nb.d(v) = linkNode(dpr);
+              nb.setEdge(v, evpr);
             }
           } else {
-            // sane value
-            node_builder& nb = useSparseBuilder(-i, 1);
-            nb.i(0) = vplist[i];
-            nb.d(0) = next;
-            nextpr = createReducedNode(vlist[i], nb);
-          }
-          //
-          // process unprimed level
-          //
-          if (DONT_CARE == vlist[i]) {
-            if (isFullyReduced()) {
-              next = nextpr;
-              continue;
+            // Doesn't matter what happened below
+            for (int v=0; v<sz; v++) {
+              nb.d(v) = linkNode(edpr);
+              nb.setEdge(v, evpr);
             }
-            // build redundant node
-            int sz = getLevelSize(i);
-            node_builder& nb = useNodeBuilder(i, sz);
-            if (isIdentityReduced()) {
-              // Below is likely a singleton, so check for identity reduction
-              // on the appropriate v value
-              for (int v=0; v<sz; v++) {
-                node_handle dpr = (v == vplist[i]) ? next : nextpr;
-                nb.d(v) = linkNode(dpr);
-              }
-            } else {
-              // Doesn't matter what happened below
-              for (int v=0; v<sz; v++) {
-                nb.d(v) = linkNode(nextpr);
-              }
-            }
-            unlinkNode(nextpr);
-            next = createReducedNode(-1, nb);
-          } else {
-            // sane value
-            node_builder& nb = useSparseBuilder(i, 1);
-            nb.i(0) = vlist[i];
-            nb.d(0) = nextpr;
-            next = createReducedNode(-1, nb);
           }
-        } // for i
-        return next;
+          unlinkNode(edpr);
+          createReducedNode(-1, nb, ev, ed);
+        } else {
+          // sane value
+          node_builder& nb = useSparseBuilder(i, 1);
+          nb.i(0) = vlist[i];
+          nb.d(0) = edpr;
+          nb.setEdge(0, evpr);
+          createReducedNode(-1, nb, ev, ed);
+        }
+      } // for i
     }
 
-  protected:
-    class mtmxd_iterator : public mt_iterator {
-      public:
-        mtmxd_iterator(const expert_forest* F);
-        virtual ~mtmxd_iterator();
-        virtual bool start(const dd_edge &e);
-        virtual bool next();
-      private:
-        bool first(int k, node_handle p);
-    };
-
-    class mtmxd_fixedrow_iter : public mt_iterator {
-      public:
-        mtmxd_fixedrow_iter(const expert_forest* F);
-        virtual ~mtmxd_fixedrow_iter();
-        virtual bool start(const dd_edge &e, const int*);
-        virtual bool next();
-      private:
-        bool first(int k, node_handle p);
-    };
-
-    class mtmxd_fixedcol_iter : public mt_iterator {
-      public:
-        mtmxd_fixedcol_iter(const expert_forest* F);
-        virtual ~mtmxd_fixedcol_iter();
-        virtual bool start(const dd_edge &e, const int*);
-        virtual bool next();
-      private:
-        bool first(int k, node_handle p);
-    };
-
 };
+
 
 //
 // Helper class for createEdge
@@ -188,9 +168,9 @@ class MEDDLY::mtmxd_forest : public mt_forest {
 
 namespace MEDDLY {
 
-  template <class ENCODER, typename T>
-  class mtmxd_edgemaker {
-      mtmxd_forest* F;
+  template <class OPERATION, typename T>
+  class evmxd_edgemaker {
+      evmxd_forest* F;
       const int* const* vulist;
       const int* const* vplist;
       const T* values;
@@ -199,9 +179,9 @@ namespace MEDDLY {
       int K;
       binary_operation* unionOp;
     public:
-      mtmxd_edgemaker(mtmxd_forest* f, 
-        const int* const* mt, const int* const* mp, const T* v, int* o, int n, 
-        int k, binary_operation* unOp) 
+      evmxd_edgemaker(evmxd_forest* f,
+        const int* const* mt, const int* const* mp, const T* v, 
+        int* o, int n, int k, binary_operation* unOp) 
       {
         F = f;
         vulist = mt;
@@ -241,34 +221,39 @@ namespace MEDDLY {
         MEDDLY::SWAP(order[i], order[j]);
       }
 
-      inline node_handle createEdge() {
-        return createEdgeUn(K, 0, N);
+      inline void createEdge(T &ev, node_handle &ed) {
+        return createEdgeUn(K, 0, N, ev, ed);
       }
+
+    protected:
 
       /**
           Recursive implementation of createEdge(),
-          unprimed levels, for use by mtmxd_forest descendants.
+          unprimed levels, for use by evmxd_forest descendants.
       */
-      node_handle createEdgeUn(int k, int start, int stop) {
+      void createEdgeUn(int k, int start, int stop, T &ev, node_handle &ed) {
         MEDDLY_DCASSERT(k>=0);
         MEDDLY_DCASSERT(stop > start);
         // 
         // Fast special case
         //
         if (1==stop-start) {
-          return F->createEdgePath(k, unprimed(start), primed(start),
-            ENCODER::value2handle(term(start))
-          );
+          ev = term(start);
+          ed = expert_forest::bool_Tencoder::value2handle(true);
+          F->createEdgePath<OPERATION, T>(k, unprimed(start), primed(start),
+            ev, ed);
+          return;
         }
         //
         // Check terminal case
         //
         if (0==k) {
-          T accumulate = term(start);
+          ev = term(start);
           for (int i=start+1; i<stop; i++) {
-            accumulate += term(i);
+            OPERATION::unionEq(ev, term(i));
           }
-          return ENCODER::value2handle(accumulate);
+          ed = expert_forest::bool_Tencoder::value2handle(true);
+          return;
         }
 
         // size of variables at level k
@@ -291,7 +276,6 @@ namespace MEDDLY {
             nextV = MIN(nextV, unprimed(i, k));
           }
         }
-        node_handle dontcares = 0;
 
         //
         // Move any "don't changes" below the "don't cares", to the front,
@@ -309,26 +293,35 @@ namespace MEDDLY {
         //
         // Process "don't care, don't change" pairs, if any
         //
+        T dc_ev;
+        node_handle dc;
+        OPERATION::makeEmptyEdge(dc_ev, dc);
+
         if (dch > start) {
-          node_handle below = createEdgeUn(k-1, start, dch);
-          dontcares = makeIdentityEdge(k, below);
+          createEdgeUn(k-1, start, dch, dc_ev, dc);
+          makeIdentityEdge(k, dc_ev, dc);
           // done with those
           start = dch;
         }
 
         //
-        // Process "don't care, odrinary" pairs, if any
+        // Process "don't care, ordinary" pairs, if any
         // (producing a level-k node)
         //
         if (batchP > start) {
-          node_handle dcnormal = F->makeNodeAtLevel(
-              k, createEdgePr(-1, -k, start, batchP)
-          );
+          T dcnormal_ev;
+          node_handle dcnormal;
+          createEdgePr(-1, -k, start, batchP, dcnormal_ev, dcnormal);
+          F->makeNodeAtLevel<OPERATION, T>(k, dcnormal_ev, dcnormal);
+
           MEDDLY_DCASSERT(unionOp);
-          node_handle total = unionOp->compute(dontcares, dcnormal);
+          T total_ev;
+          node_handle total;
+          unionOp->compute(dc_ev, dc, dcnormal_ev, dcnormal, total_ev, total);
           F->unlinkNode(dcnormal);
-          F->unlinkNode(dontcares);
-          dontcares = total;
+          F->unlinkNode(dc);
+          dc_ev = total_ev;
+          dc = total;
         }
 
         //
@@ -369,8 +362,12 @@ namespace MEDDLY {
           // (2) recurse if necessary
           //
           if (0==batchP) continue;
+          T these_ev;
+          node_handle these_ptr;
           nb.i(z) = v;
-          nb.d(z) = createEdgePr(v, -k, start, batchP);
+          createEdgePr(v, -k, start, batchP, these_ev, these_ptr);
+          nb.d(z) = these_ptr;
+          nb.setEdge(z, these_ev);
           z++;
         } // for v
 
@@ -378,12 +375,13 @@ namespace MEDDLY {
         // Union with don't cares
         //
         MEDDLY_DCASSERT(unionOp);
+        node_handle built;
+        T built_ev;
         nb.shrinkSparse(z);
-        node_handle built = F->createReducedNode(-1, nb);
-        node_handle total = unionOp->compute(dontcares, built);
-        F->unlinkNode(dontcares);
+        F->createReducedNode(-1, nb, built_ev, built);
+        unionOp->compute(dc_ev, dc, built_ev, built, ev, ed);
+        F->unlinkNode(dc);
         F->unlinkNode(built);
-        return total; 
       };
 
     protected:
@@ -392,7 +390,8 @@ namespace MEDDLY {
           Recursive implementation of createEdge(),
           primed levels
       */
-      node_handle createEdgePr(int in, int k, int start, int stop) {
+      void createEdgePr(int in, int k, int start, int stop,
+        T &ev, node_handle &ed) {
         MEDDLY_DCASSERT(k<0);
         MEDDLY_DCASSERT(stop > start);
 
@@ -419,11 +418,13 @@ namespace MEDDLY {
             nextV = MIN(nextV, primed(i, -k));
           }
         }
-        node_handle dontcares;
+
+        node_handle dc_ptr;
+        T dc_val;
         if (batchP > start) {
-          dontcares = createEdgeUn(-k-1, start, batchP);
+          createEdgeUn(-k-1, start, batchP, dc_val, dc_ptr);
         } else {
-          dontcares = 0;
+          OPERATION::makeEmptyEdge(dc_val, dc_ptr);
         }
 
         //
@@ -438,9 +439,9 @@ namespace MEDDLY {
         //  (2) process them, if any
         //  (3) union with don't cares
         //
-        for (int v = (dontcares) ? 0 : nextV; 
+        for (int v = (dc_ptr) ? 0 : nextV; 
              v<lastV; 
-             v = (dontcares) ? v+1 : nextV) 
+             v = (dc_ptr) ? v+1 : nextV) 
         {
           nextV = lastV;
           //
@@ -468,47 +469,58 @@ namespace MEDDLY {
           //
           // (2) recurse if necessary
           //
-          node_handle these;
+          node_handle these_ptr;
+          T these_val;
           if (batchP > start) {
-            these = createEdgeUn(-k-1, start, batchP);
+            createEdgeUn(-k-1, start, batchP, these_val, these_ptr);
           } else {
-            these = 0;
+            OPERATION::makeEmptyEdge(these_val, these_ptr);
           }
 
           //
           // (3) union with don't cares
           //
-          MEDDLY_DCASSERT(unionOp);
-          node_handle total = unionOp->compute(dontcares, these);
-          F->unlinkNode(these);
+          node_handle total_ptr;
+          T total_val;
+          if (0 == dc_ptr) {
+            total_val = these_val;
+            total_ptr = F->linkNode(these_ptr);
+          } else if (0 == these_val) {
+            total_val = dc_val;
+            total_ptr = F->linkNode(dc_ptr);
+          } else {
+            MEDDLY_DCASSERT(unionOp);
+            unionOp->compute(dc_val, dc_ptr, these_val, these_ptr, 
+              total_val, total_ptr);
+          }
+          F->unlinkNode(these_ptr);
 
           //
           // add to sparse node, unless empty
           //
-          if (0==total) continue;
+          if (0==total_ptr) continue;
           nb.i(z) = v;
-          nb.d(z) = total;
+          nb.d(z) = total_ptr;
+          nb.setEdge(z, total_val);
           z++;
         } // for v
 
         //
         // Cleanup
         //
-        F->unlinkNode(dontcares);
+        F->unlinkNode(dc_ptr);
         nb.shrinkSparse(z);
-        return F->createReducedNode(in, nb);
+        F->createReducedNode(in, nb, ev, ed);
       };
-
 
 
       //
       //
       // Helper for createEdge
       //
-      inline node_handle makeIdentityEdge(int k, node_handle p) {
-        if (F->isIdentityReduced()) {
-          return p;
-        }
+      inline void makeIdentityEdge(int k, T& pev, node_handle& p) {
+        if (F->isIdentityReduced()) return;
+
         // build an identity node by hand
         int lastV = F->getLevelSize(k);
         node_builder& nb = F->useNodeBuilder(k, lastV);
@@ -516,16 +528,21 @@ namespace MEDDLY {
           node_builder& nbp = F->useSparseBuilder(-k, 1);
           nbp.i(0) = v;
           nbp.d(0) = F->linkNode(p);
-          nb.d(v) = F->createReducedNode(v, nbp);
+          nbp.setEdge(0, pev);
+          node_handle pr;
+          T pr_ev;
+          F->createReducedNode(v, nbp, pr_ev, pr);
+          nb.d(v) = pr;
+          nb.setEdge(v, pr_ev);
         } // for v
         F->unlinkNode(p);
-        return F->createReducedNode(-1, nb);
+        F->createReducedNode(-1, nb, pev, p);
       }
 
 
-  }; // class mtmxd_edgemaker
 
-};  // namespace MEDDLY
+  }; // class evmxd_edgemaker
+
+}; // namespace MEDDLY
 
 #endif
-

@@ -26,6 +26,7 @@
 #include "apply_base.h"
 
 // #define TRACE_ALL_OPS
+// #define DISABLE_CACHE
 
 // ******************************************************************
 // *                                                                *
@@ -582,38 +583,46 @@ void MEDDLY::generic_binary_evtimes
 ::compute(float aev, node_handle a, float bev, node_handle b, 
   float& cev, node_handle& c)
 {
+  // Compute for the unprimed levels.
+  //
+
   if (checkTerminals(aev, a, bev, b, cev, c))
     return;
 
+#ifndef DISABLE_CACHE
   compute_table::search_key* Key = findResult(aev, a, bev, b, cev, c);
   if (0==Key) return;
+#endif
 
   // Get level information
   const int aLevel = arg1F->getNodeLevel(a);
   const int bLevel = arg2F->getNodeLevel(b);
 
-  int resultLevel = aLevel > bLevel? aLevel: bLevel;
-  int resultSize = resF->getLevelSize(resultLevel);
-
   // Initialize result
+  int resultLevel = ABS(topLevel(aLevel, bLevel));
+  int resultSize = resF->getLevelSize(resultLevel);
   node_builder& nb = resF->useNodeBuilder(resultLevel, resultSize);
 
   // Initialize readers
-  node_reader* A = (aLevel < resultLevel)
-    ? arg1F->initRedundantReader(resultLevel, 0, a, true)
-    : arg1F->initNodeReader(a, true);
+  node_reader* A =
+    (aLevel == resultLevel)
+    ? arg1F->initNodeReader(a, true)
+    : arg1F->initRedundantReader(resultLevel, 1.0f, a, true);
 
-  node_reader* B = (bLevel < resultLevel)
-    ? arg2F->initRedundantReader(resultLevel, 0, b, true)
-    : arg2F->initNodeReader(b, true);
+  node_reader* B =
+    (bLevel == resultLevel)
+    ? arg2F->initNodeReader(b, true)
+    : arg2F->initRedundantReader(resultLevel, 1.0f, b, true);
 
   // do computation
   for (int i=0; i<resultSize; i++) {
     float ev;
     node_handle ed;
-    compute(aev * A->ef(i), A->d(i), 
-            bev * B->ef(i), B->d(i), 
-            ev, ed);
+    compute(
+        i, -resultLevel,
+        aev * A->ef(i), A->d(i), 
+        bev * B->ef(i), B->d(i), 
+        ev, ed);
     nb.d(i) = ed;
     nb.setEdge(i, ev);
   }
@@ -627,7 +636,69 @@ void MEDDLY::generic_binary_evtimes
   resF->createReducedNode(-1, nb, cev, cl);
   c = cl;
 
+#ifndef DISABLE_CACHE
   // Add to CT
   saveResult(Key, aev, a, bev, b, cev, c);
+#endif
 }
+
+void MEDDLY::generic_binary_evtimes
+::compute(
+  int in, int resultLevel,
+  float aev, node_handle a,
+  float bev, node_handle b,
+  float& cev, node_handle& c)
+{
+  // Compute for the primed levels.
+  //
+  MEDDLY_DCASSERT(resultLevel < 0);
+
+  if (checkTerminals(aev, a, bev, b, cev, c))
+    return;
+
+  // Get level information
+  const int aLevel = arg1F->getNodeLevel(a);
+  const int bLevel = arg2F->getNodeLevel(b);
+
+  // Initialize result
+  int resultSize = resF->getLevelSize(resultLevel);
+  node_builder& nb = resF->useNodeBuilder(resultLevel, resultSize);
+
+  // Initialize readers
+  node_reader* A =
+    (aLevel == resultLevel)
+    ? arg1F->initNodeReader(a, true)
+    : arg1F->isFullyReduced()
+    ? arg1F->initRedundantReader(resultLevel, 1.0f, a, true)
+    : arg1F->initIdentityReader(resultLevel, in, 1.0f, a, true);
+
+  node_reader* B =
+    (bLevel == resultLevel)
+    ? arg2F->initNodeReader(b, true)
+    : arg2F->isFullyReduced()
+    ? arg2F->initRedundantReader(resultLevel, 1.0f, b, true)
+    : arg2F->initIdentityReader(resultLevel, in, 1.0f, b, true);
+
+  // do computation
+  for (int i=0; i<resultSize; i++) {
+    float ev;
+    node_handle ed;
+    compute(
+        aev * A->ef(i), A->d(i),
+        bev * B->ef(i), B->d(i), 
+        ev, ed);
+    nb.d(i) = ed;
+    nb.setEdge(i, ev);
+  }
+
+  // cleanup
+  node_reader::recycle(B);
+  node_reader::recycle(A);
+
+  // Reduce
+  node_handle cl;
+  resF->createReducedNode(in, nb, cev, cl);
+  c = cl;
+}
+
 

@@ -20,7 +20,7 @@
 */
 
 /*
-    Tests the cross-product operator.
+    Tests for floating-point errors when using EV*MxDs.
 */
 
 
@@ -30,16 +30,20 @@
 
 #include "meddly.h"
 
-#define CHECK_ALL_MTMDDS
-#define CHECK_ALL_MTMXDS
-#define CHECK_ALL_INTMDDS
-#define CHECK_ALL_REALMDDS
-#define CHECK_ALL_REALMXDS
-
-const int TERMS = 20;
-
 using namespace MEDDLY;
 
+#define CHECK_COPY
+#define CHECK_COUNTS
+
+#define ENABLE_IDENTITY_REDUCED
+// #define ENABLE_FULLY_REDUCED
+// #define ENABLE_QUASI_REDUCED
+
+// #define DEBUG_RANDSET
+
+const int varSize = 4;
+const int TERMS = 100;
+int terms = 0;
 long seed = -1;
 
 double Random()
@@ -63,6 +67,13 @@ int Equilikely(int a, int b)
   return (a + (int) ((b - a + 1) * Random()));
 }
 
+void printRandomSet(int* mt, int N)
+{
+  printf("Random minterm: [%d", mt[1]);
+  for (int i=2; i<N; i++) printf(", %d", mt[i]);
+  printf("]\n");
+}
+
 void randomizeMinterm(bool primed, int max, int* mt, int N)
 {
   int min = primed ? -2 : -1;
@@ -70,9 +81,8 @@ void randomizeMinterm(bool primed, int max, int* mt, int N)
     mt[i] = Equilikely(min, max);
   }
 #ifdef DEBUG_RANDSET
-  printf("Random minterm: [%d", minterm[1]);
-  for (int i=2; i<N; i++) printf(", %d", minterm[i]);
-  printf("]\n");
+  printf("\n");
+  printRandomSet(mt, N);
 #endif
 }
 
@@ -89,38 +99,31 @@ void buildRandomFunc(long s, int terms, dd_edge &out)
   forest* f = out.getForest();
   int Vars = f->getDomain()->getNumVariables();
 
-  int* minterm = new int[Vars+1];
-  int* minprime = 0;
-  if (f->isForRelations()) minprime = new int[Vars+1];
+  if (f->getRangeType() != forest::BOOLEAN &&
+      f->getRangeType() != forest::REAL) {
+    printf("Invalid forest: does not store booleans or reals!\n\n");
+    exit(1);
+  }
+  if (!f->isForRelations()) {
+    printf("Invalid forest: does not store relations!\n\n");
+    exit(1);
+  }
 
+  int* minterm = new int[Vars+1];
+  int* minprime = new int[Vars+1];
 
   out.clear();
   for (int i=0; i<terms; i++) {
-    randomizeMinterm(false, 4, minterm, Vars+1);
-    if (minprime) {
-      randomizeMinterm(true, 4, minprime, Vars+1);
-      adjustMinterms(minterm, minprime, Vars+1);
-    }
-    int i_value = Equilikely(1, 5);
-    float f_value = i_value;
 
+    randomizeMinterm(false, varSize-1, minterm, Vars+1);
+    randomizeMinterm(true, varSize-1, minprime, Vars+1);
+    adjustMinterms(minterm, minprime, Vars+1);
+    float f_value = float(Equilikely(1, varSize));
     dd_edge temp(out);
-
-    switch (f->getRangeType()) {
-      case forest::BOOLEAN:
-        if (minprime) f->createEdge(&minterm, &minprime, 1, temp);
-        else          f->createEdge(&minterm, 1, temp);
-        break;
-
-      case forest::INTEGER:
-        if (minprime) f->createEdge(&minterm, &minprime, &i_value, 1, temp);
-        else          f->createEdge(&minterm, &i_value, 1, temp);
-        break;
-        
-      case forest::REAL:
-        if (minprime) f->createEdge(&minterm, &minprime, &f_value, 1, temp);
-        else          f->createEdge(&minterm, &f_value, 1, temp);
-        break;
+    if (f->getRangeType() == forest::BOOLEAN) {
+      f->createEdge(&minterm, &minprime, 1, temp);
+    } else {
+      f->createEdge(&minterm, &minprime, &f_value, 1, temp);
     }
 
     out += temp;
@@ -197,7 +200,8 @@ void writeType(const forest* f)
   else                      printf("mdd");
 }
 
-void testCopy(forest* srcF, forest* destF)
+
+void testEVTimesMXD(forest* srcF, forest* destF)
 {
   printf("\t");
   writeType(srcF);
@@ -210,7 +214,7 @@ void testCopy(forest* srcF, forest* destF)
   dd_edge destE(destF);
 
   try {
-    for (int t=1; t<=TERMS; t++) {
+    for (int t=1; t<=terms; t++) {
 
       long save_seed = seed;
       buildRandomFunc(save_seed, t, srcE);
@@ -236,15 +240,21 @@ void testCopy(forest* srcF, forest* destF)
 
       if (copyE != destE) {
         printf("failed!\n\n");
-  
+
         printf("Source (first forest):\n");
         srcE.show(stdout, 3);
-  
+
         printf("Destination (should get):\n");
         destE.show(stdout, 3);
 
         printf("Copy (built from source):\n");
         copyE.show(stdout, 3);
+
+        dd_edge diff(destF);
+        apply(MINUS, destE, copyE, diff);
+        printf("Difference:\n");
+        diff.show(stdout, 3);
+
         exit(1);
       }
 
@@ -260,16 +270,69 @@ void testCopy(forest* srcF, forest* destF)
 
 
 
+void testEV(forest* mxd, forest* mtmxd, forest* evmxd)
+{
+  dd_edge MXD(mxd);
+  dd_edge MTMXD(mtmxd);
+  dd_edge EVMXD(evmxd);
+
+  try {
+
+    for (int t=1; t<=terms; t++) {
+
+      long save_seed = seed;
+      buildRandomFunc(save_seed, t, MXD);
+      buildRandomFunc(save_seed, t, MTMXD);
+      buildRandomFunc(save_seed, t, EVMXD);
+
+      if (MTMXD.getNodeCount() < EVMXD.getNodeCount()
+        || MTMXD.getEdgeCount(false) < EVMXD.getEdgeCount(false)) {
+        printf("failed!\n\n");
+
+        printf("\nCardinality: MxD = %f, MTMxD = %f, EV*MxD = %f", 
+            MXD.getCardinality(), 
+            MTMXD.getCardinality(), 
+            EVMXD.getCardinality());
+        printf("\nNode Count: MxD = %d, MTMxD = %d, EV*MxD = %d", 
+            MXD.getNodeCount(),
+            MTMXD.getNodeCount(),
+            EVMXD.getNodeCount());
+        printf("\nEdge Count: MxD = %d, MTMxD = %d, EV*MxD = %d", 
+            MXD.getEdgeCount(false),
+            MTMXD.getEdgeCount(false),
+            EVMXD.getEdgeCount(false));
+
+        exit(1);
+      }
+
+
+    } // for t
+
+    printf("\nOK\n");
+  }
+  catch (MEDDLY::error e) {
+    printf("%s\n", e.getName());
+  }
+
+}
+
+
+
 int processArgs(int argc, const char** argv)
 {
-  if (argc>2) {
+  if (argc>3) {
     /* Strip leading directory, if any: */
     const char* name = argv[0];
     for (const char* ptr=name; *ptr; ptr++) {
-    if ('/' == *ptr) name = ptr+1;
-  }
-    printf("Usage: %s <seed>\n", name);
+      if ('/' == *ptr) name = ptr+1;
+    }
+    printf("Usage: %s <seed> <#minterms>\n", name);
     return 0;
+  }
+  if (argc>2) {
+    terms = atol(argv[2]);
+  } else {
+    terms = TERMS;
   }
   if (argc>1) {
     seed = atol(argv[1]);
@@ -282,88 +345,56 @@ int processArgs(int argc, const char** argv)
   return 1;
 }
 
-void addMDDforests(domain* D, forest** list, int &i, 
-  forest::edge_labeling ev, forest::range_type type)
-{
-  forest::policies fr(false);
-  fr.setFullyReduced();
-  forest::policies qr(false);
-  qr.setQuasiReduced();
-
-  list[i++] = D->createForest(0, type, ev, fr);
-  list[i++] = D->createForest(0, type, ev, qr);
-}
-
 void addMXDforests(domain* D, forest** list, int &i, 
   forest::edge_labeling ev, forest::range_type type)
 {
+#ifdef ENABLE_IDENTITY_REDUCED
   forest::policies ir(true);
   ir.setIdentityReduced();
+  list[i++] = D->createForest(1, type, ev, ir);
+#endif
+#ifdef ENABLE_FULLY_REDUCED
   forest::policies fr(true);
   fr.setFullyReduced();
+  list[i++] = D->createForest(1, type, ev, fr);
+#endif
+#ifdef ENABLE_QUASI_REDUCED
   forest::policies qr(true);
   qr.setQuasiReduced();
-
-  list[i++] = D->createForest(1, type, ev, ir);
-  list[i++] = D->createForest(1, type, ev, fr);
   list[i++] = D->createForest(1, type, ev, qr);
-}
-
-int makeMTMDDforests(domain* D, forest** list)
-{
-  int i = 0;
-  addMDDforests(D, list, i, forest::MULTI_TERMINAL, forest::BOOLEAN);
-  addMDDforests(D, list, i, forest::MULTI_TERMINAL, forest::INTEGER);
-  addMDDforests(D, list, i, forest::MULTI_TERMINAL, forest::REAL);
-  return i;
-}
-
-int makeMTMXDforests(domain* D, forest** list)
-{
-  int i = 0;
-  addMXDforests(D, list, i, forest::MULTI_TERMINAL, forest::BOOLEAN);
-  addMXDforests(D, list, i, forest::MULTI_TERMINAL, forest::INTEGER);
-  addMXDforests(D, list, i, forest::MULTI_TERMINAL, forest::REAL);
-  return i;
-}
-
-int makeIntegerMDDforests(domain* D, forest** list)
-{
-  int i = 0;
-  addMDDforests(D, list, i, forest::MULTI_TERMINAL, forest::INTEGER);
-  addMDDforests(D, list, i, forest::EVPLUS, forest::INTEGER);
-  return i;
-}
-
-void addRealMDDforests(int& i, domain* D, forest** list)
-{
-  addMDDforests(D, list, i, forest::MULTI_TERMINAL, forest::REAL);
-  // TBD - these are not supported yet
-//  addMDDforests(D, list, i, forest::EVPLUS, forest::REAL);
-//  addMDDforests(D, list, i, forest::EVTIMES, forest::REAL);
-  // TBD
+#endif
 }
 
 void addRealMXDforests(int& i, domain* D, forest** list)
 {
   addMXDforests(D, list, i, forest::EVTIMES, forest::REAL);
-  addMXDforests(D, list, i, forest::MULTI_TERMINAL, forest::REAL);
+  // addMXDforests(D, list, i, forest::MULTI_TERMINAL, forest::REAL);
   // TBD - these are not supported yet
 //  addMXDforests(D, list, i, forest::EVPLUS, forest::REAL);
   // TBD
-}
-
-int makeRealMDDforests(domain* D, forest** list)
-{
-  int i = 0;
-  addRealMDDforests(i, D, list);
-  return i;
 }
 
 int makeRealMXDforests(domain* D, forest** list)
 {
   int i = 0;
   addRealMXDforests(i, D, list);
+  return i;
+}
+
+void addIRMXDforest(domain* D, forest** list, int &i, 
+  forest::edge_labeling ev, forest::range_type type)
+{
+  forest::policies ir(true);
+  ir.setIdentityReduced();
+  list[i++] = D->createForest(1, type, ev, ir);
+}
+
+int makeIRMXDforests(domain* D, forest** list)
+{
+  int i = 0;
+  addIRMXDforest(D, list, i, forest::MULTI_TERMINAL, forest::BOOLEAN);
+  addIRMXDforest(D, list, i, forest::MULTI_TERMINAL, forest::REAL);
+  addIRMXDforest(D, list, i, forest::EVTIMES, forest::REAL);
   return i;
 }
 
@@ -381,7 +412,7 @@ int main(int argc, const char** argv)
 
   initialize();
 
-  int vars[] = {5, 5, 5, 5, 5, 5};
+  int vars[] = {varSize, varSize, varSize, varSize, varSize, varSize};
   domain* myd = createDomainBottomUp(vars, 6);
   assert(myd);
 
@@ -399,96 +430,37 @@ int main(int argc, const char** argv)
   }
 
   //
-  // MTMDD tests, build all possible types of forests
-  //
-
-#ifdef CHECK_ALL_MTMDDS
-  printf("Checking all possible copies between MTMDD forests\n");
-  slen = makeMTMDDforests(myd, srcs);
-  dlen = makeMTMDDforests(myd, dests);
-
-  for (int i=0; i<slen; i++)
-    for (int j=0; j<dlen; j++)
-      testCopy(srcs[i], dests[j]);
-
-  clearForests(srcs, slen);
-  clearForests(dests, dlen);
-  printf("\n");
-#endif
-
-  //
-  // MTMXD tests, build all possible types
-  //
-
-#ifdef CHECK_ALL_MTMXDS
-  printf("Checking all possible copies between MTMXD forests\n");
-  slen = makeMTMXDforests(myd, srcs);
-  dlen = makeMTMXDforests(myd, dests);
-
-  for (int i=0; i<slen; i++)
-    for (int j=0; j<dlen; j++)
-      testCopy(srcs[i], dests[j]);
-
-  clearForests(srcs, slen);
-  clearForests(dests, dlen);
-  printf("\n");
-#endif
-
-  //
   // MT and EV part 1
-  // (integer to integer or real, mt or ev)
-  //
-
-#ifdef CHECK_ALL_INTMDDS
-  printf("Checking all possible copies from integer to integer/real MDD forests\n");
-  slen = makeIntegerMDDforests(myd, srcs);
-  dlen = makeIntegerMDDforests(myd, dests);
-  addRealMDDforests(dlen, myd, dests); 
-
-  for (int i=0; i<slen; i++)
-    for (int j=0; j<dlen; j++)
-      testCopy(srcs[i], dests[j]);
-
-  clearForests(srcs, slen);
-  clearForests(dests, dlen);
-  printf("\n");
-#endif
-
-  //
-  // MT and EV part 2
   // (real only)
   //
 
-#ifdef CHECK_ALL_REALMDDS
-  printf("Checking all possible copies for real MDD forests\n");
-  slen = makeRealMDDforests(myd, srcs);
-  dlen = makeRealMDDforests(myd, dests);
-
-  for (int i=0; i<slen; i++)
-    for (int j=0; j<dlen; j++)
-      testCopy(srcs[i], dests[j]);
-
-  clearForests(srcs, slen);
-  clearForests(dests, dlen);
-  printf("\n");
-#endif
-
-  //
-  // MT and EV part 3
-  // (real only)
-  //
-
-#ifdef CHECK_ALL_REALMXDS
-  printf("Checking all possible copies for real MXD forests\n");
+#ifdef CHECK_COPY
+  printf("Checking all possible copies for Real MXD forests\n");
   slen = makeRealMXDforests(myd, srcs);
   dlen = makeRealMXDforests(myd, dests);
 
   for (int i=0; i<slen; i++)
     for (int j=0; j<dlen; j++)
-      testCopy(srcs[i], dests[j]);
+      testEVTimesMXD(srcs[i], dests[j]);
 
   clearForests(srcs, slen);
   clearForests(dests, dlen);
+  printf("\n");
+#endif
+
+  //
+  // Boolean and EV part 2
+  // (real only)
+  //
+
+#ifdef CHECK_COUNTS
+  printf("Checking for errors when building Real MXD forests\n");
+  slen = makeIRMXDforests(myd, srcs);
+  assert(3 == slen);
+
+  testEV(srcs[0], srcs[1], srcs[2]);
+
+  clearForests(srcs, slen);
   printf("\n");
 #endif
 

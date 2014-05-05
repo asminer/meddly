@@ -144,3 +144,30 @@ void MEDDLY::mt_forest::clearStatics()
   the_mt_cleaner = 0; 
 }
 
+// ******************************************************************
+// *                                                                *
+// *                 mt_forest::mt_iterator methods                 *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::mt_forest::mt_iterator::mt_iterator(const expert_forest *F)
+ : iterator(F)
+{
+}
+
+MEDDLY::mt_forest::mt_iterator::~mt_iterator()
+{
+}
+
+void MEDDLY::mt_forest::mt_iterator::getValue(int &termVal) const
+{
+  MEDDLY_DCASSERT(index);
+  termVal = int_Tencoder::handle2value(index[0]);
+}
+
+void MEDDLY::mt_forest::mt_iterator::getValue(float &termVal) const
+{
+  MEDDLY_DCASSERT(index);
+  termVal = float_Tencoder::handle2value(index[0]);
+}
+

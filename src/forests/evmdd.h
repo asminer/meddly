@@ -47,7 +47,7 @@ class MEDDLY::evmdd_forest : public ev_forest {
       f.getEdgeValue(val);
       while (!isTerminalNode(node)) {
         TYPE ev;
-        getDownPtr(node, vlist[getNodeHeight(node)], ev, node);
+        getDownPtr(node, vlist[getNodeLevel(node)], ev, node);
         val = (node) ? OPERATION::apply(val, ev) : ev;
       }
     }
@@ -158,7 +158,7 @@ namespace MEDDLY {
         //
         if (0==k) {
           ev = term(start);
-          for (int i=start; i<stop; i++) {
+          for (int i=start+1; i<stop; i++) {
             OPERATION::unionEq(ev, term(i));
           }
           ed = expert_forest::bool_Tencoder::value2handle(true);

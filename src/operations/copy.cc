@@ -591,7 +591,9 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   node_reader* A;
   if (isLevelAbove(k, aLevel)) {
     if (k<0 && argF->isIdentityReduced()) {
-      A = argF->initIdentityReader(k, in, a, false);
+      TYPE rev;
+      OP::redundant(rev);
+      A = argF->initIdentityReader(k, in, rev, a, false);
     } else {
       TYPE rev;
       OP::redundant(rev);
@@ -867,7 +869,9 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
   node_reader* A;
   if (isLevelAbove(k, aLevel)) {
     if (k<0 && argF->isIdentityReduced()) {
-      A = argF->initIdentityReader(k, in, an, false);
+      INTYPE rev;
+      INOP::redundant(rev);
+      A = argF->initIdentityReader(k, in, rev, an, false);
     } else {
       INTYPE rev;
       INOP::redundant(rev);

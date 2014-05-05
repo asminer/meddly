@@ -118,15 +118,25 @@ class MEDDLY::mt_forest : public expert_forest {
       node_handle node = createReducedNode(-1, nb);
       node = makeNodeAtTop(node); 
       result.set(node);
-  }
+    }
 
 
-  template <class ENCODER, class T>
-  inline void createEdgeTempl(T term, dd_edge& e) {
+    template <class ENCODER, class T>
+    inline void createEdgeTempl(T term, dd_edge& e) {
       if (e.getForest() != this) throw error(error::INVALID_OPERATION);
       e.set(makeNodeAtTop(ENCODER::value2handle(term)));
-  }
+    }
 
+  protected:
+    // iterator base class for MT
+    class mt_iterator : public enumerator::iterator {
+      public:
+        mt_iterator(const expert_forest* F);
+        virtual ~mt_iterator();
+
+        virtual void getValue(int &termVal) const;
+        virtual void getValue(float &termVal) const;
+    };
 
 
   // statics

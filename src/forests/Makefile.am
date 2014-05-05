@@ -20,6 +20,7 @@ libforests_la_SOURCES = \
   ev.h                ev.cc \
   evmdd.h             evmdd.cc \
   evmdd_plusint.h     evmdd_plusint.cc \
-  evmdd_timesreal.h   evmdd_timesreal.cc 
+  evmxd.h             evmxd.cc \
+  evmxd_timesreal.h   evmxd_timesreal.cc 
 ##  evmddold.h \
 ##  evmddold.cc

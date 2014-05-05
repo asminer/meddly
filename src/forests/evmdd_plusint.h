@@ -42,6 +42,9 @@ class MEDDLY::evmdd_plusint : public evmdd_forest {
           readValue(p, ev);
           return (0==ev);
         }
+        static inline int getRedundantEdge() {
+          return 0;
+        }
         static inline int apply(int a, int b) {
           return a+b;
         }
@@ -67,6 +70,10 @@ class MEDDLY::evmdd_plusint : public evmdd_forest {
     virtual bool isRedundant(const node_builder &nb) const;
     virtual bool isIdentityEdge(const node_builder &nb, int i) const;
 
+    virtual enumerator::iterator* makeFullIter() const {
+      return new evpimdd_iterator(this);
+    }
+
   protected:
     virtual void normalize(node_builder &nb, int& ev) const;
     virtual void showEdgeValue(FILE* s, const void* edge) const;
@@ -76,6 +83,22 @@ class MEDDLY::evmdd_plusint : public evmdd_forest {
     virtual void writeUnhashedHeader(FILE* s, const void* uh) const;
     virtual void readUnhashedHeader(FILE* s, node_builder &nb) const;
     virtual const char* codeChars() const;
+
+  protected:
+    class evpimdd_iterator : public enumerator::iterator {
+      public:
+        evpimdd_iterator(const expert_forest* F);
+        virtual ~evpimdd_iterator();
+
+        virtual void getValue(int &termVal) const;
+        virtual bool start(const dd_edge &e);
+        virtual bool next();
+      private:
+        bool first(int k, node_handle p);
+
+      protected:
+        long* acc_evs;  // for accumulating edge values
+    };
 };
 
 

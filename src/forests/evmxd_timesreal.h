@@ -19,19 +19,17 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// This hasn't been tested very much yet...
+#ifndef EVMXD_TIMESREAL_H
+#define EVMXD_TIMESREAL_H
 
-#ifndef EVMDD_TIMESREAL_H
-#define EVMDD_TIMESREAL_H
-
-#include "evmdd.h"
+#include "evmxd.h"
 
 namespace MEDDLY {
-  class evmdd_timesreal;
+  class evmxd_timesreal;
 };
 
 
-class MEDDLY::evmdd_timesreal : public evmdd_forest {
+class MEDDLY::evmxd_timesreal : public evmxd_forest {
   public:
     class OP : public float_EVencoder {
       public:
@@ -42,6 +40,9 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
           float ev;
           readValue(p, ev);
           return !notClose(ev, 1.0);
+        }
+        static inline double getRedundantEdge() {
+          return 1.0f;
         }
         static inline double apply(double a, double b) {
           return a*b;
@@ -65,21 +66,35 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
     };
 
   public:
-    evmdd_timesreal(int dsl, domain *d, const policies &p);
-    ~evmdd_timesreal();
+    evmxd_timesreal(int dsl, domain *d, const policies &p);
+    ~evmxd_timesreal();
 
     virtual void createEdge(float val, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e);
-    virtual void createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a);
-    virtual void evaluate(const dd_edge &f, const int* vlist, float &term) const;
+    virtual void createEdge(const int* const* vlist, const int* const* vplist,
+      const float* terms, int N, dd_edge &e);
+    virtual void createEdgeForVar(int vh, bool vp, const float* terms,
+      dd_edge& a);
+    virtual void evaluate(const dd_edge &f, const int* vlist,
+      const int* vplist, float &term) const;
 
     virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const;
     virtual bool isRedundant(const node_builder &nb) const;
     virtual bool isIdentityEdge(const node_builder &nb, int i) const;
 
     virtual enumerator::iterator* makeFullIter() const {
-      return new evtrmdd_iterator(this);
+      return new evtrmxd_iterator(this);
     }
+
+    virtual enumerator::iterator* makeFixedRowIter() const 
+    {
+      return new evtrmxd_fixedrow_iter(this);
+    }
+
+    virtual enumerator::iterator* makeFixedColumnIter() const 
+    {
+      return new evtrmxd_fixedcol_iter(this);
+    }
+
 
   protected:
     virtual void normalize(node_builder &nb, float& ev) const;
@@ -89,20 +104,50 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
     virtual const char* codeChars() const;
 
   protected:
-    class evtrmdd_iterator : public enumerator::iterator {
+    class evtrmxd_baseiter : public enumerator::iterator {
       public:
-        evtrmdd_iterator(const expert_forest* F);
-        virtual ~evtrmdd_iterator();
-
+        evtrmxd_baseiter(const expert_forest* F);
+        virtual ~evtrmxd_baseiter();
         virtual void getValue(float &termVal) const;
+      protected:
+        double* acc_evs;  // for accumulating edge values
+      private:
+        double* raw_acc_evs;  
+    };
+
+    class evtrmxd_iterator : public evtrmxd_baseiter {
+      public:
+        evtrmxd_iterator(const expert_forest* F) : evtrmxd_baseiter(F) { }
+        virtual ~evtrmxd_iterator() { }
+
         virtual bool start(const dd_edge &e);
         virtual bool next();
       private:
         bool first(int k, node_handle p);
-
-      protected:
-        double* acc_evs;  // for accumulating edge values
     };
+
+    class evtrmxd_fixedrow_iter : public evtrmxd_baseiter {
+      public:
+        evtrmxd_fixedrow_iter(const expert_forest* F) : evtrmxd_baseiter(F) {}
+        virtual ~evtrmxd_fixedrow_iter() { }
+
+        virtual bool start(const dd_edge &e, const int*);
+        virtual bool next();
+      private:
+        bool first(int k, node_handle p);
+    };
+
+    class evtrmxd_fixedcol_iter : public evtrmxd_baseiter {
+      public:
+        evtrmxd_fixedcol_iter(const expert_forest* F) : evtrmxd_baseiter(F) {}
+        virtual ~evtrmxd_fixedcol_iter() { }
+
+        virtual bool start(const dd_edge &e, const int*);
+        virtual bool next();
+      private:
+        bool first(int k, node_handle p);
+    };
+
 };
 
 #endif

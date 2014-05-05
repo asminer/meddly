@@ -32,11 +32,16 @@ class MEDDLY::mtmdd_forest : public mt_forest {
   public:
     mtmdd_forest(int dsl, domain* d, range_type t, const policies &p);
 
+    virtual enumerator::iterator* makeFullIter() const 
+    {
+      return new mtmdd_iterator(this);
+    }
+
   protected:
     inline node_handle evaluateRaw(const dd_edge &f, const int* vlist) const {
       node_handle p = f.getNode();
       while (!isTerminalNode(p)) {
-        p = getDownPtr(p, vlist[getNodeHeight(p)]);
+        p = getDownPtr(p, vlist[getNodeLevel(p)]);
       }
       return p;
     }
@@ -69,6 +74,16 @@ class MEDDLY::mtmdd_forest : public mt_forest {
         return bottom;
     }
 
+  protected:
+    class mtmdd_iterator : public mt_iterator {
+      public:
+        mtmdd_iterator(const expert_forest* F);
+        virtual ~mtmdd_iterator();
+        virtual bool start(const dd_edge &e);
+        virtual bool next();
+      private:
+        bool first(int k, node_handle p);
+    };
 };
 
 

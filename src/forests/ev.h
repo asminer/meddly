@@ -48,9 +48,11 @@ class MEDDLY::ev_forest : public expert_forest {
     virtual node_handle readTerminal(FILE* s);
 
   public:
+
     template <class OPERATION>
     inline bool isRedundantTempl(const node_builder &nb) const {
       if (isQuasiReduced()) return false;
+      if (nb.getLevel() < 0 && isIdentityReduced()) return false;
       int common = nb.d(0);
       for (int i=1; i<nb.rawSize(); i++) {
         if (nb.d(i) != common)  return false;
@@ -80,7 +82,7 @@ class MEDDLY::ev_forest : public expert_forest {
     */
     template <class OPERATION, typename TYPE>
     void makeNodeAtLevel(int k, TYPE &ev, node_handle &ed);
-  
+
   protected:
     /// make a node at the top level
     template <class OPERATION, typename TYPE>
@@ -112,11 +114,11 @@ class MEDDLY::ev_forest : public expert_forest {
           Sanity checks
       */
       if (vh < 0 || vh > getNumVariables())
-          throw error(error::INVALID_VARIABLE);
+        throw error(error::INVALID_VARIABLE);
       if (result.getForest() != this) 
-          throw error(error::INVALID_OPERATION);
+        throw error(error::INVALID_OPERATION);
       if (!isForRelations() && pr) 
-          throw error(error::INVALID_ASSIGNMENT);
+        throw error(error::INVALID_ASSIGNMENT);
 
       /*
           Get info for node we're building
@@ -150,16 +152,16 @@ class MEDDLY::ev_forest : public expert_forest {
       createReducedNode(-1, nb, ev, node);
       makeNodeAtTop<OPERATION, T>(ev, node); 
       result.set(node, ev);
-  }
+    }
 
 
-  template <class OPERATION, class T>
-  inline void createEdgeTempl(T term, dd_edge& e) {
+    template <class OPERATION, class T>
+    inline void createEdgeTempl(T term, dd_edge& e) {
       if (e.getForest() != this) throw error(error::INVALID_OPERATION);
       node_handle ed = bool_Tencoder::value2handle(true);
       makeNodeAtTop<OPERATION, T>(term, ed);
       e.set(ed, term);
-  }
+    }
 
 
 
@@ -187,6 +189,7 @@ class MEDDLY::ev_forest : public expert_forest {
 
 namespace MEDDLY {
 
+#if 0
   template <class OPERATION, typename TYPE>
   void ev_forest::makeNodeAtLevel(int k, TYPE &ev, node_handle &ed)
   {
@@ -195,9 +198,7 @@ namespace MEDDLY {
     if (isFullyReduced()) return;
     int dk = getNodeLevel(ed); 
     while (dk != k) {
-      int up;
-      if (dk<0) up = -dk;
-      else up = isForRelations() ? -(dk+1) : dk+1;
+      int up =  (dk < 0) ? -dk : isForRelations() ? -(dk + 1) : (dk + 1);
   
       // make node at level "up"
       int sz = getLevelSize(up);
@@ -223,7 +224,50 @@ namespace MEDDLY {
       dk = up;
     } // while
   }
+#else
+  template <class OPERATION, typename TYPE>
+  void ev_forest::makeNodeAtLevel(int k, TYPE &ev, node_handle &ed)
+  {
+    MEDDLY_DCASSERT(abs(k) >= abs(getNodeLevel(ed)));
+    if (0==ed) return;
+    if (isFullyReduced()) return;
 
+    // prevSize == 1 enables getSingletonIndex for the first run.
+    int prevSize = 1;
+    int dk = getNodeLevel(ed);
+    while (dk != k) {
+      // make node at one level up
+      int up = (dk < 0) ? -dk : isForRelations() ? -(dk + 1) : (dk + 1);
+      int sz = getLevelSize(up);
+      node_builder& nb = useNodeBuilder(up, sz);
+  
+      if (isIdentityReduced() && (dk < 0) && (1 == prevSize)) {
+        // Build unprimed node with check for identity reduction.
+        // Note 0: ed cannot be a terminal node (dk < 0).
+        // Note 1: if prevSize > 1, and ed is not the original argument,
+        //         and if it is a primed node, it cannot be identity reduced.
+        MEDDLY_DCASSERT(!isTerminalNode(ed));
+        node_handle sd;
+        int si = getSingletonIndex(ed, sd);
+        for (int i = 0; i < sz; i++) {
+          nb.d(i) = linkNode( (si == i) ? sd : ed );
+          nb.setEdge(i, ev);
+        }
+      } else {
+        // No identity reduction possible.
+        for (int i = 0; i < sz; i++) {
+          nb.d(i) = linkNode(ed);
+          nb.setEdge(i, ev);
+        }
+      }
+
+      unlinkNode(ed);
+      createReducedNode(-1, nb, ev, ed);
+      dk = up;
+      prevSize = sz;
+    } // while
+  }
+#endif
 };  // namespace MEDDLY
 
 #endif

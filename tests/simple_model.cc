@@ -24,6 +24,7 @@
 
 // #define DEBUG_EVENTS
 // #define VERBOSE
+// #define TEST_EVTIMES
 
 inline int MAX(int a, int b) {
   return (a>b) ? a : b;
@@ -39,16 +40,13 @@ void buildNextStateFunction(const char* const* events, int nEvents,
 
   // set up auxiliary mtmxd forest and edges
   domain* d = mxd->useDomain();
-  forest* mtmxd = d->createForest(
-    true, forest::INTEGER, forest::MULTI_TERMINAL
-  );
+
   int nVars = d->getNumVariables();
   int maxBound = d->getVariableBound(1, false);
   for (int i=2; i<=nVars; i++) {
     maxBound = MAX(maxBound, d->getVariableBound(i, false));
   }
   maxBound++;
-  int* temp = new int[maxBound];
   int* minterm = new int[nVars+1];
   int* mtprime = new int[nVars+1];
   dd_edge** varP  = new dd_edge*[nVars+1];
@@ -57,6 +55,19 @@ void buildNextStateFunction(const char* const* events, int nEvents,
   inc[0] = 0;
   dd_edge** dec   = new dd_edge*[nVars+1];
   dec[0] = 0;
+
+#ifdef TEST_EVTIMES
+  forest* mtmxd = d->createForest(
+    true, forest::REAL, forest::EVTIMES
+  );
+  float* temp = new float[maxBound];
+#else
+  forest* mtmxd = d->createForest(
+    true, forest::INTEGER, forest::MULTI_TERMINAL
+  );
+  int* temp = new int[maxBound];
+#endif
+
 
   //  Create edge for each variable xi'
   for (int i=1; i<=nVars; i++) {
