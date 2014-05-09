@@ -28,7 +28,6 @@ libmeddly_la_SOURCES = \
   enumerator.cc \
   domain.cc \
   forest.cc \
-  compute_table.h \
   compute_table.cc \
   unique_table.h \
   unique_table.cc \

@@ -16,4 +16,6 @@ libstorage_la_SOURCES = \
   hm_none.h       hm_none.cc \
   old_scheme.h    old_scheme.cc \
   simple.h        simple.cc \
-  compact.h       compact.cc
+  compact.h       compact.cc \
+  \
+  ct_classic.h    ct_classic.cc

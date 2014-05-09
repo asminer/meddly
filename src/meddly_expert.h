@@ -95,6 +95,7 @@ namespace MEDDLY {
   class binary_opname;
   class numerical_opname;
 
+  class compute_table_style;
   class compute_table;
 
   class operation;
@@ -223,25 +224,29 @@ namespace MEDDLY {
   /// Builds an initializer for MEDDLY's builtin operations.
   op_initializer* makeBuiltinInitializer();
 
+  // ******************************************************************
+  // *                                                                *
+  // *                      Compute table styles                      *
+  // *                                                                *
+  // ******************************************************************
+
+  /// One huge hash table that uses chaining.
+  extern const compute_table_style* MonolithicChainedHash;
+
+  /// One huge hash table that does not use chaining.
+  extern const compute_table_style* MonolithicUnchainedHash;
+
+  /// A hash table (with chaining) for each operation.
+  extern const compute_table_style* OperationChainedHash;
+
+  /// A hash table (no chaining) for each operation.
+  extern const compute_table_style* OperationUnchainedHash;
+
+  /// A STL "map" for each operation.
+  extern const compute_table_style* OperationMap;
+
 }; // namespace MEDDLY
 
-
-// ******************************************************************
-// *                                                                *
-// *                         ct_object class                        *
-// *                                                                *
-// ******************************************************************
-
-/** Generic objects in compute tables.
-    Used for things other than dd_edges and simple types.
-    Defined in ops.cc
-*/
-class MEDDLY::ct_object {
-  public:
-    ct_object();
-    virtual ~ct_object();
-    virtual opnd_type getType() = 0;
-};
 
 // ******************************************************************
 // *                                                                *
@@ -261,18 +266,6 @@ struct MEDDLY::settings {
   public:
     struct computeTableSettings {
       public:
-        enum styleOption {
-          /// One huge hash table that uses chaining.
-          MonolithicChainedHash,
-          /// One huge hash table that does not use chaining.
-          MonolithicUnchainedHash,
-          /// A hash table (with chaining) for each operation.
-          OperationChainedHash,
-          /// A hash table (no chaining) for each operation.
-          OperationUnchainedHash,
-          /// A STL "map" for each operation.
-          OperationMap
-        };
         enum staleRemovalOption {
           /// Whenever we see a stale entry, remove it.
           Aggressive,
@@ -283,7 +276,7 @@ struct MEDDLY::settings {
         };
       public:
         /// The type of compute table(s) that should be used.
-        styleOption style;
+        const compute_table_style* style;
         /// Maximum compute table size.
         unsigned maxSize;
         /// How aggressively should we try to eliminate stale entries.
@@ -323,12 +316,14 @@ struct MEDDLY::settings {
       }
     }
     /// super handy
+    /*
     inline bool usesMonolithicComputeTable() {
       return (
        computeTableSettings::MonolithicChainedHash == computeTable.style ||
        computeTableSettings::MonolithicUnchainedHash == computeTable.style 
       );
     }
+    */
   private:
     void init(const settings &s);
     void clear();
@@ -2816,6 +2811,61 @@ class MEDDLY::numerical_opname : public opname {
       const dd_edge &A, const dd_edge &y_ind) const = 0;
 };
 
+
+// ******************************************************************
+// *                                                                *
+// *                         ct_object class                        *
+// *                                                                *
+// ******************************************************************
+
+/** Generic objects in compute tables.
+    Used for things other than dd_edges and simple types.
+    Defined in ops.cc
+*/
+class MEDDLY::ct_object {
+  public:
+    ct_object();
+    virtual ~ct_object();
+    virtual opnd_type getType() = 0;
+};
+
+// ******************************************************************
+// *                                                                *
+// *                    compute_table_style class                   *
+// *                                                                *
+// ******************************************************************
+
+/** Interface for building compute tables.
+*/
+class MEDDLY::compute_table_style {
+  protected:
+    compute_table_style();
+    virtual ~compute_table_style();
+
+  public:
+    /** Build a new, monolithic table.
+        Monolithic means that the table stores entries for several
+        (ideally, all) operations.
+
+        Default throws an error.
+    */
+    virtual compute_table* create(const settings::computeTableSettings &s)
+      const;
+
+
+    /**
+        Build a new table for a single operation.
+        Default throws an error.
+    */
+    virtual compute_table* create(const settings::computeTableSettings &s, 
+      operation* op) const;
+
+    
+    /**
+        Does this style build monolithic CTs?
+    */
+    virtual bool usesMonolithic() const = 0;
+};
 
 // ******************************************************************
 // *                                                                *

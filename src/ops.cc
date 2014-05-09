@@ -26,24 +26,12 @@
 */
 
 #include "defines.h"
-#include "compute_table.h"
+// #include "compute_table.h"
 
 // #define DEBUG_CLEANUP
 
 namespace MEDDLY {
   extern settings meddlySettings;
-}
-
-// ******************************************************************
-// *                       ct_object  methods                       *
-// ******************************************************************
-
-MEDDLY::ct_object::ct_object()
-{
-}
-
-MEDDLY::ct_object::~ct_object()
-{
 }
 
 // ******************************************************************
@@ -161,7 +149,9 @@ MEDDLY::operation::operation(const opname* n, int kl, int al)
     if (Monolithic_CT)
       CT = Monolithic_CT;
     else {
-      CT = createOperationTable(meddlySettings.computeTable, this); 
+      const compute_table_style* CTsty = meddlySettings.computeTable.style;
+      MEDDLY_DCASSERT(CTsty);
+      CT = CTsty->create(meddlySettings.computeTable, this); 
     }
 
     //

@@ -37,6 +37,7 @@
 #ifndef COMPUTE_TABLE_H
 #define COMPUTE_TABLE_H
 
+#if 0
 #include "defines.h"
 
 namespace MEDDLY {
@@ -55,6 +56,7 @@ namespace MEDDLY {
     const settings::computeTableSettings &s, operation* op
   );
 }
+#endif
 
 #endif
 
