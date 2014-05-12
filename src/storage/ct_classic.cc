@@ -1052,13 +1052,11 @@ MEDDLY::base_map
  : base_table(s)
 {
   global_op = op;
-  search = new int[op->getKeyLength()];
   current = 0;
 }
 
 MEDDLY::base_map::~base_map()
 {
-  delete[] search;
 }
 
 MEDDLY::compute_table::search_key* 
@@ -1066,7 +1064,7 @@ MEDDLY::base_map::initializeSearchKey(operation* op)
 {
   if (op != global_op)
     throw error(error::UNKNOWN_OPERATION);
-  return init(search, op, 0);
+  return init(op, 0);
 }
 
 MEDDLY::compute_table::entry_builder& 
@@ -1132,7 +1130,7 @@ MEDDLY::operation_map<K>::find(search_key *k)
   printf("\n");
 #endif
   perf.hits++;
-  ANS.setResult(h, global_op->getAnsLength());
+  ANS.setResult(h+K, global_op->getAnsLength());
   return ANS;
 }
 

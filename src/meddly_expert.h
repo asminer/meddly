@@ -315,15 +315,6 @@ struct MEDDLY::settings {
         init(s);
       }
     }
-    /// super handy
-    /*
-    inline bool usesMonolithicComputeTable() {
-      return (
-       computeTableSettings::MonolithicChainedHash == computeTable.style ||
-       computeTableSettings::MonolithicUnchainedHash == computeTable.style 
-      );
-    }
-    */
   private:
     void init(const settings &s);
     void clear();

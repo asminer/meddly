@@ -81,15 +81,6 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
       compute_table::entry_builder &entry = CT->startNewEntry(K);
-      /*
-      if (can_commute && a > b) {
-        entry.writeKeyNH(arg2F->cacheNode(b));
-        entry.writeKeyNH(arg1F->cacheNode(a));
-      } else {
-        entry.writeKeyNH(arg1F->cacheNode(a));
-        entry.writeKeyNH(arg2F->cacheNode(b));
-      }
-      */
       entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();
     }
@@ -151,16 +142,6 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
       compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      /*
-      entry.writeKey(in);
-      if (can_commute && a > b) {
-        entry.writeKeyNH(arg2F->cacheNode(b));
-        entry.writeKeyNH(arg1F->cacheNode(a));
-      } else {
-        entry.writeKeyNH(arg1F->cacheNode(a));
-        entry.writeKeyNH(arg2F->cacheNode(b));
-      }
-      */
       entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();
     }
@@ -218,16 +199,6 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
       compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      /*
-      entry.writeKey(k);
-      if (can_commute && a > b) {
-        entry.writeKeyNH(arg2F->cacheNode(b));
-        entry.writeKeyNH(arg1F->cacheNode(a));
-      } else {
-        entry.writeKeyNH(arg1F->cacheNode(a));
-        entry.writeKeyNH(arg2F->cacheNode(b));
-      }
-      */
       entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();
     }
@@ -306,19 +277,6 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
       compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      /*
-      if (can_commute && a > b) {
-        entry.writeKey(bev);
-        entry.writeKeyNH(arg2F->cacheNode(b));
-        entry.writeKey(aev);
-        entry.writeKeyNH(arg1F->cacheNode(a));
-      } else {
-        entry.writeKey(aev);
-        entry.writeKeyNH(arg1F->cacheNode(a));
-        entry.writeKey(bev);
-        entry.writeKeyNH(arg2F->cacheNode(b));
-      }
-      */
       entry.writeResult(cev);
       entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();
@@ -383,19 +341,6 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
       compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      /*
-      if (can_commute && a > b) {
-        entry.writeKey(bev);
-        entry.writeKeyNH(arg2F->cacheNode(b));
-        entry.writeKey(aev);
-        entry.writeKeyNH(arg1F->cacheNode(a));
-      } else {
-        entry.writeKey(aev);
-        entry.writeKeyNH(arg1F->cacheNode(a));
-        entry.writeKey(bev);
-        entry.writeKeyNH(arg2F->cacheNode(b));
-      }
-      */
       entry.writeResult(cev);
       entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();

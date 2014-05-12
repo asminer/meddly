@@ -174,6 +174,9 @@ class MEDDLY::base_table : public compute_table {
           friend class MEDDLY::base_table;
           int handle;
           unsigned hash_value;
+#ifdef DEVELOPMENT_CODE
+          bool has_hash_value;
+#endif
           node_handle* entry;
           node_handle* res_entry;
           unsigned resSlot;
@@ -230,7 +233,10 @@ class MEDDLY::base_table : public compute_table {
           // The following are used by the compute table.
           inline const node_handle* readEntry(int off) const { return entry+off; }
           inline int readHandle() const { return handle; }
-          inline unsigned getHash() const { return hash_value; }
+          inline unsigned getHash() const { 
+            MEDDLY_DCASSERT(has_hash_value);
+            return hash_value; 
+          }
           inline node_handle& data(int i) {
             return entry[i];
           }
@@ -293,20 +299,6 @@ class MEDDLY::base_table : public compute_table {
       return key;
     }
 
-    // M is 1 if we need a slot for the operation index, 0 otherwise.
-    static inline search_key* init(int* data, operation* op, int M) {
-      old_search_key* key = new old_search_key(op);
-      MEDDLY_DCASSERT(0==key->data);
-      key->data = data;
-      key->killData = false;
-      key->key_data = key->data+M;
-      if (M) key->data[0] = op->getIndex();
-#ifdef DEVELOPMENT_CODE
-      key->keyLength = op->getKeyLength();
-#endif
-      return key;
-    }
-    
     // C is the number of slots we need for "chaining".
     // M is 1 if we need a slot for the operation index, 0 otherwise.
     inline void startIndexedEntry(old_search_key* Key, int C, int M) {
@@ -321,6 +313,7 @@ class MEDDLY::base_table : public compute_table {
       currEntry.res_entry = currEntry.entry + Key->dataLength() + C;
 #ifdef DEVELOPMENT_CODE
       currEntry.resLength = op->getAnsLength();
+      currEntry.has_hash_value = true;
 #endif
       op->doneCTkey(Key);
     }
@@ -331,14 +324,14 @@ class MEDDLY::base_table : public compute_table {
       MEDDLY_DCASSERT(Key);
       operation* op = Key->getOp();
       MEDDLY_DCASSERT(op);
-      currEntry.hash_value = Key->getHash();
       currEntry.resSlot = 0;
-      int* data = new int[op->getKeyLength()+M+C];
+      int* data = new int[op->getCacheEntryLength()+M+C];
       currEntry.entry = data;
       memcpy(currEntry.entry+C, Key->rawData(), Key->dataLength()*sizeof(node_handle));
       currEntry.res_entry = currEntry.entry + Key->dataLength() + C;
 #ifdef DEVELOPMENT_CODE
       currEntry.resLength = op->getAnsLength();
+      currEntry.has_hash_value = false;
 #endif
       op->doneCTkey(Key);
       return data;
@@ -945,7 +938,6 @@ class MEDDLY::base_map : public base_table {
     }
   protected:
     operation* global_op;
-    int* search;
     int* current;
 };
 

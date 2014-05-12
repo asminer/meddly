@@ -149,12 +149,6 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   arg1F->cacheNode(a);
   arg2F->cacheNode(b);
   compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
-  /*
-  entry.writeKey(-1);
-  entry.writeKey(k);
-  entry.writeKeyNH(arg1F->cacheNode(a));
-  entry.writeKeyNH(arg2F->cacheNode(b));
-  */
   entry.writeResultNH(resF->cacheNode(c));
   CT->addEntry();
 
@@ -210,12 +204,6 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(int in, int k, node_handle a,
   arg1F->cacheNode(a);
   arg2F->cacheNode(b);
   compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
-  /*
-  entry.writeKey(in);
-  entry.writeKey(k);
-  entry.writeKeyNH(arg1F->cacheNode(a));
-  entry.writeKeyNH(arg2F->cacheNode(b));
-  */
   entry.writeResultNH(resF->cacheNode(c));
   CT->addEntry();
 
