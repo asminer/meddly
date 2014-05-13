@@ -57,17 +57,26 @@ class MEDDLY::range_int : public unary_operation {
     virtual void showEntry(FILE* strm, const node_handle* entryData) const;
   
   protected:
-    inline bool findResult(node_handle a, long &b) {
-      CTsrch.key(0) = a;
-      const node_handle* cacheFind = CT->find(CTsrch);
-      if (0==cacheFind) return false;
-      b = cacheFind[1];
-      return true;
+    inline compute_table::search_key* 
+    findResult(node_handle a, int &b) 
+    {
+      compute_table::search_key* CTsrch = useCTkey();
+      MEDDLY_DCASSERT(CTsrch);
+      CTsrch->reset();
+      CTsrch->writeNH(a);
+      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      if (!cacheFind) return CTsrch;
+      cacheFind.read(b);
+      doneCTkey(CTsrch);
+      return 0;
     }
-    inline long saveResult(node_handle a, long &b) {
-      compute_table::temp_entry &entry = CT->startNewEntry(this);
-      entry.key(0) = argF->cacheNode(a);
-      entry.result(0) = b;
+    inline long saveResult(compute_table::search_key* Key, 
+      node_handle a, int &b) 
+    {
+      argF->cacheNode(a);
+      compute_table::entry_builder &entry = CT->startNewEntry(Key);
+      // entry.writeKeyNH(argF->cacheNode(a));
+      entry.writeResult(b);
       CT->addEntry();
       return b;
     }
@@ -111,17 +120,24 @@ class MEDDLY::range_real : public unary_operation {
     virtual void showEntry(FILE* strm, const node_handle* entryData) const;
 
   protected:
-    inline bool findResult(node_handle a, float &b) {
-      CTsrch.key(0) = a;
-      const node_handle* cacheFind = CT->find(CTsrch);
-      if (0==cacheFind) return false;
-      b = ((float*)(cacheFind+1))[0];
-      return true;
+    inline compute_table::search_key* findResult(node_handle a, float &b) {
+      compute_table::search_key* CTsrch = useCTkey();
+      MEDDLY_DCASSERT(CTsrch);
+      CTsrch->reset();
+      CTsrch->writeNH(a);
+      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      if (!cacheFind) return CTsrch;
+      cacheFind.read(b);
+      doneCTkey(CTsrch);
+      return 0;
     }
-    inline float saveResult(node_handle a, float &b) {
-      compute_table::temp_entry &entry = CT->startNewEntry(this);
-      entry.key(0) = argF->cacheNode(a);
-      entry.copyResult(0, &b, sizeof(float));
+    inline float saveResult(compute_table::search_key* Key, 
+      node_handle a, float &b) 
+    {
+      argF->cacheNode(a);
+      compute_table::entry_builder &entry = CT->startNewEntry(Key);
+      // entry.writeKeyNH(argF->cacheNode(a));
+      entry.writeResult(b);
       return b;
     }
 };
@@ -163,17 +179,18 @@ public:
   virtual void compute(const dd_edge &arg, long &res) {
     res = compute(arg.getNode());
   }
-  long compute(node_handle a);
+  int compute(node_handle a);
 };
 
-long MEDDLY::maxrange_int::compute(node_handle a)
+int MEDDLY::maxrange_int::compute(node_handle a)
 {
   // Terminal case
   if (argF->isTerminalNode(a)) return expert_forest::int_Tencoder::handle2value(a);
   
   // Check compute table
-  long max;
-  if (findResult(a, max)) return max;
+  int max;
+  compute_table::search_key* Key = findResult(a, max);
+  if (0==Key) return max;
 
   // Initialize node reader
   node_reader* A = argF->initNodeReader(a, true);
@@ -188,7 +205,7 @@ long MEDDLY::maxrange_int::compute(node_handle a)
   node_reader::recycle(A);
 
   // Add entry to compute table
-  return saveResult(a, max);
+  return saveResult(Key, a, max);
 }
 
 
@@ -207,17 +224,18 @@ public:
   virtual void compute(const dd_edge &arg, long &res) {
     res = compute(arg.getNode());
   }
-  long compute(node_handle a);
+  int compute(node_handle a);
 };
 
-long MEDDLY::minrange_int::compute(node_handle a)
+int MEDDLY::minrange_int::compute(node_handle a)
 {
   // Terminal case
   if (argF->isTerminalNode(a)) return expert_forest::int_Tencoder::handle2value(a);
   
   // Check compute table
-  long min;
-  if (findResult(a, min)) return min;
+  int min;
+  compute_table::search_key* Key = findResult(a, min);
+  if (0==Key) return min;
 
   // Initialize node reader
   node_reader* A = argF->initNodeReader(a, true);
@@ -232,7 +250,7 @@ long MEDDLY::minrange_int::compute(node_handle a)
   node_reader::recycle(A);
 
   // Add entry to compute table
-  return saveResult(a, min);
+  return saveResult(Key, a, min);
 }
 
 
@@ -261,7 +279,8 @@ float MEDDLY::maxrange_real::compute(node_handle a)
   
   // Check compute table
   float max;
-  if (findResult(a, max)) return max;
+  compute_table::search_key* Key = findResult(a, max);
+  if (0==Key) return max;
 
   // Initialize node reader
   node_reader* A = argF->initNodeReader(a, true);
@@ -276,7 +295,7 @@ float MEDDLY::maxrange_real::compute(node_handle a)
   node_reader::recycle(A);
 
   // Add entry to compute table
-  return saveResult(a, max);
+  return saveResult(Key, a, max);
 }
 
 
@@ -305,7 +324,8 @@ float MEDDLY::minrange_real::compute(node_handle a)
   
   // Check compute table
   float min;
-  if (findResult(a, min)) return min;
+  compute_table::search_key* Key = findResult(a, min);
+  if (0==Key) return min;
 
   // Initialize node reader
   node_reader* A = argF->initNodeReader(a, true);
@@ -320,7 +340,7 @@ float MEDDLY::minrange_real::compute(node_handle a)
   node_reader::recycle(A);
 
   // Add entry to compute table
-  return saveResult(a, min);
+  return saveResult(Key, a, min);
 }
 
 

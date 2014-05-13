@@ -55,30 +55,33 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
   protected:
     virtual bool isStaleEntry(const node_handle* entryData);
 
-    inline bool findResult(node_handle a, node_handle b, node_handle &c) {
+    inline compute_table::search_key* 
+    findResult(node_handle a, node_handle b, node_handle &c) 
+    {
+      compute_table::search_key* CTsrch = useCTkey();
+      MEDDLY_DCASSERT(CTsrch);
+      CTsrch->reset();
       if (can_commute && a > b) {
-        CTsrch.key(0) = b;
-        CTsrch.key(1) = a;
+        CTsrch->writeNH(b);
+        CTsrch->writeNH(a);
       } else {
-        CTsrch.key(0) = a;
-        CTsrch.key(1) = b;
+        CTsrch->writeNH(a);
+        CTsrch->writeNH(b);
       }
-      const node_handle* cacheFind = CT->find(CTsrch);
-      if (0==cacheFind) return false;
-      c = resF->linkNode(cacheFind[2]);
-      return true;
+      compute_table::search_result& cacheFind = CT->find(CTsrch);
+      if (!cacheFind) return CTsrch;
+      c = resF->linkNode(cacheFind.readNH());
+      doneCTkey(CTsrch);
+      return 0;
     }
 
-    inline void saveResult(node_handle a, node_handle b, node_handle c) {
-      compute_table::temp_entry &entry = CT->startNewEntry(this);
-      if (can_commute && a > b) {
-        entry.key(0) = arg2F->cacheNode(b);
-        entry.key(1) = arg1F->cacheNode(a);
-      } else {
-        entry.key(0) = arg1F->cacheNode(a);
-        entry.key(1) = arg2F->cacheNode(b);
-      }
-      entry.result(0) = resF->cacheNode(c);
+    inline void saveResult(compute_table::search_key* K, 
+      node_handle a, node_handle b, node_handle c) 
+    {
+      arg1F->cacheNode(a);
+      arg2F->cacheNode(b);
+      compute_table::entry_builder &entry = CT->startNewEntry(K);
+      entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();
     }
 
@@ -112,32 +115,34 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
   protected:
     virtual bool isStaleEntry(const node_handle* entryData);
 
-    inline bool findResult(int in, node_handle a, node_handle b, node_handle &c) {
-      CTsrch.key(0) = in;
+    inline compute_table::search_key* 
+    findResult(int in, node_handle a, node_handle b, node_handle &c) 
+    {
+      compute_table::search_key* CTsrch = useCTkey();
+      MEDDLY_DCASSERT(CTsrch);
+      CTsrch->reset();
+      CTsrch->write(in);
       if (can_commute && a > b) {
-        CTsrch.key(1) = b;
-        CTsrch.key(2) = a;
+        CTsrch->writeNH(b);
+        CTsrch->writeNH(a);
       } else {
-        CTsrch.key(1) = a;
-        CTsrch.key(2) = b;
+        CTsrch->writeNH(a);
+        CTsrch->writeNH(b);
       }
-      const node_handle* cacheFind = CT->find(CTsrch);
-      if (0==cacheFind) return false;
-      c = resF->linkNode(cacheFind[3]);
-      return true;
+      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      if (!cacheFind) return CTsrch;
+      c = resF->linkNode(cacheFind.readNH());
+      doneCTkey(CTsrch);
+      return 0;
     }
 
-    inline void saveResult(int in, node_handle a, node_handle b, node_handle c) {
-      compute_table::temp_entry &entry = CT->startNewEntry(this);
-      entry.key(0) = in;
-      if (can_commute && a > b) {
-        entry.key(1) = arg2F->cacheNode(b);
-        entry.key(2) = arg1F->cacheNode(a);
-      } else {
-        entry.key(1) = arg1F->cacheNode(a);
-        entry.key(2) = arg2F->cacheNode(b);
-      }
-      entry.result(0) = resF->cacheNode(c);
+    inline void saveResult(compute_table::search_key* Key, 
+      int in, node_handle a, node_handle b, node_handle c) 
+    {
+      arg1F->cacheNode(a);
+      arg2F->cacheNode(b);
+      compute_table::entry_builder &entry = CT->startNewEntry(Key);
+      entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();
     }
 
@@ -167,32 +172,34 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
   protected:
     virtual bool isStaleEntry(const node_handle* entryData);
 
-    inline bool findResult(int k, node_handle a, node_handle b, node_handle &c) {
-      CTsrch.key(0) = k;
+    inline compute_table::search_key* 
+    findResult(int k, node_handle a, node_handle b, node_handle &c) 
+    {
+      compute_table::search_key* CTsrch = useCTkey();
+      MEDDLY_DCASSERT(CTsrch);
+      CTsrch->reset();
+      CTsrch->write(k);
       if (can_commute && a > b) {
-        CTsrch.key(1) = b;
-        CTsrch.key(2) = a;
+        CTsrch->writeNH(b);
+        CTsrch->writeNH(a);
       } else {
-        CTsrch.key(1) = a;
-        CTsrch.key(2) = b;
+        CTsrch->writeNH(a);
+        CTsrch->writeNH(b);
       }
-      const node_handle* cacheFind = CT->find(CTsrch);
-      if (0==cacheFind) return false;
-      c = resF->linkNode(cacheFind[3]);
-      return true;
+      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      if (!cacheFind) return CTsrch;
+      c = resF->linkNode(cacheFind.readNH());
+      doneCTkey(CTsrch);
+      return 0;
     }
 
-    inline void saveResult(int k, node_handle a, node_handle b, node_handle c) {
-      compute_table::temp_entry &entry = CT->startNewEntry(this);
-      entry.key(0) = k;
-      if (can_commute && a > b) {
-        entry.key(1) = arg2F->cacheNode(b);
-        entry.key(2) = arg1F->cacheNode(a);
-      } else {
-        entry.key(1) = arg1F->cacheNode(a);
-        entry.key(2) = arg2F->cacheNode(b);
-      }
-      entry.result(0) = resF->cacheNode(c);
+    inline void saveResult(compute_table::search_key* Key,
+      int k, node_handle a, node_handle b, node_handle c) 
+    {
+      arg1F->cacheNode(a);
+      arg2F->cacheNode(b);
+      compute_table::entry_builder &entry = CT->startNewEntry(Key);
+      entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();
     }
 
@@ -239,40 +246,39 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
     virtual void compute(int aev, node_handle a, int bev, node_handle b, int& cev, node_handle &c);
 
   protected:
-    inline bool findResult(int aev, node_handle a, int bev, node_handle b, int& cev, node_handle &c) {
+    inline compute_table::search_key* findResult(int aev, node_handle a, 
+      int bev, node_handle b, int& cev, node_handle &c) 
+    {
+      compute_table::search_key* CTsrch = useCTkey();
+      MEDDLY_DCASSERT(CTsrch);
+      CTsrch->reset();
       if (can_commute && a > b) {
-        CTsrch.setKeyEV(0, bev);
-        CTsrch.key(1) = b;
-        CTsrch.setKeyEV(2, aev);
-        CTsrch.key(3) = a;
+        CTsrch->write(bev);
+        CTsrch->writeNH(b);
+        CTsrch->write(aev);
+        CTsrch->writeNH(a);
       } else {
-        CTsrch.setKeyEV(0, aev);
-        CTsrch.key(1) = a;
-        CTsrch.setKeyEV(2, bev);
-        CTsrch.key(3) = b;
+        CTsrch->write(aev);
+        CTsrch->writeNH(a);
+        CTsrch->write(bev);
+        CTsrch->writeNH(b);
       }
-      const node_handle* cacheFind = CT->find(CTsrch);
-      if (0==cacheFind) return false;
-      compute_table::readEV(cacheFind+4, cev);
-      c = resF->linkNode(cacheFind[5]);
-      return true;
+      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      if (!cacheFind) return CTsrch;
+      cacheFind.read(cev);
+      c = resF->linkNode(cacheFind.readNH());
+      doneCTkey(CTsrch);
+      return 0;
     }
 
-    inline void saveResult(int aev, node_handle a, int bev, node_handle b, int cev, node_handle c) {
-      compute_table::temp_entry &entry = CT->startNewEntry(this);
-      if (can_commute && a > b) {
-        entry.setKeyEV(0, bev);
-        entry.key(1) = arg2F->cacheNode(b);
-        entry.setKeyEV(2, aev);
-        entry.key(3) = arg1F->cacheNode(a);
-      } else {
-        entry.setKeyEV(0, aev);
-        entry.key(1) = arg1F->cacheNode(a);
-        entry.setKeyEV(2, bev);
-        entry.key(3) = arg2F->cacheNode(b);
-      }
-      entry.setResultEV(0, cev);
-      entry.result(1) = resF->cacheNode(c);
+    inline void saveResult(compute_table::search_key* Key, 
+      int aev, node_handle a, int bev, node_handle b, int cev, node_handle c) 
+    {
+      arg1F->cacheNode(a);
+      arg2F->cacheNode(b);
+      compute_table::entry_builder &entry = CT->startNewEntry(Key);
+      entry.writeResult(cev);
+      entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();
     }
 
@@ -304,43 +310,39 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
       float bev, node_handle b, float& cev, node_handle& c);
 
   protected:
-    inline bool findResult(float aev, node_handle a, float bev, node_handle b, 
-      float& cev, node_handle &c) 
+    inline compute_table::search_key* findResult(float aev, node_handle a, 
+      float bev, node_handle b, float& cev, node_handle &c) 
     {
+      compute_table::search_key* CTsrch = useCTkey();
+      MEDDLY_DCASSERT(CTsrch);
+      CTsrch->reset();
       if (can_commute && a > b) {
-        CTsrch.setKeyEV(0, bev);
-        CTsrch.key(1) = b;
-        CTsrch.setKeyEV(2, aev);
-        CTsrch.key(3) = a;
+        CTsrch->write(bev);
+        CTsrch->writeNH(b);
+        CTsrch->write(aev);
+        CTsrch->writeNH(a);
       } else {
-        CTsrch.setKeyEV(0, aev);
-        CTsrch.key(1) = a;
-        CTsrch.setKeyEV(2, bev);
-        CTsrch.key(3) = b;
+        CTsrch->write(aev);
+        CTsrch->writeNH(a);
+        CTsrch->write(bev);
+        CTsrch->writeNH(b);
       }
-      const node_handle* cacheFind = CT->find(CTsrch);
-      if (0==cacheFind) return false;
-      compute_table::readEV(cacheFind+4, cev);
-      c = resF->linkNode(cacheFind[5]);
-      return true;
+      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      if (!cacheFind) return CTsrch;
+      cacheFind.read(cev);
+      c = resF->linkNode(cacheFind.readNH());
+      doneCTkey(CTsrch);
+      return 0;
     }
 
-    inline void saveResult(float aev, node_handle a, float bev, node_handle b,
-      float cev, node_handle c) {
-      compute_table::temp_entry &entry = CT->startNewEntry(this);
-      if (can_commute && a > b) {
-        entry.setKeyEV(0, bev);
-        entry.key(1) = arg2F->cacheNode(b);
-        entry.setKeyEV(2, aev);
-        entry.key(3) = arg1F->cacheNode(a);
-      } else {
-        entry.setKeyEV(0, aev);
-        entry.key(1) = arg1F->cacheNode(a);
-        entry.setKeyEV(2, bev);
-        entry.key(3) = arg2F->cacheNode(b);
-      }
-      entry.setResultEV(0, cev);
-      entry.result(1) = resF->cacheNode(c);
+    inline void saveResult(compute_table::search_key* Key, float aev, 
+      node_handle a, float bev, node_handle b, float cev, node_handle c) 
+    {
+      arg1F->cacheNode(a);
+      arg2F->cacheNode(b);
+      compute_table::entry_builder &entry = CT->startNewEntry(Key);
+      entry.writeResult(cev);
+      entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();
     }
 

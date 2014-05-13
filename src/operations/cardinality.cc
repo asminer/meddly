@@ -86,7 +86,7 @@ protected:
 };
 
 MEDDLY::card_int::card_int(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, 1, sizeof(long) / sizeof(int), arg, INTEGER)
+ : unary_operation(oc, 1, sizeof(long) / sizeof(node_handle), arg, INTEGER)
 {
 }
 
@@ -136,12 +136,15 @@ long MEDDLY::card_mdd_int::compute(int k, node_handle a)
   }
   
   // Check compute table
-  CTsrch.key(0) = a; 
-  const node_handle* cacheEntry = CT->find(CTsrch);
+  compute_table::search_key* CTsrch = useCTkey();
+  MEDDLY_DCASSERT(CTsrch);
+  CTsrch->reset();
+  CTsrch->writeNH(a); 
+  compute_table::search_result &cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
-    // ugly but portable
     long answer;
-    memcpy(&answer, cacheEntry+1, sizeof(long));
+    cacheEntry.read(answer);
+    doneCTkey(CTsrch);
     return answer;
   }
 
@@ -159,9 +162,10 @@ long MEDDLY::card_mdd_int::compute(int k, node_handle a)
   node_reader::recycle(A);
 
   // Add entry to compute table
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
-  entry.key(0) = argF->cacheNode(a);
-  entry.copyResult(0, &card, sizeof(long));
+  argF->cacheNode(a);
+  compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
+  // entry.writeKeyNH(argF->cacheNode(a));
+  entry.writeResult(card);
   CT->addEntry();
 
 #ifdef DEBUG_CARD
@@ -205,12 +209,15 @@ long MEDDLY::card_mxd_int::compute(int k, node_handle a)
   }
   
   // Check compute table
-  CTsrch.key(0) = a; 
-  const node_handle* cacheEntry = CT->find(CTsrch);
+  compute_table::search_key* CTsrch = useCTkey();
+  MEDDLY_DCASSERT(CTsrch);
+  CTsrch->reset();
+  CTsrch->writeNH(a); 
+  compute_table::search_result &cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
-    // ugly but portable
     long answer;
-    memcpy(&answer, cacheEntry+1, sizeof(long));
+    cacheEntry.read(answer);
+    doneCTkey(CTsrch);
     return answer;
   }
 
@@ -228,9 +235,10 @@ long MEDDLY::card_mxd_int::compute(int k, node_handle a)
   node_reader::recycle(A);
 
   // Add entry to compute table
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
-  entry.key(0) = argF->cacheNode(a);
-  entry.copyResult(0, &card, sizeof(long));
+  argF->cacheNode(a);
+  compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
+  // entry.writeKeyNH(argF->cacheNode(a));
+  entry.writeResult(card);
   CT->addEntry();
 
 #ifdef DEBUG_CARD
@@ -258,7 +266,7 @@ public:
 };
 
 MEDDLY::card_real::card_real(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, 1, sizeof(double) / sizeof(int), arg, REAL)
+ : unary_operation(oc, 1, sizeof(double) / sizeof(node_handle), arg, REAL)
 {
 }
 
@@ -309,12 +317,15 @@ double MEDDLY::card_mdd_real::compute(int k, node_handle a)
   }
   
   // Check compute table
-  CTsrch.key(0) = a; 
-  const node_handle* cacheEntry = CT->find(CTsrch);
+  compute_table::search_key* CTsrch = useCTkey();
+  MEDDLY_DCASSERT(CTsrch);
+  CTsrch->reset();
+  CTsrch->writeNH(a); 
+  compute_table::search_result &cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
-    // ugly but portable
     double answer;
-    memcpy(&answer, cacheEntry+1, sizeof(double));
+    cacheEntry.read(answer);
+    doneCTkey(CTsrch);
     return answer;
   }
 
@@ -332,9 +343,10 @@ double MEDDLY::card_mdd_real::compute(int k, node_handle a)
   node_reader::recycle(A);
 
   // Add entry to compute table
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
-  entry.key(0) = argF->cacheNode(a);
-  entry.copyResult(0, &card, sizeof(double));
+  argF->cacheNode(a);
+  compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
+  // entry.writeKeyNH(argF->cacheNode(a));
+  entry.writeResult(card);
   CT->addEntry();
 
 #ifdef DEBUG_CARD
@@ -379,12 +391,15 @@ double MEDDLY::card_mxd_real::compute(int k, node_handle a)
   }
   
   // Check compute table
-  CTsrch.key(0) = a; 
-  const node_handle* cacheEntry = CT->find(CTsrch);
+  compute_table::search_key* CTsrch = useCTkey();
+  MEDDLY_DCASSERT(CTsrch);
+  CTsrch->reset();
+  CTsrch->writeNH(a); 
+  compute_table::search_result &cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
-    // ugly but portable
     double answer;
-    memcpy(&answer, cacheEntry+1, sizeof(double));
+    cacheEntry.read(answer);
+    doneCTkey(CTsrch);
     return answer;
   }
 
@@ -402,9 +417,10 @@ double MEDDLY::card_mxd_real::compute(int k, node_handle a)
   node_reader::recycle(A);
 
   // Add entry to compute table
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
-  entry.key(0) = argF->cacheNode(a);
-  entry.copyResult(0, &card, sizeof(double));
+  argF->cacheNode(a);
+  compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
+  // entry.writeKeyNH(argF->cacheNode(a));
+  entry.writeResult(card);
   CT->addEntry();
 
 #ifdef DEBUG_CARD
@@ -436,7 +452,7 @@ public:
 };
 
 MEDDLY::card_mpz::card_mpz(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, 1, sizeof(ct_object*) / sizeof(int), arg, HUGEINT)
+ : unary_operation(oc, 1, sizeof(ct_object*) / sizeof(node_handle), arg, HUGEINT)
 {
 }
 
@@ -505,12 +521,17 @@ void MEDDLY::card_mdd_mpz::compute(int k, node_handle a, mpz_object &card)
   }
   
   // Check compute table
-  CTsrch.key(0) = a;
-  const node_handle* cacheEntry = CT->find(CTsrch);
+  compute_table::search_key* CTsrch = useCTkey();
+  MEDDLY_DCASSERT(CTsrch);
+  CTsrch->reset();
+  CTsrch->writeNH(a);
+  compute_table::search_result &cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
-    mpz_object* answer;
-    memcpy(&answer, cacheEntry+1, sizeof(mpz_object*));
+    void* P;
+    cacheEntry.read(P);
+    mpz_object* answer = (mpz_object*) P;
     answer->copyInto(card);
+    doneCTkey(CTsrch);
     return;
   }
 
@@ -531,10 +552,11 @@ void MEDDLY::card_mdd_mpz::compute(int k, node_handle a, mpz_object &card)
   node_reader::recycle(A);
 
   // Add entry to compute table
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
-  entry.key(0) = argF->cacheNode(a);
+  argF->cacheNode(a);
+  compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
+  // entry.writeKeyNH(argF->cacheNode(a));
   mpz_object* answer = new mpz_object(card);
-  entry.copyResult(0, &answer, sizeof(mpz_object*));
+  entry.writeResult(answer);
   CT->addEntry();
 
 #ifdef DEBUG_CARD
@@ -592,12 +614,17 @@ void MEDDLY::card_mxd_mpz::compute(int k, node_handle a, mpz_object &card)
   }
   
   // Check compute table
-  CTsrch.key(0) = a;
-  const node_handle* cacheEntry = CT->find(CTsrch);
+  compute_table::search_key* CTsrch = useCTkey();
+  MEDDLY_DCASSERT(CTsrch);
+  CTsrch->reset();
+  CTsrch->writeNH(a);
+  compute_table::search_result &cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
-    mpz_object* answer;
-    memcpy(&answer, cacheEntry+1, sizeof(mpz_object*));
+    void* P;
+    cacheEntry.read(P);
+    mpz_object* answer = (mpz_object*) P;
     answer->copyInto(card);
+    doneCTkey(CTsrch);
     return;
   }
 
@@ -618,10 +645,11 @@ void MEDDLY::card_mxd_mpz::compute(int k, node_handle a, mpz_object &card)
   node_reader::recycle(A);
 
   // Add entry to compute table
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
-  entry.key(0) = argF->cacheNode(a);
+  argF->cacheNode(a);
+  compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
+  // entry.writeKeyNH(argF->cacheNode(a));
   mpz_object* answer = new mpz_object(card);
-  entry.copyResult(0, &answer, sizeof(mpz_object*));
+  entry.writeResult(answer);
   CT->addEntry();
 
 #ifdef DEBUG_CARD
