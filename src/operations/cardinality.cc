@@ -201,7 +201,7 @@ long MEDDLY::card_mxd_int::compute(int k, node_handle a)
       return compute(-k-1, a);
     }
     // redundant node
-    return overflow_mult(compute(-k, a), argF->getLevelSize(k));
+    return overflow_mult(compute((k>0 ? -k : -k-1), a), argF->getLevelSize(k));
   }
   
   // Check compute table
@@ -375,7 +375,7 @@ double MEDDLY::card_mxd_real::compute(int k, node_handle a)
       return compute(-k-1, a);
     }
     // redundant node
-    return compute(-k, a) * argF->getLevelSize(k);
+    return compute((k>0 ? -k : -k-1), a) * argF->getLevelSize(k);
   }
   
   // Check compute table

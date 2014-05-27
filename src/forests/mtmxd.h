@@ -515,7 +515,10 @@ namespace MEDDLY {
             // process unprimed level
             //
             if (DONT_CARE == vlist[i]) {
-              if (F->isFullyReduced()) continue;
+              if (F->isFullyReduced()) {
+            	  next=nextpr;
+            	  continue;
+              }
               // build redundant node
               int sz = F->getLevelSize(i);
               node_builder& nb = F->useNodeBuilder(i, sz);
