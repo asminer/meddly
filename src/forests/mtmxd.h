@@ -60,95 +60,6 @@ class MEDDLY::mtmxd_forest : public mt_forest {
         return p;
       }
 
-  public:
-    /// Special case for createEdge(), with only one minterm.
-    inline node_handle createEdgePath(int k, const int* vlist, 
-      const int* vplist, node_handle next) 
-    {
-        MEDDLY_DCASSERT(isForRelations());
-        if (0==next) return next;
-        for (int i=1; i<=k; i++) {
-          if (DONT_CHANGE == vplist[i]) {
-            //
-            // Identity node
-            //
-            MEDDLY_DCASSERT(DONT_CARE == vlist[i]);
-            if (isIdentityReduced()) continue;
-            // Build an identity node by hand
-            int sz = getLevelSize(i);
-            node_builder& nb = useNodeBuilder(i, sz);
-            for (int v=0; v<sz; v++) {
-              node_builder& nbp = useSparseBuilder(-i, 1);
-              nbp.i(0) = v;
-              nbp.d(0) = linkNode(next);
-              nb.d(v) = createReducedNode(v, nbp);
-            }
-            unlinkNode(next);
-            next = createReducedNode(-1, nb);
-            continue;
-          }
-          //
-          // process primed level
-          //
-          node_handle nextpr;
-          if (DONT_CARE == vplist[i]) {
-            if (isFullyReduced()) {
-              // DO NOTHING
-              nextpr = next;
-            } else {
-              // build redundant node
-              int sz = getLevelSize(-i);
-              node_builder& nb = useNodeBuilder(-i, sz);
-              for (int v=0; v<sz; v++) {
-                nb.d(v) = linkNode(next);
-              }
-              unlinkNode(next);
-              nextpr = createReducedNode(-1, nb);
-            }
-          } else {
-            // sane value
-            node_builder& nb = useSparseBuilder(-i, 1);
-            nb.i(0) = vplist[i];
-            nb.d(0) = next;
-            nextpr = createReducedNode(vlist[i], nb);
-          }
-          //
-          // process unprimed level
-          //
-          if (DONT_CARE == vlist[i]) {
-            if (isFullyReduced()) {
-              next = nextpr;
-              continue;
-            }
-            // build redundant node
-            int sz = getLevelSize(i);
-            node_builder& nb = useNodeBuilder(i, sz);
-            if (isIdentityReduced()) {
-              // Below is likely a singleton, so check for identity reduction
-              // on the appropriate v value
-              for (int v=0; v<sz; v++) {
-                node_handle dpr = (v == vplist[i]) ? next : nextpr;
-                nb.d(v) = linkNode(dpr);
-              }
-            } else {
-              // Doesn't matter what happened below
-              for (int v=0; v<sz; v++) {
-                nb.d(v) = linkNode(nextpr);
-              }
-            }
-            unlinkNode(nextpr);
-            next = createReducedNode(-1, nb);
-          } else {
-            // sane value
-            node_builder& nb = useSparseBuilder(i, 1);
-            nb.i(0) = vlist[i];
-            nb.d(0) = nextpr;
-            next = createReducedNode(-1, nb);
-          }
-        } // for i
-        return next;
-    }
-
   protected:
     class mtmxd_iterator : public mt_iterator {
       public:
@@ -256,7 +167,7 @@ namespace MEDDLY {
         // Fast special case
         //
         if (1==stop-start) {
-          return F->createEdgePath(k, unprimed(start), primed(start),
+          return createEdgePath(k, unprimed(start), primed(start),
             ENCODER::value2handle(term(start))
           );
         }
@@ -317,7 +228,7 @@ namespace MEDDLY {
         }
 
         //
-        // Process "don't care, odrinary" pairs, if any
+        // Process "don't care, ordinary" pairs, if any
         // (producing a level-k node)
         //
         if (batchP > start) {
@@ -335,7 +246,7 @@ namespace MEDDLY {
         // Start new node at level k
         //
         node_builder& nb = F->useSparseBuilder(k, lastV);
-        int z = 0; // number of nonzero edges in our sparse node
+        int z = 0; // number of opaque edges in our sparse node
 
         //
         // For each value v, 
@@ -369,20 +280,28 @@ namespace MEDDLY {
           // (2) recurse if necessary
           //
           if (0==batchP) continue;
-          nb.i(z) = v;
-          nb.d(z) = createEdgePr(v, -k, start, batchP);
-          z++;
-        } // for v
+
+          node_handle total=createEdgePr(v, -k, start, batchP);
+          if(total!=F->getTransparentNode()){
+        	nb.i(z) = v;
+            nb.d(z) =total;
+            z++;
+          }
+        }
 
         //
         // Union with don't cares
         //
-        MEDDLY_DCASSERT(unionOp);
+
         nb.shrinkSparse(z);
         node_handle built = F->createReducedNode(-1, nb);
+
+        MEDDLY_DCASSERT(unionOp);
         node_handle total = unionOp->compute(dontcares, built);
+
         F->unlinkNode(dontcares);
         F->unlinkNode(built);
+
         return total; 
       };
 
@@ -438,10 +357,8 @@ namespace MEDDLY {
         //  (2) process them, if any
         //  (3) union with don't cares
         //
-        for (int v = (dontcares) ? 0 : nextV; 
-             v<lastV; 
-             v = (dontcares) ? v+1 : nextV) 
-        {
+        int v = (dontcares) ? 0 : nextV;
+        for (int v=0; v<lastV; v = (dontcares) ? v+1 : nextV) {
           nextV = lastV;
           //
           // neat trick!
@@ -483,12 +400,13 @@ namespace MEDDLY {
           F->unlinkNode(these);
 
           //
-          // add to sparse node, unless empty
+          // add to sparse node, unless transparent
           //
-          if (0==total) continue;
-          nb.i(z) = v;
-          nb.d(z) = total;
-          z++;
+          if (total!=F->getTransparentNode()){
+            nb.i(z) = v;
+            nb.d(z) = total;
+            z++;
+          }
         } // for v
 
         //
@@ -498,8 +416,6 @@ namespace MEDDLY {
         nb.shrinkSparse(z);
         return F->createReducedNode(in, nb);
       };
-
-
 
       //
       //
@@ -522,6 +438,154 @@ namespace MEDDLY {
         return F->createReducedNode(-1, nb);
       }
 
+      /// Special case for createEdge(), with only one minterm.
+      inline node_handle createEdgePath(int k, const int* vlist,
+        const int* vplist, node_handle next)
+      {
+          MEDDLY_DCASSERT(F->isForRelations());
+
+          if (0==next && (!F->isQuasiReduced() || F->getTransparentNode()==ENCODER::value2handle(0))) {
+        	return next;
+          }
+
+          for (int i=1; i<=k; i++) {
+            if (DONT_CHANGE == vplist[i]) {
+              //
+              // Identity node
+              //
+              MEDDLY_DCASSERT(DONT_CARE == vlist[i]);
+              if (F->isIdentityReduced()) continue;
+
+              // Build an identity node by hand
+              if(next!=F->getTransparentNode()){
+                int sz = F->getLevelSize(i);
+                node_builder& nb = F->useNodeBuilder(i, sz);
+                for (int v=0; v<sz; v++) {
+                  node_builder& nbp = F->useSparseBuilder(-i, 1);
+                  nbp.i(0) = v;
+                  nbp.d(0) = F->linkNode(next);
+                  nb.d(v) = F->createReducedNode(v, nbp);
+                }
+                F->unlinkNode(next);
+                next = F->createReducedNode(-1, nb);
+              }
+
+              continue;
+            }
+            //
+            // process primed level
+            //
+            node_handle nextpr;
+            if (DONT_CARE == vplist[i]) {
+              if (F->isFullyReduced()) {
+                // DO NOTHING
+                nextpr = next;
+              } else {
+                // build redundant node
+                int sz = F->getLevelSize(-i);
+                node_builder& nb = F->useNodeBuilder(-i, sz);
+                for (int v=0; v<sz; v++) {
+                  nb.d(v) = F->linkNode(next);
+                }
+                F->unlinkNode(next);
+                nextpr = F->createReducedNode(-1, nb);
+              }
+            } else {
+              // sane value
+              if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
+            	int sz = F->getLevelSize(-i);
+                node_builder& nbp = F->useNodeBuilder(-i, sz);
+                node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
+                for(int v=0; v<sz; v++){
+                  nbp.d(v)=(v==vplist[i] ? F->linkNode(next) : F->linkNode(zero));
+                }
+                F->unlinkNode(zero);
+
+                nextpr = F->createReducedNode(vlist[i], nbp);
+              }
+              else {
+                node_builder& nbp = F->useSparseBuilder(-i, 1);
+                nbp.i(0) = vplist[i];
+                nbp.d(0) = F->linkNode(next);
+
+                nextpr = F->createReducedNode(vlist[i], nbp);
+              }
+            }
+            //
+            // process unprimed level
+            //
+            if (DONT_CARE == vlist[i]) {
+              if (F->isFullyReduced()) {
+            	  next=nextpr;
+            	  continue;
+              }
+              // build redundant node
+              int sz = F->getLevelSize(i);
+              node_builder& nb = F->useNodeBuilder(i, sz);
+              if (F->isIdentityReduced()) {
+                // Below is likely a singleton, so check for identity reduction
+                // on the appropriate v value
+                for (int v=0; v<sz; v++) {
+//                  node_handle dpr = (v == vplist[i]) ? next : nextpr;
+                  nb.d(v) = F->linkNode(v == vplist[i] ? F->linkNode(next) : F->linkNode(nextpr));
+                }
+              } else {
+                // Doesn't matter what happened below
+                for (int v=0; v<sz; v++) {
+                  nb.d(v) = F->linkNode(nextpr);
+                }
+              }
+              F->unlinkNode(nextpr);
+              next = F->createReducedNode(-1, nb);
+            } else {
+              // sane value
+              if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
+            	int sz=F->getLevelSize(i);
+            	node_builder& nb = F->useNodeBuilder(i, sz);
+            	node_handle zero=makeOpaqueZeroNodeAtLevel(-i);
+            	for(int v=0; v<sz; v++){
+            	  nb.d(v)=(v==vlist[i] ? F->linkNode(nextpr) : F->linkNode(zero));
+            	}
+            	F->unlinkNode(zero);
+
+            	next = F->createReducedNode(-1, nb);
+              }
+              else {
+                node_builder& nb = F->useSparseBuilder(i, 1);
+                nb.i(0) = vlist[i];
+                nb.d(0) = F->linkNode(nextpr);
+
+                next = F->createReducedNode(-1, nb);
+              }
+            }
+          }
+
+          return next;
+      }
+
+      // Make zero nodes recursively when:
+      // 1. quasi reduction
+      // 2. the transparent value is not zero
+      node_handle makeOpaqueZeroNodeAtLevel(int k)
+      {
+  	    MEDDLY_DCASSERT(F->isQuasiReduced());
+  	    MEDDLY_DCASSERT(F->getTransparentNode()!=ENCODER::value2handle(0));
+
+//        if(k==0){
+//          return ENCODER::value2handle(0);
+//        }
+//
+//        int lastV=F->getLevelSize(k);
+//        node_builder& nb=F->useNodeBuilder(k, lastV);
+//        node_handle zero=makeOpaqueZeroNodeAtLevel(k>=0 ? -k : -k-1);
+//        nb.d(0)=zero;
+//        for(int i=1; i<lastV; i++){
+//          nb.d(i)=F->linkNode(zero);
+//        }
+//        return F->createReducedNode(-1, nb);
+
+  	    return F->makeNodeAtLevel(k, ENCODER::value2handle(0));
+      }
 
   }; // class mtmxd_edgemaker
 

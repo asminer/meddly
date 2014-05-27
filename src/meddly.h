@@ -1627,10 +1627,11 @@ class MEDDLY::domain {
                         Multi-terminal decision diagram forest,
                         edge-valued with plus/times decision diagram forest.
         @param  p       Policies to use within the forest.
+        @param  tv      Transparent value.
         @return 0       if an error occurs, a new forest otherwise.
     */
     forest* createForest(bool rel, forest::range_type t,
-      forest::edge_labeling ev, const forest::policies &p);
+      forest::edge_labeling ev, const forest::policies &p, int tv=0);
 
     /// Create a forest using the library default policies.
     forest* createForest(bool rel, forest::range_type t,

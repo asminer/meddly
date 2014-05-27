@@ -22,10 +22,12 @@
 
 #include "mtmxdreal.h"
 
-MEDDLY::mt_mxd_real::mt_mxd_real(int dsl, domain *d, const policies &p)
+MEDDLY::mt_mxd_real::mt_mxd_real(int dsl, domain *d, const policies &p, float tv)
 : mtmxd_forest(dsl, d, REAL, p)
 { 
   initializeForest();
+
+  transparent=float_Tencoder::value2handle(tv);
 }
 
 MEDDLY::mt_mxd_real::~mt_mxd_real()

@@ -36,7 +36,7 @@ namespace MEDDLY {
 class MEDDLY::mt_mxd_int : public mtmxd_forest {
   public:
 
-    mt_mxd_int(int dsl, domain *d, const policies &p);
+    mt_mxd_int(int dsl, domain *d, const policies &p, int tv=0);
     ~mt_mxd_int();
 
     void createEdge(int val, dd_edge &e);

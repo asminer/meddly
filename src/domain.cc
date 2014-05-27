@@ -225,7 +225,7 @@ void MEDDLY::domain::deleteDomList()
 }
 
 MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t, 
-    forest::edge_labeling e, const forest::policies &p)
+    forest::edge_labeling e, const forest::policies &p, int tv)
 {
   int slot = findEmptyForestSlot();
 
@@ -235,18 +235,18 @@ MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t,
     case forest::MULTI_TERMINAL:
         switch (t) {
             case forest::BOOLEAN:
-                if (rel)  f = new mt_mxd_bool(slot, this, p);
-                else      f = new mt_mdd_bool(slot, this, p);
+                if (rel)  f = new mt_mxd_bool(slot, this, p, tv==0 ? false : true);
+                else      f = new mt_mdd_bool(slot, this, p, tv==0 ? false : true);
                 break;
 
             case forest::INTEGER:
-                if (rel)  f = new mt_mxd_int(slot, this, p);
-                else      f = new mt_mdd_int(slot, this, p);
+                if (rel)  f = new mt_mxd_int(slot, this, p, tv);
+                else      f = new mt_mdd_int(slot, this, p, tv);
                 break;
 
             case forest::REAL:
-                if (rel)  f = new mt_mxd_real(slot, this, p);
-                else      f = new mt_mdd_real(slot, this, p);
+                if (rel)  f = new mt_mxd_real(slot, this, p, (float)tv);
+                else      f = new mt_mdd_real(slot, this, p, (float)tv);
                 break;
 
             default:
@@ -291,7 +291,7 @@ MEDDLY::domain
 ::createForest(bool rel, forest::range_type t, forest::edge_labeling e)
 {
   return createForest(rel, t, e, 
-    rel ? meddlySettings.mxdDefaults : meddlySettings.mddDefaults);
+    rel ? meddlySettings.mxdDefaults : meddlySettings.mddDefaults, 0);
 }
 
 void MEDDLY::domain::showInfo(FILE* strm)

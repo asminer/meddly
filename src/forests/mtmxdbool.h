@@ -36,7 +36,7 @@ namespace MEDDLY {
 class MEDDLY::mt_mxd_bool : public mtmxd_forest {
   public:
 
-    mt_mxd_bool(int dsl, domain *d, const policies &p);
+    mt_mxd_bool(int dsl, domain *d, const policies &p, bool tv=false);
     ~mt_mxd_bool();
 
     virtual void createEdge(bool val, dd_edge &e);
