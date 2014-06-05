@@ -116,12 +116,11 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
     virtual bool isStaleEntry(const node_handle* entryData);
 
     inline compute_table::search_key* 
-    findResult(int in, node_handle a, node_handle b, node_handle &c) 
+    findResult(node_handle a, node_handle b, node_handle &c) 
     {
       compute_table::search_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
-      CTsrch->write(in);
       if (can_commute && a > b) {
         CTsrch->writeNH(b);
         CTsrch->writeNH(a);
@@ -137,7 +136,7 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
     }
 
     inline void saveResult(compute_table::search_key* Key, 
-      int in, node_handle a, node_handle b, node_handle c) 
+      node_handle a, node_handle b, node_handle c) 
     {
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);

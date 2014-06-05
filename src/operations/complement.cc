@@ -254,7 +254,7 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute(int in, int k, node_handle a)
   }
 
   // recurse
-  int nextLevel = (k>0) ? -k : -k-1;
+  int nextLevel = argF->downLevel(k);
   int nnz = 0;
   bool addRedundentNode=(resF->isQuasiReduced() && (k>0 || k<-1));
 
@@ -278,10 +278,6 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute(int in, int k, node_handle a)
   if (canSave) {
     argF->cacheNode(a);
     compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
-    /*
-    entry.writeKey(k);
-    entry.writeKeyNH(argF->cacheNode(a));
-    */
     entry.writeResultNH(resF->cacheNode(result));
     CT->addEntry();
   } else {

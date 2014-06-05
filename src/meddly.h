@@ -798,6 +798,28 @@ class MEDDLY::forest {
     virtual ~forest();  
 
   // ------------------------------------------------------------
+  // static inlines.
+  public:
+    /** Go "down a level" in a relation.
+        Safest to use this, in case in later versions
+        the level numbering changes, or becomes forest dependent.
+            @param  k   Current level
+            @return Level immediately below level k
+    */
+    static inline int downLevel(int k) {
+      return (k>0) ? (-k) : (-k-1);
+    }
+    /** Go "up a level" in a relation.
+        Safest to use this, in case in later versions
+        the level numbering changes, or becomes forest dependent.
+            @param  k   Current level
+            @return Level immediately above level k
+    */
+    static inline int upLevel(int k) {
+      return (k<0) ? (-k) : (-k-1);
+    }
+
+  // ------------------------------------------------------------
   // inlines.
   public:
 
@@ -2105,12 +2127,14 @@ class MEDDLY::enumerator {
         
 
       protected:
+      /*
         static inline int downLevel(int k) {
           return (k>0) ? (-k) : (-k-1);
         }
         static inline int upLevel(int k) {
           return (k<0) ? (-k) : (-k-1);
         }
+      */
 
       protected:
         // Current parent forest.
@@ -2228,165 +2252,5 @@ class MEDDLY::enumerator {
     bool is_valid;
     type T;
 };
-
-#if 0
-/** Class for enumerating all non-zero values
-    encoded by a dd_edge.
-    Basically, these are iterators.
-*/
-class MEDDLY::enumerator {
-  public:
-    enum iter_type {
-      EMPTY=0,
-      SET,
-      RELATION,
-      ROW,      // enumerate with a fixed ROW
-      COLUMN    // enumerate with a fixed COLUMN
-    };
-  public:
-    /// Empty constructor.
-    enumerator();
-    /// Constructor - start iterating through edge e.
-    enumerator(const dd_edge &e);
-    /// Constructor - start iterating through edge e,
-    /// but fix some variables.  See startFixed().
-    enumerator(const dd_edge &e, const int* allvars);
-    /// Destructor.
-    ~enumerator();
-  private:
-    void destroy();
-    void initEmpty();
-    void newForest(expert_forest* f);
-  public:
-    /// Start iterating through edge e.
-    void start(const dd_edge &e);
-
-    /** Start iterating through edge e.
-        The unprimed variables will be fixed to
-        the given values.
-          @param  e         Edge to iterate.
-                            Must be a relation.
-          @param  minterm   Array of dimension 1+vars in e.
-                            minterm[k] gives the fixed variable
-                            assignment for (unprimed) variable k.
-    */
-    void startFixedRow(const dd_edge &e, const int* minterm);
-
-    /** Start iterating through edge e.
-        The primed variables will be fixed to
-        the given values.
-          @param  e         Edge to iterate.
-                            Must be a relation.
-          @param  minterm   Array of dimension 1+vars in e.
-                            minterm[k] gives the fixed variable
-                            assignment for (unprimed) variable k.
-    */
-    void startFixedColumn(const dd_edge &e, const int* minterm);
-
-    /** Start iterating through edge e.
-        Either the primed or unprimed variables
-        will be fixed, based on the parameter allvars.
-          @param  e         Edge to iterate.
-                            Must be a relation.
-          @param  allvars   Array of dimension 2*vars+1 in e,
-                            but shifted so that
-                            allvars[-k] gives the assignment
-                            for primed variable k, and
-                            allvars[k] gives the assignment
-                            for unprimed variable k.
-                            If all unprimed variables are
-                            set to -1, then we fix the primed ones;
-                            otherwise, all primed variables
-                            should be set to -1, and we fix the
-                            unprimed ones.
-    */
-    void startFixed(const dd_edge &e, const int* allvars);
-
-    inline operator bool() const { return isValid; }
-    inline void operator++() {
-#ifdef DEVELOPMENT_CODE
-      if (0==incr) throw error(error::MISCELLANEOUS);
-#endif
-      isValid &= (this->*incr)();
-    }
-
-    /**
-        Return the highest level changed during the last increment.
-    */
-    inline int levelChanged() const {
-      return level_change;
-    }
-
-    /** Get the current variable assignments.
-        For variable i, use index i for the
-        unprimed variable, and index -i for the primed variable.
-    */
-    inline const int* getAssignments() const {
-      return index;
-    }
-
-    /** Get primed assignments.
-        It is much faster to use getAssigments()
-        and look at the negative indexes;
-        however, this works.
-    */
-    const int* getPrimedAssignments();
-
-    /// For integer-ranged edges, get the current non-zero value.
-    void getValue(int& edgeValue) const;
-
-    /// For real-ranged edges, get the current non-zero value.
-    void getValue(float& edgeValue) const;
-        
-  private:
-    bool incrNonRelation();
-    bool incrRelation();
-    bool incrRow();
-    bool incrColumn();
-    bool firstSetElement(int k, node_handle down);
-    bool firstRelElement(int k, node_handle down);
-    bool firstRow(int k, node_handle down);
-    bool firstColumn(int k, node_handle down);
-
-    static inline int downLevel(int k) {
-      return (k>0) ? (-k) : (-k-1);
-    }
-    static inline int upLevel(int k) {
-      return (k<0) ? (-k) : (-k-1);
-    }
-
-    /// pointer to increment method, which returns a boolean.
-    bool (enumerator::* incr) ();
-
-    // Current edge.  Used only for getValue.
-    dd_edge e;
-
-    // Current parent forest.
-    expert_forest* F;
-
-    // Iterator type.
-    iter_type type;
-
-    // Path, as list of node readers
-    node_reader*    rawpath;
-    node_reader*    path;   // rawpath, shifted so we can use path[-k]
-    // Path nnz pointers
-    int*      rawnzp;
-    int*      nzp;   // rawnzp, shifted so we can use nzp[-k]
-    // Path indexes
-    int*      rawindex;
-    int*      index;  // rawindex, shifted so we can use index[-k]
-    // Used only by getPrimedAssignments.
-    int*      prindex;
-    // 
-    int       minLevel; // 1 or -#vars, depending.
-    int       maxLevel; // #vars
-    //
-    int       level_change; 
-    //
-    bool      isValid;
-};
-
-#endif
 
 #endif

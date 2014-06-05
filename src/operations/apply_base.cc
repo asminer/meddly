@@ -134,12 +134,11 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
 
 MEDDLY::generic_binary_mxd::generic_binary_mxd(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-  : binary_operation(code, 3, 1, arg1, arg2, res)
+  : binary_operation(code, 2, 1, arg1, arg2, res)
 {
-  // data[0] : incoming index
-  // data[1] : arg1
-  // data[2] : arg2
-  // data[3] : result
+  // data[0] : arg1
+  // data[1] : arg2
+  // data[2] : result
 }
 
 MEDDLY::generic_binary_mxd::~generic_binary_mxd()
@@ -148,23 +147,23 @@ MEDDLY::generic_binary_mxd::~generic_binary_mxd()
 
 bool MEDDLY::generic_binary_mxd::isStaleEntry(const node_handle* data)
 {
-  return arg1F->isStale(data[1]) ||
-         arg2F->isStale(data[2]) ||
-         resF->isStale(data[3]);
+  return arg1F->isStale(data[0]) ||
+         arg2F->isStale(data[1]) ||
+         resF->isStale(data[2]);
 }
 
 void MEDDLY::generic_binary_mxd::discardEntry(const node_handle* data)
 {
-  arg1F->uncacheNode(data[1]);
-  arg2F->uncacheNode(data[2]);
-  resF->uncacheNode(data[3]);
+  arg1F->uncacheNode(data[0]);
+  arg2F->uncacheNode(data[1]);
+  resF->uncacheNode(data[2]);
 }
 
 void
 MEDDLY::generic_binary_mxd ::showEntry(FILE* strm, const node_handle *data) const
 {
-  fprintf(strm, "[%s(in: %d, %d, %d): %d]", getName(), 
-    data[0], data[1], data[2], data[3]);
+  fprintf(strm, "[%s(%d, %d): %d]", getName(), 
+    data[0], data[1], data[2]);
 }
 
 void MEDDLY::generic_binary_mxd::compute(const dd_edge &a, const dd_edge &b, 
@@ -186,7 +185,7 @@ MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b)
   if (checkTerminals(a, b, result))
     return result;
 
-  compute_table::search_key* Key = findResult(-1, a, b, result);
+  compute_table::search_key* Key = findResult(a, b, result);
   if (0==Key) return result;
 
   // Get level information
@@ -213,7 +212,7 @@ MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b)
   } 
 
   for (int j=0; j<resultSize; j++) {
-    nb.d(j) = compute(j, -resultLevel, A->d(j), B->d(j));
+    nb.d(j) = compute(j, resF->downLevel(resultLevel), A->d(j), B->d(j));
   }
 
   // cleanup
@@ -222,8 +221,12 @@ MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b)
 
   // reduce and save result
   result = resF->createReducedNode(-1, nb);
-  saveResult(Key, -1, a, b, result);
+  saveResult(Key, a, b, result);
 
+  /*
+  printf("Saving %s un (%d, %d) = %d\n", getName(), a, b, result);
+  printf("\tLevels %d and %d\n", aLevel, bLevel);
+  */
 #ifdef TRACE_ALL_OPS
   printf("computed %s(%d, %d) = %d\n", getName(), a, b, result);
 #endif
@@ -237,6 +240,21 @@ MEDDLY::generic_binary_mxd::compute(int in, int k, node_handle a, node_handle b)
   //  Compute for the primed levels.
   //
   MEDDLY_DCASSERT(k<0);
+
+  node_handle result;
+  /*
+  //
+  // Note - we cache the primed levels, but only when "safe"
+  //
+  compute_table::search_key* Key = findResult(a, b, result);
+  if (0==Key) {
+    printf("Found %s pr (%d, %d) = %d\n", getName(), a, b, result);
+    printf("\tat level %d\n", k);
+    return result;
+  }
+  */
+
+  bool canSaveResult = true;
 
   // Get level information
   const int aLevel = arg1F->getNodeLevel(a);
@@ -253,6 +271,7 @@ MEDDLY::generic_binary_mxd::compute(int in, int k, node_handle a, node_handle b)
     A = arg1F->initRedundantReader(k, a, true);
   } else {
     A = arg1F->initIdentityReader(k, in, a, true);
+    canSaveResult = false;
   }
 
   node_reader* B;
@@ -262,10 +281,14 @@ MEDDLY::generic_binary_mxd::compute(int in, int k, node_handle a, node_handle b)
     B = arg2F->initRedundantReader(k, b, true);
   } else {
     B = arg2F->initIdentityReader(k, in, b, true);
+    canSaveResult = false;
   }
 
+  int nnz = 0;
   for (int j=0; j<resultSize; j++) {
-    nb.d(j) = compute(A->d(j), B->d(j));
+    node_handle d = compute(A->d(j), B->d(j));
+    nb.d(j) = d;
+    if (d) nnz++;
   }
 
   // cleanup
@@ -273,7 +296,14 @@ MEDDLY::generic_binary_mxd::compute(int in, int k, node_handle a, node_handle b)
   node_reader::recycle(A);
 
   // reduce 
-  node_handle result = resF->createReducedNode(in, nb);
+  result = resF->createReducedNode(in, nb);
+
+  /*
+  // save result in compute table, when we can
+  if (1==nnz) canSaveResult = false;
+  if (canSaveResult)  saveResult(Key, a, b, result);
+  else                doneCTkey(Key);
+  */
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
@@ -351,6 +381,9 @@ MEDDLY::generic_binbylevel_mxd
       return result;
   }
 
+  //
+  // Note - we cache the primed levels, but only when "safe"
+  //
   compute_table::search_key* Key = findResult(resultLevel, a, b, result);
   if (0==Key) return result;
 
@@ -384,7 +417,7 @@ MEDDLY::generic_binbylevel_mxd
     canSaveResult = false;
   }
 
-  int nextLevel = (resultLevel > 0)? -resultLevel: -resultLevel-1;
+  int nextLevel = resF->downLevel(resultLevel);
   int nnz = 0;
   for (int j=0; j<resultSize; j++) {
     int d = compute(j, nextLevel, A->d(j), B->d(j));
@@ -396,8 +429,10 @@ MEDDLY::generic_binbylevel_mxd
   node_reader::recycle(B);
   node_reader::recycle(A);
 
-  // reduce and save result
+  // reduce
   result = resF->createReducedNode(in, nb);
+
+  // save result in compute table, when we can
   if (resultLevel<0 && 1==nnz) canSaveResult = false;
   if (canSaveResult)  saveResult(Key, resultLevel, a, b, result);
   else                doneCTkey(Key);

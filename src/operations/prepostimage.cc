@@ -87,10 +87,6 @@ class MEDDLY::image_op : public binary_operation {
       argV->cacheNode(a);
       argM->cacheNode(b);
       compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      /*
-      entry.writeKeyNH(argV->cacheNode(a)); 
-      entry.writeKeyNH(argM->cacheNode(b));
-      */
       entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();
       return c;

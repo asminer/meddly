@@ -112,7 +112,6 @@ class MEDDLY::saturation_op : public unary_operation {
     {
       argF->cacheNode(a);
       compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      // entry.writeKeyNH(argF->cacheNode(a));
       entry.writeResultNH(resF->cacheNode(b));
       CT->addEntry();
       return b;
@@ -157,10 +156,6 @@ class MEDDLY::common_dfs_mt : public binary_operation {
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
       compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      /*
-      entry.writeKeyNH(arg1F->cacheNode(a)); 
-      entry.writeKeyNH(arg2F->cacheNode(b));
-      */
       entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();
       return c;

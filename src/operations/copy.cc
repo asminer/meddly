@@ -69,7 +69,6 @@ class MEDDLY::copy_MT : public unary_operation {
     {
       argF->cacheNode(a);
       compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      // entry.writeKeyNH(argF->cacheNode(a));
       entry.writeResultNH(resF->cacheNode(b));
       CT->addEntry();
       return b;
@@ -202,7 +201,7 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
   }
   int nextk;
   if (resF->isForRelations()) {
-    nextk = (k>0) ? -k : -k-1;
+    nextk = resF->downLevel(k);
   } else {
     nextk = k-1;
   }
@@ -393,7 +392,7 @@ void MEDDLY::copy_MT2EV<TYPE>
   // What's below?
   int nextk;
   if (resF->isForRelations()) {
-    nextk = (k>0) ? -k : -k-1;
+    nextk = resF->downLevel(k);
   } else {
     nextk = k-1;
   }
@@ -582,7 +581,7 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   // What's below?
   int nextk;
   if (resF->isForRelations()) {
-    nextk = (k>0) ? -k : -k-1;
+    nextk = resF->downLevel(k);
   } else {
     nextk = k-1;
   }
@@ -860,7 +859,7 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
   // What's below?
   int nextk;
   if (resF->isForRelations()) {
-    nextk = (k>0) ? -k : -k-1;
+    nextk = resF->downLevel(k);
   } else {
     nextk = k-1;
   }

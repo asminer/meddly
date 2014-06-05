@@ -82,10 +82,6 @@ class MEDDLY::mm_mult_op : public binary_operation {
       arg1->cacheNode(a);
       arg2->cacheNode(b);
       compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      /*
-      entry.writeKeyNH(arg1->cacheNode(a)); 
-      entry.writeKeyNH(arg2->cacheNode(b));
-      */
       entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();
       return c;

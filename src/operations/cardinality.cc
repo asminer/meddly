@@ -202,10 +202,10 @@ long MEDDLY::card_mxd_int::compute(int k, node_handle a)
   if (isLevelAbove(k, argF->getNodeLevel(a))) {
     if (k<0 && argF->isIdentityReduced()) {
       // identity node
-      return compute(-k-1, a);
+      return compute(argF->downLevel(k), a);
     }
     // redundant node
-    return overflow_mult(compute((k>0 ? -k : -k-1), a), argF->getLevelSize(k));
+    return overflow_mult(compute(argF->downLevel(k), a), argF->getLevelSize(k));
   }
   
   // Check compute table
@@ -226,7 +226,7 @@ long MEDDLY::card_mxd_int::compute(int k, node_handle a)
 
   // Recurse
   long card = 0;
-  int kdn = (k<0) ? -k-1 : -k;
+  int kdn = argF->downLevel(k);
   for (int z=0; z<A->getNNZs(); z++) {
     overflow_acc(card, compute(kdn, A->d(z)));
   }
@@ -384,10 +384,10 @@ double MEDDLY::card_mxd_real::compute(int k, node_handle a)
   if (isLevelAbove(k, argF->getNodeLevel(a))) {
     if (k<0 && argF->isIdentityReduced()) {
       // identity node
-      return compute(-k-1, a);
+      return compute(argF->downLevel(k), a);
     }
     // redundant node
-    return compute((k>0 ? -k : -k-1), a) * argF->getLevelSize(k);
+    return compute(argF->downLevel(k), a) * argF->getLevelSize(k);
   }
   
   // Check compute table
@@ -408,7 +408,7 @@ double MEDDLY::card_mxd_real::compute(int k, node_handle a)
 
   // Recurse
   double card = 0;
-  int kdn = (k<0) ? -k-1 : -k;
+  int kdn = argF->downLevel(k);
   for (int z=0; z<A->getNNZs(); z++) {
     card += compute(kdn, A->d(z));
   }
@@ -604,11 +604,11 @@ void MEDDLY::card_mxd_mpz::compute(int k, node_handle a, mpz_object &card)
   if (isLevelAbove(k, argF->getNodeLevel(a))) {
     if (k<0 && argF->isIdentityReduced()) {
       // identity node
-      compute(-k-1, a, card);
+      compute(argF->downLevel(k), a, card);
       return;
     }
     // redundant node
-    compute(-k, a, card);
+    compute(argF->downLevel(k), a, card);
     card.multiply(argF->getLevelSize(k));
     return;
   }
@@ -635,7 +635,7 @@ void MEDDLY::card_mxd_mpz::compute(int k, node_handle a, mpz_object &card)
   mpz_object tmp;
   tmp.setValue(0);
   card.setValue(0);
-  int kdn = (k<0) ? -k-1 : -k;
+  int kdn = argF->downLevel(k);
   for (int z=0; z<A->getNNZs(); z++) {
     compute(kdn, A->d(z), tmp);
     card.add(tmp);
