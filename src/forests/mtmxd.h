@@ -222,7 +222,7 @@ namespace MEDDLY {
         //
         if (dch > start) {
           node_handle below = createEdgeUn(k-1, start, dch);
-          dontcares = makeIdentityEdge(k, below);
+          dontcares = makeIdentityEdgeForDontCareDontChange(k, below);
           // done with those
           start = dch;
         }
@@ -281,7 +281,7 @@ namespace MEDDLY {
           //
           if (0==batchP) continue;
 
-          node_handle total=createEdgePr(v, -k, start, batchP);
+          node_handle total=createEdgePr(v, F->downLevel(k), start, batchP);
           if(total!=F->getTransparentNode()){
         	nb.i(z) = v;
             nb.d(z) =total;
@@ -338,12 +338,8 @@ namespace MEDDLY {
             nextV = MIN(nextV, primed(i, -k));
           }
         }
-        node_handle dontcares;
-        if (batchP > start) {
-          dontcares = createEdgeUn(-k-1, start, batchP);
-        } else {
-          dontcares = 0;
-        }
+
+        node_handle dontcares = (batchP > start) ? createEdgeUn(F->downLevel(k), start, batchP) : 0;
 
         //
         // Start new node at level k
@@ -357,8 +353,7 @@ namespace MEDDLY {
         //  (2) process them, if any
         //  (3) union with don't cares
         //
-        int v = (dontcares) ? 0 : nextV;
-        for (int v=0; v<lastV; v = (dontcares) ? v+1 : nextV) {
+        for (int v = (dontcares) ? 0 : nextV; v<lastV; v = (dontcares) ? v+1 : nextV) {
           nextV = lastV;
           //
           // neat trick!
@@ -387,7 +382,7 @@ namespace MEDDLY {
           //
           node_handle these;
           if (batchP > start) {
-            these = createEdgeUn(-k-1, start, batchP);
+            these = createEdgeUn(F->downLevel(k), start, batchP);
           } else {
             these = 0;
           }
@@ -419,9 +414,9 @@ namespace MEDDLY {
 
       //
       //
-      // Helper for createEdge
+      // Helper for createEdge for (DONT_CARE -> DONT_CHANGE)
       //
-      inline node_handle makeIdentityEdge(int k, node_handle p) {
+      node_handle makeIdentityEdgeForDontCareDontChange(int k, node_handle p) {
         if (F->isIdentityReduced()) {
           return p;
         }
@@ -433,14 +428,13 @@ namespace MEDDLY {
           nbp.i(0) = v;
           nbp.d(0) = F->linkNode(p);
           nb.d(v) = F->createReducedNode(v, nbp);
-        } // for v
-        F->unlinkNode(p);
+        }
+        F->unlinkNode(p);    // XXX: Necessary? May unlink outside the function
         return F->createReducedNode(-1, nb);
       }
 
       /// Special case for createEdge(), with only one minterm.
-      inline node_handle createEdgePath(int k, const int* vlist,
-        const int* vplist, node_handle next)
+      node_handle createEdgePath(int k, const int* vlist, const int* vplist, node_handle next)
       {
           MEDDLY_DCASSERT(F->isForRelations());
 
@@ -449,29 +443,6 @@ namespace MEDDLY {
           }
 
           for (int i=1; i<=k; i++) {
-            if (DONT_CHANGE == vplist[i]) {
-              //
-              // Identity node
-              //
-              MEDDLY_DCASSERT(DONT_CARE == vlist[i]);
-              if (F->isIdentityReduced()) continue;
-
-              // Build an identity node by hand
-              if(next!=F->getTransparentNode()){
-                int sz = F->getLevelSize(i);
-                node_builder& nb = F->useNodeBuilder(i, sz);
-                for (int v=0; v<sz; v++) {
-                  node_builder& nbp = F->useSparseBuilder(-i, 1);
-                  nbp.i(0) = v;
-                  nbp.d(0) = F->linkNode(next);
-                  nb.d(v) = F->createReducedNode(v, nbp);
-                }
-                F->unlinkNode(next);
-                next = F->createReducedNode(-1, nb);
-              }
-
-              continue;
-            }
             //
             // process primed level
             //
@@ -490,7 +461,42 @@ namespace MEDDLY {
                 F->unlinkNode(next);
                 nextpr = F->createReducedNode(-1, nb);
               }
-            } else {
+            }
+            else if (DONT_CHANGE == vplist[i]) {
+                //
+                // Identity node
+                //
+                if(DONT_CARE == vlist[i]){
+                	next=makeIdentityEdgeForDontCareDontChange(k, next);
+                	continue;
+                }
+
+                MEDDLY_DCASSERT(vlist[i]>=0);
+
+                if (F->isIdentityReduced()) {
+                	// DO NOTHING
+                	nextpr = next;
+                }
+                else if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
+                	int sz = F->getLevelSize(-i);
+                	node_builder& nbp = F->useNodeBuilder(-i, sz);
+					node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
+					for(int v=0; v<sz; v++){
+					  nbp.d(v)=(v==vlist[i] ? F->linkNode(next) : F->linkNode(zero));
+					}
+					F->unlinkNode(zero);
+
+					nextpr = F->createReducedNode(vlist[i], nbp);
+                }
+                else {
+                	node_builder& nbp = F->useSparseBuilder(-i, 1);
+                	nbp.i(0) = vlist[i];
+                	nbp.d(0) = F->linkNode(next);
+
+                	nextpr = F->createReducedNode(vlist[i], nbp);
+                }
+            }
+            else {
               // sane value
               if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
             	int sz = F->getLevelSize(-i);
@@ -511,6 +517,7 @@ namespace MEDDLY {
                 nextpr = F->createReducedNode(vlist[i], nbp);
               }
             }
+
             //
             // process unprimed level
             //
