@@ -467,7 +467,7 @@ namespace MEDDLY {
                 // Identity node
                 //
                 if(DONT_CARE == vlist[i]){
-                	next=makeIdentityEdgeForDontCareDontChange(k, next);
+                	next=makeIdentityEdgeForDontCareDontChange(i, next);
                 	continue;
                 }
 
