@@ -24,7 +24,7 @@
 
 // #define DEBUG_EVENTS
 // #define VERBOSE
-#define TEST_EVTIMES
+// #define TEST_EVTIMES
 
 inline int MAX(int a, int b) {
   return (a>b) ? a : b;

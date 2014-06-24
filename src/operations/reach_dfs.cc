@@ -95,17 +95,24 @@ class MEDDLY::saturation_op : public unary_operation {
     virtual void showEntry(FILE* strm, const node_handle* entryData) const;
 
   protected:
-    inline bool findSaturateResult(node_handle a, node_handle& b) {
-      CTsrch.key(0) = a;
-      const node_handle* cacheFind = CT->find(CTsrch);
-      if (0==cacheFind) return false;
-      b = resF->linkNode(cacheFind[1]); // Elvio
-      return true;
+    inline compute_table::search_key* 
+    findSaturateResult(node_handle a, node_handle& b) {
+      compute_table::search_key* CTsrch = useCTkey();
+      MEDDLY_DCASSERT(CTsrch);
+      CTsrch->reset();
+      CTsrch->writeNH(a);
+      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      if (!cacheFind) return CTsrch;
+      b = resF->linkNode(cacheFind.readNH()); 
+      doneCTkey(CTsrch);
+      return 0;
     }
-    inline node_handle saveSaturateResult(node_handle a, node_handle b) {
-      compute_table::temp_entry &entry = CT->startNewEntry(this);
-      entry.key(0) = argF->cacheNode(a);
-      entry.result(0) = resF->cacheNode(b);
+    inline node_handle saveSaturateResult(compute_table::search_key* Key,
+      node_handle a, node_handle b) 
+    {
+      argF->cacheNode(a);
+      compute_table::entry_builder &entry = CT->startNewEntry(Key);
+      entry.writeResultNH(resF->cacheNode(b));
       CT->addEntry();
       return b;
     }
@@ -129,19 +136,27 @@ class MEDDLY::common_dfs_mt : public binary_operation {
     virtual void saturateHelper(node_builder& mdd) = 0;
 
   protected:
-    inline bool findResult(node_handle a, node_handle b, node_handle &c) {
-      CTsrch.key(0) = a;
-      CTsrch.key(1) = b;
-      const node_handle* cacheFind = CT->find(CTsrch);
-      if (0==cacheFind) return false;
-      c = resF->linkNode(cacheFind[2]);
-      return true;
+    inline compute_table::search_key* 
+    findResult(node_handle a, node_handle b, node_handle &c) 
+    {
+      compute_table::search_key* CTsrch = useCTkey();
+      MEDDLY_DCASSERT(CTsrch);
+      CTsrch->reset();
+      CTsrch->writeNH(a);
+      CTsrch->writeNH(b);
+      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      if (!cacheFind) return CTsrch;
+      c = resF->linkNode(cacheFind.readNH());
+      doneCTkey(CTsrch);
+      return 0;
     }
-    inline node_handle saveResult(node_handle a, node_handle b, node_handle c) {
-      compute_table::temp_entry &entry = CT->startNewEntry(this);
-      entry.key(0) = arg1F->cacheNode(a); 
-      entry.key(1) = arg2F->cacheNode(b);
-      entry.result(0) = resF->cacheNode(c);
+    inline node_handle saveResult(compute_table::search_key* Key,
+      node_handle a, node_handle b, node_handle c) 
+    {
+      arg1F->cacheNode(a);
+      arg2F->cacheNode(b);
+      compute_table::entry_builder &entry = CT->startNewEntry(Key);
+      entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();
       return c;
     }
@@ -282,10 +297,8 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd)
 
   // search compute table
   node_handle n = 0;
-  if (findSaturateResult(mdd, n)) {
-    resF->linkNode(n);
-    return n;
-  }
+  compute_table::search_key* Key = findSaturateResult(mdd, n);
+  if (0==Key) return n;
 
   int k = argF->getNodeLevel(mdd);      // level
   int sz = argF->getLevelSize(k);       // size
@@ -304,7 +317,7 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd)
   n = resF->createReducedNode(-1, nb);
 
   // save in compute table
-  saveSaturateResult(mdd, n);
+  saveSaturateResult(Key, mdd, n);
 
 #ifdef DEBUG_DFS
   resF->showNodeGraph(stdout, n);
@@ -667,9 +680,8 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
 
   // check the cache
   node_handle result = 0;
-  if (findResult(mdd, mxd, result)) {
-    return result;
-  }
+  compute_table::search_key* Key = findResult(mdd, mxd, result);
+  if (0==Key) return result;
 
 #ifdef TRACE_RECFIRE
   printf("computing recFire(%d, %d)\n", mdd, mxd);
@@ -764,7 +776,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
   resF->showNode(stdout, result, 1);
   printf("\n");
 #endif
-  return saveResult(mdd, mxd, result); 
+  return saveResult(Key, mdd, mxd, result); 
 }
 
 
@@ -889,9 +901,8 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
 
   // check the cache
   node_handle result = 0;
-  if (findResult(mdd, mxd, result)) {
-    return result;
-  }
+  compute_table::search_key* Key = findResult(mdd, mxd, result);
+  if (0==Key) return result;
 
   // check if mxd and mdd are at the same level
   int mddLevel = arg1F->getNodeLevel(mdd);
@@ -969,7 +980,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
 #ifdef TRACE_ALL_OPS
   printf("computed recFire(%d, %d) = %d\n", mdd, mxd, result);
 #endif
-  return saveResult(mdd, mxd, result); 
+  return saveResult(Key, mdd, mxd, result); 
 }
 
 

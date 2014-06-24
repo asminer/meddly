@@ -40,11 +40,10 @@ namespace MEDDLY {
 // ******************************************************************
 
 class MEDDLY::cross_bool : public binary_operation {
-    static const int INPTR_INDEX = 0;
-    static const int LEVEL_INDEX = 1;
-    static const int OPNDA_INDEX = 2;
-    static const int OPNDB_INDEX = 3;
-    static const int RESLT_INDEX = 4;
+    static const int LEVEL_INDEX = 0;
+    static const int OPNDA_INDEX = 1;
+    static const int OPNDB_INDEX = 2;
+    static const int RESLT_INDEX = 3;
   public:
     cross_bool(const binary_opname* oc, expert_forest* a1,
       expert_forest* a2, expert_forest* res);
@@ -60,9 +59,8 @@ class MEDDLY::cross_bool : public binary_operation {
 
 MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res) 
-: binary_operation(oc, 4, 1, a1, a2, res)
+: binary_operation(oc, 3, 1, a1, a2, res)
 {
-  // data[INPTR_INDEX] : inpointer
   // data[LEVEL_INDEX] : level
   // data[OPNDA_INDEX] : a
   // data[OPNDB_INDEX] : b
@@ -88,8 +86,8 @@ void MEDDLY::cross_bool::discardEntry(const node_handle* data)
 void
 MEDDLY::cross_bool ::showEntry(FILE* strm, const node_handle* data) const
 {
-  fprintf(strm, "[%s(in: %d, level: %d, %d, %d): %d]", 
-    getName(), data[0], data[1], data[2], data[3], data[4]
+  fprintf(strm, "[%s(level: %d, %d, %d): %d]", 
+    getName(), data[1], data[2], data[3], data[4]
   );
 }
 
@@ -113,13 +111,16 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   }
 
   // check compute table
-  CTsrch.key(INPTR_INDEX) = -1;
-  CTsrch.key(LEVEL_INDEX) = k;
-  CTsrch.key(OPNDA_INDEX) = a;
-  CTsrch.key(OPNDB_INDEX) = b;
-  const node_handle* cacheFind = CT->find(CTsrch);
+  compute_table::search_key* CTsrch = useCTkey();
+  MEDDLY_DCASSERT(CTsrch);
+  CTsrch->reset();
+  CTsrch->write(k);
+  CTsrch->writeNH(a);
+  CTsrch->writeNH(b);
+  compute_table::search_result &cacheFind = CT->find(CTsrch);
   if (cacheFind) {
-    return resF->linkNode(cacheFind[RESLT_INDEX]);
+    doneCTkey(CTsrch);
+    return resF->linkNode(cacheFind.readNH());
   }
 
   // build new result node
@@ -142,12 +143,10 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   // reduce, save in compute table
   node_handle c = resF->createReducedNode(-1, nb);
 
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
-  entry.key(INPTR_INDEX) = -1;
-  entry.key(LEVEL_INDEX) = k;
-  entry.key(OPNDA_INDEX) = arg1F->cacheNode(a);
-  entry.key(OPNDB_INDEX) = arg2F->cacheNode(b);
-  entry.result(0) = resF->cacheNode(c);
+  arg1F->cacheNode(a);
+  arg2F->cacheNode(b);
+  compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
+  entry.writeResultNH(resF->cacheNode(c));
   CT->addEntry();
 
 #ifdef TRACE_ALL_OPS
@@ -165,15 +164,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(int in, int k, node_handle a,
   MEDDLY_DCASSERT(k<0);
   if (0==a || 0==b) return 0;
 
-  // check compute table
-  CTsrch.key(INPTR_INDEX) = in;
-  CTsrch.key(LEVEL_INDEX) = k;
-  CTsrch.key(OPNDA_INDEX) = a;
-  CTsrch.key(OPNDB_INDEX) = b;
-  const node_handle* cacheFind = CT->find(CTsrch);
-  if (cacheFind) {
-    return resF->linkNode(cacheFind[RESLT_INDEX]);
-  }
+  // DON'T check compute table 
 
   // build new result node
   int resultSize = resF->getLevelSize(k);
@@ -192,16 +183,10 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(int in, int k, node_handle a,
   // cleanup node reader
   node_reader::recycle(B);
 
-  // reduce, save in compute table
+  // reduce
   node_handle c = resF->createReducedNode(in, nb);
 
-  compute_table::temp_entry &entry = CT->startNewEntry(this);
-  entry.key(INPTR_INDEX) = in;
-  entry.key(LEVEL_INDEX) = k;
-  entry.key(OPNDA_INDEX) = arg1F->cacheNode(a);
-  entry.key(OPNDB_INDEX) = arg2F->cacheNode(b);
-  entry.result(0) = resF->cacheNode(c);
-  CT->addEntry();
+  // DON'T save in compute table
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s((%d), %d, %d, %d) = %d\n", getName(), in, k, a, b, c);

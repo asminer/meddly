@@ -95,6 +95,7 @@ namespace MEDDLY {
   class binary_opname;
   class numerical_opname;
 
+  class compute_table_style;
   class compute_table;
 
   class operation;
@@ -223,25 +224,29 @@ namespace MEDDLY {
   /// Builds an initializer for MEDDLY's builtin operations.
   op_initializer* makeBuiltinInitializer();
 
+  // ******************************************************************
+  // *                                                                *
+  // *                      Compute table styles                      *
+  // *                                                                *
+  // ******************************************************************
+
+  /// One huge hash table that uses chaining.
+  extern const compute_table_style* MonolithicChainedHash;
+
+  /// One huge hash table that does not use chaining.
+  extern const compute_table_style* MonolithicUnchainedHash;
+
+  /// A hash table (with chaining) for each operation.
+  extern const compute_table_style* OperationChainedHash;
+
+  /// A hash table (no chaining) for each operation.
+  extern const compute_table_style* OperationUnchainedHash;
+
+  /// A STL "map" for each operation.
+  extern const compute_table_style* OperationMap;
+
 }; // namespace MEDDLY
 
-
-// ******************************************************************
-// *                                                                *
-// *                         ct_object class                        *
-// *                                                                *
-// ******************************************************************
-
-/** Generic objects in compute tables.
-    Used for things other than dd_edges and simple types.
-    Defined in ops.cc
-*/
-class MEDDLY::ct_object {
-  public:
-    ct_object();
-    virtual ~ct_object();
-    virtual opnd_type getType() = 0;
-};
 
 // ******************************************************************
 // *                                                                *
@@ -261,18 +266,6 @@ struct MEDDLY::settings {
   public:
     struct computeTableSettings {
       public:
-        enum styleOption {
-          /// One huge hash table that uses chaining.
-          MonolithicChainedHash,
-          /// One huge hash table that does not use chaining.
-          MonolithicUnchainedHash,
-          /// A hash table (with chaining) for each operation.
-          OperationChainedHash,
-          /// A hash table (no chaining) for each operation.
-          OperationUnchainedHash,
-          /// A STL "map" for each operation.
-          OperationMap
-        };
         enum staleRemovalOption {
           /// Whenever we see a stale entry, remove it.
           Aggressive,
@@ -283,7 +276,7 @@ struct MEDDLY::settings {
         };
       public:
         /// The type of compute table(s) that should be used.
-        styleOption style;
+        const compute_table_style* style;
         /// Maximum compute table size.
         unsigned maxSize;
         /// How aggressively should we try to eliminate stale entries.
@@ -321,13 +314,6 @@ struct MEDDLY::settings {
         clear();
         init(s);
       }
-    }
-    /// super handy
-    inline bool usesMonolithicComputeTable() {
-      return (
-       computeTableSettings::MonolithicChainedHash == computeTable.style ||
-       computeTableSettings::MonolithicUnchainedHash == computeTable.style 
-      );
     }
   private:
     void init(const settings &s);
@@ -2301,14 +2287,6 @@ class MEDDLY::expert_forest : public forest
   // abstract virtual, must be overridden.
   // 
   public:
-    /** "save" a node to a file.
-        Called by \a writeEdges(). 
-          @param  s     File stream
-          @param  nr    Node to write is stored here
-          @param  map   Translation to use on node handles.
-    virtual void writeNode(FILE* s, const node_reader& nr, 
-      const node_handle* map) const;
-    */
 
     /** Are the given edge values "duplicates".
         I.e., when determining if two nodes are duplicates,
@@ -2827,6 +2805,61 @@ class MEDDLY::numerical_opname : public opname {
 
 // ******************************************************************
 // *                                                                *
+// *                         ct_object class                        *
+// *                                                                *
+// ******************************************************************
+
+/** Generic objects in compute tables.
+    Used for things other than dd_edges and simple types.
+    Defined in ops.cc
+*/
+class MEDDLY::ct_object {
+  public:
+    ct_object();
+    virtual ~ct_object();
+    virtual opnd_type getType() = 0;
+};
+
+// ******************************************************************
+// *                                                                *
+// *                    compute_table_style class                   *
+// *                                                                *
+// ******************************************************************
+
+/** Interface for building compute tables.
+*/
+class MEDDLY::compute_table_style {
+  protected:
+    compute_table_style();
+    virtual ~compute_table_style();
+
+  public:
+    /** Build a new, monolithic table.
+        Monolithic means that the table stores entries for several
+        (ideally, all) operations.
+
+        Default throws an error.
+    */
+    virtual compute_table* create(const settings::computeTableSettings &s)
+      const;
+
+
+    /**
+        Build a new table for a single operation.
+        Default throws an error.
+    */
+    virtual compute_table* create(const settings::computeTableSettings &s, 
+      operation* op) const;
+
+    
+    /**
+        Does this style build monolithic CTs?
+    */
+    virtual bool usesMonolithic() const = 0;
+};
+
+// ******************************************************************
+// *                                                                *
 // *                      compute_table  class                      *
 // *                                                                *
 // ******************************************************************
@@ -2854,87 +2887,77 @@ class MEDDLY::compute_table {
         int maxSearchLength;
       };
 
+      //
+      // Something to search for in the CT.
+      // This is an interface now!
+      //
       class search_key {
-          friend class MEDDLY::base_table;
-          int hashLength;
-          node_handle* data;
-          bool killData;
-          node_handle* key_data;
-          const operation* op;
-          /// used only for range checking during "development".
-          int keyLength;  
+          operation* op;
+        protected:
+          search_key(operation* op);
         public:
-          search_key();
-          ~search_key();
-          inline node_handle& key(int i) { 
-            MEDDLY_CHECK_RANGE(0, i, keyLength);
-            return key_data[i]; 
-          }
-          inline void setKeyEV(int i, int ev) {
-            MEDDLY_CHECK_RANGE(0, i, keyLength);
-            key_data[i] = ev;
-          }
-          inline void setKeyEV(int i, float ev) {
-            MEDDLY_CHECK_RANGE(0, i, keyLength);
-            float* f = (float*) (key_data+i);
-            f[0] = ev;
-          }
-          inline const node_handle* rawData() const { return data; }
-          inline int dataLength() const { return hashLength; }
-          inline const operation* getOp() const { return op; }
+          virtual ~search_key();
+
+          inline operation* getOp() const { return op; }
+
+          // interface, for operations
+          virtual void reset() = 0;
+          virtual void writeNH(node_handle nh) = 0;
+          virtual void write(int i) = 0;
+          virtual void write(float f) = 0;
+
+        public:
+          /// Used for linked-list of recycled search keys in an operation.
+          search_key* next;
       };
 
-      class temp_entry {
-          friend class MEDDLY::base_table;
-          int handle;
-          int hashLength;
-          node_handle* entry;
-          node_handle* key_entry;
-          node_handle* res_entry;
-          // The remaining entries are used only in development code
-          int keyLength;
-          int resLength;
+      //
+      // Result of a search
+      //
+      class search_result {
+          bool is_valid;
+
+        protected:
+          search_result();
+          virtual ~search_result();
+
         public:
-          inline node_handle& key(int i) { 
-            MEDDLY_CHECK_RANGE(0, i, keyLength);
-            return key_entry[i]; 
-          }
-          inline void setKeyEV(int i, int ev) {
-            MEDDLY_CHECK_RANGE(0, i, keyLength);
-            key_entry[i] = ev;
-          }
-          inline void setKeyEV(int i, float ev) {
-            MEDDLY_CHECK_RANGE(0, i, keyLength);
-            float* f = (float*) (key_entry+i);
-            f[0] = ev;
-          }
-          inline node_handle& result(int i) { 
-            MEDDLY_CHECK_RANGE(0, i, resLength);
-            return res_entry[i]; 
-          }
-          inline void setResultEV(int i, int ev) { 
-            MEDDLY_CHECK_RANGE(0, i, resLength);
-            res_entry[i] = ev;
-          }
-          inline void setResultEV(int i, float ev) {
-            MEDDLY_CHECK_RANGE(0, i, resLength);
-            float* f = (float*) (res_entry+i);
-            f[0] = ev;
-          }
-          inline void copyResult(int i, void* data, size_t bytes) {
-#ifdef DEVELOPMENT_CODE
-            assert(i>=0);
-            assert(i+bytes<=resLength*sizeof(int));
-#endif
-            memcpy(res_entry+i, data, bytes);
-          }
-          // The following are used by the compute table.
-          inline const node_handle* readEntry(int off) const { return entry+off; }
-          inline int readHandle() const { return handle; }
-          inline int readLength() const { return hashLength; }
-          inline node_handle& data(int i) {
-            return entry[i];
-          }
+          void setValid()     { is_valid = true; }
+          void setInvalid()   { is_valid = false; }
+
+        public:
+          inline operator bool() const { return is_valid; } 
+
+          virtual node_handle readNH() = 0;
+          virtual void read(int &i) = 0;
+          virtual void read(float &f) = 0;
+          virtual void read(long &l) = 0;
+          virtual void read(double &d) = 0;
+          virtual void read(void* &ptr) = 0;
+      };
+
+      //
+      // Building a new CT entry.
+      // This is an interface now!
+      //
+      class entry_builder {
+        protected:
+          entry_builder();
+          virtual ~entry_builder();
+          
+        public:
+        /*
+          virtual void writeKeyNH(node_handle) = 0;
+          virtual void writeKey(int) = 0;
+          virtual void writeKey(float) = 0;
+        */
+
+          virtual void writeResultNH(node_handle) = 0;
+          virtual void writeResult(int) = 0;
+          virtual void writeResult(float) = 0;
+          virtual void writeResult(long) = 0;
+          virtual void writeResult(double) = 0;
+          virtual void writeResult(void*) = 0;
       };
 
     public:
@@ -2961,21 +2984,19 @@ class MEDDLY::compute_table {
       virtual bool isOperationTable() const = 0;
 
       /// Initialize a search key for a given operation.
-      virtual void initializeSearchKey(search_key &key, operation* op) = 0;
+      virtual search_key* initializeSearchKey(operation* op) = 0;
 
       /** Find an entry in the compute table based on the key provided.
           @param  key   Key to search for.
-          @return       0, if not found;
-                        otherwise, an integer array of size 
-                        op->getCacheEntryLength()
+          @return       An appropriate search_result.
       */
-      virtual const node_handle* find(const search_key &key) = 0;
+      virtual search_result& find(search_key *key) = 0;
 
       /** Start a new compute table entry.
           The operation should "fill in" the values for the entry,
           then call \a addEntry().
       */
-      virtual temp_entry& startNewEntry(operation* op) = 0;
+      virtual entry_builder& startNewEntry(search_key* k) = 0;
 
       /** Add the "current" new entry to the compute table.
           The entry may be specified by filling in the values 
@@ -3005,7 +3026,6 @@ class MEDDLY::compute_table {
 
     protected:
       stats perf;
-      temp_entry currEntry;
 };
 
 // ******************************************************************
@@ -3040,11 +3060,14 @@ class MEDDLY::operation {
     int key_length; 
     int ans_length; 
 
+    /// List of free search_keys
+    compute_table::search_key* CT_free_keys;
+
   protected:
     /// Compute table to use, if any.
     compute_table* CT;
     /// Struct for CT searches.
-    compute_table::search_key CTsrch;
+    // compute_table::search_key* CTsrch;
     // for cache of operations.
     operation* next;
     // must stale compute table hits be discarded.
@@ -3059,7 +3082,6 @@ class MEDDLY::operation {
     /// @param  al  Answer length of compute table entries.
     ///             Use 0 if this operation does not use the compute table.
     operation(const opname* n, int kl, int al);
-    //operation(const opname* n, bool uses_CT);
 
   protected:
     virtual ~operation();
@@ -3142,6 +3164,25 @@ class MEDDLY::operation {
 
   protected:
     virtual bool isStaleEntry(const node_handle* entry) = 0;
+
+    inline compute_table::search_key* useCTkey() {
+      MEDDLY_DCASSERT(CT);
+      compute_table::search_key* ans;
+      if (CT_free_keys) {
+        ans = CT_free_keys;
+        CT_free_keys = ans->next;
+      } else {
+        ans = CT->initializeSearchKey(this);
+      }
+      return ans;
+    }
+
+  public:
+    inline void doneCTkey(compute_table::search_key* K) {
+      MEDDLY_DCASSERT(K);
+      K->next = CT_free_keys;
+      CT_free_keys = K;
+    }
 
   public:
     /// Removes the cache entry (in entryData[]) by informing the

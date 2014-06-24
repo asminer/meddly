@@ -26,24 +26,12 @@
 */
 
 #include "defines.h"
-#include "compute_table.h"
+// #include "compute_table.h"
 
 // #define DEBUG_CLEANUP
 
 namespace MEDDLY {
   extern settings meddlySettings;
-}
-
-// ******************************************************************
-// *                       ct_object  methods                       *
-// ******************************************************************
-
-MEDDLY::ct_object::ct_object()
-{
-}
-
-MEDDLY::ct_object::~ct_object()
-{
 }
 
 // ******************************************************************
@@ -161,21 +149,33 @@ MEDDLY::operation::operation(const opname* n, int kl, int al)
     if (Monolithic_CT)
       CT = Monolithic_CT;
     else {
-      CT = createOperationTable(meddlySettings.computeTable, this); 
+      const compute_table_style* CTsty = meddlySettings.computeTable.style;
+      MEDDLY_DCASSERT(CTsty);
+      CT = CTsty->create(meddlySettings.computeTable, this); 
     }
 
     //
     // Initialize CT search structure
     //
-    CT->initializeSearchKey(CTsrch, this);
+    // CTsrch = CT->initializeSearchKey(this);
+
   } else {
     MEDDLY_DCASSERT(0==ans_length);
     CT = 0;
+    // CTsrch = 0;
   }
+  CT_free_keys = 0;
 }
 
 MEDDLY::operation::~operation()
 {
+  while (CT_free_keys) {
+    compute_table::search_key* next = CT_free_keys->next;
+    delete CT_free_keys;
+    CT_free_keys = next;
+  }
+
+  // delete CTsrch;
   if (CT && (CT!=Monolithic_CT)) delete CT;
   // delete next;  // Seriously, WTF?
   if (oplist_index >= 0) {

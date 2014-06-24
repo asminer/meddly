@@ -30,7 +30,7 @@
 #endif
 #include "defines.h"
 #include "revision.h"
-#include "compute_table.h"
+// #include "compute_table.h"
 #include "operations/init_builtin.h"
 
 // #define STATS_ON_DESTROY
@@ -418,8 +418,11 @@ void MEDDLY::initialize(const settings &s)
   cleanup_procedure::Initialize();
 
   // set up monolithic compute table, if needed
-  if (meddlySettings.usesMonolithicComputeTable()) {
-    operation::Monolithic_CT = createMonolithicTable(s.computeTable);
+  const compute_table_style* CTstyle = s.computeTable.style;
+  if (0==CTstyle) throw error(error::INVALID_ASSIGNMENT);
+
+  if (CTstyle->usesMonolithic()) {
+    operation::Monolithic_CT = CTstyle->create(s.computeTable);
   }
 
   opname::next_index = 0;
