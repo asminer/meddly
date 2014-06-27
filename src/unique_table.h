@@ -35,110 +35,177 @@ namespace MEDDLY {
     designed specifically for expert_forests.
 */
 class MEDDLY::unique_table {
-  public:
+private:
+    class subtable {
+    public:
+    	subtable();
+    	~subtable();
+
+        inline unsigned getSize() const         { return size; }
+        inline unsigned getNumEntries() const   { return num_entries; }
+        inline unsigned getMemUsed() const      { return size * sizeof(node_handle); }
+
+        void reportStats(FILE* s, const char* pad, unsigned flags) const;
+
+        /// For debugging
+        void show(FILE *s) const;
+
+        /**
+         * Initialize the sub table. Must be called before use.
+         */
+    	void init(expert_forest *ef);
+
+        /** If table contains key, move it to the front of the list.
+            Otherwise, do nothing.
+            Returns the item if found, 0 otherwise.
+
+            Class T must have the following methods:
+              unsigned hash():    return the hash value for this item.
+              bool equals(int p): return true iff this item equals node p.
+         */
+        template <typename T>
+        int find(const T &key);
+
+        /** Add the item to the front of the list.
+            Used when we KNOW that the item is not in the unique table already.
+        */
+        void add(unsigned hash, node_handle item);
+
+        /** If table contains key, remove it and return it.
+          I.e., the exact key.
+          Otherwise, return 0.
+        */
+        int remove(unsigned hash, node_handle item);
+
+        /**
+         * Retrieve the items in the table.
+         * The argument sz specifies the number of items to be retrieved.
+         * If sz is larger than the number of items in the table, only the number
+         * of items in the table are to be retrieved.
+         * Returns the actual number of items retrieved.
+         */
+        int getItems(node_handle* items, int sz) const;
+
+    private:  // helper methods
+      /// Empty the hash table into a list; returns the list.
+      node_handle convertToList();
+
+      /// A series of inserts; doesn't check for duplicates or expand.
+      void buildFromList(node_handle front);
+
+      /// Expand the hash table (if possible)
+      void expand();
+
+      /// Shrink the hash table
+      void shrink();
+
+    private:
+        expert_forest* parent;
+        unsigned size;
+        unsigned num_entries;
+        unsigned next_expand;
+        unsigned next_shrink;
+        node_handle* table;
+
+        static const unsigned MAX_SIZE = 1073741824;
+        static const unsigned MIN_SIZE = 8;
+    };
+
+public:
     unique_table(expert_forest *ef);
     ~unique_table();
 
-    inline unsigned getSize() const         { return size; }
-    inline unsigned getNumEntries() const   { return num_entries; }
-    inline unsigned getMemUsed() const      { return size * sizeof(node_handle); }
+    unsigned getSize() const;
+    unsigned getNumEntries() const;
+    unsigned getMemUsed() const;
 
     void reportStats(FILE* s, const char* pad, unsigned flags) const;
 
     /// For debugging
     void show(FILE *s) const;
 
-    /** If table contains key, move it to the front of the list.
+    /** If the table at the given level contains key, move it to the front of the list.
         Otherwise, do nothing.
-        Returns index of the item if found, 0 otherwise.
+        Returns the item if found, 0 otherwise.
 
         Class T must have the following methods:
           unsigned hash():    return the hash value for this item.
           bool equals(int p): return true iff this item equals node p.
      */
-    template <class T>
-    inline node_handle find(const T &key) {
-      unsigned h = key.hash() % size;
-      MEDDLY_CHECK_RANGE(0, h, size);
-      node_handle prev = 0;
-      for (node_handle ptr = table[h]; ptr; ptr = parent->getNext(ptr)) {
-        if (parent->areDuplicates(ptr, key)) { // key.equals(ptr)) {
-          // MATCH
-          if (ptr != table[h]) {
-            // Move to front
-            MEDDLY_DCASSERT(prev);
-            parent->setNext(prev, parent->getNext(ptr));
-            parent->setNext(ptr, table[h]);
-            table[h] = ptr;
-          }
-          MEDDLY_DCASSERT(table[h] == ptr);
-          return ptr;
-        } // if
-        prev = ptr;
-      } // for ptr
-      // no match
-      return 0;
-    }
+    template <typename T>
+    node_handle find(const T &key, int level);
 
-    /** Add to the front of the list.
+    /** Add the item to the front of the list at the corresponding level.
         Used when we KNOW that the item is not in the unique table already.
     */
-    inline void add(unsigned h, node_handle item) {
-      num_entries++;
-      if (num_entries > next_expand) expand();
-      MEDDLY_DCASSERT(item>0);
-      h %= size;
-      parent->setNext(item, table[h]);
-      table[h] = item;
-    }
+    void add(unsigned h, node_handle item);
 
-    /** If table contains key, remove it and return it.
+    /** If the table at the corresponding level contains key, remove it and return it.
       I.e., the exact key.
       Otherwise, return 0.
     */
-    inline node_handle remove(unsigned h, node_handle key) {
-      h %= size;
-      MEDDLY_CHECK_RANGE(0, h, size);
-      node_handle prev = 0;
-      node_handle ptr = table[h];
-      for ( ; ptr; ptr = parent->getNext(ptr)) {
-        if (key == ptr) {
-          if (ptr != table[h]) {
-            // remove from middle
-            parent->setNext(prev, parent->getNext(ptr));
-          } else {
-            // remove from head
-            table[h] = parent->getNext(ptr);
-          }
-          num_entries--;
-          if (num_entries < next_shrink) shrink();
-          return ptr;
-        }
-        prev = ptr;
-      }
-      return 0;
-    }
+    node_handle remove(unsigned h, node_handle item);
 
-  private:  // helper methods
-    /// Empty the hash table into a list; returns the list.
-    node_handle convertToList();
-    /// A series of inserts; doesn't check for duplicates or expand.
-    void buildFromList(node_handle front);
-    /// Expand the hash table (if possible)
-    void expand();
-    /// Shrink the hash table
-    void shrink();
+    /**
+     * Retrieve the items in the table at the given level.
+     * The argument sz specifies the number of items to be retrieved.
+     * If sz is larger than the number of items in the table, only the number
+     * of items in the table are to be retrieved.
+     * Returns the actual number of items retrieved.
+     */
+    int getItems(int level, node_handle* items, int sz) const;
 
-  private:
+private:
     expert_forest* parent;
-    unsigned size;
-    unsigned num_entries;
-    unsigned next_expand;
-    unsigned next_shrink;
-    node_handle* table;
-
-    static const unsigned maxSize = 1073741824;
-    static const unsigned minSize = 8;
+    subtable* tables;
 };
+
+template <typename T>
+MEDDLY::node_handle MEDDLY::unique_table::subtable::find(const T &key)
+{
+	unsigned h = key.hash() % size;
+	MEDDLY_CHECK_RANGE(0, h, size);
+	node_handle prev = 0;
+	for (node_handle ptr = table[h]; ptr!=0; ptr = parent->getNext(ptr)) {
+		if (parent->areDuplicates(ptr, key)) { // key.equals(ptr)) {
+			// MATCH
+			if (ptr != table[h]) {
+				// Move to front
+				MEDDLY_DCASSERT(prev);
+				parent->setNext(prev, parent->getNext(ptr));
+				parent->setNext(ptr, table[h]);
+				table[h] = ptr;
+			}
+			MEDDLY_DCASSERT(table[h] == ptr);
+			return ptr;
+		}
+		prev = ptr;
+	}
+
+	return 0;
+}
+
+template <typename T>
+inline MEDDLY::node_handle MEDDLY::unique_table::find(const T &key, int level)
+{
+	return tables[level].find(key);
+}
+
+inline void MEDDLY::unique_table::add(unsigned hash, node_handle item)
+{
+	int level=parent->getNodeLevel(item);
+	tables[level].add(hash, item);
+}
+
+inline MEDDLY::node_handle MEDDLY::unique_table::remove(unsigned hash, node_handle item)
+{
+	int level=parent->getNodeLevel(item);
+	return tables[level].remove(hash, item);
+}
+
+inline int MEDDLY::unique_table::getItems(int level, node_handle* items, int sz) const
+{
+	return tables[level].getItems(items, sz);
+}
 
 #endif

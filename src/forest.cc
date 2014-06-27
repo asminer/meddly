@@ -1581,9 +1581,9 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 #ifdef DEVELOPMENT_CODE
   node_reader* key = initNodeReader(p, false);
   key->computeHash(areEdgeValuesHashed(), getTransparentNode());
-  if (unique->find(*key) != p) {
+  if (unique->find(*key, key->getLevel()) != p) {
     fprintf(stderr, "Error in deleteNode\nFind: %ld\np: %ld\n",
-      long(unique->find(*key)), long(p));
+      static_cast<long>(unique->find(*key, key->getLevel())), static_cast<long>(p));
     dumpInternal(stdout);
     MEDDLY_DCASSERT(false);
   }
@@ -1638,9 +1638,9 @@ void MEDDLY::expert_forest::zombifyNode(node_handle p)
   node_reader* key = initNodeReader(p, false);
   key->computeHash(areEdgeValuesHashed(), getTransparentNode());
   MEDDLY_DCASSERT(key->hash() == h);
-  if (unique->find(*key) != p) {
+  if (unique->find(*key, key->getLevel()) != p) {
     fprintf(stderr, "Fail: can't find reduced node %ld; got %ld\n", 
-      long(p), long(unique->find(*key)));
+      static_cast<long>(p), static_cast<long>(unique->find(*key, key->getLevel())));
     dumpInternal(stderr);
     MEDDLY_DCASSERT(false);
   }
@@ -1859,7 +1859,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
   }
 
   // check for duplicates in unique table
-  node_handle q = unique->find(nb);
+  node_handle q = unique->find(nb, nb.getLevel());
   if (q) {
     // unlink all downward pointers
     for (int i = 0; i<nb.rawSize(); i++)  unlinkNode(nb.d(i));
@@ -1897,7 +1897,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
   initNodeReader(key, p, false);
   key.computeHash(areEdgeValuesHashed(), getTransparentNode());
   MEDDLY_DCASSERT(key.hash() == nb.hash());
-  node_handle f = unique->find(key);
+  node_handle f = unique->find(key, key.getLevel());
   MEDDLY_DCASSERT(f == p);
 #endif
 #ifdef DEBUG_CREATE_REDUCED
