@@ -90,10 +90,43 @@ MEDDLY::binary_opname::~binary_opname()
 }
 
 // ******************************************************************
+// *                   specialized_opname methods                   *
+// ******************************************************************
+
+MEDDLY::specialized_opname::arguments::arguments()
+{
+}
+
+MEDDLY::specialized_opname::arguments::~arguments()
+{
+}
+
+
+MEDDLY::specialized_opname::specialized_opname(const char* n) : opname(n)
+{
+}
+
+MEDDLY::specialized_opname::~specialized_opname()
+{
+}
+
+// ******************************************************************
 // *                    numerical_opname methods                    *
 // ******************************************************************
 
-MEDDLY::numerical_opname::numerical_opname(const char* n) : opname(n)
+MEDDLY::numerical_opname::numerical_args
+::numerical_args(const dd_edge &xi, const dd_edge &a, const dd_edge &yi)
+ : x_ind(xi), A(a), y_ind(yi)
+{
+}
+
+MEDDLY::numerical_opname::numerical_args::~numerical_args()
+{
+}
+
+
+MEDDLY::numerical_opname::numerical_opname(const char* n)
+ : specialized_opname(n)
 {
 }
 
@@ -357,9 +390,41 @@ void MEDDLY::binary_operation::compute(float av, node_handle ap,
 }
 
 // ******************************************************************
-// *                  numerical_operation  methods                  *
+// *                 specialized_operation  methods                 *
 // ******************************************************************
 
+MEDDLY::
+specialized_operation::
+specialized_operation(const specialized_opname* op, int kl, int al) 
+ : operation(op, kl, al)
+{
+}
+
+MEDDLY::specialized_operation::~specialized_operation()
+{
+}
+
+void MEDDLY::specialized_operation::compute(const dd_edge &arg, dd_edge &res)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::specialized_operation::compute(const dd_edge &ar1, 
+  const dd_edge &ar2, dd_edge &res)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::specialized_operation::compute(double* y, const double* x)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+
+// ******************************************************************
+// *                  numerical_operation  methods                  *
+// ******************************************************************
+/*
 MEDDLY::numerical_operation::numerical_operation(const numerical_opname* op) 
  : operation(op, 0, 0)
 {
@@ -373,6 +438,7 @@ void MEDDLY::numerical_operation::compute(double* y, const double* x)
 {
   throw error(error::TYPE_MISMATCH);
 }
+*/
 
 // ******************************************************************
 // *                     op_initializer methods                     *

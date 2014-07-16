@@ -381,7 +381,7 @@ void MEDDLY::destroyOperation(MEDDLY::binary_operation* &op)
   op = 0;
 }
 
-void MEDDLY::destroyOperation(MEDDLY::numerical_operation* &op)
+void MEDDLY::destroyOperation(MEDDLY::specialized_operation* &op)
 {
   destroyOpInternal(op);
   op = 0;

@@ -21,6 +21,7 @@
 
 #include "../defines.h"
 #include "vect_matr.h"
+#include <typeinfo> // for "bad_cast" exception
 
 namespace MEDDLY {
   class base_evplus_mt;
@@ -43,7 +44,7 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::base_evplus_mt : public numerical_operation {
+class MEDDLY::base_evplus_mt : public specialized_operation {
   public:
     base_evplus_mt(const numerical_opname* code, const dd_edge &x_ind,
       const dd_edge& A, const dd_edge &y_ind);
@@ -77,7 +78,7 @@ class MEDDLY::base_evplus_mt : public numerical_operation {
 
 MEDDLY::base_evplus_mt::base_evplus_mt(const numerical_opname* code, 
   const dd_edge &x_ind, const dd_edge& A, const dd_edge &y_ind)
- : numerical_operation(code)
+ : specialized_operation(code, 0, 0)
 {
   fx = (const expert_forest*) x_ind.getForest();
   fA = (const expert_forest*) A.getForest();
@@ -445,31 +446,38 @@ void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
 class MEDDLY::VM_opname : public numerical_opname {
   public:
     VM_opname();
-    virtual numerical_operation* buildOperation(const dd_edge &x_ind,
+    virtual specialized_operation* buildOperation(arguments &a) const;
+    /*
+    virtual specialized_operation* buildOperation(const dd_edge &x_ind,
       const dd_edge& A, const dd_edge& y_ind) const;
+      */
 };
 
 MEDDLY::VM_opname::VM_opname() : numerical_opname("VectMatrMult")
 {
 }
 
-MEDDLY::numerical_operation* 
-MEDDLY::VM_opname::buildOperation(const dd_edge &x_ind, const dd_edge& A,
-  const dd_edge& y_ind) const
+MEDDLY::specialized_operation* 
+MEDDLY::VM_opname::buildOperation(arguments &a) const
+// ::buildOperation(const dd_edge &x_ind, const dd_edge& A,
+//   const dd_edge& y_ind) const
 {
-  const expert_forest* fx = (const expert_forest*) x_ind.getForest();
-  const expert_forest* fA = (const expert_forest*) A.getForest();
-  const expert_forest* fy = (const expert_forest*) y_ind.getForest();
+  try {
+    numerical_args &na = dynamic_cast<numerical_args&>(a);
 
-  // everyone must use the same domain
-  if (      (fx->getDomain() != fy->getDomain()) 
-        ||  (fx->getDomain() != fA->getDomain())  )
-  {
-    throw error(error::DOMAIN_MISMATCH);
-  }
+    const expert_forest* fx = (const expert_forest*) na.x_ind.getForest();
+    const expert_forest* fA = (const expert_forest*) na.A.getForest();
+    const expert_forest* fy = (const expert_forest*) na.y_ind.getForest();
 
-  // Check edge types
-  if (
+    // everyone must use the same domain
+    if (      (fx->getDomain() != fy->getDomain()) 
+          ||  (fx->getDomain() != fA->getDomain())  )
+    {
+      throw error(error::DOMAIN_MISMATCH);
+    }
+
+    // Check edge types
+    if (
            (fy->getRangeType() != forest::INTEGER) 
         || (fy->isForRelations())
         || (fx->getRangeType() != forest::INTEGER)
@@ -477,31 +485,35 @@ MEDDLY::VM_opname::buildOperation(const dd_edge &x_ind, const dd_edge& A,
         || (fA->getRangeType() != forest::REAL)
         || (!fA->isForRelations())
       ) 
-  {
-    throw error(error::TYPE_MISMATCH);
-  }
-
-  // A can't be fully reduced.
-  if (fA->isFullyReduced()) {
-    throw error(error::TYPE_MISMATCH);
-  }
-
-  // For now, fy and fx must be Indexed sets or EVPLUS forests.
-  if ( !isEvPlusStyle(fy) || !isEvPlusStyle(fx) )
-  {
-    throw error(error::NOT_IMPLEMENTED);
-  }
-
-  switch (fA->getEdgeLabeling()) {
-    case forest::MULTI_TERMINAL:
-      return new VM_evplus_mt(this, x_ind, A, y_ind);
-
-    case forest::EVTIMES:
-      throw error(error::NOT_IMPLEMENTED);
-
-    default:
+    {
       throw error(error::TYPE_MISMATCH);
-  };
+    }
+
+    // A can't be fully reduced.
+    if (fA->isFullyReduced()) {
+      throw error(error::TYPE_MISMATCH);
+    }
+
+    // For now, fy and fx must be Indexed sets or EVPLUS forests.
+    if ( !isEvPlusStyle(fy) || !isEvPlusStyle(fx) )
+    {
+      throw error(error::NOT_IMPLEMENTED);
+    }
+
+    switch (fA->getEdgeLabeling()) {
+      case forest::MULTI_TERMINAL:
+        return new VM_evplus_mt(this, na.x_ind, na.A, na.y_ind);
+
+      case forest::EVTIMES:
+        throw error(error::NOT_IMPLEMENTED);
+
+      default:
+        throw error(error::TYPE_MISMATCH);
+    };
+  }
+  catch (std::bad_cast) {
+    throw error(error::INVALID_ARGUMENT);
+  }
 }
 
 // ******************************************************************
@@ -513,31 +525,49 @@ MEDDLY::VM_opname::buildOperation(const dd_edge &x_ind, const dd_edge& A,
 class MEDDLY::MV_opname : public numerical_opname {
   public:
     MV_opname();
-    virtual numerical_operation* buildOperation(const dd_edge &x_ind,
+    virtual specialized_operation* buildOperation(arguments &a) const;
+    /*
+    virtual specialized_operation* buildOperation(const dd_edge &x_ind,
       const dd_edge& A, const dd_edge& y_ind) const;
+      */
 };
 
 MEDDLY::MV_opname::MV_opname() : numerical_opname("MatrVectMult")
 {
 }
 
-MEDDLY::numerical_operation* 
+/*
+MEDDLY::specialized_operation* 
 MEDDLY::MV_opname::buildOperation(const dd_edge &x_ind, const dd_edge& A,
   const dd_edge& y_ind) const
 {
   const expert_forest* fx = (const expert_forest*) x_ind.getForest();
   const expert_forest* fA = (const expert_forest*) A.getForest();
   const expert_forest* fy = (const expert_forest*) y_ind.getForest();
+*/
 
-  // everyone must use the same domain
-  if (      (fx->getDomain() != fy->getDomain()) 
+MEDDLY::specialized_operation* 
+MEDDLY::MV_opname::buildOperation(arguments &a) const
+// ::buildOperation(const dd_edge &x_ind, const dd_edge& A,
+//   const dd_edge& y_ind) const
+{
+  try {
+    numerical_args &na = dynamic_cast<numerical_args&>(a);
+
+    const expert_forest* fx = (const expert_forest*) na.x_ind.getForest();
+    const expert_forest* fA = (const expert_forest*) na.A.getForest();
+    const expert_forest* fy = (const expert_forest*) na.y_ind.getForest();
+
+
+    // everyone must use the same domain
+    if (      (fx->getDomain() != fy->getDomain()) 
         ||  (fx->getDomain() != fA->getDomain())  )
-  {
-    throw error(error::DOMAIN_MISMATCH);
-  }
+    {
+      throw error(error::DOMAIN_MISMATCH);
+    }
 
   // Check edge types
-  if (
+    if (
            (fy->getRangeType() != forest::INTEGER) 
         || (fy->isForRelations())
         || (fx->getRangeType() != forest::INTEGER)
@@ -545,31 +575,35 @@ MEDDLY::MV_opname::buildOperation(const dd_edge &x_ind, const dd_edge& A,
         || (fA->getRangeType() != forest::REAL)
         || (!fA->isForRelations())
       ) 
-  {
-    throw error(error::TYPE_MISMATCH);
-  }
-
-  // A can't be fully reduced.
-  if (fA->isFullyReduced()) {
-    throw error(error::TYPE_MISMATCH);
-  }
-
-  // For now, fy and fx must be Indexed sets or EVPLUS forests.
-  if ( !isEvPlusStyle(fy) || !isEvPlusStyle(fx) )
-  {
-    throw error(error::NOT_IMPLEMENTED);
-  }
-
-  switch (fA->getEdgeLabeling()) {
-    case forest::MULTI_TERMINAL:
-      return new MV_evplus_mt(this, x_ind, A, y_ind);
-
-    case forest::EVTIMES:
-      throw error(error::NOT_IMPLEMENTED);
-
-    default:
+    {
       throw error(error::TYPE_MISMATCH);
-  };
+    }
+
+    // A can't be fully reduced.
+    if (fA->isFullyReduced()) {
+      throw error(error::TYPE_MISMATCH);
+    }
+
+    // For now, fy and fx must be Indexed sets or EVPLUS forests.
+    if ( !isEvPlusStyle(fy) || !isEvPlusStyle(fx) )
+    {
+      throw error(error::NOT_IMPLEMENTED);
+    }
+
+    switch (fA->getEdgeLabeling()) {
+      case forest::MULTI_TERMINAL:
+        return new MV_evplus_mt(this, na.x_ind, na.A, na.y_ind);
+
+      case forest::EVTIMES:
+        throw error(error::NOT_IMPLEMENTED);
+
+      default:
+        throw error(error::TYPE_MISMATCH);
+    };
+  }
+  catch (std::bad_cast) {
+    throw error(error::INVALID_ARGUMENT);
+  }
 }
 
 // ******************************************************************

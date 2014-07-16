@@ -93,6 +93,7 @@ namespace MEDDLY {
   class opname;
   class unary_opname;
   class binary_opname;
+  class specialized_opname;
   class numerical_opname;
 
   class compute_table_style;
@@ -101,7 +102,8 @@ namespace MEDDLY {
   class operation;
   class unary_operation;
   class binary_operation;
-  class numerical_operation;
+  class specialized_operation;
+  // class numerical_operation;
 
   class op_initializer;
 
@@ -216,7 +218,7 @@ namespace MEDDLY {
   void destroyOperation(binary_operation* &op);
 
   /// Safely destroy the given numerical operation.
-  void destroyOperation(numerical_operation* &op);
+  void destroyOperation(specialized_operation* &op);
 
   /// Should not be called directly.
   void destroyOpInternal(operation* op);
@@ -2782,24 +2784,74 @@ class MEDDLY::binary_opname : public opname {
 
 // ******************************************************************
 // *                                                                *
+// *                    specialized_opname class                    *
+// *                                                                *
+// ******************************************************************
+
+/// Specialized operation names.
+class MEDDLY::specialized_opname : public opname {
+  public:
+    /**
+      Abstract base class for arguments to buildOperation().
+      Derived operation names must provide derived classes for arguments.
+    */
+    class arguments {
+      public:
+        arguments();
+        virtual ~arguments();
+    };
+
+  public:
+    specialized_opname(const char* n);
+    virtual ~specialized_opname();
+
+    /** Note - unlike the more general binary and unary ops,
+        a specialized operation might be crafted to the specific
+        arguments (passed as an abstract class).
+        Examples are: 
+          - operations that will be called several times with
+            several of the arguments unchanged, and we want
+            to do some preprocessing on the unchanged arguments.
+
+          - operations with very bizarre and/or user-defined
+            parameters (like on-the-fly saturation).
+    */
+    virtual specialized_operation* buildOperation(arguments &a) const = 0;
+};
+
+// ******************************************************************
+// *                                                                *
 // *                     numerical_opname class                     *
 // *                                                                *
 // ******************************************************************
 
 /// Numerical operation names.
-class MEDDLY::numerical_opname : public opname {
+class MEDDLY::numerical_opname : public specialized_opname {
+  public:
+    class numerical_args : public specialized_opname::arguments {
+      public:
+        const dd_edge &x_ind;
+        const dd_edge &A;
+        const dd_edge &y_ind;
+      public:
+        numerical_args(const dd_edge &xi, const dd_edge &a, const dd_edge &yi);
+        virtual ~numerical_args();
+    };
+
   public:
     numerical_opname(const char* n);
     virtual ~numerical_opname();
 
-    /** Note - unlike the more general binary and unary ops,
-        a numerical operation might be crafted to the specific
-        arguments, for speed.
-        The idea is that these operations will be called several
-        times (say, within a linear solver) with the same dd_edges.
-    */
-    virtual numerical_operation* buildOperation(const dd_edge &x_ind,
-      const dd_edge &A, const dd_edge &y_ind) const = 0;
+
+    virtual specialized_operation* buildOperation(arguments &a) const = 0;
+
+    /// For convenience, and backward compatability :^)
+    inline specialized_operation* buildOperation(const dd_edge &x_ind,
+      const dd_edge &A, const dd_edge &y_ind) const
+    {
+      numerical_args na(x_ind, A, y_ind);
+      return buildOperation(na);
+    }
 };
 
 
@@ -3306,12 +3358,47 @@ class MEDDLY::binary_operation : public operation {
 
 // ******************************************************************
 // *                                                                *
+// *                  specialized_operation  class                  *
+// *                                                                *
+// ******************************************************************
+
+/** Mechanism to apply specialized operations.
+*/
+class MEDDLY::specialized_operation : public operation {
+  public:
+    specialized_operation(const specialized_opname* code, int kl, int al);
+  protected:
+    virtual ~specialized_operation();
+  public:
+
+    /** For unary (like) operations.
+        Note that there could be other "built in" operands.
+        Default behavior is to throw an exception.
+    */
+    virtual void compute(const dd_edge &arg, dd_edge &res);
+
+    /** For binary (like) operations.
+        Note that there could be other "built in" operands.
+        Default behavior is to throw an exception.
+    */
+    virtual void compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res);
+    
+    /** For numerical operations.
+        compute y += some function of x, depending on the operation.
+        Default behavior is to throw an exception.
+    */
+    virtual void compute(double* y, const double* x);
+};
+
+// ******************************************************************
+// *                                                                *
 // *                   numerical_operation  class                   *
 // *                                                                *
 // ******************************************************************
 
 /** Mechanism to apply numerical operations to specific edges.
 */
+/*
 class MEDDLY::numerical_operation : public operation {
   public:
     numerical_operation(const numerical_opname* code);
@@ -3321,6 +3408,7 @@ class MEDDLY::numerical_operation : public operation {
     /// compute y += some function of x, depending on the operation.
     virtual void compute(double* y, const double* x);
 };
+*/
 
 // ******************************************************************
 // *                                                                *
