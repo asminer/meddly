@@ -58,11 +58,13 @@ int usage(const char* who)
   for (const char* ptr=who; *ptr; ptr++) {
     if ('/' == *ptr) name = ptr+1;
   }
-  printf("\nUsage: %s nnnn (-bfs) (-dfs) (-exp)\n\n", name);
-  printf("\tnnnn: number of parts\n");
-  printf("\t-bfs: use traditional iterations\n");
-  printf("\t-dfs: use saturation\n");
-  printf("\t-exp: use explicit (very slow)\n\n");
+  printf("\nUsage: %s nnnn [options]\n\n", name);
+  printf("\tnnnn: number of parts\n\n");
+  printf("\t-bfs: use traditional iterations\n\n");
+  printf("\t-dfs: use saturation (monolithic)\n");
+  printf("\t-esat: use saturation by events\n");
+  printf("\t-ksat: use saturation by levels\n\n");
+  printf("\t-exp: use explicit (very slow)\n");
   printf("\t--batch b: specify explicit batch size\n\n");
   return 1;
 }
@@ -93,6 +95,14 @@ int main(int argc, const char** argv)
     }
     if (strcmp("-dfs", argv[i])==0) {
       method = 'd';
+      continue;
+    }
+    if (strcmp("-esat", argv[i])==0) {
+      method = 's';
+      continue;
+    }
+    if (strcmp("-ksat", argv[i])==0) {
+      method = 'k';
       continue;
     }
     if (strcmp("-exp", argv[i])==0) {
@@ -134,12 +144,39 @@ int main(int argc, const char** argv)
   // Build next-state function
   forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge nsf(mxd);
+  satpregen_opname::pregen_relation ensf(mxd, 16);
+  dd_edge* knsf = 0;
+
   if ('e' != method) {
-    buildNextStateFunction(kanban, 16, mxd, nsf, 4);
+
+    switch (method) {
+      case 's':
+        try {
+          buildByEventsNSF(kanban, 16, ensf, 4);
+          ensf.finalize();
+        }
+        catch (MEDDLY::error e) {
+          printf("Caught error %s\n", e.getName());
+        }
+        break;
+
+      case 'k':
+        /*
+        knsf = new dd_edge[17];
+        for (int i=0; i<=16; i++) knsf[i].setForest(mxd);
+        buildByLevelsNSF(kanban, 16, mxd, knsf, 4);
+        */
+        break;
+
+      case 'b':
+      case 'd':
+        buildNextStateFunction(kanban, 16, mxd, nsf, 4);
 #ifdef DUMP_NSF
-    printf("Next-state function:\n");
-    nsf.show(stdout, 2);
+        printf("Next-state function:\n");
+        nsf.show(stdout, 2);
 #endif
+        break;
+    }
     printStats("MxD", mxd);
   }
 
@@ -162,6 +199,26 @@ int main(int argc, const char** argv)
         printf("Using batch size: %d\n", batchsize);
         fflush(stdout);
         explicitReachset(kanban, 16, mdd, init_state, reachable, batchsize);
+        break;
+
+    case 'k':
+        // for now - debugging - check the relation
+        for (int k=16; k; k--) {
+          printf("Relation at level %d:  %ld\n", k, long(knsf[k].getNode()));
+        }
+        break;
+
+    case 's':
+        // for now - debugging - check the relation
+        for (int k=16; k; k--) {
+          int len = ensf.lengthForLevel(k);
+          if (0==len) continue;
+          printf("Events at level %d:\n\t", k);
+          node_handle* List = ensf.arrayForLevel(k);
+          for (int i=0; i<len; i++)
+            printf("%d ", List[i]);
+          printf("\n");
+        }
         break;
 
     default:

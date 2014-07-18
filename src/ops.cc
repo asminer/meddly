@@ -29,6 +29,7 @@
 // #include "compute_table.h"
 
 // #define DEBUG_CLEANUP
+// #define DEBUG_FINALIZE
 
 namespace MEDDLY {
   extern settings meddlySettings;
@@ -133,6 +134,153 @@ MEDDLY::numerical_opname::numerical_opname(const char* n)
 MEDDLY::numerical_opname::~numerical_opname()
 {
 }
+
+// ******************************************************************
+// *                                                                *
+// *                    satpregen_opname methods                    *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::satpregen_opname::pregen_relation
+::pregen_relation(forest* f, int nevents)
+{
+  parent = smart_cast <MEDDLY::expert_forest*>(f);
+  if (0==parent) throw error(error::MISCELLANEOUS);
+
+  if (!f->isForRelations()) 
+    throw error(error::INVALID_OPERATION);
+
+  K = parent->getDomain()->getNumVariables();
+
+  num_events = nevents;
+  if (num_events) {
+    events = new node_handle[num_events];
+    next = new int[num_events];
+  } else {
+    events = 0;
+    next = 0;
+  }
+  last_event = -1;
+
+  level_index = new int[K+1];
+  for (int k=0; k<=K; k++) level_index[k] = -1;   // null pointer
+}
+
+MEDDLY::satpregen_opname::pregen_relation
+::~pregen_relation()
+{
+  delete[] events;
+  delete[] next;
+  delete[] level_index;
+}
+
+void
+MEDDLY::satpregen_opname::pregen_relation
+::addToRelation(const dd_edge &r)
+{
+  MEDDLY_DCASSERT(parent);
+
+  if (isFinalized())            throw error(error::MISCELLANEOUS);
+  if (r.getForest() != parent)  throw error(error::FOREST_MISMATCH);
+
+  int k = r.getLevel(); 
+  if (0==k) return;
+  if (k<0) k = -k;   
+
+  if (last_event+1 >= num_events) throw error(error::OVERFLOW);
+
+  last_event++;
+
+  events[last_event] = parent->linkNode(r.getNode());
+  next[last_event] = level_index[k];
+  level_index[k] = last_event;
+}
+
+void
+MEDDLY::satpregen_opname::pregen_relation
+::finalize()
+{
+#ifdef DEBUG_FINALIZE
+  printf("Finalizing pregen relation\n");
+  printf("%d events total\n", last_event+1);
+  printf("events array: [");
+  for (int i=0; i<=last_event; i++) {
+    if (i) printf(", ");
+    printf("%d", events[i]);
+  }
+  printf("]\n");
+  printf("next array: [");
+  for (int i=0; i<=last_event; i++) {
+    if (i) printf(", ");
+    printf("%d", next[i]);
+  }
+  printf("]\n");
+  printf("level_index array: [%d", level_index[1]);
+  for (int i=2; i<=K; i++) {
+    printf(", %d", level_index[i]);
+  }
+  printf("]\n");
+#endif
+  // convert from array of linked lists to contiguous array.
+  //
+  // Idea:
+  //  traverse the array in order.
+  //  everything after this point is still "linked lists".
+  //  everything before this point is contiguous, but
+  //    it is possible that one of the lists points here.
+  //    if so, the next pointer holds the "forwarding address".
+  int P = 0;  // "this point"
+  for (int k=K; k; k--) {
+    int L = level_index[k];
+    level_index[k] = P;
+    while (L>=0) {
+      // if L<P then there must be a forwarding address; follow it
+      while (L<P) L = next[L];
+      // ok, we're at the right slot now
+      int nxt = next[L];
+      if (L != P) {
+        // element L belongs in slot P, swap them...
+        SWAP(events[L], events[P]);
+        next[L] = next[P];
+        // ...and set up the forwarding address
+        next[P] = L;
+      }
+      P++;
+      L = nxt;
+    }
+  } // for k
+  level_index[0] = P;
+
+  // done with next pointers
+  delete[] next;
+  next = 0;
+
+#ifdef DEBUG_FINALIZE
+  printf("\nAfter finalization\n");
+  printf("events array: [");
+  for (int i=0; i<=last_event; i++) {
+    if (i) printf(", ");
+    printf("%d", events[i]);
+  }
+  printf("]\n");
+  printf("level_index array: [%d", level_index[1]);
+  for (int i=2; i<=K; i++) {
+    printf(", %d", level_index[i]);
+  }
+  printf("]\n");
+#endif
+}
+
+
+MEDDLY::satpregen_opname::satpregen_opname(const char* n)
+ : specialized_opname(n)
+{
+}
+
+MEDDLY::satpregen_opname::~satpregen_opname()
+{
+}
+
 
 // ******************************************************************
 // *                       operation  methods                       *
@@ -420,25 +568,6 @@ void MEDDLY::specialized_operation::compute(double* y, const double* x)
   throw error(error::TYPE_MISMATCH);
 }
 
-
-// ******************************************************************
-// *                  numerical_operation  methods                  *
-// ******************************************************************
-/*
-MEDDLY::numerical_operation::numerical_operation(const numerical_opname* op) 
- : operation(op, 0, 0)
-{
-}
-
-MEDDLY::numerical_operation::~numerical_operation()
-{
-}
-
-void MEDDLY::numerical_operation::compute(double* y, const double* x)
-{
-  throw error(error::TYPE_MISMATCH);
-}
-*/
 
 // ******************************************************************
 // *                     op_initializer methods                     *

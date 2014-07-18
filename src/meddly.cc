@@ -89,6 +89,12 @@ namespace MEDDLY {
   const numerical_opname* EXPLVECT_MATR_MULT = 0;
   const numerical_opname* MATR_EXPLVECT_MULT = 0;
 
+  // saturation operation "codes"
+
+  const specialized_opname* SATURATION_FORWARD = 0;
+  const specialized_opname* SATURATION_BACKWARD = 0;
+  const specialized_opname* SATURATION_OTF = 0;
+
   // cache of operations
   operation** op_cache = 0;
   // size of cache

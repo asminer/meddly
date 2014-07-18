@@ -95,6 +95,7 @@ namespace MEDDLY {
   class binary_opname;
   class specialized_opname;
   class numerical_opname;
+  class satpregen_opname;
 
   class compute_table_style;
   class compute_table;
@@ -103,7 +104,6 @@ namespace MEDDLY {
   class unary_operation;
   class binary_operation;
   class specialized_operation;
-  // class numerical_operation;
 
   class op_initializer;
 
@@ -134,6 +134,28 @@ namespace MEDDLY {
   */
   extern const numerical_opname* MATR_EXPLVECT_MULT; 
   // extern const numerical_opname* MATR_VECT_MULT; // renamed!
+
+  // ******************************************************************
+  // *                                                                *
+  // *                  Named saturation operations                   *
+  // *                                                                *
+  // ******************************************************************
+
+  /** Forward reachability using saturation.
+      Transition relation is already known.
+  */
+  extern const specialized_opname* SATURATION_FORWARD;
+
+  /** Backward reachability using saturation.
+      Transition relation is already known.
+  */
+  extern const specialized_opname* SATURATION_BACKWARD;
+
+  /** Forward reachability using saturation.
+      Transition relation is not completely known,
+      will be built along with reachability set.
+  */
+  extern const specialized_opname* SATURATION_OTF;
 
   // ******************************************************************
   // *                                                                *
@@ -2857,6 +2879,80 @@ class MEDDLY::numerical_opname : public specialized_opname {
 
 // ******************************************************************
 // *                                                                *
+// *                     satpregen_opname class                     *
+// *                                                                *
+// ******************************************************************
+
+/// Saturation, with already generated transition relations, operation names.
+class MEDDLY::satpregen_opname : public specialized_opname {
+  public:
+    /// Class for a partitioned transition relation, already known
+    class pregen_relation : public specialized_opname::arguments {
+      public:
+        /// Constructor - b
+        pregen_relation(forest* f, int num_events);
+        virtual ~pregen_relation();
+        void addToRelation(const dd_edge &r);
+
+        void finalize();
+
+        inline bool isFinalized() const { return 0 == next; }
+
+        // the following methods assume the relation has been finalized.
+
+        inline node_handle* arrayForLevel(int k) const {
+          MEDDLY_DCASSERT(isFinalized());
+          MEDDLY_CHECK_RANGE(1, k, K+1);
+          if (level_index[k-1] > level_index[k]) {
+            return events + level_index[k];
+          } else {
+            // empty list
+            return 0;
+          }
+        }
+
+        inline int lengthForLevel(int k) const {
+          MEDDLY_DCASSERT(isFinalized());
+          MEDDLY_CHECK_RANGE(1, k, K+1);
+          return level_index[k-1] - level_index[k];
+        }
+
+        inline forest* getForest() const {
+          return parent;
+        }
+
+      private:
+        expert_forest* parent;
+        int K;
+        // array of sub-relations
+        node_handle* events;
+        // next pointers, unless we're finalized
+        int* next;
+        // size of events array
+        int num_events;
+        // last used element of events array
+        int last_event;
+
+        // before we're finalized, level_index[k] points to a linked-list
+        // of sub-relations that affect level k.
+        // after we're finalized, the events array is sorted, so
+        // level_index[k] is the index of the first event affecting level k.
+        // Dimension is number of variables + 1.
+        int* level_index;
+    };
+
+  public:
+    satpregen_opname(const char* n);
+    virtual ~satpregen_opname();
+
+    /// Arguments should have type "pregen_relation".
+    virtual specialized_operation* buildOperation(arguments &a) const = 0;
+};
+
+
+
+// ******************************************************************
+// *                                                                *
 // *                         ct_object class                        *
 // *                                                                *
 // ******************************************************************
@@ -3389,26 +3485,6 @@ class MEDDLY::specialized_operation : public operation {
     */
     virtual void compute(double* y, const double* x);
 };
-
-// ******************************************************************
-// *                                                                *
-// *                   numerical_operation  class                   *
-// *                                                                *
-// ******************************************************************
-
-/** Mechanism to apply numerical operations to specific edges.
-*/
-/*
-class MEDDLY::numerical_operation : public operation {
-  public:
-    numerical_operation(const numerical_opname* code);
-  protected:
-    virtual ~numerical_operation();
-  public:
-    /// compute y += some function of x, depending on the operation.
-    virtual void compute(double* y, const double* x);
-};
-*/
 
 // ******************************************************************
 // *                                                                *
