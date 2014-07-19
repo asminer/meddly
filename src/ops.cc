@@ -167,6 +167,28 @@ MEDDLY::satpregen_opname::pregen_relation
 }
 
 MEDDLY::satpregen_opname::pregen_relation
+::pregen_relation(forest* f)
+{
+  parent = smart_cast <MEDDLY::expert_forest*>(f);
+  if (0==parent) throw error(error::MISCELLANEOUS);
+
+  if (!f->isForRelations()) 
+    throw error(error::INVALID_OPERATION);
+
+  K = parent->getDomain()->getNumVariables();
+
+  events = new node_handle[K+1];
+  for (int k=0; k<=K; k++) events[k] = 0;
+
+  next = 0;
+  level_index = 0;
+
+  num_events = -1;
+  last_event = -1;
+}
+
+
+MEDDLY::satpregen_opname::pregen_relation
 ::~pregen_relation()
 {
   delete[] events;
@@ -180,26 +202,45 @@ MEDDLY::satpregen_opname::pregen_relation
 {
   MEDDLY_DCASSERT(parent);
 
-  if (isFinalized())            throw error(error::MISCELLANEOUS);
   if (r.getForest() != parent)  throw error(error::FOREST_MISMATCH);
 
   int k = r.getLevel(); 
   if (0==k) return;
   if (k<0) k = -k;   
 
-  if (last_event+1 >= num_events) throw error(error::OVERFLOW);
+  if (0==level_index) {
+    // relation is "by levels"
 
-  last_event++;
+    if (0==events[k]) {
+      events[k] = parent->linkNode(r.getNode());
+    } else {
+      // already have something at this level; perform the union
+      dd_edge tmp(parent);
+      tmp.set(events[k]); // does not increase incoming count
+      tmp += r;
+      events[k] = parent->linkNode(tmp.getNode());
+      // tmp should be destroyed here
+    }
 
-  events[last_event] = parent->linkNode(r.getNode());
-  next[last_event] = level_index[k];
-  level_index[k] = last_event;
+  } else {
+    // relation is "by events"
+
+    if (isFinalized())              throw error(error::MISCELLANEOUS);
+    if (last_event+1 >= num_events) throw error(error::OVERFLOW);
+
+    last_event++;
+
+    events[last_event] = parent->linkNode(r.getNode());
+    next[last_event] = level_index[k];
+    level_index[k] = last_event;
+  }
 }
 
 void
 MEDDLY::satpregen_opname::pregen_relation
 ::finalize()
 {
+  if (0==level_index) return; // by levels, nothing to do
 #ifdef DEBUG_FINALIZE
   printf("Finalizing pregen relation\n");
   printf("%d events total\n", last_event+1);

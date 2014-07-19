@@ -144,12 +144,12 @@ namespace MEDDLY {
   /** Forward reachability using saturation.
       Transition relation is already known.
   */
-  extern const specialized_opname* SATURATION_FORWARD;
+  extern const satpregen_opname* SATURATION_FORWARD;
 
   /** Backward reachability using saturation.
       Transition relation is already known.
   */
-  extern const specialized_opname* SATURATION_BACKWARD;
+  extern const satpregen_opname* SATURATION_BACKWARD;
 
   /** Forward reachability using saturation.
       Transition relation is not completely known,
@@ -2886,11 +2886,22 @@ class MEDDLY::numerical_opname : public specialized_opname {
 /// Saturation, with already generated transition relations, operation names.
 class MEDDLY::satpregen_opname : public specialized_opname {
   public:
-    /// Class for a partitioned transition relation, already known
+    /** Class for a partitioned transition relation, already known
+        The relation can be partitioned "by events" or "by levels".
+        In the case of "by events", we can have more than one relation
+        per level; otherwise, there is at most one relation per level.
+    */
     class pregen_relation : public specialized_opname::arguments {
       public:
-        /// Constructor - b
+
+        // TBD - need forests for input, output MDDs also!
+        // TBD - so, we may want a different class name here. 
+
+        /// Constructor, by events
         pregen_relation(forest* f, int num_events);
+        /// Constructor, by levels
+        pregen_relation(forest* f);
+
         virtual ~pregen_relation();
         void addToRelation(const dd_edge &r);
 
@@ -2903,18 +2914,31 @@ class MEDDLY::satpregen_opname : public specialized_opname {
         inline node_handle* arrayForLevel(int k) const {
           MEDDLY_DCASSERT(isFinalized());
           MEDDLY_CHECK_RANGE(1, k, K+1);
-          if (level_index[k-1] > level_index[k]) {
-            return events + level_index[k];
+          if (level_index) {
+            // "by events"
+            if (level_index[k-1] > level_index[k]) {
+              return events + level_index[k];
+            } else {
+              // empty list
+              return 0;
+            }
           } else {
-            // empty list
-            return 0;
+            // "by levels"
+            if (events[k])  return events+k;
+            else            return 0;
           }
         }
 
         inline int lengthForLevel(int k) const {
           MEDDLY_DCASSERT(isFinalized());
           MEDDLY_CHECK_RANGE(1, k, K+1);
-          return level_index[k-1] - level_index[k];
+          if (level_index) {
+            // "by events"
+            return level_index[k-1] - level_index[k];
+          } else {
+            // "by levels"
+            return events[k] ? 1 : 0;
+          }
         }
 
         inline forest* getForest() const {
@@ -2933,7 +2957,8 @@ class MEDDLY::satpregen_opname : public specialized_opname {
         // last used element of events array
         int last_event;
 
-        // before we're finalized, level_index[k] points to a linked-list
+        // If null, then we are "by levels".  Otherwise, we are "by events",
+        // and before we're finalized, level_index[k] points to a linked-list
         // of sub-relations that affect level k.
         // after we're finalized, the events array is sorted, so
         // level_index[k] is the index of the first event affecting level k.

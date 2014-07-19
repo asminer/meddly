@@ -28,7 +28,8 @@
 //#define DEBUG_GENERATE
 //#define DEBUG_EVENTS
 //#define DEBUG_EVENTS_LONG
-#define SHOW_EVENT_HANDLES
+
+// #define SHOW_EVENT_HANDLES
 
 inline int MAX(int a, int b) {
   return (a>b) ? a : b;
@@ -49,13 +50,8 @@ inline int MAX(int a, int b) {
       @param  mxd       The forest to use; should be a boolean one for relations.
 
       @param  pnsf      If not null, store the relation for each event here.
-                        Do not accumulate events any further.
 
-      @param  knsf      If pnsf is null, and knsf is not null, then store the
-                        relation here with events accumulated by levels.
-
-      @param  mono      If pnsf and knsf are null, then store the monolithic
-                        relation here.
+      @param  mono      If not null, accumulate the monolithic relation here.
 
       @param  verb      Verbosity level.
 */
@@ -63,8 +59,7 @@ inline int MAX(int a, int b) {
 void buildNextStateFunction(const char* const* events, int nEvents,
   MEDDLY::forest* mxd, 
   MEDDLY::satpregen_opname::pregen_relation* pnsf,
-  MEDDLY::dd_edge* knsf,
-  MEDDLY::dd_edge &mono, int verb)
+  MEDDLY::dd_edge* mono, int verb)
 {
   using namespace MEDDLY;
   if (verb) fprintf(stderr, "Building next-state function\n");
@@ -113,12 +108,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
   //
   // Initialize accumulators
   //
-  mxd->createEdge(false, mono);
-  if (knsf) {
-    for (int k=0; k<=nVars; k++) {
-      mxd->createEdge(false, knsf[k]);
-    }
-  }
+  if (mono) mxd->createEdge(false, *mono);
 
   for (int e=0; e<nEvents; e++) {
     const char* ev = events[e];
@@ -190,21 +180,16 @@ void buildNextStateFunction(const char* const* events, int nEvents,
       //  Add event to relation
       //
       pnsf->addToRelation(nsf_ev);
-    } else if (knsf) {
-      //
-      //  Add event to relation, by level
-      //
-      int k = nsf_ev.getLevel();
-      if (k<0) k = -k;
-      if (k) knsf[k] += nsf_ev;
-    } else {
+    }
+
+    if (mono) {
       //
       //  union with overall
       //
-      mono += nsf_ev;
+      *mono += nsf_ev;
 #ifdef DEBUG_EVENTS_LONG
       printf("Complete after adding event %d:\n", e);
-      mono.show(stdout, 2);
+      mono->show(stdout, 2);
 #endif
     }
 
@@ -228,7 +213,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
 
 #ifdef DEBUG_EVENTS
   printf("Complete NSF:\n");
-  mono.show(stdout, 2); 
+  mono->show(stdout, 2); 
 #endif
 }
 
@@ -236,22 +221,29 @@ void buildNextStateFunction(const char* const* events, int nEvents,
 void buildNextStateFunction(const char* const* events, int nEvents,
   MEDDLY::forest* mxd, MEDDLY::dd_edge &nsf, int verb)
 {
-  return buildNextStateFunction(events, nEvents, mxd, 0, 0, nsf, verb);
+  buildNextStateFunction(events, nEvents, mxd, 0, &nsf, verb);
 }
 
-void buildByLevelsNSF(const char* const* events, int nEvents,
-  MEDDLY::forest* mxd, MEDDLY::dd_edge* knsf, int verb)
+void buildNextStateFunction(const char* const* events, int nEvents,
+  MEDDLY::satpregen_opname::pregen_relation* pnsf, int verb)
 {
-  MEDDLY::dd_edge dummy(mxd);
-  return buildNextStateFunction(events, nEvents, mxd, 0, knsf, dummy, verb);
-}
+  if (0==pnsf) return;
+  buildNextStateFunction(events, nEvents, pnsf->getForest(), pnsf, 0, verb);
+  pnsf->finalize();
 
-void buildByEventsNSF(const char* const* events, int nEvents,
-  MEDDLY::satpregen_opname::pregen_relation &pnsf, int verb)
-{
-  MEDDLY::dd_edge dummy(pnsf.getForest());
-  return buildNextStateFunction(events, nEvents, pnsf.getForest(), &pnsf, 
-    0, dummy, verb);
+#ifdef SHOW_EVENT_HANDLES
+  using namespace MEDDLY;
+  // check what we got
+  for (int k=16; k; k--) {
+    int len = pnsf->lengthForLevel(k);
+    if (0==len) continue;
+    printf("Events at level %d:\n\t", k);
+    node_handle* List = pnsf->arrayForLevel(k);
+    for (int i=0; i<len; i++)
+      printf("%d ", List[i]);
+    printf("\n");
+  }
+#endif
 }
 
 

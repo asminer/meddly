@@ -38,24 +38,7 @@
 void buildNextStateFunction(const char* const* events, int nEvents, 
   MEDDLY::forest* f, MEDDLY::dd_edge &e, int verb);
 
-/** Build the next-state function for the given model, by levels.
-      @param  events    Array of dimension \a nEvents.
-                        Each entry is a string where
-                        str[j] tells how this event affects variable j:
-                        '+' means the event increases the variable by one
-                            (unless this would violate the bound)
-                        '-' means the event decreases the variable by one
-                            (unless the value is already zero)
-                        '.' means no change.
-      @param  nEvents   Size of events array.
-      @param  f         The forest to use; should be a boolean one for relations.
-      @param  knsf      Array of edges, of dimension #vars+1.
-      @param  verb      Verbosity level.
-*/
-void buildByLevelsNSF(const char* const* events, int nEvents, 
-  MEDDLY::forest* f, MEDDLY::dd_edge* knsf, int verb);
-
-/** Build the next-state function for the given model, by levels.
+/** Build a partitioned next-state function for the given model.
       @param  events    Array of dimension \a nEvents.
                         Each entry is a string where
                         str[j] tells how this event affects variable j:
@@ -68,8 +51,8 @@ void buildByLevelsNSF(const char* const* events, int nEvents,
       @param  pnsf      Structure to store the relation.
       @param  verb      Verbosity level.
 */
-void buildByEventsNSF(const char* const* events, int nEvents, 
-  MEDDLY::satpregen_opname::pregen_relation &pnsf, int verb);
+void buildNextStateFunction(const char* const* events, int nEvents, 
+  MEDDLY::satpregen_opname::pregen_relation* pnsf, int verb);
 
 /** Use explicit search to build the reachability set.
       @param  events    Array of dimension \a nEvents.

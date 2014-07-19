@@ -91,8 +91,8 @@ namespace MEDDLY {
 
   // saturation operation "codes"
 
-  const specialized_opname* SATURATION_FORWARD = 0;
-  const specialized_opname* SATURATION_BACKWARD = 0;
+  const satpregen_opname* SATURATION_FORWARD = 0;
+  const satpregen_opname* SATURATION_BACKWARD = 0;
   const specialized_opname* SATURATION_OTF = 0;
 
   // cache of operations

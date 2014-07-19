@@ -51,6 +51,128 @@ const char* kanban[] = {
 
 using namespace MEDDLY;
 
+void printStats(const char* who, const forest* f)
+{
+  printf("%s stats:\n", who);
+  const expert_forest* ef = (expert_forest*) f;
+  ef->reportStats(stdout, "\t",
+    expert_forest::HUMAN_READABLE_MEMORY  |
+    expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
+    expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
+  );
+}
+
+
+void runWithArgs(int N, char method, int batchsize)
+{
+  printf("+-------------------------------------------+\n");
+  printf("|   Initializing Kanban model for N = %-4d  |\n", N);
+  printf("+-------------------------------------------+\n");
+  fflush(stdout);
+
+  // Initialize domain
+  int* sizes = new int[16];
+  for (int i=15; i>=0; i--) sizes[i] = N+1;
+  domain* d = createDomainBottomUp(sizes, 16);
+  delete[] sizes;
+
+  // Build initial state
+  int* initial = new int[17];
+  for (int i=16; i; i--) initial[i] = 0;
+  initial[1] = initial[5] = initial[9] = initial[13] = N;
+  forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  dd_edge init_state(mdd);
+  mdd->createEdge(&initial, 1, init_state);
+  delete[] initial;
+
+  // Build next-state function
+  forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  dd_edge nsf(mxd);
+  satpregen_opname::pregen_relation* ensf = 0;
+  specialized_operation* sat = 0;
+
+  if ('s' == method) {
+    ensf = new satpregen_opname::pregen_relation(mxd, 16);
+  }
+  if ('k' == method) {
+    ensf = new satpregen_opname::pregen_relation(mxd);
+  }
+
+  if ('e' != method) {
+
+    if (ensf) {
+        buildNextStateFunction(kanban, 16, ensf, 4);
+    } else {
+        buildNextStateFunction(kanban, 16, mxd, nsf, 4);
+#ifdef DUMP_NSF
+        printf("Next-state function:\n");
+        nsf.show(stdout, 2);
+#endif
+    }
+    printStats("MxD", mxd);
+  }
+
+  dd_edge reachable(mdd);
+  switch (method) {
+    case 'b':
+        printf("Building reachability set using traditional algorithm\n");
+        fflush(stdout);
+        apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
+        break;
+
+    case 'd':
+        printf("Building reachability set using saturation, monolithic relation\n");
+        fflush(stdout);
+        apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+        break;
+
+    case 'e': 
+        printf("Building reachability set using explicit search\n");
+        printf("Using batch size: %d\n", batchsize);
+        fflush(stdout);
+        explicitReachset(kanban, 16, mdd, init_state, reachable, batchsize);
+        break;
+
+    case 'k':
+    case 's':
+        printf("Building reachability set using saturation, relation");
+        if ('k'==method)  printf(" by levels\n");
+        else              printf(" by events\n");
+        fflush(stdout);
+        if (0==SATURATION_FORWARD) {
+          throw error(error::UNKNOWN_OPERATION);
+        }
+        sat = SATURATION_FORWARD->buildOperation(*ensf);
+        if (0==sat) {
+          throw error(error::INVALID_OPERATION);
+        }
+        sat->compute(init_state, reachable);
+        break;
+
+    default:
+        printf("Error - unknown method\n");
+        exit(2);
+  };
+  printf("Done\n");
+  fflush(stdout);
+
+#ifdef DUMP_REACHABLE
+  printf("Reachable states:\n");
+  reachable.show(stdout, 2);
+#endif
+
+  printStats("MDD", mdd);
+  fflush(stdout);
+
+  double c;
+  apply(CARDINALITY, reachable, c);
+  operation::showAllComputeTables(stdout, 2);
+
+  printf("Approx. %g reachable states\n", c);
+  destroyOperation(sat);
+}
+
+
 int usage(const char* who)
 {
   /* Strip leading directory, if any: */
@@ -68,18 +190,6 @@ int usage(const char* who)
   printf("\t--batch b: specify explicit batch size\n\n");
   return 1;
 }
-
-void printStats(const char* who, const forest* f)
-{
-  printf("%s stats:\n", who);
-  const expert_forest* ef = (expert_forest*) f;
-  ef->reportStats(stdout, "\t",
-    expert_forest::HUMAN_READABLE_MEMORY  |
-    expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
-    expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
-  );
-}
-
 
 
 int main(int argc, const char** argv)
@@ -121,127 +231,13 @@ int main(int argc, const char** argv)
 
   MEDDLY::initialize();
 
-  printf("+-------------------------------------------+\n");
-  printf("|   Initializing Kanban model for N = %-4d  |\n", N);
-  printf("+-------------------------------------------+\n");
-  fflush(stdout);
-
-  // Initialize domain
-  int* sizes = new int[16];
-  for (int i=15; i>=0; i--) sizes[i] = N+1;
-  domain* d = createDomainBottomUp(sizes, 16);
-  delete[] sizes;
-
-  // Build initial state
-  int* initial = new int[17];
-  for (int i=16; i; i--) initial[i] = 0;
-  initial[1] = initial[5] = initial[9] = initial[13] = N;
-  forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
-  dd_edge init_state(mdd);
-  mdd->createEdge(&initial, 1, init_state);
-  delete[] initial;
-
-  // Build next-state function
-  forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
-  dd_edge nsf(mxd);
-  satpregen_opname::pregen_relation ensf(mxd, 16);
-  dd_edge* knsf = 0;
-
-  if ('e' != method) {
-
-    switch (method) {
-      case 's':
-        try {
-          buildByEventsNSF(kanban, 16, ensf, 4);
-          ensf.finalize();
-        }
-        catch (MEDDLY::error e) {
-          printf("Caught error %s\n", e.getName());
-        }
-        break;
-
-      case 'k':
-        /*
-        knsf = new dd_edge[17];
-        for (int i=0; i<=16; i++) knsf[i].setForest(mxd);
-        buildByLevelsNSF(kanban, 16, mxd, knsf, 4);
-        */
-        break;
-
-      case 'b':
-      case 'd':
-        buildNextStateFunction(kanban, 16, mxd, nsf, 4);
-#ifdef DUMP_NSF
-        printf("Next-state function:\n");
-        nsf.show(stdout, 2);
-#endif
-        break;
-    }
-    printStats("MxD", mxd);
+  try {
+    runWithArgs(N, method, batchsize);
+  }
+  catch (MEDDLY::error e) {
+    printf("Caught MEDDLY error: %s\n", e.getName());
   }
 
-  dd_edge reachable(mdd);
-  switch (method) {
-    case 'b':
-        printf("Building reachability set using traditional algorithm\n");
-        fflush(stdout);
-        apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
-        break;
-
-    case 'd':
-        printf("Building reachability set using saturation\n");
-        fflush(stdout);
-        apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
-        break;
-
-    case 'e': 
-        printf("Building reachability set using explicit search\n");
-        printf("Using batch size: %d\n", batchsize);
-        fflush(stdout);
-        explicitReachset(kanban, 16, mdd, init_state, reachable, batchsize);
-        break;
-
-    case 'k':
-        // for now - debugging - check the relation
-        for (int k=16; k; k--) {
-          printf("Relation at level %d:  %ld\n", k, long(knsf[k].getNode()));
-        }
-        break;
-
-    case 's':
-        // for now - debugging - check the relation
-        for (int k=16; k; k--) {
-          int len = ensf.lengthForLevel(k);
-          if (0==len) continue;
-          printf("Events at level %d:\n\t", k);
-          node_handle* List = ensf.arrayForLevel(k);
-          for (int i=0; i<len; i++)
-            printf("%d ", List[i]);
-          printf("\n");
-        }
-        break;
-
-    default:
-        printf("Error - unknown method\n");
-        exit(2);
-  };
-  printf("Done\n");
-  fflush(stdout);
-
-#ifdef DUMP_REACHABLE
-  printf("Reachable states:\n");
-  reachable.show(stdout, 2);
-#endif
-
-  printStats("MDD", mdd);
-  fflush(stdout);
-
-  double c;
-  apply(CARDINALITY, reachable, c);
-  operation::showAllComputeTables(stdout, 2);
-
-  printf("Approx. %g reachable states\n", c);
-  
   // cleanup
   MEDDLY::cleanup();
   return 0;
