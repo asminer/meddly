@@ -299,6 +299,7 @@ void runWithArgs(int N, char method, int batchsize)
   
   printf("Approx. %g reachable states\n", c);
   destroyOperation(sat);
+  // or, don't, and let cleanup() take care of it?
 }
 
 int main(int argc, const char** argv)
@@ -346,14 +347,14 @@ int main(int argc, const char** argv)
 
   try {
     runWithArgs(N, method, batchsize);
+    MEDDLY::cleanup();
+    return 0;
   }
   catch (MEDDLY::error e) {
     printf("Caught MEDDLY error: %s\n", e.getName());
+    return 1;
   }
 
-  // cleanup
-  MEDDLY::cleanup();
-  return 0;
 }
 
 

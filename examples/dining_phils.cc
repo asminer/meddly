@@ -104,6 +104,192 @@ using namespace MEDDLY;
 // #define NAME_VARIABLES
 // #define SHOW_MXD
 
+struct switches {
+  bool pessimistic;
+  bool exact;
+  char method;
+  // bool chaining;
+  bool printReachableStates;
+
+public:
+  switches() {
+    pessimistic = false;
+    exact = false;
+    method = 'b';
+    // chaining = true;
+    printReachableStates = false;
+  }
+};
+
+
+class philsModel {
+  public:
+    philsModel(int nPhils, forest* mxd);
+    ~philsModel();
+
+    // event builders
+    void Idle2WaitBoth(int phil, dd_edge &e);
+    void WaitBoth2HaveRight(int phil, dd_edge &e);
+    void WaitBoth2HaveLeft(int phil, dd_edge &e);
+    void HaveRight2Eat(int phil, dd_edge &e);
+    void HaveLeft2Eat(int phil, dd_edge &e);
+    void Eat2Idle(int phil, dd_edge &e);
+
+    // build everything for a given phil
+    void eventsForPhil(int phil, dd_edge &e);
+
+  private:
+    inline void setMinterm(int* m, int c) {
+      for (int i = 1; i<sz; i++) m[i] = c;
+    }
+
+    inline int philVar(int p) const {
+      return 2*p +1;  // 0th philosopher at 1st variable
+    }
+    inline int leftVar(int p) const {
+      // left fork for phil p
+      return (p > 0) ? 2*p : nPhils*2;
+    }
+    inline int rightVar(int p) const {
+      // right fork for phil p
+      return 2*p+2;
+    }
+
+  private:
+    int* from;
+    int* to;
+    int nPhils;
+    int sz;
+    forest* mxd;
+};
+
+
+philsModel::philsModel(int nP, forest* _mxd)
+{
+  nPhils = nP;
+  mxd = _mxd;
+
+  sz = nPhils * 2 + 1;
+
+  from = new int[sz];
+  to = new int[sz];
+
+  from[0] = to[0] = 0;
+}
+
+philsModel::~philsModel()
+{
+  delete[] from;
+  delete[] to;
+}
+
+void philsModel::Idle2WaitBoth(int phil, dd_edge &e)
+{
+  const int ph = philVar(phil);
+
+  /* I(ph) -> WB(ph) */
+  setMinterm(from, DONT_CARE);
+  setMinterm(to, DONT_CHANGE);
+  from[ph] = 0;
+  to[ph] = 1;
+  mxd->createEdge(&from, &to, 1, e);
+}
+
+void philsModel::WaitBoth2HaveRight(int phil, dd_edge &e)
+{
+  const int ph = philVar(phil);
+  const int rf = rightVar(phil);
+
+  /* WB(ph) -> HR(ph), A(rf) -> NA(rf) */
+  setMinterm(from, DONT_CARE);
+  setMinterm(to, DONT_CHANGE);
+  from[ph] = 1;
+  to[ph] = 3;
+  from[rf] = 0;
+  to[rf] = 1;
+  mxd->createEdge(&from, &to, 1, e);
+}
+
+void philsModel::WaitBoth2HaveLeft(int phil, dd_edge &e)
+{
+  const int ph = philVar(phil);
+  const int lf = leftVar(phil);
+
+  /* WB(ph) -> HR(ph), A(lf) -> NA(lf) */
+  setMinterm(from, DONT_CARE);
+  setMinterm(to, DONT_CHANGE);
+  from[ph] = 1;
+  to[ph] = 3;
+  from[lf] = 0;
+  to[lf] = 1;
+  mxd->createEdge(&from, &to, 1, e);
+}
+
+void philsModel::HaveRight2Eat(int phil, dd_edge &e)
+{
+  const int ph = philVar(phil);
+  const int lf = leftVar(phil);
+
+  /* HR(ph) -> E(ph), A(lf) -> NA(lf) */
+  setMinterm(from, DONT_CARE);
+  setMinterm(to, DONT_CHANGE);
+  from[ph] = 3;
+  to[ph] = 4;
+  from[lf] = 0;
+  to[lf] = 1;
+  mxd->createEdge(&from, &to, 1, e);
+}
+
+void philsModel::HaveLeft2Eat(int phil, dd_edge &e)
+{
+  const int ph = philVar(phil);
+  const int rf = rightVar(phil);
+
+  /* HL(ph) -> E(ph), A(rf) -> NA(rf) */
+  setMinterm(from, DONT_CARE);
+  setMinterm(to, DONT_CHANGE);
+  from[ph] = 2;
+  to[ph] = 4;
+  from[rf] = 0;
+  to[rf] = 1;
+  mxd->createEdge(&from, &to, 1, e);
+}
+
+void philsModel::Eat2Idle(int phil, dd_edge &e)
+{
+  const int ph = philVar(phil);
+  const int rf = rightVar(phil);
+  const int lf = leftVar(phil);
+
+  /* E(ph) -> I(ph), NA(rf) -> A(rf), NA(lf) -> A(lf) */
+  setMinterm(from, DONT_CARE);
+  setMinterm(to, DONT_CHANGE);
+  from[ph] = 4;
+  to[ph] = 0;
+  from[rf] = 1;
+  to[rf] = 0;
+  from[lf] = 1;
+  to[lf] = 0;
+  mxd->createEdge(&from, &to, 1, e);
+}
+
+void philsModel::eventsForPhil(int phil, dd_edge &e)
+{
+  dd_edge temp(mxd);
+  Idle2WaitBoth(phil, e);
+  WaitBoth2HaveRight(phil, temp);
+  e += temp;
+  WaitBoth2HaveLeft(phil, temp);
+  e += temp;
+  HaveRight2Eat(phil, temp);
+  e += temp;
+  HaveLeft2Eat(phil, temp);
+  e += temp;
+  Eat2Idle(phil, temp);
+  e += temp;
+}
+
+
 void printStats(const char* who, const forest* f)
 {
   printf("%s stats:\n", who);
@@ -154,156 +340,6 @@ int* initializeInitialState(int nLevels)
 }
 
 
-void SetIntArray(int *p, int p_size, int c)
-{
-  for (int i = 0; i < p_size; ++i) p[i] = c;
-}
-
-
-dd_edge MakeSynchP_Forks(int philosopher, int nPhilosophers, forest* mxd)
-{
-  MEDDLY_CHECK_RANGE(0, philosopher, nPhilosophers);
-
-  dd_edge nsf(mxd);
-  dd_edge temp(mxd);
-
-  int sz = nPhilosophers * 2 + 1;
-
-  static int* from = NULL;
-  static int* to = NULL;
-  static int** addrFrom = NULL;
-  static int** addrTo = NULL;
-
-  if (from == NULL) {
-    assert(to == NULL);
-    assert(addrFrom == NULL);
-    assert(addrTo == NULL);
-
-    from = (int *) malloc(sz * sizeof(int));
-    to = (int *) malloc(sz * sizeof(int));
-    assert(from != NULL);
-    assert(to != NULL);
-
-    addrFrom = (int **) malloc(sizeof(int *));
-    addrTo = (int **) malloc(sizeof(int *));
-    assert(addrFrom != NULL);
-    assert(addrTo != NULL);
-    addrFrom[0] = from;
-    addrTo[0] = to;
-  }
-
-  assert(from != NULL);
-  assert(to != NULL);
-  assert(addrFrom != NULL);
-  assert(addrTo != NULL);
-
-  from[0] = 0;
-  to[0] = 0;
-
-  /* Right Fork level is above Philosopher level */
-  int ph = philosopher * 2 + 1;  // 0th philosopher at (0*2+1) = 1st level
-  int rf = ph + 1;
-  int lf = (philosopher > 0)? ph - 1: nPhilosophers * 2;
-
-#if 0
-  printf("%s: philosopher = %d, ph = %d, rf = %d, lf = %d\n",
-      __func__, philosopher, ph, rf, lf);
-#endif
-
-  /* I(ph) -> WB(ph) */
-  SetIntArray(from+1, sz-1, DONT_CARE);
-  SetIntArray(to+1, sz-1, DONT_CHANGE);
-  from[ph] = 0;
-  to[ph] = 1;
-  temp.clear();
-  mxd->createEdge(reinterpret_cast<int**>(addrFrom),
-      reinterpret_cast<int**>(addrTo), 1, temp);
-  nsf += temp;
-
-  /* WB(ph) -> HR(ph), A(rf) -> NA(rf) */
-  SetIntArray(from+1, sz-1, DONT_CARE);
-  SetIntArray(to+1, sz-1, DONT_CHANGE);
-  from[ph] = 1;
-  to[ph] = 3;
-  from[rf] = 0;
-  to[rf] = 1;
-  temp.clear();
-  mxd->createEdge(reinterpret_cast<int**>(addrFrom),
-      reinterpret_cast<int**>(addrTo), 1, temp);
-  nsf += temp;
-
-  /* WB(ph) -> HL(ph), A(lf) -> NA(lf) */
-  SetIntArray(from+1, sz-1, DONT_CARE);
-  SetIntArray(to+1, sz-1, DONT_CHANGE);
-  from[ph] = 1;
-  to[ph] = 2;
-  from[lf] = 0;
-  to[lf] = 1;
-  temp.clear();
-  mxd->createEdge(reinterpret_cast<int**>(addrFrom),
-      reinterpret_cast<int**>(addrTo), 1, temp);
-  nsf += temp;
-
-  /* HR(ph) -> E(ph), A(lf) -> NA(lf) */
-  SetIntArray(from+1, sz-1, DONT_CARE);
-  SetIntArray(to+1, sz-1, DONT_CHANGE);
-  from[ph] = 3;
-  to[ph] = 4;
-  from[lf] = 0;
-  to[lf] = 1;
-  temp.clear();
-  mxd->createEdge(reinterpret_cast<int**>(addrFrom),
-      reinterpret_cast<int**>(addrTo), 1, temp);
-  nsf += temp;
-
-  /* HL(ph) -> E(ph), A(rf) -> NA(rf) */
-  SetIntArray(from+1, sz-1, DONT_CARE);
-  SetIntArray(to+1, sz-1, DONT_CHANGE);
-  from[ph] = 2;
-  to[ph] = 4;
-  from[rf] = 0;
-  to[rf] = 1;
-  temp.clear();
-  mxd->createEdge(reinterpret_cast<int**>(addrFrom),
-      reinterpret_cast<int**>(addrTo), 1, temp);
-  nsf += temp;
-
-  /* E(ph) -> I(ph), NA(rf) -> A(rf), NA(lf) -> A(lf) */
-  SetIntArray(from+1, sz-1, DONT_CARE);
-  SetIntArray(to+1, sz-1, DONT_CHANGE);
-  from[ph] = 4;
-  to[ph] = 0;
-  from[rf] = 1;
-  to[rf] = 0;
-  from[lf] = 1;
-  to[lf] = 0;
-  temp.clear();
-  mxd->createEdge(reinterpret_cast<int**>(addrFrom),
-      reinterpret_cast<int**>(addrTo), 1, temp);
-  nsf += temp;
-
-  return nsf;
-}
-
-
-void usage()
-{
-  printf("Usage: dining_phils_batch [-n<#phils>|-m<#MB>|-dfs|-p|-pgif]\n");
-  printf("-n   : \
-      number of philosophers\n");
-  printf("-dfs : \
-      use depth-first algorithm to compute reachable states\n");
-  printf("-exact : \
-      display the exact number of states\n");
-  printf("-cs   : \
-      set cache size (default is 262144).\n");
-  printf("-nc   : \
-      use cache with no-chaining instead of default.\n");
-  printf("-pess: \
-      use pessimistic node deletion (lower mem usage)\n");
-  printf("\n");
-}
-
 
 // Test Index Set
 void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
@@ -317,59 +353,9 @@ void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
 #endif
 }
 
-int main(int argc, char *argv[])
+void runWithOptions(int nPhilosophers, const switches &sw)
 {
   timer start;
-  int nPhilosophers = 0; // number of philosophers
-  bool pessimistic = false;
-  bool exact = false;
-  bool dfs = false;
-  int cacheSize = 0;
-  bool chaining = true;
-  bool printReachableStates = false;
-  if (argc > 1) {
-    assert(argc > 1 && argc < 6);
-    if (argc > 1) {
-      assert(argc < 6);
-      for (int i=1; i<argc; i++) {
-        char *cmd = argv[i];
-        if (strncmp(cmd, "-pess", 6) == 0) pessimistic = true;
-        else if (strncmp(cmd, "-nc", 4) == 0) {
-          chaining = false;
-        }
-        else if (strncmp(cmd, "-cs", 3) == 0) {
-          cacheSize = strtol(&cmd[3], NULL, 10);
-          if (cacheSize < 1) {
-            usage();
-            exit(1);
-          }
-        }
-        else if (strncmp(cmd, "-dfs", 5) == 0) dfs = true;
-        else if (strncmp(cmd, "-exact", 7) == 0) exact = true;
-        else if (strncmp(cmd, "-print", 7) == 0) printReachableStates = true;
-        else if (strncmp(cmd, "-n", 2) == 0) {
-          nPhilosophers = strtol(&cmd[2], NULL, 10);
-        } else {
-          usage();
-          exit(1);
-        }
-      }
-    }
-  }
-  while (nPhilosophers < 2) {
-    printf("Enter the number of philosophers (at least 2): ");
-    scanf("%d", &nPhilosophers);
-  }
-
-  // Initialize MEDDLY
-
-  MEDDLY::settings s;
-  // TBD
-  // s.doComputeTablesUseChaining = chaining;
-  if (cacheSize > 0) {
-    s.computeTable.maxSize = cacheSize;
-  }
-  MEDDLY::initialize(s);
 
   // Number of levels in domain (excluding terminals)
   int nLevels = nPhilosophers * 2;
@@ -385,8 +371,8 @@ int main(int argc, char *argv[])
 
   // Set up MDD options
   forest::policies pmdd(false);
-  if (pessimistic)  pmdd.setPessimistic();
-  else              pmdd.setOptimistic();
+  if (sw.pessimistic) pmdd.setPessimistic();
+  else                pmdd.setOptimistic();
 
   // Create an MDD forest in this domain (to store states)
   forest* mdd =
@@ -395,8 +381,8 @@ int main(int argc, char *argv[])
 
   // Set up MXD options
   forest::policies pmxd(true);
-  if (pessimistic)  pmdd.setPessimistic();
-  else              pmdd.setOptimistic();
+  if (sw.pessimistic) pmdd.setPessimistic();
+  else                pmdd.setOptimistic();
 
   // Create a MXD forest in domain (to store transition diagrams)
   forest* mxd = 
@@ -417,15 +403,48 @@ int main(int argc, char *argv[])
   // Create a matrix diagram to represent the next-state function
   // Next-State function is computed by performing a union of next-state
   // functions that each represent how a philosopher's state can change.
+  philsModel model(nPhilosophers, mxd);
   dd_edge nsf(mxd);
-  for (int i = 0; i < nPhilosophers; i++) {
-    nsf += MakeSynchP_Forks(i, nPhilosophers, mxd);
+  satpregen_opname::pregen_relation* ensf = 0;
+  specialized_operation* sat = 0;
+
+  if ('s' == sw.method) {
+    ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd, 6*nPhilosophers);
+  }
+  if ('k' == sw.method) {
+    ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd);
+  }
+
+  if (ensf) {
+    dd_edge temp(mxd);
+    for (int i = 0; i < nPhilosophers; i++) {
+      model.Idle2WaitBoth(i, temp);
+      ensf->addToRelation(temp);
+      model.WaitBoth2HaveRight(i, temp);
+      ensf->addToRelation(temp);
+      model.WaitBoth2HaveLeft(i, temp);
+      ensf->addToRelation(temp);
+      model.HaveRight2Eat(i, temp);
+      ensf->addToRelation(temp);
+      model.HaveLeft2Eat(i, temp);
+      ensf->addToRelation(temp);
+      model.Eat2Idle(i, temp);
+      ensf->addToRelation(temp);
+    }
+  } else {
+    dd_edge phil(mxd);
+    for (int i = 0; i < nPhilosophers; i++) {
+      model.eventsForPhil(i, phil);
+      nsf += phil;
+    }
   }
   start.note_time();
   printf("Next-state function construction took %.4e seconds\n",
           start.get_last_interval()/1000000.0);
 
+  //
   // Show stats for nsf construction
+  //
   printStats("MxD", mxd);
 
 #ifdef SHOW_MXD
@@ -433,21 +452,49 @@ int main(int argc, char *argv[])
   nsf.show(stdout, 2);
 #endif
 
-  dd_edge reachableStates(initialStates);
 
-  printf("Building reachability set using %s\n", 
-    dfs
-    ? "saturation"
-    : "traditional iteration"
-  );
-  fflush(stdout);
+  //
+  // Build reachable states
+  //
+  dd_edge reachableStates(initialStates);
   start.note_time();
-  apply(
-      dfs?
-      REACHABLE_STATES_DFS:
-      REACHABLE_STATES_BFS,
-      reachableStates, nsf, reachableStates);
+
+  switch (sw.method) {
+    case 'b':
+        printf("Building reachability set using traditional algorithm\n");
+        fflush(stdout);
+        apply(REACHABLE_STATES_BFS, initialStates, nsf, reachableStates);
+        break;
+
+    case 'm':
+        printf("Building reachability set using saturation, monolithic relation\n");
+        fflush(stdout);
+        apply(REACHABLE_STATES_DFS, initialStates, nsf, reachableStates);
+        break;
+
+    case 'k':
+    case 's':
+        printf("Building reachability set using saturation, relation");
+        if ('k'==sw.method) printf(" by levels\n");
+        else                printf(" by events\n");
+        fflush(stdout);
+        if (0==SATURATION_FORWARD) {
+          throw error(error::UNKNOWN_OPERATION);
+        }
+        sat = SATURATION_FORWARD->buildOperation(ensf);
+        if (0==sat) {
+          throw error(error::INVALID_OPERATION);
+        }
+        sat->compute(initialStates, reachableStates);
+        break;
+
+    default:
+        printf("Error - unknown method\n");
+        exit(2);
+  };
   start.note_time();
+  printf("Done\n");
+
   printf("Reachability set construction took %.4e seconds\n",
           start.get_last_interval()/1000000.0);
   fflush(stdout);
@@ -466,7 +513,7 @@ int main(int argc, char *argv[])
   fflush(stdout);
 
 #if HAVE_LIBGMP
-  if (exact) {
+  if (sw.exact) {
     mpz_t nrs;
     mpz_init(nrs);
     apply(CARDINALITY, reachableStates, nrs);
@@ -478,7 +525,7 @@ int main(int argc, char *argv[])
   }
 #endif
 
-  if (printReachableStates) {
+  if (sw.printReachableStates) {
     // Create a EV+MDD forest in this domain (to store index set)
     forest* evplusmdd =
       d->createForest(false, forest::INTEGER, forest::INDEX_SET);
@@ -524,11 +571,121 @@ int main(int argc, char *argv[])
         double(counter), start.get_last_interval()/double(1000000.0));
   }
 
-  // Cleanup
-  MEDDLY::destroyDomain(d);
-  MEDDLY::cleanup();
+}
 
-  printf("\n\nDONE\n");
+
+
+int usage(const char* who)
+{
+  /* Strip leading directory, if any: */
+  const char* name = who;
+  for (const char* ptr=who; *ptr; ptr++) {
+    if ('/' == *ptr) name = ptr+1;
+  }
+
+  printf("\nUsage: %s [options]\n\n", name);
+
+  printf("\t-n<#phils>: set number of philosophers\n\n");
+
+  printf("\t-exact:     display the exact number of states\n");
+  printf("\t-cs<cache>: set cache size (0 for library default)\n");
+  printf("\t-pess:      use pessimistic node deletion (lower mem usage)\n\n");
+
+  printf("\t-bfs:   use traditional iterations (default)\n\n");
+  printf("\t-dfs:   use fastest saturation (currently, -msat)\n");
+  printf("\t-esat:  use saturation by events\n");
+  printf("\t-ksat:  use saturation by levels\n");
+  printf("\t-msat:  use monolithic saturation\n");
+  printf("\n");
   return 0;
+}
+
+
+int main(int argc, char *argv[])
+{
+  int nPhilosophers = 0; // number of philosophers
+  switches sw;
+  int cacheSize = 0;
+
+  for (int i=1; i<argc; i++) {
+    const char* cmd = argv[i];
+    if (strcmp(cmd, "-pess") == 0) {
+      sw.pessimistic = true;
+      continue;
+    }
+    if (strncmp(cmd, "-cs", 3) == 0) {
+      cacheSize = strtol(&cmd[3], NULL, 10);
+      if (cacheSize < 1) {
+        return 1+usage(argv[0]);
+      }
+      continue;
+    }
+    if (strcmp(cmd, "-exact") == 0) {
+      sw.exact = true;
+      continue;
+    }
+    if (strcmp(cmd, "-print") == 0) {
+      sw.printReachableStates = true;
+      continue;
+    }
+    if (strncmp(cmd, "-n", 2) == 0) {
+      nPhilosophers = strtol(cmd+2, NULL, 10);
+      if (nPhilosophers < 1) {
+        return 1+usage(argv[0]);
+      }
+      continue;
+    }
+
+    if (strcmp(cmd, "-bfs") == 0) {
+      sw.method = 'b';
+      continue;
+    }
+
+    if (strcmp(cmd, "-dfs") == 0) {
+      sw.method = 'm';
+      continue;
+    }
+
+    if (strcmp(cmd, "-msat") == 0) {
+      sw.method = 'm';
+      continue;
+    }
+    if (strcmp(cmd, "-esat") == 0) {
+      sw.method = 's';
+      continue;
+    }
+    if (strcmp(cmd, "-ksat") == 0) {
+      sw.method = 'k';
+      continue;
+    }
+
+    return 1+usage(argv[0]);
+  }
+
+  while (nPhilosophers < 2) {
+    printf("Enter the number of philosophers (at least 2): ");
+    scanf("%d", &nPhilosophers);
+  }
+
+  // Initialize MEDDLY
+
+  MEDDLY::settings s;
+  // TBD
+  // s.doComputeTablesUseChaining = chaining;
+  if (cacheSize > 0) {
+    s.computeTable.maxSize = cacheSize;
+  }
+  MEDDLY::initialize(s);
+
+  try {
+    runWithOptions(nPhilosophers, sw);
+    MEDDLY::cleanup();
+    printf("\n\nDONE\n");
+    return 0;
+  }
+  catch (error e) {
+    printf("Caught MEDDLY error: %s\n", e.getName());
+    return 1;
+  }
 }
 

@@ -83,21 +83,34 @@ void Exchange(int va, int vb, int N, dd_edge &answer)
     na.d(ia) = EF->createReducedNode(ia, nap);
   } // for ia
 
-  answer.set(EF->createReducedNode(-1, na), 0);
+  answer.set(EF->createReducedNode(-1, na));
 }
 
 /*
-    Build next-state relation, using "array values" state variables.
-    The forest must be IDENTITY REDUCED.
+    Build monolithic next-state relation, using "array values" 
+    state variables.  The forest must be IDENTITY REDUCED.
 */
 void ValueNSF(int N, dd_edge &answer)
 {
   dd_edge temp(answer);
-  answer.set(0, 0);
+  answer.set(0);
 
   for (int i=1; i<N; i++) {
     Exchange(i+1, i, N, temp);
     answer += temp;
+  }
+}
+
+/*
+    Build partitioned next-state relation, using "array values" 
+    state variables.  The forest must be IDENTITY REDUCED.
+*/
+void ValueNSF(int N, satpregen_opname::pregen_relation* nsf)
+{
+  dd_edge temp(nsf->getRelForest());
+  for (int i=1; i<N; i++) {
+    Exchange(i+1, i, N, temp);
+    nsf->addToRelation(temp);
   }
 }
 
@@ -148,21 +161,34 @@ void AltExchange(int pa, int pb, int N, int K, dd_edge &answer)
     bottom = EF->createReducedNode(-1, nk);
   }
 
-  answer.set(bottom, 0);
+  answer.set(bottom);
 }
 
 /*
-    Build next-state relation, using "array positions" state variables.
-    The forest must be IDENTITY REDUCED.
+    Build monolithic next-state relation, using "array positions" 
+    state variables.  The forest must be IDENTITY REDUCED.
 */
 void PositionNSF(int N, dd_edge &answer)
 {
   dd_edge temp(answer);
-  answer.set(0, 0);
+  answer.set(0);
 
   for (int i=1; i<N; i++) {
     AltExchange(i-1, i, N, N, temp);
     answer += temp;
+  }
+}
+
+/*
+    Build partitioned next-state relation, using "array positions" 
+    state variables.  The forest must be IDENTITY REDUCED.
+*/
+void PositionNSF(int N, satpregen_opname::pregen_relation* nsf)
+{
+  dd_edge temp(nsf->getRelForest());
+  for (int i=1; i<N; i++) {
+    AltExchange(i-1, i, N, N, temp);
+    nsf->addToRelation(temp);
   }
 }
 
@@ -192,43 +218,20 @@ int usage(const char* who)
   for (const char* ptr=who; *ptr; ptr++) {
     if ('/' == *ptr) name = ptr+1;
   }
-  printf("\nUsage: %s nnnn (-bfs) (-dfs)\n\n", name);
-  printf("\tnnnn: number of parts\n");
-  printf("\t-bfs: use traditional iterations\n");
-  printf("\t-dfs: use saturation (default)\n\n");
+  printf("\nUsage: %s nnnn [options]\n\n", name);
+  printf("\tnnnn: array size\n\n");
+  printf("\t-bfs: use traditional iterations\n\n");
+  printf("\t-dfs: use fastest saturation (currently, -msat)\n");
+//  printf("\t-esat: use saturation by events\n");
+//  printf("\t-ksat: use saturation by levels\n");
+  printf("\t-msat: use monolithic saturation (default)\n\n");
   printf("\t-alt: use alternate description\n");
   return 1;
 }
 
-int main(int argc, const char** argv)
+void runWithArgs(int N, char method, bool alternate)
 {
   timer watch;
-  int N = -1;
-  char method = 'd';
-  bool alternate = false;
-
-  /*
-    Process arguments
-  */
-  for (int i=1; i<argc; i++) {
-    if (strcmp("-bfs", argv[i])==0) {
-      method = 'b';
-      continue;
-    }
-    if (strcmp("-dfs", argv[i])==0) {
-      method = 'd';
-      continue;
-    }
-    if (strcmp("-alt", argv[i])==0) {
-      alternate = true;
-      continue;
-    }
-    N = atoi(argv[i]);
-  } // for i
-
-  if (N<0) return usage(argv[0]);
-
-  MEDDLY::initialize();
 
   printf("+-------------------------------------------+\n");
   printf("|   Initializing swaps model for N = %-4d   |\n", N);
@@ -244,32 +247,6 @@ int main(int argc, const char** argv)
   delete[] sizes;
 
   /*
-     Build next-state function
-  */
-  forest* mxd = D->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
-  dd_edge nsf(mxd);
-
-  watch.note_time();
-  if (alternate) {
-    PositionNSF(N, nsf);
-  } else {
-    ValueNSF(N, nsf);
-  }
-  watch.note_time();
-
-  printf("Next-state function construction took %.4f seconds\n",
-          watch.get_last_interval()/1000000.0);
-  printf("Next-state function MxD has\n\t%d nodes\n\t\%d edges\n",
-    nsf.getNodeCount(), nsf.getEdgeCount());
-
-#ifdef DUMP_NSF
-  printf("Next-state function:\n");
-  nsf.show(stdout, 2);
-#endif
-
-  printStats("MxD", mxd);
-
-  /*
      Build initial state
   */
   int* initial = new int[N+1];
@@ -282,6 +259,51 @@ int main(int argc, const char** argv)
   delete[] initial;
   
   /*
+     Build next-state function
+  */
+  forest* mxd = D->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  dd_edge nsf(mxd);
+  satpregen_opname::pregen_relation* ensf = 0;
+  specialized_operation* sat = 0;
+
+  if ('s' == method) {
+    ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd, 16);
+  }
+  if ('k' == method) {
+    ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd);
+  }
+
+  watch.note_time();
+  if (ensf) {
+    if (alternate) {
+      PositionNSF(N, ensf);
+    } else {
+      ValueNSF(N, ensf);
+    }
+  } else {
+    if (alternate) {
+      PositionNSF(N, nsf);
+    } else {
+      ValueNSF(N, nsf);
+    }
+  }
+  watch.note_time();
+
+  printf("Next-state function construction took %.4f seconds\n",
+          watch.get_last_interval()/1000000.0);
+  if (0==ensf) {
+    printf("Next-state function MxD has\n\t%d nodes\n\t\%d edges\n",
+      nsf.getNodeCount(), nsf.getEdgeCount());
+  }
+
+#ifdef DUMP_NSF
+  printf("Next-state function:\n");
+  nsf.show(stdout, 2);
+#endif
+
+  printStats("MxD", mxd);
+
+  /*
       Build reachable states
   */
   watch.note_time();
@@ -293,10 +315,26 @@ int main(int argc, const char** argv)
         apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
         break;
 
-    case 'd':
+    case 'm':
         printf("Building reachability set using saturation\n");
         fflush(stdout);
         apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+        break;
+
+    case 'k':
+    case 's':
+        printf("Building reachability set using saturation, relation");
+        if ('k'==method)  printf(" by levels\n");
+        else              printf(" by events\n");
+        fflush(stdout);
+        if (0==SATURATION_FORWARD) {
+          throw error(error::UNKNOWN_OPERATION);
+        }
+        sat = SATURATION_FORWARD->buildOperation(ensf);
+        if (0==sat) {
+          throw error(error::INVALID_OPERATION);
+        }
+        sat->compute(init_state, reachable);
         break;
 
     default:
@@ -327,11 +365,55 @@ int main(int argc, const char** argv)
   apply(CARDINALITY, reachable, c);
   printf("Counted (approx) %g reachable states\n", c);
   printf("(There should be %g states)\n", factorial(N));
+}
 
-  /*
-      Cleanup
-  */
-  MEDDLY::cleanup();
-  return 0;
+int main(int argc, const char** argv)
+{
+  int N = -1;
+  char method = 'm';
+  bool alt = false;
+
+  for (int i=1; i<argc; i++) {
+    if (strcmp("-bfs", argv[i])==0) {
+      method = 'b';
+      continue;
+    }
+    if (strcmp("-dfs", argv[i])==0) {
+      method = 'm';
+      continue;
+    }
+    if (strcmp("-esat", argv[i])==0) {
+      method = 's';
+      continue;
+    }
+    if (strcmp("-ksat", argv[i])==0) {
+      method = 'k';
+      continue;
+    }
+    if (strcmp("-msat", argv[i])==0) {
+      method = 'm';
+      continue;
+    }
+    if (strcmp("-alt", argv[i])==0) {
+      alt = true;
+      continue;
+    }
+    N = atoi(argv[i]);
+  }
+
+  if (N<0) return usage(argv[0]);
+
+  MEDDLY::initialize();
+
+  try {
+    runWithArgs(N, method, alt);
+    MEDDLY::cleanup();
+    return 0;
+  }
+  catch (MEDDLY::error e) {
+    printf("Caught MEDDLY error: %s\n", e.getName());
+    return 1;
+  }
+
 }
 
