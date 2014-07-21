@@ -37,11 +37,14 @@ int usage(const char* who)
   for (const char* ptr=who; *ptr; ptr++) {
     if ('/' == *ptr) name = ptr+1;
   }
-  printf("\nUsage: %s nnnn (-bfs) (-dfs) (-exp) \n\n", name);
-  printf("\tnnnn: number of network nodes\n");
-  printf("\t-bfs: use traditional iterations\n");
-  printf("\t-dfs: use saturation\n");
-  printf("\t-exp: use explicit generation (very slow)\n\n");
+  printf("\nUsage: %s nnnn [options]\n\n", name);
+  printf("\tnnnn: number of parts\n\n");
+  printf("\t-bfs: use traditional iterations\n\n");
+  printf("\t-dfs: use fastest saturation (currently, -msat)\n");
+  printf("\t-esat: use saturation by events\n");
+  printf("\t-ksat: use saturation by levels\n");
+  printf("\t-msat: use monolithic saturation (default)\n\n");
+  printf("\t-exp: use explicit (very slow)\n");
   printf("\t--batch b: specify explicit batch size\n\n");
   return 1;
 }
@@ -149,37 +152,14 @@ char* Go(int i, int N)
   return t;
 }
 
-int main(int argc, const char** argv)
+void runWithArgs(int N, char method, int batchsize)
 {
   timer start;
-  int N = -1;
-  char method = 'd';
-  int batchsize = 256;
 
-  for (int i=1; i<argc; i++) {
-    if (strcmp("-bfs", argv[i])==0) {
-      method = 'b';
-      continue;
-    }
-    if (strcmp("-dfs", argv[i])==0) {
-      method = 'd';
-      continue;
-    }
-    if (strcmp("-exp", argv[i])==0) {
-      method = 'e';
-      continue;
-    }
-    if (strcmp("--batch", argv[i])==0) {
-      i++;
-      if (argv[i]) batchsize = atoi(argv[i]);
-      continue;
-    }
-    N = atoi(argv[i]);
-  }
-
-  if (N<0) return usage(argv[0]);
-
-  printf("Building model for %d-node network\n", N);
+  printf("+-------------------------------------------------+\n");
+  printf("|   Initializing Slotted ring model for N = %-4d  |\n", N);
+  printf("+-------------------------------------------------+\n");
+  fflush(stdout);
 
   char** events = new char*[8*N];
   char** fill = events;
@@ -194,8 +174,6 @@ int main(int argc, const char** argv)
     fill[7] = Free(i, N);
     fill += 8;
   }
-
-  MEDDLY::initialize();
 
   // Initialize domain
   int* sizes = new int[N*8];
@@ -214,20 +192,44 @@ int main(int argc, const char** argv)
   dd_edge init_state(mdd);
   mdd->createEdge(&initial, 1, init_state);
 
+  //
   // Build next-state function
+  //
   forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge nsf(mxd);
-  start.note_time();
+  satpregen_opname::pregen_relation* ensf = 0;
+  specialized_operation* sat = 0;
 
-  if (method != 'e') {
-    buildNextStateFunction(events, 8*N, mxd, nsf, 2);
-    start.note_time();
-    printf("Next-state function construction took %.4e seconds\n",
-          start.get_last_interval()/1000000.0);
-    printStats("MxD", mxd);
-    fflush(stdout);
+  if ('s' == method) {
+    ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd, 8*N);
+  }
+  if ('k' == method) {
+    ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd);
   }
 
+  if ('e' != method) {
+
+    if (ensf) {
+        start.note_time();
+        buildNextStateFunction(events, 8*N, ensf, 2);
+        start.note_time();
+    } else {
+        start.note_time();
+        buildNextStateFunction(events, 8*N, mxd, nsf, 2);
+        start.note_time();
+#ifdef DUMP_NSF
+        printf("Next-state function:\n");
+        nsf.show(stdout, 2);
+#endif
+    }
+    printf("Next-state function construction took %.4e seconds\n",
+      start.get_last_interval() / 1000000.0);
+    printStats("MxD", mxd);
+  }
+
+  //
+  // Build reachable states
+  //
   dd_edge reachable(mdd);
   start.note_time();
   switch (method) {
@@ -237,8 +239,8 @@ int main(int argc, const char** argv)
         apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
         break;
 
-    case 'd':
-        printf("Building reachability set using saturation\n");
+    case 'm':
+        printf("Building reachability set using saturation, monolithic relation\n");
         fflush(stdout);
         apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
         break;
@@ -248,6 +250,22 @@ int main(int argc, const char** argv)
         printf("Using batch size: %d\n", batchsize);
         fflush(stdout);
         explicitReachset(events, 8*N, mdd, init_state, reachable, batchsize);
+        break;
+
+    case 'k':
+    case 's':
+        printf("Building reachability set using saturation, relation");
+        if ('k'==method)  printf(" by levels\n");
+        else              printf(" by events\n");
+        fflush(stdout);
+        if (0==SATURATION_FORWARD) {
+          throw error(error::UNKNOWN_OPERATION);
+        }
+        sat = SATURATION_FORWARD->buildOperation(ensf);
+        if (0==sat) {
+          throw error(error::INVALID_OPERATION);
+        }
+        sat->compute(init_state, reachable);
         break;
 
     default:
@@ -280,9 +298,62 @@ int main(int argc, const char** argv)
   operation::showAllComputeTables(stdout, 1);
   
   printf("Approx. %g reachable states\n", c);
+  destroyOperation(sat);
+}
+
+int main(int argc, const char** argv)
+{
+  int N = -1;
+  char method = 'm';
+  int batchsize = 256;
+
+  for (int i=1; i<argc; i++) {
+    if (strcmp("-bfs", argv[i])==0) {
+      method = 'b';
+      continue;
+    }
+    if (strcmp("-dfs", argv[i])==0) {
+      method = 'm';
+      continue;
+    }
+    if (strcmp("-esat", argv[i])==0) {
+      method = 's';
+      continue;
+    }
+    if (strcmp("-ksat", argv[i])==0) {
+      method = 'k';
+      continue;
+    }
+    if (strcmp("-msat", argv[i])==0) {
+      method = 'm';
+      continue;
+    }
+    if (strcmp("-exp", argv[i])==0) {
+      method = 'e';
+      continue;
+    }
+    if (strcmp("--batch", argv[i])==0) {
+      i++;
+      if (argv[i]) batchsize = atoi(argv[i]);
+      continue;
+    }
+    N = atoi(argv[i]);
+  }
+
+  if (N<0) return usage(argv[0]);
+
+  MEDDLY::initialize();
+
+  try {
+    runWithArgs(N, method, batchsize);
+  }
+  catch (MEDDLY::error e) {
+    printf("Caught MEDDLY error: %s\n", e.getName());
+  }
 
   // cleanup
   MEDDLY::cleanup();
   return 0;
 }
+
 

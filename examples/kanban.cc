@@ -26,6 +26,7 @@
 #include "meddly.h"
 #include "meddly_expert.h"
 #include "simple_model.h"
+#include "timer.h"
 
 // #define DUMP_NSF
 // #define DUMP_REACHABLE
@@ -65,6 +66,8 @@ void printStats(const char* who, const forest* f)
 
 void runWithArgs(int N, char method, int batchsize)
 {
+  timer start;
+
   printf("+-------------------------------------------+\n");
   printf("|   Initializing Kanban model for N = %-4d  |\n", N);
   printf("+-------------------------------------------+\n");
@@ -85,7 +88,9 @@ void runWithArgs(int N, char method, int batchsize)
   mdd->createEdge(&initial, 1, init_state);
   delete[] initial;
 
+  //
   // Build next-state function
+  //
   forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge nsf(mxd);
   satpregen_opname::pregen_relation* ensf = 0;
@@ -101,18 +106,28 @@ void runWithArgs(int N, char method, int batchsize)
   if ('e' != method) {
 
     if (ensf) {
+        start.note_time();
         buildNextStateFunction(kanban, 16, ensf, 4);
+        start.note_time();
     } else {
+        start.note_time();
         buildNextStateFunction(kanban, 16, mxd, nsf, 4);
+        start.note_time();
 #ifdef DUMP_NSF
         printf("Next-state function:\n");
         nsf.show(stdout, 2);
 #endif
     }
+    printf("Next-state function construction took %.4e seconds\n",
+      start.get_last_interval() / 1000000.0);
     printStats("MxD", mxd);
   }
 
+  //
+  // Build reachable states
+  //
   dd_edge reachable(mdd);
+  start.note_time();
   switch (method) {
     case 'b':
         printf("Building reachability set using traditional algorithm\n");
@@ -120,7 +135,7 @@ void runWithArgs(int N, char method, int batchsize)
         apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
         break;
 
-    case 'd':
+    case 'm':
         printf("Building reachability set using saturation, monolithic relation\n");
         fflush(stdout);
         apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
@@ -153,7 +168,10 @@ void runWithArgs(int N, char method, int batchsize)
         printf("Error - unknown method\n");
         exit(2);
   };
+  start.note_time();
   printf("Done\n");
+  printf("Reachability set construction took %.4e seconds\n",
+      start.get_last_interval() / 1000000.0);
   fflush(stdout);
 
 #ifdef DUMP_REACHABLE
@@ -183,9 +201,10 @@ int usage(const char* who)
   printf("\nUsage: %s nnnn [options]\n\n", name);
   printf("\tnnnn: number of parts\n\n");
   printf("\t-bfs: use traditional iterations\n\n");
-  printf("\t-dfs: use saturation (monolithic)\n");
+  printf("\t-dfs: use fastest saturation (currently, -msat)\n");
   printf("\t-esat: use saturation by events\n");
-  printf("\t-ksat: use saturation by levels\n\n");
+  printf("\t-ksat: use saturation by levels\n");
+  printf("\t-msat: use monolithic saturation (default)\n\n");
   printf("\t-exp: use explicit (very slow)\n");
   printf("\t--batch b: specify explicit batch size\n\n");
   return 1;
@@ -195,7 +214,7 @@ int usage(const char* who)
 int main(int argc, const char** argv)
 {
   int N = -1;
-  char method = 'd';
+  char method = 'm';
   int batchsize = 256;
 
   for (int i=1; i<argc; i++) {
@@ -204,7 +223,7 @@ int main(int argc, const char** argv)
       continue;
     }
     if (strcmp("-dfs", argv[i])==0) {
-      method = 'd';
+      method = 'm';
       continue;
     }
     if (strcmp("-esat", argv[i])==0) {
@@ -213,6 +232,10 @@ int main(int argc, const char** argv)
     }
     if (strcmp("-ksat", argv[i])==0) {
       method = 'k';
+      continue;
+    }
+    if (strcmp("-msat", argv[i])==0) {
+      method = 'm';
       continue;
     }
     if (strcmp("-exp", argv[i])==0) {
