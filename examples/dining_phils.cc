@@ -128,12 +128,18 @@ class philsModel {
     ~philsModel();
 
     // event builders
-    void Idle2WaitBoth(int phil, dd_edge &e);
-    void WaitBoth2HaveRight(int phil, dd_edge &e);
-    void WaitBoth2HaveLeft(int phil, dd_edge &e);
-    void HaveRight2Eat(int phil, dd_edge &e);
-    void HaveLeft2Eat(int phil, dd_edge &e);
-    void Eat2Idle(int phil, dd_edge &e);
+    inline void setPhilosopher(int phil) {
+      ph = philVar(phil);
+      rf = rightVar(phil);
+      lf = leftVar(phil);
+    };
+
+    void Idle2WaitBoth(dd_edge &e);
+    void WaitBoth2HaveRight(dd_edge &e);
+    void WaitBoth2HaveLeft(dd_edge &e);
+    void HaveRight2Eat(dd_edge &e);
+    void HaveLeft2Eat(dd_edge &e);
+    void Eat2Idle(dd_edge &e);
 
     // build everything for a given phil
     void eventsForPhil(int phil, dd_edge &e);
@@ -161,6 +167,10 @@ class philsModel {
     int nPhils;
     int sz;
     forest* mxd;
+
+    int ph;
+    int rf;
+    int lf;
 };
 
 
@@ -175,6 +185,11 @@ philsModel::philsModel(int nP, forest* _mxd)
   to = new int[sz];
 
   from[0] = to[0] = 0;
+
+  setMinterm(from, DONT_CARE);
+  setMinterm(to, DONT_CHANGE);
+
+  // we always set these arrays back when we're done :^)
 }
 
 philsModel::~philsModel()
@@ -183,109 +198,110 @@ philsModel::~philsModel()
   delete[] to;
 }
 
-void philsModel::Idle2WaitBoth(int phil, dd_edge &e)
+void philsModel::Idle2WaitBoth(dd_edge &e)
 {
-  const int ph = philVar(phil);
-
   /* I(ph) -> WB(ph) */
-  setMinterm(from, DONT_CARE);
-  setMinterm(to, DONT_CHANGE);
   from[ph] = 0;
   to[ph] = 1;
   mxd->createEdge(&from, &to, 1, e);
+
+  from[ph] = DONT_CARE;
+  to[ph] = DONT_CHANGE;
 }
 
-void philsModel::WaitBoth2HaveRight(int phil, dd_edge &e)
+void philsModel::WaitBoth2HaveRight(dd_edge &e)
 {
-  const int ph = philVar(phil);
-  const int rf = rightVar(phil);
-
   /* WB(ph) -> HR(ph), A(rf) -> NA(rf) */
-  setMinterm(from, DONT_CARE);
-  setMinterm(to, DONT_CHANGE);
   from[ph] = 1;
-  to[ph] = 3;
   from[rf] = 0;
+  to[ph] = 3;
   to[rf] = 1;
   mxd->createEdge(&from, &to, 1, e);
+
+  from[ph] = DONT_CARE;
+  from[rf] = DONT_CARE;
+  to[ph] = DONT_CHANGE;
+  to[rf] = DONT_CHANGE;
 }
 
-void philsModel::WaitBoth2HaveLeft(int phil, dd_edge &e)
+void philsModel::WaitBoth2HaveLeft(dd_edge &e)
 {
-  const int ph = philVar(phil);
-  const int lf = leftVar(phil);
-
   /* WB(ph) -> HR(ph), A(lf) -> NA(lf) */
-  setMinterm(from, DONT_CARE);
-  setMinterm(to, DONT_CHANGE);
+  from[lf] = 0;
   from[ph] = 1;
-  to[ph] = 3;
-  from[lf] = 0;
   to[lf] = 1;
+  to[ph] = 2;
   mxd->createEdge(&from, &to, 1, e);
+
+  from[lf] = DONT_CARE;
+  from[ph] = DONT_CARE;
+  to[lf] = DONT_CHANGE;
+  to[ph] = DONT_CHANGE;
 }
 
-void philsModel::HaveRight2Eat(int phil, dd_edge &e)
+void philsModel::HaveRight2Eat(dd_edge &e)
 {
-  const int ph = philVar(phil);
-  const int lf = leftVar(phil);
-
   /* HR(ph) -> E(ph), A(lf) -> NA(lf) */
-  setMinterm(from, DONT_CARE);
-  setMinterm(to, DONT_CHANGE);
-  from[ph] = 3;
-  to[ph] = 4;
   from[lf] = 0;
+  from[ph] = 3;
   to[lf] = 1;
+  to[ph] = 4;
   mxd->createEdge(&from, &to, 1, e);
+
+  from[lf] = DONT_CARE;
+  from[ph] = DONT_CARE;
+  to[lf] = DONT_CHANGE;
+  to[ph] = DONT_CHANGE;
 }
 
-void philsModel::HaveLeft2Eat(int phil, dd_edge &e)
+void philsModel::HaveLeft2Eat(dd_edge &e)
 {
-  const int ph = philVar(phil);
-  const int rf = rightVar(phil);
-
   /* HL(ph) -> E(ph), A(rf) -> NA(rf) */
-  setMinterm(from, DONT_CARE);
-  setMinterm(to, DONT_CHANGE);
   from[ph] = 2;
-  to[ph] = 4;
   from[rf] = 0;
+  to[ph] = 4;
   to[rf] = 1;
   mxd->createEdge(&from, &to, 1, e);
+
+  from[ph] = DONT_CARE;
+  from[rf] = DONT_CARE;
+  to[ph] = DONT_CHANGE;
+  to[rf] = DONT_CHANGE;
 }
 
-void philsModel::Eat2Idle(int phil, dd_edge &e)
+void philsModel::Eat2Idle(dd_edge &e)
 {
-  const int ph = philVar(phil);
-  const int rf = rightVar(phil);
-  const int lf = leftVar(phil);
-
   /* E(ph) -> I(ph), NA(rf) -> A(rf), NA(lf) -> A(lf) */
-  setMinterm(from, DONT_CARE);
-  setMinterm(to, DONT_CHANGE);
-  from[ph] = 4;
-  to[ph] = 0;
-  from[rf] = 1;
-  to[rf] = 0;
   from[lf] = 1;
+  from[ph] = 4;
+  from[rf] = 1;
   to[lf] = 0;
+  to[ph] = 0;
+  to[rf] = 0;
   mxd->createEdge(&from, &to, 1, e);
+
+  from[lf] = DONT_CARE;
+  from[ph] = DONT_CARE;
+  from[rf] = DONT_CARE;
+  to[lf] = DONT_CHANGE;
+  to[ph] = DONT_CHANGE;
+  to[rf] = DONT_CHANGE;
 }
 
 void philsModel::eventsForPhil(int phil, dd_edge &e)
 {
+  setPhilosopher(phil);
   dd_edge temp(mxd);
-  Idle2WaitBoth(phil, e);
-  WaitBoth2HaveRight(phil, temp);
+  Idle2WaitBoth(e);
+  WaitBoth2HaveRight(temp);
   e += temp;
-  WaitBoth2HaveLeft(phil, temp);
+  WaitBoth2HaveLeft(temp);
   e += temp;
-  HaveRight2Eat(phil, temp);
+  HaveRight2Eat(temp);
   e += temp;
-  HaveLeft2Eat(phil, temp);
+  HaveLeft2Eat(temp);
   e += temp;
-  Eat2Idle(phil, temp);
+  Eat2Idle(temp);
   e += temp;
 }
 
@@ -418,17 +434,18 @@ void runWithOptions(int nPhilosophers, const switches &sw)
   if (ensf) {
     dd_edge temp(mxd);
     for (int i = 0; i < nPhilosophers; i++) {
-      model.Idle2WaitBoth(i, temp);
+      model.setPhilosopher(i);
+      model.Idle2WaitBoth(temp);
       ensf->addToRelation(temp);
-      model.WaitBoth2HaveRight(i, temp);
+      model.WaitBoth2HaveRight(temp);
       ensf->addToRelation(temp);
-      model.WaitBoth2HaveLeft(i, temp);
+      model.WaitBoth2HaveLeft(temp);
       ensf->addToRelation(temp);
-      model.HaveRight2Eat(i, temp);
+      model.HaveRight2Eat(temp);
       ensf->addToRelation(temp);
-      model.HaveLeft2Eat(i, temp);
+      model.HaveLeft2Eat(temp);
       ensf->addToRelation(temp);
-      model.Eat2Idle(i, temp);
+      model.Eat2Idle(temp);
       ensf->addToRelation(temp);
     }
   } else {
@@ -441,6 +458,10 @@ void runWithOptions(int nPhilosophers, const switches &sw)
   start.note_time();
   printf("Next-state function construction took %.4e seconds\n",
           start.get_last_interval()/1000000.0);
+  if (!ensf) {
+    printf("Next-state function MxD has\n\t%d nodes\n\t\%d edges\n",
+      nsf.getNodeCount(), nsf.getEdgeCount());
+  }
 
   //
   // Show stats for nsf construction
