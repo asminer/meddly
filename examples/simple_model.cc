@@ -228,7 +228,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
   MEDDLY::satpregen_opname::pregen_relation* pnsf, int verb)
 {
   if (0==pnsf) return;
-  buildNextStateFunction(events, nEvents, pnsf->getForest(), pnsf, 0, verb);
+  buildNextStateFunction(events, nEvents, pnsf->getRelForest(), pnsf, 0, verb);
   pnsf->finalize();
 
 #ifdef SHOW_EVENT_HANDLES

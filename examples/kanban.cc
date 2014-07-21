@@ -92,10 +92,10 @@ void runWithArgs(int N, char method, int batchsize)
   specialized_operation* sat = 0;
 
   if ('s' == method) {
-    ensf = new satpregen_opname::pregen_relation(mxd, 16);
+    ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd, 16);
   }
   if ('k' == method) {
-    ensf = new satpregen_opname::pregen_relation(mxd);
+    ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd);
   }
 
   if ('e' != method) {

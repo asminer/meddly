@@ -2913,14 +2913,22 @@ class MEDDLY::satpregen_opname : public specialized_opname {
     */
     class pregen_relation : public specialized_opname::arguments {
       public:
+        /** Constructor, by events
+              @param  inmdd       MDD forest containing initial states
+              @param  mxd         MxD forest containing relations
+              @param  outmdd      MDD forest containing result
+              @param  num_events  Number of events; specifies the maximum
+                                  number of calls to addToRelation().
+        */
+        pregen_relation(forest* inmdd, forest* mxd, forest* outmdd, 
+          int num_events);
 
-        // TBD - need forests for input, output MDDs also!
-        // TBD - so, we may want a different class name here. 
-
-        /// Constructor, by events
-        pregen_relation(forest* f, int num_events);
-        /// Constructor, by levels
-        pregen_relation(forest* f);
+        /** Constructor, by levels
+              @param  inmdd       MDD forest containing initial states
+              @param  mxd         MxD forest containing relations
+              @param  outmdd      MDD forest containing result
+        */
+        pregen_relation(forest* inmdd, forest* mxd, forest* outmdd);
 
         virtual ~pregen_relation();
         void addToRelation(const dd_edge &r);
@@ -2961,12 +2969,26 @@ class MEDDLY::satpregen_opname : public specialized_opname {
           }
         }
 
-        inline forest* getForest() const {
-          return parent;
+        inline forest* getInForest() const {
+          return insetF;
+        }
+
+        inline forest* getRelForest() const {
+          return mxdF;
+        }
+
+        inline forest* getOutForest() const {
+          return outsetF;
         }
 
       private:
-        expert_forest* parent;
+        // helper for constructors
+        void setForests(forest* inf, forest* mxd, forest* outf);
+
+      private:
+        forest* insetF;
+        expert_forest* mxdF;
+        forest* outsetF;
         int K;
         // array of sub-relations
         node_handle* events;

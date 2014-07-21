@@ -52,20 +52,31 @@ MEDDLY::fb_saturation_opname::buildOperation(arguments* a) const
   pregen_relation* rel = dynamic_cast<pregen_relation*>(a);
   if (0==rel) throw error(error::INVALID_ARGUMENT);
 
-  // 
-  // TBD, but transfer rel to the operation.
   //
-
-  //
-  // Sanity checks here;
-  // except we can do probably all of these when the args are built?
+  // No sanity checks needed here; we did them already when constructing a.
   //
 
   if (forward) {
-    // build appropriate forward operation here, passing rel as argument
+
+    // 
+    // TBD. 
+    // Build appropriate forward operation here, transferring
+    // rel to the operation.
+    // Note that rel specifies the forests for the input and output sets
+    // (as well as the relations).
+    //
+
     throw error(error::NOT_IMPLEMENTED);
   } else {
-    // build appropriate backward operation here, passing rel as argument
+
+    // 
+    // TBD. 
+    // Build appropriate backward operation here, transferring
+    // rel to the operation.
+    // Note that rel specifies the forests for the input and output sets
+    // (as well as the relations).
+    //
+
     throw error(error::NOT_IMPLEMENTED);
   }
 }

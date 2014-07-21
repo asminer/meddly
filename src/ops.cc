@@ -142,16 +142,48 @@ MEDDLY::numerical_opname::~numerical_opname()
 // *                                                                *
 // ******************************************************************
 
+void
 MEDDLY::satpregen_opname::pregen_relation
-::pregen_relation(forest* f, int nevents)
+::setForests(forest* inf, forest* mxd, forest* outf)
 {
-  parent = smart_cast <MEDDLY::expert_forest*>(f);
-  if (0==parent) throw error(error::MISCELLANEOUS);
+  insetF = inf;
+  outsetF = outf;
+  mxdF = smart_cast <MEDDLY::expert_forest*>(mxd);
+  if (0==insetF || 0==outsetF || 0==mxdF) throw error(error::MISCELLANEOUS);
 
-  if (!f->isForRelations()) 
-    throw error(error::INVALID_OPERATION);
+  // Check for same domain
+  if (  
+    (insetF->getDomain() != mxdF->getDomain()) || 
+    (outsetF->getDomain() != mxdF->getDomain()) 
+  )
+    throw error(error::DOMAIN_MISMATCH);
 
-  K = parent->getDomain()->getNumVariables();
+  // for now, anyway, inset and outset must be same forest
+  if (insetF != outsetF)
+    throw error(error::FOREST_MISMATCH);
+
+  // Check forest types
+  if (
+    insetF->isForRelations()    ||
+    !mxdF->isForRelations()     ||
+    outsetF->isForRelations()   ||
+    (insetF->getRangeType() != mxdF->getRangeType())        ||
+    (outsetF->getRangeType() != mxdF->getRangeType())       ||
+    (insetF->getEdgeLabeling() != forest::MULTI_TERMINAL)   ||
+    (outsetF->getEdgeLabeling() != forest::MULTI_TERMINAL)  ||
+    (mxdF->getEdgeLabeling() != forest::MULTI_TERMINAL)     ||
+    (outsetF->getEdgeLabeling() != forest::MULTI_TERMINAL)
+  )
+    throw error(error::TYPE_MISMATCH);
+
+  // Forests are good; set number of variables
+  K = mxdF->getDomain()->getNumVariables();
+}
+
+MEDDLY::satpregen_opname::pregen_relation
+::pregen_relation(forest* inf, forest* mxd, forest* outf, int nevents)
+{
+  setForests(inf, mxd, outf);
 
   num_events = nevents;
   if (num_events) {
@@ -168,15 +200,9 @@ MEDDLY::satpregen_opname::pregen_relation
 }
 
 MEDDLY::satpregen_opname::pregen_relation
-::pregen_relation(forest* f)
+::pregen_relation(forest* inf, forest* mxd, forest* outf)
 {
-  parent = smart_cast <MEDDLY::expert_forest*>(f);
-  if (0==parent) throw error(error::MISCELLANEOUS);
-
-  if (!f->isForRelations()) 
-    throw error(error::INVALID_OPERATION);
-
-  K = parent->getDomain()->getNumVariables();
+  setForests(inf, mxd, outf);
 
   events = new node_handle[K+1];
   for (int k=0; k<=K; k++) events[k] = 0;
@@ -201,9 +227,9 @@ void
 MEDDLY::satpregen_opname::pregen_relation
 ::addToRelation(const dd_edge &r)
 {
-  MEDDLY_DCASSERT(parent);
+  MEDDLY_DCASSERT(mxdF);
 
-  if (r.getForest() != parent)  throw error(error::FOREST_MISMATCH);
+  if (r.getForest() != mxdF)  throw error(error::FOREST_MISMATCH);
 
   int k = r.getLevel(); 
   if (0==k) return;
@@ -213,13 +239,13 @@ MEDDLY::satpregen_opname::pregen_relation
     // relation is "by levels"
 
     if (0==events[k]) {
-      events[k] = parent->linkNode(r.getNode());
+      events[k] = mxdF->linkNode(r.getNode());
     } else {
       // already have something at this level; perform the union
-      dd_edge tmp(parent);
+      dd_edge tmp(mxdF);
       tmp.set(events[k]); // does not increase incoming count
       tmp += r;
-      events[k] = parent->linkNode(tmp.getNode());
+      events[k] = mxdF->linkNode(tmp.getNode());
       // tmp should be destroyed here
     }
 
@@ -231,7 +257,7 @@ MEDDLY::satpregen_opname::pregen_relation
 
     last_event++;
 
-    events[last_event] = parent->linkNode(r.getNode());
+    events[last_event] = mxdF->linkNode(r.getNode());
     next[last_event] = level_index[k];
     level_index[k] = last_event;
   }
