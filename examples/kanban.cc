@@ -142,7 +142,7 @@ void runWithArgs(int N, char method, int batchsize)
         if (0==SATURATION_FORWARD) {
           throw error(error::UNKNOWN_OPERATION);
         }
-        sat = SATURATION_FORWARD->buildOperation(*ensf);
+        sat = SATURATION_FORWARD->buildOperation(ensf);
         if (0==sat) {
           throw error(error::INVALID_OPERATION);
         }

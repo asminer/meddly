@@ -2821,6 +2821,22 @@ class MEDDLY::specialized_opname : public opname {
       public:
         arguments();
         virtual ~arguments();
+
+        /**
+            Specify if arguments should be destroyed or not.
+            If yes (the default), the operation will destroy
+            the arguments once they are no longer needed.
+        */
+        inline void setAutoDestroy(bool destroy) {
+          destroyWhenDone = destroy;
+        }
+
+        inline bool autoDestroy() const {
+          return destroyWhenDone;
+        }
+
+      private:
+        bool destroyWhenDone;
     };
 
   public:
@@ -2837,8 +2853,11 @@ class MEDDLY::specialized_opname : public opname {
 
           - operations with very bizarre and/or user-defined
             parameters (like on-the-fly saturation).
+
+        @param  a   Arguments.  Will be destroyed when we are finished,
+                    if autoDestroy() is set for the arguments.
     */
-    virtual specialized_operation* buildOperation(arguments &a) const = 0;
+    virtual specialized_operation* buildOperation(arguments* a) const = 0;
 };
 
 // ******************************************************************
@@ -2865,14 +2884,15 @@ class MEDDLY::numerical_opname : public specialized_opname {
     virtual ~numerical_opname();
 
 
-    virtual specialized_operation* buildOperation(arguments &a) const = 0;
+    virtual specialized_operation* buildOperation(arguments* a) const = 0;
 
     /// For convenience, and backward compatability :^)
     inline specialized_operation* buildOperation(const dd_edge &x_ind,
       const dd_edge &A, const dd_edge &y_ind) const
     {
       numerical_args na(x_ind, A, y_ind);
-      return buildOperation(na);
+      na.setAutoDestroy(false);   // na will be destroyed when we return
+      return buildOperation(&na);
     }
 };
 
@@ -2971,7 +2991,7 @@ class MEDDLY::satpregen_opname : public specialized_opname {
     virtual ~satpregen_opname();
 
     /// Arguments should have type "pregen_relation".
-    virtual specialized_operation* buildOperation(arguments &a) const = 0;
+    virtual specialized_operation* buildOperation(arguments* a) const = 0;
 };
 
 

@@ -37,7 +37,7 @@ class MEDDLY::fb_saturation_opname : public satpregen_opname {
     bool forward;
   public:
     fb_saturation_opname(bool fwd);
-    virtual specialized_operation* buildOperation(arguments &a) const;
+    virtual specialized_operation* buildOperation(arguments* a) const;
 };
 
 MEDDLY::fb_saturation_opname::fb_saturation_opname(bool fwd)
@@ -47,30 +47,26 @@ MEDDLY::fb_saturation_opname::fb_saturation_opname(bool fwd)
 }
 
 MEDDLY::specialized_operation*
-MEDDLY::fb_saturation_opname::buildOperation(arguments &a) const
+MEDDLY::fb_saturation_opname::buildOperation(arguments* a) const
 {
-  try {
-    pregen_relation &rel = dynamic_cast<pregen_relation&>(a);
+  pregen_relation* rel = dynamic_cast<pregen_relation*>(a);
+  if (0==rel) throw error(error::INVALID_ARGUMENT);
 
-    // 
-    // TBD
-    //
+  // 
+  // TBD, but transfer rel to the operation.
+  //
 
-    //
-    // Sanity checks here;
-    // except we can do probably all of these when the args are built?
-    //
+  //
+  // Sanity checks here;
+  // except we can do probably all of these when the args are built?
+  //
 
-    if (forward) {
-      // build appropriate forward operation here, passing rel as argument
-      throw error(error::NOT_IMPLEMENTED);
-    } else {
-      // build appropriate backward operation here, passing rel as argument
-      throw error(error::NOT_IMPLEMENTED);
-    }
-  }
-  catch (std::bad_cast) {
-    throw error(error::INVALID_ARGUMENT);
+  if (forward) {
+    // build appropriate forward operation here, passing rel as argument
+    throw error(error::NOT_IMPLEMENTED);
+  } else {
+    // build appropriate backward operation here, passing rel as argument
+    throw error(error::NOT_IMPLEMENTED);
   }
 }
 

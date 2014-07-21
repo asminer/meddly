@@ -96,6 +96,7 @@ MEDDLY::binary_opname::~binary_opname()
 
 MEDDLY::specialized_opname::arguments::arguments()
 {
+  setAutoDestroy(true);
 }
 
 MEDDLY::specialized_opname::arguments::~arguments()
