@@ -33,6 +33,42 @@
 
 namespace MEDDLY {
   extern settings meddlySettings;
+
+  /*
+      Convert from array of linked lists to contiguous array with indexes.
+  
+      Idea:
+      traverse the array in order.
+      everything after this point is still "linked lists".
+      everything before this point is contiguous, but
+        it is possible that one of the lists points here.
+        if so, the next pointer holds the "forwarding address".
+  */
+  template <typename TYPE>
+  void defragLists(TYPE* data, int* next, int* Lists, int NL)
+  {
+    int P = 0;  // "this point"
+    for (int i=NL; i; i--) {
+      int L = Lists[i];
+      Lists[i] = P;
+      while (L>=0) {
+        // if L<P then there must be a forwarding address; follow it
+        while (L<P) L = next[L];
+        // ok, we're at the right slot now
+        int nxt = next[L];
+        if (L != P) {
+          // element L belongs in slot P, swap them...
+          SWAP(data[L], data[P]);
+          next[L] = next[P];
+          // ...and set up the forwarding address
+          next[P] = L;
+        }
+        P++;
+        L = nxt;
+      }
+    } // for k
+    Lists[0] = P;
+  }
 }
 
 // ******************************************************************
@@ -141,6 +177,16 @@ MEDDLY::numerical_opname::~numerical_opname()
 // *                    satpregen_opname methods                    *
 // *                                                                *
 // ******************************************************************
+
+MEDDLY::satpregen_opname::satpregen_opname(const char* n)
+ : specialized_opname(n)
+{
+}
+
+MEDDLY::satpregen_opname::~satpregen_opname()
+{
+}
+
 
 void
 MEDDLY::satpregen_opname::pregen_relation
@@ -289,35 +335,9 @@ MEDDLY::satpregen_opname::pregen_relation
   }
   printf("]\n");
 #endif
+
   // convert from array of linked lists to contiguous array.
-  //
-  // Idea:
-  //  traverse the array in order.
-  //  everything after this point is still "linked lists".
-  //  everything before this point is contiguous, but
-  //    it is possible that one of the lists points here.
-  //    if so, the next pointer holds the "forwarding address".
-  int P = 0;  // "this point"
-  for (int k=K; k; k--) {
-    int L = level_index[k];
-    level_index[k] = P;
-    while (L>=0) {
-      // if L<P then there must be a forwarding address; follow it
-      while (L<P) L = next[L];
-      // ok, we're at the right slot now
-      int nxt = next[L];
-      if (L != P) {
-        // element L belongs in slot P, swap them...
-        SWAP(events[L], events[P]);
-        next[L] = next[P];
-        // ...and set up the forwarding address
-        next[P] = L;
-      }
-      P++;
-      L = nxt;
-    }
-  } // for k
-  level_index[0] = P;
+  defragLists(events, next, level_index, K);
 
   // done with next pointers
   delete[] next;
@@ -340,15 +360,144 @@ MEDDLY::satpregen_opname::pregen_relation
 }
 
 
-MEDDLY::satpregen_opname::satpregen_opname(const char* n)
+// ******************************************************************
+// *                                                                *
+// *                     satotf_opname  methods                     *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::satotf_opname::satotf_opname(const char* n)
  : specialized_opname(n)
 {
 }
 
-MEDDLY::satpregen_opname::~satpregen_opname()
+MEDDLY::satotf_opname::~satotf_opname()
 {
 }
 
+// ============================================================
+
+MEDDLY::satotf_opname::subfunc::subfunc(int* v, int nv)
+{
+  vars = v;
+  num_vars = nv;
+}
+
+MEDDLY::satotf_opname::subfunc::~subfunc()
+{
+  delete[] vars;
+}
+
+// ============================================================
+
+MEDDLY::satotf_opname::event::event(subfunc** p, int np)
+{
+  pieces = p;
+  num_pieces = np;
+}
+
+MEDDLY::satotf_opname::event::~event()
+{
+  for (int i=0; i<num_pieces; i++) delete pieces[i];
+  delete[] pieces;
+}
+
+void MEDDLY::satotf_opname::event::rebuild(dd_edge &e)
+{
+  throw error(error::NOT_IMPLEMENTED);
+}
+
+// ============================================================
+
+MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd, 
+  forest* mxd, forest* outmdd, event** E, int ne)
+{
+  // Set forests
+  insetF = inmdd;
+  mxdF = mxd;
+  outsetF = outmdd;
+
+  if (0==insetF || 0==outsetF || 0==mxdF) throw error(error::MISCELLANEOUS);
+
+  // Check for same domain
+  if (  
+    (insetF->getDomain() != mxdF->getDomain()) || 
+    (outsetF->getDomain() != mxdF->getDomain()) 
+  )
+    throw error(error::DOMAIN_MISMATCH);
+
+  // for now, anyway, inset and outset must be same forest
+  if (insetF != outsetF)
+    throw error(error::FOREST_MISMATCH);
+
+  // Check forest types
+  if (
+    insetF->isForRelations()    ||
+    !mxdF->isForRelations()     ||
+    outsetF->isForRelations()   ||
+    (insetF->getRangeType() != mxdF->getRangeType())        ||
+    (outsetF->getRangeType() != mxdF->getRangeType())       ||
+    (insetF->getEdgeLabeling() != forest::MULTI_TERMINAL)   ||
+    (outsetF->getEdgeLabeling() != forest::MULTI_TERMINAL)  ||
+    (mxdF->getEdgeLabeling() != forest::MULTI_TERMINAL)     ||
+    (outsetF->getEdgeLabeling() != forest::MULTI_TERMINAL)
+  )
+    throw error(error::TYPE_MISMATCH);
+
+  // Forests are good; set number of variables
+  K = mxdF->getDomain()->getNumVariables();
+
+  // Events
+  events = E;
+  num_events = ne;
+
+  // preprocess events
+  // (1) determine total size of pieces array
+  int piecesLength = 0;
+  for (int i=0; i<num_events; i++) if (events[i]) {
+    const subfunc* const* PL = events[i]->getPieces();
+    for (int p=events[i]->getNumPieces()-1; p>=0; p--) {
+      piecesLength += PL[p]->getNumVars();
+    }
+  }
+  // (2) build empty list for each level
+  piecesForLevel = new int[K+1];
+  for (int k=0; k<=K; k++) piecesForLevel[k] = -1;
+  // (3) for each piece, add it to the appropriate lists
+  pieces = new subfunc*[piecesLength];
+  int* nextPiece = new int[piecesLength];
+  int pptr = 0;
+  for (int i=0; i<num_events; i++) if (events[i]) {
+    subfunc** PL = events[i]->getPieces();
+    for (int p=events[i]->getNumPieces()-1; p>=0; p--) {
+      for (int v=PL[p]->getNumVars()-1; v>=0; v--) {
+        int k = PL[p]->getVars()[v];
+        // add PL[p] to list k
+        pieces[pptr] = PL[p];
+        nextPiece[pptr] = piecesForLevel[k];
+        piecesForLevel[k] = pptr;
+        pptr++;
+      } // for v
+      piecesLength += PL[p]->getNumVars();
+    } // for p
+  } // for i
+  // (4) defragment lists
+  defragLists(pieces, nextPiece, piecesForLevel, K);
+  // (5) cleanup
+  delete[] nextPiece;
+
+  // TBD - debug here
+}
+
+MEDDLY::satotf_opname::otf_relation::~otf_relation()
+{
+  for (int i=0; i<num_events; i++) delete events[i];
+  delete[] events;
+
+  // DO NOT delete pieces[i] pointers, they're copies
+  delete[] pieces;
+  delete[] piecesForLevel;
+}
 
 // ******************************************************************
 // *                       operation  methods                       *

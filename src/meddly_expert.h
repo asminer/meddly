@@ -96,6 +96,7 @@ namespace MEDDLY {
   class specialized_opname;
   class numerical_opname;
   class satpregen_opname;
+  class satotf_opname;
 
   class compute_table_style;
   class compute_table;
@@ -155,7 +156,7 @@ namespace MEDDLY {
       Transition relation is not completely known,
       will be built along with reachability set.
   */
-  extern const specialized_opname* SATURATION_OTF;
+  extern const satotf_opname* SATURATION_OTF;
 
   // ******************************************************************
   // *                                                                *
@@ -2906,6 +2907,18 @@ class MEDDLY::numerical_opname : public specialized_opname {
 /// Saturation, with already generated transition relations, operation names.
 class MEDDLY::satpregen_opname : public specialized_opname {
   public:
+    satpregen_opname(const char* n);
+    virtual ~satpregen_opname();
+
+    /// Arguments should have type "pregen_relation".
+    virtual specialized_operation* buildOperation(arguments* a) const = 0;
+
+
+  //
+  // Gory details below
+  //
+
+  public:
     /** Class for a partitioned transition relation, already known
         The relation can be partitioned "by events" or "by levels".
         In the case of "by events", we can have more than one relation
@@ -3008,15 +3021,167 @@ class MEDDLY::satpregen_opname : public specialized_opname {
         int* level_index;
     };
 
-  public:
-    satpregen_opname(const char* n);
-    virtual ~satpregen_opname();
-
-    /// Arguments should have type "pregen_relation".
-    virtual specialized_operation* buildOperation(arguments* a) const = 0;
 };
 
 
+
+// ******************************************************************
+// *                                                                *
+// *                      satotf_opname  class                      *
+// *                                                                *
+// ******************************************************************
+
+/// Saturation, transition relations built on the fly, operation names.
+class MEDDLY::satotf_opname : public specialized_opname {
+  public:
+    satotf_opname(const char* n);
+    virtual ~satotf_opname();
+
+    /// Arguments should have type "otf_relation", below
+    virtual specialized_operation* buildOperation(arguments* a) const = 0;
+
+
+  //
+  // Gory details below
+  //
+
+  public:
+    class otf_relation;
+
+    // ============================================================
+
+    /**
+        Part of an enabling or updating function.
+        It knows what variables it depends on, and how to build itself
+        (provided by the user).
+    */
+    class subfunc {
+      private:
+        int* vars;
+        int num_vars;
+        dd_edge root;
+      public:
+        /// Constructor, specify variables that this function depends on.
+        subfunc(int* v, int nv);
+        virtual ~subfunc();
+
+        /// Get number of variables we depend on
+        inline int getNumVars() const {
+          return num_vars;
+        }
+
+        /// Get array of variables we depend on
+        inline const int* getVars() const {
+          return vars;
+        }
+
+        /// Get the DD encoding of the current sub-function
+        inline const dd_edge& getRoot() const {
+          return root;
+        }
+
+        /**
+          Update the sub-function, as local states are confirmed.
+          User MUST provide this method, which should use setRoot()
+          to update the DD encoding.
+        */
+        virtual void update(otf_relation &rel) = 0;
+
+      protected:
+        inline void setRoot(dd_edge &r) {
+          root = r;
+        }
+        
+    };
+
+    // ============================================================
+
+    /**
+        An "event".
+        Produces part of the transition relation, from its sub-functions.
+
+        TBD - do we need to split the enabling and updating sub-functions,
+        or will one giant list work fine?
+    */
+    class event {
+      private:
+        subfunc** pieces;
+        int num_pieces;
+        
+        // TBD - put a list of events that have priority over this one
+
+        // TBD - list of levels that we depend on - built from pieces
+
+      public:
+        event(subfunc** p, int np);
+        virtual ~event();
+
+        /// Get number of pieces
+        inline int getNumPieces() const {
+          return num_pieces;
+        }
+
+        /// Get array of subfuncs
+        inline subfunc** getPieces() const {
+          return pieces;
+        }
+
+        /**
+            Rebuild the relation due to this event, from its sub-functions.
+            Default assumes that we take the conjunction of all the parts;
+            but users can override this behavior.
+
+              @param  e   Relation is written to this edge.
+        */
+        virtual void rebuild(dd_edge &e);
+
+
+        // TBD - for priority - when is this event enabled?
+
+    };
+
+    // ============================================================
+
+    /**
+        Overall relation.
+        This includes all events, and keeping track of which local
+        variables are confirmed.
+
+        TBD.
+    */
+    class otf_relation {
+      private:
+        forest* insetF;
+        forest* mxdF;
+        forest* outsetF;
+        int K;
+
+        event** events;
+        int num_events;
+
+        //
+        // For each level, list of pieces to update
+        // if that level changes.
+        subfunc** pieces;
+        int* piecesForLevel;
+
+        // TBD - for each level, list of events to update
+
+      public:
+        /** Constructor.
+              @param  inmdd       MDD forest containing initial states
+              @param  mxd         MxD forest containing relations
+              @param  outmdd      MDD forest containing result
+              @param  E           List of events
+              @param  nE          Number of events
+        */
+        otf_relation(forest* inmdd, forest* mxd, forest* outmdd, 
+          event** E, int ne);
+
+        virtual ~otf_relation();
+    };
+
+};
 
 // ******************************************************************
 // *                                                                *
