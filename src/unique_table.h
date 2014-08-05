@@ -78,6 +78,11 @@ private:
         int remove(unsigned hash, node_handle item);
 
         /**
+         * Remove all the items in the table and reset the state.
+         */
+        void clear();
+
+        /**
          * Retrieve the items in the table.
          * The argument sz specifies the number of items to be retrieved.
          * If sz is larger than the number of items in the table, only the number
@@ -116,15 +121,27 @@ public:
     ~unique_table();
 
     unsigned getSize() const;
+    /**
+     * Get the size of a given level.
+     */
+    unsigned getSize(int var) const;
     unsigned getNumEntries() const;
+    /**
+     * Get the number of entries of a given level.
+     */
+    unsigned getNumEntries(int var) const;
     unsigned getMemUsed() const;
+    /**
+     * Get the memory used for a given level.
+     */
+    unsigned getMemUsed(int var) const;
 
     void reportStats(FILE* s, const char* pad, unsigned flags) const;
 
     /// For debugging
     void show(FILE *s) const;
 
-    /** If the table at the given level contains key, move it to the front of the list.
+    /** If the table of the given variable contains key, move it to the front of the list.
         Otherwise, do nothing.
         Returns the item if found, 0 otherwise.
 
@@ -133,32 +150,52 @@ public:
           bool equals(int p): return true iff this item equals node p.
      */
     template <typename T>
-    node_handle find(const T &key, int level);
+    node_handle find(const T &key, int var);
 
-    /** Add the item to the front of the list at the corresponding level.
+    /** Add the item to the front of the list of the corresponding variable.
         Used when we KNOW that the item is not in the unique table already.
     */
     void add(unsigned h, node_handle item);
 
-    /** If the table at the corresponding level contains key, remove it and return it.
+    /** If the table of the corresponding variable contains key, remove it and return it.
       I.e., the exact key.
       Otherwise, return 0.
     */
     node_handle remove(unsigned h, node_handle item);
 
     /**
-     * Retrieve the items in the table at the given level.
+     * Clear the items in the table of the given variable and reset the state.
+     */
+    void clear(int var);
+
+    /**
+     * Retrieve the items in the table of the given variable.
      * The argument sz specifies the number of items to be retrieved.
      * If sz is larger than the number of items in the table, only the number
      * of items in the table are to be retrieved.
      * Returns the actual number of items retrieved.
      */
-    int getItems(int level, node_handle* items, int sz) const;
+    int getItems(int var, node_handle* items, int sz) const;
 
 private:
     expert_forest* parent;
     subtable* tables;
 };
+
+inline unsigned MEDDLY::unique_table::getSize(int var) const
+{
+	return tables[var].getSize();
+}
+
+inline unsigned MEDDLY::unique_table::getNumEntries(int var) const
+{
+	return tables[var].getNumEntries();
+}
+
+inline unsigned MEDDLY::unique_table::getMemUsed(int var) const
+{
+	return tables[var].getMemUsed();
+}
 
 template <typename T>
 MEDDLY::node_handle MEDDLY::unique_table::subtable::find(const T &key)
@@ -186,26 +223,31 @@ MEDDLY::node_handle MEDDLY::unique_table::subtable::find(const T &key)
 }
 
 template <typename T>
-inline MEDDLY::node_handle MEDDLY::unique_table::find(const T &key, int level)
+inline MEDDLY::node_handle MEDDLY::unique_table::find(const T &key, int var)
 {
-	return tables[level].find(key);
+	return tables[var].find(key);
 }
 
 inline void MEDDLY::unique_table::add(unsigned hash, node_handle item)
 {
-	int level=parent->getNodeLevel(item);
-	tables[level].add(hash, item);
+	int var=parent->getVarByLevel(parent->getNodeLevel(item));
+	tables[var].add(hash, item);
 }
 
 inline MEDDLY::node_handle MEDDLY::unique_table::remove(unsigned hash, node_handle item)
 {
-	int level=parent->getNodeLevel(item);
-	return tables[level].remove(hash, item);
+	int var=parent->getVarByLevel(parent->getNodeLevel(item));
+	return tables[var].remove(hash, item);
 }
 
-inline int MEDDLY::unique_table::getItems(int level, node_handle* items, int sz) const
+inline void MEDDLY::unique_table::clear(int var)
 {
-	return tables[level].getItems(items, sz);
+	return tables[var].clear();
+}
+
+inline int MEDDLY::unique_table::getItems(int var, node_handle* items, int sz) const
+{
+	return tables[var].getItems(items, sz);
 }
 
 #endif

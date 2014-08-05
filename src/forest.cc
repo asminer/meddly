@@ -1581,9 +1581,9 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 #ifdef DEVELOPMENT_CODE
   node_reader* key = initNodeReader(p, false);
   key->computeHash(areEdgeValuesHashed(), getTransparentNode());
-  if (unique->find(*key, key->getLevel()) != p) {
+  if (unique->find(*key, getVarByLevel(key->getLevel())) != p) {
     fprintf(stderr, "Error in deleteNode\nFind: %ld\np: %ld\n",
-      static_cast<long>(unique->find(*key, key->getLevel())), static_cast<long>(p));
+      static_cast<long>(unique->find(*key, getVarByLevel(key->getLevel()))), static_cast<long>(p));
     dumpInternal(stdout);
     MEDDLY_DCASSERT(false);
   }
@@ -1638,9 +1638,9 @@ void MEDDLY::expert_forest::zombifyNode(node_handle p)
   node_reader* key = initNodeReader(p, false);
   key->computeHash(areEdgeValuesHashed(), getTransparentNode());
   MEDDLY_DCASSERT(key->hash() == h);
-  if (unique->find(*key, key->getLevel()) != p) {
+  if (unique->find(*key, getVarByLevel(key->getLevel())) != p) {
     fprintf(stderr, "Fail: can't find reduced node %ld; got %ld\n", 
-      static_cast<long>(p), static_cast<long>(unique->find(*key, key->getLevel())));
+      static_cast<long>(p), static_cast<long>(unique->find(*key, getVarByLevel(key->getLevel()))));
     dumpInternal(stderr);
     MEDDLY_DCASSERT(false);
   }
@@ -1859,7 +1859,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
   }
 
   // check for duplicates in unique table
-  node_handle q = unique->find(nb, nb.getLevel());
+  node_handle q = unique->find(nb, getVarByLevel(nb.getLevel()));
   if (q) {
     // unlink all downward pointers
     for (int i = 0; i<nb.rawSize(); i++)  unlinkNode(nb.d(i));
@@ -1879,32 +1879,37 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
   // Grab a new node
   node_handle p = getFreeNodeHandle();
-  address[p].level = nb.getLevel();
-  MEDDLY_DCASSERT(0 == address[p].cache_count);
+  return createReducedNodeAt(nb, p);
+}
 
-  // All of the work is in nodeMan now :^)
-  address[p].offset = nodeMan->makeNode(p, nb, getNodeStorage());
+MEDDLY::node_handle MEDDLY::expert_forest::createReducedNodeAt(const node_builder &nb, node_handle p)
+{
+	  address[p].level = nb.getLevel();
+	  //MEDDLY_DCASSERT(0 == address[p].cache_count);
 
-#ifdef SAVE_HASHES
-  address[p].hash = nb.hash();
-#endif
-  
-  // add to UT 
-  unique->add(nb.hash(), p);
+	  // All of the work is in nodeMan now :^)
+	  address[p].offset = nodeMan->makeNode(p, nb, getNodeStorage());
 
-#ifdef DEVELOPMENT_CODE
-  node_reader key;
-  initNodeReader(key, p, false);
-  key.computeHash(areEdgeValuesHashed(), getTransparentNode());
-  MEDDLY_DCASSERT(key.hash() == nb.hash());
-  node_handle f = unique->find(key, key.getLevel());
-  MEDDLY_DCASSERT(f == p);
-#endif
-#ifdef DEBUG_CREATE_REDUCED
-  printf("Created node %d\n", p);
-  dump(stdout);
-#endif
-  return p;
+	#ifdef SAVE_HASHES
+	  address[p].hash = nb.hash();
+	#endif
+
+	  // add to UT
+	  unique->add(nb.hash(), p);
+
+	#ifdef DEVELOPMENT_CODE
+	  node_reader key;
+	  initNodeReader(key, p, false);
+	  key.computeHash(areEdgeValuesHashed(), getTransparentNode());
+	  MEDDLY_DCASSERT(key.hash() == nb.hash());
+	  node_handle f = unique->find(key, getVarByLevel(key.getLevel()));
+	  MEDDLY_DCASSERT(f == p);
+	#endif
+	#ifdef DEBUG_CREATE_REDUCED
+	  printf("Created node %d\n", p);
+	  dump(stdout);
+	#endif
+	  return p;
 }
 
 void MEDDLY::expert_forest::validateDownPointers(const node_builder &nb) const
@@ -2016,6 +2021,110 @@ void MEDDLY::expert_forest::shrinkHandleList()
 #ifdef DEBUG_ADDRESS_RESIZE
   printf("Shrank address array, new size %d\n", a_size);
 #endif
+}
+
+void MEDDLY::expert_forest::swapAdjacentVariables(int level)
+{
+	MEDDLY_DCASSERT(level>=1);
+	MEDDLY_DCASSERT(level<getNumVariables());
+
+	int high_var=getVarByLevel(level+1);
+	int high_node_size=unique->getNumEntries(high_var);
+	node_handle* high_nodes=static_cast<node_handle*>(malloc(high_node_size*sizeof(node_handle)));
+	unique->getItems(high_var, high_nodes, high_node_size);
+	unique->clear(high_var);
+
+	int low_var=getVarByLevel(level);
+	int low_node_size=unique->getNumEntries(low_var);
+	node_handle* low_nodes=static_cast<node_handle*>(malloc(low_node_size*sizeof(node_handle)));
+	unique->getItems(low_var, low_nodes, low_node_size);
+	unique->clear(low_var);
+
+	int high_size=getLevelSize(level+1);
+	int low_size=getLevelSize(level);
+
+	// Identify all nodes at level+1 whose children are lower than level
+	int i=0, j=0;
+	for(i=0; i<high_node_size; i++) {
+		node_reader* nr = initNodeReader(high_nodes[i], true);
+		MEDDLY_DCASSERT(nr->getLevel()==level+1);
+		MEDDLY_DCASSERT(nr->getSize()==high_size);
+
+		bool flag=true;
+
+		for(int k=0; k<high_size; k++){
+			if(getNodeLevel(nr->d(k))>=level){
+				flag=false;
+				break;
+			}
+		}
+
+		if(flag) {
+			// Move to level
+			node_builder& nb = useNodeBuilder(level, high_size);
+			for(int k=0; k<high_size; k++){
+				nb.d(k)=nr->d(k);
+			}
+			nb.computeHash();
+			createReducedNodeAt(nb, high_nodes[i]);
+			nb.lock=false;
+		}
+		else{
+			// Remove the identified nodes from high_nodes
+			high_nodes[j++]=high_nodes[i];
+		}
+	}
+	high_node_size=j;
+
+	// Process the rest of nodes at level+1
+	for(i=0; i<high_node_size; i++) {
+		node_reader* high_nr = initNodeReader(high_nodes[i], true);
+		node_builder& high_nb = useNodeBuilder(level+1, low_size);
+		for(int k=0; k<low_size; k++) {
+			node_builder& low_nb = useNodeBuilder(level, high_size);
+			for(int l=0; l<high_size; l++) {
+				if(getNodeLevel(high_nr->d(l))<level){
+					low_nb.d(l)=high_nr->d(l);
+				}
+				else{
+					node_reader* low_nr = initNodeReader(high_nr->d(l), true);
+					if(k==0){
+						unlinkNode(high_nr->d(l));
+					}
+					MEDDLY_DCASSERT(low_nr->getSize()==low_size);
+					low_nb.d(l)=low_nr->d(k);
+				}
+			}
+			high_nb.d(k)=createReducedNode(-1, low_nb);
+		}
+		high_nb.computeHash();
+		createReducedNodeAt(high_nb, high_nodes[i]);
+		high_nb.lock=false;
+	}
+
+	// Identify nodes at level+1 which are pointed from a node above level+1
+	for(i=0; i<low_node_size; i++) {
+		if(nodeMan->getCountOf(getNode(low_nodes[i]).offset)==0) {
+			// !!!!!!!!!!!!!!!!!!!
+			// Clean compute_table
+			// !!!!!!!!!!!!!!!!!!!
+			stats.decActive(1);
+			recycleNodeHandle(low_nodes[i]);
+		}
+		else{
+			node_reader* nr = initNodeReader(low_nodes[i], true);
+			node_builder& nb = useNodeBuilder(level, low_size);
+			for(int k=0; k<low_size; k++) {
+				nb.d(k)=nr->d(k);
+			}
+			nb.computeHash();
+			createReducedNodeAt(nb, low_nodes[i]);
+			nb.lock=false;
+		}
+	}
+
+	free(high_nodes);
+	free(low_nodes);
 }
 
 // ******************************************************************

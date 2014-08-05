@@ -22,6 +22,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <vector>
+#include <algorithm>
 
 #include "meddly.h"
 #include "simple_model.h"
@@ -29,6 +31,8 @@
 #include "kan_rs1.h"
 #include "kan_rs2.h"
 #include "kan_rs3.h"
+
+using namespace std;
 
 const char* kanban[] = {
   "X-+..............",  // Tin1
@@ -86,7 +90,21 @@ bool matches(const char* mark, const int* minterm, int np)
   return true;
 }
 
-long checkRS(int N, const char* rs[]) 
+typedef struct CompLt {
+	bool operator() (const int* x, const int* y){
+		for(int i=15; i>=0 ;i--) {
+			if(x[i]<y[i]) {
+				return true;
+			}
+			if(x[i]>y[i]) {
+				return false;
+			}
+		}
+		return false;
+	}
+}CompLt;
+
+bool checkRS(int N, const char* rs[])
 {
   int sizes[16];
 
@@ -97,20 +115,46 @@ long checkRS(int N, const char* rs[])
 
   // enumerate states
   long c = 0;
-  for (enumerator i(reachable); i; ++i) {
+  vector<int*> assignments;
+  for (enumerator i(reachable); i; ++i, c++) {
     if (c>=expected[N]) {
       c++;
       break;
     }
-    if (!matches(rs[c], i.getAssignments()+1, 16)) {
-      fprintf(stderr, "Marking %ld mismatched\n", c);
-      break;
+
+    int* assignment = static_cast<int*>(malloc(16*sizeof(int)));
+    if(assignment==0) {
+    	throw error(error::INSUFFICIENT_MEMORY);
     }
-    c++;
+    memcpy(assignment, i.getAssignments()+1, 16*sizeof(int));
+    assignments.push_back(assignment);
+  }
+
+  if(c==expected[N]) {
+	  sort(assignments.begin(), assignments.end(), CompLt());
+	  for(int i=0; i<assignments.size(); i++) {
+		  if (!matches(rs[i], assignments[i], 16)) {
+		       fprintf(stderr, "Marking %ld mismatched\n", i);
+
+		       for(int k=0; k<16; k++) {
+		     	  printf("%d ",rs[i][k]-48);
+		       }
+		       printf("\n");
+		       const int* minterm = assignments[i];
+		       for(int k=0; k<16; k++) {
+		     	  printf("%d ", minterm[k]);
+		       }
+		       printf("\n");
+
+		       break;
+		  }
+
+		  free(assignments[i]);
+	  }
   }
 
   destroyDomain(d);
-  return c;
+  return c==expected[N];
 }
 
 void showRS(int N)
@@ -139,22 +183,17 @@ int main()
 {
   MEDDLY::initialize();
 
-  long c;
-
   printf("Checking Kanban reachability set, N=1\n");
-  c = checkRS(1, kanban_rs1);
-  if (c != expected[1]) return 1;
-  printf("\t%ld markings checked out\n", c);
+  if (!checkRS(1, kanban_rs1)) return 1;
+  printf("\t%ld markings checked out\n", expected[1]);
 
   printf("Checking Kanban reachability set, N=2\n");
-  c = checkRS(2, kanban_rs2);
-  if (c != expected[2]) return 1;
-  printf("\t%ld markings checked out\n", c);
+  if (!checkRS(2, kanban_rs2)) return 1;
+  printf("\t%ld markings checked out\n", expected[2]);
 
   printf("Checking Kanban reachability set, N=3\n");
-  c = checkRS(3, kanban_rs3);
-  if (c != expected[3]) return 1;
-  printf("\t%ld markings checked out\n", c);
+  if (!checkRS(3, kanban_rs3)) return 1;
+  printf("\t%ld markings checked out\n", expected[3]);
 
   MEDDLY::cleanup();
   printf("Done\n");

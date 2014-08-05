@@ -1679,6 +1679,9 @@ class MEDDLY::domain {
     /// @return The variable at level \a lev.
     inline variable* useVar(int lev) { return vars[lev]; }
 
+    inline int getVarByLevel(int lev) const { return level_to_var[lev]; }
+    inline int getLevelByVar(int var) const { return var_to_level[var]; }
+
     /*  Get the topmost variable.
         Commented out as of version 0.10.
         Deprecated as of version 0.5.
@@ -1772,10 +1775,14 @@ class MEDDLY::domain {
     variable** vars;
     int nVars;
 
-  private:
-    bool is_marked_for_deletion;
+    int* var_to_level;
+    int* level_to_var;
+
     forest** forests;
     int szForests;
+
+  private:
+    bool is_marked_for_deletion;
 
     /// Find a free slot for a new forest.
     int findEmptyForestSlot();

@@ -55,13 +55,34 @@ void MEDDLY::evmdd_plusint
   enlargeStatics(N);
   enlargeVariables(vlist, N, false);
 
+  int num_vars=getNumVariables();
+
+  // Create vlist following the mapping between variable and level
+  int** ordered_vlist=static_cast<int**>(malloc(N*sizeof(int*)+(num_vars+1)*N*sizeof(int)));
+  if(ordered_vlist==0){
+	  throw error(error::INSUFFICIENT_MEMORY);
+  }
+
+  ordered_vlist[0]=reinterpret_cast<int*>(&ordered_vlist[N]);
+  for(int i=1; i<N; i++) {
+	  ordered_vlist[i]=(ordered_vlist[i-1]+num_vars+1);
+  }
+  for(int i=0; i<=num_vars; i++) {
+	  int level=getLevelByVar(i);
+	  for(int j=0; j<N; j++) {
+		  ordered_vlist[j][level]=vlist[j][i];
+	  }
+  }
+
   evmdd_edgemaker<OP, int>
-  EM(this, vlist, terms, order, N, getDomain()->getNumVariables(), unionOp);
+  EM(this, ordered_vlist, terms, order, N, num_vars, unionOp);
 
   int ev;
   node_handle ep;
   EM.createEdge(ev, ep);
   e.set(ep, ev);
+
+  free(ordered_vlist);
 }
 
 void MEDDLY::evmdd_plusint
@@ -207,7 +228,8 @@ bool MEDDLY::evmdd_plusint::evpimdd_iterator::next()
   for (k=1; k<=maxLevel; k++) {
     nzp[k]++;
     if (nzp[k] < path[k].getNNZs()) {
-      index[k] = path[k].i(nzp[k]);
+      int var = F->getVarByLevel(k);
+      index[var] = path[k].i(nzp[k]);
       down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
       int ev;
@@ -242,7 +264,9 @@ bool MEDDLY::evmdd_plusint::evpimdd_iterator::first(int k, node_handle down)
     if (kdn < k)  F->initRedundantReader(path[k], k, 0, down, false);
     else          F->initNodeReader(path[k], down, false);
     nzp[k] = 0;
-    index[k] = path[k].i(0);
+
+    int var = F->getVarByLevel(k);
+    index[var] = path[k].i(0);
     down = path[k].d(0);
     int ev;
     path[k].getEdge(0, ev);
@@ -278,23 +302,25 @@ void MEDDLY::evmdd_index_set::getElement(const dd_edge &a, int index, int* e)
   int p = a.getNode();
   node_reader* R = node_reader::useReader();
   for (int k=getNumVariables(); k; k--) {
+	int var = getVarByLevel(k);
+
     MEDDLY_DCASSERT(index >= 0);
     if (p <= 0) {
-      e[k] = 0;
+      e[var] = 0;
       continue;
     }
     initNodeReader(*R, p, false);
     MEDDLY_DCASSERT(R->getLevel() <= k);
     if (R->getLevel() < k) {
-      e[k] = 0;
+      e[var] = 0;
       continue; 
     }
     // Find largest i such that edge value i is not greater than index
-    e[k] = 0;
+    e[var] = 0;
     p = 0;
     for (int z=R->getNNZs()-1; z>=0; z--) {
       if (index < R->ei(z)) continue;
-      e[k] = R->i(z);
+      e[var] = R->i(z);
       p = R->d(z);
       index -= R->ei(z);
       break;

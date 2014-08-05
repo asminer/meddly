@@ -64,7 +64,8 @@ bool MEDDLY::mtmdd_forest::mtmdd_iterator::next()
   for (k=1; k<=maxLevel; k++) {
     nzp[k]++;
     if (nzp[k] < path[k].getNNZs()) {
-      index[k] = path[k].i(nzp[k]);
+      int var = F->getVarByLevel(k);
+      index[var] = path[k].i(nzp[k]);
       down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
       break;
@@ -94,8 +95,11 @@ bool MEDDLY::mtmdd_forest::mtmdd_iterator::first(int k, node_handle down)
     MEDDLY_DCASSERT(kdn <= k);
     if (kdn < k)  F->initRedundantReader(path[k], k, down, false);
     else          F->initNodeReader(path[k], down, false);
+
     nzp[k] = 0;
-    index[k] = path[k].i(0);
+
+    int var = F->getVarByLevel(k);
+    index[var] = path[k].i(0);
     down = path[k].d(0);
   }
   // save the terminal value

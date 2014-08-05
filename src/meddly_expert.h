@@ -390,7 +390,7 @@ class MEDDLY::expert_domain : public domain {
                       variable.
       @param  N       Number of variables.
     */
-    void createVariablesTopDown(const int* bounds, int N);
+//    void createVariablesTopDown(const int* bounds, int N);
 
     /** Insert a new variable.
           @param  lev   Level to insert above; use 0 for a 
@@ -493,6 +493,11 @@ class MEDDLY::expert_domain : public domain {
       @param  lev2    Level of second variable.
     */
     void swapOrderOfVariables(int lev1, int lev2);
+
+    /*
+     * Swap variables at lev and lev+1.
+     */
+    void swapAdjacentVariables(int lev);
 
     /** Find the actual bound of a variable.
       @param  vh      Variable handle.
@@ -1380,6 +1385,8 @@ class MEDDLY::node_storage {
 
 class MEDDLY::expert_forest : public forest
 {
+	friend class expert_domain;
+
   // flags for reporting; DO NOT rely on specific values
   public:
       /// Should memory be reported in a human readable format
@@ -1661,10 +1668,11 @@ class MEDDLY::expert_forest : public forest
     /// The maximum size (number of indices) a node at this level can have
     inline int getLevelSize(int lh) const {
       MEDDLY_DCASSERT(isValidLevel(lh));
+
       if (lh < 0) {
-        return getDomain()->getVariableBound(-lh, true);
+        return getDomain()->getVariableBound(getVarByLevel(-lh), true);
       } else {
-        return getDomain()->getVariableBound(lh, false);
+        return getDomain()->getVariableBound(getVarByLevel(lh), false);
       }
     }
     /// Is this a terminal node?
@@ -1697,6 +1705,15 @@ class MEDDLY::expert_forest : public forest
       MEDDLY_CHECK_RANGE(1, p, 1+a_last);
       return address[p].level;
     }
+
+    inline int getVarByLevel(int level) const {
+    	return getDomain()->getVarByLevel(level<0 ? -level : level);
+    }
+
+    inline int getLevelByVar(int var) const {
+    	return getDomain()->getLevelByVar(var);
+    }
+
     inline bool isPrimedNode(node_handle p) const {
       return getNodeLevel(p) < 0;
     }
@@ -2028,6 +2045,12 @@ class MEDDLY::expert_forest : public forest
     	return transparent;
     }
 
+    /**
+     * Swap the variables at level and level+1.
+     * This method should only be called by expert_domain.
+     */
+    void swapAdjacentVariables(int level);
+
   // ------------------------------------------------------------
   // Preferred mechanism for reading nodes
   public:
@@ -2281,7 +2304,7 @@ class MEDDLY::expert_forest : public forest
     virtual void readEdges(FILE* s, dd_edge* E, int n);
     virtual void garbageCollect();
     virtual void compactMemory();
-    virtual void showInfo(FILE* strm, int verbosity);
+    virtual void showInfo(FILE* strm, int verbosity = 0);
 
   // ------------------------------------------------------------
   // abstract virtual, must be overridden.
@@ -2612,6 +2635,14 @@ class MEDDLY::expert_forest : public forest
           @return       Handle to a node that encodes the same thing.
     */
     node_handle createReducedHelper(int in, const node_builder &nb);
+
+    /**
+     * Create a node at a given address.
+     * Does not check if the node is duplicate or redundant.
+     * Does not reset the cache count of the given address.
+     * This method can be used to update nodes in place.
+     */
+    node_handle createReducedNodeAt(const node_builder &nb, node_handle p);
 
     // Sanity check; used in development code.
     void validateDownPointers(const node_builder &nb) const;

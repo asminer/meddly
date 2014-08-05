@@ -41,7 +41,8 @@ class MEDDLY::mtmdd_forest : public mt_forest {
     inline node_handle evaluateRaw(const dd_edge &f, const int* vlist) const {
       node_handle p = f.getNode();
       while (!isTerminalNode(p)) {
-        p = getDownPtr(p, vlist[getNodeLevel(p)]);
+    	int level = getNodeLevel(p);
+        p = getDownPtr(p, vlist[getVarByLevel(level)]);
       }
       return p;
     }

@@ -235,6 +235,14 @@ MEDDLY::node_handle MEDDLY::unique_table::subtable::remove(unsigned hash, node_h
   return 0;
 }
 
+void MEDDLY::unique_table::subtable::clear()
+{
+	if(parent!=0){
+		free(table);
+		init(parent);
+	}
+}
+
 int MEDDLY::unique_table::subtable::getItems(node_handle* items, int sz) const
 {
 	int k=0;

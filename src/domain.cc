@@ -178,6 +178,9 @@ MEDDLY::domain::~domain()
   }
   free(forests);
 
+  free(var_to_level);
+  free(level_to_var);
+
   //
   // Remove myself from the master list
   //
@@ -382,6 +385,24 @@ void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
 
   vars = (variable**) malloc((1+N) * sizeof(void*));
   if (0==vars) throw error(error::INSUFFICIENT_MEMORY);
+
+  var_to_level = (int*) malloc((1+N) * sizeof(int));
+  if (0==var_to_level) throw error(error::INSUFFICIENT_MEMORY);
+
+  level_to_var = (int*) malloc((1+N) * sizeof(int));
+  if (0==level_to_var) throw error(error::INSUFFICIENT_MEMORY);
+
+  for(int i=0; i<1+N; i++) {
+	  var_to_level[i] = i;
+	  level_to_var[i] = i;
+  }
+
+  // For testing
+  var_to_level[1] = N;
+  var_to_level[N] = 1;
+  level_to_var[1] = N;
+  level_to_var[N] = 1;
+
   nVars = N;
 
   vars[0] = 0;
@@ -392,22 +413,22 @@ void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
 }
 
 
-void MEDDLY::expert_domain::createVariablesTopDown(const int* bounds, int N)
-{
-  // domain must be empty -- no variables defined so far
-  if (hasForests() || nVars != 0)
-    throw error(error::DOMAIN_NOT_EMPTY);
-
-  vars = (variable**) malloc((1+N) * sizeof(void*));
-  if (0==vars) throw error(error::INSUFFICIENT_MEMORY);
-  nVars = N;
-
-  vars[0] = 0;
-  for (int i=N; i; i--) {
-    vars[N-i+1] = MEDDLY::createVariable(bounds[i], 0);
-    ((expert_variable*)vars[i])->addToList(this);
-  }
-}
+//void MEDDLY::expert_domain::createVariablesTopDown(const int* bounds, int N)
+//{
+//  // domain must be empty -- no variables defined so far
+//  if (hasForests() || nVars != 0)
+//    throw error(error::DOMAIN_NOT_EMPTY);
+//
+//  vars = (variable**) malloc((1+N) * sizeof(void*));
+//  if (0==vars) throw error(error::INSUFFICIENT_MEMORY);
+//  nVars = N;
+//
+//  vars[0] = 0;
+//  for (int i=N; i; i--) {
+//    vars[N-i+1] = MEDDLY::createVariable(bounds[i], 0);
+//    ((expert_variable*)vars[i])->addToList(this);
+//  }
+//}
 
 void MEDDLY::expert_domain::insertVariableAboveLevel(int lev, variable* v)
 {
@@ -433,6 +454,24 @@ int MEDDLY::expert_domain::findLevelOfVariable(const variable *v) const
 void MEDDLY::expert_domain::swapOrderOfVariables(int vh1, int vh2)
 {
   throw error(error::NOT_IMPLEMENTED);
+}
+
+void MEDDLY::expert_domain::swapAdjacentVariables(int lev)
+{
+	for (int i=0; i<szForests; i++) {
+		static_cast<expert_forest*>(forests[i])->swapAdjacentVariables(lev);
+	}
+
+	int low_var = level_to_var[lev];
+	int high_var = level_to_var[lev+1];
+
+	level_to_var[lev] = high_var;
+	level_to_var[lev+1] = low_var;
+
+	MEDDLY_DCASSERT(var_to_level[low_var]==lev);
+	MEDDLY_DCASSERT(var_to_level[high_var]==lev+1);
+	var_to_level[low_var] = lev+1;
+	var_to_level[high_var] = lev;
 }
 
 // TODO: not implemented

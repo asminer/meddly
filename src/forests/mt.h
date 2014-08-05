@@ -93,14 +93,14 @@ class MEDDLY::mt_forest : public expert_forest {
       /*
           Get info for node we're building
       */
-      int k = pr ? -vh: vh;
+      int k = pr ? -getLevelByVar(vh): getLevelByVar(vh);
       int km1;
       if (isForRelations()) {
         km1 = (k<0) ? (-k)-1 : -k;
       } else {
         km1 = k-1;
       }
-      int sz = getLevelSize(vh);
+      int sz = getLevelSize(getLevelByVar(vh));
 
       /*
           Make this node

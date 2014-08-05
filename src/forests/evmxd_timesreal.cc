@@ -55,14 +55,42 @@ void MEDDLY::evmxd_timesreal
   enlargeVariables(vlist, N, false);
   enlargeVariables(vplist, N, true);
 
+  int num_vars=getNumVariables();
+
+  // Create vlist and vplist following the mapping between variable and level
+  int** ordered_vlist=static_cast<int**>(malloc(N*sizeof(int*)+(num_vars+1)*N*sizeof(int)));
+  if(ordered_vlist==0){
+	  throw error(error::INSUFFICIENT_MEMORY);
+  }
+  int** ordered_vplist=static_cast<int**>(malloc(N*sizeof(int*)+(num_vars+1)*N*sizeof(int)));
+  if(ordered_vplist==0){
+	  throw error(error::INSUFFICIENT_MEMORY);
+  }
+
+  ordered_vlist[0]=reinterpret_cast<int*>(&ordered_vlist[N]);
+  ordered_vplist[0]=reinterpret_cast<int*>(&ordered_vplist[N]);
+  for(int i=1; i<N; i++) {
+	  ordered_vlist[i]=(ordered_vlist[i-1]+num_vars+1);
+	  ordered_vplist[i]=(ordered_vplist[i-1]+num_vars+1);
+  }
+  for(int i=0; i<=num_vars; i++) {
+	  int level=getLevelByVar(i);
+	  for(int j=0; j<N; j++) {
+		  ordered_vlist[j][level]=vlist[j][i];
+		  ordered_vplist[j][level]=vplist[j][i];
+	  }
+  }
+
   evmxd_edgemaker<OP, float>
-  EM(this, vlist, vplist, terms, order, N,
-    getDomain()->getNumVariables(), unionOp);
+  EM(this, ordered_vlist, ordered_vplist, terms, order, N, num_vars, unionOp);
 
   float ev;
   node_handle ep;
   EM.createEdge(ev, ep);
   e.set(ep, ev);
+
+  free(ordered_vlist);
+  free(ordered_vplist);
 }
 
 void MEDDLY::evmxd_timesreal

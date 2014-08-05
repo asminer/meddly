@@ -52,13 +52,34 @@ void MEDDLY::evmdd_timesreal
   enlargeStatics(N);
   enlargeVariables(vlist, N, false);
 
+  int num_vars=getNumVariables();
+
+  // Create vlist following the mapping between variable and level
+  int** ordered_vlist=static_cast<int**>(malloc(N*sizeof(int*)+(num_vars+1)*N*sizeof(int)));
+  if(ordered_vlist==0){
+	  throw error(error::INSUFFICIENT_MEMORY);
+  }
+
+  ordered_vlist[0]=reinterpret_cast<int*>(&ordered_vlist[N]);
+  for(int i=1; i<N; i++) {
+	  ordered_vlist[i]=(ordered_vlist[i-1]+num_vars+1);
+  }
+  for(int i=0; i<=num_vars; i++) {
+	  int level=getLevelByVar(i);
+	  for(int j=0; j<N; j++) {
+		  ordered_vlist[j][level]=vlist[j][i];
+	  }
+  }
+
   evmdd_edgemaker<OP, float>
-  EM(this, vlist, terms, order, N, getDomain()->getNumVariables(), unionOp);
+  EM(this, ordered_vlist, terms, order, N, num_vars, unionOp);
 
   float ev;
   node_handle ep;
   EM.createEdge(ev, ep);
   e.set(ep, ev);
+
+  free(ordered_vlist);
 }
 
 void MEDDLY::evmdd_timesreal
