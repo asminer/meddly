@@ -397,12 +397,6 @@ void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
 	  level_to_var[i] = i;
   }
 
-  // For testing
-  var_to_level[1] = N;
-  var_to_level[N] = 1;
-  level_to_var[1] = N;
-  level_to_var[N] = 1;
-
   nVars = N;
 
   vars[0] = 0;
@@ -458,10 +452,6 @@ void MEDDLY::expert_domain::swapOrderOfVariables(int vh1, int vh2)
 
 void MEDDLY::expert_domain::swapAdjacentVariables(int lev)
 {
-	for (int i=0; i<szForests; i++) {
-		static_cast<expert_forest*>(forests[i])->swapAdjacentVariables(lev);
-	}
-
 	int low_var = level_to_var[lev];
 	int high_var = level_to_var[lev+1];
 
@@ -472,6 +462,12 @@ void MEDDLY::expert_domain::swapAdjacentVariables(int lev)
 	MEDDLY_DCASSERT(var_to_level[high_var]==lev+1);
 	var_to_level[low_var] = lev+1;
 	var_to_level[high_var] = lev;
+
+	for (int i=0; i<szForests; i++) {
+		if(forests[i]!=0) {
+			static_cast<expert_forest*>(forests[i])->swapAdjacentVariables(lev);
+		}
+	}
 }
 
 // TODO: not implemented

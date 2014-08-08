@@ -1776,7 +1776,7 @@ class MEDDLY::expert_forest : public forest
     // --------------------------------------------------
 
     /// Returns the in-count for a node.
-    inline long readInCount(node_handle p) const {
+    inline long getInCount(node_handle p) const {
       return nodeMan->getCountOf(getNode(p).offset);
     }
 
@@ -1871,7 +1871,7 @@ class MEDDLY::expert_forest : public forest
       fflush(stdout);
 #endif
 
-      if (cc == 0 && readInCount(p) == 0) {
+      if (cc == 0 && getInCount(p) == 0) {
         MEDDLY_DCASSERT(!isPessimistic());
         stats.orphan_nodes--;
         deleteNode(p);
@@ -1892,7 +1892,7 @@ class MEDDLY::expert_forest : public forest
           ? terminalNodesAreStale
           : isPessimistic()
             ? isZombieNode(node)
-            : (readInCount(node) == 0)
+            : (getInCount(node) == 0)
         );
     }
 
@@ -2044,12 +2044,6 @@ class MEDDLY::expert_forest : public forest
     inline node_handle getTransparentNode() const {
     	return transparent;
     }
-
-    /**
-     * Swap the variables at level and level+1.
-     * This method should only be called by expert_domain.
-     */
-    void swapAdjacentVariables(int level);
 
   // ------------------------------------------------------------
   // Preferred mechanism for reading nodes
@@ -2296,6 +2290,14 @@ class MEDDLY::expert_forest : public forest
 #endif
     }
 
+    /*
+     * Modify a node in place.
+     * Does not check if the modified node is duplicate or redundant.
+     * The level of the node may change.
+     * Keep the reference number and the cache count of the node.
+     */
+    node_handle modifyReducedNodeInPlace(const node_builder &nb, node_handle p);
+
   // ------------------------------------------------------------
   // virtual in the base class, but implemented here.
   // See meddly.h for descriptions of these methods.
@@ -2395,6 +2397,12 @@ class MEDDLY::expert_forest : public forest
         Default behavior - throw an "INVALID_FOREST" error.
     */
     virtual enumerator::iterator* makeFixedColumnIter() const;
+
+    /**
+     * Swap the variables at level and level+1.
+     * This method should only be called by expert_domain.
+     */
+    virtual void swapAdjacentVariables(int level) = 0;
 
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2570,10 +2578,6 @@ class MEDDLY::expert_forest : public forest
         ? (stats.zombie_nodes > deflt.zombieTrigger)
         : (stats.orphan_nodes > deflt.orphanTrigger);
     }
-    /// Returns the in-count for a node.
-    inline long getInCount(node_handle p) {
-      return nodeMan->getCountOf(getNode(p).offset);
-    }
     /// Increment and return the in-count for a node
     inline long incInCount(node_handle p) {
       return nodeMan->incCountOf(getNode(p).offset);
@@ -2635,14 +2639,6 @@ class MEDDLY::expert_forest : public forest
           @return       Handle to a node that encodes the same thing.
     */
     node_handle createReducedHelper(int in, const node_builder &nb);
-
-    /**
-     * Create a node at a given address.
-     * Does not check if the node is duplicate or redundant.
-     * Does not reset the cache count of the given address.
-     * This method can be used to update nodes in place.
-     */
-    node_handle createReducedNodeAt(const node_builder &nb, node_handle p);
 
     // Sanity check; used in development code.
     void validateDownPointers(const node_builder &nb) const;

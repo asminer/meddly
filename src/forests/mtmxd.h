@@ -32,6 +32,8 @@ class MEDDLY::mtmxd_forest : public mt_forest {
   public:
     mtmxd_forest(int dsl, domain* d, range_type t, const policies &p);
 
+    virtual void swapAdjacentVariables(int level);
+
     virtual enumerator::iterator* makeFullIter() const 
     {
       return new mtmxd_iterator(this);

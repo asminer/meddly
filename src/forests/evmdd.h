@@ -33,6 +33,8 @@ class MEDDLY::evmdd_forest : public ev_forest {
     evmdd_forest(int dsl, domain* d, range_type t, edge_labeling ev, 
       const policies &p);
 
+    virtual void swapAdjacentVariables(int level);
+
   protected:
     template <class OPERATION, typename TYPE>
     inline void evaluateT(const dd_edge &f, const int* vlist, TYPE &val) const 
@@ -134,7 +136,7 @@ namespace MEDDLY {
       }
 
       inline void createEdge(T &ev, node_handle &ed) {
-        return createEdge(K, 0, N, ev, ed);
+        createEdge(K, 0, N, ev, ed);
       }
 
       /**

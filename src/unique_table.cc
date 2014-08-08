@@ -198,10 +198,10 @@ void MEDDLY::unique_table::subtable::add(unsigned hash, node_handle item)
 {
 	MEDDLY_DCASSERT(item>0);
 
-	num_entries++;
-	if (num_entries > next_expand){
+	if (num_entries >= next_expand){
 		expand();
 	}
+	num_entries++;
 
 	unsigned h = hash%size;
 	parent->setNext(item, table[h]);

@@ -33,6 +33,8 @@ class MEDDLY::evmxd_forest : public ev_forest {
     evmxd_forest(int dsl, domain* d, range_type t, edge_labeling ev, 
       const policies &p);
 
+    virtual void swapAdjacentVariables(int level);
+
   protected:
     template <class OPERATION, typename TYPE>
     inline void evaluateT(const dd_edge &f, const int* vlist,
