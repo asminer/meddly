@@ -68,7 +68,7 @@ class MEDDLY::hash_stream {
 #ifdef DEBUG_HASH
         printf("hash_stream::start %u\n", init);
 #endif
-        z[2] = init;
+        z[2] = 0xbeefdead;
         z[1] = 0;
         z[0] = 0xdeadbeef;
         slot = 2;
