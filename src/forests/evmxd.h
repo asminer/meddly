@@ -34,6 +34,7 @@ class MEDDLY::evmxd_forest : public ev_forest {
       const policies &p);
 
     virtual void swapAdjacentVariables(int level);
+    virtual void moveDownVariable(int high, int low);
 
   protected:
     template <class OPERATION, typename TYPE>

@@ -33,6 +33,7 @@ class MEDDLY::mtmdd_forest : public mt_forest {
     mtmdd_forest(int dsl, domain* d, range_type t, const policies &p);
 
     virtual void swapAdjacentVariables(int level);
+    virtual void moveDownVariable(int high, int low);
 
     virtual enumerator::iterator* makeFullIter() const 
     {
@@ -48,6 +49,8 @@ class MEDDLY::mtmdd_forest : public mt_forest {
       }
       return p;
     }
+
+    node_handle recursiveReduceDown(node_handle node, int low, int val);
 
   protected:
     class mtmdd_iterator : public mt_iterator {

@@ -499,6 +499,12 @@ class MEDDLY::expert_domain : public domain {
      */
     void swapAdjacentVariables(int lev);
 
+    /*
+     * Move the variable at level high to level low.
+     * The variables from level low to level high-1 will be moved one level up.
+     */
+    void moveDownVariable(int high, int low);
+
     /** Find the actual bound of a variable.
       @param  vh      Variable handle.
       @return         The smallest shrinkable bound before information loss
@@ -1691,7 +1697,7 @@ class MEDDLY::expert_forest : public forest
       return a_last;
     }
     /// Get data for a given nonterminal node.
-    inline const node_header& getNode(node_handle p) const {
+    inline node_header& getNode(node_handle p) const {
       MEDDLY_DCASSERT(address);
       MEDDLY_CHECK_RANGE(1, p, 1+a_last);
       return address[p];
@@ -1769,6 +1775,13 @@ class MEDDLY::expert_forest : public forest
 #else
       return hashNode(p);
 #endif
+    }
+
+    inline void setNodeLevel(node_handle p, int level) const {
+      if (isTerminalNode(p)) return;
+      MEDDLY_DCASSERT(address);
+      MEDDLY_CHECK_RANGE(1, p, 1+a_last);
+      address[p].level=level;
     }
 
     // --------------------------------------------------
@@ -2296,7 +2309,7 @@ class MEDDLY::expert_forest : public forest
      * The level of the node may change.
      * Keep the reference number and the cache count of the node.
      */
-    node_handle modifyReducedNodeInPlace(const node_builder &nb, node_handle p);
+    node_handle modifyReducedNodeInPlace(node_builder &nb, node_handle p);
 
   // ------------------------------------------------------------
   // virtual in the base class, but implemented here.
@@ -2398,11 +2411,17 @@ class MEDDLY::expert_forest : public forest
     */
     virtual enumerator::iterator* makeFixedColumnIter() const;
 
-    /**
+    /*
      * Swap the variables at level and level+1.
      * This method should only be called by expert_domain.
      */
     virtual void swapAdjacentVariables(int level) = 0;
+
+    /*
+     * Move the variable at level high to level low.
+     * The variables from level low to level high-1 will be moved one level up.
+     */
+    virtual void moveDownVariable(int high, int low) = 0;
 
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

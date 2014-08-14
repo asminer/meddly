@@ -1578,28 +1578,32 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 #endif
 
   unsigned h = hashNode(p);
-  node_handle x = unique->remove(h, p);
-
-  // If x==0, the node is the legacy of variable reordering
-  if(x != 0) {
 #ifdef DEVELOPMENT_CODE
-	  if(x != p) {
-		  fprintf(stderr, "Error in deleteNode\nFind: %d\np: %d\n", x, p);
-		  dumpInternal(stdout);
-		  MEDDLY_DCASSERT(false);
-	  }
+  node_reader* key = initNodeReader(p, false);
+  key->computeHash(areEdgeValuesHashed(), getTransparentNode());
+  if (unique->find(*key, getVarByLevel(key->getLevel())) != p) {
+    fprintf(stderr, "Error in deleteNode\nFind: %ld\np: %ld\n",
+      static_cast<long>(unique->find(*key, getVarByLevel(key->getLevel()))), static_cast<long>(p));
+    dumpInternal(stdout);
+    MEDDLY_DCASSERT(false);
+  }
+  node_reader::recycle(key);
+  node_handle x = unique->remove(h, p);
+  MEDDLY_DCASSERT(p == x);
+#else
+  unique->remove(h, p);
 #endif
-
-	  MEDDLY_DCASSERT(address[p].cache_count == 0);
 
 #ifdef TRACK_DELETIONS
   printf("%s: p = %d, unique->remove(p) = %d\n", __func__, p, x);
   fflush(stdout);
 #endif
-  }
+
+  MEDDLY_DCASSERT(address[p].cache_count == 0);
+
+  node_address addr = getNode(p).offset;
 
   // unlink children and recycle node memory
-  node_address addr = getNode(p).offset;
   nodeMan->unlinkDownAndRecycle(addr);
 
   // recycle the index
@@ -1904,8 +1908,10 @@ MEDDLY::node_handle MEDDLY::expert_forest
   return p;
 }
 
-MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(const node_builder &nb, node_handle p)
+MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(node_builder &nb, node_handle p)
 {
+	nb.computeHash();
+
 	int count = getInCount(p);
 
 	address[p].level = nb.getLevel();
@@ -1932,6 +1938,8 @@ MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(const node_b
 	printf("Modified node %d\n", p);
 	dump(stdout);
 #endif
+
+	nb.lock = false;
 
 	return p;
 }

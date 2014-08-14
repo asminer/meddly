@@ -131,15 +131,15 @@ void MEDDLY::unique_table::show(FILE* s) const
 	int num_vars=parent->getNumVariables();
 	if(parent->isForRelations()){
 		for(int i=1; i<=num_vars; i++){
-			fprintf(s, "Unique table (Level %d):\n", i);
+			fprintf(s, "Unique table (Var %d):\n", i);
 			tables[i].show(s);
-			fprintf(s, "Unique table (Level %d):\n", -i);
+			fprintf(s, "Unique table (Var %d):\n", -i);
 			tables[-i].show(s);
 		}
 	}
 	else{
 		for(int i=1; i<=num_vars; i++){
-			fprintf(s, "Unique table (Level %d):\n", i);
+			fprintf(s, "Unique table (Var %d):\n", i);
 			tables[i].show(s);
 		}
 	}
@@ -170,11 +170,13 @@ void MEDDLY::unique_table::subtable::reportStats(FILE* s, const char* pad, unsig
 void MEDDLY::unique_table::subtable::show(FILE *s) const
 {
 	for (unsigned i=0; i<size; i++) {
-		fprintf(s, "[%d] : ", i);
-		for (int index = table[i]; index; index = parent->getNext(index)) {
-			fprintf(s, "%d ", index);
-	    }
-	    fprintf(s, "\n");
+		if(table[i]!=0) {
+			fprintf(s, "[%d] : ", i);
+			for (int index = table[i]; index; index = parent->getNext(index)) {
+				fprintf(s, "%d ", index);
+			}
+			fprintf(s, "\n");
+		}
 	}
 	fflush(s);
 }

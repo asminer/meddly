@@ -33,6 +33,7 @@ class MEDDLY::mtmxd_forest : public mt_forest {
     mtmxd_forest(int dsl, domain* d, range_type t, const policies &p);
 
     virtual void swapAdjacentVariables(int level);
+    virtual void moveDownVariable(int high, int low);
 
     virtual enumerator::iterator* makeFullIter() const 
     {

@@ -20,6 +20,7 @@
 */
 
 #include <vector>
+#include <algorithm>
 
 #include "mtmdd.h"
 #include "../unique_table.h"
@@ -76,9 +77,7 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 			for(int k=0; k<high_size; k++){
 				nb.d(k)=nr->d(k);
 			}
-			nb.computeHash();
 			modifyReducedNodeInPlace(nb, high_nodes[i]);
-			nb.lock=false;
 		}
 		else{
 			// Remove the identified nodes from high_nodes
@@ -110,9 +109,8 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 			}
 			high_nb.d(k)=createReducedNode(-1, low_nb);
 		}
-		high_nb.computeHash();
+		node_reader::recycle(high_nr);
 		modifyReducedNodeInPlace(high_nb, high_nodes[i]);
-		high_nb.lock=false;
 	}
 
 	for(std::vector<int>::iterator itr=unlink.begin(); itr!=unlink.end(); itr++) {
@@ -128,9 +126,9 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 				// FIXME: May not increase the reference number
 				nb.d(k)=linkNode(nr->d(k));
 			}
-			nb.computeHash();
+			node_reader::recycle(nr);
+
 			modifyReducedNodeInPlace(nb, low_nodes[i]);
-			nb.lock=false;
 		}
 	}
 
@@ -138,6 +136,133 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 	free(low_nodes);
 }
 
+typedef struct NodeOrder
+{
+	MEDDLY::node_handle node;
+	int weight;
+}NodeOrder;
+
+typedef struct NodeOrderLt
+{
+	bool operator() (const NodeOrder& no1, const NodeOrder& no2)
+	{
+		return no1.weight<no2.weight;
+	}
+}NodeOrderLt;
+
+void MEDDLY::mtmdd_forest::moveDownVariable(int high, int low)
+{
+	// Pre-condition: The compute table has been cleared
+
+	MEDDLY_DCASSERT(low<high);
+	MEDDLY_DCASSERT(low>=1);
+	MEDDLY_DCASSERT(high<=getNumVariables());
+
+	// Modify the level of nodes from level high-1 to level low
+	for(int level=high-1; level>=low; level--) {
+		int var = getVarByLevel(level+1);
+		int size = unique->getNumEntries(var);
+		node_handle* nodes = static_cast<node_handle*>(malloc(size*sizeof(node_handle)));
+		unique->getItems(var, nodes, size);
+		for(int i=0; i<size; i++) {
+			MEDDLY_DCASSERT(isActiveNode(nodes[i]));
+			MEDDLY_DCASSERT(getNodeLevel(nodes[i])==level);
+			setNodeLevel(nodes[i], level+1);
+		}
+		free(nodes);
+	}
+
+	// Process the nodes at level high (before)
+	int var = getVarByLevel(low);
+	int size = unique->getNumEntries(var);
+	node_handle* nodes = static_cast<node_handle*>(malloc(size*sizeof(node_handle)));
+	unique->getItems(var, nodes, size);
+	unique->clear(var);
+	int varSize = getLevelSize(low);
+
+	// Sort the nodes at level high (before) by the maximum level of their children
+	std::vector<NodeOrder> order;
+	for(int i=0; i<size; i++) {
+		node_handle node = nodes[i];
+		node_reader* nr = initNodeReader(node, true);
+		int weight = getNodeLevel(nr->d(0));
+		for(int val=1; val<varSize; val++) {
+			if(weight<getNodeLevel(nr->d(val))) {
+				weight = getNodeLevel(nr->d(val));
+			}
+		}
+		node_reader::recycle(nr);
+
+		order.push_back(NodeOrder{node, weight});
+	}
+	std::sort(order.begin(), order.end(), NodeOrderLt());
+	for(int i=0; i<size; i++) {
+		nodes[i] = order[i].node;
+	}
+
+	binary_operation* op = getOperation(UNION, this, this, this);
+	for(int i=0; i<size; i++) {
+		node_handle node = nodes[i];
+		node_reader* nr = initNodeReader(node, true);
+
+		node_handle h1 = recursiveReduceDown(nr->d(0), low, 0);
+		unlinkNode(nr->d(0));
+		for(int val=1; val<varSize; val++) {
+			node_handle h2 = recursiveReduceDown(nr->d(val), low, val);
+			unlinkNode(nr->d(val));
+			node_handle result = op->compute(h1, h2);
+			unlinkNode(h1);
+			unlinkNode(h2);
+			h1 = result;
+		}
+
+		node_reader::recycle(nr);
+		removeAllComputeTableEntries();
+
+		nr = initNodeReader(h1, true);
+		int level = getNodeLevel(h1);
+		node_builder& nb = useNodeBuilder(level, getLevelSize(level));
+		for(int j=0; j<getLevelSize(level); j++) {
+			nb.d(j) = linkNode(nr->d(j));
+		}
+		node_reader::recycle(nr);
+
+		MEDDLY_DCASSERT(getInCount(h1)==1);
+		unlinkNode(h1);
+
+		modifyReducedNodeInPlace(nb, node);
+	}
+
+	free(nodes);
+}
+
+MEDDLY::node_handle MEDDLY::mtmdd_forest::recursiveReduceDown(node_handle node, int low, int val)
+{
+	int level = getNodeLevel(node);
+	if(level < low) {
+		if(node!=getTransparentNode()) {
+			node_builder& nb = useSparseBuilder(low, 1);
+			nb.i(0) = val;
+			nb.d(0) = linkNode(node);
+			return createReducedNode(-1, nb);
+		}
+		else {
+			return linkNode(node);
+		}
+	}
+
+	MEDDLY_DCASSERT(level>=low+1);
+
+	node_builder& nb = useNodeBuilder(level, getLevelSize(level));
+	node_reader* nr = initNodeReader(node, true);
+	int varSize = getLevelSize(level);
+	for(int v=0; v<varSize; v++) {
+		nb.d(v) = recursiveReduceDown(nr->d(v), low, val);
+	}
+	node_reader::recycle(nr);
+
+	return createReducedNode(-1, nb);
+}
 
 // ******************************************************************
 // *                                                                *

@@ -470,6 +470,32 @@ void MEDDLY::expert_domain::swapAdjacentVariables(int lev)
 	}
 }
 
+void MEDDLY::expert_domain::moveDownVariable(int high, int low)
+{
+	MEDDLY_DCASSERT(low<high);
+
+	for (int i=0; i<szForests; i++) {
+		if(forests[i]!=0) {
+			static_cast<expert_forest*>(forests[i])->removeAllComputeTableEntries();
+		}
+	}
+
+	int high_var = level_to_var[high];
+	for(int level=high-1; level>=low; level--) {
+		int var = level_to_var[level];
+		var_to_level[var] = level+1;
+		level_to_var[level+1] = var;
+	}
+	var_to_level[high_var] = low;
+	level_to_var[low] = high_var;
+
+	for (int i=0; i<szForests; i++) {
+		if(forests[i]!=0) {
+			static_cast<expert_forest*>(forests[i])->moveDownVariable(high, low);
+		}
+	}
+}
+
 // TODO: not implemented
 int MEDDLY::expert_domain::findVariableBound(int vh) const
 {

@@ -44,6 +44,11 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariables(int level)
 	throw error(error::NOT_IMPLEMENTED);
 }
 
+void MEDDLY::mtmxd_forest::moveDownVariable(int high, int low)
+{
+	throw error(error::NOT_IMPLEMENTED);
+}
+
 MEDDLY::mtmxd_forest::mtmxd_iterator::~mtmxd_iterator()
 {
 }

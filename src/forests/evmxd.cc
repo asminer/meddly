@@ -32,3 +32,8 @@ void MEDDLY::evmxd_forest::swapAdjacentVariables(int level)
 {
 	throw error(error::NOT_IMPLEMENTED);
 }
+
+void MEDDLY::evmxd_forest::moveDownVariable(int high, int low)
+{
+	throw error(error::NOT_IMPLEMENTED);
+}
