@@ -37,3 +37,8 @@ void MEDDLY::evmxd_forest::moveDownVariable(int high, int low)
 {
 	throw error(error::NOT_IMPLEMENTED);
 }
+
+void MEDDLY::evmxd_forest::moveUpVariable(int low, int high)
+{
+	throw error(error::NOT_IMPLEMENTED);
+}

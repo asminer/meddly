@@ -264,6 +264,132 @@ MEDDLY::node_handle MEDDLY::mtmdd_forest::recursiveReduceDown(node_handle node, 
 	return createReducedNode(-1, nb);
 }
 
+void MEDDLY::mtmdd_forest::moveUpVariable(int low, int high)
+{
+	// Pre-condition:
+	// - The compute table has been cleared
+	// - The change in variable-level mapping in domain is done
+
+	MEDDLY_DCASSERT(low<high);
+	MEDDLY_DCASSERT(low>=1);
+	MEDDLY_DCASSERT(high<=getNumVariables());
+
+	// Mark the nodes in the functions depending on the variable to be moved up
+	for(int level=low+1; level<=high; level++) {
+		int var = getVarByLevel(level-1);
+		int size = unique->getNumEntries(var);
+		node_handle* nodes = static_cast<node_handle*>(malloc(size*sizeof(node_handle)));
+		unique->getItems(var, nodes, size);
+		for(int i=0; i<size; i++) {
+			MEDDLY_DCASSERT(isActiveNode(nodes[i]));
+			MEDDLY_DCASSERT(getNodeLevel(nodes[i])==level);
+
+			node_reader* nr = initNodeReader(nodes[i], true);
+			bool flag = false;
+			for(int v=0; v<getLevelSize(level-1); v++) {
+				int childLevel=getNodeLevel(nr->d(v));
+				if(childLevel==low || (childLevel>low && getNode(nr->d(v)).isMarked())) {
+					flag = true;
+					break;
+				}
+			}
+			if(flag) {
+				getNode(nodes[i]).mark();
+			}
+		}
+		free(nodes);
+	}
+
+	// Modify the level of nodes
+	for(int level=low+1; level<=high; level++) {
+		int var = getVarByLevel(level-1);
+		int size = unique->getNumEntries(var);
+		node_handle* nodes = static_cast<node_handle*>(malloc(size*sizeof(node_handle)));
+		unique->getItems(var, nodes, size);
+		for(int i=0; i<size; i++) {
+			MEDDLY_DCASSERT(isActiveNode(nodes[i]));
+			MEDDLY_DCASSERT(getNodeLevel(nodes[i])==level);
+
+			setNodeLevel(nodes[i], level-1);
+		}
+		free(nodes);
+	}
+	int var = getVarByLevel(high);
+	int size = unique->getNumEntries(var);
+	node_handle* nodes = static_cast<node_handle*>(malloc(size*sizeof(node_handle)));
+	unique->getItems(var, nodes, size);
+	for(int i=0; i<size; i++) {
+		MEDDLY_DCASSERT(isActiveNode(nodes[i]));
+		MEDDLY_DCASSERT(getNodeLevel(nodes[i])==low);
+
+		setNodeLevel(nodes[i], high);
+	}
+	free(nodes);
+
+	// Process the nodes from level high to level low+1 (after)
+	int varSize = getLevelSize(high);
+	for(int level=high; level>low; level--) {
+		int var = getVarByLevel(level-1);
+		int size = unique->getNumEntries(var);
+		node_handle* nodes = static_cast<node_handle*>(malloc(size*sizeof(node_handle)));
+		unique->getItems(var, nodes, size);
+
+		for(int i=0; i<size; i++) {
+			node_handle node = nodes[i];
+			if(getNode(node).isMarked()) {
+				node_builder& nb = useNodeBuilder(high, getLevelSize(high));
+				for(int val=0; val<varSize; val++) {
+					nb.d(val) = recursiveReduceUp(node, low, high, val);
+				}
+				node_reader* nr = initNodeReader(node, true);
+				for(int val=0; val<getLevelSize(level-1); val++) {
+					unlinkNode(nr->d(val));
+				}
+				node_reader::recycle(nr);
+
+				// h may not be at level high
+				node_handle h = createReducedNode(-1, nb);
+				nr = initNodeReader(h, true);
+				int hLevel = getNodeLevel(h);
+				nb = useNodeBuilder(hLevel, getLevelSize(hLevel));
+				for(int val=0; val<getLevelSize(hLevel); val++) {
+					nb.d(val) = linkNode(nr->d(val));
+				}
+				node_reader::recycle(nr);
+
+				MEDDLY_DCASSERT(getInCount(h)==1);
+				unlinkNode(h);
+
+				unique->remove(hashNode(node), node);
+				modifyReducedNodeInPlace(nb, node);
+			}
+		}
+		free(nodes);
+	}
+}
+
+MEDDLY::node_handle MEDDLY::mtmdd_forest::recursiveReduceUp(node_handle node, int low, int high, int val)
+{
+	int level = getNodeLevel(node);
+	if(level < low || (level!=high && !getNode(node).isMarked())) {
+		return linkNode(node);
+	}
+
+	node_reader* nr = initNodeReader(node, true);
+	if(level == high) {
+		return linkNode(nr->d(val));
+	}
+
+	node_builder& nb = useNodeBuilder(level, getLevelSize(level));
+	int varSize = getLevelSize(level);
+	for(int v=0; v<varSize; v++) {
+		nb.d(v) = recursiveReduceUp(nr->d(v), low, high, val);
+	}
+	node_reader::recycle(nr);
+
+	return createReducedNode(-1, nb);
+}
+
 // ******************************************************************
 // *                                                                *
 // *              mtmdd_forest::mtmdd_iterator methods              *

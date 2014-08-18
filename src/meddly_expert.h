@@ -500,10 +500,16 @@ class MEDDLY::expert_domain : public domain {
     void swapAdjacentVariables(int lev);
 
     /*
-     * Move the variable at level high to level low.
+     * Move the variable at level high down to level low.
      * The variables from level low to level high-1 will be moved one level up.
      */
     void moveDownVariable(int high, int low);
+
+    /*
+     * Move the variable at level low up to level high.
+     * The variables from level low+1 to level high will be moved one level down.
+     */
+    void moveUpVariable(int low, int high);
 
     /** Find the actual bound of a variable.
       @param  vh      Variable handle.
@@ -972,6 +978,11 @@ struct MEDDLY::node_header {
     */
     int cache_count;
 
+    /*
+     * Can be used for various purposes
+     */
+    bool marked;
+
 #ifdef SAVE_HASHES
     /// Remember the hash for speed.
     unsigned hash;
@@ -988,6 +999,10 @@ struct MEDDLY::node_header {
       
     inline int getNextDeleted() const { return -offset; }
     inline void setNextDeleted(int n) { offset = -n; }
+
+    inline bool isMarked() const { return marked; }
+    inline void mark() { marked = true; }
+    inline void unmark() { marked = false; }
 
     inline void makeZombie() { 
       MEDDLY_DCASSERT(cache_count > 0);
@@ -2418,10 +2433,16 @@ class MEDDLY::expert_forest : public forest
     virtual void swapAdjacentVariables(int level) = 0;
 
     /*
-     * Move the variable at level high to level low.
+     * Move the variable at level high down to level low.
      * The variables from level low to level high-1 will be moved one level up.
      */
     virtual void moveDownVariable(int high, int low) = 0;
+
+    /*
+     * Move the variable at level low up to level high.
+     * The variables from level low+1 to level high will be moved one level down.
+     */
+    virtual void moveUpVariable(int low, int high) = 0;
 
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

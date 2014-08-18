@@ -1675,9 +1675,9 @@ class MEDDLY::domain {
     }
 
     /// @return The variable at level \a lev.
-    inline const variable* getVar(int lev) const { return vars[lev]; }
+    inline const variable* getVar(int lev) const { return vars[getVarByLevel(lev)]; }
     /// @return The variable at level \a lev.
-    inline variable* useVar(int lev) { return vars[lev]; }
+    inline variable* useVar(int lev) { return vars[getVarByLevel(lev)]; }
 
     inline int getVarByLevel(int lev) const { return level_to_var[lev]; }
     inline int getLevelByVar(int var) const { return var_to_level[var]; }

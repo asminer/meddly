@@ -908,9 +908,9 @@ void MEDDLY::expert_forest
         const variable* v = getDomain()->getVar(ABS(k));
         char primed = (k>0) ? ' ' : '\'';
         if (v->getName()) {
-          fprintf(s, "Level: %s%c\n", v->getName(), primed);
+          fprintf(s, "Level: %d%c Var: %s\n", ABS(k), primed, v->getName());
         } else {
-          fprintf(s, "Level: %d%c\n", ABS(k), primed);
+          fprintf(s, "Level: %d%c Var: %d\n", ABS(k), primed, getVarByLevel(k));
         }
         printed = true;
       }
@@ -1884,6 +1884,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
   // All of the work is in nodeMan now :^)
   address[p].offset = nodeMan->makeNode(p, nb, getNodeStorage());
+  address[p].unmark();
 
 #ifdef SAVE_HASHES
   address[p].hash = nb.hash();
@@ -1916,6 +1917,7 @@ MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(node_builder
 
 	address[p].level = nb.getLevel();
 	address[p].offset = nodeMan->makeNode(p, nb, getNodeStorage());
+	address[p].unmark();
 
 	nodeMan->setCountOf(address[p].offset, count);
 

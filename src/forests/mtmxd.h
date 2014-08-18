@@ -34,6 +34,7 @@ class MEDDLY::mtmxd_forest : public mt_forest {
 
     virtual void swapAdjacentVariables(int level);
     virtual void moveDownVariable(int high, int low);
+    virtual void moveUpVariable(int low, int high);
 
     virtual enumerator::iterator* makeFullIter() const 
     {

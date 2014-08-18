@@ -35,6 +35,7 @@ class MEDDLY::evmxd_forest : public ev_forest {
 
     virtual void swapAdjacentVariables(int level);
     virtual void moveDownVariable(int high, int low);
+    virtual void moveUpVariable(int low, int high);
 
   protected:
     template <class OPERATION, typename TYPE>
@@ -225,7 +226,7 @@ namespace MEDDLY {
       }
 
       inline void createEdge(T &ev, node_handle &ed) {
-        return createEdgeUn(K, 0, N, ev, ed);
+        createEdgeUn(K, 0, N, ev, ed);
       }
 
     protected:
