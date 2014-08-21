@@ -510,6 +510,8 @@ class MEDDLY::error {
       WRONG_NUMBER,
       /// A result won't fit in an integer / float.
       OVERFLOW,
+      /// Integer division by 0 is invalid.
+      DIVIDE_BY_ZERO,
       /// Invalid policy setting.
       INVALID_POLICY,
       /// Bad value for something.
@@ -541,6 +543,7 @@ class MEDDLY::error {
           case  TYPE_MISMATCH:        return "Type mismatch";
           case  WRONG_NUMBER:         return "Wrong number";
           case  OVERFLOW:             return "Overflow";
+          case  DIVIDE_BY_ZERO:       return "Divide by zero";
           case  INVALID_POLICY:       return "Invalid policy";
           case  INVALID_ASSIGNMENT:   return "Invalid assignment";
           case  INVALID_FILE:         return "Invalid file";
