@@ -500,6 +500,12 @@ class MEDDLY::expert_domain : public domain {
     void swapAdjacentVariables(int lev);
 
     /*
+     * Reorganize the variables in the certain order.
+     * Order specifies that Variable i is at Level order[i].
+     */
+    void reorderVariables(const int* order);
+
+    /*
      * Move the variable at level high down to level low.
      * The variables from level low to level high-1 will be moved one level up.
      */
@@ -1696,6 +1702,10 @@ class MEDDLY::expert_forest : public forest
         return getDomain()->getVariableBound(getVarByLevel(lh), false);
       }
     }
+    // The maximum size (number of indices) a variable can have.
+    inline int getVariableSize(int var) const {
+    	return getDomain()->getVariableBound(var, false);
+    }
     /// Is this a terminal node?
     inline static bool isTerminalNode(node_handle p) {
       return (p < 1);
@@ -1728,11 +1738,13 @@ class MEDDLY::expert_forest : public forest
     }
 
     inline int getVarByLevel(int level) const {
-    	return getDomain()->getVarByLevel(level<0 ? -level : level);
+//    	return getDomain()->getVarByLevel(level<0 ? -level : level);
+    	return order_level[level<0 ? -level : level];
     }
 
     inline int getLevelByVar(int var) const {
-    	return getDomain()->getLevelByVar(var);
+//    	return getDomain()->getLevelByVar(var);
+    	return order_var[var];
     }
 
     inline bool isPrimedNode(node_handle p) const {
@@ -2427,6 +2439,11 @@ class MEDDLY::expert_forest : public forest
     virtual enumerator::iterator* makeFixedColumnIter() const;
 
     /*
+     * Reorganize the variables in a certain order.
+     */
+    virtual void reorderVariables(const int* order) = 0;
+
+    /*
      * Swap the variables at level and level+1.
      * This method should only be called by expert_domain.
      */
@@ -2708,6 +2725,11 @@ class MEDDLY::expert_forest : public forest
 
     /// Transparent value
     node_handle transparent;
+
+    // Variable order information organized by variable
+    int* order_var;
+    // Variable order information organized by level
+    int* order_level;
 
   private:
     // Keep a node_builder for each level.

@@ -28,6 +28,11 @@ MEDDLY::evmdd_forest
   // anything to construct?
 }
 
+void MEDDLY::evmdd_forest::reorderVariables(const int* order)
+{
+	throw error(error::NOT_IMPLEMENTED);
+}
+
 void MEDDLY::evmdd_forest::swapAdjacentVariables(int level)
 {
 	throw error(error::NOT_IMPLEMENTED);

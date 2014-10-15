@@ -32,6 +32,7 @@ class MEDDLY::mtmdd_forest : public mt_forest {
   public:
     mtmdd_forest(int dsl, domain* d, range_type t, const policies &p);
 
+    virtual void reorderVariables(const int* order);
     virtual void swapAdjacentVariables(int level);
     virtual void moveDownVariable(int high, int low);
     virtual void moveUpVariable(int low, int high);
@@ -53,6 +54,15 @@ class MEDDLY::mtmdd_forest : public mt_forest {
 
     node_handle recursiveReduceDown(node_handle node, int low, int val);
     node_handle recursiveReduceUp(node_handle node, int low, int high, int val);
+
+    // Reorder by swapping the lowest inversion until none exists
+    void reorderVariablesLowestInversion(const int* order);
+    // Reorder by swapping the highest inversion until none exists
+    void reorderVariablesHighestInversion(const int* order);
+    // Reorder by swapping until the lowest variable is at the right level
+    void reorderVariablesBubbleDown(const int* order);
+    // Reorder by swapping until the highest variable is at the right level
+    void reorderVariablesBubbleUp(const int* order);
 
   protected:
     class mtmdd_iterator : public mt_iterator {

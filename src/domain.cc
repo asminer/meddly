@@ -470,6 +470,20 @@ void MEDDLY::expert_domain::swapAdjacentVariables(int lev)
 	}
 }
 
+void MEDDLY::expert_domain::reorderVariables(const int* order)
+{
+	for (int i=0; i<szForests; i++) {
+		if(forests[i]!=0) {
+			static_cast<expert_forest*>(forests[i])->reorderVariables(order);
+		}
+	}
+
+	for (int i=1; i<=nVars; i++) {
+		var_to_level[i] = order[i];
+		level_to_var[order[i]] = i;
+	}
+}
+
 void MEDDLY::expert_domain::moveDownVariable(int high, int low)
 {
 	MEDDLY_DCASSERT(low<high);

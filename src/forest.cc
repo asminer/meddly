@@ -562,6 +562,14 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   //
   int N = getNumVariables();
 
+  // Initialize variable order
+  order_var = static_cast<int*>(calloc(sizeof(int), N+1));
+  order_level = static_cast<int*>(calloc(sizeof(int), N+1));
+  for(int i=1; i<N+1; i++) {
+	  order_var[i] = i;
+	  order_level[i] = i;
+  }
+
   //
   // Initialize builders array
   //
@@ -604,6 +612,9 @@ MEDDLY::expert_forest::~expert_forest()
 #endif
   // Address array
   free(address);
+
+  free(order_var);
+  free(order_level);
 
   delete nodeMan;
 
@@ -1911,9 +1922,11 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
 MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(node_builder &nb, node_handle p)
 {
-	nb.computeHash();
-
 	int count = getInCount(p);
+
+	nodeMan->unlinkDownAndRecycle(address[p].offset);
+
+	nb.computeHash();
 
 	address[p].level = nb.getLevel();
 	address[p].offset = nodeMan->makeNode(p, nb, getNodeStorage());
@@ -1928,12 +1941,12 @@ MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(node_builder
 	unique->add(nb.hash(), p);
 
 #ifdef DEVELOPMENT_CODE
-	node_reader key;
-	initNodeReader(key, p, false);
-	key.computeHash(areEdgeValuesHashed(), getTransparentNode());
-	MEDDLY_DCASSERT(key.hash() == nb.hash());
-	node_handle f = unique->find(key, getVarByLevel(key.getLevel()));
+	node_reader* key = initNodeReader(p, false);
+	key->computeHash(areEdgeValuesHashed(), getTransparentNode());
+	MEDDLY_DCASSERT(key->hash() == nb.hash());
+	node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
 	MEDDLY_DCASSERT(f == p);
+	node_reader::recycle(key);
 #endif
 
 #ifdef DEBUG_CREATE_REDUCED

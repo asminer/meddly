@@ -33,6 +33,7 @@ class MEDDLY::evmdd_forest : public ev_forest {
     evmdd_forest(int dsl, domain* d, range_type t, edge_labeling ev, 
       const policies &p);
 
+    virtual void reorderVariables(const int* order);
     virtual void swapAdjacentVariables(int level);
     virtual void moveDownVariable(int high, int low);
     virtual void moveUpVariable(int low, int high);

@@ -39,6 +39,11 @@ MEDDLY::mtmxd_forest::mtmxd_iterator::mtmxd_iterator(const expert_forest *F)
 {
 }
 
+void MEDDLY::mtmxd_forest::reorderVariables(const int* order)
+{
+	throw error(error::NOT_IMPLEMENTED);
+}
+
 void MEDDLY::mtmxd_forest::swapAdjacentVariables(int level)
 {
 	throw error(error::NOT_IMPLEMENTED);

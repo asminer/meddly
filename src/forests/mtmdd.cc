@@ -34,6 +34,114 @@ MEDDLY::mtmdd_forest
   // anything to construct?
 }
 
+void MEDDLY::mtmdd_forest::reorderVariables(const int* order)
+{
+	removeAllComputeTableEntries();
+
+	if(isLowestInversion()) {
+		reorderVariablesLowestInversion(order);
+	}
+	else if(isHighestInversion()) {
+		reorderVariablesHighestInversion(order);
+	}
+	else if(isBubbleDown()) {
+		reorderVariablesBubbleDown(order);
+	}
+	else if(isBubbleUp()) {
+		reorderVariablesBubbleUp(order);
+	}
+}
+
+void MEDDLY::mtmdd_forest::reorderVariablesLowestInversion(const int* order)
+{
+	int size = getDomain()->getNumVariables();
+
+	// The variables below ordered_level are ordered
+	int ordered_level = 1;
+	int level = 1;
+	int swap = 0;
+	while (ordered_level<size) {
+		level = ordered_level;
+		while(level>0 && (order[getVarByLevel(level)] > order[getVarByLevel(level+1)])) {
+			swapAdjacentVariables(level);
+			level--;
+			swap++;
+		}
+		ordered_level++;
+	}
+
+	printf("Total Swap: %d\n", swap);
+}
+
+void MEDDLY::mtmdd_forest::reorderVariablesHighestInversion(const int* order)
+{
+	int size = getDomain()->getNumVariables();
+
+	// The variables above ordered_level are ordered
+	int ordered_level = size-1;
+	int level = size-1;
+	int swap = 0;
+	while (ordered_level>0) {
+		level = ordered_level;
+		while(level<size && (order[getVarByLevel(level)] > order[getVarByLevel(level+1)])) {
+			swapAdjacentVariables(level);
+			level++;
+			swap++;
+		}
+		ordered_level--;
+	}
+
+	printf("Total Swap: %d\n", swap);
+}
+
+void MEDDLY::mtmdd_forest::reorderVariablesBubbleDown(const int* order)
+{
+	int size = getDomain()->getNumVariables();
+
+	// Construct the mapping from level to variable
+	int* level_to_var = static_cast<int*>(calloc(sizeof(int), size+1));
+	for(int i=1; i<size+1; i++) {
+		level_to_var[order[i]] = i;
+	}
+
+	int swap=0;
+	for(int i=1; i<size; i++) {
+		int level = getLevelByVar(level_to_var[i]);
+		while(level>i) {
+			swapAdjacentVariables(level-1);
+			level--;
+			swap++;
+		}
+	}
+
+	free(level_to_var);
+	printf("Total Swap: %d\n", swap);
+}
+
+void MEDDLY::mtmdd_forest::reorderVariablesBubbleUp(const int* order)
+{
+	int size = getDomain()->getNumVariables();
+
+	// Construct the mapping from level to variable
+	int* level_to_var = static_cast<int*>(calloc(sizeof(int), size+1));
+	for(int i=1; i<size+1; i++) {
+		level_to_var[order[i]] = i;
+	}
+
+	int swap=0;
+	for(int i=size; i>1; i--) {
+		int level = getLevelByVar(level_to_var[i]);
+		while(level<i) {
+			swapAdjacentVariables(level);
+			level++;
+			swap++;
+		}
+	}
+
+	free(level_to_var);
+	printf("Total Swap: %d\n", swap);
+}
+
 void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 {
 	MEDDLY_DCASSERT(level>=1);
@@ -41,19 +149,24 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 
 	removeAllComputeTableEntries();
 
-	// Domain has already update the variable-level mapping
-	int high_var=getVarByLevel(level);
+	int high_var=getVarByLevel(level+1);
+	int low_var=getVarByLevel(level);
+	int high_size=getVariableSize(high_var);
+	int low_size=getVariableSize(low_var);
+
+	// Update the variable order
+	order_var[high_var] = level;
+	order_var[low_var] = level+1;
+	order_level[level+1] = low_var;
+	order_level[level] = high_var;
+
 	int high_node_size=unique->getNumEntries(high_var);
 	node_handle* high_nodes=static_cast<node_handle*>(malloc(high_node_size*sizeof(node_handle)));
 	unique->getItems(high_var, high_nodes, high_node_size);
 
-	int low_var=getVarByLevel(level+1);
 	int low_node_size=unique->getNumEntries(low_var);
 	node_handle* low_nodes=static_cast<node_handle*>(malloc(low_node_size*sizeof(node_handle)));
 	unique->getItems(low_var, low_nodes, low_node_size);
-
-	int high_size=getLevelSize(level);
-	int low_size=getLevelSize(level+1);
 
 	int i=0, j=0;
 	// Renumber the level of nodes for the variable to be moved down
@@ -101,9 +214,9 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 			high_nb.d(j)=createReducedNode(-1, low_nb);
 		}
 
-		for(int k=0; k<high_size; k++) {
-			unlinkNode(high_nr->d(k));
-		}
+//		for(int k=0; k<high_size; k++) {
+//			unlinkNode(high_nr->d(k));
+//		}
 		node_reader::recycle(high_nr);
 
 		unique->remove(hashNode(high_nodes[i]), high_nodes[i]);

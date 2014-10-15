@@ -643,12 +643,26 @@ class MEDDLY::forest {
           PESSIMISTIC_DELETION
       };
 
+      // Supported variable reorder strategies.
+      enum variable_reorder {
+    	  // Swap the lowest inversion until ordered
+    	  LOWEST_INVERSION,
+    	  // Swap the highest inversion until ordered
+    	  HIGHEST_INVERSION,
+    	  // Swap until the lowest variable is at the right level
+    	  BUBBLE_DOWN,
+    	  // Swap until the highest variable is at the right level
+    	  BUBBLE_UP,
+      };
+
       /// Defaults: how may we store nodes for all levels in the forest.
       node_storage_flags storage_flags;
       /// Default reduction rule for all levels in the forest.
       reduction_rule reduction;
       /// Default deletion policy for all levels in the forest.
       node_deletion deletion;
+      // Default variable reorder strategy.
+      variable_reorder reorder;
 
       /// Backend storage mechanism for nodes.
       const node_storage* nodestor;
@@ -674,6 +688,8 @@ class MEDDLY::forest {
         reduction = rel ? IDENTITY_REDUCED : FULLY_REDUCED;
         storage_flags = ALLOW_FULL_STORAGE | ALLOW_SPARSE_STORAGE;
         deletion = OPTIMISTIC_DELETION;
+        reorder = LOWEST_INVERSION;
+
         compact_min = 100;
         compact_max = 1000000;
         compact_frac = 40;
@@ -708,6 +724,11 @@ class MEDDLY::forest {
       inline void setNeverDelete()      { deletion = NEVER_DELETE; }
       inline void setOptimistic()       { deletion = OPTIMISTIC_DELETION; }
       inline void setPessimistic()      { deletion = PESSIMISTIC_DELETION; }
+
+      inline void setLowestInversion() { reorder = LOWEST_INVERSION; }
+      inline void setHighestInversion() { reorder = HIGHEST_INVERSION; }
+      inline void setBubbleDown() { reorder = BUBBLE_DOWN; }
+      inline void setBubbleUp() { reorder = BUBBLE_UP; }
     }; // end of struct policies
 
     /// Collection of various stats for performance measurement
@@ -906,6 +927,22 @@ class MEDDLY::forest {
     /// Returns true if the forest is identity reduced.
     inline bool isIdentityReduced() const {
       return policies::IDENTITY_REDUCED == deflt.reduction;
+    }
+
+    inline bool isLowestInversion() const {
+    	return policies::LOWEST_INVERSION == deflt.reorder;
+    }
+
+    inline bool isHighestInversion() const {
+    	return policies::HIGHEST_INVERSION == deflt.reorder;
+    }
+
+    inline bool isBubbleDown() const {
+    	return policies::BUBBLE_DOWN == deflt.reorder;
+    }
+
+    inline bool isBubbleUp() const {
+    	return policies::BUBBLE_UP == deflt.reorder;
     }
 
     /// Returns the storage mechanism used by this forest.
