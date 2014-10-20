@@ -653,6 +653,8 @@ class MEDDLY::forest {
     	  BUBBLE_DOWN,
     	  // Swap until the highest variable is at the right level
     	  BUBBLE_UP,
+    	  // Swap the inversion with lowest cost until ordered
+    	  LOWEST_COST
       };
 
       /// Defaults: how may we store nodes for all levels in the forest.
@@ -729,6 +731,7 @@ class MEDDLY::forest {
       inline void setHighestInversion() { reorder = HIGHEST_INVERSION; }
       inline void setBubbleDown() { reorder = BUBBLE_DOWN; }
       inline void setBubbleUp() { reorder = BUBBLE_UP; }
+      inline void setLowestCost() { reorder = LOWEST_COST; }
     }; // end of struct policies
 
     /// Collection of various stats for performance measurement
@@ -943,6 +946,10 @@ class MEDDLY::forest {
 
     inline bool isBubbleUp() const {
     	return policies::BUBBLE_UP == deflt.reorder;
+    }
+
+    inline bool isLowestCost() const {
+    	return policies::LOWEST_COST == deflt.reorder;
     }
 
     /// Returns the storage mechanism used by this forest.

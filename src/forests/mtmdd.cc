@@ -26,6 +26,7 @@
 #include "mtmdd.h"
 #include "../unique_table.h"
 #include "../hash_stream.h"
+#include "../heap.h"
 
 MEDDLY::mtmdd_forest
 ::mtmdd_forest(int dsl, domain* d, range_type t, const policies &p)
@@ -49,6 +50,9 @@ void MEDDLY::mtmdd_forest::reorderVariables(const int* order)
 	}
 	else if(isBubbleUp()) {
 		reorderVariablesBubbleUp(order);
+	}
+	else if(isLowestCost()) {
+		reorderVariablesLowestCost(order);
 	}
 }
 
@@ -139,6 +143,38 @@ void MEDDLY::mtmdd_forest::reorderVariablesBubbleUp(const int* order)
 	}
 
 	free(level_to_var);
+	printf("Total Swap: %d\n", swap);
+}
+
+void MEDDLY::mtmdd_forest::reorderVariablesLowestCost(const int* order)
+{
+	int size = getDomain()->getNumVariables();
+	InversionHeap heap(size);
+
+	for(int i=1; i<size; i++) {
+		if(order[getVarByLevel(i)] > order[getVarByLevel(i+1)]) {
+			int cost = unique->getSize(getVarByLevel(i)) + unique->getSize(getVarByLevel(i+1));
+			heap.push(i, cost);
+		}
+	}
+
+	int swap = 0;
+	while(!heap.empty()) {
+		int level = heap.top();
+		swapAdjacentVariables(level);
+		swap++;
+		heap.pop();
+
+		if(level<size-1 && (order[getVarByLevel(level+1)] > order[getVarByLevel(level+2)])) {
+			int cost = unique->getSize(getVarByLevel(level+1)) + unique->getSize(getVarByLevel(level+2));
+			heap.push(level+1, cost);
+		}
+		if(level>1 && (order[getVarByLevel(level-1)] > order[getVarByLevel(level)])) {
+			int cost = unique->getSize(getVarByLevel(level-1)) + unique->getSize(getVarByLevel(level));
+			heap.push(level-1, cost);
+		}
+	}
+
 	printf("Total Swap: %d\n", swap);
 }
 
