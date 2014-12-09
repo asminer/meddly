@@ -15,7 +15,7 @@ typedef struct Inversion
 {
 	// An inversion is formed by the variables at level and level+1
 	int level;
-	int cost;
+	long cost;
 } Inversion;
 
 class InversionHeap
@@ -105,7 +105,7 @@ public:
 	}
 
 	// If the level is in the heap, update the cost
-	void push(int level, int cost)
+	void push(int level, long cost)
 	{
 		if(!is_in_heap(level)){
 			_indices[level]=_heap.size();
@@ -113,7 +113,7 @@ public:
 			percolate_up(level);
 		}
 		else {
-			int old_cost=_heap[_indices[level]].cost;
+			long old_cost=_heap[_indices[level]].cost;
 			_heap[_indices[level]].cost=cost;
 			if(old_cost<cost) {
 				percolate_down(level);
@@ -126,6 +126,7 @@ public:
 
 	void pop()
 	{
+//		printf("%d\n", _heap[0].cost);
 		int top=_heap[0].level;
 		_heap[0]=_heap.back();
 		_indices[_heap[0].level]=0;

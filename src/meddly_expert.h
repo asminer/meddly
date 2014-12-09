@@ -378,6 +378,8 @@ class MEDDLY::expert_domain : public domain {
   protected:
     ~expert_domain();
 
+    void initializeVariableOrder();
+
   public:
     virtual void createVariablesBottomUp(const int* bounds, int N);
 

@@ -369,6 +369,9 @@ void MEDDLY::domain::markForDeletion()
 MEDDLY::expert_domain::expert_domain(variable** x, int n)
 : domain(x, n)
 {
+	if(x!=NULL) {
+		initializeVariableOrder();
+	}
 }
 
 
@@ -376,6 +379,23 @@ MEDDLY::expert_domain::~expert_domain()
 {
 }
 
+void MEDDLY::expert_domain::initializeVariableOrder()
+{
+	var_to_level = (int*) malloc((1+nVars) * sizeof(int));
+	if (var_to_level==NULL) {
+		throw error(error::INSUFFICIENT_MEMORY);
+	}
+
+	level_to_var = (int*) malloc((1+nVars) * sizeof(int));
+	if (level_to_var==NULL) {
+		throw error(error::INSUFFICIENT_MEMORY);
+	}
+
+	for(int i=0; i<1+nVars; i++) {
+		var_to_level[i] = i;
+		level_to_var[i] = i;
+	}
+}
 
 void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
 {
@@ -383,27 +403,18 @@ void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
   if (hasForests() || nVars != 0)
     throw error(error::DOMAIN_NOT_EMPTY);
 
-  vars = (variable**) malloc((1+N) * sizeof(void*));
-  if (0==vars) throw error(error::INSUFFICIENT_MEMORY);
-
-  var_to_level = (int*) malloc((1+N) * sizeof(int));
-  if (0==var_to_level) throw error(error::INSUFFICIENT_MEMORY);
-
-  level_to_var = (int*) malloc((1+N) * sizeof(int));
-  if (0==level_to_var) throw error(error::INSUFFICIENT_MEMORY);
-
-  for(int i=0; i<1+N; i++) {
-	  var_to_level[i] = i;
-	  level_to_var[i] = i;
-  }
-
   nVars = N;
 
-  vars[0] = 0;
+  vars = (variable**) malloc((1+N) * sizeof(void*));
+  if (vars==NULL) throw error(error::INSUFFICIENT_MEMORY);
+
+  vars[0] = NULL;
   for (int i=1; i<=N; i++) {
     vars[i] = MEDDLY::createVariable(bounds[i-1], 0);
     ((expert_variable*)vars[i])->addToList(this);
   }
+
+  initializeVariableOrder();
 }
 
 
@@ -472,8 +483,9 @@ void MEDDLY::expert_domain::swapAdjacentVariables(int lev)
 
 void MEDDLY::expert_domain::reorderVariables(const int* order)
 {
+	// Relation does not support variable reordering
 	for (int i=0; i<szForests; i++) {
-		if(forests[i]!=0) {
+		if(forests[i]!=0 && !forests[i]->isForRelations()) {
 			static_cast<expert_forest*>(forests[i])->reorderVariables(order);
 		}
 	}

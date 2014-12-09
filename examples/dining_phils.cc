@@ -97,7 +97,7 @@
 #include "meddly.h"
 #include "meddly_expert.h"
 #include "timer.h"
-
+#include "reorder.h"
 
 using namespace MEDDLY;
 
@@ -304,7 +304,6 @@ void usage()
   printf("\n");
 }
 
-
 // Test Index Set
 void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
 {
@@ -357,9 +356,13 @@ int main(int argc, char *argv[])
     }
   }
   while (nPhilosophers < 2) {
-    printf("Enter the number of philosophers (at least 2): ");
+    printf("Enter the number of philosophers (at least 2):\n");
     scanf("%d", &nPhilosophers);
   }
+
+  char reorderStrategy[10];
+  printf("Enter the number of reordering strategy (LC, LI, BU, HI, BD):\n");
+  scanf("%s", reorderStrategy);
 
   // Initialize MEDDLY
 
@@ -385,6 +388,30 @@ int main(int argc, char *argv[])
 
   // Set up MDD options
   forest::policies pmdd(false);
+  if(strcmp("LC", reorderStrategy)==0) {
+	  printf("Lowest Cost\n");
+	  pmdd.setLowestCost();
+  }
+  else if(strcmp("LI", reorderStrategy)==0) {
+	  printf("Lowest Inversion\n");
+	  pmdd.setLowestInversion();
+  }
+  else if(strcmp("BU", reorderStrategy)==0) {
+	  printf("Bubble Up\n");
+	  pmdd.setBubbleUp();
+  }
+  else if(strcmp("HI", reorderStrategy)==0) {
+	  printf("Highest Inversion\n");
+	  pmdd.setHighestInversion();
+  }
+  else if(strcmp("BD", reorderStrategy)==0) {
+	  printf("Bubble Down\n");
+	  pmdd.setBubbleDown();
+  }
+  else {
+	  exit(0);
+  }
+
   if (pessimistic)  pmdd.setPessimistic();
   else              pmdd.setOptimistic();
 
@@ -523,6 +550,33 @@ int main(int argc, char *argv[])
     printf("Iterator traversal time (%0.4e elements): %0.4e seconds\n",
         double(counter), start.get_last_interval()/double(1000000.0));
   }
+
+  // Reorder
+  int* newOrder = NULL;
+  int* oldOrder = static_cast<int*>(calloc(nLevels+1, sizeof(int)));
+  for(int i=1; i<nLevels+1; i++) {
+	  oldOrder[i]=i;
+  }
+
+  char orderFile[200];
+  printf("Please enter the order file:\n");
+  scanf("%s", orderFile);
+
+  readOrderFile(orderFile, newOrder, nLevels);
+//  shuffle(newOrder, 1, nLevels);
+
+  start.note_time();
+  static_cast<expert_domain*>(d)->reorderVariables(newOrder);
+  start.note_time();
+  printf("Reorder Time: %f seconds\n", start.get_last_interval()/1000000.0);
+
+  start.note_time();
+  static_cast<expert_domain*>(d)->reorderVariables(oldOrder);
+  start.note_time();
+  printf("Reorder Time: %f seconds\n", start.get_last_interval()/1000000.0);
+
+  delete[] newOrder;
+  delete[] oldOrder;
 
   // Cleanup
   MEDDLY::destroyDomain(d);

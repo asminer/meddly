@@ -39,6 +39,12 @@ void MEDDLY::mtmdd_forest::reorderVariables(const int* order)
 {
 	removeAllComputeTableEntries();
 
+	int size=getDomain()->getNumVariables();
+	for(int i=1; i<=size; i++) {
+		printf("Lv %d: %d\n", i, unique->getNumEntries(getVarByLevel(i)));
+	}
+	printf("#Node: %d\n", getCurrentNumNodes());
+
 	if(isLowestInversion()) {
 		reorderVariablesLowestInversion(order);
 	}
@@ -54,6 +60,11 @@ void MEDDLY::mtmdd_forest::reorderVariables(const int* order)
 	else if(isLowestCost()) {
 		reorderVariablesLowestCost(order);
 	}
+
+//	for(int i=1; i<=size; i++) {
+//		printf("Lv %d: %d\n", i, unique->getNumEntries(getVarByLevel(i)));
+//	}
+	printf("#Node: %d\n", getCurrentNumNodes());
 }
 
 void MEDDLY::mtmdd_forest::reorderVariablesLowestInversion(const int* order)
@@ -153,7 +164,7 @@ void MEDDLY::mtmdd_forest::reorderVariablesLowestCost(const int* order)
 
 	for(int i=1; i<size; i++) {
 		if(order[getVarByLevel(i)] > order[getVarByLevel(i+1)]) {
-			int cost = unique->getSize(getVarByLevel(i)) + unique->getSize(getVarByLevel(i+1));
+			long cost = calculate_swap_cost(i);
 			heap.push(i, cost);
 		}
 	}
@@ -166,16 +177,29 @@ void MEDDLY::mtmdd_forest::reorderVariablesLowestCost(const int* order)
 		heap.pop();
 
 		if(level<size-1 && (order[getVarByLevel(level+1)] > order[getVarByLevel(level+2)])) {
-			int cost = unique->getSize(getVarByLevel(level+1)) + unique->getSize(getVarByLevel(level+2));
+			long cost = calculate_swap_cost(level+1);
 			heap.push(level+1, cost);
 		}
 		if(level>1 && (order[getVarByLevel(level-1)] > order[getVarByLevel(level)])) {
-			int cost = unique->getSize(getVarByLevel(level-1)) + unique->getSize(getVarByLevel(level));
+			long cost = calculate_swap_cost(level-1);
 			heap.push(level-1, cost);
 		}
 	}
 
 	printf("Total Swap: %d\n", swap);
+}
+
+long MEDDLY::mtmdd_forest::calculate_swap_cost(int level)
+{
+//	int low_var=getVarByLevel(level);
+//	int high_var=getVarByLevel(level+1);
+//	return unique->getSize(high_var)*getVariableSize(high_var)*getVariableSize(low_var)
+//			+ unique->getSize(low_var);
+	int low_var=getVarByLevel(level);
+	int high_var=getVarByLevel(level+1);
+	return static_cast<long>(unique->getNumEntries(high_var))*getVariableSize(high_var)*getVariableSize(low_var)
+			+ unique->getNumEntries(low_var);
+//	return unique->getSize(high_var) + unique->getSize(low_var);
 }
 
 void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
@@ -190,12 +214,6 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 	int high_size=getVariableSize(high_var);
 	int low_size=getVariableSize(low_var);
 
-	// Update the variable order
-	order_var[high_var] = level;
-	order_var[low_var] = level+1;
-	order_level[level+1] = low_var;
-	order_level[level] = high_var;
-
 	int high_node_size=unique->getNumEntries(high_var);
 	node_handle* high_nodes=static_cast<node_handle*>(malloc(high_node_size*sizeof(node_handle)));
 	unique->getItems(high_var, high_nodes, high_node_size);
@@ -203,6 +221,10 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 	int low_node_size=unique->getNumEntries(low_var);
 	node_handle* low_nodes=static_cast<node_handle*>(malloc(low_node_size*sizeof(node_handle)));
 	unique->getItems(low_var, low_nodes, low_node_size);
+
+	printf("Before: Level %d : %d, Level %d : %d\n",
+			level+1, high_node_size,
+			level, low_node_size);
 
 	int i=0, j=0;
 	// Renumber the level of nodes for the variable to be moved down
@@ -229,6 +251,12 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 	for(i=0; i<low_node_size; i++) {
 		setNodeLevel(low_nodes[i], level+1);
 	}
+
+	// Update the variable order
+	order_var[high_var] = level;
+	order_var[low_var] = level+1;
+	order_level[level+1] = low_var;
+	order_level[level] = high_var;
 
 	// Process the rest of nodes for the variable to be moved down
 	for(i=0; i<high_node_size; i++) {
@@ -266,6 +294,11 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 
 	free(high_nodes);
 	free(low_nodes);
+
+	printf("After: Level %d : %d, Level %d : %d\n",
+			level+1, unique->getNumEntries(low_var),
+			level, unique->getNumEntries(high_var));
+	printf("#Node: %d\n", getCurrentNumNodes());
 }
 
 typedef struct ProcessedItem

@@ -26,6 +26,8 @@
 #include "meddly.h"
 #include "meddly_expert.h"
 #include "simple_model.h"
+#include "timer.h"
+#include "reorder.h"
 
 // #define DUMP_NSF
 // #define DUMP_REACHABLE
@@ -78,8 +80,6 @@ void printStats(const char* who, const forest* f)
   );
 }
 
-
-
 int main(int argc, const char** argv)
 {
   int N = -1;
@@ -109,6 +109,10 @@ int main(int argc, const char** argv)
 
   if (N<0) return usage(argv[0]);
 
+  char reorderStrategy[10];
+  printf("Enter the reordering strategy (LC, LI, BU, HI, BD):\n");
+  scanf("%s", reorderStrategy);
+
   MEDDLY::initialize();
 
   printf("+-------------------------------------------+\n");
@@ -122,11 +126,37 @@ int main(int argc, const char** argv)
   domain* d = createDomainBottomUp(sizes, 16);
   delete[] sizes;
 
+  // Set up MDD options
+  forest::policies pmdd(false);
+  if(strcmp("LC", reorderStrategy)==0) {
+	  printf("Lowest Cost\n");
+	  pmdd.setLowestCost();
+  }
+  else if(strcmp("LI", reorderStrategy)==0) {
+	  printf("Lowest Inversion\n");
+	  pmdd.setLowestInversion();
+  }
+  else if(strcmp("BU", reorderStrategy)==0) {
+	  printf("Bubble Up\n");
+	  pmdd.setBubbleUp();
+  }
+  else if(strcmp("HI", reorderStrategy)==0) {
+	  printf("Highest Inversion\n");
+	  pmdd.setHighestInversion();
+  }
+  else if(strcmp("BD", reorderStrategy)==0) {
+	  printf("Bubble Down\n");
+	  pmdd.setBubbleDown();
+  }
+  else {
+	  exit(0);
+  }
+
   // Build initial state
   int* initial = new int[17];
   for (int i=16; i; i--) initial[i] = 0;
   initial[1] = initial[5] = initial[9] = initial[13] = N;
-  forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL, pmdd);
   dd_edge init_state(mdd);
   mdd->createEdge(&initial, 1, init_state);
   delete[] initial;
@@ -185,6 +215,34 @@ int main(int argc, const char** argv)
 
   printf("Approx. %g reachable states\n", c);
   
+  // Reorder
+  int* newOrder = NULL;
+  int* oldOrder = static_cast<int*>(calloc(16+1, sizeof(int)));
+  for(int i=1; i<16+1; i++) {
+	  oldOrder[i]=i;
+  }
+
+  char orderFile[200];
+  printf("Please enter the order file:\n");
+  scanf("%s", orderFile);
+
+  readOrderFile(orderFile, newOrder, 16);
+//  shuffle(newOrder, 1, 16);
+
+  timer start;
+  start.note_time();
+  static_cast<expert_domain*>(d)->reorderVariables(newOrder);
+  start.note_time();
+  printf("Reorder Time: %f seconds\n", start.get_last_interval()/1000000.0);
+
+  start.note_time();
+  static_cast<expert_domain*>(d)->reorderVariables(oldOrder);
+  start.note_time();
+  printf("Reorder Time: %f seconds\n", start.get_last_interval()/1000000.0);
+
+  delete[] newOrder;
+  delete[] oldOrder;
+
   // cleanup
   MEDDLY::cleanup();
   return 0;

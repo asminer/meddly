@@ -66,6 +66,8 @@ class MEDDLY::mtmdd_forest : public mt_forest {
     // Reorder by swapping the inversion with lowest cost until none exists
     void reorderVariablesLowestCost(const int* order);
 
+    long calculate_swap_cost(int level);
+
   protected:
     class mtmdd_iterator : public mt_iterator {
       public:
