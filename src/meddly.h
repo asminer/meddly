@@ -654,7 +654,9 @@ class MEDDLY::forest {
     	  // Swap until the highest variable is at the right level
     	  BUBBLE_UP,
     	  // Swap the inversion with lowest cost until ordered
-    	  LOWEST_COST
+    	  LOWEST_COST,
+    	  // Swap the inversion with lowest memory cost until ordered
+    	  LOWEST_MEMORY
       };
 
       /// Defaults: how may we store nodes for all levels in the forest.
@@ -732,6 +734,7 @@ class MEDDLY::forest {
       inline void setBubbleDown() { reorder = BUBBLE_DOWN; }
       inline void setBubbleUp() { reorder = BUBBLE_UP; }
       inline void setLowestCost() { reorder = LOWEST_COST; }
+      inline void setLowestMemory() { reorder = LOWEST_MEMORY; }
     }; // end of struct policies
 
     /// Collection of various stats for performance measurement
@@ -952,6 +955,10 @@ class MEDDLY::forest {
     	return policies::LOWEST_COST == deflt.reorder;
     }
 
+    inline bool isLowestMemory() const {
+    	return policies::LOWEST_MEMORY == deflt.reorder;
+    }
+
     /// Returns the storage mechanism used by this forest.
     inline node_storage_flags getNodeStorage() const {
       return deflt.storage_flags;
@@ -1015,6 +1022,12 @@ class MEDDLY::forest {
     inline long getPeakNumNodes() const {
       return stats.peak_active;
     }
+    
+    /** Set the peak number of nodes to the number current number of nodes.
+    */
+    inline void resetPeakNumNodes() {
+      stats.peak_active = stats.active_nodes;
+    }
 
     /** Get the peak memory used by the forest.
         @return     Peak total memory used by the forest.
@@ -1022,6 +1035,12 @@ class MEDDLY::forest {
     inline long getPeakMemoryUsed() const {
       return stats.peak_memory_used;
     }
+	
+	/** Set the peak memory to the current memory.
+	*/
+	inline long resetPeakMemoryUsed() {
+	  stats.peak_memory_used = stats.memory_used;
+	}
 
     /** Get the peak memory allocated by the forest.
         @return     Peak memory allocated by the forest.

@@ -126,7 +126,6 @@ public:
 
 	void pop()
 	{
-//		printf("%d\n", _heap[0].cost);
 		int top=_heap[0].level;
 		_heap[0]=_heap.back();
 		_indices[_heap[0].level]=0;

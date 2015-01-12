@@ -45,6 +45,9 @@ void MEDDLY::mtmdd_forest::reorderVariables(const int* order)
 	}
 	printf("#Node: %d\n", getCurrentNumNodes());
 
+	resetPeakNumNodes();
+	resetPeakMemoryUsed();
+	
 	if(isLowestInversion()) {
 		reorderVariablesLowestInversion(order);
 	}
@@ -60,11 +63,16 @@ void MEDDLY::mtmdd_forest::reorderVariables(const int* order)
 	else if(isLowestCost()) {
 		reorderVariablesLowestCost(order);
 	}
+	else if(isLowestMemory()) {
+		reorderVariablesLowestMemory(order);
+	}
 
 //	for(int i=1; i<=size; i++) {
 //		printf("Lv %d: %d\n", i, unique->getNumEntries(getVarByLevel(i)));
 //	}
 	printf("#Node: %d\n", getCurrentNumNodes());
+	printf("Peak #Node: %d\n", getPeakNumNodes());
+	printf("Peak Memory: %ld\n", getPeakMemoryUsed());
 }
 
 void MEDDLY::mtmdd_forest::reorderVariablesLowestInversion(const int* order)
@@ -200,6 +208,123 @@ long MEDDLY::mtmdd_forest::calculate_swap_cost(int level)
 	return static_cast<long>(unique->getNumEntries(high_var))*getVariableSize(high_var)*getVariableSize(low_var)
 			+ unique->getNumEntries(low_var);
 //	return unique->getSize(high_var) + unique->getSize(low_var);
+}
+
+//void MEDDLY::mtmdd_forest::reorderVariablesLowestMemory(const int* order)
+//{
+//	int size = getDomain()->getNumVariables();
+//	InversionHeap heap(size);
+//
+//	for(int i=1; i<size; i++) {
+//		if(order[getVarByLevel(i)] > order[getVarByLevel(i+1)]) {
+//			long cost = calculate_swap_memory_cost(i);
+//			heap.push(i, cost);
+//		}
+//	}
+//
+//	int swap = 0;
+//	while(!heap.empty()) {
+//		int level = heap.top();
+//		swapAdjacentVariables(level);
+//		swap++;
+//		heap.pop();
+//
+//		if(level<size-1 && (order[getVarByLevel(level+1)] > order[getVarByLevel(level+2)])) {
+//			long cost = calculate_swap_memory_cost(level+1);
+//			heap.push(level+1, cost);
+//		}
+//		if(level>1 && (order[getVarByLevel(level-1)] > order[getVarByLevel(level)])) {
+//			long cost = calculate_swap_memory_cost(level-1);
+//			heap.push(level-1, cost);
+//		}
+//	}
+//
+//	printf("Total Swap: %d\n", swap);
+//}
+
+void MEDDLY::mtmdd_forest::reorderVariablesLowestMemory(const int* order)
+{
+	int size = getDomain()->getNumVariables();
+	InversionHeap heap(size);
+
+	for(int i=1; i<size; i++) {
+		if(order[getVarByLevel(i)] > order[getVarByLevel(i+1)]) {
+			long cost = calculate_swap_memory_cost(i);
+			heap.push(i, cost);
+		}
+	}
+
+	int swap = 0;
+	bool swapped[] = {false, false};
+	int saved = 0;
+	while(!heap.empty()) {
+		int level = heap.top();
+		if(swapped[0] || swapped[1]) {
+			saved++;
+			swapped[0] = false;
+			swapped[1] = false;
+		}
+		else {
+			swapAdjacentVariables(level);
+		}
+		swap++;
+		heap.pop();
+
+		if(level<size-1 && (order[getVarByLevel(level+1)] > order[getVarByLevel(level+2)])) {
+			int low_var=getVarByLevel(level+1);
+			int high_var=getVarByLevel(level+2);
+			int before=unique->getNumEntries(high_var)+unique->getNumEntries(low_var);
+
+			swapAdjacentVariables(level+1);
+			int after=unique->getNumEntries(high_var)+unique->getNumEntries(low_var);
+
+			long cost = static_cast<long>(after-before);
+			heap.push(level+1, cost);
+
+			swapped[0]=true;
+		}
+		if(level>1 && (order[getVarByLevel(level-1)] > order[getVarByLevel(level)])) {
+			int low_var=getVarByLevel(level-1);
+			int high_var=getVarByLevel(level);
+			int before=unique->getNumEntries(high_var)+unique->getNumEntries(low_var);
+
+			swapAdjacentVariables(level-1);
+			int after=unique->getNumEntries(high_var)+unique->getNumEntries(low_var);
+
+			long cost = static_cast<long>(after-before);
+			heap.push(level-1, cost);
+
+			swapped[1]=true;
+		}
+
+		if(swapped[0] && heap.top()!=level+1) {
+			// Undo
+			swapAdjacentVariables(level+1);
+			swapped[0]=false;
+		}
+
+		if(swapped[1] && heap.top()!=level-1) {
+			// Undo
+			swapAdjacentVariables(level-1);
+			swapped[1]=false;
+		}
+	}
+
+	printf("Total Swap: %d\n", swap);
+	printf("Saved Swap: %d\n", saved);
+}
+
+long MEDDLY::mtmdd_forest::calculate_swap_memory_cost(int level)
+{
+	int low_var=getVarByLevel(level);
+	int high_var=getVarByLevel(level+1);
+	int before=unique->getNumEntries(high_var)+unique->getNumEntries(low_var);
+
+	swapAdjacentVariables(level);
+	int after=unique->getNumEntries(high_var)+unique->getNumEntries(low_var);
+	swapAdjacentVariables(level);
+
+	return static_cast<long>(after-before);
 }
 
 void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
