@@ -1767,11 +1767,11 @@ class MEDDLY::expert_forest : public forest
         made to point to this node.
           @return p, for convenience.
     */
-    inline long linkNode(node_handle p) {
+    inline node_handle linkNode(node_handle p) {
         MEDDLY_DCASSERT(isActiveNode(p));
         if (isTerminalNode(p)) return p;
         MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
-
+      
         long count = incInCount(p);
         if (1 == count) {
           // Reclaim an orphan node
