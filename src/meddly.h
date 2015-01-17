@@ -830,7 +830,10 @@ class MEDDLY::forest {
         */
         virtual void logForestInfo(const forest* f, const char* name) = 0;
 
-        virtual void addToActiveNodeCount(int level, long delta) = 0;
+        /**
+            Change node counts by specified amounts.
+        */
+        virtual void addToActiveNodeCount(const forest* f, int level, long delta) = 0;
 
       /*
           Helpers for derived classes
@@ -884,6 +887,11 @@ class MEDDLY::forest {
   // ------------------------------------------------------------
   // inlines.
   public:
+
+    /// Returns the forest identifier, a unique integer per forest.
+    inline unsigned FID() const {
+      return fid;
+    }
 
     /// Returns a non-modifiable pointer to this forest's domain.
     inline const domain* getDomain() const {
@@ -1641,6 +1649,11 @@ class MEDDLY::forest {
 
     friend void MEDDLY::destroyForest(MEDDLY::forest* &f);
 
+    // our ID
+    unsigned fid;
+
+    // global one
+    static unsigned gfid;
 };
 
 // ******************************************************************

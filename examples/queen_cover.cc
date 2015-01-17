@@ -30,6 +30,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <fstream>
 
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -37,11 +38,13 @@
 
 #include "meddly.h"
 #include "meddly_expert.h"
+#include "loggers.h"
 
 using namespace MEDDLY;
 
 int N;
 FILE* outfile;
+const char* lfile;
 
 dd_edge** qic;
 dd_edge** qidp;
@@ -174,6 +177,7 @@ void queenInDiagM(forest* f, int d, dd_edge &e)
 
 bool processArgs(int argc, const char** argv, forest::policies &p)
 {
+  lfile = 0;
   p.setPessimistic();
   N = -1;
   int i;
@@ -184,6 +188,11 @@ bool processArgs(int argc, const char** argv, forest::policies &p)
     }
     if (strcmp("-pess", argv[i])==0) {
       p.setPessimistic();
+      continue;
+    }
+    if (strcmp("-l", argv[i])==0) {
+      lfile = argv[i+1];
+      i++;
       continue;
     }
     N = atoi(argv[i]);
@@ -208,10 +217,11 @@ int usage(const char* who)
   for (const char* ptr=who; *ptr; ptr++) {
     if ('/' == *ptr) name = ptr+1;
   }
-  printf("Usage: %s <-opt> <-pess> N <outfile>\n\n", name);
+  printf("Usage: %s <-opt> <-pess> <-l lfile> N <outfile>\n\n", name);
   printf("\t        N:  board dimension\n");
   printf("\t     -opt:  Optimistic node deletion\n");
   printf("\t    -pess:  Pessimistic node deletion (default)\n");
+  printf("\t -l lfile:  Write logging information to specified file\n");
   printf("\t<outfile>:  if specified, we write all solutions to this file\n\n");
   return 1;
 }
@@ -227,6 +237,19 @@ int main(int argc, const char** argv)
   printf("\nDetermining queen covers for %dx%d chessboard.\n", N, N);
 
   forest* f = buildQueenForest(p);
+  
+  std::ofstream log;
+  json_logger* LOG = 0;
+  if (lfile) {
+    log.open(lfile, std::ofstream::out);
+    if (!log) {
+      printf("Couldn't open %s for writing, no logging\n", lfile);
+    } else {
+      LOG = new json_logger(log);
+      LOG->recordNodeCounts();
+      f->setLogger(LOG, "forest name");
+    }
+  }
 
   dd_edge num_queens(f);
   f->createEdge(int(0), num_queens);

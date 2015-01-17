@@ -32,6 +32,8 @@ libmeddly_la_SOURCES = \
   unique_table.h \
   unique_table.cc \
   hash_stream.h \
+  loggers.h \
+  loggers.cc \
   timer.h 
 
 libmeddly_la_LIBADD = \

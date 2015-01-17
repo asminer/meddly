@@ -147,10 +147,16 @@ void MEDDLY::forest::logger::currentTime(long &sec, long &usec)
 // *                                                                *
 // ******************************************************************
 
+unsigned MEDDLY::forest::gfid = 0;
+
 MEDDLY::forest
 ::forest(int ds, domain* _d, bool rel, range_type t, edge_labeling ev, 
   const policies &p) : deflt(p)
 {
+  // FID
+  //
+  fid = ++gfid;
+
 #ifdef DEBUG_CLEANUP
   fprintf(stderr, "Creating forest #%d in domain #%d\n", ds, _d->ID());
 #endif
@@ -820,6 +826,24 @@ void MEDDLY::expert_forest::validateIncounts(bool exact)
 #endif
 }
 
+
+void MEDDLY::expert_forest::countNodesByLevel(long* active) const
+{
+  int L = getNumVariables();
+  int l;
+  if (isForRelations()) {
+    l = -L;
+  } else {
+    l = 0;
+  }
+
+  for (; l<=L; l++) active[l] = 0;
+
+  for (long p=0; p<=a_last; p++) {
+    if (address[p].isDeleted()) continue; 
+    active[address[p].level]++;
+  }
+}
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // '                                                                '
@@ -1674,7 +1698,7 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
   //
   stats.decActive(1);
   if (theLogger && theLogger->recordingNodeCounts()) {
-    theLogger->addToActiveNodeCount(getNode(p).level, -1);
+    theLogger->addToActiveNodeCount(this, getNode(p).level, -1);
   }
   recycleNodeHandle(p);
 
@@ -1697,7 +1721,7 @@ void MEDDLY::expert_forest::zombifyNode(node_handle p)
   stats.zombie_nodes++;
   stats.decActive(1);
   if (theLogger && theLogger->recordingNodeCounts()) {
-    theLogger->addToActiveNodeCount(getNode(p).level, -1);
+    theLogger->addToActiveNodeCount(this, getNode(p).level, -1);
   }
 
   // mark node as zombie
@@ -1953,7 +1977,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
   stats.incActive(1);
   if (theLogger && theLogger->recordingNodeCounts()) {
-    theLogger->addToActiveNodeCount(address[p].level, 1);
+    theLogger->addToActiveNodeCount(this, address[p].level, 1);
   }
 
   // All of the work is in nodeMan now :^)

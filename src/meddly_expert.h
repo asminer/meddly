@@ -1881,12 +1881,13 @@ class MEDDLY::expert_forest : public forest
 
 
   // ------------------------------------------------------------
-  // non-virtual, handy methods for debugging.
+  // non-virtual, handy methods for debugging or logging.
   public:
     void dump(FILE *s) const; 
     void dumpInternal(FILE *s) const; 
     void dumpUniqueTable(FILE *s) const;
     void validateIncounts(bool exact);
+    void countNodesByLevel(long* active) const;
 
 
   // ------------------------------------------------------------
