@@ -50,12 +50,12 @@ void MEDDLY::json_logger::logForestInfo(const forest* f, const char* name)
   int L = ef->getNumVariables();
   int smallest = ef->isForRelations() ? -L : 1;
 
-  out << "{ forest_id=" << ef->FID() << ", ";
+  out << "{ \"forest_id\":" << ef->FID() << ", ";
   if (name) {
-    out << "name=\"" << name << "\", ";
+    out << "\"name\":\"" << name << "\", ";
   }
-  out << "left=" << smallest << ", ";
-  out << "right=" << L;
+  out << "\"left\":" << smallest << ", ";
+  out << "\"right\":" << L;
   if (recordingNodeCounts()) {
     long* raw_active;
     long* active;
@@ -68,7 +68,7 @@ void MEDDLY::json_logger::logForestInfo(const forest* f, const char* name)
     }
     ef->countNodesByLevel(active);
 
-    out << ", an=[";
+    out << ", \"an\":[";
     for (int l=smallest; l<=L; l++) {
       out << active[l];
       if (l<L) out << ", ";
@@ -82,6 +82,6 @@ void MEDDLY::json_logger::logForestInfo(const forest* f, const char* name)
 void MEDDLY::json_logger::addToActiveNodeCount(const forest* f, int level, long delta)
 {
   if (0==f) return;
-  out << "{ f=" << f->FID() << ", l=" << level << ", anc=" << delta << " }\n";
+  out << "{ \"f\":" << f->FID() << ", \"l\":" << level << ", \"anc\":" << delta << " }\n";
   out.flush();
 }

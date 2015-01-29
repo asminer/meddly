@@ -386,7 +386,7 @@ class MEDDLY::hm_heap : public holeman {
           if (!child) return n;   // return before we become null
           n = child;
         }
-        // Keep compiler happy; I don't think we ever get here
+        // we should never get here, but do something sane just in case
         return 0;
       }
 

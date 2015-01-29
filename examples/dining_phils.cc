@@ -424,6 +424,8 @@ int main(int argc, char *argv[])
   start.note_time();
   printf("Next-state function construction took %.4e seconds\n",
           start.get_last_interval()/1000000.0);
+  printf("Next-state function MxD has\n\t%d nodes\n\t\%d edges\n",
+      nsf.getNodeCount(), nsf.getEdgeCount());
 
   // Show stats for nsf construction
   printStats("MxD", mxd);
