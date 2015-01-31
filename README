@@ -12,6 +12,7 @@ docs-devel/   Generated docs from source code, for developers (all source files)
 examples/     Stand-alone applications that use the library
 src/          Library source code
 tests/        Test applications used by "make check"
+visual/       Visualization utilities that work with the library.
 
 Building the library:
 ---------------------
