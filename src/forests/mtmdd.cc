@@ -19,6 +19,7 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <cstdlib>
 #include <vector>
 #include <algorithm>
 #include <ext/hash_map>
@@ -65,6 +66,9 @@ void MEDDLY::mtmdd_forest::reorderVariables(const int* order)
 	}
 	else if(isLowestMemory()) {
 		reorderVariablesLowestMemory(order);
+	}
+	else if(isRandom()) {
+		reorderVariablesRandom(order);
 	}
 
 //	for(int i=1; i<=size; i++) {
@@ -327,6 +331,54 @@ long MEDDLY::mtmdd_forest::calculate_swap_memory_cost(int level)
 	return static_cast<long>(after-before);
 }
 
+void MEDDLY::mtmdd_forest::reorderVariablesRandom(const int* order)
+{
+	int size = getDomain()->getNumVariables();
+	std::vector<bool> inversions(size+1, false);
+	std::vector<int> levels;
+
+	for(int i=1; i<size; i++){
+		if(order[getVarByLevel(i)] > order[getVarByLevel(i+1)]) {
+			inversions[i]=true;
+			levels.push_back(i);
+		}
+	}
+
+	srand(time(NULL));
+	int seed = rand();
+	printf("Seed: %d\n", seed);
+	srand(seed);
+
+	int swap = 0;
+	while(!levels.empty()){
+		int index = rand()%levels.size();
+		int level = levels[index];
+		assert(inversions[level]);
+		swapAdjacentVariables(level);
+		swap++;
+
+		inversions[level] = false;
+		if(level>1){
+			if(!inversions[level-1] && (order[getVarByLevel(level-1)] > order[getVarByLevel(level)])){
+				// New inversion at lower level
+				inversions[level-1] = true;
+				levels.push_back(level-1);
+			}
+		}
+		if(level<size-1){
+			if(!inversions[level+1] && (order[getVarByLevel(level+1)] > order[getVarByLevel(level+2)])){
+				// New inversion at upper level
+				inversions[level+1] = true;
+				levels.push_back(level+1);
+			}
+		}
+		levels[index]=levels.back();
+		levels.pop_back();
+	}
+
+	printf("Total Swap: %d\n", swap);
+}
+
 void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 {
 	MEDDLY_DCASSERT(level>=1);
@@ -398,6 +450,7 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 					MEDDLY_DCASSERT(low_nr->getSize()==low_size);
 					low_nb.d(k)=linkNode(low_nr->d(j));
 					node_reader::recycle(low_nr);
+//					this->getDownPtr(high_nr->d(k), j);
 				}
 			}
 			high_nb.d(j)=createReducedNode(-1, low_nb);

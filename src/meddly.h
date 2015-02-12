@@ -656,7 +656,9 @@ class MEDDLY::forest {
     	  // Swap the inversion with lowest cost until ordered
     	  LOWEST_COST,
     	  // Swap the inversion with lowest memory cost until ordered
-    	  LOWEST_MEMORY
+    	  LOWEST_MEMORY,
+    	  // Swap the inversion randomly
+    	  RANDOM
       };
 
       /// Defaults: how may we store nodes for all levels in the forest.
@@ -735,6 +737,7 @@ class MEDDLY::forest {
       inline void setBubbleUp() { reorder = BUBBLE_UP; }
       inline void setLowestCost() { reorder = LOWEST_COST; }
       inline void setLowestMemory() { reorder = LOWEST_MEMORY; }
+      inline void setRandom() { reorder = RANDOM; }
     }; // end of struct policies
 
     /// Collection of various stats for performance measurement
@@ -957,6 +960,10 @@ class MEDDLY::forest {
 
     inline bool isLowestMemory() const {
     	return policies::LOWEST_MEMORY == deflt.reorder;
+    }
+
+    inline bool isRandom() const {
+    	return policies::RANDOM == deflt.reorder;
     }
 
     /// Returns the storage mechanism used by this forest.
