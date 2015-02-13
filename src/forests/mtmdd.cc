@@ -435,30 +435,44 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 	order_level[level+1] = low_var;
 	order_level[level] = high_var;
 
+	node_reader** low_nrs=static_cast<node_reader**>(malloc(high_size*sizeof(node_reader*)));
+	node_handle* skips=static_cast<node_handle*>(malloc(high_size*sizeof(node_handle))); // If the lower level is skipped
+
 	// Process the rest of nodes for the variable to be moved down
 	for(i=0; i<high_node_size; i++) {
 		node_reader* high_nr = initNodeReader(high_nodes[i], true);
 		node_builder& high_nb = useNodeBuilder(level+1, low_size);
+
+		for(int k=0; k<high_size; k++) {
+			if(getNodeLevel(high_nr->d(k))<level){
+				low_nrs[k]=NULL;
+				skips[k]=high_nr->d(k);
+			}
+			else{
+				low_nrs[k]=initNodeReader(high_nr->d(k), true);
+				MEDDLY_DCASSERT(low_nrs[k]->getSize()==low_size);
+			}
+		}
+
 		for(j=0; j<low_size; j++) {
 			node_builder& low_nb = useNodeBuilder(level, high_size);
 			for(int k=0; k<high_size; k++) {
-				if(getNodeLevel(high_nr->d(k))<level){
-					low_nb.d(k)=linkNode(high_nr->d(k));
+				if(low_nrs[k]==NULL){
+					low_nb.d(k)=linkNode(skips[k]);
 				}
 				else{
-					node_reader* low_nr = initNodeReader(high_nr->d(k), true);
-					MEDDLY_DCASSERT(low_nr->getSize()==low_size);
-					low_nb.d(k)=linkNode(low_nr->d(j));
-					node_reader::recycle(low_nr);
-//					this->getDownPtr(high_nr->d(k), j);
+					low_nb.d(k)=linkNode(low_nrs[k]->d(j));
 				}
 			}
 			high_nb.d(j)=createReducedNode(-1, low_nb);
 		}
 
-//		for(int k=0; k<high_size; k++) {
-//			unlinkNode(high_nr->d(k));
-//		}
+		for(int k=0; k<high_size; k++) {
+			if(low_nrs[k]!=NULL){
+				node_reader::recycle(low_nrs[k]);
+			}
+		}
+
 		node_reader::recycle(high_nr);
 
 		unique->remove(hashNode(high_nodes[i]), high_nodes[i]);
@@ -469,6 +483,9 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 		// This is a contradiction
 		modifyReducedNodeInPlace(high_nb, high_nodes[i]);
 	}
+
+	free(low_nrs);
+	free(skips);
 
 	free(high_nodes);
 	free(low_nodes);
