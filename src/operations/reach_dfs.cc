@@ -293,53 +293,6 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd)
   return saturate(mdd, argF->getNumVariables());
 }
 
-#if 0
-MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd)
-{
-#ifdef DEBUG_DFS
-  printf("mdd: %d\n", mdd);
-#endif
-
-  // MEDDLY_DCASSERT(argF->isReducedNode(mdd));
-
-  // terminal condition for recursion
-  if (argF->isTerminalNode(mdd)) return mdd;
-
-  // search compute table
-  node_handle n = 0;
-  compute_table::search_key* Key = findSaturateResult(mdd, n);
-  if (0==Key) return n;
-
-  int k = argF->getNodeLevel(mdd);      // level
-  int sz = argF->getLevelSize(k);       // size
-
-#ifdef DEBUG_DFS
-  printf("mdd: %d, level: %d, size: %d\n", mdd, k, sz);
-#endif
-
-  node_builder& nb = resF->useNodeBuilder(k, sz);
-  node_reader* mddDptrs = argF->initNodeReader(mdd, true);
-  for (int i=0; i<sz; i++) {
-    nb.d(i) = mddDptrs->d(i) ? saturate(mddDptrs->d(i)) : 0;
-  }
-  node_reader::recycle(mddDptrs);
-  parent->saturateHelper(nb);
-  n = resF->createReducedNode(-1, nb);
-
-  // save in compute table
-  saveSaturateResult(Key, mdd, n);
-
-#ifdef DEBUG_DFS
-  resF->showNodeGraph(stdout, n);
-#endif
-
-  return n;
-}
-#else
-// Fixing tests/bug_01.cc and tests/bug_02.cc
-// by adding level information to mdd
-// TODO: need to use (mdd, k) instead of just mdd (for fully reduced mdds).
-// TODO: need to modify compute table to store the additional k?
 MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
 {
 #ifdef DEBUG_DFS
@@ -384,7 +337,6 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
 
   return n;
 }
-#endif
 
 bool MEDDLY::saturation_op::isStaleEntry(const node_handle* data)
 {
