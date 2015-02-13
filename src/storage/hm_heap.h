@@ -386,6 +386,8 @@ class MEDDLY::hm_heap : public holeman {
           if (!child) return n;   // return before we become null
           n = child;
         }
+        // we should never get here, but do something sane just in case
+        return 0;
       }
 
       // add node to the given heap

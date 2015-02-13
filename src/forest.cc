@@ -28,6 +28,14 @@
 #include "hash_stream.h"
 #include "storage/bytepack.h"
 
+// for timestamps.
+// to do - check during configuration that these are present,
+// and act accordingly here
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
 //#include <set>
 //#include <queue>
 //#include <vector>
@@ -80,6 +88,56 @@ MEDDLY::forest::statset::statset()
   max_UT_chain = 0;
 }
 
+// ******************************************************************
+// *                                                                *
+// *                     forest::logger methods                     *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::forest::logger::logger()
+{
+  free = true;
+  /* 
+    All other settings to false;
+    the default logger does nothing!
+  */
+  node_counts = false;
+  time_stamps = false;
+
+  /* Do this now, regardless */
+#ifdef HAVE_SYS_TIME_H
+  static struct timeval curr_time;
+  static struct timezone tz;
+  gettimeofday(&curr_time, &tz);
+  startsec = curr_time.tv_sec;
+  startusec = curr_time.tv_usec;
+#else 
+  startsec = 0;
+  startusec = 0;
+#endif
+}
+
+MEDDLY::forest::logger::~logger()
+{
+}
+
+void MEDDLY::forest::logger::currentTime(long &sec, long &usec)
+{
+#ifdef HAVE_SYS_TIME_H
+  static struct timeval curr_time;
+  static struct timezone tz;
+  gettimeofday(&curr_time, &tz);
+  sec = curr_time.tv_sec - startsec;
+  usec = curr_time.tv_usec - startusec;
+  if (usec<0) {
+    sec--;
+    usec += 1000000;
+  }
+#else
+  sec = 0;
+  usec = 0;
+#endif
+}
 
 // ******************************************************************
 // *                                                                *
@@ -89,10 +147,16 @@ MEDDLY::forest::statset::statset()
 // *                                                                *
 // ******************************************************************
 
+unsigned MEDDLY::forest::gfid = 0;
+
 MEDDLY::forest
 ::forest(int ds, domain* _d, bool rel, range_type t, edge_labeling ev, 
   const policies &p) : deflt(p)
 {
+  // FID
+  //
+  fid = ++gfid;
+
 #ifdef DEBUG_CLEANUP
   fprintf(stderr, "Creating forest #%d in domain #%d\n", ds, _d->ID());
 #endif
@@ -125,6 +189,12 @@ MEDDLY::forest
     edge[i].nextHole = -1;
     edge[i].edge = 0;
   }
+
+  //
+  // Empty logger
+  //
+
+  theLogger = 0;
 }
 
 MEDDLY::forest::~forest()
@@ -767,6 +837,24 @@ void MEDDLY::expert_forest::validateIncounts(bool exact)
 #endif
 }
 
+
+void MEDDLY::expert_forest::countNodesByLevel(long* active) const
+{
+  int L = getNumVariables();
+  int l;
+  if (isForRelations()) {
+    l = -L;
+  } else {
+    l = 0;
+  }
+
+  for (; l<=L; l++) active[l] = 0;
+
+  for (long p=0; p<=a_last; p++) {
+    if (address[p].isDeleted()) continue; 
+    active[address[p].level]++;
+  }
+}
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // '                                                                '
@@ -1620,6 +1708,9 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
   // recycle the index
   //
   stats.decActive(1);
+  if (theLogger && theLogger->recordingNodeCounts()) {
+    theLogger->addToActiveNodeCount(this, getNode(p).level, -1);
+  }
   recycleNodeHandle(p);
 
   // if (nodeMan.compactLevel) nodeMan.compact(false);
@@ -1640,6 +1731,9 @@ void MEDDLY::expert_forest::zombifyNode(node_handle p)
 
   stats.zombie_nodes++;
   stats.decActive(1);
+  if (theLogger && theLogger->recordingNodeCounts()) {
+    theLogger->addToActiveNodeCount(this, getNode(p).level, -1);
+  }
 
   // mark node as zombie
   address[p].cache_count = -address[p].cache_count;
@@ -1735,7 +1829,6 @@ inline void dump_handle_info(const MEDDLY::node_header* A, long size)
 MEDDLY::node_handle MEDDLY::expert_forest::getFreeNodeHandle() 
 {
   MEDDLY_DCASSERT(address);
-  stats.incActive(1);
   stats.incMemUsed(sizeof(node_header));
   node_handle found = 0;
   for (int i=a_lowest_index; i<8; i++) {
@@ -1892,6 +1985,11 @@ MEDDLY::node_handle MEDDLY::expert_forest
   node_handle p = getFreeNodeHandle();
   address[p].level = nb.getLevel();
   MEDDLY_DCASSERT(0 == address[p].cache_count);
+
+  stats.incActive(1);
+  if (theLogger && theLogger->recordingNodeCounts()) {
+    theLogger->addToActiveNodeCount(this, address[p].level, 1);
+  }
 
   // All of the work is in nodeMan now :^)
   address[p].offset = nodeMan->makeNode(p, nb, getNodeStorage());

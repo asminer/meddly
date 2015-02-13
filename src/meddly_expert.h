@@ -1826,11 +1826,11 @@ class MEDDLY::expert_forest : public forest
         made to point to this node.
           @return p, for convenience.
     */
-    inline long linkNode(node_handle p) {
+    inline node_handle linkNode(node_handle p) {
         MEDDLY_DCASSERT(isActiveNode(p));
         if (isTerminalNode(p)) return p;
         MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
-
+      
         long count = incInCount(p);
         if (1 == count) {
           // Reclaim an orphan node
@@ -1940,12 +1940,13 @@ class MEDDLY::expert_forest : public forest
 
 
   // ------------------------------------------------------------
-  // non-virtual, handy methods for debugging.
+  // non-virtual, handy methods for debugging or logging.
   public:
     void dump(FILE *s) const; 
     void dumpInternal(FILE *s) const; 
     void dumpUniqueTable(FILE *s) const;
     void validateIncounts(bool exact);
+    void countNodesByLevel(long* active) const;
 
 
   // ------------------------------------------------------------

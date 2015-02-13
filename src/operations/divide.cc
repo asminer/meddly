@@ -59,6 +59,7 @@ bool divide_mdd<REAL>
     REAL av, bv;
     arg1F->getValueFromHandle(a, av);
     arg2F->getValueFromHandle(b, bv);
+    if (0 == bv) throw error(error::DIVIDE_BY_ZERO);
     c = resF->handleForValue( av / bv );
     return true;
   }
@@ -95,6 +96,7 @@ bool divide_mxd<REAL>
     REAL av, bv;
     arg1F->getValueFromHandle(a, av);
     arg2F->getValueFromHandle(b, bv);
+    if (0 == bv) throw error(error::DIVIDE_BY_ZERO);
     c = resF->handleForValue( av / bv );
     return true;
   }
@@ -117,7 +119,7 @@ class MEDDLY::divide_opname : public binary_opname {
 };
 
 MEDDLY::divide_opname::divide_opname()
- : binary_opname("LessThan")
+ : binary_opname("Divide")
 {
 }
 

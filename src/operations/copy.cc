@@ -185,6 +185,11 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
     return resF->handleForValue(aTerm);
   }
 
+  // 0 is 0 is 0, I think...
+  if (0==a) {
+    return 0; 
+  }
+
 #ifdef DEBUG_COPY_COMPUTE_ALL
   fprintf(stderr, "copy(%d, %d, %d)\n", in, k, a);
 #endif
