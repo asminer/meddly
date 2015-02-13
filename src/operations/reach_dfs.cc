@@ -89,6 +89,7 @@ class MEDDLY::saturation_op : public unary_operation {
     virtual ~saturation_op();
 
     node_handle saturate(node_handle mdd);
+    node_handle saturate(node_handle mdd, int level);
 
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
@@ -96,11 +97,12 @@ class MEDDLY::saturation_op : public unary_operation {
 
   protected:
     inline compute_table::search_key* 
-    findSaturateResult(node_handle a, node_handle& b) {
+    findSaturateResult(node_handle a, int level, node_handle& b) {
       compute_table::search_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       CTsrch->writeNH(a);
+      if (argF->isFullyReduced()) CTsrch->write(level);
       compute_table::search_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       b = resF->linkNode(cacheFind.readNH()); 
@@ -275,7 +277,9 @@ class MEDDLY::common_dfs_mt : public binary_operation {
 
 MEDDLY::saturation_op
 ::saturation_op(common_dfs_mt* p, expert_forest* argF, expert_forest* resF)
-  : unary_operation(saturation_opname::getInstance(), 1, 1, argF, resF)
+  : unary_operation(saturation_opname::getInstance(),
+  ((argF != 0 && argF->isFullyReduced())? 2: 1),
+  1, argF, resF)
 {
   parent = p;
 }
@@ -284,6 +288,12 @@ MEDDLY::saturation_op::~saturation_op()
 {
 }
 
+MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd)
+{
+  return saturate(mdd, argF->getNumVariables());
+}
+
+#if 0
 MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd)
 {
 #ifdef DEBUG_DFS
@@ -325,22 +335,82 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd)
 
   return n;
 }
+#else
+// Fixing tests/bug_01.cc and tests/bug_02.cc
+// by adding level information to mdd
+// TODO: need to use (mdd, k) instead of just mdd (for fully reduced mdds).
+// TODO: need to modify compute table to store the additional k?
+MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
+{
+#ifdef DEBUG_DFS
+  printf("mdd: %d, k: %d\n", mdd, k);
+#endif
+
+  // terminal condition for recursion
+  if (argF->isTerminalNode(mdd)) return mdd;
+
+  // search compute table
+  node_handle n = 0;
+  compute_table::search_key* Key = findSaturateResult(mdd, k, n);
+  if (0==Key) return n;
+
+  int sz = argF->getLevelSize(k);               // size
+  int mdd_level = argF->getNodeLevel(mdd);      // mdd level
+
+#ifdef DEBUG_DFS
+  printf("mdd: %d, level: %d, size: %d, mdd_level: %d\n",
+      mdd, k, sz, mdd_level);
+#endif
+
+  // TODO: Optimize this for the situation when there is no event at level k.
+  node_builder& nb = resF->useNodeBuilder(k, sz);
+  node_reader* mddDptrs =
+    (mdd_level < k)
+    ? argF->initRedundantReader(k, mdd, true)
+    : argF->initNodeReader(mdd, true);
+  for (int i=0; i<sz; i++) {
+    nb.d(i) = mddDptrs->d(i) ? saturate(mddDptrs->d(i), k-1) : 0;
+  }
+  node_reader::recycle(mddDptrs);
+  parent->saturateHelper(nb);
+  n = resF->createReducedNode(-1, nb);
+
+  // save in compute table
+  saveSaturateResult(Key, mdd, n);
+
+#ifdef DEBUG_DFS
+  resF->showNodeGraph(stdout, n);
+#endif
+
+  return n;
+}
+#endif
 
 bool MEDDLY::saturation_op::isStaleEntry(const node_handle* data)
 {
-  return argF->isStale(data[0]) ||
-         resF->isStale(data[1]);
+  return (argF->isFullyReduced()
+  ? (argF->isStale(data[0]) || resF->isStale(data[2]))
+  : (argF->isStale(data[0]) || resF->isStale(data[1])));
 }
 
 void MEDDLY::saturation_op::discardEntry(const node_handle* data)
 {
-  argF->uncacheNode(data[0]);
-  resF->uncacheNode(data[1]);
+  if (argF->isFullyReduced()) {
+    argF->uncacheNode(data[0]);
+    resF->uncacheNode(data[2]);
+  } else {
+    argF->uncacheNode(data[0]);
+    resF->uncacheNode(data[1]);
+  }
 }
 
 void MEDDLY::saturation_op::showEntry(FILE* strm, const node_handle* data) const
 {
-  fprintf(strm, "[%s(%d): %d]", getName(), data[0], data[1]);
+  if (argF->isFullyReduced()) {
+    fprintf(strm, "[%s(%d, %d): %d]", getName(), data[0], data[1], data[2]);
+  } else {
+    fprintf(strm, "[%s(%d): %d]", getName(), data[0], data[1]);
+  }
 }
 
 
