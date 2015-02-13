@@ -7,12 +7,16 @@
 check_PROGRAMS = \
   enctest \
   bug_00 \
+  bug_01 \
+  bug_02 \
   chk_evtimes_float \
   sat_test nqueens check_xA chk_copy chk_cross \
   kanban kan_show kan_batch kan_index kan_io
 
 TESTS = \
   bug_00 \
+  bug_01 \
+  bug_02 \
   chk_evtimes_float \
   sat_test nqueens check_xA chk_copy chk_cross \
   kanban kan_show kan_batch kan_index kan_io
@@ -25,6 +29,12 @@ enctest_LDADD =
 
 bug_00_SOURCES = bug_00.cc simple_model.h simple_model.cc
 bug_00_LDADD = ../src/libmeddly.la
+
+bug_01_SOURCES = bug_01.cc
+bug_01_LDADD = ../src/libmeddly.la
+
+bug_02_SOURCES = bug_02.cc
+bug_02_LDADD = ../src/libmeddly.la
 
 sat_test_SOURCES = sat_test.cc
 sat_test_LDADD = ../src/libmeddly.la
