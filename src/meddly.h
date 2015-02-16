@@ -510,6 +510,8 @@ class MEDDLY::error {
       WRONG_NUMBER,
       /// A result won't fit in an integer / float.
       OVERFLOW,
+      /// Integer division by 0 is invalid.
+      DIVIDE_BY_ZERO,
       /// Invalid policy setting.
       INVALID_POLICY,
       /// Bad value for something.
@@ -543,6 +545,7 @@ class MEDDLY::error {
           case  TYPE_MISMATCH:        return "Type mismatch";
           case  WRONG_NUMBER:         return "Wrong number";
           case  OVERFLOW:             return "Overflow";
+          case  DIVIDE_BY_ZERO:       return "Divide by zero";
           case  INVALID_POLICY:       return "Invalid policy";
           case  INVALID_ASSIGNMENT:   return "Invalid assignment";
           case  INVALID_ARGUMENT:     return "Invalid argument";
@@ -785,6 +788,68 @@ class MEDDLY::forest {
       }
     };
 
+    /**
+        Abstract base class for logging of forest stats.
+        The idea is to allow an external tool to read this information,
+        and display stats in real time.  Potentially much more detailed
+        that the stats collected above.
+    */
+    class logger {
+        bool free;
+        bool node_counts;
+        bool time_stamps;
+
+        long startsec;
+        long startusec;
+      public:
+        logger();
+        virtual ~logger();
+
+      /*
+          Settings.
+          Cannot be changed once we attach to a forest.
+      */
+      public:
+        inline bool recordingNodeCounts() const { return node_counts; }
+        inline void recordNodeCounts()          { if (free) node_counts = true; }
+        inline void ignoreNodeCounts()          { if (free) node_counts = false; }
+
+        inline bool recordingTimeStamps() const { return time_stamps; }
+        inline void recordTimeStamps()          { if (free) time_stamps = true; }
+        inline void ignoreTimeStamps()          { if (free) time_stamps = false; }
+
+      /*
+          Hooks, used in various places.
+          Must be overridden in derived classes.
+      */
+      public:
+        /**
+            Called once, when the logger is attached to a forest.
+            Must call method fixLogger().
+
+              @param  f       Forest info to log
+              @param  name    Forest name; better for displaying if we
+                              have multiple forests.
+        */
+        virtual void logForestInfo(const forest* f, const char* name) = 0;
+
+        /**
+            Change node counts by specified amounts.
+        */
+        virtual void addToActiveNodeCount(const forest* f, int level, long delta) = 0;
+
+      /*
+          Helpers for derived classes
+      */
+      protected:
+        /* Use this for generating timestamps. */
+        void currentTime(long &sec, long &usec);
+
+        /* Call this inside logForestInfo() */
+        inline void fixLogger() { free = false; }
+    };
+
+
   protected:
     /** Constructor -- this class cannot be instantiated.
       @param  dslot   slot used to store the forest, in the domain
@@ -825,6 +890,11 @@ class MEDDLY::forest {
   // ------------------------------------------------------------
   // inlines.
   public:
+
+    /// Returns the forest identifier, a unique integer per forest.
+    inline unsigned FID() const {
+      return fid;
+    }
 
     /// Returns a non-modifiable pointer to this forest's domain.
     inline const domain* getDomain() const {
@@ -1485,6 +1555,21 @@ class MEDDLY::forest {
     */
     virtual void showInfo(FILE* strm, int verbosity=0) = 0;
 
+
+    /** Start logging stats.
+          @param  L     Logger to use; if 0, we don't log anything.
+                        Will overwrite the old logger.
+                        The logger WILL NOT be deleted by the forest
+                        (in case we want to log for multiple forests).
+
+          @param  name  Name to use for the forest (for display only).
+    */
+    inline void setLogger(logger* L, const char* name) {
+      theLogger = L;
+      if (theLogger) theLogger->logForestInfo(this, name);
+    }
+
+
   // ------------------------------------------------------------
   // For derived classes.
   protected:
@@ -1494,6 +1579,7 @@ class MEDDLY::forest {
   protected:
     policies deflt;
     statset stats;
+    logger *theLogger;
 
   // ------------------------------------------------------------
   // Ugly details from here down.
@@ -1566,6 +1652,11 @@ class MEDDLY::forest {
 
     friend void MEDDLY::destroyForest(MEDDLY::forest* &f);
 
+    // our ID
+    unsigned fid;
+
+    // global one
+    static unsigned gfid;
 };
 
 // ******************************************************************

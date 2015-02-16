@@ -537,7 +537,7 @@ const char* MEDDLY::getLibraryInfo(int what)
       return "Released under the GNU Lesser General Public License, version 3";
  
     case 3:
-      return "http://meddly.sourceforge.net/";
+      return PACKAGE_URL;
 
     case 4:
       return "Data Structures and operations available:\n\
