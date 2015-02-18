@@ -448,6 +448,7 @@ void runWithOptions(int nPhilosophers, const switches &sw)
       model.Eat2Idle(temp);
       ensf->addToRelation(temp);
     }
+    // ensf->finalize();
   } else {
     dd_edge phil(mxd);
     for (int i = 0; i < nPhilosophers; i++) {
