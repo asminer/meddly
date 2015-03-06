@@ -16,6 +16,7 @@ test_evmdd \
 build_expression \
 dining_phils \
 rubiks_cube \
+rubiks_cube_orient \
 nqueens \
 queen_cover \
 kanban \
@@ -58,6 +59,9 @@ dining_phils_LDADD = ../src/libmeddly.la
 
 rubiks_cube_SOURCES = rubiks_cube.cc
 rubiks_cube_LDADD = ../src/libmeddly.la
+
+rubiks_cube_orient_SOURCES = rubiks_cube_orient.cc
+rubiks_cube_orient_LDADD = ../src/libmeddly.la
 
 test_evmdd_SOURCES = test_evmdd.cc
 test_evmdd_LDADD = ../src/libmeddly.la

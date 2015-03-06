@@ -1306,7 +1306,17 @@ int main(int argc, char *argv[])
   Init();
 
   // Initialize MEDDLY
-  initialize();
+  MEDDLY::settings s;
+  s.computeTable.style = MonolithicChainedHash;
+  s.computeTable.maxSize = 16 * 16777216;
+  // s.computeTable.staleRemoval =
+  //   MEDDLY::settings::computeTableSettings::Lazy;
+  // s.computeTable.staleRemoval =
+  //   MEDDLY::settings::computeTableSettings::Moderate;
+  // s.computeTable.staleRemoval = 
+  //   MEDDLY::settings::computeTableSettings::Aggressive;
+
+  MEDDLY::initialize(s);
 
   // Set up the state variables, as described earlier
   d = createDomainBottomUp(sizes, num_levels);
@@ -1340,19 +1350,6 @@ int main(int argc, char *argv[])
   } else {
     fprintf(stderr, "Created forest of relations\n");
   }
-
-  // states->setNodeDeletion(forest::OPTIMISTIC_DELETION);
-  // states->setNodeDeletion(forest::PESSIMISTIC_DELETION);
-  // states->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
-  // states->setNodeStorage(forest::FULL_STORAGE);
-  // states->setReductionRule(forest::FULLY_REDUCED);
-  // states->setReductionRule(forest::QUASI_REDUCED);
-
-  // relation->setNodeDeletion(forest::OPTIMISTIC_DELETION);
-  // relation->setNodeDeletion(forest::PESSIMISTIC_DELETION);
-  // relation->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
-  // relation->setNodeStorage(forest::FULL_STORAGE);
-  // relation->setReductionRule(forest::IDENTITY_REDUCED);
 
   // Build set of initial states
 

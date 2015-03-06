@@ -21,6 +21,7 @@
 
 
 
+
 /*
   State space generation for a 3x3 Rubik's Cube
   -- Junaid Babar
@@ -29,732 +30,1190 @@
 	for a total of 54 squares.
   
 	These 54 squares can be grouped together as some of them move together.
+  Each Corner is a group of 3 squares. There are 8 corners.
+  Each Edge is a group of 2 squares. There are 12 edges.
+  The center's of each face has a single-squared component that does not move.
 
-	Type 1: Single square (6 such squares)  ,  6 * 1 =  6
-	Type 2: Two squares (12 such L-corners) , 12 * 2 = 24
-	Type 3: Three squares (8 such corners)  ,  8 * 3 = 24
-	
-	The model thus has 26 components and 26 component locations.
-	Each component location is represented as a MDD level. The size of the MDD
-	level depends on the number of components that can fit into that location.
-	For example, Type 2 component locations are of size 12.
+  In addition to these components our model also tracks the orientation of
+  each component.
+  Each Corner has 3 different orientations.
+  Each Edge has 2 different orientations.
+
+  Our model therefore has (8 + 8 + 12 + 12 + 6 = ) 46 variables.
+
+  We have two choices for the meaning of each variable:
+  1: Each variable tells us the location of a component.
+  2: Each variables tells the component at a location.
+
+  There are three kinds of moves (events): rotate a face clockwise by
+  90, 180 and 270 degrees.
   
-	Level 0        : Terminals
-	Level 01 - 12  : Type 2 component locations (size 12)
-	Level 13 - 20  : Type 3 component locations (size 8)
+  Using Scheme 1 for representing the variables, each move will span all
+  the variables in the MDD. Scheme 2, on the other hand will only span the
+  variables effected by a move (i.e. 17 variables vs 46). We therefore
+  use Scheme 2 for this model.
+  
+  The locations are named as follows:
 
-  The 6 Type 1 component locations (size 6) are not represented since they
-  never move.	Previously at levels 21 - 26.
-
-	Up:     In order (going right starting from front face left-upper corner)
-          of components (Type:id),
-          (3:0, 2:0, 3:1, 2:1, 3:2, 2:2, 3:3, 2:3)
-          Note: (1:0) also belongs to this row but since it stays in the
-          same location when this row is moved left or right, it is ignored.
-	Down:   (3:4, 2:8, 3:5, 2:9, 3:6, 2:10, 3:7, 2:11) (1:5 ignored)
-	Left:   (3:0, 2:4, 3:4, 2:11, 3:7, 2:7, 3:3, 2:3) (1:4 ignored)
-	Right:  (3:1, 2:5, 3:5, 2:9, 3:6, 2:6, 3:2, 2:1) (1:2 ignored)
-	Front:  (3:0, 2:0, 3:1, 2:5, 3:5, 2:8, 3:4, 2:4) (1:1 ignored)
-	Back:   (3:3, 2:2, 3:2, 2:6, 3:6, 2:10, 3:7, 2:7) (1:3 ignored)
+  (starting with the left top corner of the face and going clockwise)
+  Front:  C1, E1, C2, E2, C3, E3, C4, E4.
+  Left:   C5, E12, C1, E4, C4, E11, C8, E8.
+  Right:  C2, E9, C6, E6, C7, E10, C3, E2.
+  Up:     C5, E5, C6, E9, C2, E1, C1, E12.
+  Down:   C4, E3, C3, E10, C7, E7, C8, E11.
+  Back:   C6, E5, C5, E8, C8, E7, C7, E6.
 
 	Initially components are placed in components locations that match their
 	Ids.
 */
 
 
-#define SATURATE 1
-#define NO_CHOICE 1
-#define COUNT_TIME 1
-#define COUNT_STATES 1
-
-#define REORDER_CUBE 0
-#define FACED_ORDERING 0
-
-#define FROM_TO 0
-
 #include <iostream>
-#include <sys/time.h>
-#include <sys/resource.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <vector>
 
-#include <domain.h>
-#include <forest.h>
-#include <dd_edge.h>
-#include <ophandle.h>
+#include "meddly.h"
+#include "meddly_expert.h"
+#include "timer.h"
+
+#define DEBUG
+
+using namespace std;
+using namespace MEDDLY;
 
 typedef enum {F, B, L, R, U, D} face;
-typedef enum {CW, CCW} direction;
-
-level *variables = NULL;
-int *sizes = NULL;
-int *initst = NULL;
-
-// Domain handle
-domain *d;
-
-// Forest storing the next state function
-forest_hndl relation;
-
-// Forest storing the set of states
-forest_hndl states;
-
-// Edge representing the initial set of states
-dd_edge *initial;
-
-// Edge representing the next state function
-dd_edge *nsf;
-
-// Number of variables of each type
-const int type1 = 6;
-const int type2 = 12;
-const int type3 = 8;
-
-// Number of levels
-const int num_levels = type2 + type3;
+typedef enum {CW, CCW, FLIP} direction;
 
 
-int get_component_type (int comp_level)
-{
-  assert(comp_level > 0 && comp_level <= num_levels);
+class moves {
+  public:
 
-#if FACED_ORDERING
-  // type3 = 1, 3, 5, 7, 10, 12, 15, 18
-  // type2 = the rest; except 0
-  static int comp_type[] =
-      {0, 3, 2, 3, 2, 3, 2, 3, 2, 2, 3, 2, 3, 2, 2, 3, 2, 2, 3, 2, 2};
-#else
-  
-#if REORDER_CUBE
-  static int comp_type[] =
-      {0, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
-#else
-  static int comp_type[] =
-      {0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3};
-#endif
+    // ?CW, ?CCW, ?F stand for clock-wise, counter clock-wise and flip resp.
 
-#endif
-  return comp_type[comp_level];
-}
+    bool FCW;
+    bool FCCW;
+    bool FF;
+    bool BCW;
+    bool BCCW;
+    bool BF;
+    bool LCW;
+    bool LCCW;
+    bool LF;
+    bool RCW;
+    bool RCCW;
+    bool RF;
+    bool UCW;
+    bool UCCW;
+    bool UF;
+    bool DCW;
+    bool DCCW;
+    bool DF;
 
-int get_component_size (int comp_type)
-{
-  assert(comp_type > 0 && comp_type < 4);  // 1..3 depending on # of facets
-  assert(comp_type != 1);
-  return (comp_type == 3)? type3 * 3: type2 * 2;
-}
+    moves()
+      : FCW(false), FCCW(false), FF(false), BCW(false), BCCW(false),
+      BF(false), LCW(false), LCCW(false), LF(false), RCW(false),
+      RCCW(false), RF(false), UCW(false), UCCW(false), UF(false),
+      DCW(false), DCCW(false), DF(false) {}
 
-int getLevelSize (int comp_level)
-{
-  return get_component_size(get_component_type(comp_level));
-}
-
-int get_component_level (int comp_type, int index)
-{
-  assert(comp_type > 0 && comp_type < 4);  // 1..3 depending on # of facets
-  assert(comp_type != 1);
-  assert((comp_type == 3 && index >= 0 && index <= 7) ||
-      (comp_type == 2 && index >= 0 && index <= 11));
-
-#if FACED_ORDERING
-  static int comp3_map[] = {1, 3, 5, 7, 10, 12, 15, 18};
-  static int comp2_map[] = {2, 4, 6, 8, 9, 11, 13, 14, 16, 17, 19, 20};
-#else
-
-#if REORDER_CUBE
-  static int comp3_map[] = {1, 2, 3, 4, 5, 6, 7, 8};
-  static int comp2_map[] = {9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
-#else
-  static int comp3_map[] = {13, 14, 15, 16, 17, 18, 19, 20};
-  static int comp2_map[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-#endif
-
-#endif
-
-  return (comp_type == 3)? comp3_map[index]: comp2_map[index];
-}
-
-void Init()
-{
-  assert(num_levels == (type2 + type3));
-
-  // store for level handles
-  variables = (level *) malloc((num_levels + 1) * sizeof(level));
-  assert(variables != NULL);
-  memset(variables, 0, (num_levels + 1) * sizeof(level));
-  
-  // node size for each level
-  sizes = (int *) malloc((num_levels + 1) * sizeof(int));
-  assert(sizes != NULL);
-  
-  assert(num_levels == 20);
-  sizes[0] = 0;
-  for (int i = 1; i < (num_levels + 1); i++) {
-    sizes[i] = getLevelSize(i);
-    fprintf(stderr, "sizes[%d] = %d\n", i, sizes[i]);
-  }
-  fflush(stderr);
-
-  // sets of states
-  initst = (int *) malloc((num_levels + 1) * sizeof(int));
-  assert(initst != NULL);
-  // all start at state 0
-  memset(initst, 0, (num_levels + 1) * sizeof(int));
-}
-
-void CheckVars()
-{
-  // Sanity check
-  for (int i = num_levels; i > 0; i--) 
-    if ((variables[i] > num_levels) || (variables[i] < 1)) {
-      fprintf(stderr, "Level handle for variable %d is %d, ",
-          i, variables[i]);
-      fprintf(stderr, "outside of expected range\n");
-      exit(1);
+    int countEnabledMoves() const {
+      int count = 0;
+      if (FCW) count++;
+      if (BCW) count++;
+      if (UCW) count++;
+      if (DCW) count++;
+      if (LCW) count++;
+      if (RCW) count++;
+      if (FCCW) count++;
+      if (BCCW) count++;
+      if (UCCW) count++;
+      if (DCCW) count++;
+      if (LCCW) count++;
+      if (RCCW) count++;
+      if (FF) count++;
+      if (BF) count++;
+      if (UF) count++;
+      if (DF) count++;
+      if (LF) count++;
+      if (RF) count++;
+      return count;
     }
-}
+};
 
-void SetIntArray(int p[], const int p_size, const int c)
-{
-  for (int i=0; i<p_size; i++) p[i] = c;
-}
 
-int plus1_mod2[] = {1, 0};
-int plus1_mod3[] = {1, 2, 0};
-int plus2_mod3[] = {2, 0, 1};
 
-// type3: along Z axis
-// type2: along Y axis; then along Z axis
-//
-// type3: along Z axis
-// type3:
-//   F : no change
-//   B : no change
-//   L : +1 (3, 4), +2 (0, 7)
-//   R : +1 (1, 6), +2 (2, 5)
-//   U : +1 (0, 5), +2 (1, 4)
-//   D : +1 (2, 7), +2 (3, 6)
-//
-// type2: along Y axis; then along Z axis
-// type2:
-//   F : +1
-//   B : +1
-//   L : no change
-//   R : no change
-//   U : no change
-//   D : no change
-int chor_type2 (face f, int from, int curr_or) {
-  return (f == F || f == B)? plus1_mod2[curr_or]: curr_or;
-}
+class rubiks {
 
-// type3: along Z axis
-// type3:
-//   F : no change
-//   B : no change
-//   L : +1 (3, 4), +2 (0, 7)
-//   R : +1 (1, 6), +2 (2, 5)
-//   U : +1 (0, 5), +2 (1, 4)
-//   D : +1 (2, 7), +2 (3, 6)
-//
-int chor_type3 (face f, int from, int curr_or) {
-  switch (f) {
-    case L:
-      //   L : +1 (3, 4), +2 (0, 7)
-      return (from == 3 || from == 4)?
-        plus1_mod3[curr_or]: plus2_mod3[curr_or];
-    case R:
-      //   R : +1 (1, 6), +2 (2, 5)
-      return (from == 1 || from == 6)?
-        plus1_mod3[curr_or]: plus2_mod3[curr_or];
-    case U:
-      //   U : +1 (0, 5), +2 (1, 4)
-      return (from == 0 || from == 5)?
-        plus1_mod3[curr_or]: plus2_mod3[curr_or];
-    case D:
-      //   D : +1 (2, 7), +2 (3, 6)
-      return (from == 2 || from == 7)?
-        plus1_mod3[curr_or]: plus2_mod3[curr_or];
-    case F:
-    case B:
-      //   F : no change
-      //   B : no change
-    default:
-      return curr_or;
-  }
-}
+  protected:
 
-dd_edge* DoMoveHelper(
-  face f,
-  int type3_a,
-  int type2_a,
-  int type3_b,
-  int type2_b,
-  int type3_c,
-  int type2_c,
-  int type3_d,
-  int type2_d
-  )
-{
-  const int sz = num_levels + 1;
-  int from[sz];  // num_levels is a constant
-  int to[sz];
+    // order[variable]: position of the variable in the MDD.
+    // 0 is for terminal nodes.
+    int* order;
 
-  // face is ordered like this:
-  // type3, type2, type3, type2, type3, type2, type3, type2
+    // Number of enabled levels.
+    int nLevels;
 
-  // transform to levels
-  int a2 = get_component_level(2, type2_a);
-  int b2 = get_component_level(2, type2_b);
-  int c2 = get_component_level(2, type2_c);
-  int d2 = get_component_level(2, type2_d);
-  int a3 = get_component_level(3, type3_a);
-  int b3 = get_component_level(3, type3_b);
-  int c3 = get_component_level(3, type3_c);
-  int d3 = get_component_level(3, type3_d);
+    // Variables:
+    // 1-8:   Corners
+    // 2-16:  Corner Orientations
+    // 17-28: Edges
+    // 29-40: Edge Orientations
+    // 41-46: Centers
 
-  fprintf(stderr, "type2_a, a2 = %d, %d\n", type2_a, a2);
-  fprintf(stderr, "type2_b, b2 = %d, %d\n", type2_b, b2);
-  fprintf(stderr, "type2_c, c2 = %d, %d\n", type2_c, c2);
-  fprintf(stderr, "type2_d, d2 = %d, %d\n", type2_d, d2);
-  fprintf(stderr, "type3_a, a3 = %d, %d\n", type3_a, a3);
-  fprintf(stderr, "type3_b, b3 = %d, %d\n", type3_b, b3);
-  fprintf(stderr, "type3_c, c3 = %d, %d\n", type3_c, c3);
-  fprintf(stderr, "type3_d, d3 = %d, %d\n", type3_d, d3);
-  fflush(stderr);
+    // Get the ith corner variable
+    int c(int i) const { return i; }
 
-  // create node at level 13
-  dd_tempedge *temp13 = CreateTempEdge(relation, NULL);
+    int coOffset;
+    // Get the ith corner orientation variable
+    int co(int i) const { 
+      return i + coOffset;
+    }
 
-  // Set all levels (except term) to don't care
-  SetIntArray(from + 1, sz - 1, -2);
-  SetIntArray(to + 1, sz - 1, -2);
-  from[variables[a3]] = -1; to[variables[a3]] = -1;
-  from[variables[b3]] = -1; to[variables[b3]] = -1;
-  from[variables[c3]] = -1; to[variables[c3]] = -1;
-  from[variables[d3]] = -1; to[variables[d3]] = -1;
-  from[variables[a2]] = -1; to[variables[a2]] = -1;
-  from[variables[b2]] = -1; to[variables[b2]] = -1;
-  from[variables[c2]] = -1; to[variables[c2]] = -1;
-  from[variables[d2]] = -1; to[variables[d2]] = -1;
+    int eOffset;
+    // Get the ith edge variable
+    int e(int i) const { return i + eOffset; }
 
-  for (int i=0; i<type3; i++) {
-    for (int j=0; j<3; j++) {
-      from[variables[d3]] = i + (j * type3);
-      to[variables[a3]] = i + (chor_type3(f, type3_d, j) * type3);
-#if FROM_TO
-      AddMatrixElement(temp13, from, to, sz, true);
-#else
-      AddMatrixElement(temp13, to, from, sz, true);
+    int eoOffset;
+    // Get the ith edge orientation variable
+    int eo(int i) const { return i + eoOffset; }
+
+    int centerOffset;
+    // Get the ith center variable
+    int center(int i) const { return i + centerOffset; }
+
+    // Sizes of variables (i.e. locations)
+    int* variableSize;
+    /*
+       = {
+       0,
+       8, 8, 8, 8, 8, 8, 8, 8, 
+       3, 3, 3, 3, 3, 3, 3, 3, 
+       12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 
+       2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+       2, 2, 2, 2, 2, 2
+       };
+     */
+
+    bool enableCorners;
+    bool enableCornerOrientations;
+    bool enableEdges;
+    bool enableEdgeOrientations;
+    bool enableCenterOrientations;
+
+    // Domain handle
+    domain *d;
+
+    // Forest storing the next state function
+    // forest_hndl relation;
+    forest* relation;
+    forest* mtmxd;
+
+    // Forest storing the set of states
+    // forest_hndl states;
+    forest* states;
+
+  public:
+    // The maximum possible levels. This is the same as nLevels when
+    // all the locations are enabled.
+    static const int nLocations = (8 + 8 + 12 + 12 + 6);
+
+    // Default variable ordering:
+    static const int defaultVariableOrdering[nLocations+1];
+
+    // Ben Smith's SMART file ordering:
+    static const int BenSmithsVariableOrdering[nLocations+1];
+
+    static const int plus1mod2[2];
+    static const int plus1mod3[3];
+    static const int plus2mod3[3];
+
+    ~rubiks() {
+      // Clean up forests and domain.
+      delete[] order;
+      delete[] variableSize;
+
+      MEDDLY::destroyDomain(d);
+      MEDDLY::cleanup();
+    }
+
+    // Returns an ordering based on the full-order with restrictions.
+    void buildOrdering(const int* fullOrder) {
+      assert(fullOrder);
+      assert(order == 0);
+      assert(variableSize == 0);
+
+      coOffset = eOffset = eoOffset = centerOffset = 0;
+      nLevels = 0;
+      if (enableCorners) {
+        nLevels += 8;
+        coOffset = nLevels;
+        if (enableCornerOrientations) nLevels += 8;
+      }
+      eOffset = nLevels;
+      if (enableEdges) {
+        nLevels += 12;
+        eoOffset = nLevels;
+        if (enableEdgeOrientations) nLevels += 12;
+      }
+      centerOffset = nLevels;
+      if (enableCenterOrientations) nLevels += 6;
+
+      assert(nLevels > 0);
+
+      int sz = nLevels + 1;
+      order = new int[sz];
+      variableSize = new int[sz];
+
+      int* orderPtr = order;
+      const int* fullOrderPtr = fullOrder;
+      int* vSizePtr = variableSize;
+
+      *orderPtr++ = *fullOrderPtr++;
+      *vSizePtr++ = 0;
+
+      int subtract = 0;
+
+      if (enableCorners) {
+        for (int i = 0; i < 8; i++) {
+          *orderPtr++ = *fullOrderPtr++;
+          *vSizePtr++ = 8;
+        }
+        if (enableCornerOrientations) {
+          for (int i = 0; i < 8; i++) {
+            *orderPtr++ = *fullOrderPtr++;
+            *vSizePtr++ = 3;
+          }
+        }
+        else {
+          fullOrderPtr += 8;
+          subtract += 8;
+        }
+      } else {
+        fullOrderPtr += 16;
+        subtract += 16;
+      }
+
+      if (enableEdges) {
+        for (int i = 0; i < 12; i++) {
+          *orderPtr++ = (*fullOrderPtr++) - subtract;
+          *vSizePtr++ = 12;
+        }
+        if (enableEdgeOrientations) {
+          for (int i = 0; i < 12; i++) {
+            *orderPtr++ = (*fullOrderPtr++) - subtract;
+            *vSizePtr++ = 2;
+          }
+        }
+        else {
+          fullOrderPtr += 12;
+          subtract += 12;
+        }
+      } else {
+        fullOrderPtr += 24;
+        subtract += 24;
+      }
+
+      if (enableCenterOrientations) {
+        for (int i = 0; i < 6; i++) {
+          *orderPtr++ = (*fullOrderPtr++) - subtract;
+          *vSizePtr++ = 2;
+        }
+      } else {
+        fullOrderPtr += 6;
+        subtract += 6;
+      }
+
+      assert(fullOrderPtr == (fullOrder + (nLocations + 1)));
+      assert(orderPtr == (order + sz));
+      assert(vSizePtr == (variableSize + sz));
+
+#ifdef DEBUG
+      printf("\nfullOrder[]:\n\t");
+      for (int i = 0; i < (nLocations+1); i++) printf("%d ", fullOrder[i]);
+      printf("\norder[]:\n\t");
+      for (int i = 0; i < sz; i++) printf("%d ", order[i]);
+      printf("\n");
 #endif
     }
-  }
 
-  dd_edge *e13 = CreateEdge(temp13);
 
-  // create node at level 14
-  dd_tempedge *temp14 = CreateTempEdge(relation, NULL);
+    // Constructor
+    // variableOrdering: the full variable ordering must include
+    //                    all the locations in the model.
+    // voSize: size of variableOrdering. Must be equal to nLocations + 1.
+    // enable components and their orientations.
+    rubiks(const int* variableOrdering, int voSize,
+        bool enableCorners, bool enableCornerOrientations,
+        bool enableEdges, bool enableEdgeOrientations,
+        bool enableCenterOrientations) {
 
-  // Set all levels (except term) to don't care
-  SetIntArray(from + 1, sz - 1, -2);
-  SetIntArray(to + 1, sz - 1, -2);
-  from[variables[a3]] = -1; to[variables[a3]] = -1;
-  from[variables[b3]] = -1; to[variables[b3]] = -1;
-  from[variables[c3]] = -1; to[variables[c3]] = -1;
-  from[variables[d3]] = -1; to[variables[d3]] = -1;
-  from[variables[a2]] = -1; to[variables[a2]] = -1;
-  from[variables[b2]] = -1; to[variables[b2]] = -1;
-  from[variables[c2]] = -1; to[variables[c2]] = -1;
-  from[variables[d2]] = -1; to[variables[d2]] = -1;
+      assert(variableOrdering);
+      assert(voSize == (nLocations + 1));
 
-  for (int i=0; i<type3; i++) {
-    for (int j=0; j<3; j++) {
-      from[variables[a3]] = i + (j * type3);
-      to[variables[b3]] = i + (chor_type3(f, type3_a, j) * type3);
-#if FROM_TO
-      AddMatrixElement(temp14, from, to, sz, true);
-#else
-      AddMatrixElement(temp14, to, from, sz, true);
-#endif
+      this->enableCorners = enableCorners;
+      this->enableCornerOrientations = enableCornerOrientations;
+      this->enableEdges = enableEdges;
+      this->enableEdgeOrientations = enableEdgeOrientations;
+      this->enableCenterOrientations = enableCenterOrientations;
+
+      order = 0;
+      variableSize = 0;
+      nLevels = 0;
+      d = 0;
+      relation = 0;
+      mtmxd = 0;
+      states = 0;
+
+      // Build the restricted variable order (order[]) and variableSize[].
+      buildOrdering(variableOrdering);
+
+      // Initialize MEDDLY
+      MEDDLY::settings s;
+      s.computeTable.style = MonolithicUnchainedHash;
+      s.computeTable.maxSize = 16 * 16777216;
+      MEDDLY::initialize(s);
+
+      // Set up the state variables, as described earlier
+      d = createDomainBottomUp(&variableSize[1], nLevels);
+      if (0 == d) {
+        fprintf(stderr, "Couldn't create domain\n");
+        assert(false);
+      }
+
+      printf("Variable Order:\n");
+      for (int i = d->getNumVariables(); i > 0; i--) {
+        printf("level %d, location %d, size %d\n", i, order[i],
+            static_cast<expert_domain*>(d)->getVariableBound(i));
+      }
+
+      // Create forests
+      states = d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL);
+      relation = d->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
+      mtmxd = d->createForest(true, forest::INTEGER, forest::MULTI_TERMINAL);
+
+      if (0 == states) {
+        fprintf(stderr, "Couldn't create forest of states\n");
+        assert(false);
+      } else {
+        fprintf(stderr, "Created forest of states\n");
+      }
+      if (0 == relation) {
+        fprintf(stderr, "Couldn't create forest of relations\n");
+        assert(false);
+      } else {
+        fprintf(stderr, "Created forest of relations\n");
+      }
+      if (0 == mtmxd) {
+        fprintf(stderr, "Couldn't create forest of mtmxd\n");
+        assert(false);
+      } else {
+        fprintf(stderr, "Created forest of mtmxd\n");
+      }
     }
-  }
 
-  dd_edge *e14 = CreateEdge(temp14);
+    dd_edge buildInitialState() {
+      assert(states);
 
-  // create node at level 15
-  dd_tempedge *temp15 = CreateTempEdge(relation, NULL);
+      // sets of states
+      int* initst = new int[nLevels + 1];
+      assert(initst);
 
-  // Set all levels (except term) to don't care
-  SetIntArray(from + 1, sz - 1, -2);
-  SetIntArray(to + 1, sz - 1, -2);
-  from[variables[a3]] = -1; to[variables[a3]] = -1;
-  from[variables[b3]] = -1; to[variables[b3]] = -1;
-  from[variables[c3]] = -1; to[variables[c3]] = -1;
-  from[variables[d3]] = -1; to[variables[d3]] = -1;
-  from[variables[a2]] = -1; to[variables[a2]] = -1;
-  from[variables[b2]] = -1; to[variables[b2]] = -1;
-  from[variables[c2]] = -1; to[variables[c2]] = -1;
-  from[variables[d2]] = -1; to[variables[d2]] = -1;
+      // The initial state is the "solved" Rubik's Cube.
+      // Therefore each component i is at location i,
+      // and each component's orientation is 0 (i.e. the solved orientation).
+      if (enableCorners) {
+        for (int i = 0; i < 8; i++) initst[order[c(i+1)]] = i;
+        if (enableCornerOrientations) {
+          for (int i = 0; i < 8; i++) initst[order[co(i+1)]] = 0;
+        }
+      }
+      if (enableEdges) {
+        for (int i = 0; i < 12; i++) initst[order[e(i+1)]] = i;
+        if (enableEdgeOrientations) {
+          for (int i = 0; i < 12; i++) initst[order[eo(i+1)]] = 0;
+        }
+      }
+      if (enableCenterOrientations) {
+        for (int i = 0; i < 6; i++) initst[order[center(i+1)]] = i;
+      }
 
-  for (int i=0; i<type3; i++) {
-    for (int j=0; j<3; j++) {
-      from[variables[b3]] = i + (j * type3);
-      to[variables[c3]] = i + (chor_type3(f, type3_b, j) * type3);
-#if FROM_TO
-      AddMatrixElement(temp15, from, to, sz, true);
-#else
-      AddMatrixElement(temp15, to, from, sz, true);
-#endif
+      dd_edge initialStates(states);
+      states->createEdge((int**)(&initst), 1, initialStates);
+
+      delete[] initst;
+
+      return initialStates;
     }
-  }
 
-  dd_edge *e15 = CreateEdge(temp15);
 
-  // create node at level 16
-  dd_tempedge *temp16 = CreateTempEdge(relation, NULL);
-
-  // Set all levels (except term) to don't care
-  SetIntArray(from + 1, sz - 1, -2);
-  SetIntArray(to + 1, sz - 1, -2);
-  from[variables[a3]] = -1; to[variables[a3]] = -1;
-  from[variables[b3]] = -1; to[variables[b3]] = -1;
-  from[variables[c3]] = -1; to[variables[c3]] = -1;
-  from[variables[d3]] = -1; to[variables[d3]] = -1;
-  from[variables[a2]] = -1; to[variables[a2]] = -1;
-  from[variables[b2]] = -1; to[variables[b2]] = -1;
-  from[variables[c2]] = -1; to[variables[c2]] = -1;
-  from[variables[d2]] = -1; to[variables[d2]] = -1;
-
-  for (int i=0; i<type3; i++) {
-    for (int j=0; j<3; j++) {
-      from[variables[c3]] = i + (j * type3);
-      to[variables[d3]] = i + (chor_type3(f, type3_c, j) * type3);
-#if FROM_TO
-      AddMatrixElement(temp16, from, to, sz, true);
-#else
-      AddMatrixElement(temp16, to, from, sz, true);
-#endif
+    void SetIntArray(int p[], const int p_size, const int c)
+    {
+      for (int i=0; i<p_size; i++) p[i] = c;
     }
-  }
 
-  dd_edge *e16 = CreateEdge(temp16);
-  
-  // create node at level 1
-  dd_tempedge *temp1 = CreateTempEdge(relation, NULL);
-
-  // Set all levels (except term) to don't care
-  SetIntArray(from + 1, sz - 1, -2);
-  SetIntArray(to + 1, sz - 1, -2);
-  from[variables[a3]] = -1; to[variables[a3]] = -1;
-  from[variables[b3]] = -1; to[variables[b3]] = -1;
-  from[variables[c3]] = -1; to[variables[c3]] = -1;
-  from[variables[d3]] = -1; to[variables[d3]] = -1;
-  from[variables[a2]] = -1; to[variables[a2]] = -1;
-  from[variables[b2]] = -1; to[variables[b2]] = -1;
-  from[variables[c2]] = -1; to[variables[c2]] = -1;
-  from[variables[d2]] = -1; to[variables[d2]] = -1;
-
-  for (int i=0; i<type2; i++) {
-    for (int j=0; j<2; j++) {
-      from[variables[d2]] = i + (j * type2);
-      to[variables[a2]] = i + (chor_type2(f, type2_d, j) * type2);
-#if FROM_TO
-      AddMatrixElement(temp1, from, to, sz, true);
-#else
-      AddMatrixElement(temp1, to, from, sz, true);
-#endif
+    void PrintIntArray(int p[], const int p_size)
+    {
+      printf("[");
+      for (int i=0; i<p_size; i++) printf("%d ", p[i]);
+      printf("]\n");
     }
-  }
 
-  dd_edge *e1 = CreateEdge(temp1);
+    dd_edge buildPair(int x1, int x2, int offset = 0) {
+      // Build ((x1 + offset) % varsize(x1)) == x2'
+      const int* mod = 0;
+      if (offset != 0) {
+        switch (variableSize[x1]) {
+          case 2: mod = (offset == 1)? plus1mod2: 0;
+                  break;
+          case 3: mod = (offset == 1)? plus1mod3: (offset == 2)? plus2mod3: 0;
+                  break;
+          default: mod = 0;
+        }
+      }
 
-  // create node at level 2
-  dd_tempedge *temp2 = CreateTempEdge(relation, NULL);
-
-  // Set all levels (except term) to don't care
-  SetIntArray(from + 1, sz - 1, -2);
-  SetIntArray(to + 1, sz - 1, -2);
-  from[variables[a3]] = -1; to[variables[a3]] = -1;
-  from[variables[b3]] = -1; to[variables[b3]] = -1;
-  from[variables[c3]] = -1; to[variables[c3]] = -1;
-  from[variables[d3]] = -1; to[variables[d3]] = -1;
-  from[variables[a2]] = -1; to[variables[a2]] = -1;
-  from[variables[b2]] = -1; to[variables[b2]] = -1;
-  from[variables[c2]] = -1; to[variables[c2]] = -1;
-  from[variables[d2]] = -1; to[variables[d2]] = -1;
-
-  for (int i=0; i<type2; i++) {
-    for (int j=0; j<2; j++) {
-      from[variables[a2]] = i + (j * type2);
-      to[variables[b2]] = i + (chor_type2(f, type2_a, j) * type2);
-#if FROM_TO
-      AddMatrixElement(temp2, from, to, sz, true);
-#else
-      AddMatrixElement(temp2, to, from, sz, true);
+#ifdef DEBUG
+      printf("building pair: %d %d\n", x1, x2);
+      fflush(stdout);
 #endif
+
+      dd_edge r1(mtmxd);
+      dd_edge r2(mtmxd);
+      dd_edge r(relation);
+      if (mod) {
+        mtmxd->createEdgeForVar(order[x1], false, mod, r1);
+      } else {
+        mtmxd->createEdgeForVar(order[x1], false, r1);
+      }
+      mtmxd->createEdgeForVar(order[x2], true, r2);
+      apply(EQUAL, r1, r2, r);
+      return r;
     }
-  }
 
-  dd_edge *e2 = CreateEdge(temp2);
-
-  // create node at level 3
-  dd_tempedge *temp3 = CreateTempEdge(relation, NULL);
-
-  // Set all levels (except term) to don't care
-  SetIntArray(from + 1, sz - 1, -2);
-  SetIntArray(to + 1, sz - 1, -2);
-  from[variables[a3]] = -1; to[variables[a3]] = -1;
-  from[variables[b3]] = -1; to[variables[b3]] = -1;
-  from[variables[c3]] = -1; to[variables[c3]] = -1;
-  from[variables[d3]] = -1; to[variables[d3]] = -1;
-  from[variables[a2]] = -1; to[variables[a2]] = -1;
-  from[variables[b2]] = -1; to[variables[b2]] = -1;
-  from[variables[c2]] = -1; to[variables[c2]] = -1;
-  from[variables[d2]] = -1; to[variables[d2]] = -1;
-
-  for (int i=0; i<type2; i++) {
-    for (int j=0; j<2; j++) {
-      from[variables[b2]] = i + (j * type2);
-      to[variables[c2]] = i + (chor_type2(f, type2_b, j) * type2);
-#if FROM_TO
-      AddMatrixElement(temp3, from, to, sz, true);
-#else
-      AddMatrixElement(temp3, to, from, sz, true);
+    dd_edge buildRelevantVariables(
+        int c1, int c2, int c3, int c4,
+        int e1, int e2, int e3, int e4,
+        int co1, int co2, int co3, int co4,
+        int eo1, int eo2, int eo3, int eo4,
+        int centero) {
+#ifdef DEBUG
+      printf("locations: %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+          c1, c2, c3, c4, e1, e2, e3, e4,
+          co1, co2, co3, co4, eo1, eo2, eo3, eo4, centero);
+      fflush(stdout);
 #endif
+
+      int* from = (int *)malloc((1+nLevels) * sizeof(int));
+      int* to = (int *)malloc((1+nLevels) * sizeof(int));
+      for (int i = 1; i <= nLevels; i++) {
+        from[i] = DONT_CARE;
+        to[i] = DONT_CHANGE;
+      }
+      if (enableCorners) {
+        to[order[c1]] = DONT_CARE;
+        to[order[c2]] = DONT_CARE;
+        to[order[c3]] = DONT_CARE;
+        to[order[c4]] = DONT_CARE;
+        if (enableCornerOrientations) {
+          to[order[co1]] = DONT_CARE;
+          to[order[co2]] = DONT_CARE;
+          to[order[co3]] = DONT_CARE;
+          to[order[co4]] = DONT_CARE;
+        }
+      }
+      if (enableEdges) {
+        to[order[e1]] = DONT_CARE;
+        to[order[e2]] = DONT_CARE;
+        to[order[e3]] = DONT_CARE;
+        to[order[e4]] = DONT_CARE;
+        if (enableEdgeOrientations) {
+          to[order[eo1]] = DONT_CARE;
+          to[order[eo2]] = DONT_CARE;
+          to[order[eo3]] = DONT_CARE;
+          to[order[eo4]] = DONT_CARE;
+        }
+      }
+      if (enableCenterOrientations) {
+        to[order[centero]] = DONT_CARE;
+      }
+      dd_edge r(relation);
+      relation->createEdge((int**)(&from), (int**)(&to), 1, r);
+      free(from);
+      free(to);
+
+      return r;
     }
-  }
 
-  dd_edge *e3 = CreateEdge(temp3);
-  
-  // create node at level 4
-  dd_tempedge *temp4 = CreateTempEdge(relation, NULL);
+    dd_edge buildMove(direction d, const int* f, const int* o) {
+      // Translate ith variable of type j, to the actual variable 
 
-  // Set all levels (except term) to don't care
-  SetIntArray(from + 1, sz - 1, -2);
-  SetIntArray(to + 1, sz - 1, -2);
-  from[variables[a3]] = -1; to[variables[a3]] = -1;
-  from[variables[b3]] = -1; to[variables[b3]] = -1;
-  from[variables[c3]] = -1; to[variables[c3]] = -1;
-  from[variables[d3]] = -1; to[variables[d3]] = -1;
-  from[variables[a2]] = -1; to[variables[a2]] = -1;
-  from[variables[b2]] = -1; to[variables[b2]] = -1;
-  from[variables[c2]] = -1; to[variables[c2]] = -1;
-  from[variables[d2]] = -1; to[variables[d2]] = -1;
+      int c1 = c(f[0]);
+      int c2 = c(f[2]);
+      int c3 = c(f[4]);
+      int c4 = c(f[6]);
+      int co1 = co(f[0]);
+      int co2 = co(f[2]);
+      int co3 = co(f[4]);
+      int co4 = co(f[6]);
+      int co1offset = o[0];
+      int co2offset = o[2];
+      int co3offset = o[4];
+      int co4offset = o[6];
 
-  for (int i=0; i<type2; i++) {
-    for (int j=0; j<2; j++) {
-      from[variables[c2]] = i + (j * type2);
-      to[variables[d2]] = i + (chor_type2(f, type2_c, j) * type2);
-#if FROM_TO
-      AddMatrixElement(temp4, from, to, sz, true);
-#else
-      AddMatrixElement(temp4, to, from, sz, true);
-#endif
+      int e1 = e(f[1]);
+      int e2 = e(f[3]);
+      int e3 = e(f[5]);
+      int e4 = e(f[7]);
+      int eo1 = eo(f[1]);
+      int eo2 = eo(f[3]);
+      int eo3 = eo(f[5]);
+      int eo4 = eo(f[7]);
+      int eo1offset = o[1];
+      int eo2offset = o[3];
+      int eo3offset = o[5];
+      int eo4offset = o[7];
+
+      int centero = center(f[8]);
+      int centeroffset = o[8];
+
+      dd_edge r(relation);
+      r = buildRelevantVariables(c1, c2, c3, c4, e1, e2, e3, e4,
+          co1, co2, co3, co4, eo1, eo2, eo3, eo4, centero);
+      if (d == CW) {
+        // clockwise 90 degrees.
+        if (enableCorners) {
+          r *= buildPair(c1, c2);
+          r *= buildPair(c2, c3);
+          r *= buildPair(c3, c4);
+          r *= buildPair(c4, c1);
+          if (enableCornerOrientations) {
+            r *= buildPair(co1, co2, co1offset);
+            r *= buildPair(co2, co3, co2offset);
+            r *= buildPair(co3, co4, co3offset);
+            r *= buildPair(co4, co1, co4offset);
+          }
+        }
+        if (enableEdges) {
+          r *= buildPair(e1, e2);
+          r *= buildPair(e2, e3);
+          r *= buildPair(e3, e4);
+          r *= buildPair(e4, e1);
+          if (enableEdgeOrientations) {
+            r *= buildPair(eo1, eo2, eo1offset);
+            r *= buildPair(eo2, eo3, eo2offset);
+            r *= buildPair(eo3, eo4, eo3offset);
+            r *= buildPair(eo4, eo1, eo4offset);
+          }
+        }
+        if (enableCenterOrientations) {
+          r *= buildPair(centero, centero, centeroffset);
+        }
+      } else if (d == FLIP) {
+        // 180 degrees.
+        if (enableCorners) {
+          r *= buildPair(c1, c3);
+          r *= buildPair(c2, c4);
+          r *= buildPair(c3, c1);
+          r *= buildPair(c4, c2);
+          if (enableCornerOrientations) {
+            r *= buildPair(co1, co3);
+            r *= buildPair(co2, co4);
+            r *= buildPair(co3, co1);
+            r *= buildPair(co4, co2);
+          }
+        }
+        if (enableEdges) {
+          r *= buildPair(e1, e3);
+          r *= buildPair(e2, e4);
+          r *= buildPair(e3, e1);
+          r *= buildPair(e4, e2);
+          if (enableEdgeOrientations) {
+            r *= buildPair(eo1, eo3);
+            r *= buildPair(eo2, eo4);
+            r *= buildPair(eo3, eo1);
+            r *= buildPair(eo4, eo2);
+          }
+        }
+        if (enableCenterOrientations) {
+          r *= buildPair(centero, centero);
+        }
+      } else {
+        // clockwise 270 degrees.
+        if (enableCorners) {
+          r *= buildPair(c1, c4);
+          r *= buildPair(c2, c1);
+          r *= buildPair(c3, c2);
+          r *= buildPair(c4, c3);
+          if (enableCornerOrientations) {
+            r *= buildPair(co1, co4, co1offset);
+            r *= buildPair(co2, co1, co2offset);
+            r *= buildPair(co3, co2, co3offset);
+            r *= buildPair(co4, co3, co4offset);
+          }
+        }
+        if (enableEdges) {
+          r *= buildPair(e1, e4);
+          r *= buildPair(e2, e1);
+          r *= buildPair(e3, e2);
+          r *= buildPair(e4, e3);
+          if (enableEdgeOrientations) {
+            r *= buildPair(eo1, eo4, eo1offset);
+            r *= buildPair(eo2, eo1, eo2offset);
+            r *= buildPair(eo3, eo2, eo3offset);
+            r *= buildPair(eo4, eo3, eo4offset);
+          }
+        }
+        if (enableCenterOrientations) {
+          r *= buildPair(centero, centero, centeroffset);
+        }
+      }
+      return r;
     }
-  }
 
-  dd_edge *e4 = CreateEdge(temp4);
-  // ShowDDEdge(stderr, e4);
 
-  dd_edge *result = NULL;
+    dd_edge buildMove(face f, direction d)
+    {
+      // order: starting from top left corner, go clockwise. last is center.
+
+      // F-CW: 1, 1, 2, 2, 3, 3, 4, 4
+      static const int front[] = { 1, 1, 2, 2, 3, 3, 4, 4, 1};
+      static const int forient[] = {0, 0, 0, 0, 0, 0, 0, 0, 1};
+
+      // B-CW: 6, 5, 5, 8, 8, 7, 7, 6
+      static const int back[] = { 6, 5, 5, 8, 8, 7, 7, 6, 2};
+      static const int borient[] = {0, 0, 0, 0, 0, 0, 0, 0, 1};
+
+      // L-CW: 5, 12, 1, 4, 4, 11, 8, 8
+      static const int left[] = { 5, 12, 1, 4, 4, 11, 8, 8, 3};
+      static const int lorient[] = {1, 1, 2, 1, 1, 1, 2, 1, 1};
+
+      // R-CW: 2, 9, 6, 6, 7, 10, 3, 2
+      static const int right[] = { 2, 9, 6, 6, 7, 10, 3, 2, 4};
+      static const int rorient[] = {1, 1, 2, 1, 1, 1, 2, 1, 1};
+
+      // U-CW: 5, 5, 6, 9, 2, 1, 1, 12
+      static const int up[] = { 5, 5, 6, 9, 2, 1, 1, 12, 5};
+      static const int uorient[] = {2, 0, 1, 0, 2, 0, 1, 0, 1};
+
+      // D-CW: 4, 3, 3, 10, 7, 7, 8, 11
+      static const int down[] = { 4, 3, 3, 10, 7, 7, 8, 11, 6};
+      static const int dorient[] = {2, 0, 1, 0, 2, 0, 1, 0, 1};
+
+
+      // F-CW: 1, 1, 2, 2, 3, 3, 4, 4
+      if (f == F) return buildMove(d, front, forient);
+
+      // L-CW: 5, 12, 1, 4, 4, 11, 8, 8
+      if (f == L) return buildMove(d, left, lorient);
+
+      // R-CW: 2, 9, 6, 6, 7, 10, 3, 2
+      if (f == R) return buildMove(d, right, rorient);
+
+      // U-CW: 5, 5, 6, 9, 2, 1, 1, 12
+      if (f == U) return buildMove(d, up, uorient);
+
+      // D-CW: 4, 3, 3, 10, 7, 7, 8, 11
+      if (f == D) return buildMove(d, down, dorient);
+
+      // B-CW: 6, 5, 5, 8, 8, 7, 7, 6
+      assert(f == B);
+      return buildMove(d, back, borient);
+    }
+
+    void buildNextStateFunction(const moves& m,
+        satpregen_opname::pregen_relation& ensf)
+    {
+      // Build each move using buildMove().
+
+      // Clock-wise moves
+      if (m.FCW) ensf.addToRelation(buildMove(F, CW));
+      if (m.BCW) ensf.addToRelation(buildMove(B, CW));
+      if (m.UCW) ensf.addToRelation(buildMove(U, CW));
+      if (m.DCW) ensf.addToRelation(buildMove(D, CW));
+      if (m.LCW) ensf.addToRelation(buildMove(L, CW));
+      if (m.RCW) ensf.addToRelation(buildMove(R, CW));
+
+      // Counter clock-wise moves
+      if (m.FCCW) ensf.addToRelation(buildMove(F, CCW));
+      if (m.BCCW) ensf.addToRelation(buildMove(B, CCW));
+      if (m.UCCW) ensf.addToRelation(buildMove(U, CCW));
+      if (m.DCCW) ensf.addToRelation(buildMove(D, CCW));
+      if (m.LCCW) ensf.addToRelation(buildMove(L, CCW));
+      if (m.RCCW) ensf.addToRelation(buildMove(R, CCW));
+
+      // Flip moves
+      if (m.FF) ensf.addToRelation(buildMove(F, FLIP));
+      if (m.BF) ensf.addToRelation(buildMove(B, FLIP));
+      if (m.UF) ensf.addToRelation(buildMove(U, FLIP));
+      if (m.DF) ensf.addToRelation(buildMove(D, FLIP));
+      if (m.LF) ensf.addToRelation(buildMove(L, FLIP));
+      if (m.RF) ensf.addToRelation(buildMove(R, FLIP));
+
+      ensf.finalize();
+    }
+
+    dd_edge buildNextStateFunction(const moves& m)
+    {
+      // Build each move using buildMove().
+      dd_edge r(relation);
+
+      // Clock-wise moves
+      if (m.FCW) r += buildMove(F, CW);
+      if (m.BCW) r += buildMove(B, CW);
+      if (m.UCW) r += buildMove(U, CW);
+      if (m.DCW) r += buildMove(D, CW);
+      if (m.LCW) r += buildMove(L, CW);
+      if (m.RCW) r += buildMove(R, CW);
+
+      // Counter clock-wise moves
+      if (m.FCCW) r += buildMove(F, CCW);
+      if (m.BCCW) r += buildMove(B, CCW);
+      if (m.UCCW) r += buildMove(U, CCW);
+      if (m.DCCW) r += buildMove(D, CCW);
+      if (m.LCCW) r += buildMove(L, CCW);
+      if (m.RCCW) r += buildMove(R, CCW);
+
+      // Flip moves
+      if (m.FF) r += buildMove(F, FLIP);
+      if (m.BF) r += buildMove(B, FLIP);
+      if (m.UF) r += buildMove(U, FLIP);
+      if (m.DF) r += buildMove(D, FLIP);
+      if (m.LF) r += buildMove(L, FLIP);
+      if (m.RF) r += buildMove(R, FLIP);
+
+      return r;
+    }
+
+    int doBfs(const moves& m)
+    {
+      assert(states);
+      assert(relation);
+      assert(order);
+
+      // Build overall Next-State Function.
+      dd_edge nsf = buildNextStateFunction(m);
+
+      // Build initial state.
+      dd_edge initial = buildInitialState();
+
+      // Perform Reachability via "traditional" reachability algorithm.
+      fprintf(stdout, "Started BFS Saturate...");
+      fflush(stdout);
+      timer start;
+      apply(REACHABLE_STATES_BFS, initial, nsf, initial);
+      start.note_time();
+      fprintf(stdout, " done!\n");
+      fflush(stdout);
+      fprintf(stdout, "Time for constructing reachability set: %.4e seconds\n",
+          start.get_last_interval()/1000000.0);
+      fprintf(stdout, "# of reachable states: %1.6e\n",
+          initial.getCardinality());
+      fflush(stdout);
+
+      return 0;
+    }
+
+
+    int doDfs(const moves& m, char saturation_type)
+    {
+      assert(states);
+      assert(relation);
+      assert(order);
+
+      satpregen_opname::pregen_relation *ensf = 0;
+      dd_edge nsf(relation);
+
+      // Build initial state.
+      dd_edge initial = buildInitialState();
+
+      timer start;
+
+      printf("Building transition diagrams...");
+      fflush(stdout);
+
+      // Build next state function.
+      if (saturation_type == 'e') {
+        ensf = new satpregen_opname::pregen_relation(states, relation, states,
+            m.countEnabledMoves());
+        buildNextStateFunction(m, *ensf);
+        printf("done.\n");
+        printf("Building reachability set: Event-wise saturation\n");
+        fflush(stdout);
+      } else if (saturation_type == 'k') {
+        ensf = new satpregen_opname::pregen_relation(states, relation, states);
+        buildNextStateFunction(m, *ensf);
+        printf("done.\n");
+        printf("Building reachability set: Level-wise saturation\n");
+        fflush(stdout);
+      } else {
+        nsf = buildNextStateFunction(m);
+        printf("done.\n");
+        printf("Building reachability set: Monolithic relation saturation\n");
+        fflush(stdout);
+      }
+
+      start.note_time();
+
+      // Perform Reacability via "saturation".
+      if (ensf) {
+        if (0==SATURATION_FORWARD) throw error(error::UNKNOWN_OPERATION);
+        specialized_operation *sat = SATURATION_FORWARD->buildOperation(ensf);
+        if (0==sat) throw error(error::INVALID_OPERATION);
+        sat->compute(initial, initial);
+      } else {
+        apply(REACHABLE_STATES_DFS, initial, nsf, initial);
+      }
+
+      start.note_time();
+      fprintf(stdout, " done!\n");
+      fflush(stdout);
+      fprintf(stdout, "Time for constructing reachability set: %.4e seconds\n",
+          start.get_last_interval()/1000000.0);
+      fprintf(stdout, "# of reachable states: %1.6e\n",
+          initial.getCardinality());
+      fflush(stdout);
+
+      if (ensf && !ensf->autoDestroy()) delete ensf;
+
+      return 0;
+    }
+
 
 #if 0
-  assert(SUCCESS == ApplyBinary(OP_INTERSECTION, e1, e4, result));
-  assert(SUCCESS == ApplyBinary(OP_INTERSECTION, result, e3, result));
-  assert(SUCCESS == ApplyBinary(OP_INTERSECTION, result, e2, result));
-  assert(SUCCESS == ApplyBinary(OP_INTERSECTION, result, e13, result));
-  assert(SUCCESS == ApplyBinary(OP_INTERSECTION, result, e16, result));
-  assert(SUCCESS == ApplyBinary(OP_INTERSECTION, result, e15, result));
-  assert(SUCCESS == ApplyBinary(OP_INTERSECTION, result, e14, result));
-#else    
-  assert(SUCCESS == ApplyBinary(OP_INTERSECTION, e1, e2, result));
-#if 0
-  fprintf(stderr, "e1: from [%d] to [%d]\n", variables[d2], variables[a2]);
-  ShowDDEdge(stderr, e1);
-  fprintf(stderr, "e2: from [%d] to [%d]\n", variables[a2], variables[b2]);
-  ShowDDEdge(stderr, e2);
-  fprintf(stderr, "e1 union e2:\n");
-  ShowDDEdge(stderr, result);
-  fprintf(stderr, "\n");
-  exit(0);
+    int doChoice(const moves& m)
+    {
+      assert(states);
+      assert(relation);
+      assert(order);
+
+      // Build Next-State Function for each "move".
+      // Moves 0-5 are CW, 6-11 are CCW, 12-17 are FLIP.
+      // Order within each set: F, B, L, R, U, D.
+
+      const int nFaces = 6;
+      vector<dd_edge> nsf;
+
+      // Clock-wise moves
+      nsf.push_back(buildMove(F, CW));
+      nsf.push_back(buildMove(B, CW));
+      nsf.push_back(buildMove(L, CW));
+      nsf.push_back(buildMove(R, CW));
+      nsf.push_back(buildMove(U, CW));
+      nsf.push_back(buildMove(D, CW));
+      // Counter Clock-wise moves
+      nsf.push_back(buildMove(F, CCW));
+      nsf.push_back(buildMove(B, CCW));
+      nsf.push_back(buildMove(L, CCW));
+      nsf.push_back(buildMove(R, CCW));
+      nsf.push_back(buildMove(U, CCW));
+      nsf.push_back(buildMove(D, CCW));
+      // Flip moves
+      nsf.push_back(buildMove(F, FLIP));
+      nsf.push_back(buildMove(B, FLIP));
+      nsf.push_back(buildMove(L, FLIP));
+      nsf.push_back(buildMove(R, FLIP));
+      nsf.push_back(buildMove(U, FLIP));
+      nsf.push_back(buildMove(D, FLIP));
+
+      // Perform reachability via user-interaction.
+      // Display menu.
+      // Perform user command.
+      // Repeat.
+
+      // Display menu and get choice
+      assert(states);
+
+      dd_edge initial(states);
+      states->createEdge(initst, 1, initial);
+
+      dd_edge result = initial;
+      dd_edge temp(states);
+      bool continueLoop = true;
+      int choice = 21;
+
+      while (continueLoop)
+      {
+        fprintf(stdout, "------- Choices -------\n");
+        fprintf(stdout, "CW(0:F, B, L, R, U, 5:D), CCW(6-11), FLIP(12-17).\n");
+        fprintf(stdout, "18: Perform Garbage Collection.\n");
+        fprintf(stdout, "19: Reset result to initial state.\n");
+        fprintf(stdout, "20: Report.\n");
+        fprintf(stdout, "21: Quit.\n");
+        fprintf(stdout, "Enter choice (0-21): ");
+        cin >> choice;
+
+        switch (choice) {
+          case 0:
+          case 1:
+          case 2:
+          case 3:
+          case 4:
+          case 5:
+          case 6:
+          case 7:
+          case 8:
+          case 9:
+          case 10:
+          case 11:
+          case 12:
+          case 13:
+          case 14:
+          case 15:
+          case 16:
+          case 17:
+            {
+              face f = face(choice % nFaces);
+              direction d = direction(choice / nFaces);
+              printf("Choice: %d, Face: %d, Direction: %d\n", choice, f, d);
+            }
+            apply(POST_IMAGE, result, nsf[choice], temp);
+            result += temp;
+            break;
+          case 18:
+            // Perform garbage collection.
+            states->garbageCollect();
+            break;
+          case 19:
+            // Clear result.
+            result = initial;
+            break;
+          case 20:
+            // Print Report.
+            // For now, print the cardinality of result.
+            printf("Cardinality of result: %1.6e\n", result.getCardinality());
+            break;
+          case 21:
+            // Quit.
+            printf("Quit!\n");
+            continueLoop = false;
+            break;
+          default:
+            printf("Invalid choice: %d\n", choice);
+            break;
+        }
+      }
+
+      return 0;
+    }
+
+
+    int doSteppedBfs(const moves& m)
+    {
+      assert(states);
+      assert(relation);
+      assert(order);
+
+      // Performs DFS for each event starting with initial state.
+      // At the end of each iteration, peform a union and repeat.
+
+      // Build Next-State Function for each "move".
+      // Moves 0-5 are CW, 6-11 are CCW, 12-17 are FLIP.
+      // Order within each set: F, B, L, R, U, D.
+
+      const int nFaces = 6;
+      vector<dd_edge> nsf;
+
+      // Clock-wise moves
+      nsf.push_back(buildMove(F, CW));
+      nsf.push_back(buildMove(B, CW));
+      nsf.push_back(buildMove(L, CW));
+      nsf.push_back(buildMove(R, CW));
+      nsf.push_back(buildMove(U, CW));
+      nsf.push_back(buildMove(D, CW));
+
+      // Perform reachability via user-interaction.
+      // Display menu.
+      // Perform user command.
+      // Repeat.
+
+      // Display menu and get choice
+      assert(states);
+
+      dd_edge initial(states);
+      states->createEdge(initst, 1, initial);
+
+      dd_edge result = initial;
+      dd_edge temp(states);
+      vector<dd_edge> eventResults;
+      for (int i = 0; i < nFaces; i++)
+      {
+        eventResults.push_back(initial);
+      }
+
+      bool continueLoop = true;
+      int choice = 4;
+
+      while (continueLoop)
+      {
+        fprintf(stdout, "------- Choices -------\n");
+        fprintf(stdout, "0: Perform event-wise DFS.\n");
+        fprintf(stdout, "1: Perform Union\n");
+        fprintf(stdout, "2: Report cardinalities.\n");
+        fprintf(stdout, "3: Garbage Collection.\n");
+        fprintf(stdout, "4: Reset.\n");
+        fprintf(stdout, "5: Quit.\n");
+        fprintf(stdout, "Enter choice (0-5): ");
+        cin >> choice;
+
+        switch (choice) {
+          case 0:
+            // for each face perform dfs and store in eventResults.
+            for (int i = 0; i < nFaces; i++)
+            {
+              printf("Processing event[%d]...", i);
+              fflush(stdout);
+              apply(
+                  REACHABLE_STATES_DFS, eventResults[i], nsf[i], eventResults[i]
+                  );
+              printf("done.\n");
+              fflush(stdout);
+            }
+            break;
+          case 1:
+            // Result = union of all eventResults.
+            for (int i = 0; i < nFaces; i++)
+            {
+              result += eventResults[i];
+            }
+            for (int i = 0; i < nFaces; i++)
+            {
+              eventResults[i] = result - eventResults[i];
+            }
+            break;
+          case 2:
+            // Print Report.
+            // For now, print the cardinality of result.
+            printf("Cardinality of result: %1.6e\n", result.getCardinality());
+            for (int i = 0; i < nFaces; i++)
+            {
+              printf("Cardinality of event[%d]: %1.6e\n",
+                  i, eventResults[i].getCardinality());
+            }
+            break;
+          case 3:
+            // Perform garbage collection.
+            states->garbageCollect();
+            break;
+          case 4:
+            // Clear result.
+            result = initial;
+            for (int i = 0; i < nFaces; i++)
+            {
+              eventResults[i] = result;
+            }
+            break;
+          case 5:
+            // Quit.
+            printf("Quit!\n");
+            continueLoop = false;
+            break;
+          default:
+            printf("Invalid choice: %d\n", choice);
+            break;
+        }
+      }
+
+      return 0;
+    }
 #endif
-  assert(SUCCESS == ApplyBinary(OP_INTERSECTION, result, e3, result));
-  assert(SUCCESS == ApplyBinary(OP_INTERSECTION, result, e4, result));
-  assert(SUCCESS == ApplyBinary(OP_INTERSECTION, result, e13, result));
-  assert(SUCCESS == ApplyBinary(OP_INTERSECTION, result, e14, result));
-  assert(SUCCESS == ApplyBinary(OP_INTERSECTION, result, e15, result));
-  assert(SUCCESS == ApplyBinary(OP_INTERSECTION, result, e16, result));
-#if 0
-  ReleaseEdge(e1);
-  ReleaseEdge(e2);
-  ReleaseEdge(e3);
-  ReleaseEdge(e4);
-  ReleaseEdge(e13);
-  ReleaseEdge(e14);
-  ReleaseEdge(e15);
-  ReleaseEdge(e16);
-#endif
-#endif
-  return result;
-}
 
-# if 0
-dd_edge* DoMoveHelper(int a3, int b3, int c3, int d3,
-    int a1, int b1, int c1, int d1);
-dd_edge* DoMove(face f, direction d);
 
-dd_edge* Front(direction dir);
-dd_edge* Back(direction dir);
-dd_edge* Left(direction dir);
-dd_edge* Right(direction dir);
-dd_edge* Up(direction dir);
-dd_edge* Down(direction dir);
-#endif
+};
 
-dd_edge* DoMove(face f, direction d) {
-  dd_edge* result = NULL;
-  switch (f) {
-    case U:
-      if (d == CW) {
-        // result = DoMoveHelper(16, 15, 14, 13, 4, 3, 2, 1);
-        result = DoMoveHelper(f, 4, 5, 5, 6, 1, 0, 0, 4);
-      } else {
-        assert(d == CCW);
-        // result = DoMoveHelper(13, 14, 15, 16, 1, 2, 3, 4);
-        result = DoMoveHelper(f, 0, 4, 1, 0, 5, 6, 4, 5);
-      }
-      break;
-    case D:
-      if (d == CW) {
-        // result =  DoMoveHelper(20, 19, 18, 17, 12, 11, 10, 9);
-        result =  DoMoveHelper(f, 3, 2, 2, 8, 6, 9, 7, 10);
-      } else {
-        assert(d == CCW);
-        // result =  DoMoveHelper(17, 18, 19, 20, 9, 10, 11, 12);
-        result =  DoMoveHelper(f, 7, 10, 6, 9, 2, 8, 3, 2);
-      }
-      break;
-    case L:
-      if (d == CW) {
-        // result =  DoMoveHelper(13, 17, 20, 16, 5, 12, 8, 4);
-        result =  DoMoveHelper(f, 0, 3, 3, 10, 7, 11, 4, 4);
-      } else {
-        assert(d == CCW);
-        // result =  DoMoveHelper(16, 20, 17, 13, 4, 8, 12, 5);
-        result =  DoMoveHelper(f, 4, 4, 7, 11, 3, 10, 0, 3);
-      }
-      break;
-    case R:
-      if (d == CW) {
-        // result =  DoMoveHelper(14, 15, 19, 18, 2, 7, 10, 6);
-        result =  DoMoveHelper(f, 1, 1, 5, 6, 6, 7, 2, 8);
-      } else {
-        assert(d == CCW);
-        // result =  DoMoveHelper(18, 19, 15, 14, 6, 10, 7, 2);
-        result =  DoMoveHelper(f, 2, 8, 6, 7, 5, 6, 1, 1);
-      }
-      break;
-    case F:
-      if (d == CW) {
-        // result =  DoMoveHelper(13, 14, 18, 17, 1, 6, 9, 5);
-        result = DoMoveHelper(f, 0, 0, 1, 1, 2, 2, 3, 3);
-      } else {
-        assert(d == CCW);
-        // result =  DoMoveHelper(17, 18, 14, 13, 5, 9, 6, 1);
-        result = DoMoveHelper(f, 3, 3, 2, 2, 1, 1, 0, 0);
-      }
-      break;
-    case B:
-      if (d == CW) {
-        // result =  DoMoveHelper(15, 16, 20, 19, 3, 8, 11, 7);
-        result =  DoMoveHelper(f, 5, 5, 4, 11, 7, 9, 6, 7);
-      } else {
-        assert(d == CCW);
-        // result =  DoMoveHelper(19, 20, 16, 15, 7, 11, 8, 3);
-        result =  DoMoveHelper(f, 6, 7, 7, 9, 4, 11, 5, 5);
-      }
-      break;
-  }
-  return result;
-}
+const int rubiks::plus1mod2[2] = {1, 0};
+const int rubiks::plus1mod3[3] = {1, 2, 0};
+const int rubiks::plus2mod3[3] = {2, 0, 1};
 
-dd_edge* Front(direction dir) { return DoMove(F, dir); }
-dd_edge* Back(direction dir) { return DoMove(B, dir); }
-dd_edge* Left(direction dir) { return DoMove(L, dir); }
-dd_edge* Right(direction dir) { return DoMove(R, dir); }
-dd_edge* Up(direction dir) { return DoMove(U, dir); }
-dd_edge* Down(direction dir) { return DoMove(D, dir); }
+const int rubiks::defaultVariableOrdering[rubiks::nLocations+1] = {
+  0,
+  1, 2, 3, 4, 5, 6, 7, 8,
+  9, 10, 11, 12, 13, 14, 15, 16,
+  17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
+  29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+  41, 42, 43, 44, 45, 46
+};
 
-const char* face_to_string(face f){
-  switch(f) {
-    case F: return "Front";
-    case B: return "Back";
-    case L: return "Left";
-    case R: return "Right";
-    case U: return "Up";
-    case D: return "Down";
-    default: return "Invalid Face";
-  }
-}
-
+const int rubiks::BenSmithsVariableOrdering[rubiks::nLocations+1] = {
+  0,
+  3, 5, 6, 4, 2, 8, 7, 1,
+  12, 11, 9, 10, 15, 13, 14, 16,
+  17, 21, 19, 18, 24, 22, 26, 25, 23, 20, 27, 28,
+  29, 33, 31, 30, 36, 34, 38, 37, 35, 32, 39, 40,
+  41, 42, 43, 44, 45, 46
+};
 
 void usage() {
-  fprintf(stderr, "Usage: rubik_cube [-m <MB>|-dfs|-l<int>|-p|-pgif]\n");
-  fprintf(stderr, "-m<MB> : sets the total memory to be used (in MB)\n");
-  fprintf(stderr, "-dfs   : use depth-first algorithm to compute reachable states\n");
-  fprintf(stderr, "-l<int>: combo to use {2:FU, 3:FUR, 4:FURL, 5:FURLB, 6:FURLBD}\n");
+  fprintf(stderr, "Usage: rubik_cube [-bfs|-dfs|-l<key>|-p]\n");
+  fprintf(stderr, "-bfs   : use traditional algorithm to compute reachable states\n");
+  fprintf(stderr, "-msat  : use saturation with monolithic relation compute reachable states\n");
+  fprintf(stderr, "-esat  : use saturation with event-wise relation compute reachable states\n");
+  fprintf(stderr, "-ksat  : use saturation with level-wise relation compute reachable states\n");
+  fprintf(stderr, "-l<key>: key can be any combination of\n");
+  fprintf(stderr, "         A: Front face clock-wise rotation,\n");
+  fprintf(stderr, "         a: Front face counter clock-wise rotation,\n");
+  fprintf(stderr, "         1: Front face flip,\n");
+  fprintf(stderr, "         Back face (B, b, 2),\n");
+  fprintf(stderr, "         Left face (C, c, 3),\n");
+  fprintf(stderr, "         Right face (D, d, 4),\n");
+  fprintf(stderr, "         Up face (E, e, 5),\n");
+  fprintf(stderr, "         Down face (F, f, 6),\n");
   fprintf(stderr, "-p     : prints initial states, nsf, reachable states on stderr\n");
-  fprintf(stderr, "-pgif  : writes GIFs for initial states, nsf, reachable states\n");
   fprintf(stderr, "\n");
-  fflush(stderr);
 }
+
+
 
 int main(int argc, char *argv[])
 {
-  bool make_gifs = false;
   bool pretty_print = false;
-  bool no_choice = false;
-  bool enable_F = false;
-  bool enable_U = false;
-  bool enable_R = false;
-  bool enable_L = false;
-  bool enable_B = false;
-  bool enable_D = false;
+  moves enabled;
+  bool dfs = false;
+  bool bfs = false;
+  char saturation_type = 'm';
+  bool enableCorners = true;
+  bool enableCornerOrientations = true;
+  bool enableEdges = true;
+  bool enableEdgeOrientations = true;
+  bool enableCenterOrientations = true;
+
   if (argc > 1) {
     assert(argc <= 5);
     for (int i=1; i<argc; i++) {
       char *cmd = argv[i];
-      if (strncmp(cmd, "-pgif", 6) == 0) make_gifs = true;
-      else if (strncmp(cmd, "-p", 3) == 0) pretty_print = true;
-      else if (strncmp(cmd, "-dfs", 5) == 0) no_choice = true;
+      if (strncmp(cmd, "-p", 3) == 0) pretty_print = true;
+      else if (strncmp(cmd, "-msat", 6) == 0) {
+        dfs = true; saturation_type = 'm';
+      }
+      else if (strncmp(cmd, "-esat", 6) == 0) {
+        dfs = true; saturation_type = 'e';
+      }
+      else if (strncmp(cmd, "-ksat", 6) == 0) {
+        dfs = true; saturation_type = 'k';
+      }
+      else if (strncmp(cmd, "-bfs", 5) == 0) bfs = true;
       else if (strncmp(cmd, "-l", 2) == 0) {
         for (unsigned j = 2; j < strlen(cmd); j++) {
           switch (cmd[j]) {
-            case 'F':
-                enable_F = true;
-                break;
-            case 'U':
-                enable_U = true;
-                break;
-            case 'R':
-                enable_R = true;
-                break;
-            case 'L':
-                enable_L = true;
-                break;
-            case 'B':
-                enable_B = true;
-                break;
-            case 'D':
-                enable_D = true;
-                break;
+            case 'A': enabled.FCW = true; break;
+            case 'a': enabled.FCCW = true; break;
+            case '1': enabled.FF = true; break;
+            case 'B': enabled.BCW = true; break;
+            case 'b': enabled.BCCW = true; break;
+            case '2': enabled.BF = true; break;
+            case 'C': enabled.LCW = true; break;
+            case 'c': enabled.LCCW = true; break;
+            case '3': enabled.LF = true; break;
+            case 'D': enabled.RCW = true; break;
+            case 'd': enabled.RCCW = true; break;
+            case '4': enabled.RF = true; break;
+            case 'E': enabled.UCW = true; break;
+            case 'e': enabled.UCCW = true; break;
+            case '5': enabled.UF = true; break;
+            case 'F': enabled.DCW = true; break;
+            case 'f': enabled.DCCW = true; break;
+            case '6': enabled.DF = true; break;
           }
         }
-      } else if (strncmp(cmd, "-m", 2) == 0) {
-        int mem_total = strtol(&cmd[2], NULL, 10);
-        if (mem_total < 1 || mem_total > 100*1024) { // 10 GB!
-          usage();
-          exit(1);
-        }
-        // set up memory available
-        InitMemoryManager(mem_total*1024*1024);
       }
       else {
         usage();
@@ -763,381 +1222,37 @@ int main(int argc, char *argv[])
     }
   }
 
+  bool choice = true;
+  if (dfs) { bfs = false; }
+  if (dfs || bfs) { choice = false; }
+
+  enableCorners = true;
+  enableCornerOrientations = false;
+  enableEdges = true;
+  enableEdgeOrientations = false;
+  enableCenterOrientations = false;
+
+
   // set up arrays based on number of levels
-  Init();
+  const int* order = rubiks::BenSmithsVariableOrdering;
+  rubiks model(order, rubiks::nLocations + 1,
+      enableCorners, enableCornerOrientations,
+      enableEdges, enableEdgeOrientations, enableCenterOrientations);
 
-  // Initialize MEDDLY
-  initialize();
-
-  // Set up the state variables, as described earlier
-  d = CreateDomain(num_levels, sizes, variables);
-  if (NULL == d) {
-    fprintf(stderr, "Couldn't create domain\n");
-    return 1;
-  }
-  CheckVars();
-
-  // Create forests
-#if 1
-  // states = CreateForest(d, MDD, false, forest::QUASI_REDUCED, FULL_OR_SPARSE_STORAGE);
-  states = CreateForest(d, MDD, false, forest::FULLY_REDUCED, FULL_OR_SPARSE_STORAGE);
-  relation = CreateForest(d, MXD, false, forest::IDENTITY_REDUCED, FULL_OR_SPARSE_STORAGE);
-  // relation = CreateForest(d, MXD, false, forest::QUASI_REDUCED, FULL_OR_SPARSE_STORAGE);
-#else
-  states = CreateForest(d, MDD, false, forest::FULLY_REDUCED, FULL_STORAGE);
-  relation = CreateForest(d, MXD, false, forest::IDENTITY_REDUCED, FULL_STORAGE);
-#endif
-
-  if (INVALID_FOREST == states) {
-    fprintf(stderr, "Couldn't create forest of states\n");
-    return 1;
+  if (dfs) {
+    model.doDfs(enabled, saturation_type);
+  } else if (bfs) {
+    model.doBfs(enabled);
   } else {
-    fprintf(stderr, "Created forest of states\n");
-  }
-  if (INVALID_FOREST == relation) {
-    fprintf(stderr, "Couldn't create forest of relations\n");
-    return 1;
-  } else {
-    fprintf(stderr, "Created forest of relations\n");
-  }
-
-  // Build set of initial states
-  for (int j = 0; j < type2; j++) {
-    initst[variables[get_component_level(2, j)]] = j;
-  }
-  for (int j = 0; j < type3; j++) {
-    initst[variables[get_component_level(3, j)]] = j;
-  }
-
-  int i = num_levels;
-
-#if FACED_ORDERING
-  i = 0;
-#else
-#if REORDER_CUBE
-  for (int j = type2; j > 0; i--) { assert(initst[variables[i]] == --j); }
-  for (int j = type3; j > 0; i--) { assert(initst[variables[i]] == --j); }
-#else
-  for (int j = type3; j > 0; i--) { assert(initst[variables[i]] == --j); }
-  for (int j = type2; j > 0; i--) { assert(initst[variables[i]] == --j); }
-#endif
-  assert (i == 0);
-#endif
-
-  initst[0] = 0;
-  initial = CreateVectorElement(states, initst, num_levels + 1, true); 
-
-  dd_edge *curr = NULL;
-
-  if (NULL==initial) {
-    fprintf(stderr, "Couldn't create set of initial states\n");
-    return 1;
-  } else {
-    fprintf(stderr, "Created set of initial states\n");
 #if 0
-    fprintf(stderr, "Initial state: ");
-    ShowDDEdge(stderr, initial);
-    exit(0);
-#endif
-  }
-
-  // Build transitions
-  const int num_moves = 6;
-  dd_edge* move[num_moves][2];
-
-#if !(NO_CHOICE)
-
-  move[F][CW] = Front(CW);
 #if 0
-  fprintf(stderr, "Overall transition relation: ");
-  ShowDDEdge(stderr, move[F][CW]);
-  exit(0);
-#endif
-
-  move[B][CW] = Back(CW);
-  move[L][CW] = Left(CW);
-  move[R][CW] = Right(CW);
-  move[U][CW] = Up(CW);
-  move[D][CW] = Down(CW);
-#if 0
-  move[F][CCW] = Front(CCW);
-  move[B][CCW] = Back(CCW);
-  move[L][CCW] = Left(CCW);
-  move[R][CCW] = Right(CCW);
-  move[U][CCW] = Up(CCW);
-  move[D][CCW] = Down(CCW);
+    model.doChoice(enabled);
 #else
-  move[F][CCW] = move[F][CW];
-  move[B][CCW] = move[B][CW];
-  move[L][CCW] = move[L][CW];
-  move[R][CCW] = move[R][CW];
-  move[U][CCW] = move[U][CW];
-  move[D][CCW] = move[D][CW];
+    model.doSteppedBfs(enabled);
 #endif
-
 #endif
-  
-  char dummy;
-
-  // Build overall next-state function
-  if(no_choice) {
-    nsf = NULL;
-    
-    if (enable_F) {
-      move[F][CW] = Front(CW);
-      if (nsf == NULL) {
-        nsf = move[F][CW];
-      } else {
-        assert(SUCCESS == 
-            ApplyBinary(OP_UNION, nsf, move[F][CW], nsf));
-      }
-      fprintf(stderr, "Union f-cw: ");
-    }
-
-    if (enable_U) {
-      move[U][CW] = Up(CW);
-      if (nsf == NULL) {
-        nsf = move[U][CW];
-      } else {
-        assert(SUCCESS == 
-            ApplyBinary(OP_UNION, nsf, move[U][CW], nsf));
-      }
-      fprintf(stderr, "Union u-cw: ");
-    }
-
-    if (enable_R) {
-      move[R][CW] = Right(CW);
-      if (nsf == NULL) {
-        nsf = move[R][CW];
-      } else {
-        assert(SUCCESS == 
-            ApplyBinary(OP_UNION, nsf, move[R][CW], nsf));
-      }
-      fprintf(stderr, "Union r-cw: ");
-    }
-
-    if (enable_L) {
-      move[L][CW] = Left(CW);
-      if (nsf == NULL) {
-        nsf = move[L][CW];
-      } else {
-        assert(SUCCESS == 
-            ApplyBinary(OP_UNION, nsf, move[L][CW], nsf));
-      }
-      fprintf(stderr, "Union l-cw: ");
-    }
-
-    if (enable_B) {
-      move[B][CW] = Back(CW);
-      if (nsf == NULL) {
-        nsf = move[B][CW];
-      } else {
-        assert(SUCCESS == 
-            ApplyBinary(OP_UNION, nsf, move[B][CW], nsf));
-      }
-      fprintf(stderr, "Union b-cw: ");
-    }
-
-    if (enable_D) {
-      move[D][CW] = Down(CW);
-      if (nsf == NULL) {
-        nsf = move[D][CW];
-      } else {
-        assert(SUCCESS == 
-            ApplyBinary(OP_UNION, nsf, move[D][CW], nsf));
-      }
-      fprintf(stderr, "Union d-cw: ");
-    }
-
-    if (NULL == nsf) {
-      fprintf(stderr, "Couldn't create next-state function\n");
-      return 1;
-    } else {
-      fprintf(stderr, "Created next-state function\n");
-    }
   }
 
-#ifdef INTERMEDIATE_PRINT
-  fprintf(stderr, "Initial states: ");
-  ShowDDEdge(stderr, initial);
-  fprintf(stderr, "\nTransition relation nodes\n");
-  for (int i=0; i<num_moves; i++) {
-    fprintf(stderr, "Move %d, CW: ", i);
-    ShowDDEdge(stderr, move[i][0]);
-    fprintf(stderr, "\n"); 
-    fprintf(stderr, "Move %d, CCW: ", i);
-    ShowDDEdge(stderr, move[i][1]);
-    fprintf(stderr, "\n"); 
-  }
-  fprintf(stderr, "Overall transition relation: ");
-  ShowDDEdge(stderr, nsf);
-  fprintf(stderr, "\n"); 
-#endif
-
-  double card = 0;
-
-#ifdef SATURATE
-
-#ifdef COUNT_TIME
-  struct rusage start, stop;
-  assert(getrusage(RUSAGE_SELF, &start) == 0);
-#endif
-
-  if (no_choice) {
-#if 0
-    Saturate(initial, nsf, curr);
-#else
-#if 0
-    vector<dd_edge *> xd;
-    // FURLBD
-    xd.push_back(move[F][CW]);
-    xd.push_back(move[U][CW]);
-    /*
-       xd.push_back(move[R][CW]);
-       xd.push_back(move[L][CW]);
-       xd.push_back(move[B][CW]);
-       xd.push_back(move[D][CW]);
-     */
-    assert(SUCCESS == Saturate(initial, &xd, curr));
-#else
-    fflush(stderr);
-    vector<dd_edge *> *xd = NULL;
-    assert(SUCCESS == SplitMxd(nsf, xd));
-    assert(SUCCESS == Saturate(initial, xd, curr));
-#endif
-#endif
-  } else {
-    int choice = 0;
-    curr = initial;
-    card = Cardinality(curr);
-    fprintf(stderr, "# of reachable states: %1.6e\n", card);
-    while (true) {
-      fprintf(stderr, "\n\nSaturate using...\n");
-      for (i = 0; i < num_moves; i++) {
-        fprintf(stderr, "\t%d. %s\n", i, face_to_string((face)i));
-      }
-      fprintf(stderr, "\t6. Print reachable states\n");
-      fprintf(stderr, "\t7. Stop\n");
-      fprintf(stderr, "Enter Choice (0-7): ");
-      fscanf(stdin, "%d%c", &choice, &dummy);
-      if (choice >= 0 && choice < num_moves) {
-#if 0
-        Saturate(curr, temp_nsf[choice], curr);
-#else
-#if 1
-        Saturate(curr, move[choice][0], curr);
-#else
-        assert(SUCCESS == 
-            ApplyBinary(OP_UNION, move[F][CW], move[U][CW], nsf));
-#if 1
-        assert(SUCCESS == 
-            ApplyBinary(OP_UNION, nsf, move[R][CW], nsf));
-#endif
-        Saturate(initial, nsf, curr);
-        break;
-#endif
-#endif
-        card = Cardinality(curr);
-        fprintf(stderr, "# of reachable states: %1.6e\n", card);
-      } else if (choice == 6) {
-        fprintf(stderr, "Reachable states: ");
-        ShowDDEdge(stderr, curr);
-        fprintf(stderr, "\n");
-      } else if (choice == 7) {
-        fprintf(stderr, "Stopping... \n");
-        break;
-      }
-    }
-  }
-
-#ifdef COUNT_TIME
-  assert(getrusage(RUSAGE_SELF, &stop) == 0);
-
-  // stop.ru_utime - start.ru_utime
-  suseconds_t u_sat_time =
-    (stop.ru_utime.tv_sec * 1000000 + stop.ru_utime.tv_usec) -
-    (start.ru_utime.tv_sec * 1000000 + start.ru_utime.tv_usec);
-  suseconds_t s_sat_time =
-    (stop.ru_stime.tv_sec * 1000000 + stop.ru_stime.tv_usec) -
-    (start.ru_stime.tv_sec * 1000000 + start.ru_stime.tv_usec);
-
-  fprintf(stderr, "\nTime for constructing initial states and nsf:\n");
-  fprintf(stderr, "  %ld.%ld sec user, %ld.%ld sec system\n",
-      (long int)start.ru_utime.tv_sec, (long int)start.ru_utime.tv_usec,
-      (long int)start.ru_stime.tv_sec, (long int)start.ru_stime.tv_usec);
-
-  fprintf(stderr, "\nTime for constructing reachability set:\n");
-  fprintf(stderr, "  %06f sec user, %06f system\n",
-      u_sat_time/1000000.0, s_sat_time/1000000.0);
-#endif  // COUNT_TIME
-
-#endif  // SATURATE
-
-#ifdef COUNT_STATES
-  card = Cardinality(curr);
-  fprintf(stderr, "\n# of reachable states: %1.12e\n", card);
-  fflush(stderr);
-  // fprintf(stderr, "\n# of reachable states: %s\n", ll_to_pa(card));
-#endif
-
-#ifdef MEM_USAGE
-  fprintf(stderr, "\nPeak memory usage: %d\n", stop.ru_maxrss);
-  fprintf(stderr, "\nIntegral shared memory usage: %d\n", stop.ru_ixrss);
-#endif
-
-  const char *fn[] = {"reachable", "initial", "nsf", "gif"};
-  if (make_gifs) {
-    CreateDDEdgePic(fn[1], fn[3], initial);
-    printf("Wrote initial states to %s.%s\n", fn[1], fn[3]);
-    CreateDDEdgePic(fn[2], fn[3], nsf);
-    printf("Wrote next-state function to %s.%s\n", fn[2], fn[3]);
-    CreateDDEdgePic(fn[0], fn[3], curr);
-    printf("Wrote reachable states to %s.%s\n", fn[0], fn[3]);
-  } else if (pretty_print) {
-    fprintf(stderr, "\nInitial States: ");
-    ShowDDEdge(stderr, initial);
-    fprintf(stderr, "\n");
-    fprintf(stderr, "\nNext-State Function: ");
-    ShowDDEdge(stderr, nsf);
-    fprintf(stderr, "\n");
-    fprintf(stderr, "\nReachable States: ");
-    ShowDDEdge(stderr, curr);
-    fprintf(stderr, "\n");
-  }
-
-#if 0
-  ReleaseEdge(move[F][CW]);
-  ReleaseEdge(move[U][CW]);
-  ReleaseEdge(move[R][CW]);
-  ReleaseEdge(move[L][CW]);
-  ReleaseEdge(move[B][CW]);
-  ReleaseEdge(move[D][CW]);
-  ReleaseEdge(move[F][CCW]);
-  ReleaseEdge(move[B][CCW]);
-  ReleaseEdge(move[L][CCW]);
-  ReleaseEdge(move[R][CCW]);
-  ReleaseEdge(move[U][CCW]);
-  ReleaseEdge(move[D][CCW]);
-#endif
-
-  DestroyForest(states);
-  if (INVALID_FOREST != states) {
-    fprintf(stderr, "Couldn't destroy forest of states\n");
-    return 1;
-  } else {
-    fprintf(stderr, "Destroyed forest of states\n");
-  }
-
-  DestroyForest(relation);
-  if (INVALID_FOREST != relation) {
-    fprintf(stderr, "Couldn't destroy forest of relations\n");
-    return 1;
-  } else {
-    fprintf(stderr, "Destroyed forest of relations\n");
-  }
-
-  DestroyDomain(d);
-  cleanup();
   fprintf(stderr, "\n\nDONE\n");
   return 0;
 }
