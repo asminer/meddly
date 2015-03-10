@@ -821,6 +821,12 @@ class MEDDLY::forest {
       */
       public:
         /**
+            Insert a comment string.
+            May be ignored depending on the file format.
+        */
+        virtual void addComment(const char* comment) = 0;
+
+        /**
             Called once, when the logger is attached to a forest.
             Must call method fixLogger().
 
