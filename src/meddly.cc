@@ -64,6 +64,7 @@ namespace MEDDLY {
   const binary_opname* MINUS = 0;
   const binary_opname* MULTIPLY = 0;
   const binary_opname* DIVIDE = 0;
+  const binary_opname* MODULO = 0;
 
   const binary_opname* EQUAL = 0;
   const binary_opname* NOT_EQUAL = 0;

@@ -43,6 +43,7 @@ class MEDDLY::builtin_initializer : public op_initializer {
   binary_opname* MINUS;
   binary_opname* MULTIPLY;
   binary_opname* DIVIDE;
+  binary_opname* MODULO;
 
   binary_opname* EQ;
   binary_opname* NE;

@@ -215,6 +215,9 @@ namespace MEDDLY {
   /// For forests with range_type of INTEGER and REAL. All operands must
   /// belong to the same forest.
   extern const binary_opname* DIVIDE;
+  /// For forests with range_type of INTEGER. All operands must
+  /// belong to the same forest.
+  extern const binary_opname* MODULO;
 
   /// For forests with range_type of INTEGER and REAL. All operands must
   /// belong to the same forest.

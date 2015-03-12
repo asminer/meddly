@@ -42,6 +42,7 @@
 #include "minus.h"
 #include "multiply.h"
 #include "divide.h"
+#include "modulo.h"
 
 #include "comp_eq.h"
 #include "comp_ne.h"
@@ -83,7 +84,8 @@ void MEDDLY::builtin_initializer::init(const settings &s)
   initP(MEDDLY::PLUS,                 PLUS,       initializePlus(s)         );
   initP(MEDDLY::MINUS,                MINUS,      initializeMinus(s)        );
   initP(MEDDLY::MULTIPLY,             MULTIPLY,   initializeMultiply(s)     );
-  initP(MEDDLY::DIVIDE,               DIVIDE,     initializeMultiply(s)     );
+  initP(MEDDLY::DIVIDE,               DIVIDE,     initializeDivide(s)       );
+  initP(MEDDLY::MODULO,               MODULO,     initializeModulo(s)       );
 
   initP(MEDDLY::EQUAL,                EQ,           initializeEQ(s)         );
   initP(MEDDLY::NOT_EQUAL,            NE,           initializeNE(s)         );
@@ -135,6 +137,7 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(MINUS,          MEDDLY::MINUS);
   cleanPair(MULTIPLY,       MEDDLY::MULTIPLY);
   cleanPair(DIVIDE,         MEDDLY::DIVIDE);
+  cleanPair(MODULO,         MEDDLY::MODULO);
 
   cleanPair(EQ,             MEDDLY::EQUAL);
   cleanPair(NE,             MEDDLY::NOT_EQUAL);
