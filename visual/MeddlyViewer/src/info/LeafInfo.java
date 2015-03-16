@@ -1,6 +1,7 @@
 package info;
 
 import java.util.PriorityQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * 
@@ -8,22 +9,22 @@ import java.util.PriorityQueue;
  *
  */
 public class LeafInfo {
-	private PriorityQueue<Long> level;
-	private PriorityQueue<Long> anc;
+	private LinkedBlockingQueue<Integer> level;
+	private LinkedBlockingQueue<Integer> anc;
 
 	/**
 	 * 
 	 */
 	public LeafInfo() {
-		this.level = new PriorityQueue<Long>();
-		this.anc = new PriorityQueue<Long>();
+		this.level = new LinkedBlockingQueue<Integer>();
+		this.anc = new LinkedBlockingQueue<Integer>();
 	}
 
 	/**
 	 * 
 	 * @param level
 	 */
-	public void addLevel(long level) {
+	public void addLevel(int level) {
 		this.level.add(level);
 	}
 
@@ -31,7 +32,7 @@ public class LeafInfo {
 	 * 
 	 * @param anc
 	 */
-	public void addAnc(long anc) {
+	public void addAnc(int anc) {
 		this.anc.add(anc);
 	}
 
@@ -39,7 +40,7 @@ public class LeafInfo {
 	 * 
 	 * @return
 	 */
-	public Long getLevel() {
+	public int getLevel() {
 		return this.level.poll();
 	}
 
@@ -47,7 +48,7 @@ public class LeafInfo {
 	 * 
 	 * @return
 	 */
-	public Long getAnc() {
+	public int getAnc() {
 		return this.anc.poll();
 	}
 

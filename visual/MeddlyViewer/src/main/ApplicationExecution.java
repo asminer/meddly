@@ -30,36 +30,47 @@ public class ApplicationExecution extends Application {
 		final CategoryAxis yAxis = new CategoryAxis();
 		final BarChart<Number, String> bc = new BarChart<Number, String>(xAxis,
 				yAxis);
-		bc.setTitle("Summary");
+		Timeline tl = new Timeline();
+		bc.setTitle("Summary of Forest Count");
+		bc.setAnimated(true);
 		xAxis.setLabel("Number of nodes");
 		xAxis.setTickLabelRotation(90);
 		yAxis.setLabel("Forest Level");
 		XYChart.Series series = null;
 
 		try {
-			series = applicationInfoParser.initalizeForestInfoFromJsonFile();
+			
+			series = applicationInfoParser.initalizeForestInfo();
 			info = applicationInfoParser.readNodeInfoFromJsonFile();
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (org.json.simple.parser.ParseException e) {
 			e.printStackTrace();
 		}
 
-		Timeline tl = new Timeline();
-		tl.getKeyFrames().add(
-				new KeyFrame(Duration.millis(100),
+		
+		tl.getKeyFrames().addAll(
+				new KeyFrame(Duration.millis(200),
 						new EventHandler<ActionEvent>() {
 							@Override
 							public void handle(ActionEvent actionEvent) {
 								XYChart.Series<Number, String> series = bc
 										.getData().get(0);
 								try {
-									while (info.hasNext()) {
+									if(info.hasNext()) {
+										int level = info.getLevel();
+										int anc = info.getAnc();
+										
 										XYChart.Data<Number, String> x = (XYChart.Data<Number, String>) series
 												.getData()
-												.get((int) (info.getLevel() - 1));
-										x.setXValue(x.getXValue().longValue()
-												+ info.getAnc());
+												.get((int) (level - 1));
+										System.out.print("Grabbed node at position: " + (level - 1) );
+										System.out.println(" Value at node is: " + (x.getXValue().longValue()));
+										System.out.print("Updating value anc: " + anc);
+										x.setXValue(x.getXValue().intValue() + anc);
+										System.out.println(" Value at node is: " + (x.getXValue().longValue()));
+										
 									}
 
 								} catch (Exception e) {

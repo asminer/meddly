@@ -9,13 +9,20 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.scene.chart.BarChart;
+import javafx.scene.chart.XYChart;
 import javafx.scene.chart.XYChart.Series;
+import javafx.util.Duration;
 
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
 /**
- * A Static class which parses the JSON information from Meddly for animation.
+ * A Static class which parses the information from Meddly for animation.
  * 
  * @author Coleman
  *
@@ -23,7 +30,6 @@ import org.json.simple.parser.JSONParser;
 public class ForestInfoParser {
 	private static ForestInfo forestInfo = null;
 	private static BufferedReader br = null;
-	private static JSONParser parser = null;
 
 	/**
 	 * 
@@ -31,31 +37,92 @@ public class ForestInfoParser {
 	 */
 	public ForestInfoParser() {
 		try {
-			ForestInfoParser.br = new BufferedReader(new FileReader(
-					"qc7.json"));
+			ForestInfoParser.br = new BufferedReader(new FileReader("qc3.txt"));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		ForestInfoParser.parser = new JSONParser();
-
 	}
 
 	/**
 	 * 
 	 * @return
 	 * @throws IOException
+	 * 
 	 */
-	public static Series initalizeForestInfoFromJsonFile() throws IOException {
+	public static Series initalizeForestInfo() throws IOException {
 		try {
-			String stringOfForestInfo = br.readLine();
-			System.out.println("Record:\t" + stringOfForestInfo);
 
-			Object obj;
-			JSONObject jsonObject = new JSONObject();
-			obj = parser.parse(stringOfForestInfo);
-			jsonObject = (JSONObject) obj;
-			forestInfo = new ForestInfo(jsonObject);
+			// FILETYPE PARSE BLOCK
+			String fileType = br.readLine(); // does nothing yet
+
+			br.readLine(); // consume known comment line
+
+			System.out.println(fileType);// error checking
+
+			String stringOfForestInfo = br.readLine();
+			System.out.println("Record: " + stringOfForestInfo);
+			// END OF FILETYPE PARSE BLOCK
+
+			// ID PARSE BLOCK
+			int id = (int) stringOfForestInfo.charAt(2);
+			// END OF ID PARSE BLOCK
+
+			// NAME PARSE BLOCK
+			String name = "";
+			int index = -1;
+			if (stringOfForestInfo.charAt(4) == '"') {
+				index = 5;
+				while (stringOfForestInfo.charAt(index) != '"') {
+					name += stringOfForestInfo.charAt(index);
+					index++;
+				}
+				// If there isn't a " at index 4, then there is no name in the
+				// file, so name it untitled, and continue.
+			} else {
+				name = "Untitled";
+				index = 4; // index used to get locations of subsequent items
+							// after the name of the tree.
+			}
+			// END OF NAME PARSE BLOCK
+
+			// LEFT AND RIGHT INITIAL NODE PARSE BLOCK
+			if (index != 4)
+				index += 2; // if the index is not 4, then name was parsed and
+							// we are on a ", so increment to the next char
+							// index.
+			// Use a string builder to build the strings for left and right
+			// counts, length of string unknown.
+			StringBuilder leftAndRightCountStringConverter = new StringBuilder();
+			leftAndRightCountStringConverter.append(stringOfForestInfo
+					.charAt(index));
+			while (stringOfForestInfo.charAt(index + 1) != ' ') {
+				index++;
+				leftAndRightCountStringConverter.append(stringOfForestInfo
+						.charAt(index));
+			}
+			int leftCount = Integer.parseInt(leftAndRightCountStringConverter
+					.toString());
+			leftAndRightCountStringConverter.delete(0,
+					leftAndRightCountStringConverter.length());
+
+			// End of left node parsing, beginning of right node parsing
+			leftAndRightCountStringConverter.append(stringOfForestInfo
+					.charAt(index += 2));
+			while (stringOfForestInfo.charAt(index + 1) != ' ') {
+				index++;
+				leftAndRightCountStringConverter.append(stringOfForestInfo
+						.charAt(index));
+			}
+
+			int forestDepth = Integer.parseInt(leftAndRightCountStringConverter
+					.toString());
+
+			System.out.println(leftCount);
+			System.out.println(forestDepth);
+			// END OF LEFT AND RIGHT INITIAL NODE PARSE BLOCK
+
+			forestInfo = new ForestInfo(id, name, leftCount, forestDepth);
 			return forestInfo.getSeries();
 
 		} catch (Exception e) {
@@ -79,37 +146,56 @@ public class ForestInfoParser {
 		try {
 
 			String sCurrentLine;
-			while ((sCurrentLine = br.readLine()) != null) {
-				if(br.ready() == false) break;
+			while ((sCurrentLine = br.readLine()) != null) { // error checking
 				System.out.println("Record:\t" + sCurrentLine);
-				Object obj;
-				JSONObject jsonObject = new JSONObject();
-				if(!sCurrentLine.startsWith("{")) break;
-				obj = parser.parse(sCurrentLine);
-				jsonObject = (JSONObject) obj;
-				if (jsonObject.get("f") != null) {
-					Long id = (Long) jsonObject.get("f");
-					System.out.println(id);
-					Long level = (Long) jsonObject.get("l");
-					System.out.println(level);
-					Long anc = (Long) jsonObject.get("anc");
-					System.out.println(anc);
-					info.addAnc(anc);
-					info.addLevel(level);
+				if (!sCurrentLine.startsWith("a"))
+					break; // break as its the last line of the file.
+
+				// ID PARSE BLOCK
+				int index = 2;
+				StringBuilder leafInfoStringBuilder = new StringBuilder();
+				leafInfoStringBuilder.append(sCurrentLine.charAt(index));
+				while (sCurrentLine.charAt(index + 1) != ' ') {
+					index++;
+					leafInfoStringBuilder.append(sCurrentLine.charAt(index));
 				}
+				int id = Integer.parseInt(leafInfoStringBuilder.toString());
+				leafInfoStringBuilder.delete(0, leafInfoStringBuilder.length());
+				index += 2;
+
+				// LEVEL PARSE BLOCK
+				leafInfoStringBuilder.append(sCurrentLine.charAt(index));
+				while (sCurrentLine.charAt(index + 1) != ' ') {
+					index++;
+					leafInfoStringBuilder.append(sCurrentLine.charAt(index));
+				}
+				int level = Integer.parseInt(leafInfoStringBuilder.toString());
+				leafInfoStringBuilder.delete(0, leafInfoStringBuilder.length());
+
+				index += 2;
+
+				// ANC PARSE BLOCK
+				leafInfoStringBuilder.append(sCurrentLine.charAt(index));
+				while (sCurrentLine.length() != index + 1
+						&& sCurrentLine.charAt(index + 1) != ' ') {
+					index++;
+					leafInfoStringBuilder.append(sCurrentLine.charAt(index));
+				}
+				int anc = Integer.parseInt(leafInfoStringBuilder.toString());
+
+				// FINAL DEBUG AND ADDITION OF ANC AND LEVEL TO THEIR INFO
+				// QUEUES
+				System.out.println("Id, Level, ANC " + id + level + anc);
+				leafInfoStringBuilder.delete(0, leafInfoStringBuilder.length());
+
+				info.addAnc(anc);
+				info.addLevel(level);
+
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		br.close();
 		return info;
-	}
-
-	/**
-	 * 
-	 * @return
-	 */
-	public ForestInfo getForestInfo() {
-		return forestInfo;
 	}
 }
