@@ -58,6 +58,7 @@ class MEDDLY::json_logger : public MEDDLY::forest::logger {
     virtual ~json_logger();
 
     virtual void addComment(const char* comment);
+    virtual void newPhase(const char* comment);
     virtual void logForestInfo(const forest* f, const char* name);
     virtual void addToActiveNodeCount(const forest* f, int level, long delta);
 };
@@ -79,6 +80,7 @@ class MEDDLY::simple_logger : public MEDDLY::forest::logger {
     virtual ~simple_logger();
 
     virtual void addComment(const char* comment);
+    virtual void newPhase(const char* comment);
     virtual void logForestInfo(const forest* f, const char* name);
     virtual void addToActiveNodeCount(const forest* f, int level, long delta);
 };

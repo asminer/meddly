@@ -826,8 +826,18 @@ class MEDDLY::forest {
         /**
             Insert a comment string.
             May be ignored depending on the file format.
+
+              @param  comment   String to insert.
         */
         virtual void addComment(const char* comment) = 0;
+
+        /**
+            Start a new phase of computation.
+            May be ignored depending on the file format.
+
+              @param  comment   Info to display about this phase.
+        */
+        virtual void newPhase(const char* comment) = 0;
 
         /**
             Called once, when the logger is attached to a forest.

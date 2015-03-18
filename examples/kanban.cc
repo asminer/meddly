@@ -154,7 +154,7 @@ int main(int argc, const char** argv)
   }
 
   // Build initial state
-  if (LOG) LOG->addComment("Building initial state:");
+  if (LOG) LOG->newPhase("Building initial state");
   int* initial = new int[17];
   for (int i=16; i; i--) initial[i] = 0;
   initial[1] = initial[5] = initial[9] = initial[13] = N;
@@ -163,7 +163,7 @@ int main(int argc, const char** argv)
   delete[] initial;
 
   // Build next-state function
-  if (LOG) LOG->addComment("Building next-state function:");
+  if (LOG) LOG->newPhase("Building next-state function");
   dd_edge nsf(mxd);
   if ('e' != method) {
     buildNextStateFunction(kanban, 16, mxd, nsf, 4);
@@ -174,7 +174,7 @@ int main(int argc, const char** argv)
     printStats("MxD", mxd);
   }
 
-  if (LOG) LOG->addComment("Building reachability set:");
+  if (LOG) LOG->newPhase("Building reachability set");
   dd_edge reachable(mdd);
   switch (method) {
     case 'b':
@@ -218,6 +218,7 @@ int main(int argc, const char** argv)
   printf("Approx. %g reachable states\n", c);
   
   // cleanup
+  if (LOG) LOG->newPhase("Cleanup");
   MEDDLY::cleanup();
   return 0;
 }

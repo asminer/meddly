@@ -44,6 +44,11 @@ void MEDDLY::json_logger::addComment(const char*)
   // Completely ignored
 }
 
+void MEDDLY::json_logger::newPhase(const char*)
+{
+  // Completely ignored
+}
+
 void MEDDLY::json_logger::logForestInfo(const forest* f, const char* name)
 {
   const expert_forest* ef = dynamic_cast<const expert_forest*>(f);
@@ -115,6 +120,20 @@ void MEDDLY::simple_logger::addComment(const char* str)
     out << *str;
     if ('\n' == *str) out << "# ";
     str++;
+  }
+  out << "\n";
+}
+
+void MEDDLY::simple_logger::newPhase(const char* str)
+{
+  out << "p ";
+  if (0==str) {
+    out << "\n";
+    return;
+  }
+  for (; *str; str++) {
+    if ('\n' == *str) continue; // strip any newlines
+    out << *str;
   }
   out << "\n";
 }
