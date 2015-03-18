@@ -109,13 +109,14 @@ MEDDLY::simple_logger::~simple_logger()
 
 void MEDDLY::simple_logger::addComment(const char* str)
 {
-  //
-  // TBD - fancify - scan str, and after every newline,
-  // start the next line with #
-  //
-  if (str) {
-    out << "# " << str << "\n";
+  if (0==str) return;
+  out << "# ";
+  while (*str) {
+    out << *str;
+    if ('\n' == *str) out << "# ";
+    str++;
   }
+  out << "\n";
 }
 
 void MEDDLY::simple_logger::logForestInfo(const forest* f, const char* name)
