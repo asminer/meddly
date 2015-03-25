@@ -48,8 +48,8 @@ import logic.ForestInfoParser;
 public class ApplicationExecution extends Application {
 	private static ForestInfoParser applicationInfoParser = new ForestInfoParser();
 
-	public static void main(String[] args)
-			throws org.json.simple.parser.ParseException {
+	public static void main(String[] args) {
+			// throws org.json.simple.parser.ParseException {
 		launch(args);
 
 	}

@@ -24,7 +24,7 @@ package info;
 import javafx.scene.chart.XYChart;
 import javafx.scene.chart.XYChart.Series;
 
-import org.json.simple.JSONObject;
+// import org.json.simple.JSONObject;
 
 /**
  * Forest Information Class used to build and update chart series information

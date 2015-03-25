@@ -149,7 +149,8 @@ public class ForestInfoParser {
 	 * @throws IOException
 	 */
 	public ArrayList<Integer> parseNodeInfo()
-			throws org.json.simple.parser.ParseException, IOException {
+			// throws org.json.simple.parser.ParseException, IOException {
+			throws IOException {
 
 		ArrayList<Integer> leafinfo = new ArrayList<>(0);
 		try {

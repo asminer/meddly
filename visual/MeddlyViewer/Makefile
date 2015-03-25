@@ -5,7 +5,7 @@
 # Right now - proof of concept makefile
 #
 
-all: thing.jar
+all: visual.jar
 
 SRC= \
       info/LeafInfo.java      \
@@ -16,10 +16,11 @@ SRC= \
 
 
 
-OBJ= $(SRC:%.java=bin/%.class)
+OBJ= $(SRC:%.java=%.class)
+BINOBJ= $(SRC:%.java=bin/%.class)
 
-thing.jar: $(OBJ)
-	jar cf thing.jar $(OBJ)
+visual.jar: $(BINOBJ)
+	cd bin; jar cf ../visual.jar $(OBJ)
 
 #
 # Generic rule
