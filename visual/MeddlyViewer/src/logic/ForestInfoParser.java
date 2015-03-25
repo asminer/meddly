@@ -22,43 +22,38 @@
 package logic;
 
 import info.ForestInfo;
-import info.LeafInfo;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.util.ArrayList;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-import javafx.scene.chart.BarChart;
-import javafx.scene.chart.XYChart;
+import javafx.scene.text.*;
 import javafx.scene.chart.XYChart.Series;
-import javafx.util.Duration;
-
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 
 /**
  * A Static class which parses the information from Meddly for animation.
  * 
- * @author Coleman
+ * @author Coleman Jackson, 2015.
  *
  */
 public class ForestInfoParser {
+	private String status;
 	private static ForestInfo forestInfo = null;
 	private static BufferedReader br = null;
+	private boolean pLineReached;
 
 	/**
 	 * 
 	 * @throws FileNotFoundException
 	 */
 	public ForestInfoParser() {
+		pLineReached = false;
+		status = "Initalized";
 		try {
-			ForestInfoParser.br = new BufferedReader(new FileReader("qc3.txt"));
+			ForestInfoParser.br = new BufferedReader(new FileReader("qc4.txt"));
+			
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -71,13 +66,13 @@ public class ForestInfoParser {
 	 * @throws IOException
 	 * 
 	 */
-	public static Series initalizeForestInfo() throws IOException {
+	public Series initalizeForestInfo() throws IOException {
 		try {
 
 			// FILETYPE PARSE BLOCK
 			String fileType = br.readLine(); // does nothing yet
 
-			br.readLine(); // consume known comment line
+			br.readLine(); // consume known comment line TODO: LOOK HERE IF YOU CHANGE THE FILE FORMAT. IF YOU HAVE AN ERROR ITS HERE.
 
 			System.out.println(fileType);// error checking
 
@@ -108,36 +103,30 @@ public class ForestInfoParser {
 			// END OF NAME PARSE BLOCK
 
 			// LEFT AND RIGHT INITIAL NODE PARSE BLOCK
-			if (index != 4)
-				index += 2; // if the index is not 4, then name was parsed and
+			if (index != 4) index += 2; // if the index is not 4, then name was parsed and
 							// we are on a ", so increment to the next char
 							// index.
+			
 			// Use a string builder to build the strings for left and right
 			// counts, length of string unknown.
 			StringBuilder leftAndRightCountStringConverter = new StringBuilder();
-			leftAndRightCountStringConverter.append(stringOfForestInfo
-					.charAt(index));
+			leftAndRightCountStringConverter.append(stringOfForestInfo.charAt(index));
 			while (stringOfForestInfo.charAt(index + 1) != ' ') {
 				index++;
-				leftAndRightCountStringConverter.append(stringOfForestInfo
-						.charAt(index));
+				leftAndRightCountStringConverter.append(stringOfForestInfo.charAt(index));
 			}
-			int leftCount = Integer.parseInt(leftAndRightCountStringConverter
-					.toString());
-			leftAndRightCountStringConverter.delete(0,
-					leftAndRightCountStringConverter.length());
+			
+			int leftCount = Integer.parseInt(leftAndRightCountStringConverter.toString());
+			leftAndRightCountStringConverter.delete(0, leftAndRightCountStringConverter.length());
 
 			// End of left node parsing, beginning of right node parsing
-			leftAndRightCountStringConverter.append(stringOfForestInfo
-					.charAt(index += 2));
+			leftAndRightCountStringConverter.append(stringOfForestInfo.charAt(index += 2));
 			while (stringOfForestInfo.charAt(index + 1) != ' ') {
 				index++;
-				leftAndRightCountStringConverter.append(stringOfForestInfo
-						.charAt(index));
+				leftAndRightCountStringConverter.append(stringOfForestInfo.charAt(index));
 			}
 
-			int forestDepth = Integer.parseInt(leftAndRightCountStringConverter
-					.toString());
+			int forestDepth = Integer.parseInt(leftAndRightCountStringConverter.toString());
 
 			System.out.println(leftCount);
 			System.out.println(forestDepth);
@@ -156,67 +145,90 @@ public class ForestInfoParser {
 
 	/**
 	 * 
-	 * @return
-	 * @throws org.json.simple.parser.ParseException
+	 * @return an arrayList that is populated with three values if parsing is successful, or 1 value if it is 
 	 * @throws IOException
 	 */
-	public static LeafInfo readNodeInfoFromJsonFile()
+	public ArrayList<Integer> parseNodeInfo()
 			throws org.json.simple.parser.ParseException, IOException {
-		LeafInfo info = new LeafInfo();
 
+		ArrayList<Integer> leafinfo = new ArrayList<>(0);
 		try {
 
 			String sCurrentLine;
-			while ((sCurrentLine = br.readLine()) != null) { // error checking
+			if ((sCurrentLine = br.readLine()) != null) { // error checking
 				System.out.println("Record:\t" + sCurrentLine);
-				if (!sCurrentLine.startsWith("a"))
-					break; // break as its the last line of the file.
-
-				// ID PARSE BLOCK
-				int index = 2;
-				StringBuilder leafInfoStringBuilder = new StringBuilder();
-				leafInfoStringBuilder.append(sCurrentLine.charAt(index));
-				while (sCurrentLine.charAt(index + 1) != ' ') {
-					index++;
-					leafInfoStringBuilder.append(sCurrentLine.charAt(index));
+				if (!sCurrentLine.startsWith("a")
+						&& !sCurrentLine.startsWith("p")) {
+					br.close();
+					return leafinfo; // break with null values, as its the last
+										// line of the file
 				}
-				int id = Integer.parseInt(leafInfoStringBuilder.toString());
-				leafInfoStringBuilder.delete(0, leafInfoStringBuilder.length());
-				index += 2;
 
-				// LEVEL PARSE BLOCK
-				leafInfoStringBuilder.append(sCurrentLine.charAt(index));
-				while (sCurrentLine.charAt(index + 1) != ' ') {
-					index++;
-					leafInfoStringBuilder.append(sCurrentLine.charAt(index));
+				if (sCurrentLine.startsWith("p")) {
+					leafinfo.add(0);
+					leafinfo.add(0);
+					leafinfo.add(0);
+					status = sCurrentLine.substring(2);
 				}
-				int level = Integer.parseInt(leafInfoStringBuilder.toString());
-				leafInfoStringBuilder.delete(0, leafInfoStringBuilder.length());
 
-				index += 2;
-
-				// ANC PARSE BLOCK
-				leafInfoStringBuilder.append(sCurrentLine.charAt(index));
-				while (sCurrentLine.length() != index + 1
-						&& sCurrentLine.charAt(index + 1) != ' ') {
-					index++;
+				if (sCurrentLine.startsWith("a")) {
+					// ID PARSE BLOCK
+					int index = 2;
+					StringBuilder leafInfoStringBuilder = new StringBuilder();
 					leafInfoStringBuilder.append(sCurrentLine.charAt(index));
+					while (sCurrentLine.charAt(index + 1) != ' ') {
+						index++;
+						leafInfoStringBuilder
+								.append(sCurrentLine.charAt(index));
+					}
+					int id = Integer.parseInt(leafInfoStringBuilder.toString());
+					leafInfoStringBuilder.delete(0,
+							leafInfoStringBuilder.length());
+					index += 2;
+
+					// LEVEL PARSE BLOCK
+					leafInfoStringBuilder.append(sCurrentLine.charAt(index));
+					while (sCurrentLine.charAt(index + 1) != ' ') {
+						index++;
+						leafInfoStringBuilder
+								.append(sCurrentLine.charAt(index));
+					}
+					int level = Integer.parseInt(leafInfoStringBuilder
+							.toString());
+					leafInfoStringBuilder.delete(0,
+							leafInfoStringBuilder.length());
+
+					index += 2;
+
+					// ANC PARSE BLOCK
+					leafInfoStringBuilder.append(sCurrentLine.charAt(index));
+					while (sCurrentLine.length() != index + 1
+							&& sCurrentLine.charAt(index + 1) != ' ') {
+						index++;
+						leafInfoStringBuilder
+								.append(sCurrentLine.charAt(index));
+					}
+					int anc = Integer
+							.parseInt(leafInfoStringBuilder.toString());
+
+					// FINAL DEBUG AND ADDITION OF ANC AND LEVEL TO THEIR
+					// INFOHOLDER
+					System.out.println("Id, Level, ANC " + id + level + anc);
+					leafInfoStringBuilder.delete(0,
+							leafInfoStringBuilder.length());
+					leafinfo.add(id);
+					leafinfo.add(anc);
+					leafinfo.add(level);
 				}
-				int anc = Integer.parseInt(leafInfoStringBuilder.toString());
-
-				// FINAL DEBUG AND ADDITION OF ANC AND LEVEL TO THEIR INFO
-				// QUEUES
-				System.out.println("Id, Level, ANC " + id + level + anc);
-				leafInfoStringBuilder.delete(0, leafInfoStringBuilder.length());
-
-				info.addAnc(anc);
-				info.addLevel(level);
 
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		br.close();
-		return info;
+		return leafinfo;
+	}
+
+	public String getStatus() {
+		return status;
 	}
 }

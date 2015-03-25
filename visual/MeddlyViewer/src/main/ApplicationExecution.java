@@ -24,6 +24,7 @@ package main;
 import info.LeafInfo;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -36,17 +37,28 @@ import javafx.scene.chart.BarChart;
 import javafx.scene.chart.CategoryAxis;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
+import javafx.scene.control.Button;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import logic.ForestInfoParser;
 
 public class ApplicationExecution extends Application {
-	private LeafInfo info;
 	private static ForestInfoParser applicationInfoParser = new ForestInfoParser();
 
+	public static void main(String[] args)
+			throws org.json.simple.parser.ParseException {
+		launch(args);
+
+	}
+	
 	@SuppressWarnings("unchecked")
 	@Override
 	public void start(Stage stage) {
+
+		// Build Initial control buttons and set up bar chart axis
 		final NumberAxis xAxis = new NumberAxis();
 		final CategoryAxis yAxis = new CategoryAxis();
 		final BarChart<Number, String> bc = new BarChart<Number, String>(xAxis,
@@ -54,68 +66,110 @@ public class ApplicationExecution extends Application {
 		Timeline tl = new Timeline();
 		bc.setTitle("Summary of Forest Count");
 		bc.setAnimated(true);
+		bc.setMinHeight(600);
+		Button btnStart = new Button("Start");
+		Button btnStop = new Button("Stop");
+		Button btnStepToNewStatus = new Button("Run To Next Status");
+		btnStart.setMaxSize(150, 50);
+		btnStop.setMaxSize(150, 50);
+		btnStepToNewStatus.setMaxSize(150, 50);
 		xAxis.setLabel("Number of nodes");
 		xAxis.setTickLabelRotation(90);
 		yAxis.setLabel("Forest Level");
 		XYChart.Series series = null;
+		Text status = new Text(10, 50, "No Update");
+		status.setFont(new Font(20));
+		
+		
+		
+		
+		// Define handlers for control buttons
+		btnStart.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent arg0) {
+				tl.play();
+			}
 
+		});
+
+		btnStop.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent arg0) {
+				tl.stop();
+
+			}
+
+		});
+		
+		btnStart.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent arg0) {
+				tl.play();
+			}
+
+		});
+
+
+		// Data Parse Block and initialize series for timeline building
 		try {
-			
+
 			series = applicationInfoParser.initalizeForestInfo();
-			info = applicationInfoParser.readNodeInfoFromJsonFile();
-			
+
 		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (org.json.simple.parser.ParseException e) {
 			e.printStackTrace();
 		}
 
 		
+		// Animation Block - Each KeyFrame represents a new scene in the timeline. 
 		tl.getKeyFrames().addAll(
-				new KeyFrame(Duration.millis(200),
+				new KeyFrame(Duration.millis(150),
 						new EventHandler<ActionEvent>() {
 							@Override
 							public void handle(ActionEvent actionEvent) {
-								XYChart.Series<Number, String> series = bc
-										.getData().get(0);
-								try {
-									if(info.hasNext()) {
-										int level = info.getLevel();
-										int anc = info.getAnc();
-										
-										XYChart.Data<Number, String> x = (XYChart.Data<Number, String>) series
-												.getData()
-												.get((int) (level - 1));
-										System.out.print("Grabbed node at position: " + (level - 1) );
-										System.out.println(" Value at node is: " + (x.getXValue().longValue()));
-										System.out.print("Updating value anc: " + anc);
-										x.setXValue(x.getXValue().intValue() + anc);
-										System.out.println(" Value at node is: " + (x.getXValue().longValue()));
-										
-									}
+								
+								// Get the proper series from the bar chart
+								//TODO: Allow for multiple series using forest ID
+								XYChart.Series<Number, String> series = bc.getData().get(0);
 
+								try {
+									// Parse the updates for the chart from the file stream
+									ArrayList<Integer> currentInfo = applicationInfoParser.parseNodeInfo();
+									
+									// Ensure the arraylist containing the values is populated
+									if (currentInfo.size() > 0) {
+										
+										// get the anc and the level for the series to be updated
+										int anc = currentInfo.get(1);
+										int level = currentInfo.get(2);
+										
+										// Set the text of the status
+										status.setText(applicationInfoParser.getStatus().toString());
+
+										// Get the level of the bar chart to update
+										XYChart.Data<Number, String> levelOfBarChartToUpdate = (XYChart.Data<Number, String>) series.getData().get((int) (level - 1));
+										
+										// Apply the active node change to the bar level
+										levelOfBarChartToUpdate.setXValue(levelOfBarChartToUpdate.getXValue().intValue() + anc);
+																				
+									} else {
+										status.setText("Visualization Complete, No New Data");
+										tl.stop();
+									}
 								} catch (Exception e) {
 									e.printStackTrace();
 								}
-
 							}
 						}));
+		
 		tl.setCycleCount(Animation.INDEFINITE);
-		tl.play();
-		Scene scene = new Scene(bc, 800, 600);
+
+		VBox contentPane = new VBox();
+		contentPane.getChildren().addAll(bc, btnStart, btnStop, status);
+		Scene scene = new Scene(contentPane, 800, 600);
 		bc.getData().addAll(series);
 		stage.setScene(scene);
 		stage.show();
 	}
 
 	
-	
-	
-	
-	public static void main(String[] args)
-			throws org.json.simple.parser.ParseException {
-
-		launch(args);
-
-	}
 }
