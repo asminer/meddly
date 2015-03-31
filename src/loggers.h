@@ -37,6 +37,7 @@
 namespace MEDDLY {
 
   class json_logger;
+  class simple_logger;
 
 };
 
@@ -56,6 +57,30 @@ class MEDDLY::json_logger : public MEDDLY::forest::logger {
     json_logger(std::ostream &s);
     virtual ~json_logger();
 
+    virtual void addComment(const char* comment);
+    virtual void newPhase(const char* comment);
+    virtual void logForestInfo(const forest* f, const char* name);
+    virtual void addToActiveNodeCount(const forest* f, int level, long delta);
+};
+
+// ******************************************************************
+// *                                                                *
+// *                       simple_logger class                      *
+// *                                                                *
+// ******************************************************************
+
+/** For logging stats in a flexible and compact text-based format.
+    No timestamps.
+*/
+
+class MEDDLY::simple_logger : public MEDDLY::forest::logger {
+    std::ostream &out;
+  public:
+    simple_logger(std::ostream &s);
+    virtual ~simple_logger();
+
+    virtual void addComment(const char* comment);
+    virtual void newPhase(const char* comment);
     virtual void logForestInfo(const forest* f, const char* name);
     virtual void addToActiveNodeCount(const forest* f, int level, long delta);
 };
