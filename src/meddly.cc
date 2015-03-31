@@ -90,6 +90,12 @@ namespace MEDDLY {
   const numerical_opname* EXPLVECT_MATR_MULT = 0;
   const numerical_opname* MATR_EXPLVECT_MULT = 0;
 
+  // saturation operation "codes"
+
+  const satpregen_opname* SATURATION_FORWARD = 0;
+  const satpregen_opname* SATURATION_BACKWARD = 0;
+  const satotf_opname* SATURATION_OTF = 0;
+
   // cache of operations
   operation** op_cache = 0;
   // size of cache
@@ -382,7 +388,7 @@ void MEDDLY::destroyOperation(MEDDLY::binary_operation* &op)
   op = 0;
 }
 
-void MEDDLY::destroyOperation(MEDDLY::numerical_operation* &op)
+void MEDDLY::destroyOperation(MEDDLY::specialized_operation* &op)
 {
   destroyOpInternal(op);
   op = 0;

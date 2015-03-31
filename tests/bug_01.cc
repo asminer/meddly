@@ -28,6 +28,7 @@
 */
 
 #include "meddly.h"
+#include <cstdlib>
 
 #define VERBOSE
 

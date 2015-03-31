@@ -29,9 +29,46 @@
 // #include "compute_table.h"
 
 // #define DEBUG_CLEANUP
+// #define DEBUG_FINALIZE
 
 namespace MEDDLY {
   extern settings meddlySettings;
+
+  /*
+      Convert from array of linked lists to contiguous array with indexes.
+  
+      Idea:
+      traverse the array in order.
+      everything after this point is still "linked lists".
+      everything before this point is contiguous, but
+        it is possible that one of the lists points here.
+        if so, the next pointer holds the "forwarding address".
+  */
+  template <typename TYPE>
+  void defragLists(TYPE* data, int* next, int* Lists, int NL)
+  {
+    int P = 0;  // "this point"
+    for (int i=NL; i; i--) {
+      int L = Lists[i];
+      Lists[i] = P;
+      while (L>=0) {
+        // if L<P then there must be a forwarding address; follow it
+        while (L<P) L = next[L];
+        // ok, we're at the right slot now
+        int nxt = next[L];
+        if (L != P) {
+          // element L belongs in slot P, swap them...
+          SWAP(data[L], data[P]);
+          next[L] = next[P];
+          // ...and set up the forwarding address
+          next[P] = L;
+        }
+        P++;
+        L = nxt;
+      }
+    } // for k
+    Lists[0] = P;
+  }
 }
 
 // ******************************************************************
@@ -90,15 +127,376 @@ MEDDLY::binary_opname::~binary_opname()
 }
 
 // ******************************************************************
+// *                   specialized_opname methods                   *
+// ******************************************************************
+
+MEDDLY::specialized_opname::arguments::arguments()
+{
+  setAutoDestroy(true);
+}
+
+MEDDLY::specialized_opname::arguments::~arguments()
+{
+}
+
+
+MEDDLY::specialized_opname::specialized_opname(const char* n) : opname(n)
+{
+}
+
+MEDDLY::specialized_opname::~specialized_opname()
+{
+}
+
+// ******************************************************************
 // *                    numerical_opname methods                    *
 // ******************************************************************
 
-MEDDLY::numerical_opname::numerical_opname(const char* n) : opname(n)
+MEDDLY::numerical_opname::numerical_args
+::numerical_args(const dd_edge &xi, const dd_edge &a, const dd_edge &yi)
+ : x_ind(xi), A(a), y_ind(yi)
+{
+}
+
+MEDDLY::numerical_opname::numerical_args::~numerical_args()
+{
+}
+
+
+MEDDLY::numerical_opname::numerical_opname(const char* n)
+ : specialized_opname(n)
 {
 }
 
 MEDDLY::numerical_opname::~numerical_opname()
 {
+}
+
+// ******************************************************************
+// *                                                                *
+// *                    satpregen_opname methods                    *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::satpregen_opname::satpregen_opname(const char* n)
+ : specialized_opname(n)
+{
+}
+
+MEDDLY::satpregen_opname::~satpregen_opname()
+{
+}
+
+
+void
+MEDDLY::satpregen_opname::pregen_relation
+::setForests(forest* inf, forest* mxd, forest* outf)
+{
+  insetF = inf;
+  outsetF = outf;
+  mxdF = smart_cast <MEDDLY::expert_forest*>(mxd);
+  if (0==insetF || 0==outsetF || 0==mxdF) throw error(error::MISCELLANEOUS);
+
+  // Check for same domain
+  if (  
+    (insetF->getDomain() != mxdF->getDomain()) || 
+    (outsetF->getDomain() != mxdF->getDomain()) 
+  )
+    throw error(error::DOMAIN_MISMATCH);
+
+  // for now, anyway, inset and outset must be same forest
+  if (insetF != outsetF)
+    throw error(error::FOREST_MISMATCH);
+
+  // Check forest types
+  if (
+    insetF->isForRelations()    ||
+    !mxdF->isForRelations()     ||
+    outsetF->isForRelations()   ||
+    (insetF->getRangeType() != mxdF->getRangeType())        ||
+    (outsetF->getRangeType() != mxdF->getRangeType())       ||
+    (insetF->getEdgeLabeling() != forest::MULTI_TERMINAL)   ||
+    (outsetF->getEdgeLabeling() != forest::MULTI_TERMINAL)  ||
+    (mxdF->getEdgeLabeling() != forest::MULTI_TERMINAL)     ||
+    (outsetF->getEdgeLabeling() != forest::MULTI_TERMINAL)
+  )
+    throw error(error::TYPE_MISMATCH);
+
+  // Forests are good; set number of variables
+  K = mxdF->getDomain()->getNumVariables();
+}
+
+MEDDLY::satpregen_opname::pregen_relation
+::pregen_relation(forest* inf, forest* mxd, forest* outf, int nevents)
+{
+  setForests(inf, mxd, outf);
+
+  num_events = nevents;
+  if (num_events) {
+    events = new node_handle[num_events];
+    next = new int[num_events];
+  } else {
+    events = 0;
+    next = 0;
+  }
+  last_event = -1;
+
+  level_index = new int[K+1];
+  for (int k=0; k<=K; k++) level_index[k] = -1;   // null pointer
+}
+
+MEDDLY::satpregen_opname::pregen_relation
+::pregen_relation(forest* inf, forest* mxd, forest* outf)
+{
+  setForests(inf, mxd, outf);
+
+  events = new node_handle[K+1];
+  for (int k=0; k<=K; k++) events[k] = 0;
+
+  next = 0;
+  level_index = 0;
+
+  num_events = -1;
+  last_event = -1;
+}
+
+
+MEDDLY::satpregen_opname::pregen_relation
+::~pregen_relation()
+{
+  delete[] events;
+  delete[] next;
+  delete[] level_index;
+}
+
+void
+MEDDLY::satpregen_opname::pregen_relation
+::addToRelation(const dd_edge &r)
+{
+  MEDDLY_DCASSERT(mxdF);
+
+  if (r.getForest() != mxdF)  throw error(error::FOREST_MISMATCH);
+
+  int k = r.getLevel(); 
+  if (0==k) return;
+  if (k<0) k = -k;   
+
+  if (0==level_index) {
+    // relation is "by levels"
+
+    if (0==events[k]) {
+      events[k] = mxdF->linkNode(r.getNode());
+    } else {
+      // already have something at this level; perform the union
+      dd_edge tmp(mxdF);
+      tmp.set(events[k]); // does not increase incoming count
+      tmp += r;
+      events[k] = mxdF->linkNode(tmp.getNode());
+      // tmp should be destroyed here
+    }
+
+  } else {
+    // relation is "by events"
+
+    if (isFinalized())              throw error(error::MISCELLANEOUS);
+    if (last_event+1 >= num_events) throw error(error::OVERFLOW);
+
+    last_event++;
+
+    events[last_event] = mxdF->linkNode(r.getNode());
+    next[last_event] = level_index[k];
+    level_index[k] = last_event;
+  }
+}
+
+void
+MEDDLY::satpregen_opname::pregen_relation
+::finalize()
+{
+  if (0==level_index) return; // by levels, nothing to do
+#ifdef DEBUG_FINALIZE
+  printf("Finalizing pregen relation\n");
+  printf("%d events total\n", last_event+1);
+  printf("events array: [");
+  for (int i=0; i<=last_event; i++) {
+    if (i) printf(", ");
+    printf("%d", events[i]);
+  }
+  printf("]\n");
+  printf("next array: [");
+  for (int i=0; i<=last_event; i++) {
+    if (i) printf(", ");
+    printf("%d", next[i]);
+  }
+  printf("]\n");
+  printf("level_index array: [%d", level_index[1]);
+  for (int i=2; i<=K; i++) {
+    printf(", %d", level_index[i]);
+  }
+  printf("]\n");
+#endif
+
+  // convert from array of linked lists to contiguous array.
+  defragLists(events, next, level_index, K);
+
+  // done with next pointers
+  delete[] next;
+  next = 0;
+
+#ifdef DEBUG_FINALIZE
+  printf("\nAfter finalization\n");
+  printf("events array: [");
+  for (int i=0; i<=last_event; i++) {
+    if (i) printf(", ");
+    printf("%d", events[i]);
+  }
+  printf("]\n");
+  printf("level_index array: [%d", level_index[1]);
+  for (int i=2; i<=K; i++) {
+    printf(", %d", level_index[i]);
+  }
+  printf("]\n");
+#endif
+}
+
+
+// ******************************************************************
+// *                                                                *
+// *                     satotf_opname  methods                     *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::satotf_opname::satotf_opname(const char* n)
+ : specialized_opname(n)
+{
+}
+
+MEDDLY::satotf_opname::~satotf_opname()
+{
+}
+
+// ============================================================
+
+MEDDLY::satotf_opname::subfunc::subfunc(int* v, int nv)
+{
+  vars = v;
+  num_vars = nv;
+}
+
+MEDDLY::satotf_opname::subfunc::~subfunc()
+{
+  delete[] vars;
+}
+
+// ============================================================
+
+MEDDLY::satotf_opname::event::event(subfunc** p, int np)
+{
+  pieces = p;
+  num_pieces = np;
+}
+
+MEDDLY::satotf_opname::event::~event()
+{
+  for (int i=0; i<num_pieces; i++) delete pieces[i];
+  delete[] pieces;
+}
+
+void MEDDLY::satotf_opname::event::rebuild(dd_edge &e)
+{
+  throw error(error::NOT_IMPLEMENTED);
+}
+
+// ============================================================
+
+MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd, 
+  forest* mxd, forest* outmdd, event** E, int ne)
+{
+  // Set forests
+  insetF = inmdd;
+  mxdF = mxd;
+  outsetF = outmdd;
+
+  if (0==insetF || 0==outsetF || 0==mxdF) throw error(error::MISCELLANEOUS);
+
+  // Check for same domain
+  if (  
+    (insetF->getDomain() != mxdF->getDomain()) || 
+    (outsetF->getDomain() != mxdF->getDomain()) 
+  )
+    throw error(error::DOMAIN_MISMATCH);
+
+  // for now, anyway, inset and outset must be same forest
+  if (insetF != outsetF)
+    throw error(error::FOREST_MISMATCH);
+
+  // Check forest types
+  if (
+    insetF->isForRelations()    ||
+    !mxdF->isForRelations()     ||
+    outsetF->isForRelations()   ||
+    (insetF->getRangeType() != mxdF->getRangeType())        ||
+    (outsetF->getRangeType() != mxdF->getRangeType())       ||
+    (insetF->getEdgeLabeling() != forest::MULTI_TERMINAL)   ||
+    (outsetF->getEdgeLabeling() != forest::MULTI_TERMINAL)  ||
+    (mxdF->getEdgeLabeling() != forest::MULTI_TERMINAL)     ||
+    (outsetF->getEdgeLabeling() != forest::MULTI_TERMINAL)
+  )
+    throw error(error::TYPE_MISMATCH);
+
+  // Forests are good; set number of variables
+  K = mxdF->getDomain()->getNumVariables();
+
+  // Events
+  events = E;
+  num_events = ne;
+
+  // preprocess events
+  // (1) determine total size of pieces array
+  int piecesLength = 0;
+  for (int i=0; i<num_events; i++) if (events[i]) {
+    const subfunc* const* PL = events[i]->getPieces();
+    for (int p=events[i]->getNumPieces()-1; p>=0; p--) {
+      piecesLength += PL[p]->getNumVars();
+    }
+  }
+  // (2) build empty list for each level
+  piecesForLevel = new int[K+1];
+  for (int k=0; k<=K; k++) piecesForLevel[k] = -1;
+  // (3) for each piece, add it to the appropriate lists
+  pieces = new subfunc*[piecesLength];
+  int* nextPiece = new int[piecesLength];
+  int pptr = 0;
+  for (int i=0; i<num_events; i++) if (events[i]) {
+    subfunc** PL = events[i]->getPieces();
+    for (int p=events[i]->getNumPieces()-1; p>=0; p--) {
+      for (int v=PL[p]->getNumVars()-1; v>=0; v--) {
+        int k = PL[p]->getVars()[v];
+        // add PL[p] to list k
+        pieces[pptr] = PL[p];
+        nextPiece[pptr] = piecesForLevel[k];
+        piecesForLevel[k] = pptr;
+        pptr++;
+      } // for v
+      piecesLength += PL[p]->getNumVars();
+    } // for p
+  } // for i
+  // (4) defragment lists
+  defragLists(pieces, nextPiece, piecesForLevel, K);
+  // (5) cleanup
+  delete[] nextPiece;
+
+  // TBD - debug here
+}
+
+MEDDLY::satotf_opname::otf_relation::~otf_relation()
+{
+  for (int i=0; i<num_events; i++) delete events[i];
+  delete[] events;
+
+  // DO NOT delete pieces[i] pointers, they're copies
+  delete[] pieces;
+  delete[] piecesForLevel;
 }
 
 // ******************************************************************
@@ -357,22 +755,36 @@ void MEDDLY::binary_operation::compute(float av, node_handle ap,
 }
 
 // ******************************************************************
-// *                  numerical_operation  methods                  *
+// *                 specialized_operation  methods                 *
 // ******************************************************************
 
-MEDDLY::numerical_operation::numerical_operation(const numerical_opname* op) 
- : operation(op, 0, 0)
+MEDDLY::
+specialized_operation::
+specialized_operation(const specialized_opname* op, int kl, int al) 
+ : operation(op, kl, al)
 {
 }
 
-MEDDLY::numerical_operation::~numerical_operation()
+MEDDLY::specialized_operation::~specialized_operation()
 {
 }
 
-void MEDDLY::numerical_operation::compute(double* y, const double* x)
+void MEDDLY::specialized_operation::compute(const dd_edge &arg, dd_edge &res)
 {
   throw error(error::TYPE_MISMATCH);
 }
+
+void MEDDLY::specialized_operation::compute(const dd_edge &ar1, 
+  const dd_edge &ar2, dd_edge &res)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::specialized_operation::compute(double* y, const double* x)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
 
 // ******************************************************************
 // *                     op_initializer methods                     *

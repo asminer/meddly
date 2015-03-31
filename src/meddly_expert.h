@@ -93,7 +93,10 @@ namespace MEDDLY {
   class opname;
   class unary_opname;
   class binary_opname;
+  class specialized_opname;
   class numerical_opname;
+  class satpregen_opname;
+  class satotf_opname;
 
   class compute_table_style;
   class compute_table;
@@ -101,7 +104,7 @@ namespace MEDDLY {
   class operation;
   class unary_operation;
   class binary_operation;
-  class numerical_operation;
+  class specialized_operation;
 
   class op_initializer;
 
@@ -132,6 +135,28 @@ namespace MEDDLY {
   */
   extern const numerical_opname* MATR_EXPLVECT_MULT; 
   // extern const numerical_opname* MATR_VECT_MULT; // renamed!
+
+  // ******************************************************************
+  // *                                                                *
+  // *                  Named saturation operations                   *
+  // *                                                                *
+  // ******************************************************************
+
+  /** Forward reachability using saturation.
+      Transition relation is already known.
+  */
+  extern const satpregen_opname* SATURATION_FORWARD;
+
+  /** Backward reachability using saturation.
+      Transition relation is already known.
+  */
+  extern const satpregen_opname* SATURATION_BACKWARD;
+
+  /** Forward reachability using saturation.
+      Transition relation is not completely known,
+      will be built along with reachability set.
+  */
+  extern const satotf_opname* SATURATION_OTF;
 
   // ******************************************************************
   // *                                                                *
@@ -216,7 +241,7 @@ namespace MEDDLY {
   void destroyOperation(binary_operation* &op);
 
   /// Safely destroy the given numerical operation.
-  void destroyOperation(numerical_operation* &op);
+  void destroyOperation(specialized_operation* &op);
 
   /// Should not be called directly.
   void destroyOpInternal(operation* op);
@@ -2783,26 +2808,381 @@ class MEDDLY::binary_opname : public opname {
 
 // ******************************************************************
 // *                                                                *
+// *                    specialized_opname class                    *
+// *                                                                *
+// ******************************************************************
+
+/// Specialized operation names.
+class MEDDLY::specialized_opname : public opname {
+  public:
+    /**
+      Abstract base class for arguments to buildOperation().
+      Derived operation names must provide derived classes for arguments.
+    */
+    class arguments {
+      public:
+        arguments();
+        virtual ~arguments();
+
+        /**
+            Specify if arguments should be destroyed or not.
+            If yes (the default), the operation will destroy
+            the arguments once they are no longer needed.
+        */
+        inline void setAutoDestroy(bool destroy) {
+          destroyWhenDone = destroy;
+        }
+
+        inline bool autoDestroy() const {
+          return destroyWhenDone;
+        }
+
+      private:
+        bool destroyWhenDone;
+    };
+
+  public:
+    specialized_opname(const char* n);
+    virtual ~specialized_opname();
+
+    /** Note - unlike the more general binary and unary ops,
+        a specialized operation might be crafted to the specific
+        arguments (passed as an abstract class).
+        Examples are: 
+          - operations that will be called several times with
+            several of the arguments unchanged, and we want
+            to do some preprocessing on the unchanged arguments.
+
+          - operations with very bizarre and/or user-defined
+            parameters (like on-the-fly saturation).
+
+        @param  a   Arguments.  Will be destroyed when we are finished,
+                    if autoDestroy() is set for the arguments.
+    */
+    virtual specialized_operation* buildOperation(arguments* a) const = 0;
+};
+
+// ******************************************************************
+// *                                                                *
 // *                     numerical_opname class                     *
 // *                                                                *
 // ******************************************************************
 
 /// Numerical operation names.
-class MEDDLY::numerical_opname : public opname {
+class MEDDLY::numerical_opname : public specialized_opname {
+  public:
+    class numerical_args : public specialized_opname::arguments {
+      public:
+        const dd_edge &x_ind;
+        const dd_edge &A;
+        const dd_edge &y_ind;
+      public:
+        numerical_args(const dd_edge &xi, const dd_edge &a, const dd_edge &yi);
+        virtual ~numerical_args();
+    };
+
   public:
     numerical_opname(const char* n);
     virtual ~numerical_opname();
 
-    /** Note - unlike the more general binary and unary ops,
-        a numerical operation might be crafted to the specific
-        arguments, for speed.
-        The idea is that these operations will be called several
-        times (say, within a linear solver) with the same dd_edges.
-    */
-    virtual numerical_operation* buildOperation(const dd_edge &x_ind,
-      const dd_edge &A, const dd_edge &y_ind) const = 0;
+
+    virtual specialized_operation* buildOperation(arguments* a) const = 0;
+
+    /// For convenience, and backward compatability :^)
+    inline specialized_operation* buildOperation(const dd_edge &x_ind,
+      const dd_edge &A, const dd_edge &y_ind) const
+    {
+      numerical_args na(x_ind, A, y_ind);
+      na.setAutoDestroy(false);   // na will be destroyed when we return
+      return buildOperation(&na);
+    }
 };
 
+
+// ******************************************************************
+// *                                                                *
+// *                     satpregen_opname class                     *
+// *                                                                *
+// ******************************************************************
+
+/// Saturation, with already generated transition relations, operation names.
+class MEDDLY::satpregen_opname : public specialized_opname {
+  public:
+    satpregen_opname(const char* n);
+    virtual ~satpregen_opname();
+
+    /// Arguments should have type "pregen_relation".
+    virtual specialized_operation* buildOperation(arguments* a) const = 0;
+
+
+  //
+  // Gory details below
+  //
+
+  public:
+    /** Class for a partitioned transition relation, already known
+        The relation can be partitioned "by events" or "by levels".
+        In the case of "by events", we can have more than one relation
+        per level; otherwise, there is at most one relation per level.
+    */
+    class pregen_relation : public specialized_opname::arguments {
+      public:
+        /** Constructor, by events
+              @param  inmdd       MDD forest containing initial states
+              @param  mxd         MxD forest containing relations
+              @param  outmdd      MDD forest containing result
+              @param  num_events  Number of events; specifies the maximum
+                                  number of calls to addToRelation().
+        */
+        pregen_relation(forest* inmdd, forest* mxd, forest* outmdd, 
+          int num_events);
+
+        /** Constructor, by levels
+              @param  inmdd       MDD forest containing initial states
+              @param  mxd         MxD forest containing relations
+              @param  outmdd      MDD forest containing result
+        */
+        pregen_relation(forest* inmdd, forest* mxd, forest* outmdd);
+
+        virtual ~pregen_relation();
+        void addToRelation(const dd_edge &r);
+
+        void finalize();
+
+        inline bool isFinalized() const { return 0 == next; }
+
+        // the following methods assume the relation has been finalized.
+
+        inline node_handle* arrayForLevel(int k) const {
+          MEDDLY_DCASSERT(isFinalized());
+          MEDDLY_CHECK_RANGE(1, k, K+1);
+          if (level_index) {
+            // "by events"
+            if (level_index[k-1] > level_index[k]) {
+              return events + level_index[k];
+            } else {
+              // empty list
+              return 0;
+            }
+          } else {
+            // "by levels"
+            if (events[k])  return events+k;
+            else            return 0;
+          }
+        }
+
+        inline int lengthForLevel(int k) const {
+          MEDDLY_DCASSERT(isFinalized());
+          MEDDLY_CHECK_RANGE(1, k, K+1);
+          if (level_index) {
+            // "by events"
+            return level_index[k-1] - level_index[k];
+          } else {
+            // "by levels"
+            return events[k] ? 1 : 0;
+          }
+        }
+
+        inline forest* getInForest() const {
+          return insetF;
+        }
+
+        inline forest* getRelForest() const {
+          return mxdF;
+        }
+
+        inline forest* getOutForest() const {
+          return outsetF;
+        }
+
+      private:
+        // helper for constructors
+        void setForests(forest* inf, forest* mxd, forest* outf);
+
+      private:
+        forest* insetF;
+        expert_forest* mxdF;
+        forest* outsetF;
+        int K;
+        // array of sub-relations
+        node_handle* events;
+        // next pointers, unless we're finalized
+        int* next;
+        // size of events array
+        int num_events;
+        // last used element of events array
+        int last_event;
+
+        // If null, then we are "by levels".  Otherwise, we are "by events",
+        // and before we're finalized, level_index[k] points to a linked-list
+        // of sub-relations that affect level k.
+        // after we're finalized, the events array is sorted, so
+        // level_index[k] is the index of the first event affecting level k.
+        // Dimension is number of variables + 1.
+        int* level_index;
+    };
+
+};
+
+
+
+// ******************************************************************
+// *                                                                *
+// *                      satotf_opname  class                      *
+// *                                                                *
+// ******************************************************************
+
+/// Saturation, transition relations built on the fly, operation names.
+class MEDDLY::satotf_opname : public specialized_opname {
+  public:
+    satotf_opname(const char* n);
+    virtual ~satotf_opname();
+
+    /// Arguments should have type "otf_relation", below
+    virtual specialized_operation* buildOperation(arguments* a) const = 0;
+
+
+  //
+  // Gory details below
+  //
+
+  public:
+    class otf_relation;
+
+    // ============================================================
+
+    /**
+        Part of an enabling or updating function.
+        It knows what variables it depends on, and how to build itself
+        (provided by the user).
+    */
+    class subfunc {
+      private:
+        int* vars;
+        int num_vars;
+        dd_edge root;
+      public:
+        /// Constructor, specify variables that this function depends on.
+        subfunc(int* v, int nv);
+        virtual ~subfunc();
+
+        /// Get number of variables we depend on
+        inline int getNumVars() const {
+          return num_vars;
+        }
+
+        /// Get array of variables we depend on
+        inline const int* getVars() const {
+          return vars;
+        }
+
+        /// Get the DD encoding of the current sub-function
+        inline const dd_edge& getRoot() const {
+          return root;
+        }
+
+        /**
+          Update the sub-function, as local states are confirmed.
+          User MUST provide this method, which should use setRoot()
+          to update the DD encoding.
+        */
+        virtual void update(otf_relation &rel) = 0;
+
+      protected:
+        inline void setRoot(dd_edge &r) {
+          root = r;
+        }
+        
+    };
+
+    // ============================================================
+
+    /**
+        An "event".
+        Produces part of the transition relation, from its sub-functions.
+
+        TBD - do we need to split the enabling and updating sub-functions,
+        or will one giant list work fine?
+    */
+    class event {
+      private:
+        subfunc** pieces;
+        int num_pieces;
+        
+        // TBD - put a list of events that have priority over this one
+
+        // TBD - list of levels that we depend on - built from pieces
+
+      public:
+        event(subfunc** p, int np);
+        virtual ~event();
+
+        /// Get number of pieces
+        inline int getNumPieces() const {
+          return num_pieces;
+        }
+
+        /// Get array of subfuncs
+        inline subfunc** getPieces() const {
+          return pieces;
+        }
+
+        /**
+            Rebuild the relation due to this event, from its sub-functions.
+            Default assumes that we take the conjunction of all the parts;
+            but users can override this behavior.
+
+              @param  e   Relation is written to this edge.
+        */
+        virtual void rebuild(dd_edge &e);
+
+
+        // TBD - for priority - when is this event enabled?
+
+    };
+
+    // ============================================================
+
+    /**
+        Overall relation.
+        This includes all events, and keeping track of which local
+        variables are confirmed.
+
+        TBD.
+    */
+    class otf_relation {
+      private:
+        forest* insetF;
+        forest* mxdF;
+        forest* outsetF;
+        int K;
+
+        event** events;
+        int num_events;
+
+        //
+        // For each level, list of pieces to update
+        // if that level changes.
+        subfunc** pieces;
+        int* piecesForLevel;
+
+        // TBD - for each level, list of events to update
+
+      public:
+        /** Constructor.
+              @param  inmdd       MDD forest containing initial states
+              @param  mxd         MxD forest containing relations
+              @param  outmdd      MDD forest containing result
+              @param  E           List of events
+              @param  nE          Number of events
+        */
+        otf_relation(forest* inmdd, forest* mxd, forest* outmdd, 
+          event** E, int ne);
+
+        virtual ~otf_relation();
+    };
+
+};
 
 // ******************************************************************
 // *                                                                *
@@ -3307,19 +3687,35 @@ class MEDDLY::binary_operation : public operation {
 
 // ******************************************************************
 // *                                                                *
-// *                   numerical_operation  class                   *
+// *                  specialized_operation  class                  *
 // *                                                                *
 // ******************************************************************
 
-/** Mechanism to apply numerical operations to specific edges.
+/** Mechanism to apply specialized operations.
 */
-class MEDDLY::numerical_operation : public operation {
+class MEDDLY::specialized_operation : public operation {
   public:
-    numerical_operation(const numerical_opname* code);
+    specialized_operation(const specialized_opname* code, int kl, int al);
   protected:
-    virtual ~numerical_operation();
+    virtual ~specialized_operation();
   public:
-    /// compute y += some function of x, depending on the operation.
+
+    /** For unary (like) operations.
+        Note that there could be other "built in" operands.
+        Default behavior is to throw an exception.
+    */
+    virtual void compute(const dd_edge &arg, dd_edge &res);
+
+    /** For binary (like) operations.
+        Note that there could be other "built in" operands.
+        Default behavior is to throw an exception.
+    */
+    virtual void compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res);
+    
+    /** For numerical operations.
+        compute y += some function of x, depending on the operation.
+        Default behavior is to throw an exception.
+    */
     virtual void compute(double* y, const double* x);
 };
 

@@ -54,6 +54,7 @@
 #include "prepostimage.h"
 #include "reach_bfs.h"
 #include "reach_dfs.h"
+#include "sat_pregen.h"
 
 #include "vect_matr.h"
 
@@ -100,6 +101,9 @@ void MEDDLY::builtin_initializer::init(const settings &s)
   initP(MEDDLY::REACHABLE_STATES_BFS, FORWARD_BFS,  initializeForwardBFS(s) );
   initP(MEDDLY::REVERSE_REACHABLE_DFS,BACKWARD_DFS, initializeBackwardDFS(s));
   initP(MEDDLY::REVERSE_REACHABLE_BFS,BACKWARD_BFS, initializeBackwardBFS(s));
+
+  initP(MEDDLY::SATURATION_FORWARD,   SATURATION_FORWARD,   initSaturationForward(s)  );
+  initP(MEDDLY::SATURATION_BACKWARD,  SATURATION_BACKWARD,  initSaturationBackward(s) );
 
   initP(MEDDLY::VM_MULTIPLY,          VM_MULTIPLY,  initializeVMmult(s)     );
   initP(MEDDLY::MV_MULTIPLY,          MV_MULTIPLY,  initializeMVmult(s)     );
@@ -152,6 +156,9 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(FORWARD_BFS,    MEDDLY::REACHABLE_STATES_BFS);
   cleanPair(BACKWARD_DFS,   MEDDLY::REVERSE_REACHABLE_DFS);
   cleanPair(BACKWARD_BFS,   MEDDLY::REVERSE_REACHABLE_BFS);
+
+  cleanPair(SATURATION_BACKWARD,  MEDDLY::SATURATION_BACKWARD );
+  cleanPair(SATURATION_FORWARD,   MEDDLY::SATURATION_FORWARD  );
 
   cleanPair(EXPLVECT_MATR_MULT, MEDDLY::EXPLVECT_MATR_MULT);
   cleanPair(MATR_EXPLVECT_MULT, MEDDLY::MATR_EXPLVECT_MULT);

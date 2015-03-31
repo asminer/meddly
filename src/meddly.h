@@ -519,6 +519,8 @@ class MEDDLY::error {
       INVALID_POLICY,
       /// Bad value for something.
       INVALID_ASSIGNMENT,
+      /// Invalid argument (for specialized operations)
+      INVALID_ARGUMENT,
       /// File format error.
       INVALID_FILE,
       /// File output error.
@@ -549,6 +551,7 @@ class MEDDLY::error {
           case  DIVIDE_BY_ZERO:       return "Divide by zero";
           case  INVALID_POLICY:       return "Invalid policy";
           case  INVALID_ASSIGNMENT:   return "Invalid assignment";
+          case  INVALID_ARGUMENT:     return "Invalid argument";
           case  INVALID_FILE:         return "Invalid file";
           case  COULDNT_WRITE:        return "Couldn't write to file";
           case  MISCELLANEOUS:        return "Miscellaneous";

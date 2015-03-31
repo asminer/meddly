@@ -67,8 +67,6 @@
 #define REORDER_CUBE 0
 #define FACED_ORDERING 0
 
-#define FROM_TO 0
-
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
@@ -236,6 +234,13 @@ void SetIntArray(int p[], const int p_size, const int c)
   for (int i=0; i<p_size; i++) p[i] = c;
 }
 
+void PrintIntArray(int p[], const int p_size)
+{
+  printf("[");
+  for (int i=0; i<p_size; i++) printf("%d ", p[i]);
+  printf("]\n");
+}
+
 
 dd_edge BuildMoveHelper(
   int type3_a,
@@ -291,18 +296,17 @@ dd_edge BuildMoveHelper(
     // initialize elements
     from[i][0] = 0;
     to[i][0] = 0;
-    SetIntArray(from[i] + 1, sz - 1, -2);
-    SetIntArray(to[i] + 1, sz - 1, -2);
-    from[i][a3] = -1; to[i][a3] = -1;
-    from[i][b3] = -1; to[i][b3] = -1;
-    from[i][c3] = -1; to[i][c3] = -1;
-    from[i][d3] = -1; to[i][d3] = -1;
-    from[i][a2] = -1; to[i][a2] = -1;
-    from[i][b2] = -1; to[i][b2] = -1;
-    from[i][c2] = -1; to[i][c2] = -1;
-    from[i][d2] = -1; to[i][d2] = -1;
+    SetIntArray(from[i] + 1, sz - 1, DONT_CARE);
+    SetIntArray(to[i] + 1, sz - 1, DONT_CHANGE);
+    to[i][a3] = DONT_CARE;
+    to[i][b3] = DONT_CARE;
+    to[i][c3] = DONT_CARE;
+    to[i][d3] = DONT_CARE;
+    to[i][a2] = DONT_CARE;
+    to[i][b2] = DONT_CARE;
+    to[i][c2] = DONT_CARE;
+    to[i][d2] = DONT_CARE;
   }
-
 
   int currElement = 0;
 
@@ -379,62 +383,63 @@ dd_edge BuildMoveHelper(
     currElement++;
   }
 
-
   // compute result = union elements to create an mxd for each component
   // and then intersect the mxds.
 
-#if FROM_TO
-  
-#else
-  int** swapper = from;
-  from = to;
-  to = swapper;
-#endif
-
   dd_edge result(relation);
+  dd_edge temp(relation);
   int offset = 0;
 
   // a3' <- d3
-  {
-    dd_edge temp(relation);
-    relation->createEdge(from + offset, to + offset, type3, temp);
-    result = temp;
-    offset += type3;
-  }
+
+  relation->createEdge(from + offset, to + offset, type3, result);
+  offset += type3;
 
   // b3' <- a3
+  relation->createEdge(from + offset, to + offset, type3, temp);
+  result *= temp;
+  offset += type3;
+
   // c3' <- b3
+  relation->createEdge(from + offset, to + offset, type3, temp);
+  result *= temp;
+  offset += type3;
+
   // d3' <- c3
-  for (int i = 0; i < 3; i++)
-  {
-    dd_edge temp(relation);
-    relation->createEdge(from + offset, to + offset, type3, temp);
-    result *= temp;
-    offset += type3;
-  }
+  relation->createEdge(from + offset, to + offset, type3, temp);
+  result *= temp;
+  offset += type3;
 
   // a2' <- d2
+  relation->createEdge(from + offset, to + offset, type2, temp);
+  result *= temp;
+  offset += type2;
+
   // b2' <- a2
+  relation->createEdge(from + offset, to + offset, type2, temp);
+  result *= temp;
+  offset += type2;
+
   // c2' <- b2
+  relation->createEdge(from + offset, to + offset, type2, temp);
+  result *= temp;
+  offset += type2;
+
   // d2' <- c2
-  for (int i = 0; i < 4; i++)
-  {
-    dd_edge temp(relation);
-    relation->createEdge(from + offset, to + offset, type2, temp);
-    result *= temp;
-    offset += type2;
-  }
+  relation->createEdge(from + offset, to + offset, type2, temp);
+  result *= temp;
+  offset += type2;
 
   assert(offset == nElements);
 
   // delete arrays
   for (int i = 0; i < nElements; i++)
   {
-    delete from[i];
-    delete to[i];
+    free(from[i]);
+    free(to[i]);
   }
-  delete from;
-  delete to;
+  free(from);
+  free(to);
   
   return result;
 }
@@ -495,16 +500,16 @@ dd_edge BuildFlipMoveHelper(
     // initialize elements
     from[i][0] = 0;
     to[i][0] = 0;
-    SetIntArray(from[i] + 1, sz - 1, -2);
-    SetIntArray(to[i] + 1, sz - 1, -2);
-    from[i][a3] = -1; to[i][a3] = -1;
-    from[i][b3] = -1; to[i][b3] = -1;
-    from[i][c3] = -1; to[i][c3] = -1;
-    from[i][d3] = -1; to[i][d3] = -1;
-    from[i][a2] = -1; to[i][a2] = -1;
-    from[i][b2] = -1; to[i][b2] = -1;
-    from[i][c2] = -1; to[i][c2] = -1;
-    from[i][d2] = -1; to[i][d2] = -1;
+    SetIntArray(from[i] + 1, sz - 1, DONT_CARE);
+    SetIntArray(to[i] + 1, sz - 1, DONT_CHANGE);
+    to[i][a3] = DONT_CARE;
+    to[i][b3] = DONT_CARE;
+    to[i][c3] = DONT_CARE;
+    to[i][d3] = DONT_CARE;
+    to[i][a2] = DONT_CARE;
+    to[i][b2] = DONT_CARE;
+    to[i][c2] = DONT_CARE;
+    to[i][d2] = DONT_CARE;
   }
 
 
@@ -587,14 +592,6 @@ dd_edge BuildFlipMoveHelper(
   // compute result = union elements to create an mxd for each component
   // and then intersect the mxds.
 
-#if FROM_TO
-  
-#else
-  int** swapper = from;
-  from = to;
-  to = swapper;
-#endif
-
   dd_edge result(relation);
   int offset = 0;
 
@@ -634,11 +631,11 @@ dd_edge BuildFlipMoveHelper(
   // delete arrays
   for (int i = 0; i < nElements; i++)
   {
-    delete from[i];
-    delete to[i];
+    free(from[i]);
+    free(to[i]);
   }
-  delete from;
-  delete to;
+  free(from);
+  free(to);
   
   return result;
 }
@@ -646,9 +643,6 @@ dd_edge BuildFlipMoveHelper(
 
 dd_edge BuildMove(face f, direction d) {
   dd_edge result(relation);
-#if FROM_TO
-  if (d != FLIP) { d = (d == CW)? CCW: CW; }
-#endif
   switch (f) {
     case U:
       if (d == CW) {
@@ -725,7 +719,9 @@ const char* face_to_string(face f){
 void usage() {
   fprintf(stderr, "Usage: rubik_cube [-bfs|-dfs|-l<key>|-p]\n");
   fprintf(stderr, "-bfs   : use traditional algorithm to compute reachable states\n");
-  fprintf(stderr, "-dfs   : use depth-first algorithm to compute reachable states\n");
+  fprintf(stderr, "-msat  : use saturation with monolithic relation compute reachable states\n");
+  fprintf(stderr, "-esat  : use saturation with event-wise relation compute reachable states\n");
+  fprintf(stderr, "-ksat  : use saturation with level-wise relation compute reachable states\n");
   fprintf(stderr, "-l<key>: key can be any combination of\n");
   fprintf(stderr, "         A: Front face clock-wise rotation,\n");
   fprintf(stderr, "         a: Front face counter clock-wise rotation,\n");
@@ -769,9 +765,63 @@ class moves {
       BF(false), LCW(false), LCCW(false), LF(false), RCW(false),
       RCCW(false), RF(false), UCW(false), UCCW(false), UF(false),
       DCW(false), DCCW(false), DF(false) {}
+
+    int countEnabledMoves() const {
+      int count = 0;
+      if (FCW) count++;
+      if (BCW) count++;
+      if (UCW) count++;
+      if (DCW) count++;
+      if (LCW) count++;
+      if (RCW) count++;
+      if (FCCW) count++;
+      if (BCCW) count++;
+      if (UCCW) count++;
+      if (DCCW) count++;
+      if (LCCW) count++;
+      if (RCCW) count++;
+      if (FF) count++;
+      if (BF) count++;
+      if (UF) count++;
+      if (DF) count++;
+      if (LF) count++;
+      if (RF) count++;
+      return count;
+    }
 };
 
 
+void buildOverallNextStateFunction(const moves& m,
+    satpregen_opname::pregen_relation& ensf)
+{
+  // Build each move using BuildMove().
+  
+  // Clock-wise moves
+  if (m.FCW) ensf.addToRelation(BuildMove(F, CW));
+  if (m.BCW) ensf.addToRelation(BuildMove(B, CW));
+  if (m.UCW) ensf.addToRelation(BuildMove(U, CW));
+  if (m.DCW) ensf.addToRelation(BuildMove(D, CW));
+  if (m.LCW) ensf.addToRelation(BuildMove(L, CW));
+  if (m.RCW) ensf.addToRelation(BuildMove(R, CW));
+
+  // Counter clock-wise moves
+  if (m.FCCW) ensf.addToRelation(BuildMove(F, CCW));
+  if (m.BCCW) ensf.addToRelation(BuildMove(B, CCW));
+  if (m.UCCW) ensf.addToRelation(BuildMove(U, CCW));
+  if (m.DCCW) ensf.addToRelation(BuildMove(D, CCW));
+  if (m.LCCW) ensf.addToRelation(BuildMove(L, CCW));
+  if (m.RCCW) ensf.addToRelation(BuildMove(R, CCW));
+
+  // Flip moves
+  if (m.FF) ensf.addToRelation(BuildMove(F, FLIP));
+  if (m.BF) ensf.addToRelation(BuildMove(B, FLIP));
+  if (m.UF) ensf.addToRelation(BuildMove(U, FLIP));
+  if (m.DF) ensf.addToRelation(BuildMove(D, FLIP));
+  if (m.LF) ensf.addToRelation(BuildMove(L, FLIP));
+  if (m.RF) ensf.addToRelation(BuildMove(R, FLIP));
+
+  ensf.finalize();
+}
 
 
 dd_edge buildOverallNextStateFunction(const moves& m)
@@ -908,25 +958,45 @@ int doBfs(const moves& m)
 }
 
 
-int doDfs(const moves& m)
+int doDfs(const moves& m, char saturation_type)
 {
-  // Build overall Next-State Function.
-  dd_edge nsf = buildOverallNextStateFunction(m);
-  fprintf(stdout, "# of nodes in the next-state function: %1.6e\n",
-      double(nsf.getNodeCount()));
-  fprintf(stdout, "# of non-zero edges in the next-state function: %1.6e\n",
-      double(nsf.getEdgeCount()));
+  satpregen_opname::pregen_relation *ensf = 0;
+  dd_edge nsf(relation);
 
   // Build initial state.
   assert(states);
   dd_edge initial(states);
   states->createEdge(initst, 1, initial);
 
-  // Perform Reacability via "saturation".
-  fprintf(stdout, "Started DFS Saturate...");
-  fflush(stdout);
   timer start;
-  apply(REACHABLE_STATES_DFS, initial, nsf, initial);
+
+  if (saturation_type == 'e') {
+    ensf = new satpregen_opname::pregen_relation(states, relation, states,
+        m.countEnabledMoves());
+    buildOverallNextStateFunction(m, *ensf);
+    printf("Building reachability set using saturation, relation by events\n");
+    fflush(stdout);
+  } else if (saturation_type == 'k') {
+    ensf = new satpregen_opname::pregen_relation(states, relation, states);
+    buildOverallNextStateFunction(m, *ensf);
+    printf("Building reachability set using saturation, relation by levels\n");
+    fflush(stdout);
+  } else {
+    nsf = buildOverallNextStateFunction(m);
+    printf("Building reachability set using saturation, monolithic relation\n");
+    fflush(stdout);
+  }
+
+  // Perform Reacability via "saturation".
+  if (ensf) {
+    if (0==SATURATION_FORWARD) throw error(error::UNKNOWN_OPERATION);
+    specialized_operation *sat = SATURATION_FORWARD->buildOperation(ensf);
+    if (0==sat) throw error(error::INVALID_OPERATION);
+    sat->compute(initial, initial);
+  } else {
+    apply(REACHABLE_STATES_DFS, initial, nsf, initial);
+  }
+
   start.note_time();
   fprintf(stdout, " done!\n");
   fflush(stdout);
@@ -1179,13 +1249,22 @@ int main(int argc, char *argv[])
   moves enabled;
   bool dfs = false;
   bool bfs = false;
+  char saturation_type = 'm';
 
   if (argc > 1) {
     assert(argc <= 5);
     for (int i=1; i<argc; i++) {
       char *cmd = argv[i];
       if (strncmp(cmd, "-p", 3) == 0) pretty_print = true;
-      else if (strncmp(cmd, "-dfs", 5) == 0) dfs = true;
+      else if (strncmp(cmd, "-msat", 6) == 0) {
+        dfs = true; saturation_type = 'm';
+      }
+      else if (strncmp(cmd, "-esat", 6) == 0) {
+        dfs = true; saturation_type = 'e';
+      }
+      else if (strncmp(cmd, "-ksat", 6) == 0) {
+        dfs = true; saturation_type = 'k';
+      }
       else if (strncmp(cmd, "-bfs", 5) == 0) bfs = true;
       else if (strncmp(cmd, "-l", 2) == 0) {
         for (unsigned j = 2; j < strlen(cmd); j++) {
@@ -1227,7 +1306,17 @@ int main(int argc, char *argv[])
   Init();
 
   // Initialize MEDDLY
-  initialize();
+  MEDDLY::settings s;
+  s.computeTable.style = MonolithicChainedHash;
+  s.computeTable.maxSize = 16 * 16777216;
+  // s.computeTable.staleRemoval =
+  //   MEDDLY::settings::computeTableSettings::Lazy;
+  // s.computeTable.staleRemoval =
+  //   MEDDLY::settings::computeTableSettings::Moderate;
+  // s.computeTable.staleRemoval = 
+  //   MEDDLY::settings::computeTableSettings::Aggressive;
+
+  MEDDLY::initialize(s);
 
   // Set up the state variables, as described earlier
   d = createDomainBottomUp(sizes, num_levels);
@@ -1262,19 +1351,6 @@ int main(int argc, char *argv[])
     fprintf(stderr, "Created forest of relations\n");
   }
 
-  // states->setNodeDeletion(forest::OPTIMISTIC_DELETION);
-  // states->setNodeDeletion(forest::PESSIMISTIC_DELETION);
-  // states->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
-  // states->setNodeStorage(forest::FULL_STORAGE);
-  // states->setReductionRule(forest::FULLY_REDUCED);
-  // states->setReductionRule(forest::QUASI_REDUCED);
-
-  // relation->setNodeDeletion(forest::OPTIMISTIC_DELETION);
-  // relation->setNodeDeletion(forest::PESSIMISTIC_DELETION);
-  // relation->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
-  // relation->setNodeStorage(forest::FULL_STORAGE);
-  // relation->setReductionRule(forest::IDENTITY_REDUCED);
-
   // Build set of initial states
 
   for (int j = 0; j < type2; j++) {
@@ -1289,7 +1365,7 @@ int main(int argc, char *argv[])
   states->createEdge(initst, 1, initial);
 
   if (dfs) {
-    doDfs(enabled);
+    doDfs(enabled, saturation_type);
   } else if (bfs) {
     doBfs(enabled);
   } else {
