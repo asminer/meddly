@@ -80,7 +80,6 @@
 
 #define DEBUG
 
-using namespace std;
 using namespace MEDDLY;
 
 typedef enum {F, B, L, R, U, D} face;
@@ -191,9 +190,9 @@ class rubiks {
        3, 3, 3, 3, 3, 3, 3, 3, 
        12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 
        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
-       2, 2, 2, 2, 2, 2
+       4, 4, 4, 4, 4, 4
        };
-     */
+       */
 
     bool enableCorners;
     bool enableCornerOrientations;
@@ -205,13 +204,13 @@ class rubiks {
     domain *d;
 
     // Forest storing the next state function
-    // forest_hndl relation;
-    forest* relation;
+    // forest_hndl mxd;
+    forest* mxd;
     forest* mtmxd;
 
     // Forest storing the set of states
-    // forest_hndl states;
-    forest* states;
+    // forest_hndl mdd;
+    forest* mdd;
 
   public:
     // The maximum possible levels. This is the same as nLevels when
@@ -224,9 +223,17 @@ class rubiks {
     // Ben Smith's SMART file ordering:
     static const int BenSmithsVariableOrdering[nLocations+1];
 
+    static const int plus0mod2[2];
     static const int plus1mod2[2];
+    static const int plus0mod3[3];
     static const int plus1mod3[3];
     static const int plus2mod3[3];
+    static const int plus0mod4[4];
+    static const int plus1mod4[4];
+    static const int plus2mod4[4];
+    static const int plus3mod4[4];
+    static const int plus0mod8[8];
+    static const int plus0mod12[12];
 
     ~rubiks() {
       // Clean up forests and domain.
@@ -261,6 +268,10 @@ class rubiks {
 
       assert(nLevels > 0);
 
+      // Fill in order[] and variableSize[] from fullOrder[].
+      // Skip disabled locations.
+      // Use nSkipped to renumber the variables in fullOrder.
+
       int sz = nLevels + 1;
       order = new int[sz];
       variableSize = new int[sz];
@@ -272,7 +283,7 @@ class rubiks {
       *orderPtr++ = *fullOrderPtr++;
       *vSizePtr++ = 0;
 
-      int subtract = 0;
+      int nSkipped = 0;
 
       if (enableCorners) {
         for (int i = 0; i < 8; i++) {
@@ -287,41 +298,41 @@ class rubiks {
         }
         else {
           fullOrderPtr += 8;
-          subtract += 8;
+          nSkipped += 8;
         }
       } else {
         fullOrderPtr += 16;
-        subtract += 16;
+        nSkipped += 16;
       }
 
       if (enableEdges) {
         for (int i = 0; i < 12; i++) {
-          *orderPtr++ = (*fullOrderPtr++) - subtract;
+          *orderPtr++ = (*fullOrderPtr++) - nSkipped;
           *vSizePtr++ = 12;
         }
         if (enableEdgeOrientations) {
           for (int i = 0; i < 12; i++) {
-            *orderPtr++ = (*fullOrderPtr++) - subtract;
+            *orderPtr++ = (*fullOrderPtr++) - nSkipped;
             *vSizePtr++ = 2;
           }
         }
         else {
           fullOrderPtr += 12;
-          subtract += 12;
+          nSkipped += 12;
         }
       } else {
         fullOrderPtr += 24;
-        subtract += 24;
+        nSkipped += 24;
       }
 
       if (enableCenterOrientations) {
         for (int i = 0; i < 6; i++) {
-          *orderPtr++ = (*fullOrderPtr++) - subtract;
+          *orderPtr++ = (*fullOrderPtr++) - nSkipped;
           *vSizePtr++ = 2;
         }
       } else {
         fullOrderPtr += 6;
-        subtract += 6;
+        nSkipped += 6;
       }
 
       assert(fullOrderPtr == (fullOrder + (nLocations + 1)));
@@ -361,17 +372,19 @@ class rubiks {
       variableSize = 0;
       nLevels = 0;
       d = 0;
-      relation = 0;
+      mxd = 0;
       mtmxd = 0;
-      states = 0;
+      mdd = 0;
 
       // Build the restricted variable order (order[]) and variableSize[].
       buildOrdering(variableOrdering);
 
       // Initialize MEDDLY
       MEDDLY::settings s;
-      s.computeTable.style = MonolithicUnchainedHash;
+      s.computeTable.style = MEDDLY::MonolithicUnchainedHash;
       s.computeTable.maxSize = 16 * 16777216;
+      s.computeTable.staleRemoval =
+        MEDDLY::settings::computeTableSettings::Lazy;
       MEDDLY::initialize(s);
 
       // Set up the state variables, as described earlier
@@ -388,32 +401,32 @@ class rubiks {
       }
 
       // Create forests
-      states = d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL);
-      relation = d->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
+      mdd = d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL);
+      mxd = d->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
       mtmxd = d->createForest(true, forest::INTEGER, forest::MULTI_TERMINAL);
 
-      if (0 == states) {
-        fprintf(stderr, "Couldn't create forest of states\n");
+      if (0 == mdd) {
+        fprintf(stderr, "Couldn't create forest for states\n");
         assert(false);
       } else {
-        fprintf(stderr, "Created forest of states\n");
+        fprintf(stderr, "Created forest for states\n");
       }
-      if (0 == relation) {
-        fprintf(stderr, "Couldn't create forest of relations\n");
+      if (0 == mxd) {
+        fprintf(stderr, "Couldn't create forest for relations\n");
         assert(false);
       } else {
-        fprintf(stderr, "Created forest of relations\n");
+        fprintf(stderr, "Created forest for relations\n");
       }
       if (0 == mtmxd) {
-        fprintf(stderr, "Couldn't create forest of mtmxd\n");
+        fprintf(stderr, "Couldn't create forest for mtmxd\n");
         assert(false);
       } else {
-        fprintf(stderr, "Created forest of mtmxd\n");
+        fprintf(stderr, "Created forest for mtmxd\n");
       }
     }
 
     dd_edge buildInitialState() {
-      assert(states);
+      assert(mdd);
 
       // sets of states
       int* initst = new int[nLevels + 1];
@@ -438,8 +451,8 @@ class rubiks {
         for (int i = 0; i < 6; i++) initst[order[center(i+1)]] = i;
       }
 
-      dd_edge initialStates(states);
-      states->createEdge((int**)(&initst), 1, initialStates);
+      dd_edge initialStates(mdd);
+      mdd->createEdge((int**)(&initst), 1, initialStates);
 
       delete[] initst;
 
@@ -459,18 +472,41 @@ class rubiks {
       printf("]\n");
     }
 
+
+    const int* getModArray(int var, int offset) const {
+      const int* modArray = 0;
+      offset = offset % variableSize[var];
+      switch (variableSize[var]) {
+        case 2: modArray = (offset == 0)? plus0mod2: plus1mod2;
+                break;
+        case 3: modArray = (offset == 0)
+                ? plus0mod3
+                  : (offset == 1)
+                  ? plus1mod3
+                  : plus2mod3;
+                break;
+        case 4: modArray = (offset == 0)
+                ? plus0mod4
+                  : (offset == 1)
+                  ? plus1mod4
+                  : (offset == 2)
+                  ? plus2mod4
+                  : plus3mod4;
+                break;
+        case 8: assert(offset == 0);
+                modArray = plus0mod8;
+                break;
+        case 12: assert(offset == 0);
+                 modArray = plus0mod12;
+                 break;
+      }
+      return modArray;
+    }
+
+
+    // order[x1] and order[x2] represent the actual variables.
     dd_edge buildPair(int x1, int x2, int offset = 0) {
       // Build ((x1 + offset) % varsize(x1)) == x2'
-      const int* mod = 0;
-      if (offset != 0) {
-        switch (variableSize[x1]) {
-          case 2: mod = (offset == 1)? plus1mod2: 0;
-                  break;
-          case 3: mod = (offset == 1)? plus1mod3: (offset == 2)? plus2mod3: 0;
-                  break;
-          default: mod = 0;
-        }
-      }
 
 #ifdef DEBUG
       printf("building pair: %d %d\n", x1, x2);
@@ -479,12 +515,9 @@ class rubiks {
 
       dd_edge r1(mtmxd);
       dd_edge r2(mtmxd);
-      dd_edge r(relation);
-      if (mod) {
-        mtmxd->createEdgeForVar(order[x1], false, mod, r1);
-      } else {
-        mtmxd->createEdgeForVar(order[x1], false, r1);
-      }
+      dd_edge r(mxd);
+      const int* modArray = getModArray(x1, offset);
+      mtmxd->createEdgeForVar(order[x1], false, modArray, r1);
       mtmxd->createEdgeForVar(order[x2], true, r2);
       apply(EQUAL, r1, r2, r);
       return r;
@@ -536,8 +569,8 @@ class rubiks {
       if (enableCenterOrientations) {
         to[order[centero]] = DONT_CARE;
       }
-      dd_edge r(relation);
-      relation->createEdge((int**)(&from), (int**)(&to), 1, r);
+      dd_edge r(mxd);
+      mxd->createEdge((int**)(&from), (int**)(&to), 1, r);
       free(from);
       free(to);
 
@@ -576,7 +609,7 @@ class rubiks {
       int centero = center(f[8]);
       int centeroffset = o[8];
 
-      dd_edge r(relation);
+      dd_edge r(mxd);
       r = buildRelevantVariables(c1, c2, c3, c4, e1, e2, e3, e4,
           co1, co2, co3, co4, eo1, eo2, eo3, eo4, centero);
       if (d == CW) {
@@ -635,7 +668,7 @@ class rubiks {
           }
         }
         if (enableCenterOrientations) {
-          r *= buildPair(centero, centero);
+          r *= buildPair(centero, centero, 2*centeroffset);
         }
       } else {
         // clockwise 270 degrees.
@@ -664,7 +697,7 @@ class rubiks {
           }
         }
         if (enableCenterOrientations) {
-          r *= buildPair(centero, centero, centeroffset);
+          r *= buildPair(centero, centero, 3*centeroffset);
         }
       }
       return r;
@@ -755,7 +788,7 @@ class rubiks {
     dd_edge buildNextStateFunction(const moves& m)
     {
       // Build each move using buildMove().
-      dd_edge r(relation);
+      dd_edge r(mxd);
 
       // Clock-wise moves
       if (m.FCW) r += buildMove(F, CW);
@@ -786,8 +819,8 @@ class rubiks {
 
     int doBfs(const moves& m)
     {
-      assert(states);
-      assert(relation);
+      assert(mdd);
+      assert(mxd);
       assert(order);
 
       // Build overall Next-State Function.
@@ -816,12 +849,12 @@ class rubiks {
 
     int doDfs(const moves& m, char saturation_type)
     {
-      assert(states);
-      assert(relation);
+      assert(mdd);
+      assert(mxd);
       assert(order);
 
       satpregen_opname::pregen_relation *ensf = 0;
-      dd_edge nsf(relation);
+      dd_edge nsf(mxd);
 
       // Build initial state.
       dd_edge initial = buildInitialState();
@@ -833,14 +866,14 @@ class rubiks {
 
       // Build next state function.
       if (saturation_type == 'e') {
-        ensf = new satpregen_opname::pregen_relation(states, relation, states,
+        ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd,
             m.countEnabledMoves());
         buildNextStateFunction(m, *ensf);
         printf("done.\n");
         printf("Building reachability set: Event-wise saturation\n");
         fflush(stdout);
       } else if (saturation_type == 'k') {
-        ensf = new satpregen_opname::pregen_relation(states, relation, states);
+        ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd);
         buildNextStateFunction(m, *ensf);
         printf("done.\n");
         printf("Building reachability set: Level-wise saturation\n");
@@ -882,8 +915,8 @@ class rubiks {
 #if 0
     int doChoice(const moves& m)
     {
-      assert(states);
-      assert(relation);
+      assert(mdd);
+      assert(mxd);
       assert(order);
 
       // Build Next-State Function for each "move".
@@ -921,13 +954,13 @@ class rubiks {
       // Repeat.
 
       // Display menu and get choice
-      assert(states);
+      assert(mdd);
 
-      dd_edge initial(states);
-      states->createEdge(initst, 1, initial);
+      dd_edge initial(mdd);
+      mdd->createEdge(initst, 1, initial);
 
       dd_edge result = initial;
-      dd_edge temp(states);
+      dd_edge temp(mdd);
       bool continueLoop = true;
       int choice = 21;
 
@@ -971,7 +1004,7 @@ class rubiks {
             break;
           case 18:
             // Perform garbage collection.
-            states->garbageCollect();
+            mdd->garbageCollect();
             break;
           case 19:
             // Clear result.
@@ -999,8 +1032,8 @@ class rubiks {
 
     int doSteppedBfs(const moves& m)
     {
-      assert(states);
-      assert(relation);
+      assert(mdd);
+      assert(mxd);
       assert(order);
 
       // Performs DFS for each event starting with initial state.
@@ -1027,13 +1060,13 @@ class rubiks {
       // Repeat.
 
       // Display menu and get choice
-      assert(states);
+      assert(mdd);
 
-      dd_edge initial(states);
-      states->createEdge(initst, 1, initial);
+      dd_edge initial(mdd);
+      mdd->createEdge(initst, 1, initial);
 
       dd_edge result = initial;
-      dd_edge temp(states);
+      dd_edge temp(mdd);
       vector<dd_edge> eventResults;
       for (int i = 0; i < nFaces; i++)
       {
@@ -1092,7 +1125,7 @@ class rubiks {
             break;
           case 3:
             // Perform garbage collection.
-            states->garbageCollect();
+            mdd->garbageCollect();
             break;
           case 4:
             // Clear result.
@@ -1117,12 +1150,37 @@ class rubiks {
     }
 #endif
 
+    void printStats()
+    {
+      printStats("Mdd", mdd);
+      printStats("Mxd", mxd);
+      printStats("MtMxd", mtmxd);
+    }
+
+    void printStats(const char* who, const forest* f)
+    { 
+      printf("%s stats:\n", who);
+      const expert_forest* ef = (expert_forest*) f;
+      ef->reportStats(stdout, "\t",
+          expert_forest::HUMAN_READABLE_MEMORY  |
+          expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
+          expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
+          );
+    }
 
 };
 
+const int rubiks::plus0mod2[2] = {0, 1};
 const int rubiks::plus1mod2[2] = {1, 0};
+const int rubiks::plus0mod3[3] = {0, 1, 2};
 const int rubiks::plus1mod3[3] = {1, 2, 0};
 const int rubiks::plus2mod3[3] = {2, 0, 1};
+const int rubiks::plus0mod4[4] = {0, 1, 2, 3};
+const int rubiks::plus1mod4[4] = {1, 2, 3, 0};
+const int rubiks::plus2mod4[4] = {2, 3, 0, 1};
+const int rubiks::plus3mod4[4] = {3, 0, 1, 2};
+const int rubiks::plus0mod8[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+const int rubiks::plus0mod12[12] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
 
 const int rubiks::defaultVariableOrdering[rubiks::nLocations+1] = {
   0,
@@ -1134,11 +1192,19 @@ const int rubiks::defaultVariableOrdering[rubiks::nLocations+1] = {
 };
 
 const int rubiks::BenSmithsVariableOrdering[rubiks::nLocations+1] = {
+  /*
   0,
   3, 5, 6, 4, 2, 8, 7, 1,
   12, 11, 9, 10, 15, 13, 14, 16,
   17, 21, 19, 18, 24, 22, 26, 25, 23, 20, 27, 28,
   29, 33, 31, 30, 36, 34, 38, 37, 35, 32, 39, 40,
+  41, 42, 43, 44, 45, 46
+  */
+  0,
+  4, 6, 5, 3, 1, 7, 8, 2,
+  9, 10, 12, 11, 16, 14, 13, 15,
+  18, 20, 19, 17, 24, 23, 26, 25, 22, 21, 27, 28,
+  30, 32, 31, 29, 36, 35, 38, 37, 34, 33, 39, 40,
   41, 42, 43, 44, 45, 46
 };
 
@@ -1158,6 +1224,11 @@ void usage() {
   fprintf(stderr, "         Up face (E, e, 5),\n");
   fprintf(stderr, "         Down face (F, f, 6),\n");
   fprintf(stderr, "-p     : prints initial states, nsf, reachable states on stderr\n");
+  fprintf(stderr, "-c     : enable corners\n");
+  fprintf(stderr, "-co    : enable corners orientations\n");
+  fprintf(stderr, "-e     : enable edges\n");
+  fprintf(stderr, "-eo    : enable edges orientations\n");
+  fprintf(stderr, "-center: enable center orientations\n");
   fprintf(stderr, "\n");
 }
 
@@ -1165,23 +1236,21 @@ void usage() {
 
 int main(int argc, char *argv[])
 {
-  bool pretty_print = false;
   moves enabled;
   bool dfs = false;
   bool bfs = false;
   char saturation_type = 'm';
-  bool enableCorners = true;
-  bool enableCornerOrientations = true;
-  bool enableEdges = true;
-  bool enableEdgeOrientations = true;
-  bool enableCenterOrientations = true;
+  bool enableCorners = false;
+  bool enableCornerOrientations = false;
+  bool enableEdges = false;
+  bool enableEdgeOrientations = false;
+  bool enableCenterOrientations = false;
 
   if (argc > 1) {
-    assert(argc <= 5);
+    assert(argc <= 9);
     for (int i=1; i<argc; i++) {
       char *cmd = argv[i];
-      if (strncmp(cmd, "-p", 3) == 0) pretty_print = true;
-      else if (strncmp(cmd, "-msat", 6) == 0) {
+      if (strncmp(cmd, "-msat", 6) == 0) {
         dfs = true; saturation_type = 'm';
       }
       else if (strncmp(cmd, "-esat", 6) == 0) {
@@ -1191,6 +1260,11 @@ int main(int argc, char *argv[])
         dfs = true; saturation_type = 'k';
       }
       else if (strncmp(cmd, "-bfs", 5) == 0) bfs = true;
+      else if (strncmp(cmd, "-c", 3) == 0) enableCorners = true;
+      else if (strncmp(cmd, "-co", 4) == 0) enableCornerOrientations = true;
+      else if (strncmp(cmd, "-e", 3) == 0) enableEdges = true;
+      else if (strncmp(cmd, "-eo", 4) == 0) enableEdgeOrientations = true;
+      else if (strncmp(cmd, "-center", 8) == 0) enableCenterOrientations = true;
       else if (strncmp(cmd, "-l", 2) == 0) {
         for (unsigned j = 2; j < strlen(cmd); j++) {
           switch (cmd[j]) {
@@ -1222,16 +1296,19 @@ int main(int argc, char *argv[])
     }
   }
 
-  bool choice = true;
-  if (dfs) { bfs = false; }
-  if (dfs || bfs) { choice = false; }
-
-  enableCorners = true;
-  enableCornerOrientations = false;
-  enableEdges = true;
-  enableEdgeOrientations = false;
-  enableCenterOrientations = false;
-
+  if (enableCorners || enableCornerOrientations
+      || enableEdges || enableEdgeOrientations || enableCenterOrientations) {
+  } else {
+    // set up defaults
+    //
+    printf("No locations were enabled by user. Enabling all components.\n");
+    fflush(stdout);
+    enableCorners = true;
+    enableCornerOrientations = true;
+    enableEdges = true;
+    enableEdgeOrientations = true;
+    enableCenterOrientations = true;
+  }
 
   // set up arrays based on number of levels
   const int* order = rubiks::BenSmithsVariableOrdering;
@@ -1239,22 +1316,40 @@ int main(int argc, char *argv[])
       enableCorners, enableCornerOrientations,
       enableEdges, enableEdgeOrientations, enableCenterOrientations);
 
-  if (dfs) {
-    model.doDfs(enabled, saturation_type);
-  } else if (bfs) {
-    model.doBfs(enabled);
-  } else {
+  try {
+
+    if (dfs) {
+      model.doDfs(enabled, saturation_type);
+    }
+
+    if (bfs) {
+      model.doBfs(enabled);
+    }
+
+    if (!dfs && !bfs) {
 #if 0
 #if 0
-    model.doChoice(enabled);
+      model.doChoice(enabled);
 #else
-    model.doSteppedBfs(enabled);
+      model.doSteppedBfs(enabled);
 #endif
 #endif
+    }
+  }
+  catch (MEDDLY::error& e) {
+    printf("Meddly error: %s\n", e.getName());
+    fflush(stdout);
+    model.printStats();
+    fflush(stdout);
+  } 
+  catch (...) {
+    printf("Unknown error.\n");
   }
 
   fprintf(stderr, "\n\nDONE\n");
+  fflush(stderr);
   return 0;
 }
+
 
 
