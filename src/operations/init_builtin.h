@@ -43,6 +43,7 @@ class MEDDLY::builtin_initializer : public op_initializer {
   binary_opname* MINUS;
   binary_opname* MULTIPLY;
   binary_opname* DIVIDE;
+  binary_opname* MODULO;
 
   binary_opname* EQ;
   binary_opname* NE;
@@ -65,6 +66,9 @@ class MEDDLY::builtin_initializer : public op_initializer {
 
   numerical_opname* EXPLVECT_MATR_MULT;
   numerical_opname* MATR_EXPLVECT_MULT;
+
+  satpregen_opname* SATURATION_FORWARD;
+  satpregen_opname* SATURATION_BACKWARD;
 
 public:
   builtin_initializer(op_initializer* b) : op_initializer(b) { }

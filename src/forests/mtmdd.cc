@@ -501,6 +501,7 @@ typedef struct ProcessedItem
 	MEDDLY::node_handle node;
 	int index;
 
+  ProcessedItem(MEDDLY::node_handle n, int i) : node(n), index(i) {}
 	bool operator==(const ProcessedItem& item) const
 	{
 		return (node==item.node) && (index==item.index);
@@ -527,6 +528,7 @@ typedef struct NodeOrder
 {
 	MEDDLY::node_handle node;
 	int weight;
+  NodeOrder(MEDDLY::node_handle n, int w) : node(n), weight(w) {}
 }NodeOrder;
 
 typedef struct NodeOrderLt
@@ -580,7 +582,7 @@ void MEDDLY::mtmdd_forest::moveDownVariable(int high, int low)
 		}
 		node_reader::recycle(nr);
 
-		order.push_back(NodeOrder{node, weight});
+		order.push_back(NodeOrder(node, weight));
 	}
 	std::sort(order.begin(), order.end(), NodeOrderLt());
 	for(int i=0; i<size; i++) {
@@ -782,7 +784,7 @@ MEDDLY::node_handle MEDDLY::mtmdd_forest::recursiveReduceUp(node_handle node, in
 		return h;
 	}
 
-	ProcessedHashMap::const_iterator itr=processed.find(ProcessedItem{node, val});
+	ProcessedHashMap::const_iterator itr=processed.find(ProcessedItem(node, val));
 	if(itr!=processed.end()) {
 		MEDDLY_DCASSERT(isActiveNode(itr->second));
 		return linkNode(itr->second);
@@ -798,7 +800,7 @@ MEDDLY::node_handle MEDDLY::mtmdd_forest::recursiveReduceUp(node_handle node, in
 
 	node_handle h = createReducedNode(-1, nb);
 	if(getInCount(node)>1) {
-		processed.insert(__gnu_cxx::pair<ProcessedItem, node_handle>(ProcessedItem{node, val}, h));
+		processed.insert(__gnu_cxx::pair<ProcessedItem, node_handle>(ProcessedItem(node, val), h));
 	}
 
 	return h;

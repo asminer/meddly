@@ -16,6 +16,7 @@ typedef struct Inversion
 	// An inversion is formed by the variables at level and level+1
 	int level;
 	long cost;
+  Inversion(int l, long c) : level(l), cost(c) {}
 } Inversion;
 
 class InversionHeap
@@ -109,7 +110,7 @@ public:
 	{
 		if(!is_in_heap(level)){
 			_indices[level]=_heap.size();
-			_heap.push_back(Inversion{level, cost});
+			_heap.push_back(Inversion(level, cost));
 			percolate_up(level);
 		}
 		else {

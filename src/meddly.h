@@ -215,6 +215,9 @@ namespace MEDDLY {
   /// For forests with range_type of INTEGER and REAL. All operands must
   /// belong to the same forest.
   extern const binary_opname* DIVIDE;
+  /// For forests with range_type of INTEGER. All operands must
+  /// belong to the same forest.
+  extern const binary_opname* MODULO;
 
   /// For forests with range_type of INTEGER and REAL. All operands must
   /// belong to the same forest.
@@ -516,6 +519,8 @@ class MEDDLY::error {
       INVALID_POLICY,
       /// Bad value for something.
       INVALID_ASSIGNMENT,
+      /// Invalid argument (for specialized operations)
+      INVALID_ARGUMENT,
       /// File format error.
       INVALID_FILE,
       /// File output error.
@@ -546,6 +551,7 @@ class MEDDLY::error {
           case  DIVIDE_BY_ZERO:       return "Divide by zero";
           case  INVALID_POLICY:       return "Invalid policy";
           case  INVALID_ASSIGNMENT:   return "Invalid assignment";
+          case  INVALID_ARGUMENT:     return "Invalid argument";
           case  INVALID_FILE:         return "Invalid file";
           case  COULDNT_WRITE:        return "Couldn't write to file";
           case  MISCELLANEOUS:        return "Miscellaneous";
@@ -822,7 +828,7 @@ class MEDDLY::forest {
         that the stats collected above.
     */
     class logger {
-        bool free;
+        bool nfix;
         bool node_counts;
         bool time_stamps;
 
@@ -838,18 +844,34 @@ class MEDDLY::forest {
       */
       public:
         inline bool recordingNodeCounts() const { return node_counts; }
-        inline void recordNodeCounts()          { if (free) node_counts = true; }
-        inline void ignoreNodeCounts()          { if (free) node_counts = false; }
+        inline void recordNodeCounts()          { if (nfix) node_counts = true; }
+        inline void ignoreNodeCounts()          { if (nfix) node_counts = false; }
 
         inline bool recordingTimeStamps() const { return time_stamps; }
-        inline void recordTimeStamps()          { if (free) time_stamps = true; }
-        inline void ignoreTimeStamps()          { if (free) time_stamps = false; }
+        inline void recordTimeStamps()          { if (nfix) time_stamps = true; }
+        inline void ignoreTimeStamps()          { if (nfix) time_stamps = false; }
 
       /*
           Hooks, used in various places.
           Must be overridden in derived classes.
       */
       public:
+        /**
+            Insert a comment string.
+            May be ignored depending on the file format.
+
+              @param  comment   String to insert.
+        */
+        virtual void addComment(const char* comment) = 0;
+
+        /**
+            Start a new phase of computation.
+            May be ignored depending on the file format.
+
+              @param  comment   Info to display about this phase.
+        */
+        virtual void newPhase(const char* comment) = 0;
+
         /**
             Called once, when the logger is attached to a forest.
             Must call method fixLogger().
@@ -873,7 +895,7 @@ class MEDDLY::forest {
         void currentTime(long &sec, long &usec);
 
         /* Call this inside logForestInfo() */
-        inline void fixLogger() { free = false; }
+        inline void fixLogger() { nfix = false; }
     };
 
 

@@ -23,6 +23,7 @@
 #include "defines.h"
 #include "loggers.h"
 
+// #define BATCH
 
 // ******************************************************************
 // *                                                                *
@@ -37,6 +38,16 @@ MEDDLY::json_logger::json_logger(std::ostream &s)
 
 MEDDLY::json_logger::~json_logger()
 {
+}
+
+void MEDDLY::json_logger::addComment(const char*)
+{
+  // Completely ignored
+}
+
+void MEDDLY::json_logger::newPhase(const char*)
+{
+  // Completely ignored
 }
 
 void MEDDLY::json_logger::logForestInfo(const forest* f, const char* name)
@@ -83,5 +94,189 @@ void MEDDLY::json_logger::addToActiveNodeCount(const forest* f, int level, long 
 {
   if (0==f) return;
   out << "{ \"f\":" << f->FID() << ", \"l\":" << level << ", \"anc\":" << delta << " }\n";
+  out.flush();
+}
+
+// ******************************************************************
+// *                                                                *
+// *                      simple_logger methods                     *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::simple_logger::simple_logger(std::ostream &s, int agg)
+  : out(s)
+{
+  out << "T simple\n";
+  active_delta = 0;
+  left = 0;
+  right = 0;
+  batch_forests = 0;
+  aggregate = MAX(1, agg);
+  ucount = aggregate;
+}
+
+MEDDLY::simple_logger::~simple_logger()
+{
+  flushLog();
+
+  for (int i=0; i<batch_forests; i++) {
+    delete[] active_delta[i];
+  }
+  free(active_delta);
+  free(left);
+  free(right);
+}
+
+void MEDDLY::simple_logger::addComment(const char* str)
+{
+  if (0==str) return;
+  out << "# ";
+  while (*str) {
+    out << *str;
+    if ('\n' == *str) out << "# ";
+    str++;
+  }
+  out << "\n";
+}
+
+void MEDDLY::simple_logger::newPhase(const char* str)
+{
+  out << "p ";
+  if (0==str) {
+    out << "\n";
+    return;
+  }
+  for (; *str; str++) {
+    if ('\n' == *str) continue; // strip any newlines
+    out << *str;
+  }
+  out << "\n";
+}
+
+void MEDDLY::simple_logger::logForestInfo(const forest* f, const char* name)
+{
+  const expert_forest* ef = dynamic_cast<const expert_forest*>(f);
+  MEDDLY_DCASSERT(ef);
+  if (0==ef) return;
+
+  fixLogger();
+
+  /* Allocate space for this forest info */
+  if (ef->FID() >= batch_forests) {
+    int bf = ((ef->FID() / 16) + 1) * 16;
+
+    /* Increase forest dimension if needed */
+    if (recordingNodeCounts()) {
+      active_delta = (long**) realloc(active_delta, bf * sizeof(long*));
+      if (0==active_delta) throw error(error::INSUFFICIENT_MEMORY);
+      for (int i=batch_forests; i<bf; i++) {
+        active_delta[i] = 0;
+      }
+    }
+
+    /* Increase left and right arrays */
+    left = (int*) realloc(left, bf * sizeof(int));
+    if (0==left) throw error(error::INSUFFICIENT_MEMORY);
+    right = (int*) realloc(right, bf * sizeof(int));
+    if (0==right) throw error(error::INSUFFICIENT_MEMORY);
+    for (int i=batch_forests; i<bf; i++) {
+      left[i] = right[i] = 0;
+    }
+
+    /* Other data? */
+
+    batch_forests = bf;
+  }
+
+  /* Get some forest info */
+  int L = ef->getNumVariables();
+  right[ef->FID()] = L;
+  left[ef->FID()] = ef->isForRelations() ? -L : 1;
+
+  if (recordingNodeCounts()) {
+    /* Initialize active_delta array for this forest */
+    if (ef->isForRelations()) {
+      active_delta[ef->FID()] = new long[2*L+1];
+    } else {
+      active_delta[ef->FID()] = new long[L+1];
+    }
+  }
+
+  /* Write */
+
+  out << "F " << ef->FID();
+  if (name) {
+    out << " \"" << name << "\"";
+  }
+  out << " " << left[ef->FID()]; 
+  out << " " << right[ef->FID()];
+
+  if (recordingNodeCounts()) {
+    long* active = activeArray(ef->FID());
+    ef->countNodesByLevel(active);
+
+    out << " [";
+    for (int l=left[ef->FID()]; l<=right[ef->FID()]; l++) {
+      out << active[l];
+      active[l] = 0;
+      if (l<L) out << ", ";
+    }
+    out << "]";
+  }
+  out << "\n";
+  out.flush();
+}
+
+void MEDDLY::simple_logger
+::addToActiveNodeCount(const forest* f, int level, long delta)
+{
+  if (0==f) return;
+#ifdef BATCH
+  long* active = activeArray(f->FID());
+  active[level] += delta;
+  ucount--;
+  if (ucount) return;
+  ucount = aggregate;
+  flushLog();
+#else
+  out << "a " << f->FID() << " " << level << " " << delta;
+  if (recordingTimeStamps()) {
+    long sec, usec;
+    currentTime(sec, usec);
+    out << " t " << sec << " " << usec;
+  }
+  out << "\n";
+  out.flush();
+#endif
+}
+
+void MEDDLY::simple_logger::flushLog()
+{
+#ifdef BATCH
+  /* Time to write to file */
+  if (recordingNodeCounts()) {
+
+    out << "a";
+
+    for (int f=1; f<batch_forests; f++) {
+      if (0==active_delta[f]) continue;
+      long* active = activeArray(f);
+      for (int k=left[f]; k<=right[f]; k++) {
+        if (0==active[k]) continue;
+        out << " " << f << " " << k << " " << active[k];
+        active[k] = 0;
+      }
+    }
+
+    if (recordingTimeStamps()) {
+      long sec, usec;
+      currentTime(sec, usec);
+      out << " t " << sec << " " << usec;
+    }
+
+    out << "\n";
+
+  }
+#endif
   out.flush();
 }
