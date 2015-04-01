@@ -798,7 +798,7 @@ class MEDDLY::forest {
         that the stats collected above.
     */
     class logger {
-        bool free;
+        bool nfix;
         bool node_counts;
         bool time_stamps;
 
@@ -814,12 +814,12 @@ class MEDDLY::forest {
       */
       public:
         inline bool recordingNodeCounts() const { return node_counts; }
-        inline void recordNodeCounts()          { if (free) node_counts = true; }
-        inline void ignoreNodeCounts()          { if (free) node_counts = false; }
+        inline void recordNodeCounts()          { if (nfix) node_counts = true; }
+        inline void ignoreNodeCounts()          { if (nfix) node_counts = false; }
 
         inline bool recordingTimeStamps() const { return time_stamps; }
-        inline void recordTimeStamps()          { if (free) time_stamps = true; }
-        inline void ignoreTimeStamps()          { if (free) time_stamps = false; }
+        inline void recordTimeStamps()          { if (nfix) time_stamps = true; }
+        inline void ignoreTimeStamps()          { if (nfix) time_stamps = false; }
 
       /*
           Hooks, used in various places.
@@ -865,7 +865,7 @@ class MEDDLY::forest {
         void currentTime(long &sec, long &usec);
 
         /* Call this inside logForestInfo() */
-        inline void fixLogger() { free = false; }
+        inline void fixLogger() { nfix = false; }
     };
 
 

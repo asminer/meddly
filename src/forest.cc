@@ -96,7 +96,7 @@ MEDDLY::forest::statset::statset()
 
 MEDDLY::forest::logger::logger()
 {
-  free = true;
+  nfix = true;
   /* 
     All other settings to false;
     the default logger does nothing!

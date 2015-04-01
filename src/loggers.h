@@ -75,14 +75,27 @@ class MEDDLY::json_logger : public MEDDLY::forest::logger {
 
 class MEDDLY::simple_logger : public MEDDLY::forest::logger {
     std::ostream &out;
+    long** active_delta;
+    int* left;
+    int* right;
+    int batch_forests;
+    int aggregate;
+    int ucount;
   public:
-    simple_logger(std::ostream &s);
+    simple_logger(std::ostream &s, int agg=16);
     virtual ~simple_logger();
 
     virtual void addComment(const char* comment);
     virtual void newPhase(const char* comment);
     virtual void logForestInfo(const forest* f, const char* name);
     virtual void addToActiveNodeCount(const forest* f, int level, long delta);
+
+  protected:
+    inline long* activeArray(int fid) const {
+      return (left[fid]<0) ? active_delta[fid] - left[fid] : active_delta[fid];
+    }
+
+    void flushLog();
 };
 
 #endif
