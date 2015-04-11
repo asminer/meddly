@@ -472,7 +472,7 @@ void MEDDLY::common_dfs_mt::splitMxd(node_handle mxd)
     }
 
     int mxdLevel = arg2F->getNodeLevel(mxd);
-    MEDDLY_DCASSERT(ABS(mxdLevel <= level));
+    MEDDLY_DCASSERT(ABS(mxdLevel) <= level);
 
     // Initialize readers
     node_reader* Mu = isLevelAbove(level, mxdLevel)
@@ -517,14 +517,13 @@ void MEDDLY::common_dfs_mt::splitMxd(node_handle mxd)
   } // for level
 
 #ifdef DEBUG_SPLIT
-  for (int k=arg2F->getNumVariables(); k; k--) {
-    if (splits[k]) {
-      printf("------------------------------------------------------------\n");
-      printf("Level %d nsf: %d\n", k, splits[k]);
-      printf("------------------------------------------------------------\n");
-      arg2F->showNodeGraph(stdout, splits[k]);
-    }
+  printf("After splitting monolithic event in msat\n");
+  printf("splits array: [");
+  for (int k=0; k <= arg2F->getNumVariables(); k++) {
+    if (k) printf(", ");
+    printf("%d", splits[k]);
   }
+  printf("]\n");
 #endif
 }
 

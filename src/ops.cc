@@ -30,6 +30,7 @@
 
 // #define DEBUG_CLEANUP
 // #define DEBUG_FINALIZE
+// #define DEBUG_FINALIZE_SPLIT
 
 namespace MEDDLY {
   extern settings meddlySettings;
@@ -313,11 +314,224 @@ MEDDLY::satpregen_opname::pregen_relation
   }
 }
 
+
 void
 MEDDLY::satpregen_opname::pregen_relation
-::finalize()
+::splitMxd(splittingOption split)
 {
-  if (0==level_index) return; // by levels, nothing to do
+  if (split == None) return;
+  if (split == MonolithicSplit) {
+    unionLevels();
+    split = SplitOnly;
+  }
+
+  // For each level k, starting from the top level
+  //    MXD(k) is the matrix diagram at level k.
+  //    Calculate ID(k), the intersection of the diagonals of MXD(k).
+  //    Subtract ID(k) from MXD(k).
+  //    Add ID(k) to level(ID(k)).
+
+#ifdef DEBUG_FINALIZE_SPLIT
+  printf("Splitting events in finalize()\n");
+  printf("events array: [");
+  for (int i=0; i<=K; i++) {
+    if (i) printf(", ");
+    printf("%d", events[i]);
+  }
+  printf("]\n");
+#endif
+
+  // Initialize operations
+  binary_operation* mxdUnion = getOperation(UNION, mxdF, mxdF, mxdF);
+  MEDDLY_DCASSERT(mxdUnion);
+
+  binary_operation* mxdIntersection =
+    getOperation(INTERSECTION, mxdF, mxdF, mxdF);
+  MEDDLY_DCASSERT(mxdIntersection);
+
+  binary_operation* mxdDifference = getOperation(DIFFERENCE, mxdF, mxdF, mxdF);
+  MEDDLY_DCASSERT(mxdDifference);
+
+  for (int k = K; k > 1; k--) {
+    if (0 == events[k]) continue;
+
+    MEDDLY_DCASSERT(ABS(mxdF->getNodeLevel(events[k])) <= k);
+
+    // Initialize readers
+    node_reader* Mu = isLevelAbove(k, mxdF->getNodeLevel(events[k]))
+      ? mxdF->initRedundantReader(k, events[k], true)
+      : mxdF->initNodeReader(events[k], true);
+    node_reader* Mp = node_reader::useReader();
+
+    bool first = true;
+    node_handle maxDiag = 0;
+
+    // Read "rows"
+    for (int i = 0; i < Mu->getSize(); i++) {
+      // Initialize column reader
+      if (isLevelAbove(-k, mxdF->getNodeLevel(Mu->d(i)))) {
+        mxdF->initIdentityReader(*Mp, -k, i, Mu->d(i), true);
+      } else {
+        mxdF->initNodeReader(*Mp, Mu->d(i), true);
+      }
+
+      // Intersect along the diagonal
+      if (first) {
+        maxDiag = mxdF->linkNode(Mp->d(i));
+        first = false;
+      } else {
+        node_handle nmd = mxdIntersection->compute(maxDiag, Mp->d(i));
+        mxdF->unlinkNode(maxDiag);
+        maxDiag = nmd;
+      }
+    } // for i
+
+    // Cleanup
+    node_reader::recycle(Mp);
+    node_reader::recycle(Mu);
+
+    if (0 == maxDiag) {
+#ifdef DEBUG_FINALIZE_SPLIT
+      printf("splitMxd: event %d, maxDiag %d\n", events[k], maxDiag);
+#endif
+      continue;
+    }
+
+    // Subtract maxDiag from events[k]
+    // Do this only for SplitOnly. Other cases are handled later.
+    if (split == SplitOnly) {
+      int tmp = events[k];
+      events[k] = mxdDifference->compute(events[k], maxDiag);
+      mxdF->unlinkNode(tmp);
+#ifdef DEBUG_FINALIZE_SPLIT
+      printf("SplitOnly: event %d = event %d - maxDiag %d\n",
+          events[k], tmp, maxDiag);
+#endif
+    } 
+
+    // Add maxDiag to events[level(maxDiag)]
+    int maxDiagLevel = ABS(mxdF->getNodeLevel(maxDiag));
+    int tmp = events[maxDiagLevel];
+    events[maxDiagLevel] = mxdUnion->compute(maxDiag, events[maxDiagLevel]);
+    mxdF->unlinkNode(tmp);
+    mxdF->unlinkNode(maxDiag);
+
+    // Subtract events[maxDiagLevel] from events[k].
+    // Do this only for SplitSubtract. SplitSubtractAll is handled later.
+    if (split == SplitSubtract) {
+      int tmp = events[k];
+      events[k] = mxdDifference->compute(events[k], events[maxDiagLevel]);
+      mxdF->unlinkNode(tmp);
+#ifdef DEBUG_FINALIZE_SPLIT
+      printf("SplitSubtract: event %d = event %d - event[maxDiagLevel] %d\n",
+          events[k], tmp, maxDiag);
+#endif
+    }
+
+  } // for k
+
+  if (split == SplitSubtractAll) {
+    // Subtract event[i] from all event[j], where j > i.
+    for (int i = 1; i < K; i++) {
+      for (int j = i + 1; j <= K; j++) {
+        if (events[i] && events[j]) {
+          int tmp = events[j];
+          events[j] = mxdDifference->compute(events[j], events[i]);
+          mxdF->unlinkNode(tmp);
+#ifdef DEBUG_FINALIZE_SPLIT
+          printf("SplitSubtractAll: event %d = event %d - event %d\n",
+              events[j], tmp, events[i]);
+#endif
+        }
+      }
+    }
+  }
+
+#ifdef DEBUG_FINALIZE_SPLIT
+  printf("After splitting events in finalize()\n");
+  printf("events array: [");
+  for (int i=0; i<=K; i++) {
+    if (i) printf(", ");
+    printf("%d", events[i]);
+  }
+  printf("]\n");
+#endif
+}
+
+
+void
+MEDDLY::satpregen_opname::pregen_relation
+::unionLevels()
+{
+  if (K < 1) return;
+
+  binary_operation* mxdUnion = getOperation(UNION, mxdF, mxdF, mxdF);
+  MEDDLY_DCASSERT(mxdUnion);
+
+  node_handle u = events[1];
+  events[1] = 0;
+
+  for (int k = 2; k <= K; k++) {
+    if (0 == events[k]) continue;
+    node_handle temp = mxdUnion->compute(u, events[k]);
+    mxdF->unlinkNode(events[k]);
+    events[k] = 0;
+    mxdF->unlinkNode(u);
+    u = temp;
+  }
+
+  events[mxdF->getNodeLevel(u)] = u;
+}
+
+
+void
+MEDDLY::satpregen_opname::pregen_relation
+::finalize(splittingOption split)
+{
+  if (0==level_index) {
+    // by levels
+    switch (split) {
+      case SplitOnly: printf("Split: SplitOnly\n"); break;
+      case SplitSubtract: printf("Split: SplitSubtract\n"); break;
+      case SplitSubtractAll: printf("Split: SplitSubtractAll\n"); break;
+      case MonolithicSplit: printf("Split: MonolithicSplit\n"); break;
+      default: printf("Split: None\n");
+    }
+    splitMxd(split);
+    if (split != None && split != MonolithicSplit) {
+#ifdef DEBUG_FINALIZE_SPLIT
+      // Union the elements, and then re-run.
+      // Result must be the same as before.
+      node_handle* old_events = new node_handle[K+1];
+      for(int k = 0; k <= K; k++) {
+        old_events[k] = events[k];
+        if (old_events[k]) mxdF->linkNode(old_events[k]);
+      }
+      splitMxd(MonolithicSplit);
+      binary_operation* mxdDifference =
+        getOperation(DIFFERENCE, mxdF, mxdF, mxdF);
+      MEDDLY_DCASSERT(mxdDifference);
+      for(int k = 0; k <= K; k++) {
+        if (old_events[k] != events[k]) {
+          node_handle diff1 = mxdDifference->compute(old_events[k], events[k]);
+          node_handle diff2 = mxdDifference->compute(events[k], old_events[k]);
+          printf("error at level %d, n:k %d:%d, %d:%d\n",
+              k,
+              diff1, mxdF->getNodeLevel(diff1),
+              diff2, mxdF->getNodeLevel(diff2)
+              );
+          mxdF->unlinkNode(diff1);
+          mxdF->unlinkNode(diff2);
+        }
+        if (old_events[k]) mxdF->unlinkNode(old_events[k]);
+      }
+
+      delete [] old_events;
+#endif
+    }
+    return; 
+  }
+
 #ifdef DEBUG_FINALIZE
   printf("Finalizing pregen relation\n");
   printf("%d events total\n", last_event+1);

@@ -756,9 +756,11 @@ class rubiks {
     }
 
     void buildNextStateFunction(const moves& m,
-        satpregen_opname::pregen_relation& ensf)
+        satpregen_opname::pregen_relation& ensf, bool split)
     {
       // Build each move using buildMove().
+
+      timer start;
 
       // Clock-wise moves
       if (m.FCW) ensf.addToRelation(buildMove(F, CW));
@@ -784,7 +786,24 @@ class rubiks {
       if (m.LF) ensf.addToRelation(buildMove(L, FLIP));
       if (m.RF) ensf.addToRelation(buildMove(R, FLIP));
 
-      ensf.finalize();
+      start.note_time();
+      fprintf(stdout, "Time for building individual events: %.4e seconds\n",
+          start.get_last_interval()/1000000.0);
+      fflush(stdout);
+      start.note_time();
+
+      if (split) {
+        //ensf.finalize(satpregen_opname::pregen_relation::SplitOnly);
+        //ensf.finalize(satpregen_opname::pregen_relation::SplitSubtract);
+        ensf.finalize(satpregen_opname::pregen_relation::SplitSubtractAll);
+      } else {
+        ensf.finalize(satpregen_opname::pregen_relation::MonolithicSplit);
+      }
+
+      start.note_time();
+      fprintf(stdout, "Time for splitting events: %.4e seconds\n",
+          start.get_last_interval()/1000000.0);
+      fflush(stdout);
     }
 
     dd_edge buildNextStateFunction(const moves& m)
@@ -849,7 +868,7 @@ class rubiks {
     }
 
 
-    int doDfs(const moves& m, char saturation_type)
+    int doDfs(const moves& m, char saturation_type, bool split)
     {
       assert(mdd);
       assert(mxd);
@@ -861,38 +880,48 @@ class rubiks {
       // Build initial state.
       dd_edge initial = buildInitialState();
 
-      timer start;
-
       printf("Building transition diagrams...");
       fflush(stdout);
+
+      timer start;
 
       // Build next state function.
       if (saturation_type == 'e') {
         ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd,
             m.countEnabledMoves());
-        buildNextStateFunction(m, *ensf);
-        printf("done.\n");
-        printf("Building reachability set: Event-wise saturation\n");
-        fflush(stdout);
+        buildNextStateFunction(m, *ensf, split);
       } else if (saturation_type == 'k') {
         ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd);
-        buildNextStateFunction(m, *ensf);
-        printf("done.\n");
-        printf("Building reachability set: Level-wise saturation\n");
-        fflush(stdout);
+        buildNextStateFunction(m, *ensf, split);
       } else {
         nsf = buildNextStateFunction(m);
-        printf("done.\n");
-        printf("Building reachability set: Monolithic relation saturation\n");
-        fflush(stdout);
       }
       
+      start.note_time();
+      fprintf(stdout,
+          "Time for building next-state function: %.4e seconds\n",
+          start.get_last_interval()/1000000.0);
+      printStats(stdout);
+      fflush(stdout);
+
       mxd->removeAllComputeTableEntries();
       mtmxd->removeAllComputeTableEntries();
 
-      start.note_time();
-
+      // Identify the type of splitting to be performed for saturation
+      printf("done.\n");
+      if (saturation_type == 'e') {
+        printf("Building reachability set: Event-wise saturation\n");
+      } else if (saturation_type == 'k') {
+        printf("Building reachability set: Level-wise saturation");
+        if (split) printf(" with splitting");
+        printf("\n");
+      } else {
+        printf("Building reachability set: Monolithic relation saturation\n");
+      }
+      fflush(stdout);
+      
       // Perform Reacability via "saturation".
+      start.note_time();
       if (ensf) {
         if (0==SATURATION_FORWARD) throw error(error::UNKNOWN_OPERATION);
         specialized_operation *sat = SATURATION_FORWARD->buildOperation(ensf);
@@ -903,8 +932,6 @@ class rubiks {
       }
 
       start.note_time();
-      fprintf(stdout, " done!\n");
-      fflush(stdout);
       fprintf(stdout, "Time for constructing reachability set: %.4e seconds\n",
           start.get_last_interval()/1000000.0);
       fprintf(stdout, "# of reachable states: %1.6e\n",
@@ -1220,6 +1247,7 @@ void usage() {
   fprintf(stderr, "-msat  : use saturation with monolithic relation compute reachable states\n");
   fprintf(stderr, "-esat  : use saturation with event-wise relation compute reachable states\n");
   fprintf(stderr, "-ksat  : use saturation with level-wise relation compute reachable states\n");
+  fprintf(stderr, "-kspsat: same as ksat, with additional pre-processing of events to improve saturation\n");
   fprintf(stderr, "-l<key>: key can be any combination of\n");
   fprintf(stderr, "         A: Front face clock-wise rotation,\n");
   fprintf(stderr, "         a: Front face counter clock-wise rotation,\n");
@@ -1246,6 +1274,7 @@ int main(int argc, char *argv[])
   bool dfs = false;
   bool bfs = false;
   char saturation_type = 'm';
+  bool split = false;
   bool enableCorners = false;
   bool enableCornerOrientations = false;
   bool enableEdges = false;
@@ -1263,7 +1292,10 @@ int main(int argc, char *argv[])
         dfs = true; saturation_type = 'e';
       }
       else if (strncmp(cmd, "-ksat", 6) == 0) {
-        dfs = true; saturation_type = 'k';
+        dfs = true; saturation_type = 'k'; split = false;
+      }
+      else if (strncmp(cmd, "-kspsat", 8) == 0) {
+        dfs = true; saturation_type = 'k'; split = true;
       }
       else if (strncmp(cmd, "-bfs", 5) == 0) bfs = true;
       else if (strncmp(cmd, "-c", 3) == 0) enableCorners = true;
@@ -1325,7 +1357,7 @@ int main(int argc, char *argv[])
   try {
 
     if (dfs) {
-      model.doDfs(enabled, saturation_type);
+      model.doDfs(enabled, saturation_type, split);
     }
 
     if (bfs) {

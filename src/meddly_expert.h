@@ -2947,7 +2947,34 @@ class MEDDLY::satpregen_opname : public specialized_opname {
         virtual ~pregen_relation();
         void addToRelation(const dd_edge &r);
 
-        void finalize();
+        // Options for controlling the amount of processing performed by
+        // \a finalize(splittingOption).
+        enum splittingOption {
+          // None.
+          None,
+          // Transitions from level K that do not effect level K,
+          // are moved to a lower level.
+          SplitOnly,
+          // SplitOnly + duplicated transitions between adjacent levels
+          // are removed from the higher level.
+          SplitSubtract,
+          // SplitOnly + all duplicate transitions are removed.
+          SplitSubtractAll,
+          // Same as SplitSubtractAll, but using an algorithm that
+          // first combines all transitions before splitting it up per level.
+          MonolithicSplit
+        };
+
+        /** To be called after all events have been added to
+            the transition relation.
+            This method modifies the decision diagrams stored at different
+            levels, to reduce duplicated transitions.
+              @param  split       This parameter only applies to "by levels",
+                                  and it controls the amount of processing
+                                  that is performed.
+                                  Please refer to splittingOption for details.
+        */
+        void finalize(splittingOption split = SplitSubtract);
 
         inline bool isFinalized() const { return 0 == next; }
 
@@ -2998,6 +3025,14 @@ class MEDDLY::satpregen_opname : public specialized_opname {
       private:
         // helper for constructors
         void setForests(forest* inf, forest* mxd, forest* outf);
+        // helper for finalize,
+        // find intersection of diagonals of events[k],
+        // subtracts the intersection of events[k] and adds it to events[k-1].
+        void splitMxd(splittingOption split);
+        // helper for finalize
+        // adds all event[k]; sets all event[k] to 0;
+        // sets events[level(sum)] = sum
+        void unionLevels();
 
       private:
         forest* insetF;
