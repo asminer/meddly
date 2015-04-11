@@ -55,7 +55,7 @@ class MEDDLY::saturation_by_events_opname : public unary_opname {
 MEDDLY::saturation_by_events_opname* MEDDLY::saturation_by_events_opname::instance = 0;
 
 MEDDLY::saturation_by_events_opname::saturation_by_events_opname()
- : unary_opname("Saturate")
+ : unary_opname("Saturate_by_events")
 {
 }
 
@@ -121,6 +121,7 @@ class MEDDLY::common_dfs_by_events_mt : public specialized_operation {
   public:
     common_dfs_by_events_mt(const satpregen_opname* opcode,
       satpregen_opname::pregen_relation* rel);
+    virtual ~common_dfs_by_events_mt();
 
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
@@ -277,10 +278,12 @@ MEDDLY::saturation_by_events_op
     ((argF != 0 && argF->isFullyReduced())? 2: 1), 1, argF, resF)
 {
   parent = p;
+
 }
 
 MEDDLY::saturation_by_events_op::~saturation_by_events_op()
 {
+  removeAllComputeTableEntries();
 }
 
 MEDDLY::node_handle MEDDLY::saturation_by_events_op::saturate(node_handle mdd)
@@ -383,6 +386,19 @@ MEDDLY::common_dfs_by_events_mt::common_dfs_by_events_mt(
   arg1F = static_cast<expert_forest*>(rel->getInForest());
   arg2F = static_cast<expert_forest*>(rel->getRelForest());
   resF = static_cast<expert_forest*>(rel->getOutForest());
+
+  registerInForest(arg1F);
+  registerInForest(arg2F);
+  registerInForest(resF);
+  setAnswerForest(resF);
+}
+
+MEDDLY::common_dfs_by_events_mt::~common_dfs_by_events_mt()
+{
+  if (rel->autoDestroy()) delete rel;
+  unregisterInForest(arg1F);
+  unregisterInForest(arg2F);
+  unregisterInForest(resF);
 }
 
 bool MEDDLY::common_dfs_by_events_mt::isStaleEntry(const node_handle* data)
@@ -431,11 +447,11 @@ void MEDDLY::common_dfs_by_events_mt
   // Execute saturation operation
   if (!rel->isFinalized()) {
     printf("Transition relation has not been finalized.\n");
-    printf("Finalizing... ");
+    printf("Finalizing using default options... ");
     rel->finalize();
     printf("done.\n");
   }
-  saturation_by_events_op *so = new saturation_by_events_op(this, arg1F, resF);
+  saturation_by_events_op* so = new saturation_by_events_op(this, arg1F, resF);
   node_handle cnode = so->saturate(a.getNode());
   c.set(cnode);
 
@@ -450,9 +466,7 @@ void MEDDLY::common_dfs_by_events_mt
     freebufs = t->next;
     delete t;
   }
-  so->removeAllComputeTableEntries();
   delete so;
-  if (rel->autoDestroy()) delete rel;
 }
 
 // ******************************************************************
@@ -975,31 +989,16 @@ MEDDLY::fb_saturation_opname::buildOperation(arguments* a) const
   // No sanity checks needed here; we did them already when constructing a.
   //
 
-  if (forward) {
+  MEDDLY::specialized_operation* op = 0;
+  if (forward)
+    op = new forwd_dfs_by_events_mt(this, rel);
+  else
+    op = new bckwd_dfs_by_events_mt(this, rel);
 
-    // 
-    // TBD. 
-    // Build appropriate forward operation here, transferring
-    // rel to the operation.
-    // Note that rel specifies the forests for the input and output sets
-    // (as well as the relations).
-    //
+  // Do we need to delete rel here?
+  // No, if needed, do this in the destructor for op.
 
-    // throw error(error::NOT_IMPLEMENTED);
-    return new forwd_dfs_by_events_mt(this, rel);
-  } else {
-
-    // 
-    // TBD. 
-    // Build appropriate backward operation here, transferring
-    // rel to the operation.
-    // Note that rel specifies the forests for the input and output sets
-    // (as well as the relations).
-    //
-
-    // throw error(error::NOT_IMPLEMENTED);
-    return new bckwd_dfs_by_events_mt(this, rel);
-  }
+  return op;
 }
 
 // ******************************************************************

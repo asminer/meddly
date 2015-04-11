@@ -57,7 +57,7 @@ MEDDLY::dd_edge::dd_edge()
   opPlus(0), opStar(0), opMinus(0), opDivide(0)
 {
 #ifdef DEBUG_CLEANUP
-  fprintf(stderr, "Creating dd_edge %x\n", this);
+  fprintf(stderr, "Creating dd_edge %p\n", this);
 #endif
 }
 
@@ -68,7 +68,7 @@ MEDDLY::dd_edge::dd_edge(forest* p)
   opPlus(0), opStar(0), opMinus(0), opDivide(0)
 {
 #ifdef DEBUG_CLEANUP
-  fprintf(stderr, "Creating dd_edge %x\n", this);
+  fprintf(stderr, "Creating dd_edge %p\n", this);
 #endif
   MEDDLY_DCASSERT(p != NULL);
   parent->registerEdge(*this);
@@ -80,7 +80,7 @@ MEDDLY::dd_edge::dd_edge(forest* p)
 MEDDLY::dd_edge::dd_edge(const dd_edge& e)
 {
 #ifdef DEBUG_CLEANUP
-  fprintf(stderr, "Creating dd_edge %x\n", this);
+  fprintf(stderr, "Creating dd_edge %p\n", this);
 #endif
   init(e);
   MEDDLY_DCASSERT(index != -1);
@@ -102,7 +102,7 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator=(const dd_edge& e)
 MEDDLY::dd_edge::~dd_edge()
 {
 #ifdef DEBUG_CLEANUP
-  fprintf(stderr, "Deleting dd_edge %x\n", this);
+  fprintf(stderr, "Deleting dd_edge %p\n", this);
 #endif
   destroy();
 }

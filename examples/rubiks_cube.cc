@@ -731,7 +731,6 @@ void usage() {
   fprintf(stderr, "         Right face (D, d, 4),\n");
   fprintf(stderr, "         Up face (E, e, 5),\n");
   fprintf(stderr, "         Down face (F, f, 6),\n");
-  fprintf(stderr, "-p     : prints initial states, nsf, reachable states on stderr\n");
   fprintf(stderr, "\n");
 }
 
@@ -1245,7 +1244,6 @@ int doSteppedBfs(const moves& m)
 
 int main(int argc, char *argv[])
 {
-  bool pretty_print = false;
   moves enabled;
   bool dfs = false;
   bool bfs = false;
@@ -1255,8 +1253,7 @@ int main(int argc, char *argv[])
     assert(argc <= 5);
     for (int i=1; i<argc; i++) {
       char *cmd = argv[i];
-      if (strncmp(cmd, "-p", 3) == 0) pretty_print = true;
-      else if (strncmp(cmd, "-msat", 6) == 0) {
+      if (strncmp(cmd, "-msat", 6) == 0) {
         dfs = true; saturation_type = 'm';
       }
       else if (strncmp(cmd, "-esat", 6) == 0) {
@@ -1297,9 +1294,7 @@ int main(int argc, char *argv[])
     }
   }
 
-  bool choice = true;
   if (dfs) { bfs = false; }
-  if (dfs || bfs) { choice = false; }
 
   // set up arrays based on number of levels
   SetUpArrays();

@@ -369,7 +369,7 @@ void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
 #endif
 }
 
-void runWithOptions(int nPhilosophers, const switches &sw)
+domain* runWithOptions(int nPhilosophers, const switches &sw)
 {
   timer start;
 
@@ -593,6 +593,7 @@ void runWithOptions(int nPhilosophers, const switches &sw)
         double(counter), start.get_last_interval()/double(1000000.0));
   }
 
+  return d;
 }
 
 
@@ -700,7 +701,8 @@ int main(int argc, char *argv[])
   MEDDLY::initialize(s);
 
   try {
-    runWithOptions(nPhilosophers, sw);
+    domain* d = runWithOptions(nPhilosophers, sw);
+    MEDDLY::destroyDomain(d);
     MEDDLY::cleanup();
     printf("\n\nDONE\n");
     return 0;

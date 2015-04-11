@@ -711,6 +711,8 @@ class MEDDLY::base_unchained : public base_hash {
       if (0==table) {
         table = oldT;
         tableSize = oldSize;
+        fprintf(stderr, "Error in allocating array of size %u at %s, line %d\n",
+            newsize * sizeof(int), __FILE__, __LINE__);
         throw error(error::INSUFFICIENT_MEMORY);
       }
       for (unsigned i=0; i<newsize; i++) table[i] = 0;
@@ -756,6 +758,9 @@ class MEDDLY::base_unchained : public base_hash {
           if (0==table) {
             table = oldT;
             tableSize = oldSize;
+            fprintf(stderr,
+                "Error in allocating array of size %u at %s, line %d\n",
+                newsize * sizeof(int), __FILE__, __LINE__);
             throw error(error::INSUFFICIENT_MEMORY);
           }
           for (unsigned i=0; i<newsize; i++) table[i] = 0;

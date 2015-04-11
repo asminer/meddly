@@ -352,6 +352,7 @@ void MEDDLY::domain::markForDeletion()
 #ifdef DEBUG_CLEANUP
   fprintf(stderr, "Marking domain #%d for deletion\n", my_index);
 #endif
+  if (is_marked_for_deletion) return;
   is_marked_for_deletion = true;
   for (int slot=0; slot<szForests; slot++) 
     if (forests[slot]) forests[slot]->markForDeletion();

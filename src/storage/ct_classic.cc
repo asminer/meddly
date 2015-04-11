@@ -104,7 +104,12 @@ int MEDDLY::base_table::newEntry(int size)
     // Expand by a factor of 1.5
     int neA = entriesAlloc + (entriesAlloc/2);
     int* ne = (int*) realloc(entries, neA * sizeof(int));
-    if (0==ne) throw error(error::INSUFFICIENT_MEMORY);
+    if (0==ne) {
+      fprintf(stderr,
+          "Error in allocating array of size %u at %s, line %d\n",
+          neA * sizeof(int), __FILE__, __LINE__);
+      throw error(error::INSUFFICIENT_MEMORY);
+    }
     currMemory += (neA - entriesAlloc) * sizeof(int);
     if (currMemory > peakMemory) peakMemory = currMemory;
     entries = ne;
@@ -300,7 +305,12 @@ void MEDDLY::base_chained::addEntry()
   if (newsize > maxSize) newsize = maxSize;
 
   int* newt = (int*) realloc(table, newsize * sizeof(int));
-  if (0==newt) throw error(error::INSUFFICIENT_MEMORY);
+  if (0==newt) {
+    fprintf(stderr,
+        "Error in allocating array of size %u at %s, line %d\n",
+        newsize * sizeof(int), __FILE__, __LINE__);
+    throw error(error::INSUFFICIENT_MEMORY);
+  }
 
   for (unsigned i=tableSize; i<newsize; i++) newt[i] = 0;
 
@@ -335,7 +345,12 @@ void MEDDLY::base_chained::removeStales()
     int newsize = tableSize / 2;
     if (newsize < 1024) newsize = 1024;
     int* newt = (int*) realloc(table, newsize * sizeof(int));
-    if (0==newt) throw error(error::INSUFFICIENT_MEMORY); 
+    if (0==newt) {
+      fprintf(stderr,
+          "Error in allocating array of size %u at %s, line %d\n",
+          newsize * sizeof(int), __FILE__, __LINE__);
+      throw error(error::INSUFFICIENT_MEMORY); 
+    }
 
     currMemory -= (tableSize - newsize) * sizeof(int);  
 
@@ -782,8 +797,8 @@ void MEDDLY::base_unchained::show(FILE *s, int verbLevel)
   showTitle(s);
   fprintf(s, "%*sCurrent CT memory :\t%lu bytes\n", 6, "", currMemory);
   fprintf(s, "%*sPeak    CT memory :\t%lu bytes\n", 6, "", peakMemory);
-  verbLevel--;
-  if (verbLevel < 1) return;
+  // verbLevel--;
+  // if (verbLevel < 1) return;
   fprintf(s, "%*sCollisions        :\t%ld\n", 6, "", collisions);
   report(s, 6, verbLevel);
   verbLevel--;

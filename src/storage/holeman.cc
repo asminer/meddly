@@ -124,7 +124,12 @@ void MEDDLY::holeman::resize(node_address new_slots)
   node_handle* new_data 
     = (node_handle*) realloc(data, new_slots * sizeof(node_handle));
 
-  if (0 == new_data) throw error(error::INSUFFICIENT_MEMORY);
+  if (0 == new_data) {
+    fprintf(stderr,
+        "Error in allocating array of size %u at %s, line %d\n",
+        new_slots * sizeof(node_handle), __FILE__, __LINE__);
+    throw error(error::INSUFFICIENT_MEMORY);
+  }
   if (0 == data) new_data[0] = 0;
   if (new_slots > size) {
     incMemAlloc((new_slots - size) * sizeof(node_handle));

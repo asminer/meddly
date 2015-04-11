@@ -178,6 +178,7 @@ MEDDLY::numerical_opname::~numerical_opname()
 // *                                                                *
 // ******************************************************************
 
+
 MEDDLY::satpregen_opname::satpregen_opname(const char* n)
  : specialized_opname(n)
 {
@@ -264,6 +265,9 @@ MEDDLY::satpregen_opname::pregen_relation
 MEDDLY::satpregen_opname::pregen_relation
 ::~pregen_relation()
 {
+  if (events && mxdF) {
+    for (int k=0; k<=K; k++) if(events[k]) mxdF->unlinkNode(events[k]);
+  }
   delete[] events;
   delete[] next;
   delete[] level_index;
@@ -506,7 +510,8 @@ MEDDLY::satotf_opname::otf_relation::~otf_relation()
 MEDDLY::operation::operation(const opname* n, int kl, int al)
 {
 #ifdef DEBUG_CLEANUP
-  fprintf(stderr, "Creating operation %x\n", this);
+  fprintf(stdout, "Creating operation %p\n", this);
+  fflush(stdout);
 #endif
   MEDDLY_DCASSERT(kl>=0);
   MEDDLY_DCASSERT(al>=0);
@@ -567,6 +572,11 @@ MEDDLY::operation::operation(const opname* n, int kl, int al)
 
 MEDDLY::operation::~operation()
 {
+#ifdef DEBUG_CLEANUP
+  fprintf(stdout, "Deleting operation %p %s\n", this, getName());
+  fflush(stdout);
+#endif
+
   while (CT_free_keys) {
     compute_table::search_key* next = CT_free_keys->next;
     delete CT_free_keys;
@@ -583,7 +593,8 @@ MEDDLY::operation::~operation()
     free_list = oplist_index;
   }
 #ifdef DEBUG_CLEANUP
-  fprintf(stderr, "Deleting operation %x\n", this);
+  fprintf(stdout, "Deleted operation %p %s\n", this, getName());
+  fflush(stdout);
 #endif
 }
 
@@ -595,8 +606,10 @@ void MEDDLY::operation::removeStalesFromMonolithic()
 void MEDDLY::operation::markForDeletion()
 {
 #ifdef DEBUG_CLEANUP
-  fprintf(stderr, "Marking operation %x for deletion\n", this);
+  fprintf(stdout, "Marking operation %p %s for deletion\n", this, getName());
+  fflush(stdout);
 #endif
+  if (is_marked_for_deletion) return;
   is_marked_for_deletion = true;
   if (CT && CT->isOperationTable()) CT->removeStales();
 }
@@ -620,10 +633,18 @@ void MEDDLY::operation::removeStaleComputeTableEntries()
 
 void MEDDLY::operation::removeAllComputeTableEntries()
 {
+#ifdef DEBUG_CLEANUP
+  fprintf(stdout, "Removing entries for operation %p %s\n", this, getName());
+  fflush(stdout);
+#endif
   if (is_marked_for_deletion) return;
   is_marked_for_deletion = true;
   if (CT) CT->removeStales();
   is_marked_for_deletion = false;
+#ifdef DEBUG_CLEANUP
+  fprintf(stdout, "Removed entries for operation %p %s\n", this, getName());
+  fflush(stdout);
+#endif
 }
 
 void MEDDLY::operation::showMonolithicComputeTable(FILE* s, int verbLevel)
@@ -717,7 +738,7 @@ MEDDLY::binary_operation::binary_operation(const binary_opname* op, int kl,
 
   registerInForest(arg1F);
   registerInForest(arg2F);
-  registerInForest(res);
+  registerInForest(resF);
 
   setAnswerForest(resF);
   can_commute = false;

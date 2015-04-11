@@ -29,7 +29,11 @@ MEDDLY::unique_table::unique_table(expert_forest* ef)
   size = minSize;
   num_entries = 0;
   table = (node_handle*) malloc(sizeof(node_handle) * size);
-  if (0==table) throw error(error::INSUFFICIENT_MEMORY);
+  if (0==table) {
+    fprintf(stderr, "Error in allocating array of size %lu at %s, line %d\n",
+        size*sizeof(node_handle), __FILE__, __LINE__);
+    throw error(error::INSUFFICIENT_MEMORY);
+  }
   for (unsigned i=0; i<size; i++) table[i] = 0;
   next_expand = 2*size;
   next_shrink = 0;
@@ -112,7 +116,11 @@ void MEDDLY::unique_table::expand()
   // length will the same as num_entries previously
   unsigned newSize = size * 2;
   node_handle *temp = (node_handle*) realloc(table, sizeof(node_handle) * newSize);
-  if (0==temp) throw error(error::INSUFFICIENT_MEMORY);
+  if (0==temp) {
+    fprintf(stderr, "Error in allocating array of size %lu at %s, line %d\n",
+        newSize*sizeof(node_handle), __FILE__, __LINE__);
+    throw error(error::INSUFFICIENT_MEMORY);
+  }
   table = temp;
   for (unsigned i = newSize-1; i>=size; i--) table[i] = 0;
   next_shrink = size;
@@ -132,7 +140,11 @@ void MEDDLY::unique_table::shrink()
   // length will the same as num_entries previously
   unsigned newSize = size / 2;
   node_handle *temp = (node_handle*) realloc(table, sizeof(node_handle) * newSize);
-  if (0==temp) throw error(error::INSUFFICIENT_MEMORY);
+  if (0==temp) {
+    fprintf(stderr, "Error in allocating array of size %lu at %s, line %d\n",
+        newSize*sizeof(node_handle), __FILE__, __LINE__);
+    throw error(error::INSUFFICIENT_MEMORY);
+  }
   table = temp;
   next_expand = size;
   size = newSize;

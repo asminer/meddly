@@ -126,7 +126,7 @@ void exchangeMove(bool left, dd_edge &answer)
         continue;
       }
       
-      if (i%12>5 == left) {
+      if ((i%12>5) == left) {
         // exchange this piece
         // i -> (i+12)%24
         node_builder& nkp = EF->useSparseBuilder(-k, 1);

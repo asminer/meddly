@@ -3498,7 +3498,7 @@ class MEDDLY::operation {
     inline void setNext(operation* n) { next = n; }
     inline operation* getNext()       { return next; }
 
-    inline static bool useMonolithicComputeTable() { return Monolithic_CT; }
+    inline static bool usesMonolithicComputeTable() { return Monolithic_CT; }
     static void removeStalesFromMonolithic();
 
     /// Remove stale compute table entries for this operation.

@@ -221,6 +221,7 @@ void MEDDLY::forest::markForDeletion()
 #ifdef DEBUG_CLEANUP
   fprintf(stderr, "Marking forest #%d for deletion in domain #%d\n", d_slot, d->ID());
 #endif
+  if (is_marked_for_deletion) return;
   is_marked_for_deletion = true;
   // deal with operations associated with this forest
   for (int i=0; i<szOpCount; i++) 
@@ -336,7 +337,7 @@ void MEDDLY::forest::getElement(const dd_edge& a, int index, int* e)
 
 void MEDDLY::forest::removeStaleComputeTableEntries()
 {
-  if (operation::useMonolithicComputeTable()) {
+  if (operation::usesMonolithicComputeTable()) {
     operation::removeStalesFromMonolithic();
   } else {
     for (int i=0; i<szOpCount; i++) 
@@ -350,7 +351,7 @@ void MEDDLY::forest::removeStaleComputeTableEntries()
 void MEDDLY::forest::removeAllComputeTableEntries()
 {
   if (is_marked_for_deletion) return;
-  if (operation::useMonolithicComputeTable()) {
+  if (operation::usesMonolithicComputeTable()) {
     is_marked_for_deletion = true;
     operation::removeStalesFromMonolithic();
     is_marked_for_deletion = false;
@@ -365,7 +366,7 @@ void MEDDLY::forest::removeAllComputeTableEntries()
 
 void MEDDLY::forest::showComputeTable(FILE* s, int verbLevel) const
 {
-  if (operation::useMonolithicComputeTable()) {
+  if (operation::usesMonolithicComputeTable()) {
     operation::showMonolithicComputeTable(s, verbLevel);
   } else {
     for (int i=0; i<szOpCount; i++) 
@@ -2007,7 +2008,6 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
 void MEDDLY::expert_forest::validateDownPointers(const node_builder &nb) const
 {
-  int nextLevel;
   switch (getReductionRule()) {
     case policies::IDENTITY_REDUCED:
     case policies::FULLY_REDUCED:
@@ -2023,16 +2023,19 @@ void MEDDLY::expert_forest::validateDownPointers(const node_builder &nb) const
       break;
 
     case policies::QUASI_REDUCED:
+#ifdef DEVELOPMENT_CODE
+      int nextLevel;
       if (isForRelations()) 
         nextLevel = (nb.getLevel()<0) ? -(nb.getLevel()+1) : -nb.getLevel();
       else
         nextLevel = nb.getLevel()-1;
+#endif
       if (nb.isSparse()) {
         for (int z=0; z<nb.getNNZs(); z++) {
           MEDDLY_DCASSERT(getNodeLevel(nb.d(z)) == nextLevel);
         } 
       } else {
-    	node_handle tv=getTransparentNode();
+        node_handle tv=getTransparentNode();
         for (int i=0; i<nb.getSize(); i++) {
           if (nb.d(i)==tv) continue;
           MEDDLY_DCASSERT(getNodeLevel(nb.d(i)) == nextLevel);
@@ -2054,6 +2057,8 @@ void MEDDLY::expert_forest::expandHandleList()
   MEDDLY_DCASSERT(delta>=0);
   address = (node_header*) realloc(address, (a_size+delta) * sizeof(node_header));
   if (0==address) {
+    fprintf(stderr, "Error in allocating array of size %lu at %s, line %d\n",
+        (a_size+delta) * sizeof(node_header), __FILE__, __LINE__);
     throw error(error::INSUFFICIENT_MEMORY);
   }
   stats.incMemAlloc(delta * sizeof(node_header));
@@ -2105,6 +2110,8 @@ void MEDDLY::expert_forest::shrinkHandleList()
   MEDDLY_DCASSERT(a_size-delta>=a_min_size);
   address = (node_header*) realloc(address, new_size * sizeof(node_header));
   if (0==address) {
+    fprintf(stderr, "Error in allocating array of size %lu at %s, line %d\n",
+        new_size*sizeof(node_header), __FILE__, __LINE__);
     throw error(error::INSUFFICIENT_MEMORY);
   }
   stats.decMemAlloc(delta * sizeof(node_header));

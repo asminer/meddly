@@ -241,7 +241,7 @@ class rubiks {
       delete[] variableSize;
 
       MEDDLY::destroyDomain(d);
-      MEDDLY::cleanup();
+      //MEDDLY::cleanup();
     }
 
     // Returns an ordering based on the full-order with restrictions.
@@ -381,10 +381,12 @@ class rubiks {
 
       // Initialize MEDDLY
       MEDDLY::settings s;
-      s.computeTable.style = MEDDLY::MonolithicUnchainedHash;
-      s.computeTable.maxSize = 16 * 16777216;
-      s.computeTable.staleRemoval =
-        MEDDLY::settings::computeTableSettings::Lazy;
+      s.computeTable.style = MEDDLY::OperationChainedHash;
+      //s.computeTable.style = MEDDLY::MonolithicChainedHash;
+      //s.computeTable.style = MEDDLY::MonolithicUnchainedHash;
+      s.computeTable.maxSize = 8 * 16777216;
+      // s.computeTable.staleRemoval =
+      //   MEDDLY::settings::computeTableSettings::Aggressive;
       MEDDLY::initialize(s);
 
       // Set up the state variables, as described earlier
@@ -409,19 +411,19 @@ class rubiks {
         fprintf(stderr, "Couldn't create forest for states\n");
         assert(false);
       } else {
-        fprintf(stderr, "Created forest for states\n");
+        fprintf(stdout, "Created forest for states %p\n", mdd);
       }
       if (0 == mxd) {
         fprintf(stderr, "Couldn't create forest for relations\n");
         assert(false);
       } else {
-        fprintf(stderr, "Created forest for relations\n");
+        fprintf(stdout, "Created forest for relations %p\n", mxd);
       }
       if (0 == mtmxd) {
         fprintf(stderr, "Couldn't create forest for mtmxd\n");
         assert(false);
       } else {
-        fprintf(stderr, "Created forest for mtmxd\n");
+        fprintf(stdout, "Created forest for mtmxd %p\n", mtmxd);
       }
     }
 
@@ -884,6 +886,9 @@ class rubiks {
         printf("Building reachability set: Monolithic relation saturation\n");
         fflush(stdout);
       }
+      
+      mxd->removeAllComputeTableEntries();
+      mtmxd->removeAllComputeTableEntries();
 
       start.note_time();
 
@@ -905,8 +910,6 @@ class rubiks {
       fprintf(stdout, "# of reachable states: %1.6e\n",
           initial.getCardinality());
       fflush(stdout);
-
-      if (ensf && !ensf->autoDestroy()) delete ensf;
 
       return 0;
     }
@@ -1150,21 +1153,24 @@ class rubiks {
     }
 #endif
 
-    void printStats()
+    void printStats(FILE* out)
     {
-      printStats("Mdd", mdd);
-      printStats("Mxd", mxd);
-      printStats("MtMxd", mtmxd);
+      printStats(out, "Mdd", mdd);
+      printStats(out, "Mxd", mxd);
+      printStats(out, "MtMxd", mtmxd);
+      MEDDLY::operation::showAllComputeTables(out, 3);
+      fflush(out);
     }
 
-    void printStats(const char* who, const forest* f)
+    void printStats(FILE* out, const char* who, const forest* f)
     { 
-      printf("%s stats:\n", who);
+      fprintf(out, "%s stats:\n", who);
       const expert_forest* ef = (expert_forest*) f;
-      ef->reportStats(stdout, "\t",
+      ef->reportStats(out, "\t",
           expert_forest::HUMAN_READABLE_MEMORY  |
           expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
-          expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
+          expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS |
+          expert_forest::UNIQUE_TABLE_STATS
           );
     }
 
@@ -1337,17 +1343,19 @@ int main(int argc, char *argv[])
     }
   }
   catch (MEDDLY::error& e) {
-    printf("Meddly error: %s\n", e.getName());
-    fflush(stdout);
-    model.printStats();
-    fflush(stdout);
+    fprintf(stderr, "Meddly error: %s\n", e.getName());
+    fflush(stderr);
   } 
   catch (...) {
-    printf("Unknown error.\n");
+    fprintf(stderr, "Unknown error.\n");
+    fflush(stderr);
   }
 
-  fprintf(stderr, "\n\nDONE\n");
-  fflush(stderr);
+  model.printStats(stdout);
+  fflush(stdout);
+
+  fprintf(stdout, "\n\nDONE\n");
+  fflush(stdout);
   return 0;
 }
 

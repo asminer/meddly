@@ -1320,7 +1320,12 @@ void MEDDLY::old_node_storage::indexRemove(node_handle p_offset)
 void MEDDLY::old_node_storage::resize(node_handle new_size)
 {
   node_handle* new_data = (node_handle*) realloc(data, new_size * sizeof(node_handle));
-  if (0 == new_data) throw error(error::INSUFFICIENT_MEMORY);
+  if (0 == new_data) {
+    fprintf(stderr,
+        "Error in allocating array of size %u at %s, line %d\n",
+        new_size * sizeof(node_handle), __FILE__, __LINE__);
+    throw error(error::INSUFFICIENT_MEMORY);
+  }
   if (0== data) new_data[0] = 0;
   if (new_size > size) {
     incMemAlloc((new_size - size) * sizeof(node_handle));
