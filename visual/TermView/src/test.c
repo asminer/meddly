@@ -6,7 +6,7 @@
 	gcc <this> -lncurses
 */
 
-#include <ncurses.h>
+#include "system.h"
 #include <string.h>
 
 int main()
