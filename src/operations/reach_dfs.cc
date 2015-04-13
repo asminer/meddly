@@ -377,9 +377,9 @@ MEDDLY::common_dfs_mt::common_dfs_mt(const binary_opname* oc, expert_forest* a1,
 : binary_operation(oc, 2, 1, a1, a2, res)
 {
   splits = 0;
-  binary_operation* mddUnion = 0;
-  binary_operation* mxdIntersection = 0;
-  binary_operation* mxdDifference = 0;
+  mddUnion = 0;
+  mxdIntersection = 0;
+  mxdDifference = 0;
   freeqs = 0;
   freebufs = 0;
 }

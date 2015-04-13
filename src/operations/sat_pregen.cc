@@ -377,9 +377,9 @@ MEDDLY::common_dfs_by_events_mt::common_dfs_by_events_mt(
   satpregen_opname::pregen_relation* relation)
 : specialized_operation(opcode, 2, 1)
 {
-  binary_operation* mddUnion = 0;
-  binary_operation* mxdIntersection = 0;
-  binary_operation* mxdDifference = 0;
+  mddUnion = 0;
+  mxdIntersection = 0;
+  mxdDifference = 0;
   freeqs = 0;
   freebufs = 0;
   rel = relation;

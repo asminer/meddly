@@ -353,7 +353,7 @@ int AndSum(int n1, int n2)
   int tempNode = f->createTempNode(resultLevel, result);
   resultNode = f->reduceNode(tempNode);
 
-  // TODO: save result to cache.
+  // save result to cache.
   saveInCache(f, n1, n2, resultNode);
 
   // Alternatively, user the cache provided by MEDDLY by building an
