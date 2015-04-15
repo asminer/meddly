@@ -1,5 +1,5 @@
 
-// $Id:$
+/* $Id$ */
 
 /*
     termview: terminal viewing utility for Meddly trace data.
@@ -19,27 +19,30 @@
     with this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SYSTEM_H
-#define SYSTEM_H
-
-#include "../config.h"
+#ifndef DATA_H
+#define DATA_H
 
 /*
-    Include appropriate curses header(s).
+  Struct for forest information
 */
+typedef struct {
+  int fid;
+  char* name;
+  int left;
+  int right;
+  int* counts_raw;
+  int* counts;
+} forest_t;
 
-#if defined HAVE_NCURSESW_CURSES_H
-#  include <ncursesw/curses.h>
-#elif defined HAVE_NCURSESW_H
-#  include <ncursesw.h>
-#elif defined HAVE_NCURSES_CURSES_H
-#  include <ncurses/curses.h>
-#elif defined HAVE_NCURSES_H
-#  include <ncurses.h>
-#elif defined HAVE_CURSES_H
-#  include <curses.h>
-#else
-#  error "SysV or X/Open-compatible Curses header file required"
-#endif
+/*
+  Initialize a forest_t struct to zeroes.
+*/
+void initialize(forest_t *f);
+
+/*
+  Free the memory used by a forest_t struct.
+  Does not free the pointer to the forest_t itself.
+*/
+void destroy(forest_t *f);
 
 #endif

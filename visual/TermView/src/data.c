@@ -1,5 +1,5 @@
 
-// $Id:$
+/* $Id$ */
 
 /*
     termview: terminal viewing utility for Meddly trace data.
@@ -19,27 +19,30 @@
     with this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SYSTEM_H
-#define SYSTEM_H
+#include "data.h"
 
-#include "../config.h"
+#include <stdlib.h>
 
-/*
-    Include appropriate curses header(s).
-*/
+void initialize(forest_t *f)
+{
+  if (0==f) return;
+  f->fid = 0;
+  f->name = 0;
+  f->left = 0;
+  f->right = 0;
+  f->counts_raw = 0;
+  f->counts = 0;
+}
 
-#if defined HAVE_NCURSESW_CURSES_H
-#  include <ncursesw/curses.h>
-#elif defined HAVE_NCURSESW_H
-#  include <ncursesw.h>
-#elif defined HAVE_NCURSES_CURSES_H
-#  include <ncurses/curses.h>
-#elif defined HAVE_NCURSES_H
-#  include <ncurses.h>
-#elif defined HAVE_CURSES_H
-#  include <curses.h>
-#else
-#  error "SysV or X/Open-compatible Curses header file required"
-#endif
+void destroy(forest_t *f)
+{
+  if (0==f) return;
 
-#endif
+  free(f->name);
+  free(f->counts_raw);
+
+  /* For sanity */
+  f->name = 0;
+  f->counts_raw = 0;
+  f->counts = 0;
+}

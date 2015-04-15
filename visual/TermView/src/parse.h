@@ -1,5 +1,5 @@
 
-// $Id:$
+/* $Id$ */
 
 /*
     termview: terminal viewing utility for Meddly trace data.
@@ -19,27 +19,37 @@
     with this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SYSTEM_H
-#define SYSTEM_H
+#ifndef PARSER_H
+#define PARSER_H
 
-#include "../config.h"
+#include "data.h"
 
-/*
-    Include appropriate curses header(s).
+/**
+  Ignore the next line of input.
+    @param  inf   Input file stream.
 */
+void ignoreLine(FILE* inf);
 
-#if defined HAVE_NCURSESW_CURSES_H
-#  include <ncursesw/curses.h>
-#elif defined HAVE_NCURSESW_H
-#  include <ncursesw.h>
-#elif defined HAVE_NCURSES_CURSES_H
-#  include <ncurses/curses.h>
-#elif defined HAVE_NCURSES_H
-#  include <ncurses.h>
-#elif defined HAVE_CURSES_H
-#  include <curses.h>
-#else
-#  error "SysV or X/Open-compatible Curses header file required"
-#endif
+
+/**
+  Parse a 'T' record.
+    @param  inf   Input file stream.
+
+    @return   The file type:
+               -1 - parse error
+                0 - unknown
+                1 - simple
+*/
+int parse_T(FILE* inf);
+
+
+/** 
+  Parse a 'F' record.
+    @param  inf   Input file stream.
+    @param  F     Where to store the forest info.
+
+    @return 1 on success, 0 on error
+*/
+int parse_F(FILE* inf, forest_t* F);
 
 #endif
