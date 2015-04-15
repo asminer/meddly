@@ -1409,6 +1409,13 @@ void MEDDLY::expert_forest::readEdges(FILE* s, dd_edge* E, int n)
 #ifdef DEBUG_READ
     printf("Reading %d pointers\n", num_ptrs);
 #endif
+    MEDDLY_DCASSERT(num_ptrs <= n);
+    if (num_ptrs > n) {
+      printf("Error at %s:%s, E[] is of size %d, needs to be atleast %d\n",
+      __FILE__, __LINE__, n, num_ptrs);
+      fflush(stdout);
+      throw error(error::INVALID_ASSIGNMENT);
+    }
     for (int i=0; i<num_ptrs; i++) {
       E[i].read(this, s, map);
     }

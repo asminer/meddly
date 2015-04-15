@@ -240,7 +240,6 @@ void MEDDLY::compact_storage
     for (int i=0; i<size; i++) {
       if (i) fprintf(s, "|"); 
       node_handle down;
-      int index;
       dataToDown(rawd, pbytes, down);
 
       if (edgeBytes) {
@@ -844,7 +843,7 @@ MEDDLY::compact_storage::makeSparseNode(node_handle p, int size,
   if (nb.isSparse()) {
     return copySparseIntoSparse(pbytes, ibytes, nb, size, addr);
   } else {
-    return copyFullIntoSparse(pbytes, ibytes, nb, size, addr);
+    return copyFullIntoSparse(pbytes, ibytes, nb, addr);
   }
 }
 

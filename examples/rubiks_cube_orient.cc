@@ -795,6 +795,7 @@ class rubiks {
       if (split) {
         //ensf.finalize(satpregen_opname::pregen_relation::SplitOnly);
         //ensf.finalize(satpregen_opname::pregen_relation::SplitSubtract);
+        //ensf.finalize(satpregen_opname::pregen_relation::MonolithicSplit);
         ensf.finalize(satpregen_opname::pregen_relation::SplitSubtractAll);
       } else {
         ensf.finalize(satpregen_opname::pregen_relation::MonolithicSplit);

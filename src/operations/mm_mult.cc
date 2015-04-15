@@ -79,8 +79,8 @@ class MEDDLY::mm_mult_op : public binary_operation {
     inline node_handle saveResult(compute_table::search_key* Key, 
       node_handle a, node_handle b, node_handle c) 
     {
-      arg1->cacheNode(a);
-      arg2->cacheNode(b);
+      arg1F->cacheNode(a);
+      arg2F->cacheNode(b);
       compute_table::entry_builder &entry = CT->startNewEntry(Key);
       entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();
@@ -91,9 +91,6 @@ class MEDDLY::mm_mult_op : public binary_operation {
   protected:
     binary_operation* accumulateOp;
     virtual node_handle compute_rec(node_handle a, node_handle b) = 0;
-
-    expert_forest* arg1;
-    expert_forest* arg2;
 };
 
 MEDDLY::mm_mult_op::mm_mult_op(const binary_opname* oc, expert_forest* a1,
@@ -108,15 +105,15 @@ MEDDLY::mm_mult_op::mm_mult_op(const binary_opname* oc, expert_forest* a1,
 
 bool MEDDLY::mm_mult_op::isStaleEntry(const node_handle* data)
 {
-  return arg1->isStale(data[0]) ||
-         arg2->isStale(data[1]) ||
+  return arg1F->isStale(data[0]) ||
+         arg2F->isStale(data[1]) ||
          resF->isStale(data[2]);
 }
 
 void MEDDLY::mm_mult_op::discardEntry(const node_handle* data)
 {
-  arg1->uncacheNode(data[0]);
-  arg2->uncacheNode(data[1]);
+  arg1F->uncacheNode(data[0]);
+  arg2F->uncacheNode(data[1]);
   resF->uncacheNode(data[2]);
 }
 
@@ -174,7 +171,7 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
 {
   // termination conditions
   if (a == 0 || b == 0) return 0;
-  if (arg2->isTerminalNode(b) && arg1->isTerminalNode(a)) {
+  if (arg2F->isTerminalNode(b) && arg1F->isTerminalNode(a)) {
       return processTerminals(a, b);
   }
 
@@ -206,8 +203,8 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
    */
 
   // check if b and a are at the same level
-  int aLevel = arg1->getNodeLevel(a);
-  int bLevel = arg2->getNodeLevel(b);
+  int aLevel = arg1F->getNodeLevel(a);
+  int bLevel = arg2F->getNodeLevel(b);
 
   // No primed levels at this point
   MEDDLY_DCASSERT(aLevel >= 0);
@@ -231,11 +228,11 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
 
   if (aLevel < bLevel) {
     // For all i and j, r[i][j] = compute_rec(a, b[i][j])
-    node_reader* nrb = arg2->initNodeReader(b, false);
+    node_reader* nrb = arg2F->initNodeReader(b, false);
     for (int iz = 0; iz < nrb->getNNZs(); ++iz) {
       node_builder& nbri = resF->useNodeBuilder(-rLevel, rSize);
       for (int i = 0; i < rSize; ++i) nbri.d(i) = 0;
-      node_reader* nrbp = arg2->initNodeReader(nrb->d(iz), false);
+      node_reader* nrbp = arg2F->initNodeReader(nrb->d(iz), false);
       int i = nrb->i(iz);
       for (int jz = 0; jz < nrbp->getNNZs(); ++jz) {
         int j = nrbp->i(jz);
@@ -250,11 +247,11 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
   }
   else if (aLevel > bLevel) {
     // For all i and j, r[i][j]=compute_rec(a[i][j], b)
-    node_reader* nra = arg1->initNodeReader(a, false);
+    node_reader* nra = arg1F->initNodeReader(a, false);
     for (int iz = 0; iz < nra->getNNZs(); ++iz) {
       node_builder& nbri = resF->useNodeBuilder(-rLevel, rSize);
       for (int i = 0; i < rSize; ++i) nbri.d(i) = 0;
-      node_reader* nrap = arg1->initNodeReader(nra->d(iz), false);
+      node_reader* nrap = arg1F->initNodeReader(nra->d(iz), false);
       int i = nra->i(iz);
       for (int jz = 0; jz < nrap->getNNZs(); ++jz) {
         int j = nrap->i(jz);
@@ -273,13 +270,13 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
     MEDDLY_DCASSERT(bLevel == rLevel);
     
     // Node readers for a, b and all b[j].
-    node_reader* nra = arg1->initNodeReader(a, false);
+    node_reader* nra = arg1F->initNodeReader(a, false);
     node_reader* nrap = node_reader::useReader();
-    node_reader* nrb = arg2->initNodeReader(b, true);
+    node_reader* nrb = arg2F->initNodeReader(b, true);
     node_reader** nrbp =
       (node_reader**) malloc(nrb->getSize() * sizeof(node_reader*));
     for (int i = 0; i < nrb->getSize(); ++i) {
-      nrbp[i] = (0 == nrb->d(i))? 0: arg2->initNodeReader(nrb->d(i), false);
+      nrbp[i] = (0 == nrb->d(i))? 0: arg2F->initNodeReader(nrb->d(i), false);
     }
 
     // For all i, j, and k:
@@ -287,7 +284,7 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
     for (int iz = 0; iz < nra->getNNZs(); ++iz) {
       node_builder& nbri = resF->useNodeBuilder(-rLevel, rSize);
       for (int i = 0; i < rSize; ++i) nbri.d(i) = 0;
-      arg1->initNodeReader(*nrap, nra->d(iz), false);
+      arg1F->initNodeReader(*nrap, nra->d(iz), false);
       int i = nra->i(iz);
       for (int jz = 0; jz < nrap->getNNZs(); ++jz) {
         int j = nrap->i(jz);
@@ -350,8 +347,8 @@ namespace MEDDLY {
         RTYPE aval;
         RTYPE bval;
         RTYPE rval;
-        arg1->getValueFromHandle(a, aval);
-        arg2->getValueFromHandle(b, bval);
+        arg1F->getValueFromHandle(a, aval);
+        arg2F->getValueFromHandle(b, bval);
         rval = aval * bval;
         return resF->handleForValue(rval);
       }

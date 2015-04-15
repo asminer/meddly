@@ -173,14 +173,14 @@ void MEDDLY::hm_heap::recycleChunk(node_address addr, int slots)
   // Can we absorb this hole at the end?
   if (addr+slots-1 == lastSlot()) {
     // YES!
-    releaseToEnd(addr, slots);
+    releaseToEnd(slots);
     // Check for a hole to our left
     if (data[lastSlot()]<0) {
       // it's a hole; absorb it at the end too
       slots = -data[lastSlot()];
       addr = lastSlot() - slots + 1;
       removeHole(addr);
-      releaseToEnd(addr, slots);
+      releaseToEnd(slots);
     }
     return;
   }

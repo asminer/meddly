@@ -263,7 +263,7 @@ class MEDDLY::holeman {
       return h;
     }
 
-    inline void releaseToEnd(node_address h, int slots) {
+    inline void releaseToEnd(int slots) {
       last_slot -= slots;
       if (size > min_size && (last_slot + 1) < size/2) {
         node_handle new_size = size/2;

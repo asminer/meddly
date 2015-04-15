@@ -99,7 +99,7 @@ void MEDDLY::unique_table::buildFromList(node_handle front)
   for ( ; front; front = next) {
     next = parent->getNext(front);
     unsigned h = parent->hash(front) % size;
-    MEDDLY_CHECK_RANGE(0, h, size);
+    MEDDLY_DCASSERT(h < size);
     parent->setNext(front, table[h]);
     table[h] = front;
     num_entries++;

@@ -162,7 +162,8 @@ void MEDDLY::simple_logger::logForestInfo(const forest* f, const char* name)
   fixLogger();
 
   /* Allocate space for this forest info */
-  if (ef->FID() >= batch_forests) {
+  MEDDLY_DCASSERT(batch_forests >= 0);
+  if (ef->FID() >= (unsigned int)(batch_forests)) {
     int bf = ((ef->FID() / 16) + 1) * 16;
 
     /* Increase forest dimension if needed */

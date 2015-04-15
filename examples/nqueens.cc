@@ -50,7 +50,7 @@ const char* lfile;
 bool use_folding;
 
 
-void intersect_acc(expert_forest* f, dd_edge** A, int L)
+void intersect_acc(dd_edge** A, int L)
 {
   if (0==A[0]) {
     // find first non-zero and swap
@@ -77,7 +77,7 @@ void intersect_acc(expert_forest* f, dd_edge** A, int L)
 }
 
 
-void intersect_fold(expert_forest* f, dd_edge** A, int L)
+void intersect_fold(dd_edge** A, int L)
 {
   while (L>1) {
     fprintf(stderr, "\t%2d terms to combine ", L);
@@ -107,12 +107,12 @@ void intersect_fold(expert_forest* f, dd_edge** A, int L)
 }
 
 
-inline void intersect(expert_forest* f, dd_edge** A, int L)
+inline void intersect(dd_edge** A, int L)
 {
   if (use_folding)
-    intersect_fold(f, A, L);
+    intersect_fold(A, L);
   else
-    intersect_acc(f, A, L);
+    intersect_acc(A, L);
 }
 
 
@@ -281,7 +281,7 @@ int main(int argc, const char** argv)
 
   printf("Building solutions\n");
   fflush(stdout);
-  intersect(f, constr, N);
+  intersect(constr, N);
   assert(constr[0]);
   dd_edge* solutions = constr[0];
   constr[0] = 0;

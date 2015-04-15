@@ -1322,7 +1322,7 @@ void MEDDLY::old_node_storage::resize(node_handle new_size)
   node_handle* new_data = (node_handle*) realloc(data, new_size * sizeof(node_handle));
   if (0 == new_data) {
     fprintf(stderr,
-        "Error in allocating array of size %u at %s, line %d\n",
+        "Error in allocating array of size %lu at %s, line %d\n",
         new_size * sizeof(node_handle), __FILE__, __LINE__);
     throw error(error::INSUFFICIENT_MEMORY);
   }

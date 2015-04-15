@@ -126,33 +126,33 @@ class MEDDLY::base_table : public compute_table {
         }
 
         virtual node_handle readNH() {
-          MEDDLY_CHECK_RANGE(0, currslot, ansLength);
+          MEDDLY_DCASSERT(currslot < ansLength);
           return data[currslot++];
         }
         virtual void read(int &i) {
-          MEDDLY_CHECK_RANGE(0, currslot, ansLength);
+          MEDDLY_DCASSERT(currslot < ansLength);
           i = data[currslot++];
         }
         virtual void read(float &f) {
-          MEDDLY_CHECK_RANGE(0, currslot, ansLength);
+          MEDDLY_DCASSERT(currslot < ansLength);
           f = ((float*)(data + currslot))[0];
           currslot++;
         }
         virtual void read(long &L) {
-          MEDDLY_CHECK_RANGE(0, 
-            currslot+sizeof(long)/sizeof(node_handle), ansLength+1);
+          MEDDLY_DCASSERT( 
+            currslot+sizeof(long)/sizeof(node_handle) <= ansLength);
           memcpy(&L, data+currslot, sizeof(long));
           currslot += sizeof(long) / sizeof(node_handle);
         }
         virtual void read(double &D) {
-          MEDDLY_CHECK_RANGE(0, 
-            currslot+sizeof(double)/sizeof(node_handle), ansLength+1);
+          MEDDLY_DCASSERT( 
+            currslot+sizeof(double)/sizeof(node_handle) <= ansLength);
           memcpy(&D, data+currslot, sizeof(double));
           currslot += sizeof(double) / sizeof(node_handle);
         }
         virtual void read(void* &P) {
-          MEDDLY_CHECK_RANGE(0, 
-            currslot+sizeof(void*)/sizeof(node_handle), ansLength+1);
+          MEDDLY_DCASSERT( 
+            currslot+sizeof(void*)/sizeof(node_handle) <= ansLength);
           memcpy(&P, data+currslot, sizeof(void*));
           currslot += sizeof(void*) / sizeof(node_handle);
         }
@@ -190,17 +190,17 @@ class MEDDLY::base_table : public compute_table {
 
           virtual void writeResultNH(node_handle nh)
           {
-            MEDDLY_CHECK_RANGE(0, resSlot, resLength);
+            MEDDLY_DCASSERT(resSlot < resLength);
             res_entry[resSlot++] = nh;
           }
           virtual void writeResult(int i)
           {
-            MEDDLY_CHECK_RANGE(0, resSlot, resLength);
+            MEDDLY_DCASSERT(resSlot < resLength);
             res_entry[resSlot++] = i;
           }
           virtual void writeResult(float f)
           {
-            MEDDLY_CHECK_RANGE(0, resSlot, resLength);
+            MEDDLY_DCASSERT(resSlot < resLength);
             float* x = (float*) res_entry + resSlot;
             x[0] = f;
             resSlot++;
@@ -209,7 +209,6 @@ class MEDDLY::base_table : public compute_table {
           inline void writeResult(void* data, size_t slots)
           {
             MEDDLY_DCASSERT(slots>0);
-            MEDDLY_DCASSERT(resSlot>=0);
             MEDDLY_DCASSERT(resSlot+slots<=resLength);
             memcpy(res_entry+resSlot, data, slots * sizeof(node_handle));
             resSlot += slots;
@@ -711,7 +710,8 @@ class MEDDLY::base_unchained : public base_hash {
       if (0==table) {
         table = oldT;
         tableSize = oldSize;
-        fprintf(stderr, "Error in allocating array of size %u at %s, line %d\n",
+        fprintf(stderr,
+            "Error in allocating array of size %lu at %s, line %d\n",
             newsize * sizeof(int), __FILE__, __LINE__);
         throw error(error::INSUFFICIENT_MEMORY);
       }
@@ -759,7 +759,7 @@ class MEDDLY::base_unchained : public base_hash {
             table = oldT;
             tableSize = oldSize;
             fprintf(stderr,
-                "Error in allocating array of size %u at %s, line %d\n",
+                "Error in allocating array of size %lu at %s, line %d\n",
                 newsize * sizeof(int), __FILE__, __LINE__);
             throw error(error::INSUFFICIENT_MEMORY);
           }

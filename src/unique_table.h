@@ -59,7 +59,7 @@ class MEDDLY::unique_table {
     template <class T>
     inline node_handle find(const T &key) {
       unsigned h = key.hash() % size;
-      MEDDLY_CHECK_RANGE(0, h, size);
+      MEDDLY_DCASSERT(h < size);
       node_handle prev = 0;
       for (node_handle ptr = table[h]; ptr; ptr = parent->getNext(ptr)) {
         if (parent->areDuplicates(ptr, key)) { // key.equals(ptr)) {
@@ -98,7 +98,7 @@ class MEDDLY::unique_table {
     */
     inline node_handle remove(unsigned h, node_handle key) {
       h %= size;
-      MEDDLY_CHECK_RANGE(0, h, size);
+      MEDDLY_DCASSERT(h < size);
       node_handle prev = 0;
       node_handle ptr = table[h];
       for ( ; ptr; ptr = parent->getNext(ptr)) {

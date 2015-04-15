@@ -1020,7 +1020,7 @@ int doDfs(const moves& m, char saturation_type, bool split)
 }
 
 
-int doChoice(const moves& m)
+int doChoice()
 {
   // Build Next-State Function for each "move".
   // Moves 0-5 are CW, 6-11 are CCW, 12-17 are FLIP.
@@ -1137,7 +1137,7 @@ int doChoice(const moves& m)
 }
 
 
-int doSteppedBfs(const moves& m)
+int doSteppedBfs()
 {
   // Performs DFS for each event starting with initial state.
   // At the end of each iteration, peform a union and repeat.
@@ -1380,9 +1380,9 @@ int main(int argc, char *argv[])
     doBfs(enabled);
   } else {
 #if 0
-    doChoice(enabled);
+    doChoice();
 #else
-    doSteppedBfs(enabled);
+    doSteppedBfs();
 #endif
   }
 

@@ -106,7 +106,7 @@ int MEDDLY::base_table::newEntry(int size)
     int* ne = (int*) realloc(entries, neA * sizeof(int));
     if (0==ne) {
       fprintf(stderr,
-          "Error in allocating array of size %u at %s, line %d\n",
+          "Error in allocating array of size %lu at %s, line %d\n",
           neA * sizeof(int), __FILE__, __LINE__);
       throw error(error::INSUFFICIENT_MEMORY);
     }
@@ -307,7 +307,7 @@ void MEDDLY::base_chained::addEntry()
   int* newt = (int*) realloc(table, newsize * sizeof(int));
   if (0==newt) {
     fprintf(stderr,
-        "Error in allocating array of size %u at %s, line %d\n",
+        "Error in allocating array of size %lu at %s, line %d\n",
         newsize * sizeof(int), __FILE__, __LINE__);
     throw error(error::INSUFFICIENT_MEMORY);
   }
@@ -347,7 +347,7 @@ void MEDDLY::base_chained::removeStales()
     int* newt = (int*) realloc(table, newsize * sizeof(int));
     if (0==newt) {
       fprintf(stderr,
-          "Error in allocating array of size %u at %s, line %d\n",
+          "Error in allocating array of size %lu at %s, line %d\n",
           newsize * sizeof(int), __FILE__, __LINE__);
       throw error(error::INSUFFICIENT_MEMORY); 
     }

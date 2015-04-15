@@ -80,7 +80,7 @@ void MEDDLY::hm_none::recycleChunk(node_address addr, int slots)
       long(lastSlot()), long(addr), slots
     );
 #endif
-    releaseToEnd(addr, slots);
+    releaseToEnd(slots);
     useUntracked(slots);
   }
 }

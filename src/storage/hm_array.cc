@@ -79,7 +79,6 @@ MEDDLY::node_address MEDDLY::hm_array::requestChunk(int slots)
 #ifdef MEASURE_LARGE_HOLE_STATS
     num_large_hole_traversals++;
 #endif
-    node_handle curr = large_holes;
     for (node_handle curr = large_holes; curr; curr = Next(curr)) {
 #ifdef MEASURE_LARGE_HOLE_STATS
       count_large_hole_visits++;
@@ -162,7 +161,7 @@ void MEDDLY::hm_array::recycleChunk(node_address addr, int slots)
   // if addr is the last hole, absorb into free part of array
   MEDDLY_DCASSERT(addr + slots - 1 <= lastSlot());
   if (addr+slots-1 == lastSlot()) {
-    releaseToEnd(addr, slots);
+    releaseToEnd(slots);
     return;
   }
 
