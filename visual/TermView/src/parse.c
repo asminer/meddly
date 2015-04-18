@@ -75,7 +75,7 @@ int readString(FILE* inf, char* line, int length)
 {
   for (int i=0; ; ) {
     int c = fgetc(inf);
-    if ('"' == c || '\n' == c || EOF == c) {
+    if ('"' == c || '\r' == c || '\n' == c || EOF == c) {
       line[i] = 0;
       return c;
     }
@@ -238,4 +238,84 @@ int parse_F(FILE* inf, forest_t* F)
   ignoreLine(inf);
   return 1;
 }
+
+
+/* ================================================================ 
+   |                                                              |
+   |                           parse_p                            |
+   |                                                              |
+   ================================================================ */
+
+
+int parse_p(FILE* inf, char* pstr, int plen)
+{
+  if (' ' != matchChar(inf, " ")) return 0;
+  if (0==pstr) plen = 0;
+  int i;
+  plen--;
+  for (i=0; i<plen; i++) {
+    int c = fgetc(inf);
+    if (EOF == c || '\n' == c || '\r' == c) {
+      ungetc(c, inf);
+      break;
+    }
+    pstr[i] = c; 
+  }
+  if (pstr) pstr[i] = 0;
+  ignoreLine(inf);
+  return 1;
+}
+
+
+
+/* ================================================================ 
+   |                                                              |
+   |                           parse_a                            |
+   |                                                              |
+   ================================================================ */
+
+
+update_t* parse_a(FILE* inf)
+{
+  update_t* list = 0;
+  for (;;) {
+    int c = fgetc(inf);
+    if (' ' == c)   continue;
+    if ('\r' == c)  continue;
+    if ('\t' == c)  continue;
+    if ('\n' == c)  return list;
+    if (EOF == c)   return list;
+
+    if ('t' == c) {
+      /* Next thing is timestamp. */
+      break;
+    }
+
+    /* TBD - c should be a digit */
+    ungetc(c, inf);
+
+    /* Next should be a triple of integers */
+    int fid, level, delta;
+    if (!matchInt(inf, &fid)) {
+      ignoreLine(inf);
+      return list;
+    }
+    if (!matchInt(inf, &level)) {
+      ignoreLine(inf);
+      return list;
+    }
+    if (!matchInt(inf, &delta)) {
+      ignoreLine(inf);
+      return list;
+    }
+    list = new_update(fid, level, delta, list);
+  }
+
+  /*
+    TBD - process timestamp
+  */
+  ignoreLine(inf);
+  return list;
+}
+
 

@@ -92,10 +92,17 @@ int main(int argc, const char** argv)
   }
 
   /*
-    For now - just a loop to parse file to test the parser
+    Structures for grabbing parse data
   */
+  const int plength = 256;
+  char pbuffer[plength];
+  update_t* alist = 0;
   forest_t F;
   initialize(&F);
+
+  /*
+    For now - just a loop to parse file to test the parser
+  */
   for (int line=1;;line++) {
     int c = fgetc(inf);
     int t;
@@ -141,7 +148,30 @@ int main(int argc, const char** argv)
 
       
       case 'a': /* TBD */
-        ignoreLine(inf);
+#ifdef DEBUG_PARSER
+        printf("Parsing a record\n");
+#endif
+        alist = parse_a(inf);
+#ifdef DEBUG_PARSER
+        printf("Got a structure:\n");
+        for (update_t* curr = alist; curr; curr=curr->next) {
+          printf("\tfid: %2d level: %3d delta: %3d    ", 
+                  curr->fid, curr->level, curr->delta);
+          if (curr->next) printf("->");
+          printf("\n");
+        }
+#endif
+        kill_update(alist);
+        continue;
+
+      case 'p': /* TBD */
+#ifdef DEBUG_PARSER
+        printf("Parsing p record\n");
+#endif
+        parse_p(inf, pbuffer, plength);
+#ifdef DEBUG_PARSER
+        printf("Got p string: `%s'\n", pbuffer);
+#endif
         continue;
       
       default:

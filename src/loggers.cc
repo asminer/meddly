@@ -23,7 +23,7 @@
 #include "defines.h"
 #include "loggers.h"
 
-// #define BATCH
+#define BATCH
 
 // ******************************************************************
 // *                                                                *

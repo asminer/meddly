@@ -179,6 +179,10 @@ inline void MEDDLY::forest::logger::ignoreTimeStamps() {
   if (nfix) time_stamps = false;
 }
 
+inline void MEDDLY::forest::logger::fixLogger() {
+  nfix = false;
+}
+
 // end of forest::logger
 
 // forest::

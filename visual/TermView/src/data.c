@@ -46,3 +46,34 @@ void destroy(forest_t *f)
   f->counts_raw = 0;
   f->counts = 0;
 }
+
+
+update_t* free_list = 0;
+
+update_t* new_update(int fid, int level, int delta, update_t* next)
+{
+  update_t* node = 0;
+  if (free_list) {
+    node = free_list;
+    free_list = free_list->next;
+  } else {
+    node = (update_t*) malloc(sizeof(update_t));
+  }
+  node->fid = fid;
+  node->level = level;
+  node->delta = delta;
+  node->next = next;
+  return node;
+}
+
+void kill_update(update_t* node)
+{
+  while (node) {
+    update_t* nxt = node->next;
+    node->next = free_list;
+    free_list = node;
+    node = nxt;
+  }
+}
+
+

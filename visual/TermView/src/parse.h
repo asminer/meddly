@@ -52,4 +52,24 @@ int parse_T(FILE* inf);
 */
 int parse_F(FILE* inf, forest_t* F);
 
+
+/**
+  Parse a 'p' record.
+    @param  inf     Input file stream.
+    @param  pstr    Buffer to store the string
+    @param  plen    Length of pstr buffer
+
+    @return 1 on success, 0 on error
+*/
+int parse_p(FILE* inf, char* pstr, int plen);
+
+
+/** 
+  Parse an 'a' record.
+    @param  inf     Input file stream.
+    
+    @return List of updates that were parsed out of the line.
+*/
+update_t* parse_a(FILE* inf);
+
 #endif

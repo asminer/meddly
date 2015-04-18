@@ -45,4 +45,28 @@ void initialize(forest_t *f);
 */
 void destroy(forest_t *f);
 
+
+/*
+  Struct for a list of count updates
+*/
+struct update {
+  int fid;
+  int level;
+  int delta;
+  struct update* next;
+};
+
+typedef struct update update_t;
+
+/*
+  Make a new update struct.
+  (List of length 1).
+*/
+update_t* new_update(int fid, int level, int delta, update_t* next);
+
+/*
+  Destroy an update list.
+*/
+void kill_update(update_t*);
+
 #endif
