@@ -53,7 +53,7 @@ namespace MEDDLY {
 }
 
 // ----------------------------------------------------------------------
-// varaiable
+// variable
 // ----------------------------------------------------------------------
 
 MEDDLY::variable::variable(int b, char* n)
@@ -133,6 +133,7 @@ void MEDDLY::expert_variable::shrinkBound(int b, bool force)
 // domain
 // ----------------------------------------------------------------------
 
+const int MEDDLY::domain::TERMINALS = 0;
 
 MEDDLY::domain::domain(variable** v, int N) 
 {

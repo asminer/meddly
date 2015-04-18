@@ -66,6 +66,34 @@ const int a_min_size = 1024;
 
 // ******************************************************************
 // *                                                                *
+// *                    forest::policies methods                    *
+// *                                                                *
+// ******************************************************************
+
+const unsigned char MEDDLY::forest::policies::ALLOW_FULL_STORAGE    = 0x01;
+const unsigned char MEDDLY::forest::policies::ALLOW_SPARSE_STORAGE  = 0x02;
+
+MEDDLY::forest::policies::policies(bool rel) {
+  reduction = rel ? IDENTITY_REDUCED : FULLY_REDUCED;
+  storage_flags = ALLOW_FULL_STORAGE | ALLOW_SPARSE_STORAGE;
+  deletion = OPTIMISTIC_DELETION;
+  compact_min = 100;
+  compact_max = 1000000;
+  compact_frac = 40;
+  zombieTrigger = 1000000;
+  orphanTrigger = 500000;
+  compactAfterGC = false;
+  compactBeforeExpand = true;
+  // nodestor = CLASSIC_STORAGE;
+  nodestor = SIMPLE_GRID;
+  // nodestor = SIMPLE_ARRAY;
+  // nodestor = SIMPLE_HEAP;
+  // nodestor = SIMPLE_NONE;
+  // nodestor = COMPACT_GRID;
+}
+
+// ******************************************************************
+// *                                                                *
 // *                    forest::statset  methods                    *
 // *                                                                *
 // ******************************************************************

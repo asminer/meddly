@@ -20,7 +20,9 @@ CLEANFILES = revision.h
 libmeddly_la_SOURCES = \
   defines.h \
   meddly.h \
+  meddly.hh \
   meddly_expert.h \
+  meddly_expert.hh \
   meddly.cc \
   node_wrappers.cc \
   ops.cc \
@@ -45,6 +47,6 @@ libmeddly_la_LIBADD = \
 
 AM_CXXFLAGS = -Wall
 
-include_HEADERS = meddly.h meddly_expert.h 
+include_HEADERS = meddly.h meddly_expert.h meddly.hh meddly_expert.hh
 
 EXTRA_DIST = BuildRevNo revision.h
