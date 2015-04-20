@@ -223,6 +223,7 @@ namespace MEDDLY {
         if (dch > start) {
           node_handle below = createEdgeUn(k-1, start, dch);
           dontcares = makeIdentityEdgeForDontCareDontChange(k, below);
+          F->unlinkNode(below);
           // done with those
           start = dch;
         }
@@ -429,7 +430,6 @@ namespace MEDDLY {
           nbp.d(0) = F->linkNode(p);
           nb.d(v) = F->createReducedNode(v, nbp);
         }
-        F->unlinkNode(p);    // XXX: Necessary? May unlink outside the function
         return F->createReducedNode(-1, nb);
       }
 
@@ -467,7 +467,9 @@ namespace MEDDLY {
                 // Identity node
                 //
                 if(DONT_CARE == vlist[i]){
+                	node_handle tmp = next;
                 	next=makeIdentityEdgeForDontCareDontChange(i, next);
+                	F->unlinkNode(tmp);
                 	continue;
                 }
 

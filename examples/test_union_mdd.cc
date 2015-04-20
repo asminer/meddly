@@ -27,8 +27,6 @@
  * Testing MDD union.
  */
 
-//TODO: test union, intersection (optimize), diff (optimize)
-
 #include <iostream>
 #include "meddly.h"
 #include "timer.h"

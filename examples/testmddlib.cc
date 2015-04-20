@@ -131,7 +131,6 @@ int main(int argc, char *argv[])
 #endif
 #endif
 
-  // TODO:
   // Create another edge in MDD forest
   // Union (+) the two edges
   // Intersect (*) the two edges

@@ -315,7 +315,6 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
       mdd, k, sz, mdd_level);
 #endif
 
-  // TODO: Optimize this for the situation when there is no event at level k.
   node_builder& nb = resF->useNodeBuilder(k, sz);
   node_reader* mddDptrs =
     (mdd_level < k)

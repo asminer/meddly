@@ -1951,7 +1951,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
     if (nnz == getLevelSize(nb.getLevel())) {
       if (isRedundant(nb)) {
         // unlink downward pointers, except the one we're returning.
-        for (int i = 1; i<nb.getNNZs(); i++)  unlinkNode(nb.d(i));  // XXX: Better to use nzz?
+        for (int i = 1; i<nb.getNNZs(); i++)  unlinkNode(nb.d(i));  // XXX: Better to use nnz?
         return nb.d(0);
       }
     }

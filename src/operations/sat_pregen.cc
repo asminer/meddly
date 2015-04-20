@@ -314,7 +314,6 @@ MEDDLY::saturation_by_events_op::saturate(node_handle mdd, int k)
       mdd, k, sz, mdd_level);
 #endif
 
-  // TODO: Optimize this for the situation when there is no event at level k.
   node_builder& nb = resF->useNodeBuilder(k, sz);
   node_reader* mddDptrs =
     (mdd_level < k)
@@ -441,7 +440,6 @@ void MEDDLY::common_dfs_by_events_mt
 #ifdef DEBUG_NSF
   printf("Calling saturate for NSF:\n");
   // b.show(stdout, 2);
-  // TODO
 #endif
 
   // Execute saturation operation
