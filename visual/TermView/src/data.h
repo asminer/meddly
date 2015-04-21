@@ -35,9 +35,9 @@ typedef struct {
 } forest_t;
 
 /*
-  Initialize a forest_t struct to zeroes.
+  Allocate a new forest_t struct, and initialize it to zeroes.
 */
-void initialize(forest_t *f);
+forest_t* new_forest();
 
 /*
   Free the memory used by a forest_t struct.
@@ -68,5 +68,38 @@ update_t* new_update(int fid, int level, int delta, update_t* next);
   Destroy an update list.
 */
 void kill_update(update_t*);
+
+
+/*
+  Struct for screen information
+*/
+typedef struct {
+  forest_t** F;
+  int nf;
+  int maxf;
+  char has_primed;
+  int max_level;
+  int rows;
+  int cols;
+  int forwidth;
+  int varwidth;
+  char playing;
+} screen_t;
+
+/*
+  Initialize a screen_info struct
+*/
+void init_screen_t(screen_t* S, int maxF);
+
+/*
+  Destroy a screen info struct
+*/
+void done_screen_t(screen_t* S);
+
+/*
+  Add a forest to a screen info struct
+*/
+void add_forest(screen_t* S, forest_t* f);
+
 
 #endif

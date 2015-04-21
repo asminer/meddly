@@ -133,6 +133,7 @@ int main(int argc, const char** argv)
 
   if (N<0) return usage(argv[0]);
 
+  domain* d = 0;
   try {
 
     MEDDLY::initialize();
@@ -147,7 +148,7 @@ int main(int argc, const char** argv)
     // Initialize domain
     int* sizes = new int[16];
     for (int i=15; i>=0; i--) sizes[i] = N+1;
-    domain* d = createDomainBottomUp(sizes, 16);
+    d = createDomainBottomUp(sizes, 16);
     delete[] sizes;
 
     // Initialize forests
@@ -279,7 +280,10 @@ int main(int argc, const char** argv)
     printf("Approx. %g reachable states\n", c);
 
     // cleanup
-    if (LOG) LOG->newPhase("Cleanup");
+    if (LOG) {
+      LOG->newPhase("Cleanup");
+      MEDDLY::destroyDomain(d); 
+    }
     MEDDLY::cleanup();
     return 0;
   }

@@ -6,5 +6,5 @@
 bin_PROGRAMS = \
   termview
 
-termview_SOURCES = termview.c parse.c data.c
+termview_SOURCES = termview.c parse.c data.c screen.c
 termview_LDADD = @CURSES_LIB@

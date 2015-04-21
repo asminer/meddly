@@ -26,7 +26,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define DEBUG_PARSER
+// #define DEBUG_PARSER
 
 // TBD - #include "data.h"
 

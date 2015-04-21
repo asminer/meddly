@@ -21,8 +21,9 @@
 
 #include "system.h"
 #include "parse.h"
+#include "screen.h"
 
-#define DEBUG_PARSER
+// #define DEBUG_PARSER
 
 int usage(const char* who)
 {
@@ -89,7 +90,11 @@ int main(int argc, const char** argv)
       printf("\nError, couldn't open file `%s', giving up\n\n", pathname);
       return 2;
     }
+    fprintf(stderr, "Reading from %s\n", pathname);
+  } else {
+    fprintf(stderr, "Reading from standard input\n");
   }
+  int code = 0; // return code
 
   /*
     Structures for grabbing parse data
@@ -97,31 +102,52 @@ int main(int argc, const char** argv)
   const int plength = 256;
   char pbuffer[plength];
   update_t* alist = 0;
-  forest_t F;
-  initialize(&F);
+  forest_t* F = 0; 
 
   /*
-    For now - just a loop to parse file to test the parser
+    Initialize screen data
+  */
+  screen_t S;
+  init_screen_t(&S, 16);
+  if (!open_screen(&S)) {
+    fprintf(stderr, "\nCouldn't initialize screen, bailing out.\n\n");
+    return 1;
+  }
+  update_windows(&S);
+
+  /*
+    Loop to parse file
   */
   for (int line=1;;line++) {
-    int c = fgetc(inf);
+    if (code) break;
+    int c = 0;
     int t;
+    if (S.playing) {
+      c = fgetc(inf);
+    }
     if (EOF == c) break;
     if ('\n' == c) continue;  /* In case of empty lines */
 
     switch (c) {
+      case 0:
+        /* We're not consuming the file */
+        break;
+
+
       case 'T':
 #ifdef DEBUG_PARSER
         printf("Parsing T record\n");
 #endif
         t = parse_T(inf);
         if (t<0) {
-          printf("Parse error line %d\n", line);
-          return 2;
+          fprintf(stderr, "Parse error line %d\n", line);
+          code = 2;
+          break;
         }
         if (t!=1) {
-          printf("Unknown file type\n");
-          return 3;
+          fprintf(stderr, "Unknown file type\n");
+          code = 3;
+          break;
         }
         continue;
 
@@ -129,22 +155,29 @@ int main(int argc, const char** argv)
 #ifdef DEBUG_PARSER
         printf("Parsing F record\n");
 #endif
-        parse_F(inf, &F);
+        F = new_forest();
+        parse_F(inf, F);
 #ifdef DEBUG_PARSER
-        printf("Got F structure:\n");
-        printf("  fid %d\n", F.fid);
-        if (F.name) printf("  name `%s'\n", F.name);
-        printf("  left %d\n", F.left);
-        printf("  right %d\n", F.right);
-        if (F.counts) {
-          printf("  counts [%d", F.counts[F.left]);
-          for (int k=F.left+1; k<=F.right; k++) {
-            printf(", %d", F.counts[k]);
+        if (0==F) {
+          printf("Null F structure?\n");
+        } else {
+          printf("Got F structure:\n");
+          printf("  fid %d\n", F->fid);
+          if (F->name) printf("  name `%s'\n", F->name);
+          printf("  left %d\n", F->left);
+          printf("  right %d\n", F->right);
+          if (F->counts) {
+            printf("  counts [%d", F->counts[F->left]);
+            for (int k=F->left+1; k<=F->right; k++) {
+              printf(", %d", F->counts[k]);
+            }
+            printf("]\n");
           }
-          printf("]\n");
         }
 #endif
-        continue;
+        add_forest(&S, F);
+        update_windows(&S);
+        break;
 
       
       case 'a': /* TBD */
@@ -161,8 +194,9 @@ int main(int argc, const char** argv)
           printf("\n");
         }
 #endif
+        update_a(&S, alist);
         kill_update(alist);
-        continue;
+        break;
 
       case 'p': /* TBD */
 #ifdef DEBUG_PARSER
@@ -172,7 +206,8 @@ int main(int argc, const char** argv)
 #ifdef DEBUG_PARSER
         printf("Got p string: `%s'\n", pbuffer);
 #endif
-        continue;
+        update_p(pbuffer);
+        break;
       
       default:
 #ifdef DEBUG_PARSER
@@ -183,8 +218,39 @@ int main(int argc, const char** argv)
         }
 #endif
         ignoreLine(inf);
+        continue;
     }
+
+    /*
+      Deal with keyboard input, if any
+    */
+    int key = keystroke(0);
+    if (0==key) continue;
+
+    switch (key) {
+      case 'q':
+      case 'Q': 
+        close_screen();
+        return 0;
+
+      case 'p':
+      case 'P':
+        S.playing = 1-S.playing;
+        break;
+    }
+    update_keys(&S);
   }
 
+  /*
+    Done processing file.
+    Wait for user to explicitly quit.
+  */
+  update_p("End of file");
+  for (;;) {
+    int key = keystroke(1);
+    if ('q' == key || 'Q' == key) break;
+  }
+
+  close_screen();
   return 0;
 }
