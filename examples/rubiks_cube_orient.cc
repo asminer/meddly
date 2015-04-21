@@ -381,11 +381,11 @@ class rubiks {
 
       // Initialize MEDDLY
       MEDDLY::settings s;
-      s.computeTable.style = MEDDLY::OperationChainedHash;
-      //s.computeTable.style = MEDDLY::MonolithicChainedHash;
-      //s.computeTable.style = MEDDLY::MonolithicUnchainedHash;
-      s.computeTable.maxSize = 8 * 16777216;
-      // s.computeTable.staleRemoval =
+      s.ctSettings.style = MEDDLY::OperationChainedHash;
+      //s.ctSettings.style = MEDDLY::MonolithicChainedHash;
+      //s.ctSettings.style = MEDDLY::MonolithicUnchainedHash;
+      s.ctSettings.maxSize = 8 * 16777216;
+      // s.ctSettings.staleRemoval =
       //   MEDDLY::settings::computeTableSettings::Aggressive;
       MEDDLY::initialize(s);
 

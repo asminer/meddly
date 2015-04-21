@@ -1317,13 +1317,13 @@ int main(int argc, char *argv[])
 
   // Initialize MEDDLY
   MEDDLY::settings s;
-  s.computeTable.style = MonolithicChainedHash;
-  s.computeTable.maxSize = 16 * 16777216;
-  // s.computeTable.staleRemoval =
+  s.ctSettings.style = MonolithicChainedHash;
+  s.ctSettings.maxSize = 16 * 16777216;
+  // s.ctSettings.staleRemoval =
   //   MEDDLY::settings::computeTableSettings::Lazy;
-  // s.computeTable.staleRemoval =
+  // s.ctSettings.staleRemoval =
   //   MEDDLY::settings::computeTableSettings::Moderate;
-  // s.computeTable.staleRemoval = 
+  // s.ctSettings.staleRemoval =
   //   MEDDLY::settings::computeTableSettings::Aggressive;
 
   MEDDLY::initialize(s);

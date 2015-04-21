@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
 
   settings s;
 #ifdef CACHE_SIZE
-  s.computeTable.maxSize = CACHE_SIZE;
+  s.ctSettings.maxSize = CACHE_SIZE;
 #endif
   initialize(s);
 

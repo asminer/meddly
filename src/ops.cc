@@ -766,9 +766,9 @@ MEDDLY::operation::operation(const opname* n, int kl, int al)
     if (Monolithic_CT)
       CT = Monolithic_CT;
     else {
-      const compute_table_style* CTsty = meddlySettings.computeTable.style;
+      const compute_table_style* CTsty = meddlySettings.ctSettings.style;
       MEDDLY_DCASSERT(CTsty);
-      CT = CTsty->create(meddlySettings.computeTable, this); 
+      CT = CTsty->create(meddlySettings.ctSettings, this);
     }
 
     //

@@ -637,6 +637,16 @@ void MEDDLY::expert_forest::float_EVencoder::read(FILE* s, void* ptr)
 // *                                                                *
 // ******************************************************************
 
+const unsigned MEDDLY::expert_forest::HUMAN_READABLE_MEMORY   = 0x0001;
+const unsigned MEDDLY::expert_forest::BASIC_STATS             = 0x0002;
+const unsigned MEDDLY::expert_forest::EXTRA_STATS             = 0x0004;
+const unsigned MEDDLY::expert_forest::FOREST_STATS            = 0x0008;
+const unsigned MEDDLY::expert_forest::STORAGE_STATS           = 0x0010;
+const unsigned MEDDLY::expert_forest::STORAGE_DETAILED        = 0x0020;
+const unsigned MEDDLY::expert_forest::UNIQUE_TABLE_STATS      = 0x0040;
+const unsigned MEDDLY::expert_forest::UNIQUE_TABLE_DETAILED   = 0x0080;
+const unsigned MEDDLY::expert_forest::HOLE_MANAGER_STATS      = 0x0100;
+const unsigned MEDDLY::expert_forest::HOLE_MANAGER_DETAILED   = 0x0200;
 
 
 MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
