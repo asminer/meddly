@@ -22,6 +22,7 @@
 #include "system.h"
 #include "parse.h"
 #include "screen.h"
+#include <sys/stat.h>
 
 // #define DEBUG_PARSER
 
@@ -32,11 +33,12 @@ int usage(const char* who)
   for (const char* ptr=who; *ptr; ptr++) {
     if ('/' == *ptr) name = ptr+1;
   }
-  printf("\nUsage: %s [options]\n\n", name);
-  printf("Read trace data from standard input, and display to the terminal.\n");
+  printf("\nUsage: %s [options] file\n\n", name);
+  printf("Read trace data from the specified file, and display to the terminal.\n");
   printf("If conflicting options are passed, then the last one takes precedence.\n\n");
   printf("Options:\n");
-  printf("    -f  file:  read from the given file, instead of standard input.\n");
+  printf("    -p      :  initial state is `playing'.\n");
+  printf("    -s      :  initial state is `stopped'.\n");
   printf("\n");
   return 1;
 }
@@ -44,13 +46,17 @@ int usage(const char* who)
 int main(int argc, const char** argv)
 {
   const char* pathname = 0;
+  char poverride = 0;
+  char playing = 0;
 
   /* 
     Parse arguments 
   */
   for (int i=1; i<argc; i++) {
     if ('-' != argv[i][0]) {
-      return usage(argv[0]);
+      if (pathname) return usage(argv[0]);
+      pathname = argv[i];
+      continue;
     }
 
     /* Future expansion - long options */
@@ -66,9 +72,14 @@ int main(int argc, const char** argv)
 
     switch (argv[i][1]) {
 
-      case 'f':
-        pathname = argv[i+1];
-        i++;
+      case 'p':
+        poverride = 1;
+        playing = 1;
+        continue;
+
+      case 's':
+        poverride = 1;
+        playing = 0;
         continue;
 
       default:
@@ -77,23 +88,37 @@ int main(int argc, const char** argv)
 
 
   } /* For i (looping over arguments) */
+  if (0==pathname) return usage(argv[0]);
 
 
 
   /*
     Initialize parser
   */
-  FILE* inf = stdin;
-  if (pathname) {
-    inf = fopen(pathname, "r");
-    if (0==inf) {
-      printf("\nError, couldn't open file `%s', giving up\n\n", pathname);
-      return 2;
-    }
-    fprintf(stderr, "Reading from %s\n", pathname);
-  } else {
-    fprintf(stderr, "Reading from standard input\n");
+  FILE* inf = fopen(pathname, "r");
+  if (0==inf) {
+    printf("\nError, couldn't open file `%s', giving up\n\n", pathname);
+    return 2;
   }
+  fprintf(stderr, "Reading from %s\n", pathname);
+
+  /*
+    Determine if input is a pipe (if so play immediately)
+    or a file (wait to play).
+  */
+  if (!poverride) {
+    struct stat inode;
+    fstat(fileno(inf), &inode);
+    if (inode.st_mode & (S_IFREG | S_IFLNK)) {
+      playing = 0;
+      fprintf(stderr, "Input appears to be a file, will wait to play.\n");
+    } else {
+      playing = 1;
+      fprintf(stderr, "Input appears to be a pipe, will play immediately.\n");
+    }
+  }
+
+
   int code = 0; // return code
 
   /*
@@ -113,6 +138,7 @@ int main(int argc, const char** argv)
     fprintf(stderr, "\nCouldn't initialize screen, bailing out.\n\n");
     return 1;
   }
+  S.playing = playing;
   update_windows(&S);
 
   /*

@@ -1,5 +1,5 @@
 
-// $Id:$
+// $Id$
 
 /*
     termview: terminal viewing utility for Meddly trace data.
