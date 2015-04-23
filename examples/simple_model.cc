@@ -31,6 +31,8 @@
 
 // #define SHOW_EVENT_HANDLES
 
+// #define SAME_FOREST_OPERATIONS
+
 inline int MAX(int a, int b) {
   return (a>b) ? a : b;
 }
@@ -141,7 +143,9 @@ void buildNextStateFunction(const char* const* events, int nEvents,
     // 'and' with the "do care" levels
     //
     for (int i=1; i<=nVars; i++) {
+#ifdef SAME_FOREST_OPERATIONS
       dd_edge docare(mtmxd);
+#endif
 
       if ('.' == ev[i]) {
         if (verb>3) fputc('.', stderr);
@@ -150,15 +154,27 @@ void buildNextStateFunction(const char* const* events, int nEvents,
         if (verb>2) fputc(ev[i], stderr);
       }
       switch (ev[i]) {
-        case '+':   apply(EQUAL, varP[i][0], inc[i][0], docare);
+        case '+':   
+#ifdef SAME_FOREST_OPERATIONS
+                    apply(EQUAL, varP[i][0], inc[i][0], docare);
+#else
+                    apply(EQUAL, varP[i][0], inc[i][0], term);
+#endif
                     break;
 
-        case '-':   apply(EQUAL, varP[i][0], dec[i][0], docare);
+        case '-':   
+#ifdef SAME_FOREST_OPERATIONS
+                    apply(EQUAL, varP[i][0], dec[i][0], docare);
+#else
+                    apply(EQUAL, varP[i][0], dec[i][0], term);
+#endif
                     break;
 
         default:    throw 1;
       } // switch
+#ifdef SAME_FOREST_OPERATIONS
       apply(COPY, docare, term);
+#endif
 #ifdef DEBUG_EVENTS
       printf("Term for event %d, level %d\n", e, i);
       term.show(stdout, 2);
