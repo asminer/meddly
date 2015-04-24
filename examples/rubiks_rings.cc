@@ -560,7 +560,7 @@ int main(int argc, const char** argv)
   //
   // Cleanup
   //
-  operation::showAllComputeTables(stdout, 1);
+  operation::showAllComputeTables(stdout, 3);
   MEDDLY::cleanup();
   return 0;
 }

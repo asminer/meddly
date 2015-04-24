@@ -295,7 +295,7 @@ void runWithArgs(int N, char method, int batchsize)
 
   double c;
   apply(CARDINALITY, reachable, c);
-  operation::showAllComputeTables(stdout, 1);
+  operation::showAllComputeTables(stdout, 3);
   
   printf("Approx. %g reachable states\n", c);
   destroyOperation(sat);

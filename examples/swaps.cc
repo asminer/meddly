@@ -355,7 +355,7 @@ void runWithArgs(int N, char method, bool alternate)
 #endif
 
   printStats("MDD", mdd);
-  operation::showAllComputeTables(stdout, 1);
+  operation::showAllComputeTables(stdout, 3);
   fflush(stdout);
 
   /*

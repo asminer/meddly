@@ -687,7 +687,7 @@ int main(int argc, const char** argv)
       expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
     );
     cerr << "Operation stats:\n";
-    operation::showAllComputeTables(stderr, 1);
+    operation::showAllComputeTables(stderr, 3);
   }
 
   // Done!

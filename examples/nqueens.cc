@@ -342,7 +342,7 @@ int main(int argc, const char** argv)
   }
 #endif
   delete solutions;
-  operation::showAllComputeTables(stdout, 2);
+  operation::showAllComputeTables(stdout, 3);
   if (LOG) LOG->newPhase("Cleanup");
   cleanup();
   return 0;

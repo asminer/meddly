@@ -345,7 +345,7 @@ int main(int argc, const char** argv)
     expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
     expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
   );
-  operation::showAllComputeTables(stdout, 2);
+  operation::showAllComputeTables(stdout, 3);
 
   long c;
   apply(CARDINALITY, solutions, c);

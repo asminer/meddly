@@ -328,7 +328,7 @@ int main()
   printf("Reachability set MDD has\n\t%d nodes\n\t\%d edges\n",
     nsf.getNodeCount(), nsf.getEdgeCount());
   printStats("MDD", mdd);
-  operation::showAllComputeTables(stdout, 1);
+  operation::showAllComputeTables(stdout, 3);
   fflush(stdout);
 
 #ifdef DUMP_REACHABLE
