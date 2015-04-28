@@ -21,6 +21,7 @@
 
 #include "screen.h"
 #include "system.h"
+#include <string.h>
 
 int open_screen(screen_t *S)
 {
@@ -99,6 +100,7 @@ inline void drawValue(screen_t *S, int fid, int level, int value, int blanks)
 {
   int row = level2row(S, level);
   int col = (fid-1) * S->forwidth + S->varwidth + 6;
+  if (row<=1) return;
   if (blanks) {
     move(row, col);
     for (int spaces = S->forwidth - (S->varwidth+6); spaces; spaces--)
@@ -107,15 +109,62 @@ inline void drawValue(screen_t *S, int fid, int level, int value, int blanks)
   mvprintw(row, col, "%d", value);
 }
 
+void center(int row, int lcol, int rcol, const char* str)
+{
+  if (0==str) return;
+  int len = strlen(str);
+  int pos = (lcol+rcol-len)/2;
+  if (pos < lcol) pos = lcol;
+  move(row, pos);
+  for (; pos<rcol; pos++) {
+    if (0==*str) break;
+    addch(*str);
+    str++;
+  }
+}
+
 void update_windows(screen_t *S)
 {
   if (0==S) return;
 
   /*
-    Draw all the lines
+    Draw top 2 lines
   */
-  int nb;
-  for (int r=0; r<S->rows-4; r++) {
+  int nb = S->nf;
+  move(0, 0);
+  for (int c=0; c<S->cols; c++) {
+    if (nb && (0== c % S->forwidth)) {
+      addch(ACS_VLINE);
+      nb--;
+    } else {
+      addch(' ');
+    }
+  }
+  move(1, 0);
+  addch(ACS_LTEE);
+  nb = S->nf-1;
+  for (int c=1; c<S->cols; c++) {
+    if (nb && (0== c % S->forwidth)) {
+      addch(ACS_PLUS);
+      nb--;
+    } else {
+      addch(ACS_HLINE);
+    }
+  }
+
+  /*
+    Draw forest names
+  */
+  for (int f=1; f<=S->nf; f++) {
+    if (S->F[f]) {
+      center(0, (f-1)*S->forwidth+1, f*S->forwidth, S->F[f]->name);
+    }
+  }
+
+  /*
+    Draw vertical lines
+  */
+  for (int r=2; r<S->rows-4; r++) {
     move(r, 0);
     nb = S->nf;
     for (int c=0; c<S->cols; c++) {
@@ -127,6 +176,10 @@ void update_windows(screen_t *S)
       }
     }
   }
+
+  /*
+    Draw bottom 4 lines
+  */
   move(S->rows-4, 0);
   if (S->nf > 0) {
     addch(ACS_LTEE);
@@ -160,8 +213,9 @@ void update_windows(screen_t *S)
     if (0==F) continue;
     int c = (f-1) * S->forwidth + 2;
     for (int k=F->left; k<=F->right; k++) {
+      if (0==k) continue;
       int r = level2row(S, k);
-      if (r<0) continue;
+      if (r<=1) continue;
       move(r, c);
       if (F->left<0) {
         addch('x');
