@@ -374,5 +374,6 @@ int main(int argc, const char** argv)
 
   if (LOG) LOG->newPhase("Cleanup");
   cleanup();
+  delete LOG;
   return 0;
 }

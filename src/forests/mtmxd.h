@@ -492,7 +492,8 @@ namespace MEDDLY {
                 else {
                 	node_builder& nbp = F->useSparseBuilder(-i, 1);
                 	nbp.i(0) = vlist[i];
-                	nbp.d(0) = F->linkNode(next);
+                	nbp.d(0) = next;
+                  // link count should be unchanged
 
                 	nextpr = F->createReducedNode(vlist[i], nbp);
                 }
@@ -513,7 +514,8 @@ namespace MEDDLY {
               else {
                 node_builder& nbp = F->useSparseBuilder(-i, 1);
                 nbp.i(0) = vplist[i];
-                nbp.d(0) = F->linkNode(next);
+                nbp.d(0) = next;
+                // link count should be unchanged
 
                 nextpr = F->createReducedNode(vlist[i], nbp);
               }
@@ -535,7 +537,7 @@ namespace MEDDLY {
                 // on the appropriate v value
                 for (int v=0; v<sz; v++) {
 //                  node_handle dpr = (v == vplist[i]) ? next : nextpr;
-                  nb.d(v) = F->linkNode(v == vplist[i] ? F->linkNode(next) : F->linkNode(nextpr));
+                  nb.d(v) = F->linkNode(v == vplist[i] ? next : nextpr);
                 }
               } else {
                 // Doesn't matter what happened below
@@ -550,9 +552,9 @@ namespace MEDDLY {
               if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
             	int sz=F->getLevelSize(i);
             	node_builder& nb = F->useNodeBuilder(i, sz);
-            	node_handle zero=makeOpaqueZeroNodeAtLevel(-i);
+            	node_handle zero = makeOpaqueZeroNodeAtLevel(-i);
             	for(int v=0; v<sz; v++){
-            	  nb.d(v)=(v==vlist[i] ? F->linkNode(nextpr) : F->linkNode(zero));
+            	  nb.d(v) = F->linkNode(v==vlist[i] ? nextpr : zero);
             	}
             	F->unlinkNode(zero);
 
@@ -561,7 +563,8 @@ namespace MEDDLY {
               else {
                 node_builder& nb = F->useSparseBuilder(i, 1);
                 nb.i(0) = vlist[i];
-                nb.d(0) = F->linkNode(nextpr);
+                nb.d(0) = nextpr;
+                // link count should be unchanged
 
                 next = F->createReducedNode(-1, nb);
               }

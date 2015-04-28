@@ -36,6 +36,9 @@ MEDDLY::mt_mxd_bool::~mt_mxd_bool()
 void MEDDLY::mt_mxd_bool::createEdge(bool term, dd_edge& e)
 {
   createEdgeTempl<bool_Tencoder, bool>(term, e);
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true);
+#endif
 }
 
 void MEDDLY::mt_mxd_bool
@@ -49,12 +52,18 @@ void MEDDLY::mt_mxd_bool
   EM(this, vlist, vplist, 0, order, N, getDomain()->getNumVariables(), unionOp);
 
   e.set(EM.createEdge());
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true);
+#endif
 }
 
 void MEDDLY::mt_mxd_bool::
 createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 {
   createEdgeForVarTempl<bool_Tencoder, bool>(vh, vp, terms, a);
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true);
+#endif
 }
 
 void MEDDLY::mt_mxd_bool::evaluate(const dd_edge &f, const int* vlist, 

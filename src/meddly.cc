@@ -128,6 +128,7 @@ namespace MEDDLY {
   // helper functions
   void purgeMarkedOperations();
   void destroyOpInternal(operation* op);
+
 };
 
 //----------------------------------------------------------------------

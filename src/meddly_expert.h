@@ -270,6 +270,7 @@ namespace MEDDLY {
   /// A STL "map" for each operation.
   extern const compute_table_style* OperationMap;
 
+
 }; // namespace MEDDLY
 
 
@@ -902,9 +903,9 @@ class MEDDLY::node_storage {
 
         @param  s       Output stream.
         @param  addr    Address of the node we care about.
-        @param  verb    Verbose output or not.
+        @param  details Should we show "details" or not.
     */
-    virtual void showNode(FILE* s, node_address addr, bool verb) const = 0;
+    virtual void showNode(FILE* s, node_address addr, bool details) const = 0;
 
     /** Write a node in machine-readable format.
 
@@ -1181,8 +1182,29 @@ class MEDDLY::expert_forest: public forest
     /// Stats specific to the hole manager.
     static const unsigned HOLE_MANAGER_DETAILED;
 
-    // preferred way to encode and decode terminal values
-    // (classes so we can use them in template functions)
+    // ************************************************************
+    // *                                                          *
+    // *               Constants for  showing nodes               *
+    // *                                                          *
+    // ************************************************************
+
+    /// Display deleted nodes
+    static const unsigned int SHOW_DELETED;
+    /// Display zombie nodes
+    static const unsigned int SHOW_ZOMBIE;
+    /// Display node details
+    static const unsigned int SHOW_DETAILS;
+    /// Display the node index
+    static const unsigned int SHOW_INDEX;
+    /// Display terminal nodes
+    static const unsigned int SHOW_TERMINALS;
+
+    // ************************************************************
+    // *                                                          *
+    // *    Preferred way to encode and decode terminal values    *
+    // *    (classes so we can use them in template functions)    *
+    // *                                                          *
+    // ************************************************************
 
     /** Encoding for booleans into (terminal) node handles */
     class bool_Tencoder {
@@ -1239,6 +1261,7 @@ class MEDDLY::expert_forest: public forest
         static void write(FILE* s, const void* ptr);
         static void read(FILE* s, void* ptr);
     };
+
     /** Constructor.
       @param  dslot   slot used to store the forest, in the domain
       @param  d       domain to which this forest belongs to.
@@ -1389,7 +1412,13 @@ class MEDDLY::expert_forest: public forest
   // ------------------------------------------------------------
   // non-virtual, handy methods for debugging or logging.
 
-    void dump(FILE *s) const;
+    /**
+        Display all nodes in the forest.
+          @param  s       File stream to write to
+          @param  flags   Switches to control output;
+                          see constants "SHOW_DETAILED", etc.
+    */
+    void dump(FILE *s, unsigned int flags) const;
     void dumpInternal(FILE *s) const;
     void dumpUniqueTable(FILE *s) const;
     void validateIncounts(bool exact);
@@ -1431,8 +1460,15 @@ class MEDDLY::expert_forest: public forest
     */
     long getEdgeCount(node_handle node, bool countZeroes) const;
 
-    /// Display the contents of a single node.
-    void showNode(FILE* s, node_handle node, int verbose = 0) const;
+    /** Display the contents of a single node.
+          @param  s       File stream to write to.
+          @param  node    Node to display.
+          @param  flags   Switches to control output;
+                          see constants "SHOW_DETAILED", etc.
+
+          @return true, iff we displayed anything
+    */
+    bool showNode(FILE* s, node_handle node, unsigned int flags = 0) const;
 
     /// Show all the nodes in the subgraph below the given nodes.
     void showNodeGraph(FILE* s, const node_handle* node, int n) const;
@@ -2000,6 +2036,8 @@ class MEDDLY::expert_forest: public forest
     // memory for validating incounts
     node_handle* in_validate;
     int  in_val_size;
+    // depth of delete/zombie stack; validate when 0
+    int delete_depth;
 
     /// address info for nodes
     node_header *address;

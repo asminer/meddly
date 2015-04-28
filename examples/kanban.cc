@@ -283,6 +283,7 @@ int main(int argc, const char** argv)
     if (LOG) {
       LOG->newPhase("Cleanup");
       MEDDLY::destroyDomain(d); 
+      delete LOG;
     }
     MEDDLY::cleanup();
     return 0;

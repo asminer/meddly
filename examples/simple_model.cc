@@ -25,9 +25,9 @@
 
 #define VERBOSE
 
-//#define DEBUG_GENERATE
-//#define DEBUG_EVENTS
-//#define DEBUG_EVENTS_LONG
+// #define DEBUG_GENERATE
+// #define DEBUG_EVENTS
+// #define DEBUG_EVENTS_LONG
 
 // #define SHOW_EVENT_HANDLES
 

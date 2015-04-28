@@ -36,6 +36,9 @@ MEDDLY::mt_mdd_int::~mt_mdd_int()
 void MEDDLY::mt_mdd_int::createEdge(int term, dd_edge& e)
 {
   createEdgeTempl<int_Tencoder, int>(term, e);
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true);
+#endif
 }
 
 void MEDDLY::mt_mdd_int::createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e)
@@ -48,12 +51,18 @@ void MEDDLY::mt_mdd_int::createEdge(const int* const* vlist, const int* terms, i
   EM(this, vlist, terms, order, N, getDomain()->getNumVariables(), unionOp);
 
   e.set(EM.createEdge());
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true);
+#endif
 }
 
 void MEDDLY::mt_mdd_int::
 createEdgeForVar(int vh, bool vp, const int* terms, dd_edge& a)
 {
   createEdgeForVarTempl<int_Tencoder, int>(vh, vp, terms, a);
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true);
+#endif
 }
 
 void MEDDLY::mt_mdd_int

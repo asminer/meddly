@@ -36,6 +36,9 @@ MEDDLY::mt_mxd_real::~mt_mxd_real()
 void MEDDLY::mt_mxd_real::createEdge(float term, dd_edge& e)
 {
   createEdgeTempl<float_Tencoder, float>(term, e);
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true);
+#endif
 }
 
 void MEDDLY::mt_mxd_real
@@ -50,12 +53,18 @@ void MEDDLY::mt_mxd_real
   EM(this, vlist, vplist, terms, order, N, getDomain()->getNumVariables(), unionOp);
 
   e.set(EM.createEdge());
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true);
+#endif
 }
 
 void MEDDLY::mt_mxd_real::
 createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
 {
   createEdgeForVarTempl<float_Tencoder, float>(vh, vp, terms, a);
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true);
+#endif
 }
 
 void MEDDLY::mt_mxd_real::evaluate(const dd_edge &f, const int* vlist, 

@@ -343,7 +343,11 @@ int main(int argc, const char** argv)
 #endif
   delete solutions;
   operation::showAllComputeTables(stdout, 3);
-  if (LOG) LOG->newPhase("Cleanup");
+  if (LOG) {
+    LOG->newPhase("Cleanup");
+    destroyDomain(d);
+  }
   cleanup();
+  delete LOG;
   return 0;
 }

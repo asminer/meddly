@@ -47,6 +47,7 @@
 #endif
 
 // #define DEBUG_CLEANUP
+// #define DUMP_ON_FOREST_DESTROY
 
 namespace MEDDLY {
   extern settings meddlySettings;
@@ -169,15 +170,27 @@ MEDDLY::domain::~domain()
   fprintf(stderr, "Deleting domain #%d\n", my_index);
 #endif
 
+  //
+  // Delete all forests using this domain
+  //
+  for (int i=0; i<szForests; i++) {
+#ifdef DUMP_ON_FOREST_DESTROY
+    expert_forest* ef = dynamic_cast <expert_forest*> (forests[i]);
+    if (0==ef) continue;
+    printf("Destroying forest %u:\n", ef->FID());
+    ef->dump(stdout, expert_forest::SHOW_DETAILS);
+#endif
+    delete forests[i];
+  }
+  free(forests);
+
+  //
+  // Delete my variables
+  //
   for (int i=1; i<=nVars; i++) {
     ((expert_variable*)vars[i])->removeFromList(this);
   }
   free(vars);
-
-  for (int i=0; i<szForests; i++) {
-    delete forests[i];
-  }
-  free(forests);
 
   //
   // Remove myself from the master list
