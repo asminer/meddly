@@ -19,6 +19,7 @@ rubiks_cube \
 rubiks_cube_orient \
 nqueens \
 queen_cover \
+qc2 \
 kanban \
 slot \
 life \
@@ -71,6 +72,9 @@ nqueens_LDADD = ../src/libmeddly.la
 
 queen_cover_SOURCES = queen_cover.cc
 queen_cover_LDADD = ../src/libmeddly.la
+
+qc2_SOURCES = qc2.cc
+qc2_LDADD = ../src/libmeddly.la
 
 kanban_SOURCES = kanban.cc simple_model.h simple_model.cc
 kanban_LDADD = ../src/libmeddly.la

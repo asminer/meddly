@@ -26,6 +26,14 @@
     In other words, finds all possible ways to put queens onto
     an NxN chessboard so that every square either contains a queen,
     or is attached by a queen.
+
+    State: 
+      For each square, does it hold a queen.
+
+    Constraints:
+      conjunction over all squares:
+        is this square covered
+
 */
 
 #include <cstdio>
