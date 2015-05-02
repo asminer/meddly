@@ -23,6 +23,8 @@
 #include "system.h"
 #include <string.h>
 
+// #define SHOW_ARROWS
+
 int open_screen(screen_t *S)
 {
   if (0==initscr()) return 0;
@@ -96,17 +98,43 @@ inline int level2row(screen_t *S, int level)
   return S->rows - 4 - level;
 }
 
-inline void drawValue(screen_t *S, int fid, int level, int value, int blanks)
+inline void clearArrows(screen_t *S)
+{
+  for (int f = 0; f<S->nf; f++) {
+    int col = f * S->forwidth + S->varwidth + 5;
+    for (int row = 2; row < S->rows-4; row++) {
+      move(row, col);
+      addch(' ');
+    }
+  } // for f
+}
+
+
+inline void drawValue(screen_t *S, int fid, int level, int value, int delta)
 {
   int row = level2row(S, level);
+#ifdef SHOW_ARROWS
+  int col = (fid-1) * S->forwidth + S->varwidth + 5;
+#else
   int col = (fid-1) * S->forwidth + S->varwidth + 6;
+#endif
   if (row<=1) return;
-  if (blanks) {
+  if (delta<0) {
     move(row, col);
-    for (int spaces = S->forwidth - (S->varwidth+6); spaces; spaces--)
+#ifdef SHOW_ARROWS
+    addch(ACS_DARROW);
+#endif
+    for (int spaces = S->forwidth - (S->varwidth+6); spaces; spaces--) {
       addch(' ');
+    }
   }
-  mvprintw(row, col, "%d", value);
+#ifdef SHOW_ARROWS
+  if (delta>0) {
+    move(row, col);
+    addch(ACS_UARROW);
+  }
+#endif
+  mvprintw(row, col+1, "%d", value);
 }
 
 void center(int row, int lcol, int rcol, const char* str)
@@ -269,6 +297,15 @@ int keystroke(char block)
 void update_a(screen_t* S, update_t* list)
 {
   if (0==S) return;
+#ifdef SHOW_ARROWS
+  static int counter = 0;
+  if (0==counter) {
+    clearArrows(S);
+    counter = 1024;
+  } else {
+    counter--;
+  }
+#endif
   while (list) {
     forest_t* F = 0;
     if (list->fid > 0 && list->fid < S->maxf) {
@@ -277,7 +314,7 @@ void update_a(screen_t* S, update_t* list)
     if (F) if (list->level >= F->left && list->level <= F->right) {
       F->counts[list->level] += list->delta;
       drawValue(S, list->fid, list->level, F->counts[list->level],
-        (list->delta < 0) ? 1 : 0);
+        list->delta);
     }
 
     list = list->next;
