@@ -46,6 +46,9 @@
 // #define DEBUG_SQUARES
 // #define DEBUG_SPIRAL
 
+// Force rows to be in order, to reduce number of solutions
+#define ORDER_ROWS
+
 using namespace MEDDLY;
 
 /*
@@ -394,6 +397,30 @@ dd_edge** buildConstraintsForSquares(forest *F, const varorder &V, int N)
     }
   } 
 
+#ifdef ORDER_ROWS
+  /*
+    Build row ordering constraint
+  */
+  dd_edge roworder(F);
+  F->createEdge(1, roworder);
+  for (int i=V.queens()-1; i; i--) {
+    dd_edge rowi(F), rowim1(F), tmp(F);
+    F->createEdgeForVar(V.queenRow(i), false, rowi);
+    F->createEdgeForVar(V.queenRow(i-1), false, rowim1);
+    apply(GREATER_THAN_EQUAL, rowi, rowim1, tmp);
+    apply(MULTIPLY, roworder, tmp, roworder);
+  }
+  /*
+    Intersect with all square constraints
+  */
+  for (int r=0; r<N; r++) {
+    for (int c=0; c<N; c++) {
+      apply(MULTIPLY, covered[r][c], roworder, covered[r][c]);
+    }
+  }
+
+#endif
+
 #ifdef DEBUG_SQUARES
   printf("\nVariable orders: \n\t");
   for (int i=0; i<V.queens(); i++) {
@@ -451,6 +478,7 @@ void AndSublists(dd_edge *A, int N, int n, bool dots)
     int stop = i+n;
     if (stop > N) stop = N;
     result = A[i];
+    A[i].getForest()->createEdge(1, A[i]);
     for (i++; i<stop; i++) {
       apply(MULTIPLY, result, A[i], result);
       A[i].getForest()->createEdge(1, A[i]);
@@ -492,7 +520,7 @@ void FoldList(dd_edge *A, int n, bool dots)
           fflush(stdout);
         }
       }
-      A[i].getForest()->createEdge(1, A[i+1]);
+      A[i].getForest()->createEdge(1, A[i]);
       A[res] = result;
       res++;
     }
@@ -601,6 +629,27 @@ void FlattenByInwardSpiral(dd_edge** squares, dd_edge* list, int N)
     loCol++;
     if (loCol > hiCol) return;
   }
+}
+
+void matchQueens(varorder &V, int q1, int q2, dd_edge &rule)
+{
+  forest* F = rule.getForest();
+
+  dd_edge q1r(F), q1c(F), q2r(F), q2c(F), tmp(F);
+
+  F->createEdgeForVar(V.queenRow(q1), false, q1r);
+  F->createEdgeForVar(V.queenRow(q2), false, q2r);
+
+  // q1r == q2r
+  apply(EQUAL, q1r, q2r, tmp);
+
+  F->createEdgeForVar(V.queenCol(q1), false, q1c);
+  F->createEdgeForVar(V.queenCol(q2), false, q2c);
+
+  // q1c == q2c
+  apply(EQUAL, q1c, q2c, rule);
+
+  apply(MULTIPLY, rule, tmp, rule);
 }
 
 int usage(const char* who)
@@ -814,10 +863,39 @@ int main(int argc, const char** argv)
   }
   printf("Done!\n");
   
+  int Q;  // minimum number of required queens
+
   if (0==acc[0].getNode()) {
+    Q = 0;
     printf("\nNO SOLUTIONS\n\n");
   } else {
     printf("There are solutions.  Minimizing number of queens.\n");
+    if (LOG) LOG->newPhase("Minimizing");
+
+    Q = M-1;
+
+    /*
+      Constrain queen Q and Q-1 to be at the same position;
+      if we still have a solution, then we can eliminate the
+      last queen and continue.
+    */
+    for (; Q; Q--) {
+      dd_edge killq(F);
+      matchQueens(V, Q, Q-1, killq);
+      apply(MULTIPLY, killq, acc[0], killq);
+
+      if (0==killq.getNode()) break;
+
+      printf("Queen %d is not needed\n", Q+1);
+      acc[0] = killq;
+    }
+
+    printf("\n%d QUEENS MINIMAL SOLUTION\n\n", Q+1);
+  
+    long c;
+    apply(CARDINALITY, acc[0], c);
+    printf("For a %dx%d chessboard, ", N, N);
+    printf("there are %ld covers with %d queens\n", c, Q+1);
   }
 
   printf("Forest stats:\n");
@@ -827,6 +905,31 @@ int main(int argc, const char** argv)
     expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
   );
   operation::showAllComputeTables(stdout, 3);
+
+  /*
+    Write solutions to file
+  */
+  if (ofile) {
+    FILE* OUT = fopen(ofile, "w");
+    if (0==OUT) {
+      printf("Couldn't open %s for writing, no solutions will be written\n", ofile);      
+    } else {
+      fprintf(OUT, "%d # Board dimension\n\n", N);
+      enumerator iter(acc[0]);
+      for (long counter=1; iter; ++iter, ++counter) {
+        fprintf(OUT, "solution %5ld:  ", counter);
+        const int* minterm = iter.getAssignments();
+        for (int q=0; q<=Q; q++) {
+          int r = minterm[V.queenRow(q)];
+          int c = minterm[V.queenCol(q)];
+          fprintf(OUT, "(%2d, %2d) ", r+1, c+1);
+        }
+        fprintf(OUT, "\n");
+      } // for iter
+      fprintf(OUT, "\n");
+      fclose(OUT);
+    }
+  }
 
   if (LOG) LOG->newPhase("Cleanup");
   cleanup();
