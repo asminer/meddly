@@ -42,7 +42,12 @@
 #include "meddly_expert.h"
 #include "loggers.h"
 
+// #define SET_VAR_NAMES
 // #define DEBUG_VARS
+// #define DEBUG_ROW_CONSTRAINTS
+// #define DEBUG_COLUMN_CONSTRAINTS
+// #define DEBUG_PLUSD_CONSTRAINTS
+// #define DEBUG_MINUSD_CONSTRAINTS
 // #define DEBUG_SQUARES
 // #define DEBUG_SPIRAL
 
@@ -149,8 +154,10 @@ forest::logger* buildLogger(const char* lfile)
   return LOG;
 }
 
-forest* buildForest(forest::policies &p, int N, int M)
+forest* buildForest(forest::policies &p, int N, const varorder &V)
 {
+  int M = V.queens();
+
   /*
     Set up domain.
     2M variables (row and column of queen i),
@@ -164,6 +171,16 @@ forest* buildForest(forest::policies &p, int N, int M)
   domain* d = createDomainBottomUp(vars, 2*M);
   delete[] vars;
   if (0==d) return 0;
+
+#ifdef SET_VAR_NAMES
+  char buffer[20];
+  for (int i=0; i<M; i++) {
+    snprintf(buffer, 20, "qr%02d", i+1);
+    d->useVar(V.queenRow(i))->setName(strdup(buffer));
+    snprintf(buffer, 20, "qc%02d", i+1);
+    d->useVar(V.queenCol(i))->setName(strdup(buffer));
+  }
+#endif
 
   /*
     Set up forest.
@@ -343,6 +360,10 @@ dd_edge** buildConstraintsForSquares(forest *F, const varorder &V, int N)
   for (int r=0; r<N; r++) {
     dd_edge tmp(F);
     queenInRow(V, r, tmp);
+#ifdef DEBUG_ROW_CONSTRAINTS
+    printf("queenInRow(%d):\n", r);
+    tmp.show(stdout, 2);
+#endif
 
     for (int c=0; c<N; c++) {
       apply(MAXIMUM, covered[r][c], tmp, covered[r][c]);
@@ -355,6 +376,10 @@ dd_edge** buildConstraintsForSquares(forest *F, const varorder &V, int N)
   for (int c=0; c<N; c++) {
     dd_edge tmp(F);
     queenInCol(V, c, tmp);
+#ifdef DEBUG_COLUMN_CONSTRAINTS
+    printf("queenInCol(%d):\n", c);
+    tmp.show(stdout, 2);
+#endif
 
     for (int r=0; r<N; r++) {
       apply(MAXIMUM, covered[r][c], tmp, covered[r][c]);
@@ -364,15 +389,19 @@ dd_edge** buildConstraintsForSquares(forest *F, const varorder &V, int N)
   /*
     Add plus diagonal coverage
   */
-  for (int d=0; d<=2*N; d++) {
+  for (int d=0; d<2*N-1; d++) {
     dd_edge tmp(F);
     queenInPlusd(V, d, tmp);
+#ifdef DEBUG_PLUSD_CONSTRAINTS
+    printf("queenInPlusd(%d):\n", d);
+    tmp.show(stdout, 2);
+#endif
 
     // There is a fancier way to set up this loop...
     for (int r=0; r<N; r++) {
       // restrict to r+c=d
       int c = d-r;
-      if (c<0) break; // out of bounds, and we will continue to be
+      if (c<0) continue;
       if (c>=N) continue;
 
       apply(MAXIMUM, covered[r][c], tmp, covered[r][c]);
@@ -382,15 +411,19 @@ dd_edge** buildConstraintsForSquares(forest *F, const varorder &V, int N)
   /*
     Add minus diagonal coverage
   */
-  for (int d=-N; d<=N; d++) {
+  for (int d=1-N; d<N; d++) {
     dd_edge tmp(F);
     queenInMinusd(V, d, tmp);
+#ifdef DEBUG_MINUSD_CONSTRAINTS
+    printf("queenInMinusd(%d):\n", d);
+    tmp.show(stdout, 2);
+#endif
 
     // There is a fancier way to set up this loop...
     for (int r=0; r<N; r++) {
       // restrict to r-c=d
-      int c = d+r;
-      if (c>=N) break; // out of bounds, and we will continue to be
+      int c = r-d;
+      if (c>=N) continue;
       if (c<0) continue;
 
       apply(MAXIMUM, covered[r][c], tmp, covered[r][c]);
@@ -422,14 +455,6 @@ dd_edge** buildConstraintsForSquares(forest *F, const varorder &V, int N)
 #endif
 
 #ifdef DEBUG_SQUARES
-  printf("\nVariable orders: \n\t");
-  for (int i=0; i<V.queens(); i++) {
-    printf("qr[%d]: %d  ", i, V.queenRow(i));
-  }
-  printf("\n\t");
-  for (int i=0; i<V.queens(); i++) {
-    printf("qc[%d]: %d  ", i, V.queenCol(i));
-  }
   printf("\nConditions for each square:\n");
   for (int r=0; r<N; r++) {
     for (int c=0; c<N; c++) {
@@ -763,19 +788,6 @@ int main(int argc, const char** argv)
   printf("Queen cover, %dx%d board, trying at most %d queens\n", N, N, M);
 
   /*
-    Set up forest logging, if desired
-  */
-  forest::logger* LOG = buildLogger(lfile);
-
-  /*
-    Build forest
-  */
-  forest* F = buildForest(p, N, M);
-  if (0==F) return 1;
-  F->setLogger(LOG, "qc2 forest");
-  if (LOG) LOG->newPhase("Building per square constraints");
-
-  /*
     Set variable order
   */
   varorder V(M);
@@ -794,6 +806,19 @@ int main(int argc, const char** argv)
   }
   printf("Using variable order: %s\n", V.Name());
     
+  /*
+    Set up forest logging, if desired
+  */
+  forest::logger* LOG = buildLogger(lfile);
+
+  /*
+    Build forest
+  */
+  forest* F = buildForest(p, N, V);
+  if (0==F) return 1;
+  F->setLogger(LOG, "qc2 forest");
+  if (LOG) LOG->newPhase("Building per square constraints");
+
   /*
     Build constraints for each square.
     Then give a quick report.

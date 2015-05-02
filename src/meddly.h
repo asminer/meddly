@@ -1529,6 +1529,7 @@ class MEDDLY::variable {
   public:
     int getBound(bool primed) const;
     const char* getName() const;
+    void setName(char* newname);
   protected:
     int un_bound;
     int pr_bound;

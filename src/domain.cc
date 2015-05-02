@@ -72,6 +72,12 @@ MEDDLY::variable::~variable()
   delete[] name;
 }
 
+void MEDDLY::variable::setName(char *n)
+{
+  delete[] name;
+  name = n;
+}
+
 // ----------------------------------------------------------------------
 // expert_varaiable
 // ----------------------------------------------------------------------
