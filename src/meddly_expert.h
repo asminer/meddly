@@ -2360,6 +2360,7 @@ class MEDDLY::satotf_opname : public specialized_opname {
     // ============================================================
 
     /**
+        User must derive a subclass from this.
         Part of an enabling or updating function.
         It knows what variables it depends on, and how to build itself
         (provided by the user).
@@ -2369,6 +2370,8 @@ class MEDDLY::satotf_opname : public specialized_opname {
         int* vars;
         int num_vars;
         dd_edge root;
+
+        // add event parent here
       public:
         /// Constructor, specify variables that this function depends on.
         subfunc(int* v, int nv);
@@ -2389,17 +2392,20 @@ class MEDDLY::satotf_opname : public specialized_opname {
           return root;
         }
 
+        /// add getter for parent event
+
         /**
           Update the sub-function, as local states are confirmed.
-          User MUST provide this method, which should use setRoot()
-          to update the DD encoding.
         */
-        virtual void update(otf_relation &rel) = 0;
+        void update(const otf_relation &rel);
 
       protected:
-        inline void setRoot(dd_edge &r) {
-          root = r;
-        }
+        /**
+          Rebuild the sub-function to include new local states,
+          and return it.
+          User MUST provide this method.
+        */
+        virtual dd_edge& rebuild(const otf_relation &rel) = 0;
 
     };
 
@@ -2568,8 +2574,8 @@ class MEDDLY::compute_table {
 
       struct stats {
         unsigned numEntries;
-        unsigned hits;
-        unsigned pings;
+        long hits;
+        long pings;
         static const int searchHistogramSize = 256;
         long searchHistogram[searchHistogramSize];
         long numLargeSearches;

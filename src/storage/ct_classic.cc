@@ -153,8 +153,8 @@ void MEDDLY::base_table
 
   if (--level < 1) return;
 
-  fprintf(s, "%*sPings             :\t%d\n", indent, "", perf.pings);
-  fprintf(s, "%*sHits              :\t%d\n", indent, "", perf.hits);
+  fprintf(s, "%*sPings             :\t%ld\n", indent, "", perf.pings);
+  fprintf(s, "%*sHits              :\t%ld\n", indent, "", perf.hits);
 
   if (--level < 1) return;
 

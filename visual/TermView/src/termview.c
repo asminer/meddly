@@ -175,7 +175,7 @@ int main(int argc, const char** argv)
           code = 3;
           break;
         }
-        continue;
+        break;
 
       case 'F':
 #ifdef DEBUG_PARSER
@@ -206,7 +206,7 @@ int main(int argc, const char** argv)
         break;
 
       
-      case 'a': /* TBD */
+      case 'a': 
 #ifdef DEBUG_PARSER
         printf("Parsing a record\n");
 #endif
@@ -224,7 +224,7 @@ int main(int argc, const char** argv)
         kill_update(alist);
         break;
 
-      case 'p': /* TBD */
+      case 'p': 
 #ifdef DEBUG_PARSER
         printf("Parsing p record\n");
 #endif
@@ -244,7 +244,7 @@ int main(int argc, const char** argv)
         }
 #endif
         ignoreLine(inf);
-        continue;
+        break;
     }
 
     /*
