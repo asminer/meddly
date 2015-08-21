@@ -28,6 +28,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#define _MEDDLY_WITHOUT_CSTDIO_
+
 #include "meddly.h"
 #include "meddly_expert.h"
 #include "timer.h"
@@ -35,6 +37,8 @@
 // #define DEBUG_INPUT
 // #define DEBUG_NUM_TRUE
 // #define DEBUG_CONSTRAINTS
+
+MEDDLY::ostream_output meddlyout(std::cerr);
 
 struct lifegrid {
     int width;
@@ -246,7 +250,7 @@ void numTrueGeneral(const int* levels, int* bottom, int n, int deflt, dd_edge &e
 #ifdef DEBUG_NUM_TRUE
   cerr << "leaving numTrueGeneral, answer is " << bottom[0] << ":\n";
   cerr.flush();
-  e.show(stderr, 2);
+  e.show(meddlyout, 2);
 #endif
 }
 
@@ -363,7 +367,7 @@ void buildConstraints(const lifegrid &G, int row, int col, dd_edge &e)
   cerr << "finished constraint for (" << row << ", " << col << "), ";
   if (G.grid[row][col]) cerr << "alive\n"; else cerr << "dead\n";
   cerr.flush();
-  e.show(stderr, 2);
+  e.show(meddlyout, 2);
 #endif
 }
 
@@ -577,7 +581,7 @@ int main(int argc, const char** argv)
   cerr.flush();
   f->garbageCollect();
   f->compactMemory();
-  f->reportStats(stderr, "\t", 
+  f->reportStats(meddlyout, "\t", 
     expert_forest::HUMAN_READABLE_MEMORY  |
     expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
     expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
@@ -681,13 +685,13 @@ int main(int argc, const char** argv)
   if (show_stats) {
     cerr << "Library stats:\n";
     const expert_forest* ef = (expert_forest*) f;
-    ef->reportStats(stderr, "\t",
+    ef->reportStats(meddlyout, "\t",
       expert_forest::HUMAN_READABLE_MEMORY  |
       expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
       expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
     );
     cerr << "Operation stats:\n";
-    operation::showAllComputeTables(stderr, 3);
+    operation::showAllComputeTables(meddlyout, 3);
   }
 
   // Done!

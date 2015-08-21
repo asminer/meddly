@@ -49,7 +49,6 @@
 #include <cstdlib>
 #include <cassert>
 #include <cstring>
-#include <cstdio>
 #include <cstdarg>
 #include <limits>
 
@@ -109,6 +108,7 @@ namespace MEDDLY {
   }
 
   /// Print human-readable memory usage
+  /*
   inline void fprintmem(FILE* s, unsigned long m, bool human) {
     if ((!human) || (m<1024)) {
       fprintf(s, "%lu bytes", m);
@@ -133,30 +133,38 @@ namespace MEDDLY {
     approx /= 1024;
     fprintf(s, "%3.2lf Tbytes", approx);
   }
+  */
 
   /// throw wrapper around fputc
+  /*
   inline void th_fputc(int c, FILE* s) {
     if (EOF==fputc(c, s)) throw error(error::COULDNT_WRITE);
   }
+  */
 
   /// throw wrapper around fprintf
+  /*
   inline void th_fprintf(FILE* s, const char* fmt, ...) {
     va_list argptr;
     va_start(argptr, fmt);
     if (vfprintf(s, fmt, argptr)<0) throw error(error::COULDNT_WRITE);
     va_end(argptr);
   }
+  */
 
   /// throw wrapper around fscanf
+  /*
   inline void th_fscanf(int n, FILE* s, const char* fmt, ...) {
     va_list argptr;
     va_start(argptr, fmt);
     if (vfscanf(s, fmt, argptr)!=n) throw error(error::INVALID_FILE);
     va_end(argptr);
   }
+  */
 
   /// Consume whitespace (if any) from a file stream
   /// including comments of the form #....\n
+  /*
   inline void stripWS(FILE* s) {
     bool comment = false;
     for (;;) {
@@ -179,14 +187,17 @@ namespace MEDDLY {
       return;
     }
   }
+  */
 
   /// Consume a keyword from a file stream
+  /*
   inline void consumeKeyword(FILE* s, const char* keyword) {
     for ( ; *keyword; keyword++) {
       int c = fgetc(s);
       if (c != *keyword) throw error(error::INVALID_FILE);
     }
   }
+  */
 }
 
 /*

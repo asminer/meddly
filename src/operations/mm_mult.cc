@@ -60,7 +60,7 @@ class MEDDLY::mm_mult_op : public binary_operation {
 
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(FILE* strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData) const;
 
     inline compute_table::search_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
@@ -118,9 +118,10 @@ void MEDDLY::mm_mult_op::discardEntry(const node_handle* data)
 }
 
 void
-MEDDLY::mm_mult_op::showEntry(FILE* strm, const node_handle* data) const
+MEDDLY::mm_mult_op::showEntry(output &strm, const node_handle* data) const
 {
-  fprintf(strm, "[%s(%d, %d): %d]", getName(), data[0], data[1], data[2]);
+  strm  << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1])
+        << "): " << long(data[2]) << "]";
 }
 
 void MEDDLY::mm_mult_op

@@ -59,6 +59,8 @@
 
 using namespace MEDDLY;
 
+FILE_output meddlyout(stdout);
+
 /*
   Variable ordering.
   Give the variables for "queen i row" and "queen i column".
@@ -226,7 +228,7 @@ void queeniRowr(const varorder &V, int i, int r, dd_edge &e)
 
 #ifdef DEBUG_VARS
   printf("Build queen %d is in row %d:\n", i, r);
-  e.show(stdout, 2);
+  e.show(meddlyout, 2);
 #endif
 }
 
@@ -246,7 +248,7 @@ void queeniColc(const varorder &V, int i, int c, dd_edge &e)
 
 #ifdef DEBUG_VARS
   printf("Build queen %d is in col %d:\n", i, c);
-  e.show(stdout, 2);
+  e.show(meddlyout, 2);
 #endif
 }
 
@@ -367,7 +369,7 @@ dd_edge** buildConstraintsForSquares(forest *F, const varorder &V, int N)
     queenInRow(V, r, tmp);
 #ifdef DEBUG_ROW_CONSTRAINTS
     printf("queenInRow(%d):\n", r);
-    tmp.show(stdout, 2);
+    tmp.show(meddlyout, 2);
 #endif
 
     for (int c=0; c<N; c++) {
@@ -383,7 +385,7 @@ dd_edge** buildConstraintsForSquares(forest *F, const varorder &V, int N)
     queenInCol(V, c, tmp);
 #ifdef DEBUG_COLUMN_CONSTRAINTS
     printf("queenInCol(%d):\n", c);
-    tmp.show(stdout, 2);
+    tmp.show(meddlyout, 2);
 #endif
 
     for (int r=0; r<N; r++) {
@@ -399,7 +401,7 @@ dd_edge** buildConstraintsForSquares(forest *F, const varorder &V, int N)
     queenInPlusd(V, d, tmp);
 #ifdef DEBUG_PLUSD_CONSTRAINTS
     printf("queenInPlusd(%d):\n", d);
-    tmp.show(stdout, 2);
+    tmp.show(meddlyout, 2);
 #endif
 
     // There is a fancier way to set up this loop...
@@ -421,7 +423,7 @@ dd_edge** buildConstraintsForSquares(forest *F, const varorder &V, int N)
     queenInMinusd(V, d, tmp);
 #ifdef DEBUG_MINUSD_CONSTRAINTS
     printf("queenInMinusd(%d):\n", d);
-    tmp.show(stdout, 2);
+    tmp.show(meddlyout, 2);
 #endif
 
     // There is a fancier way to set up this loop...
@@ -506,7 +508,7 @@ dd_edge** buildConstraintsForSquares(forest *F, const varorder &V, int N)
       printf("----------------------------------------\n");
       printf("[%2d, %2d]\n", r, c);
       printf("----------------------------------------\n");
-      covered[r][c].show(stdout, 2);
+      covered[r][c].show(meddlyout, 2);
     }
   }
 #endif
@@ -894,7 +896,7 @@ int main(int argc, const char** argv)
   dd_edge** covered = buildConstraintsForSquares(F, V, N);
   printf("Basic constraints are done:\n");
   expert_forest* ef = (expert_forest*) F;
-  ef->reportStats(stdout, "\t", 
+  ef->reportStats(meddlyout, "\t", 
     expert_forest::HUMAN_READABLE_MEMORY | expert_forest::BASIC_STATS
   );
 
@@ -993,12 +995,12 @@ int main(int argc, const char** argv)
   }
 
   printf("Forest stats:\n");
-  ef->reportStats(stdout, "\t", 
+  ef->reportStats(meddlyout, "\t", 
     expert_forest::HUMAN_READABLE_MEMORY  |
     expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
     expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
   );
-  operation::showAllComputeTables(stdout, 3);
+  operation::showAllComputeTables(meddlyout, 3);
 
   /*
     Write solutions to file

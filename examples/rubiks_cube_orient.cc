@@ -902,7 +902,8 @@ class rubiks {
       fprintf(stdout,
           "Time for building next-state function: %.4e seconds\n",
           start.get_last_interval()/1000000.0);
-      printStats(stdout);
+      FILE_output myout(stdout);
+      printStats(myout);
       fflush(stdout);
 
       mxd->removeAllComputeTableEntries();
@@ -1181,18 +1182,18 @@ class rubiks {
     }
 #endif
 
-    void printStats(FILE* out)
+    void printStats(MEDDLY::output &out)
     {
       printStats(out, "Mdd", mdd);
       printStats(out, "Mxd", mxd);
       printStats(out, "MtMxd", mtmxd);
       MEDDLY::operation::showAllComputeTables(out, 3);
-      fflush(out);
+      out.flush();
     }
 
-    void printStats(FILE* out, const char* who, const forest* f)
+    void printStats(MEDDLY::output &out, const char* who, const forest* f)
     { 
-      fprintf(out, "%s stats:\n", who);
+      out << who << " stats:\n";
       const expert_forest* ef = (expert_forest*) f;
       ef->reportStats(out, "\t",
           expert_forest::HUMAN_READABLE_MEMORY  |
@@ -1384,7 +1385,8 @@ int main(int argc, char *argv[])
     fflush(stderr);
   }
 
-  model.printStats(stdout);
+  FILE_output myout(stdout);
+  model.printStats(myout);
   fflush(stdout);
 
   fprintf(stdout, "\n\nDONE\n");

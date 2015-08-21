@@ -43,9 +43,9 @@ class MEDDLY::ev_forest : public expert_forest {
       const policies &p);
 
   protected:
-    virtual void showTerminal(FILE* s, node_handle tnode) const;
-    virtual void writeTerminal(FILE* s, node_handle tnode) const;
-    virtual node_handle readTerminal(FILE* s);
+    virtual void showTerminal(output &s, node_handle tnode) const;
+    virtual void writeTerminal(output &s, node_handle tnode) const;
+    virtual node_handle readTerminal(input &s);
 
   public:
 

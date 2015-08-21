@@ -314,18 +314,18 @@ MEDDLY::domain
     rel ? meddlySettings.mxdDefaults : meddlySettings.mddDefaults, 0);
 }
 
-void MEDDLY::domain::showInfo(FILE* strm)
+void MEDDLY::domain::showInfo(output &strm)
 {
   // list variables handles, their bounds and heights.
-  fprintf(strm, "Domain info:\n");
-  fprintf(strm, "  #variables: %d\n", nVars);
-  fprintf(strm, "  Variables listed in height-order (ascending):\n");
-  fprintf(strm, "    height\t\tname\t\tbound\t\tprime-bound\n");
+  strm << "Domain info:\n";
+  strm << "  #variables: " << nVars << "\n";
+  strm << "  Variables listed in height-order (ascending):\n";
+  strm << "    height\t\tname\t\tbound\t\tprime-bound\n";
   for (int i = 1; i < nVars + 1; ++i) {
     const char* name = vars[i]->getName();
     if (0==name) name = "null";
-    fprintf(strm, "    %d\t\t%s\t\t%d\t\t%d\n",
-            i, name, vars[i]->getBound(0), vars[i]->getBound(1));
+    strm  << "    " << i << "\t\t" << name << "\t\t" << vars[i]->getBound(0)
+          << "\t\t" << vars[i]->getBound(1) << "\n";
   }
 
   // call showNodes for each of the forests in this domain.
@@ -464,27 +464,27 @@ int MEDDLY::expert_domain::findVariableBound(int vh) const
   return getVariableBound(vh, false);
 }
 
-void MEDDLY::expert_domain::write(FILE* s) const
+void MEDDLY::expert_domain::write(output &s) const
 {
-  th_fprintf(s, "dom\n%d\n", nVars);
+  s << "dom\n" << nVars << "\n";
   for (int i=nVars; i; i--) {
-   th_fprintf(s, "%d ", vars[i]->getBound(false));
-   MEDDLY_DCASSERT(vars[i]->getBound(false) == vars[i]->getBound(true));
+    s.put(long(vars[i]->getBound(false)));
+    s.put(' ');
+    MEDDLY_DCASSERT(vars[i]->getBound(false) == vars[i]->getBound(true));
   }
-  th_fprintf(s, "\nmod\n");
+  s << "\nmod\n";
 }
 
-void MEDDLY::expert_domain::read(FILE* s)
+void MEDDLY::expert_domain::read(input &s)
 {
   // domain must be empty -- no variables defined so far
   if (hasForests() || nVars != 0)
     throw error(error::DOMAIN_NOT_EMPTY);
 
-  stripWS(s);
-  consumeKeyword(s, "dom");
-  stripWS(s);
-  fscanf(s, "%d", &nVars);
-  if (nVars < 0) throw error(error::INVALID_FILE);
+  s.stripWS();
+  s.consumeKeyword("dom");
+  s.stripWS();
+  nVars = s.get_integer();
   if (nVars) {
     vars = (variable**) malloc((1+nVars) * sizeof(void*));
     if (0==vars) throw error(error::INSUFFICIENT_MEMORY);
@@ -493,13 +493,13 @@ void MEDDLY::expert_domain::read(FILE* s)
   }
   vars[0] = 0;
   for (int i=nVars; i; i--) {
-    int bound;
-    stripWS(s);
-    fscanf(s, "%d", &bound);
+    long bound;
+    s.stripWS();
+    bound = s.get_integer();
     vars[nVars-i+1] = MEDDLY::createVariable(bound, 0);
     ((expert_variable*)vars[i])->addToList(this);
   }
-  stripWS(s);
-  consumeKeyword(s, "mod");
+  s.stripWS();
+  s.consumeKeyword("mod");
 }
 

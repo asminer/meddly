@@ -24,8 +24,7 @@
 */
 
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <time.h>
 
 #include "meddly.h"
@@ -239,21 +238,23 @@ void testEVTimesMXD(forest* srcF, forest* destF)
       apply(COPY, srcE, copyE);
 
       if (copyE != destE) {
+        FILE_output meddlyout(stdout);
+
         printf("failed!\n\n");
 
         printf("Source (first forest):\n");
-        srcE.show(stdout, 3);
+        srcE.show(meddlyout, 3);
 
         printf("Destination (should get):\n");
-        destE.show(stdout, 3);
+        destE.show(meddlyout, 3);
 
         printf("Copy (built from source):\n");
-        copyE.show(stdout, 3);
+        copyE.show(meddlyout, 3);
 
         dd_edge diff(destF);
         apply(MINUS, destE, copyE, diff);
         printf("Difference:\n");
-        diff.show(stdout, 3);
+        diff.show(meddlyout, 3);
 
         exit(1);
       }

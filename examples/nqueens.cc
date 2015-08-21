@@ -311,7 +311,8 @@ int main(int argc, const char** argv)
 
   printf("Set of solutions requires %d nodes\n", solutions->getNodeCount());
   printf("Forest stats:\n");
-  f->reportStats(stdout, "\t", 
+  FILE_output myout(stdout);
+  f->reportStats(myout, "\t", 
     expert_forest::HUMAN_READABLE_MEMORY  |
     expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
     expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
@@ -342,7 +343,7 @@ int main(int argc, const char** argv)
   }
 #endif
   delete solutions;
-  operation::showAllComputeTables(stdout, 3);
+  operation::showAllComputeTables(myout, 3);
   if (LOG) {
     LOG->newPhase("Cleanup");
     destroyDomain(d);

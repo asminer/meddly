@@ -143,7 +143,7 @@ class MEDDLY::holeman {
 
             @param  s   Output stream
     */
-    virtual void dumpInternalInfo(FILE* s) const = 0;
+    virtual void dumpInternalInfo(output &s) const = 0;
 
     /**
         Dump the interesting contents of a hole.
@@ -152,7 +152,7 @@ class MEDDLY::holeman {
             @param  s   Output stream
             @param  a   Starting index of the chunk that's a hole
     */
-    virtual void dumpHole(FILE* s, node_address a) const = 0;
+    virtual void dumpHole(output &s, node_address a) const = 0;
 
     /**
         Dump information for debugging.
@@ -160,7 +160,7 @@ class MEDDLY::holeman {
 
             @param  s   Output stream
     */
-    virtual void dumpInternalTail(FILE* s) const;
+    virtual void dumpInternalTail(output &s) const;
 
     /** 
         Print stats.
@@ -170,7 +170,7 @@ class MEDDLY::holeman {
 
         Children can call this to save some code.
     */
-    virtual void reportStats(FILE* s, const char* pad, unsigned flags) const;
+    virtual void reportStats(output &s, const char* pad, unsigned flags) const;
 
     /**
         Clear hole data structure and maybe shrink.
@@ -223,11 +223,11 @@ class MEDDLY::holeman {
       untracked_slots -= slots;
     }
     
-    inline void dumpInternal(FILE* s, unsigned flags) const {
+    inline void dumpInternal(output &s, unsigned flags) const {
       if (parent) parent->dumpInternal(s, flags);
     }
     inline void 
-    dumpInternalNode(FILE* s, node_address addr, unsigned flags) const {
+    dumpInternalNode(output &s, node_address addr, unsigned flags) const {
       if (parent) parent->dumpInternalNode(s, addr, flags);
     }
 

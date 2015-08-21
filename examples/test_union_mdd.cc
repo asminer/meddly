@@ -44,14 +44,16 @@ using namespace MEDDLY;
 
 #define CACHE_SIZE 262144u
 
+FILE_output meddlyout(stdout);
+
 void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
 {
   apply(CONVERT_TO_INDEX_SET, mdd, indexSet);
 
 #if 1
-  indexSet.show(stdout, 3);
+  indexSet.show(meddlyout, 3);
 #else
-  indexSet.show(stdout, 1);
+  indexSet.show(meddlyout, 1);
 #endif
 }
 
@@ -221,7 +223,7 @@ int main(int argc, char *argv[])
 
 #ifdef VERBOSE
   printf("\n\nInitial State:\n");
-  initial_state.show(stdout, 2);
+  initial_state.show(meddlyout, 2);
 #endif
 
   double c;
@@ -240,7 +242,7 @@ int main(int argc, char *argv[])
   assert(evmdd != 0);
   dd_edge evmdd_states(evmdd);
   apply(CONVERT_TO_INDEX_SET, initial_state, evmdd_states);
-  evmdd_states.show(stdout, 3);
+  evmdd_states.show(meddlyout, 3);
 
   enumerator iter(evmdd_states);
   int currentIndex = 0;
@@ -263,7 +265,7 @@ int main(int argc, char *argv[])
 
 #ifdef VERBOSE
   printf("\n\nForest Info:\n");
-  states->showInfo(stdout);
+  states->showInfo(meddlyout);
 #endif
 
 #ifdef CHECK_ELEMENTS

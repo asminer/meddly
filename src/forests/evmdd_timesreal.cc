@@ -124,17 +124,17 @@ void MEDDLY::evmdd_timesreal::normalize(node_builder &nb, float& ev) const
   }
 }
 
-void MEDDLY::evmdd_timesreal::showEdgeValue(FILE* s, const void* edge) const
+void MEDDLY::evmdd_timesreal::showEdgeValue(output &s, const void* edge) const
 {
   OP::show(s, edge);
 }
 
-void MEDDLY::evmdd_timesreal::writeEdgeValue(FILE* s, const void* edge) const
+void MEDDLY::evmdd_timesreal::writeEdgeValue(output &s, const void* edge) const
 {
   OP::write(s, edge);
 }
 
-void MEDDLY::evmdd_timesreal::readEdgeValue(FILE* s, void* edge)
+void MEDDLY::evmdd_timesreal::readEdgeValue(input &s, void* edge)
 {
   OP::read(s, edge);
 }

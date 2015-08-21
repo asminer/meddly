@@ -39,7 +39,14 @@
 #ifndef MEDDLY_H
 #define MEDDLY_H
 
+#ifndef _MEDDLY_WITHOUT_CSTDIO_
 #include <cstdio>
+#endif
+
+#ifndef _MEDDLY_WITHOUT_IOSTREAM_
+#include <iostream>
+#endif
+
 #include <cassert>
 
 namespace MEDDLY {
@@ -79,6 +86,13 @@ namespace MEDDLY {
   // Classes
 
   class error;
+  class input;
+  class FILE_input;
+  class istream_input;
+  class output;
+  class FILE_output;
+  class ostream_output;
+
   struct settings;
   class forest;
   class expert_forest;
@@ -501,6 +515,8 @@ class MEDDLY::error {
       INVALID_ARGUMENT,
       /// File format error.
       INVALID_FILE,
+      /// File input error.
+      COULDNT_READ,
       /// File output error.
       COULDNT_WRITE,
       /// Miscellaneous error
@@ -514,6 +530,330 @@ class MEDDLY::error {
     code errcode;
 };
 
+
+// ******************************************************************
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                       MEDDLY  custom I/O                       *
+// *                                                                *
+// ******************************************************************
+// 
+// We are using our own I/O classes because we want to support both C++ streams
+// and C FILE*s, and this seems to be the cleanest way to do that.  Also it
+// allows users to (easily?) define their own I/O mechanisms.                               
+//
+// Implementation is in io.cc
+// 
+// ******************************************************************
+// ******************************************************************
+
+// ******************************************************************
+// *                                                                *
+// *                          input  class                          *
+// *                                                                *
+// ******************************************************************
+
+/** Input class.
+    Abstract base class.
+*/
+class MEDDLY::input {
+  public:
+    input();
+    virtual ~input();
+
+    /**
+        Return true if and only if the input stream has hit EOF.
+    */
+    virtual bool eof() const = 0;
+
+    /**
+        Read exactly one character from the input stream.
+          @return   The character consumed, or EOF.
+          @throws   an appropriate error
+    */
+    virtual int get_char() = 0;
+
+    /**
+        Put the last consumed character back on the stream.
+        Does nothing if no character was consumed.
+          @param  x   Character to put back.
+                      x will be the last consumed character.
+          @throws     an appropriate error
+    */
+    virtual void unget(char x) = 0;
+
+    /**
+        Read an integer in signed decimal notation.
+        TBD - integer is terminated by whitespace, or any character?
+          @return   The integer consumed
+          @throws   an appropriate error
+    */
+    virtual long get_integer() = 0;
+
+    /**
+        Read a floating point value in signed decimal notation.
+        TBD - value is terminated by whitespace, or any character?
+          @return   The value consumed
+          @throws   an appropriate error
+    */
+    virtual double get_real() = 0;
+
+    /**
+        Read raw bytes into a memory location.
+          @param  bytes   Number of bytes requested
+          @param  buffer  Pointer to store the bytes
+
+          @return Number of bytes actually read, 
+                  or negative on error.
+    */
+    virtual int read(int bytes, unsigned char* buffer) = 0;
+
+
+  /*
+    Handy input stream manipulation
+  */
+
+  /**
+      Consume whitespace (if any) from the input stream,
+      including comments of the form #...\n
+  */
+  void stripWS();
+
+  /**
+      Consume a keyword from the input stream.
+      If the keyword does not match the input stream,
+      we throw an INVALID_FILE error.
+  */
+  void consumeKeyword(const char* keyword);
+};  // end of input class
+
+// ******************************************************************
+// *                                                                *
+// *                        FILE_input class                        *
+// *                                                                *
+// ******************************************************************
+
+#ifndef _MEDDLY_WITHOUT_CSTDIO_
+
+/** FILE_Input class.
+    Use for C-style FILE* input.
+
+    TBD - come up with a way to remove #include <cstdio> and <iostream> from above!
+*/
+class MEDDLY::FILE_input : public MEDDLY::input {
+  public:
+    FILE_input(FILE* _inf);
+    virtual ~FILE_input();
+
+    virtual bool eof() const;
+    virtual int get_char();
+    virtual void unget(char);
+    virtual long get_integer();
+    virtual double get_real();
+    virtual int read(int bytes, unsigned char* buffer);
+
+  private:
+    FILE* inf;
+};  // end of FILE_input class
+
+#endif
+
+// ******************************************************************
+// *                                                                *
+// *                      istream_input  class                      *
+// *                                                                *
+// ******************************************************************
+
+#ifndef _MEDDLY_WITHOUT_IOSTREAM_
+
+/** istream_Input class.
+    Use for C++-style istream input.
+
+    TBD - come up with a way to remove #include <cstdio> and <iostream> from above!
+*/
+class MEDDLY::istream_input : public MEDDLY::input {
+  public:
+    istream_input(std::istream &in);
+    virtual ~istream_input();
+
+    virtual bool eof() const;
+    virtual int get_char();
+    virtual void unget(char);
+    virtual long get_integer();
+    virtual double get_real();
+    virtual int read(int bytes, unsigned char* buffer);
+
+  private:
+    std::istream &in;
+};  // end of istream_input class
+
+#endif
+
+// ******************************************************************
+// *                                                                *
+// *                          output class                          *
+// *                                                                *
+// ******************************************************************
+
+/** Output class.
+    Abstract base class.
+*/
+class MEDDLY::output {
+  public:
+    output();
+    virtual ~output();
+
+    /**
+        Write exactly one character to the output stream.
+          @param  x   Character to write
+          @throws     An appropriate error
+    */
+    virtual void put(char x) = 0;
+
+    /**
+        Write a null-terminated string to the output stream.
+        The terminating null is not written.
+          @param  x   String to write
+          @param  w   Width for formatting
+          @throws     An appropriate error
+    */
+    virtual void put(const char* x, int w=0) = 0;
+
+    /**
+        Write a signed, decimal integer to the output stream.
+          @param  x   Integer to write
+          @param  w   Width for formatting
+          @throws     An appropriate error
+    */
+    virtual void put(long x, int w=0) = 0;
+
+    /**
+        Write hex digits to the output stream.
+          @param  x   Value to write
+          @param  w   Width for formatting
+          @throws     An appropriate error
+    */
+    virtual void put_hex(unsigned long x, int w=0) = 0;
+
+    /**
+        Write a signed, decimal, floating-point value to the output stream.
+          @param  x   Value to write
+          @param  w   Width
+          @param  p   Precision
+          @param  f   Format, either 'e', 'f', or 'g' (for the style of printf)
+          @throws     An appropriate error
+    */
+    virtual void put(double x, int w=0, int p=6, char f='g') = 0;
+
+    /**
+        Write raw bytes from a memory location.
+          @param  bytes   Number of bytes in the buffer
+          @param  buffer  Pointer to memory location
+          
+          @return Number of bytes actually written,
+                  or negative on error.
+    */
+    virtual int write(int bytes, const unsigned char* buffer) = 0;
+
+    /**
+        Flush the output stream.
+    */
+    virtual void flush() = 0;
+
+  /*
+    Handy output stream manipulation
+  */
+
+    /**
+        Write number of bytes, with units.
+          @param  m       Number of bytes
+          @param  human   If false, units will be "bytes".
+                          If true, scale units so that output is betwen one and 1000.
+    */
+    void put_mem(long m, bool human);
+
+};  // end of output class
+
+/* 
+  These will let us do C++ style output, with our class.
+*/
+
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, char x)        { s.put(x); return s; }
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, const char* x) { s.put(x); return s; }
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, int x)         { s.put(long(x)); return s; }
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, long x)        { s.put(x); return s; }
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, double x)      { s.put(x); return s; }
+
+
+// ******************************************************************
+// *                                                                *
+// *                       FILE_output  class                       *
+// *                                                                *
+// ******************************************************************
+
+#ifndef _MEDDLY_WITHOUT_CSTDIO_
+
+/** FILE_output class.
+    Use for C-style FILE* input.
+
+    TBD - come up with a way to remove #include <cstdio> and <iostream> from above!
+*/
+class MEDDLY::FILE_output : public MEDDLY::output {
+  public:
+    FILE_output(FILE* outf);
+    virtual ~FILE_output();
+
+    virtual void put(char x);
+    virtual void put(const char*, int w);
+    virtual void put(long x, int w);
+    virtual void put_hex(unsigned long x, int w);
+    virtual void put(double x, int w, int p, char f);
+    virtual int write(int bytes, const unsigned char* buffer);
+    virtual void flush();
+
+  private:
+    FILE* outf;
+};  // end of FILE_output class
+
+#endif
+
+// ******************************************************************
+// *                                                                *
+// *                      ostream_output class                      *
+// *                                                                *
+// ******************************************************************
+
+#ifndef MEDDLY_WITHOUT_IOSTREAM_
+
+/** ostream_output class.
+    Use for C++-style ostream input.
+
+    TBD - come up with a way to remove #include <cstdio> and <iostream> from above!
+*/
+class MEDDLY::ostream_output : public MEDDLY::output {
+  public:
+    ostream_output(std::ostream &out);
+    virtual ~ostream_output();
+
+    virtual void put(char x);
+    virtual void put(const char*, int w);
+    virtual void put(long x, int w);
+    virtual void put_hex(unsigned long x, int w);
+    virtual void put(double x, int w, int p, char f);
+    virtual int write(int bytes, const unsigned char* buffer);
+    virtual void flush();
+
+  private:
+    std::ostream &out;
+};  // end of ostream_output class
+
+#endif
+
+// ******************************************************************
+// ******************************************************************
+// ******************************************************************
+// ******************************************************************
 
 // ******************************************************************
 // *                                                                *
@@ -1349,7 +1689,7 @@ class MEDDLY::forest {
 
           @throws     COULDNT_WRITE, if writing failed
     */
-    virtual void writeEdges(FILE* s, const dd_edge* E, int n) const = 0;
+    virtual void writeEdges(output &s, const dd_edge* E, int n) const = 0;
 
     /** Read edges from a file.
         Allows reconstruction of edges that we
@@ -1363,7 +1703,7 @@ class MEDDLY::forest {
           @throws     INVALID_FILE, if the file does not match what we expect,
                       including different number of edges specified.
     */
-    virtual void readEdges(FILE* s, dd_edge* E, int n) = 0;
+    virtual void readEdges(input &s, dd_edge* E, int n) = 0;
 
     /** Force garbage collection.
         All disconnected nodes in this forest are discarded along with any
@@ -1397,13 +1737,13 @@ class MEDDLY::forest {
 
     /** Display all active (i.e., connected) nodes in the forest.
         This is primarily for aid in debugging.
-        @param  strm      File stream to write to.
+        @param  strm      Stream to write to.
         @param  verbosity How much information to display.
                           0 : just statistics.
                           1 : all forest nodes + statistics.
                           2 : internal forest + statistics.
     */
-    virtual void showInfo(FILE* strm, int verbosity=0) = 0;
+    virtual void showInfo(output &strm, int verbosity=0) = 0;
 
 
     /** Start logging stats.
@@ -1421,7 +1761,7 @@ class MEDDLY::forest {
   // For derived classes.
   protected:
     // for debugging:
-    void showComputeTable(FILE* s, int verbLevel) const;
+    void showComputeTable(output &s, int verbLevel) const;
 
   protected:
     policies deflt;
@@ -1618,7 +1958,7 @@ class MEDDLY::domain {
 
           @throws     COULDNT_WRITE, if writing failed
     */
-    virtual void write(FILE* s) const = 0;
+    virtual void write(output &s) const = 0;
 
     /** Initialize the domain from data in a file.
         Allows reconstruction of a domain that 
@@ -1628,13 +1968,13 @@ class MEDDLY::domain {
           
           @throws     INVALID_FILE, if the file does not match what we expect 
     */
-    virtual void read(FILE* s) = 0;
+    virtual void read(input &s) = 0;
 
     /** Display lots of information about the domain.
         This is primarily for aid in debugging.
-        @param  strm    File stream to write to.
+        @param  strm    Stream to write to.
     */
-    void showInfo(FILE* strm);
+    void showInfo(output &strm);
 
     /// Free the slot that the forest is using.
     void unlinkForest(forest* f, int slot);
@@ -1899,13 +2239,13 @@ class MEDDLY::dd_edge {
                           2: default + displays graph rooted at this node.
                           3: default + cardinality + graph.
     */
-    void show(FILE* strm, int verbosity = 0) const;
+    void show(output &s, int verbosity = 0) const;
 
     /// Write to a file
-    void write(FILE* s, const node_handle* map) const;
+    void write(output &s, const node_handle* map) const;
 
     /// Read from a file
-    void read(forest* p, FILE* s, const node_handle* map);
+    void read(forest* p, input &s, const node_handle* map);
 
   private:
     friend class forest;

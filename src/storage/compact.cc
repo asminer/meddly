@@ -36,12 +36,13 @@
 // #define DEEP_MEMORY_TRACE
 
 
-inline void fprintRaw(FILE* s, const char* what, unsigned char* x, int bytes)
+inline void fprintRaw(MEDDLY::output &s, const char* what, unsigned char* x, int bytes)
 {
   if (bytes<1) return;
-  fputs(what, s);
+  s.put(what);
   for (int i=0; i<bytes; i++) {
-    fprintf(s, " %x", x[i]);
+    s.put(' ');
+    s.put_hex(x[i], 2);
   }
 }
 
@@ -162,14 +163,13 @@ void MEDDLY::compact_storage::collectGarbage(bool shrink)
 
 // ******************************************************************
 void MEDDLY::compact_storage
-::reportStats(FILE* s, const char* pad, unsigned flags) const
+::reportStats(output &s, const char* pad, unsigned flags) const
 {
   static unsigned STORAGE = 
     expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED;
 
   if (flags & STORAGE) {
-    fprintf(s, "%s", pad);
-    fprintf(s, "Stats for %s\n", getStorageName());
+    s << pad << "Stats for " << getStorageName() << "\n";
 
     // anything for us?
   }
@@ -183,82 +183,82 @@ void MEDDLY::compact_storage
 
 // ******************************************************************
 void MEDDLY::compact_storage
-::showNode(FILE* s, node_address addr, bool verb) const
+::showNode(output &s, node_address addr, bool verb) const
 {
   int pbytes, ibytes;
   getStyleOf(addr, pbytes, ibytes);
   if (verb) {
-    fprintf(s, " pb : %d", pbytes);
-    fprintf(s, " ib : %d", ibytes);
+    s << " pb : " << long(pbytes);
+    s << " ib : " << long(ibytes);
   }
   if (sizeOf(addr) < 0) {
     //
     // Sparse node
     //
     int nnz = -sizeOf(addr);
-    if (verb)  fprintf(s, " nnz : %d", nnz);
-    fprintf(s, " down: (");
+    if (verb)  s << " nnz : " << long(nnz);
+    s << " down: (";
     unsigned char* rawd = sparseDown(addr);
     unsigned char* rawi = sparseIndex(addr);
     unsigned char* rawe = sparseEdge(addr);
     for (int i=0; i<nnz; i++) {
-      if (i) fprintf(s, ", ");
+      if (i) s << ", ";
 
       node_handle down; 
       int index;
       dataToDown(rawd, pbytes, down);
       dataToUnsigned(rawi, ibytes, index);
 
-      fprintf(s, "%d:", index);
+      s << long(index) << ":";
       if (edgeBytes) {
-        fprintf(s, "<");
+        s.put('<');
         getParent()->showEdgeValue(s, rawe);
-        fprintf(s, ", ");
+        s << ", ";
       }
       if (getParent()->isTerminalNode(down)) {
         getParent()->showTerminal(s, down);
       } else {
-        fprintf(s, "%ld", long(down));
+        s.put(long(down));
       }
       if (edgeBytes) {
-        fprintf(s, ">");
+        s.put('>');
         rawe += edgeBytes;
       }
       rawd += pbytes;
       rawi += ibytes;
     } // for i
-    fprintf(s, ")");
+    s.put(')');
   } else {
     //
     // Full node
     //
     int size = sizeOf(addr);
-    if (verb) fprintf(s, " size: %d", size);
-    fprintf(s, " down: [");
+    if (verb) s << " size: " << long(size);
+    s << " down: [";
     unsigned char* rawd = fullDown(addr);
     unsigned char* rawe = fullEdge(addr);
     for (int i=0; i<size; i++) {
-      if (i) fprintf(s, "|"); 
+      if (i) s.put('|');
       node_handle down;
       dataToDown(rawd, pbytes, down);
 
       if (edgeBytes) {
-        fprintf(s, "<");
+        s.put('<');
         getParent()->showEdgeValue(s, rawe);
-        fprintf(s, ", ");
+        s << ", ";
       } 
       if (getParent()->isTerminalNode(down)) {
         getParent()->showTerminal(s, down);
       } else {
-        fprintf(s, "%ld", long(down));
+        s.put(long(down));
       }
       if (edgeBytes) {
-        fprintf(s, ">");
+        s.put('>');
         rawe += edgeBytes;
       }
       rawd += pbytes;
     } // for i
-    fprintf(s, "]");
+    s.put(']');
   }
 
   // show extra header stuff
@@ -272,14 +272,14 @@ void MEDDLY::compact_storage
 
 // ******************************************************************
 void MEDDLY::compact_storage
-::writeNode(FILE* s, node_address addr, const node_handle* map) const
+::writeNode(output &s, node_address addr, const node_handle* map) const
 {
   int pbytes, ibytes, size;
   getStyleOf(addr, pbytes, ibytes);
   unsigned char* rawd = 0;
   unsigned char* rawe = 0;
 
-  th_fprintf(s, "%d\n", sizeOf(addr));
+  s << long(sizeOf(addr)) << "\n";
   if (sizeOf(addr) < 0) {
     //
     // Sparse node
@@ -291,14 +291,14 @@ void MEDDLY::compact_storage
     //
     // write indexes
     //
-    th_fprintf(s, "\t");
+    s.put('\t');
     for (int z=0; z<size; z++) {
       int index;
       dataToUnsigned(rawi, ibytes, index);
       rawi += ibytes;
-      th_fprintf(s, " %d", index);
+      s << " " << long(index);
     }
-    th_fprintf(s, "\n\t");
+    s << "\n\t";
   } else {
     //
     // Full node
@@ -312,7 +312,7 @@ void MEDDLY::compact_storage
   // write down pointers
   //
   for (int z=0; z<size; z++) {
-    th_fprintf(s, " ");
+    s.put(' ');
     node_handle down;
     dataToDown(rawd, pbytes, down);
     rawd += pbytes;
@@ -320,7 +320,7 @@ void MEDDLY::compact_storage
       getParent()->writeTerminal(s, down);
     } else {
       if (map) down = map[down];
-      th_fprintf(s, "%ld", long(down));
+      s.put(long(down));
     }
   }
 
@@ -328,14 +328,14 @@ void MEDDLY::compact_storage
   // write edges
   //
   if (edgeBytes) {
-    th_fprintf(s, "\n\t");
+    s << "\n\t";
     for (int z=0; z<size; z++) {
-      th_fprintf(s, " ");
+      s.put(' ');
       getParent()->showEdgeValue(s, rawe);
       rawe += edgeBytes;
     }
   } 
-  th_fprintf(s, "\n");
+  s.put('\n');
 
   // write extra header stuff
   // this goes LAST so we can read it into a built node
@@ -722,14 +722,14 @@ int MEDDLY::compact_storage::smallestNode() const
 
 // ******************************************************************
 
-void MEDDLY::compact_storage::dumpInternalInfo(FILE* s) const
+void MEDDLY::compact_storage::dumpInternalInfo(output &s) const
 {
   holeManager->dumpInternalInfo(s);
 }
 
 // ******************************************************************
 
-void MEDDLY::compact_storage::dumpInternalTail(FILE* s) const
+void MEDDLY::compact_storage::dumpInternalTail(output &s) const
 {
   holeManager->dumpInternalTail(s);
 }
@@ -738,41 +738,46 @@ void MEDDLY::compact_storage::dumpInternalTail(FILE* s) const
 
 MEDDLY::node_address 
 MEDDLY::compact_storage
-::dumpInternalNode(FILE *s, node_address a, unsigned flags) const
+::dumpInternalNode(output &s, node_address a, unsigned flags) const
 {
   if (a<=0) return 0;
   int awidth = digits(getParent()->getLastNode());
   if (a > holeManager->lastSlot()) {
-    fprintf(s, "%*ld : free slots\n", awidth, long(a));
+    s.put(long(a), awidth);
+    s << " : free slots\n";
     return 0;
   }
   MEDDLY_DCASSERT(data);
   if (data[a]<0) { 
     // hole
     if (flags & 0x02) {
-      fprintf(s, "%*ld : ", awidth, a);
+      s.put(long(a), awidth);
+      s << " : ";
       holeManager->dumpHole(s, a);
     }
     a = holeManager->chunkAfterHole(a);
   } else {
     // proper node
     if (flags & 0x01) {
-      fprintf(s, "%*ld : ", awidth, a);
+      s.put(long(a), awidth);
+      s << " : ";
       int nElements = activeNodeActualSlots(a) - 1;
-      fprintf(s, "[in %ld, next %ld", long(data[a]), long(data[a+1]));
+      s << "[in " << long(data[a]) << ", next " << long(data[a+1]);
       int sz = sizeOf(a);
-      fprintf(s, ", size %d", sz);
+      s << ", size " << long(sz);
       unsigned char x = rawStyleOf(a);
-      fprintf(s, ", style %c%c%c:%c%c:%c%c%c",
-        (x & 0x80) ? '1' : '0',
-        (x & 0x40) ? '1' : '0',
-        (x & 0x20) ? '1' : '0',
-        (x & 0x10) ? '1' : '0',
-        (x & 0x08) ? '1' : '0',
-        (x & 0x04) ? '1' : '0',
-        (x & 0x02) ? '1' : '0',
-        (x & 0x01) ? '1' : '0'
-      );
+      s << ", style ";
+      s.put( (x & 0x80) ? '1' : '0' );
+      s.put( (x & 0x40) ? '1' : '0' );
+      s.put( (x & 0x20) ? '1' : '0' );
+      s.put(':');
+      s.put( (x & 0x10) ? '1' : '0' );
+      s.put( (x & 0x08) ? '1' : '0' );
+      s.put(':');
+      s.put( (x & 0x04) ? '1' : '0' );
+      s.put( (x & 0x02) ? '1' : '0' );
+      s.put( (x & 0x01) ? '1' : '0' );
+
       fprintRaw(s, ", uh", UH(a), unhashedBytes);
       fprintRaw(s, ", hh", HH(a), hashedBytes);
 
@@ -792,7 +797,7 @@ MEDDLY::compact_storage
 
       unsigned char* tail = (unsigned char*) (data + a + nElements);
       fprintRaw(s, ", pad", end, tail-end);
-      fprintf(s, ", tail %ld]\n", long(data[a+nElements]));
+      s << ", tail " << long(data[a+nElements]) << "]\n";
     }
     a += activeNodeActualSlots(a);
   }

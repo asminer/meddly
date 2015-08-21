@@ -266,75 +266,79 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator/=(const dd_edge& e)
 
 
 // Display the edge information.
-void MEDDLY::dd_edge::show(FILE* strm, int verbosity) const
+void MEDDLY::dd_edge::show(output &strm, int verbosity) const
 {
   expert_forest* eParent = smart_cast<expert_forest*>(parent);
-  fprintf(strm, "(Forest Addr: %p, ", parent);
+  strm << "(Forest Addr: ";
+  strm.put_hex(long(parent));
   
-  fprintf(strm, "transparent: ");
+  strm << "transparent: ";
   eParent->showTerminal(strm, eParent->getTransparentNode());
-  fprintf(strm, ", ");
+  strm << ", ";
   
   if (eParent->isTerminalNode(node)) {
-    fprintf(strm, "node: ");
+    strm << "node: ";
     eParent->showTerminal(strm, node);
-    fprintf(strm, "*, ");
+    strm << "*, ";
   }
   else {
-    fprintf(strm, "node: %ld, ", long(node));
+    strm << "node: " << long(node) << ", ";
   }
   if (!eParent->isMultiTerminal()) {
     if (eParent->getRangeType() == forest::REAL) {
       float ev;
       getEdgeValue(ev);
-      fprintf(strm, "value: %f, ", ev);
+      strm << "value: " << ev << ", ";
     } else {
       int iv;
       getEdgeValue(iv);
-      fprintf(strm, "value: %d, ", iv);
+      strm << "value: " << iv << ", ";
     }
   }
-  fprintf(strm, "level: %d)\n", getLevel());
+  strm << "level: " << getLevel() << ")\n";
 
   if (verbosity == 2 || verbosity == 3) {
     if (eParent->isMultiTerminal()) {
-      fprintf(strm, "MT");
+      strm.put("MT");
     } 
     if (eParent->isEVPlus()) {
-      fprintf(strm, "EV+");
+      strm.put("EV+");
     }
     if (eParent->isEVTimes()) {
-      fprintf(strm, "EV*");
+      strm.put("EV*");
     }
     if (eParent->isForRelations()) {
-      fprintf(strm, "MxD");
+      strm.put("MxD");
     } else {
-      fprintf(strm, "MDD");
+      strm.put("MDD");
     }
-    fprintf(strm, " rooted at this node:\n");
+    strm.put(" rooted at this node:\n");
     eParent->showNodeGraph(strm, &node, 1);
   }
   if (verbosity == 1 || verbosity == 3) {
-    fprintf(strm, "Cardinality of node %ld: %0.8e\n", long(node), getCardinality());
+    strm << "Cardinality of node " << long(node) << ": ";
+    strm.put(getCardinality(), 0, 8, 'e');
+    strm.put('\n');
   }
 }
 
-void MEDDLY::dd_edge::write(FILE* s, const node_handle* map) const
+void MEDDLY::dd_edge::write(output &s, const node_handle* map) const
 {
   expert_forest* eParent = smart_cast<expert_forest*>(parent);
 
   if (!eParent->isMultiTerminal()) {
     eParent->writeEdgeValue(s, &raw_value);
-    th_fprintf(s, " ");
+    s.put(' ');
   }
   if (node > 0) {
-    th_fprintf(s, "%ld\n", long(map[node]));
+    s.put(long(map[node]));
   } else {
-    th_fprintf(s, "%ld\n", long(node));
+    s.put(long(node));
   }
+  s.put('\n');
 }
 
-void MEDDLY::dd_edge::read(forest* p, FILE* s, const node_handle* map)
+void MEDDLY::dd_edge::read(forest* p, input &s, const node_handle* map)
 {
   destroy();
 
@@ -342,13 +346,12 @@ void MEDDLY::dd_edge::read(forest* p, FILE* s, const node_handle* map)
   expert_forest* eParent = smart_cast<expert_forest*>(parent);
 
   if (!eParent->isMultiTerminal()) {
-    stripWS(s);
+    s.stripWS();
     eParent->readEdgeValue(s, &raw_value);
   }
 
-  stripWS(s);
-  long lnode;
-  th_fscanf(1, s, "%ld", &lnode);
+  s.stripWS();
+  long lnode = s.get_integer();
   if (lnode <= 0) {
     node = lnode;
   } else {

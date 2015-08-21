@@ -119,10 +119,10 @@ class MEDDLY::compact_storage : public node_storage {
     virtual ~compact_storage();
 
     virtual void collectGarbage(bool shrink);
-    virtual void reportStats(FILE* s, const char* pad, unsigned flags) const;
+    virtual void reportStats(output &s, const char* pad, unsigned flags) const;
 
-    virtual void showNode(FILE* s, node_address addr, bool verb) const;
-    virtual void writeNode(FILE* s, node_address addr, const node_handle* map)
+    virtual void showNode(output &s, node_address addr, bool verb) const;
+    virtual void writeNode(output &s, node_address addr, const node_handle* map)
     const;
 
     virtual node_address makeNode(node_handle p, const node_builder &nb, 
@@ -149,10 +149,10 @@ class MEDDLY::compact_storage : public node_storage {
     virtual void localInitForForest(const expert_forest* f);
     virtual void updateData(node_handle* d);
     virtual int smallestNode() const;
-    virtual void dumpInternalInfo(FILE*) const;
+    virtual void dumpInternalInfo(output &) const;
     virtual node_address 
-    dumpInternalNode(FILE*, node_address addr, unsigned flags) const;
-    virtual void dumpInternalTail(FILE*) const;
+    dumpInternalNode(output &, node_address addr, unsigned flags) const;
+    virtual void dumpInternalTail(output &) const;
 
   // --------------------------------------------------------
   // |  Misc. helpers.

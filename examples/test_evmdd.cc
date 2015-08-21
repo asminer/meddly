@@ -57,6 +57,7 @@ using namespace MEDDLY;
 // verbose: 0: minimum, 2: maximum
 const int verbose = 0;
 
+FILE_output meddlyout(stdout);
 
 #ifdef USE_EXPERT_INTERFACE
 
@@ -132,11 +133,11 @@ dd_edge test_evmdd(forest* evmdd, const binary_opname* opCode,
 
   if (verbose > 0) {
     printf("A: ");
-    A.show(stdout, 2);
+    A.show(meddlyout, 2);
     printf("\n\nB: ");
-    B.show(stdout, 2);
+    B.show(meddlyout, 2);
     printf("\n\nC: ");
-    C.show(stdout, 2);
+    C.show(meddlyout, 2);
     printf("\n\n");
   }
 
@@ -159,7 +160,7 @@ dd_edge test_evmdd_plus(forest* evmdd,
     B += A;
     if (verbose > 0) {
       printf(" done.\n");
-      A.show(stdout, 2);
+      A.show(meddlyout, 2);
     }
   }
 
@@ -312,7 +313,7 @@ int main(int argc, char *argv[])
   evmdd->createEdge(element, terms, nElements, result);
   start.note_time();
   printf("Batch Addition:\n");
-  if (verbose > 0) result.show(stdout, 2);
+  if (verbose > 0) result.show(meddlyout, 2);
 
   printf("Time interval: %.4e seconds\n",
       start.get_last_interval()/1000000.0);
@@ -328,7 +329,7 @@ int main(int argc, char *argv[])
   dd_edge result1 = test_evmdd_plus(evmdd, element, terms, nElements);
   start.note_time();
   printf("Sequential Addition:\n");
-  if (verbose > 0) result1.show(stdout, 2);
+  if (verbose > 0) result1.show(meddlyout, 2);
 
   printf("Time interval: %.4e seconds\n",
       start.get_last_interval()/1000000.0);
@@ -342,7 +343,7 @@ int main(int argc, char *argv[])
     assert(compute_manager::SUCCESS ==
         getComputeManager()->apply(compute_manager::EQUAL,
           result, result1, result2));
-    result2.show(stdout, 2);
+    result2.show(meddlyout, 2);
 #endif
   }
 #endif
@@ -359,12 +360,12 @@ int main(int argc, char *argv[])
 
   if (verbose > 1) {
     printf("\n\nForest Info:\n");
-    evmdd->showInfo(stdout);
+    evmdd->showInfo(meddlyout);
   }
 
 #if 0
   printf("EVMDD: ");
-  result.show(stdout, 2);
+  result.show(meddlyout, 2);
 #endif
 
   if (true) {

@@ -234,54 +234,54 @@ void MEDDLY::hm_grid::recycleChunk(node_address addr, int slots)
 
 // ******************************************************************
 
-void MEDDLY::hm_grid::dumpInternalInfo(FILE* s) const
+void MEDDLY::hm_grid::dumpInternalInfo(output &s) const
 {
-  fprintf(s, "Last slot used: %ld\n", long(lastSlot()));
-  fprintf(s, "Total hole slots: %ld\n", holeSlots());
-  fprintf(s, "large_holes: %ld\n", long(large_holes));
-  fprintf(s, "Grid: top = %ld bottom = %ld\n", long(holes_top), long(holes_bottom));
+  s << "Last slot used: " << long(lastSlot()) << "\n";
+  s << "Total hole slots: " <<  holeSlots() << "\n";
+  s << "large_holes: " << long(large_holes) << "\n";
+  s << "Grid: top = " << long(holes_top) << " bottom = " << long(holes_bottom) << "\n";
 }
 
 // ******************************************************************
 
-void MEDDLY::hm_grid::dumpHole(FILE* s, node_address a) const
+void MEDDLY::hm_grid::dumpHole(output &s, node_address a) const
 {
   MEDDLY_DCASSERT(data);
   MEDDLY_CHECK_RANGE(1, a, lastSlot());
-  fprintf(s, "[%ld", long(data[a]));
+  s << '[' << long(data[a]);
   if (-data[a] <  smallestChunk()) {
     // not tracked
     for (int i=1; i<-data[a]; i++) {
-      fprintf(s, ", %ld", long(data[a+i]));
+      s << ", " << long(data[a+i]);
     }
-    fprintf(s, "]\n");
+    s << "]\n";
   } else {
     // tracked hole
     if (isIndexHole(a)) {
       node_handle up, down, next;
       getIndex(a, up, down, next);
-      fprintf(s, ", u: %ld, d: %ld, n: %ld, ", long(up), long(down), long(next));
+      s << ", u: " << long(up) << ", d: " << long(down) << ", n: " << long(next) << ", ";
     } else {
       node_handle next, prev;
       getMiddle(a, prev, next);
-      fprintf(s, ", non-index, p: %ld, n: %ld, ", long(prev), long(next));
+      s << ", non-index, p: " << long(prev) << ", n: " << long(next) << ", ";
     }
     long aN = chunkAfterHole(a)-1;
-    fprintf(s, "..., %ld]\n", long(data[aN]));
+    s << "..., " << long(data[aN]) << "]\n";
   }
 }
 
 // ******************************************************************
 
 void MEDDLY::hm_grid
-::reportStats(FILE* s, const char* pad, unsigned flags) const
+::reportStats(output &s, const char* pad, unsigned flags) const
 {
   static unsigned HOLE_MANAGER =
     expert_forest::HOLE_MANAGER_STATS | expert_forest::HOLE_MANAGER_DETAILED;
 
   if (! (flags & HOLE_MANAGER)) return;
 
-  fprintf(s, "%sStats for grid hole management\n", pad);
+  s << pad << "Stats for grid hole management\n";
 
   holeman::reportStats(s, pad, flags);
 
@@ -308,16 +308,19 @@ void MEDDLY::hm_grid
 
   // Display the histogram
 
-  fprintf(s, "%s    Hole Chains (size, count):\n", pad);
+  s << pad << "    Hole Chains (size, count):\n";
   for (std::map<int, int>::iterator iter = chainLengths.begin();
       iter != chainLengths.end(); ++iter)
     {
-      if (iter->first<0)
-        fprintf(s, "%s\tlarge: %d\n", pad, iter->second);
-      else
-        fprintf(s, "%s\t%5d: %d\n", pad, iter->first, iter->second);
+      if (iter->first<0) {
+        s << pad << "\tlarge: " << iter->second << "\n";
+      } else {
+        s << pad << "\t";
+        s.put(long(iter->first), 5);
+        s << ": " << iter->second << "\n";
+      }
     }
-  fprintf(s, "%s    End of Hole Chains\n", pad);
+  s << pad << "    End of Hole Chains\n";
 }
 
 // ******************************************************************

@@ -71,17 +71,17 @@ void MEDDLY::mt_mdd_bool
   term = bool_Tencoder::handle2value(evaluateRaw(f, vlist));
 }
 
-void MEDDLY::mt_mdd_bool::showTerminal(FILE* s, node_handle tnode) const
+void MEDDLY::mt_mdd_bool::showTerminal(output &s, node_handle tnode) const
 {
   bool_Tencoder::show(s, tnode);
 }
 
-void MEDDLY::mt_mdd_bool::writeTerminal(FILE* s, node_handle tnode) const
+void MEDDLY::mt_mdd_bool::writeTerminal(output &s, node_handle tnode) const
 {
   bool_Tencoder::write(s, tnode);
 }
 
-MEDDLY::node_handle MEDDLY::mt_mdd_bool::readTerminal(FILE* s)
+MEDDLY::node_handle MEDDLY::mt_mdd_bool::readTerminal(input &s)
 {
   return bool_Tencoder::read(s);
 }

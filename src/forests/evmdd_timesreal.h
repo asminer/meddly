@@ -83,9 +83,9 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
 
   protected:
     virtual void normalize(node_builder &nb, float& ev) const;
-    virtual void showEdgeValue(FILE* s, const void* edge) const;
-    virtual void writeEdgeValue(FILE* s, const void* edge) const;
-    virtual void readEdgeValue(FILE* s, void* edge);
+    virtual void showEdgeValue(output &s, const void* edge) const;
+    virtual void writeEdgeValue(output &s, const void* edge) const;
+    virtual void readEdgeValue(input &s, void* edge);
     virtual const char* codeChars() const;
 
   protected:

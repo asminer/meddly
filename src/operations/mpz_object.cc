@@ -29,6 +29,13 @@
 #include "../defines.h"
 #include "mpz_object.h"
 
+
+// ******************************************************************
+// *                                                                *
+// *                       mpz_object methods                       *
+// *                                                                *
+// ******************************************************************
+
 MEDDLY::mpz_object::mpz_object()
 {
   mpz_init(value);
@@ -54,6 +61,64 @@ MEDDLY::opnd_type MEDDLY::mpz_object::getType()
 {
   return HUGEINT;
 }
+
+void MEDDLY::mpz_object::show(output &strm) const
+{
+  // Make sure temporary string has enough space
+  int digits = mpz_sizeinbase(value, 10)+2;
+  enlargeBuffer(digits);
+  // Write into a string
+  mpz_get_str(buffer, 10, value);
+  // Display the string
+  strm.put(buffer);
+}
+
+void MEDDLY::mpz_object::clearBuffer()
+{
+  free(buffer);
+  buffer = 0;
+  bufsize = 0;
+}
+
+void MEDDLY::mpz_object::enlargeBuffer(int digits)
+{
+  if (digits > bufsize) {
+    int newbufsize = (1+digits / 1024) * 1024;
+    if (newbufsize <= 0) throw error(error::MISCELLANEOUS);
+    char* newbuf = (char*) realloc(buffer, newbufsize);
+    if (0==newbuf) throw error(error::INSUFFICIENT_MEMORY);
+    buffer = newbuf;
+    bufsize = newbufsize;
+    if (0==the_mpz_cleanup) the_mpz_cleanup = new mpz_cleanup();
+  }
+}
+
+MEDDLY::mpz_object::mpz_cleanup::mpz_cleanup() : cleanup_procedure()
+{
+}
+
+MEDDLY::mpz_object::mpz_cleanup::~mpz_cleanup()
+{
+}
+
+void MEDDLY::mpz_object::mpz_cleanup::execute()
+{
+  mpz_object::clearBuffer();
+  fprintf(stderr, "called mpz_object::mpz_cleanup::execute()\n");
+}
+
+MEDDLY::mpz_object::mpz_cleanup* MEDDLY::mpz_object::the_mpz_cleanup = 0;
+char* MEDDLY::mpz_object::buffer = 0;
+int   MEDDLY::mpz_object::bufsize = 0;
+
+
+
+// ******************************************************************
+// *                                                                *
+// *                      mpz_object functions                      *
+// *                                                                *
+// ******************************************************************
+
 
 MEDDLY::ct_object& MEDDLY::get_mpz_wrapper()
 {

@@ -236,50 +236,48 @@ void MEDDLY::hm_heap::recycleChunk(node_address addr, int slots)
 
 // ******************************************************************
 
-void MEDDLY::hm_heap::dumpInternalInfo(FILE* s) const
+void MEDDLY::hm_heap::dumpInternalInfo(output &s) const
 {
-  fprintf(s, "Last slot used: %ld\n", long(lastSlot()));
-  fprintf(s, "Total hole slots: %ld\n", holeSlots());
-  fprintf(s, "large_holes: %ld\n", long(large_holes));
-  fprintf(s, "large_holes_size: %ld\n", long(large_holes_size));
-  fprintf(s, "Grid: top = %ld bottom = %ld\n", long(holes_top), long(holes_bottom));
+  s << "Last slot used: " << long(lastSlot()) << "\n";
+  s << "Total hole slots: " << holeSlots() << "\n";
+  s << "large_holes: " << long(large_holes) << "\n";
+  s << "large_holes_size: " << long(large_holes_size) << "\n";
+  s << "Grid: top = " << long(holes_top) << " bottom = " << long(holes_bottom) << "\n";
 }
 
 // ******************************************************************
 
-void MEDDLY::hm_heap::dumpHole(FILE* s, node_address a) const
+void MEDDLY::hm_heap::dumpHole(output &s, node_address a) const
 {
   MEDDLY_DCASSERT(data);
   MEDDLY_CHECK_RANGE(1, a, lastSlot());
-  fprintf(s, "[%ld, ", long(data[a]));
+  s << '[' << long(data[a]) << ", ";
   if (isIndexHole(a)) {
     node_handle up, down, root, size;
     getIndex(a, up, down, root, size);
-    fprintf(s, "u: %ld, d: %ld, r: %ld, s: %ld", 
-      long(up), long(down), long(root), long(size)
-    );
+    s << "u: " << long(up) << ", d: " << long(down) << ", r: " 
+      << long(root) << ", s: " << long(size);
   } else {
     node_handle left, right, parent, id;
     getHeapNode(a, id, parent, left, right);
-    fprintf(s, "l: %ld, r: %ld, p: %ld, id: %ld",
-      long(left), long(right), long(parent), long(id)
-    );
+    s << "l: " << long(left) << ", r: " << long(right) << ", p: " 
+      << long(parent) << ", id: " << long(id);
   }
   long aN = chunkAfterHole(a)-1;
-  fprintf(s, ", ..., %ld]\n", long(data[aN]));
+  s << ", ..., " << long(data[aN]) << "]\n";
 }
 
 // ******************************************************************
 
 void MEDDLY::hm_heap
-::reportStats(FILE* s, const char* pad, unsigned flags) const
+::reportStats(output &s, const char* pad, unsigned flags) const
 {
   static unsigned HOLE_MANAGER =
     expert_forest::HOLE_MANAGER_STATS | expert_forest::HOLE_MANAGER_DETAILED;
 
   if (! (flags & HOLE_MANAGER)) return;
 
-  fprintf(s, "%sStats for grid hole management\n", pad);
+  s << pad << "Stats for grid hole management\n";
 
   holeman::reportStats(s, pad, flags);
 

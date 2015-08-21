@@ -83,7 +83,7 @@ class MEDDLY::saturation_by_events_op : public unary_operation {
 
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(FILE* strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData) const;
 
   protected:
     inline compute_table::search_key* 
@@ -125,7 +125,7 @@ class MEDDLY::common_dfs_by_events_mt : public specialized_operation {
 
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(FILE* strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData) const;
     virtual void compute(const dd_edge& a, dd_edge &c);
     virtual void saturateHelper(node_builder& mdd) = 0;
 
@@ -354,13 +354,13 @@ void MEDDLY::saturation_by_events_op::discardEntry(const node_handle* data)
   }
 }
 
-void MEDDLY::saturation_by_events_op::showEntry(FILE* strm,
+void MEDDLY::saturation_by_events_op::showEntry(output &strm,
   const node_handle* data) const
 {
   if (argF->isFullyReduced()) {
-    fprintf(strm, "[%s(%d, %d): %d]", getName(), data[0], data[1], data[2]);
+    strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): " << long(data[2]) << "]";
   } else {
-    fprintf(strm, "[%s(%d): %d]", getName(), data[0], data[1]);
+    strm << "[" << getName() << "(" << long(data[0]) << "): " << long(data[1]) << "]";
   }
 }
 
@@ -414,10 +414,10 @@ void MEDDLY::common_dfs_by_events_mt::discardEntry(const node_handle* data)
   resF->uncacheNode(data[2]);
 }
 
-void MEDDLY::common_dfs_by_events_mt::showEntry(FILE* strm,
+void MEDDLY::common_dfs_by_events_mt::showEntry(output &strm,
   const node_handle* data) const
 {
-  fprintf(strm, "[%s(%d, %d): %d]", getName(), data[0], data[1], data[2]);
+  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): " << long(data[2]) << "]";
 }
 
 void MEDDLY::common_dfs_by_events_mt

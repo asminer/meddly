@@ -84,6 +84,9 @@ namespace MEDDLY {
   class node_reader;
   class node_builder;
 
+  // EXPERIMENTAL - matrix wrappers for unprimed, primed pairs of nodes
+  class unpacked_matrix;
+
   // Actual node storage
   struct node_header;
   class node_storage;
@@ -527,8 +530,8 @@ class MEDDLY::expert_domain : public domain {
     */
     void shrinkVariableBound(int vh, int b, bool force);
 
-    virtual void write(FILE* s) const;
-    virtual void read(FILE* s);
+    virtual void write(output &s) const;
+    virtual void read(input &s);
 
   protected:
     ~expert_domain();
@@ -568,7 +571,7 @@ class MEDDLY::node_reader {
     void clear();
 
     /// Display this node
-    void show(FILE* s, const expert_forest* parent, bool verb) const;
+    void show(output &s, const expert_forest* parent, bool verb) const;
 
     /// Get a pointer to the hashed header data.
     const void* HHptr() const;
@@ -703,7 +706,7 @@ class MEDDLY::node_builder {
     node_builder();
     ~node_builder();
     void init(int k, const expert_forest* p);
-    void show(FILE* s, bool verb) const;
+    void show(output &s, bool verb) const;
     bool hasEdges() const;
     int edgeBytes() const;
     void resize(int s);
@@ -777,6 +780,130 @@ class MEDDLY::node_builder {
 
 
 
+
+// ******************************************************************
+// *                                                                *
+// *                     unpacked_matrix  class                     *
+// *                                                                *
+// ******************************************************************
+
+/** Class for unpacked matrices: unprimed, primed "2 levels" of nodes.
+    Implemented in node_wrappers.cc.
+
+    TBD : inline what we should
+*/
+class MEDDLY::unpacked_matrix {
+
+  public:
+    /**
+      Different internal storage types.
+      Affects the allowed read/write access methods.
+    */
+    enum storage_type {
+      FULL_FULL     = 0,  // Full storage; acts like a 2-d array
+      FULL_SPARSE   = 1,  // Compressed row storage; each row is sparse
+      SPARSE_SPARSE = 2   // Coordinate list storage; list of (i, j, down)
+    };
+
+  public:
+    unpacked_matrix();
+    ~unpacked_matrix();
+
+    /**
+        An instance must be initialized, using init(), before use.
+        Ties the instance to a particular level of a forest.
+        Can be re-initialized with a different level or forest.
+          @param  k   Level.
+          @param  p   Forest.
+    */
+    void init(int k, const expert_forest* p);
+    
+    /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+      Basic matrix information
+        
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+    /// How the matrix can be accessed.
+    storage_type howStored() const;
+
+    /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+      Methods for filling the unpacked matrix from nodes,
+      primarily used by forests.
+        
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+    /// Clear node and use FULL_FULL storage
+    void initFullFull(int rows, int cols);
+
+    /// Clear node and use FULL_SPARSE storage
+    void initFullSparse(int rows, int maxnzs);
+
+    /// Clear node and use SPARSE_SPARSE storage
+    void initSparseSparse(int maxnzs);
+
+    /** Add a non-zero element to the matrix.
+        Must be called in lexicographical order of rows, columns.
+        I.e., enumerate the rows in increasing order, and for each row,
+        enumerate the columns in increasing order.
+    */
+    void appendElement(int i, int j, node_handle d);
+
+    // tbd - edge version of appendElement.
+
+    /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+      FULL_FULL storage access:  methods for reading and modifying
+      matrix entries.
+        
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+    node_handle down(int i, int j) const;
+
+    void set_down(int i, int j, node_handle d);
+
+
+    // tbd - edges?
+
+
+    /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+      FULL_SPARSE and SPARSE_SPARSE storage access:  
+      methods for reading matrix entries.
+        
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+    /** 
+      For FULL_SPARSE: Get nonzero index for first element in row i.
+      Equivalently, get one plus the nonzero index for last element
+      in row i-1.
+        @param  i   Row index, between 0 and number of rows (inclusive).
+        @return     A nonzero index, can be used in methods col_index()
+                    and down().
+    */
+    int row_start(int i) const; 
+
+    /// For SPARSE_SPARSE: Get row for nonzero number z.
+    int row_index(int z) const;
+
+    /// Get column for nonzero number z.
+    int col_index(int z) const;
+
+    /// Get downward pointer for nonzero number z.
+    node_handle down(int z) const;
+
+    // tbd - edges?
+
+  private:
+    /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+      Implementation details.  Nothing to see here.
+        
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+
+};  // end of unpacked_matrix class
 
 // ******************************************************************
 // *                                                                *
@@ -894,7 +1021,7 @@ class MEDDLY::node_storage {
                           each output line.
           @param  flags   Controls what is displayed.
     */
-    virtual void reportStats(FILE* s, const char* pad, unsigned flags) const = 0;
+    virtual void reportStats(output &s, const char* pad, unsigned flags) const = 0;
 
     /** Write a node in human-readable format.
 
@@ -905,7 +1032,7 @@ class MEDDLY::node_storage {
         @param  addr    Address of the node we care about.
         @param  details Should we show "details" or not.
     */
-    virtual void showNode(FILE* s, node_address addr, bool details) const = 0;
+    virtual void showNode(output &s, node_address addr, bool details) const = 0;
 
     /** Write a node in machine-readable format.
 
@@ -918,7 +1045,7 @@ class MEDDLY::node_storage {
                         Allows us to renumber nodes as we write them.
     */
     virtual void
-        writeNode(FILE* s, node_address addr, const node_handle* map) const;
+        writeNode(output &s, node_address addr, const node_handle* map) const;
 
     /** Dump the internal storage details.
         Primarily used for debugging.
@@ -928,7 +1055,7 @@ class MEDDLY::node_storage {
                             0x01  Show active memory
                             0x02  Show memory "holes"
     */
-    void dumpInternal(FILE* s, unsigned flags) const;
+    void dumpInternal(output &s, unsigned flags) const;
 
     /** Allocate space for, and store, a node.
         I.e., create a new node that is a copy of the given one.
@@ -1071,7 +1198,7 @@ class MEDDLY::node_storage {
 
   protected:
     /// Dump information not related to individual nodes.
-    virtual void dumpInternalInfo(FILE*) const = 0;
+    virtual void dumpInternalInfo(output &s) const = 0;
 
     /** Dump the node/hole information at the given address.
           @param  s       Output stream to use
@@ -1080,11 +1207,11 @@ class MEDDLY::node_storage {
 
           @return   Next interesting address.
     */
-    virtual node_address dumpInternalNode(FILE* s, node_address addr,
+    virtual node_address dumpInternalNode(output &s, node_address addr,
                                           unsigned flags) const = 0;
 
     /// Dump final info (after node info)
-    virtual void dumpInternalTail(FILE*) const = 0;
+    virtual void dumpInternalTail(output &s) const = 0;
 
     // Hooks from other classes, so we don't need to make
     // all the derived classes "friends".
@@ -1213,18 +1340,18 @@ class MEDDLY::expert_forest: public forest
       public:
         static node_handle value2handle(bool v);
         static bool handle2value(node_handle h);
-        static void show(FILE* s, node_handle h);
-        static void write(FILE* s, node_handle h);
-        static node_handle read(FILE* s);
+        static void show(output &s, node_handle h);
+        static void write(output &s, node_handle h);
+        static node_handle read(input &s);
     };
     /** Encoding for integers into (terminal) node handles */
     class int_Tencoder {
       public:
         static node_handle value2handle(int v);
         static int handle2value(node_handle h);
-        static void show(FILE* s, node_handle h);
-        static void write(FILE* s, node_handle h);
-        static node_handle read(FILE* s);
+        static void show(output &s, node_handle h);
+        static void write(output &s, node_handle h);
+        static node_handle read(input &s);
     };
     /** Encoding for floats into (terminal) node handles */
     class float_Tencoder {
@@ -1235,9 +1362,9 @@ class MEDDLY::expert_forest: public forest
       public:
         static node_handle value2handle(float v);
         static float handle2value(node_handle h);
-        static void show(FILE* s, node_handle h);
-        static void write(FILE* s, node_handle h);
-        static node_handle read(FILE* s);
+        static void show(output &s, node_handle h);
+        static void write(output &s, node_handle h);
+        static node_handle read(input &s);
     };
     // preferred way to encode and decode edge values
     // (classes so we can use them in template functions)
@@ -1247,9 +1374,9 @@ class MEDDLY::expert_forest: public forest
         static size_t edgeBytes();
         static void writeValue(void* ptr, int val);
         static void readValue(const void* ptr, int &val);
-        static void show(FILE* s, const void* ptr);
-        static void write(FILE* s, const void* ptr);
-        static void read(FILE* s, void* ptr);
+        static void show(output &s, const void* ptr);
+        static void write(output &s, const void* ptr);
+        static void read(input &s, void* ptr);
     };
     /** Encoding for floats into (edge value) node handles */
     class float_EVencoder {
@@ -1257,9 +1384,9 @@ class MEDDLY::expert_forest: public forest
         static size_t edgeBytes();
         static void writeValue(void* ptr, float val);
         static void readValue(const void* ptr, float &val);
-        static void show(FILE* s, const void* ptr);
-        static void write(FILE* s, const void* ptr);
-        static void read(FILE* s, void* ptr);
+        static void show(output &s, const void* ptr);
+        static void write(output &s, const void* ptr);
+        static void read(input &s, void* ptr);
     };
 
     /** Constructor.
@@ -1418,9 +1545,9 @@ class MEDDLY::expert_forest: public forest
           @param  flags   Switches to control output;
                           see constants "SHOW_DETAILED", etc.
     */
-    void dump(FILE *s, unsigned int flags) const;
-    void dumpInternal(FILE *s) const;
-    void dumpUniqueTable(FILE *s) const;
+    void dump(output &s, unsigned int flags) const;
+    void dumpInternal(output &s) const;
+    void dumpUniqueTable(output &s) const;
     void validateIncounts(bool exact);
     void countNodesByLevel(long* active) const;
 
@@ -1468,10 +1595,10 @@ class MEDDLY::expert_forest: public forest
 
           @return true, iff we displayed anything
     */
-    bool showNode(FILE* s, node_handle node, unsigned int flags = 0) const;
+    bool showNode(output &s, node_handle node, unsigned int flags = 0) const;
 
     /// Show all the nodes in the subgraph below the given nodes.
-    void showNodeGraph(FILE* s, const node_handle* node, int n) const;
+    void showNodeGraph(output &s, const node_handle* node, int n) const;
 
 
     /** Show various stats for this forest.
@@ -1482,7 +1609,7 @@ class MEDDLY::expert_forest: public forest
                           use bitwise or to combine values.
                           For example, BASIC_STATS | FOREST_STATS.
     */
-    void reportStats(FILE* s, const char* pad, unsigned flags) const;
+    void reportStats(output &s, const char* pad, unsigned flags) const;
 
 
     /// Compute a hash for a node.
@@ -1710,11 +1837,11 @@ class MEDDLY::expert_forest: public forest
   // virtual in the base class, but implemented here.
   // See meddly.h for descriptions of these methods.
 
-    virtual void writeEdges(FILE* s, const dd_edge* E, int n) const;
-    virtual void readEdges(FILE* s, dd_edge* E, int n);
+    virtual void writeEdges(output &s, const dd_edge* E, int n) const;
+    virtual void readEdges(input &s, dd_edge* E, int n);
     virtual void garbageCollect();
     virtual void compactMemory();
-    virtual void showInfo(FILE* strm, int verbosity);
+    virtual void showInfo(output &strm, int verbosity);
 
   // ------------------------------------------------------------
   // abstract virtual, must be overridden.
@@ -1797,13 +1924,13 @@ class MEDDLY::expert_forest: public forest
           @param  s       Stream to write to.
           @param  tnode   Handle to a terminal node.
     */
-    virtual void showTerminal(FILE* s, node_handle tnode) const;
+    virtual void showTerminal(output &s, node_handle tnode) const;
 
     /** Write a terminal node in machine-readable format.
           @param  s       Stream to write to.
           @param  tnode   Handle to a terminal node.
     */
-    virtual void writeTerminal(FILE* s, node_handle tnode) const;
+    virtual void writeTerminal(output &s, node_handle tnode) const;
 
     /** Read a terminal node in machine-readable format.
           @param  s       Stream to read from.
@@ -1811,61 +1938,61 @@ class MEDDLY::expert_forest: public forest
           @throws         An invalid file exception if the stream does not
                           contain a valid terminal node.
     */
-    virtual node_handle readTerminal(FILE* s);
+    virtual node_handle readTerminal(input &s);
 
     /** Show an edge value.
           @param  s       Stream to write to.
           @param  edge    Pointer to edge value chunk
     */
-    virtual void showEdgeValue(FILE* s, const void* edge) const;
+    virtual void showEdgeValue(output &s, const void* edge) const;
 
     /** Write an edge value in machine-readable format.
           @param  s       Stream to write to.
           @param  edge    Pointer to edge value chunk
     */
-    virtual void writeEdgeValue(FILE* s, const void* edge) const;
+    virtual void writeEdgeValue(output &s, const void* edge) const;
 
     /** Read an edge value in machine-readable format.
           @param  s       Stream to read from.
           @param  edge    Pointer to edge value chunk
     */
-    virtual void readEdgeValue(FILE* s, void* edge);
+    virtual void readEdgeValue(input &s, void* edge);
 
     /** Show the hashed header values.
           @param  s       Stream to write to.
           @param  hh      Pointer to hashed header data.
     */
-    virtual void showHashedHeader(FILE* s, const void* hh) const;
+    virtual void showHashedHeader(output &s, const void* hh) const;
 
     /** Write the hashed header in machine-readable format.
           @param  s       Stream to write to.
           @param  hh      Pointer to hashed header data.
     */
-    virtual void writeHashedHeader(FILE* s, const void* hh) const;
+    virtual void writeHashedHeader(output &s, const void* hh) const;
 
     /** Read the hashed header in machine-readable format.
           @param  s       Stream to write to.
           @param  nb      Node we're building.
     */
-    virtual void readHashedHeader(FILE* s, node_builder &nb) const;
+    virtual void readHashedHeader(input &s, node_builder &nb) const;
 
     /** Show the unhashed header values.
           @param  s       Stream to write to.
           @param  uh      Array of all unhashed header values.
     */
-    virtual void showUnhashedHeader(FILE* s, const void* uh) const;
+    virtual void showUnhashedHeader(output &s, const void* uh) const;
 
     /** Write the unhashed header in machine-readable format.
           @param  s       Stream to write to.
           @param  hh      Pointer to unhashed header data.
     */
-    virtual void writeUnhashedHeader(FILE* s, const void* uh) const;
+    virtual void writeUnhashedHeader(output &s, const void* uh) const;
 
     /** Read the unhashed header in machine-readable format.
           @param  s       Stream to write to.
           @param  nb      Node we're building.
     */
-    virtual void readUnhashedHeader(FILE* s, node_builder &nb) const;
+    virtual void readUnhashedHeader(input &s, node_builder &nb) const;
 
 
 
@@ -1937,7 +2064,7 @@ class MEDDLY::expert_forest: public forest
           @param  s     Output stream to use
           @param  pad   String to display at the beginning of each line.
     */
-    virtual void reportForestStats(FILE* s, const char* pad) const;
+    virtual void reportForestStats(output &s, const char* pad) const;
 
 
 
@@ -2700,7 +2827,7 @@ class MEDDLY::compute_table {
       const stats& getStats();
 
       /// For debugging.
-      virtual void show(FILE *s, int verbLevel = 0) = 0;
+      virtual void show(output &s, int verbLevel = 0) = 0;
 
     protected:
       stats perf;
@@ -2800,9 +2927,9 @@ class MEDDLY::operation {
 
     // for debugging:
 
-    static void showMonolithicComputeTable(FILE*, int verbLevel);
-    static void showAllComputeTables(FILE*, int verbLevel);
-    void showComputeTable(FILE*, int verbLevel) const;
+    static void showMonolithicComputeTable(output &, int verbLevel);
+    static void showAllComputeTables(output &, int verbLevel);
+    void showComputeTable(output &, int verbLevel) const;
 
     // handy
     const char* getName() const;
@@ -2828,7 +2955,7 @@ class MEDDLY::operation {
     virtual void discardEntry(const node_handle* entryData) = 0;
 
     /// Prints a string representation of this cache entry on strm (stream).
-    virtual void showEntry(FILE* strm, const node_handle *entryData) const = 0;
+    virtual void showEntry(output &strm, const node_handle *entryData) const = 0;
 
     bool shouldStaleCacheHitsBeDiscarded() const;
 };

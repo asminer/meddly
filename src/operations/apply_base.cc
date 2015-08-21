@@ -59,9 +59,10 @@ void MEDDLY::generic_binary_mdd::discardEntry(const node_handle* data)
 }
 
 void
-MEDDLY::generic_binary_mdd ::showEntry(FILE* strm, const node_handle *data) const
+MEDDLY::generic_binary_mdd ::showEntry(output &strm, const node_handle *data) const
 {
-  fprintf(strm, "[%s(%d, %d): %d]", getName(), data[0], data[1], data[2]);
+  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) 
+       << "): " << long(data[2]) << "]";
 }
 
 void MEDDLY::generic_binary_mdd::compute(const dd_edge &a, const dd_edge &b, 
@@ -160,10 +161,10 @@ void MEDDLY::generic_binary_mxd::discardEntry(const node_handle* data)
 }
 
 void
-MEDDLY::generic_binary_mxd ::showEntry(FILE* strm, const node_handle *data) const
+MEDDLY::generic_binary_mxd ::showEntry(output &strm, const node_handle *data) const
 {
-  fprintf(strm, "[%s(%d, %d): %d]", getName(), 
-    data[0], data[1], data[2]);
+  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) 
+       << "): " << long(data[2]) << "]";
 }
 
 void MEDDLY::generic_binary_mxd::compute(const dd_edge &a, const dd_edge &b, 
@@ -346,11 +347,10 @@ void MEDDLY::generic_binbylevel_mxd::discardEntry(const node_handle* data)
 
 void
 MEDDLY::generic_binbylevel_mxd
-::showEntry(FILE* strm, const node_handle *data) const
+::showEntry(output &strm, const node_handle *data) const
 {
-  fprintf(strm, "[%s(%d, %d, %d): %d]", getName(), 
-    data[0], data[1], data[2], data[3]
-  );
+  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) 
+       << ", " << long(data[2]) << "): " << long(data[3]) << "]";
 }
 
 void MEDDLY::generic_binbylevel_mxd
@@ -493,12 +493,11 @@ MEDDLY::generic_binary_evplus::~generic_binary_evplus()
 }
 
 void MEDDLY::generic_binary_evplus
-::showEntry(FILE* strm, const node_handle *data) const
+::showEntry(output &strm, const node_handle *data) const
 {
-  fprintf(strm, "[%s(<%d:%d>, <%d:%d>): <%d:%d>]",
-      getName(),
-      data[0], data[1], data[2], data[3], data[4], data[5]
-  );
+  strm << "[" << getName() << "(<" << long(data[0]) << ":" << long(data[1]) 
+       << ">, <" << long(data[2]) << ":" << long(data[3]) << ">): <"
+       << long(data[4]) << ":" << long(data[5]) << ">]";
 }
 
 void MEDDLY::generic_binary_evplus
@@ -587,7 +586,7 @@ MEDDLY::generic_binary_evtimes::~generic_binary_evtimes()
 }
 
 void MEDDLY::generic_binary_evtimes
-::showEntry(FILE* strm, const node_handle *data) const
+::showEntry(output &strm, const node_handle *data) const
 {
   float ev0;
   float ev2;
@@ -595,9 +594,9 @@ void MEDDLY::generic_binary_evtimes
   compute_table::readEV(data+0, ev0);
   compute_table::readEV(data+2, ev2);
   compute_table::readEV(data+4, ev4);
-  fprintf(strm, "[%s(<%f:%d>, <%f:%d>): <%f:%d>]",
-      getName(), ev0, data[1], ev2, data[3], ev4, data[5]
-  );
+  strm << "[" << getName() << "(<" << ev0 << ":" << long(data[1]) 
+       << ">, <" << ev2 << ":" << long(data[3]) << ">): <"
+       << ev4 << ":" << long(data[5]) << ">]";
 }
 
 void MEDDLY::generic_binary_evtimes

@@ -45,26 +45,26 @@ MEDDLY::unique_table::~unique_table()
 }
 
 void MEDDLY::unique_table
-::reportStats(FILE* s, const char* pad, unsigned flags) const
+::reportStats(output &s, const char* pad, unsigned flags) const
 {
   if (flags & expert_forest::UNIQUE_TABLE_STATS) {
-    fprintf(s, "%sUnique table stats:\n", pad);
-    fprintf(s, "%s    %u current size\n", pad, getSize());
-    fprintf(s, "%s    %u current entries\n", pad, getNumEntries());
+    s << pad << "Unique table stats:\n";
+    s << pad << "    " << long(getSize()) << " current size\n";
+    s << pad << "    " << long(getNumEntries()) << " current entries\n";
   }
 }
 
-void MEDDLY::unique_table::show(FILE* s) const
+void MEDDLY::unique_table::show(output &s) const
 {
-  fprintf(s, "Unique table:\n");
+  s << "Unique table:\n";
   for (unsigned i=0; i<size; i++) {
-    fprintf(s, "[%d] : ", i);
+    s << '[' << long(i) << "] : ";
     for (int index = table[i]; index; index = parent->getNext(index)) {
-      fprintf(s, "%d ", index);
+      s << index << ' ';
     }
-    fprintf(s, "\n");
+    s.put('\n');
   } 
-  fflush(s);
+  s.flush();
 }
 
 //

@@ -72,17 +72,17 @@ void MEDDLY::mt_mdd_real
   term = float_Tencoder::handle2value(evaluateRaw(f, vlist));
 }
 
-void MEDDLY::mt_mdd_real::showTerminal(FILE* s, node_handle tnode) const
+void MEDDLY::mt_mdd_real::showTerminal(output &s, node_handle tnode) const
 {
   float_Tencoder::show(s, tnode);
 }
 
-void MEDDLY::mt_mdd_real::writeTerminal(FILE* s, node_handle tnode) const
+void MEDDLY::mt_mdd_real::writeTerminal(output &s, node_handle tnode) const
 {
   float_Tencoder::write(s, tnode);
 }
 
-MEDDLY::node_handle MEDDLY::mt_mdd_real::readTerminal(FILE* s)
+MEDDLY::node_handle MEDDLY::mt_mdd_real::readTerminal(input &s)
 {
   return float_Tencoder::read(s);
 }

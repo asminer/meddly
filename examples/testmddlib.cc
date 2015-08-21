@@ -63,6 +63,8 @@ using namespace MEDDLY;
 
 int main(int argc, char *argv[])
 {
+  FILE_output meddlyout(stdout);
+
   initialize();
   // Create a domain
   domain *d = createDomain();
@@ -86,11 +88,11 @@ int main(int argc, char *argv[])
   v[1][0] = 0; v[1][1] = 1; v[1][2] = 0;
   dd_edge initial_state(states);
   states->createEdge(v, 1, initial_state);
-  initial_state.show(stdout, 2);
-  // states->showInfo(stdout);
+  initial_state.show(meddlyout, 2);
+  // states->showInfo(meddlyout);
   // initial_state.clear();
-  // initial_state.show(stdout, 2);
-  // states->showInfo(stdout);
+  // initial_state.show(meddlyout, 2);
+  // states->showInfo(meddlyout);
 #else
   // Create an edge in MDD forest
   int** v = (int **) malloc(1 * sizeof(int*));
@@ -99,35 +101,35 @@ int main(int argc, char *argv[])
   v[0][0] = 0; v[0][1] = 0; v[0][2] = 0;
   dd_edge stateA(states);
   states->createEdge(v, 1, stateA);
-  stateA.show(stdout, 2);
+  stateA.show(meddlyout, 2);
 
   dd_edge stateD = stateA;
-  stateD.show(stdout, 2);
-  states->showInfo(stdout);
+  stateD.show(meddlyout, 2);
+  states->showInfo(meddlyout);
 
   v[0][0] = 0; v[0][1] = 1; v[0][2] = 0;
   dd_edge stateB(states);
   states->createEdge(v, 1, stateB);
-  stateB.show(stdout, 2);
+  stateB.show(meddlyout, 2);
 
   stateD += stateB;
-  stateD.show(stdout, 2);
-  states->showInfo(stdout);
+  stateD.show(meddlyout, 2);
+  states->showInfo(meddlyout);
 
   v[0][0] = 0; v[0][1] = 2; v[0][2] = 0;
   dd_edge stateC(states);
   states->createEdge(v, 1, stateC);
-  stateC.show(stdout, 2);
+  stateC.show(meddlyout, 2);
 
   stateD += stateC;
-  stateD.show(stdout, 2);
-  states->showInfo(stdout);
+  stateD.show(meddlyout, 2);
+  states->showInfo(meddlyout);
 
   stateA.clear();
   stateB.clear();
   stateC.clear();
   stateD.clear();
-  states->showInfo(stdout);
+  states->showInfo(meddlyout);
 #endif
 #endif
 
@@ -173,11 +175,11 @@ int main(int argc, char *argv[])
   dd_edge xd(transitions);
   printf("Constructing transition diagram\n");
   transitions->createEdge(vlist, vplist, num_of_transitions, xd);
-  xd.show(stdout, 2);
-  // transitions->showInfo(stdout);
+  xd.show(meddlyout, 2);
+  // transitions->showInfo(meddlyout);
 
   printf("\nCompute Table:\n");
-  operation::showMonolithicComputeTable(stdout, true);
+  operation::showMonolithicComputeTable(meddlyout, true);
 
   dd_edge reachableStates(initial_state);
   dd_edge prevReachableStates(states);
@@ -190,14 +192,14 @@ int main(int argc, char *argv[])
         long(reachableStates.getNode()), long(xd.getNode()));
     apply(POST_IMAGE, reachableStates, xd, postImage);
     printf("%ld\n", long(postImage.getNode()));
-    // postImage.show(stdout, 2);
+    // postImage.show(meddlyout, 2);
     printf("\nUnion (mdd:%ld, mdd:%ld): ",
         long(reachableStates.getNode()), long(postImage.getNode()));
     apply(UNION, reachableStates, postImage,
         reachableStates);
     printf("%ld\n", long(reachableStates.getNode()));
   }
-  reachableStates.show(stdout, 2);
+  reachableStates.show(meddlyout, 2);
 
 #if 0
   // Do PreImage

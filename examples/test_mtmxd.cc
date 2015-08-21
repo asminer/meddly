@@ -200,12 +200,13 @@ dd_edge test_mtmxd(forest* mtmxd, binary_opname* opCode,
   apply(opCode, A, B, C);
 
   if (verbose > 0) {
+    FILE_output meddlyout(stdout);
     printf("A: ");
-    A.show(stdout, 2);
+    A.show(meddlyout, 2);
     printf("\n\nB: ");
-    B.show(stdout, 2);
+    B.show(meddlyout, 2);
     printf("\n\nC: ");
-    C.show(stdout, 2);
+    C.show(meddlyout, 2);
   }
 
   return C;
@@ -377,7 +378,8 @@ int main(int argc, char *argv[])
       (getComputeManager())->getNumCacheEntries());
   */
 
-  result.show(stdout, 2);
+  FILE_output myout(stdout);
+  result.show(myout, 2);
 
   // Use iterator to display elements
   if (true) {

@@ -51,7 +51,7 @@ class MEDDLY::common_bfs_mt : public binary_operation {
 
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(FILE* strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
     virtual node_handle compute(node_handle a, node_handle b) = 0;
   protected:
@@ -122,7 +122,7 @@ void MEDDLY::common_bfs_mt::discardEntry(const node_handle* entryData)
   // this operation won't add any CT entries.
 }
 
-void MEDDLY::common_bfs_mt::showEntry(FILE* strm, const node_handle* entryData) const
+void MEDDLY::common_bfs_mt::showEntry(output &strm, const node_handle* entryData) const
 {
   throw error(error::MISCELLANEOUS);
   // this operation won't add any CT entries.

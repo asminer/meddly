@@ -861,12 +861,12 @@ void MEDDLY::operation::removeAllComputeTableEntries()
 #endif
 }
 
-void MEDDLY::operation::showMonolithicComputeTable(FILE* s, int verbLevel)
+void MEDDLY::operation::showMonolithicComputeTable(output &s, int verbLevel)
 {
   if (Monolithic_CT) Monolithic_CT->show(s, verbLevel);
 }
 
-void MEDDLY::operation::showAllComputeTables(FILE* s, int verbLevel)
+void MEDDLY::operation::showAllComputeTables(output &s, int verbLevel)
 {
   if (Monolithic_CT) {
     Monolithic_CT->show(s, verbLevel);
@@ -878,7 +878,7 @@ void MEDDLY::operation::showAllComputeTables(FILE* s, int verbLevel)
     }
 }
 
-void MEDDLY::operation::showComputeTable(FILE* s, int verbLevel) const
+void MEDDLY::operation::showComputeTable(output &s, int verbLevel) const
 {
   if (CT) CT->show(s, verbLevel);
 }

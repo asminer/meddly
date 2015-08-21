@@ -312,7 +312,8 @@ void printStats(const char* who, const forest* f)
 {
   printf("%s stats:\n", who);
   const expert_forest* ef = (expert_forest*) f;
-  ef->reportStats(stdout, "\t",
+  FILE_output mout(stdout);
+  ef->reportStats(mout, "\t",
     expert_forest::HUMAN_READABLE_MEMORY  |
     expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
     expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
@@ -364,16 +365,18 @@ void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
 {
   apply(CONVERT_TO_INDEX_SET, mdd, indexSet);
 
+  FILE_output mout(stdout);
 #if 1
-  indexSet.show(stdout, 3);
+  indexSet.show(mout, 3);
 #else
-  indexSet.show(stdout, 1);
+  indexSet.show(mout, 1);
 #endif
 }
 
 domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LOG)
 {
   timer start;
+  FILE_output meddlyout(stdout);
 
   // Number of levels in domain (excluding terminals)
   int nLevels = nPhilosophers * 2;
@@ -477,7 +480,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
 
 #ifdef SHOW_MXD
   printf("Next-State Function:\n");
-  nsf.show(stdout, 2);
+  nsf.show(meddlyout, 2);
 #endif
 
 
@@ -534,7 +537,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
   // Show stats for rs construction
   printStats("MDD", mdd);
   
-  operation::showAllComputeTables(stdout, 3);
+  operation::showAllComputeTables(meddlyout, 3);
 
   double c;
   apply(CARDINALITY, reachableStates, c);

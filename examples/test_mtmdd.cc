@@ -122,12 +122,13 @@ dd_edge test_mtmdd(forest* mtmdd, const binary_opname* opCode,
   apply(opCode, A, B, C);
 
   if (verbose > 0) {
+    FILE_output meddlyout(stdout);
     printf("A: ");
-    A.show(stdout, 2);
+    A.show(meddlyout, 2);
     printf("\n\nB: ");
-    B.show(stdout, 2);
+    B.show(meddlyout, 2);
     printf("\n\nC: ");
-    C.show(stdout, 2);
+    C.show(meddlyout, 2);
   }
 
   return C;

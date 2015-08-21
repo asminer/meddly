@@ -45,7 +45,7 @@ class MEDDLY::mdd2index_operation : public unary_operation {
 
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(FILE* strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData) const;
 
     virtual void compute(const dd_edge &arg, dd_edge &res);
 
@@ -79,10 +79,10 @@ MEDDLY::mdd2index_operation
 
 void 
 MEDDLY::mdd2index_operation
-::showEntry(FILE* strm, const node_handle* entryData) const
+::showEntry(output &strm, const node_handle* entryData) const
 {
-  fprintf(strm, "[%s %d %d (card %d)]", getName(), entryData[0], 
-    entryData[1], entryData[2]);
+  strm << "[" << getName() << " " << long(entryData[0]) << " "
+       << long(entryData[1]) << " (card " << long(entryData[2]) << ")]";
 }
 
 void

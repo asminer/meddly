@@ -87,33 +87,33 @@ void MEDDLY::hm_none::recycleChunk(node_address addr, int slots)
 
 // ******************************************************************
 
-void MEDDLY::hm_none::dumpInternalInfo(FILE* s) const
+void MEDDLY::hm_none::dumpInternalInfo(output &s) const
 {
-  fprintf(s, "Last slot used: %ld\n", long(lastSlot()));
-  fprintf(s, "Total hole slots: %ld\n", holeSlots());
+  s << "Last slot used: " << long(lastSlot()) << "\n";
+  s << "Total hole slots: " << holeSlots() << "\n";
 }
 
 // ******************************************************************
 
-void MEDDLY::hm_none::dumpHole(FILE* s, node_address a) const
+void MEDDLY::hm_none::dumpHole(output &s, node_address a) const
 {
   MEDDLY_DCASSERT(data);
   MEDDLY_CHECK_RANGE(1, a, lastSlot());
   long aN = chunkAfterHole(a)-1;
-  fprintf(s, "[%ld, ..., %ld]\n", long(data[a]), long(data[aN]));
+  s << '[' << long(data[a]) << ", ..., " << long(data[aN]) << "]\n";
 }
 
 // ******************************************************************
 
 void MEDDLY::hm_none
-::reportStats(FILE* s, const char* pad, unsigned flags) const
+::reportStats(output &s, const char* pad, unsigned flags) const
 {
   static unsigned HOLE_MANAGER =
     expert_forest::HOLE_MANAGER_STATS | expert_forest::HOLE_MANAGER_DETAILED;
 
   if (! (flags & HOLE_MANAGER)) return;
 
-  fprintf(s, "%sStats for do nothing hole management\n", pad);
+  s << pad << "Stats for do nothing hole management\n";
 
   holeman::reportStats(s, pad, flags);
 }

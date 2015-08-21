@@ -71,7 +71,7 @@ public:
   // common
   virtual bool isStaleEntry(const node_handle* entryData);
   virtual void discardEntry(const node_handle* entryData);
-  virtual void showEntry(FILE* strm, const node_handle* entryData) const;
+  virtual void showEntry(output &strm, const node_handle* entryData) const;
 
 protected:
   static inline void overflow_acc(long &a, long x) {
@@ -100,11 +100,12 @@ void MEDDLY::card_int::discardEntry(const node_handle* data)
   argF->uncacheNode(data[0]);
 }
 
-void MEDDLY::card_int::showEntry(FILE* strm, const node_handle* data) const
+void MEDDLY::card_int::showEntry(output &strm, const node_handle* data) const
 {
   long answer;
   memcpy(&answer, data+1, sizeof(long));
-  fprintf(strm, "[%s(%d): %ld(L)]", getName(), data[0], answer);
+  strm  << "[" << getName() << "(" << long(data[0]) 
+        << "): " << answer << "(L)]";
 }
 
 // ******************************************************************
@@ -262,7 +263,7 @@ public:
   // common
   virtual bool isStaleEntry(const node_handle* entryData);
   virtual void discardEntry(const node_handle* entryData);
-  virtual void showEntry(FILE* strm, const node_handle* entryData) const;
+  virtual void showEntry(output &strm, const node_handle* entryData) const;
 };
 
 MEDDLY::card_real::card_real(const unary_opname* oc, expert_forest* arg)
@@ -280,11 +281,13 @@ void MEDDLY::card_real::discardEntry(const node_handle* data)
   argF->uncacheNode(data[0]);
 }
 
-void MEDDLY::card_real::showEntry(FILE* strm, const node_handle* data) const
+void MEDDLY::card_real::showEntry(output &strm, const node_handle* data) const
 {
   double answer;
   memcpy(&answer, data+1, sizeof(double));
-  fprintf(strm, "[%s(%d): %le]", getName(), data[0], answer);
+  strm  << "[" << getName() << "(" << long(data[0]) << "): ";
+  strm.put(answer, 0, 0, 'e');
+  strm.put(']');
 }
 
 
@@ -448,7 +451,7 @@ public:
   // common
   virtual bool isStaleEntry(const node_handle* entryData);
   virtual void discardEntry(const node_handle* entryData);
-  virtual void showEntry(FILE* strm, const node_handle* entryData) const;
+  virtual void showEntry(output &strm, const node_handle* entryData) const;
 };
 
 MEDDLY::card_mpz::card_mpz(const unary_opname* oc, expert_forest* arg)
@@ -469,13 +472,13 @@ void MEDDLY::card_mpz::discardEntry(const node_handle* data)
   delete answer;
 }
 
-void MEDDLY::card_mpz::showEntry(FILE* strm, const node_handle* entryData) const
+void MEDDLY::card_mpz::showEntry(output &strm, const node_handle* entryData) const
 {
   mpz_object* answer;
   memcpy(&answer, entryData+1, sizeof(mpz_object*));
-  fprintf(strm, "[%s(%d): ", getName(), entryData[0]);
+  strm  << "[" << getName() << "(" << long(entryData[0]) << "): ";
   answer->show(strm);
-  fprintf(strm, "]");
+  strm.put(']');
 }
 
 #endif

@@ -71,6 +71,7 @@ inline const char* MEDDLY::error::getName() const {
       case  MEDDLY::error::INVALID_ARGUMENT:     return "Invalid argument";
       case  MEDDLY::error::INVALID_FILE:         return "Invalid file";
       case  MEDDLY::error::COULDNT_WRITE:        return "Couldn't write to file";
+      case  MEDDLY::error::COULDNT_READ:         return "Couldn't read from file";
       case  MEDDLY::error::MISCELLANEOUS:        return "Miscellaneous";
       default:                           return "Unknown error";
   }
