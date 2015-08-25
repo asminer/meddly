@@ -271,6 +271,7 @@ void MEDDLY::dd_edge::show(output &strm, int verbosity) const
   expert_forest* eParent = smart_cast<expert_forest*>(parent);
   strm << "(Forest Addr: ";
   strm.put_hex(long(parent));
+  strm << ", ";
   
   strm << "transparent: ";
   eParent->showTerminal(strm, eParent->getTransparentNode());
