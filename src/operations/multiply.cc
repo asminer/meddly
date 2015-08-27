@@ -218,7 +218,7 @@ bool MEDDLY::multiply_evplus::checkTerminals(int aev, node_handle a, int bev, no
   int& cev, node_handle& c)
 {
   if (a == 0 || b == 0) {
-    c = 0; cev = INF;
+    c = 0; cev = Inf();
     return true;
   }
   if (a == -1 && b == -1) {
@@ -257,7 +257,7 @@ bool MEDDLY::multiply_evtimes::checkTerminals(float aev, node_handle a,
   float bev, node_handle b, float& cev, node_handle& c)
 {
   if (a == 0 || b == 0) {
-    c = 0; cev = NAN;
+    c = 0; cev = Nan();
     return true;
   }
   if (a == -1 && b == -1) {

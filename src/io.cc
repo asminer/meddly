@@ -182,7 +182,8 @@ double MEDDLY::istream_input::get_real()
 
 int MEDDLY::istream_input::read(int bytes, unsigned char* buffer)
 {
-  return in.read((char*) buffer, bytes);
+  in.read((char*) buffer, bytes);
+  return in.gcount();
 }
 
 
@@ -372,7 +373,9 @@ void MEDDLY::ostream_output::put(double x, int w, int p, char f)
 
 int MEDDLY::ostream_output::write(int bytes, const unsigned char* buffer)
 {
-  return out.write((const char*) buffer, bytes);
+  out.write((const char*) buffer, bytes);
+  // Not sure how to catch this one, so...
+  return bytes;
 }
 
 void MEDDLY::ostream_output::flush()

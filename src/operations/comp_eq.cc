@@ -142,7 +142,7 @@ bool MEDDLY::equal_evtimes
       cev = 1.0;
     } else {
       c = 0;
-      cev = NAN;
+      cev = Nan();
     }
     return true;
   }

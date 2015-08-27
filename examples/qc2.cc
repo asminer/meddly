@@ -36,6 +36,7 @@
 */
 
 #include <cstdio>
+#include <cstdlib>
 #include <fstream>
 
 #include "meddly.h"
