@@ -411,7 +411,7 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 		MEDDLY_DCASSERT(nr->getSize()==high_size);
 
 		for(int k=0; k<high_size; k++){
-			if(getNodeLevel(nr->d(k))>=level){
+			if(isLevelAbove(getNodeLevel(nr->d(k)), level-1)){
 				// Remove the nodes corresponding to functions that
 				// are independent of the variable to be moved up
 				high_nodes[j++]=high_nodes[i];
@@ -444,7 +444,7 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 		node_builder& high_nb = useNodeBuilder(level+1, low_size);
 
 		for(int k=0; k<high_size; k++) {
-			if(getNodeLevel(high_nr->d(k))<level){
+			if(isLevelAbove(level, getNodeLevel(high_nr->d(k)))){
 				low_nrs[k]=NULL;
 				skips[k]=high_nr->d(k);
 			}
@@ -842,8 +842,7 @@ bool MEDDLY::mtmdd_forest::mtmdd_iterator::next()
   for (k=1; k<=maxLevel; k++) {
     nzp[k]++;
     if (nzp[k] < path[k].getNNZs()) {
-      int var = F->getVarByLevel(k);
-      index[var] = path[k].i(nzp[k]);
+      index[k] = path[k].i(nzp[k]);
       down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
       break;

@@ -65,6 +65,9 @@ class MEDDLY::mtmxd_forest : public mt_forest {
         return p;
       }
 
+      // Reorder by swapping the highest inversion until none exists.
+      void reorderVariablesHighestInversion(const int* order);
+
   protected:
     class mtmxd_iterator : public mt_iterator {
       public:
@@ -96,6 +99,10 @@ class MEDDLY::mtmxd_forest : public mt_forest {
         bool first(int k, node_handle p);
     };
 
+    /** Return the root node after swapping the adjacent variables
+        in the MxD with the given root node.
+    */
+    node_handle swapAdjacentVariablesInMxD(node_handle node);
 };
 
 //
@@ -425,6 +432,9 @@ namespace MEDDLY {
         if (F->isIdentityReduced()) {
           return p;
         }
+//        if(p==F->getTransparentNode()){
+//        	return p;
+//        }
         // build an identity node by hand
         int lastV = F->getLevelSize(k);
         node_builder& nb = F->useNodeBuilder(k, lastV);
@@ -434,7 +444,7 @@ namespace MEDDLY {
           nbp.d(0) = F->linkNode(p);
           nb.d(v) = F->createReducedNode(v, nbp);
         }
-        F->unlinkNode(p);    // XXX: Necessary? May unlink outside the function
+        F->unlinkNode(p);
         return F->createReducedNode(-1, nb);
       }
 
@@ -472,8 +482,9 @@ namespace MEDDLY {
                 // Identity node
                 //
                 if(DONT_CARE == vlist[i]){
-                	next=makeIdentityEdgeForDontCareDontChange(i, next);
-                	continue;
+//                  if (F->isIdentityReduced()) continue;
+                  next = makeIdentityEdgeForDontCareDontChange(i, next);
+                  continue;
                 }
 
                 MEDDLY_DCASSERT(vlist[i]>=0);
@@ -496,7 +507,8 @@ namespace MEDDLY {
                 else {
                 	node_builder& nbp = F->useSparseBuilder(-i, 1);
                 	nbp.i(0) = vlist[i];
-                	nbp.d(0) = F->linkNode(next);
+                	nbp.d(0) = next;
+                  // link count should be unchanged
 
                 	nextpr = F->createReducedNode(vlist[i], nbp);
                 }
@@ -517,7 +529,8 @@ namespace MEDDLY {
               else {
                 node_builder& nbp = F->useSparseBuilder(-i, 1);
                 nbp.i(0) = vplist[i];
-                nbp.d(0) = F->linkNode(next);
+                nbp.d(0) = next;
+                // link count should be unchanged
 
                 nextpr = F->createReducedNode(vlist[i], nbp);
               }
@@ -539,7 +552,7 @@ namespace MEDDLY {
                 // on the appropriate v value
                 for (int v=0; v<sz; v++) {
 //                  node_handle dpr = (v == vplist[i]) ? next : nextpr;
-                  nb.d(v) = F->linkNode(v == vplist[i] ? F->linkNode(next) : F->linkNode(nextpr));
+                  nb.d(v) = F->linkNode(v == vplist[i] ? next : nextpr);
                 }
               } else {
                 // Doesn't matter what happened below
@@ -554,9 +567,9 @@ namespace MEDDLY {
               if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
             	int sz=F->getLevelSize(i);
             	node_builder& nb = F->useNodeBuilder(i, sz);
-            	node_handle zero=makeOpaqueZeroNodeAtLevel(-i);
+            	node_handle zero = makeOpaqueZeroNodeAtLevel(-i);
             	for(int v=0; v<sz; v++){
-            	  nb.d(v)=(v==vlist[i] ? F->linkNode(nextpr) : F->linkNode(zero));
+            	  nb.d(v) = F->linkNode(v==vlist[i] ? nextpr : zero);
             	}
             	F->unlinkNode(zero);
 
@@ -565,7 +578,8 @@ namespace MEDDLY {
               else {
                 node_builder& nb = F->useSparseBuilder(i, 1);
                 nb.i(0) = vlist[i];
-                nb.d(0) = F->linkNode(nextpr);
+                nb.d(0) = nextpr;
+                // link count should be unchanged
 
                 next = F->createReducedNode(-1, nb);
               }

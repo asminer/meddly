@@ -230,7 +230,8 @@ inline MEDDLY::node_handle MEDDLY::unique_table::find(const T &key, int var)
 
 inline void MEDDLY::unique_table::add(unsigned hash, node_handle item)
 {
-	int var=parent->getVarByLevel(parent->getNodeLevel(item));
+	int level=parent->getNodeLevel(item);
+	int var=parent->getVarByLevel(level);
 	tables[var].add(hash, item);
 }
 

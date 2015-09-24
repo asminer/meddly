@@ -1765,13 +1765,11 @@ class MEDDLY::expert_forest : public forest
     }
 
     inline int getVarByLevel(int level) const {
-//    	return getDomain()->getVarByLevel(level<0 ? -level : level);
-    	return order_level[level<0 ? -level : level];
+    	return level<0 ? -order_level[-level] : order_level[level];
     }
 
     inline int getLevelByVar(int var) const {
-//    	return getDomain()->getLevelByVar(var);
-    	return order_var[var];
+    	return var<0 ? -order_var[-var] : order_var[var];
     }
 
     inline bool isPrimedNode(node_handle p) const {
@@ -2357,6 +2355,11 @@ class MEDDLY::expert_forest : public forest
       fprintf(stderr, "releasing builder at level %d\n", nb.getLevel());
 #endif
     }
+
+    /** Swap the content of nodes.
+        Do not update their parents and inCount.
+    */
+    void swapNodes(node_handle p, node_handle q);
 
     /*
      * Modify a node in place.

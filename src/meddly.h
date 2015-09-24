@@ -2309,6 +2309,16 @@ class MEDDLY::enumerator {
         */
         const int* getPrimedAssignments();
 
+        /** Get the current variable assignments.
+            The values in each assignment are ordered by variables.
+         */
+        const int* getOrderedAssignments();
+
+        /** Get the current primed variable assignments.
+            The values in each assignment are ordered by variables.
+         */
+        const int* getOrderedPrimedAssignments();
+
         /// For integer-ranged edges, get the current non-zero value.
         virtual void getValue(int& edgeValue) const;
     
@@ -2347,6 +2357,10 @@ class MEDDLY::enumerator {
       private:
         // Used only by getPrimedAssignments.
         int*      prindex;
+        // Used only by getOrderedAssignments().
+        int*      index_by_var;
+        // USed only by getOrderedPrimedAssignments().
+        int*      prindex_by_var;
     };
 
   public:
@@ -2422,6 +2436,20 @@ class MEDDLY::enumerator {
     /// Get the current primed variable assignments.
     inline const int* getPrimedAssignments() const {
       if (I && is_valid) return I->getPrimedAssignments(); else return 0;
+    }
+
+    /** Get the current variable assignments.
+        The values in each assignment are ordered by variables.
+    */
+    inline const int* getOrderedAssignments() const {
+      if (I && is_valid) return I->getOrderedAssignments(); else return 0;
+    }
+
+    /** Get the current primed variable assignments.
+        The values in each assignment are ordered by variables.
+     */
+    inline const int* getOrderedPrimedAssignments() const {
+      if (I && is_valid) return I->getOrderedPrimedAssignments(); else return 0;
     }
 
     inline void getValue(int &v) const {

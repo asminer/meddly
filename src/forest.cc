@@ -1675,7 +1675,8 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 #ifdef VALIADE_INCOUNTS_ON_DELETE
   validateIncounts(false);
 #endif
-
+  // reset the mark
+  getNode(p).unmark();
   unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE
   node_reader* key = initNodeReader(p, false);
@@ -1737,7 +1738,8 @@ void MEDDLY::expert_forest::zombifyNode(node_handle p)
 
   // mark node as zombie
   address[p].cache_count = -address[p].cache_count;
-
+  // reset the mark
+  getNode(p).unmark();
   unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE 
   node_reader* key = initNodeReader(p, false);
@@ -1959,7 +1961,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
   // Is this a transparent node?
   if (0==nnz) {
     // no need to unlink
-    return getTransparentNode();;
+    return getTransparentNode();
   }
 
   // check for duplicates in unique table
@@ -2016,6 +2018,27 @@ MEDDLY::node_handle MEDDLY::expert_forest
 #endif
 
   return p;
+}
+
+void MEDDLY::expert_forest::swapNodes(node_handle p, node_handle q)
+{
+	unique->remove(hashNode(p), p);
+	unique->remove(hashNode(q), q);
+
+	int pCount=getInCount(p);
+	int qCount=getInCount(q);
+
+	// Swap
+	node_header temp = address[p];
+	address[p] = address[q];
+	address[q] = temp;
+
+	// Do not change inCount
+	nodeMan->setCountOf(address[p].offset, pCount);
+	nodeMan->setCountOf(address[q].offset, qCount);
+
+	unique->add(hashNode(p), p);
+	unique->add(hashNode(q), q);
 }
 
 MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(node_builder &nb, node_handle p)

@@ -38,6 +38,8 @@
 MEDDLY::enumerator::iterator::iterator(const expert_forest* f)
 {
   prindex = 0;
+  index_by_var = 0;
+  prindex_by_var = 0;
   F = f;
   if (0==f) {
     rawpath = path = 0;
@@ -101,6 +103,35 @@ const int* MEDDLY::enumerator::iterator::getPrimedAssignments()
     prindex[k] = index[-k];
   }
   return prindex; 
+}
+
+const int* MEDDLY::enumerator::iterator::getOrderedAssignments()
+{
+  if (0==F) return 0;
+  if (0==index_by_var) {
+	index_by_var = new int[1+maxLevel];
+	index_by_var[0] = 0;
+  }
+  MEDDLY_DCASSERT(index);
+  for (int k=maxLevel; k; k--) {
+	index_by_var[F->getVarByLevel(k)] = index[k];
+  }
+  return index_by_var;
+}
+
+const int* MEDDLY::enumerator::iterator::getOrderedPrimedAssignments()
+{
+  if (0==F) return 0;
+  if (!F->isForRelations()) return 0;
+  if (0==prindex_by_var) {
+	prindex_by_var = new int[1+maxLevel];
+	prindex_by_var[0] = 0;
+  }
+  MEDDLY_DCASSERT(index);
+  for (int k=maxLevel; k; k--) {
+	  prindex_by_var[-(F->getVarByLevel(-k))] = index[-k];
+  }
+  return prindex_by_var;
 }
 
 void MEDDLY::enumerator::iterator::getValue(int &) const
