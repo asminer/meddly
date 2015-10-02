@@ -670,6 +670,16 @@ class MEDDLY::forest {
     	  RANDOM
       };
 
+      // Supported variable swap strategies.
+      // Work for MxD only.
+      enum variable_swap {
+    	  // Swap adjacent variables in one go.
+    	  VAR,
+    	  // Swap adjacent variables through swapping levels 4 time.
+    	  // Do not work with fully-identity reduction.
+    	  LEVEL
+      };
+
       /// Defaults: how may we store nodes for all levels in the forest.
       node_storage_flags storage_flags;
       /// Default reduction rule for all levels in the forest.
@@ -678,6 +688,8 @@ class MEDDLY::forest {
       node_deletion deletion;
       // Default variable reorder strategy.
       variable_reorder reorder;
+      // Default variable swap strategy.
+      variable_swap swap;
 
       /// Backend storage mechanism for nodes.
       const node_storage* nodestor;
@@ -704,6 +716,7 @@ class MEDDLY::forest {
         storage_flags = ALLOW_FULL_STORAGE | ALLOW_SPARSE_STORAGE;
         deletion = OPTIMISTIC_DELETION;
         reorder = LOWEST_INVERSION;
+        swap = VAR;
 
         compact_min = 100;
         compact_max = 1000000;
@@ -747,6 +760,9 @@ class MEDDLY::forest {
       inline void setLowestCost() { reorder = LOWEST_COST; }
       inline void setLowestMemory() { reorder = LOWEST_MEMORY; }
       inline void setRandom() { reorder = RANDOM; }
+
+      inline void setVarSwap() { swap = VAR; }
+      inline void setLevelSwap() { swap = LEVEL; }
     }; // end of struct policies
 
     /// Collection of various stats for performance measurement
@@ -1056,6 +1072,14 @@ class MEDDLY::forest {
 
     inline bool isRandom() const {
     	return policies::RANDOM == deflt.reorder;
+    }
+
+    inline bool isVarSwap() const {
+    	return policies::VAR == deflt.swap;
+    }
+
+    inline bool isLevelSwap() const {
+    	return policies::LEVEL == deflt.swap;
     }
 
     /// Returns the storage mechanism used by this forest.

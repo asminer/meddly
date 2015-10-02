@@ -99,10 +99,14 @@ class MEDDLY::mtmxd_forest : public mt_forest {
         bool first(int k, node_handle p);
     };
 
+    void swapAdjacentVariablesByVarSwap(int level);
     /** Return the root node after swapping the adjacent variables
         in the MxD with the given root node.
     */
     node_handle swapAdjacentVariablesInMxD(node_handle node);
+
+    void swapAdjacentVariablesByLevelSwap(int level);
+    void swapAdjacentLevels(int level);
 };
 
 //

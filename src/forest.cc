@@ -633,11 +633,28 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   int N = getNumVariables();
 
   // Initialize variable order
-  order_var = static_cast<int*>(calloc(sizeof(int), N+1));
-  order_level = static_cast<int*>(calloc(sizeof(int), N+1));
-  for(int i=1; i<N+1; i++) {
-	  order_var[i] = i;
-	  order_level[i] = i;
+  if(rel){
+	  // Negative indices for primed variables
+	  raw_order_var = static_cast<int*>(calloc(sizeof(int), 2*N+1));
+	  order_var = raw_order_var + N;
+	  raw_order_level = static_cast<int*>(calloc(sizeof(int), 2*N+1));
+	  order_level = raw_order_level + N;
+	  for(int i=1; i<N+1; i++) {
+		  order_var[i] = i;
+		  order_var[-i] = -i;
+		  order_level[i] = i;
+		  order_level[-i] = -i;
+	  }
+  }
+  else{
+	  raw_order_var = static_cast<int*>(calloc(sizeof(int), N+1));
+	  order_var = raw_order_var;
+	  raw_order_level = static_cast<int*>(calloc(sizeof(int), N+1));
+	  order_level = raw_order_level;
+	  for(int i=1; i<N+1; i++) {
+		  order_var[i] = i;
+		  order_level[i] = i;
+	  }
   }
 
   //
@@ -683,8 +700,8 @@ MEDDLY::expert_forest::~expert_forest()
   // Address array
   free(address);
 
-  free(order_var);
-  free(order_level);
+  free(raw_order_var);
+  free(raw_order_level);
 
   delete nodeMan;
 

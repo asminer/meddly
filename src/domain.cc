@@ -485,7 +485,7 @@ void MEDDLY::expert_domain::reorderVariables(const int* order)
 {
 	// Relation does not support variable reordering
 	for (int i=0; i<szForests; i++) {
-		if(forests[i]!=0 && !forests[i]->isForRelations()) {
+		if(forests[i]!=0) {
 			static_cast<expert_forest*>(forests[i])->reorderVariables(order);
 		}
 	}

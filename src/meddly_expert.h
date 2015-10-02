@@ -1723,10 +1723,11 @@ class MEDDLY::expert_forest : public forest
     inline int getLevelSize(int lh) const {
       MEDDLY_DCASSERT(isValidLevel(lh));
 
-      if (lh < 0) {
-        return getDomain()->getVariableBound(getVarByLevel(-lh), true);
+      int var=getVarByLevel(lh);
+      if (var < 0) {
+        return getDomain()->getVariableBound(-var, true);
       } else {
-        return getDomain()->getVariableBound(getVarByLevel(lh), false);
+        return getDomain()->getVariableBound(var, false);
       }
     }
     // The maximum size (number of indices) a variable can have.
@@ -1765,11 +1766,11 @@ class MEDDLY::expert_forest : public forest
     }
 
     inline int getVarByLevel(int level) const {
-    	return level<0 ? -order_level[-level] : order_level[level];
+    	return order_level[level];
     }
 
     inline int getLevelByVar(int var) const {
-    	return var<0 ? -order_var[-var] : order_var[var];
+    	return order_var[var];
     }
 
     inline bool isPrimedNode(node_handle p) const {
@@ -2758,8 +2759,10 @@ class MEDDLY::expert_forest : public forest
     node_handle transparent;
 
     // Variable order information organized by variable
+    int* raw_order_var;
     int* order_var;
     // Variable order information organized by level
+    int* raw_order_level;
     int* order_level;
 
   private:
