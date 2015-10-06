@@ -526,12 +526,6 @@ void MEDDLY::expert_domain::moveUpVariable(int low, int high)
 {
 	MEDDLY_DCASSERT(low<high);
 
-	for (int i=0; i<szForests; i++) {
-		if(forests[i]!=0) {
-			static_cast<expert_forest*>(forests[i])->removeAllComputeTableEntries();
-		}
-	}
-
 	int low_var = level_to_var[low];
 	for(int level=low+1; level<=high; level++) {
 		int var = level_to_var[level];
