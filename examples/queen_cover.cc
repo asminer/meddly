@@ -42,12 +42,7 @@
 #include "meddly.h"
 #include "meddly_expert.h"
 #include "loggers.h"
-
-#ifdef HAVE_GETRUSAGE
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <unistd.h>
-#endif
+#include "timer.h"
 
 using namespace MEDDLY;
 
@@ -58,38 +53,6 @@ const char* lfile;
 dd_edge** qic;
 dd_edge** qidp;
 dd_edge** qidm;
-
-
-class timer {
-  double start_time;
-protected:
-  inline double Time() const {
-#ifdef HAVE_GETRUSAGE
-    rusage r;
-    getrusage(RUSAGE_SELF, &r);
-    return r.ru_utime.tv_sec + r.ru_utime.tv_usec / 1000000.0;
-#else
-    return 0;
-#endif
-  }
-public:
-  timer() { 
-    reset();
-  }
-  void reset() { 
-    start_time = Time(); 
-  }
-  double elapsed() const {
-    return Time() - start_time;
-  }
-  static bool works() {
-#ifdef HAVE_GETRUSAGE
-    return true;
-#else
-    return false;
-#endif
-  }
-};
 
 
 forest* buildQueenForest(forest::policies &p)
@@ -254,6 +217,8 @@ int main(int argc, const char** argv)
   printf("Using %s\n", getLibraryInfo(0));
 
   timer stopwatch;
+  stopwatch.note_time();
+
   printf("\nDetermining queen covers for %dx%d chessboard.\n", N, N);
 
   forest* f = buildQueenForest(p);
@@ -357,9 +322,8 @@ int main(int argc, const char** argv)
   delete[] qidp;
   delete[] qidm;
 
-  if (stopwatch.works()) {
-    printf("\n%lg seconds CPU time elapsed\n", stopwatch.elapsed());
-  }
+  printf("\n%lg seconds CPU time elapsed\n", 
+    stopwatch.get_last_interval() / 1000000.0);
   printf("Forest stats:\n");
   FILE_output myout(stdout);
   expert_forest* ef = (expert_forest*)f;
