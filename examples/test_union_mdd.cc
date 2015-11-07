@@ -27,6 +27,7 @@
  * Testing MDD union.
  */
 
+#include <cstdlib>
 #include <iostream>
 #include "meddly.h"
 #include "timer.h"
@@ -72,7 +73,7 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  srandom(1u);
+  srand(1u);
 
   // initialize number of variables, their bounds and the number of elements
   // to create
@@ -109,7 +110,7 @@ int main(int argc, char *argv[])
     elements[i][0] = 0;
     for (int j = nVariables; j >= 1; --j)
     {
-      elements[i][j] = int(float(variableBound) * random() / (RAND_MAX + 1.0));
+      elements[i][j] = int(float(variableBound) * rand() / (RAND_MAX + 1.0));
       assert(elements[i][j] >= 0 && elements[i][j] < variableBound);
     }
     // print element[i]

@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  srandom(1u);
+  srand(1u);
 
   // initialize number of variables, their bounds and the number of elements
   // to create
@@ -88,9 +88,9 @@ int main(int argc, char *argv[])
     pelements[i][0] = 0;
     for (int j = nVariables; j >= 1; --j)
     {
-      elements[i][j] = int(float(variableBound) * random() / (RAND_MAX + 1.0));
+      elements[i][j] = int(float(variableBound) * rand() / (RAND_MAX + 1.0));
       assert(elements[i][j] >= 0 && elements[i][j] < variableBound);
-      pelements[i][j] = int(float(variableBound) * random() / (RAND_MAX + 1.0));
+      pelements[i][j] = int(float(variableBound) * rand() / (RAND_MAX + 1.0));
       assert(pelements[i][j] >= 0 && pelements[i][j] < variableBound);
     }
     // print element[i]

@@ -39,13 +39,15 @@
 #include <cstdlib>
 #include <fstream>
 
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <unistd.h>
-
 #include "meddly.h"
 #include "meddly_expert.h"
 #include "loggers.h"
+
+#ifdef HAVE_GETRUSAGE
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <unistd.h>
+#endif
 
 using namespace MEDDLY;
 
@@ -62,9 +64,13 @@ class timer {
   double start_time;
 protected:
   inline double Time() const {
+#ifdef HAVE_GETRUSAGE
     rusage r;
     getrusage(RUSAGE_SELF, &r);
     return r.ru_utime.tv_sec + r.ru_utime.tv_usec / 1000000.0;
+#else
+    return 0;
+#endif
   }
 public:
   timer() { 
@@ -75,6 +81,13 @@ public:
   }
   double elapsed() const {
     return Time() - start_time;
+  }
+  static bool works() {
+#ifdef HAVE_GETRUSAGE
+    return true;
+#else
+    return false;
+#endif
   }
 };
 
@@ -344,7 +357,9 @@ int main(int argc, const char** argv)
   delete[] qidp;
   delete[] qidm;
 
-  printf("\n%lg seconds CPU time elapsed\n", stopwatch.elapsed());
+  if (stopwatch.works()) {
+    printf("\n%lg seconds CPU time elapsed\n", stopwatch.elapsed());
+  }
   printf("Forest stats:\n");
   FILE_output myout(stdout);
   expert_forest* ef = (expert_forest*)f;

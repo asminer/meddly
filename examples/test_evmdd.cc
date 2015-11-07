@@ -201,7 +201,7 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  srandom(1u);
+  srand(1u);
 
   // initialize number of variables, their bounds and the number of elements
   // to create
@@ -242,10 +242,10 @@ int main(int argc, char *argv[])
     {
 #ifdef USE_RANDOM_GENERATOR_BOUND
       element[i][j] =
-        int(float(randomGeneratorBound) * random() / (RAND_MAX + 1.0));
+        int(float(randomGeneratorBound) * rand() / (RAND_MAX + 1.0));
       assert(element[i][j] >= 0 && element[i][j] < randomGeneratorBound);
 #else
-      element[i][j] = int(float(variableBound) * random() / (RAND_MAX + 1.0));
+      element[i][j] = int(float(variableBound) * rand() / (RAND_MAX + 1.0));
       assert(element[i][j] >= 0 && element[i][j] < variableBound);
 #endif
     }
@@ -259,10 +259,10 @@ int main(int argc, char *argv[])
 #else
 #ifdef USE_RANDOM_GENERATOR_BOUND
     terms[i] =
-      element_type(float(randomGeneratorBound) * random() / (RAND_MAX + 1.0));
+      element_type(float(randomGeneratorBound) * rand() / (RAND_MAX + 1.0));
 #else
     terms[i] =
-      element_type(float(variableBound) * random() / (RAND_MAX + 1.0));
+      element_type(float(variableBound) * rand() / (RAND_MAX + 1.0));
 #endif
 #endif
   }
