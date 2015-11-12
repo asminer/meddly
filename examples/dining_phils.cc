@@ -105,6 +105,15 @@ using namespace MEDDLY;
 
 // #define NAME_VARIABLES
 // #define SHOW_MXD
+// #define SHOW_MDD
+
+// Specify the variable order, top down:
+enum varorder {
+  fpfp,       // fork, phil, fork, phil, ...
+  pfpf,       // phil, fork, phil, fork, ...
+  ppff,       // phil, ..., phil, fork, ..., fork
+  ffpp        // fork, ..., fork, phil, ..., phil
+};
 
 struct switches {
   bool pessimistic;
@@ -112,6 +121,7 @@ struct switches {
   char method;
   // bool chaining;
   bool printReachableStates;
+  varorder vord;
 
 public:
   switches() {
@@ -120,20 +130,79 @@ public:
     method = 'b';
     // chaining = true;
     printReachableStates = false;
+    vord = fpfp;
   }
 };
 
+class model2var {
+  public:
+    model2var(varorder vo, int phils);
+
+    inline int philVar(int p) const {
+      switch (vord) {
+
+        case ffpp:    return p+1;
+
+        case ppff:    return nPhils+p+1;
+
+        case pfpf:    return 2*p +2;  // 0th philosopher at 2nd variable
+
+        case fpfp:
+        default:      return 2*p +1;  // 0th philosopher at 1st variable
+      }
+    }
+
+    inline int forkVar(int p) const {
+      switch (vord) {
+
+        case ffpp:    return nPhils+p+1;
+
+        case ppff:    return p+1;
+
+        case pfpf:    return 2*p +1;  // 0th fork at 1st variable
+
+        case fpfp:
+        default:      return 2*p +2;  // 0th fork at 2nd variable
+      }
+
+    }
+
+    inline int leftVar(int p) const {
+      return forkVar( (p + nPhils - 1) % nPhils );
+    }
+    inline int rightVar(int p) const {
+      return forkVar(p);
+    }
+
+    inline int numPhils() const {
+      return nPhils;
+    }
+
+    inline int numLevels() const {
+      return 2*nPhils;
+    }
+  
+  private:
+    varorder vord;
+    int nPhils;
+};
+
+
+model2var::model2var(varorder vo, int phils) : vord(vo)
+{
+  nPhils = phils;
+}
 
 class philsModel {
   public:
-    philsModel(int nPhils, forest* mxd);
+    philsModel(int nPhils, const model2var& m2v, forest* mxd);
     ~philsModel();
 
     // event builders
     inline void setPhilosopher(int phil) {
-      ph = philVar(phil);
-      rf = rightVar(phil);
-      lf = leftVar(phil);
+      ph = M2V.philVar(phil);
+      rf = M2V.rightVar(phil);
+      lf = M2V.leftVar(phil);
     };
 
     void Idle2WaitBoth(dd_edge &e);
@@ -151,18 +220,6 @@ class philsModel {
       for (int i = 1; i<sz; i++) m[i] = c;
     }
 
-    inline int philVar(int p) const {
-      return 2*p +1;  // 0th philosopher at 1st variable
-    }
-    inline int leftVar(int p) const {
-      // left fork for phil p
-      return (p > 0) ? 2*p : nPhils*2;
-    }
-    inline int rightVar(int p) const {
-      // right fork for phil p
-      return 2*p+2;
-    }
-
   private:
     int* from;
     int* to;
@@ -173,10 +230,13 @@ class philsModel {
     int ph;
     int rf;
     int lf;
+
+    const model2var& M2V;
 };
 
 
-philsModel::philsModel(int nP, forest* _mxd)
+philsModel::philsModel(int nP, const model2var& m2v, forest* _mxd)
+: M2V(m2v)
 {
   nPhils = nP;
   mxd = _mxd;
@@ -320,32 +380,61 @@ void printStats(const char* who, const forest* f)
   );
 }
 
-variable** initializeVariables(int nLevels)
+variable** initializeVariables(const model2var &M2V)
 {
   // set bounds for each variable
   // forks: 2 states, philosophers: 5 states
-  variable** vars = (variable**) malloc((1+nLevels) * sizeof(void*));
-  vars[0] = 0;
+  variable** vars = (variable**) malloc((1+M2V.numLevels()) * sizeof(void*));
+  for (int i=0; i<=M2V.numLevels(); i++) {
+    vars[i] = 0;
+  }
+
 #ifdef NAME_VARIABLES
   char buffer[32];
-  for (int i = nLevels; i; i -= 2) {
-    // forks
-    buffer[0] = 0;
-    snprintf(buffer, 32, "fork%d", i/2);
-    vars[i] = createVariable(2, strdup(buffer));
-    // philosophers one level below corresponding forks
-    buffer[0] = 0;
-    snprintf(buffer, 32, "phil%d", i/2);
-    vars[i-1] = createVariable(5, strdup(buffer));
-  }
-#else
-  for (int i = nLevels; i; i -= 2) {
-    // forks
-    vars[i] = createVariable(2, 0);
-    // philosophers one level below corresponding forks
-    vars[i-1] = createVariable(5, 0);
-  }
 #endif
+  
+  for (int i=0; i<M2V.numPhils(); i++) {
+
+    /*
+        Create ith fork
+    */
+
+    int v = M2V.forkVar(i);
+
+    if (vars[v]) {
+      fprintf(stderr, "Error: forkVar(%d) = %d index in use\n", i, v);
+      exit(1);
+    }
+
+    char* name = 0;
+#ifdef NAME_VARIABLES
+    buffer[0] = 0;
+    snprintf(buffer, 32, "fork%d", i);
+    name = strdup(buffer);
+#endif
+    vars[v] = createVariable(2, name);
+
+    /*
+        Create ith philosopher
+    */
+
+    v = M2V.philVar(i);
+
+    if (vars[v]) {
+      fprintf(stderr, "Error: philVar(%d) = %d index in use\n", i, v);
+      exit(1);
+    }
+
+    name = 0;
+#ifdef NAME_VARIABLES
+    buffer[0] = 0;
+    snprintf(buffer, 32, "phil%d", i);
+    name = strdup(buffer);
+#endif
+    vars[v] = createVariable(5, name);
+
+  } // for i
+
   return vars;
 }
 
@@ -381,13 +470,29 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
   // Number of levels in domain (excluding terminals)
   int nLevels = nPhilosophers * 2;
 
+
+  const char* order_description = 0;
+  switch (sw.vord) {
+    case pfpf:  order_description = "phil, fork, phil, fork, ...";
+                break;
+    case fpfp:  order_description = "fork, phil, fork, phil, ...";
+                break;
+    case ppff:  order_description = "phil, ..., phil, fork, ..., fork";
+                break;
+    case ffpp:  order_description = "fork, ..., fork, phil, ..., phil";
+                break;
+    default:    order_description = "unknown order?";
+  }
+  printf("Using variable order (from top down): %s\n", order_description);
+  model2var M2V(sw.vord, nPhilosophers);
+
   // Set up arrays bounds based on nPhilosophers
-  variable** vars = initializeVariables(nLevels);
+  variable** vars = initializeVariables(M2V);
 
   printf("Initiailzing forests\n");
 
   // Create a domain and set up the state variables.
-  domain *d = createDomain(vars, nLevels);
+  domain *d = createDomain(vars, M2V.numLevels());
   assert(d != NULL);
 
   // Set up MDD options
@@ -428,7 +533,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
   // Create a matrix diagram to represent the next-state function
   // Next-State function is computed by performing a union of next-state
   // functions that each represent how a philosopher's state can change.
-  philsModel model(nPhilosophers, mxd);
+  philsModel model(nPhilosophers, M2V, mxd);
   dd_edge nsf(mxd);
   satpregen_opname::pregen_relation* ensf = 0;
   specialized_operation* sat = 0;
@@ -533,6 +638,10 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
   printf("#Nodes: %d\n", reachableStates.getNodeCount());
   printf("#Edges: %d\n", reachableStates.getEdgeCount());
 
+#ifdef SHOW_MDD
+  printf("Reachability set:\n");
+  reachableStates.show(meddlyout, 2);
+#endif
 
   // Show stats for rs construction
   printStats("MDD", mdd);
@@ -630,6 +739,10 @@ int usage(const char* who)
   printf("\t-ksat:      use saturation by levels\n");
   printf("\t-msat:      use monolithic saturation\n");
   printf("\t -l lfile:  Write logging information to specified file\n\n");
+  printf("\t-ofpfp:     (default) Variable order: fork, phil, fork, phil, ...\n");
+  printf("\t-opfpf:     Variable order: phil, fork, phil, fork, ...\n");
+  printf("\t-oppff:     Variable order: phil, ..., phil, fork, ..., fork\n");
+  printf("\t-offpp:     Variable order: fork, ..., fork, phil, ..., phil\n");
   printf("\n");
   return 0;
 }
@@ -696,6 +809,23 @@ int main(int argc, char *argv[])
     if (strcmp("-l", argv[i])==0) {
       lfile = argv[i+1];
       i++;
+      continue;
+    }
+
+    if (strcmp(cmd, "-ofpfp") == 0) {
+      sw.vord = fpfp;
+      continue;
+    }
+    if (strcmp(cmd, "-opfpf") == 0) {
+      sw.vord = pfpf;
+      continue;
+    }
+    if (strcmp(cmd, "-oppff") == 0) {
+      sw.vord = ppff;
+      continue;
+    }
+    if (strcmp(cmd, "-offpp") == 0) {
+      sw.vord = ffpp;
       continue;
     }
 
