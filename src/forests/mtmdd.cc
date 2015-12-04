@@ -475,7 +475,6 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 
 		node_reader::recycle(high_nr);
 
-		unique->remove(hashNode(high_nodes[i]), high_nodes[i]);
 		// The reduced node of high_nb must be at level+1
 		// Assume the reduced node is at level
 		// Then high_nodes[i] corresponds to a function that
@@ -779,7 +778,6 @@ void MEDDLY::mtmdd_forest::moveUpVariable(int low, int high)
 				// Then node corresponds to a function that
 				// is independent of the variable to be moved up
 				// This is a contradiction
-				unique->remove(hashNode(nodes[i]), nodes[i]);
 				modifyReducedNodeInPlace(nb, nodes[i]);
 			}
 		}

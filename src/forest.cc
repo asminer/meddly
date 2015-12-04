@@ -2062,6 +2062,7 @@ MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(node_builder
 {
 	int count = getInCount(p);
 
+	unique->remove(hashNode(p), p);
 	nodeMan->unlinkDownAndRecycle(address[p].offset);
 
 	nb.computeHash();
