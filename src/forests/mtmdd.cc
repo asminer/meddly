@@ -6,7 +6,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -48,7 +48,7 @@ void MEDDLY::mtmdd_forest::reorderVariables(const int* order)
 
 	resetPeakNumNodes();
 	resetPeakMemoryUsed();
-	
+
 	if(isLowestInversion()) {
 		reorderVariablesLowestInversion(order);
 	}
@@ -172,7 +172,7 @@ void MEDDLY::mtmdd_forest::reorderVariablesBubbleUp(const int* order)
 void MEDDLY::mtmdd_forest::reorderVariablesLowestCost(const int* order)
 {
 	int size = getDomain()->getNumVariables();
-	InversionHeap heap(size);
+	IndexedHeap<long, less<long> > heap(size);
 
 	for(int i=1; i<size; i++) {
 		if(order[getVarByLevel(i)] > order[getVarByLevel(i+1)]) {
@@ -183,7 +183,7 @@ void MEDDLY::mtmdd_forest::reorderVariablesLowestCost(const int* order)
 
 	int swap = 0;
 	while(!heap.empty()) {
-		int level = heap.top();
+		int level = heap.top_key();
 		swapAdjacentVariables(level);
 		swap++;
 		heap.pop();
@@ -249,7 +249,7 @@ long MEDDLY::mtmdd_forest::calculate_swap_cost(int level)
 void MEDDLY::mtmdd_forest::reorderVariablesLowestMemory(const int* order)
 {
 	int size = getDomain()->getNumVariables();
-	InversionHeap heap(size);
+	IndexedHeap<long, less<long> > heap(size);
 
 	for(int i=1; i<size; i++) {
 		if(order[getVarByLevel(i)] > order[getVarByLevel(i+1)]) {
@@ -262,7 +262,7 @@ void MEDDLY::mtmdd_forest::reorderVariablesLowestMemory(const int* order)
 	bool swapped[] = {false, false};
 	int saved = 0;
 	while(!heap.empty()) {
-		int level = heap.top();
+		int level = heap.top_key();
 		if(swapped[0] || swapped[1]) {
 			saved++;
 			swapped[0] = false;
@@ -301,13 +301,13 @@ void MEDDLY::mtmdd_forest::reorderVariablesLowestMemory(const int* order)
 			swapped[1]=true;
 		}
 
-		if(swapped[0] && heap.top()!=level+1) {
+		if(swapped[0] && heap.top_key()!=level+1) {
 			// Undo
 			swapAdjacentVariables(level+1);
 			swapped[0]=false;
 		}
 
-		if(swapped[1] && heap.top()!=level-1) {
+		if(swapped[1] && heap.top_key()!=level-1) {
 			// Undo
 			swapAdjacentVariables(level-1);
 			swapped[1]=false;

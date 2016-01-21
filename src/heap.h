@@ -8,24 +8,17 @@
 
 using namespace std;
 
-//
-// InversionHeap is designed to obtain the inversion with lowest cost quickly
-// Two adjacent variables form an inversion
-// if their relative order is different from that in the final permutation
-//
-
-typedef struct Inversion
-{
-	// An inversion is formed by the variables at level and level+1
-	int level;
-	long cost;
-  Inversion(int l, long c) : level(l), cost(c) {}
-} Inversion;
-
-class InversionHeap
+template <typename T, typename Comp>
+class IndexedHeap
 {
 private:
 	static const int NOT_IN_HEAP=-1;
+
+	struct Item
+	{
+		int key;
+		T value;
+	};
 
 	static inline size_t left(size_t i)
 	{
@@ -42,112 +35,119 @@ private:
 		return (i-1)/2;
 	}
 
-	static inline bool lessthan(Inversion& left, Inversion& right)
-	{
-		return left.cost<right.cost;
-	}
-
-	vector<Inversion> _heap;
+	vector<Item> _heap;
 	vector<int> _indices;
+	Comp _comp;
 
-	bool inline has_left(size_t index)
+	inline bool lessthan(const T& x, const T& y)
 	{
-		return left(index)<_heap.size();
+		return _comp(x, y);
 	}
 
-	bool inline has_right(size_t index)
+	inline bool has_left(size_t index)
 	{
-		return right(index)<_heap.size();
+		return left(index) < _heap.size();
 	}
 
-	void percolate_down(int level)
+	inline bool has_right(size_t index)
 	{
-		assert(is_in_heap(level));
-		int i=_indices[level];
-		Inversion inversion=_heap[i];
-		while(has_left(i)){
-			int min_index = left(i);
-			if (has_right(i)){
-				if (lessthan(_heap[right(i)], _heap[min_index])) {
-					min_index = right(i);
+		return right(index) < _heap.size();
+	}
+
+	void percolate_down(int key)
+	{
+		assert(is_in_heap(key));
+		int index = _indices[key];
+		Item item = _heap[index];
+		while(has_left(index)){
+			int min_index = left(index);
+			if (has_right(index)){
+				if (lessthan(_heap[right(index)].value, _heap[min_index].value)) {
+					min_index = right(index);
 				}
 			}
-			if (lessthan(_heap[min_index], inversion)) {
-				_indices[_heap[min_index].level]=i;
-				_heap[i]=_heap[min_index];
-				i=min_index;
+			if (lessthan(_heap[min_index].value, item.value)) {
+				_indices[_heap[min_index].key]=index;
+				_heap[index] = _heap[min_index];
+				index = min_index;
 			}
 			else{
 				break;
 			}
 		}
-		_indices[level]=i;
-		_heap[i]=inversion;
+		_indices[key] = index;
+		_heap[index] = item;
 	}
 
-	void percolate_up(int level)
+	void percolate_up(int key)
 	{
-		assert(is_in_heap(level));
-		int i=_indices[level];
-		Inversion inversion=_heap[i];
-		int p=parent(i);
-		while (i>0 && lessthan(inversion, _heap[p])){
-			_indices[_heap[p].level]=i;
-			_heap[i]=_heap[p];
-			i=p;
-			p=parent(i);
+		assert(is_in_heap(key));
+		int index = _indices[key];
+		Item item = _heap[index];
+		int p = parent(index);
+		while (index>0 && lessthan(item.value, _heap[p].value)){
+			_indices[_heap[p].key] = index;
+			_heap[index] = _heap[p];
+			index = p;
+			p = parent(index);
 		}
-		_indices[level]=i;
-		_heap[i]=inversion;
+		_indices[key] = index;
+		_heap[index] = item;
 	}
 
 public:
-	InversionHeap(int var_size)
+	IndexedHeap(int size)
 	{
-		_indices.assign(var_size+1, NOT_IN_HEAP);
-		_heap.reserve(var_size);
+		_indices.assign(size+1, NOT_IN_HEAP);
+		_heap.reserve(size);
 	}
 
-	// If the level is in the heap, update the cost
-	void push(int level, long cost)
+	void push(int key, T value)
 	{
-		if(!is_in_heap(level)){
-			_indices[level]=_heap.size();
-			_heap.push_back(Inversion(level, cost));
-			percolate_up(level);
+		if(!is_in_heap(key)){
+			_indices[key] = _heap.size();
+			_heap.push_back({key, value});
+			percolate_up(key);
 		}
 		else {
-			long old_cost=_heap[_indices[level]].cost;
-			_heap[_indices[level]].cost=cost;
-			if(old_cost<cost) {
-				percolate_down(level);
+			// If the index is in the heap
+			// Update its value and location
+			T old_value = _heap[_indices[key]].value;
+			_heap[_indices[key]].value = value;
+			if(old_value < value) {
+				percolate_down(key);
 			}
-			else if(old_cost>cost) {
-				percolate_up(level);
+			else if(old_value>value) {
+				percolate_up(key);
 			}
 		}
 	}
 
 	void pop()
 	{
-		int top=_heap[0].level;
-		_heap[0]=_heap.back();
-		_indices[_heap[0].level]=0;
-		_indices[top]=NOT_IN_HEAP;
+		int key = top_key();
+		_heap[0] = _heap.back();
+		_indices[_heap[0].key] = 0;
+		_indices[key] = NOT_IN_HEAP;
 		_heap.pop_back();
 		if(_heap.size()>1) {
-			percolate_down(_heap[0].level);
+			percolate_down(_heap[0].key);
 		}
 	}
 
-	int top()
+	int top_key() const
 	{
-		return _heap[0].level;
+		return _heap[0].key;
 	}
 
-	bool is_in_heap(int level) const
+	T top() const
 	{
-		return _indices[level]!=NOT_IN_HEAP;
+		return _heap[0].value;
+	}
+
+	bool is_in_heap(int key) const
+	{
+		return _indices[key]!=NOT_IN_HEAP;
 	}
 
 	bool empty() const

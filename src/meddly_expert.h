@@ -527,8 +527,8 @@ class MEDDLY::expert_domain : public domain {
     void swapAdjacentVariables(int lev);
 
     /*
-     * Reorganize the variables in the certain order.
-     * Order specifies that Variable i is at Level order[i].
+     * Reorganize the variables into the given order.
+     * Variable order specifies that Variable i is at Level order[i].
      */
     void reorderVariables(const int* order);
 
