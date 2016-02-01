@@ -386,91 +386,87 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 
 	removeAllComputeTableEntries();
 
-	int high_var=getVarByLevel(level+1);
-	int low_var=getVarByLevel(level);
-	int high_size=getVariableSize(high_var);
-	int low_size=getVariableSize(low_var);
+	int hvar = getVarByLevel(level+1);  // The variable at the higher level
+	int lvar = getVarByLevel(level);    // The variable at the lower level
+	int hsize = getVariableSize(hvar);  // The size of the variable at the higher level
+	int lsize = getVariableSize(lvar);  // The size of the variable at the lower level
 
-	int high_node_size=unique->getNumEntries(high_var);
-	node_handle* high_nodes=static_cast<node_handle*>(malloc(high_node_size*sizeof(node_handle)));
-	unique->getItems(high_var, high_nodes, high_node_size);
+	int hnum = unique->getNumEntries(hvar); // The number of nodes associated with the variable at the higher level
+	node_handle* hnodes = static_cast<node_handle*>(malloc(hnum*sizeof(node_handle)));
+	unique->getItems(hvar, hnodes, hnum);
 
-	int low_node_size=unique->getNumEntries(low_var);
-	node_handle* low_nodes=static_cast<node_handle*>(malloc(low_node_size*sizeof(node_handle)));
-	unique->getItems(low_var, low_nodes, low_node_size);
+	int lnum = unique->getNumEntries(lvar); // The nubmer of nodes associated with the variable at the lower level
+	node_handle* lnodes = static_cast<node_handle*>(malloc(lnum*sizeof(node_handle)));
+	unique->getItems(lvar, lnodes, lnum);
 
 //	printf("Before: Level %d : %d, Level %d : %d\n",
-//			level+1, high_node_size,
-//			level, low_node_size);
+//			level+1, hnum,
+//			level, lnum);
 
-	int i=0, j=0;
+	int num = 0;
 	// Renumber the level of nodes for the variable to be moved down
-	for(i=0; i<high_node_size; i++) {
-		node_reader* nr = initNodeReader(high_nodes[i], true);
-		MEDDLY_DCASSERT(nr->getLevel()==level+1);
-		MEDDLY_DCASSERT(nr->getSize()==high_size);
+	for(int i=0; i<hnum; i++) {
+		node_reader* nr = initNodeReader(hnodes[i], true);
+		MEDDLY_DCASSERT(nr->getLevel() == level+1);
+		MEDDLY_DCASSERT(nr->getSize() == hsize);
 
-		for(int k=0; k<high_size; k++){
+		for(int k=0; k<hsize; k++){
 			if(isLevelAbove(getNodeLevel(nr->d(k)), level-1)){
 				// Remove the nodes corresponding to functions that
 				// are independent of the variable to be moved up
-				high_nodes[j++]=high_nodes[i];
+				hnodes[num++] = hnodes[i];
 				break;
 			}
 		}
 		node_reader::recycle(nr);
 
-		setNodeLevel(high_nodes[i], level);
+		setNodeLevel(hnodes[i], level);
 	}
-	high_node_size=j;
+	hnum = num;
 
 	// Renumber the level of nodes for the variable to be moved up
-	for(i=0; i<low_node_size; i++) {
-		setNodeLevel(low_nodes[i], level+1);
+	for(int i=0; i<lnum; i++) {
+		setNodeLevel(lnodes[i], level+1);
 	}
 
 	// Update the variable order
-	order_var[high_var] = level;
-	order_var[low_var] = level+1;
-	order_level[level+1] = low_var;
-	order_level[level] = high_var;
+	order_var[hvar] = level;
+	order_var[lvar] = level+1;
+	order_level[level+1] = lvar;
+	order_level[level] = hvar;
 
-	node_reader** low_nrs=static_cast<node_reader**>(malloc(high_size*sizeof(node_reader*)));
-	node_handle* skips=static_cast<node_handle*>(malloc(high_size*sizeof(node_handle))); // If the lower level is skipped
+	node_handle** children = new node_handle*[hsize];
+	for(int i=0; i<hsize; i++) {
+		children[i] = new node_handle[lsize];
+	}
 
 	// Process the rest of nodes for the variable to be moved down
-	for(i=0; i<high_node_size; i++) {
-		node_reader* high_nr = initNodeReader(high_nodes[i], true);
-		node_builder& high_nb = useNodeBuilder(level+1, low_size);
+	for(int i=0; i<hnum; i++) {
+		node_reader* high_nr = initNodeReader(hnodes[i], true);
+		node_builder& high_nb = useNodeBuilder(level+1, lsize);
 
-		for(int k=0; k<high_size; k++) {
-			if(isLevelAbove(level, getNodeLevel(high_nr->d(k)))){
-				low_nrs[k]=NULL;
-				skips[k]=high_nr->d(k);
+		for(int j=0; j<hsize; j++) {
+			if(isLevelAbove(level, getNodeLevel(high_nr->d(j)))) {
+				for(int k=0; k<lsize; k++) {
+					children[j][k] = high_nr->d(j);
+				}
 			}
-			else{
-				low_nrs[k]=initNodeReader(high_nr->d(k), true);
-				MEDDLY_DCASSERT(low_nrs[k]->getSize()==low_size);
+			else {
+				node_reader* nr = initNodeReader(high_nr->d(j), true);
+				MEDDLY_DCASSERT(nr->getSize()==lsize);
+				for(int k=0; k<lsize; k++) {
+					children[j][k] = nr->d(k);
+				}
+				node_reader::recycle(nr);
 			}
 		}
 
-		for(j=0; j<low_size; j++) {
-			node_builder& low_nb = useNodeBuilder(level, high_size);
-			for(int k=0; k<high_size; k++) {
-				if(low_nrs[k]==NULL){
-					low_nb.d(k)=linkNode(skips[k]);
-				}
-				else{
-					low_nb.d(k)=linkNode(low_nrs[k]->d(j));
-				}
+		for(int j=0; j<lsize; j++) {
+			node_builder& low_nb = useNodeBuilder(level, hsize);
+			for(int k=0; k<hsize; k++) {
+				low_nb.d(k) = linkNode(children[k][j]);
 			}
-			high_nb.d(j)=createReducedNode(-1, low_nb);
-		}
-
-		for(int k=0; k<high_size; k++) {
-			if(low_nrs[k]!=NULL){
-				node_reader::recycle(low_nrs[k]);
-			}
+			high_nb.d(j) = createReducedNode(-1, low_nb);
 		}
 
 		node_reader::recycle(high_nr);
@@ -480,23 +476,20 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 		// Then high_nodes[i] corresponds to a function that
 		// is independent of the variable to be moved up
 		// This is a contradiction
-		modifyReducedNodeInPlace(high_nb, high_nodes[i]);
-
-//		node_handle node = createReducedNode(-1, high_nb);
-//		MEDDLY_DCASSERT(getInCount(node)==1);
-//		swapNodes(high_nodes[i], node);
-//		unlinkNode(node);
+		modifyReducedNodeInPlace(high_nb, hnodes[i]);
 	}
 
-	free(low_nrs);
-	free(skips);
+	for(int i=0; i<hsize; i++) {
+		free(children[i]);
+	}
+	free(children);
 
-	free(high_nodes);
-	free(low_nodes);
+	free(hnodes);
+	free(lnodes);
 
 //	printf("After: Level %d : %d, Level %d : %d\n",
-//			level+1, unique->getNumEntries(low_var),
-//			level, unique->getNumEntries(high_var));
+//			level+1, unique->getNumEntries(lvar),
+//			level, unique->getNumEntries(hvar));
 //	printf("#Node: %d\n", getCurrentNumNodes());
 }
 
