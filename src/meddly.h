@@ -2411,6 +2411,7 @@ class MEDDLY::enumerator {
     const int* getPrimedAssignments() const;
 
     void getValue(int &v) const;
+    void getValue(float &v) const;
 
     int levelChanged() const;
 
