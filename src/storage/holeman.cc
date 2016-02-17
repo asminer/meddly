@@ -62,41 +62,41 @@ MEDDLY::node_address MEDDLY::holeman::chunkAfterHole(node_address addr) const
 }
 
 // ******************************************************************
-void MEDDLY::holeman::dumpInternalTail(FILE*) const
+void MEDDLY::holeman::dumpInternalTail(output &) const
 {
 }
 
 // ******************************************************************
 
 void MEDDLY::holeman
-::reportStats(FILE* s, const char* pad, unsigned flags) const
+::reportStats(output &s, const char* pad, unsigned flags) const
 {
   if (flags & expert_forest::HOLE_MANAGER_STATS) {
     bool human_readable = flags & expert_forest::HUMAN_READABLE_MEMORY;
-    fprintf(s, "%s    %d holes currently\n", pad, num_holes);
+    s << pad << "    " << num_holes << " holes currently\n";
     if (num_untracked) {
-      fprintf(s, "%s        (%d untracked, %d tracked)\n", pad, num_untracked, 
-        num_holes-num_untracked);
+      s << pad << "        (" << num_untracked << " untracked, " 
+        << num_holes-num_untracked << " tracked)\n";
     }
-    fprintf(s, "%s    %d max holes seen\n", pad, max_holes);
+    s << pad << "    " << max_holes << " max holes seen\n";
 
     unsigned long holemem = hole_slots * sizeof(node_handle);
-    fprintf(s, "%s    ", pad);
-    fprintmem(s, holemem, human_readable);
-    fprintf(s, " wasted in holes (total)\n");
+    s << pad << "    ";
+    s.put_mem(holemem, human_readable);
+    s << " wasted in holes (total)\n";
     unsigned long untrackedmem = untracked_slots * sizeof(node_handle);
     if (untrackedmem) {
-      fprintf(s, "%s        (", pad);
-      fprintmem(s, untrackedmem, human_readable);
-      fprintf(s, " untracked, ");
-      fprintmem(s, holemem-untrackedmem, human_readable);
-      fprintf(s, " tracked)\n");
+      s << pad << "        (";
+      s.put_mem(untrackedmem, human_readable);
+      s << " untracked, ";
+      s.put_mem(holemem-untrackedmem, human_readable);
+      s << " tracked)\n";
     }
 
     holemem = max_hole_slots * sizeof(node_handle);
-    fprintf(s, "%s    ", pad);
-    fprintmem(s, holemem, human_readable);
-    fprintf(s, " max in holes\n");
+    s << pad << "    ";
+    s.put_mem(holemem, human_readable);
+    s << pad << " max in holes\n";
   }
 }
 
@@ -124,7 +124,12 @@ void MEDDLY::holeman::resize(node_address new_slots)
   node_handle* new_data 
     = (node_handle*) realloc(data, new_slots * sizeof(node_handle));
 
-  if (0 == new_data) throw error(error::INSUFFICIENT_MEMORY);
+  if (0 == new_data) {
+    fprintf(stderr,
+        "Error in allocating array of size %lu at %s, line %d\n",
+        new_slots * sizeof(node_handle), __FILE__, __LINE__);
+    throw error(error::INSUFFICIENT_MEMORY);
+  }
   if (0 == data) new_data[0] = 0;
   if (new_slots > size) {
     incMemAlloc((new_slots - size) * sizeof(node_handle));

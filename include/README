@@ -5,47 +5,9 @@
 
 Explanation of files:
 
-mddlib        simple interface to MDD library
-mddexpert     expert interface to MDD library
+meddly.h          simple interface
+meddly_expert.h   expert interface
 
-Structure:
+Usage:
+meddly.h must be included before meddly_expert.h.
 
-Forests:
-Simple Interface (SI) -- simplest interface with most common mdd functions.
-Expert Interface (EI) -- contains all the functionality that we want to expose.
-
-Internal Structure:
-node_manager (NM) -- internal concrete class to implement a mdd forest.
-
-NM inherits EI which in-turn inherits SI.
-
-Domain:
-A collection of forests which use the same variable-ordering.
-
-dd_edge:
-An edge in a forest -- an edge is nothing but a node in a forest and can
-therefore represent a collection of edges. An edge must belong to some forest.
-
-Compute Manager (CM):
-Expert CM (ECM) inherits from Abstract CM (ACM)
-All forest operations (such as APPLY) are performed via the CM. The CM stores
-the handles to different operations as well as the compute tables (a.k.a
-compute caches) for each operation. Note, that the compute manager may choose
-to use the same compute table for all operations, but this detail is
-not visible to the SI.
-
-Operations:
-Only visible to the EI.
-An expert-user may wish to define a custom operation. In which case, he/she
-can inherit from an appropriate derived class of operation (see meddly_expert.h
-for examples of derived classes). In general, the expert-user will need
-to over-ride the correct compute() and checkTerminals() functions from the
-operation class they derive their new operation from.
-
-Once, a custom operation has been defined, the user must pass an instance of
-that operation to the ECM.
-
-IMPORTANT: it is up to the user to make sure that ONLY ONE instance of each
-operation is created. If more than one are created, the ECM will treat them
-internally as distinct operations and this may lead to less effective use of
-the compute caches.

@@ -119,10 +119,10 @@ class MEDDLY::compact_storage : public node_storage {
     virtual ~compact_storage();
 
     virtual void collectGarbage(bool shrink);
-    virtual void reportStats(FILE* s, const char* pad, unsigned flags) const;
+    virtual void reportStats(output &s, const char* pad, unsigned flags) const;
 
-    virtual void showNode(FILE* s, node_address addr, bool verb) const;
-    virtual void writeNode(FILE* s, node_address addr, const node_handle* map)
+    virtual void showNode(output &s, node_address addr, bool verb) const;
+    virtual void writeNode(output &s, node_address addr, const node_handle* map)
     const;
 
     virtual node_address makeNode(node_handle p, const node_builder &nb, 
@@ -149,10 +149,10 @@ class MEDDLY::compact_storage : public node_storage {
     virtual void localInitForForest(const expert_forest* f);
     virtual void updateData(node_handle* d);
     virtual int smallestNode() const;
-    virtual void dumpInternalInfo(FILE*) const;
+    virtual void dumpInternalInfo(output &) const;
     virtual node_address 
-    dumpInternalNode(FILE*, node_address addr, unsigned flags) const;
-    virtual void dumpInternalTail(FILE*) const;
+    dumpInternalNode(output &, node_address addr, unsigned flags) const;
+    virtual void dumpInternalTail(output &) const;
 
   // --------------------------------------------------------
   // |  Misc. helpers.
@@ -381,7 +381,7 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <int pbytes, int ibytes>
       inline node_address 
-      copyFullIntoSparse(const node_builder &nb, int size, node_address addr)
+      copyFullIntoSparse(const node_builder &nb, node_address addr)
       {
         MEDDLY_DCASSERT(nb.isFull());
         unsigned char* down = sparseDown(addr);
@@ -410,14 +410,13 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <int pbytes>
       inline node_address
-      copyFullIntoSparse(int ibytes, const node_builder &nb, 
-        int size, node_address addr)
+      copyFullIntoSparse(int ibytes, const node_builder &nb, node_address addr)
       {
         switch (ibytes) {
-            case 1:   return  copyFullIntoSparse<pbytes, 1>(nb, size, addr);
-            case 2:   return  copyFullIntoSparse<pbytes, 2>(nb, size, addr);
-            case 3:   return  copyFullIntoSparse<pbytes, 3>(nb, size, addr);
-            case 4:   return  copyFullIntoSparse<pbytes, 4>(nb, size, addr);
+            case 1:   return  copyFullIntoSparse<pbytes, 1>(nb, addr);
+            case 2:   return  copyFullIntoSparse<pbytes, 2>(nb, addr);
+            case 3:   return  copyFullIntoSparse<pbytes, 3>(nb, addr);
+            case 4:   return  copyFullIntoSparse<pbytes, 4>(nb, addr);
             default:
                 MEDDLY_DCASSERT(0);
                 throw error(error::MISCELLANEOUS);
@@ -426,17 +425,17 @@ class MEDDLY::compact_storage : public node_storage {
 
       inline node_address
       copyFullIntoSparse(int pbytes, int ibytes, const node_builder &nb, 
-        int size, node_address addr)
+        node_address addr)
       {
         switch (pbytes) {
-            case 1:   return  copyFullIntoSparse<1>(ibytes, nb, size, addr);
-            case 2:   return  copyFullIntoSparse<2>(ibytes, nb, size, addr);
-            case 3:   return  copyFullIntoSparse<3>(ibytes, nb, size, addr);
-            case 4:   return  copyFullIntoSparse<4>(ibytes, nb, size, addr);
-            case 5:   return  copyFullIntoSparse<5>(ibytes, nb, size, addr);
-            case 6:   return  copyFullIntoSparse<6>(ibytes, nb, size, addr);
-            case 7:   return  copyFullIntoSparse<7>(ibytes, nb, size, addr);
-            case 8:   return  copyFullIntoSparse<8>(ibytes, nb, size, addr);
+            case 1:   return  copyFullIntoSparse<1>(ibytes, nb, addr);
+            case 2:   return  copyFullIntoSparse<2>(ibytes, nb, addr);
+            case 3:   return  copyFullIntoSparse<3>(ibytes, nb, addr);
+            case 4:   return  copyFullIntoSparse<4>(ibytes, nb, addr);
+            case 5:   return  copyFullIntoSparse<5>(ibytes, nb, addr);
+            case 6:   return  copyFullIntoSparse<6>(ibytes, nb, addr);
+            case 7:   return  copyFullIntoSparse<7>(ibytes, nb, addr);
+            case 8:   return  copyFullIntoSparse<8>(ibytes, nb, addr);
             default:
                 MEDDLY_DCASSERT(0);
                 throw error(error::MISCELLANEOUS);

@@ -38,6 +38,8 @@
 
 using namespace MEDDLY;
 
+FILE_output meddlyout(stdout);
+
 const int Vars = 25;
 
 /*
@@ -126,7 +128,7 @@ void exchangeMove(bool left, dd_edge &answer)
         continue;
       }
       
-      if (i%12>5 == left) {
+      if ((i%12>5) == left) {
         // exchange this piece
         // i -> (i+12)%24
         node_builder& nkp = EF->useSparseBuilder(-k, 1);
@@ -163,8 +165,8 @@ void Square1NSF(dd_edge &answer)
   rotateMove(rot, 24, topl);
 
 #ifdef DEBUG_EVENTS
-  topl.show(stdout, 2);
-  fflush(stdout);
+  topl.show(meddlyout, 2);
+  meddlyout.flush();
 #endif
 
   printf("Building event: rotate top by %d\n", -1);
@@ -173,8 +175,8 @@ void Square1NSF(dd_edge &answer)
   rotateMove(rot, 24, topr);
 
 #ifdef DEBUG_EVENTS
-  topr.show(stdout, 2);
-  fflush(stdout);
+  topr.show(meddlyout, 2);
+  meddlyout.flush();
 #endif
 
   printf("Building event: rotate bottom by %d\n", 1);
@@ -184,8 +186,8 @@ void Square1NSF(dd_edge &answer)
   rotateMove(rot, 24, botl);
 
 #ifdef DEBUG_EVENTS
-  botl.show(stdout, 2);
-  fflush(stdout);
+  botl.show(meddlyout, 2);
+  meddlyout.flush();
 #endif
 
   printf("Building event: rotate bottom by %d\n", -1);
@@ -193,24 +195,24 @@ void Square1NSF(dd_edge &answer)
   for (int i=12; i<24; i++) rot[i] = (i+11)%12+12;
   rotateMove(rot, 24, botr);
 #ifdef DEBUG_EVENTS
-  botr.show(stdout, 2);
-  fflush(stdout);
+  botr.show(meddlyout, 2);
+  meddlyout.flush();
 #endif
 
   printf("Building event: exchange left\n");
   fflush(stdout);
   exchangeMove(true, exchl);
 #ifdef DEBUG_EVENTS
-  exchl.show(stdout, 2);
-  fflush(stdout);
+  exchl.show(meddlyout, 2);
+  meddlyout.flush();
 #endif
 
   printf("Building event: exchange right\n");
   fflush(stdout);
   exchangeMove(false, exchr);
 #ifdef DEBUG_EVENTS
-  exchl.show(stdout, 2);
-  fflush(stdout);
+  exchl.show(meddlyout, 2);
+  meddlyout.flush();
 #endif
 
   printf("Accumulating events...");
@@ -223,8 +225,8 @@ void Square1NSF(dd_edge &answer)
 
 #ifdef DUMP_NSF
   printf("Overall NSF:\n");
-  answer.show(stdout, 2);
-  fflush(stdout);
+  answer.show(meddlyout, 2);
+  meddlyout.flush();
 #endif
 }
 
@@ -233,7 +235,7 @@ void printStats(const char* who, const forest* f)
 {
   printf("%s stats:\n", who);
   const expert_forest* ef = (expert_forest*) f;
-  ef->reportStats(stdout, "\t",
+  ef->reportStats(meddlyout, "\t",
     expert_forest::HUMAN_READABLE_MEMORY  |
     expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
     expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
@@ -328,12 +330,12 @@ int main()
   printf("Reachability set MDD has\n\t%d nodes\n\t\%d edges\n",
     nsf.getNodeCount(), nsf.getEdgeCount());
   printStats("MDD", mdd);
-  operation::showAllComputeTables(stdout, 1);
-  fflush(stdout);
+  operation::showAllComputeTables(meddlyout, 3);
+  meddlyout.flush();
 
 #ifdef DUMP_REACHABLE
   printf("Reachable states:\n");
-  reachable.show(stdout, 2);
+  reachable.show(meddlyout, 2);
 #endif
 
   //

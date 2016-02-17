@@ -30,6 +30,8 @@
 
 using namespace MEDDLY;
 
+FILE_output meddlyout(stdout);
+
 // #define DUMP_NSF
 // #define DUMP_REACHABLE
 
@@ -203,12 +205,12 @@ void printStats(const char* who, const forest* f)
 {
   printf("%s stats:\n", who);
   const expert_forest* ef = (expert_forest*) f;
-  ef->reportStats(stdout, "\t",
+  ef->reportStats(meddlyout, "\t",
     expert_forest::HUMAN_READABLE_MEMORY  |
     expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
     expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
   );
-  fflush(stdout);
+  meddlyout.flush();
 }
 
 int usage(const char* who)
@@ -298,7 +300,7 @@ void runWithArgs(int N, char method, bool alternate)
 
 #ifdef DUMP_NSF
   printf("Next-state function:\n");
-  nsf.show(stdout, 2);
+  nsf.show(meddlyout, 2);
 #endif
 
   printStats("MxD", mxd);
@@ -351,12 +353,12 @@ void runWithArgs(int N, char method, bool alternate)
 
 #ifdef DUMP_REACHABLE
   printf("Reachable states:\n");
-  reachable.show(stdout, 2);
+  reachable.show(meddlyout, 2);
 #endif
 
   printStats("MDD", mdd);
-  operation::showAllComputeTables(stdout, 1);
-  fflush(stdout);
+  operation::showAllComputeTables(meddlyout, 3);
+  meddlyout.flush();
 
   /*
       Determine cardinality

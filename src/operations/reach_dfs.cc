@@ -93,7 +93,7 @@ class MEDDLY::saturation_op : public unary_operation {
 
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(FILE* strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData) const;
 
   protected:
     inline compute_table::search_key* 
@@ -133,7 +133,7 @@ class MEDDLY::common_dfs_mt : public binary_operation {
 
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(FILE* strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
     virtual void saturateHelper(node_builder& mdd) = 0;
 
@@ -315,7 +315,6 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
       mdd, k, sz, mdd_level);
 #endif
 
-  // TODO: Optimize this for the situation when there is no event at level k.
   node_builder& nb = resF->useNodeBuilder(k, sz);
   node_reader* mddDptrs =
     (mdd_level < k)
@@ -356,12 +355,12 @@ void MEDDLY::saturation_op::discardEntry(const node_handle* data)
   }
 }
 
-void MEDDLY::saturation_op::showEntry(FILE* strm, const node_handle* data) const
+void MEDDLY::saturation_op::showEntry(output &strm, const node_handle* data) const
 {
   if (argF->isFullyReduced()) {
-    fprintf(strm, "[%s(%d, %d): %d]", getName(), data[0], data[1], data[2]);
+    strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): " << long(data[2]) << "]";
   } else {
-    fprintf(strm, "[%s(%d): %d]", getName(), data[0], data[1]);
+    strm << "[" << getName() << "(" << long(data[0]) << "): " << long(data[1]) << "]";
   }
 }
 
@@ -377,9 +376,9 @@ MEDDLY::common_dfs_mt::common_dfs_mt(const binary_opname* oc, expert_forest* a1,
 : binary_operation(oc, 2, 1, a1, a2, res)
 {
   splits = 0;
-  binary_operation* mddUnion = 0;
-  binary_operation* mxdIntersection = 0;
-  binary_operation* mxdDifference = 0;
+  mddUnion = 0;
+  mxdIntersection = 0;
+  mxdDifference = 0;
   freeqs = 0;
   freebufs = 0;
 }
@@ -398,9 +397,9 @@ void MEDDLY::common_dfs_mt::discardEntry(const node_handle* data)
   resF->uncacheNode(data[2]);
 }
 
-void MEDDLY::common_dfs_mt::showEntry(FILE* strm, const node_handle* data) const
+void MEDDLY::common_dfs_mt::showEntry(output &strm, const node_handle* data) const
 {
-  fprintf(strm, "[%s(%d, %d): %d]", getName(), data[0], data[1], data[2]);
+  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): " << long(data[2]) << "]";
 }
 
 void MEDDLY::common_dfs_mt
@@ -472,7 +471,7 @@ void MEDDLY::common_dfs_mt::splitMxd(node_handle mxd)
     }
 
     int mxdLevel = arg2F->getNodeLevel(mxd);
-    MEDDLY_DCASSERT(ABS(mxdLevel <= level));
+    MEDDLY_DCASSERT(ABS(mxdLevel) <= level);
 
     // Initialize readers
     node_reader* Mu = isLevelAbove(level, mxdLevel)
@@ -517,14 +516,13 @@ void MEDDLY::common_dfs_mt::splitMxd(node_handle mxd)
   } // for level
 
 #ifdef DEBUG_SPLIT
-  for (int k=arg2F->getNumVariables(); k; k--) {
-    if (splits[k]) {
-      printf("------------------------------------------------------------\n");
-      printf("Level %d nsf: %d\n", k, splits[k]);
-      printf("------------------------------------------------------------\n");
-      arg2F->showNodeGraph(stdout, splits[k]);
-    }
+  printf("After splitting monolithic event in msat\n");
+  printf("splits array: [");
+  for (int k=0; k <= arg2F->getNumVariables(); k++) {
+    if (k) printf(", ");
+    printf("%d", splits[k]);
   }
+  printf("]\n");
 #endif
 }
 

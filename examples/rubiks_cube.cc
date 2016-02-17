@@ -722,6 +722,7 @@ void usage() {
   fprintf(stderr, "-msat  : use saturation with monolithic relation compute reachable states\n");
   fprintf(stderr, "-esat  : use saturation with event-wise relation compute reachable states\n");
   fprintf(stderr, "-ksat  : use saturation with level-wise relation compute reachable states\n");
+  fprintf(stderr, "-kspsat: same as ksat, with additional pre-processing of events to improve saturation\n");
   fprintf(stderr, "-l<key>: key can be any combination of\n");
   fprintf(stderr, "         A: Front face clock-wise rotation,\n");
   fprintf(stderr, "         a: Front face counter clock-wise rotation,\n");
@@ -731,7 +732,6 @@ void usage() {
   fprintf(stderr, "         Right face (D, d, 4),\n");
   fprintf(stderr, "         Up face (E, e, 5),\n");
   fprintf(stderr, "         Down face (F, f, 6),\n");
-  fprintf(stderr, "-p     : prints initial states, nsf, reachable states on stderr\n");
   fprintf(stderr, "\n");
 }
 
@@ -792,7 +792,7 @@ class moves {
 
 
 void buildOverallNextStateFunction(const moves& m,
-    satpregen_opname::pregen_relation& ensf)
+    satpregen_opname::pregen_relation& ensf, bool split)
 {
   // Build each move using BuildMove().
   
@@ -820,7 +820,13 @@ void buildOverallNextStateFunction(const moves& m,
   if (m.LF) ensf.addToRelation(BuildMove(L, FLIP));
   if (m.RF) ensf.addToRelation(BuildMove(R, FLIP));
 
-  ensf.finalize();
+  if (split) {
+    //ensf.finalize(satpregen_opname::pregen_relation::SplitOnly);
+    //ensf.finalize(satpregen_opname::pregen_relation::SplitSubtract);
+    ensf.finalize(satpregen_opname::pregen_relation::SplitSubtractAll);
+  } else {
+    ensf.finalize(satpregen_opname::pregen_relation::MonolithicSplit);
+  }
 }
 
 
@@ -958,7 +964,7 @@ int doBfs(const moves& m)
 }
 
 
-int doDfs(const moves& m, char saturation_type)
+int doDfs(const moves& m, char saturation_type, bool split)
 {
   satpregen_opname::pregen_relation *ensf = 0;
   dd_edge nsf(relation);
@@ -973,19 +979,23 @@ int doDfs(const moves& m, char saturation_type)
   if (saturation_type == 'e') {
     ensf = new satpregen_opname::pregen_relation(states, relation, states,
         m.countEnabledMoves());
-    buildOverallNextStateFunction(m, *ensf);
+    buildOverallNextStateFunction(m, *ensf, split);
     printf("Building reachability set using saturation, relation by events\n");
     fflush(stdout);
   } else if (saturation_type == 'k') {
     ensf = new satpregen_opname::pregen_relation(states, relation, states);
-    buildOverallNextStateFunction(m, *ensf);
-    printf("Building reachability set using saturation, relation by levels\n");
+    buildOverallNextStateFunction(m, *ensf, split);
+    printf("Building reachability set using saturation, relation by levels");
+    if (split) printf(" with splitting");
+    printf("\n");
     fflush(stdout);
   } else {
     nsf = buildOverallNextStateFunction(m);
     printf("Building reachability set using saturation, monolithic relation\n");
     fflush(stdout);
   }
+
+  start.note_time();
 
   // Perform Reacability via "saturation".
   if (ensf) {
@@ -1010,7 +1020,7 @@ int doDfs(const moves& m, char saturation_type)
 }
 
 
-int doChoice(const moves& m)
+int doChoice()
 {
   // Build Next-State Function for each "move".
   // Moves 0-5 are CW, 6-11 are CCW, 12-17 are FLIP.
@@ -1127,7 +1137,7 @@ int doChoice(const moves& m)
 }
 
 
-int doSteppedBfs(const moves& m)
+int doSteppedBfs()
 {
   // Performs DFS for each event starting with initial state.
   // At the end of each iteration, peform a union and repeat.
@@ -1245,25 +1255,27 @@ int doSteppedBfs(const moves& m)
 
 int main(int argc, char *argv[])
 {
-  bool pretty_print = false;
   moves enabled;
   bool dfs = false;
   bool bfs = false;
   char saturation_type = 'm';
+  bool split = true;
 
   if (argc > 1) {
     assert(argc <= 5);
     for (int i=1; i<argc; i++) {
       char *cmd = argv[i];
-      if (strncmp(cmd, "-p", 3) == 0) pretty_print = true;
-      else if (strncmp(cmd, "-msat", 6) == 0) {
+      if (strncmp(cmd, "-msat", 6) == 0) {
         dfs = true; saturation_type = 'm';
       }
       else if (strncmp(cmd, "-esat", 6) == 0) {
         dfs = true; saturation_type = 'e';
       }
       else if (strncmp(cmd, "-ksat", 6) == 0) {
-        dfs = true; saturation_type = 'k';
+        dfs = true; saturation_type = 'k'; split = false;
+      }
+      else if (strncmp(cmd, "-kspsat", 8) == 0) {
+        dfs = true; saturation_type = 'k'; split = true;
       }
       else if (strncmp(cmd, "-bfs", 5) == 0) bfs = true;
       else if (strncmp(cmd, "-l", 2) == 0) {
@@ -1297,9 +1309,7 @@ int main(int argc, char *argv[])
     }
   }
 
-  bool choice = true;
   if (dfs) { bfs = false; }
-  if (dfs || bfs) { choice = false; }
 
   // set up arrays based on number of levels
   SetUpArrays();
@@ -1307,13 +1317,13 @@ int main(int argc, char *argv[])
 
   // Initialize MEDDLY
   MEDDLY::settings s;
-  s.computeTable.style = MonolithicChainedHash;
-  s.computeTable.maxSize = 16 * 16777216;
-  // s.computeTable.staleRemoval =
+  s.ctSettings.style = MonolithicChainedHash;
+  s.ctSettings.maxSize = 16 * 16777216;
+  // s.ctSettings.staleRemoval =
   //   MEDDLY::settings::computeTableSettings::Lazy;
-  // s.computeTable.staleRemoval =
+  // s.ctSettings.staleRemoval =
   //   MEDDLY::settings::computeTableSettings::Moderate;
-  // s.computeTable.staleRemoval = 
+  // s.ctSettings.staleRemoval =
   //   MEDDLY::settings::computeTableSettings::Aggressive;
 
   MEDDLY::initialize(s);
@@ -1365,14 +1375,14 @@ int main(int argc, char *argv[])
   states->createEdge(initst, 1, initial);
 
   if (dfs) {
-    doDfs(enabled, saturation_type);
+    doDfs(enabled, saturation_type, split);
   } else if (bfs) {
     doBfs(enabled);
   } else {
 #if 0
-    doChoice(enabled);
+    doChoice();
 #else
-    doSteppedBfs(enabled);
+    doSteppedBfs();
 #endif
   }
 

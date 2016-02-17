@@ -54,7 +54,7 @@ class MEDDLY::range_int : public unary_operation {
     // common
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(FILE* strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData) const;
   
   protected:
     inline compute_table::search_key* 
@@ -97,9 +97,10 @@ void MEDDLY::range_int::discardEntry(const node_handle* data)
   argF->uncacheNode(data[0]);
 }
 
-void MEDDLY::range_int::showEntry(FILE* strm, const node_handle* data) const
+void MEDDLY::range_int::showEntry(output &strm, const node_handle* data) const
 {
-  fprintf(strm, "[%s(%d): %d(L)]", getName(), data[0], data[1]);
+  strm  << "[" << getName() << "(" << long(data[0]) 
+        << "): " << long(data[1]) << "(L)]";
 }
 
 
@@ -117,7 +118,7 @@ class MEDDLY::range_real : public unary_operation {
     // common
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(FILE* strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData) const;
 
   protected:
     inline compute_table::search_key* findResult(node_handle a, float &b) {
@@ -157,11 +158,13 @@ void MEDDLY::range_real::discardEntry(const node_handle* data)
   argF->uncacheNode(data[0]);
 }
 
-void MEDDLY::range_real::showEntry(FILE* strm, const node_handle* data) const
+void MEDDLY::range_real::showEntry(output &strm, const node_handle* data) const
 {
   double answer;
   memcpy(&answer, data+1, sizeof(double));
-  fprintf(strm, "[%s(%d): %le]", getName(), data[0], answer);
+  strm  << "[" << getName() << "(" << long(data[0]) << "): ";
+  strm.put(answer, 0, 0, 'e');
+  strm.put(']');
 }
 
 

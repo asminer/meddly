@@ -40,10 +40,10 @@ void MEDDLY::mtmdd_forest::reorderVariables(const int* order)
 {
 	removeAllComputeTableEntries();
 
-	int size=getDomain()->getNumVariables();
-	for(int i=1; i<=size; i++) {
-		printf("Lv %d: %d\n", i, unique->getNumEntries(getVarByLevel(i)));
-	}
+//	int size=getDomain()->getNumVariables();
+//	for(int i=size; i>=1; i--) {
+//		printf("Lv %d Var %d: %d\n", i, getVarByLevel(i), unique->getNumEntries(getVarByLevel(i)));
+//	}
 	printf("#Node: %d\n", getCurrentNumNodes());
 
 	resetPeakNumNodes();
@@ -55,7 +55,7 @@ void MEDDLY::mtmdd_forest::reorderVariables(const int* order)
 	else if(isHighestInversion()) {
 		reorderVariablesHighestInversion(order);
 	}
-	else if(isBubbleDown()) {
+	else if(isSinkDown()) {
 		reorderVariablesBubbleDown(order);
 	}
 	else if(isBubbleUp()) {
@@ -70,9 +70,12 @@ void MEDDLY::mtmdd_forest::reorderVariables(const int* order)
 	else if(isRandom()) {
 		reorderVariablesRandom(order);
 	}
+	else if(isLARC()) {
+		reorderVariablesLARC(order);
+	}
 
-//	for(int i=1; i<=size; i++) {
-//		printf("Lv %d: %d\n", i, unique->getNumEntries(getVarByLevel(i)));
+//	for(int i=size; i>=1; i--) {
+//		printf("Lv %d Var %d: %d\n", i, getVarByLevel(i), unique->getNumEntries(getVarByLevel(i)));
 //	}
 	printf("#Node: %d\n", getCurrentNumNodes());
 	printf("Peak #Node: %d\n", getPeakNumNodes());
@@ -176,8 +179,8 @@ void MEDDLY::mtmdd_forest::reorderVariablesLowestCost(const int* order)
 
 	for(int i=1; i<size; i++) {
 		if(order[getVarByLevel(i)] > order[getVarByLevel(i+1)]) {
-			long cost = calculate_swap_cost(i);
-			heap.push(i, cost);
+			long weight = calculate_swap_cost(i);
+			heap.push(i, weight);
 		}
 	}
 
@@ -189,12 +192,12 @@ void MEDDLY::mtmdd_forest::reorderVariablesLowestCost(const int* order)
 		heap.pop();
 
 		if(level<size-1 && (order[getVarByLevel(level+1)] > order[getVarByLevel(level+2)])) {
-			long cost = calculate_swap_cost(level+1);
-			heap.push(level+1, cost);
+			long weight = calculate_swap_cost(level+1);
+			heap.push(level+1, weight);
 		}
 		if(level>1 && (order[getVarByLevel(level-1)] > order[getVarByLevel(level)])) {
-			long cost = calculate_swap_cost(level-1);
-			heap.push(level-1, cost);
+			long weight = calculate_swap_cost(level-1);
+			heap.push(level-1, weight);
 		}
 	}
 
@@ -203,48 +206,59 @@ void MEDDLY::mtmdd_forest::reorderVariablesLowestCost(const int* order)
 
 long MEDDLY::mtmdd_forest::calculate_swap_cost(int level)
 {
-//	int low_var=getVarByLevel(level);
-//	int high_var=getVarByLevel(level+1);
-//	return unique->getSize(high_var)*getVariableSize(high_var)*getVariableSize(low_var)
-//			+ unique->getSize(low_var);
-	int low_var=getVarByLevel(level);
-	int high_var=getVarByLevel(level+1);
-	return static_cast<long>(unique->getNumEntries(high_var))*getVariableSize(high_var)*getVariableSize(low_var)
-			+ unique->getNumEntries(low_var);
+	int lvar=getVarByLevel(level);
+	int hvar=getVarByLevel(level+1);
+	return static_cast<long>(unique->getNumEntries(hvar))*getVariableSize(hvar);
 //	return unique->getSize(high_var) + unique->getSize(low_var);
 }
 
-//void MEDDLY::mtmdd_forest::reorderVariablesLowestMemory(const int* order)
-//{
-//	int size = getDomain()->getNumVariables();
-//	InversionHeap heap(size);
-//
-//	for(int i=1; i<size; i++) {
-//		if(order[getVarByLevel(i)] > order[getVarByLevel(i+1)]) {
-//			long cost = calculate_swap_memory_cost(i);
-//			heap.push(i, cost);
-//		}
-//	}
-//
-//	int swap = 0;
-//	while(!heap.empty()) {
-//		int level = heap.top();
-//		swapAdjacentVariables(level);
-//		swap++;
-//		heap.pop();
-//
-//		if(level<size-1 && (order[getVarByLevel(level+1)] > order[getVarByLevel(level+2)])) {
-//			long cost = calculate_swap_memory_cost(level+1);
-//			heap.push(level+1, cost);
-//		}
-//		if(level>1 && (order[getVarByLevel(level-1)] > order[getVarByLevel(level)])) {
-//			long cost = calculate_swap_memory_cost(level-1);
-//			heap.push(level-1, cost);
-//		}
-//	}
-//
-//	printf("Total Swap: %d\n", swap);
-//}
+void MEDDLY::mtmdd_forest::reorderVariablesLARC(const int* order)
+{
+	int size = getDomain()->getNumVariables();
+	IndexedHeap<long, less<double> > heap(size);
+
+	for(int i=1; i<size; i++) {
+		if(order[getVarByLevel(i)] > order[getVarByLevel(i+1)]) {
+			double weight = calculate_avg_ref_count(i);
+			heap.push(i, weight);
+		}
+	}
+
+	int swap = 0;
+	while(!heap.empty()) {
+		int level = heap.top_key();
+		swapAdjacentVariables(level);
+		swap++;
+		heap.pop();
+
+		if(level<size-1 && (order[getVarByLevel(level+1)] > order[getVarByLevel(level+2)])) {
+			double weight = calculate_avg_ref_count(level+1);
+			heap.push(level+1, weight);
+		}
+		if(level>1 && (order[getVarByLevel(level-1)] > order[getVarByLevel(level)])) {
+			double weight = calculate_avg_ref_count(level-1);
+			heap.push(level-1, weight);
+		}
+	}
+
+	printf("Total Swap: %d\n", swap);
+}
+
+double MEDDLY::mtmdd_forest::calculate_avg_ref_count(int level)
+{
+	int lvar=getVarByLevel(level);
+
+	int lnum=unique->getNumEntries(lvar);
+	node_handle* low_nodes=static_cast<node_handle*>(malloc(lnum*sizeof(node_handle)));
+	unique->getItems(lvar, low_nodes, lnum);
+
+	int edges=0;
+	for(int i=0; i<lnum; i++){
+		edges+=getInCount(low_nodes[i]);
+	}
+
+	return (double)edges/lnum;
+}
 
 void MEDDLY::mtmdd_forest::reorderVariablesLowestMemory(const int* order)
 {
@@ -275,12 +289,12 @@ void MEDDLY::mtmdd_forest::reorderVariablesLowestMemory(const int* order)
 		heap.pop();
 
 		if(level<size-1 && (order[getVarByLevel(level+1)] > order[getVarByLevel(level+2)])) {
-			int low_var=getVarByLevel(level+1);
-			int high_var=getVarByLevel(level+2);
-			int before=unique->getNumEntries(high_var)+unique->getNumEntries(low_var);
+			int lvar=getVarByLevel(level+1);
+			int hvar=getVarByLevel(level+2);
+			int before=unique->getNumEntries(hvar)+unique->getNumEntries(lvar);
 
 			swapAdjacentVariables(level+1);
-			int after=unique->getNumEntries(high_var)+unique->getNumEntries(low_var);
+			int after=unique->getNumEntries(hvar)+unique->getNumEntries(lvar);
 
 			long cost = static_cast<long>(after-before);
 			heap.push(level+1, cost);
@@ -288,12 +302,12 @@ void MEDDLY::mtmdd_forest::reorderVariablesLowestMemory(const int* order)
 			swapped[0]=true;
 		}
 		if(level>1 && (order[getVarByLevel(level-1)] > order[getVarByLevel(level)])) {
-			int low_var=getVarByLevel(level-1);
-			int high_var=getVarByLevel(level);
-			int before=unique->getNumEntries(high_var)+unique->getNumEntries(low_var);
+			int lvar=getVarByLevel(level-1);
+			int hvar=getVarByLevel(level);
+			int before=unique->getNumEntries(hvar)+unique->getNumEntries(lvar);
 
 			swapAdjacentVariables(level-1);
-			int after=unique->getNumEntries(high_var)+unique->getNumEntries(low_var);
+			int after=unique->getNumEntries(hvar)+unique->getNumEntries(lvar);
 
 			long cost = static_cast<long>(after-before);
 			heap.push(level-1, cost);
@@ -320,12 +334,12 @@ void MEDDLY::mtmdd_forest::reorderVariablesLowestMemory(const int* order)
 
 long MEDDLY::mtmdd_forest::calculate_swap_memory_cost(int level)
 {
-	int low_var=getVarByLevel(level);
-	int high_var=getVarByLevel(level+1);
-	int before=unique->getNumEntries(high_var)+unique->getNumEntries(low_var);
+	int lvar=getVarByLevel(level);
+	int hvar=getVarByLevel(level+1);
+	int before=unique->getNumEntries(hvar)+unique->getNumEntries(lvar);
 
 	swapAdjacentVariables(level);
-	int after=unique->getNumEntries(high_var)+unique->getNumEntries(low_var);
+	int after=unique->getNumEntries(hvar)+unique->getNumEntries(lvar);
 	swapAdjacentVariables(level);
 
 	return static_cast<long>(after-before);
@@ -410,8 +424,8 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 		MEDDLY_DCASSERT(nr->getLevel() == level+1);
 		MEDDLY_DCASSERT(nr->getSize() == hsize);
 
-		for(int k=0; k<hsize; k++){
-			if(isLevelAbove(getNodeLevel(nr->d(k)), level-1)){
+		for(int j=0; j<hsize; j++){
+			if(isLevelAbove(getNodeLevel(nr->d(j)), level-1)){
 				// Remove the nodes corresponding to functions that
 				// are independent of the variable to be moved up
 				hnodes[num++] = hnodes[i];
@@ -493,324 +507,30 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 //	printf("#Node: %d\n", getCurrentNumNodes());
 }
 
-typedef struct ProcessedItem
-{
-	MEDDLY::node_handle node;
-	int index;
-
-  ProcessedItem(MEDDLY::node_handle n, int i) : node(n), index(i) {}
-	bool operator==(const ProcessedItem& item) const
-	{
-		return (node==item.node) && (index==item.index);
-	}
-}ProcessedItem;
-
-typedef struct HashProcessedItem
-{
-    size_t operator()(const ProcessedItem& item) const
-    {
-    	MEDDLY::hash_stream s;
-    	s.start(0);
-    	s.push(item.node, item.index);
-    	return s.finish();
-    }
-}HashProcessedItem;
-
-// Temporary solution
-// Need to redesign in future
-typedef __gnu_cxx::hash_map<ProcessedItem, MEDDLY::node_handle, HashProcessedItem> ProcessedHashMap;
-static ProcessedHashMap processed;
-
-typedef struct NodeOrder
-{
-	MEDDLY::node_handle node;
-	int weight;
-  NodeOrder(MEDDLY::node_handle n, int w) : node(n), weight(w) {}
-}NodeOrder;
-
-typedef struct NodeOrderLt
-{
-	bool operator() (const NodeOrder& no1, const NodeOrder& no2)
-	{
-		return no1.weight<no2.weight;
-	}
-}NodeOrderLt;
-
 void MEDDLY::mtmdd_forest::moveDownVariable(int high, int low)
 {
-	// Pre-condition: The compute table has been cleared
-
-	MEDDLY_DCASSERT(low<high);
-	MEDDLY_DCASSERT(low>=1);
-	MEDDLY_DCASSERT(high<=getNumVariables());
-
-	// Renumber the level of nodes
-	for(int level=high-1; level>=low; level--) {
-		int var = getVarByLevel(level+1);
-		int size = unique->getNumEntries(var);
-		node_handle* nodes = static_cast<node_handle*>(malloc(size*sizeof(node_handle)));
-		unique->getItems(var, nodes, size);
-		for(int i=0; i<size; i++) {
-			MEDDLY_DCASSERT(isActiveNode(nodes[i]));
-			MEDDLY_DCASSERT(getNodeLevel(nodes[i])==level);
-			setNodeLevel(nodes[i], level+1);
-		}
-		free(nodes);
-	}
-
-	int var = getVarByLevel(low);
-	int size = unique->getNumEntries(var);
-	node_handle* nodes = static_cast<node_handle*>(malloc(size*sizeof(node_handle)));
-	unique->getItems(var, nodes, size);
-	unique->clear(var);
-	int varSize = getLevelSize(low);
-
-	// Sort the nodes for the variable to be moved down
-	// by the maximum level of their children in ascending order
-	std::vector<NodeOrder> order;
-	for(int i=0; i<size; i++) {
-		node_handle node = nodes[i];
-		node_reader* nr = initNodeReader(node, true);
-		int weight = getNodeLevel(nr->d(0));
-		for(int val=1; val<varSize; val++) {
-			if(weight<getNodeLevel(nr->d(val))) {
-				weight = getNodeLevel(nr->d(val));
-			}
-		}
-		node_reader::recycle(nr);
-
-		order.push_back(NodeOrder(node, weight));
-	}
-	std::sort(order.begin(), order.end(), NodeOrderLt());
-	for(int i=0; i<size; i++) {
-		nodes[i] = order[i].node;
-	}
-
-	binary_operation* op = getOperation(UNION, this, this, this);
-	for(int i=0; i<size; i++) {
-		node_handle node = nodes[i];
-		node_reader* nr = initNodeReader(node, true);
-
-		node_handle h1 = recursiveReduceDown(nr->d(0), low, 0);
-		unlinkNode(nr->d(0));
-		for(int val=1; val<varSize; val++) {
-			node_handle h2 = recursiveReduceDown(nr->d(val), low, val);
-			unlinkNode(nr->d(val));
-			node_handle result = op->compute(h1, h2);
-			unlinkNode(h1);
-			unlinkNode(h2);
-			h1 = result;
-		}
-
-		node_reader::recycle(nr);
-		// If not, h1 will not be recycled and will stay in the unique table
-		// Will cause problems when updating node in place
-		// because node and h1 are the same
-		removeAllComputeTableEntries();
-
-		nr = initNodeReader(h1, true);
-		int level = getNodeLevel(h1);
-		node_builder& nb = useNodeBuilder(level, getLevelSize(level));
-		for(int j=0; j<getLevelSize(level); j++) {
-			nb.d(j) = linkNode(nr->d(j));
-		}
-		node_reader::recycle(nr);
-
-		MEDDLY_DCASSERT(getInCount(h1)==1);
-		unlinkNode(h1);
-
-		modifyReducedNodeInPlace(nb, node);
-	}
-
-	free(nodes);
-
-//#ifdef __USE_CACHE
-//	processed.clear();
-//#endif
-}
-
-MEDDLY::node_handle MEDDLY::mtmdd_forest::recursiveReduceDown(node_handle node, int low, int val)
-{
-	int level = getNodeLevel(node);
-	if(level < low) {
-		if(node!=getTransparentNode()) {
-			node_builder& nb = useSparseBuilder(low, 1);
-			nb.i(0) = val;
-			nb.d(0) = linkNode(node);
-			return createReducedNode(-1, nb);
-		}
-		else {
-			return linkNode(node);
-		}
-	}
-
-	MEDDLY_DCASSERT(level>=low+1);
-
-//#ifdef __USE_CACHE
-//	ProcessedHashMap::const_iterator itr=processed.find(ProcessedItem{node, val});
-//	if(itr!=processed.end()) {
-//		MEDDLY_DCASSERT(isActiveNode(itr->second));
-//		return linkNode(itr->second);
-//	}
-//#endif
-
-	node_builder& nb = useNodeBuilder(level, getLevelSize(level));
-	node_reader* nr = initNodeReader(node, true);
-	int varSize = getLevelSize(level);
-	for(int v=0; v<varSize; v++) {
-		nb.d(v) = recursiveReduceDown(nr->d(v), low, val);
-	}
-	node_reader::recycle(nr);
-
-	MEDDLY::node_handle h = createReducedNode(-1, nb);
-//#ifdef __USE_CACHE
-//	processed.insert(__gnu_cxx::pair<ProcessedItem, node_handle>(ProcessedItem{node, val}, h));
-//#endif
-	return h;
-}
-
-void MEDDLY::mtmdd_forest::moveUpVariable(int low, int high)
-{
-	// Pre-condition:
-	// - The compute table has been cleared
-	// - The change in variable-level mapping in domain is done
-
 	MEDDLY_DCASSERT(low<high);
 	MEDDLY_DCASSERT(low>=1);
 	MEDDLY_DCASSERT(high<=getNumVariables());
 
 	removeAllComputeTableEntries();
 
-	// Mark the nodes in the functions depending on the variable to be moved up
-	for(int level=low+1; level<=high; level++) {
-		int var = getVarByLevel(level);
-		int size = unique->getNumEntries(var);
-		node_handle* nodes = static_cast<node_handle*>(malloc(size*sizeof(node_handle)));
-		unique->getItems(var, nodes, size);
-
-		int varSize = getLevelSize(level);
-		for(int i=0; i<size; i++) {
-			MEDDLY_DCASSERT(isActiveNode(nodes[i]));
-			MEDDLY_DCASSERT(getNodeLevel(nodes[i])==level);
-
-			node_reader* nr = initNodeReader(nodes[i], true);
-			for(int v=0; v<varSize; v++) {
-				int childLevel=getNodeLevel(nr->d(v));
-				if(childLevel==low || (isLevelAbove(childLevel, low) && getNode(nr->d(v)).isMarked())) {
-					getNode(nodes[i]).mark();
-					break;
-				}
-			}
-			node_reader::recycle(nr);
-		}
-		free(nodes);
+	for(int level=high-1; level>=low; level--) {
+		swapAdjacentVariables(level);
 	}
-
-	// Modify the level of nodes
-	for(int level=low+1; level<=high; level++) {
-		int var = getVarByLevel(level);
-		int size = unique->getNumEntries(var);
-		node_handle* nodes = static_cast<node_handle*>(malloc(size*sizeof(node_handle)));
-		unique->getItems(var, nodes, size);
-		for(int i=0; i<size; i++) {
-			MEDDLY_DCASSERT(isActiveNode(nodes[i]));
-			MEDDLY_DCASSERT(getNodeLevel(nodes[i])==level);
-
-			setNodeLevel(nodes[i], level-1);
-		}
-		free(nodes);
-	}
-	int var_low = getVarByLevel(low);
-	int size = unique->getNumEntries(var_low);
-	node_handle* nodes = static_cast<node_handle*>(malloc(size*sizeof(node_handle)));
-	unique->getItems(var_low, nodes, size);
-	for(int i=0; i<size; i++) {
-		MEDDLY_DCASSERT(isActiveNode(nodes[i]));
-		MEDDLY_DCASSERT(getNodeLevel(nodes[i])==low);
-
-		setNodeLevel(nodes[i], high);
-	}
-	free(nodes);
-
-	for(int level=low+1; level<=high; level++) {
-		int var = getVarByLevel(level);
-		order_var[var] = level-1;
-		order_level[level-1] = var;
-	}
-	order_var[var_low] = high;
-	order_level[high] = var_low;
-
-	// Process the nodes corresponding to functions
-	// depending on the variable to be moved up
-	int varSize = getLevelSize(high);
-	for(int level=high; level>low; level--) {
-		int var = getVarByLevel(level-1);
-		int size = unique->getNumEntries(var);
-		node_handle* nodes = static_cast<node_handle*>(malloc(size*sizeof(node_handle)));
-		unique->getItems(var, nodes, size);
-
-		for(int i=0; i<size; i++) {
-			if(getNode(nodes[i]).isMarked()) {
-				node_builder& nb = useNodeBuilder(high, varSize);
-				for(int val=0; val<varSize; val++) {
-					nb.d(val) = recursiveReduceUp(nodes[i], low, high, val);
-				}
-//				node_handle node = createReducedNode(-1, nb);
-//				MEDDLY_DCASSERT(getInCount(node)==1);
-//				swapNodes(nodes[i], node);
-//				unlinkNode(node);
-
-//				node_reader* nr = initNodeReader(nodes[i], true);
-//				for(int val=0; val<getLevelSize(level-1); val++) {
-//					unlinkNode(nr->d(val));
-//				}
-//				node_reader::recycle(nr);
-
-				// The reduced node of nb must be at high
-				// Assume the reduced node is below high and above low
-				// Then node corresponds to a function that
-				// is independent of the variable to be moved up
-				// This is a contradiction
-				modifyReducedNodeInPlace(nb, nodes[i]);
-			}
-		}
-		free(nodes);
-	}
-
-	processed.clear();
 }
 
-MEDDLY::node_handle MEDDLY::mtmdd_forest::recursiveReduceUp(node_handle node, int low, int high, int val)
+void MEDDLY::mtmdd_forest::moveUpVariable(int low, int high)
 {
-	int level = getNodeLevel(node);
-	if(isLevelAbove(low, level) || (level!=high && !getNode(node).isMarked())) {
-		return linkNode(node);
-	}
+	MEDDLY_DCASSERT(low<high);
+	MEDDLY_DCASSERT(low>=1);
+	MEDDLY_DCASSERT(high<=getNumVariables());
 
-	if(level == high) {
-		return linkNode(getDownPtr(node, val));
-	}
+	removeAllComputeTableEntries();
 
-	ProcessedHashMap::const_iterator itr=processed.find(ProcessedItem(node, val));
-	if(itr!=processed.end()) {
-		MEDDLY_DCASSERT(isActiveNode(itr->second));
-		return linkNode(itr->second);
+	for(int level=low; level<high; level++) {
+		swapAdjacentVariables(level);
 	}
-
-	node_reader* nr = initNodeReader(node, true);
-	int varSize = getLevelSize(level);
-	node_builder& nb = useNodeBuilder(level, varSize);
-	for(int v=0; v<varSize; v++) {
-		nb.d(v) = recursiveReduceUp(nr->d(v), low, high, val);
-	}
-	node_reader::recycle(nr);
-
-	node_handle h = createReducedNode(-1, nb);
-	if(getInCount(node)>1) {
-		processed.insert(__gnu_cxx::pair<ProcessedItem, node_handle>(ProcessedItem(node, val), h));
-	}
-
-	return h;
 }
 
 // ******************************************************************

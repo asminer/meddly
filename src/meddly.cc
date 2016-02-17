@@ -128,6 +128,7 @@ namespace MEDDLY {
   // helper functions
   void purgeMarkedOperations();
   void destroyOpInternal(operation* op);
+
 };
 
 //----------------------------------------------------------------------
@@ -402,7 +403,7 @@ MEDDLY::op_initializer* MEDDLY::makeBuiltinInitializer()
 void MEDDLY::settings::init(const settings &s)
 {
   operationBuilder = op_initializer::copy(s.operationBuilder);
-  computeTable = s.computeTable;
+  ctSettings = s.ctSettings;
   mddDefaults = s.mddDefaults;
   mxdDefaults = s.mxdDefaults;
 }
@@ -411,6 +412,36 @@ void MEDDLY::settings::clear()
 {
   op_initializer::recycle(operationBuilder);
 }
+
+MEDDLY::settings::computeTableSettings::computeTableSettings() :
+  style(MonolithicUnchainedHash), maxSize(16777216), staleRemoval(Moderate) {
+}
+
+//----------------------------------------------------------------------
+// front end - Meddly settings
+//----------------------------------------------------------------------
+
+MEDDLY::settings::settings() :
+  ctSettings(), mddDefaults(0), mxdDefaults(1),
+      operationBuilder(makeBuiltinInitializer()) {
+}
+
+MEDDLY::settings::settings(const settings &s) :
+  mddDefaults(0), mxdDefaults(1) {
+  init(s);
+}
+
+MEDDLY::settings::~settings() {
+  clear();
+}
+
+void MEDDLY::settings::operator=(const settings &s) {
+  if (&s != this) {
+    clear();
+    init(s);
+  }
+}
+
 
 //----------------------------------------------------------------------
 // front end - initialize and cleanup of library
@@ -425,11 +456,11 @@ void MEDDLY::initialize(const settings &s)
   cleanup_procedure::Initialize();
 
   // set up monolithic compute table, if needed
-  const compute_table_style* CTstyle = s.computeTable.style;
+  const compute_table_style* CTstyle = s.ctSettings.style;
   if (0==CTstyle) throw error(error::INVALID_ASSIGNMENT);
 
   if (CTstyle->usesMonolithic()) {
-    operation::Monolithic_CT = CTstyle->create(s.computeTable);
+    operation::Monolithic_CT = CTstyle->create(s.ctSettings);
   }
 
   opname::next_index = 0;

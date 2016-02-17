@@ -76,12 +76,12 @@ class MEDDLY::evmdd_plusint : public evmdd_forest {
 
   protected:
     virtual void normalize(node_builder &nb, int& ev) const;
-    virtual void showEdgeValue(FILE* s, const void* edge) const;
-    virtual void writeEdgeValue(FILE* s, const void* edge) const;
-    virtual void readEdgeValue(FILE* s, void* edge);
-    virtual void showUnhashedHeader(FILE* s, const void* uh) const;
-    virtual void writeUnhashedHeader(FILE* s, const void* uh) const;
-    virtual void readUnhashedHeader(FILE* s, node_builder &nb) const;
+    virtual void showEdgeValue(output &s, const void* edge) const;
+    virtual void writeEdgeValue(output &s, const void* edge) const;
+    virtual void readEdgeValue(input &s, void* edge);
+    virtual void showUnhashedHeader(output &s, const void* uh) const;
+    virtual void writeUnhashedHeader(output &s, const void* uh) const;
+    virtual void readUnhashedHeader(input &s, node_builder &nb) const;
     virtual const char* codeChars() const;
 
   protected:

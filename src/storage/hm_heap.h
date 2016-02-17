@@ -85,9 +85,9 @@ class MEDDLY::hm_heap : public holeman {
   public:
     virtual node_address requestChunk(int slots);
     virtual void recycleChunk(node_address addr, int slots);
-    virtual void dumpInternalInfo(FILE* s) const;
-    virtual void dumpHole(FILE* s, node_address a) const;
-    virtual void reportStats(FILE* s, const char* pad, unsigned flags) const;
+    virtual void dumpInternalInfo(output &s) const;
+    virtual void dumpHole(output &s, node_address a) const;
+    virtual void reportStats(output &s, const char* pad, unsigned flags) const;
     virtual void clearHolesAndShrink(node_address new_last, bool shrink);
 
   private:

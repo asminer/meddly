@@ -19,10 +19,11 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <string.h>
 #include <fstream>
+
+#define _MEDDLY_WITHOUT_IOSTREAM_
 
 #include "meddly.h"
 #include "meddly_expert.h"
@@ -54,6 +55,8 @@ const char* kanban[] = {
 
 using namespace MEDDLY;
 
+FILE_output meddlyout(stdout);
+
 int usage(const char* who)
 {
   /* Strip leading directory, if any: */
@@ -78,7 +81,7 @@ void printStats(const char* who, const forest* f)
 {
   printf("%s stats:\n", who);
   const expert_forest* ef = (expert_forest*) f;
-  ef->reportStats(stdout, "\t",
+  ef->reportStats(meddlyout, "\t",
     expert_forest::HUMAN_READABLE_MEMORY  |
     expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
     expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
@@ -133,6 +136,7 @@ int main(int argc, const char** argv)
 
   if (N<0) return usage(argv[0]);
 
+  domain* d = 0;
   try {
 
     MEDDLY::initialize();
@@ -147,7 +151,7 @@ int main(int argc, const char** argv)
     // Initialize domain
     int* sizes = new int[16];
     for (int i=15; i>=0; i--) sizes[i] = N+1;
-    domain* d = createDomainBottomUp(sizes, 16);
+    d = createDomainBottomUp(sizes, 16);
     delete[] sizes;
 
     // Initialize forests
@@ -207,7 +211,7 @@ int main(int argc, const char** argv)
         start.note_time();
 #ifdef DUMP_NSF
         printf("Next-state function:\n");
-        nsf.show(stdout, 2);
+        nsf.show(meddlyout, 2);
 #endif
       }
       printf("Next-state function construction took %.4e seconds\n",
@@ -266,7 +270,7 @@ int main(int argc, const char** argv)
 
 #ifdef DUMP_REACHABLE
     printf("Reachable states:\n");
-    reachable.show(stdout, 2);
+    reachable.show(meddlyout, 2);
 #endif
 
     printStats("MDD", mdd);
@@ -274,12 +278,16 @@ int main(int argc, const char** argv)
 
     double c;
     apply(CARDINALITY, reachable, c);
-    operation::showAllComputeTables(stdout, 2);
+    operation::showAllComputeTables(meddlyout, 3);
 
     printf("Approx. %g reachable states\n", c);
 
     // cleanup
-    if (LOG) LOG->newPhase("Cleanup");
+    if (LOG) {
+      LOG->newPhase("Cleanup");
+      MEDDLY::destroyDomain(d); 
+      delete LOG;
+    }
     MEDDLY::cleanup();
     return 0;
   }

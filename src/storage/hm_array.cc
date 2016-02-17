@@ -79,7 +79,6 @@ MEDDLY::node_address MEDDLY::hm_array::requestChunk(int slots)
 #ifdef MEASURE_LARGE_HOLE_STATS
     num_large_hole_traversals++;
 #endif
-    node_handle curr = large_holes;
     for (node_handle curr = large_holes; curr; curr = Next(curr)) {
 #ifdef MEASURE_LARGE_HOLE_STATS
       count_large_hole_visits++;
@@ -162,7 +161,7 @@ void MEDDLY::hm_array::recycleChunk(node_address addr, int slots)
   // if addr is the last hole, absorb into free part of array
   MEDDLY_DCASSERT(addr + slots - 1 <= lastSlot());
   if (addr+slots-1 == lastSlot()) {
-    releaseToEnd(addr, slots);
+    releaseToEnd(slots);
     return;
   }
 
@@ -202,69 +201,70 @@ void MEDDLY::hm_array::recycleChunk(node_address addr, int slots)
 
 // ******************************************************************
 
-void MEDDLY::hm_array::dumpInternalInfo(FILE* s) const
+void MEDDLY::hm_array::dumpInternalInfo(output &s) const
 {
-  fprintf(s, "Last slot used: %ld\n", long(lastSlot()));
-  fprintf(s, "Total hole slots: %ld\n", holeSlots());
-  fprintf(s, "small_holes: (");
+  s << "Last slot used: " << long(lastSlot()) << "\n";
+  s << "Total hole slots: " << holeSlots() << "\n";
+  s << "small_holes: (";
   bool printed = false;
   for (int i=0; i<LARGE_SIZE; i++) if (small_holes[i]) {
-    if (printed) fprintf(s, ", ");
-    fprintf(s, "%d:%d", i, small_holes[i]);
+    if (printed) s << ", ";
+    s << i << ":" << small_holes[i];
     printed = true;
   }
-  fprintf(s, ")\n");
-  fprintf(s, "large_holes: %ld\n", long(large_holes));
+  s << ")\n";
+  s << "large_holes: " << long(large_holes) << "\n";
 }
 
 // ******************************************************************
 
-void MEDDLY::hm_array::dumpHole(FILE* s, node_address a) const
+void MEDDLY::hm_array::dumpHole(output &s, node_address a) const
 {
   MEDDLY_DCASSERT(data);
   MEDDLY_CHECK_RANGE(1, a, lastSlot());
   long aN = chunkAfterHole(a)-1;
-  fprintf(s, "[%ld, p: %ld, n: %ld, ..., %ld]\n", 
-      long(data[a]), long(data[a+1]), long(data[a+2]), long(data[aN])
-  );
+  s << "[" << long(data[a]) << ", p: " << long(data[a+1]) << ", n: " 
+    << long(data[a+2]) << ", ..., " << long(data[aN]) << "]\n";
 }
 
 // ******************************************************************
 
 void MEDDLY::hm_array
-::reportStats(FILE* s, const char* pad, unsigned flags) const
+::reportStats(output &s, const char* pad, unsigned flags) const
 {
   static unsigned HOLE_MANAGER =
     expert_forest::HOLE_MANAGER_STATS | expert_forest::HOLE_MANAGER_DETAILED;
 
   if (! (flags & HOLE_MANAGER)) return;
 
-  fprintf(s, "%sStats for array of lists hole management\n", pad);
+  s << pad << "Stats for array of lists hole management\n";
 
   holeman::reportStats(s, pad, flags);
 
 #ifdef MEASURE_LARGE_HOLE_STATS
   if (flags & expert_forest::HOLE_MANAGER_STATS) {
-    fprintf(s, "%s    #traversals large_holes: %ld\n", pad, num_large_hole_traversals);
+    s << pad << "    #traversals large_holes: " << num_large_hole_traversals << "\n";
     if (num_large_hole_traversals) {
-      fprintf(s, "%s    total traversal cost: %ld\n", pad, count_large_hole_visits);
+      s << pad << "    total traversal cost: " << count_large_hole_visits << "\n";
       double avg = count_large_hole_visits;
       avg /= num_large_hole_traversals;
-      fprintf(s, "%s    Avg cost per traversal : %lf\n", pad, avg);
+      s << pad << "    Avg cost per traversal : " << avg << "\n";
     }
   }
 #endif
 
   if (flags & expert_forest::HOLE_MANAGER_DETAILED) {
-    fprintf(s, "%s    Length of non-empty chains:\n", pad);
+    s << pad << "    Length of non-empty chains:\n";
     for (int i=0; i<LARGE_SIZE; i++) {
       long L = listLength(small_holes[i]);
       if (L) {
-        fprintf(s, "%s\tsize %3d: %ld\n", pad, i, L);
+        s << pad << "\tsize ";
+        s.put(long(i), 3);
+        s << ": " << L << "\n";
       }
     }
     long LL = listLength(large_holes);
-    if (LL) fprintf(s, "%s\tlarge   : %ld\n", pad, listLength(large_holes));
+    if (LL) s << pad << "\tlarge   : " << listLength(large_holes) << "\n";
   }
 
 }

@@ -36,6 +36,9 @@ MEDDLY::mt_mxd_bool::~mt_mxd_bool()
 void MEDDLY::mt_mxd_bool::createEdge(bool term, dd_edge& e)
 {
   createEdgeTempl<bool_Tencoder, bool>(term, e);
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true);
+#endif
 }
 
 void MEDDLY::mt_mxd_bool
@@ -79,12 +82,19 @@ void MEDDLY::mt_mxd_bool
 
   free(ordered_vlist);
   free(ordered_vplist);
+
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true);
+#endif
 }
 
 void MEDDLY::mt_mxd_bool::
 createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 {
   createEdgeForVarTempl<bool_Tencoder, bool>(vh, vp, terms, a);
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true);
+#endif
 }
 
 void MEDDLY::mt_mxd_bool::evaluate(const dd_edge &f, const int* vlist, 
@@ -93,17 +103,17 @@ void MEDDLY::mt_mxd_bool::evaluate(const dd_edge &f, const int* vlist,
   term = bool_Tencoder::handle2value(evaluateRaw(f, vlist, vplist));
 }
 
-void MEDDLY::mt_mxd_bool::showTerminal(FILE* s, node_handle tnode) const
+void MEDDLY::mt_mxd_bool::showTerminal(output &s, node_handle tnode) const
 {
   bool_Tencoder::show(s, tnode);
 }
 
-void MEDDLY::mt_mxd_bool::writeTerminal(FILE* s, node_handle tnode) const
+void MEDDLY::mt_mxd_bool::writeTerminal(output &s, node_handle tnode) const
 {
   bool_Tencoder::write(s, tnode);
 }
 
-MEDDLY::node_handle MEDDLY::mt_mxd_bool::readTerminal(FILE* s)
+MEDDLY::node_handle MEDDLY::mt_mxd_bool::readTerminal(input &s)
 {
   return bool_Tencoder::read(s);
 }

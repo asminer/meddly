@@ -45,10 +45,10 @@ private:
         inline unsigned getNumEntries() const   { return num_entries; }
         inline unsigned getMemUsed() const      { return size * sizeof(node_handle); }
 
-        void reportStats(FILE* s, const char* pad, unsigned flags) const;
+        void reportStats(output &s, const char* pad, unsigned flags) const;
 
         /// For debugging
-        void show(FILE *s) const;
+        void show(output& s) const;
 
         /**
          * Initialize the sub table. Must be called before use.
@@ -136,10 +136,10 @@ public:
      */
     unsigned getMemUsed(int var) const;
 
-    void reportStats(FILE* s, const char* pad, unsigned flags) const;
+    void reportStats(output &s, const char* pad, unsigned flags) const;
 
     /// For debugging
-    void show(FILE *s) const;
+    void show(output &s) const;
 
     /** If the table of the given variable contains key, move it to the front of the list.
         Otherwise, do nothing.

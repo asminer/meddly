@@ -36,6 +36,9 @@ MEDDLY::mt_mxd_real::~mt_mxd_real()
 void MEDDLY::mt_mxd_real::createEdge(float term, dd_edge& e)
 {
   createEdgeTempl<float_Tencoder, float>(term, e);
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true);
+#endif
 }
 
 void MEDDLY::mt_mxd_real
@@ -79,12 +82,19 @@ void MEDDLY::mt_mxd_real
 
   free(ordered_vlist);
   free(ordered_vplist);
+
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true);
+#endif
 }
 
 void MEDDLY::mt_mxd_real::
 createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
 {
   createEdgeForVarTempl<float_Tencoder, float>(vh, vp, terms, a);
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true);
+#endif
 }
 
 void MEDDLY::mt_mxd_real::evaluate(const dd_edge &f, const int* vlist, 
@@ -93,17 +103,17 @@ void MEDDLY::mt_mxd_real::evaluate(const dd_edge &f, const int* vlist,
   term = float_Tencoder::handle2value(evaluateRaw(f, vlist, vplist));
 }
 
-void MEDDLY::mt_mxd_real::showTerminal(FILE* s, node_handle tnode) const
+void MEDDLY::mt_mxd_real::showTerminal(output &s, node_handle tnode) const
 {
   float_Tencoder::show(s, tnode);
 }
 
-void MEDDLY::mt_mxd_real::writeTerminal(FILE* s, node_handle tnode) const
+void MEDDLY::mt_mxd_real::writeTerminal(output &s, node_handle tnode) const
 {
   float_Tencoder::write(s, tnode);
 }
 
-MEDDLY::node_handle MEDDLY::mt_mxd_real::readTerminal(FILE* s)
+MEDDLY::node_handle MEDDLY::mt_mxd_real::readTerminal(input &s)
 {
   return float_Tencoder::read(s);
 }

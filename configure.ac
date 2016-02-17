@@ -5,7 +5,7 @@
 
 ## AC_PREREQ(2.60)
 AC_PREREQ(2.59)
-AC_INIT([MEDDLY], [0.12], [asminer@iastate.edu], meddly, [http://meddly.sourceforge.net])
+AC_INIT([MEDDLY], [0.13], [asminer@iastate.edu], meddly, [http://meddly.sourceforge.net])
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_SRCDIR([src/meddly.h])
@@ -51,7 +51,7 @@ AC_FUNC_MEMCMP
 AC_FUNC_REALLOC
 AC_TYPE_SIGNAL
 AC_FUNC_STRTOD
-AC_CHECK_FUNCS([gettimeofday memmove memset strtol])
+AC_CHECK_FUNCS([getrusage gettimeofday memmove memset strtol])
 
 AC_CONFIG_FILES([Makefile
                  examples/Makefile

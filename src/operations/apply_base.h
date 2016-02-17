@@ -47,7 +47,7 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
 
   public:
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(FILE* strm, const node_handle *entryData) const;
+    virtual void showEntry(output &strm, const node_handle *entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     virtual node_handle compute(node_handle a, node_handle b);
@@ -104,7 +104,7 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
 
   public:
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(FILE* strm, const node_handle *entryData) const;
+    virtual void showEntry(output &strm, const node_handle *entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     virtual node_handle compute(node_handle a, node_handle b);
@@ -163,7 +163,7 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
 
   public:
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(FILE* strm, const node_handle *entryData) const;
+    virtual void showEntry(output &strm, const node_handle *entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     virtual node_handle compute(int level, node_handle a, node_handle b);
@@ -239,7 +239,7 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
     virtual ~generic_binary_evplus();
 
   public:
-    virtual void showEntry(FILE* strm, const node_handle *entryData) const;
+    virtual void showEntry(output &strm, const node_handle *entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     virtual void compute(int aev, node_handle a, int bev, node_handle b, int& cev, node_handle &c);
@@ -299,7 +299,7 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
     virtual ~generic_binary_evtimes();
 
   public:
-    virtual void showEntry(FILE* strm, const node_handle *entryData) const;
+    virtual void showEntry(output &strm, const node_handle *entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     virtual void compute(float aev, node_handle a, float bev, node_handle b, 

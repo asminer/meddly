@@ -74,43 +74,43 @@ void MEDDLY::node_reader::clear()
 }
 
 void MEDDLY::node_reader
-::show(FILE* s, const expert_forest* parent, bool verb) const
+::show(output &s, const expert_forest* parent, bool verb) const
 {
   int stop;
   if (isSparse()) {
-    if (verb) fprintf(s, "nnzs: %d ", size);
-    fprintf(s, "down: (");
+    if (verb) s << "nnzs: " << long(size) << " ";
+    s << "down: (";
     stop = nnzs;
   } else {
-    if (verb) fprintf(s, "size: %d ", size);
-    fprintf(s, "down: [");
+    if (verb) s << "size: " << long(size) << " ";
+    s << "down: [";
     stop = size;
   }
 
   for (int z=0; z<stop; z++) {
     if (isSparse()) {
-      if (z) fprintf(s, ", ");
-      fprintf(s, "%d:", i(z));
+      if (z) s << ", ";
+      s << long(i(z)) << ":";
     } else {
-      if (z) fprintf(s, "|");
+      if (z) s.put('|');
     }
     if (parent->edgeBytes()) {
-      fprintf(s, "<");
+      s.put('<');
       parent->showEdgeValue(s, eptr(z));
-      fprintf(s, ", ");
+      s.put(", ");
     }
     if (parent->isTerminalNode(d(z))) {
       parent->showTerminal(s, d(z));
     } else {
-      fprintf(s, "%ld", long(d(z)));
+      s.put(long(d(z)));
     }
-    if (parent->edgeBytes()) fprintf(s, ">");
+    if (parent->edgeBytes()) s.put('>');
   }
 
   if (isSparse()) {
-    fputc(')', s);
+    s.put(')');
   } else {
-    fputc(']', s);
+    s.put(']');
   }
 }
 
@@ -254,40 +254,40 @@ void MEDDLY::node_builder::init(int k, const expert_forest* p)
   edge_bytes = parent->edgeBytes();
 }
 
-void MEDDLY::node_builder::show(FILE* s, bool verb) const
+void MEDDLY::node_builder::show(output &s, bool verb) const
 {
   if (isSparse()) {
-    if (verb) fprintf(s, "nnzs: %d ", size);
-    fprintf(s, "down: (");
+    if (verb) s << "nnzs: " << long(size) << " ";
+    s << "down: (";
   } else {
-    if (verb) fprintf(s, "size: %d ", size);
-    fprintf(s, "down: [");
+    if (verb) s << "size: " << long(size) << " ";
+    s << "down: [";
   }
 
   for (int z=0; z<size; z++) {
     if (isSparse()) {
-      if (z) fprintf(s, ", ");
-      fprintf(s, "%d:", i(z));
+      if (z) s << ", ";
+      s << long(i(z)) << ":";
     } else {
-      if (z) fprintf(s, "|");
+      if (z) s.put('|');
     }
     if (parent->edgeBytes()) {
-      fprintf(s, "<");
+      s.put('<');
       parent->showEdgeValue(s, eptr(z));
-      fprintf(s, ", ");
+      s.put(", ");
     }
     if (parent->isTerminalNode(d(z))) {
       parent->showTerminal(s, d(z));
     } else {
-      fprintf(s, "%ld", long(d(z)));
+      s.put(long(d(z)));
     }
-    if (parent->edgeBytes()) fprintf(s, ">");
+    if (parent->edgeBytes()) s.put('>');
   }
 
   if (isSparse()) {
-    fputc(')', s);
+    s.put(')');
   } else {
-    fputc(']', s);
+    s.put(']');
   }
 }
 
@@ -384,21 +384,21 @@ void MEDDLY::node_storage::initForForest(expert_forest* f)
 }
 
 void MEDDLY::node_storage
-::writeNode(FILE* s, node_address, const node_handle*) const
+::writeNode(output &s, node_address, const node_handle*) const
 {
   throw error(error::NOT_IMPLEMENTED);
 }
 
-void MEDDLY::node_storage::dumpInternal(FILE* s, unsigned flags) const
+void MEDDLY::node_storage::dumpInternal(output &s, unsigned flags) const
 {
   dumpInternalInfo(s);
-  fprintf(s, "Data array by record:\n");
+  s << "Data array by record:\n";
   for (node_address a=1; a > 0; ) {
-    fflush(s);
+    s.flush();
     a = dumpInternalNode(s, a, flags);
   } // for a
   dumpInternalTail(s);
-  fflush(s);
+  s.flush();
 }
 
 void MEDDLY::node_storage::localInitForForest(const expert_forest* f)

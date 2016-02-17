@@ -19,8 +19,7 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <string.h>
 #include <unistd.h>
 
@@ -108,9 +107,10 @@ long writeReachset(FILE* s, int N)
   long c;
   apply(CARDINALITY, reachable, c);
 
+  FILE_output mys(s);
 #ifdef WRITE_MXD
   // Write NSF
-  mxd->writeEdges(s, &nsf, 1);
+  mxd->writeEdges(mys, &nsf, 1);
 #endif
 
 #ifdef WRITE_MDD
@@ -118,11 +118,11 @@ long writeReachset(FILE* s, int N)
   dd_edge list[2];
   list[0] = init_state;
   list[1] = reachable;
-  mdd->writeEdges(s, list, 2);
+  mdd->writeEdges(mys, list, 2);
 #endif
 
 #ifdef WRITE_EVMDD
-  evmdd->writeEdges(s, &reach_index, 1);
+  evmdd->writeEdges(mys, &reach_index, 1);
 #endif
 
   destroyDomain(d);
@@ -160,9 +160,11 @@ bool generateAndRead(FILE* s, int N)
   apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
 
   // Now, read from the file and verify
+  FILE_input mys(s);
+
   dd_edge list[2];
 #ifdef WRITE_MXD
-  mxd->readEdges(s, list, 1);
+  mxd->readEdges(mys, list, 1);
   if (list[0] != nsf) {
     printf("Failed to generate and read MXD\n");
     return false;
@@ -170,7 +172,7 @@ bool generateAndRead(FILE* s, int N)
 #endif
 
 #ifdef WRITE_MDD
-  mdd->readEdges(s, list, 2);
+  mdd->readEdges(mys, list, 2);
   if (list[0] != init_state) {
     printf("Failed to generate and read initial state\n");
     return false;
@@ -182,7 +184,7 @@ bool generateAndRead(FILE* s, int N)
 #endif
 
 #ifdef WRITE_EVMDD
-  evmdd->readEdges(s, list, 1);
+  evmdd->readEdges(mys, list, 1);
   if (list[0] != reach_index) {
     printf("Failed to generate and read reachable state indexes\n");
     return false;
@@ -200,6 +202,8 @@ bool generateAndRead(FILE* s, int N)
 */
 bool readAndGenerate(FILE* s, int N)
 {
+  FILE_input mys(s);
+
   // Build domain
   domain* d = buildKanbanDomain(N);
 
@@ -213,13 +217,13 @@ bool readAndGenerate(FILE* s, int N)
   dd_edge indexfile;
   // Read from the file
 #ifdef WRITE_MXD
-  mxd->readEdges(s, &mxdfile, 1);
+  mxd->readEdges(mys, &mxdfile, 1);
 #endif
 #ifdef WRITE_MDD
-  mdd->readEdges(s, mddfile, 2);
+  mdd->readEdges(mys, mddfile, 2);
 #endif
 #ifdef WRITE_EVMDD
-  evmdd->readEdges(s, &indexfile, 1);
+  evmdd->readEdges(mys, &indexfile, 1);
 #endif
 
   // Build initial state
@@ -351,6 +355,15 @@ int main()
     MEDDLY::cleanup();
     printf("\nError %d\n", e);
     return e;
+  }
+  catch (MEDDLY::error e) {
+    // cleanup
+#ifndef DEBUG_FILE
+    remove(filename);
+#endif
+    MEDDLY::cleanup();
+    printf("\nError: %s\n", e.getName());
+    return 1;
   }
   catch (...) {
     // cleanup

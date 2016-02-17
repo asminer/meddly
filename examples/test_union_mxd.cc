@@ -19,163 +19,188 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <iostream>
-#include <fstream>
 
+
+/**
+ * test_union_mxd.cc
+ *
+ * Testing MXD union.
+ */
+
+#include <iostream>
 #include "meddly.h"
 #include "timer.h"
-#include "reorder.h"
+
+#define CACHE_SIZE 262144u
 
 using namespace MEDDLY;
-using namespace std;
 
-void printUsage()
+void printUsage(FILE *outputStream)
 {
-	cout<<"Usage: test_reorder <ElementFile> <OrderFile> <ReorderingHeuristic>"<<endl;
-}
-
-void printStat(const dd_edge& state)
-{
-	printf("Current Nodes in MDD: %ld\n", state.getForest()->getCurrentNumNodes());
-}
-
-void readElementFile(char* elementFileName, int**& elements, int& numVariable, int& numElement)
-{
-	assert(elements==NULL);
-
-	ifstream in(elementFileName);
-	const int MAX_LINE_LENGTH=1000;
-	char lineBuffer[MAX_LINE_LENGTH];
-	char literalBuffer[10];
-	int x=0;
-	int y=1;
-	while(in.getline(lineBuffer, MAX_LINE_LENGTH)){
-		if(lineBuffer[0]=='#'){
-			if(lineBuffer[1]=='v'){
-				// Number of variables
-				sscanf(&lineBuffer[3], "%d", &numVariable);
-			}
-			else if(lineBuffer[1]=='e'){
-				// Number of elements
-				sscanf(&lineBuffer[3], "%d", &numElement);
-				elements=new int*[numElement];
-			}
-			else if(lineBuffer[1]=='s'){
-				// Seed
-			}
-			else {
-				exit(0);
-			}
-		}
-		else{
-			elements[x]=new int[numVariable+1];
-			y=1;
-
-			char* linePtr=lineBuffer;
-			char* literalPtr=literalBuffer;
-			while(*linePtr!='\0'){
-				literalPtr = literalBuffer;
-				while(*linePtr && isspace(*linePtr)){
-					linePtr++;
-				}
-				while(*linePtr && !isspace(*linePtr)){
-					*(literalPtr++) = *(linePtr++); // copy Literal
-				}
-				*literalPtr = '\0'; // terminate Literal
-
-				if(strlen(literalBuffer)>0){
-					elements[x][y++] = atoi(literalBuffer);
-				}
-			}
-
-			assert(y==numVariable+1);
-			x++;
-		}
-	}
-	assert(x==numElement);
+  fprintf(outputStream,
+      "Usage: test_union_mxd <#Variables> <VariableBound> <#Elements>\n");
 }
 
 int main(int argc, char *argv[])
 {
-	if(argc!=4){
-		printUsage();
-		exit(0);
-	}
+  if (argc != 4) {
+    printUsage(stdout);
+    exit(1);
+  }
 
-	char elementFileName[200];
-	sscanf(argv[1], "%s", &elementFileName);
-	char orderFileName[200];
-	sscanf(argv[2], "%s", &orderFileName);
-	char heuristic[30];
-	sscanf(argv[3], "%s", &heuristic);
+  srand(1u);
 
-	int numVariable=0;
-	int numElement=0;
-	int** elements=NULL;
-	int* order=NULL;
+  // initialize number of variables, their bounds and the number of elements
+  // to create
 
-	readElementFile(elementFileName, elements, numVariable, numElement);
-	readOrderFile(orderFileName, order, numVariable);
+  int nVariables = 0;
+  int variableBound = 0;
+  int nElements = 0;
 
-	int* bounds = new int[numVariable];
-	for (int i = 0; i < numVariable; ++i) {
-		bounds[i] = 2;
-	}
+  sscanf(argv[1], "%d", &nVariables);
+  assert(nVariables > 0);
 
-	settings s;
-	initialize(s);
+  sscanf(argv[2], "%d", &variableBound);
+  assert(variableBound > 0);
 
-	// Create a domain
-	domain *d = createDomainBottomUp(bounds, numVariable);
+  sscanf(argv[3], "%d", &nElements);
+  assert(nElements > 0);
 
-	// Create an MDD forest in this domain (to store states)
-	forest::policies p(false);
-	if(strcmp(heuristic, "LI")==0) {
-		p.setLowestInversion();
-	}
-	else if(strcmp(heuristic, "HI")==0) {
-		p.setHighestInversion();
-	}
-	else if(strcmp(heuristic, "BD")==0) {
-		p.setBubbleDown();
-	}
-	else if(strcmp(heuristic, "BU")==0) {
-		p.setBubbleUp();
-	}
-	else if(strcmp(heuristic, "LC")==0) {
-		p.setLowestCost();
-	}
+  printf("#variables: %d, variable bound: %d, #elements: %d\n",
+      nVariables, variableBound, nElements);
 
-	forest* f = d->createForest(false, forest::BOOLEAN,
-			forest::MULTI_TERMINAL, p);
+  // create the elements randomly
 
-	dd_edge state(f);
+  timer mallocTimer;
+  long mallocTime = 0;
 
-	cout<<"Started..."<<endl;
+  int** elements = (int **) malloc(nElements * sizeof(int *));
+  int** pelements = (int **) malloc(nElements * sizeof(int *));
+  for (int i = 0; i < nElements; ++i)
+  {
+    mallocTimer.note_time();
+    elements[i] = (int *) malloc((nVariables + 1) * sizeof(int));
+    pelements[i] = (int *) malloc((nVariables + 1) * sizeof(int));
+    mallocTimer.note_time();
+    mallocTime += mallocTimer.get_last_interval();
 
-	f->createEdge(elements, numElement, state);
+    elements[i][0] = 0;
+    pelements[i][0] = 0;
+    for (int j = nVariables; j >= 1; --j)
+    {
+      elements[i][j] = int(float(variableBound) * rand() / (RAND_MAX + 1.0));
+      assert(elements[i][j] >= 0 && elements[i][j] < variableBound);
+      pelements[i][j] = int(float(variableBound) * rand() / (RAND_MAX + 1.0));
+      assert(pelements[i][j] >= 0 && pelements[i][j] < variableBound);
+    }
+    // print element[i]
+#ifdef VERBOSE
+    printf("Element %d: [%d", i, elements[i][0]);
+    for (int j = 1; j <= nVariables; ++j) { printf(" %d", elements[i][j]); }
+    printf("] --> [%d", pelements[i][0]);
+    for (int j = 1; j <= nVariables; ++j) { printf(" %d", pelements[i][j]); }
+    printf("]\n");
+#endif
+  }
 
-	static_cast<expert_forest*>(f)->removeAllComputeTableEntries();
-	printStat(state);
+  // initialize the variable bounds array to provide to the domain
 
-	timer runTimer;
-	runTimer.note_time();
+  int* bounds = (int *) malloc(nVariables * sizeof(int));
+  assert(bounds != 0);
+  for (int i = 0; i < nVariables; ++i)
+  {
+#ifdef TESTING_AUTO_VAR_GROWTH
+    bounds[i] = 2;
+#else
+    bounds[i] = variableBound;
+#endif
+  }
 
-	static_cast<expert_domain*>(d)->reorderVariables(order);
+  settings s;
+#ifdef CACHE_SIZE
+  s.ctSettings.maxSize = CACHE_SIZE;
+#endif
+  initialize(s);
 
-	runTimer.note_time();
-	cout<<"Time: "<<runTimer.get_last_interval()/1000000.0<<" s"<<endl;
-	printStat(state);
+  // Create a domain
+  domain *d = createDomainBottomUp(bounds, nVariables);
+  assert(d != 0);
 
-	destroyDomain(d);
-	MEDDLY::cleanup();
+  // Create an MXD forest in this domain (to store a relation)
+  forest* xd = d->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  assert(xd != 0);
 
-	delete[] bounds;
-	delete[] order;
-	for (int i = 0; i < numElement; i++) {
-		delete[] elements[i];
-	}
-	delete[] elements;
+  dd_edge initial_state(xd);
+  timer start;
+  printf("Started... ");
 
-	return 0;
+  // Create a dd_edge per element and combine using the UNION operator.
+  dd_edge** ddElements = new dd_edge*[nElements];
+  for (int i = 0; i < nElements; ++i)
+  {
+    ddElements[i] = new dd_edge(xd);
+    xd->createEdge(elements + i, pelements + i, 1, *(ddElements[i]));
+  }
+
+  // Combine dd_edges
+  start.note_time();
+  int nDDElements = nElements;
+  while (nDDElements > 1) {
+    int nCombinations = nDDElements/2;
+    for (int i = 0; i < nCombinations; i++)
+    {
+      // Combine i and (nDDElements-1-i)
+      (*(ddElements[i])) += (*(ddElements[nDDElements-1-i]));
+    }
+    nDDElements = (nDDElements+1)/2;
+  }
+  initial_state = *(ddElements[0]);
+  start.note_time();
+
+  for (int i = 0; i < nElements; ++i) delete ddElements[i];
+  delete [] ddElements;
+
+  printf("done. Time interval: %.4e seconds\n",
+      start.get_last_interval()/1000000.0);
+
+#ifdef VERBOSE
+  printf("\n\nInitial State:\n");
+  initial_state.show(stdout, 2);
+#endif
+
+  double c;
+  apply(CARDINALITY, initial_state, c);
+  printf("Elements in result: %.4e\n", c);
+  printf("Peak Nodes in MXD: %ld\n", xd->getPeakNumNodes());
+  /* TBD: FIX
+  printf("Nodes in compute table: %ld\n",
+      (getComputeManager())->getNumCacheEntries());
+  */
+
+#ifdef VERBOSE
+  printf("\n\nForest Info:\n");
+  xd->showInfo(stdout);
+#endif
+
+  // Cleanup; in this case simply delete the domain
+  destroyDomain(d);
+  cleanup();
+
+  free(bounds);
+  for (int i = 0; i < nElements; ++i)
+  {
+    mallocTimer.note_time();
+    free(elements[i]);
+    free(pelements[i]);
+    mallocTimer.note_time();
+    mallocTime += mallocTimer.get_last_interval();
+  }
+  free(elements);
+  free(pelements);
+
+#ifdef VERBOSE
+  printf("Malloc time: %.4e seconds\n", mallocTime/1000000.0);
+#endif
+
+  return 0;
 }

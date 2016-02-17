@@ -185,7 +185,7 @@ void MEDDLY::old_node_storage::collectGarbage(bool shrink)
 }
 
 void MEDDLY::old_node_storage
-::reportStats(FILE* s, const char* pad, unsigned flags) const
+::reportStats(output &s, const char* pad, unsigned flags) const
 {
   static unsigned STORAGE =
     expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED;
@@ -194,25 +194,24 @@ void MEDDLY::old_node_storage
 
 
   if (flags & expert_forest::STORAGE_STATS) {
-    fprintf(s, "%s", pad);
-    fprintf(s, "Stats for \"classic\" node storage:\n");
+    s << pad << "Stats for \"classic\" node storage:\n";
 
     // anything?
   }
 
   if (! (flags & HOLE_MANAGER)) return;
 
-  fprintf(s, "%sStats for \"classic\" hole management:\n", pad);
+  s << pad << "Stats for \"classic\" hole management:\n";
 
   if (flags & expert_forest::HOLE_MANAGER_STATS) {
     unsigned long holemem = hole_slots * sizeof(node_handle);
-    fprintf(s, "%s    ", pad);
-    fprintmem(s, holemem, flags & expert_forest::HUMAN_READABLE_MEMORY);
-    fprintf(s, " wasted in holes\n");
+    s << pad << "    ";
+    s.put_mem(holemem, flags & expert_forest::HUMAN_READABLE_MEMORY);
+    s << " wasted in holes\n";
     unsigned long fragmem = fragment_slots * sizeof(node_handle);
-    fprintf(s, "%s    ", pad);
-    fprintmem(s, fragmem, flags & expert_forest::HUMAN_READABLE_MEMORY);
-    fprintf(s, " wasted in fragments\n");
+    s << pad << "    ";
+    s.put_mem(fragmem, flags & expert_forest::HUMAN_READABLE_MEMORY);
+    s << " wasted in fragments\n";
   }
 
   if (! (flags & expert_forest::HOLE_MANAGER_DETAILED)) return;
@@ -238,63 +237,66 @@ void MEDDLY::old_node_storage
 
   // Display the histogram
 
-  fprintf(s, "%s    Hole Chains (size, count):\n", pad);
+  s << pad << "    Hole Chains (size, count):\n";
   for (std::map<int, int>::iterator iter = chainLengths.begin();
       iter != chainLengths.end(); ++iter)
     {
-      if (iter->first<0)
-        fprintf(s, "%s\tlarge: %d\n", pad, iter->second);
-      else
-        fprintf(s, "%s\t%5d: %d\n", pad, iter->first, iter->second);
+      if (iter->first<0) {
+        s << pad << "\tlarge: " << long(iter->second) << "\n";
+      } else {
+        s << pad << "\t";
+        s.put(long(iter->first), 5);
+        s << ": " << long(iter->second) << "\n";
+      }
     }
-  fprintf(s, "%s    End of Hole Chains\n", pad);
+  s << pad << "    End of Hole Chains\n";
 }
 
-void MEDDLY::old_node_storage::showNode(FILE* s, node_address addr, bool verb) const
+void MEDDLY::old_node_storage::showNode(output &s, node_address addr, bool verb) const
 {
   if (sizeOf(addr) < 0) {
     // Sparse node
-    int nnz = -sizeOf(addr);
-    if (verb) fprintf(s, " nnz : %d", nnz);
-    fprintf(s, " down: (");
-    for (int z=0; z<nnz; z++) {
-      if (z) fprintf(s, ", ");
-      fprintf(s, "%ld:", long(SI(addr)[z]));
+    long nnz = -sizeOf(addr);
+    if (verb) s << " nnz : " << nnz;
+    s << " down: (";
+    for (long z=0; z<nnz; z++) {
+      if (z) s << ", ";
+      s << long(SI(addr)[z]) << ':';
       if (edgeSlots) {
-        fprintf(s, "<");
+        s.put('<');
         getParent()->showEdgeValue(s, SEP(addr, z));
-        fprintf(s, ", ");
+        s.put(", ");
       } 
       node_handle d = SD(addr)[z];
       if (getParent()->isTerminalNode(d)) {
         getParent()->showTerminal(s, d);
       } else {
-        fprintf(s, "%ld", long(d));
+        s.put(long(d));
       }
-      if (edgeSlots) fprintf(s, ">");
+      if (edgeSlots) s.put('>');
     } // for z
-    fprintf(s, ")");
+    s.put(')');
   } else {
     // Full node
-    int size = sizeOf(addr);
-    if (verb) fprintf(s, " size: %d", size);
-    fprintf(s, " down: [");
-    for (int i=0; i<size; i++) {
-      if (i) fprintf(s, "|"); 
+    long size = sizeOf(addr);
+    if (verb) s << " size: " << size;
+    s << " down: [";
+    for (long i=0; i<size; i++) {
+      if (i) s.put('|');
       if (edgeSlots) {
-        fprintf(s, "<");
+        s.put('<');
         getParent()->showEdgeValue(s, FEP(addr, i));
-        fprintf(s, ", ");
+        s.put(", ");
       } 
       node_handle d = FD(addr)[i];
       if (getParent()->isTerminalNode(d)) {
         getParent()->showTerminal(s, d);
       } else {
-        fprintf(s, "%ld", long(d));
+        s.put(long(d));
       }
-      if (edgeSlots) fprintf(s, ">");
+      if (edgeSlots) s.put('>');
     } // for i
-    fprintf(s, "]");
+    s.put(']');
   }
 
   // show extra header stuff
@@ -307,62 +309,64 @@ void MEDDLY::old_node_storage::showNode(FILE* s, node_address addr, bool verb) c
 }
 
 void MEDDLY::old_node_storage
-::writeNode(FILE* s, node_address addr, const node_handle* map) const
+::writeNode(output &s, node_address addr, const node_handle* map) const
 {
-  th_fprintf(s, "%d\n", sizeOf(addr));
+  s.put(long(sizeOf(addr)));
+  s.put('\n');
   if (sizeOf(addr) < 0) {
     // Sparse node
     int nnz = -sizeOf(addr);
     // write indexes
-    th_fprintf(s, "\t");
+    s.put('\t');
     for (int z=0; z<nnz; z++) {
-      th_fprintf(s, " %d", SI(addr)[z]);
+      s.put(' ');
+      s.put(long(SI(addr)[z]));
     }
-    th_fprintf(s, "\n\t");
+    s.put("\n\t");
     // write down pointers
     for (int z=0; z<nnz; z++) {
-      th_fprintf(s, " ");
+      s.put(' ');
       node_handle d = SD(addr)[z];
       if (getParent()->isTerminalNode(d)) {
         getParent()->writeTerminal(s, d);
       } else {
         if (map) d = map[d];
-        th_fprintf(s, "%ld", long(d));
+        s.put(long(d));
       }
     }
     // write edges
     if (edgeSlots) {
-      th_fprintf(s, "\n\t");
+      s.put("\n\t");
       for (int z=0; z<nnz; z++) {
-        th_fprintf(s, " ");
+        s.put(' ');
         getParent()->showEdgeValue(s, SEP(addr, z));
       }
     } 
-    th_fprintf(s, "\n");
+    s.put('\n');
   } else {
     // Full node
     int size = sizeOf(addr);
-    th_fprintf(s, "\t");
+    s.put('\t');
     // write down pointers
     for (int i=0; i<size; i++) {
-      th_fprintf(s, " ");
+      s.put(' ');
       node_handle d = FD(addr)[i];
       if (getParent()->isTerminalNode(d)) {
         getParent()->writeTerminal(s, d);
       } else {
         if (map) d = map[d];
-        th_fprintf(s, "%ld", long(d));
+        s.put(long(d));
       }
     }
     // write edges
     if (edgeSlots) {
-      th_fprintf(s, "\n\t");
+      s.put("\n\t");
       for (int i=0; i<size; i++) {
-        th_fprintf(s, " ");
+        s.put(' ');
         getParent()->showEdgeValue(s, FEP(addr, i));
       }
     } 
-    th_fprintf(s, "\n");
+    s.put('\n');
   }
 
   // write extra header stuff
@@ -735,61 +739,69 @@ int MEDDLY::old_node_storage::smallestNode() const
   return slotsForNode(0);
 }
 
-void MEDDLY::old_node_storage::dumpInternalInfo(FILE* s) const
+void MEDDLY::old_node_storage::dumpInternalInfo(output &s) const
 {
   if (0==data) return; // nothing to display
-  fprintf(s, "Last slot used: %ld\n", long(last));
-  fprintf(s, "large_holes: %ld\n", long(large_holes));
-  fprintf(s, "Grid: top = %ld bottom = %ld\n", long(holes_top), long(holes_bottom));
+  s << "Last slot used: " << long(last) << "\n";
+  s << "large_holes: " << long(large_holes) << "\n";
+  s << "Grod: top = " << long(holes_top) << " bottom = " << long(holes_bottom) << "\n";
   verify_hole_slots = 0;
 }
 
 
 MEDDLY::node_address 
 MEDDLY::old_node_storage
-::dumpInternalNode(FILE *s, node_address a, unsigned flags) const
+::dumpInternalNode(output &s, node_address a, unsigned flags) const
 {
   if (a<=0) return 0;
   int awidth = digits(getParent()->getLastNode());
   if (a > last) {
-    fprintf(s, "%*ld : free slots\n", awidth, long(a));
+    s.put(long(a), awidth);
+    s << " : free slots\n";
     return 0;
   }
   MEDDLY_DCASSERT(data);
   bool print = (data[a] < 0) ? (flags & 0x02) : (flags & 0x01);
-  if (print) fprintf(s, "%*ld : ", awidth, a);
+  if (print) {
+    s.put(long(a), awidth);
+    s << " : ";
+  }
   if (data[a]<0) { 
     // hole
     if (print) {
-      fprintf(s, "[%ld", long(data[a]));
+      s.put('[');
+      s.put(long(data[a]));
       for (int i=1; i<3; i++) {
-        fprintf(s, "|%ld", long(data[a+i]));
+        s.put('|');
+        s.put(long(data[a+i]));
       }
-      fprintf(s, "| ... ");
+      s.put("| ... ");
     }
     verify_hole_slots += -data[a];
     a -= data[a];  
-    if (print) fprintf(s, "%ld]\n", long(data[a-1]));
+    if (print) s << long(data[a-1]) << "]\n";
   } else {
     // proper node
     if (print) {
-      fprintf(s, "%*ld : ", awidth, a);
+      s.put(a, awidth);
+      s << " : ";
       int nElements = activeNodeActualSlots(a);
-      fprintf(s, "[%ld", long(data[a]));
+      s << "[" << long(data[a]);
       for (int i=1; i<nElements-1; i++) {
-        fprintf(s, "|%ld", long(data[a+i]));
+        s.put('|');
+        s.put(long(data[a+i]));
       }
     }
     a += activeNodeActualSlots(a);
-    if (print) fprintf(s, "%ld]\n", long(data[a-1]));
+    if (print) s << long(data[a-1]) << "]\n";
   }
   return a;
 }
 
-void MEDDLY::old_node_storage::dumpInternalTail(FILE* s) const
+void MEDDLY::old_node_storage::dumpInternalTail(output &s) const
 {
   if (verify_hole_slots != hole_slots) {
-    fprintf(s, "Counted hole slots: %ld\n", long(verify_hole_slots));
+    s << "Counted hole slots: " << long(verify_hole_slots) << "\n";
     MEDDLY_DCASSERT(false);
   }
 }
@@ -1320,7 +1332,12 @@ void MEDDLY::old_node_storage::indexRemove(node_handle p_offset)
 void MEDDLY::old_node_storage::resize(node_handle new_size)
 {
   node_handle* new_data = (node_handle*) realloc(data, new_size * sizeof(node_handle));
-  if (0 == new_data) throw error(error::INSUFFICIENT_MEMORY);
+  if (0 == new_data) {
+    fprintf(stderr,
+        "Error in allocating array of size %lu at %s, line %d\n",
+        new_size * sizeof(node_handle), __FILE__, __LINE__);
+    throw error(error::INSUFFICIENT_MEMORY);
+  }
   if (0== data) new_data[0] = 0;
   if (new_size > size) {
     incMemAlloc((new_size - size) * sizeof(node_handle));

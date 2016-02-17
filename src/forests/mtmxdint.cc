@@ -36,6 +36,9 @@ MEDDLY::mt_mxd_int::~mt_mxd_int()
 void MEDDLY::mt_mxd_int::createEdge(int term, dd_edge& e)
 {
   createEdgeTempl<int_Tencoder, int>(term, e);
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true);
+#endif
 }
 
 void MEDDLY::mt_mxd_int
@@ -79,12 +82,19 @@ void MEDDLY::mt_mxd_int
 
   free(ordered_vlist);
   free(ordered_vplist);
+
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true);
+#endif
 }
 
 void MEDDLY::mt_mxd_int::
 createEdgeForVar(int vh, bool vp, const int* terms, dd_edge& a)
 {
   createEdgeForVarTempl<int_Tencoder, int>(vh, vp, terms, a);
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true);
+#endif
 }
 
 void MEDDLY::mt_mxd_int::evaluate(const dd_edge &f, const int* vlist, 
@@ -93,17 +103,17 @@ void MEDDLY::mt_mxd_int::evaluate(const dd_edge &f, const int* vlist,
   term = int_Tencoder::handle2value(evaluateRaw(f, vlist, vplist));
 }
 
-void MEDDLY::mt_mxd_int::showTerminal(FILE* s, node_handle tnode) const
+void MEDDLY::mt_mxd_int::showTerminal(output &s, node_handle tnode) const
 {
   int_Tencoder::show(s, tnode);
 }
 
-void MEDDLY::mt_mxd_int::writeTerminal(FILE* s, node_handle tnode) const
+void MEDDLY::mt_mxd_int::writeTerminal(output &s, node_handle tnode) const
 {
   int_Tencoder::write(s, tnode);
 }
 
-MEDDLY::node_handle MEDDLY::mt_mxd_int::readTerminal(FILE* s)
+MEDDLY::node_handle MEDDLY::mt_mxd_int::readTerminal(input &s)
 {
   return int_Tencoder::read(s);
 }

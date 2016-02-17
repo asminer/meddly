@@ -89,17 +89,19 @@ int main(int argc, char *argv[])
   int retval = (reachBFS == reachDFS)? 0: 1;
 
 #ifdef VERBOSE
+  FILE_output meddlyout(stdout);
+
   printf("Initial States:\n");
-  initialStates.show(stdout, 2);
+  initialStates.show(meddlyout, 2);
 
   printf("Next-State Function:\n");
-  nsf.show(stdout, 2);
+  nsf.show(meddlyout, 2);
 
   printf("BFS states\n");
-  reachBFS.show(stdout, 2);
+  reachBFS.show(meddlyout, 2);
 
   printf("DFS states\n");
-  reachDFS.show(stdout, 2);
+  reachDFS.show(meddlyout, 2);
 
   if (retval) {
     printf("\nReachable states DO NOT match\n\n");

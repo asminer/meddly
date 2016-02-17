@@ -30,7 +30,7 @@
 #include "meddly.h"
 #include "meddly_expert.h"
 #include "timer.h"
-#include <stdio.h>
+#include <cstdio>
 #include <stdarg.h>
 
 // #define DEBUG_MOVE_BALL
@@ -380,8 +380,9 @@ void printStats(const char* who, timer& watch, const dd_edge &node)
     who, node.getNodeCount(), node.getEdgeCount()
   );
   printf("    Stats:\n");
+  FILE_output meddlyout(stdout);
   const expert_forest* ef = (expert_forest*) node.getForest();
-  ef->reportStats(stdout, "\t",
+  ef->reportStats(meddlyout, "\t",
     expert_forest::HUMAN_READABLE_MEMORY  |
     expert_forest::BASIC_STATS | 
     expert_forest::EXTRA_STATS |
@@ -560,7 +561,8 @@ int main(int argc, const char** argv)
   //
   // Cleanup
   //
-  operation::showAllComputeTables(stdout, 1);
+  FILE_output meddlyout(stdout);
+  operation::showAllComputeTables(meddlyout, 3);
   MEDDLY::cleanup();
   return 0;
 }

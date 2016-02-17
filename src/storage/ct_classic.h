@@ -126,33 +126,33 @@ class MEDDLY::base_table : public compute_table {
         }
 
         virtual node_handle readNH() {
-          MEDDLY_CHECK_RANGE(0, currslot, ansLength);
+          MEDDLY_DCASSERT(currslot < ansLength);
           return data[currslot++];
         }
         virtual void read(int &i) {
-          MEDDLY_CHECK_RANGE(0, currslot, ansLength);
+          MEDDLY_DCASSERT(currslot < ansLength);
           i = data[currslot++];
         }
         virtual void read(float &f) {
-          MEDDLY_CHECK_RANGE(0, currslot, ansLength);
+          MEDDLY_DCASSERT(currslot < ansLength);
           f = ((float*)(data + currslot))[0];
           currslot++;
         }
         virtual void read(long &L) {
-          MEDDLY_CHECK_RANGE(0, 
-            currslot+sizeof(long)/sizeof(node_handle), ansLength+1);
+          MEDDLY_DCASSERT( 
+            currslot+sizeof(long)/sizeof(node_handle) <= ansLength);
           memcpy(&L, data+currslot, sizeof(long));
           currslot += sizeof(long) / sizeof(node_handle);
         }
         virtual void read(double &D) {
-          MEDDLY_CHECK_RANGE(0, 
-            currslot+sizeof(double)/sizeof(node_handle), ansLength+1);
+          MEDDLY_DCASSERT( 
+            currslot+sizeof(double)/sizeof(node_handle) <= ansLength);
           memcpy(&D, data+currslot, sizeof(double));
           currslot += sizeof(double) / sizeof(node_handle);
         }
         virtual void read(void* &P) {
-          MEDDLY_CHECK_RANGE(0, 
-            currslot+sizeof(void*)/sizeof(node_handle), ansLength+1);
+          MEDDLY_DCASSERT( 
+            currslot+sizeof(void*)/sizeof(node_handle) <= ansLength);
           memcpy(&P, data+currslot, sizeof(void*));
           currslot += sizeof(void*) / sizeof(node_handle);
         }
@@ -190,17 +190,17 @@ class MEDDLY::base_table : public compute_table {
 
           virtual void writeResultNH(node_handle nh)
           {
-            MEDDLY_CHECK_RANGE(0, resSlot, resLength);
+            MEDDLY_DCASSERT(resSlot < resLength);
             res_entry[resSlot++] = nh;
           }
           virtual void writeResult(int i)
           {
-            MEDDLY_CHECK_RANGE(0, resSlot, resLength);
+            MEDDLY_DCASSERT(resSlot < resLength);
             res_entry[resSlot++] = i;
           }
           virtual void writeResult(float f)
           {
-            MEDDLY_CHECK_RANGE(0, resSlot, resLength);
+            MEDDLY_DCASSERT(resSlot < resLength);
             float* x = (float*) res_entry + resSlot;
             x[0] = f;
             resSlot++;
@@ -209,7 +209,6 @@ class MEDDLY::base_table : public compute_table {
           inline void writeResult(void* data, size_t slots)
           {
             MEDDLY_DCASSERT(slots>0);
-            MEDDLY_DCASSERT(resSlot>=0);
             MEDDLY_DCASSERT(resSlot+slots<=resLength);
             memcpy(res_entry+resSlot, data, slots * sizeof(node_handle));
             resSlot += slots;
@@ -267,8 +266,8 @@ class MEDDLY::base_table : public compute_table {
       freeList[size] = h;
       perf.numEntries--;
     }
-    void dumpInternal(FILE* s, int verbLevel) const;
-    void report(FILE* s, int indent, int &level) const;
+    void dumpInternal(output &s, int verbLevel) const;
+    void report(output &s, int indent, int &level) const;
 
     static inline bool equal_sw(const int* a, const int* b, int N) {
       switch (N) {  // note: cases 8 - 2 fall through
@@ -384,8 +383,8 @@ class MEDDLY::base_hash : public base_table {
       return key->getHash() % tableSize;
     }
     
-    void dumpInternal(FILE* s, int verbLevel) const;
-    void report(FILE* s, int indent, int &level) const;
+    void dumpInternal(output &s, int verbLevel) const;
+    void report(output &s, int indent, int &level) const;
   protected:
     int*  table;
     unsigned int tableSize;
@@ -434,10 +433,10 @@ class MEDDLY::base_chained : public base_hash {
     virtual void addEntry();
     virtual void removeStales();
   protected:
-    void dumpInternal(FILE* s, int verbLevel) const;
+    void dumpInternal(output &s, int verbLevel) const;
     virtual int convertToList(bool removeStales) = 0;
     virtual void listToTable(int h) = 0;
-    virtual void showEntry(FILE* s, int h) const = 0;
+    virtual void showEntry(output &s, int h) const = 0;
 };
 
 
@@ -472,12 +471,12 @@ class MEDDLY::monolithic_chained : public base_chained {
     virtual entry_builder& startNewEntry(search_key *key);
     virtual void removeAll();
 
-    virtual void show(FILE *s, int verbLevel);
+    virtual void show(output &s, int verbLevel);
 
   protected:
     virtual int convertToList(bool removeStales);
     virtual void listToTable(int h);
-    virtual void showEntry(FILE* s, int h) const;
+    virtual void showEntry(output &s, int h) const;
 
     inline bool checkStale(unsigned h, int prev, int &curr) {
         operation* currop = operation::getOpWithIndex(entries[curr+1]);
@@ -526,12 +525,12 @@ class MEDDLY::operation_chained : public base_chained {
     virtual entry_builder& startNewEntry(search_key *key);
     virtual void removeAll();
 
-    virtual void show(FILE *s, int verbLevel);
+    virtual void show(output &s, int verbLevel);
 
   protected:
     virtual int convertToList(bool removeStales);
     virtual void listToTable(int h);
-    virtual void showEntry(FILE* s, int h) const { 
+    virtual void showEntry(output &s, int h) const { 
       global_op->showEntry(s, entries + h + 1);
     }
 
@@ -587,10 +586,10 @@ class MEDDLY::base_unchained : public base_hash {
     base_unchained(const settings::computeTableSettings &s);
     virtual ~base_unchained();
 
-    virtual void show(FILE *s, int verbLevel);
+    virtual void show(output &s, int verbLevel);
   protected:
-    virtual void showTitle(FILE* s) const = 0;
-    virtual void showEntry(FILE* s, int h) const = 0;
+    virtual void showTitle(output &s) const = 0;
+    virtual void showEntry(output &s, int h) const = 0;
 
     inline void incMod(unsigned &h) {
       h++;
@@ -711,6 +710,9 @@ class MEDDLY::base_unchained : public base_hash {
       if (0==table) {
         table = oldT;
         tableSize = oldSize;
+        fprintf(stderr,
+            "Error in allocating array of size %lu at %s, line %d\n",
+            newsize * sizeof(int), __FILE__, __LINE__);
         throw error(error::INSUFFICIENT_MEMORY);
       }
       for (unsigned i=0; i<newsize; i++) table[i] = 0;
@@ -756,6 +758,9 @@ class MEDDLY::base_unchained : public base_hash {
           if (0==table) {
             table = oldT;
             tableSize = oldSize;
+            fprintf(stderr,
+                "Error in allocating array of size %lu at %s, line %d\n",
+                newsize * sizeof(int), __FILE__, __LINE__);
             throw error(error::INSUFFICIENT_MEMORY);
           }
           for (unsigned i=0; i<newsize; i++) table[i] = 0;
@@ -824,8 +829,8 @@ class MEDDLY::monolithic_unchained : public base_unchained {
     virtual void removeStales();
     virtual void removeAll();
   protected:
-    virtual void showTitle(FILE *s) const;
-    virtual void showEntry(FILE *s, int curr) const;
+    virtual void showTitle(output &s) const;
+    virtual void showEntry(output &s, int curr) const;
 };
 
 
@@ -858,8 +863,8 @@ class MEDDLY::operation_unchained : public base_unchained {
     virtual void removeStales();
     virtual void removeAll();
   protected:
-    virtual void showTitle(FILE *s) const;
-    virtual void showEntry(FILE *s, int curr) const;
+    virtual void showTitle(output &s) const;
+    virtual void showEntry(output &s, int curr) const;
 };
 
 
@@ -926,7 +931,7 @@ class MEDDLY::base_map : public base_table {
     virtual search_key* initializeSearchKey(operation* op);
     virtual entry_builder& startNewEntry(search_key *key);
   protected:
-    inline void showEntry(FILE* s, int* h) const {
+    inline void showEntry(output &s, int* h) const {
       global_op->showEntry(s, h);
     }
     inline bool isStale(const int* entry) {
@@ -964,7 +969,7 @@ namespace MEDDLY {
       virtual void removeStales();
       virtual void removeAll();
 
-      virtual void show(FILE *s, int verbLevel = 0);
+      virtual void show(output &s, int verbLevel = 0);
     protected:
       std::map<int*, int*, less<K> > ct;
   };

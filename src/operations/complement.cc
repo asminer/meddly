@@ -46,7 +46,7 @@ class MEDDLY::compl_mdd : public unary_operation {
 
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(FILE* strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData) const;
     virtual void compute(const dd_edge& a, dd_edge& b);
 
   protected:
@@ -96,9 +96,10 @@ void MEDDLY::compl_mdd::discardEntry(const node_handle* data)
   resF->uncacheNode(data[1]);
 }
 
-void MEDDLY::compl_mdd::showEntry(FILE* strm, const node_handle* data) const
+void MEDDLY::compl_mdd::showEntry(output &strm, const node_handle* data) const
 {
-  fprintf(strm, "[%s(%d): %d]", getName(), data[0], data[1]);
+  strm  << "[" << getName() << "(" << long(data[0]) 
+        << "): " << long(data[1]) << "]";
 }
 
 void MEDDLY::compl_mdd::compute(const dd_edge& a, dd_edge& b) 
@@ -163,7 +164,7 @@ class MEDDLY::compl_mxd : public unary_operation {
 
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(FILE* strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData) const;
     virtual void compute(const dd_edge& a, dd_edge& b);
 
     node_handle compute(int in, int k, node_handle a);
@@ -189,9 +190,10 @@ void MEDDLY::compl_mxd::discardEntry(const node_handle* data)
   resF->uncacheNode(data[2]);
 }
 
-void MEDDLY::compl_mxd::showEntry(FILE* strm, const node_handle* data) const
+void MEDDLY::compl_mxd::showEntry(output &strm, const node_handle* data) const
 {
-  fprintf(strm, "[%s(%d, %d): %d]", getName(), data[0], data[1], data[2]);
+  strm  << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1])
+        << "): " << long(data[2]) << "]";
 }
 
 void MEDDLY::compl_mxd::compute(const dd_edge& a, dd_edge& b) 

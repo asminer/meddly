@@ -46,15 +46,36 @@ public:
   inline void setValue(long i) {
     mpz_set_si(value, i);
   }
-  inline void show(FILE* strm) const {
+  /*
+  inline void show(output &strm) const {
     mpz_out_str(strm, 10, value);
   }
+  */
+  void show(output &strm) const;
   inline void multiply(long i) {
     mpz_mul_si(value, value, i);
   }
   inline void add(const mpz_object &x) {
     mpz_add(value, value, x.value);
   }
+
+  static void clearBuffer();
+
+private:
+  class mpz_cleanup : public cleanup_procedure {
+    public:
+      mpz_cleanup();
+    protected:
+      virtual ~mpz_cleanup();
+    public:
+      virtual void execute();
+  };
+
+  static mpz_cleanup* the_mpz_cleanup;
+  
+  static char* buffer;  // for show().
+  static int bufsize;   // for show().
+  static void enlargeBuffer(int digits);
 };
 
 }

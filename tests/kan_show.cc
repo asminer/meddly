@@ -19,8 +19,7 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <string.h>
 #include <vector>
 #include <algorithm>

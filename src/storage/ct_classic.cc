@@ -104,7 +104,12 @@ int MEDDLY::base_table::newEntry(int size)
     // Expand by a factor of 1.5
     int neA = entriesAlloc + (entriesAlloc/2);
     int* ne = (int*) realloc(entries, neA * sizeof(int));
-    if (0==ne) throw error(error::INSUFFICIENT_MEMORY);
+    if (0==ne) {
+      fprintf(stderr,
+          "Error in allocating array of size %lu at %s, line %d\n",
+          neA * sizeof(int), __FILE__, __LINE__);
+      throw error(error::INSUFFICIENT_MEMORY);
+    }
     currMemory += (neA - entriesAlloc) * sizeof(int);
     if (currMemory > peakMemory) peakMemory = currMemory;
     entries = ne;
@@ -119,51 +124,65 @@ int MEDDLY::base_table::newEntry(int size)
   return h;
 }
 
-void MEDDLY::base_table::dumpInternal(FILE* s, int verbLevel) const
+void MEDDLY::base_table::dumpInternal(output &s, int verbLevel) const
 {
   if (verbLevel < 1) return;
-  if (0==entries) fprintf(s, "Entries: null\n");
-  else {
-    fprintf(s, "Entries: [%d", entries[0]);
-    for (int i=1; i<entriesSize; i++) 
-      fprintf(s, ", %d", entries[i]);
-    fprintf(s, "]\n");
+  if (0==entries) {
+    s << "Entries: null\n";
+  } else {
+    s << "Entries: [" << long(entries[0]);
+    for (int i=1; i<entriesSize; i++) {
+      s << ", " << long(entries[i]);
+    }
+    s << "]\n";
   }
-  if (0==freeList) fprintf(s, "Free: null\n");
-  else {
-    fprintf(s, "Free: [%d", freeList[0]);
-    for (int i=1; i<=maxEntrySize; i++) 
-      fprintf(s, ", %d", freeList[i]);
-    fprintf(s, "]\n");
+  if (0==freeList) {
+    s << "Free: null\n";
+  } else {
+    s << "Free: [" << long(freeList[0]);
+    for (int i=1; i<=maxEntrySize; i++) {
+      s << ", " << long(freeList[i]);
+    }
+    s << "]\n";
   }
 }
 
 void MEDDLY::base_table
-::report(FILE* s, int indent, int &level) const
+::report(output &s, int indent, int &level) const
 {
   if (level < 1) return;
-  fprintf(s, "%*sNumber of entries :\t%u\n", indent, "", perf.numEntries);
-  fprintf(s, "%*sEntry array size  :\t%d\n", indent, "", entriesSize);
-  fprintf(s, "%*sEntry array alloc :\t%d\n", indent, "", entriesAlloc);
+  s.put("", indent);
+  s << "Number of entries :\t" << long(perf.numEntries) << "\n";
+  s.put("", indent);
+  s << "Entry array size  :\t" << long(entriesSize) << "\n";
+  s.put("", indent);
+  s << "Entry array alloc :\t" << long(entriesAlloc) << "\n";
 
   if (--level < 1) return;
 
-  fprintf(s, "%*sPings             :\t%d\n", indent, "", perf.pings);
-  fprintf(s, "%*sHits              :\t%d\n", indent, "", perf.hits);
+  s.put("", indent);
+  s << "Pings             :\t" << long(perf.pings) << "\n";
+  s.put("", indent);
+  s << "Hits              :\t" << long(perf.hits) << "\n";
 
   if (--level < 1) return;
 
-  fprintf(s, "%*sSearch length histogram:\n", indent, "");
+  s.put("", indent);
+  s << "Search length histogram:\n";
   for (int i=0; i<stats::searchHistogramSize; i++) {
     if (perf.searchHistogram[i]) {
-      fprintf(s, "%*s%3d: %ld\n", indent+4, "", i, perf.searchHistogram[i]);
+      s.put("", indent+4);
+      s.put(long(i), 3);
+      s << ": " << long(perf.searchHistogram[i]) << "\n";
     }
   }
-  if (perf.numLargeSearches)
-    fprintf(s, "%*sSearches longer than %d: %ld\n", indent, "",
-            stats::searchHistogramSize-1, perf.numLargeSearches
-    );
-  fprintf(s, "%*sMax search length: %d\n", indent, "", perf.maxSearchLength);
+  if (perf.numLargeSearches) {
+    s.put("", indent);
+    s << "Searches longer than " << long(stats::searchHistogramSize-1)
+      << ": " << long(perf.numLargeSearches) << "\n";
+  }
+  s.put("", indent);
+  s << "Max search length: " << long(perf.maxSearchLength) << "\n";
 }
 
 // **********************************************************************
@@ -193,24 +212,27 @@ MEDDLY::base_hash::~base_hash()
   free(table);
 }
 
-void MEDDLY::base_hash::dumpInternal(FILE* s, int verbLevel) const
+void MEDDLY::base_hash::dumpInternal(output &s, int verbLevel) const
 {
   if (verbLevel < 1) return;
-  if (0==table) fprintf(s, "Table: null\n");
-  else {
-    fprintf(s, "Table: [%d", table[0]);
-    for (unsigned i=1; i<tableSize; i++) 
-      fprintf(s, ", %d", table[i]);
-    fprintf(s, "]\n");
+  if (0==table) {
+    s << "Table: null\n";
+  } else {
+    s << "Table: [" << long(table[0]);
+    for (unsigned i=1; i<tableSize; i++) {
+      s << ", " << long(table[i]);
+    }
+    s << "]\n";
   }
   base_table::dumpInternal(s, verbLevel-1);
 }
 
 void MEDDLY::base_hash
-::report(FILE* s, int indent, int &level) const
+::report(output &s, int indent, int &level) const
 {
   if (level < 1) return;
-  fprintf(s, "%*sHash table size   :\t%d\n", indent, "", tableSize);
+  s.put("", indent);
+  s << "Hash table size   :\t" << long(tableSize) << "\n";
   base_table::report(s, indent, level);
 }
 
@@ -300,7 +322,12 @@ void MEDDLY::base_chained::addEntry()
   if (newsize > maxSize) newsize = maxSize;
 
   int* newt = (int*) realloc(table, newsize * sizeof(int));
-  if (0==newt) throw error(error::INSUFFICIENT_MEMORY);
+  if (0==newt) {
+    fprintf(stderr,
+        "Error in allocating array of size %lu at %s, line %d\n",
+        newsize * sizeof(int), __FILE__, __LINE__);
+    throw error(error::INSUFFICIENT_MEMORY);
+  }
 
   for (unsigned i=tableSize; i<newsize; i++) newt[i] = 0;
 
@@ -335,7 +362,12 @@ void MEDDLY::base_chained::removeStales()
     int newsize = tableSize / 2;
     if (newsize < 1024) newsize = 1024;
     int* newt = (int*) realloc(table, newsize * sizeof(int));
-    if (0==newt) throw error(error::INSUFFICIENT_MEMORY); 
+    if (0==newt) {
+      fprintf(stderr,
+          "Error in allocating array of size %lu at %s, line %d\n",
+          newsize * sizeof(int), __FILE__, __LINE__);
+      throw error(error::INSUFFICIENT_MEMORY); 
+    }
 
     currMemory -= (tableSize - newsize) * sizeof(int);  
 
@@ -356,35 +388,39 @@ void MEDDLY::base_chained::removeStales()
 #endif
 }
 
-void MEDDLY::base_chained::dumpInternal(FILE* s, int verbLevel) const
+void MEDDLY::base_chained::dumpInternal(output &s, int verbLevel) const
 {
   if (verbLevel < 1) return;
 
-  fprintf(s, "Hash table chains:\n");
+  s << "Hash table chains:\n";
 
   for (unsigned i=0; i<tableSize; i++) {
     if (0==table[i]) continue;
-    fprintf(s, "table[%9d]: %d", i, table[i]);
+    s << "table[";
+    s.put(long(i), 9);
+    s << "]: " << long(table[i]);
     int curr = entries[table[i]];
     while (curr) {
-      fprintf(s, " -> %d", curr);
+      s << " -> " << long(curr);
       curr = entries[curr];
     }
-    fprintf(s, "\n");
+    s.put('\n');
   }
 
-  fprintf(s, "\nHash table nodes:\n");
+  s << "\nHash table nodes:\n";
   
   for (unsigned i=0; i<tableSize; i++) {
     int curr = table[i];
     while (curr) {
-      fprintf(s, "\tNode %9d:  ", curr);
+      s << "\tNode ";
+      s.put(long(curr), 9);
+      s << ":  ";
       showEntry(s, curr);
-      fprintf(s, "\n");
+      s.put('\n');
       curr = entries[curr];
     }
   }
-  fprintf(s, "\n");
+  s.put('\n');
 
   base_hash::dumpInternal(s, verbLevel-1);
 }
@@ -495,12 +531,14 @@ void MEDDLY::monolithic_chained::removeAll()
   } // for i
 }
 
-void MEDDLY::monolithic_chained::show(FILE *s, int verbLevel) 
+void MEDDLY::monolithic_chained::show(output &s, int verbLevel) 
 {
   if (verbLevel < 1) return;
-  fprintf(s, "Monolithic compute table\n");
-  fprintf(s, "%*sCurrent CT memory :\t%lu bytes\n", 6, "", currMemory);
-  fprintf(s, "%*sPeak    CT memory :\t%lu bytes\n", 6, "", peakMemory);
+  s << "Monolithic compute table\n";
+  s.put("", 6);
+  s << "Current CT memory :\t" << long(currMemory) << " bytes\n";
+  s.put("", 6);
+  s << "Peak    CT memory :\t" << long(peakMemory) << " bytes\n";
   // verbLevel--;
   report(s, 6, verbLevel);
   verbLevel--;
@@ -579,7 +617,7 @@ void MEDDLY::monolithic_chained::listToTable(int L)
   }
 }
 
-void MEDDLY::monolithic_chained::showEntry(FILE *s, int curr) const
+void MEDDLY::monolithic_chained::showEntry(output &s, int curr) const
 { 
   operation* op = operation::getOpWithIndex(entries[curr+1]);
   op->showEntry(s, entries + curr + 2);
@@ -635,14 +673,15 @@ void MEDDLY::operation_chained::removeAll()
   } // for i
 }
 
-void MEDDLY::operation_chained::show(FILE *s, int verbLevel)
+void MEDDLY::operation_chained::show(output &s, int verbLevel)
 {
   if (verbLevel < 1) return;
-  fprintf(s, "Compute table for %s (index %d)\n", 
-    global_op->getName(), global_op->getIndex()
-  );
-  fprintf(s, "%*sCurrent CT memory :\t%lu bytes\n", 6, "", currMemory);
-  fprintf(s, "%*sPeak    CT memory :\t%lu bytes\n", 6, "", peakMemory);
+  s << "Compute table for " << global_op->getName() << " (index " 
+    << long(global_op->getIndex()) << ")\n";
+  s.put("", 6);
+  s << "Current CT memory :\t" << long(currMemory) << " bytes\n";
+  s.put("", 6);
+  s << "Peak    CT memory :\t" << long(peakMemory) << " bytes\n";
   // verbLevel--;
   report(s, 6, verbLevel);
   verbLevel--;
@@ -776,27 +815,34 @@ MEDDLY::base_unchained::~base_unchained()
 {
 }
 
-void MEDDLY::base_unchained::show(FILE *s, int verbLevel) 
+void MEDDLY::base_unchained::show(output &s, int verbLevel) 
 {
   if (verbLevel < 1) return;
   showTitle(s);
-  fprintf(s, "%*sCurrent CT memory :\t%lu bytes\n", 6, "", currMemory);
-  fprintf(s, "%*sPeak    CT memory :\t%lu bytes\n", 6, "", peakMemory);
-  verbLevel--;
-  if (verbLevel < 1) return;
-  fprintf(s, "%*sCollisions        :\t%ld\n", 6, "", collisions);
+  s.put("", 6);
+  s << "Current CT memory :\t" << long(currMemory) << " bytes\n";
+  s.put("", 6);
+  s << "Peak    CT memory :\t" << long(peakMemory) << " bytes\n";
+  // verbLevel--;
+  // if (verbLevel < 1) return;
+  s.put("", 6);
+  s << "Collisions        :\t" << long(collisions) << "\n";
   report(s, 6, verbLevel);
   verbLevel--;
   if (verbLevel < 1) return;
 
-  fprintf(s, "\nHash table:\n");
+  s << "\nHash table:\n";
   
   for (unsigned i=0; i<tableSize; i++) {
     int curr = table[i];
     if (0==curr) continue;
-    fprintf(s, "\t%9u:  node %9d: ", i, curr);
+    s.put('\t');
+    s.put(long(i), 9);
+    s << ":  node ";
+    s.put(long(curr), 9);
+    s << ": ";
     showEntry(s, curr);
-    fprintf(s, "\n");
+    s.put('\n');
   }
 
   base_hash::dumpInternal(s, verbLevel-1);
@@ -903,12 +949,12 @@ void MEDDLY::monolithic_unchained::removeAll()
   }
 }
 
-void MEDDLY::monolithic_unchained::showTitle(FILE* s) const
+void MEDDLY::monolithic_unchained::showTitle(output &s) const
 {
-  fprintf(s, "Monolithic compute table\n");
+  s << "Monolithic compute table\n";
 }
 
-void MEDDLY::monolithic_unchained::showEntry(FILE *s, int curr) const 
+void MEDDLY::monolithic_unchained::showEntry(output &s, int curr) const 
 { 
   operation* op = operation::getOpWithIndex(entries[curr]);
   op->showEntry(s, entries + curr + 1);
@@ -968,14 +1014,13 @@ void MEDDLY::operation_unchained::removeAll()
   }
 }
 
-void MEDDLY::operation_unchained::showTitle(FILE* s) const
+void MEDDLY::operation_unchained::showTitle(output &s) const
 {
-  fprintf(s, "Compute table for %s (index %d)\n", 
-    global_op->getName(), global_op->getIndex()
-  );
+  s << "Compute table for " << global_op->getName() << " (index " 
+    << long(global_op->getIndex()) << ")\n";
 }
 
-void MEDDLY::operation_unchained::showEntry(FILE *s, int curr) const 
+void MEDDLY::operation_unchained::showEntry(output &s, int curr) const 
 { 
   global_op->showEntry(s, entries + curr);
 }
@@ -1203,28 +1248,27 @@ void MEDDLY::operation_map<K>::removeAll()
 }
 
 template <int K>
-void MEDDLY::operation_map<K>::show(FILE *s, int verbLevel) 
+void MEDDLY::operation_map<K>::show(output &s, int verbLevel) 
 {
   if (verbLevel < 1) return;
-  fprintf(s, "Compute table for %s (index %d)\n", 
-    global_op->getName(), global_op->getIndex()
-  );
+  s << "Compute table for " << global_op->getName() << " (index " 
+    << long(global_op->getIndex()) << ")\n";
 
-  fprintf(s, "\tMap size: %ld\n", long(ct.size()));
+  s << "\tMap size: " << long(ct.size()) << "\n";
   verbLevel -= 4;
   if (verbLevel<1) return;
 
-  fprintf(s, "Map entries, in order:\n\t");
+  s << "Map entries, in order:\n\t";
   typename std::map<int*, int*, less<K> >::iterator curr = ct.begin();
   typename std::map<int*, int*, less<K> >::iterator end = ct.end();
   const char* comma = "";
   while (curr != end) {
     showEntry(s, curr->second);
-    fputs(comma, s);
+    s << comma;
     comma = ", ";
     ++curr;
   }
-  fprintf(s, "\n\n");
+  s << "\n\n";
 
   verbLevel--;
   dumpInternal(s, verbLevel);

@@ -67,6 +67,7 @@ using namespace MEDDLY;
 
 int main(int argv, char *argc[])
 {
+  ostream_output meddlyout(std::cout);
   initialize();
   std::cout << getLibraryInfo();
 
@@ -117,7 +118,7 @@ int main(int argv, char *argc[])
     << "node: " << first.getNode()
     << ", level: " << first.getLevel()
     << "\n";
-  first.show(stdout, 2);
+  first.show(meddlyout, 2);
 
   // Second element
   elementList[0][1] = 0; elementList[0][2] = 1; elementList[0][3] = 1;
@@ -127,7 +128,7 @@ int main(int argv, char *argc[])
     << "node: " << second.getNode()
     << ", level: " << second.getLevel()
     << "\n";
-  second.show(stdout, 2);
+  second.show(meddlyout, 2);
 
   // Third, Fourth, Fifth and Sixth elements are created at once
   int* eList[4];
@@ -142,7 +143,7 @@ int main(int argv, char *argc[])
     << "node: " << theRest.getNode()
     << ", level: " << theRest.getLevel()
     << "\n";
-  theRest.show(stdout, 2);
+  theRest.show(meddlyout, 2);
 
   // Add them all together (using union)
   // 1. Get a handle to the compute manager (through which operations
@@ -155,7 +156,7 @@ int main(int argv, char *argc[])
   dd_edge all(mdd);
   apply(UNION, first, second, all);
   std::cout << all.getNode() << "\n";
-  all.show(stdout, 2);
+  all.show(meddlyout, 2);
 
   // do all = union(all, theRest)
   // -- note that all is over-written with the result of the union
@@ -163,7 +164,7 @@ int main(int argv, char *argc[])
     << all.getNode() << ", " << theRest.getNode() << "): ";
   apply(UNION, all, theRest, all);
   std::cout << all.getNode() << "\n";
-  all.show(stdout, 2);
+  all.show(meddlyout, 2);
 
   // intersect = intersection(theRest, all)
   std::cout << "\nIntersection("
@@ -171,13 +172,13 @@ int main(int argv, char *argc[])
   dd_edge intersect(mdd);
   apply(INTERSECTION, theRest, all, intersect);
   std::cout << intersect.getNode() << "\n";
-  intersect.show(stdout, 2);
+  intersect.show(meddlyout, 2);
 
   // create edge reprenting terminal node TRUE
   dd_edge one(mdd);
   mdd->createEdge(true, one);
   std::cout << "\nTerminal node, TRUE: " << one.getNode() << "\n";
-  one.show(stdout, 2);
+  one.show(meddlyout, 2);
 
   // diff = difference(one, all)
   std::cout << "\nUsing difference to compute complement, "
@@ -185,9 +186,9 @@ int main(int argv, char *argc[])
   dd_edge diff(mdd);
   apply(DIFFERENCE, one, all, diff);
   std::cout << diff.getNode() << "\n";
-  diff.show(stdout, 2);
+  diff.show(meddlyout, 2);
 
-  operation::showMonolithicComputeTable(stdout, true);
+  operation::showMonolithicComputeTable(meddlyout, true);
   cleanup();
   return 0;
 }

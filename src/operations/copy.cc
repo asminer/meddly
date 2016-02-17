@@ -46,7 +46,7 @@ class MEDDLY::copy_MT : public unary_operation {
 
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(FILE* strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData) const;
     virtual void compute(const dd_edge &arg, dd_edge &res);
   protected:
     virtual node_handle compute(node_handle a) = 0;
@@ -95,9 +95,9 @@ void MEDDLY::copy_MT::discardEntry(const node_handle* entryData)
   resF->uncacheNode(entryData[1]);
 }
 
-void MEDDLY::copy_MT::showEntry(FILE* strm, const node_handle* entryData) const
+void MEDDLY::copy_MT::showEntry(output &strm, const node_handle* eD) const
 {
-  fprintf(strm, "[%s(%d) %d]", getName(), entryData[0], entryData[1]);
+  strm << "[" << getName() << "(" << long(eD[0]) << ") " << long(eD[1]) << "]";
 }
 
 void MEDDLY::copy_MT::compute(const dd_edge &arg, dd_edge &res)
@@ -274,12 +274,11 @@ namespace MEDDLY {
         argF->uncacheNode(entryData[0]);
         resF->uncacheNode(entryData[2]);
       }
-      virtual void showEntry(FILE* strm, const node_handle* entryData) const {
-        fprintf(strm, "[%s(%d) <", getName(), entryData[0]);
+      virtual void showEntry(output &strm, const node_handle* entryData) const {
         TYPE ev;
         compute_table::readEV(entryData+1, ev);
-        show(strm, ev);
-        fprintf(strm, ", %d>]", entryData[2]);
+        strm << "[" << getName() << "(" << long(entryData[0]) << ") <"
+             << ev << ", " << long(entryData[2]) << ">]";
       }
       virtual void compute(const dd_edge &arg, dd_edge &res) {
         node_handle b;
@@ -324,9 +323,6 @@ namespace MEDDLY {
         CT->addEntry();
       }
 
-    private:
-      static inline void show(FILE* strm, int ev)    { fprintf(strm, "%d", ev); }
-      static inline void show(FILE* strm, float ev)  { fprintf(strm, "%f", ev); }
   };
 
 };  // namespace MEDDLY
@@ -463,12 +459,11 @@ namespace MEDDLY {
         argF->uncacheNode(entryData[1]);
         resF->uncacheNode(entryData[2]);
       }
-      virtual void showEntry(FILE* strm, const node_handle* entryData) const {
-        fprintf(strm, "[%s(<", getName());
+      virtual void showEntry(output &strm, const node_handle* entryData) const {
         TYPE ev;
         compute_table::readEV(entryData, ev);
-        show(strm, ev);
-        fprintf(strm, ",%d> %d]", entryData[1], entryData[2]);
+        strm  << "[" << getName() << "(<" << ev << "," << long(entryData[1])
+              << "> " << long(entryData[2]) << "]"; 
       }
       virtual void compute(const dd_edge &arg, dd_edge &res) {
         TYPE ev;
@@ -516,9 +511,6 @@ namespace MEDDLY {
         CT->addEntry();
       }
 
-    private:
-      static inline void show(FILE* strm, int ev)    { fprintf(strm, "%d", ev); }
-      static inline void show(FILE* strm, float ev)  { fprintf(strm, "%f", ev); }
   };
 
 };  // namespace MEDDLY
@@ -656,8 +648,9 @@ namespace MEDDLY {
         argF->uncacheNode(entryData[0]);
         resF->uncacheNode(entryData[1]);
       }
-      virtual void showEntry(FILE* strm, const node_handle* entryData) const {
-        fprintf(strm, "[%s(<?,%d>) <?,%d>]", getName(), entryData[0], entryData[1]);
+      virtual void showEntry(output &strm, const node_handle* entryData) const {
+        strm  << "[" << getName() << "(<?," << long(entryData[0]) 
+              << ">) <?," << long(entryData[1]) << ">]";
       }
       virtual void compute(const dd_edge &arg, dd_edge &res) {
         INTYPE av;
@@ -775,16 +768,13 @@ namespace MEDDLY {
         argF->uncacheNode(entryData[1]);
         resF->uncacheNode(entryData[3]);
       }
-      virtual void showEntry(FILE* strm, const node_handle* entryData) const {
-        fprintf(strm, "[%s(<", getName());
+      virtual void showEntry(output &strm, const node_handle* entryData) const {
         INTYPE ev1;
         compute_table::readEV(entryData, ev1);
-        show(strm, ev1);
-        fprintf(strm, ",%d> <", entryData[1]);
         OUTTYPE ev2; 
         compute_table::readEV(entryData+2, ev2);
-        show(strm, ev2);
-        fprintf(strm, ",%d>]", entryData[3]);
+        strm << "[" << getName() << "(<" << ev1 << "," << long(entryData[1])
+             << "> <" << ev2 << "," << long(entryData[3]) << ">]";
       }
       virtual void compute(const dd_edge &arg, dd_edge &res) {
         INTYPE av;
@@ -832,9 +822,6 @@ namespace MEDDLY {
         CT->addEntry();
       }
 
-    private:
-      static inline void show(FILE* strm, int ev)    { fprintf(strm, "%d", ev); }
-      static inline void show(FILE* strm, float ev)  { fprintf(strm, "%f", ev); }
   };
 
 };  // namespace MEDDLY

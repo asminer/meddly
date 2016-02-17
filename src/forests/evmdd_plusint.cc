@@ -140,34 +140,40 @@ void MEDDLY::evmdd_plusint::normalize(node_builder &nb, int& ev) const
   }
 }
 
-void MEDDLY::evmdd_plusint::showEdgeValue(FILE* s, const void* edge) const
+void MEDDLY::evmdd_plusint::showEdgeValue(output &s, const void* edge) const
 {
   OP::show(s, edge);
 }
 
-void MEDDLY::evmdd_plusint::writeEdgeValue(FILE* s, const void* edge) const
+void MEDDLY::evmdd_plusint::writeEdgeValue(output &s, const void* edge) const
 {
   OP::write(s, edge);
 }
 
-void MEDDLY::evmdd_plusint::readEdgeValue(FILE* s, void* edge)
+void MEDDLY::evmdd_plusint::readEdgeValue(input &s, void* edge)
 {
   OP::read(s, edge);
 }
 
-void MEDDLY::evmdd_plusint::showUnhashedHeader(FILE* s, const void* uh) const
+void MEDDLY::evmdd_plusint::showUnhashedHeader(output &s, const void* uh) const
 {
-  fprintf(s, " card: %d", ((const node_handle*)uh)[0]);
+  s.put(" card: ");
+  s.put(long( ((const node_handle*)uh)[0]  ));
+  // fprintf(s, " card: %d", ((const node_handle*)uh)[0]);
 }
 
-void MEDDLY::evmdd_plusint::writeUnhashedHeader(FILE* s, const void* uh) const
+void MEDDLY::evmdd_plusint::writeUnhashedHeader(output &s, const void* uh) const
 {
-  th_fprintf(s, "\t %d\n", ((const node_handle*)uh)[0]);
+  s.put("\t ");
+  s.put(long( ((const node_handle*)uh)[0]  ));
+  s.put('\n');
+  // th_fprintf(s, "\t %d\n", ((const node_handle*)uh)[0]);
 }
 
-void MEDDLY::evmdd_plusint::readUnhashedHeader(FILE* s, node_builder &nb) const
+void MEDDLY::evmdd_plusint::readUnhashedHeader(input &s, node_builder &nb) const
 {
-  th_fscanf(1, s, "%d", (node_handle*)nb.UHptr());
+  ((node_handle*)nb.UHptr())[0] = s.get_integer();
+  // th_fscanf(1, s, "%d", (node_handle*)nb.UHptr());
 }
 
 const char* MEDDLY::evmdd_plusint::codeChars() const

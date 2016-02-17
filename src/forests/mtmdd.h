@@ -52,9 +52,6 @@ class MEDDLY::mtmdd_forest : public mt_forest {
       return p;
     }
 
-    node_handle recursiveReduceDown(node_handle node, int low, int val);
-    node_handle recursiveReduceUp(node_handle node, int low, int high, int val);
-
     // Reorder by swapping the lowest inversion until none exists
     void reorderVariablesLowestInversion(const int* order);
     // Reorder by swapping the highest inversion until none exists
@@ -69,9 +66,12 @@ class MEDDLY::mtmdd_forest : public mt_forest {
     void reorderVariablesLowestMemory(const int* order);
     // Reorder by random swap
     void reorderVariablesRandom(const int* order);
+    // Reorder by swapping the inversion with smallest average in count
+    void reorderVariablesLARC(const int* order);
 
     long calculate_swap_cost(int level);
     long calculate_swap_memory_cost(int level);
+    double calculate_avg_ref_count(int level);
 
   protected:
     class mtmdd_iterator : public mt_iterator {

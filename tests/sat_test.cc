@@ -25,8 +25,7 @@
     Note: most of thest tests were automatically generated :^)
 */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include "meddly.h"
 
 using namespace MEDDLY;

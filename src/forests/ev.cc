@@ -58,27 +58,24 @@ MEDDLY::ev_forest::ev_forest(int dsl, domain *d, bool rel,
   transparent=bool_Tencoder::value2handle(false);
 }
 
-void MEDDLY::ev_forest::showTerminal(FILE* s, node_handle tnode) const
+void MEDDLY::ev_forest::showTerminal(output &s, node_handle tnode) const
 {
-  fprintf(s, "t%d", -tnode);
+  s.put('t');
+  s.put(long(-tnode));
 }
 
-void MEDDLY::ev_forest::writeTerminal(FILE* s, node_handle tnode) const
+void MEDDLY::ev_forest::writeTerminal(output &s, node_handle tnode) const
 {
-  th_fprintf(s, "t%d", -tnode);
+  s.put('t');
+  s.put(long(-tnode));
 }
 
-MEDDLY::node_handle MEDDLY::ev_forest::readTerminal(FILE* s)
+MEDDLY::node_handle MEDDLY::ev_forest::readTerminal(input &s)
 {
-  stripWS(s);
-  char c = fgetc(s);
+  s.stripWS();
+  int c = s.get_char();
   if ('t' == c) {
-    int N;
-    if (1==fscanf(s, "%d", &N)) {
-      if (N>=0) {
-        return -N;
-      }
-    }
+    return -s.get_integer();
   }
   throw error(error::INVALID_FILE);
 }

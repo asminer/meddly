@@ -50,7 +50,7 @@ class MEDDLY::cross_bool : public binary_operation {
 
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(FILE* strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData) const;
     virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     node_handle compute_pr(int in, int ht, node_handle a, node_handle b);
@@ -84,11 +84,11 @@ void MEDDLY::cross_bool::discardEntry(const node_handle* data)
 }
 
 void
-MEDDLY::cross_bool ::showEntry(FILE* strm, const node_handle* data) const
+MEDDLY::cross_bool ::showEntry(output &strm, const node_handle* data) const
 {
-  fprintf(strm, "[%s(level: %d, %d, %d): %d]", 
-    getName(), data[1], data[2], data[3], data[4]
-  );
+  strm  << "[" << getName() << "(level: " << long(data[1]) << ", " 
+        << long(data[2]) << ", " << long(data[3]) << "): " << long(data[4])
+        << "]";
 }
 
 void

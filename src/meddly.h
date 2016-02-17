@@ -39,7 +39,14 @@
 #ifndef MEDDLY_H
 #define MEDDLY_H
 
+#ifndef _MEDDLY_WITHOUT_CSTDIO_
 #include <cstdio>
+#endif
+
+#ifndef _MEDDLY_WITHOUT_IOSTREAM_
+#include <iostream>
+#endif
+
 #include <cassert>
 
 namespace MEDDLY {
@@ -79,6 +86,13 @@ namespace MEDDLY {
   // Classes
 
   class error;
+  class input;
+  class FILE_input;
+  class istream_input;
+  class output;
+  class FILE_output;
+  class ostream_output;
+
   struct settings;
   class forest;
   class expert_forest;
@@ -308,20 +322,6 @@ namespace MEDDLY {
   */
   const char* getLibraryInfo(int what = 0);
 
-/*  Commented out as of version 0.10
-#ifdef _MSC_VER
-  __declspec(deprecated)
-#endif
-#ifdef __GNUC__
-  __attribute__ ((deprecated))
-#endif
-  /// This function is deprecated as of version 0.4; 
-  /// use "getLibraryInfo" instead.
-  inline const char* MEDDLY_getLibraryInfo(int what = 0) {
-    return getLibraryInfo(what);
-  };
-*/
-
   // ******************************************************************
   // *                   object creation  functions                   *
   // ******************************************************************
@@ -348,9 +348,7 @@ namespace MEDDLY {
   /** Front-end function to create an empty domain.
       This is required because domain is an abstract class.
   */
-  inline domain* createDomain() { 
-    return createDomain((variable**) 0, 0);
-  }
+  domain* createDomain();
 
   /** Front-end function to create a domain with given variable bounds.
       Equivalent to creating an empty domain and then building the
@@ -374,9 +372,7 @@ namespace MEDDLY {
 #endif
   /// This function is deprecated as of version 0.4; 
   /// use "createDomain" instead.
-  inline domain* MEDDLY_createDomain() {
-    return createDomain();
-  }
+  domain* MEDDLY_createDomain();
 */
 
 
@@ -435,11 +431,7 @@ namespace MEDDLY {
         @param  c     Input: an initialized MP integer.
                       Output parameter: the result, where \a c = \a op \a a.
   */
-  inline void apply(const unary_opname* op, const dd_edge &a, mpz_t &c) {
-    ct_object& x = get_mpz_wrapper();
-    apply(op, a, HUGEINT, x);
-    unwrap(x, c);
-  }
+  void apply(const unary_opname* op, const dd_edge &a, mpz_t &c);
 #endif
 
   // ******************************************************************
@@ -523,45 +515,345 @@ class MEDDLY::error {
       INVALID_ARGUMENT,
       /// File format error.
       INVALID_FILE,
+      /// File input error.
+      COULDNT_READ,
       /// File output error.
       COULDNT_WRITE,
       /// Miscellaneous error
       MISCELLANEOUS
     };
   public:
-    error(code c) { errcode = c; }
-    inline code getCode() const { return errcode; }
-    inline const char* getName() const {
-      switch (errcode) {
-          case  UNINITIALIZED:        return "Uninitialized";
-          case  ALREADY_INITIALIZED:  return "Already initialized";
-          case  NOT_IMPLEMENTED:      return "Not implemented";
-          case  INSUFFICIENT_MEMORY:  return "Insufficient memory";
-          case  INVALID_OPERATION:    return "Invalid operation";
-          case  INVALID_VARIABLE:     return "Invalid variable";
-          case  INVALID_LEVEL:        return "Invalid level";
-          case  INVALID_BOUND:        return "Invalid bound";
-          case  DOMAIN_NOT_EMPTY:     return "Domain not empty";
-          case  UNKNOWN_OPERATION:    return "Unknown operation";
-          case  DOMAIN_MISMATCH:      return "Domain mismatch";
-          case  FOREST_MISMATCH:      return "Forest mismatch";
-          case  TYPE_MISMATCH:        return "Type mismatch";
-          case  WRONG_NUMBER:         return "Wrong number";
-          case  OVERFLOW:             return "Overflow";
-          case  DIVIDE_BY_ZERO:       return "Divide by zero";
-          case  INVALID_POLICY:       return "Invalid policy";
-          case  INVALID_ASSIGNMENT:   return "Invalid assignment";
-          case  INVALID_ARGUMENT:     return "Invalid argument";
-          case  INVALID_FILE:         return "Invalid file";
-          case  COULDNT_WRITE:        return "Couldn't write to file";
-          case  MISCELLANEOUS:        return "Miscellaneous";
-          default:                    return "Unknown error";
-      }
-    }
+    error(code c);
+    code getCode() const;
+    const char* getName() const;
   private:
     code errcode;
 };
 
+
+// ******************************************************************
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                       MEDDLY  custom I/O                       *
+// *                                                                *
+// ******************************************************************
+// 
+// We are using our own I/O classes because we want to support both C++ streams
+// and C FILE*s, and this seems to be the cleanest way to do that.  Also it
+// allows users to (easily?) define their own I/O mechanisms.                               
+//
+// Implementation is in io.cc
+// 
+// ******************************************************************
+// ******************************************************************
+
+// ******************************************************************
+// *                                                                *
+// *                          input  class                          *
+// *                                                                *
+// ******************************************************************
+
+/** Input class.
+    Abstract base class.
+*/
+class MEDDLY::input {
+  public:
+    input();
+    virtual ~input();
+
+    /**
+        Return true if and only if the input stream has hit EOF.
+    */
+    virtual bool eof() const = 0;
+
+    /**
+        Read exactly one character from the input stream.
+          @return   The character consumed, or EOF.
+          @throws   an appropriate error
+    */
+    virtual int get_char() = 0;
+
+    /**
+        Put the last consumed character back on the stream.
+        Does nothing if no character was consumed.
+          @param  x   Character to put back.
+                      x will be the last consumed character.
+          @throws     an appropriate error
+    */
+    virtual void unget(char x) = 0;
+
+    /**
+        Read an integer in signed decimal notation.
+        TBD - integer is terminated by whitespace, or any character?
+          @return   The integer consumed
+          @throws   an appropriate error
+    */
+    virtual long get_integer() = 0;
+
+    /**
+        Read a floating point value in signed decimal notation.
+        TBD - value is terminated by whitespace, or any character?
+          @return   The value consumed
+          @throws   an appropriate error
+    */
+    virtual double get_real() = 0;
+
+    /**
+        Read raw bytes into a memory location.
+          @param  bytes   Number of bytes requested
+          @param  buffer  Pointer to store the bytes
+
+          @return Number of bytes actually read, 
+                  or negative on error.
+    */
+    virtual int read(int bytes, unsigned char* buffer) = 0;
+
+
+  /*
+    Handy input stream manipulation
+  */
+
+  /**
+      Consume whitespace (if any) from the input stream,
+      including comments of the form #...\n
+  */
+  void stripWS();
+
+  /**
+      Consume a keyword from the input stream.
+      If the keyword does not match the input stream,
+      we throw an INVALID_FILE error.
+  */
+  void consumeKeyword(const char* keyword);
+};  // end of input class
+
+// ******************************************************************
+// *                                                                *
+// *                        FILE_input class                        *
+// *                                                                *
+// ******************************************************************
+
+#ifndef _MEDDLY_WITHOUT_CSTDIO_
+
+/** FILE_Input class.
+    Use for C-style FILE* input.
+
+    TBD - come up with a way to remove #include <cstdio> and <iostream> from above!
+*/
+class MEDDLY::FILE_input : public MEDDLY::input {
+  public:
+    FILE_input(FILE* _inf);
+    virtual ~FILE_input();
+
+    virtual bool eof() const;
+    virtual int get_char();
+    virtual void unget(char);
+    virtual long get_integer();
+    virtual double get_real();
+    virtual int read(int bytes, unsigned char* buffer);
+
+  private:
+    FILE* inf;
+};  // end of FILE_input class
+
+#endif
+
+// ******************************************************************
+// *                                                                *
+// *                      istream_input  class                      *
+// *                                                                *
+// ******************************************************************
+
+#ifndef _MEDDLY_WITHOUT_IOSTREAM_
+
+/** istream_Input class.
+    Use for C++-style istream input.
+
+    TBD - come up with a way to remove #include <cstdio> and <iostream> from above!
+*/
+class MEDDLY::istream_input : public MEDDLY::input {
+  public:
+    istream_input(std::istream &in);
+    virtual ~istream_input();
+
+    virtual bool eof() const;
+    virtual int get_char();
+    virtual void unget(char);
+    virtual long get_integer();
+    virtual double get_real();
+    virtual int read(int bytes, unsigned char* buffer);
+
+  private:
+    std::istream &in;
+};  // end of istream_input class
+
+#endif
+
+// ******************************************************************
+// *                                                                *
+// *                          output class                          *
+// *                                                                *
+// ******************************************************************
+
+/** Output class.
+    Abstract base class.
+*/
+class MEDDLY::output {
+  public:
+    output();
+    virtual ~output();
+
+    /**
+        Write exactly one character to the output stream.
+          @param  x   Character to write
+          @throws     An appropriate error
+    */
+    virtual void put(char x) = 0;
+
+    /**
+        Write a null-terminated string to the output stream.
+        The terminating null is not written.
+          @param  x   String to write
+          @param  w   Width for formatting
+          @throws     An appropriate error
+    */
+    virtual void put(const char* x, int w=0) = 0;
+
+    /**
+        Write a signed, decimal integer to the output stream.
+          @param  x   Integer to write
+          @param  w   Width for formatting
+          @throws     An appropriate error
+    */
+    virtual void put(long x, int w=0) = 0;
+
+    /**
+        Write hex digits to the output stream.
+          @param  x   Value to write
+          @param  w   Width for formatting
+          @throws     An appropriate error
+    */
+    virtual void put_hex(unsigned long x, int w=0) = 0;
+
+    /**
+        Write a signed, decimal, floating-point value to the output stream.
+          @param  x   Value to write
+          @param  w   Width
+          @param  p   Precision
+          @param  f   Format, either 'e', 'f', or 'g' (for the style of printf)
+          @throws     An appropriate error
+    */
+    virtual void put(double x, int w=0, int p=6, char f='g') = 0;
+
+    /**
+        Write raw bytes from a memory location.
+          @param  bytes   Number of bytes in the buffer
+          @param  buffer  Pointer to memory location
+          
+          @return Number of bytes actually written,
+                  or negative on error.
+    */
+    virtual int write(int bytes, const unsigned char* buffer) = 0;
+
+    /**
+        Flush the output stream.
+    */
+    virtual void flush() = 0;
+
+  /*
+    Handy output stream manipulation
+  */
+
+    /**
+        Write number of bytes, with units.
+          @param  m       Number of bytes
+          @param  human   If false, units will be "bytes".
+                          If true, scale units so that output is betwen one and 1000.
+    */
+    void put_mem(long m, bool human);
+
+};  // end of output class
+
+/* 
+  These will let us do C++ style output, with our class.
+*/
+
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, char x)        { s.put(x); return s; }
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, const char* x) { s.put(x); return s; }
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, int x)         { s.put(long(x)); return s; }
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, long x)        { s.put(x); return s; }
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, double x)      { s.put(x); return s; }
+
+
+// ******************************************************************
+// *                                                                *
+// *                       FILE_output  class                       *
+// *                                                                *
+// ******************************************************************
+
+#ifndef _MEDDLY_WITHOUT_CSTDIO_
+
+/** FILE_output class.
+    Use for C-style FILE* input.
+
+    TBD - come up with a way to remove #include <cstdio> and <iostream> from above!
+*/
+class MEDDLY::FILE_output : public MEDDLY::output {
+  public:
+    FILE_output(FILE* outf);
+    virtual ~FILE_output();
+
+    virtual void put(char x);
+    virtual void put(const char*, int w);
+    virtual void put(long x, int w);
+    virtual void put_hex(unsigned long x, int w);
+    virtual void put(double x, int w, int p, char f);
+    virtual int write(int bytes, const unsigned char* buffer);
+    virtual void flush();
+
+  private:
+    FILE* outf;
+};  // end of FILE_output class
+
+#endif
+
+// ******************************************************************
+// *                                                                *
+// *                      ostream_output class                      *
+// *                                                                *
+// ******************************************************************
+
+#ifndef MEDDLY_WITHOUT_IOSTREAM_
+
+/** ostream_output class.
+    Use for C++-style ostream input.
+
+    TBD - come up with a way to remove #include <cstdio> and <iostream> from above!
+*/
+class MEDDLY::ostream_output : public MEDDLY::output {
+  public:
+    ostream_output(std::ostream &out);
+    virtual ~ostream_output();
+
+    virtual void put(char x);
+    virtual void put(const char*, int w);
+    virtual void put(long x, int w);
+    virtual void put_hex(unsigned long x, int w);
+    virtual void put(double x, int w, int p, char f);
+    virtual int write(int bytes, const unsigned char* buffer);
+    virtual void flush();
+
+  private:
+    std::ostream &out;
+};  // end of ostream_output class
+
+#endif
+
+// ******************************************************************
+// ******************************************************************
+// ******************************************************************
+// ******************************************************************
 
 // ******************************************************************
 // *                                                                *
@@ -634,8 +926,8 @@ class MEDDLY::forest {
       };
 
       // Supported node storage meachanisms.
-      static const unsigned char  ALLOW_FULL_STORAGE      = 0x01;
-      static const unsigned char  ALLOW_SPARSE_STORAGE    = 0x02;
+      static const unsigned char ALLOW_FULL_STORAGE;
+      static const unsigned char ALLOW_SPARSE_STORAGE;
 
       /// Supported node deletion policies.
       enum node_deletion {
@@ -659,7 +951,7 @@ class MEDDLY::forest {
     	  // Swap the highest inversion until ordered
     	  HIGHEST_INVERSION,
     	  // Swap until the lowest variable is at the right level
-    	  BUBBLE_DOWN,
+    	  SINK_DOWN,
     	  // Swap until the highest variable is at the right level
     	  BUBBLE_UP,
     	  // Swap the inversion with lowest cost until ordered
@@ -667,7 +959,9 @@ class MEDDLY::forest {
     	  // Swap the inversion with lowest memory cost until ordered
     	  LOWEST_MEMORY,
     	  // Swap the inversion randomly
-    	  RANDOM
+    	  RANDOM,
+		  // Swap the inversion with lowest average reference count
+		  LOWEST_AVG_REF_COUNT
       };
 
       // Supported variable swap strategies.
@@ -711,55 +1005,25 @@ class MEDDLY::forest {
       bool compactBeforeExpand;
 
       /// Constructor; sets reasonable defaults
-      policies(bool rel) {
-        reduction = rel ? IDENTITY_REDUCED : FULLY_REDUCED;
-        storage_flags = ALLOW_FULL_STORAGE | ALLOW_SPARSE_STORAGE;
-        deletion = OPTIMISTIC_DELETION;
-        reorder = LOWEST_INVERSION;
-        swap = VAR;
-
-        compact_min = 100;
-        compact_max = 1000000;
-        compact_frac = 40;
-        zombieTrigger = 1000000;
-        orphanTrigger = 500000;
-        compactAfterGC = false;
-        compactBeforeExpand = true;
-        // nodestor = CLASSIC_STORAGE;
-        nodestor = SIMPLE_GRID;
-        // nodestor = SIMPLE_ARRAY;
-        // nodestor = SIMPLE_HEAP;
-        // nodestor = SIMPLE_NONE;
-        // nodestor = COMPACT_GRID;
-      }
-
-      inline void setFullStorage() { 
-        storage_flags = ALLOW_FULL_STORAGE; 
-      }
-
-      inline void setSparseStorage() { 
-        storage_flags = ALLOW_SPARSE_STORAGE;
-      }
-
-      inline void setFullOrSparse() { 
-        storage_flags = ALLOW_FULL_STORAGE | ALLOW_SPARSE_STORAGE;
-      }
-
-      inline void setFullyReduced()     { reduction = FULLY_REDUCED; }
-      inline void setQuasiReduced()     { reduction = QUASI_REDUCED; }
-      inline void setIdentityReduced()  { reduction = IDENTITY_REDUCED; }
-
-      inline void setNeverDelete()      { deletion = NEVER_DELETE; }
-      inline void setOptimistic()       { deletion = OPTIMISTIC_DELETION; }
-      inline void setPessimistic()      { deletion = PESSIMISTIC_DELETION; }
+      policies(bool rel);
+      void setFullStorage();
+      void setSparseStorage();
+      void setFullOrSparse();
+      void setFullyReduced();
+      void setQuasiReduced();
+      void setIdentityReduced();
+      void setNeverDelete();
+      void setOptimistic();
+      void setPessimistic();
 
       inline void setLowestInversion() { reorder = LOWEST_INVERSION; }
       inline void setHighestInversion() { reorder = HIGHEST_INVERSION; }
-      inline void setBubbleDown() { reorder = BUBBLE_DOWN; }
+      inline void setBubbleDown() { reorder = SINK_DOWN; }
       inline void setBubbleUp() { reorder = BUBBLE_UP; }
       inline void setLowestCost() { reorder = LOWEST_COST; }
       inline void setLowestMemory() { reorder = LOWEST_MEMORY; }
       inline void setRandom() { reorder = RANDOM; }
+      inline void setLARC() { reorder = LOWEST_AVG_REF_COUNT; }
 
       inline void setVarSwap() { swap = VAR; }
       inline void setLevelSwap() { swap = LEVEL; }
@@ -807,34 +1071,13 @@ class MEDDLY::forest {
 
       // nice helpers
 
-      inline void incActive(long b) {
-        active_nodes += b;
-        if (active_nodes > peak_active) 
-          peak_active = active_nodes;
-      }
-      inline void decActive(long b) {
-        active_nodes -= b;
-      }
-      inline void incMemUsed(long b) {
-        memory_used += b;
-        if (memory_used > peak_memory_used) 
-          peak_memory_used = memory_used;
-      }
-      inline void decMemUsed(long b) {
-        memory_used -= b;
-      }
-      inline void incMemAlloc(long b) {
-        memory_alloc += b;
-        if (memory_alloc > peak_memory_alloc) 
-          peak_memory_alloc = memory_alloc;
-      }
-      inline void decMemAlloc(long b) {
-        memory_alloc -= b;
-      }
-      inline void sawUTchain(int c) {
-        if (c > max_UT_chain)
-          max_UT_chain = c;
-      }
+      void incActive(long b);
+      void decActive(long b);
+      void incMemUsed(long b);
+      void decMemUsed(long b);
+      void incMemAlloc(long b);
+      void decMemAlloc(long b);
+      void sawUTchain(int c);
     };
 
     /**
@@ -859,13 +1102,13 @@ class MEDDLY::forest {
           Cannot be changed once we attach to a forest.
       */
       public:
-        inline bool recordingNodeCounts() const { return node_counts; }
-        inline void recordNodeCounts()          { if (nfix) node_counts = true; }
-        inline void ignoreNodeCounts()          { if (nfix) node_counts = false; }
+        bool recordingNodeCounts() const;
+        void recordNodeCounts();
+        void ignoreNodeCounts();
 
-        inline bool recordingTimeStamps() const { return time_stamps; }
-        inline void recordTimeStamps()          { if (nfix) time_stamps = true; }
-        inline void ignoreTimeStamps()          { if (nfix) time_stamps = false; }
+        bool recordingTimeStamps() const;
+        void recordTimeStamps();
+        void ignoreTimeStamps();
 
       /*
           Hooks, used in various places.
@@ -911,7 +1154,7 @@ class MEDDLY::forest {
         void currentTime(long &sec, long &usec);
 
         /* Call this inside logForestInfo() */
-        inline void fixLogger() { nfix = false; }
+        void fixLogger();
     };
 
 
@@ -939,112 +1182,70 @@ class MEDDLY::forest {
             @param  k   Current level
             @return Level immediately below level k
     */
-    static inline int downLevel(int k) {
-      return (k>0) ? (-k) : (-k-1);
-    }
+    static int downLevel(int k);
+
     /** Go "up a level" in a relation.
         Safest to use this, in case in later versions
         the level numbering changes, or becomes forest dependent.
             @param  k   Current level
             @return Level immediately above level k
     */
-    static inline int upLevel(int k) {
-      return (k<0) ? (-k) : (-k-1);
-    }
+    static int upLevel(int k);
 
   // ------------------------------------------------------------
   // inlines.
   public:
 
     /// Returns the forest identifier, a unique integer per forest.
-    inline unsigned FID() const {
-      return fid;
-    }
+    unsigned FID() const;
 
     /// Returns a non-modifiable pointer to this forest's domain.
-    inline const domain* getDomain() const {
-      return d;
-    }
+    const domain* getDomain() const;
 
     /// Returns a pointer to this forest's domain.
-    inline domain* useDomain() {
-      return d;
-    }
+    domain* useDomain();
 
     /// Does this forest represent relations or matrices?
-    inline bool isForRelations() const {
-      return isRelation;
-    }
+    bool isForRelations() const;
 
     /// Returns the range type.
-    inline range_type getRangeType() const {
-      return rangeType;
-    }
+    range_type getRangeType() const;
 
     /// Query the range type.
-    inline bool isRangeType(range_type r) const {
-      return r == rangeType;
-    }
+    bool isRangeType(range_type r) const;
 
     /// Returns the edge labeling mechanism.
-    inline edge_labeling getEdgeLabeling() const {
-      return edgeLabel;
-    }
-
-    /// Query the edge labeling mechanism.
-    // inline bool isEdgeLabeling(edge_labeling e) const {
-    //  return e == edgeLabel;
-    //}
+    edge_labeling getEdgeLabeling() const;
 
     /// Is the edge labeling "MULTI_TERMINAL".
-    inline bool isMultiTerminal() const {
-      return MULTI_TERMINAL == edgeLabel;
-    }
+    bool isMultiTerminal() const;
 
     /// Is the edge labeling "EV_PLUS".
-    inline bool isEVPlus() const {
-      return EVPLUS == edgeLabel;
-    }
+    bool isEVPlus() const;
 
     /// Is the edge labeling "INDEX_SET".
-    inline bool isIndexSet() const {
-      return INDEX_SET == edgeLabel;
-    }
+    bool isIndexSet() const;
 
     /// Is the edge labeling "EV_TIMES".
-    inline bool isEVTimes() const {
-      return EVTIMES == edgeLabel;
-    }
+    bool isEVTimes() const;
 
     /// Check if we match a specific type of forest
-    inline bool matches(bool isR, range_type rt, edge_labeling el) const {
-      return (isRelation == isR) && (rangeType == rt) && (edgeLabel == el);
-    }
+    bool matches(bool isR, range_type rt, edge_labeling el) const;
 
     /// Returne the current policies used by this forest.
-    inline const policies& getPolicies() const {
-      return deflt;
-    }
+    const policies& getPolicies() const;
 
     /// Returns the reduction rule used by this forest.
-    inline policies::reduction_rule getReductionRule() const {
-      return deflt.reduction;
-    }
+    policies::reduction_rule getReductionRule() const;
 
     /// Returns true if the forest is fully reduced.
-    inline bool isFullyReduced() const {
-      return policies::FULLY_REDUCED == deflt.reduction;
-    }
+    bool isFullyReduced() const;
 
     /// Returns true if the forest is quasi reduced.
-    inline bool isQuasiReduced() const {
-      return policies::QUASI_REDUCED == deflt.reduction;
-    }
+    bool isQuasiReduced() const;
 
     /// Returns true if the forest is identity reduced.
-    inline bool isIdentityReduced() const {
-      return policies::IDENTITY_REDUCED == deflt.reduction;
-    }
+    bool isIdentityReduced() const;
 
     inline bool isLowestInversion() const {
     	return policies::LOWEST_INVERSION == deflt.reorder;
@@ -1054,8 +1255,8 @@ class MEDDLY::forest {
     	return policies::HIGHEST_INVERSION == deflt.reorder;
     }
 
-    inline bool isBubbleDown() const {
-    	return policies::BUBBLE_DOWN == deflt.reorder;
+    inline bool isSinkDown() const {
+    	return policies::SINK_DOWN == deflt.reorder;
     }
 
     inline bool isBubbleUp() const {
@@ -1074,6 +1275,10 @@ class MEDDLY::forest {
     	return policies::RANDOM == deflt.reorder;
     }
 
+    inline bool isLARC() const {
+    	return policies::LOWEST_AVG_REF_COUNT == deflt.reorder;
+    }
+
     inline bool isVarSwap() const {
     	return policies::VAR == deflt.swap;
     }
@@ -1083,58 +1288,42 @@ class MEDDLY::forest {
     }
 
     /// Returns the storage mechanism used by this forest.
-    inline node_storage_flags getNodeStorage() const {
-      return deflt.storage_flags;
-    }
+    node_storage_flags getNodeStorage() const;
 
     /// Returns the node deletion policy used by this forest.
-    inline policies::node_deletion getNodeDeletion() const {
-      return deflt.deletion;
-    }
+    policies::node_deletion getNodeDeletion() const;
 
     /// Are we using pessimistic deletion
-    inline bool isPessimistic() const {
-      return policies::PESSIMISTIC_DELETION == deflt.deletion;
-    }
+    bool isPessimistic() const;
 
     /// Can we store nodes sparsely
-    inline bool areSparseNodesEnabled() const {
-      return policies::ALLOW_SPARSE_STORAGE & deflt.storage_flags;
-    }
+    bool areSparseNodesEnabled() const;
 
     /// Can we store nodes fully
-    inline bool areFullNodesEnabled() const {
-      return policies::ALLOW_FULL_STORAGE & deflt.storage_flags;
-    }
+    bool areFullNodesEnabled() const;
 
     /// Get forest performance stats.
-    inline const statset& getStats() const { return stats; }
+    const statset& getStats() const;
 
     /** Get the current number of nodes in the forest, at all levels.
         @return     The current number of nodes, not counting deleted or
                     marked for deletion nodes.
     */
-    inline long getCurrentNumNodes() const {
-      return stats.active_nodes;
-    }
+    long getCurrentNumNodes() const;
 
     /** Get the current total memory used by the forest.
         This should be equal to summing getMemoryUsedForVariable()
         over all variables.
         @return     Current memory used by the forest.
     */
-    inline long getCurrentMemoryUsed() const {
-      return stats.memory_used;
-    }
+    long getCurrentMemoryUsed() const;
 
     /** Get the current total memory allocated by the forest.
         This should be equal to summing getMemoryAllocatedForVariable()
         over all variables.
         @return     Current total memory allocated by the forest.
     */
-    inline long getCurrentMemoryAllocated() const {
-      return stats.memory_alloc; 
-    }
+    long getCurrentMemoryAllocated() const;
 
     /** Get the peak number of nodes in the forest, at all levels.
         This will be at least as large as calling getNumNodes() after
@@ -1142,9 +1331,7 @@ class MEDDLY::forest {
         @return     The peak number of nodes that existed at one time,
                     in the forest.
     */
-    inline long getPeakNumNodes() const {
-      return stats.peak_active;
-    }
+    long getPeakNumNodes() const;
     
     /** Set the peak number of nodes to the number current number of nodes.
     */
@@ -1155,25 +1342,21 @@ class MEDDLY::forest {
     /** Get the peak memory used by the forest.
         @return     Peak total memory used by the forest.
     */
-    inline long getPeakMemoryUsed() const {
-      return stats.peak_memory_used;
-    }
+    long getPeakMemoryUsed() const;
 	
 	/** Set the peak memory to the current memory.
 	*/
-	inline long resetPeakMemoryUsed() {
+	inline void resetPeakMemoryUsed() {
 	  stats.peak_memory_used = stats.memory_used;
 	}
 
     /** Get the peak memory allocated by the forest.
         @return     Peak memory allocated by the forest.
     */
-    inline long getPeakMemoryAllocated() const {
-      return stats.peak_memory_alloc;
-    }
+    long getPeakMemoryAllocated() const;
 
     /// Are we about to be deleted?
-    inline bool isMarkedForDeletion() const { return is_marked_for_deletion; }
+    bool isMarkedForDeletion() const;
 
   // ------------------------------------------------------------
   // non-virtual.
@@ -1294,15 +1477,7 @@ class MEDDLY::forest {
         @param  a     return a handle to a node in the forest such that
                       f(v_1, ..., vh=i, ..., v_n) = i for 0 <= i < size(vh).
     */
-    inline void createEdgeForVar(int vh, bool pr, dd_edge& a) {
-      switch (rangeType) {
-        case BOOLEAN:   createEdgeForVar(vh, pr, (bool*)  0, a);  break;
-        case INTEGER:   createEdgeForVar(vh, pr, (int*)   0, a);  break;
-        case REAL:      createEdgeForVar(vh, pr, (float*) 0, a);  break;
-        default:        throw error(error::MISCELLANEOUS);
-      };
-    };
-
+    void createEdgeForVar(int vh, bool pr, dd_edge& a);
 
     /** Create an edge as the union of several explicit vectors.
         @param  vlist Array of vectors. Each vector has dimension equal
@@ -1612,7 +1787,7 @@ class MEDDLY::forest {
 
           @throws     COULDNT_WRITE, if writing failed
     */
-    virtual void writeEdges(FILE* s, const dd_edge* E, int n) const = 0;
+    virtual void writeEdges(output &s, const dd_edge* E, int n) const = 0;
 
     /** Read edges from a file.
         Allows reconstruction of edges that we
@@ -1626,7 +1801,7 @@ class MEDDLY::forest {
           @throws     INVALID_FILE, if the file does not match what we expect,
                       including different number of edges specified.
     */
-    virtual void readEdges(FILE* s, dd_edge* E, int n) = 0;
+    virtual void readEdges(input &s, dd_edge* E, int n) = 0;
 
     /** Force garbage collection.
         All disconnected nodes in this forest are discarded along with any
@@ -1660,13 +1835,13 @@ class MEDDLY::forest {
 
     /** Display all active (i.e., connected) nodes in the forest.
         This is primarily for aid in debugging.
-        @param  strm      File stream to write to.
+        @param  strm      Stream to write to.
         @param  verbosity How much information to display.
                           0 : just statistics.
                           1 : all forest nodes + statistics.
                           2 : internal forest + statistics.
     */
-    virtual void showInfo(FILE* strm, int verbosity=0) = 0;
+    virtual void showInfo(output &strm, int verbosity=0) = 0;
 
 
     /** Start logging stats.
@@ -1677,17 +1852,14 @@ class MEDDLY::forest {
 
           @param  name  Name to use for the forest (for display only).
     */
-    inline void setLogger(logger* L, const char* name) {
-      theLogger = L;
-      if (theLogger) theLogger->logForestInfo(this, name);
-    }
+    void setLogger(logger* L, const char* name);
 
 
   // ------------------------------------------------------------
   // For derived classes.
   protected:
     // for debugging:
-    void showComputeTable(FILE* s, int verbLevel) const;
+    void showComputeTable(output &s, int verbLevel) const;
 
   protected:
     policies deflt;
@@ -1748,11 +1920,7 @@ class MEDDLY::forest {
         virtual ~edge_visitor();
         virtual void visit(dd_edge &e) = 0;
     };
-    inline void visitRegisteredEdges(edge_visitor &ev) {
-      for (unsigned i = 0; i < firstFree; ++i) {
-        if (edge[i].edge) ev.visit(*(edge[i].edge));
-      }
-    }
+    void visitRegisteredEdges(edge_visitor &ev);
 
   private:
     bool isRelation;
@@ -1797,10 +1965,9 @@ class MEDDLY::variable {
   protected:
     virtual ~variable();
   public:
-    inline int getBound(bool primed) const { 
-      return primed ? pr_bound : un_bound; 
-    }
-    inline const char* getName() const { return name; }
+    int getBound(bool primed) const;
+    const char* getName() const;
+    void setName(char* newname);
   protected:
     int un_bound;
     int pr_bound;
@@ -1828,7 +1995,7 @@ class MEDDLY::variable {
 */
 class MEDDLY::domain {
   public:
-    static const int TERMINALS = 0;
+    static const int TERMINALS;
   public:
     /** Create all variables at once, from the bottom up.
         Requires the domain to be "empty" (containing no variables or
@@ -1867,7 +2034,7 @@ class MEDDLY::domain {
       forest::edge_labeling ev);
 
     /// Get the number of variables in this domain.
-    inline int getNumVariables() const { return nVars; }
+    int getNumVariables() const;
 
     /** Get the specified bound of a variable.
         No range checking, for speed.
@@ -1877,79 +2044,22 @@ class MEDDLY::domain {
                         the primed variable.
         @return         The bound set for variable at level \a lev.
     */
-    inline int getVariableBound(int lev, bool prime = false) const {
-      return vars[lev]->getBound(prime);
-    }
+    int getVariableBound(int lev, bool prime = false) const;
 
     /// @return The variable at level \a lev.
-    inline const variable* getVar(int lev) const { return vars[getVarByLevel(lev)]; }
+    const variable* getVar(int lev) const;
     /// @return The variable at level \a lev.
-    inline variable* useVar(int lev) { return vars[getVarByLevel(lev)]; }
+    variable* useVar(int lev);
 
     inline int getVarByLevel(int lev) const { return level_to_var[lev]; }
     inline int getLevelByVar(int var) const { return var_to_level[var]; }
-
-    /*  Get the topmost variable.
-        Commented out as of version 0.10.
-        Deprecated as of version 0.5.
-        @return         The variable handle for the top-most variable.
-                        If there are no variables, returns 0.
-    */
-    /*
-#ifdef _MSC_VER
-    __declspec(deprecated)
-#endif
-#ifdef __GNUC__
-    __attribute__ ((deprecated))
-#endif
-    inline int getTopVariable() const { return nVars; }
-    */
-
-    /*  Get the variable immediately above this one.
-        Commented out as of version 0.10.
-        Deprecated as of version 0.5.
-        @param  vh      Any variable handle.
-        @return         The variable appearing on top of this one. If \a vh
-                        is already the top-most variable, returns -1.
-    */
-    /*
-#ifdef _MSC_VER
-    __declspec(deprecated)
-#endif
-#ifdef __GNUC__
-    __attribute__ ((deprecated))
-#endif
-    inline int getVariableAbove(int vh) const {
-      return (vh>=nVars) ? -1 : vh+1;
-    }
-    */
-
-    /*  Get the variable immediately below this one.
-        Commented out as of version 0.10.
-        Depracated as of version 0.5.
-        @param  vh      Any variable handle.
-        @return         The variable appearing below this one. If \a vh is 
-                        the bottom-most variable, returns \a TERMINALS. If 
-                        \a vh is \a TERMINALS, returns -1.
-    */
-    /*
-#ifdef _MSC_VER
-    __declspec(deprecated)
-#endif
-#ifdef __GNUC__
-    __attribute__ ((deprecated))
-#endif
-    inline int getVariableBelow(int vh) const {
-      return vh-1;
-    }
-    */
 
     /** Write the domain to a file in a format that can be read back later.
           @param  s   Stream to write to
 
           @throws     COULDNT_WRITE, if writing failed
     */
-    virtual void write(FILE* s) const = 0;
+    virtual void write(output &s) const = 0;
 
     /** Initialize the domain from data in a file.
         Allows reconstruction of a domain that 
@@ -1959,13 +2069,13 @@ class MEDDLY::domain {
           
           @throws     INVALID_FILE, if the file does not match what we expect 
     */
-    virtual void read(FILE* s) = 0;
+    virtual void read(input &s) = 0;
 
     /** Display lots of information about the domain.
         This is primarily for aid in debugging.
-        @param  strm    File stream to write to.
+        @param  strm    Stream to write to.
     */
-    void showInfo(FILE* strm);
+    void showInfo(output &strm);
 
     /// Free the slot that the forest is using.
     void unlinkForest(forest* f, int slot);
@@ -2001,8 +2111,8 @@ class MEDDLY::domain {
     friend void MEDDLY::cleanup();
 
   public:
-    inline bool hasForests() const { return forests; }
-    inline bool isMarkedForDeletion() const { return is_marked_for_deletion; }
+    bool hasForests() const;
+    bool isMarkedForDeletion() const;
 
   private:
     /// List of all domains; initialized in meddly.cc
@@ -2021,7 +2131,7 @@ class MEDDLY::domain {
     static void deleteDomList();
 
   public:
-    inline int ID() const { return my_index; }
+    int ID() const;
 };
 
 
@@ -2082,21 +2192,17 @@ class MEDDLY::dd_edge {
     /** Clears the contents of this edge. It will belong to the same
         forest as before.
     */
-    inline void clear() {
-      assert(index != -1);
-      set(0);
-      raw_value = 0;
-    }
+    void clear();
 
     /** Obtain a modifiable copy of the forest owning this edge.
         @return         the forest to which this edge belongs to.
     */
-    inline forest* getForest() const { return parent; }
+    forest* getForest() const;
 
     /** Get this dd_edge's node handle.
         @return         the node handle.
     */
-    inline node_handle getNode() const { return node; }
+    node_handle getNode() const;
 
     /// Get this dd_edge's edge value (only valid for edge-valued MDDs).
     void getEdgeValue(int& ev) const;
@@ -2114,11 +2220,7 @@ class MEDDLY::dd_edge {
         Use apply(CARDINALITY, ...) instead.
         @return         the cardinality of the node.
     */
-    inline double getCardinality() const {
-      double c;
-      apply(CARDINALITY, *this, c);
-      return c;
-    }
+    double getCardinality() const;
 
     /** Counts the number of unique nodes in this decision diagram.
         @return       the number of unique nodes starting at the root node
@@ -2166,26 +2268,19 @@ class MEDDLY::dd_edge {
         @return true    iff this edge has the same parent and refers to
                         the same edge as \a e.
     */
-    inline bool operator==(const dd_edge& e) const {
-      if (parent != e.parent) return false;
-      return (node == e.node) && (raw_value == e.raw_value);
-    }
+    bool operator==(const dd_edge& e) const;
 
     /** Check for inequality.
         @return true    iff this edge does not refer to the same edge as \a e.
     */
-    inline bool operator!=(const dd_edge& e) const {
-      return !(*this == e);
-    }
+    bool operator!=(const dd_edge& e) const;
 
     /** Plus operator.
         BOOLEAN forests: Union; INTEGER/REAL forests: Addition.
         @param  e       dd_edge to Union/Add with this dd_edge.
         @return         \a this + \a e.
     */
-    inline const dd_edge operator+(const dd_edge& e) const {
-      return dd_edge(*this) += e;
-    }
+    const dd_edge operator+(const dd_edge& e) const;
 
     /** Compound Plus operator.
         BOOLEAN forests: Union; INTEGER/REAL forests: Addition.
@@ -2200,9 +2295,7 @@ class MEDDLY::dd_edge {
         @param  e       dd_edge to Intersection/Multiply with this dd_edge.
         @return         \a this * \a e.
     */
-    inline const dd_edge operator*(const dd_edge& e) const {
-      return dd_edge(*this) *= e;
-    }
+    const dd_edge operator*(const dd_edge& e) const;
 
     /** Compound Star operator.
         BOOLEAN forests: Intersection; INTEGER/REAL forests: Multiplication.
@@ -2217,9 +2310,7 @@ class MEDDLY::dd_edge {
         @param  e       dd_edge for difference/subtract.
         @return         \a this - \a e.
     */
-    inline const dd_edge operator-(const dd_edge& e) const {
-      return dd_edge(*this) -= e;
-    }
+    const dd_edge operator-(const dd_edge& e) const;
 
     /** Compound Minus operator.
         BOOLEAN forests: Difference; INTEGER/REAL forests: Subtraction.
@@ -2253,19 +2344,19 @@ class MEDDLY::dd_edge {
                           2: default + displays graph rooted at this node.
                           3: default + cardinality + graph.
     */
-    void show(FILE* strm, int verbosity = 0) const;
+    void show(output &s, int verbosity = 0) const;
 
     /// Write to a file
-    void write(FILE* s, const node_handle* map) const;
+    void write(output &s, const node_handle* map) const;
 
     /// Read from a file
-    void read(forest* p, FILE* s, const node_handle* map);
+    void read(forest* p, input &s, const node_handle* map);
 
   private:
     friend class forest;
 
-    inline void setIndex(int ind) { index = ind; }
-    inline int getIndex() const { return index; }
+    void setIndex(int ind);
+    int getIndex() const;
 
     forest *parent;
     int index;  //  our slot number in the parent forest's list
@@ -2279,9 +2370,7 @@ class MEDDLY::dd_edge {
     binary_operation* opDivide;
 
     // called when the parent is destroyed
-    inline void orphan() {
-      parent = 0;
-    }
+    void orphan();
 };
 
 // ******************************************************************
@@ -2303,9 +2392,7 @@ class MEDDLY::enumerator {
         iterator(const expert_forest* F);
         virtual ~iterator();
 
-        inline bool build_error() const {
-          return 0==F;
-        }
+        bool build_error() const;
 
         virtual bool start(const dd_edge &e);
         virtual bool start(const dd_edge &e, const int* m);
@@ -2314,17 +2401,13 @@ class MEDDLY::enumerator {
         /**
             Return the highest level changed during the last increment.
         */
-        inline int levelChanged() const {
-          return level_change;
-        }
+        int levelChanged() const;
 
         /** Get the current variable assignments.
             For variable i, use index i for the
             unprimed variable, and index -i for the primed variable.
         */
-        inline const int* getAssignments() const {
-          return index;
-        }
+        const int* getAssignments() const;
 
         /** Get primed assignments.
             It is much faster to use getAssigments()
@@ -2349,16 +2432,6 @@ class MEDDLY::enumerator {
         /// For real-ranged edges, get the current non-zero value.
         virtual void getValue(float& edgeValue) const;
         
-
-      protected:
-      /*
-        static inline int downLevel(int k) {
-          return (k>0) ? (-k) : (-k-1);
-        }
-        static inline int upLevel(int k) {
-          return (k<0) ? (-k) : (-k-1);
-        }
-      */
 
       protected:
         // Current parent forest.
@@ -2415,11 +2488,9 @@ class MEDDLY::enumerator {
     /// Re-initialize
     void init(type t, const forest* F);
 
-    inline operator bool() const { return is_valid; }
+    operator bool() const;
 
-    inline void operator++() {
-      is_valid &= I->next();
-    }
+    void operator++();
 
     /** 
         Start iterating through edge e.
@@ -2453,14 +2524,10 @@ class MEDDLY::enumerator {
         For variable i, use index i for the
         unprimed variable, and index -i for the primed variable.
     */
-    inline const int* getAssignments() const {
-      if (I && is_valid) return I->getAssignments(); else return 0;
-    }
+    const int* getAssignments() const;
 
     /// Get the current primed variable assignments.
-    inline const int* getPrimedAssignments() const {
-      if (I && is_valid) return I->getPrimedAssignments(); else return 0;
-    }
+    const int* getPrimedAssignments() const;
 
     /** Get the current variable assignments.
         The values in each assignment are ordered by variables.
@@ -2476,18 +2543,12 @@ class MEDDLY::enumerator {
       if (I && is_valid) return I->getOrderedPrimedAssignments(); else return 0;
     }
 
-    inline void getValue(int &v) const {
-      if (I && is_valid) I->getValue(v);
-    }
+    void getValue(int &v) const;
+    void getValue(float &v) const;
 
-    inline int levelChanged() const {
-      if (I) return I->levelChanged();
-      return 0;
-    }
+    int levelChanged() const;
 
-    inline type getType() const {
-      return T;
-    }
+    type getType() const;
 
   private:
     iterator* I;
@@ -2495,4 +2556,5 @@ class MEDDLY::enumerator {
     type T;
 };
 
+#include "meddly.hh"
 #endif

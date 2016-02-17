@@ -200,12 +200,13 @@ dd_edge test_mtmxd(forest* mtmxd, binary_opname* opCode,
   apply(opCode, A, B, C);
 
   if (verbose > 0) {
+    FILE_output meddlyout(stdout);
     printf("A: ");
-    A.show(stdout, 2);
+    A.show(meddlyout, 2);
     printf("\n\nB: ");
-    B.show(stdout, 2);
+    B.show(meddlyout, 2);
     printf("\n\nC: ");
-    C.show(stdout, 2);
+    C.show(meddlyout, 2);
   }
 
   return C;
@@ -266,7 +267,7 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  srandom(1u);
+  srand(1u);
 
   // initialize number of variables, their bounds and the number of elements
   // to create
@@ -301,13 +302,13 @@ int main(int argc, char *argv[])
     to[i][0] = 0;
     for (int j = nVariables; j > 0; --j)
     {
-      from[i][j] = int(float(variableBound) * random() / (RAND_MAX + 1.0));
+      from[i][j] = int(float(variableBound) * rand() / (RAND_MAX + 1.0));
       assert(from[i][j] >= 0 && from[i][j] < variableBound);
-      to[i][j] = int(float(variableBound) * random() / (RAND_MAX + 1.0));
+      to[i][j] = int(float(variableBound) * rand() / (RAND_MAX + 1.0));
       assert(to[i][j] >= 0 && to[i][j] < variableBound);
     }
     terms[i] =
-      element_type(int(float(variableBound) * random() / (RAND_MAX + 1.0)));
+      element_type(int(float(variableBound) * rand() / (RAND_MAX + 1.0)));
   }
 
   // initialize the variable bounds array to provide to the domain
@@ -377,7 +378,8 @@ int main(int argc, char *argv[])
       (getComputeManager())->getNumCacheEntries());
   */
 
-  result.show(stdout, 2);
+  FILE_output myout(stdout);
+  result.show(myout, 2);
 
   // Use iterator to display elements
   if (true) {

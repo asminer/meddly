@@ -25,8 +25,6 @@
     our expectations.
 */
 
-#include <cstdio>
-
 #include "meddly.h"
 
 using namespace MEDDLY;

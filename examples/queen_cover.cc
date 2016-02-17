@@ -26,19 +26,23 @@
     In other words, finds all possible ways to put queens onto
     an NxN chessboard so that every square either contains a queen,
     or is attached by a queen.
+
+    State: 
+      For each square, does it hold a queen.
+
+    Constraints:
+      conjunction over all squares:
+        is this square covered
+
 */
 
-#include <cstdio>
 #include <cstdlib>
 #include <fstream>
-
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <unistd.h>
 
 #include "meddly.h"
 #include "meddly_expert.h"
 #include "loggers.h"
+#include "timer.h"
 
 using namespace MEDDLY;
 
@@ -49,27 +53,6 @@ const char* lfile;
 dd_edge** qic;
 dd_edge** qidp;
 dd_edge** qidm;
-
-
-class timer {
-  double start_time;
-protected:
-  inline double Time() const {
-    rusage r;
-    getrusage(RUSAGE_SELF, &r);
-    return r.ru_utime.tv_sec + r.ru_utime.tv_usec / 1000000.0;
-  }
-public:
-  timer() { 
-    reset();
-  }
-  void reset() { 
-    start_time = Time(); 
-  }
-  double elapsed() const {
-    return Time() - start_time;
-  }
-};
 
 
 forest* buildQueenForest(forest::policies &p)
@@ -234,6 +217,8 @@ int main(int argc, const char** argv)
   printf("Using %s\n", getLibraryInfo(0));
 
   timer stopwatch;
+  stopwatch.note_time();
+
   printf("\nDetermining queen covers for %dx%d chessboard.\n", N, N);
 
   forest* f = buildQueenForest(p);
@@ -337,15 +322,17 @@ int main(int argc, const char** argv)
   delete[] qidp;
   delete[] qidm;
 
-  printf("\n%lg seconds CPU time elapsed\n", stopwatch.elapsed());
+  printf("\n%lg seconds CPU time elapsed\n", 
+    stopwatch.get_last_interval() / 1000000.0);
   printf("Forest stats:\n");
+  FILE_output myout(stdout);
   expert_forest* ef = (expert_forest*)f;
-  ef->reportStats(stdout, "\t", 
+  ef->reportStats(myout, "\t", 
     expert_forest::HUMAN_READABLE_MEMORY  |
     expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
     expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
   );
-  operation::showAllComputeTables(stdout, 2);
+  operation::showAllComputeTables(myout, 3);
 
   long c;
   apply(CARDINALITY, solutions, c);
@@ -374,5 +361,6 @@ int main(int argc, const char** argv)
 
   if (LOG) LOG->newPhase("Cleanup");
   cleanup();
+  delete LOG;
   return 0;
 }
