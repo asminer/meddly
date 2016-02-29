@@ -105,8 +105,9 @@ public:
 	void push(int key, T value)
 	{
 		if(!is_in_heap(key)){
-			_indices[key] = _heap.size();
-			_heap.push_back({key, value});
+			_indices[key] = _heap.size(); 
+			Item i; i.key = key; i.value = value;
+			_heap.push_back(i);
 			percolate_up(key);
 		}
 		else {
