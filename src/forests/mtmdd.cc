@@ -56,7 +56,7 @@ void MEDDLY::mtmdd_forest::reorderVariables(const int* order)
 		reorderVariablesHighestInversion(order);
 	}
 	else if(isSinkDown()) {
-		reorderVariablesBubbleDown(order);
+		reorderVariablesSinkDown(order);
 	}
 	else if(isBubbleUp()) {
 		reorderVariablesBubbleUp(order);
@@ -124,7 +124,7 @@ void MEDDLY::mtmdd_forest::reorderVariablesHighestInversion(const int* order)
 	printf("Total Swap: %d\n", swap);
 }
 
-void MEDDLY::mtmdd_forest::reorderVariablesBubbleDown(const int* order)
+void MEDDLY::mtmdd_forest::reorderVariablesSinkDown(const int* order)
 {
 	int size = getDomain()->getNumVariables();
 
@@ -247,17 +247,22 @@ void MEDDLY::mtmdd_forest::reorderVariablesLARC(const int* order)
 double MEDDLY::mtmdd_forest::calculate_avg_ref_count(int level)
 {
 	int lvar=getVarByLevel(level);
-
 	int lnum=unique->getNumEntries(lvar);
-	node_handle* low_nodes=static_cast<node_handle*>(malloc(lnum*sizeof(node_handle)));
-	unique->getItems(lvar, low_nodes, lnum);
-
-	int edges=0;
-	for(int i=0; i<lnum; i++){
-		edges+=getInCount(low_nodes[i]);
+	if(lnum==0) {
+		return 0;
 	}
+	else {
+		node_handle* lnodes=static_cast<node_handle*>(malloc(lnum*sizeof(node_handle)));
+		unique->getItems(lvar, lnodes, lnum);
 
-	return (double)edges/lnum;
+		int edges=0;
+		for(int i=0; i<lnum; i++){
+			edges+=getInCount(lnodes[i]);
+		}
+
+		free(lnodes);
+		return (double)edges/lnum;
+	}
 }
 
 void MEDDLY::mtmdd_forest::reorderVariablesLowestMemory(const int* order)
@@ -449,9 +454,9 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 	order_level[level+1] = lvar;
 	order_level[level] = hvar;
 
-	node_handle** children = new node_handle*[hsize];
+	node_handle** children = static_cast<node_handle**>(malloc(hsize*sizeof(node_handle*)));
 	for(int i=0; i<hsize; i++) {
-		children[i] = new node_handle[lsize];
+		children[i] = static_cast<node_handle*>(malloc(lsize*sizeof(node_handle)));
 	}
 
 	// Process the rest of nodes for the variable to be moved down

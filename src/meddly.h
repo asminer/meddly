@@ -504,7 +504,7 @@ class MEDDLY::error {
       /// Requested operation requires different number of operands.
       WRONG_NUMBER,
       /// A result won't fit in an integer / float.
-      OVERFLOW,
+      MEDDLY_OVERFLOW,
       /// Integer division by 0 is invalid.
       DIVIDE_BY_ZERO,
       /// Invalid policy setting.
@@ -1018,7 +1018,7 @@ class MEDDLY::forest {
 
       inline void setLowestInversion() { reorder = LOWEST_INVERSION; }
       inline void setHighestInversion() { reorder = HIGHEST_INVERSION; }
-      inline void setBubbleDown() { reorder = SINK_DOWN; }
+      inline void setSinkDown() { reorder = SINK_DOWN; }
       inline void setBubbleUp() { reorder = BUBBLE_UP; }
       inline void setLowestCost() { reorder = LOWEST_COST; }
       inline void setLowestMemory() { reorder = LOWEST_MEMORY; }
@@ -1234,6 +1234,7 @@ class MEDDLY::forest {
 
     /// Returne the current policies used by this forest.
     const policies& getPolicies() const;
+    policies& getPolicies();
 
     /// Returns the reduction rule used by this forest.
     policies::reduction_rule getReductionRule() const;

@@ -57,7 +57,7 @@ class MEDDLY::mtmdd_forest : public mt_forest {
     // Reorder by swapping the highest inversion until none exists
     void reorderVariablesHighestInversion(const int* order);
     // Reorder by swapping until the lowest variable is at the right level
-    void reorderVariablesBubbleDown(const int* order);
+    void reorderVariablesSinkDown(const int* order);
     // Reorder by swapping until the highest variable is at the right level
     void reorderVariablesBubbleUp(const int* order);
     // Reorder by swapping the inversion with lowest cost until none exists

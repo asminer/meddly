@@ -39,6 +39,7 @@
 #define MEDDLY_EXPERT_H
 
 #include <string.h>
+#include <unordered_map>
 
 // Flags for development version only. Significant reduction in performance.
 #ifdef DEVELOPMENT_CODE
@@ -112,6 +113,8 @@ namespace MEDDLY {
   class op_initializer;
 
   class cleanup_procedure;
+
+  class global_rebuilder;
 
   // classes defined elsewhere
   class base_table;
@@ -3241,6 +3244,64 @@ class MEDDLY::cleanup_procedure {
     static void DeleteAll();
 };
 
+// ******************************************************************
+// *                                                                *
+// *                    global_rebuilder  class                     *
+// *                                                                *
+// ******************************************************************
+
+/** Rebuild the dd_edge from the source forest in the target forest.
+    The source and target forests may have different variable orders.
+    While rebuilding, extra nodes may be created in the source forest
+    because of the restrict operation.
+*/
+
+class MEDDLY::global_rebuilder {
+private:
+	struct RestrictKey {
+		node_handle p;
+		int var;
+		int idx;
+
+		bool operator==(const RestrictKey &other) const
+		{
+			return (p == other.p && var == other.var && idx == other.idx);
+		}
+	};
+
+	struct RestrictKeyHasher {
+		size_t operator()(const RestrictKey &key) const;
+	};
+
+	struct TransformKey {
+		node_handle p;
+		int var;
+
+		bool operator==(const TransformKey &other) const
+		{
+			return (p == other.p && var == other.var);
+		}
+	};
+
+	struct TransformKeyHasher {
+		size_t operator()(const TransformKey &key) const;
+	};
+
+	std::unordered_map<RestrictKey, node_handle, RestrictKeyHasher> _computed_restrict;
+	std::unordered_map<TransformKey, node_handle, TransformKeyHasher> _computed_transform;
+
+	expert_forest* _source;
+	expert_forest* _target;
+
+	node_handle transform(node_handle p, int target_level);
+	node_handle restrict(node_handle p, int var, int idx);
+
+public:
+	global_rebuilder(expert_forest* source, expert_forest* target);
+
+	dd_edge rebuild(const dd_edge& e);
+	void clearCache();
+};
 
 #include "meddly_expert.hh"
 #endif

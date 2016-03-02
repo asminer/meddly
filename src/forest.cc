@@ -90,6 +90,7 @@ MEDDLY::forest::policies::policies(bool rel) {
   // nodestor = SIMPLE_HEAP;
   // nodestor = SIMPLE_NONE;
   // nodestor = COMPACT_GRID;
+  reorder = SINK_DOWN;
 }
 
 // ******************************************************************
@@ -1097,9 +1098,9 @@ void MEDDLY::expert_forest
         const variable* v = getDomain()->getVar(ABS(k));
         char primed = (k>0) ? ' ' : '\'';
         if (v->getName()) {
-          s << "Level: " << v->getName() << primed << '\n';
+          s << "Level: " << k << " Var: " << v->getName() << primed << '\n';
         } else {
-          s << "Level: " << ABS(k) << primed << '\n';
+          s << "Level: " << k << " Var: " << getVarByLevel(ABS(k)) << primed << '\n';
         }
         printed = true;
       }

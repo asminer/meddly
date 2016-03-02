@@ -157,5 +157,7 @@ public:
 	}
 };
 
+template <typename T, typename Comp>
+const int IndexedHeap<T, Comp>::NOT_IN_HEAP;
 
 #endif

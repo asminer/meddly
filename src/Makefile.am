@@ -37,7 +37,8 @@ libmeddly_la_SOURCES = \
   hash_stream.h \
   loggers.h \
   loggers.cc \
-  timer.h 
+  timer.h \
+  global_rebuilder.cc
 
 libmeddly_la_LIBADD = \
   forests/libforests.la \
