@@ -94,206 +94,208 @@ void MEDDLY::mtmxd_forest::reorderVariablesHighestInversion(const int* order)
 //
 void MEDDLY::mtmxd_forest::swapAdjacentVariables(int level)
 {
-	if(isVarSwap()){
-		swapAdjacentVariablesByVarSwap(level);
-	}
-	else if(isLevelSwap()){
-		swapAdjacentVariablesByLevelSwap(level);
-	}
+	throw error(error::NOT_IMPLEMENTED);
+
+//	if(isVarSwap()){
+//		swapAdjacentVariablesByVarSwap(level);
+//	}
+//	else if(isLevelSwap()){
+//		swapAdjacentVariablesByLevelSwap(level);
+//	}
 }
 
-void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
-{
-	// Swap VarHigh and VarLow
-
-	MEDDLY_DCASSERT(level>=1);
-	MEDDLY_DCASSERT(level<getNumVariables());
-
-	removeAllComputeTableEntries();
-
-	int var_high=getVarByLevel(level+1);
-	int var_low=getVarByLevel(level);
-	int size_high=getVariableSize(var_high);
-	int size_low=getVariableSize(var_low);
-
-	// Renumber the level of nodes for VarHigh
-	int num_high=unique->getNumEntries(var_high);
-	node_handle* high_nodes=static_cast<node_handle*>(malloc(num_high*sizeof(node_handle)));
-	unique->getItems(var_high, high_nodes, num_high);
-	for(int i=0; i<num_high; i++) {
-		setNodeLevel(high_nodes[i], level);
-	}
-
-	// Renumber the level of nodes for VarHigh'
-	int num_phigh=unique->getNumEntries(-var_high);
-	node_handle* phigh_nodes=static_cast<node_handle*>(malloc(num_phigh*sizeof(node_handle)));
-	unique->getItems(-var_high, phigh_nodes, num_phigh);
-	for(int i=0; i<num_phigh; i++) {
-		setNodeLevel(phigh_nodes[i], -level);
-		getNode(phigh_nodes[i]).mark();
-	}
-
-	// Renumber the level of nodes for VarLow
-	int num_low=unique->getNumEntries(var_low);
-	node_handle* low_nodes=static_cast<node_handle*>(malloc(num_low*sizeof(node_handle)));
-	unique->getItems(var_low, low_nodes, num_low);
-	for(int i=0; i<num_low; i++) {
-		setNodeLevel(low_nodes[i], level+1);
-	}
-	free(low_nodes);
-
-	// Renumber the level of nodes for VarLow'
-	int num_plow=unique->getNumEntries(-var_low);
-	node_handle* plow_nodes=static_cast<node_handle*>(malloc(num_plow*sizeof(node_handle)));
-	unique->getItems(-var_low, plow_nodes, num_plow);
-	for(int i=0; i<num_plow; i++) {
-		setNodeLevel(plow_nodes[i], -(level+1));
-	}
-	free(plow_nodes);
-
-//	printf("Before: Level %d : %d, Level %d : %d, Level %d : %d, Level %d : %d\n",
-//			level+1, num_high, -(level+1), num_phigh,
-//			level, num_low, -level, num_plow);
-
-	// Update the variable order
-	order_var[var_high] = level;
-	order_var[-var_high] = -level;
-	order_var[var_low] = level+1;
-	order_var[-var_low] = -(level+1);
-	order_level[level+1] = var_low;
-	order_level[-(level+1)] = -var_low;
-	order_level[level] = var_high;
-	order_level[-level] = -var_high;
-
-	std::vector<node_handle> t;
-	std::map<node_handle, node_handle> m;
-	std::map<node_handle, int> p;
-	// Reconstruct nodes for VarHigh
-	for(int i=0; i<num_high; i++) {
-		node_handle node=swapAdjacentVariablesInMxD(high_nodes[i]);
-		if(high_nodes[i]==node){
-			// VarLow is DONT_CHANGE in the MxD
-			unlinkNode(node);
-		}
-		else if(getInCount(node)>1){
-			assert(getNodeLevel(node)==-(level+1));
-
-			// Duplication conflict
-			node_reader* nr = initNodeReader(high_nodes[i], true);
-			for(int j=0; j<size_high; j++){
-				if(getNodeLevel(nr->d(j))==-level){
-					if(p.find(nr->d(j))==p.end()){
-						p[nr->d(j)]=1;
-					}
-					else{
-						p[nr->d(j)]++;
-					}
-				}
-			}
-			node_reader::recycle(nr);
-
-			m.insert(std::pair<node_handle, node_handle>(node, high_nodes[i]));
-//			printf("UPDATE: %d -> %d\n", node, high_nodes[i]);
-		}
-		else{
-			// Newly created node
-			swapNodes(high_nodes[i], node);
-			unlinkNode(node);
-			if(getNodeLevel(high_nodes[i])==(level+1)){
-				t.push_back(high_nodes[i]);
-			}
-		}
-	}
-
-	// Reconstruct nodes for VarHigh'
-	for(int i=0; i<num_phigh; i++) {
-		if(!isActiveNode(phigh_nodes[i]) || !getNode(phigh_nodes[i]).isMarked()){
-			continue;
-		}
-		getNode(phigh_nodes[i]).unmark();
-		if(p.find(phigh_nodes[i])!=p.end() && p[phigh_nodes[i]]==getInCount(phigh_nodes[i])){
-			continue;
-		}
-
-		// VarLow is DONT_CHANGE in the MxD
-		node_reader* nr = initNodeReader(phigh_nodes[i], true);
-		bool skip=true;
-		for(int j=0; j<size_high; j++){
-			if(!isLevelAbove(-level, getNodeLevel(nr->d(j)))){
-				skip=false;
-				break;
-			}
-		}
-		node_reader::recycle(nr);
-
-		if(!skip){
-			node_handle node=swapAdjacentVariablesInMxD(phigh_nodes[i]);
-			assert(phigh_nodes[i]!=node);
-
-			if(getInCount(node)>1){
-				assert(getNodeLevel(node)==-(level+1));
-
-				// Duplication conflict
-				m.insert(std::pair<node_handle, node_handle>(node, phigh_nodes[i]));
-//				printf("UPDATE: %d -> %d\n", node, phigh_nodes[i]);
-			}
-			else{
-				// Newly created node
-				swapNodes(phigh_nodes[i], node);
-				unlinkNode(node);
-				if(getNodeLevel(phigh_nodes[i])==(level+1)){
-					t.push_back(phigh_nodes[i]);
-				}
-			}
-		}
-	}
-
-	if(!m.empty()){
-		for(std::vector<node_handle>::iterator itr=t.begin(); itr!=t.end(); itr++){
-			assert(getNodeLevel(*itr)==(level+1));
-			node_reader* nr = initNodeReader(*itr, true);
-			bool update=false;
-			for(int i=0; i<size_high; i++){
-				if(m.find(nr->d(i))!=m.end()){
-					update=true;
-					break;
-				}
-			}
-			if(update){
-				node_builder& nb = useNodeBuilder(level+1, size_high);
-				for(int i=0; i<size_high; i++){
-					if(m.find(nr->d(i))==m.end()){
-						nb.d(i)=linkNode(nr->d(i));
-					}
-					else{
-						nb.d(i)=linkNode(m[nr->d(i)]);
-					}
-				}
-				node_handle node = createReducedNode(-1, nb);
-				assert(getInCount(node)==1 && getNodeLevel(node)==level+1);
-				swapNodes(*itr, node);
-				unlinkNode(node);
-			}
-			node_reader::recycle(nr);
-		}
-
-		for(std::map<node_handle, node_handle>::iterator itr=m.begin(); itr!=m.end(); itr++){
-			assert(getInCount(itr->first)==1);
-			swapNodes(itr->first, itr->second);
-			unlinkNode(itr->first);
-		}
-	}
-
-	free(high_nodes);
-	free(phigh_nodes);
-
-//	printf("After: Level %d : %d,  Level %d : %d, Level %d : %d, Level %d : %d\n",
-//			level+1, unique->getNumEntries(var_low),
-//			-(level+1), unique->getNumEntries(-var_low),
-//			level, unique->getNumEntries(var_high),
-//			-level, unique->getNumEntries(-var_high));
-//	printf("#Node: %d\n", getCurrentNumNodes());
-}
+//void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
+//{
+//	// Swap VarHigh and VarLow
+//
+//	MEDDLY_DCASSERT(level>=1);
+//	MEDDLY_DCASSERT(level<getNumVariables());
+//
+//	removeAllComputeTableEntries();
+//
+//	int var_high=getVarByLevel(level+1);
+//	int var_low=getVarByLevel(level);
+//	int size_high=getVariableSize(var_high);
+//	int size_low=getVariableSize(var_low);
+//
+//	// Renumber the level of nodes for VarHigh
+//	int num_high=unique->getNumEntries(var_high);
+//	node_handle* high_nodes=static_cast<node_handle*>(malloc(num_high*sizeof(node_handle)));
+//	unique->getItems(var_high, high_nodes, num_high);
+//	for(int i=0; i<num_high; i++) {
+//		setNodeLevel(high_nodes[i], level);
+//	}
+//
+//	// Renumber the level of nodes for VarHigh'
+//	int num_phigh=unique->getNumEntries(-var_high);
+//	node_handle* phigh_nodes=static_cast<node_handle*>(malloc(num_phigh*sizeof(node_handle)));
+//	unique->getItems(-var_high, phigh_nodes, num_phigh);
+//	for(int i=0; i<num_phigh; i++) {
+//		setNodeLevel(phigh_nodes[i], -level);
+//		getNode(phigh_nodes[i]).mark();
+//	}
+//
+//	// Renumber the level of nodes for VarLow
+//	int num_low=unique->getNumEntries(var_low);
+//	node_handle* low_nodes=static_cast<node_handle*>(malloc(num_low*sizeof(node_handle)));
+//	unique->getItems(var_low, low_nodes, num_low);
+//	for(int i=0; i<num_low; i++) {
+//		setNodeLevel(low_nodes[i], level+1);
+//	}
+//	free(low_nodes);
+//
+//	// Renumber the level of nodes for VarLow'
+//	int num_plow=unique->getNumEntries(-var_low);
+//	node_handle* plow_nodes=static_cast<node_handle*>(malloc(num_plow*sizeof(node_handle)));
+//	unique->getItems(-var_low, plow_nodes, num_plow);
+//	for(int i=0; i<num_plow; i++) {
+//		setNodeLevel(plow_nodes[i], -(level+1));
+//	}
+//	free(plow_nodes);
+//
+////	printf("Before: Level %d : %d, Level %d : %d, Level %d : %d, Level %d : %d\n",
+////			level+1, num_high, -(level+1), num_phigh,
+////			level, num_low, -level, num_plow);
+//
+//	// Update the variable order
+//	order_var[var_high] = level;
+//	order_var[-var_high] = -level;
+//	order_var[var_low] = level+1;
+//	order_var[-var_low] = -(level+1);
+//	order_level[level+1] = var_low;
+//	order_level[-(level+1)] = -var_low;
+//	order_level[level] = var_high;
+//	order_level[-level] = -var_high;
+//
+//	std::vector<node_handle> t;
+//	std::map<node_handle, node_handle> m;
+//	std::map<node_handle, int> p;
+//	// Reconstruct nodes for VarHigh
+//	for(int i=0; i<num_high; i++) {
+//		node_handle node=swapAdjacentVariablesInMxD(high_nodes[i]);
+//		if(high_nodes[i]==node){
+//			// VarLow is DONT_CHANGE in the MxD
+//			unlinkNode(node);
+//		}
+//		else if(getInCount(node)>1){
+//			MEDDLY_DCASSERT(getNodeLevel(node)==-(level+1));
+//
+//			// Duplication conflict
+//			node_reader* nr = initNodeReader(high_nodes[i], true);
+//			for(int j=0; j<size_high; j++){
+//				if(getNodeLevel(nr->d(j))==-level){
+//					if(p.find(nr->d(j))==p.end()){
+//						p[nr->d(j)]=1;
+//					}
+//					else{
+//						p[nr->d(j)]++;
+//					}
+//				}
+//			}
+//			node_reader::recycle(nr);
+//
+//			m.insert(std::pair<node_handle, node_handle>(node, high_nodes[i]));
+////			printf("UPDATE: %d -> %d\n", node, high_nodes[i]);
+//		}
+//		else{
+//			// Newly created node
+//			swapNodes(high_nodes[i], node);
+//			unlinkNode(node);
+//			if(getNodeLevel(high_nodes[i])==(level+1)){
+//				t.push_back(high_nodes[i]);
+//			}
+//		}
+//	}
+//
+//	// Reconstruct nodes for VarHigh'
+//	for(int i=0; i<num_phigh; i++) {
+//		if(!isActiveNode(phigh_nodes[i]) || !getNode(phigh_nodes[i]).isMarked()){
+//			continue;
+//		}
+//		getNode(phigh_nodes[i]).unmark();
+//		if(p.find(phigh_nodes[i])!=p.end() && p[phigh_nodes[i]]==getInCount(phigh_nodes[i])){
+//			continue;
+//		}
+//
+//		// VarLow is DONT_CHANGE in the MxD
+//		node_reader* nr = initNodeReader(phigh_nodes[i], true);
+//		bool skip=true;
+//		for(int j=0; j<size_high; j++){
+//			if(!isLevelAbove(-level, getNodeLevel(nr->d(j)))){
+//				skip=false;
+//				break;
+//			}
+//		}
+//		node_reader::recycle(nr);
+//
+//		if(!skip){
+//			node_handle node=swapAdjacentVariablesInMxD(phigh_nodes[i]);
+//			MEDDLY_DCASSERT(phigh_nodes[i]!=node);
+//
+//			if(getInCount(node)>1){
+//				MEDDLY_DCASSERT(getNodeLevel(node)==-(level+1));
+//
+//				// Duplication conflict
+//				m.insert(std::pair<node_handle, node_handle>(node, phigh_nodes[i]));
+////				printf("UPDATE: %d -> %d\n", node, phigh_nodes[i]);
+//			}
+//			else{
+//				// Newly created node
+//				swapNodes(phigh_nodes[i], node);
+//				unlinkNode(node);
+//				if(getNodeLevel(phigh_nodes[i])==(level+1)){
+//					t.push_back(phigh_nodes[i]);
+//				}
+//			}
+//		}
+//	}
+//
+//	if(!m.empty()){
+//		for(std::vector<node_handle>::iterator itr=t.begin(); itr!=t.end(); itr++){
+//			MEDDLY_DCASSERT(getNodeLevel(*itr)==(level+1));
+//			node_reader* nr = initNodeReader(*itr, true);
+//			bool update=false;
+//			for(int i=0; i<size_high; i++){
+//				if(m.find(nr->d(i))!=m.end()){
+//					update=true;
+//					break;
+//				}
+//			}
+//			if(update){
+//				node_builder& nb = useNodeBuilder(level+1, size_high);
+//				for(int i=0; i<size_high; i++){
+//					if(m.find(nr->d(i))==m.end()){
+//						nb.d(i)=linkNode(nr->d(i));
+//					}
+//					else{
+//						nb.d(i)=linkNode(m[nr->d(i)]);
+//					}
+//				}
+//				node_handle node = createReducedNode(-1, nb);
+//				MEDDLY_DCASSERT(getInCount(node)==1 && getNodeLevel(node)==level+1);
+//				swapNodes(*itr, node);
+//				unlinkNode(node);
+//			}
+//			node_reader::recycle(nr);
+//		}
+//
+//		for(std::map<node_handle, node_handle>::iterator itr=m.begin(); itr!=m.end(); itr++){
+//			MEDDLY_DCASSERT(getInCount(itr->first)==1);
+//			swapNodes(itr->first, itr->second);
+//			unlinkNode(itr->first);
+//		}
+//	}
+//
+//	free(high_nodes);
+//	free(phigh_nodes);
+//
+////	printf("After: Level %d : %d,  Level %d : %d, Level %d : %d, Level %d : %d\n",
+////			level+1, unique->getNumEntries(var_low),
+////			-(level+1), unique->getNumEntries(-var_low),
+////			level, unique->getNumEntries(var_high),
+////			-level, unique->getNumEntries(-var_high));
+////	printf("#Node: %d\n", getCurrentNumNodes());
+//}
 
 MEDDLY::node_handle MEDDLY::mtmxd_forest::swapAdjacentVariablesInMxD(node_handle node)
 {
@@ -458,8 +460,8 @@ void MEDDLY::mtmxd_forest::swapAdjacentLevels(int level)
 		node_reader::recycle(high_nr);
 
 		node_handle node=createReducedNode(-1, high_nb);
-		assert(getInCount(node)==1);
-		assert(getNodeLevel(node)==high_level);
+		MEDDLY_DCASSERT(getInCount(node)==1);
+		MEDDLY_DCASSERT(getNodeLevel(node)==high_level);
 
 		swapNodes(high_nodes[i], node);
 		unlinkNode(node);

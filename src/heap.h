@@ -56,7 +56,7 @@ private:
 
 	void percolate_down(int key)
 	{
-		assert(is_in_heap(key));
+		MEDDLY_DCASSERT(is_in_heap(key));
 		int index = _indices[key];
 		Item item = _heap[index];
 		while(has_left(index)){
@@ -81,7 +81,7 @@ private:
 
 	void percolate_up(int key)
 	{
-		assert(is_in_heap(key));
+		MEDDLY_DCASSERT(is_in_heap(key));
 		int index = _indices[key];
 		Item item = _heap[index];
 		int p = parent(index);

@@ -40,6 +40,7 @@
 
 #include <string.h>
 #include <unordered_map>
+#include <vector>
 
 // Flags for development version only. Significant reduction in performance.
 #ifdef DEVELOPMENT_CODE
@@ -963,11 +964,6 @@ struct MEDDLY::node_header {
     */
     int cache_count;
 
-    /*
-     * Can be used for various purposes
-     */
-    bool marked;
-
 #ifdef SAVE_HASHES
     /// Remember the hash for speed.
     unsigned hash;
@@ -984,10 +980,6 @@ struct MEDDLY::node_header {
 
     int getNextDeleted() const;
     void setNextDeleted(int n);
-
-    inline bool isMarked() const { return marked; }
-    inline void mark() { marked = true; }
-    inline void unmark() { marked = false; }
 
     void makeZombie();
 };
@@ -1217,13 +1209,13 @@ class MEDDLY::node_storage {
     // --------------------------------------------------
 
     /// Get the number of incoming pointers to a node.
-    node_handle getCountOf(node_address addr) const;
+    int getCountOf(node_address addr) const;
     /// Set the number of incoming pointers to a node.
     void setCountOf(node_address addr, node_handle c);
     /// Increment (and return) the number of incoming pointers to a node.
-    node_handle incCountOf(node_address addr);
+    int incCountOf(node_address addr);
     /// Decrement (and return) the number of incoming pointers to a node.
-    node_handle decCountOf(node_address addr);
+    int decCountOf(node_address addr);
 
     // --------------------------------------------------
     // next pointer data
@@ -1306,7 +1298,7 @@ class MEDDLY::node_storage {
     forest::statset* stats;
 
     /// Count array, so that counts[addr] gives the count for node at addr.
-    node_handle* counts;
+    int* counts;
 
     /// Next array, so that nexts[addr] gives the next value for node at addr.
     node_handle* nexts;
@@ -2012,6 +2004,10 @@ class MEDDLY::expert_forest: public forest
      */
     virtual void moveUpVariable(int low, int high) = 0;
 
+    virtual void dynamicReorderVariables(int top, int bottom) {
+    	throw error(error::NOT_IMPLEMENTED);
+    }
+
     /** Show a terminal node.
           @param  s       Stream to write to.
           @param  tnode   Handle to a terminal node.
@@ -2174,7 +2170,7 @@ class MEDDLY::expert_forest: public forest
 
   protected:
     /// Returns the in-count for a node.
-    long getInCount(node_handle p);
+    int getInCount(node_handle p);
 
   private:
     /// Increment and return the in-count for a node
@@ -2196,6 +2192,7 @@ class MEDDLY::expert_forest: public forest
     void moveNodeOffset(node_handle node, node_address old_addr, node_address new_addr);
     friend class MEDDLY::node_storage;
 
+    friend class MEDDLY::global_rebuilder;
 
   // ------------------------------------------------------------
   // helpers for this class
@@ -3274,12 +3271,23 @@ private:
 	};
 
 	struct TransformKey {
-		node_handle p;
+		int sig;
 		int var;
 
 		bool operator==(const TransformKey &other) const
 		{
-			return (p == other.p && var == other.var);
+			return (sig == other.sig && var == other.var);
+		}
+	};
+
+	struct TransformEntry {
+		// Partial assignment
+		std::vector<int> pa;
+		node_handle p;
+
+		bool operator==(const TransformEntry &other) const
+		{
+			return p == other.p;
 		}
 	};
 
@@ -3288,19 +3296,26 @@ private:
 	};
 
 	std::unordered_map<RestrictKey, node_handle, RestrictKeyHasher> _computed_restrict;
-	std::unordered_map<TransformKey, node_handle, TransformKeyHasher> _computed_transform;
+	std::unordered_multimap<TransformKey, TransformEntry, TransformKeyHasher> _computed_transform;
 
 	expert_forest* _source;
 	expert_forest* _target;
+	node_handle _root;
+	int _hit;
+	int _total;
 
-	node_handle transform(node_handle p, int target_level);
-	node_handle restrict(node_handle p, int var, int idx);
+	node_handle transform(node_handle p, int target_level, std::vector<int>& pa);
+	node_handle restrict(node_handle p, std::vector<int>& pa);
+
+	bool restrict_exist(node_handle p, const std::vector<int>& pa, int start, node_handle& result);
+	int signature(node_handle p) const;
 
 public:
 	global_rebuilder(expert_forest* source, expert_forest* target);
 
 	dd_edge rebuild(const dd_edge& e);
 	void clearCache();
+	double hitRate() const;
 };
 
 #include "meddly_expert.hh"

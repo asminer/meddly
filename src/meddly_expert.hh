@@ -549,7 +549,7 @@ MEDDLY::node_storage::getCountOf(node_address addr) const
 }
 
 inline void
-MEDDLY::node_storage::setCountOf(node_address addr, MEDDLY::node_handle c)
+MEDDLY::node_storage::setCountOf(node_address addr, int c)
 {
   MEDDLY_DCASSERT(counts);
   MEDDLY_DCASSERT(addr > 0);
@@ -1417,7 +1417,7 @@ MEDDLY::expert_forest::isTimeToGc() const
       : (stats.orphan_nodes > deflt.orphanTrigger);
 }
 
-inline long
+inline int
 MEDDLY::expert_forest::getInCount(MEDDLY::node_handle p)
 {
   return nodeMan->getCountOf(getNode(p).offset);

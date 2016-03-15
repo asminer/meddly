@@ -1790,8 +1790,7 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 #ifdef VALIADE_INCOUNTS_ON_DELETE
   validateIncounts(false);
 #endif
-  // reset the mark
-  getNode(p).unmark();
+
   unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE
   node_reader* key = initNodeReader(p, false);
@@ -1867,9 +1866,6 @@ void MEDDLY::expert_forest::zombifyNode(node_handle p)
   if (theLogger && theLogger->recordingNodeCounts()) {
     theLogger->addToActiveNodeCount(this, getNode(p).level, -1);
   }
-  
-  // reset the mark
-  getNode(p).unmark();
 
   unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE 
@@ -2157,7 +2153,6 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
   // All of the work is in nodeMan now :^)
   address[p].offset = nodeMan->makeNode(p, nb, getNodeStorage());
-  address[p].unmark();
 
 #ifdef SAVE_HASHES
   address[p].hash = nb.hash();
@@ -2215,7 +2210,6 @@ MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(node_builder
 
 	address[p].level = nb.getLevel();
 	address[p].offset = nodeMan->makeNode(p, nb, getNodeStorage());
-	address[p].unmark();
 
 	nodeMan->setCountOf(address[p].offset, count);
 

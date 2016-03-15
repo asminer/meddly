@@ -37,6 +37,8 @@ class MEDDLY::mtmdd_forest : public mt_forest {
     virtual void moveDownVariable(int high, int low);
     virtual void moveUpVariable(int low, int high);
 
+    virtual void dynamicReorderVariables(int top, int bottom);
+
     virtual enumerator::iterator* makeFullIter() const 
     {
       return new mtmdd_iterator(this);
@@ -68,6 +70,9 @@ class MEDDLY::mtmdd_forest : public mt_forest {
     void reorderVariablesRandom(const int* order);
     // Reorder by swapping the inversion with smallest average in count
     void reorderVariablesLARC(const int* order);
+
+    // Move the variable to the optimal level between top and bottom
+    void sifting(int var, int top, int bottom);
 
     long calculate_swap_cost(int level);
     long calculate_swap_memory_cost(int level);

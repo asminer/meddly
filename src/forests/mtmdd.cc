@@ -372,7 +372,7 @@ void MEDDLY::mtmdd_forest::reorderVariablesRandom(const int* order)
 	while(!levels.empty()){
 		int index = rand()%levels.size();
 		int level = levels[index];
-		assert(inversions[level]);
+		MEDDLY_DCASSERT(inversions[level]);
 		swapAdjacentVariables(level);
 		swap++;
 
@@ -402,8 +402,6 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 {
 	MEDDLY_DCASSERT(level>=1);
 	MEDDLY_DCASSERT(level<getNumVariables());
-
-	removeAllComputeTableEntries();
 
 	int hvar = getVarByLevel(level+1);  // The variable at the higher level
 	int lvar = getVarByLevel(level);    // The variable at the lower level
@@ -535,6 +533,136 @@ void MEDDLY::mtmdd_forest::moveUpVariable(int low, int high)
 
 	for(int level=low; level<high; level++) {
 		swapAdjacentVariables(level);
+	}
+}
+
+void MEDDLY::mtmdd_forest::dynamicReorderVariables(int top, int bottom)
+{
+	MEDDLY_DCASSERT(top > bottom);
+	MEDDLY_DCASSERT(top <= getNumVariables());
+	MEDDLY_DCASSERT(bottom >= 1);
+
+	removeAllComputeTableEntries();
+
+	vector<int> vars(top - bottom + 1);
+	for(int i = 0; i < vars.size(); i++){
+		vars[i] = getVarByLevel(bottom + i);
+	}
+
+	for(int i = 0; i < vars.size() / 4; i++){
+		int max = i;
+		size_t max_num = unique->getNumEntries(vars[max]);
+		for(int j = i+1; j < vars.size(); j++){
+			if(unique->getNumEntries(vars[j]) > max_num){
+				max = j;
+				max_num = unique->getNumEntries(vars[j]);
+			}
+		}
+
+		int temp = vars[max];
+		vars[max] = vars[i];
+		vars[i] = temp;
+
+		sifting(vars[i], top, bottom);
+//		printf("%d : %d\n", vars[i], getCurrentNumNodes());
+	}
+}
+
+void MEDDLY::mtmdd_forest::sifting(int var, int top, int bottom)
+{
+	int level = getLevelByVar(var);
+
+	MEDDLY_DCASSERT(level <= top && level >= bottom);
+
+	int num = getCurrentNumNodes();
+	if(level <= (top + bottom) / 2) {
+		// Move to the bottom
+		while(level > bottom) {
+//			int low_var = getVarByLevel(level - 1);
+//			int old_sum = unique->getNumEntries(var) + unique->getNumEntries(low_var);
+			swapAdjacentVariables(level - 1);
+//			int new_sum = unique->getNumEntries(var) + unique->getNumEntries(low_var);
+//			change += (new_sum - old_sum);
+			level--;
+//
+//			if(change < min) {
+//				min_level = level;
+//				min = change;
+//			}
+		}
+
+		int change = 0;
+		int min_level = bottom;
+
+		MEDDLY_DCASSERT(level == bottom);
+		// Move to the top
+		while(level < top) {
+			int high_var = getVarByLevel(level + 1);
+			size_t old_sum = unique->getNumEntries(var) + unique->getNumEntries(high_var);
+			swapAdjacentVariables(level);
+			size_t new_sum = unique->getNumEntries(var) + unique->getNumEntries(high_var);
+			change += (new_sum - old_sum);
+			level++;
+
+			if(change <= 0) {
+				min_level = level;
+				change = 0;
+			}
+		}
+
+		MEDDLY_DCASSERT(level == top);
+		while(level > min_level) {
+			swapAdjacentVariables(level - 1);
+			level--;
+		}
+	}
+	else {
+		// Move to the top
+		while(level < top) {
+//			int high_var = getVarByLevel(level + 1);
+//			int old_sum = unique->getNumEntries(var) + unique->getNumEntries(high_var);
+			swapAdjacentVariables(level);
+//			int new_sum = unique->getNumEntries(var) + unique->getNumEntries(high_var);
+//			change += (new_sum - old_sum);
+			level++;
+//
+//			if(change < min) {
+//				min_level = level;
+//				min = change;
+//			}
+		}
+
+		int change = 0;
+		int min_level = top;
+		int min = change;
+
+		MEDDLY_DCASSERT(level == top);
+		// Move to the bottom
+		while(level > bottom) {
+			int low_var = getVarByLevel(level - 1);
+			size_t old_sum = unique->getNumEntries(var) + unique->getNumEntries(low_var);
+			swapAdjacentVariables(level - 1);
+			size_t new_sum = unique->getNumEntries(var) + unique->getNumEntries(low_var);
+			change += (new_sum - old_sum);
+			level--;
+
+			if(change <= min) {
+				min_level = level;
+				min = change;
+			}
+		}
+
+		MEDDLY_DCASSERT(level == bottom);
+		MEDDLY_DCASSERT(min <= 0);
+		while(level < min_level) {
+			swapAdjacentVariables(level);
+			level++;
+		}
+	}
+
+	MEDDLY_DCASSERT(getCurrentNumNodes() <= num);
+	if(getCurrentNumNodes() > num) {
+		printf("Error: %d > %d\n", getCurrentNumNodes(), num);
 	}
 }
 
