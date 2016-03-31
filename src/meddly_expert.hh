@@ -540,6 +540,7 @@ MEDDLY::node_header::makeZombie()
 
 // ****************************************************************************
 
+#ifdef INLINED_COUNT
 inline MEDDLY::node_handle
 MEDDLY::node_storage::getCountOf(node_address addr) const
 {
@@ -572,7 +573,9 @@ MEDDLY::node_storage::decCountOf(node_address addr)
   MEDDLY_DCASSERT(addr > 0);
   return --counts[addr];
 }
+#endif
 
+#ifdef INLINED_NEXT
 inline MEDDLY::node_handle
 MEDDLY::node_storage::getNextOf(node_address addr) const
 {
@@ -588,6 +591,7 @@ MEDDLY::node_storage::setNextOf(node_address addr, MEDDLY::node_handle n)
   MEDDLY_DCASSERT(addr > 0);
   nexts[addr] = n;
 }
+#endif
 
 inline void
 MEDDLY::node_storage::resize_header(MEDDLY::node_reader& nr, int extra_slots)

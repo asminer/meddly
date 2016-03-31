@@ -46,6 +46,10 @@
 #define DCASSERTS_ON
 #endif
 
+
+#define INLINED_COUNT
+#define INLINED_NEXT
+
 // #define DEBUG_NODE_BUILDERS
 // #define DEBUG_MDD_H
 // #define TRACK_DELETIONS
@@ -1180,6 +1184,7 @@ class MEDDLY::node_storage {
     // incoming count data
     // --------------------------------------------------
 
+#ifdef INLINED_COUNT
     /// Get the number of incoming pointers to a node.
     node_handle getCountOf(node_address addr) const;
     /// Set the number of incoming pointers to a node.
@@ -1188,13 +1193,28 @@ class MEDDLY::node_storage {
     node_handle incCountOf(node_address addr);
     /// Decrement (and return) the number of incoming pointers to a node.
     node_handle decCountOf(node_address addr);
+#else
+    /// Get the number of incoming pointers to a node.
+    virtual node_handle getCountOf(node_address addr) const;
+    /// Set the number of incoming pointers to a node.
+    virtual void setCountOf(node_address addr, node_handle c);
+    /// Increment (and return) the number of incoming pointers to a node.
+    virtual node_handle incCountOf(node_address addr);
+    /// Decrement (and return) the number of incoming pointers to a node.
+    virtual node_handle decCountOf(node_address addr);
+#endif
 
     // --------------------------------------------------
     // next pointer data
     // --------------------------------------------------
 
+#ifdef INLINED_NEXT
     node_handle getNextOf(node_address addr) const;
     void setNextOf(node_address addr, node_handle n);
+#else
+    virtual node_handle getNextOf(node_address addr) const;
+    virtual void setNextOf(node_address addr, node_handle n);
+#endif
 
   protected:
     /// Dump information not related to individual nodes.

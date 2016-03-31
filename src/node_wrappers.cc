@@ -389,6 +389,60 @@ void MEDDLY::node_storage
   throw error(error::NOT_IMPLEMENTED);
 }
 
+#ifndef INLINED_COUNT
+MEDDLY::node_handle
+MEDDLY::node_storage::getCountOf(node_address addr) const
+{
+  MEDDLY_DCASSERT(counts);
+  MEDDLY_DCASSERT(addr > 0);
+  return counts[addr];
+}
+
+void
+MEDDLY::node_storage::setCountOf(node_address addr, MEDDLY::node_handle c)
+{
+  MEDDLY_DCASSERT(counts);
+  MEDDLY_DCASSERT(addr > 0);
+  counts[addr] = c;
+}
+
+MEDDLY::node_handle
+MEDDLY::node_storage::incCountOf(node_address addr)
+{
+  MEDDLY_DCASSERT(counts);
+  MEDDLY_DCASSERT(addr > 0);
+  return ++counts[addr];
+}
+;
+
+MEDDLY::node_handle
+MEDDLY::node_storage::decCountOf(node_address addr)
+{
+  MEDDLY_DCASSERT(counts);
+  MEDDLY_DCASSERT(addr > 0);
+  return --counts[addr];
+}
+#endif
+
+#ifndef INLINED_NEXT
+MEDDLY::node_handle
+MEDDLY::node_storage::getNextOf(node_address addr) const
+{
+  MEDDLY_DCASSERT(nexts);
+  MEDDLY_DCASSERT(addr > 0);
+  return nexts[addr];
+}
+
+void
+MEDDLY::node_storage::setNextOf(node_address addr, MEDDLY::node_handle n)
+{
+  MEDDLY_DCASSERT(nexts);
+  MEDDLY_DCASSERT(addr > 0);
+  nexts[addr] = n;
+}
+#endif
+
+
 void MEDDLY::node_storage::dumpInternal(output &s, unsigned flags) const
 {
   dumpInternalInfo(s);
