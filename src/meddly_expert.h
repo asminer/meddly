@@ -2647,10 +2647,6 @@ class MEDDLY::satotf_opname : public specialized_opname {
         expert_forest* outsetF;
         int num_levels;
 
-        // Array of events (in no particular order)
-        event** events;
-        int num_events;
-
         // All events that begin at level i,
         // are listed in events_by_top_level[i].
         // An event will appear in only one list

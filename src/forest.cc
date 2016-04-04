@@ -1511,7 +1511,7 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
     validateIncounts(true);
 #endif
   } // try
-  catch (error e) {
+  catch (error& e) {
 #ifdef DEBUG_READ
     printf("Read failed (error: %s)\n", e.getName());
     printf("Failed, next few characters of file:\n");
