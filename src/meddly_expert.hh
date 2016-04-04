@@ -1562,6 +1562,64 @@ MEDDLY::satpregen_opname::pregen_relation::getOutForest() const
 
 // ****************************************************************************
 
+inline MEDDLY::expert_forest*
+MEDDLY::satotf_opname::otf_relation::getInForest() const
+{
+  return insetF;
+}
+
+inline MEDDLY::expert_forest*
+MEDDLY::satotf_opname::otf_relation::getRelForest() const
+{
+  return mxdF;
+}
+
+inline MEDDLY::expert_forest*
+MEDDLY::satotf_opname::otf_relation::getOutForest() const
+{
+  return outsetF;
+}
+
+inline bool
+MEDDLY::satotf_opname::otf_relation::isConfirmed(int level, int i) const
+{
+  if (level < num_levels &&  i >= 0 && i < mxdF->getLevelSize(level)) {
+    return confirmed[level][i];
+  }
+  throw MEDDLY::error::INVALID_ARGUMENT;
+}
+
+inline int
+MEDDLY::satotf_opname::otf_relation::getNumOfEvents(int level)
+{
+  MEDDLY_CHECK_RANGE(1, level, num_levels);
+  return num_events_by_top_level[level];
+}
+
+inline MEDDLY::node_handle
+MEDDLY::satotf_opname::otf_relation::getEvent(int level, int i)
+{
+  MEDDLY_CHECK_RANGE(0, i, getNumOfEvents(level));
+  return events_by_top_level[level][i]->getRoot().getNode();
+}
+
+
+inline bool
+MEDDLY::satotf_opname::otf_relation::rebuildEvent(int level, int i)
+{
+  MEDDLY_CHECK_RANGE(0, i, getNumOfEvents(level));
+  return events_by_top_level[level][i]->rebuild();
+}
+
+inline bool*
+MEDDLY::satotf_opname::otf_relation::getLocalStates(int level)
+{
+  MEDDLY_CHECK_RANGE(0, level, num_levels);
+  return confirmed[level];
+}
+
+// ****************************************************************************
+
 inline MEDDLY::operation*
 MEDDLY::compute_table::search_key::getOp() const
 {

@@ -69,6 +69,7 @@ class MEDDLY::builtin_initializer : public op_initializer {
 
   satpregen_opname* SATURATION_FORWARD;
   satpregen_opname* SATURATION_BACKWARD;
+  satotf_opname* SATURATION_OTF_FORWARD;
 
 public:
   builtin_initializer(op_initializer* b) : op_initializer(b) { }

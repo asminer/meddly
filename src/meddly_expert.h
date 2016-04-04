@@ -163,7 +163,7 @@ namespace MEDDLY {
       Transition relation is not completely known,
       will be built along with reachability set.
   */
-  extern const satotf_opname* SATURATION_OTF;
+  extern const satotf_opname* SATURATION_OTF_FORWARD;
 
   // ******************************************************************
   // *                                                                *
@@ -2501,7 +2501,6 @@ class MEDDLY::satotf_opname : public specialized_opname {
     /// Arguments should have type "otf_relation", below
     virtual specialized_operation* buildOperation(arguments* a) const = 0;
 
-  public:
     class otf_relation;
 
     // ============================================================
@@ -2512,49 +2511,52 @@ class MEDDLY::satotf_opname : public specialized_opname {
         It knows what variables it depends on, and how to build itself
         (provided by the user).
     */
-    class subfunc {
+    class subevent {
       private:
         int* vars;
         int num_vars;
-        dd_edge root;
+        dd_edge* root;
+        int top;
+        expert_forest* f;
 
         // add event parent here
       public:
         /// Constructor, specify variables that this function depends on.
-        subfunc(int* v, int nv);
-        virtual ~subfunc();
+        subevent(forest* f, int* v, int nv);
+        virtual ~subevent();
 
-        /// Get number of variables we depend on
+        /// Get the forest to which this function belongs to.
+        inline expert_forest* getForest() { return f; } 
+
+        /// Get number of variables this function depends on.
         inline int getNumVars() const {
           return num_vars;
         }
 
-        /// Get array of variables we depend on
+        /// Get array of variables this function depends on.
         inline const int* getVars() const {
           return vars;
         }
 
-        /// Get the DD encoding of the current sub-function
-        inline const dd_edge& getRoot() const {
-          return root;
+        /// Get the DD encoding of this function
+        inline dd_edge getRoot() const {
+          return *root;
         }
 
-        /// add getter for parent event
+        /// Get the "top" variable for this function
+        inline int getTop() const {
+          return top;
+        }
 
         /**
-          Update the sub-function, as local states are confirmed.
-        */
-        void update(const otf_relation &rel);
-
-      protected:
-        /**
-          Rebuild the sub-function to include new local states,
-          and return it.
+          Rebuild the function to include the
+          local state "index" for the variable "v".
+          Updates root with the updated function.
           User MUST provide this method.
         */
-        virtual dd_edge& rebuild(const otf_relation &rel) = 0;
+        virtual void confirm(otf_relation &rel, int v, int index) = 0;
 
-    };
+    };  // end of class subevent
 
     // ============================================================
 
@@ -2567,40 +2569,67 @@ class MEDDLY::satotf_opname : public specialized_opname {
     */
     class event {
       private:
-        subfunc** pieces;
-        int num_pieces;
+        subevent** subevents;
+        int num_subevents;
+        int top;
+        int num_vars;
+        int* vars;
+        dd_edge* root;
+        bool needs_rebuilding;
+        expert_forest* f;
 
         // TBD - put a list of events that have priority over this one
 
-        // TBD - list of levels that we depend on - built from pieces
-
+        // TBD - list of levels that we depend on - built from subevents
       public:
-        event(subfunc** p, int np);
+        event(subevent** se, int nse);
         virtual ~event();
 
-        /// Get number of pieces
-        inline int getNumPieces() const {
-          return num_pieces;
+        /// Get the forest to which the subevents belong to
+        inline expert_forest* getForest() { return f; } 
+
+        /// Get number of subevents
+        inline int getNumOfSubevents() const { return num_subevents; }
+
+        /// Get array of subevents
+        inline subevent** getSubevents() const { return subevents; }
+
+        /// Get the "top" variable for this event
+        inline int getTop() const { return top; }
+
+        /// Get the number of variables that are effected by this event
+        inline int getNumVars() const { return num_vars; }
+
+        /// Get a (sorted) array of variables that are effected by this event
+        inline const int* getVars() const { return vars; }
+
+        inline const dd_edge& getRoot() const { return *root; }
+
+        inline bool needsRebuilding() const {
+          return needs_rebuilding;
         }
 
-        /// Get array of subfuncs
-        inline subfunc** getPieces() const {
-          return pieces;
+        inline void markForRebuilding() {
+          needs_rebuilding = true;
         }
 
         /**
-            Rebuild the relation due to this event, from its sub-functions.
-            Default assumes that we take the conjunction of all the parts;
-            but users can override this behavior.
+            If this event has been marked for rebuilding:
+              Build this event as a conjunction of its sub-events.
 
-              @param  e   Relation is written to this edge.
+            @return               true, if the event needed rebuilding and
+                                        the rebuilding modified the root.
+                                  false, otherwise.
         */
-        virtual void rebuild(dd_edge &e);
+        virtual bool rebuild();
+
+        /// Enlarges the "from" variable to be the same size as the "to" variable
+        void enlargeVariables();
 
 
         // TBD - for priority - when is this event enabled?
 
-    };
+    };  // end of class event
 
     // ============================================================
 
@@ -2611,23 +2640,43 @@ class MEDDLY::satotf_opname : public specialized_opname {
 
         TBD.
     */
-    class otf_relation {
+    class otf_relation : public specialized_opname::arguments {
       private:
-        forest* insetF;
-        forest* mxdF;
-        forest* outsetF;
-        int K;
+        expert_forest* insetF;
+        expert_forest* mxdF;
+        expert_forest* outsetF;
+        int num_levels;
 
+        // Array of events (in no particular order)
         event** events;
         int num_events;
 
-        //
-        // For each level, list of pieces to update
-        // if that level changes.
-        subfunc** pieces;
-        int* piecesForLevel;
+        // All events that begin at level i,
+        // are listed in events_by_top_level[i].
+        // An event will appear in only one list
+        // (as there is only one top level per event).
+        // num_events_by_top_level[i] gives the size of events_by_top_level[i]
+        event*** events_by_top_level;
+        int *num_events_by_top_level;
 
-        // TBD - for each level, list of events to update
+        // All events that depend on a level i,
+        // are listed in events_by_level[i]
+        // Therefore, an event that depends on n levels,
+        // will appear in n lists
+        // num_events_by_level[i] gives the size of events_by_level[i]
+        event*** events_by_level;
+        int *num_events_by_level;
+
+        // All subevents that depend on a level i,
+        // are listed in subevents_by_level[i]
+        // Therefore, an subevent that depends on n levels,
+        // will appear in n lists
+        // num_subevents_by_level[i] gives the size of subevents_by_level[i]
+        subevent*** subevents_by_level;
+        int *num_subevents_by_level;
+
+        // List of confirmed local states at each level
+        bool** confirmed;
 
       public:
         /** Constructor.
@@ -2641,9 +2690,61 @@ class MEDDLY::satotf_opname : public specialized_opname {
           event** E, int ne);
 
         virtual ~otf_relation();
-    };
 
-};
+        /// Returns the MDD forest that stores the initial set of states
+        expert_forest* getInForest() const;
+
+        /// Returns the MXD forest that stores the events
+        expert_forest* getRelForest() const;
+
+        /// Returns the MDD forest that stores the resultant set of states
+        expert_forest* getOutForest() const;
+
+        /// Returns true if the local state is already confirmed.
+        bool isConfirmed(int level, int index) const;
+
+        /// Returns an array of local states for this level, such that
+        /// result[i] == isConfirmed(level, i).
+        bool* getLocalStates(int level);
+
+        /** Confirm a variable's previously unconfirmed state.
+            Any event that is dependent on this variable is marked
+            as "stale" --- so that it is rebuilt before use.
+
+            @param  level       variable's level
+            @param  index       the state of the variable being confirmed.
+            @return             false: if state was previously confirmed.
+                                true: if state was previously unconfirmed.
+         */
+        bool confirm(int level, int index);
+
+        /** Get the number of events at whose "top" is this level.
+
+            @param  level       level for the events.
+            @return             number of events whose "top" is this level.
+         */
+        int getNumOfEvents(int level);
+
+        /** Gets an event from the set of events whose "top" is this level.
+
+            @param  level       level for the events.
+            @param  i           index of the event.
+            @return             if 0 <= i < getNumOfEvents(level),
+                                the ith event at this level;
+                                otherwise, 0.
+         */
+        node_handle getEvent(int level, int i);
+
+        /** Rebuild an event.
+
+            @param  i           index of the event.
+            @return             true, if event was updated.
+          */
+        bool rebuildEvent(int level, int i);
+
+    };  // end of class otf_relation
+
+};  // end of class satotf_opname
 
 // ******************************************************************
 // *                                                                *

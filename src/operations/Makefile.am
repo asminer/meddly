@@ -40,6 +40,7 @@ libops_la_SOURCES = \
   reach_bfs.h       reach_bfs.cc    \
   reach_dfs.h       reach_dfs.cc    \
   sat_pregen.h      sat_pregen.cc   \
+  sat_otf.h         sat_otf.cc      \
   \
   vect_matr.h       vect_matr.cc    \
   \
