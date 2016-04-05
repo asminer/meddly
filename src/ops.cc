@@ -888,7 +888,7 @@ bool MEDDLY::satotf_opname::otf_relation::confirm(int level, int index)
 }
 
 
-void findConfirmedStates(MEDDLY::expert_forest* insetF,
+void findConfirmedStates(MEDDLY::satotf_opname::otf_relation* rel,
     bool** confirmed, int* num_confirmed,
     MEDDLY::node_handle mdd, int level,
     std::set<MEDDLY::node_handle>& visited) {
@@ -896,28 +896,27 @@ void findConfirmedStates(MEDDLY::expert_forest* insetF,
   if (visited.find(mdd) != visited.end()) return;
   visited.insert(mdd);
 
+  MEDDLY::expert_forest* insetF = rel->getInForest();
   int mdd_level = insetF->getNodeLevel(mdd);
   if (MEDDLY::isLevelAbove(level, mdd_level)) {
     // skipped level; confirm all local states at this level
+    // go to the next level
+    findConfirmedStates(rel, confirmed, num_confirmed, mdd, level-1, visited);
     int level_size = insetF->getLevelSize(level);
     for (int i = 0; i < level_size; i++) {
       if (!confirmed[level][i]) {
-        confirmed[level][i] = true;
-        num_confirmed[level]++;
+        rel->confirm(level, i);
       }
     }
-    // go to the next level
-    findConfirmedStates(insetF, confirmed, num_confirmed, mdd, level-1, visited);
   } else {
     if (MEDDLY::isLevelAbove(mdd_level, level)) throw MEDDLY::error::INVALID_VARIABLE;
     // mdd_level == level
     MEDDLY::node_reader* nr = insetF->initNodeReader(mdd, false);
     for (int i = 0; i < nr->getNNZs(); i++) {
+      findConfirmedStates(rel, confirmed, num_confirmed, nr->d(i), level-1, visited);
       if (!confirmed[level][nr->i(i)]) {
-        confirmed[level][nr->i(i)] = true;
-        num_confirmed[level]++;
+        rel->confirm(level, nr->i(i));
       }
-      findConfirmedStates(insetF, confirmed, num_confirmed, nr->d(i), level-1, visited);
     }
   }
 }
@@ -933,7 +932,8 @@ void MEDDLY::satotf_opname::otf_relation::confirm(const dd_edge& set)
       enlargeConfirmedArrays(i);
   }
   std::set<node_handle> visited;
-  findConfirmedStates(insetF, confirmed, num_confirmed, set.getNode(), num_levels-1, visited);
+  findConfirmedStates(const_cast<otf_relation*>(this),
+      confirmed, num_confirmed, set.getNode(), num_levels-1, visited);
 }
 
 void MEDDLY::satotf_opname::otf_relation::enlargeConfirmedArrays(int level)
