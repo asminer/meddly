@@ -2512,41 +2512,25 @@ class MEDDLY::satotf_opname : public specialized_opname {
         (provided by the user).
     */
     class subevent {
-      private:
-        int* vars;
-        int num_vars;
-        dd_edge* root;
-        int top;
-        expert_forest* f;
-
-        // add event parent here
       public:
         /// Constructor, specify variables that this function depends on.
         subevent(forest* f, int* v, int nv);
         virtual ~subevent();
 
         /// Get the forest to which this function belongs to.
-        inline expert_forest* getForest() { return f; } 
+        expert_forest* getForest();
 
         /// Get number of variables this function depends on.
-        inline int getNumVars() const {
-          return num_vars;
-        }
+        int getNumVars() const;
 
         /// Get array of variables this function depends on.
-        inline const int* getVars() const {
-          return vars;
-        }
+        const int* getVars() const;
 
         /// Get the DD encoding of this function
-        inline dd_edge getRoot() const {
-          return *root;
-        }
+        const dd_edge& getRoot();
 
         /// Get the "top" variable for this function
-        inline int getTop() const {
-          return top;
-        }
+        int getTop() const;
 
         /**
           Rebuild the function to include the
@@ -2555,6 +2539,16 @@ class MEDDLY::satotf_opname : public specialized_opname {
           User MUST provide this method.
         */
         virtual void confirm(otf_relation &rel, int v, int index) = 0;
+
+      protected:
+        void setRoot(const dd_edge& dd);
+
+      private:
+        int* vars;
+        int num_vars;
+        dd_edge root;
+        int top;
+        expert_forest* f;
 
     };  // end of class subevent
 
@@ -2568,19 +2562,9 @@ class MEDDLY::satotf_opname : public specialized_opname {
         or will one giant list work fine?
     */
     class event {
-      private:
-        subevent** subevents;
-        int num_subevents;
-        int top;
-        int num_vars;
-        int* vars;
-        dd_edge* root;
-        bool needs_rebuilding;
-        expert_forest* f;
-
         // TBD - put a list of events that have priority over this one
 
-        // TBD - list of levels that we depend on - built from subevents
+        // TBD - for priority - when is this event enabled?
       public:
         event(subevent** se, int nse);
         virtual ~event();
@@ -2603,15 +2587,11 @@ class MEDDLY::satotf_opname : public specialized_opname {
         /// Get a (sorted) array of variables that are effected by this event
         inline const int* getVars() const { return vars; }
 
-        inline const dd_edge& getRoot() const { return *root; }
+        inline const dd_edge& getRoot() const { return root; }
 
-        inline bool needsRebuilding() const {
-          return needs_rebuilding;
-        }
+        inline bool needsRebuilding() const { return needs_rebuilding; }
 
-        inline void markForRebuilding() {
-          needs_rebuilding = true;
-        }
+        inline void markForRebuilding() { needs_rebuilding = true; }
 
         /**
             If this event has been marked for rebuilding:
@@ -2627,7 +2607,15 @@ class MEDDLY::satotf_opname : public specialized_opname {
         void enlargeVariables();
 
 
-        // TBD - for priority - when is this event enabled?
+      private:
+        subevent** subevents;
+        int num_subevents;
+        int top;
+        int num_vars;
+        int* vars;
+        dd_edge root;
+        bool needs_rebuilding;
+        expert_forest* f;
 
     };  // end of class event
 
@@ -2641,39 +2629,6 @@ class MEDDLY::satotf_opname : public specialized_opname {
         TBD.
     */
     class otf_relation : public specialized_opname::arguments {
-      private:
-        expert_forest* insetF;
-        expert_forest* mxdF;
-        expert_forest* outsetF;
-        int num_levels;
-
-        // All events that begin at level i,
-        // are listed in events_by_top_level[i].
-        // An event will appear in only one list
-        // (as there is only one top level per event).
-        // num_events_by_top_level[i] gives the size of events_by_top_level[i]
-        event*** events_by_top_level;
-        int *num_events_by_top_level;
-
-        // All events that depend on a level i,
-        // are listed in events_by_level[i]
-        // Therefore, an event that depends on n levels,
-        // will appear in n lists
-        // num_events_by_level[i] gives the size of events_by_level[i]
-        event*** events_by_level;
-        int *num_events_by_level;
-
-        // All subevents that depend on a level i,
-        // are listed in subevents_by_level[i]
-        // Therefore, an subevent that depends on n levels,
-        // will appear in n lists
-        // num_subevents_by_level[i] gives the size of subevents_by_level[i]
-        subevent*** subevents_by_level;
-        int *num_subevents_by_level;
-
-        // List of confirmed local states at each level
-        bool** confirmed;
-
       public:
         /** Constructor.
               @param  inmdd       MDD forest containing initial states
@@ -2701,7 +2656,13 @@ class MEDDLY::satotf_opname : public specialized_opname {
 
         /// Returns an array of local states for this level, such that
         /// result[i] == isConfirmed(level, i).
-        bool* getLocalStates(int level);
+        const bool* getLocalStates(int level);
+
+        /// Returns the number of confirmed states at this level
+        int getNumConfirmed(int level) const;
+
+        /// Confirms all local states enabled in the given MDD
+        void confirm(const dd_edge& set);
 
         /** Confirm a variable's previously unconfirmed state.
             Any event that is dependent on this variable is marked
@@ -2737,6 +2698,44 @@ class MEDDLY::satotf_opname : public specialized_opname {
             @return             true, if event was updated.
           */
         bool rebuildEvent(int level, int i);
+
+      protected:
+        void enlargeConfirmedArrays(int level);
+
+      private:
+        expert_forest* insetF;
+        expert_forest* mxdF;
+        expert_forest* outsetF;
+        int num_levels;
+
+        // All events that begin at level i,
+        // are listed in events_by_top_level[i].
+        // An event will appear in only one list
+        // (as there is only one top level per event).
+        // num_events_by_top_level[i] gives the size of events_by_top_level[i]
+        event*** events_by_top_level;
+        int *num_events_by_top_level;
+
+        // All events that depend on a level i,
+        // are listed in events_by_level[i]
+        // Therefore, an event that depends on n levels,
+        // will appear in n lists
+        // num_events_by_level[i] gives the size of events_by_level[i]
+        event*** events_by_level;
+        int *num_events_by_level;
+
+        // All subevents that depend on a level i,
+        // are listed in subevents_by_level[i]
+        // Therefore, an subevent that depends on n levels,
+        // will appear in n lists
+        // num_subevents_by_level[i] gives the size of subevents_by_level[i]
+        subevent*** subevents_by_level;
+        int *num_subevents_by_level;
+
+        // List of confirmed local states at each level
+        bool** confirmed;
+        int* size_confirmed;
+        int* num_confirmed;
 
     };  // end of class otf_relation
 

@@ -1563,6 +1563,38 @@ MEDDLY::satpregen_opname::pregen_relation::getOutForest() const
 // ****************************************************************************
 
 inline MEDDLY::expert_forest*
+MEDDLY::satotf_opname::subevent::getForest() {
+  return f;
+} 
+
+inline int
+MEDDLY::satotf_opname::subevent::getNumVars() const {
+  return num_vars;
+}
+
+inline const int*
+MEDDLY::satotf_opname::subevent::getVars() const {
+  return vars;
+}
+
+inline const MEDDLY::dd_edge&
+MEDDLY::satotf_opname::subevent::getRoot() {
+  return root;
+}
+
+inline int
+MEDDLY::satotf_opname::subevent::getTop() const {
+  return top;
+}
+
+inline void
+MEDDLY::satotf_opname::subevent::setRoot(const MEDDLY::dd_edge& dd) {
+  root = dd;
+}
+
+// ****************************************************************************
+
+inline MEDDLY::expert_forest*
 MEDDLY::satotf_opname::otf_relation::getInForest() const
 {
   return insetF;
@@ -1611,11 +1643,18 @@ MEDDLY::satotf_opname::otf_relation::rebuildEvent(int level, int i)
   return events_by_top_level[level][i]->rebuild();
 }
 
-inline bool*
+inline const bool*
 MEDDLY::satotf_opname::otf_relation::getLocalStates(int level)
 {
   MEDDLY_CHECK_RANGE(0, level, num_levels);
   return confirmed[level];
+}
+
+inline int
+MEDDLY::satotf_opname::otf_relation::getNumConfirmed(int level) const
+{
+  MEDDLY_CHECK_RANGE(0, level, num_levels);
+  return num_confirmed[level];
 }
 
 // ****************************************************************************

@@ -597,7 +597,7 @@ MEDDLY::satotf_opname::~satotf_opname()
 // ============================================================
 
 MEDDLY::satotf_opname::subevent::subevent(forest* f, int* v, int nv)
-: vars(0), num_vars(nv), root(0), top(0), f(static_cast<expert_forest*>(f))
+: vars(0), num_vars(nv), root(dd_edge(f)), top(0), f(static_cast<expert_forest*>(f))
 {
   MEDDLY_DCASSERT(f != 0);
   MEDDLY_DCASSERT(v != 0);
@@ -616,7 +616,6 @@ MEDDLY::satotf_opname::subevent::subevent(forest* f, int* v, int nv)
 MEDDLY::satotf_opname::subevent::~subevent()
 {
   if (vars) delete [] vars;
-  if (root) delete root;
 }
 
 void MEDDLY::satotf_opname::subevent::confirm(otf_relation& rel, int v, int i) {
@@ -659,13 +658,12 @@ MEDDLY::satotf_opname::event::event(subevent** p, int np)
     *curr++ = *it++;
   }
 
-  root = 0;
+  root = dd_edge(f);
   needs_rebuilding = true;
 }
 
 MEDDLY::satotf_opname::event::~event()
 {
-  delete root;
   for (int i=0; i<num_subevents; i++) delete subevents[i];
   delete[] subevents;
 }
@@ -682,15 +680,9 @@ bool MEDDLY::satotf_opname::event::rebuild()
     e *= subevents[i]->getRoot();
   }
 
-  bool changed = false;
-  if (root == 0) {
-    changed = true;
-    root = new dd_edge(e);
-  } else if (e != *root) {
-    changed = true;
-    *root = e;
-  }
-  return changed;
+  if (e == root) return false;
+  root = e;
+  return true;
 }
 
 void MEDDLY::satotf_opname::event::enlargeVariables()
@@ -747,8 +739,8 @@ MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd,
 
   // Build the events-per-level data structure
   // (0) Initialize
-  int* num_events_by_top_level = new int[num_levels];
-  int* num_events_by_level = new int[num_levels];
+  num_events_by_top_level = new int[num_levels];
+  num_events_by_level = new int[num_levels];
   memset(num_events_by_top_level, 0, sizeof(int)*num_levels);
   memset(num_events_by_level, 0, sizeof(int)*num_levels);
 
@@ -789,7 +781,7 @@ MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd,
 
   // Build the subevents-per-level data structure
   // (0) Initialize
-  int* num_subevents_by_level = new int[num_levels];
+  num_subevents_by_level = new int[num_levels];
   memset(num_subevents_by_level, 0, sizeof(int)*num_levels);
 
   // (1) Determine the number of subevents per level
@@ -827,6 +819,21 @@ MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd,
     }
   }
 
+  // confirmed local states
+  confirmed = new bool*[num_levels];
+  size_confirmed = new int[num_levels];
+  num_confirmed = new int[num_levels];
+  confirmed[0] = 0;
+  for (int i = 1; i < num_levels; i++) {
+    int level_size = mxdF->getLevelSize(-i);
+    confirmed[i] = (bool*) malloc(level_size * sizeof(bool));
+    for (int j = 0; j < level_size; j++) {
+      confirmed[i][j] = false;
+    }
+    size_confirmed[i] = level_size;
+    num_confirmed[i] = 0;
+  }
+
   // TBD - debug here
 }
 
@@ -836,6 +843,7 @@ MEDDLY::satotf_opname::otf_relation::~otf_relation()
     delete[] subevents_by_level[i];
     delete[] events_by_level[i];
     delete[] events_by_top_level[i];
+    free(confirmed[i]);
   }
   delete[] subevents_by_level;
   delete[] events_by_level;
@@ -843,6 +851,9 @@ MEDDLY::satotf_opname::otf_relation::~otf_relation()
   delete[] num_subevents_by_level;
   delete[] num_events_by_level;
   delete[] num_events_by_top_level;
+  delete[] confirmed;
+  delete[] size_confirmed;
+  delete[] num_confirmed;
 }
 
 bool MEDDLY::satotf_opname::otf_relation::confirm(int level, int index)
@@ -852,7 +863,10 @@ bool MEDDLY::satotf_opname::otf_relation::confirm(int level, int index)
   //    (2) for each level k affected by the subevent,
   //        (a) enlarge variable bound of k to variable bound of k'
 
- if (isConfirmed(level, index)) return false; 
+  if (size_confirmed[level] < mxdF->getLevelSize(-level))
+    enlargeConfirmedArrays(level);
+
+  if (isConfirmed(level, index)) return false; 
 
   // Get subevents affected by this level, and rebuild them.
   int nSubevents = num_subevents_by_level[level];
@@ -869,9 +883,69 @@ bool MEDDLY::satotf_opname::otf_relation::confirm(int level, int index)
   }
 
   confirmed[level][index] = true;
+  num_confirmed[level]++;
   return true;
 }
 
+
+void findConfirmedStates(MEDDLY::expert_forest* insetF,
+    bool** confirmed, int* num_confirmed,
+    MEDDLY::node_handle mdd, int level,
+    std::set<MEDDLY::node_handle>& visited) {
+  if (level == 0) return;
+  if (visited.find(mdd) != visited.end()) return;
+  visited.insert(mdd);
+
+  int mdd_level = insetF->getNodeLevel(mdd);
+  if (MEDDLY::isLevelAbove(level, mdd_level)) {
+    // skipped level; confirm all local states at this level
+    int level_size = insetF->getLevelSize(level);
+    for (int i = 0; i < level_size; i++) {
+      if (!confirmed[level][i]) {
+        confirmed[level][i] = true;
+        num_confirmed[level]++;
+      }
+    }
+    // go to the next level
+    findConfirmedStates(insetF, confirmed, num_confirmed, mdd, level-1, visited);
+  } else {
+    if (MEDDLY::isLevelAbove(mdd_level, level)) throw MEDDLY::error::INVALID_VARIABLE;
+    // mdd_level == level
+    MEDDLY::node_reader* nr = insetF->initNodeReader(mdd, false);
+    for (int i = 0; i < nr->getNNZs(); i++) {
+      if (!confirmed[level][nr->i(i)]) {
+        confirmed[level][nr->i(i)] = true;
+        num_confirmed[level]++;
+      }
+      findConfirmedStates(insetF, confirmed, num_confirmed, nr->d(i), level-1, visited);
+    }
+  }
+}
+
+void MEDDLY::satotf_opname::otf_relation::confirm(const dd_edge& set)
+{
+  // Perform a depth-first traversal of set:
+  //    At each level, mark all enabled states as confirmed.
+
+  // Enlarge the confirmed arrays if needed
+  for (int i = 1; i < num_levels; i++) {
+    if (size_confirmed[i] < mxdF->getLevelSize(-i))
+      enlargeConfirmedArrays(i);
+  }
+  std::set<node_handle> visited;
+  findConfirmedStates(insetF, confirmed, num_confirmed, set.getNode(), num_levels-1, visited);
+}
+
+void MEDDLY::satotf_opname::otf_relation::enlargeConfirmedArrays(int level)
+{
+  int curr = size_confirmed[level];
+  int needed = mxdF->getLevelSize(-level);
+  int new_size = curr*2 < needed? needed: curr*2;
+  confirmed[level] = (bool*) realloc(confirmed, new_size * sizeof(bool));
+  if (confirmed[level] == 0) throw error::INSUFFICIENT_MEMORY;
+  for ( ; curr < new_size; ) confirmed[level][curr++] = false;
+  size_confirmed[level] = curr;
+}
 
 // ******************************************************************
 // *                       operation  methods                       *
