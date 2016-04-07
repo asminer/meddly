@@ -538,19 +538,26 @@ MEDDLY::forwd_otf_dfs_by_events_mt::forwd_otf_dfs_by_events_mt(
 
 void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(node_builder& nb)
 {
-  int nEventsAtThisLevel = rel->getNumOfEvents(nb.getLevel());
+  int level = nb.getLevel();
+  int nEventsAtThisLevel = rel->getNumOfEvents(level);
   if (0 == nEventsAtThisLevel) return;
 
   // Initialize mxd readers, note we might skip the unprimed level
   node_reader** Ru = new node_reader*[nEventsAtThisLevel];
   for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
-    rel->rebuildEvent(nb.getLevel(), ei);
-    node_handle mxd = rel->getEvent(nb.getLevel(), ei);
-    int eventLevel = arg2F->getNodeLevel(mxd);
-    MEDDLY_DCASSERT(ABS(eventLevel) == nb.getLevel());
-    Ru[ei] = (eventLevel<0)
-      ? arg2F->initRedundantReader(nb.getLevel(), mxd, true)
-      : arg2F->initNodeReader(mxd, true);
+    rel->rebuildEvent(level, ei);
+    node_handle mxd = rel->getEvent(level, ei);
+    if (0==mxd) {
+      printf("ZERO EVENT FOUND!\n");
+      Ru[ei] = 0;
+    } else {
+      printf("NON-ZERO EVENT FOUND!\n");
+      int eventLevel = arg2F->getNodeLevel(mxd);
+      MEDDLY_DCASSERT(ABS(eventLevel) == level);
+      Ru[ei] = (eventLevel<0)
+        ? arg2F->initRedundantReader(level, mxd, true)
+        : arg2F->initNodeReader(mxd, true);
+    }
   }
   node_reader* Rp = node_reader::useReader();
 
@@ -574,25 +581,32 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(node_builder& nb)
       // If event i needs rebuilding,
       //    Rebuild it, and
       //    Update the event reader
-      if (rel->rebuildEvent(nb.getLevel(), ei)) {
-        node_handle mxd = rel->getEvent(nb.getLevel(), ei);
-        int eventLevel = arg2F->getNodeLevel(mxd);
-        MEDDLY_DCASSERT(ABS(eventLevel) == nb.getLevel());
-        if (eventLevel<0)
-          arg2F->initRedundantReader(*Ru[ei], nb.getLevel(), mxd, true);
-        else
-          arg2F->initNodeReader(*Ru[ei], mxd, true);
+      if (rel->rebuildEvent(level, ei)) {
+        node_handle mxd = rel->getEvent(level, ei);
+        if (0==mxd) {
+          printf("ZERO EVENT FOUND!\n");
+          MEDDLY_DCASSERT(0==Ru[ei]);
+          Ru[ei] = 0;
+        } else {
+          printf("NON-ZERO EVENT FOUND!\n");
+          int eventLevel = arg2F->getNodeLevel(mxd);
+          MEDDLY_DCASSERT(ABS(eventLevel) == level);
+          if (eventLevel<0)
+            arg2F->initRedundantReader(*Ru[ei], level, mxd, true);
+          else
+            arg2F->initNodeReader(*Ru[ei], mxd, true);
+        }
       }
-
+      if (0 == Ru[ei]) continue;
       if (0 == Ru[ei]->d(i)) continue;  // row i of the event ei is empty
 
       // grab column (TBD: build these ahead of time?)
       int dlevel = arg2F->getNodeLevel(Ru[ei]->d(i));
 
-      if (dlevel == -nb.getLevel()) {
+      if (dlevel == -level) {
         arg2F->initNodeReader(*Rp, Ru[ei]->d(i), false);
       } else {
-        arg2F->initIdentityReader(*Rp, -nb.getLevel(), i, Ru[ei]->d(i), false);
+        arg2F->initIdentityReader(*Rp, -level, i, Ru[ei]->d(i), false);
       }
 
       for (int jz=0; jz<Rp->getNNZs(); jz++) {
@@ -603,7 +617,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(node_builder& nb)
 
         if (rec == 0) continue;
 
-        if (rel->confirm(nb.getLevel(), j)) {
+        if (rel->confirm(level, j)) {
           // Newly confirmed local state
           // Node builder must expand to accomodate j
           if (j >= nb.getSize()) {
@@ -751,7 +765,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
         node_handle newstates = recFire(A->d(i), Rp->d(jz));
         if (0==newstates) continue;
 
-        if (rel->confirm(nb.getLevel(), j)) {
+        if (rel->confirm(rLevel, j)) {
           // Newly confirmed local state
           // Node builder must expand to accomodate j
           if (j >= nb.getSize()) {
