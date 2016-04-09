@@ -24,7 +24,7 @@
 
 namespace MEDDLY {
   class unary_opname;
-  class settings;
+  struct settings;
 
   /// Set up a unary_opname for the "maxrange" operation.
   unary_opname* initializeMaxRange(const settings &s);

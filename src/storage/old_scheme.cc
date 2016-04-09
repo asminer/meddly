@@ -187,8 +187,8 @@ void MEDDLY::old_node_storage::collectGarbage(bool shrink)
 void MEDDLY::old_node_storage
 ::reportStats(output &s, const char* pad, unsigned flags) const
 {
-  static unsigned STORAGE =
-    expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED;
+  // static unsigned STORAGE =
+  //  expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED;
   static unsigned HOLE_MANAGER =
     expert_forest::HOLE_MANAGER_STATS | expert_forest::HOLE_MANAGER_DETAILED;
 

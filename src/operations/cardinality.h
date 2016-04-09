@@ -24,7 +24,7 @@
 
 namespace MEDDLY {
   class unary_opname;
-  class settings;
+  struct settings;
 
   /// Minimalist interface.
   /// Set up a unary_opname for the "cardinality" operation.

@@ -24,7 +24,7 @@
 
 namespace MEDDLY {
   class binary_opname;
-  class settings;
+  struct settings;
 
   /// Set up a binary_opname for the "greater than equal" operator.
   binary_opname* initializeGE(const settings &s);

@@ -24,7 +24,7 @@
 
 namespace MEDDLY {
   class satotf_opname;
-  class settings;
+  struct settings;
   
   /// Set up a numerical_opname for "forward saturation".
   satotf_opname* initOtfSaturationForward(const settings &s);
