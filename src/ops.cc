@@ -669,12 +669,10 @@ bool MEDDLY::satotf_opname::subevent::addMinterm(const int* from, const int* to)
   expert_domain* d = static_cast<expert_domain*>(f->useDomain());
   for (int i = num_vars - 1; i >= 0; i--) {
     int level = vars[i];
-    // expand "to" first, since they are usually larger
+    // expand "to" since the set of unconfirmed local states is always larger
     if (to[level] > 0 && to[level] >= f->getLevelSize(-level)) {
-      d->enlargeVariableBound(level, true, 1+to[level]);
-    }
-    if (from[level] > 0 && from[level] >= f->getLevelSize(level)) {
-      d->enlargeVariableBound(level, false, 1+from[level]);
+      //d->enlargeVariableBound(level, true, 1+to[level]);
+      d->enlargeVariableBound(level, false, 1+to[level]);
     }
   }
   num_minterms++;
@@ -718,6 +716,7 @@ void MEDDLY::satotf_opname::subevent::showInfo(output& out) const {
     }
     out << "]\n";
   }
+  root.show(out, 2);
 }
 
 // ============================================================
@@ -814,7 +813,7 @@ void MEDDLY::satotf_opname::event::enlargeVariables()
 
 void MEDDLY::satotf_opname::event::showInfo(output& out) const {
   for (int i = 0; i < num_subevents; i++) {
-    out << "Minters for subevent " << i << "\n";
+    out << "subevent " << i << "\n";
     subevents[i]->showInfo(out);
   }
 }
@@ -1085,6 +1084,11 @@ void MEDDLY::satotf_opname::otf_relation::enlargeConfirmedArrays(int level, int 
 
 void MEDDLY::satotf_opname::otf_relation::showInfo(output &strm) const
 {
+  for (int level = 1; level < num_levels; level++) {
+    for (int ei = 0; ei < getNumOfEvents(level); ei++) {
+      events_by_top_level[level][ei]->rebuild();
+    }
+  }
   strm << "On-the-fly relation info:\n";
   for (int level = 1; level < num_levels; level++) {
     for (int ei = 0; ei < getNumOfEvents(level); ei++) {
