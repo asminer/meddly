@@ -447,8 +447,18 @@ void MEDDLY::common_otf_dfs_by_events_mt
 
   // Execute saturation operation
   otfsat_by_events_op* so = new otfsat_by_events_op(this, arg1F, resF);
+#if 0
   node_handle cnode = so->saturate(a.getNode());
   c.set(cnode);
+#else
+  node_handle prev = 0;
+  node_handle curr = a.getNode();
+  while (prev != curr) {
+    prev = curr;
+    curr = so->saturate(prev);
+  }
+  c.set(curr);
+#endif
 
   // Cleanup
   while (freeqs) {
@@ -585,8 +595,10 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(node_builder& nb)
         node_handle mxd = rel->getEvent(level, ei);
         if (0==mxd) {
           printf("ZERO EVENT FOUND!\n");
-          MEDDLY_DCASSERT(0==Ru[ei]);
-          Ru[ei] = 0;
+          if (Ru[ei]) {
+            node_reader::recycle(Ru[ei]);
+            Ru[ei] = 0;
+          }
         } else {
           printf("NON-ZERO EVENT FOUND!\n");
           int eventLevel = arg2F->getNodeLevel(mxd);
@@ -597,8 +609,8 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(node_builder& nb)
             arg2F->initNodeReader(*Ru[ei], mxd, true);
         }
       }
-      if (0 == Ru[ei]) continue;
-      if (0 == Ru[ei]->d(i)) continue;  // row i of the event ei is empty
+      // check if row i of the event ei is empty
+      if (0 == Ru[ei] || i >= Ru[ei]->getSize() || 0 == Ru[ei]->d(i)) continue;
 
       // grab column (TBD: build these ahead of time?)
       int dlevel = arg2F->getNodeLevel(Ru[ei]->d(i));
@@ -611,7 +623,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(node_builder& nb)
 
       for (int jz=0; jz<Rp->getNNZs(); jz++) {
         int j = Rp->i(jz);
-        if (-1==nb.d(j)) continue;  // nothing can be added to this set
+        if (j < nb.getSize() && -1==nb.d(j)) continue;  // nothing can be added to this set
 
         node_handle rec = recFire(nb.d(i), Rp->d(jz));
 
@@ -710,11 +722,12 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
   printf("\n");
 #endif
 
+  mxd = arg2F->linkNode(mxd);
+
   // check if mxd and mdd are at the same level
   int mddLevel = arg1F->getNodeLevel(mdd);
   int mxdLevel = arg2F->getNodeLevel(mxd);
   int rLevel = MAX(ABS(mxdLevel), mddLevel);
-  MEDDLY_DCASSERT (arg2F->getLevelSize(rLevel) == arg2F->getLevelSize(-rLevel));
   int rSize = resF->getLevelSize(rLevel);
   node_builder& nb = resF->useNodeBuilder(rLevel, rSize);
 
@@ -769,7 +782,6 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
           // Newly confirmed local state
           // Node builder must expand to accomodate j
           if (j >= nb.getSize()) {
-            assert(false);
             int oldSize = nb.getSize();
             // resize the node builder, and clear out the new entries
             nb.resize(j+1);

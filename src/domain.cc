@@ -328,11 +328,13 @@ void MEDDLY::domain::showInfo(output &strm)
           << "\t\t" << vars[i]->getBound(1) << "\n";
   }
 
+#if 0
   // call showNodes for each of the forests in this domain.
   for (int i = 0; i < szForests; i++) {
     if (forests[i] != 0)
       forests[i]->showInfo(strm, 2);
   }
+#endif
 }
 
 void MEDDLY::domain::unlinkForest(forest* f, int slot)

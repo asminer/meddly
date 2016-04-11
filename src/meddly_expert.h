@@ -2527,7 +2527,7 @@ class MEDDLY::satotf_opname : public specialized_opname {
         const int* getVars() const;
 
         /// Get the DD encoding of this function
-        const dd_edge& getRoot();
+        const dd_edge& getRoot() const;
 
         /// Get the "top" variable for this function
         int getTop() const;
@@ -2540,15 +2540,26 @@ class MEDDLY::satotf_opname : public specialized_opname {
         */
         virtual void confirm(otf_relation &rel, int v, int index) = 0;
 
-      protected:
-        void setRoot(const dd_edge& dd);
+        /// If num_minterms > 0,
+        ///   Add all minterms to the root
+        ///   Delete all minterms.
+        void buildRoot();
 
-      private:
+        /// Debugging info
+        void showInfo(output& out) const;
+
+      protected:
+        bool addMinterm(const int* from, const int* to);
+
         int* vars;
         int num_vars;
         dd_edge root;
         int top;
         expert_forest* f;
+        int** unpminterms;
+        int** pminterms;
+        int num_minterms;
+        int size_minterms;
 
     };  // end of class subevent
 
@@ -2605,6 +2616,9 @@ class MEDDLY::satotf_opname : public specialized_opname {
 
         /// Enlarges the "from" variable to be the same size as the "to" variable
         void enlargeVariables();
+
+        /// Debugging info
+        void showInfo(output& out) const;
 
 
       private:
@@ -2680,7 +2694,7 @@ class MEDDLY::satotf_opname : public specialized_opname {
             @param  level       level for the events.
             @return             number of events whose "top" is this level.
          */
-        int getNumOfEvents(int level);
+        int getNumOfEvents(int level) const;
 
         /** Gets an event from the set of events whose "top" is this level.
 
@@ -2699,8 +2713,11 @@ class MEDDLY::satotf_opname : public specialized_opname {
           */
         bool rebuildEvent(int level, int i);
 
+        /// For Debugging
+        void showInfo(output &strm) const;
+
       protected:
-        void enlargeConfirmedArrays(int level);
+        void enlargeConfirmedArrays(int level, int sz);
 
       private:
         expert_forest* insetF;
