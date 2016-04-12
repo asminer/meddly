@@ -603,10 +603,16 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(node_builder& nb)
           printf("NON-ZERO EVENT FOUND!\n");
           int eventLevel = arg2F->getNodeLevel(mxd);
           MEDDLY_DCASSERT(ABS(eventLevel) == level);
-          if (eventLevel<0)
-            arg2F->initRedundantReader(*Ru[ei], level, mxd, true);
-          else
-            arg2F->initNodeReader(*Ru[ei], mxd, true);
+          if (Ru[ei]){
+            if (eventLevel<0)
+              arg2F->initRedundantReader(*Ru[ei], level, mxd, true);
+            else
+              arg2F->initNodeReader(*Ru[ei], mxd, true);
+          } else {
+            Ru[ei] = (eventLevel<0)
+              ? arg2F->initRedundantReader(level, mxd, true)
+              : arg2F->initNodeReader(mxd, true);
+          }
         }
       }
       // check if row i of the event ei is empty
