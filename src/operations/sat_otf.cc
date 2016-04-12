@@ -447,18 +447,8 @@ void MEDDLY::common_otf_dfs_by_events_mt
 
   // Execute saturation operation
   otfsat_by_events_op* so = new otfsat_by_events_op(this, arg1F, resF);
-#if 0
   node_handle cnode = so->saturate(a.getNode());
   c.set(cnode);
-#else
-  node_handle prev = 0;
-  node_handle curr = a.getNode();
-  while (prev != curr) {
-    prev = curr;
-    curr = so->saturate(prev);
-  }
-  c.set(curr);
-#endif
 
   // Cleanup
   while (freeqs) {
@@ -558,10 +548,8 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(node_builder& nb)
     rel->rebuildEvent(level, ei);
     node_handle mxd = rel->getEvent(level, ei);
     if (0==mxd) {
-      printf("ZERO EVENT FOUND!\n");
       Ru[ei] = 0;
     } else {
-      printf("NON-ZERO EVENT FOUND!\n");
       int eventLevel = arg2F->getNodeLevel(mxd);
       MEDDLY_DCASSERT(ABS(eventLevel) == level);
       Ru[ei] = (eventLevel<0)
@@ -594,13 +582,11 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(node_builder& nb)
       if (rel->rebuildEvent(level, ei)) {
         node_handle mxd = rel->getEvent(level, ei);
         if (0==mxd) {
-          printf("ZERO EVENT FOUND!\n");
           if (Ru[ei]) {
             node_reader::recycle(Ru[ei]);
             Ru[ei] = 0;
           }
         } else {
-          printf("NON-ZERO EVENT FOUND!\n");
           int eventLevel = arg2F->getNodeLevel(mxd);
           MEDDLY_DCASSERT(ABS(eventLevel) == level);
           if (Ru[ei]){

@@ -636,12 +636,14 @@ void MEDDLY::satotf_opname::subevent::confirm(otf_relation& rel, int v, int i) {
 
 bool MEDDLY::satotf_opname::subevent::addMinterm(const int* from, const int* to)
 {
+  /*
   ostream_output out(std::cout);
   out << "Adding minterm: [";
   for (int i = f->getNumVariables(); i >= 0; i--) {
     out << from[i] << " -> " << to[i] << " , ";
   }
   out << "]\n";
+  */
 
   if (num_minterms >= size_minterms) {
     int old_size = size_minterms;
@@ -659,19 +661,18 @@ bool MEDDLY::satotf_opname::subevent::addMinterm(const int* from, const int* to)
     MEDDLY_DCASSERT(0==pminterms[num_minterms]);
     pminterms[num_minterms] = new int[f->getNumVariables() + 1];
   }
-  out << "Added minterm: [";
+  // out << "Added minterm: [";
   for (int i = f->getNumVariables(); i >= 0; i--) {
     unpminterms[num_minterms][i] = from[i];
     pminterms[num_minterms][i] = to[i];
-    out << unpminterms[num_minterms][i] << " -> " << pminterms[num_minterms][i] << " , ";
+    // out << unpminterms[num_minterms][i] << " -> " << pminterms[num_minterms][i] << " , ";
   }
-  out << "]\n";
+  // out << "]\n";
   expert_domain* d = static_cast<expert_domain*>(f->useDomain());
   for (int i = num_vars - 1; i >= 0; i--) {
     int level = vars[i];
     // expand "to" since the set of unconfirmed local states is always larger
     if (to[level] > 0 && to[level] >= f->getLevelSize(-level)) {
-      //d->enlargeVariableBound(level, true, 1+to[level]);
       d->enlargeVariableBound(level, false, 1+to[level]);
     }
   }
@@ -683,6 +684,7 @@ bool MEDDLY::satotf_opname::subevent::addMinterm(const int* from, const int* to)
 
 void MEDDLY::satotf_opname::subevent::buildRoot() {
   if (0 == num_minterms) return;
+  /*
   ostream_output out(std::cout);
   out << "Building subevent from " << num_minterms << " minterms\n";
   for (int i = 0; i < num_minterms; i++) {
@@ -692,17 +694,18 @@ void MEDDLY::satotf_opname::subevent::buildRoot() {
     }
     out << " ]\n";
   }
+  */
 #if 0
   dd_edge sum(root);
   f->createEdge(unpminterms, pminterms, num_minterms, sum);
   num_minterms = 0;
   root += sum;
-  out << "Equivalent event: " << root.getNode() << "\n";
-  root.show(out, 2);
+  // out << "Equivalent event: " << root.getNode() << "\n";
+  // root.show(out, 2);
 #else
   f->createEdge(unpminterms, pminterms, num_minterms, root);
-  out << "Result: ";
-  root.show(out, 2);
+  // out << "Result: ";
+  // root.show(out, 2);
 #endif
 }
 
@@ -780,15 +783,16 @@ bool MEDDLY::satotf_opname::event::rebuild()
     e *= subevents[i]->getRoot();
   }
 
+  /*
   if (e.getNode() == 0) {
     ostream_output out(std::cout);
     f->useDomain()->showInfo(out);
-    // f->showInfo(out, 3);
     for (int i = 0; i < num_subevents; i++) {
       out << "subevent: " << subevents[i]->getRoot().getNode() << "\n";
       subevents[i]->getRoot().show(out, 2);
     }
   }
+  */
 
   if (e == root) return false;
   root += e;
@@ -957,8 +961,8 @@ MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd,
 
 MEDDLY::satotf_opname::otf_relation::~otf_relation()
 {
-  ostream_output out(std::cout);
-  showInfo(out);
+  // ostream_output out(std::cout);
+  // showInfo(out);
 
   for (int i = 0; i < num_levels; i++) {
     delete[] subevents_by_level[i];
@@ -1055,8 +1059,8 @@ void MEDDLY::satotf_opname::otf_relation::confirm(const dd_edge& set)
   findConfirmedStates(const_cast<otf_relation*>(this),
       confirmed, num_confirmed, set.getNode(), num_levels-1, visited);
 
-  ostream_output out(std::cout);
-  showInfo(out);
+  // ostream_output out(std::cout);
+  // showInfo(out);
 }
 
 
