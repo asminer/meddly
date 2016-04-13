@@ -722,6 +722,10 @@ void MEDDLY::satotf_opname::subevent::showInfo(output& out) const {
   root.show(out, 2);
 }
 
+long MEDDLY::satotf_opname::subevent::mintermMemoryUsage() const {
+  return long(num_minterms * 2) * long(f->getDomain()->getNumVariables()) * sizeof(int);
+}
+
 // ============================================================
 
 MEDDLY::satotf_opname::event::event(subevent** p, int np)
@@ -820,6 +824,14 @@ void MEDDLY::satotf_opname::event::showInfo(output& out) const {
     out << "subevent " << i << "\n";
     subevents[i]->showInfo(out);
   }
+}
+
+long MEDDLY::satotf_opname::event::mintermMemoryUsage() const {
+  long usage = 0;
+  for (int i = 0; i < num_subevents; i++) {
+    usage += subevents[i]->mintermMemoryUsage();
+  }
+  return usage;
 }
 
 // ============================================================
@@ -1108,6 +1120,16 @@ void MEDDLY::satotf_opname::otf_relation::showInfo(output &strm) const
       events_by_top_level[level][ei]->getRoot().show(strm, 2);
     }
   }
+}
+
+long MEDDLY::satotf_opname::otf_relation::mintermMemoryUsage() const {
+  long usage = 0;
+  for (int level = 1; level < num_levels; level++) {
+    for (int ei = 0; ei < getNumOfEvents(level); ei++) {
+      usage += events_by_top_level[level][ei]->mintermMemoryUsage();
+    }
+  }
+  return usage;
 }
 
 
