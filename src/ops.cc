@@ -1233,6 +1233,12 @@ void MEDDLY::operation::removeStalesFromMonolithic()
   if (Monolithic_CT) Monolithic_CT->removeStales();
 }
 
+void MEDDLY::operation::removeAllFromMonolithic()
+{
+  if (Monolithic_CT) Monolithic_CT->removeAll();
+}
+
+
 void MEDDLY::operation::markForDeletion()
 {
 #ifdef DEBUG_CLEANUP

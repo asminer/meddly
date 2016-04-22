@@ -3050,6 +3050,7 @@ class MEDDLY::operation {
 
     static bool usesMonolithicComputeTable();
     static void removeStalesFromMonolithic();
+    static void removeAllFromMonolithic();
 
     /// Remove stale compute table entries for this operation.
     void removeStaleComputeTableEntries();
