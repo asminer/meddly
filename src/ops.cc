@@ -626,8 +626,20 @@ MEDDLY::satotf_opname::subevent::~subevent()
   }
   free(unpminterms);
   free(pminterms);
-
 }
+
+void MEDDLY::satotf_opname::subevent::clearMinterms()
+{
+  for (int i=0; i<num_minterms; i++) {
+    delete[] unpminterms[i];
+    delete[] pminterms[i];
+  }
+  free(unpminterms);
+  free(pminterms);
+  unpminterms = pminterms = 0;
+  num_minterms = 0;
+}
+
 
 void MEDDLY::satotf_opname::subevent::confirm(otf_relation& rel, int v, int i) {
   throw MEDDLY::error::NOT_IMPLEMENTED;
@@ -992,6 +1004,18 @@ MEDDLY::satotf_opname::otf_relation::~otf_relation()
   delete[] size_confirmed;
   delete[] num_confirmed;
 }
+
+void MEDDLY::satotf_opname::otf_relation::clearMinterms()
+{
+  for (int level = 1; level < num_levels; level++) {
+    // Get subevents affected by this level, and rebuild them.
+    int nSubevents = num_subevents_by_level[level];
+    for (int i = 0; i < nSubevents; i++) {
+      subevents_by_level[level][i]->clearMinterms();
+    }
+  }
+}
+
 
 bool MEDDLY::satotf_opname::otf_relation::confirm(int level, int index)
 {

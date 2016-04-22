@@ -2549,6 +2549,7 @@ class MEDDLY::satotf_opname : public specialized_opname {
         void showInfo(output& out) const;
 
         long mintermMemoryUsage() const;
+        void clearMinterms();
 
       protected:
         bool addMinterm(const int* from, const int* to);
@@ -2720,6 +2721,8 @@ class MEDDLY::satotf_opname : public specialized_opname {
         void showInfo(output &strm) const;
 
         long mintermMemoryUsage() const;
+
+        void clearMinterms();
 
       protected:
         void enlargeConfirmedArrays(int level, int sz);
