@@ -128,9 +128,12 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   node_builder& nb = resF->useNodeBuilder(k, resultSize);
 
   // Initialize node reader
-  node_reader* A = (arg1F->getNodeLevel(a) < k) 
-    ? arg1F->initRedundantReader(k, a, true)
-    : arg1F->initNodeReader(a, true);
+  unpacked_node *A = unpacked_node::useUnpackedNode();
+  if (arg1F->getNodeLevel(a) < k) {
+    A->initRedundant(arg1F, k, a, true);
+  } else {
+    A->initFromNode(arg1F, a, true);
+  }
 
   // recurse
   for (int i=0; i<resultSize; i++) {
@@ -138,7 +141,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   }
 
   // cleanup node reader
-  node_reader::recycle(A);
+  unpacked_node::recycle(A);
 
   // reduce, save in compute table
   node_handle c = resF->createReducedNode(-1, nb);
@@ -171,9 +174,12 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(int in, int k, node_handle a,
   node_builder& nb = resF->useNodeBuilder(k, resultSize);
 
   // Initialize node reader
-  node_reader* B = (arg2F->getNodeLevel(b) < -k) 
-    ? arg2F->initRedundantReader(-k, b, true)
-    : arg2F->initNodeReader(b, true);
+  unpacked_node *B = unpacked_node::useUnpackedNode();
+  if (arg2F->getNodeLevel(b) < -k) {
+    B->initRedundant(arg2F, -k, b, true);
+  } else {
+    B->initFromNode(arg2F, b, true);
+  }
 
   // recurse
   for (int i=0; i<resultSize; i++) {
@@ -181,7 +187,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(int in, int k, node_handle a,
   }
 
   // cleanup node reader
-  node_reader::recycle(B);
+  unpacked_node::recycle(B);
 
   // reduce
   node_handle c = resF->createReducedNode(in, nb);

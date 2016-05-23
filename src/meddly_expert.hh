@@ -76,20 +76,96 @@ MEDDLY::expert_domain::shrinkVariableBound(int vh, int b, bool force)
 
 // ****************************************************************************
 
+inline void 
+MEDDLY::unpacked_node::initFromNode(const expert_forest *f, 
+  node_handle node, bool full)
+{
+  MEDDLY_DCASSERT(f);
+  f->fillUnpacked(*this, node, full);
+}
+
+// ****************************************************************************
+
+inline MEDDLY::unpacked_node* 
+MEDDLY::unpacked_node::newFromNode(const expert_forest *f, node_handle node, bool full)
+{
+  unpacked_node* U = useUnpackedNode();
+  MEDDLY_DCASSERT(U);
+  U->initFromNode(f, node, full);
+  return U;
+}
+
+inline MEDDLY::unpacked_node* 
+MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, node_handle node, bool full)
+{
+  unpacked_node* U = useUnpackedNode();
+  MEDDLY_DCASSERT(U);
+  U->initRedundant(f, k, node, full);
+  return U;
+}
+
+inline MEDDLY::unpacked_node* 
+MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, int ev, node_handle node, bool full)
+{
+  unpacked_node* U = useUnpackedNode();
+  MEDDLY_DCASSERT(U);
+  U->initRedundant(f, k, ev, node, full);
+  return U;
+}
+
+inline MEDDLY::unpacked_node* 
+MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, float ev, node_handle node, bool full)
+{
+  unpacked_node* U = useUnpackedNode();
+  MEDDLY_DCASSERT(U);
+  U->initRedundant(f, k, ev, node, full);
+  return U;
+}
+
+inline MEDDLY::unpacked_node* 
+MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, int i, node_handle node, bool full)
+{
+  unpacked_node* U = useUnpackedNode();
+  MEDDLY_DCASSERT(U);
+  U->initIdentity(f, k, i, node, full);
+  return U;
+}
+
+inline MEDDLY::unpacked_node* 
+MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, int i, int ev, node_handle node, bool full)
+{
+  unpacked_node* U = useUnpackedNode();
+  MEDDLY_DCASSERT(U);
+  U->initIdentity(f, k, i, ev, node, full);
+  return U;
+}
+
+inline MEDDLY::unpacked_node* 
+MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, int i, float ev, node_handle node, bool full)
+{
+  unpacked_node* U = useUnpackedNode();
+  MEDDLY_DCASSERT(U);
+  U->initIdentity(f, k, i, ev, node, full);
+  return U;
+}
+
+
+// ****************************************************************************
+
 inline const void*
-MEDDLY::node_reader::HHptr() const
+MEDDLY::unpacked_node::HHptr() const
 {
   return extra_hashed;
 }
 
 inline int
-MEDDLY::node_reader::HHbytes() const
+MEDDLY::unpacked_node::HHbytes() const
 {
   return ext_size;
 }
 
 inline MEDDLY::node_handle
-MEDDLY::node_reader::d(int n) const
+MEDDLY::unpacked_node::d(int n) const
 {
   MEDDLY_DCASSERT(down);
   MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
@@ -97,7 +173,7 @@ MEDDLY::node_reader::d(int n) const
 }
 
 inline int
-MEDDLY::node_reader::i(int n) const
+MEDDLY::unpacked_node::i(int n) const
 {
   MEDDLY_DCASSERT(index);
   MEDDLY_DCASSERT(!is_full);
@@ -106,7 +182,7 @@ MEDDLY::node_reader::i(int n) const
 }
 
 inline const void*
-MEDDLY::node_reader::eptr(int i) const
+MEDDLY::unpacked_node::eptr(int i) const
 {
   MEDDLY_DCASSERT(edge);
   MEDDLY_CHECK_RANGE(0, i, (is_full ? size : nnzs));
@@ -114,21 +190,21 @@ MEDDLY::node_reader::eptr(int i) const
 }
 
 inline void
-MEDDLY::node_reader::getEdge(int n, int &val) const
+MEDDLY::unpacked_node::getEdge(int n, int &val) const
 {
   MEDDLY_DCASSERT(sizeof(int) == edge_bytes);
   MEDDLY::expert_forest::int_EVencoder::readValue(eptr(n), val);
 }
 
 inline void
-MEDDLY::node_reader::getEdge(int n, float &val) const
+MEDDLY::unpacked_node::getEdge(int n, float &val) const
 {
   MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
   MEDDLY::expert_forest::float_EVencoder::readValue(eptr(n), val);
 }
 
 inline int
-MEDDLY::node_reader::ei(int i) const
+MEDDLY::unpacked_node::ei(int i) const
 {
   int ev;
   getEdge(i, ev);
@@ -136,7 +212,7 @@ MEDDLY::node_reader::ei(int i) const
 }
 
 inline float
-MEDDLY::node_reader::ef(int i) const
+MEDDLY::unpacked_node::ef(int i) const
 {
   float ev;
   getEdge(i, ev);
@@ -144,50 +220,50 @@ MEDDLY::node_reader::ef(int i) const
 }
 
 inline int
-MEDDLY::node_reader::getLevel() const
+MEDDLY::unpacked_node::getLevel() const
 {
   return level;
 }
 
 inline int
-MEDDLY::node_reader::getSize() const
+MEDDLY::unpacked_node::getSize() const
 {
   MEDDLY_DCASSERT(is_full);
   return size;
 }
 
 inline int
-MEDDLY::node_reader::getNNZs() const
+MEDDLY::unpacked_node::getNNZs() const
 {
   MEDDLY_DCASSERT(!is_full);
   return nnzs;
 }
 
 inline bool
-MEDDLY::node_reader::isSparse() const
+MEDDLY::unpacked_node::isSparse() const
 {
   return !is_full;
 }
 
 inline bool
-MEDDLY::node_reader::isFull() const
+MEDDLY::unpacked_node::isFull() const
 {
   return is_full;
 }
 
 inline bool
-MEDDLY::node_reader::hasEdges() const
+MEDDLY::unpacked_node::hasEdges() const
 {
   return edge_bytes;
 }
 inline int
-MEDDLY::node_reader::edgeBytes() const
+MEDDLY::unpacked_node::edgeBytes() const
 {
   return edge_bytes;
 }
 
 inline unsigned
-MEDDLY::node_reader::hash() const
+MEDDLY::unpacked_node::hash() const
 {
 #ifdef DEVELOPMENT_CODE
   MEDDLY_DCASSERT(has_hash);
@@ -195,7 +271,7 @@ MEDDLY::node_reader::hash() const
   return h;
 }
 inline void
-MEDDLY::node_reader::setHash(unsigned H)
+MEDDLY::unpacked_node::setHash(unsigned H)
 {
 #ifdef DEVELOPMENT_CODE
   MEDDLY_DCASSERT(!has_hash);
@@ -204,16 +280,16 @@ MEDDLY::node_reader::setHash(unsigned H)
   h = H;
 }
 
-inline MEDDLY::node_reader*
-MEDDLY::node_reader::useReader()
+inline MEDDLY::unpacked_node*
+MEDDLY::unpacked_node::useUnpackedNode()
 {
-  node_reader* nr;
+  unpacked_node* nr;
   if (freeList) {
     nr = freeList;
     freeList = nr->next;
   }
   else {
-    nr = new node_reader;
+    nr = new unpacked_node;
   }
 #ifdef DEVELOPMENT_CODE
   nr->has_hash = false;
@@ -222,7 +298,7 @@ MEDDLY::node_reader::useReader()
 }
 
 inline void
-MEDDLY::node_reader::recycle(MEDDLY::node_reader* r)
+MEDDLY::unpacked_node::recycle(MEDDLY::unpacked_node* r)
 {
   if (r) {
     r->next = freeList;
@@ -231,10 +307,10 @@ MEDDLY::node_reader::recycle(MEDDLY::node_reader* r)
 }
 
 inline void
-MEDDLY::node_reader::freeRecycled()
+MEDDLY::unpacked_node::freeRecycled()
 {
   while (freeList) {
-    MEDDLY::node_reader* n = freeList->next;
+    MEDDLY::unpacked_node* n = freeList->next;
     delete freeList;
     freeList = n;
   }
@@ -594,37 +670,37 @@ MEDDLY::node_storage::setNextOf(node_address addr, MEDDLY::node_handle n)
 #endif
 
 inline void
-MEDDLY::node_storage::resize_header(MEDDLY::node_reader& nr, int extra_slots)
+MEDDLY::node_storage::resize_header(MEDDLY::unpacked_node& nr, int extra_slots)
 {
   nr.resize_header(extra_slots);
 }
 
 inline void*
-MEDDLY::node_storage::extra_hashed(MEDDLY::node_reader& nr)
+MEDDLY::node_storage::extra_hashed(MEDDLY::unpacked_node& nr)
 {
   return nr.extra_hashed;
 }
 
 inline MEDDLY::node_handle*
-MEDDLY::node_storage::down_of(MEDDLY::node_reader& nr)
+MEDDLY::node_storage::down_of(MEDDLY::unpacked_node& nr)
 {
   return nr.down;
 }
 
 inline int*
-MEDDLY::node_storage::index_of(MEDDLY::node_reader& nr)
+MEDDLY::node_storage::index_of(MEDDLY::unpacked_node& nr)
 {
   return nr.index;
 }
 
 inline char*
-MEDDLY::node_storage::edge_of(MEDDLY::node_reader& nr)
+MEDDLY::node_storage::edge_of(MEDDLY::unpacked_node& nr)
 {
   return (char*) nr.edge;
 }
 
 inline int&
-MEDDLY::node_storage::nnzs_of(MEDDLY::node_reader& nr)
+MEDDLY::node_storage::nnzs_of(MEDDLY::unpacked_node& nr)
 {
   return nr.nnzs;
 }
@@ -1194,8 +1270,18 @@ MEDDLY::expert_forest::getTransparentNode() const
   return transparent;
 }
 
+inline void 
+MEDDLY::expert_forest::fillUnpacked(MEDDLY::unpacked_node &un, MEDDLY::node_handle node, bool full) 
+const
+{
+  const MEDDLY::node_header &n = getNode(node);
+  un.resize(n.level, getLevelSize(n.level), edgeBytes(), full);
+  nodeMan->fillUnpacked(un, getNode(node).offset);
+}
+
+/*
 inline void
-MEDDLY::expert_forest::initNodeReader(MEDDLY::node_reader &nr, MEDDLY::node_handle node,
+MEDDLY::expert_forest::initNodeReader(MEDDLY::unpacked_node &nr, MEDDLY::node_handle node,
     bool full) const
 {
   const MEDDLY::node_header &n = getNode(node);
@@ -1270,6 +1356,8 @@ MEDDLY::expert_forest::initIdentityReader(int k, int i, float ev,
   initIdentityReader(*nr, k, i, ev, nd, full);
   return nr;
 }
+*/
+
 
 inline MEDDLY::node_builder&
 MEDDLY::expert_forest::useNodeBuilder(int level, int tsz)
@@ -1353,7 +1441,7 @@ MEDDLY::expert_forest::areDuplicates(MEDDLY::node_handle node, const MEDDLY::nod
 }
 
 inline bool
-MEDDLY::expert_forest::areDuplicates(MEDDLY::node_handle node, const MEDDLY::node_reader &nr) const
+MEDDLY::expert_forest::areDuplicates(MEDDLY::node_handle node, const MEDDLY::unpacked_node &nr) const
 {
   MEDDLY_DCASSERT(node > 0);
   MEDDLY_DCASSERT(address);

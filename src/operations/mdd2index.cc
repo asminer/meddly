@@ -49,7 +49,7 @@ class MEDDLY::mdd2index_operation : public unary_operation {
 
     virtual void compute(const dd_edge &arg, dd_edge &res);
 
-    void compute(int k, node_handle a, node_handle &bdn, int &bcard);
+    void compute_r(int k, node_handle a, node_handle &bdn, int &bcard);
 };
 
 MEDDLY::mdd2index_operation::mdd2index_operation(const unary_opname* oc, 
@@ -97,13 +97,13 @@ MEDDLY::mdd2index_operation
   node_handle down;
   int card;
   int nVars = argF->getDomain()->getNumVariables();
-  compute(nVars, arg.getNode(), down, card);
+  compute_r(nVars, arg.getNode(), down, card);
   res.set(down);
 }
 
 void
 MEDDLY::mdd2index_operation
-::compute(int k, node_handle a, node_handle &bdn, int &bcard)
+::compute_r(int k, node_handle a, node_handle &bdn, int &bcard)
 {
   // Deal with terminals
   if (0 == a) {
@@ -145,16 +145,19 @@ MEDDLY::mdd2index_operation
   node_builder& nb = resF->useNodeBuilder(k, size);
   
   // Initialize node reader
-  node_reader* A = (aLevel < k)
-    ? argF->initRedundantReader(k, a, true)
-    : argF->initNodeReader(a, true);
+  unpacked_node *A = unpacked_node::useUnpackedNode();
+  if (aLevel < k) {
+    A->initRedundant(argF, k, a, true);
+  } else {
+    A->initFromNode(argF, a, true);
+  }
 
   // recurse
   bcard = 0;
   for (int i=0; i<size; i++) {
     node_handle ddn;
     int dcard;
-    compute(k-1, A->d(i), ddn, dcard);
+    compute_r(k-1, A->d(i), ddn, dcard);
     nb.d(i) = ddn;
     if (nb.d(i)) {
       nb.setEdge(i, bcard);
@@ -166,7 +169,7 @@ MEDDLY::mdd2index_operation
   }
 
   // Cleanup
-  node_reader::recycle(A);
+  unpacked_node::recycle(A);
 
   // Reduce
   nb.setUH(&bcard);

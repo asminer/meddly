@@ -131,8 +131,8 @@ class MEDDLY::compact_storage : public node_storage {
     virtual void unlinkDownAndRecycle(node_address addr);
 
     virtual bool areDuplicates(node_address addr, const node_builder &nb) const;
-    virtual bool areDuplicates(node_address addr, const node_reader &nr) const;
-    virtual void fillReader(node_address addr, node_reader &nr) const;
+    virtual bool areDuplicates(node_address addr, const unpacked_node &nr) const;
+    virtual void fillUnpacked(unpacked_node &nr, node_address addr) const;
     virtual unsigned hashNode(const node_header& p) const;
     virtual int getSingletonIndex(node_address addr, node_handle &down) const;
     virtual node_handle getDownPtr(node_address addr, int index) const;
@@ -818,7 +818,7 @@ class MEDDLY::compact_storage : public node_storage {
       //--------------------------------------------------------------
       template <int pbytes>
       inline void 
-      readFullFromFull(node_address addr, int size, node_reader &nr) const
+      readFullFromFull(node_address addr, int size, unpacked_node &nr) const
       {
         MEDDLY_DCASSERT(nr.isFull());
         MEDDLY_DCASSERT(sizeOf(addr) >= 0);
@@ -842,7 +842,7 @@ class MEDDLY::compact_storage : public node_storage {
       }
 
       inline void readFullFromFull(int pbytes, node_address addr, int size, 
-        node_reader &nr) const
+        unpacked_node &nr) const
       {
           switch (pbytes) {
               case 1:   return readFullFromFull<1>(addr, size, nr);
@@ -864,7 +864,7 @@ class MEDDLY::compact_storage : public node_storage {
       //--------------------------------------------------------------
       template <int pbytes>
       inline void 
-      readSparseFromFull(node_address addr, int size, node_reader &nr) const
+      readSparseFromFull(node_address addr, int size, unpacked_node &nr) const
       {
         MEDDLY_DCASSERT(nr.isSparse());
         MEDDLY_DCASSERT(sizeOf(addr) >= 0);
@@ -907,7 +907,7 @@ class MEDDLY::compact_storage : public node_storage {
       }
 
       inline void readSparseFromFull(int pbytes, node_address addr, int size, 
-        node_reader &nr) const
+        unpacked_node &nr) const
       {
           switch (pbytes) {
               case 1:   return readSparseFromFull<1>(addr, size, nr);
@@ -929,7 +929,7 @@ class MEDDLY::compact_storage : public node_storage {
       //--------------------------------------------------------------
       template <int pbytes, int ibytes>
       inline void 
-      readFullFromSparse(node_address addr, int nnzs, node_reader &nr) const
+      readFullFromSparse(node_address addr, int nnzs, unpacked_node &nr) const
       {
         MEDDLY_DCASSERT(nr.isFull());
         MEDDLY_DCASSERT(sizeOf(addr) < 0);
@@ -967,7 +967,7 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <int pbytes>
       inline void readFullFromSparse(int ibytes, node_address addr, 
-        int nnzs, node_reader &nr) const
+        int nnzs, unpacked_node &nr) const
       {
         switch (ibytes) {
             case 1:   return  readFullFromSparse<pbytes, 1>(addr, nnzs, nr);
@@ -981,7 +981,7 @@ class MEDDLY::compact_storage : public node_storage {
       }
 
       inline void readFullFromSparse(int pbytes, int ibytes, 
-        node_address addr, int nnzs, node_reader &nr) const
+        node_address addr, int nnzs, unpacked_node &nr) const
       {
           switch (pbytes) {
               case 1:   return readFullFromSparse<1>(ibytes, addr, nnzs, nr);
@@ -1004,7 +1004,7 @@ class MEDDLY::compact_storage : public node_storage {
       //--------------------------------------------------------------
       template <int pbytes, int ibytes>
       inline void 
-      readSparseFromSparse(node_address addr, int nnzs, node_reader &nr) const
+      readSparseFromSparse(node_address addr, int nnzs, unpacked_node &nr) const
       {
         MEDDLY_DCASSERT(nr.isSparse());
         MEDDLY_DCASSERT(sizeOf(addr) < 0);
@@ -1028,7 +1028,7 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <int pbytes>
       inline void readSparseFromSparse(int ibytes, node_address addr, 
-        int nnzs, node_reader &nr) const
+        int nnzs, unpacked_node &nr) const
       {
         switch (ibytes) {
             case 1:   return  readSparseFromSparse<pbytes, 1>(addr, nnzs, nr);
@@ -1042,7 +1042,7 @@ class MEDDLY::compact_storage : public node_storage {
       }
 
       inline void readSparseFromSparse(int pbytes, int ibytes, 
-        node_address addr, int nnzs, node_reader &nr) const
+        node_address addr, int nnzs, unpacked_node &nr) const
       {
           switch (pbytes) {
               case 1:   return readSparseFromSparse<1>(ibytes, addr, nnzs, nr);

@@ -96,7 +96,7 @@ namespace MEDDLY {
   struct settings;
   class forest;
   class expert_forest;
-  class node_reader;
+  class unpacked_node;
   class node_storage;
   class variable;
   class domain;
@@ -2321,9 +2321,9 @@ class MEDDLY::enumerator {
       protected:
         // Current parent forest.
         const expert_forest* F;
-        // Path, as list of node readers
-        node_reader*    rawpath;
-        node_reader*    path;   // rawpath, shifted so we can use path[-k]
+        // Path, as list of unpacked nodes
+        unpacked_node*    rawpath;
+        unpacked_node*    path;   // rawpath, shifted so we can use path[-k]
         // Path nnz pointers
         int*      rawnzp;
         int*      nzp;   // rawnzp, shifted so we can use nzp[-k]

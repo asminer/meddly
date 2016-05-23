@@ -251,12 +251,12 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_iterator::first(int k, node_handle down)
 
     if (isLevelAbove(k, kdn)) {
       if (k>0 || isFully) {
-        F->initRedundantReader(path[k], k, float(1), down, false);
+        path[k].initRedundant(F, k, 1.0f, down, false);
       } else {
-        F->initIdentityReader(path[k], k, index[-k], float(1), down, false);
+        path[k].initIdentity(F, k, index[-k], 1.0f, down, false);
       }
     } else {
-      F->initNodeReader(path[k], down, false);
+      path[k].initFromNode(F, down, false);
     }
     nzp[k] = 0;
     index[k] = path[k].i(0);
@@ -368,11 +368,11 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedrow_iter::first(int k, node_handle do
     // Set up this level.
     nzp[k] = 0;
     if (F->isFullyReduced()) {
-      F->initRedundantReader(path[k], k, float(1), cdown, false);
+      path[k].initRedundant(F, k, 1.0f, cdown, false);
       index[k] = 0;
     } else {
       index[k] = index[upLevel(k)];
-      F->initIdentityReader(path[k], k, index[k], float(1), cdown, false);
+      path[k].initIdentity(F, k, index[k], 1.0f, cdown, false);
     }
     return true;
   } 
@@ -380,7 +380,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedrow_iter::first(int k, node_handle do
   // Proper node here.
   // cycle through it and recurse... 
 
-  F->initNodeReader(path[k], cdown, false);
+  path[k].initFromNode(F, cdown, false);
 
   for (int z=0; z<path[k].getNNZs(); z++) {
     float ev;
@@ -495,7 +495,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter::first(int k, node_handle do
       // See if there is a valid path below.
       if (!first(downLevel(kpr), down)) return false;
       // There's one below, set up the one at these levels.
-      F->initRedundantReader(path[k], k, float(1), down, false);
+      path[k].initRedundant(F, k, 1.0f, down, false);
       if (F->isFullyReduced()) {
         nzp[k] = 0;
         index[k] = 0;
@@ -513,14 +513,14 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter::first(int k, node_handle do
     if (0==cdown) return false;
     acc_evs[downLevel(kpr)] = acc_evs[kpr] * ev;
     if (!first(kpr, cdown)) return false;
-    F->initRedundantReader(path[k], k, float(1), down, false);
+    path[k].initRedundant(F, k, 1.0f, down, false);
     nzp[k] = 0;
     index[k] = 0;
     return true;
   }
 
   // Level is not skipped.
-  F->initNodeReader(path[k], down, false);
+  path[k].initFromNode(F, down, false);
   
   for (int z=0; z<path[k].getNNZs(); z++) {
     index[k] = path[k].i(z);

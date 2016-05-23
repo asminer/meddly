@@ -477,7 +477,7 @@ bool MEDDLY::compact_storage
 // ******************************************************************
 
 bool MEDDLY::compact_storage::
-areDuplicates(node_address addr, const node_reader &nr) const
+areDuplicates(node_address addr, const unpacked_node &nr) const
 {
   return areDupsTempl(addr, nr);
 }
@@ -485,7 +485,7 @@ areDuplicates(node_address addr, const node_reader &nr) const
 // ******************************************************************
 
 void MEDDLY::compact_storage
-::fillReader(node_address addr, node_reader &nr) const
+::fillUnpacked(unpacked_node &nr, node_address addr) const
 {
 #ifdef DEBUG_ENCODING
   printf("compact_storage filling reader\n    internal: ");

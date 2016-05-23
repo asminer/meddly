@@ -122,8 +122,8 @@ namespace MEDDLY {
   int domain::free_list = -1;
 
   //
-  // List of free node readers
-  node_reader* node_reader::freeList = 0;
+  // List of free unpacked nodes
+  unpacked_node* unpacked_node::freeList = 0;
 
   // helper functions
   void purgeMarkedOperations();
@@ -516,8 +516,8 @@ void MEDDLY::cleanup()
     meddlySettings.operationBuilder->cleanupChain();
   }
 
-  // clean up recycled node readers
-  node_reader::freeRecycled();
+  // clean up recycled unpacked nodes
+  unpacked_node::freeRecycled();
 
   cleanup_procedure::DeleteAll();
 

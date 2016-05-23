@@ -229,41 +229,45 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
 
   if (aLevel < bLevel) {
     // For all i and j, r[i][j] = compute_rec(a, b[i][j])
-    node_reader* nrb = arg2F->initNodeReader(b, false);
+    unpacked_node* nrb = unpacked_node::useUnpackedNode();
+    unpacked_node* nrbp = unpacked_node::useUnpackedNode();
+    nrb->initFromNode(arg2F, b, false);
     for (int iz = 0; iz < nrb->getNNZs(); ++iz) {
       node_builder& nbri = resF->useNodeBuilder(-rLevel, rSize);
       for (int i = 0; i < rSize; ++i) nbri.d(i) = 0;
-      node_reader* nrbp = arg2F->initNodeReader(nrb->d(iz), false);
+      nrbp->initFromNode(arg2F, nrb->d(iz), false);
       int i = nrb->i(iz);
       for (int jz = 0; jz < nrbp->getNNZs(); ++jz) {
         int j = nrbp->i(jz);
         MEDDLY_DCASSERT(0 == nbri.d(j));
         nbri.d(j) = compute_rec(a, nrbp->d(jz));
       }
-      node_reader::recycle(nrbp);
       MEDDLY_DCASSERT(0 == nbr.d(i));
       nbr.d(i) = resF->createReducedNode(i, nbri);
     }
-    node_reader::recycle(nrb);
+    unpacked_node::recycle(nrbp);
+    unpacked_node::recycle(nrb);
   }
   else if (aLevel > bLevel) {
     // For all i and j, r[i][j]=compute_rec(a[i][j], b)
-    node_reader* nra = arg1F->initNodeReader(a, false);
+    unpacked_node* nra = unpacked_node::useUnpackedNode();
+    unpacked_node* nrap = unpacked_node::useUnpackedNode();
+    nra->initFromNode(arg1F, a, false);
     for (int iz = 0; iz < nra->getNNZs(); ++iz) {
       node_builder& nbri = resF->useNodeBuilder(-rLevel, rSize);
       for (int i = 0; i < rSize; ++i) nbri.d(i) = 0;
-      node_reader* nrap = arg1F->initNodeReader(nra->d(iz), false);
+      nrap->initFromNode(arg1F, nra->d(iz), false);
       int i = nra->i(iz);
       for (int jz = 0; jz < nrap->getNNZs(); ++jz) {
         int j = nrap->i(jz);
         MEDDLY_DCASSERT(0 == nbri.d(j));
         nbri.d(j) = compute_rec(nrap->d(jz), b);
       }
-      node_reader::recycle(nrap);
       MEDDLY_DCASSERT(0 == nbr.d(i));
       nbr.d(i) = resF->createReducedNode(i, nbri);
     }
-    node_reader::recycle(nra);
+    unpacked_node::recycle(nrap);
+    unpacked_node::recycle(nra);
   }
   else {
     // For all i, j and k, r[i][k] += compute_rec(a[i][j], b[j][k])
@@ -271,13 +275,22 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
     MEDDLY_DCASSERT(bLevel == rLevel);
     
     // Node readers for a, b and all b[j].
-    node_reader* nra = arg1F->initNodeReader(a, false);
-    node_reader* nrap = node_reader::useReader();
-    node_reader* nrb = arg2F->initNodeReader(b, true);
-    node_reader** nrbp =
-      (node_reader**) malloc(nrb->getSize() * sizeof(node_reader*));
+    unpacked_node* nra = unpacked_node::useUnpackedNode();
+    nra->initFromNode(arg1F, a, false);
+
+    unpacked_node* nrb = unpacked_node::useUnpackedNode();
+    nrb->initFromNode(arg2F, b, true);
+
+    unpacked_node* nrap = unpacked_node::useUnpackedNode();
+
+    unpacked_node** nrbp = new unpacked_node*[nrb->getSize()];
     for (int i = 0; i < nrb->getSize(); ++i) {
-      nrbp[i] = (0 == nrb->d(i))? 0: arg2F->initNodeReader(nrb->d(i), false);
+      if (0==nrb->d(i)) {
+        nrbp[i] = 0;
+        continue;
+      }
+      nrbp[i] = unpacked_node::useUnpackedNode();
+      nrbp[i]->initFromNode(arg2F, nrb->d(i), false);
     }
 
     // For all i, j, and k:
@@ -285,7 +298,7 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
     for (int iz = 0; iz < nra->getNNZs(); ++iz) {
       node_builder& nbri = resF->useNodeBuilder(-rLevel, rSize);
       for (int i = 0; i < rSize; ++i) nbri.d(i) = 0;
-      arg1F->initNodeReader(*nrap, nra->d(iz), false);
+      nrap->initFromNode(arg1F, nra->d(iz), false);
       int i = nra->i(iz);
       for (int jz = 0; jz < nrap->getNNZs(); ++jz) {
         int j = nrap->i(jz);
@@ -307,13 +320,13 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
       MEDDLY_DCASSERT(0 == nbr.d(i));
       nbr.d(i) = resF->createReducedNode(i, nbri);
     }
-    node_reader::recycle(nrap);
-    node_reader::recycle(nra);
+    unpacked_node::recycle(nrap);
+    unpacked_node::recycle(nra);
     for (int i = 0; i < nrb->getSize(); ++i) {
-      if (0 != nrbp[i]) node_reader::recycle(nrbp[i]);
+      if (nrbp[i]) unpacked_node::recycle(nrbp[i]);
     }
-    free(nrbp);
-    node_reader::recycle(nrb);
+    delete[] nrbp;
+    unpacked_node::recycle(nrb);
   }
 
   result = resF->createReducedNode(-1, nbr);

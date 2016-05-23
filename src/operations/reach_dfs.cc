@@ -316,14 +316,22 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
 #endif
 
   node_builder& nb = resF->useNodeBuilder(k, sz);
-  node_reader* mddDptrs =
-    (mdd_level < k)
-    ? argF->initRedundantReader(k, mdd, true)
-    : argF->initNodeReader(mdd, true);
+  // Initialize mdd reader
+  unpacked_node *mddDptrs = unpacked_node::useUnpackedNode();
+  if (mdd_level < k) {
+    mddDptrs->initRedundant(argF, k, mdd, true);
+  } else {
+    mddDptrs->initFromNode(argF, mdd, true);
+  }
+
+  // Do computation
   for (int i=0; i<sz; i++) {
     nb.d(i) = mddDptrs->d(i) ? saturate(mddDptrs->d(i), k-1) : 0;
   }
-  node_reader::recycle(mddDptrs);
+
+  // Cleanup
+  unpacked_node::recycle(mddDptrs);
+
   parent->saturateHelper(nb);
   n = resF->createReducedNode(-1, nb);
 
@@ -474,10 +482,13 @@ void MEDDLY::common_dfs_mt::splitMxd(node_handle mxd)
     MEDDLY_DCASSERT(ABS(mxdLevel) <= level);
 
     // Initialize readers
-    node_reader* Mu = isLevelAbove(level, mxdLevel)
-      ? arg2F->initRedundantReader(level, mxd, true)
-      : arg2F->initNodeReader(mxd, true);
-    node_reader* Mp = node_reader::useReader();
+    unpacked_node *Mu = unpacked_node::useUnpackedNode();
+    unpacked_node *Mp = unpacked_node::useUnpackedNode();
+    if (isLevelAbove(level, mxdLevel)) {
+      Mu->initRedundant(arg2F, level, mxd, true);
+    } else {
+      Mu->initFromNode(arg2F, mxd, true);
+    }
 
     bool first = true;
     node_handle maxDiag;
@@ -487,9 +498,9 @@ void MEDDLY::common_dfs_mt::splitMxd(node_handle mxd)
       // Initialize column reader
       int mxdPLevel = arg2F->getNodeLevel(Mu->d(i));
       if (isLevelAbove(-level, mxdPLevel)) {
-        arg2F->initIdentityReader(*Mp, -level, i, Mu->d(i), true);
+        Mp->initIdentity(arg2F, -level, i, Mu->d(i), true);
       } else {
-        arg2F->initNodeReader(*Mp, Mu->d(i), true);
+        Mp->initFromNode(arg2F, Mu->d(i), true);
       }
 
       // Intersect along the diagonal
@@ -511,8 +522,8 @@ void MEDDLY::common_dfs_mt::splitMxd(node_handle mxd)
     mxd = maxDiag;
 
     // Cleanup
-    node_reader::recycle(Mp);
-    node_reader::recycle(Mu);
+    unpacked_node::recycle(Mp);
+    unpacked_node::recycle(Mu);
   } // for level
 
 #ifdef DEBUG_SPLIT
@@ -605,10 +616,13 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(node_builder& nb)
   MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
 
   // Initialize mxd readers, note we might skip the unprimed level
-  node_reader* Ru = (mxdLevel<0)
-    ? arg2F->initRedundantReader(nb.getLevel(), mxd, true)
-    : arg2F->initNodeReader(mxd, true);
-  node_reader* Rp = node_reader::useReader();
+  unpacked_node *Ru = unpacked_node::useUnpackedNode();
+  unpacked_node *Rp = unpacked_node::useUnpackedNode();
+  if (mxdLevel < 0) {
+    Ru->initRedundant(arg2F, nb.getLevel(), mxd, true);
+  } else {
+    Ru->initFromNode(arg2F, mxd, true);
+  }
 
   // indexes to explore
   indexq* queue = useIndexQueue(nb.getSize());
@@ -627,9 +641,9 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(node_builder& nb)
     int dlevel = arg2F->getNodeLevel(Ru->d(i));
 
     if (dlevel == -nb.getLevel()) {
-      arg2F->initNodeReader(*Rp, Ru->d(i), false);
+      Rp->initFromNode(arg2F, Ru->d(i), false);
     } else {
-      arg2F->initIdentityReader(*Rp, -nb.getLevel(), i, Ru->d(i), false);
+      Rp->initIdentity(arg2F, -nb.getLevel(), i, Ru->d(i), false);
     }
 
     for (int jz=0; jz<Rp->getNNZs(); jz++) {
@@ -679,8 +693,8 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(node_builder& nb)
   } // while there are indexes to explore
 
   // cleanup
-  node_reader::recycle(Rp);
-  node_reader::recycle(Ru);
+  unpacked_node::recycle(Rp);
+  unpacked_node::recycle(Ru);
   recycle(queue);
 }
 
@@ -720,9 +734,12 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
   node_builder& nb = resF->useNodeBuilder(rLevel, rSize);
 
   // Initialize mdd reader
-  node_reader* A = (mddLevel < rLevel)
-    ? arg1F->initRedundantReader(rLevel, mdd, true)
-    : arg1F->initNodeReader(mdd, true);
+  unpacked_node *A = unpacked_node::useUnpackedNode();
+  if (mddLevel < rLevel) {
+    A->initRedundant(arg1F, rLevel, mdd, true);
+  } else {
+    A->initFromNode(arg1F, mdd, true);
+  }
 
   if (mddLevel > ABS(mxdLevel)) {
     //
@@ -742,19 +759,22 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
     for (int i=0; i<rSize; i++) nb.d(i) = 0;
 
     // Initialize mxd readers, note we might skip the unprimed level
-    node_reader* Ru = (mxdLevel < 0)
-      ? arg2F->initRedundantReader(rLevel, mxd, false)
-      : arg2F->initNodeReader(mxd, false);
-    node_reader* Rp = node_reader::useReader();
+    unpacked_node *Ru = unpacked_node::useUnpackedNode();
+    unpacked_node *Rp = unpacked_node::useUnpackedNode();
+    if (mxdLevel < 0) {
+      Ru->initRedundant(arg2F, rLevel, mxd, false);
+    } else {
+      Ru->initFromNode(arg2F, mxd, false);
+    }
 
     // loop over mxd "rows"
     for (int iz=0; iz<Ru->getNNZs(); iz++) {
       int i = Ru->i(iz);
       if (0==A->d(i))   continue; 
       if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz)))) {
-        arg2F->initIdentityReader(*Rp, rLevel, i, Ru->d(iz), false);
+        Rp->initIdentity(arg2F, rLevel, i, Ru->d(iz), false);
       } else {
-        arg2F->initNodeReader(*Rp, Ru->d(iz), false);
+        Rp->initFromNode(arg2F, Ru->d(iz), false);
       }
 
       // loop over mxd "columns"
@@ -778,12 +798,12 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
   
     } // for i
 
-    node_reader::recycle(Rp);
-    node_reader::recycle(Ru);
+    unpacked_node::recycle(Rp);
+    unpacked_node::recycle(Ru);
   } // else
 
   // cleanup mdd reader
-  node_reader::recycle(A);
+  unpacked_node::recycle(A);
 
   saturateHelper(nb);
   result = resF->createReducedNode(-1, nb);
@@ -832,10 +852,13 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(node_builder& nb)
   MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
 
   // Initialize mxd readers, note we might skip the unprimed level
-  node_reader* Ru = (mxdLevel<0)
-    ? arg2F->initRedundantReader(nb.getLevel(), mxd, false)
-    : arg2F->initNodeReader(mxd, false);
-  node_reader* Rp = node_reader::useReader();
+  unpacked_node *Ru = unpacked_node::useUnpackedNode();
+  unpacked_node *Rp = unpacked_node::useUnpackedNode();
+  if (mxdLevel < 0) {
+    Ru->initRedundant(arg2F, nb.getLevel(), mxd, false);
+  } else {
+    Ru->initFromNode(arg2F, mxd, false);
+  }
 
   // indexes to explore
   charbuf* expl = useCharBuf(nb.getSize());
@@ -855,9 +878,9 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(node_builder& nb)
       int dlevel = arg2F->getNodeLevel(Ru->d(iz));
 
       if (dlevel == -nb.getLevel()) {
-        arg2F->initNodeReader(*Rp, Ru->d(iz), false); 
+        Rp->initFromNode(arg2F, Ru->d(iz), false);
       } else {
-        arg2F->initIdentityReader(*Rp, -nb.getLevel(), i, Ru->d(iz), false);
+        Rp->initIdentity(arg2F, -nb.getLevel(), i, Ru->d(iz), false);
       }
 
       for (int jz=0; jz<Rp->getNNZs(); jz++) {
@@ -901,8 +924,8 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(node_builder& nb)
     } // for i
   } // while repeat
   // cleanup
-  node_reader::recycle(Rp);
-  node_reader::recycle(Ru);
+  unpacked_node::recycle(Rp);
+  unpacked_node::recycle(Ru);
   recycle(expl);
 }
 
@@ -932,9 +955,12 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
   node_builder& nb = resF->useNodeBuilder(rLevel, rSize);
 
   // Initialize mdd reader
-  node_reader* A = (mddLevel < rLevel)
-    ? arg1F->initRedundantReader(rLevel, mdd, true)
-    : arg1F->initNodeReader(mdd, true);
+  unpacked_node *A = unpacked_node::useUnpackedNode();
+  if (mddLevel < rLevel) {
+    A->initRedundant(arg1F, rLevel, mdd, true);
+  } else {
+    A->initFromNode(arg1F, mdd, true);
+  }
 
   if (mddLevel > ABS(mxdLevel)) {
     //
@@ -952,18 +978,21 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
     for (int i=0; i<rSize; i++) nb.d(i) = 0;
 
     // Initialize mxd readers, note we might skip the unprimed level
-    node_reader* Ru = (mxdLevel < 0)
-      ? arg2F->initRedundantReader(rLevel, mxd, false)
-      : arg2F->initNodeReader(mxd, false);
-    node_reader* Rp = node_reader::useReader();
+    unpacked_node *Ru = unpacked_node::useUnpackedNode();
+    unpacked_node *Rp = unpacked_node::useUnpackedNode();
+    if (mxdLevel < 0) {
+      Ru->initRedundant(arg2F, rLevel, mxd, false);
+    } else {
+      Ru->initFromNode(arg2F, mxd, false);
+    }
 
     // loop over mxd "rows"
     for (int iz=0; iz<Ru->getNNZs(); iz++) {
       int i = Ru->i(iz);
       if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz)))) {
-        arg2F->initIdentityReader(*Rp, rLevel, i, Ru->d(iz), false);
+        Rp->initIdentity(arg2F, rLevel, i, Ru->d(iz), false);
       } else {
-        arg2F->initNodeReader(*Rp, Ru->d(iz), false);
+        Rp->initFromNode(arg2F, Ru->d(iz), false);
       }
 
       // loop over mxd "columns"
@@ -988,12 +1017,12 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
   
     } // for i
 
-    node_reader::recycle(Rp);
-    node_reader::recycle(Ru);
+    unpacked_node::recycle(Rp);
+    unpacked_node::recycle(Ru);
   } // else
 
   // cleanup mdd reader
-  node_reader::recycle(A);
+  unpacked_node::recycle(A);
 
   saturateHelper(nb);
   result = resF->createReducedNode(-1, nb);

@@ -245,8 +245,8 @@ bool MEDDLY::evmdd_plusint::evpimdd_iterator::first(int k, node_handle down)
     MEDDLY_DCASSERT(down);
     int kdn = F->getNodeLevel(down);
     MEDDLY_DCASSERT(kdn <= k);
-    if (kdn < k)  F->initRedundantReader(path[k], k, 0, down, false);
-    else          F->initNodeReader(path[k], down, false);
+    if (kdn < k)  path[k].initRedundant(F, k, 0, down, false);
+    else          path[k].initFromNode(F, down, false);
     nzp[k] = 0;
     index[k] = path[k].i(0);
     down = path[k].d(0);
@@ -282,14 +282,14 @@ void MEDDLY::evmdd_index_set::getElement(const dd_edge &a, int index, int* e)
     return;
   }
   int p = a.getNode();
-  node_reader* R = node_reader::useReader();
+  unpacked_node* R = unpacked_node::useUnpackedNode();
   for (int k=getNumVariables(); k; k--) {
     MEDDLY_DCASSERT(index >= 0);
     if (p <= 0) {
       e[k] = 0;
       continue;
     }
-    initNodeReader(*R, p, false);
+    R->initFromNode(this, p, false);
     MEDDLY_DCASSERT(R->getLevel() <= k);
     if (R->getLevel() < k) {
       e[k] = 0;
@@ -308,6 +308,6 @@ void MEDDLY::evmdd_index_set::getElement(const dd_edge &a, int index, int* e)
   } // for k
   if (index)    e[0] = 0;
   else          e[0] = -p;
-  node_reader::recycle(R);
+  unpacked_node::recycle(R);
 }
 

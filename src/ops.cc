@@ -358,11 +358,13 @@ MEDDLY::satpregen_opname::pregen_relation
 
     MEDDLY_DCASSERT(ABS(mxdF->getNodeLevel(events[k])) <= k);
 
-    // Initialize readers
-    node_reader* Mu = isLevelAbove(k, mxdF->getNodeLevel(events[k]))
-      ? mxdF->initRedundantReader(k, events[k], true)
-      : mxdF->initNodeReader(events[k], true);
-    node_reader* Mp = node_reader::useReader();
+    // Initialize unpacked nodes
+    unpacked_node* Mu = (isLevelAbove(k, mxdF->getNodeLevel(events[k]))) 
+      ?   unpacked_node::newRedundant(mxdF, k, events[k], true)
+      :   unpacked_node::newFromNode(mxdF, events[k], true)
+    ;
+
+    unpacked_node* Mp = unpacked_node::useUnpackedNode();
 
     bool first = true;
     node_handle maxDiag = 0;
@@ -371,9 +373,9 @@ MEDDLY::satpregen_opname::pregen_relation
     for (int i = 0; i < Mu->getSize(); i++) {
       // Initialize column reader
       if (isLevelAbove(-k, mxdF->getNodeLevel(Mu->d(i)))) {
-        mxdF->initIdentityReader(*Mp, -k, i, Mu->d(i), true);
+        Mp->initIdentity(mxdF, -k, i, Mu->d(i), true);
       } else {
-        mxdF->initNodeReader(*Mp, Mu->d(i), true);
+        Mp->initFromNode(mxdF, Mu->d(i), true);
       }
 
       // Intersect along the diagonal
@@ -388,8 +390,8 @@ MEDDLY::satpregen_opname::pregen_relation
     } // for i
 
     // Cleanup
-    node_reader::recycle(Mp);
-    node_reader::recycle(Mu);
+    unpacked_node::recycle(Mp);
+    unpacked_node::recycle(Mu);
 
     if (0 == maxDiag) {
 #ifdef DEBUG_FINALIZE_SPLIT
@@ -1072,13 +1074,14 @@ void findConfirmedStates(MEDDLY::satotf_opname::otf_relation* rel,
   } else {
     if (MEDDLY::isLevelAbove(mdd_level, level)) throw MEDDLY::error::INVALID_VARIABLE;
     // mdd_level == level
-    MEDDLY::node_reader* nr = insetF->initNodeReader(mdd, false);
+    MEDDLY::unpacked_node *nr = MEDDLY::unpacked_node::newFromNode(insetF, mdd, false);
     for (int i = 0; i < nr->getNNZs(); i++) {
       if (!confirmed[level][nr->i(i)]) {
         rel->confirm(level, nr->i(i));
       }
       findConfirmedStates(rel, confirmed, num_confirmed, nr->d(i), level-1, visited);
     }
+    MEDDLY::unpacked_node::recycle(nr);
   }
 }
 

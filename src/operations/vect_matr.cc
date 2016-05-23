@@ -53,7 +53,7 @@ class MEDDLY::base_evplus_mt : public specialized_operation {
 
     virtual void compute(double* y, const double* x);
 
-    virtual void compute(int ht, double* y, node_handle y_ind, const double* x, 
+    virtual void compute_r(int ht, double* y, node_handle y_ind, const double* x, 
       node_handle x_ind, node_handle A) = 0;
 
     virtual bool isStaleEntry(const node_handle*) {
@@ -98,7 +98,7 @@ MEDDLY::base_evplus_mt::~base_evplus_mt()
 
 void MEDDLY::base_evplus_mt::compute(double* y, const double* x)
 {
-  compute(L, y, y_root, x, x_root, A_root);
+  compute_r(L, y, y_root, x, x_root, A_root);
 }
 
 // ******************************************************************
@@ -112,7 +112,7 @@ class MEDDLY::VM_evplus_mt : public base_evplus_mt {
     VM_evplus_mt(const numerical_opname* code, const dd_edge &x_ind,
       const dd_edge& A, const dd_edge &y_ind);
 
-    virtual void compute(int k, double* y, node_handle y_ind, const double* x, 
+    virtual void compute_r(int k, double* y, node_handle y_ind, const double* x, 
       node_handle x_ind, node_handle A);
 
     void comp_pr(int k, double* y, node_handle y_ind, const double* x, 
@@ -126,7 +126,7 @@ MEDDLY::VM_evplus_mt::VM_evplus_mt(const numerical_opname* code,
 {
 }
 
-void MEDDLY::VM_evplus_mt::compute(int k, double* y, node_handle y_ind, 
+void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind, 
   const double* x, node_handle x_ind, node_handle a)
 {
   // Handles the unprimed levels of a
@@ -159,8 +159,8 @@ void MEDDLY::VM_evplus_mt::compute(int k, double* y, node_handle y_ind,
   //
   if (ABS(aLevel) < k) {
     // Init sparse readers
-    node_reader* xR = fx->initNodeReader(x_ind, false);
-    node_reader* yR = fy->initNodeReader(y_ind, false);
+    unpacked_node* xR = unpacked_node::newFromNode(fx, x_ind, false);
+    unpacked_node* yR = unpacked_node::newFromNode(fy, y_ind, false);
 
     int xp = 0;
     int yp = 0;
@@ -176,7 +176,7 @@ void MEDDLY::VM_evplus_mt::compute(int k, double* y, node_handle y_ind,
         continue;
       }
       // match, need to recurse
-      compute(k-1, y + yR->ei(yp), yR->d(yp), x + xR->ei(xp), xR->d(xp), a);
+      compute_r(k-1, y + yR->ei(yp), yR->d(yp), x + xR->ei(xp), xR->d(xp), a);
       xp++;
       if (xp >= xR->getNNZs()) break;
       yp++;
@@ -184,8 +184,8 @@ void MEDDLY::VM_evplus_mt::compute(int k, double* y, node_handle y_ind,
     } // for (;;)
     
     // Cleanup
-    node_reader::recycle(yR);
-    node_reader::recycle(xR);
+    unpacked_node::recycle(yR);
+    unpacked_node::recycle(xR);
 
     // Done
     return;
@@ -196,10 +196,15 @@ void MEDDLY::VM_evplus_mt::compute(int k, double* y, node_handle y_ind,
   //
 
   // Init sparse readers
-  node_reader* aR = (aLevel == k) 
-    ? fA->initNodeReader(a, false)
-    : fA->initRedundantReader(k, a, false);
-  node_reader* xR = fx->initNodeReader(x_ind, false);
+  unpacked_node* aR = unpacked_node::useUnpackedNode();
+  if (aLevel == k) {
+    aR->initFromNode(fA, a, false);
+  } else {
+    aR->initRedundant(fA, k, a, false);
+  }
+
+  unpacked_node* xR = unpacked_node::useUnpackedNode();
+  xR->initFromNode(fx, x_ind, false);
 
   int xp = 0;
   int ap = 0;
@@ -223,8 +228,8 @@ void MEDDLY::VM_evplus_mt::compute(int k, double* y, node_handle y_ind,
   } // for (;;)
 
   // Cleanup
-  node_reader::recycle(xR);
-  node_reader::recycle(aR);
+  unpacked_node::recycle(xR);
+  unpacked_node::recycle(aR);
 }
 
 void MEDDLY::VM_evplus_mt::comp_pr(int k, double* y, node_handle y_ind, 
@@ -237,10 +242,15 @@ void MEDDLY::VM_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
   }
 
   // Init sparse readers
-  node_reader* aR = (fA->getNodeLevel(a) == -k) 
-    ? fA->initNodeReader(a, false)
-    : fA->initIdentityReader(k, ain, a, false);
-  node_reader* yR = fy->initNodeReader(y_ind, false);
+  unpacked_node* aR = unpacked_node::useUnpackedNode();
+  if (fA->getNodeLevel(a) == -k) {
+    aR->initFromNode(fA, a, false);
+  } else {
+    aR->initIdentity(fA, k, ain, a, false);
+  }
+
+  unpacked_node* yR = unpacked_node::newFromNode(fy, y_ind, false);
+
 
   int yp = 0;
   int ap = 0;
@@ -256,7 +266,7 @@ void MEDDLY::VM_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
       continue;
     }
     // match, need to recurse
-    compute(k-1, y + yR->ei(yp), yR->d(yp), x, x_ind, aR->d(ap));
+    compute_r(k-1, y + yR->ei(yp), yR->d(yp), x, x_ind, aR->d(ap));
     ap++;
     if (ap >= aR->getNNZs()) break;
     yp++;
@@ -264,8 +274,8 @@ void MEDDLY::VM_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
   } // for (;;)
 
   // Cleanup
-  node_reader::recycle(yR);
-  node_reader::recycle(aR);
+  unpacked_node::recycle(yR);
+  unpacked_node::recycle(aR);
 }
 
 
@@ -280,7 +290,7 @@ class MEDDLY::MV_evplus_mt : public base_evplus_mt {
     MV_evplus_mt(const numerical_opname* code, const dd_edge &x_ind,
       const dd_edge& A, const dd_edge &y_ind);
 
-    virtual void compute(int k, double* y, node_handle y_ind, const double* x, 
+    virtual void compute_r(int k, double* y, node_handle y_ind, const double* x, 
       node_handle x_ind, node_handle A);
 
     void comp_pr(int k, double* y, node_handle y_ind, const double* x, 
@@ -294,7 +304,7 @@ MEDDLY::MV_evplus_mt::MV_evplus_mt(const numerical_opname* code,
 {
 }
 
-void MEDDLY::MV_evplus_mt::compute(int k, double* y, node_handle y_ind, 
+void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind, 
   const double* x, node_handle x_ind, node_handle a)
 {
   // Handles the unprimed levels of a
@@ -327,8 +337,8 @@ void MEDDLY::MV_evplus_mt::compute(int k, double* y, node_handle y_ind,
   //
   if (ABS(aLevel) < k) {
     // Init sparse readers
-    node_reader* xR = fx->initNodeReader(x_ind, false);
-    node_reader* yR = fy->initNodeReader(y_ind, false);
+    unpacked_node* xR = unpacked_node::newFromNode(fx, x_ind, false);
+    unpacked_node* yR = unpacked_node::newFromNode(fy, y_ind, false);
 
     int xp = 0;
     int yp = 0;
@@ -344,7 +354,7 @@ void MEDDLY::MV_evplus_mt::compute(int k, double* y, node_handle y_ind,
         continue;
       }
       // match, need to recurse
-      compute(k-1, y + yR->ei(yp), yR->d(yp), x + xR->ei(xp), xR->d(xp), a);
+      compute_r(k-1, y + yR->ei(yp), yR->d(yp), x + xR->ei(xp), xR->d(xp), a);
       xp++;
       if (xp >= xR->getNNZs()) break;
       yp++;
@@ -352,8 +362,8 @@ void MEDDLY::MV_evplus_mt::compute(int k, double* y, node_handle y_ind,
     } // for (;;)
     
     // Cleanup
-    node_reader::recycle(yR);
-    node_reader::recycle(xR);
+    unpacked_node::recycle(yR);
+    unpacked_node::recycle(xR);
 
     // Done
     return;
@@ -364,10 +374,15 @@ void MEDDLY::MV_evplus_mt::compute(int k, double* y, node_handle y_ind,
   //
 
   // Init sparse readers
-  node_reader* aR = (aLevel == k) 
-    ? fA->initNodeReader(a, false)
-    : fA->initRedundantReader(k, a, false);
-  node_reader* yR = fy->initNodeReader(y_ind, false);
+  unpacked_node* aR = unpacked_node::useUnpackedNode();
+  if (aLevel == k) {
+    aR->initFromNode(fA, a, false);
+  } else {
+    aR->initRedundant(fA, k, a, false);
+  }
+
+  unpacked_node* yR = unpacked_node::newFromNode(fy, y_ind, false);
+
 
   int yp = 0;
   int ap = 0;
@@ -391,8 +406,8 @@ void MEDDLY::MV_evplus_mt::compute(int k, double* y, node_handle y_ind,
   } // for (;;)
 
   // Cleanup
-  node_reader::recycle(yR);
-  node_reader::recycle(aR);
+  unpacked_node::recycle(yR);
+  unpacked_node::recycle(aR);
 }
 
 void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, node_handle y_ind, 
@@ -405,10 +420,15 @@ void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
   }
 
   // Init sparse readers
-  node_reader* aR = (fA->getNodeLevel(a) == -k) 
-    ? fA->initNodeReader(a, false)
-    : fA->initIdentityReader(k, ain, a, false);
-  node_reader* xR = fx->initNodeReader(x_ind, false);
+  unpacked_node* aR = unpacked_node::useUnpackedNode();
+  if (fA->getNodeLevel(a) == -k) {
+    aR->initFromNode(fA, a, false);
+  } else {
+    aR->initIdentity(fA, k, ain, a, false);
+  }
+
+  unpacked_node* xR = unpacked_node::newFromNode(fx, x_ind, false);
+
 
   int xp = 0;
   int ap = 0;
@@ -424,7 +444,7 @@ void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
       continue;
     }
     // match, need to recurse
-    compute(k-1, y, y_ind, x + xR->ei(xp), xR->d(xp), aR->d(ap));
+    compute_r(k-1, y, y_ind, x + xR->ei(xp), xR->d(xp), aR->d(ap));
     ap++;
     if (ap >= aR->getNNZs()) break;
     xp++;
@@ -432,8 +452,8 @@ void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
   } // for (;;)
 
   // Cleanup
-  node_reader::recycle(xR);
-  node_reader::recycle(aR);
+  unpacked_node::recycle(xR);
+  unpacked_node::recycle(aR);
 }
 
 

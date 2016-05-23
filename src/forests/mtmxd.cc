@@ -103,12 +103,12 @@ bool MEDDLY::mtmxd_forest::mtmxd_iterator::first(int k, node_handle down)
 
     if (isLevelAbove(k, kdn)) {
       if (k>0 || isFully) {
-        F->initRedundantReader(path[k], k, down, false);
+        path[k].initRedundant(F, k, down, false);
       } else {
-        F->initIdentityReader(path[k], k, index[-k], down, false);
+        path[k].initIdentity(F, k, index[-k], down, false);
       }
     } else {
-      F->initNodeReader(path[k], down, false);
+      path[k].initFromNode(F, down, false);
     }
     nzp[k] = 0;
     index[k] = path[k].i(0);
@@ -209,11 +209,11 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::first(int k, node_handle down)
     // Set up this level.
     nzp[k] = 0;
     if (F->isFullyReduced()) {
-      F->initRedundantReader(path[k], k, cdown, false);
+      path[k].initRedundant(F, k, cdown, false);
       index[k] = 0;
     } else {
       index[k] = index[upLevel(k)];
-      F->initIdentityReader(path[k], k, index[k], cdown, false);
+      path[k].initIdentity(F, k, index[k], cdown, false);
     }
     return true;
   } 
@@ -221,7 +221,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::first(int k, node_handle down)
   // Proper node here.
   // cycle through it and recurse... 
 
-  F->initNodeReader(path[k], cdown, false);
+  path[k].initFromNode(F, cdown, false);
 
   for (int z=0; z<path[k].getNNZs(); z++) {
     if (first(downLevel(k), path[k].d(z))) {
@@ -328,7 +328,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::first(int k, node_handle down)
       // See if there is a valid path below.
       if (!first(downLevel(kpr), down)) return false;
       // There's one below, set up the one at these levels.
-      F->initRedundantReader(path[k], k, down, false);
+      path[k].initRedundant(F, k, down, false);
       if (F->isFullyReduced()) {
         nzp[k] = 0;
         index[k] = 0;
@@ -343,14 +343,14 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::first(int k, node_handle down)
     int cdown = F->getDownPtr(down, index[kpr]);
     if (0==cdown) return false;
     if (!first(kpr, cdown)) return false;
-    F->initRedundantReader(path[k], k, down, false);
+    path[k].initRedundant(F, k, down, false);
     nzp[k] = 0;
     index[k] = 0;
     return true;
   }
 
   // Level is not skipped.
-  F->initNodeReader(path[k], down, false);
+  path[k].initFromNode(F, down, false);
   
   for (int z=0; z<path[k].getNNZs(); z++) {
     index[k] = path[k].i(z);

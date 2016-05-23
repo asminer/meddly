@@ -480,12 +480,13 @@ bool MEDDLY::old_node_storage
 }
 
 bool MEDDLY::old_node_storage
-::areDuplicates(node_address addr, const node_reader &nr) const
+::areDuplicates(node_address addr, const unpacked_node &nr) const
 {
   return areDupsTempl(addr, nr);
 }
 
-void MEDDLY::old_node_storage::fillReader(node_address addr, node_reader &nr) const
+// void MEDDLY::old_node_storage::fillReader(node_address addr, node_reader &nr) const
+void MEDDLY::old_node_storage::fillUnpacked(unpacked_node &nr, node_address addr) const
 {
   // Copy hashed header
 

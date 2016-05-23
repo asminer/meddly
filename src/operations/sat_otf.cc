@@ -318,14 +318,22 @@ MEDDLY::otfsat_by_events_op::saturate(node_handle mdd, int k)
 #endif
 
   node_builder& nb = resF->useNodeBuilder(k, sz);
-  node_reader* mddDptrs =
-    (mdd_level < k)
-    ? argF->initRedundantReader(k, mdd, true)
-    : argF->initNodeReader(mdd, true);
+  // Initialize mdd reader
+  unpacked_node *mddDptrs = unpacked_node::useUnpackedNode();
+  if (mdd_level < k) {
+    mddDptrs->initRedundant(argF, k, mdd, true);
+  } else {
+    mddDptrs->initFromNode(argF, mdd, true);
+  }
+
+  // Do computation
   for (int i=0; i<sz; i++) {
     nb.d(i) = mddDptrs->d(i) ? saturate(mddDptrs->d(i), k-1) : 0;
   }
-  node_reader::recycle(mddDptrs);
+
+  // Cleanup
+  unpacked_node::recycle(mddDptrs);
+
   parent->saturateHelper(nb);
   n = resF->createReducedNode(-1, nb);
 
@@ -543,21 +551,24 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(node_builder& nb)
   if (0 == nEventsAtThisLevel) return;
 
   // Initialize mxd readers, note we might skip the unprimed level
-  node_reader** Ru = new node_reader*[nEventsAtThisLevel];
+  unpacked_node** Ru = new unpacked_node*[nEventsAtThisLevel];
   for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
     rel->rebuildEvent(level, ei);
     node_handle mxd = rel->getEvent(level, ei);
     if (0==mxd) {
       Ru[ei] = 0;
     } else {
+      Ru[ei] = unpacked_node::useUnpackedNode();
       int eventLevel = arg2F->getNodeLevel(mxd);
       MEDDLY_DCASSERT(ABS(eventLevel) == level);
-      Ru[ei] = (eventLevel<0)
-        ? arg2F->initRedundantReader(level, mxd, true)
-        : arg2F->initNodeReader(mxd, true);
+      if (eventLevel<0) {
+        Ru[ei]->initRedundant(arg2F, level, mxd, true);
+      } else {
+        Ru[ei]->initFromNode(arg2F, mxd, true);
+      }
     }
   }
-  node_reader* Rp = node_reader::useReader();
+  unpacked_node* Rp = unpacked_node::useUnpackedNode();
 
   //      Node reader auto expands when passed by reference
   //      Node builder can be expanded via a call to node_builder::resize()
@@ -583,21 +594,19 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(node_builder& nb)
         node_handle mxd = rel->getEvent(level, ei);
         if (0==mxd) {
           if (Ru[ei]) {
-            node_reader::recycle(Ru[ei]);
+            unpacked_node::recycle(Ru[ei]);
             Ru[ei] = 0;
           }
         } else {
           int eventLevel = arg2F->getNodeLevel(mxd);
           MEDDLY_DCASSERT(ABS(eventLevel) == level);
-          if (Ru[ei]){
-            if (eventLevel<0)
-              arg2F->initRedundantReader(*Ru[ei], level, mxd, true);
-            else
-              arg2F->initNodeReader(*Ru[ei], mxd, true);
+          if (0==Ru[ei]) {
+            Ru[ei] = unpacked_node::useUnpackedNode();
+          }
+          if (eventLevel<0) {
+            Ru[ei]->initRedundant(arg2F, level, mxd, true);
           } else {
-            Ru[ei] = (eventLevel<0)
-              ? arg2F->initRedundantReader(level, mxd, true)
-              : arg2F->initNodeReader(mxd, true);
+            Ru[ei]->initFromNode(arg2F, mxd, true);
           }
         }
       }
@@ -608,9 +617,9 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(node_builder& nb)
       int dlevel = arg2F->getNodeLevel(Ru[ei]->d(i));
 
       if (dlevel == -level) {
-        arg2F->initNodeReader(*Rp, Ru[ei]->d(i), false);
+        Rp->initFromNode(arg2F, Ru[ei]->d(i), false);
       } else {
-        arg2F->initIdentityReader(*Rp, -level, i, Ru[ei]->d(i), false);
+        Rp->initIdentity(arg2F, -level, i, Ru[ei]->d(i), false);
       }
 
       for (int jz=0; jz<Rp->getNNZs(); jz++) {
@@ -666,8 +675,8 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(node_builder& nb)
   } // while there are indexes to explore
 
   // cleanup
-  node_reader::recycle(Rp);
-  for (int ei = 0; ei < nEventsAtThisLevel; ei++) node_reader::recycle(Ru[ei]);
+  unpacked_node::recycle(Rp);
+  for (int ei = 0; ei < nEventsAtThisLevel; ei++) unpacked_node::recycle(Ru[ei]);
   delete[] Ru;
   recycle(queue);
 }
@@ -724,9 +733,12 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
   node_builder& nb = resF->useNodeBuilder(rLevel, rSize);
 
   // Initialize mdd reader
-  node_reader* A = (mddLevel < rLevel)
-    ? arg1F->initRedundantReader(rLevel, mdd, true)
-    : arg1F->initNodeReader(mdd, true);
+  unpacked_node *A = unpacked_node::useUnpackedNode();
+  if (mddLevel < rLevel) {
+    A->initRedundant(arg1F, rLevel, mdd, true);
+  } else {
+    A->initFromNode(arg1F, mdd, true);
+  }
 
   if (mddLevel > ABS(mxdLevel)) {
     //
@@ -746,19 +758,22 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
     for (int i=0; i<rSize; i++) nb.d(i) = 0;
 
     // Initialize mxd readers, note we might skip the unprimed level
-    node_reader* Ru = (mxdLevel < 0)
-      ? arg2F->initRedundantReader(rLevel, mxd, false)
-      : arg2F->initNodeReader(mxd, false);
-    node_reader* Rp = node_reader::useReader();
+    unpacked_node *Ru = unpacked_node::useUnpackedNode();
+    unpacked_node *Rp = unpacked_node::useUnpackedNode();
+    if (mxdLevel < 0) {
+      Ru->initRedundant(arg2F, rLevel, mxd, false);
+    } else {
+      Ru->initFromNode(arg2F, mxd, false);
+    }
 
     // loop over mxd "rows"
     for (int iz=0; iz<Ru->getNNZs(); iz++) {
       int i = Ru->i(iz);
       if (0==A->d(i))   continue; 
       if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz)))) {
-        arg2F->initIdentityReader(*Rp, rLevel, i, Ru->d(iz), false);
+        Rp->initIdentity(arg2F, rLevel, i, Ru->d(iz), false);
       } else {
-        arg2F->initNodeReader(*Rp, Ru->d(iz), false);
+        Rp->initFromNode(arg2F, Ru->d(iz), false);
       }
 
       // loop over mxd "columns"
@@ -794,12 +809,12 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
   
     } // for i
 
-    node_reader::recycle(Rp);
-    node_reader::recycle(Ru);
+    unpacked_node::recycle(Rp);
+    unpacked_node::recycle(Ru);
   } // else
 
   // cleanup mdd reader
-  node_reader::recycle(A);
+  unpacked_node::recycle(A);
 
   saturateHelper(nb);
   result = resF->createReducedNode(-1, nb);

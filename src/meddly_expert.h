@@ -85,8 +85,11 @@ namespace MEDDLY {
   class expert_domain;
 
   // wrappers for nodes
-  class node_reader;
-  class node_builder;
+  // class node_reader;  // to be killed 
+  class node_builder; // to be killed
+
+  // wrapper for nodes
+  class unpacked_node;  // replacement for node_reader, node_builder
 
   // EXPERIMENTAL - matrix wrappers for unprimed, primed pairs of nodes
   class unpacked_matrix;
@@ -544,7 +547,7 @@ class MEDDLY::expert_domain : public domain {
 
 // ******************************************************************
 // *                                                                *
-// *                       node_reader  class                       *
+// *                      unpacked_node  class                      *
 // *                                                                *
 // ******************************************************************
 
@@ -560,19 +563,48 @@ class MEDDLY::expert_domain : public domain {
       array of integers, for indexes (sparse only)
       "compact" chunk of memory for edge values
 */
-class MEDDLY::node_reader {
+class MEDDLY::unpacked_node {
   public:
     /** Constructor.
      The class must be "filled" by a forest before
      it can be used, however.
      */
-    node_reader();
+    unpacked_node();
 
     /// Destructor.
-    ~node_reader();
+    ~unpacked_node();
 
     /// Free memory, but don't delete.
     void clear();
+
+  public:
+  /* Initialization methods */
+
+    void initFromNode(const expert_forest *f, node_handle node, bool full);
+
+    void initRedundant(const expert_forest *f, int k, node_handle node, bool full);
+    void initRedundant(const expert_forest *f, int k, int ev, node_handle node, bool full);
+    void initRedundant(const expert_forest *f, int k, float ev, node_handle node, bool full);
+
+    void initIdentity(const expert_forest *f, int k, int i, node_handle node, bool full);
+    void initIdentity(const expert_forest *f, int k, int i, int ev, node_handle node, bool full);
+    void initIdentity(const expert_forest *f, int k, int i, float ev, node_handle node, bool full);
+
+  public:
+  /* For convenience: get recycled instance and initialize */
+
+    static unpacked_node* newFromNode(const expert_forest *f, node_handle node, bool full);
+
+    static unpacked_node* newRedundant(const expert_forest *f, int k, node_handle node, bool full);
+    static unpacked_node* newRedundant(const expert_forest *f, int k, int ev, node_handle node, bool full);
+    static unpacked_node* newRedundant(const expert_forest *f, int k, float ev, node_handle node, bool full);
+
+    static unpacked_node* newIdentity(const expert_forest *f, int k, int i, node_handle node, bool full);
+    static unpacked_node* newIdentity(const expert_forest *f, int k, int i, int ev, node_handle node, bool full);
+    static unpacked_node* newIdentity(const expert_forest *f, int k, int i, float ev, node_handle node, bool full);
+
+  public:
+  /* Display / access methods */
 
     /// Display this node
     void show(output &s, const expert_forest* parent, bool verb) const;
@@ -641,12 +673,12 @@ class MEDDLY::node_reader {
     void computeHash(bool hashEdgeValues, node_handle tv);
 
     // Centralized recycling
-    static node_reader* useReader();
-    static void recycle(node_reader* r);
+    static unpacked_node* useUnpackedNode();
+    static void recycle(unpacked_node* r);
 
   private:
-    static node_reader* freeList;
-    node_reader* next; // for recycled list
+    static unpacked_node* freeList;
+    unpacked_node* next; // for recycled list
     /*
      Extra info that is hashed
      */
@@ -1100,7 +1132,7 @@ class MEDDLY::node_storage {
           @return true    iff the nodes are duplicates
     */
     virtual bool
-        areDuplicates(node_address addr, const node_reader &nr) const = 0;
+        areDuplicates(node_address addr, const unpacked_node &nr) const = 0;
 
     /** Fill a node reader.
         Useful if we want to read an entire node.
@@ -1109,13 +1141,21 @@ class MEDDLY::node_storage {
                           been "resized".  Full or sparse
                           will be decided from \a nr settings.
     */
-    virtual void fillReader(node_address addr, node_reader &nr) const = 0;
+    // virtual void fillReader(node_address addr, unpacked_node &nr) const = 0;
+
+    /**
+        Copy the node at the specified address, into an unpacked node.
+        Useful for reading an entire node.
+          @param  un      Result will be stored here.  Will be resized if needed.
+          @param  addr    Node address in this structure.
+    */
+    virtual void fillUnpacked(unpacked_node &un, node_address addr) const = 0;
 
     /** Compute the hash value for a node.
         This requires an actual "node", not just an address,
         because the hash contains the node's level.
-        Should give the same answer as filling a node_reader
-        and computing the hash on the node_reader.
+        Should give the same answer as filling a unpacked_node
+        and computing the hash on the unpacked_node.
 
           @param  p     Node of interest.
     */
@@ -1239,12 +1279,12 @@ class MEDDLY::node_storage {
     void moveNodeOffset(node_handle node, node_address old_addr,
                         node_address new_addr);
 
-    static void resize_header(node_reader& nr, int extra_slots);
-    static void* extra_hashed(node_reader& nr);
-    static node_handle* down_of(node_reader& nr);
-    static int* index_of(node_reader& nr);
-    static char* edge_of(node_reader& nr);
-    static int& nnzs_of(node_reader& nr);
+    static void resize_header(unpacked_node& nr, int extra_slots);
+    static void* extra_hashed(unpacked_node& nr);
+    static node_handle* down_of(unpacked_node& nr);
+    static int* index_of(unpacked_node& nr);
+    static char* edge_of(unpacked_node& nr);
+    static int& nnzs_of(unpacked_node& nr);
 
     //
     // Methods for derived classes to deal with
@@ -1662,7 +1702,7 @@ class MEDDLY::expert_forest: public forest
 
         This is designed to be used for one or two indexes only.
         For reading all or several downward pointers, a
-        node_reader should be used instead.
+        unpacked_node should be used instead.
 
           @param  p       Node to look at
           @param  index   Index of the pointer we want.
@@ -1675,7 +1715,7 @@ class MEDDLY::expert_forest: public forest
 
         This is designed to be used for one or two indexes only.
         For reading all or several downward pointers, a
-        node_reader should be used instead.
+        unpacked_node should be used instead.
 
           @param  p       Node to look at
           @param  index   Index of the pointer we want.
@@ -1689,7 +1729,7 @@ class MEDDLY::expert_forest: public forest
 
         This is designed to be used for one or two indexes only.
         For reading all or several downward pointers, a
-        node_reader should be used instead.
+        unpacked_node should be used instead.
 
           @param  p       Node to look at
           @param  index   Index of the pointer we want.
@@ -1704,13 +1744,20 @@ class MEDDLY::expert_forest: public forest
   // ------------------------------------------------------------
   // Preferred mechanism for reading nodes
 
+  void fillUnpacked(unpacked_node &un, node_handle node, bool full) const;
+
+/*
+    TBD - calls are moved into node_reader class
+ */
+
+#if 0
     /** Initialize a node reader.
           @param  nr      Node reader to fill.
           @param  node    The node to use.
           @param  full    true:   Use a full reader.
                           false:  Use a sparse reader.
     */
-    void initNodeReader(node_reader &nr, node_handle node, bool full) const;
+    void initNodeReader(unpacked_node &nr, node_handle node, bool full) const;
 
     /// Allocate and initialize a node reader.
     node_reader* initNodeReader(node_handle node, bool full) const;
@@ -1812,6 +1859,8 @@ class MEDDLY::expert_forest: public forest
     node_reader* initIdentityReader(int k, int i, float ev,
       node_handle nd, bool full) const;
 
+#endif
+
   // ------------------------------------------------------------
   // Preferred mechanism for building nodes
 
@@ -1895,7 +1944,7 @@ class MEDDLY::expert_forest: public forest
 
           @return   true, iff the nodes are duplicates.
     */
-    bool areDuplicates(node_handle node, const node_reader &nr) const;
+    bool areDuplicates(node_handle node, const unpacked_node &nr) const;
 
     /** Is this a redundant node that can be eliminated?
         Must be implemented in derived forests

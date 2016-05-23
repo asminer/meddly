@@ -918,12 +918,12 @@ MEDDLY::expert_forest
     inList[root[i]] = true;
   }
 
-  node_reader *M = node_reader::useReader();
+  unpacked_node *M = unpacked_node::useUnpackedNode();
 
   // Breadth-first search
   for (int mexpl=0; mexpl<mlen; mexpl++) {
     // explore node marked[mexpl]
-    initNodeReader(*M, marked[mexpl], false);
+    M->initFromNode(this, marked[mexpl], false);
     for (int i=0; i<M->getNNZs(); i++) {
       if (isTerminalNode(M->d(i))) continue;
       MEDDLY_CHECK_RANGE(0, M->d(i)-1, a_last);
@@ -941,7 +941,8 @@ MEDDLY::expert_forest
       mlen++;
     } // for i
   } // for mexpl
-  node_reader::recycle(M);
+
+  unpacked_node::recycle(M);
 
   // sort
   if (sort && mlen>0) {
@@ -979,12 +980,12 @@ long MEDDLY::expert_forest::getEdgeCount(node_handle p, bool countZeroes) const
   node_handle* list = markNodesInSubgraph(&p, 1, true);
   if (0==list) return 0;
   long ec=0;
-  node_reader *M = node_reader::useReader();
+  unpacked_node *M = unpacked_node::useUnpackedNode();
   for (long i=0; list[i]; i++) {
-    initNodeReader(*M, list[i], countZeroes);
+    M->initFromNode(this, list[i], countZeroes);
     ec += countZeroes ? M->getSize() : M->getNNZs();
   }
-  node_reader::recycle(M);
+  unpacked_node::recycle(M);
   free(list);
   return ec;
 }
@@ -1124,6 +1125,7 @@ void MEDDLY::expert_forest
 // '                                                                '
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
+/*
 void MEDDLY::expert_forest
 ::initRedundantReader(node_reader &nr, int k, node_handle p, bool full) const
 {
@@ -1231,7 +1233,7 @@ void MEDDLY::expert_forest
     nr.index[0] = i;
   }
 }
-
+*/
 
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -1760,7 +1762,7 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 
   unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE
-  node_reader* key = initNodeReader(p, false);
+  unpacked_node* key = unpacked_node::newFromNode(this, p, false);
   key->computeHash(areEdgeValuesHashed(), getTransparentNode());
   if (unique->find(*key) != p) {
     fprintf(stderr, "Error in deleteNode\nFind: %ld\np: %ld\n",
@@ -1769,9 +1771,9 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
     dumpInternal(myout);
     MEDDLY_DCASSERT(false);
   }
-  node_reader::recycle(key);
   node_handle x = unique->remove(h, p);
   MEDDLY_DCASSERT(p == x);
+  unpacked_node::recycle(key);
 #else
   unique->remove(h, p);
 #endif
@@ -1836,7 +1838,7 @@ void MEDDLY::expert_forest::zombifyNode(node_handle p)
 
   unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE 
-  node_reader* key = initNodeReader(p, false);
+  unpacked_node* key = unpacked_node::newFromNode(this, p, false);
   key->computeHash(areEdgeValuesHashed(), getTransparentNode());
   MEDDLY_DCASSERT(key->hash() == h);
   if (unique->find(*key) != p) {
@@ -1846,9 +1848,9 @@ void MEDDLY::expert_forest::zombifyNode(node_handle p)
     dumpInternal(myerr);
     MEDDLY_DCASSERT(false);
   }
-  node_reader::recycle(key);
   node_handle x = unique->remove(h, p);
   MEDDLY_DCASSERT(x==p);
+  unpacked_node::recycle(key);
 #else
   unique->remove(h, p);
 #endif
@@ -2129,12 +2131,12 @@ MEDDLY::node_handle MEDDLY::expert_forest
   unique->add(nb.hash(), p);
 
 #ifdef DEVELOPMENT_CODE
-  node_reader key;
-  initNodeReader(key, p, false);
-  key.computeHash(areEdgeValuesHashed(), getTransparentNode());
-  MEDDLY_DCASSERT(key.hash() == nb.hash());
-  node_handle f = unique->find(key);
+  unpacked_node* key = unpacked_node::newFromNode(this, p, false);
+  key->computeHash(areEdgeValuesHashed(), getTransparentNode());
+  MEDDLY_DCASSERT(key->hash() == nb.hash());
+  node_handle f = unique->find(*key);
   MEDDLY_DCASSERT(f == p);
+  unpacked_node::recycle(key);
 #endif
 #ifdef DEBUG_CREATE_REDUCED
   printf("Created node ");
