@@ -128,7 +128,7 @@ MEDDLY::node_handle MEDDLY::compl_mdd::compute_r(node_handle a)
   node_builder& nb = resF->useNodeBuilder(level, size);
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+  unpacked_node* A = unpacked_node::newFromNode(argF, a, true);
 
   bool addRedundentNode=(resF->isQuasiReduced() && level>1);
 
