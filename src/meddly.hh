@@ -371,8 +371,8 @@ MEDDLY::domain::getVariableBound(int lev, bool prime) const {
   return vars[lev]->getBound(prime);
 }
 
-inline const MEDDLY::variable* MEDDLY::domain::getVar(int lev) const {
-  return vars[getVarByLevel(lev)];
+inline const MEDDLY::variable* MEDDLY::domain::getVar(int var) const {
+  return vars[var];
 }
 
 inline MEDDLY::variable* MEDDLY::domain::useVar(int lev) { return vars[lev]; }

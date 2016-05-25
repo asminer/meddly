@@ -64,7 +64,7 @@ private:
               bool equals(int p): return true iff this item equals node p.
          */
         template <typename T>
-        int find(const T &key);
+        int find(const T &key) const;
 
         /** Add the item to the front of the list.
             Used when we KNOW that the item is not in the unique table already.
@@ -121,19 +121,11 @@ public:
     ~unique_table();
 
     unsigned getSize() const;
-    /**
-     * Get the size of a given level.
-     */
-    unsigned getSize(int var) const;
     unsigned getNumEntries() const;
-    /**
-     * Get the number of entries of a given level.
-     */
-    unsigned getNumEntries(int var) const;
     unsigned getMemUsed() const;
-    /**
-     * Get the memory used for a given level.
-     */
+
+    unsigned getSize(int var) const;
+    unsigned getNumEntries(int var) const;
     unsigned getMemUsed(int var) const;
 
     void reportStats(output &s, const char* pad, unsigned flags) const;
@@ -150,7 +142,7 @@ public:
           bool equals(int p): return true iff this item equals node p.
      */
     template <typename T>
-    node_handle find(const T &key, int var);
+    node_handle find(const T &key, int var) const;
 
     /** Add the item to the front of the list of the corresponding variable.
         Used when we KNOW that the item is not in the unique table already.
@@ -198,12 +190,12 @@ inline unsigned MEDDLY::unique_table::getMemUsed(int var) const
 }
 
 template <typename T>
-MEDDLY::node_handle MEDDLY::unique_table::subtable::find(const T &key)
+MEDDLY::node_handle MEDDLY::unique_table::subtable::find(const T &key) const
 {
 	unsigned h = key.hash() % size;
 	MEDDLY_CHECK_RANGE(0, h, size);
 	node_handle prev = 0;
-	for (node_handle ptr = table[h]; ptr!=0; ptr = parent->getNext(ptr)) {
+	for (node_handle ptr = table[h]; ptr != 0; ptr = parent->getNext(ptr)) {
 		if (parent->areDuplicates(ptr, key)) { // key.equals(ptr)) {
 			// MATCH
 			if (ptr != table[h]) {
@@ -223,21 +215,21 @@ MEDDLY::node_handle MEDDLY::unique_table::subtable::find(const T &key)
 }
 
 template <typename T>
-inline MEDDLY::node_handle MEDDLY::unique_table::find(const T &key, int var)
+inline MEDDLY::node_handle MEDDLY::unique_table::find(const T &key, int var) const
 {
 	return tables[var].find(key);
 }
 
 inline void MEDDLY::unique_table::add(unsigned hash, node_handle item)
 {
-	int level=parent->getNodeLevel(item);
-	int var=parent->getVarByLevel(level);
+	int level = parent->getNodeLevel(item);
+	int var = parent->getVarByLevel(level);
 	tables[var].add(hash, item);
 }
 
 inline MEDDLY::node_handle MEDDLY::unique_table::remove(unsigned hash, node_handle item)
 {
-	int var=parent->getVarByLevel(parent->getNodeLevel(item));
+	int var = parent->getVarByLevel(parent->getNodeLevel(item));
 	return tables[var].remove(hash, item);
 }
 

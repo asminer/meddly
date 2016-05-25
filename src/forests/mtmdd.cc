@@ -44,10 +44,10 @@ void MEDDLY::mtmdd_forest::reorderVariables(const int* order)
   //	for(int i=size; i>=1; i--) {
   //		printf("Lv %d Var %d: %d\n", i, getVarByLevel(i), unique->getNumEntries(getVarByLevel(i)));
   //	}
-  printf("#Node: %d\n", getCurrentNumNodes());
+//  printf("#Node: %d\n", getCurrentNumNodes());
 
-  resetPeakNumNodes();
-  resetPeakMemoryUsed();
+//  resetPeakNumNodes();
+//  resetPeakMemoryUsed();
 
   if(isLowestInversion()) {
     reorderVariablesLowestInversion(order);
@@ -77,9 +77,9 @@ void MEDDLY::mtmdd_forest::reorderVariables(const int* order)
   //	for(int i=size; i>=1; i--) {
   //		printf("Lv %d Var %d: %d\n", i, getVarByLevel(i), unique->getNumEntries(getVarByLevel(i)));
   //	}
-  printf("#Node: %d\n", getCurrentNumNodes());
-  printf("Peak #Node: %d\n", getPeakNumNodes());
-  printf("Peak Memory: %ld\n", getPeakMemoryUsed());
+//  printf("#Node: %d\n", getCurrentNumNodes());
+//  printf("Peak #Node: %d\n", getPeakNumNodes());
+//  printf("Peak Memory: %ld\n", getPeakMemoryUsed());
 }
 
 void MEDDLY::mtmdd_forest::reorderVariablesLowestInversion(const int* order)
@@ -100,7 +100,7 @@ void MEDDLY::mtmdd_forest::reorderVariablesLowestInversion(const int* order)
     ordered_level++;
   }
 
-  printf("Total Swap: %d\n", swap);
+//  printf("Total Swap: %d\n", swap);
 }
 
 void MEDDLY::mtmdd_forest::reorderVariablesHighestInversion(const int* order)
@@ -121,7 +121,7 @@ void MEDDLY::mtmdd_forest::reorderVariablesHighestInversion(const int* order)
     ordered_level--;
   }
 
-  printf("Total Swap: %d\n", swap);
+//  printf("Total Swap: %d\n", swap);
 }
 
 void MEDDLY::mtmdd_forest::reorderVariablesSinkDown(const int* order)
@@ -129,7 +129,7 @@ void MEDDLY::mtmdd_forest::reorderVariablesSinkDown(const int* order)
   int size = getDomain()->getNumVariables();
 
   // Construct the mapping from level to variable
-  int* level_to_var = static_cast<int*>(calloc(sizeof(int), size+1));
+  int* level_to_var = new int[size + 1];
   for(int i=1; i<size+1; i++) {
     level_to_var[order[i]] = i;
   }
@@ -144,8 +144,8 @@ void MEDDLY::mtmdd_forest::reorderVariablesSinkDown(const int* order)
     }
   }
 
-  free(level_to_var);
-  printf("Total Swap: %d\n", swap);
+  delete[] level_to_var;
+//  printf("Total Swap: %d\n", swap);
 }
 
 void MEDDLY::mtmdd_forest::reorderVariablesBubbleUp(const int* order)
@@ -153,7 +153,7 @@ void MEDDLY::mtmdd_forest::reorderVariablesBubbleUp(const int* order)
   int size = getDomain()->getNumVariables();
 
   // Construct the mapping from level to variable
-  int* level_to_var = static_cast<int*>(calloc(sizeof(int), size+1));
+  int* level_to_var = new int[size + 1];
   for(int i=1; i<size+1; i++) {
     level_to_var[order[i]] = i;
   }
@@ -168,8 +168,8 @@ void MEDDLY::mtmdd_forest::reorderVariablesBubbleUp(const int* order)
     }
   }
 
-  free(level_to_var);
-  printf("Total Swap: %d\n", swap);
+  delete[] level_to_var;
+//  printf("Total Swap: %d\n", swap);
 }
 
 void MEDDLY::mtmdd_forest::reorderVariablesLowestCost(const int* order)
@@ -201,7 +201,7 @@ void MEDDLY::mtmdd_forest::reorderVariablesLowestCost(const int* order)
     }
   }
 
-  printf("Total Swap: %d\n", swap);
+//  printf("Total Swap: %d\n", swap);
 }
 
 long MEDDLY::mtmdd_forest::calculate_swap_cost(int level)
@@ -252,7 +252,7 @@ double MEDDLY::mtmdd_forest::calculate_avg_ref_count(int level)
     return 0;
   }
   else {
-    node_handle* lnodes=static_cast<node_handle*>(malloc(lnum*sizeof(node_handle)));
+    node_handle* lnodes = new node_handle[lnum];
     unique->getItems(lvar, lnodes, lnum);
 
     int edges=0;
@@ -260,7 +260,7 @@ double MEDDLY::mtmdd_forest::calculate_avg_ref_count(int level)
       edges+=getInCount(lnodes[i]);
     }
 
-    free(lnodes);
+    delete[] lnodes;
     return (double)edges/lnum;
   }
 }
@@ -297,7 +297,6 @@ void MEDDLY::mtmdd_forest::reorderVariablesLowestMemory(const int* order)
       int lvar=getVarByLevel(level+1);
       int hvar=getVarByLevel(level+2);
       int before=unique->getNumEntries(hvar)+unique->getNumEntries(lvar);
-
       swapAdjacentVariables(level+1);
       int after=unique->getNumEntries(hvar)+unique->getNumEntries(lvar);
 
@@ -333,8 +332,8 @@ void MEDDLY::mtmdd_forest::reorderVariablesLowestMemory(const int* order)
     }
   }
 
-  printf("Total Swap: %d\n", swap);
-  printf("Saved Swap: %d\n", saved);
+//  printf("Total Swap: %d\n", swap);
+//  printf("Saved Swap: %d\n", saved);
 }
 
 long MEDDLY::mtmdd_forest::calculate_swap_memory_cost(int level)

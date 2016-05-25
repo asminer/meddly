@@ -41,6 +41,7 @@
 #include <string.h>
 #include <unordered_map>
 #include <vector>
+#include <cstdint>
 
 // Flags for development version only. Significant reduction in performance.
 #ifdef DEVELOPMENT_CODE
@@ -494,35 +495,13 @@ class MEDDLY::expert_domain : public domain {
     __attribute__ ((deprecated))
 #endif
     int getVariableWithHeight(int ht) const;
+
     /** Swap the locations of variables in forests.
       I.e., changes the variable ordering of all forests with this domain.
       @param  lev1    Level of first variable.
       @param  lev2    Level of second variable.
     */
     void swapOrderOfVariables(int lev1, int lev2);
-
-    /*
-     * Swap variables at lev and lev+1.
-     */
-    void swapAdjacentVariables(int lev);
-
-    /*
-     * Reorganize the variables into the given order.
-     * Variable order specifies that Variable i is at Level order[i].
-     */
-    void reorderVariables(const int* order);
-
-    /*
-     * Move the variable at level high down to level low.
-     * The variables from level low to level high-1 will be moved one level up.
-     */
-    void moveDownVariable(int high, int low);
-
-    /*
-     * Move the variable at level low up to level high.
-     * The variables from level low+1 to level high will be moved one level down.
-     */
-    void moveUpVariable(int low, int high);
 
     /** Find the actual bound of a variable.
       @param  vh      Variable handle.
@@ -560,8 +539,6 @@ class MEDDLY::expert_domain : public domain {
     virtual void read(input &s);
 
   protected:
-    void initializeVariableOrder();
-  
     ~expert_domain();
 };
 
@@ -964,6 +941,9 @@ struct MEDDLY::node_header {
     */
     int cache_count;
 
+    uint8_t marked: 1;
+    uint8_t unused: 7;
+
 #ifdef SAVE_HASHES
     /// Remember the hash for speed.
     unsigned hash;
@@ -982,6 +962,10 @@ struct MEDDLY::node_header {
     void setNextDeleted(int n);
 
     void makeZombie();
+
+    bool isMarked() const;
+    void setMarked();
+    void setUnmarked();
 };
 
 
@@ -1985,6 +1969,8 @@ class MEDDLY::expert_forest: public forest
      * Reorganize the variables in a certain order.
      */
     virtual void reorderVariables(const int* order) = 0;
+
+    void getVariableOrder(int* order);
 
     /*
      * Swap the variables at level and level+1.
@@ -3255,67 +3241,105 @@ class MEDDLY::cleanup_procedure {
 
 class MEDDLY::global_rebuilder {
 private:
-	struct RestrictKey {
-		node_handle p;
-		int var;
-		int idx;
+  struct RestrictKey {
+    node_handle p;
+    int var;
+    int idx;
 
-		bool operator==(const RestrictKey &other) const
-		{
-			return (p == other.p && var == other.var && idx == other.idx);
-		}
-	};
+    bool operator==(const RestrictKey &other) const {
+      return (p == other.p && var == other.var && idx == other.idx);
+    }
+  };
 
-	struct RestrictKeyHasher {
-		size_t operator()(const RestrictKey &key) const;
-	};
+  struct RestrictKeyHasher {
+    size_t operator()(const RestrictKey &key) const;
+  };
 
-	struct TransformKey {
-		int sig;
-		int var;
+  struct TransformKey {
+    int sig;
+//    int var;
 
-		bool operator==(const TransformKey &other) const
-		{
-			return (sig == other.sig && var == other.var);
-		}
-	};
+    bool operator==(const TransformKey &other) const {
+      return sig == other.sig;
+//      return (sig == other.sig && var == other.var);
+    }
+  };
 
-	struct TransformEntry {
-		// Partial assignment
-		std::vector<int> pa;
-		node_handle p;
+  struct TransformEntry {
+    // Partial assignment
+    std::vector<int> pa;
+    node_handle p;
 
-		bool operator==(const TransformEntry &other) const
-		{
-			return p == other.p;
-		}
-	};
+    bool operator==(const TransformEntry &other) const {
+      return p == other.p;
+    }
+  };
 
-	struct TransformKeyHasher {
-		size_t operator()(const TransformKey &key) const;
-	};
+  struct TransformKeyHasher {
+    size_t operator()(const TransformKey &key) const;
+  };
 
-	std::unordered_map<RestrictKey, node_handle, RestrictKeyHasher> _computed_restrict;
-	std::unordered_multimap<TransformKey, TransformEntry, TransformKeyHasher> _computed_transform;
+  class SignatureComputer {
+  protected:
+    global_rebuilder &_gr;
 
-	expert_forest* _source;
-	expert_forest* _target;
-	node_handle _root;
-	int _hit;
-	int _total;
+  public:
+    SignatureComputer(global_rebuilder& gr);
+    virtual void precompute() = 0;
+    virtual int signature(node_handle p) = 0;
+  };
 
-	node_handle transform(node_handle p, int target_level, std::vector<int>& pa);
-	node_handle restrict(node_handle p, std::vector<int>& pa);
+  class TopDownSignatureComputer: public SignatureComputer {
+  public:
+    TopDownSignatureComputer(global_rebuilder& gr);
+    void precompute() override;
+    int signature(node_handle p) override;
+  };
 
-	bool restrict_exist(node_handle p, const std::vector<int>& pa, int start, node_handle& result);
-	int signature(node_handle p) const;
+  class BottomUpSignatureComputer: public SignatureComputer {
+  private:
+    std::unordered_map<node_handle, int> _cache_sig;
+    std::unordered_map<node_handle, int> _cache_rec_sig;
+
+    int rec_signature(node_handle p);
+
+  public:
+    BottomUpSignatureComputer(global_rebuilder& gr);
+    void precompute() override;
+    int signature(node_handle p) override;
+  };
+
+  std::unordered_map<RestrictKey, node_handle, RestrictKeyHasher> _computed_restrict;
+  std::unordered_multimap<TransformKey, TransformEntry, TransformKeyHasher> _computed_transform;
+  SignatureComputer* _sc;
+
+  expert_forest* _source;
+  expert_forest* _target;
+  node_handle _root;
+  int _hit;
+  int _total;
+
+  node_handle transform(node_handle p, int target_level, std::vector<int>& pa);
+  node_handle restrict(node_handle p, std::vector<int>& pa);
+
+  bool restrict_exist(node_handle p, const std::vector<int>& pa, int start,
+      node_handle& result);
+  int signature(node_handle p) const;
+
+  // Return the top variable in the sub-order of the target variable order
+  // starting from 0 to target_level
+  // such that the given decision diagram depends on it.
+  int check_dependency(node_handle p, int target_level) const;
 
 public:
-	global_rebuilder(expert_forest* source, expert_forest* target);
+  friend class SignatureComputer;
 
-	dd_edge rebuild(const dd_edge& e);
-	void clearCache();
-	double hitRate() const;
+  global_rebuilder(expert_forest* source, expert_forest* target);
+  ~global_rebuilder();
+
+  dd_edge rebuild(const dd_edge& e);
+  void clearCache();
+  double hitRate() const;
 };
 
 #include "meddly_expert.hh"

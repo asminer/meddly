@@ -190,9 +190,6 @@ MEDDLY::domain::~domain()
   }
   free(forests);
 
-  free(var_to_level);
-  free(level_to_var);
-
   //
   // Delete my variables
   //
@@ -390,32 +387,11 @@ void MEDDLY::domain::markForDeletion()
 MEDDLY::expert_domain::expert_domain(variable** x, int n)
 : domain(x, n)
 {
-	if(x!=NULL) {
-		initializeVariableOrder();
-	}
 }
 
 
 MEDDLY::expert_domain::~expert_domain()
 {
-}
-
-void MEDDLY::expert_domain::initializeVariableOrder()
-{
-	var_to_level = (int*) malloc((1+nVars) * sizeof(int));
-	if (var_to_level==NULL) {
-		throw error(error::INSUFFICIENT_MEMORY);
-	}
-
-	level_to_var = (int*) malloc((1+nVars) * sizeof(int));
-	if (level_to_var==NULL) {
-		throw error(error::INSUFFICIENT_MEMORY);
-	}
-
-	for(int i=0; i<1+nVars; i++) {
-		var_to_level[i] = i;
-		level_to_var[i] = i;
-	}
 }
 
 void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
@@ -430,12 +406,10 @@ void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
   if (vars==NULL) throw error(error::INSUFFICIENT_MEMORY);
 
   vars[0] = NULL;
-  for (int i=1; i<=N; i++) {
+  for (int i = 1; i <= N; i++) {
     vars[i] = MEDDLY::createVariable(bounds[i-1], 0);
     ((expert_variable*)vars[i])->addToList(this);
   }
-
-  initializeVariableOrder();
 }
 
 
@@ -480,81 +454,6 @@ int MEDDLY::expert_domain::findLevelOfVariable(const variable *v) const
 void MEDDLY::expert_domain::swapOrderOfVariables(int vh1, int vh2)
 {
   throw error(error::NOT_IMPLEMENTED);
-}
-
-void MEDDLY::expert_domain::swapAdjacentVariables(int lev)
-{
-	int low_var = level_to_var[lev];
-	int high_var = level_to_var[lev+1];
-
-	level_to_var[lev] = high_var;
-	level_to_var[lev+1] = low_var;
-
-	MEDDLY_DCASSERT(var_to_level[low_var]==lev);
-	MEDDLY_DCASSERT(var_to_level[high_var]==lev+1);
-	var_to_level[low_var] = lev+1;
-	var_to_level[high_var] = lev;
-
-	for (int i=0; i<szForests; i++) {
-		if(forests[i]!=0) {
-			static_cast<expert_forest*>(forests[i])->swapAdjacentVariables(lev);
-		}
-	}
-}
-
-void MEDDLY::expert_domain::reorderVariables(const int* order)
-{
-	// Relation does not support variable reordering
-	for (int i=0; i<szForests; i++) {
-		if(forests[i]!=0) {
-			static_cast<expert_forest*>(forests[i])->reorderVariables(order);
-		}
-	}
-
-	for (int i=1; i<=nVars; i++) {
-		var_to_level[i] = order[i];
-		level_to_var[order[i]] = i;
-	}
-}
-
-void MEDDLY::expert_domain::moveDownVariable(int high, int low)
-{
-	MEDDLY_DCASSERT(low<high);
-
-	int high_var = level_to_var[high];
-	for(int level=high-1; level>=low; level--) {
-		int var = level_to_var[level];
-		var_to_level[var] = level+1;
-		level_to_var[level+1] = var;
-	}
-	var_to_level[high_var] = low;
-	level_to_var[low] = high_var;
-
-	for (int i=0; i<szForests; i++) {
-		if(forests[i]!=0) {
-			static_cast<expert_forest*>(forests[i])->moveDownVariable(high, low);
-		}
-	}
-}
-
-void MEDDLY::expert_domain::moveUpVariable(int low, int high)
-{
-	MEDDLY_DCASSERT(low<high);
-
-	int low_var = level_to_var[low];
-	for(int level=low+1; level<=high; level++) {
-		int var = level_to_var[level];
-		var_to_level[var] = level-1;
-		level_to_var[level-1] = var;
-	}
-	var_to_level[low_var] = high;
-	level_to_var[high] = low_var;
-
-	for (int i=0; i<szForests; i++) {
-		if(forests[i]!=0) {
-			static_cast<expert_forest*>(forests[i])->moveUpVariable(low, high);
-		}
-	}
 }
 
 // TODO: not implemented

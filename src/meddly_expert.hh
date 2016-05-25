@@ -537,6 +537,21 @@ MEDDLY::node_header::makeZombie()
   cache_count *= -1;
   offset = 0;
 }
+inline bool
+MEDDLY::node_header::isMarked() const
+{
+  return marked;
+}
+inline void
+MEDDLY::node_header::setMarked()
+{
+  marked = true;
+}
+inline void
+MEDDLY::node_header::setUnmarked()
+{
+  marked = false;
+}
 
 // ****************************************************************************
 
@@ -1458,6 +1473,13 @@ MEDDLY::expert_forest::moveNodeOffset(MEDDLY::node_handle node, node_address old
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(old_addr == address[node].offset);
   address[node].offset = new_addr;
+}
+
+inline void
+MEDDLY::expert_forest::getVariableOrder(int* order)
+{
+  // Assume order has enough space
+  memcpy(order, order_level, sizeof(int) * (getNumVariables() + 1));
 }
 
 // ****************************************************************************

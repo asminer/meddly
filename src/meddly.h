@@ -2052,9 +2052,6 @@ class MEDDLY::domain {
     /// @return The variable at level \a lev.
     variable* useVar(int lev);
 
-    inline int getVarByLevel(int lev) const { return level_to_var[lev]; }
-    inline int getLevelByVar(int var) const { return var_to_level[var]; }
-
     /** Write the domain to a file in a format that can be read back later.
           @param  s   Stream to write to
 
@@ -2092,9 +2089,6 @@ class MEDDLY::domain {
 
     variable** vars;
     int nVars;
-
-    int* var_to_level;
-    int* level_to_var;
 
     forest** forests;
     int szForests;

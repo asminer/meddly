@@ -1065,7 +1065,7 @@ bool MEDDLY::expert_forest
   const node_header& node = getNode(p);
   if (flags & SHOW_DETAILS) {
     // node: was already written.
-    const variable* v = getDomain()->getVar(ABS(node.level));
+    const variable* v = getDomain()->getVar(getVarByLevel(ABS(node.level)));
     if (v->getName()) {
       s << " level: " << v->getName();
     } else {
@@ -1095,7 +1095,7 @@ void MEDDLY::expert_forest
       if (getNodeLevel(list[i]) != k) continue;
 
       if (!printed) {
-        const variable* v = getDomain()->getVar(ABS(k));
+        const variable* v = getDomain()->getVar(getVarByLevel(ABS(k)));
         char primed = (k>0) ? ' ' : '\'';
         if (v->getName()) {
           s << "Level: " << k << " Var: " << v->getName() << primed << '\n';
@@ -2012,6 +2012,7 @@ void MEDDLY::expert_forest::recycleNodeHandle(node_handle p)
   MEDDLY_DCASSERT(0==address[p].cache_count);
   stats.decMemUsed(sizeof(node_header));
   address[p].setDeleted();
+  address[p].setUnmarked();
 
   // Determine which list to add this into
   int i = bytesRequiredForDown(p) -1;

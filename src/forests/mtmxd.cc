@@ -20,7 +20,7 @@
 */
 
 #include <vector>
-#include <map>
+#include <unordered_map>
 
 #include "mtmxd.h"
 #include "../unique_table.h"
@@ -45,446 +45,454 @@ MEDDLY::mtmxd_forest::mtmxd_iterator::mtmxd_iterator(const expert_forest *F)
 
 void MEDDLY::mtmxd_forest::reorderVariables(const int* order)
 {
-//	removeAllComputeTableEntries();
+  removeAllComputeTableEntries();
 
-//	int size=getDomain()->getNumVariables();
-//	for(int i=1; i<=size; i++) {
-//		printf("Lv %d: %d\n", i, unique->getNumEntries(getVarByLevel(i)));
-//		printf("Lv %d: %d\n", -i, unique->getNumEntries(-getVarByLevel(-i)));
-//	}
-//	printf("#Node: %d\n", getCurrentNumNodes());
+  //	int size=getDomain()->getNumVariables();
+  //	for(int i=1; i<=size; i++) {
+  //		printf("Lv %d: %d\n", i, unique->getNumEntries(getVarByLevel(i)));
+  //		printf("Lv %d: %d\n", -i, unique->getNumEntries(-getVarByLevel(-i)));
+  //	}
+  //	printf("#Node: %d\n", getCurrentNumNodes());
 
-	resetPeakNumNodes();
-	resetPeakMemoryUsed();
+//  resetPeakNumNodes();
+//  resetPeakMemoryUsed();
 
-	reorderVariablesHighestInversion(order);
+  reorderVariablesHighestInversion(order);
 
-//	for(int i=1; i<=size; i++) {
-//		printf("Lv %d: %d\n", i, unique->getNumEntries(getVarByLevel(i)));
-//	}
-	printf("#Node: %d\n", getCurrentNumNodes());
-	printf("Peak #Node: %d\n", getPeakNumNodes());
-	printf("Peak Memory: %ld\n", getPeakMemoryUsed());
+  //	for(int i=1; i<=size; i++) {
+  //		printf("Lv %d: %d\n", i, unique->getNumEntries(getVarByLevel(i)));
+  //	}
+//  printf("#Node: %d\n", getCurrentNumNodes());
+//  printf("Peak #Node: %d\n", getPeakNumNodes());
+//  printf("Peak Memory: %ld\n", getPeakMemoryUsed());
 }
 
 void MEDDLY::mtmxd_forest::reorderVariablesHighestInversion(const int* order)
 {
-	int size = getDomain()->getNumVariables();
+  int size = getDomain()->getNumVariables();
 
-	// The variables above ordered_level are ordered
-	int ordered_level = size-1;
-	int level = size-1;
-	int swap = 0;
-	while (ordered_level>0) {
-		level = ordered_level;
-		while(level<size && (order[getVarByLevel(level)] > order[getVarByLevel(level+1)])) {
-			swapAdjacentVariables(level);
-			level++;
-			swap++;
-		}
-		ordered_level--;
-	}
+  // The variables above ordered_level are ordered
+  int ordered_level = size-1;
+  int level = size-1;
+  int swap = 0;
+  while (ordered_level>0) {
+    level = ordered_level;
+    while(level<size && (order[getVarByLevel(level)] > order[getVarByLevel(level+1)])) {
+      swapAdjacentVariables(level);
+      level++;
+      swap++;
+    }
+    ordered_level--;
+  }
 
-	printf("Total Swap: %d\n", swap);
+  printf("Total Swap: %d\n", swap);
 }
 
-//
-// Complete adjacent variable swap by swapping two levels 4 times
-// Work for fully-fully reduction only
-//
 void MEDDLY::mtmxd_forest::swapAdjacentVariables(int level)
 {
-	throw error(error::NOT_IMPLEMENTED);
-
-//	if(isVarSwap()){
-//		swapAdjacentVariablesByVarSwap(level);
-//	}
-//	else if(isLevelSwap()){
-//		swapAdjacentVariablesByLevelSwap(level);
-//	}
+  if (isVarSwap()) {
+    swapAdjacentVariablesByVarSwap(level);
+  }
+  else if (isLevelSwap()) {
+    swapAdjacentVariablesByLevelSwap(level);
+  }
 }
 
-//void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
-//{
-//	// Swap VarHigh and VarLow
-//
-//	MEDDLY_DCASSERT(level>=1);
-//	MEDDLY_DCASSERT(level<getNumVariables());
-//
-//	removeAllComputeTableEntries();
-//
-//	int var_high=getVarByLevel(level+1);
-//	int var_low=getVarByLevel(level);
-//	int size_high=getVariableSize(var_high);
-//	int size_low=getVariableSize(var_low);
-//
-//	// Renumber the level of nodes for VarHigh
-//	int num_high=unique->getNumEntries(var_high);
-//	node_handle* high_nodes=static_cast<node_handle*>(malloc(num_high*sizeof(node_handle)));
-//	unique->getItems(var_high, high_nodes, num_high);
-//	for(int i=0; i<num_high; i++) {
-//		setNodeLevel(high_nodes[i], level);
-//	}
-//
-//	// Renumber the level of nodes for VarHigh'
-//	int num_phigh=unique->getNumEntries(-var_high);
-//	node_handle* phigh_nodes=static_cast<node_handle*>(malloc(num_phigh*sizeof(node_handle)));
-//	unique->getItems(-var_high, phigh_nodes, num_phigh);
-//	for(int i=0; i<num_phigh; i++) {
-//		setNodeLevel(phigh_nodes[i], -level);
-//		getNode(phigh_nodes[i]).mark();
-//	}
-//
-//	// Renumber the level of nodes for VarLow
-//	int num_low=unique->getNumEntries(var_low);
-//	node_handle* low_nodes=static_cast<node_handle*>(malloc(num_low*sizeof(node_handle)));
-//	unique->getItems(var_low, low_nodes, num_low);
-//	for(int i=0; i<num_low; i++) {
-//		setNodeLevel(low_nodes[i], level+1);
-//	}
-//	free(low_nodes);
-//
-//	// Renumber the level of nodes for VarLow'
-//	int num_plow=unique->getNumEntries(-var_low);
-//	node_handle* plow_nodes=static_cast<node_handle*>(malloc(num_plow*sizeof(node_handle)));
-//	unique->getItems(-var_low, plow_nodes, num_plow);
-//	for(int i=0; i<num_plow; i++) {
-//		setNodeLevel(plow_nodes[i], -(level+1));
-//	}
-//	free(plow_nodes);
-//
-////	printf("Before: Level %d : %d, Level %d : %d, Level %d : %d, Level %d : %d\n",
-////			level+1, num_high, -(level+1), num_phigh,
-////			level, num_low, -level, num_plow);
-//
-//	// Update the variable order
-//	order_var[var_high] = level;
-//	order_var[-var_high] = -level;
-//	order_var[var_low] = level+1;
-//	order_var[-var_low] = -(level+1);
-//	order_level[level+1] = var_low;
-//	order_level[-(level+1)] = -var_low;
-//	order_level[level] = var_high;
-//	order_level[-level] = -var_high;
-//
-//	std::vector<node_handle> t;
-//	std::map<node_handle, node_handle> m;
-//	std::map<node_handle, int> p;
-//	// Reconstruct nodes for VarHigh
-//	for(int i=0; i<num_high; i++) {
-//		node_handle node=swapAdjacentVariablesInMxD(high_nodes[i]);
-//		if(high_nodes[i]==node){
-//			// VarLow is DONT_CHANGE in the MxD
-//			unlinkNode(node);
-//		}
-//		else if(getInCount(node)>1){
-//			MEDDLY_DCASSERT(getNodeLevel(node)==-(level+1));
-//
-//			// Duplication conflict
-//			node_reader* nr = initNodeReader(high_nodes[i], true);
-//			for(int j=0; j<size_high; j++){
-//				if(getNodeLevel(nr->d(j))==-level){
-//					if(p.find(nr->d(j))==p.end()){
-//						p[nr->d(j)]=1;
-//					}
-//					else{
-//						p[nr->d(j)]++;
-//					}
-//				}
-//			}
-//			node_reader::recycle(nr);
-//
-//			m.insert(std::pair<node_handle, node_handle>(node, high_nodes[i]));
-////			printf("UPDATE: %d -> %d\n", node, high_nodes[i]);
-//		}
-//		else{
-//			// Newly created node
-//			swapNodes(high_nodes[i], node);
-//			unlinkNode(node);
-//			if(getNodeLevel(high_nodes[i])==(level+1)){
-//				t.push_back(high_nodes[i]);
-//			}
-//		}
-//	}
-//
-//	// Reconstruct nodes for VarHigh'
-//	for(int i=0; i<num_phigh; i++) {
-//		if(!isActiveNode(phigh_nodes[i]) || !getNode(phigh_nodes[i]).isMarked()){
-//			continue;
-//		}
-//		getNode(phigh_nodes[i]).unmark();
-//		if(p.find(phigh_nodes[i])!=p.end() && p[phigh_nodes[i]]==getInCount(phigh_nodes[i])){
-//			continue;
-//		}
-//
-//		// VarLow is DONT_CHANGE in the MxD
-//		node_reader* nr = initNodeReader(phigh_nodes[i], true);
-//		bool skip=true;
-//		for(int j=0; j<size_high; j++){
-//			if(!isLevelAbove(-level, getNodeLevel(nr->d(j)))){
-//				skip=false;
-//				break;
-//			}
-//		}
-//		node_reader::recycle(nr);
-//
-//		if(!skip){
-//			node_handle node=swapAdjacentVariablesInMxD(phigh_nodes[i]);
-//			MEDDLY_DCASSERT(phigh_nodes[i]!=node);
-//
-//			if(getInCount(node)>1){
-//				MEDDLY_DCASSERT(getNodeLevel(node)==-(level+1));
-//
-//				// Duplication conflict
-//				m.insert(std::pair<node_handle, node_handle>(node, phigh_nodes[i]));
-////				printf("UPDATE: %d -> %d\n", node, phigh_nodes[i]);
-//			}
-//			else{
-//				// Newly created node
-//				swapNodes(phigh_nodes[i], node);
-//				unlinkNode(node);
-//				if(getNodeLevel(phigh_nodes[i])==(level+1)){
-//					t.push_back(phigh_nodes[i]);
-//				}
-//			}
-//		}
-//	}
-//
-//	if(!m.empty()){
-//		for(std::vector<node_handle>::iterator itr=t.begin(); itr!=t.end(); itr++){
-//			MEDDLY_DCASSERT(getNodeLevel(*itr)==(level+1));
-//			node_reader* nr = initNodeReader(*itr, true);
-//			bool update=false;
-//			for(int i=0; i<size_high; i++){
-//				if(m.find(nr->d(i))!=m.end()){
-//					update=true;
-//					break;
-//				}
-//			}
-//			if(update){
-//				node_builder& nb = useNodeBuilder(level+1, size_high);
-//				for(int i=0; i<size_high; i++){
-//					if(m.find(nr->d(i))==m.end()){
-//						nb.d(i)=linkNode(nr->d(i));
-//					}
-//					else{
-//						nb.d(i)=linkNode(m[nr->d(i)]);
-//					}
-//				}
-//				node_handle node = createReducedNode(-1, nb);
-//				MEDDLY_DCASSERT(getInCount(node)==1 && getNodeLevel(node)==level+1);
-//				swapNodes(*itr, node);
-//				unlinkNode(node);
-//			}
-//			node_reader::recycle(nr);
-//		}
-//
-//		for(std::map<node_handle, node_handle>::iterator itr=m.begin(); itr!=m.end(); itr++){
-//			MEDDLY_DCASSERT(getInCount(itr->first)==1);
-//			swapNodes(itr->first, itr->second);
-//			unlinkNode(itr->first);
-//		}
-//	}
-//
-//	free(high_nodes);
-//	free(phigh_nodes);
-//
-////	printf("After: Level %d : %d,  Level %d : %d, Level %d : %d, Level %d : %d\n",
-////			level+1, unique->getNumEntries(var_low),
-////			-(level+1), unique->getNumEntries(-var_low),
-////			level, unique->getNumEntries(var_high),
-////			-level, unique->getNumEntries(-var_high));
-////	printf("#Node: %d\n", getCurrentNumNodes());
-//}
-
-MEDDLY::node_handle MEDDLY::mtmxd_forest::swapAdjacentVariablesInMxD(node_handle node)
+void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
 {
-	int level=ABS(getNodeLevel(node));
-	int hi_var=getVarByLevel(level);
-	int lo_var=getVarByLevel(level+1);
-	int hi_size=getVariableSize(hi_var);
-	int lo_size=getVariableSize(lo_var);
+  // Swap VarHigh and VarLow
+  MEDDLY_DCASSERT(level >= 1);
+  MEDDLY_DCASSERT(level < getNumVariables());
 
-	node_builder& hi_nb = useNodeBuilder(level+1, lo_size);
+  int hvar = getVarByLevel(level+1);
+  int lvar = getVarByLevel(level);
+  int hsize = getVariableSize(hvar);
+  int lsize = getVariableSize(lvar);
 
-	if(isFullyReduced() || isQuasiReduced()){
-		for(int m=0; m<lo_size; m++) {
-			node_builder& pr_hi_nb = useNodeBuilder(-(level+1), lo_size);
-			for(int n=0; n<lo_size; n++) {
-				node_builder& lo_nb = useNodeBuilder(level, hi_size);
-				for(int p=0; p<hi_size; p++){
-					node_builder& pr_lo_nb = useNodeBuilder(-level, hi_size);
-					for(int q=0; q<hi_size; q++){
-						node_handle node_p=(getNodeLevel(node)==level ? getDownPtr(node, p) : node);
-						node_handle node_pq=(getNodeLevel(node_p)==-(level) ? getDownPtr(node_p, q) : node_p);
-						node_handle node_pqm=(getNodeLevel(node_pq)==(level+1) ? getDownPtr(node_pq, m) : node_pq);
-						pr_lo_nb.d(q)=linkNode(getNodeLevel(node_pqm)==-(level+1) ? getDownPtr(node_pqm, n) : node_pqm);
-					}
-					lo_nb.d(p)=createReducedNode(p, pr_lo_nb);
-				}
-				pr_hi_nb.d(n)=createReducedNode(-1, lo_nb);
-			}
-			hi_nb.d(m)=createReducedNode(m, pr_hi_nb);
-		}
-	}
-	else if(isIdentityReduced()){
-		for(int m=0; m<lo_size; m++) {
-			node_builder& pr_hi_nb = useNodeBuilder(-(level+1), lo_size);
-			for(int n=0; n<lo_size; n++) {
-				node_builder& lo_nb = useNodeBuilder(level, hi_size);
-				for(int p=0; p<hi_size; p++){
-					node_builder& pr_lo_nb = useNodeBuilder(-level, hi_size);
-					for(int q=0; q<hi_size; q++){
-						node_handle node_p=(getNodeLevel(node)==level ? getDownPtr(node, p) : node);
-						if(getNodeLevel(node_p)!=-(level) && q!=p){
-							pr_lo_nb.d(q)=linkNode(getTransparentNode());
-						}
-						else{
-							node_handle node_pq=(getNodeLevel(node_p)==-(level) ? getDownPtr(node_p, q) : node_p);
-							node_handle node_pqm=(getNodeLevel(node_pq)==(level+1) ? getDownPtr(node_pq, m) : node_pq);
-							if(getNodeLevel(node_pqm)!=-(level+1) && n!=m){
-								pr_lo_nb.d(q)=linkNode(getTransparentNode());
-							}
-							else{
-								pr_lo_nb.d(q)=linkNode(getNodeLevel(node_pqm)==-(level+1) ? getDownPtr(node_pqm, n) : node_pqm);
-							}
-						}
-					}
-					lo_nb.d(p)=createReducedNode(p, pr_lo_nb);
-				}
-				pr_hi_nb.d(n)=createReducedNode(-1, lo_nb);
-			}
-			hi_nb.d(m)=createReducedNode(m, pr_hi_nb);
-		}
-	}
-	else{
-		throw error(error::NOT_IMPLEMENTED);
-	}
+  // Renumber the level of nodes for VarHigh
+  int hnum = unique->getNumEntries(hvar);
+  node_handle* hnodes = new node_handle[hnum];
+  unique->getItems(hvar, hnodes, hnum);
+  for (int i = 0; i < hnum; i++) {
+    setNodeLevel(hnodes[i], level);
+  }
 
-	return createReducedNode(-1, hi_nb);
+  // Renumber the level of nodes for VarHigh'
+  int phnum = unique->getNumEntries(-hvar);
+  node_handle* phnodes = new node_handle[phnum];
+  unique->getItems(-hvar, phnodes, phnum);
+  for (int i = 0; i < phnum; i++) {
+    setNodeLevel(phnodes[i], -level);
+    // Some node header which is associated with a node destroyed
+    // during swap may be associated with another newly created node
+    getNode(phnodes[i]).setMarked();
+  }
+
+  // Renumber the level of nodes for VarLow
+  int lnum = unique->getNumEntries(lvar);
+  node_handle* lnodes = new node_handle[lnum];
+  unique->getItems(lvar, lnodes, lnum);
+  for (int i = 0; i < lnum; i++) {
+    setNodeLevel(lnodes[i], level+1);
+  }
+  delete[] lnodes;
+
+  // Renumber the level of nodes for VarLow'
+  int plnum = unique->getNumEntries(-lvar);
+  node_handle* plnodes = new node_handle[plnum];
+  unique->getItems(-lvar, plnodes, plnum);
+  for (int i = 0; i < plnum; i++) {
+    setNodeLevel(plnodes[i], -(level+1));
+  }
+  delete[] plnodes;
+
+  //	printf("Before: Level %d : %d, Level %d : %d, Level %d : %d, Level %d : %d\n",
+  //			level+1, num_high, -(level+1), num_phigh,
+  //			level, num_low, -level, num_plow);
+
+  // Update the variable order
+  order_var[hvar] = level;
+  order_var[-hvar] = -level;
+  order_var[lvar] = level+1;
+  order_var[-lvar] = -(level+1);
+  order_level[level+1] = lvar;
+  order_level[-(level+1)] = -lvar;
+  order_level[level] = hvar;
+  order_level[-level] = -hvar;
+
+  std::vector<node_handle> t;
+  std::unordered_map<node_handle, node_handle> dup;
+  std::unordered_map<node_handle, int> refs;
+
+  // Reconstruct nodes for VarHigh
+  for (int i = 0; i < hnum; i++) {
+    node_handle node = swapAdjacentVariablesOf(hnodes[i]);
+    if (hnodes[i] == node){
+      // VarLow is DONT_CHANGE in the MxD
+      unlinkNode(node);
+    }
+    else if (getInCount(node) > 1) {
+      MEDDLY_DCASSERT(getNodeLevel(node) == -(level+1));
+
+      // Duplication conflict
+      node_reader* nr = initNodeReader(hnodes[i], true);
+      for(int j = 0; j < hsize; j++){
+        if(getNodeLevel(nr->d(j)) == -level){
+          if(refs.find(nr->d(j)) == refs.end()){
+            refs[nr->d(j)] = 1;
+          }
+          else{
+            refs[nr->d(j)]++;
+          }
+        }
+      }
+      node_reader::recycle(nr);
+
+      dup.emplace(node, hnodes[i]);
+      //			printf("UPDATE: %d -> %d\n", node, high_nodes[i]);
+    }
+    else {
+      // Newly created node
+      swapNodes(hnodes[i], node);
+      unlinkNode(node);
+      if (getNodeLevel(hnodes[i]) == (level+1)) {
+        t.push_back(hnodes[i]);
+      }
+    }
+  }
+
+  // Reconstruct nodes for VarHigh'
+  for (int i = 0; i < phnum; i++) {
+    if (!isActiveNode(phnodes[i])
+        || !getNode(phnodes[0]).isMarked()) {
+      continue;
+    }
+
+    getNode(phnodes[i]).setUnmarked();
+    auto search = refs.find(phnodes[i]);
+    if (search != refs.end() && search->second == getInCount(phnodes[i])){
+      continue;
+    }
+
+    node_reader* nr = initNodeReader(phnodes[i], true);
+    bool skip = true;
+    for (int j = 0; j < hsize; j++){
+      if (!isLevelAbove(-level, getNodeLevel(nr->d(j)))) {
+        skip = false;
+        break;
+      }
+    }
+    node_reader::recycle(nr);
+
+    if (skip) {
+      // VarLow is DONT_CARE + DONT_CHANGE in the MxD
+      continue;
+    }
+
+    node_handle node = swapAdjacentVariablesOf(phnodes[i]);
+    MEDDLY_DCASSERT(phnodes[i] != node);
+
+    if (getInCount(node) > 1) {
+      MEDDLY_DCASSERT(getNodeLevel(node) == -(level+1));
+
+      // Duplication conflict
+      dup.emplace(node, phnodes[i]);
+    }
+    else {
+      // Newly created node
+      swapNodes(phnodes[i], node);
+      unlinkNode(node);
+      if (getNodeLevel(phnodes[i]) == (level+1)) {
+        t.push_back(phnodes[i]);
+      }
+    }
+  }
+
+  if (!dup.empty()) {
+    for (const auto& n : t) {
+      MEDDLY_DCASSERT(getNodeLevel(n)==(level+1));
+
+      node_reader* nr = initNodeReader(n, true);
+      bool update = false;
+      for (int i = 0; i < hsize; i++){
+        if(dup.find(nr->d(i)) != dup.end()){
+          update=true;
+          break;
+        }
+      }
+
+      if (update) {
+        node_builder& nb = useNodeBuilder(level+1, hsize);
+        for (int i = 0; i < hsize; i++) {
+          auto search = dup.find(nr->d(i));
+          nb.d(i) = linkNode(search == dup.end() ? nr->d(i) : search->second);
+        }
+        node_handle node = createReducedNode(-1, nb);
+        MEDDLY_DCASSERT(getInCount(node) == 1 && getNodeLevel(node) == level+1);
+        swapNodes(n, node);
+        unlinkNode(node);
+      }
+
+      node_reader::recycle(nr);
+    }
+
+    for (const auto& it : dup) {
+      MEDDLY_DCASSERT(getInCount(it.first) == 1);
+      swapNodes(it.first, it.second);
+      unlinkNode(it.first);
+    }
+  }
+
+  delete[] hnodes;
+  delete[] phnodes;
+
+  //	printf("After: Level %d : %d,  Level %d : %//
+  // Complete adjacent variable swap by swapping two levels 4 times
+  // Work for fully-fully reduction only
+  //d, Level %d : %d, Level %d : %d\n",
+  //			level+1, unique->getNumEntries(var_low),
+  //			-(level+1), unique->getNumEntries(-var_low),
+  //			level, unique->getNumEntries(var_high),
+  //			-level, unique->getNumEntries(-var_high));
+  //	printf("#Node: %d\n", getCurrentNumNodes());
 }
 
+MEDDLY::node_handle MEDDLY::mtmxd_forest::swapAdjacentVariablesOf(node_handle node)
+{
+  int level = ABS(getNodeLevel(node));
+  int hvar = getVarByLevel(level);
+  int lvar = getVarByLevel(level+1);
+  int hsize = getVariableSize(hvar);
+  int lsize = getVariableSize(lvar);
+
+  // Unprimed high node builder
+  node_builder& hnb = useNodeBuilder(level+1, lsize);
+  if (isFullyReduced() || isQuasiReduced()) {
+    for (int m = 0; m < lsize; m++) {
+      // Primed high node builder
+      node_builder& phnb = useNodeBuilder(-(level+1), lsize);
+      for (int n = 0; n < lsize; n++) {
+        // Unprimed low node builder
+        node_builder& lnb = useNodeBuilder(level, hsize);
+        for (int p = 0; p < hsize; p++) {
+          // Primed low node builder
+          node_builder& plnb = useNodeBuilder(-level, hsize);
+          for (int q = 0; q < hsize; q++){
+            node_handle node_p = (getNodeLevel(node) == level ? getDownPtr(node, p) : node);
+            node_handle node_pq = (getNodeLevel(node_p) == -(level) ? getDownPtr(node_p, q) : node_p);
+            node_handle node_pqm = (getNodeLevel(node_pq) == (level+1) ? getDownPtr(node_pq, m) : node_pq);
+            plnb.d(q) = linkNode(getNodeLevel(node_pqm) == -(level+1) ? getDownPtr(node_pqm, n) : node_pqm);
+          }
+          lnb.d(p) = createReducedNode(p, plnb);
+        }
+        phnb.d(n) = createReducedNode(-1, lnb);
+      }
+      hnb.d(m) = createReducedNode(m, phnb);
+    }
+  }
+  else if (isIdentityReduced()) {
+    for (int m = 0; m < lsize; m++) {
+      // Primed high node builder
+      node_builder& phnb = useNodeBuilder(-(level+1), lsize);
+      for (int n = 0; n < lsize; n++) {
+        // Unprimed low node builder
+        node_builder& lnb = useNodeBuilder(level, hsize);
+        for (int p = 0; p < hsize; p++) {
+          // Primed low node builder
+          node_builder& plnb = useNodeBuilder(-level, hsize);
+          for (int q = 0; q < hsize; q++) {
+            node_handle node_p = (getNodeLevel(node) == level ? getDownPtr(node, p) : node);
+            if (getNodeLevel(node_p) != -(level) && q != p) {
+              plnb.d(q) = linkNode(getTransparentNode());
+            }
+            else {
+              node_handle node_pq = (getNodeLevel(node_p) == -(level) ? getDownPtr(node_p, q) : node_p);
+              node_handle node_pqm = (getNodeLevel(node_pq) == (level+1) ? getDownPtr(node_pq, m) : node_pq);
+              if (getNodeLevel(node_pqm) != -(level+1) && n != m) {
+                plnb.d(q) = linkNode(getTransparentNode());
+              }
+              else {
+                plnb.d(q) = linkNode(getNodeLevel(node_pqm) == -(level+1) ? getDownPtr(node_pqm, n) : node_pqm);
+              }
+            }
+          }
+          lnb.d(p) = createReducedNode(p, plnb);
+        }
+        phnb.d(n) = createReducedNode(-1, lnb);
+      }
+      hnb.d(m) = createReducedNode(m, phnb);
+    }
+  }
+  else {
+    throw error(error::NOT_IMPLEMENTED);
+  }
+
+  return createReducedNode(-1, hnb);
+}
+
+//
+// Complete adjacent variable swap by swapping two levels four times
+// Work for fully-fully and quasi-quasi reductions only
+//
 void MEDDLY::mtmxd_forest::swapAdjacentVariablesByLevelSwap(int level)
 {
-	// Swap VarHigh and VarLow
-	MEDDLY_DCASSERT(level>=1);
-	MEDDLY_DCASSERT(level<getNumVariables());
+  // Swap VarHigh and VarLow
+  MEDDLY_DCASSERT(level >= 1);
+  MEDDLY_DCASSERT(level < getNumVariables());
 
-	if(!isFullyReduced() && !isQuasiReduced()){
-		throw error(error::INVALID_OPERATION);
-	}
+  if(!isFullyReduced() && !isQuasiReduced()){
+    throw error(error::INVALID_OPERATION);
+  }
 
-	removeAllComputeTableEntries();
-
-	// x > x' > y > y'
-	swapAdjacentLevels(level);
-	// x > y > x' > y'
-	swapAdjacentLevels(-(level+1));
-	// y > x > x' > y'
-	swapAdjacentLevels(-level);
-	// y > x > y' > x'
-	swapAdjacentLevels(level);
-	// y > y' > x > x'
+  // x > x' > y > y'
+  swapAdjacentLevels(level);
+  // x > y > x' > y'
+  swapAdjacentLevels(-(level+1));
+  // y > x > x' > y'
+  swapAdjacentLevels(-level);
+  // y > x > y' > x'
+  swapAdjacentLevels(level);
+  // y > y' > x > x'
 }
 
 void MEDDLY::mtmxd_forest::swapAdjacentLevels(int level)
 {
-	MEDDLY_DCASSERT(ABS(level)>=1);
-	MEDDLY_DCASSERT(ABS(level)<=getNumVariables());
+  MEDDLY_DCASSERT(ABS(level) >= 1);
+  MEDDLY_DCASSERT(ABS(level) <= getNumVariables());
 
-	int high_level=(level<0 ? -level : (-level-1));
-	int high_var=getVarByLevel(high_level);
-	int low_var=getVarByLevel(level);
-	int high_size=getVariableSize(ABS(high_var));
-	int low_size=getVariableSize(ABS(low_var));
+  int hlevel = (level<0 ? -level : (-level-1));
+  int hvar = getVarByLevel(hlevel);
+  int lvar = getVarByLevel(level);
+  int hsize = getVariableSize(ABS(hvar));
+  int lsize = getVariableSize(ABS(lvar));
 
-	int high_node_size=unique->getNumEntries(high_var);
-	node_handle* high_nodes=static_cast<node_handle*>(malloc(high_node_size*sizeof(node_handle)));
-	unique->getItems(high_var, high_nodes, high_node_size);
+  int hnum = unique->getNumEntries(hvar);
+  node_handle* hnodes = new node_handle[hnum];
+  unique->getItems(hvar, hnodes, hnum);
 
-	int low_node_size=unique->getNumEntries(low_var);
-	node_handle* low_nodes=static_cast<node_handle*>(malloc(low_node_size*sizeof(node_handle)));
-	unique->getItems(low_var, low_nodes, low_node_size);
+  int lnum = unique->getNumEntries(lvar);
+  node_handle* lnodes = new node_handle[lnum];
+  unique->getItems(lvar, lnodes, lnum);
 
-//	printf("Before: Level %d : %d, Level %d : %d\n",
-//			level+1, high_node_size,
-//			level, low_node_size);
+  //	printf("Before: Level %d : %d, Level %d : %d\n",
+  //			level+1, high_node_size,
+  //			level, low_node_size);
 
-	int i=0, j=0;
-	// Renumber the level of nodes for VarHigh
-	for(i=0; i<high_node_size; i++) {
-		node_reader* nr = initNodeReader(high_nodes[i], true);
-		MEDDLY_DCASSERT(nr->getLevel()==high_level);
-		MEDDLY_DCASSERT(nr->getSize()==high_size);
+  int num = 0;
+  // Renumber the level of nodes for VarHigh
+  for (int i = 0; i < hnum; i++) {
+    node_reader* nr = initNodeReader(hnodes[i], true);
+    MEDDLY_DCASSERT(nr->getLevel() == hlevel);
+    MEDDLY_DCASSERT(nr->getSize() == hsize);
 
-		for(int k=0; k<high_size; k++){
-			if(getNodeLevel(nr->d(k))==level){
-				// Remove the nodes corresponding to functions that
-				// are independent of VarLow
-				high_nodes[j++]=high_nodes[i];
-				break;
-			}
-		}
-		node_reader::recycle(nr);
+    for (int j = 0; j < hsize; j++) {
+      if (getNodeLevel(nr->d(j)) == level) {
+        // Remove the nodes corresponding to functions that
+        // are independent of the variable to be moved up
+        hnodes[num++] = hnodes[i];
+        break;
+      }
+    }
+    node_reader::recycle(nr);
 
-		setNodeLevel(high_nodes[i], level);
-	}
-	high_node_size=j;
+    setNodeLevel(hnodes[i], level);
+  }
+  hnum = num;
 
-	// Renumber the level of nodes for the variable to be moved up
-	for(i=0; i<low_node_size; i++) {
-		setNodeLevel(low_nodes[i], high_level);
-	}
+  // Renumber the level of nodes for the variable to be moved up
+  for(int i = 0; i < lnum; i++) {
+    setNodeLevel(lnodes[i], hlevel);
+  }
+  delete[] lnodes;
 
-	// Update the variable order
-	order_var[high_var] = level;
-	order_var[low_var] = high_level;
-	order_level[high_level] = low_var;
-	order_level[level] = high_var;
+  // Update the variable order
+  order_var[hvar] = level;
+  order_var[lvar] = hlevel;
+  order_level[hlevel] = lvar;
+  order_level[level] = hvar;
 
-	// Process the rest of nodes for VarHigh
-	for(i=0; i<high_node_size; i++) {
-		node_reader* high_nr = initNodeReader(high_nodes[i], true);
-		node_builder& high_nb = useNodeBuilder(high_level, low_size);
+  // Process the rest of nodes for the variable to be moved down
+  for (int i = 0; i < hnum; i++) {
+    node_reader* high_nr = initNodeReader(hnodes[i], true);
+    node_builder& high_nb = useNodeBuilder(hlevel, lsize);
 
-		for(j=0; j<low_size; j++) {
-			node_builder& low_nb = useNodeBuilder(level, high_size);
-			for(int k=0; k<high_size; k++) {
-				node_handle node_k=high_nr->d(k);
-				node_handle node_kj=(getNodeLevel(node_k)==high_level ? getDownPtr(node_k, j) : node_k);
-				low_nb.d(k)=linkNode(node_kj);
-			}
-			high_nb.d(j)=createReducedNode(-1, low_nb);
-		}
+    for (int j = 0; j < lsize; j++) {
+      node_builder& low_nb = useNodeBuilder(level, hsize);
+      for (int k = 0; k < hsize; k++) {
+        node_handle node_k = high_nr->d(k);
+        node_handle node_kj = (getNodeLevel(node_k) == hlevel ? getDownPtr(node_k, j) : node_k);
+        low_nb.d(k) = linkNode(node_kj);
+      }
+      high_nb.d(j) = createReducedNode(-1, low_nb);
+    }
 
-		node_reader::recycle(high_nr);
+    node_reader::recycle(high_nr);
 
-		node_handle node=createReducedNode(-1, high_nb);
-		MEDDLY_DCASSERT(getInCount(node)==1);
-		MEDDLY_DCASSERT(getNodeLevel(node)==high_level);
+    node_handle node = createReducedNode(-1, high_nb);
+    MEDDLY_DCASSERT(getInCount(node) == 1);
+    MEDDLY_DCASSERT(getNodeLevel(node) == hlevel);
 
-		swapNodes(high_nodes[i], node);
-		unlinkNode(node);
-	}
+    swapNodes(hnodes[i], node);
+    unlinkNode(node);
+  }
 
-	free(high_nodes);
-	free(low_nodes);
+  delete[] hnodes;
 
-//	printf("After: Level %d : %d, Level %d : %d\n",
-//			level+1, unique->getNumEntries(low_var),
-//			level, unique->getNumEntries(high_var));
-//	printf("#Node: %d\n", getCurrentNumNodes());
+  //	printf("After: Level %d : %d, Level %d : %d\n",
+  //			level+1, unique->getNumEntries(low_var),
+  //			level, unique->getNumEntries(high_var));
+  //	printf("#Node: %d\n", getCurrentNumNodes());
 }
 
 
 void MEDDLY::mtmxd_forest::moveDownVariable(int high, int low)
 {
-	throw error(error::NOT_IMPLEMENTED);
+  throw error(error::NOT_IMPLEMENTED);
 }
 
 void MEDDLY::mtmxd_forest::moveUpVariable(int low, int high)
 {
-	throw error(error::NOT_IMPLEMENTED);
+  throw error(error::NOT_IMPLEMENTED);
 }
 
 MEDDLY::mtmxd_forest::mtmxd_iterator::~mtmxd_iterator()

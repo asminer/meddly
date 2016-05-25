@@ -64,58 +64,55 @@ MEDDLY::unique_table::~unique_table()
 
 unsigned MEDDLY::unique_table::getSize() const
 {
-	unsigned num=0;
-	int num_vars=parent->getNumVariables();
-	if(parent->isForRelations()){
-		for(int i=1; i<=num_vars; i++){
+	unsigned num = 0;
+	int num_vars = parent->getNumVariables();
+	if (parent->isForRelations()) {
+		for(int i = 1; i <= num_vars; i++){
 			num += tables[i].getSize();
 			num += tables[-i].getSize();
 		}
 	}
-	else{
-		for(int i=1; i<=num_vars; i++){
+	else {
+		for (int i = 1; i <= num_vars; i++) {
 			num += tables[i].getSize();
 		}
 	}
-
 	return num;
 }
 
 unsigned MEDDLY::unique_table::getNumEntries() const
 {
-	unsigned num=0;
-	int num_vars=parent->getNumVariables();
-	if(parent->isForRelations()){
-		for(int i=1; i<=num_vars; i++){
+	unsigned num = 0;
+	int num_vars = parent->getNumVariables();
+	if (parent->isForRelations()) {
+		for (int i = 1; i <= num_vars; i++) {
 			num += tables[i].getNumEntries();
 			num += tables[-i].getNumEntries();
 		}
 	}
-	else{
-		for(int i=1; i<=num_vars; i++){
+	else {
+		for (int i = 1; i <= num_vars; i++) {
 			num += tables[i].getNumEntries();
 		}
 	}
-
 	return num;
 }
 
 unsigned MEDDLY::unique_table::getMemUsed() const
 {
-	unsigned num=0;
-	int num_vars=parent->getNumVariables();
-	if(parent->isForRelations()){
-		for(int i=1; i<=num_vars; i++){
+	unsigned num = 0;
+	int num_vars = parent->getNumVariables();
+	if (parent->isForRelations()) {
+		for (int i = 1; i <= num_vars; i++) {
 			num += tables[i].getMemUsed();
 			num += tables[-i].getMemUsed();
 		}
 	}
-	else{
-		for(int i=1; i<=num_vars; i++){
+	else {
+		for (int i = 1; i <= num_vars; i++) {
 			num += tables[i].getMemUsed();
 		}
 	}
-
 	return num;
 }
 
@@ -130,17 +127,17 @@ void MEDDLY::unique_table::reportStats(output &s, const char* pad, unsigned flag
 
 void MEDDLY::unique_table::show(output &s) const
 {
-	int num_vars=parent->getNumVariables();
-	if(parent->isForRelations()){
-		for(int i=1; i<=num_vars; i++){
+	int num_vars = parent->getNumVariables();
+	if (parent->isForRelations()) {
+		for (int i = 1; i <= num_vars; i++) {
 			s << "Unique table (Var " << i << "):\n";
 			tables[i].show(s);
 			s << "Unique table (Var " << -i << "):\n";
 			tables[-i].show(s);
 		}
 	}
-	else{
-		for(int i=1; i<=num_vars; i++){
+	else {
+		for (int i = 1; i <= num_vars; i++) {
 			s << "Unique table (Var " << i << "):\n";
 			tables[i].show(s);
 		}
@@ -149,13 +146,13 @@ void MEDDLY::unique_table::show(output &s) const
 }
 
 MEDDLY::unique_table::subtable::subtable()
-	: parent(0), table(0)
+	: parent(nullptr), table(nullptr)
 {
 }
 
 MEDDLY::unique_table::subtable::~subtable()
 {
-	if(parent!=0){
+	if (parent != nullptr) {
 		free(table);
 	}
 }
@@ -171,8 +168,8 @@ void MEDDLY::unique_table::subtable::reportStats(output &s, const char* pad, uns
 
 void MEDDLY::unique_table::subtable::show(output &s) const
 {
-	for (unsigned i=0; i<size; i++) {
-		if(table[i]!=0) {
+	for (unsigned i=0; i < size; i++) {
+		if(table[i] != 0) {
 			s << "[" << long(i) << "] : ";
 			for (int index = table[i]; index; index = parent->getNext(index)) {
 				s << index <<" ";
@@ -190,11 +187,11 @@ void MEDDLY::unique_table::subtable::init(expert_forest *ef)
 	num_entries = 0;
 
 	table = static_cast<node_handle*>(calloc(size, sizeof(node_handle)));
-	if (0==table){
+	if (table == nullptr) {
 		throw error(error::INSUFFICIENT_MEMORY);
 	}
 
-	next_expand = 2*size;
+	next_expand = 2 * size;
 	next_shrink = 0;
 }
 
@@ -207,7 +204,7 @@ void MEDDLY::unique_table::subtable::add(unsigned hash, node_handle item)
 	}
 	num_entries++;
 
-	unsigned h = hash%size;
+	unsigned h = hash % size;
 	parent->setNext(item, table[h]);
 	table[h] = item;
 }
@@ -229,7 +226,7 @@ MEDDLY::node_handle MEDDLY::unique_table::subtable::remove(unsigned hash, node_h
         table[h] = parent->getNext(ptr);
       }
       num_entries--;
-      if (num_entries < next_shrink){
+      if (num_entries < next_shrink) {
     	  shrink();
       }
       return ptr;
@@ -241,7 +238,7 @@ MEDDLY::node_handle MEDDLY::unique_table::subtable::remove(unsigned hash, node_h
 
 void MEDDLY::unique_table::subtable::clear()
 {
-	if(parent!=0){
+	if (parent != 0) {
 		free(table);
 		init(parent);
 	}
@@ -249,15 +246,15 @@ void MEDDLY::unique_table::subtable::clear()
 
 int MEDDLY::unique_table::subtable::getItems(node_handle* items, int sz) const
 {
-	int k=0;
+	int k = 0;
 	for (unsigned i = 0; i < size; i++) {
 		node_handle curr = table[i];
-		while (curr!=0) {
-			items[k++]=curr;
-			if(k==sz){
+		while (curr != 0) {
+			items[k++] = curr;
+			if(k == sz){
 				return k;
 			}
-			curr=parent->getNext(curr);
+			curr = parent->getNext(curr);
 		}
 	}
 
@@ -293,7 +290,7 @@ MEDDLY::node_handle MEDDLY::unique_table::subtable::convertToList()
 
 void MEDDLY::unique_table::subtable::buildFromList(node_handle front)
 {
-  for (node_handle next = 0; front!=0; front = next) {
+  for (node_handle next = 0; front != 0; front = next) {
     next = parent->getNext(front);
     unsigned h = parent->hash(front) % size;
     MEDDLY_DCASSERT(h < size);
@@ -315,12 +312,12 @@ void MEDDLY::unique_table::subtable::expand()
   node_handle* temp = (node_handle*) realloc(table, sizeof(node_handle) * newSize);
   if (0==temp){
     fprintf(stderr, "Error in allocating array of size %lu at %s, line %d\n",
-        newSize*sizeof(node_handle), __FILE__, __LINE__);
+        newSize * sizeof(node_handle), __FILE__, __LINE__);
 	throw error(error::INSUFFICIENT_MEMORY);
   }
   
   table = temp;
-  for (unsigned i = newSize-1; i>=size; i--){
+  for (unsigned i = newSize-1; i >= size; i--){
 	  table[i] = 0;
   }
 
@@ -343,7 +340,7 @@ void MEDDLY::unique_table::subtable::shrink()
   node_handle *temp = (node_handle*) realloc(table, sizeof(node_handle) * newSize);
   if (0==temp) {
     fprintf(stderr, "Error in allocating array of size %lu at %s, line %d\n",
-        newSize*sizeof(node_handle), __FILE__, __LINE__);
+        newSize * sizeof(node_handle), __FILE__, __LINE__);
     throw error(error::INSUFFICIENT_MEMORY);
   }
   table = temp;
