@@ -79,6 +79,27 @@ bool MEDDLY::mt_forest::isIdentityEdge(const node_builder &nb, int i) const
 }
 
 
+bool MEDDLY::mt_forest::isRedundant(const unpacked_node &nb) const
+{
+  if (isQuasiReduced()) return false;
+  if (nb.getLevel() < 0 && isIdentityReduced()) return false;
+  int rawsize = nb.isSparse() ? nb.getNNZs() : nb.getSize();
+  if (rawsize < getLevelSize(nb.getLevel())) return false;
+  int common = nb.d(0);
+  for (int i=1; i<rawsize; i++) 
+    if (nb.d(i) != common) return false;
+  return true;
+}
+
+bool MEDDLY::mt_forest::isIdentityEdge(const unpacked_node &nb, int i) const
+{
+  if (nb.getLevel() > 0) return false;
+  if (!isIdentityReduced()) return false;
+  if (i<0) return false;
+  return nb.d(i) != 0;
+}
+
+
 MEDDLY::node_handle MEDDLY::mt_forest::makeNodeAtLevel(int k, node_handle d) 
 {
   MEDDLY_DCASSERT(abs(k) >= abs(getNodeLevel(d)));

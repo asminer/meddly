@@ -84,6 +84,18 @@ MEDDLY::unpacked_node::initFromNode(const expert_forest *f,
   f->fillUnpacked(*this, node, full);
 }
 
+inline void MEDDLY::unpacked_node::initFull(const expert_forest *f, int level, int tsz)
+{
+  MEDDLY_DCASSERT(f);
+  bind_to_forest(f, level, tsz, true);
+}
+
+inline void MEDDLY::unpacked_node::initSparse(const expert_forest *f, int level, int nnz)
+{
+  MEDDLY_DCASSERT(f);
+  bind_to_forest(f, level, nnz, false);
+}
+
 // ****************************************************************************
 
 inline MEDDLY::unpacked_node* 
@@ -149,8 +161,43 @@ MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, int i, float e
   return U;
 }
 
+inline MEDDLY::unpacked_node* 
+MEDDLY::unpacked_node::newFull(const expert_forest *f, int level, int tsz)
+{
+  unpacked_node* U = useUnpackedNode();
+  MEDDLY_DCASSERT(U);
+  U->initFull(f, level, tsz);
+  return U;
+}
+
+inline MEDDLY::unpacked_node* 
+MEDDLY::unpacked_node::newSparse(const expert_forest *f, int level, int nnzs)
+{
+  unpacked_node* U = useUnpackedNode();
+  MEDDLY_DCASSERT(U);
+  U->initSparse(f, level, nnzs);
+  return U;
+}
 
 // ****************************************************************************
+
+inline const void*
+MEDDLY::unpacked_node::UHptr() const
+{
+  return extra_unhashed;
+}
+
+inline void*
+MEDDLY::unpacked_node::UHdata()
+{
+  return extra_unhashed;
+}
+
+inline int
+MEDDLY::unpacked_node::UHbytes() const
+{
+  return ext_uh_size;
+}
 
 inline const void*
 MEDDLY::unpacked_node::HHptr() const
@@ -158,10 +205,16 @@ MEDDLY::unpacked_node::HHptr() const
   return extra_hashed;
 }
 
+inline void*
+MEDDLY::unpacked_node::HHdata()
+{
+  return extra_hashed;
+}
+
 inline int
 MEDDLY::unpacked_node::HHbytes() const
 {
-  return ext_size;
+  return ext_h_size;
 }
 
 inline MEDDLY::node_handle
@@ -172,8 +225,26 @@ MEDDLY::unpacked_node::d(int n) const
   return down[n];
 }
 
+inline MEDDLY::node_handle&
+MEDDLY::unpacked_node::d_ref(int n) 
+{
+  MEDDLY_DCASSERT(down);
+  MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
+  return down[n];
+}
+
+
 inline int
 MEDDLY::unpacked_node::i(int n) const
+{
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(!is_full);
+  MEDDLY_CHECK_RANGE(0, n, nnzs);
+  return index[n];
+}
+
+inline int&
+MEDDLY::unpacked_node::i_ref(int n)
 {
   MEDDLY_DCASSERT(index);
   MEDDLY_DCASSERT(!is_full);
@@ -189,6 +260,15 @@ MEDDLY::unpacked_node::eptr(int i) const
   return ((char*) edge) + i * edge_bytes;
 }
 
+inline void*
+MEDDLY::unpacked_node::eptr_write(int i)
+{
+  MEDDLY_DCASSERT(edge);
+  MEDDLY_CHECK_RANGE(0, i, (is_full ? size : nnzs));
+  return ((char*) edge) + i * edge_bytes;
+}
+
+
 inline void
 MEDDLY::unpacked_node::getEdge(int n, int &val) const
 {
@@ -202,6 +282,21 @@ MEDDLY::unpacked_node::getEdge(int n, float &val) const
   MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
   MEDDLY::expert_forest::float_EVencoder::readValue(eptr(n), val);
 }
+
+inline void
+MEDDLY::unpacked_node::setEdge(int n, int ev)
+{
+  MEDDLY_DCASSERT(sizeof(int) == edge_bytes);
+  MEDDLY::expert_forest::int_EVencoder::writeValue(eptr_write(n), ev);
+}
+
+inline void
+MEDDLY::unpacked_node::setEdge(int n, float ev)
+{
+  MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
+  MEDDLY::expert_forest::float_EVencoder::writeValue(eptr_write(n), ev);
+}
+
 
 inline int
 MEDDLY::unpacked_node::ei(int i) const
@@ -223,6 +318,12 @@ inline int
 MEDDLY::unpacked_node::getLevel() const
 {
   return level;
+}
+
+inline void
+MEDDLY::unpacked_node::setLevel(int k)
+{
+  level = k;
 }
 
 inline int
@@ -280,6 +381,15 @@ MEDDLY::unpacked_node::setHash(unsigned H)
   h = H;
 }
 
+inline void
+MEDDLY::unpacked_node::shrinkSparse(int ns)
+{
+  MEDDLY_DCASSERT(isSparse());
+  MEDDLY_DCASSERT(ns >= 0);
+  nnzs = ns;
+}
+
+
 inline MEDDLY::unpacked_node*
 MEDDLY::unpacked_node::useUnpackedNode()
 {
@@ -315,6 +425,17 @@ MEDDLY::unpacked_node::freeRecycled()
     freeList = n;
   }
 }
+
+inline void 
+MEDDLY::unpacked_node::bind_to_forest(const expert_forest* f, int k, int ns, bool full)
+{
+  parent = f;
+  level = k;
+  is_full = full;
+  edge_bytes = f->edgeBytes();
+  resize(ns);
+}
+
 
 // ****************************************************************************
 
@@ -673,36 +794,6 @@ inline void
 MEDDLY::node_storage::resize_header(MEDDLY::unpacked_node& nr, int extra_slots)
 {
   nr.resize_header(extra_slots);
-}
-
-inline void*
-MEDDLY::node_storage::extra_hashed(MEDDLY::unpacked_node& nr)
-{
-  return nr.extra_hashed;
-}
-
-inline MEDDLY::node_handle*
-MEDDLY::node_storage::down_of(MEDDLY::unpacked_node& nr)
-{
-  return nr.down;
-}
-
-inline int*
-MEDDLY::node_storage::index_of(MEDDLY::unpacked_node& nr)
-{
-  return nr.index;
-}
-
-inline char*
-MEDDLY::node_storage::edge_of(MEDDLY::unpacked_node& nr)
-{
-  return (char*) nr.edge;
-}
-
-inline int&
-MEDDLY::node_storage::nnzs_of(MEDDLY::unpacked_node& nr)
-{
-  return nr.nnzs;
 }
 
 inline const MEDDLY::expert_forest*
@@ -1275,88 +1366,9 @@ MEDDLY::expert_forest::fillUnpacked(MEDDLY::unpacked_node &un, MEDDLY::node_hand
 const
 {
   const MEDDLY::node_header &n = getNode(node);
-  un.resize(n.level, getLevelSize(n.level), edgeBytes(), full);
+  un.bind_to_forest(this, n.level, getLevelSize(n.level), full);
   nodeMan->fillUnpacked(un, getNode(node).offset);
 }
-
-/*
-inline void
-MEDDLY::expert_forest::initNodeReader(MEDDLY::unpacked_node &nr, MEDDLY::node_handle node,
-    bool full) const
-{
-  const MEDDLY::node_header &n = getNode(node);
-  nr.resize(n.level, getLevelSize(n.level), edgeBytes(), full);
-  nodeMan->fillReader(n.offset, nr);
-}
-
-inline MEDDLY::node_reader*
-MEDDLY::expert_forest::initNodeReader(MEDDLY::node_handle node, bool full) const
-{
-  MEDDLY::node_reader* nr = MEDDLY::node_reader::useReader();
-  MEDDLY_DCASSERT(nr);
-  initNodeReader(*nr, node, full);
-  return nr;
-}
-
-inline MEDDLY::node_reader*
-MEDDLY::expert_forest::initRedundantReader(int k, MEDDLY::node_handle node, bool full) const
-{
-  MEDDLY::node_reader* nr = MEDDLY::node_reader::useReader();
-  MEDDLY_DCASSERT(nr);
-  initRedundantReader(*nr, k, node, full);
-  return nr;
-}
-
-inline MEDDLY::node_reader*
-MEDDLY::expert_forest::initRedundantReader(int k, int ev, MEDDLY::node_handle nd,
-    bool full) const
-{
-  MEDDLY::node_reader* nr = MEDDLY::node_reader::useReader();
-  MEDDLY_DCASSERT(nr);
-  initRedundantReader(*nr, k, ev, nd, full);
-  return nr;
-}
-
-inline MEDDLY::node_reader*
-MEDDLY::expert_forest::initRedundantReader(int k, float ev, MEDDLY::node_handle nd,
-    bool full) const
-{
-  MEDDLY::node_reader* nr = MEDDLY::node_reader::useReader();
-  MEDDLY_DCASSERT(nr);
-  initRedundantReader(*nr, k, ev, nd, full);
-  return nr;
-}
-
-inline MEDDLY::node_reader*
-MEDDLY::expert_forest::initIdentityReader(int k, int i, MEDDLY::node_handle node,
-    bool full) const
-{
-  MEDDLY::node_reader* nr = MEDDLY::node_reader::useReader();
-  MEDDLY_DCASSERT(nr);
-  initIdentityReader(*nr, k, i, node, full);
-  return nr;
-}
-
-inline MEDDLY::node_reader*
-MEDDLY::expert_forest::initIdentityReader(int k, int i, int ev, MEDDLY::node_handle nd,
-    bool full) const
-{
-  MEDDLY::node_reader* nr = MEDDLY::node_reader::useReader();
-  MEDDLY_DCASSERT(nr);
-  initIdentityReader(*nr, k, i, ev, nd, full);
-  return nr;
-}
-
-inline MEDDLY::node_reader*
-MEDDLY::expert_forest::initIdentityReader(int k, int i, float ev,
-    MEDDLY::node_handle nd, bool full) const
-{
-  MEDDLY::node_reader* nr = MEDDLY::node_reader::useReader();
-  MEDDLY_DCASSERT(nr);
-  initIdentityReader(*nr, k, i, ev, nd, full);
-  return nr;
-}
-*/
 
 
 inline MEDDLY::node_builder&
@@ -1428,6 +1440,20 @@ template<class T>
     fprintf(stderr, "releasing builder at level %d\n", nb.getLevel());
 #endif
   }
+
+inline MEDDLY::node_handle
+MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un)
+{
+  MEDDLY_DCASSERT(un);
+  un->computeHash();
+  MEDDLY::node_handle q = createReducedHelper(in, *un);
+#ifdef TRACK_DELETIONS
+  printf("Created node %d\n", q);
+#endif
+  unpacked_node::recycle(un);
+  return q;
+}
+
 
 inline bool
 MEDDLY::expert_forest::areDuplicates(MEDDLY::node_handle node, const MEDDLY::node_builder &nb) const

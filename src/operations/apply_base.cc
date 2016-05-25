@@ -96,7 +96,8 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
 
   int resultLevel = MAX(aLevel, bLevel);
   int resultSize = resF->getLevelSize(resultLevel);
-  node_builder& nb = resF->useNodeBuilder(resultLevel, resultSize);
+
+  unpacked_node* C = unpacked_node::newFull(resF, resultLevel, resultSize);
 
   // Initialize readers
   unpacked_node *A = (aLevel < resultLevel) 
@@ -111,7 +112,7 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
 
   // do computation
   for (int i=0; i<resultSize; i++) {
-    nb.d(i) = compute(A->d(i), B->d(i));
+    C->d_ref(i) = compute(A->d(i), B->d(i));
   }
 
   // cleanup
@@ -119,7 +120,7 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
   unpacked_node::recycle(A);
 
   // reduce and save result
-  result = resF->createReducedNode(-1, nb);
+  result = resF->createReducedNode(-1, C);
   saveResult(Key, a, b, result);
 
 #ifdef TRACE_ALL_OPS
@@ -197,7 +198,8 @@ MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b)
   int resultLevel = ABS(topLevel(aLevel, bLevel));
 
   int resultSize = resF->getLevelSize(resultLevel);
-  node_builder& nb = resF->useNodeBuilder(resultLevel, resultSize);
+
+  unpacked_node* C = unpacked_node::newFull(resF, resultLevel, resultSize);
 
   // Initialize readers
   unpacked_node *A = (aLevel < resultLevel) 
@@ -212,7 +214,7 @@ MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b)
 
   // Do computation
   for (int j=0; j<resultSize; j++) {
-    nb.d(j) = compute_r(j, resF->downLevel(resultLevel), A->d(j), B->d(j));
+    C->d_ref(j) = compute_r(j, resF->downLevel(resultLevel), A->d(j), B->d(j));
   }
 
   // cleanup
@@ -220,7 +222,7 @@ MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b)
   unpacked_node::recycle(A);
 
   // reduce and save result
-  result = resF->createReducedNode(-1, nb);
+  result = resF->createReducedNode(-1, C);
   saveResult(Key, a, b, result);
 
   /*
@@ -261,7 +263,8 @@ MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle 
   const int bLevel = arg2F->getNodeLevel(b);
 
   int resultSize = resF->getLevelSize(k);
-  node_builder& nb = resF->useNodeBuilder(k, resultSize);
+
+  unpacked_node* C = unpacked_node::newFull(resF, k, resultSize);
 
   // Initialize readers
   unpacked_node *A = unpacked_node::useUnpackedNode();
@@ -284,11 +287,8 @@ MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle 
   }
 
   // Do computation
-  int nnz = 0;
   for (int j=0; j<resultSize; j++) {
-    node_handle d = compute(A->d(j), B->d(j));
-    nb.d(j) = d;
-    if (d) nnz++;
+    C->d_ref(j) = compute(A->d(j), B->d(j));
   }
 
   // cleanup
@@ -296,14 +296,7 @@ MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle 
   unpacked_node::recycle(A);
 
   // reduce 
-  result = resF->createReducedNode(in, nb);
-
-  /*
-  // save result in compute table, when we can
-  if (1==nnz) canSaveResult = false;
-  if (canSaveResult)  saveResult(Key, a, b, result);
-  else                doneCTkey(Key);
-  */
+  result = resF->createReducedNode(in, C);
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
@@ -391,7 +384,8 @@ MEDDLY::generic_binbylevel_mxd
   const int bLevel = arg2F->getNodeLevel(b);
 
   int resultSize = resF->getLevelSize(resultLevel);
-  node_builder& nb = resF->useNodeBuilder(resultLevel, resultSize);
+
+  unpacked_node* C = unpacked_node::newFull(resF, resultLevel, resultSize);
 
   bool canSaveResult = true;
 
@@ -421,8 +415,8 @@ MEDDLY::generic_binbylevel_mxd
   int nextLevel = resF->downLevel(resultLevel);
   int nnz = 0;
   for (int j=0; j<resultSize; j++) {
-    int d = compute_r(j, nextLevel, A->d(j), B->d(j));
-    nb.d(j) = d;
+    node_handle d = compute_r(j, nextLevel, A->d(j), B->d(j));
+    C->d_ref(j) = d;
     if (d) nnz++;
   }
 
@@ -431,7 +425,7 @@ MEDDLY::generic_binbylevel_mxd
   unpacked_node::recycle(A);
 
   // reduce
-  result = resF->createReducedNode(in, nb);
+  result = resF->createReducedNode(in, C);
 
   // save result in compute table, when we can
   if (resultLevel<0 && 1==nnz) canSaveResult = false;

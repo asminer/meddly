@@ -129,7 +129,7 @@ class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
     virtual void compute(const dd_edge& a, dd_edge &c);
-    virtual void saturateHelper(node_builder& mdd) = 0;
+    virtual void saturateHelper(unpacked_node& mdd) = 0;
 
   protected:
     inline compute_table::search_key* 
@@ -309,15 +309,15 @@ MEDDLY::otfsat_by_events_op::saturate(node_handle mdd, int k)
   compute_table::search_key* Key = findSaturateResult(mdd, k, n);
   if (0==Key) return n;
 
-  int sz = argF->getLevelSize(k);               // size
-  int mdd_level = argF->getNodeLevel(mdd);      // mdd level
+  const int sz = argF->getLevelSize(k);               // size
+  const int mdd_level = argF->getNodeLevel(mdd);      // mdd level
 
 #ifdef DEBUG_DFS
   printf("mdd: %d, level: %d, size: %d, mdd_level: %d\n",
       mdd, k, sz, mdd_level);
 #endif
 
-  node_builder& nb = resF->useNodeBuilder(k, sz);
+  unpacked_node* nb = unpacked_node::newFull(resF, k, sz);
   // Initialize mdd reader
   unpacked_node *mddDptrs = unpacked_node::useUnpackedNode();
   if (mdd_level < k) {
@@ -328,13 +328,13 @@ MEDDLY::otfsat_by_events_op::saturate(node_handle mdd, int k)
 
   // Do computation
   for (int i=0; i<sz; i++) {
-    nb.d(i) = mddDptrs->d(i) ? saturate(mddDptrs->d(i), k-1) : 0;
+    nb->d_ref(i) = mddDptrs->d(i) ? saturate(mddDptrs->d(i), k-1) : 0;
   }
 
   // Cleanup
   unpacked_node::recycle(mddDptrs);
 
-  parent->saturateHelper(nb);
+  parent->saturateHelper(*nb);
   n = resF->createReducedNode(-1, nb);
 
   // save in compute table
@@ -532,7 +532,7 @@ class MEDDLY::forwd_otf_dfs_by_events_mt : public common_otf_dfs_by_events_mt {
     forwd_otf_dfs_by_events_mt(const satotf_opname* opcode,
     satotf_opname::otf_relation* rel);
   protected:
-    virtual void saturateHelper(node_builder& mdd);
+    virtual void saturateHelper(unpacked_node& mdd);
     node_handle recFire(node_handle mdd, node_handle mxd);
 };
 
@@ -544,10 +544,10 @@ MEDDLY::forwd_otf_dfs_by_events_mt::forwd_otf_dfs_by_events_mt(
 }
 
 
-void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(node_builder& nb)
+void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 {
-  int level = nb.getLevel();
-  int nEventsAtThisLevel = rel->getNumOfEvents(level);
+  const int level = nb.getLevel();
+  const int nEventsAtThisLevel = rel->getNumOfEvents(level);
   if (0 == nEventsAtThisLevel) return;
 
   // Initialize mxd readers, note we might skip the unprimed level
@@ -559,7 +559,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(node_builder& nb)
       Ru[ei] = 0;
     } else {
       Ru[ei] = unpacked_node::useUnpackedNode();
-      int eventLevel = arg2F->getNodeLevel(mxd);
+      const int eventLevel = arg2F->getNodeLevel(mxd);
       MEDDLY_DCASSERT(ABS(eventLevel) == level);
       if (eventLevel<0) {
         Ru[ei]->initRedundant(arg2F, level, mxd, true);
@@ -582,7 +582,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(node_builder& nb)
 
   // explore indexes
   while (!queue->isEmpty()) {
-    int i = queue->remove();
+    const int i = queue->remove();
 
     MEDDLY_DCASSERT(nb.d(i));
 
@@ -598,7 +598,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(node_builder& nb)
             Ru[ei] = 0;
           }
         } else {
-          int eventLevel = arg2F->getNodeLevel(mxd);
+          const int eventLevel = arg2F->getNodeLevel(mxd);
           MEDDLY_DCASSERT(ABS(eventLevel) == level);
           if (0==Ru[ei]) {
             Ru[ei] = unpacked_node::useUnpackedNode();
@@ -614,7 +614,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(node_builder& nb)
       if (0 == Ru[ei] || i >= Ru[ei]->getSize() || 0 == Ru[ei]->d(i)) continue;
 
       // grab column (TBD: build these ahead of time?)
-      int dlevel = arg2F->getNodeLevel(Ru[ei]->d(i));
+      const int dlevel = arg2F->getNodeLevel(Ru[ei]->d(i));
 
       if (dlevel == -level) {
         Rp->initFromNode(arg2F, Ru[ei]->d(i), false);
@@ -623,7 +623,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(node_builder& nb)
       }
 
       for (int jz=0; jz<Rp->getNNZs(); jz++) {
-        int j = Rp->i(jz);
+        const int j = Rp->i(jz);
         if (j < nb.getSize() && -1==nb.d(j)) continue;  // nothing can be added to this set
 
         node_handle rec = recFire(nb.d(i), Rp->d(jz));
@@ -637,7 +637,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(node_builder& nb)
             int oldSize = nb.getSize();
             // resize the node builder, and clear out the new entries
             nb.resize(j+1);
-            while(oldSize < nb.getSize()) { nb.d(oldSize++) = 0; }
+            while(oldSize < nb.getSize()) { nb.d_ref(oldSize++) = 0; }
             // resize the queue, and clear out the new entries
             queue->resize(nb.getSize());
           }
@@ -651,18 +651,18 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(node_builder& nb)
         bool updated = true;
 
         if (0 == nb.d(j)) {
-          nb.d(j) = rec;
+          nb.d_ref(j) = rec;
         }
         else if (rec == -1) {
           resF->unlinkNode(nb.d(j));
-          nb.d(j) = -1;
+          nb.d_ref(j) = -1;
         }
         else {
           node_handle acc = mddUnion->compute(nb.d(j), rec);
           resF->unlinkNode(rec);
           if (acc != nb.d(j)) {
             resF->unlinkNode(nb.d(j));
-            nb.d(j) = acc;
+            nb.d_ref(j) = acc;
           } else {
             resF->unlinkNode(acc);
             updated = false;
@@ -726,11 +726,11 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
   mxd = arg2F->linkNode(mxd);
 
   // check if mxd and mdd are at the same level
-  int mddLevel = arg1F->getNodeLevel(mdd);
-  int mxdLevel = arg2F->getNodeLevel(mxd);
-  int rLevel = MAX(ABS(mxdLevel), mddLevel);
-  int rSize = resF->getLevelSize(rLevel);
-  node_builder& nb = resF->useNodeBuilder(rLevel, rSize);
+  const int mddLevel = arg1F->getNodeLevel(mdd);
+  const int mxdLevel = arg2F->getNodeLevel(mxd);
+  const int rLevel = MAX(ABS(mxdLevel), mddLevel);
+  const int rSize = resF->getLevelSize(rLevel);
+  unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
 
   // Initialize mdd reader
   unpacked_node *A = unpacked_node::useUnpackedNode();
@@ -746,7 +746,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
     // that's an important special case that we can handle quickly.
 
     for (int i=0; i<rSize; i++) {
-      nb.d(i) = recFire(A->d(i), mxd);
+      nb->d_ref(i) = recFire(A->d(i), mxd);
     }
 
   } else {
@@ -755,7 +755,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
     MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
     // clear out result (important!)
-    for (int i=0; i<rSize; i++) nb.d(i) = 0;
+    for (int i=0; i<rSize; i++) nb->d_ref(i) = 0;
 
     // Initialize mxd readers, note we might skip the unprimed level
     unpacked_node *Ru = unpacked_node::useUnpackedNode();
@@ -768,7 +768,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
 
     // loop over mxd "rows"
     for (int iz=0; iz<Ru->getNNZs(); iz++) {
-      int i = Ru->i(iz);
+      const int i = Ru->i(iz);
       if (0==A->d(i))   continue; 
       if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz)))) {
         Rp->initIdentity(arg2F, rLevel, i, Ru->d(iz), false);
@@ -778,7 +778,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
 
       // loop over mxd "columns"
       for (int jz=0; jz<Rp->getNNZs(); jz++) {
-        int j = Rp->i(jz);
+        const int j = Rp->i(jz);
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
         // and add them
@@ -788,21 +788,21 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
         if (rel->confirm(rLevel, j)) {
           // Newly confirmed local state
           // Node builder must expand to accomodate j
-          if (j >= nb.getSize()) {
-            int oldSize = nb.getSize();
+          if (j >= nb->getSize()) {
+            int oldSize = nb->getSize();
             // resize the node builder, and clear out the new entries
-            nb.resize(j+1);
-            while(oldSize < nb.getSize()) { nb.d(oldSize++) = 0; }
+            nb->resize(j+1);
+            while(oldSize < nb->getSize()) { nb->d_ref(oldSize++) = 0; }
           }
         }
 
-        if (0==nb.d(j)) {
-          nb.d(j) = newstates;
+        if (0==nb->d(j)) {
+          nb->d_ref(j) = newstates;
           continue;
         }
         // there's new states and existing states; union them.
-        int oldj = nb.d(j);
-        nb.d(j) = mddUnion->compute(newstates, oldj);
+        const int oldj = nb->d(j);
+        nb->d_ref(j) = mddUnion->compute(newstates, oldj);
         resF->unlinkNode(oldj);
         resF->unlinkNode(newstates);
       } // for j
@@ -816,7 +816,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
   // cleanup mdd reader
   unpacked_node::recycle(A);
 
-  saturateHelper(nb);
+  saturateHelper(*nb);
   result = resF->createReducedNode(-1, nb);
 #ifdef TRACE_ALL_OPS
   printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);

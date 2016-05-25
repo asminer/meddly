@@ -123,11 +123,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
     return resF->linkNode(cacheFind.readNH());
   }
 
-  // build new result node
-  int resultSize = resF->getLevelSize(k);
-  node_builder& nb = resF->useNodeBuilder(k, resultSize);
-
-  // Initialize node reader
+  // Initialize unpacked node
   unpacked_node *A = unpacked_node::useUnpackedNode();
   if (arg1F->getNodeLevel(a) < k) {
     A->initRedundant(arg1F, k, a, true);
@@ -135,16 +131,17 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
     A->initFromNode(arg1F, a, true);
   }
 
+  const int resultSize = resF->getLevelSize(k);
+  unpacked_node *C = unpacked_node::newFull(resF, k, resultSize);
+
   // recurse
   for (int i=0; i<resultSize; i++) {
-    nb.d(i) = compute_pr(i, -k, A->d(i), b);
+    C->d_ref(i) = compute_pr(i, -k, A->d(i), b);
   }
 
-  // cleanup node reader
-  unpacked_node::recycle(A);
-
   // reduce, save in compute table
-  node_handle c = resF->createReducedNode(-1, nb);
+  unpacked_node::recycle(A);
+  node_handle c = resF->createReducedNode(-1, C);
 
   arg1F->cacheNode(a);
   arg2F->cacheNode(b);
@@ -169,11 +166,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(int in, int k, node_handle a,
 
   // DON'T check compute table 
 
-  // build new result node
-  int resultSize = resF->getLevelSize(k);
-  node_builder& nb = resF->useNodeBuilder(k, resultSize);
-
-  // Initialize node reader
+  // Initialize unpacked node
   unpacked_node *B = unpacked_node::useUnpackedNode();
   if (arg2F->getNodeLevel(b) < -k) {
     B->initRedundant(arg2F, -k, b, true);
@@ -181,16 +174,17 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(int in, int k, node_handle a,
     B->initFromNode(arg2F, b, true);
   }
 
+  const int resultSize = resF->getLevelSize(k);
+  unpacked_node *C = unpacked_node::newFull(resF, k, resultSize);
+
   // recurse
   for (int i=0; i<resultSize; i++) {
-    nb.d(i) = compute_un(-(k+1), a, B->d(i));
+    C->d_ref(i) = compute_un(-(k+1), a, B->d(i));
   }
 
-  // cleanup node reader
-  unpacked_node::recycle(B);
-
   // reduce
-  node_handle c = resF->createReducedNode(in, nb);
+  unpacked_node::recycle(B);
+  node_handle c = resF->createReducedNode(in, C);
 
   // DON'T save in compute table
 

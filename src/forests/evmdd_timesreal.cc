@@ -102,6 +102,16 @@ bool MEDDLY::evmdd_timesreal::isIdentityEdge(const node_builder &nb, int i) cons
   return isIdentityEdgeTempl<OP>(nb, i); 
 }
 
+bool MEDDLY::evmdd_timesreal::isRedundant(const unpacked_node &nb) const
+{
+  return isRedundantTempl<OP>(nb);
+}
+
+bool MEDDLY::evmdd_timesreal::isIdentityEdge(const unpacked_node &nb, int i) const
+{
+  return isIdentityEdgeTempl<OP>(nb, i); 
+}
+
 
 void MEDDLY::evmdd_timesreal::normalize(node_builder &nb, float& ev) const
 {

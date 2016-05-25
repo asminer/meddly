@@ -72,6 +72,31 @@ class MEDDLY::ev_forest : public expert_forest {
       return (nb.d(i) != 0)  &&  OPERATION::isIdentityEdge(nb.eptr(i));
     }
 
+    template <class OPERATION>
+    inline bool isRedundantTempl(const unpacked_node &nb) const {
+      if (isQuasiReduced()) return false;
+      if (nb.getLevel() < 0 && isIdentityReduced()) return false;
+      int rawsize = nb.isSparse() ? nb.getNNZs() : nb.getSize();
+      if (rawsize < getLevelSize(nb.getLevel())) return false;
+      int common = nb.d(0);
+      for (int i=1; i<rawsize; i++) {
+        if (nb.d(i) != common)  return false;
+      }
+      // This might be expensive, so split the loops to cheapest first
+      for (int i=0; i<rawsize; i++) {
+        if (!OPERATION::isIdentityEdge(nb.eptr(i))) return false;
+      }
+      return true;
+    }
+
+    template <class OPERATION>
+    inline bool isIdentityEdgeTempl(const unpacked_node &nb, int i) const {
+      if (nb.getLevel() > 0) return false;
+      if (!isIdentityReduced()) return false;
+      if (i<0) return false;
+      return (nb.d(i) != 0)  &&  OPERATION::isIdentityEdge(nb.eptr(i));
+    }
+
   // ------------------------------------------------------------
   // Helpers for this and derived classes
 

@@ -202,11 +202,11 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
   if (0==Key) return result;
 
   // check if mxd and mdd are at the same level
-  int mddLevel = argV->getNodeLevel(mdd);
-  int mxdLevel = argM->getNodeLevel(mxd);
-  int rLevel = MAX(ABS(mxdLevel), mddLevel);
-  int rSize = resF->getLevelSize(rLevel);
-  node_builder& nb = resF->useNodeBuilder(rLevel, rSize);
+  const int mddLevel = argV->getNodeLevel(mdd);
+  const int mxdLevel = argM->getNodeLevel(mxd);
+  const int rLevel = MAX(ABS(mxdLevel), mddLevel);
+  const int rSize = resF->getLevelSize(rLevel);
+  unpacked_node* C = unpacked_node::newFull(resF, rLevel, rSize);
 
   // Initialize mdd reader
   unpacked_node *A = unpacked_node::useUnpackedNode();
@@ -221,7 +221,7 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
     // Skipped levels in the MXD,
     // that's an important special case that we can handle quickly.
     for (int i=0; i<rSize; i++) {
-      nb.d(i) = compute_rec(A->d(i), mxd);
+      C->d_ref(i) = compute_rec(A->d(i), mxd);
     }
   } else {
     // 
@@ -229,7 +229,7 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
     MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
     // clear out result (important!)
-    for (int i=0; i<rSize; i++) nb.d(i) = 0;
+    for (int i=0; i<rSize; i++) C->d_ref(i) = 0;
 
     // Initialize mxd readers, note we might skip the unprimed level
     unpacked_node *Ru = unpacked_node::useUnpackedNode();
@@ -258,13 +258,13 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
         // and add them
         node_handle newstates = compute_rec(A->d(j), Rp->d(jz));
         if (0==newstates) continue;
-        if (0==nb.d(i)) {
-          nb.d(i) = newstates;
+        if (0==C->d(i)) {
+          C->d_ref(i) = newstates;
           continue;
         }
         // there's new states and existing states; union them.
-        node_handle oldi = nb.d(i);
-        nb.d(i) = accumulateOp->compute(newstates, oldi);
+        node_handle oldi = C->d(i);
+        C->d_ref(i) = accumulateOp->compute(newstates, oldi);
         resF->unlinkNode(oldi);
         resF->unlinkNode(newstates);
       } // for j
@@ -278,7 +278,7 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
   // cleanup mdd reader
   unpacked_node::recycle(A);
 
-  result = resF->createReducedNode(-1, nb);
+  result = resF->createReducedNode(-1, C);
 #ifdef TRACE_ALL_OPS
   printf("computed relXset(%d, %d) = %d\n", mdd, mxd, result);
 #endif
@@ -331,11 +331,11 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
   if (0==Key) return result;
 
   // check if mxd and mdd are at the same level
-  int mddLevel = argV->getNodeLevel(mdd);
-  int mxdLevel = argM->getNodeLevel(mxd);
-  int rLevel = MAX(ABS(mxdLevel), mddLevel);
-  int rSize = resF->getLevelSize(rLevel);
-  node_builder& nb = resF->useNodeBuilder(rLevel, rSize);
+  const int mddLevel = argV->getNodeLevel(mdd);
+  const int mxdLevel = argM->getNodeLevel(mxd);
+  const int rLevel = MAX(ABS(mxdLevel), mddLevel);
+  const int rSize = resF->getLevelSize(rLevel);
+  unpacked_node* C = unpacked_node::newFull(resF, rLevel, rSize);
 
   // Initialize mdd reader
   unpacked_node *A = unpacked_node::useUnpackedNode();
@@ -350,7 +350,7 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
     // Skipped levels in the MXD,
     // that's an important special case that we can handle quickly.
     for (int i=0; i<rSize; i++) {
-      nb.d(i) = compute_rec(A->d(i), mxd);
+      C->d_ref(i) = compute_rec(A->d(i), mxd);
     }
   } else {
     // 
@@ -358,7 +358,7 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
     MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
     // clear out result (important!)
-    for (int i=0; i<rSize; i++) nb.d(i) = 0;
+    for (int i=0; i<rSize; i++) C->d_ref(i) = 0;
 
     // Initialize mxd readers, note we might skip the unprimed level
     unpacked_node *Ru = unpacked_node::useUnpackedNode();
@@ -387,13 +387,13 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
         // and add them
         node_handle newstates = compute_rec(A->d(i), Rp->d(jz));
         if (0==newstates) continue;
-        if (0==nb.d(j)) {
-          nb.d(j) = newstates;
+        if (0==C->d(j)) {
+          C->d_ref(j) = newstates;
           continue;
         }
         // there's new states and existing states; union them.
-        node_handle oldj = nb.d(j);
-        nb.d(j) = accumulateOp->compute(newstates, oldj);
+        node_handle oldj = C->d(j);
+        C->d_ref(j) = accumulateOp->compute(newstates, oldj);
         resF->unlinkNode(oldj);
         resF->unlinkNode(newstates);
       } // for j
@@ -407,7 +407,7 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
   // cleanup mdd reader
   unpacked_node::recycle(A);
 
-  result = resF->createReducedNode(-1, nb);
+  result = resF->createReducedNode(-1, C);
 #ifdef TRACE_ALL_OPS
   printf("computed new setXrel(%d, %d) = %d\n", mdd, mxd, result);
 #endif

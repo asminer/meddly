@@ -498,7 +498,7 @@ void MEDDLY::compact_storage
 
   if (hashedBytes) {
     resize_header(nr, hashedBytes);
-    memcpy(extra_hashed(nr), HH(addr), hashedBytes);
+    memcpy(nr.HHdata(), HH(addr), hashedBytes);
   }
 
   int size = sizeOf(addr);

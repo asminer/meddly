@@ -214,10 +214,10 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
   // Create a node builder for the result.
   int rLevel = MAX(aLevel, bLevel);
   int rSize = resF->getLevelSize(rLevel);
-  node_builder& nbr = resF->useNodeBuilder(rLevel, rSize);
+  unpacked_node* nbr = unpacked_node::newFull(resF, rLevel, rSize);
 
   // Clear out result (important!)
-  for (int i = 0; i < rSize; ++i) nbr.d(i) = 0;
+  for (int i = 0; i < rSize; ++i) nbr->d_ref(i) = 0;
 
   /**
    * If a is identity reduced (i.e. lower level than b)
@@ -233,17 +233,17 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
     unpacked_node* nrbp = unpacked_node::useUnpackedNode();
     nrb->initFromNode(arg2F, b, false);
     for (int iz = 0; iz < nrb->getNNZs(); ++iz) {
-      node_builder& nbri = resF->useNodeBuilder(-rLevel, rSize);
-      for (int i = 0; i < rSize; ++i) nbri.d(i) = 0;
+      unpacked_node* nbri = unpacked_node::newFull(resF, -rLevel, rSize);
+      for (int i = 0; i < rSize; ++i) nbri->d_ref(i) = 0;
       nrbp->initFromNode(arg2F, nrb->d(iz), false);
       int i = nrb->i(iz);
       for (int jz = 0; jz < nrbp->getNNZs(); ++jz) {
         int j = nrbp->i(jz);
-        MEDDLY_DCASSERT(0 == nbri.d(j));
-        nbri.d(j) = compute_rec(a, nrbp->d(jz));
+        MEDDLY_DCASSERT(0 == nbri->d(j));
+        nbri->d_ref(j) = compute_rec(a, nrbp->d(jz));
       }
-      MEDDLY_DCASSERT(0 == nbr.d(i));
-      nbr.d(i) = resF->createReducedNode(i, nbri);
+      MEDDLY_DCASSERT(0 == nbr->d(i));
+      nbr->d_ref(i) = resF->createReducedNode(i, nbri);
     }
     unpacked_node::recycle(nrbp);
     unpacked_node::recycle(nrb);
@@ -254,17 +254,17 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
     unpacked_node* nrap = unpacked_node::useUnpackedNode();
     nra->initFromNode(arg1F, a, false);
     for (int iz = 0; iz < nra->getNNZs(); ++iz) {
-      node_builder& nbri = resF->useNodeBuilder(-rLevel, rSize);
-      for (int i = 0; i < rSize; ++i) nbri.d(i) = 0;
+      unpacked_node* nbri = unpacked_node::newFull(resF, -rLevel, rSize);
+      for (int i = 0; i < rSize; ++i) nbri->d_ref(i) = 0;
       nrap->initFromNode(arg1F, nra->d(iz), false);
       int i = nra->i(iz);
       for (int jz = 0; jz < nrap->getNNZs(); ++jz) {
         int j = nrap->i(jz);
-        MEDDLY_DCASSERT(0 == nbri.d(j));
-        nbri.d(j) = compute_rec(nrap->d(jz), b);
+        MEDDLY_DCASSERT(0 == nbri->d(j));
+        nbri->d_ref(j) = compute_rec(nrap->d(jz), b);
       }
-      MEDDLY_DCASSERT(0 == nbr.d(i));
-      nbr.d(i) = resF->createReducedNode(i, nbri);
+      MEDDLY_DCASSERT(0 == nbr->d(i));
+      nbr->d_ref(i) = resF->createReducedNode(i, nbri);
     }
     unpacked_node::recycle(nrap);
     unpacked_node::recycle(nra);
@@ -296,8 +296,8 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
     // For all i, j, and k:
     //    result[i][k] += compute_rec(a[i][j], b[j][k])
     for (int iz = 0; iz < nra->getNNZs(); ++iz) {
-      node_builder& nbri = resF->useNodeBuilder(-rLevel, rSize);
-      for (int i = 0; i < rSize; ++i) nbri.d(i) = 0;
+      unpacked_node* nbri = unpacked_node::newFull(resF, -rLevel, rSize);
+      for (int i = 0; i < rSize; ++i) nbri->d_ref(i) = 0;
       nrap->initFromNode(arg1F, nra->d(iz), false);
       int i = nra->i(iz);
       for (int jz = 0; jz < nrap->getNNZs(); ++jz) {
@@ -307,18 +307,18 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
           int result = compute_rec(nrap->d(jz), nrbp[j]->d(kz));
           if (0 == result) continue;
           int k = nrbp[j]->i(kz);
-          if (0 == nbri.d(k)) {
-            nbri.d(k) = result;
+          if (0 == nbri->d(k)) {
+            nbri->d_ref(k) = result;
             continue;
           }
-          int old = nbri.d(k);
-          nbri.d(k) = accumulateOp->compute(old, result);
+          int old = nbri->d(k);
+          nbri->d_ref(k) = accumulateOp->compute(old, result);
           resF->unlinkNode(old);
           resF->unlinkNode(result);
         }
       }
-      MEDDLY_DCASSERT(0 == nbr.d(i));
-      nbr.d(i) = resF->createReducedNode(i, nbri);
+      MEDDLY_DCASSERT(0 == nbr->d(i));
+      nbr->d_ref(i) = resF->createReducedNode(i, nbri);
     }
     unpacked_node::recycle(nrap);
     unpacked_node::recycle(nra);

@@ -1119,122 +1119,6 @@ void MEDDLY::expert_forest
   unique->reportStats(s, pad, flags);
 }
 
-// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-// '                                                                '
-// '                   methods for  reading nodes                   '
-// '                                                                '
-// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-/*
-void MEDDLY::expert_forest
-::initRedundantReader(node_reader &nr, int k, node_handle p, bool full) const
-{
-  MEDDLY_DCASSERT(0==edgeBytes());
-  int nsize = getLevelSize(k);
-  nr.resize(k, nsize, 0, full);
-  for (int i=0; i<nsize; i++) {
-    nr.down[i] = p;
-  }
-  if (!full) {
-    for (int i=0; i<nsize; i++) nr.index[i] = i;
-    nr.nnzs = nsize;
-  }
-}
-
-void MEDDLY::expert_forest
-::initRedundantReader(node_reader &nr, int k, int ev, node_handle np, bool full) const
-{
-  MEDDLY_DCASSERT(sizeof(int)==edgeBytes());
-  int nsize = getLevelSize(k);
-  nr.resize(k, nsize, sizeof(int), full);
-  for (int i=0; i<nsize; i++) {
-    nr.down[i] = np;
-    ((int*)nr.edge)[i] = ev;
-  }
-  if (!full) {
-    for (int i=0; i<nsize; i++) nr.index[i] = i;
-    nr.nnzs = nsize;
-  }
-}
-
-void MEDDLY::expert_forest
-::initRedundantReader(node_reader &nr, int k, float ev, node_handle np, bool full) const
-{
-  MEDDLY_DCASSERT(sizeof(float)==edgeBytes());
-  int nsize = getLevelSize(k);
-  nr.resize(k, nsize, sizeof(float), full);
-  for (int i=0; i<nsize; i++) {
-    nr.down[i] = np;
-    ((float*)nr.edge)[i] = ev;
-  }
-  if (!full) {
-    for (int i=0; i<nsize; i++) nr.index[i] = i;
-    nr.nnzs = nsize;
-  }
-}
-
-void MEDDLY::expert_forest
-::initIdentityReader(node_reader &nr, int k, int i, node_handle node, bool full) const
-{
-  MEDDLY_DCASSERT(0==edgeBytes());
-  int nsize = getLevelSize(k);
-  if (full) {
-    nr.resize(k, nsize, 0, full);
-    memset(nr.down, 0, nsize * sizeof(node_handle));
-    nr.down[i] = node;
-  } else {
-    nr.resize(k, 1, 0, full);
-    nr.nnzs = 1;
-    nr.down[0] = node;
-    nr.index[0] = i;
-  }
-}
-
-
-void MEDDLY::expert_forest
-::initIdentityReader(node_reader &nr, int k, int i, int ev, node_handle node, 
-  bool full) const
-{
-  MEDDLY_DCASSERT(sizeof(int)==edgeBytes());
-  int nsize = getLevelSize(k);
-  if (full) {
-    nr.resize(k, nsize, sizeof(int), full);
-    memset(nr.down, 0, nsize * sizeof(node_handle));
-    memset(nr.edge, 0, nsize * sizeof(int));
-    nr.down[i] = node;
-    ((int*)nr.edge)[i] = ev;
-  } else {
-    nr.resize(k, 1, sizeof(int), full);
-    nr.nnzs = 1;
-    nr.down[0] = node;
-    ((int*)nr.edge)[0] = ev;
-    nr.index[0] = i;
-  }
-}
-
-
-void MEDDLY::expert_forest
-::initIdentityReader(node_reader &nr, int k, int i, float ev, node_handle node, 
-  bool full) const
-{
-  MEDDLY_DCASSERT(sizeof(float)==edgeBytes());
-  int nsize = getLevelSize(k);
-  if (full) {
-    nr.resize(k, nsize, sizeof(float), full);
-    memset(nr.down, 0, nsize * sizeof(node_handle));
-    memset(nr.edge, 0, nsize * sizeof(float));
-    nr.down[i] = node;
-    ((float*)nr.edge)[i] = ev;
-  } else {
-    nr.resize(k, 1, sizeof(float), full);
-    nr.nnzs = 1;
-    nr.down[0] = node;
-    ((float*)nr.edge)[0] = ev;
-    nr.index[0] = i;
-  }
-}
-*/
-
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // '                                                                '
@@ -1763,7 +1647,7 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
   unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE
   unpacked_node* key = unpacked_node::newFromNode(this, p, false);
-  key->computeHash(areEdgeValuesHashed(), getTransparentNode());
+  key->computeHash();
   if (unique->find(*key) != p) {
     fprintf(stderr, "Error in deleteNode\nFind: %ld\np: %ld\n",
       long(unique->find(*key)), long(p));
@@ -1839,7 +1723,7 @@ void MEDDLY::expert_forest::zombifyNode(node_handle p)
   unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE 
   unpacked_node* key = unpacked_node::newFromNode(this, p, false);
-  key->computeHash(areEdgeValuesHashed(), getTransparentNode());
+  key->computeHash();
   MEDDLY_DCASSERT(key->hash() == h);
   if (unique->find(*key) != p) {
     fprintf(stderr, "Fail: can't find reduced node %ld; got %ld\n", 
@@ -2132,7 +2016,149 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
 #ifdef DEVELOPMENT_CODE
   unpacked_node* key = unpacked_node::newFromNode(this, p, false);
-  key->computeHash(areEdgeValuesHashed(), getTransparentNode());
+  key->computeHash();
+  MEDDLY_DCASSERT(key->hash() == nb.hash());
+  node_handle f = unique->find(*key);
+  MEDDLY_DCASSERT(f == p);
+  unpacked_node::recycle(key);
+#endif
+#ifdef DEBUG_CREATE_REDUCED
+  printf("Created node ");
+  showNode(stdout, p, SHOW_DETAILS | SHOW_INDEX);
+  printf("\n");
+#endif
+  return p;
+}
+
+MEDDLY::node_handle MEDDLY::expert_forest
+::createReducedHelper(int in, const unpacked_node &nb)
+{
+#ifdef DEVELOPMENT_CODE
+  validateDownPointers(nb);
+#endif
+
+  // get sparse, truncated full sizes and check
+  // for redundant / identity reductions.
+  int nnz;
+  if (nb.isSparse()) {
+    // Reductions for sparse nodes
+    nnz = nb.getNNZs();
+#ifdef DEVELOPMENT_CODE
+    for (int z=0; z<nnz; z++) {
+      MEDDLY_DCASSERT(nb.d(z)!=getTransparentNode());
+    } // for z
+#endif
+
+    // Check for identity nodes
+    if (1==nnz && in==nb.i(0)) {
+      if (isIdentityEdge(nb, 0)) {
+#ifdef DEBUG_CREATE_REDUCED
+        printf("Identity node ");
+        showNode(stdout, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
+        printf("\n");
+#endif
+        return nb.d(0);
+      }
+    }
+
+    // Check for redundant nodes
+    if (nnz == getLevelSize(nb.getLevel())) {
+      if (isRedundant(nb)) {
+        // unlink downward pointers, except the one we're returning.
+        for (int i = 1; i<nnz; i++)  unlinkNode(nb.d(i));  
+#ifdef DEBUG_CREATE_REDUCED
+        printf("Redundant node ");
+        showNode(stdout, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
+        printf("\n");
+#endif
+        return nb.d(0);
+      }
+    }
+
+  } else {
+    // Reductions for full nodes
+    MEDDLY_DCASSERT(nb.getSize() <= getLevelSize(nb.getLevel()));
+    nnz = 0;
+    for (int i=0; i<nb.getSize(); i++) {
+      if (nb.d(i)!=getTransparentNode()) nnz++;
+    } // for i
+
+    // Check for identity nodes
+    if (1==nnz) {
+      if (isIdentityEdge(nb, in)) {
+#ifdef DEBUG_CREATE_REDUCED
+        printf("Identity node ");
+        showNode(stdout, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
+        printf("\n");
+#endif
+        return nb.d(in);
+      }
+    }
+
+    // Check for redundant nodes
+    if (nnz == getLevelSize(nb.getLevel())) {
+      if (isRedundant(nb)) {
+        // unlink downward pointers, except the one we're returning.
+        for (int i = 1; i<nb.getSize(); i++)  unlinkNode(nb.d(i));
+#ifdef DEBUG_CREATE_REDUCED
+        printf("Redundant node ");
+        showNode(stdout, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
+        printf("\n");
+#endif
+        return nb.d(0);
+      }
+    }
+  }
+
+  // Is this a transparent node?
+  if (0==nnz) {
+    // no need to unlink
+    return getTransparentNode();
+  }
+
+  // check for duplicates in unique table
+  node_handle q = unique->find(nb);
+  if (q) {
+    // unlink all downward pointers
+    int rawsize = nb.isSparse() ? nb.getNNZs() : nb.getSize();
+    for (int i = 0; i<rawsize; i++)  unlinkNode(nb.d(i));
+    return linkNode(q);
+  }
+
+  // 
+  // Not eliminated by reduction rule.
+  // Not a duplicate.
+  //
+  // We need to create a new node for this.
+
+  // NOW is the best time to run the garbage collector, if necessary.
+#ifndef GC_OFF
+  if (isTimeToGc()) garbageCollect();
+#endif
+
+  // Grab a new node
+  node_handle p = getFreeNodeHandle();
+  address[p].level = nb.getLevel();
+  MEDDLY_DCASSERT(0 == address[p].cache_count);
+
+  stats.incActive(1);
+  if (theLogger && theLogger->recordingNodeCounts()) {
+    theLogger->addToActiveNodeCount(this, address[p].level, 1);
+  }
+
+  // All of the work is in nodeMan now :^)
+  address[p].offset = nodeMan->makeNode(p, nb, getNodeStorage());
+
+#ifdef SAVE_HASHES
+  address[p].hash = nb.hash();
+#endif
+  
+  // add to UT 
+  unique->add(nb.hash(), p);
+
+#ifdef DEVELOPMENT_CODE
+  unpacked_node* key = unpacked_node::newFromNode(this, p, false);
+  key->computeHash();
   MEDDLY_DCASSERT(key->hash() == nb.hash());
   node_handle f = unique->find(*key);
   MEDDLY_DCASSERT(f == p);
@@ -2147,6 +2173,50 @@ MEDDLY::node_handle MEDDLY::expert_forest
 }
 
 void MEDDLY::expert_forest::validateDownPointers(const node_builder &nb) const
+{
+  switch (getReductionRule()) {
+    case policies::IDENTITY_REDUCED:
+    case policies::FULLY_REDUCED:
+      if (nb.isSparse()) {
+        for (int z=0; z<nb.getNNZs(); z++) {
+          MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(z))));
+        } 
+      } else {
+        for (int i=0; i<nb.getSize(); i++) {
+          MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(i))));
+        }
+      }
+      break;
+
+    case policies::QUASI_REDUCED:
+#ifdef DEVELOPMENT_CODE
+      int nextLevel;
+      if (isForRelations()) 
+        nextLevel = (nb.getLevel()<0) ? -(nb.getLevel()+1) : -nb.getLevel();
+      else
+        nextLevel = nb.getLevel()-1;
+#endif
+      if (nb.isSparse()) {
+        for (int z=0; z<nb.getNNZs(); z++) {
+          MEDDLY_DCASSERT(getNodeLevel(nb.d(z)) == nextLevel);
+        } 
+      } else {
+        node_handle tv=getTransparentNode();
+        for (int i=0; i<nb.getSize(); i++) {
+          if (nb.d(i)==tv) continue;
+          MEDDLY_DCASSERT(getNodeLevel(nb.d(i)) == nextLevel);
+        }
+      }
+      break;
+
+    default:
+      throw error(error::NOT_IMPLEMENTED);
+  }
+
+}
+
+
+void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
 {
   switch (getReductionRule()) {
     case policies::IDENTITY_REDUCED:

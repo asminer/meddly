@@ -95,6 +95,16 @@ bool MEDDLY::evmdd_plusint::isIdentityEdge(const node_builder &nb, int i) const
   return isIdentityEdgeTempl<OP>(nb, i); 
 }
 
+bool MEDDLY::evmdd_plusint::isRedundant(const unpacked_node &nb) const
+{
+  return isRedundantTempl<OP>(nb);
+}
+
+bool MEDDLY::evmdd_plusint::isIdentityEdge(const unpacked_node &nb, int i) const
+{
+  return isIdentityEdgeTempl<OP>(nb, i); 
+}
+
 
 
 

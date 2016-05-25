@@ -134,6 +134,9 @@ class MEDDLY::simple_storage : public node_storage {
     virtual node_address makeNode(node_handle p, const node_builder &nb, 
         node_storage_flags opt);
 
+    virtual node_address makeNode(node_handle p, const unpacked_node &nb, 
+        node_storage_flags opt);
+
     virtual void unlinkDownAndRecycle(node_address addr);
 
     virtual bool areDuplicates(node_address addr, const node_builder &nb) const;
@@ -315,6 +318,29 @@ class MEDDLY::simple_storage : public node_storage {
         const node_builder &nb);
 
       void copyExtraHeader(node_address addr, const node_builder &nb);
+
+
+
+      /** Create a new node, stored as truncated full.
+          Space is allocated for the node, and data is copied.
+            @param  p     Node handle number.
+            @param  size  Number of downward pointers.
+            @param  nb    Node data is copied from here.
+            @return       The "address" of the new node.
+      */
+      node_handle makeFullNode(node_handle p, int size, const unpacked_node &nb);
+
+      /** Create a new node, stored sparsely.
+          Space is allocated for the node, and data is copied.
+            @param  p     Node handle number.
+            @param  size  Number of nonzero downward pointers.
+            @param  nb    Node data is copied from here.
+            @return       The "address" of the new node.
+      */
+      node_handle makeSparseNode(node_handle p, int size, 
+        const unpacked_node &nb);
+
+      void copyExtraHeader(node_address addr, const unpacked_node &nb);
 
       /** Allocate enough slots to store a node with given size.
           Also, stores the node size in the node.

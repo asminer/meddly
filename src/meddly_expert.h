@@ -578,7 +578,7 @@ class MEDDLY::unpacked_node {
     void clear();
 
   public:
-  /* Initialization methods */
+  /* Initialization methods, primarily for reading */
 
     void initFromNode(const expert_forest *f, node_handle node, bool full);
 
@@ -589,6 +589,11 @@ class MEDDLY::unpacked_node {
     void initIdentity(const expert_forest *f, int k, int i, node_handle node, bool full);
     void initIdentity(const expert_forest *f, int k, int i, int ev, node_handle node, bool full);
     void initIdentity(const expert_forest *f, int k, int i, float ev, node_handle node, bool full);
+
+  /* Create blank node, primarily for writing */
+    
+    void initFull(const expert_forest *f, int level, int tsz); 
+    void initSparse(const expert_forest *f, int level, int nnz);
 
   public:
   /* For convenience: get recycled instance and initialize */
@@ -603,40 +608,78 @@ class MEDDLY::unpacked_node {
     static unpacked_node* newIdentity(const expert_forest *f, int k, int i, int ev, node_handle node, bool full);
     static unpacked_node* newIdentity(const expert_forest *f, int k, int i, float ev, node_handle node, bool full);
 
+    static unpacked_node* newFull(const expert_forest *f, int level, int tsz);
+    static unpacked_node* newSparse(const expert_forest *f, int level, int nnz);
+
   public:
   /* Display / access methods */
 
     /// Display this node
     void show(output &s, const expert_forest* parent, bool verb) const;
 
+    /// Get a pointer to the unhashed header data.
+    const void* UHptr() const;
+
+    /// Modify a pointer to the unhashed header data
+    void* UHdata();
+
+    /// Get the number of bytes of unhashed header data.
+    int UHbytes() const;
+
     /// Get a pointer to the hashed header data.
     const void* HHptr() const;
+
+    /// Modify a pointer to the hashed header data.
+    void* HHdata();
 
     /// Get the number of bytes of hashed header data.
     int HHbytes() const;
 
     /** Get a downward pointer.
-     @param  n   Which pointer.
-     @return     If this is a full reader,
-     return pointer with index n.
-     If this is a sparse reader,
-     return the nth non-zero pointer.
-     */
+          @param  n   Which pointer.
+          @return     If this is a full reader,
+                      return pointer with index n.
+                      If this is a sparse reader,
+                      return the nth non-zero pointer.
+    */
     node_handle d(int n) const;
 
+    /** Reference to a downward pointer.
+          @param  n   Which pointer.
+          @return     If this is a full reader,
+                      modify pointer with index n.
+                      If this is a sparse reader,
+                      modify the nth non-zero pointer.
+    */
+    node_handle& d_ref(int n);
+
     /** Get the index of the nth non-zero pointer.
-     Use only for sparse readers.
+        Use only for sparse readers.
      */
     int i(int n) const;
 
+    /** Modify the index of the nth non-zero pointer.
+        Use only for sparse readers.
+    */
+    int& i_ref(int n);
+
     /// Get a pointer to an edge
     const void* eptr(int i) const;
+
+    /// Modify pointer to an edge
+    void* eptr_write(int i);
 
     /// Get the edge value, as an integer.
     void getEdge(int i, int& ev) const;
 
     /// Get the edge value, as a float.
     void getEdge(int i, float& ev) const;
+
+    /// Set the edge value, as an integer.
+    void setEdge(int i, int ev);
+
+    /// Set the edge value, as a float.
+    void setEdge(int i, float ev);
 
     /// Get the edge value, as an integer.
     int ei(int i) const;
@@ -646,6 +689,9 @@ class MEDDLY::unpacked_node {
 
     /// Get the level number of this node.
     int getLevel() const;
+
+    /// Set the level number of this node.
+    void setLevel(int k);
 
     /// Get the size of this node (full readers only).
     int getSize() const;
@@ -670,21 +716,50 @@ class MEDDLY::unpacked_node {
 
     void setHash(unsigned H);
 
-    void computeHash(bool hashEdgeValues, node_handle tv);
+    void computeHash();
 
+  public:
+
+    /// Change the size of a node
+    void resize(int ns);
+
+    /// Shrink the size of a sparse node
+    void shrinkSparse(int ns);
+
+    /// Called within expert_forest to allocate space.
+    ///   @param  p     Parent.
+    ///   @param  k     Level number.
+    ///   @param  ns    Size of node.
+    ///   @param  full  If true, we'll be filling a full reader.
+    ///                 Otherwise it is a sparse one.
+    void bind_to_forest(const expert_forest* p, int k, int ns, bool full);
+
+    /// Allocate space for extra hashed info
+    void resize_header(int extra_bytes);
+
+  public:
     // Centralized recycling
     static unpacked_node* useUnpackedNode();
     static void recycle(unpacked_node* r);
+    static void freeRecycled();
+
 
   private:
+    const expert_forest* parent;
     static unpacked_node* freeList;
     unpacked_node* next; // for recycled list
+    /*
+      TBD - extra info that is not hashed
+    */
+    void* extra_unhashed;
+    int ext_uh_alloc;
+    int ext_uh_size;
     /*
      Extra info that is hashed
      */
     void* extra_hashed;
-    int ext_alloc;
-    int ext_size;
+    int ext_h_alloc;
+    int ext_h_size;
     /*
      Down pointers, indexes, edge values.
      */
@@ -702,24 +777,6 @@ class MEDDLY::unpacked_node {
 #ifdef DEVELOPMENT_CODE
     bool has_hash;
 #endif
-
-    static void freeRecycled();
-
-    /// Called within expert_forest to allocate space.
-    ///   @param  p     Parent.
-    ///   @param  k     Level number.
-    ///   @param  ns    Size of node.
-    ///   @param  eb    Bytes for each edge.
-    ///   @param  full  If true, we'll be filling a full reader.
-    ///                 Otherwise it is a sparse one.
-    void resize(int k, int ns, char eb, bool full);
-
-    /// Allocate space for extra hashed info
-    void resize_header(int extra_bytes);
-
-    friend class expert_forest;
-    friend class node_storage;
-    friend void cleanup();
 };
 
 
@@ -1106,6 +1163,19 @@ class MEDDLY::node_storage {
     virtual node_address makeNode(node_handle p, const node_builder &nb,
                                   node_storage_flags opt) = 0;
 
+    /** Allocate space for, and store, a node.
+        I.e., create a new node that is a copy of the given one.
+        The node might be "compressed" in various ways to reduce
+        storage requirements.  (Indeed, that is the whole point
+        of the node_storage class.)
+            @param  p     Node handle number, in case it is used
+            @param  nb    Node data is copied from here.
+            @param  opt   Ways we can store the node.
+            @return       The "address" of the new node.
+    */
+    virtual node_address makeNode(node_handle p, const unpacked_node &nb,
+                                  node_storage_flags opt) = 0;
+
     /** Destroy a node.
         Unlink the downward pointers, and recycle the memory
         used by the node.
@@ -1280,11 +1350,6 @@ class MEDDLY::node_storage {
                         node_address new_addr);
 
     static void resize_header(unpacked_node& nr, int extra_slots);
-    static void* extra_hashed(unpacked_node& nr);
-    static node_handle* down_of(unpacked_node& nr);
-    static int* index_of(unpacked_node& nr);
-    static char* edge_of(unpacked_node& nr);
-    static int& nnzs_of(unpacked_node& nr);
 
     //
     // Methods for derived classes to deal with
@@ -1742,127 +1807,29 @@ class MEDDLY::expert_forest: public forest
     node_handle getTransparentNode() const;
 
   // ------------------------------------------------------------
-  // Preferred mechanism for reading nodes
+  // Copy a node into an unpacked node
 
   void fillUnpacked(unpacked_node &un, node_handle node, bool full) const;
 
-/*
-    TBD - calls are moved into node_reader class
- */
+  /**   Return a forest node equal to the one given.
+        The node is constructed as necessary.
+        This version should be used only for
+        multi terminal forests.
+        The unpacked node is recycled.
+          @param  in    Incoming pointer index;
+                        used for identity reductions.
+          @param  un    Temporary node; will be recycled.
 
-#if 0
-    /** Initialize a node reader.
-          @param  nr      Node reader to fill.
-          @param  node    The node to use.
-          @param  full    true:   Use a full reader.
-                          false:  Use a sparse reader.
-    */
-    void initNodeReader(unpacked_node &nr, node_handle node, bool full) const;
-
-    /// Allocate and initialize a node reader.
-    node_reader* initNodeReader(node_handle node, bool full) const;
-
-    /** Initialize a redundant node reader.
-        Use for multi-terminal forests.
-        For convenience.
-          @param  nr      Node reader to fill.
-          @param  k       Level that was skipped.
-          @param  node    Downward pointer to use.
-          @param  full    Use a full reader or sparse.
-    */
-    void initRedundantReader(node_reader &nr, int k, node_handle node, bool full) const;
-
-    /// Allocate and initialize a redundant node reader.
-    node_reader* initRedundantReader(int k, node_handle node, bool full) const;
-
-    /** Initialize a redundant node reader.
-        Use for edge-valued forests, whose edge values
-        require a single integer slot.
-        For convenience.
-          @param  nr      Node reader to fill.
-          @param  k       Level that was skipped.
-          @param  ev      Edge value to use.
-          @param  node    Downward pointer to use.
-          @param  full    Use a full reader or sparse.
-    */
-    void initRedundantReader(node_reader &nr, int k, int ev, node_handle node,
-      bool full) const;
-
-    /// Allocate and initialize a redundant node reader.
-    node_reader*
-    initRedundantReader(int k, int ev, node_handle nd, bool full) const;
-
-    /** Initialize a redundant node reader.
-        Use for edge-valued forests, whose edge values
-        require a single float slot.
-        For convenience.
-          @param  nr      Node reader to fill.
-          @param  k       Level that was skipped.
-          @param  ev      Edge value to use.
-          @param  node    Downward pointer to use.
-          @param  full    Use a full reader or sparse.
-    */
-    void initRedundantReader(node_reader &nr, int k, float ev,
-      node_handle node, bool full) const;
-
-    /// Allocate and initialize a redundant node reader.
-    node_reader* initRedundantReader(int k, float ev,
-      node_handle nd, bool full) const;
-
-    /** Initialize an identity node reader.
-        Use for multi-terminal forests.
-        For convenience.
-          @param  nr      Node reader to fill.
-          @param  k       Level that was skipped.
-          @param  i       Index of identity reduction
-          @param  n       Downward pointer to use.
-          @param  f       Use a full reader or sparse.
-    */
-    void initIdentityReader(node_reader &nr, int k, int i, node_handle n, bool f) const;
-
-    /** Initialize an identity node reader.
-        Use for edge-valued forests, whose edge values
-        require a single integer slot.
-        For convenience.
-          @param  nr      Node reader to fill.
-          @param  k       Level that was skipped.
-          @param  i       Index of identity reduction
-          @param  ev      Edge value.
-          @param  n       Downward pointer to use.
-          @param  f       Use a full reader or sparse.
-    */
-    void initIdentityReader(node_reader &nr, int k, int i, int ev, node_handle n, bool f) const;
-
-    /// Allocate and initialize an identity node reader.
-    node_reader* initIdentityReader(int k, int i, node_handle node,
-      bool full) const;
-
-    /// Allocate and initialize an identity node reader.
-    node_reader* initIdentityReader(int k, int i, int ev, node_handle nd,
-      bool full) const;
-
-    /** Initialize an identity node reader.
-        Use for edge-valued forests, whose edge values
-        require a single float slot.
-        For convenience.
-          @param  nr      Node reader to fill.
-          @param  k       Level that was skipped.
-          @param  i       Index of identity reduction
-          @param  ev      Edge value.
-          @param  n       Downward pointer to use.
-          @param  f       Use a full reader or sparse.
-    */
-    void initIdentityReader(node_reader &nr, int k, int i, float ev,
-      node_handle n, bool f) const;
-
-    /// Allocate and initialize an identity node reader.
-    node_reader* initIdentityReader(int k, int i, float ev,
-      node_handle nd, bool full) const;
-
-#endif
+          @return       A node handle equivalent
+                        to \a un, taking into account
+                        the forest reduction rules
+                        and if a duplicate node exists.
+    
+  */
+  node_handle createReducedNode(int in, unpacked_node *un);
 
   // ------------------------------------------------------------
-  // Preferred mechanism for building nodes
+  // (OLD) Preferred mechanism for building nodes
 
     node_builder& useNodeBuilder(int level, int tsz);
     node_builder& useSparseBuilder(int level, int nnz);
@@ -1937,15 +1904,6 @@ class MEDDLY::expert_forest: public forest
     */
     bool areDuplicates(node_handle node, const node_builder &nb) const;
 
-    /** Discover duplicate nodes.
-        Right now, used for sanity checks only.
-          @param  node    Handle to a node.
-          @param  nr      Some other node.
-
-          @return   true, iff the nodes are duplicates.
-    */
-    bool areDuplicates(node_handle node, const unpacked_node &nr) const;
-
     /** Is this a redundant node that can be eliminated?
         Must be implemented in derived forests
         to deal with the default edge value.
@@ -1969,6 +1927,40 @@ class MEDDLY::expert_forest: public forest
                         identity node should be eliminated.
     */
     virtual bool isIdentityEdge(const node_builder &nb, int i) const = 0;
+
+
+    /** Discover duplicate nodes.
+        Right now, used for sanity checks only.
+          @param  node    Handle to a node.
+          @param  nr      Some other node.
+
+          @return   true, iff the nodes are duplicates.
+    */
+    bool areDuplicates(node_handle node, const unpacked_node &nr) const;
+
+    /** Is this a redundant node that can be eliminated?
+        Must be implemented in derived forests
+        to deal with the default edge value.
+          @param  nb    Node we're trying to build.
+
+          @return   True, if nr is a redundant node
+                          AND it should be eliminated.
+    */
+    virtual bool isRedundant(const unpacked_node &nb) const = 0;
+
+    /** Is the specified edge an identity edge, that can be eliminated?
+        Must be implemented in derived forests
+        to deal with the default edge value.
+
+          @param  nr    Node we're trying to build.
+                        We know there is a single non-zero downward pointer.
+
+          @param  i     Candidate edge (or edge index for sparse nodes).
+
+          @return True, if nr[i] is an identity edge, and the
+                        identity node should be eliminated.
+    */
+    virtual bool isIdentityEdge(const unpacked_node &nb, int i) const = 0;
 
 
     /**
@@ -2192,8 +2184,20 @@ class MEDDLY::expert_forest: public forest
     */
     node_handle createReducedHelper(int in, const node_builder &nb);
 
+    /** Apply reduction rule to the temporary node and finalize it. 
+        Once a node is reduced, its contents cannot be modified.
+          @param  in    Incoming index, used only for identity reduction;
+                        Or -1.
+          @param  un    Unpacked node.
+          @return       Handle to a node that encodes the same thing.
+    */
+    node_handle createReducedHelper(int in, const unpacked_node &nb);
+
     // Sanity check; used in development code.
     void validateDownPointers(const node_builder &nb) const;
+
+    // Sanity check; used in development code.
+    void validateDownPointers(const unpacked_node &nb) const;
 
     /// Increase the number of node handles.
     void expandHandleList();
