@@ -245,7 +245,7 @@ namespace MEDDLY {
         //
         // Start new node at level k
         //
-        node_builder& nb = F->useSparseBuilder(k, lastV);
+        unpacked_node* nb = unpacked_node::newSparse(F, k, lastV);
         int z = 0; // number of opaque edges in our sparse node
 
         //
@@ -283,8 +283,8 @@ namespace MEDDLY {
 
           node_handle total=createEdgePr(v, F->downLevel(k), start, batchP);
           if(total!=F->getTransparentNode()){
-        	nb.i(z) = v;
-            nb.d(z) =total;
+        	  nb->i_ref(z) = v;
+            nb->d_ref(z) =total;
             z++;
           }
         }
@@ -293,7 +293,7 @@ namespace MEDDLY {
         // Union with don't cares
         //
 
-        nb.shrinkSparse(z);
+        nb->shrinkSparse(z);
         node_handle built = F->createReducedNode(-1, nb);
 
         MEDDLY_DCASSERT(unionOp);
@@ -344,7 +344,7 @@ namespace MEDDLY {
         //
         // Start new node at level k
         //
-        node_builder& nb = F->useSparseBuilder(k, lastV);
+        unpacked_node* nb = unpacked_node::newSparse(F, k, lastV);
         int z = 0; // number of nonzero edges in our sparse node
 
         //
@@ -398,8 +398,8 @@ namespace MEDDLY {
           // add to sparse node, unless transparent
           //
           if (total!=F->getTransparentNode()){
-            nb.i(z) = v;
-            nb.d(z) = total;
+            nb->i_ref(z) = v;
+            nb->d_ref(z) = total;
             z++;
           }
         } // for v
@@ -408,7 +408,7 @@ namespace MEDDLY {
         // Cleanup
         //
         F->unlinkNode(dontcares);
-        nb.shrinkSparse(z);
+        nb->shrinkSparse(z);
         return F->createReducedNode(in, nb);
       };
 
@@ -422,12 +422,12 @@ namespace MEDDLY {
         }
         // build an identity node by hand
         int lastV = F->getLevelSize(k);
-        node_builder& nb = F->useNodeBuilder(k, lastV);
+        unpacked_node* nb = unpacked_node::newFull(F, k, lastV);
         for (int v=0; v<lastV; v++) {
-          node_builder& nbp = F->useSparseBuilder(-k, 1);
-          nbp.i(0) = v;
-          nbp.d(0) = F->linkNode(p);
-          nb.d(v) = F->createReducedNode(v, nbp);
+          unpacked_node* nbp = unpacked_node::newSparse(F, -k, 1);
+          nbp->i_ref(0) = v;
+          nbp->d_ref(0) = F->linkNode(p);
+          nb->d_ref(v) = F->createReducedNode(v, nbp);
         }
         F->unlinkNode(p);
         return F->createReducedNode(-1, nb);
@@ -454,9 +454,9 @@ namespace MEDDLY {
               } else {
                 // build redundant node
                 int sz = F->getLevelSize(-i);
-                node_builder& nb = F->useNodeBuilder(-i, sz);
+                unpacked_node* nb = unpacked_node::newFull(F, -i, sz);
                 for (int v=0; v<sz; v++) {
-                  nb.d(v) = F->linkNode(next);
+                  nb->d_ref(v) = F->linkNode(next);
                 }
                 F->unlinkNode(next);
                 nextpr = F->createReducedNode(-1, nb);
@@ -480,19 +480,19 @@ namespace MEDDLY {
                 }
                 else if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
                 	int sz = F->getLevelSize(-i);
-                	node_builder& nbp = F->useNodeBuilder(-i, sz);
-					node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
-					for(int v=0; v<sz; v++){
-					  nbp.d(v)=(v==vlist[i] ? F->linkNode(next) : F->linkNode(zero));
-					}
-					F->unlinkNode(zero);
+                  unpacked_node* nbp = unpacked_node::newFull(F, -i, sz);
+					        node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
+					        for(int v=0; v<sz; v++){
+					          nbp->d_ref(v)=(v==vlist[i] ? F->linkNode(next) : F->linkNode(zero));
+					        }
+					        F->unlinkNode(zero);
 
-					nextpr = F->createReducedNode(vlist[i], nbp);
+					        nextpr = F->createReducedNode(vlist[i], nbp);
                 }
                 else {
-                	node_builder& nbp = F->useSparseBuilder(-i, 1);
-                	nbp.i(0) = vlist[i];
-                	nbp.d(0) = next;
+                  unpacked_node* nbp = unpacked_node::newSparse(F, -i, 1);
+                	nbp->i_ref(0) = vlist[i];
+                	nbp->d_ref(0) = next;
                   // link count should be unchanged
 
                 	nextpr = F->createReducedNode(vlist[i], nbp);
@@ -502,19 +502,19 @@ namespace MEDDLY {
               // sane value
               if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
             	int sz = F->getLevelSize(-i);
-                node_builder& nbp = F->useNodeBuilder(-i, sz);
+                unpacked_node* nbp = unpacked_node::newFull(F, -i, sz);
                 node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
                 for(int v=0; v<sz; v++){
-                  nbp.d(v)=(v==vplist[i] ? F->linkNode(next) : F->linkNode(zero));
+                  nbp->d_ref(v)=(v==vplist[i] ? F->linkNode(next) : F->linkNode(zero));
                 }
                 F->unlinkNode(zero);
 
                 nextpr = F->createReducedNode(vlist[i], nbp);
               }
               else {
-                node_builder& nbp = F->useSparseBuilder(-i, 1);
-                nbp.i(0) = vplist[i];
-                nbp.d(0) = next;
+                unpacked_node* nbp = unpacked_node::newSparse(F, -i, 1);
+                nbp->i_ref(0) = vplist[i];
+                nbp->d_ref(0) = next;
                 // link count should be unchanged
 
                 nextpr = F->createReducedNode(vlist[i], nbp);
@@ -531,18 +531,18 @@ namespace MEDDLY {
               }
               // build redundant node
               int sz = F->getLevelSize(i);
-              node_builder& nb = F->useNodeBuilder(i, sz);
+              unpacked_node* nb = unpacked_node::newFull(F, i, sz);
               if (F->isIdentityReduced()) {
                 // Below is likely a singleton, so check for identity reduction
                 // on the appropriate v value
                 for (int v=0; v<sz; v++) {
 //                  node_handle dpr = (v == vplist[i]) ? next : nextpr;
-                  nb.d(v) = F->linkNode(v == vplist[i] ? next : nextpr);
+                  nb->d_ref(v) = F->linkNode(v == vplist[i] ? next : nextpr);
                 }
               } else {
                 // Doesn't matter what happened below
                 for (int v=0; v<sz; v++) {
-                  nb.d(v) = F->linkNode(nextpr);
+                  nb->d_ref(v) = F->linkNode(nextpr);
                 }
               }
               F->unlinkNode(nextpr);
@@ -551,19 +551,19 @@ namespace MEDDLY {
               // sane value
               if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
             	int sz=F->getLevelSize(i);
-            	node_builder& nb = F->useNodeBuilder(i, sz);
+              unpacked_node* nb = unpacked_node::newFull(F, i, sz);
             	node_handle zero = makeOpaqueZeroNodeAtLevel(-i);
             	for(int v=0; v<sz; v++){
-            	  nb.d(v) = F->linkNode(v==vlist[i] ? nextpr : zero);
+            	  nb->d_ref(v) = F->linkNode(v==vlist[i] ? nextpr : zero);
             	}
             	F->unlinkNode(zero);
 
             	next = F->createReducedNode(-1, nb);
               }
               else {
-                node_builder& nb = F->useSparseBuilder(i, 1);
-                nb.i(0) = vlist[i];
-                nb.d(0) = nextpr;
+                unpacked_node* nb = unpacked_node::newSparse(F, i, 1);
+                nb->i_ref(0) = vlist[i];
+                nb->d_ref(0) = nextpr;
                 // link count should be unchanged
 
                 next = F->createReducedNode(-1, nb);

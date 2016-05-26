@@ -221,9 +221,9 @@ void queeniRowr(const varorder &V, int i, int r, dd_edge &e)
 {
   expert_forest* F = dynamic_cast<expert_forest*>(e.getForest());
   
-  node_builder& nb = F->useSparseBuilder(V.queenRow(i), 1);
-  nb.i(0) = r;
-  nb.d(0) = F->handleForValue(1);
+  unpacked_node* nb = unpacked_node::newSparse(F, V.queenRow(i), 1);
+  nb->i_ref(0) = r;
+  nb->d_ref(0) = F->handleForValue(1);
 
   e.set( F->createReducedNode(-1, nb) );
 
@@ -241,9 +241,9 @@ void queeniColc(const varorder &V, int i, int c, dd_edge &e)
 {
   expert_forest* F = dynamic_cast<expert_forest*>(e.getForest());
   
-  node_builder& nb = F->useSparseBuilder(V.queenCol(i), 1);
-  nb.i(0) = c;
-  nb.d(0) = F->handleForValue(1);
+  unpacked_node* nb = unpacked_node::newSparse(F, V.queenCol(i), 1);
+  nb->i_ref(0) = c;
+  nb->d_ref(0) = F->handleForValue(1);
 
   e.set( F->createReducedNode(-1, nb) );
 

@@ -63,26 +63,26 @@ void Exchange(int va, int vb, int N, dd_edge &answer)
 
   /* We're doing this BY HAND which means a 4 levels of nodes */
 
-  node_builder& na = EF->useNodeBuilder(va, N);
+  unpacked_node* na = unpacked_node::newFull(EF, va, N);
   for (int ia=0; ia<N; ia++) {
-    node_builder& nap = EF->useNodeBuilder(-va, N);
+    unpacked_node* nap = unpacked_node::newFull(EF, -va, N);
     for (int ja=0; ja<N; ja++) {
       
       // WANT vb == va' and vb' == va, so...
 
       // Make a singleton for vb' == va (index ia)
-      node_builder& nbp = EF->useSparseBuilder(-vb, 1);
-      nbp.i(0) = ia;
-      nbp.d(0) = EF->handleForValue(1);
+      unpacked_node* nbp = unpacked_node::newSparse(EF, -vb, 1);
+      nbp->i_ref(0) = ia;
+      nbp->d_ref(0) = EF->handleForValue(1);
 
       // Make a singleton for vb == va' (index ja)
-      node_builder& nb = EF->useSparseBuilder(vb, 1);
-      nb.i(0) = ja;
-      nb.d(0) = EF->createReducedNode(ja, nbp);
+      unpacked_node* nb = unpacked_node::newSparse(EF, vb, 1);
+      nb->i_ref(0) = ja;
+      nb->d_ref(0) = EF->createReducedNode(ja, nbp);
 
-      nap.d(ja) = EF->createReducedNode(-1, nb);
+      nap->d_ref(ja) = EF->createReducedNode(-1, nb);
     } // for ja
-    na.d(ia) = EF->createReducedNode(ia, nap);
+    na->d_ref(ia) = EF->createReducedNode(ia, nap);
   } // for ia
 
   answer.set(EF->createReducedNode(-1, na));
@@ -140,24 +140,24 @@ void AltExchange(int pa, int pb, int N, int K, dd_edge &answer)
   node_handle bottom = EF->handleForValue(1);
 
   for (int k=1; k<=K; k++) {
-    node_builder& nk = EF->useNodeBuilder(k, N);
+    unpacked_node* nk = unpacked_node::newFull(EF, k, N);
 
     for (int i=0; i<N; i++) {
       if (pa == i) {
-        node_builder& nkp = EF->useSparseBuilder(-k, 1);
-        nkp.i(0) = pb;
-        nkp.d(0) = bottom;
-        nk.d(i) = EF->createReducedNode(i, nkp);
+        unpacked_node* nkp = unpacked_node::newSparse(EF, -k, 1);
+        nkp->i_ref(0) = pb;
+        nkp->d_ref(0) = bottom;
+        nk->d_ref(i) = EF->createReducedNode(i, nkp);
         continue;
       }
       if (pb == i) {
-        node_builder& nkp = EF->useSparseBuilder(-k, 1);
-        nkp.i(0) = pa;
-        nkp.d(0) = bottom;
-        nk.d(i) = EF->createReducedNode(i, nkp);
+        unpacked_node* nkp = unpacked_node::newSparse(EF, -k, 1);
+        nkp->i_ref(0) = pa;
+        nkp->d_ref(0) = bottom;
+        nk->d_ref(i) = EF->createReducedNode(i, nkp);
         continue;
       }
-      nk.d(i) = bottom;
+      nk->d_ref(i) = bottom;
     } // for i
 
     bottom = EF->createReducedNode(-1, nk);

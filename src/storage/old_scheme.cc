@@ -380,6 +380,7 @@ void MEDDLY::old_node_storage
 
 }
 
+#ifdef USE_NODE_BUILDERS
 MEDDLY::node_address MEDDLY::old_node_storage
 ::makeNode(node_handle p, const node_builder &nb, node_storage_flags opt)
 {
@@ -447,6 +448,7 @@ MEDDLY::node_address MEDDLY::old_node_storage
   }
 
 }
+#endif
 
 MEDDLY::node_address MEDDLY::old_node_storage
 ::makeNode(node_handle p, const unpacked_node &nb, node_storage_flags opt)
@@ -541,11 +543,13 @@ void MEDDLY::old_node_storage::unlinkDownAndRecycle(node_address addr)
   fragment_slots += padding;
 }
 
+#ifdef USE_NODE_BUILDERS
 bool MEDDLY::old_node_storage
 ::areDuplicates(node_address addr, const node_builder &nb) const
 {
   return areDupsTempl(addr, nb);
 }
+#endif
 
 bool MEDDLY::old_node_storage
 ::areDuplicates(node_address addr, const unpacked_node &nr) const
@@ -556,11 +560,14 @@ bool MEDDLY::old_node_storage
 // void MEDDLY::old_node_storage::fillReader(node_address addr, node_reader &nr) const
 void MEDDLY::old_node_storage::fillUnpacked(unpacked_node &nr, node_address addr) const
 {
-  // Copy hashed header
+  // Copy extra headers
 
   if (hashedSlots) {
-    resize_header(nr, getParent()->hashedHeaderBytes());
     memcpy(nr.HHdata(), HH(addr), getParent()->hashedHeaderBytes());
+  }
+
+  if (unhashedSlots) {
+    memcpy(nr.UHdata(), UH(addr), getParent()->unhashedHeaderBytes());
   }
 
   // Copy everything else
@@ -877,6 +884,8 @@ void MEDDLY::old_node_storage::dumpInternalTail(output &s) const
 //
 //
 
+#ifdef USE_NODE_BUILDERS
+
 MEDDLY::node_handle MEDDLY::old_node_storage
 ::makeFullNode(node_handle p, int size, const node_builder &nb)
 {
@@ -979,7 +988,7 @@ void MEDDLY::old_node_storage
   }
 }
 
-
+#endif
 
 
 

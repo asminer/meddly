@@ -59,6 +59,7 @@ MEDDLY::mt_forest::mt_forest(int dsl, domain *d, bool rel,
 {
 }
 
+#ifdef USE_NODE_BUILDERS
 bool MEDDLY::mt_forest::isRedundant(const node_builder &nb) const
 {
   if (isQuasiReduced()) return false;
@@ -77,7 +78,7 @@ bool MEDDLY::mt_forest::isIdentityEdge(const node_builder &nb, int i) const
   if (i<0) return false;
   return nb.d(i) != 0;
 }
-
+#endif
 
 bool MEDDLY::mt_forest::isRedundant(const unpacked_node &nb) const
 {
@@ -116,19 +117,19 @@ MEDDLY::node_handle MEDDLY::mt_forest::makeNodeAtLevel(int k, node_handle d)
 
     // make node at level "up"
     int sz = getLevelSize(up);
-    node_builder& nb = useNodeBuilder(up, sz);
+    unpacked_node* nb = unpacked_node::newFull(this, up, sz);
 
     if (isIdentityReduced() && (dk<0)) {
       // make identity reductions below as necessary
       node_handle sd;
       int si = isTerminalNode(d) ? -1 : getSingletonIndex(d, sd);
       for (int i=0; i<sz; i++) {
-        nb.d(i) = linkNode( (i==si) ? sd : d );
+        nb->d_ref(i) = linkNode( (i==si) ? sd : d );
       }
     } else {
       // don't worry about identity reductions
       for (int i=0; i<sz; i++) {
-        nb.d(i) = linkNode(d);
+        nb->d_ref(i) = linkNode(d);
       }
     }
     unlinkNode(d);

@@ -669,6 +669,7 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   a_lowest_index = 8;
   
 
+#ifdef USE_NODE_BUILDERS
   //
   // Initialize level array
   //
@@ -684,6 +685,7 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
     raw_builders = new node_builder[N+1];
     builders = raw_builders;
   }
+#endif
 
   //
   // Initialize misc. protected data
@@ -720,8 +722,10 @@ MEDDLY::expert_forest::~expert_forest()
 
   delete nodeMan;
 
+#ifdef USE_NODE_BUILDERS
   // builders array
   delete[] raw_builders;
+#endif
 
   // unique table
   delete unique;
@@ -741,12 +745,14 @@ void MEDDLY::expert_forest::initializeForest()
   //
   nodeMan = deflt.nodestor->createForForest(this);
 
+#ifdef USE_NODE_BUILDERS
   //
   // Initialize builders array
   //
   for (int k=getMinLevelIndex(); k<=getNumVariables(); k++) {
     builders[k].init(k, this);
   }
+#endif
 }
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -1258,9 +1264,15 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
       s.stripWS();
       int rawsize = s.get_integer();
       int n;
+#ifdef USE_NODE_BUILDERS
       node_builder &nb = (rawsize < 0)
         ? useSparseBuilder(k, n=-rawsize)
         : useNodeBuilder(k, n=rawsize);
+#else
+      unpacked_node* nb = (rawsize < 0)
+        ? unpacked_node::newSparse(this, k, n=-rawsize)
+        : unpacked_node::newFull(this, k, n=rawsize);
+#endif
 
 #ifdef DEBUG_READ
       printf("%d ", rawsize);
@@ -1270,7 +1282,11 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
       if (rawsize<0) {
         for (int i=0; i<n; i++) {
           s.stripWS();
+#ifdef USE_NODE_BUILDERS
           nb.i(i) = s.get_integer();
+#else
+          nb->i_ref(i) = s.get_integer();
+#endif
         }
 #ifdef DEBUG_READ
         printf("indexes ");
@@ -1296,13 +1312,21 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
           if (down >= node_index) {
             throw error(error::INVALID_ASSIGNMENT);
           }
+#ifdef USE_NODE_BUILDERS
           nb.d(i) = linkNode(map[down]);
+#else
+          nb->d_ref(i) = linkNode(map[down]);
+#endif
         } else {
           // must be a terminal node
 #ifdef DEBUG_READ
           printf("t");
 #endif
+#ifdef USE_NODE_BUILDERS
           nb.d(i) = readTerminal(s);
+#else
+          nb->d_ref(i) = readTerminal(s);
+#endif
         }
       }
 #ifdef DEBUG_READ
@@ -1310,11 +1334,19 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
 #endif
 
       // read edges
+#ifdef USE_NODE_BUILDERS
       if (nb.hasEdges()) {
         for (int i=0; i<n; i++) {
           s.stripWS();
           readEdgeValue(s, nb.eptr(i));
         }
+#else
+      if (nb->hasEdges()) {
+        for (int i=0; i<n; i++) {
+          s.stripWS();
+          readEdgeValue(s, nb->eptr_write(i));
+        }
+#endif
 #ifdef DEBUG_READ
         printf("edges ");
 #endif
@@ -1323,11 +1355,19 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
       // any extra header info?  read it
       if (unhashedHeaderBytes()) {
         s.stripWS();
+#ifdef USE_NODE_BUILDERS
         readUnhashedHeader(s, nb);
+#else
+        readUnhashedHeader(s, *nb);
+#endif
       }
       if (hashedHeaderBytes()) {
         s.stripWS();
+#ifdef USE_NODE_BUILDERS
         readHashedHeader(s, nb);
+#else
+        readHashedHeader(s, *nb);
+#endif
       }
 
       // ok, done reading; time to reduce it
@@ -1514,12 +1554,24 @@ const char* MEDDLY::expert_forest::codeChars() const
   return "unknown dd";
 }
 
+#ifdef USE_NODE_BUILDERS
 void MEDDLY::expert_forest::normalize(node_builder &nb, int& ev) const
 {
   throw error(error::TYPE_MISMATCH);
 }
 
 void MEDDLY::expert_forest::normalize(node_builder &nb, float& ev) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+#endif
+
+void MEDDLY::expert_forest::normalize(unpacked_node &nb, int& ev) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::expert_forest::normalize(unpacked_node &nb, float& ev) const
 {
   throw error(error::TYPE_MISMATCH);
 }
@@ -1569,7 +1621,14 @@ void MEDDLY::expert_forest::writeHashedHeader(output &s, const void* hh) const
   throw error(error::TYPE_MISMATCH);
 }
 
+#ifdef USE_NODE_BUILDERS
 void MEDDLY::expert_forest::readHashedHeader(input &s, node_builder &nb) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+#endif
+
+void MEDDLY::expert_forest::readHashedHeader(input &s, unpacked_node &nb) const
 {
   throw error(error::TYPE_MISMATCH);
 }
@@ -1584,7 +1643,14 @@ void MEDDLY::expert_forest::writeUnhashedHeader(output &s, const void* uh) const
   throw error(error::TYPE_MISMATCH);
 }
 
+#ifdef USE_NODE_BUILDERS
 void MEDDLY::expert_forest::readUnhashedHeader(input &s, node_builder &nb) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+#endif
+
+void MEDDLY::expert_forest::readUnhashedHeader(input &s, unpacked_node &nb) const
 {
   throw error(error::TYPE_MISMATCH);
 }
@@ -1889,6 +1955,7 @@ void MEDDLY::expert_forest::recycleNodeHandle(node_handle p)
 }
 
 
+#ifdef USE_NODE_BUILDERS 
 MEDDLY::node_handle MEDDLY::expert_forest
 ::createReducedHelper(int in, const node_builder &nb)
 {
@@ -2029,6 +2096,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
 #endif
   return p;
 }
+#endif
 
 MEDDLY::node_handle MEDDLY::expert_forest
 ::createReducedHelper(int in, const unpacked_node &nb)
@@ -2172,6 +2240,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
   return p;
 }
 
+#ifdef USE_NODE_BUILDERS
 void MEDDLY::expert_forest::validateDownPointers(const node_builder &nb) const
 {
   switch (getReductionRule()) {
@@ -2214,6 +2283,7 @@ void MEDDLY::expert_forest::validateDownPointers(const node_builder &nb) const
   }
 
 }
+#endif
 
 
 void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const

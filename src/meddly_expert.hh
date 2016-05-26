@@ -184,12 +184,14 @@ MEDDLY::unpacked_node::newSparse(const expert_forest *f, int level, int nnzs)
 inline const void*
 MEDDLY::unpacked_node::UHptr() const
 {
+  MEDDLY_DCASSERT(extra_unhashed);
   return extra_unhashed;
 }
 
 inline void*
 MEDDLY::unpacked_node::UHdata()
 {
+  MEDDLY_DCASSERT(extra_unhashed);
   return extra_unhashed;
 }
 
@@ -202,12 +204,14 @@ MEDDLY::unpacked_node::UHbytes() const
 inline const void*
 MEDDLY::unpacked_node::HHptr() const
 {
+  MEDDLY_DCASSERT(extra_hashed);
   return extra_hashed;
 }
 
 inline void*
 MEDDLY::unpacked_node::HHdata()
 {
+  MEDDLY_DCASSERT(extra_hashed);
   return extra_hashed;
 }
 
@@ -426,19 +430,9 @@ MEDDLY::unpacked_node::freeRecycled()
   }
 }
 
-inline void 
-MEDDLY::unpacked_node::bind_to_forest(const expert_forest* f, int k, int ns, bool full)
-{
-  parent = f;
-  level = k;
-  is_full = full;
-  edge_bytes = f->edgeBytes();
-  resize(ns);
-}
-
-
 // ****************************************************************************
 
+#ifdef USE_NODE_BUILDERS
 inline void*
 MEDDLY::node_builder::raw_hh() const
 {
@@ -690,6 +684,8 @@ MEDDLY::node_builder::setEdge(int n, float ev)
   MEDDLY::expert_forest::float_EVencoder::writeValue(eptr(n), ev);
 }
 
+#endif
+
 // ****************************************************************************
 
 inline bool
@@ -789,12 +785,6 @@ MEDDLY::node_storage::setNextOf(node_address addr, MEDDLY::node_handle n)
   nexts[addr] = n;
 }
 #endif
-
-inline void
-MEDDLY::node_storage::resize_header(MEDDLY::unpacked_node& nr, int extra_slots)
-{
-  nr.resize_header(extra_slots);
-}
 
 inline const MEDDLY::expert_forest*
 MEDDLY::node_storage::getParent() const
@@ -1371,6 +1361,8 @@ const
 }
 
 
+#ifdef USE_NODE_BUILDERS
+
 inline MEDDLY::node_builder&
 MEDDLY::expert_forest::useNodeBuilder(int level, int tsz)
 {
@@ -1441,6 +1433,19 @@ template<class T>
 #endif
   }
 
+inline bool
+MEDDLY::expert_forest::areDuplicates(MEDDLY::node_handle node, const MEDDLY::node_builder &nb) const
+{
+  MEDDLY_DCASSERT(node > 0);
+  MEDDLY_DCASSERT(address);
+  MEDDLY_CHECK_RANGE(1, node, 1 + a_last);
+  if (address[node].level != nb.getLevel())
+    return false;
+  return nodeMan->areDuplicates(address[node].offset, nb);
+}
+
+#endif
+
 inline MEDDLY::node_handle
 MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un)
 {
@@ -1454,16 +1459,19 @@ MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un)
   return q;
 }
 
-
-inline bool
-MEDDLY::expert_forest::areDuplicates(MEDDLY::node_handle node, const MEDDLY::node_builder &nb) const
+template<class T>
+inline void
+MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un, T& ev,
+      MEDDLY::node_handle& node)
 {
-  MEDDLY_DCASSERT(node > 0);
-  MEDDLY_DCASSERT(address);
-  MEDDLY_CHECK_RANGE(1, node, 1 + a_last);
-  if (address[node].level != nb.getLevel())
-    return false;
-  return nodeMan->areDuplicates(address[node].offset, nb);
+  MEDDLY_DCASSERT(un);
+  normalize(*un, ev);
+  un->computeHash();
+  node = createReducedHelper(in, *un);
+#ifdef TRACK_DELETIONS
+  printf("Created node %d\n", node);
+#endif
+  unpacked_node::recycle(un);
 }
 
 inline bool

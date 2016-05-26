@@ -142,7 +142,11 @@ MEDDLY::mdd2index_operation
 
   // Initialize node builder
   const int size = resF->getLevelSize(k);
+#ifdef USE_NODE_BUILDERS
   node_builder& nb = resF->useNodeBuilder(k, size);
+#else
+  unpacked_node* nb = unpacked_node::newFull(resF, k, size);
+#endif
   
   // Initialize node reader
   unpacked_node *A = unpacked_node::useUnpackedNode();
@@ -158,21 +162,37 @@ MEDDLY::mdd2index_operation
     node_handle ddn;
     int dcard;
     compute_r(k-1, A->d(i), ddn, dcard);
+#ifdef USE_NODE_BUILDERS
     nb.d(i) = ddn;
-    if (nb.d(i)) {
+    if (ddn) {
       nb.setEdge(i, bcard);
       bcard += dcard;
     } else {
       MEDDLY_DCASSERT(0 == dcard);
       nb.setEdge(i, 0);
     }
+#else
+    nb->d_ref(i) = ddn;
+    if (ddn) {
+      nb->setEdge(i, bcard);
+      bcard += dcard;
+    } else {
+      MEDDLY_DCASSERT(0 == dcard);
+      nb->setEdge(i, 0);
+    }
+#endif
   }
 
   // Cleanup
   unpacked_node::recycle(A);
 
   // Reduce
+#ifdef USE_NODE_BUILDERS
   nb.setUH(&bcard);
+#else
+  memcpy(nb->UHdata(), &bcard, sizeof(bcard));
+#endif
+
   int dummy;
   node_handle bl;
   resF->createReducedNode(-1, nb, dummy, bl);

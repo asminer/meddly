@@ -63,6 +63,7 @@ MEDDLY::unpacked_node::~unpacked_node()
 
 void MEDDLY::unpacked_node::clear()
 {
+  free(extra_unhashed);
   free(extra_hashed);
   free(down);
   free(index);
@@ -262,6 +263,36 @@ void MEDDLY::unpacked_node
   }
 }
 
+void MEDDLY::unpacked_node::bind_to_forest(const expert_forest* f, int k, int ns, bool full)
+{
+  parent = f;
+  level = k;
+  is_full = full;
+  edge_bytes = f->edgeBytes();
+  resize(ns);
+
+  // Allocate headers
+  ext_h_size = parent->hashedHeaderBytes();
+  if (ext_h_size > ext_h_alloc) {
+    ext_h_alloc = ((ext_h_size/8)+1)*8;
+    MEDDLY_DCASSERT(ext_h_alloc > ext_h_size);
+    MEDDLY_DCASSERT(ext_h_alloc>0);
+    extra_hashed =  realloc(extra_hashed, ext_h_alloc);
+    if (0==extra_hashed) throw error(error::INSUFFICIENT_MEMORY);
+  }
+
+  ext_uh_size = parent->unhashedHeaderBytes();
+  if (ext_uh_size > ext_uh_alloc) {
+    ext_uh_alloc = ((ext_uh_size/8)+1)*8;
+    MEDDLY_DCASSERT(ext_uh_alloc > ext_uh_size);
+    MEDDLY_DCASSERT(ext_uh_alloc>0);
+    extra_unhashed =  realloc(extra_unhashed, ext_uh_alloc);
+    if (0==extra_unhashed) throw error(error::INSUFFICIENT_MEMORY);
+  }
+}
+
+
+/*
 void MEDDLY::unpacked_node
 ::resize_header(int extra_bytes)
 {
@@ -274,6 +305,7 @@ void MEDDLY::unpacked_node
     if (0==extra_hashed) throw error(error::INSUFFICIENT_MEMORY);
   }
 }
+*/
 
 void MEDDLY::unpacked_node::computeHash()
 {
@@ -328,6 +360,8 @@ void MEDDLY::unpacked_node::computeHash()
 // *                                                                *
 // *                                                                *
 // ******************************************************************
+
+#ifdef USE_NODE_BUILDERS
 
 MEDDLY::node_builder::node_builder()
 {
@@ -473,6 +507,8 @@ void MEDDLY::node_builder::enlarge()
     if (0==edge) throw error(error::INSUFFICIENT_MEMORY);
   }
 }
+
+#endif
 
 // ******************************************************************
 // *                                                                *

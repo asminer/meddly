@@ -125,15 +125,19 @@ class MEDDLY::compact_storage : public node_storage {
     virtual void writeNode(output &s, node_address addr, const node_handle* map)
     const;
 
+#ifdef USE_NODE_BUILDERS
     virtual node_address makeNode(node_handle p, const node_builder &nb, 
         node_storage_flags opt);
+#endif
 
     virtual node_address makeNode(node_handle p, const unpacked_node &nb, 
         node_storage_flags opt) { MEDDLY_DCASSERT(0); return 0; }
 
     virtual void unlinkDownAndRecycle(node_address addr);
 
+#ifdef USE_NODE_BUILDERS
     virtual bool areDuplicates(node_address addr, const node_builder &nb) const;
+#endif
     virtual bool areDuplicates(node_address addr, const unpacked_node &nr) const;
     virtual void fillUnpacked(unpacked_node &nr, node_address addr) const;
     virtual unsigned hashNode(const node_header& p) const;
@@ -160,6 +164,7 @@ class MEDDLY::compact_storage : public node_storage {
   // --------------------------------------------------------
   // |  Misc. helpers.
   private:
+#ifdef USE_NODE_BUILDERS
       /** Create a new node, stored as truncated full.
           Space is allocated for the node, and data is copied.
             @param  p       Node handle number.
@@ -183,7 +188,7 @@ class MEDDLY::compact_storage : public node_storage {
       node_address makeSparseNode(node_handle p, int size, 
           int pbytes, int ibytes, const node_builder &nb);
 
-
+#endif
 
       /** Create a new node, stored as truncated full.
           Space is allocated for the node, and data is copied.
@@ -251,6 +256,8 @@ class MEDDLY::compact_storage : public node_storage {
         return end - a + 1;
       }
 
+#ifdef USE_NODE_BUILDERS
+
       inline void copyExtraHeader(node_address addr, const node_builder &nb) {
         if (unhashedBytes) {
           nb.getUH(UH(addr));
@@ -259,6 +266,8 @@ class MEDDLY::compact_storage : public node_storage {
           nb.getHH(HH(addr));
         }
       }
+
+#endif
 
       inline void copyExtraHeader(node_address addr, const unpacked_node &nb) {
         // copy extra header info, if any
@@ -274,6 +283,8 @@ class MEDDLY::compact_storage : public node_storage {
       //--------------------------------------------------------------
       // Helpers - building full from full
       //--------------------------------------------------------------
+
+#ifdef USE_NODE_BUILDERS
 
       template <int pbytes>
       inline node_address 
@@ -481,6 +492,8 @@ class MEDDLY::compact_storage : public node_storage {
         }
       }
 
+#endif
+
       //--------------------------------------------------------------
       // Helpers - unlink down pointers
       //--------------------------------------------------------------
@@ -515,17 +528,15 @@ class MEDDLY::compact_storage : public node_storage {
       // Helpers for areDuplicates
       //--------------------------------------------------------------
       //--------------------------------------------------------------
-      inline bool headersMatch(node_handle addr, const void* hh, int bytes) 
-      const {
-        if (0== bytes) return true;
-        return 0 == memcmp(HH(addr), hh, bytes);
-      }
-
       template <class nodetype>
       inline bool areDupsTempl(node_address addr, const nodetype &n) const 
       {
-        if (!headersMatch(addr, n.HHptr(), n.HHbytes())) {
-          return false;
+        if (n.HHbytes()) {
+          if (memcmp(HH(addr), n.HHptr(), n.HHbytes())) return false;
+        }
+
+        if (n.UHbytes()) {
+          if (memcmp(UH(addr), n.UHptr(), n.UHbytes())) return false;
         }
         
         int size = sizeOf(addr);

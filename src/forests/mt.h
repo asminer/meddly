@@ -45,8 +45,10 @@ class MEDDLY::mt_forest : public expert_forest {
     mt_forest(int dsl, domain *d, bool rel, range_type t, const policies &p);
 
   public:
+#ifdef USE_NODE_BUILDERS
     virtual bool isRedundant(const node_builder &nb) const;
     virtual bool isIdentityEdge(const node_builder &nb, int i) const;
+#endif
 
     virtual bool isRedundant(const unpacked_node &nb) const;
     virtual bool isIdentityEdge(const unpacked_node &nb, int i) const;
@@ -108,9 +110,9 @@ class MEDDLY::mt_forest : public expert_forest {
       /*
           Make this node
       */
-      node_builder &nb = useNodeBuilder(k, sz);
+      unpacked_node* nb = unpacked_node::newFull(this, k, sz);
       for (int i=0; i<sz; i++) {
-        nb.d(i) = makeNodeAtLevel(km1, 
+        nb->d_ref(i) = makeNodeAtLevel(km1, 
           ENCODER::value2handle(vals ? vals[i] : i)
         );
       }

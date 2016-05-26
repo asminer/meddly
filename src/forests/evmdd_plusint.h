@@ -67,8 +67,10 @@ class MEDDLY::evmdd_plusint : public evmdd_forest {
     virtual void evaluate(const dd_edge &f, const int* vlist, int &term) const;
 
     virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const;
+#ifdef USE_NODE_BUILDERS
     virtual bool isRedundant(const node_builder &nb) const;
     virtual bool isIdentityEdge(const node_builder &nb, int i) const;
+#endif
     virtual bool isRedundant(const unpacked_node &nb) const;
     virtual bool isIdentityEdge(const unpacked_node &nb, int i) const;
 
@@ -77,13 +79,19 @@ class MEDDLY::evmdd_plusint : public evmdd_forest {
     }
 
   protected:
+#ifdef USE_NODE_BUILDERS
     virtual void normalize(node_builder &nb, int& ev) const;
+#endif
+    virtual void normalize(unpacked_node &nb, int& ev) const;
     virtual void showEdgeValue(output &s, const void* edge) const;
     virtual void writeEdgeValue(output &s, const void* edge) const;
     virtual void readEdgeValue(input &s, void* edge);
     virtual void showUnhashedHeader(output &s, const void* uh) const;
     virtual void writeUnhashedHeader(output &s, const void* uh) const;
+#ifdef USE_NODE_BUILDERS
     virtual void readUnhashedHeader(input &s, node_builder &nb) const;
+#endif
+    virtual void readUnhashedHeader(input &s, unpacked_node &nb) const;
     virtual const char* codeChars() const;
 
   protected:

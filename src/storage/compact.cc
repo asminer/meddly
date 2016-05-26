@@ -349,6 +349,9 @@ void MEDDLY::compact_storage
 }
 
 // ******************************************************************
+
+#ifdef USE_NODE_BUILDERS
+
 MEDDLY::node_address 
 MEDDLY::compact_storage
 ::makeNode(node_handle p, const node_builder &nb, node_storage_flags opt)
@@ -442,6 +445,8 @@ MEDDLY::compact_storage
   return addr;
 }
 
+#endif
+
 // ******************************************************************
 
 void MEDDLY::compact_storage::unlinkDownAndRecycle(node_address addr)
@@ -468,11 +473,13 @@ void MEDDLY::compact_storage::unlinkDownAndRecycle(node_address addr)
 
 // ******************************************************************
 
+#ifdef USE_NODE_BUILDERS
 bool MEDDLY::compact_storage
 ::areDuplicates(node_address addr, const node_builder &nb) const
 {
   return areDupsTempl(addr, nb);
 }
+#endif
 
 // ******************************************************************
 
@@ -494,11 +501,14 @@ void MEDDLY::compact_storage
   showNode(stdout, addr, true);
 #endif
 
-  // Copy hashed header
+  // Copy extra header
 
   if (hashedBytes) {
-    resize_header(nr, hashedBytes);
     memcpy(nr.HHdata(), HH(addr), hashedBytes);
+  }
+
+  if (unhashedBytes) {
+    memcpy(nr.UHdata(), UH(addr), unhashedBytes);
   }
 
   int size = sizeOf(addr);
@@ -812,6 +822,8 @@ MEDDLY::compact_storage
 //
 // ******************************************************************
 
+#ifdef USE_NODE_BUILDERS
+
 MEDDLY::node_address
 MEDDLY::compact_storage
 ::makeFullNode(node_handle p, int size, int pbytes, const node_builder &nb)
@@ -851,6 +863,8 @@ MEDDLY::compact_storage::makeSparseNode(node_handle p, int size,
     return copyFullIntoSparse(pbytes, ibytes, nb, addr);
   }
 }
+
+#endif
 
 // ******************************************************************
 

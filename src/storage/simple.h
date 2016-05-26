@@ -131,15 +131,19 @@ class MEDDLY::simple_storage : public node_storage {
     virtual void writeNode(output &s, node_address addr, const node_handle* map)
     const;
 
+#ifdef USE_NODE_BUILDERS
     virtual node_address makeNode(node_handle p, const node_builder &nb, 
         node_storage_flags opt);
+#endif
 
     virtual node_address makeNode(node_handle p, const unpacked_node &nb, 
         node_storage_flags opt);
 
     virtual void unlinkDownAndRecycle(node_address addr);
 
+#ifdef USE_NODE_BUILDERS
     virtual bool areDuplicates(node_address addr, const node_builder &nb) const;
+#endif
     virtual bool areDuplicates(node_address addr, const unpacked_node &nr) const;
     virtual void fillUnpacked(unpacked_node &nr, node_address addr) const;
     virtual unsigned hashNode(const node_header& p) const;
@@ -298,6 +302,7 @@ class MEDDLY::simple_storage : public node_storage {
   // --------------------------------------------------------
   // |  Misc. helpers.
   private:
+#ifdef USE_NODE_BUILDERS
       /** Create a new node, stored as truncated full.
           Space is allocated for the node, and data is copied.
             @param  p     Node handle number.
@@ -318,7 +323,7 @@ class MEDDLY::simple_storage : public node_storage {
         const node_builder &nb);
 
       void copyExtraHeader(node_address addr, const node_builder &nb);
-
+#endif
 
 
       /** Create a new node, stored as truncated full.
@@ -359,15 +364,14 @@ class MEDDLY::simple_storage : public node_storage {
   // --------------------------------------------------------
   // |  Node comparison as a template
   private:
-    inline bool headersMatch(node_handle addr, const void* hh, int bytes) const {
-      if (0== bytes) return true;
-      return 0 == memcmp(HH(addr), hh, bytes);
-    }
-
     template <class nodetype>
     inline bool areDupsTempl(node_handle addr, const nodetype &n) const {
-      if (!headersMatch(addr, n.HHptr(), n.HHbytes())) {
-        return false;
+      if (n.HHbytes()) {
+        if (memcmp(HH(addr), n.HHptr(), n.HHbytes())) return false;
+      }
+
+      if (n.UHbytes()) {
+        if (memcmp(UH(addr), n.UHptr(), n.UHbytes())) return false;
       }
 
       node_handle tv=getParent()->getTransparentNode();

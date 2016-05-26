@@ -49,6 +49,7 @@ class MEDDLY::ev_forest : public expert_forest {
 
   public:
 
+#ifdef USE_NODE_BUILDERS
     template <class OPERATION>
     inline bool isRedundantTempl(const node_builder &nb) const {
       if (isQuasiReduced()) return false;
@@ -71,6 +72,7 @@ class MEDDLY::ev_forest : public expert_forest {
       if (i<0) return false;
       return (nb.d(i) != 0)  &&  OPERATION::isIdentityEdge(nb.eptr(i));
     }
+#endif
 
     template <class OPERATION>
     inline bool isRedundantTempl(const unpacked_node &nb) const {
@@ -160,6 +162,7 @@ class MEDDLY::ev_forest : public expert_forest {
       /*
           Make this node
       */
+#ifdef USE_NODE_BUILDERS
       node_builder &nb = useNodeBuilder(k, sz);
       for (int i=0; i<sz; i++) {
         T ev = vals ? vals[i] : i;
@@ -177,6 +180,25 @@ class MEDDLY::ev_forest : public expert_forest {
       createReducedNode(-1, nb, ev, node);
       makeNodeAtTop<OPERATION, T>(ev, node); 
       result.set(node, ev);
+#else
+      unpacked_node *nb = unpacked_node::newFull(this, k, sz);
+      for (int i=0; i<sz; i++) {
+        T ev = vals ? vals[i] : i;
+        node_handle ed = bool_Tencoder::value2handle(true);
+        makeNodeAtLevel<OPERATION, T>(km1, ev, ed);
+        nb->d_ref(i) = ed;
+        nb->setEdge(i, ev);
+      }
+
+      /*
+          Reduce, add redundant as necessary, and set answer
+      */
+      T ev;
+      node_handle node;
+      createReducedNode(-1, nb, ev, node);
+      makeNodeAtTop<OPERATION, T>(ev, node); 
+      result.set(node, ev);
+#endif
     }
 
 
@@ -264,6 +286,7 @@ namespace MEDDLY {
       // make node at one level up
       int up = (dk < 0) ? -dk : isForRelations() ? -(dk + 1) : (dk + 1);
       int sz = getLevelSize(up);
+#ifdef USE_NODE_BUILDERS
       node_builder& nb = useNodeBuilder(up, sz);
   
       if (isIdentityReduced() && (dk < 0) && (1 == prevSize)) {
@@ -288,6 +311,32 @@ namespace MEDDLY {
 
       unlinkNode(ed);
       createReducedNode(-1, nb, ev, ed);
+#else
+      unpacked_node* nb = unpacked_node::newFull(this, up, sz);
+  
+      if (isIdentityReduced() && (dk < 0) && (1 == prevSize)) {
+        // Build unprimed node with check for identity reduction.
+        // Note 0: ed cannot be a terminal node (dk < 0).
+        // Note 1: if prevSize > 1, and ed is not the original argument,
+        //         and if it is a primed node, it cannot be identity reduced.
+        MEDDLY_DCASSERT(!isTerminalNode(ed));
+        node_handle sd;
+        int si = getSingletonIndex(ed, sd);
+        for (int i = 0; i < sz; i++) {
+          nb->d_ref(i) = linkNode( (si == i) ? sd : ed );
+          nb->setEdge(i, ev);
+        }
+      } else {
+        // No identity reduction possible.
+        for (int i = 0; i < sz; i++) {
+          nb->d_ref(i) = linkNode(ed);
+          nb->setEdge(i, ev);
+        }
+      }
+
+      unlinkNode(ed);
+      createReducedNode(-1, nb, ev, ed);
+#endif
       dk = up;
       prevSize = sz;
     } // while
