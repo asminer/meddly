@@ -96,18 +96,6 @@ bool MEDDLY::evmxd_timesreal
   return !OP::notClose(val1, val2);
 }
 
-#ifdef USE_NODE_BUILDERS
-bool MEDDLY::evmxd_timesreal::isRedundant(const node_builder &nb) const
-{
-  return isRedundantTempl<OP>(nb);
-}
-
-bool MEDDLY::evmxd_timesreal::isIdentityEdge(const node_builder &nb, int i) const
-{
-  return isIdentityEdgeTempl<OP>(nb, i); 
-}
-#endif
-
 bool MEDDLY::evmxd_timesreal::isRedundant(const unpacked_node &nb) const
 {
   return isRedundantTempl<OP>(nb);
@@ -117,32 +105,6 @@ bool MEDDLY::evmxd_timesreal::isIdentityEdge(const unpacked_node &nb, int i) con
 {
   return isIdentityEdgeTempl<OP>(nb, i); 
 }
-
-#ifdef USE_NODE_BUILDERS
-void MEDDLY::evmxd_timesreal::normalize(node_builder &nb, float& ev) const
-{
-  ev = 0.0f;
-  int index = -1;
-  int stop = nb.isSparse() ? nb.getNNZs() : nb.getSize();
-  for (int i=0; i<stop; i++) {
-    if (0 != nb.d(i) && 0.0f != nb.ef(i)) { index = i; break; }
-  }
-  if (index < 0) return; // no non-zero ev found; can't normalize.
-  ev = nb.ef(index);
-  MEDDLY_DCASSERT(ev != 0.0f);
-  for (int i=0; i<stop; i++) {
-    if (0==nb.d(i)) continue;
-    float temp;
-    nb.getEdge(i, temp);
-    if (OP::notClose(0.0f, temp)) {
-      temp = double(temp) / ev;
-      nb.setEdge(i, temp);
-    } else {
-      nb.setEdge(i, 0.0f);
-    }
-  }
-}
-#endif
 
 void MEDDLY::evmxd_timesreal::normalize(unpacked_node &nb, float& ev) const
 {

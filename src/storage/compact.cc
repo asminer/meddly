@@ -350,11 +350,9 @@ void MEDDLY::compact_storage
 
 // ******************************************************************
 
-#ifdef USE_NODE_BUILDERS
-
 MEDDLY::node_address 
 MEDDLY::compact_storage
-::makeNode(node_handle p, const node_builder &nb, node_storage_flags opt)
+::makeNode(node_handle p, const unpacked_node &nb, node_storage_flags opt)
 {
 #ifdef DEBUG_ENCODING
   printf("compact_storage making node\n        temp:  ");
@@ -445,8 +443,6 @@ MEDDLY::compact_storage
   return addr;
 }
 
-#endif
-
 // ******************************************************************
 
 void MEDDLY::compact_storage::unlinkDownAndRecycle(node_address addr)
@@ -470,16 +466,6 @@ void MEDDLY::compact_storage::unlinkDownAndRecycle(node_address addr)
   //
   holeManager->recycleChunk(addr, activeNodeActualSlots(addr));
 }
-
-// ******************************************************************
-
-#ifdef USE_NODE_BUILDERS
-bool MEDDLY::compact_storage
-::areDuplicates(node_address addr, const node_builder &nb) const
-{
-  return areDupsTempl(addr, nb);
-}
-#endif
 
 // ******************************************************************
 
@@ -822,11 +808,9 @@ MEDDLY::compact_storage
 //
 // ******************************************************************
 
-#ifdef USE_NODE_BUILDERS
-
 MEDDLY::node_address
 MEDDLY::compact_storage
-::makeFullNode(node_handle p, int size, int pbytes, const node_builder &nb)
+::makeFullNode(node_handle p, int size, int pbytes, const unpacked_node &nb)
 {
   int slots = slotsForNode(size, pbytes, 0);
   node_address addr = allocNode(slots, p, true);
@@ -847,7 +831,7 @@ MEDDLY::compact_storage
 
 MEDDLY::node_address
 MEDDLY::compact_storage::makeSparseNode(node_handle p, int size, 
-  int pbytes, int ibytes, const node_builder &nb)
+  int pbytes, int ibytes, const unpacked_node &nb)
 {
   int slots = slotsForNode(-size, pbytes, ibytes);
   node_address addr = allocNode(slots, p, true);
@@ -863,8 +847,6 @@ MEDDLY::compact_storage::makeSparseNode(node_handle p, int size,
     return copyFullIntoSparse(pbytes, ibytes, nb, addr);
   }
 }
-
-#endif
 
 // ******************************************************************
 

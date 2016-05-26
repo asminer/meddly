@@ -85,18 +85,6 @@ bool MEDDLY::evmdd_plusint
   return (val1 == val2);
 }
 
-#ifdef USE_NODE_BUILDERS
-bool MEDDLY::evmdd_plusint::isRedundant(const node_builder &nb) const
-{
-  return isRedundantTempl<OP>(nb);
-}
-
-bool MEDDLY::evmdd_plusint::isIdentityEdge(const node_builder &nb, int i) const
-{
-  return isIdentityEdgeTempl<OP>(nb, i); 
-}
-#endif
-
 bool MEDDLY::evmdd_plusint::isRedundant(const unpacked_node &nb) const
 {
   return isRedundantTempl<OP>(nb);
@@ -109,29 +97,6 @@ bool MEDDLY::evmdd_plusint::isIdentityEdge(const unpacked_node &nb, int i) const
 
 
 
-
-#ifdef USE_NODE_BUILDERS
-void MEDDLY::evmdd_plusint::normalize(node_builder &nb, int& ev) const
-{
-  int minindex = -1;
-  int stop = nb.isSparse() ? nb.getNNZs() : nb.getSize();
-  for (int i=0; i<stop; i++) {
-    if (0==nb.d(i)) continue;
-    if ((minindex < 0) || (nb.ei(i) < nb.ei(minindex))) {
-      minindex = i;
-    }
-  }
-  if (minindex < 0) return; // this node will eventually be reduced to "0".
-  ev = nb.ei(minindex);
-  for (int i=0; i<stop; i++) {
-    if (0==nb.d(i)) continue;
-    int temp;
-    nb.getEdge(i, temp);
-    temp -= ev;
-    nb.setEdge(i, temp);
-  }
-}
-#endif
 
 void MEDDLY::evmdd_plusint::normalize(unpacked_node &nb, int& ev) const
 {
@@ -183,14 +148,6 @@ void MEDDLY::evmdd_plusint::writeUnhashedHeader(output &s, const void* uh) const
   s.put('\n');
   // th_fprintf(s, "\t %d\n", ((const node_handle*)uh)[0]);
 }
-
-#ifdef USE_NODE_BUILDERS
-void MEDDLY::evmdd_plusint::readUnhashedHeader(input &s, node_builder &nb) const
-{
-  ((node_handle*)nb.UHptr())[0] = s.get_integer();
-  // th_fscanf(1, s, "%d", (node_handle*)nb.UHptr());
-}
-#endif
 
 void MEDDLY::evmdd_plusint::readUnhashedHeader(input &s, unpacked_node &nb) const
 {

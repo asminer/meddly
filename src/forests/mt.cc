@@ -59,27 +59,6 @@ MEDDLY::mt_forest::mt_forest(int dsl, domain *d, bool rel,
 {
 }
 
-#ifdef USE_NODE_BUILDERS
-bool MEDDLY::mt_forest::isRedundant(const node_builder &nb) const
-{
-  if (isQuasiReduced()) return false;
-  if (nb.getLevel() < 0 && isIdentityReduced()) return false;
-  if (nb.rawSize() < getLevelSize(nb.getLevel())) return false;
-  int common = nb.d(0);
-  for (int i=1; i<nb.rawSize(); i++) 
-    if (nb.d(i) != common) return false;
-  return true;
-}
-
-bool MEDDLY::mt_forest::isIdentityEdge(const node_builder &nb, int i) const
-{
-  if (nb.getLevel() > 0) return false;
-  if (!isIdentityReduced()) return false;
-  if (i<0) return false;
-  return nb.d(i) != 0;
-}
-#endif
-
 bool MEDDLY::mt_forest::isRedundant(const unpacked_node &nb) const
 {
   if (isQuasiReduced()) return false;

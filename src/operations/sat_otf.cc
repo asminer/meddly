@@ -571,7 +571,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   unpacked_node* Rp = unpacked_node::useUnpackedNode();
 
   //      Node reader auto expands when passed by reference
-  //      Node builder can be expanded via a call to node_builder::resize()
+  //      Node builder can be expanded via a call to unpacked_node::resize()
   //      Queue can be expanded via a call to indexq::resize()
 
   // indexes to explore
@@ -691,10 +691,10 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
   //      MXD doesnt expand but unconfirmed > confirmed
   //          - so mdd may need to expand to accomodate rec_fire result
   //          - No need: primed and unprimed variables are of the same size
-  //      Check if createReduce and handle a node_builder of size
+  //      Check if createReduce and handle a unpacked_node of size
   //          larger than the variable size
   //          - No
-  //      Can we build a node_builder with the size of the primed variable
+  //      Can we build a unpacked_node with the size of the primed variable
   //          and save some trouble?
   //          - No need: primed and unprimed variables are of the same size
 
@@ -829,234 +829,6 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
 #endif
   return saveResult(Key, mdd, mxd, result); 
 }
-
-
-
-#if 0
-
-// ******************************************************************
-// *                                                                *
-// *             bckwd_otf_dfs_by_events_mt class                   *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::bckwd_otf_dfs_by_events_mt : public common_otf_dfs_by_events_mt {
-  public:
-    bckwd_otf_dfs_by_events_mt(const satotf_opname* opcode,
-    satotf_opname::otf_relation* rel);
-  protected:
-    virtual void saturateHelper(node_builder& mdd);
-    node_handle recFire(node_handle mdd, node_handle mxd);
-};
-
-MEDDLY::bckwd_otf_dfs_by_events_mt::bckwd_otf_dfs_by_events_mt(
-  const satotf_opname* opcode,
-  satotf_opname::otf_relation* rel)
-  : common_otf_dfs_by_events_mt(opcode, rel)
-{
-}
-
-void MEDDLY::bckwd_otf_dfs_by_events_mt::saturateHelper(node_builder& nb)
-{
-  int nEventsAtThisLevel = rel->getNumOfEvents(nb.getLevel());
-  if (0 == nEventsAtThisLevel) return;
-
-  // Initialize mxd readers, note we might skip the unprimed level
-  node_handle* events = rel->get(nb.getLevel());
-  node_reader** Ru = new node_reader*[nEventsAtThisLevel];
-  for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
-    int eventLevel = arg2F->getNodeLevel(events[ei]);
-    MEDDLY_DCASSERT(ABS(eventLevel) == nb.getLevel());
-    Ru[ei] = (eventLevel<0)
-      ? arg2F->initRedundantReader(nb.getLevel(), events[ei], false)
-      : arg2F->initNodeReader(events[ei], false);
-  }
-  node_reader* Rp = node_reader::useReader();
-
-  // indexes to explore
-  charbuf* expl = useCharBuf(nb.getSize());
-  for (int i = 0; i < nb.getSize(); i++) expl->data[i] = 2;
-  bool repeat = true;
-
-  // explore 
-  while (repeat) {
-    // "advance" the explore list
-    for (int i=0; i<nb.getSize(); i++) if (expl->data[i]) expl->data[i]--;
-    repeat = false;
-
-    // explore all events
-    for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
-      // explore all rows
-      for (int iz=0; iz<Ru[ei]->getNNZs(); iz++) {
-        int i = Ru[ei]->i(iz);
-        // grab column (TBD: build these ahead of time?)
-        int dlevel = arg2F->getNodeLevel(Ru[ei]->d(iz));
-
-        if (dlevel == -nb.getLevel()) {
-          arg2F->initNodeReader(*Rp, Ru[ei]->d(iz), false); 
-        } else {
-          arg2F->initIdentityReader(*Rp, -nb.getLevel(), i,
-            Ru[ei]->d(iz), false);
-        }
-
-        for (int jz=0; jz<Rp->getNNZs(); jz++) {
-          int j = Rp->i(jz);
-          if (0==expl->data[j]) continue;
-          if (0==nb.d(j))       continue;
-          // We have an i->j edge to explore
-          node_handle rec = recFire(nb.d(j), Rp->d(jz));
-
-          if (0==rec) continue;
-          if (rec == nb.d(i)) {
-            resF->unlinkNode(rec);
-            continue;
-          }
-
-          bool updated = true;
-
-          if (0 == nb.d(i)) {
-            nb.d(i) = rec;
-          }
-          else if (-1 == rec) {
-            resF->unlinkNode(nb.d(i));
-            nb.d(i) = -1;
-          } 
-          else {
-            node_handle acc = mddUnion->compute(nb.d(i), rec);
-            resF->unlinkNode(rec);
-            if (acc != nb.d(i)) {
-              resF->unlinkNode(nb.d(i));
-              nb.d(i) = acc;
-            } else {
-              resF->unlinkNode(acc);
-              updated = false;
-            }
-          }
-          if (updated) {
-            expl->data[i] = 2;
-            repeat = true;
-          }
-        } // for j
-      } // for i
-    } // for each event
-  } // while repeat
-
-  // cleanup
-  node_reader::recycle(Rp);
-  for (int ei = 0; ei < nEventsAtThisLevel; ei++) node_reader::recycle(Ru[ei]);
-  delete[] Ru;
-  recycle(expl);
-}
-
-MEDDLY::node_handle MEDDLY::bckwd_otf_dfs_by_events_mt::recFire(node_handle mdd,
-  node_handle mxd)
-{
-  // termination conditions
-  if (mxd == 0 || mdd == 0) return 0;
-  if (arg2F->isTerminalNode(mxd)) {
-    if (arg1F->isTerminalNode(mdd)) {
-      return resF->handleForValue(1);
-    }
-    // mxd is identity
-    if (arg1F == resF)
-      return resF->linkNode(mdd);
-  }
-
-  // check the cache
-  node_handle result = 0;
-  compute_table::search_key* Key = findResult(mdd, mxd, result);
-  if (0==Key) return result;
-
-  // check if mxd and mdd are at the same level
-  int mddLevel = arg1F->getNodeLevel(mdd);
-  int mxdLevel = arg2F->getNodeLevel(mxd);
-  int rLevel = MAX(ABS(mxdLevel), mddLevel);
-  int rSize = resF->getLevelSize(rLevel);
-  node_builder& nb = resF->useNodeBuilder(rLevel, rSize);
-
-  // Initialize mdd reader
-  node_reader* A = (mddLevel < rLevel)
-    ? arg1F->initRedundantReader(rLevel, mdd, true)
-    : arg1F->initNodeReader(mdd, true);
-
-  if (mddLevel > ABS(mxdLevel)) {
-    //
-    // Skipped levels in the MXD,
-    // that's an important special case that we can handle quickly.
-    for (int i=0; i<rSize; i++) {
-      nb.d(i) = recFire(A->d(i), mxd);
-    }
-  } else {
-    // 
-    // Need to process this level in the MXD.
-    MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
-
-    // clear out result (important!)
-    for (int i=0; i<rSize; i++) nb.d(i) = 0;
-
-    // Initialize mxd readers, note we might skip the unprimed level
-    node_reader* Ru = (mxdLevel < 0)
-      ? arg2F->initRedundantReader(rLevel, mxd, false)
-      : arg2F->initNodeReader(mxd, false);
-    node_reader* Rp = node_reader::useReader();
-
-    // loop over mxd "rows"
-    for (int iz=0; iz<Ru->getNNZs(); iz++) {
-      int i = Ru->i(iz);
-      if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz)))) {
-        arg2F->initIdentityReader(*Rp, rLevel, i, Ru->d(iz), false);
-      } else {
-        arg2F->initNodeReader(*Rp, Ru->d(iz), false);
-      }
-
-      // loop over mxd "columns"
-      for (int jz=0; jz<Rp->getNNZs(); jz++) {
-        int j = Rp->i(jz);
-        if (0==A->d(j))   continue; 
-        // ok, there is an i->j "edge".
-        // determine new states to be added (recursively)
-        // and add them
-        node_handle newstates = recFire(A->d(j), Rp->d(jz));
-        if (0==newstates) continue;
-        if (0==nb.d(i)) {
-          nb.d(i) = newstates;
-          continue;
-        }
-        // there's new states and existing states; union them.
-        node_handle oldi = nb.d(i);
-        nb.d(i) = mddUnion->compute(newstates, oldi);
-        resF->unlinkNode(oldi);
-        resF->unlinkNode(newstates);
-      } // for j
-  
-    } // for i
-
-    node_reader::recycle(Rp);
-    node_reader::recycle(Ru);
-  } // else
-
-  // cleanup mdd reader
-  node_reader::recycle(A);
-
-  saturateHelper(nb);
-  result = resF->createReducedNode(-1, nb);
-#ifdef TRACE_ALL_OPS
-  printf("computed recFire(%d, %d) = %d\n", mdd, mxd, result);
-#endif
-  return saveResult(Key, mdd, mxd, result); 
-}
-
-#endif
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -74,22 +74,6 @@ class MEDDLY::evmxd_forest : public ev_forest {
           if (isIdentityReduced()) continue;
           // Build an identity node by hand
           int sz = getLevelSize(i);
-#ifdef USE_NODE_BUILDERS
-          node_builder& nb = useNodeBuilder(i, sz);
-          for (int v=0; v<sz; v++) {
-            node_builder& nbp = useSparseBuilder(-i, 1);
-            nbp.i(0) = v;
-            nbp.d(0) = linkNode(ed);
-            nbp.setEdge(0, ev);
-            TYPE pev;
-            node_handle pd;
-            createReducedNode(v, nbp, pev, pd);
-            nb.d(v) = pd;
-            nb.setEdge(v, pev);
-          }
-          unlinkNode(ed);
-          createReducedNode(-1, nb, ev, ed);
-#else
           unpacked_node* nb = unpacked_node::newFull(this, i, sz);
           for (int v=0; v<sz; v++) {
             unpacked_node* nbp = unpacked_node::newSparse(this, -i, 1);
@@ -104,7 +88,6 @@ class MEDDLY::evmxd_forest : public ev_forest {
           }
           unlinkNode(ed);
           createReducedNode(-1, nb, ev, ed);
-#endif
           continue;
         }
         //
@@ -119,16 +102,6 @@ class MEDDLY::evmxd_forest : public ev_forest {
             evpr = ev;
           } else {
             // build redundant node
-#ifdef USE_NODE_BUILDERS
-            int sz = getLevelSize(-i);
-            node_builder& nb = useNodeBuilder(-i, sz);
-            for (int v=0; v<sz; v++) {
-              nb.d(v) = linkNode(ed);
-              nb.setEdge(v, ev);
-            }
-            unlinkNode(ed);
-            createReducedNode(-1, nb, evpr, edpr);
-#else
             int sz = getLevelSize(-i);
             unpacked_node* nb = unpacked_node::newFull(this, -i, sz);
             for (int v=0; v<sz; v++) {
@@ -137,23 +110,14 @@ class MEDDLY::evmxd_forest : public ev_forest {
             }
             unlinkNode(ed);
             createReducedNode(-1, nb, evpr, edpr);
-#endif
           }
         } else {
           // sane value
-#ifdef USE_NODE_BUILDERS
-          node_builder& nb = useSparseBuilder(-i, 1);
-          nb.i(0) = vplist[i];
-          nb.d(0) = ed;
-          nb.setEdge(0, ev);
-          createReducedNode(vlist[i], nb, evpr, edpr);
-#else
           unpacked_node* nb = unpacked_node::newSparse(this, -i, 1);
           nb->i_ref(0) = vplist[i];
           nb->d_ref(0) = ed;
           nb->setEdge(0, ev);
           createReducedNode(vlist[i], nb, evpr, edpr);
-#endif
         }
         //
         // process unprimed level
@@ -166,51 +130,30 @@ class MEDDLY::evmxd_forest : public ev_forest {
           }
           // build redundant node
           int sz = getLevelSize(i);
-#ifdef USE_NODE_BUILDERS
-          node_builder& nb = useNodeBuilder(i, sz);
-#else
           unpacked_node *nb = unpacked_node::newFull(this, i, sz);
-#endif
           if (isIdentityReduced()) {
             // Below is likely a singleton, so check for identity reduction
             // on the appropriate v value
             for (int v=0; v<sz; v++) {
               node_handle dpr = (v == vplist[i]) ? ed : edpr;
-#ifdef USE_NODE_BUILDERS
-              nb.d(v) = linkNode(dpr);
-              nb.setEdge(v, evpr);
-#else
               nb->d_ref(v) = linkNode(dpr);
               nb->setEdge(v, evpr);
-#endif
             }
           } else {
             // Doesn't matter what happened below
             for (int v=0; v<sz; v++) {
-#ifdef USE_NODE_BUILDERS
-              nb.d(v) = linkNode(edpr);
-              nb.setEdge(v, evpr);
-#else
               nb->d_ref(v) = linkNode(edpr);
               nb->setEdge(v, evpr);
-#endif
             }
           }
           unlinkNode(edpr);
           createReducedNode(-1, nb, ev, ed);
         } else {
           // sane value
-#ifdef USE_NODE_BUILDERS
-          node_builder& nb = useSparseBuilder(i, 1);
-          nb.i(0) = vlist[i];
-          nb.d(0) = edpr;
-          nb.setEdge(0, evpr);
-#else
           unpacked_node* nb = unpacked_node::newSparse(this, i, 1);
           nb->i_ref(0) = vlist[i];
           nb->d_ref(0) = edpr;
           nb->setEdge(0, evpr);
-#endif
           createReducedNode(-1, nb, ev, ed);
         }
       } // for i
@@ -384,11 +327,7 @@ namespace MEDDLY {
         //
         // Start new node at level k
         //
-#ifdef USE_NODE_BUILDERS
-        node_builder& nb = F->useSparseBuilder(k, lastV);
-#else
         unpacked_node* nb = unpacked_node::newSparse(F, k, lastV);
-#endif
         int z = 0; // number of nonzero edges in our sparse node
 
         //
@@ -425,17 +364,10 @@ namespace MEDDLY {
           if (0==batchP) continue;
           T these_ev;
           node_handle these_ptr;
-#ifdef USE_NODE_BUILDERS
-          nb.i(z) = v;
-          createEdgePr(v, -k, start, batchP, these_ev, these_ptr);
-          nb.d(z) = these_ptr;
-          nb.setEdge(z, these_ev);
-#else
           nb->i_ref(z) = v;
           createEdgePr(v, -k, start, batchP, these_ev, these_ptr);
           nb->d_ref(z) = these_ptr;
           nb->setEdge(z, these_ev);
-#endif
           z++;
         } // for v
 
@@ -445,11 +377,7 @@ namespace MEDDLY {
         MEDDLY_DCASSERT(unionOp);
         node_handle built;
         T built_ev;
-#ifdef USE_NODE_BUILDERS
-        nb.shrinkSparse(z);
-#else
         nb->shrinkSparse(z);
-#endif
         F->createReducedNode(-1, nb, built_ev, built);
         unionOp->compute(dc_ev, dc, built_ev, built, ev, ed);
         F->unlinkNode(dc);
@@ -502,11 +430,7 @@ namespace MEDDLY {
         //
         // Start new node at level k
         //
-#ifdef USE_NODE_BUILDERS
-        node_builder& nb = F->useSparseBuilder(k, lastV);
-#else
         unpacked_node* nb = unpacked_node::newSparse(F, k, lastV);
-#endif
         int z = 0; // number of nonzero edges in our sparse node
 
         //
@@ -575,15 +499,9 @@ namespace MEDDLY {
           // add to sparse node, unless empty
           //
           if (0==total_ptr) continue;
-#ifdef USE_NODE_BUILDERS
-          nb.i(z) = v;
-          nb.d(z) = total_ptr;
-          nb.setEdge(z, total_val);
-#else
           nb->i_ref(z) = v;
           nb->d_ref(z) = total_ptr;
           nb->setEdge(z, total_val);
-#endif
           z++;
         } // for v
 
@@ -591,11 +509,7 @@ namespace MEDDLY {
         // Cleanup
         //
         F->unlinkNode(dc_ptr);
-#ifdef USE_NODE_BUILDERS
-        nb.shrinkSparse(z);
-#else
         nb->shrinkSparse(z);
-#endif
         F->createReducedNode(in, nb, ev, ed);
       };
 
@@ -607,22 +521,6 @@ namespace MEDDLY {
       inline void makeIdentityEdge(int k, T& pev, node_handle& p) {
         if (F->isIdentityReduced()) return;
 
-#ifdef USE_NODE_BUILDERS
-        // build an identity node by hand
-        int lastV = F->getLevelSize(k);
-        node_builder& nb = F->useNodeBuilder(k, lastV);
-        for (int v=0; v<lastV; v++) {
-          node_builder& nbp = F->useSparseBuilder(-k, 1);
-          nbp.i(0) = v;
-          nbp.d(0) = F->linkNode(p);
-          nbp.setEdge(0, pev);
-          node_handle pr;
-          T pr_ev;
-          F->createReducedNode(v, nbp, pr_ev, pr);
-          nb.d(v) = pr;
-          nb.setEdge(v, pr_ev);
-        } // for v
-#else
         // build an identity node by hand
         int lastV = F->getLevelSize(k);
         unpacked_node* nb = unpacked_node::newFull(F, k, lastV);
@@ -637,7 +535,6 @@ namespace MEDDLY {
           nb->d_ref(v) = pr;
           nb->setEdge(v, pr_ev);
         } // for v
-#endif
         F->unlinkNode(p);
         F->createReducedNode(-1, nb, pev, p);
       }

@@ -92,16 +92,6 @@ bool MEDDLY::evmdd_timesreal
   return !OP::notClose(val1, val2);
 }
 
-bool MEDDLY::evmdd_timesreal::isRedundant(const node_builder &nb) const
-{
-  return isRedundantTempl<OP>(nb);
-}
-
-bool MEDDLY::evmdd_timesreal::isIdentityEdge(const node_builder &nb, int i) const
-{
-  return isIdentityEdgeTempl<OP>(nb, i); 
-}
-
 bool MEDDLY::evmdd_timesreal::isRedundant(const unpacked_node &nb) const
 {
   return isRedundantTempl<OP>(nb);
@@ -112,29 +102,6 @@ bool MEDDLY::evmdd_timesreal::isIdentityEdge(const unpacked_node &nb, int i) con
   return isIdentityEdgeTempl<OP>(nb, i); 
 }
 
-
-#ifdef USE_NODE_BUILDERS
-void MEDDLY::evmdd_timesreal::normalize(node_builder &nb, float& ev) const
-{
-  int minindex = -1;
-  int stop = nb.isSparse() ? nb.getNNZs() : nb.getSize();
-  for (int i=0; i<stop; i++) {
-    if (0==nb.d(i)) continue;
-    if ((minindex < 0) || (nb.ef(i) < nb.ef(minindex))) {
-      minindex = i;
-    }
-  }
-  if (minindex < 0) return; // this node will eventually be reduced to "0".
-  ev = nb.ef(minindex);
-  for (int i=0; i<stop; i++) {
-    if (0==nb.d(i)) continue;
-    float temp;
-    nb.getEdge(i, temp);
-    temp /= ev;
-    nb.setEdge(i, temp);
-  }
-}
-#endif
 
 void MEDDLY::evmdd_timesreal::normalize(unpacked_node &nb, float& ev) const
 {

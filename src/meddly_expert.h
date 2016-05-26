@@ -70,8 +70,6 @@
 #define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX)
 #endif
 
-// #define USE_NODE_BUILDERS
-
 //
 // Design decision: should we remember the hashes for a reduced node?
 // Tests so far indicate: doesn't save much, if any, time; and has
@@ -86,13 +84,7 @@ namespace MEDDLY {
   class expert_variable;
   class expert_domain;
 
-  // wrappers for nodes
-  // class node_reader;  // to be killed 
-#ifdef USE_NODE_BUILDERS
-  class node_builder; // to be killed
-#endif
-
-  // wrapper for nodes
+  // wrapper for temporary nodes
   class unpacked_node;  // replacement for node_reader, node_builder
 
   // EXPERIMENTAL - matrix wrappers for unprimed, primed pairs of nodes
@@ -781,101 +773,6 @@ class MEDDLY::unpacked_node {
 };
 
 
-// ******************************************************************
-// *                                                                *
-// *                       node_builder class                       *
-// *                                                                *
-// ******************************************************************
-
-#ifdef USE_NODE_BUILDERS
-
-/** Class for building nodes.
-    Effectively, a reserved chunk of memory for storing down pointers
-    and edge values.
-    Implemented in node_wrappers.cc.
-*/
-class MEDDLY::node_builder {
-
-  public:
-    bool lock;
-
-    node_builder();
-    ~node_builder();
-    void init(int k, const expert_forest* p);
-    void show(output &s, bool verb) const;
-    bool hasEdges() const;
-    int edgeBytes() const;
-    void resize(int s);
-    void resparse(int s);
-    // used when we don't know exactly the sparse size
-    void shrinkSparse(int ns);
-    bool isSparse() const;
-    bool isFull() const;
-    int rawSize() const;
-    int getSize() const;
-    int getNNZs() const;
-    int getLevel() const;
-    void setUH(const void* x);
-    void getUH(void* x) const;
-    void setHH(const void* x);
-    void getHH(void* x) const;
-    node_handle& d(int i);
-    node_handle d(int i) const;
-    int& i(int i);
-    int i(int i) const;
-    // edge getting
-    void getEdge(int i, int& ev) const;
-    void getEdge(int i, float& ev) const;
-    int ei(int i) const;
-    float ef(int i) const;
-    // edge setting
-    void setEdge(int i, int ev);
-    void setEdge(int i, float ev);
-    // raw edge info
-    void* eptr(int i);
-    const void* eptr(int i) const;
-    /// Get a pointer to the unhashed header data.
-    void* UHptr();
-    /// Get a pointer to the hashed header data.
-    const void* HHptr() const;
-    void* HHptr();
-    /// Get the number of bytes of hashed header data.
-    int HHbytes() const;
-    // for unique table
-    unsigned hash() const;
-    void computeHash();
-
-  protected:
-    void enlarge();
-
-  private:
-    const expert_forest* parent;
-    void* extra_hashed;
-    void* extra_unhashed;
-    node_handle* down;
-    int* indexes;
-    void* edge;
-    int hhbytes; // number of bytes in hashed header
-    int level; // level of this node.
-    int size;
-    int alloc;
-    unsigned h;
-    char edge_bytes;
-#ifdef DEVELOPMENT_CODE
-    bool has_hash;
-#endif
-    bool is_sparse;
-
-    // These cheat; let's see if any compiler complains.
-    void* raw_hh() const;
-    void* raw_uh() const;
-    node_handle& raw_d(int i) const;
-    int& raw_i(int i) const;
-
-}; // end of node_builder class
-
-
-#endif
 
 // ******************************************************************
 // *                                                                *
@@ -1153,21 +1050,6 @@ class MEDDLY::node_storage {
     */
     void dumpInternal(output &s, unsigned flags) const;
 
-#ifdef USE_NODE_BUILDERS
-    /** Allocate space for, and store, a node.
-        I.e., create a new node that is a copy of the given one.
-        The node might be "compressed" in various ways to reduce
-        storage requirements.  (Indeed, that is the whole point
-        of the node_storage class.)
-            @param  p     Node handle number, in case it is used
-            @param  nb    Node data is copied from here.
-            @param  opt   Ways we can store the node.
-            @return       The "address" of the new node.
-    */
-    virtual node_address makeNode(node_handle p, const node_builder &nb,
-                                  node_storage_flags opt) = 0;
-#endif
-
     /** Allocate space for, and store, a node.
         I.e., create a new node that is a copy of the given one.
         The node might be "compressed" in various ways to reduce
@@ -1190,17 +1072,6 @@ class MEDDLY::node_storage {
 
 
     // various ways to read a node
-
-#ifdef USE_NODE_BUILDERS
-    /** Check for duplicates.
-          @param  addr    Node address in this structure
-          @param  nb      Node to compare against
-
-          @return true    iff the nodes are duplicates
-    */
-    virtual bool
-        areDuplicates(node_address addr, const node_builder &nb) const = 0;
-#endif
 
     /** Check for duplicates.
           @param  addr    Node address in this structure
@@ -1851,48 +1722,6 @@ class MEDDLY::expert_forest: public forest
   template <class T>
   void createReducedNode(int in, unpacked_node* nb, T& ev, node_handle& node);
 
-#ifdef USE_NODE_BUILDERS
-  // ------------------------------------------------------------
-  // (OLD) Preferred mechanism for building nodes
-
-    node_builder& useNodeBuilder(int level, int tsz);
-    node_builder& useSparseBuilder(int level, int nnz);
-    void doneNodeBuilder(node_builder& nb);
-
-    /** Return a forest node equal to the one given.
-        The node is constructed as necessary.
-        This version should be used only for
-        multi terminal forests.
-        The node builder nb is recycled.
-          @param  in    Incoming pointer index;
-                        used for identity reductions.
-          @param  nb    Constructed node.
-
-          @return       A node handle equivalent
-                        to nb, taking into account
-                        the forest reduction rules
-                        and if a duplicate node exists.
-    */
-    node_handle createReducedNode(int in, node_builder& nb);
-
-    /** Return a forest node equal to the one given.
-        The node is constructed as necessary.
-        This version should be used only for
-        edge valuded forests.
-        The node builder nb is recycled.
-          @param  in    Incoming pointer index;
-                        used for identity reductions.
-          @param  nb    Constructed node.
-          @param  ev    Output: edge value
-          @param  node  Output: node handle.
-                        On exit, the edge value and the node
-                        handle together are equivalent to nb;
-                        taking into account the forest reduction rules
-                        and if a duplicate node exists.
-    */
-    template <class T>
-    void createReducedNode(int in, node_builder& nb, T& ev, node_handle& node);
-#endif
 
   // ------------------------------------------------------------
   // virtual in the base class, but implemented here.
@@ -1920,40 +1749,6 @@ class MEDDLY::expert_forest: public forest
     */
     virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const;
 
-#ifdef USE_NODE_BUILDERS
-    /** Discover duplicate nodes.
-        Required for the unique table.
-          @param  node    Handle to a node.
-          @param  nb      Node we've just built.
-
-          @return   true, iff the nodes are duplicates.
-    */
-    bool areDuplicates(node_handle node, const node_builder &nb) const;
-
-    /** Is this a redundant node that can be eliminated?
-        Must be implemented in derived forests
-        to deal with the default edge value.
-          @param  nb    Node we're trying to build.
-
-          @return   True, if nr is a redundant node
-                          AND it should be eliminated.
-    */
-    virtual bool isRedundant(const node_builder &nb) const = 0;
-
-    /** Is the specified edge an identity edge, that can be eliminated?
-        Must be implemented in derived forests
-        to deal with the default edge value.
-
-          @param  nr    Node we're trying to build.
-                        We know there is a single non-zero downward pointer.
-
-          @param  i     Candidate edge (or edge index for sparse nodes).
-
-          @return True, if nr[i] is an identity edge, and the
-                        identity node should be eliminated.
-    */
-    virtual bool isIdentityEdge(const node_builder &nb, int i) const = 0;
-#endif
 
     /** Discover duplicate nodes.
         Right now, used for sanity checks only.
@@ -2057,14 +1852,6 @@ class MEDDLY::expert_forest: public forest
     */
     virtual void writeHashedHeader(output &s, const void* hh) const;
 
-#ifdef USE_NODE_BUILDERS
-    /** Read the hashed header in machine-readable format.
-          @param  s       Stream to write to.
-          @param  nb      Node we're building.
-    */
-    virtual void readHashedHeader(input &s, node_builder &nb) const;
-#endif
-
     /** Read the hashed header in machine-readable format.
           @param  s       Stream to write to.
           @param  nb      Node we're building.
@@ -2082,14 +1869,6 @@ class MEDDLY::expert_forest: public forest
           @param  hh      Pointer to unhashed header data.
     */
     virtual void writeUnhashedHeader(output &s, const void* uh) const;
-
-#ifdef USE_NODE_BUILDERS
-    /** Read the unhashed header in machine-readable format.
-          @param  s       Stream to write to.
-          @param  nb      Node we're building.
-    */
-    virtual void readUnhashedHeader(input &s, node_builder &nb) const;
-#endif
 
     /** Read the unhashed header in machine-readable format.
           @param  s       Stream to write to.
@@ -2137,33 +1916,6 @@ class MEDDLY::expert_forest: public forest
     /// Character sequence used when writing forests to files.
     virtual const char* codeChars() const;
 
-#ifdef USE_NODE_BUILDERS
-    /** Normalize a node.
-        Used only for "edge valued" DDs with range type: integer.
-        Different forest types will have different normalization rules,
-        so the default behavior given here (throw an error) will need
-        to be overridden by all edge-valued forests.
-
-          @param  nb    Array of downward pointers and edge values;
-                        may be modified.
-          @param  ev    The incoming edge value, may be modified
-                        as appropriate to normalize the node.
-    */
-    virtual void normalize(node_builder &nb, int& ev) const;
-
-    /** Normalize a node.
-        Used only for "edge valued" DDs with range type: real.
-        Different forest types will have different normalization rules,
-        so the default behavior given here (throw an error) will need
-        to be overridden by all edge-valued forests.
-
-          @param  nb    Array of downward pointers and edge values;
-                        may be modified.
-          @param  ev    The incoming edge value, may be modified
-                        as appropriate to normalize the node.
-    */
-    virtual void normalize(node_builder &nb, float& ev) const;
-#endif
 
     /** Normalize a node.
         Used only for "edge valued" DDs with range type: integer.
@@ -2245,19 +1997,6 @@ class MEDDLY::expert_forest: public forest
     /// Release a node handle back to the free pool.
     void recycleNodeHandle(node_handle p);
 
-#ifdef USE_NODE_BUILDERS
-    /** Apply reduction rule to the temporary node and finalize it. 
-        Once a node is reduced, its contents cannot be modified.
-          @param  in    Incoming index, used only for identity reduction;
-                        Or -1.
-          @param  nb    Array of downward pointers.
-          @return       Handle to a node that encodes the same thing.
-    */
-    node_handle createReducedHelper(int in, const node_builder &nb);
-
-    // Sanity check; used in development code.
-    void validateDownPointers(const node_builder &nb) const;
-#endif
 
     /** Apply reduction rule to the temporary node and finalize it. 
         Once a node is reduced, its contents cannot be modified.
@@ -2298,12 +2037,6 @@ class MEDDLY::expert_forest: public forest
     node_handle transparent;
 
   private:
-#ifdef USE_NODE_BUILDERS
-    // Keep a node_builder for each level.
-    node_builder* raw_builders;
-    node_builder* builders;
-#endif
-
     // Garbage collection in progress
     bool performing_gc;
 

@@ -527,11 +527,7 @@ void MEDDLY::generic_binary_evplus
   const int resultSize = resF->getLevelSize(resultLevel);
 
   // Initialize result
-#ifdef USE_NODE_BUILDERS
-  node_builder& nb = resF->useNodeBuilder(resultLevel, resultSize);
-#else
   unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
-#endif
 
   // Initialize readers
   unpacked_node *A = (aLevel < resultLevel) 
@@ -552,13 +548,8 @@ void MEDDLY::generic_binary_evplus
     compute(aev + A->ei(i), A->d(i), 
             bev + B->ei(i), B->d(i), 
             ev, ed);
-#ifdef USE_NODE_BUILDERS
-    nb.d(i) = ed;
-    nb.setEdge(i, ev);
-#else
     nb->d_ref(i) = ed;
     nb->setEdge(i, ev);
-#endif
   }
 
   // cleanup
@@ -642,11 +633,7 @@ void MEDDLY::generic_binary_evtimes
   // Initialize result
   const int resultLevel = ABS(topLevel(aLevel, bLevel));
   const int resultSize = resF->getLevelSize(resultLevel);
-#ifdef USE_NODE_BUILDERS
-  node_builder& nb = resF->useNodeBuilder(resultLevel, resultSize);
-#else
   unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
-#endif
 
   // Initialize readers
   unpacked_node *A = (aLevel < resultLevel) 
@@ -668,13 +655,8 @@ void MEDDLY::generic_binary_evtimes
         aev * A->ef(i), A->d(i), 
         bev * B->ef(i), B->d(i), 
         ev, ed);
-#ifdef USE_NODE_BUILDERS
-    nb.d(i) = ed;
-    nb.setEdge(i, ev);
-#else
     nb->d_ref(i) = ed;
     nb->setEdge(i, ev);
-#endif
   }
 
   // cleanup
@@ -712,11 +694,7 @@ void MEDDLY::generic_binary_evtimes
 
   // Initialize result
   const int resultSize = resF->getLevelSize(resultLevel);
-#ifdef USE_NODE_BUILDERS
-  node_builder& nb = resF->useNodeBuilder(resultLevel, resultSize);
-#else
   unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
-#endif
 
   // Initialize readers
   unpacked_node *A = unpacked_node::useUnpackedNode();
@@ -746,13 +724,8 @@ void MEDDLY::generic_binary_evtimes
         aev * A->ef(i), A->d(i),
         bev * B->ef(i), B->d(i), 
         ev, ed);
-#ifdef USE_NODE_BUILDERS
-    nb.d(i) = ed;
-    nb.setEdge(i, ev);
-#else
     nb->d_ref(i) = ed;
     nb->setEdge(i, ev);
-#endif
   }
 
   // cleanup

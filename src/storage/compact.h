@@ -125,19 +125,11 @@ class MEDDLY::compact_storage : public node_storage {
     virtual void writeNode(output &s, node_address addr, const node_handle* map)
     const;
 
-#ifdef USE_NODE_BUILDERS
-    virtual node_address makeNode(node_handle p, const node_builder &nb, 
-        node_storage_flags opt);
-#endif
-
     virtual node_address makeNode(node_handle p, const unpacked_node &nb, 
-        node_storage_flags opt) { MEDDLY_DCASSERT(0); return 0; }
+        node_storage_flags opt);
 
     virtual void unlinkDownAndRecycle(node_address addr);
 
-#ifdef USE_NODE_BUILDERS
-    virtual bool areDuplicates(node_address addr, const node_builder &nb) const;
-#endif
     virtual bool areDuplicates(node_address addr, const unpacked_node &nr) const;
     virtual void fillUnpacked(unpacked_node &nr, node_address addr) const;
     virtual unsigned hashNode(const node_header& p) const;
@@ -164,7 +156,6 @@ class MEDDLY::compact_storage : public node_storage {
   // --------------------------------------------------------
   // |  Misc. helpers.
   private:
-#ifdef USE_NODE_BUILDERS
       /** Create a new node, stored as truncated full.
           Space is allocated for the node, and data is copied.
             @param  p       Node handle number.
@@ -174,7 +165,7 @@ class MEDDLY::compact_storage : public node_storage {
             @return         The "address" of the new node.
       */
       node_address makeFullNode(node_handle p, int size, 
-          int pbytes, const node_builder &nb);
+          int pbytes, const unpacked_node &nb);
 
       /** Create a new node, stored sparsely.
           Space is allocated for the node, and data is copied.
@@ -186,32 +177,7 @@ class MEDDLY::compact_storage : public node_storage {
             @return         The "address" of the new node.
       */
       node_address makeSparseNode(node_handle p, int size, 
-          int pbytes, int ibytes, const node_builder &nb);
-
-#endif
-
-      /** Create a new node, stored as truncated full.
-          Space is allocated for the node, and data is copied.
-            @param  p       Node handle number.
-            @param  size    Number of downward pointers.
-            @param  pbytes  Number of bytes to use for each pointer.
-            @param  nb      Node data is copied from here.
-            @return         The "address" of the new node.
-      */
-      node_address makeFullNode(node_handle p, int size, 
-          int pbytes, const unpacked_node &nb) { MEDDLY_DCASSERT(0); return 0; }
-
-      /** Create a new node, stored sparsely.
-          Space is allocated for the node, and data is copied.
-            @param  p       Node handle number.
-            @param  size    Number of nonzero downward pointers.
-            @param  pbytes  Number of bytes to use for each pointer.
-            @param  ibytes  Number of bytes to use for each index.
-            @param  nb      Node data is copied from here.
-            @return         The "address" of the new node.
-      */
-      node_address makeSparseNode(node_handle p, int size, 
-          int pbytes, int ibytes, const unpacked_node &nb) { MEDDLY_DCASSERT(0); return 0; }
+          int pbytes, int ibytes, const unpacked_node &nb);
 
 
       /** Allocate a new chunk of requested size or larger.
@@ -256,19 +222,6 @@ class MEDDLY::compact_storage : public node_storage {
         return end - a + 1;
       }
 
-#ifdef USE_NODE_BUILDERS
-
-      inline void copyExtraHeader(node_address addr, const node_builder &nb) {
-        if (unhashedBytes) {
-          nb.getUH(UH(addr));
-        }
-        if (hashedBytes) {
-          nb.getHH(HH(addr));
-        }
-      }
-
-#endif
-
       inline void copyExtraHeader(node_address addr, const unpacked_node &nb) {
         // copy extra header info, if any
         if (unhashedBytes) {
@@ -284,11 +237,9 @@ class MEDDLY::compact_storage : public node_storage {
       // Helpers - building full from full
       //--------------------------------------------------------------
 
-#ifdef USE_NODE_BUILDERS
-
       template <int pbytes>
       inline node_address 
-      copyFullIntoFull(const node_builder &nb, int size, node_address addr)
+      copyFullIntoFull(const unpacked_node &nb, int size, node_address addr)
       {
         MEDDLY_DCASSERT(nb.isFull());
         unsigned char* down = fullDown(addr);
@@ -303,7 +254,7 @@ class MEDDLY::compact_storage : public node_storage {
       }
 
       inline node_address copyFullIntoFull(int pbytes, 
-        const node_builder &nb, int size, node_address addr)
+        const unpacked_node &nb, int size, node_address addr)
       {
         switch (pbytes) {
             case 1:   return  copyFullIntoFull<1>(nb, size, addr);
@@ -326,7 +277,7 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <int pbytes>
       inline node_address
-      copySparseIntoFull(const node_builder &nb, int size, node_address addr)
+      copySparseIntoFull(const unpacked_node &nb, int size, node_address addr)
       {
         MEDDLY_DCASSERT(nb.isSparse());
         unsigned char* down = fullDown(addr);
@@ -349,7 +300,7 @@ class MEDDLY::compact_storage : public node_storage {
       }
 
       inline node_address copySparseIntoFull(int pbytes, 
-        const node_builder &nb, int size, node_address addr)
+        const unpacked_node &nb, int size, node_address addr)
       {
         switch (pbytes) {
             case 1:   return  copySparseIntoFull<1>(nb, size, addr);
@@ -372,7 +323,7 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <int pbytes, int ibytes>
       inline node_address 
-      copySparseIntoSparse(const node_builder &nb, int size, node_address addr)
+      copySparseIntoSparse(const unpacked_node &nb, int size, node_address addr)
       {
         MEDDLY_DCASSERT(nb.isSparse());
         unsigned char* down = sparseDown(addr);
@@ -391,7 +342,7 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <int pbytes>
       inline node_address
-      copySparseIntoSparse(int ibytes, const node_builder &nb, 
+      copySparseIntoSparse(int ibytes, const unpacked_node &nb, 
         int size, node_address addr)
       {
         switch (ibytes) {
@@ -406,7 +357,7 @@ class MEDDLY::compact_storage : public node_storage {
       }
 
       inline node_address
-      copySparseIntoSparse(int pbytes, int ibytes, const node_builder &nb, 
+      copySparseIntoSparse(int pbytes, int ibytes, const unpacked_node &nb, 
         int size, node_address addr)
       {
         switch (pbytes) {
@@ -431,7 +382,7 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <int pbytes, int ibytes>
       inline node_address 
-      copyFullIntoSparse(const node_builder &nb, node_address addr)
+      copyFullIntoSparse(const unpacked_node &nb, node_address addr)
       {
         MEDDLY_DCASSERT(nb.isFull());
         unsigned char* down = sparseDown(addr);
@@ -460,7 +411,7 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <int pbytes>
       inline node_address
-      copyFullIntoSparse(int ibytes, const node_builder &nb, node_address addr)
+      copyFullIntoSparse(int ibytes, const unpacked_node &nb, node_address addr)
       {
         switch (ibytes) {
             case 1:   return  copyFullIntoSparse<pbytes, 1>(nb, addr);
@@ -474,7 +425,7 @@ class MEDDLY::compact_storage : public node_storage {
       }
 
       inline node_address
-      copyFullIntoSparse(int pbytes, int ibytes, const node_builder &nb, 
+      copyFullIntoSparse(int pbytes, int ibytes, const unpacked_node &nb, 
         node_address addr)
       {
         switch (pbytes) {
@@ -492,7 +443,6 @@ class MEDDLY::compact_storage : public node_storage {
         }
       }
 
-#endif
 
       //--------------------------------------------------------------
       // Helpers - unlink down pointers

@@ -345,19 +345,6 @@ namespace MEDDLY {
   	    MEDDLY_DCASSERT(F->isQuasiReduced());
   	    MEDDLY_DCASSERT(F->getTransparentNode()!=ENCODER::value2handle(0));
 
-//        if(k==0){
-//          return ENCODER::value2handle(0);
-//        }
-//
-//        int lastV=F->getLevelSize(k);
-//        node_builder& nb=F->useNodeBuilder(k, lastV);
-//        node_handle zero=makeOpaqueZeroNodeAtLevel(k-1);
-//        nb.d(0)=zero;
-//        for(int i=1; i<lastV; i++){
-//          nb.d(i)=F->linkNode(zero);
-//        }
-//        return F->createReducedNode(-1, nb);
-
   	    return F->makeNodeAtLevel(k, ENCODER::value2handle(0));
       }
   }; // class mtmdd_edgemaker

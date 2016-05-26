@@ -164,19 +164,11 @@ class MEDDLY::old_node_storage : public node_storage {
     virtual void writeNode(output &s, node_address addr, const node_handle* map)
     const;
 
-#ifdef USE_NODE_BUILDERS
-    virtual node_address makeNode(node_handle p, const node_builder &nb, 
-        node_storage_flags opt);
-#endif
-
     virtual node_address makeNode(node_handle p, const unpacked_node &nb, 
         node_storage_flags opt);
 
     virtual void unlinkDownAndRecycle(node_address addr);
 
-#ifdef USE_NODE_BUILDERS
-    virtual bool areDuplicates(node_address addr, const node_builder &nb) const;
-#endif
     virtual bool areDuplicates(node_address addr, const unpacked_node &nr) const;
     virtual void fillUnpacked(unpacked_node &ur, node_address addr) const;
     virtual unsigned hashNode(const node_header& p) const;
@@ -341,29 +333,6 @@ class MEDDLY::old_node_storage : public node_storage {
   // --------------------------------------------------------
   // |  Misc. helpers.
   private:
-#ifdef USE_NODE_BUILDERS
-      /** Create a new node, stored as truncated full.
-          Space is allocated for the node, and data is copied.
-            @param  p     Node handle number.
-            @param  size  Number of downward pointers.
-            @param  nb    Node data is copied from here.
-            @return       The "address" of the new node.
-      */
-      node_handle makeFullNode(node_handle p, int size, const node_builder &nb);
-
-      /** Create a new node, stored sparsely.
-          Space is allocated for the node, and data is copied.
-            @param  p     Node handle number.
-            @param  size  Number of nonzero downward pointers.
-            @param  nb    Node data is copied from here.
-            @return       The "address" of the new node.
-      */
-      node_handle makeSparseNode(node_handle p, int size, const node_builder &nb);
-
-      void copyExtraHeader(node_address addr, const node_builder &nb);
-#endif
-
-
 
       /** Create a new node, stored as truncated full.
           Space is allocated for the node, and data is copied.
@@ -469,113 +438,6 @@ class MEDDLY::old_node_storage : public node_storage {
           return end - addr + 1;
       }
 
-
-  // --------------------------------------------------------
-  // |  Node comparison as a template
-  private:
-    template <class nodetype>
-    inline bool areDupsTempl(node_handle addr, const nodetype &n) const {
-      if (n.HHbytes()) {
-        if (memcmp(HH(addr), n.HHptr(), n.HHbytes())) return false;
-      }
-
-      if (n.UHbytes()) {
-        if (memcmp(UH(addr), n.UHptr(), n.UHbytes())) return false;
-      }
-
-      int size = sizeOf(addr);
-      if (size<0) {
-        //
-        // Node is sparse
-        //
-        int nnz = -size;
-        const node_handle* down = SD(addr);
-        const node_handle* index = SI(addr);
-        if (n.isFull()) {
-          // check that down matches
-          int i = 0;
-          for (int z=0; z<nnz; z++) {
-            if (index[z] >= n.getSize()) return false;
-            for (; i<index[z]; i++) if (n.d(i)) return false;
-            if (n.d(i) != down[z]) return false;
-            i++;
-          }
-          for (; i<n.getSize(); i++) if (n.d(i)) return false;
-          // check that edges match
-          if (n.hasEdges()) {
-            for (int z=0; z<nnz; z++) {
-              if (!getParent()->areEdgeValuesEqual( 
-                      SEP(addr, z),   n.eptr(index[z])
-                  )) return false;
-            } // for z
-          }
-          // must be equal
-          return true;
-        }
-        // n is sparse
-        if (n.getNNZs() != nnz) return false;
-        // check that down matches
-        for (int z=0; z<nnz; z++) {
-          if (index[z] != n.i(z)) return false;
-          if (down[z] != n.d(z))  return false;
-        }
-        // check that edges match
-        if (n.hasEdges()) {
-          for (int z=0; z<nnz; z++) {
-              if (!getParent()->areEdgeValuesEqual( 
-                      SEP(addr, z),   n.eptr(z)
-                  )) return false;
-          }
-        } 
-        // must be equal
-        return true;
-      }
-      //
-      // Node is truncated full
-      //
-      const node_handle* down = FD(addr);
-      if (n.isFull()) {
-        if (size > n.getSize()) return false;
-        // check down
-        int i;
-        for (i=0; i<size; i++) {
-          if (down[i] != n.d(i)) return false;
-        }
-        for ( ; i<n.getSize(); i++) {
-          if (n.d(i)) return false;
-        }
-        // check edges
-        if (n.hasEdges()) {
-          for (int i=0; i<size; i++) if (down[i]) {
-              if (!getParent()->areEdgeValuesEqual( 
-                      FEP(addr, i),   n.eptr(i)
-                  )) return false;
-          }
-        }
-        // must be equal
-        return true;
-      }
-      // n is sparse
-      int i = 0;
-      // check down
-      for (int z=0; z<n.getNNZs(); z++) {
-        if (n.i(z) >= size) return false;
-        for (; i<n.i(z); i++) if (down[i]) return false;
-        if (n.d(z) != down[i]) return false;
-        i++;
-      }
-      if (i<size) return false; // there WILL be a non-zero down
-      // check edges
-      if (n.hasEdges()) {
-        for (int z=0; z<n.getNNZs(); z++) {
-          if (!getParent()->areEdgeValuesEqual(
-                FEP(addr, n.i(z)),  n.eptr(z)
-              )) return false;
-        } // for z
-      }
-      // must be equal
-      return true;
-    }
 }; 
 
 #endif

@@ -380,75 +380,6 @@ void MEDDLY::old_node_storage
 
 }
 
-#ifdef USE_NODE_BUILDERS
-MEDDLY::node_address MEDDLY::old_node_storage
-::makeNode(node_handle p, const node_builder &nb, node_storage_flags opt)
-{
-  int nnz, truncsize;
-
-  //
-  // Easy case - sparse nodes disabled
-  //
-  if (0==(forest::policies::ALLOW_SPARSE_STORAGE & opt)) {
-
-          if (nb.isSparse()) {
-            truncsize = -1;
-            for (int z=0; z<nb.getNNZs(); z++) {
-              truncsize = MAX(truncsize, nb.i(z));
-            }
-            if (truncsize<0) return 0;
-            return makeFullNode(p, truncsize+1, nb);
-          } else {
-            for (int i=nb.getSize()-1; i>=0; i--) {
-              if (nb.d(i)) return makeFullNode(p, i+1, nb);
-            }
-          }
-          return 0;
-  }
-
-  //
-  // Easy case - full nodes disabled
-  //
-  if (0==(forest::policies::ALLOW_FULL_STORAGE & opt)) {
-
-          if (nb.isSparse()) {
-            return makeSparseNode(p, nb.getNNZs(), nb);
-          } else {
-            nnz = 0;
-            for (int i=0; i<nb.getSize(); i++) {
-              if (nb.d(i)) nnz++;
-            }
-            return makeSparseNode(p, nnz, nb);
-          }
-  }
-
-  //
-  // Full and sparse are allowed, determine which is more compact
-  //
-  truncsize = -1;
-  if (nb.isSparse()) {
-    nnz = nb.getNNZs();
-    for (int z=0; z<nnz; z++) {
-      truncsize = MAX(truncsize, nb.i(z));
-    }
-    if (truncsize<0) return 0;
-    truncsize++;
-  } else {
-    nnz = 0;
-    for (int i=0; i<nb.getSize(); i++) if (nb.d(i)) {
-      nnz++;
-      truncsize = i;
-    }
-    truncsize++;
-  }
-  if (slotsForNode(-nnz) < slotsForNode(truncsize)) { 
-    return makeSparseNode(p, nnz, nb);
-  } else {
-    return makeFullNode(p, truncsize, nb);
-  }
-
-}
-#endif
 
 MEDDLY::node_address MEDDLY::old_node_storage
 ::makeNode(node_handle p, const unpacked_node &nb, node_storage_flags opt)
@@ -543,18 +474,110 @@ void MEDDLY::old_node_storage::unlinkDownAndRecycle(node_address addr)
   fragment_slots += padding;
 }
 
-#ifdef USE_NODE_BUILDERS
-bool MEDDLY::old_node_storage
-::areDuplicates(node_address addr, const node_builder &nb) const
-{
-  return areDupsTempl(addr, nb);
-}
-#endif
 
 bool MEDDLY::old_node_storage
-::areDuplicates(node_address addr, const unpacked_node &nr) const
+::areDuplicates(node_address addr, const unpacked_node &n) const
 {
-  return areDupsTempl(addr, nr);
+  if (n.HHbytes()) {
+    if (memcmp(HH(addr), n.HHptr(), n.HHbytes())) return false;
+  }
+
+  if (n.UHbytes()) {
+    if (memcmp(UH(addr), n.UHptr(), n.UHbytes())) return false;
+  }
+
+  int size = sizeOf(addr);
+  if (size<0) {
+    //
+    // Node is sparse
+    //
+    int nnz = -size;
+    const node_handle* down = SD(addr);
+    const node_handle* index = SI(addr);
+    if (n.isFull()) {
+      // check that down matches
+      int i = 0;
+      for (int z=0; z<nnz; z++) {
+        if (index[z] >= n.getSize()) return false;
+        for (; i<index[z]; i++) if (n.d(i)) return false;
+        if (n.d(i) != down[z]) return false;
+        i++;
+      }
+      for (; i<n.getSize(); i++) if (n.d(i)) return false;
+      // check that edges match
+      if (n.hasEdges()) {
+        for (int z=0; z<nnz; z++) {
+          if (!getParent()->areEdgeValuesEqual( 
+                  SEP(addr, z),   n.eptr(index[z])
+              )) return false;
+        } // for z
+      }
+      // must be equal
+      return true;
+    }
+    // n is sparse
+    if (n.getNNZs() != nnz) return false;
+    // check that down matches
+    for (int z=0; z<nnz; z++) {
+      if (index[z] != n.i(z)) return false;
+      if (down[z] != n.d(z))  return false;
+    }
+    // check that edges match
+    if (n.hasEdges()) {
+      for (int z=0; z<nnz; z++) {
+          if (!getParent()->areEdgeValuesEqual( 
+                  SEP(addr, z),   n.eptr(z)
+              )) return false;
+      }
+    } 
+    // must be equal
+    return true;
+  }
+  //
+  // Node is truncated full
+  //
+  const node_handle* down = FD(addr);
+  if (n.isFull()) {
+    if (size > n.getSize()) return false;
+    // check down
+    int i;
+    for (i=0; i<size; i++) {
+      if (down[i] != n.d(i)) return false;
+    }
+    for ( ; i<n.getSize(); i++) {
+      if (n.d(i)) return false;
+    }
+    // check edges
+    if (n.hasEdges()) {
+      for (int i=0; i<size; i++) if (down[i]) {
+          if (!getParent()->areEdgeValuesEqual( 
+                  FEP(addr, i),   n.eptr(i)
+              )) return false;
+      }
+    }
+    // must be equal
+    return true;
+  }
+  // n is sparse
+  int i = 0;
+  // check down
+  for (int z=0; z<n.getNNZs(); z++) {
+    if (n.i(z) >= size) return false;
+    for (; i<n.i(z); i++) if (down[i]) return false;
+    if (n.d(z) != down[i]) return false;
+    i++;
+  }
+  if (i<size) return false; // there WILL be a non-zero down
+  // check edges
+  if (n.hasEdges()) {
+    for (int z=0; z<n.getNNZs(); z++) {
+      if (!getParent()->areEdgeValuesEqual(
+            FEP(addr, n.i(z)),  n.eptr(z)
+          )) return false;
+    } // for z
+  }
+  // must be equal
+  return true;
 }
 
 // void MEDDLY::old_node_storage::fillReader(node_address addr, node_reader &nr) const
@@ -883,112 +906,6 @@ void MEDDLY::old_node_storage::dumpInternalTail(output &s) const
 // Private
 //
 //
-
-#ifdef USE_NODE_BUILDERS
-
-MEDDLY::node_handle MEDDLY::old_node_storage
-::makeFullNode(node_handle p, int size, const node_builder &nb)
-{
-  node_address addr = allocNode(size, p, false);
-  MEDDLY_DCASSERT(1==getCountOf(addr));
-  node_handle* down = FD(addr);
-  if (edgeSlots) {
-      MEDDLY_DCASSERT(nb.hasEdges());
-      char* edge = (char*) FE(addr);
-      int edge_bytes = edgeSlots * sizeof(node_handle);
-      if (nb.isSparse()) {
-        memset(down, 0, size * sizeof(node_handle));
-        memset(edge, 0, size * edge_bytes);
-        for (int z=0; z<nb.getNNZs(); z++) {
-          int i = nb.i(z);
-          MEDDLY_CHECK_RANGE(0, i, size);
-          down[i] = nb.d(z);
-          memcpy(edge + i * edge_bytes, nb.eptr(z), edge_bytes);
-        }
-      } else {
-        for (int i=0; i<size; i++) down[i] = nb.d(i);
-        // kinda hacky
-        memcpy(edge, nb.eptr(0), size * edge_bytes);
-      }
-  } else {
-      MEDDLY_DCASSERT(!nb.hasEdges());
-      if (nb.isSparse()) {
-        memset(down, 0, size * sizeof(node_handle));
-        for (int z=0; z<nb.getNNZs(); z++) {
-          MEDDLY_CHECK_RANGE(0, nb.i(z), size);
-          down[nb.i(z)] = nb.d(z);
-        }
-      } else {
-        for (int i=0; i<size; i++) down[i] = nb.d(i);
-      }
-  }
-  copyExtraHeader(addr, nb);
-  return addr;
-}
-
-MEDDLY::node_handle MEDDLY::old_node_storage
-::makeSparseNode(node_handle p, int size, const node_builder &nb)
-{
-  node_address addr = allocNode(-size, p, false);
-  MEDDLY_DCASSERT(1==getCountOf(addr));
-  node_handle* index = SI(addr);
-  node_handle* down  = SD(addr);
-  if (nb.hasEdges()) {
-      MEDDLY_DCASSERT(nb.hasEdges());
-      char* edge = (char*) SE(addr);
-      int edge_bytes = edgeSlots * sizeof(node_handle);
-      if (nb.isSparse()) {
-        for (int z=0; z<size; z++) {
-          down[z] = nb.d(z);
-          index[z] = nb.i(z);
-        }
-        // kinda hacky
-        memcpy(edge, nb.eptr(0), size * edge_bytes);
-      } else {
-        int z = 0;
-        for (int i=0; i<nb.getSize(); i++) if (nb.d(i)) {
-          MEDDLY_CHECK_RANGE(0, z, size);
-          down[z] = nb.d(i);
-          index[z] = i;
-          memcpy(edge + z * edge_bytes, nb.eptr(i), edge_bytes);
-          z++;
-        }
-      }
-  } else {
-      MEDDLY_DCASSERT(!nb.hasEdges());
-      if (nb.isSparse()) {
-        for (int z=0; z<size; z++) {
-          down[z] = nb.d(z);
-          index[z] = nb.i(z);
-        }
-      } else {
-        int z = 0;
-        for (int i=0; i<nb.getSize(); i++) if (nb.d(i)) {
-          MEDDLY_CHECK_RANGE(0, z, size);
-          down[z] = nb.d(i);
-          index[z] = i;
-          z++;
-        }
-      }
-  }
-  copyExtraHeader(addr, nb);
-  return addr;
-}
-
-
-void MEDDLY::old_node_storage
-::copyExtraHeader(node_address addr, const node_builder &nb)
-{
-  // copy extra header info, if any
-  if (unhashedSlots) {
-    nb.getUH(UH(addr));
-  }
-  if (hashedSlots) {
-    nb.getHH(HH(addr));
-  }
-}
-
-#endif
 
 
 

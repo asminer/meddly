@@ -58,31 +58,6 @@ class MEDDLY::evmdd_forest : public ev_forest {
     inline void 
     createEdgePath(int k, const int* vlist, TYPE &ev, node_handle &ed) 
     {
-#ifdef USE_NODE_BUILDERS
-        if (0==ed) return;
-        for (int i=1; i<=k; i++) {
-          if (DONT_CARE == vlist[i]) {
-            // make a redundant node
-            if (isFullyReduced()) continue; 
-            int sz = getLevelSize(i);
-            node_builder& nb = useNodeBuilder(i, sz);
-            nb.d(0) = ed;
-            nb.setEdge(0, ev);
-            for (int v=1; v<sz; v++) {
-              nb.d(v) = linkNode(ed);
-              nb.setEdge(v, ev);
-            }
-            createReducedNode(-1, nb, ev, ed);
-          } else {
-            // make a singleton node
-            node_builder& nb = useSparseBuilder(i, 1);
-            nb.i(0) = vlist[i];
-            nb.d(0) = ed;
-            nb.setEdge(0, ev);
-            createReducedNode(-1, nb, ev, ed);
-          }
-        } // for i
-#else
         if (0==ed) return;
         for (int i=1; i<=k; i++) {
           if (DONT_CARE == vlist[i]) {
@@ -106,7 +81,6 @@ class MEDDLY::evmdd_forest : public ev_forest {
             createReducedNode(-1, nb, ev, ed);
           }
         } // for i
-#endif
     }
 
 };
@@ -222,11 +196,7 @@ namespace MEDDLY {
         //
         // Start new node at level k
         //
-#ifdef USE_NODE_BUILDERS
-        node_builder& nb = F->useSparseBuilder(k, lastV);
-#else
         unpacked_node* nb = unpacked_node::newSparse(F, k, lastV);
-#endif
         int z = 0; // number of nonzero edges in our sparse node
 
         //
@@ -298,15 +268,9 @@ namespace MEDDLY {
           // add to sparse node, unless empty
           //
           if (0==total_ptr) continue;
-#ifdef USE_NODE_BUILDERS
-          nb.i(z) = v;
-          nb.d(z) = total_ptr;
-          nb.setEdge(z, total_val);
-#else
           nb->i_ref(z) = v;
           nb->d_ref(z) = total_ptr;
           nb->setEdge(z, total_val);
-#endif
           z++;
         } // for v
 
@@ -314,11 +278,7 @@ namespace MEDDLY {
         // Cleanup
         //
         F->unlinkNode(dc_ptr);
-#ifdef USE_NODE_BUILDERS
-        nb.shrinkSparse(z);
-#else
         nb->shrinkSparse(z);
-#endif
 
         F->createReducedNode(-1, nb, ev, ed);
       };

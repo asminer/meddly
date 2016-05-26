@@ -347,26 +347,16 @@ void MEDDLY::copy_MT2EV<TYPE>
 
   // Initialize node builder
   const int level = argF->getNodeLevel(a);
-#ifdef USE_NODE_BUILDERS
-  node_builder& nb = resF->useSparseBuilder(level, A->getNNZs());
-#else
   unpacked_node* nb = unpacked_node::newSparse(resF, level, A->getNNZs());
-#endif
 
   // recurse
   for (int z=0; z<A->getNNZs(); z++) {
     node_handle d;
     TYPE dev;
     computeSkip(A->i(z), A->d(z), d, dev);
-#ifdef USE_NODE_BUILDERS
-    nb.i(z) = A->i(z);
-    nb.d(z) = d;
-    nb.setEdge(z, dev);
-#else
     nb->i_ref(z) = A->i(z);
     nb->d_ref(z) = d;
     nb->setEdge(z, dev);
-#endif
   }
 
   // Cleanup
@@ -421,24 +411,14 @@ void MEDDLY::copy_MT2EV<TYPE>
   }
 
   // Initialize node builder
-#ifdef USE_NODE_BUILDERS
-  node_builder& nb = resF->useSparseBuilder(k, A->getNNZs());
-#else
   unpacked_node* nb = unpacked_node::newSparse(resF, k, A->getNNZs());
-#endif
 
   // recurse
   for (int z=0; z<A->getNNZs(); z++) {
     TYPE dev;
-#ifdef USE_NODE_BUILDERS
-    nb.i(z) = A->i(z);
-    computeAll(A->i(z), nextk, A->d(z), nb.d(z), dev);
-    nb.setEdge(z, dev);
-#else
     nb->i_ref(z) = A->i(z);
     computeAll(A->i(z), nextk, A->d(z), nb->d_ref(z), dev);
     nb->setEdge(z, dev);
-#endif
   }
 
   // Cleanup
@@ -734,30 +714,17 @@ MEDDLY::copy_EV2EV_fast<INTYPE,OUTTYPE>::computeSkip(int in, node_handle a)
 
   // Initialize node builder
   const int level = argF->getNodeLevel(a);
-#ifdef USE_NODE_BUILDERS
-  node_builder& nb = resF->useSparseBuilder(level, A->getNNZs());
-#else
   unpacked_node* nb = unpacked_node::newSparse(resF, level, A->getNNZs());
-#endif
 
   // recurse
   for (int z=0; z<A->getNNZs(); z++) {
-#ifdef USE_NODE_BUILDERS
-    nb.i(z) = A->i(z);
-    nb.d(z) = computeSkip(A->i(z), A->d(z));
-#else
     nb->i_ref(z) = A->i(z);
     nb->d_ref(z) = computeSkip(A->i(z), A->d(z));
-#endif
     INTYPE av;
     OUTTYPE bv;
     A->getEdge(z, av);
     bv = av;
-#ifdef USE_NODE_BUILDERS
-    nb.setEdge(z, bv);
-#else
     nb->setEdge(z, bv);
-#endif
   }
 
   // Cleanup
@@ -907,26 +874,16 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
   }
 
   // Initialize node builder
-#ifdef USE_NODE_BUILDERS
-  node_builder& nb = resF->useSparseBuilder(k, A->getNNZs());
-#else
   unpacked_node* nb = unpacked_node::newSparse(resF, k, A->getNNZs());
-#endif
 
   // recurse
   for (int z=0; z<A->getNNZs(); z++) {
     INTYPE adv;
     OUTTYPE bdv;
     A->getEdge(z, adv);
-#ifdef USE_NODE_BUILDERS
-    nb.i(z) = A->i(z);
-    computeAll(A->i(z), nextk, INOP::apply(av, adv), A->d(z), bdv, nb.d(z));
-    nb.setEdge(z, bdv);
-#else
     nb->i_ref(z) = A->i(z);
     computeAll(A->i(z), nextk, INOP::apply(av, adv), A->d(z), bdv, nb->d_ref(z));
     nb->setEdge(z, bdv);
-#endif
   }
 
   // Cleanup
