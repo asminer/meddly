@@ -822,13 +822,13 @@ void MEDDLY::expert_forest::validateIncounts(bool exact)
     MEDDLY_DCASSERT(!isTerminalNode(i));
     if (!isActiveNode(i)) continue;
     bool fail = exact
-      ?  in_validate[i] != readInCount(i)
-      :  in_validate[i] >  readInCount(i);
+      ?  in_validate[i] != getNodeInCount(i)
+      :  in_validate[i] >  getNodeInCount(i);
     if (fail) {
       printf("Validation #%d failed\n", idnum);
       long l_i = i;
       long l_v = in_validate[i];
-      long l_c = readInCount(i);
+      long l_c = getNodeInCount(i);
       printf("For node %ld\n\tcount: %ld\n\tnode:  %ld\n", l_i, l_v, l_c);
       dump(stdout, SHOW_DETAILS);
       MEDDLY_DCASSERT(0);
@@ -1008,22 +1008,21 @@ bool MEDDLY::expert_forest
   /*
     Ordinary node
   */
-  const node_header& node = getNode(p);
   if (flags & SHOW_DETAILS) {
     // node: was already written.
-    const variable* v = getDomain()->getVar(ABS(node.level));
+    const variable* v = getDomain()->getVar(ABS(getNodeLevel(p)));
     if (v->getName()) {
       s << " level: " << v->getName();
     } else {
-      s << " level: " <<  ABS(node.level);
+      s << " level: " <<  ABS(getNodeLevel(p));
     }
     s.put( (getNodeLevel(p) < 0) ? '\'' : ' ' );
-    s << " in: " << long(nodeMan->getCountOf(node.offset));
-    s << " cc: " << node.cache_count;
+    s << " in: " << getNodeInCount(p);
+    s << " cc: " << getNodeCacheCount(p);
   } else {
     s << "node: " << long(p);
   }
-  nodeMan->showNode(s, node.offset, flags & SHOW_DETAILS);
+  nodeMan->showNode(s, getNodeAddress(p), flags & SHOW_DETAILS);
   return true;
 }
 
@@ -1172,9 +1171,8 @@ void MEDDLY::expert_forest
   s << block << " " << num_nodes << "\n";
 
   for (int i=0; output2index[i]; i++) {
-    const node_header& node = getNode(output2index[i]);
-    s << node.level << " ";
-    nodeMan->writeNode(s, node.offset, index2output);
+    s << getNodeLevel(output2index[i]) << " ";
+    nodeMan->writeNode(s, getNodeAddress(output2index[i]), index2output);
   }
 
   // reverse the block
@@ -1576,7 +1574,7 @@ void MEDDLY::expert_forest::handleNewOrphanNode(node_handle p)
   MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
   MEDDLY_DCASSERT(isActiveNode(p));
   MEDDLY_DCASSERT(!isTerminalNode(p));
-  MEDDLY_DCASSERT(readInCount(p) == 0);
+  MEDDLY_DCASSERT(getNodeInCount(p) == 0);
 
   // insted of orphan_nodes++ here; do it only when the orphan is not going
   // to get deleted or converted into a zombie
@@ -1584,9 +1582,9 @@ void MEDDLY::expert_forest::handleNewOrphanNode(node_handle p)
   // Two possible scenarios:
   // (1) a reduced node, or
   // (2) a temporary node ready to be deleted.
-  // MEDDLY_DCASSERT(isReducedNode(p) || getCacheCount(p) == 0);
+  // MEDDLY_DCASSERT(isReducedNode(p) || getNodeCacheCount(p) == 0);
 
-  if (getCacheCount(p) == 0) {
+  if (getNodeCacheCount(p) == 0) {
     // delete node
     // this should take care of the temporary nodes also
     deleteNode(p);
@@ -1615,7 +1613,7 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 #endif
 
   MEDDLY_DCASSERT(isValidNonterminalIndex(p));
-  MEDDLY_DCASSERT(readInCount(p) == 0);
+  MEDDLY_DCASSERT(getNodeInCount(p) == 0);
   MEDDLY_DCASSERT(isActiveNode(p));
 
   unsigned h = hashNode(p);
@@ -1645,16 +1643,14 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 
   MEDDLY_DCASSERT(address[p].cache_count == 0);
 
-  node_address addr = getNode(p).offset;
-
   // unlink children and recycle node memory
-  nodeMan->unlinkDownAndRecycle(addr);
+  nodeMan->unlinkDownAndRecycle(getNodeAddress(p));
 
   // recycle the index
   //
   stats.decActive(1);
   if (theLogger && theLogger->recordingNodeCounts()) {
-    theLogger->addToActiveNodeCount(this, getNode(p).level, -1);
+    theLogger->addToActiveNodeCount(this, getNodeLevel(p), -1);
   }
   recycleNodeHandle(p);
 
@@ -1684,14 +1680,14 @@ void MEDDLY::expert_forest::zombifyNode(node_handle p)
 
   MEDDLY_DCASSERT(isActiveNode(p));
   MEDDLY_DCASSERT(!isTerminalNode(p));
-  MEDDLY_DCASSERT(getCacheCount(p) > 0);  // otherwise this node should be deleted
-  MEDDLY_DCASSERT(readInCount(p) == 0);
+  MEDDLY_DCASSERT(getNodeCacheCount(p) > 0);  // otherwise this node should be deleted
+  MEDDLY_DCASSERT(getNodeInCount(p) == 0);
   MEDDLY_DCASSERT(address[p].cache_count > 0);
 
   stats.zombie_nodes++;
   stats.decActive(1);
   if (theLogger && theLogger->recordingNodeCounts()) {
-    theLogger->addToActiveNodeCount(this, getNode(p).level, -1);
+    theLogger->addToActiveNodeCount(this, getNodeLevel(p), -1);
   }
 
   unsigned h = hashNode(p);
@@ -1713,10 +1709,10 @@ void MEDDLY::expert_forest::zombifyNode(node_handle p)
   unique->remove(h, p);
 #endif
 
-  node_address addr = getNode(p).offset;
+  // node_address addr = getNode(p).offset;
 
   // unlink children and recycle node memory
-  nodeMan->unlinkDownAndRecycle(addr);
+  nodeMan->unlinkDownAndRecycle(getNodeAddress(p));
 
   // mark node as zombie
   address[p].makeZombie();
@@ -1982,10 +1978,6 @@ MEDDLY::node_handle MEDDLY::expert_forest
   // All of the work is in nodeMan now :^)
   address[p].offset = nodeMan->makeNode(p, nb, getNodeStorage());
 
-#ifdef SAVE_HASHES
-  address[p].hash = nb.hash();
-#endif
-  
   // add to UT 
   unique->add(nb.hash(), p);
 

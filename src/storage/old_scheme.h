@@ -171,7 +171,7 @@ class MEDDLY::old_node_storage : public node_storage {
 
     virtual bool areDuplicates(node_address addr, const unpacked_node &nr) const;
     virtual void fillUnpacked(unpacked_node &ur, node_address addr) const;
-    virtual unsigned hashNode(const node_header& p) const;
+    virtual unsigned hashNode(int level, node_address addr) const;
     virtual int getSingletonIndex(node_address addr, node_handle &down) const;
     virtual node_handle getDownPtr(node_address addr, int index) const;
     virtual void getDownPtr(node_address addr, int ind, int& ev, node_handle& dn) const;

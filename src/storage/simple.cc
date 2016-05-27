@@ -648,29 +648,29 @@ void MEDDLY::simple_storage::fillUnpacked(unpacked_node &nr, node_address addr) 
 }
 
 
-unsigned MEDDLY::simple_storage::hashNode(const node_header& node) const
+unsigned MEDDLY::simple_storage::hashNode(int level, node_address addr) const
 {
   hash_stream s;
-  s.start(node.level);
+  s.start(level);
 
   // Do the hashed header part, if any
 
   if (hashedSlots) {
-    s.push(HH(node.offset), getParent()->hashedHeaderBytes());
+    s.push(HH(addr), getParent()->hashedHeaderBytes());
   }
 
   //
   // Hash the node itself
   
-  int size = sizeOf(node.offset);
+  int size = sizeOf(addr);
   if (size < 0) {
     // Node is sparse
     int nnz = -size;
-    node_handle* down = SD(node.offset);
-    node_handle* index = SI(node.offset);
+    node_handle* down = SD(addr);
+    node_handle* index = SI(addr);
     if (getParent()->areEdgeValuesHashed()) {
       for (int z=0; z<nnz; z++) {
-        s.push(index[z], down[z], ((int*)SEP(node.offset, z))[0]);
+        s.push(index[z], down[z], ((int*)SEP(addr, z))[0]);
       } // for z
     } else {
       for (int z=0; z<nnz; z++) {
@@ -679,12 +679,12 @@ unsigned MEDDLY::simple_storage::hashNode(const node_header& node) const
     }
   } else {
     // Node is full
-    node_handle* down = FD(node.offset);
+    node_handle* down = FD(addr);
     node_handle tv=getParent()->getTransparentNode();
     if (getParent()->areEdgeValuesHashed()) {
       for (int i=0; i<size; i++) {
     	if (down[i]!=tv) {
-          s.push(i, down[i], ((int*)FEP(node.offset, i))[0]);
+          s.push(i, down[i], ((int*)FEP(addr, i))[0]);
     	}
       } // for z
     } else {

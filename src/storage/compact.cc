@@ -530,23 +530,23 @@ void MEDDLY::compact_storage
 
 // ******************************************************************
 
-unsigned MEDDLY::compact_storage::hashNode(const node_header& node) const
+unsigned MEDDLY::compact_storage::hashNode(int level, node_address addr) const
 {
   hash_stream s;
-  s.start(node.level);
+  s.start(level);
 
   // Do the hashed header part, if any
   if (hashedBytes) {
-    s.push(HH(node.offset), hashedBytes);
+    s.push(HH(addr), hashedBytes);
   }
 
   //
   // Hash the node itself
-  int size = sizeOf(node.offset);
+  int size = sizeOf(addr);
   if (size < 0) {
-    hashSparse(s, node.offset, -size);
+    hashSparse(s, addr, -size);
   } else {
-    hashFull(s, node.offset, size);
+    hashFull(s, addr, size);
   }
 
   return s.finish();

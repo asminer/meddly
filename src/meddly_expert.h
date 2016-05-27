@@ -70,12 +70,6 @@
 #define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX)
 #endif
 
-//
-// Design decision: should we remember the hashes for a reduced node?
-// Tests so far indicate: doesn't save much, if any, time; and has
-// a noticeable increase in memory.
-//
-// #define SAVE_HASHES
 
 namespace MEDDLY {
 
@@ -91,7 +85,6 @@ namespace MEDDLY {
   class unpacked_matrix;
 
   // Actual node storage
-  struct node_header;
   class node_storage;
 
   class expert_forest;
@@ -898,58 +891,6 @@ class MEDDLY::unpacked_matrix {
 
 };  // end of unpacked_matrix class
 
-// ******************************************************************
-// *                                                                *
-// *                       node_header  class                       *
-// *                                                                *
-// ******************************************************************
-
-/** Header information for each node.
-    The node handles (integers) need to keep some
-    information about the node they point to,
-    both for addressing and for bookkeeping purposes.
-    This struct holds that information.
-*/
-struct MEDDLY::node_header {
-    /** Offset to node's data in the corresponding node storage structure.
-        If the node is active, this is the offset (>0) in the data array.
-        If the node is deleted, this is -next deleted node
-        (part of the unused address list).
-    */
-    node_address offset;
-
-    /** Node level
-        If the node is active, this indicates node level.
-    */
-    int level;
-
-    /** Cache count
-        The number of cache entries that refer to this node (excl. unique
-        table). If this node is a zombie, cache_count is negative.
-    */
-    int cache_count;
-
-#ifdef SAVE_HASHES
-    /// Remember the hash for speed.
-    unsigned hash;
-#endif
-
-    // Handy functions, in case our internal storage changes.
-
-    bool isActive() const;
-    bool isZombie() const;
-
-    bool isDeleted() const;
-    void setDeleted();
-    void setNotDeleted();
-
-    int getNextDeleted() const;
-    void setNextDeleted(int n);
-
-    void makeZombie();
-};
-
-
 
 // ******************************************************************
 // *                                                                *
@@ -1082,15 +1023,6 @@ class MEDDLY::node_storage {
     virtual bool
         areDuplicates(node_address addr, const unpacked_node &nr) const = 0;
 
-    /** Fill a node reader.
-        Useful if we want to read an entire node.
-          @param  addr    Node address in this structure.
-          @param  nr      Node reader to fill, has already
-                          been "resized".  Full or sparse
-                          will be decided from \a nr settings.
-    */
-    // virtual void fillReader(node_address addr, unpacked_node &nr) const = 0;
-
     /**
         Copy the node at the specified address, into an unpacked node.
         Useful for reading an entire node.
@@ -1100,15 +1032,13 @@ class MEDDLY::node_storage {
     virtual void fillUnpacked(unpacked_node &un, node_address addr) const = 0;
 
     /** Compute the hash value for a node.
-        This requires an actual "node", not just an address,
-        because the hash contains the node's level.
         Should give the same answer as filling a unpacked_node
         and computing the hash on the unpacked_node.
 
-          @param  p     Node of interest.
+          @param  levl  Level of the node of interest
+          @param  addr  Address of the node of interest
     */
-    virtual unsigned hashNode(const node_header& p) const = 0;
-
+    virtual unsigned hashNode(int level, node_address addr) const = 0;
 
     /** Determine if this is a singleton node.
         Used for identity reductions.
@@ -1460,45 +1390,45 @@ class MEDDLY::expert_forest: public forest
 
     const expert_domain* getExpertDomain() const;
     expert_domain* useExpertDomain();
-    /// Ignores prime/unprime.
-    int getNumVariables() const;
-    int getMinLevelIndex() const;
-    bool isValidLevel(int k) const;
 
-    /// The maximum size (number of indices) a node at this level can have
-    int getLevelSize(int lh) const;
-    /// Is this a terminal node?
-    static bool isTerminalNode(node_handle p);
-    /// Sanity check: is this a valid nonterminal node index.
-    bool isValidNonterminalIndex(node_handle node) const;
-    /// Sanity check: is this a valid node index.
-    bool isValidNodeIndex(node_handle node) const;
-    node_handle getLastNode() const;
-    /// Get data for a given nonterminal node.
-    const node_header& getNode(node_handle p) const;
+  // --------------------------------------------------
+  // Node address information
+  // --------------------------------------------------
+  protected:
+    node_address getNodeAddress(node_handle p) const;
+    void setNodeAddress(node_handle p, node_address a);
+
+  // --------------------------------------------------
+  // Node level information
+  // --------------------------------------------------
+  public:
     /** Get the node's level as an integer.
         Negative values are used for primed levels.
     */
     int getNodeLevel(node_handle p) const;
     bool isPrimedNode(node_handle p) const;
     bool isUnprimedNode(node_handle p) const;
+    int getNumVariables() const;
+    // returns 0 or -K 
+    int getMinLevelIndex() const;
+    bool isValidLevel(int k) const;
 
-    /// Get the cardinality of an Index Set.
-    int getIndexSetCardinality(node_handle node) const;
+    /// The maximum size (number of indices) a node at this level can have
+    int getLevelSize(int lh) const;
 
-    // --------------------------------------------------
-    // Used by the unique table
-    // --------------------------------------------------
-    node_handle getNext(node_handle p) const;
-    void setNext(node_handle p, node_handle n);
-    unsigned hash(node_handle p) const;
+  protected:
+    void setNodeLevel(node_handle p, int level);
 
-    // --------------------------------------------------
-    // Managing reference counts
-    // --------------------------------------------------
+  // --------------------------------------------------
+  // Managing incoming edge counts
+  // --------------------------------------------------
+  public:
+    /// Returns true if we are tracking incoming counts
+    bool trackingInCounts() const;
 
     /// Returns the in-count for a node.
-    long readInCount(node_handle p) const;
+    // long readInCount(node_handle p) const;
+    int getNodeInCount(node_handle p) const;
 
     /** Increase the link count to this node. Call this when another node is
         made to point to this node.
@@ -1512,9 +1442,15 @@ class MEDDLY::expert_forest: public forest
     */
     void unlinkNode(node_handle p);
 
-    // --------------------------------------------------
-    // Managing cache entries
-    // --------------------------------------------------
+  // --------------------------------------------------
+  // Managing cache counts
+  // --------------------------------------------------
+  public:
+    /// Returns true if we are tracking incoming counts
+    bool trackingCacheCounts() const;
+
+    /// Returns the cache count for a node.
+    int getNodeCacheCount(node_handle p) const;
 
     /** Increase the cache count for this node. Call this whenever this node
         is added to a cache.
@@ -1528,6 +1464,54 @@ class MEDDLY::expert_forest: public forest
           @param  p     Node we care about.
     */
     void uncacheNode(node_handle p);
+
+  // --------------------------------------------------
+  // Marking and unmarking nodes
+  // --------------------------------------------------
+  public:
+    /// Set all nodes as marked
+    void markAllNodes();
+
+    /// Set all nodes as unmarked
+    void unmarkAllNodes();
+
+    /// Mark a particular node
+    void markNode(node_handle p);
+
+    /// Unmark a particular node
+    void unmarkNode(node_handle p);
+
+    /// Determine if a node is marked
+    bool isNodeMarked(node_handle p) const;
+
+
+  // --------------------------------------------------
+  // Node status
+  // --------------------------------------------------
+  public:
+    bool isActiveNode(node_handle p) const;
+    bool isZombieNode(node_handle p) const;
+    bool isDeletedNode(node_handle p) const;
+    static bool isTerminalNode(node_handle p);
+    /// Sanity check: is this a valid nonterminal node index.
+    bool isValidNonterminalIndex(node_handle p) const;
+    /// Sanity check: is this a valid node index.
+    bool isValidNodeIndex(node_handle p) const;
+    node_handle getLastNode() const;
+
+
+  public:
+
+    /// Get the cardinality of an Index Set.
+    int getIndexSetCardinality(node_handle node) const;
+
+    // --------------------------------------------------
+    // Used by the unique table
+    // --------------------------------------------------
+    node_handle getNext(node_handle p) const;
+    void setNext(node_handle p, node_handle n);
+    unsigned hash(node_handle p) const;
+
 
     /// A node can be discarded once it goes stale. Whether a node is
     /// considered stale depends on the forest's deletion policy.
@@ -1903,13 +1887,6 @@ class MEDDLY::expert_forest: public forest
     void setHashedSize(char hbytes);
 
   // ------------------------------------------------------------
-  // inlined helpers.
-
-    bool isZombieNode(long p) const;
-    bool isActiveNode(long p) const;
-    bool isDeletedNode(long p) const;
-
-  // ------------------------------------------------------------
   // virtual, with default implementation.
   // Should be overridden in appropriate derived classes.
 
@@ -1962,16 +1939,14 @@ class MEDDLY::expert_forest: public forest
   // inlined helpers for this class
 
     bool isTimeToGc() const;
-    /// Returns the in-count for a node.
-    long getInCount(node_handle p);
     /// Increment and return the in-count for a node
-    long incInCount(node_handle p);
+    // long incInCount(node_handle p);
     /// Decrement and return the in-count for a node
-    long decInCount(node_handle p);
+    // long decInCount(node_handle p);
     /// Returns the (modifiable) cache-count for a node
-    int& cacheCount(node_handle p);
+    // int& cacheCount(node_handle p);
     /// Returns the cache-count for a node
-    int getCacheCount(node_handle p) const;
+    // int getCacheCount(node_handle p) const;
 
     /** Change the location of a node.
         Used by node_storage during compaction.
@@ -2035,6 +2010,52 @@ class MEDDLY::expert_forest: public forest
 
     /// Transparent value
     node_handle transparent;
+
+
+  private:
+      /** Header information for each node.
+          The node handles (integers) need to keep some
+          information about the node they point to,
+          both for addressing and for bookkeeping purposes.
+          This struct holds that information.
+      */
+      struct node_header {
+          /** Offset to node's data in the corresponding node storage structure.
+              If the node is active, this is the offset (>0) in the data array.
+              If the node is deleted, this is -next deleted node
+              (part of the unused address list).
+          */
+          node_address offset;
+
+          /** Node level
+              If the node is active, this indicates node level.
+          */
+          int level;
+
+          /** Cache count
+              The number of cache entries that refer to this node (excl. unique
+              table). If this node is a zombie, cache_count is negative.
+          */
+          int cache_count;
+
+          /// Is node marked.  This is pretty horrible, but is only temporary
+          bool marked;
+
+          // Handy functions, in case our internal storage changes.
+
+          bool isActive() const;
+          bool isZombie() const;
+
+          bool isDeleted() const;
+          void setDeleted();
+          void setNotDeleted();
+
+          int getNextDeleted() const;
+          void setNextDeleted(int n);
+
+          void makeZombie();
+      };
+
 
   private:
     // Garbage collection in progress
