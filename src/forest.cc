@@ -2012,7 +2012,6 @@ void MEDDLY::expert_forest::recycleNodeHandle(node_handle p)
   MEDDLY_DCASSERT(0==address[p].cache_count);
   stats.decMemUsed(sizeof(node_header));
   address[p].setDeleted();
-  address[p].setUnmarked();
 
   // Determine which list to add this into
   int i = bytesRequiredForDown(p) -1;

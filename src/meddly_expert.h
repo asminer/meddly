@@ -941,9 +941,6 @@ struct MEDDLY::node_header {
     */
     int cache_count;
 
-    uint8_t marked: 1;
-    uint8_t unused: 7;
-
 #ifdef SAVE_HASHES
     /// Remember the hash for speed.
     unsigned hash;
@@ -962,10 +959,6 @@ struct MEDDLY::node_header {
     void setNextDeleted(int n);
 
     void makeZombie();
-
-    bool isMarked() const;
-    void setMarked();
-    void setUnmarked();
 };
 
 

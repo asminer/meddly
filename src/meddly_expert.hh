@@ -537,21 +537,6 @@ MEDDLY::node_header::makeZombie()
   cache_count *= -1;
   offset = 0;
 }
-inline bool
-MEDDLY::node_header::isMarked() const
-{
-  return marked;
-}
-inline void
-MEDDLY::node_header::setMarked()
-{
-  marked = true;
-}
-inline void
-MEDDLY::node_header::setUnmarked()
-{
-  marked = false;
-}
 
 // ****************************************************************************
 

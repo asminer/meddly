@@ -123,9 +123,8 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
   unique->getItems(-hvar, phnodes, phnum);
   for (int i = 0; i < phnum; i++) {
     setNodeLevel(phnodes[i], -level);
-    // Some node header which is associated with a node destroyed
-    // during swap may be associated with another newly created node
-    getNode(phnodes[i]).setMarked();
+    // Protect nodes from being destroyed
+    linkNode(phnodes[i]);
   }
 
   // Renumber the level of nodes for VarLow
@@ -162,12 +161,11 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
 
   std::vector<node_handle> t;
   std::unordered_map<node_handle, node_handle> dup;
-  std::unordered_map<node_handle, int> refs;
 
   // Reconstruct nodes for VarHigh
   for (int i = 0; i < hnum; i++) {
     node_handle node = swapAdjacentVariablesOf(hnodes[i]);
-    if (hnodes[i] == node){
+    if (hnodes[i] == node) {
       // VarLow is DONT_CHANGE in the MxD
       unlinkNode(node);
     }
@@ -175,21 +173,8 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
       MEDDLY_DCASSERT(getNodeLevel(node) == -(level+1));
 
       // Duplication conflict
-      node_reader* nr = initNodeReader(hnodes[i], true);
-      for(int j = 0; j < hsize; j++){
-        if(getNodeLevel(nr->d(j)) == -level){
-          if(refs.find(nr->d(j)) == refs.end()){
-            refs[nr->d(j)] = 1;
-          }
-          else{
-            refs[nr->d(j)]++;
-          }
-        }
-      }
-      node_reader::recycle(nr);
-
       dup.emplace(node, hnodes[i]);
-      //			printf("UPDATE: %d -> %d\n", node, high_nodes[i]);
+//      std::cout << "UPDATE: " << node << " -> " << hnodes[i] << std::endl;
     }
     else {
       // Newly created node
@@ -200,19 +185,60 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
       }
     }
   }
+  delete[] hnodes;
+
+  if (!dup.empty()) {
+    for (const auto& n : t) {
+      MEDDLY_DCASSERT(getNodeLevel(n) == (level+1));
+
+      node_reader* nr = initNodeReader(n, true);
+      bool update = false;
+      for (int i = 0; i < hsize; i++) {
+        if (dup.find(nr->d(i)) != dup.end()) {
+          update = true;
+          break;
+        }
+      }
+
+      if (update) {
+        node_builder& nb = useNodeBuilder(level+1, hsize);
+        for (int i = 0; i < hsize; i++) {
+          auto search = dup.find(nr->d(i));
+          nb.d(i) = linkNode(search == dup.end() ? nr->d(i) : search->second);
+        }
+        node_handle node = createReducedNode(-1, nb);
+        MEDDLY_DCASSERT(getInCount(node) == 1 && getNodeLevel(node) == level+1);
+        swapNodes(n, node);
+        unlinkNode(node);
+      }
+
+      node_reader::recycle(nr);
+    }
+
+    for (const auto& it : dup) {
+      MEDDLY_DCASSERT(getInCount(it.first) == 1);
+      swapNodes(it.first, it.second);
+      unlinkNode(it.first);
+    }
+
+    dup.clear();
+  }
+
+  {
+    int j = 0;
+    for (int i = 0; i < phnum; i++) {
+      // Revoke the protection
+      unlinkNode(phnodes[i]);
+      if (isActiveNode(phnodes[i])) {
+        phnodes[j++] = phnodes[i];
+      }
+    }
+    phnum = j;
+  }
 
   // Reconstruct nodes for VarHigh'
   for (int i = 0; i < phnum; i++) {
-    if (!isActiveNode(phnodes[i])
-        || !getNode(phnodes[0]).isMarked()) {
-      continue;
-    }
-
-    getNode(phnodes[i]).setUnmarked();
-    auto search = refs.find(phnodes[i]);
-    if (search != refs.end() && search->second == getInCount(phnodes[i])){
-      continue;
-    }
+    MEDDLY_DCASSERT(isActiveNode(phnodes[i]));
 
     node_reader* nr = initNodeReader(phnodes[i], true);
     bool skip = true;
@@ -237,6 +263,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
 
       // Duplication conflict
       dup.emplace(node, phnodes[i]);
+//      std::cout << "UPDATE: " << node << " -> " << phnodes[i] << std::endl;
     }
     else {
       // Newly created node
@@ -247,14 +274,16 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
       }
     }
   }
+  delete[] phnodes;
 
+  // XXX: Duplicate code
   if (!dup.empty()) {
     for (const auto& n : t) {
       MEDDLY_DCASSERT(getNodeLevel(n)==(level+1));
 
       node_reader* nr = initNodeReader(n, true);
       bool update = false;
-      for (int i = 0; i < hsize; i++){
+      for (int i = 0; i < hsize; i++) {
         if(dup.find(nr->d(i)) != dup.end()){
           update=true;
           break;
@@ -281,10 +310,9 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
       swapNodes(it.first, it.second);
       unlinkNode(it.first);
     }
-  }
 
-  delete[] hnodes;
-  delete[] phnodes;
+    dup.clear();
+  }
 
   //	printf("After: Level %d : %d,  Level %d : %//
   // Complete adjacent variable swap by swapping two levels 4 times
