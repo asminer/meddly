@@ -4,7 +4,7 @@
 
 ## compile library
 
-SUBDIRS = forests operations storage .
+SUBDIRS = forests operations storage reordering .
 
 lib_LTLIBRARIES = libmeddly.la
 
@@ -43,7 +43,8 @@ libmeddly_la_SOURCES = \
 libmeddly_la_LIBADD = \
   forests/libforests.la \
   operations/libops.la \
-  storage/libstorage.la
+  storage/libstorage.la \
+  reordering/libreordering.la
 
 ## compile apps
 

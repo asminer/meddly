@@ -47,6 +47,8 @@
 #include <iostream>
 #endif
 
+#include "reordering/reordering_type.h"
+
 #include <cassert>
 
 namespace MEDDLY {
@@ -981,7 +983,7 @@ class MEDDLY::forest {
       /// Default deletion policy for all levels in the forest.
       node_deletion deletion;
       // Default variable reorder strategy.
-      variable_reorder reorder;
+      reordering_type reorder;
       // Default variable swap strategy.
       variable_swap swap;
 
@@ -1016,14 +1018,14 @@ class MEDDLY::forest {
       void setOptimistic();
       void setPessimistic();
 
-      inline void setLowestInversion() { reorder = LOWEST_INVERSION; }
-      inline void setHighestInversion() { reorder = HIGHEST_INVERSION; }
-      inline void setSinkDown() { reorder = SINK_DOWN; }
-      inline void setBubbleUp() { reorder = BUBBLE_UP; }
-      inline void setLowestCost() { reorder = LOWEST_COST; }
-      inline void setLowestMemory() { reorder = LOWEST_MEMORY; }
-      inline void setRandom() { reorder = RANDOM; }
-      inline void setLARC() { reorder = LOWEST_AVG_REF_COUNT; }
+      inline void setLowestInversion() { reorder = reordering_type::LOWEST_INVERSION; }
+      inline void setHighestInversion() { reorder = reordering_type::HIGHEST_INVERSION; }
+      inline void setSinkDown() { reorder = reordering_type::SINK_DOWN; }
+      inline void setBubbleUp() { reorder = reordering_type::BUBBLE_UP; }
+      inline void setLowestCost() { reorder = reordering_type::LOWEST_COST; }
+      inline void setLowestMemory() { reorder = reordering_type::LOWEST_MEMORY; }
+      inline void setRandom() { reorder = reordering_type::RANDOM; }
+      inline void setLARC() { reorder = reordering_type::LARC; }
 
       inline void setVarSwap() { swap = VAR; }
       inline void setLevelSwap() { swap = LEVEL; }
@@ -1249,35 +1251,35 @@ class MEDDLY::forest {
     bool isIdentityReduced() const;
 
     inline bool isLowestInversion() const {
-    	return policies::LOWEST_INVERSION == deflt.reorder;
+    	return deflt.reorder == reordering_type::LOWEST_INVERSION;
     }
 
     inline bool isHighestInversion() const {
-    	return policies::HIGHEST_INVERSION == deflt.reorder;
+    	return deflt.reorder == reordering_type::HIGHEST_INVERSION;
     }
 
     inline bool isSinkDown() const {
-    	return policies::SINK_DOWN == deflt.reorder;
+    	return deflt.reorder == reordering_type::SINK_DOWN;
     }
 
     inline bool isBubbleUp() const {
-    	return policies::BUBBLE_UP == deflt.reorder;
+    	return deflt.reorder == reordering_type::BUBBLE_UP;
     }
 
     inline bool isLowestCost() const {
-    	return policies::LOWEST_COST == deflt.reorder;
+    	return deflt.reorder == reordering_type::LOWEST_COST;
     }
 
     inline bool isLowestMemory() const {
-    	return policies::LOWEST_MEMORY == deflt.reorder;
+    	return deflt.reorder == reordering_type::LOWEST_MEMORY;
     }
 
     inline bool isRandom() const {
-    	return policies::RANDOM == deflt.reorder;
+    	return deflt.reorder == reordering_type::RANDOM;
     }
 
     inline bool isLARC() const {
-    	return policies::LOWEST_AVG_REF_COUNT == deflt.reorder;
+    	return deflt.reorder == reordering_type::LARC;
     }
 
     inline bool isVarSwap() const {

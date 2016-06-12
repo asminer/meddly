@@ -90,7 +90,7 @@ MEDDLY::forest::policies::policies(bool rel) {
   // nodestor = SIMPLE_HEAP;
   // nodestor = SIMPLE_NONE;
   // nodestor = COMPACT_GRID;
-  reorder = SINK_DOWN;
+  reorder = reordering_type::SINK_DOWN;
 }
 
 // ******************************************************************

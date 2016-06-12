@@ -122,6 +122,8 @@ namespace MEDDLY {
   class base_table;
   class unique_table;
 
+  class reordering_base;
+
   // ******************************************************************
   // *                                                                *
   // *                   Named numerical operations                   *
@@ -1393,6 +1395,9 @@ class MEDDLY::expert_forest: public forest
         static void write(output &s, const void* ptr);
         static void read(input &s, void* ptr);
     };
+
+
+    friend class reordering_base;
 
     /** Constructor.
       @param  dslot   slot used to store the forest, in the domain
