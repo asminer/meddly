@@ -1,3 +1,5 @@
+// $Id$
+
 #ifndef REORDERING_TYPE_H
 #define REORDERING_TYPE_H
 

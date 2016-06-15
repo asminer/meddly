@@ -1,3 +1,5 @@
+// $Id$
+
 #ifndef BUBBLE_UP_REORDERING_H
 #define BUBBLE_UP_REORDERING_H
 

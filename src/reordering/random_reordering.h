@@ -1,3 +1,5 @@
+// $Id$
+
 #ifndef RANDOM_REORDERING_H
 #define RANDOM_REORDERING_H
 

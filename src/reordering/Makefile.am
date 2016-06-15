@@ -1,4 +1,4 @@
-## $Id: Makefile.am 544 2014-06-24 23:01:21Z cjiang1209 $
+## $Id$
 
 ## Makefile.am -- Process this file with automake to produce Makefile.in
 

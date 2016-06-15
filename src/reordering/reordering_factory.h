@@ -1,3 +1,5 @@
+// $Id$
+
 #ifndef REORDERING_FACTORY_H
 #define REORDERING_FACTORY_H
 
@@ -26,7 +28,7 @@ public:
   static std::unique_ptr<reordering_base> create(reordering_type r);
 };
 
-std::unique_ptr<reordering_base> reordering_factory::create(reordering_type r)
+inline std::unique_ptr<reordering_base> reordering_factory::create(reordering_type r)
 {
   switch(r) {
   case reordering_type::LOWEST_INVERSION:
