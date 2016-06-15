@@ -494,6 +494,119 @@ void MEDDLY::mtmxd_forest::swapAdjacentLevels(int level)
   //	printf("#Node: %d\n", getCurrentNumNodes());
 }
 
+void MEDDLY::mtmxd_forest::dynamicReorderVariables(int top, int bottom)
+{
+  MEDDLY_DCASSERT(top > bottom);
+  MEDDLY_DCASSERT(top <= getNumVariables());
+  MEDDLY_DCASSERT(bottom >= 1);
+
+  removeAllComputeTableEntries();
+
+  vector<int> vars;
+  vars.reserve(top - bottom + 1);
+  for (int i = bottom; i <= top; i++) {
+    vars.push_back(getVarByLevel(i));
+  }
+
+  for (int i = 0; i < vars.size(); i++) {
+    int max = i;
+    unsigned max_num = unique->getNumEntries(vars[max]) + unique->getNumEntries(-vars[max]);
+    for (int j = i + 1; j < vars.size(); j++){
+      unsigned num = unique->getNumEntries(vars[j]) + unique->getNumEntries(-vars[j]);
+      if (num > max_num) {
+        max = j;
+        max_num = num;
+      }
+    }
+
+    int temp = vars[max];
+    vars[max] = vars[i];
+    vars[i] = temp;
+
+    sifting(vars[i], top, bottom);
+  }
+}
+
+void MEDDLY::mtmxd_forest::sifting(int var, int top, int bottom)
+{
+  int level = getLevelByVar(var);
+
+  MEDDLY_DCASSERT(level <= top && level >= bottom);
+
+  int num = getCurrentNumNodes();
+  if(level <= (top + bottom) / 2) {
+    // Move to the bottom
+    while(level > bottom) {
+      swapAdjacentVariables(level - 1);
+      level--;
+    }
+
+    int change = 0;
+    int min_level = bottom;
+
+    MEDDLY_DCASSERT(level == bottom);
+    // Move to the top
+    while(level < top) {
+      int high_var = getVarByLevel(level + 1);
+      size_t old_sum = unique->getNumEntries(var) + unique->getNumEntries(-var)
+          + unique->getNumEntries(high_var) + unique->getNumEntries(-high_var);
+      swapAdjacentVariables(level);
+      size_t new_sum = unique->getNumEntries(var) + unique->getNumEntries(-var)
+          + unique->getNumEntries(high_var) + unique->getNumEntries(-high_var);
+      change += (new_sum - old_sum);
+      level++;
+
+      if(change <= 0) {
+        min_level = level;
+        change = 0;
+      }
+    }
+
+    MEDDLY_DCASSERT(level == top);
+    while(level > min_level) {
+      swapAdjacentVariables(level - 1);
+      level--;
+    }
+  }
+  else {
+    // Move to the top
+    while(level < top) {
+      swapAdjacentVariables(level);
+      level++;
+    }
+
+    int change = 0;
+    int min_level = top;
+    int min = change;
+
+    MEDDLY_DCASSERT(level == top);
+    // Move to the bottom
+    while(level > bottom) {
+      int low_var = getVarByLevel(level - 1);
+      size_t old_sum = unique->getNumEntries(var) + unique->getNumEntries(-var)
+          + unique->getNumEntries(low_var) + unique->getNumEntries(-low_var);
+      swapAdjacentVariables(level - 1);
+      size_t new_sum = unique->getNumEntries(var) + unique->getNumEntries(-var)
+          + unique->getNumEntries(low_var) + unique->getNumEntries(-low_var);
+      change += (new_sum - old_sum);
+      level--;
+
+      if(change <= min) {
+        min_level = level;
+        min = change;
+      }
+    }
+
+    MEDDLY_DCASSERT(level == bottom);
+    MEDDLY_DCASSERT(min <= 0);
+    while(level < min_level) {
+      swapAdjacentVariables(level);
+      level++;
+    }
+  }
+
+  MEDDLY_DCASSERT(getCurrentNumNodes() <= num);
+}
 
 void MEDDLY::mtmxd_forest::moveDownVariable(int high, int low)
 {
