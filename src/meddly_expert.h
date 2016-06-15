@@ -50,8 +50,6 @@
 #define INLINED_COUNT
 #define INLINED_NEXT
 
-// #define DEBUG_NODE_BUILDERS
-// #define DEBUG_MDD_H
 // #define TRACK_DELETIONS
 // #define TRACK_CACHECOUNT
 
