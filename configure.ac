@@ -5,7 +5,7 @@
 
 ## AC_PREREQ(2.60)
 AC_PREREQ(2.59)
-AC_INIT([MEDDLY], [0.13], [asminer@iastate.edu], meddly, [http://meddly.sourceforge.net])
+AC_INIT([MEDDLY], [0.14], [asminer@iastate.edu], meddly, [http://meddly.sourceforge.net])
 AM_INIT_AUTOMAKE([-Wall foreign color-tests subdir-objects])
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_SRCDIR([src/meddly.h])
