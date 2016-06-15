@@ -22,7 +22,6 @@
 #include <cstdlib>
 #include <vector>
 #include <algorithm>
-#include <ext/hash_map>
 
 #include "mtmdd.h"
 #include "../unique_table.h"
@@ -41,10 +40,10 @@ void MEDDLY::mtmdd_forest::reorderVariables(const int* order)
 {
   removeAllComputeTableEntries();
 
-  //	int size=getDomain()->getNumVariables();
-  //	for(int i=size; i>=1; i--) {
-  //		printf("Lv %d Var %d: %d\n", i, getVarByLevel(i), unique->getNumEntries(getVarByLevel(i)));
-  //	}
+//  int size=getDomain()->getNumVariables();
+//  for(int i=size; i>=1; i--) {
+//    printf("Lv %d Var %d: %d\n", i, getVarByLevel(i), unique->getNumEntries(getVarByLevel(i)));
+//  }
 //  printf("#Node: %d\n", getCurrentNumNodes());
 
 //  resetPeakNumNodes();
@@ -78,9 +77,9 @@ void MEDDLY::mtmdd_forest::reorderVariables(const int* order)
   auto reordering = reordering_factory::create(getPolicies().reorder);
   reordering->reorderVariables(this, order);
 
-  //	for(int i=size; i>=1; i--) {
-  //		printf("Lv %d Var %d: %d\n", i, getVarByLevel(i), unique->getNumEntries(getVarByLevel(i)));
-  //	}
+//  for(int i=size; i>=1; i--) {
+//    printf("Lv %d Var %d: %d\n", i, getVarByLevel(i), unique->getNumEntries(getVarByLevel(i)));
+//  }
 //  printf("#Node: %d\n", getCurrentNumNodes());
 //  printf("Peak #Node: %d\n", getPeakNumNodes());
 //  printf("Peak Memory: %ld\n", getPeakMemoryUsed());
@@ -557,16 +556,17 @@ void MEDDLY::mtmdd_forest::dynamicReorderVariables(int top, int bottom)
 
   removeAllComputeTableEntries();
 
-  vector<int> vars(top - bottom + 1);
-  for(int i = 0; i < vars.size(); i++){
-    vars[i] = getVarByLevel(bottom + i);
+  vector<int> vars;
+  vars.reserve(top - bottom + 1);
+  for (int i = bottom; i <= top; i++) {
+    vars.push_back(getVarByLevel(i));
   }
 
-  for(int i = 0; i < vars.size() / 4; i++){
+  for (int i = 0; i < vars.size(); i++) {
     int max = i;
-    size_t max_num = unique->getNumEntries(vars[max]);
-    for(int j = i+1; j < vars.size(); j++){
-      if(unique->getNumEntries(vars[j]) > max_num){
+    unsigned max_num = unique->getNumEntries(vars[max]);
+    for (int j = i + 1; j < vars.size(); j++){
+      if (unique->getNumEntries(vars[j]) > max_num) {
         max = j;
         max_num = unique->getNumEntries(vars[j]);
       }
@@ -577,7 +577,6 @@ void MEDDLY::mtmdd_forest::dynamicReorderVariables(int top, int bottom)
     vars[i] = temp;
 
     sifting(vars[i], top, bottom);
-    //		printf("%d : %d\n", vars[i], getCurrentNumNodes());
   }
 }
 

@@ -24,6 +24,7 @@
 
 #include "mtmxd.h"
 #include "../unique_table.h"
+#include "../reordering/reordering_factory.h"
 
 MEDDLY::mtmxd_forest
 ::mtmxd_forest(int dsl, domain* d, range_type t, const policies &p)
@@ -47,45 +48,26 @@ void MEDDLY::mtmxd_forest::reorderVariables(const int* order)
 {
   removeAllComputeTableEntries();
 
-  //	int size=getDomain()->getNumVariables();
-  //	for(int i=1; i<=size; i++) {
-  //		printf("Lv %d: %d\n", i, unique->getNumEntries(getVarByLevel(i)));
-  //		printf("Lv %d: %d\n", -i, unique->getNumEntries(-getVarByLevel(-i)));
-  //	}
-  //	printf("#Node: %d\n", getCurrentNumNodes());
+//  int size=getDomain()->getNumVariables();
+//  for(int i=1; i<=size; i++) {
+//    printf("Lv %d: %d\n", i, unique->getNumEntries(getVarByLevel(i)));
+//    printf("Lv %d: %d\n", -i, unique->getNumEntries(-getVarByLevel(-i)));
+//  }
+//  printf("#Node: %d\n", getCurrentNumNodes());
 
 //  resetPeakNumNodes();
 //  resetPeakMemoryUsed();
 
-  reorderVariablesHighestInversion(order);
+  auto reordering = reordering_factory::create(getPolicies().reorder);
+  reordering->reorderVariables(this, order);
 
-  //	for(int i=1; i<=size; i++) {
-  //		printf("Lv %d: %d\n", i, unique->getNumEntries(getVarByLevel(i)));
-  //	}
+//  for(int i=1; i<=size; i++) {
+//    printf("Lv %d: %d\n", i, unique->getNumEntries(getVarByLevel(i)));
+//    printf("Lv %d: %d\n", -i, unique->getNumEntries(-getVarByLevel(-i)));
+//  }
 //  printf("#Node: %d\n", getCurrentNumNodes());
 //  printf("Peak #Node: %d\n", getPeakNumNodes());
 //  printf("Peak Memory: %ld\n", getPeakMemoryUsed());
-}
-
-void MEDDLY::mtmxd_forest::reorderVariablesHighestInversion(const int* order)
-{
-  int size = getDomain()->getNumVariables();
-
-  // The variables above ordered_level are ordered
-  int ordered_level = size-1;
-  int level = size-1;
-  int swap = 0;
-  while (ordered_level>0) {
-    level = ordered_level;
-    while(level<size && (order[getVarByLevel(level)] > order[getVarByLevel(level+1)])) {
-      swapAdjacentVariables(level);
-      level++;
-      swap++;
-    }
-    ordered_level--;
-  }
-
-  printf("Total Swap: %d\n", swap);
 }
 
 void MEDDLY::mtmxd_forest::swapAdjacentVariables(int level)

@@ -65,9 +65,6 @@ class MEDDLY::mtmxd_forest : public mt_forest {
         return p;
       }
 
-      // Reorder by swapping the highest inversion until none exists.
-      void reorderVariablesHighestInversion(const int* order);
-
   protected:
     class mtmxd_iterator : public mt_iterator {
       public:
