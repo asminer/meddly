@@ -151,7 +151,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
       // VarLow is DONT_CHANGE in the MxD
       unlinkNode(node);
     }
-    else if (getInCount(node) > 1) {
+    else if (getNodeInCount(node) > 1) {
       MEDDLY_DCASSERT(getNodeLevel(node) == -(level+1));
 
       // Duplication conflict
@@ -173,7 +173,8 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
     for (const auto& n : t) {
       MEDDLY_DCASSERT(getNodeLevel(n) == (level+1));
 
-      node_reader* nr = initNodeReader(n, true);
+      unpacked_node* nr = unpacked_node::useUnpackedNode();
+      nr->initFromNode(this, n, true);
       bool update = false;
       for (int i = 0; i < hsize; i++) {
         if (dup.find(nr->d(i)) != dup.end()) {
@@ -183,10 +184,10 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
       }
 
       if (update) {
-        node_builder& nb = useNodeBuilder(level+1, hsize);
+        unpacked_node* nb = unpacked_node::newFull(this, level + 1, hsize);
         for (int i = 0; i < hsize; i++) {
           auto search = dup.find(nr->d(i));
-          nb.d(i) = linkNode(search == dup.end() ? nr->d(i) : search->second);
+          nb->d_ref(i) = linkNode(search == dup.end() ? nr->d(i) : search->second);
         }
         node_handle node = createReducedNode(-1, nb);
         MEDDLY_DCASSERT(getInCount(node) == 1 && getNodeLevel(node) == level+1);
@@ -194,7 +195,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
         unlinkNode(node);
       }
 
-      node_reader::recycle(nr);
+      unpacked_node::recycle(nr);
     }
 
     for (const auto& it : dup) {
@@ -222,7 +223,8 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
   for (int i = 0; i < phnum; i++) {
     MEDDLY_DCASSERT(isActiveNode(phnodes[i]));
 
-    node_reader* nr = initNodeReader(phnodes[i], true);
+    unpacked_node* nr = unpacked_node::useUnpackedNode();
+    nr->initFromNode(this, phnodes[i], true);
     bool skip = true;
     for (int j = 0; j < hsize; j++){
       if (!isLevelAbove(-level, getNodeLevel(nr->d(j)))) {
@@ -230,7 +232,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
         break;
       }
     }
-    node_reader::recycle(nr);
+    unpacked_node::recycle(nr);
 
     if (skip) {
       // VarLow is DONT_CARE + DONT_CHANGE in the MxD
@@ -240,7 +242,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
     node_handle node = swapAdjacentVariablesOf(phnodes[i]);
     MEDDLY_DCASSERT(phnodes[i] != node);
 
-    if (getInCount(node) > 1) {
+    if (getNodeInCount(node) > 1) {
       MEDDLY_DCASSERT(getNodeLevel(node) == -(level+1));
 
       // Duplication conflict
@@ -263,7 +265,9 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
     for (const auto& n : t) {
       MEDDLY_DCASSERT(getNodeLevel(n)==(level+1));
 
-      node_reader* nr = initNodeReader(n, true);
+      unpacked_node* nr = unpacked_node::useUnpackedNode();
+      nr->initFromNode(this, n, true);
+
       bool update = false;
       for (int i = 0; i < hsize; i++) {
         if(dup.find(nr->d(i)) != dup.end()){
@@ -273,10 +277,10 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
       }
 
       if (update) {
-        node_builder& nb = useNodeBuilder(level+1, hsize);
+        unpacked_node* nb = unpacked_node::newFull(this, level + 1, hsize);
         for (int i = 0; i < hsize; i++) {
           auto search = dup.find(nr->d(i));
-          nb.d(i) = linkNode(search == dup.end() ? nr->d(i) : search->second);
+          nb->d_ref(i) = linkNode(search == dup.end() ? nr->d(i) : search->second);
         }
         node_handle node = createReducedNode(-1, nb);
         MEDDLY_DCASSERT(getInCount(node) == 1 && getNodeLevel(node) == level+1);
@@ -284,7 +288,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
         unlinkNode(node);
       }
 
-      node_reader::recycle(nr);
+      unpacked_node::recycle(nr);
     }
 
     for (const auto& it : dup) {
@@ -316,61 +320,61 @@ MEDDLY::node_handle MEDDLY::mtmxd_forest::swapAdjacentVariablesOf(node_handle no
   int lsize = getVariableSize(lvar);
 
   // Unprimed high node builder
-  node_builder& hnb = useNodeBuilder(level+1, lsize);
+  unpacked_node* hnb = unpacked_node::newFull(this, level + 1, lsize);
   if (isFullyReduced() || isQuasiReduced()) {
     for (int m = 0; m < lsize; m++) {
       // Primed high node builder
-      node_builder& phnb = useNodeBuilder(-(level+1), lsize);
+      unpacked_node* phnb = unpacked_node::newFull(this, -(level + 1), lsize);
       for (int n = 0; n < lsize; n++) {
         // Unprimed low node builder
-        node_builder& lnb = useNodeBuilder(level, hsize);
+        unpacked_node* lnb = unpacked_node::newFull(this, level, hsize);
         for (int p = 0; p < hsize; p++) {
           // Primed low node builder
-          node_builder& plnb = useNodeBuilder(-level, hsize);
+          unpacked_node* plnb = unpacked_node::newFull(this, -level, hsize);
           for (int q = 0; q < hsize; q++){
             node_handle node_p = (getNodeLevel(node) == level ? getDownPtr(node, p) : node);
             node_handle node_pq = (getNodeLevel(node_p) == -(level) ? getDownPtr(node_p, q) : node_p);
             node_handle node_pqm = (getNodeLevel(node_pq) == (level+1) ? getDownPtr(node_pq, m) : node_pq);
-            plnb.d(q) = linkNode(getNodeLevel(node_pqm) == -(level+1) ? getDownPtr(node_pqm, n) : node_pqm);
+            plnb->d_ref(q) = linkNode(getNodeLevel(node_pqm) == -(level+1) ? getDownPtr(node_pqm, n) : node_pqm);
           }
-          lnb.d(p) = createReducedNode(p, plnb);
+          lnb->d_ref(p) = createReducedNode(p, plnb);
         }
-        phnb.d(n) = createReducedNode(-1, lnb);
+        phnb->d_ref(n) = createReducedNode(-1, lnb);
       }
-      hnb.d(m) = createReducedNode(m, phnb);
+      hnb->d_ref(m) = createReducedNode(m, phnb);
     }
   }
   else if (isIdentityReduced()) {
     for (int m = 0; m < lsize; m++) {
       // Primed high node builder
-      node_builder& phnb = useNodeBuilder(-(level+1), lsize);
+      unpacked_node* phnb = unpacked_node::newFull(this, -(level + 1), lsize);
       for (int n = 0; n < lsize; n++) {
         // Unprimed low node builder
-        node_builder& lnb = useNodeBuilder(level, hsize);
+        unpacked_node* lnb = unpacked_node::newFull(this, level, hsize);
         for (int p = 0; p < hsize; p++) {
           // Primed low node builder
-          node_builder& plnb = useNodeBuilder(-level, hsize);
+          unpacked_node* plnb = unpacked_node::newFull(this, -level, hsize);
           for (int q = 0; q < hsize; q++) {
             node_handle node_p = (getNodeLevel(node) == level ? getDownPtr(node, p) : node);
             if (getNodeLevel(node_p) != -(level) && q != p) {
-              plnb.d(q) = linkNode(getTransparentNode());
+              plnb->d_ref(q) = linkNode(getTransparentNode());
             }
             else {
               node_handle node_pq = (getNodeLevel(node_p) == -(level) ? getDownPtr(node_p, q) : node_p);
               node_handle node_pqm = (getNodeLevel(node_pq) == (level+1) ? getDownPtr(node_pq, m) : node_pq);
               if (getNodeLevel(node_pqm) != -(level+1) && n != m) {
-                plnb.d(q) = linkNode(getTransparentNode());
+                plnb->d_ref(q) = linkNode(getTransparentNode());
               }
               else {
-                plnb.d(q) = linkNode(getNodeLevel(node_pqm) == -(level+1) ? getDownPtr(node_pqm, n) : node_pqm);
+                plnb->d_ref(q) = linkNode(getNodeLevel(node_pqm) == -(level+1) ? getDownPtr(node_pqm, n) : node_pqm);
               }
             }
           }
-          lnb.d(p) = createReducedNode(p, plnb);
+          lnb->d_ref(p) = createReducedNode(p, plnb);
         }
-        phnb.d(n) = createReducedNode(-1, lnb);
+        phnb->d_ref(n) = createReducedNode(-1, lnb);
       }
-      hnb.d(m) = createReducedNode(m, phnb);
+      hnb->d_ref(m) = createReducedNode(m, phnb);
     }
   }
   else {
@@ -431,7 +435,9 @@ void MEDDLY::mtmxd_forest::swapAdjacentLevels(int level)
   int num = 0;
   // Renumber the level of nodes for VarHigh
   for (int i = 0; i < hnum; i++) {
-    node_reader* nr = initNodeReader(hnodes[i], true);
+    unpacked_node* nr = unpacked_node::useUnpackedNode();
+    nr->initFromNode(this, hnodes[i], true);
+
     MEDDLY_DCASSERT(nr->getLevel() == hlevel);
     MEDDLY_DCASSERT(nr->getSize() == hsize);
 
@@ -443,7 +449,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentLevels(int level)
         break;
       }
     }
-    node_reader::recycle(nr);
+    unpacked_node::recycle(nr);
 
     setNodeLevel(hnodes[i], level);
   }
@@ -463,20 +469,20 @@ void MEDDLY::mtmxd_forest::swapAdjacentLevels(int level)
 
   // Process the rest of nodes for the variable to be moved down
   for (int i = 0; i < hnum; i++) {
-    node_reader* high_nr = initNodeReader(hnodes[i], true);
-    node_builder& high_nb = useNodeBuilder(hlevel, lsize);
-
+    unpacked_node* high_nr = unpacked_node::useUnpackedNode();
+    high_nr->initFromNode(this, hnodes[i], true);
+    unpacked_node* high_nb = unpacked_node::newFull(this, hlevel, lsize);
     for (int j = 0; j < lsize; j++) {
-      node_builder& low_nb = useNodeBuilder(level, hsize);
+      unpacked_node* low_nb = unpacked_node::newFull(this, level, hsize);
       for (int k = 0; k < hsize; k++) {
         node_handle node_k = high_nr->d(k);
         node_handle node_kj = (getNodeLevel(node_k) == hlevel ? getDownPtr(node_k, j) : node_k);
-        low_nb.d(k) = linkNode(node_kj);
+        low_nb->d_ref(k) = linkNode(node_kj);
       }
-      high_nb.d(j) = createReducedNode(-1, low_nb);
+      high_nb->d_ref(j) = createReducedNode(-1, low_nb);
     }
 
-    node_reader::recycle(high_nr);
+    unpacked_node::recycle(high_nr);
 
     node_handle node = createReducedNode(-1, high_nb);
     MEDDLY_DCASSERT(getInCount(node) == 1);
@@ -682,12 +688,12 @@ bool MEDDLY::mtmxd_forest::mtmxd_iterator::first(int k, node_handle down)
 
     if (isLevelAbove(k, kdn)) {
       if (k>0 || isFully) {
-        F->initRedundantReader(path[k], k, down, false);
+        path[k].initRedundant(F, k, down, false);
       } else {
-        F->initIdentityReader(path[k], k, index[-k], down, false);
+        path[k].initIdentity(F, k, index[-k], down, false);
       }
     } else {
-      F->initNodeReader(path[k], down, false);
+      path[k].initFromNode(F, down, false);
     }
     nzp[k] = 0;
     index[k] = path[k].i(0);
@@ -788,11 +794,11 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::first(int k, node_handle down)
     // Set up this level.
     nzp[k] = 0;
     if (F->isFullyReduced()) {
-      F->initRedundantReader(path[k], k, cdown, false);
+      path[k].initRedundant(F, k, cdown, false);
       index[k] = 0;
     } else {
       index[k] = index[upLevel(k)];
-      F->initIdentityReader(path[k], k, index[k], cdown, false);
+      path[k].initIdentity(F, k, index[k], cdown, false);
     }
     return true;
   } 
@@ -800,7 +806,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::first(int k, node_handle down)
   // Proper node here.
   // cycle through it and recurse... 
 
-  F->initNodeReader(path[k], cdown, false);
+  path[k].initFromNode(F, cdown, false);
 
   for (int z=0; z<path[k].getNNZs(); z++) {
     if (first(downLevel(k), path[k].d(z))) {
@@ -907,7 +913,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::first(int k, node_handle down)
       // See if there is a valid path below.
       if (!first(downLevel(kpr), down)) return false;
       // There's one below, set up the one at these levels.
-      F->initRedundantReader(path[k], k, down, false);
+      path[k].initRedundant(F, k, down, false);
       if (F->isFullyReduced()) {
         nzp[k] = 0;
         index[k] = 0;
@@ -922,14 +928,14 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::first(int k, node_handle down)
     int cdown = F->getDownPtr(down, index[kpr]);
     if (0==cdown) return false;
     if (!first(kpr, cdown)) return false;
-    F->initRedundantReader(path[k], k, down, false);
+    path[k].initRedundant(F, k, down, false);
     nzp[k] = 0;
     index[k] = 0;
     return true;
   }
 
   // Level is not skipped.
-  F->initNodeReader(path[k], down, false);
+  path[k].initFromNode(F, down, false);
   
   for (int z=0; z<path[k].getNNZs(); z++) {
     index[k] = path[k].i(z);

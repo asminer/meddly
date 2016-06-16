@@ -180,12 +180,12 @@ public:
   maxrange_int(const unary_opname* oc, expert_forest* arg)
     : range_int(oc, arg) { }
   virtual void compute(const dd_edge &arg, long &res) {
-    res = compute(arg.getNode());
+    res = compute_r(arg.getNode());
   }
-  int compute(node_handle a);
+  int compute_r(node_handle a);
 };
 
-int MEDDLY::maxrange_int::compute(node_handle a)
+int MEDDLY::maxrange_int::compute_r(node_handle a)
 {
   // Terminal case
   if (argF->isTerminalNode(a)) return expert_forest::int_Tencoder::handle2value(a);
@@ -196,16 +196,16 @@ int MEDDLY::maxrange_int::compute(node_handle a)
   if (0==Key) return max;
 
   // Initialize node reader
-  node_reader* A = argF->initNodeReader(a, true);
+  unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
 
   // recurse
-  max = compute(A->d(0));
+  max = compute_r(A->d(0));
   for (int i=1; i<A->getSize(); i++) {
-    max = MAX(max, compute(A->d(i)));
+    max = MAX(max, compute_r(A->d(i)));
   }
 
   // Cleanup
-  node_reader::recycle(A);
+  unpacked_node::recycle(A);
 
   // Add entry to compute table
   return saveResult(Key, a, max);
@@ -225,12 +225,12 @@ public:
   minrange_int(const unary_opname* oc, expert_forest* arg)
     : range_int(oc, arg) { }
   virtual void compute(const dd_edge &arg, long &res) {
-    res = compute(arg.getNode());
+    res = compute_r(arg.getNode());
   }
-  int compute(node_handle a);
+  int compute_r(node_handle a);
 };
 
-int MEDDLY::minrange_int::compute(node_handle a)
+int MEDDLY::minrange_int::compute_r(node_handle a)
 {
   // Terminal case
   if (argF->isTerminalNode(a)) return expert_forest::int_Tencoder::handle2value(a);
@@ -241,16 +241,16 @@ int MEDDLY::minrange_int::compute(node_handle a)
   if (0==Key) return min;
 
   // Initialize node reader
-  node_reader* A = argF->initNodeReader(a, true);
+  unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
 
   // recurse
-  min = compute(A->d(0));
+  min = compute_r(A->d(0));
   for (int i=1; i<A->getSize(); i++) {
-    min = MIN(min, compute(A->d(i)));
+    min = MIN(min, compute_r(A->d(i)));
   }
 
   // Cleanup
-  node_reader::recycle(A);
+  unpacked_node::recycle(A);
 
   // Add entry to compute table
   return saveResult(Key, a, min);
@@ -270,12 +270,12 @@ public:
   maxrange_real(const unary_opname* oc, expert_forest* arg)
     : range_real(oc, arg) { }
   virtual void compute(const dd_edge &arg, double &res) {
-    res = compute(arg.getNode());
+    res = compute_r(arg.getNode());
   }
-  float compute(node_handle a);
+  float compute_r(node_handle a);
 };
 
-float MEDDLY::maxrange_real::compute(node_handle a)
+float MEDDLY::maxrange_real::compute_r(node_handle a)
 {
   // Terminal case
   if (argF->isTerminalNode(a)) return expert_forest::float_Tencoder::handle2value(a);
@@ -286,16 +286,16 @@ float MEDDLY::maxrange_real::compute(node_handle a)
   if (0==Key) return max;
 
   // Initialize node reader
-  node_reader* A = argF->initNodeReader(a, true);
+  unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
 
   // recurse
-  max = compute(A->d(0));
+  max = compute_r(A->d(0));
   for (int i=1; i<A->getSize(); i++) {
-    max = MAX(max, compute(A->d(i)));
+    max = MAX(max, compute_r(A->d(i)));
   }
 
   // Cleanup
-  node_reader::recycle(A);
+  unpacked_node::recycle(A);
 
   // Add entry to compute table
   return saveResult(Key, a, max);
@@ -315,12 +315,12 @@ public:
   minrange_real(const unary_opname* oc, expert_forest* arg)
     : range_real(oc, arg) { }
   virtual void compute(const dd_edge &arg, double &res) {
-    res = compute(arg.getNode());
+    res = compute_r(arg.getNode());
   }
-  float compute(node_handle a);
+  float compute_r(node_handle a);
 };
 
-float MEDDLY::minrange_real::compute(node_handle a)
+float MEDDLY::minrange_real::compute_r(node_handle a)
 {
   // Terminal case
   if (argF->isTerminalNode(a)) return expert_forest::float_Tencoder::handle2value(a);
@@ -331,16 +331,16 @@ float MEDDLY::minrange_real::compute(node_handle a)
   if (0==Key) return min;
 
   // Initialize node reader
-  node_reader* A = argF->initNodeReader(a, true);
+  unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
 
   // recurse
-  min = compute(A->d(0));
+  min = compute_r(A->d(0));
   for (int i=1; i<A->getSize(); i++) {
-    min = MIN(min, compute(A->d(i)));
+    min = MIN(min, compute_r(A->d(i)));
   }
 
   // Cleanup
-  node_reader::recycle(A);
+  unpacked_node::recycle(A);
 
   // Add entry to compute table
   return saveResult(Key, a, min);

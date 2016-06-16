@@ -24,7 +24,7 @@ inline const unique_table* reordering_base::get_unique_table(expert_forest* fore
 
 inline int reordering_base::getInCount(expert_forest* forest, node_handle p) const
 {
-  return forest->getInCount(p);
+  return forest->getNodeInCount(p);
 }
 
 }

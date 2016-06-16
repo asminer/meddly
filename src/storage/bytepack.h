@@ -242,7 +242,7 @@ inline void downToData(INT  P, unsigned char* d)
   //              next msb set - terminal value is negative.
   //
   //  No conversion necessary because msb propogates when we shift
-  static const unsigned long nmsb = (0x40L) << ((sizeof(INT)-1)*8);
+  static const unsigned long nmsb = (0x40UL) << ((sizeof(INT)-1)*8);
   if (P & nmsb) {
     rawToData<bytes>(P, d);
     return;
@@ -253,7 +253,7 @@ inline void downToData(INT  P, unsigned char* d)
   //              
   //  The thing to do here is deal with the msb manually:
   //  clear msb, encode, set msb.
-  static const unsigned long msboff = ~ ((0x80L) << ((sizeof(INT)-1)*8));
+  static const unsigned long msboff = ~ ((0x80UL) << ((sizeof(INT)-1)*8));
   rawToData<bytes>(P & msboff, d);
   d[bytes-1] |= 0x80;
 }
@@ -306,7 +306,7 @@ inline void dataToSigned(const unsigned char* d, INT& L)
   MEDDLY_DCASSERT(bytes <= sizeof(INT));
   // deal with negatives properly
   if (d[bytes-1] & 0x80) {
-    L = (~0L) << 8;
+    L = INT((~0UL) << 8);
   } else {
     L = 0;
   }
@@ -389,8 +389,8 @@ inline void moveMSB(INT& P)
 {
   MEDDLY_DCASSERT(sizeof(INT) == sizeofint);
   // if (bytes < sizeofint) {
-    P = (P & ~(0x80L << ((bytes-1)*8)) )      // old msb off
-        | ((0x80L) << ((sizeofint-1)*8));     // new msb on
+    P = (P & ~(0x80UL << ((bytes-1)*8)) )      // old msb off
+        | ((0x80UL) << ((sizeofint-1)*8));     // new msb on
   // }
 }
 
@@ -406,7 +406,7 @@ inline void dataToDown(const unsigned char* d, INT& P)
     if (d[bytes-1] & 0x40) {
       // YES.
       // Easy case: same as ordinary negatives.
-      P = (~0L) << 8;
+      P = INT((~0UL) << 8);
       dataToRaw<bytes>(d, P);
       return;
     }

@@ -92,18 +92,18 @@ bool MEDDLY::evmdd_timesreal
   return !OP::notClose(val1, val2);
 }
 
-bool MEDDLY::evmdd_timesreal::isRedundant(const node_builder &nb) const
+bool MEDDLY::evmdd_timesreal::isRedundant(const unpacked_node &nb) const
 {
   return isRedundantTempl<OP>(nb);
 }
 
-bool MEDDLY::evmdd_timesreal::isIdentityEdge(const node_builder &nb, int i) const
+bool MEDDLY::evmdd_timesreal::isIdentityEdge(const unpacked_node &nb, int i) const
 {
   return isIdentityEdgeTempl<OP>(nb, i); 
 }
 
 
-void MEDDLY::evmdd_timesreal::normalize(node_builder &nb, float& ev) const
+void MEDDLY::evmdd_timesreal::normalize(unpacked_node &nb, float& ev) const
 {
   int minindex = -1;
   int stop = nb.isSparse() ? nb.getNNZs() : nb.getSize();
@@ -230,7 +230,7 @@ bool MEDDLY::evmdd_timesreal::evtrmdd_iterator::first(int k, node_handle down)
     MEDDLY_DCASSERT(down);
     int kdn = F->getNodeLevel(down);
     MEDDLY_DCASSERT(kdn <= k);
-    if (kdn < k)  F->initRedundantReader(path[k], k, float(1), down, false);
+    if (kdn < k)  F->initRedundantReader(path[k], k, 1.0f, down, false);
     else          F->initNodeReader(path[k], down, false);
     nzp[k] = 0;
     index[k] = path[k].i(0);

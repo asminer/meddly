@@ -50,7 +50,7 @@ class MEDDLY::compl_mdd : public unary_operation {
     virtual void compute(const dd_edge& a, dd_edge& b);
 
   protected:
-    node_handle compute(node_handle a);
+    node_handle compute_r(node_handle a);
 
     inline compute_table::search_key* 
     findResult(node_handle a, node_handle &b) 
@@ -70,7 +70,6 @@ class MEDDLY::compl_mdd : public unary_operation {
     {
       argF->cacheNode(a);
       compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      // entry.writeKeyNH(argF->cacheNode(a));
       entry.writeResultNH(resF->cacheNode(b));
       CT->addEntry();
       return b;
@@ -104,11 +103,11 @@ void MEDDLY::compl_mdd::showEntry(output &strm, const node_handle* data) const
 
 void MEDDLY::compl_mdd::compute(const dd_edge& a, dd_edge& b) 
 {
-  int result = compute(a.getNode());
+  int result = compute_r(a.getNode());
   b.set(result);
 }
 
-MEDDLY::node_handle MEDDLY::compl_mdd::compute(node_handle a)
+MEDDLY::node_handle MEDDLY::compl_mdd::compute_r(node_handle a)
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
@@ -122,30 +121,26 @@ MEDDLY::node_handle MEDDLY::compl_mdd::compute(node_handle a)
   compute_table::search_key* Key = findResult(a, b);
   if (0==Key) return b;
 
-  // Initialize node builder
   const int level = argF->getNodeLevel(a);
   const int size = resF->getLevelSize(level);
-  node_builder& nb = resF->useNodeBuilder(level, size);
-
-  // Initialize node reader
-  node_reader* A = argF->initNodeReader(a, true);
-
   bool addRedundentNode=(resF->isQuasiReduced() && level>1);
+
+  // Initialize unpacked nodes
+  unpacked_node* A = unpacked_node::newFromNode(argF, a, true);
+  unpacked_node* C = unpacked_node::newFull(resF, level, size);
 
   // recurse
   for (int i=0; i<size; i++) {
-    nb.d(i) = compute(A->d(i));
+    C->d_ref(i) = compute_r(A->d(i));
 
-    if(addRedundentNode && resF->isTerminalNode(nb.d(i)) && nb.d(i)!=resF->getTransparentNode()){
-    	nb.d(i)=((mt_forest*)resF)->makeNodeAtLevel(level-1, nb.d(i));
+    if(addRedundentNode && resF->isTerminalNode(C->d(i)) && C->d(i)!=resF->getTransparentNode()){
+    	C->d_ref(i)=((mt_forest*)resF)->makeNodeAtLevel(level-1, C->d(i));
     }
   }
 
-  // Cleanup
-  node_reader::recycle(A);
-
-  // Reduce
-  b = resF->createReducedNode(-1, nb);
+  // cleanup and Reduce
+  unpacked_node::recycle(A);
+  b = resF->createReducedNode(-1, C);
 
   // Add to compute table
   return saveResult(Key, a, b);
@@ -167,7 +162,7 @@ class MEDDLY::compl_mxd : public unary_operation {
     virtual void showEntry(output &strm, const node_handle* entryData) const;
     virtual void compute(const dd_edge& a, dd_edge& b);
 
-    node_handle compute(int in, int k, node_handle a);
+    node_handle compute_r(int in, int k, node_handle a);
 };
 
 MEDDLY::compl_mxd
@@ -198,11 +193,11 @@ void MEDDLY::compl_mxd::showEntry(output &strm, const node_handle* data) const
 
 void MEDDLY::compl_mxd::compute(const dd_edge& a, dd_edge& b) 
 {
-  node_handle result = compute(-1, argF->getDomain()->getNumVariables(), a.getNode());
+  node_handle result = compute_r(-1, argF->getDomain()->getNumVariables(), a.getNode());
   b.set(result);
 }
 
-MEDDLY::node_handle MEDDLY::compl_mxd::compute(int in, int k, node_handle a)
+MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
 {
   if (0==k) {
     return expert_forest::bool_Tencoder::value2handle(
@@ -236,24 +231,22 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute(int in, int k, node_handle a)
   fprintf(stderr, "\tstarting compl_mxd(%d, %d)\n", ht, a);
 #endif
 
-  // Initialize node builder
+  // Initialize unpacked node
   const int size = resF->getLevelSize(k);
-  node_builder& nb = resF->useNodeBuilder(k, size);
-
-  // Initialize node reader
   const int aLevel = argF->getNodeLevel(a);
   MEDDLY_DCASSERT(!isLevelAbove(aLevel, k));
-  node_reader* A;
+  unpacked_node* A = unpacked_node::useUnpackedNode();
   bool canSave = true;
   if (aLevel == k) {
-    A = argF->initNodeReader(a, true);
+    A->initFromNode(argF, a, true);
   } else if (k>0 || argF->isFullyReduced()) {
-    A = argF->initRedundantReader(k, a, true);
+    A->initRedundant(argF, k, a, true);
   } else {
     MEDDLY_DCASSERT(in>=0);
-    A = argF->initIdentityReader(k, in, a, true);
+    A->initIdentity(argF, k, in, a, true);
     canSave = false;
   }
+  unpacked_node* C = unpacked_node::newFull(resF, aLevel, size);
 
   // recurse
   int nextLevel = argF->downLevel(k);
@@ -262,20 +255,17 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute(int in, int k, node_handle a)
 
   // recurse
   for (int i=0; i<size; i++) {
-    int d = compute(i, nextLevel, A->d(i));
-    nb.d(i) = d;
-    if (d!=resF->getTransparentNode()) nnz++;
+    C->d_ref(i) = compute_r(i, nextLevel, A->d(i));
+    if (C->d(i)!=resF->getTransparentNode()) nnz++;
 
-    if(addRedundentNode && resF->isTerminalNode(nb.d(i)) && nb.d(i)!=resF->getTransparentNode()){
-      nb.d(i)=((mt_forest*)resF)->makeNodeAtLevel(nextLevel, nb.d(i));
+    if(addRedundentNode && resF->isTerminalNode(C->d(i)) && C->d(i)!=resF->getTransparentNode()){
+      C->d_ref(i)=((mt_forest*)resF)->makeNodeAtLevel(nextLevel, C->d(i));
     }
   }
 
-  // cleanup
-  node_reader::recycle(A);
-
   // reduce, save in CT
-  node_handle result = resF->createReducedNode(in, nb);
+  unpacked_node::recycle(A);
+  node_handle result = resF->createReducedNode(in, C);
   if (k<0 && 1==nnz) canSave = false;
   if (canSave) {
     argF->cacheNode(a);

@@ -98,7 +98,7 @@ namespace MEDDLY {
   struct settings;
   class forest;
   class expert_forest;
-  class node_reader;
+  class unpacked_node;
   class node_storage;
   class variable;
   class domain;
@@ -946,33 +946,13 @@ class MEDDLY::forest {
           PESSIMISTIC_DELETION
       };
 
-      // Supported variable reorder strategies.
-      enum variable_reorder {
-    	  // Swap the lowest inversion until ordered
-    	  LOWEST_INVERSION,
-    	  // Swap the highest inversion until ordered
-    	  HIGHEST_INVERSION,
-    	  // Swap until the lowest variable is at the right level
-    	  SINK_DOWN,
-    	  // Swap until the highest variable is at the right level
-    	  BUBBLE_UP,
-    	  // Swap the inversion with lowest cost until ordered
-    	  LOWEST_COST,
-    	  // Swap the inversion with lowest memory cost until ordered
-    	  LOWEST_MEMORY,
-    	  // Swap the inversion randomly
-    	  RANDOM,
-		  // Swap the inversion with lowest average reference count
-		  LOWEST_AVG_REF_COUNT
-      };
-
       // Supported variable swap strategies.
-      // Work for MxD only.
-      enum variable_swap {
+      // Work for relations only.
+      enum class variable_swap_type {
     	  // Swap adjacent variables in one go.
     	  VAR,
     	  // Swap adjacent variables through swapping levels 4 time.
-    	  // Do not work with fully-identity reduction.
+    	  // Do not work for fully-identity reduced relations.
     	  LEVEL
       };
 
@@ -985,7 +965,7 @@ class MEDDLY::forest {
       // Default variable reorder strategy.
       reordering_type reorder;
       // Default variable swap strategy.
-      variable_swap swap;
+      variable_swap_type swap;
 
       /// Backend storage mechanism for nodes.
       const node_storage* nodestor;
@@ -1027,8 +1007,8 @@ class MEDDLY::forest {
       inline void setRandom() { reorder = reordering_type::RANDOM; }
       inline void setLARC() { reorder = reordering_type::LARC; }
 
-      inline void setVarSwap() { swap = VAR; }
-      inline void setLevelSwap() { swap = LEVEL; }
+      inline void setVarSwap() { swap = variable_swap_type::VAR; }
+      inline void setLevelSwap() { swap = variable_swap_type::LEVEL; }
     }; // end of struct policies
 
     /// Collection of various stats for performance measurement
@@ -1283,11 +1263,11 @@ class MEDDLY::forest {
     }
 
     inline bool isVarSwap() const {
-    	return policies::VAR == deflt.swap;
+    	return deflt.swap == policies::variable_swap_type::VAR;
     }
 
     inline bool isLevelSwap() const {
-    	return policies::LEVEL == deflt.swap;
+    	return deflt.swap == policies::variable_swap_type::LEVEL;
     }
 
     /// Returns the storage mechanism used by this forest.
@@ -2433,9 +2413,9 @@ class MEDDLY::enumerator {
       protected:
         // Current parent forest.
         const expert_forest* F;
-        // Path, as list of node readers
-        node_reader*    rawpath;
-        node_reader*    path;   // rawpath, shifted so we can use path[-k]
+        // Path, as list of unpacked nodes
+        unpacked_node*    rawpath;
+        unpacked_node*    path;   // rawpath, shifted so we can use path[-k]
         // Path nnz pointers
         int*      rawnzp;
         int*      nzp;   // rawnzp, shifted so we can use nzp[-k]

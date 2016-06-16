@@ -24,7 +24,7 @@
 
 namespace MEDDLY {
   class numerical_opname;
-  class settings;
+  struct settings;
   
   /// Set up a numerical_opname for "vector matrix multiply".
   numerical_opname* initExplVectorMatrixMult(const settings &s);

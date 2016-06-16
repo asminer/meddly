@@ -120,12 +120,12 @@ public:
   card_mdd_int(const unary_opname* oc, expert_forest* arg)
     : card_int(oc, arg) { }
   virtual void compute(const dd_edge &arg, long &res) {
-    res = compute(argF->getDomain()->getNumVariables(), arg.getNode());
+    res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
   }
-  long compute(int k, node_handle a);
+  long compute_r(int k, node_handle a);
 };
 
-long MEDDLY::card_mdd_int::compute(int k, node_handle a)
+long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
 {
   // Terminal cases
   if (0==a) return 0;
@@ -133,7 +133,7 @@ long MEDDLY::card_mdd_int::compute(int k, node_handle a)
 
   // Quickly deal with skipped levels
   if (argF->getNodeLevel(a) < k) {
-    return overflow_mult(compute(k-1, a), argF->getLevelSize(k));
+    return overflow_mult(compute_r(k-1, a), argF->getLevelSize(k));
   }
   
   // Check compute table
@@ -150,17 +150,17 @@ long MEDDLY::card_mdd_int::compute(int k, node_handle a)
   }
 
   // Initialize node reader
-  node_reader* A = argF->initNodeReader(a, false);
+  unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
 
   // Recurse
   long card = 0;
   int kdn = k-1;
   for (int z=0; z<A->getNNZs(); z++) {
-    overflow_acc(card, compute(kdn, A->d(z)));
+    overflow_acc(card, compute_r(kdn, A->d(z)));
   }
   
   // Cleanup
-  node_reader::recycle(A);
+  unpacked_node::recycle(A);
 
   // Add entry to compute table
   argF->cacheNode(a);
@@ -188,12 +188,12 @@ public:
   card_mxd_int(const unary_opname* oc, expert_forest* arg)
     : card_int(oc, arg) { }
   virtual void compute(const dd_edge &arg, long &res) {
-    res = compute(argF->getDomain()->getNumVariables(), arg.getNode());
+    res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
   }
-  long compute(int k, node_handle a);
+  long compute_r(int k, node_handle a);
 };
 
-long MEDDLY::card_mxd_int::compute(int k, node_handle a)
+long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
 {
   // Terminal cases
   if (0==a) return 0;
@@ -203,10 +203,10 @@ long MEDDLY::card_mxd_int::compute(int k, node_handle a)
   if (isLevelAbove(k, argF->getNodeLevel(a))) {
     if (k<0 && argF->isIdentityReduced()) {
       // identity node
-      return compute(argF->downLevel(k), a);
+      return compute_r(argF->downLevel(k), a);
     }
     // redundant node
-    return overflow_mult(compute(argF->downLevel(k), a), argF->getLevelSize(k));
+    return overflow_mult(compute_r(argF->downLevel(k), a), argF->getLevelSize(k));
   }
   
   // Check compute table
@@ -223,17 +223,17 @@ long MEDDLY::card_mxd_int::compute(int k, node_handle a)
   }
 
   // Initialize node reader
-  node_reader* A = argF->initNodeReader(a, false);
+  unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
 
   // Recurse
   long card = 0;
   int kdn = argF->downLevel(k);
   for (int z=0; z<A->getNNZs(); z++) {
-    overflow_acc(card, compute(kdn, A->d(z)));
+    overflow_acc(card, compute_r(kdn, A->d(z)));
   }
   
   // Cleanup
-  node_reader::recycle(A);
+  unpacked_node::recycle(A);
 
   // Add entry to compute table
   argF->cacheNode(a);
@@ -303,12 +303,12 @@ public:
   card_mdd_real(const unary_opname* oc, expert_forest* arg)
     : card_real(oc, arg) { }
   virtual void compute(const dd_edge &arg, double &res) {
-    res = compute(argF->getDomain()->getNumVariables(), arg.getNode());
+    res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
   }
-  double compute(int ht, node_handle a);
+  double compute_r(int ht, node_handle a);
 };
 
-double MEDDLY::card_mdd_real::compute(int k, node_handle a)
+double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
 {
   // Terminal cases
   if (0==a) return 0.0;
@@ -316,7 +316,7 @@ double MEDDLY::card_mdd_real::compute(int k, node_handle a)
 
   // Quickly deal with skipped levels
   if (argF->getNodeLevel(a) < k) {
-    return compute(k-1, a) * argF->getLevelSize(k);
+    return compute_r(k-1, a) * argF->getLevelSize(k);
   }
   
   // Check compute table
@@ -333,17 +333,17 @@ double MEDDLY::card_mdd_real::compute(int k, node_handle a)
   }
 
   // Initialize node reader
-  node_reader* A = argF->initNodeReader(a, false);
+  unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
 
   // Recurse
   double card = 0;
   int kdn = k-1;
   for (int z=0; z<A->getNNZs(); z++) {
-    card += compute(kdn, A->d(z));
+    card += compute_r(kdn, A->d(z));
   }
   
   // Cleanup
-  node_reader::recycle(A);
+  unpacked_node::recycle(A);
 
   // Add entry to compute table
   argF->cacheNode(a);
@@ -372,12 +372,12 @@ public:
   card_mxd_real(const unary_opname* oc, expert_forest* arg)
     : card_real(oc, arg) { }
   virtual void compute(const dd_edge &arg, double &res) {
-    res = compute(argF->getDomain()->getNumVariables(), arg.getNode());
+    res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
   }
-  double compute(int k, node_handle a);
+  double compute_r(int k, node_handle a);
 };
 
-double MEDDLY::card_mxd_real::compute(int k, node_handle a)
+double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
 {
   // Terminal cases
   if (0==a) return 0.0;
@@ -387,10 +387,10 @@ double MEDDLY::card_mxd_real::compute(int k, node_handle a)
   if (isLevelAbove(k, argF->getNodeLevel(a))) {
     if (k<0 && argF->isIdentityReduced()) {
       // identity node
-      return compute(argF->downLevel(k), a);
+      return compute_r(argF->downLevel(k), a);
     }
     // redundant node
-    return compute(argF->downLevel(k), a) * argF->getLevelSize(k);
+    return compute_r(argF->downLevel(k), a) * argF->getLevelSize(k);
   }
   
   // Check compute table
@@ -407,17 +407,17 @@ double MEDDLY::card_mxd_real::compute(int k, node_handle a)
   }
 
   // Initialize node reader
-  node_reader* A = argF->initNodeReader(a, false);
+  unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
 
   // Recurse
   double card = 0;
   int kdn = argF->downLevel(k);
   for (int z=0; z<A->getNNZs(); z++) {
-    card += compute(kdn, A->d(z));
+    card += compute_r(kdn, A->d(z));
   }
   
   // Cleanup
-  node_reader::recycle(A);
+  unpacked_node::recycle(A);
 
   // Add entry to compute table
   argF->cacheNode(a);
@@ -498,12 +498,12 @@ public:
     : card_mpz(oc, arg) { }
   virtual void compute(const dd_edge& a, ct_object &res) {
     mpz_object& mcard = dynamic_cast <mpz_object &> (res);
-    compute(argF->getDomain()->getNumVariables(), a.getNode(), mcard);
+    compute_r(argF->getDomain()->getNumVariables(), a.getNode(), mcard);
   }
-  void compute(int k, node_handle a, mpz_object &b);
+  void compute_r(int k, node_handle a, mpz_object &b);
 };
 
-void MEDDLY::card_mdd_mpz::compute(int k, node_handle a, mpz_object &card)
+void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
 {
   // Terminal cases
   if (0==a) {
@@ -518,7 +518,7 @@ void MEDDLY::card_mdd_mpz::compute(int k, node_handle a, mpz_object &card)
   // Quickly deal with skipped levels
   if (argF->getNodeLevel(a) < k) {
     // skipped level
-    compute(k-1, a, card);
+    compute_r(k-1, a, card);
     card.multiply(argF->getLevelSize(k));
     return;
   }
@@ -539,7 +539,7 @@ void MEDDLY::card_mdd_mpz::compute(int k, node_handle a, mpz_object &card)
   }
 
   // Initialize node reader
-  node_reader* A = argF->initNodeReader(a, false);
+  unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
 
   // Recurse
   mpz_object tmp;
@@ -547,12 +547,12 @@ void MEDDLY::card_mdd_mpz::compute(int k, node_handle a, mpz_object &card)
   card.setValue(0);
   int kdn = k-1;
   for (int z=0; z<A->getNNZs(); z++) {
-    compute(kdn, A->d(z), tmp);
+    compute_r(kdn, A->d(z), tmp);
     card.add(tmp);
   }
   
   // Cleanup
-  node_reader::recycle(A);
+  unpacked_node::recycle(A);
 
   // Add entry to compute table
   argF->cacheNode(a);
@@ -586,12 +586,12 @@ public:
     : card_mpz(oc, arg) { }
   virtual void compute(const dd_edge& a, ct_object &res) {
     mpz_object& mcard = dynamic_cast <mpz_object &> (res);
-    compute(argF->getDomain()->getNumVariables(), a.getNode(), mcard);
+    compute_r(argF->getDomain()->getNumVariables(), a.getNode(), mcard);
   }
-  void compute(int k, node_handle a, mpz_object &b);
+  void compute_r(int k, node_handle a, mpz_object &b);
 };
 
-void MEDDLY::card_mxd_mpz::compute(int k, node_handle a, mpz_object &card)
+void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
 {
   // Terminal cases
   if (0==a) {
@@ -607,11 +607,11 @@ void MEDDLY::card_mxd_mpz::compute(int k, node_handle a, mpz_object &card)
   if (isLevelAbove(k, argF->getNodeLevel(a))) {
     if (k<0 && argF->isIdentityReduced()) {
       // identity node
-      compute(argF->downLevel(k), a, card);
+      compute_r(argF->downLevel(k), a, card);
       return;
     }
     // redundant node
-    compute(argF->downLevel(k), a, card);
+    compute_r(argF->downLevel(k), a, card);
     card.multiply(argF->getLevelSize(k));
     return;
   }
@@ -632,7 +632,7 @@ void MEDDLY::card_mxd_mpz::compute(int k, node_handle a, mpz_object &card)
   }
 
   // Initialize node reader
-  node_reader* A = argF->initNodeReader(a, false);
+  unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
 
   // Recurse
   mpz_object tmp;
@@ -640,12 +640,12 @@ void MEDDLY::card_mxd_mpz::compute(int k, node_handle a, mpz_object &card)
   card.setValue(0);
   int kdn = argF->downLevel(k);
   for (int z=0; z<A->getNNZs(); z++) {
-    compute(kdn, A->d(z), tmp);
+    compute_r(kdn, A->d(z), tmp);
     card.add(tmp);
   }
   
   // Cleanup
-  node_reader::recycle(A);
+  unpacked_node::recycle(A);
 
   // Add entry to compute table
   argF->cacheNode(a);

@@ -82,7 +82,8 @@ int MEDDLY::global_rebuilder::check_dependency(node_handle p, int target_level) 
     int var = _source->getVarByLevel(_source->getNodeLevel(pv));
     int size = _source->getVariableSize(var);
     MEDDLY_DCASSERT(size == 2);
-    node_reader* nr = _source->initNodeReader(pv, true);
+    unpacked_node *nr = unpacked_node::useUnpackedNode();
+    nr->initFromNode(_source, pv, true);
     for(int i = 1; i < size; i++) {
       if(nr->d(i) != nr->d(0)) {
         if(var == top_var) {
@@ -104,7 +105,7 @@ int MEDDLY::global_rebuilder::check_dependency(node_handle p, int target_level) 
       visited.emplace(nr->d(0));
     }
 
-    node_reader::recycle(nr);
+    unpacked_node::recycle(nr);
   }
 
   while(true) {
@@ -176,7 +177,7 @@ MEDDLY::node_handle MEDDLY::global_rebuilder::transform(node_handle p,
 
   int size = _target->getVariableSize(top_var);
   MEDDLY_DCASSERT(size == 2);
-  node_builder& nb = _target->useNodeBuilder(target_level, size);
+  unpacked_node* nb = unpacked_node::newFull(_target, target_level, size);
   for (int i = 0; i < size; i++) {
     pa.push_back(i == 0 ? -top_var : top_var);
     node_handle pr = restrict(p, pa);
@@ -187,7 +188,7 @@ MEDDLY::node_handle MEDDLY::global_rebuilder::transform(node_handle p,
 //    MEDDLY_DCASSERT(_target->getLevelByVar(top_pr) < _target->getLevelByVar(top_var));
 
     _computed_restrict.clear();
-    nb.d(i) = transform(pr, target_level - 1, pa);
+    nb->d_ref(i) = transform(pr, target_level - 1, pa);
     _source->unlinkNode(pr);
     pa.pop_back();
   }
@@ -228,15 +229,16 @@ MEDDLY::node_handle MEDDLY::global_rebuilder::restrict(node_handle p,
     }
 
     if (level1 > level2) {
-      node_reader* nr = _source->initNodeReader(p, true);
+      unpacked_node* nr = unpacked_node::useUnpackedNode();
+      nr->initFromNode(_source, p, true);
 
       int size = _source->getVariableSize(_source->getVarByLevel(level1));
-      node_builder& nb = _source->useNodeBuilder(level1, size);
+      unpacked_node* nb = unpacked_node::newFull(_source, level1, size);
       for (int i = 0; i < size; i++) {
         MEDDLY_DCASSERT(size==2);
-        nb.d(i) = restrict(nr->d(i), pa);
+        nb->d_ref(i) = restrict(nr->d(i), pa);
       }
-      node_reader::recycle(nr);
+      unpacked_node::recycle(nr);
 
       node_handle pr = _source->createReducedNode(-1, nb);
 
@@ -343,27 +345,28 @@ bool MEDDLY::global_rebuilder::restrict_exist(node_handle p,
     }
 
     if (level1 > level2) {
-      node_reader* nr = _source->initNodeReader(p, true);
+      unpacked_node* nr = unpacked_node::useUnpackedNode();
+      nr->initFromNode(_source, p, true);
 
       int size = _source->getVariableSize(_source->getVarByLevel(level1));
-      node_builder& nb = _source->useNodeBuilder(level1, size);
+      unpacked_node* nb = unpacked_node::newFull(_source, level1, size);
       for (int i = 0; i < size; i++) {
         if (restrict_exist(nr->d(i), pa, start, result)) {
-          nb.d(i) = result;
+          nb->d_ref(i) = result;
         } else {
           for (int j = 0; j < i; j++) {
-            _source->unlinkNode(nb.d(j));
+            _source->unlinkNode(nb->d(j));
           }
-          node_reader::recycle(nr);
-          nb.lock = false;
+          unpacked_node::recycle(nr);
+          unpacked_node::recycle(nb);
           return false;
         }
       }
-      node_reader::recycle(nr);
+      unpacked_node::recycle(nr);
 
       result = _source->createReducedNode(-1, nb);
       if (!_source->isTerminalNode(result)
-          && _source->getInCount(result) == 1) {
+          && _source->getNodeInCount(result) == 1) {
         // Newly created node
         return false;
       }
@@ -550,7 +553,8 @@ int MEDDLY::global_rebuilder::TopDownSignatureComputer::signature(
     int size = source->getVariableSize(source->getVarByLevel(level));
     MEDDLY_DCASSERT(size == 2);
 
-    node_reader* nr = source->initNodeReader(pv, true);
+    unpacked_node* nr = unpacked_node::useUnpackedNode();
+    nr->initFromNode(source, pv, true);
     for (int i = 0; i < size; i++) {
       if (source->isTerminalNode(nr->d(i))) {
         if (nr->d(i) != 0) {
@@ -565,7 +569,7 @@ int MEDDLY::global_rebuilder::TopDownSignatureComputer::signature(
         }
       }
     }
-    node_reader::recycle(nr);
+    unpacked_node::recycle(nr);
   }
 
   return sig;
@@ -643,11 +647,12 @@ int MEDDLY::global_rebuilder::BottomUpSignatureComputer::rec_signature(node_hand
   int size = source->getVariableSize(source->getVarByLevel(level));
   MEDDLY_DCASSERT(size == 2);
 
-  node_reader* nr = source->initNodeReader(p, true);
+  unpacked_node* nr = unpacked_node::useUnpackedNode();
+  nr->initFromNode(source, p, true);
   for (int i = 0; i < size; i++) {
     sig += (i == 0 ? 1 - PRIMES[level] : PRIMES[level]) * rec_signature(nr->d(i));
   }
-  node_reader::recycle(nr);
+  unpacked_node::recycle(nr);
 
   _cache_rec_sig.emplace(p, sig);
 

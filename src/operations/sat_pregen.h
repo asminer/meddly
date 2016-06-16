@@ -24,7 +24,7 @@
 
 namespace MEDDLY {
   class satpregen_opname;
-  class settings;
+  struct settings;
   
   /// Set up a numerical_opname for "forward saturation".
   satpregen_opname* initSaturationForward(const settings &s);

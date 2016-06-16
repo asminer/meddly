@@ -106,12 +106,12 @@ bool MEDDLY::evmdd_plusint
   return (val1 == val2);
 }
 
-bool MEDDLY::evmdd_plusint::isRedundant(const node_builder &nb) const
+bool MEDDLY::evmdd_plusint::isRedundant(const unpacked_node &nb) const
 {
   return isRedundantTempl<OP>(nb);
 }
 
-bool MEDDLY::evmdd_plusint::isIdentityEdge(const node_builder &nb, int i) const
+bool MEDDLY::evmdd_plusint::isIdentityEdge(const unpacked_node &nb, int i) const
 {
   return isIdentityEdgeTempl<OP>(nb, i); 
 }
@@ -119,7 +119,7 @@ bool MEDDLY::evmdd_plusint::isIdentityEdge(const node_builder &nb, int i) const
 
 
 
-void MEDDLY::evmdd_plusint::normalize(node_builder &nb, int& ev) const
+void MEDDLY::evmdd_plusint::normalize(unpacked_node &nb, int& ev) const
 {
   int minindex = -1;
   int stop = nb.isSparse() ? nb.getNNZs() : nb.getSize();
@@ -170,7 +170,7 @@ void MEDDLY::evmdd_plusint::writeUnhashedHeader(output &s, const void* uh) const
   // th_fprintf(s, "\t %d\n", ((const node_handle*)uh)[0]);
 }
 
-void MEDDLY::evmdd_plusint::readUnhashedHeader(input &s, node_builder &nb) const
+void MEDDLY::evmdd_plusint::readUnhashedHeader(input &s, unpacked_node &nb) const
 {
   ((node_handle*)nb.UHptr())[0] = s.get_integer();
   // th_fscanf(1, s, "%d", (node_handle*)nb.UHptr());
@@ -267,8 +267,8 @@ bool MEDDLY::evmdd_plusint::evpimdd_iterator::first(int k, node_handle down)
     MEDDLY_DCASSERT(down);
     int kdn = F->getNodeLevel(down);
     MEDDLY_DCASSERT(kdn <= k);
-    if (kdn < k)  F->initRedundantReader(path[k], k, 0, down, false);
-    else          F->initNodeReader(path[k], down, false);
+    if (kdn < k)  path[k].initRedundant(F, k, 0, down, false);
+    else          path[k].initFromNode(F, down, false);
     nzp[k] = 0;
 
     int var = F->getVarByLevel(k);
@@ -306,7 +306,7 @@ void MEDDLY::evmdd_index_set::getElement(const dd_edge &a, int index, int* e)
     return;
   }
   int p = a.getNode();
-  node_reader* R = node_reader::useReader();
+  unpacked_node* R = unpacked_node::useUnpackedNode();
   for (int k=getNumVariables(); k; k--) {
 	int var = getVarByLevel(k);
 
@@ -315,7 +315,7 @@ void MEDDLY::evmdd_index_set::getElement(const dd_edge &a, int index, int* e)
       e[var] = 0;
       continue;
     }
-    initNodeReader(*R, p, false);
+    R->initFromNode(this, p, false);
     MEDDLY_DCASSERT(R->getLevel() <= k);
     if (R->getLevel() < k) {
       e[var] = 0;
@@ -334,6 +334,6 @@ void MEDDLY::evmdd_index_set::getElement(const dd_edge &a, int index, int* e)
   } // for k
   if (index)    e[0] = 0;
   else          e[0] = -p;
-  node_reader::recycle(R);
+  unpacked_node::recycle(R);
 }
 

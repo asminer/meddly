@@ -110,7 +110,7 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
     virtual node_handle compute(node_handle a, node_handle b);
 
   protected:
-    node_handle compute(int i, int k, node_handle a, node_handle b);
+    node_handle compute_r(int i, int k, node_handle a, node_handle b);
 
   protected:
     virtual bool isStaleEntry(const node_handle* entryData);
@@ -202,7 +202,7 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
       CT->addEntry();
     }
 
-    node_handle compute(int i, int level, node_handle a, node_handle b);
+    node_handle compute_r(int i, int level, node_handle a, node_handle b);
 
   protected:
     // If terminal condition is reached, returns true and the result in c.
@@ -305,7 +305,7 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
     virtual void compute(float aev, node_handle a, float bev, node_handle b, 
       float& cev, node_handle &c);
 
-    virtual void compute(int in, int k, float aev, node_handle a,
+    virtual void compute_k(int in, int k, float aev, node_handle a,
       float bev, node_handle b, float& cev, node_handle& c);
 
   protected:

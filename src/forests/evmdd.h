@@ -69,20 +69,20 @@ class MEDDLY::evmdd_forest : public ev_forest {
             // make a redundant node
             if (isFullyReduced()) continue; 
             int sz = getLevelSize(i);
-            node_builder& nb = useNodeBuilder(i, sz);
-            nb.d(0) = ed;
-            nb.setEdge(0, ev);
+            unpacked_node* nb = unpacked_node::newFull(this, i, sz);
+            nb->d_ref(0) = ed;
+            nb->setEdge(0, ev);
             for (int v=1; v<sz; v++) {
-              nb.d(v) = linkNode(ed);
-              nb.setEdge(v, ev);
+              nb->d_ref(v) = linkNode(ed);
+              nb->setEdge(v, ev);
             }
             createReducedNode(-1, nb, ev, ed);
           } else {
             // make a singleton node
-            node_builder& nb = useSparseBuilder(i, 1);
-            nb.i(0) = vlist[i];
-            nb.d(0) = ed;
-            nb.setEdge(0, ev);
+            unpacked_node* nb = unpacked_node::newSparse(this, i, 1);
+            nb->i_ref(0) = vlist[i];
+            nb->d_ref(0) = ed;
+            nb->setEdge(0, ev);
             createReducedNode(-1, nb, ev, ed);
           }
         } // for i
@@ -201,7 +201,7 @@ namespace MEDDLY {
         //
         // Start new node at level k
         //
-        node_builder& nb = F->useSparseBuilder(k, lastV);
+        unpacked_node* nb = unpacked_node::newSparse(F, k, lastV);
         int z = 0; // number of nonzero edges in our sparse node
 
         //
@@ -273,9 +273,9 @@ namespace MEDDLY {
           // add to sparse node, unless empty
           //
           if (0==total_ptr) continue;
-          nb.i(z) = v;
-          nb.d(z) = total_ptr;
-          nb.setEdge(z, total_val);
+          nb->i_ref(z) = v;
+          nb->d_ref(z) = total_ptr;
+          nb->setEdge(z, total_val);
           z++;
         } // for v
 
@@ -283,7 +283,7 @@ namespace MEDDLY {
         // Cleanup
         //
         F->unlinkNode(dc_ptr);
-        nb.shrinkSparse(z);
+        nb->shrinkSparse(z);
 
         F->createReducedNode(-1, nb, ev, ed);
       };

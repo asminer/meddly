@@ -24,7 +24,7 @@
 
 namespace MEDDLY {
   class binary_opname;
-  class settings;
+  struct settings;
 
   /// Set up a binary_opname for the "reachable bfs" operation.
   binary_opname* initializeForwardBFS(const settings &s);

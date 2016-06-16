@@ -125,15 +125,14 @@ class MEDDLY::compact_storage : public node_storage {
     virtual void writeNode(output &s, node_address addr, const node_handle* map)
     const;
 
-    virtual node_address makeNode(node_handle p, const node_builder &nb, 
+    virtual node_address makeNode(node_handle p, const unpacked_node &nb, 
         node_storage_flags opt);
 
     virtual void unlinkDownAndRecycle(node_address addr);
 
-    virtual bool areDuplicates(node_address addr, const node_builder &nb) const;
-    virtual bool areDuplicates(node_address addr, const node_reader &nr) const;
-    virtual void fillReader(node_address addr, node_reader &nr) const;
-    virtual unsigned hashNode(const node_header& p) const;
+    virtual bool areDuplicates(node_address addr, const unpacked_node &nr) const;
+    virtual void fillUnpacked(unpacked_node &nr, node_address addr) const;
+    virtual unsigned hashNode(int level, node_address addr) const;
     virtual int getSingletonIndex(node_address addr, node_handle &down) const;
     virtual node_handle getDownPtr(node_address addr, int index) const;
     virtual void getDownPtr(node_address addr, int ind, int& ev, node_handle& dn) const;
@@ -166,7 +165,7 @@ class MEDDLY::compact_storage : public node_storage {
             @return         The "address" of the new node.
       */
       node_address makeFullNode(node_handle p, int size, 
-          int pbytes, const node_builder &nb);
+          int pbytes, const unpacked_node &nb);
 
       /** Create a new node, stored sparsely.
           Space is allocated for the node, and data is copied.
@@ -178,7 +177,7 @@ class MEDDLY::compact_storage : public node_storage {
             @return         The "address" of the new node.
       */
       node_address makeSparseNode(node_handle p, int size, 
-          int pbytes, int ibytes, const node_builder &nb);
+          int pbytes, int ibytes, const unpacked_node &nb);
 
 
       /** Allocate a new chunk of requested size or larger.
@@ -223,14 +222,16 @@ class MEDDLY::compact_storage : public node_storage {
         return end - a + 1;
       }
 
-      inline void copyExtraHeader(node_address addr, const node_builder &nb) {
+      inline void copyExtraHeader(node_address addr, const unpacked_node &nb) {
+        // copy extra header info, if any
         if (unhashedBytes) {
-          nb.getUH(UH(addr));
+          memcpy(UH(addr), nb.UHptr(), nb.UHbytes());
         }
         if (hashedBytes) {
-          nb.getHH(HH(addr));
+          memcpy(HH(addr), nb.HHptr(), nb.HHbytes());
         }
       }
+
 
       //--------------------------------------------------------------
       // Helpers - building full from full
@@ -238,7 +239,7 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <int pbytes>
       inline node_address 
-      copyFullIntoFull(const node_builder &nb, int size, node_address addr)
+      copyFullIntoFull(const unpacked_node &nb, int size, node_address addr)
       {
         MEDDLY_DCASSERT(nb.isFull());
         unsigned char* down = fullDown(addr);
@@ -253,7 +254,7 @@ class MEDDLY::compact_storage : public node_storage {
       }
 
       inline node_address copyFullIntoFull(int pbytes, 
-        const node_builder &nb, int size, node_address addr)
+        const unpacked_node &nb, int size, node_address addr)
       {
         switch (pbytes) {
             case 1:   return  copyFullIntoFull<1>(nb, size, addr);
@@ -276,7 +277,7 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <int pbytes>
       inline node_address
-      copySparseIntoFull(const node_builder &nb, int size, node_address addr)
+      copySparseIntoFull(const unpacked_node &nb, int size, node_address addr)
       {
         MEDDLY_DCASSERT(nb.isSparse());
         unsigned char* down = fullDown(addr);
@@ -299,7 +300,7 @@ class MEDDLY::compact_storage : public node_storage {
       }
 
       inline node_address copySparseIntoFull(int pbytes, 
-        const node_builder &nb, int size, node_address addr)
+        const unpacked_node &nb, int size, node_address addr)
       {
         switch (pbytes) {
             case 1:   return  copySparseIntoFull<1>(nb, size, addr);
@@ -322,7 +323,7 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <int pbytes, int ibytes>
       inline node_address 
-      copySparseIntoSparse(const node_builder &nb, int size, node_address addr)
+      copySparseIntoSparse(const unpacked_node &nb, int size, node_address addr)
       {
         MEDDLY_DCASSERT(nb.isSparse());
         unsigned char* down = sparseDown(addr);
@@ -341,7 +342,7 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <int pbytes>
       inline node_address
-      copySparseIntoSparse(int ibytes, const node_builder &nb, 
+      copySparseIntoSparse(int ibytes, const unpacked_node &nb, 
         int size, node_address addr)
       {
         switch (ibytes) {
@@ -356,7 +357,7 @@ class MEDDLY::compact_storage : public node_storage {
       }
 
       inline node_address
-      copySparseIntoSparse(int pbytes, int ibytes, const node_builder &nb, 
+      copySparseIntoSparse(int pbytes, int ibytes, const unpacked_node &nb, 
         int size, node_address addr)
       {
         switch (pbytes) {
@@ -381,7 +382,7 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <int pbytes, int ibytes>
       inline node_address 
-      copyFullIntoSparse(const node_builder &nb, node_address addr)
+      copyFullIntoSparse(const unpacked_node &nb, node_address addr)
       {
         MEDDLY_DCASSERT(nb.isFull());
         unsigned char* down = sparseDown(addr);
@@ -410,7 +411,7 @@ class MEDDLY::compact_storage : public node_storage {
 
       template <int pbytes>
       inline node_address
-      copyFullIntoSparse(int ibytes, const node_builder &nb, node_address addr)
+      copyFullIntoSparse(int ibytes, const unpacked_node &nb, node_address addr)
       {
         switch (ibytes) {
             case 1:   return  copyFullIntoSparse<pbytes, 1>(nb, addr);
@@ -424,7 +425,7 @@ class MEDDLY::compact_storage : public node_storage {
       }
 
       inline node_address
-      copyFullIntoSparse(int pbytes, int ibytes, const node_builder &nb, 
+      copyFullIntoSparse(int pbytes, int ibytes, const unpacked_node &nb, 
         node_address addr)
       {
         switch (pbytes) {
@@ -441,6 +442,7 @@ class MEDDLY::compact_storage : public node_storage {
                 throw error(error::MISCELLANEOUS);
         }
       }
+
 
       //--------------------------------------------------------------
       // Helpers - unlink down pointers
@@ -476,17 +478,15 @@ class MEDDLY::compact_storage : public node_storage {
       // Helpers for areDuplicates
       //--------------------------------------------------------------
       //--------------------------------------------------------------
-      inline bool headersMatch(node_handle addr, const void* hh, int bytes) 
-      const {
-        if (0== bytes) return true;
-        return 0 == memcmp(HH(addr), hh, bytes);
-      }
-
       template <class nodetype>
       inline bool areDupsTempl(node_address addr, const nodetype &n) const 
       {
-        if (!headersMatch(addr, n.HHptr(), n.HHbytes())) {
-          return false;
+        if (n.HHbytes()) {
+          if (memcmp(HH(addr), n.HHptr(), n.HHbytes())) return false;
+        }
+
+        if (n.UHbytes()) {
+          if (memcmp(UH(addr), n.UHptr(), n.UHbytes())) return false;
         }
         
         int size = sizeOf(addr);
@@ -818,31 +818,33 @@ class MEDDLY::compact_storage : public node_storage {
       //--------------------------------------------------------------
       template <int pbytes>
       inline void 
-      readFullFromFull(node_address addr, int size, node_reader &nr) const
+      readFullFromFull(node_address addr, int size, unpacked_node &nr) const
       {
         MEDDLY_DCASSERT(nr.isFull());
         MEDDLY_DCASSERT(sizeOf(addr) >= 0);
         MEDDLY_DCASSERT(sizeOf(addr) == size);
-        const unsigned char* down = fullDown(addr);
+        MEDDLY_DCASSERT(edgeBytes == nr.edgeBytes());
+        unsigned char* down = fullDown(addr);
+        unsigned char* edge = fullEdge(addr);
         int i;
         for (i=0; i<size; i++) {
-          dataToDown<pbytes>(down, down_of(nr)[i]);
+          dataToDown<pbytes>(down, nr.d_ref(i));
           down += pbytes;
+          if (edgeBytes) {
+            memcpy(nr.eptr_write(i), edge, edgeBytes);
+            edge += edgeBytes;
+          }
         } 
         for (; i<nr.getSize(); i++) {
-          down_of(nr)[i] = 0;
-        }
-        if (edgeBytes) {
-          MEDDLY_DCASSERT(edgeBytes == nr.edgeBytes());
-          long bytes = size * edgeBytes;
-          memcpy(edge_of(nr), fullEdge(addr), bytes);
-          void* evext = edge_of(nr) + bytes;
-          memset(evext, 0, (nr.getSize()-size) * edgeBytes);
+          nr.d_ref(i) = 0;
+          if (edgeBytes) {
+            memset(nr.eptr_write(i), 0, edgeBytes);
+          }
         }
       }
 
       inline void readFullFromFull(int pbytes, node_address addr, int size, 
-        node_reader &nr) const
+        unpacked_node &nr) const
       {
           switch (pbytes) {
               case 1:   return readFullFromFull<1>(addr, size, nr);
@@ -864,50 +866,41 @@ class MEDDLY::compact_storage : public node_storage {
       //--------------------------------------------------------------
       template <int pbytes>
       inline void 
-      readSparseFromFull(node_address addr, int size, node_reader &nr) const
+      readSparseFromFull(node_address addr, int size, unpacked_node &nr) const
       {
         MEDDLY_DCASSERT(nr.isSparse());
         MEDDLY_DCASSERT(sizeOf(addr) >= 0);
         MEDDLY_DCASSERT(sizeOf(addr) == size);
-        const unsigned char* down = fullDown(addr);
+        unsigned char* down = fullDown(addr);
 
-        int& z = nnzs_of(nr);
-        z = 0;
-
+        int z = 0;
         if (nr.hasEdges()) {
-          MEDDLY_DCASSERT(edgeBytes>0);
-          MEDDLY_DCASSERT(nr.edgeBytes() == edgeBytes);
-          char* nev = edge_of(nr);
-          const unsigned char* edge = fullEdge(addr);
+          unsigned char* edge = fullEdge(addr);
           for (int i=0; i<size; i++) {
-            node_handle downval;
-            dataToDown<pbytes>(down, downval);
+            dataToDown<pbytes>(down, nr.d_ref(z));
             down += pbytes;
-            if (downval) {
-              down_of(nr)[z] = downval;
-              index_of(nr)[z] = i;
+            if (nr.d(z)) {
+              nr.i_ref(z) = i;
+              memcpy(nr.eptr_write(z), edge, edgeBytes);
               z++;
-              memcpy(nev, edge, edgeBytes);
-              nev += edgeBytes;
-            } // if downval
+            }
             edge += edgeBytes;
           } // for i
         } else {
           for (int i=0; i<size; i++) {
-            node_handle downval;
-            dataToDown<pbytes>(down, downval);
+            dataToDown<pbytes>(down, nr.d_ref(z));
             down += pbytes;
-            if (downval) {
-              down_of(nr)[z] = downval;
-              index_of(nr)[z] = i;
+            if (nr.d(z)) {
+              nr.i_ref(z) = i;
               z++;
-            } // if downval
+            }
           } // for i
         }
+        nr.shrinkSparse(z);
       }
 
       inline void readSparseFromFull(int pbytes, node_address addr, int size, 
-        node_reader &nr) const
+        unpacked_node &nr) const
       {
           switch (pbytes) {
               case 1:   return readSparseFromFull<1>(addr, size, nr);
@@ -929,45 +922,41 @@ class MEDDLY::compact_storage : public node_storage {
       //--------------------------------------------------------------
       template <int pbytes, int ibytes>
       inline void 
-      readFullFromSparse(node_address addr, int nnzs, node_reader &nr) const
+      readFullFromSparse(node_address addr, int nnzs, unpacked_node &nr) const
       {
         MEDDLY_DCASSERT(nr.isFull());
         MEDDLY_DCASSERT(sizeOf(addr) < 0);
         MEDDLY_DCASSERT(sizeOf(addr) == -nnzs);
+        MEDDLY_DCASSERT(nr.edgeBytes() == edgeBytes);
 
-        const unsigned char* down = sparseDown(addr);
-        const unsigned char* index = sparseIndex(addr);
-
-        memset(down_of(nr), 0, nr.getSize() * sizeof(node_handle));
-        if (nr.hasEdges()) {
-          const unsigned char* edge = sparseEdge(addr);
-          MEDDLY_DCASSERT(edgeBytes>0);
-          MEDDLY_DCASSERT(nr.edgeBytes() == edgeBytes);
-          memset(edge_of(nr), 0, nr.getSize() * edgeBytes);
-          for (int z=0; z<nnzs; z++) {
-            int i;
-            dataToUnsigned<ibytes>(index, i);
-            index += ibytes;
-            dataToDown<pbytes>(down, down_of(nr)[i]);
-            down += pbytes;
-            int off = i * edgeBytes;
-            memcpy(edge_of(nr) + off, edge, edgeBytes);
-            edge += edgeBytes;
-          } // for z
-        } else {
-          for (int z=0; z<nnzs; z++) {
-            int i;
-            dataToUnsigned<ibytes>(index, i);
-            index += ibytes;
-            dataToDown<pbytes>(down, down_of(nr)[i]);
-            down += pbytes;
-          } // for z
+        for (int i=0; i<nr.getSize(); i++) {
+          nr.d_ref(i) = 0;
+          if (nr.hasEdges()) {
+            memset(nr.eptr_write(i), 0, nr.edgeBytes());
+          }
         }
+
+        unsigned char* down = sparseDown(addr);
+        unsigned char* index = sparseIndex(addr);
+        unsigned char* edge = sparseEdge(addr);
+
+        for (int z=0; z<nnzs; z++) {
+          int i;
+          dataToUnsigned<ibytes>(index, i);
+          index += ibytes;
+          dataToDown<pbytes>(down, nr.d_ref(i));
+          down += pbytes;
+          if (nr.hasEdges()) {
+            memcpy(nr.eptr_write(i), edge, edgeBytes);
+            edge += edgeBytes;
+          }
+        }
+        
       }
 
       template <int pbytes>
       inline void readFullFromSparse(int ibytes, node_address addr, 
-        int nnzs, node_reader &nr) const
+        int nnzs, unpacked_node &nr) const
       {
         switch (ibytes) {
             case 1:   return  readFullFromSparse<pbytes, 1>(addr, nnzs, nr);
@@ -981,7 +970,7 @@ class MEDDLY::compact_storage : public node_storage {
       }
 
       inline void readFullFromSparse(int pbytes, int ibytes, 
-        node_address addr, int nnzs, node_reader &nr) const
+        node_address addr, int nnzs, unpacked_node &nr) const
       {
           switch (pbytes) {
               case 1:   return readFullFromSparse<1>(ibytes, addr, nnzs, nr);
@@ -1004,31 +993,38 @@ class MEDDLY::compact_storage : public node_storage {
       //--------------------------------------------------------------
       template <int pbytes, int ibytes>
       inline void 
-      readSparseFromSparse(node_address addr, int nnzs, node_reader &nr) const
+      readSparseFromSparse(node_address addr, int nnzs, unpacked_node &nr) const
       {
         MEDDLY_DCASSERT(nr.isSparse());
         MEDDLY_DCASSERT(sizeOf(addr) < 0);
         MEDDLY_DCASSERT(sizeOf(addr) == -nnzs);
+        MEDDLY_DCASSERT(nr.edgeBytes() == edgeBytes);
 
-        const unsigned char* down = sparseDown(addr);
-        const unsigned char* index = sparseIndex(addr);
-        nnzs_of(nr) = nnzs;
+        unsigned char* down = sparseDown(addr);
+        unsigned char* index = sparseIndex(addr);
+
         for (int z=0; z<nnzs; z++) {
-          dataToDown<pbytes>(down, down_of(nr)[z]);
+          dataToDown<pbytes>(down, nr.d_ref(z));
           down += pbytes;
-          dataToUnsigned<ibytes>(index, index_of(nr)[z]);
+          dataToUnsigned<ibytes>(index, nr.i_ref(z));
           index += ibytes;
         }
+
         if (nr.hasEdges()) {
           MEDDLY_DCASSERT(edgeBytes>0);
-          MEDDLY_DCASSERT(nr.edgeBytes() == edgeBytes);
-          memcpy(edge_of(nr), sparseEdge(addr), nnzs * edgeBytes);
+          unsigned char* edge = sparseEdge(addr);
+          for (int z=0; z<nnzs; z++) {
+            memcpy(nr.eptr_write(z), edge, edgeBytes);
+            edge += edgeBytes;
+          } 
         }
+
+        nr.shrinkSparse(nnzs);
       }
 
       template <int pbytes>
       inline void readSparseFromSparse(int ibytes, node_address addr, 
-        int nnzs, node_reader &nr) const
+        int nnzs, unpacked_node &nr) const
       {
         switch (ibytes) {
             case 1:   return  readSparseFromSparse<pbytes, 1>(addr, nnzs, nr);
@@ -1042,7 +1038,7 @@ class MEDDLY::compact_storage : public node_storage {
       }
 
       inline void readSparseFromSparse(int pbytes, int ibytes, 
-        node_address addr, int nnzs, node_reader &nr) const
+        node_address addr, int nnzs, unpacked_node &nr) const
       {
           switch (pbytes) {
               case 1:   return readSparseFromSparse<1>(ibytes, addr, nnzs, nr);

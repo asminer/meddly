@@ -19,17 +19,19 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef COPY_H
-#define COPY_H
+#ifndef SAT_OTF_H
+#define SAT_OTF_H
 
 namespace MEDDLY {
-  class unary_opname;
+  class satotf_opname;
   struct settings;
+  
+  /// Set up a numerical_opname for "forward saturation".
+  satotf_opname* initOtfSaturationForward(const settings &s);
 
-  /// Minimalist interface.
-  /// Set up a unary_opname for the "copy" operation.
-  unary_opname* initializeCopy(const settings &s);
-};
+  /// Set up a numerical_opname for "backward saturation".
+  satotf_opname* initOtfSaturationBackward(const settings &s);
+}
 
 #endif
 

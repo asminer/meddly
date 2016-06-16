@@ -24,7 +24,7 @@
 
 namespace MEDDLY {
   class binary_opname;
-  class settings;
+  struct settings;
 
   /// Set up a binary_opname for the "less than equal" operator.
   binary_opname* initializeLE(const settings &s);

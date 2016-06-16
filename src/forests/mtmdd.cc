@@ -435,7 +435,9 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
   int num = 0;
   // Renumber the level of nodes for the variable to be moved down
   for(int i=0; i<hnum; i++) {
-    node_reader* nr = initNodeReader(hnodes[i], true);
+    unpacked_node* nr = unpacked_node::useUnpackedNode();
+    nr->initFromNode(this, hnodes[i], true);
+
     MEDDLY_DCASSERT(nr->getLevel() == level+1);
     MEDDLY_DCASSERT(nr->getSize() == hsize);
 
@@ -447,7 +449,7 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
         break;
       }
     }
-    node_reader::recycle(nr);
+    unpacked_node::recycle(nr);
 
     setNodeLevel(hnodes[i], level);
   }
@@ -470,35 +472,38 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
   }
 
   // Process the rest of nodes for the variable to be moved down
-  for(int i=0; i<hnum; i++) {
-    node_reader* high_nr = initNodeReader(hnodes[i], true);
-    node_builder& high_nb = useNodeBuilder(level+1, lsize);
+  for (int i = 0; i < hnum; i++) {
+    unpacked_node* high_nr = unpacked_node::useUnpackedNode();
+    high_nr->initFromNode(this, hnodes[i], true);
 
-    for(int j=0; j<hsize; j++) {
-      if(isLevelAbove(level, getNodeLevel(high_nr->d(j)))) {
-        for(int k=0; k<lsize; k++) {
+    unpacked_node* high_nb = unpacked_node::newFull(this, level + 1, lsize);
+    for (int j = 0; j < hsize; j++) {
+      if (isLevelAbove(level, getNodeLevel(high_nr->d(j)))) {
+        for (int k = 0; k < lsize; k++) {
           children[j][k] = high_nr->d(j);
         }
       }
       else {
-        node_reader* nr = initNodeReader(high_nr->d(j), true);
+        unpacked_node* nr = unpacked_node::useUnpackedNode();
+        nr->initFromNode(this, high_nr->d(j), true);
+
         MEDDLY_DCASSERT(nr->getSize()==lsize);
         for(int k=0; k<lsize; k++) {
           children[j][k] = nr->d(k);
         }
-        node_reader::recycle(nr);
+        unpacked_node::recycle(nr);
       }
     }
 
     for(int j=0; j<lsize; j++) {
-      node_builder& low_nb = useNodeBuilder(level, hsize);
+      unpacked_node* low_nb = unpacked_node::newFull(this, level, hsize);
       for(int k=0; k<hsize; k++) {
-        low_nb.d(k) = linkNode(children[k][j]);
+        low_nb->d_ref(k) = linkNode(children[k][j]);
       }
-      high_nb.d(j) = createReducedNode(-1, low_nb);
+      high_nb->d_ref(j) = createReducedNode(-1, low_nb);
     }
 
-    node_reader::recycle(high_nr);
+    unpacked_node::recycle(high_nr);
 
     // The reduced node of high_nb must be at level+1
     // Assume the reduced node is at level
@@ -742,8 +747,8 @@ bool MEDDLY::mtmdd_forest::mtmdd_iterator::first(int k, node_handle down)
     MEDDLY_DCASSERT(down);
     int kdn = F->getNodeLevel(down);
     MEDDLY_DCASSERT(kdn <= k);
-    if (kdn < k)  F->initRedundantReader(path[k], k, down, false);
-    else          F->initNodeReader(path[k], down, false);
+    if (kdn < k)  path[k].initRedundant(F, k, down, false);
+    else          path[k].initFromNode(F, down, false);
 
     nzp[k] = 0;
 

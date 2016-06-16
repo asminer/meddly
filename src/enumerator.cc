@@ -53,7 +53,7 @@ MEDDLY::enumerator::iterator::iterator(const expert_forest* f)
   int N = f->getNumVariables();
   maxLevel = N;
   if (f->isForRelations()) {
-    rawpath = new node_reader[2*N+1];
+    rawpath = new unpacked_node[2*N+1];
     rawnzp = new int[2*N+1];
     rawindex = new int[2*N+1];
     path = rawpath + N;
@@ -61,7 +61,7 @@ MEDDLY::enumerator::iterator::iterator(const expert_forest* f)
     index = rawindex + N;
     minLevel = -N;
   } else {
-    rawpath = new node_reader[N+1];
+    rawpath = new unpacked_node[N+1];
     rawnzp = new int[N+1];
     rawindex = new int[N+1];
     path = rawpath;

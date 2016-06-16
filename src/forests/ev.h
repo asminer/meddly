@@ -50,22 +50,24 @@ class MEDDLY::ev_forest : public expert_forest {
   public:
 
     template <class OPERATION>
-    inline bool isRedundantTempl(const node_builder &nb) const {
+    inline bool isRedundantTempl(const unpacked_node &nb) const {
       if (isQuasiReduced()) return false;
       if (nb.getLevel() < 0 && isIdentityReduced()) return false;
+      int rawsize = nb.isSparse() ? nb.getNNZs() : nb.getSize();
+      if (rawsize < getLevelSize(nb.getLevel())) return false;
       int common = nb.d(0);
-      for (int i=1; i<nb.rawSize(); i++) {
+      for (int i=1; i<rawsize; i++) {
         if (nb.d(i) != common)  return false;
       }
       // This might be expensive, so split the loops to cheapest first
-      for (int i=0; i<nb.rawSize(); i++) {
+      for (int i=0; i<rawsize; i++) {
         if (!OPERATION::isIdentityEdge(nb.eptr(i))) return false;
       }
       return true;
     }
 
     template <class OPERATION>
-    inline bool isIdentityEdgeTempl(const node_builder &nb, int i) const {
+    inline bool isIdentityEdgeTempl(const unpacked_node &nb, int i) const {
       if (nb.getLevel() > 0) return false;
       if (!isIdentityReduced()) return false;
       if (i<0) return false;
@@ -135,13 +137,13 @@ class MEDDLY::ev_forest : public expert_forest {
       /*
           Make this node
       */
-      node_builder &nb = useNodeBuilder(k, sz);
+      unpacked_node *nb = unpacked_node::newFull(this, k, sz);
       for (int i=0; i<sz; i++) {
         T ev = vals ? vals[i] : i;
         node_handle ed = bool_Tencoder::value2handle(true);
         makeNodeAtLevel<OPERATION, T>(km1, ev, ed);
-        nb.d(i) = ed;
-        nb.setEdge(i, ev);
+        nb->d_ref(i) = ed;
+        nb->setEdge(i, ev);
       }
 
       /*
@@ -189,42 +191,6 @@ class MEDDLY::ev_forest : public expert_forest {
 
 namespace MEDDLY {
 
-#if 0
-  template <class OPERATION, typename TYPE>
-  void ev_forest::makeNodeAtLevel(int k, TYPE &ev, node_handle &ed)
-  {
-    MEDDLY_DCASSERT(abs(k) >= abs(getNodeLevel(ed)));
-    if (0==ed) return;
-    if (isFullyReduced()) return;
-    int dk = getNodeLevel(ed); 
-    while (dk != k) {
-      int up =  (dk < 0) ? -dk : isForRelations() ? -(dk + 1) : (dk + 1);
-  
-      // make node at level "up"
-      int sz = getLevelSize(up);
-      node_builder& nb = useNodeBuilder(up, sz);
-  
-      if (isIdentityReduced() && (dk<0)) {
-        // make identity reductions below as necessary
-        node_handle sd;
-        int si = isTerminalNode(ed) ? -1 : getSingletonIndex(ed, sd);
-        for (int i=0; i<sz; i++) {
-          nb.d(i) = linkNode( (i==si) ? sd : ed );
-          nb.setEdge(i, ev);
-        }
-      } else {
-        // don't worry about identity reductions
-        for (int i=0; i<sz; i++) {
-          nb.d(i) = linkNode(ed);
-          nb.setEdge(i, ev);
-        }
-      }
-      unlinkNode(ed);
-      createReducedNode(-1, nb, ev, ed);
-      dk = up;
-    } // while
-  }
-#else
   template <class OPERATION, typename TYPE>
   void ev_forest::makeNodeAtLevel(int k, TYPE &ev, node_handle &ed)
   {
@@ -239,7 +205,7 @@ namespace MEDDLY {
       // make node at one level up
       int up = (dk < 0) ? -dk : isForRelations() ? -(dk + 1) : (dk + 1);
       int sz = getLevelSize(up);
-      node_builder& nb = useNodeBuilder(up, sz);
+      unpacked_node* nb = unpacked_node::newFull(this, up, sz);
   
       if (isIdentityReduced() && (dk < 0) && (1 == prevSize)) {
         // Build unprimed node with check for identity reduction.
@@ -250,14 +216,14 @@ namespace MEDDLY {
         node_handle sd;
         int si = getSingletonIndex(ed, sd);
         for (int i = 0; i < sz; i++) {
-          nb.d(i) = linkNode( (si == i) ? sd : ed );
-          nb.setEdge(i, ev);
+          nb->d_ref(i) = linkNode( (si == i) ? sd : ed );
+          nb->setEdge(i, ev);
         }
       } else {
         // No identity reduction possible.
         for (int i = 0; i < sz; i++) {
-          nb.d(i) = linkNode(ed);
-          nb.setEdge(i, ev);
+          nb->d_ref(i) = linkNode(ed);
+          nb->setEdge(i, ev);
         }
       }
 
@@ -267,7 +233,7 @@ namespace MEDDLY {
       prevSize = sz;
     } // while
   }
-#endif
+
 };  // namespace MEDDLY
 
 #endif

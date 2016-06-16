@@ -26,6 +26,7 @@
 */
 
 #include "defines.h"
+#include <set>
 // #include "compute_table.h"
 
 // #define DEBUG_CLEANUP
@@ -357,11 +358,13 @@ MEDDLY::satpregen_opname::pregen_relation
 
     MEDDLY_DCASSERT(ABS(mxdF->getNodeLevel(events[k])) <= k);
 
-    // Initialize readers
-    node_reader* Mu = isLevelAbove(k, mxdF->getNodeLevel(events[k]))
-      ? mxdF->initRedundantReader(k, events[k], true)
-      : mxdF->initNodeReader(events[k], true);
-    node_reader* Mp = node_reader::useReader();
+    // Initialize unpacked nodes
+    unpacked_node* Mu = (isLevelAbove(k, mxdF->getNodeLevel(events[k]))) 
+      ?   unpacked_node::newRedundant(mxdF, k, events[k], true)
+      :   unpacked_node::newFromNode(mxdF, events[k], true)
+    ;
+
+    unpacked_node* Mp = unpacked_node::useUnpackedNode();
 
     bool first = true;
     node_handle maxDiag = 0;
@@ -370,9 +373,9 @@ MEDDLY::satpregen_opname::pregen_relation
     for (int i = 0; i < Mu->getSize(); i++) {
       // Initialize column reader
       if (isLevelAbove(-k, mxdF->getNodeLevel(Mu->d(i)))) {
-        mxdF->initIdentityReader(*Mp, -k, i, Mu->d(i), true);
+        Mp->initIdentity(mxdF, -k, i, Mu->d(i), true);
       } else {
-        mxdF->initNodeReader(*Mp, Mu->d(i), true);
+        Mp->initFromNode(mxdF, Mu->d(i), true);
       }
 
       // Intersect along the diagonal
@@ -387,8 +390,8 @@ MEDDLY::satpregen_opname::pregen_relation
     } // for i
 
     // Cleanup
-    node_reader::recycle(Mp);
-    node_reader::recycle(Mu);
+    unpacked_node::recycle(Mp);
+    unpacked_node::recycle(Mu);
 
     if (0 == maxDiag) {
 #ifdef DEBUG_FINALIZE_SPLIT
@@ -595,46 +598,264 @@ MEDDLY::satotf_opname::~satotf_opname()
 
 // ============================================================
 
-MEDDLY::satotf_opname::subfunc::subfunc(int* v, int nv)
+MEDDLY::satotf_opname::subevent::subevent(forest* f, int* v, int nv)
+: vars(0), num_vars(nv), root(dd_edge(f)), top(0), f(static_cast<expert_forest*>(f))
+
 {
-  vars = v;
-  num_vars = nv;
+  MEDDLY_DCASSERT(f != 0);
+  MEDDLY_DCASSERT(v != 0);
+  MEDDLY_DCASSERT(nv > 0);
+
+  vars = new int[num_vars];
+  memcpy(vars, v, num_vars * sizeof(int));
+
+  // find top
+  top = vars[0];
+  for (int i = 1; i < num_vars; i++) {
+    if (isLevelAbove(top, vars[i])) top = vars[i];
+  }
+
+  unpminterms = pminterms = 0;
+  num_minterms = size_minterms = 0;
 }
 
-MEDDLY::satotf_opname::subfunc::~subfunc()
+MEDDLY::satotf_opname::subevent::~subevent()
 {
-  delete[] vars;
+  if (vars) delete [] vars;
+  for (int i=0; i<num_minterms; i++) {
+    delete[] unpminterms[i];
+    delete[] pminterms[i];
+  }
+  free(unpminterms);
+  free(pminterms);
+}
+
+void MEDDLY::satotf_opname::subevent::clearMinterms()
+{
+  for (int i=0; i<num_minterms; i++) {
+    delete[] unpminterms[i];
+    delete[] pminterms[i];
+  }
+  free(unpminterms);
+  free(pminterms);
+  unpminterms = pminterms = 0;
+  num_minterms = 0;
+}
+
+
+void MEDDLY::satotf_opname::subevent::confirm(otf_relation& rel, int v, int i) {
+  throw MEDDLY::error::NOT_IMPLEMENTED;
+}
+
+
+bool MEDDLY::satotf_opname::subevent::addMinterm(const int* from, const int* to)
+{
+  /*
+  ostream_output out(std::cout);
+  out << "Adding minterm: [";
+  for (int i = f->getNumVariables(); i >= 0; i--) {
+    out << from[i] << " -> " << to[i] << " , ";
+  }
+  out << "]\n";
+  */
+
+  if (num_minterms >= size_minterms) {
+    int old_size = size_minterms;
+    size_minterms = (0==size_minterms)? 8: MIN(2*size_minterms, 256 + size_minterms);
+    unpminterms = (int**) realloc(unpminterms, size_minterms * sizeof(int**));
+    pminterms = (int**) realloc(pminterms, size_minterms * sizeof(int**));
+    if (0==unpminterms || 0==pminterms) return false; // malloc or realloc failed
+    for (int i=old_size; i<size_minterms; i++) {
+      unpminterms[i] = 0;
+      pminterms[i] = 0;
+    }
+  }
+  if (0==unpminterms[num_minterms]) {
+    unpminterms[num_minterms] = new int[f->getNumVariables() + 1];
+    MEDDLY_DCASSERT(0==pminterms[num_minterms]);
+    pminterms[num_minterms] = new int[f->getNumVariables() + 1];
+  }
+  // out << "Added minterm: [";
+  for (int i = f->getNumVariables(); i >= 0; i--) {
+    unpminterms[num_minterms][i] = from[i];
+    pminterms[num_minterms][i] = to[i];
+    // out << unpminterms[num_minterms][i] << " -> " << pminterms[num_minterms][i] << " , ";
+  }
+  // out << "]\n";
+  expert_domain* d = static_cast<expert_domain*>(f->useDomain());
+  for (int i = num_vars - 1; i >= 0; i--) {
+    int level = vars[i];
+    // expand "to" since the set of unconfirmed local states is always larger
+    if (to[level] > 0 && to[level] >= f->getLevelSize(-level)) {
+      d->enlargeVariableBound(level, false, 1+to[level]);
+    }
+  }
+  num_minterms++;
+  return true;
+}
+
+
+
+void MEDDLY::satotf_opname::subevent::buildRoot() {
+  if (0 == num_minterms) return;
+  /*
+  ostream_output out(std::cout);
+  out << "Building subevent from " << num_minterms << " minterms\n";
+  for (int i = 0; i < num_minterms; i++) {
+    out << "minterm[" << i << "]: [ ";
+    for (int j = f->getNumVariables(); j >= 0; j--) {
+      out << unpminterms[i][j] << " -> " << pminterms[i][j] << ", ";
+    }
+    out << " ]\n";
+  }
+  */
+#if 0
+  dd_edge sum(root);
+  f->createEdge(unpminterms, pminterms, num_minterms, sum);
+  num_minterms = 0;
+  root += sum;
+  // out << "Equivalent event: " << root.getNode() << "\n";
+  // root.show(out, 2);
+#else
+  f->createEdge(unpminterms, pminterms, num_minterms, root);
+  // out << "Result: ";
+  // root.show(out, 2);
+#endif
+}
+
+
+void MEDDLY::satotf_opname::subevent::showInfo(output& out) const {
+  int num_levels = f->getDomain()->getNumVariables();
+  for (int i = 0; i < num_minterms; i++) {
+    out << "minterm[" << i << "]: ";
+    for (int lvl = num_levels; lvl > 0; lvl--) {
+      out << unpminterms[i][lvl] << " -> " << pminterms[i][lvl] << ", ";
+    }
+    out << "]\n";
+  }
+  root.show(out, 2);
+}
+
+long MEDDLY::satotf_opname::subevent::mintermMemoryUsage() const {
+  return long(num_minterms * 2) * long(f->getDomain()->getNumVariables()) * sizeof(int);
 }
 
 // ============================================================
 
-MEDDLY::satotf_opname::event::event(subfunc** p, int np)
+MEDDLY::satotf_opname::event::event(subevent** p, int np)
+: subevents(p), num_subevents(np) 
 {
-  pieces = p;
-  num_pieces = np;
+  if (p == 0 || np <= 0 || p[0]->getForest() == 0)
+    throw MEDDLY::error::INVALID_ARGUMENT;
+  f = p[0]->getForest();
+  for (int i=1; i<np; i++) {
+    if (p[i]->getForest() != f) throw MEDDLY::error::INVALID_ARGUMENT;
+  }
+
+  top = p[0]->getTop();
+  for (int i = 1; i < np; i++) {
+    if (top < p[i]->getTop()) top = p[i]->getTop();
+  }
+
+  // Find the variable that effect this event from the list of subevents.
+  // TODO:
+  // Not efficient. p[i] is a sorted list of integers.
+  // Should be able to insert in O(n) time
+  // where n is the sum(p[i]->getNumVars).
+  std::set<int> sVars;
+  for (int i = 0; i < np; i++) {
+    const int* subeventVars = p[i]->getVars();
+    sVars.insert(subeventVars, subeventVars+p[i]->getNumVars());
+  }
+
+  num_vars = sVars.size();
+  vars = new int[num_vars];
+  int* curr = &vars[0];
+  for (std::set<int>::iterator it=sVars.begin(); it!=sVars.end(); ) {
+    *curr++ = *it++;
+  }
+
+  root = dd_edge(f);
+  needs_rebuilding = true;
 }
 
 MEDDLY::satotf_opname::event::~event()
 {
-  for (int i=0; i<num_pieces; i++) delete pieces[i];
-  delete[] pieces;
+  for (int i=0; i<num_subevents; i++) delete subevents[i];
+  delete[] subevents;
 }
 
-void MEDDLY::satotf_opname::event::rebuild(dd_edge &e)
+bool MEDDLY::satotf_opname::event::rebuild()
 {
-  throw error(error::NOT_IMPLEMENTED);
+  MEDDLY_DCASSERT(num_subevents > 0);
+  if (!needs_rebuilding) return false;
+  needs_rebuilding = false;
+
+  // An event is a conjunction of sub-events (or sub-functions).
+  for (int i = 0; i < num_subevents; i++) {
+    subevents[i]->buildRoot();
+  }
+
+  dd_edge e = subevents[0]->getRoot();
+  for (int i = 1; i < num_subevents; i++) {
+    e *= subevents[i]->getRoot();
+  }
+
+  /*
+  if (e.getNode() == 0) {
+    ostream_output out(std::cout);
+    f->useDomain()->showInfo(out);
+    for (int i = 0; i < num_subevents; i++) {
+      out << "subevent: " << subevents[i]->getRoot().getNode() << "\n";
+      subevents[i]->getRoot().show(out, 2);
+    }
+  }
+  */
+
+  if (e == root) return false;
+  root += e;
+  return true;
+}
+
+void MEDDLY::satotf_opname::event::enlargeVariables()
+{
+  expert_domain* ed = static_cast<expert_forest*>(f)->useExpertDomain();
+  for (int i = 0; i < num_vars; i++) {
+    int unprimed = ABS(vars[i]);
+    int primed = -unprimed;
+    int unprimedSize = f->getLevelSize(unprimed);
+    int primedSize = f->getLevelSize(primed);
+    if (unprimedSize < primedSize) {
+      ed->enlargeVariableBound(unprimed, false, primedSize);
+    }
+    MEDDLY_DCASSERT(f->getLevelSize(unprimed) == f->getLevelSize(primed));
+  }
+}
+
+
+void MEDDLY::satotf_opname::event::showInfo(output& out) const {
+  for (int i = 0; i < num_subevents; i++) {
+    out << "subevent " << i << "\n";
+    subevents[i]->showInfo(out);
+  }
+}
+
+long MEDDLY::satotf_opname::event::mintermMemoryUsage() const {
+  long usage = 0;
+  for (int i = 0; i < num_subevents; i++) {
+    usage += subevents[i]->mintermMemoryUsage();
+  }
+  return usage;
 }
 
 // ============================================================
 
 MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd, 
   forest* mxd, forest* outmdd, event** E, int ne)
+: insetF(static_cast<expert_forest*>(inmdd)),
+  mxdF(static_cast<expert_forest*>(mxd)),
+  outsetF(static_cast<expert_forest*>(outmdd))
 {
-  // Set forests
-  insetF = inmdd;
-  mxdF = mxd;
-  outsetF = outmdd;
-
   if (0==insetF || 0==outsetF || 0==mxdF) throw error(error::MISCELLANEOUS);
 
   // Check for same domain
@@ -656,66 +877,288 @@ MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd,
     (insetF->getRangeType() != mxdF->getRangeType())        ||
     (outsetF->getRangeType() != mxdF->getRangeType())       ||
     (insetF->getEdgeLabeling() != forest::MULTI_TERMINAL)   ||
-    (outsetF->getEdgeLabeling() != forest::MULTI_TERMINAL)  ||
     (mxdF->getEdgeLabeling() != forest::MULTI_TERMINAL)     ||
     (outsetF->getEdgeLabeling() != forest::MULTI_TERMINAL)
   )
     throw error(error::TYPE_MISMATCH);
 
   // Forests are good; set number of variables
-  K = mxdF->getDomain()->getNumVariables();
+  num_levels = mxdF->getDomain()->getNumVariables() + 1;
 
-  // Events
-  events = E;
-  num_events = ne;
+  // Build the events-per-level data structure
+  // (0) Initialize
+  num_events_by_top_level = new int[num_levels];
+  num_events_by_level = new int[num_levels];
+  memset(num_events_by_top_level, 0, sizeof(int)*num_levels);
+  memset(num_events_by_level, 0, sizeof(int)*num_levels);
 
-  // preprocess events
-  // (1) determine total size of pieces array
-  int piecesLength = 0;
-  for (int i=0; i<num_events; i++) if (events[i]) {
-    const subfunc* const* PL = events[i]->getPieces();
-    for (int p=events[i]->getNumPieces()-1; p>=0; p--) {
-      piecesLength += PL[p]->getNumVars();
+  // (1) Determine the number of events per level
+  for (int i = 0; i < ne; i++) {
+    int nVars = E[i]->getNumVars();
+    const int* vars = E[i]->getVars();
+    for (int j = 0; j < nVars; j++) {
+      num_events_by_level[vars[j]]++;
+    }
+    num_events_by_top_level[E[i]->getTop()]++;
+  }
+
+  // (2) Allocate events[i]
+  events_by_top_level = new event**[num_levels];
+  events_by_level = new event**[num_levels];
+  for (int i = 0; i < num_levels; i++) {
+    events_by_top_level[i] = num_events_by_top_level[i] > 0
+      ? new event*[num_events_by_top_level[i]]: 0;
+    events_by_level[i] = num_events_by_level[i] > 0
+      ? new event*[num_events_by_level[i]]: 0;
+    num_events_by_top_level[i] = 0; // reset this; to be used by the next loop
+    num_events_by_level[i] = 0; // reset this; to be used by the next loop
+  }
+
+  // (3) Store events by level
+  for (int i = 0; i < ne; i++) {
+    int nVars = E[i]->getNumVars();
+    const int* vars = E[i]->getVars();
+    for (int j = 0; j < nVars; j++) {
+      int level = vars[j];
+      events_by_level[level][num_events_by_level[level]++] = E[i];
+    }
+    int level = E[i]->getTop();
+    events_by_top_level[level][num_events_by_top_level[level]++] = E[i];
+    E[i]->markForRebuilding();
+  }
+
+  // Build the subevents-per-level data structure
+  // (0) Initialize
+  num_subevents_by_level = new int[num_levels];
+  memset(num_subevents_by_level, 0, sizeof(int)*num_levels);
+
+  // (1) Determine the number of subevents per level
+  for (int i = 0; i < ne; i++) {
+    int nse = E[i]->getNumOfSubevents();
+    subevent** se = E[i]->getSubevents();
+    for (int j = 0; j < nse; j++) {
+      int nVars = se[j]->getNumVars();
+      const int* vars = se[j]->getVars();
+      for (int k = 0; k < nVars; k++) {
+        num_subevents_by_level[vars[k]]++;
+      }
     }
   }
-  // (2) build empty list for each level
-  piecesForLevel = new int[K+1];
-  for (int k=0; k<=K; k++) piecesForLevel[k] = -1;
-  // (3) for each piece, add it to the appropriate lists
-  pieces = new subfunc*[piecesLength];
-  int* nextPiece = new int[piecesLength];
-  int pptr = 0;
-  for (int i=0; i<num_events; i++) if (events[i]) {
-    subfunc** PL = events[i]->getPieces();
-    for (int p=events[i]->getNumPieces()-1; p>=0; p--) {
-      for (int v=PL[p]->getNumVars()-1; v>=0; v--) {
-        int k = PL[p]->getVars()[v];
-        // add PL[p] to list k
-        pieces[pptr] = PL[p];
-        nextPiece[pptr] = piecesForLevel[k];
-        piecesForLevel[k] = pptr;
-        pptr++;
-      } // for v
-      piecesLength += PL[p]->getNumVars();
-    } // for p
-  } // for i
-  // (4) defragment lists
-  defragLists(pieces, nextPiece, piecesForLevel, K);
-  // (5) cleanup
-  delete[] nextPiece;
+
+  // (2) Allocate subevents[i]
+  subevents_by_level = new subevent**[num_levels];
+  for (int i = 0; i < num_levels; i++) {
+    subevents_by_level[i] = num_subevents_by_level[i] > 0
+      ? new subevent*[num_subevents_by_level[i]]: 0;
+    num_subevents_by_level[i] = 0; // reset this; to be used by the next loop
+  }
+
+  // (3) Store subevents by level
+  for (int i = 0; i < ne; i++) {
+    int nse = E[i]->getNumOfSubevents();
+    subevent** se = E[i]->getSubevents();
+    for (int j = 0; j < nse; j++) {
+      int nVars = se[j]->getNumVars();
+      const int* vars = se[j]->getVars();
+      for (int k = 0; k < nVars; k++) {
+        int level = vars[k];
+        subevents_by_level[level][num_subevents_by_level[level]++] = se[j];
+      }
+    }
+  }
+
+  // confirmed local states
+  confirmed = new bool*[num_levels];
+  size_confirmed = new int[num_levels];
+  num_confirmed = new int[num_levels];
+  confirmed[0] = 0;
+  for (int i = 1; i < num_levels; i++) {
+    int level_size = mxdF->getLevelSize(-i);
+    confirmed[i] = (bool*) malloc(level_size * sizeof(bool));
+    for (int j = 0; j < level_size; j++) {
+      confirmed[i][j] = false;
+    }
+    size_confirmed[i] = level_size;
+    num_confirmed[i] = 0;
+  }
 
   // TBD - debug here
 }
 
 MEDDLY::satotf_opname::otf_relation::~otf_relation()
 {
-  for (int i=0; i<num_events; i++) delete events[i];
-  delete[] events;
+  // ostream_output out(std::cout);
+  // showInfo(out);
 
-  // DO NOT delete pieces[i] pointers, they're copies
-  delete[] pieces;
-  delete[] piecesForLevel;
+  for (int i = 0; i < num_levels; i++) {
+    delete[] subevents_by_level[i];
+    delete[] events_by_level[i];
+    delete[] events_by_top_level[i];
+    free(confirmed[i]);
+  }
+  delete[] subevents_by_level;
+  delete[] events_by_level;
+  delete[] events_by_top_level;
+  delete[] num_subevents_by_level;
+  delete[] num_events_by_level;
+  delete[] num_events_by_top_level;
+  delete[] confirmed;
+  delete[] size_confirmed;
+  delete[] num_confirmed;
 }
+
+void MEDDLY::satotf_opname::otf_relation::clearMinterms()
+{
+  for (int level = 1; level < num_levels; level++) {
+    // Get subevents affected by this level, and rebuild them.
+    int nSubevents = num_subevents_by_level[level];
+    for (int i = 0; i < nSubevents; i++) {
+      subevents_by_level[level][i]->clearMinterms();
+    }
+  }
+}
+
+
+bool MEDDLY::satotf_opname::otf_relation::confirm(int level, int index)
+{
+  // For each subevent that affects this level:
+  //    (1) call subevent::confirm()
+  //    (2) for each level k affected by the subevent,
+  //        (a) enlarge variable bound of k to variable bound of k'
+
+  enlargeConfirmedArrays(level, index+1);
+
+  MEDDLY_DCASSERT(size_confirmed[level] > index);
+  if (isConfirmed(level, index)) return false; 
+
+  // Get subevents affected by this level, and rebuild them.
+  int nSubevents = num_subevents_by_level[level];
+  for (int i = 0; i < nSubevents; i++) {
+    subevents_by_level[level][i]->confirm(const_cast<otf_relation&>(*this),
+        level, index);
+  }
+
+  // Get events affected by this level, and mark them stale.
+  const int nEvents = num_events_by_level[level];
+  for (int i = 0; i < nEvents; i++) {
+    // events_by_level[level][i]->enlargeVariables();
+    events_by_level[level][i]->markForRebuilding();
+  }
+
+  confirmed[level][index] = true;
+  num_confirmed[level]++;
+  return true;
+}
+
+
+void findConfirmedStates(MEDDLY::satotf_opname::otf_relation* rel,
+    bool** confirmed, int* num_confirmed,
+    MEDDLY::node_handle mdd, int level,
+    std::set<MEDDLY::node_handle>& visited) {
+  if (level == 0) return;
+  if (visited.find(mdd) != visited.end()) return;
+  visited.insert(mdd);
+
+  MEDDLY::expert_forest* insetF = rel->getInForest();
+  int mdd_level = insetF->getNodeLevel(mdd);
+  if (MEDDLY::isLevelAbove(level, mdd_level)) {
+    // skipped level; confirm all local states at this level
+    // go to the next level
+    int level_size = insetF->getLevelSize(level);
+    for (int i = 0; i < level_size; i++) {
+      if (!confirmed[level][i]) {
+        rel->confirm(level, i);
+      }
+    }
+    findConfirmedStates(rel, confirmed, num_confirmed, mdd, level-1, visited);
+  } else {
+    if (MEDDLY::isLevelAbove(mdd_level, level)) throw MEDDLY::error::INVALID_VARIABLE;
+    // mdd_level == level
+    MEDDLY::unpacked_node *nr = MEDDLY::unpacked_node::newFromNode(insetF, mdd, false);
+    for (int i = 0; i < nr->getNNZs(); i++) {
+      if (!confirmed[level][nr->i(i)]) {
+        rel->confirm(level, nr->i(i));
+      }
+      findConfirmedStates(rel, confirmed, num_confirmed, nr->d(i), level-1, visited);
+    }
+    MEDDLY::unpacked_node::recycle(nr);
+  }
+}
+
+void MEDDLY::satotf_opname::otf_relation::confirm(const dd_edge& set)
+{
+  // Perform a depth-first traversal of set:
+  //    At each level, mark all enabled states as confirmed.
+
+  // Enlarge the confirmed arrays if needed
+  for (int i = 1; i < num_levels; i++) {
+      enlargeConfirmedArrays(i, mxdF->getLevelSize(-i));
+  }
+  std::set<node_handle> visited;
+  findConfirmedStates(const_cast<otf_relation*>(this),
+      confirmed, num_confirmed, set.getNode(), num_levels-1, visited);
+
+  // ostream_output out(std::cout);
+  // showInfo(out);
+}
+
+
+
+void MEDDLY::satotf_opname::otf_relation::enlargeConfirmedArrays(int level, int sz)
+{
+#if 0
+  int curr = size_confirmed[level];
+  int needed = mxdF->getLevelSize(-level);
+  int new_size = curr*2 < needed? needed: curr*2;
+  confirmed[level] = (bool*) realloc(confirmed[level], new_size * sizeof(bool));
+  if (confirmed[level] == 0) throw error::INSUFFICIENT_MEMORY;
+  for ( ; curr < new_size; ) confirmed[level][curr++] = false;
+  size_confirmed[level] = curr;
+#else
+  if (sz <= size_confirmed[level]) return;
+  sz = MAX( sz , size_confirmed[level]*2 );
+  confirmed[level] = (bool*) realloc(confirmed[level], sz * sizeof(bool));
+  if (confirmed[level] == 0) throw error::INSUFFICIENT_MEMORY;
+  for (int i = size_confirmed[level]; i < sz; i++) confirmed[level][i] = false;
+  size_confirmed[level] = sz;
+#endif
+}
+
+
+void MEDDLY::satotf_opname::otf_relation::showInfo(output &strm) const
+{
+  for (int level = 1; level < num_levels; level++) {
+    for (int ei = 0; ei < getNumOfEvents(level); ei++) {
+      events_by_top_level[level][ei]->rebuild();
+    }
+  }
+  strm << "On-the-fly relation info:\n";
+  for (int level = 1; level < num_levels; level++) {
+    for (int ei = 0; ei < getNumOfEvents(level); ei++) {
+      strm << "Level: " << level << ", Event:[" << ei << "]: needs rebuilding? "
+        << (events_by_top_level[level][ei]->needsRebuilding()? "true": "false")
+        << "\n";
+      strm << "Depends on levels: [";
+      for (int j = 0; j < events_by_top_level[level][ei]->getNumVars(); j++) {
+        strm << " " << events_by_top_level[level][ei]->getVars()[j] << " ";
+      }
+      strm << "]\n";
+      events_by_top_level[level][ei]->showInfo(strm);
+      events_by_top_level[level][ei]->getRoot().show(strm, 2);
+    }
+  }
+}
+
+long MEDDLY::satotf_opname::otf_relation::mintermMemoryUsage() const {
+  long usage = 0;
+  for (int level = 1; level < num_levels; level++) {
+    for (int ei = 0; ei < getNumOfEvents(level); ei++) {
+      usage += events_by_top_level[level][ei]->mintermMemoryUsage();
+    }
+  }
+  return usage;
+}
+
 
 // ******************************************************************
 // *                       operation  methods                       *
@@ -816,6 +1259,12 @@ void MEDDLY::operation::removeStalesFromMonolithic()
 {
   if (Monolithic_CT) Monolithic_CT->removeStales();
 }
+
+void MEDDLY::operation::removeAllFromMonolithic()
+{
+  if (Monolithic_CT) Monolithic_CT->removeAll();
+}
+
 
 void MEDDLY::operation::markForDeletion()
 {

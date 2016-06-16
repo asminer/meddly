@@ -4,7 +4,11 @@
 
 ## compile library
 
-SUBDIRS = forests operations storage reordering .
+##
+## This version: don't use recursive make
+##
+
+## SUBDIRS = forests operations storage .
 
 lib_LTLIBRARIES = libmeddly.la
 
@@ -18,11 +22,6 @@ BUILT_SOURCES = _revision revision.h
 CLEANFILES = revision.h
 
 libmeddly_la_SOURCES = \
-  defines.h \
-  meddly.h \
-  meddly.hh \
-  meddly_expert.h \
-  meddly_expert.hh \
   meddly.cc \
   io.cc \
   node_wrappers.cc \
@@ -32,24 +31,71 @@ libmeddly_la_SOURCES = \
   domain.cc \
   forest.cc \
   compute_table.cc \
-  unique_table.h \
   unique_table.cc \
-  hash_stream.h \
-  loggers.h \
   loggers.cc \
-  timer.h \
-  global_rebuilder.cc
-
-libmeddly_la_LIBADD = \
-  forests/libforests.la \
-  operations/libops.la \
-  storage/libstorage.la \
-  reordering/libreordering.la
+  global_rebuilder.cc \
+  \
+  forests/mt.cc \
+  forests/mtmdd.cc \
+  forests/mtmddbool.cc \
+  forests/mtmddint.cc \
+  forests/mtmddreal.cc \
+  forests/mtmxd.cc \
+  forests/mtmxdbool.cc \
+  forests/mtmxdint.cc \
+  forests/mtmxdreal.cc \
+  forests/ev.cc \
+  forests/evmdd.cc \
+  forests/evmdd_plusint.cc \
+  forests/evmxd.cc \
+  forests/evmxd_timesreal.cc \
+  \
+  operations/init_builtin.cc \
+  operations/apply_base.cc   \
+  operations/mpz_object.cc   \
+  operations/copy.cc         \
+  operations/cardinality.cc  \
+  operations/complement.cc   \
+  operations/maxmin_range.cc \
+  operations/mdd2index.cc    \
+  operations/union.cc        \
+  operations/intersection.cc \
+  operations/difference.cc   \
+  operations/cross.cc        \
+  operations/maxmin.cc       \
+  operations/plus.cc         \
+  operations/minus.cc        \
+  operations/multiply.cc     \
+  operations/divide.cc       \
+  operations/modulo.cc       \
+  operations/comp_eq.cc      \
+  operations/comp_ne.cc      \
+  operations/comp_lt.cc      \
+  operations/comp_le.cc      \
+  operations/comp_gt.cc      \
+  operations/comp_ge.cc      \
+  operations/prepostimage.cc \
+  operations/reach_bfs.cc    \
+  operations/reach_dfs.cc    \
+  operations/sat_pregen.cc   \
+  operations/sat_otf.cc      \
+  operations/vect_matr.cc    \
+  operations/mm_mult.cc      \
+  \
+  storage/holeman.cc \
+  storage/hm_array.cc \
+  storage/hm_grid.cc \
+  storage/hm_heap.cc \
+  storage/hm_none.cc \
+  storage/old_scheme.cc \
+  storage/simple.cc \
+  storage/compact.cc \
+  storage/ct_classic.cc
 
 ## compile apps
-
-AM_CXXFLAGS = -Wall
 
 include_HEADERS = meddly.h meddly_expert.h meddly.hh meddly_expert.hh
 
 EXTRA_DIST = BuildRevNo revision.h
+
+AM_CXXFLAGS = -Wall

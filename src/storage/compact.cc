@@ -349,9 +349,10 @@ void MEDDLY::compact_storage
 }
 
 // ******************************************************************
+
 MEDDLY::node_address 
 MEDDLY::compact_storage
-::makeNode(node_handle p, const node_builder &nb, node_storage_flags opt)
+::makeNode(node_handle p, const unpacked_node &nb, node_storage_flags opt)
 {
 #ifdef DEBUG_ENCODING
   printf("compact_storage making node\n        temp:  ");
@@ -468,16 +469,8 @@ void MEDDLY::compact_storage::unlinkDownAndRecycle(node_address addr)
 
 // ******************************************************************
 
-bool MEDDLY::compact_storage
-::areDuplicates(node_address addr, const node_builder &nb) const
-{
-  return areDupsTempl(addr, nb);
-}
-
-// ******************************************************************
-
 bool MEDDLY::compact_storage::
-areDuplicates(node_address addr, const node_reader &nr) const
+areDuplicates(node_address addr, const unpacked_node &nr) const
 {
   return areDupsTempl(addr, nr);
 }
@@ -485,7 +478,7 @@ areDuplicates(node_address addr, const node_reader &nr) const
 // ******************************************************************
 
 void MEDDLY::compact_storage
-::fillReader(node_address addr, node_reader &nr) const
+::fillUnpacked(unpacked_node &nr, node_address addr) const
 {
 #ifdef DEBUG_ENCODING
   printf("compact_storage filling reader\n    internal: ");
@@ -494,11 +487,14 @@ void MEDDLY::compact_storage
   showNode(stdout, addr, true);
 #endif
 
-  // Copy hashed header
+  // Copy extra header
 
   if (hashedBytes) {
-    resize_header(nr, hashedBytes);
-    memcpy(extra_hashed(nr), HH(addr), hashedBytes);
+    memcpy(nr.HHdata(), HH(addr), hashedBytes);
+  }
+
+  if (unhashedBytes) {
+    memcpy(nr.UHdata(), UH(addr), unhashedBytes);
   }
 
   int size = sizeOf(addr);
@@ -534,23 +530,23 @@ void MEDDLY::compact_storage
 
 // ******************************************************************
 
-unsigned MEDDLY::compact_storage::hashNode(const node_header& node) const
+unsigned MEDDLY::compact_storage::hashNode(int level, node_address addr) const
 {
   hash_stream s;
-  s.start(node.level);
+  s.start(level);
 
   // Do the hashed header part, if any
   if (hashedBytes) {
-    s.push(HH(node.offset), hashedBytes);
+    s.push(HH(addr), hashedBytes);
   }
 
   //
   // Hash the node itself
-  int size = sizeOf(node.offset);
+  int size = sizeOf(addr);
   if (size < 0) {
-    hashSparse(s, node.offset, -size);
+    hashSparse(s, addr, -size);
   } else {
-    hashFull(s, node.offset, size);
+    hashFull(s, addr, size);
   }
 
   return s.finish();
@@ -814,7 +810,7 @@ MEDDLY::compact_storage
 
 MEDDLY::node_address
 MEDDLY::compact_storage
-::makeFullNode(node_handle p, int size, int pbytes, const node_builder &nb)
+::makeFullNode(node_handle p, int size, int pbytes, const unpacked_node &nb)
 {
   int slots = slotsForNode(size, pbytes, 0);
   node_address addr = allocNode(slots, p, true);
@@ -835,7 +831,7 @@ MEDDLY::compact_storage
 
 MEDDLY::node_address
 MEDDLY::compact_storage::makeSparseNode(node_handle p, int size, 
-  int pbytes, int ibytes, const node_builder &nb)
+  int pbytes, int ibytes, const unpacked_node &nb)
 {
   int slots = slotsForNode(-size, pbytes, ibytes);
   node_address addr = allocNode(slots, p, true);

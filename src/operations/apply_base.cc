@@ -94,30 +94,33 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
   const int aLevel = arg1F->getNodeLevel(a);
   const int bLevel = arg2F->getNodeLevel(b);
 
-  int resultLevel = MAX(aLevel, bLevel);
-  int resultSize = resF->getLevelSize(resultLevel);
-  node_builder& nb = resF->useNodeBuilder(resultLevel, resultSize);
+  const int resultLevel = MAX(aLevel, bLevel);
+  const int resultSize = resF->getLevelSize(resultLevel);
+
+  unpacked_node* C = unpacked_node::newFull(resF, resultLevel, resultSize);
 
   // Initialize readers
-  node_reader* A = (aLevel < resultLevel) 
-    ? arg1F->initRedundantReader(resultLevel, a, true)
-    : arg1F->initNodeReader(a, true);
+  unpacked_node *A = (aLevel < resultLevel) 
+    ? unpacked_node::newRedundant(arg1F, resultLevel, a, true)
+    : unpacked_node::newFromNode(arg1F, a, true)
+  ;
 
-  node_reader* B = (bLevel < resultLevel) 
-    ? arg2F->initRedundantReader(resultLevel, b, true)
-    : arg2F->initNodeReader(b, true);
+  unpacked_node *B = (bLevel < resultLevel)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, b, true)
+    : unpacked_node::newFromNode(arg2F, b, true)
+  ;
 
   // do computation
   for (int i=0; i<resultSize; i++) {
-    nb.d(i) = compute(A->d(i), B->d(i));
+    C->d_ref(i) = compute(A->d(i), B->d(i));
   }
 
   // cleanup
-  node_reader::recycle(B);
-  node_reader::recycle(A);
+  unpacked_node::recycle(B);
+  unpacked_node::recycle(A);
 
   // reduce and save result
-  result = resF->createReducedNode(-1, nb);
+  result = resF->createReducedNode(-1, C);
   saveResult(Key, a, b, result);
 
 #ifdef TRACE_ALL_OPS
@@ -195,33 +198,31 @@ MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b)
   int resultLevel = ABS(topLevel(aLevel, bLevel));
 
   int resultSize = resF->getLevelSize(resultLevel);
-  node_builder& nb = resF->useNodeBuilder(resultLevel, resultSize);
+
+  unpacked_node* C = unpacked_node::newFull(resF, resultLevel, resultSize);
 
   // Initialize readers
-  node_reader* A;
-  if (aLevel == resultLevel) {
-    A = arg1F->initNodeReader(a, true);
-  } else {
-    A = arg1F->initRedundantReader(resultLevel, a, true);
-  } 
+  unpacked_node *A = (aLevel < resultLevel) 
+    ? unpacked_node::newRedundant(arg1F, resultLevel, a, true)
+    : unpacked_node::newFromNode(arg1F, a, true)
+  ;
 
-  node_reader* B;
-  if (bLevel == resultLevel) {
-    B = arg2F->initNodeReader(b, true);
-  } else {
-    B = arg2F->initRedundantReader(resultLevel, b, true);
-  } 
+  unpacked_node *B = (bLevel < resultLevel)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, b, true)
+    : unpacked_node::newFromNode(arg2F, b, true)
+  ;
 
+  // Do computation
   for (int j=0; j<resultSize; j++) {
-    nb.d(j) = compute(j, resF->downLevel(resultLevel), A->d(j), B->d(j));
+    C->d_ref(j) = compute_r(j, resF->downLevel(resultLevel), A->d(j), B->d(j));
   }
 
   // cleanup
-  node_reader::recycle(B);
-  node_reader::recycle(A);
+  unpacked_node::recycle(B);
+  unpacked_node::recycle(A);
 
   // reduce and save result
-  result = resF->createReducedNode(-1, nb);
+  result = resF->createReducedNode(-1, C);
   saveResult(Key, a, b, result);
 
   /*
@@ -236,7 +237,7 @@ MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b)
 }
 
 MEDDLY::node_handle 
-MEDDLY::generic_binary_mxd::compute(int in, int k, node_handle a, node_handle b)
+MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle b)
 {
   //  Compute for the primed levels.
   //
@@ -255,56 +256,47 @@ MEDDLY::generic_binary_mxd::compute(int in, int k, node_handle a, node_handle b)
   }
   */
 
-  bool canSaveResult = true;
+  // bool canSaveResult = true;
 
   // Get level information
   const int aLevel = arg1F->getNodeLevel(a);
   const int bLevel = arg2F->getNodeLevel(b);
 
-  int resultSize = resF->getLevelSize(k);
-  node_builder& nb = resF->useNodeBuilder(k, resultSize);
+  const int resultSize = resF->getLevelSize(k);
+
+  unpacked_node* C = unpacked_node::newFull(resF, k, resultSize);
 
   // Initialize readers
-  node_reader* A;
+  unpacked_node *A = unpacked_node::useUnpackedNode();
+  unpacked_node *B = unpacked_node::useUnpackedNode();
+
   if (aLevel == k) {
-    A = arg1F->initNodeReader(a, true);
+    A->initFromNode(arg1F, a, true);
   } else if (arg1F->isFullyReduced()) {
-    A = arg1F->initRedundantReader(k, a, true);
+    A->initRedundant(arg1F, k, a, true);
   } else {
-    A = arg1F->initIdentityReader(k, in, a, true);
-    canSaveResult = false;
+    A->initIdentity(arg1F, k, in, a, true);
   }
 
-  node_reader* B;
   if (bLevel == k) {
-    B = arg2F->initNodeReader(b, true);
+    B->initFromNode(arg2F, b, true);
   } else if (arg2F->isFullyReduced()) {
-    B = arg2F->initRedundantReader(k, b, true);
+    B->initRedundant(arg2F, k, b, true);
   } else {
-    B = arg2F->initIdentityReader(k, in, b, true);
-    canSaveResult = false;
+    B->initIdentity(arg2F, k, in, b, true);
   }
 
-  int nnz = 0;
+  // Do computation
   for (int j=0; j<resultSize; j++) {
-    node_handle d = compute(A->d(j), B->d(j));
-    nb.d(j) = d;
-    if (d) nnz++;
+    C->d_ref(j) = compute(A->d(j), B->d(j));
   }
 
   // cleanup
-  node_reader::recycle(B);
-  node_reader::recycle(A);
+  unpacked_node::recycle(B);
+  unpacked_node::recycle(A);
 
   // reduce 
-  result = resF->createReducedNode(in, nb);
-
-  /*
-  // save result in compute table, when we can
-  if (1==nnz) canSaveResult = false;
-  if (canSaveResult)  saveResult(Key, a, b, result);
-  else                doneCTkey(Key);
-  */
+  result = resF->createReducedNode(in, C);
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
@@ -368,12 +360,12 @@ void MEDDLY::generic_binbylevel_mxd
 MEDDLY::node_handle 
 MEDDLY::generic_binbylevel_mxd::compute(int level, node_handle a, node_handle b) 
 {
-  return compute(-1, level, a, b);
+  return compute_r(-1, level, a, b);
 }
 
 MEDDLY::node_handle 
 MEDDLY::generic_binbylevel_mxd
-::compute(int in, int resultLevel, node_handle a, node_handle b)
+::compute_r(int in, int resultLevel, node_handle a, node_handle b)
 {
   node_handle result = 0;
   if (0==resultLevel) {
@@ -392,45 +384,48 @@ MEDDLY::generic_binbylevel_mxd
   const int bLevel = arg2F->getNodeLevel(b);
 
   int resultSize = resF->getLevelSize(resultLevel);
-  node_builder& nb = resF->useNodeBuilder(resultLevel, resultSize);
+
+  unpacked_node* C = unpacked_node::newFull(resF, resultLevel, resultSize);
 
   bool canSaveResult = true;
 
   // Initialize readers
-  node_reader* A;
+  unpacked_node* A = unpacked_node::useUnpackedNode();
+  unpacked_node* B = unpacked_node::useUnpackedNode();
+
   if (aLevel == resultLevel) {
-    A = arg1F->initNodeReader(a, true);
+    A->initFromNode(arg1F, a, true);
   } else if (resultLevel>0 || arg1F->isFullyReduced()) {
-    A = arg1F->initRedundantReader(resultLevel, a, true);
+    A->initRedundant(arg1F, resultLevel, a, true);
   } else {
-    A = arg1F->initIdentityReader(resultLevel, in, a, true);
+    A->initIdentity(arg1F, resultLevel, in, a, true);
     canSaveResult = false;
   }
 
-  node_reader* B;
   if (bLevel == resultLevel) {
-    B = arg2F->initNodeReader(b, true);
+    B->initFromNode(arg2F, b, true);
   } else if (resultLevel>0 || arg2F->isFullyReduced()) {
-    B = arg2F->initRedundantReader(resultLevel, b, true);
+    B->initRedundant(arg2F, resultLevel, b, true);
   } else {
-    B = arg2F->initIdentityReader(resultLevel, in, b, true);
+    B->initIdentity(arg2F, resultLevel, in, b, true);
     canSaveResult = false;
   }
 
+  // Do computation
   int nextLevel = resF->downLevel(resultLevel);
   int nnz = 0;
   for (int j=0; j<resultSize; j++) {
-    int d = compute(j, nextLevel, A->d(j), B->d(j));
-    nb.d(j) = d;
+    node_handle d = compute_r(j, nextLevel, A->d(j), B->d(j));
+    C->d_ref(j) = d;
     if (d) nnz++;
   }
 
   // cleanup
-  node_reader::recycle(B);
-  node_reader::recycle(A);
+  unpacked_node::recycle(B);
+  unpacked_node::recycle(A);
 
   // reduce
-  result = resF->createReducedNode(in, nb);
+  result = resF->createReducedNode(in, C);
 
   // save result in compute table, when we can
   if (resultLevel<0 && 1==nnz) canSaveResult = false;
@@ -528,20 +523,23 @@ void MEDDLY::generic_binary_evplus
   const int aLevel = arg1F->getNodeLevel(a);
   const int bLevel = arg2F->getNodeLevel(b);
 
-  int resultLevel = aLevel > bLevel? aLevel: bLevel;
-  int resultSize = resF->getLevelSize(resultLevel);
+  const int resultLevel = aLevel > bLevel? aLevel: bLevel;
+  const int resultSize = resF->getLevelSize(resultLevel);
 
   // Initialize result
-  node_builder& nb = resF->useNodeBuilder(resultLevel, resultSize);
+  unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
 
   // Initialize readers
-  node_reader* A = (aLevel < resultLevel)
-    ? arg1F->initRedundantReader(resultLevel, 0, a, true)
-    : arg1F->initNodeReader(a, true);
+  unpacked_node *A = (aLevel < resultLevel) 
+    ? unpacked_node::newRedundant(arg1F, resultLevel, 0, a, true)
+    : unpacked_node::newFromNode(arg1F, a, true)
+  ;
 
-  node_reader* B = (bLevel < resultLevel)
-    ? arg2F->initRedundantReader(resultLevel, 0, b, true)
-    : arg2F->initNodeReader(b, true);
+  unpacked_node *B = (bLevel < resultLevel)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, 0, b, true)
+    : unpacked_node::newFromNode(arg2F, b, true)
+  ;
+
 
   // do computation
   for (int i=0; i<resultSize; i++) {
@@ -550,13 +548,13 @@ void MEDDLY::generic_binary_evplus
     compute(aev + A->ei(i), A->d(i), 
             bev + B->ei(i), B->d(i), 
             ev, ed);
-    nb.d(i) = ed;
-    nb.setEdge(i, ev);
+    nb->d_ref(i) = ed;
+    nb->setEdge(i, ev);
   }
 
   // cleanup
-  node_reader::recycle(B);
-  node_reader::recycle(A);
+  unpacked_node::recycle(B);
+  unpacked_node::recycle(A);
 
   // Reduce
   node_handle cl;
@@ -633,37 +631,37 @@ void MEDDLY::generic_binary_evtimes
   const int bLevel = arg2F->getNodeLevel(b);
 
   // Initialize result
-  int resultLevel = ABS(topLevel(aLevel, bLevel));
-  int resultSize = resF->getLevelSize(resultLevel);
-  node_builder& nb = resF->useNodeBuilder(resultLevel, resultSize);
+  const int resultLevel = ABS(topLevel(aLevel, bLevel));
+  const int resultSize = resF->getLevelSize(resultLevel);
+  unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
 
   // Initialize readers
-  node_reader* A =
-    (aLevel == resultLevel)
-    ? arg1F->initNodeReader(a, true)
-    : arg1F->initRedundantReader(resultLevel, 1.0f, a, true);
+  unpacked_node *A = (aLevel < resultLevel) 
+    ? unpacked_node::newRedundant(arg1F, resultLevel, 1.0f, a, true)
+    : unpacked_node::newFromNode(arg1F, a, true)
+  ;
 
-  node_reader* B =
-    (bLevel == resultLevel)
-    ? arg2F->initNodeReader(b, true)
-    : arg2F->initRedundantReader(resultLevel, 1.0f, b, true);
+  unpacked_node *B = (bLevel < resultLevel)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, 1.0f, b, true)
+    : unpacked_node::newFromNode(arg2F, b, true)
+  ;
 
   // do computation
   for (int i=0; i<resultSize; i++) {
     float ev;
     node_handle ed;
-    compute(
+    compute_k(
         i, -resultLevel,
         aev * A->ef(i), A->d(i), 
         bev * B->ef(i), B->d(i), 
         ev, ed);
-    nb.d(i) = ed;
-    nb.setEdge(i, ev);
+    nb->d_ref(i) = ed;
+    nb->setEdge(i, ev);
   }
 
   // cleanup
-  node_reader::recycle(B);
-  node_reader::recycle(A);
+  unpacked_node::recycle(B);
+  unpacked_node::recycle(A);
 
   // Reduce
   node_handle cl;
@@ -677,7 +675,7 @@ void MEDDLY::generic_binary_evtimes
 }
 
 void MEDDLY::generic_binary_evtimes
-::compute(
+::compute_k(
   int in, int resultLevel,
   float aev, node_handle a,
   float bev, node_handle b,
@@ -695,23 +693,28 @@ void MEDDLY::generic_binary_evtimes
   const int bLevel = arg2F->getNodeLevel(b);
 
   // Initialize result
-  int resultSize = resF->getLevelSize(resultLevel);
-  node_builder& nb = resF->useNodeBuilder(resultLevel, resultSize);
+  const int resultSize = resF->getLevelSize(resultLevel);
+  unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
 
   // Initialize readers
-  node_reader* A =
-    (aLevel == resultLevel)
-    ? arg1F->initNodeReader(a, true)
-    : arg1F->isFullyReduced()
-    ? arg1F->initRedundantReader(resultLevel, 1.0f, a, true)
-    : arg1F->initIdentityReader(resultLevel, in, 1.0f, a, true);
+  unpacked_node *A = unpacked_node::useUnpackedNode();
+  unpacked_node *B = unpacked_node::useUnpackedNode();
 
-  node_reader* B =
-    (bLevel == resultLevel)
-    ? arg2F->initNodeReader(b, true)
-    : arg2F->isFullyReduced()
-    ? arg2F->initRedundantReader(resultLevel, 1.0f, b, true)
-    : arg2F->initIdentityReader(resultLevel, in, 1.0f, b, true);
+  if (aLevel == resultLevel) {
+    A->initFromNode(arg1F, a, true);
+  } else if (arg1F->isFullyReduced()) {
+    A->initRedundant(arg1F, resultLevel, 1.0f, a, true);
+  } else {
+    A->initIdentity(arg1F, resultLevel, in, 1.0f, a, true);
+  }
+
+  if (bLevel == resultLevel) {
+    B->initFromNode(arg2F, b, true);
+  } else if (arg2F->isFullyReduced()) {
+    B->initRedundant(arg2F, resultLevel, 1.0f, b, true);
+  } else {
+    B->initIdentity(arg2F, resultLevel, in, 1.0f, b, true);
+  }
 
   // do computation
   for (int i=0; i<resultSize; i++) {
@@ -721,13 +724,13 @@ void MEDDLY::generic_binary_evtimes
         aev * A->ef(i), A->d(i),
         bev * B->ef(i), B->d(i), 
         ev, ed);
-    nb.d(i) = ed;
-    nb.setEdge(i, ev);
+    nb->d_ref(i) = ed;
+    nb->setEdge(i, ev);
   }
 
   // cleanup
-  node_reader::recycle(B);
-  node_reader::recycle(A);
+  unpacked_node::recycle(B);
+  unpacked_node::recycle(A);
 
   // Reduce
   node_handle cl;
