@@ -210,9 +210,9 @@ void numTrueGeneral(const int* levels, int* bottom, int n, int deflt, dd_edge &e
     cerr << "]\n";
 #endif
     for (int i=0; i<n; i++) { 
-      node_builder& nb = ef->useNodeBuilder(levels[ki], 2);
-      nb.d(0) = ef->linkNode(bottom[i]);
-      nb.d(1) = ef->linkNode( (i+1<n) ? bottom[i+1] : deflt );
+      unpacked_node* nb = unpacked_node::newFull(ef, levels[ki], 2);
+      nb->d_ref(0) = ef->linkNode(bottom[i]);
+      nb->d_ref(1) = ef->linkNode( (i+1<n) ? bottom[i+1] : deflt );
       current[i] = ef->createReducedNode(-1, nb);
     } // for i
     //

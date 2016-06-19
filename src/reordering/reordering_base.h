@@ -14,7 +14,7 @@ protected:
   int getInCount(expert_forest* forest, node_handle p) const;
 
 public:
-  virtual void reorderVariables(expert_forest* forest, const int* order) = 0;
+  virtual void reorderVariables(expert_forest* forest, const int* level2var) = 0;
 };
 
 inline const unique_table* reordering_base::get_unique_table(expert_forest* forest) const

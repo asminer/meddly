@@ -1,3 +1,3 @@
 # $Id$
 
-autoreconf --install --verbose
+autoreconf --force --install --verbose

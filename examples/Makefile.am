@@ -26,7 +26,10 @@ life \
 libinfo \
 square1 \
 swaps \
-rubiks_rings
+rubiks_rings \
+rebuild_mdd \
+test_reorder_mtmxd \
+rubiks_cube_phase
 
 # test_user_operation 
 
@@ -96,6 +99,15 @@ swaps_LDADD = ../src/libmeddly.la
 
 rubiks_rings_SOURCES = rubiks_rings.cc
 rubiks_rings_LDADD = ../src/libmeddly.la
+
+rebuild_mdd_SOURCES = rebuild_mdd.cc
+rebuild_mdd_LDADD = ../src/libmeddly.la
+
+test_reorder_mtmxd_SOURCES = test_reorder_mtmxd.cc
+test_reorder_mtmxd_LDADD = ../src/libmeddly.la
+
+rubiks_cube_phase_SOURCES = rubiks_cube_phase.cc
+rubiks_cube_phase_LDADD = ../src/libmeddly.la
 
 # test_user_operation_SOURCES = test_user_operation.cc
 # test_user_operation_LDADD = ../src/libmeddly.la

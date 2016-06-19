@@ -1349,10 +1349,10 @@ MEDDLY::expert_forest::moveNodeOffset(MEDDLY::node_handle node, node_address old
 }
 
 inline void
-MEDDLY::expert_forest::getVariableOrder(int* order)
+MEDDLY::expert_forest::getVariableOrder(int* level2var)
 {
   // Assume order has enough space
-  memcpy(order, order_level, sizeof(int) * (getNumVariables() + 1));
+  memcpy(level2var, order_level, sizeof(int) * (getNumVariables() + 1));
 }
 
 // ******************************************************************

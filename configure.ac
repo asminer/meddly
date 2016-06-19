@@ -5,8 +5,8 @@
 
 ## AC_PREREQ(2.60)
 AC_PREREQ(2.59)
-AC_INIT([MEDDLY], [0.13], [asminer@iastate.edu], meddly, [http://meddly.sourceforge.net])
-AM_INIT_AUTOMAKE
+AC_INIT([MEDDLY], [0.14], [asminer@iastate.edu], meddly, [http://meddly.sourceforge.net])
+AM_INIT_AUTOMAKE([-Wall foreign color-tests subdir-objects])
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_SRCDIR([src/meddly.h])
 AC_CONFIG_MACRO_DIR([m4])
@@ -15,6 +15,7 @@ AC_PREFIX_DEFAULT([$PWD])
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
+AM_PROG_AR
 AM_PROG_LIBTOOL
 
 # Checks for libraries.
@@ -56,9 +57,6 @@ AC_CHECK_FUNCS([getrusage gettimeofday memmove memset strtol])
 AC_CONFIG_FILES([Makefile
                  examples/Makefile
                  src/Makefile
-                 src/forests/Makefile
-                 src/operations/Makefile
-                 src/storage/Makefile
                  tests/Makefile])
 
 AC_OUTPUT

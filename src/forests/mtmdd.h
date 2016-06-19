@@ -32,7 +32,7 @@ class MEDDLY::mtmdd_forest : public mt_forest {
   public:
     mtmdd_forest(int dsl, domain* d, range_type t, const policies &p);
 
-    virtual void reorderVariables(const int* order);
+    virtual void reorderVariables(const int* level2var);
     virtual void swapAdjacentVariables(int level);
     virtual void moveDownVariable(int high, int low);
     virtual void moveUpVariable(int low, int high);
@@ -54,29 +54,8 @@ class MEDDLY::mtmdd_forest : public mt_forest {
       return p;
     }
 
-//    // Reorder by swapping the lowest inversion until none exists
-//    void reorderVariablesLowestInversion(const int* order);
-//    // Reorder by swapping the highest inversion until none exists
-//    void reorderVariablesHighestInversion(const int* order);
-//    // Reorder by swapping until the lowest variable is at the right level
-//    void reorderVariablesSinkDown(const int* order);
-//    // Reorder by swapping until the highest variable is at the right level
-//    void reorderVariablesBubbleUp(const int* order);
-//    // Reorder by swapping the inversion with lowest cost until none exists
-//    void reorderVariablesLowestCost(const int* order);
-//    // Reorder by swapping the inversion with lowest memory cost until none exists
-//    void reorderVariablesLowestMemory(const int* order);
-//    // Reorder by random swap
-//    void reorderVariablesRandom(const int* order);
-//    // Reorder by swapping the inversion with smallest average in count
-//    void reorderVariablesLARC(const int* order);
-
     // Move the variable to the optimal level between top and bottom
     void sifting(int var, int top, int bottom);
-
-//    long calculate_swap_cost(int level);
-//    long calculate_swap_memory_cost(int level);
-//    double calculate_avg_ref_count(int level);
 
   protected:
     class mtmdd_iterator : public mt_iterator {

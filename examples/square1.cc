@@ -75,16 +75,16 @@ void rotateMove(const int* delta, int N, dd_edge &answer)
       continue;
     }
 
-    node_builder& nk = EF->useNodeBuilder(k, N);
+    unpacked_node* nk = unpacked_node::newFull(EF, k, N);
 
     for (int i=0; i<N; i++) {
       if (delta[i] < 0) {
-        nk.d(i) = EF->handleForValue(0);
+        nk->d_ref(i) = EF->handleForValue(0);
       } else {
-        node_builder& nkp = EF->useSparseBuilder(-k, 1);
-        nkp.i(0) = delta[i];
-        nkp.d(0) = EF->linkNode(bottom);
-        nk.d(i) = EF->createReducedNode(i, nkp);
+        unpacked_node* nkp = unpacked_node::newSparse(EF, -k, 1);
+        nkp->i_ref(0) = delta[i];
+        nkp->d_ref(0) = EF->linkNode(bottom);
+        nk->d_ref(i) = EF->createReducedNode(i, nkp);
       }
     } // for i
 
@@ -106,38 +106,38 @@ void exchangeMove(bool left, dd_edge &answer)
   for (int k=1; k<=K; k++) {
     if (EF->getLevelSize(k) == 2) {
       // the exchange level
-      node_builder& nk = EF->useNodeBuilder(k, 2);
-      node_builder& nkp = EF->useSparseBuilder(-k, 1);
-      nkp.i(0) = 1;
-      nkp.d(0) = EF->linkNode(bottom);
-      nk.d(0) = EF->createReducedNode(0, nkp);
-      nkp = EF->useSparseBuilder(-k, 1);
-      nkp.i(0) = 0;
-      nkp.d(0) = EF->linkNode(bottom);
-      nk.d(1) = EF->createReducedNode(1, nkp);
+      unpacked_node* nk = unpacked_node::newFull(EF, k, 2);
+      unpacked_node* nkp = unpacked_node::newSparse(EF, -k, 1);
+      nkp->i_ref(0) = 1;
+      nkp->d_ref(0) = EF->linkNode(bottom);
+      nk->d_ref(0) = EF->createReducedNode(0, nkp);
+      nkp = unpacked_node::newSparse(EF, -k, 1);
+      nkp->i_ref(0) = 0;
+      nkp->d_ref(0) = EF->linkNode(bottom);
+      nk->d_ref(1) = EF->createReducedNode(1, nkp);
       EF->unlinkNode(bottom);
       bottom = EF->createReducedNode(-1, nk);
       continue;
     }
 
-    node_builder& nk = EF->useNodeBuilder(k, 24);
+    unpacked_node* nk = unpacked_node::newFull(EF, k, 24);
     for (int i=0; i<24; i++) {
       if (isWideLeft[k] && 0==i%6) {
         // can't rotate, wide piece is in the way
-        nk.d(i) = 0;
+        nk->d_ref(i) = 0;
         continue;
       }
       
       if ((i%12>5) == left) {
         // exchange this piece
         // i -> (i+12)%24
-        node_builder& nkp = EF->useSparseBuilder(-k, 1);
-        nkp.i(0) = (i+12)%24;
-        nkp.d(0) = EF->linkNode(bottom);
-        nk.d(i) = EF->createReducedNode(-1, nkp);
+        unpacked_node* nkp = unpacked_node::newSparse(EF, -k, 1);
+        nkp->i_ref(0) = (i+12)%24;
+        nkp->d_ref(0) = EF->linkNode(bottom);
+        nk->d_ref(i) = EF->createReducedNode(-1, nkp);
       } else {
         // this piece doesn't move
-        nk.d(i) = EF->linkNode(bottom);
+        nk->d_ref(i) = EF->linkNode(bottom);
       }
 
     } // for i

@@ -35,34 +35,43 @@ protected:
   }
 
 public:
-  virtual void reorderVariables(expert_forest* forest, const int* order)
+  virtual void reorderVariables(expert_forest* forest, const int* level2var)
   {
     int size = forest->getDomain()->getNumVariables();
-    IndexedHeap<long, less<double> > heap(size);
 
+    // Transpose order
+    int* var2level = new int[size];
+    var2level[0] = 0;
+    for (int i = 1; i <= size; i++) {
+      var2level[level2var[i]] = i;
+    }
+
+    IndexedHeap<long, less<double>> heap(size);
     for (int i = 1; i < size; i++) {
-      if (order[forest->getVarByLevel(i)] > order[forest->getVarByLevel(i+1)]) {
+      if (var2level[forest->getVarByLevel(i)] > var2level[forest->getVarByLevel(i + 1)]) {
         double weight = calculate_average_ref_count(forest, i);
         heap.push(i, weight);
       }
     }
 
-    while(!heap.empty()) {
+    while (!heap.empty()) {
       int level = heap.top_key();
       forest->swapAdjacentVariables(level);
       heap.pop();
 
       if (level < size-1
-          && (order[forest->getVarByLevel(level+1)] > order[forest->getVarByLevel(level+2)])) {
+          && var2level[forest->getVarByLevel(level + 1)] > var2level[forest->getVarByLevel(level + 2)]) {
         double weight = calculate_average_ref_count(forest, level + 1);
         heap.push(level + 1, weight);
       }
       if (level > 1
-          && (order[forest->getVarByLevel(level-1)] > order[forest->getVarByLevel(level)])) {
+          && var2level[forest->getVarByLevel(level - 1)] > var2level[forest->getVarByLevel(level)]) {
         double weight = calculate_average_ref_count(forest, level - 1);
         heap.push(level - 1, weight);
       }
     }
+
+    delete[] var2level;
   }
 };
 

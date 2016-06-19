@@ -44,7 +44,7 @@ MEDDLY::mtmxd_forest::mtmxd_iterator::mtmxd_iterator(const expert_forest *F)
 {
 }
 
-void MEDDLY::mtmxd_forest::reorderVariables(const int* order)
+void MEDDLY::mtmxd_forest::reorderVariables(const int* level2var)
 {
   removeAllComputeTableEntries();
 
@@ -59,7 +59,7 @@ void MEDDLY::mtmxd_forest::reorderVariables(const int* order)
 //  resetPeakMemoryUsed();
 
   auto reordering = reordering_factory::create(getPolicies().reorder);
-  reordering->reorderVariables(this, order);
+  reordering->reorderVariables(this, level2var);
 
 //  for(int i=1; i<=size; i++) {
 //    printf("Lv %d: %d\n", i, unique->getNumEntries(getVarByLevel(i)));

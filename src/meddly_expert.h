@@ -1819,9 +1819,9 @@ class MEDDLY::expert_forest: public forest
     /*
      * Reorganize the variables in a certain order.
      */
-    virtual void reorderVariables(const int* order) = 0;
+    virtual void reorderVariables(const int* level2var) = 0;
 
-    void getVariableOrder(int* order);
+    void getVariableOrder(int* level2var);
 
     /*
      * Swap the variables at level and level+1.
