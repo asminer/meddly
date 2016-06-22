@@ -247,9 +247,11 @@ int parse_F(FILE* inf, forest_t* F)
    ================================================================ */
 
 
-int parse_p(FILE* inf, char* pstr, int plen)
+int parse_p(FILE* inf, int* fid, char* pstr, int plen)
 {
+  if (!matchInt(inf, fid))        return 0;
   if (' ' != matchChar(inf, " ")) return 0;
+
   if (0==pstr) plen = 0;
   int i;
   plen--;

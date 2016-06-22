@@ -128,6 +128,7 @@ int main(int argc, const char** argv)
   char pbuffer[plength];
   update_t* alist = 0;
   forest_t* F = 0; 
+  int fid = 0;
 
   /*
     Initialize screen data
@@ -228,11 +229,11 @@ int main(int argc, const char** argv)
 #ifdef DEBUG_PARSER
         printf("Parsing p record\n");
 #endif
-        parse_p(inf, pbuffer, plength);
+        parse_p(inf, &fid, pbuffer, plength);
 #ifdef DEBUG_PARSER
-        printf("Got p string: `%s'\n", pbuffer);
+        printf("Got p record fid: %d string: `%s'\n", fid, pbuffer);
 #endif
-        update_p(pbuffer);
+        update_p(&S, fid, pbuffer);
         break;
       
       default:
@@ -271,7 +272,9 @@ int main(int argc, const char** argv)
     Done processing file.
     Wait for user to explicitly quit.
   */
-  update_p("End of file");
+  for (int i=0; i<=S.nf; i++) {
+    if (S.F[i]) update_p(&S, S.F[i]->fid, "End of file");
+  }
   for (;;) {
     int key = keystroke(1);
     if ('q' == key || 'Q' == key) break;

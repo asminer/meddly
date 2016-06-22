@@ -268,19 +268,33 @@ void update_windows(screen_t *S)
   update_keys(S);
 }
 
-void update_p(const char* str)
+void update_p(screen_t *S, int fid, const char* str)
 {
+  if (0==S) return;
+
+  /* Find slot number */
+  int f;
+  for (f=S->nf; f; f--) {
+    if (S->F[f]) {
+      if (fid == S->F[f]->fid) break;
+    }
+  }
+  if (f<1) return;
+
   int row, col;
   getmaxyx(stdscr, row, col);
-  move(row-1, 0);
-  int i;
-  for (i=0; i<col; i++) {
-    if (0==str[i]) break;
-    addch(str[i]);
-  }
-  for (; i<col; i++) {
+  int lcol = (f-1)*S->forwidth+1;
+  int rcol = f*S->forwidth;
+
+  /* Clear out display */
+  move(row-1, lcol);
+  for (int i=lcol; i<=rcol; i++) {
     addch(' ');
   }
+
+  /* Update display */
+  center(row-1, lcol, rcol, str);
+
   refresh();
 }
 

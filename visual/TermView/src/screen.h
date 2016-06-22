@@ -49,9 +49,11 @@ void update_windows(screen_t* S);
 
 /**
   Update screen with phase information.
+    @param  S     Screen info
+    @param  fid   Raw forest id
     @param  str   String - next phase of computation.
 */
-void update_p(const char* str);
+void update_p(screen_t* S, int fid, const char* str);
 
 /**
   Get a keystroke.

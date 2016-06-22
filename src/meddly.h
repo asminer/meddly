@@ -1081,9 +1081,10 @@ class MEDDLY::forest {
             Start a new phase of computation.
             May be ignored depending on the file format.
 
+              @param  f         Forest this applies to.
               @param  comment   Info to display about this phase.
         */
-        virtual void newPhase(const char* comment) = 0;
+        virtual void newPhase(const forest* f, const char* comment) = 0;
 
         /**
             Called once, when the logger is attached to a forest.

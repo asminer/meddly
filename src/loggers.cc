@@ -45,7 +45,7 @@ void MEDDLY::json_logger::addComment(const char*)
   // Completely ignored
 }
 
-void MEDDLY::json_logger::newPhase(const char*)
+void MEDDLY::json_logger::newPhase(const forest*, const char*)
 {
   // Completely ignored
 }
@@ -139,9 +139,18 @@ void MEDDLY::simple_logger::addComment(const char* str)
   out << "\n";
 }
 
-void MEDDLY::simple_logger::newPhase(const char* str)
+void MEDDLY::simple_logger::newPhase(const forest* f, const char* str)
 {
   out << "p ";
+  const expert_forest* ef = dynamic_cast<const expert_forest*>(f);
+  MEDDLY_DCASSERT(ef);
+  // Failsafe
+  if (ef) {
+    out << ef->FID() << " ";
+  } else {
+    out << "0 ";
+  }
+
   if (0==str) {
     out << "\n";
     return;
@@ -240,13 +249,12 @@ void MEDDLY::simple_logger
   ucount = aggregate;
   flushLog();
 #else
-  out << "a " << f->FID() << " " << level << " " << delta;
+  out << "a " << f->FID() << " " << level << " " << delta << "\n";
   if (recordingTimeStamps()) {
     long sec, usec;
     currentTime(sec, usec);
-    out << " t " << sec << " " << usec;
+    out << " t " << sec << " " << usec << "\n";
   }
-  out << "\n";
   out.flush();
 #endif
 }
@@ -269,13 +277,13 @@ void MEDDLY::simple_logger::flushLog()
       }
     }
 
+    out << "\n";
+
     if (recordingTimeStamps()) {
       long sec, usec;
       currentTime(sec, usec);
-      out << " t " << sec << " " << usec;
+      out << " t " << sec << " " << usec << "\n";
     }
-
-    out << "\n";
 
   }
 #endif

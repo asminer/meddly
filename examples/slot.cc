@@ -196,7 +196,7 @@ void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
   //
   // Build initial state
   //
-  if (LOG) LOG->newPhase("Building initial state");
+  if (LOG) LOG->newPhase(mdd, "Building initial state");
   int* initial = new int[1+N*8];
   for (int i=N*8; i; i--) initial[i] = 0;
   int* initLocal = initial;
@@ -210,7 +210,7 @@ void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
   //
   // Build next-state function
   //
-  if (LOG) LOG->newPhase("Building next-state function");
+  if (LOG) LOG->newPhase(mxd, "Building next-state function");
   dd_edge nsf(mxd);
   satpregen_opname::pregen_relation* ensf = 0;
   specialized_operation* sat = 0;
@@ -245,7 +245,7 @@ void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
   //
   // Build reachable states
   //
-  if (LOG) LOG->newPhase("Building reachability set");
+  if (LOG) LOG->newPhase(mdd, "Building reachability set");
   dd_edge reachable(mdd);
   start.note_time();
   switch (method) {
@@ -318,7 +318,8 @@ void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
   // or, don't, and let cleanup() take care of it?
 
   if (LOG) {
-    LOG->newPhase("Cleanup");
+    LOG->newPhase(mdd, "Cleanup");
+    LOG->newPhase(mxd, "Cleanup");
     MEDDLY::destroyDomain(d);
   }
 }
