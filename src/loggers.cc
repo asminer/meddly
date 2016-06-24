@@ -253,7 +253,7 @@ void MEDDLY::simple_logger
   if (recordingTimeStamps()) {
     long sec, usec;
     currentTime(sec, usec);
-    out << " t " << sec << " " << usec << "\n";
+    out << "t " << sec << " " << usec << "\n";
   }
   out.flush();
 #endif
@@ -282,7 +282,7 @@ void MEDDLY::simple_logger::flushLog()
     if (recordingTimeStamps()) {
       long sec, usec;
       currentTime(sec, usec);
-      out << " t " << sec << " " << usec << "\n";
+      out << "t " << sec << " " << usec << "\n";
     }
 
   }
