@@ -1,5 +1,5 @@
 
-// $Id: rubiks_cube.cc 653 2016-02-17 00:00:51Z cjiang1209 $
+// $Id$
 
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
@@ -176,16 +176,19 @@ static Component level2components[3][21] = {
   }
 };
 
-//static vector<vector<Action>> actions = {
-//  { { Face::F, Direction::CW }, { Face::B, Direction::CW } },
-//  { { Face::L, Direction::CW }, { Face::R, Direction::CW } },
-//  { { Face::U, Direction::CW }, { Face::D, Direction::CW } }
-//};
-
 static vector<vector<Action>> actions = {
-  { { Face::F, Direction::CW }, { Face::B, Direction::CW } },
-  { { Face::L, Direction::CW }, { Face::R, Direction::CW } },
-  { { Face::U, Direction::CW }, { Face::D, Direction::CW } }
+  {
+    { Face::F, Direction::CW },
+    { Face::B, Direction::CW }
+  },
+  {
+    { Face::L, Direction::CW },
+    { Face::R, Direction::CW }
+  },
+  {
+    { Face::U, Direction::CW },
+    { Face::D, Direction::CW }
+  }
 };
 
 //static vector<vector<Action>> actions ={
@@ -304,6 +307,7 @@ void show_num_nodes(const dd_edge& e)
   printf("#Nodes: %d\n", e.getForest()->getCurrentNumNodes());
   FILE_output out(stdout);
   e.show(out, 2);
+  printf("#States: %1.6e\n", e.getCardinality());
 }
 
 dd_edge BuildMoveHelper(
@@ -1004,17 +1008,8 @@ int phased_saturate()
   static_cast<expert_forest*>(relations[1])->reorderVariables(&level2vars[1][0]);
   static_cast<expert_forest*>(relations[2])->reorderVariables(&level2vars[2][0]);
 
-//  {
-//    dd_edge e(relations[2]);
-//    for (const auto& action : actions[2]) {
-//      e += BuildMove(relations[2], action.face, action.direction);
-//    }
-//    static_cast<expert_forest*>(relations[2])->removeAllComputeTableEntries();
-//  }
-
   vector<dd_edge> nsfs;
   for (int i = 0; i < num_phases; i++) {
-//  for (int i = num_phases - 1; i >= 0; i--) {
     dd_edge e(relations[i]);
     for (const auto& action : actions[i]) {
       e += BuildMove(relations[i], action.face, action.direction);
@@ -1023,30 +1018,6 @@ int phased_saturate()
 
     show_num_nodes(e);
   }
-
-//  show_num_nodes(nsfs[0]);
-  static_cast<expert_forest*>(relations[0])->dynamicReorderVariables(16, 1);
-////  show_num_nodes(nsfs[0]);
-//  static_cast<expert_forest*>(relations[0])->dynamicReorderVariables(8, 5);
-////  show_num_nodes(nsfs[0]);
-//  static_cast<expert_forest*>(relations[0])->dynamicReorderVariables(12, 9);
-////  show_num_nodes(nsfs[0]);
-//  static_cast<expert_forest*>(relations[0])->dynamicReorderVariables(16, 13);
-  show_num_nodes(nsfs[0]);
-
-//  show_num_nodes(nsfs[1]);
-//  static_cast<expert_forest*>(relations[1])->dynamicReorderVariables(4, 1);
-//  static_cast<expert_forest*>(relations[1])->dynamicReorderVariables(8, 5);
-//  static_cast<expert_forest*>(relations[1])->dynamicReorderVariables(12, 9);
-//  static_cast<expert_forest*>(relations[1])->dynamicReorderVariables(16, 13);
-//  show_num_nodes(nsfs[1]);
-
-//  show_num_nodes(nsfs[2]);
-//  static_cast<expert_forest*>(relations[2])->dynamicReorderVariables(4, 1);
-//  static_cast<expert_forest*>(relations[2])->dynamicReorderVariables(8, 5);
-//  static_cast<expert_forest*>(relations[2])->dynamicReorderVariables(12, 9);
-//  static_cast<expert_forest*>(relations[2])->dynamicReorderVariables(16, 13);
-//  show_num_nodes(nsfs[2]);
 
   // Build the initial states
   assert(states);
@@ -1089,7 +1060,7 @@ int main(int argc, char *argv[])
 
   // Initialize MEDDLY
   MEDDLY::settings s;
-  s.ctSettings.style = MonolithicChainedHash;
+  s.ctSettings.style = MonolithicUnchainedHash;
   s.ctSettings.maxSize = 16 * 16777216;
   // s.ctSettings.staleRemoval =
   //   MEDDLY::settings::computeTableSettings::Lazy;
