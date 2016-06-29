@@ -195,6 +195,26 @@ inline int MEDDLY::forest::upLevel(int k) {
   return (k<0) ? (-k) : (-k-1);
 }
 
+inline const MEDDLY::forest::policies& MEDDLY::forest::getDefaultPoliciesMDDs()
+{
+  return mddDefaults;
+}
+
+inline const MEDDLY::forest::policies& MEDDLY::forest::getDefaultPoliciesMXDs()
+{
+  return mxdDefaults;
+}
+
+inline void MEDDLY::forest::setDefaultPoliciesMDDs(const policies& p)
+{
+  mddDefaults = p;
+}
+
+inline void MEDDLY::forest::setDefaultPoliciesMXDs(const policies& p)
+{
+  mxdDefaults = p;
+}
+
 inline unsigned MEDDLY::forest::FID() const {
   return fid;
 }

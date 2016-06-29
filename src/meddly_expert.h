@@ -313,10 +313,19 @@ struct MEDDLY::settings {
 
     /// Settings for the compute table(s)
     computeTableSettings ctSettings;
-    /// Default forest policies for "sets"
-    forest::policies mddDefaults;
-    /// Default forest policies for "relations"
-    forest::policies mxdDefaults;
+
+    /*
+      forest::policies mddDefaults
+      
+      has been moved to class forest
+    */
+
+    /*
+      forest::policies mxdDefaults
+
+      has been moved to class forest
+    */
+
     /// Initializer for operations
     op_initializer* operationBuilder;
 

@@ -311,7 +311,7 @@ MEDDLY::domain
 ::createForest(bool rel, forest::range_type t, forest::edge_labeling e)
 {
   return createForest(rel, t, e, 
-    rel ? meddlySettings.mxdDefaults : meddlySettings.mddDefaults, 0);
+    rel ? forest::getDefaultPoliciesMXDs() : forest::getDefaultPoliciesMDDs(), 0);
 }
 
 void MEDDLY::domain::showInfo(output &strm)

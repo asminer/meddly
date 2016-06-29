@@ -1149,6 +1149,28 @@ class MEDDLY::forest {
     */
     static int upLevel(int k);
 
+    /**
+        Get the default policies for MDD forests.
+    */
+    static const policies& getDefaultPoliciesMDDs();
+
+    /**
+        Get the default policies for MxD forests.
+    */
+    static const policies& getDefaultPoliciesMXDs();
+
+    /**
+        Set the default policies for MDD forests.
+    */
+    static void setDefaultPoliciesMDDs(const policies&);
+
+    /**
+        Set the default policies for MxD forests.
+    */
+    static void setDefaultPoliciesMXDs(const policies&);
+
+        
+
   // ------------------------------------------------------------
   // inlines.
   public:
@@ -1189,7 +1211,7 @@ class MEDDLY::forest {
     /// Check if we match a specific type of forest
     bool matches(bool isR, range_type rt, edge_labeling el) const;
 
-    /// Returne the current policies used by this forest.
+    /// Returns the current policies used by this forest.
     const policies& getPolicies() const;
 
     /// Returns the reduction rule used by this forest.
@@ -1773,6 +1795,10 @@ class MEDDLY::forest {
 
   // ------------------------------------------------------------
   // Ugly details from here down.
+  private:  // Defaults
+    static policies mddDefaults;
+    static policies mxdDefaults;
+
   private:  // Domain info 
     friend class domain;
     int d_slot;

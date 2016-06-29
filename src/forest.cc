@@ -177,6 +177,9 @@ void MEDDLY::forest::logger::currentTime(long &sec, long &usec)
 
 unsigned MEDDLY::forest::gfid = 0;
 
+MEDDLY::forest::policies MEDDLY::forest::mddDefaults(0);
+MEDDLY::forest::policies MEDDLY::forest::mxdDefaults(1);
+
 MEDDLY::forest
 ::forest(int ds, domain* _d, bool rel, range_type t, edge_labeling ev, 
   const policies &p) : deflt(p)

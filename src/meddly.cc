@@ -404,8 +404,6 @@ void MEDDLY::settings::init(const settings &s)
 {
   operationBuilder = op_initializer::copy(s.operationBuilder);
   ctSettings = s.ctSettings;
-  mddDefaults = s.mddDefaults;
-  mxdDefaults = s.mxdDefaults;
 }
 
 void MEDDLY::settings::clear()
@@ -422,12 +420,11 @@ MEDDLY::settings::computeTableSettings::computeTableSettings() :
 //----------------------------------------------------------------------
 
 MEDDLY::settings::settings() :
-  ctSettings(), mddDefaults(0), mxdDefaults(1),
-      operationBuilder(makeBuiltinInitializer()) {
+  ctSettings(), operationBuilder(makeBuiltinInitializer()) {
 }
 
-MEDDLY::settings::settings(const settings &s) :
-  mddDefaults(0), mxdDefaults(1) {
+MEDDLY::settings::settings(const settings &s) 
+{
   init(s);
 }
 
