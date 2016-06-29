@@ -124,20 +124,33 @@ RubiksCubeModelConfig buildModelConfig(int num_phases, RubiksCubeModelType type)
 {
   RubiksCubeModelConfig config;
 
-  if (num_phases == 3) {
+  if (num_phases == 1) {
+    config.num_phases = 1;
+    config.moves = {
+      {
+        { Face::F, Direction::CW },
+        { Face::B, Direction::CW },
+        { Face::L, Direction::CW },
+        { Face::R, Direction::CW },
+        { Face::U, Direction::CW },
+        { Face::D, Direction::CW }
+      }
+    };
+  }
+  else if (num_phases == 3) {
     config.num_phases = 3;
     config.moves = {
       {
-        { Face::F, Direction::CW},
-        { Face::B, Direction::CW}
+        { Face::F, Direction::CW },
+        { Face::B, Direction::CW }
       },
       {
-        { Face::L, Direction::CW},
-        { Face::R, Direction::CW}
+        { Face::L, Direction::CW },
+        { Face::R, Direction::CW }
       },
       {
-        { Face::U, Direction::CW},
-        { Face::D, Direction::CW}
+        { Face::U, Direction::CW },
+        { Face::D, Direction::CW }
       }
     };
   }
@@ -145,22 +158,22 @@ RubiksCubeModelConfig buildModelConfig(int num_phases, RubiksCubeModelType type)
     config.num_phases = 6;
     config.moves = {
       {
-        { Face::F, Direction::CW}
+        { Face::F, Direction::CW }
       },
       {
-        { Face::B, Direction::CW}
+        { Face::B, Direction::CW }
       },
       {
-        { Face::L, Direction::CW}
+        { Face::L, Direction::CW }
       },
       {
-        { Face::R, Direction::CW}
+        { Face::R, Direction::CW }
       },
       {
-        { Face::U, Direction::CW}
+        { Face::U, Direction::CW }
       },
       {
-        { Face::D, Direction::CW}
+        { Face::D, Direction::CW }
       }
     };
   }
@@ -186,7 +199,30 @@ RubiksCubeModelConfig buildModelConfig(int num_phases, RubiksCubeModelType type)
     exit(1);
   }
 
-  if (num_phases == 3 && type == RubiksCubeModelType::DEFAULT) {
+  if (num_phases == 1 && type == RubiksCubeModelType::DEFAULT) {
+    config.level2components = {
+      {
+        // Not used
+        { 0, 0 },
+        { 2, 2 }, { 2, 1 }, { 2, 0 }, { 2, 3 },
+        { 2, 6 }, { 2, 5 }, { 2, 4 }, { 2, 8 },
+        { 2, 7 }, { 2, 10 }, { 2, 9 }, { 2, 11 },
+        { 3, 2 }, { 3, 1 }, { 3, 0 }, { 3, 3 },
+        { 3, 4 }, { 3, 5 }, { 3, 6 }, { 3, 7 }
+      },
+    };
+  }
+  else if (num_phases == 1 && type == RubiksCubeModelType::CORNER_ONLY) {
+    config.level2components = {
+      {
+        // Not used
+        { 0, 0 },
+        { 3, 2 }, { 3, 1 }, { 3, 0 }, { 3, 3 },
+        { 3, 4 }, { 3, 5 }, { 3, 6 }, { 3, 7 }
+      },
+    };
+  }
+  else if (num_phases == 3 && type == RubiksCubeModelType::DEFAULT) {
     config.level2components = {
       {
         // Not used
@@ -439,6 +475,7 @@ private:
   void buildDomain();
   void destroy();
   void buildForests();
+  vector<int> convertToVariableOrder(const vector<Component>& level2component);
   dd_edge buildInitial();
   vector<dd_edge> buildNextStateFunctions();
 
@@ -513,6 +550,19 @@ void RubiksCubeModel::buildForests()
   cout << "Created forest of relations" << endl;
 }
 
+vector<int> RubiksCubeModel::convertToVariableOrder(const vector<Component>& level2component)
+{
+  assert(level2component.size() == _config.num_components());
+
+  vector<int> level2var;
+  level2var.push_back(0);
+  for (int i = 1; i <= _config.num_components(); i++) {
+    const Component& comp = level2component[i];
+    level2var.push_back(get_var_of_component(comp.type, comp.id));
+  }
+  return level2var;
+}
+
 dd_edge RubiksCubeModel::buildInitial()
 {
   int** initst = new int*[1];
@@ -540,14 +590,7 @@ vector<dd_edge> RubiksCubeModel::buildNextStateFunctions()
 {
   vector<vector<int>> level2vars;
   for (int i = 0; i< _config.num_phases; i++) {
-    vector<int> l2v;
-    l2v.push_back(0);
-    for (int j = 1 ; j <= _config.num_components(); j++) {
-      const Component& comp = _config.level2components[i][j];
-      l2v.push_back(get_var_of_component(comp.type, comp.id));
-    }
-
-    level2vars.push_back(l2v);
+    level2vars.push_back(convertToVariableOrder(_config.level2components[i]));
   }
 
   assert(_relations.size() == _config.num_phases);
@@ -1091,7 +1134,8 @@ const char* face_to_string(Face f){
 }
 
 void usage() {
-  cout << "Usage: rubik_cube [-p3|-p6] [-corner]" << endl;
+  cout << "Usage: rubik_cube [-p1|-p3|-p6] [-corner]" << endl;
+  cout << "-p1  : use 1-phase phased saturation (normal saturation)" << endl;
   cout << "-p3  : use 3-phases phased saturation" << endl;
   cout << "-p6  : use 6-phases phased saturation" << endl;
   cout << "-corner  : use model with corners only" << endl;
@@ -1106,13 +1150,19 @@ int main(int argc, char *argv[])
   if (argc > 1) {
     for (int i = 1; i < argc; i++) {
       char *cmd = argv[i];
-      if (strncmp(cmd, "-p3", strlen("-p3")) == 0) {
+      if (strncmp(cmd, "-p1", strlen("-p1")) == 0) {
+        num_phases = 1;
+      }
+      else if (strncmp(cmd, "-p3", strlen("-p3")) == 0) {
         num_phases = 3;
-      } else if (strncmp(cmd, "-p6", strlen("-p6")) == 0) {
+      }
+      else if (strncmp(cmd, "-p6", strlen("-p6")) == 0) {
         num_phases = 6;
-      } else if (strncmp(cmd, "-corner", strlen("-corner")) == 0) {
+      }
+      else if (strncmp(cmd, "-corner", strlen("-corner")) == 0) {
         type = RubiksCubeModelType::CORNER_ONLY;
-      } else {
+      }
+      else {
         usage();
         exit(1);
       }
