@@ -33,7 +33,7 @@
 namespace MEDDLY {
   class compact_storage;
 
-  class compact_grid;
+  class compact_grid_style;
 };
 
 // ******************************************************************
@@ -115,7 +115,7 @@ namespace MEDDLY {
 class MEDDLY::compact_storage : public node_storage {
   // required interface
   public:
-    compact_storage(holeman* hm);
+    compact_storage(expert_forest* f, holeman* hm, const char* sN);
     virtual ~compact_storage();
 
     virtual void collectGarbage(bool shrink);
@@ -140,12 +140,7 @@ class MEDDLY::compact_storage : public node_storage {
     virtual const void* getUnhashedHeaderOf(node_address addr) const;
     virtual const void* getHashedHeaderOf(node_address addr) const;
 
-  // for derived classes to implement
-    virtual const char* getStorageName() const = 0;
-
-
   protected:
-    virtual void localInitForForest(const expert_forest* f);
     virtual void updateData(node_handle* d);
     virtual int smallestNode() const;
     virtual void dumpInternalInfo(output &) const;
@@ -1327,6 +1322,9 @@ class MEDDLY::compact_storage : public node_storage {
 
       static const int extraSlots = 3;
   private:
+    /// what we are, for display purposes
+    const char* storageName;
+
     /// the data array
     node_handle* data;
     /// for convenience - memory chunk by address
@@ -1349,7 +1347,7 @@ class MEDDLY::compact_storage : public node_storage {
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                       compact_grid class                       *
+// *                    compact_grid_style class                    *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
@@ -1357,12 +1355,11 @@ class MEDDLY::compact_storage : public node_storage {
 /** Compact storage using the original grid mechanism for holes.
 */
 
-class MEDDLY::compact_grid : public compact_storage {
+class MEDDLY::compact_grid_style : public node_storage_style {
   public:
-    compact_grid(holeman* hm);
-    virtual ~compact_grid();
+    compact_grid_style();
+    virtual ~compact_grid_style();
     virtual node_storage* createForForest(expert_forest* f) const;
-    virtual const char* getStorageName() const;
 };
 
 

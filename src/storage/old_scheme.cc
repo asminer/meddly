@@ -46,40 +46,54 @@ MEDDLY::node_handle MEDDLY::old_node_storage::verify_hole_slots;
 // ******************************************************************
 // *                                                                *
 // *                                                                *
+// *                 old_node_storage_style methods                 *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::old_node_storage_style::old_node_storage_style() : node_storage_style()
+{
+}
+
+MEDDLY::old_node_storage_style::~old_node_storage_style()
+{
+}
+
+MEDDLY::node_storage* MEDDLY::old_node_storage_style
+::createForForest(expert_forest* f) const
+{
+  return new old_node_storage(f);
+}
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
 // *                    old_node_storage methods                    *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
 
 
-MEDDLY::old_node_storage::old_node_storage() : node_storage()
+MEDDLY::old_node_storage::old_node_storage(expert_forest* f) : node_storage(f)
 {
+  data = 0;
+  size = 0;
+  last = 0;
+  max_request = 0;
+  large_holes = 0;
+  holes_top = 0;
+  holes_bottom = 0;
+  hole_slots = 0;
+  fragment_slots = 0;
+  edgeSlots = slotsForBytes(f->edgeBytes());
+  unhashedSlots = slotsForBytes(f->unhashedHeaderBytes());
+  hashedSlots = slotsForBytes(f->hashedHeaderBytes());
 }
 
 MEDDLY::old_node_storage::~old_node_storage()
 {
   decMemAlloc(size*sizeof(node_handle));
   free(data);
-}
-
-MEDDLY::node_storage* MEDDLY::old_node_storage
-::createForForest(expert_forest* f) const
-{
-  old_node_storage* nns = new old_node_storage;
-  nns->initForForest(f);
-  nns->data = 0;
-  nns->size = 0;
-  nns->last = 0;
-  nns->max_request = 0;
-  nns->large_holes = 0;
-  nns->holes_top = 0;
-  nns->holes_bottom = 0;
-  nns->hole_slots = 0;
-  nns->fragment_slots = 0;
-  nns->edgeSlots = slotsForBytes(f->edgeBytes());
-  nns->unhashedSlots = slotsForBytes(f->unhashedHeaderBytes());
-  nns->hashedSlots = slotsForBytes(f->hashedHeaderBytes());
-  return nns;
 }
 
 // original version
@@ -1486,8 +1500,8 @@ MEDDLY::old_node_storage::allocNode(int sz, node_handle tail, bool clear)
 
 namespace MEDDLY {
   // node storage mechanism used for versions < 0.10 of the library
-  old_node_storage THE_OLD_NODE_STORAGE;
+  old_node_storage_style THE_OLD_NODE_STORAGE;
 
-  const node_storage* CLASSIC_STORAGE = &THE_OLD_NODE_STORAGE;
+  const node_storage_style* CLASSIC_STORAGE = &THE_OLD_NODE_STORAGE;
 };
 

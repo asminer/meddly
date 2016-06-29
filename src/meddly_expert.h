@@ -83,6 +83,7 @@ namespace MEDDLY {
   class unpacked_matrix;
 
   // Actual node storage
+  class node_storage_style;
   class node_storage;
 
   class expert_forest;
@@ -892,6 +893,35 @@ class MEDDLY::unpacked_matrix {
 
 // ******************************************************************
 // *                                                                *
+// *                    node_storage_style class                    *
+// *                                                                *
+// ******************************************************************
+
+/** Abstract base class for node storage factories.
+
+    The base class is implemented in node_wrappers.cc;
+    various backends are implemented in directory storage/.
+
+*/
+class MEDDLY::node_storage_style {
+  public:
+    node_storage_style();
+    virtual ~node_storage_style();
+
+
+    /** Build a new node storage mechanism, bound to the given forest.
+
+          @param  f   Forest to bind to
+
+          @return     A pointer to a node storage class,
+                      initialized for forest f.
+    */
+    virtual node_storage* createForForest(expert_forest* f) const = 0;
+
+};
+
+// ******************************************************************
+// *                                                                *
 // *                       node_storage class                       *
 // *                                                                *
 // ******************************************************************
@@ -915,30 +945,8 @@ class MEDDLY::unpacked_matrix {
 */
 class MEDDLY::node_storage {
   public:
-    node_storage();
+    node_storage(expert_forest* f);
     virtual ~node_storage();
-
-    /** Build a new mechanism, bound to the given forest.
-
-        Any instance serves also as a factory to build new instances.
-        However, an instance is not initialized until it is bound
-        to a given forest.
-
-          @param  f   Forest to bind to
-
-          @return     A pointer to a node storage class,
-                      initialized for forest f.
-                      Most likely, we are returning the same
-                      instance as ourself, but this is not required.
-    */
-    virtual node_storage* createForForest(expert_forest* f) const = 0;
-
-    /** Should be called by createForForest in derived classes.
-        Initializes the base class for a given forest.
-
-          @param  f   Forest to bind to
-    */
-    void initForForest(expert_forest* f);
 
     /** Go through and collect any garbage.
 
@@ -1170,14 +1178,6 @@ class MEDDLY::node_storage {
     void incCompactions();
     void updateCountArray(node_handle* cptr);
     void updateNextArray(node_handle* nptr);
-
-    /** Initialization hook for derived classes.
-        Allowes derived classes to initialize themselves
-        for a particular forest.
-        Called by initForForest().
-        Default behavior is to do nothing.
-    */
-    virtual void localInitForForest(const expert_forest* f);
 
     //
     // Hooks for hole managers

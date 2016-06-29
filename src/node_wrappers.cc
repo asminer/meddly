@@ -357,30 +357,39 @@ void MEDDLY::unpacked_node::computeHash()
 // ******************************************************************
 // *                                                                *
 // *                                                                *
+// *                   node_storage_style methods                   *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::node_storage_style::node_storage_style()
+{
+}
+
+MEDDLY::node_storage_style::~node_storage_style()
+{
+}
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
 // *                      node_storage methods                      *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::node_storage::node_storage()
+MEDDLY::node_storage::node_storage(expert_forest* f)
 {
-  parent = 0;
-  stats = 0;
   counts = 0;
   nexts = 0;
+
+  parent = f;
+  stats = &parent->changeStats();
 }
 
 MEDDLY::node_storage::~node_storage()
 {
   // nothing, derived classes must handle everything
-}
-
-void MEDDLY::node_storage::initForForest(expert_forest* f)
-{
-  MEDDLY_DCASSERT(0==parent);
-  parent = f;
-  stats = &parent->changeStats();
-  localInitForForest(f);
 }
 
 void MEDDLY::node_storage
@@ -455,7 +464,9 @@ void MEDDLY::node_storage::dumpInternal(output &s, unsigned flags) const
   s.flush();
 }
 
+/*
 void MEDDLY::node_storage::localInitForForest(const expert_forest* f)
 {
   // default - do nothing
 }
+*/

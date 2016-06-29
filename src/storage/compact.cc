@@ -54,11 +54,19 @@ inline void fprintRaw(MEDDLY::output &s, const char* what, unsigned char* x, int
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::compact_storage::compact_storage(holeman* hm) : node_storage()
+MEDDLY::compact_storage::compact_storage(expert_forest* f, holeman* hm, const char* sN)
+: node_storage(f)
 {
   holeManager = hm;
+  storageName = sN;
   data = 0;
   memchunk = 0;
+
+  edgeBytes = f->edgeBytes();
+  unhashedBytes = f->unhashedHeaderBytes();
+  hashedBytes = f->hashedHeaderBytes();
+  MEDDLY_DCASSERT(holeManager);
+  holeManager->setParent(this);
 }
 
 // ******************************************************************
@@ -169,7 +177,7 @@ void MEDDLY::compact_storage
     expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED;
 
   if (flags & STORAGE) {
-    s << pad << "Stats for " << getStorageName() << "\n";
+    s << pad << "Stats for " << storageName << "\n";
 
     // anything for us?
   }
@@ -690,17 +698,6 @@ const void* MEDDLY::compact_storage
 //
 //
 
-void MEDDLY::compact_storage::localInitForForest(const expert_forest* f)
-{
-  edgeBytes = f->edgeBytes();
-  unhashedBytes = f->unhashedHeaderBytes();
-  hashedBytes = f->hashedHeaderBytes();
-  MEDDLY_DCASSERT(holeManager);
-  holeManager->setParent(this);
-}
-
-// ******************************************************************
-
 void MEDDLY::compact_storage::updateData(node_handle* d)
 {
   data = d;
@@ -878,33 +875,25 @@ MEDDLY::compact_storage::allocNode(int slots, node_handle tail, bool clear)
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                      compact_grid methods                      *
+// *                   compact_grid_style methods                   *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
 
 
-MEDDLY::compact_grid::compact_grid(holeman* hm) : compact_storage(hm)
+MEDDLY::compact_grid_style::compact_grid_style()
 {
 }
 
-MEDDLY::compact_grid::~compact_grid()
+MEDDLY::compact_grid_style::~compact_grid_style()
 {
 }
 
-MEDDLY::node_storage* MEDDLY::compact_grid
+MEDDLY::node_storage* MEDDLY::compact_grid_style
 ::createForForest(expert_forest* f) const
 {
-  compact_storage* nns = new compact_grid(new hm_grid);
-  nns->initForForest(f);
-  return nns;
+  return new compact_storage(f, new hm_grid, "compact node storage with grid for holes");
 }
-
-const char* MEDDLY::compact_grid::getStorageName() const
-{
-  return "compact node storage with grid for holes";
-}
-
 
 // ******************************************************************
 // *                                                                *
@@ -913,9 +902,9 @@ const char* MEDDLY::compact_grid::getStorageName() const
 // ******************************************************************
 
 namespace MEDDLY {
-  compact_grid THE_COMPACT_GRID(0);
+  compact_grid_style THE_COMPACT_GRID;
 
-  const node_storage* COMPACT_GRID = &THE_COMPACT_GRID;
+  const node_storage_style* COMPACT_GRID = &THE_COMPACT_GRID;
 };
 
 

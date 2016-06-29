@@ -53,10 +53,18 @@ inline char slotsForBytes(int bytes)
 // ******************************************************************
 
 
-MEDDLY::simple_storage::simple_storage(holeman* hm) : node_storage()
+MEDDLY::simple_storage::simple_storage(expert_forest* f, holeman* hm, const char* sN)
+ : node_storage(f)
 {
   holeManager = hm;
+  storageName = sN;
   data = 0;
+
+  edgeSlots = slotsForBytes(f->edgeBytes());
+  unhashedSlots = slotsForBytes(f->unhashedHeaderBytes());
+  hashedSlots = slotsForBytes(f->hashedHeaderBytes());
+  MEDDLY_DCASSERT(holeManager);
+  holeManager->setParent(this);
 }
 
 MEDDLY::simple_storage::~simple_storage()
@@ -161,7 +169,7 @@ void MEDDLY::simple_storage
     expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED;
 
   if (flags & STORAGE) {
-    s << pad << "Stats for " << getStorageName() << "\n";
+    s << pad << "Stats for " << storageName << "\n";
 
     // anything for us?
   }
@@ -810,15 +818,6 @@ const void* MEDDLY::simple_storage
 //
 //
 
-void MEDDLY::simple_storage::localInitForForest(const expert_forest* f)
-{
-  edgeSlots = slotsForBytes(f->edgeBytes());
-  unhashedSlots = slotsForBytes(f->unhashedHeaderBytes());
-  hashedSlots = slotsForBytes(f->hashedHeaderBytes());
-  MEDDLY_DCASSERT(holeManager);
-  holeManager->setParent(this);
-}
-
 void MEDDLY::simple_storage::updateData(node_handle* d)
 {
   data = d;
@@ -1123,125 +1122,94 @@ void MEDDLY::simple_storage::verifyStats() const
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                      simple_grid  methods                      *
+// *                   simple_grid_style  methods                   *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
 
 
-MEDDLY::simple_grid::simple_grid(holeman* hm) : simple_storage(hm)
+MEDDLY::simple_grid_style::simple_grid_style()
 {
 }
 
-MEDDLY::simple_grid::~simple_grid()
+MEDDLY::simple_grid_style::~simple_grid_style()
 {
 }
 
-MEDDLY::node_storage* MEDDLY::simple_grid
+MEDDLY::node_storage* MEDDLY::simple_grid_style
 ::createForForest(expert_forest* f) const
 {
-  simple_storage* nns = new simple_grid(new hm_grid);
-  nns->initForForest(f);
-  return nns;
+  return new simple_storage(f, new hm_grid, "simple node storage with grid for holes");
 }
-
-const char* MEDDLY::simple_grid::getStorageName() const
-{
-  return "simple node storage with grid for holes";
-}
-
 
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                      simple_array methods                      *
+// *                   simple_array_style methods                   *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
 
 
-MEDDLY::simple_array::simple_array(holeman* hm) : simple_storage(hm)
+MEDDLY::simple_array_style::simple_array_style()
 {
 }
 
-MEDDLY::simple_array::~simple_array()
+MEDDLY::simple_array_style::~simple_array_style()
 {
 }
 
-MEDDLY::node_storage* MEDDLY::simple_array
+MEDDLY::node_storage* MEDDLY::simple_array_style
 ::createForForest(expert_forest* f) const
 {
-  simple_storage* nns = new simple_array(new hm_array);
-  nns->initForForest(f);
-  return nns;
-}
-
-const char* MEDDLY::simple_array::getStorageName() const
-{
-  return "simple node storage with array of lists for holes";
+  return new simple_storage(f, new hm_array, "simple node storage with array of lists for holes");
 }
 
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                      simple_heap  methods                      *
+// *                   simple_heap_style  methods                   *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
 
 
-MEDDLY::simple_heap::simple_heap(holeman* hm) : simple_storage(hm)
+MEDDLY::simple_heap_style::simple_heap_style()
 {
 }
 
-MEDDLY::simple_heap::~simple_heap()
+MEDDLY::simple_heap_style::~simple_heap_style()
 {
 }
 
-MEDDLY::node_storage* MEDDLY::simple_heap
+MEDDLY::node_storage* MEDDLY::simple_heap_style
 ::createForForest(expert_forest* f) const
 {
-  simple_storage* nns = new simple_heap(new hm_heap);
-  nns->initForForest(f);
-  return nns;
+  return new simple_storage(f, new hm_heap, "simple node storage with heaps for holes");
 }
-
-const char* MEDDLY::simple_heap::getStorageName() const
-{
-  return "simple node storage with heaps for holes";
-}
-
 
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                      simple_none  methods                      *
+// *                   simple_none_style  methods                   *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
 
 
-MEDDLY::simple_none::simple_none(holeman* hm) : simple_storage(hm)
+MEDDLY::simple_none_style::simple_none_style()
 {
 }
 
-MEDDLY::simple_none::~simple_none()
+MEDDLY::simple_none_style::~simple_none_style()
 {
 }
 
-MEDDLY::node_storage* MEDDLY::simple_none
+MEDDLY::node_storage* MEDDLY::simple_none_style
 ::createForForest(expert_forest* f) const
 {
-  simple_storage* nns = new simple_none(new hm_none);
-  nns->initForForest(f);
-  return nns;
+  return new simple_storage(f, new hm_none, "simple node storage with no hole management");
 }
-
-const char* MEDDLY::simple_none::getStorageName() const
-{
-  return "simple node storage with no hole management";
-}
-
 
 // ******************************************************************
 // *                                                                *
@@ -1250,14 +1218,14 @@ const char* MEDDLY::simple_none::getStorageName() const
 // ******************************************************************
 
 namespace MEDDLY {
-  simple_grid THE_SIMPLE_GRID(0);
-  simple_array THE_SIMPLE_ARRAY(0);
-  simple_heap THE_SIMPLE_HEAP(0);
-  simple_none THE_SIMPLE_NONE(0);
+  simple_grid_style THE_SIMPLE_GRID;
+  simple_array_style THE_SIMPLE_ARRAY;
+  simple_heap_style THE_SIMPLE_HEAP;
+  simple_none_style THE_SIMPLE_NONE;
 
-  const node_storage* SIMPLE_GRID = &THE_SIMPLE_GRID;
-  const node_storage* SIMPLE_ARRAY = &THE_SIMPLE_ARRAY;
-  const node_storage* SIMPLE_HEAP = &THE_SIMPLE_HEAP;
-  const node_storage* SIMPLE_NONE = &THE_SIMPLE_NONE;
+  const node_storage_style* SIMPLE_GRID = &THE_SIMPLE_GRID;
+  const node_storage_style* SIMPLE_ARRAY = &THE_SIMPLE_ARRAY;
+  const node_storage_style* SIMPLE_HEAP = &THE_SIMPLE_HEAP;
+  const node_storage_style* SIMPLE_NONE = &THE_SIMPLE_NONE;
 };
 

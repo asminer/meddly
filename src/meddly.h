@@ -97,7 +97,9 @@ namespace MEDDLY {
   class forest;
   class expert_forest;
   class unpacked_node;
-  class node_storage;
+
+  class node_storage_style;
+
   class variable;
   class domain;
   class dd_edge;
@@ -136,30 +138,30 @@ namespace MEDDLY {
   /** "Classic" node storage mechanism.
       The node storage mechanism from early versions of this library.
   */
-  extern const node_storage* CLASSIC_STORAGE;
+  extern const node_storage_style* CLASSIC_STORAGE;
 
   /** Similar to classic.
       Differences are in class design, so we can measure overhead
       (if any) of class design differences.
   */
-  extern const node_storage* SIMPLE_GRID;
+  extern const node_storage_style* SIMPLE_GRID;
 
   /** Like classic, but use an array of lists for hole management.
   */
-  extern const node_storage* SIMPLE_ARRAY;
+  extern const node_storage_style* SIMPLE_ARRAY;
 
   /** Like classic, but use heaps for hole management.
   */
-  extern const node_storage* SIMPLE_HEAP;
+  extern const node_storage_style* SIMPLE_HEAP;
 
   /** Classic node storage but no hole management.
   */
-  extern const node_storage* SIMPLE_NONE;
+  extern const node_storage_style* SIMPLE_NONE;
 
   /** Nodes are stored in a compressed form.
       Holes are managed using the original grid structure.
   */
-  extern const node_storage* COMPACT_GRID;
+  extern const node_storage_style* COMPACT_GRID;
 
 
   // ******************************************************************
@@ -952,7 +954,7 @@ class MEDDLY::forest {
       node_deletion deletion;
 
       /// Backend storage mechanism for nodes.
-      const node_storage* nodestor;
+      const node_storage_style* nodestor;
 
       /// Memory compactor: never run if fewer than this many unused slots.
       int compact_min;
