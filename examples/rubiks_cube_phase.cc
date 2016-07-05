@@ -137,6 +137,21 @@ RubiksCubeModelConfig buildModelConfig(int num_phases, RubiksCubeModelType type)
       }
     };
   }
+  else if (num_phases == 2) {
+    config.num_phases = 2;
+    config.moves = {
+      {
+        { Face::F, Direction::CW },
+        { Face::L, Direction::CW },
+        { Face::U, Direction::CW }
+      },
+      {
+        { Face::B, Direction::CW },
+        { Face::R, Direction::CW },
+        { Face::D, Direction::CW }
+      }
+    };
+  }
   else if (num_phases == 3) {
     config.num_phases = 3;
     config.moves = {
@@ -220,6 +235,60 @@ RubiksCubeModelConfig buildModelConfig(int num_phases, RubiksCubeModelType type)
         { 3, 2 }, { 3, 1 }, { 3, 0 }, { 3, 3 },
         { 3, 4 }, { 3, 5 }, { 3, 6 }, { 3, 7 }
       },
+    };
+  }
+  else if (num_phases == 2 && type == RubiksCubeModelType::DEFAULT) {
+    config.level2components = {
+      {
+        // Not used
+        { 0, 0 },
+        // Front, Up and Right
+        { 3, 0 }, { 3, 1 }, { 3, 3 }, { 3, 4 },
+        { 3, 2 }, { 3, 5 }, { 3, 7 },
+        { 2, 0 }, { 2, 3 }, { 2, 4 },
+        { 2, 1 }, { 2, 2 },
+        { 2, 6 }, { 2, 5 },
+        { 2, 10 }, { 2, 11 },
+        // Not affected
+        { 3, 6 },
+        { 2, 7 }, { 2, 8 }, { 2, 9 }
+      },
+      {
+        // Not used
+        { 0, 0 },
+        // Back, Down and Left
+        { 3, 6 }, { 3, 2 }, { 3, 5 }, { 3, 7 },
+        { 3, 1 }, { 3, 3 }, { 3, 4 },
+        { 2, 7 }, { 2, 8 }, { 2, 9 },
+        { 2, 1 }, { 2, 6 },
+        { 2, 2 }, { 2, 10 },
+        { 2, 5 }, { 2, 11 },
+        // Not affected
+        { 3, 0 },
+        { 2, 0 }, { 2, 3 }, { 2, 4 }
+      }
+    };
+  }
+  else if (num_phases == 2 && type == RubiksCubeModelType::CORNER_ONLY) {
+    config.level2components = {
+      {
+        // Not used
+        { 0, 0 },
+        // Front, Up and Right
+        { 3, 0 }, { 3, 1 }, { 3, 3 }, { 3, 4 },
+        { 3, 2 }, { 3, 5 }, { 3, 7 },
+        // Not affected
+        { 3, 6 }
+      },
+      {
+        // Not used
+        { 0, 0 },
+        // Back, Down and Left
+        { 3, 6 }, { 3, 2 }, { 3, 5 }, { 3, 7 },
+        { 3, 1 }, { 3, 3 }, { 3, 4 },
+        // Not affected
+        { 3, 0 }
+      }
     };
   }
   else if (num_phases == 3 && type == RubiksCubeModelType::DEFAULT) {
@@ -656,7 +725,7 @@ void RubiksCubeModel::execute()
     cout << "Phase " << _phase << endl;
 
     dd_edge result = initial;
-    execute_phase(initial, nsfs[_phase % _config.num_components()], result);
+    execute_phase(initial, nsfs[_phase % _config.num_phases], result);
     _phase++;
 
     if (result != initial) {
@@ -1153,6 +1222,9 @@ int main(int argc, char *argv[])
       char *cmd = argv[i];
       if (strncmp(cmd, "-p1", strlen("-p1")) == 0) {
         num_phases = 1;
+      }
+      else if (strncmp(cmd, "-p2", strlen("-p2")) == 0) {
+        num_phases = 2;
       }
       else if (strncmp(cmd, "-p3", strlen("-p3")) == 0) {
         num_phases = 3;
