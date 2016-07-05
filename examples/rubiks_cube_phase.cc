@@ -650,18 +650,24 @@ void RubiksCubeModel::execute()
   start.note_time();
 
   // Fixed point
-  bool fp = false;
-  dd_edge result = initial;
-  while (!fp) {
-    fp = true;
-    for (int i = 0; i < _config.num_phases; i++) {
-      execute_phase(initial, nsfs[i], result);
-      if (result != initial) {
-        fp = false;
-        initial = result;
-      }
-      show_node(result);
+  int fp = 0;
+  while (fp != _config.num_phases) {
+    cout << "-------------------------------------------------------------------" << endl;
+    cout << "Phase " << _phase << endl;
+
+    dd_edge result = initial;
+    execute_phase(initial, nsfs[_phase % _config.num_components()], result);
+    _phase++;
+
+    if (result != initial) {
+      fp = 0;
+      initial = result;
     }
+    else {
+      fp++;
+    }
+
+    show_node(initial);
   }
 
   start.note_time();
@@ -677,9 +683,6 @@ void RubiksCubeModel::execute()
 
 void RubiksCubeModel::execute_phase(const dd_edge& initial, const dd_edge& nsf, dd_edge& result)
 {
-  cout << "-------------------------------------------------------------------" << endl;
-  cout << "Phase " << _phase << endl;
-
   expert_forest* relation = static_cast<expert_forest*>(nsf.getForest());
   int* rel_level2var = new int[relation->getNumVariables() + 1];
   relation->getVariableOrder(rel_level2var);
@@ -723,8 +726,6 @@ void RubiksCubeModel::execute_phase(const dd_edge& initial, const dd_edge& nsf, 
   cout << "Time: "
       << static_cast<double>(start.get_last_interval()) / 1000000.0 << " s"
       << endl;
-
-  _phase++;
 }
 
 dd_edge RubiksCubeModel::buildMove(forest* relation, Face f, Direction d)
