@@ -312,12 +312,12 @@ MEDDLY::minimum_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeMaximum(const settings &s)
+MEDDLY::binary_opname* MEDDLY::initializeMaximum()
 {
   return new maximum_opname;
 }
 
-MEDDLY::binary_opname* MEDDLY::initializeMinimum(const settings &s)
+MEDDLY::binary_opname* MEDDLY::initializeMinimum()
 {
   return new minimum_opname;
 }

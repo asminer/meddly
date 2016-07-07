@@ -24,10 +24,9 @@
 
 namespace MEDDLY {
   class binary_opname;
-  struct settings;
 
   /// Set up a binary_opname for the "not equal" operator.
-  binary_opname* initializeNE(const settings &s);
+  binary_opname* initializeNE();
 }
 
 #endif

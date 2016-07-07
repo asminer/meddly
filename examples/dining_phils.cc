@@ -854,7 +854,7 @@ int main(int argc, char *argv[])
   if (cacheSize > 0) {
     s.ctSettings.maxSize = cacheSize;
   }
-  MEDDLY::initialize(s);
+  MEDDLY::initialize(s, defaultInitializerList(0));
 
   //
   // Set up logger, if any

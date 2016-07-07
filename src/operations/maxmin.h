@@ -24,13 +24,12 @@
 
 namespace MEDDLY {
   class binary_opname;
-  struct settings;
 
   /// Set up a binary_opname for the "maximum" operation.
-  binary_opname* initializeMaximum(const settings &s);
+  binary_opname* initializeMaximum();
 
   /// Set up a binary_opname for the "minimum" operation.
-  binary_opname* initializeMinimum(const settings &s);
+  binary_opname* initializeMinimum();
 }
 
 #endif

@@ -604,12 +604,12 @@ MEDDLY::MV_opname::buildOperation(arguments* a) const
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::numerical_opname* MEDDLY::initExplVectorMatrixMult(const settings &s)
+MEDDLY::numerical_opname* MEDDLY::initExplVectorMatrixMult()
 {
   return new VM_opname;
 }
 
-MEDDLY::numerical_opname* MEDDLY::initMatrixExplVectorMult(const settings &s)
+MEDDLY::numerical_opname* MEDDLY::initMatrixExplVectorMult()
 {
   return new MV_opname;
 }

@@ -195,7 +195,7 @@ MEDDLY::diffr_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeDifference(const settings &s)
+MEDDLY::binary_opname* MEDDLY::initializeDifference()
 {
   return new diffr_opname;
 }

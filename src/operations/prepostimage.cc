@@ -728,22 +728,22 @@ MEDDLY::MVmult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializePreImage(const settings &s)
+MEDDLY::binary_opname* MEDDLY::initializePreImage()
 {
   return new preimage_opname;
 }
 
-MEDDLY::binary_opname* MEDDLY::initializePostImage(const settings &s)
+MEDDLY::binary_opname* MEDDLY::initializePostImage()
 {
   return new postimage_opname;
 }
 
-MEDDLY::binary_opname* MEDDLY::initializeVMmult(const settings &s)
+MEDDLY::binary_opname* MEDDLY::initializeVMmult()
 {
   return new VMmult_opname;
 }
 
-MEDDLY::binary_opname* MEDDLY::initializeMVmult(const settings &s)
+MEDDLY::binary_opname* MEDDLY::initializeMVmult()
 {
   return new MVmult_opname;
 }

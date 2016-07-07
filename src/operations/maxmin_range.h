@@ -24,13 +24,12 @@
 
 namespace MEDDLY {
   class unary_opname;
-  struct settings;
 
   /// Set up a unary_opname for the "maxrange" operation.
-  unary_opname* initializeMaxRange(const settings &s);
+  unary_opname* initializeMaxRange();
 
   /// Set up a unary_opname for the "minrange" operation.
-  unary_opname* initializeMinRange(const settings &s);
+  unary_opname* initializeMinRange();
 }
 
 #endif

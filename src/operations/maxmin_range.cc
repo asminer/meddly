@@ -441,12 +441,12 @@ MEDDLY::minrange_opname::buildOperation(expert_forest* ar, opnd_type res) const
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unary_opname* MEDDLY::initializeMaxRange(const settings &s)
+MEDDLY::unary_opname* MEDDLY::initializeMaxRange()
 {
   return new maxrange_opname;
 }
 
-MEDDLY::unary_opname* MEDDLY::initializeMinRange(const settings &s)
+MEDDLY::unary_opname* MEDDLY::initializeMinRange()
 {
   return new minrange_opname;
 }

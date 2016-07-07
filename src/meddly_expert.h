@@ -104,9 +104,20 @@ namespace MEDDLY {
   class binary_operation;
   class specialized_operation;
 
-  class op_initializer;
+  /*
+  
+    class op_initializer;
 
-  class cleanup_procedure;
+    Generalized to class initializer_list.
+  */
+
+  class initializer_list;
+
+  /*
+    class cleanup_procedure;
+
+    Subsumed by class initializer_list.
+  */
 
   // classes defined elsewhere
   class base_table;
@@ -244,8 +255,43 @@ namespace MEDDLY {
   /// Should not be called directly.
   void destroyOpInternal(operation* op);
 
+  // ******************************************************************
+  // *                                                                *
+  // *                  library management functions                  *
+  // *                                                                *
+  // ******************************************************************
+
+  /*
   /// Builds an initializer for MEDDLY's builtin operations.
   op_initializer* makeBuiltinInitializer();
+
+    Use defaultInitializerList() instead
+  */
+
+  /**
+    Build list of initializers for Meddly.
+    Custom-built initialization lists will usually include this list.
+      @param    prev    Initializers to execute before the default list;
+                        can be null.
+
+      @return   List of initializers.
+  */
+  initializer_list* defaultInitializerList(initializer_list* prev);
+
+
+  /** Initialize the library with custom settings.
+      Should be called before using any other functions.
+        @param  s   Various settings.
+        @param  L   List of initializers.  Will execute the "setup()"
+                    methods in order now, and the "cleanup()" methods
+                    in reverse order on library cleanup.
+  */
+  void initialize(const settings &s, initializer_list* L);
+
+
+  /// Get the current library settings.
+  const settings& getLibrarySettings();
+
 
   // ******************************************************************
   // *                                                                *
@@ -312,7 +358,7 @@ struct MEDDLY::settings {
     };
 
     /// Settings for the compute table(s)
-    computeTableSettings ctSettings;
+    computeTableSettings ctSettings; 
 
     /*
       forest::policies mddDefaults
@@ -326,20 +372,27 @@ struct MEDDLY::settings {
       has been moved to class forest
     */
 
-    /// Initializer for operations
-    op_initializer* operationBuilder;
+    /*
+      op_initializer* operationBuilder; /// Initializer for operations
+
+      has been removed, renamed, and is now passed directly 
+      as an argument to initialize().
+    */
+
 
     /// Constructor, to set defaults.
     settings();
     /// Copy constructor.
-    settings(const settings &s);
+    // settings(const settings &s);
     /// Destructor
-    ~settings();
-    void operator=(const settings &s);
+    // ~settings();
+    // void operator=(const settings &s);
 
+  /*
   private:
     void init(const settings &s);
     void clear();
+    */
 };
 
 // ******************************************************************
@@ -2130,7 +2183,7 @@ class MEDDLY::opname {
     int index;
     static int next_index;
 
-    friend void MEDDLY::initialize(const settings &);
+    friend void MEDDLY::initialize(const settings &, initializer_list *);
     friend void MEDDLY::cleanup();
   public:
     opname(const char* n);
@@ -2922,7 +2975,7 @@ class MEDDLY::operation {
     void addEntryObject(int index);
 
     friend class forest;
-    friend void MEDDLY::initialize(const settings &);
+    friend void MEDDLY::initialize(const settings &, initializer_list *);
     friend void MEDDLY::destroyOpInternal(operation* op);
     friend void MEDDLY::cleanup();
 
@@ -3113,64 +3166,48 @@ class MEDDLY::specialized_operation : public operation {
     virtual void compute(double* y, const double* x);
 };
 
-// ******************************************************************
-// *                                                                *
-// *                      op_initializer class                      *
-// *                                                                *
-// ******************************************************************
-
-/** Preferred mechanism for users to initialize their own operations.
-    Derive a class from this one, provide the \a execute method.
-    Implementation in ops.cc
-*/
-class MEDDLY::op_initializer {
-  unsigned refcount;
-  op_initializer* before;
-
-public:
-  /// Constructor.
-  ///   @param  bef   initializer(s) to execute before this one.
-  op_initializer(op_initializer* bef);
-
-  void initChain(const settings &s);
-  void cleanupChain();
-
-  static void recycle(op_initializer *I);
-  static op_initializer* copy(op_initializer *I);
-
-protected:
-  virtual ~op_initializer();
-  virtual void init(const settings &s) = 0;
-  virtual void cleanup() = 0;
-};
-
 
 // ******************************************************************
 // *                                                                *
-// *                    cleanup_procedure  class                    *
+// *                     initializer_list class                     *
 // *                                                                *
 // ******************************************************************
 
-/** Mechanism for registering actions to occur at library cleanup time.
-    This allows us to free certain memory when the library is closed.
-    Derive a class from this one, and provide the execute() method.
+/** Mechanism for initializing and/or cleaning up library structures.
+    Any user additions to the library should utilize this class.
+    Derive a class from this one, provide the \a setup and \a cleanup
+    methods.
     Implementation in meddly.cc
 */
-class MEDDLY::cleanup_procedure {
-    static cleanup_procedure* list;
-    cleanup_procedure* next;
+class MEDDLY::initializer_list {
   public:
-    cleanup_procedure();
+    /**
+        Constructor.
+        Takes the initializer(s) to run before this one.
+        Cleanup runs in the reverse order.
+    */
+    initializer_list(initializer_list* previous);
+    virtual ~initializer_list();
+
+    /**
+        Run all setup methods for the list of initializers,
+        "previous first".
+    */
+    void setupAll();
+
+    /**
+        Run all cleanup methods for the list of initializers,
+        "previous last".
+    */
+    void cleanupAll();
+
   protected:
-    virtual ~cleanup_procedure();
-  public:
-    virtual void execute() = 0;
+    virtual void setup() = 0;
+    virtual void cleanup() = 0;
 
-    static void Initialize();
-    static void ExecuteAll();
-    static void DeleteAll();
+  private:
+    initializer_list* previous;
 };
-
 
 #include "meddly_expert.hh"
 #endif

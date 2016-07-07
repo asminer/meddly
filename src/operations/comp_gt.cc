@@ -165,7 +165,7 @@ MEDDLY::morethan_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeGT(const settings &s)
+MEDDLY::binary_opname* MEDDLY::initializeGT()
 {
   return new morethan_opname;
 }

@@ -295,12 +295,12 @@ MEDDLY::bckwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeForwardBFS(const settings &s)
+MEDDLY::binary_opname* MEDDLY::initializeForwardBFS()
 {
   return new forwd_bfs_opname;
 }
 
-MEDDLY::binary_opname* MEDDLY::initializeBackwardBFS(const settings &s)
+MEDDLY::binary_opname* MEDDLY::initializeBackwardBFS()
 {
   return new bckwd_bfs_opname;
 }

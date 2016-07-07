@@ -1804,6 +1804,8 @@ MEDDLY::binary_operation::operationCommutes()
 // ******************************************************************
 
 
+#if 0
+
 inline void
 MEDDLY::op_initializer::recycle(op_initializer *I)
 {
@@ -1823,6 +1825,7 @@ MEDDLY::op_initializer::copy(op_initializer *I)
   return I;
 }
 
+#endif
 
 // ******************************************************************
 // *                                                                *

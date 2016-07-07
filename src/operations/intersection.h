@@ -24,10 +24,9 @@
 
 namespace MEDDLY {
   class binary_opname;
-  struct settings;
 
   /// Set up a binary_opname for the "intersection" operation.
-  binary_opname* initializeIntersection(const settings &s);
+  binary_opname* initializeIntersection();
 }
 
 #endif

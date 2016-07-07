@@ -24,13 +24,12 @@
 
 namespace MEDDLY {
   class satpregen_opname;
-  struct settings;
   
   /// Set up a numerical_opname for "forward saturation".
-  satpregen_opname* initSaturationForward(const settings &s);
+  satpregen_opname* initSaturationForward();
 
   /// Set up a numerical_opname for "backward saturation".
-  satpregen_opname* initSaturationBackward(const settings &s);
+  satpregen_opname* initSaturationBackward();
 }
 
 #endif

@@ -720,7 +720,7 @@ MEDDLY::card_opname::buildOperation(expert_forest* arg, opnd_type res) const
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unary_opname* MEDDLY::initializeCardinality(const settings &s)
+MEDDLY::unary_opname* MEDDLY::initializeCardinality()
 {
   return new card_opname;
 }

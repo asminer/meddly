@@ -167,7 +167,7 @@ MEDDLY::modulo_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeModulo(const settings &s)
+MEDDLY::binary_opname* MEDDLY::initializeModulo()
 {
   return new modulo_opname;
 }

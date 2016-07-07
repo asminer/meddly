@@ -24,11 +24,10 @@
 
 namespace MEDDLY {
   class unary_opname;
-  struct settings;
 
   /// Minimalist interface.
   /// Set up a unary_opname for the "cardinality" operation.
-  unary_opname* initializeCardinality(const settings &s);
+  unary_opname* initializeCardinality();
 };
 
 #endif

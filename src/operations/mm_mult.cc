@@ -447,7 +447,7 @@ MEDDLY::mm_mult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeMMMultiply(const settings &s)
+MEDDLY::binary_opname* MEDDLY::initializeMMMultiply()
 {
   return new mm_mult_opname;
 }

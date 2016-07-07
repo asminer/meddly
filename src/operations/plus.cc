@@ -317,7 +317,7 @@ MEDDLY::plus_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializePlus(const settings &s)
+MEDDLY::binary_opname* MEDDLY::initializePlus()
 {
   return new plus_opname;
 }

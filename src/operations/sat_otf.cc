@@ -884,12 +884,12 @@ MEDDLY::fb_otf_saturation_opname::buildOperation(arguments* a) const
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::satotf_opname* MEDDLY::initOtfSaturationForward(const settings &s)
+MEDDLY::satotf_opname* MEDDLY::initOtfSaturationForward()
 {
   return new fb_otf_saturation_opname(true);
 }
 
-MEDDLY::satotf_opname* MEDDLY::initOtfSaturationBackward(const settings &s)
+MEDDLY::satotf_opname* MEDDLY::initOtfSaturationBackward()
 {
   return new fb_otf_saturation_opname(false);
 }

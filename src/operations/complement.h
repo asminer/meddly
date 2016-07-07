@@ -24,11 +24,10 @@
 
 namespace MEDDLY {
   class unary_opname;
-  struct settings;
 
   /// Minimalist interface.
   /// Set up a unary_opname for the "complement" operation.
-  unary_opname* initializeComplement(const settings &s);
+  unary_opname* initializeComplement();
 };
 
 #endif

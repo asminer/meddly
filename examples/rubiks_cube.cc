@@ -1326,7 +1326,7 @@ int main(int argc, char *argv[])
   // s.ctSettings.staleRemoval =
   //   MEDDLY::settings::computeTableSettings::Aggressive;
 
-  MEDDLY::initialize(s);
+  MEDDLY::initialize(s, defaultInitializerList(0));
 
   // Set up the state variables, as described earlier
   d = createDomainBottomUp(sizes, num_levels);

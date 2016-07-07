@@ -93,7 +93,6 @@ namespace MEDDLY {
   class FILE_output;
   class ostream_output;
 
-  struct settings;
   class forest;
   class expert_forest;
   class unpacked_node;
@@ -290,13 +289,9 @@ namespace MEDDLY {
   // *                  library management functions                  *
   // ******************************************************************
 
-  /** Initialize the library.
-      Should be called before using any other functions.
-        @param  s   Collection of various settings.
-  */
-  void initialize(const settings &s);
-
   /** Initialize the library with default settings.
+      See meddly_expert.h for functions to initialize 
+      the library with non-default settings.
       Should be called before using any other functions.
   */
   void initialize();
@@ -306,9 +301,6 @@ namespace MEDDLY {
       after it is called, the library may be initialized again.
   */
   void cleanup();
-
-  /// Get the current library settings.
-  const settings& getLibrarySettings();
 
   /** Get the information about the library.
       @param  what  Determines the type of information to obtain.

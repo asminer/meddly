@@ -48,6 +48,7 @@ libmeddly_la_SOURCES = \
   forests/evmdd_plusint.cc \
   forests/evmxd.cc \
   forests/evmxd_timesreal.cc \
+  forests/init_forests.cc \
   \
   operations/init_builtin.cc \
   operations/apply_base.cc   \

@@ -24,10 +24,9 @@
 
 namespace MEDDLY {
   class binary_opname;
-  struct settings;
 
   /// Set up a binary_opname for the "greater than" operator.
-  binary_opname* initializeGT(const settings &s);
+  binary_opname* initializeGT();
 }
 
 #endif

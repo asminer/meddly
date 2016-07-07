@@ -32,7 +32,6 @@
 
 namespace MEDDLY {
   class mt_forest;
-  class mt_cleanup;
 };
 
 /**
@@ -142,13 +141,9 @@ class MEDDLY::mt_forest : public expert_forest {
   // statics
 
   public:
+    static void initStatics();
     static void enlargeStatics(int n);
-  private:
     static void clearStatics();
-
-    friend class mt_cleanup;
-
-    static mt_cleanup* the_mt_cleaner;
 
   protected:
     static int* order;

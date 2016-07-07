@@ -387,7 +387,7 @@ class rubiks {
       s.ctSettings.maxSize = 8 * 16777216;
       // s.ctSettings.staleRemoval =
       //   MEDDLY::settings::computeTableSettings::Aggressive;
-      MEDDLY::initialize(s);
+      MEDDLY::initialize(s, defaultInitializerList(0));
 
       // Set up the state variables, as described earlier
       d = createDomainBottomUp(&variableSize[1], nLevels);

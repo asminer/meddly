@@ -336,7 +336,7 @@ MEDDLY::multiply_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeMultiply(const settings &s)
+MEDDLY::binary_opname* MEDDLY::initializeMultiply()
 {
   return new multiply_opname;
 }

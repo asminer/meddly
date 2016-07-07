@@ -24,13 +24,12 @@
 
 namespace MEDDLY {
   class binary_opname;
-  struct settings;
 
   /// Set up a binary_opname for the "reachable bfs" operation.
-  binary_opname* initializeForwardBFS(const settings &s);
+  binary_opname* initializeForwardBFS();
 
   /// Set up a binary_opname for the "reverse reachable bfs" operation.
-  binary_opname* initializeBackwardBFS(const settings &s);
+  binary_opname* initializeBackwardBFS();
 }
 
 #endif

@@ -1470,31 +1470,3 @@ void MEDDLY::specialized_operation::compute(double* y, const double* x)
 }
 
 
-// ******************************************************************
-// *                     op_initializer methods                     *
-// ******************************************************************
-
-MEDDLY::op_initializer::op_initializer(op_initializer* bef)
-{
-  refcount = 1;
-  before = bef;
-}
-
-MEDDLY::op_initializer::~op_initializer()
-{
-  MEDDLY_DCASSERT(0==refcount);
-  delete before;
-}
-
-void MEDDLY::op_initializer::initChain(const settings &s)
-{
-  if (before) before->initChain(s);
-  init(s);
-}
-
-void MEDDLY::op_initializer::cleanupChain()
-{
-  cleanup();
-  if (before) before->cleanupChain();
-}
-
