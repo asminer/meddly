@@ -39,7 +39,6 @@
 namespace MEDDLY {
   // "global" variables
 
-  settings meddlySettings;
   initializer_list* meddlyInitializers;
 
 
@@ -398,17 +397,6 @@ void MEDDLY::destroyOperation(MEDDLY::specialized_operation* &op)
   op = 0;
 }
 
-MEDDLY::settings::computeTableSettings::computeTableSettings() :
-  style(MonolithicUnchainedHash), maxSize(16777216), staleRemoval(Moderate) {
-}
-
-//----------------------------------------------------------------------
-// front end - Meddly settings
-//----------------------------------------------------------------------
-
-MEDDLY::settings::settings() : ctSettings()
-{
-}
 
 
 
@@ -418,27 +406,17 @@ MEDDLY::settings::settings() : ctSettings()
 
 MEDDLY::initializer_list* MEDDLY::defaultInitializerList(initializer_list* prev)
 {
+  prev = new ct_initializer(prev);
   prev = new builtin_initializer(prev);
   prev = new forest_initializer(prev);
 
   return prev;
 }
 
-void MEDDLY::initialize(const settings &s, initializer_list* L)
+// void MEDDLY::initialize(const settings &s, initializer_list* L)
+void MEDDLY::initialize(initializer_list* L)
 {
   if (libraryRunning) throw error(error::ALREADY_INITIALIZED);
-  meddlySettings = s;
-  // initStats(meddlyStats);
-
-  // cleanup_procedure::Initialize();
-
-  // set up monolithic compute table, if needed
-  const compute_table_style* CTstyle = s.ctSettings.style;
-  if (0==CTstyle) throw error(error::INVALID_ASSIGNMENT);
-
-  if (CTstyle->usesMonolithic()) {
-    operation::Monolithic_CT = CTstyle->create(s.ctSettings);
-  }
 
   opname::next_index = 0;
 
@@ -457,8 +435,7 @@ void MEDDLY::initialize(const settings &s, initializer_list* L)
 
 void MEDDLY::initialize()
 {
-  settings deflt;
-  initialize(deflt, defaultInitializerList(0));
+  initialize( defaultInitializerList(0) );
 }
 
 void MEDDLY::cleanup()
@@ -473,14 +450,6 @@ void MEDDLY::cleanup()
 
 #endif
 
-  if (meddlyInitializers) {
-    meddlyInitializers->cleanupAll();
-    delete meddlyInitializers;
-    meddlyInitializers = 0;
-  }
-
-  // cleanup_procedure::ExecuteAll();
-
   domain::markDomList();
 
   operation::destroyAllOps();
@@ -491,20 +460,14 @@ void MEDDLY::cleanup()
   delete[] op_cache;
   op_cache = 0;
 
-  // clean up compute table
-  delete operation::Monolithic_CT;
-  operation::Monolithic_CT = 0;
-
-  /*
-  if (meddlySettings.operationBuilder) {
-    meddlySettings.operationBuilder->cleanupChain();
-  }
-  */
-
   // clean up recycled unpacked nodes
   unpacked_node::freeRecycled();
 
-  // cleanup_procedure::DeleteAll();
+  if (meddlyInitializers) {
+    meddlyInitializers->cleanupAll();
+    delete meddlyInitializers;
+    meddlyInitializers = 0;
+  }
 
   libraryRunning = 0;
 }
@@ -513,10 +476,6 @@ void MEDDLY::cleanup()
 // front end - library info
 //----------------------------------------------------------------------
 
-const MEDDLY::settings& MEDDLY::getLibrarySettings()
-{
-  return meddlySettings;
-}
 
 const char* MEDDLY::getLibraryInfo(int what)
 {

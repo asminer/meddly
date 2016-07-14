@@ -22,6 +22,8 @@
 
 #include "defines.h"
 
+#include "storage/ct_classic.h"
+
 // **********************************************************************
 // *                                                                    *
 // *                         ct_object  methods                         *
@@ -34,6 +36,102 @@ MEDDLY::ct_object::ct_object()
 
 MEDDLY::ct_object::~ct_object()
 {
+}
+
+// ******************************************************************
+// *                                                                *
+// *                     ct_initializer  methods                    *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::ct_initializer::settings MEDDLY::ct_initializer::the_settings;
+const MEDDLY::compute_table_style* MEDDLY::ct_initializer::ct_factory;
+MEDDLY::compute_table_style* MEDDLY::ct_initializer::builtin_ct_factory;
+
+MEDDLY::ct_initializer::ct_initializer(initializer_list* prev) : initializer_list(prev)
+{
+  ct_factory = 0;
+  builtin_ct_factory = 0;
+
+  setBuiltinStyle(MonolithicUnchainedHash);
+  setMaxSize(16777216);
+  setStaleRemoval(Moderate);
+}
+
+MEDDLY::ct_initializer::~ct_initializer()
+{
+  delete builtin_ct_factory;
+  builtin_ct_factory = 0;
+}
+
+void MEDDLY::ct_initializer::setup()
+{
+  if (0==ct_factory) throw error(error::INVALID_ASSIGNMENT);
+
+  if (ct_factory->usesMonolithic()) {
+    operation::Monolithic_CT = ct_factory->create(the_settings);
+  }
+}
+
+void MEDDLY::ct_initializer::cleanup()
+{
+  delete operation::Monolithic_CT;
+  operation::Monolithic_CT = 0;
+}
+
+void MEDDLY::ct_initializer::setStaleRemoval(staleRemovalOption sro)
+{
+  the_settings.staleRemoval = sro;
+}
+
+void MEDDLY::ct_initializer::setMaxSize(unsigned ms)
+{
+  the_settings.maxSize = ms;
+}
+
+void MEDDLY::ct_initializer::setBuiltinStyle(builtinCTstyle cts)
+{
+  delete builtin_ct_factory;
+  builtin_ct_factory = 0;
+  switch (cts) {
+    case MonolithicUnchainedHash:
+          builtin_ct_factory = new monolithic_unchained_style;
+          break;
+
+    case MonolithicChainedHash:
+          builtin_ct_factory = new monolithic_chained_style;
+          break;
+
+    case OperationUnchainedHash:
+          builtin_ct_factory = new operation_unchained_style;
+          break;
+
+    case OperationChainedHash:
+          builtin_ct_factory = new operation_chained_style;
+          break;
+
+    case OperationMap:
+          builtin_ct_factory = new operation_map_style;
+          break;
+  }
+
+  ct_factory = builtin_ct_factory;
+}
+
+void MEDDLY::ct_initializer::setUserStyle(const compute_table_style* cts)
+{
+  delete builtin_ct_factory;
+  builtin_ct_factory = 0;
+  ct_factory = cts;
+}
+
+MEDDLY::compute_table* MEDDLY::ct_initializer::createForOp(operation* op)
+{
+  if (ct_factory) {
+    return ct_factory->create(the_settings, op);
+  } else {
+    return 0;
+  }
 }
 
 // **********************************************************************
@@ -51,7 +149,7 @@ MEDDLY::compute_table_style::~compute_table_style()
 }
 
 MEDDLY::compute_table* 
-MEDDLY::compute_table_style::create(const settings::computeTableSettings &s)
+MEDDLY::compute_table_style::create(const ct_initializer::settings &s)
       const
 {
   throw error(error::TYPE_MISMATCH);
@@ -59,7 +157,7 @@ MEDDLY::compute_table_style::create(const settings::computeTableSettings &s)
 
 
 MEDDLY::compute_table* 
-MEDDLY::compute_table_style::create(const settings::computeTableSettings &s, 
+MEDDLY::compute_table_style::create(const ct_initializer::settings &s, 
       operation* op) const
 {
   throw error(error::TYPE_MISMATCH);
@@ -71,22 +169,22 @@ MEDDLY::compute_table_style::create(const settings::computeTableSettings &s,
 // *                                                                    *
 // **********************************************************************
 
-MEDDLY::compute_table::compute_table(const settings::computeTableSettings &s)
+MEDDLY::compute_table::compute_table(const ct_initializer::settings &s)
 {
   maxSize = s.maxSize;
   if (0==maxSize)
     throw error(error::INVALID_ASSIGNMENT);
 
   switch (s.staleRemoval) {
-    case settings::computeTableSettings::Aggressive:
+    case ct_initializer::Aggressive:
             checkStalesOnFind = true;
             checkStalesOnResize = true;
             break;
-    case settings::computeTableSettings::Moderate:
+    case ct_initializer::Moderate:
             checkStalesOnFind = false;
             checkStalesOnResize = true;
             break;
-    case settings::computeTableSettings::Lazy:
+    case ct_initializer::Lazy:
             checkStalesOnFind = false;
             checkStalesOnResize = false;
             break;

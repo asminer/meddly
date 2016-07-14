@@ -49,10 +49,6 @@
 // #define DEBUG_CLEANUP
 // #define DUMP_ON_FOREST_DESTROY
 
-namespace MEDDLY {
-  extern settings meddlySettings;
-}
-
 // ----------------------------------------------------------------------
 // variable
 // ----------------------------------------------------------------------

@@ -45,30 +45,6 @@ MEDDLY::expert_domain::readExpertVar(int lev) const
 }
 
 inline void
-MEDDLY::expert_domain::createVariable(int below, int &vh)
-{
-  createVariable(below);
-  vh = below + 1;
-}
-inline void
-MEDDLY::expert_domain::destroyVariable(int vh)
-{
-  removeVariableAtLevel(vh);
-}
-
-inline int
-MEDDLY::expert_domain::getVariableHeight(int vh) const
-{
-  return vh;
-}
-
-inline int
-MEDDLY::expert_domain::getVariableWithHeight(int ht) const
-{
-  return ht;
-}
-
-inline void
 MEDDLY::expert_domain::enlargeVariableBound(int vh, bool prime, int b)
 {
   getExpertVar(vh)->enlargeBound(prime, b);
@@ -1796,36 +1772,6 @@ MEDDLY::binary_operation::operationCommutes()
   can_commute = (arg1F == arg2F);
 }
 
-
-// ******************************************************************
-// *                                                                *
-// *                 inlined op_initializer methods                 *
-// *                                                                *
-// ******************************************************************
-
-
-#if 0
-
-inline void
-MEDDLY::op_initializer::recycle(op_initializer *I)
-{
-  if (0 == I)
-    return;
-  MEDDLY_DCASSERT(I->refcount);
-  I->refcount--;
-  if (0 == I->refcount)
-    delete I;
-}
-
-inline MEDDLY::op_initializer*
-MEDDLY::op_initializer::copy(op_initializer *I)
-{
-  if (I)
-    I->refcount++;
-  return I;
-}
-
-#endif
 
 // ******************************************************************
 // *                                                                *

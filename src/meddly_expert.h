@@ -72,7 +72,7 @@
 namespace MEDDLY {
 
   // classes defined here
-  struct settings;
+
   class expert_variable;
   class expert_domain;
 
@@ -81,28 +81,6 @@ namespace MEDDLY {
 
   // EXPERIMENTAL - matrix wrappers for unprimed, primed pairs of nodes
   class unpacked_matrix;
-
-  // Actual node storage
-  class node_storage_style;
-  class node_storage;
-
-  class expert_forest;
-
-  class opname;
-  class unary_opname;
-  class binary_opname;
-  class specialized_opname;
-  class numerical_opname;
-  class satpregen_opname;
-  class satotf_opname;
-
-  class compute_table_style;
-  class compute_table;
-
-  class operation;
-  class unary_operation;
-  class binary_operation;
-  class specialized_operation;
 
   /*
   
@@ -118,6 +96,29 @@ namespace MEDDLY {
 
     Subsumed by class initializer_list.
   */
+
+  // Actual node storage
+  class node_storage_style;
+  class node_storage;
+
+  class expert_forest;
+
+  class opname;
+  class unary_opname;
+  class binary_opname;
+  class specialized_opname;
+  class numerical_opname;
+  class satpregen_opname;
+  class satotf_opname;
+
+  class ct_initializer;
+  class compute_table_style;
+  class compute_table;
+
+  class operation;
+  class unary_operation;
+  class binary_operation;
+  class specialized_operation;
 
   // classes defined elsewhere
   class base_table;
@@ -281,119 +282,16 @@ namespace MEDDLY {
 
   /** Initialize the library with custom settings.
       Should be called before using any other functions.
-        @param  s   Various settings.
         @param  L   List of initializers.  Will execute the "setup()"
                     methods in order now, and the "cleanup()" methods
                     in reverse order on library cleanup.
   */
-  void initialize(const settings &s, initializer_list* L);
-
-
-  /// Get the current library settings.
-  const settings& getLibrarySettings();
-
-
-  // ******************************************************************
-  // *                                                                *
-  // *                      Compute table styles                      *
-  // *                                                                *
-  // ******************************************************************
-
-  /// One huge hash table that uses chaining.
-  extern const compute_table_style* MonolithicChainedHash;
-
-  /// One huge hash table that does not use chaining.
-  extern const compute_table_style* MonolithicUnchainedHash;
-
-  /// A hash table (with chaining) for each operation.
-  extern const compute_table_style* OperationChainedHash;
-
-  /// A hash table (no chaining) for each operation.
-  extern const compute_table_style* OperationUnchainedHash;
-
-  /// A STL "map" for each operation.
-  extern const compute_table_style* OperationMap;
+  void initialize(initializer_list* L);
 
 
 }; // namespace MEDDLY
 
 
-// ******************************************************************
-// *                                                                *
-// *                         settings struct                        *
-// *                                                                *
-// ******************************************************************
-
-/** "Global" settings for MEDDLY.
-    These settings DO NOT CHANGE once the library is initialized.
-
-    The compute cache by default uses a hash table with chaining (i.e. a
-    list of entries at each hash location). This can be changed to a
-    hash-table without chaining. The maximum size of the hash table can
-    also be fixed (to limit the amount of memory it uses).
-*/
-struct MEDDLY::settings {
-  public:
-
-    struct computeTableSettings {
-      public:
-        enum staleRemovalOption {
-          /// Whenever we see a stale entry, remove it.
-          Aggressive,
-          /// Only remove stales when we need to expand the table
-          Moderate,
-          /// Only remove stales during Garbage Collection.
-          Lazy
-        };
-
-        /// The type of compute table(s) that should be used.
-        const compute_table_style* style;
-        /// Maximum compute table size.
-        unsigned maxSize;
-        /// How aggressively should we try to eliminate stale entries.
-        staleRemovalOption staleRemoval;
-
-        /// Constructor, to set defaults.
-        computeTableSettings();
-    };
-
-    /// Settings for the compute table(s)
-    computeTableSettings ctSettings; 
-
-    /*
-      forest::policies mddDefaults
-      
-      has been moved to class forest
-    */
-
-    /*
-      forest::policies mxdDefaults
-
-      has been moved to class forest
-    */
-
-    /*
-      op_initializer* operationBuilder; /// Initializer for operations
-
-      has been removed, renamed, and is now passed directly 
-      as an argument to initialize().
-    */
-
-
-    /// Constructor, to set defaults.
-    settings();
-    /// Copy constructor.
-    // settings(const settings &s);
-    /// Destructor
-    // ~settings();
-    // void operator=(const settings &s);
-
-  /*
-  private:
-    void init(const settings &s);
-    void clear();
-    */
-};
 
 // ******************************************************************
 // *                                                                *
@@ -496,58 +394,7 @@ class MEDDLY::expert_domain : public domain {
     */
     void createVariable(int below);
 
-    /** Add a new variable with bound 1.
-      Deprecated as of version 0.5; use one paramater version instead.
-    */
-#ifdef _MSC_VER
-    __declspec(deprecated)
-#endif
-#ifdef __GNUC__
-    __attribute__ ((deprecated))
-#endif
-    void createVariable(int below, int &vh);
 
-    /** Destroy a variable with bound 1.
-        Deprecated as of version 0.5; use removeVariableAtLevel instead.
-    */
-#ifdef _MSC_VER
-    __declspec(deprecated)
-#endif
-#ifdef __GNUC__
-    __attribute__ ((deprecated))
-#endif
-    void destroyVariable(int vh);
-
-    /** Get the position of the variable in this domain's variable-order.
-      \a TERMINALS are considered to be at height 0.
-      be at height 0.
-      Deprecated as of version 0.5: level height always equals level handle.
-      @param  vh      Any variable handle.
-      @return         The variable at this height. 0 for \a TERMINALS.
-                      If \a vh is not a valid level handle, return -1.
-    */
-#ifdef _MSC_VER
-    __declspec(deprecated)
-#endif
-#ifdef __GNUC__
-    __attribute__ ((deprecated))
-#endif
-    int getVariableHeight(int vh) const;
-
-    /** Get the variable with height \a ht in this domain's variable-order.
-      \a TERMINALS are considered to be at height 0.
-      Deprecated as of version 0.5: level height always equals level handle.
-      @param  ht      Height of the variable.
-      @return         The variable with this height. If the height is not in
-                      [0, height of top variable], returns -1.
-    */
-#ifdef _MSC_VER
-    __declspec(deprecated)
-#endif
-#ifdef __GNUC__
-    __attribute__ ((deprecated))
-#endif
-    int getVariableWithHeight(int ht) const;
     /** Swap the locations of variables in forests.
       I.e., changes the variable ordering of all forests with this domain.
       @param  lev1    Level of first variable.
@@ -980,6 +827,48 @@ class MEDDLY::node_storage_style {
     */
     virtual node_storage* createForForest(expert_forest* f) const = 0;
 
+};
+
+// ******************************************************************
+// *                                                                *
+// *                     initializer_list class                     *
+// *                                                                *
+// ******************************************************************
+
+/** Mechanism for initializing and/or cleaning up library structures.
+    Any user additions to the library should utilize this class.
+    Derive a class from this one, provide the \a setup and \a cleanup
+    methods.
+    Implementation in meddly.cc
+*/
+class MEDDLY::initializer_list {
+  public:
+    /**
+        Constructor.
+        Takes the initializer(s) to run before this one.
+        Cleanup runs in the reverse order.
+    */
+    initializer_list(initializer_list* previous);
+    virtual ~initializer_list();
+
+    /**
+        Run all setup methods for the list of initializers,
+        "previous first".
+    */
+    void setupAll();
+
+    /**
+        Run all cleanup methods for the list of initializers,
+        "previous last".
+    */
+    void cleanupAll();
+
+  protected:
+    virtual void setup() = 0;
+    virtual void cleanup() = 0;
+
+  private:
+    initializer_list* previous;
 };
 
 // ******************************************************************
@@ -2183,7 +2072,7 @@ class MEDDLY::opname {
     int index;
     static int next_index;
 
-    friend void MEDDLY::initialize(const settings &, initializer_list *);
+    friend void MEDDLY::initialize(initializer_list *);
     friend void MEDDLY::cleanup();
   public:
     opname(const char* n);
@@ -2724,6 +2613,90 @@ class MEDDLY::ct_object {
     virtual opnd_type getType() = 0;
 };
 
+// under construction:
+
+
+// ******************************************************************
+// *                                                                *
+// *                      ct_initializer  class                     *
+// *                                                                *
+// ******************************************************************
+
+/** Interface for initializing Meddly's compute table(s).
+    Implemented in compute_table.cc.
+    Note - this is a singleton class but this is not enforced.
+  
+    This is exposed here because it allows us to avoid a
+    "chicken and egg" problem:  to initialize the library, we want to 
+    set the compute table style, but we cannot guarantee that those
+    pointers are set up before we initialize the library.
+    So, settings for compute tables should be made as follows.
+
+    (1) call defaultInitializerList(), to build an instance of this class,
+        and save the result.  That will set up the default settings.
+
+    (2) change settings using static members
+
+    (3) initialize Meddly using the saved initializer list.
+
+*/
+class MEDDLY::ct_initializer : public initializer_list {
+  public:
+    enum staleRemovalOption {
+      /// Whenever we see a stale entry, remove it.
+      Aggressive,
+      /// Only remove stales when we need to expand the table
+      Moderate,
+      /// Only remove stales during Garbage Collection.
+      Lazy
+    };
+
+    enum builtinCTstyle {
+      /// One huge hash table that uses chaining.
+      MonolithicChainedHash,
+
+      /// One huge hash table that does not use chaining.
+      MonolithicUnchainedHash,
+
+      /// A hash table (with chaining) for each operation.
+      OperationChainedHash,
+
+      /// A hash table (no chaining) for each operation.
+      OperationUnchainedHash,
+
+      /// A STL "map" for each operation.
+      OperationMap
+    };
+
+    struct settings {
+      staleRemovalOption staleRemoval;
+      unsigned maxSize;
+    };
+
+  public:
+    ct_initializer(initializer_list* previous);
+    virtual ~ct_initializer();
+
+  protected:
+    virtual void setup();
+    virtual void cleanup();
+
+  // use these to change defaults, before library initialization
+  public:
+    static void setStaleRemoval(staleRemovalOption sro);
+    static void setMaxSize(unsigned ms);
+    static void setBuiltinStyle(builtinCTstyle cts);
+    static void setUserStyle(const compute_table_style*);
+
+    // for convenience
+    static compute_table* createForOp(operation* op);
+
+  private:
+    static settings the_settings;
+    static const compute_table_style* ct_factory;
+    static compute_table_style* builtin_ct_factory;
+};
+
 // ******************************************************************
 // *                                                                *
 // *                    compute_table_style class                   *
@@ -2733,18 +2706,17 @@ class MEDDLY::ct_object {
 /** Interface for building compute tables.
 */
 class MEDDLY::compute_table_style {
-  protected:
+  public:
     compute_table_style();
     virtual ~compute_table_style();
 
-  public:
     /** Build a new, monolithic table.
         Monolithic means that the table stores entries for several
         (ideally, all) operations.
 
         Default throws an error.
     */
-    virtual compute_table* create(const settings::computeTableSettings &s)
+    virtual compute_table* create(const ct_initializer::settings &s)
       const;
 
 
@@ -2752,7 +2724,7 @@ class MEDDLY::compute_table_style {
         Build a new table for a single operation.
         Default throws an error.
     */
-    virtual compute_table* create(const settings::computeTableSettings &s,
+    virtual compute_table* create(const ct_initializer::settings &s,
       operation* op) const;
 
 
@@ -2861,7 +2833,7 @@ class MEDDLY::compute_table {
       static void readEV(const node_handle* p, float &ev);
 
       /// Constructor
-      compute_table(const settings::computeTableSettings &s);
+      compute_table(const ct_initializer::settings &s);
 
       /** Destructor.
           Does NOT properly discard all table entries;
@@ -2975,9 +2947,10 @@ class MEDDLY::operation {
     void addEntryObject(int index);
 
     friend class forest;
-    friend void MEDDLY::initialize(const settings &, initializer_list *);
     friend void MEDDLY::destroyOpInternal(operation* op);
     friend void MEDDLY::cleanup();
+
+    friend class ct_initializer;
 
   public:
     /// New constructor.
@@ -3166,48 +3139,6 @@ class MEDDLY::specialized_operation : public operation {
     virtual void compute(double* y, const double* x);
 };
 
-
-// ******************************************************************
-// *                                                                *
-// *                     initializer_list class                     *
-// *                                                                *
-// ******************************************************************
-
-/** Mechanism for initializing and/or cleaning up library structures.
-    Any user additions to the library should utilize this class.
-    Derive a class from this one, provide the \a setup and \a cleanup
-    methods.
-    Implementation in meddly.cc
-*/
-class MEDDLY::initializer_list {
-  public:
-    /**
-        Constructor.
-        Takes the initializer(s) to run before this one.
-        Cleanup runs in the reverse order.
-    */
-    initializer_list(initializer_list* previous);
-    virtual ~initializer_list();
-
-    /**
-        Run all setup methods for the list of initializers,
-        "previous first".
-    */
-    void setupAll();
-
-    /**
-        Run all cleanup methods for the list of initializers,
-        "previous last".
-    */
-    void cleanupAll();
-
-  protected:
-    virtual void setup() = 0;
-    virtual void cleanup() = 0;
-
-  private:
-    initializer_list* previous;
-};
 
 #include "meddly_expert.hh"
 #endif

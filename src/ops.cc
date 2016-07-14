@@ -34,7 +34,6 @@
 // #define DEBUG_FINALIZE_SPLIT
 
 namespace MEDDLY {
-  extern settings meddlySettings;
 
   /*
       Convert from array of linked lists to contiguous array with indexes.
@@ -1206,12 +1205,10 @@ MEDDLY::operation::operation(const opname* n, int kl, int al)
     // 
     // Initialize CT 
     //
-    if (Monolithic_CT)
+    if (Monolithic_CT) {
       CT = Monolithic_CT;
-    else {
-      const compute_table_style* CTsty = meddlySettings.ctSettings.style;
-      MEDDLY_DCASSERT(CTsty);
-      CT = CTsty->create(meddlySettings.ctSettings, this);
+    } else {
+      CT = ct_initializer::createForOp(this);
     }
 
     //

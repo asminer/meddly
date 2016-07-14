@@ -848,13 +848,11 @@ int main(int argc, char *argv[])
 
   // Initialize MEDDLY
 
-  MEDDLY::settings s;
-  // TBD
-  // s.doComputeTablesUseChaining = chaining;
+  initializer_list* L = defaultInitializerList(0);
   if (cacheSize > 0) {
-    s.ctSettings.maxSize = cacheSize;
+    ct_initializer::setMaxSize(cacheSize);
   }
-  MEDDLY::initialize(s, defaultInitializerList(0));
+  MEDDLY::initialize(L);
 
   //
   // Set up logger, if any
