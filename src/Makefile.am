@@ -50,7 +50,6 @@ libmeddly_la_SOURCES = \
   forests/evmxd_timesreal.cc \
   forests/init_forests.cc \
   \
-  operations/init_builtin.cc \
   operations/apply_base.cc   \
   operations/mpz_object.cc   \
   operations/copy.cc         \
@@ -81,6 +80,7 @@ libmeddly_la_SOURCES = \
   operations/sat_otf.cc      \
   operations/vect_matr.cc    \
   operations/mm_mult.cc      \
+  operations/init_builtin.cc \
   \
   storage/holeman.cc \
   storage/hm_array.cc \
@@ -90,7 +90,8 @@ libmeddly_la_SOURCES = \
   storage/old_scheme.cc \
   storage/simple.cc \
   storage/compact.cc \
-  storage/ct_classic.cc
+  storage/ct_classic.cc \
+  storage/init_storage.cc
 
   
 ## compile apps

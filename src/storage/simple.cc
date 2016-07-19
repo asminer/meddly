@@ -1217,6 +1217,7 @@ MEDDLY::node_storage* MEDDLY::simple_none_style
 // *                                                                *
 // ******************************************************************
 
+/*
 namespace MEDDLY {
   simple_grid_style THE_SIMPLE_GRID;
   simple_array_style THE_SIMPLE_ARRAY;
@@ -1228,4 +1229,4 @@ namespace MEDDLY {
   const node_storage_style* SIMPLE_HEAP = &THE_SIMPLE_HEAP;
   const node_storage_style* SIMPLE_NONE = &THE_SIMPLE_NONE;
 };
-
+*/

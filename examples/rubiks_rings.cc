@@ -454,6 +454,7 @@ int usage(const char* who)
 
 int main(int argc, const char** argv)
 {
+  MEDDLY::initialize();
 
   int red = 11;
   int blue = 11;
@@ -501,7 +502,6 @@ int main(int argc, const char** argv)
 
   if (decinc) decinc_order(red, blue);
   else        incdec_order(red, blue);
-  MEDDLY::initialize();
 
   //
   // Build the domain

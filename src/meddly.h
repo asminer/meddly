@@ -964,8 +964,15 @@ class MEDDLY::forest {
       /// Should we run the memory compactor before trying to expand
       bool compactBeforeExpand;
 
+      /// Empty constructor, for setting up defaults later
+      policies();
+
       /// Constructor; sets reasonable defaults
       policies(bool rel);
+
+      /// Set to hard-wired defaults
+      void useDefaults(bool rel);
+
       void setFullStorage();
       void setSparseStorage();
       void setFullOrSparse();
@@ -1788,6 +1795,7 @@ class MEDDLY::forest {
   // ------------------------------------------------------------
   // Ugly details from here down.
   private:  // Defaults
+    friend class forest_initializer;
     static policies mddDefaults;
     static policies mxdDefaults;
 

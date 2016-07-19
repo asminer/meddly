@@ -1,5 +1,5 @@
 
-// $Id:$
+// $Id: init_builtin.h 700 2016-07-07 21:06:50Z asminer $
 
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
@@ -19,31 +19,23 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-#include "../defines.h"
-#include "init_forests.h"
+namespace MEDDLY {
+  class storage_initializer;
+};
 
-#include "mt.h"
-#include "ev.h"
+class MEDDLY::storage_initializer : public initializer_list {
 
-MEDDLY::forest_initializer::forest_initializer(initializer_list *p) : initializer_list(p)
-{
-}
+    node_storage_style* classic;
 
-void MEDDLY::forest_initializer::setup()
-{
-  forest::mddDefaults.useDefaults(false);
-  forest::mxdDefaults.useDefaults(true);
+    node_storage_style* simple_grid;
+    node_storage_style* simple_array;
+    node_storage_style* simple_heap;
+    node_storage_style* simple_none;
 
-  mt_forest::initStatics();
-  ev_forest::initStatics();
-}
-
-void MEDDLY::forest_initializer::cleanup()
-{
-  mt_forest::clearStatics();
-  ev_forest::clearStatics();
-}
+  public:
+    storage_initializer(initializer_list *p);
+  protected:
+    virtual void setup();
+    virtual void cleanup();
+};
 

@@ -211,9 +211,9 @@ int usage(const char* who)
 
 int main(int argc, const char** argv)
 {
+  initialize();
   forest::policies p(false);
   if (!processArgs(argc, argv, p)) return usage(argv[0]);
-  initialize();
   printf("Using %s\n", getLibraryInfo(0));
 
   timer stopwatch;

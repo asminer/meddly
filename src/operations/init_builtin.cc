@@ -64,6 +64,64 @@
 
 #include "mpz_object.h"
 
+namespace MEDDLY {
+
+  // unary operation "codes"
+
+  const unary_opname* COPY = 0;
+  const unary_opname* CARDINALITY = 0;
+  const unary_opname* COMPLEMENT = 0;
+  const unary_opname* MAX_RANGE = 0;
+  const unary_opname* MIN_RANGE = 0;
+  const unary_opname* CONVERT_TO_INDEX_SET = 0;
+
+  // binary operation "codes"
+
+  const binary_opname* UNION = 0;
+  const binary_opname* INTERSECTION = 0;
+  const binary_opname* DIFFERENCE = 0;
+  const binary_opname* CROSS = 0;
+
+  const binary_opname* MINIMUM = 0;
+  const binary_opname* MAXIMUM = 0;
+  const binary_opname* PLUS = 0;
+  const binary_opname* MINUS = 0;
+  const binary_opname* MULTIPLY = 0;
+  const binary_opname* DIVIDE = 0;
+  const binary_opname* MODULO = 0;
+
+  const binary_opname* EQUAL = 0;
+  const binary_opname* NOT_EQUAL = 0;
+  const binary_opname* LESS_THAN = 0;
+  const binary_opname* LESS_THAN_EQUAL = 0;
+  const binary_opname* GREATER_THAN = 0;
+  const binary_opname* GREATER_THAN_EQUAL = 0;
+
+  const binary_opname* PRE_IMAGE = 0;
+  const binary_opname* POST_IMAGE = 0;
+  const binary_opname* REACHABLE_STATES_DFS = 0;
+  const binary_opname* REACHABLE_STATES_BFS = 0;
+  const binary_opname* REVERSE_REACHABLE_DFS = 0;
+  const binary_opname* REVERSE_REACHABLE_BFS = 0;
+
+  const binary_opname* VM_MULTIPLY = 0;
+  const binary_opname* MV_MULTIPLY = 0;
+
+  const binary_opname* MM_MULTIPLY = 0;
+
+  // numerical operation "codes"
+
+  const numerical_opname* EXPLVECT_MATR_MULT = 0;
+  const numerical_opname* MATR_EXPLVECT_MULT = 0;
+
+  // saturation operation "codes"
+
+  const satpregen_opname* SATURATION_FORWARD = 0;
+  const satpregen_opname* SATURATION_BACKWARD = 0;
+  const satotf_opname* SATURATION_OTF_FORWARD = 0;
+};
+
+
 
 MEDDLY::builtin_initializer::builtin_initializer(initializer_list *p)
  : initializer_list(p)

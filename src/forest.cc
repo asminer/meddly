@@ -73,7 +73,18 @@ const int a_min_size = 1024;
 const unsigned char MEDDLY::forest::policies::ALLOW_FULL_STORAGE    = 0x01;
 const unsigned char MEDDLY::forest::policies::ALLOW_SPARSE_STORAGE  = 0x02;
 
-MEDDLY::forest::policies::policies(bool rel) {
+MEDDLY::forest::policies::policies()
+{
+  nodestor = 0; // should cause an exception later
+}
+
+MEDDLY::forest::policies::policies(bool rel) 
+{
+  useDefaults(rel);
+}
+
+void MEDDLY::forest::policies::useDefaults(bool rel)
+{
   reduction = rel ? IDENTITY_REDUCED : FULLY_REDUCED;
   storage_flags = ALLOW_FULL_STORAGE | ALLOW_SPARSE_STORAGE;
   deletion = OPTIMISTIC_DELETION;
@@ -84,6 +95,7 @@ MEDDLY::forest::policies::policies(bool rel) {
   orphanTrigger = 500000;
   compactAfterGC = false;
   compactBeforeExpand = true;
+
   // nodestor = CLASSIC_STORAGE;
   nodestor = SIMPLE_GRID;
   // nodestor = SIMPLE_ARRAY;
@@ -177,8 +189,8 @@ void MEDDLY::forest::logger::currentTime(long &sec, long &usec)
 
 unsigned MEDDLY::forest::gfid = 0;
 
-MEDDLY::forest::policies MEDDLY::forest::mddDefaults(0);
-MEDDLY::forest::policies MEDDLY::forest::mxdDefaults(1);
+MEDDLY::forest::policies MEDDLY::forest::mddDefaults;
+MEDDLY::forest::policies MEDDLY::forest::mxdDefaults;
 
 MEDDLY::forest
 ::forest(int ds, domain* _d, bool rel, range_type t, edge_labeling ev, 

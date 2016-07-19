@@ -20,6 +20,7 @@
 */
 
 #ifndef HASH_STREAM_H
+#define HASH_STREAM_H
 
 #include "meddly_expert.h"
 

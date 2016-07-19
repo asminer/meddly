@@ -802,35 +802,6 @@ class MEDDLY::unpacked_matrix {
 
 // ******************************************************************
 // *                                                                *
-// *                    node_storage_style class                    *
-// *                                                                *
-// ******************************************************************
-
-/** Abstract base class for node storage factories.
-
-    The base class is implemented in node_wrappers.cc;
-    various backends are implemented in directory storage/.
-
-*/
-class MEDDLY::node_storage_style {
-  public:
-    node_storage_style();
-    virtual ~node_storage_style();
-
-
-    /** Build a new node storage mechanism, bound to the given forest.
-
-          @param  f   Forest to bind to
-
-          @return     A pointer to a node storage class,
-                      initialized for forest f.
-    */
-    virtual node_storage* createForForest(expert_forest* f) const = 0;
-
-};
-
-// ******************************************************************
-// *                                                                *
 // *                     initializer_list class                     *
 // *                                                                *
 // ******************************************************************
@@ -869,6 +840,35 @@ class MEDDLY::initializer_list {
 
   private:
     initializer_list* previous;
+};
+
+// ******************************************************************
+// *                                                                *
+// *                    node_storage_style class                    *
+// *                                                                *
+// ******************************************************************
+
+/** Abstract base class for node storage factories.
+
+    The base class is implemented in node_wrappers.cc;
+    various backends are implemented in directory storage/.
+
+*/
+class MEDDLY::node_storage_style {
+  public:
+    node_storage_style();
+    virtual ~node_storage_style();
+
+
+    /** Build a new node storage mechanism, bound to the given forest.
+
+          @param  f   Forest to bind to
+
+          @return     A pointer to a node storage class,
+                      initialized for forest f.
+    */
+    virtual node_storage* createForForest(expert_forest* f) const = 0;
+
 };
 
 // ******************************************************************
