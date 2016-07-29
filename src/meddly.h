@@ -47,8 +47,6 @@
 #include <iostream>
 #endif
 
-#include "reordering/reordering_type.h"
-
 #include <cassert>
 
 namespace MEDDLY {
@@ -956,6 +954,27 @@ class MEDDLY::forest {
     	  LEVEL
       };
 
+      enum class reordering_type {
+        // Always choose the lowest swappable inversion
+        LOWEST_INVERSION,
+        // Always choose the highest swappable inversion
+        HIGHEST_INVERSION,
+        // Sink down the "heaviest" variables
+        SINK_DOWN,
+        // Bubble up the "lightest" variables
+        BUBBLE_UP,
+        // Always choose the swappabel inversion where the variable on the top
+        // has the fewest associated nodes
+        LOWEST_COST,
+        // Always choose the swappable inversion that will result in
+        // the lowest memory consumption
+        LOWEST_MEMORY,
+        // Choose the swappable inversion randomly
+        RANDOM,
+        // Always choose the swappable inversion with the lowest average reference count
+        LARC
+      };
+
       /// Defaults: how may we store nodes for all levels in the forest.
       node_storage_flags storage_flags;
       /// Default reduction rule for all levels in the forest.
@@ -998,17 +1017,17 @@ class MEDDLY::forest {
       void setOptimistic();
       void setPessimistic();
 
-      inline void setLowestInversion() { reorder = reordering_type::LOWEST_INVERSION; }
-      inline void setHighestInversion() { reorder = reordering_type::HIGHEST_INVERSION; }
-      inline void setSinkDown() { reorder = reordering_type::SINK_DOWN; }
-      inline void setBubbleUp() { reorder = reordering_type::BUBBLE_UP; }
-      inline void setLowestCost() { reorder = reordering_type::LOWEST_COST; }
-      inline void setLowestMemory() { reorder = reordering_type::LOWEST_MEMORY; }
-      inline void setRandom() { reorder = reordering_type::RANDOM; }
-      inline void setLARC() { reorder = reordering_type::LARC; }
+      void setLowestInversion();
+      void setHighestInversion();
+      void setSinkDown();
+      void setBubbleUp();
+      void setLowestCost();
+      void setLowestMemory();
+      void setRandom();
+      void setLARC();
 
-      inline void setVarSwap() { swap = variable_swap_type::VAR; }
-      inline void setLevelSwap() { swap = variable_swap_type::LEVEL; }
+      void setVarSwap();
+      void setLevelSwap();
     }; // end of struct policies
 
     /// Collection of various stats for performance measurement
@@ -1229,38 +1248,6 @@ class MEDDLY::forest {
 
     /// Returns true if the forest is identity reduced.
     bool isIdentityReduced() const;
-
-    inline bool isLowestInversion() const {
-    	return deflt.reorder == reordering_type::LOWEST_INVERSION;
-    }
-
-    inline bool isHighestInversion() const {
-    	return deflt.reorder == reordering_type::HIGHEST_INVERSION;
-    }
-
-    inline bool isSinkDown() const {
-    	return deflt.reorder == reordering_type::SINK_DOWN;
-    }
-
-    inline bool isBubbleUp() const {
-    	return deflt.reorder == reordering_type::BUBBLE_UP;
-    }
-
-    inline bool isLowestCost() const {
-    	return deflt.reorder == reordering_type::LOWEST_COST;
-    }
-
-    inline bool isLowestMemory() const {
-    	return deflt.reorder == reordering_type::LOWEST_MEMORY;
-    }
-
-    inline bool isRandom() const {
-    	return deflt.reorder == reordering_type::RANDOM;
-    }
-
-    inline bool isLARC() const {
-    	return deflt.reorder == reordering_type::LARC;
-    }
 
     inline bool isVarSwap() const {
     	return deflt.swap == policies::variable_swap_type::VAR;

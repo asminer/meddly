@@ -122,6 +122,46 @@ inline void MEDDLY::forest::policies::setPessimistic() {
   deletion = PESSIMISTIC_DELETION;
 }
 
+inline void MEDDLY::forest::policies::setLowestInversion() {
+  reorder = reordering_type::LOWEST_INVERSION;
+}
+
+inline void MEDDLY::forest::policies::setHighestInversion() {
+  reorder = reordering_type::HIGHEST_INVERSION;
+}
+
+inline void MEDDLY::forest::policies::setSinkDown() {
+  reorder = reordering_type::SINK_DOWN;
+}
+
+inline void MEDDLY::forest::policies::setBubbleUp() {
+  reorder = reordering_type::BUBBLE_UP;
+}
+
+inline void MEDDLY::forest::policies::setLowestCost() {
+  reorder = reordering_type::LOWEST_COST;
+}
+
+inline void MEDDLY::forest::policies::setLowestMemory() {
+  reorder = reordering_type::LOWEST_MEMORY;
+}
+
+inline void MEDDLY::forest::policies::setRandom() {
+  reorder = reordering_type::RANDOM;
+}
+
+inline void MEDDLY::forest::policies::setLARC() {
+  reorder = reordering_type::LARC;
+}
+
+inline void MEDDLY::forest::policies::setVarSwap() {
+  swap = variable_swap_type::VAR;
+}
+
+inline void MEDDLY::forest::policies::setLevelSwap() {
+  swap = variable_swap_type::LEVEL;
+}
+
 // end of struct policies
 
 // forest::statset::

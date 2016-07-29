@@ -5,7 +5,8 @@
 
 #include <memory>
 
-#include "reordering_type.h"
+#include "meddly.h"
+
 #include "reordering_base.h"
 
 #include "lowest_inversion_reordering.h"
@@ -25,27 +26,27 @@ private:
   reordering_factory();
 
 public:
-  static std::unique_ptr<reordering_base> create(reordering_type r);
+  static std::unique_ptr<reordering_base> create(forest::policies::reordering_type r);
 };
 
-inline std::unique_ptr<reordering_base> reordering_factory::create(reordering_type r)
+inline std::unique_ptr<reordering_base> reordering_factory::create(forest::policies::reordering_type r)
 {
   switch(r) {
-  case reordering_type::LOWEST_INVERSION:
+  case forest::policies::reordering_type::LOWEST_INVERSION:
     return std::unique_ptr<reordering_base>(new lowest_inversion_reordering());
-  case reordering_type::HIGHEST_INVERSION:
+  case forest::policies::reordering_type::HIGHEST_INVERSION:
     return std::unique_ptr<reordering_base>(new highest_inversion_reordering());
-  case reordering_type::SINK_DOWN:
+  case forest::policies::reordering_type::SINK_DOWN:
     return std::unique_ptr<reordering_base>(new sink_down_reordering());
-  case reordering_type::BUBBLE_UP:
+  case forest::policies::reordering_type::BUBBLE_UP:
     return std::unique_ptr<reordering_base>(new bubble_up_reordering());
-  case reordering_type::LOWEST_COST:
+  case forest::policies::reordering_type::LOWEST_COST:
     return std::unique_ptr<reordering_base>(new lowest_cost_reordering());
-  case reordering_type::LOWEST_MEMORY:
+  case forest::policies::reordering_type::LOWEST_MEMORY:
     return std::unique_ptr<reordering_base>(new lowest_memory_reordering());
-  case reordering_type::RANDOM:
+  case forest::policies::reordering_type::RANDOM:
     return std::unique_ptr<reordering_base>(new random_reordering());
-  case reordering_type::LARC:
+  case forest::policies::reordering_type::LARC:
     return std::unique_ptr<reordering_base>(new LARC_reordering());
   default:
     throw error(error::INVALID_ARGUMENT);
