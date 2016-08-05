@@ -498,7 +498,7 @@ class MEDDLY::error {
       /// Requested operation requires different number of operands.
       WRONG_NUMBER,
       /// A result won't fit in an integer / float.
-      OVERFLOW,
+      VALUE_OVERFLOW,
       /// Integer division by 0 is invalid.
       DIVIDE_BY_ZERO,
       /// Invalid policy setting.

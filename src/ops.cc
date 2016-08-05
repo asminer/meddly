@@ -304,7 +304,7 @@ MEDDLY::satpregen_opname::pregen_relation
     // relation is "by events"
 
     if (isFinalized())              throw error(error::MISCELLANEOUS);
-    if (last_event+1 >= num_events) throw error(error::OVERFLOW);
+    if (last_event+1 >= num_events) throw error(error::VALUE_OVERFLOW);
 
     last_event++;
 

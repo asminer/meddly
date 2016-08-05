@@ -64,7 +64,7 @@ inline const char* MEDDLY::error::getName() const {
       case  MEDDLY::error::FOREST_MISMATCH:      return "Forest mismatch";
       case  MEDDLY::error::TYPE_MISMATCH:        return "Type mismatch";
       case  MEDDLY::error::WRONG_NUMBER:         return "Wrong number";
-      case  MEDDLY::error::OVERFLOW:             return "Overflow";
+      case  MEDDLY::error::VALUE_OVERFLOW:       return "Overflow";
       case  MEDDLY::error::DIVIDE_BY_ZERO:       return "Divide by zero";
       case  MEDDLY::error::INVALID_POLICY:       return "Invalid policy";
       case  MEDDLY::error::INVALID_ASSIGNMENT:   return "Invalid assignment";

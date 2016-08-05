@@ -76,11 +76,11 @@ public:
 protected:
   static inline void overflow_acc(long &a, long x) {
     a += x;
-    if (a < x) throw error(error::OVERFLOW);
+    if (a < x) throw error(error::VALUE_OVERFLOW);
   }
   static inline long overflow_mult(long a, long x) {
     a *= x;
-    if (a < x) throw error(error::OVERFLOW);
+    if (a < x) throw error(error::VALUE_OVERFLOW);
     return a;
   }
 };

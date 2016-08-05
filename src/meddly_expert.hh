@@ -624,7 +624,7 @@ MEDDLY::expert_forest::int_Tencoder::value2handle(int v)
   MEDDLY_DCASSERT(4 == sizeof(MEDDLY::node_handle));
   if (v < -1073741824 || v > 1073741823) {
     // Can't fit in 31 bits (signed)
-    throw error(error::OVERFLOW);
+    throw error(error::VALUE_OVERFLOW);
   }
   if (v)
     v |= 0x80000000; // sets the sign bit
