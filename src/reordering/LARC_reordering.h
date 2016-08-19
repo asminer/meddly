@@ -4,6 +4,7 @@
 #define LARC_REORDERING_H
 
 #include "../heap.h"
+#include "../unique_table.h"
 
 namespace MEDDLY{
 

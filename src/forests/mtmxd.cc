@@ -190,7 +190,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
           nb->d_ref(i) = linkNode(search == dup.end() ? nr->d(i) : search->second);
         }
         node_handle node = createReducedNode(-1, nb);
-        MEDDLY_DCASSERT(getInCount(node) == 1 && getNodeLevel(node) == level+1);
+        MEDDLY_DCASSERT(getNodeInCount(node) == 1 && getNodeLevel(node) == level + 1);
         swapNodes(n, node);
         unlinkNode(node);
       }
@@ -199,7 +199,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
     }
 
     for (const auto& it : dup) {
-      MEDDLY_DCASSERT(getInCount(it.first) == 1);
+      MEDDLY_DCASSERT(getNodeInCount(it.first) == 1);
       swapNodes(it.first, it.second);
       unlinkNode(it.first);
     }
@@ -283,7 +283,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
           nb->d_ref(i) = linkNode(search == dup.end() ? nr->d(i) : search->second);
         }
         node_handle node = createReducedNode(-1, nb);
-        MEDDLY_DCASSERT(getInCount(node) == 1 && getNodeLevel(node) == level+1);
+        MEDDLY_DCASSERT(getNodeInCount(node) == 1 && getNodeLevel(node) == level + 1);
         swapNodes(n, node);
         unlinkNode(node);
       }
@@ -292,7 +292,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
     }
 
     for (const auto& it : dup) {
-      MEDDLY_DCASSERT(getInCount(it.first) == 1);
+      MEDDLY_DCASSERT(getNodeInCount(it.first) == 1);
       swapNodes(it.first, it.second);
       unlinkNode(it.first);
     }
@@ -485,7 +485,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentLevels(int level)
     unpacked_node::recycle(high_nr);
 
     node_handle node = createReducedNode(-1, high_nb);
-    MEDDLY_DCASSERT(getInCount(node) == 1);
+    MEDDLY_DCASSERT(getNodeInCount(node) == 1);
     MEDDLY_DCASSERT(getNodeLevel(node) == hlevel);
 
     swapNodes(hnodes[i], node);

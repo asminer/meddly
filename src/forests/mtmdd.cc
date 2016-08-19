@@ -25,8 +25,6 @@
 
 #include "mtmdd.h"
 #include "../unique_table.h"
-#include "../hash_stream.h"
-#include "../heap.h"
 #include "../reordering/reordering_factory.h"
 
 MEDDLY::mtmdd_forest

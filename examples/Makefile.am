@@ -29,6 +29,7 @@ swaps \
 rubiks_rings \
 rebuild_mdd \
 test_reorder_mtmxd \
+test_reorder_evmdd \
 rubiks_cube_phase \
 slot_phase
 
@@ -106,6 +107,9 @@ rebuild_mdd_LDADD = ../src/libmeddly.la
 
 test_reorder_mtmxd_SOURCES = test_reorder_mtmxd.cc
 test_reorder_mtmxd_LDADD = ../src/libmeddly.la
+
+test_reorder_evmdd_SOURCES = test_reorder_evmdd.cc
+test_reorder_evmdd_LDADD = ../src/libmeddly.la
 
 rubiks_cube_phase_SOURCES = rubiks_cube_phase.cc
 rubiks_cube_phase_LDADD = ../src/libmeddly.la

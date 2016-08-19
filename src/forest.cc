@@ -2026,7 +2026,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
   unpacked_node* key = unpacked_node::newFromNode(this, p, false);
   key->computeHash();
   MEDDLY_DCASSERT(key->hash() == nb.hash());
-  node_handle f = unique->find(*key);
+  node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
   MEDDLY_DCASSERT(f == p);
   unpacked_node::recycle(key);
 #endif
@@ -2062,6 +2062,18 @@ void MEDDLY::expert_forest::swapNodes(node_handle p, node_handle q)
 
 MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(unpacked_node* un, node_handle p)
 {
+#ifdef DEVELOPMENT_CODE
+  bool well_formed = false;
+  int size = (un->isFull() ? un->getSize() : un->getNNZs());
+  for (int i = 0; i < size; i++) {
+    if (un->ei(i) == 0) {
+      well_formed = true;
+      break;
+    }
+  }
+  MEDDLY_DCASSERT(well_formed);
+#endif
+
   int count = getNodeInCount(p);
 
   unique->remove(hashNode(p), p);
@@ -2079,8 +2091,8 @@ MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(unpacked_nod
 #ifdef DEVELOPMENT_CODE
   unpacked_node* key = unpacked_node::newFromNode(this, p, false);
   key->computeHash();
-  MEDDLY_DCASSERT(key->hash() == nb.hash());
-  node_handle f = unique->find(*key);
+  MEDDLY_DCASSERT(key->hash() == un->hash());
+  node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
   MEDDLY_DCASSERT(f == p);
   unpacked_node::recycle(key);
 #endif
