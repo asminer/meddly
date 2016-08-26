@@ -6,7 +6,12 @@
 #include <QString>
 #include <QtDebug>
 
-
+/*
+ *
+ * This function sets up the initial states of all the buttons.
+ * This creates the 2 scenes and attaches them to the graphics views.
+ *
+ * */
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -56,6 +61,10 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+/*
+ *
+ * This will hide and show forest one when the show/hide forest1 button is clicked.
+ * */
 void MainWindow::on_hideForest1_clicked()
 {
     if(MainWindow::forest1Hidden)
@@ -73,6 +82,10 @@ void MainWindow::on_hideForest1_clicked()
     }
 }
 
+/*
+ *
+ * This will hide and show forest 2 when the show/hide forest2 button is clicked.
+ * */
 void MainWindow::on_hideForest2_clicked()
 {
     if(MainWindow::forest2Hidden)
@@ -90,6 +103,11 @@ void MainWindow::on_hideForest2_clicked()
     }
 }
 
+/*
+ * if paused this function will unpause and if unpause it will pause.
+ * Play works by calling on_step_clicked() in a while loop.
+ *
+ * */
 void MainWindow::on_play_clicked()
 {
     if(MainWindow::isPaused)
@@ -109,7 +127,7 @@ void MainWindow::on_play_clicked()
         while(!MainWindow::isPaused && !MainWindow::endOfLog)
         {
             MainWindow::on_step_clicked();
-            delayMili(1);
+            //delayMili(1);
         }
     }else
     {
@@ -127,6 +145,9 @@ void MainWindow::on_play_clicked()
     }
 }
 
+/*
+ * This function calles playForest in miscForestOperation.cpp
+ * */
 void MainWindow::on_step_clicked()
 {
     playForests(MainWindow::parser
@@ -160,6 +181,13 @@ void MainWindow::on_step_clicked()
     }
 }
 
+/*
+ * This function alows the user to search for a log file and load into the program.
+ * It checks for T simple then starts to set up the forests by calling setupForest in the miscForestOperations.cpp.
+ * It creates the parser to be used for the rest of the lifetime of the log.
+ *
+ * This functions also activate the relevent buttons and sliders.
+ * */
 void MainWindow::on_actionOpen_triggered()
 {
     MainWindow::fileName = QFileDialog::getOpenFileName(
@@ -212,7 +240,7 @@ void MainWindow::on_actionOpen_triggered()
 
         QString c = MainWindow::parser->peek();
 
-        if(c == "F")
+        if(c == "F") //This checks to see if there is another Forest to setup.
         {
             MainWindow::forest2 = setupForest2(
                         MainWindow::parser
@@ -250,6 +278,9 @@ void MainWindow::on_actionOpen_triggered()
     }
 }
 
+/*
+ * This function allows the user to manually reduce the length of the lines in Forest 1 in a linear fashion.
+ * */
 void MainWindow::on_f1HorizontalLinearReduction_valueChanged(int value)
 {
     if(value == 1)
@@ -277,6 +308,9 @@ void MainWindow::on_f1HorizontalLinearReduction_valueChanged(int value)
     ui->redrawForest1->setEnabled(true);
 }
 
+/*
+ * This function allows the user to manually reduce the length of the lines in Forest 2 in a linear fashion.
+ * */
 void MainWindow::on_f2HorizontalLinearReduction_valueChanged(int value)
 {
     if(value == 1)
@@ -304,6 +338,10 @@ void MainWindow::on_f2HorizontalLinearReduction_valueChanged(int value)
     ui->redrawForest2->setEnabled(true);
 }
 
+/*
+ * This function allows the user to expand or contract the height of the lines for Forest 1.
+ * This enables redrawForest1 and disables the play and step button.
+ * */
 void MainWindow::on_f1VerticalExpanderSlider_valueChanged(int value)
 {
     MainWindow::f1PenHeight = value;
@@ -315,6 +353,10 @@ void MainWindow::on_f1VerticalExpanderSlider_valueChanged(int value)
     ui->redrawForest1->setEnabled(true);
 }
 
+/*
+ * This function allows the user to expand or contract the height of the lines for Forest 2.
+ * This enables redrawForest2 and disables the play and step button.
+ * */
 void MainWindow::on_f2VerticalExpanderSlider_valueChanged(int value)
 {
     MainWindow::f2PenHeight = value;
@@ -326,6 +368,11 @@ void MainWindow::on_f2VerticalExpanderSlider_valueChanged(int value)
     ui->redrawForest2->setEnabled(true);
 }
 
+/*
+ * This redraws Forest 1 by calling redrawForest in miscforestoperation.cpp.
+ * Then it disables the redrawForest1 button and checks to see if forest 2 needs to be redrawn.
+ * If both forests are ready then it enables the play and step buttons.
+ * */
 void MainWindow::on_redrawForest1_clicked()
 {
     redrawForest(MainWindow::forest1Scene
@@ -346,6 +393,11 @@ void MainWindow::on_redrawForest1_clicked()
 
 }
 
+/*
+ * This redraws Forest 2 by calling redrawForest in miscforestoperation.cpp.
+ * Then it disables the redrawForest1 button and checks to see if forest 1 needs to be redrawn.
+ * If both forests are ready then it enables the play and step buttons.
+ * */
 void MainWindow::on_redrawForest2_clicked()
 {
     redrawForest(MainWindow::forest2Scene
@@ -365,6 +417,9 @@ void MainWindow::on_redrawForest2_clicked()
     }
 }
 
+/*
+ *
+ * */
 void MainWindow::on_replayButton_clicked()
 {
     MainWindow::parser = new Parser(MainWindow::fileName);
