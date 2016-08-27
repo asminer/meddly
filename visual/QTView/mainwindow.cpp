@@ -418,7 +418,10 @@ void MainWindow::on_redrawForest2_clicked()
 }
 
 /*
- *
+ * This function creates a new parser. Then sets up the forests again
+ * by calling setupForest() in the miscforestoperations.cpp.
+ * This then redraws the forests by calling redrawForest() in the
+ * miscforestoperations.cpp.
  * */
 void MainWindow::on_replayButton_clicked()
 {
@@ -487,6 +490,9 @@ void MainWindow::on_replayButton_clicked()
     ui->speedFactorDial->setEnabled(true);
 }
 
+/*
+ * This function changes the value of the factor multiplied with the time stamp.
+ * */
 void MainWindow::on_speedFactorDial_valueChanged(int value)
 {
     MainWindow::speedFactorValue = value;
