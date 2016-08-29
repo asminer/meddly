@@ -5,6 +5,11 @@
 #include <QGraphicsLineItem>
 #include <QGraphicsItem>
 
+/*
+ * This functions will add all lines to the scene for sets.
+ * This will go through the entire forest and add the lines centered on the 0 axis.
+ *
+ */
 void drawSet(QGraphicsScene *forestScene
              , QVector<int> *forest
              , int penHeight, int reductionValue)
@@ -24,13 +29,6 @@ void drawSet(QGraphicsScene *forestScene
 
         y = var *penHeight;
 
-//        QGraphicsLineItem *line = new QGraphicsLineItem(startLine
-//                                                       , y
-//                                                       , endLine
-//                                                       , y);
-//        line->setPen(green);
-//        forestScene->addItem(line);
-
         forestScene->addLine(startLine
                              , y
                              , endLine
@@ -40,6 +38,11 @@ void drawSet(QGraphicsScene *forestScene
     }
 }
 
+/*
+ * This functions will add all lines to the scene for relations.
+ * This will go through the entire forest and add the lines centered on the 0 axis.
+ *
+ */
 void drawRelation(QGraphicsScene *forestScene
                   , QVector<int> *forest
                   , int penHeight, int reductionValue)
@@ -60,7 +63,7 @@ void drawRelation(QGraphicsScene *forestScene
 
     for (int var = 0; var < middle; ++var)
     {
-        //Positive
+        //Positive lines
         endLine = ( (forest->at(middle + var + 1))/2 ) / reductionValue;
         startLine = 0 - endLine;
 
@@ -72,7 +75,7 @@ void drawRelation(QGraphicsScene *forestScene
                              , posYlevel
                              , green);
 
-        //Negitive
+        //Negitive lines
         endLine = ( (forest->at(middle - var -1))/2 ) / reductionValue;
         startLine = 0 - endLine;
         negYlevel = ((var*2)+1) * penHeight;
@@ -86,6 +89,9 @@ void drawRelation(QGraphicsScene *forestScene
     }
 }
 
+/*
+ * This functions chooses the default pen height for use later when adding lines to a scene.
+ */
 int generatePenHeight(int size)
 {
     if(size <20)
@@ -100,6 +106,10 @@ int generatePenHeight(int size)
     }
 }
 
+/*
+ * This will update the forest scenes.
+ *
+ */
 void drawUpdates(QVector<int> *&forest1
                  , QVector<int> *&forest2
                  , QVector<int> &isInForest1Updates
@@ -138,6 +148,11 @@ void drawUpdates(QVector<int> *&forest1
             endline = endline/f1HorizontalReductionValue;
             int startline = 0 - endline;
 
+            //If you try to grab a 0 to 0 line then the
+            //pointer will be null. This checks to see if
+            //you tried to pull an empty l  from the
+            //scene. If you did then it will create a new line
+            //to add to the appropriate spot.
             if(lineI == NULL)
             {
                 green.setWidth(f1PenHeight);
@@ -147,7 +162,8 @@ void drawUpdates(QVector<int> *&forest1
                                       , y
                                       , green
                                       );
-            }else
+            }else//This changes the start and stop place
+                //of the line object.
             {
                 lineI->setLine(startline
                                , y
