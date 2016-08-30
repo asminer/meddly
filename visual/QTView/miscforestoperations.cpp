@@ -5,7 +5,11 @@
 #include <QDebug>
 #include <QMessageBox>
 
-
+/*
+ * This function recieves the begining values
+ * from the log files and returns a new forest
+ * QVector.
+ */
 QVector<int> *setupRelation(QStringList &list)
 {
     QVector<int> *forest = new QVector<int>();
@@ -22,6 +26,13 @@ QVector<int> *setupRelation(QStringList &list)
     return forest;
 }
 
+/*
+ * This does the same as setupRelation.
+ * This is here as sets and relations
+ * were set up differently in the past.
+ * SetupSet and setupRelation need to be combinded
+ * in the future.
+ */
 QVector<int> *setupSet(QStringList &list)
 {
     QVector<int> *forest = new QVector<int>();
@@ -39,6 +50,12 @@ QVector<int> *setupSet(QStringList &list)
     return forest;
 }
 
+/*
+ * This function sets up forest 1. It returns a
+ * new forest QVector. This function calls
+ * setupSet or setupRelation depending on the
+ * value of f1base.
+ */
 QVector<int> *setupForest1(Parser *parser
                            , int &f1base
                            , int &f1PenHeight
@@ -77,6 +94,10 @@ QVector<int> *setupForest1(Parser *parser
     }
 }
 
+/*
+ * This does the same thing as setupForest2 now.
+ * This needs to be combined with setupForest1 in the future.
+ */
 QVector<int> *setupForest2(Parser *parser
                             , int &f2base
                             , int &f2PenHeight
@@ -111,6 +132,13 @@ QVector<int> *setupForest2(Parser *parser
     }
 }
 
+/*
+ * This function will process a, t, and p lines.
+ * it continues on anything else.
+ * If it reaches the end of the file then it
+ * will draw the current updates and delete
+ * the parser and forests QVectors.
+ */
 void playForests(Parser *parser
                  , QLabel *labelForest1
                  , QLabel *labelForest2
@@ -171,7 +199,11 @@ void playForests(Parser *parser
 
         switch (u)
         {
-        //This is the p line
+        /*
+         * This is the p line
+         * This case sets the lables with the correct message
+         */
+
         case 112:
         {
             QChar fNumber = line.at(2);
@@ -190,7 +222,11 @@ void playForests(Parser *parser
 
             break;
         }
-        //This is the 'a' line
+        /*
+         * This is the 'a' line
+         * This function uses boolean arrays to indicate if an update is already
+         * in the forest update list.
+         */
         case 97:
         {
             QStringList updates = line.split(" ", QString::SkipEmptyParts);
