@@ -276,7 +276,13 @@ void playForests(Parser *parser
             break;
         }
 
-            //This is the t line
+        /*
+         * This is the t line.
+         * This function will calculate the time to wait in microseconds
+         * then convert it to miliseconds.
+         *
+         *
+         */
         case 116:
         {
             QStringList times = line.split(" ", QString::SkipEmptyParts);
@@ -289,7 +295,12 @@ void playForests(Parser *parser
             int tempSeconds = newSeconds - oldSeconds;
             int tempMicroseconds = newMicroseconds - oldMicroseconds;
 
-            if(tempSeconds > 0 || tempMicroseconds >= (10000 / speedFactorValue))
+            int tempTimeToWait = tempSeconds * 1000000 + tempMicroseconds;
+
+            /*
+             *
+             */
+            if(tempTimeToWait >= (10000 / speedFactorValue))
             {
                 oldSeconds = newSeconds;
 
@@ -330,6 +341,10 @@ void playForests(Parser *parser
     }//end while loop
 }
 
+/*
+ * This function will clear the forestScene then call either
+ * drawSet or drawRelation in drawfunctions.cpp.
+ */
 void redrawForest(QGraphicsScene *forestScene
                   , QVector<int> *forest, int base
                   , int penHeight, int reductionValue)
