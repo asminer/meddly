@@ -32,6 +32,8 @@ class MEDDLY::storage_initializer : public initializer_list {
     node_storage_style* simple_heap;
     node_storage_style* simple_none;
 
+    node_storage_style* compact_grid;
+
   public:
     storage_initializer(initializer_list *p);
   protected:

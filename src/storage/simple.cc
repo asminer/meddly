@@ -1211,22 +1211,3 @@ MEDDLY::node_storage* MEDDLY::simple_none_style
   return new simple_storage(f, new hm_none, "simple node storage with no hole management");
 }
 
-// ******************************************************************
-// *                                                                *
-// *                   front-end global variables                   *
-// *                                                                *
-// ******************************************************************
-
-/*
-namespace MEDDLY {
-  simple_grid_style THE_SIMPLE_GRID;
-  simple_array_style THE_SIMPLE_ARRAY;
-  simple_heap_style THE_SIMPLE_HEAP;
-  simple_none_style THE_SIMPLE_NONE;
-
-  const node_storage_style* SIMPLE_GRID = &THE_SIMPLE_GRID;
-  const node_storage_style* SIMPLE_ARRAY = &THE_SIMPLE_ARRAY;
-  const node_storage_style* SIMPLE_HEAP = &THE_SIMPLE_HEAP;
-  const node_storage_style* SIMPLE_NONE = &THE_SIMPLE_NONE;
-};
-*/

@@ -27,6 +27,7 @@
 
 #include "old_scheme.h"
 #include "simple.h"
+#include "compact.h"
 
 namespace MEDDLY {
   const node_storage_style* CLASSIC_STORAGE = 0;
@@ -35,6 +36,8 @@ namespace MEDDLY {
   const node_storage_style* SIMPLE_ARRAY = 0;
   const node_storage_style* SIMPLE_HEAP = 0;
   const node_storage_style* SIMPLE_NONE = 0;
+
+  const node_storage_style* COMPACT_GRID = 0;
 };
 
 
@@ -49,6 +52,8 @@ MEDDLY::storage_initializer::storage_initializer(initializer_list *p)
   simple_array = 0;
   simple_heap = 0;
   simple_none = 0;
+
+  compact_grid = 0;
 }
 
 void MEDDLY::storage_initializer::setup()
@@ -59,6 +64,8 @@ void MEDDLY::storage_initializer::setup()
   SIMPLE_ARRAY = (simple_array = new simple_array_style);
   SIMPLE_HEAP  = (simple_heap  = new simple_heap_style);
   SIMPLE_NONE  = (simple_none  = new simple_none_style);
+
+  COMPACT_GRID = (compact_grid = new compact_grid_style);
 }
 
 void MEDDLY::storage_initializer::cleanup()
@@ -75,5 +82,9 @@ void MEDDLY::storage_initializer::cleanup()
   SIMPLE_ARRAY = (simple_array = 0);
   SIMPLE_HEAP  = (simple_heap  = 0);
   SIMPLE_NONE  = (simple_none  = 0);
+
+
+  delete compact_grid;
+  COMPACT_GRID = (compact_grid = 0);
 }
 

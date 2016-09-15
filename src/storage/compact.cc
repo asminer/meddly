@@ -895,17 +895,3 @@ MEDDLY::node_storage* MEDDLY::compact_grid_style
   return new compact_storage(f, new hm_grid, "compact node storage with grid for holes");
 }
 
-// ******************************************************************
-// *                                                                *
-// *                   front-end global variables                   *
-// *                                                                *
-// ******************************************************************
-
-namespace MEDDLY {
-  compact_grid_style THE_COMPACT_GRID;
-
-  const node_storage_style* COMPACT_GRID = &THE_COMPACT_GRID;
-};
-
-
-

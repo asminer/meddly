@@ -1492,18 +1492,3 @@ MEDDLY::old_node_storage::allocNode(int sz, node_handle tail, bool clear)
   return off;
 }
 
-// ******************************************************************
-// *                                                                *
-// *                   front-end global variables                   *
-// *                                                                *
-// ******************************************************************
-
-/*
-namespace MEDDLY {
-  // node storage mechanism used for versions < 0.10 of the library
-  old_node_storage_style THE_OLD_NODE_STORAGE;
-
-  const node_storage_style* CLASSIC_STORAGE = &THE_OLD_NODE_STORAGE;
-};
-
-*/
