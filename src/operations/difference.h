@@ -24,10 +24,9 @@
 
 namespace MEDDLY {
   class binary_opname;
-  struct settings;
 
   /// Set up a binary_opname for the "difference" operation.
-  binary_opname* initializeDifference(const settings &s);
+  binary_opname* initializeDifference();
 }
 
 #endif

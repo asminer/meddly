@@ -24,10 +24,9 @@
 
 namespace MEDDLY {
   class binary_opname;
-  struct settings;
 
   /// Set up a binary_opname for the "union" operation.
-  binary_opname* initializeUnion(const settings &s);
+  binary_opname* initializeUnion();
 }
 
 #endif

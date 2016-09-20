@@ -29,29 +29,12 @@
 
 // ******************************************************************
 // *                                                                *
-// *                        mt_cleanup class                        *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::mt_cleanup : public cleanup_procedure {
-  public:
-    mt_cleanup() : cleanup_procedure() { 
-      // nothing
-    }
-    virtual void execute() {
-      mt_forest::clearStatics();
-    }
-};
-
-// ******************************************************************
-// *                                                                *
 // *                       mt_forest  methods                       *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::mt_cleanup* MEDDLY::mt_forest::the_mt_cleaner = 0;
-int* MEDDLY::mt_forest::order = 0;
-int  MEDDLY::mt_forest::order_size = 0;
+int* MEDDLY::mt_forest::order;
+int  MEDDLY::mt_forest::order_size;
 
 MEDDLY::mt_forest::mt_forest(int dsl, domain *d, bool rel,
   range_type t, const policies &p)
@@ -118,15 +101,15 @@ MEDDLY::node_handle MEDDLY::mt_forest::makeNodeAtLevel(int k, node_handle d)
   return d;
 }
 
-// private
+void MEDDLY::mt_forest::initStatics()
+{
+  order = 0;
+  order_size = 0;
+}
 
 void MEDDLY::mt_forest::enlargeStatics(int n)
 {
   MEDDLY_DCASSERT(n>0);
-  if (0==the_mt_cleaner) {
-    the_mt_cleaner = new mt_cleanup();
-    // DO NOT EVER DELETE the_mt_cleaner, it is done automatically :^)
-  }
   if (n>order_size) {
     order = (int*) realloc(order, n*sizeof(int));
     //terminals = (node_handle*) realloc(terminals, n*sizeof(node_handle));
@@ -144,8 +127,6 @@ void MEDDLY::mt_forest::clearStatics()
   free(order);
   order = 0;
   order_size = 0;
-  // DO NOT delete the_mt_cleaner
-  the_mt_cleaner = 0; 
 }
 
 // ******************************************************************

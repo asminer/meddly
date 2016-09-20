@@ -33,10 +33,10 @@
 namespace MEDDLY {
   class simple_storage;
 
-  class simple_grid;
-  class simple_array;
-  class simple_heap;
-  class simple_none;
+  class simple_grid_style;
+  class simple_array_style;
+  class simple_heap_style;
+  class simple_none_style;
 };
 
 // ******************************************************************
@@ -121,7 +121,7 @@ namespace MEDDLY {
 class MEDDLY::simple_storage : public node_storage {
   // required interface
   public:
-    simple_storage(holeman* hm);
+    simple_storage(expert_forest* f, holeman* hm, const char* whatWeAre);
     virtual ~simple_storage();
 
     virtual void collectGarbage(bool shrink);
@@ -146,17 +146,17 @@ class MEDDLY::simple_storage : public node_storage {
     virtual const void* getUnhashedHeaderOf(node_address addr) const;
     virtual const void* getHashedHeaderOf(node_address addr) const;
 
-  // for derived classes to implement
-    virtual const char* getStorageName() const = 0;
-
   protected:
-    virtual void localInitForForest(const expert_forest* f);
     virtual void updateData(node_handle* d);
     virtual int smallestNode() const;
     virtual void dumpInternalInfo(output &) const;
     virtual node_address 
     dumpInternalNode(output &, node_address addr, unsigned flags) const;
     virtual void dumpInternalTail(output &) const;
+
+  private:
+      // For debugging/display purposes
+      const char* storageName;
 
   private:
       static const long temp_node_value = -5;
@@ -334,7 +334,7 @@ class MEDDLY::simple_storage : public node_storage {
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                       simple_grid  class                       *
+// *                    simple_grid_style  class                    *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
@@ -343,35 +343,33 @@ class MEDDLY::simple_storage : public node_storage {
     Should be equivalent to old_node_storage; use to check for overheads.
 */
 
-class MEDDLY::simple_grid : public simple_storage {
+class MEDDLY::simple_grid_style : public node_storage_style {
   public:
-    simple_grid(holeman* hm);
-    virtual ~simple_grid();
+    simple_grid_style();
+    virtual ~simple_grid_style();
     virtual node_storage* createForForest(expert_forest* f) const;
-    virtual const char* getStorageName() const;
 };
 
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                       simple_array class                       *
+// *                    simple_array_style  class                    *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
 
 /// Simple storage using a new array of lists mechanism for holes.
-class MEDDLY::simple_array : public simple_storage {
+class MEDDLY::simple_array_style : public node_storage_style {
   public:
-    simple_array(holeman* hm);
-    virtual ~simple_array();
+    simple_array_style();
+    virtual ~simple_array_style();
     virtual node_storage* createForForest(expert_forest* f) const;
-    virtual const char* getStorageName() const;
 };
 
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                       simple_heap  class                       *
+// *                    simple_heap_style  class                    *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
@@ -380,31 +378,29 @@ class MEDDLY::simple_array : public simple_storage {
     This allows us to use "earliest holes first".
 */
 
-class MEDDLY::simple_heap : public simple_storage {
+class MEDDLY::simple_heap_style : public node_storage_style {
   public:
-    simple_heap(holeman* hm);
-    virtual ~simple_heap();
+    simple_heap_style();
+    virtual ~simple_heap_style();
     virtual node_storage* createForForest(expert_forest* f) const;
-    virtual const char* getStorageName() const;
 };
+
 
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                       simple_none  class                       *
+// *                    simple_none_style  class                    *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
 
 /** Simple storage using no hole management whatsoever.
 */
-
-class MEDDLY::simple_none : public simple_storage {
+class MEDDLY::simple_none_style : public node_storage_style {
   public:
-    simple_none(holeman* hm);
-    virtual ~simple_none();
+    simple_none_style();
+    virtual ~simple_none_style();
     virtual node_storage* createForForest(expert_forest* f) const;
-    virtual const char* getStorageName() const;
 };
 
 

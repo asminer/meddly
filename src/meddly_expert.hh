@@ -45,30 +45,6 @@ MEDDLY::expert_domain::readExpertVar(int lev) const
 }
 
 inline void
-MEDDLY::expert_domain::createVariable(int below, int &vh)
-{
-  createVariable(below);
-  vh = below + 1;
-}
-inline void
-MEDDLY::expert_domain::destroyVariable(int vh)
-{
-  removeVariableAtLevel(vh);
-}
-
-inline int
-MEDDLY::expert_domain::getVariableHeight(int vh) const
-{
-  return vh;
-}
-
-inline int
-MEDDLY::expert_domain::getVariableWithHeight(int ht) const
-{
-  return ht;
-}
-
-inline void
 MEDDLY::expert_domain::enlargeVariableBound(int vh, bool prime, int b)
 {
   getExpertVar(vh)->enlargeBound(prime, b);
@@ -648,7 +624,7 @@ MEDDLY::expert_forest::int_Tencoder::value2handle(int v)
   MEDDLY_DCASSERT(4 == sizeof(MEDDLY::node_handle));
   if (v < -1073741824 || v > 1073741823) {
     // Can't fit in 31 bits (signed)
-    throw error(error::MEDDLY_OVERFLOW);
+    throw error(error::VALUE_OVERFLOW);
   }
   if (v)
     v |= 0x80000000; // sets the sign bit
@@ -1807,33 +1783,6 @@ inline void
 MEDDLY::binary_operation::operationCommutes()
 {
   can_commute = (arg1F == arg2F);
-}
-
-
-// ******************************************************************
-// *                                                                *
-// *                 inlined op_initializer methods                 *
-// *                                                                *
-// ******************************************************************
-
-
-inline void
-MEDDLY::op_initializer::recycle(op_initializer *I)
-{
-  if (0 == I)
-    return;
-  MEDDLY_DCASSERT(I->refcount);
-  I->refcount--;
-  if (0 == I->refcount)
-    delete I;
-}
-
-inline MEDDLY::op_initializer*
-MEDDLY::op_initializer::copy(op_initializer *I)
-{
-  if (I)
-    I->refcount++;
-  return I;
 }
 
 

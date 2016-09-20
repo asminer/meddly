@@ -325,7 +325,7 @@ MEDDLY::compl_opname
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unary_opname* MEDDLY::initializeComplement(const settings &s)
+MEDDLY::unary_opname* MEDDLY::initializeComplement()
 {
   return new compl_opname;
 }

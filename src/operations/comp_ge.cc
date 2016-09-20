@@ -165,7 +165,7 @@ MEDDLY::moreequal_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeGE(const settings &s)
+MEDDLY::binary_opname* MEDDLY::initializeGE()
 {
   return new moreequal_opname;
 }

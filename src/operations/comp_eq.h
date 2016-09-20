@@ -24,10 +24,9 @@
 
 namespace MEDDLY {
   class binary_opname;
-  struct settings;
 
   /// Set up a binary_opname for the "equal" operator.
-  binary_opname* initializeEQ(const settings &s);
+  binary_opname* initializeEQ();
 }
 
 #endif

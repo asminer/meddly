@@ -24,7 +24,7 @@ namespace MEDDLY {
   class builtin_initializer;
 };
 
-class MEDDLY::builtin_initializer : public op_initializer {
+class MEDDLY::builtin_initializer : public initializer_list {
   unary_opname* COPY;
   unary_opname* CARD;
   unary_opname* COMPL;
@@ -72,9 +72,9 @@ class MEDDLY::builtin_initializer : public op_initializer {
   satotf_opname* SATURATION_OTF_FORWARD;
 
 public:
-  builtin_initializer(op_initializer* b) : op_initializer(b) { }
+  builtin_initializer(initializer_list *p);
 protected:
-  virtual void init(const settings &s);
+  virtual void setup();
   virtual void cleanup();
 };
 

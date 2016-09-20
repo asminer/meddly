@@ -32,69 +32,18 @@
 #include "revision.h"
 // #include "compute_table.h"
 #include "operations/init_builtin.h"
+#include "forests/init_forests.h"
+#include "storage/init_storage.h"
 
 // #define STATS_ON_DESTROY
 
 namespace MEDDLY {
   // "global" variables
 
-  settings meddlySettings;
+  initializer_list* meddlyInitializers;
+
 
   bool libraryRunning = 0;
-
-  // unary operation "codes"
-
-  const unary_opname* COPY = 0;
-  const unary_opname* CARDINALITY = 0;
-  const unary_opname* COMPLEMENT = 0;
-  const unary_opname* MAX_RANGE = 0;
-  const unary_opname* MIN_RANGE = 0;
-  const unary_opname* CONVERT_TO_INDEX_SET = 0;
-
-  // binary operation "codes"
-
-  const binary_opname* UNION = 0;
-  const binary_opname* INTERSECTION = 0;
-  const binary_opname* DIFFERENCE = 0;
-  const binary_opname* CROSS = 0;
-
-  const binary_opname* MINIMUM = 0;
-  const binary_opname* MAXIMUM = 0;
-  const binary_opname* PLUS = 0;
-  const binary_opname* MINUS = 0;
-  const binary_opname* MULTIPLY = 0;
-  const binary_opname* DIVIDE = 0;
-  const binary_opname* MODULO = 0;
-
-  const binary_opname* EQUAL = 0;
-  const binary_opname* NOT_EQUAL = 0;
-  const binary_opname* LESS_THAN = 0;
-  const binary_opname* LESS_THAN_EQUAL = 0;
-  const binary_opname* GREATER_THAN = 0;
-  const binary_opname* GREATER_THAN_EQUAL = 0;
-
-  const binary_opname* PRE_IMAGE = 0;
-  const binary_opname* POST_IMAGE = 0;
-  const binary_opname* REACHABLE_STATES_DFS = 0;
-  const binary_opname* REACHABLE_STATES_BFS = 0;
-  const binary_opname* REVERSE_REACHABLE_DFS = 0;
-  const binary_opname* REVERSE_REACHABLE_BFS = 0;
-
-  const binary_opname* VM_MULTIPLY = 0;
-  const binary_opname* MV_MULTIPLY = 0;
-
-  const binary_opname* MM_MULTIPLY = 0;
-
-  // numerical operation "codes"
-
-  const numerical_opname* EXPLVECT_MATR_MULT = 0;
-  const numerical_opname* MATR_EXPLVECT_MULT = 0;
-
-  // saturation operation "codes"
-
-  const satpregen_opname* SATURATION_FORWARD = 0;
-  const satpregen_opname* SATURATION_BACKWARD = 0;
-  const satotf_opname* SATURATION_OTF_FORWARD = 0;
 
   // cache of operations
   operation** op_cache = 0;
@@ -395,78 +344,32 @@ void MEDDLY::destroyOperation(MEDDLY::specialized_operation* &op)
   op = 0;
 }
 
-MEDDLY::op_initializer* MEDDLY::makeBuiltinInitializer()
-{
-  return new builtin_initializer(0);
-}
 
-void MEDDLY::settings::init(const settings &s)
-{
-  operationBuilder = op_initializer::copy(s.operationBuilder);
-  ctSettings = s.ctSettings;
-  mddDefaults = s.mddDefaults;
-  mxdDefaults = s.mxdDefaults;
-}
-
-void MEDDLY::settings::clear()
-{
-  op_initializer::recycle(operationBuilder);
-}
-
-MEDDLY::settings::computeTableSettings::computeTableSettings() :
-  style(MonolithicUnchainedHash), maxSize(16777216), staleRemoval(Moderate) {
-}
-
-//----------------------------------------------------------------------
-// front end - Meddly settings
-//----------------------------------------------------------------------
-
-MEDDLY::settings::settings() :
-  ctSettings(), mddDefaults(0), mxdDefaults(1),
-      operationBuilder(makeBuiltinInitializer()) {
-}
-
-MEDDLY::settings::settings(const settings &s) :
-  mddDefaults(0), mxdDefaults(1) {
-  init(s);
-}
-
-MEDDLY::settings::~settings() {
-  clear();
-}
-
-void MEDDLY::settings::operator=(const settings &s) {
-  if (&s != this) {
-    clear();
-    init(s);
-  }
-}
 
 
 //----------------------------------------------------------------------
 // front end - initialize and cleanup of library
 //----------------------------------------------------------------------
 
-void MEDDLY::initialize(const settings &s)
+MEDDLY::initializer_list* MEDDLY::defaultInitializerList(initializer_list* prev)
+{
+  prev = new ct_initializer(prev);
+  prev = new storage_initializer(prev);
+  prev = new builtin_initializer(prev);
+  prev = new forest_initializer(prev);
+
+  return prev;
+}
+
+// void MEDDLY::initialize(const settings &s, initializer_list* L)
+void MEDDLY::initialize(initializer_list* L)
 {
   if (libraryRunning) throw error(error::ALREADY_INITIALIZED);
-  meddlySettings = s;
-  // initStats(meddlyStats);
-
-  cleanup_procedure::Initialize();
-
-  // set up monolithic compute table, if needed
-  const compute_table_style* CTstyle = s.ctSettings.style;
-  if (0==CTstyle) throw error(error::INVALID_ASSIGNMENT);
-
-  if (CTstyle->usesMonolithic()) {
-    operation::Monolithic_CT = CTstyle->create(s.ctSettings);
-  }
 
   opname::next_index = 0;
 
-  if (meddlySettings.operationBuilder) 
-    meddlySettings.operationBuilder->initChain(s);
+  if (L) L->setupAll();
+  meddlyInitializers = L;
 
   // set up operation cache
   op_cache_size = opname::next_index;
@@ -480,8 +383,7 @@ void MEDDLY::initialize(const settings &s)
 
 void MEDDLY::initialize()
 {
-  settings deflt;
-  initialize(deflt);
+  initialize( defaultInitializerList(0) );
 }
 
 void MEDDLY::cleanup()
@@ -496,8 +398,6 @@ void MEDDLY::cleanup()
 
 #endif
 
-  cleanup_procedure::ExecuteAll();
-
   domain::markDomList();
 
   operation::destroyAllOps();
@@ -508,18 +408,14 @@ void MEDDLY::cleanup()
   delete[] op_cache;
   op_cache = 0;
 
-  // clean up compute table
-  delete operation::Monolithic_CT;
-  operation::Monolithic_CT = 0;
-
-  if (meddlySettings.operationBuilder) {
-    meddlySettings.operationBuilder->cleanupChain();
-  }
-
   // clean up recycled unpacked nodes
   unpacked_node::freeRecycled();
 
-  cleanup_procedure::DeleteAll();
+  if (meddlyInitializers) {
+    meddlyInitializers->cleanupAll();
+    delete meddlyInitializers;
+    meddlyInitializers = 0;
+  }
 
   libraryRunning = 0;
 }
@@ -528,10 +424,6 @@ void MEDDLY::cleanup()
 // front end - library info
 //----------------------------------------------------------------------
 
-const MEDDLY::settings& MEDDLY::getLibrarySettings()
-{
-  return meddlySettings;
-}
 
 const char* MEDDLY::getLibraryInfo(int what)
 {
@@ -593,39 +485,29 @@ const char* MEDDLY::getLibraryInfo(int what)
 
 // ******************************************************************
 // *                                                                *
-// *                   cleanup_procedure  methods                   *
+// *                    initializer_list methods                    *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::cleanup_procedure* MEDDLY::cleanup_procedure::list;
-
-MEDDLY::cleanup_procedure::cleanup_procedure()
+MEDDLY::initializer_list::initializer_list(initializer_list* prev)
 {
-  next = list;
-  list = this;
+  previous = prev;
 }
 
-MEDDLY::cleanup_procedure::~cleanup_procedure()
+MEDDLY::initializer_list::~initializer_list()
 {
+  delete previous;
 }
 
-void MEDDLY::cleanup_procedure::Initialize()
+void MEDDLY::initializer_list::setupAll()
 {
-  list = 0;
+  if (previous) previous->setupAll();
+  setup();
 }
 
-void MEDDLY::cleanup_procedure::ExecuteAll()
+void MEDDLY::initializer_list::cleanupAll()
 {
-  for (cleanup_procedure* L = list; L; L=L->next) {
-    L->execute();
-  }
+  cleanup();
+  if (previous) previous->cleanupAll();
 }
 
-void MEDDLY::cleanup_procedure::DeleteAll()
-{
-  while (list) {
-    cleanup_procedure* N = list->next;
-    delete list;
-    list = N;
-  }
-}

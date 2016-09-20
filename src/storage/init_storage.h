@@ -1,5 +1,5 @@
 
-// $Id$
+// $Id: init_builtin.h 700 2016-07-07 21:06:50Z asminer $
 
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
@@ -19,18 +19,25 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SAT_OTF_H
-#define SAT_OTF_H
-
 namespace MEDDLY {
-  class satotf_opname;
-  
-  /// Set up a numerical_opname for "forward saturation".
-  satotf_opname* initOtfSaturationForward();
+  class storage_initializer;
+};
 
-  /// Set up a numerical_opname for "backward saturation".
-  satotf_opname* initOtfSaturationBackward();
-}
+class MEDDLY::storage_initializer : public initializer_list {
 
-#endif
+    node_storage_style* classic;
+
+    node_storage_style* simple_grid;
+    node_storage_style* simple_array;
+    node_storage_style* simple_heap;
+    node_storage_style* simple_none;
+
+    node_storage_style* compact_grid;
+
+  public:
+    storage_initializer(initializer_list *p);
+  protected:
+    virtual void setup();
+    virtual void cleanup();
+};
 

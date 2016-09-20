@@ -93,11 +93,12 @@ namespace MEDDLY {
   class FILE_output;
   class ostream_output;
 
-  struct settings;
   class forest;
   class expert_forest;
   class unpacked_node;
-  class node_storage;
+
+  class node_storage_style;
+
   class variable;
   class domain;
   class dd_edge;
@@ -136,30 +137,30 @@ namespace MEDDLY {
   /** "Classic" node storage mechanism.
       The node storage mechanism from early versions of this library.
   */
-  extern const node_storage* CLASSIC_STORAGE;
+  extern const node_storage_style* CLASSIC_STORAGE;
 
   /** Similar to classic.
       Differences are in class design, so we can measure overhead
       (if any) of class design differences.
   */
-  extern const node_storage* SIMPLE_GRID;
+  extern const node_storage_style* SIMPLE_GRID;
 
   /** Like classic, but use an array of lists for hole management.
   */
-  extern const node_storage* SIMPLE_ARRAY;
+  extern const node_storage_style* SIMPLE_ARRAY;
 
   /** Like classic, but use heaps for hole management.
   */
-  extern const node_storage* SIMPLE_HEAP;
+  extern const node_storage_style* SIMPLE_HEAP;
 
   /** Classic node storage but no hole management.
   */
-  extern const node_storage* SIMPLE_NONE;
+  extern const node_storage_style* SIMPLE_NONE;
 
   /** Nodes are stored in a compressed form.
       Holes are managed using the original grid structure.
   */
-  extern const node_storage* COMPACT_GRID;
+  extern const node_storage_style* COMPACT_GRID;
 
 
   // ******************************************************************
@@ -288,13 +289,9 @@ namespace MEDDLY {
   // *                  library management functions                  *
   // ******************************************************************
 
-  /** Initialize the library.
-      Should be called before using any other functions.
-        @param  s   Collection of various settings.
-  */
-  void initialize(const settings &s);
-
   /** Initialize the library with default settings.
+      See meddly_expert.h for functions to initialize 
+      the library with non-default settings.
       Should be called before using any other functions.
   */
   void initialize();
@@ -304,9 +301,6 @@ namespace MEDDLY {
       after it is called, the library may be initialized again.
   */
   void cleanup();
-
-  /// Get the current library settings.
-  const settings& getLibrarySettings();
 
   /** Get the information about the library.
       @param  what  Determines the type of information to obtain.
@@ -504,7 +498,7 @@ class MEDDLY::error {
       /// Requested operation requires different number of operands.
       WRONG_NUMBER,
       /// A result won't fit in an integer / float.
-      MEDDLY_OVERFLOW,
+      VALUE_OVERFLOW,
       /// Integer division by 0 is invalid.
       DIVIDE_BY_ZERO,
       /// Invalid policy setting.
@@ -987,7 +981,7 @@ class MEDDLY::forest {
       variable_swap_type swap;
 
       /// Backend storage mechanism for nodes.
-      const node_storage* nodestor;
+      const node_storage_style* nodestor;
 
       /// Memory compactor: never run if fewer than this many unused slots.
       int compact_min;
@@ -1005,8 +999,15 @@ class MEDDLY::forest {
       /// Should we run the memory compactor before trying to expand
       bool compactBeforeExpand;
 
+      /// Empty constructor, for setting up defaults later
+      policies();
+
       /// Constructor; sets reasonable defaults
       policies(bool rel);
+
+      /// Set to hard-wired defaults
+      void useDefaults(bool rel);
+
       void setFullStorage();
       void setSparseStorage();
       void setFullOrSparse();
@@ -1128,9 +1129,10 @@ class MEDDLY::forest {
             Start a new phase of computation.
             May be ignored depending on the file format.
 
+              @param  f         Forest this applies to.
               @param  comment   Info to display about this phase.
         */
-        virtual void newPhase(const char* comment) = 0;
+        virtual void newPhase(const forest* f, const char* comment) = 0;
 
         /**
             Called once, when the logger is attached to a forest.
@@ -1193,6 +1195,28 @@ class MEDDLY::forest {
     */
     static int upLevel(int k);
 
+    /**
+        Get the default policies for MDD forests.
+    */
+    static const policies& getDefaultPoliciesMDDs();
+
+    /**
+        Get the default policies for MxD forests.
+    */
+    static const policies& getDefaultPoliciesMXDs();
+
+    /**
+        Set the default policies for MDD forests.
+    */
+    static void setDefaultPoliciesMDDs(const policies&);
+
+    /**
+        Set the default policies for MxD forests.
+    */
+    static void setDefaultPoliciesMXDs(const policies&);
+
+        
+
   // ------------------------------------------------------------
   // inlines.
   public:
@@ -1233,7 +1257,7 @@ class MEDDLY::forest {
     /// Check if we match a specific type of forest
     bool matches(bool isR, range_type rt, edge_labeling el) const;
 
-    /// Returne the current policies used by this forest.
+    /// Returns the current policies used by this forest.
     const policies& getPolicies() const;
     policies& getPolicies();
 
@@ -1838,6 +1862,11 @@ class MEDDLY::forest {
 
   // ------------------------------------------------------------
   // Ugly details from here down.
+  private:  // Defaults
+    friend class forest_initializer;
+    static policies mddDefaults;
+    static policies mxdDefaults;
+
   private:  // Domain info 
     friend class domain;
     int d_slot;

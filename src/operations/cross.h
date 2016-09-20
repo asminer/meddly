@@ -24,10 +24,9 @@
 
 namespace MEDDLY {
   class binary_opname;
-  struct settings;
 
   /// Set up a binary_opname for the "cross-product" operation.
-  binary_opname* initializeCross(const settings &s);
+  binary_opname* initializeCross();
 }
 
 #endif

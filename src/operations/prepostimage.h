@@ -24,19 +24,18 @@
 
 namespace MEDDLY {
   class binary_opname;
-  struct settings;
 
   /// Set up a binary_opname for the "preimage" operation.
-  binary_opname* initializePreImage(const settings &s);
+  binary_opname* initializePreImage();
 
   /// Set up a binary_opname for the "postimage" operation.
-  binary_opname* initializePostImage(const settings &s);
+  binary_opname* initializePostImage();
 
   /// Set up a binary_opname for vector matrix multiplication.
-  binary_opname* initializeVMmult(const settings &s);
+  binary_opname* initializeVMmult();
 
   /// Set up a binary_opname for matrix vector multiplication.
-  binary_opname* initializeMVmult(const settings &s);
+  binary_opname* initializeMVmult();
 }
 
 #endif

@@ -165,7 +165,7 @@ MEDDLY::lessthan_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeLT(const settings &s)
+MEDDLY::binary_opname* MEDDLY::initializeLT()
 {
   return new lessthan_opname;
 }

@@ -380,14 +380,14 @@ class rubiks {
       buildOrdering(variableOrdering);
 
       // Initialize MEDDLY
-      MEDDLY::settings s;
-      s.ctSettings.style = MEDDLY::OperationChainedHash;
-      //s.ctSettings.style = MEDDLY::MonolithicChainedHash;
-      //s.ctSettings.style = MEDDLY::MonolithicUnchainedHash;
-      s.ctSettings.maxSize = 8 * 16777216;
-      // s.ctSettings.staleRemoval =
-      //   MEDDLY::settings::computeTableSettings::Aggressive;
-      MEDDLY::initialize(s);
+      initializer_list* L = defaultInitializerList(0);
+      ct_initializer::setBuiltinStyle(ct_initializer::OperationChainedHash);
+      // ct_initializer::setBuiltinStyle(ct_initializer::MonolithicChainedHash);
+      ct_initializer::setMaxSize(8 * 16777216);
+      // ct_initializer::setStaleRemoval(ct_initializer::Lazy);
+      // ct_initializer::setStaleRemoval(ct_initializer::Moderate);
+      // ct_initializer::setStaleRemoval(ct_initializer::Aggressive);
+      MEDDLY::initialize(L);
 
       // Set up the state variables, as described earlier
       d = createDomainBottomUp(&variableSize[1], nLevels);

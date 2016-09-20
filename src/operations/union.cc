@@ -204,7 +204,7 @@ MEDDLY::union_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeUnion(const settings &s)
+MEDDLY::binary_opname* MEDDLY::initializeUnion()
 {
   return new union_opname;
 }

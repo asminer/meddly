@@ -1,5 +1,5 @@
 
-// $Id$
+// $Id:$
 
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
@@ -19,18 +19,31 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SAT_OTF_H
-#define SAT_OTF_H
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+#include "../defines.h"
+#include "init_forests.h"
 
-namespace MEDDLY {
-  class satotf_opname;
-  
-  /// Set up a numerical_opname for "forward saturation".
-  satotf_opname* initOtfSaturationForward();
+#include "mt.h"
+#include "ev.h"
 
-  /// Set up a numerical_opname for "backward saturation".
-  satotf_opname* initOtfSaturationBackward();
+MEDDLY::forest_initializer::forest_initializer(initializer_list *p) : initializer_list(p)
+{
 }
 
-#endif
+void MEDDLY::forest_initializer::setup()
+{
+  forest::mddDefaults.useDefaults(false);
+  forest::mxdDefaults.useDefaults(true);
+
+  mt_forest::initStatics();
+  ev_forest::initStatics();
+}
+
+void MEDDLY::forest_initializer::cleanup()
+{
+  mt_forest::clearStatics();
+  ev_forest::clearStatics();
+}
 

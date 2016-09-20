@@ -64,7 +64,7 @@ inline const char* MEDDLY::error::getName() const {
       case  MEDDLY::error::FOREST_MISMATCH:      return "Forest mismatch";
       case  MEDDLY::error::TYPE_MISMATCH:        return "Type mismatch";
       case  MEDDLY::error::WRONG_NUMBER:         return "Wrong number";
-      case  MEDDLY::error::MEDDLY_OVERFLOW:      return "Overflow";
+      case  MEDDLY::error::VALUE_OVERFLOW:       return "Overflow";
       case  MEDDLY::error::DIVIDE_BY_ZERO:       return "Divide by zero";
       case  MEDDLY::error::INVALID_POLICY:       return "Invalid policy";
       case  MEDDLY::error::INVALID_ASSIGNMENT:   return "Invalid assignment";
@@ -233,6 +233,26 @@ inline int MEDDLY::forest::downLevel(int k) {
 }
 inline int MEDDLY::forest::upLevel(int k) {
   return (k<0) ? (-k) : (-k-1);
+}
+
+inline const MEDDLY::forest::policies& MEDDLY::forest::getDefaultPoliciesMDDs()
+{
+  return mddDefaults;
+}
+
+inline const MEDDLY::forest::policies& MEDDLY::forest::getDefaultPoliciesMXDs()
+{
+  return mxdDefaults;
+}
+
+inline void MEDDLY::forest::setDefaultPoliciesMDDs(const policies& p)
+{
+  mddDefaults = p;
+}
+
+inline void MEDDLY::forest::setDefaultPoliciesMXDs(const policies& p)
+{
+  mxdDefaults = p;
 }
 
 inline unsigned MEDDLY::forest::FID() const {

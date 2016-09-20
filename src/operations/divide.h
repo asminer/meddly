@@ -24,10 +24,9 @@
 
 namespace MEDDLY {
   class binary_opname;
-  struct settings;
 
   /// Set up a binary_opname for the "divide" operator.
-  binary_opname* initializeDivide(const settings &s);
+  binary_opname* initializeDivide();
 }
 
 #endif

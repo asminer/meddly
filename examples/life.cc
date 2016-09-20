@@ -469,6 +469,8 @@ int helpScreen(const char* who)
 
 int main(int argc, const char** argv)
 {
+  initialize();
+
   //
   // Switch variables
   //
@@ -481,7 +483,6 @@ int main(int argc, const char** argv)
   p.setPessimistic();
 
   using namespace std;
-  initialize();
   cerr << "Using " << getLibraryInfo(0) << "\n";
 
   for (int i=1; i<argc; i++) {

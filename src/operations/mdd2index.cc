@@ -235,7 +235,7 @@ MEDDLY::mdd2index_opname
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unary_opname* MEDDLY::initializeMDD2INDEX(const settings &s)
+MEDDLY::unary_opname* MEDDLY::initializeMDD2INDEX()
 {
   return new mdd2index_opname;
 }

@@ -173,7 +173,7 @@ MEDDLY::divide_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeDivide(const settings &s)
+MEDDLY::binary_opname* MEDDLY::initializeDivide()
 {
   return new divide_opname;
 }

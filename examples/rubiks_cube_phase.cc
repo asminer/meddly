@@ -1243,11 +1243,10 @@ int main(int argc, char *argv[])
   }
 
   // Initialize MEDDLY
-  MEDDLY::settings s;
-  s.ctSettings.style = MonolithicUnchainedHash;
-  s.ctSettings.maxSize = 16 * 16777216;
-
-  MEDDLY::initialize(s);
+  MEDDLY::initializer_list* L = defaultInitializerList(0);
+  ct_initializer::setBuiltinStyle(ct_initializer::MonolithicUnchainedHash);
+  ct_initializer::setMaxSize(16 * 16777216);
+  MEDDLY::initialize(L);
 
   RubiksCubeModelConfig config = buildModelConfig(num_phases, type);
   RubiksCubeModel model(config);

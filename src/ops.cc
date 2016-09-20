@@ -34,7 +34,6 @@
 // #define DEBUG_FINALIZE_SPLIT
 
 namespace MEDDLY {
-  extern settings meddlySettings;
 
   /*
       Convert from array of linked lists to contiguous array with indexes.
@@ -305,7 +304,7 @@ MEDDLY::satpregen_opname::pregen_relation
     // relation is "by events"
 
     if (isFinalized())              throw error(error::MISCELLANEOUS);
-    if (last_event+1 >= num_events) throw error(error::MEDDLY_OVERFLOW);
+    if (last_event+1 >= num_events) throw error(error::VALUE_OVERFLOW);
 
     last_event++;
 
@@ -1206,12 +1205,10 @@ MEDDLY::operation::operation(const opname* n, int kl, int al)
     // 
     // Initialize CT 
     //
-    if (Monolithic_CT)
+    if (Monolithic_CT) {
       CT = Monolithic_CT;
-    else {
-      const compute_table_style* CTsty = meddlySettings.ctSettings.style;
-      MEDDLY_DCASSERT(CTsty);
-      CT = CTsty->create(meddlySettings.ctSettings, this);
+    } else {
+      CT = ct_initializer::createForOp(this);
     }
 
     //
@@ -1469,32 +1466,4 @@ void MEDDLY::specialized_operation::compute(double* y, const double* x)
   throw error(error::TYPE_MISMATCH);
 }
 
-
-// ******************************************************************
-// *                     op_initializer methods                     *
-// ******************************************************************
-
-MEDDLY::op_initializer::op_initializer(op_initializer* bef)
-{
-  refcount = 1;
-  before = bef;
-}
-
-MEDDLY::op_initializer::~op_initializer()
-{
-  MEDDLY_DCASSERT(0==refcount);
-  delete before;
-}
-
-void MEDDLY::op_initializer::initChain(const settings &s)
-{
-  if (before) before->initChain(s);
-  init(s);
-}
-
-void MEDDLY::op_initializer::cleanupChain()
-{
-  cleanup();
-  if (before) before->cleanupChain();
-}
 

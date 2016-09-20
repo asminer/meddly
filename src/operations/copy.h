@@ -24,11 +24,10 @@
 
 namespace MEDDLY {
   class unary_opname;
-  struct settings;
 
   /// Minimalist interface.
   /// Set up a unary_opname for the "copy" operation.
-  unary_opname* initializeCopy(const settings &s);
+  unary_opname* initializeCopy();
 };
 
 #endif

@@ -76,11 +76,11 @@ public:
 protected:
   static inline void overflow_acc(long &a, long x) {
     a += x;
-    if (a < x) throw error(error::MEDDLY_OVERFLOW);
+    if (a < x) throw error(error::VALUE_OVERFLOW);
   }
   static inline long overflow_mult(long a, long x) {
     a *= x;
-    if (a < x) throw error(error::MEDDLY_OVERFLOW);
+    if (a < x) throw error(error::VALUE_OVERFLOW);
     return a;
   }
 };
@@ -720,7 +720,7 @@ MEDDLY::card_opname::buildOperation(expert_forest* arg, opnd_type res) const
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unary_opname* MEDDLY::initializeCardinality(const settings &s)
+MEDDLY::unary_opname* MEDDLY::initializeCardinality()
 {
   return new card_opname;
 }

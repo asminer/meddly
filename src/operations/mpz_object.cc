@@ -73,6 +73,12 @@ void MEDDLY::mpz_object::show(output &strm) const
   strm.put(buffer);
 }
 
+void MEDDLY::mpz_object::initBuffer()
+{
+  buffer = 0;
+  bufsize = 0;
+}
+
 void MEDDLY::mpz_object::clearBuffer()
 {
   free(buffer);
@@ -89,27 +95,11 @@ void MEDDLY::mpz_object::enlargeBuffer(int digits)
     if (0==newbuf) throw error(error::INSUFFICIENT_MEMORY);
     buffer = newbuf;
     bufsize = newbufsize;
-    if (0==the_mpz_cleanup) the_mpz_cleanup = new mpz_cleanup();
   }
 }
 
-MEDDLY::mpz_object::mpz_cleanup::mpz_cleanup() : cleanup_procedure()
-{
-}
-
-MEDDLY::mpz_object::mpz_cleanup::~mpz_cleanup()
-{
-}
-
-void MEDDLY::mpz_object::mpz_cleanup::execute()
-{
-  mpz_object::clearBuffer();
-  fprintf(stderr, "called mpz_object::mpz_cleanup::execute()\n");
-}
-
-MEDDLY::mpz_object::mpz_cleanup* MEDDLY::mpz_object::the_mpz_cleanup = 0;
-char* MEDDLY::mpz_object::buffer = 0;
-int   MEDDLY::mpz_object::bufsize = 0;
+char* MEDDLY::mpz_object::buffer;
+int   MEDDLY::mpz_object::bufsize;
 
 
 

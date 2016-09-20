@@ -887,7 +887,7 @@ int main(int argc, const char** argv)
   forest* F = buildForest(p, N, V);
   if (0==F) return 1;
   F->setLogger(LOG, "qc2 forest");
-  if (LOG) LOG->newPhase("Building per square constraints");
+  if (LOG) LOG->newPhase(F, "Building per square constraints");
 
   /*
     Build constraints for each square.
@@ -933,7 +933,7 @@ int main(int argc, const char** argv)
   }
   delete[] covered;
 
-  if (LOG) LOG->newPhase("Accumulating constraints");
+  if (LOG) LOG->newPhase(F, "Accumulating constraints");
 
   /*
     Combine constraints, based on chosen style.
@@ -967,7 +967,7 @@ int main(int argc, const char** argv)
     printf("\nNO SOLUTIONS\n\n");
   } else {
     printf("There are solutions.  Minimizing number of queens.\n");
-    if (LOG) LOG->newPhase("Minimizing");
+    if (LOG) LOG->newPhase(F, "Minimizing");
 
     Q = M-1;
 
@@ -1028,7 +1028,7 @@ int main(int argc, const char** argv)
     }
   }
 
-  if (LOG) LOG->newPhase("Cleanup");
+  if (LOG) LOG->newPhase(F, "Cleanup");
   cleanup();
   delete LOG;
   return 0;

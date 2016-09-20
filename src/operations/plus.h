@@ -24,10 +24,9 @@
 
 namespace MEDDLY {
   class binary_opname;
-  struct settings;
 
   /// Set up a binary_opname for the "plus" operation.
-  binary_opname* initializePlus(const settings &s);
+  binary_opname* initializePlus();
 }
 
 #endif

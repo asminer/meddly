@@ -32,7 +32,19 @@
 
 namespace MEDDLY {
   // node storage mechanism used for versions < 0.10 of the library
+  class old_node_storage_style;
   class old_node_storage;
+};
+
+
+/**
+    Factory to build an old_node_storage object.
+*/
+class MEDDLY::old_node_storage_style : public node_storage_style {
+  public:
+    old_node_storage_style();
+    virtual ~old_node_storage_style();
+    virtual node_storage* createForForest(expert_forest* f) const;
 };
 
 
@@ -153,10 +165,9 @@ namespace MEDDLY {
 class MEDDLY::old_node_storage : public node_storage {
   // required interface
   public:
-    old_node_storage();
+    old_node_storage(expert_forest* f);
     virtual ~old_node_storage();
 
-    virtual node_storage* createForForest(expert_forest* f) const;
     virtual void collectGarbage(bool shrink);
     virtual void reportStats(output &s, const char* pad, unsigned flags) const;
 

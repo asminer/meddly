@@ -224,7 +224,7 @@ MEDDLY::equal_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeEQ(const settings &s)
+MEDDLY::binary_opname* MEDDLY::initializeEQ()
 {
   return new equal_opname;
 }

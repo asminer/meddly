@@ -165,7 +165,7 @@ MEDDLY::lessequal_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeLE(const settings &s)
+MEDDLY::binary_opname* MEDDLY::initializeLE()
 {
   return new lessequal_opname;
 }

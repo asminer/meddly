@@ -1143,7 +1143,7 @@ MEDDLY::copy_opname
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unary_opname* MEDDLY::initializeCopy(const settings &s)
+MEDDLY::unary_opname* MEDDLY::initializeCopy()
 {
   return new copy_opname;
 }

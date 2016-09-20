@@ -88,12 +88,12 @@ int* sizes = NULL;
 int** initst = NULL;
 
 // Number of variables of each type
-const int type1 = 6;
-const int type2 = 12;
-const int type3 = 8;
+const int NUM_TYPE1 = 6;
+const int NUM_TYPE2 = 12;
+const int NUM_TYPE3 = 8;
 
 // Number of levels
-const int num_levels = type2 + type3;
+const int num_levels = NUM_TYPE2 + NUM_TYPE3;
 
 // Domain handle
 domain *d;
@@ -166,7 +166,7 @@ int get_component_type (int comp_level)
 int get_component_size (int c_type)
 {
   assert(c_type == 2 || c_type == 3);
-  return (c_type == 3)? type3: type2;
+  return (c_type == 3)? NUM_TYPE3: NUM_TYPE2;
 }
 
 int getLevelSize (int comp_level)
@@ -186,7 +186,7 @@ int get_component_level (int c_type, int index)
 
 void Init()
 {
-  assert(num_levels == (type2 + type3));
+  assert(num_levels == (NUM_TYPE2 + NUM_TYPE3));
 
   // node size for each level
   sizes = (int *) malloc(num_levels * sizeof(int));
@@ -283,7 +283,7 @@ dd_edge BuildMoveHelper(
   // 4 type 3 additions = 4 * 8 = 32
   // total additions = 4 * 12 + 4 * 8 = 4 * 20 = 80
   //
-  int nElements = 4 * type2 + 4 * type3;
+  int nElements = 4 * NUM_TYPE2 + 4 * NUM_TYPE3;
   assert(nElements == 80);
   int** from = (int**) malloc(nElements * sizeof(int *));
   int** to = (int**) malloc(nElements * sizeof(int *));
@@ -312,7 +312,7 @@ dd_edge BuildMoveHelper(
 
   // a3' <- d3
 
-  for (int i = 0; i < type3; i++)
+  for (int i = 0; i < NUM_TYPE3; i++)
   {
     from[currElement][d3] = i;
     to[currElement][a3] = i;
@@ -321,7 +321,7 @@ dd_edge BuildMoveHelper(
 
   // b3' <- a3
 
-  for (int i = 0; i < type3; i++)
+  for (int i = 0; i < NUM_TYPE3; i++)
   {
     from[currElement][a3] = i;
     to[currElement][b3] = i;
@@ -330,7 +330,7 @@ dd_edge BuildMoveHelper(
 
   // c3' <- b3
 
-  for (int i = 0; i < type3; i++)
+  for (int i = 0; i < NUM_TYPE3; i++)
   {
     from[currElement][b3] = i;
     to[currElement][c3] = i;
@@ -339,7 +339,7 @@ dd_edge BuildMoveHelper(
 
   // d3' <- c3
 
-  for (int i = 0; i < type3; i++)
+  for (int i = 0; i < NUM_TYPE3; i++)
   {
     from[currElement][c3] = i;
     to[currElement][d3] = i;
@@ -349,7 +349,7 @@ dd_edge BuildMoveHelper(
 
   // a2' <- d2
 
-  for (int i = 0; i < type2; i++)
+  for (int i = 0; i < NUM_TYPE2; i++)
   {
     from[currElement][d2] = i;
     to[currElement][a2] = i;
@@ -358,7 +358,7 @@ dd_edge BuildMoveHelper(
 
   // b2' <- a2
 
-  for (int i = 0; i < type2; i++)
+  for (int i = 0; i < NUM_TYPE2; i++)
   {
     from[currElement][a2] = i;
     to[currElement][b2] = i;
@@ -367,7 +367,7 @@ dd_edge BuildMoveHelper(
 
   // c2' <- b2
 
-  for (int i = 0; i < type2; i++)
+  for (int i = 0; i < NUM_TYPE2; i++)
   {
     from[currElement][b2] = i;
     to[currElement][c2] = i;
@@ -376,7 +376,7 @@ dd_edge BuildMoveHelper(
 
   // d2' <- c2
 
-  for (int i = 0; i < type2; i++)
+  for (int i = 0; i < NUM_TYPE2; i++)
   {
     from[currElement][c2] = i;
     to[currElement][d2] = i;
@@ -392,43 +392,43 @@ dd_edge BuildMoveHelper(
 
   // a3' <- d3
 
-  relation->createEdge(from + offset, to + offset, type3, result);
-  offset += type3;
+  relation->createEdge(from + offset, to + offset, NUM_TYPE3, result);
+  offset += NUM_TYPE3;
 
   // b3' <- a3
-  relation->createEdge(from + offset, to + offset, type3, temp);
+  relation->createEdge(from + offset, to + offset, NUM_TYPE3, temp);
   result *= temp;
-  offset += type3;
+  offset += NUM_TYPE3;
 
   // c3' <- b3
-  relation->createEdge(from + offset, to + offset, type3, temp);
+  relation->createEdge(from + offset, to + offset, NUM_TYPE3, temp);
   result *= temp;
-  offset += type3;
+  offset += NUM_TYPE3;
 
   // d3' <- c3
-  relation->createEdge(from + offset, to + offset, type3, temp);
+  relation->createEdge(from + offset, to + offset, NUM_TYPE3, temp);
   result *= temp;
-  offset += type3;
+  offset += NUM_TYPE3;
 
   // a2' <- d2
-  relation->createEdge(from + offset, to + offset, type2, temp);
+  relation->createEdge(from + offset, to + offset, NUM_TYPE2, temp);
   result *= temp;
-  offset += type2;
+  offset += NUM_TYPE2;
 
   // b2' <- a2
-  relation->createEdge(from + offset, to + offset, type2, temp);
+  relation->createEdge(from + offset, to + offset, NUM_TYPE2, temp);
   result *= temp;
-  offset += type2;
+  offset += NUM_TYPE2;
 
   // c2' <- b2
-  relation->createEdge(from + offset, to + offset, type2, temp);
+  relation->createEdge(from + offset, to + offset, NUM_TYPE2, temp);
   result *= temp;
-  offset += type2;
+  offset += NUM_TYPE2;
 
   // d2' <- c2
-  relation->createEdge(from + offset, to + offset, type2, temp);
+  relation->createEdge(from + offset, to + offset, NUM_TYPE2, temp);
   result *= temp;
-  offset += type2;
+  offset += NUM_TYPE2;
 
   assert(offset == nElements);
 
@@ -487,7 +487,7 @@ dd_edge BuildFlipMoveHelper(
   // 4 type 3 additions = 4 * 8 = 32
   // total additions = 4 * 12 + 4 * 8 = 4 * 20 = 80
   //
-  int nElements = 4 * type2 + 4 * type3;
+  int nElements = 4 * NUM_TYPE2 + 4 * NUM_TYPE3;
   assert(nElements == 80);
   int** from = (int**) malloc(nElements * sizeof(int *));
   int** to = (int**) malloc(nElements * sizeof(int *));
@@ -517,7 +517,7 @@ dd_edge BuildFlipMoveHelper(
 
   // a3' <- c3
 
-  for (int i = 0; i < type3; i++)
+  for (int i = 0; i < NUM_TYPE3; i++)
   {
     from[currElement][c3] = i;
     to[currElement][a3] = i;
@@ -526,7 +526,7 @@ dd_edge BuildFlipMoveHelper(
 
   // b3' <- d3
 
-  for (int i = 0; i < type3; i++)
+  for (int i = 0; i < NUM_TYPE3; i++)
   {
     from[currElement][d3] = i;
     to[currElement][b3] = i;
@@ -535,7 +535,7 @@ dd_edge BuildFlipMoveHelper(
 
   // c3' <- a3
 
-  for (int i = 0; i < type3; i++)
+  for (int i = 0; i < NUM_TYPE3; i++)
   {
     from[currElement][a3] = i;
     to[currElement][c3] = i;
@@ -544,7 +544,7 @@ dd_edge BuildFlipMoveHelper(
 
   // d3' <- b3
 
-  for (int i = 0; i < type3; i++)
+  for (int i = 0; i < NUM_TYPE3; i++)
   {
     from[currElement][b3] = i;
     to[currElement][d3] = i;
@@ -554,7 +554,7 @@ dd_edge BuildFlipMoveHelper(
 
   // a2' <- c2
 
-  for (int i = 0; i < type2; i++)
+  for (int i = 0; i < NUM_TYPE2; i++)
   {
     from[currElement][c2] = i;
     to[currElement][a2] = i;
@@ -563,7 +563,7 @@ dd_edge BuildFlipMoveHelper(
 
   // b2' <- d2
 
-  for (int i = 0; i < type2; i++)
+  for (int i = 0; i < NUM_TYPE2; i++)
   {
     from[currElement][d2] = i;
     to[currElement][b2] = i;
@@ -572,7 +572,7 @@ dd_edge BuildFlipMoveHelper(
 
   // c2' <- a2
 
-  for (int i = 0; i < type2; i++)
+  for (int i = 0; i < NUM_TYPE2; i++)
   {
     from[currElement][a2] = i;
     to[currElement][c2] = i;
@@ -581,7 +581,7 @@ dd_edge BuildFlipMoveHelper(
 
   // d2' <- b2
 
-  for (int i = 0; i < type2; i++)
+  for (int i = 0; i < NUM_TYPE2; i++)
   {
     from[currElement][b2] = i;
     to[currElement][d2] = i;
@@ -598,9 +598,9 @@ dd_edge BuildFlipMoveHelper(
   // a3' <- c3
   {
     dd_edge temp(relation);
-    relation->createEdge(from + offset, to + offset, type3, temp);
+    relation->createEdge(from + offset, to + offset, NUM_TYPE3, temp);
     result = temp;
-    offset += type3;
+    offset += NUM_TYPE3;
   }
 
   // b3' <- d3
@@ -609,9 +609,9 @@ dd_edge BuildFlipMoveHelper(
   for (int i = 0; i < 3; i++)
   {
     dd_edge temp(relation);
-    relation->createEdge(from + offset, to + offset, type3, temp);
+    relation->createEdge(from + offset, to + offset, NUM_TYPE3, temp);
     result *= temp;
-    offset += type3;
+    offset += NUM_TYPE3;
   }
 
   // a2' <- c2
@@ -621,9 +621,9 @@ dd_edge BuildFlipMoveHelper(
   for (int i = 0; i < 4; i++)
   {
     dd_edge temp(relation);
-    relation->createEdge(from + offset, to + offset, type2, temp);
+    relation->createEdge(from + offset, to + offset, NUM_TYPE2, temp);
     result *= temp;
-    offset += type2;
+    offset += NUM_TYPE2;
   }
 
   assert(offset == nElements);
@@ -1010,10 +1010,16 @@ int doDfs(const moves& m, char saturation_type, bool split)
   start.note_time();
   fprintf(stdout, " done!\n");
   fflush(stdout);
+
+  FILE_output out(stdout);
+  initial.show(out, 2);
+
   fprintf(stdout, "Time for constructing reachability set: %.4e seconds\n",
       start.get_last_interval()/1000000.0);
   fprintf(stdout, "# of reachable states: %1.6e\n",
       initial.getCardinality());
+  fprintf(stdout, "#Nodes: %ld\n",
+        initial.getNodeCount());
   fflush(stdout);
 
   return 0;
@@ -1316,17 +1322,13 @@ int main(int argc, char *argv[])
   Init();
 
   // Initialize MEDDLY
-  MEDDLY::settings s;
-  s.ctSettings.style = MonolithicChainedHash;
-  s.ctSettings.maxSize = 16 * 16777216;
-  // s.ctSettings.staleRemoval =
-  //   MEDDLY::settings::computeTableSettings::Lazy;
-  // s.ctSettings.staleRemoval =
-  //   MEDDLY::settings::computeTableSettings::Moderate;
-  // s.ctSettings.staleRemoval =
-  //   MEDDLY::settings::computeTableSettings::Aggressive;
-
-  MEDDLY::initialize(s);
+  MEDDLY::initializer_list* L = defaultInitializerList(0);
+  ct_initializer::setBuiltinStyle(ct_initializer::MonolithicChainedHash);
+  ct_initializer::setMaxSize(16 * 16777216);
+  // ct_initializer::setStaleRemoval(ct_initializer::Lazy);
+  // ct_initializer::setStaleRemoval(ct_initializer::Moderate);
+  // ct_initializer::setStaleRemoval(ct_initializer::Aggressive);
+  MEDDLY::initialize(L);
 
   // Set up the state variables, as described earlier
   d = createDomainBottomUp(sizes, num_levels);
@@ -1363,10 +1365,10 @@ int main(int argc, char *argv[])
 
   // Build set of initial states
 
-  for (int j = 0; j < type2; j++) {
+  for (int j = 0; j < NUM_TYPE2; j++) {
     initst[0][get_component_level(2, j)] = j;
   }
-  for (int j = 0; j < type3; j++) {
+  for (int j = 0; j < NUM_TYPE3; j++) {
     initst[0][get_component_level(3, j)] = j;
   }
   initst[0][0] = 0;

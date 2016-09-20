@@ -24,10 +24,9 @@
 
 namespace MEDDLY {
   class binary_opname;
-  struct settings;
 
   /// Set up a binary_opname for the "matrix multiply" operation.
-  binary_opname* initializeMMMultiply(const settings &s);
+  binary_opname* initializeMMMultiply();
 }
 
 #endif

@@ -138,11 +138,11 @@ int main(int argc, char *argv[])
   }
 
 
-  settings s;
+  initializer_list* L = defaultInitializerList(0);
 #ifdef CACHE_SIZE
-  s.ctSettings.maxSize = CACHE_SIZE;
+  ct_initializer::setMaxSize(CACHE_SIZE);
 #endif
-  initialize(s);
+  initialize(L);
 
   // Create a domain
   domain *d = createDomainBottomUp(bounds, nVariables);

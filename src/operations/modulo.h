@@ -24,10 +24,9 @@
 
 namespace MEDDLY {
   class binary_opname;
-  struct settings;
 
   /// Set up a binary_opname for the "modulo" operator.
-  binary_opname* initializeModulo(const settings &s);
+  binary_opname* initializeModulo();
 }
 
 #endif

@@ -1031,12 +1031,12 @@ MEDDLY::fb_saturation_opname::buildOperation(arguments* a) const
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::satpregen_opname* MEDDLY::initSaturationForward(const settings &s)
+MEDDLY::satpregen_opname* MEDDLY::initSaturationForward()
 {
   return new fb_saturation_opname(true);
 }
 
-MEDDLY::satpregen_opname* MEDDLY::initSaturationBackward(const settings &s)
+MEDDLY::satpregen_opname* MEDDLY::initSaturationBackward()
 {
   return new fb_saturation_opname(false);
 }
