@@ -112,6 +112,7 @@ void MainWindow::on_play_clicked()
 {
     if(MainWindow::isPaused)
     {
+
         //forests are playing, set text to "Pause"
         //isPaused goes to false
         //greys out step
