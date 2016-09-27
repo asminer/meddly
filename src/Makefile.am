@@ -91,7 +91,9 @@ libmeddly_la_SOURCES = \
   storage/simple.cc \
   storage/compact.cc \
   storage/ct_classic.cc \
-  storage/init_storage.cc
+  storage/init_storage.cc \
+  \
+  memory_managers/base_manager.cc
 
   
 ## compile apps

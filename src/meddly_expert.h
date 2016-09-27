@@ -97,6 +97,10 @@ namespace MEDDLY {
     Subsumed by class initializer_list.
   */
 
+  // Memory managers, for node storage and compute tables
+  class memory_manager_factory;
+  class memory_manager;
+
   // Actual node storage
   class node_storage_style;
   class node_storage;
@@ -840,6 +844,171 @@ class MEDDLY::initializer_list {
 
   private:
     initializer_list* previous;
+};
+
+// ******************************************************************
+// *                                                                *
+// *                  memory_manager_factory class                  *
+// *                                                                *
+// ******************************************************************
+
+/** Abstract base class for memory manager factories.
+    
+    This allows us to use specialized implementations of
+    memory managers (say, using templates) based on the granularity.
+
+    Implementation is in memory_managers/base_manager.cc
+*/
+class MEDDLY::memory_manager_factory {
+  public:
+    memory_manager_factory();
+    virtual ~memory_manager_factory();
+
+    /**
+        Build a new memory manager.
+        
+          @param  granularity   Unit of storage, in bytes.
+                                Must be greater than 0.
+                                All sizes specified to the memory manager,
+                                for allocating and freeing chunks, are in
+                                terms of the granularity.  For example, to
+                                manage a collection of arrays of integers,
+                                set the granularity to be sizeof(int) and
+                                use sizes equal to the number of integers.
+                                For behavior exactly the same as malloc,
+                                use a granularity of 1.
+
+
+          @param  minsize       The smallest size chunk that will ever be
+                                requested.  Must be greater than 0.
+                                This is specified here in case
+                                that information can help the memory manager.
+
+
+          @return   A pointer to a new instance of a memory manager, or 0
+                    if some error occurred, for example if the requested
+                    granularity cannot be supported by this type of memory
+                    manager.
+    */
+    virtual memory_manager* initManager(unsigned char granularity, 
+      unsigned char minsize) const = 0;
+
+};
+
+// ******************************************************************
+// *                                                                *
+// *                      memory_manager class                      *
+// *                                                                *
+// ******************************************************************
+
+/** 
+    Interface for memory managers.
+
+    Implementation is in memory_managers/base_manager.cc
+*/
+class MEDDLY::memory_manager {
+  public:
+    memory_manager();
+    virtual ~memory_manager();
+
+    /**
+        Is this memory manager unable to free everything on its own?
+
+          @return   True, if destroying the memory manager DOES NOT
+                    automatically recycle all non-freed requested chunks
+                    (because the memory manager does not track them).
+
+                    False, if destroying the memory manager DOES
+                    automatically recycle all non-freed requested chunks.
+    */
+    virtual bool mustRecycleManually() const = 0;
+
+    /**
+        Does the memory manager require that the most significant bit
+        of the first slot is cleared?
+
+        (If true, the memory manager sets this bit for recycled chunks.)
+
+          @return   True, if the first slot of a chunk must hold a value 
+                    such that the most significant bit is cleared.
+                    If this cannot be guaranteed by what is stored there,
+                    then you must allocate an extra slot and not use the
+                    first one.
+
+                    False, if there are no restrictions on what may be
+                    stored in the first slot of a chunk.
+    */
+    virtual bool firstSlotMustClearMSB() const = 0;
+
+    /**
+        Does the memory manager require that the most significant bit
+        of the last slot is cleared?
+
+        (If true, the memory manager sets this bit for recycled chunks.)
+
+          @return   True, if the last slot of a chunk must hold a value 
+                    such that the most significant bit is cleared.
+                    If this cannot be guaranteed by what is stored there,
+                    then you must allocate an extra slot and not use the
+                    last one.
+
+                    False, if there are no restrictions on what may be
+                    stored in the last slot of a chunk.
+    */
+    virtual bool lastSlotMustClearMSB() const = 0;
+
+
+    /**
+        Request a chunk of memory.
+
+          @param  numSlots    Number of slots.  
+                              INPUT: number of requested slots.
+                              OUTPUT: number of slots in the given chunk,
+                              might be larger than the number requested.
+                              Will not be smaller than the number requested,
+                              unless a failure occurred, in which case 
+                              it will be set to zero.
+
+          @return   A non-zero handle for a new chunk of memory, containing
+                    numSlots slots (and requiring numSlots * granularity
+                    bytes), on success.
+                    Zero, on failure.
+
+    */
+    virtual unsigned long requestChunk(size_t &numSlots) = 0;
+    
+    /**
+        Recycle a chunk of memory.
+        
+          @param  h           Handle of the chunk, as returned by 
+                              method requestChunk().
+
+          @param  numSlots    Total number of slots in the chunk.
+    */
+    virtual void recycleChunk(unsigned long h, size_t numSlots) = 0;
+
+    /**
+        Convert a handle to an actual pointer we can use.
+
+          @param  h     Handle of the chunk, as returned by requestChunk(), or 0.
+
+          @return       If h is 0, then we return 0.  Otherwise, we return
+                        a pointer to the chunk given by handle h.
+                        This pointer is guaranteed to be fixed until the next
+                        call to requestChunk() or recycleChunk(); after that,
+                        the pointer for a handle could change.
+    */
+    virtual void* getChunkAddress(unsigned long h) const = 0;
+
+
+    /** Show various statistics.
+          @param  s         Output stream to write to
+          @param  pad       Padding string, written at the start of
+                            each output line.
+          @param  details   If false, just display basic statistics.
+                            If true, display details.
+    */
+    virtual void reportStats(output &s, const char* pad, bool details) const = 0;
 };
 
 // ******************************************************************
