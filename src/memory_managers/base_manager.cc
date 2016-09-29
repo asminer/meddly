@@ -41,11 +41,19 @@ MEDDLY::memory_manager_factory::~memory_manager_factory()
 // *                                                                *
 // ******************************************************************
 
+MEDDLY::memory_manager::stats MEDDLY::memory_manager::global_mem;
+
 MEDDLY::memory_manager::memory_manager()
 {
+  my_mem.reset();
 }
 
 MEDDLY::memory_manager::~memory_manager()
 {
+}
+
+void MEDDLY::memory_manager::resetGlobalStats()
+{
+  global_mem.reset();
 }
 

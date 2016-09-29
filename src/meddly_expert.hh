@@ -469,6 +469,77 @@ MEDDLY::expert_forest::node_header::makeZombie()
 
 // ******************************************************************
 // *                                                                *
+// *             inlined  memory_manager::stats methods             *
+// *                                                                *
+// ******************************************************************
+
+inline void MEDDLY::memory_manager::stats::reset()
+{
+  memory_used = 0;
+  memory_alloc = 0;
+  peak_memory_used = 0;
+  peak_memory_alloc = 0;
+}
+
+inline void MEDDLY::memory_manager::stats::incMemUsed(long b)
+{
+  memory_used += b;
+  if (memory_used > peak_memory_used) {
+    peak_memory_used = memory_used;
+  }
+}
+
+inline void MEDDLY::memory_manager::stats::decMemUsed(long b)
+{
+  memory_used -= b;
+}
+
+inline void MEDDLY::memory_manager::stats::incMemAlloc(long b)
+{
+  memory_alloc += b;
+  if (memory_alloc > peak_memory_alloc) {
+    peak_memory_alloc = memory_alloc;
+  }
+}
+
+inline void MEDDLY::memory_manager::stats::decMemAlloc(long b)
+{
+  memory_alloc -= b;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                 inlined memory_manager methods                 *
+// *                                                                *
+// ******************************************************************
+
+inline void MEDDLY::memory_manager::incMemUsed(long b)
+{
+  global_mem.incMemUsed(b);
+  my_mem.incMemUsed(b);
+}
+
+inline void MEDDLY::memory_manager::decMemUsed(long b)
+{
+  global_mem.decMemUsed(b);
+  my_mem.decMemUsed(b);
+}
+
+inline void MEDDLY::memory_manager::incMemAlloc(long b)
+{
+  global_mem.incMemAlloc(b);
+  my_mem.incMemAlloc(b);
+}
+
+inline void MEDDLY::memory_manager::decMemAlloc(long b)
+{
+  global_mem.decMemAlloc(b);
+  my_mem.decMemAlloc(b);
+}
+
+
+// ******************************************************************
+// *                                                                *
 // *                  inlined node_storage methods                  *
 // *                                                                *
 // ******************************************************************

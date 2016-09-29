@@ -907,6 +907,37 @@ class MEDDLY::memory_manager_factory {
     Implementation is in memory_managers/base_manager.cc
 */
 class MEDDLY::memory_manager {
+
+  public:
+    struct stats {
+      /// Current memory used
+      long memory_used;
+      /// Current memory allocated
+      long memory_alloc;
+      /// Peak memory used
+      long peak_memory_used;
+      /// Peak memory allocated
+      long peak_memory_alloc;
+
+      // helpers
+
+      /// Reset statistics
+      void reset();
+
+      /// Increase memory used by b bytes.
+      void incMemUsed(long b);
+
+      /// Decrease memory used by b bytes.
+      void decMemUsed(long b);
+
+      /// Increase memory allocated by b bytes.
+      void incMemAlloc(long b);
+
+      /// Decrease memory allocated by b bytes.
+      void decMemAlloc(long b);
+
+    };
+
   public:
     memory_manager();
     virtual ~memory_manager();
@@ -1009,6 +1040,33 @@ class MEDDLY::memory_manager {
                             If true, display details.
     */
     virtual void reportStats(output &s, const char* pad, bool details) const = 0;
+
+
+    /** Display manager-specific internals.
+        For debugging.
+    */
+    virtual void dumpInternal(output &s) const = 0;
+
+
+  protected:
+    void incMemUsed(long b);
+    void decMemUsed(long b);
+    void incMemAlloc(long b);
+    void decMemAlloc(long b);
+
+  public:
+    /**
+        Reset the global memory stats.
+        
+        TBD - make this private and the initializer that sets this
+        up becomes a friend.
+
+    */
+    static void resetGlobalStats();
+
+  private:
+    static stats global_mem;
+    stats my_mem;
 };
 
 // ******************************************************************

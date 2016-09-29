@@ -26,9 +26,9 @@
 
 #include "../defines.h"
 #include "../hash_stream.h"
-#include "holeman.h"
+// #include "holeman.h"
 
-#define INTEGRATED_HOLE_MANAGER
+// #define INTEGRATED_HOLE_MANAGER
 
 namespace MEDDLY {
   // node storage mechanism used for versions < 0.10 of the library
