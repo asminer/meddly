@@ -537,7 +537,6 @@ inline void MEDDLY::memory_manager::decMemAlloc(long b)
   my_mem.decMemAlloc(b);
 }
 
-
 // ******************************************************************
 // *                                                                *
 // *                  inlined node_storage methods                  *

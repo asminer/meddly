@@ -97,6 +97,7 @@ namespace MEDDLY {
   class expert_forest;
   class unpacked_node;
 
+  class memory_manager_style;
   class node_storage_style;
 
   class variable;
@@ -129,6 +130,12 @@ namespace MEDDLY {
   ct_object& get_mpz_wrapper();
   void unwrap(const ct_object &, mpz_t &value);
 #endif
+
+  // ******************************************************************
+  // *                    Memory management schemes                   *
+  // ******************************************************************
+
+  extern const memory_manager_style* ORIGINAL_GRID;
 
   // ******************************************************************
   // *                     Node storage mechanisms                    *

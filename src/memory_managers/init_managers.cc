@@ -25,13 +25,11 @@
 #include "../defines.h"
 #include "init_managers.h"
 
-// include specific manager headers here
+#include "orig_grid.h"
 
-/*
 namespace MEDDLY {
-  // Global memory manager constants here
+  const memory_manager_style* ORIGINAL_GRID = 0;
 };
-*/
 
 
 
@@ -39,19 +37,19 @@ namespace MEDDLY {
 MEDDLY::memman_initializer::memman_initializer(initializer_list *p)
  : initializer_list(p)
 {
-  // TBD - zero out any memory_manager_factory members here
+  original_grid = 0;
 }
 
 void MEDDLY::memman_initializer::setup()
 {
   memory_manager::resetGlobalStats();
   
-  // TBD - initialize Global and member factories here
+  ORIGINAL_GRID = (original_grid  = new orig_grid_style);
 }
 
 void MEDDLY::memman_initializer::cleanup()
 {
-  // TBD - destroy and zero member factories
-  // TBD - zero globals
+  delete original_grid;
+  ORIGINAL_GRID = (original_grid  = 0);
 }
 

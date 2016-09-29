@@ -1,5 +1,5 @@
 
-// $Id: init_builtin.h 700 2016-07-07 21:06:50Z asminer $
+// $Id$
 
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
@@ -19,18 +19,30 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+
+#ifndef ORIG_GRID_H
+#define ORIG_GRID_H
+
 namespace MEDDLY {
-  class memman_initializer;
+  class orig_grid_style;
 };
 
-class MEDDLY::memman_initializer : public initializer_list {
+/**
+    Factory for a memory manager based on the original grid scheme.
 
-    memory_manager_style* original_grid;
+    All details, including the actual memory manager constructed,
+    are hidden in implementation file :^)
 
+*/
+
+class MEDDLY::orig_grid_style : public memory_manager_style {
   public:
-    memman_initializer(initializer_list *p);
-  protected:
-    virtual void setup();
-    virtual void cleanup();
+    orig_grid_style();
+    virtual ~orig_grid_style();
+
+    virtual memory_manager* initManager(unsigned char granularity,
+      unsigned char minsize) const;
 };
+
+#endif
 

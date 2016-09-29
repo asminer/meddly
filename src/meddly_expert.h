@@ -98,7 +98,7 @@ namespace MEDDLY {
   */
 
   // Memory managers, for node storage and compute tables
-  class memory_manager_factory;
+  class memory_manager_style;
   class memory_manager;
 
   // Actual node storage
@@ -848,7 +848,7 @@ class MEDDLY::initializer_list {
 
 // ******************************************************************
 // *                                                                *
-// *                  memory_manager_factory class                  *
+// *                   memory_manager_style class                   *
 // *                                                                *
 // ******************************************************************
 
@@ -859,10 +859,10 @@ class MEDDLY::initializer_list {
 
     Implementation is in memory_managers/base_manager.cc
 */
-class MEDDLY::memory_manager_factory {
+class MEDDLY::memory_manager_style {
   public:
-    memory_manager_factory();
-    virtual ~memory_manager_factory();
+    memory_manager_style();
+    virtual ~memory_manager_style();
 
     /**
         Build a new memory manager.

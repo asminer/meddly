@@ -23,15 +23,15 @@
 
 // ******************************************************************
 // *                                                                *
-// *                 memory_manager_factory methods                 *
+// *                  memory_manager_style methods                  *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::memory_manager_factory::memory_manager_factory()
+MEDDLY::memory_manager_style::memory_manager_style()
 {
 }
 
-MEDDLY::memory_manager_factory::~memory_manager_factory()
+MEDDLY::memory_manager_style::~memory_manager_style()
 {
 }
 

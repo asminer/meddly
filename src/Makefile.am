@@ -94,7 +94,8 @@ libmeddly_la_SOURCES = \
   storage/init_storage.cc \
   \
   memory_managers/base_manager.cc \
-  memory_managers/init_managers.cc 
+  memory_managers/init_managers.cc \
+  memory_managers/orig_grid.cc
 
   
 ## compile apps
