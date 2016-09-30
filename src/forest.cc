@@ -27,6 +27,7 @@
 #include "unique_table.h"
 #include "hash_stream.h"
 #include "storage/bytepack.h"
+#include "reordering/reordering_factory.h"
 
 // for timestamps.
 // to do - check during configuration that these are present,
@@ -691,29 +692,7 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   int N = getNumVariables();
 
   // Initialize variable order
-  if(rel){
-	  // Negative indices for primed variables
-	  raw_order_var = static_cast<int*>(calloc(sizeof(int), 2*N+1));
-	  order_var = raw_order_var + N;
-	  raw_order_level = static_cast<int*>(calloc(sizeof(int), 2*N+1));
-	  order_level = raw_order_level + N;
-	  for(int i=1; i<N+1; i++) {
-		  order_var[i] = i;
-		  order_var[-i] = -i;
-		  order_level[i] = i;
-		  order_level[-i] = -i;
-	  }
-  }
-  else{
-	  raw_order_var = static_cast<int*>(calloc(sizeof(int), N+1));
-	  order_var = raw_order_var;
-	  raw_order_level = static_cast<int*>(calloc(sizeof(int), N+1));
-	  order_level = raw_order_level;
-	  for(int i=1; i<N+1; i++) {
-		  order_var[i] = i;
-		  order_level[i] = i;
-	  }
-  }
+  var_order = d->makeDefaultVariableOrder();
 
   //
   // Initialize misc. protected data
@@ -747,9 +726,6 @@ MEDDLY::expert_forest::~expert_forest()
 #endif
   // Address array
   free(address);
-
-  free(raw_order_var);
-  free(raw_order_level);
 
   delete nodeMan;
 
@@ -1613,6 +1589,20 @@ void MEDDLY::expert_forest::readUnhashedHeader(input &s, unpacked_node &nb) cons
   throw error(error::TYPE_MISMATCH);
 }
 
+void MEDDLY::expert_forest::reorderVariables(const int* level2var)
+{
+  removeAllComputeTableEntries();
+
+  // Create a temporary variable order
+  // Support in-place update and avoid interfering other forests
+  var_order = std::make_shared<variable_order>(*var_order);
+
+  auto reordering = reordering_factory::create(getPolicies().reorder);
+  reordering->reorderVariables(this, level2var);
+
+  var_order = useDomain()->makeVariableOrder(*var_order);
+}
+
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // '                                                                '
 // '                                                                '
@@ -2077,18 +2067,6 @@ void MEDDLY::expert_forest::swapNodes(node_handle p, node_handle q)
 
 MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(unpacked_node* un, node_handle p)
 {
-#ifdef DEVELOPMENT_CODE
-  bool well_formed = false;
-  int size = (un->isFull() ? un->getSize() : un->getNNZs());
-  for (int i = 0; i < size; i++) {
-    if (un->ei(i) == 0) {
-      well_formed = true;
-      break;
-    }
-  }
-  MEDDLY_DCASSERT(well_formed);
-#endif
-
   int count = getNodeInCount(p);
 
   unique->remove(hashNode(p), p);

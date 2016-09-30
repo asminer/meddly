@@ -134,7 +134,7 @@ class MEDDLY::common_dfs_mt : public binary_operation {
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
-    virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
+    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
     virtual void saturateHelper(unpacked_node &mdd) = 0;
 
   protected:
@@ -411,7 +411,7 @@ void MEDDLY::common_dfs_mt::showEntry(output &strm, const node_handle* data) con
 }
 
 void MEDDLY::common_dfs_mt
-::compute(const dd_edge &a, const dd_edge &b, dd_edge &c)
+::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c)
 {
   // Initialize operations
   mddUnion = getOperation(UNION, resF, resF, resF);

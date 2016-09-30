@@ -193,33 +193,33 @@ int main(int argc, char *argv[])
   int* level2var = new int[nVariables + 1];
   memcpy(level2var, level2var_origin, sizeof(int) * (nVariables + 1));
 
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < 10; i++) {
+    std::cout << "Reorder" << std::endl;
+
 //    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::shuffle(&level2var[1], &level2var[nVariables+1], std::default_random_engine(seed + 1));
 
 //    displayElements(result);
-    std::cout << "#Nodes: " << mtmxd->getCurrentNumNodes() << std::endl;
+    std::cout << "#Nodes (Before): " << mtmxd->getCurrentNumNodes() << std::endl;
 
     start.note_time();
-
-    std::cout << "Reordered" << std::endl;
     emtmxd->reorderVariables(level2var);
     //displayElements(result);
-    std::cout << "#Nodes: " << mtmxd->getCurrentNumNodes() << std::endl;
+    std::cout << "#Nodes  (After): " << mtmxd->getCurrentNumNodes() << std::endl;
 
     start.note_time();
     std::cout << "Time interval: " << start.get_last_interval()/1000000.0 << " seconds" << std::endl;
   }
 
+  std::cout << "Reorder" << std::endl;
+
 //  displayElements(result);
-  std::cout << "#Nodes: " << mtmxd->getCurrentNumNodes() << std::endl;
+  std::cout << "#Nodes (Before): " << mtmxd->getCurrentNumNodes() << std::endl;
 
   start.note_time();
-
-  std::cout << "Reordered" << std::endl;
   emtmxd->reorderVariables(level2var_origin);
 //  displayElements(result);
-  std::cout << "#Nodes: " << mtmxd->getCurrentNumNodes() << std::endl;
+  std::cout << "#Nodes  (After): " << mtmxd->getCurrentNumNodes() << std::endl;
 
   start.note_time();
   std::cout << "Time interval: " << start.get_last_interval()/1000000.0 << " seconds" << std::endl;

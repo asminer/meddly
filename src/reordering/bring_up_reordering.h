@@ -5,7 +5,7 @@
 
 namespace MEDDLY{
 
-class bubble_up_reordering : public reordering_base
+class bring_up_reordering : public reordering_base
 {
 public:
   virtual void reorderVariables(expert_forest* forest, const int * level2var)

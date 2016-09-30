@@ -11,7 +11,7 @@ namespace MEDDLY{
 //
 // Lowest Average Reference Count
 //
-class LARC_reordering : public reordering_base
+class larc_reordering : public reordering_base
 {
 protected:
   double calculate_average_ref_count(expert_forest* forest, int level)

@@ -25,37 +25,12 @@
 
 #include "mtmdd.h"
 #include "../unique_table.h"
-#include "../reordering/reordering_factory.h"
 
 MEDDLY::mtmdd_forest
 ::mtmdd_forest(int dsl, domain* d, range_type t, const policies &p)
  : mt_forest(dsl, d, false, t, p)
 {
   // anything to construct?
-}
-
-void MEDDLY::mtmdd_forest::reorderVariables(const int* level2var)
-{
-  removeAllComputeTableEntries();
-
-//  int size=getDomain()->getNumVariables();
-//  for(int i=size; i>=1; i--) {
-//    printf("Lv %d Var %d: %d\n", i, getVarByLevel(i), unique->getNumEntries(getVarByLevel(i)));
-//  }
-//  printf("#Node: %d\n", getCurrentNumNodes());
-
-//  resetPeakNumNodes();
-//  resetPeakMemoryUsed();
-
-  auto reordering = reordering_factory::create(getPolicies().reorder);
-  reordering->reorderVariables(this, level2var);
-
-//  for(int i=size; i>=1; i--) {
-//    printf("Lv %d Var %d: %d\n", i, getVarByLevel(i), unique->getNumEntries(getVarByLevel(i)));
-//  }
-//  printf("#Node: %d\n", getCurrentNumNodes());
-//  printf("Peak #Node: %d\n", getPeakNumNodes());
-//  printf("Peak Memory: %ld\n", getPeakMemoryUsed());
 }
 
 void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
@@ -75,7 +50,7 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
   node_handle* hnodes = new node_handle[hnum];
   unique->getItems(hvar, hnodes, hnum);
 
-  int lnum = unique->getNumEntries(lvar); // The nubmer of nodes associated with the variable at the lower level
+  int lnum = unique->getNumEntries(lvar); // The number of nodes associated with the variable at the lower level
   node_handle* lnodes = new node_handle[lnum];
   unique->getItems(lvar, lnodes, lnum);
 
@@ -112,10 +87,7 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
   }
 
   // Update the variable order
-  order_var[hvar] = level;
-  order_var[lvar] = level+1;
-  order_level[level + 1] = lvar;
-  order_level[level] = hvar;
+  std::const_pointer_cast<variable_order>(var_order)->exchange(hvar, lvar);
 
   node_handle** children = new node_handle*[hsize];
   for (int i = 0; i < hsize; i++) {
@@ -124,6 +96,8 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 
   // Process the rest of nodes for the variable to be moved down
   for (int i = 0; i < hnum; i++) {
+    MEDDLY_DCASSERT(isActiveNode(hnodes[i]));
+
     unpacked_node* high_nr = unpacked_node::useUnpackedNode();
     high_nr->initFromNode(this, hnodes[i], true);
 
@@ -212,7 +186,7 @@ void MEDDLY::mtmdd_forest::dynamicReorderVariables(int top, int bottom)
 
   removeAllComputeTableEntries();
 
-  vector<int> vars;
+  std::vector<int> vars;
   vars.reserve(top - bottom + 1);
   for (int i = bottom; i <= top; i++) {
     vars.push_back(getVarByLevel(i));

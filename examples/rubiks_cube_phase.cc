@@ -621,7 +621,7 @@ void RubiksCubeModel::buildForests()
 
 vector<int> RubiksCubeModel::convertToVariableOrder(const vector<Component>& level2component)
 {
-  assert(level2component.size() == _config.num_components());
+  assert(level2component.size() - 1 == _config.num_components());
 
   vector<int> level2var;
   level2var.push_back(0);

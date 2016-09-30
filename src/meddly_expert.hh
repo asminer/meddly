@@ -1325,10 +1325,19 @@ MEDDLY::expert_forest::moveNodeOffset(MEDDLY::node_handle node, node_address old
 }
 
 inline void
-MEDDLY::expert_forest::getVariableOrder(int* level2var)
+MEDDLY::expert_forest::getVariableOrder(int* level2var) const
 {
-  // Assume order has enough space
-  memcpy(level2var, order_level, sizeof(int) * (getNumVariables() + 1));
+  // Assume sufficient space has been allocated for order
+  level2var[0] = 0;
+  for (int i = 1; i < getNumVariables() + 1; i++) {
+    level2var[i] = var_order->getVarByLevel(i);
+  }
+}
+
+inline std::shared_ptr<const MEDDLY::variable_order>
+MEDDLY::expert_forest::variableOrder() const
+{
+  return var_order;
 }
 
 // ******************************************************************
@@ -1750,6 +1759,18 @@ MEDDLY::operation::shouldStaleCacheHitsBeDiscarded() const
 // *                                                                *
 // ******************************************************************
 
+inline bool
+MEDDLY::unary_operation::checkForestCompatibility() const
+{
+  if (resultType == FOREST) {
+    auto o1 = argF->variableOrder();
+    auto o2 = resF->variableOrder();
+    return o1->is_compatible_with(*o2);
+  }
+  else {
+    return true;
+  }
+}
 
 inline bool
 MEDDLY::unary_operation::matches(const MEDDLY::expert_forest* arg,
@@ -1763,7 +1784,14 @@ MEDDLY::unary_operation::matches(const MEDDLY::expert_forest* arg, opnd_type res
 {
   return (arg == argF && resultType == res);
 }
-
+inline void
+MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
+{
+  if (!checkForestCompatibility()) {
+    throw error(error::INVALID_OPERATION);
+  }
+  computeDDEdge(arg, res);
+}
 
 // ******************************************************************
 // *                                                                *
@@ -1785,6 +1813,23 @@ MEDDLY::binary_operation::operationCommutes()
   can_commute = (arg1F == arg2F);
 }
 
+inline bool
+MEDDLY::binary_operation::checkForestCompatibility() const
+{
+  auto o1 = arg1F->variableOrder();
+  auto o2 = arg2F->variableOrder();
+  auto o3 = resF->variableOrder();
+  return o1->is_compatible_with(*o2) && o1->is_compatible_with(*o3);
+}
+
+inline void
+MEDDLY::binary_operation::compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res)
+{
+  if (!checkForestCompatibility()) {
+    throw error(error::INVALID_OPERATION);
+  }
+  computeDDEdge(ar1, ar2, res);
+}
 
 // ******************************************************************
 // *                                                                *

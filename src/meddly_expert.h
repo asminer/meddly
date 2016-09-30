@@ -1366,10 +1366,10 @@ class MEDDLY::expert_forest: public forest
         Negative values are used for primed levels or variables.
     */
     int getVarByLevel(int level) const {
-        return order_level[level];
+      return level > 0 ? var_order->getVarByLevel(level) : -var_order->getVarByLevel(-level);
     }
     int getLevelByVar(int var) const {
-        return order_var[var];
+      return var > 0 ? var_order->getLevelByVar(var) : -var_order->getLevelByVar(-var);
     }
 
     int getNodeLevel(node_handle p) const;
@@ -1771,9 +1771,11 @@ class MEDDLY::expert_forest: public forest
     /*
      * Reorganize the variables in a certain order.
      */
-    virtual void reorderVariables(const int* level2var) = 0;
+    void reorderVariables(const int* level2var);
 
-    void getVariableOrder(int* level2var);
+    void getVariableOrder(int* level2var) const;
+
+    std::shared_ptr<const variable_order> variableOrder() const;
 
     /*
      * Swap the variables at level and level+1.
@@ -2024,12 +2026,7 @@ class MEDDLY::expert_forest: public forest
     /// Transparent value
     node_handle transparent;
 
-    // Variable order information organized by variable
-    int* raw_order_var;
-    int* order_var;
-    // Variable order information organized by level
-    int* raw_order_level;
-    int* order_level;
+    std::shared_ptr<const variable_order> var_order;
 
   private:
       /** Header information for each node.
@@ -3016,6 +3013,8 @@ class MEDDLY::operation {
     void allocEntryObjects(int no);
     void addEntryObject(int index);
 
+    virtual bool checkForestCompatibility() const = 0;
+
     friend class forest;
     friend void MEDDLY::destroyOpInternal(operation* op);
     friend void MEDDLY::cleanup();
@@ -3103,6 +3102,8 @@ class MEDDLY::unary_operation : public operation {
 
     virtual ~unary_operation();
 
+    virtual bool checkForestCompatibility() const;
+
   public:
     unary_operation(const unary_opname* code, int kl, int al,
       expert_forest* arg, expert_forest* res);
@@ -3117,6 +3118,7 @@ class MEDDLY::unary_operation : public operation {
 
     // high-level front-ends
     virtual void compute(const dd_edge &arg, dd_edge &res);
+    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
     virtual void compute(const dd_edge &arg, long &res);
     virtual void compute(const dd_edge &arg, double &res);
     virtual void compute(const dd_edge &arg, ct_object &c);
@@ -3147,6 +3149,9 @@ class MEDDLY::binary_operation : public operation {
     virtual ~binary_operation();
     void operationCommutes();
 
+    // Check if the variables orders of relevant forests are compatible
+    virtual bool checkForestCompatibility() const;
+
   public:
     binary_operation(const binary_opname* code, int kl, int al,
       expert_forest* arg1, expert_forest* arg2, expert_forest* res);
@@ -3155,7 +3160,8 @@ class MEDDLY::binary_operation : public operation {
       const expert_forest* res) const;
 
     // high-level front-end
-    virtual void compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res)
+    virtual void compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res);
+    virtual void computeDDEdge(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res)
       = 0;
 
     // low-level front ends
@@ -3261,24 +3267,24 @@ private:
     size_t operator()(const TransformKey &key) const;
   };
 
-  class SignatureComputer {
+  class SignatureGenerator {
   protected:
     global_rebuilder &_gr;
 
   public:
-    SignatureComputer(global_rebuilder& gr);
+    SignatureGenerator(global_rebuilder& gr);
     virtual void precompute() = 0;
     virtual int signature(node_handle p) = 0;
   };
 
-  class TopDownSignatureComputer: public SignatureComputer {
+  class TopDownSignatureGenerator: public SignatureGenerator {
   public:
-    TopDownSignatureComputer(global_rebuilder& gr);
+    TopDownSignatureGenerator(global_rebuilder& gr);
     void precompute() override;
     int signature(node_handle p) override;
   };
 
-  class BottomUpSignatureComputer: public SignatureComputer {
+  class BottomUpSignatureGenerator: public SignatureGenerator {
   private:
     std::unordered_map<node_handle, int> _cache_sig;
     std::unordered_map<node_handle, int> _cache_rec_sig;
@@ -3286,14 +3292,14 @@ private:
     int rec_signature(node_handle p);
 
   public:
-    BottomUpSignatureComputer(global_rebuilder& gr);
+    BottomUpSignatureGenerator(global_rebuilder& gr);
     void precompute() override;
     int signature(node_handle p) override;
   };
 
   std::unordered_map<RestrictKey, node_handle, RestrictKeyHasher> _computed_restrict;
   std::unordered_multimap<TransformKey, TransformEntry, TransformKeyHasher> _computed_transform;
-  SignatureComputer* _sc;
+  SignatureGenerator* _sg;
 
   expert_forest* _source;
   expert_forest* _target;
@@ -3314,7 +3320,7 @@ private:
   int check_dependency(node_handle p, int target_level) const;
 
 public:
-  friend class SignatureComputer;
+  friend class SignatureGenerator;
 
   global_rebuilder(expert_forest* source, expert_forest* target);
   ~global_rebuilder();

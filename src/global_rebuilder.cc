@@ -36,13 +36,13 @@ MEDDLY::global_rebuilder::global_rebuilder(expert_forest* source,
     throw error(error::DOMAIN_MISMATCH);
   }
 
-  _sc = new TopDownSignatureComputer(*this);
+  _sg = new TopDownSignatureGenerator(*this);
 //  _sc = new BottomUpSignatureComputer(*this);
-  _sc->precompute();
+  _sg->precompute();
 }
 
 MEDDLY::global_rebuilder::~global_rebuilder() {
-  delete _sc;
+  delete _sg;
 }
 
 int MEDDLY::global_rebuilder::check_dependency(node_handle p, int target_level) const
@@ -419,14 +419,14 @@ void MEDDLY::global_rebuilder::clearCache() {
 }
 
 int MEDDLY::global_rebuilder::signature(node_handle p) const {
-  return _sc->signature(p);
+  return _sg->signature(p);
 }
 
 double MEDDLY::global_rebuilder::hitRate() const {
   return (double) _hit / _total;
 }
 
-MEDDLY::global_rebuilder::SignatureComputer::SignatureComputer(
+MEDDLY::global_rebuilder::SignatureGenerator::SignatureGenerator(
     global_rebuilder& gr) :
     _gr(gr) {
 }
@@ -513,16 +513,16 @@ static int PRIMES[] = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43,
     7753, 7757, 7759, 7789, 7793, 7817, 7823, 7829, 7841, 7853, 7867, 7873,
     7877, 7879, 7883, 7901, 7907, 7919 };
 
-MEDDLY::global_rebuilder::TopDownSignatureComputer::TopDownSignatureComputer(
+MEDDLY::global_rebuilder::TopDownSignatureGenerator::TopDownSignatureGenerator(
     global_rebuilder& gr) :
-    SignatureComputer(gr) {
+    SignatureGenerator(gr) {
 }
 
-void MEDDLY::global_rebuilder::TopDownSignatureComputer::precompute()
+void MEDDLY::global_rebuilder::TopDownSignatureGenerator::precompute()
 {
 }
 
-int MEDDLY::global_rebuilder::TopDownSignatureComputer::signature(
+int MEDDLY::global_rebuilder::TopDownSignatureGenerator::signature(
     node_handle p) {
   expert_forest* source = _gr._source;
   if (source->getNumVariables() > 999) {
@@ -575,12 +575,12 @@ int MEDDLY::global_rebuilder::TopDownSignatureComputer::signature(
   return sig;
 }
 
-MEDDLY::global_rebuilder::BottomUpSignatureComputer::BottomUpSignatureComputer(global_rebuilder& gr)
-  : SignatureComputer(gr)
+MEDDLY::global_rebuilder::BottomUpSignatureGenerator::BottomUpSignatureGenerator(global_rebuilder& gr)
+  : SignatureGenerator(gr)
 {
 }
 
-void MEDDLY::global_rebuilder::BottomUpSignatureComputer::precompute()
+void MEDDLY::global_rebuilder::BottomUpSignatureGenerator::precompute()
 {
   expert_forest* source = _gr._source;
   int num_vars = source->getNumVariables();
@@ -598,7 +598,7 @@ void MEDDLY::global_rebuilder::BottomUpSignatureComputer::precompute()
   }
 }
 
-int MEDDLY::global_rebuilder::BottomUpSignatureComputer::signature(node_handle p)
+int MEDDLY::global_rebuilder::BottomUpSignatureGenerator::signature(node_handle p)
 {
   expert_forest* source = _gr._source;
   if (source->getNumVariables() > 999) {
@@ -621,7 +621,7 @@ int MEDDLY::global_rebuilder::BottomUpSignatureComputer::signature(node_handle p
   return sig;
 }
 
-int MEDDLY::global_rebuilder::BottomUpSignatureComputer::rec_signature(node_handle p)
+int MEDDLY::global_rebuilder::BottomUpSignatureGenerator::rec_signature(node_handle p)
 {
   expert_forest* source = _gr._source;
 

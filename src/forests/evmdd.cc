@@ -21,21 +21,11 @@
 
 #include "evmdd.h"
 
-#include "../reordering/reordering_factory.h"
-
 MEDDLY::evmdd_forest
 ::evmdd_forest(int dsl, domain* d, range_type t, edge_labeling ev, 
   const policies &p) : ev_forest(dsl, d, false, t, ev, p)
 {
   // anything to construct?
-}
-
-void MEDDLY::evmdd_forest::reorderVariables(const int* level2var)
-{
-  removeAllComputeTableEntries();
-
-  auto reordering = reordering_factory::create(getPolicies().reorder);
-  reordering->reorderVariables(this, level2var);
 }
 
 void MEDDLY::evmdd_forest::swapAdjacentVariables(int level)

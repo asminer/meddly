@@ -75,6 +75,66 @@ void MEDDLY::variable::setName(char *n)
 }
 
 // ----------------------------------------------------------------------
+// variable order
+// ----------------------------------------------------------------------
+
+MEDDLY::variable_order::variable_order(const int* order, int size) {
+  MEDDLY_DCASSERT(order[0] == 0);
+
+  level2var.assign(size + 1, 0);
+  var2level.assign(size + 1, 0);
+  for (int i = 1; i < size + 1; i++) {
+    level2var[i] = order[i];
+    var2level[order[i]] = i;
+  }
+}
+
+MEDDLY::variable_order::variable_order(const variable_order& order) {
+  MEDDLY_DCASSERT(order.getVarByLevel(0) == 0);
+
+  level2var.assign(order.level2var.begin(), order.level2var.end());
+  var2level.assign(order.var2level.begin(), order.var2level.end());
+}
+
+// Exchange two variables
+// The two variables don't have to be adjacent
+void MEDDLY::variable_order::exchange(int var1, int var2) {
+  MEDDLY_DCASSERT(var1 > 0 && var2 > 0);
+
+  level2var[var2level[var1]] = var2;
+  level2var[var2level[var2]] = var1;
+
+  int temp = var2level[var1];
+  var2level[var1] = var2level[var2];
+  var2level[var2] = temp;
+}
+
+bool MEDDLY::variable_order::is_compatible_with(const int* order) const {
+  MEDDLY_DCASSERT(order[0] == 0);
+  for (int i = 1; i < level2var.size(); i++) {
+    if (level2var[i] != order[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool MEDDLY::variable_order::is_compatible_with(const variable_order& order) const {
+  if (this == &order) {
+    return true;
+  }
+  if (level2var.size() != order.level2var.size()) {
+    return false;
+  }
+  for (int i = 0; i < level2var.size(); i++) {
+    if (level2var[i] != order.getVarByLevel(i)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// ----------------------------------------------------------------------
 // expert_varaiable
 // ----------------------------------------------------------------------
 
@@ -160,6 +220,15 @@ MEDDLY::domain::domain(variable** v, int N)
   free_list = dom_free[free_list];
   dom_list[my_index] = this;
   dom_free[my_index] = -1;
+
+  // Create the default variable order
+  int* defaultOrder = new int[N + 1];
+  for (int i = 0; i < N + 1; i++) {
+    defaultOrder[i] = i;
+  }
+  default_var_order = std::make_shared<variable_order>(defaultOrder, N);
+  delete[] defaultOrder;
+  var_orders.push_back(default_var_order);
 
 #ifdef DEBUG_CLEANUP
   fprintf(stderr, "Creating domain #%d\n", my_index);
@@ -376,7 +445,50 @@ void MEDDLY::domain::markForDeletion()
     if (forests[slot]) forests[slot]->markForDeletion();
 }
 
+std::shared_ptr<const MEDDLY::variable_order> MEDDLY::domain::makeVariableOrder(const int* order)
+{
+  cleanVariableOrders();
+  
+  for (const auto& p : var_orders) {
+    if (p->is_compatible_with(order)) {
+      return p;
+    }
+  }
 
+  std::shared_ptr<const variable_order> p = std::make_shared<variable_order>(order, getNumVariables());
+  var_orders.push_back(p);
+  return p;
+}
+
+std::shared_ptr<const MEDDLY::variable_order> MEDDLY::domain::makeVariableOrder(const variable_order& order)
+{
+  cleanVariableOrders();
+  
+  for (const auto& p : var_orders) {
+    if (p->is_compatible_with(order)) {
+      return p;
+    }
+  }
+
+  std::shared_ptr<const variable_order> p = std::make_shared<variable_order>(order);
+  var_orders.push_back(p);
+  return p;
+}
+
+void MEDDLY::domain::cleanVariableOrders()
+{
+  // var_orders[0] is reserved
+  size_t i = 1;
+  while (i < var_orders.size()) {
+    if (var_orders[i].use_count() == 1) {
+      var_orders[i] = var_orders.back();
+      var_orders.pop_back();
+    }
+    else {
+      i++;
+    }
+  }
+}
 
 // ----------------------------------------------------------------------
 // expert_domain
@@ -408,6 +520,16 @@ void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
     vars[i] = MEDDLY::createVariable(bounds[i-1], 0);
     ((expert_variable*)vars[i])->addToList(this);
   }
+
+  // Create the default variable order
+  var_orders.clear();
+  int* defaultOrder = new int[N + 1];
+  for (int i = 0; i < N + 1; i++) {
+    defaultOrder[i] = i;
+  }
+  default_var_order = std::make_shared<variable_order>(defaultOrder, N);
+  delete[] defaultOrder;
+  var_orders.push_back(default_var_order);
 }
 
 

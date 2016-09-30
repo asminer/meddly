@@ -32,7 +32,6 @@ class MEDDLY::mtmxd_forest : public mt_forest {
   public:
     mtmxd_forest(int dsl, domain* d, range_type t, const policies &p);
 
-    virtual void reorderVariables(const int* level2var);
     virtual void swapAdjacentVariables(int level);
     virtual void moveDownVariable(int high, int low);
     virtual void moveUpVariable(int low, int high);

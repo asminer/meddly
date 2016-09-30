@@ -12,11 +12,11 @@
 #include "lowest_inversion_reordering.h"
 #include "highest_inversion_reordering.h"
 #include "sink_down_reordering.h"
-#include "bubble_up_reordering.h"
+#include "bring_up_reordering.h"
 #include "lowest_cost_reordering.h"
 #include "lowest_memory_reordering.h"
 #include "random_reordering.h"
-#include "LARC_reordering.h"
+#include "larc_reordering.h"
 
 namespace MEDDLY {
 
@@ -38,8 +38,8 @@ inline std::unique_ptr<reordering_base> reordering_factory::create(forest::polic
     return std::unique_ptr<reordering_base>(new highest_inversion_reordering());
   case forest::policies::reordering_type::SINK_DOWN:
     return std::unique_ptr<reordering_base>(new sink_down_reordering());
-  case forest::policies::reordering_type::BUBBLE_UP:
-    return std::unique_ptr<reordering_base>(new bubble_up_reordering());
+  case forest::policies::reordering_type::BRING_UP:
+    return std::unique_ptr<reordering_base>(new bring_up_reordering());
   case forest::policies::reordering_type::LOWEST_COST:
     return std::unique_ptr<reordering_base>(new lowest_cost_reordering());
   case forest::policies::reordering_type::LOWEST_MEMORY:
@@ -47,7 +47,7 @@ inline std::unique_ptr<reordering_base> reordering_factory::create(forest::polic
   case forest::policies::reordering_type::RANDOM:
     return std::unique_ptr<reordering_base>(new random_reordering());
   case forest::policies::reordering_type::LARC:
-    return std::unique_ptr<reordering_base>(new LARC_reordering());
+    return std::unique_ptr<reordering_base>(new larc_reordering());
   default:
     throw error(error::INVALID_ARGUMENT);
   }

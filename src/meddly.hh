@@ -134,8 +134,8 @@ inline void MEDDLY::forest::policies::setSinkDown() {
   reorder = reordering_type::SINK_DOWN;
 }
 
-inline void MEDDLY::forest::policies::setBubbleUp() {
-  reorder = reordering_type::BUBBLE_UP;
+inline void MEDDLY::forest::policies::setBringUp() {
+  reorder = reordering_type::BRING_UP;
 }
 
 inline void MEDDLY::forest::policies::setLowestCost() {
@@ -415,6 +415,21 @@ inline int MEDDLY::variable::getBound(bool primed) const {
 }
 inline const char* MEDDLY::variable::getName() const { return name; }
 
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                         variable order class                         *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+inline int MEDDLY::variable_order::getVarByLevel(int level) const {
+  return level2var[level];
+}
+
+inline int MEDDLY::variable_order::getLevelByVar(int var) const {
+  return var2level[var];
+}
 
 // ******************************************************************
 // *                                                                *
@@ -441,6 +456,10 @@ inline bool MEDDLY::domain::hasForests() const { return forests; }
 
 inline bool MEDDLY::domain::isMarkedForDeletion() const {
   return is_marked_for_deletion;
+}
+
+inline std::shared_ptr<const MEDDLY::variable_order> MEDDLY::domain::makeDefaultVariableOrder() {
+  return default_var_order;
 }
 
 inline int MEDDLY::domain::ID() const { return my_index; }

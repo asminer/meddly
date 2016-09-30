@@ -65,7 +65,7 @@ MEDDLY::generic_binary_mdd ::showEntry(output &strm, const node_handle *data) co
        << "): " << long(data[2]) << "]";
 }
 
-void MEDDLY::generic_binary_mdd::compute(const dd_edge &a, const dd_edge &b, 
+void MEDDLY::generic_binary_mdd::computeDDEdge(const dd_edge &a, const dd_edge &b, 
   dd_edge &c)
 {
   node_handle cnode = compute(a.getNode(), b.getNode());
@@ -170,7 +170,7 @@ MEDDLY::generic_binary_mxd ::showEntry(output &strm, const node_handle *data) co
        << "): " << long(data[2]) << "]";
 }
 
-void MEDDLY::generic_binary_mxd::compute(const dd_edge &a, const dd_edge &b, 
+void MEDDLY::generic_binary_mxd::computeDDEdge(const dd_edge &a, const dd_edge &b, 
   dd_edge &c)
 {
   node_handle cnode = compute(a.getNode(), b.getNode());
@@ -346,7 +346,7 @@ MEDDLY::generic_binbylevel_mxd
 }
 
 void MEDDLY::generic_binbylevel_mxd
-::compute(const dd_edge& a, const dd_edge& b, dd_edge& c)
+::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
 {
   node_handle result = compute(
     resF->getDomain()->getNumVariables(), a.getNode(), b.getNode()
@@ -496,7 +496,7 @@ void MEDDLY::generic_binary_evplus
 }
 
 void MEDDLY::generic_binary_evplus
-::compute(const dd_edge& a, const dd_edge& b, dd_edge& c)
+::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
 {
   node_handle result;
   int ev, aev, bev;
@@ -598,7 +598,7 @@ void MEDDLY::generic_binary_evtimes
 }
 
 void MEDDLY::generic_binary_evtimes
-::compute(const dd_edge& a, const dd_edge& b, dd_edge& c)
+::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
 {
   node_handle result; 
   float ev, aev, bev;

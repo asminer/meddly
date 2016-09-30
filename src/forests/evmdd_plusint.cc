@@ -169,10 +169,7 @@ void MEDDLY::evmdd_plusint::swapAdjacentVariables(int level)
   }
 
   // Update the variable order
-  order_var[hvar] = level;
-  order_var[lvar] = level+1;
-  order_level[level + 1] = lvar;
-  order_level[level] = hvar;
+  std::const_pointer_cast<variable_order>(var_order)->exchange(hvar, lvar);
 
   node_handle** children = new node_handle*[hsize];
   int** sum_evs = new int*[hsize];

@@ -47,6 +47,8 @@
 #include <iostream>
 #endif
 
+#include <vector>
+#include <memory>
 #include <cassert>
 
 namespace MEDDLY {
@@ -100,6 +102,7 @@ namespace MEDDLY {
   class node_storage_style;
 
   class variable;
+  class variable_order;
   class domain;
   class dd_edge;
   class enumerator;
@@ -956,7 +959,7 @@ class MEDDLY::forest {
         // Sink down the "heaviest" variables
         SINK_DOWN,
         // Bubble up the "lightest" variables
-        BUBBLE_UP,
+        BRING_UP,
         // Always choose the swappabel inversion where the variable on the top
         // has the fewest associated nodes
         LOWEST_COST,
@@ -1021,7 +1024,7 @@ class MEDDLY::forest {
       void setLowestInversion();
       void setHighestInversion();
       void setSinkDown();
-      void setBubbleUp();
+      void setBringUp();
       void setLowestCost();
       void setLowestMemory();
       void setRandom();
@@ -1977,6 +1980,35 @@ class MEDDLY::variable {
 // ******************************************************************
 // *                                                                *
 // *                                                                *
+// *                      variable order class                      *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::variable_order {
+  protected:
+    std::vector<int> level2var;
+    std::vector<int> var2level;
+
+  public:
+    variable_order(const int* order, int size);
+    variable_order(const variable_order& order);
+
+    int getVarByLevel(int level) const;
+    int getLevelByVar(int var) const;
+
+    // Exchange two variables
+    // The two variables don't have to be adjacent
+    void exchange(int var1, int var2);
+
+    bool is_compatible_with(const int* order) const;
+    bool is_compatible_with(const variable_order& order) const;
+};
+
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
 // *                          domain class                          *
 // *                                                                *
 // *                                                                *
@@ -2091,6 +2123,10 @@ class MEDDLY::domain {
     forest** forests;
     int szForests;
 
+    // var_orders[0] is reserved to store the default variable order
+    std::vector<std::shared_ptr<const variable_order>> var_orders;
+    std::shared_ptr<const variable_order> default_var_order;
+
   private:
     bool is_marked_for_deletion;
 
@@ -2106,6 +2142,11 @@ class MEDDLY::domain {
   public:
     bool hasForests() const;
     bool isMarkedForDeletion() const;
+
+    std::shared_ptr<const variable_order> makeVariableOrder(const int* order);
+    std::shared_ptr<const variable_order> makeVariableOrder(const variable_order& order);
+    std::shared_ptr<const variable_order> makeDefaultVariableOrder();
+    void cleanVariableOrders();
 
   private:
     /// List of all domains; initialized in meddly.cc
