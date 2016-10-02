@@ -1,5 +1,5 @@
 
-// $Id: slot.cc 653 2016-02-17 00:00:51Z cjiang1209 $
+// $Id$
 
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
@@ -166,34 +166,46 @@ void show_node(const dd_edge& e)
   static_cast<expert_forest*>(e.getForest())->removeAllComputeTableEntries();
 
   cout << "# Nodes: " << e.getForest()->getCurrentNumNodes() << endl;
+  cout << "# Peak Nodes: " << e.getForest()->getPeakNumNodes() << endl;
 //  FILE_output out(stdout);
 //  e.show(out, 2);
   cout << "# States: " << e.getCardinality() << endl;
 }
 
-void execute_phase(const dd_edge& initial, const dd_edge& nsf, dd_edge& result)
+double reorder_time = 0;
+
+void execute_phase(const dd_edge& initial, const dd_edge& nsf, dd_edge& result, bool reorder)
 {
-  expert_forest* relation = static_cast<expert_forest*>(nsf.getForest());
-  int* rel_level2var = new int[relation->getNumVariables() + 1];
-  relation->getVariableOrder(rel_level2var);
-
   timer start;
-  start.note_time();
 
-  cout << "Reordering..." << endl;
+  if (reorder) {
+    start.note_time();
 
-  expert_forest* state = static_cast<expert_forest*>(initial.getForest());
+    cout << "Reordering..." << endl;
 
-  state->reorderVariables(rel_level2var);
-  delete[] rel_level2var;
+    initial.getForest()->resetPeakNumNodes();
 
-  start.note_time();
-  cout << "Time: "
-      << static_cast<double>(start.get_last_interval()) / 1000000.0 << " s"
-      << endl;
+    expert_forest* relation = static_cast<expert_forest*>(nsf.getForest());
+    int* rel_level2var = new int[relation->getNumVariables() + 1];
+    relation->getVariableOrder(rel_level2var);
+
+    expert_forest* state = static_cast<expert_forest*>(initial.getForest());
+
+    state->reorderVariables(rel_level2var);
+    delete[] rel_level2var;
+
+    start.note_time();
+    cout << "Time: "
+        << static_cast<double>(start.get_last_interval()) / 1000000.0 << " s"
+        << endl;
+    show_node(initial);
+
+    reorder_time += static_cast<double>(start.get_last_interval()) / 1000000.0;
+  }
 
   cout << "Computing the reachable states..." << endl;
-  show_node(initial);
+
+  initial.getForest()->resetPeakNumNodes();
 
   start.note_time();
   apply(REACHABLE_STATES_DFS, initial, nsf, result);
@@ -206,6 +218,13 @@ void execute_phase(const dd_edge& initial, const dd_edge& nsf, dd_edge& result)
 
 void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
 {
+  int num_phases = 3;
+  bool reorder = true;
+
+  if (N % num_phases != 0) {
+    exit(0);
+  }
+
   timer start;
 
   printf("+-------------------------------------------------+\n");
@@ -236,10 +255,12 @@ void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
   delete[] sizes;
 
   // Initialize forests
+  forest::policies p(false);
+  p.setSinkDown();
   forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
 
   std::vector<forest*> mxds;
-  for (int i = 0; i < N; i++) {
+  for (int i = 0; i < num_phases; i++) {
     forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
     mxds.push_back(mxd);
   }
@@ -253,7 +274,7 @@ void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
   //
   // Build initial state
   //
-  if (LOG) LOG->newPhase("Building initial state");
+  if (LOG) LOG->newPhase(mdd, "Building initial state");
   int* initial = new int[1 + N * 8];
   for (int i = N * 8; i; i--) initial[i] = 0;
   int* initLocal = initial;
@@ -267,32 +288,41 @@ void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
   //
   // Build next-state function
   //
-  if (LOG) LOG->newPhase("Building next-state function");
 
   std::vector<dd_edge> nsfs;
 
   start.note_time();
 
-  int* level2var = new int[N * 8 + 1];
-  for (int i = 0; i < N * 8 + 1; i++) {
-    level2var[i] = i;
-  }
-
-  std::rotate(level2var + 1, level2var + ((N - 1) * 8 + 1), level2var + (N * 8 + 1));
-
   char** itr = events;
-  for (int i = 0; i < N; i++) {
+  for (int i = 0; i < num_phases; i++) {
+    if (LOG) LOG->newPhase(mxds[i], "Building next-state function");
+
     dd_edge nsf(mxds[i]);
-    buildNextStateFunction(itr, 8, mxds[i], nsf, 2);
-    static_cast<expert_forest*>(mxds[i])->reorderVariables(level2var);
+    buildNextStateFunction(itr, N / num_phases * 8, mxds[i], nsf, 2);
     nsfs.push_back(nsf);
     show_node(nsf);
 
-    itr += 8;
-    std::rotate(level2var + 1, level2var + (8 + 1), level2var + (N * 8 + 1));
+    itr += (N / num_phases) * 8;
   }
 
-  delete[] level2var;
+  if (reorder) {
+    int* level2var = new int[N * 8 + 1];
+    for (int i = 0; i < N * 8 + 1; i++) {
+      level2var[i] = i;
+    }
+    std::rotate(level2var + 1, level2var + ((N - 1) * 8 + 1), level2var + (N * 8 + 1));
+
+    for (auto& nsf : nsfs) {
+      static_cast<expert_forest*>(nsf.getForest())->reorderVariables(level2var);
+      std::rotate(level2var + 1, level2var + ((N / num_phases) * 8 + 1), level2var + (N * 8 + 1));
+    }
+
+    static_cast<expert_forest*>(nsfs.back().getForest())->getVariableOrder(level2var);
+    static_cast<expert_forest*>(mdd)->reorderVariables(level2var);
+
+    delete[] level2var;
+  }
+
   for (int i = 0; i < 8 * N; i++) {
     delete[] events[i];
   }
@@ -307,7 +337,7 @@ void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
   //
   // Build reachable states
   //
-  if (LOG) LOG->newPhase("Building reachability set");
+  if (LOG) LOG->newPhase(mdd, "Building reachability set");
 
   int phase = 0;
 
@@ -315,12 +345,12 @@ void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
 
   // Fixed point
   int fp = 0;
-  while (fp != N) {
+  while (fp != num_phases) {
     cout << "-------------------------------------------------------------------" << endl;
     cout << "Phase " << phase << endl;
 
     dd_edge result = init_state;
-    execute_phase(init_state, nsfs[phase % N], result);
+    execute_phase(init_state, nsfs[phase % num_phases], result, reorder);
     phase++;
 
     if (result != init_state) {
@@ -338,6 +368,7 @@ void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
   printf("Done\n");
   printf("Reachability set construction took %.4e seconds\n",
           start.get_last_interval()/1000000.0);
+  printf("Reordering took %.4e seconds\n", reorder_time);
   fflush(stdout);
 
 #ifdef SHOW_STATES
@@ -362,7 +393,7 @@ void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
   // or, don't, and let cleanup() take care of it?
 
   if (LOG) {
-    LOG->newPhase("Cleanup");
+    LOG->newPhase(mdd, "Cleanup");
     MEDDLY::destroyDomain(d);
   }
 }
