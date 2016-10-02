@@ -33,6 +33,10 @@ class MEDDLY::evmdd_forest : public ev_forest {
     evmdd_forest(int dsl, domain* d, range_type t, edge_labeling ev, 
       const policies &p);
 
+    virtual void swapAdjacentVariables(int level);
+    virtual void moveDownVariable(int high, int low);
+    virtual void moveUpVariable(int low, int high);
+
   protected:
     template <class OPERATION, typename TYPE>
     inline void evaluateT(const dd_edge &f, const int* vlist, TYPE &val) const 
@@ -47,7 +51,7 @@ class MEDDLY::evmdd_forest : public ev_forest {
       f.getEdgeValue(val);
       while (!isTerminalNode(node)) {
         TYPE ev;
-        getDownPtr(node, vlist[getNodeLevel(node)], ev, node);
+        getDownPtr(node, vlist[getVarByLevel(getNodeLevel(node))], ev, node);
         val = (node) ? OPERATION::apply(val, ev) : ev;
       }
     }
@@ -134,7 +138,7 @@ namespace MEDDLY {
       }
 
       inline void createEdge(T &ev, node_handle &ed) {
-        return createEdge(K, 0, N, ev, ed);
+        createEdge(K, 0, N, ev, ed);
       }
 
       /**

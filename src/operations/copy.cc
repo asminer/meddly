@@ -47,7 +47,7 @@ class MEDDLY::copy_MT : public unary_operation {
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
-    virtual void compute(const dd_edge &arg, dd_edge &res);
+    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
   protected:
     virtual node_handle compute_r(node_handle a) = 0;
 
@@ -100,7 +100,7 @@ void MEDDLY::copy_MT::showEntry(output &strm, const node_handle* eD) const
   strm << "[" << getName() << "(" << long(eD[0]) << ") " << long(eD[1]) << "]";
 }
 
-void MEDDLY::copy_MT::compute(const dd_edge &arg, dd_edge &res)
+void MEDDLY::copy_MT::computeDDEdge(const dd_edge &arg, dd_edge &res)
 {
   node_handle result = compute_r(arg.getNode());
   res.set(result);
@@ -279,7 +279,7 @@ namespace MEDDLY {
         strm << "[" << getName() << "(" << long(entryData[0]) << ") <"
              << ev << ", " << long(entryData[2]) << ">]";
       }
-      virtual void compute(const dd_edge &arg, dd_edge &res) {
+      virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
         node_handle b;
         TYPE bev;
         if (argF->getReductionRule() == resF->getReductionRule()) {
@@ -465,7 +465,7 @@ namespace MEDDLY {
         strm  << "[" << getName() << "(<" << ev << "," << long(entryData[1])
               << "> " << long(entryData[2]) << "]"; 
       }
-      virtual void compute(const dd_edge &arg, dd_edge &res) {
+      virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
         TYPE ev;
         node_handle b;
         arg.getEdgeValue(ev);
@@ -653,7 +653,7 @@ namespace MEDDLY {
         strm  << "[" << getName() << "(<?," << long(entryData[0]) 
               << ">) <?," << long(entryData[1]) << ">]";
       }
-      virtual void compute(const dd_edge &arg, dd_edge &res) {
+      virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
         INTYPE av;
         node_handle bn;
         arg.getEdgeValue(av);
@@ -777,7 +777,7 @@ namespace MEDDLY {
         strm << "[" << getName() << "(<" << ev1 << "," << long(entryData[1])
              << "> <" << ev2 << "," << long(entryData[3]) << ">]";
       }
-      virtual void compute(const dd_edge &arg, dd_edge &res) {
+      virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
         INTYPE av;
         node_handle an, bn;
         OUTTYPE bv;

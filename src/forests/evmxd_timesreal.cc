@@ -53,7 +53,7 @@ void MEDDLY::evmxd_timesreal
   const float* terms, int N, dd_edge &e)
 {
   binary_operation* unionOp = getOperation(PLUS, this, this, this);
-  assert(unionOp);
+  MEDDLY_DCASSERT(unionOp);
   enlargeStatics(N);
   enlargeVariables(vlist, N, false);
   enlargeVariables(vplist, N, true);

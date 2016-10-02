@@ -314,7 +314,7 @@ void MEDDLY::unpacked_node::computeHash()
 #endif
   
   hash_stream s;
-  s.start(level);
+  s.start(0);
 
   if (ext_h_size) {
     s.push(extra_hashed, ext_h_size);

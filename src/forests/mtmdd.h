@@ -32,6 +32,12 @@ class MEDDLY::mtmdd_forest : public mt_forest {
   public:
     mtmdd_forest(int dsl, domain* d, range_type t, const policies &p);
 
+    virtual void swapAdjacentVariables(int level);
+    virtual void moveDownVariable(int high, int low);
+    virtual void moveUpVariable(int low, int high);
+
+    virtual void dynamicReorderVariables(int top, int bottom);
+
     virtual enumerator::iterator* makeFullIter() const 
     {
       return new mtmdd_iterator(this);
@@ -41,10 +47,14 @@ class MEDDLY::mtmdd_forest : public mt_forest {
     inline node_handle evaluateRaw(const dd_edge &f, const int* vlist) const {
       node_handle p = f.getNode();
       while (!isTerminalNode(p)) {
-        p = getDownPtr(p, vlist[getNodeLevel(p)]);
+    	int level = getNodeLevel(p);
+        p = getDownPtr(p, vlist[getVarByLevel(level)]);
       }
       return p;
     }
+
+    // Move the variable to the optimal level between top and bottom
+    void sifting(int var, int top, int bottom);
 
   protected:
     class mtmdd_iterator : public mt_iterator {

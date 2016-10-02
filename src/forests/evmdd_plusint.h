@@ -74,6 +74,8 @@ class MEDDLY::evmdd_plusint : public evmdd_forest {
       return new evpimdd_iterator(this);
     }
 
+    virtual void swapAdjacentVariables(int level);
+
   protected:
     virtual void normalize(unpacked_node &nb, int& ev) const;
     virtual void showEdgeValue(output &s, const void* edge) const;

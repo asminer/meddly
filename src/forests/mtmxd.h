@@ -32,6 +32,13 @@ class MEDDLY::mtmxd_forest : public mt_forest {
   public:
     mtmxd_forest(int dsl, domain* d, range_type t, const policies &p);
 
+    virtual void swapAdjacentVariables(int level);
+    virtual void moveDownVariable(int high, int low);
+    virtual void moveUpVariable(int low, int high);
+
+    virtual void dynamicReorderVariables(int top, int bottom);
+    void sifting(int var, int top, int bottom);
+
     virtual enumerator::iterator* makeFullIter() const 
     {
       return new mtmxd_iterator(this);
@@ -91,6 +98,14 @@ class MEDDLY::mtmxd_forest : public mt_forest {
         bool first(int k, node_handle p);
     };
 
+    void swapAdjacentVariablesByVarSwap(int level);
+    /** Return the root node after swapping the adjacent variables
+        in the MxD with the given root node.
+    */
+    node_handle swapAdjacentVariablesOf(node_handle node);
+
+    void swapAdjacentVariablesByLevelSwap(int level);
+    void swapAdjacentLevels(int level);
 };
 
 //
@@ -420,6 +435,9 @@ namespace MEDDLY {
         if (F->isIdentityReduced()) {
           return p;
         }
+//        if(p==F->getTransparentNode()){
+//        	return p;
+//        }
         // build an identity node by hand
         int lastV = F->getLevelSize(k);
         unpacked_node* nb = unpacked_node::newFull(F, k, lastV);

@@ -265,6 +265,10 @@ class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
       a->next = freebufs;
       freebufs = a;
     }
+
+    inline virtual bool checkForestCompatibility() const {
+      return true;
+    }
 };
 
 // ******************************************************************

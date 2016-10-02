@@ -21,6 +21,8 @@
 
 #include "evmdd_plusint.h"
 
+#include "../unique_table.h"
+
 // ******************************************************************
 // *                                                                *
 // *                                                                *
@@ -55,13 +57,34 @@ void MEDDLY::evmdd_plusint
   enlargeStatics(N);
   enlargeVariables(vlist, N, false);
 
+  int num_vars=getNumVariables();
+
+  // Create vlist following the mapping between variable and level
+  int** ordered_vlist=static_cast<int**>(malloc(N*sizeof(int*)+(num_vars+1)*N*sizeof(int)));
+  if(ordered_vlist==0){
+	  throw error(error::INSUFFICIENT_MEMORY);
+  }
+
+  ordered_vlist[0]=reinterpret_cast<int*>(&ordered_vlist[N]);
+  for(int i=1; i<N; i++) {
+	  ordered_vlist[i]=(ordered_vlist[i-1]+num_vars+1);
+  }
+  for(int i=0; i<=num_vars; i++) {
+	  int level=getLevelByVar(i);
+	  for(int j=0; j<N; j++) {
+		  ordered_vlist[j][level]=vlist[j][i];
+	  }
+  }
+
   evmdd_edgemaker<OP, int>
-  EM(this, vlist, terms, order, N, getDomain()->getNumVariables(), unionOp);
+  EM(this, ordered_vlist, terms, order, N, num_vars, unionOp);
 
   int ev;
   node_handle ep;
   EM.createEdge(ev, ep);
   e.set(ep, ev);
+
+  free(ordered_vlist);
 }
 
 void MEDDLY::evmdd_plusint
@@ -95,8 +118,137 @@ bool MEDDLY::evmdd_plusint::isIdentityEdge(const unpacked_node &nb, int i) const
   return isIdentityEdgeTempl<OP>(nb, i); 
 }
 
+void MEDDLY::evmdd_plusint::swapAdjacentVariables(int level)
+{
+  MEDDLY_DCASSERT(level >= 1);
+  MEDDLY_DCASSERT(level < getNumVariables());
 
+  int hvar = getVarByLevel(level + 1);  // The variable at the higher level
+  int lvar = getVarByLevel(level);    // The variable at the lower level
+  int hsize = getVariableSize(hvar);  // The size of the variable at the higher level
+  int lsize = getVariableSize(lvar);  // The size of the variable at the lower level
 
+  int hnum = unique->getNumEntries(hvar); // The number of nodes associated with the variable at the higher level
+  node_handle* hnodes = new node_handle[hnum];
+  unique->getItems(hvar, hnodes, hnum);
+
+  int lnum = unique->getNumEntries(lvar); // The nubmer of nodes associated with the variable at the lower level
+  node_handle* lnodes = new node_handle[lnum];
+  unique->getItems(lvar, lnodes, lnum);
+
+  //    printf("Before: Level %d : %d, Level %d : %d\n",
+  //            level+1, hnum,
+  //            level, lnum);
+
+  int num = 0;
+  // Renumber the level of nodes for the variable to be moved down
+  for (int i = 0; i < hnum; i++) {
+    unpacked_node* nr = unpacked_node::useUnpackedNode();
+    nr->initFromNode(this, hnodes[i], true);
+
+    MEDDLY_DCASSERT(nr->getLevel() == level + 1);
+    MEDDLY_DCASSERT(nr->getSize() == hsize);
+
+    for (int j = 0; j < hsize; j++) {
+      if (isLevelAbove(getNodeLevel(nr->d(j)), level - 1)) {
+        // Remove the nodes corresponding to functions that
+        // are independent of the variable to be moved up
+        hnodes[num++] = hnodes[i];
+        break;
+      }
+    }
+    unpacked_node::recycle(nr);
+
+    setNodeLevel(hnodes[i], level);
+  }
+  hnum = num;
+
+  // Renumber the level of nodes for the variable to be moved up
+  for (int i = 0; i < lnum; i++) {
+    setNodeLevel(lnodes[i], level + 1);
+  }
+
+  // Update the variable order
+  std::const_pointer_cast<variable_order>(var_order)->exchange(hvar, lvar);
+
+  node_handle** children = new node_handle*[hsize];
+  int** sum_evs = new int*[hsize];
+  for (int i = 0; i < hsize; i++) {
+    children[i] = new node_handle[lsize];
+    sum_evs[i] = new int[lsize];
+  }
+
+  // Process the rest of nodes for the variable to be moved down
+  for (int i = 0; i < hnum; i++) {
+    unpacked_node* high_nr = unpacked_node::useUnpackedNode();
+    high_nr->initFromNode(this, hnodes[i], true);
+
+    unpacked_node* high_nb = unpacked_node::newFull(this, level + 1, lsize);
+    for (int j = 0; j < hsize; j++) {
+      int ev1 = high_nr->ei(j);
+      MEDDLY_DCASSERT(ev1 >= 0);
+
+      if (isLevelAbove(level, getNodeLevel(high_nr->d(j)))) {
+        for (int k = 0; k < lsize; k++) {
+          children[j][k] = high_nr->d(j);
+          sum_evs[j][k] = ev1;
+        }
+      }
+      else {
+        unpacked_node* nr = unpacked_node::useUnpackedNode();
+        nr->initFromNode(this, high_nr->d(j), true);
+
+        MEDDLY_DCASSERT(nr->getSize() == lsize);
+        for (int k = 0; k < lsize; k++) {
+          children[j][k] = nr->d(k);
+
+          int ev2 = nr->ei(k);
+          MEDDLY_DCASSERT(ev2 >= 0);
+
+          sum_evs[j][k] = ev1 + ev2;
+        }
+        unpacked_node::recycle(nr);
+      }
+    }
+
+    for (int j = 0; j < lsize; j++) {
+      unpacked_node* low_nb = unpacked_node::newFull(this, level, hsize);
+      for (int k = 0; k < hsize; k++) {
+        low_nb->d_ref(k) = linkNode(children[k][j]);
+        low_nb->setEdge(k, sum_evs[k][j]);
+      }
+      node_handle node = 0;
+      int ev = 0;
+      createReducedNode(-1, low_nb, ev, node);
+      high_nb->d_ref(j) = node;
+      high_nb->setEdge(j, ev);
+    }
+
+    unpacked_node::recycle(high_nr);
+
+    // The reduced node of high_nb must be at level+1
+    // Assume the reduced node is at level
+    // Then high_nodes[i] corresponds to a function that
+    // is independent of the variable to be moved up
+    // This is a contradiction
+    modifyReducedNodeInPlace(high_nb, hnodes[i]);
+  }
+
+  for (int i = 0; i < hsize; i++) {
+    delete[] children[i];
+    delete[] sum_evs[i];
+  }
+  delete[] children;
+  delete[] sum_evs;
+
+  delete[] hnodes;
+  delete[] lnodes;
+
+  //    printf("After: Level %d : %d, Level %d : %d\n",
+  //            level+1, unique->getNumEntries(lvar),
+  //            level, unique->getNumEntries(hvar));
+  //    printf("#Node: %d\n", getCurrentNumNodes());
+}
 
 void MEDDLY::evmdd_plusint::normalize(unpacked_node &nb, int& ev) const
 {
@@ -284,23 +436,25 @@ void MEDDLY::evmdd_index_set::getElement(const dd_edge &a, int index, int* e)
   int p = a.getNode();
   unpacked_node* R = unpacked_node::useUnpackedNode();
   for (int k=getNumVariables(); k; k--) {
+	int var = getVarByLevel(k);
+
     MEDDLY_DCASSERT(index >= 0);
     if (p <= 0) {
-      e[k] = 0;
+      e[var] = 0;
       continue;
     }
     R->initFromNode(this, p, false);
     MEDDLY_DCASSERT(R->getLevel() <= k);
     if (R->getLevel() < k) {
-      e[k] = 0;
+      e[var] = 0;
       continue; 
     }
     // Find largest i such that edge value i is not greater than index
-    e[k] = 0;
+    e[var] = 0;
     p = 0;
     for (int z=R->getNNZs()-1; z>=0; z--) {
       if (index < R->ei(z)) continue;
-      e[k] = R->i(z);
+      e[var] = R->i(z);
       p = R->d(z);
       index -= R->ei(z);
       break;

@@ -74,6 +74,14 @@ class MEDDLY::base_evplus_mt : public specialized_operation {
     node_handle A_root;
     node_handle y_root;
     int L;
+
+    inline virtual bool checkForestCompatibility() const
+    {
+      auto o1 = fx->variableOrder();
+      auto o2 = fA->variableOrder();
+      auto o3 = fy->variableOrder();
+      return o1->is_compatible_with(*o2) && o1->is_compatible_with(*o3);
+    }
 };
 
 MEDDLY::base_evplus_mt::base_evplus_mt(const numerical_opname* code, 
@@ -98,6 +106,9 @@ MEDDLY::base_evplus_mt::~base_evplus_mt()
 
 void MEDDLY::base_evplus_mt::compute(double* y, const double* x)
 {
+  if (!checkForestCompatibility()) {
+    throw error(error::INVALID_OPERATION);
+  }
   compute_r(L, y, y_root, x, x_root, A_root);
 }
 
