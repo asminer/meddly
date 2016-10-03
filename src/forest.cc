@@ -27,6 +27,7 @@
 #include "unique_table.h"
 #include "hash_stream.h"
 #include "storage/bytepack.h"
+#include "reordering/reordering_factory.h"
 
 // for timestamps.
 // to do - check during configuration that these are present,
@@ -102,6 +103,8 @@ void MEDDLY::forest::policies::useDefaults(bool rel)
   // nodestor = SIMPLE_HEAP;
   // nodestor = SIMPLE_NONE;
   // nodestor = COMPACT_GRID;
+  reorder = reordering_type::SINK_DOWN;
+  swap = variable_swap_type::VAR;
 }
 
 // ******************************************************************
@@ -682,7 +685,10 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   a_last = a_next_shrink = 0;
   for (int i=0; i<8; i++) a_unused[i] = 0;
   a_lowest_index = 8;
-  
+
+  // Initialize variable order
+  var_order = d->makeDefaultVariableOrder();
+
   //
   // Initialize misc. protected data
   //
@@ -1025,7 +1031,7 @@ bool MEDDLY::expert_forest
   */
   if (flags & SHOW_DETAILS) {
     // node: was already written.
-    const variable* v = getDomain()->getVar(ABS(getNodeLevel(p)));
+    const variable* v = getDomain()->getVar(getVarByLevel(ABS(getNodeLevel(p))));
     if (v->getName()) {
       s << " level: " << v->getName();
     } else {
@@ -1055,12 +1061,12 @@ void MEDDLY::expert_forest
       if (getNodeLevel(list[i]) != k) continue;
 
       if (!printed) {
-        const variable* v = getDomain()->getVar(ABS(k));
+        const variable* v = getDomain()->getVar(getVarByLevel(ABS(k)));
         char primed = (k>0) ? ' ' : '\'';
         if (v->getName()) {
-          s << "Level: " << v->getName() << primed << '\n';
+          s << "Level: " << k << " Var: " << v->getName() << primed << '\n';
         } else {
-          s << "Level: " << ABS(k) << primed << '\n';
+          s << "Level: " << k << " Var: " << getVarByLevel(ABS(k)) << primed << '\n';
         }
         printed = true;
       }
@@ -1576,6 +1582,20 @@ void MEDDLY::expert_forest::readUnhashedHeader(input &s, unpacked_node &nb) cons
   throw error(error::TYPE_MISMATCH);
 }
 
+void MEDDLY::expert_forest::reorderVariables(const int* level2var)
+{
+  removeAllComputeTableEntries();
+
+  // Create a temporary variable order
+  // Support in-place update and avoid interfering other forests
+  var_order = std::make_shared<variable_order>(*var_order);
+
+  auto reordering = reordering_factory::create(getPolicies().reorder);
+  reordering->reorderVariables(this, level2var);
+
+  var_order = useDomain()->makeVariableOrder(*var_order);
+}
+
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // '                                                                '
 // '                                                                '
@@ -1635,9 +1655,9 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 #ifdef DEVELOPMENT_CODE
   unpacked_node* key = unpacked_node::newFromNode(this, p, false);
   key->computeHash();
-  if (unique->find(*key) != p) {
+  if (unique->find(*key, getVarByLevel(key->getLevel())) != p) {
     fprintf(stderr, "Error in deleteNode\nFind: %ld\np: %ld\n",
-      long(unique->find(*key)), long(p));
+      static_cast<long>(unique->find(*key, getVarByLevel(key->getLevel()))), static_cast<long>(p));
     FILE_output myout(stdout);
     dumpInternal(myout);
     MEDDLY_DCASSERT(false);
@@ -1710,9 +1730,9 @@ void MEDDLY::expert_forest::zombifyNode(node_handle p)
   unpacked_node* key = unpacked_node::newFromNode(this, p, false);
   key->computeHash();
   MEDDLY_DCASSERT(key->hash() == h);
-  if (unique->find(*key) != p) {
-    fprintf(stderr, "Fail: can't find reduced node %ld; got %ld\n", 
-      long(p), long(unique->find(*key)));
+  if (unique->find(*key, getVarByLevel(key->getLevel())) != p) {
+    fprintf(stderr, "Fail: can't find reduced node %ld; got %ld\n",
+      static_cast<long>(p), static_cast<long>(unique->find(*key, getVarByLevel(key->getLevel()))));
     FILE_output myerr(stderr);
     dumpInternal(myerr);
     MEDDLY_DCASSERT(false);
@@ -1961,7 +1981,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
   }
 
   // check for duplicates in unique table
-  node_handle q = unique->find(nb);
+  node_handle q = unique->find(nb, getVarByLevel(nb.getLevel()));
   if (q) {
     // unlink all downward pointers
     int rawsize = nb.isSparse() ? nb.getNNZs() : nb.getSize();
@@ -1993,14 +2013,14 @@ MEDDLY::node_handle MEDDLY::expert_forest
   // All of the work is in nodeMan now :^)
   address[p].offset = nodeMan->makeNode(p, nb, getNodeStorage());
 
-  // add to UT 
+  // add to UT
   unique->add(nb.hash(), p);
 
 #ifdef DEVELOPMENT_CODE
   unpacked_node* key = unpacked_node::newFromNode(this, p, false);
   key->computeHash();
   MEDDLY_DCASSERT(key->hash() == nb.hash());
-  node_handle f = unique->find(*key);
+  node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
   MEDDLY_DCASSERT(f == p);
   unpacked_node::recycle(key);
 #endif
@@ -2009,10 +2029,64 @@ MEDDLY::node_handle MEDDLY::expert_forest
   showNode(stdout, p, SHOW_DETAILS | SHOW_INDEX);
   printf("\n");
 #endif
+
   return p;
 }
 
+void MEDDLY::expert_forest::swapNodes(node_handle p, node_handle q)
+{
+  unique->remove(hashNode(p), p);
+  unique->remove(hashNode(q), q);
 
+  int pCount = getNodeInCount(p);
+  int qCount = getNodeInCount(q);
+
+  // Swap
+  node_header temp = address[p];
+  address[p] = address[q];
+  address[q] = temp;
+
+  // Do not change inCount
+  nodeMan->setCountOf(address[p].offset, pCount);
+  nodeMan->setCountOf(address[q].offset, qCount);
+
+  unique->add(hashNode(p), p);
+  unique->add(hashNode(q), q);
+}
+
+MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(unpacked_node* un, node_handle p)
+{
+  int count = getNodeInCount(p);
+
+  unique->remove(hashNode(p), p);
+  nodeMan->unlinkDownAndRecycle(address[p].offset);
+
+  un->computeHash();
+
+  address[p].level = un->getLevel();
+  address[p].offset = nodeMan->makeNode(p, *un, getNodeStorage());
+
+  nodeMan->setCountOf(address[p].offset, count);
+
+  unique->add(un->hash(), p);
+
+#ifdef DEVELOPMENT_CODE
+  unpacked_node* key = unpacked_node::newFromNode(this, p, false);
+  key->computeHash();
+  MEDDLY_DCASSERT(key->hash() == un->hash());
+  node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
+  MEDDLY_DCASSERT(f == p);
+  unpacked_node::recycle(key);
+#endif
+#ifdef DEBUG_CREATE_REDUCED
+  printf("Created node ");
+  showNode(stdout, p, SHOW_DETAILS | SHOW_INDEX);
+  printf("\n");
+#endif
+
+  unpacked_node::recycle(un);
+  return p;
+}
 
 void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
 {

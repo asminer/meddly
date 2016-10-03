@@ -249,7 +249,7 @@ class MEDDLY::holeman {
       if (last_slot + slots >= size) {
         // new size is 50% more than previous 
         node_address want_size = last_slot + slots;
-        node_handle new_size = MAX(size, want_size) * 1.5;  // TBD: WTF?
+        node_address new_size = MAX(size, want_size) * 1.5;  // TBD: WTF?
 
         resize(new_size);
       }
@@ -266,7 +266,7 @@ class MEDDLY::holeman {
     inline void releaseToEnd(int slots) {
       last_slot -= slots;
       if (size > min_size && (last_slot + 1) < size/2) {
-        node_handle new_size = size/2;
+        node_address new_size = size/2;
         while (new_size > (last_slot + 1) * 2) new_size /= 2;
         if (new_size < min_size) new_size = min_size;
         resize(new_size);

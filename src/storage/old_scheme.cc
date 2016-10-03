@@ -186,7 +186,7 @@ void MEDDLY::old_node_storage::collectGarbage(bool shrink)
   incCompactions(); // parent->changeStats().num_compactions++;
 
   if (shrink && size > min_size && last < size/2) {
-    node_handle new_size = size/2;
+    node_address new_size = size/2;
     while (new_size > min_size && new_size > last * 3) { new_size /= 2; }
     resize(new_size);
   }
@@ -684,7 +684,7 @@ void MEDDLY::old_node_storage::fillUnpacked(unpacked_node &nr, node_address addr
 unsigned MEDDLY::old_node_storage::hashNode(int level, node_address addr) const
 {
   hash_stream s;
-  s.start(level);
+  s.start(0);
 
   // Do the hashed header part, if any
 
@@ -1156,7 +1156,7 @@ MEDDLY::node_handle MEDDLY::old_node_storage::getHole(int slots)
   //
   if (last + slots >= size) {
     // new size is 50% more than previous (37.5% * 4 = 1.5 => 50% growth)
-    node_handle new_size = MAX( size, last + slots ) * 1.5;
+    node_address new_size = MAX( size, last + slots ) * 1.5;
 
     resize(new_size);
   }
@@ -1204,7 +1204,7 @@ void MEDDLY::old_node_storage::makeHole(node_handle addr, int slots)
     last -= slots;
     hole_slots -= slots;
     if (size > min_size && (last + 1) < size/2) {
-      node_handle new_size = size/2;
+      node_address new_size = size/2;
       while (new_size > (last + 1) * 2) new_size /= 2;
       if (new_size < min_size) new_size = min_size;
       resize(new_size);

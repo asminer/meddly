@@ -39,6 +39,9 @@
 #define MEDDLY_EXPERT_H
 
 #include <string.h>
+#include <unordered_map>
+#include <vector>
+#include <cstdint>
 
 // Flags for development version only. Significant reduction in performance.
 #ifdef DEVELOPMENT_CODE
@@ -124,9 +127,13 @@ namespace MEDDLY {
   class binary_operation;
   class specialized_operation;
 
+  class global_rebuilder;
+
   // classes defined elsewhere
   class base_table;
   class unique_table;
+
+  class reordering_base;
 
   // ******************************************************************
   // *                                                                *
@@ -1288,13 +1295,13 @@ class MEDDLY::node_storage {
 
 #ifdef INLINED_COUNT
     /// Get the number of incoming pointers to a node.
-    node_handle getCountOf(node_address addr) const;
+    int getCountOf(node_address addr) const;
     /// Set the number of incoming pointers to a node.
     void setCountOf(node_address addr, node_handle c);
     /// Increment (and return) the number of incoming pointers to a node.
-    node_handle incCountOf(node_address addr);
+    int incCountOf(node_address addr);
     /// Decrement (and return) the number of incoming pointers to a node.
-    node_handle decCountOf(node_address addr);
+    int decCountOf(node_address addr);
 #else
     /// Get the number of incoming pointers to a node.
     virtual node_handle getCountOf(node_address addr) const;
@@ -1377,7 +1384,7 @@ class MEDDLY::node_storage {
     forest::statset* stats;
 
     /// Count array, so that counts[addr] gives the count for node at addr.
-    node_handle* counts;
+    int* counts;
 
     /// Next array, so that nexts[addr] gives the next value for node at addr.
     node_handle* nexts;
@@ -1496,6 +1503,9 @@ class MEDDLY::expert_forest: public forest
         static void read(input &s, void* ptr);
     };
 
+
+    friend class reordering_base;
+
     /** Constructor.
       @param  dslot   slot used to store the forest, in the domain
       @param  d       domain to which this forest belongs to.
@@ -1578,9 +1588,16 @@ class MEDDLY::expert_forest: public forest
   // Node level information
   // --------------------------------------------------
   public:
-    /** Get the node's level as an integer.
-        Negative values are used for primed levels.
+    /**
+        Negative values are used for primed levels or variables.
     */
+    int getVarByLevel(int level) const {
+      return level > 0 ? var_order->getVarByLevel(level) : -var_order->getVarByLevel(-level);
+    }
+    int getLevelByVar(int var) const {
+      return var > 0 ? var_order->getLevelByVar(var) : -var_order->getLevelByVar(-var);
+    }
+
     int getNodeLevel(node_handle p) const;
     bool isPrimedNode(node_handle p) const;
     bool isUnprimedNode(node_handle p) const;
@@ -1591,6 +1608,8 @@ class MEDDLY::expert_forest: public forest
 
     /// The maximum size (number of indices) a node at this level can have
     int getLevelSize(int lh) const;
+    // The maximum size (number of indices) a variable can have.
+    int getVariableSize(int var) const;
 
   protected:
     void setNodeLevel(node_handle p, int level);
@@ -1883,6 +1902,19 @@ class MEDDLY::expert_forest: public forest
   void createReducedNode(int in, unpacked_node* nb, T& ev, node_handle& node);
 
 
+    /** Swap the content of nodes.
+        Do not update their parents and inCount.
+    */
+    void swapNodes(node_handle p, node_handle q);
+
+    /*
+     * Modify a node in place.
+     * Does not check if the modified node is duplicate or redundant.
+     * The level of the node may change.
+     * Keep the reference number and the cache count of the node.
+     */
+    node_handle modifyReducedNodeInPlace(unpacked_node* un, node_handle p);
+
   // ------------------------------------------------------------
   // virtual in the base class, but implemented here.
   // See meddly.h for descriptions of these methods.
@@ -1961,6 +1993,37 @@ class MEDDLY::expert_forest: public forest
         Default behavior - throw an "INVALID_FOREST" error.
     */
     virtual enumerator::iterator* makeFixedColumnIter() const;
+
+    /*
+     * Reorganize the variables in a certain order.
+     */
+    void reorderVariables(const int* level2var);
+
+    void getVariableOrder(int* level2var) const;
+
+    std::shared_ptr<const variable_order> variableOrder() const;
+
+    /*
+     * Swap the variables at level and level+1.
+     * This method should only be called by expert_domain.
+     */
+    virtual void swapAdjacentVariables(int level) = 0;
+
+    /*
+     * Move the variable at level high down to level low.
+     * The variables from level low to level high-1 will be moved one level up.
+     */
+    virtual void moveDownVariable(int high, int low) = 0;
+
+    /*
+     * Move the variable at level low up to level high.
+     * The variables from level low+1 to level high will be moved one level down.
+     */
+    virtual void moveUpVariable(int low, int high) = 0;
+
+    virtual void dynamicReorderVariables(int top, int bottom) {
+    	throw error(error::NOT_IMPLEMENTED);
+    }
 
     /** Show a terminal node.
           @param  s       Stream to write to.
@@ -2115,6 +2178,7 @@ class MEDDLY::expert_forest: public forest
   // inlined helpers for this class
 
     bool isTimeToGc() const;
+
     /// Increment and return the in-count for a node
     // long incInCount(node_handle p);
     /// Decrement and return the in-count for a node
@@ -2134,6 +2198,7 @@ class MEDDLY::expert_forest: public forest
     void moveNodeOffset(node_handle node, node_address old_addr, node_address new_addr);
     friend class MEDDLY::node_storage;
 
+    friend class MEDDLY::global_rebuilder;
 
   // ------------------------------------------------------------
   // helpers for this class
@@ -2187,6 +2252,7 @@ class MEDDLY::expert_forest: public forest
     /// Transparent value
     node_handle transparent;
 
+    std::shared_ptr<const variable_order> var_order;
 
   private:
       /** Header information for each node.
@@ -3173,6 +3239,8 @@ class MEDDLY::operation {
     void allocEntryObjects(int no);
     void addEntryObject(int index);
 
+    virtual bool checkForestCompatibility() const = 0;
+
     friend class forest;
     friend void MEDDLY::destroyOpInternal(operation* op);
     friend void MEDDLY::cleanup();
@@ -3260,6 +3328,8 @@ class MEDDLY::unary_operation : public operation {
 
     virtual ~unary_operation();
 
+    virtual bool checkForestCompatibility() const;
+
   public:
     unary_operation(const unary_opname* code, int kl, int al,
       expert_forest* arg, expert_forest* res);
@@ -3274,6 +3344,7 @@ class MEDDLY::unary_operation : public operation {
 
     // high-level front-ends
     virtual void compute(const dd_edge &arg, dd_edge &res);
+    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
     virtual void compute(const dd_edge &arg, long &res);
     virtual void compute(const dd_edge &arg, double &res);
     virtual void compute(const dd_edge &arg, ct_object &c);
@@ -3304,6 +3375,9 @@ class MEDDLY::binary_operation : public operation {
     virtual ~binary_operation();
     void operationCommutes();
 
+    // Check if the variables orders of relevant forests are compatible
+    virtual bool checkForestCompatibility() const;
+
   public:
     binary_operation(const binary_opname* code, int kl, int al,
       expert_forest* arg1, expert_forest* arg2, expert_forest* res);
@@ -3312,7 +3386,8 @@ class MEDDLY::binary_operation : public operation {
       const expert_forest* res) const;
 
     // high-level front-end
-    virtual void compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res)
+    virtual void compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res);
+    virtual void computeDDEdge(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res)
       = 0;
 
     // low-level front ends
@@ -3366,6 +3441,120 @@ class MEDDLY::specialized_operation : public operation {
     virtual void compute(double* y, const double* x);
 };
 
+// ******************************************************************
+// *                                                                *
+// *                    global_rebuilder  class                     *
+// *                                                                *
+// ******************************************************************
+
+/** Rebuild the dd_edge from the source forest in the target forest.
+    The source and target forests may have different variable orders.
+    While rebuilding, extra nodes may be created in the source forest
+    because of the restrict operation.
+*/
+
+class MEDDLY::global_rebuilder {
+private:
+  struct RestrictKey {
+    node_handle p;
+    int var;
+    int idx;
+
+    bool operator==(const RestrictKey &other) const {
+      return (p == other.p && var == other.var && idx == other.idx);
+    }
+  };
+
+  struct RestrictKeyHasher {
+    size_t operator()(const RestrictKey &key) const;
+  };
+
+  struct TransformKey {
+    int sig;
+//    int var;
+
+    bool operator==(const TransformKey &other) const {
+      return sig == other.sig;
+//      return (sig == other.sig && var == other.var);
+    }
+  };
+
+  struct TransformEntry {
+    // Partial assignment
+    std::vector<int> pa;
+    node_handle p;
+
+    bool operator==(const TransformEntry &other) const {
+      return p == other.p;
+    }
+  };
+
+  struct TransformKeyHasher {
+    size_t operator()(const TransformKey &key) const;
+  };
+
+  class SignatureGenerator {
+  protected:
+    global_rebuilder &_gr;
+
+  public:
+    SignatureGenerator(global_rebuilder& gr);
+    virtual void precompute() = 0;
+    virtual int signature(node_handle p) = 0;
+  };
+
+  class TopDownSignatureGenerator: public SignatureGenerator {
+  public:
+    TopDownSignatureGenerator(global_rebuilder& gr);
+    void precompute() override;
+    int signature(node_handle p) override;
+  };
+
+  class BottomUpSignatureGenerator: public SignatureGenerator {
+  private:
+    std::unordered_map<node_handle, int> _cache_sig;
+    std::unordered_map<node_handle, int> _cache_rec_sig;
+
+    int rec_signature(node_handle p);
+
+  public:
+    BottomUpSignatureGenerator(global_rebuilder& gr);
+    void precompute() override;
+    int signature(node_handle p) override;
+  };
+
+  std::unordered_map<RestrictKey, node_handle, RestrictKeyHasher> _computed_restrict;
+  std::unordered_multimap<TransformKey, TransformEntry, TransformKeyHasher> _computed_transform;
+  SignatureGenerator* _sg;
+
+  expert_forest* _source;
+  expert_forest* _target;
+  node_handle _root;
+  int _hit;
+  int _total;
+
+  node_handle transform(node_handle p, int target_level, std::vector<int>& pa);
+  node_handle restrict(node_handle p, std::vector<int>& pa);
+
+  bool restrict_exist(node_handle p, const std::vector<int>& pa, int start,
+      node_handle& result);
+  int signature(node_handle p) const;
+
+  // Return the top variable in the sub-order of the target variable order
+  // starting from 0 to target_level
+  // such that the given decision diagram depends on it.
+  int check_dependency(node_handle p, int target_level) const;
+
+public:
+  friend class SignatureGenerator;
+
+  global_rebuilder(expert_forest* source, expert_forest* target);
+  ~global_rebuilder();
+
+  dd_edge rebuild(const dd_edge& e);
+  void clearCache();
+  double hitRate() const;
+};
 
 #include "meddly_expert.hh"
 #endif

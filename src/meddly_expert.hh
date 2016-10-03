@@ -554,7 +554,7 @@ MEDDLY::node_storage::getCountOf(node_address addr) const
 }
 
 inline void
-MEDDLY::node_storage::setCountOf(node_address addr, MEDDLY::node_handle c)
+MEDDLY::node_storage::setCountOf(node_address addr, int c)
 {
   MEDDLY_DCASSERT(counts);
   MEDDLY_DCASSERT(addr > 0);
@@ -959,12 +959,19 @@ inline int
 MEDDLY::expert_forest::getLevelSize(int lh) const
 {
   MEDDLY_DCASSERT(isValidLevel(lh));
-  if (lh < 0) {
-    return getDomain()->getVariableBound(-lh, true);
+  int var=getVarByLevel(lh);
+  if (var < 0) {
+    return getDomain()->getVariableBound(-var, true);
   }
   else {
-    return getDomain()->getVariableBound(lh, false);
+    return getDomain()->getVariableBound(var, false);
   }
+}
+
+inline int
+MEDDLY::expert_forest::getVariableSize(int var) const
+{
+  return getDomain()->getVariableBound(var, false);
 }
 
 inline void
@@ -1106,7 +1113,6 @@ MEDDLY::expert_forest::uncacheNode(MEDDLY::node_handle p)
     deleteNode(p);
   }
 }
-
 
 // --------------------------------------------------
 // Marking and unmarking nodes
@@ -1386,6 +1392,22 @@ MEDDLY::expert_forest::moveNodeOffset(MEDDLY::node_handle node, node_address old
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(old_addr == address[node].offset);
   address[node].offset = new_addr;
+}
+
+inline void
+MEDDLY::expert_forest::getVariableOrder(int* level2var) const
+{
+  // Assume sufficient space has been allocated for order
+  level2var[0] = 0;
+  for (int i = 1; i < getNumVariables() + 1; i++) {
+    level2var[i] = var_order->getVarByLevel(i);
+  }
+}
+
+inline std::shared_ptr<const MEDDLY::variable_order>
+MEDDLY::expert_forest::variableOrder() const
+{
+  return var_order;
 }
 
 // ******************************************************************
@@ -1807,7 +1829,6 @@ MEDDLY::operation::shouldStaleCacheHitsBeDiscarded() const
 // *                                                                *
 // ******************************************************************
 
-
 inline bool
 MEDDLY::unary_operation::matches(const MEDDLY::expert_forest* arg,
     const MEDDLY::expert_forest* res) const
@@ -1821,6 +1842,27 @@ MEDDLY::unary_operation::matches(const MEDDLY::expert_forest* arg, opnd_type res
   return (arg == argF && resultType == res);
 }
 
+inline bool
+MEDDLY::unary_operation::checkForestCompatibility() const
+{
+  if (resultType == FOREST) {
+    auto o1 = argF->variableOrder();
+    auto o2 = resF->variableOrder();
+    return o1->is_compatible_with(*o2);
+  }
+  else {
+    return true;
+  }
+}
+
+inline void
+MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
+{
+  if (!checkForestCompatibility()) {
+    throw error(error::INVALID_OPERATION);
+  }
+  computeDDEdge(arg, res);
+}
 
 // ******************************************************************
 // *                                                                *
@@ -1842,6 +1884,23 @@ MEDDLY::binary_operation::operationCommutes()
   can_commute = (arg1F == arg2F);
 }
 
+inline bool
+MEDDLY::binary_operation::checkForestCompatibility() const
+{
+  auto o1 = arg1F->variableOrder();
+  auto o2 = arg2F->variableOrder();
+  auto o3 = resF->variableOrder();
+  return o1->is_compatible_with(*o2) && o1->is_compatible_with(*o3);
+}
+
+inline void
+MEDDLY::binary_operation::compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res)
+{
+  if (!checkForestCompatibility()) {
+    throw error(error::INVALID_OPERATION);
+  }
+  computeDDEdge(ar1, ar2, res);
+}
 
 // ******************************************************************
 // *                                                                *

@@ -33,6 +33,7 @@ libmeddly_la_SOURCES = \
   compute_table.cc \
   unique_table.cc \
   loggers.cc \
+  global_rebuilder.cc \
   \
   forests/mt.cc \
   forests/mtmdd.cc \

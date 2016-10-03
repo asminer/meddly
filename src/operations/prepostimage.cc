@@ -91,7 +91,7 @@ class MEDDLY::image_op : public binary_operation {
       CT->addEntry();
       return c;
     }
-    virtual void compute(const dd_edge& a, const dd_edge& b, dd_edge &c);
+    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
     virtual node_handle compute(node_handle a, node_handle b);
   protected:
     binary_operation* accumulateOp;
@@ -140,7 +140,7 @@ MEDDLY::image_op::showEntry(output &strm, const node_handle* data) const
 }
 
 void MEDDLY::image_op
-::compute(const dd_edge &a, const dd_edge &b, dd_edge &c)
+::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c)
 {
   node_handle cnode;
   if (a.getForest() == argV) {

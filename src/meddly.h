@@ -47,6 +47,8 @@
 #include <iostream>
 #endif
 
+#include <vector>
+#include <memory>
 #include <cassert>
 
 namespace MEDDLY {
@@ -101,6 +103,7 @@ namespace MEDDLY {
   class node_storage_style;
 
   class variable;
+  class variable_order;
   class domain;
   class dd_edge;
   class enumerator;
@@ -945,12 +948,47 @@ class MEDDLY::forest {
           PESSIMISTIC_DELETION
       };
 
+      // Supported variable swap strategies.
+      // Work for relations only.
+      enum class variable_swap_type {
+    	  // Swap adjacent variables in one go.
+    	  VAR,
+    	  // Swap adjacent variables through swapping levels 4 time.
+    	  // Do not work for fully-identity reduced relations.
+    	  LEVEL
+      };
+
+      enum class reordering_type {
+        // Always choose the lowest swappable inversion
+        LOWEST_INVERSION,
+        // Always choose the highest swappable inversion
+        HIGHEST_INVERSION,
+        // Sink down the "heaviest" variables
+        SINK_DOWN,
+        // Bubble up the "lightest" variables
+        BRING_UP,
+        // Always choose the swappabel inversion where the variable on the top
+        // has the fewest associated nodes
+        LOWEST_COST,
+        // Always choose the swappable inversion that will result in
+        // the lowest memory consumption
+        LOWEST_MEMORY,
+        // Choose the swappable inversion randomly
+        RANDOM,
+        // Always choose the swappable inversion with the lowest average reference count
+        LARC
+      };
+
       /// Defaults: how may we store nodes for all levels in the forest.
       node_storage_flags storage_flags;
       /// Default reduction rule for all levels in the forest.
       reduction_rule reduction;
       /// Default deletion policy for all levels in the forest.
       node_deletion deletion;
+      // Default variable reorder strategy.
+      reordering_type reorder;
+      // Default variable swap strategy.
+      variable_swap_type swap;
 
       /// Backend storage mechanism for nodes.
       const node_storage_style* nodestor;
@@ -989,6 +1027,18 @@ class MEDDLY::forest {
       void setNeverDelete();
       void setOptimistic();
       void setPessimistic();
+
+      void setLowestInversion();
+      void setHighestInversion();
+      void setSinkDown();
+      void setBringUp();
+      void setLowestCost();
+      void setLowestMemory();
+      void setRandom();
+      void setLARC();
+
+      void setVarSwap();
+      void setLevelSwap();
     }; // end of struct policies
 
     /// Collection of various stats for performance measurement
@@ -1219,6 +1269,7 @@ class MEDDLY::forest {
 
     /// Returns the current policies used by this forest.
     const policies& getPolicies() const;
+    policies& getPolicies();
 
     /// Returns the reduction rule used by this forest.
     policies::reduction_rule getReductionRule() const;
@@ -1231,6 +1282,13 @@ class MEDDLY::forest {
 
     /// Returns true if the forest is identity reduced.
     bool isIdentityReduced() const;
+
+    inline bool isVarSwap() const {
+    	return deflt.swap == policies::variable_swap_type::VAR;
+    }
+    inline bool isLevelSwap() const {
+    	return deflt.swap == policies::variable_swap_type::LEVEL;
+    }
 
     /// Returns the storage mechanism used by this forest.
     node_storage_flags getNodeStorage() const;
@@ -1277,11 +1335,23 @@ class MEDDLY::forest {
                     in the forest.
     */
     long getPeakNumNodes() const;
+    
+    /** Set the peak number of nodes to the number current number of nodes.
+    */
+    inline void resetPeakNumNodes() {
+      stats.peak_active = stats.active_nodes;
+    }
 
     /** Get the peak memory used by the forest.
         @return     Peak total memory used by the forest.
     */
     long getPeakMemoryUsed() const;
+	
+	/** Set the peak memory to the current memory.
+	*/
+	inline void resetPeakMemoryUsed() {
+	  stats.peak_memory_used = stats.memory_used;
+	}
 
     /** Get the peak memory allocated by the forest.
         @return     Peak memory allocated by the forest.
@@ -1916,6 +1986,35 @@ class MEDDLY::variable {
 // ******************************************************************
 // *                                                                *
 // *                                                                *
+// *                      variable order class                      *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::variable_order {
+  protected:
+    std::vector<int> level2var;
+    std::vector<int> var2level;
+
+  public:
+    variable_order(const int* order, int size);
+    variable_order(const variable_order& order);
+
+    int getVarByLevel(int level) const;
+    int getLevelByVar(int var) const;
+
+    // Exchange two variables
+    // The two variables don't have to be adjacent
+    void exchange(int var1, int var2);
+
+    bool is_compatible_with(const int* order) const;
+    bool is_compatible_with(const variable_order& order) const;
+};
+
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
 // *                          domain class                          *
 // *                                                                *
 // *                                                                *
@@ -2027,6 +2126,10 @@ class MEDDLY::domain {
     variable** vars;
     int nVars;
 
+    // var_orders[0] is reserved to store the default variable order
+    std::vector<std::shared_ptr<const variable_order>> var_orders;
+    std::shared_ptr<const variable_order> default_var_order;
+
   private:
     bool is_marked_for_deletion;
     forest** forests;
@@ -2044,6 +2147,11 @@ class MEDDLY::domain {
   public:
     bool hasForests() const;
     bool isMarkedForDeletion() const;
+
+    std::shared_ptr<const variable_order> makeVariableOrder(const int* order);
+    std::shared_ptr<const variable_order> makeVariableOrder(const variable_order& order);
+    std::shared_ptr<const variable_order> makeDefaultVariableOrder();
+    void cleanVariableOrders();
 
   private:
     /// List of all domains; initialized in meddly.cc

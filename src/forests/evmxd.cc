@@ -27,3 +27,23 @@ MEDDLY::evmxd_forest
 {
   // anything to construct?
 }
+
+void MEDDLY::evmxd_forest::reorderVariables(const int* level2var)
+{
+	throw error(error::NOT_IMPLEMENTED);
+}
+
+void MEDDLY::evmxd_forest::swapAdjacentVariables(int level)
+{
+	throw error(error::NOT_IMPLEMENTED);
+}
+
+void MEDDLY::evmxd_forest::moveDownVariable(int high, int low)
+{
+	throw error(error::NOT_IMPLEMENTED);
+}
+
+void MEDDLY::evmxd_forest::moveUpVariable(int low, int high)
+{
+	throw error(error::NOT_IMPLEMENTED);
+}

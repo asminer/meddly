@@ -300,7 +300,7 @@ void playForests(Parser *parser
             /*
              *
              */
-            if(tempTimeToWait >= (10000 / speedFactorValue))
+            if(tempTimeToWait >= (100000 / speedFactorValue))
             {
                 oldSeconds = newSeconds;
 

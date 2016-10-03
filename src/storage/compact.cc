@@ -541,7 +541,7 @@ void MEDDLY::compact_storage
 unsigned MEDDLY::compact_storage::hashNode(int level, node_address addr) const
 {
   hash_stream s;
-  s.start(level);
+  s.start(0);
 
   // Do the hashed header part, if any
   if (hashedBytes) {

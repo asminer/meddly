@@ -27,3 +27,18 @@ MEDDLY::evmdd_forest
 {
   // anything to construct?
 }
+
+void MEDDLY::evmdd_forest::swapAdjacentVariables(int level)
+{
+	throw error(error::NOT_IMPLEMENTED);
+}
+
+void MEDDLY::evmdd_forest::moveDownVariable(int high, int low)
+{
+	throw error(error::NOT_IMPLEMENTED);
+}
+
+void MEDDLY::evmdd_forest::moveUpVariable(int low, int high)
+{
+	throw error(error::NOT_IMPLEMENTED);
+}
