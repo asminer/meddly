@@ -469,6 +469,17 @@ MEDDLY::expert_forest::node_header::makeZombie()
 
 // ******************************************************************
 // *                                                                *
+// *              inlined memory_manager_style methods              *
+// *                                                                *
+// ******************************************************************
+
+inline const char* MEDDLY::memory_manager_style::getName() const
+{
+  return name;
+}
+
+// ******************************************************************
+// *                                                                *
 // *             inlined  memory_manager::stats methods             *
 // *                                                                *
 // ******************************************************************
@@ -535,6 +546,17 @@ inline void MEDDLY::memory_manager::decMemAlloc(long b)
 {
   global_mem.decMemAlloc(b);
   my_mem.decMemAlloc(b);
+}
+
+// ******************************************************************
+// *                                                                *
+// *               inlined node_storage_style methods               *
+// *                                                                *
+// ******************************************************************
+
+inline const char* MEDDLY::node_storage_style::getName() const
+{
+  return name;
 }
 
 // ******************************************************************

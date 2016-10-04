@@ -1128,7 +1128,8 @@ void MEDDLY::simple_storage::verifyStats() const
 // ******************************************************************
 
 
-MEDDLY::simple_grid_style::simple_grid_style()
+MEDDLY::simple_grid_style::simple_grid_style(const char* n)
+ : node_storage_style(n)
 {
 }
 
@@ -1151,7 +1152,8 @@ MEDDLY::node_storage* MEDDLY::simple_grid_style
 // ******************************************************************
 
 
-MEDDLY::simple_array_style::simple_array_style()
+MEDDLY::simple_array_style::simple_array_style(const char* n)
+ : node_storage_style(n)
 {
 }
 
@@ -1174,7 +1176,8 @@ MEDDLY::node_storage* MEDDLY::simple_array_style
 // ******************************************************************
 
 
-MEDDLY::simple_heap_style::simple_heap_style()
+MEDDLY::simple_heap_style::simple_heap_style(const char* n)
+ : node_storage_style(n)
 {
 }
 
@@ -1197,7 +1200,8 @@ MEDDLY::node_storage* MEDDLY::simple_heap_style
 // ******************************************************************
 
 
-MEDDLY::simple_none_style::simple_none_style()
+MEDDLY::simple_none_style::simple_none_style(const char* n)
+ : node_storage_style(n)
 {
 }
 

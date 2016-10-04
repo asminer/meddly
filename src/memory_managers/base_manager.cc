@@ -27,8 +27,9 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::memory_manager_style::memory_manager_style()
+MEDDLY::memory_manager_style::memory_manager_style(const char* n)
 {
+  name = n;
 }
 
 MEDDLY::memory_manager_style::~memory_manager_style()

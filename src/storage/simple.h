@@ -345,7 +345,7 @@ class MEDDLY::simple_storage : public node_storage {
 
 class MEDDLY::simple_grid_style : public node_storage_style {
   public:
-    simple_grid_style();
+    simple_grid_style(const char* n);
     virtual ~simple_grid_style();
     virtual node_storage* createForForest(expert_forest* f) const;
 };
@@ -361,7 +361,7 @@ class MEDDLY::simple_grid_style : public node_storage_style {
 /// Simple storage using a new array of lists mechanism for holes.
 class MEDDLY::simple_array_style : public node_storage_style {
   public:
-    simple_array_style();
+    simple_array_style(const char* n);
     virtual ~simple_array_style();
     virtual node_storage* createForForest(expert_forest* f) const;
 };
@@ -380,7 +380,7 @@ class MEDDLY::simple_array_style : public node_storage_style {
 
 class MEDDLY::simple_heap_style : public node_storage_style {
   public:
-    simple_heap_style();
+    simple_heap_style(const char* n);
     virtual ~simple_heap_style();
     virtual node_storage* createForForest(expert_forest* f) const;
 };
@@ -398,7 +398,7 @@ class MEDDLY::simple_heap_style : public node_storage_style {
 */
 class MEDDLY::simple_none_style : public node_storage_style {
   public:
-    simple_none_style();
+    simple_none_style(const char* n);
     virtual ~simple_none_style();
     virtual node_storage* createForForest(expert_forest* f) const;
 };

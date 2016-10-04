@@ -362,8 +362,9 @@ void MEDDLY::unpacked_node::computeHash()
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::node_storage_style::node_storage_style()
+MEDDLY::node_storage_style::node_storage_style(const char* n)
 {
+  name = n;
 }
 
 MEDDLY::node_storage_style::~node_storage_style()

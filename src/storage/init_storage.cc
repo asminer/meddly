@@ -58,14 +58,14 @@ MEDDLY::storage_initializer::storage_initializer(initializer_list *p)
 
 void MEDDLY::storage_initializer::setup()
 {
-  CLASSIC_STORAGE = (classic = new old_node_storage_style);
+  CLASSIC_STORAGE = (classic = new old_node_storage_style("CLASSIC_STORAGE"));
 
-  SIMPLE_GRID  = (simple_grid  = new simple_grid_style);
-  SIMPLE_ARRAY = (simple_array = new simple_array_style);
-  SIMPLE_HEAP  = (simple_heap  = new simple_heap_style);
-  SIMPLE_NONE  = (simple_none  = new simple_none_style);
+  SIMPLE_GRID  = (simple_grid  = new simple_grid_style("SIMPLE_GRID"));
+  SIMPLE_ARRAY = (simple_array = new simple_array_style("SIMPLE_ARRAY"));
+  SIMPLE_HEAP  = (simple_heap  = new simple_heap_style("SIMPLE_HEAP"));
+  SIMPLE_NONE  = (simple_none  = new simple_none_style("SIMPLE_NONE"));
 
-  COMPACT_GRID = (compact_grid = new compact_grid_style);
+  COMPACT_GRID = (compact_grid = new compact_grid_style("COMPACT_GRID"));
 }
 
 void MEDDLY::storage_initializer::cleanup()

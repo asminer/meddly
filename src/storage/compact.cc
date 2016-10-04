@@ -881,7 +881,8 @@ MEDDLY::compact_storage::allocNode(int slots, node_handle tail, bool clear)
 // ******************************************************************
 
 
-MEDDLY::compact_grid_style::compact_grid_style()
+MEDDLY::compact_grid_style::compact_grid_style(const char* n)
+ : node_storage_style(n)
 {
 }
 

@@ -1357,7 +1357,7 @@ class MEDDLY::compact_storage : public node_storage {
 
 class MEDDLY::compact_grid_style : public node_storage_style {
   public:
-    compact_grid_style();
+    compact_grid_style(const char* n);
     virtual ~compact_grid_style();
     virtual node_storage* createForForest(expert_forest* f) const;
 };

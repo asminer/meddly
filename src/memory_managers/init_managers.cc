@@ -44,7 +44,7 @@ void MEDDLY::memman_initializer::setup()
 {
   memory_manager::resetGlobalStats();
   
-  ORIGINAL_GRID = (original_grid  = new orig_grid_style);
+  ORIGINAL_GRID = (original_grid  = new orig_grid_style("ORIGINAL_GRID"));
 }
 
 void MEDDLY::memman_initializer::cleanup()

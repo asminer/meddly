@@ -20,11 +20,150 @@
 */
 
 #include <iostream>
+#include <fstream>
+#include <map>  // for symbol table
+#include "meddly.h"
 #include "meddly_expert.h"
 
-const int MAX_ID = 32;
+// #define DEBUG_PARSER
 
-int usage(const char* what)
+const int MAX_ID = 32;
+const char* filename;
+int lineno;
+
+struct handle_size {
+  unsigned long handle;
+  size_t size;
+
+  handle_size(unsigned long h, size_t s) {
+    handle = h;
+    size = s;
+  }
+};
+
+void showFileLine(std::ostream &out)
+{
+  if (filename)   out << filename;
+  else            out << "standard input";
+  out << " near line " << lineno;
+}
+
+void runError(const char* ident, const char* what)
+{
+  using namespace std;
+  cerr << "Runtime error in ";
+  showFileLine(cerr);
+  cerr << ":\n\tIdentifier `" << ident << "' " << what << "\n";
+}
+
+void parseError(char c, const char* what)
+{
+  using namespace std;
+  cerr << "Parse error in ";
+  showFileLine(cerr);
+  cerr << ":\n\t";
+  if (c) cerr << "`" << c << "' ";
+  cerr << what << "\n";
+  exit(1);
+}
+
+char skipWhite(std::istream &in)
+{
+  bool comment = false;
+  for (;;) {
+    char c = in.get();
+    if (!in) return ' ';
+    switch (c) {
+      case '\n': 
+            comment = false;
+            lineno++;
+            continue;
+
+      case ' ': continue;
+      case '\t': continue;
+      case '\r': continue;
+
+      case '#': 
+            comment = true;
+            continue;
+
+      default:
+            if (comment) continue;
+            return c;
+    };
+  }
+}
+
+void readIdent(std::istream &in, char* buffer, int buflen)
+{
+  buflen--;
+  buffer[0] = skipWhite(in);
+  if (!in) {
+    parseError(0, "identifier expected");
+  }
+  if ( ('_' != buffer[0]) &&
+       ('a' > buffer[0] || 'z' < buffer[0]) &&
+       ('A' > buffer[0] || 'Z' < buffer[0]) ) {
+    parseError(0, "identifier expected");
+  }
+  int i = 1;
+  for (;;) {
+    char c = in.get();
+    if (!in) break;
+    if (i<buflen) {
+      buffer[i] = c;
+      i++;
+    }
+    if ('_' == c) continue;
+    if (('0' <= c) && ('9' >= c)) continue;
+    if (('a' <= c) && ('z' >= c)) continue;
+    if (('A' <= c) && ('Z' >= c)) continue;
+    in.unget();
+    break;
+  }
+  i--;
+  buffer[i] = 0;
+#ifdef DEBUG_PARSER
+  std::cerr << "Consumed identifier `" << buffer << "'\n";
+#endif
+}
+
+size_t readNumber(std::istream &in)
+{
+  size_t num = 0;
+  char c = skipWhite(in);
+  if (!in) {
+    parseError(0, "number expected");
+  }
+  if (('0' > c) || ('9' < c)) {
+    parseError(0, "number expected");
+  }
+  num = c - '0';
+  for (;;) {
+    c = in.get();
+    if (!in) break;
+    if (('0' > c) || ('9' < c)) {
+      in.unget();
+      break;
+    }
+    num *= 10;
+    num += c - '0';
+  }
+#ifdef DEBUG_PARSER
+  std::cerr << "Consumed number " << num << "\n";
+#endif
+  return num;
+}
+
+void matchChar(std::istream &in, char key)
+{
+  char c = skipWhite(in);
+  if (c!=key) {
+    parseError(key, "expected");
+  }
+}
+
+int usage(const char* who)
 {
   /* Strip leading directory, if any: */
   const char* name = who;
@@ -34,12 +173,18 @@ int usage(const char* what)
     }
   }
 
+  using namespace std;
+
   cerr << "\nUsage: " << name << " [options] script script ...\n\n";
   cerr << "Run testing scripts.  If none specified, read scripts from standard input.\n";
   cerr << "Possible options:\n";
-  cerr << "\t-mm=MANAGER:     set the memory manager to the specified style.\n";
+  cerr << "\t-m MANAGER:     set the memory manager to the specified style.\n";
   cerr << "\t                 Possible managers:\n";
-  cerr << "\t                     TBD\n";
+  cerr << "\t                     NONE  (test input file only)\n";
+  cerr << "\t                     ORIGINAL_GRID\n";
+
+  // TBD - granularity
+
   cerr << "\nScripts:\n";
   cerr << "Scripts are free-form text files, with the following statements:\n";
   cerr << "    # for comments (ignore until end of line)\n";
@@ -54,5 +199,212 @@ int usage(const char* what)
   cerr << "are used.\n\n";
 
   return 0;
+}
+
+int main(int argc, const char** argv)
+{
+  char buffer[MAX_ID+1];
+  const char* program = argv[0];
+
+  const MEDDLY::memory_manager_style* mst = 0;  // set a default
+  unsigned char granularity = 4;  // make this an option
+  unsigned char minsize = 0;      // make this an option
+
+  for (; argc>1; argv++, argc--) {
+
+    if (strcmp("--", argv[1]) == 0) {
+      argv++;
+      argc--;
+      break;
+    }
+
+    if (strcmp("-m", argv[1]) == 0) {
+      argv++;
+      argc--;
+
+      if (0==argv[1]) {
+        std::cerr << "Missing argument to -m\n";
+        return usage(program)+1;
+      }
+      
+      if (0==strcmp("NONE", argv[1])) {
+        mst = 0;
+        continue;
+      }
+      // DON'T continue for these,
+      // so we can check for errors
+      if (0==strcmp("ORIGINAL_GRID", argv[1])) {
+        mst = MEDDLY::ORIGINAL_GRID;
+      } 
+      // else if ... else if ...
+      else {
+        std::cerr << "Unknown memory manager " << argv[1] << "\n";
+        return usage(program)+1;
+      }
+
+      if (0==mst) {
+        std::cerr << "Hmm, memory manager style " << argv[1] << " does not seem to be\n";
+        std::cerr << "    available; falling back to NONE\n";
+      }
+      continue;
+    }
+
+    if ('-' == argv[1][0]) {
+      std::cerr << "Unknown switch: " << argv[1] << "\n";
+      return usage(program)+1;
+    }
+
+    break;
+
+  } // for switches
+
+  //
+  // Build memory manager
+  //
+
+  MEDDLY::memory_manager* Mmm = 0;
+
+  if (mst) {
+    std::cout << "Using memory manager of type " << mst->getName() << "\n";
+    Mmm = mst->initManager(granularity, minsize);
+    if (0==Mmm) {
+      std::cout << "  error, couldn't create memory manager with\n";
+      std::cout << "      granularity = " << granularity << "\n";
+      std::cout << "      minsize = " << minsize << "\n";
+      return 0;
+    }
+  }
+
+  //
+  // We have the memory manager; start parsing!
+  //
+
+  
+
+  std::istream* infile = 0;
+  std::map <std::string, handle_size> symbols;
+
+  lineno = 1;
+  if (argc < 2) {
+    filename = 0;
+#ifdef DEBUG_PARSER
+    std::cerr << "Reading from standard input\n";
+#endif
+    infile = &std::cin;
+  } else {
+    filename = argv[1];
+    argv++;
+    argc--;
+#ifdef DEBUG_PARSER
+    std::cerr << "Reading from " << filename << "\n";
+#endif
+    infile = new std::ifstream(filename);
+    if (! *infile) {
+      std::cerr << "Couldn't open file `" << filename << "'\n";
+    }
+  }
+
+  for (;;) {
+    char c = skipWhite(*infile);
+    size_t slots;
+    if (' ' == c) {
+      if (filename) delete infile;
+      // open next file, if any
+      if (argc > 1) {
+        filename = argv[1];
+        lineno = 1;
+        argv++;
+        argc--;
+#ifdef DEBUG_PARSER
+        std::cerr << "Reading from " << filename << "\n";
+#endif
+        infile = new std::ifstream(filename);
+        if (! *infile) {
+          std::cerr << "Couldn't open file `" << filename << "'\n";
+        }
+        continue;
+      } else {
+        break;
+      }
+    }
+
+    switch (c) {
+      case '+':
+#ifdef DEBUG_PARSER
+          std::cerr << "Parsing + statement\n";
+#endif
+          readIdent(*infile, buffer, MAX_ID);
+          slots = readNumber(*infile);
+          matchChar(*infile, ';');
+          if (symbols.count(buffer)) {
+            runError(buffer, " is already active; ignoring");
+          } else {
+            unsigned long handle = 0;
+            if (Mmm) {
+              handle = Mmm->requestChunk(slots);
+              if (0==handle) {
+                runError(buffer, "could not be allocated");
+              }
+            }
+            symbols.insert(std::pair<std::string, handle_size>
+              (buffer, handle_size(handle, slots))
+            );
+          }
+          continue;
+
+      case '-':
+#ifdef DEBUG_PARSER
+          std::cerr << "Parsing - statement\n";
+#endif
+          readIdent(*infile, buffer, MAX_ID);
+          matchChar(*infile, ';');
+          if (!symbols.count(buffer)) {
+            runError(buffer, " is not active; ignoring");
+          } else {
+            std::map<std::string, handle_size>::iterator pos = symbols.find(buffer);
+            if (pos == symbols.end()) {
+              std::cerr << "Internal error - can't find item " << buffer << "\n";
+              exit(2);
+            }
+            if (Mmm) {
+              Mmm->recycleChunk(pos->second.handle, pos->second.size);
+            }
+            symbols.erase(pos);
+          }
+          continue;
+
+      case '?':
+#ifdef DEBUG_PARSER
+          std::cerr << "Parsing ? statement\n";
+#endif
+          matchChar(*infile, ';');
+
+          std::cout << "Current active identifiers, as of ";
+          showFileLine(std::cout);
+          std::cout << ":\n";
+          for (std::map<std::string, handle_size>::iterator pos= symbols.begin();
+               pos != symbols.end();
+               ++pos)
+          {
+            std::cout << "\t" << pos->first;
+            std::cout << "    size: " << pos->second.size;
+            std::cout << "    handle: " << pos->second.handle << "\n";
+          }
+
+          if (Mmm) {
+            std::cout << "Memory manager internals:\n";
+            MEDDLY::ostream_output out(std::cout);
+            Mmm->dumpInternal(out);
+          }
+          continue;
+
+      default:
+          parseError(c, "is not a valid statement");
+
+    }
+  }
+#ifdef DEBUG_PARSER
+  std::cerr << "End of input\n";
+#endif
 }
 

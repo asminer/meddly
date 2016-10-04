@@ -867,8 +867,9 @@ class MEDDLY::initializer_list {
     Implementation is in memory_managers/base_manager.cc
 */
 class MEDDLY::memory_manager_style {
+    const char* name; 
   public:
-    memory_manager_style();
+    memory_manager_style(const char* n);
     virtual ~memory_manager_style();
 
     /**
@@ -900,6 +901,10 @@ class MEDDLY::memory_manager_style {
     virtual memory_manager* initManager(unsigned char granularity, 
       unsigned char minsize) const = 0;
 
+
+    const char* getName() const;
+
+  // TBD - const char* for name?
 };
 
 // ******************************************************************
@@ -1089,8 +1094,9 @@ class MEDDLY::memory_manager {
 
 */
 class MEDDLY::node_storage_style {
+    const char* name;
   public:
-    node_storage_style();
+    node_storage_style(const char* n);
     virtual ~node_storage_style();
 
 
@@ -1103,6 +1109,7 @@ class MEDDLY::node_storage_style {
     */
     virtual node_storage* createForForest(expert_forest* f) const = 0;
 
+    const char* getName() const;
 };
 
 // ******************************************************************

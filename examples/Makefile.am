@@ -31,7 +31,8 @@ rebuild_mdd \
 test_reorder_mtmxd \
 test_reorder_evmdd \
 rubiks_cube_phase \
-slot_phase
+slot_phase \
+test_memory
 
 # test_user_operation 
 
@@ -119,4 +120,7 @@ slot_phase_LDADD = ../src/libmeddly.la
 
 # test_user_operation_SOURCES = test_user_operation.cc
 # test_user_operation_LDADD = ../src/libmeddly.la
+
+test_memory_SOURCES = test_memory.cc
+test_memory_LDADD = ../src/libmeddly.la
 

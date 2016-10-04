@@ -276,8 +276,8 @@ namespace MEDDLY {
 
     data_alloc = new_alloc;
     data = new_data;
+    return true;
   }
-
 
 }; // namespace MEDDLY
 
@@ -289,7 +289,8 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::orig_grid_style::orig_grid_style()
+MEDDLY::orig_grid_style::orig_grid_style(const char* n)
+: memory_manager_style(n)
 {
 }
 

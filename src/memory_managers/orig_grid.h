@@ -37,7 +37,7 @@ namespace MEDDLY {
 
 class MEDDLY::orig_grid_style : public memory_manager_style {
   public:
-    orig_grid_style();
+    orig_grid_style(const char* n);
     virtual ~orig_grid_style();
 
     virtual memory_manager* initManager(unsigned char granularity,

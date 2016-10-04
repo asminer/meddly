@@ -51,7 +51,8 @@ MEDDLY::node_handle MEDDLY::old_node_storage::verify_hole_slots;
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::old_node_storage_style::old_node_storage_style() : node_storage_style()
+MEDDLY::old_node_storage_style::old_node_storage_style(const char* n)
+: node_storage_style(n)
 {
 }
 
