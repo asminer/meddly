@@ -7,7 +7,7 @@
 
 /*
  * This functions will add all lines to the scene for sets.
- * This will go through the entire forest and add the lines centered on the 0 axis.
+ * This will go through the entire forest and add the lines left aligned, starting on the 0 axis.
  *
  */
 void drawSet(QGraphicsScene *forestScene
@@ -24,12 +24,14 @@ void drawSet(QGraphicsScene *forestScene
 
     for (int var = 0; var < g; ++var)
     {
-        endLine = ( (forest->at(var))/2 ) /reductionValue;
-        startLine = 0 - endLine;
+        //endLine = ( (forest->at(var))/2 ) /reductionValue;
+        //startLine = 0 - endLine;
+
+        endLine = forest->at(var) /reductionValue;
 
         y = var *penHeight;
 
-        forestScene->addLine(startLine
+        forestScene->addLine(0//startLine
                              , y
                              , endLine
                              , y
@@ -40,7 +42,7 @@ void drawSet(QGraphicsScene *forestScene
 
 /*
  * This functions will add all lines to the scene for relations.
- * This will go through the entire forest and add the lines centered on the 0 axis.
+ * This will go through the entire forest and add the lines left aligned, starting on the 0 axis.
  *
  */
 void drawRelation(QGraphicsScene *forestScene
@@ -64,23 +66,26 @@ void drawRelation(QGraphicsScene *forestScene
     for (int var = 0; var < middle; ++var)
     {
         //Positive lines
-        endLine = ( (forest->at(middle + var + 1))/2 ) / reductionValue;
-        startLine = 0 - endLine;
+        endLine = (forest->at(middle + var + 1)) / reductionValue;
+        //startLine = 0 - endLine;
 
         posYlevel = ((var*2)+2) *penHeight;
 
-        forestScene->addLine(startLine
+        forestScene->addLine(0//startLine
                              , posYlevel
                              , endLine
                              , posYlevel
                              , green);
 
         //Negitive lines
-        endLine = ( (forest->at(middle - var -1))/2 ) / reductionValue;
-        startLine = 0 - endLine;
+        //endLine = ( (forest->at(middle - var -1))/2 ) / reductionValue;
+        //startLine = 0 - endLine;
+
+        endLine = forest->at(middle - var -1) / reductionValue;
+
         negYlevel = ((var*2)+1) * penHeight;
 
-        forestScene->addLine(startLine
+        forestScene->addLine(0 //startLine
                              , negYlevel
                              , endLine
                              , negYlevel
@@ -144,28 +149,28 @@ void drawUpdates(QVector<int> *&forest1
             //forest1Scene->removeItem(line);
             //delete line;
 
-            int endline = forest1->at(indexOfForest)/2;
+            int endline = forest1->at(indexOfForest);
             endline = endline/f1HorizontalReductionValue;
-            int startline = 0 - endline;
+//            int startline = 0 - endline;
 
             //If you try to grab a 0 to 0 line then the
             //pointer will be null. This checks to see if
-            //you tried to pull an empty l  from the
+            //you tried to pull an empty line from the
             //scene. If you did then it will create a new line
             //to add to the appropriate spot.
             if(lineI == NULL)
             {
                 green.setWidth(f1PenHeight);
-                forest1Scene->addLine(startline
+                forest1Scene->addLine(0//startline
                                       , y
                                       , endline
                                       , y
                                       , green
                                       );
-            }else//This changes the start and stop place
-                //of the line object.
+            }else//This changes the positionof the
+                //end of the line object.
             {
-                lineI->setLine(startline
+                lineI->setLine(0 //startline
                                , y
                                , endline
                                , y);
@@ -189,12 +194,12 @@ void drawUpdates(QVector<int> *&forest1
                 forest1Scene->removeItem(line);
                 delete line;
 
-                int endline = forest1->at(indexOfForest)/2;
+                int endline = forest1->at(indexOfForest);
                 endline = endline/f1HorizontalReductionValue;
-                int startline = 0 - endline;
+                //int startline = 0 - endline;
 
                 green.setWidth(f1PenHeight);
-                forest1Scene->addLine(startline
+                forest1Scene->addLine(0//startline
                                       , y
                                       , endline
                                       , y
