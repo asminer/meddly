@@ -146,12 +146,10 @@ void drawUpdates(QVector<int> *&forest1
             y = indexOfForest * f1PenHeight;
             line = forest1Scene->itemAt(x, y, QTransform());
             lineI = qgraphicsitem_cast<QGraphicsLineItem*>(line);
-            //forest1Scene->removeItem(line);
-            //delete line;
 
             int endline = forest1->at(indexOfForest);
             endline = endline/f1HorizontalReductionValue;
-//            int startline = 0 - endline;
+//          int startline = 0 - endline;
 
             //If you try to grab a 0 to 0 line then the
             //pointer will be null. This checks to see if
@@ -216,12 +214,12 @@ void drawUpdates(QVector<int> *&forest1
                 forest1Scene->removeItem(line);
                 delete line;
 
-                int endline = forest1->at(indexOfForest)/2;
+                int endline = forest1->at(indexOfForest);
                 endline = endline/f1HorizontalReductionValue;
-                int startline = 0 - endline;
+                //int startline = 0 - endline;
 
                 darkgreen.setWidth(f1PenHeight);
-                forest1Scene->addLine(startline
+                forest1Scene->addLine(0 //startline
                                       , y
                                       , endline
                                       , y
@@ -244,12 +242,12 @@ void drawUpdates(QVector<int> *&forest1
             forest2Scene->removeItem(line);
             delete line;
 
-            int endline = forest2->at(indexOfForest)/2;
+            int endline = forest2->at(indexOfForest);
             endline = endline/f2HorizontalReductionValue;
-            int startline = 0 - endline;
+            //int startline = 0 - endline;
 
             green.setWidth(f2PenHeight);
-            forest2Scene->addLine(startline
+            forest2Scene->addLine(0 //startline
                                   , y
                                   , endline
                                   , y
@@ -276,12 +274,12 @@ void drawUpdates(QVector<int> *&forest1
                 forest2Scene->removeItem(line);
                 delete line;
 
-                int endline = forest2->at(indexOfForest)/2;
+                int endline = forest2->at(indexOfForest);
                 endline = endline/f2HorizontalReductionValue;
-                int startline = 0 - endline;
+                //int startline = 0 - endline;
 
                 green.setWidth(f2PenHeight);
-                forest2Scene->addLine(startline
+                forest2Scene->addLine(0 //startline
                                       , y
                                       , endline
                                       , y
@@ -298,12 +296,12 @@ void drawUpdates(QVector<int> *&forest1
                 forest2Scene->removeItem(line);
                 delete line;
 
-                int endline = forest2->at(indexOfForest)/2;
+                int endline = forest2->at(indexOfForest);
                 endline = endline/f2HorizontalReductionValue;
-                int startline = 0 - endline;
+                //int startline = 0 - endline;
 
                 darkgreen.setWidth(f2PenHeight);
-                forest2Scene->addLine(startline
+                forest2Scene->addLine(0 //startline
                                       , y
                                       , endline
                                       , y
