@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>742</width>
-    <height>705</height>
+    <height>722</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,6 +19,12 @@
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
        <widget class="QPushButton" name="hideForest1">
+        <property name="minimumSize">
+         <size>
+          <width>121</width>
+          <height>0</height>
+         </size>
+        </property>
         <property name="text">
          <string>Hide Forest 1</string>
         </property>
@@ -55,7 +61,7 @@
       <item>
        <widget class="QDial" name="speedFactorDial">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
@@ -99,7 +105,7 @@
       <item>
        <widget class="QSlider" name="f1HorizontalLinearReduction">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
@@ -128,7 +134,7 @@
       <item>
        <widget class="QSlider" name="f2HorizontalLinearReduction">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>

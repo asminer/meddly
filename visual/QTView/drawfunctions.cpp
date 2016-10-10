@@ -16,13 +16,16 @@ void drawSet(QGraphicsScene *forestScene
 {
     QPen green(Qt::green);
     green.setWidth(penHeight);
-    int startLine = 0;
+    //int startLine = 0;
     int endLine = 0;
 
-    int g = forest->size();
+    int top = forest->size() -1;
     int y = 0;
 
-    for (int var = 0; var < g; ++var)
+    drawRulers(forestScene, penHeight
+               , top, 0);
+
+    for (int var = 0; var < top; ++var)
     {
         //endLine = ( (forest->at(var))/2 ) /reductionValue;
         //startLine = 0 - endLine;
@@ -54,7 +57,7 @@ void drawRelation(QGraphicsScene *forestScene
 
     QPen darkGreen(Qt::darkGreen);
     darkGreen.setWidth(penHeight);
-    int startLine = 0;
+    //int startLine = 0;
     int endLine = 0;
 
     int posYlevel = 0;
@@ -63,13 +66,16 @@ void drawRelation(QGraphicsScene *forestScene
     int top = forest->size() - 1;
     int middle = top/2;
 
+    drawRulers(forestScene, penHeight
+               , top, 1);
+
     for (int var = 0; var < middle; ++var)
     {
         //Positive lines
         endLine = (forest->at(middle + var + 1)) / reductionValue;
         //startLine = 0 - endLine;
 
-        posYlevel = ((var*2)+2) *penHeight;
+        posYlevel = ((var*2)+1) *penHeight;
 
         forestScene->addLine(0//startLine
                              , posYlevel
@@ -78,21 +84,66 @@ void drawRelation(QGraphicsScene *forestScene
                              , green);
 
         //Negitive lines
+
         //endLine = ( (forest->at(middle - var -1))/2 ) / reductionValue;
         //startLine = 0 - endLine;
 
         endLine = forest->at(middle - var -1) / reductionValue;
 
-        negYlevel = ((var*2)+1) * penHeight;
+        negYlevel = ((var*2)+0) * penHeight;
 
         forestScene->addLine(0 //startLine
                              , negYlevel
                              , endLine
                              , negYlevel
                              , darkGreen);
-        delayMili(1);
+    }
+
+
+}
+
+void drawRulers(QGraphicsScene *forestScene
+                , int penHeight, int forestsize
+                , int setOrRelation)
+{
+    QPen black(Qt::black);
+    black.setWidth(1);
+
+
+    if(setOrRelation == 0)
+    {
+        forestScene->addLine(-20
+                             , 0
+                             , -20
+                             , penHeight*forestsize
+                             , black);
+        int x = 300;
+        forestScene->addLine(-20
+                             , 0
+                             , 20 + x
+                             , 0
+                             , black);
+
+        int height = 0;
+        //while
+    }else
+    {
+        forestScene->addLine(-20
+                             , 0
+                             , -20
+                             , penHeight*forestsize
+                             , black);
+        int x = 300;
+        forestScene->addLine(-20
+                             , 0
+                             , 20 + x
+                             , 0
+                             , black);
+
     }
 }
+
+
 
 /*
  * This functions chooses the default pen height for use later when adding lines to a scene.
@@ -101,10 +152,10 @@ int generatePenHeight(int size)
 {
     if(size <20)
     {
-        return 8;
+        return 15;
     }else if(size >= 20 && size <= 100)
     {
-        return 5;
+        return 10;
     }else
     {
         return 1;
@@ -173,7 +224,6 @@ void drawUpdates(QVector<int> *&forest1
                                , endline
                                , y);
             }
-            //delayMili(1);
         }
     }else
     {
@@ -203,7 +253,6 @@ void drawUpdates(QVector<int> *&forest1
                                       , y
                                       , green
                                       );
-                //delayMili(1);
 
             }else//negitive levels
             {
@@ -225,7 +274,6 @@ void drawUpdates(QVector<int> *&forest1
                                       , y
                                       , darkgreen
                                       );
-                //delayMili(1);
             }
         }
     }
@@ -253,7 +301,6 @@ void drawUpdates(QVector<int> *&forest1
                                   , y
                                   , green
                                   );
-            //delayMili(1);
         }
 
     }else
@@ -285,7 +332,6 @@ void drawUpdates(QVector<int> *&forest1
                                       , y
                                       , green
                                       );
-                //delayMili(1);
 
             }else//negitive levels
             {
@@ -307,7 +353,6 @@ void drawUpdates(QVector<int> *&forest1
                                       , y
                                       , darkgreen
                                       );
-                //delayMili(1);
             }
         }
     }

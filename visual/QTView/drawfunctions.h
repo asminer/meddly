@@ -32,4 +32,7 @@ void drawUpdates(QVector<int> *&forest1
                  , int f1HorizontalReductionValue
                  , int f2HorizontalReductionValue);
 
+void drawRulers(QGraphicsScene *forestScene
+                , int penHeight, int forestsize, int setOrRelation);
+
 #endif // DRAWFUNCTIONS_H
