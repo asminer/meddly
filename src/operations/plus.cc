@@ -148,8 +148,8 @@ class MEDDLY::plus_evplus : public generic_binary_evplus {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(int aev, node_handle a, int bev, node_handle b, 
-      int& cev, node_handle& c);
+    virtual bool checkTerminals(long aev, node_handle a, long bev, node_handle b,
+      long& cev, node_handle& c);
 };
 
 MEDDLY::plus_evplus::plus_evplus(const binary_opname* opcode, 
@@ -159,15 +159,15 @@ MEDDLY::plus_evplus::plus_evplus(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::plus_evplus::checkTerminals(int aev, node_handle a, int bev, node_handle b,
-  int& cev, node_handle& c)
+bool MEDDLY::plus_evplus::checkTerminals(long aev, node_handle a, long bev, node_handle b,
+  long& cev, node_handle& c)
 {
   if (a == -1 && b == -1) {
     c = -1; cev = aev + bev;
     return true;
   }
   if (0 == a && 0 == b) {
-    c = 0; 
+    c = 0;
     cev = 0;
     return true;
   }
@@ -189,7 +189,6 @@ bool MEDDLY::plus_evplus::checkTerminals(int aev, node_handle a, int bev, node_h
   }
   return false;
 }
-
 
 
 // ******************************************************************

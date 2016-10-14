@@ -121,17 +121,19 @@ class MEDDLY::ev_forest : public expert_forest {
       if (!isForRelations() && pr) 
         throw error(error::INVALID_ASSIGNMENT);
 
+      int level = getLevelByVar(vh);
+
       /*
           Get info for node we're building
       */
-      int k = pr ? -vh: vh;
+      int k = pr ? -level : level;
       int km1;
       if (isForRelations()) {
         km1 = (k<0) ? (-k)-1 : -k;
       } else {
         km1 = k-1;
       }
-      int sz = getLevelSize(vh);
+      int sz = getLevelSize(level);
 
       /*
           Make this node

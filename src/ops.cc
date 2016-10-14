@@ -1429,6 +1429,12 @@ void MEDDLY::binary_operation::compute(int av, node_handle ap,
   throw error(error::WRONG_NUMBER);
 }
 
+void MEDDLY::binary_operation::compute(long av, node_handle ap,
+  long bv, node_handle bp, long &cv, node_handle &cp)
+{
+  throw error(error::WRONG_NUMBER);
+}
+
 void MEDDLY::binary_operation::compute(float av, node_handle ap,
   float bv, node_handle bp, float &cv, node_handle &cp)
 {

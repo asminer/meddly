@@ -186,6 +186,7 @@ class MEDDLY::old_node_storage : public node_storage {
     virtual int getSingletonIndex(node_address addr, node_handle &down) const;
     virtual node_handle getDownPtr(node_address addr, int index) const;
     virtual void getDownPtr(node_address addr, int ind, int& ev, node_handle& dn) const;
+    virtual void getDownPtr(node_address addr, int ind, long& ev, node_handle& dn) const;
     virtual void getDownPtr(node_address addr, int ind, float& ev, node_handle& dn) const;
     virtual const void* getUnhashedHeaderOf(node_address addr) const;
     virtual const void* getHashedHeaderOf(node_address addr) const;

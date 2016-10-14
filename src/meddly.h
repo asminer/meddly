@@ -1650,6 +1650,7 @@ class MEDDLY::forest {
                         the range type of the forest is not BOOLEAN.
     */
     virtual void createEdge(int val, dd_edge &e);
+    virtual void createEdge(long val, dd_edge &e);
 
     /** Create an edge for an integer constant.
         @param  val   Requested constant.
@@ -1740,6 +1741,8 @@ class MEDDLY::forest {
     */
     virtual void evaluate(const dd_edge& f, const int* vlist,
       const int* vplist, int &term) const;
+    virtual void evaluate(const dd_edge& f, const int* vlist,
+      const int* vplist, long &term) const;
 
     /** Evaluate the function encoded by an edge.
         @param  f       Edge (function) to evaluate.
@@ -1770,6 +1773,7 @@ class MEDDLY::forest {
         @throws       INVALID_OPERATION, if this is not an Index Set EV+MDD.
     */
     virtual void getElement(const dd_edge& a, int index, int* e);
+    virtual void getElement(const dd_edge& a, long index, int* e);
 
   // ------------------------------------------------------------
   // abstract virtual.
@@ -2238,6 +2242,7 @@ class MEDDLY::dd_edge {
 
     /// Get this dd_edge's edge value (only valid for edge-valued MDDs).
     void getEdgeValue(int& ev) const;
+    void getEdgeValue(long& ev) const;
 
     /// Get this dd_edge's edge value (only valid for edge-valued MDDs).
     void getEdgeValue(float& ev) const;
@@ -2286,6 +2291,7 @@ class MEDDLY::dd_edge {
                         for edge-valued MDDs)
     */
     void set(node_handle node, int value);
+    void set(node_handle node, long value);
 
     /** Modifies the dd_edge fields.
         The dd_edge is cleared (it will still belong to the same forest),

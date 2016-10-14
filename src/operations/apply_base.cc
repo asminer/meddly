@@ -448,7 +448,10 @@ MEDDLY::generic_binbylevel_mxd
 
 MEDDLY::generic_binary_ev::generic_binary_ev(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-  : binary_operation(code, 4, 2, arg1, arg2, res)
+  : binary_operation(code,
+      2 * (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle),
+      (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle),
+      arg1, arg2, res)
 {
   can_commute = false;
 }
@@ -499,7 +502,7 @@ void MEDDLY::generic_binary_evplus
 ::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
 {
   node_handle result;
-  int ev, aev, bev;
+  long ev = 0, aev = 0, bev = 0;
   a.getEdgeValue(aev);
   b.getEdgeValue(bev);
   compute(aev, a.getNode(), bev, b.getNode(), ev, result);
@@ -510,8 +513,8 @@ void MEDDLY::generic_binary_evplus
 }
 
 void MEDDLY::generic_binary_evplus
-::compute(int aev, node_handle a, int bev, node_handle b, 
-  int& cev, node_handle& c)
+::compute(long aev, node_handle a, long bev, node_handle b,
+  long& cev, node_handle& c)
 {
   if (checkTerminals(aev, a, bev, b, cev, c))
     return;
@@ -530,7 +533,7 @@ void MEDDLY::generic_binary_evplus
   unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
 
   // Initialize readers
-  unpacked_node *A = (aLevel < resultLevel) 
+  unpacked_node *A = (aLevel < resultLevel)
     ? unpacked_node::newRedundant(arg1F, resultLevel, 0, a, true)
     : unpacked_node::newFromNode(arg1F, a, true)
   ;
@@ -543,10 +546,10 @@ void MEDDLY::generic_binary_evplus
 
   // do computation
   for (int i=0; i<resultSize; i++) {
-    int ev;
+    long ev = 0;
     node_handle ed;
-    compute(aev + A->ei(i), A->d(i), 
-            bev + B->ei(i), B->d(i), 
+    compute(aev + A->ei(i), A->d(i),
+            bev + B->ei(i), B->d(i),
             ev, ed);
     nb->d_ref(i) = ed;
     nb->setEdge(i, ev);
@@ -564,7 +567,6 @@ void MEDDLY::generic_binary_evplus
   // Add to CT
   saveResult(Key, aev, a, bev, b, cev, c);
 }
-
 
 // ******************************************************************
 // *                                                                *

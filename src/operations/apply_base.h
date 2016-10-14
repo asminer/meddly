@@ -242,11 +242,11 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
     virtual void showEntry(output &strm, const node_handle *entryData) const;
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
-    virtual void compute(int aev, node_handle a, int bev, node_handle b, int& cev, node_handle &c);
+    virtual void compute(long aev, node_handle a, long bev, node_handle b, long& cev, node_handle &c);
 
   protected:
-    inline compute_table::search_key* findResult(int aev, node_handle a, 
-      int bev, node_handle b, int& cev, node_handle &c) 
+    inline compute_table::search_key* findResult(long aev, node_handle a,
+      long bev, node_handle b, long& cev, node_handle &c)
     {
       compute_table::search_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
@@ -271,7 +271,7 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
     }
 
     inline void saveResult(compute_table::search_key* Key, 
-      int aev, node_handle a, int bev, node_handle b, int cev, node_handle c) 
+      long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
     {
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
@@ -284,8 +284,8 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
   protected:
     // If terminal condition is reached, returns true and the result in c.
     // Must be provided in derived classes.
-    virtual bool checkTerminals(int aev, node_handle a, int bev, node_handle b, 
-      int &cev, node_handle &c) = 0;
+    virtual bool checkTerminals(long aev, node_handle a, long bev, node_handle b,
+      long &cev, node_handle &c) = 0;
 };
 
 // ******************************************************************

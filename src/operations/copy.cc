@@ -772,10 +772,13 @@ namespace MEDDLY {
       virtual void showEntry(output &strm, const node_handle* entryData) const {
         INTYPE ev1;
         compute_table::readEV(entryData, ev1);
-        OUTTYPE ev2; 
-        compute_table::readEV(entryData+2, ev2);
-        strm << "[" << getName() << "(<" << ev1 << "," << long(entryData[1])
-             << "> <" << ev2 << "," << long(entryData[3]) << ">]";
+        node_handle n1 = entryData[sizeof(INTYPE) / sizeof(node_handle)];
+        OUTTYPE ev2;
+        compute_table::readEV(entryData + (sizeof(INTYPE) + sizeof(node_handle)) / sizeof(node_handle), ev2);
+        node_handle n2 = entryData[(sizeof(INTYPE) + sizeof(node_handle) + sizeof(INTYPE)) / sizeof(node_handle)];
+
+        strm << "[" << getName() << "(<" << ev1 << "," << n1
+             << "> <" << ev2 << "," << n2 << ">]";
       }
       virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
         INTYPE av;
@@ -1076,9 +1079,9 @@ MEDDLY::copy_opname
       case forest::INTEGER:
           switch (res->getRangeType()) {
             case forest::INTEGER:
-                return new copy_EV2EV_slow<int,PLUS,int>(this, arg, res);
+                return new copy_EV2EV_slow<long,PLUS,long>(this, arg, res);
             case forest::REAL:
-                return new copy_EV2EV_slow<int,PLUS,float>(this, arg, res);
+                return new copy_EV2EV_slow<long,PLUS,float>(this, arg, res);
             default:
                 throw error(error::TYPE_MISMATCH);
           };
@@ -1086,7 +1089,7 @@ MEDDLY::copy_opname
       case forest::REAL:
           switch (res->getRangeType()) {
             case forest::INTEGER:
-                return new copy_EV2EV_slow<float,PLUS,int>(this, arg, res);
+                return new copy_EV2EV_slow<float,PLUS,long>(this, arg, res);
             case forest::REAL:
                 return new copy_EV2EV_slow<float,PLUS,float>(this, arg, res);
             default:
@@ -1108,9 +1111,9 @@ MEDDLY::copy_opname
       case forest::INTEGER:
           switch (res->getRangeType()) {
             case forest::INTEGER:
-                return new copy_EV2EV_slow<int,TIMES,int>(this, arg, res);
+                return new copy_EV2EV_slow<long,TIMES,long>(this, arg, res);
             case forest::REAL:
-                return new copy_EV2EV_slow<int,TIMES,float>(this, arg, res);
+                return new copy_EV2EV_slow<long,TIMES,float>(this, arg, res);
             default:
                 throw error(error::TYPE_MISMATCH);
           };
@@ -1118,7 +1121,7 @@ MEDDLY::copy_opname
       case forest::REAL:
           switch (res->getRangeType()) {
             case forest::INTEGER:
-                return new copy_EV2EV_slow<float,TIMES,int>(this, arg, res);
+                return new copy_EV2EV_slow<float,TIMES,long>(this, arg, res);
             case forest::REAL:
                 return new copy_EV2EV_slow<float,TIMES,float>(this, arg, res);
             default:

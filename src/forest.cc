@@ -338,6 +338,11 @@ void MEDDLY::forest::createEdge(int val, dd_edge &e)
   throw error(error::TYPE_MISMATCH);
 }
 
+void MEDDLY::forest::createEdge(long val, dd_edge &e)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
 void MEDDLY::forest::createEdge(float val, dd_edge &e)
 {
   throw error(error::TYPE_MISMATCH);
@@ -371,12 +376,23 @@ void MEDDLY::forest
 }
 
 void MEDDLY::forest
+::evaluate(const dd_edge& f, const int* vl, const int* vpl, long &t) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::forest
 ::evaluate(const dd_edge& f, const int* vl, const int* vpl, float &t) const
 {
   throw error(error::TYPE_MISMATCH);
 }
 
 void MEDDLY::forest::getElement(const dd_edge& a, int index, int* e)
+{
+  throw error(error::INVALID_OPERATION);
+}
+
+void MEDDLY::forest::getElement(const dd_edge& a, long index, int* e)
 {
   throw error(error::INVALID_OPERATION);
 }
@@ -595,49 +611,6 @@ MEDDLY::node_handle MEDDLY::expert_forest::float_Tencoder::read(input &s)
   int c = s.get_char();
   if ('t' != c) throw error(error::INVALID_FILE);
   return value2handle(s.get_real());
-}
-
-// ******************************************************************
-// ******************************************************************
-
-void MEDDLY::expert_forest::int_EVencoder::show(output &s, const void* ptr)
-{
-  int val;
-  readValue(ptr, val);
-  s << val;
-}
-
-void MEDDLY::expert_forest::int_EVencoder::write(output &s, const void* ptr)
-{
-  int val;
-  readValue(ptr, val);
-  s << val;
-}
-
-void MEDDLY::expert_forest::int_EVencoder::read(input &s, void* ptr)
-{
-  writeValue(ptr, int(s.get_integer()));
-}
-
-// ******************************************************************
-
-void MEDDLY::expert_forest::float_EVencoder::show(output &s, const void* ptr)
-{
-  float val;
-  readValue(ptr, val);
-  s << val;
-}
-
-void MEDDLY::expert_forest::float_EVencoder::write(output &s, const void* ptr)
-{
-  float val;
-  readValue(ptr, val);
-  s.put(val, 8, 8, 'e');
-}
-
-void MEDDLY::expert_forest::float_EVencoder::read(input &s, void* ptr)
-{
-  writeValue(ptr, float(s.get_real()));
 }
 
 // ******************************************************************
@@ -1508,6 +1481,11 @@ const char* MEDDLY::expert_forest::codeChars() const
 }
 
 void MEDDLY::expert_forest::normalize(unpacked_node &nb, int& ev) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::expert_forest::normalize(unpacked_node &nb, long& ev) const
 {
   throw error(error::TYPE_MISMATCH);
 }

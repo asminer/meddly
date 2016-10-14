@@ -46,7 +46,7 @@ libmeddly_la_SOURCES = \
   forests/mtmxdreal.cc \
   forests/ev.cc \
   forests/evmdd.cc \
-  forests/evmdd_plusint.cc \
+  forests/evmdd_pluslong.cc \
   forests/evmxd.cc \
   forests/evmxd_timesreal.cc \
   forests/init_forests.cc \

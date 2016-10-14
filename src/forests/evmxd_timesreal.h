@@ -31,7 +31,7 @@ namespace MEDDLY {
 
 class MEDDLY::evmxd_timesreal : public evmxd_forest {
   public:
-    class OP : public float_EVencoder {
+    class OP : public EVencoder<float> {
       public:
         static inline void setEdge(void* ptr, float v) {
           writeValue(ptr, v);

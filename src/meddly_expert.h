@@ -488,10 +488,12 @@ class MEDDLY::unpacked_node {
 
     void initRedundant(const expert_forest *f, int k, node_handle node, bool full);
     void initRedundant(const expert_forest *f, int k, int ev, node_handle node, bool full);
+    void initRedundant(const expert_forest *f, int k, long ev, node_handle node, bool full);
     void initRedundant(const expert_forest *f, int k, float ev, node_handle node, bool full);
 
     void initIdentity(const expert_forest *f, int k, int i, node_handle node, bool full);
     void initIdentity(const expert_forest *f, int k, int i, int ev, node_handle node, bool full);
+    void initIdentity(const expert_forest *f, int k, int i, long ev, node_handle node, bool full);
     void initIdentity(const expert_forest *f, int k, int i, float ev, node_handle node, bool full);
 
   /* Create blank node, primarily for writing */
@@ -575,18 +577,20 @@ class MEDDLY::unpacked_node {
 
     /// Get the edge value, as an integer.
     void getEdge(int i, int& ev) const;
+    void getEdge(int i, long& ev) const;
 
     /// Get the edge value, as a float.
     void getEdge(int i, float& ev) const;
 
     /// Set the edge value, as an integer.
     void setEdge(int i, int ev);
+    void setEdge(int i, long ev);
 
     /// Set the edge value, as a float.
     void setEdge(int i, float ev);
 
     /// Get the edge value, as an integer.
-    int ei(int i) const;
+    long ei(int i) const;
 
     /// Get the edge value, as a float.
     float ef(int i) const;
@@ -1037,6 +1041,8 @@ class MEDDLY::node_storage {
     */
     virtual void getDownPtr(node_address addr, int ind, int& ev,
                             node_handle& dn) const = 0;
+    virtual void getDownPtr(node_address addr, int ind, long& ev,
+                            node_handle& dn) const = 0;
 
     /** Get the specified outgoing edge for a node.
         Fast if we just want one.
@@ -1253,24 +1259,14 @@ class MEDDLY::expert_forest: public forest
         static void write(output &s, node_handle h);
         static node_handle read(input &s);
     };
+
     // preferred way to encode and decode edge values
-    // (classes so we can use them in template functions)
-    /** Encoding for ints into (edge value) node handles */
-    class int_EVencoder {
+    template<typename T>
+    class EVencoder {
       public:
         static size_t edgeBytes();
-        static void writeValue(void* ptr, int val);
-        static void readValue(const void* ptr, int &val);
-        static void show(output &s, const void* ptr);
-        static void write(output &s, const void* ptr);
-        static void read(input &s, void* ptr);
-    };
-    /** Encoding for floats into (edge value) node handles */
-    class float_EVencoder {
-      public:
-        static size_t edgeBytes();
-        static void writeValue(void* ptr, float val);
-        static void readValue(const void* ptr, float &val);
+        static void writeValue(void* ptr, T val);
+        static void readValue(const void* ptr, T &val);
         static void show(output &s, const void* ptr);
         static void write(output &s, const void* ptr);
         static void read(input &s, void* ptr);
@@ -1617,6 +1613,7 @@ class MEDDLY::expert_forest: public forest
           @param  dn      Output: downward pointer at that index.
     */
     void getDownPtr(node_handle p, int index, int& ev, node_handle& dn) const;
+    void getDownPtr(node_handle p, int index, long& ev, node_handle& dn) const;
 
     /** For a given node, get a specified downward pointer.
 
@@ -1918,6 +1915,7 @@ class MEDDLY::expert_forest: public forest
                         as appropriate to normalize the node.
     */
     virtual void normalize(unpacked_node &nb, int& ev) const;
+    virtual void normalize(unpacked_node &nb, long& ev) const;
 
     /** Normalize a node.
         Used only for "edge valued" DDs with range type: real.
@@ -2850,6 +2848,7 @@ class MEDDLY::compute_table {
           virtual void reset() = 0;
           virtual void writeNH(node_handle nh) = 0;
           virtual void write(int i) = 0;
+          virtual void write(long i) = 0;
           virtual void write(float f) = 0;
       };
 
@@ -2896,6 +2895,7 @@ class MEDDLY::compute_table {
 
       // convenience methods, for grabbing edge values
       static void readEV(const node_handle* p, int &ev);
+      static void readEV(const node_handle* p, long &ev);
       static void readEV(const node_handle* p, float &ev);
 
       /// Constructor
@@ -3173,6 +3173,8 @@ class MEDDLY::binary_operation : public operation {
     /// Low-level compute on EV edges (av, ap) and (bv, bp), return result.
     virtual void compute(int av, node_handle ap, int bv, node_handle bp,
       int &cv, node_handle &cp);
+    virtual void compute(long av, node_handle ap, long bv, node_handle bp,
+      long &cv, node_handle &cp);
 
     /// Low-level compute on EV edges (av, ap) and (bv, bp), return result.
     virtual void compute(float av, node_handle ap, float bv, node_handle bp,

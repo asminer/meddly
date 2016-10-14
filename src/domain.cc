@@ -40,7 +40,7 @@
 #include "forests/mtmxdint.h"
 #include "forests/mtmxdreal.h"
 
-#include "forests/evmdd_plusint.h"
+#include "forests/evmdd_pluslong.h"
 #include "forests/evmdd_timesreal.h"
 
 #include "forests/evmxd_timesreal.h"
@@ -342,12 +342,12 @@ MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t,
     case forest::EVPLUS:
       if (forest::INTEGER != t) throw error(error::TYPE_MISMATCH);
       if (rel)  throw error(error::NOT_IMPLEMENTED);
-      else      f = new evmdd_plusint(slot, this, p); 
+      else      f = new evmdd_pluslong(slot, this, p);
       break;
 
     case forest::INDEX_SET:
       if (forest::INTEGER != t || rel) throw error(error::TYPE_MISMATCH);
-      f = new evmdd_index_set(slot, this, p); 
+      f = new evmdd_index_set_long(slot, this, p);
       break;
 
     case forest::EVTIMES:

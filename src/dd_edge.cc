@@ -146,7 +146,15 @@ void MEDDLY::dd_edge::getEdgeValue(int& ev) const
   MEDDLY_DCASSERT(parent);
   MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
   MEDDLY_DCASSERT(forest::INTEGER == parent->getRangeType());
-  expert_forest::int_EVencoder::readValue(&raw_value, ev);
+  expert_forest::EVencoder<int>::readValue(&raw_value, ev);
+}
+
+void MEDDLY::dd_edge::getEdgeValue(long& ev) const
+{
+  MEDDLY_DCASSERT(parent);
+  MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
+  MEDDLY_DCASSERT(forest::INTEGER == parent->getRangeType());
+  expert_forest::EVencoder<long>::readValue(&raw_value, ev);
 }
 
 void MEDDLY::dd_edge::getEdgeValue(float& ev) const
@@ -154,7 +162,7 @@ void MEDDLY::dd_edge::getEdgeValue(float& ev) const
   MEDDLY_DCASSERT(parent);
   MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
   MEDDLY_DCASSERT(forest::REAL == parent->getRangeType());
-  expert_forest::float_EVencoder::readValue(&raw_value, ev);
+  expert_forest::EVencoder<float>::readValue(&raw_value, ev);
 }
 
 int MEDDLY::dd_edge::getLevel() const
@@ -180,9 +188,17 @@ void MEDDLY::dd_edge::set(node_handle n, int v)
   MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
   MEDDLY_DCASSERT(forest::INTEGER == parent->getRangeType());
   set(n);
-  expert_forest::int_EVencoder::writeValue(&raw_value, v);
+  expert_forest::EVencoder<int>::writeValue(&raw_value, v);
 }
 
+void MEDDLY::dd_edge::set(node_handle n, long v)
+{
+  MEDDLY_DCASSERT(parent);
+  MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
+  MEDDLY_DCASSERT(forest::INTEGER == parent->getRangeType());
+  set(n);
+  expert_forest::EVencoder<long>::writeValue(&raw_value, v);
+}
 
 void MEDDLY::dd_edge::set(node_handle n, float v)
 {
@@ -190,7 +206,7 @@ void MEDDLY::dd_edge::set(node_handle n, float v)
   MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
   MEDDLY_DCASSERT(forest::REAL == parent->getRangeType());
   set(n);
-  expert_forest::float_EVencoder::writeValue(&raw_value, v);
+  expert_forest::EVencoder<float>::writeValue(&raw_value, v);
 }
 
 

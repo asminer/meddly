@@ -795,6 +795,30 @@ void MEDDLY::old_node_storage
 }
 
 void MEDDLY::old_node_storage
+::getDownPtr(node_address addr, int index, long& ev, node_handle& dn) const
+{
+  if (index<0) throw error(error::INVALID_VARIABLE);
+  if (sizeOf(addr)<0) {
+    int z = findSparseIndex(addr, index);
+    if (z<0) {
+      dn = 0;
+      ev = 0;
+    } else {
+      dn = SD(addr)[z];
+      ev = ((long*)SEP(addr, z))[0];
+    }
+  } else {
+    if (index < sizeOf(addr)) {
+      dn = FD(addr)[index];
+      ev = ((long*)FEP(addr, index))[0];
+    } else {
+      dn = 0;
+      ev = 0;
+    }
+  }
+}
+
+void MEDDLY::old_node_storage
 ::getDownPtr(node_address addr, int index, float& ev, node_handle& dn) const
 {
   if (index<0) throw error(error::INVALID_VARIABLE);
