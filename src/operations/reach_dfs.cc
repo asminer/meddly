@@ -25,12 +25,21 @@
 #endif
 #include "../defines.h"
 #include "reach_dfs.h"
+#include <deque>
+#include <algorithm>
 
 // #define TRACE_RECFIRE
 // #define DEBUG_DFS
 // #define DEBUG_INITIAL
 // #define DEBUG_NSF
 // #define DEBUG_SPLIT
+
+//#define COUNT_UNION_LENGTH
+#define BATCHED_UNIONS
+
+#ifdef BATCHED_UNIONS
+#define COMPARISON_OPERATION NODE_COUNT
+#endif
 
 namespace MEDDLY {
   class saturation_opname;
@@ -45,6 +54,43 @@ namespace MEDDLY {
   class bckwd_dfs_opname;
 };
 
+#ifdef BATCHED_UNIONS
+class sorter {
+  MEDDLY::unary_operation *op;
+  int level;
+  bool descending;
+
+  public:
+
+  sorter(MEDDLY::unary_operation *op)
+    : op(op), level(0), descending(false) {}
+
+  void setLevel(int k) { level = k; }
+  void setDescending(bool d) { descending = d; }
+
+  // returns true if a must be placed before b in the sorted order
+  bool operator()(MEDDLY::node_handle a, MEDDLY::node_handle b) const {
+    if (descending) {
+      // descending order
+      // returns true if a > b
+      if (a == b || b == -1 || a == 0) return false;
+      if (b == 0 || a == -1) return true;
+      double card_a = 0, card_b = 0;
+      op->compute(level, a, card_a);
+      op->compute(level, b, card_b);
+      return card_a > card_b;
+    }
+    // ascending order
+    // returns true if a < b
+    if (a == b || a == -1 || b == 0) return false;
+    if (a == 0 || b == -1) return true;
+    double card_a = 0, card_b = 0;
+    op->compute(level, a, card_a);
+    op->compute(level, b, card_b);
+    return card_a < card_b;
+  }
+};
+#endif
 
 // ******************************************************************
 // *                                                                *
@@ -410,6 +456,14 @@ void MEDDLY::common_dfs_mt::showEntry(output &strm, const node_handle* data) con
   strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): " << long(data[2]) << "]";
 }
 
+//std::vector<std::vector<std::set<MEDDLY::node_handle>>> g_union_nodes;
+std::vector<std::vector<std::deque<MEDDLY::node_handle>>> g_union_nodes;
+#ifdef COUNT_UNION_LENGTH
+// print histogram
+std::vector<long> union_length_counts;
+std::vector<std::vector<long>> g_counts;
+#endif
+
 void MEDDLY::common_dfs_mt
 ::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c)
 {
@@ -435,6 +489,26 @@ void MEDDLY::common_dfs_mt
   // Partition NSF by levels
   splitMxd(b.getNode());
 
+  // Initialize sets for each level
+  g_union_nodes.clear();
+  g_union_nodes.push_back(std::vector<std::deque<node_handle>>());
+  for (int i = 1; i <= resF->getNumVariables(); i++) {
+    std::vector<std::deque<node_handle>> x(resF->getVariableSize(i));
+    g_union_nodes.push_back(x);
+  }
+
+#ifdef COUNT_UNION_LENGTH
+  union_length_counts.clear();
+  union_length_counts.resize(10, 0);
+  g_counts.clear();
+  g_counts.push_back(std::vector<long>());
+  for (int i = 1; i <= resF->getNumVariables(); i++) {
+    std::vector<long> x(resF->getVariableSize(i), 0);
+    g_counts.push_back(x);
+  }
+  assert(g_counts.size() == resF->getNumVariables()+1);
+#endif
+
   // Execute saturation operation
   saturation_op *so = new saturation_op(this, arg1F, resF);
   node_handle cnode = so->saturate(a.getNode());
@@ -456,6 +530,18 @@ void MEDDLY::common_dfs_mt
   delete[] splits;
   splits = 0;
   delete so;
+
+#ifdef COUNT_UNION_LENGTH
+  // print histogram
+  printf("\nLength :\tFrequency\n");
+  for (int i = 0; i < union_length_counts.size(); i++) {
+    printf("\t%d :\t%ld\n", i, union_length_counts[i]);
+  }
+
+  union_length_counts.clear();
+  g_counts.clear();
+#endif
+  g_union_nodes.clear();
 }
 
 // Partition the nsf based on "top level"
@@ -596,17 +682,195 @@ class MEDDLY::forwd_dfs_mt : public common_dfs_mt {
   public:
     forwd_dfs_mt(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
+    ~forwd_dfs_mt();
+
   protected:
     virtual void saturateHelper(unpacked_node &mdd);
     node_handle recFire(node_handle mdd, node_handle mxd);
+
+#ifdef BATCHED_UNIONS
+    // Sort a queue of nodes by node count
+    void sort(bool descending_order, int level, std::deque<node_handle>& q);
+    unary_operation* mdd_op;
+    sorter *mdd_sorter;
+#endif
 };
 
 MEDDLY::forwd_dfs_mt::forwd_dfs_mt(const binary_opname* opcode, 
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : common_dfs_mt(opcode, arg1, arg2, res)
 {
+#ifdef BATCHED_UNIONS
+  mdd_op = getOperation(COMPARISON_OPERATION, resF, REAL);
+  MEDDLY_DCASSERT(mdd_op);
+  mdd_sorter = new sorter(mdd_op);
+#endif
 }
 
+MEDDLY::forwd_dfs_mt::~forwd_dfs_mt()
+{
+  delete mdd_sorter;
+}
+
+#ifdef BATCHED_UNIONS
+
+// Sort a queue of nodes by cardinality
+void MEDDLY::forwd_dfs_mt::sort(bool descending_order,
+    int level, std::deque<node_handle>& q)
+{
+  mdd_sorter->setLevel(level);
+  mdd_sorter->setDescending(descending_order);
+  std::sort(q.begin(), q.end(), *mdd_sorter);
+}
+
+// SaturateHelper with batched unions
+void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
+{
+  node_handle mxd = splits[nb.getLevel()];
+  if (mxd == 0) return;
+
+  const int mxdLevel = arg2F->getNodeLevel(mxd);
+  MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
+
+  // Initialize mxd readers, note we might skip the unprimed level
+  unpacked_node *Ru = unpacked_node::useUnpackedNode();
+  unpacked_node *Rp = unpacked_node::useUnpackedNode();
+  if (mxdLevel < 0) {
+    Ru->initRedundant(arg2F, nb.getLevel(), mxd, true);
+  } else {
+    Ru->initFromNode(arg2F, mxd, true);
+  }
+
+  // batches of unions per node index
+  std::vector<std::deque<node_handle>>& union_nodes = g_union_nodes[nb.getLevel()];
+  if (union_nodes.size() < nb.getSize()) union_nodes.resize(nb.getSize());
+  for (int i = 0; i < union_nodes.size(); i++) assert(union_nodes[i].empty());
+
+#ifdef COUNT_UNION_LENGTH
+  std::vector<long>& counts = g_counts[nb.getLevel()];
+  if (counts.size() < nb.getSize()) counts.resize(nb.getSize());
+  std::fill(counts.begin(), counts.end(), 0);
+#endif
+
+  // indexes to explore
+  indexq* queue = useIndexQueue(nb.getSize());
+  for (int i = 0; i < nb.getSize(); i++) {
+    if (nb.d(i)) {
+      queue->add(i);
+      // move d(i) to the associated queue, and reset d(i).
+      // otherwise, batched-union algorithm will not start.
+      union_nodes[i].push_back(nb.d(i));
+      nb.d_ref(i) = 0;
+    }
+  }
+
+  // explore indexes
+  while (!queue->isEmpty()) {
+    const int i = queue->remove();
+
+#ifdef COUNT_UNION_LENGTH
+    if (0 != counts[i]) {
+      union_length_counts[(counts[i] > 9? 9: counts[i])]++;
+      counts[i] = 0;
+    }
+#endif
+
+    // accumulate nb.d(i) and all nodes in union_nodes[i]
+    node_handle acc = nb.d(i);
+    resF->linkNode(acc);
+    if (!union_nodes[i].empty()) {
+      // TODO: use heuristics to modify the order
+      //       in which this accumulation is performed.
+      // current strategy: straightforward union (traditional saturation)
+
+      union_nodes[i].push_back(acc);
+      acc = 0;
+
+      // Sort queue by #nodes
+      //if (union_nodes[i].size() > 4) {
+      sort(true, nb.getLevel(), union_nodes[i]);
+      // std::reverse(union_nodes[i].begin(), union_nodes[i].end());
+      //}
+      // Add the nodes to acc
+      for (auto mdd : union_nodes[i]) {
+        // printf("%d\n", mdd);
+        node_handle temp = mddUnion->compute(acc, mdd);
+        resF->unlinkNode(acc);
+        acc = temp;
+      }
+      union_nodes[i].clear();
+    }
+
+    if (acc == nb.d(i)) {
+      resF->unlinkNode(acc);
+      continue; // nothing new to explore in acc
+    }
+
+    // update d(i) with the result of accumulation.
+    resF->unlinkNode(nb.d(i));
+    nb.d_ref(i) = acc;
+
+    MEDDLY_DCASSERT(nb.d(i));
+    if (0==Ru->d(i)) continue;  // row i is empty
+
+    // grab column (TBD: build these ahead of time?)
+    const int dlevel = arg2F->getNodeLevel(Ru->d(i));
+
+    if (dlevel == -nb.getLevel()) {
+      Rp->initFromNode(arg2F, Ru->d(i), false);
+    } else {
+      Rp->initIdentity(arg2F, -nb.getLevel(), i, Ru->d(i), false);
+    }
+
+    for (int jz=0; jz<Rp->getNNZs(); jz++) {
+      const int j = Rp->i(jz);
+      if (-1==nb.d(j)) continue;  // nothing can be added to this set
+
+      node_handle rec = recFire(nb.d(i), Rp->d(jz));
+
+      if (0 == rec) continue;
+      if (rec == nb.d(j)) { 
+        resF->unlinkNode(rec); 
+        continue; 
+      }
+
+      queue->add(j);
+
+//      if (0 == nb.d(j)) {
+//        nb.d_ref(j) = rec;
+//      }
+//      else 
+//      if (-1 == rec) {
+//        resF->unlinkNode(nb.d(j));
+//        nb.d_ref(j) = -1;
+//        // nothing can be added to nb.d(j), therefore, empty its union_queue
+//        for (auto n : union_nodes[j]) resF->unlinkNode(n);
+//        union_nodes[j].clear();
+//#ifdef COUNT_UNION_LENGTH
+//        counts[j] = 0;
+//#endif
+//      }
+//      else {
+//        union_nodes[j].push_back(rec);
+//#ifdef COUNT_UNION_LENGTH
+//        counts[j]++;
+//#endif
+//      }
+
+      union_nodes[j].push_back(rec);
+    } // for j
+
+  } // while there are indexes to explore
+
+  // cleanup
+  unpacked_node::recycle(Rp);
+  unpacked_node::recycle(Ru);
+  recycle(queue);
+}
+
+#else
+
+// SaturateHelper with immediate unions
 void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
 {
   node_handle mxd = splits[nb.getLevel()];
@@ -630,9 +894,22 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
     if (nb.d(i)) queue->add(i);
   }
 
+#ifdef COUNT_UNION_LENGTH
+  std::vector<long>& counts = g_counts[nb.getLevel()];
+  if (counts.size() < nb.getSize()) counts.resize(nb.getSize());
+  std::fill(counts.begin(), counts.end(), 0);
+#endif
+
   // explore indexes
   while (!queue->isEmpty()) {
     const int i = queue->remove();
+
+#ifdef COUNT_UNION_LENGTH
+    if (0 != counts[i]) {
+      union_length_counts[(counts[i] > 9? 9: counts[i])]++;
+      counts[i] = 0;
+    }
+#endif
 
     MEDDLY_DCASSERT(nb.d(i));
     if (0==Ru->d(i)) continue;  // row i is empty
@@ -685,6 +962,9 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
           jz = -1;
         } else {
           queue->add(j);
+#ifdef COUNT_UNION_LENGTH
+          counts[j]++;
+#endif
         }
       }
 
@@ -697,6 +977,8 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
   unpacked_node::recycle(Ru);
   recycle(queue);
 }
+
+#endif  // End of SaturateHelper
 
 // Same as post-image, except we saturate before reducing.
 MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle mxd)
@@ -767,9 +1049,16 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
       Ru->initFromNode(arg2F, mxd, false);
     }
 
+#ifdef COUNT_UNION_LENGTH
+    std::vector<long>& counts = g_counts[nb->getLevel()];
+    if (counts.size() < rSize) counts.resize(rSize);
+    std::fill(counts.begin(), counts.end(), 0);
+#endif
+
     // loop over mxd "rows"
     for (int iz=0; iz<Ru->getNNZs(); iz++) {
       const int i = Ru->i(iz);
+
       if (0==A->d(i))   continue; 
       if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz)))) {
         Rp->initIdentity(arg2F, rLevel, i, Ru->d(iz), false);
@@ -794,9 +1083,21 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
         nb->d_ref(j) = mddUnion->compute(newstates, oldj);
         resF->unlinkNode(oldj);
         resF->unlinkNode(newstates);
+
+#ifdef COUNT_UNION_LENGTH
+        counts[j]++;
+#endif
       } // for j
   
     } // for i
+
+#ifdef COUNT_UNION_LENGTH
+    for (int i = 0; i < counts.size(); i++) {
+      if (0 != counts[i]) {
+        union_length_counts[(counts[i] > 9? 9: counts[i])]++;
+      }
+    }
+#endif
 
     unpacked_node::recycle(Rp);
     unpacked_node::recycle(Ru);

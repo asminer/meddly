@@ -985,6 +985,22 @@ long MEDDLY::expert_forest::getEdgeCount(node_handle p, bool countZeroes) const
   return ec;
 }
 
+long MEDDLY::expert_forest::getNodeAndEdgeCount(node_handle p, bool countZeroes) const
+{
+  node_handle* list = markNodesInSubgraph(&p, 1, true);
+  if (0==list) return 0;
+  long ec=0;
+  unpacked_node *M = unpacked_node::useUnpackedNode();
+  for (long i=0; list[i]; i++) {
+    ec++;   // count the node
+    M->initFromNode(this, list[i], countZeroes);
+    ec += countZeroes ? M->getSize() : M->getNNZs();    // count the edges
+  }
+  unpacked_node::recycle(M);
+  free(list);
+  return ec;
+}
+
 bool MEDDLY::expert_forest
 ::showNode(output &s, node_handle p, unsigned int flags) const
 {

@@ -305,6 +305,10 @@ public:
   virtual void compute(const dd_edge &arg, double &res) {
     res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
   }
+  virtual void compute(int k, node_handle a, double &res) {
+    res = compute_r(k, a);
+  }
+
   double compute_r(int ht, node_handle a);
 };
 

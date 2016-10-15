@@ -182,6 +182,20 @@ namespace MEDDLY {
   /// so that the function evaluates to non-zero.
   extern const unary_opname* CARDINALITY;
 
+  /// Unary operation.  Return the number of nodes in
+  /// the given decision diagram.
+  extern const unary_opname* NODE_COUNT;
+
+#if 0
+  /// Unary operation.  Return the number of edges in
+  /// the given decision diagram. Ignors edges to 0.
+  extern const unary_opname* EDGE_COUNT;
+
+  /// Unary operation.  Return the number of nodes and edges in
+  /// the given decision diagram. Ignores edges to 0.
+  extern const unary_opname* NODE_EDGE_COUNT;
+#endif
+
   /// For BOOLEAN forests, flip the return values.
   extern const unary_opname* COMPLEMENT;
 

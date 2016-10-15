@@ -51,37 +51,38 @@ libmeddly_la_SOURCES = \
   forests/evmxd_timesreal.cc \
   forests/init_forests.cc \
   \
-  operations/apply_base.cc   \
-  operations/mpz_object.cc   \
-  operations/copy.cc         \
-  operations/cardinality.cc  \
-  operations/complement.cc   \
-  operations/maxmin_range.cc \
-  operations/mdd2index.cc    \
-  operations/union.cc        \
-  operations/intersection.cc \
-  operations/difference.cc   \
-  operations/cross.cc        \
-  operations/maxmin.cc       \
-  operations/plus.cc         \
-  operations/minus.cc        \
-  operations/multiply.cc     \
-  operations/divide.cc       \
-  operations/modulo.cc       \
-  operations/comp_eq.cc      \
-  operations/comp_ne.cc      \
-  operations/comp_lt.cc      \
-  operations/comp_le.cc      \
-  operations/comp_gt.cc      \
-  operations/comp_ge.cc      \
-  operations/prepostimage.cc \
-  operations/reach_bfs.cc    \
-  operations/reach_dfs.cc    \
-  operations/sat_pregen.cc   \
-  operations/sat_otf.cc      \
-  operations/vect_matr.cc    \
-  operations/mm_mult.cc      \
-  operations/init_builtin.cc \
+  operations/apply_base.cc       \
+  operations/mpz_object.cc       \
+  operations/copy.cc             \
+  operations/cardinality.cc      \
+  operations/node_edge_count.cc  \
+  operations/complement.cc       \
+  operations/maxmin_range.cc     \
+  operations/mdd2index.cc        \
+  operations/union.cc            \
+  operations/intersection.cc     \
+  operations/difference.cc       \
+  operations/cross.cc            \
+  operations/maxmin.cc           \
+  operations/plus.cc             \
+  operations/minus.cc            \
+  operations/multiply.cc         \
+  operations/divide.cc           \
+  operations/modulo.cc           \
+  operations/comp_eq.cc          \
+  operations/comp_ne.cc          \
+  operations/comp_lt.cc          \
+  operations/comp_le.cc          \
+  operations/comp_gt.cc          \
+  operations/comp_ge.cc          \
+  operations/prepostimage.cc     \
+  operations/reach_bfs.cc        \
+  operations/reach_dfs.cc        \
+  operations/sat_pregen.cc       \
+  operations/sat_otf.cc          \
+  operations/vect_matr.cc        \
+  operations/mm_mult.cc          \
+  operations/init_builtin.cc     \
   \
   storage/holeman.cc \
   storage/hm_array.cc \

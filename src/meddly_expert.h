@@ -1540,6 +1540,11 @@ class MEDDLY::expert_forest: public forest
     */
     long getEdgeCount(node_handle node, bool countZeroes) const;
 
+    /** Count and return the number of nodes and edges
+        in the subgraph below the given node.
+    */
+    long getNodeAndEdgeCount(node_handle node, bool countZeroes) const;
+
     /** Display the contents of a single node.
           @param  s       File stream to write to.
           @param  node    Node to display.
@@ -3121,6 +3126,9 @@ class MEDDLY::unary_operation : public operation {
     virtual void compute(const dd_edge &arg, long &res);
     virtual void compute(const dd_edge &arg, double &res);
     virtual void compute(const dd_edge &arg, ct_object &c);
+
+    // low-level front-ends
+    virtual void compute(int k, node_handle a, double& res);
 
     // TBD: low-level front-ends?
     // e.g.,

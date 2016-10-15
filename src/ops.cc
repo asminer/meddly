@@ -1384,6 +1384,11 @@ void MEDDLY::unary_operation::compute(const dd_edge &arg, ct_object &c)
   throw error(error::TYPE_MISMATCH);
 }
 
+void MEDDLY::unary_operation::compute(int k, node_handle a, double &res)
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
 // ******************************************************************
 // *                    binary_operation methods                    *
 // ******************************************************************

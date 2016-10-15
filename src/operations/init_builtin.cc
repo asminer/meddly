@@ -28,6 +28,7 @@
 
 #include "copy.h"
 #include "cardinality.h"
+#include "node_edge_count.h"
 #include "complement.h"
 #include "maxmin_range.h"
 #include "mdd2index.h"
@@ -70,6 +71,11 @@ namespace MEDDLY {
 
   const unary_opname* COPY = 0;
   const unary_opname* CARDINALITY = 0;
+  const unary_opname* NODE_COUNT = 0;
+#if 0
+  const unary_opname* EDGE_COUNT = 0;
+  const unary_opname* NODE_EDGE_COUNT = 0;
+#endif
   const unary_opname* COMPLEMENT = 0;
   const unary_opname* MAX_RANGE = 0;
   const unary_opname* MIN_RANGE = 0;
@@ -139,12 +145,17 @@ inline void initP(const T* &global, T* &local, T* init)
 
 void MEDDLY::builtin_initializer::setup()
 {
-  initP(MEDDLY::COPY,                 COPY,       initializeCopy()          );
-  initP(MEDDLY::CARDINALITY,          CARD,       initializeCardinality()   );
-  initP(MEDDLY::COMPLEMENT,           COMPL,      initializeComplement()    );
-  initP(MEDDLY::MAX_RANGE,            MAXRANGE,   initializeMaxRange()      );
-  initP(MEDDLY::MIN_RANGE,            MINRANGE,   initializeMaxRange()      );
-  initP(MEDDLY::CONVERT_TO_INDEX_SET, MDD2INDEX,  initializeMDD2INDEX()     );
+  initP(MEDDLY::COPY,                 COPY,             initializeCopy()          );
+  initP(MEDDLY::CARDINALITY,          CARD,             initializeCardinality()   );
+  initP(MEDDLY::NODE_COUNT,           NODE_COUNT,       initializeNodeCount()     );
+#if 0
+  initP(MEDDLY::EDGE_COUNT,           EDGE_COUNT,       initializeEdgeCount()     );
+  initP(MEDDLY::NODE_EDGE_COUNT,      NODE_EDGE_COUNT,  initializeNodeEdgeCount() );
+#endif
+  initP(MEDDLY::COMPLEMENT,           COMPL,            initializeComplement()    );
+  initP(MEDDLY::MAX_RANGE,            MAXRANGE,         initializeMaxRange()      );
+  initP(MEDDLY::MIN_RANGE,            MINRANGE,         initializeMaxRange()      );
+  initP(MEDDLY::CONVERT_TO_INDEX_SET, MDD2INDEX,        initializeMDD2INDEX()     );
 
   initP(MEDDLY::UNION,                UNION,      initializeUnion()         );
   initP(MEDDLY::INTERSECTION,         INTERSECT,  initializeIntersection()  );
@@ -200,12 +211,17 @@ inline void cleanPair(T *local, const T* &global)
 
 void MEDDLY::builtin_initializer::cleanup()
 {
-  cleanPair(COPY,           MEDDLY::COPY);
-  cleanPair(CARD,           MEDDLY::CARDINALITY);
-  cleanPair(COMPL,          MEDDLY::COMPLEMENT);
-  cleanPair(MAXRANGE,       MEDDLY::MAX_RANGE);
-  cleanPair(MINRANGE,       MEDDLY::MIN_RANGE);
-  cleanPair(MDD2INDEX,      MEDDLY::CONVERT_TO_INDEX_SET);
+  cleanPair(COPY,             MEDDLY::COPY);
+  cleanPair(CARD,             MEDDLY::CARDINALITY);
+  cleanPair(NODE_COUNT,       MEDDLY::NODE_COUNT);
+#if 0
+  cleanPair(EDGE_COUNT,       MEDDLY::EDGE_COUNT);
+  cleanPair(NODE_EDGE_COUNT,  MEDDLY::NODE_EDGE_COUNT);
+#endif
+  cleanPair(COMPL,            MEDDLY::COMPLEMENT);
+  cleanPair(MAXRANGE,         MEDDLY::MAX_RANGE);
+  cleanPair(MINRANGE,         MEDDLY::MIN_RANGE);
+  cleanPair(MDD2INDEX,        MEDDLY::CONVERT_TO_INDEX_SET);
 
   cleanPair(UNION,          MEDDLY::UNION);
   cleanPair(INTERSECT,      MEDDLY::INTERSECTION);

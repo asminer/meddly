@@ -27,6 +27,11 @@ namespace MEDDLY {
 class MEDDLY::builtin_initializer : public initializer_list {
   unary_opname* COPY;
   unary_opname* CARD;
+  unary_opname* NODE_COUNT;
+#if 0
+  unary_opname* EDGE_COUNT;
+  unary_opname* NODE_EDGE_COUNT;
+#endif
   unary_opname* COMPL;
   unary_opname* MAXRANGE;
   unary_opname* MINRANGE;
