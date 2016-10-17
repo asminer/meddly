@@ -3129,6 +3129,7 @@ class MEDDLY::unary_operation : public operation {
 
     // low-level front-ends
     virtual void compute(int k, node_handle a, double& res);
+    virtual void compute(int k, node_handle a, long &res);
 
     // TBD: low-level front-ends?
     // e.g.,

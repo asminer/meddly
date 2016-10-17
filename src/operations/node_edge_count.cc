@@ -60,8 +60,8 @@ public:
   virtual void compute(const dd_edge &arg, long &res) {
     res = compute_r(arg.getNode());
   }
-  long compute_r(int k, node_handle a) {
-    return compute_r(a);
+  virtual void compute(int k, node_handle a, long &res) {
+    res = compute_r(a);
   }
   long compute_r(node_handle a);
 };
