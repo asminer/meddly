@@ -35,10 +35,11 @@
 // #define DEBUG_SPLIT
 
 //#define COUNT_UNION_LENGTH
-//#define BATCHED_UNIONS
+#define BATCHED_UNIONS
 
 #ifdef BATCHED_UNIONS
 
+//#define BATCHED_UNIONS_FOR_SATURATE   // enables batch unions in saturate()
 #define BATCHED_UNIONS_FOR_REC_FIRE   // enables batch unions in rec_fire()
 
 #define DQ  // acc starts with 0, and d(i) is placed in queue
@@ -747,6 +748,10 @@ void MEDDLY::forwd_dfs_mt::sort(bool descending_order,
   mdd_sorter->setDescending(descending_order);
   std::sort(q.begin(), q.end(), *mdd_sorter);
 }
+
+#endif
+
+#ifdef BATCHED_UNIONS_FOR_SATURATE
 
 // SaturateHelper with batched unions
 void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
