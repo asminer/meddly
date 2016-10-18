@@ -178,9 +178,12 @@ int usage(const char* who)
   cerr << "\nUsage: " << name << " [options] script script ...\n\n";
   cerr << "Run testing scripts.  If none specified, read scripts from standard input.\n";
   cerr << "Possible options:\n";
+  cerr << "\t--              Remaining arguments are filenames.\n\n";
+  cerr << "\t-g N            set the granularity of the memory manager to N.\n";
+  cerr << "\t                Valid sizes are from 1 to 16; default is 4.\n\n";
   cerr << "\t-m MANAGER:     set the memory manager to the specified style.\n";
   cerr << "\t                 Possible managers:\n";
-  cerr << "\t                     NONE  (test input file only)\n";
+  cerr << "\t                     NONE  (default; test input file only)\n";
   cerr << "\t                     ORIGINAL_GRID\n";
 
   // TBD - granularity
@@ -203,6 +206,8 @@ int usage(const char* who)
 
 int main(int argc, const char** argv)
 {
+  MEDDLY::initialize();
+
   char buffer[MAX_ID+1];
   const char* program = argv[0];
 
@@ -212,12 +217,39 @@ int main(int argc, const char** argv)
 
   for (; argc>1; argv++, argc--) {
 
+    //
+    // Process --
+    //
     if (strcmp("--", argv[1]) == 0) {
       argv++;
       argc--;
       break;
     }
 
+    //
+    // Process -g
+    //
+    if (strcmp("-g", argv[1]) == 0) {
+      argv++;
+      argc--;
+
+      if (!argv[1]) {
+        std::cerr << "Missing argument to -g\n";
+        return usage(program)+1;
+      }
+      int G = atoi(argv[1]);
+      if (G<1 || G>16) {
+        std::cerr << "Value of " << G << " for -g is out of range 1..16, ignoring\n";
+      } else {
+        granularity = G;
+      }
+
+      continue;
+    }
+
+    //
+    // Process -m
+    //
     if (strcmp("-m", argv[1]) == 0) {
       argv++;
       argc--;
@@ -249,11 +281,17 @@ int main(int argc, const char** argv)
       continue;
     }
 
+    //
+    // Is this an attempt at a switch?
+    //
     if ('-' == argv[1][0]) {
       std::cerr << "Unknown switch: " << argv[1] << "\n";
       return usage(program)+1;
     }
 
+    //
+    // Done with switches
+    //
     break;
 
   } // for switches
@@ -269,8 +307,8 @@ int main(int argc, const char** argv)
     Mmm = mst->initManager(granularity, minsize);
     if (0==Mmm) {
       std::cout << "  error, couldn't create memory manager with\n";
-      std::cout << "      granularity = " << granularity << "\n";
-      std::cout << "      minsize = " << minsize << "\n";
+      std::cout << "      granularity = " << int(granularity) << "\n";
+      std::cout << "      minsize = " << int(minsize) << "\n";
       return 0;
     }
   }
@@ -406,5 +444,7 @@ int main(int argc, const char** argv)
 #ifdef DEBUG_PARSER
   std::cerr << "End of input\n";
 #endif
+
+  MEDDLY::cleanup();
 }
 
