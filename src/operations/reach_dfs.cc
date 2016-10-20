@@ -35,28 +35,41 @@
 // #define DEBUG_SPLIT
 
 //#define COUNT_UNION_LENGTH
+//#define BATCHED_UNLINK        // unlink intermediate results as a batch
 #define BATCHED_UNIONS
+//#define USE_NODE_COUNT
+
+#ifdef BATCHED_UNLINK
+std::deque<MEDDLY::node_handle> to_be_unlinked;
+#endif
 
 #ifdef BATCHED_UNIONS
 
-//#define BATCHED_UNIONS_FOR_SATURATE   // enables batch unions in saturate()
+#define BATCHED_UNIONS_FOR_SATURATE   // enables batch unions in saturate()
 #define BATCHED_UNIONS_FOR_REC_FIRE   // enables batch unions in rec_fire()
 
 #define DQ  // acc starts with 0, and d(i) is placed in queue
             // otherwise, acc starts with d(i)
 
-#define DESCENDING_ORDER true
+#ifdef USE_NODE_COUNT
 
-#if 0
+// Node count heuristic for batch unions
 #define COMPARISON_OPERATION NODE_COUNT
 #define RESULT_TYPE long
 #define MEDDLY_RESULT_TYPE INTEGER
+#define DESCENDING_ORDER false
+
 #else
+
+// Cardinality heuristic for batch unions
 #define COMPARISON_OPERATION CARDINALITY
 #define RESULT_TYPE double
 #define MEDDLY_RESULT_TYPE REAL
-#endif
-#endif
+#define DESCENDING_ORDER true
+
+#endif  // USE_NODE_COUNT
+
+#endif  // BATCHED_UNIONS
 
 namespace MEDDLY {
   class saturation_opname;
@@ -473,8 +486,9 @@ void MEDDLY::common_dfs_mt::showEntry(output &strm, const node_handle* data) con
   strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): " << long(data[2]) << "]";
 }
 
-//std::vector<std::vector<std::set<MEDDLY::node_handle>>> g_union_nodes;
+#ifdef BATCHED_UNIONS
 std::vector<std::vector<std::deque<MEDDLY::node_handle>>> g_union_nodes;
+#endif
 #ifdef COUNT_UNION_LENGTH
 // print histogram
 std::vector<long> union_length_counts;
@@ -506,6 +520,7 @@ void MEDDLY::common_dfs_mt
   // Partition NSF by levels
   splitMxd(b.getNode());
 
+#ifdef BATCHED_UNIONS
   // Initialize sets for each level
   g_union_nodes.clear();
   g_union_nodes.push_back(std::vector<std::deque<node_handle>>());
@@ -513,6 +528,7 @@ void MEDDLY::common_dfs_mt
     std::vector<std::deque<node_handle>> x(resF->getVariableSize(i));
     g_union_nodes.push_back(x);
   }
+#endif
 
 #ifdef COUNT_UNION_LENGTH
   union_length_counts.clear();
@@ -565,7 +581,15 @@ void MEDDLY::common_dfs_mt
   union_length_counts.clear();
   g_counts.clear();
 #endif
+
+#ifdef BATCHED_UNIONS
   g_union_nodes.clear();
+#endif
+
+#ifdef BATCHED_UNLINK
+  for (auto n : to_be_unlinked) resF->unlinkNode(n);
+  to_be_unlinked.clear();
+#endif
 }
 
 // Partition the nsf based on "top level"
@@ -796,17 +820,22 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
     node_handle acc = nb.d(i);
     resF->linkNode(acc);
     if (!union_nodes[i].empty()) {
+      // Sort queue by COMPARISON_OPERATION
 #ifdef DQ
       union_nodes[i].push_back(acc);
       acc = 0;
 #endif
-      // Sort queue by COMPARISON_OPERATION
       sort(DESCENDING_ORDER, nb.getLevel(), union_nodes[i]);
       // Add the nodes to acc
       for (auto mdd : union_nodes[i]) {
         // printf("%d\n", mdd);
         node_handle temp = mddUnion->compute(acc, mdd);
         resF->unlinkNode(acc);
+#ifdef BATCHED_UNLINK
+        to_be_unlinked.push_back(mdd);
+#else
+        resF->unlinkNode(mdd);
+#endif
         acc = temp;
       }
       union_nodes[i].clear();
@@ -845,24 +874,25 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
         continue; 
       }
 
+#if 0
+      if (0 == nb.d(j)) {
+        nb.d_ref(j) = rec;
+      }
+      else if (-1 == rec) {
+        resF->unlinkNode(nb.d(j));
+        nb.d_ref(j) = -1;
+        // nothing can be added to nb.d(j), therefore, empty its union_queue
+        for (auto n : union_nodes[j]) resF->unlinkNode(n);
+        union_nodes[j].clear();
+      }
+      else {
+        union_nodes[j].push_back(rec);
+      }
       queue->add(j);
-
-//      if (0 == nb.d(j)) {
-//        nb.d_ref(j) = rec;
-//      }
-//      else 
-//      if (-1 == rec) {
-//        resF->unlinkNode(nb.d(j));
-//        nb.d_ref(j) = -1;
-//        // nothing can be added to nb.d(j), therefore, empty its union_queue
-//        for (auto n : union_nodes[j]) resF->unlinkNode(n);
-//        union_nodes[j].clear();
-//      }
-//      else {
-//        union_nodes[j].push_back(rec);
-//      }
-
+#else
+      queue->add(j);
       union_nodes[j].push_back(rec);
+#endif
     } // for j
 
   } // while there are indexes to explore
@@ -951,7 +981,11 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
       }
       else {
         node_handle acc = mddUnion->compute(nb.d(j), rec);
+#ifdef BATCHED_UNLINK
+        to_be_unlinked.push_back(rec);
+#else
         resF->unlinkNode(rec);
+#endif
         if (acc != nb.d(j)) {
           resF->unlinkNode(nb.d(j));
           nb.d_ref(j) = acc;
@@ -1046,7 +1080,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
     // batches of unions per node index
     std::vector<std::deque<node_handle>>& union_nodes = g_union_nodes[nb->getLevel()];
     if (union_nodes.size() < nb->getSize()) union_nodes.resize(nb->getSize());
-    for (int i = 0; i < union_nodes.size(); i++) assert(union_nodes[i].empty());
+    // for (int i = 0; i < union_nodes.size(); i++) assert(union_nodes[i].empty());
 #endif
 
     // clear out result (important!)
@@ -1088,6 +1122,12 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
         if (0==newstates) continue;
 #ifdef BATCHED_UNIONS_FOR_REC_FIRE
         // batched union
+        /*
+        if (0 == nb->d(j) && union_nodes[j].empty()) {
+          nb->d_ref(j) = newstates;
+          continue;
+        }
+        */
         union_nodes[j].push_back(newstates);
 #else
         // no batches
@@ -1099,7 +1139,11 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
         const int oldj = nb->d(j);
         nb->d_ref(j) = mddUnion->compute(newstates, oldj);
         resF->unlinkNode(oldj);
+#ifdef BATCHED_UNLINK
+        to_be_unlinked.push_back(newstates);
+#else
         resF->unlinkNode(newstates);
+#endif
 #endif
 
 #ifdef COUNT_UNION_LENGTH
@@ -1119,8 +1163,8 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
 
 #ifdef BATCHED_UNIONS_FOR_REC_FIRE
     for (int i = 0; i < union_nodes.size(); i++) {
-      node_handle acc = nb->d_ref(i);
-      assert(0 == acc);
+      assert(0 == nb->d(i));
+      node_handle acc = 0;
       if (!union_nodes[i].empty()) {
         // Sort queue by COMPARISON_OPERATION
         sort(DESCENDING_ORDER, nb->getLevel(), union_nodes[i]);
@@ -1129,6 +1173,11 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
           // printf("%d\n", mdd);
           node_handle temp = mddUnion->compute(acc, mdd);
           resF->unlinkNode(acc);
+#ifdef BATCHED_UNLINK
+          to_be_unlinked.push_back(mdd);
+#else
+          resF->unlinkNode(mdd);
+#endif
           acc = temp;
         }
         union_nodes[i].clear();

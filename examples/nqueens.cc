@@ -38,8 +38,17 @@
 #include "meddly_expert.h"
 #include "timer.h"
 #include "loggers.h"
+#include <vector>
+#include <algorithm>
 
 // #define SHOW_ALL_SOLUTIONS
+#define BATCHED_MULTIPLY
+#define USE_HEAP
+#define USE_NODE_COUNT
+
+#ifdef USE_HEAP
+#include <queue>
+#endif
 
 using namespace MEDDLY;
 
@@ -49,6 +58,131 @@ const char* lfile;
 
 bool use_folding;
 
+#ifdef BATCHED_MULTIPLY
+
+#ifdef USE_NODE_COUNT
+#define COMPARISON_OPERATION NODE_COUNT
+#define RESULT_TYPE long
+#define MEDDLY_RESULT_TYPE INTEGER
+const bool descending_order = false;
+#else
+#define COMPARISON_OPERATION CARDINALITY
+#define RESULT_TYPE double
+#define MEDDLY_RESULT_TYPE REAL
+const bool descending_order = true;
+#endif
+
+class sorter {
+  MEDDLY::unary_operation *op;
+  int level;
+  bool descending;
+
+  public:
+
+  sorter(MEDDLY::unary_operation *op)
+    : op(op), level(0), descending(false) {}
+
+  void setLevel(int k) { level = k; }
+  void setDescending(bool d) { descending = d; }
+
+  // returns true if a must be placed before b in the sorted order
+  bool operator()(MEDDLY::node_handle a, MEDDLY::node_handle b) const {
+    if (descending) {
+      // descending order
+      // returns true if a > b
+      if (a == b || b == -1 || a == 0) return false;
+      if (b == 0 || a == -1) return true;
+      RESULT_TYPE card_a = 0, card_b = 0;
+      op->compute(level, a, card_a);
+      op->compute(level, b, card_b);
+      return card_a > card_b;
+    }
+    // ascending order
+    // returns true if a < b
+    if (a == b || a == -1 || b == 0) return false;
+    if (a == 0 || b == -1) return true;
+    RESULT_TYPE card_a = 0, card_b = 0;
+    op->compute(level, a, card_a);
+    op->compute(level, b, card_b);
+    return card_a < card_b;
+  }
+};
+
+void intersect_acc(dd_edge** A, int L)
+{
+  expert_forest* f = 0;
+  std::vector<MEDDLY::node_handle> q;
+  for (int i=0; i<L; i++) {
+    if (A[i]) {
+      if (0 == f) { f = dynamic_cast<expert_forest*>(A[i]->getForest()); }
+      q.push_back(A[i]->getNode());
+      f->linkNode(A[i]->getNode());
+      delete A[i];
+      A[i] = 0;
+    }
+  }
+  if (q.size() == 0) return;
+  assert(0 != f);
+
+  fprintf(stderr, "Original Order:\t ");
+  for (unsigned i=0; i<q.size(); i++) {
+    fprintf(stderr, "%lu ", q.size()-i);
+    fprintf(stderr, "(%d) ", q[i]);
+  }
+  fprintf(stderr, "\n");
+
+  // sort by cardinality
+  unary_operation* mddCardinality = getOperation(COMPARISON_OPERATION, f, MEDDLY_RESULT_TYPE);
+  assert(mddCardinality);
+  binary_operation* mddMultiply = getOperation(MULTIPLY, f, f, f);
+  assert(mddMultiply);
+
+  sorter mdd_sorter(mddCardinality);
+  mdd_sorter.setLevel(f->getNumVariables());
+  MEDDLY::node_handle result = 0;
+  fprintf(stderr, "\t");
+#ifdef USE_HEAP
+  mdd_sorter.setDescending(!descending_order);  // since this heap pulls from the "back"
+  std::priority_queue<node_handle, std::vector<node_handle>, sorter> pq(mdd_sorter);
+  for (auto n : q) pq.push(n);
+  result = pq.top();
+  pq.pop();
+  while (!pq.empty()) {
+    fprintf(stderr, "%lu ", pq.size());
+    MEDDLY::node_handle next = pq.top();
+    fprintf(stderr, "(%d) ", result);
+    fprintf(stderr, "(%d)\n", next);
+    pq.pop();
+    MEDDLY::node_handle temp = mddMultiply->compute(result, next);
+    f->unlinkNode(result);
+    f->unlinkNode(next);
+    pq.push(temp);
+    result = pq.top();
+    pq.pop();
+  }
+#else
+  mdd_sorter.setDescending(descending_order);
+  std::sort(q.begin(), q.end(), mdd_sorter);
+  result = q[0];
+  fprintf(stderr, "(%d) ", result);
+  for (unsigned i=1; i<q.size(); i++) {
+    fprintf(stderr, "%lu ", q.size()-i);
+    fprintf(stderr, "(%d) ", q[i]);
+    MEDDLY::node_handle temp = mddMultiply->compute(result, q[i]);
+    f->unlinkNode(result);
+    f->unlinkNode(q[i]);
+    result = temp;
+  }
+#endif
+
+  A[0] = new dd_edge(f);
+  A[0]->set(result);
+  fprintf(stderr, "\n");
+}
+
+#else
+
+// Original code, without batched operations
 
 void intersect_acc(dd_edge** A, int L)
 {
@@ -75,6 +209,8 @@ void intersect_acc(dd_edge** A, int L)
   }
   fprintf(stderr, "\n");
 }
+
+#endif
 
 
 void intersect_fold(dd_edge** A, int L)
