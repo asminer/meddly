@@ -30,6 +30,8 @@ namespace MEDDLY {
   class union_mdd;
   class union_mxd;
 
+  class union_min_evplus;
+
   class union_opname;
 };
 
@@ -152,6 +154,85 @@ bool MEDDLY::union_mxd::checkTerminals(node_handle a, node_handle b, node_handle
 
 // ******************************************************************
 // *                                                                *
+// *                    union_min_evplus  class                     *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::union_min_evplus : public generic_binary_evplus {
+  public:
+    union_min_evplus(const binary_opname* opcode, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res);
+
+  protected:
+    virtual bool checkTerminals(long aev, node_handle a, long bev, node_handle b,
+      long& cev, node_handle& c);
+};
+
+MEDDLY::union_min_evplus::union_min_evplus(const binary_opname* opcode,
+  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+  : generic_binary_evplus(opcode, arg1, arg2, res)
+{
+  operationCommutes();
+}
+
+bool MEDDLY::union_min_evplus::checkTerminals(long aev, node_handle a, long bev, node_handle b,
+  long& cev, node_handle& c)
+{
+  if (a == 0) {
+    if (arg2F == resF) {
+      cev = bev;
+      c = resF->linkNode(b);
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  if (b == 0) {
+    if (arg1F == resF) {
+      cev = aev;
+      c = resF->linkNode(a);
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  if (arg1F->isTerminalNode(a) && aev < bev) {
+    if (arg1F == resF) {
+      cev = aev;
+      c = resF->linkNode(a);
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  if (arg2F->isTerminalNode(b) && bev < aev) {
+    if (arg2F == resF) {
+      cev = bev;
+      c = resF->linkNode(b);
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  if (a == b) {
+    if (arg1F == arg2F && arg2F == resF) {
+      cev = (aev < bev ? aev : bev);
+      c = resF->linkNode(a);
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  return false;
+}
+
+// ******************************************************************
+// *                                                                *
 // *                       union_opname class                       *
 // *                                                                *
 // ******************************************************************
@@ -193,6 +274,15 @@ MEDDLY::union_opname::buildOperation(expert_forest* a1, expert_forest* a2,
       return new union_mxd(this, a1, a2, r);
     else
       return new union_mdd(this, a1, a2, r);
+  }
+
+  if (r->getEdgeLabeling() == forest::EVPLUS) {
+    if (r->isForRelations()) {
+      throw error(error::NOT_IMPLEMENTED);
+    }
+    else {
+      return new union_min_evplus(this, a1, a2, r);
+    }
   }
 
   throw error(error::NOT_IMPLEMENTED);

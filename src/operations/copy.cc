@@ -257,7 +257,10 @@ namespace MEDDLY {
   class copy_MT2EV : public unary_operation {
     public:
       copy_MT2EV(const unary_opname* oc, expert_forest* arg, 
-        expert_forest* res) : unary_operation(oc, 1, 2, arg, res)
+        expert_forest* res) : unary_operation(oc,
+          sizeof(node_handle) / sizeof(node_handle),
+          (sizeof(TYPE) + sizeof(node_handle)) / sizeof(node_handle),
+          arg, res)
       {
         // entry[0]: mt node 
         // entry[1]: EV value (output)
@@ -443,7 +446,10 @@ namespace MEDDLY {
   class copy_EV2MT : public unary_operation {
     public:
       copy_EV2MT(const unary_opname* oc, expert_forest* arg, 
-        expert_forest* res) : unary_operation(oc, 2, 1, arg, res)
+        expert_forest* res) : unary_operation(oc,
+          (sizeof(TYPE) + sizeof(node_handle)) / sizeof(node_handle),
+          sizeof(node_handle) / sizeof(node_handle),
+          arg, res)
       {
         // entry[0]: EV value
         // entry[1]: EV node
@@ -635,7 +641,10 @@ namespace MEDDLY {
   class copy_EV2EV_fast : public unary_operation {
     public:
       copy_EV2EV_fast(const unary_opname* oc, expert_forest* arg, 
-        expert_forest* res) : unary_operation(oc, 1, 1, arg, res)
+        expert_forest* res) : unary_operation(oc,
+          sizeof(node_handle) / sizeof(node_handle),
+          sizeof(node_handle) / sizeof(node_handle),
+          arg, res)
       {
         // entry[0]: EV node
         // entry[1]: EV node 
@@ -752,7 +761,10 @@ namespace MEDDLY {
   class copy_EV2EV_slow : public unary_operation {
     public:
       copy_EV2EV_slow(const unary_opname* oc, expert_forest* arg, 
-        expert_forest* res) : unary_operation(oc, 2, 2, arg, res)
+        expert_forest* res) : unary_operation(oc,
+          (sizeof(INTYPE) + sizeof(node_handle)) / sizeof(node_handle),
+          (sizeof(OUTTYPE) + sizeof(node_handle)) / sizeof(node_handle),
+          arg, res)
       {
         // entry[0]: EV value
         // entry[1]: EV node
@@ -979,7 +991,7 @@ MEDDLY::copy_opname
     //
     switch (res->getRangeType()) {
       case forest::INTEGER:
-        return new copy_MT2EV<int>(this, arg, res);
+        return new copy_MT2EV<long>(this, arg, res);
 
       case forest::REAL:
         return new copy_MT2EV<float>(this, arg, res);
@@ -1043,9 +1055,9 @@ MEDDLY::copy_opname
         case forest::INTEGER:
             switch (res->getRangeType()) {
                 case forest::INTEGER:
-                    return new copy_EV2EV_fast<int,int>(this, arg, res);
+                    return new copy_EV2EV_fast<long,long>(this, arg, res);
                 case forest::REAL:
-                    return new copy_EV2EV_fast<int,float>(this, arg, res);
+                    return new copy_EV2EV_fast<long,float>(this, arg, res);
                 default:
                     throw error(error::TYPE_MISMATCH);
             };

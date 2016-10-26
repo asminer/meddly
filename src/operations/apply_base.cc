@@ -449,6 +449,7 @@ MEDDLY::generic_binbylevel_mxd
 MEDDLY::generic_binary_ev::generic_binary_ev(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : binary_operation(code,
+      // XXX: Cause problem in case of EV*
       2 * (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle),
       (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle),
       arg1, arg2, res)
@@ -462,16 +463,16 @@ MEDDLY::generic_binary_ev::~generic_binary_ev()
 
 bool MEDDLY::generic_binary_ev::isStaleEntry(const node_handle* data)
 {
-  return arg1F->isStale(data[1]) ||
-         arg2F->isStale(data[3]) ||
-         resF->isStale(data[5]);
+  return arg1F->isStale(data[sizeof(long) / sizeof(node_handle)]) ||
+         arg2F->isStale(data[(2 * sizeof(long) + sizeof(node_handle)) / sizeof(node_handle)]) ||
+         resF->isStale(data[(3 * sizeof(long) + 2 * sizeof(node_handle)) / sizeof(node_handle)]);
 }
 
 void MEDDLY::generic_binary_ev::discardEntry(const node_handle* data)
 {
-  arg1F->uncacheNode(data[1]);
-  arg2F->uncacheNode(data[3]);
-  resF->uncacheNode(data[5]);
+  arg1F->uncacheNode(data[sizeof(long) / sizeof(node_handle)]);
+  arg2F->uncacheNode(data[(2 * sizeof(long) + sizeof(node_handle)) / sizeof(node_handle)]);
+  resF->uncacheNode(data[(3 * sizeof(long) + 2 * sizeof(node_handle)) / sizeof(node_handle)]);
 }
 
 // ******************************************************************

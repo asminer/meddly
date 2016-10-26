@@ -283,13 +283,6 @@ MEDDLY::unpacked_node::getEdge(int n, float &val) const
 }
 
 inline void
-MEDDLY::unpacked_node::setEdge(int n, int ev)
-{
-  MEDDLY_DCASSERT(sizeof(int) == edge_bytes);
-  MEDDLY::expert_forest::EVencoder<int>::writeValue(eptr_write(n), ev);
-}
-
-inline void
 MEDDLY::unpacked_node::setEdge(int n, long ev)
 {
   MEDDLY_DCASSERT(sizeof(long) == edge_bytes);

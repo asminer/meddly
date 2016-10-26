@@ -583,7 +583,6 @@ class MEDDLY::unpacked_node {
     void getEdge(int i, float& ev) const;
 
     /// Set the edge value, as an integer.
-    void setEdge(int i, int ev);
     void setEdge(int i, long ev);
 
     /// Set the edge value, as a float.
@@ -3174,6 +3173,8 @@ class MEDDLY::binary_operation : public operation {
     virtual void compute(int av, node_handle ap, int bv, node_handle bp,
       int &cv, node_handle &cp);
     virtual void compute(long av, node_handle ap, long bv, node_handle bp,
+      long &cv, node_handle &cp);
+    virtual void compute(long av, node_handle ap, node_handle bp,
       long &cv, node_handle &cp);
 
     /// Low-level compute on EV edges (av, ap) and (bv, bp), return result.
