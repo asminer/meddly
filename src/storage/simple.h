@@ -347,13 +347,14 @@ class MEDDLY::simple_grid_style : public node_storage_style {
   public:
     simple_grid_style(const char* n);
     virtual ~simple_grid_style();
-    virtual node_storage* createForForest(expert_forest* f) const;
+    virtual node_storage* createForForest(expert_forest* f,
+        const memory_manager_style* mst) const;
 };
 
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                    simple_array_style  class                    *
+// *                    simple_array_style class                    *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
@@ -363,7 +364,8 @@ class MEDDLY::simple_array_style : public node_storage_style {
   public:
     simple_array_style(const char* n);
     virtual ~simple_array_style();
-    virtual node_storage* createForForest(expert_forest* f) const;
+    virtual node_storage* createForForest(expert_forest* f,
+        const memory_manager_style* mst) const;
 };
 
 // ******************************************************************
@@ -382,7 +384,8 @@ class MEDDLY::simple_heap_style : public node_storage_style {
   public:
     simple_heap_style(const char* n);
     virtual ~simple_heap_style();
-    virtual node_storage* createForForest(expert_forest* f) const;
+    virtual node_storage* createForForest(expert_forest* f,
+        const memory_manager_style* mst) const;
 };
 
 
@@ -400,7 +403,8 @@ class MEDDLY::simple_none_style : public node_storage_style {
   public:
     simple_none_style(const char* n);
     virtual ~simple_none_style();
-    virtual node_storage* createForForest(expert_forest* f) const;
+    virtual node_storage* createForForest(expert_forest* f,
+        const memory_manager_style* mst) const;
 };
 
 

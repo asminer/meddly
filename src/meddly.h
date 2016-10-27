@@ -990,6 +990,9 @@ class MEDDLY::forest {
       // Default variable swap strategy.
       variable_swap_type swap;
 
+      /// Backend memory management mechanism for nodes.
+      const memory_manager_style* nodemm;
+
       /// Backend storage mechanism for nodes.
       const node_storage_style* nodestor;
 

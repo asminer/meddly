@@ -76,6 +76,7 @@ const unsigned char MEDDLY::forest::policies::ALLOW_SPARSE_STORAGE  = 0x02;
 
 MEDDLY::forest::policies::policies()
 {
+  nodemm = 0;   // 
   nodestor = 0; // should cause an exception later
 }
 
@@ -96,6 +97,8 @@ void MEDDLY::forest::policies::useDefaults(bool rel)
   orphanTrigger = 500000;
   compactAfterGC = false;
   compactBeforeExpand = true;
+
+  nodemm = ORIGINAL_GRID;
 
   // nodestor = CLASSIC_STORAGE;
   nodestor = SIMPLE_GRID;
@@ -740,7 +743,7 @@ void MEDDLY::expert_forest::initializeForest()
   //
   // Initialize node storage
   //
-  nodeMan = deflt.nodestor->createForForest(this);
+  nodeMan = deflt.nodestor->createForForest(this, deflt.nodemm);
 
 }
 

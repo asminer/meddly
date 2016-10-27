@@ -1103,11 +1103,13 @@ class MEDDLY::node_storage_style {
     /** Build a new node storage mechanism, bound to the given forest.
 
           @param  f   Forest to bind to
+          @param  mm  Memory manager style to use
 
           @return     A pointer to a node storage class,
                       initialized for forest f.
     */
-    virtual node_storage* createForForest(expert_forest* f) const = 0;
+    virtual node_storage* createForForest(expert_forest* f, 
+        const memory_manager_style* mmst) const = 0;
 
     const char* getName() const;
 };

@@ -1138,7 +1138,7 @@ MEDDLY::simple_grid_style::~simple_grid_style()
 }
 
 MEDDLY::node_storage* MEDDLY::simple_grid_style
-::createForForest(expert_forest* f) const
+::createForForest(expert_forest* f, const memory_manager_style*) const
 {
   return new simple_storage(f, new hm_grid, "simple node storage with grid for holes");
 }
@@ -1162,7 +1162,7 @@ MEDDLY::simple_array_style::~simple_array_style()
 }
 
 MEDDLY::node_storage* MEDDLY::simple_array_style
-::createForForest(expert_forest* f) const
+::createForForest(expert_forest* f, const memory_manager_style*) const
 {
   return new simple_storage(f, new hm_array, "simple node storage with array of lists for holes");
 }
@@ -1186,7 +1186,7 @@ MEDDLY::simple_heap_style::~simple_heap_style()
 }
 
 MEDDLY::node_storage* MEDDLY::simple_heap_style
-::createForForest(expert_forest* f) const
+::createForForest(expert_forest* f, const memory_manager_style*) const
 {
   return new simple_storage(f, new hm_heap, "simple node storage with heaps for holes");
 }
@@ -1210,7 +1210,7 @@ MEDDLY::simple_none_style::~simple_none_style()
 }
 
 MEDDLY::node_storage* MEDDLY::simple_none_style
-::createForForest(expert_forest* f) const
+::createForForest(expert_forest* f, const memory_manager_style*) const
 {
   return new simple_storage(f, new hm_none, "simple node storage with no hole management");
 }

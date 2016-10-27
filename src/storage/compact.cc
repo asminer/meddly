@@ -891,8 +891,9 @@ MEDDLY::compact_grid_style::~compact_grid_style()
 }
 
 MEDDLY::node_storage* MEDDLY::compact_grid_style
-::createForForest(expert_forest* f) const
+::createForForest(expert_forest* f, const memory_manager_style*) const
 {
+  // TBD - use memory manager
   return new compact_storage(f, new hm_grid, "compact node storage with grid for holes");
 }
 
