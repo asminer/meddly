@@ -270,17 +270,19 @@ namespace MEDDLY {
       virtual bool isStaleEntry(const node_handle* entryData) {
         return 
           argF->isStale(entryData[0]) ||
-          resF->isStale(entryData[2]);
+          resF->isStale(entryData[(sizeof(node_handle) + sizeof(TYPE)) / sizeof(node_handle)]);
       }
       virtual void discardEntry(const node_handle* entryData) {
         argF->uncacheNode(entryData[0]);
-        resF->uncacheNode(entryData[2]);
+        resF->uncacheNode(entryData[(sizeof(node_handle) + sizeof(TYPE)) / sizeof(node_handle)]);
       }
       virtual void showEntry(output &strm, const node_handle* entryData) const {
         TYPE ev;
-        compute_table::readEV(entryData+1, ev);
-        strm << "[" << getName() << "(" << long(entryData[0]) << ") <"
-             << ev << ", " << long(entryData[2]) << ">]";
+        compute_table::readEV(entryData + sizeof(node_handle) / sizeof(node_handle), ev);
+        strm << "[" << getName()
+          << "(" << long(entryData[0])
+          << ") <" << ev << ", " << long(entryData[(sizeof(node_handle) + sizeof(TYPE)) / sizeof(node_handle)])
+          << ">]";
       }
       virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
         node_handle b;
@@ -458,18 +460,20 @@ namespace MEDDLY {
 
       virtual bool isStaleEntry(const node_handle* entryData) {
         return 
-          argF->isStale(entryData[1]) ||
-          resF->isStale(entryData[2]);
+          argF->isStale(entryData[sizeof(TYPE) / sizeof(node_handle)]) ||
+          resF->isStale(entryData[(sizeof(TYPE) + sizeof(node_handle)) / sizeof(node_handle)]);
       }
       virtual void discardEntry(const node_handle* entryData) {
-        argF->uncacheNode(entryData[1]);
-        resF->uncacheNode(entryData[2]);
+        argF->uncacheNode(entryData[sizeof(TYPE) / sizeof(node_handle)]);
+        resF->uncacheNode(entryData[(sizeof(TYPE) + sizeof(node_handle)) / sizeof(node_handle)]);
       }
       virtual void showEntry(output &strm, const node_handle* entryData) const {
         TYPE ev;
         compute_table::readEV(entryData, ev);
-        strm  << "[" << getName() << "(<" << ev << "," << long(entryData[1])
-              << "> " << long(entryData[2]) << "]"; 
+        strm << "[" << getName()
+          << "(<" << ev << "," << long(entryData[sizeof(TYPE) / sizeof(node_handle)])
+          << ">) " << long(entryData[(sizeof(TYPE) + sizeof(node_handle)) / sizeof(node_handle)])
+          << "]";
       }
       virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
         TYPE ev;
@@ -659,8 +663,10 @@ namespace MEDDLY {
         resF->uncacheNode(entryData[1]);
       }
       virtual void showEntry(output &strm, const node_handle* entryData) const {
-        strm  << "[" << getName() << "(<?," << long(entryData[0]) 
-              << ">) <?," << long(entryData[1]) << ">]";
+        strm << "[" << getName()
+          << "(<?," << long(entryData[0])
+          << ">) <?," << long(entryData[1])
+          << ">]";
       }
       virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
         INTYPE av;
@@ -774,12 +780,12 @@ namespace MEDDLY {
 
       virtual bool isStaleEntry(const node_handle* entryData) {
         return 
-          argF->isStale(entryData[1]) ||
-          resF->isStale(entryData[3]);
+          argF->isStale(entryData[sizeof(INTYPE) / sizeof(node_handle)]) ||
+          resF->isStale(entryData[(sizeof(INTYPE) + sizeof(node_handle) + sizeof(OUTTYPE)) / sizeof(node_handle)]);
       }
       virtual void discardEntry(const node_handle* entryData) {
-        argF->uncacheNode(entryData[1]);
-        resF->uncacheNode(entryData[3]);
+        argF->uncacheNode(entryData[sizeof(INTYPE) / sizeof(node_handle)]);
+        resF->uncacheNode(entryData[(sizeof(INTYPE) + sizeof(node_handle) + sizeof(OUTTYPE)) / sizeof(node_handle)]);
       }
       virtual void showEntry(output &strm, const node_handle* entryData) const {
         INTYPE ev1;
@@ -787,10 +793,12 @@ namespace MEDDLY {
         node_handle n1 = entryData[sizeof(INTYPE) / sizeof(node_handle)];
         OUTTYPE ev2;
         compute_table::readEV(entryData + (sizeof(INTYPE) + sizeof(node_handle)) / sizeof(node_handle), ev2);
-        node_handle n2 = entryData[(sizeof(INTYPE) + sizeof(node_handle) + sizeof(INTYPE)) / sizeof(node_handle)];
+        node_handle n2 = entryData[(sizeof(INTYPE) + sizeof(node_handle) + sizeof(OUTTYPE)) / sizeof(node_handle)];
 
-        strm << "[" << getName() << "(<" << ev1 << "," << n1
-             << "> <" << ev2 << "," << n2 << ">]";
+        strm << "[" << getName()
+          << "(<" << ev1 << "," << n1
+          << ">) <" << ev2 << "," << n2
+          << ">]";
       }
       virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
         INTYPE av;
@@ -1008,7 +1016,7 @@ MEDDLY::copy_opname
     //
     switch (arg->getRangeType()) {
       case forest::INTEGER:
-        return new copy_EV2MT<int,PLUS>(this, arg, res);
+        return new copy_EV2MT<long,PLUS>(this, arg, res);
 
       case forest::REAL:
         return new copy_EV2MT<float,PLUS>(this, arg, res);
@@ -1025,7 +1033,7 @@ MEDDLY::copy_opname
     //
     switch (arg->getRangeType()) {
       case forest::INTEGER:
-        return new copy_EV2MT<int,TIMES>(this, arg, res);
+        return new copy_EV2MT<long,TIMES>(this, arg, res);
 
       case forest::REAL:
         return new copy_EV2MT<float,TIMES>(this, arg, res);
