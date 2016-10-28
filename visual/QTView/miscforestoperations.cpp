@@ -174,19 +174,21 @@ void playForests(Parser *parser
 
             //Empty the last of the updates
             drawUpdates(forest1
-                        , forest2
                         , isInForest1Updates
-                        , isInForest2Updates
                         , Forest1Updates
-                        , Forest2Updates
                         , forest1Scene
-                        , forest2Scene
                         , f1PenHeight
-                        , f2PenHeight
                         , f1base
+                        , f1HorizontalReductionValue);
+
+            drawUpdates(forest2
+                        , isInForest2Updates
+                        , Forest2Updates
+                        , forest2Scene
+                        , f2PenHeight
                         , f2base
-                        , f1HorizontalReductionValue
                         , f2HorizontalReductionValue);
+
             delete parser;
             delete forest1;
             delete forest2;
@@ -316,19 +318,22 @@ void playForests(Parser *parser
                 delayMili(tempMiliseconds*speedFactorValue);
 
                 drawUpdates(forest1
-                            , forest2
                             , isInForest1Updates
-                            , isInForest2Updates
                             , Forest1Updates
-                            , Forest2Updates
                             , forest1Scene
-                            , forest2Scene
                             , f1PenHeight
-                            , f2PenHeight
                             , f1base
+                            , f1HorizontalReductionValue);
+
+                drawUpdates(forest2
+                            , isInForest2Updates
+                            , Forest2Updates
+                            , forest2Scene
+                            , f2PenHeight
                             , f2base
-                            , f1HorizontalReductionValue
                             , f2HorizontalReductionValue);
+
+
 
             }
             continueLoop = false;

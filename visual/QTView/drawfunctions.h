@@ -19,18 +19,12 @@ void drawRelation(QGraphicsScene *forestScene
 
 int generatePenHeight(int size);
 
-void drawUpdates(QVector<int> *&forest1
-                 , QVector<int> *&forest2
-                 , QVector<int> &isInForest1Updates
-                 , QVector<int> &isInForest2Updates
-                 , QVector<int> &Forest1Updates
-                 , QVector<int> &Forest2Updates
-                 , QGraphicsScene *&forest1Scene
-                 , QGraphicsScene *&forest2Scene
-                 , int f1PenHeight, int f2PenHeight
-                 , int f1base, int f2base
-                 , int f1HorizontalReductionValue
-                 , int f2HorizontalReductionValue);
+void drawUpdates(QVector<int> *&forest
+                 , QVector<int> &isInForestUpdates
+                 , QVector<int> &ForestUpdates
+                 , QGraphicsScene *&forestScene
+                 , int fPenHeight, int fbase, int fHorizontalReductionValue
+                 );
 
 void drawRulers(QGraphicsScene *forestScene
                 , int penHeight, int forestsize, int setOrRelation);
