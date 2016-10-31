@@ -44,7 +44,7 @@ void drawSet(QGraphicsScene *forestScene
     }
     QPen red(Qt::red);
     red.setWidth(1);
-    forestScene->addLine(0,0,20,0,red);
+    forestScene->addLine(-20,0,-1,0,red);
 }
 
 /*
@@ -106,8 +106,7 @@ void drawRelation(QGraphicsScene *forestScene
     }
     QPen red(Qt::red);
     red.setWidth(1);
-    forestScene->addLine(0,0,20,0,red);
-
+    forestScene->addLine(-20,0,-1,0,red);
 
 }
 
@@ -134,7 +133,7 @@ void drawRulers(QGraphicsScene *forestScene
 
     if(setOrRelation == 0)
     {
-
+        //add code for marks on ruler.
 
         int height = 0;
         //while
@@ -244,6 +243,7 @@ void drawUpdates(QVector<int> *&forest
                 line = forestScene->itemAt(x, y, QTransform());
                 forestScene->removeItem(line);
                 delete line;
+                delayMili(1);
 
                 int endline = forest->at(indexOfForest);
                 endline = endline/fHorizontalReductionValue;
@@ -264,6 +264,7 @@ void drawUpdates(QVector<int> *&forest
                 line = forestScene->itemAt(x, y, QTransform());
                 forestScene->removeItem(line);
                 delete line;
+                delayMili(1);
 
                 int endline = forest->at(indexOfForest);
                 endline = endline/fHorizontalReductionValue;

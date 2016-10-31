@@ -167,9 +167,11 @@ void playForests(Parser *parser
     {
         QString line = parser->readLine();
 
+        //End of File.
         if (line.length() <1)
         {
-            //QMessageBox::information(NULL,"File Name", "End of file");
+            //QMessageBox::information(NULL,"File Name",
+            //                            "End of file");
             endOfFile = true;
 
             //Empty the last of the updates
@@ -200,12 +202,11 @@ void playForests(Parser *parser
         int u = t.toLatin1();
 
         switch (u)
-        {
+        {        
         /*
          * This is the p line
          * This case sets the lables with the correct message
          */
-
         case 112:
         {
             QChar fNumber = line.at(2);
@@ -226,8 +227,8 @@ void playForests(Parser *parser
         }
         /*
          * This is the 'a' line
-         * This function uses boolean arrays to indicate if an update is already
-         * in the forest update list.
+         * This function uses boolean arrays to indicate if an update
+         * is already in the forest update list.
          */
         case 97:
         {
@@ -282,8 +283,6 @@ void playForests(Parser *parser
          * This is the t line.
          * This function will calculate the time to wait in microseconds
          * then convert it to miliseconds.
-         *
-         *
          */
         case 116:
         {
@@ -299,10 +298,8 @@ void playForests(Parser *parser
 
             int tempTimeToWait = tempSeconds * 1000000 + tempMicroseconds;
 
-            /*
-             *
-             */
-            if(tempTimeToWait >= (100000 / speedFactorValue))
+            //tempTimeToWait >= (100000 / speedFactorValue)
+            if(true)
             {
                 oldSeconds = newSeconds;
 
