@@ -144,6 +144,19 @@ namespace MEDDLY {
   // *                     Node storage mechanisms                    *
   // ******************************************************************
 
+  /**
+    New, "simple" style with memory manager removed.
+    This node storage mechanism relies on the 
+    memory_manager_style for memory management.
+  */
+  extern const node_storage_style* SIMPLE_STORAGE;
+
+
+  // 
+  // From here are "old" mechanisms for node storage,
+  // with built-in memory managers.
+  //
+
   /** "Classic" node storage mechanism.
       The node storage mechanism from early versions of this library.
   */

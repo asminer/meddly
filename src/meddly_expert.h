@@ -951,7 +951,7 @@ class MEDDLY::memory_manager {
     };
 
   public:
-    memory_manager();
+    memory_manager(const char* sn);
     virtual ~memory_manager();
 
     /**
@@ -1068,6 +1068,11 @@ class MEDDLY::memory_manager {
 
   public:
     /**
+        Return the name of the style that created us.
+    */
+    const char* getStyleName() const;
+
+    /**
         Reset the global memory stats.
         
         TBD - make this private and the initializer that sets this
@@ -1077,6 +1082,8 @@ class MEDDLY::memory_manager {
     static void resetGlobalStats();
 
   private:
+    /// Name of the style that invoked us
+    const char* style_name;
     static stats global_mem;
     stats my_mem;
 };
@@ -1139,7 +1146,7 @@ class MEDDLY::node_storage_style {
 */
 class MEDDLY::node_storage {
   public:
-    node_storage(expert_forest* f);
+    node_storage(const char* sn, expert_forest* f);
     virtual ~node_storage();
 
     /** Go through and collect any garbage.
@@ -1334,6 +1341,13 @@ class MEDDLY::node_storage {
     virtual void setNextOf(node_address addr, node_handle n);
 #endif
 
+    //
+
+    /**
+        Return the name of the style that created us.
+    */
+    const char* getStyleName() const;
+
   protected:
     /// Dump information not related to individual nodes.
     virtual void dumpInternalInfo(output &s) const = 0;
@@ -1386,6 +1400,9 @@ class MEDDLY::node_storage {
     friend class holeman;
 
   private:
+    /// Name of the style that invoked us
+    const char* style_name;
+
     /// Parent forest.
     expert_forest* parent;
 

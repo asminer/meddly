@@ -30,6 +30,8 @@
 #include "compact.h"
 
 namespace MEDDLY {
+  const node_storage_style* SIMPLE_STORAGE = 0;
+
   const node_storage_style* CLASSIC_STORAGE = 0;
 
   const node_storage_style* SIMPLE_GRID = 0;
@@ -46,6 +48,8 @@ namespace MEDDLY {
 MEDDLY::storage_initializer::storage_initializer(initializer_list *p)
  : initializer_list(p)
 {
+  simple = 0;
+
   classic = 0;
 
   simple_grid = 0;
@@ -58,6 +62,8 @@ MEDDLY::storage_initializer::storage_initializer(initializer_list *p)
 
 void MEDDLY::storage_initializer::setup()
 {
+  SIMPLE_STORAGE = (simple = new simple_separated_style("SIMPLE_STORAGE")); 
+
   CLASSIC_STORAGE = (classic = new old_node_storage_style("CLASSIC_STORAGE"));
 
   SIMPLE_GRID  = (simple_grid  = new simple_grid_style("SIMPLE_GRID"));
@@ -70,6 +76,10 @@ void MEDDLY::storage_initializer::setup()
 
 void MEDDLY::storage_initializer::cleanup()
 {
+  delete simple;
+  SIMPLE_STORAGE = (simple = 0);
+
+
   delete classic;
   CLASSIC_STORAGE = (classic = 0);
 

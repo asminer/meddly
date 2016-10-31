@@ -166,7 +166,7 @@ class MEDDLY::old_node_storage_style : public node_storage_style {
 class MEDDLY::old_node_storage : public node_storage {
   // required interface
   public:
-    old_node_storage(expert_forest* f);
+    old_node_storage(const char* n, expert_forest* f);
     virtual ~old_node_storage();
 
     virtual void collectGarbage(bool shrink);

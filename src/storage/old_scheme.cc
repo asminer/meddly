@@ -64,7 +64,7 @@ MEDDLY::node_storage* MEDDLY::old_node_storage_style
 ::createForForest(expert_forest* f, const memory_manager_style*) const
 {
   // TBD - use memory manager
-  return new old_node_storage(f);
+  return new old_node_storage(getName(), f);
 }
 
 // ******************************************************************
@@ -76,7 +76,8 @@ MEDDLY::node_storage* MEDDLY::old_node_storage_style
 // ******************************************************************
 
 
-MEDDLY::old_node_storage::old_node_storage(expert_forest* f) : node_storage(f)
+MEDDLY::old_node_storage::old_node_storage(const char* n, expert_forest* f)
+ : node_storage(n, f)
 {
   data = 0;
   size = 0;

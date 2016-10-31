@@ -44,8 +44,9 @@ MEDDLY::memory_manager_style::~memory_manager_style()
 
 MEDDLY::memory_manager::stats MEDDLY::memory_manager::global_mem;
 
-MEDDLY::memory_manager::memory_manager()
+MEDDLY::memory_manager::memory_manager(const char* n)
 {
+  style_name = n;
   my_mem.reset();
 }
 

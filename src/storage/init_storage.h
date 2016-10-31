@@ -25,6 +25,10 @@ namespace MEDDLY {
 
 class MEDDLY::storage_initializer : public initializer_list {
 
+    node_storage_style* simple;
+
+    // old mechanisms...
+
     node_storage_style* classic;
 
     node_storage_style* simple_grid;

@@ -87,7 +87,7 @@ namespace MEDDLY {
   class original_grid : public memory_manager {
 
     public:
-      original_grid();
+      original_grid(const char* n);
       virtual ~original_grid();
 
       virtual bool mustRecycleManually() const {
@@ -219,7 +219,7 @@ namespace MEDDLY {
   // ******************************************************************
 
   template <class INT>
-  original_grid<INT>::original_grid()
+  original_grid<INT>::original_grid(const char* n) : memory_manager(n)
   {
     data = 0;
     data_alloc = 0;
@@ -784,15 +784,15 @@ MEDDLY::memory_manager*
 MEDDLY::orig_grid_style::initManager(unsigned char granularity, unsigned char minsize) const
 {
   if (sizeof(int) == granularity) {
-    return new original_grid <int>;
+    return new original_grid <int>(getName());
   }
 
   if (sizeof(long) == granularity) {
-    return new original_grid <long>;
+    return new original_grid <long>(getName());
   }
 
   if (sizeof(short) == granularity) {
-    return new original_grid <short>;
+    return new original_grid <short>(getName());
   }
 
   // unsupported granularity

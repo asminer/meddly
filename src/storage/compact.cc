@@ -54,11 +54,11 @@ inline void fprintRaw(MEDDLY::output &s, const char* what, unsigned char* x, int
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::compact_storage::compact_storage(expert_forest* f, holeman* hm, const char* sN)
-: node_storage(f)
+MEDDLY::compact_storage::compact_storage(const char* n, expert_forest* f, holeman* hm)
+: node_storage(n, f)
 {
   holeManager = hm;
-  storageName = sN;
+  // storageName = sN;
   data = 0;
   memchunk = 0;
 
@@ -177,7 +177,7 @@ void MEDDLY::compact_storage
     expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED;
 
   if (flags & STORAGE) {
-    s << pad << "Stats for " << storageName << "\n";
+    s << pad << "Stats for " << getStyleName() << "\n";
 
     // anything for us?
   }
@@ -894,6 +894,6 @@ MEDDLY::node_storage* MEDDLY::compact_grid_style
 ::createForForest(expert_forest* f, const memory_manager_style*) const
 {
   // TBD - use memory manager
-  return new compact_storage(f, new hm_grid, "compact node storage with grid for holes");
+  return new compact_storage("compact_grid", f, new hm_grid);
 }
 

@@ -115,7 +115,7 @@ namespace MEDDLY {
 class MEDDLY::compact_storage : public node_storage {
   // required interface
   public:
-    compact_storage(expert_forest* f, holeman* hm, const char* sN);
+    compact_storage(const char* n, expert_forest* f, holeman* hm);
     virtual ~compact_storage();
 
     virtual void collectGarbage(bool shrink);
@@ -1323,7 +1323,7 @@ class MEDDLY::compact_storage : public node_storage {
       static const int extraSlots = 3;
   private:
     /// what we are, for display purposes
-    const char* storageName;
+    // const char* storageName;
 
     /// the data array
     node_handle* data;

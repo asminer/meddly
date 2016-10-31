@@ -484,6 +484,11 @@ inline const char* MEDDLY::memory_manager_style::getName() const
 // *                                                                *
 // ******************************************************************
 
+inline const char* MEDDLY::memory_manager::getStyleName() const
+{
+  return style_name;
+}
+
 inline void MEDDLY::memory_manager::stats::reset()
 {
   memory_used = 0;
@@ -618,6 +623,12 @@ MEDDLY::node_storage::setNextOf(node_address addr, MEDDLY::node_handle n)
   nexts[addr] = n;
 }
 #endif
+
+inline const char*
+MEDDLY::node_storage::getStyleName() const
+{
+  return style_name;
+}
 
 inline const MEDDLY::expert_forest*
 MEDDLY::node_storage::getParent() const

@@ -379,11 +379,12 @@ MEDDLY::node_storage_style::~node_storage_style()
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::node_storage::node_storage(expert_forest* f)
+MEDDLY::node_storage::node_storage(const char* n, expert_forest* f)
 {
   counts = 0;
   nexts = 0;
 
+  style_name = n;
   parent = f;
   stats = &parent->changeStats();
 }
