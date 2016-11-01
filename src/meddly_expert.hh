@@ -261,12 +261,12 @@ MEDDLY::unpacked_node::eptr_write(int i)
 }
 
 
-inline void
-MEDDLY::unpacked_node::getEdge(int n, int &val) const
-{
-  MEDDLY_DCASSERT(sizeof(int) == edge_bytes);
-  MEDDLY::expert_forest::EVencoder<int>::readValue(eptr(n), val);
-}
+//inline void
+//MEDDLY::unpacked_node::getEdge(int n, int &val) const
+//{
+//  MEDDLY_DCASSERT(sizeof(int) == edge_bytes);
+//  MEDDLY::expert_forest::EVencoder<int>::readValue(eptr(n), val);
+//}
 
 inline void
 MEDDLY::unpacked_node::getEdge(int n, long &val) const

@@ -286,7 +286,7 @@ namespace MEDDLY {
       }
       virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
         node_handle b;
-        TYPE bev;
+        TYPE bev = Inf<TYPE>();
         if (argF->getReductionRule() == resF->getReductionRule()) {
           computeSkip(-1, arg.getNode(), b, bev);  // same skipping rule, ok
         } else {
@@ -319,6 +319,8 @@ namespace MEDDLY {
       inline void addToCache(compute_table::search_key* Key,
         node_handle a, node_handle b, TYPE bev) 
       {
+        MEDDLY_DCASSERT(bev != Inf<TYPE>());
+
         argF->cacheNode(a);
         compute_table::entry_builder &entry = CT->startNewEntry(Key);
         // entry.writeKeyNH(argF->cacheNode(a));
@@ -337,7 +339,13 @@ void MEDDLY::copy_MT2EV<TYPE>
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
-    argF->getValueFromHandle(a, bev);
+    MEDDLY_DCASSERT(a != argF->getTransparentNode());
+    if (argF->getRangeType() == forest::BOOLEAN) {
+      bev = 0;
+    }
+    else {
+      argF->getValueFromHandle(a, bev);
+    }
     b = expert_forest::bool_Tencoder::value2handle(true);
     return;
   }
@@ -357,7 +365,7 @@ void MEDDLY::copy_MT2EV<TYPE>
   // recurse
   for (int z=0; z<A->getNNZs(); z++) {
     node_handle d;
-    TYPE dev;
+    TYPE dev = Inf<TYPE>();
     computeSkip(A->i(z), A->d(z), d, dev);
     nb->i_ref(z) = A->i(z);
     nb->d_ref(z) = d;
@@ -380,7 +388,13 @@ void MEDDLY::copy_MT2EV<TYPE>
 {
   // Check terminals
   if (0==k) {
-    argF->getValueFromHandle(a, bev);
+    MEDDLY_DCASSERT(a != argF->getTransparentNode());
+    if (argF->getRangeType() == forest::BOOLEAN) {
+      bev = 0;
+    }
+    else {
+      argF->getValueFromHandle(a, bev);
+    }
     b = expert_forest::bool_Tencoder::value2handle(true);
     return;
   }
@@ -531,7 +545,13 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
-    return resF->handleForValue(ev);
+    MEDDLY_DCASSERT(a != argF->getTransparentNode());
+    if (resF->getRangeType() == forest::BOOLEAN) {
+      return expert_forest::bool_Tencoder::value2handle(true);
+    }
+    else {
+      return resF->handleForValue(ev);
+    }
   }
 
   // Check compute table
@@ -572,7 +592,13 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
 {
   // Check terminals
   if (0==k) {
-    return resF->handleForValue(ev);
+    MEDDLY_DCASSERT(a != argF->getTransparentNode());
+    if (resF->getRangeType() == forest::BOOLEAN) {
+      return expert_forest::bool_Tencoder::value2handle(true);
+    }
+    else {
+      return resF->handleForValue(ev);
+    }
   }
 
   // Get level number

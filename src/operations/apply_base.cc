@@ -503,7 +503,7 @@ void MEDDLY::generic_binary_evplus
 ::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
 {
   node_handle result;
-  long ev = 0, aev = 0, bev = 0;
+  long ev = Inf<long>(), aev = Inf<long>(), bev = Inf<long>();
   a.getEdgeValue(aev);
   b.getEdgeValue(bev);
   compute(aev, a.getNode(), bev, b.getNode(), ev, result);

@@ -509,6 +509,8 @@ class MEDDLY::image_op_evplus : public binary_operation {
     inline compute_table::search_key*
     findResult(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle &resEvmdd)
     {
+      MEDDLY_DCASSERT(ev != Inf<long>());
+
       compute_table::search_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
@@ -517,7 +519,9 @@ class MEDDLY::image_op_evplus : public binary_operation {
       compute_table::search_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       cacheFind.read(resEv);
-      resEv += ev;
+      if (resEv != Inf<long>()) {
+        resEv += ev;
+      }
       resEvmdd = resF->linkNode(cacheFind.readNH());
       doneCTkey(CTsrch);
       return 0;
@@ -525,10 +529,12 @@ class MEDDLY::image_op_evplus : public binary_operation {
     inline void saveResult(compute_table::search_key* Key,
       long ev, node_handle evmdd, node_handle mxd, long resEv, node_handle resEvmdd)
     {
+      MEDDLY_DCASSERT(ev != Inf<long>());
+
       argV->cacheNode(evmdd);
       argM->cacheNode(mxd);
       compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResult(resEv - ev);
+      entry.writeResult(resEv == Inf<long>() ? resEv : resEv - ev);
       entry.writeResultNH(resF->cacheNode(resEvmdd));
       CT->addEntry();
     }

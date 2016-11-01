@@ -342,6 +342,8 @@ class MEDDLY::common_dfs_evplus : public binary_operation {
     inline compute_table::search_key*
     findResult(long aev, node_handle a, node_handle b, long& cev, node_handle& c)
     {
+      MEDDLY_DCASSERT(aev != Inf<long>());
+
       compute_table::search_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
@@ -351,7 +353,9 @@ class MEDDLY::common_dfs_evplus : public binary_operation {
       compute_table::search_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       cacheFind.read(cev);
-      cev += aev;
+      if (cev != Inf<long>()) {
+        cev += aev;
+      }
       c = resF->linkNode(cacheFind.readNH());
       doneCTkey(CTsrch);
       return 0;
@@ -359,10 +363,12 @@ class MEDDLY::common_dfs_evplus : public binary_operation {
     inline void saveResult(compute_table::search_key* Key,
       long aev, node_handle a, node_handle b, long cev, node_handle c)
     {
+      MEDDLY_DCASSERT(aev != Inf<long>());
+
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
       compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResult(cev - aev);
+      entry.writeResult(cev == Inf<long>() ? cev : cev - aev);
       entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();
     }

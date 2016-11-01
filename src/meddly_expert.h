@@ -576,7 +576,7 @@ class MEDDLY::unpacked_node {
     void* eptr_write(int i);
 
     /// Get the edge value, as an integer.
-    void getEdge(int i, int& ev) const;
+//    void getEdge(int i, int& ev) const;
     void getEdge(int i, long& ev) const;
 
     /// Get the edge value, as a float.

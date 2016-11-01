@@ -141,13 +141,13 @@ void MEDDLY::dd_edge::destroy()
   }
 }
 
-void MEDDLY::dd_edge::getEdgeValue(int& ev) const
-{
-  MEDDLY_DCASSERT(parent);
-  MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
-  MEDDLY_DCASSERT(forest::INTEGER == parent->getRangeType());
-  expert_forest::EVencoder<int>::readValue(&raw_value, ev);
-}
+//void MEDDLY::dd_edge::getEdgeValue(int& ev) const
+//{
+//  MEDDLY_DCASSERT(parent);
+//  MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
+//  MEDDLY_DCASSERT(forest::INTEGER == parent->getRangeType());
+//  expert_forest::EVencoder<int>::readValue(&raw_value, ev);
+//}
 
 void MEDDLY::dd_edge::getEdgeValue(long& ev) const
 {
@@ -182,14 +182,14 @@ void MEDDLY::dd_edge::set(node_handle n)
   unlinkNode(parent, old);
 }
 
-void MEDDLY::dd_edge::set(node_handle n, int v)
-{
-  MEDDLY_DCASSERT(parent);
-  MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
-  MEDDLY_DCASSERT(forest::INTEGER == parent->getRangeType());
-  set(n);
-  expert_forest::EVencoder<int>::writeValue(&raw_value, v);
-}
+//void MEDDLY::dd_edge::set(node_handle n, int v)
+//{
+//  MEDDLY_DCASSERT(parent);
+//  MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
+//  MEDDLY_DCASSERT(forest::INTEGER == parent->getRangeType());
+//  set(n);
+//  expert_forest::EVencoder<int>::writeValue(&raw_value, v);
+//}
 
 void MEDDLY::dd_edge::set(node_handle n, long v)
 {
@@ -307,7 +307,7 @@ void MEDDLY::dd_edge::show(output &strm, int verbosity) const
       getEdgeValue(ev);
       strm << "value: " << ev << ", ";
     } else {
-      int iv;
+      long iv = Inf<long>();
       getEdgeValue(iv);
       strm << "value: " << iv << ", ";
     }

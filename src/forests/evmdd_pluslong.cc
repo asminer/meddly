@@ -84,7 +84,7 @@ void MEDDLY::evmdd_pluslong
   evmdd_edgemaker<OP, long>
   EM(this, ordered_vlist, terms_long, order, N, num_vars, unionOp);
 
-  long ev = 0;
+  long ev = Inf<long>();
   node_handle ep = 0;
   EM.createEdge(ev, ep);
   e.set(ep, ev);
@@ -366,7 +366,7 @@ bool MEDDLY::evmdd_pluslong::evpimdd_iterator::start(const dd_edge &e)
     throw error(error::FOREST_MISMATCH);
   }
 
-  int ev;
+  long ev = Inf<long>();
   e.getEdgeValue(ev);
   acc_evs[maxLevel] = ev;
 
@@ -390,7 +390,7 @@ bool MEDDLY::evmdd_pluslong::evpimdd_iterator::next()
       index[k] = path[k].i(nzp[k]);
       down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
-      int ev;
+      long ev = Inf<long>();
       path[k].getEdge(nzp[k], ev);
       acc_evs[k-1] = acc_evs[k] + ev;
       break;
@@ -424,7 +424,7 @@ bool MEDDLY::evmdd_pluslong::evpimdd_iterator::first(int k, node_handle down)
     nzp[k] = 0;
     index[k] = path[k].i(0);
     down = path[k].d(0);
-    int ev;
+    long ev = Inf<long>();
     path[k].getEdge(0, ev);
     acc_evs[k-1] = acc_evs[k] + ev;
   }

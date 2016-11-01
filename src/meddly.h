@@ -2241,7 +2241,7 @@ class MEDDLY::dd_edge {
     node_handle getNode() const;
 
     /// Get this dd_edge's edge value (only valid for edge-valued MDDs).
-    void getEdgeValue(int& ev) const;
+//    void getEdgeValue(int& ev) const;
     void getEdgeValue(long& ev) const;
 
     /// Get this dd_edge's edge value (only valid for edge-valued MDDs).
@@ -2290,7 +2290,7 @@ class MEDDLY::dd_edge {
         @param  value   value of edge coming into the node (only useful
                         for edge-valued MDDs)
     */
-    void set(node_handle node, int value);
+//    void set(node_handle node, int value);
     void set(node_handle node, long value);
 
     /** Modifies the dd_edge fields.
@@ -2400,7 +2400,7 @@ class MEDDLY::dd_edge {
     int index;  //  our slot number in the parent forest's list
 
     node_handle node;
-    node_handle raw_value;
+    long raw_value;
 
     binary_operation* opPlus;
     binary_operation* opStar;
