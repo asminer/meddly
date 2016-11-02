@@ -58,7 +58,7 @@ MainWindow::MainWindow(QWidget *parent) :
 }
 
 /*
- * This function alows the user to search for a log file and load into the program.
+ * This function allows the user to search for a log file and load into the program.
  * It checks for T simple then starts to set up the forests by calling setupForest in the miscForestOperations.cpp.
  * It creates the parser to be used for the rest of the lifetime of the log.
  *

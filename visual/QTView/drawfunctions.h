@@ -3,11 +3,6 @@
 
 #include <QGraphicsScene>
 #include <QVector>
-//class Drawfunctions
-//{
-//public:
-//    Drawfunctions();
-//};
 
 void drawSet(QGraphicsScene *forestScene
              , QVector<int> *forest, int penHeight
@@ -26,6 +21,7 @@ void drawUpdates(QVector<int> *&forest
                  , int fPenHeight, int fbase, int fHorizontalReductionValue
                  );
 
+//Needs to be finished
 void drawRulers(QGraphicsScene *forestScene
                 , int penHeight, int forestsize, int setOrRelation);
 

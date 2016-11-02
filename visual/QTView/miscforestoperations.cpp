@@ -183,17 +183,24 @@ void playForests(Parser *parser
                         , f1base
                         , f1HorizontalReductionValue);
 
-            drawUpdates(forest2
-                        , isInForest2Updates
-                        , Forest2Updates
-                        , forest2Scene
-                        , f2PenHeight
-                        , f2base
-                        , f2HorizontalReductionValue);
+            //This checks to see if forest 2 exist before
+            //emptying it and deleting it.
+            if(forest2->size() > 1)
+            {
+                drawUpdates(forest2
+                            , isInForest2Updates
+                            , Forest2Updates
+                            , forest2Scene
+                            , f2PenHeight
+                            , f2base
+                            , f2HorizontalReductionValue);
+
+                delete forest2;
+            }
 
             delete parser;
             delete forest1;
-            delete forest2;
+
 
             break;
         }
@@ -298,8 +305,11 @@ void playForests(Parser *parser
 
             int tempTimeToWait = tempSeconds * 1000000 + tempMicroseconds;
 
-            //tempTimeToWait >= (100000 / speedFactorValue)
-            if(true)
+            //The idea here is that when you slow the speed of the graph
+            //display, you lower the time to wait. This will increase the
+            //resolution of the data being displayed. You will see more
+            //of the udates separately.
+            if(tempTimeToWait >= (100000 / speedFactorValue))
             {
                 oldSeconds = newSeconds;
 
@@ -312,6 +322,8 @@ void playForests(Parser *parser
                 //convert mili to micro
                 int tempMiliseconds = tempMicroseconds/1000;
 
+                //This will slow down the progress through the log
+                //when you increase the speedFactorValue.
                 delayMili(tempMiliseconds*speedFactorValue);
 
                 drawUpdates(forest1
@@ -322,13 +334,18 @@ void playForests(Parser *parser
                             , f1base
                             , f1HorizontalReductionValue);
 
-                drawUpdates(forest2
-                            , isInForest2Updates
-                            , Forest2Updates
-                            , forest2Scene
-                            , f2PenHeight
-                            , f2base
-                            , f2HorizontalReductionValue);
+                //This first checks to see if
+                if(forest2->size() > 1)
+                {
+                    drawUpdates(forest2
+                                , isInForest2Updates
+                                , Forest2Updates
+                                , forest2Scene
+                                , f2PenHeight
+                                , f2base
+                                , f2HorizontalReductionValue);
+                }
+
 
 
 

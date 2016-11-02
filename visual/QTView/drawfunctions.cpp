@@ -22,8 +22,10 @@ void drawSet(QGraphicsScene *forestScene
     int top = forest->size();
     int y = 0;
 
-    drawRulers(forestScene, penHeight
-               , top, 0);
+    //This is the call to the function drawRulers. This will start to create
+    //the initial x and y axis
+    //drawRulers(forestScene, penHeight
+    //           , top, 0);
 
     for (int var = 0; var < top; ++var)
     {
@@ -71,8 +73,10 @@ void drawRelation(QGraphicsScene *forestScene
     int top = forest->size() - 1;
     int middle = top/2;
 
-    drawRulers(forestScene, penHeight
-               , top, 1);
+    //This is the call to the function drawRulers. This will start to create
+    //the initial x and y axis.
+    //drawRulers(forestScene, penHeight
+    //           , top, 1);
 
     for (int var = 0; var < middle; ++var)
     {
@@ -107,9 +111,11 @@ void drawRelation(QGraphicsScene *forestScene
     QPen red(Qt::red);
     red.setWidth(1);
     forestScene->addLine(-20,0,-1,0,red);
-
 }
 
+//When called this will redraw the x and y axis.
+//This doesn't yet have a variable passed in to redraw the x axis. It
+//has a default length for the x axis.
 void drawRulers(QGraphicsScene *forestScene
                 , int penHeight, int forestsize
                 , int setOrRelation)
@@ -140,15 +146,16 @@ void drawRulers(QGraphicsScene *forestScene
     }else
     {
 
+        //code for markes on rulers and lables for those marks.
 
     }
 }
 
-
-
 /*
  * This functions chooses the default pen height
  *  for use later when adding lines to a scene.
+ * In future versions this could capture the size of the qgraphicsview portal
+ * and calculate a pen height that will maximize the use of the space.
  */
 int generatePenHeight(int size)
 {
@@ -165,8 +172,9 @@ int generatePenHeight(int size)
 }
 
 /*
- * This will update the forest scenes.
- *
+ * This will update the QGraphicScene forestScene.
+ *This will only undate the line indexes that have been modified in the
+ *forest. Those forest indexes are stored in QVector ForestUpdates.
  */
 void drawUpdates(QVector<int> *&forest
                  , QVector<int> &isInForestUpdates
@@ -194,6 +202,9 @@ void drawUpdates(QVector<int> *&forest
         while (!ForestUpdates.isEmpty())
         {
             int indexOfForest = ForestUpdates.takeFirst();
+            //this will reset the values in boolean list
+            //isInForestUpdates back to 0 to indicate that those
+            //indexes are no longer contained in the ForestUpdate list.
             isInForestUpdates.replace(indexOfForest, 0);
             y = indexOfForest * fPenHeight;
             line = forestScene->itemAt(x, y, QTransform());
@@ -280,228 +291,3 @@ void drawUpdates(QVector<int> *&forest
         }
     }
 }
-
-//void drawUpdates(QVector<int> *&forest1
-//                 , QVector<int> *&forest2
-//                 , QVector<int> &isInForest1Updates
-//                 , QVector<int> &isInForest2Updates
-//                 , QVector<int> &Forest1Updates
-//                 , QVector<int> &Forest2Updates
-//                 , QGraphicsScene *&forest1Scene
-//                 , QGraphicsScene *&forest2Scene
-//                 , int f1PenHeight
-//                 , int f2PenHeight
-//                 , int f1base
-//                 , int f2base
-//                 , int f1HorizontalReductionValue
-//                 , int f2HorizontalReductionValue)
-//{
-//    QPen green(Qt::green);
-//    QPen darkgreen(Qt::darkGreen);
-
-//    QGraphicsItem *line = NULL;
-//    QGraphicsLineItem *lineI = NULL;
-//    qreal x = 0;
-//    qreal y = 0;
-
-//    //This will process th forest 1 updates.
-//    //It will decide wheather it is a set or relation
-//    //then complete the updates to the individual lines.
-
-//    //set
-//    if(f1base > 0)
-//    {
-//        while (!Forest1Updates.isEmpty())
-//        {
-//            int indexOfForest = Forest1Updates.takeFirst();
-//            isInForest1Updates.replace(indexOfForest, 0);
-//            y = indexOfForest * f1PenHeight;
-//            line = forest1Scene->itemAt(x, y, QTransform());
-//            lineI = qgraphicsitem_cast<QGraphicsLineItem*>(line);
-
-//            int endline = forest1->at(indexOfForest);
-//            endline = endline/f1HorizontalReductionValue;
-
-//            //If you try to grab a 0 to 0 line then the
-//            //pointer will be null. This checks to see if
-//            //you tried to pull an empty line from the
-//            //scene. If you did then it will create a new
-//            //line to add to the appropriate spot.
-//            if(lineI == NULL)
-//            {
-//                green.setWidth(f1PenHeight);
-//                forest1Scene->addLine(0//startline
-//                                      , y
-//                                      , endline
-//                                      , y
-//                                      , green
-//                                      );
-//            }else//This changes the positionof the
-//                //end of the line object.
-//            {
-//                lineI->setLine(0 //startline
-//                               , y
-//                               , endline
-//                               , y);
-//            }
-//        }
-//    //Relation
-//    }else
-//    {
-//        while (!Forest1Updates.isEmpty())
-//        {
-//            int indexOfForest = Forest1Updates.takeFirst();
-//            isInForest1Updates.replace(indexOfForest, 0);
-//            //positive levels
-//            int middle = forest1->size()/2;
-//            if(indexOfForest > middle)
-//            {
-//                int indexOnScene = (indexOfForest - middle) * 2;
-
-//                y = indexOnScene * f1PenHeight;
-//                line = forest1Scene->itemAt(x, y, QTransform());
-//                forest1Scene->removeItem(line);
-//                delete line;
-
-//                int endline = forest1->at(indexOfForest);
-//                endline = endline/f1HorizontalReductionValue;
-
-//                green.setWidth(f1PenHeight);
-//                forest1Scene->addLine(0//startline
-//                                      , y
-//                                      , endline
-//                                      , y
-//                                      , green
-//                                      );
-
-//            }else//negitive levels
-//            {
-//                int indexOnScene = (forest1->size() - 1)
-//                        - (indexOfForest * 2) -1;
-//                y = indexOnScene * f1PenHeight;
-//                line = forest1Scene->itemAt(x, y, QTransform());
-//                forest1Scene->removeItem(line);
-//                delete line;
-
-//                int endline = forest1->at(indexOfForest);
-//                endline = endline/f1HorizontalReductionValue;
-
-//                darkgreen.setWidth(f1PenHeight);
-//                forest1Scene->addLine(0 //startline
-//                                      , y
-//                                      , endline
-//                                      , y
-//                                      , darkgreen
-//                                      );
-//            }
-//        }
-//    }
-
-//    //This will process th forest 2 updates.
-//    //It will decide wheather it is a set or relation
-//    //then complete the updates to the individual lines.
-
-//    //Set
-//    if(f2base > 0)
-//    {
-//        while (!Forest2Updates.isEmpty())
-//        {
-//            int indexOfForest = Forest2Updates.takeFirst();
-//            isInForest2Updates.replace(indexOfForest, 0);
-//            y = indexOfForest * f2PenHeight;
-//            line = forest2Scene->itemAt(x, y, QTransform());
-//            lineI = qgraphicsitem_cast<QGraphicsLineItem*>(line);
-//            //forest2Scene->removeItem(line);
-//            //delete line;
-
-//            int endline = forest2->at(indexOfForest);
-//            endline = endline/f2HorizontalReductionValue;
-
-//            //If you try to grab a 0 to 0 line then the
-//            //pointer will be null. This checks to see if
-//            //you tried to pull an empty line from the
-//            //scene. If you did then it will create a new
-//            //line to add to the appropriate spot.
-//            if(lineI == NULL)
-//            {
-//                green.setWidth(f2PenHeight);
-//                forest2Scene->addLine(0//startline
-//                                      , y
-//                                      , endline
-//                                      , y
-//                                      , green
-//                                      );
-//            }else//This changes the positionof the
-//                //end of the line object.
-//            {
-//                lineI->setLine(0 //startline
-//                               , y
-//                               , endline
-//                               , y);
-//            }
-
-
-////            green.setWidth(f2PenHeight);
-////            forest2Scene->addLine(0 //startline
-////                                  , y
-////                                  , endline
-////                                  , y
-////                                  , green
-////                                  );
-//        }
-
-//    //Relation
-//    }else
-//    {
-//        while (!Forest2Updates.isEmpty())
-//        {
-//            int indexOfForest = Forest2Updates.takeFirst();
-//            isInForest2Updates.replace(indexOfForest, 0);
-
-//            //positive levels
-//            int middle = forest2->size()/2;
-//            if(indexOfForest > middle)
-//            {
-//                int indexOnScene = (indexOfForest - middle) * 2;
-
-//                y = indexOnScene * f2PenHeight;
-//                line = forest2Scene->itemAt(x, y, QTransform());
-//                forest2Scene->removeItem(line);
-//                delete line;
-
-//                int endline = forest2->at(indexOfForest);
-//                endline = endline/f2HorizontalReductionValue;
-//                //int startline = 0 - endline;
-
-//                green.setWidth(f2PenHeight);
-//                forest2Scene->addLine(0 //startline
-//                                      , y
-//                                      , endline
-//                                      , y
-//                                      , green
-//                                      );
-
-//            }else//negitive levels
-//            {
-//                int indexOnScene = (forest2->size() - 1)
-//                        - (indexOfForest * 2) -1;
-//                y = indexOnScene * f2PenHeight;
-//                line = forest2Scene->itemAt(x, y, QTransform());
-//                forest2Scene->removeItem(line);
-//                delete line;
-
-//                int endline = forest2->at(indexOfForest);
-//                endline = endline/f2HorizontalReductionValue;
-//                //int startline = 0 - endline;
-
-//                darkgreen.setWidth(f2PenHeight);
-//                forest2Scene->addLine(0 //startline
-//                                      , y
-//                                      , endline
-//                                      , y
-//                                      , darkgreen
-//                                      );
-//            }
-//        }
-//    }
-//}
