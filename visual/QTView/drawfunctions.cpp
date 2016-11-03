@@ -44,9 +44,13 @@ void drawSet(QGraphicsScene *forestScene
         delayMili(1);
 
     }
+    /*
+     * //This a troublshooting tool to see where 0,0 is on the
+     * QGraphicScene
     QPen red(Qt::red);
     red.setWidth(1);
     forestScene->addLine(-20,0,-1,0,red);
+    */
 }
 
 /*
@@ -108,13 +112,17 @@ void drawRelation(QGraphicsScene *forestScene
                              , darkGreen);
         delayMili(1);
     }
+    /*
+     * //This a troublshooting tool to see where 0,0 is on the
+     * QGraphicScene
     QPen red(Qt::red);
     red.setWidth(1);
     forestScene->addLine(-20,0,-1,0,red);
+    */
 }
 
 //When called this will redraw the x and y axis.
-//This doesn't yet have a variable passed in to redraw the x axis. It
+//This doesn't yet have a perameter to redraw the x axis. It
 //has a default length for the x axis.
 void drawRulers(QGraphicsScene *forestScene
                 , int penHeight, int forestsize
