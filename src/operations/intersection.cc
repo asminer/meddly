@@ -29,6 +29,7 @@
 namespace MEDDLY {
   class inter_mdd;
   class inter_mxd;
+  class inter_max_evplus;
 
   class inter_opname;
 };
@@ -137,6 +138,69 @@ bool MEDDLY::inter_mxd::checkTerminals(node_handle a, node_handle b, node_handle
   return false;
 }
 
+// ******************************************************************
+// *                                                                *
+// *                     inter_max_evplus  class                    *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::inter_max_evplus : public generic_binary_evplus {
+  public:
+    inter_max_evplus(const binary_opname* opcode, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res);
+
+  protected:
+    virtual bool checkTerminals(long aev, node_handle a, long bev, node_handle b,
+        long& cev, node_handle& c);
+};
+
+MEDDLY::inter_max_evplus::inter_max_evplus(const binary_opname* opcode,
+  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+  : generic_binary_evplus(opcode, arg1, arg2, res)
+{
+  operationCommutes();
+}
+
+bool MEDDLY::inter_max_evplus::checkTerminals(long aev, node_handle a, long bev, node_handle b,
+    long& cev, node_handle& c)
+{
+  if (a == 0 || b == 0) {
+    cev = Inf<long>();
+    c = 0;
+    return true;
+  }
+  if (arg1F->isTerminalNode(a) && bev >= aev) {
+    if (arg2F == resF) {
+      cev = bev;
+      c = resF->linkNode(b);
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  if (arg2F->isTerminalNode(b) && aev >= bev) {
+    if (arg1F == resF) {
+      cev = aev;
+      c = resF->linkNode(a);
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  if (a == b) {
+    if (arg1F == arg2F && arg2F == resF) {
+      cev = (aev > bev ? aev : bev);
+      c = resF->linkNode(a);
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  return false;
+}
 
 // ******************************************************************
 // *                                                                *
@@ -171,11 +235,8 @@ MEDDLY::inter_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   if (
     (a1->isForRelations() != r->isForRelations()) ||
     (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getRangeType() != r->getRangeType()) ||
-    (a2->getRangeType() != r->getRangeType()) ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (r->getRangeType() != forest::BOOLEAN)
+    (a2->getEdgeLabeling() != r->getEdgeLabeling())
   )
     throw error(error::TYPE_MISMATCH);
 
@@ -184,6 +245,15 @@ MEDDLY::inter_opname::buildOperation(expert_forest* a1, expert_forest* a2,
       return new inter_mxd(this, a1, a2, r);
     else
       return new inter_mdd(this, a1, a2, r);
+  }
+
+  if (r->getEdgeLabeling() == forest::EVPLUS) {
+    if (r->isForRelations()) {
+      throw error(error::NOT_IMPLEMENTED);
+    }
+    else {
+      return new inter_max_evplus(this, a1, a2, r);
+    }
   }
 
   throw error(error::NOT_IMPLEMENTED);

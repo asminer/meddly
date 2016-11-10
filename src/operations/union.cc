@@ -198,7 +198,7 @@ bool MEDDLY::union_min_evplus::checkTerminals(long aev, node_handle a, long bev,
       return false;
     }
   }
-  if (arg1F->isTerminalNode(a) && aev < bev) {
+  if (arg1F->isTerminalNode(a) && aev <= bev) {
     if (arg1F == resF) {
       cev = aev;
       c = resF->linkNode(a);
@@ -208,7 +208,7 @@ bool MEDDLY::union_min_evplus::checkTerminals(long aev, node_handle a, long bev,
       return false;
     }
   }
-  if (arg2F->isTerminalNode(b) && bev < aev) {
+  if (arg2F->isTerminalNode(b) && bev <= aev) {
     if (arg2F == resF) {
       cev = bev;
       c = resF->linkNode(b);
