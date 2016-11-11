@@ -36,6 +36,7 @@ namespace MEDDLY {
 
   class common_bfs_evplus;
   class forwd_bfs_evplus;
+  class bckwd_bfs_evplus;
 
   class forwd_bfs_opname;
   class bckwd_bfs_opname;
@@ -337,6 +338,38 @@ void MEDDLY::forwd_bfs_evplus::compute(long ev, node_handle evmdd, node_handle m
 
 // ******************************************************************
 // *                                                                *
+// *                     bckwd_bfs_evplus class                     *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::bckwd_bfs_evplus : public common_bfs_evplus {
+  public:
+    bckwd_bfs_evplus(const binary_opname* opcode, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res);
+
+    virtual void compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd);
+};
+
+MEDDLY::bckwd_bfs_evplus::bckwd_bfs_evplus(const binary_opname* oc, expert_forest* a1,
+  expert_forest* a2, expert_forest* res) : common_bfs_evplus(oc, a1, a2, res)
+{
+}
+
+void MEDDLY::bckwd_bfs_evplus::compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd)
+{
+  if (resF->getRangeType() == forest::INTEGER) {
+    unionMinOp = getOperation(UNION, resF, resF, resF);
+  } else {
+    throw error(error::INVALID_OPERATION);
+  }
+  imageOp = getOperation(PRE_IMAGE, arg1F, arg2F, resF);
+
+  iterate(ev, evmdd, mxd, resEv, resEvmdd);
+}
+
+
+// ******************************************************************
+// *                                                                *
 // *                     forwd_bfs_opname class                     *
 // *                                                                *
 // ******************************************************************
@@ -370,7 +403,6 @@ MEDDLY::forwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     !a2->isForRelations()   ||
     r->isForRelations()     ||
     (a1->getRangeType() != r->getRangeType()) ||
-    //(a2->getRangeType() != r->getRangeType()) ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
     (a2->getEdgeLabeling() != forest::MULTI_TERMINAL)
   )
@@ -423,13 +455,22 @@ MEDDLY::bckwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   if (
     a1->isForRelations()    ||
     !a2->isForRelations()   ||
-    (a1->getRangeType() != a2->getRangeType()) ||
-    (a1->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
+    r->isForRelations()     ||
+    (a1->getRangeType() != r->getRangeType()) ||
+    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
     (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) 
   )
     throw error(error::TYPE_MISMATCH);
 
-  return new bckwd_bfs_mt(this, a1, a2, r);
+  if (a1->getEdgeLabeling() == forest::MULTI_TERMINAL) {
+    return new bckwd_bfs_mt(this, a1, a2, r);
+  }
+  else if (a1->getEdgeLabeling() == forest::EVPLUS) {
+    return new bckwd_bfs_evplus(this, a1, a2, r);
+  }
+  else {
+    throw error(error::TYPE_MISMATCH);
+  }
 }
 
 // ******************************************************************
