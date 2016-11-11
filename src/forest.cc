@@ -1043,7 +1043,12 @@ bool MEDDLY::expert_forest
   } else {
     s << "node: " << long(p);
   }
-  nodeMan->showNode(s, getNodeAddress(p), flags & SHOW_DETAILS);
+
+  s.put(' ');
+  unpacked_node* un = unpacked_node::newFromNode(this, p, unpacked_node::AS_STORED);
+  un->show(s, flags & SHOW_DETAILS);
+  unpacked_node::recycle(un);
+
   return true;
 }
 
@@ -1191,10 +1196,13 @@ void MEDDLY::expert_forest
   const char* block = codeChars();
   s << block << " " << num_nodes << "\n";
 
+  unpacked_node* un = unpacked_node::useUnpackedNode();
   for (int i=0; output2index[i]; i++) {
     s << getNodeLevel(output2index[i]) << " ";
-    nodeMan->writeNode(s, getNodeAddress(output2index[i]), index2output);
+    un->initFromNode(this, output2index[i], unpacked_node::AS_STORED);
+    un->write(s, index2output);
   }
+  unpacked_node::recycle(un);
 
   // reverse the block
   for (int i=strlen(block); i; ) {

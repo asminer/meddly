@@ -181,6 +181,7 @@ void MEDDLY::simple_storage
 #endif
 }
 
+/*
 void MEDDLY::simple_storage::showNode(output &s, node_address addr, bool verb) const
 {
   if (sizeOf(addr) < 0) {
@@ -306,7 +307,7 @@ void MEDDLY::simple_storage
   }
 
 }
-
+*/
 
 
 
@@ -539,7 +540,8 @@ bool MEDDLY::simple_storage
   }
 }
 
-void MEDDLY::simple_storage::fillUnpacked(unpacked_node &nr, node_address addr) const
+void MEDDLY::simple_storage
+::fillUnpacked(unpacked_node &nr, node_address addr, unpacked_node::storage_style st2) const
 {
 #ifdef DEBUG_ENCODING
   printf("simple_storage filling reader\n    internal: ");
@@ -563,6 +565,18 @@ void MEDDLY::simple_storage::fillUnpacked(unpacked_node &nr, node_address addr) 
   // Copy everything else
 
   int size = sizeOf(addr);
+
+  /*
+      Set the unpacked node storage style based on settings
+  */
+  switch (st2) {
+      case unpacked_node::FULL_NODE:     nr.bind_as_full(true);    break;
+      case unpacked_node::SPARSE_NODE:   nr.bind_as_full(false);   break;
+      case unpacked_node::AS_STORED:     nr.bind_as_full(size>=0); break;
+
+      default:            assert(0);
+  };
+
   if (size < 0) {
     //
     // Node is sparse
@@ -623,10 +637,14 @@ void MEDDLY::simple_storage::fillUnpacked(unpacked_node &nr, node_address addr) 
         memcpy(nr.eptr_write(i), FEP(addr, i), nr.edgeBytes());
       }
     } 
-    for (; i<nr.getSize(); i++) {
-      nr.d_ref(i) = tv;
-      if (nr.hasEdges()) {
-        memset(nr.eptr_write(i), 0, nr.edgeBytes());
+    if (unpacked_node::AS_STORED == st2) {
+      nr.shrinkFull(size);
+    } else {
+      for (; i<nr.getSize(); i++) {
+        nr.d_ref(i) = tv;
+        if (nr.hasEdges()) {
+          memset(nr.eptr_write(i), 0, nr.edgeBytes());
+        }
       }
     }
 #ifdef DEBUG_ENCODING

@@ -216,7 +216,7 @@ void MEDDLY::mtmdd_forest::sifting(int var, int top, int bottom)
 
   MEDDLY_DCASSERT(level <= top && level >= bottom);
 
-  int num = getCurrentNumNodes();
+  long num = getCurrentNumNodes();
   if(level <= (top + bottom) / 2) {
     // Move to the bottom
     while(level > bottom) {
@@ -304,7 +304,7 @@ void MEDDLY::mtmdd_forest::sifting(int var, int top, int bottom)
 
   MEDDLY_DCASSERT(getCurrentNumNodes() <= num);
   if(getCurrentNumNodes() > num) {
-    printf("Error: %d > %d\n", getCurrentNumNodes(), num);
+    printf("Error: %ld > %ld\n", getCurrentNumNodes(), num);
   }
 }
 
