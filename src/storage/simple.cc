@@ -122,7 +122,6 @@ class MEDDLY::simple_separated : public node_storage {
     virtual void collectGarbage(bool shrink);
     virtual void reportStats(output &s, const char* pad, unsigned flags) const;
 
-    virtual void showNode(output &s, node_address addr, bool verb) const;
   private:
     memory_manager* MM;
 
@@ -202,73 +201,6 @@ void MEDDLY::simple_separated::reportStats(output &s, const char* pad,
   */
 }
 
-
-void MEDDLY::simple_separated::showNode(output &s, node_address addr, 
-  bool verb) const
-{
-  MEDDLY_DCASSERT(MM);
-  node_handle* chunk = (node_handle*) MM->getChunkAddress(addr); 
-  MEDDLY_DCASSERT(chunk);
-  node_handle* down = chunk + down_start;
-
-  if (chunk[size_slot] < 0) {
-    //
-    // Sparse node
-    //
-    node_handle* SI = down - chunk[size_slot]; 
-    node_handle* SE = SI - chunk[size_slot];
-    if (verb) s << " nnz : " << -chunk[size_slot];
-    s << " down: (";
-    for (int z=0; z<-chunk[size_slot]; z++) {
-      if (z) s << ", ";
-      s << SI[z] << ":";
-      if (slots_per_edge) {
-        s.put('<');
-        getParent()->showEdgeValue(s, SE + z*slots_per_edge);
-        s << ", ";
-      } 
-      node_handle d = down[z];
-      if (getParent()->isTerminalNode(d)) {
-        getParent()->showTerminal(s, d);
-      } else {
-        s.put(long(d));
-      }
-      if (slots_per_edge) s.put('>');
-    } // for z
-    s.put(')');
-  } else {
-    //
-    // Full node
-    //
-    node_handle* FE = down + chunk[size_slot];
-    if (verb) s << " size: " << chunk[size_slot];
-    s << " down: [";
-    for (int i=0; i<chunk[size_slot]; i++) {
-      if (i) s.put('|');
-      if (slots_per_edge) {
-        s.put('<');
-        getParent()->showEdgeValue(s, FE + i*slots_per_edge);
-        s.put(", ");
-      } 
-      node_handle d = down[i];
-      if (getParent()->isTerminalNode(d)) {
-        getParent()->showTerminal(s, d);
-      } else {
-        s.put(long(d));
-      }
-      if (slots_per_edge) s.put('>');
-    } // for i
-    s.put(']');
-  }
-
-  // show extra header stuff
-  if (unhashed_slots) {
-    getParent()->showUnhashedHeader(s, chunk + unhashed_start);
-  }
-  if (hashed_slots) {
-    getParent()->showHashedHeader(s, chunk + hashed_start);
-  }
-}
 
 // ******************************************************************
 // *                                                                *
@@ -399,9 +331,11 @@ class MEDDLY::simple_storage : public node_storage {
     virtual void collectGarbage(bool shrink);
     virtual void reportStats(output &s, const char* pad, unsigned flags) const;
 
+    /*
     virtual void showNode(output &s, node_address addr, bool verb) const;
     virtual void writeNode(output &s, node_address addr, const node_handle* map)
     const;
+    */
 
     virtual node_address makeNode(node_handle p, const unpacked_node &nb, 
         node_storage_flags opt);
@@ -409,7 +343,7 @@ class MEDDLY::simple_storage : public node_storage {
     virtual void unlinkDownAndRecycle(node_address addr);
 
     virtual bool areDuplicates(node_address addr, const unpacked_node &nr) const;
-    virtual void fillUnpacked(unpacked_node &nr, node_address addr) const;
+    virtual void fillUnpacked(unpacked_node &nr, node_address addr, unpacked_node::storage_style) const;
     virtual unsigned hashNode(int level, node_address addr) const;
     virtual int getSingletonIndex(node_address addr, node_handle &down) const;
     virtual node_handle getDownPtr(node_address addr, int index) const;
@@ -743,6 +677,7 @@ void MEDDLY::simple_storage
 #endif
 }
 
+/*
 void MEDDLY::simple_storage::showNode(output &s, node_address addr, bool verb) const
 {
   if (sizeOf(addr) < 0) {
@@ -868,7 +803,7 @@ void MEDDLY::simple_storage
   }
 
 }
-
+*/
 
 
 
@@ -1101,7 +1036,8 @@ bool MEDDLY::simple_storage
   }
 }
 
-void MEDDLY::simple_storage::fillUnpacked(unpacked_node &nr, node_address addr) const
+void MEDDLY::simple_storage
+::fillUnpacked(unpacked_node &nr, node_address addr, unpacked_node::storage_style st2) const
 {
 #ifdef DEBUG_ENCODING
   printf("simple_storage filling reader\n    internal: ");
@@ -1125,6 +1061,18 @@ void MEDDLY::simple_storage::fillUnpacked(unpacked_node &nr, node_address addr) 
   // Copy everything else
 
   int size = sizeOf(addr);
+
+  /*
+      Set the unpacked node storage style based on settings
+  */
+  switch (st2) {
+      case unpacked_node::FULL_NODE:     nr.bind_as_full(true);    break;
+      case unpacked_node::SPARSE_NODE:   nr.bind_as_full(false);   break;
+      case unpacked_node::AS_STORED:     nr.bind_as_full(size>=0); break;
+
+      default:            assert(0);
+  };
+
   if (size < 0) {
     //
     // Node is sparse
@@ -1185,10 +1133,14 @@ void MEDDLY::simple_storage::fillUnpacked(unpacked_node &nr, node_address addr) 
         memcpy(nr.eptr_write(i), FEP(addr, i), nr.edgeBytes());
       }
     } 
-    for (; i<nr.getSize(); i++) {
-      nr.d_ref(i) = tv;
-      if (nr.hasEdges()) {
-        memset(nr.eptr_write(i), 0, nr.edgeBytes());
+    if (unpacked_node::AS_STORED == st2) {
+      nr.shrinkFull(size);
+    } else {
+      for (; i<nr.getSize(); i++) {
+        nr.d_ref(i) = tv;
+        if (nr.hasEdges()) {
+          memset(nr.eptr_write(i), 0, nr.edgeBytes());
+        }
       }
     }
 #ifdef DEBUG_ENCODING

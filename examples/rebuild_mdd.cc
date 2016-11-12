@@ -27,6 +27,7 @@
  * Rebuild a mdd forest with a different variable ordr.
  */
 
+#include <stdlib.h>
 #include <iostream>
 #include <string.h>
 #include "meddly.h"

@@ -94,6 +94,7 @@ class MEDDLY::simple_grid_style : public node_storage_style {
         const memory_manager_style* mst) const;
 };
 
+
 // ******************************************************************
 // *                                                                *
 // *                                                                *

@@ -7,10 +7,9 @@
 #include <QtDebug>
 
 /*
- *
- * This function sets up the initial states of all the buttons.
- * This creates the 2 scenes and attaches them to the graphics views.
- *
+ * This function sets up the initial states of all the
+ * buttons. This creates the 2 scenes and attaches
+ * them to the graphics views.
  * */
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -51,9 +50,118 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->replayButton->hide();
     ui->speedFactorLabel->hide();
     ui->speedFactorDial->hide();
+    ui->timer->hide();
 
     ui->redrawForest1->setEnabled(false);
     ui->redrawForest2->setEnabled(false);
+}
+
+/*
+ * This function allows the user to search for a log file and load into the program.
+ * It creates the parser to be used for the rest of the lifetime of the log.
+ * It checks the first line for "T simple", then starts to set up the forests by
+ * calling setupForest in the miscForestOperations.cpp.
+ *
+ * This functions also activate the relevent buttons and sliders.
+ * */
+void MainWindow::on_actionOpen_triggered()
+{
+    MainWindow::fileName = QFileDialog::getOpenFileName(
+                this,
+                "Open File",
+                "c://",
+                "Text File (*.txt);;All Files (*,*)"
+                );
+    if (MainWindow::fileName.length() <1)
+    {
+        return;
+    }
+
+    MainWindow::parser = new Parser(MainWindow::fileName);
+    QString newLine = parser->readLine();
+
+    if (newLine.compare("T simple") ==0 )
+    {
+        //This is to skip the comment line.
+        parser->readLine();
+
+        MainWindow::forest1 = setupForest1(
+                    MainWindow::parser
+                    , MainWindow::f1base
+                    , MainWindow::f1PenHeight
+                    , MainWindow::f1Name);
+
+        ui->forest1->show();
+        ui->labelForest1->setText(MainWindow::f1Name);
+        ui->labelForest1->show();
+        ui->hideForest1->show();
+        ui->play->show();
+        ui->step->show();
+        ui->f1HLRLabel->show();
+        ui->f1HorizontalLinearReduction->show();
+        ui->verticalExpanderLabel->show();
+        ui->f1PenHeightLabel->show();
+        ui->f1VerticalExpanderSlider->show();
+        ui->redrawForest1->show();
+        ui->speedFactorLabel->show();
+        ui->speedFactorDial->show();
+        ui->timer->show();
+
+        MainWindow::forest1Hidden = false;
+
+        //This is a boolean list representing whether or not
+        //an index is already marked for redraw or not.
+        //This means that if ther are more than one update for
+        //the same line, it is not added twice to the list.
+        //This will avoid the line being redrawn multiple times.
+        MainWindow::isInUpdateForest1
+                = QVector<int>(MainWindow::forest1->size());
+
+        //This call draws the initial bar graph for the first forest.
+        redrawForest(MainWindow::forest1Scene
+                     , MainWindow::forest1
+                     , MainWindow::f1base
+                     , MainWindow::f1PenHeight
+                     , MainWindow::f1HorizontalReductionValue);
+
+        QString c = MainWindow::parser->peek();
+
+        if(c == "F") //This checks to see if there is another Forest to setup.
+        {
+            MainWindow::forest2 = setupForest2(
+                        MainWindow::parser
+                        , MainWindow::f2base
+                        , MainWindow::f2PenHeight
+                        , MainWindow::f2Name);
+
+            ui->forest2->show();
+            ui->labelForest2->setText(MainWindow::f2Name);
+            ui->labelForest2->show();
+            ui->hideForest2->show();
+            ui->f2HLRLabel->show();
+            ui->f2HorizontalLinearReduction->show();
+            ui->f2PenHeightLabel->show();
+            ui->f2VerticalExpanderSlider->show();
+            ui->redrawForest2->show();
+
+            MainWindow::forest2Hidden = false;
+
+            MainWindow::isInUpdateForest2
+                    = QVector<int>(MainWindow::forest2->size());
+
+            redrawForest(MainWindow::forest2Scene
+                         , MainWindow::forest2
+                         , MainWindow::f2base
+                         , MainWindow::f2PenHeight
+                         , MainWindow::f2HorizontalReductionValue);
+
+        }
+    }else
+    {
+        QMessageBox::information(this,"File Name",
+           "The file needs to start with T simple");
+        MainWindow::file->close();
+    }
 }
 
 MainWindow::~MainWindow()
@@ -62,7 +170,6 @@ MainWindow::~MainWindow()
 }
 
 /*
- *
  * This will hide and show forest one when the show/hide forest1 button is clicked.
  * */
 void MainWindow::on_hideForest1_clicked()
@@ -104,7 +211,7 @@ void MainWindow::on_hideForest2_clicked()
 }
 
 /*
- * if paused this function will unpause and if unpause it will pause.
+ * If paused, this function will unpause and if unpaused it will pause.
  * Play works by calling on_step_clicked() in a while loop.
  *
  * */
@@ -132,7 +239,7 @@ void MainWindow::on_play_clicked()
         }
     }else
     {
-        //forests are not palying
+        //forests are not playing
         //isPaused goes to true
         //enable step button
         ui->play->setText("Play");
@@ -179,103 +286,6 @@ void MainWindow::on_step_clicked()
         ui->play->hide();
         ui->step->hide();
         ui->replayButton->show();
-    }
-}
-
-/*
- * This function alows the user to search for a log file and load into the program.
- * It checks for T simple then starts to set up the forests by calling setupForest in the miscForestOperations.cpp.
- * It creates the parser to be used for the rest of the lifetime of the log.
- *
- * This functions also activate the relevent buttons and sliders.
- * */
-void MainWindow::on_actionOpen_triggered()
-{
-    MainWindow::fileName = QFileDialog::getOpenFileName(
-                this,
-                "Open File",
-                "c://",
-                "Text File (*.txt);;All Files (*,*)"
-                );
-    if (MainWindow::fileName.length() <1)
-    {
-        return;
-    }
-
-    MainWindow::parser = new Parser(MainWindow::fileName);
-    QString newLine = parser->readLine();
-
-    if (newLine.compare("T simple") ==0 )
-    {
-        MainWindow::forest1 = setupForest1(
-                    MainWindow::parser
-                    , MainWindow::f1base
-                    , MainWindow::f1PenHeight
-                    , MainWindow::f1Name);
-
-        ui->forest1->show();
-        ui->labelForest1->setText(MainWindow::f1Name);
-        ui->labelForest1->show();
-        ui->hideForest1->show();
-        ui->play->show();
-        ui->step->show();
-        ui->f1HLRLabel->show();
-        ui->f1HorizontalLinearReduction->show();
-        ui->verticalExpanderLabel->show();
-        ui->f1PenHeightLabel->show();
-        ui->f1VerticalExpanderSlider->show();
-        ui->redrawForest1->show();
-        ui->speedFactorLabel->show();
-        ui->speedFactorDial->show();
-
-        MainWindow::forest1Hidden = false;
-
-        MainWindow::isInUpdateForest1
-                = QVector<int>(MainWindow::forest1->size());
-
-        redrawForest(MainWindow::forest1Scene
-                     , MainWindow::forest1
-                     , MainWindow::f1base
-                     , MainWindow::f1PenHeight
-                     , MainWindow::f1HorizontalReductionValue);
-
-        QString c = MainWindow::parser->peek();
-
-        if(c == "F") //This checks to see if there is another Forest to setup.
-        {
-            MainWindow::forest2 = setupForest2(
-                        MainWindow::parser
-                        , MainWindow::f2base
-                        , MainWindow::f2PenHeight
-                        , MainWindow::f2Name);
-
-            ui->forest2->show();
-            ui->labelForest2->setText(MainWindow::f2Name);
-            ui->labelForest2->show();
-            ui->hideForest2->show();
-            ui->f2HLRLabel->show();
-            ui->f2HorizontalLinearReduction->show();
-            ui->f2PenHeightLabel->show();
-            ui->f2VerticalExpanderSlider->show();
-            ui->redrawForest2->show();
-
-            MainWindow::forest2Hidden = false;
-
-            MainWindow::isInUpdateForest2
-                    = QVector<int>(MainWindow::forest2->size());
-
-            redrawForest(MainWindow::forest2Scene
-                         , MainWindow::forest2
-                         , MainWindow::f2base
-                         , MainWindow::f2PenHeight
-                         , MainWindow::f2HorizontalReductionValue);
-
-        }
-    }else
-    {
-        QMessageBox::information(this,"File Name",
-           "The file needs to start with T simple");
-        MainWindow::file->close();
     }
 }
 
@@ -493,6 +503,7 @@ void MainWindow::on_replayButton_clicked()
 
 /*
  * This function changes the value of the factor multiplied with the time stamp.
+ * This needs expanded.
  * */
 void MainWindow::on_speedFactorDial_valueChanged(int value)
 {

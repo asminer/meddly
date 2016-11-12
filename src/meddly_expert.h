@@ -473,6 +473,19 @@ class MEDDLY::expert_domain : public domain {
 */
 class MEDDLY::unpacked_node {
   public:
+    /**
+        Options for filling an unpacked node from an existing one.
+    */
+    enum storage_style {
+      /// Unpacked node should be stored as truncated full
+      FULL_NODE,
+      /// Unpacked node should be stored sparsely
+      SPARSE_NODE,
+      /// Unpacked node should be stored same as packed node
+      AS_STORED
+    };
+
+  public:
     /** Constructor.
      The class must be "filled" by a forest before
      it can be used, however.
@@ -489,6 +502,7 @@ class MEDDLY::unpacked_node {
   /* Initialization methods, primarily for reading */
 
     void initFromNode(const expert_forest *f, node_handle node, bool full);
+    void initFromNode(const expert_forest *f, node_handle node, storage_style st2);
 
     void initRedundant(const expert_forest *f, int k, node_handle node, bool full);
     void initRedundant(const expert_forest *f, int k, int ev, node_handle node, bool full);
@@ -507,6 +521,7 @@ class MEDDLY::unpacked_node {
   /* For convenience: get recycled instance and initialize */
 
     static unpacked_node* newFromNode(const expert_forest *f, node_handle node, bool full);
+    static unpacked_node* newFromNode(const expert_forest *f, node_handle node, storage_style st2);
 
     static unpacked_node* newRedundant(const expert_forest *f, int k, node_handle node, bool full);
     static unpacked_node* newRedundant(const expert_forest *f, int k, int ev, node_handle node, bool full);
@@ -522,8 +537,20 @@ class MEDDLY::unpacked_node {
   public:
   /* Display / access methods */
 
-    /// Display this node
-    void show(output &s, const expert_forest* parent, bool verb) const;
+    /** Write a node in human-readable format.
+
+        @param  s       Output stream.
+        @param  details Should we show "details" or not.
+    */
+    void show(output &s, bool details) const;
+
+    /** Write a node in machine-readable format.
+
+        @param  s       Output stream.
+        @param  map     Translation to use on node handles.
+                        Allows us to renumber nodes as we write them.
+    */
+    void write(output &s, const node_handle* map) const;
 
     /// Get a pointer to the unhashed header data.
     const void* UHptr() const;
@@ -631,6 +658,9 @@ class MEDDLY::unpacked_node {
     /// Change the size of a node
     void resize(int ns);
 
+    /// Shrink the size of a (truncated) full node
+    void shrinkFull(int ns);
+
     /// Shrink the size of a sparse node
     void shrinkSparse(int ns);
 
@@ -641,6 +671,10 @@ class MEDDLY::unpacked_node {
     ///   @param  full  If true, we'll be filling a full reader.
     ///                 Otherwise it is a sparse one.
     void bind_to_forest(const expert_forest* p, int k, int ns, bool full);
+
+    /// Called by node_storage when building an unpacked
+    /// node based on how it's stored.
+    void bind_as_full(bool full);
 
   public:
     // Centralized recycling
@@ -1164,30 +1198,6 @@ class MEDDLY::node_storage {
     */
     virtual void reportStats(output &s, const char* pad, unsigned flags) const = 0;
 
-    /** Write a node in human-readable format.
-
-        Ideally, the output format for each node is the same
-        regardless of how it is stored.
-
-        @param  s       Output stream.
-        @param  addr    Address of the node we care about.
-        @param  details Should we show "details" or not.
-    */
-    virtual void showNode(output &s, node_address addr, bool details) const = 0;
-
-    /** Write a node in machine-readable format.
-
-        Ideally, the output format for each node is the same
-        regardless of how it is stored.
-
-        @param  s       Output stream.
-        @param  addr    Address of the node we care about.
-        @param  map     Translation to use on node handles.
-                        Allows us to renumber nodes as we write them.
-    */
-    virtual void
-        writeNode(output &s, node_address addr, const node_handle* map) const;
-
     /** Dump the internal storage details.
         Primarily used for debugging.
 
@@ -1236,7 +1246,7 @@ class MEDDLY::node_storage {
           @param  un      Result will be stored here.  Will be resized if needed.
           @param  addr    Node address in this structure.
     */
-    virtual void fillUnpacked(unpacked_node &un, node_address addr) const = 0;
+    virtual void fillUnpacked(unpacked_node &un, node_address addr, unpacked_node::storage_style st2) const = 0;
 
     /** Compute the hash value for a node.
         Should give the same answer as filling a unpacked_node
@@ -1890,7 +1900,7 @@ class MEDDLY::expert_forest: public forest
   // ------------------------------------------------------------
   // Copy a node into an unpacked node
 
-  void fillUnpacked(unpacked_node &un, node_handle node, bool full) const;
+  void fillUnpacked(unpacked_node &un, node_handle node, unpacked_node::storage_style st2) const;
 
   /**   Return a forest node equal to the one given.
         The node is constructed as necessary.

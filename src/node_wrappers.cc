@@ -196,16 +196,15 @@ void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   Usage
 */
 
-void MEDDLY::unpacked_node
-::show(output &s, const expert_forest* parent, bool verb) const
+void MEDDLY::unpacked_node::show(output &s, bool details) const
 {
   int stop;
   if (isSparse()) {
-    if (verb) s << "nnzs: " << long(size) << " ";
+    if (details) s << "nnzs: " << long(nnzs) << " ";
     s << "down: (";
     stop = nnzs;
   } else {
-    if (verb) s << "size: " << long(size) << " ";
+    if (details) s << "size: " << long(size) << " ";
     s << "down: [";
     stop = size;
   }
@@ -235,6 +234,76 @@ void MEDDLY::unpacked_node
   } else {
     s.put(']');
   }
+
+  // show extra header stuff
+  if (ext_uh_size) {
+    parent->showUnhashedHeader(s, extra_unhashed);
+  }
+  if (ext_h_size) {
+    parent->showHashedHeader(s, extra_hashed);
+  }
+}
+
+void MEDDLY::unpacked_node::write(output &s, const node_handle* map) const
+{
+  int stop;
+  if (isSparse()) {
+    s.put(long(-nnzs));
+    stop = nnzs;
+  } else {
+    s.put(long(size));
+    stop = size;
+  }
+
+  //
+  // write indexes (sparse only)
+  //
+  if (isSparse()) {
+    s.put('\n');
+    s.put('\t');
+    for (int z=0; z<nnzs; z++) {
+      s.put(' ');
+      s.put(long(i(z)));
+    }
+  }
+
+  //
+  // write down pointers
+  //
+  s.put('\n');
+  s.put('\t');
+  for (int z=0; z<stop; z++) {
+    s.put(' ');
+    if (parent->isTerminalNode(d(z))) {
+      parent->writeTerminal(s, d(z));
+    } else {
+      s.put(long( map ? map[d(z)] : d(z) ));
+    }
+  }
+
+  // 
+  // write edges
+  //
+  if (parent->edgeBytes()) {
+    s.put('\n');
+    s.put('\t');
+    for (int z=0; z<stop; z++) {
+      s.put(' ');
+      parent->showEdgeValue(s, eptr(z));
+    }
+  }
+  s.put('\n');
+
+
+  // write extra header stuff
+  // this goes LAST so we can read it into a built node
+  if (ext_uh_size) {
+    parent->writeUnhashedHeader(s, extra_unhashed);
+  }
+  if (ext_h_size) {
+    parent->writeHashedHeader(s, extra_hashed);
+  }
+
 }
 
 void MEDDLY::unpacked_node
@@ -394,11 +463,6 @@ MEDDLY::node_storage::~node_storage()
   // nothing, derived classes must handle everything
 }
 
-void MEDDLY::node_storage
-::writeNode(output &s, node_address, const node_handle*) const
-{
-  throw error(error::NOT_IMPLEMENTED);
-}
 
 #ifndef INLINED_COUNT
 MEDDLY::node_handle

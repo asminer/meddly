@@ -2143,7 +2143,7 @@ class MEDDLY::domain {
     int nVars;
 
     // var_orders[0] is reserved to store the default variable order
-    std::vector<std::shared_ptr<const variable_order>> var_orders;
+    std::vector< std::shared_ptr<const variable_order> > var_orders;
     std::shared_ptr<const variable_order> default_var_order;
 
   private:

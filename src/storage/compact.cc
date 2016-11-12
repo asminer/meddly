@@ -189,6 +189,7 @@ void MEDDLY::compact_storage
 #endif
 }
 
+/*
 // ******************************************************************
 void MEDDLY::compact_storage
 ::showNode(output &s, node_address addr, bool verb) const
@@ -355,6 +356,7 @@ void MEDDLY::compact_storage
   }
 
 }
+*/
 
 // ******************************************************************
 
@@ -486,7 +488,7 @@ areDuplicates(node_address addr, const unpacked_node &nr) const
 // ******************************************************************
 
 void MEDDLY::compact_storage
-::fillUnpacked(unpacked_node &nr, node_address addr) const
+::fillUnpacked(unpacked_node &nr, node_address addr, unpacked_node::storage_style st2) const
 {
 #ifdef DEBUG_ENCODING
   printf("compact_storage filling reader\n    internal: ");
@@ -505,7 +507,20 @@ void MEDDLY::compact_storage
     memcpy(nr.UHdata(), UH(addr), unhashedBytes);
   }
 
-  int size = sizeOf(addr);
+  const int size = sizeOf(addr);
+
+  /*
+      Set the unpacked node storage style based on settings
+  */
+  switch (st2) {
+      case unpacked_node::FULL_NODE:     nr.bind_as_full(true);    break;
+      case unpacked_node::SPARSE_NODE:   nr.bind_as_full(false);   break;
+      case unpacked_node::AS_STORED:     nr.bind_as_full(size>=0); break;
+
+      default:            assert(0);
+  };
+
+
   if (size < 0) {
     //
     // Node is sparse
@@ -523,7 +538,7 @@ void MEDDLY::compact_storage
     // Node is full
     //
     if (nr.isFull()) {
-      readFullFromFull(pointerBytesOf(addr), addr, size, nr);
+      readFullFromFull(pointerBytesOf(addr), addr, size, nr, unpacked_node::AS_STORED == st2);
     } else {
       readSparseFromFull(pointerBytesOf(addr), addr, size, nr);
     }

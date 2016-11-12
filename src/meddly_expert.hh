@@ -69,7 +69,15 @@ MEDDLY::unpacked_node::initFromNode(const expert_forest *f,
   node_handle node, bool full)
 {
   MEDDLY_DCASSERT(f);
-  f->fillUnpacked(*this, node, full);
+  f->fillUnpacked(*this, node, full ? FULL_NODE : SPARSE_NODE);
+}
+
+inline void 
+MEDDLY::unpacked_node::initFromNode(const expert_forest *f, 
+  node_handle node, storage_style st2)
+{
+  MEDDLY_DCASSERT(f);
+  f->fillUnpacked(*this, node, st2);
 }
 
 inline void MEDDLY::unpacked_node::initFull(const expert_forest *f, int level, int tsz)
@@ -92,6 +100,15 @@ MEDDLY::unpacked_node::newFromNode(const expert_forest *f, node_handle node, boo
   unpacked_node* U = useUnpackedNode();
   MEDDLY_DCASSERT(U);
   U->initFromNode(f, node, full);
+  return U;
+}
+
+inline MEDDLY::unpacked_node* 
+MEDDLY::unpacked_node::newFromNode(const expert_forest *f, node_handle node, storage_style st2)
+{
+  unpacked_node* U = useUnpackedNode();
+  MEDDLY_DCASSERT(U);
+  U->initFromNode(f, node, st2);
   return U;
 }
 
@@ -374,13 +391,28 @@ MEDDLY::unpacked_node::setHash(unsigned H)
 }
 
 inline void
+MEDDLY::unpacked_node::shrinkFull(int ns)
+{
+  MEDDLY_DCASSERT(isFull());
+  MEDDLY_DCASSERT(ns >= 0);
+  MEDDLY_DCASSERT(ns <= size);
+  size = ns;
+}
+
+inline void
 MEDDLY::unpacked_node::shrinkSparse(int ns)
 {
   MEDDLY_DCASSERT(isSparse());
   MEDDLY_DCASSERT(ns >= 0);
+  MEDDLY_DCASSERT(ns <= nnzs);
   nnzs = ns;
 }
 
+inline void
+MEDDLY::unpacked_node::bind_as_full(bool full)
+{
+  is_full = full;
+}
 
 inline MEDDLY::unpacked_node*
 MEDDLY::unpacked_node::useUnpackedNode()
@@ -1342,12 +1374,12 @@ MEDDLY::expert_forest::getTransparentNode() const
 }
 
 inline void 
-MEDDLY::expert_forest::fillUnpacked(MEDDLY::unpacked_node &un, MEDDLY::node_handle node, bool full) 
+MEDDLY::expert_forest::fillUnpacked(MEDDLY::unpacked_node &un, MEDDLY::node_handle node, unpacked_node::storage_style st2) 
 const
 {
   const int level = getNodeLevel(node);
-  un.bind_to_forest(this, level, getLevelSize(level), full);
-  nodeMan->fillUnpacked(un, getNodeAddress(node));
+  un.bind_to_forest(this, level, getLevelSize(level), true); 
+  nodeMan->fillUnpacked(un, getNodeAddress(node), st2);
 }
 
 

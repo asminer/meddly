@@ -4,6 +4,7 @@
 #define RANDOM_REORDERING_H
 
 #include <vector>
+#include <time.h>
 
 namespace MEDDLY{
 
