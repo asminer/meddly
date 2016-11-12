@@ -113,13 +113,36 @@ namespace MEDDLY {
 
 */
 class MEDDLY::simple_separated : public node_storage {
-  // required interface
   public:
     simple_separated(const char* n, expert_forest* f, const memory_manager_style* mst);
     virtual ~simple_separated();
 
+  // required interface
+  public:
+    virtual void collectGarbage(bool shrink);
+    virtual void reportStats(output &s, const char* pad, unsigned flags) const;
+
+    virtual void showNode(output &s, node_address addr, bool verb) const;
   private:
     memory_manager* MM;
+
+    //
+    // Header indexes that are fixed
+    //
+    static const int count_slot = 0;
+    static const int next_slot = 1;
+    static const int size_slot = 2;
+    static const int header_slots = size_slot+1;
+
+    //
+    // Header info that varies by forest
+    //
+    char unhashed_start;
+    char unhashed_slots;
+    char hashed_start;
+    char hashed_slots;
+    char down_start;
+    char slots_per_edge;
 };
 
 
@@ -137,6 +160,13 @@ MEDDLY::simple_separated
 {
   // TBD -- minimum size instead of 1
   MM = mst->initManager(sizeof(node_handle), 1);
+
+  unhashed_start = header_slots;
+  unhashed_slots = slotsForBytes(f->unhashedHeaderBytes());
+  hashed_start = unhashed_start + unhashed_slots;
+  hashed_slots = slotsForBytes(f->hashedHeaderBytes());
+  down_start = hashed_start + hashed_slots;
+  slots_per_edge = slotsForBytes(f->edgeBytes());
 }
 
 MEDDLY::simple_separated::~simple_separated()
@@ -145,6 +175,100 @@ MEDDLY::simple_separated::~simple_separated()
   delete MM;
 }
 
+void MEDDLY::simple_separated::collectGarbage(bool shrink)
+{
+  // TBD
+}
+
+void MEDDLY::simple_separated::reportStats(output &s, const char* pad, 
+  unsigned flags) const
+{
+  static unsigned STORAGE = 
+    expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED;
+
+  if (flags & STORAGE) {
+    s << pad << "Stats for " << getStyleName() << "\n";
+
+    // anything for us?
+
+    MM->reportStats(s, pad, flags & expert_forest::STORAGE_DETAILED);
+  }
+
+
+  /*
+#ifdef DEVELOPMENT_CODE
+  verifyStats();
+#endif
+  */
+}
+
+
+void MEDDLY::simple_separated::showNode(output &s, node_address addr, 
+  bool verb) const
+{
+  MEDDLY_DCASSERT(MM);
+  node_handle* chunk = (node_handle*) MM->getChunkAddress(addr); 
+  MEDDLY_DCASSERT(chunk);
+  node_handle* down = chunk + down_start;
+
+  if (chunk[size_slot] < 0) {
+    //
+    // Sparse node
+    //
+    node_handle* SI = down - chunk[size_slot]; 
+    node_handle* SE = SI - chunk[size_slot];
+    if (verb) s << " nnz : " << -chunk[size_slot];
+    s << " down: (";
+    for (int z=0; z<-chunk[size_slot]; z++) {
+      if (z) s << ", ";
+      s << SI[z] << ":";
+      if (slots_per_edge) {
+        s.put('<');
+        getParent()->showEdgeValue(s, SE + z*slots_per_edge);
+        s << ", ";
+      } 
+      node_handle d = down[z];
+      if (getParent()->isTerminalNode(d)) {
+        getParent()->showTerminal(s, d);
+      } else {
+        s.put(long(d));
+      }
+      if (slots_per_edge) s.put('>');
+    } // for z
+    s.put(')');
+  } else {
+    //
+    // Full node
+    //
+    node_handle* FE = down + chunk[size_slot];
+    if (verb) s << " size: " << chunk[size_slot];
+    s << " down: [";
+    for (int i=0; i<chunk[size_slot]; i++) {
+      if (i) s.put('|');
+      if (slots_per_edge) {
+        s.put('<');
+        getParent()->showEdgeValue(s, FE + i*slots_per_edge);
+        s.put(", ");
+      } 
+      node_handle d = down[i];
+      if (getParent()->isTerminalNode(d)) {
+        getParent()->showTerminal(s, d);
+      } else {
+        s.put(long(d));
+      }
+      if (slots_per_edge) s.put('>');
+    } // for i
+    s.put(']');
+  }
+
+  // show extra header stuff
+  if (unhashed_slots) {
+    getParent()->showUnhashedHeader(s, chunk + unhashed_start);
+  }
+  if (hashed_slots) {
+    getParent()->showHashedHeader(s, chunk + hashed_start);
+  }
+}
 
 // ******************************************************************
 // *                                                                *
