@@ -794,9 +794,9 @@ void MEDDLY::expert_forest::dumpInternal(output &s) const
   }
   s << "]\n\n";
 
-  nodeMan->dumpInternal(s, 0x03);
+  nodeMan->dumpInternal(s, 0x03); 
  
-  unique->show(s);
+  // unique->show(s);
   s.flush();
 }
 
@@ -1495,12 +1495,6 @@ void MEDDLY::expert_forest::showInfo(output &s, int verb)
 // '    virtual methods to be overridden by some derived classes    '
 // '                                                                '
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-bool MEDDLY::expert_forest
-::areEdgeValuesEqual(const void* eva, const void* evb) const
-{
-  throw error(error::TYPE_MISMATCH);
-}
 
 MEDDLY::enumerator::iterator* MEDDLY::expert_forest::makeFixedRowIter() const
 {

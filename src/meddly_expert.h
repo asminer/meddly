@@ -274,10 +274,10 @@ namespace MEDDLY {
   // ******************************************************************
 
   /*
-  /// Builds an initializer for MEDDLY's builtin operations.
-  op_initializer* makeBuiltinInitializer();
+    /// Builds an initializer for MEDDLY's builtin operations.
+    /// Use defaultInitializerList() instead
+    op_initializer* makeBuiltinInitializer();
 
-    Use defaultInitializerList() instead
   */
 
   /**
@@ -1090,9 +1090,43 @@ class MEDDLY::memory_manager {
 
     /** Display manager-specific internals.
         For debugging.
+          @param  s       Output stream to use
     */
     virtual void dumpInternal(output &s) const = 0;
 
+
+  
+    /** Get first address.
+        Used to cycle through all addresses, if we can.
+        If we cannot, then always return 0.
+    */
+    virtual unsigned long getFirstAddress() const = 0;
+
+    /** Is a given address in use?
+        Best effort answer only.
+        If unsure, return false.
+    */
+    virtual bool isAddressInUse(unsigned long addr) const = 0;
+
+    /** Get the next address.
+        Used to cycle through all addresses, if we can.
+        If we cannot, then always return 0.
+          @param  addr    An address given by any of the methods that
+                          "cycle through addresses", and one where
+                          isAddressInUse() returned false.
+
+          @return   Next address to check,  Presumably this address
+                    is unused and is a hole of some kind.
+    */
+    virtual unsigned long getNextAddress(unsigned long addr) const = 0;
+
+    /** Show information about an unused address.
+        If we do not track unused addresses, then do nothing. 
+          @param  addr    An address given by any of the methods that
+                          "cycle through addresses", and one where
+                          isAddressInUse() returned false.
+    */
+    virtual void dumpInternalUnused(output &s, unsigned long addr) const = 0;
 
   protected:
     void incMemUsed(long b);
@@ -1205,6 +1239,8 @@ class MEDDLY::node_storage {
           @param  flags   What to show.
                             0x01  Show active memory
                             0x02  Show memory "holes"
+
+        TBD - remove this
     */
     void dumpInternal(output &s, unsigned flags) const;
 
@@ -1237,8 +1273,8 @@ class MEDDLY::node_storage {
 
           @return true    iff the nodes are duplicates
     */
-    virtual bool
-        areDuplicates(node_address addr, const unpacked_node &nr) const = 0;
+    virtual bool areDuplicates(node_address addr, const unpacked_node &nr) 
+        const = 0;
 
     /**
         Copy the node at the specified address, into an unpacked node.
@@ -1246,7 +1282,8 @@ class MEDDLY::node_storage {
           @param  un      Result will be stored here.  Will be resized if needed.
           @param  addr    Node address in this structure.
     */
-    virtual void fillUnpacked(unpacked_node &un, node_address addr, unpacked_node::storage_style st2) const = 0;
+    virtual void fillUnpacked(unpacked_node &un, node_address addr, 
+        unpacked_node::storage_style st2) const = 0;
 
     /** Compute the hash value for a node.
         Should give the same answer as filling a unpacked_node
@@ -1267,8 +1304,8 @@ class MEDDLY::node_storage {
                     then return the index for that pointer.
                     Otherwise, return a negative value.
     */
-    virtual int
-        getSingletonIndex(node_address addr, node_handle &down) const = 0;
+    virtual int getSingletonIndex(node_address addr, node_handle &down) 
+        const = 0;
 
 
     /** Get the specified downward pointer for a node.
@@ -1289,7 +1326,7 @@ class MEDDLY::node_storage {
           @param  dn      Output: downward pointer at that index.
     */
     virtual void getDownPtr(node_address addr, int ind, int& ev,
-                            node_handle& dn) const = 0;
+          node_handle& dn) const = 0;
 
     /** Get the specified outgoing edge for a node.
         Fast if we just want one.
@@ -1300,7 +1337,7 @@ class MEDDLY::node_storage {
           @param  dn      Output: downward pointer at that index.
     */
     virtual void getDownPtr(node_address addr, int ind, float& ev,
-                            node_handle& dn) const = 0;
+          node_handle& dn) const = 0;
 
 
     /** Read the unhashed header portion of a node.
@@ -1359,27 +1396,37 @@ class MEDDLY::node_storage {
     const char* getStyleName() const;
 
   protected:
+    /// TBD - remove this
     /// Dump information not related to individual nodes.
     virtual void dumpInternalInfo(output &s) const = 0;
+
+    /** Get the first interesting address.
+        If this cannot be determined, return 0.
+        TBD - remove this
+    */
+    virtual node_address firstNodeAddress() const = 0;
 
     /** Dump the node/hole information at the given address.
           @param  s       Output stream to use
           @param  addr    Address
           @param  flags   What chunks should be displayed
 
-          @return   Next interesting address.
+          @return   Next interesting address, if we can determine this; otherwise 0.
+
+        TBD - make this public
     */
     virtual node_address dumpInternalNode(output &s, node_address addr,
-                                          unsigned flags) const = 0;
+        unsigned flags) const = 0;
 
+    /// TBD - remove this
     /// Dump final info (after node info)
     virtual void dumpInternalTail(output &s) const = 0;
 
     // Hooks from other classes, so we don't need to make
     // all the derived classes "friends".
 
-    void moveNodeOffset(node_handle node, node_address old_addr,
-                        node_address new_addr);
+    void moveNodeOffset(node_handle node, node_address old_addr, 
+        node_address new_addr);
 
     //
     // Methods for derived classes to deal with
@@ -1895,6 +1942,10 @@ class MEDDLY::expert_forest: public forest
     */
     void getDownPtr(node_handle p, int index, float& ev, node_handle& dn) const;
 
+    /**
+        Get the transparent node.
+        This is the default node value for "skipped" edges in sparse nodes.
+    */
     node_handle getTransparentNode() const;
 
   // ------------------------------------------------------------
@@ -1965,6 +2016,25 @@ class MEDDLY::expert_forest: public forest
   // abstract virtual, must be overridden.
   //
 
+    /**
+        Is the given edge transparent?
+        If so it may be "skipped" in a sparse node.
+        Should not be called for multi-terminal; it is better to simply
+        compare with the transparent node as given by getTransparentNode().
+          @param  ep    Node part of the edge to check
+          @param  ev    Value part of the edge to check
+    */
+    virtual bool isTransparentEdge(node_handle ep, const void* ev) const = 0;
+
+    /**
+        Get the transparent edge value.
+        This is the default edge value for "skipped" edges in sparse nodes.
+        Copy the transparent edge value into the parameters.
+          @param  ep      Put node part of the edge here.
+          @param  ev      Put value part of the edge here.
+    */
+    virtual void getTransparentEdge(node_handle &ep, void* ptr) const = 0;
+
     /** Are the given edge values "duplicates".
         I.e., when determining if two nodes are duplicates,
         do the given edge values qualify as duplicate values.
@@ -1975,7 +2045,7 @@ class MEDDLY::expert_forest: public forest
           @throws     A TYPE_MISMATCH error if the forest
                       does not store edge values.
     */
-    virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const;
+    virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const = 0;
 
 
     /** Discover duplicate nodes.

@@ -121,12 +121,6 @@ class MEDDLY::compact_storage : public node_storage {
     virtual void collectGarbage(bool shrink);
     virtual void reportStats(output &s, const char* pad, unsigned flags) const;
 
-    /*
-    virtual void showNode(output &s, node_address addr, bool verb) const;
-    virtual void writeNode(output &s, node_address addr, const node_handle* map)
-    const;
-    */
-
     virtual node_address makeNode(node_handle p, const unpacked_node &nb, 
         node_storage_flags opt);
 
@@ -146,6 +140,7 @@ class MEDDLY::compact_storage : public node_storage {
     virtual void updateData(node_handle* d);
     virtual int smallestNode() const;
     virtual void dumpInternalInfo(output &) const;
+    virtual node_address firstNodeAddress() const;
     virtual node_address 
     dumpInternalNode(output &, node_address addr, unsigned flags) const;
     virtual void dumpInternalTail(output &) const;

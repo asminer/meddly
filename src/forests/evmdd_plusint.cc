@@ -100,6 +100,20 @@ void MEDDLY::evmdd_plusint
 }
 
 bool MEDDLY::evmdd_plusint
+::isTransparentEdge(node_handle ep, const void* ev) const
+{
+  if (ep) return false;
+  return OP::isTransparentEdge(ev);
+}
+
+void MEDDLY::evmdd_plusint
+::getTransparentEdge(node_handle &ep, void* ev) const
+{
+  ep = 0;
+  OP::setEdge(ev, OP::getRedundantEdge());
+}
+
+bool MEDDLY::evmdd_plusint
 ::areEdgeValuesEqual(const void* eva, const void* evb) const
 {
   int val1, val2;

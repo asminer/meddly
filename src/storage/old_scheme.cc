@@ -269,136 +269,6 @@ void MEDDLY::old_node_storage
   s << pad << "    End of Hole Chains\n";
 }
 
-/*
-void MEDDLY::old_node_storage::showNode(output &s, node_address addr, bool verb) const
-{
-  if (sizeOf(addr) < 0) {
-    // Sparse node
-    long nnz = -sizeOf(addr);
-    if (verb) s << " nnz : " << nnz;
-    s << " down: (";
-    for (long z=0; z<nnz; z++) {
-      if (z) s << ", ";
-      s << long(SI(addr)[z]) << ':';
-      if (edgeSlots) {
-        s.put('<');
-        getParent()->showEdgeValue(s, SEP(addr, z));
-        s.put(", ");
-      } 
-      node_handle d = SD(addr)[z];
-      if (getParent()->isTerminalNode(d)) {
-        getParent()->showTerminal(s, d);
-      } else {
-        s.put(long(d));
-      }
-      if (edgeSlots) s.put('>');
-    } // for z
-    s.put(')');
-  } else {
-    // Full node
-    long size = sizeOf(addr);
-    if (verb) s << " size: " << size;
-    s << " down: [";
-    for (long i=0; i<size; i++) {
-      if (i) s.put('|');
-      if (edgeSlots) {
-        s.put('<');
-        getParent()->showEdgeValue(s, FEP(addr, i));
-        s.put(", ");
-      } 
-      node_handle d = FD(addr)[i];
-      if (getParent()->isTerminalNode(d)) {
-        getParent()->showTerminal(s, d);
-      } else {
-        s.put(long(d));
-      }
-      if (edgeSlots) s.put('>');
-    } // for i
-    s.put(']');
-  }
-
-  // show extra header stuff
-  if (unhashedSlots) {
-    getParent()->showUnhashedHeader(s, UH(addr));
-  }
-  if (hashedSlots) {
-    getParent()->showHashedHeader(s, HH(addr));
-  }
-}
-
-void MEDDLY::old_node_storage
-::writeNode(output &s, node_address addr, const node_handle* map) const
-{
-  s.put(long(sizeOf(addr)));
-  s.put('\n');
-  if (sizeOf(addr) < 0) {
-    // Sparse node
-    int nnz = -sizeOf(addr);
-    // write indexes
-    s.put('\t');
-    for (int z=0; z<nnz; z++) {
-      s.put(' ');
-      s.put(long(SI(addr)[z]));
-    }
-    s.put("\n\t");
-    // write down pointers
-    for (int z=0; z<nnz; z++) {
-      s.put(' ');
-      node_handle d = SD(addr)[z];
-      if (getParent()->isTerminalNode(d)) {
-        getParent()->writeTerminal(s, d);
-      } else {
-        if (map) d = map[d];
-        s.put(long(d));
-      }
-    }
-    // write edges
-    if (edgeSlots) {
-      s.put("\n\t");
-      for (int z=0; z<nnz; z++) {
-        s.put(' ');
-        getParent()->showEdgeValue(s, SEP(addr, z));
-      }
-    } 
-    s.put('\n');
-  } else {
-    // Full node
-    int size = sizeOf(addr);
-    s.put('\t');
-    // write down pointers
-    for (int i=0; i<size; i++) {
-      s.put(' ');
-      node_handle d = FD(addr)[i];
-      if (getParent()->isTerminalNode(d)) {
-        getParent()->writeTerminal(s, d);
-      } else {
-        if (map) d = map[d];
-        s.put(long(d));
-      }
-    }
-    // write edges
-    if (edgeSlots) {
-      s.put("\n\t");
-      for (int i=0; i<size; i++) {
-        s.put(' ');
-        getParent()->showEdgeValue(s, FEP(addr, i));
-      }
-    } 
-    s.put('\n');
-  }
-
-  // write extra header stuff
-  // this goes LAST so we can read it into a built node
-  if (unhashedSlots) {
-    getParent()->writeUnhashedHeader(s, UH(addr));
-  }
-  if (hashedSlots) {
-    getParent()->writeHashedHeader(s, HH(addr));
-  }
-
-}
-*/
-
 
 MEDDLY::node_address MEDDLY::old_node_storage
 ::makeNode(node_handle p, const unpacked_node &nb, node_storage_flags opt)
@@ -873,6 +743,11 @@ void MEDDLY::old_node_storage::dumpInternalInfo(output &s) const
   verify_hole_slots = 0;
 }
 
+MEDDLY::node_address 
+MEDDLY::old_node_storage::firstNodeAddress() const
+{
+  return 1;
+}
 
 MEDDLY::node_address 
 MEDDLY::old_node_storage

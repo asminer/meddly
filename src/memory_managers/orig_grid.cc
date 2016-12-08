@@ -113,6 +113,11 @@ namespace MEDDLY {
       virtual void reportStats(output &s, const char* pad, bool details) const;
       virtual void dumpInternal(output &s) const;
 
+      virtual unsigned long getFirstAddress() const;
+      virtual bool isAddressInUse(unsigned long addr) const;
+      virtual unsigned long getNextAddress(unsigned long addr) const;
+      virtual void dumpInternalUnused(output &s, unsigned long addr) const;
+
     private:
       /// @return true on success
       bool resize(long newalloc);
@@ -464,6 +469,74 @@ namespace MEDDLY {
       s << "\n";
     }
 
+  }
+
+
+  // ******************************************************************
+
+
+  template <class INT>
+  unsigned long original_grid<INT>::getFirstAddress() const
+  {
+    return 1;
+  }
+
+
+  // ******************************************************************
+
+
+  template <class INT>
+  bool original_grid<INT>::isAddressInUse(unsigned long addr) const
+  {
+    if (0==addr) return false;
+    if (addr > last_used_slot) return false;
+    return !isHole(addr);
+  }
+
+
+  // ******************************************************************
+
+
+  template <class INT>
+  unsigned long original_grid<INT>::getNextAddress(unsigned long addr) const
+  {
+    if (0==addr) return 0;
+    if (addr > last_used_slot) return 0;
+    return addr + getHoleSize(addr);
+  }
+
+
+  // ******************************************************************
+
+
+  template <class INT>
+  void original_grid<INT>::dumpInternalUnused(output &s, unsigned long addr) const
+  {
+    if (0==addr) return;
+    if (addr > last_used_slot) {
+      s << "free slots";
+      return;
+    }
+
+    if (data[addr] & MSB()) {
+      s << "1:";
+    } else {
+      s << "0:";
+      MEDDLY_DCASSERT(0);
+    }
+    s << getHoleSize(addr);
+    s << ", " << data[addr+1];
+    s << ", " << data[addr+2];
+    s << ", " << data[addr+3];
+    s << ", ..., ";
+    addr += getHoleSize(addr)-1;
+    if (data[addr] & MSB()) {
+      s << "1:";
+    } else {
+      s << "0:";
+      MEDDLY_DCASSERT(0);
+    }
+    s << getHoleSize(addr);
   }
 
 

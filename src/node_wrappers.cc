@@ -522,7 +522,7 @@ void MEDDLY::node_storage::dumpInternal(output &s, unsigned flags) const
 {
   dumpInternalInfo(s);
   s << "Data array by record:\n";
-  for (node_address a=1; a > 0; ) {
+  for (node_address a=firstNodeAddress(); a > 0; ) {
     s.flush();
     a = dumpInternalNode(s, a, flags);
   } // for a

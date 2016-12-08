@@ -43,6 +43,11 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
           readValue(p, ev);
           return !notClose(ev, 1.0);
         }
+        static inline bool isTransparentEdge(const void* p) {
+          float ev;
+          readValue(p, ev);
+          return (0.0 == ev);
+        }
         static inline double apply(double a, double b) {
           return a*b;
         }
@@ -73,6 +78,8 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
     virtual void createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a);
     virtual void evaluate(const dd_edge &f, const int* vlist, float &term) const;
 
+    virtual bool isTransparentEdge(node_handle p, const void* v) const;
+    virtual void getTransparentEdge(node_handle &p, void* v) const;
     virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const;
     virtual bool isRedundant(const unpacked_node &nb) const;
     virtual bool isIdentityEdge(const unpacked_node &nb, int i) const;

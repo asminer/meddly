@@ -82,6 +82,19 @@ void MEDDLY::evmdd_timesreal
   evaluateT<OP, float>(f, vlist, term);
 }
 
+bool MEDDLY::evmdd_timesreal
+::isTransparentEdge(node_handle ep, const void* ev) const
+{
+  if (ep) return false;
+  return OP::isTransparentEdge(ev);
+}
+
+void MEDDLY::evmdd_timesreal
+::getTransparentEdge(node_handle &ep, void* ev) const
+{
+  ep = 0;
+  OP::setEdge(ev, OP::getRedundantEdge());
+}
 
 bool MEDDLY::evmdd_timesreal
 ::areEdgeValuesEqual(const void* eva, const void* evb) const
