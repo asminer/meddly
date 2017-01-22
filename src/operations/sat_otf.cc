@@ -564,8 +564,10 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
     } else {
       Ru[ei] = unpacked_node::useUnpackedNode();
       const int eventLevel = arg2F->getNodeLevel(mxd);
-      MEDDLY_DCASSERT(ABS(eventLevel) == level);
-      if (eventLevel<0) {
+      if (ABS(eventLevel) < level || eventLevel < 0) {
+        // Takes care of two situations:
+        // - skipped unprimed level (due to Fully Reduced)
+        // - skipped unprimed and primed levels (due to Fully Identity Reduced)
         Ru[ei]->initRedundant(arg2F, level, mxd, true);
       } else {
         Ru[ei]->initFromNode(arg2F, mxd, true);
@@ -602,12 +604,14 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
             Ru[ei] = 0;
           }
         } else {
-          const int eventLevel = arg2F->getNodeLevel(mxd);
-          MEDDLY_DCASSERT(ABS(eventLevel) == level);
           if (0==Ru[ei]) {
             Ru[ei] = unpacked_node::useUnpackedNode();
           }
-          if (eventLevel<0) {
+          const int eventLevel = arg2F->getNodeLevel(mxd);
+          if (ABS(eventLevel) < level || eventLevel < 0) {
+            // Takes care of two situations:
+            // - skipped unprimed level (due to Fully Reduced)
+            // - skipped unprimed and primed levels (due to Fully Identity Reduced)
             Ru[ei]->initRedundant(arg2F, level, mxd, true);
           } else {
             Ru[ei]->initFromNode(arg2F, mxd, true);
