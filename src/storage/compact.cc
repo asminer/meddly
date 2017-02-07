@@ -553,6 +553,7 @@ void MEDDLY::compact_storage
 
 // ******************************************************************
 
+// TODO: Add extensible node data to the hash
 unsigned MEDDLY::compact_storage::hashNode(int level, node_address addr) const
 {
   hash_stream s;

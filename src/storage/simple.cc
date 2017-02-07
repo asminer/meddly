@@ -585,7 +585,26 @@ void MEDDLY::simple_storage
     const node_handle* down = SD(addr);
     const node_handle* index = SI(addr);
 
+    if (nr.isExtensible()) {
+      if (storesExtensibleEdge(addr)) {
+        // Last downpointer is extensible
+        nr.setExtensibleEdge(down[nnz-1], index[nnz-1]);
+        if (nr.hasEdges()) {
+          memcpy(nr.ext_eptr_write(), SEP(addr, nnz-1), nr.edgeBytes());
+        }
+        nnz--;
+      } else {
+        // Extensible edge is the same as a transparent edge
+        nr.setExtensibleEdge(tv, index[nnz-1]+1);
+        if (nr.hasEdges()) {
+          memcpy(nr.ext_eptr_write(), 0, nr.edgeBytes());
+        }
+      }
+    }
+
     if (nr.isFull()) {
+      nr.resize(index[nnz-1]+1);
+
       for (int i=0; i<nr.getSize(); i++) {
         nr.d_ref(i) = tv;
         if (nr.hasEdges()) {
@@ -629,6 +648,25 @@ void MEDDLY::simple_storage
   // Node is full
   //
   const node_handle* down = FD(addr);
+
+  if (nr.isExtensible()) {
+    if (storesExtensibleEdge(addr)) {
+      // Last downpointer is extensible
+      nr.setExtensibleEdge(down[size-1], size-1);
+      if (nr.hasEdges()) {
+        memcpy(nr.ext_eptr_write(), FEP(addr, size-1), nr.edgeBytes());
+      }
+      size--;
+    } else {
+      // Extensible edge is the same as a transparent edge
+      nr.setExtensibleEdge(tv, size);
+      if (nr.hasEdges()) {
+        memcpy(nr.ext_eptr_write(), 0, nr.edgeBytes());
+      }
+    }
+  }
+
+
   if (nr.isFull()) {
     int i;
     for (i=0; i<size; i++) {
@@ -674,6 +712,7 @@ void MEDDLY::simple_storage
 }
 
 
+// TODO: Add extensible node data to the hash
 unsigned MEDDLY::simple_storage::hashNode(int level, node_address addr) const
 {
   hash_stream s;
@@ -709,15 +748,15 @@ unsigned MEDDLY::simple_storage::hashNode(int level, node_address addr) const
     node_handle tv=getParent()->getTransparentNode();
     if (getParent()->areEdgeValuesHashed()) {
       for (int i=0; i<size; i++) {
-    	if (down[i]!=tv) {
+        if (down[i]!=tv) {
           s.push(i, down[i], ((int*)FEP(addr, i))[0]);
-    	}
+        }
       } // for z
     } else {
       for (int i=0; i<size; i++) {
-    	if (down[i]!=tv) {
+        if (down[i]!=tv) {
           s.push(i, down[i]);
-    	}
+        }
       } // for z
     }
   }

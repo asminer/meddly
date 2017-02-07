@@ -323,6 +323,9 @@ class MEDDLY::expert_variable : public variable {
                       the primed and unprimed are enlarged.
       @param  b       New bound, if less than the current bound
                       an error is thrown.
+                      If bound<=0, the variable is marked as extensible,
+                      with initial bound as abs(bound).
+                      Note: an extensible variable has a range [1 .. +infinity].
     */
     void enlargeBound(bool prime, int b);
 
@@ -364,6 +367,9 @@ class MEDDLY::expert_domain : public domain {
                       bounds[0] gives the bound for the top-most variable,
                       and bounds[N-1] gives the bound for the bottom-most
                       variable.
+                      If bound<=0, the variable is marked as extensible,
+                      with initial bound as abs(bound).
+                      Note: an extensible variable has a range [1 .. +infinity].
       @param  N       Number of variables.
     */
     void createVariablesTopDown(const int* bounds, int N);
@@ -426,6 +432,9 @@ class MEDDLY::expert_domain : public domain {
                       the primed and unprimed are enlarged.
       @param  b       New bound, if less than the current bound
                       an error code is returned.
+                      If bound<=0, the variable is marked as extensible,
+                      with initial bound as abs(bound).
+                      Note: an extensible variable has a range [1 .. +infinity].
     */
     void enlargeVariableBound(int vh, bool prime, int b);
 
@@ -618,6 +627,49 @@ class MEDDLY::unpacked_node {
     /// Get the edge value, as a float.
     float ef(int i) const;
 
+    // -------------------------------------------------------------------------
+    // Methods to access the extensible portion of the node
+    //
+    // Note: Only nodes that belong to an extensible level can be extensible.
+    // 
+    // Extensible node  : {Regular part, Extensible part).
+    // Regular Part     : same as non-extensible nodes.
+    // Extensible Part  : a single edge, i.e. a tuple {index, node, edge-value},
+    //                    for all indices in [extensible_index, +infinity].
+    // 
+    // Example:
+    // The node
+    //    [0:n0:ev0, 1:n1:ev1, 2:n2:ev2, 3:n2:ev2, ..., +infinity:n2:ev2]
+    // is represented as the following extensible node:
+    //    {[0:n0:ev0, 1:n1:ev1], Extensible: [2:n2:ev2]}
+    // with,
+    //    size of node           : 2
+    //    extensible index       : 2
+    //    extensible node_handle : n2
+    //    extensible edge-value  : ev2
+    // -------------------------------------------------------------------------
+
+    /// Does this reader store an extensible edge?
+    /// Note: in an extensible node, all edges starting from
+    ///       index to +infinity refer to the same edge, i.e. (node, edge-value).
+    bool hasExtensibleEdge() const;
+
+    /// Get the extensible edge.
+    void getExtensibleEdge(int& i, node_handle& n) const;
+    /// Get the extensible edge for EVMDDs with integer edge-values.
+    void getExtensibleEdge(int& i, node_handle& n, int& ev) const;
+    /// Get the extensible edge for EVMDDs with floating-point edge-values.
+    void getExtensibleEdge(int& i, node_handle& n, float& ev) const;
+
+    /// Set the extensible edge.
+    void setExtensibleEdge(int i, node_handle n) const;
+    /// Set the extensible edge for EVMDDs with integer edge-values.
+    void setExtensibleEdge(int i, node_handle n, int ev) const;
+    /// Set the extensible edge for EVMDDs with floating-point edge-values.
+    void setExtensibleEdge(int i, node_handle n, float ev) const;
+
+    // -------------------- End of extensible portion --------------------------
+
     /// Get the level number of this node.
     int getLevel() const;
 
@@ -701,6 +753,9 @@ class MEDDLY::unpacked_node {
     node_handle* down;
     int* index;
     void* edge;
+    node_handle extensible_down;
+    int extensible_index;
+    void* extensible_edge;
     int alloc;
     int ealloc;
     int size;
@@ -1411,6 +1466,7 @@ class MEDDLY::expert_forest: public forest
     // returns 0 or -K 
     int getMinLevelIndex() const;
     bool isValidLevel(int k) const;
+    bool isExtensibleLevel(int k) const;
 
     /// The maximum size (number of indices) a node at this level can have
     int getLevelSize(int lh) const;
@@ -1500,6 +1556,15 @@ class MEDDLY::expert_forest: public forest
     bool isValidNodeIndex(node_handle p) const;
     node_handle getLastNode() const;
 
+    // --------------------------------------------------
+    // Extensible Node Information:
+    // --------------------------------------------------
+    /// Is this an extensible node
+    bool hasExtensibleEdge(node_handle p) const;
+    /// If \a p is an extensible node, this returns an index
+    /// that can be used by getDownPtr(...) to access the
+    /// extensible portion of this node.
+    int getExtensibleIndex(node_handle p) const;
 
   public:
 

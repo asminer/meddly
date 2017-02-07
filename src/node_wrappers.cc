@@ -46,6 +46,9 @@ MEDDLY::unpacked_node::unpacked_node()
   down = 0;
   index = 0;
   edge = 0;
+  extensible_down = 0;
+  extensible_index = INT_MIN;
+  extensible_edge = 0;
   alloc = 0;
   ealloc = 0;
   size = 0;
@@ -68,9 +71,13 @@ void MEDDLY::unpacked_node::clear()
   free(down);
   free(index);
   free(edge);
+  free(extensible_edge);
   down = 0;
   index = 0;
   edge = 0;
+  extensible_down = 0;
+  extensible_index =INT_MIN;
+  extensible_edge = 0;
   alloc = 0;
   ealloc = 0;
   size = 0;
@@ -80,6 +87,14 @@ void MEDDLY::unpacked_node::clear()
 
 /*
   Initializers 
+
+  TODO: Extensible nodes
+        + Every node at level k, where level k represents an extensible
+          variable, is represented by an extensible node.
+        + Whether a node is extensible or not is determined by querying
+          the corresponding level's property.
+        + The last downpointer in an extensible node is considered to
+          repeat for all indices till +infinity.
 */
 
 void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k, 
@@ -200,11 +215,11 @@ void MEDDLY::unpacked_node::show(output &s, bool details) const
 {
   int stop;
   if (isSparse()) {
-    if (details) s << "nnzs: " << long(nnzs) << " ";
+    if (details) s << "nnzs: " << long(nnzs) << (hasExtensibleEdge()? "*": "") << " ";
     s << "down: (";
     stop = nnzs;
   } else {
-    if (details) s << "size: " << long(size) << " ";
+    if (details) s << "size: " << long(size) << (hasExtensibleEdge()? "*": "") << " ";
     s << "down: [";
     stop = size;
   }
@@ -330,13 +345,19 @@ void MEDDLY::unpacked_node
     if (0==edge) throw error(error::INSUFFICIENT_MEMORY);
     ealloc = nalloc;
   }
+  if (0==extensible_edge) {
+    extensible_edge = realloc(edge, (edge_bytes/8+1)*8);
+  }
 }
 
-void MEDDLY::unpacked_node::bind_to_forest(const expert_forest* f, int k, int ns, bool full)
+// TODO: make it work for extensible nodes
+void MEDDLY::unpacked_node::bind_to_forest(const expert_forest* f,
+    int k, int ns, bool full)
 {
   parent = f;
   level = k;
   is_full = full;
+  extensible_index = INT_MIN;    // represents a non-extensible node
   edge_bytes = f->edgeBytes();
   resize(ns);
 
@@ -376,6 +397,7 @@ void MEDDLY::unpacked_node
 }
 */
 
+// TODO: Add extensible node data to the hash
 void MEDDLY::unpacked_node::computeHash()
 {
 #ifdef DEVELOPMENT_CODE

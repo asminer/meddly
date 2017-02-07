@@ -62,7 +62,6 @@ namespace MEDDLY {
   */
   const int DONT_CHANGE = -2;
 
-
   // Typedefs
   typedef unsigned char node_storage_flags;
 
@@ -325,7 +324,10 @@ namespace MEDDLY {
 
   /** Front-end function to create a variable.
       This is required because variable is an abstract class.
-        @param  bound   The initial bound for the varaible.
+        @param  bound   The initial bound for the variable.
+                        If bound<=0, the variable is marked as extensible,
+                        with initial bound as abs(bound).
+                        Note: an extensible variable has a range [1 .. +infinity].
         @param  name    Variable name (used only in display / debugging), or 0.
         @return A new variable, or 0 on error.
   */
@@ -354,6 +356,9 @@ namespace MEDDLY {
         @param  bounds  variable bounds.
                         bounds[i] gives the bound for the variable
                         at level i+1.
+                        If bound<=0, the variable is marked as extensible,
+                        with initial bound as abs(bound).
+                        Note: an extensible variable has a range [1 .. +infinity].
         @param  N       Number of variables.
 
         @return A new domain.
@@ -1976,7 +1981,7 @@ class MEDDLY::forest {
     A single variable object is used to describe both 
     the primed and unprimed versions of the variable.
 
-    Note: variables are automatically deleted when
+    Note1: variables are automatically deleted when
     removed from their last domain.
 
     Additional features are provided in the expert interface.
@@ -1984,15 +1989,16 @@ class MEDDLY::forest {
 class MEDDLY::variable {
   protected:
     variable(int bound, char* name);
-  protected:
     virtual ~variable();
   public:
     int getBound(bool primed) const;
     const char* getName() const;
     void setName(char* newname);
+    bool isExtensible() const;
   protected:
     int un_bound;
     int pr_bound;
+    bool is_extensible;
   private:
     char* name;
 };
@@ -2055,6 +2061,9 @@ class MEDDLY::domain {
         @param  bounds  variable bounds.
                         bounds[i] gives the bound for the variable
                         at level i+1.
+                        If bound<=0, the variable is marked as extensible,
+                        with initial bound as abs(bound).
+                        Note: an extensible variable has a range [1 .. +infinity].
         @param  N       Number of variables.
     */
     virtual void createVariablesBottomUp(const int* bounds, int N) = 0;
