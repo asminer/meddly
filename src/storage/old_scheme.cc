@@ -700,6 +700,7 @@ void MEDDLY::old_node_storage
 }
 
 
+// TODO: Add extensible node data to the hash
 unsigned MEDDLY::old_node_storage::hashNode(int level, node_address addr) const
 {
   hash_stream s;

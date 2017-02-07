@@ -80,6 +80,95 @@ void MEDDLY::generic_binary_mdd::computeDDEdge(const dd_edge &a, const dd_edge &
 }
 
 
+#ifdef EXTENSIBLE_APPLY
+
+MEDDLY::node_handle 
+MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
+{
+  node_handle result = 0;
+  if (checkTerminals(a, b, result))
+    return result;
+
+  compute_table::search_key* Key = findResult(a, b, result);
+  if (0==Key) return result;
+
+  // Get level information
+  const int aLevel = arg1F->getNodeLevel(a);
+  const int bLevel = arg2F->getNodeLevel(b);
+
+  const int resultLevel = MAX(aLevel, bLevel);
+  const int resultSize = resF->getLevelSize(resultLevel);
+
+  // Initialize sparse readers
+  unpacked_node *A = (aLevel < resultLevel) 
+    ? unpacked_node::newRedundant(arg1F, resultLevel, a, false)
+    : unpacked_node::newFromNode(arg1F, a, false)
+  ;
+
+  unpacked_node *B = (bLevel < resultLevel)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, b, false)
+    : unpacked_node::newFromNode(arg2F, b, false)
+  ;
+
+  MEDDLY_DCASSERT(A->isSparse());
+  MEDDLY_DCASSERT(B->isSparse());
+
+  // do computation
+  for (int i=0; i<resultSize; i++) {
+    result_
+    C->d_ref(i) = compute(A->d(i), B->d(i));
+  }
+
+  int a_i = 0;
+  int b_i = 0;
+  int r_index = 0;
+  for ( ; a_i < a.getNNZs() || b_i < b.getNNZs(); ) {
+    node_handle r = 0;
+    if (A->i(a_i) < B->i(b_i)) {
+      r = compute(A->d(a_i), 0);
+      r_i = A->i(a_i);
+      a_i++;
+    } else if (A->i(a_i) > B->i(b_i)) {
+      r = compute(0, B->d(b_i));
+      r_i = B->i(b_i);
+      b_i++;
+    } else {
+      r = compute(A->d(a_i), B->d(b_i));
+      r_i = A->i(a_i);
+      a_i++; b_i++;
+    }
+
+    if (0 == r) continue;
+    result_d.push_back(r);
+    result_i.push_back(r_i);
+  }
+
+  // process the extensible portion
+  if (resF->isExtensibleLevel(resultLevel)) {
+    node_handle a_n, b_n;
+    int a_i, b_i;
+    A->getExtensibleEdge(a_i, a_n);
+    B->getExtensibleEdge(b_i, b_n);
+    // Note: resultSize is the first index of the extensible portion of the node
+    C->setExtensibleEdge(resultSize, compute(a_n, b_n));
+  }
+
+  // cleanup
+  unpacked_node::recycle(B);
+  unpacked_node::recycle(A);
+
+  // reduce and save result
+  unpacked_node* C = unpacked_node::newFull(resF, resultLevel, resultSize);
+
+  result = resF->createReducedNode(-1, C);
+  saveResult(Key, a, b, result);
+
+#ifdef TRACE_ALL_OPS
+  printf("computed %s(%d, %d) = %d\n", getName(), a, b, result);
+#endif
+  return result;
+}
+
 MEDDLY::node_handle 
 MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
 {
@@ -110,6 +199,10 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
     : unpacked_node::newFromNode(arg2F, b, true)
   ;
 
+  MEDDLY_DCASSERT(A->isFull() && resultSize == A->getSize());
+  MEDDLY_DCASSERT(B->isFull() && resultSize == B->getSize());
+  MEDDLY_DCASSERT(C->isFull() && resultSize == C->getSize());
+
   // do computation
   for (int i=0; i<resultSize; i++) {
     C->d_ref(i) = compute(A->d(i), B->d(i));
@@ -128,6 +221,63 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
 #endif
   return result;
 }
+
+#else
+
+MEDDLY::node_handle 
+MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
+{
+  node_handle result = 0;
+  if (checkTerminals(a, b, result))
+    return result;
+
+  compute_table::search_key* Key = findResult(a, b, result);
+  if (0==Key) return result;
+
+  // Get level information
+  const int aLevel = arg1F->getNodeLevel(a);
+  const int bLevel = arg2F->getNodeLevel(b);
+
+  const int resultLevel = MAX(aLevel, bLevel);
+  const int resultSize = resF->getLevelSize(resultLevel);
+
+  unpacked_node* C = unpacked_node::newFull(resF, resultLevel, resultSize);
+
+  // Initialize readers
+  unpacked_node *A = (aLevel < resultLevel) 
+    ? unpacked_node::newRedundant(arg1F, resultLevel, a, true)
+    : unpacked_node::newFromNode(arg1F, a, true)
+  ;
+
+  unpacked_node *B = (bLevel < resultLevel)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, b, true)
+    : unpacked_node::newFromNode(arg2F, b, true)
+  ;
+
+  MEDDLY_DCASSERT(A->isFull() && resultSize == A->getSize());
+  MEDDLY_DCASSERT(B->isFull() && resultSize == B->getSize());
+  MEDDLY_DCASSERT(C->isFull() && resultSize == C->getSize());
+
+  // do computation
+  for (int i=0; i<resultSize; i++) {
+    C->d_ref(i) = compute(A->d(i), B->d(i));
+  }
+
+  // cleanup
+  unpacked_node::recycle(B);
+  unpacked_node::recycle(A);
+
+  // reduce and save result
+  result = resF->createReducedNode(-1, C);
+  saveResult(Key, a, b, result);
+
+#ifdef TRACE_ALL_OPS
+  printf("computed %s(%d, %d) = %d\n", getName(), a, b, result);
+#endif
+  return result;
+}
+
+#endif  // End of #ifdef EXTENSIBLE_APPLY
 
 
 // ******************************************************************

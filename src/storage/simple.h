@@ -162,6 +162,7 @@ class MEDDLY::simple_storage : public node_storage {
 
   private:
       static const long temp_node_value = -5;
+      static const int extensible_flag = (0x1 << (8*sizeof(node_handle) - 2));
 
       // header indexes (relative to chunk start)
       static const int count_index = 0;
@@ -210,11 +211,14 @@ class MEDDLY::simple_storage : public node_storage {
       inline node_handle& rawSizeOf(node_handle addr) const {
         return chunkOf(addr)[size_index];
       }
-      inline node_handle  sizeOf(node_handle addr) const { 
+      inline node_handle sizeOf(node_handle addr) const { 
         return rawSizeOf(addr); 
       }
       inline void setSizeOf(node_handle addr, node_handle sz) { 
         rawSizeOf(addr) = sz; 
+      }
+      inline bool storesExtensibleEdge(node_handle addr) const {
+        return sizeOf(addr) & extensible_flag;
       }
 
       inline node_handle* UH(node_handle addr) const {

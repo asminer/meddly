@@ -414,6 +414,9 @@ inline int MEDDLY::variable::getBound(bool primed) const {
   return primed ? pr_bound : un_bound; 
 }
 inline const char* MEDDLY::variable::getName() const { return name; }
+inline bool MEDDLY::variable::isExtensible() const { 
+  return is_extensible;
+}
 
 // ******************************************************************
 // *                                                                *

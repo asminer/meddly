@@ -335,6 +335,12 @@ MEDDLY::unpacked_node::setLevel(int k)
   level = k;
 }
 
+inline bool
+MEDDLY::unpacked_node::hasExtensibleEdge() const
+{
+  return extensible_index == INT_MIN;
+}
+
 inline int
 MEDDLY::unpacked_node::getSize() const
 {
@@ -917,6 +923,13 @@ MEDDLY::expert_forest::isValidLevel(int k) const
   return (k >= getMinLevelIndex()) && (k <= getNumVariables());
 }
 
+inline bool
+MEDDLY::expert_forest::isExtensibleLevel(int k) const
+{
+  MEDDLY_DCASSERT(isValidLevel(k));
+  return getDomain()->getVar(k < 0? -k: k)->isExtensible();
+}
+
 inline int
 MEDDLY::expert_forest::getLevelSize(int lh) const
 {
@@ -1177,10 +1190,18 @@ MEDDLY::expert_forest::getLastNode() const
   return a_last;
 }
 
+// --------------------------------------------------
+// Extensible Node Information:
+// --------------------------------------------------
+inline bool
+MEDDLY::expert_forest::hasExtensibleEdge(node_handle p) const
+{
+  return isExtensibleLevel(getNodeLevel(p));
+}
+
 //
 // Unorganized from here
 //
-
 
 inline int
 MEDDLY::expert_forest::getIndexSetCardinality(MEDDLY::node_handle node) const
@@ -1279,7 +1300,6 @@ const
   nodeMan->fillUnpacked(un, getNodeAddress(node), st2);
 }
 
-
 inline MEDDLY::node_handle
 MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un)
 {
@@ -1326,13 +1346,14 @@ MEDDLY::expert_forest::setEdgeSize(char ebytes, bool hashed)
   edge_bytes = ebytes;
   hash_edge_values = hashed;
 }
-;
+
 inline void
 MEDDLY::expert_forest::setUnhashedSize(char ubytes)
 {
   MEDDLY_DCASSERT(0 == unhashed_bytes);
   unhashed_bytes = ubytes;
 }
+
 inline void
 MEDDLY::expert_forest::setHashedSize(char hbytes)
 {
