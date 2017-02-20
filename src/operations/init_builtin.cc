@@ -185,8 +185,9 @@ void MEDDLY::builtin_initializer::setup()
   initP(MEDDLY::SATURATION_BACKWARD,  SATURATION_BACKWARD,  initSaturationBackward()  );
   initP(MEDDLY::SATURATION_OTF_FORWARD,   SATURATION_OTF_FORWARD,   initOtfSaturationForward()  );
 
-
+#ifdef HAVE_LIBGMP
   mpz_object::initBuffer();
+#endif
 }
 
 
@@ -244,6 +245,8 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(MM_MULTIPLY,    MEDDLY::MM_MULTIPLY);
 
 
+#ifdef HAVE_LIBGMP
   mpz_object::clearBuffer();
+#endif
 }
 
