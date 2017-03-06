@@ -2145,12 +2145,16 @@ void MEDDLY::expert_forest::expandHandleList()
   // increase size by 50%
   int delta = a_size / 2;
   MEDDLY_DCASSERT(delta>=0);
-  address = (node_header*) realloc(address, (a_size+delta) * sizeof(node_header));
-  if (0==address) {
+  node_header* new_address = (node_header*) 
+    realloc(address, (a_size+delta) * sizeof(node_header));
+  if (0==new_address) {
+    /*
     fprintf(stderr, "Error in allocating array of size %lu at %s, line %d\n",
         (a_size+delta) * sizeof(node_header), __FILE__, __LINE__);
+    */
     throw error(error::INSUFFICIENT_MEMORY);
   }
+  address = new_address;
   stats.incMemAlloc(delta * sizeof(node_header));
   memset(address + a_size, 0, delta * sizeof(node_header));
   a_size += delta;
