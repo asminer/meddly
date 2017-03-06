@@ -928,8 +928,10 @@ MEDDLY::expert_forest
           // expand.  Note we're leaving an extra slot
           // at the end, for the terminal 0.
           msize += 1024;
-          marked = (node_handle*) realloc(marked, msize*sizeof(node_handle));
-          if (0==marked) throw error(error::INSUFFICIENT_MEMORY);
+          node_handle* new_marked = (node_handle*) 
+            realloc(marked, msize*sizeof(node_handle));
+          if (0==new_marked) throw error(error::INSUFFICIENT_MEMORY);
+          marked = new_marked;
       }
       inList[M->d(i)] = true;
       marked[mlen] = M->d(i);
@@ -2202,12 +2204,16 @@ void MEDDLY::expert_forest::shrinkHandleList()
   // shrink the array
   MEDDLY_DCASSERT(delta>=0);
   MEDDLY_DCASSERT(a_size-delta>=a_min_size);
-  address = (node_header*) realloc(address, new_size * sizeof(node_header));
-  if (0==address) {
+  node_header* new_address = (node_header*) 
+    realloc(address, new_size * sizeof(node_header));
+  if (0==new_address) {
+    /*
     fprintf(stderr, "Error in allocating array of size %lu at %s, line %d\n",
         new_size*sizeof(node_header), __FILE__, __LINE__);
+    */
     throw error(error::INSUFFICIENT_MEMORY);
   }
+  address = new_address;
   stats.decMemAlloc(delta * sizeof(node_header));
   a_size -= delta;
   a_next_shrink = a_size / 2;
