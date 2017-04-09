@@ -192,10 +192,10 @@ void MEDDLY::mtmdd_forest::dynamicReorderVariables(int top, int bottom)
     vars.push_back(getVarByLevel(i));
   }
 
-  for (int i = 0; i < vars.size(); i++) {
+  for (unsigned int i = 0; i < vars.size(); i++) {
     int max = i;
     unsigned max_num = unique->getNumEntries(vars[max]);
-    for (int j = i + 1; j < vars.size(); j++){
+    for (unsigned int j = i + 1; j < vars.size(); j++){
       if (unique->getNumEntries(vars[j]) > max_num) {
         max = j;
         max_num = unique->getNumEntries(vars[j]);

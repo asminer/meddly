@@ -1522,6 +1522,16 @@ MEDDLY::satotf_opname::subevent::getTop() const {
   return top;
 }
 
+inline bool
+MEDDLY::satotf_opname::subevent::isFiring() const {
+  return is_firing;
+}
+
+inline bool
+MEDDLY::satotf_opname::subevent::isEnabling() const {
+  return !is_firing;
+}
+
 inline const MEDDLY::dd_edge&
 MEDDLY::satotf_opname::subevent::getRoot() const {
   return root;

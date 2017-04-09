@@ -111,7 +111,7 @@ void MEDDLY::variable_order::exchange(int var1, int var2) {
 
 bool MEDDLY::variable_order::is_compatible_with(const int* order) const {
   MEDDLY_DCASSERT(order[0] == 0);
-  for (int i = 1; i < level2var.size(); i++) {
+  for (unsigned int i = 1; i < level2var.size(); i++) {
     if (level2var[i] != order[i]) {
       return false;
     }
@@ -126,7 +126,7 @@ bool MEDDLY::variable_order::is_compatible_with(const variable_order& order) con
   if (level2var.size() != order.level2var.size()) {
     return false;
   }
-  for (int i = 0; i < level2var.size(); i++) {
+  for (unsigned int i = 0; i < level2var.size(); i++) {
     if (level2var[i] != order.getVarByLevel(i)) {
       return false;
     }
