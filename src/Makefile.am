@@ -82,6 +82,7 @@ libmeddly_la_SOURCES = \
   operations/vect_matr.cc    \
   operations/mm_mult.cc      \
   operations/init_builtin.cc \
+  operations/minimum_witness.cc \
   \
   storage/holeman.cc \
   storage/hm_array.cc \

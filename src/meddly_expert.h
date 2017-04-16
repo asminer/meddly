@@ -113,6 +113,7 @@ namespace MEDDLY {
   class numerical_opname;
   class satpregen_opname;
   class satotf_opname;
+  class minimum_witness_opname;
 
   class ct_initializer;
   class compute_table_style;
@@ -174,6 +175,8 @@ namespace MEDDLY {
       will be built along with reachability set.
   */
   extern const satotf_opname* SATURATION_OTF_FORWARD;
+
+  extern const minimum_witness_opname* CONSGTRAINT_BACKWARD_DFS;
 
   // ******************************************************************
   // *                                                                *
@@ -2658,6 +2661,12 @@ class MEDDLY::satotf_opname : public specialized_opname {
     };  // end of class otf_relation
 
 };  // end of class satotf_opname
+
+class MEDDLY::minimum_witness_opname : public specialized_opname {
+public:
+	minimum_witness_opname(const char* n);
+    //virtual specialized_operation* buildOperation(arguments* a) const = 0;
+};
 
 // ******************************************************************
 // *                                                                *

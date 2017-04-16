@@ -61,6 +61,7 @@
 
 #include "mm_mult.h"
 
+#include "minimum_witness.h"
 
 #include "mpz_object.h"
 
@@ -119,6 +120,9 @@ namespace MEDDLY {
   const satpregen_opname* SATURATION_FORWARD = 0;
   const satpregen_opname* SATURATION_BACKWARD = 0;
   const satotf_opname* SATURATION_OTF_FORWARD = 0;
+
+  // minimum witness operation "codes"
+  const minimum_witness_opname* CONSGTRAINT_BACKWARD_DFS = 0;
 };
 
 
@@ -184,6 +188,7 @@ void MEDDLY::builtin_initializer::setup()
   initP(MEDDLY::SATURATION_FORWARD,   SATURATION_FORWARD,   initSaturationForward()   );
   initP(MEDDLY::SATURATION_BACKWARD,  SATURATION_BACKWARD,  initSaturationBackward()  );
   initP(MEDDLY::SATURATION_OTF_FORWARD,   SATURATION_OTF_FORWARD,   initOtfSaturationForward()  );
+  initP(MEDDLY::CONSGTRAINT_BACKWARD_DFS,   CONSGTRAINT_BACKWARD_DFS,   initConstraintDFSBackward()  );
 
 
   mpz_object::initBuffer();

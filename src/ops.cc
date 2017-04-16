@@ -189,7 +189,6 @@ MEDDLY::satpregen_opname::~satpregen_opname()
 {
 }
 
-
 void
 MEDDLY::satpregen_opname::pregen_relation
 ::setForests(forest* inf, forest* mxd, forest* outf)
@@ -1158,6 +1157,16 @@ long MEDDLY::satotf_opname::otf_relation::mintermMemoryUsage() const {
   return usage;
 }
 
+// ******************************************************************
+// *                                                                *
+// *                 minimum_witness_opname methods                 *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::minimum_witness_opname::minimum_witness_opname(const char* n)
+  : specialized_opname(n)
+{
+}
 
 // ******************************************************************
 // *                       operation  methods                       *
@@ -1477,5 +1486,3 @@ void MEDDLY::specialized_operation::compute(double* y, const double* x)
 {
   throw error(error::TYPE_MISMATCH);
 }
-
-
