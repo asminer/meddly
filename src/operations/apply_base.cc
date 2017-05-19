@@ -535,12 +535,12 @@ void MEDDLY::generic_binary_evplus
 
   // Initialize readers
   unpacked_node *A = (aLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg1F, resultLevel, 0, a, true)
+    ? unpacked_node::newRedundant(arg1F, resultLevel, 0L, a, true)
     : unpacked_node::newFromNode(arg1F, a, true)
   ;
 
   unpacked_node *B = (bLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg2F, resultLevel, 0, b, true)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, 0L, b, true)
     : unpacked_node::newFromNode(arg2F, b, true)
   ;
 

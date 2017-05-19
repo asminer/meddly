@@ -95,7 +95,7 @@ MEDDLY::unpacked_node::newFromNode(const expert_forest *f, node_handle node, boo
   return U;
 }
 
-inline MEDDLY::unpacked_node* 
+inline MEDDLY::unpacked_node*
 MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, node_handle node, bool full)
 {
   unpacked_node* U = useUnpackedNode();
@@ -104,8 +104,17 @@ MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, node_handle n
   return U;
 }
 
+//inline MEDDLY::unpacked_node*
+//MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, int ev, node_handle node, bool full)
+//{
+//  unpacked_node* U = useUnpackedNode();
+//  MEDDLY_DCASSERT(U);
+//  U->initRedundant(f, k, ev, node, full);
+//  return U;
+//}
+
 inline MEDDLY::unpacked_node* 
-MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, int ev, node_handle node, bool full)
+MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, long ev, node_handle node, bool full)
 {
   unpacked_node* U = useUnpackedNode();
   MEDDLY_DCASSERT(U);
@@ -287,6 +296,10 @@ MEDDLY::unpacked_node::setEdge(int n, long ev)
 {
   MEDDLY_DCASSERT(sizeof(long) == edge_bytes);
   MEDDLY::expert_forest::EVencoder<long>::writeValue(eptr_write(n), ev);
+
+  long test_ev = 256;
+  getEdge(n, test_ev);
+  MEDDLY_DCASSERT(test_ev == ev);
 }
 
 
@@ -1337,6 +1350,7 @@ MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un, T& e
 {
   MEDDLY_DCASSERT(un);
   normalize(*un, ev);
+  MEDDLY_DCASSERT(ev >= 0);
   un->computeHash();
   node = createReducedHelper(in, *un);
 #ifdef TRACK_DELETIONS

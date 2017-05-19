@@ -510,7 +510,8 @@ class MEDDLY::unpacked_node {
     static unpacked_node* newFromNode(const expert_forest *f, node_handle node, bool full);
 
     static unpacked_node* newRedundant(const expert_forest *f, int k, node_handle node, bool full);
-    static unpacked_node* newRedundant(const expert_forest *f, int k, int ev, node_handle node, bool full);
+//    static unpacked_node* newRedundant(const expert_forest *f, int k, int ev, node_handle node, bool full);
+    static unpacked_node* newRedundant(const expert_forest *f, int k, long ev, node_handle node, bool full);
     static unpacked_node* newRedundant(const expert_forest *f, int k, float ev, node_handle node, bool full);
 
     static unpacked_node* newIdentity(const expert_forest *f, int k, int i, node_handle node, bool full);

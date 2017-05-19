@@ -125,8 +125,8 @@ bool MEDDLY::constraint_bckwd_dfs::checkTerminals(int aev, node_handle a, int be
     dev = bev;
     return true;
   }
-  if (aev == Inf<long>() || bev == Inf<long>() || c == 0) {
-//  if (a == 0 || b == 0 || c == 0) {
+  if (a == 0 || b == 0 || c == 0) {
+    MEDDLY_DCASSERT(aev == Inf<long>() || bev == Inf<long>() || c == 0);
     d = 0;
     // XXX: 0 or infinity???
     dev = Inf<long>();
@@ -149,9 +149,16 @@ MEDDLY::compute_table::search_key* MEDDLY::constraint_bckwd_dfs::findResult(long
   if (!cacheFind) {
     return key;
   }
+
   cacheFind.read(dev);
-  dev += aev + bev;
   d = resF->linkNode(cacheFind.readNH());
+  if (d != 0) {
+    dev += aev + bev;
+  }
+  else {
+    MEDDLY_DCASSERT(dev == Inf<long>());
+  }
+
   doneCTkey(key);
   return 0;
 }
@@ -163,7 +170,12 @@ void MEDDLY::constraint_bckwd_dfs::saveResult(compute_table::search_key* key,
   argF->cacheNode(b);
   transF->cacheNode(c);
   compute_table::entry_builder& entry = CT->startNewEntry(key);
-  entry.writeResult(dev - aev - bev);
+  if (d == 0) {
+    entry.writeResult(Inf<long>());
+  }
+  else {
+    entry.writeResult(dev - aev - bev);
+  }
   entry.writeResultNH(resF->cacheNode(d));
   CT->addEntry();
 }
@@ -267,6 +279,20 @@ void MEDDLY::constraint_bckwd_dfs::splitMxd(node_handle mxd)
 #endif
 }
 
+MEDDLY::dd_edge MEDDLY::constraint_bckwd_dfs::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r)
+{
+  dd_edge res(resF);
+  long cev = Inf<long>();
+  node_handle c = 0;
+  long aev;
+  a.getEdgeValue(aev);
+  long bev;
+  b.getEdgeValue(bev);
+  compute(aev, a.getNode(), bev, b.getNode(), r.getNode(), cev, c);
+  res.set(c, cev);
+  return res;
+}
+
 void MEDDLY::constraint_bckwd_dfs::compute(int aev, node_handle a, int bev, node_handle b, node_handle r,
   long& cev, node_handle& c)
 {
@@ -289,6 +315,8 @@ void MEDDLY::constraint_bckwd_dfs::compute(int aev, node_handle a, int bev, node
 
 void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpacked_node& nb)
 {
+  MEDDLY_DCASSERT(a != 0);
+
   node_handle mxd = splits[nb.getLevel()];
   if (mxd == 0) {
     return;
@@ -303,14 +331,15 @@ void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpac
     : unpacked_node::newFromNode(transF, mxd, false);
 
   unpacked_node* A = isLevelAbove(nb.getLevel(), consF->getNodeLevel(a))
-    ? unpacked_node::newRedundant(consF, nb.getLevel(), 0, a, true)
+    ? unpacked_node::newRedundant(consF, nb.getLevel(), 0L, a, true)
     : unpacked_node::newFromNode(consF, a, true);
 
   // indices to explore
   std::deque<int> queue;
   std::vector<bool> waiting(nb.getSize(), false);
   for (int j = 0; j < nb.getSize(); j++) {
-    if (nb.ei(j) != Inf<long>() && A->ei(j) != Inf<long>()) {
+    if (nb.d(j) != 0) {
+      MEDDLY_DCASSERT(nb.ei(j) != Inf<long>());
       queue.push_back(j);
       waiting[j] = true;
     }
@@ -322,10 +351,15 @@ void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpac
     queue.pop_front();
     waiting[j] = false;
 
-    MEDDLY_DCASSERT(nb.d(j) && A->ei(j) != Inf<long>());
+    MEDDLY_DCASSERT(nb.d(j) != 0);
 
     for (int iz = 0; iz < Ru->getNNZs(); iz++) {
       const int i = Ru->i(iz);
+      if (A->d(i) == 0) {
+        MEDDLY_DCASSERT(A->ei(i) == Inf<long>());
+        continue;
+      }
+
       const int dlevel = transF->getNodeLevel(Ru->d(iz));
       unpacked_node* Rp = (dlevel == -nb.getLevel())
         ? unpacked_node::newFromNode(transF, Ru->d(iz), true)
@@ -333,16 +367,18 @@ void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpac
       if (Rp->d(j) != 0) {
         long recev = Inf<long>();
         node_handle rec = 0;
-        recFire(aev + A->ei(j), A->d(j), nb.ei(j), nb.d(j), Rp->d(j), recev, rec);
+        recFire(aev + A->ei(i), A->d(i), nb.ei(j), nb.d(j), Rp->d(j), recev, rec);
+        MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
-//        if (recev == Inf<long>()) {
         if (rec == 0) {
+          MEDDLY_DCASSERT(recev == Inf<long>());
           continue;
         }
 
         MEDDLY_DCASSERT(recev != Inf<long>());
         // Increase the distance
-        plusOp->compute(recev, rec, aev, a, recev, rec);
+        plusOp->compute(recev, rec, aev + A->ei(i), A->d(i), recev, rec);
+        MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
         if (rec == nb.d(i)) {
           // Compute the minimum
@@ -356,6 +392,7 @@ void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpac
         bool updated = true;
 
         if (nb.d(i) == 0) {
+          MEDDLY_DCASSERT(nb.ei(i) == Inf<long>());
           nb.setEdge(i, recev);
           nb.d_ref(i) = rec;
         }
@@ -382,7 +419,8 @@ void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpac
             iz = -1;
           }
           else {
-            if (!waiting[i] && A->ei(i) != Inf<long>()) {
+            if (!waiting[i]) {
+              MEDDLY_DCASSERT(A->ei(i) != Inf<long>());
               queue.push_back(i);
               waiting[i] = true;
             }
@@ -401,21 +439,21 @@ void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpac
 void MEDDLY::constraint_bckwd_dfs::recFire(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c)
 {
   // termination conditions
-  if (aev == Inf<long>() || r == 0) {
+  if (a == 0 || b == 0 || r == 0) {
     cev = Inf<long>();
     c = 0;
     return;
   }
-  if (a == -1 && r == -1) {
-    // XXX: a == b ???
+  if ((a == -1 || a == b) && r == -1) {
     cev = bev;
-    c = b;
+    c = resF->linkNode(b);
     return;
   }
 
   // check the cache
   compute_table::search_key* key = findResult(aev, a, bev, b, r, cev, c);
   if (key == 0) {
+    MEDDLY_DCASSERT(cev >= 0);
     return;
   }
 
@@ -428,10 +466,10 @@ void MEDDLY::constraint_bckwd_dfs::recFire(long aev, node_handle a, long bev, no
 
   // Initialize evmdd reader
   unpacked_node* A = isLevelAbove(level, aLevel)
-    ? unpacked_node::newRedundant(consF, level, 0, a, true)
+    ? unpacked_node::newRedundant(consF, level, 0L, a, true)
     : unpacked_node::newFromNode(consF, a, true);
   unpacked_node* B = isLevelAbove(level, bLevel)
-    ? unpacked_node::newRedundant(argF, level, 0, b, true)
+    ? unpacked_node::newRedundant(argF, level, 0L, b, true)
     : unpacked_node::newFromNode(argF, b, true);
 
   unpacked_node* T = unpacked_node::newFull(resF, level, size);
@@ -466,6 +504,11 @@ void MEDDLY::constraint_bckwd_dfs::recFire(long aev, node_handle a, long bev, no
     // loop over mxd "rows"
     for (int iz = 0; iz < Ru->getNNZs(); iz++) {
       const int i = Ru->i(iz);
+      if (A->d(i) == 0) {
+        MEDDLY_DCASSERT((A->ei(i) == Inf<long>()));
+        continue;
+      }
+
       unpacked_node* Rp = isLevelAbove(-level, transF->getNodeLevel(Ru->d(iz)))
         ? unpacked_node::newIdentity(transF, -level, i, Ru->d(iz), false)
         : unpacked_node::newFromNode(transF, Ru->d(iz), false);
@@ -474,10 +517,6 @@ void MEDDLY::constraint_bckwd_dfs::recFire(long aev, node_handle a, long bev, no
       for (int jz = 0; jz < Rp->getNNZs(); jz++) {
         int j = Rp->i(jz);
 
-        if (A->ei(j) == Inf<long>() || Rp->d(jz) == 0) {
-          continue;
-        }
-
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
         // and add them
@@ -485,10 +524,13 @@ void MEDDLY::constraint_bckwd_dfs::recFire(long aev, node_handle a, long bev, no
         node_handle n = 0;
         recFire(aev + A->ei(i), A->d(i), bev + B->ei(j), B->d(j), Rp->d(jz), nev, n);
 
-        if (nev == Inf<long>()) {
+        if (n == 0) {
+          MEDDLY_DCASSERT(nev == Inf<long>());
           continue;
         }
-        if (T->ei(i) == Inf<long>()) {
+
+        if (T->d(i) == 0) {
+          MEDDLY_DCASSERT(T->ei(i) == Inf<long>());
           T->setEdge(i, nev);
           T->d_ref(i) = n;
           continue;
@@ -518,6 +560,7 @@ void MEDDLY::constraint_bckwd_dfs::recFire(long aev, node_handle a, long bev, no
 
   saturateHelper(aev, a, *T);
   resF->createReducedNode(-1, T, cev, c);
+  MEDDLY_DCASSERT(cev >= 0);
 
   saveResult(key, aev, a, bev, b, r, cev, c);
 }
@@ -674,10 +717,10 @@ void MEDDLY::constraint_saturation::saturate(int aev, node_handle a, int bev, no
   const int bLevel = argF->getNodeLevel(b);
 
   unpacked_node* A = (aLevel < level)
-    ? unpacked_node::newRedundant(consF, level, 0, a, true)
+    ? unpacked_node::newRedundant(consF, level, 0L, a, true)
     : unpacked_node::newFromNode(consF, a, true);
   unpacked_node* B = (bLevel < level)
-    ? unpacked_node::newRedundant(argF, level, 0, b, true)
+    ? unpacked_node::newRedundant(argF, level, 0L, b, true)
     : unpacked_node::newFromNode(argF, b, true);
 
   // Do computation
@@ -685,7 +728,7 @@ void MEDDLY::constraint_saturation::saturate(int aev, node_handle a, int bev, no
   for (int i = 0; i < sz; i++) {
     long tev = Inf<long>();
     node_handle t = 0;
-    saturate(A->ei(i), A->d(i), B->ei(i), B->d(i), level - 1, tev, t);
+    saturate(aev + A->ei(i), A->d(i), B->ei(i), B->d(i), level - 1, tev, t);
     T->setEdge(i, tev);
     T->d_ref(i) = t;
   }

@@ -330,6 +330,11 @@ void MEDDLY::dd_edge::show(output &strm, int verbosity) const
       strm.put("MDD");
     }
     strm.put(" rooted at this node:\n");
+    if (eParent->isEVPlus()) {
+      long ev = Inf<long>();
+      getEdgeValue(ev);
+      strm << "Dangling: " << ev << "\n";
+    }
     eParent->showNodeGraph(strm, &node, 1);
   }
   if (verbosity == 1 || verbosity == 3) {

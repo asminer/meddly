@@ -163,29 +163,17 @@ bool MEDDLY::plus_evplus::checkTerminals(long aev, node_handle a, long bev, node
   long& cev, node_handle& c)
 {
   if (a == -1 && b == -1) {
-    c = -1; cev = aev + bev;
+    c = -1;
+    MEDDLY_DCASSERT(aev != Inf<long>());
+    MEDDLY_DCASSERT(bev != Inf<long>());
+    cev = aev + bev;
+    MEDDLY_DCASSERT(cev >= 0);
     return true;
   }
-  if (0 == a && 0 == b) {
+  if (a == 0 || b == 0) {
     c = 0;
-    cev = 0;
+    cev = Inf<long>();
     return true;
-  }
-  if (0 == a) {
-    if (arg2F == resF) {
-      c = resF->linkNode(b);
-      cev = bev;
-      return true;
-    }
-    return false;
-  }
-  if (0 == b) {
-    if (arg1F == resF) {
-      c = resF->linkNode(a);
-      cev = aev;
-      return true;
-    }
-    return false;
   }
   return false;
 }

@@ -1829,8 +1829,8 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
         }
 
         // there's new states and existing states; union them.
-        const long oldev = nb->ei(j);
-        const int oldj = nb->d(j);
+        long oldev = nb->ei(j);
+        node_handle oldj = nb->d(j);
         long newev = Inf<long>();
         node_handle newstates = 0;
         evplusUnionMin->compute(nev, n, oldev, oldj, newev, newstates);

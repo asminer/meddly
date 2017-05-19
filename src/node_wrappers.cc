@@ -119,7 +119,8 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   int ev, node_handle node, bool full)
 {
   MEDDLY_DCASSERT(f);
-  MEDDLY_DCASSERT(sizeof(int)==f->edgeBytes());
+//  MEDDLY_DCASSERT(sizeof(int)==f->edgeBytes());
+  MEDDLY_DCASSERT(sizeof(long)==f->edgeBytes());
   int nsize = f->getLevelSize(k);
   bind_to_forest(f, k, nsize, full);
   for (int i=0; i<nsize; i++) {

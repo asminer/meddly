@@ -65,8 +65,6 @@ protected:
 
   node_handle* splits;
 
-  virtual ~constraint_bckwd_dfs();
-
   // Check if the variables orders of relevant forests are compatible
   virtual bool checkForestCompatibility() const;
 
@@ -88,6 +86,9 @@ public:
   constraint_bckwd_dfs(const minimum_witness_opname* code,
     expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
 
+  ~constraint_bckwd_dfs();
+
+  dd_edge compute(const dd_edge& a, const dd_edge& b, const dd_edge& r);
   void compute(int aev, node_handle a, int bev, node_handle b, node_handle r, long& cev, node_handle& c);
 
   void saturateHelper(long aev, node_handle a, unpacked_node& nb);
