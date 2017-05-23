@@ -197,7 +197,7 @@ MEDDLY::forest::policies MEDDLY::forest::mxdDefaults;
 
 MEDDLY::forest
 ::forest(int ds, domain* _d, bool rel, range_type t, edge_labeling ev, 
-  const policies &p) : deflt(p)
+  const policies &p,int* lrr) : deflt(p)
 {
   // FID
   //
@@ -212,11 +212,57 @@ MEDDLY::forest
   isRelation = rel;
   rangeType = t;
   edgeLabel = ev;
+
+  
+    if(lrr==NULL){
+        if(isRelation)
+        {
+            int span = 2*(d->getNumVariables()) + 1;
+            lrr=(int*)malloc(sizeof(int)*span);
+            
+            if(isQuasiReduced())
+                for(int i=0;i<=span;i++)
+                {lrr[i]=i==0?-4:(i%2==0?-2:-1);}
+            
+            else if (isFullyReduced())
+                for(int i=0;i<=span;i++)
+                {lrr[i]=i==0?-4:(i%2==0?-1:-1);}
+            
+            else if (isIdentityReduced())
+                for(int i=0;i<=span;i++)
+                {lrr[i]=i==0?-4:(i%2==0?-3:-1);}
+        }
+        else
+        {
+            lrr=(int*)malloc(sizeof(int)*(d->getNumVariables()+1));
+            lrr[0]=-4;
+            if(isQuasiReduced())
+                for(int i=1;i<=d->getNumVariables();i++)
+                    lrr[i]=-2;
+            
+            else
+                if (isFullyReduced())
+                for(int i=1;i<=d->getNumVariables();i++)
+                    lrr[i]=-1;
+            
+        }
+        
+    }
+    
+    level_reduction_rule=lrr;
+    
+    
+    
+    
   // check policies
   if (!isRelation) {
     if (policies::IDENTITY_REDUCED == deflt.reduction)
       throw error(error::INVALID_POLICY);
-  } 
+      
+    for(int i=1;i<=d->getNumVariables();i++)
+        if(level_reduction_rule[i]==-3)              //isIdentityReduced()
+         throw error(error::INVALID_POLICY);
+  }
   //
   // Initialize array of operations
   //
@@ -671,8 +717,8 @@ const unsigned int MEDDLY::expert_forest::SHOW_TERMINALS  = 0x01;
 
 
 MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
-  edge_labeling ev, const policies &p)
-: forest(ds, d, rel, t, ev, p)
+  edge_labeling ev, const policies &p,int* level_reduction_rule)
+: forest(ds, d, rel, t, ev, p,level_reduction_rule)
 {
   //
   // Inltialize address array

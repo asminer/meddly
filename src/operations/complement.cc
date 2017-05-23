@@ -123,7 +123,7 @@ MEDDLY::node_handle MEDDLY::compl_mdd::compute_r(node_handle a)
 
   const int level = argF->getNodeLevel(a);
   const int size = resF->getLevelSize(level);
-  bool addRedundentNode=(resF->isQuasiReduced() && level>1);
+  bool addRedundentNode=(resF->isQuasiReduced(level) && level>1);
 
   // Initialize unpacked nodes
   unpacked_node* A = unpacked_node::newFromNode(argF, a, true);
@@ -205,7 +205,7 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
     );
   }
   if (argF->isTerminalNode(a) &&
-      resF->isFullyReduced())
+      resF->isFullyReduced(k))
   {
     return expert_forest::bool_Tencoder::value2handle(
       !expert_forest::bool_Tencoder::handle2value(a)
@@ -239,7 +239,7 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
   bool canSave = true;
   if (aLevel == k) {
     A->initFromNode(argF, a, true);
-  } else if (k>0 || argF->isFullyReduced()) {
+  } else if (k>0 || argF->isFullyReduced(k)) {
     A->initRedundant(argF, k, a, true);
   } else {
     MEDDLY_DCASSERT(in>=0);
@@ -251,7 +251,7 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
   // recurse
   int nextLevel = argF->downLevel(k);
   int nnz = 0;
-  bool addRedundentNode=(resF->isQuasiReduced() && (k>0 || k<-1));
+  bool addRedundentNode=(resF->isQuasiReduced(k) && (k>0 || k<-1));
 
   // recurse
   for (int i=0; i<size; i++) {

@@ -31,7 +31,7 @@ namespace MEDDLY {
 class MEDDLY::evmxd_forest : public ev_forest {
   public:
     evmxd_forest(int dsl, domain* d, range_type t, edge_labeling ev, 
-      const policies &p);
+      const policies &p,int* level_reduction_rule=NULL);
 
     virtual void reorderVariables(const int* level2var);
     virtual void swapAdjacentVariables(int level);
@@ -76,7 +76,7 @@ class MEDDLY::evmxd_forest : public ev_forest {
           // Identity node
           //
           MEDDLY_DCASSERT(DONT_CARE == vlist[i]);
-          if (isIdentityReduced()) continue;
+          if (isIdentityReduced(i)) continue;
           // Build an identity node by hand
           int sz = getLevelSize(i);
           unpacked_node* nb = unpacked_node::newFull(this, i, sz);
@@ -101,7 +101,7 @@ class MEDDLY::evmxd_forest : public ev_forest {
         node_handle edpr;
         TYPE evpr;
         if (DONT_CARE == vplist[i]) {
-          if (isFullyReduced()) {
+          if (isFullyReduced(-i)) {
             // DO NOTHING
             edpr = ed;
             evpr = ev;
@@ -128,7 +128,7 @@ class MEDDLY::evmxd_forest : public ev_forest {
         // process unprimed level
         //
         if (DONT_CARE == vlist[i]) {
-          if (isFullyReduced()) {
+          if (isFullyReduced(-i)) {
             ed = edpr;
             ev = evpr;
             continue;
@@ -136,7 +136,7 @@ class MEDDLY::evmxd_forest : public ev_forest {
           // build redundant node
           int sz = getLevelSize(i);
           unpacked_node *nb = unpacked_node::newFull(this, i, sz);
-          if (isIdentityReduced()) {
+          if (isIdentityReduced(-i)) {
             // Below is likely a singleton, so check for identity reduction
             // on the appropriate v value
             for (int v=0; v<sz; v++) {
@@ -524,7 +524,7 @@ namespace MEDDLY {
       // Helper for createEdge
       //
       inline void makeIdentityEdge(int k, T& pev, node_handle& p) {
-        if (F->isIdentityReduced()) return;
+        if (F->isIdentityReduced(k)) return;
 
         // build an identity node by hand
         int lastV = F->getLevelSize(k);

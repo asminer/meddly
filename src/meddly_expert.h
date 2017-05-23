@@ -1321,7 +1321,7 @@ class MEDDLY::expert_forest: public forest
       @param  p       Polcies for reduction, storage, deletion.
     */
     expert_forest(int dslot, domain *d, bool rel, range_type t,
-                  edge_labeling ev, const policies &p);
+                  edge_labeling ev, const policies &p,int* level_reduction_rule);
 
   // ------------------------------------------------------------
   // inlined helpers.

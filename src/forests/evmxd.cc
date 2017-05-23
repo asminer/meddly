@@ -23,7 +23,7 @@
 
 MEDDLY::evmxd_forest
 ::evmxd_forest(int dsl, domain* d, range_type t, edge_labeling ev, 
-  const policies &p) : ev_forest(dsl, d, true, t, ev, p)
+  const policies &p,int* level_reduction_rule) : ev_forest(dsl, d, true, t, ev, p,level_reduction_rule)
 {
   // anything to construct?
 }

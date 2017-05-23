@@ -26,8 +26,8 @@
 #include "../unique_table.h"
 
 MEDDLY::mtmxd_forest
-::mtmxd_forest(int dsl, domain* d, range_type t, const policies &p)
- : mt_forest(dsl, d, true, t, p)
+::mtmxd_forest(int dsl, domain* d, range_type t, const policies &p,int* level_reduction_rule)
+ : mt_forest(dsl, d, true, t, p,level_reduction_rule)
 {
   // anything to construct?
 }
@@ -287,7 +287,7 @@ MEDDLY::node_handle MEDDLY::mtmxd_forest::swapAdjacentVariablesOf(node_handle no
 
   // Unprimed high node builder
   unpacked_node* hnb = unpacked_node::newFull(this, level + 1, lsize);
-  if (isFullyReduced() || isQuasiReduced()) {
+  if (isFullyReduced(level) || isQuasiReduced(level)) { //Doubtful
     for (int m = 0; m < lsize; m++) {
       // Primed high node builder
       unpacked_node* phnb = unpacked_node::newFull(this, -(level + 1), lsize);
@@ -310,7 +310,7 @@ MEDDLY::node_handle MEDDLY::mtmxd_forest::swapAdjacentVariablesOf(node_handle no
       hnb->d_ref(m) = createReducedNode(m, phnb);
     }
   }
-  else if (isIdentityReduced()) {
+  else if (isIdentityReduced(level)) { //Doubtful
     for (int m = 0; m < lsize; m++) {
       // Primed high node builder
       unpacked_node* phnb = unpacked_node::newFull(this, -(level + 1), lsize);
@@ -360,7 +360,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByLevelSwap(int level)
   MEDDLY_DCASSERT(level >= 1);
   MEDDLY_DCASSERT(level < getNumVariables());
 
-  if(!isFullyReduced() && !isQuasiReduced()){
+  if(!isFullyReduced(level) && !isQuasiReduced(level)){
     throw error(error::INVALID_OPERATION);
   }
 
@@ -649,7 +649,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_iterator::first(int k, node_handle down)
 
   if (0==down) return false;
 
-  bool isFully = F->isFullyReduced();
+  bool isFully = F->isFullyReduced(k);
 
   for ( ; k; k = downLevel(k) ) {
     MEDDLY_DCASSERT(down);
@@ -763,7 +763,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::first(int k, node_handle down)
     // Ok, there is a valid path.
     // Set up this level.
     nzp[k] = 0;
-    if (F->isFullyReduced()) {
+    if (F->isFullyReduced(k)) {
       path[k].initRedundant(F, k, cdown, false);
       index[k] = 0;
     } else {
@@ -860,7 +860,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::first(int k, node_handle down)
     // See if this "column node" has a path
     // at the specified index.
     if (isLevelAbove(k, F->getNodeLevel(down))) {
-      if (!F->isFullyReduced()) {
+      if (!F->isFullyReduced(k)) {
         // Identity node here - check index
         if (index[k] != index[upLevel(k)]) return false;
       }
@@ -884,7 +884,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::first(int k, node_handle down)
       if (!first(downLevel(kpr), down)) return false;
       // There's one below, set up the one at these levels.
       path[k].initRedundant(F, k, down, false);
-      if (F->isFullyReduced()) {
+      if (F->isFullyReduced(k)) {
         nzp[k] = 0;
         index[k] = 0;
       } else {
