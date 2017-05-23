@@ -356,7 +356,7 @@ void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpac
     for (int iz = 0; iz < Ru->getNNZs(); iz++) {
       const int i = Ru->i(iz);
       if (A->d(i) == 0) {
-        MEDDLY_DCASSERT(A->ei(i) == Inf<long>());
+        MEDDLY_DCASSERT(A->ei(i) == Inf<long>() || A->ei(i) == 0);
         continue;
       }
 
@@ -505,7 +505,7 @@ void MEDDLY::constraint_bckwd_dfs::recFire(long aev, node_handle a, long bev, no
     for (int iz = 0; iz < Ru->getNNZs(); iz++) {
       const int i = Ru->i(iz);
       if (A->d(i) == 0) {
-        MEDDLY_DCASSERT((A->ei(i) == Inf<long>()));
+        MEDDLY_DCASSERT(A->ei(i) == Inf<long>() || A->ei(i) == 0);
         continue;
       }
 
@@ -571,12 +571,6 @@ void MEDDLY::constraint_bckwd_dfs::recFire(long aev, node_handle a, long bev, no
 // *                                                                *
 // ******************************************************************
 
-const int MEDDLY::constraint_saturation::NODE_INDICES_IN_KEY[3] = {
-  sizeof(long) / sizeof(node_handle),
-  (2 * sizeof(long) + sizeof(node_handle)) / sizeof(node_handle),
-  (3 * sizeof(long) + 2 * sizeof(node_handle)) / sizeof(node_handle)
-};
-
 MEDDLY::constraint_saturation::constraint_saturation(constraint_bckwd_dfs* p,
   expert_forest* cons, expert_forest* arg, expert_forest* res)
   : specialized_operation(nullptr,
@@ -602,6 +596,18 @@ MEDDLY::constraint_saturation::constraint_saturation(constraint_bckwd_dfs* p,
 
   minOp = getOperation(UNION, resF, resF, resF);
   plusOp = getOperation(PLUS, resF, resF, resF);
+
+  if (argF->isFullyReduced()) {
+    NODE_INDICES_IN_KEY[0] = sizeof(long) / sizeof(node_handle);
+    NODE_INDICES_IN_KEY[1] = (2 * sizeof(long) + sizeof(node_handle)) / sizeof(node_handle);
+    // Store level in key for fully-reduced forest
+    NODE_INDICES_IN_KEY[2] = (3 * sizeof(long) + 2 * sizeof(node_handle) + sizeof(int)) / sizeof(node_handle);
+  }
+  else {
+    NODE_INDICES_IN_KEY[0] = sizeof(long) / sizeof(node_handle);
+    NODE_INDICES_IN_KEY[1] = (2 * sizeof(long) + sizeof(node_handle)) / sizeof(node_handle);
+    NODE_INDICES_IN_KEY[2] = (3 * sizeof(long) + 2 * sizeof(node_handle)) / sizeof(node_handle);
+  }
 }
 
 MEDDLY::constraint_saturation::~constraint_saturation()
@@ -663,7 +669,7 @@ MEDDLY::compute_table::search_key* MEDDLY::constraint_saturation::findResult(lon
 }
 
 void MEDDLY::constraint_saturation::saveResult(compute_table::search_key* key,
-  long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
+  long aev, node_handle a, long bev, node_handle b, int level, long cev, node_handle c)
 {
   consF->cacheNode(a);
   argF->cacheNode(b);
@@ -726,11 +732,18 @@ void MEDDLY::constraint_saturation::saturate(int aev, node_handle a, int bev, no
   // Do computation
   unpacked_node* T = unpacked_node::newFull(resF, level, sz);
   for (int i = 0; i < sz; i++) {
-    long tev = Inf<long>();
-    node_handle t = 0;
-    saturate(aev + A->ei(i), A->d(i), B->ei(i), B->d(i), level - 1, tev, t);
-    T->setEdge(i, tev);
-    T->d_ref(i) = t;
+    if (A->d(i) == 0) {
+      MEDDLY_DCASSERT(resF == argF);
+      T->setEdge(i, B->ei(i));
+      T->d_ref(i) = resF->linkNode(B->d(i));
+    }
+    else {
+      long tev = Inf<long>();
+      node_handle t = 0;
+      saturate(aev + A->ei(i), A->d(i), B->ei(i), B->d(i), level - 1, tev, t);
+      T->setEdge(i, tev);
+      T->d_ref(i) = t;
+    }
   }
 
   // Cleanup
@@ -742,7 +755,7 @@ void MEDDLY::constraint_saturation::saturate(int aev, node_handle a, int bev, no
   cev += bev;
 
   // save in compute table
-  saveResult(key, aev, a, bev, b, cev, c);
+  saveResult(key, aev, a, bev, b, level, cev, c);
 }
 
 // ******************************************************************

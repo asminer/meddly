@@ -97,7 +97,7 @@ public:
 class MEDDLY::constraint_saturation: public specialized_operation
 {
 protected:
-  static const int NODE_INDICES_IN_KEY[3];
+  int NODE_INDICES_IN_KEY[3];
 
   constraint_bckwd_dfs* parent;
 
@@ -119,7 +119,7 @@ protected:
   compute_table::search_key* findResult(long aev, node_handle a,
     long bev, node_handle b, int level, long& cev, node_handle &c);
   void saveResult(compute_table::search_key* Key,
-    long aev, node_handle a, long bev, node_handle b, long cev, node_handle c);
+    long aev, node_handle a, long bev, node_handle b, int level, long cev, node_handle c);
 
   virtual bool isStaleEntry(const node_handle* data);
   virtual void discardEntry(const node_handle* data);
