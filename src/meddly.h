@@ -921,7 +921,9 @@ class MEDDLY::forest {
           /// Nodes are quasi-reduced.
           QUASI_REDUCED,
           /// Nodes are identity-reduced.
-          IDENTITY_REDUCED
+          IDENTITY_REDUCED,
+	 /// Nodes are user-defined reduced
+	  USER_DEFINED
       };
 
       // Supported node storage meachanisms.
@@ -1019,6 +1021,7 @@ class MEDDLY::forest {
       void setFullyReduced();
       void setQuasiReduced();
       void setIdentityReduced();
+      void setUserDefinedReduced();
       void setNeverDelete();
       void setOptimistic();
       void setPessimistic();
@@ -1278,6 +1281,9 @@ class MEDDLY::forest {
     /// Returns true if the forest is identity reduced.
     bool isIdentityReduced() const;
     
+     /// Returns true if the forest is user_defined reduced.
+    bool isUserDefinedReduced() const;
+
     /// Returns true if the level is fully reduced.
     bool isFullyReduced(int k) const;
     

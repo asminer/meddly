@@ -215,21 +215,28 @@ MEDDLY::forest
 
   
     if(lrr==NULL){
+       
+        if(isUserDefinedReduced()){
+		throw error(error::INVALID_POLICY);
+        }
+
+	else{
+
         if(isRelation)
         {
             int span = 2*(d->getNumVariables()) + 1;
             lrr=(int*)malloc(sizeof(int)*span);
             
             if(isQuasiReduced())
-                for(int i=0;i<=span;i++)
+                for(int i=0;i<span;i++)
                 {lrr[i]=i==0?-4:(i%2==0?-2:-1);}
             
             else if (isFullyReduced())
-                for(int i=0;i<=span;i++)
+                for(int i=0;i<span;i++)
                 {lrr[i]=i==0?-4:(i%2==0?-1:-1);}
             
             else if (isIdentityReduced())
-                for(int i=0;i<=span;i++)
+                for(int i=0;i<span;i++)
                 {lrr[i]=i==0?-4:(i%2==0?-3:-1);}
         }
         else
@@ -246,10 +253,17 @@ MEDDLY::forest
                     lrr[i]=-1;
             
         }
-        
+      
+	}
+
+	level_reduction_rule=lrr;        
     }
-    
-    level_reduction_rule=lrr;
+	else if(isUserDefinedReduced()){
+
+    	level_reduction_rule=lrr;
+    }
+	else
+		throw error(error::INVALID_POLICY);
     
     
     

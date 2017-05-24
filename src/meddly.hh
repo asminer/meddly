@@ -329,6 +329,10 @@ inline bool MEDDLY::forest::isIdentityReduced() const {
     return MEDDLY::forest::policies::IDENTITY_REDUCED == deflt.reduction;
 }
 
+inline bool MEDDLY::forest::isUserDefinedReduced() const {
+    return MEDDLY::forest::policies::USER_DEFINED == deflt.reduction;
+}
+
 inline int* MEDDLY::forest::getLevelReductionRule() const{
     return level_reduction_rule;
     
