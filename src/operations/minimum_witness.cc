@@ -26,7 +26,159 @@
 
 // ******************************************************************
 // *                                                                *
-// *                    constraint_image_opname                     *
+// *                       common_constraint                        *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::common_constraint::common_constraint(const minimum_witness_opname* code,
+  int kl, int al,
+  expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
+  : specialized_operation(code, kl, al)
+{
+  MEDDLY_DCASSERT(cons->isEVPlus());
+  MEDDLY_DCASSERT(arg->isEVPlus());
+  MEDDLY_DCASSERT(trans->isMultiTerminal() && trans->isForRelations());
+  MEDDLY_DCASSERT(res->isEVPlus());
+
+  consF = cons;
+  argF = arg;
+  transF = trans;
+  resF = res;
+
+  registerInForest(consF);
+  registerInForest(argF);
+  registerInForest(transF);
+  registerInForest(resF);
+
+  setAnswerForest(resF);
+}
+
+MEDDLY::common_constraint::~common_constraint()
+{
+  unregisterInForest(consF);
+  unregisterInForest(argF);
+  unregisterInForest(transF);
+  unregisterInForest(resF);
+}
+
+bool MEDDLY::common_constraint::checkForestCompatibility() const
+{
+  auto o1 = consF->variableOrder();
+  auto o2 = argF->variableOrder();
+  auto o3 = transF->variableOrder();
+  auto o4 = resF->variableOrder();
+  return o1->is_compatible_with(*o2)
+    && o1->is_compatible_with(*o3)
+    && o1->is_compatible_with(*o4);
+}
+
+// ******************************************************************
+// *                                                                *
+// *                     constraint_bfs_opname                      *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::constraint_bfs_opname::constraint_bfs_opname(bool fwd)
+ : minimum_witness_opname(fwd ? "PostImage" : "PreImage")
+{
+  forward = fwd;
+}
+
+MEDDLY::specialized_operation* MEDDLY::constraint_bfs_opname::buildOperation(
+  expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res) const
+{
+  specialized_operation* op = 0;
+  if (forward) {
+    throw error(error::NOT_IMPLEMENTED);
+  }
+  else {
+    op = new constraint_bckwd_bfs(this, cons, arg, trans, res);
+  }
+  return op;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                    constraint_bckwd_bfs                        *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::constraint_bckwd_bfs::constraint_bckwd_bfs(const minimum_witness_opname* code,
+  expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
+  : common_constraint(code, 0, 0, cons, arg, trans, res)
+{
+  if (resF->getRangeType() == forest::INTEGER) {
+    plusOp = getOperation(PLUS, resF, consF, resF);
+    minOp = getOperation(UNION, resF, resF, resF);
+  } else {
+    throw error(error::INVALID_OPERATION);
+  }
+  imageOp = getOperation(PRE_IMAGE, argF, transF, resF);
+}
+
+MEDDLY::dd_edge MEDDLY::constraint_bckwd_bfs::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r)
+{
+  if (resF->getRangeType() == forest::INTEGER) {
+    plusOp = getOperation(PLUS, resF, consF, resF);
+    minOp = getOperation(UNION, resF, resF, resF);
+  } else {
+    throw error(error::INVALID_OPERATION);
+  }
+  imageOp = getOperation(PRE_IMAGE, argF, transF, resF);
+
+  long aev = Inf<long>();
+  a.getEdgeValue(aev);
+  long bev = Inf<long>();
+  b.getEdgeValue(bev);
+  long cev = Inf<long>();
+  node_handle cnode = 0;
+  iterate(aev, a.getNode(), bev, b.getNode(), r.getNode(), cev, cnode);
+
+  dd_edge c(resF);
+  c.set(cnode, cev);
+}
+
+void MEDDLY::constraint_bckwd_bfs::iterate(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c)
+{
+  cev = bev;
+  MEDDLY_DCASSERT(argF == resF);
+  c = resF->linkNode(b);
+
+  node_handle prev = 0;
+  while (prev != c) {
+    resF->unlinkNode(prev);
+    prev = c;
+    long tev = Inf<long>();
+    node_handle t = 0;
+    imageOp->compute(cev, c, r, tev, t);
+    plusOp->compute(tev, t, aev, a, tev, t);
+    minOp->compute(cev, c, tev, t, cev, c);
+    resF->unlinkNode(t);
+  }
+  resF->unlinkNode(prev);
+}
+
+bool MEDDLY::constraint_bckwd_bfs::isStaleEntry(const node_handle* entryData)
+{
+  throw error(error::MISCELLANEOUS);
+  // this operation won't add any CT entries.
+}
+
+void MEDDLY::constraint_bckwd_bfs::discardEntry(const node_handle* entryData)
+{
+  throw error(error::MISCELLANEOUS);
+  // this operation won't add any CT entries.
+}
+
+void MEDDLY::constraint_bckwd_bfs::showEntry(output &strm, const node_handle* entryData) const
+{
+  throw error(error::MISCELLANEOUS);
+  // this operation won't add any CT entries.
+}
+
+// ******************************************************************
+// *                                                                *
+// *                     constraint_dfs_opname                      *
 // *                                                                *
 // ******************************************************************
 
@@ -51,7 +203,7 @@ MEDDLY::specialized_operation* MEDDLY::constraint_dfs_opname::buildOperation(
 
 // ******************************************************************
 // *                                                                *
-// *                     constraint_preimage                        *
+// *                    constraint_bckwd_dfs                        *
 // *                                                                *
 // ******************************************************************
 
@@ -64,57 +216,17 @@ const int MEDDLY::constraint_bckwd_dfs::NODE_INDICES_IN_KEY[4] = {
 
 MEDDLY::constraint_bckwd_dfs::constraint_bckwd_dfs(const minimum_witness_opname* code,
   expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
-  : specialized_operation(code,
+  : common_constraint(code,
       3 * (sizeof(node_handle)) / sizeof(node_handle),
-      (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle))
+      (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle),
+      cons, arg, trans, res)
 {
-  MEDDLY_DCASSERT(cons->isEVPlus());
-  MEDDLY_DCASSERT(arg->isEVPlus());
-  MEDDLY_DCASSERT(trans->isMultiTerminal() && trans->isForRelations());
-  MEDDLY_DCASSERT(res->isEVPlus());
-
-  consF = cons;
-  argF = arg;
-  transF = trans;
-  resF = res;
-
-  registerInForest(consF);
-  registerInForest(argF);
-  registerInForest(transF);
-  registerInForest(resF);
-
-  setAnswerForest(resF);
-
   mxdIntersectionOp = getOperation(INTERSECTION, transF, transF, transF);
   mxdDifferenceOp = getOperation(DIFFERENCE, transF, transF, transF);
-  plusOp = getOperation(PLUS, resF, resF, resF);
+  plusOp = getOperation(PLUS, resF, consF, resF);
   minOp = getOperation(UNION, resF, resF, resF);
 
   splits = nullptr;
-}
-
-MEDDLY::constraint_bckwd_dfs::~constraint_bckwd_dfs()
-{
-  unregisterInForest(consF);
-  unregisterInForest(argF);
-  unregisterInForest(transF);
-  unregisterInForest(resF);
-
-  //delete mxdDifferenceOp;
-  //delete mxdIntersectionOp;
-  //delete plusOp;
-  //delete minOp;
-}
-
-bool MEDDLY::constraint_bckwd_dfs::checkForestCompatibility() const
-{
-  auto o1 = consF->variableOrder();
-  auto o2 = argF->variableOrder();
-  auto o3 = transF->variableOrder();
-  auto o4 = resF->variableOrder();
-  return o1->is_compatible_with(*o2)
-    && o1->is_compatible_with(*o3)
-    && o1->is_compatible_with(*o4);
 }
 
 bool MEDDLY::constraint_bckwd_dfs::checkTerminals(int aev, node_handle a, int bev, node_handle b, node_handle c,

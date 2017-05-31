@@ -25,6 +25,11 @@
 #include "meddly_expert.h"
 
 namespace MEDDLY {
+  class common_constraint;
+
+  class constraint_bfs_opname;
+  class constraint_bckwd_bfs;
+
   class constraint_dfs_opname;
   class constraint_bckwd_dfs;
 
@@ -33,6 +38,58 @@ namespace MEDDLY {
 
   minimum_witness_opname* initConstraintDFSBackward();
 }
+
+class MEDDLY::common_constraint: public specialized_operation
+{
+protected:
+  expert_forest* consF;
+  expert_forest* argF;
+  expert_forest* transF;
+  expert_forest* resF;
+
+  // Check if the variables orders of relevant forests are compatible
+  virtual bool checkForestCompatibility() const;
+
+public:
+  common_constraint(const minimum_witness_opname* code, int kl, int al,
+    expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
+  ~common_constraint();
+
+  virtual dd_edge compute(const dd_edge& a, const dd_edge& b, const dd_edge& r) = 0;
+};
+
+class MEDDLY::constraint_bfs_opname : public minimum_witness_opname {
+protected:
+  bool forward;
+public:
+  constraint_bfs_opname(bool fwd);
+  virtual specialized_operation* buildOperation(expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res) const;
+
+  virtual specialized_operation* buildOperation(arguments* a) const
+  {
+    throw error::NOT_IMPLEMENTED;
+  }
+};
+
+class MEDDLY::constraint_bckwd_bfs: public common_constraint
+{
+protected:
+  binary_operation* imageOp;
+  binary_operation* plusOp;
+  binary_operation* minOp;
+
+  void iterate(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c);
+
+  virtual bool isStaleEntry(const node_handle* entryData);
+  virtual void discardEntry(const node_handle* entryData);
+  virtual void showEntry(output &strm, const node_handle* entryData) const;
+
+public:
+  constraint_bckwd_bfs(const minimum_witness_opname* code,
+    expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
+
+  virtual dd_edge compute(const dd_edge& a, const dd_edge& b, const dd_edge& r);
+};
 
 class MEDDLY::constraint_dfs_opname : public minimum_witness_opname {
 protected:
@@ -47,26 +104,17 @@ public:
   }
 };
 
-class MEDDLY::constraint_bckwd_dfs: public specialized_operation
+class MEDDLY::constraint_bckwd_dfs: public common_constraint
 {
 protected:
   static const int NODE_INDICES_IN_KEY[4];
-
-  expert_forest* consF;
-  expert_forest* argF;
-  expert_forest* transF;
-  expert_forest* resF;
 
   binary_operation* mxdDifferenceOp;
   binary_operation* mxdIntersectionOp;
   binary_operation* plusOp;
   binary_operation* minOp;
-//  constraint_saturation* bckwdSatOp;
 
   node_handle* splits;
-
-  // Check if the variables orders of relevant forests are compatible
-  virtual bool checkForestCompatibility() const;
 
   bool checkTerminals(int aev, node_handle a, int bev, node_handle b, node_handle c, long& dev, node_handle& d);
 
@@ -86,9 +134,7 @@ public:
   constraint_bckwd_dfs(const minimum_witness_opname* code,
     expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
 
-  ~constraint_bckwd_dfs();
-
-  dd_edge compute(const dd_edge& a, const dd_edge& b, const dd_edge& r);
+  virtual dd_edge compute(const dd_edge& a, const dd_edge& b, const dd_edge& r);
   void compute(int aev, node_handle a, int bev, node_handle b, node_handle r, long& cev, node_handle& c);
 
   void saturateHelper(long aev, node_handle a, unpacked_node& nb);
