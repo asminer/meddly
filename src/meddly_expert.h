@@ -467,7 +467,7 @@ class MEDDLY::expert_domain : public domain {
       array of integers, for indexes (sparse only)
       "compact" chunk of memory for edge values
 */
-class MEDDLY::unpacked_node {
+class MEDDLY::unpacked_node { 
   public:
     /**
         Options for filling an unpacked node from an existing one.
