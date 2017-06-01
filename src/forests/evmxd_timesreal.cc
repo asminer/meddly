@@ -29,8 +29,8 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::evmxd_timesreal::evmxd_timesreal(int dsl, domain *d, const policies &p)
- : evmxd_forest(dsl, d, REAL, EVTIMES, p)
+MEDDLY::evmxd_timesreal::evmxd_timesreal(int dsl, domain *d, const policies &p,int* level_reduction_rule)
+ : evmxd_forest(dsl, d, REAL, EVTIMES, p,level_reduction_rule)
 {
   // Edge's are floats and are NOT hashed.
   setEdgeSize(sizeof(float), false);
@@ -242,7 +242,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_iterator::first(int k, node_handle down)
 
   if (0==down) return false;
 
-  bool isFully = F->isFullyReduced();
+  bool isFully = F->isFullyReduced(k);
 
   for ( ; k; k = downLevel(k) ) {
     MEDDLY_DCASSERT(down);
@@ -367,7 +367,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedrow_iter::first(int k, node_handle do
     // Ok, there is a valid path.
     // Set up this level.
     nzp[k] = 0;
-    if (F->isFullyReduced()) {
+    if (F->isFullyReduced(k)) {
       path[k].initRedundant(F, k, 1.0f, cdown, false);
       index[k] = 0;
     } else {
@@ -467,7 +467,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter::first(int k, node_handle do
     // See if this "column node" has a path
     // at the specified index.
     if (isLevelAbove(k, F->getNodeLevel(down))) {
-      if (!F->isFullyReduced()) {
+      if (!F->isFullyReduced(k)) {
         // Identity node here - check index
         if (index[k] != index[upLevel(k)]) return false;
       }
@@ -496,7 +496,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter::first(int k, node_handle do
       if (!first(downLevel(kpr), down)) return false;
       // There's one below, set up the one at these levels.
       path[k].initRedundant(F, k, 1.0f, down, false);
-      if (F->isFullyReduced()) {
+      if (F->isFullyReduced(k)) {
         nzp[k] = 0;
         index[k] = 0;
       } else {

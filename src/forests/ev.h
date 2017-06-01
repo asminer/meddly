@@ -39,7 +39,7 @@ namespace MEDDLY {
 class MEDDLY::ev_forest : public expert_forest {
   protected:
     ev_forest(int dsl, domain *d, bool rel, range_type t, edge_labeling ev,
-      const policies &p);
+      const policies &p,int* level_reduction_rule=NULL);
 
   protected:
     virtual void showTerminal(output &s, node_handle tnode) const;
@@ -50,8 +50,8 @@ class MEDDLY::ev_forest : public expert_forest {
 
     template <class OPERATION>
     inline bool isRedundantTempl(const unpacked_node &nb) const {
-      if (isQuasiReduced()) return false;
-      if (nb.getLevel() < 0 && isIdentityReduced()) return false;
+      if (isQuasiReduced(nb.getLevel())) return false;
+      if (nb.getLevel() < 0 && isIdentityReduced(nb.getLevel())) return false;
       int rawsize = nb.isSparse() ? nb.getNNZs() : nb.getSize();
       if (rawsize < getLevelSize(nb.getLevel())) return false;
       int common = nb.d(0);
@@ -68,7 +68,7 @@ class MEDDLY::ev_forest : public expert_forest {
     template <class OPERATION>
     inline bool isIdentityEdgeTempl(const unpacked_node &nb, int i) const {
       if (nb.getLevel() > 0) return false;
-      if (!isIdentityReduced()) return false;
+      if (!isIdentityReduced(nb.getLevel())) return false;
       if (i<0) return false;
       return (nb.d(i) != 0)  &&  OPERATION::isIdentityEdge(nb.eptr(i));
     }
@@ -191,7 +191,7 @@ namespace MEDDLY {
   {
     MEDDLY_DCASSERT(abs(k) >= abs(getNodeLevel(ed)));
     if (0==ed) return;
-    if (isFullyReduced()) return;
+    if (isFullyReduced(k)) return;
 
     // prevSize == 1 enables getSingletonIndex for the first run.
     int prevSize = 1;
@@ -202,7 +202,7 @@ namespace MEDDLY {
       int sz = getLevelSize(up);
       unpacked_node* nb = unpacked_node::newFull(this, up, sz);
   
-      if (isIdentityReduced() && (dk < 0) && (1 == prevSize)) {
+      if (isIdentityReduced(dk) && (dk < 0) && (1 == prevSize)) {
         // Build unprimed node with check for identity reduction.
         // Note 0: ed cannot be a terminal node (dk < 0).
         // Note 1: if prevSize > 1, and ed is not the original argument,

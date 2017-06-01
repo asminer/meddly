@@ -214,7 +214,7 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
   // Initialize node reader
   unpacked_node* A = unpacked_node::useUnpackedNode();
   if (isLevelAbove(k, aLevel)) {
-    if (k<0 && argF->isIdentityReduced()) {
+    if (k<0 && argF->isIdentityReduced(k)) {
       A->initIdentity(argF, k, in, a, false);
     } else {
       A->initRedundant(argF, k, a, false);
@@ -401,7 +401,7 @@ void MEDDLY::copy_MT2EV<TYPE>
   // Initialize node reader
   unpacked_node* A = unpacked_node::useUnpackedNode();
   if (isLevelAbove(k, aLevel)) {
-    if (k<0 && argF->isIdentityReduced()) {
+    if (k<0 && argF->isIdentityReduced(k)) {
       A->initIdentity(argF, k, in, a, false);
     } else {
       A->initRedundant(argF, k, a, false);
@@ -587,7 +587,7 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   // Initialize node reader
   unpacked_node* A = unpacked_node::useUnpackedNode();
   if (isLevelAbove(k, aLevel)) {
-    if (k<0 && argF->isIdentityReduced()) {
+    if (k<0 && argF->isIdentityReduced(k)) {
       TYPE rev;
       OP::redundant(rev);
       A->initIdentity(argF, k, in, rev, a, false);
@@ -860,7 +860,7 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
   // Initialize node reader
   unpacked_node* A = unpacked_node::useUnpackedNode();
   if (isLevelAbove(k, aLevel)) {
-    if (k<0 && argF->isIdentityReduced()) {
+    if (k<0 && argF->isIdentityReduced(k)) {
       INTYPE rev;
       INOP::redundant(rev);
       A->initIdentity(argF, k, in, rev, an, false);

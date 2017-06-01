@@ -272,7 +272,7 @@ MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle 
 
   if (aLevel == k) {
     A->initFromNode(arg1F, a, true);
-  } else if (arg1F->isFullyReduced()) {
+  } else if (arg1F->isFullyReduced(k)) {
     A->initRedundant(arg1F, k, a, true);
   } else {
     A->initIdentity(arg1F, k, in, a, true);
@@ -280,7 +280,7 @@ MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle 
 
   if (bLevel == k) {
     B->initFromNode(arg2F, b, true);
-  } else if (arg2F->isFullyReduced()) {
+  } else if (arg2F->isFullyReduced(k)) {
     B->initRedundant(arg2F, k, b, true);
   } else {
     B->initIdentity(arg2F, k, in, b, true);
@@ -395,7 +395,7 @@ MEDDLY::generic_binbylevel_mxd
 
   if (aLevel == resultLevel) {
     A->initFromNode(arg1F, a, true);
-  } else if (resultLevel>0 || arg1F->isFullyReduced()) {
+  } else if (resultLevel>0 || arg1F->isFullyReduced(resultLevel)) {
     A->initRedundant(arg1F, resultLevel, a, true);
   } else {
     A->initIdentity(arg1F, resultLevel, in, a, true);
@@ -404,7 +404,7 @@ MEDDLY::generic_binbylevel_mxd
 
   if (bLevel == resultLevel) {
     B->initFromNode(arg2F, b, true);
-  } else if (resultLevel>0 || arg2F->isFullyReduced()) {
+  } else if (resultLevel>0 || arg2F->isFullyReduced(resultLevel)) {
     B->initRedundant(arg2F, resultLevel, b, true);
   } else {
     B->initIdentity(arg2F, resultLevel, in, b, true);
@@ -702,7 +702,7 @@ void MEDDLY::generic_binary_evtimes
 
   if (aLevel == resultLevel) {
     A->initFromNode(arg1F, a, true);
-  } else if (arg1F->isFullyReduced()) {
+  } else if (arg1F->isFullyReduced(resultLevel)) {
     A->initRedundant(arg1F, resultLevel, 1.0f, a, true);
   } else {
     A->initIdentity(arg1F, resultLevel, in, 1.0f, a, true);
@@ -710,7 +710,7 @@ void MEDDLY::generic_binary_evtimes
 
   if (bLevel == resultLevel) {
     B->initFromNode(arg2F, b, true);
-  } else if (arg2F->isFullyReduced()) {
+  } else if (arg2F->isFullyReduced(resultLevel)) {
     B->initRedundant(arg2F, resultLevel, 1.0f, b, true);
   } else {
     B->initIdentity(arg2F, resultLevel, in, 1.0f, b, true);

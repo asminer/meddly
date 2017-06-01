@@ -310,7 +310,7 @@ void MEDDLY::domain::deleteDomList()
 }
 
 MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t, 
-    forest::edge_labeling e, const forest::policies &p, int tv)
+    forest::edge_labeling e, const forest::policies &p,int* level_reduction_rule, int tv)
 {
   int slot = findEmptyForestSlot();
 
@@ -320,18 +320,18 @@ MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t,
     case forest::MULTI_TERMINAL:
         switch (t) {
             case forest::BOOLEAN:
-                if (rel)  f = new mt_mxd_bool(slot, this, p, tv==0 ? false : true);
-                else      f = new mt_mdd_bool(slot, this, p, tv==0 ? false : true);
+                if (rel)  f = new mt_mxd_bool(slot, this, p,level_reduction_rule, tv==0 ? false : true);
+                else      f = new mt_mdd_bool(slot, this, p,level_reduction_rule, tv==0 ? false : true);
                 break;
 
             case forest::INTEGER:
-                if (rel)  f = new mt_mxd_int(slot, this, p, tv);
-                else      f = new mt_mdd_int(slot, this, p, tv);
+                if (rel)  f = new mt_mxd_int(slot, this, p,level_reduction_rule, tv);
+                else      f = new mt_mdd_int(slot, this, p,level_reduction_rule, tv);
                 break;
 
             case forest::REAL:
-                if (rel)  f = new mt_mxd_real(slot, this, p, (float)tv);
-                else      f = new mt_mdd_real(slot, this, p, (float)tv);
+                if (rel)  f = new mt_mxd_real(slot, this, p,level_reduction_rule, (float)tv);
+                else      f = new mt_mdd_real(slot, this, p,level_reduction_rule, (float)tv);
                 break;
 
             default:
@@ -376,7 +376,7 @@ MEDDLY::domain
 ::createForest(bool rel, forest::range_type t, forest::edge_labeling e)
 {
   return createForest(rel, t, e, 
-    rel ? forest::getDefaultPoliciesMXDs() : forest::getDefaultPoliciesMDDs(), 0);
+    rel ? forest::getDefaultPoliciesMXDs() : forest::getDefaultPoliciesMDDs(),NULL, 0);
 }
 
 void MEDDLY::domain::showInfo(output &strm)

@@ -201,7 +201,7 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
   
   // Quickly deal with skipped levels
   if (isLevelAbove(k, argF->getNodeLevel(a))) {
-    if (k<0 && argF->isIdentityReduced()) {
+    if (k<0 && argF->isIdentityReduced(k)) {
       // identity node
       return compute_r(argF->downLevel(k), a);
     }
@@ -385,7 +385,7 @@ double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
 
   // Quickly deal with skipped levels
   if (isLevelAbove(k, argF->getNodeLevel(a))) {
-    if (k<0 && argF->isIdentityReduced()) {
+    if (k<0 && argF->isIdentityReduced(k)) {
       // identity node
       return compute_r(argF->downLevel(k), a);
     }
@@ -605,7 +605,7 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
 
   // Quickly deal with skipped levels
   if (isLevelAbove(k, argF->getNodeLevel(a))) {
-    if (k<0 && argF->isIdentityReduced()) {
+    if (k<0 && argF->isIdentityReduced(k)) {
       // identity node
       compute_r(argF->downLevel(k), a, card);
       return;
