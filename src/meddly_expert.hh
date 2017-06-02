@@ -141,13 +141,22 @@ MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, int i, node_ha
 }
 
 inline MEDDLY::unpacked_node* 
-MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, int i, int ev, node_handle node, bool full)
+MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, int i, long ev, node_handle node, bool full)
 {
   unpacked_node* U = useUnpackedNode();
   MEDDLY_DCASSERT(U);
   U->initIdentity(f, k, i, ev, node, full);
   return U;
 }
+
+//inline MEDDLY::unpacked_node*
+//MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, int i, int ev, node_handle node, bool full)
+//{
+//  unpacked_node* U = useUnpackedNode();
+//  MEDDLY_DCASSERT(U);
+//  U->initIdentity(f, k, i, ev, node, full);
+//  return U;
+//}
 
 inline MEDDLY::unpacked_node* 
 MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, int i, float ev, node_handle node, bool full)

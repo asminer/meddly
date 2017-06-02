@@ -43,6 +43,7 @@
 #include "forests/evmdd_pluslong.h"
 #include "forests/evmdd_timesreal.h"
 
+#include "forests/evmxd_pluslong.h"
 #include "forests/evmxd_timesreal.h"
 #endif
 
@@ -341,7 +342,7 @@ MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t,
 
     case forest::EVPLUS:
       if (forest::INTEGER != t) throw error(error::TYPE_MISMATCH);
-      if (rel)  throw error(error::NOT_IMPLEMENTED);
+      if (rel)  f = new evmxd_pluslong(slot, this, p);
       else      f = new evmdd_pluslong(slot, this, p);
       break;
 

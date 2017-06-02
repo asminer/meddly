@@ -48,6 +48,7 @@ libmeddly_la_SOURCES = \
   forests/evmdd.cc \
   forests/evmdd_pluslong.cc \
   forests/evmxd.cc \
+  forests/evmxd_pluslong.cc \
   forests/evmxd_timesreal.cc \
   forests/init_forests.cc \
   \
@@ -74,6 +75,7 @@ libmeddly_la_SOURCES = \
   operations/comp_le.cc      \
   operations/comp_gt.cc      \
   operations/comp_ge.cc      \
+  operations/prepostplus.cc \
   operations/prepostimage.cc \
   operations/reach_bfs.cc    \
   operations/reach_dfs.cc    \

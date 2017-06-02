@@ -51,6 +51,8 @@
 #include "comp_gt.h"
 #include "comp_ge.h"
 
+#include "prepostplus.h"
+
 #include "prepostimage.h"
 #include "reach_bfs.h"
 #include "reach_dfs.h"
@@ -97,6 +99,9 @@ namespace MEDDLY {
   const binary_opname* LESS_THAN_EQUAL = 0;
   const binary_opname* GREATER_THAN = 0;
   const binary_opname* GREATER_THAN_EQUAL = 0;
+
+  const binary_opname* PRE_PLUS = 0;
+  const binary_opname* POST_PLUS = 0;
 
   const binary_opname* PRE_IMAGE = 0;
   const binary_opname* POST_IMAGE = 0;
@@ -170,6 +175,9 @@ void MEDDLY::builtin_initializer::setup()
   initP(MEDDLY::GREATER_THAN,         GT,           initializeGT()          );
   initP(MEDDLY::GREATER_THAN_EQUAL,   GE,           initializeGE()          );
 
+  initP(MEDDLY::PRE_PLUS,             PRE_PLUS,     initializePrePlus()     );
+  initP(MEDDLY::POST_PLUS,            POST_PLUS,    initializePostPlus()    );
+
   initP(MEDDLY::PRE_IMAGE,            PRE_IMAGE,    initializePreImage()    );
   initP(MEDDLY::POST_IMAGE,           POST_IMAGE,   initializePostImage()   );
   initP(MEDDLY::REACHABLE_STATES_DFS, FORWARD_DFS,  initializeForwardDFS()  );
@@ -231,6 +239,9 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(LE,             MEDDLY::LESS_THAN_EQUAL);
   cleanPair(GT,             MEDDLY::GREATER_THAN);
   cleanPair(GE,             MEDDLY::GREATER_THAN_EQUAL);
+
+  cleanPair(PRE_PLUS,       MEDDLY::PRE_PLUS);
+  cleanPair(POST_PLUS,      MEDDLY::POST_PLUS);
 
   cleanPair(PRE_IMAGE,      MEDDLY::PRE_IMAGE);
   cleanPair(POST_IMAGE,     MEDDLY::POST_IMAGE);

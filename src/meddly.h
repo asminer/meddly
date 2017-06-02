@@ -256,6 +256,13 @@ namespace MEDDLY {
   /// belong to the same forest.
   extern const binary_opname* GREATER_THAN_EQUAL;
 
+  /** Plus operation used to compute transitive closure and further
+      minimum witness. The first operand must be an EV+MxD and the second
+      operand must be an EV+MDD. The result is an EV+MxD.
+   */
+  extern const binary_opname* PRE_PLUS;
+  extern const binary_opname* POST_PLUS;
+
   /** Image operations on a set-of-states with a transition function.
       The first operand must be the set-of-states and the second operand
       must be the transition function. The result is a set-of-states that
