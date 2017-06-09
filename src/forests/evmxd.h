@@ -76,7 +76,7 @@ class MEDDLY::evmxd_forest : public ev_forest {
           // Identity node
           //
           MEDDLY_DCASSERT(DONT_CARE == vlist[i]);
-          if (isIdentityReduced(i)) continue;
+          if (isIdentityReduced()) continue;
           // Build an identity node by hand
           int sz = getLevelSize(i);
           unpacked_node* nb = unpacked_node::newFull(this, i, sz);
@@ -101,7 +101,7 @@ class MEDDLY::evmxd_forest : public ev_forest {
         node_handle edpr;
         TYPE evpr;
         if (DONT_CARE == vplist[i]) {
-          if (isFullyReduced(-i)) {
+          if (isFullyReduced()) {
             // DO NOTHING
             edpr = ed;
             evpr = ev;
@@ -128,7 +128,7 @@ class MEDDLY::evmxd_forest : public ev_forest {
         // process unprimed level
         //
         if (DONT_CARE == vlist[i]) {
-          if (isFullyReduced(-i)) {
+          if (isFullyReduced()) {
             ed = edpr;
             ev = evpr;
             continue;
@@ -136,7 +136,7 @@ class MEDDLY::evmxd_forest : public ev_forest {
           // build redundant node
           int sz = getLevelSize(i);
           unpacked_node *nb = unpacked_node::newFull(this, i, sz);
-          if (isIdentityReduced(-i)) {
+          if (isIdentityReduced()) {
             // Below is likely a singleton, so check for identity reduction
             // on the appropriate v value
             for (int v=0; v<sz; v++) {
@@ -524,7 +524,7 @@ namespace MEDDLY {
       // Helper for createEdge
       //
       inline void makeIdentityEdge(int k, T& pev, node_handle& p) {
-        if (F->isIdentityReduced(k)) return;
+        if (F->isIdentityReduced()) return;
 
         // build an identity node by hand
         int lastV = F->getLevelSize(k);

@@ -432,7 +432,7 @@ namespace MEDDLY {
       // Helper for createEdge for (DONT_CARE -> DONT_CHANGE)
       //
       node_handle makeIdentityEdgeForDontCareDontChange(int k, node_handle p) {
-        if (F->isIdentityReduced(k)) {
+        if (F->isIdentityReduced()) {
           return p;
         }
 //        if(p==F->getTransparentNode()){
@@ -456,7 +456,7 @@ namespace MEDDLY {
       {
           MEDDLY_DCASSERT(F->isForRelations());
 
-          if (0==next && (!F->isQuasiReduced(k) || F->getTransparentNode()==ENCODER::value2handle(0))) {
+          if (0==next && (!F->isQuasiReduced() || F->getTransparentNode()==ENCODER::value2handle(0))) {
         	return next;
           }
 
@@ -466,7 +466,7 @@ namespace MEDDLY {
             //
             node_handle nextpr;
             if (DONT_CARE == vplist[i]) {
-              if (F->isFullyReduced(-i)) {
+              if (F->isFullyReduced()) {
                 // DO NOTHING
                 nextpr = next;
               } else {
@@ -485,18 +485,18 @@ namespace MEDDLY {
                 // Identity node
                 //
                 if(DONT_CARE == vlist[i]){
-                  if (F->isIdentityReduced(-i)) continue;
+                  if (F->isIdentityReduced()) continue;
                 	next = makeIdentityEdgeForDontCareDontChange(i, next);
                 	continue;
                 }
 
                 MEDDLY_DCASSERT(vlist[i]>=0);
 
-                if (F->isIdentityReduced(-i)) {
+                if (F->isIdentityReduced()) {
                 	// DO NOTHING
                 	nextpr = next;
                 }
-                else if(F->isQuasiReduced(-i) && F->getTransparentNode()!=ENCODER::value2handle(0)){
+                else if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
                 	int sz = F->getLevelSize(-i);
                   unpacked_node* nbp = unpacked_node::newFull(F, -i, sz);
 					        node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
@@ -518,7 +518,7 @@ namespace MEDDLY {
             }
             else {
               // sane value
-              if(F->isQuasiReduced(-i) && F->getTransparentNode()!=ENCODER::value2handle(0)){
+              if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
             	int sz = F->getLevelSize(-i);
                 unpacked_node* nbp = unpacked_node::newFull(F, -i, sz);
                 node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
@@ -543,14 +543,14 @@ namespace MEDDLY {
             // process unprimed level
             //
             if (DONT_CARE == vlist[i]) {
-              if (F->isFullyReduced(-i)) { 
+              if (F->isFullyReduced()) { 
             	  next=nextpr;
             	  continue;
               }
               // build redundant node
               int sz = F->getLevelSize(i);
               unpacked_node* nb = unpacked_node::newFull(F, i, sz);
-              if (F->isIdentityReduced(-i)) {
+              if (F->isIdentityReduced()) {
                 // Below is likely a singleton, so check for identity reduction
                 // on the appropriate v value
                 for (int v=0; v<sz; v++) {
@@ -567,7 +567,7 @@ namespace MEDDLY {
               next = F->createReducedNode(-1, nb);
             } else {
               // sane value
-              if(F->isQuasiReduced(i) && F->getTransparentNode()!=ENCODER::value2handle(0)){
+              if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
             	int sz=F->getLevelSize(i);
               unpacked_node* nb = unpacked_node::newFull(F, i, sz);
             	node_handle zero = makeOpaqueZeroNodeAtLevel(-i);
@@ -597,7 +597,7 @@ namespace MEDDLY {
       // 2. the transparent value is not zero
       node_handle makeOpaqueZeroNodeAtLevel(int k)
       {
-  	    MEDDLY_DCASSERT(F->isQuasiReduced(k));
+  	    MEDDLY_DCASSERT(F->isQuasiReduced());
   	    MEDDLY_DCASSERT(F->getTransparentNode()!=ENCODER::value2handle(0));
 
   	    return F->makeNodeAtLevel(k, ENCODER::value2handle(0));

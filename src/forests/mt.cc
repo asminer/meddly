@@ -44,8 +44,8 @@ MEDDLY::mt_forest::mt_forest(int dsl, domain *d, bool rel,
 
 bool MEDDLY::mt_forest::isRedundant(const unpacked_node &nb) const
 {
-  if (isQuasiReduced(nb.getLevel())) return false;
-  if (nb.getLevel() < 0 && isIdentityReduced(nb.getLevel())) return false;
+  if (isQuasiReduced()) return false;
+  if (nb.getLevel() < 0 && isIdentityReduced()) return false;
   int rawsize = nb.isSparse() ? nb.getNNZs() : nb.getSize();
   if (rawsize < getLevelSize(nb.getLevel())) return false;
   int common = nb.d(0);
@@ -57,7 +57,7 @@ bool MEDDLY::mt_forest::isRedundant(const unpacked_node &nb) const
 bool MEDDLY::mt_forest::isIdentityEdge(const unpacked_node &nb, int i) const
 {
   if (nb.getLevel() > 0) return false;
-  if (!isIdentityReduced(nb.getLevel())) return false;
+  if (!isIdentityReduced()) return false;
   if (i<0) return false;
   return nb.d(i) != 0;
 }
@@ -67,9 +67,9 @@ MEDDLY::node_handle MEDDLY::mt_forest::makeNodeAtLevel(int k, node_handle d)
 {
   MEDDLY_DCASSERT(abs(k) >= abs(getNodeLevel(d)));
 
-  if (isFullyReduced()) return d; //Doubtful
+  if (isFullyReduced()) return d; 
 
-  if (isQuasiReduced(k) && d==getTransparentNode()) return d;
+  if (isQuasiReduced() && d==getTransparentNode()) return d;
 
   int dk = getNodeLevel(d); 
   while (dk != k) {
@@ -81,7 +81,7 @@ MEDDLY::node_handle MEDDLY::mt_forest::makeNodeAtLevel(int k, node_handle d)
     int sz = getLevelSize(up);
     unpacked_node* nb = unpacked_node::newFull(this, up, sz);
 
-    if (isIdentityReduced(dk) && (dk<0)) {
+    if (isIdentityReduced() && (dk<0)) {
       // make identity reductions below as necessary
       node_handle sd;
       int si = isTerminalNode(d) ? -1 : getSingletonIndex(d, sd);

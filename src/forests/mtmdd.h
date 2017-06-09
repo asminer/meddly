@@ -168,7 +168,7 @@ namespace MEDDLY {
         }
 
         node_handle dontcares = (batchP > start) ? createEdge(k-1, start, batchP) : 0;
-        if(dontcares && F->isQuasiReduced(k)){
+        if(dontcares && F->isQuasiReduced()){
           // Add the redundant node at level k
           unpacked_node* nb = unpacked_node::newFull(F, k, lastV);
           for (int v = 0; v<lastV; v++) {
@@ -191,7 +191,7 @@ namespace MEDDLY {
         //  (2) process them, if any
         //  (3) union with don't cares
         //
-		    if(F->isQuasiReduced(k) && F->getTransparentNode()!=ENCODER::value2handle(0)){
+		    if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
 		      // TODO: Can be simpler
 		      node_handle zero=makeOpaqueZeroNodeAtLevel(k-1);
 
@@ -308,14 +308,14 @@ namespace MEDDLY {
       inline node_handle
       createEdgePath(int k, const int* vlist, node_handle bottom)
       {
-          if (bottom==0 && (!F->isQuasiReduced(k) || F->getTransparentNode()==ENCODER::value2handle(0))) {
+          if (bottom==0 && (!F->isQuasiReduced() || F->getTransparentNode()==ENCODER::value2handle(0))) {
             return bottom;
           }
 
           for (int i=1; i<=k; i++) {
             if (DONT_CARE == vlist[i]) {
               // make a redundant node
-              if (F->isFullyReduced(i)) continue;
+              if (F->isFullyReduced()) continue;
               int sz = F->getLevelSize(i);
               unpacked_node* nb = unpacked_node::newFull(F, i, sz);
               nb->d_ref(0) = bottom;
@@ -324,7 +324,7 @@ namespace MEDDLY {
               }
               bottom = F->createReducedNode(-1, nb);
             } else {
-              if(F->isQuasiReduced(i) && F->getTransparentNode()!=ENCODER::value2handle(0)){
+              if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
                 int sz = F->getLevelSize(i);
                 unpacked_node* nb = unpacked_node::newFull(F, i, sz);
                 node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
@@ -352,7 +352,7 @@ namespace MEDDLY {
       // 2. the transparent value is not zero
       node_handle makeOpaqueZeroNodeAtLevel(int k)
       {
-  	    MEDDLY_DCASSERT(F->isQuasiReduced(k));
+  	    MEDDLY_DCASSERT(F->isQuasiReduced());
   	    MEDDLY_DCASSERT(F->getTransparentNode()!=ENCODER::value2handle(0));
 
   	    return F->makeNodeAtLevel(k, ENCODER::value2handle(0));

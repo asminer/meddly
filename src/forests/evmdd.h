@@ -66,7 +66,7 @@ class MEDDLY::evmdd_forest : public ev_forest {
         for (int i=1; i<=k; i++) {
           if (DONT_CARE == vlist[i]) {
             // make a redundant node
-            if (isFullyReduced(i)) continue;
+            if (isFullyReduced()) continue;
             int sz = getLevelSize(i);
             unpacked_node* nb = unpacked_node::newFull(this, i, sz);
             nb->d_ref(0) = ed;
