@@ -268,7 +268,7 @@ MEDDLY::satpregen_opname::pregen_relation
 ::~pregen_relation()
 {
   if (events && mxdF) {
-    for (int k=0; k<=K; k++) if(events[k]) mxdF->unlinkNode(events[k]);
+    for (int k=0; k<=last_event; k++) if(events[k]) mxdF->unlinkNode(events[k]);
   }
   delete[] events;
   delete[] next;
