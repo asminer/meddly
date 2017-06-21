@@ -113,6 +113,7 @@ namespace MEDDLY {
   class numerical_opname;
   class satpregen_opname;
   class satotf_opname;
+  class satimpl_opname;
 
   class ct_initializer;
   class compute_table_style;
@@ -174,6 +175,11 @@ namespace MEDDLY {
       will be built along with reachability set.
   */
   extern const satotf_opname* SATURATION_OTF_FORWARD;
+
+  /** Forward reachability using saturation.
+      Transition relation is specified implicitly.
+  */
+  extern const satimpl_opname* SATURATION_OTF_IMPLICIT;
 
   // ******************************************************************
   // *                                                                *
@@ -2714,6 +2720,211 @@ class MEDDLY::satotf_opname : public specialized_opname {
     };  // end of class otf_relation
 
 };  // end of class satotf_opname
+
+// ******************************************************************
+// *                                                                *
+// *                      satimpl_opname class                      *
+// *                                                                *
+// ******************************************************************
+
+/// Saturation, transition relations stored implcitly, operation names.
+class MEDDLY::satimpl_opname : public specialized_opname {
+  public:
+    satimpl_opname(const char* n);
+    virtual ~satimpl_opname();
+
+    /// Arguments should have type "implicit_relation", below
+    virtual specialized_operation* buildOperation(arguments* a) const;
+
+  public:
+    /**
+        Pieces of an implicit relation.
+        
+        Each piece (this class) is a function of a single variable.
+        The function specifies the "next state" for the given
+        current state, but we are only allowed to depend on one
+        state variable.
+
+        This is an abstract base class.  The function is specified
+        by deriving a class from this one, and specifying method
+        nextOf().
+        TBD - Need a bogus value for nextOf()...
+
+        Additionally, you must specify method equals(), which is used
+        to detect when two nodes actually represent the same function.
+
+    */
+    class relation_node {
+      public:
+        /**
+            Constructor.
+              @param  signature   Hash for this node, such that
+                                  two equal nodes must have the same
+                                  signature.
+              @param  level       Level affected.
+              @param  down        Handle to a node below us.
+        */
+        relation_node(unsigned long signature, int level, node_handle down);
+        virtual ~relation_node();
+
+        // the following should be inlined in meddly_expert.hh
+
+        /**
+            A signature for this function.
+            This helps class implicit_relation to detect duplicate 
+            functions (using a hash table where the signature
+            is taken as the hash value).
+        */
+        unsigned long getSignature() const;
+
+        /**
+            The state variable affected by this part of the relation.
+        */
+        int getLevel() const;
+
+        /**
+            Pointer to the (ID of the) next piece of the relation.
+        */
+        node_handle getDown() const; 
+
+        /**
+            The unique ID for this piece.
+        */
+        node_handle getID() const;
+
+
+        // the following must be provided in derived classes.
+
+        /**
+            If the variable at this level has value i,
+            what should the new value be?
+        */
+        virtual long nextOf(long i) = 0;
+
+        /**
+            Determine if this node is equal to another one.
+        */
+        virtual bool equals(const relation_node* n) const = 0;
+
+      private:
+        unsigned long signature;
+        int level;
+        node_handle down;
+        node_handle ID; 
+
+        // used by the hash table in implicit_relation
+
+        relation_node* hash_chain;
+
+        friend class implicit_relation; 
+    };  // class relation_node
+
+  public:
+    
+    /**
+        An implicit relation, as a DAG of relation_nodes.
+
+        The relation is partitioned by "events", where each event
+        is the conjunction of local functions, and each local function
+        is specified as a single relation_node.  The relation_nodes
+        are chained together with at most one relation_node per state
+        variable, and any skipped variables are taken to be unchanged
+        by the event.
+
+        If the bottom portion (suffix) of two events are identical,
+        then they are merged.  This is done by "registering" nodes
+        which assigns a unique ID to each node, not unlike an MDD forest.
+
+        Note: node handles 0 and 1 are reserved.
+              0 means null node.
+              1 means special bottom-level "terminal" node
+              (in case we need to distinguish 0 and 1).
+    */
+    class implicit_relation : public specialized_opname::arguments {
+        public:
+          /**
+              Constructor.
+
+                @param  inmdd       MDD forest containing initial states
+                @param  outmdd      MDD forest containing result
+
+              Not 100% sure we need these...
+
+          */
+          implicit_relation(forest* inmdd, forest* outmdd);
+          virtual ~implicit_relation();
+
+          /// Returns the MDD forest that stores the initial set of states
+          expert_forest* getInForest() const;
+
+          /// Returns the MDD forest that stores the resultant set of states
+          expert_forest* getOutForest() const;
+
+          /**
+              Register a relation node.
+              If we have seen an equivalent node before, then
+              return its handle and destroy n.
+              Otherwise, add n to the unique table, assign it a unique
+              identifier, and return that identifier.
+
+                  @param  is_event_top    If true, this is also the top
+                                          node of some event; register it
+                                          in the list of events.
+
+                  @param  n               The relation node to register.
+
+                  @return Unique identifier to use to refer to n.
+          */
+          node_handle registerNode(bool is_event_top, relation_node* n);
+
+          /**
+              Indicate that there will be no more registered nodes.
+              Allows us to preprocess the events or cleanup or convert
+              to a more useful representation for saturation.
+          */
+          void finalizeNodes();
+
+          /**
+              Get the relation node associated with the given handle.
+
+              Should be a fast, inlined implementation.
+          */
+
+        private:
+          expert_forest* insetF;
+          expert_forest* outsetF;
+          int num_levels;
+
+        private:
+          //
+          // List of relation nodes.  The node handle is the array index,
+          // except we ensure that handle 0 refers to a null node.
+          //
+
+          /// Expanding array of pointers to relation nodes.
+          relation_node* node_array;
+
+          /// Current size of \a node_array.
+          long node_array_alloc;
+
+          /// Last used element in \a node_array.
+          long last_in_node_array;
+
+        private:
+          // TBD - add a data structure for the "uniqueness table"
+          // of relation_nodes, so if we register a node that
+          // is already present in \a node_array, we can detect it.
+
+           
+        private:
+          // TBD - add a data structure for list of events with top level k,
+          // for all possible k.
+          // Possibly this data structure is built by method
+          // finalizeNodes().
+
+    };  // class implicit_relation
+};
+
 
 // ******************************************************************
 // *                                                                *
