@@ -2730,6 +2730,7 @@ class MEDDLY::satotf_opname : public specialized_opname {
 /// Saturation, transition relations stored implcitly, operation names.
 class MEDDLY::satimpl_opname : public specialized_opname {
   public:
+    typedef int rel_node_handle;
     satimpl_opname(const char* n);
     virtual ~satimpl_opname();
 
@@ -2762,9 +2763,9 @@ class MEDDLY::satimpl_opname : public specialized_opname {
                                   two equal nodes must have the same
                                   signature.
               @param  level       Level affected.
-              @param  down        Handle to a node below us.
+              @param  down        Handle to a relation node below us.
         */
-        relation_node(unsigned long signature, int level, node_handle down);
+        relation_node(unsigned long signature, int level, rel_node_handle down);
         virtual ~relation_node();
 
         // the following should be inlined in meddly_expert.hh
@@ -2785,12 +2786,12 @@ class MEDDLY::satimpl_opname : public specialized_opname {
         /**
             Pointer to the (ID of the) next piece of the relation.
         */
-        node_handle getDown() const; 
+        rel_node_handle getDown() const;
 
         /**
             The unique ID for this piece.
         */
-        node_handle getID() const;
+        rel_node_handle getID() const;
 
 
         // the following must be provided in derived classes.
@@ -2809,8 +2810,8 @@ class MEDDLY::satimpl_opname : public specialized_opname {
       private:
         unsigned long signature;
         int level;
-        node_handle down;
-        node_handle ID; 
+        rel_node_handle down;
+        rel_node_handle ID;
 
         // used by the hash table in implicit_relation
 
@@ -2875,7 +2876,7 @@ class MEDDLY::satimpl_opname : public specialized_opname {
 
                   @return Unique identifier to use to refer to n.
           */
-          node_handle registerNode(bool is_event_top, relation_node* n);
+          rel_node_handle registerNode(bool is_event_top, relation_node* n);
 
           /**
               Indicate that there will be no more registered nodes.
@@ -2913,7 +2914,7 @@ class MEDDLY::satimpl_opname : public specialized_opname {
         private:
           // TBD - add a data structure for the "uniqueness table"
           // of relation_nodes, so if we register a node that
-          // is already present in \a node_array, we can detect it.
+          // is already present in a node_array, we can detect it.
 
            
         private:
@@ -2923,6 +2924,15 @@ class MEDDLY::satimpl_opname : public specialized_opname {
           // finalizeNodes().
 
     };  // class implicit_relation
+  
+  public:
+  
+    rel_node_handle getLastHandle() const;
+  
+  
+  private:
+  
+     rel_node_handle last_handle;
 };
 
 

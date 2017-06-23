@@ -1609,6 +1609,57 @@ MEDDLY::satotf_opname::otf_relation::getNumConfirmed(int level) const
   return num_confirmed[level];
 }
 
+// ******************************************************************
+// *                                                                *
+// *                 inlined  satimpl_opname methods                *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::satimpl_opname::satimpl_opname(const char* n)
+: specialized_opname(n)
+{
+}
+
+MEDDLY::satimpl_opname::~satimpl_opname()
+{
+}
+
+inline rel_node_handle
+MEDDLY::satimpl_opname::getLastHandle() const
+{
+  return last_handle;
+}
+
+// ******************************************************************
+
+inline unsigned long
+MEDDLY::satimpl_opname::relation_node::getSignature() const
+{
+  return signature;
+}
+
+inline int
+MEDDLY::satimpl_opname::relation_node::getLevel() const
+{
+  return level;
+}
+
+inline node_handle
+MEDDLY::satimpl_opname::relation_node::getDown() const
+{
+  return down;
+}
+
+inline node_handle
+MEDDLY::satimpl_opname::relation_node::getID() const
+{
+  return ID;
+}
+
+//************************************************************************
+
+
+
 
 // ******************************************************************
 // *                                                                *

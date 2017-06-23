@@ -1223,6 +1223,54 @@ long MEDDLY::satotf_opname::otf_relation::mintermMemoryUsage() const {
   return usage;
 }
 
+// ******************************************************************
+// *                                                                *
+// *                     satimpl_opname  methods                    *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::satimpl_opname::relation_node::relation_node(unsigned long sign, int lvl, node_handle d)
+{
+  signature  = sign;
+  lvl = level;
+  MEDDLY_DCASSERT(lvl > getLevel(d)); // Find a mechanism to find level from node_handle
+  down = d;
+}
+
+MEDDLY::satimpl_opname::relation_node::relation_node(unsigned long sign, int lvl, node_handle d)
+{
+  
+}
+
+MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
+                                                  forest* outmdd)
+: insetF(static_cast<expert_forest*>(inmdd)),
+outsetF(static_cast<expert_forest*>(outmdd))
+{
+  if (0==insetF || 0==outsetF) throw error(error::MISCELLANEOUS);
+  
+  // Check for same domain
+  if (insetF->getDomain() != outsetF->getDomain())
+    throw error(error::DOMAIN_MISMATCH);
+  
+  // for now, anyway, inset and outset must be same forest
+  if (insetF != outsetF)
+    throw error(error::FOREST_MISMATCH);
+  
+  // Check forest types
+  if (
+      insetF->isForRelations()    ||
+      outsetF->isForRelations()   ||
+      (insetF->getEdgeLabeling() != forest::MULTI_TERMINAL)   ||
+      (outsetF->getEdgeLabeling() != forest::MULTI_TERMINAL)
+      )
+    throw error(error::TYPE_MISMATCH);
+  
+  // Forests are good; set number of variables
+  num_levels = insetF->getDomain()->getNumVariables() + 1;
+}
+
+
 
 // ******************************************************************
 // *                       operation  methods                       *
