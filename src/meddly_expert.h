@@ -2877,6 +2877,8 @@ class MEDDLY::satimpl_opname : public specialized_opname {
                   @return Unique identifier to use to refer to n.
           */
           rel_node_handle registerNode(bool is_event_top, relation_node* n);
+      
+          bool isUniqueNode(relation_node* n);
 
           /**
               Indicate that there will be no more registered nodes.
@@ -2915,6 +2917,9 @@ class MEDDLY::satimpl_opname : public specialized_opname {
           // TBD - add a data structure for the "uniqueness table"
           // of relation_nodes, so if we register a node that
           // is already present in a node_array, we can detect it.
+      
+          std::unordered_map<rel_node_handle, relation_node> impl_unique;
+
 
            
         private:
@@ -2925,14 +2930,7 @@ class MEDDLY::satimpl_opname : public specialized_opname {
 
     };  // class implicit_relation
   
-  public:
   
-    rel_node_handle getLastHandle() const;
-  
-  
-  private:
-  
-     rel_node_handle last_handle;
 };
 
 

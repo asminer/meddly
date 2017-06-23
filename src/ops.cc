@@ -1229,16 +1229,55 @@ long MEDDLY::satotf_opname::otf_relation::mintermMemoryUsage() const {
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::satimpl_opname::relation_node::relation_node(unsigned long sign, int lvl, node_handle d)
+void MEDDLY::satimpl_opname::relation_node::relation_node(unsigned long sign, int lvl, node_handle d)
 {
   signature  = sign;
   lvl = level;
-  MEDDLY_DCASSERT(lvl > getLevel(d)); // Find a mechanism to find level from node_handle
   down = d;
 }
 
-MEDDLY::satimpl_opname::relation_node::relation_node(unsigned long sign, int lvl, node_handle d)
+
+bool MEDDLY::satimpl_opname::relation_node::equals(const relation_node* n) const
 {
+  if(signature == n->signature && level = n->level && down = n->down)
+    return true;
+  else
+    return false;
+}
+
+// ******************************************************************
+
+bool MEDDLY::satimpl_opname::implicit_relation::isUniqueNode(relation_node* n)
+{
+  bool unique_node = false;
+  std::unordered_map<rel_node_handle, relation_node>::iterator it = impl_unique.begin();
+  while(it != impl_unique.end())
+    {
+    unique_node = ((it->second).equals(n));
+    if(unique_node)
+      break;
+    ++it;
+    }
+  return unique_node;
+}
+
+rel_node_handle MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_event_top, relation_node* n)
+{
+ 
+  if(isUniqueNode(n))
+    {
+      rel_node_handle n_ID  = last_in_node_array + 1;
+      impl_unique.insert(n_ID, n);
+      if(impl_unique.find(n_ID) != imple_unique.end())
+        {
+          last_in_node_array = n_ID;
+          n->ID  = n_ID;
+        }
+    }
+  
+  //Do some thing abot is_top_event
+  
+  return n->ID;
   
 }
 

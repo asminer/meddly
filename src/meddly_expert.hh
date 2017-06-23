@@ -1624,12 +1624,6 @@ MEDDLY::satimpl_opname::~satimpl_opname()
 {
 }
 
-inline rel_node_handle
-MEDDLY::satimpl_opname::getLastHandle() const
-{
-  return last_handle;
-}
-
 // ******************************************************************
 
 inline unsigned long
