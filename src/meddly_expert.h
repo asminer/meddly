@@ -2879,6 +2879,13 @@ class MEDDLY::satimpl_opname : public specialized_opname {
           rel_node_handle registerNode(bool is_event_top, relation_node* n);
       
           bool isUniqueNode(relation_node* n);
+      
+          /* implicit */
+          bool doesNodeExists(rel_node_handle n);
+           
+          relation_node* getNode(rel_node_handle n);
+      
+          int getLevelOf(rel_node_handle n);
 
           /**
               Indicate that there will be no more registered nodes.
@@ -2918,10 +2925,8 @@ class MEDDLY::satimpl_opname : public specialized_opname {
           // of relation_nodes, so if we register a node that
           // is already present in a node_array, we can detect it.
       
-          std::unordered_map<rel_node_handle, relation_node> impl_unique;
+          std::unordered_map<rel_node_handle, relation_node*> impl_unique;
 
-
-           
         private:
           // TBD - add a data structure for list of events with top level k,
           // for all possible k.

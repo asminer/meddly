@@ -1232,14 +1232,14 @@ long MEDDLY::satotf_opname::otf_relation::mintermMemoryUsage() const {
 void MEDDLY::satimpl_opname::relation_node::relation_node(unsigned long sign, int lvl, node_handle d)
 {
   signature  = sign;
-  lvl = level;
+  level = lvl;
   down = d;
 }
 
 
 bool MEDDLY::satimpl_opname::relation_node::equals(const relation_node* n) const
 {
-  if(signature == n->signature && level = n->level && down = n->down)
+  if((signature == n->signature) && (level == n->level) && (down == n->down))
     return true;
   else
     return false;
@@ -1249,12 +1249,12 @@ bool MEDDLY::satimpl_opname::relation_node::equals(const relation_node* n) const
 
 bool MEDDLY::satimpl_opname::implicit_relation::isUniqueNode(relation_node* n)
 {
-  bool unique_node = false;
-  std::unordered_map<rel_node_handle, relation_node>::iterator it = impl_unique.begin();
+  bool unique_node = true;
+  std::unordered_map<rel_node_handle, relation_node*>::iterator it = impl_unique.begin();
   while(it != impl_unique.end())
     {
-    unique_node = ((it->second).equals(n));
-    if(unique_node)
+    unique_node = !((it->second)->equals(n));
+    if(!unique_node)
       break;
     ++it;
     }
@@ -1264,21 +1264,22 @@ bool MEDDLY::satimpl_opname::implicit_relation::isUniqueNode(relation_node* n)
 rel_node_handle MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_event_top, relation_node* n)
 {
  
-  if(isUniqueNode(n))
+  MEDDLY_DCASSERT(n->level < getLevelOf(n->down));
+  if(isUniqueNode(ns))
     {
       rel_node_handle n_ID  = last_in_node_array + 1;
-      impl_unique.insert(n_ID, n);
-      if(impl_unique.find(n_ID) != imple_unique.end())
+      std::pair<rel_node_handle, relation_node*> add_node(n_ID,n);
+      impl_unique.insert(add_node);
+      if(impl_unique.find(n_ID) != impl_unique.end())
         {
           last_in_node_array = n_ID;
           n->ID  = n_ID;
         }
     }
   
-  //Do some thing abot is_top_event
+  //Do some thing about is_top_event
   
   return n->ID;
-  
 }
 
 MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
@@ -1286,6 +1287,8 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
 : insetF(static_cast<expert_forest*>(inmdd)),
 outsetF(static_cast<expert_forest*>(outmdd))
 {
+  
+  last_in_node_array = 0;
   if (0==insetF || 0==outsetF) throw error(error::MISCELLANEOUS);
   
   // Check for same domain

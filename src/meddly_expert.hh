@@ -1652,7 +1652,31 @@ MEDDLY::satimpl_opname::relation_node::getID() const
 
 //************************************************************************
 
+inline bool
+MEDDLY::satimpl_opname::implicit_relation::doesNodeExists(rel_node_handle n)
+{
+  std::unordered_map<rel_node_handle, relation_node*>::iterator finder = impl_unique.find(n);
+  
+  if(finder!=impl_unique.end())
+    return true;
+  else
+    return false;
+}
 
+inline relation_node*
+MEDDLY::satimpl_opname::implicit_relation::getNode(rel_node_handle n)
+{
+  MEDDLY_DCASSERT(doesNodeExists(n));
+  std::unordered_map<rel_node_handle, relation_node*>::iterator finder = impl_unique.find(n);
+  return finder->second;
+}
+
+inline int
+MEDDLY::satimpl_opname::implicit_relation::getLevelOf(rel_node_handle n)
+{
+  MEDDLY_DCASSERT(n);
+  return getNode(n)->level;
+}
 
 
 // ******************************************************************
