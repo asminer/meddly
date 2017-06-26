@@ -2880,18 +2880,12 @@ class MEDDLY::satimpl_opname : public specialized_opname {
       
           bool isUniqueNode(relation_node* n);
       
-          /* implicit */
-          bool doesNodeExists(rel_node_handle n);
-           
-          relation_node* getNode(rel_node_handle n);
-      
-          int getLevelOf(rel_node_handle n);
-
           /**
-              Indicate that there will be no more registered nodes.
-              Allows us to preprocess the events or cleanup or convert
-              to a more useful representation for saturation.
-          */
+           Indicate that there will be no more registered nodes.
+           Allows us to preprocess the events or cleanup or convert
+           to a more useful representation for saturation.
+           */
+      
           void finalizeNodes();
 
           /**
@@ -2899,7 +2893,8 @@ class MEDDLY::satimpl_opname : public specialized_opname {
 
               Should be a fast, inlined implementation.
           */
-
+          relation_node* nodeExists(rel_node_handle n);
+      
         private:
           expert_forest* insetF;
           expert_forest* outsetF;
@@ -2932,8 +2927,15 @@ class MEDDLY::satimpl_opname : public specialized_opname {
           // for all possible k.
           // Possibly this data structure is built by method
           // finalizeNodes().
+      
+          int **event_list;
+          int *event_list_length;
+      
+      
+      
 
     };  // class implicit_relation
+  
   
   
 };

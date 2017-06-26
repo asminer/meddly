@@ -1239,7 +1239,7 @@ void MEDDLY::satimpl_opname::relation_node::relation_node(unsigned long sign, in
 
 bool MEDDLY::satimpl_opname::relation_node::equals(const relation_node* n) const
 {
-  if((signature == n->signature) && (level == n->level) && (down == n->down))
+  if((signature == n->getSignature()) && (level == n->getLevel()) && (down == n->getDown()))
     return true;
   else
     return false;
@@ -1264,20 +1264,31 @@ bool MEDDLY::satimpl_opname::implicit_relation::isUniqueNode(relation_node* n)
 rel_node_handle MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_event_top, relation_node* n)
 {
  
-  MEDDLY_DCASSERT(n->level < getLevelOf(n->down));
-  if(isUniqueNode(ns))
-    {
-      rel_node_handle n_ID  = last_in_node_array + 1;
-      std::pair<rel_node_handle, relation_node*> add_node(n_ID,n);
-      impl_unique.insert(add_node);
-      if(impl_unique.find(n_ID) != impl_unique.end())
-        {
-          last_in_node_array = n_ID;
-          n->ID  = n_ID;
-        }
-    }
+  relation_node* down_node = nodeExists(n->getDown());
+  MEDDLY_DCASSERT(down_node!=NULL);
+  MEDDLY_DCASSERT(n->getLevel() > down_node->getLevel());
+  MEDDLY_DCASSERT(isUniqueNode(n));
   
+  rel_node_handle n_ID  = last_in_node_array + 1;
+  std::pair<rel_node_handle, relation_node*> add_node(n_ID,n);
+  impl_unique.insert(add_node);
+  if(impl_unique.find(n_ID) != impl_unique.end())
+  {
+    last_in_node_array = n_ID;
+    n->ID  = n_ID;
+  }
+
   //Do some thing about is_top_event
+  if(is_event_top)
+  {
+    if(event_list_length[n->getLevel()]==0)
+      event_list[n->getLevel()] = (int*)malloc(1*sizeof(int));
+    else
+      event_list[n->getLevel()] = (int*)realloc(event_list[n->getLevel()],event_list_length[n->getLevel()]*sizeof(int));
+    
+     event_list[n->getLevel()][el_length[n->getLevel()]] = 1; // ReplaceWithEventId
+    event_list_length[n->getLevel()]++;
+  }
   
   return n->ID;
 }
@@ -1289,6 +1300,10 @@ outsetF(static_cast<expert_forest*>(outmdd))
 {
   
   last_in_node_array = 0;
+  relation_node *last = new relation_node(0,0,0);
+  std::pair<rel_node_handle, relation_node*> terminal_node(0,last);
+  impl_unique.insert(terminal_node);
+  
   if (0==insetF || 0==outsetF) throw error(error::MISCELLANEOUS);
   
   // Check for same domain
@@ -1310,8 +1325,11 @@ outsetF(static_cast<expert_forest*>(outmdd))
   
   // Forests are good; set number of variables
   num_levels = insetF->getDomain()->getNumVariables() + 1;
+  
+  //Set the event_list;
+  event_list = (int**)malloc(num_levels*sizeof(int*));
+  event_list_length = (int*)malloc(num_levels*sizeof(int*));
 }
-
 
 
 // ******************************************************************

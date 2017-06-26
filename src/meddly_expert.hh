@@ -1638,13 +1638,13 @@ MEDDLY::satimpl_opname::relation_node::getLevel() const
   return level;
 }
 
-inline node_handle
+inline rel_node_handle
 MEDDLY::satimpl_opname::relation_node::getDown() const
 {
   return down;
 }
 
-inline node_handle
+inline rel_node_handle
 MEDDLY::satimpl_opname::relation_node::getID() const
 {
   return ID;
@@ -1652,31 +1652,17 @@ MEDDLY::satimpl_opname::relation_node::getID() const
 
 //************************************************************************
 
-inline bool
-MEDDLY::satimpl_opname::implicit_relation::doesNodeExists(rel_node_handle n)
+inline relation_node*
+MEDDLY::satimpl_opname::implicit_relation::nodeExists(rel_node_handle n)
 {
   std::unordered_map<rel_node_handle, relation_node*>::iterator finder = impl_unique.find(n);
   
   if(finder!=impl_unique.end())
-    return true;
+    return finder->second;
   else
-    return false;
+    return NULL;
 }
 
-inline relation_node*
-MEDDLY::satimpl_opname::implicit_relation::getNode(rel_node_handle n)
-{
-  MEDDLY_DCASSERT(doesNodeExists(n));
-  std::unordered_map<rel_node_handle, relation_node*>::iterator finder = impl_unique.find(n);
-  return finder->second;
-}
-
-inline int
-MEDDLY::satimpl_opname::implicit_relation::getLevelOf(rel_node_handle n)
-{
-  MEDDLY_DCASSERT(n);
-  return getNode(n)->level;
-}
 
 
 // ******************************************************************
