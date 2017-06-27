@@ -2767,7 +2767,7 @@ class MEDDLY::satimpl_opname:public specialized_opname {
               @param  down        Handle to a relation node below us.
         */
         relation_node(unsigned long signature, int level, node_handle down);
-      virtual ~relation_node()=0;
+        virtual ~relation_node();
 
         // the following should be inlined in meddly_expert.hh
 
@@ -2806,7 +2806,7 @@ class MEDDLY::satimpl_opname:public specialized_opname {
             If the variable at this level has value i,
             what should the new value be?
         */
-        virtual long eventUpdatesTokens(long i) = 0;
+        virtual long nextOf(long i) = 0;
 
         /**
             Determine if this node is equal to another one.
@@ -2859,7 +2859,7 @@ class MEDDLY::satimpl_opname:public specialized_opname {
 
           */
           implicit_relation(forest* inmdd, forest* outmdd);
-          virtual ~implicit_relation()=0;
+          virtual ~implicit_relation();
 
           /// Returns the MDD forest that stores the initial set of states
           expert_forest* getInForest() const;

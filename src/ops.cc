@@ -1237,7 +1237,8 @@ long MEDDLY::satotf_opname::otf_relation::mintermMemoryUsage() const {
 
 MEDDLY::satimpl_opname::~satimpl_opname()
 {
-}*/
+}
+*/
  
 // =====================================================================
 MEDDLY::satimpl_opname::relation_node::relation_node(unsigned long sign, int lvl, node_handle d)
@@ -1248,7 +1249,7 @@ MEDDLY::satimpl_opname::relation_node::relation_node(unsigned long sign, int lvl
 }
 
 
-long MEDDLY::satimpl_opname::relation_node::eventUpdatesTokens(long i)
+long MEDDLY::satimpl_opname::relation_node::nextOf(long i)
 {
   long n=10;
   return n;
@@ -1261,6 +1262,11 @@ bool MEDDLY::satimpl_opname::relation_node::equals(const relation_node* n) const
   else
     return false;
 }
+
+MEDDLY::satimpl_opname::relation_node::~relation_node()
+{
+}
+
 
 // ******************************************************************
 
@@ -1294,8 +1300,20 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
   num_levels = insetF->getDomain()->getNumVariables() + 1;
   
   //Set the event_list;
-  event_list = (int**)malloc(10*sizeof(int*));
-  event_list_length = (int*)malloc(10*sizeof(int*));
+  event_list = (int**)malloc(num_levels*sizeof(int*));
+  event_list_length = (int*)malloc(num_levels*sizeof(int*));
+}
+
+MEDDLY::satimpl_opname::implicit_relation::~implicit_relation()
+{
+  last_in_node_array = 0;
+  impl_unique.clear();
+  for (int i = 0; i < num_levels; i++) {
+    delete[] event_list[i];
+  }
+  delete[] event_list;
+  delete[] event_list_length;
+  
 }
 
 
