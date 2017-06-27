@@ -2728,14 +2728,15 @@ class MEDDLY::satotf_opname : public specialized_opname {
 // ******************************************************************
 
 /// Saturation, transition relations stored implcitly, operation names.
-class MEDDLY::satimpl_opname : public specialized_opname {
+typedef int rel_node_handle;
+class MEDDLY::satimpl_opname:public specialized_opname {
   public:
-    typedef int rel_node_handle;
+  
     satimpl_opname(const char* n);
     virtual ~satimpl_opname();
 
     /// Arguments should have type "implicit_relation", below
-    virtual specialized_operation* buildOperation(arguments* a) const;
+     virtual specialized_operation* buildOperation(arguments* a) const;
 
   public:
     /**
@@ -2765,8 +2766,8 @@ class MEDDLY::satimpl_opname : public specialized_opname {
               @param  level       Level affected.
               @param  down        Handle to a relation node below us.
         */
-        relation_node(unsigned long signature, int level, rel_node_handle down);
-        virtual ~relation_node();
+        relation_node(unsigned long signature, int level, node_handle down);
+      virtual ~relation_node()=0;
 
         // the following should be inlined in meddly_expert.hh
 
@@ -2792,6 +2793,11 @@ class MEDDLY::satimpl_opname : public specialized_opname {
             The unique ID for this piece.
         */
         rel_node_handle getID() const;
+      
+        /**
+            Set the unique ID for this piece.
+         */
+        void setID(rel_node_handle ID);
 
 
         // the following must be provided in derived classes.
@@ -2800,7 +2806,7 @@ class MEDDLY::satimpl_opname : public specialized_opname {
             If the variable at this level has value i,
             what should the new value be?
         */
-        virtual long nextOf(long i) = 0;
+        virtual long eventUpdatesTokens(long i) = 0;
 
         /**
             Determine if this node is equal to another one.
@@ -2853,7 +2859,7 @@ class MEDDLY::satimpl_opname : public specialized_opname {
 
           */
           implicit_relation(forest* inmdd, forest* outmdd);
-          virtual ~implicit_relation();
+          virtual ~implicit_relation()=0;
 
           /// Returns the MDD forest that stores the initial set of states
           expert_forest* getInForest() const;
@@ -2876,7 +2882,7 @@ class MEDDLY::satimpl_opname : public specialized_opname {
 
                   @return Unique identifier to use to refer to n.
           */
-          rel_node_handle registerNode(bool is_event_top, relation_node* n);
+      rel_node_handle registerNode(bool is_event_top, relation_node* n);
       
           bool isUniqueNode(relation_node* n);
       
@@ -2920,7 +2926,7 @@ class MEDDLY::satimpl_opname : public specialized_opname {
           // of relation_nodes, so if we register a node that
           // is already present in a node_array, we can detect it.
       
-          std::unordered_map<rel_node_handle, relation_node*> impl_unique;
+      std::unordered_map<MEDDLY::node_handle, relation_node*> impl_unique;
 
         private:
           // TBD - add a data structure for list of events with top level k,

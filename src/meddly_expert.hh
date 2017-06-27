@@ -1615,17 +1615,6 @@ MEDDLY::satotf_opname::otf_relation::getNumConfirmed(int level) const
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::satimpl_opname::satimpl_opname(const char* n)
-: specialized_opname(n)
-{
-}
-
-MEDDLY::satimpl_opname::~satimpl_opname()
-{
-}
-
-// ******************************************************************
-
 inline unsigned long
 MEDDLY::satimpl_opname::relation_node::getSignature() const
 {
@@ -1650,9 +1639,15 @@ MEDDLY::satimpl_opname::relation_node::getID() const
   return ID;
 }
 
+inline void
+MEDDLY::satimpl_opname::relation_node::setID(rel_node_handle n_ID)
+{
+  ID=n_ID;
+}
+
 //************************************************************************
 
-inline relation_node*
+inline MEDDLY::satimpl_opname::relation_node*
 MEDDLY::satimpl_opname::implicit_relation::nodeExists(rel_node_handle n)
 {
   std::unordered_map<rel_node_handle, relation_node*>::iterator finder = impl_unique.find(n);

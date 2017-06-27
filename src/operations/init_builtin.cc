@@ -119,6 +119,7 @@ namespace MEDDLY {
   const satpregen_opname* SATURATION_FORWARD = 0;
   const satpregen_opname* SATURATION_BACKWARD = 0;
   const satotf_opname* SATURATION_OTF_FORWARD = 0;
+  const satimpl_opname* SATURATION_OTF_IMPLICIT = 0;
 };
 
 
