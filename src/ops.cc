@@ -1251,8 +1251,8 @@ MEDDLY::satimpl_opname::relation_node::relation_node(unsigned long sign, int lvl
 
 long MEDDLY::satimpl_opname::relation_node::nextOf(long i)
 {
-  long n=10;
-  return n;
+  //extract expression from signature and do operation to i
+  return i;
 }
 
 bool MEDDLY::satimpl_opname::relation_node::equals(const relation_node* n) const
@@ -1333,7 +1333,6 @@ bool MEDDLY::satimpl_opname::implicit_relation::isUniqueNode(relation_node* n)
 
 rel_node_handle MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_event_top, relation_node* n)
 {
- 
   relation_node* down_node = nodeExists(n->getDown());
   MEDDLY_DCASSERT((down_node!=NULL) || (n->getDown() == 0));
   MEDDLY_DCASSERT((n->getLevel() > down_node->getLevel()) || (n->getDown() == 0));
@@ -1356,7 +1355,7 @@ rel_node_handle MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_
     else
       event_list[n->getLevel()] = (int*)realloc(event_list[n->getLevel()],event_list_length[n->getLevel()]*sizeof(int));
     
-     event_list[n->getLevel()][event_list_length[n->getLevel()]] = 1; // ReplaceWithEventId
+     event_list[n->getLevel()][event_list_length[n->getLevel()]] = 1; //ReplaceWithEventId
     event_list_length[n->getLevel()]++;
   }
   

@@ -2882,7 +2882,7 @@ class MEDDLY::satimpl_opname:public specialized_opname {
 
                   @return Unique identifier to use to refer to n.
           */
-      rel_node_handle registerNode(bool is_event_top, relation_node* n);
+          rel_node_handle registerNode(bool is_event_top, relation_node* n);
       
           bool isUniqueNode(relation_node* n);
       
@@ -2926,7 +2926,7 @@ class MEDDLY::satimpl_opname:public specialized_opname {
           // of relation_nodes, so if we register a node that
           // is already present in a node_array, we can detect it.
       
-      std::unordered_map<MEDDLY::node_handle, relation_node*> impl_unique;
+          std::unordered_map<MEDDLY::node_handle, relation_node*> impl_unique;
 
         private:
           // TBD - add a data structure for list of events with top level k,
