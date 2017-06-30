@@ -2884,7 +2884,15 @@ class MEDDLY::satimpl_opname:public specialized_opname {
           */
           rel_node_handle registerNode(bool is_event_top, relation_node* n);
       
+          /**
+              Check if the relation node is unique
+           */
           bool isUniqueNode(relation_node* n);
+      
+          /**
+              Resize the node_array
+          */
+          void resizeNodeArray(int n);
       
           /**
            Indicate that there will be no more registered nodes.
@@ -2934,12 +2942,8 @@ class MEDDLY::satimpl_opname:public specialized_opname {
           // Possibly this data structure is built by method
           // finalizeNodes().
       
-          int **event_list;
-          int *event_list_length;
+          int *event_list;
       
-      
-      
-
     };  // class implicit_relation
   
   

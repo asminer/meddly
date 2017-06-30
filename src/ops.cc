@@ -1276,6 +1276,8 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
 {
   
   last_in_node_array = 0;
+  node_array_alloc = 0;
+  
   
   if (0==insetF || 0==outsetF) throw error(error::MISCELLANEOUS);
   
@@ -1298,11 +1300,28 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
   
   // Forests are good; set number of variables
   num_levels = insetF->getDomain()->getNumVariables() + 1;
+  event_list = (int*)malloc(num_levels*sizeof(int));
   
   //Set the event_list;
   event_list = (int**)malloc(num_levels*sizeof(int*));
   event_list_length = (int*)malloc(num_levels*sizeof(int*));
 }
+
+void
+MEDDLY::satimpl_opname::implicit_relation::resizeNodeArray(int nh)
+{
+  last_in_node_array = nh;
+  if (last_in_node_array > node_array_alloc) {
+    int nalloc = ((nh/8)+1)*8;
+    MEDDLY_DCASSERT(nalloc > nh);
+    MEDDLY_DCASSERT(nalloc > 0);
+    MEDDLY_DCASSERT(nalloc > node_array_alloc);
+    node_array = (relation_node*) realloc(node_array, nalloc*sizeof(relation_node));
+    if (0==node_array) throw error(error::INSUFFICIENT_MEMORY);
+    node_array_alloc = nalloc;
+  }
+}
+
 
 MEDDLY::satimpl_opname::implicit_relation::~implicit_relation()
 {
@@ -1338,6 +1357,7 @@ rel_node_handle MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_
   MEDDLY_DCASSERT((n->getLevel() > down_node->getLevel()) || (n->getDown() == 0));
   MEDDLY_DCASSERT(isUniqueNode(n));
   
+  
   node_handle n_ID  = last_in_node_array + 1;
   std::pair<rel_node_handle, relation_node*> add_node(n_ID,n);
   impl_unique.insert(add_node);
@@ -1345,26 +1365,16 @@ rel_node_handle MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_
   {
     last_in_node_array = n_ID;
     n->setID(n_ID);
+    resize(n_ID);
+    node_array[n_ID] = n;
   }
 
   //Do some thing about is_top_event
   if(is_event_top)
-  {
-    if(event_list_length[n->getLevel()]==0)
-      event_list[n->getLevel()] = (int*)malloc(1*sizeof(int));
-    else
-      event_list[n->getLevel()] = (int*)realloc(event_list[n->getLevel()],event_list_length[n->getLevel()]*sizeof(int));
-    
-     event_list[n->getLevel()][event_list_length[n->getLevel()]] = 1; //ReplaceWithEventId
-    event_list_length[n->getLevel()]++;
-  }
+    event_list[n->getLevel()] = 1;//replace 1 with event details, when available
   
   return n->getID();
 }
-
-
-
-
 
 // ******************************************************************
 // *                       operation  methods                       *
