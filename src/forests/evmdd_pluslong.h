@@ -94,7 +94,7 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
         evpimdd_iterator(const expert_forest* F);
         virtual ~evpimdd_iterator();
 
-        virtual void getValue(int &termVal) const;
+        virtual void getValue(long &termVal) const;
         virtual bool start(const dd_edge &e);
         virtual bool next();
       private:

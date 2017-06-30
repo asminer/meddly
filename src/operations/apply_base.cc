@@ -571,6 +571,159 @@ void MEDDLY::generic_binary_evplus
 
 // ******************************************************************
 // *                                                                *
+// *               generic_binary_evplus_mxd methods                *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::generic_binary_evplus_mxd::generic_binary_evplus_mxd(const binary_opname* code,
+  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+  : generic_binary_ev(code, arg1, arg2, res)
+{
+  if (!arg1->isForRelations() || !arg2->isForRelations() || !res->isForRelations()) {
+    throw error::TYPE_MISMATCH;
+  }
+}
+
+MEDDLY::generic_binary_evplus_mxd::~generic_binary_evplus_mxd()
+{
+}
+
+void MEDDLY::generic_binary_evplus_mxd
+::showEntry(output &strm, const node_handle *data) const
+{
+  strm << "[" << getName() << "(<" << long(data[0]) << ":" << long(data[1])
+       << ">, <" << long(data[2]) << ":" << long(data[3]) << ">): <"
+       << long(data[4]) << ":" << long(data[5]) << ">]";
+}
+
+void MEDDLY::generic_binary_evplus_mxd
+::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
+{
+  node_handle result;
+  long ev = Inf<long>(), aev = Inf<long>(), bev = Inf<long>();
+  a.getEdgeValue(aev);
+  b.getEdgeValue(bev);
+  compute(aev, a.getNode(), bev, b.getNode(), ev, result);
+  c.set(result, ev);
+#ifdef DEVELOPMENT_CODE
+  resF->validateIncounts(true);
+#endif
+}
+
+void MEDDLY::generic_binary_evplus_mxd
+::compute(long aev, node_handle a, long bev, node_handle b,
+  long& cev, node_handle& c)
+{
+  if (checkTerminals(aev, a, bev, b, cev, c))
+    return;
+
+  compute_table::search_key* Key = findResult(aev, a, bev, b, cev, c);
+  if (0==Key) return;
+
+  // Get level information
+  const int aLevel = arg1F->getNodeLevel(a);
+  const int bLevel = arg2F->getNodeLevel(b);
+
+  const int resultLevel = aLevel > bLevel? aLevel: bLevel;
+  const int resultSize = resF->getLevelSize(resultLevel);
+
+  // Initialize result
+  unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
+
+  // Initialize readers
+  unpacked_node *A = (aLevel < resultLevel)
+    ? unpacked_node::newRedundant(arg1F, resultLevel, 0L, a, true)
+    : unpacked_node::newFromNode(arg1F, a, true)
+  ;
+
+  unpacked_node *B = (bLevel < resultLevel)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, 0L, b, true)
+    : unpacked_node::newFromNode(arg2F, b, true)
+  ;
+
+  // do computation
+  for (int i=0; i<resultSize; i++) {
+    long ev = 0;
+    node_handle ed;
+    compute_r(i, resF->downLevel(resultLevel),
+        aev + A->ei(i), A->d(i),
+        bev + B->ei(i), B->d(i),
+        ev, ed);
+    nb->d_ref(i) = ed;
+    nb->setEdge(i, ev);
+  }
+
+  // cleanup
+  unpacked_node::recycle(B);
+  unpacked_node::recycle(A);
+
+  // Reduce
+  node_handle cl;
+  resF->createReducedNode(-1, nb, cev, cl);
+  c = cl;
+
+  // Add to CT
+  saveResult(Key, aev, a, bev, b, cev, c);
+}
+
+void MEDDLY::generic_binary_evplus_mxd
+::compute_r(int in, int level, long aev, node_handle a, long bev, node_handle b, long& cev, node_handle &c)
+{
+  //  Compute for the primed levels.
+  //
+  MEDDLY_DCASSERT(level<0);
+
+  // Get level information
+  const int aLevel = arg1F->getNodeLevel(a);
+  const int bLevel = arg2F->getNodeLevel(b);
+
+  const int resultSize = resF->getLevelSize(level);
+
+  unpacked_node* C = unpacked_node::newFull(resF, level, resultSize);
+
+  // Initialize readers
+  unpacked_node *A = unpacked_node::useUnpackedNode();
+  unpacked_node *B = unpacked_node::useUnpackedNode();
+
+  if (aLevel == level) {
+    A->initFromNode(arg1F, a, true);
+  } else if (arg1F->isFullyReduced()) {
+    A->initRedundant(arg1F, level, 0L, a, true);
+  } else {
+    A->initIdentity(arg1F, level, in, 0L, a, true);
+  }
+
+  if (bLevel == level) {
+    B->initFromNode(arg2F, b, true);
+  } else if (arg2F->isFullyReduced()) {
+    B->initRedundant(arg2F, level, 0L, b, true);
+  } else {
+    B->initIdentity(arg2F, level, in, 0L, b, true);
+  }
+
+  // Do computation
+  for (int i = 0; i < resultSize; i++) {
+    long ev = 0;
+    node_handle e = 0;
+    compute(aev + A->ei(i), A->d(i), bev + B->ei(i), B->d(i), ev, e);
+    C->setEdge(i, ev);
+    C->d_ref(i) = e;
+  }
+
+  // cleanup
+  unpacked_node::recycle(B);
+  unpacked_node::recycle(A);
+
+  // reduce
+  resF->createReducedNode(in, C, cev, c);
+
+#ifdef TRACE_ALL_OPS
+  printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
+#endif
+}
+
+// ******************************************************************
+// *                                                                *
 // *                 generic_binary_evtimes methods                 *
 // *                                                                *
 // ******************************************************************

@@ -269,11 +269,14 @@ namespace MEDDLY {
       must be stored in the same forest as the first operand.
       
       Applies to:
-      PRE_IMAGE, POST_IMAGE, REACHABLE_STATES_DFS, REACHABLE_STATES_BFS,
+      PRE_IMAGE, POST_IMAGE,
+      TC_POST_IMAGE,
+      REACHABLE_STATES_DFS, REACHABLE_STATES_BFS,
       REVERSE_REACHABLE_DFS, REVERSE_REACHABLE_BFS.
   */
   extern const binary_opname* PRE_IMAGE;
   extern const binary_opname* POST_IMAGE;
+  extern const binary_opname* TC_POST_IMAGE;
   extern const binary_opname* REACHABLE_STATES_DFS;
   extern const binary_opname* REACHABLE_STATES_BFS;
   extern const binary_opname* REVERSE_REACHABLE_DFS;
@@ -2463,6 +2466,9 @@ class MEDDLY::enumerator {
 
         /// For integer-ranged edges, get the current non-zero value.
         virtual void getValue(int& edgeValue) const;
+
+        /// For integer-ranged edges, get the current non-zero value.
+        virtual void getValue(long& edgeValue) const;
     
         /// For real-ranged edges, get the current non-zero value.
         virtual void getValue(float& edgeValue) const;
@@ -2561,6 +2567,7 @@ class MEDDLY::enumerator {
     const int* getPrimedAssignments() const;
 
     void getValue(int &v) const;
+    void getValue(long &v) const;
     void getValue(float &v) const;
 
     int levelChanged() const;

@@ -354,7 +354,7 @@ MEDDLY::evmdd_pluslong::evpimdd_iterator::~evpimdd_iterator()
   delete[] acc_evs;
 }
 
-void MEDDLY::evmdd_pluslong::evpimdd_iterator::getValue(int &tv) const
+void MEDDLY::evmdd_pluslong::evpimdd_iterator::getValue(long &tv) const
 {
   MEDDLY_DCASSERT(acc_evs);
   tv = acc_evs[0];

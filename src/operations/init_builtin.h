@@ -57,6 +57,7 @@ class MEDDLY::builtin_initializer : public initializer_list {
 
   binary_opname* PRE_IMAGE;
   binary_opname* POST_IMAGE;
+  binary_opname* TC_POST_IMAGE;
   binary_opname* FORWARD_DFS;
   binary_opname* FORWARD_BFS;
   binary_opname* BACKWARD_DFS;

@@ -32,7 +32,7 @@
 MEDDLY::evmxd_pluslong::evmxd_pluslong(int dsl, domain *d, const policies &p)
  : evmxd_forest(dsl, d, INTEGER, EVPLUS, p)
 {
-  // Edge's are floats and are NOT hashed.
+  // Edge's are longs and are NOT hashed.
   setEdgeSize(sizeof(long), false);
   initializeForest();
 }
@@ -228,6 +228,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_iterator::next()
     }
     if (maxLevel == k) {
       level_change = k+1;
+      return false;
     }
     k = upLevel(k);
   } // infinite loop
@@ -266,7 +267,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_iterator::first(int k, node_handle down)
     nzp[k] = 0;
     index[k] = path[k].i(0);
     down = path[k].d(0);
-    float ev;
+    long ev;
     path[k].getEdge(0, ev);
     acc_evs[downLevel(k)] = acc_evs[k] + ev;
   }
@@ -353,7 +354,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedrow_iter::first(int k, node_handle dow
     if (0==cdown) return false;
     acc_evs[-k] = acc_evs[k];
   } else {
-    float ev;
+    long ev;
     F->getDownPtr(down, index[k], ev, cdown);
     if (0==cdown) return false;
     acc_evs[-k] = acc_evs[k] + ev;
@@ -512,7 +513,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedcol_iter::first(int k, node_handle dow
     }
     // next level is not skipped.
     // See if there is a valid path below.
-    float ev;
+    long ev;
     int cdown;
     F->getDownPtr(down, index[kpr], ev, cdown);
     if (0==cdown) return false;
@@ -529,7 +530,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedcol_iter::first(int k, node_handle dow
   
   for (int z=0; z<path[k].getNNZs(); z++) {
     index[k] = path[k].i(z);
-    float ev;
+    long ev;
     path[k].getEdge(z, ev);
     acc_evs[downLevel(k)] = acc_evs[k] + ev;
     if (first(downLevel(k), path[k].d(z))) {

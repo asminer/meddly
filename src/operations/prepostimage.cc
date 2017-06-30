@@ -36,9 +36,12 @@ namespace MEDDLY {
   class image_op_evplus;
   class relXset_evplus;
   class setXrel_evplus;
+  class tcXrel_evplus;
 
   class preimage_opname;
   class postimage_opname;
+
+  class transitive_closure_postimage_opname;
 
   class VMmult_opname;
   class MVmult_opname;
@@ -557,15 +560,18 @@ MEDDLY::image_op_evplus::image_op_evplus(const binary_opname* oc, expert_forest*
 {
   accumulateOp = acc;
 
-  if (a1->isForRelations()) {
-    argM = a1;
-    argV = a2;
-    if (a2->isForRelations()) throw error(error::MISCELLANEOUS);
-  } else {
-    argM = a2;
-    argV = a1;
-    if (!a2->isForRelations()) throw error(error::MISCELLANEOUS);
-  }
+  argV = a1;
+  argM = a2;
+
+//  if (a1->isForRelations()) {
+//    argM = a1;
+//    argV = a2;
+//    if (a2->isForRelations()) throw error(error::MISCELLANEOUS);
+//  } else {
+//    argM = a2;
+//    argV = a1;
+//    if (!a2->isForRelations()) throw error(error::MISCELLANEOUS);
+//  }
 }
 
 bool MEDDLY::image_op_evplus::isStaleEntry(const node_handle* data)
@@ -997,6 +1003,191 @@ namespace MEDDLY {
   };
 };
 
+// ******************************************************************
+// *                                                                *
+// *                     tcXrel_evplus  class                      *
+// *                                                                *
+// ******************************************************************
+
+/** Generic base for transitive closure multiplied by relation.
+    Changing what happens at the terminals can give
+    different meanings to this operation :^)
+*/
+class MEDDLY::tcXrel_evplus : public image_op_evplus {
+  public:
+    tcXrel_evplus(const binary_opname* opcode, expert_forest* tc,
+      expert_forest* trans, expert_forest* res, binary_operation* acc);
+
+  protected:
+    virtual void compute_rec(long ev, node_handle evmxd, node_handle mxd, long& resEv, node_handle& resEvmxd);
+    virtual void processTerminals(long ev, node_handle evmxd, node_handle mxd, long& resEv, node_handle& resEvmxd);
+};
+
+MEDDLY::tcXrel_evplus::tcXrel_evplus(const binary_opname* oc,
+  expert_forest* tc, expert_forest* trans, expert_forest* res, binary_operation* acc)
+: image_op_evplus(oc, tc, trans, res, acc)
+{
+}
+
+void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle mxd, long& resEv, node_handle& resEvmdd)
+{
+  // termination conditions
+  if (mxd == 0 || evmxd == 0) {
+    resEv = Inf<long>();
+    resEvmdd = 0;
+    return;
+  }
+  if (argM->isTerminalNode(mxd)) {
+    if (argV->isTerminalNode(evmxd)) {
+      processTerminals(ev, evmxd, mxd, resEv, resEvmdd);
+      return;
+    }
+    // mxd is identity
+    if (argV == resF) {
+      resEv = ev;
+      resEvmdd = resF->linkNode(evmxd);
+      return;
+    }
+  }
+
+  // check the cache
+  compute_table::search_key* Key = findResult(ev, evmxd, mxd, resEv, resEvmdd);
+  if (0==Key) {
+    return;
+  }
+
+  // check if mxd and evmdd are at the same level
+  const int evmxdLevel = argV->getNodeLevel(evmxd);
+  const int mxdLevel = argM->getNodeLevel(mxd);
+  const int rLevel = MAX(ABS(mxdLevel), ABS(evmxdLevel));
+  const int rSize = resF->getLevelSize(rLevel);
+  unpacked_node* C = unpacked_node::newFull(resF, rLevel, rSize);
+
+  // Initialize evmdd reader
+  unpacked_node* A = isLevelAbove(rLevel, evmxdLevel)
+    ? unpacked_node::newRedundant(argV, rLevel, 0L, evmxd, true)
+    : unpacked_node::newFromNode(argV, evmxd, true);
+
+  for (int i = 0; i < rSize; i++) {
+    int pLevel = argV->getNodeLevel(A->d(i));
+    unpacked_node* B = isLevelAbove(-rLevel, pLevel)
+      ? unpacked_node::newIdentity(argV, -rLevel, i, 0L, A->d(i), true)
+      : unpacked_node::newFromNode(argV, A->d(i), true);
+
+    unpacked_node* D = unpacked_node::newFull(resF, -rLevel, rSize);
+    if (rLevel > ABS(mxdLevel)) {
+      //
+      // Skipped levels in the MXD,
+      // that's an important special case that we can handle quickly.
+      for (int j = 0; j < rSize; j++) {
+        long nev = Inf<long>();
+        node_handle newstates = 0;
+        compute_rec(A->ei(i) + B->ei(j), B->d(j), mxd, nev, newstates);
+
+        D->setEdge(j, newstates == 0 ? Inf<long>() : ev + nev);
+        D->d_ref(j) = newstates;
+      }
+    }
+    else {
+      //
+      // Need to process this level in the MXD.
+      MEDDLY_DCASSERT(ABS(mxdLevel) >= ABS(pLevel));
+
+      // clear out result (important!)
+      for (int j = 0; j < rSize; j++) {
+        D->setEdge(j, Inf<long>());
+        D->d_ref(j) = 0;
+      }
+
+      // Initialize mxd readers, note we might skip the unprimed level
+      unpacked_node *Ru = unpacked_node::useUnpackedNode();
+      unpacked_node *Rp = unpacked_node::useUnpackedNode();
+      if (mxdLevel < 0) {
+        Ru->initRedundant(argM, rLevel, mxd, false);
+      } else {
+        Ru->initFromNode(argM, mxd, false);
+      }
+
+      // loop over mxd "rows"
+      for (int jz = 0; jz < Ru->getNNZs(); jz++) {
+        int j = Ru->i(jz);
+        if (0 == B->d(j)) {
+          continue;
+        }
+
+        if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->d(jz)))) {
+          Rp->initIdentity(argM, rLevel, j, Ru->d(jz), false);
+        } else {
+          Rp->initFromNode(argM, Ru->d(jz), false);
+        }
+
+        // loop over mxd "columns"
+        for (int jpz = 0; jpz < Rp->getNNZs(); jpz++) {
+          int jp = Rp->i(jpz);
+          // ok, there is an i->j "edge".
+          // determine new states to be added (recursively)
+          // and add them
+          long nev = Inf<long>();
+          node_handle newstates = 0;
+          compute_rec(A->ei(i) + B->ei(j), B->d(j), Rp->d(jpz), nev, newstates);
+          if (0==newstates) {
+            continue;
+          }
+          MEDDLY_DCASSERT(nev != Inf<long>());
+          nev += ev;
+          if (0 == D->d(jp)) {
+            D->setEdge(jp, nev);
+            D->d_ref(jp) = newstates;
+            continue;
+          }
+          // there's new states and existing states; union them.
+          node_handle oldjp = D->d(jp);
+          long dev = Inf<long>();
+          node_handle dnode = 0;
+          accumulateOp->compute(nev, newstates, D->ei(jp), oldjp, dev, dnode);
+          D->setEdge(jp, dev);
+          D->d_ref(jp) = dnode;
+
+          resF->unlinkNode(oldjp);
+          resF->unlinkNode(newstates);
+        } // for j
+
+      } // for i
+
+      unpacked_node::recycle(Rp);
+      unpacked_node::recycle(Ru);
+    } // else
+
+    long cev = Inf<long>();
+    node_handle cnode = 0;
+    resF->createReducedNode(i, D, cev, cnode);
+    C->setEdge(i, cev);
+    C->d_ref(i) = cnode;
+
+    unpacked_node::recycle(B);
+  }
+
+  // cleanup mdd reader
+  unpacked_node::recycle(A);
+
+  resF->createReducedNode(-1, C, resEv, resEvmdd);
+#ifdef TRACE_ALL_OPS
+  printf("computed new tcXrel(<%ld, %d>, %d) = <%ld, %d>\n", ev, evmdd, mxd, resEv, resEvmdd);
+#endif
+  saveResult(Key, ev, evmxd, mxd, resEv, resEvmdd);
+}
+
+void MEDDLY::tcXrel_evplus::processTerminals(long ev, node_handle evmxd, node_handle mxd, long& resEv, node_handle& resEvmxd)
+{
+  long evmddval;
+  long mxdval;
+  long rval;
+  argV->getValueFromHandle(evmxd, evmddval);
+  argM->getValueFromHandle(mxd, mxdval);
+  rval = evmddval * mxdval;
+  resEv = ev;
+  resEvmxd = resF->handleForValue(rval);
+}
 
 // ************************************************************************
 // *                                                                      *
@@ -1116,13 +1307,56 @@ MEDDLY::postimage_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     return new mtvect_mtmatr<bool>(this, a1, a2, r, acc);
   }
   else if(a1->getEdgeLabeling() == forest::EVPLUS) {
-    return new evplusvect_mtmatr<int>(this, a1, a2, r, acc);
+      return new evplusvect_mtmatr<int>(this, a1, a2, r, acc);
   }
   else {
     throw error(error::TYPE_MISMATCH);
   }
 }
 
+// ******************************************************************
+// *                                                                *
+// *           transitive_closure_postimage_opname class            *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::transitive_closure_postimage_opname : public binary_opname {
+  public:
+  transitive_closure_postimage_opname();
+    virtual binary_operation* buildOperation(expert_forest* a1,
+      expert_forest* a2, expert_forest* r) const;
+};
+
+MEDDLY::transitive_closure_postimage_opname::transitive_closure_postimage_opname()
+ : binary_opname("Transitive Closure Post-image")
+{
+}
+
+MEDDLY::binary_operation*
+MEDDLY::transitive_closure_postimage_opname::buildOperation(expert_forest* a1, expert_forest* a2,
+  expert_forest* r) const
+{
+  if (0==a1 || 0==a2 || 0==r) return 0;
+
+  if (
+    (a1->getDomain() != r->getDomain()) ||
+    (a2->getDomain() != r->getDomain())
+  )
+    throw error(error::DOMAIN_MISMATCH);
+
+  if (
+    !a1->isForRelations()    ||
+    !a2->isForRelations()   ||
+    !r->isForRelations()     ||
+    (a1->getEdgeLabeling() != forest::EVPLUS) ||
+    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
+    (r->getEdgeLabeling() != forest::EVPLUS)
+  )
+    throw error(error::TYPE_MISMATCH);
+
+  binary_operation* acc = getOperation(UNION, r, r, r);
+  return new tcXrel_evplus(this, a1, a2, r, acc);
+}
 
 // ******************************************************************
 // *                                                                *
@@ -1180,7 +1414,6 @@ MEDDLY::VMmult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
       throw error(error::TYPE_MISMATCH);
   }
 }
-
 
 // ******************************************************************
 // *                                                                *
@@ -1258,6 +1491,11 @@ MEDDLY::binary_opname* MEDDLY::initializePreImage()
 MEDDLY::binary_opname* MEDDLY::initializePostImage()
 {
   return new postimage_opname;
+}
+
+MEDDLY::binary_opname* MEDDLY::initializeTCPostImage()
+{
+  return new transitive_closure_postimage_opname;
 }
 
 MEDDLY::binary_opname* MEDDLY::initializeVMmult()

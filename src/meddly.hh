@@ -563,6 +563,10 @@ inline void MEDDLY::enumerator::getValue(int &v) const {
   if (I && is_valid) I->getValue(v);
 }
 
+inline void MEDDLY::enumerator::getValue(long &v) const {
+  if (I && is_valid) I->getValue(v);
+}
+
 inline void MEDDLY::enumerator::getValue(float &v) const {
   if (I && is_valid) I->getValue(v);
 }

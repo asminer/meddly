@@ -108,6 +108,11 @@ void MEDDLY::enumerator::iterator::getValue(int &) const
   throw error(error::TYPE_MISMATCH);
 }
 
+void MEDDLY::enumerator::iterator::getValue(long &) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
 void MEDDLY::enumerator::iterator::getValue(float &) const
 {
   throw error(error::TYPE_MISMATCH);

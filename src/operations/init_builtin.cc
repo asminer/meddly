@@ -64,6 +64,7 @@
 #include "mm_mult.h"
 
 #include "minimum_witness.h"
+#include "transitive_closure.h"
 
 #include "mpz_object.h"
 
@@ -105,6 +106,7 @@ namespace MEDDLY {
 
   const binary_opname* PRE_IMAGE = 0;
   const binary_opname* POST_IMAGE = 0;
+  const binary_opname* TC_POST_IMAGE = 0;
   const binary_opname* REACHABLE_STATES_DFS = 0;
   const binary_opname* REACHABLE_STATES_BFS = 0;
   const binary_opname* REVERSE_REACHABLE_DFS = 0;
@@ -180,6 +182,7 @@ void MEDDLY::builtin_initializer::setup()
 
   initP(MEDDLY::PRE_IMAGE,            PRE_IMAGE,    initializePreImage()    );
   initP(MEDDLY::POST_IMAGE,           POST_IMAGE,   initializePostImage()   );
+  initP(MEDDLY::TC_POST_IMAGE,        TC_POST_IMAGE,initializeTCPostImage() );
   initP(MEDDLY::REACHABLE_STATES_DFS, FORWARD_DFS,  initializeForwardDFS()  );
   initP(MEDDLY::REACHABLE_STATES_BFS, FORWARD_BFS,  initializeForwardBFS()  );
   initP(MEDDLY::REVERSE_REACHABLE_DFS,BACKWARD_DFS, initializeBackwardDFS() );
@@ -245,6 +248,7 @@ void MEDDLY::builtin_initializer::cleanup()
 
   cleanPair(PRE_IMAGE,      MEDDLY::PRE_IMAGE);
   cleanPair(POST_IMAGE,     MEDDLY::POST_IMAGE);
+  cleanPair(TC_POST_IMAGE,  MEDDLY::TC_POST_IMAGE);
   cleanPair(FORWARD_DFS,    MEDDLY::REACHABLE_STATES_DFS);
   cleanPair(FORWARD_BFS,    MEDDLY::REACHABLE_STATES_BFS);
   cleanPair(BACKWARD_DFS,   MEDDLY::REVERSE_REACHABLE_DFS);
