@@ -154,15 +154,21 @@ bool createQueenNodes(forest* f, int q, dd_edge &col, dd_edge &cp, dd_edge &cm)
   return error;
 }
 
-int main()
+int main(int argc, const char** argv)
 {
   timer watch;
   CM = MEDDLY_getComputeManager();
   assert(CM);
   printf("Using %s\n", MEDDLY_getLibraryInfo(0));
-  printf("N-Queens solutions.  Enter the value for N:\n");
-  scanf("%d", &N);
+  if (argc<2) {
+    printf("N-Queens solutions.  Enter the value for N:\n");
+    scanf("%d", &N);
+  } else {
+    N = atoi(argv[1]);
+  }
   if (N<1) return 0;
+  printf("%d-Queens solutions.\n", N);
+
   scratch = new int[N+1];
   
   watch.note_time();
