@@ -316,9 +316,14 @@ class binary_compute_cache : public compute_cache {
         }
         void set(int A, int B) { a = A; b = B; }
         bool operator<(const key& k) const {
+          /*
           if (a < k.a) return true;
           if (a > k.a) return false;
           return (b < k.b);
+          */
+          if (b < k.b) return true;
+          if (b > k.b) return false;
+          return (a < k.a);
         }
 
         int a;

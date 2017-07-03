@@ -219,6 +219,11 @@ namespace MEDDLY {
     return getLibraryInfo(what);
   };
 
+  /** Front-end function to destroy a forest.
+  */
+  class forest;
+  void destroyForest(forest* &f);
+
   // ******************************************************************
   // *                                                                *
   // *                                                                *
@@ -833,10 +838,6 @@ namespace MEDDLY {
     friend void MEDDLY::destroyForest(forest* &f);
   };
 
-  /** Front-end function to destroy a forest.
-  */
-  void destroyForest(forest* &f);
-
   // ******************************************************************
   // *                                                                *
   // *                                                                *
@@ -889,6 +890,56 @@ namespace MEDDLY {
   // *                                                                *
   // ******************************************************************
 
+  class domain;
+
+  /** Front-end function to create a domain with the given variables.
+        @param  vars    List of variables, in order.
+                        vars[i] gives the variable at level i.
+                        Note that vars[0] should be 0.
+        @param  N       Number of variables.
+                        vars[N] refers to the top-most variable.
+
+        @return A new domain.
+  */
+  domain* createDomain(variable** vars, int N);
+
+  /** Front-end function to create an empty domain.
+      This is required because domain is an abstract class.
+  */
+  inline domain* createDomain() { 
+    return createDomain((variable**) 0, 0);
+  }
+
+  /** Front-end function to create a domain with given variable bounds.
+      Equivalent to creating an empty domain and then building the
+      domain bottom up.
+  
+        @param  bounds  variable bounds.
+                        bounds[i] gives the bound for the variable
+                        at level i.
+        @param  N       Number of variables.
+
+        @return A new domain.
+  */
+  domain* createDomainBottomUp(const int* bounds, int N);
+
+
+#ifdef _MSC_VER
+  __declspec(deprecated)
+#endif
+#ifdef __GNUC__
+  __attribute__ ((deprecated))
+#endif
+  /// This function is deprecated as of version 0.4; 
+  /// use "createDomain" instead.
+  inline domain* MEDDLY_createDomain() {
+    return createDomain();
+  }
+
+  /** Front-end function to destroy a domain.
+      For consistency.
+  */
+  void destroyDomain(domain* &d);
 
   /** Domain class.
       Abstract base class.
@@ -1021,54 +1072,6 @@ namespace MEDDLY {
       int nVars;
   };
 
-  /** Front-end function to create a domain with the given variables.
-        @param  vars    List of variables, in order.
-                        vars[i] gives the variable at level i.
-                        Note that vars[0] should be 0.
-        @param  N       Number of variables.
-                        vars[N] refers to the top-most variable.
-
-        @return A new domain.
-  */
-  domain* createDomain(variable** vars, int N);
-
-  /** Front-end function to create an empty domain.
-      This is required because domain is an abstract class.
-  */
-  inline domain* createDomain() { 
-    return createDomain((variable**) 0, 0);
-  }
-
-  /** Front-end function to create a domain with given variable bounds.
-      Equivalent to creating an empty domain and then building the
-      domain bottom up.
-  
-        @param  bounds  variable bounds.
-                        bounds[i] gives the bound for the variable
-                        at level i.
-        @param  N       Number of variables.
-
-        @return A new domain.
-  */
-  domain* createDomainBottomUp(const int* bounds, int N);
-
-
-#ifdef _MSC_VER
-  __declspec(deprecated)
-#endif
-#ifdef __GNUC__
-  __attribute__ ((deprecated))
-#endif
-  /// This function is deprecated as of version 0.4; 
-  /// use "createDomain" instead.
-  inline domain* MEDDLY_createDomain() {
-    return createDomain();
-  }
-
-  /** Front-end function to destroy a domain.
-      For consistency.
-  */
-  void destroyDomain(domain* &d);
 
   // ******************************************************************
   // *                                                                *

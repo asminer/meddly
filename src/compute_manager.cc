@@ -194,14 +194,14 @@ void MEDDLY::expert_compute_manager::apply(
 
 void MEDDLY::expert_compute_manager::showComputeTable(FILE* strm) const
 {
-  if (cc != 0) if (cc->getNumEntries() > 0) { cc->show(strm, true); }
+  if (cc != 0) if (cc->getNumEntries() > 0) { cc->show(strm, false); }
 
   // Other compute tables may exist (!= cc). Clear those as well.
   std::map<builtin_op_key, op_info>::iterator curr = builtinOpEntries->begin();
   std::map<builtin_op_key, op_info>::iterator end = builtinOpEntries->end();
   for ( ; curr != end; ++curr) {
     compute_cache* cache = (curr->second).cc;
-    if (cache != cc) cache->show(strm, true);
+    if (cache != cc) cache->show(strm, false);
   }
 }
 
@@ -241,7 +241,7 @@ void MEDDLY::expert_compute_manager::removeStales(expert_forest* f)
       if (opInfo.p[i].getForest() == f) { clearCC = true; break; }
     }
     if (clearCC) {
-      // fprintf(stderr, "Removing stale entries for %s\n", opInfo.op->getName());
+//    fprintf(stdout, "Removing stale entries for %s\n", opInfo.op->getName());
       opInfo.cc->removeStales();
     }
   }
