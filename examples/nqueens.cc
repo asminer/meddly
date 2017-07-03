@@ -147,15 +147,31 @@ void createQueenNodes(forest* f, int q, dd_edge &col, dd_edge &cp, dd_edge &cm)
   f->createEdgeForVar(q, false, scratch, cm);
 }
 
-int main()
+
+bool processArgs(int argc, const char** argv)
 {
+  if (argc<2) return false;
+  if (argc>3) return false;
+  N = atoi(argv[1]); 
+  if (N<1) return false;
+  return true;
+}
+
+int usage(const char* who)
+{
+  printf("Usage: %s N\n\n\t        N:  board dimension\n\n", who);
+  return 1;
+}
+
+int main(int argc, const char** argv)
+{
+  if (!processArgs(argc, argv)) return usage(argv[0]);
   timer watch;
   initialize();
   CM = getComputeManager();
   assert(CM);
   printf("Using %s\n", getLibraryInfo(0));
-  printf("N-Queens solutions.  Enter the value for N:\n");
-  scanf("%d", &N);
+  printf("%d-Queens solutions.\n", N);
   if (N<1) return 0;
   scratch = new int[N+1];
   
