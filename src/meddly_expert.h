@@ -199,6 +199,8 @@ namespace MEDDLY {
   /// Safely destroy the given numerical operation.
   void destroyOperation(numerical_operation* &op);
 
+  /// 
+  void destroyOpInternal(operation* op);
   
   /// Builds an initializer for MEDDLY's builtin operations.
   op_initializer* makeBuiltinInitializer();
