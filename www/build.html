@@ -1,0 +1,84 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<!-- $Id: build.html 103 2010-07-21 18:32:25Z asminer $ -->
+<html>
+<head>
+<title>MEDDLY: Multi-terminal and Edge-valued Decision Diagram LibrarY</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="meddly.css">
+<link rel="stylesheet" type="text/css" media="print" href="print.css">
+</head>
+<body>
+
+<div id="content">
+
+<h1 id="hometitle">Building MEDDLY</h1>
+
+<p>
+MEDDLY follows the GNU style of building applications
+from the command line,
+and a typical build involves running
+<tt>configure</tt>
+and
+<tt>make</tt>.
+More detailed build instructions are given in the
+<tt>README</tt> file.
+</p>
+
+<h2>System Requirements</h2>
+<p>
+The following development tools are used to build the library.
+</p>
+<ul>
+<li>A C++ compiler (it is known to work with g++, the GNU compiler) </li>
+<li><tt>autoconf</tt> version 2.59 or higher </li>
+<li><tt>automake</tt> </li>
+<li><tt>make</tt> </li>
+<li><tt>libtool</tt> </li>
+</ul>
+<p>
+The library has been built and tested successfully on a variety of
+Unix-like platforms, incuding Linux, Mac OS X, Solaris, and 
+Windows (using <a href="http://www.cygwin.com/" target="_new">Cygwin</a>).
+</p>
+
+<h2>Recommended Tools and Libraries</h2>
+<ul>
+<li> <tt>doxygen</tt>, to build the documentation for the library
+<li> <tt>gmp</tt>, 
+the <a href="http://gmplib.org/" target="_new">GNU MP library</a>
+for arbitrary-precision arithmetic.
+MEDDLY utilizes this library for certain operations
+(such as determining the cardinality of a large set).
+It is possible to disable this functionality on systems without <tt>gmp</tt>
+installed; see the <tt>README</tt> file for details.
+</ul>
+
+
+<!-- Common sections of all pages -->
+
+
+<div id="footer">
+<p id="copyright">Copyright &copy; 2009-2010, Iowa State University Research Foundation, Inc.</p>
+</div>
+</div>
+
+<div id="sidebar">
+
+<ul class="navlist">
+<li><a href="index.html">Home</a></li>
+<li><a href="obtain.html">Obtain MEDDLY</a></li>
+<li><a href="build.html" class="current">Build MEDDLY</a></li>
+<li><a href="features.html">Features</a></li>
+<li><a href="history.html">Version History</a></li>
+<li><a href="papers.html">Publications</a></li>
+</ul>
+
+
+<p id="sflogo">
+Hosted by:<br>
+<a href="http://sourceforge.net/projects/meddly"><img src="http://sflogo.sourceforge.net/sflogo.php?group_id=255553&amp;type=16" width="150" height="40" alt="Get Decision diagram library at SourceForge.net. Fast, secure and Free Open Source software downloads" /></a>
+</p>
+
+</div>
+</body>
+</html>
