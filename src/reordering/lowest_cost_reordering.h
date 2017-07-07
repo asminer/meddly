@@ -1,4 +1,3 @@
-// $Id$
 
 #ifndef LOWEST_COST_REORDERING_H
 #define LOWEST_COST_REORDERING_H

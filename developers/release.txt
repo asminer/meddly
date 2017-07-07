@@ -1,0 +1,14 @@
+
+Preferred mechanism to "release" the library:
+
+(0) svn update and commit
+
+(1) make dist; rename tarball
+
+(2) upload to sourceforge (under "Files")
+
+(3) bump version in configure.ac
+
+(4) update www/index and history; publish
+
+(5) bask in the glory of a job well-done

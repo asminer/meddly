@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     termview: terminal viewing utility for Meddly trace data.
     Copyright (C) 2015, Iowa State University Research Foundation, Inc.

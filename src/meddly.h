@@ -1,5 +1,3 @@
-  
-// $Id$
 
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.

@@ -1,0 +1,40 @@
+
+Preferred mechanism for disruptive library changes: branching.
+
+
+MAKE A BRANCH:
+
+(0) Copy the trunk into a new subdirectory under branches:
+
+    $ svn copy url:for/trunk  url:for/branches/mybranch
+
+
+(1) svn update to get the branch
+
+
+MERGE A BRANCH BACK:
+
+(0) Merge any trunk changes into the branch.  Inside the branch:
+
+    $ svn merge url:for/trunk
+
+
+(1) Build and test; resolve any issues
+
+(2) Commit changes (svn commit)
+
+
+(3) Change to trunk working copy
+
+(4) svn update (should be nothing)
+
+(5) svn merge --reintegrate  url:for/branches/mybranch
+
+(6) Build and test; resolve any issues
+
+(7) Commit changes (svn commit)
+
+(8) Delete the branch:
+
+    $ svn delete url:for/branches/mybranch
+
