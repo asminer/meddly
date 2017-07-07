@@ -210,16 +210,16 @@ MEDDLY::specialized_operation* MEDDLY::constraint_dfs_opname::buildOperation(
 // ******************************************************************
 
 const int MEDDLY::constraint_bckwd_dfs::NODE_INDICES_IN_KEY[4] = {
-  0,
-  sizeof(node_handle) / sizeof(node_handle),
-  2 * sizeof(node_handle) / sizeof(node_handle),
-  (3 * sizeof(node_handle) + sizeof(long)) / sizeof(node_handle)
+  sizeof(long) / sizeof(node_handle),
+  (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle),
+  (sizeof(long) + 2 * sizeof(node_handle)) / sizeof(node_handle),
+  (3 * sizeof(node_handle) + 2 * sizeof(long)) / sizeof(node_handle)
 };
 
 MEDDLY::constraint_bckwd_dfs::constraint_bckwd_dfs(const minimum_witness_opname* code,
   expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
   : common_constraint(code,
-      3 * (sizeof(node_handle)) / sizeof(node_handle),
+      (sizeof(long) + 3 * sizeof(node_handle)) / sizeof(node_handle),
       (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle),
       cons, arg, trans, res)
 {
@@ -255,6 +255,7 @@ MEDDLY::compute_table::search_key* MEDDLY::constraint_bckwd_dfs::findResult(long
   compute_table::search_key* key = useCTkey();
   MEDDLY_DCASSERT(key);
   key->reset();
+  key->write(aev);
   key->writeNH(a);
   key->writeNH(b);
   key->writeNH(c);
@@ -267,7 +268,8 @@ MEDDLY::compute_table::search_key* MEDDLY::constraint_bckwd_dfs::findResult(long
   cacheFind.read(dev);
   d = resF->linkNode(cacheFind.readNH());
   if (d != 0) {
-    dev += aev + bev;
+//    dev += aev + bev;
+    dev += bev;
   }
   else {
     MEDDLY_DCASSERT(dev == Inf<long>());
@@ -288,7 +290,8 @@ void MEDDLY::constraint_bckwd_dfs::saveResult(compute_table::search_key* key,
     entry.writeResult(Inf<long>());
   }
   else {
-    entry.writeResult(dev - aev - bev);
+//    entry.writeResult(dev - aev - bev);
+    entry.writeResult(dev - bev);
   }
   entry.writeResultNH(resF->cacheNode(d));
   CT->addEntry();
@@ -689,8 +692,8 @@ MEDDLY::constraint_saturation::constraint_saturation(constraint_bckwd_dfs* p,
   expert_forest* cons, expert_forest* arg, expert_forest* res)
   : specialized_operation(nullptr,
       (arg->isFullyReduced()
-          ? (2 * (sizeof(long) + sizeof(node_handle)) + sizeof(int)) / sizeof(node_handle)
-          : 2 * (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle)),
+          ? (sizeof(long) + 2 * sizeof(node_handle) + sizeof(int)) / sizeof(node_handle)
+          : (sizeof(long) + 2 * sizeof(node_handle)) / sizeof(node_handle)),
       (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle))
 {
   MEDDLY_DCASSERT(cons->isEVPlus());
@@ -713,14 +716,14 @@ MEDDLY::constraint_saturation::constraint_saturation(constraint_bckwd_dfs* p,
 
   if (argF->isFullyReduced()) {
     NODE_INDICES_IN_KEY[0] = sizeof(long) / sizeof(node_handle);
-    NODE_INDICES_IN_KEY[1] = (2 * sizeof(long) + sizeof(node_handle)) / sizeof(node_handle);
+    NODE_INDICES_IN_KEY[1] = (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle);
     // Store level in key for fully-reduced forest
-    NODE_INDICES_IN_KEY[2] = (3 * sizeof(long) + 2 * sizeof(node_handle) + sizeof(int)) / sizeof(node_handle);
+    NODE_INDICES_IN_KEY[2] = (2 * sizeof(long) + 2 * sizeof(node_handle) + sizeof(int)) / sizeof(node_handle);
   }
   else {
     NODE_INDICES_IN_KEY[0] = sizeof(long) / sizeof(node_handle);
-    NODE_INDICES_IN_KEY[1] = (2 * sizeof(long) + sizeof(node_handle)) / sizeof(node_handle);
-    NODE_INDICES_IN_KEY[2] = (3 * sizeof(long) + 2 * sizeof(node_handle)) / sizeof(node_handle);
+    NODE_INDICES_IN_KEY[1] = (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle);
+    NODE_INDICES_IN_KEY[2] = 2 * (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle);
   }
 }
 
@@ -767,7 +770,7 @@ MEDDLY::compute_table::search_key* MEDDLY::constraint_saturation::findResult(lon
   key->reset();
   key->write(aev);
   key->writeNH(a);
-  key->write(bev);
+//  key->write(bev);
   key->writeNH(b);
   if(argF->isFullyReduced()) {
     // Level is part of key for fully-reduced forest
@@ -778,6 +781,13 @@ MEDDLY::compute_table::search_key* MEDDLY::constraint_saturation::findResult(lon
   if (!cacheFind) return key;
   cacheFind.read(cev);
   c = resF->linkNode(cacheFind.readNH());
+  if (c != 0) {
+    cev += bev;
+  }
+  else {
+    MEDDLY_DCASSERT(cev == Inf<long>());
+  }
+
   doneCTkey(key);
   return 0;
 }
@@ -788,7 +798,13 @@ void MEDDLY::constraint_saturation::saveResult(compute_table::search_key* key,
   consF->cacheNode(a);
   argF->cacheNode(b);
   compute_table::entry_builder &entry = CT->startNewEntry(key);
-  entry.writeResult(cev);
+  if (c == 0) {
+    entry.writeResult(Inf<long>());
+  }
+  else {
+    MEDDLY_DCASSERT(cev - bev >= 0);
+    entry.writeResult(cev - bev);
+  }
   entry.writeResultNH(resF->cacheNode(c));
   CT->addEntry();
 }
