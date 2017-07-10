@@ -1,40 +1,44 @@
 
-Preferred mechanism for disruptive library changes: branching.
+Preferred mechanism for Meddly feature additions: branching.
 
 
 MAKE A BRANCH:
 
-(0) Copy the trunk into a new subdirectory under branches:
+(0) Create a local branch and switch to it
 
-    $ svn copy url:for/trunk  url:for/branches/mybranch
+    $ git checkout -b my_branch
 
 
-(1) svn update to get the branch
+(1) Optionally, share that branch with the server:
+
+    $ git push origin my_branch
 
 
 MERGE A BRANCH BACK:
 
-(0) Merge any trunk changes into the branch.  Inside the branch:
+(0) Commit desired changes into the branch.
 
-    $ svn merge url:for/trunk
+(1) Switch back to master branch.
 
+    $ git checkout master
 
-(1) Build and test; resolve any issues
+(2) Make sure you have the latest code from the server
 
-(2) Commit changes (svn commit)
+    $ git pull
 
+    Or do a git fetch followed by git merge.
 
-(3) Change to trunk working copy
+(3) Merge your branch into the master
 
-(4) svn update (should be nothing)
+    $ git merge my_branch
 
-(5) svn merge --reintegrate  url:for/branches/mybranch
+(4) Build and test; resolve any issues
 
-(6) Build and test; resolve any issues
+(5) Commit changes 
 
-(7) Commit changes (svn commit)
+(6) Delete the branch when you're done with it:
 
-(8) Delete the branch:
+    $ git branch -d my_branch             (local branch)
 
-    $ svn delete url:for/branches/mybranch
+    $ git push origin --delete my_branch  (remote branch)
 
