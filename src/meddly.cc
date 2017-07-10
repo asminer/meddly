@@ -465,7 +465,7 @@ const char* MEDDLY::getLibraryInfo(int what)
 ";
 
     case 5:
-      return REVISION_DATE;
+      return MEDDLY_DATE;
   }
   return 0;
 }

@@ -4,7 +4,7 @@ if [ $# -ne 0 ]; then
   printf "\nUsage: $0 \n\n"
   printf "Creates a release based on the version number in configure.ac.\n"
   printf "Automatically updates the revision date in the source,\n"
-  printf "and creates a branch of the form releases/v[version].\n\n"
+  printf "and creates a tag for the release, named v[version].\n\n"
   printf "Before running, be sure that all modified files have been committed\n"
   printf "to the repository.\n\n"
   exit 0
@@ -16,7 +16,7 @@ version=`awk '/AC_INIT/{print $2}' configure.ac | tr -d '[],'`
 printf "Creating release for version $version\n"
 
 rdate=`date +"%Y %B %d"`
-printf "const char* REVISION_DATE = \"%s\";\n" "$rdate" > src/revision.h
+printf "const char* MEDDLY_DATE = \"%s\";\n" "$rdate" > src/revision.h
 
 nextver=`awk -F. '{for (i=1; i<NF; i++) printf($i"."); print $NF+1}' <<< $version`
 
@@ -29,11 +29,12 @@ git commit -m "Updated release date for $version"
 git push
 
 #
-# Create and publish a branch for $version
+# Create and publish a tag for $version
 #
 
-git branch releases/v$version
-git push origin releases/v$version
+git tag -a "v$version" -m "Tag for release $version"
+git push origin v$version
+ 
  
 #
 # Build distribution
