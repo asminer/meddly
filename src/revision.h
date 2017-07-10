@@ -1,2 +1,1 @@
-const int REVISION_NUMBER = 0 ;
-const char* REVISION_DATE = "";
+const char* REVISION_DATE = "2017 July 07";

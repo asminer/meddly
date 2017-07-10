@@ -4,6 +4,7 @@ autom4te.cache
 compile
 config.*
 configure
+configure.ac.old
 depcomp
 include/
 install-sh
