@@ -932,7 +932,7 @@ class MEDDLY::initializer_list {
 #ifndef OLD_NODE_HEADERS
 class MEDDLY::node_headers {
   public:
-    node_headers(node_storage &NS, forest::statset &stats);
+    node_headers(expert_forest &P);
     ~node_headers();
 
     /**
@@ -976,6 +976,21 @@ class MEDDLY::node_headers {
         getFreeNodeHandle().
     */
     void recycleNodeHandle(node_handle p);
+
+    /**
+        Get largest handle of active nodes.
+    */
+    node_handle lastUsedHandle() const;
+
+    /**
+        Swap two nodes.
+        Used for in-place forest reordering.
+          @param  p               First node
+          @param  q               Second node
+          @param  swap_incounts   If true, swap everything;
+                                  if false, don't swap incoming counts.
+    */
+    void swapNodes(node_handle p, node_handle q, bool swap_incounts);
 
   public: // address stuff
 
@@ -1052,6 +1067,10 @@ class MEDDLY::node_headers {
     */
     void doneWithMarks();
 
+  public: // for debugging
+
+    void dumpInternal(output &s) const;
+
   private:  // helper methods
 
     /// Increase the number of node handles.
@@ -1062,6 +1081,12 @@ class MEDDLY::node_headers {
 
     /// Allocate marks if needed.
     void allocateMarks();
+
+    node_handle getNextOf(node_handle p) const;
+    void setNextOf(node_handle p, node_handle n);
+    void deactivate(node_handle p);
+  public:
+    bool isDeactivated(node_handle p) const;
 
   private:
     
@@ -1118,11 +1143,8 @@ class MEDDLY::node_headers {
     /// Are we using the pessimistic strategy?
     bool pessimistic;
 
-    /// Node storage, needed for some recycling
-    node_storage &NS;
-
-    /// Memory stats
-    forest::statset &stats;
+    /// Parent forest, needed for recycling
+    expert_forest &parent;
 
     static const int a_min_size = 1024;
 };
@@ -2248,14 +2270,26 @@ class MEDDLY::expert_forest: public forest
     */
     void moveNodeOffset(node_handle node, node_address old_addr, node_address new_addr);
     friend class MEDDLY::node_storage;
+#ifndef OLD_NODE_HEADERS
+    friend class MEDDLY::node_headers;  // calls deleteNode().
+#endif
 
     friend class MEDDLY::global_rebuilder;
 
   // ------------------------------------------------------------
   // helpers for this class
 
+#ifdef OLD_NODE_HEADERS
     void handleNewOrphanNode(node_handle node);
+#endif
+
+    /**
+        Disconnects all downward pointers from p,
+        and removes p from the unique table.
+    */
     void deleteNode(node_handle p);
+
+#ifdef OLD_NODE_HEADERS
     void zombifyNode(node_handle p);
 
     /// Determine a node handle that we can use.
@@ -2263,6 +2297,7 @@ class MEDDLY::expert_forest: public forest
 
     /// Release a node handle back to the free pool.
     void recycleNodeHandle(node_handle p);
+#endif
 
 
     /** Apply reduction rule to the temporary node and finalize it. 
@@ -2377,6 +2412,9 @@ class MEDDLY::expert_forest: public forest
     char a_lowest_index;
     /// Next time we shink the address list.
     node_handle a_next_shrink;
+#else
+
+    node_headers nodeHeaders;
 #endif
 
 

@@ -457,9 +457,15 @@ MEDDLY::unpacked_node::freeRecycled()
 
 #ifndef OLD_NODE_HEADERS
 
-inline void MEDDLY::node_headers::setPessimistic(pess)
+inline void MEDDLY::node_headers::setPessimistic(bool pess)
 {
   pessimistic = pess;
+}
+
+inline MEDDLY::node_handle
+MEDDLY::node_headers::lastUsedHandle() const
+{
+  return a_last;
 }
 
 inline MEDDLY::node_address 
@@ -566,20 +572,16 @@ MEDDLY::node_headers::uncacheNode(MEDDLY::node_handle p)
   
   if (0==address[p].offset) {
       // we are a zombie
-      stats.zombie_nodes--;
+      parent.stats.zombie_nodes--;
       recycleNodeHandle(p);
   } else {
       // We're still active
       // See if we're now completely disconnected
       // and if so, tell parent to recycle node storage
       if (0==address[p].incoming_count) {
-        stats.orphan_nodes--;
+        parent.stats.orphan_nodes--;
 
-        // TBD!!!!!
-        // we need to unhash this node first!!!!
-        // FIX FIX FIX FIX!!!!
-        NS.unlinkDownAndRecycle(address[p].offset);
-        address[p].offset = 0;
+        parent.deleteNode(p);
         recycleNodeHandle(p);
       }
   }
@@ -614,8 +616,8 @@ MEDDLY::node_headers::linkNode(node_handle p)
 
   if (0==address[p].incoming_count) {
     // Reclaim an orphan node
-    stats.reclaimed_nodes++;
-    stats.orphan_nodes--;
+    parent.stats.reclaimed_nodes++;
+    parent.stats.orphan_nodes--;
   }
 
   address[p].incoming_count++;
@@ -633,7 +635,7 @@ MEDDLY::node_headers::unlinkNode(node_handle p)
 {
   MEDDLY_DCASSERT(usesIncomingCounts); // or do we just return?  TBD
 
-  if (p<1) return p;    // terminal node
+  if (p<1) return;    // terminal node
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(p>0);
   MEDDLY_DCASSERT(p<=a_last);
@@ -654,11 +656,7 @@ MEDDLY::node_headers::unlinkNode(node_handle p)
   //
 
   if (0==address[p].cache_count) {
-        // TBD!!!!!
-        // we need to unhash this node first!!!!
-        // FIX FIX FIX FIX!!!!
-        NS.unlinkDownAndRecycle(address[p].offset);
-        address[p].offset = 0;
+        parent.deleteNode(p);
         recycleNodeHandle(p);
         return;
   }
@@ -667,18 +665,14 @@ MEDDLY::node_headers::unlinkNode(node_handle p)
     //
     // Make this a zombie
     //
-
-        // TBD!!!!!
-        // we need to unhash this node first!!!!
-        // FIX FIX FIX FIX!!!!
-    NS.unlinkDownAndRecycle(address[p].offset);
+    parent.deleteNode(p);
     address[p].offset = 0;
-    stats.zombie_nodes++;
+    parent.stats.zombie_nodes++;
   } else {
     //
     // We're disconnected but sticking around
     //
-    stats.orphan_nodes++;
+    parent.stats.orphan_nodes++;
   }
 }
 
@@ -731,6 +725,44 @@ inline void
 MEDDLY::node_headers::doneWithMarks()
 {
   // Cannot do anything
+}
+
+inline MEDDLY::node_handle
+MEDDLY::node_headers::getNextOf(node_handle p) const
+{
+  MEDDLY_DCASSERT(address);
+  MEDDLY_DCASSERT(p>0);
+  MEDDLY_DCASSERT(p<=a_last);
+  MEDDLY_DCASSERT(0==address[p].level);
+  return address[p].offset;
+}
+
+inline void
+MEDDLY::node_headers::setNextOf(node_handle p, node_handle n)
+{
+  MEDDLY_DCASSERT(address);
+  MEDDLY_DCASSERT(p>0);
+  MEDDLY_DCASSERT(p<=a_last);
+  MEDDLY_DCASSERT(0==address[p].level);
+  address[p].offset = n;
+}
+
+inline void
+MEDDLY::node_headers::deactivate(node_handle p)
+{
+  MEDDLY_DCASSERT(address);
+  MEDDLY_DCASSERT(p>0);
+  MEDDLY_DCASSERT(p<=a_last);
+  address[p].level = 0;
+}
+
+inline bool
+MEDDLY::node_headers::isDeactivated(node_handle p) const
+{
+  MEDDLY_DCASSERT(address);
+  MEDDLY_DCASSERT(p>0);
+  MEDDLY_DCASSERT(p<=a_last);
+  return (0==address[p].level);
 }
 
 #endif // #ifndef OLD_NODE_HEADERS
@@ -1147,42 +1179,47 @@ MEDDLY::expert_forest::useExpertDomain()
 // Node address information
 // --------------------------------------------------
 
-#ifdef OLD_NODE_HEADERS
 
 inline MEDDLY::node_address
 MEDDLY::expert_forest::getNodeAddress(node_handle p) const
 {
+#ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(isValidNonterminalIndex(p));
   return address[p].offset;
+#else
+  return nodeHeaders.getNodeAddress(p);
+#endif
 }
 
 inline void
 MEDDLY::expert_forest::setNodeAddress(node_handle p, node_address a)
 {
+#ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(isValidNonterminalIndex(p));
   address[p].offset = a;
-}
-
+#else
+  nodeHeaders.setNodeAddress(p, a);
 #endif
+}
 
 // --------------------------------------------------
 // Node level information
 // --------------------------------------------------
 
-#ifdef OLD_NODE_HEADERS
-
 inline int
 MEDDLY::expert_forest::getNodeLevel(node_handle p) const
 {
+#ifdef OLD_NODE_HEADERS
   if (isTerminalNode(p)) return 0;
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(isValidNonterminalIndex(p));
   return address[p].level;
-}
-
+#else
+  return nodeHeaders.getNodeLevel(p);
 #endif
+}
 
 inline bool
 MEDDLY::expert_forest::isPrimedNode(node_handle p) const
@@ -1236,10 +1273,14 @@ MEDDLY::expert_forest::getVariableSize(int var) const
 inline void
 MEDDLY::expert_forest::setNodeLevel(node_handle p, int level)
 {
+#ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(isValidNonterminalIndex(p));
   MEDDLY_DCASSERT(isValidLevel(level));
   address[p].level = level;
+#else
+  nodeHeaders.setNodeLevel(p, level);
+#endif
 }
 
 // --------------------------------------------------
@@ -1249,21 +1290,30 @@ MEDDLY::expert_forest::setNodeLevel(node_handle p, int level)
 inline bool
 MEDDLY::expert_forest::trackingInCounts() const
 {
+#ifdef OLD_NODE_HEADERS
   return true;
   // For now; in the future, we might have other garbage collection schemes
   // that do not use reference counts
+#else
+  return nodeHeaders.trackingIncomingCounts();
+#endif
 }
 
 inline int 
 // MEDDLY::expert_forest::readInCount(MEDDLY::node_handle p) const
 MEDDLY::expert_forest::getNodeInCount(MEDDLY::node_handle p) const
 {
+#ifdef OLD_NODE_HEADERS
   return nodeMan->getCountOf(getNodeAddress(p));
+#else
+  return nodeHeaders.getIncomingCount(p);
+#endif
 }
 
 inline MEDDLY::node_handle
 MEDDLY::expert_forest::linkNode(MEDDLY::node_handle p)
 {
+#ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(isActiveNode(p));
   if (isTerminalNode(p)) return p;
   MEDDLY_DCASSERT(isValidNonterminalIndex(p));
@@ -1280,11 +1330,15 @@ MEDDLY::expert_forest::linkNode(MEDDLY::node_handle p)
   fflush(stdout);
 #endif
   return p;
+#else
+  return nodeHeaders.linkNode(p);
+#endif
 }
 
 inline void
 MEDDLY::expert_forest::unlinkNode(MEDDLY::node_handle p)
 {
+#ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(isActiveNode(p));
   if (isTerminalNode(p)) return;
   MEDDLY_DCASSERT(isValidNonterminalIndex(p));
@@ -1300,6 +1354,9 @@ MEDDLY::expert_forest::unlinkNode(MEDDLY::node_handle p)
   if (count) return;
 
   handleNewOrphanNode(p);
+#else
+  nodeHeaders.unlinkNode(p);
+#endif
 }
 
 // --------------------------------------------------
@@ -1309,22 +1366,31 @@ MEDDLY::expert_forest::unlinkNode(MEDDLY::node_handle p)
 inline bool
 MEDDLY::expert_forest::trackingCacheCounts() const
 {
+#ifdef OLD_NODE_HEADERS
   return true;
   // For now; in the future, we might use some other scheme
+#else
+  return nodeHeaders.trackingCacheCounts();
+#endif
 }
 
 inline int 
 MEDDLY::expert_forest::getNodeCacheCount(MEDDLY::node_handle p) const
 {
+#ifdef OLD_NODE_HEADERS
   if (isTerminalNode(p)) return 0;
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(isValidNonterminalIndex(p));
   return address[p].cache_count;
+#else
+  return nodeHeaders.getNodeCacheCount(p);
+#endif
 }
 
 inline MEDDLY::node_handle
 MEDDLY::expert_forest::cacheNode(MEDDLY::node_handle p)
 {
+#ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(isActiveNode(p));
   if (isTerminalNode(p)) return p;
   MEDDLY_DCASSERT(address);
@@ -1336,11 +1402,15 @@ MEDDLY::expert_forest::cacheNode(MEDDLY::node_handle p)
   fflush(stdout);
 #endif
   return p;
+#else
+  return nodeHeaders.cacheNode(p);
+#endif
 }
 
 inline void
 MEDDLY::expert_forest::uncacheNode(MEDDLY::node_handle p)
 {
+#ifdef OLD_NODE_HEADERS
   if (isTerminalNode(p)) return;
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(isValidNonterminalIndex(p));
@@ -1371,6 +1441,9 @@ MEDDLY::expert_forest::uncacheNode(MEDDLY::node_handle p)
     stats.orphan_nodes--;
     deleteNode(p);
   }
+#else
+  nodeHeaders.uncacheNode(p);
+#endif
 }
 
 // --------------------------------------------------
@@ -1380,6 +1453,7 @@ MEDDLY::expert_forest::uncacheNode(MEDDLY::node_handle p)
 inline void
 MEDDLY::expert_forest::markAllNodes()
 {
+#ifdef OLD_NODE_HEADERS
   //
   // This is horrible but for now...
   //
@@ -1387,11 +1461,15 @@ MEDDLY::expert_forest::markAllNodes()
   for (node_handle i=1; i<=a_last; i++) {
     address[i].marked = true;
   }
+#else
+  nodeHeaders.markAll();
+#endif
 }
 
 inline void
 MEDDLY::expert_forest::unmarkAllNodes()
 {
+#ifdef OLD_NODE_HEADERS
   //
   // This is horrible but for now...
   //
@@ -1399,31 +1477,47 @@ MEDDLY::expert_forest::unmarkAllNodes()
   for (node_handle i=1; i<=a_last; i++) {
     address[i].marked = false;
   }
+#else
+  nodeHeaders.unmarkAll();
+#endif
 }
 
 inline void
 MEDDLY::expert_forest::markNode(node_handle p)
 {
+#ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(isValidNonterminalIndex(p));
   address[p].marked = true;
+#else
+  nodeHeaders.markNode(p);
+#endif
 }
 
 inline void
 MEDDLY::expert_forest::unmarkNode(node_handle p)
 {
+#ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(isValidNonterminalIndex(p));
   address[p].marked = false;
+#else
+  nodeHeaders.unmarkNode(p);
+#endif
 }
 
 inline bool 
 MEDDLY::expert_forest::isNodeMarked(node_handle p) const
 {
+#ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(isValidNonterminalIndex(p));
   return address[p].marked;
+#else
+  return nodeHeaders.isNodeMarked(p);
+#endif
 }
+
 
 // --------------------------------------------------
 // Node status
@@ -1456,6 +1550,8 @@ MEDDLY::expert_forest::isTerminalNode(MEDDLY::node_handle p)
   return (p < 1);
 }
 
+#ifdef OLD_NODE_HEADERS
+
 inline bool
 MEDDLY::expert_forest::isValidNonterminalIndex(MEDDLY::node_handle node) const
 {
@@ -1473,6 +1569,8 @@ MEDDLY::expert_forest::getLastNode() const
 {
   return a_last;
 }
+
+#endif
 
 //
 // Unorganized from here
@@ -1493,24 +1591,30 @@ MEDDLY::expert_forest::getIndexSetCardinality(MEDDLY::node_handle node) const
 inline MEDDLY::node_handle
 MEDDLY::expert_forest::getNext(MEDDLY::node_handle p) const
 {
+#ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(isValidNonterminalIndex(p));
+#endif
   return nodeMan->getNextOf(getNodeAddress(p));
 }
 
 inline void
 MEDDLY::expert_forest::setNext(MEDDLY::node_handle p, MEDDLY::node_handle n)
 {
+#ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(isValidNonterminalIndex(p));
+#endif
   nodeMan->setNextOf(getNodeAddress(p), n);
 }
 
 inline unsigned
 MEDDLY::expert_forest::hash(MEDDLY::node_handle p) const
 {
+#ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(isValidNonterminalIndex(p));
+#endif
   return hashNode(p);
 }
 
@@ -1609,11 +1713,18 @@ inline bool
 MEDDLY::expert_forest::areDuplicates(MEDDLY::node_handle node, const MEDDLY::unpacked_node &nr) const
 {
   MEDDLY_DCASSERT(node > 0);
+#ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
   MEDDLY_CHECK_RANGE(1, node, 1 + a_last);
   if (address[node].level != nr.getLevel())
     return false;
   return nodeMan->areDuplicates(address[node].offset, nr);
+#else
+  if (nodeHeaders.getNodeLevel(node) != nr.getLevel()) {
+    return false;
+  }
+  return nodeMan->areDuplicates(nodeHeaders.getNodeAddress(node), nr);
+#endif
 }
 
 inline void
@@ -1648,9 +1759,13 @@ inline void
 MEDDLY::expert_forest::moveNodeOffset(MEDDLY::node_handle node, node_address old_addr,
     node_address new_addr)
 {
+#ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(old_addr == address[node].offset);
   address[node].offset = new_addr;
+#else
+  nodeHeaders.moveNodeAddress(node, old_addr, new_addr);
+#endif
 }
 
 inline void

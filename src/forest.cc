@@ -60,7 +60,9 @@
 // #define REPORT_ON_DESTROY
 // #define DUMP_ON_FOREST_DESTROY
 
+#ifdef OLD_NODE_HEADERS
 const int a_min_size = 1024;
+#endif
 
 
 // ******************************************************************
@@ -731,7 +733,11 @@ const unsigned int MEDDLY::expert_forest::SHOW_TERMINALS  = 0x01;
 MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   edge_labeling ev, const policies &p,int* level_reduction_rule)
 : forest(ds, d, rel, t, ev, p,level_reduction_rule)
+#ifndef OLD_NODE_HEADERS  // ugly, sorry!
+  , nodeHeaders(*this)
+#endif
 {
+#ifdef OLD_NODE_HEADERS
   //
   // Inltialize address array
   //
@@ -743,6 +749,9 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   a_last = a_next_shrink = 0;
   for (int i=0; i<8; i++) a_unused[i] = 0;
   a_lowest_index = 8;
+#else 
+  nodeHeaders.setPessimistic(isPessimistic());
+#endif
 
   // Initialize variable order
   var_order = d->makeDefaultVariableOrder();
@@ -777,8 +786,11 @@ MEDDLY::expert_forest::~expert_forest()
   printf("Destroying forest.  Stats:\n");
   reportMemoryUsage(stdout, "\t", 9);
 #endif
+
+#ifdef OLD_NODE_HEADERS
   // Address array
   free(address);
+#endif
 
   delete nodeMan;
 
@@ -810,7 +822,11 @@ void MEDDLY::expert_forest::initializeForest()
 
 void MEDDLY::expert_forest::dump(output &s, unsigned int flags) const
 {
+#ifdef OLD_NODE_HEADERS
   for (long p=0; p<=a_last; p++) {
+#else
+  for (long p=0; p<=nodeHeaders.lastUsedHandle(); p++) {
+#endif
     if (showNode(s, p, flags | SHOW_INDEX)) {
       s.put('\n');
       s.flush();
@@ -821,6 +837,8 @@ void MEDDLY::expert_forest::dump(output &s, unsigned int flags) const
 void MEDDLY::expert_forest::dumpInternal(output &s) const
 {
   s << "Internal forest storage\n";
+
+#ifdef OLD_NODE_HEADERS
   for (int i=0; i<8; i++) {
     s << "First " << i << "-byte unused node index: " << a_unused[i] << "\n";
   }
@@ -848,6 +866,9 @@ void MEDDLY::expert_forest::dumpInternal(output &s) const
     s.put(long(address[p].cache_count), awidth);
   }
   s << "]\n\n";
+#else
+  nodeHeaders.dumpInternal(s);
+#endif
 
   nodeMan->dumpInternal(s, 0x03);
  
@@ -937,10 +958,17 @@ void MEDDLY::expert_forest::countNodesByLevel(long* active) const
 
   for (; l<=L; l++) active[l] = 0;
 
+#ifdef OLD_NODE_HEADERS
   for (long p=0; p<=a_last; p++) {
     if (address[p].isDeleted()) continue; 
     active[address[p].level]++;
   }
+#else
+  for (long p=1; p<=nodeHeaders.lastUsedHandle(); p++) {
+    if (nodeHeaders.isDeactivated(p)) continue; 
+    active[nodeHeaders.getNodeLevel(p)]++;
+  }
+#endif
 }
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -955,10 +983,14 @@ MEDDLY::expert_forest
 {
   MEDDLY_DCASSERT(root);
 
+#ifndef OLD_NODE_HEADERS
+  const node_handle a_last = nodeHeaders.lastUsedHandle();
+#endif
   // initialize lists
   bool* inList = new bool[a_last];
   for (int i=0; i<a_last; i++) inList[i] = false;
   inList--;
+
   int mlen = 0;
   int msize = 1024;
   node_handle* marked = (node_handle*) malloc(msize * sizeof(node_handle));
@@ -1002,9 +1034,11 @@ MEDDLY::expert_forest
   // sort
   if (sort && mlen>0) {
     mlen = 0;
-    for (int i=1; i<=a_last; i++) if (inList[i]) {
-      marked[mlen] = i;
-      mlen++;
+    for (int i=1; i<=a_last; i++) {
+      if (inList[i]) {
+        marked[mlen] = i;
+        mlen++;
+      }
     }
   }
 
@@ -1065,7 +1099,11 @@ bool MEDDLY::expert_forest
     Show the node index, if selected.
   */
   if (flags & SHOW_INDEX) {
+#ifdef OLD_NODE_HEADERS
     int nwidth = digits(a_last);
+#else
+    int nwidth = digits(nodeHeaders.lastUsedHandle());
+#endif
     s.put(long(p), nwidth);
     s.put('\t');
   }
@@ -1082,7 +1120,11 @@ bool MEDDLY::expert_forest
     return true;
   }
   if (isZombieNode(p)) {
+#ifdef OLD_NODE_HEADERS
     s << "Zombie cc: " <<  -address[p].cache_count;
+#else
+    s << "Zombie cc: " <<  nodeHeaders.getNodeCacheCount(p);
+#endif
     return true;
   }
 
@@ -1672,6 +1714,8 @@ void MEDDLY::expert_forest::reorderVariables(const int* level2var)
 // '                                                                '
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
+#ifdef OLD_NODE_HEADERS 
+
 void MEDDLY::expert_forest::handleNewOrphanNode(node_handle p)
 {
   MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
@@ -1701,6 +1745,8 @@ void MEDDLY::expert_forest::handleNewOrphanNode(node_handle p)
   }
 
 }
+
+#endif  // #ifdef OLD_NODE_HEADERS
 
 void MEDDLY::expert_forest::deleteNode(node_handle p)
 {
@@ -1744,18 +1790,20 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
   fflush(stdout);
 #endif
 
-  MEDDLY_DCASSERT(address[p].cache_count == 0);
+  MEDDLY_DCASSERT(0==getNodeCacheCount(p));
 
   // unlink children and recycle node memory
   nodeMan->unlinkDownAndRecycle(getNodeAddress(p));
 
   // recycle the index
   //
+#ifdef OLD_NODE_HEADERS
   stats.decActive(1);
   if (theLogger && theLogger->recordingNodeCounts()) {
     theLogger->addToActiveNodeCount(this, getNodeLevel(p), -1);
   }
   recycleNodeHandle(p);
+#endif
 
   // if (nodeMan.compactLevel) nodeMan.compact(false);
 
@@ -1767,6 +1815,8 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 #endif
 
 }
+
+#ifdef OLD_NODE_HEADERS
 
 void MEDDLY::expert_forest::zombifyNode(node_handle p)
 {
@@ -1828,6 +1878,7 @@ void MEDDLY::expert_forest::zombifyNode(node_handle p)
 #endif
 }
 
+#endif // #ifdef OLD_NODE_HEADERS
 
 #ifdef DEBUG_HANDLE_FREELIST
 void print_sequence(long a)
@@ -1891,6 +1942,8 @@ inline void dump_handle_info(const MEDDLY::node_header* A, long size)
   printf("\n");
 }
 #endif
+
+#ifdef OLD_NODE_HEADERS
 
 MEDDLY::node_handle MEDDLY::expert_forest::getFreeNodeHandle() 
 {
@@ -1961,6 +2014,7 @@ void MEDDLY::expert_forest::recycleNodeHandle(node_handle p)
 #endif
 }
 
+#endif // #ifdef OLD_NODE_HEADERS
 
 MEDDLY::node_handle MEDDLY::expert_forest
 ::createReducedHelper(int in, const unpacked_node &nb)
@@ -2069,17 +2123,28 @@ MEDDLY::node_handle MEDDLY::expert_forest
 #endif
 
   // Grab a new node
+#ifdef OLD_NODE_HEADERS
   node_handle p = getFreeNodeHandle();
   address[p].level = nb.getLevel();
   MEDDLY_DCASSERT(0 == address[p].cache_count);
+#else
+  node_handle p = nodeHeaders.getFreeNodeHandle();
+  nodeHeaders.setNodeLevel(p, nb.getLevel());
+  MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(p));
+  MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
+#endif
 
   stats.incActive(1);
   if (theLogger && theLogger->recordingNodeCounts()) {
-    theLogger->addToActiveNodeCount(this, address[p].level, 1);
+    theLogger->addToActiveNodeCount(this, nb.getLevel(), 1);
   }
 
   // All of the work is in nodeMan now :^)
+#ifdef OLD_NODE_HEADERS
   address[p].offset = nodeMan->makeNode(p, nb, getNodeStorage());
+#else
+  nodeHeaders.setNodeAddress(p, nodeMan->makeNode(p, nb, getNodeStorage()));
+#endif
 
   // add to UT
   unique->add(nb.hash(), p);
@@ -2106,6 +2171,8 @@ void MEDDLY::expert_forest::swapNodes(node_handle p, node_handle q)
   unique->remove(hashNode(p), p);
   unique->remove(hashNode(q), q);
 
+#ifdef OLD_NODE_HEADERS
+
   int pCount = getNodeInCount(p);
   int qCount = getNodeInCount(q);
 
@@ -2118,23 +2185,42 @@ void MEDDLY::expert_forest::swapNodes(node_handle p, node_handle q)
   nodeMan->setCountOf(address[p].offset, pCount);
   nodeMan->setCountOf(address[q].offset, qCount);
 
+#else
+  
+  nodeHeaders.swapNodes(p, q, false);
+
+#endif
+
   unique->add(hashNode(p), p);
   unique->add(hashNode(q), q);
 }
 
 MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(unpacked_node* un, node_handle p)
 {
+#ifdef OLD_NODE_HEADERS
   int count = getNodeInCount(p);
+#endif
 
   unique->remove(hashNode(p), p);
+#ifdef OLD_NODE_HEADERS
   nodeMan->unlinkDownAndRecycle(address[p].offset);
+#else
+  nodeMan->unlinkDownAndRecycle(nodeHeaders.getNodeAddress(p));
+#endif
 
   un->computeHash();
 
+#ifdef OLD_NODE_HEADERS
   address[p].level = un->getLevel();
-  address[p].offset = nodeMan->makeNode(p, *un, getNodeStorage());
-
-  nodeMan->setCountOf(address[p].offset, count);
+  node_address addr = nodeMan->makeNode(p, *un, getNodeStorage());
+  address[p].offset = addr;
+  nodeMan->setCountOf(addr, count);
+#else
+  nodeHeaders.setNodeLevel(p, un->getLevel());
+  node_address addr = nodeMan->makeNode(p, *un, getNodeStorage());
+  nodeHeaders.setNodeAddress(p, addr);
+  // incoming count, cache count remains unchanged
+#endif
 
   unique->add(un->hash(), p);
 
@@ -2200,6 +2286,7 @@ void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
 }
 
 
+#ifdef OLD_NODE_HEADERS
 void MEDDLY::expert_forest::expandHandleList()
 {
   // increase size by 50%
@@ -2280,6 +2367,7 @@ void MEDDLY::expert_forest::shrinkHandleList()
   printf("Shrank address array, new size %d\n", a_size);
 #endif
 }
+#endif
 
 // ******************************************************************
 // *                                                                *
