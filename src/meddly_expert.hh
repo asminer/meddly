@@ -732,7 +732,7 @@ MEDDLY::node_headers::getNextOf(node_handle p) const
 {
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
+  MEDDLY_DCASSERT(p<=a_size);
   MEDDLY_DCASSERT(0==address[p].level);
   return address[p].offset;
 }

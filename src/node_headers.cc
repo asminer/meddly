@@ -180,7 +180,6 @@ MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
     }
   }
   if (found) {  
-    MEDDLY_DCASSERT(0==address[found].offset);
 #ifdef DEBUG_HANDLE_FREELIST
     address[found].setNotDeleted();
     dump_handle_info(address, a_last+1);

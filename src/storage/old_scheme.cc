@@ -1501,7 +1501,7 @@ MEDDLY::old_node_storage::allocNode(int sz, node_handle tail, bool clear)
 #ifdef OLD_NODE_HEADERS
   setCountOf(off, 1);                     // #incoming
 #else
-  chunkOf(off)[count_index] = 0;          // make the slot non-negative
+  data[off + count_index] = 0;            // make the slot non-negative
 #endif
   setNextOf(off, temp_node_value);        // mark as a temp node
   setSizeOf(off, sz);                     // size

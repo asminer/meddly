@@ -1102,7 +1102,7 @@ MEDDLY::simple_storage::allocNode(int sz, node_handle tail, bool clear)
   setCountOf(off, 1);                     // #incoming
 #else
   // Need the slot to be non-negative for now...
-  chunkOf(off)[count_index] = 0;
+  data[off + count_index] = 0;
 #endif
   setNextOf(off, temp_node_value);        // mark as a temp node
   setSizeOf(off, sz);                     // size
