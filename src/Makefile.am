@@ -16,6 +16,7 @@ libmeddly_la_SOURCES = \
   meddly.h meddly.hh meddly.cc \
   meddly_expert.h meddly_expert.hh \
   io.cc \
+  node_headers.cc \
   node_wrappers.cc \
   ops.cc \
   dd_edge.cc \
