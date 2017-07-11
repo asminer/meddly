@@ -1790,7 +1790,7 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
   fflush(stdout);
 #endif
 
-  MEDDLY_DCASSERT(0==getNodeCacheCount(p));
+  MEDDLY_DCASSERT(0==getNodeInCount(p));
 
   // unlink children and recycle node memory
   nodeMan->unlinkDownAndRecycle(getNodeAddress(p));
@@ -2144,6 +2144,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
   address[p].offset = nodeMan->makeNode(p, nb, getNodeStorage());
 #else
   nodeHeaders.setNodeAddress(p, nodeMan->makeNode(p, nb, getNodeStorage()));
+  linkNode(p);
 #endif
 
   // add to UT

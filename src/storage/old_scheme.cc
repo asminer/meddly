@@ -944,7 +944,9 @@ MEDDLY::node_handle MEDDLY::old_node_storage
 ::makeFullNode(node_handle p, int size, const unpacked_node &nb)
 {
   node_address addr = allocNode(size, p, false);
+#ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(1==getCountOf(addr));
+#endif
   node_handle* down = FD(addr);
   if (edgeSlots) {
       MEDDLY_DCASSERT(nb.hasEdges());
@@ -984,7 +986,9 @@ MEDDLY::node_handle MEDDLY::old_node_storage
 ::makeSparseNode(node_handle p, int size, const unpacked_node &nb)
 {
   node_address addr = allocNode(-size, p, false);
+#ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(1==getCountOf(addr));
+#endif
   node_handle* index = SI(addr);
   node_handle* down  = SD(addr);
   if (nb.hasEdges()) {
@@ -1475,7 +1479,9 @@ void MEDDLY::old_node_storage::resize(node_handle new_size)
   if (data != new_data) {
     // update pointers
     data = new_data;
+#ifdef OLD_NODE_HEADERS
     updateCountArray(data + count_index);
+#endif
     updateNextArray(data + next_index);
   }
 }
@@ -1492,7 +1498,11 @@ MEDDLY::old_node_storage::allocNode(int sz, node_handle tail, bool clear)
   incMemUsed(got * sizeof(node_handle));
   MEDDLY_DCASSERT(got >= slots);
   if (clear) memset(data+off, 0, slots*sizeof(node_handle));
+#ifdef OLD_NODE_HEADERS
   setCountOf(off, 1);                     // #incoming
+#else
+  chunkOf(off)[count_index] = 0;          // make the slot non-negative
+#endif
   setNextOf(off, temp_node_value);        // mark as a temp node
   setSizeOf(off, sz);                     // size
   data[off+slots-1] = slots - got;        // negative padding

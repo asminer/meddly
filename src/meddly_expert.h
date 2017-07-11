@@ -70,7 +70,7 @@
 #endif
 
 
-#define OLD_NODE_HEADERS
+// #define OLD_NODE_HEADERS
 
 namespace MEDDLY {
 
@@ -1366,24 +1366,26 @@ class MEDDLY::node_storage {
     // incoming count data
     // --------------------------------------------------
 
+#ifdef OLD_NODE_HEADERS
 #ifdef INLINED_COUNT
-    /// Get the number of incoming pointers to a node.
-    int getCountOf(node_address addr) const;
     /// Set the number of incoming pointers to a node.
     void setCountOf(node_address addr, node_handle c);
+    /// Get the number of incoming pointers to a node.
+    int getCountOf(node_address addr) const;
     /// Increment (and return) the number of incoming pointers to a node.
     int incCountOf(node_address addr);
     /// Decrement (and return) the number of incoming pointers to a node.
     int decCountOf(node_address addr);
 #else
-    /// Get the number of incoming pointers to a node.
-    virtual node_handle getCountOf(node_address addr) const;
     /// Set the number of incoming pointers to a node.
     virtual void setCountOf(node_address addr, node_handle c);
+    /// Get the number of incoming pointers to a node.
+    virtual node_handle getCountOf(node_address addr) const;
     /// Increment (and return) the number of incoming pointers to a node.
     virtual node_handle incCountOf(node_address addr);
     /// Decrement (and return) the number of incoming pointers to a node.
     virtual node_handle decCountOf(node_address addr);
+#endif
 #endif
 
     // --------------------------------------------------
@@ -1434,7 +1436,9 @@ class MEDDLY::node_storage {
     void incMemAlloc(long delta);
     void decMemAlloc(long delta);
     void incCompactions();
+#ifdef OLD_NODE_HEADERS
     void updateCountArray(node_handle* cptr);
+#endif
     void updateNextArray(node_handle* nptr);
 
     //
@@ -1456,8 +1460,10 @@ class MEDDLY::node_storage {
     /// Memory stats
     forest::statset* stats;
 
+#ifdef OLD_NODE_HEADERS
     /// Count array, so that counts[addr] gives the count for node at addr.
     int* counts;
+#endif
 
     /// Next array, so that nexts[addr] gives the next value for node at addr.
     node_handle* nexts;

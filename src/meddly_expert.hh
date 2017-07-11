@@ -827,6 +827,7 @@ MEDDLY::expert_forest::node_header::makeZombie()
 // ******************************************************************
 
 
+#ifdef OLD_NODE_HEADERS
 #ifdef INLINED_COUNT
 inline MEDDLY::node_handle
 MEDDLY::node_storage::getCountOf(node_address addr) const
@@ -860,6 +861,7 @@ MEDDLY::node_storage::decCountOf(node_address addr)
   MEDDLY_DCASSERT(addr > 0);
   return --counts[addr];
 }
+#endif
 #endif
 
 #ifdef INLINED_NEXT
@@ -929,11 +931,13 @@ MEDDLY::node_storage::incCompactions()
     stats->num_compactions++;
 }
 
+#ifdef OLD_NODE_HEADERS
 inline void
 MEDDLY::node_storage::updateCountArray(MEDDLY::node_handle* cptr)
 {
   counts = cptr;
 }
+#endif
 
 inline void
 MEDDLY::node_storage::updateNextArray(MEDDLY::node_handle* nptr)
@@ -1211,8 +1215,8 @@ MEDDLY::expert_forest::setNodeAddress(node_handle p, node_address a)
 inline int
 MEDDLY::expert_forest::getNodeLevel(node_handle p) const
 {
-#ifdef OLD_NODE_HEADERS
   if (isTerminalNode(p)) return 0;
+#ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(isValidNonterminalIndex(p));
   return address[p].level;
@@ -1550,27 +1554,34 @@ MEDDLY::expert_forest::isTerminalNode(MEDDLY::node_handle p)
   return (p < 1);
 }
 
-#ifdef OLD_NODE_HEADERS
 
 inline bool
 MEDDLY::expert_forest::isValidNonterminalIndex(MEDDLY::node_handle node) const
 {
+#ifndef OLD_NODE_HEADERS
+  const node_handle a_last = nodeHeaders.lastUsedHandle();
+#endif
   return (node > 0) && (node <= a_last);
 }
 
 inline bool
 MEDDLY::expert_forest::isValidNodeIndex(MEDDLY::node_handle node) const
 {
+#ifndef OLD_NODE_HEADERS
+  const node_handle a_last = nodeHeaders.lastUsedHandle();
+#endif
   return node <= a_last;
 }
 
 inline MEDDLY::node_handle
 MEDDLY::expert_forest::getLastNode() const
 {
+#ifndef OLD_NODE_HEADERS
+  const node_handle a_last = nodeHeaders.lastUsedHandle();
+#endif
   return a_last;
 }
 
-#endif
 
 //
 // Unorganized from here
@@ -1621,8 +1632,19 @@ MEDDLY::expert_forest::hash(MEDDLY::node_handle p) const
 inline bool
 MEDDLY::expert_forest::isStale(MEDDLY::node_handle node) const
 {
+  if (isMarkedForDeletion()) {
+    return true;
+  }
+  if (isTerminalNode(node)) {
+    return terminalNodesAreStale;
+  }
+  if (0==getNodeAddress(node)) return true; // zombie nodes are stale
+  return getNodeInCount(node) == 0;
+
+/*
   return isMarkedForDeletion() || (isTerminalNode(node) ? terminalNodesAreStale
       : isPessimistic() ? isZombieNode(node) : (getNodeInCount(node) == 0));
+  */
 }
 
 inline unsigned

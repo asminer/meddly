@@ -447,7 +447,9 @@ MEDDLY::node_storage_style::~node_storage_style()
 
 MEDDLY::node_storage::node_storage(expert_forest* f)
 {
+#ifdef OLD_NODE_HEADERS
   counts = 0;
+#endif
   nexts = 0;
 
   parent = f;
