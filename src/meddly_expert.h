@@ -1045,6 +1045,7 @@ class MEDDLY::node_headers {
   
   public: // mark and unmark stuff
 
+/*
     /// mark all nodes.
     void markAll();
 
@@ -1059,13 +1060,13 @@ class MEDDLY::node_headers {
 
     /// Is a given node marked?
     bool isNodeMarked(node_handle p) const;
-
+*/
     /** 
       Free memory used for node marks, if possible.
       Will be reallocated when needed,
       by markAll() and unmarkAll().
     */
-    void doneWithMarks();
+//    void doneWithMarks();
 
   public: // for debugging
 
@@ -1118,7 +1119,7 @@ class MEDDLY::node_headers {
           int incoming_count;
 
           /// Is node marked.  This is pretty horrible, but is only temporary
-          bool marked;
+          // bool marked;
 
     };
 
@@ -1743,6 +1744,7 @@ class MEDDLY::expert_forest: public forest
   // Marking and unmarking nodes
   // --------------------------------------------------
   public:
+    /*
     /// Set all nodes as marked
     void markAllNodes();
 
@@ -1757,6 +1759,7 @@ class MEDDLY::expert_forest: public forest
 
     /// Determine if a node is marked
     bool isNodeMarked(node_handle p) const;
+    */
 
 
   // --------------------------------------------------

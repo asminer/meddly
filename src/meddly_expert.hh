@@ -676,6 +676,7 @@ MEDDLY::node_headers::unlinkNode(node_handle p)
   }
 }
 
+/*
 inline void
 MEDDLY::node_headers::markAll()
 {
@@ -726,6 +727,7 @@ MEDDLY::node_headers::doneWithMarks()
 {
   // Cannot do anything
 }
+*/
 
 inline MEDDLY::node_handle
 MEDDLY::node_headers::getNextOf(node_handle p) const
@@ -1454,6 +1456,7 @@ MEDDLY::expert_forest::uncacheNode(MEDDLY::node_handle p)
 // Marking and unmarking nodes
 // --------------------------------------------------
 
+/*
 inline void
 MEDDLY::expert_forest::markAllNodes()
 {
@@ -1521,7 +1524,7 @@ MEDDLY::expert_forest::isNodeMarked(node_handle p) const
   return nodeHeaders.isNodeMarked(p);
 #endif
 }
-
+*/
 
 // --------------------------------------------------
 // Node status
