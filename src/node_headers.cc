@@ -22,8 +22,6 @@
 #include "defines.h"
 #include "storage/bytepack.h"
 
-#ifndef OLD_NODE_HEADERS
-
 
 // #define DEBUG_HANDLE_FREELIST
 // #define DEBUG_ADDRESS_RESIZE
@@ -371,4 +369,3 @@ void MEDDLY::node_headers::shrinkHandleList()
 
 // ******************************************************************
 
-#endif // #ifndef OLD_NODE_HEADERS

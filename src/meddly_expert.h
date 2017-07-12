@@ -70,7 +70,6 @@
 #endif
 
 
-// #define OLD_NODE_HEADERS
 
 namespace MEDDLY {
 
@@ -101,9 +100,7 @@ namespace MEDDLY {
   */
 
   // Node header storage
-#ifndef OLD_NODE_HEADERS
   class node_headers;
-#endif
 
   // Actual node storage
   class node_storage_style;
@@ -929,7 +926,6 @@ class MEDDLY::initializer_list {
     Inlined methods are found in meddly_expert.hh.
     Non-inlined methods are found in node_headers.cc.
 */
-#ifndef OLD_NODE_HEADERS
 class MEDDLY::node_headers {
   public:
     node_headers(expert_forest &P);
@@ -1043,30 +1039,6 @@ class MEDDLY::node_headers {
     void unlinkNode(node_handle p);
     
   
-  public: // mark and unmark stuff
-
-/*
-    /// mark all nodes.
-    void markAll();
-
-    /// unmark all nodes.
-    void unmarkAll();
-
-    /// mark a given node
-    void markNode(node_handle p);
-
-    /// unmark a given node
-    void unmarkNode(node_handle p);
-
-    /// Is a given node marked?
-    bool isNodeMarked(node_handle p) const;
-*/
-    /** 
-      Free memory used for node marks, if possible.
-      Will be reallocated when needed,
-      by markAll() and unmarkAll().
-    */
-//    void doneWithMarks();
 
   public: // for debugging
 
@@ -1149,7 +1121,7 @@ class MEDDLY::node_headers {
 
     static const int a_min_size = 1024;
 };
-#endif
+
 
 // ******************************************************************
 // *                                                                *
@@ -1363,31 +1335,6 @@ class MEDDLY::node_storage {
     */
     virtual const void* getHashedHeaderOf(node_address addr) const = 0;
 
-    // --------------------------------------------------
-    // incoming count data
-    // --------------------------------------------------
-
-#ifdef OLD_NODE_HEADERS
-#ifdef INLINED_COUNT
-    /// Set the number of incoming pointers to a node.
-    void setCountOf(node_address addr, node_handle c);
-    /// Get the number of incoming pointers to a node.
-    int getCountOf(node_address addr) const;
-    /// Increment (and return) the number of incoming pointers to a node.
-    int incCountOf(node_address addr);
-    /// Decrement (and return) the number of incoming pointers to a node.
-    int decCountOf(node_address addr);
-#else
-    /// Set the number of incoming pointers to a node.
-    virtual void setCountOf(node_address addr, node_handle c);
-    /// Get the number of incoming pointers to a node.
-    virtual node_handle getCountOf(node_address addr) const;
-    /// Increment (and return) the number of incoming pointers to a node.
-    virtual node_handle incCountOf(node_address addr);
-    /// Decrement (and return) the number of incoming pointers to a node.
-    virtual node_handle decCountOf(node_address addr);
-#endif
-#endif
 
     // --------------------------------------------------
     // next pointer data
@@ -1437,9 +1384,6 @@ class MEDDLY::node_storage {
     void incMemAlloc(long delta);
     void decMemAlloc(long delta);
     void incCompactions();
-#ifdef OLD_NODE_HEADERS
-    void updateCountArray(node_handle* cptr);
-#endif
     void updateNextArray(node_handle* nptr);
 
     //
@@ -1460,11 +1404,6 @@ class MEDDLY::node_storage {
 
     /// Memory stats
     forest::statset* stats;
-
-#ifdef OLD_NODE_HEADERS
-    /// Count array, so that counts[addr] gives the count for node at addr.
-    int* counts;
-#endif
 
     /// Next array, so that nexts[addr] gives the next value for node at addr.
     node_handle* nexts;
@@ -2279,35 +2218,18 @@ class MEDDLY::expert_forest: public forest
     */
     void moveNodeOffset(node_handle node, node_address old_addr, node_address new_addr);
     friend class MEDDLY::node_storage;
-#ifndef OLD_NODE_HEADERS
     friend class MEDDLY::node_headers;  // calls deleteNode().
-#endif
 
     friend class MEDDLY::global_rebuilder;
 
   // ------------------------------------------------------------
   // helpers for this class
 
-#ifdef OLD_NODE_HEADERS
-    void handleNewOrphanNode(node_handle node);
-#endif
-
     /**
         Disconnects all downward pointers from p,
         and removes p from the unique table.
     */
     void deleteNode(node_handle p);
-
-#ifdef OLD_NODE_HEADERS
-    void zombifyNode(node_handle p);
-
-    /// Determine a node handle that we can use.
-    node_handle getFreeNodeHandle();
-
-    /// Release a node handle back to the free pool.
-    void recycleNodeHandle(node_handle p);
-#endif
-
 
     /** Apply reduction rule to the temporary node and finalize it. 
         Once a node is reduced, its contents cannot be modified.
@@ -2320,14 +2242,6 @@ class MEDDLY::expert_forest: public forest
 
     // Sanity check; used in development code.
     void validateDownPointers(const unpacked_node &nb) const;
-
-#ifdef OLD_NODE_HEADERS
-    /// Increase the number of node handles.
-    void expandHandleList();
-
-    /// Decrease the number of node handles.
-    void shrinkHandleList();
-#endif
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   // |                                                                |
@@ -2352,53 +2266,6 @@ class MEDDLY::expert_forest: public forest
     std::shared_ptr<const variable_order> var_order;
 
   private:
-#ifdef OLD_NODE_HEADERS
-      /** Header information for each node.
-          The node handles (integers) need to keep some
-          information about the node they point to,
-          both for addressing and for bookkeeping purposes.
-          This struct holds that information.
-      */
-      struct node_header {
-          /** Offset to node's data in the corresponding node storage structure.
-              If the node is active, this is the offset (>0) in the data array.
-              If the node is deleted, this is -next deleted node
-              (part of the unused address list).
-          */
-          node_address offset;
-
-          /** Node level
-              If the node is active, this indicates node level.
-          */
-          int level;
-
-          /** Cache count
-              The number of cache entries that refer to this node (excl. unique
-              table). If this node is a zombie, cache_count is negative.
-          */
-          int cache_count;
-
-          /// Is node marked.  This is pretty horrible, but is only temporary
-          bool marked;
-
-          // Handy functions, in case our internal storage changes.
-
-          bool isActive() const;
-          bool isZombie() const;
-
-          bool isDeleted() const;
-          void setDeleted();
-          void setNotDeleted();
-
-          int getNextDeleted() const;
-          void setNextDeleted(int n);
-
-          void makeZombie();
-      };
-#endif
-
-
-  private:
     // Garbage collection in progress
     bool performing_gc;
 
@@ -2408,23 +2275,8 @@ class MEDDLY::expert_forest: public forest
     // depth of delete/zombie stack; validate when 0
     int delete_depth;
 
-#ifdef OLD_NODE_HEADERS
-    /// address info for nodes
-    node_header *address;
-    /// Size of address/next array.
-    node_handle a_size;
-    /// Last used address.
-    node_handle a_last;
-    /// Pointer to unused address lists, based on size
-    node_handle a_unused[8];  // number of bytes per handle
-    /// Lowest non-empty address list
-    char a_lowest_index;
-    /// Next time we shink the address list.
-    node_handle a_next_shrink;
-#else
-
+    /// Node header information
     node_headers nodeHeaders;
-#endif
 
 
     /// Number of bytes for an edge
