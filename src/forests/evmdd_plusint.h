@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -61,7 +59,7 @@ class MEDDLY::evmdd_plusint : public evmdd_forest {
     };
 
   public:
-    evmdd_plusint(int dsl, domain *d, const policies &p, bool index_set=false);
+    evmdd_plusint(int dsl, domain *d, const policies &p,int* level_reduction_rule=NULL,bool index_set=false);
     ~evmdd_plusint();
 
     virtual void createEdge(int val, dd_edge &e);

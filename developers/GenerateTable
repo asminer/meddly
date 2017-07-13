@@ -1,0 +1,124 @@
+#!/bin/bash
+#
+# Builds a table of run times for various versions of Meddly.
+# The versions to run tests on must be held in a directory
+# with name Meddly-<something>, in the home directory.
+# This is because some versions need to be tweaked to run
+# correctly with the script.
+# 
+# Simply runs the benchmark script in each directory,
+# and collects the results.
+#
+
+if [ $# -ne "1" ]; then
+  echo "Usage: $0 <file.html>"
+  exit 1
+fi
+
+OUT="`pwd`/$1"
+echo "Writing to $OUT"
+
+#
+# Rebuild everything
+#
+
+for dir in $HOME/Meddly-*; do
+  cd $dir
+  echo "Building $dir" 1>&2
+  if make clean all check 1>&2; then
+    echo "============================================================"
+    echo "|                                                          |"
+    echo "|    Build of $dir was successful"
+    echo "|                                                          |"
+    echo "============================================================"
+  else
+    echo "============================================================"
+    echo "|                                                          |"
+    echo "|    Build of $dir FAILED"
+    echo "|                                                          |"
+    echo "============================================================"
+    exit 1
+  fi
+done
+
+#
+# Run everything and generate table
+#
+
+cat > $OUT <<EOF
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+table {
+  border-collapse:collapse;
+}
+th {
+  padding-top:2px;
+  padding-bottom:2px;
+  padding-left:5px;
+  padding-right:5px;
+}
+td {
+  text-align:right;
+  padding-top:2px;
+  padding-bottom:2px;
+  padding-left:5px;
+  padding-right:5px;
+}
+</style>
+</head>
+
+<body>
+<p>
+Gigantic table of MEDDLY stats,
+primarily for tracking performance changes over time.
+Tested on 
+EOF
+date +"%d %B %Y." >> $OUT
+echo "Executables built using" >> $OUT
+g++ --version 2> /dev/null | head -n 1 >> $OUT
+
+cat >> $OUT <<EOF
+</p>
+<table border=1>
+<tr>
+  <th rowspan=2>Release Date</th>
+  <th rowspan=2>Version</th>
+  <th colspan=3>Source size</th>
+  <th colspan=2>Logical operations</th>
+  <th colspan=3>BFS reachability</th>
+  <th colspan=3>DFS reachability (saturation)</th>
+  <th colspan=2>Explicit reach</th>
+</tr>
+<tr>
+  <th>files</th>
+  <th>lines</th>
+  <th>chars</th>
+  <th>nqueens 14</th>
+  <th>qcover 12</th>
+  <th>phils 800</th>
+  <th>kanban 75</th>
+  <th>slot 20</th>
+  <th>phils 10k</th>
+  <th>kanban 200</th>
+  <th>slot 100</th>
+  <th>kanban 6</th>
+  <th>slot 7</th>
+</tr>
+<!-- Data here -->
+EOF
+
+
+for dir in $HOME/Meddly-*; do
+  cd $dir
+  MeddlyBenchmarks -h $OUT
+done
+cd $HOME
+
+cat >> $OUT <<EOF
+<!-- Done data -->
+</table>
+</body>
+</html>
+EOF

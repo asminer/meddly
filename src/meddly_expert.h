@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -50,8 +48,7 @@
 #endif
 
 
-#define INLINED_COUNT
-#define INLINED_NEXT
+// #define INLINED_NEXT
 
 // #define TRACK_DELETIONS
 // #define TRACK_CACHECOUNT
@@ -70,6 +67,7 @@
 #else
 #define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX)
 #endif
+
 
 
 namespace MEDDLY {
@@ -103,6 +101,9 @@ namespace MEDDLY {
   // Memory managers, for node storage and compute tables
   class memory_manager_style;
   class memory_manager;
+
+  // Node header storage
+  class node_headers;
 
   // Actual node storage
   class node_storage_style;
@@ -471,7 +472,7 @@ class MEDDLY::expert_domain : public domain {
       array of integers, for indexes (sparse only)
       "compact" chunk of memory for edge values
 */
-class MEDDLY::unpacked_node {
+class MEDDLY::unpacked_node { 
   public:
     /**
         Options for filling an unpacked node from an existing one.
@@ -1156,6 +1157,245 @@ class MEDDLY::memory_manager {
     stats my_mem;
 };
 
+
+// ******************************************************************
+// *                                                                *
+// *                       node_headers class                       *
+// *                                                                *
+// ******************************************************************
+
+/**
+    Node header information, for a collection of nodes.
+
+    This is used within a forest to store meta-information
+    about each node.  The actual node itself (i.e., the downward
+    pointers and any edge values) is stored in a separate data
+    structure (the node_storage class) using various encoding schemes.
+
+    Conceptually, this class is simply an array of structs,
+    plus a mechanism for recycling unused elements.  
+    Node handle 0 is reserved for special use, so
+    "real" nodes must have a non-zero handle.
+
+    For each node, its header contains:
+      node_address  address     The "address" of the node in the node_storage class.
+      integer       level       Level number of the node.  0 indicates that the
+                                node has been deleted, but we cannot recycle the
+                                node handle yet (probably because it might be
+                                contained in a compute table somewhere).
+      integer       cache_count Optional (i.e., can be turned on/off for all nodes).
+                                Number of compute table references to this handle.
+      integer       incoming    Optional (i.e., can be turned on/off for all nodes).
+                                Number of incoming edges to the node referred to
+                                by this handle.
+
+    In practice, we may use a different data structure for speed
+    or (more likely) to save space.
+
+    
+    For now, we are using an array of structs, but this may change.
+
+
+    Inlined methods are found in meddly_expert.hh.
+    Non-inlined methods are found in node_headers.cc.
+*/
+class MEDDLY::node_headers {
+  public:
+    node_headers(expert_forest &P);
+    ~node_headers();
+
+    /**
+        Indicate that we don't need to track cache counts.
+        The default is that we will track cache counts.
+        For efficiency, this should be called soon after 
+        construction (otherwise we may allocate space for nothing).
+    */
+    void turnOffCacheCounts();
+
+    /**
+        Indicate that we don't need to track incoming counts.
+        The default is that we will track incoming counts.
+        For efficiency, this should be called soon after 
+        construction (otherwise we may allocate space for nothing).
+    */
+    void turnOffIncomingCounts();
+
+    /**
+        Set node recycling to pessimistic or optimistic.
+        Pessimistic: disconnected nodes are recycled immediately.
+        Optimistic:  disconnected nodes are recycled only when
+                      they no longer appear in any caches.
+    */
+    void setPessimistic(bool pess);
+    
+  public: // node handle management
+
+    /**
+        Get an unused node handle.
+        This is either a recycled one or
+        the next one in the available pool
+        (which will be expanded if necessary).
+    */
+    node_handle getFreeNodeHandle();
+
+    /**
+        Recycle a used node handle.
+        The recycled handle can eventually be
+        reused when returned by a call to
+        getFreeNodeHandle().
+    */
+    void recycleNodeHandle(node_handle p);
+
+    /**
+        Get largest handle of active nodes.
+    */
+    node_handle lastUsedHandle() const;
+
+    /**
+        Swap two nodes.
+        Used for in-place forest reordering.
+          @param  p               First node
+          @param  q               Second node
+          @param  swap_incounts   If true, swap everything;
+                                  if false, don't swap incoming counts.
+    */
+    void swapNodes(node_handle p, node_handle q, bool swap_incounts);
+
+  public: // address stuff
+
+    /// Get the address for node p.
+    node_address getNodeAddress(node_handle p) const;
+
+    /// Set the address for node p to a.
+    void setNodeAddress(node_handle p, node_address a);
+
+    /** Change the address for node p.
+        Same as setNodeAddress, except we can verify the old address
+        as a sanity check.
+    */
+    void moveNodeAddress(node_handle p, node_address old_addr, node_address new_addr);
+
+  public: // level stuff
+
+    /// Get the level for node p.
+    int getNodeLevel(node_handle p) const;
+
+    /// Set the level for node p to k.
+    void setNodeLevel(node_handle p, int k);
+
+  public: // cache count stuff
+
+    /// Are we tracking cache counts
+    bool trackingCacheCounts() const;
+
+    /// Get the cache count for node p.
+    long getNodeCacheCount(node_handle p) const;
+
+    /// Increment the cache count for node p and return p.
+    node_handle cacheNode(node_handle p);
+
+    /// Decrement the cache count for node p.
+    void uncacheNode(node_handle p);
+    
+  public: // incoming count stuff
+
+    /// Are we tracking incoming counts
+    bool trackingIncomingCounts() const;
+
+    /// Get the incoming count for node p.
+    long getIncomingCount(node_handle p) const;
+
+    /// Increment the incoming count for node p and return p.
+    node_handle linkNode(node_handle p);
+
+    /// Decrement the incoming count for node p.
+    void unlinkNode(node_handle p);
+    
+  
+
+  public: // for debugging
+
+    void dumpInternal(output &s) const;
+
+  private:  // helper methods
+
+    /// Increase the number of node handles.
+    void expandHandleList();
+
+    /// Decrease the number of node handles.
+    void shrinkHandleList();
+
+    /// Allocate marks if needed.
+    void allocateMarks();
+
+    node_handle getNextOf(node_handle p) const;
+    void setNextOf(node_handle p, node_handle n);
+    void deactivate(node_handle p);
+  public:
+    bool isDeactivated(node_handle p) const;
+
+  private:
+    
+    // Nothing to see here.  Move along.
+    // Anything below here is subject to change without notice.
+
+    struct node_header {
+          /** Offset to node's data in the corresponding node storage structure.
+              If the node is active, this is the offset (>0) in the data array.
+              If the node is deleted, this is -next deleted node
+              (part of the unused address list).
+          */
+          node_address offset;
+
+          /** Node level
+              If the node is active, this indicates node level.
+          */
+          int level;
+
+          /** Cache count
+              The number of cache entries that refer to this node (excl. unique
+              table). If this node is a zombie, cache_count is negative.
+          */
+          int cache_count;
+
+          /** Incoming count
+              The number of incoming edges to this node.
+          */
+          int incoming_count;
+
+          /// Is node marked.  This is pretty horrible, but is only temporary
+          // bool marked;
+
+    };
+
+    /// address info for nodes
+    node_header *address;
+    /// Size of address/next array.
+    node_handle a_size;
+    /// Last used address.
+    node_handle a_last;
+    /// Pointer to unused address lists, based on size
+    node_handle a_unused[8];  // number of bytes per handle
+    /// Lowest non-empty address list
+    char a_lowest_index;
+    /// Next time we shink the address list.
+    node_handle a_next_shrink;
+
+    /// Do we track cache counts
+    bool usesCacheCounts;
+    /// Do we track incoming counts
+    bool usesIncomingCounts;
+
+    /// Are we using the pessimistic strategy?
+    bool pessimistic;
+
+    /// Parent forest, needed for recycling
+    expert_forest &parent;
+
+    static const int a_min_size = 1024;
+};
+
+
 // ******************************************************************
 // *                                                                *
 // *                    node_storage_style class                    *
@@ -1352,29 +1592,6 @@ class MEDDLY::node_storage {
     */
     virtual const void* getHashedHeaderOf(node_address addr) const = 0;
 
-    // --------------------------------------------------
-    // incoming count data
-    // --------------------------------------------------
-
-#ifdef INLINED_COUNT
-    /// Get the number of incoming pointers to a node.
-    int getCountOf(node_address addr) const;
-    /// Set the number of incoming pointers to a node.
-    void setCountOf(node_address addr, node_handle c);
-    /// Increment (and return) the number of incoming pointers to a node.
-    int incCountOf(node_address addr);
-    /// Decrement (and return) the number of incoming pointers to a node.
-    int decCountOf(node_address addr);
-#else
-    /// Get the number of incoming pointers to a node.
-    virtual node_handle getCountOf(node_address addr) const;
-    /// Set the number of incoming pointers to a node.
-    virtual void setCountOf(node_address addr, node_handle c);
-    /// Increment (and return) the number of incoming pointers to a node.
-    virtual node_handle incCountOf(node_address addr);
-    /// Decrement (and return) the number of incoming pointers to a node.
-    virtual node_handle decCountOf(node_address addr);
-#endif
 
     // --------------------------------------------------
     // next pointer data
@@ -1441,7 +1658,6 @@ class MEDDLY::node_storage {
     void incMemAlloc(long delta);
     void decMemAlloc(long delta);
     void incCompactions();
-    void updateCountArray(node_handle* cptr);
     void updateNextArray(node_handle* nptr);
 
     //
@@ -1465,9 +1681,6 @@ class MEDDLY::node_storage {
 
     /// Memory stats
     forest::statset* stats;
-
-    /// Count array, so that counts[addr] gives the count for node at addr.
-    int* counts;
 
     /// Next array, so that nexts[addr] gives the next value for node at addr.
     node_handle* nexts;
@@ -1598,7 +1811,7 @@ class MEDDLY::expert_forest: public forest
       @param  p       Polcies for reduction, storage, deletion.
     */
     expert_forest(int dslot, domain *d, bool rel, range_type t,
-                  edge_labeling ev, const policies &p);
+                  edge_labeling ev, const policies &p,int* level_reduction_rule);
 
   // ------------------------------------------------------------
   // inlined helpers.
@@ -1742,25 +1955,6 @@ class MEDDLY::expert_forest: public forest
           @param  p     Node we care about.
     */
     void uncacheNode(node_handle p);
-
-  // --------------------------------------------------
-  // Marking and unmarking nodes
-  // --------------------------------------------------
-  public:
-    /// Set all nodes as marked
-    void markAllNodes();
-
-    /// Set all nodes as unmarked
-    void unmarkAllNodes();
-
-    /// Mark a particular node
-    void markNode(node_handle p);
-
-    /// Unmark a particular node
-    void unmarkNode(node_handle p);
-
-    /// Determine if a node is marked
-    bool isNodeMarked(node_handle p) const;
 
 
   // --------------------------------------------------
@@ -2303,22 +2497,18 @@ class MEDDLY::expert_forest: public forest
     */
     void moveNodeOffset(node_handle node, node_address old_addr, node_address new_addr);
     friend class MEDDLY::node_storage;
+    friend class MEDDLY::node_headers;  // calls deleteNode().
 
     friend class MEDDLY::global_rebuilder;
 
   // ------------------------------------------------------------
   // helpers for this class
 
-    void handleNewOrphanNode(node_handle node);
+    /**
+        Disconnects all downward pointers from p,
+        and removes p from the unique table.
+    */
     void deleteNode(node_handle p);
-    void zombifyNode(node_handle p);
-
-    /// Determine a node handle that we can use.
-    node_handle getFreeNodeHandle();
-
-    /// Release a node handle back to the free pool.
-    void recycleNodeHandle(node_handle p);
-
 
     /** Apply reduction rule to the temporary node and finalize it. 
         Once a node is reduced, its contents cannot be modified.
@@ -2331,12 +2521,6 @@ class MEDDLY::expert_forest: public forest
 
     // Sanity check; used in development code.
     void validateDownPointers(const unpacked_node &nb) const;
-
-    /// Increase the number of node handles.
-    void expandHandleList();
-
-    /// Decrease the number of node handles.
-    void shrinkHandleList();
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   // |                                                                |
@@ -2361,51 +2545,6 @@ class MEDDLY::expert_forest: public forest
     std::shared_ptr<const variable_order> var_order;
 
   private:
-      /** Header information for each node.
-          The node handles (integers) need to keep some
-          information about the node they point to,
-          both for addressing and for bookkeeping purposes.
-          This struct holds that information.
-      */
-      struct node_header {
-          /** Offset to node's data in the corresponding node storage structure.
-              If the node is active, this is the offset (>0) in the data array.
-              If the node is deleted, this is -next deleted node
-              (part of the unused address list).
-          */
-          node_address offset;
-
-          /** Node level
-              If the node is active, this indicates node level.
-          */
-          int level;
-
-          /** Cache count
-              The number of cache entries that refer to this node (excl. unique
-              table). If this node is a zombie, cache_count is negative.
-          */
-          int cache_count;
-
-          /// Is node marked.  This is pretty horrible, but is only temporary
-          bool marked;
-
-          // Handy functions, in case our internal storage changes.
-
-          bool isActive() const;
-          bool isZombie() const;
-
-          bool isDeleted() const;
-          void setDeleted();
-          void setNotDeleted();
-
-          int getNextDeleted() const;
-          void setNextDeleted(int n);
-
-          void makeZombie();
-      };
-
-
-  private:
     // Garbage collection in progress
     bool performing_gc;
 
@@ -2415,18 +2554,8 @@ class MEDDLY::expert_forest: public forest
     // depth of delete/zombie stack; validate when 0
     int delete_depth;
 
-    /// address info for nodes
-    node_header *address;
-    /// Size of address/next array.
-    node_handle a_size;
-    /// Last used address.
-    node_handle a_last;
-    /// Pointer to unused address lists, based on size
-    node_handle a_unused[8];  // number of bytes per handle
-    /// Lowest non-empty address list
-    char a_lowest_index;
-    /// Next time we shink the address list.
-    node_handle a_next_shrink;
+    /// Node header information
+    node_headers nodeHeaders;
 
 
     /// Number of bytes for an edge
@@ -2742,8 +2871,9 @@ class MEDDLY::satotf_opname : public specialized_opname {
     */
     class subevent {
       public:
-        /// Constructor, specify variables that this function depends on.
-        subevent(forest* f, int* v, int nv);
+        /// Constructor, specify variables that this function depends on,
+        /// and if it is a firing or enabling event.
+        subevent(forest* f, int* v, int nv, bool firing);
         virtual ~subevent();
 
         /// Get the forest to which this function belongs to.
@@ -2760,6 +2890,12 @@ class MEDDLY::satotf_opname : public specialized_opname {
 
         /// Get the "top" variable for this function
         int getTop() const;
+
+        /// Is this a firing subevent?
+        bool isFiring() const;
+
+        /// Is this an enabling subevent
+        bool isEnabling() const;
 
         /**
           Rebuild the function to include the
@@ -2792,6 +2928,7 @@ class MEDDLY::satotf_opname : public specialized_opname {
         int** pminterms;
         int num_minterms;
         int size_minterms;
+        bool is_firing;
 
     };  // end of class subevent
 
@@ -2832,6 +2969,8 @@ class MEDDLY::satotf_opname : public specialized_opname {
 
         inline const dd_edge& getRoot() const { return root; }
 
+        inline bool isDisabled() const { return is_disabled; }
+
         inline bool needsRebuilding() const { return needs_rebuilding; }
 
         inline void markForRebuilding() { needs_rebuilding = true; }
@@ -2854,6 +2993,9 @@ class MEDDLY::satotf_opname : public specialized_opname {
 
         long mintermMemoryUsage() const;
 
+      protected:
+        void buildEventMask();
+
       private:
         subevent** subevents;
         int num_subevents;
@@ -2863,6 +3005,13 @@ class MEDDLY::satotf_opname : public specialized_opname {
         dd_edge root;
         bool needs_rebuilding;
         expert_forest* f;
+
+        bool is_disabled;
+        int num_firing_vars;
+        int* firing_vars;
+        dd_edge event_mask;
+        int* event_mask_from_minterm;
+        int* event_mask_to_minterm;
 
     };  // end of class event
 

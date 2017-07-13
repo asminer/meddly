@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -22,8 +20,8 @@
 
 #include "mtmddreal.h"
 
-MEDDLY::mt_mdd_real::mt_mdd_real(int dsl, domain *d, const policies &p, float tv)
-: mtmdd_forest(dsl, d, REAL, p)
+MEDDLY::mt_mdd_real::mt_mdd_real(int dsl, domain *d, const policies &p,int* level_reduction_rule, float tv)
+: mtmdd_forest(dsl, d, REAL, p,level_reduction_rule)
 { 
   initializeForest();
 

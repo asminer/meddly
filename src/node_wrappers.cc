@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -450,7 +448,9 @@ MEDDLY::node_storage_style::~node_storage_style()
 
 MEDDLY::node_storage::node_storage(const char* n, expert_forest* f)
 {
+#ifdef OLD_NODE_HEADERS
   counts = 0;
+#endif
   nexts = 0;
 
   style_name = n;
@@ -463,41 +463,6 @@ MEDDLY::node_storage::~node_storage()
   // nothing, derived classes must handle everything
 }
 
-
-#ifndef INLINED_COUNT
-MEDDLY::node_handle
-MEDDLY::node_storage::getCountOf(node_address addr) const
-{
-  MEDDLY_DCASSERT(counts);
-  MEDDLY_DCASSERT(addr > 0);
-  return counts[addr];
-}
-
-void
-MEDDLY::node_storage::setCountOf(node_address addr, MEDDLY::node_handle c)
-{
-  MEDDLY_DCASSERT(counts);
-  MEDDLY_DCASSERT(addr > 0);
-  counts[addr] = c;
-}
-
-MEDDLY::node_handle
-MEDDLY::node_storage::incCountOf(node_address addr)
-{
-  MEDDLY_DCASSERT(counts);
-  MEDDLY_DCASSERT(addr > 0);
-  return ++counts[addr];
-}
-;
-
-MEDDLY::node_handle
-MEDDLY::node_storage::decCountOf(node_address addr)
-{
-  MEDDLY_DCASSERT(counts);
-  MEDDLY_DCASSERT(addr > 0);
-  return --counts[addr];
-}
-#endif
 
 #ifndef INLINED_NEXT
 MEDDLY::node_handle

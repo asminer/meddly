@@ -1,6 +1,4 @@
 
-// $Id: slot_phase.cc 722 2016-10-02 01:16:29Z cjiang1209 $
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2011, Iowa State University Research Foundation, Inc.

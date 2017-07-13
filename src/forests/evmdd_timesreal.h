@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -70,7 +68,7 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
     };
 
   public:
-    evmdd_timesreal(int dsl, domain *d, const policies &p);
+    evmdd_timesreal(int dsl, domain *d, const policies &p,int* level_reduction_rule=NULL);
     ~evmdd_timesreal();
 
     virtual void createEdge(float val, dd_edge &e);

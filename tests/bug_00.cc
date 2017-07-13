@@ -1,6 +1,4 @@
 
-// $Id$
-
 #include "meddly.h"
 #include "simple_model.h"
 

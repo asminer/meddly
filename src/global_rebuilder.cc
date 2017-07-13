@@ -1,4 +1,3 @@
-// $Id$
 
 #include "defines.h"
 #include "meddly.h"

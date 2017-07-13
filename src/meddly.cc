@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -434,25 +432,14 @@ const char* MEDDLY::getLibraryInfo(int what)
     case 0:
       if (!title) {
         title = new char[80];
-        if (REVISION_NUMBER) {
-          snprintf(title, 80, 
+        snprintf(title, 80, 
 #ifdef DEVELOPMENT_CODE
-            "%s version %s.%d.dev", 
+          "%s version %s.dev", 
 #else
-            "%s version %s.%d", 
-#endif
-            PACKAGE_NAME, VERSION, REVISION_NUMBER
-          );
-        } else {
-          snprintf(title, 80, 
-#ifdef DEVELOPMENT_CODE
-            "%s version %s.dev", 
-#else
-            "%s version %s", 
+          "%s version %s", 
 #endif
             PACKAGE_NAME, VERSION
-          );
-        }
+        );
       }
       return title;
 
@@ -480,7 +467,7 @@ const char* MEDDLY::getLibraryInfo(int what)
 ";
 
     case 5:
-      return REVISION_DATE;
+      return MEDDLY_DATE;
   }
   return 0;
 }

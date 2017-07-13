@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -143,6 +141,9 @@ class MEDDLY::simple_separated : public node_storage {
     virtual const void* getUnhashedHeaderOf(node_address addr) const;
     virtual const void* getHashedHeaderOf(node_address addr) const;
 
+    virtual node_handle getNextOf(node_address addr) const;
+    virtual void setNextOf(node_address addr, node_handle n);
+
   protected:
     virtual void updateData(node_handle* d);
     virtual int smallestNode() const;
@@ -160,7 +161,7 @@ class MEDDLY::simple_separated : public node_storage {
       ///   @param  sz  negative for sparse storage, otherwise full.
       inline int slotsForNode(int sz) const {
           int node_slots = (sz<0) ? (2+slots_per_edge) * (-sz) : (1+slots_per_edge) * sz;
-          return header_slots + unhashed_slots + hashed_slots + node_slots;
+          return extra_slots + unhashed_slots + hashed_slots + node_slots;
       }
 
       /** Create a new node, stored as truncated full.
@@ -209,6 +210,10 @@ class MEDDLY::simple_separated : public node_storage {
     static const int next_slot = 1;
     static const int size_slot = 2;
     static const int header_slots = size_slot+1;
+
+    // Slots at the end
+    static const int tail_slots = 1;
+    static const int extra_slots = header_slots + tail_slots;
 
     //
     // Header info that varies by forest
@@ -282,7 +287,8 @@ MEDDLY::node_address MEDDLY::simple_separated
 {
 #ifdef DEBUG_ENCODING
   printf("simple_separated making node\n        temp:  ");
-  nb.show(stdout, true);
+  FILE_output out(stdout);
+  nb.show(out, true);
 #endif
   const node_handle tv = getParent()->getTransparentNode();
 
@@ -361,8 +367,13 @@ MEDDLY::node_address MEDDLY::simple_separated
 
 void MEDDLY::simple_separated::unlinkDownAndRecycle(node_address addr)
 {
+#ifdef MEMORY_TRACE
+  printf("recycling node at address %ld\n", addr);
+  FILE_output out(stdout);
+  dumpInternalNode(out, addr, 0x03);
+#endif
   MEDDLY_DCASSERT(MM);
-  node_handle* chunk = (node_handle*) MM->getChunkAddress(addr);
+  const node_handle* chunk = (node_handle*) MM->getChunkAddress(addr);
   MEDDLY_DCASSERT(chunk);
   
   const int size = chunk[size_slot];
@@ -371,18 +382,21 @@ void MEDDLY::simple_separated::unlinkDownAndRecycle(node_address addr)
   // Unlink down pointers
   //
   const int num_down = size < 0 ? -size : size;
-  node_handle* down = chunk + down_start;
+  const node_handle* down = chunk + down_start;
   for (int i=0; i<num_down; i++) {
     getParent()->unlinkNode(down[i]);
   }
+
+  // Can this move after unlinking?
+  MEDDLY_DCASSERT(MM->getChunkAddress(addr) == chunk);
 
   //
   // Determine number of slots in this node
   //
   size_t actual_slots = slotsForNode(size);
-  if (chunk[actual_slots] < 0) {
+  if (chunk[actual_slots-1] < 0) {
     // padding
-    actual_slots += (-chunk[actual_slots]);
+    actual_slots += (-chunk[actual_slots-1]);
   }
 
   //
@@ -543,17 +557,16 @@ void MEDDLY::simple_separated
 ::fillUnpacked(unpacked_node &nr, node_address addr, unpacked_node::storage_style st2) const
 {
 #ifdef DEBUG_ENCODING
+  FILE_output out(stdout);
   printf("simple_separeted filling reader\n    internal: ");
-  dumpInternalNode(stdout, addr, 0x03);
-  printf("        node: ");
-  showNode(stdout, addr, true);
+  dumpInternalNode(out, addr, 0x03);
 #endif
 
   MEDDLY_DCASSERT(MM);
   const node_handle* chunk = (node_handle*) MM->getChunkAddress(addr);
   MEDDLY_DCASSERT(chunk);
 
-  MEDDLY_DCASSERT( n.hasEdges() == (slots_per_edge>0) );
+  MEDDLY_DCASSERT(nr.hasEdges() == (slots_per_edge>0) );
   
   //
   // Copy any extra header information
@@ -613,7 +626,7 @@ void MEDDLY::simple_separated
       }
 #ifdef DEBUG_ENCODING
       printf("\n        temp:  ");
-      nr.show(stdout, getParent(), true);
+      nr.show(out, true);
       printf("\n");
 #endif
       return;
@@ -633,7 +646,7 @@ void MEDDLY::simple_separated
     nr.shrinkSparse(nnz);
 #ifdef DEBUG_ENCODING
     printf("\n        temp:  ");
-    nr.show(stdout, getParent(), true);
+    nr.show(out, true);
     printf("\n");
 #endif
     return;
@@ -658,13 +671,19 @@ void MEDDLY::simple_separated
     if (unpacked_node::AS_STORED == st2) {
       nr.shrinkFull(size);
     } else {
-      for (; i<nr.getSize(); i++) {
-        getParent()->getTransparentEdge(nr.d_ref(i), nr.eptr_write(i));
+      if (nr.hasEdges()) {
+        for (; i<nr.getSize(); i++) {
+          getParent()->getTransparentEdge(nr.d_ref(i), nr.eptr_write(i));
+        }
+      } else {
+        for (; i<nr.getSize(); i++) {
+          nr.d_ref(i) = getParent()->getTransparentNode();
+        }
       }
     }
 #ifdef DEBUG_ENCODING
     printf("\n        temp:  ");
-    nr.show(stdout, getParent(), true);
+    nr.show(out, true);
     printf("\n");
 #endif
     return;
@@ -686,7 +705,7 @@ void MEDDLY::simple_separated
   nr.shrinkSparse(z);
 #ifdef DEBUG_ENCODING
   printf("\n        temp:  ");
-  nr.show(stdout, getParent(), true);
+  nr.show(out, true);
   printf("\n");
 #endif
 }
@@ -914,6 +933,25 @@ const void* MEDDLY::simple_separated
 }
 
 
+MEDDLY::node_handle MEDDLY::simple_separated
+::getNextOf(node_address addr) const
+{
+  MEDDLY_DCASSERT(MM);
+  const node_handle* chunk = (node_handle*) MM->getChunkAddress(addr);
+  MEDDLY_DCASSERT(chunk);
+  return chunk[next_slot];
+}
+
+void MEDDLY::simple_separated
+::setNextOf(node_address addr, node_handle n)
+{
+  MEDDLY_DCASSERT(MM);
+  node_handle* chunk = (node_handle*) MM->getChunkAddress(addr);
+  MEDDLY_DCASSERT(chunk);
+  chunk[next_slot] = n;
+  // TBD - if next_slot is 0 then make sure MSB is not set
+}
+
 
 void MEDDLY::simple_separated::updateData(node_handle* d)
 {
@@ -1111,6 +1149,9 @@ MEDDLY::simple_separated
 MEDDLY::node_handle MEDDLY::simple_separated
 ::makeFullNode(node_handle p, int size, const unpacked_node &nb)
 {
+#ifdef DEBUG_ENCODING
+  printf("\nBuilding full node with handle %ld\n", p);
+#endif
   //
   // Determine amount of memory we need, and request it
   //
@@ -1130,7 +1171,9 @@ MEDDLY::node_handle MEDDLY::simple_separated
   //
   // Set size, incoming count, etc.
   //
+  MEDDLY_CHECK_RANGE(0, count_slot, slots_given);
   chunk[count_slot] = 1;
+  MEDDLY_CHECK_RANGE(0, size_slot, slots_given);
   chunk[size_slot] = size;
 
   //
@@ -1201,10 +1244,9 @@ MEDDLY::node_handle MEDDLY::simple_separated
   tail[delta] = p;  // if delta = 0, we just overwrote but that's fine
 
 #ifdef DEBUG_ENCODING
-  printf("\n        made: ");
-  showNode(stdout, addr, true);
   printf("\n    internal: ");
-  dumpInternalNode(stdout, addr, 0x03);
+  FILE_output out(stdout);
+  dumpInternalNode(out, addr, 0x03);
 #endif
   return addr;
 }
@@ -1212,6 +1254,9 @@ MEDDLY::node_handle MEDDLY::simple_separated
 MEDDLY::node_handle MEDDLY::simple_separated
 ::makeSparseNode(node_handle p, int size, const unpacked_node &nb)
 {
+#ifdef DEBUG_ENCODING
+  printf("\nBuilding sparse node with handle %ld\n", p);
+#endif
   //
   // Determine amount of memory we need, and request it
   //
@@ -1304,17 +1349,20 @@ MEDDLY::node_handle MEDDLY::simple_separated
   // Deal with any padding and the tail
   //
 
-  node_handle* tail = down + size + slots_per_edge * size;
+  node_handle* tail = down + 2*size + slots_per_edge * size;
   int delta = slots_given - slots_req;
   MEDDLY_DCASSERT(delta>=0);
   tail[0] = -delta;
   tail[delta] = p;  // if delta = 0, we just overwrote but that's fine
 
 #ifdef DEBUG_ENCODING
+  /*
   printf("\n        made: ");
   showNode(stdout, addr, true);
+  */
   printf("\n    internal: ");
-  dumpInternalNode(stdout, addr, 0x03);
+  FILE_output out(stdout);
+  dumpInternalNode(out, addr, 0x03);
 #endif
   return addr;
 }
@@ -1799,7 +1847,8 @@ MEDDLY::node_address MEDDLY::simple_storage
 {
 #ifdef DEBUG_ENCODING
   printf("simple_storage making node\n        temp:  ");
-  nb.show(stdout, true);
+  FILE_output out(stdout);
+  nb.show(out, true);
 #endif
   node_handle tv = getParent()->getTransparentNode();
 
@@ -2028,9 +2077,12 @@ void MEDDLY::simple_storage
 {
 #ifdef DEBUG_ENCODING
   printf("simple_storage filling reader\n    internal: ");
-  dumpInternalNode(stdout, addr, 0x03);
+  FILE_output out(stdout);
+  dumpInternalNode(out, addr, 0x03);
+  /*
   printf("        node: ");
   showNode(stdout, addr, true);
+  */
 #endif
 
   const node_handle tv = getParent()->getTransparentNode();
@@ -2084,7 +2136,7 @@ void MEDDLY::simple_storage
       }
 #ifdef DEBUG_ENCODING
       printf("\n        temp:  ");
-      nr.show(stdout, getParent(), true);
+      nr.show(out, true);
       printf("\n");
 #endif
       return;
@@ -2102,7 +2154,7 @@ void MEDDLY::simple_storage
     nr.shrinkSparse(nnz);
 #ifdef DEBUG_ENCODING
     printf("\n        temp:  ");
-    nr.show(stdout, getParent(), true);
+    nr.show(out, true);
     printf("\n");
 #endif
     return;
@@ -2132,7 +2184,7 @@ void MEDDLY::simple_storage
     }
 #ifdef DEBUG_ENCODING
     printf("\n        temp:  ");
-    nr.show(stdout, getParent(), true);
+    nr.show(out, true);
     printf("\n");
 #endif
     return;
@@ -2151,7 +2203,7 @@ void MEDDLY::simple_storage
   nr.shrinkSparse(z);
 #ifdef DEBUG_ENCODING
   printf("\n        temp:  ");
-  nr.show(stdout, getParent(), true);
+  nr.show(out, true);
   printf("\n");
 #endif
 }
@@ -2322,7 +2374,6 @@ const void* MEDDLY::simple_storage
 void MEDDLY::simple_storage::updateData(node_handle* d)
 {
   data = d;
-  updateCountArray(data + count_index);
   updateNextArray(data + next_index);
 }
 
@@ -2440,7 +2491,6 @@ MEDDLY::node_handle MEDDLY::simple_storage
   }
 #else
   node_address addr = allocNode(size, p, true);
-  MEDDLY_DCASSERT(1==getCountOf(addr));
   node_handle* down = FD(addr);
   if (edgeSlots) {
       MEDDLY_DCASSERT(nb.hasEdges());
@@ -2472,10 +2522,13 @@ MEDDLY::node_handle MEDDLY::simple_storage
 #endif
   copyExtraHeader(addr, nb);
 #ifdef DEBUG_ENCODING
+  /*
   printf("\n        made: ");
   showNode(stdout, addr, true);
+  */
   printf("\n    internal: ");
-  dumpInternalNode(stdout, addr, 0x03);
+  FILE_output out(stdout);
+  dumpInternalNode(out, addr, 0x03);
 #endif
   return addr;
 }
@@ -2484,56 +2537,70 @@ MEDDLY::node_handle MEDDLY::simple_storage
 ::makeSparseNode(node_handle p, int size, const unpacked_node &nb)
 {
   node_address addr = allocNode(-size, p, false);
-  MEDDLY_DCASSERT(1==getCountOf(addr));
   node_handle* index = SI(addr);
   node_handle* down  = SD(addr);
   if (nb.hasEdges()) {
-      MEDDLY_DCASSERT(nb.hasEdges());
-      char* edge = (char*) SE(addr);
-      int edge_bytes = edgeSlots * sizeof(node_handle);
-      if (nb.isSparse()) {
-        for (int z=0; z<size; z++) {
-          down[z] = nb.d(z);
-          index[z] = nb.i(z);
-        }
-        // kinda hacky
-        memcpy(edge, nb.eptr(0), size * edge_bytes);
-      } else {
-        int z = 0;
-        for (int i=0; i<nb.getSize(); i++) if (nb.d(i)) {
+    MEDDLY_DCASSERT(nb.hasEdges());
+    char* edge = (char*) SE(addr);
+    int edge_bytes = edgeSlots * sizeof(node_handle);
+    if (nb.isSparse()) {
+      for (int z=0; z<size; z++) {
+        down[z] = nb.d(z);
+        index[z] = nb.i(z);
+      }
+      // kinda hacky
+      memcpy(edge, nb.eptr(0), size * edge_bytes);
+#ifdef DEVELOPMENT_CODE
+      // check if the sparse node is sorted
+      for (int z=1; z<size; z++) {
+        MEDDLY_DCASSERT(index[z-1] < index[z]);
+      }
+#endif
+    } else {
+      int z = 0;
+      for (int i=0; i<nb.getSize(); i++) if (nb.d(i)) {
+        MEDDLY_CHECK_RANGE(0, z, size);
+        down[z] = nb.d(i);
+        index[z] = i;
+        memcpy(edge + z * edge_bytes, nb.eptr(i), edge_bytes);
+        z++;
+      }
+    }
+  } else {
+    MEDDLY_DCASSERT(!nb.hasEdges());
+    if (nb.isSparse()) {
+      for (int z=0; z<size; z++) {
+        down[z] = nb.d(z);
+        index[z] = nb.i(z);
+      }
+#ifdef DEVELOPMENT_CODE
+      // check if the sparse node is sorted
+      for (int z=1; z<size; z++) {
+        MEDDLY_DCASSERT(index[z-1] < index[z]);
+      }
+#endif
+    } else {
+      int z = 0;
+      node_handle tv = getParent()->getTransparentNode();
+      for (int i=0; i<nb.getSize(); i++) {
+        if (nb.d(i)!=tv) {
           MEDDLY_CHECK_RANGE(0, z, size);
           down[z] = nb.d(i);
           index[z] = i;
-          memcpy(edge + z * edge_bytes, nb.eptr(i), edge_bytes);
           z++;
         }
       }
-  } else {
-      MEDDLY_DCASSERT(!nb.hasEdges());
-      if (nb.isSparse()) {
-        for (int z=0; z<size; z++) {
-          down[z] = nb.d(z);
-          index[z] = nb.i(z);
-        }
-      } else {
-        int z = 0;
-        node_handle tv = getParent()->getTransparentNode();
-        for (int i=0; i<nb.getSize(); i++) {
-          if (nb.d(i)!=tv) {
-            MEDDLY_CHECK_RANGE(0, z, size);
-            down[z] = nb.d(i);
-            index[z] = i;
-            z++;
-          }
-        }
-      }
+    }
   }
   copyExtraHeader(addr, nb);
 #ifdef DEBUG_ENCODING
+  /*
   printf("\n        made: ");
   showNode(stdout, addr, true);
+  */
   printf("\n    internal: ");
-  dumpInternalNode(stdout, addr, 0x03);
+  FILE_output out(stdout);
+  dumpInternalNode(out, addr, 0x03);
 #endif
   return addr;
 }
@@ -2565,22 +2632,25 @@ MEDDLY::simple_storage::allocNode(int sz, node_handle tail, bool clear)
   MEDDLY_DCASSERT(got >= slots);
   if (clear) {
 //	memset(data+off, 0, slots*sizeof(node_handle));
-	node_handle tv = getParent()->getTransparentNode();
-	for(int i=0; i<slots; i++){
-		data[off+i]=tv;
-	}
+	  node_handle tv = getParent()->getTransparentNode();
+	  for(int i=0; i<slots; i++){
+		  data[off+i]=tv;
+	  }
   }
-  setCountOf(off, 1);                     // #incoming
+  // Need the slot to be non-negative for now...
+  data[off + count_index] = 0;
+
   setNextOf(off, temp_node_value);        // mark as a temp node
   setSizeOf(off, sz);                     // size
   data[off+slots-1] = slots - got;        // negative padding
   data[off+got-1] = tail;                 // tail entry
 #ifdef MEMORY_TRACE
   printf("Allocated new node, asked %d, got %d, position %d (size %d)\n", slots, got, off, sz);
+  FILE_output out(stdout);
 #ifdef DEEP_MEMORY_TRACE
-  dumpInternal(stdout);
+  dumpInternal(out);
 #else
-  dumpInternal(stdout, off);
+  dumpInternal(out, off);
 #endif
 #endif
   return off;

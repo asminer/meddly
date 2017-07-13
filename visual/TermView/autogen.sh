@@ -1,3 +1,2 @@
-# $Id$
 
 autoreconf --install --verbose

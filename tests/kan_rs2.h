@@ -1,6 +1,4 @@
 
-// $Id$
-
 // Reachable states for kanban, n=2
 
 const char* kanban_rs2[] = {

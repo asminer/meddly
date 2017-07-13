@@ -29,7 +29,8 @@
 #include <malloc/malloc.h>
 #endif
 
-#define MEMORY_TRACE
+// #define MEMORY_TRACE
+// #define DEBUG_GRID
 
 // new grid class here
 
@@ -135,62 +136,71 @@ namespace MEDDLY {
     private:
       inline bool isHole(unsigned long h) const {
         MEDDLY_DCASSERT(data);
-        MEDDLY_DCASSERT(h <= last_used_slot);
-        return data[h] & MSB();
+        MEDDLY_CHECK_RANGE(0, h, 1+last_used_slot);
+        return data[h] & MSB;
       }
       inline INT getHoleSize(unsigned long h) const {
         MEDDLY_DCASSERT(data);
-        MEDDLY_DCASSERT(h <= last_used_slot);
-        return data[h] & (~MSB());
+        MEDDLY_CHECK_RANGE(0, h, 1+last_used_slot);
+        return data[h] & (~MSB);
       }
       inline void setHoleSize(unsigned long h, INT hs) {
         MEDDLY_DCASSERT(data);
         MEDDLY_DCASSERT(h <= last_used_slot);
         MEDDLY_DCASSERT(hs>0);
-        data[h] = data[h+hs-1] = (hs | MSB());
+        MEDDLY_CHECK_RANGE(0, h+hs-1, 1+last_used_slot);
+        data[h] = data[h+hs-1] = (hs | MSB);
       }
 
-      inline bool isIndexHole(unsigned long h) {
+      inline bool isIndexHole(unsigned long h) const {
         MEDDLY_DCASSERT(data);
         MEDDLY_DCASSERT(h <= last_used_slot);
+        MEDDLY_CHECK_RANGE(0, h+1, 1+last_used_slot);
         return data[h+1] >= 0;
       }
 
       inline void setNonIndexHole(unsigned long h) {
         MEDDLY_DCASSERT(data);
         MEDDLY_DCASSERT(h <= last_used_slot);
+        MEDDLY_CHECK_RANGE(0, h+1, 1+last_used_slot);
         data[h+1] = -1;
+      }
+
+      inline void createIndexHoleUp(unsigned long h, INT up) {
+        MEDDLY_DCASSERT(isHole(h));
+        MEDDLY_CHECK_RANGE(0, h+1, 1+last_used_slot);
+        data[h+1] = up;
       }
       
       inline INT& Up(unsigned long h) const {
         MEDDLY_DCASSERT(isHole(h));
         MEDDLY_DCASSERT(isIndexHole(h));
+        MEDDLY_CHECK_RANGE(0, h+1, 1+last_used_slot);
         return data[h+1];
       }
 
       inline INT& Down(unsigned long h) const {
         MEDDLY_DCASSERT(isHole(h));
         MEDDLY_DCASSERT(isIndexHole(h));
+        MEDDLY_CHECK_RANGE(0, h+2, 1+last_used_slot);
         return data[h+2];
       }
 
       inline INT& Prev(unsigned long h) const {
         MEDDLY_DCASSERT(isHole(h));
         MEDDLY_DCASSERT(!isIndexHole(h));
+        MEDDLY_CHECK_RANGE(0, h+2, 1+last_used_slot);
         return data[h+2];
       }
 
       inline INT& Next(unsigned long h) const {
         MEDDLY_DCASSERT(isHole(h));
+        MEDDLY_CHECK_RANGE(0, h+3, 1+last_used_slot);
         return data[h+3];
       }
       
-      inline static INT MSB() {
-        return INT(1) << ( (8*sizeof(INT))-1 );
-      }
-
-      inline static unsigned long max_handle() {
-        return (~MSB());
+      inline unsigned long max_handle() const {
+        return (~MSB);
       }
 
       inline static INT smallestChunk() {
@@ -214,8 +224,10 @@ namespace MEDDLY {
       /// Pointer to bottom of holes grid
       INT holes_top;
 
-  }; // class original_grid
+      /// MSB, to use as a mask
+      INT MSB;
 
+  }; // class original_grid
 
   // ******************************************************************
   // *                                                                *
@@ -234,6 +246,9 @@ namespace MEDDLY {
     large_holes = 0;
     holes_bottom = 0;
     holes_top = 0;
+
+    MSB = 1;
+    MSB <<= (8*sizeof(INT) - 1);
   }
 
   template <class INT>
@@ -251,9 +266,12 @@ namespace MEDDLY {
   template <class INT>
   unsigned long original_grid<INT>::requestChunk(size_t &numSlots)
   {
+#ifdef MEMORY_TRACE
+    printf("requestChunk(%lu)\n", numSlots);
+#endif
     if (numSlots > max_request) {
 #ifdef MEMORY_TRACE
-      printf("New max request %lu; shifting holes from large list to grid\n", numSlots);
+      printf("\tNew max request %lu; shifting holes from large list to grid\n", numSlots);
 #endif
       max_request = numSlots;
 
@@ -270,11 +288,18 @@ namespace MEDDLY {
         addToGrid(curr);  
         curr = next;
       }
+#ifdef DEBUG_GRID
+      FILE_output out(stdout);
+      dumpInternal(out);
+#endif
     }
 
     //
     // Still here?  We couldn't recycle a chunk.
     //
+#ifdef MEMORY_TRACE
+    printf("\tNo recycleable chunks, grabbing from end\n");
+#endif
 
     if (last_used_slot + numSlots > data_alloc) {
       // 
@@ -311,6 +336,9 @@ namespace MEDDLY {
       return 0;
     }
     last_used_slot += numSlots;
+#ifdef MEMORY_TRACE
+    printf("requestChunk(%lu) returned %ld\n", numSlots, h);
+#endif
     return h;
   }
 
@@ -335,12 +363,16 @@ namespace MEDDLY {
       MEDDLY_DCASSERT(getHoleSize(h-1) < h);
       unsigned long hleft = h - getHoleSize(h-1);
 #ifdef MEMORY_TRACE
-      printf("Merging to the left, holes %lu and %lu\n", hleft, h);
+      printf("\tMerging to the left, holes %lu and %lu\n", hleft, h);
 #endif
       removeFromGrid(hleft);
       numSlots += getHoleSize(hleft); 
       h = hleft;
       setHoleSize(h, numSlots);
+#ifdef DEBUG_GRID
+      FILE_output out(stdout);
+      dumpInternal(out);
+#endif
     }
 
     //
@@ -348,7 +380,7 @@ namespace MEDDLY {
     //
     if (h + numSlots - 1 == last_used_slot) {
 #ifdef MEMORY_TRACE
-      printf("Merging chunk with unused end bit\n");
+      printf("\tMerging chunk with unused end bit\n");
 #endif
       last_used_slot = h-1;
       return;
@@ -360,17 +392,25 @@ namespace MEDDLY {
     if (isHole(h + numSlots)) {
       unsigned long hright = h + numSlots;
 #ifdef MEMORY_TRACE
-      printf("Merging to the right, holes %lu and %lu\n", h, hright);
+      printf("\tMerging to the right, holes %lu and %lu\n", h, hright);
 #endif
       removeFromGrid(hright);
       numSlots += getHoleSize(hright);
       setHoleSize(h, numSlots);
+#ifdef DEBUG_GRID
+      FILE_output out(stdout);
+      dumpInternal(out);
+#endif
     }
 
     //
     // Hole is ready, add to grid
     //
     addToGrid(h);
+#ifdef DEBUG_GRID
+    FILE_output out(stdout);
+    dumpInternal(out);
+#endif
   }
 
 
@@ -518,7 +558,7 @@ namespace MEDDLY {
       return;
     }
 
-    if (data[addr] & MSB()) {
+    if (data[addr] & MSB) {
       s << "1:";
     } else {
       s << "0:";
@@ -530,7 +570,7 @@ namespace MEDDLY {
     s << ", " << data[addr+3];
     s << ", ..., ";
     addr += getHoleSize(addr)-1;
-    if (data[addr] & MSB()) {
+    if (data[addr] & MSB) {
       s << "1:";
     } else {
       s << "0:";
@@ -551,6 +591,9 @@ namespace MEDDLY {
 #ifdef HAVE_MALLOC_GOOD_SIZE
     size_t good_bytes = malloc_good_size(new_alloc * sizeof(INT));
     new_alloc = good_bytes / sizeof(INT);
+#endif
+#ifdef MEMORY_TRACE
+    printf("resizing, new size %ld\n", new_alloc);
 #endif
 
     INT* new_data = (INT*) realloc(data, new_alloc * sizeof(INT));
@@ -688,6 +731,13 @@ namespace MEDDLY {
     INT next = Next(h);
     MEDDLY_DCASSERT(next);
 
+    if (above) {
+      Down(above) = next;
+    } else {
+      holes_top = next;
+    }
+    createIndexHoleUp(next, above);
+
     if (below) {
       Up(below) = next;
     } else {
@@ -695,12 +745,6 @@ namespace MEDDLY {
     }
     Down(next) = below;
 
-    if (above) {
-      Down(above) = next;
-    } else {
-      holes_top = next;
-    }
-    Up(next) = above;
   }
 
 
@@ -736,7 +780,7 @@ namespace MEDDLY {
 #ifdef MEMORY_TRACE
       printf("\tadding to large hole list %ld\n", long(large_holes));
 #endif
-      Up(h) = 0;
+      setNonIndexHole(h);
       Prev(h) = 0;
       Next(h) = large_holes;
       if (large_holes) Prev(large_holes) = h;

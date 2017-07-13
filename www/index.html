@@ -1,0 +1,216 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>MEDDLY: Multi-terminal and Edge-valued Decision Diagram LibrarY</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="meddly.css">
+<link rel="stylesheet" type="text/css" media="print" href="print.css">
+</head>
+<body>
+
+<div id="content">
+
+<h1 id="hometitle">MEDDLY</h1>
+
+<p>
+MEDDLY stands for Multi-terminal and Edge-valued Decision Diagram LibrarY.
+It is an open-source software library that supports several types of
+decision diagrams, including binary decision diagrams (BDDs).
+See the list of <a href="features.html">features</a>
+for a complete list of supported types.
+</p>
+<p>
+The library is written in C++ and is licensed under the 
+<a href="http://www.gnu.org/licenses/licenses.html">GNU Lesser General Public License Version 3</a>.
+</p>
+<p>
+At the moment, there are no pre-compiled binaries or packages for the library.
+To obtain the library, you must
+<a href="obtain.html">obtain the source code</a>
+and then 
+<a href="build.html">build the library</a>.
+</p>
+
+
+
+
+<h2><a name="news"></a>News</h2>
+
+<p>
+<b>2017 July 05:</b>
+Version <b>0.14.818</b> is now available.
+Changes are mostly related to library initialization and cleanup.
+See the Version History for more details.
+</p>
+<p>
+In the next several days, we will be migrating from subversion to git.
+This release also serves as a stable snapshot while we work through
+any kinks with this migration.
+</p>
+
+<p>
+<b>2016 June 15:</b>
+Version <b>0.13.685</b> is now available.
+Added features include prototype implementations for
+saturation for partitioned relations
+and on-the-fly saturation.
+See the Version History for more details.
+</p>
+
+<p>
+<b>2015 April 25:</b>
+Version <b>0.12.625</b> is now available.
+Added features include more (but not yet complete)
+support for Edge-valued DDs,
+and saturation for transition relations
+that are already partitioned by levels or events.
+Less visible additions include an abstract compute table interface,
+allowing the use of different compute tables.
+See the Version History for more details.
+</p>
+
+<p>
+<b>2014 February 04:</b>
+Version <b>0.11.486</b> is now available.
+Most changes are to the Multi-terminal
+class hierarchy, and should have minimal
+impact on casual users.
+See the Version History for more details.
+</p>
+
+<p>
+<b>2013 July 30:</b>
+Version <b>0.10.456</b> is now available.
+Most changes are related to how nodes are
+stored internally, and should have minimal
+impact on casual users.
+See the Version History for more details.
+</p>
+
+<p>
+<b>2012 September 26:</b>
+Meddly has been upgraded to the new SourceForge.
+As a result of this, the subversion repositories have moved.
+Anyone using the subversion repository to obtain Meddly will
+want to do a fresh checkout from the new location.
+</p>
+
+<p>
+<b>2012 July 26:</b>
+Version <b>0.9.397</b> is now available.
+There are many changes at the expert level for
+building and accessing nodes, and all the built-in
+operations have been updated.
+The code runs a bit faster now.
+See the Version History for more details.
+</p>
+
+<p>
+<b>2012 June 18:</b>
+Version <b>0.8.311</b> is now available.
+Changes are mostly reorganization of the source code.
+Forest policies must be set at construction time.
+See the Version History for more details.
+</p>
+
+<p>
+<b>2011 July 26:</b>
+<a href="https://lists.sourceforge.net/lists/listinfo/meddly-news" target="_blank">Subscribe</a> to the Meddly news mailing list for announcements
+about Meddly releases.
+</p>
+
+<p>
+<b>2011 July 15:</b>
+Version <b>0.7.254</b> is now available.
+Compute tables have been reimplemented and are 
+a bit faster now.
+See the Version History.
+</p>
+
+<p>
+<b>2011 July 05:</b>
+Version <b>0.6.233</b> is now available.
+The compute manager class is replaced by top-level functions
+in the MEDDLY namespace.
+The back-end mechanism for operations has changed significantly.
+Applications that use only the simple interface should require
+only a few changes.
+See the Version History for a more detailed list.
+</p>
+
+<p>
+<b>2011 June 16:</b>
+Version <b>0.5.186</b> is now available.
+Each variable in a domain is now represented by 
+an instance of class <tt>variable</tt>, 
+rather than an integer handle.
+See the Version History for a complete list of changes.
+The interface has changed, but not much;
+applications should require only a few minor changes to use version 0.5.
+</p>
+
+<p>
+<b>2011 June 13:</b>
+Version <b>0.4.174</b> is now available.
+Error handling is now done using throw/catch instead of
+returning error codes.
+See the Version History for a list of changes to the interface;
+code using versions 0.3 and earlier must be modified
+to use version 0.4.
+</p>
+
+<p>
+<b>2011 June 08:</b> 
+Some major interface changes are planned for 
+the next releases (0.4 and higher) of MEDDLY.
+</p>
+
+<p>
+<b>2011 June 08:</b> 
+Version <b>0.3.165</b> is now available.
+</p>
+
+<p>
+<b>2010 June 11:</b> 
+Version <b>0.2.101</b> is now available.
+</p>
+
+
+
+<h2><a name="rsrc"></a>Acknowledgments</h2>
+
+<p>
+This project has been supported in part by the
+<a href="http://www.nsf.gov">National Science Foundation</a>
+under grants CSR-0546041 and CSR-0509340.
+</p>
+
+
+<!-- Common sections of all pages -->
+
+
+<div id="footer">
+<p id="copyright">Copyright &copy; 2009-2010, Iowa State University Research Foundation, Inc.</p>
+</div>
+</div>
+
+<div id="sidebar">
+
+<ul class="navlist">
+<li><a href="index.html" class="current">Home</a></li>
+<li><a href="obtain.html">Obtain MEDDLY</a></li>
+<li><a href="build.html">Build MEDDLY</a></li>
+<li><a href="features.html">Features</a></li>
+<li><a href="history.html">Version History</a></li>
+<li><a href="papers.html">Publications</a></li>
+</ul>
+
+
+<p id="sflogo">
+Hosted by:<br>
+<a href="http://sourceforge.net/projects/meddly"><img src="http://sflogo.sourceforge.net/sflogo.php?group_id=255553&amp;type=16" width="150" height="40" alt="Get Decision diagram library at SourceForge.net. Fast, secure and Free Open Source software downloads" /></a>
+</p>
+
+</div>
+</body>
+</html>

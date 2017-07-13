@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -41,7 +39,7 @@ namespace MEDDLY {
 */
 class MEDDLY::mt_forest : public expert_forest {
   protected:
-    mt_forest(int dsl, domain *d, bool rel, range_type t, const policies &p);
+    mt_forest(int dsl, domain *d, bool rel, range_type t, const policies &p,int* level_reduction_rule=NULL);
 
   public:
     virtual bool isTransparentEdge(node_handle p, const void* v) const;

@@ -1,6 +1,4 @@
 
-// $Id: init_builtin.cc 700 2016-07-07 21:06:50Z asminer $
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.

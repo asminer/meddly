@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -31,7 +29,7 @@ namespace MEDDLY {
 class MEDDLY::evmdd_forest : public ev_forest {
   public:
     evmdd_forest(int dsl, domain* d, range_type t, edge_labeling ev, 
-      const policies &p);
+      const policies &p,int* level_reduction_rule=NULL);
 
     virtual void swapAdjacentVariables(int level);
     virtual void moveDownVariable(int high, int low);
@@ -66,7 +64,7 @@ class MEDDLY::evmdd_forest : public ev_forest {
         for (int i=1; i<=k; i++) {
           if (DONT_CARE == vlist[i]) {
             // make a redundant node
-            if (isFullyReduced()) continue; 
+            if (isFullyReduced()) continue;
             int sz = getLevelSize(i);
             unpacked_node* nb = unpacked_node::newFull(this, i, sz);
             nb->d_ref(0) = ed;
