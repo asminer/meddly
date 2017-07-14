@@ -1530,19 +1530,25 @@ class MEDDLY::node_storage {
     virtual const void* getHashedHeaderOf(node_address addr) const = 0;
 
 
-    // --------------------------------------------------
-    // next pointer data
-    // --------------------------------------------------
-
-#ifdef INLINED_NEXT
-    node_handle getNextOf(node_address addr) const;
-    void setNextOf(node_address addr, node_handle n);
-#else
+    /**
+        Get next pointer for node at this address.
+        Used by unique table in case of chaining.
+          @param  addr    Address of node
+          @return         Handle of next node, or 0.
+    */
     virtual node_handle getNextOf(node_address addr) const;
-    virtual void setNextOf(node_address addr, node_handle n);
-#endif
 
-    //
+
+    /**
+        Set next pointer for node at this address.
+        Used by unique table in case of chaining.
+          @param  addr    Address of node
+          @param  n       Non-negative.  Handle of
+                          next node in a unique table chain,
+                          or 0 if none.
+    */
+    virtual void setNextOf(node_address addr, node_handle n);
+
 
     /**
         Return the name of the style that created us.

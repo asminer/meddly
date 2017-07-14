@@ -464,7 +464,6 @@ MEDDLY::node_storage::~node_storage()
 }
 
 
-#ifndef INLINED_NEXT
 MEDDLY::node_handle
 MEDDLY::node_storage::getNextOf(node_address addr) const
 {
@@ -478,9 +477,9 @@ MEDDLY::node_storage::setNextOf(node_address addr, MEDDLY::node_handle n)
 {
   MEDDLY_DCASSERT(nexts);
   MEDDLY_DCASSERT(addr > 0);
+  MEDDLY_DCASSERT(n>=0);
   nexts[addr] = n;
 }
-#endif
 
 
 void MEDDLY::node_storage::dumpInternal(output &s, unsigned flags) const
@@ -495,9 +494,3 @@ void MEDDLY::node_storage::dumpInternal(output &s, unsigned flags) const
   s.flush();
 }
 
-/*
-void MEDDLY::node_storage::localInitForForest(const expert_forest* f)
-{
-  // default - do nothing
-}
-*/

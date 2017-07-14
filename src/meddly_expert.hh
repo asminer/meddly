@@ -780,24 +780,6 @@ MEDDLY::node_headers::isDeactivated(node_handle p) const
 // ******************************************************************
 
 
-#ifdef INLINED_NEXT
-inline MEDDLY::node_handle
-MEDDLY::node_storage::getNextOf(node_address addr) const
-{
-  MEDDLY_DCASSERT(nexts);
-  MEDDLY_DCASSERT(addr > 0);
-  return nexts[addr];
-}
-
-inline void
-MEDDLY::node_storage::setNextOf(node_address addr, MEDDLY::node_handle n)
-{
-  MEDDLY_DCASSERT(nexts);
-  MEDDLY_DCASSERT(addr > 0);
-  nexts[addr] = n;
-}
-#endif
-
 inline const char*
 MEDDLY::node_storage::getStyleName() const
 {

@@ -109,6 +109,7 @@ namespace MEDDLY {
       virtual void recycleChunk(unsigned long h, size_t numSlots);
 
       virtual void* getChunkAddress(unsigned long h) const {
+        MEDDLY_DCASSERT(data);
         MEDDLY_DCASSERT(h < data_alloc);
         return data + h;
       }

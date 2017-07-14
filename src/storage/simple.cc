@@ -73,9 +73,10 @@ namespace MEDDLY {
     Details of node storage are left to the derived forests.
     However, every active node is stored in the following format.
 
-      common   {  slot[0] : incoming count (MSB cleared), >= 0.
-      header --{  slot[1] : next pointer in unique table or special value.
-               {  slot[2] : size.  >=0 for full storage, <0 for sparse.
+
+
+      common   {  slot[0] : next pointer >=0 in unique table.
+      header --{  slot[1] : size.  >=0 for full storage, <0 for sparse.
 
       unhashed    {       : slots used for any extra information
       header    --{       : as needed on a forest-by-forest basis.
@@ -209,9 +210,9 @@ class MEDDLY::simple_separated : public node_storage {
     //
     // Header indexes that are fixed
     //
-    static const int count_slot = 0;
-    static const int next_slot = 1;
-    static const int size_slot = 2;
+    // static const int count_slot = 0;
+    static const int next_slot = 0;
+    static const int size_slot = 1;
     static const int header_slots = size_slot+1;
 
     // Slots at the end
@@ -974,8 +975,8 @@ void MEDDLY::simple_separated
   MEDDLY_DCASSERT(MM);
   node_handle* chunk = (node_handle*) MM->getChunkAddress(addr);
   MEDDLY_DCASSERT(chunk);
+  MEDDLY_DCASSERT(n>=0);
   chunk[next_slot] = n;
-  // TBD - if next_slot is 0 then make sure MSB is not set
 }
 
 
@@ -1205,10 +1206,8 @@ MEDDLY::node_handle MEDDLY::simple_separated
   MEDDLY_DCASSERT(chunk);
 
   //
-  // Set size, incoming count, etc.
+  // Set size
   //
-  MEDDLY_CHECK_RANGE(0, count_slot, slots_given);
-  chunk[count_slot] = 1;
   MEDDLY_CHECK_RANGE(0, size_slot, slots_given);
   chunk[size_slot] = size;
 
@@ -1325,9 +1324,9 @@ MEDDLY::node_handle MEDDLY::simple_separated
   MEDDLY_DCASSERT(chunk);
 
   //
-  // Set size, incoming count, etc.
+  // Set size
   //
-  chunk[count_slot] = 1;
+  MEDDLY_CHECK_RANGE(0, size_slot, slots_given);
   chunk[size_slot] = -size;
 
   //
