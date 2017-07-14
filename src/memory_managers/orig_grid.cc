@@ -300,7 +300,7 @@ namespace MEDDLY {
     printf("\tNo recycleable chunks, grabbing from end\n");
 #endif
 
-    if (last_used_slot + numSlots > data_alloc) {
+    if (last_used_slot + numSlots >= data_alloc) {
       // 
       // Expand.
       //
@@ -309,11 +309,9 @@ namespace MEDDLY {
 
       if (0==data_alloc) {
         // TBD HERE
-        /*
         if (numSlots < 512) ok = resize(1024);
         else                ok = resize(2*numSlots);
-        */
-        ok = resize(100000000);
+        // ok = resize(100000000);
       } else {
         size_t want_size = last_used_slot + numSlots;
         want_size += want_size/2;
@@ -592,12 +590,10 @@ namespace MEDDLY {
   {
     MEDDLY_DCASSERT(new_alloc >= 0);
 
-    /*
 #ifdef HAVE_MALLOC_GOOD_SIZE
     size_t good_bytes = malloc_good_size(new_alloc * sizeof(INT));
     new_alloc = good_bytes / sizeof(INT);
 #endif
-    */
 #ifdef TRACE_REALLOCS
     if (new_alloc > data_alloc) printf("enlarging"); else printf("shrinking");
     printf(" data %lx, new size %ld\n", (unsigned long)data, new_alloc);
