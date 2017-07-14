@@ -630,6 +630,7 @@ void MEDDLY::generic_binary_evtimes
 
   // Initialize result
   const int resultLevel = ABS(topLevel(aLevel, bLevel));
+  MEDDLY_DCASSERT(resultLevel>0);
   const int resultSize = resF->getLevelSize(resultLevel);
   unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
 

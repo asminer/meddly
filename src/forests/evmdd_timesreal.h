@@ -53,6 +53,10 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
           ev = 0;
           ep = 0;
         }
+        static inline void makeEmptyEdge(node_handle &ep, void* ev) {
+          ep = 0;
+          writeValue(ev, 0);
+        }
         static inline void unionEq(float &a, float b) {
           a += b;
         }

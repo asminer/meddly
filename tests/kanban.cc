@@ -47,6 +47,9 @@ long expected[] = {
   41644800, 133865325, 384392800, 1005927208 
 };
 
+const int nstart = 1;
+const int nstop = 10;
+
 using namespace MEDDLY;
 
 long buildReachset(int N, bool useSat)
@@ -89,21 +92,27 @@ int main()
   MEDDLY::initialize();
 
   printf("Building Kanban reachability sets, using saturation\n");
-  for (int n=1; n<11; n++) {
+  for (int n=nstart; n<=nstop; n++) {
     printf("N=%2d:  ", n);
     fflush(stdout);
     long c = buildReachset(n, true);
     printf("%12ld states\n", c);
-    if (c != expected[n]) return 1;
+    if (c != expected[n]) {
+      printf("Wrong number of states!\n");
+      return 1;
+    }
   }
 
   printf("Building Kanban reachability sets, using traditional iteration\n");
-  for (int n=1; n<11; n++) {
+  for (int n=nstart; n<=nstop; n++) {
     printf("N=%2d:  ", n);
     fflush(stdout);
     long c = buildReachset(n, false);
     printf("%12ld states\n", c);
-    if (c != expected[n]) return 1;
+    if (c != expected[n]) {
+      printf("Wrong number of states!\n");
+      return 1;
+    }
   }
 
   MEDDLY::cleanup();

@@ -90,8 +90,7 @@ bool MEDDLY::evmdd_timesreal
 void MEDDLY::evmdd_timesreal
 ::getTransparentEdge(node_handle &ep, void* ev) const
 {
-  ep = 0;
-  OP::setEdge(ev, OP::getRedundantEdge());
+  OP::makeEmptyEdge(ep, ev);
 }
 
 bool MEDDLY::evmdd_timesreal

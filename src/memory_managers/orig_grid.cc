@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -29,6 +27,7 @@
 #include <malloc/malloc.h>
 #endif
 
+// #define TRACE_REALLOCS
 // #define MEMORY_TRACE
 // #define DEBUG_GRID
 
@@ -309,8 +308,12 @@ namespace MEDDLY {
       bool ok = false;
 
       if (0==data_alloc) {
+        // TBD HERE
+        /*
         if (numSlots < 512) ok = resize(1024);
         else                ok = resize(2*numSlots);
+        */
+        ok = resize(100000000);
       } else {
         size_t want_size = last_used_slot + numSlots;
         want_size += want_size/2;
@@ -352,6 +355,7 @@ namespace MEDDLY {
 #ifdef MEMORY_TRACE
     printf("recycling chunk %lu size %lu\n", h, numSlots);
 #endif
+    return; // TBD
     decMemUsed(sizeof(INT) * numSlots);
 
     setHoleSize(h, numSlots);
@@ -406,7 +410,7 @@ namespace MEDDLY {
     //
     // Hole is ready, add to grid
     //
-    addToGrid(h);
+    addToGrid(h); 
 #ifdef DEBUG_GRID
     FILE_output out(stdout);
     dumpInternal(out);
@@ -588,20 +592,29 @@ namespace MEDDLY {
   {
     MEDDLY_DCASSERT(new_alloc >= 0);
 
+    /*
 #ifdef HAVE_MALLOC_GOOD_SIZE
     size_t good_bytes = malloc_good_size(new_alloc * sizeof(INT));
     new_alloc = good_bytes / sizeof(INT);
 #endif
-#ifdef MEMORY_TRACE
-    printf("resizing, new size %ld\n", new_alloc);
+    */
+#ifdef TRACE_REALLOCS
+    if (new_alloc > data_alloc) printf("enlarging"); else printf("shrinking");
+    printf(" data %lx, new size %ld\n", (unsigned long)data, new_alloc);
 #endif
 
     INT* new_data = (INT*) realloc(data, new_alloc * sizeof(INT));
 
+#ifdef TRACE_REALLOCS
+    if (new_data != data) {
+      printf("data moved to %lx\n", (unsigned long)new_data);
+    }
+#endif
+
     if (0==new_data && (new_alloc!=0)) {
       return false;
     }
-    if (0==data) new_data[0] = 0;
+    if ((0==data) && new_data) new_data[0] = 0;
 
     if (new_alloc > data_alloc) {
       incMemAlloc((new_alloc - data_alloc) * sizeof(INT));
@@ -796,7 +809,7 @@ namespace MEDDLY {
 #ifdef MEMORY_TRACE
       printf("\tadding to empty grid\n");
 #endif
-      Up(h) = 0;
+      createIndexHoleUp(h, 0);
       Down(h) = 0;
       Next(h) = 0;
       holes_bottom = holes_top = h;
@@ -811,7 +824,7 @@ namespace MEDDLY {
 #ifdef MEMORY_TRACE
       printf("\tadding new chain at top\n");
 #endif
-      Up(h) = 0;
+      createIndexHoleUp(h, 0);
       Down(h) = holes_top;
       Next(h) = 0;
       if (holes_top) Up(holes_top) = h;
@@ -861,7 +874,7 @@ namespace MEDDLY {
 #ifdef MEMORY_TRACE
     printf("\tadding new chain\n");
 #endif
-    Up(h) = above;
+    createIndexHoleUp(h, above);
     Down(h) = below;
     Next(h) = 0;
     if (above) {
