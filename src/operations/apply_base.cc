@@ -123,6 +123,7 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(%d, %d) = %d\n", getName(), a, b, result);
+  fflush(stdout);
 #endif
   return result;
 }
@@ -229,6 +230,7 @@ MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b)
   */
 #ifdef TRACE_ALL_OPS
   printf("computed %s(%d, %d) = %d\n", getName(), a, b, result);
+  fflush(stdout);
 #endif
 
   return result;
@@ -298,6 +300,7 @@ MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle 
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
+  fflush(stdout);
 #endif
 
   return result;
@@ -432,6 +435,7 @@ MEDDLY::generic_binbylevel_mxd
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
+  fflush(stdout);
 #endif
 
   return result;

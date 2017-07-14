@@ -469,7 +469,14 @@ bool MEDDLY::simple_separated
         // compare this[z] with n[i]
         if (down[z] != n.d(i)) return false;
         i++;
-      } // for i
+      } // for z
+      //
+      // Anything beyond must be transparent
+      for (; i<n.getSize(); i++) {
+        if (n.d(i)!=tv) {
+          return false;
+        }
+      }
       //
       // now check edges
       //
@@ -699,6 +706,7 @@ void MEDDLY::simple_separated
   printf("\n        temp:  ");
   nr.show(out, true);
   printf("\n");
+  fflush(stdout);
 #endif
 #ifdef VERIFY_DECODING
   if (!areDuplicates(addr, nr)) {
@@ -1283,6 +1291,7 @@ MEDDLY::node_handle MEDDLY::simple_separated
   printf("\n    internal: ");
   FILE_output out(stdout);
   dumpInternalNode(out, addr, 0x03);
+  fflush(stdout);
 #endif
   return addr;
 }
@@ -1357,6 +1366,7 @@ MEDDLY::node_handle MEDDLY::simple_separated
           memcpy(edge + z * edge_bytes, nb.eptr(i), edge_bytes);
           z++;
         }
+        MEDDLY_DCASSERT(size == z);
       }
   } else {
       //
@@ -1379,8 +1389,16 @@ MEDDLY::node_handle MEDDLY::simple_separated
             z++;
           }
         }
+        MEDDLY_DCASSERT(size == z);
       }
   }
+
+#ifdef DEVELOPMENT_CODE
+  // check if the sparse node is sorted
+  for (int z=1; z<size; z++) {
+    MEDDLY_DCASSERT(index[z-1] < index[z]);
+  }
+#endif
 
   //
   // Deal with any padding and the tail
@@ -1409,6 +1427,7 @@ MEDDLY::node_handle MEDDLY::simple_separated
   printf("\n    internal: ");
   FILE_output out(stdout);
   dumpInternalNode(out, addr, 0x03);
+  fflush(stdout);
 #endif
   return addr;
 }
