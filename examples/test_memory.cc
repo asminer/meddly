@@ -302,9 +302,11 @@ int main(int argc, const char** argv)
 
   MEDDLY::memory_manager* Mmm = 0;
 
+  MEDDLY::forest::statset stats;
+
   if (mst) {
     std::cout << "Using memory manager of type " << mst->getName() << "\n";
-    Mmm = mst->initManager(granularity, minsize);
+    Mmm = mst->initManager(granularity, minsize, stats);
     if (0==Mmm) {
       std::cout << "  error, couldn't create memory manager with\n";
       std::cout << "      granularity = " << int(granularity) << "\n";

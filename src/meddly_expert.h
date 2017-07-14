@@ -41,35 +41,6 @@
 #include <vector>
 #include <cstdint>
 
-// Flags for development version only. Significant reduction in performance.
-#ifdef DEVELOPMENT_CODE
-#define RANGE_CHECK_ON
-#define DCASSERTS_ON
-#endif
-
-
-// #define INLINED_NEXT
-
-// #define TRACK_DELETIONS
-// #define TRACK_CACHECOUNT
-
-// Use this for assertions that will fail only when your
-// code is wrong.  Handy for debugging.
-#ifdef DCASSERTS_ON
-#define MEDDLY_DCASSERT(X) assert(X)
-#else
-#define MEDDLY_DCASSERT(X)
-#endif
-
-// Use this for range checking assertions that should succeed.
-#ifdef RANGE_CHECK_ON
-#define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX) { assert(VALUE < MAX); assert(VALUE >= MIN); }
-#else
-#define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX)
-#endif
-
-
-
 namespace MEDDLY {
 
   // classes defined here
@@ -927,6 +898,7 @@ class MEDDLY::memory_manager_style {
                                 This is specified here in case
                                 that information can help the memory manager.
 
+          @param  stats         Structure to use for updating memory stats.
 
           @return   A pointer to a new instance of a memory manager, or 0
                     if some error occurred, for example if the requested
@@ -934,7 +906,7 @@ class MEDDLY::memory_manager_style {
                     manager.
     */
     virtual memory_manager* initManager(unsigned char granularity, 
-      unsigned char minsize) const = 0;
+      unsigned char minsize, forest::statset& stats) const = 0;
 
 
     const char* getName() const;
@@ -956,37 +928,7 @@ class MEDDLY::memory_manager_style {
 class MEDDLY::memory_manager {
 
   public:
-    struct stats {
-      /// Current memory used
-      long memory_used;
-      /// Current memory allocated
-      long memory_alloc;
-      /// Peak memory used
-      long peak_memory_used;
-      /// Peak memory allocated
-      long peak_memory_alloc;
-
-      // helpers
-
-      /// Reset statistics
-      void reset();
-
-      /// Increase memory used by b bytes.
-      void incMemUsed(long b);
-
-      /// Decrease memory used by b bytes.
-      void decMemUsed(long b);
-
-      /// Increase memory allocated by b bytes.
-      void incMemAlloc(long b);
-
-      /// Decrease memory allocated by b bytes.
-      void decMemAlloc(long b);
-
-    };
-
-  public:
-    memory_manager(const char* sn);
+    memory_manager(const char* sn, forest::statset& stats);
     virtual ~memory_manager();
 
     /**
@@ -1083,10 +1025,13 @@ class MEDDLY::memory_manager {
           @param  s         Output stream to write to
           @param  pad       Padding string, written at the start of
                             each output line.
+          @param  human     If false, just display raw byte counts. 
+                            If true, use units (e.g., Mbytes, Kbytes).
           @param  details   If false, just display basic statistics.
                             If true, display details.
     */
-    virtual void reportStats(output &s, const char* pad, bool details) const = 0;
+    virtual void reportStats(output &s, const char* pad, 
+      bool human, bool details) const = 0;
 
 
     /** Display manager-specific internals.
@@ -1135,26 +1080,18 @@ class MEDDLY::memory_manager {
     void incMemAlloc(long b);
     void decMemAlloc(long b);
 
+
+
   public:
     /**
         Return the name of the style that created us.
     */
     const char* getStyleName() const;
 
-    /**
-        Reset the global memory stats.
-        
-        TBD - make this private and the initializer that sets this
-        up becomes a friend.
-
-    */
-    static void resetGlobalStats();
-
   private:
     /// Name of the style that invoked us
     const char* style_name;
-    static stats global_mem;
-    stats my_mem;
+    forest::statset &my_mem;
 };
 
 
@@ -1680,7 +1617,7 @@ class MEDDLY::node_storage {
     expert_forest* parent;
 
     /// Memory stats
-    forest::statset* stats;
+    forest::statset &stats;
 
     /// Next array, so that nexts[addr] gives the next value for node at addr.
     node_handle* nexts;

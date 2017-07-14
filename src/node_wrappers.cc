@@ -447,6 +447,7 @@ MEDDLY::node_storage_style::~node_storage_style()
 // ******************************************************************
 
 MEDDLY::node_storage::node_storage(const char* n, expert_forest* f)
+ : stats(f->changeStats())
 {
 #ifdef OLD_NODE_HEADERS
   counts = 0;
@@ -455,7 +456,6 @@ MEDDLY::node_storage::node_storage(const char* n, expert_forest* f)
 
   style_name = n;
   parent = f;
-  stats = &parent->changeStats();
 }
 
 MEDDLY::node_storage::~node_storage()

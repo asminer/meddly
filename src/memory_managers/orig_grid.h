@@ -41,7 +41,7 @@ class MEDDLY::orig_grid_style : public memory_manager_style {
     virtual ~orig_grid_style();
 
     virtual memory_manager* initManager(unsigned char granularity,
-      unsigned char minsize) const;
+      unsigned char minsize, forest::statset &stats) const;
 };
 
 #endif

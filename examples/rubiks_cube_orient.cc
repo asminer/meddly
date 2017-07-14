@@ -1196,8 +1196,10 @@ class rubiks {
       ef->reportStats(out, "\t",
           expert_forest::HUMAN_READABLE_MEMORY  |
           expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
-          expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS |
-          expert_forest::UNIQUE_TABLE_STATS
+          expert_forest::UNIQUE_TABLE_STATS |
+          expert_forest::STORAGE_STATS | 
+          expert_forest::HOLE_MANAGER_STATS | 
+          expert_forest::HOLE_MANAGER_DETAILED
           );
     }
 

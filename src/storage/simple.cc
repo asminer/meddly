@@ -242,7 +242,7 @@ MEDDLY::simple_separated
 ::simple_separated(const char* n, expert_forest* f, const memory_manager_style* mst)
 : node_storage(n, f)
 {
-  MM = mst->initManager(sizeof(node_handle), slotsForNode(0));
+  MM = mst->initManager(sizeof(node_handle), slotsForNode(0), f->changeStats());
 
   unhashed_start = header_slots;
   unhashed_slots = slotsForBytes(f->unhashedHeaderBytes());
@@ -270,11 +270,17 @@ void MEDDLY::simple_separated::reportStats(output &s, const char* pad,
     expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED;
 
   if (flags & STORAGE) {
-    s << pad << "Stats for " << getStyleName() << "\n";
+    // s << pad << "Stats for " << getStyleName() << "\n";
 
-    // anything for us?
+  }
 
-    MM->reportStats(s, pad, flags & expert_forest::STORAGE_DETAILED);
+  static unsigned HOLEMAN =
+    expert_forest::HOLE_MANAGER_STATS | expert_forest::HOLE_MANAGER_DETAILED;
+
+  if (flags & HOLEMAN) {
+    MM->reportStats(s, pad, 
+      flags & expert_forest::HUMAN_READABLE_MEMORY,
+      flags & expert_forest::HOLE_MANAGER_DETAILED);
   }
 
 

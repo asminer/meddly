@@ -42,20 +42,13 @@ MEDDLY::memory_manager_style::~memory_manager_style()
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::memory_manager::stats MEDDLY::memory_manager::global_mem;
-
-MEDDLY::memory_manager::memory_manager(const char* n)
+MEDDLY::memory_manager::memory_manager(const char* n, forest::statset &stats)
+ : my_mem(stats)
 {
   style_name = n;
-  my_mem.reset();
 }
 
 MEDDLY::memory_manager::~memory_manager()
 {
-}
-
-void MEDDLY::memory_manager::resetGlobalStats()
-{
-  global_mem.reset();
 }
 

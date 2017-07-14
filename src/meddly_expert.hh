@@ -599,7 +599,7 @@ inline const char* MEDDLY::memory_manager_style::getName() const
 
 // ******************************************************************
 // *                                                                *
-// *             inlined  memory_manager::stats methods             *
+// *                 inlined memory_manager methods                 *
 // *                                                                *
 // ******************************************************************
 
@@ -608,67 +608,23 @@ inline const char* MEDDLY::memory_manager::getStyleName() const
   return style_name;
 }
 
-inline void MEDDLY::memory_manager::stats::reset()
-{
-  memory_used = 0;
-  memory_alloc = 0;
-  peak_memory_used = 0;
-  peak_memory_alloc = 0;
-}
-
-inline void MEDDLY::memory_manager::stats::incMemUsed(long b)
-{
-  memory_used += b;
-  if (memory_used > peak_memory_used) {
-    peak_memory_used = memory_used;
-  }
-}
-
-inline void MEDDLY::memory_manager::stats::decMemUsed(long b)
-{
-  memory_used -= b;
-}
-
-inline void MEDDLY::memory_manager::stats::incMemAlloc(long b)
-{
-  memory_alloc += b;
-  if (memory_alloc > peak_memory_alloc) {
-    peak_memory_alloc = memory_alloc;
-  }
-}
-
-inline void MEDDLY::memory_manager::stats::decMemAlloc(long b)
-{
-  memory_alloc -= b;
-}
-
-// ******************************************************************
-// *                                                                *
-// *                 inlined memory_manager methods                 *
-// *                                                                *
-// ******************************************************************
-
 inline void MEDDLY::memory_manager::incMemUsed(long b)
 {
-  global_mem.incMemUsed(b);
   my_mem.incMemUsed(b);
 }
 
 inline void MEDDLY::memory_manager::decMemUsed(long b)
 {
-  global_mem.decMemUsed(b);
   my_mem.decMemUsed(b);
 }
 
 inline void MEDDLY::memory_manager::incMemAlloc(long b)
 {
-  global_mem.incMemAlloc(b);
   my_mem.incMemAlloc(b);
 }
 
 inline void MEDDLY::memory_manager::decMemAlloc(long b)
 {
-  global_mem.decMemAlloc(b);
   my_mem.decMemAlloc(b);
 }
 
@@ -865,36 +821,31 @@ MEDDLY::node_storage::getParent()
 inline void
 MEDDLY::node_storage::incMemUsed(long delta)
 {
-  if (stats)
-    stats->incMemUsed(delta);
+  stats.incMemUsed(delta);
 }
 
 inline void
 MEDDLY::node_storage::decMemUsed(long delta)
 {
-  if (stats)
-    stats->decMemUsed(delta);
+  stats.decMemUsed(delta);
 }
 
 inline void
 MEDDLY::node_storage::incMemAlloc(long delta)
 {
-  if (stats)
-    stats->incMemAlloc(delta);
+  stats.incMemAlloc(delta);
 }
 
 inline void
 MEDDLY::node_storage::decMemAlloc(long delta)
 {
-  if (stats)
-    stats->decMemAlloc(delta);
+  stats.decMemAlloc(delta);
 }
 
 inline void
 MEDDLY::node_storage::incCompactions()
 {
-  if (stats)
-    stats->num_compactions++;
+  stats.num_compactions++;
 }
 
 inline void

@@ -49,6 +49,35 @@
 #include <memory>
 #include <cassert>
 
+// Flags for development version only. Significant reduction in performance.
+#ifdef DEVELOPMENT_CODE
+#define RANGE_CHECK_ON
+#define DCASSERTS_ON
+#endif
+
+
+// #define INLINED_NEXT
+
+// #define TRACK_DELETIONS
+// #define TRACK_CACHECOUNT
+
+// Use this for assertions that will fail only when your
+// code is wrong.  Handy for debugging.
+#ifdef DCASSERTS_ON
+#define MEDDLY_DCASSERT(X) assert(X)
+#else
+#define MEDDLY_DCASSERT(X)
+#endif
+
+// Use this for range checking assertions that should succeed.
+#ifdef RANGE_CHECK_ON
+#define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX) { assert(VALUE < MAX); assert(VALUE >= MIN); }
+#else
+#define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX)
+#endif
+
+
+
 namespace MEDDLY {
   /** Special value for minterms: don't care what this variable does.
       I.e., do the same thing for all possible assignments for a variable.

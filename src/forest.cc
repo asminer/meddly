@@ -94,10 +94,10 @@ void MEDDLY::forest::policies::useDefaults(bool rel)
 
   nodemm = ORIGINAL_GRID;
 
-  // nodestor = SIMPLE_STORAGE;
+  nodestor = SIMPLE_STORAGE;
 
   // nodestor = CLASSIC_STORAGE;
-  nodestor = SIMPLE_GRID;
+  // nodestor = SIMPLE_GRID;
   // nodestor = SIMPLE_ARRAY;
   // nodestor = SIMPLE_HEAP;
   // nodestor = SIMPLE_NONE;
