@@ -18,25 +18,25 @@
 */
 
 
-#ifndef ORIG_GRID_H
-#define ORIG_GRID_H
+#ifndef MALLOC_STYLE_H
+#define MALLOC_STYLE_H
 
 namespace MEDDLY {
-  class orig_grid_style;
+  class malloc_style;
 };
 
 /**
-    Factory for a memory manager based on the original grid scheme.
+    Factory for a memory manager based on malloc / free.
 
     All details, including the actual memory manager constructed,
     are hidden in implementation file :^)
 
 */
 
-class MEDDLY::orig_grid_style : public memory_manager_style {
+class MEDDLY::malloc_style : public memory_manager_style {
   public:
-    orig_grid_style(const char* n);
-    virtual ~orig_grid_style();
+    malloc_style(const char* n);
+    virtual ~malloc_style();
 
     virtual memory_manager* initManager(unsigned char granularity,
       unsigned char minsize, forest::statset &stats) const;

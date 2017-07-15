@@ -995,7 +995,7 @@ class MEDDLY::memory_manager {
                     Zero, on failure.
 
     */
-    virtual unsigned long requestChunk(size_t &numSlots) = 0;
+    virtual node_address requestChunk(size_t &numSlots) = 0;
     
     /**
         Recycle a chunk of memory.
@@ -1005,7 +1005,7 @@ class MEDDLY::memory_manager {
 
           @param  numSlots    Total number of slots in the chunk.
     */
-    virtual void recycleChunk(unsigned long h, size_t numSlots) = 0;
+    virtual void recycleChunk(node_address h, size_t numSlots) = 0;
 
     /**
         Convert a handle to an actual pointer we can use.
@@ -1018,7 +1018,7 @@ class MEDDLY::memory_manager {
                         call to requestChunk() or recycleChunk(); after that,
                         the pointer for a handle could change.
     */
-    virtual void* getChunkAddress(unsigned long h) const = 0;
+    virtual void* getChunkAddress(node_address h) const = 0;
 
 
     /** Show various statistics.
@@ -1046,13 +1046,13 @@ class MEDDLY::memory_manager {
         Used to cycle through all addresses, if we can.
         If we cannot, then always return 0.
     */
-    virtual unsigned long getFirstAddress() const = 0;
+    virtual node_address getFirstAddress() const = 0;
 
     /** Is a given address in use?
         Best effort answer only.
         If unsure, return false.
     */
-    virtual bool isAddressInUse(unsigned long addr) const = 0;
+    virtual bool isAddressInUse(node_address addr) const = 0;
 
     /** Get the next address.
         Used to cycle through all addresses, if we can.
@@ -1064,7 +1064,7 @@ class MEDDLY::memory_manager {
           @return   Next address to check,  Presumably this address
                     is unused and is a hole of some kind.
     */
-    virtual unsigned long getNextAddress(unsigned long addr) const = 0;
+    virtual node_address getNextAddress(node_address addr) const = 0;
 
     /** Show information about an unused address.
         If we do not track unused addresses, then do nothing. 
@@ -1072,7 +1072,7 @@ class MEDDLY::memory_manager {
                           "cycle through addresses", and one where
                           isAddressInUse() returned false.
     */
-    virtual void dumpInternalUnused(output &s, unsigned long addr) const = 0;
+    virtual void dumpInternalUnused(output &s, node_address addr) const = 0;
 
   protected:
     void incMemUsed(long b);

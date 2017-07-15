@@ -105,10 +105,10 @@ namespace MEDDLY {
         return true;
       }
 
-      virtual unsigned long requestChunk(size_t &numSlots);
-      virtual void recycleChunk(unsigned long h, size_t numSlots);
+      virtual node_address requestChunk(size_t &numSlots);
+      virtual void recycleChunk(node_address h, size_t numSlots);
 
-      virtual void* getChunkAddress(unsigned long h) const {
+      virtual void* getChunkAddress(node_address h) const {
         MEDDLY_DCASSERT(data);
         MEDDLY_DCASSERT(h < data_alloc);
         return data + h;
@@ -117,10 +117,10 @@ namespace MEDDLY {
       virtual void reportStats(output &s, const char* pad, bool human, bool details) const;
       virtual void dumpInternal(output &s) const;
 
-      virtual unsigned long getFirstAddress() const;
-      virtual bool isAddressInUse(unsigned long addr) const;
-      virtual unsigned long getNextAddress(unsigned long addr) const;
-      virtual void dumpInternalUnused(output &s, unsigned long addr) const;
+      virtual node_address getFirstAddress() const;
+      virtual bool isAddressInUse(node_address addr) const;
+      virtual node_address getNextAddress(node_address addr) const;
+      virtual void dumpInternalUnused(output &s, node_address addr) const;
 
     private:
       /// @return true on success
@@ -129,85 +129,85 @@ namespace MEDDLY {
       /**
           Remove a hole, at handle h, from the grid.
       */
-      void removeFromGrid(unsigned long h);
+      void removeFromGrid(node_address h);
 
       /**
           Add a hole, at handle h, to the grid.
       */
-      void addToGrid(unsigned long h);
+      void addToGrid(node_address h);
 
     private:
-      inline bool isHole(unsigned long h) const {
+      inline bool isHole(node_address h) const {
         MEDDLY_DCASSERT(data);
         MEDDLY_CHECK_RANGE(0, h, 1+last_used_slot);
         return data[h] & MSB;
         // Because we set data[0] to 0, this will work
         // correctly also for h=0 (which is not a hole).
       }
-      inline INT getHoleSize(unsigned long h) const {
+      inline INT getHoleSize(node_address h) const {
         MEDDLY_DCASSERT(isHole(h));
         return data[h] & (~MSB);
       }
-      inline void setHoleSize(unsigned long h, INT hs) {
+      inline void setHoleSize(node_address h, INT hs) {
         MEDDLY_DCASSERT(data);
         MEDDLY_DCASSERT(hs>0);
         MEDDLY_CHECK_RANGE(1, h, 1+last_used_slot);
         MEDDLY_CHECK_RANGE(1, h+hs-1, 1+last_used_slot);
         data[h] = data[h+hs-1] = (hs | MSB);
       }
-      inline void clearHole(unsigned long h, INT hs) const {
+      inline void clearHole(node_address h, INT hs) const {
         MEDDLY_DCASSERT(isHole(h));
         data[h] = data[h+hs-1] = 0;
       }
 
-      inline bool isIndexHole(unsigned long h) const {
+      inline bool isIndexHole(node_address h) const {
         MEDDLY_DCASSERT(data);
         MEDDLY_DCASSERT(h <= last_used_slot);
         MEDDLY_CHECK_RANGE(1, h+1, 1+last_used_slot);
         return data[h+1] >= 0;
       }
 
-      inline void setNonIndexHole(unsigned long h) {
+      inline void setNonIndexHole(node_address h) {
         MEDDLY_DCASSERT(data);
         MEDDLY_DCASSERT(h <= last_used_slot);
         MEDDLY_CHECK_RANGE(1, h+1, 1+last_used_slot);
         data[h+1] = -1;
       }
 
-      inline void createIndexHoleUp(unsigned long h, INT up) {
+      inline void createIndexHoleUp(node_address h, INT up) {
         MEDDLY_DCASSERT(isHole(h));
         MEDDLY_CHECK_RANGE(1, h+1, 1+last_used_slot);
         data[h+1] = up;
       }
       
-      inline INT& Up(unsigned long h) const {
+      inline INT& Up(node_address h) const {
         MEDDLY_DCASSERT(isHole(h));
         MEDDLY_DCASSERT(isIndexHole(h));
         MEDDLY_CHECK_RANGE(1, h+1, 1+last_used_slot);
         return data[h+1];
       }
 
-      inline INT& Down(unsigned long h) const {
+      inline INT& Down(node_address h) const {
         MEDDLY_DCASSERT(isHole(h));
         MEDDLY_DCASSERT(isIndexHole(h));
         MEDDLY_CHECK_RANGE(1, h+2, 1+last_used_slot);
         return data[h+2];
       }
 
-      inline INT& Prev(unsigned long h) const {
+      inline INT& Prev(node_address h) const {
         MEDDLY_DCASSERT(isHole(h));
         MEDDLY_DCASSERT(!isIndexHole(h));
         MEDDLY_CHECK_RANGE(1, h+2, 1+last_used_slot);
         return data[h+2];
       }
 
-      inline INT& Next(unsigned long h) const {
+      inline INT& Next(node_address h) const {
         MEDDLY_DCASSERT(isHole(h));
         MEDDLY_CHECK_RANGE(1, h+3, 1+last_used_slot);
         return data[h+3];
       }
       
-      inline unsigned long max_handle() const {
+      inline node_address max_handle() const {
         return (~MSB);
       }
 
@@ -217,8 +217,8 @@ namespace MEDDLY {
 
     private:
       INT* data; 
-      unsigned long data_alloc;
-      unsigned long last_used_slot;
+      node_address data_alloc;
+      node_address last_used_slot;
 
       /// Largest hole ever requested
       size_t max_request;
@@ -295,7 +295,7 @@ namespace MEDDLY {
 
 
   template <class INT>
-  unsigned long original_grid<INT>::requestChunk(size_t &numSlots)
+  MEDDLY::node_address original_grid<INT>::requestChunk(size_t &numSlots)
   {
 #ifdef MEMORY_TRACE
     printf("requestChunk(%lu)\n", numSlots);
@@ -330,7 +330,7 @@ namespace MEDDLY {
     // Check a few places for holes.
     // Update h with the hole we're going to use.
     //
-    unsigned long h = 0;
+    node_address h = 0;
 
 #ifndef DONT_RECYCLE_FROM_GRID
     //
@@ -484,7 +484,7 @@ namespace MEDDLY {
 
 
   template <class INT>
-  void original_grid<INT>::recycleChunk(unsigned long h, size_t numSlots)
+  void original_grid<INT>::recycleChunk(node_address h, size_t numSlots)
   {
 #ifdef MEMORY_TRACE
     printf("recycling chunk %lu size %lu\n", h, numSlots);
@@ -498,7 +498,7 @@ namespace MEDDLY {
     //
     if (isHole(h-1)) {
       MEDDLY_DCASSERT(getHoleSize(h-1) < h);
-      unsigned long hleft = h - getHoleSize(h-1);
+      node_address hleft = h - getHoleSize(h-1);
 #ifdef MEMORY_TRACE_DETAILS
       printf("\tMerging to the left, holes %lu and %lu\n", hleft, h);
 #endif
@@ -527,7 +527,7 @@ namespace MEDDLY {
     // Check to the right for another hole
     //
     if (isHole(h + numSlots)) {
-      unsigned long hright = h + numSlots;
+      node_address hright = h + numSlots;
 #ifdef MEMORY_TRACE_DETAILS
       printf("\tMerging to the right, holes %lu and %lu\n", h, hright);
 #endif
@@ -592,8 +592,8 @@ namespace MEDDLY {
     s << "  data pointer: ";
     s.put_hex((unsigned long)data);
     s << "\n";
-    s << "  data_alloc: " << long(data_alloc) << "\n";
-    s << "  last_used_slot: " << long(last_used_slot) << "\n\n";
+    s << "  data_alloc: " << data_alloc << "\n";
+    s << "  last_used_slot: " << last_used_slot << "\n\n";
 
     if (0==holes_bottom) {
       s << "  Empty Grid\n";
@@ -676,7 +676,7 @@ namespace MEDDLY {
 
 
   template <class INT>
-  unsigned long original_grid<INT>::getFirstAddress() const
+  MEDDLY::node_address original_grid<INT>::getFirstAddress() const
   {
     return 1;
   }
@@ -686,7 +686,7 @@ namespace MEDDLY {
 
 
   template <class INT>
-  bool original_grid<INT>::isAddressInUse(unsigned long addr) const
+  bool original_grid<INT>::isAddressInUse(node_address addr) const
   {
     if (0==addr) return false;
     if (addr > last_used_slot) return false;
@@ -698,7 +698,7 @@ namespace MEDDLY {
 
 
   template <class INT>
-  unsigned long original_grid<INT>::getNextAddress(unsigned long addr) const
+  MEDDLY::node_address original_grid<INT>::getNextAddress(node_address addr) const
   {
     if (0==addr) return 0;
     if (addr > last_used_slot) return 0;
@@ -710,7 +710,7 @@ namespace MEDDLY {
 
 
   template <class INT>
-  void original_grid<INT>::dumpInternalUnused(output &s, unsigned long addr) const
+  void original_grid<INT>::dumpInternalUnused(output &s, node_address addr) const
   {
     if (0==addr) return;
     if (addr > last_used_slot) {
@@ -786,7 +786,7 @@ namespace MEDDLY {
 
 
   template <class INT>
-  void original_grid<INT>::removeFromGrid(unsigned long h) 
+  void original_grid<INT>::removeFromGrid(node_address h) 
   {
 #ifdef MEMORY_TRACE_DETAILS
     printf("removeFromGrid(%lu)\n", h);
@@ -937,7 +937,7 @@ namespace MEDDLY {
 
 
   template <class INT>
-  void original_grid<INT>::addToGrid(unsigned long h) 
+  void original_grid<INT>::addToGrid(node_address h) 
   {
 #ifdef MEMORY_TRACE_DETAILS
     printf("addToGrid(%lu) size %ld\n", h, long(getHoleSize(h)));

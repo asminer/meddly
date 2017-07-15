@@ -164,6 +164,7 @@ namespace MEDDLY {
   // ******************************************************************
 
   extern const memory_manager_style* ORIGINAL_GRID;
+  extern const memory_manager_style* MALLOC_MANAGER;
 
   // ******************************************************************
   // *                     Node storage mechanisms                    *

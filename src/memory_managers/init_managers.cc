@@ -1,6 +1,4 @@
 
-// $Id: init_builtin.cc 700 2016-07-07 21:06:50Z asminer $
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -26,9 +24,11 @@
 #include "init_managers.h"
 
 #include "orig_grid.h"
+#include "malloc_style.h"
 
 namespace MEDDLY {
   const memory_manager_style* ORIGINAL_GRID = 0;
+  const memory_manager_style* MALLOC_MANAGER = 0;
 };
 
 
@@ -38,16 +38,20 @@ MEDDLY::memman_initializer::memman_initializer(initializer_list *p)
  : initializer_list(p)
 {
   original_grid = 0;
+  malloc_manager = 0;
 }
 
 void MEDDLY::memman_initializer::setup()
 {
   ORIGINAL_GRID = (original_grid  = new orig_grid_style("ORIGINAL_GRID"));
+  MALLOC_MANAGER = (malloc_manager = new malloc_style("MALLOC_MANAGER"));
 }
 
 void MEDDLY::memman_initializer::cleanup()
 {
   delete original_grid;
+  delete malloc_manager;
   ORIGINAL_GRID = (original_grid  = 0);
+  MALLOC_MANAGER = (malloc_manager  = 0);
 }
 

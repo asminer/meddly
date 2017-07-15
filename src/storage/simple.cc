@@ -175,7 +175,7 @@ class MEDDLY::simple_separated : public node_storage {
             @param  nb    Node data is copied from here.
             @return       The "address" of the new node.
       */
-      node_handle makeFullNode(node_handle p, int size, const unpacked_node &nb);
+      node_address makeFullNode(node_handle p, int size, const unpacked_node &nb);
 
       /** Create a new node, stored sparsely.
           Space is allocated for the node, and data is copied.
@@ -184,7 +184,7 @@ class MEDDLY::simple_separated : public node_storage {
             @param  nb    Node data is copied from here.
             @return       The "address" of the new node.
       */
-      node_handle makeSparseNode(node_handle p, int size, 
+      node_address makeSparseNode(node_handle p, int size, 
         const unpacked_node &nb);
 
 
@@ -1182,7 +1182,7 @@ MEDDLY::simple_separated
 // Helpers
 //
 
-MEDDLY::node_handle MEDDLY::simple_separated
+MEDDLY::node_address MEDDLY::simple_separated
 ::makeFullNode(node_handle p, int size, const unpacked_node &nb)
 {
 #ifdef DEBUG_ENCODING
@@ -1196,7 +1196,7 @@ MEDDLY::node_handle MEDDLY::simple_separated
   MEDDLY_DCASSERT(slots_req > 0);
   size_t slots_given = slots_req;
   MEDDLY_DCASSERT(MM);
-  unsigned long addr = MM->requestChunk(slots_given);
+  node_address addr = MM->requestChunk(slots_given);
   if (0==addr) {
     throw error(error::INSUFFICIENT_MEMORY);
   }
@@ -1301,7 +1301,7 @@ MEDDLY::node_handle MEDDLY::simple_separated
   return addr;
 }
 
-MEDDLY::node_handle MEDDLY::simple_separated
+MEDDLY::node_address MEDDLY::simple_separated
 ::makeSparseNode(node_handle p, int size, const unpacked_node &nb)
 {
 #ifdef DEBUG_ENCODING
@@ -1314,7 +1314,7 @@ MEDDLY::node_handle MEDDLY::simple_separated
   size_t slots_req = slotsForNode(-size);
   MEDDLY_DCASSERT(slots_req > 0);
   size_t slots_given = slots_req;
-  unsigned long addr = MM->requestChunk(slots_given);
+  node_address addr = MM->requestChunk(slots_given);
   if (0==addr) {
     throw error(error::INSUFFICIENT_MEMORY);
   }

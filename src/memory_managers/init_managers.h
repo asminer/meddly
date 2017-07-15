@@ -1,6 +1,4 @@
 
-// $Id: init_builtin.h 700 2016-07-07 21:06:50Z asminer $
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -26,6 +24,7 @@ namespace MEDDLY {
 class MEDDLY::memman_initializer : public initializer_list {
 
     memory_manager_style* original_grid;
+    memory_manager_style* malloc_manager;
 
   public:
     memman_initializer(initializer_list *p);
