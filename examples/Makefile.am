@@ -31,7 +31,8 @@ rebuild_mdd \
 test_reorder_mtmxd \
 test_reorder_evmdd \
 rubiks_cube_phase \
-slot_phase
+slot_phase \
+test_implicit
 
 # test_user_operation 
 
@@ -116,6 +117,9 @@ rubiks_cube_phase_LDADD = ../src/libmeddly.la
 
 slot_phase_SOURCES = slot_phase.cc simple_model.h simple_model.cc
 slot_phase_LDADD = ../src/libmeddly.la
+
+test_implicit_SOURCES = test_implicit.cc simple_model.h simple_model.cc
+test_implicit_LDADD = ../src/libmeddly.la
 
 # test_user_operation_SOURCES = test_user_operation.cc
 # test_user_operation_LDADD = ../src/libmeddly.la

@@ -1615,6 +1615,7 @@ MEDDLY::satotf_opname::otf_relation::getNumConfirmed(int level) const
 // *                                                                *
 // ******************************************************************
 
+
 inline unsigned long
 MEDDLY::satimpl_opname::relation_node::getSignature() const
 {
@@ -1639,6 +1640,7 @@ MEDDLY::satimpl_opname::relation_node::getID() const
   return ID;
 }
 
+
 inline void
 MEDDLY::satimpl_opname::relation_node::setID(rel_node_handle n_ID)
 {
@@ -1651,13 +1653,45 @@ inline MEDDLY::satimpl_opname::relation_node*
 MEDDLY::satimpl_opname::implicit_relation::nodeExists(rel_node_handle n)
 {
   std::unordered_map<rel_node_handle, relation_node*>::iterator finder = impl_unique.find(n);
-  
   if(finder!=impl_unique.end())
     return finder->second;
   else
     return NULL;
 }
 
+inline bool
+MEDDLY::satimpl_opname::implicit_relation::isReserved(rel_node_handle n)
+{
+  return (n==1);
+}
+
+//************************************************************************
+
+inline MEDDLY::expert_forest*
+MEDDLY::satimpl_opname::implicit_relation::getInForest() const
+{
+  return insetF;
+}
+
+inline MEDDLY::expert_forest*
+MEDDLY::satimpl_opname::implicit_relation::getOutForest() const
+{
+  return outsetF;
+}
+
+// ******************************************************************
+
+inline long
+MEDDLY::satimpl_opname::implicit_relation::lengthForLevel(int level) const
+{
+  return event_added[level];
+}
+
+inline rel_node_handle*
+MEDDLY::satimpl_opname::implicit_relation::arrayForLevel(int level) const
+{
+  return event_list[level];
+}
 
 
 // ******************************************************************

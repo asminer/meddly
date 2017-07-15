@@ -1223,6 +1223,7 @@ long MEDDLY::satotf_opname::otf_relation::mintermMemoryUsage() const {
   return usage;
 }
 
+
 // ******************************************************************
 // *                                                                *
 // *                     satimpl_opname  methods                    *
@@ -1230,7 +1231,8 @@ long MEDDLY::satotf_opname::otf_relation::mintermMemoryUsage() const {
 // ******************************************************************
 
 
-/*MEDDLY::satimpl_opname::satimpl_opname(const char* n)
+
+MEDDLY::satimpl_opname::satimpl_opname(const char* n)
 : specialized_opname(n)
 {
 }
@@ -1238,9 +1240,8 @@ long MEDDLY::satotf_opname::otf_relation::mintermMemoryUsage() const {
 MEDDLY::satimpl_opname::~satimpl_opname()
 {
 }
-*/
- 
-// =====================================================================
+
+
 MEDDLY::satimpl_opname::relation_node::relation_node(unsigned long sign, int lvl, node_handle d)
 {
   signature  = sign;
@@ -1248,11 +1249,12 @@ MEDDLY::satimpl_opname::relation_node::relation_node(unsigned long sign, int lvl
   down = d;
 }
 
+MEDDLY::satimpl_opname::relation_node::~relation_node()
+{
+}
 
 long MEDDLY::satimpl_opname::relation_node::nextOf(long i)
 {
-  //extract expression from signature and do operation to i
-  return i;
 }
 
 bool MEDDLY::satimpl_opname::relation_node::equals(const relation_node* n) const
@@ -1263,11 +1265,6 @@ bool MEDDLY::satimpl_opname::relation_node::equals(const relation_node* n) const
     return false;
 }
 
-MEDDLY::satimpl_opname::relation_node::~relation_node()
-{
-}
-
-
 // ******************************************************************
 
 MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
@@ -1275,8 +1272,6 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
 : insetF(static_cast<expert_forest*>(inmdd)),outsetF(static_cast<expert_forest*>(outmdd))
 {
   
-  last_in_node_array = 0;
-  node_array_alloc = 0;
   
   
   if (0==insetF || 0==outsetF) throw error(error::MISCELLANEOUS);
@@ -1300,11 +1295,34 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
   
   // Forests are good; set number of variables
   num_levels = insetF->getDomain()->getNumVariables() + 1;
-  event_list = (int*)malloc(num_levels*sizeof(int));
   
-  //Set the event_list;
-  event_list = (int**)malloc(num_levels*sizeof(int*));
-  event_list_length = (int*)malloc(num_levels*sizeof(int*));
+  //Allocate node_array
+  node_array = (relation_node*) malloc(8*sizeof(relation_node));
+  node_array_alloc = 8;
+  
+  
+  //Allocate event_list
+  event_list = (rel_node_handle**)malloc(num_levels*sizeof(rel_node_handle*));
+  event_list_alloc = (long*)malloc(num_levels*sizeof(long));
+  event_added = (long*)malloc(num_levels*sizeof(long));
+  
+  for(int i = 1;i < num_levels;i++)
+    {
+    event_list[i] = (rel_node_handle*)malloc(8*sizeof(rel_node_handle));
+    event_list_alloc[i] = 8;
+    event_added[i] = 0;
+    }
+  
+  //create the terminal node
+  relation_node *Terminal = new relation_node(0,0,1);
+  Terminal->setID(1);
+  std::pair<rel_node_handle, relation_node*> TerminalNode(1,Terminal);
+  impl_unique.insert(TerminalNode);
+  resizeNodeArray(1);
+  node_array[1] = *Terminal;
+  last_in_node_array = 1;
+  
+  
 }
 
 void
@@ -1322,39 +1340,59 @@ MEDDLY::satimpl_opname::implicit_relation::resizeNodeArray(int nh)
   }
 }
 
+void
+MEDDLY::satimpl_opname::implicit_relation::resizeEventArray(int level)
+{
+  event_added[level] += 1;
+  if (event_added[level] > event_list_alloc[level]) {
+    int nalloc = ((event_added[level]/8)+1)*8;
+    MEDDLY_DCASSERT(nalloc > 0);
+    MEDDLY_DCASSERT(nalloc > event_added[level]);
+    MEDDLY_DCASSERT(nalloc > event_list_alloc[level]);
+    event_list[level] = (rel_node_handle*) realloc(event_list[level], nalloc*sizeof(rel_node_handle));
+    if (0==event_list[level]) throw error(error::INSUFFICIENT_MEMORY);
+    event_list_alloc[level] = nalloc;
+  }
+}
+
 
 MEDDLY::satimpl_opname::implicit_relation::~implicit_relation()
 {
   last_in_node_array = 0;
   impl_unique.clear();
-  for (int i = 0; i < num_levels; i++) {
-    delete[] event_list[i];
-  }
-  delete[] event_list;
-  delete[] event_list_length;
   
+  for(int i = 0; i < num_levels; i++) delete[] event_list[i];
+  delete[] event_list;
+  delete[] event_added;
+  delete[] event_list_alloc;
 }
 
 
 bool MEDDLY::satimpl_opname::implicit_relation::isUniqueNode(relation_node* n)
 {
-  bool unique_node = true;
+  bool is_unique_node = true;
   std::unordered_map<rel_node_handle, relation_node*>::iterator it = impl_unique.begin();
   while(it != impl_unique.end())
     {
-    unique_node = !((it->second)->equals(n));
-    if(!unique_node)
-      break;
+    is_unique_node = !((it->second)->equals(n));
+    
+    if(is_unique_node==false)
+      return is_unique_node;
     ++it;
     }
-  return unique_node;
+  return is_unique_node;
 }
 
 rel_node_handle MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_event_top, relation_node* n)
 {
-  relation_node* down_node = nodeExists(n->getDown());
-  MEDDLY_DCASSERT((down_node!=NULL) || (n->getDown() == 0));
-  MEDDLY_DCASSERT((n->getLevel() > down_node->getLevel()) || (n->getDown() == 0));
+  
+  rel_node_handle nLevel = n->getLevel();
+  rel_node_handle downHandle = n->getDown();
+  relation_node* downNode = nodeExists(downHandle);
+  rel_node_handle downLevel = downNode->getLevel();
+  std::cout<<"\n"<<nLevel<<" "<<downHandle<<" "<<downLevel;
+  
+  MEDDLY_DCASSERT( ( ( downNode!=NULL ) && ( nLevel > downLevel ) ) || ( downLevel == 0 ) );
   MEDDLY_DCASSERT(isUniqueNode(n));
   
   
@@ -1362,19 +1400,23 @@ rel_node_handle MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_
   std::pair<rel_node_handle, relation_node*> add_node(n_ID,n);
   impl_unique.insert(add_node);
   if(impl_unique.find(n_ID) != impl_unique.end())
-  {
+    {
     last_in_node_array = n_ID;
     n->setID(n_ID);
-    resize(n_ID);
-    node_array[n_ID] = n;
-  }
-
-  //Do some thing about is_top_event
+    
+    resizeNodeArray(n_ID);
+    node_array[n_ID] = *n;
+    }
+  
   if(is_event_top)
-    event_list[n->getLevel()] = 1;//replace 1 with event details, when available
+    {
+    resizeEventArray(nLevel);
+    event_list[nLevel][event_added[nLevel] - 1] = n_ID;
+    }
   
   return n->getID();
 }
+
 
 // ******************************************************************
 // *                       operation  methods                       *

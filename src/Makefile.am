@@ -79,6 +79,7 @@ libmeddly_la_SOURCES = \
   operations/reach_dfs.cc    \
   operations/sat_pregen.cc   \
   operations/sat_otf.cc      \
+  operations/sat_impl.cc   \
   operations/vect_matr.cc    \
   operations/mm_mult.cc      \
   operations/init_builtin.cc \
