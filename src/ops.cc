@@ -1253,10 +1253,8 @@ MEDDLY::satimpl_opname::relation_node::~relation_node()
 {
 }
 
-long MEDDLY::satimpl_opname::relation_node::nextOf(long i)
-{
-}
 
+  
 bool MEDDLY::satimpl_opname::relation_node::equals(const relation_node* n) const
 {
   if((signature == n->getSignature()) && (level == n->getLevel()) && (down == n->getDown()))
@@ -1271,8 +1269,6 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
                                                              forest* outmdd)
 : insetF(static_cast<expert_forest*>(inmdd)),outsetF(static_cast<expert_forest*>(outmdd))
 {
-  
-  
   
   if (0==insetF || 0==outsetF) throw error(error::MISCELLANEOUS);
   
@@ -1391,6 +1387,7 @@ rel_node_handle MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_
   relation_node* downNode = nodeExists(downHandle);
   rel_node_handle downLevel = downNode->getLevel();
   std::cout<<"\n"<<nLevel<<" "<<downHandle<<" "<<downLevel;
+
   
   MEDDLY_DCASSERT( ( ( downNode!=NULL ) && ( nLevel > downLevel ) ) || ( downLevel == 0 ) );
   MEDDLY_DCASSERT(isUniqueNode(n));
