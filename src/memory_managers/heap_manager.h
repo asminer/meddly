@@ -17,20 +17,31 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+
+#ifndef HEAP_MANAGER_H
+#define HEAP_MANAGER_H
+
 namespace MEDDLY {
-  class memman_initializer;
+  class heap_style;
 };
 
-class MEDDLY::memman_initializer : public initializer_list {
+/**
+    Factory for a memory manager based on a heap.
+    Largest holes are at the top of the heap.
 
-    memory_manager_style* original_grid;
-    memory_manager_style* malloc_manager;
-    memory_manager_style* heap_manager;
+    All details, including the actual memory manager constructed,
+    are hidden in implementation file :^)
 
+*/
+
+class MEDDLY::heap_style : public memory_manager_style {
   public:
-    memman_initializer(initializer_list *p);
-  protected:
-    virtual void setup();
-    virtual void cleanup();
+    heap_style(const char* n);
+    virtual ~heap_style();
+
+    virtual memory_manager* initManager(unsigned char granularity,
+      unsigned char minsize, forest::statset &stats) const;
 };
+
+#endif
 
