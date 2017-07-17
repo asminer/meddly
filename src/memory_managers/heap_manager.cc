@@ -17,22 +17,13 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-#include "../defines.h"
-#include "heap_manager.h"
-
-#ifdef HAVE_MALLOC_GOOD_SIZE
-#include <malloc/malloc.h>
-#endif
-
 // #define TRACE_REALLOCS
 // #define MEMORY_TRACE
 // #define MEMORY_TRACE_DETAILS
 // #define DEBUG_HEAP
 
-// new grid class here
+#include "hole_base.h"
+#include "heap_manager.h"
 
 namespace MEDDLY {
 
@@ -69,46 +60,20 @@ namespace MEDDLY {
 
   */
   template <class INT>
-  class heap_manager : public memory_manager {
+  class heap_manager : public hole_manager<INT> {
 
     public:
       heap_manager(const char* n, forest::statset &stats);
       virtual ~heap_manager();
 
-      virtual bool mustRecycleManually() const {
-        return false;
-      }
-
-      virtual bool firstSlotMustClearMSB() const {
-        return true;
-      }
-
-      virtual bool lastSlotMustClearMSB() const {
-        return true;
-      }
-
       virtual node_address requestChunk(size_t &numSlots);
       virtual void recycleChunk(node_address h, size_t numSlots);
 
-      virtual void* getChunkAddress(node_address h) const {
-        MEDDLY_DCASSERT(data);
-        MEDDLY_DCASSERT(h < data_alloc);
-        return data + h;
-      }
-
       virtual void reportStats(output &s, const char* pad, bool human, bool details) const;
       virtual void dumpInternal(output &s) const;
-
-      virtual node_address getFirstAddress() const;
-      virtual bool isAddressInUse(node_address addr) const;
-      virtual node_address getNextAddress(node_address addr) const;
       virtual void dumpInternalUnused(output &s, node_address addr) const;
 
     private:
-      /// @return true on success
-      bool resize(long newalloc);
-
-
       /**
           Find and return the hole at position id in the heap.
           The root node is position 1.
@@ -148,93 +113,57 @@ namespace MEDDLY {
       void downHeap(node_address n);
 
     private:
-      inline bool isHole(node_address h) const {
-        MEDDLY_DCASSERT(data);
-        MEDDLY_CHECK_RANGE(0, h, 1+last_used_slot);
-        return data[h] & MSB;
-        // Because we set data[0] to 0, this will work
-        // correctly also for h=0 (which is not a hole).
-      }
-      inline INT getHoleSize(node_address h) const {
-        MEDDLY_DCASSERT(isHole(h));
-        return data[h] & (~MSB);
-      }
-      inline void setHoleSize(node_address h, INT hs) {
-        MEDDLY_DCASSERT(data);
-        MEDDLY_DCASSERT(hs>0);
-        MEDDLY_CHECK_RANGE(1, h, 1+last_used_slot);
-        MEDDLY_CHECK_RANGE(1, h+hs-1, 1+last_used_slot);
-        data[h] = data[h+hs-1] = (hs | MSB);
-      }
-      inline void clearHole(node_address h, INT hs) const {
-        MEDDLY_DCASSERT(isHole(h));
-        data[h] = data[h+hs-1] = 0;
-      }
-
-
       inline INT Parent(node_address h) const {
-        MEDDLY_DCASSERT(isHole(h));
-        MEDDLY_CHECK_RANGE(1, h+1, 1+last_used_slot);
-        return data[h+1];
+        return hole_manager<INT>::readSlot(h, 1);
       }
 
       inline INT Left(node_address h) const {
-        MEDDLY_DCASSERT(isHole(h));
-        MEDDLY_CHECK_RANGE(1, h+2, 1+last_used_slot);
-        return data[h+2];
+        return hole_manager<INT>::readSlot(h, 2);
       }
 
       inline INT Right(node_address h) const {
-        MEDDLY_DCASSERT(isHole(h));
-        MEDDLY_CHECK_RANGE(1, h+3, 1+last_used_slot);
-        return data[h+3];
+        return hole_manager<INT>::readSlot(h, 3);
       }
 
       inline void zeroPointers(node_address h) {
-        MEDDLY_DCASSERT(isHole(h));
-        MEDDLY_CHECK_RANGE(3, h+3, 1+last_used_slot);
-        data[h+1] = 0;  // parent
-        data[h+2] = 0;  // left
-        data[h+3] = 0;  // right
+        hole_manager<INT>::refSlot(h, 1) = 0; // parent
+        hole_manager<INT>::refSlot(h, 2) = 0; // left
+        hole_manager<INT>::refSlot(h, 3) = 0; // right
       }
 
       inline void makeRoot(node_address h) {
-        MEDDLY_DCASSERT(isHole(h));
-        MEDDLY_CHECK_RANGE(1, h+1, 1+last_used_slot);
-        data[h+1] = 0;
+        hole_manager<INT>::refSlot(h, 1) = 0;
         heap_root = h;
       }
 
       inline void setLeft(node_address h, node_address L) {
-        MEDDLY_DCASSERT(isHole(h));
-        MEDDLY_CHECK_RANGE(1, h+2, 1+last_used_slot);
-        data[h+2] = L;
+        hole_manager<INT>::refSlot(h, 2) = L;
         if (L) {
           // Set L's parent to h
-          MEDDLY_DCASSERT(isHole(L));
-          MEDDLY_CHECK_RANGE(1, L+1, 1+last_used_slot);
-          data[L+1] = h;
+          hole_manager<INT>::refSlot(L, 1) = h;
         }
       }
 
       inline void setRight(node_address h, node_address R) {
-        MEDDLY_DCASSERT(isHole(h));
-        MEDDLY_CHECK_RANGE(1, h+3, 1+last_used_slot);
-        data[h+3] = R;
+        hole_manager<INT>::refSlot(h, 3) = R;
         if (R) {
           // Set R's parent to h
-          MEDDLY_DCASSERT(isHole(R));
-          MEDDLY_CHECK_RANGE(1, R+1, 1+last_used_slot);
-          data[R+1] = h;
+          hole_manager<INT>::refSlot(R, 1) = h;
         }
       }
       
-      inline node_address max_handle() const {
-        return (~MSB);
-      }
-
       inline static INT smallestChunk() {
         return 5;
+      }
+
+      inline bool isHole(node_address h) const {
+        return hole_manager<INT>::isHole(h);
+      }
+      inline INT getHoleSize(node_address h) const {
+        return hole_manager<INT>::getHoleSize(h);
+      }
+      inline void setHoleSize(node_address h, INT hs) {
+        hole_manager<INT>::setHoleSize(h, hs);
       }
 
       inline bool isSmallHole(node_address addr) const {
@@ -280,10 +209,6 @@ namespace MEDDLY {
       }
 
     private:
-      INT* data; 
-      node_address data_alloc;
-      node_address last_used_slot;
-
       /// Current number of nodes in the heap.
       long num_heap_nodes;
 
@@ -292,9 +217,6 @@ namespace MEDDLY {
 
       /// Current hole (not in heap) we're trying to use
       node_address current_hole;
-
-      /// MSB, to use as a mask
-      INT MSB;
 
     private:    // stats
       long max_heap_nodes;
@@ -318,20 +240,12 @@ namespace MEDDLY {
 
   template <class INT>
   heap_manager<INT>::heap_manager(const char* n, forest::statset &stats)
-  : memory_manager(n, stats)
+  : hole_manager<INT>(n, stats)
   {
-    data = 0;
-    data_alloc = 0;
-    last_used_slot = 0;
-
     num_heap_nodes = 0;
     heap_root = 0;
     current_hole = 0;
 
-    MSB = 1;
-    MSB <<= (8*sizeof(INT) - 1);
-
-    // stats
     max_heap_nodes = 0;
 
     num_small_holes = 0;
@@ -346,8 +260,6 @@ namespace MEDDLY {
   template <class INT>
   heap_manager<INT>::~heap_manager()
   {
-    decMemAlloc(data_alloc * sizeof(INT));
-    free(data);
   }
 
 
@@ -474,7 +386,7 @@ namespace MEDDLY {
 #ifdef MEMORY_TRACE_DETAILS
       printf("requestChunk(%lu) grabbed from current, returned hole %ld\n", numSlots, h);
 #endif
-      incMemUsed(getHoleSize(h) * sizeof(INT));
+      memory_manager::incMemUsed(getHoleSize(h) * sizeof(INT));
       return h;
     }
 
@@ -484,46 +396,15 @@ namespace MEDDLY {
 #ifdef MEMORY_TRACE_DETAILS
     printf("\tNo recycleable chunks large enough, grabbing from end\n");
 #endif
-
-    if (last_used_slot + numSlots >= data_alloc) {
-      // 
-      // Expand.
-      //
-
-      bool ok = false;
-
-      if (0==data_alloc) {
-        if (numSlots < 512) ok = resize(1024);
-        else                ok = resize(2*numSlots);
-      } else {
-        size_t want_size = last_used_slot + numSlots;
-        want_size += want_size/2;
-        ok = resize(want_size);
-      }
-
-      if (!ok) {
-        //
-        // Couldn't resize, fail cleanly
-        //
-
-        numSlots = 0;
-        return 0;
-      }
-    }
-
-    //
-    // Grab node from the end
-    //
-    node_address h = last_used_slot + 1;
-    if (h > max_handle()) {
+    node_address h = hole_manager<INT>::allocateFromArray(numSlots);
+    if (0==h) {
       numSlots = 0;
       return 0;
     }
-    last_used_slot += numSlots;
 #ifdef MEMORY_TRACE_DETAILS
     printf("requestChunk(%lu) returned %ld\n", numSlots, h);
 #endif
-    incMemUsed(numSlots * sizeof(INT));
+    memory_manager::incMemUsed(numSlots * sizeof(INT));
     return h;
   }
 
@@ -537,7 +418,7 @@ namespace MEDDLY {
 #ifdef MEMORY_TRACE
     printf("recycling chunk %lu size %lu\n", h, numSlots);
 #endif
-    decMemUsed(numSlots * sizeof(INT));
+    memory_manager::decMemUsed(numSlots * sizeof(INT));
 
     setHoleSize(h, numSlots);
 
@@ -566,13 +447,8 @@ namespace MEDDLY {
     //
     // Can we absorb this hole at the end?
     //
-    if (h + numSlots - 1 == last_used_slot) {
-#ifdef MEMORY_TRACE_DETAILS
-      printf("\tMerging chunk with unused end bit\n");
-#endif
-      last_used_slot = h-1;
+    if (hole_manager<INT>::recycleHoleInArray(h, numSlots)) {
       if (h==current_hole) {
-        // we just absorbed the current hole.
         current_hole = 0;
       }
       return;
@@ -696,7 +572,7 @@ namespace MEDDLY {
   void heap_manager<INT>::dumpInternal(output &s) const
   {
     s << "Internal storage for heap:\n";
-    s << "  Last used slot: " << last_used_slot << "\n";
+    hole_manager<INT>::showInternal(s);
     if (0==heap_root) {
       s << "  Empty heap\n";
     } else {
@@ -729,109 +605,9 @@ namespace MEDDLY {
 
 
   template <class INT>
-  MEDDLY::node_address heap_manager<INT>::getFirstAddress() const
-  {
-    return 1;
-  }
-
-
-  // ******************************************************************
-
-
-  template <class INT>
-  bool heap_manager<INT>::isAddressInUse(node_address addr) const
-  {
-    if (0==addr) return false;
-    if (addr > last_used_slot) return false;
-    return !isHole(addr);
-  }
-
-
-  // ******************************************************************
-
-
-  template <class INT>
-  MEDDLY::node_address heap_manager<INT>::getNextAddress(node_address addr) const
-  {
-    if (0==addr) return 0;
-    if (addr > last_used_slot) return 0;
-    return addr + getHoleSize(addr);
-  }
-
-
-  // ******************************************************************
-
-
-  template <class INT>
   void heap_manager<INT>::dumpInternalUnused(output &s, node_address addr) const
   {
-    if (0==addr) return;
-    if (addr > last_used_slot) {
-      s << "free slots";
-      return;
-    }
-
-    if (data[addr] & MSB) {
-      s << "1:";
-    } else {
-      s << "0:";
-      MEDDLY_DCASSERT(0);
-    }
-    s << getHoleSize(addr);
-    s << ", " << data[addr+1];
-    s << ", " << data[addr+2];
-    s << ", " << data[addr+3];
-    s << ", ..., ";
-    addr += getHoleSize(addr)-1;
-    if (data[addr] & MSB) {
-      s << "1:";
-    } else {
-      s << "0:";
-      MEDDLY_DCASSERT(0);
-    }
-    s << getHoleSize(addr);
-  }
-
-
-  // ******************************************************************
-
-
-  template <class INT>
-  bool heap_manager<INT>::resize(long new_alloc) 
-  {
-    MEDDLY_DCASSERT(new_alloc >= 0);
-
-#ifdef HAVE_MALLOC_GOOD_SIZE
-    size_t good_bytes = malloc_good_size(new_alloc * sizeof(INT));
-    new_alloc = good_bytes / sizeof(INT);
-#endif
-#ifdef TRACE_REALLOCS
-    if (new_alloc > data_alloc) printf("enlarging"); else printf("shrinking");
-    printf(" data %lx, new size %ld\n", (unsigned long)data, new_alloc);
-#endif
-
-    INT* new_data = (INT*) realloc(data, new_alloc * sizeof(INT));
-
-#ifdef TRACE_REALLOCS
-    if (new_data != data) {
-      printf("data moved to %lx\n", (unsigned long)new_data);
-    }
-#endif
-
-    if (0==new_data && (new_alloc!=0)) {
-      return false;
-    }
-    if ((0==data) && new_data) new_data[0] = 0;
-
-    if (new_alloc > data_alloc) {
-      incMemAlloc((new_alloc - data_alloc) * sizeof(INT));
-    } else {
-      decMemAlloc((data_alloc - new_alloc) * sizeof(INT));
-    }
-
-    data_alloc = new_alloc;
-    data = new_data;
-    return true;
+    hole_manager<INT>::showInternalAddr(s, addr, 3);
   }
 
 
