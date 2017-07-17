@@ -318,13 +318,12 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
     for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
       
       int j = Ru[ei]->nextOf(i);
-      
-      
+      if(j==-1) continue;
       if (-1==nb.d(j)) continue;  // nothing can be added to this set
       
       
-      node_handle rec = recFire(nb.d(i), Ru[ei]->getDown());
       
+      node_handle rec = recFire(nb.d(i), Ru[ei]->getDown());
       
       if (rec == 0) continue;
       if (rec == nb.d(j)) {
@@ -362,7 +361,6 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   } // while there are indexes to explore
   
   // cleanup
-  for (int ei = 0; ei < nEventsAtThisLevel; ei++) delete Ru[ei];
   delete[] Ru;
   recycle(queue);
 }
@@ -430,28 +428,25 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     //
     // Need to process this level in the MXD.
     MEDDLY_DCASSERT(mxdLevel >= mddLevel);
-    //std::cout<<"\n relLevel:"<<mxdLevel<<" NodeLevel:"<<mddLevel;
     // clear out result (important!)
     for (int i=0; i<rSize; i++) nb->d_ref(i) = 0;
     
     // Initialize mxd readers, note we might skip the unprimed level
     
     // loop over mxd "rows"
-    for (int iz=0; iz<arg1F->getLevelSize(rLevel); iz++) {
+    for (int iz=0; iz<rSize; iz++) {
       int i = iz; // relation_node enabling condition
       if (0==A->d(i))   continue;
       
       
       // loop over mxd "columns"
       int j = relNode->nextOf(i);
-      //std::cout<<"\n Next of "<<i<<" is "<<j<<"at Level: "<<mddLevel<<" by Event: "<<relNode->getID();
-      //std::cout<<"\n Newstates from recFire of "<<A->d(i)<< "and "<<relNode->getDown();
+      if(j==-1) continue;
       // ok, there is an i->j "edge".
       // determine new states to be added (recursively)
       // and add them
       
       node_handle newstates = recFire(A->d(i), relNode->getDown());
-      //std::cout<<"\n Newstates:: "<<newstates;
       if (0==newstates) continue;
       if (0==nb->d(j)) {
         nb->d_ref(j) = newstates;
@@ -507,11 +502,11 @@ MEDDLY::common_impl_dfs_by_events_mt::common_impl_dfs_by_events_mt(
   freebufs = 0;
   rel = relation;
   arg1F = static_cast<expert_forest*>(rel->getInForest());
-  arg2F = static_cast<expert_forest*>(rel->getInForest());
+  //arg2F = static_cast<expert_forest*>(rel->getInForest());
   resF = static_cast<expert_forest*>(rel->getOutForest());
   
   registerInForest(arg1F);
-  registerInForest(arg2F);
+  //registerInForest(arg2F);
   registerInForest(resF);
   setAnswerForest(resF);
 }
@@ -520,14 +515,14 @@ MEDDLY::common_impl_dfs_by_events_mt::~common_impl_dfs_by_events_mt()
 {
   if (rel->autoDestroy()) delete rel;
   unregisterInForest(arg1F);
-  unregisterInForest(arg2F);
+  //unregisterInForest(arg2F);
   unregisterInForest(resF);
 }
 
 bool MEDDLY::common_impl_dfs_by_events_mt::isStaleEntry(const node_handle* data)
 {
   return arg1F->isStale(data[0]) ||
-  arg2F->isStale(data[1]) ||
+  //arg2F->isStale(data[1]) ||
   resF->isStale(data[2]);
 }
 

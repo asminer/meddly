@@ -1253,7 +1253,11 @@ MEDDLY::satimpl_opname::relation_node::~relation_node()
 {
 }
 
-
+long MEDDLY::satimpl_opname::relation_node::nextOf(long i)
+{
+  //to be defined for the example you use & comment this definition
+  throw error(error::NOT_IMPLEMENTED);
+}
   
 bool MEDDLY::satimpl_opname::relation_node::equals(const relation_node* n) const
 {
@@ -1325,7 +1329,7 @@ void
 MEDDLY::satimpl_opname::implicit_relation::resizeNodeArray(int nh)
 {
   last_in_node_array = nh;
-  if (last_in_node_array > node_array_alloc) {
+  if (last_in_node_array >= node_array_alloc) {
     int nalloc = ((nh/8)+1)*8;
     MEDDLY_DCASSERT(nalloc > nh);
     MEDDLY_DCASSERT(nalloc > 0);
@@ -1386,8 +1390,7 @@ rel_node_handle MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_
   rel_node_handle downHandle = n->getDown();
   relation_node* downNode = nodeExists(downHandle);
   rel_node_handle downLevel = downNode->getLevel();
-  std::cout<<"\n"<<nLevel<<" "<<downHandle<<" "<<downLevel;
-
+  
   
   MEDDLY_DCASSERT( ( ( downNode!=NULL ) && ( nLevel > downLevel ) ) || ( downLevel == 0 ) );
   MEDDLY_DCASSERT(isUniqueNode(n));
@@ -1400,7 +1403,6 @@ rel_node_handle MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_
     {
     last_in_node_array = n_ID;
     n->setID(n_ID);
-    
     resizeNodeArray(n_ID);
     node_array[n_ID] = *n;
     }
