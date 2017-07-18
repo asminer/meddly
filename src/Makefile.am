@@ -8,16 +8,8 @@ SUBDIRS = forests operations storage .
 
 lib_LTLIBRARIES = libmeddly.la
 
-_revision:
-	./BuildRevNo
-
-revision.h:
-	./BuildRevNo
-
-BUILT_SOURCES = _revision revision.h 
-CLEANFILES = revision.h
-
 libmeddly_la_SOURCES = \
+  revision.h \
   defines.h \
   meddly.h \
   meddly_expert.h \
@@ -46,4 +38,3 @@ AM_CXXFLAGS = -Wall
 
 include_HEADERS = meddly.h meddly_expert.h 
 
-EXTRA_DIST = BuildRevNo revision.h
