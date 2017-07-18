@@ -1140,7 +1140,7 @@ void MEDDLY::expert_forest
   // initialize the dot file
   s << "digraph structs {\n";
   // s << "  rankdir=LR;\n";
-  s << "  size=\"10,10\";\n";
+  s << "  size=\"5,5\";\n";
   s << "  node [shape=record];\n";
   
   const char blue[] = "blue";
@@ -1156,7 +1156,16 @@ void MEDDLY::expert_forest
 
     // write the level node (to identify the height at which the rest of the nodes
     // are to be displayed)
-    s << "  l" << map_k << " [label=\"<0>level " << k << "\"];\n";
+    s << "  l" << map_k << " [label=\"<0>level: ";
+    
+    const variable* v = getDomain()->getVar(getVarByLevel(ABS(k)));
+    if (v->getName()) {
+      s << v->getName();
+    } else {
+      s << ABS(k);
+    }
+    if (k < 0) s << "' ";
+    s << "\"];\n";
     
     MEDDLY_DCASSERT(map_k > 0);
     bool do_once = true;
@@ -1181,20 +1190,19 @@ void MEDDLY::expert_forest
         if (getNodeLevel(list[i]) != k) continue;
 
         s << " s" << list[i] << " [label=\"";
-        unpacked_node* un = unpacked_node::newFromNode(this, list[i], unpacked_node::FULL_NODE);
+        unpacked_node* un = unpacked_node::newFromNode(this, list[i], unpacked_node::SPARSE_NODE);
 
         // print index pointers
         MEDDLY_DCASSERT(isMultiTerminal());
-        s << "<0>0";
-        for (int j = 1; j < un->getSize(); j++) {
-          s << "|<" << j << ">" << j;
+        s << "<0>" << un->i(0);
+        for (int j = 1; j < un->getNNZs(); j++) {
+          s << "|<" << j << ">" << un->i(j);
         }
         s << "\"];\n";
 
         // print down pointers
-        for (int j = 0; j < un->getSize(); j++) {
-          if (0 == un->d(j)) continue;
-          s << "  edge [color=" << ((j % 2 == 0)? black: blue) << "];\n";
+        for (int j = 0; j < un->getNNZs(); j++) {
+          s << "  edge [color=" << blue /*((un->i(j) % 2 == 0)? black: blue)*/ << "];\n";
           s << "  s" << list[i] << ":" << j;
           s << " -> s" << (un->d(j) == -1? 0: un->d(j)) << ":0 [samehead = true];\n";
         }
