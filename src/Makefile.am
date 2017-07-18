@@ -12,16 +12,8 @@
 
 lib_LTLIBRARIES = libmeddly.la
 
-_revision:
-	./BuildRevNo
-
-revision.h:
-	./BuildRevNo
-
-BUILT_SOURCES = _revision revision.h 
-CLEANFILES = revision.h
-
 libmeddly_la_SOURCES = \
+  revision,h \
   meddly.cc \
   io.cc \
   node_wrappers.cc \
@@ -95,7 +87,5 @@ libmeddly_la_SOURCES = \
 ## compile apps
 
 include_HEADERS = meddly.h meddly_expert.h meddly.hh meddly_expert.hh
-
-EXTRA_DIST = BuildRevNo revision.h
 
 AM_CXXFLAGS = -Wall
