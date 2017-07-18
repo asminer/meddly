@@ -1,5 +1,5 @@
 
-// $Id$
+// $Id: kanban.cc 381 2012-07-16 17:18:08Z asminer $
 
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "meddly.h"
+#include "meddly_expert.h"
 #include "simple_model.h"
 
 const char* kanban[] = {
@@ -49,25 +50,57 @@ using namespace MEDDLY;
 
 int usage(const char* name)
 {
-  printf("\nUsage: %s nnnn (-bfs) (-dfs)\n\n", name);
+  printf("\nUsage: %s nnnn (-bfs) (-dfs) (-exp)\n\n", name);
   printf("\tnnnn: number of parts\n");
   printf("\t-bfs: use traditional iterations\n");
-  printf("\t-dfs: use saturation\n\n");
+  printf("\t-dfs: use saturation\n");
+  printf("\t-exp: use explicit (very slow)\n\n");
   return 1;
 }
+
+void printmem(long m)
+{
+  if (m<1024) {
+    printf("%ld bytes", m);
+    return;
+  }
+  double approx = m;
+  approx /= 1024;
+  if (approx < 1024) {
+    printf("%3.2lf Kbytes", approx);
+    return;
+  }
+  approx /= 1024;
+  if (approx < 1024) {
+    printf("%3.2lf Mbytes", approx);
+    return;
+  }
+  approx /= 1024;
+  if (approx < 1024) {
+    printf("%3.2lf Gbytes", approx);
+    return;
+  }
+  approx /= 1024;
+  printf("%3.2lf Tbytes", approx);
+}
+
 
 int main(int argc, const char** argv)
 {
   int N = -1;
-  bool useSaturation = true;
+  char method = 'd';
 
   for (int i=1; i<argc; i++) {
     if (strcmp("-bfs", argv[i])==0) {
-      useSaturation = false;
+      method = 'b';
       continue;
     }
     if (strcmp("-dfs", argv[i])==0) {
-      useSaturation = true;
+      method = 'd';
+      continue;
+    }
+    if (strcmp("-exp", argv[i])==0) {
+      method = 'e';
       continue;
     }
     N = atoi(argv[i]);
@@ -93,20 +126,68 @@ int main(int argc, const char** argv)
   // Build next-state function
   forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge nsf(mxd);
-  buildNextStateFunction(kanban, 16, mxd, nsf, 4);
+  if ('e' != method) {
+    buildNextStateFunction(kanban, 16, mxd, nsf, 4);
 
-  printf("Building reachable states\n");
-  fflush(stdout);
+    printf("MxD stats:\n");
+    printf("\t%ld current nodes\n", mxd->getCurrentNumNodes());
+    printf("\t%ld peak nodes\n", mxd->getPeakNumNodes());
+    printf("\t");
+    printmem(mxd->getCurrentMemoryUsed());
+    printf(" current memory used\n\t");
+    printmem(mxd->getPeakMemoryUsed());
+    printf(" peak memory used\n\t");
+    printmem(mxd->getCurrentMemoryAllocated());
+    printf(" current memory allocated\n\t");
+    printmem(mxd->getPeakMemoryAllocated());
+    printf(" peak memory allocated\n");
+  }
 
   dd_edge reachable(mdd);
-  if (useSaturation)
-    apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
-  else
-    apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
+  switch (method) {
+    case 'b':
+        printf("Building reachability set using traditional algorithm\n");
+        fflush(stdout);
+        apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
+        break;
 
+    case 'd':
+        printf("Building reachability set using saturation\n");
+        fflush(stdout);
+        apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+        break;
+
+    case 'e':
+        printf("Building reachability set using explicit search\n");
+        fflush(stdout);
+        explicitReachset(kanban, 16, mdd, init_state, reachable, 256);
+        break;
+
+    default:
+        printf("Error - unknown method\n");
+        exit(2);
+  };
   printf("Done\n");
+  fflush(stdout);
+
+  printf("MDD stats:\n");
+  printf("\t%ld current nodes\n", mdd->getCurrentNumNodes());
+  printf("\t%ld peak nodes\n", mdd->getPeakNumNodes());
+  printf("\t");
+  printmem(mdd->getCurrentMemoryUsed());
+  printf(" current memory used\n\t");
+  printmem(mdd->getPeakMemoryUsed());
+  printf(" peak memory used\n\t");
+  printmem(mdd->getCurrentMemoryAllocated());
+  printf(" current memory allocated\n\t");
+  printmem(mdd->getPeakMemoryAllocated());
+  printf(" peak memory allocated\n");
+  fflush(stdout);
+
   double c;
   apply(CARDINALITY, reachable, c);
+  // operation::showAllComputeTables(stdout, 1);
+
   printf("Approx. %g reachable states\n", c);
   
   // cleanup

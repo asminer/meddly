@@ -1,5 +1,5 @@
 
-// $Id$
+// $Id: simple_model.cc 378 2012-07-16 16:16:00Z asminer $
 
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
@@ -20,10 +20,11 @@
 */
 
 #include "meddly.h"
-#include "meddly_expert.h"
 #include "simple_model.h"
 
 #define VERBOSE
+// #define DEBUG_GENERATE
+
 
 inline int MAX(int a, int b) {
   return (a>b) ? a : b;
@@ -80,7 +81,8 @@ void buildNextStateFunction(const char* const* events, int nEvents,
 
   for (int e=0; e<nEvents; e++) {
     const char* ev = events[e];
-    if (verb>1) fprintf(stderr, "Event %5d", e);
+    if (2==verb) fprintf(stderr, "%5d", e);
+    if (verb>2) fprintf(stderr, "Event %5d", e);
 
     dd_edge nsf_ev(mxd);
     dd_edge term(mxd);
@@ -143,8 +145,9 @@ void buildNextStateFunction(const char* const* events, int nEvents,
     if (verb>2) fputc(' ', stderr);
     nsf += nsf_ev;
 
-    if (verb>1) fputc('\n', stderr);
+    if (verb>2) fputc('\n', stderr);
   } // for e
+  if (verb==2) fputc('\n', stderr);
 
   // cleanup
   delete[] mtprime;
@@ -164,5 +167,105 @@ void buildNextStateFunction(const char* const* events, int nEvents,
   printf("Complete NSF:\n");
   nsf.show(stdout, 2);
 #endif
+}
+
+
+
+
+//
+//  Explicit RS construction
+//
+
+bool fireEvent(const char* event, const int* current, int* next, int nVars)
+{
+  for (int i=nVars; i; i--) {
+    if ('.' == event[i]) {
+      next[i] = current[i];
+      continue;
+    }
+    if ('-' == event[i]) {
+      next[i] = current[i] - 1;
+      if (next[i] < 0) return false;
+      continue;
+    }
+    if ('+' == event[i]) {
+      next[i] = current[i] + 1;
+      // TBD ... check for overflow
+      continue;
+    }
+    throw 1;  // bad event string
+  }
+  return true;
+}
+
+void explicitReachset(const char* const* events, int nEvents, 
+  MEDDLY::forest* f, MEDDLY::dd_edge &expl, MEDDLY::dd_edge &RS, int batchsize)
+{
+  int nVars = f->getDomain()->getNumVariables();
+  if (batchsize < 1) batchsize = 256;
+
+  // initialize batch memory
+  int** minterms = new int*[batchsize];
+  for (int b=0; b<batchsize; b++) {
+    minterms[b] = new int[1+nVars];
+  }
+  
+  // unexplored states
+  MEDDLY::dd_edge unexplored(f);
+  // batch of states
+  MEDDLY::dd_edge batch(f);
+  int b = 0; 
+  // exploration loop.
+  for (;;) {
+    unexplored.clear();
+    MEDDLY::dd_edge::iterator I = expl.begin();
+    if (!I) break;    // nothing left to explore, bail out
+    // explore everything in expl
+    for (; I; ++I) {
+      const int* curr = I.getAssignments();
+#ifdef DEBUG_GENERATE
+      printf("Exploring state: (%d", curr[1]);
+      for (int n=2; n<=nVars; n++) printf(", %d", curr[n]);
+      printf(")\n");
+#endif
+      // what's enabled?
+      for (int e=0; e<nEvents; e++) {
+        if (!fireEvent(events[e], curr, minterms[b], nVars)) continue;
+#ifdef DEBUG_GENERATE
+        printf("  -- (event %d) --> (%d", e, minterms[b][1]);
+        for (int n=2; n<=nVars; n++) printf(", %d", minterms[b][n]);
+        printf(")\n");
+#endif
+        bool seen;
+        f->evaluate(RS, minterms[b], seen);
+        if (seen) continue;     // already known in RS
+        f->evaluate(unexplored, minterms[b], seen);
+        if (seen) continue;     // already in unexplored list
+        b++;
+        if (b>=batchsize) {
+          // Buffer is full; flush it
+          f->createEdge(minterms, b, batch);
+          unexplored += batch;
+          RS += batch;
+          b = 0;
+        }
+      }
+    }
+    // expl is empty.
+    // Flush the buffer
+    if (b) {
+      f->createEdge(minterms, b, batch);
+      unexplored += batch;
+      b = 0;
+    }
+    RS += unexplored;
+    expl = unexplored;
+  }
+
+  // cleanup batch memory
+  for (int b=0; b<batchsize; b++) {
+    delete[] minterms[b];
+  }
+  delete[] minterms;
 }
 
