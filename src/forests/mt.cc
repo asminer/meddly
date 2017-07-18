@@ -37,8 +37,8 @@ int* MEDDLY::mt_forest::order;
 int  MEDDLY::mt_forest::order_size;
 
 MEDDLY::mt_forest::mt_forest(int dsl, domain *d, bool rel,
-  range_type t, const policies &p)
-: expert_forest(dsl, d, rel, t, MULTI_TERMINAL, p)
+  range_type t, const policies &p,int* level_reduction_rule)
+: expert_forest(dsl, d, rel, t, MULTI_TERMINAL, p, level_reduction_rule)
 {
 }
 
@@ -73,7 +73,7 @@ MEDDLY::node_handle MEDDLY::mt_forest::makeNodeAtLevel(int k, node_handle d)
 {
   MEDDLY_DCASSERT(abs(k) >= abs(getNodeLevel(d)));
 
-  if (isFullyReduced()) return d;
+  if (isFullyReduced()) return d; 
 
   if (isQuasiReduced() && d==getTransparentNode()) return d;
 

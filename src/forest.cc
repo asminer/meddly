@@ -197,7 +197,7 @@ MEDDLY::forest::policies MEDDLY::forest::mxdDefaults;
 
 MEDDLY::forest
 ::forest(int ds, domain* _d, bool rel, range_type t, edge_labeling ev, 
-  const policies &p) : deflt(p)
+  const policies &p,int* lrr) : deflt(p)
 {
   // FID
   //
@@ -212,11 +212,71 @@ MEDDLY::forest
   isRelation = rel;
   rangeType = t;
   edgeLabel = ev;
+
+  
+    if(lrr==NULL){
+       
+        if(isUserDefinedReduced()){
+		throw error(error::INVALID_POLICY);
+        }
+
+	else{
+
+        if(isRelation)
+        {
+            int span = 2*(d->getNumVariables()) + 1;
+            lrr=(int*)malloc(sizeof(int)*span);
+            
+            if(isQuasiReduced())
+                for(int i=0;i<span;i++)
+                {lrr[i]=i==0?-4:(i%2==0?-2:-1);}
+            
+            else if (isFullyReduced())
+                for(int i=0;i<span;i++)
+                {lrr[i]=i==0?-4:(i%2==0?-1:-1);}
+            
+            else if (isIdentityReduced())
+                for(int i=0;i<span;i++)
+                {lrr[i]=i==0?-4:(i%2==0?-3:-1);}
+        }
+        else
+        {
+            lrr=(int*)malloc(sizeof(int)*(d->getNumVariables()+1));
+            lrr[0]=-4;
+            if(isQuasiReduced())
+                for(int i=1;i<=d->getNumVariables();i++)
+                    lrr[i]=-2;
+            
+            else
+                if (isFullyReduced())
+                for(int i=1;i<=d->getNumVariables();i++)
+                    lrr[i]=-1;
+            
+        }
+      
+	}
+
+	level_reduction_rule=lrr;        
+    }
+	else if(isUserDefinedReduced()){
+
+    	level_reduction_rule=lrr;
+    }
+	else
+		throw error(error::INVALID_POLICY);
+    
+    
+    
+    
   // check policies
   if (!isRelation) {
     if (policies::IDENTITY_REDUCED == deflt.reduction)
       throw error(error::INVALID_POLICY);
-  } 
+      
+    for(int i=1;i<=d->getNumVariables();i++)
+        if(level_reduction_rule[i]==-3)              //isIdentityReduced()
+         throw error(error::INVALID_POLICY);
+  }
   //
   // Initialize array of operations
   //
@@ -671,8 +731,8 @@ const unsigned int MEDDLY::expert_forest::SHOW_TERMINALS  = 0x01;
 
 
 MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
-  edge_labeling ev, const policies &p)
-: forest(ds, d, rel, t, ev, p)
+  edge_labeling ev, const policies &p,int* level_reduction_rule)
+: forest(ds, d, rel, t, ev, p,level_reduction_rule)
 {
   //
   // Inltialize address array
@@ -928,8 +988,10 @@ MEDDLY::expert_forest
           // expand.  Note we're leaving an extra slot
           // at the end, for the terminal 0.
           msize += 1024;
-          marked = (node_handle*) realloc(marked, msize*sizeof(node_handle));
-          if (0==marked) throw error(error::INSUFFICIENT_MEMORY);
+          node_handle* new_marked = (node_handle*) 
+            realloc(marked, msize*sizeof(node_handle));
+          if (0==new_marked) throw error(error::INSUFFICIENT_MEMORY);
+          marked = new_marked;
       }
       inList[M->d(i)] = true;
       marked[mlen] = M->d(i);
@@ -2255,12 +2317,16 @@ void MEDDLY::expert_forest::expandHandleList()
   // increase size by 50%
   int delta = a_size / 2;
   MEDDLY_DCASSERT(delta>=0);
-  address = (node_header*) realloc(address, (a_size+delta) * sizeof(node_header));
-  if (0==address) {
+  node_header* new_address = (node_header*) 
+    realloc(address, (a_size+delta) * sizeof(node_header));
+  if (0==new_address) {
+    /*
     fprintf(stderr, "Error in allocating array of size %lu at %s, line %d\n",
         (a_size+delta) * sizeof(node_header), __FILE__, __LINE__);
+    */
     throw error(error::INSUFFICIENT_MEMORY);
   }
+  address = new_address;
   stats.incMemAlloc(delta * sizeof(node_header));
   memset(address + a_size, 0, delta * sizeof(node_header));
   a_size += delta;
@@ -2308,12 +2374,16 @@ void MEDDLY::expert_forest::shrinkHandleList()
   // shrink the array
   MEDDLY_DCASSERT(delta>=0);
   MEDDLY_DCASSERT(a_size-delta>=a_min_size);
-  address = (node_header*) realloc(address, new_size * sizeof(node_header));
-  if (0==address) {
+  node_header* new_address = (node_header*) 
+    realloc(address, new_size * sizeof(node_header));
+  if (0==new_address) {
+    /*
     fprintf(stderr, "Error in allocating array of size %lu at %s, line %d\n",
         new_size*sizeof(node_header), __FILE__, __LINE__);
+    */
     throw error(error::INSUFFICIENT_MEMORY);
   }
+  address = new_address;
   stats.decMemAlloc(delta * sizeof(node_header));
   a_size -= delta;
   a_next_shrink = a_size / 2;

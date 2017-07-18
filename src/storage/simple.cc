@@ -1040,45 +1040,57 @@ MEDDLY::node_handle MEDDLY::simple_storage
   node_handle* index = SI(addr);
   node_handle* down  = SD(addr);
   if (nb.hasEdges()) {
-      MEDDLY_DCASSERT(nb.hasEdges());
-      char* edge = (char*) SE(addr);
-      int edge_bytes = edgeSlots * sizeof(node_handle);
-      if (nb.isSparse()) {
-        for (int z=0; z<size; z++) {
-          down[z] = nb.d(z);
-          index[z] = nb.i(z);
-        }
-        // kinda hacky
-        memcpy(edge, nb.eptr(0), size * edge_bytes);
-      } else {
-        int z = 0;
-        for (int i=0; i<nb.getSize(); i++) if (nb.d(i)) {
+    MEDDLY_DCASSERT(nb.hasEdges());
+    char* edge = (char*) SE(addr);
+    int edge_bytes = edgeSlots * sizeof(node_handle);
+    if (nb.isSparse()) {
+      for (int z=0; z<size; z++) {
+        down[z] = nb.d(z);
+        index[z] = nb.i(z);
+      }
+      // kinda hacky
+      memcpy(edge, nb.eptr(0), size * edge_bytes);
+#ifdef DEVELOPMENT_CODE
+      // check if the sparse node is sorted
+      for (int z=1; z<size; z++) {
+        MEDDLY_DCASSERT(index[z-1] < index[z]);
+      }
+#endif
+    } else {
+      int z = 0;
+      for (int i=0; i<nb.getSize(); i++) if (nb.d(i)) {
+        MEDDLY_CHECK_RANGE(0, z, size);
+        down[z] = nb.d(i);
+        index[z] = i;
+        memcpy(edge + z * edge_bytes, nb.eptr(i), edge_bytes);
+        z++;
+      }
+    }
+  } else {
+    MEDDLY_DCASSERT(!nb.hasEdges());
+    if (nb.isSparse()) {
+      for (int z=0; z<size; z++) {
+        down[z] = nb.d(z);
+        index[z] = nb.i(z);
+      }
+#ifdef DEVELOPMENT_CODE
+      // check if the sparse node is sorted
+      for (int z=1; z<size; z++) {
+        MEDDLY_DCASSERT(index[z-1] < index[z]);
+      }
+#endif
+    } else {
+      int z = 0;
+      node_handle tv = getParent()->getTransparentNode();
+      for (int i=0; i<nb.getSize(); i++) {
+        if (nb.d(i)!=tv) {
           MEDDLY_CHECK_RANGE(0, z, size);
           down[z] = nb.d(i);
           index[z] = i;
-          memcpy(edge + z * edge_bytes, nb.eptr(i), edge_bytes);
           z++;
         }
       }
-  } else {
-      MEDDLY_DCASSERT(!nb.hasEdges());
-      if (nb.isSparse()) {
-        for (int z=0; z<size; z++) {
-          down[z] = nb.d(z);
-          index[z] = nb.i(z);
-        }
-      } else {
-        int z = 0;
-        node_handle tv = getParent()->getTransparentNode();
-        for (int i=0; i<nb.getSize(); i++) {
-          if (nb.d(i)!=tv) {
-            MEDDLY_CHECK_RANGE(0, z, size);
-            down[z] = nb.d(i);
-            index[z] = i;
-            z++;
-          }
-        }
-      }
+    }
   }
   copyExtraHeader(addr, nb);
 #ifdef DEBUG_ENCODING

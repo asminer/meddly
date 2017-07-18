@@ -3,6 +3,7 @@
 #ifndef RANDOM_REORDERING_H
 #define RANDOM_REORDERING_H
 
+#include <time.h>
 #include <vector>
 #include <time.h>
 

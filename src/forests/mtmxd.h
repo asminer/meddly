@@ -30,7 +30,7 @@ namespace MEDDLY {
 
 class MEDDLY::mtmxd_forest : public mt_forest {
   public:
-    mtmxd_forest(int dsl, domain* d, range_type t, const policies &p);
+    mtmxd_forest(int dsl, domain* d, range_type t, const policies &p,int* level_reduction_rule=NULL);
 
     virtual void swapAdjacentVariables(int level);
     virtual void moveDownVariable(int high, int low);
@@ -543,7 +543,7 @@ namespace MEDDLY {
             // process unprimed level
             //
             if (DONT_CARE == vlist[i]) {
-              if (F->isFullyReduced()) {
+              if (F->isFullyReduced()) { 
             	  next=nextpr;
             	  continue;
               }

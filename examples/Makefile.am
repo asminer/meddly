@@ -102,7 +102,7 @@ swaps_LDADD = ../src/libmeddly.la
 rubiks_rings_SOURCES = rubiks_rings.cc
 rubiks_rings_LDADD = ../src/libmeddly.la
 
-rebuild_mdd_SOURCES = rebuild_mdd.cc
+rebuild_mdd_SOURCES = rebuild_mdd.cc reorder.h
 rebuild_mdd_LDADD = ../src/libmeddly.la
 
 test_reorder_mtmxd_SOURCES = test_reorder_mtmxd.cc

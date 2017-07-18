@@ -39,7 +39,7 @@ namespace MEDDLY {
 class MEDDLY::ev_forest : public expert_forest {
   protected:
     ev_forest(int dsl, domain *d, bool rel, range_type t, edge_labeling ev,
-      const policies &p);
+      const policies &p,int* level_reduction_rule=NULL);
 
   protected:
     virtual void showTerminal(output &s, node_handle tnode) const;

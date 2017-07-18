@@ -476,7 +476,7 @@ class MEDDLY::expert_domain : public domain {
       array of integers, for indexes (sparse only)
       "compact" chunk of memory for edge values
 */
-class MEDDLY::unpacked_node {
+class MEDDLY::unpacked_node { 
   public:
     /**
         Options for filling an unpacked node from an existing one.
@@ -1389,7 +1389,7 @@ class MEDDLY::expert_forest: public forest
       @param  p       Polcies for reduction, storage, deletion.
     */
     expert_forest(int dslot, domain *d, bool rel, range_type t,
-                  edge_labeling ev, const policies &p);
+                  edge_labeling ev, const policies &p,int* level_reduction_rule);
 
   // ------------------------------------------------------------
   // inlined helpers.
@@ -2539,8 +2539,9 @@ class MEDDLY::satotf_opname : public specialized_opname {
     */
     class subevent {
       public:
-        /// Constructor, specify variables that this function depends on.
-        subevent(forest* f, int* v, int nv);
+        /// Constructor, specify variables that this function depends on,
+        /// and if it is a firing or enabling event.
+        subevent(forest* f, int* v, int nv, bool firing);
         virtual ~subevent();
 
         /// Get the forest to which this function belongs to.
@@ -2557,6 +2558,12 @@ class MEDDLY::satotf_opname : public specialized_opname {
 
         /// Get the "top" variable for this function
         int getTop() const;
+
+        /// Is this a firing subevent?
+        bool isFiring() const;
+
+        /// Is this an enabling subevent
+        bool isEnabling() const;
 
         /**
           Rebuild the function to include the
@@ -2589,6 +2596,7 @@ class MEDDLY::satotf_opname : public specialized_opname {
         int** pminterms;
         int num_minterms;
         int size_minterms;
+        bool is_firing;
 
     };  // end of class subevent
 
@@ -2629,6 +2637,8 @@ class MEDDLY::satotf_opname : public specialized_opname {
 
         inline const dd_edge& getRoot() const { return root; }
 
+        inline bool isDisabled() const { return is_disabled; }
+
         inline bool needsRebuilding() const { return needs_rebuilding; }
 
         inline void markForRebuilding() { needs_rebuilding = true; }
@@ -2651,6 +2661,9 @@ class MEDDLY::satotf_opname : public specialized_opname {
 
         long mintermMemoryUsage() const;
 
+      protected:
+        void buildEventMask();
+
       private:
         subevent** subevents;
         int num_subevents;
@@ -2660,6 +2673,13 @@ class MEDDLY::satotf_opname : public specialized_opname {
         dd_edge root;
         bool needs_rebuilding;
         expert_forest* f;
+
+        bool is_disabled;
+        int num_firing_vars;
+        int* firing_vars;
+        dd_edge event_mask;
+        int* event_mask_from_minterm;
+        int* event_mask_to_minterm;
 
     };  // end of class event
 

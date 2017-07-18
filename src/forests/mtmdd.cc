@@ -27,8 +27,8 @@
 #include "../unique_table.h"
 
 MEDDLY::mtmdd_forest
-::mtmdd_forest(int dsl, domain* d, range_type t, const policies &p)
- : mt_forest(dsl, d, false, t, p)
+::mtmdd_forest(int dsl, domain* d, range_type t, const policies &p,int* level_reduction_rule)
+ : mt_forest(dsl, d, false, t, p,level_reduction_rule)
 {
   // anything to construct?
 }
@@ -192,10 +192,10 @@ void MEDDLY::mtmdd_forest::dynamicReorderVariables(int top, int bottom)
     vars.push_back(getVarByLevel(i));
   }
 
-  for (int i = 0; i < vars.size(); i++) {
+  for (unsigned int i = 0; i < vars.size(); i++) {
     int max = i;
     unsigned max_num = unique->getNumEntries(vars[max]);
-    for (int j = i + 1; j < vars.size(); j++){
+    for (unsigned int j = i + 1; j < vars.size(); j++){
       if (unique->getNumEntries(vars[j]) > max_num) {
         max = j;
         max_num = unique->getNumEntries(vars[j]);

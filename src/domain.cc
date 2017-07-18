@@ -112,7 +112,7 @@ void MEDDLY::variable_order::exchange(int var1, int var2) {
 
 bool MEDDLY::variable_order::is_compatible_with(const int* order) const {
   MEDDLY_DCASSERT(order[0] == 0);
-  for (int i = 1; i < level2var.size(); i++) {
+  for (unsigned int i = 1; i < level2var.size(); i++) {
     if (level2var[i] != order[i]) {
       return false;
     }
@@ -127,7 +127,7 @@ bool MEDDLY::variable_order::is_compatible_with(const variable_order& order) con
   if (level2var.size() != order.level2var.size()) {
     return false;
   }
-  for (int i = 0; i < level2var.size(); i++) {
+  for (unsigned int i = 0; i < level2var.size(); i++) {
     if (level2var[i] != order.getVarByLevel(i)) {
       return false;
     }
@@ -314,7 +314,7 @@ void MEDDLY::domain::deleteDomList()
 }
 
 MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t, 
-    forest::edge_labeling e, const forest::policies &p, int tv)
+    forest::edge_labeling e, const forest::policies &p,int* level_reduction_rule, int tv)
 {
   int slot = findEmptyForestSlot();
 
@@ -324,18 +324,18 @@ MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t,
     case forest::MULTI_TERMINAL:
         switch (t) {
             case forest::BOOLEAN:
-                if (rel)  f = new mt_mxd_bool(slot, this, p, tv==0 ? false : true);
-                else      f = new mt_mdd_bool(slot, this, p, tv==0 ? false : true);
+                if (rel)  f = new mt_mxd_bool(slot, this, p,level_reduction_rule, tv==0 ? false : true);
+                else      f = new mt_mdd_bool(slot, this, p,level_reduction_rule, tv==0 ? false : true);
                 break;
 
             case forest::INTEGER:
-                if (rel)  f = new mt_mxd_int(slot, this, p, tv);
-                else      f = new mt_mdd_int(slot, this, p, tv);
+                if (rel)  f = new mt_mxd_int(slot, this, p,level_reduction_rule, tv);
+                else      f = new mt_mdd_int(slot, this, p,level_reduction_rule, tv);
                 break;
 
             case forest::REAL:
-                if (rel)  f = new mt_mxd_real(slot, this, p, (float)tv);
-                else      f = new mt_mdd_real(slot, this, p, (float)tv);
+                if (rel)  f = new mt_mxd_real(slot, this, p,level_reduction_rule, (float)tv);
+                else      f = new mt_mdd_real(slot, this, p,level_reduction_rule, (float)tv);
                 break;
 
             default:
@@ -380,7 +380,7 @@ MEDDLY::domain
 ::createForest(bool rel, forest::range_type t, forest::edge_labeling e)
 {
   return createForest(rel, t, e, 
-    rel ? forest::getDefaultPoliciesMXDs() : forest::getDefaultPoliciesMDDs(), 0);
+    rel ? forest::getDefaultPoliciesMXDs() : forest::getDefaultPoliciesMDDs(),NULL, 0);
 }
 
 void MEDDLY::domain::showInfo(output &strm)

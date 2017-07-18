@@ -26,8 +26,8 @@
 #include "../unique_table.h"
 
 MEDDLY::mtmxd_forest
-::mtmxd_forest(int dsl, domain* d, range_type t, const policies &p)
- : mt_forest(dsl, d, true, t, p)
+::mtmxd_forest(int dsl, domain* d, range_type t, const policies &p,int* level_reduction_rule)
+ : mt_forest(dsl, d, true, t, p,level_reduction_rule)
 {
   // anything to construct?
 }
@@ -287,7 +287,7 @@ MEDDLY::node_handle MEDDLY::mtmxd_forest::swapAdjacentVariablesOf(node_handle no
 
   // Unprimed high node builder
   unpacked_node* hnb = unpacked_node::newFull(this, level + 1, lsize);
-  if (isFullyReduced() || isQuasiReduced()) {
+  if (isFullyReduced() || isQuasiReduced()) { 
     for (int m = 0; m < lsize; m++) {
       // Primed high node builder
       unpacked_node* phnb = unpacked_node::newFull(this, -(level + 1), lsize);
@@ -310,7 +310,7 @@ MEDDLY::node_handle MEDDLY::mtmxd_forest::swapAdjacentVariablesOf(node_handle no
       hnb->d_ref(m) = createReducedNode(m, phnb);
     }
   }
-  else if (isIdentityReduced()) {
+  else if (isIdentityReduced()) { 
     for (int m = 0; m < lsize; m++) {
       // Primed high node builder
       unpacked_node* phnb = unpacked_node::newFull(this, -(level + 1), lsize);

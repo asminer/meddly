@@ -30,7 +30,7 @@ namespace MEDDLY {
 
 class MEDDLY::mtmdd_forest : public mt_forest {
   public:
-    mtmdd_forest(int dsl, domain* d, range_type t, const policies &p);
+    mtmdd_forest(int dsl, domain* d, range_type t, const policies &p,int* level_reduction_rule=NULL);
 
     virtual void swapAdjacentVariables(int level);
     virtual void moveDownVariable(int high, int low);
@@ -325,18 +325,18 @@ namespace MEDDLY {
               bottom = F->createReducedNode(-1, nb);
             } else {
               if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
-            	int sz = F->getLevelSize(i);
-              unpacked_node* nb = unpacked_node::newFull(F, i, sz);
-            	node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
-            	// add opaque zero nodes
+                int sz = F->getLevelSize(i);
+                unpacked_node* nb = unpacked_node::newFull(F, i, sz);
+                node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
+                // add opaque zero nodes
                 for(int v=0; v<sz; v++) {
-          	      nb->d_ref(v)=(v==vlist[i] ? bottom : F->linkNode(zero));
-            	}
-            	F->unlinkNode(zero);
-            	bottom=F->createReducedNode(-1, nb);
+                  nb->d_ref(v)=(v==vlist[i] ? bottom : F->linkNode(zero));
+                }
+                F->unlinkNode(zero);
+                bottom=F->createReducedNode(-1, nb);
               }
               else{
-            	// make a singleton node
+                // make a singleton node
                 unpacked_node* nb = unpacked_node::newSparse(F, i, 1);
                 nb->i_ref(0) = vlist[i];
                 nb->d_ref(0) = bottom;
