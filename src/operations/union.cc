@@ -300,7 +300,7 @@ bool MEDDLY::union_min_evplus_mxd::checkTerminals(long aev, node_handle a, long 
   }
   if (a == b) {
     if (arg1F == arg2F && arg2F == resF) {
-      cev = (aev < bev ? aev : bev);
+      cev = MIN(aev, bev);
       c = resF->linkNode(a);
       return true;
     }

@@ -711,9 +711,6 @@ MEDDLY::constraint_saturation::constraint_saturation(constraint_bckwd_dfs* p,
 
   setAnswerForest(resF);
 
-  minOp = getOperation(UNION, resF, resF, resF);
-  plusOp = getOperation(PLUS, resF, resF, resF);
-
   if (argF->isFullyReduced()) {
     NODE_INDICES_IN_KEY[0] = sizeof(long) / sizeof(node_handle);
     NODE_INDICES_IN_KEY[1] = (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle);
@@ -732,9 +729,6 @@ MEDDLY::constraint_saturation::~constraint_saturation()
   unregisterInForest(consF);
   unregisterInForest(argF);
   unregisterInForest(resF);
-
-//  delete minOp;
-//  delete plusOp;
 }
 
 bool MEDDLY::constraint_saturation::checkForestCompatibility() const

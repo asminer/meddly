@@ -614,41 +614,42 @@ void MEDDLY::generic_binary_evplus_mxd
 ::compute(long aev, node_handle a, long bev, node_handle b,
   long& cev, node_handle& c)
 {
-  if (checkTerminals(aev, a, bev, b, cev, c))
+  if (checkTerminals(aev, a, bev, b, cev, c)) {
     return;
+  }
 
   compute_table::search_key* Key = findResult(aev, a, bev, b, cev, c);
-  if (0==Key) return;
+  if (0 == Key) {
+    return;
+  }
 
   // Get level information
   const int aLevel = arg1F->getNodeLevel(a);
   const int bLevel = arg2F->getNodeLevel(b);
 
-  const int resultLevel = aLevel > bLevel? aLevel: bLevel;
+  const int resultLevel = ABS(isLevelAbove(aLevel, bLevel) ? aLevel: bLevel);
   const int resultSize = resF->getLevelSize(resultLevel);
 
   // Initialize result
   unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
 
   // Initialize readers
-  unpacked_node *A = (aLevel < resultLevel)
+  unpacked_node *A = isLevelAbove(resultLevel, aLevel)
     ? unpacked_node::newRedundant(arg1F, resultLevel, 0L, a, true)
-    : unpacked_node::newFromNode(arg1F, a, true)
-  ;
+    : unpacked_node::newFromNode(arg1F, a, true);
 
-  unpacked_node *B = (bLevel < resultLevel)
+  unpacked_node *B = isLevelAbove(resultLevel, bLevel)
     ? unpacked_node::newRedundant(arg2F, resultLevel, 0L, b, true)
-    : unpacked_node::newFromNode(arg2F, b, true)
-  ;
+    : unpacked_node::newFromNode(arg2F, b, true);
 
   // do computation
-  for (int i=0; i<resultSize; i++) {
-    long ev = 0;
-    node_handle ed;
+  for (int i = 0; i < resultSize; i++) {
+    long ev = Inf<long>();
+    node_handle ed = 0;
     compute_r(i, resF->downLevel(resultLevel),
-        aev + A->ei(i), A->d(i),
-        bev + B->ei(i), B->d(i),
-        ev, ed);
+      aev + A->ei(i), A->d(i),
+      bev + B->ei(i), B->d(i),
+      ev, ed);
     nb->d_ref(i) = ed;
     nb->setEdge(i, ev);
   }
@@ -671,7 +672,7 @@ void MEDDLY::generic_binary_evplus_mxd
 {
   //  Compute for the primed levels.
   //
-  MEDDLY_DCASSERT(level<0);
+  MEDDLY_DCASSERT(level < 0);
 
   // Get level information
   const int aLevel = arg1F->getNodeLevel(a);

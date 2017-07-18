@@ -150,10 +150,6 @@ protected:
   expert_forest* consF;
   expert_forest* argF;
   expert_forest* resF;
-  //opnd_type resultType;
-
-  binary_operation* plusOp;
-  binary_operation* minOp;
 
   virtual ~constraint_saturation();
 

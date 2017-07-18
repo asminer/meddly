@@ -37,39 +37,9 @@ namespace MEDDLY {
   class transitive_closure_evplus;
 
   minimum_witness_opname* initConstraintDFSBackward();
-}
 
-//class MEDDLY::common_constraint: public specialized_operation
-//{
-//protected:
-//  expert_forest* consF;
-//  expert_forest* argF;
-//  expert_forest* transF;
-//  expert_forest* resF;
-//
-//  // Check if the variables orders of relevant forests are compatible
-//  virtual bool checkForestCompatibility() const;
-//
-//public:
-//  common_constraint(const minimum_witness_opname* code, int kl, int al,
-//    expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
-//  ~common_constraint();
-//
-//  virtual dd_edge compute(const dd_edge& a, const dd_edge& b, const dd_edge& r) = 0;
-//};
-//
-//class MEDDLY::constraint_bfs_opname : public minimum_witness_opname {
-//protected:
-//  bool forward;
-//public:
-//  constraint_bfs_opname(bool fwd);
-//  virtual specialized_operation* buildOperation(expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res) const;
-//
-//  virtual specialized_operation* buildOperation(arguments* a) const
-//  {
-//    throw error::NOT_IMPLEMENTED;
-//  }
-//};
+  void printAssignmentsDEBUG(const dd_edge& res);
+}
 
 class MEDDLY::common_transitive_closure: public specialized_operation
 {
@@ -140,7 +110,6 @@ protected:
 
   binary_operation* mxdDifferenceOp;
   binary_operation* mxdIntersectionOp;
-  binary_operation* plusOp;
   binary_operation* minOp;
 
   node_handle* splits;
@@ -192,10 +161,6 @@ protected:
   expert_forest* tcF;
   expert_forest* consF;
   expert_forest* resF;
-  //opnd_type resultType;
-
-  binary_operation* plusOp;
-  binary_operation* minOp;
 
   virtual ~transitive_closure_evplus();
 
