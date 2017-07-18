@@ -1141,16 +1141,17 @@ void MEDDLY::expert_forest
   s << "digraph structs {\n";
   // s << "  rankdir=LR;\n";
   s << "  size=\"5,5\";\n";
-  s << "  node [shape=record];\n";
+  s << "  node [shape=record, height=0.25, width=0.25];\n";
   
   const char blue[] = "blue";
   const char black[] = "black";
-  // const char white[] = "white";
+  // const char white[] = "transparent";
 
   // Print by levels
-  s << "  l0 [label=\"<0>level 0 \"];\n";
-  s << "  {rank=same; l0 s0;}\n";
-  s << "  s0 [label=\"<0>1\"];\n";
+  // s << "  l0 [label=\"<0>level 0 \"];\n";
+  // s << "  {rank=same; l0 s0;}\n";
+  // s << "  s0 [label=\"<0>1\"];\n";
+  bool lowest_level = true;
   for (int k = (isForRelations()? -1: 1); ABS(k) <= getNumVariables(); ) {
     int map_k = ((k < 0)? (-k)*2 - 1: k*2);
 
@@ -1174,9 +1175,13 @@ void MEDDLY::expert_forest
     for (long i=0; list[i]; i++) {
       if (getNodeLevel(list[i]) != k) continue;
       if (do_once) {
-        s << "  edge [color=white];\n";
-        s << "  l" << map_k << ":0 -> l" << (isForRelations()? map_k-1: map_k-2) << ":0;\n";
-        s << "  edge [color=black];\n";
+        if (lowest_level) {
+          lowest_level = false;
+        } else {
+          s << "  edge [color=transparent];\n";
+          s << "  l" << map_k << ":0 -> l" << (isForRelations()? map_k-1: map_k-2) << ":0;\n";
+          s << "  edge [color=black];\n";
+        }
         s << "  {rank=same; l" << map_k << " ";
         do_once = false;
       }
@@ -1194,17 +1199,21 @@ void MEDDLY::expert_forest
 
         // print index pointers
         MEDDLY_DCASSERT(isMultiTerminal());
-        s << "<0>" << un->i(0);
-        for (int j = 1; j < un->getNNZs(); j++) {
-          s << "|<" << j << ">" << un->i(j);
+        bool first_index = true;
+        for (int j = 0; j < un->getNNZs(); j++) {
+          if (first_index) first_index=false; else s << "|";
+          s << "<" << j << ">";
+          if (-1 == un->d(j)) s << "T"; else s << un->i(j);
         }
         s << "\"];\n";
 
         // print down pointers
         for (int j = 0; j < un->getNNZs(); j++) {
+          if (-1 == un->d(j)) continue;
           s << "  edge [color=" << blue /*((un->i(j) % 2 == 0)? black: blue)*/ << "];\n";
           s << "  s" << list[i] << ":" << j;
-          s << " -> s" << (un->d(j) == -1? 0: un->d(j)) << ":0 [samehead = true];\n";
+          s << " -> s" << un->d(j);
+          s << ":0 [samehead = true];\n";
         }
 
         unpacked_node::recycle(un);
