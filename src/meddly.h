@@ -2397,6 +2397,12 @@ class MEDDLY::dd_edge {
     */
     void show(output &s, int verbosity = 0) const;
 
+    /** Draws a pictographical representation of the graph with this node as the root.
+        @param  filename  Name of output file (without extension)
+        @param  extension File extension (without "."). E.g. "pdf", "ps"
+    */
+    void writePicture(const char* filename, const char* extension) const;
+
     /// Write to a file
     void write(output &s, const node_handle* map) const;
 

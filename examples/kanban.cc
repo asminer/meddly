@@ -281,6 +281,8 @@ int main(int argc, const char** argv)
 
     printf("Approx. %g reachable states\n", c);
 
+    reachable.writePicture("kanban", "pdf");
+
     // cleanup
     if (LOG) {
       LOG->newPhase(mdd, "Cleanup");

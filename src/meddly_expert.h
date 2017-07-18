@@ -1801,6 +1801,11 @@ class MEDDLY::expert_forest: public forest
     /// Show all the nodes in the subgraph below the given nodes.
     void showNodeGraph(output &s, const node_handle* node, int n) const;
 
+    /// Write all the nodes in the subgraph below the given nodes
+    /// in a graphical format specified by the extension.
+    void writeNodeGraphPicture(const char* filename, const char *extension,
+        const node_handle* node, int n) const;
+
 
     /** Show various stats for this forest.
           @param  s       Output stream to write to

@@ -267,6 +267,7 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator/=(const dd_edge& e)
 void MEDDLY::dd_edge::show(output &strm, int verbosity) const
 {
   expert_forest* eParent = smart_cast<expert_forest*>(parent);
+
   strm << "(Forest Addr: ";
   strm.put_hex(long(parent));
   strm << ", ";
@@ -368,3 +369,11 @@ void MEDDLY::dd_edge::read(forest* p, input &s, const node_handle* map)
   MEDDLY_DCASSERT(index != -1);
 }
 
+
+void MEDDLY::dd_edge::writePicture(const char* filename, const char* extension) const
+{
+  if (parent) {
+    expert_forest* eParent = smart_cast<expert_forest*>(parent);
+    eParent->writeNodeGraphPicture(filename, extension, &node, 1);
+  }
+}
