@@ -115,6 +115,30 @@ for oldrel in v0.02 v0.03 v0.04 v0.05 v0.06 v0.07 v0.08 v0.09 v0.10 v0.11 v0.12 
   ./RunBenchmarks -h $OUT
 done
 
+make clean  
+
+#
+# New releases 
+#
+
+for newrel in master; do
+  if git checkout $newrel; then
+    echo "Checkout of $newrel succeeded"
+  else
+    echo "Checkout of $newrel failed"
+    exit 1
+  fi
+  ./autogen.sh
+  if make clean all check; then
+    echo "Build of version $newrel succeeded"
+  else
+    echo "Build of version $newrel failed"
+    exit 1
+  fi
+  ./RunBenchmarks -h $OUT
+done
+
+
 rm RunBenchmarks
 
 cat >> $OUT <<EOF

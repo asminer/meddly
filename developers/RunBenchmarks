@@ -118,6 +118,7 @@ printcount()
 update()
 {
   printf "\n\nSource code for $version (branch: $branch):\n" 
+  printf "\tReleased $revdate\n"
   printcount $numfiles "files"
   printcount $numlines "lines"
   printcount $numchars "chars"
