@@ -267,6 +267,13 @@ void MEDDLY::FILE_output::put(long x, int w)
   }
 }
 
+void MEDDLY::FILE_output::put(unsigned long x, int w)
+{
+  if (fprintf(outf, "%*lu", w, x)<1) {
+    throw error(error::COULDNT_WRITE);
+  }
+}
+
 void MEDDLY::FILE_output::put_hex(unsigned long x, int w)
 {
   if (fprintf(outf, "%*lx", w, x)<1) {
@@ -333,6 +340,14 @@ void MEDDLY::ostream_output::put(const char* x, int w)
 }
 
 void MEDDLY::ostream_output::put(long x, int w)
+{
+  out.setf(std::ios::dec, std::ios::basefield);
+  out.width(w);
+  out << x;
+  // TBD - what about errors?
+}
+
+void MEDDLY::ostream_output::put(unsigned long x, int w)
 {
   out.setf(std::ios::dec, std::ios::basefield);
   out.width(w);

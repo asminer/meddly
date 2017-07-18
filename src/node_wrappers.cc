@@ -447,13 +447,7 @@ MEDDLY::node_storage_style::~node_storage_style()
 // ******************************************************************
 
 MEDDLY::node_storage::node_storage(const char* n, expert_forest* f)
- : stats(f->changeStats())
 {
-#ifdef OLD_NODE_HEADERS
-  counts = 0;
-#endif
-  nexts = 0;
-
   style_name = n;
   parent = f;
 }
@@ -462,25 +456,6 @@ MEDDLY::node_storage::~node_storage()
 {
   // nothing, derived classes must handle everything
 }
-
-
-MEDDLY::node_handle
-MEDDLY::node_storage::getNextOf(node_address addr) const
-{
-  MEDDLY_DCASSERT(nexts);
-  MEDDLY_DCASSERT(addr > 0);
-  return nexts[addr];
-}
-
-void
-MEDDLY::node_storage::setNextOf(node_address addr, MEDDLY::node_handle n)
-{
-  MEDDLY_DCASSERT(nexts);
-  MEDDLY_DCASSERT(addr > 0);
-  MEDDLY_DCASSERT(n>=0);
-  nexts[addr] = n;
-}
-
 
 void MEDDLY::node_storage::dumpInternal(output &s, unsigned flags) const
 {

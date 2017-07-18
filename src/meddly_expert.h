@@ -1544,7 +1544,7 @@ class MEDDLY::node_storage {
           @param  addr    Address of node
           @return         Handle of next node, or 0.
     */
-    virtual node_handle getNextOf(node_address addr) const;
+    virtual node_handle getNextOf(node_address addr) const = 0;
 
 
     /**
@@ -1555,7 +1555,7 @@ class MEDDLY::node_storage {
                           next node in a unique table chain,
                           or 0 if none.
     */
-    virtual void setNextOf(node_address addr, node_handle n);
+    virtual void setNextOf(node_address addr, node_handle n) = 0;
 
 
     /**
@@ -1604,37 +1604,12 @@ class MEDDLY::node_storage {
     const expert_forest* getParent() const;
     expert_forest* getParent();
 
-    void incMemUsed(long delta);
-    void decMemUsed(long delta);
-    void incMemAlloc(long delta);
-    void decMemAlloc(long delta);
-    void incCompactions();
-    void updateNextArray(node_handle* nptr);
-
-    //
-    // Hooks for hole managers
-    //
-
-    // Change the data array
-    virtual void updateData(node_handle* data) = 0;
-
-    // How small can a node be?
-    virtual int smallestNode() const = 0;
-
-    friend class holeman;
-
   private:
     /// Name of the style that invoked us
     const char* style_name;
 
     /// Parent forest.
     expert_forest* parent;
-
-    /// Memory stats
-    forest::statset &stats;
-
-    /// Next array, so that nexts[addr] gives the next value for node at addr.
-    node_handle* nexts;
 };
 
 

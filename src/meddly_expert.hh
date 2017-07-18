@@ -862,6 +862,7 @@ MEDDLY::node_storage::getParent()
   return parent;
 }
 
+/*
 inline void
 MEDDLY::node_storage::incMemUsed(long delta)
 {
@@ -897,6 +898,7 @@ MEDDLY::node_storage::updateNextArray(MEDDLY::node_handle* nptr)
 {
   nexts = nptr;
 }
+*/
 
 inline void
 MEDDLY::node_storage::moveNodeOffset(MEDDLY::node_handle node, node_address old_addr,

@@ -147,7 +147,6 @@ class MEDDLY::simple_separated : public node_storage {
 
   protected:
     virtual void updateData(node_handle* d);
-    virtual int smallestNode() const;
     virtual void dumpInternalInfo(output &) const;
     virtual node_address firstNodeAddress() const;
     virtual node_address 
@@ -200,6 +199,7 @@ class MEDDLY::simple_separated : public node_storage {
         }
         return -1;
       }
+
 
   private:
     memory_manager* MM;
@@ -986,10 +986,6 @@ void MEDDLY::simple_separated::updateData(node_handle* d)
   //
 }
 
-int MEDDLY::simple_separated::smallestNode() const
-{
-  return slotsForNode(0);
-}
 
 void MEDDLY::simple_separated::dumpInternalInfo(output &s) const
 {
