@@ -103,6 +103,8 @@ namespace MEDDLY {
       void addToGrid(node_address h);
 
     private:
+      static const INT SmallestChunk = 5;   
+
       inline bool isHole(node_address h) const {
         return hole_manager<INT>::isHole(h);
       }
@@ -112,6 +114,16 @@ namespace MEDDLY {
       }
       inline void setHoleSize(node_address h, INT hs) {
         hole_manager<INT>::setHoleSize(h, hs);
+      }
+      inline bool isSmallHole(node_address h) const {
+        return getHoleSize(h) < SmallestChunk;
+      }
+      inline bool isLargeHole(node_address h) const {
+        return getHoleSize(h) > max_request;
+        // return getHoleSize(h) > max_request + SmallestChunk;
+        // if we add SmallestChunk, every large hole can be
+        // used for every request seen so far, with enough
+        // space left over to track the leftover hole.
       }
 
       inline bool matchingHoleSizes(node_address h) const {
@@ -165,10 +177,6 @@ namespace MEDDLY {
         return hole_manager<INT>::refSlot(h, 3);
       }
       
-      inline static INT smallestChunk() {
-        return 5;
-      }
-
     private:
       /// Largest hole ever requested
       size_t max_request;
@@ -595,7 +603,7 @@ namespace MEDDLY {
     //
     // Is this a small hole?  If so, it's not in the grid
     //
-    if (getHoleSize(h) < smallestChunk()) {
+    if (isSmallHole(h)) {
 #ifdef MEMORY_TRACE_DETAILS
       printf("\thole size %ld, too small to track\n", long(getHoleSize(h)));
 #endif
@@ -608,7 +616,7 @@ namespace MEDDLY {
     //
     // Is this a large hole?  If so, remove from large hole list
     //
-    if (getHoleSize(h) > max_request) {
+    if (isLargeHole(h)) {
 #ifdef MEMORY_TRACE_DETAILS
       printf("\tremoving from large hole list %ld\n", long(large_holes));
 #endif
@@ -747,7 +755,7 @@ namespace MEDDLY {
     // Check if the hole is too small to track.
     // If so, just leave it, and hope it gets merged later.
     //
-    if (getHoleSize(h) < smallestChunk()) {
+    if (isSmallHole(h)) { 
 #ifdef MEMORY_TRACE_DETAILS
       printf("\thole size %ld, too small to track\n", long(getHoleSize(h)));
 #endif
@@ -760,7 +768,7 @@ namespace MEDDLY {
     //
     // If the hole is large enough, just add it to the large hole list
     //
-    if (getHoleSize(h) > max_request) {
+    if (isLargeHole(h)) {
 #ifdef MEMORY_TRACE_DETAILS
       printf("\tadding to large hole list %ld\n", long(large_holes));
 #endif
@@ -791,7 +799,6 @@ namespace MEDDLY {
       Next(h) = 0;
       holes_bottom = holes_top = h;
       return;
-      // TBD - update stats
     }
 
     //
@@ -807,7 +814,6 @@ namespace MEDDLY {
       if (holes_top) Up(holes_top) = h;
       holes_top = h;
       return;
-      // TBD - update stats
     }
 
     //
@@ -842,7 +848,6 @@ namespace MEDDLY {
       if (right) Prev(right) = h;
       Next(above) = h;
       return;
-      // TBD - update stats
     }
 
     //
@@ -864,8 +869,6 @@ namespace MEDDLY {
     } else {
       holes_bottom = h;
     }
-
-    // TBD - update stats
   }
 
 }; // namespace MEDDLY
