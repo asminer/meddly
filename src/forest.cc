@@ -1203,7 +1203,8 @@ void MEDDLY::expert_forest
         for (int j = 0; j < un->getNNZs(); j++) {
           if (first_index) first_index=false; else s << "|";
           s << "<" << j << ">";
-          if (-1 == un->d(j)) s << "T"; else s << un->i(j);
+          s << un->i(j);
+          if (-1 == un->d(j)) s <<":T";
         }
         s << "\"];\n";
 
