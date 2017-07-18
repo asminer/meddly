@@ -6,6 +6,7 @@
 
 ## bin_PROGRAMS = \
 noinst_PROGRAMS = \
+libinfo \
 testmddlib \
 graphs_to_mdds \
 test_union_mdd \
@@ -23,6 +24,9 @@ slot
 
 AM_CPPFLAGS = -I../src -I../src/operations
 AM_CXXFLAGS = -Wall
+
+libinfo_SOURCES = libinfo.cc
+libinfo_LDADD = ../src/libmeddly.la
 
 ## testmddlib_SOURCES = `$(CXX) testmddlib.cc -MM`
 testmddlib_SOURCES = testmddlib.cc 
