@@ -145,6 +145,8 @@ class MEDDLY::simple_storage : public node_storage {
     virtual node_handle getDownPtr(node_address addr, int index) const;
     virtual void getDownPtr(node_address addr, int ind, int& ev, node_handle& dn) const;
     virtual void getDownPtr(node_address addr, int ind, float& ev, node_handle& dn) const;
+    virtual bool isExtensible(node_address addr) const;
+    virtual int getExtensibleIndex(node_address addr) const;
     virtual const void* getUnhashedHeaderOf(node_address addr) const;
     virtual const void* getHashedHeaderOf(node_address addr) const;
 
@@ -211,16 +213,23 @@ class MEDDLY::simple_storage : public node_storage {
       inline node_handle& rawSizeOf(node_handle addr) const {
         return chunkOf(addr)[size_index];
       }
-      inline node_handle sizeOf(node_handle addr) const { 
-        return rawSizeOf(addr); 
+      inline void setSizeOf(node_handle addr,
+          unsigned int sz, bool sparse, bool extensible) {
+#ifdef DEVELOPMENT_CODE
+        int size_diff = (sizeof(sz) - (sizeof(node_handle)-2));;
+        MEDDLY_DCASSERT(size_diff <= 0 || sz == ((sz << size_diff) >> size_diff));
+#endif
+        rawSizeOf(addr) = (sz << 2 | (sparse? 2U: 0) | (extensible? 1U: 0));
       }
-      inline void setSizeOf(node_handle addr, node_handle sz) { 
-        rawSizeOf(addr) = sz; 
+      inline unsigned int sizeOf(node_handle addr) const { 
+        return ((unsigned int)rawSizeOf(addr)) >> 2;
       }
-      inline bool storesExtensibleEdge(node_handle addr) const {
-        return sizeOf(addr) & extensible_flag;
+      inline bool isSparse(node_handle addr) const {
+        return ((rawSizeOf(addr) & 2U) != 0);
       }
-
+      inline bool isExtensible(node_handle addr) const {
+        return ((rawSizeOf(addr) & 1U) != 0);
+      }
       inline node_handle* UH(node_handle addr) const {
           return chunkOf(addr) + headerSlots;
       }
@@ -229,12 +238,12 @@ class MEDDLY::simple_storage : public node_storage {
       }
       // full down, as a pointer
       inline node_handle* FD(node_handle addr) const {
-          MEDDLY_DCASSERT(rawSizeOf(addr)>0);
+          MEDDLY_DCASSERT(!isSparse(addr));
           return HH(addr) + hashedSlots;
       }
       // full edges, as a pointer
       inline node_handle* FE(node_handle addr) const {
-          return FD(addr) + rawSizeOf(addr);
+          return FD(addr) + sizeOf(addr);
       }
       // a particular full edge, as a pointer
       inline void* FEP(node_handle addr, int p) const {
@@ -242,16 +251,16 @@ class MEDDLY::simple_storage : public node_storage {
       }
       // sparse down, as a pointer
       inline node_handle* SD(node_handle addr) const {
-          MEDDLY_DCASSERT(rawSizeOf(addr)<0);
+          MEDDLY_DCASSERT(isSparse(addr));
           return HH(addr) + hashedSlots;
       }
       // sparse indexes, as a pointer
       inline node_handle* SI(node_handle addr) const {
-          return SD(addr) - rawSizeOf(addr);  // sparse size is negative
+          return SD(addr) + sizeOf(addr);
       }
       // sparse edges, as a pointer
       inline node_handle* SE(node_handle addr) const {
-          return SD(addr) - 2*rawSizeOf(addr);  // sparse size is negative
+          return SD(addr) + 2*sizeOf(addr);
       }
       // a particular sparse edge, as a pointer
       inline void* SEP(node_handle addr, int p) const {
@@ -259,11 +268,12 @@ class MEDDLY::simple_storage : public node_storage {
       }
       // binary search for an index
       inline int findSparseIndex(node_handle addr, int i) const {
-        int low = 0;
-        int nnz = -rawSizeOf(addr);
+        int nnz = sizeOf(addr);
         MEDDLY_DCASSERT(nnz>=0);
-        int high = nnz;
         node_handle* index = SI(addr);
+        if (isExtensible(addr) && i >= index[nnz-1]) return nnz-1;
+        int low = 0;
+        int high = nnz;
         while (low < high) {
           int z = (low+high)/2;
           MEDDLY_CHECK_RANGE(0, z, nnz);
@@ -279,20 +289,21 @@ class MEDDLY::simple_storage : public node_storage {
   // |  inlines.
   private:
       /// How many int slots would be required for a node with given size.
-      ///   @param  sz  negative for sparse storage, otherwise full.
-      inline int slotsForNode(int sz) const {
-          int nodeSlots = (sz<0) ? (2+edgeSlots) * (-sz) : (1+edgeSlots) * sz;
-          return extraSlots + unhashedSlots + hashedSlots + nodeSlots;
+      ///   @param  sz      Number of downward pointers.
+      ///   @param  sparse  Allocates a sparse node when true, full otherwise. 
+      inline int slotsForNode(int sz, bool sparse) const {
+        int nodeSlots = sparse ? (2+edgeSlots) * sz : (1+edgeSlots) * sz;
+        return extraSlots + unhashedSlots + hashedSlots + nodeSlots;
       }
 
       /// Find actual number of slots used for this active node.
       inline int activeNodeActualSlots(node_handle addr) const {
-          int end = addr + slotsForNode(sizeOf(addr))-1;
-          // account for any padding
-          if (data[end] < 0) {
-            end -= data[end];
-          }
-          return end - addr + 1;
+        int end = addr + slotsForNode(sizeOf(addr), isSparse(addr))-1;
+        // account for any padding
+        if (data[end] < 0) {
+          end -= data[end];
+        }
+        return end - addr + 1;
       }
 
 
@@ -304,7 +315,7 @@ class MEDDLY::simple_storage : public node_storage {
       /** Create a new node, stored as truncated full.
           Space is allocated for the node, and data is copied.
             @param  p     Node handle number.
-            @param  size  Number of downward pointers.
+            @param  size  Number of downward pointers (incl. extensible).
             @param  nb    Node data is copied from here.
             @return       The "address" of the new node.
       */
@@ -313,7 +324,7 @@ class MEDDLY::simple_storage : public node_storage {
       /** Create a new node, stored sparsely.
           Space is allocated for the node, and data is copied.
             @param  p     Node handle number.
-            @param  size  Number of nonzero downward pointers.
+            @param  size  Number of nonzero downward pointers (incl. extensible).
             @param  nb    Node data is copied from here.
             @return       The "address" of the new node.
       */
@@ -324,17 +335,32 @@ class MEDDLY::simple_storage : public node_storage {
 
       /** Allocate enough slots to store a node with given size.
           Also, stores the node size in the node.
-            @param  sz      negative for sparse storage, otherwise full.
+            @param  sz      Number of downward pointers (incl. extensible).
+            @param  sparse  Allocates a sparse node when true, full otherwise. 
+            @param  ext     Allocates an extensible node when true.
             @param  tail    Node id
             @param  clear   Should the node be zeroed.
             @return         Offset in the data array.
       */
-      node_handle allocNode(int sz, node_handle tail, bool clear);
+      node_handle allocNode(int sz,
+          bool sparse, bool ext,
+          node_handle tail, bool clear);
 
 
 #ifdef DEVELOPMENT_CODE
       void verifyStats() const;
 #endif
+
+  private:
+  typedef struct {
+    int i;
+    node_handle d;
+  } mdd_node;
+  typedef struct {
+    int i;
+    node_handle d;
+
+  } mdd_node;
 }; 
 
 // ******************************************************************

@@ -1909,6 +1909,12 @@ MEDDLY::node_handle MEDDLY::expert_forest
   validateDownPointers(nb);
 #endif
 
+  // check is the node is written in order,
+  // if not rearrange it in ascending order of indices.
+  if (nb.isSparse()) sort();
+
+  if (nb.isExtensible()) return createReducedExtensibleNodeHelper(in, nb);
+
   // get sparse, truncated full sizes and check
   // for redundant / identity reductions.
   int nnz;
@@ -1980,6 +1986,110 @@ MEDDLY::node_handle MEDDLY::expert_forest
         return nb.d(0);
       }
     }
+  }
+
+  // Is this a transparent node?
+  if (0==nnz) {
+    // no need to unlink
+    return getTransparentNode();
+  }
+
+  // check for duplicates in unique table
+  node_handle q = unique->find(nb, getVarByLevel(nb.getLevel()));
+  if (q) {
+    // unlink all downward pointers
+    int rawsize = nb.isSparse() ? nb.getNNZs() : nb.getSize();
+    for (int i = 0; i<rawsize; i++)  unlinkNode(nb.d(i));
+    return linkNode(q);
+  }
+
+  // 
+  // Not eliminated by reduction rule.
+  // Not a duplicate.
+  //
+  // We need to create a new node for this.
+
+  // NOW is the best time to run the garbage collector, if necessary.
+#ifndef GC_OFF
+  if (isTimeToGc()) garbageCollect();
+#endif
+
+  // Grab a new node
+  node_handle p = getFreeNodeHandle();
+  address[p].level = nb.getLevel();
+  MEDDLY_DCASSERT(0 == address[p].cache_count);
+
+  stats.incActive(1);
+  if (theLogger && theLogger->recordingNodeCounts()) {
+    theLogger->addToActiveNodeCount(this, address[p].level, 1);
+  }
+
+  // All of the work is in nodeMan now :^)
+  address[p].offset = nodeMan->makeNode(p, nb, getNodeStorage());
+
+  // add to UT
+  unique->add(nb.hash(), p);
+
+#ifdef DEVELOPMENT_CODE
+  unpacked_node* key = unpacked_node::newFromNode(this, p, false);
+  key->computeHash();
+  MEDDLY_DCASSERT(key->hash() == nb.hash());
+  node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
+  MEDDLY_DCASSERT(f == p);
+  unpacked_node::recycle(key);
+#endif
+#ifdef DEBUG_CREATE_REDUCED
+  printf("Created node ");
+  showNode(stdout, p, SHOW_DETAILS | SHOW_INDEX);
+  printf("\n");
+#endif
+
+  return p;
+}
+
+
+MEDDLY::node_handle MEDDLY::expert_forest
+::createReducedExtensibleNodeHelper(int in, const unpacked_node &nb)
+{
+#ifdef DEVELOPMENT_CODE
+  validateDownPointers(nb);
+#endif
+  MEDDLY_DCASSERT(nb.isExtensible());
+
+  trim();
+
+  // NOTE: Identity reduction not possible for nodes marked as extensible.
+  //       Fully-Identity reduction is still possible when
+  //       prime-level nodes are non-extensible, and get Identity reduced.
+
+  // get sparse, truncated full sizes and check
+  // for redundant / identity reductions.
+  int nnz;
+  if (nb.isSparse()) {
+    nnz = nb.getNNZs();
+#ifdef DEVELOPMENT_CODE
+    for (int z=0; z<nnz; z++) {
+      MEDDLY_DCASSERT(nb.d(z)!=getTransparentNode());
+    } // for z
+#endif
+  } else {
+    // Reductions for full nodes
+    MEDDLY_DCASSERT(nb.getSize() <= getLevelSize(nb.getLevel()));
+    nnz = 0;
+    for (int i=0; i<nb.getSize(); i++) {
+      if (nb.d(i)!=getTransparentNode()) nnz++;
+    } // for i
+  }
+
+  // Check for redundant nodes
+  if (isRedundant(nb)) {
+    MEDDLY_DCASSERT(nnz == 1 && nb.ext_i() == 0);
+#ifdef DEBUG_CREATE_REDUCED
+    printf("Redundant node ");
+    showNode(stdout, nb.ext_d(), SHOW_DETAILS | SHOW_INDEX);
+    printf("\n");
+#endif
+    return nb.ext_d();
   }
 
   // Is this a transparent node?

@@ -46,9 +46,7 @@ MEDDLY::unpacked_node::unpacked_node()
   down = 0;
   index = 0;
   edge = 0;
-  extensible_down = 0;
-  extensible_index = INT_MIN;
-  extensible_edge = 0;
+  is_extensible = false;
   alloc = 0;
   ealloc = 0;
   size = 0;
@@ -71,13 +69,10 @@ void MEDDLY::unpacked_node::clear()
   free(down);
   free(index);
   free(edge);
-  free(extensible_edge);
   down = 0;
   index = 0;
   edge = 0;
-  extensible_down = 0;
-  extensible_index =INT_MIN;
-  extensible_edge = 0;
+  is_extensible = false;
   alloc = 0;
   ealloc = 0;
   size = 0;
@@ -102,7 +97,7 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
 {
   MEDDLY_DCASSERT(f);
   MEDDLY_DCASSERT(0==f->edgeBytes());
-  int nsize = f->getLevelSize(k);
+  int nsize = f->isExtensibleLevel(k) ? 1 : f->getLevelSize(k);
   bind_to_forest(f, k, nsize, full);
   for (int i=0; i<nsize; i++) {
     down[i] = node;
@@ -111,6 +106,7 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
     for (int i=0; i<nsize; i++) index[i] = i;
     nnzs = nsize;
   }
+  if (f->isExtensibleLevel(k)) markAsExtensible();
 }
 
 void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k, 
@@ -215,11 +211,11 @@ void MEDDLY::unpacked_node::show(output &s, bool details) const
 {
   int stop;
   if (isSparse()) {
-    if (details) s << "nnzs: " << long(nnzs) << (hasExtensibleEdge()? "*": "") << " ";
+    if (details) s << "nnzs: " << long(nnzs) << (isExtensible()? "*": "") << " ";
     s << "down: (";
     stop = nnzs;
   } else {
-    if (details) s << "size: " << long(size) << (hasExtensibleEdge()? "*": "") << " ";
+    if (details) s << "size: " << long(size) << (isExtensible()? "*": "") << " ";
     s << "down: [";
     stop = size;
   }
@@ -345,9 +341,6 @@ void MEDDLY::unpacked_node
     if (0==edge) throw error(error::INSUFFICIENT_MEMORY);
     ealloc = nalloc;
   }
-  if (0==extensible_edge) {
-    extensible_edge = realloc(edge, (edge_bytes/8+1)*8);
-  }
 }
 
 // TODO: make it work for extensible nodes
@@ -357,7 +350,7 @@ void MEDDLY::unpacked_node::bind_to_forest(const expert_forest* f,
   parent = f;
   level = k;
   is_full = full;
-  extensible_index = INT_MIN;    // represents a non-extensible node
+  is_extensible = false;
   edge_bytes = f->edgeBytes();
   resize(ns);
 
@@ -397,20 +390,18 @@ void MEDDLY::unpacked_node
 }
 */
 
-// TODO: Add extensible node data to the hash
 void MEDDLY::unpacked_node::computeHash()
 {
-#ifdef DEVELOPMENT_CODE
   MEDDLY_DCASSERT(!has_hash);
-#endif
-  
+  trim();
+
   hash_stream s;
   s.start(0);
 
   if (ext_h_size) {
     s.push(extra_hashed, ext_h_size);
   }
-  
+
   if (isSparse()) {
     if (parent->areEdgeValuesHashed()) {
       for (int z=0; z<nnzs; z++) {
@@ -438,10 +429,142 @@ void MEDDLY::unpacked_node::computeHash()
       }
     }
   }
+
+  if (isExtensible()) s.push(0u) else s.push(1u);
   h = s.finish();
+
 #ifdef DEVELOPMENT_CODE
   has_hash = true;
 #endif
+}
+
+
+void MEDDLY::unpacked_node::swap(int j, int k)
+{
+  SWAP(i(j), i(k));
+  SWAP(d(j), d(k));
+  int temp_a, temp_b;
+  getEdge(j, temp_a);
+  getEdge(k, temp_b);
+  setEdge(j, temp_b);
+  setEdge(k, temp_a);
+}
+
+// check is the node is written in order,
+// if not rearrange it in ascending order of indices.
+void MEDDLY::unpacked_node::sort()
+{
+  if (!isSparse()) return;
+
+  int k = 1;
+  for (k = 1; k < getNNZs() && i(k-1) < i(k) ; k++);
+  if (k == getNNZs()) return; // already sorted
+  
+  // sort from (k-1) to (nnz-1)
+  --k;
+  std::map<int, int> sorter;
+  for (int m = k; m < getNNZs(); m++) {
+    sorter[i(m)] = m;
+  }
+
+  // allocate new arrays for index, node handles and edge-values
+  node_handle* old_down = down;
+  int* old_index = index;
+  void* old_edge = edge;
+  int old_size = size;
+  int old_nnzs = nnzs;
+  int old_alloc = alloc;
+  int old_elloc = ealloc;
+
+  down = 0;
+  index = 0;
+  edge = 0;
+  size = 0;
+  nnzs = 0;
+  alloc = 0;
+  ealloc = 0;
+  resize(old_nnzs);
+
+  // copy into new arrays
+  memcpy(down, old_down, sizeof(node_handle) * k);
+  memcpy(index, old_index, sizeof(int) * k);
+  memcpy(edge, old_edge, edge_bytes * k);
+
+  for (std::map<int, int>::iterator s_iter = sorter.begin();
+    s_iter != sorter.end(); s_iter++, k++) {
+    int old_location = s_iter->second;
+    index[k] = old_index[old_location];
+    down[k] = old_down[old_location];
+    memcpy(edge + (k * edge_bytes), old_edge + (old_location * edge_bytes), edge_bytes);
+  }
+
+  free(old_down);
+  free(old_index);
+  free(old_edge);
+}
+
+// remove all edges starting at the given index
+void MEDDLY::unpacked_node::trim()
+{
+  if (!isExtensible()) return;
+
+  // If extensible edge is transparent, mark the node as not-extensible and return
+  if (d((isSparse()? getNNZs() : getSize()) - 1) == parent->getTransparentNode()) {
+    markAsNotExtensible();
+    return;
+  }
+
+  MEDDLY_DCASSERT(isExtensible() && !isTrim());
+
+  if (isSparse()) {
+    int z = getNNZs()-1;
+    while (z > 0 && (i(z-1)+1) == i(z) && d(z-1) == d(z)) {
+      parent->unlinkNode(d(z));
+      z--;
+    }
+    if (z != (getNNZs() - 1)) {
+      // node is smaller than before, shrink it to the correct size.
+      shrinkSparse(z+1);
+    }
+  } else {
+    int z = getSize()-1;
+    while (z > 0 && d(z-1) == d(z)) {
+      parent->unlinkNode(d(z));
+      z--;
+    }
+    if (z != (getSize()-1)) {
+      shrinkFull(z+1);
+    }
+  }
+}
+
+// checks if the node is has no trailing redundant edges
+bool MEDDLY::unpacked_node::isTrim() const
+{
+  if (!isExtensible()) return true;
+
+  if (isSparse()) {
+    int nnz = getNNZs();
+    return (nnz < 2 || i(nnz-1) != (i(nnz-2)+1) || d(nnz-1) != d(nnz-2));
+  } else {
+    int size = getSize();
+    return (size < 2 || d(size-1) != d(size-2));
+  }
+}
+
+// checks if the node indices are in ascending order
+bool MEDDLY::unpacked_node::isTrim() const
+{
+  if (!isSparse()) return true;
+
+  int nnz = getNNZs();
+  return (nnz < 2 || i(nnz-1) != (i(nnz-2)+1) || d(nnz-1) != d(nnz-2));
+
+  for (int z = 1; z < getNNZs(); z++) {
+    if (i(z-1) >= i(z)) return false;
+  }
+
+  return true;
 }
 
 
