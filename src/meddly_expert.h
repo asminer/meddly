@@ -652,7 +652,15 @@ class MEDDLY::unpacked_node {
     /// Does this reader store an extensible edge?
     /// Note: in an extensible node, all edges starting from
     ///       index to +infinity refer to the same edge, i.e. (node, edge-value).
-    bool hasExtensibleEdge() const;
+    bool isExtensible() const;
+
+    void markAsExtensible();
+    void markAsNotExtensible();
+
+    int ext_d() const;
+    int ext_i() const;
+    int ext_ei() const;
+    float ext_ef() const;
 
     /// Get the extensible edge.
     void getExtensibleEdge(int& i, node_handle& n) const;
@@ -753,9 +761,7 @@ class MEDDLY::unpacked_node {
     node_handle* down;
     int* index;
     void* edge;
-    node_handle extensible_down;
-    int extensible_index;
-    void* extensible_edge;
+    bool is_extensible;
     int alloc;
     int ealloc;
     int size;
@@ -1091,6 +1097,13 @@ class MEDDLY::node_storage {
           @param  addr  Address of the node of interest
     */
     virtual unsigned hashNode(int level, node_address addr) const = 0;
+
+    /** Determine if this is an extensible node.
+          @param  p       Node handle
+          @return         True if the node stores an extensible edge,
+                          False otherwise.
+    */
+    virtual bool isExtensible(node_handle p) const = 0;
 
     /** Determine if this is a singleton node.
         Used for identity reductions.
@@ -1560,7 +1573,7 @@ class MEDDLY::expert_forest: public forest
     // Extensible Node Information:
     // --------------------------------------------------
     /// Is this an extensible node
-    bool hasExtensibleEdge(node_handle p) const;
+    bool isExtensible(node_handle p) const;
     /// If \a p is an extensible node, this returns an index
     /// that can be used by getDownPtr(...) to access the
     /// extensible portion of this node.
@@ -2093,6 +2106,25 @@ class MEDDLY::expert_forest: public forest
           @return       Handle to a node that encodes the same thing.
     */
     node_handle createReducedHelper(int in, const unpacked_node &nb);
+
+    /** Apply reduction rule to the temporary extensible node and finalize it. 
+        Once a node is reduced, its contents cannot be modified.
+          @param  in    Incoming index, used only for identity reduction;
+                        Or -1.
+          @param  un    Unpacked extensible node. Must be sorted by indices if sparse.
+          @return       Handle to a node that encodes the same thing.
+    */
+    node_handle createReducedExtensibleNodeHelper(int in, const unpacked_node &nb);
+
+    /// Removes redundant trailing edges.
+    /// If the unpacked node is sparse, it assumes its indices to be in ascending order.
+    void trim();
+
+    /// Checks if the node is has no trailing redundant edges
+    bool isTrim() const;
+
+    // checks if the node indices are in ascending order
+    bool isSorted() const;
 
     // Sanity check; used in development code.
     void validateDownPointers(const unpacked_node &nb) const;
@@ -3449,3 +3481,21 @@ public:
 
 #include "meddly_expert.hh"
 #endif
+
+// $Id$
+
+/*
+    Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
+    Copyright (C) 2009, Iowa State University Research Foundation, Inc.
+
+    This library is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License

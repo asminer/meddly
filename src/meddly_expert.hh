@@ -335,11 +335,58 @@ MEDDLY::unpacked_node::setLevel(int k)
   level = k;
 }
 
+// ---------------------------------------------
+// Extensible portion of the node
+// ---------------------------------------------
+
 inline bool
-MEDDLY::unpacked_node::hasExtensibleEdge() const
+MEDDLY::unpacked_node::isExtensible() const
 {
-  return extensible_index == INT_MIN;
+  return is_extensible;
 }
+
+inline void
+MEDDLY::unpacked_node::markAsExtensible()
+{
+  MEDDLY_DCASSERT(parent->isExtensibleLevel(getLevel()));
+  is_extensible = true;
+}
+
+inline void
+MEDDLY::unpacked_node::markAsNotExtensible()
+{
+  is_extensible = false;
+}
+
+inline int
+MEDDLY::unpacked_node::ext_i() const
+{
+  MEDDLY_DCASSERT(isExtensible());
+  return isSparse()? i(getNNZs() - 1): getSize() - 1;
+}
+
+inline MEDDLY::node_handle
+MEDDLY::unpacked_node::ext_d() const
+{
+  MEDDLY_DCASSERT(isExtensible());
+  return d( (isSparse()? getNNZs(): getSize()) - 1 );
+}
+
+inline int
+MEDDLY::unpacked_node::ext_ei() const
+{
+  MEDDLY_DCASSERT(isExtensible());
+  return ei( (isSparse()? getNNZs(): getSize()) - 1 );
+}
+
+inline float
+MEDDLY::unpacked_node::ext_ef() const
+{
+  MEDDLY_DCASSERT(isExtensible());
+  return ef( (isSparse()? getNNZs(): getSize()) - 1 );
+}
+
+// --- End of Extensible portion of the node ---
 
 inline int
 MEDDLY::unpacked_node::getSize() const
@@ -1194,9 +1241,9 @@ MEDDLY::expert_forest::getLastNode() const
 // Extensible Node Information:
 // --------------------------------------------------
 inline bool
-MEDDLY::expert_forest::hasExtensibleEdge(node_handle p) const
+MEDDLY::expert_forest::isExtensible(node_handle p) const
 {
-  return isExtensibleLevel(getNodeLevel(p));
+  return nodeMan->isExtensible(getNodeAddress(p));
 }
 
 //
@@ -1305,6 +1352,7 @@ MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un)
 {
   MEDDLY_DCASSERT(un);
   un->computeHash();
+  MEDDLY_DCASSERT(un->isTrim());
   MEDDLY::node_handle q = createReducedHelper(in, *un);
 #ifdef TRACK_DELETIONS
   printf("Created node %d\n", q);

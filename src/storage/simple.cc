@@ -56,6 +56,12 @@ inline char slotsForBytes(int bytes)
 MEDDLY::simple_storage::simple_storage(expert_forest* f, holeman* hm, const char* sN)
  : node_storage(f)
 {
+#ifdef DEVELOPMENT_CODE
+  if (sizeof(node_handle) != sizeof(unsigned int)) {
+    cout << "Warning: node_handle not the same size as unsigned int.\n";
+    cout << "\tsimple_storage may not work correctly.\n";
+  }
+#endif
   holeManager = hm;
   storageName = sN;
   data = 0;
@@ -127,7 +133,7 @@ void MEDDLY::simple_storage::collectGarbage(bool shrink)
     long new_off = curr_ptr - data;
 
     // copy the node, except for the tail
-    int datalen = slotsForNode(sizeOf(old_off)) - 1;
+    int datalen = slotsForNode(sizeOf(old_off), isSparse(old_off)) - 1;
     if (node_ptr != curr_ptr) {
       memmove(curr_ptr, node_ptr, datalen * sizeof(node_handle));
     }
@@ -325,11 +331,16 @@ MEDDLY::node_address MEDDLY::simple_storage
   //
   if (0==(forest::policies::ALLOW_SPARSE_STORAGE & opt)) {
     if (nb.isSparse()) {
-      int truncsize = -1;
-      for (int z=0; z<nb.getNNZs(); z++) {
-        truncsize = MAX(truncsize, nb.i(z));
-      }
-      return (truncsize<0) ? tv : makeFullNode(p, truncsize+1, nb);
+      // Q: why not just pick the last nnz instead of going through
+      //    the entire list of nnzs?
+      // A: because we do not require the user to build sparse nodes
+      //    with an ascending order of indices.
+      //
+      // Note: change in node is sorted before it gets here...
+      if (0 == nb.getNNZs())
+        return tv;
+      else
+        return makeFullNode(p, 1 + nb.i(nb.getNNZs()-1), nb);
     } else {
       for (int i=nb.getSize()-1; i>=0; i--) {
         if (nb.d(i)!=tv) {
@@ -361,19 +372,11 @@ MEDDLY::node_address MEDDLY::simple_storage
   // Full and sparse are allowed, determine which is more compact
   //
   int truncsize = -1;
-  int nnz;
+  int nnz = 0;
   if (nb.isSparse()) {
     nnz = nb.getNNZs();
-    if(nnz==0) {
-      return tv;
-    }
-    for (int z=0; z<nnz; z++) {
-      truncsize = MAX(truncsize, nb.i(z));
-    }
-//    if (truncsize<0) {
-//      return tv;
-//    }
-    truncsize++;
+    if (nnz == 0) return tv;
+    truncsize = 1 + nb.i(nnz - 1);
   } else {
     nnz = 0;
     for (int i=0; i<nb.getSize(); i++) {
@@ -382,13 +385,11 @@ MEDDLY::node_address MEDDLY::simple_storage
         truncsize = i;
       }
     }
-    if(nnz==0) {
-      return tv;
-    }
+    if (nnz == 0) return tv;
     truncsize++;
   }
 
-  return (slotsForNode(-nnz) < slotsForNode(truncsize)) ? makeSparseNode(p, nnz, nb) : makeFullNode(p, truncsize, nb);
+  return (slotsForNode(nnz, true) < slotsForNode(truncsize, false)) ? makeSparseNode(p, nnz, nb) : makeFullNode(p, truncsize, nb);
 }
 
 void MEDDLY::simple_storage::unlinkDownAndRecycle(node_address addr)
@@ -396,15 +397,9 @@ void MEDDLY::simple_storage::unlinkDownAndRecycle(node_address addr)
   //
   // Unlink down pointers
   //
-  const node_handle* down;
-  int size = sizeOf(addr);
-  if (size < 0) {
-    size = -size;
-    down = SD(addr);
-  } else {
-    down = FD(addr);
-  }
-  for (int i=0; i<size; i++) {
+  unsigned int size = sizeOf(addr);
+  const node_handle* down = isSparse(addr)? SD(addr): FD(addr);
+  for (unsigned int i=0; i<size; i++) {
     getParent()->unlinkNode(down[i]);
   }
 
@@ -414,9 +409,12 @@ void MEDDLY::simple_storage::unlinkDownAndRecycle(node_address addr)
   holeManager->recycleChunk(addr, activeNodeActualSlots(addr));
 }
 
+// TODO: add extensible edge
 bool MEDDLY::simple_storage
 ::areDuplicates(node_address addr, const unpacked_node &n) const
 {
+  MEDDLY_DCASSERT(!n.isExtensible() || n.isTrim());
+
   if (n.HHbytes()) {
     if (memcmp(HH(addr), n.HHptr(), n.HHbytes())) return false;
   }
@@ -426,12 +424,21 @@ bool MEDDLY::simple_storage
   }
 
   node_handle tv=getParent()->getTransparentNode();
+
+  // If only one of the nodes is extensible, then they cannot be duplicates
+  if (n.isExtensible()) {
+    if (!isExtensible(addr)) return false;
+  } else {
+    if (isExtensible(addr)) return false;
+  }
+
   int size = sizeOf(addr);
-  if (size<0) {
+  if (isSparse(addr)) {
+
     //
     // Node is sparse
     //
-    int nnz = -size;
+    int nnz = size;
     const node_handle* down = SD(addr);
     const node_handle* index = SI(addr);
     if (n.isFull()) {
@@ -540,6 +547,8 @@ bool MEDDLY::simple_storage
   }
 }
 
+
+// TODO: add extensible edge
 void MEDDLY::simple_storage
 ::fillUnpacked(unpacked_node &nr, node_address addr, unpacked_node::storage_style st2) const
 {
@@ -577,30 +586,15 @@ void MEDDLY::simple_storage
       default:            assert(0);
   };
 
-  if (size < 0) {
+  if (isExtensible(addr)) nr.markAsExtensible(); else nr.markAsNotExtensible();
+
+  if (isSparse(addr)) {
     //
     // Node is sparse
     //
-    int nnz = -size;
+    int nnz = size;
     const node_handle* down = SD(addr);
     const node_handle* index = SI(addr);
-
-    if (nr.isExtensible()) {
-      if (storesExtensibleEdge(addr)) {
-        // Last downpointer is extensible
-        nr.setExtensibleEdge(down[nnz-1], index[nnz-1]);
-        if (nr.hasEdges()) {
-          memcpy(nr.ext_eptr_write(), SEP(addr, nnz-1), nr.edgeBytes());
-        }
-        nnz--;
-      } else {
-        // Extensible edge is the same as a transparent edge
-        nr.setExtensibleEdge(tv, index[nnz-1]+1);
-        if (nr.hasEdges()) {
-          memcpy(nr.ext_eptr_write(), 0, nr.edgeBytes());
-        }
-      }
-    }
 
     if (nr.isFull()) {
       nr.resize(index[nnz-1]+1);
@@ -649,24 +643,6 @@ void MEDDLY::simple_storage
   //
   const node_handle* down = FD(addr);
 
-  if (nr.isExtensible()) {
-    if (storesExtensibleEdge(addr)) {
-      // Last downpointer is extensible
-      nr.setExtensibleEdge(down[size-1], size-1);
-      if (nr.hasEdges()) {
-        memcpy(nr.ext_eptr_write(), FEP(addr, size-1), nr.edgeBytes());
-      }
-      size--;
-    } else {
-      // Extensible edge is the same as a transparent edge
-      nr.setExtensibleEdge(tv, size);
-      if (nr.hasEdges()) {
-        memcpy(nr.ext_eptr_write(), 0, nr.edgeBytes());
-      }
-    }
-  }
-
-
   if (nr.isFull()) {
     int i;
     for (i=0; i<size; i++) {
@@ -712,7 +688,6 @@ void MEDDLY::simple_storage
 }
 
 
-// TODO: Add extensible node data to the hash
 unsigned MEDDLY::simple_storage::hashNode(int level, node_address addr) const
 {
   hash_stream s;
@@ -728,9 +703,9 @@ unsigned MEDDLY::simple_storage::hashNode(int level, node_address addr) const
   // Hash the node itself
   
   int size = sizeOf(addr);
-  if (size < 0) {
+  if (isSparse(addr)) {
     // Node is sparse
-    int nnz = -size;
+    int nnz = size;
     node_handle* down = SD(addr);
     node_handle* index = SI(addr);
     if (getParent()->areEdgeValuesHashed()) {
@@ -761,6 +736,8 @@ unsigned MEDDLY::simple_storage::hashNode(int level, node_address addr) const
     }
   }
 
+  if (isExtensible(addr)) s.push(0u) else s.push(1u);
+
   return s.finish();
 }
 
@@ -768,10 +745,11 @@ unsigned MEDDLY::simple_storage::hashNode(int level, node_address addr) const
 int MEDDLY::simple_storage
 ::getSingletonIndex(node_address addr, node_handle &down) const
 {
+  if (isExtensible(addr)) return -1;
   int size = sizeOf(addr);
-  if (size<0) {
+  if (isSparse(addr)) {
     // sparse node --- easy
-    if (size != -1) return -1;
+    if (size != 1) return -1;
     down = SD(addr)[0];
     return SI(addr)[0];
   } 
@@ -788,30 +766,47 @@ int MEDDLY::simple_storage
 }
 
 
+/// Extensible Index is the index of the last edge
+int
+MEDDLY::simple_storage
+::getExtensibleIndex(node_address addr) const
+{
+  if (!isExtensible(addr)) return -1;
+  int sz = sizeOf(addr);
+  if (isSparse(addr)) {
+    MEDDLY_DCASSERT(SD(addr)[sz-1] != getParent()->getTransparentNode());
+    return SI(addr)[sz-1];
+  } else {
+    MEDDLY_DCASSERT(FD(addr)[sz-1] != getParent()->getTransparentNode());
+    return sz-1;
+  }
+}
+
+
 MEDDLY::node_handle 
 MEDDLY::simple_storage
 ::getDownPtr(node_address addr, int index) const
 {
   if (index<0) throw error(error::INVALID_VARIABLE);
-  int size = sizeOf(addr);
-  if (size<0) {
+  if (isSparse(addr)) {
     int z = findSparseIndex(addr, index);
-    if (z<0) return 0;
-    return SD(addr)[z];
+    return (z < 0)? 0; SD(addr)[z];
   } else {
+    int size = sizeOf(addr);
     if (index < size) {
       return FD(addr)[index];
     } else {
-      return 0;
+      return isExtensible(addr)? FD(addr)[size-1]: 0;
     }
   }
 }
+
 
 void MEDDLY::simple_storage
 ::getDownPtr(node_address addr, int index, int& ev, node_handle& dn) const
 {
   if (index<0) throw error(error::INVALID_VARIABLE);
-  if (sizeOf(addr)<0) {
+  if (isSparse(addr)) {
     int z = findSparseIndex(addr, index);
     if (z<0) {
       dn = 0;
@@ -821,21 +816,24 @@ void MEDDLY::simple_storage
       ev = ((int*)SEP(addr, z))[0];
     }
   } else {
-    if (index < sizeOf(addr)) {
-      dn = FD(addr)[index];
-      ev = ((int*)FEP(addr, index))[0];
-    } else {
+    int size = sizeOf(addr);
+    int z = (index < size)? index: isExtensible(addr)? size-1: -1;
+    if (z<0) {
       dn = 0;
       ev = 0;
+    } else {
+      dn = FD(addr)[z];
+      ev = ((int*)FEP(addr, z))[0];
     }
   }
 }
+
 
 void MEDDLY::simple_storage
 ::getDownPtr(node_address addr, int index, float& ev, node_handle& dn) const
 {
   if (index<0) throw error(error::INVALID_VARIABLE);
-  if (sizeOf(addr)<0) {
+  if (isSparse(addr)) {
     int z = findSparseIndex(addr, index);
     if (z<0) {
       dn = 0;
@@ -845,12 +843,14 @@ void MEDDLY::simple_storage
       ev = ((float*)SEP(addr, z))[0];
     }
   } else {
-    if (index < sizeOf(addr)) {
-      dn = FD(addr)[index];
-      ev = ((float*)FEP(addr, index))[0];
-    } else {
+    int size = sizeOf(addr);
+    int z = (index < size)? index: isExtensible(addr)? size-1: -1;
+    if (z<0) {
       dn = 0;
       ev = 0;
+    } else {
+      dn = FD(addr)[z];
+      ev = ((float*)FEP(addr, z))[0];
     }
   }
 }
@@ -884,7 +884,7 @@ void MEDDLY::simple_storage::updateData(node_handle* d)
 
 int MEDDLY::simple_storage::smallestNode() const
 {
-  return slotsForNode(0);
+  return slotsForNode(0, false);
 }
 
 void MEDDLY::simple_storage::dumpInternalInfo(output &s) const
@@ -930,6 +930,7 @@ MEDDLY::simple_storage
         s.put('|');
         s.put(long(data[a+i]));
       }
+      if (isExtensible(a)) s << "(ext)";
       s << "]\n";
     }
     a += activeNodeActualSlots(a);
@@ -956,7 +957,7 @@ MEDDLY::node_handle MEDDLY::simple_storage
 ::makeFullNode(node_handle p, int size, const unpacked_node &nb)
 {
 #if 0
-  node_address addr = allocNode(size, p, false);
+  node_address addr = allocNode(size, false, nb.isExtensible(), p, false);
   MEDDLY_DCASSERT(1==getCountOf(addr));
   node_handle* down = FD(addr);
   if (edgeSlots) {
@@ -990,7 +991,7 @@ MEDDLY::node_handle MEDDLY::simple_storage
       }
   }
 #else
-  node_address addr = allocNode(size, p, true);
+  node_address addr = allocNode(size, false, nb.isExtensible(), p, true);
   MEDDLY_DCASSERT(1==getCountOf(addr));
   node_handle* down = FD(addr);
   if (edgeSlots) {
@@ -1034,7 +1035,7 @@ MEDDLY::node_handle MEDDLY::simple_storage
 MEDDLY::node_handle MEDDLY::simple_storage
 ::makeSparseNode(node_handle p, int size, const unpacked_node &nb)
 {
-  node_address addr = allocNode(-size, p, false);
+  node_address addr = allocNode(size, true, nb.isExtensible(), p, false);
   MEDDLY_DCASSERT(1==getCountOf(addr));
   node_handle* index = SI(addr);
   node_handle* down  = SD(addr);
@@ -1117,9 +1118,10 @@ void MEDDLY::simple_storage
 
 
 MEDDLY::node_handle 
-MEDDLY::simple_storage::allocNode(int sz, node_handle tail, bool clear)
+MEDDLY::simple_storage::allocNode(int sz,
+    bool sparse, bool extensible, node_handle tail, bool clear)
 {
-  int slots = slotsForNode(sz);
+  int slots = slotsForNode(sz, sparse);
   MEDDLY_DCASSERT(slots >= extraSlots + unhashedSlots + hashedSlots);
 
   node_handle off = holeManager->requestChunk(slots);
@@ -1127,15 +1129,15 @@ MEDDLY::simple_storage::allocNode(int sz, node_handle tail, bool clear)
   incMemUsed(got * sizeof(node_handle));
   MEDDLY_DCASSERT(got >= slots);
   if (clear) {
-//	memset(data+off, 0, slots*sizeof(node_handle));
-	node_handle tv = getParent()->getTransparentNode();
-	for(int i=0; i<slots; i++){
-		data[off+i]=tv;
-	}
+    //	memset(data+off, 0, slots*sizeof(node_handle));
+    node_handle tv = getParent()->getTransparentNode();
+    node_handle* d = data+off;
+    node_handle* last = d+slots;
+    while (d < last) *d++ = tv;
   }
   setCountOf(off, 1);                     // #incoming
   setNextOf(off, temp_node_value);        // mark as a temp node
-  setSizeOf(off, sz);                     // size
+  setSizeOf(off, sz, sparse, extensible); // size
   data[off+slots-1] = slots - got;        // negative padding
   data[off+got-1] = tail;                 // tail entry
 #ifdef MEMORY_TRACE
