@@ -11,8 +11,20 @@ if [ $# -ne "1" ]; then
   exit 1
 fi
 
+if [ ! -f autogen.sh ]; then
+  echo "Are you running this in the Meddly root directory?"
+  exit 1
+fi
+
 OUT="`pwd`/$1"
 echo "Writing to $OUT"
+
+#
+# Copy RunBenchmarks to working directory
+# because when we switch to other versions, it may get clobbered
+#
+
+cp developers/RunBenchmarks .
 
 #
 # Run everything and generate table
@@ -100,9 +112,10 @@ for oldrel in v0.02 v0.03 v0.04 v0.05 v0.06 v0.07 v0.08 v0.09 v0.10 v0.11 v0.12 
     echo "Build of version $oldrel failed"
     exit 1
   fi
-  MeddlyBenchmarks -h $OUT
+  ./RunBenchmarks -h $OUT
 done
-cd $HOME
+
+rm RunBenchmarks
 
 cat >> $OUT <<EOF
 <!-- Done data -->
