@@ -289,7 +289,7 @@ int main(int argc, const char** argv)
 
     if (build_pdf) {
       reachable.writePicture("kanban", "pdf");
-      // if ('m' == method) nsf.writePicture("kanban-nsf", "pdf");
+      if ('m' == method) nsf.writePicture("kanban-nsf", "pdf");
     }
 
     // cleanup
