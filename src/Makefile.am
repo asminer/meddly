@@ -97,14 +97,7 @@ libmeddly_la_SOURCES = \
   operations/init_builtin.h   operations/init_builtin.cc \
   \
   storage/bytepack.h  \
-  storage/holeman.h         storage/holeman.cc \
-  storage/hm_array.h        storage/hm_array.cc \
-  storage/hm_grid.h         storage/hm_grid.cc \
-  storage/hm_heap.h         storage/hm_heap.cc \
-  storage/hm_none.h         storage/hm_none.cc \
-  storage/old_scheme.h      storage/old_scheme.cc \
   storage/simple.h          storage/simple.cc \
-  storage/compact.h         storage/compact.cc \
   storage/ct_classic.h      storage/ct_classic.cc \
   storage/init_storage.h    storage/init_storage.cc
 

@@ -92,19 +92,13 @@ void MEDDLY::forest::policies::useDefaults(bool rel)
   compactAfterGC = false;
   compactBeforeExpand = true;
 
-  nodemm = ORIGINAL_GRID;
-  // nodemm = ARRAY_PLUS_GRID;
+  // nodemm = ORIGINAL_GRID;
+  nodemm = ARRAY_PLUS_GRID;
   // nodemm = MALLOC_MANAGER;
   // nodemm = HEAP_MANAGER;
 
   nodestor = SIMPLE_STORAGE;
 
-  // nodestor = CLASSIC_STORAGE;
-  // nodestor = SIMPLE_GRID;
-  // nodestor = SIMPLE_ARRAY;
-  // nodestor = SIMPLE_HEAP;
-  // nodestor = SIMPLE_NONE;
-  // nodestor = COMPACT_GRID;
   reorder = reordering_type::SINK_DOWN;
   swap = variable_swap_type::VAR;
 }
