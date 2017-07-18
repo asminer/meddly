@@ -24,11 +24,13 @@
 #include "init_managers.h"
 
 #include "orig_grid.h"
+#include "array_grid.h"
 #include "malloc_style.h"
 #include "heap_manager.h"
 
 namespace MEDDLY {
   const memory_manager_style* ORIGINAL_GRID = 0;
+  const memory_manager_style* ARRAY_PLUS_GRID = 0;
   const memory_manager_style* MALLOC_MANAGER = 0;
   const memory_manager_style* HEAP_MANAGER = 0;
 };
@@ -40,6 +42,7 @@ MEDDLY::memman_initializer::memman_initializer(initializer_list *p)
  : initializer_list(p)
 {
   original_grid = 0;
+  array_plus_grid = 0;
   malloc_manager = 0;
   heap_manager = 0;
 }
@@ -47,6 +50,7 @@ MEDDLY::memman_initializer::memman_initializer(initializer_list *p)
 void MEDDLY::memman_initializer::setup()
 {
   ORIGINAL_GRID = (original_grid  = new orig_grid_style("ORIGINAL_GRID"));
+  ARRAY_PLUS_GRID = (array_plus_grid  = new array_grid_style("ARRAY_PLUS_GRID"));
   MALLOC_MANAGER = (malloc_manager = new malloc_style("MALLOC_MANAGER"));
   HEAP_MANAGER = (heap_manager = new heap_style("HEAP_MANAGER"));
 }
@@ -54,9 +58,11 @@ void MEDDLY::memman_initializer::setup()
 void MEDDLY::memman_initializer::cleanup()
 {
   delete original_grid;
+  delete array_plus_grid;
   delete malloc_manager;
   delete heap_manager;
   ORIGINAL_GRID = (original_grid  = 0);
+  ARRAY_PLUS_GRID = (array_plus_grid  = 0);
   MALLOC_MANAGER = (malloc_manager  = 0);
   HEAP_MANAGER = (heap_manager  = 0);
 }

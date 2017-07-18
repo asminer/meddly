@@ -59,6 +59,7 @@ libmeddly_la_SOURCES = \
   memory_managers/base_manager.cc \
   memory_managers/init_managers.h     memory_managers/init_managers.cc  \
   memory_managers/hole_base.h         \
+  memory_managers/array_grid.h        memory_managers/array_grid.cc  \
   memory_managers/orig_grid.h         memory_managers/orig_grid.cc  \
   memory_managers/malloc_style.h      memory_managers/malloc_style.cc  \
   memory_managers/heap_manager.h      memory_managers/heap_manager.cc  \

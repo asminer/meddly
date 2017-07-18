@@ -93,6 +93,7 @@ void MEDDLY::forest::policies::useDefaults(bool rel)
   compactBeforeExpand = true;
 
   nodemm = ORIGINAL_GRID;
+  // nodemm = ARRAY_PLUS_GRID;
   // nodemm = MALLOC_MANAGER;
   // nodemm = HEAP_MANAGER;
 
