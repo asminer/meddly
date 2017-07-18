@@ -1198,6 +1198,16 @@ class MEDDLY::node_headers {
     */
     void swapNodes(node_handle p, node_handle q, bool swap_incounts);
 
+  public: // node status
+    bool isActive(node_handle p) const;
+    /// Is this a zombie node (dead but not able to be deleted yet)
+    bool isZombie(node_handle p) const;
+    /// Is this a deleted node
+    bool isDeleted(node_handle p) const;
+    /// Deactivated: 0 address
+    bool isDeactivated(node_handle p) const;
+
+
   public: // address stuff
 
     /// Get the address for node p.
@@ -1268,8 +1278,6 @@ class MEDDLY::node_headers {
     node_handle getNextOf(node_handle p) const;
     void setNextOf(node_handle p, node_handle n);
     void deactivate(node_handle p);
-  public:
-    bool isDeactivated(node_handle p) const;
 
   private:
     
@@ -1279,7 +1287,7 @@ class MEDDLY::node_headers {
     struct node_header {
           /** Offset to node's data in the corresponding node storage structure.
               If the node is active, this is the offset (>0) in the data array.
-              If the node is deleted, this is -next deleted node
+              If the node is deleted, this is the next deleted node
               (part of the unused address list).
           */
           node_address offset;
@@ -1291,7 +1299,7 @@ class MEDDLY::node_headers {
 
           /** Cache count
               The number of cache entries that refer to this node (excl. unique
-              table). If this node is a zombie, cache_count is negative.
+              table). 
           */
           int cache_count;
 
@@ -1884,7 +1892,7 @@ class MEDDLY::expert_forest: public forest
     bool trackingCacheCounts() const;
 
     /// Returns the cache count for a node.
-    int getNodeCacheCount(node_handle p) const;
+    // long getNodeCacheCount(node_handle p) const;
 
     /** Increase the cache count for this node. Call this whenever this node
         is added to a cache.

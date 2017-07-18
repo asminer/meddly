@@ -1064,7 +1064,7 @@ bool MEDDLY::expert_forest
     }
     s.put( (getNodeLevel(p) < 0) ? '\'' : ' ' );
     s << " in: " << getNodeInCount(p);
-    s << " cc: " << getNodeCacheCount(p);
+    s << " cc: " << nodeHeaders.getNodeCacheCount(p);
   } else {
     s << "node: " << long(p);
   }
