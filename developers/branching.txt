@@ -1,0 +1,44 @@
+
+Preferred mechanism for Meddly feature additions: branching.
+
+
+MAKE A BRANCH:
+
+(0) Create a local branch and switch to it
+
+    $ git checkout -b my_branch
+
+
+(1) Optionally, share that branch with the server:
+
+    $ git push origin my_branch
+
+
+MERGE A BRANCH BACK:
+
+(0) Commit desired changes into the branch.
+
+(1) Switch back to master branch.
+
+    $ git checkout master
+
+(2) Make sure you have the latest code from the server
+
+    $ git pull
+
+    Or do a git fetch followed by git merge.
+
+(3) Merge your branch into the master
+
+    $ git merge my_branch
+
+(4) Build and test; resolve any issues
+
+(5) Commit changes 
+
+(6) Delete the branch when you're done with it:
+
+    $ git branch -d my_branch             (local branch)
+
+    $ git push origin --delete my_branch  (remote branch)
+

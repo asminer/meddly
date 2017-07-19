@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -717,7 +715,6 @@ const void* MEDDLY::compact_storage
 void MEDDLY::compact_storage::updateData(node_handle* d)
 {
   data = d;
-  updateCountArray(data + count_index);
   updateNextArray(data + next_index);
   memchunk = data + mem_index;
 }
@@ -827,7 +824,6 @@ MEDDLY::compact_storage
 {
   int slots = slotsForNode(size, pbytes, 0);
   node_address addr = allocNode(slots, p, true);
-  MEDDLY_DCASSERT(1==getCountOf(addr));
 
   setSizeOf(addr, size);
   setStyleOf(addr, pbytes, 1);
@@ -848,7 +844,6 @@ MEDDLY::compact_storage::makeSparseNode(node_handle p, int size,
 {
   int slots = slotsForNode(-size, pbytes, ibytes);
   node_address addr = allocNode(slots, p, true);
-  MEDDLY_DCASSERT(1==getCountOf(addr));
 
   setSizeOf(addr, -size);
   setStyleOf(addr, pbytes, ibytes);
@@ -871,7 +866,10 @@ MEDDLY::compact_storage::allocNode(int slots, node_handle tail, bool clear)
   incMemUsed(got * sizeof(node_handle));
   MEDDLY_DCASSERT(got >= slots);
   if (clear) memset(data+off, 0, slots*sizeof(node_handle));
-  setCountOf(off, 1);                     // #incoming
+
+  // make the slot non-negative, for now
+  data[count_index + off] = 0;
+
   setNextOf(off, -1);                     // mark as a temp node
   data[off+slots-1] = slots - got;        // negative padding
   data[off+got-1] = tail;                 // tail entry

@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -316,17 +314,51 @@ inline MEDDLY::forest::policies::reduction_rule MEDDLY::forest::getReductionRule
   return deflt.reduction;
 }
 
+
 inline bool MEDDLY::forest::isFullyReduced() const {
-  return MEDDLY::forest::policies::FULLY_REDUCED == deflt.reduction;
+    return MEDDLY::forest::policies::FULLY_REDUCED == deflt.reduction;
 }
 
 inline bool MEDDLY::forest::isQuasiReduced() const {
-  return MEDDLY::forest::policies::QUASI_REDUCED == deflt.reduction;
+    return MEDDLY::forest::policies::QUASI_REDUCED == deflt.reduction;
 }
 
 inline bool MEDDLY::forest::isIdentityReduced() const {
-  return MEDDLY::forest::policies::IDENTITY_REDUCED == deflt.reduction;
+    return MEDDLY::forest::policies::IDENTITY_REDUCED == deflt.reduction;
 }
+
+inline bool MEDDLY::forest::isUserDefinedReduced() const {
+    return MEDDLY::forest::policies::USER_DEFINED == deflt.reduction;
+}
+
+inline int* MEDDLY::forest::getLevelReductionRule() const{
+    return level_reduction_rule;
+    
+}
+
+inline bool MEDDLY::forest::isFullyReduced(int k) const {
+    if(k<0)
+        return getLevelReductionRule()[2*(-k)]==-1;
+    else
+        return getLevelReductionRule()[2*(k) - 1]==-1;
+    
+}
+
+inline bool MEDDLY::forest::isQuasiReduced(int k) const {
+    if(k<0)
+        return getLevelReductionRule()[2*(-k)]==-2;
+    else
+        return getLevelReductionRule()[2*(k) - 1]==-2;
+}
+
+inline bool MEDDLY::forest::isIdentityReduced(int k) const {
+    if(k<0)
+        return getLevelReductionRule()[2*(-k)]==-3;
+    else
+        return false;
+}
+
+
 
 inline MEDDLY::node_storage_flags MEDDLY::forest::getNodeStorage() const {
   return deflt.storage_flags;

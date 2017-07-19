@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -36,7 +34,7 @@ namespace MEDDLY {
 class MEDDLY::mt_mxd_bool : public mtmxd_forest {
   public:
 
-    mt_mxd_bool(int dsl, domain *d, const policies &p, bool tv=false);
+    mt_mxd_bool(int dsl, domain *d, const policies &p,int* level_reduction_rule=NULL, bool tv=false);
     ~mt_mxd_bool();
 
     virtual void createEdge(bool val, dd_edge &e);

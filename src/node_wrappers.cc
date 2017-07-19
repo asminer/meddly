@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -23,6 +21,7 @@
 
 // TODO: Testing
 
+#include <map>
 #include "defines.h"
 #include "hash_stream.h"
 
@@ -430,7 +429,7 @@ void MEDDLY::unpacked_node::computeHash()
     }
   }
 
-  if (isExtensible()) s.push(0u) else s.push(1u);
+  if (isExtensible()) s.push(0u); else s.push(1u);
   h = s.finish();
 
 #ifdef DEVELOPMENT_CODE
@@ -438,17 +437,6 @@ void MEDDLY::unpacked_node::computeHash()
 #endif
 }
 
-
-void MEDDLY::unpacked_node::swap(int j, int k)
-{
-  SWAP(i(j), i(k));
-  SWAP(d(j), d(k));
-  int temp_a, temp_b;
-  getEdge(j, temp_a);
-  getEdge(k, temp_b);
-  setEdge(j, temp_b);
-  setEdge(k, temp_a);
-}
 
 // check is the node is written in order,
 // if not rearrange it in ascending order of indices.
@@ -471,10 +459,7 @@ void MEDDLY::unpacked_node::sort()
   node_handle* old_down = down;
   int* old_index = index;
   void* old_edge = edge;
-  int old_size = size;
   int old_nnzs = nnzs;
-  int old_alloc = alloc;
-  int old_elloc = ealloc;
 
   down = 0;
   index = 0;
@@ -495,7 +480,8 @@ void MEDDLY::unpacked_node::sort()
     int old_location = s_iter->second;
     index[k] = old_index[old_location];
     down[k] = old_down[old_location];
-    memcpy(edge + (k * edge_bytes), old_edge + (old_location * edge_bytes), edge_bytes);
+    memcpy((char*)edge + (k * edge_bytes),
+        (char*)old_edge + (old_location * edge_bytes), edge_bytes);
   }
 
   free(old_down);
@@ -519,7 +505,7 @@ void MEDDLY::unpacked_node::trim()
   if (isSparse()) {
     int z = getNNZs()-1;
     while (z > 0 && (i(z-1)+1) == i(z) && d(z-1) == d(z)) {
-      parent->unlinkNode(d(z));
+      const_cast<expert_forest*>(parent)->unlinkNode(d(z));
       z--;
     }
     if (z != (getNNZs() - 1)) {
@@ -529,7 +515,7 @@ void MEDDLY::unpacked_node::trim()
   } else {
     int z = getSize()-1;
     while (z > 0 && d(z-1) == d(z)) {
-      parent->unlinkNode(d(z));
+      const_cast<expert_forest*>(parent)->unlinkNode(d(z));
       z--;
     }
     if (z != (getSize()-1)) {
@@ -553,7 +539,7 @@ bool MEDDLY::unpacked_node::isTrim() const
 }
 
 // checks if the node indices are in ascending order
-bool MEDDLY::unpacked_node::isTrim() const
+bool MEDDLY::unpacked_node::isSorted() const
 {
   if (!isSparse()) return true;
 
@@ -594,7 +580,9 @@ MEDDLY::node_storage_style::~node_storage_style()
 
 MEDDLY::node_storage::node_storage(expert_forest* f)
 {
+#ifdef OLD_NODE_HEADERS
   counts = 0;
+#endif
   nexts = 0;
 
   parent = f;

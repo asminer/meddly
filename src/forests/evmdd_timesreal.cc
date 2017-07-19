@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -29,8 +27,8 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::evmdd_timesreal::evmdd_timesreal(int dsl, domain *d, const policies &p)
- : evmdd_forest(dsl, d, REAL, EVTIMES, p)
+MEDDLY::evmdd_timesreal::evmdd_timesreal(int dsl, domain *d, const policies &p,int* level_reduction_rule)
+ : evmdd_forest(dsl, d, REAL, EVTIMES, p,level_reduction_rule)
 {
   setEdgeSize(sizeof(float), true);
   initializeForest();

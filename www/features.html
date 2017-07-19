@@ -1,0 +1,377 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>MEDDLY: Multi-terminal and Edge-valued Decision Diagram LibrarY</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="meddly.css">
+<link rel="stylesheet" type="text/css" media="print" href="print.css">
+</head>
+<body>
+
+<div id="content">
+
+<h1 id="hometitle">Features</h1>
+
+<h2>Legend</h2>
+<table>
+<tr>
+<td class="stable">Y</td>
+<td>Implemented and stable</td>
+</tr>
+<tr>
+<td class="unstable">y</td>
+<td>Implemented and unstable (untested, or known to have bugs, or likely to change)</td>
+</tr>
+<tr>
+<td class="devel">n</td>
+<td>Under development (expected to be implemented short-term)</td>
+</tr>
+<tr>
+<td class="planned">N</td>
+<td>Planned (expected to be implemented medium- to long-term)</td>
+</tr>
+<tr>
+<td class="blank"></td>
+<td>No plans</td>
+</tr>
+</table>
+
+<h2>Forest types</h2>
+<table>
+<tr><th> Abbrv. </th>
+  <th> Status </th>
+  <th> Range </th>
+  <th> Value mechanism </th>
+  <th> Set / relation </th>
+</tr>
+<tr><td> MDD </td>
+  <td class="stable"> Y </td>
+  <td>boolean</td>
+  <td>terminals</td>
+  <td>set</td>
+</tr>
+<tr><td> MxD </td>
+  <td class="stable"> Y </td>
+  <td>boolean</td>
+  <td>terminals</td>
+  <td>relation</td>
+</tr>
+<tr><td> MTMDD </td>
+  <td class="stable"> Y </td>
+  <td>integer</td>
+  <td>terminals</td>
+  <td>set</td>
+</tr>
+<tr><td> MTMxD </td>
+  <td class="stable"> Y </td>
+  <td>integer</td>
+  <td>terminals</td>
+  <td>relation</td>
+</tr>
+<tr><td> EV+MDD </td>
+  <td class="unstable"> y </td>
+  <td>integer</td>
+  <td>sum of edge values</td>
+  <td>set</td>
+</tr>
+<tr><td> MTMDD </td>
+  <td class="stable"> Y </td>
+  <td>real</td>
+  <td>terminals</td>
+  <td>set</td>
+</tr>
+<tr><td> MTMxD </td>
+  <td class="stable"> Y </td>
+  <td>real</td>
+  <td>terminals</td>
+  <td>relation</td>
+</tr>
+<tr><td> EV*MxD </td>
+  <td class="devel"> n </td>
+  <td>real</td>
+  <td>product of edge values</td>
+  <td>relation</td>
+</tr>
+<tr><td> </td>
+  <td class="planned"> N </td>
+  <td>user-defined</td>
+  <td>terminals</td>
+  <td>set</td>
+</tr>
+<tr><td> </td>
+  <td class="planned"> N </td>
+  <td>user-defined</td>
+  <td>terminals</td>
+  <td>relation</td>
+</tr>
+</table>
+
+<h2>Operations</h2>
+<table>
+<tr> <th> Operation </th>
+  <th> MDD </th>
+  <th> MxD </th>
+  <th> MTMDD </th>
+  <th> MTMxD </th>
+  <th> EV+MDD </th>
+  <th> EV*MxD </th>
+</tr>
+<tr> <td> Node Count </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+</tr>
+<tr> <td> Edge Count </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+</tr>
+<tr> <td> Create Edge </td>
+  <td class="unstable"> y </td>
+  <td class="stable"> Y </td>
+  <td class="unstable"> y </td>
+  <td class="stable"> Y </td>
+  <td class="unstable"> y </td>
+  <td class="unstable"> y </td>
+</tr>
+<tr> <td> Iterators </td>
+  <td class="stable"> Y </td>
+  <td class="unstable"> y </td>
+  <td class="stable"> Y </td>
+  <td class="unstable"> y </td>
+  <td class="stable"> Y </td>
+  <td class="unstable"> y </td>
+</tr>
+<tr> <td> Cardinality </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="unstable"> y </td>
+  <td class="unstable"> y </td>
+  <td class="devel"> n </td>
+  <td class="planned"> N </td>
+</tr>
+<tr> <td> Complement </td>
+  <td class="devel"> n </td>
+  <td class="devel"> n </td>
+  <td class="blank"> </td>
+  <td class="blank"> </td>
+  <td class="blank"> </td>
+  <td class="blank"> </td>
+</tr>
+<tr> <td> Set Union </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="blank"> </td>
+  <td class="blank"> </td>
+  <td class="blank"> </td>
+  <td class="blank"> </td>
+</tr>
+<tr> <td> Set Intersection </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="blank"> </td>
+  <td class="blank"> </td>
+  <td class="blank"> </td>
+  <td class="blank"> </td>
+</tr>
+<tr> <td> Set Difference </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="blank"> </td>
+  <td class="blank"> </td>
+  <td class="blank"> </td>
+  <td class="blank"> </td>
+</tr>
+<tr> <td> Pre-Image </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="planned"> N </td>
+  <td class="planned"> N </td>
+</tr>
+<tr> <td> Post-Image </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="planned"> N </td>
+  <td class="planned"> N </td>
+</tr>
+<tr> <td> Forward reachability </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="devel"> n </td>
+  <td class="devel"> n </td>
+  <td class="planned"> N </td>
+  <td class="planned"> N </td>
+</tr>
+<tr> <td> Forward saturation </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="devel"> n </td>
+  <td class="devel"> n </td>
+  <td class="planned"> N </td>
+  <td class="planned"> N </td>
+</tr>
+<tr> <td> Backward reachability </td>
+  <td class="devel"> n </td>
+  <td class="devel"> n </td>
+  <td class="devel"> n </td>
+  <td class="devel"> n </td>
+  <td class="planned"> N </td>
+  <td class="planned"> N </td>
+</tr>
+<tr> <td> Backward saturation </td>
+  <td class="devel"> n </td>
+  <td class="devel"> n </td>
+  <td class="devel"> n </td>
+  <td class="devel"> n </td>
+  <td class="planned"> N </td>
+  <td class="planned"> N </td>
+</tr>
+<tr> <td> Element-wise + </td>
+  <td class="blank"> </td>
+  <td class="blank"> </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="unstable"> y </td>
+  <td class="unstable"> y </td>
+</tr>
+<tr> <td> Element-wise - </td>
+  <td class="blank"> </td>
+  <td class="blank"> </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="unstable"> y </td>
+  <td class="unstable"> y </td>
+</tr>
+<tr> <td> Element-wise * </td>
+  <td class="blank"> </td>
+  <td class="blank"> </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="unstable"> y </td>
+  <td class="unstable"> y </td>
+</tr>
+<tr> <td> Element-wise / </td>
+  <td class="blank"> </td>
+  <td class="blank"> </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="devel"> n </td>
+  <td class="devel"> n </td>
+</tr>
+<tr> <td> Element-wise compare </td>
+  <td class="blank"> </td>
+  <td class="blank"> </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="devel"> n </td>
+  <td class="devel"> n </td>
+</tr>
+<tr> <td> Element-wise max,min </td>
+  <td class="blank"> </td>
+  <td class="blank"> </td>
+  <td class="stable"> Y </td>
+  <td class="stable"> Y </td>
+  <td class="devel"> n </td>
+  <td class="devel"> n </td>
+</tr>
+</table>
+
+
+<h2>Conversion</h2>
+<table>
+<tr> <td> </td>
+  <th> to MDD </th>
+  <th> to MxD </th>
+  <th> to MTMDD </th>
+  <th> to MTMxD </th>
+  <th> to EV+MDD </th>
+  <th> to EV*MxD </th>
+</tr>
+<tr> <th> from MDD </th>
+  <td class="stable"> Y </td>
+  <td class="blank"> </td>
+  <td class="stable"> Y </td>
+  <td class="blank"> </td>
+  <td class="stable"> Y </td>
+  <td class="blank"> </td>
+</tr>
+<tr> <th> from MxD </th>
+  <td class="blank"> </td>
+  <td class="stable"> Y </td>
+  <td class="blank"> </td>
+  <td class="stable"> Y </td>
+  <td class="blank"> </td>
+  <td class="planned"> N </td>
+</tr>
+<tr> <th> from MTMDD </th>
+  <td class="stable"> Y </td>
+  <td class="blank"> </td>
+  <td class="stable"> Y </td>
+  <td class="blank"> </td>
+  <td class="unstable"> y </td>
+  <td class="blank"> </td>
+</tr>
+<tr> <th> from MTMxD </th>
+  <td class="blank"> </td>
+  <td class="stable"> Y </td>
+  <td class="blank"> </td>
+  <td class="stable"> Y </td>
+  <td class="blank"> </td>
+  <td class="planned"> N </td>
+</tr>
+<tr> <th> from EV+MDD </th>
+  <td class="planned"> N </td>
+  <td class="blank"> </td>
+  <td class="planned"> N </td>
+  <td class="blank"> </td>
+  <td class="unstable"> y </td>
+  <td class="blank"> </td>
+</tr>
+<tr> <th> from EV*MxD </th>
+  <td class="blank"> </td>
+  <td class="planned"> N </td>
+  <td class="blank"> </td>
+  <td class="planned"> N </td>
+  <td class="blank"> </td>
+  <td class="planned"> N </td>
+</tr>
+</table>
+
+<!-- Common sections of all pages -->
+
+
+<div id="footer">
+<p id="copyright">Copyright &copy; 2009-2010, Iowa State University Research Foundation, Inc.</p>
+</div>
+</div>
+
+<div id="sidebar">
+
+<ul class="navlist">
+<li><a href="index.html">Home</a></li>
+<li><a href="obtain.html">Obtain MEDDLY</a></li>
+<li><a href="build.html">Build MEDDLY</a></li>
+<li><a href="features.html" class="current">Features</a></li>
+<li><a href="history.html">Version History</a></li>
+<li><a href="papers.html">Publications</a></li>
+</ul>
+
+
+<p id="sflogo">
+Hosted by:<br>
+<a href="http://sourceforge.net/projects/meddly"><img src="http://sflogo.sourceforge.net/sflogo.php?group_id=255553&amp;type=16" width="150" height="40" alt="Get Decision diagram library at SourceForge.net. Fast, secure and Free Open Source software downloads" /></a>
+</p>
+
+</div>
+</body>
+</html>

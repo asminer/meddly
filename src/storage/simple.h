@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -355,11 +353,6 @@ class MEDDLY::simple_storage : public node_storage {
   typedef struct {
     int i;
     node_handle d;
-  } mdd_node;
-  typedef struct {
-    int i;
-    node_handle d;
-
   } mdd_node;
 }; 
 

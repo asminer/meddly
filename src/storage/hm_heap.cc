@@ -1,4 +1,3 @@
-// $Id: hm_grid.cc 436 2013-07-01 21:43:08Z asminer $
 
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.

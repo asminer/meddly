@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -23,6 +21,8 @@
 
 // TODO: Testing
 
+#include <fstream>
+#include <sstream>
 #include "defines.h"
 #include "unique_table.h"
 #include "hash_stream.h"
@@ -48,7 +48,6 @@
 // #define DEBUG_GC
 // #define DEBUG_WRITE
 // #define DEBUG_READ 
-// #define DEBUG_HANDLE_FREELIST
 
 // #define TRACK_DELETIONS
 
@@ -61,9 +60,6 @@
 
 // #define REPORT_ON_DESTROY
 // #define DUMP_ON_FOREST_DESTROY
-
-const int a_min_size = 1024;
-
 
 // ******************************************************************
 // *                                                                *
@@ -197,7 +193,7 @@ MEDDLY::forest::policies MEDDLY::forest::mxdDefaults;
 
 MEDDLY::forest
 ::forest(int ds, domain* _d, bool rel, range_type t, edge_labeling ev, 
-  const policies &p) : deflt(p)
+  const policies &p,int* lrr) : deflt(p)
 {
   // FID
   //
@@ -212,11 +208,71 @@ MEDDLY::forest
   isRelation = rel;
   rangeType = t;
   edgeLabel = ev;
+
+  
+    if(lrr==NULL){
+       
+        if(isUserDefinedReduced()){
+		throw error(error::INVALID_POLICY);
+        }
+
+	else{
+
+        if(isRelation)
+        {
+            int span = 2*(d->getNumVariables()) + 1;
+            lrr=(int*)malloc(sizeof(int)*span);
+            
+            if(isQuasiReduced())
+                for(int i=0;i<span;i++)
+                {lrr[i]=i==0?-4:(i%2==0?-2:-1);}
+            
+            else if (isFullyReduced())
+                for(int i=0;i<span;i++)
+                {lrr[i]=i==0?-4:(i%2==0?-1:-1);}
+            
+            else if (isIdentityReduced())
+                for(int i=0;i<span;i++)
+                {lrr[i]=i==0?-4:(i%2==0?-3:-1);}
+        }
+        else
+        {
+            lrr=(int*)malloc(sizeof(int)*(d->getNumVariables()+1));
+            lrr[0]=-4;
+            if(isQuasiReduced())
+                for(int i=1;i<=d->getNumVariables();i++)
+                    lrr[i]=-2;
+            
+            else
+                if (isFullyReduced())
+                for(int i=1;i<=d->getNumVariables();i++)
+                    lrr[i]=-1;
+            
+        }
+      
+	}
+
+	level_reduction_rule=lrr;        
+    }
+	else if(isUserDefinedReduced()){
+
+    	level_reduction_rule=lrr;
+    }
+	else
+		throw error(error::INVALID_POLICY);
+    
+    
+    
+    
   // check policies
   if (!isRelation) {
     if (policies::IDENTITY_REDUCED == deflt.reduction)
       throw error(error::INVALID_POLICY);
-  } 
+      
+    for(int i=1;i<=d->getNumVariables();i++)
+        if(level_reduction_rule[i]==-3)              //isIdentityReduced()
+         throw error(error::INVALID_POLICY);
+  }
   //
   // Initialize array of operations
   //
@@ -671,20 +727,10 @@ const unsigned int MEDDLY::expert_forest::SHOW_TERMINALS  = 0x01;
 
 
 MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
-  edge_labeling ev, const policies &p)
-: forest(ds, d, rel, t, ev, p)
+  edge_labeling ev, const policies &p,int* level_reduction_rule)
+: forest(ds, d, rel, t, ev, p,level_reduction_rule), nodeHeaders(*this)
 {
-  //
-  // Inltialize address array
-  //
-  a_size = a_min_size;
-  address = (node_header *) malloc(a_size * sizeof(node_header));
-  if (0 == address) throw error(error::INSUFFICIENT_MEMORY);
-  stats.incMemAlloc(a_size * sizeof(node_header));
-  memset(address, 0, a_size * sizeof(node_header));
-  a_last = a_next_shrink = 0;
-  for (int i=0; i<8; i++) a_unused[i] = 0;
-  a_lowest_index = 8;
+  nodeHeaders.setPessimistic(isPessimistic());
 
   // Initialize variable order
   var_order = d->makeDefaultVariableOrder();
@@ -719,8 +765,6 @@ MEDDLY::expert_forest::~expert_forest()
   printf("Destroying forest.  Stats:\n");
   reportMemoryUsage(stdout, "\t", 9);
 #endif
-  // Address array
-  free(address);
 
   delete nodeMan;
 
@@ -752,7 +796,7 @@ void MEDDLY::expert_forest::initializeForest()
 
 void MEDDLY::expert_forest::dump(output &s, unsigned int flags) const
 {
-  for (long p=0; p<=a_last; p++) {
+  for (long p=0; p<=nodeHeaders.lastUsedHandle(); p++) {
     if (showNode(s, p, flags | SHOW_INDEX)) {
       s.put('\n');
       s.flush();
@@ -763,33 +807,8 @@ void MEDDLY::expert_forest::dump(output &s, unsigned int flags) const
 void MEDDLY::expert_forest::dumpInternal(output &s) const
 {
   s << "Internal forest storage\n";
-  for (int i=0; i<8; i++) {
-    s << "First " << i << "-byte unused node index: " << a_unused[i] << "\n";
-  }
-  int awidth = digits(a_last);
-  s << " Node# :  ";
-  for (node_handle p=1; p<=a_last; p++) {
-    if (p) s.put(' ');
-    s.put(long(p), awidth);
-  }
-  s << "\nLevel  : [";
-  for (node_handle p=1; p<=a_last; p++) {
-    if (p) s.put('|');
-    s.put(long(address[p].level), awidth);
-  }
-  s << "]\n";
-  s << "\nOffset : [";
-  for (node_handle p=1; p<=a_last; p++) {
-    if (p) s.put('|');
-    s.put(long(address[p].offset), awidth);
-  }
-  s << "]\n";
-  s << "\nCache  : [";
-  for (node_handle p=1; p<=a_last; p++) {
-    if (p) s.put('|');
-    s.put(long(address[p].cache_count), awidth);
-  }
-  s << "]\n\n";
+
+  nodeHeaders.dumpInternal(s);
 
   nodeMan->dumpInternal(s, 0x03);
  
@@ -879,9 +898,9 @@ void MEDDLY::expert_forest::countNodesByLevel(long* active) const
 
   for (; l<=L; l++) active[l] = 0;
 
-  for (long p=0; p<=a_last; p++) {
-    if (address[p].isDeleted()) continue; 
-    active[address[p].level]++;
+  for (long p=1; p<=nodeHeaders.lastUsedHandle(); p++) {
+    if (nodeHeaders.isDeactivated(p)) continue; 
+    active[nodeHeaders.getNodeLevel(p)]++;
   }
 }
 
@@ -897,10 +916,12 @@ MEDDLY::expert_forest
 {
   MEDDLY_DCASSERT(root);
 
+  const node_handle a_last = nodeHeaders.lastUsedHandle();
   // initialize lists
   bool* inList = new bool[a_last];
   for (int i=0; i<a_last; i++) inList[i] = false;
   inList--;
+
   int mlen = 0;
   int msize = 1024;
   node_handle* marked = (node_handle*) malloc(msize * sizeof(node_handle));
@@ -928,8 +949,10 @@ MEDDLY::expert_forest
           // expand.  Note we're leaving an extra slot
           // at the end, for the terminal 0.
           msize += 1024;
-          marked = (node_handle*) realloc(marked, msize*sizeof(node_handle));
-          if (0==marked) throw error(error::INSUFFICIENT_MEMORY);
+          node_handle* new_marked = (node_handle*) 
+            realloc(marked, msize*sizeof(node_handle));
+          if (0==new_marked) throw error(error::INSUFFICIENT_MEMORY);
+          marked = new_marked;
       }
       inList[M->d(i)] = true;
       marked[mlen] = M->d(i);
@@ -942,9 +965,11 @@ MEDDLY::expert_forest
   // sort
   if (sort && mlen>0) {
     mlen = 0;
-    for (int i=1; i<=a_last; i++) if (inList[i]) {
-      marked[mlen] = i;
-      mlen++;
+    for (int i=1; i<=a_last; i++) {
+      if (inList[i]) {
+        marked[mlen] = i;
+        mlen++;
+      }
     }
   }
 
@@ -1005,7 +1030,7 @@ bool MEDDLY::expert_forest
     Show the node index, if selected.
   */
   if (flags & SHOW_INDEX) {
-    int nwidth = digits(a_last);
+    int nwidth = digits(nodeHeaders.lastUsedHandle());
     s.put(long(p), nwidth);
     s.put('\t');
   }
@@ -1022,7 +1047,7 @@ bool MEDDLY::expert_forest
     return true;
   }
   if (isZombieNode(p)) {
-    s << "Zombie cc: " <<  -address[p].cache_count;
+    s << "Zombie cc: " <<  nodeHeaders.getNodeCacheCount(p);
     return true;
   }
 
@@ -1087,6 +1112,136 @@ void MEDDLY::expert_forest
   } // for k
 
   free(list);
+}
+
+void MEDDLY::expert_forest
+::writeNodeGraphPicture(const char* filename, const char *ext,
+    const node_handle* p, int n) const
+{
+  if (filename == NULL || ext == NULL || p == NULL) return;
+  if (!isMultiTerminal()) {
+    fprintf(stderr,
+        "%s: Error. Only implemented for Multi-Terminal MDDs\n",
+        __func__);
+    return;
+  }
+  node_handle* list = markNodesInSubgraph(p, n, true);
+  if (0==list) return;
+
+  std::string dot_fn(filename);
+  dot_fn += ".dot";
+  std::ofstream s(dot_fn.c_str());
+
+  if (!s.is_open()) {
+    std::cerr << __func__ << ": Error opening file " << dot_fn << "\n";
+    exit(1);
+  }
+  
+  // initialize the dot file
+  s << "digraph structs {\n";
+  // s << "  rankdir=LR;\n";
+  s << "  size=\"5,5\";\n";
+  s << "  node [shape=record, height=0.25, width=0.25];\n";
+  
+  const char blue[] = "blue";
+  // const char black[] = "black";
+  // const char white[] = "transparent";
+
+  // Print by levels
+  // s << "  l0 [label=\"<0>level 0 \"];\n";
+  // s << "  {rank=same; l0 s0;}\n";
+  // s << "  s0 [label=\"<0>1\"];\n";
+  bool lowest_level = true;
+  for (int k = (isForRelations()? -1: 1); ABS(k) <= getNumVariables(); ) {
+    int map_k = ((k < 0)? (-k)*2 - 1: k*2);
+
+    // write the level node (to identify the height at which the rest of the nodes
+    // are to be displayed)
+    s << "  l" << map_k << " [label=\"<0>level: ";
+    
+    const variable* v = getDomain()->getVar(getVarByLevel(ABS(k)));
+    if (v->getName()) {
+      s << v->getName();
+    } else {
+      s << ABS(k);
+    }
+    if (k < 0) s << "' ";
+    s << "\"];\n";
+    
+    MEDDLY_DCASSERT(map_k > 0);
+    bool do_once = true;
+
+    // write rank info for all nodes at this level
+    for (long i=0; list[i]; i++) {
+      if (getNodeLevel(list[i]) != k) continue;
+      if (do_once) {
+        if (lowest_level) {
+          lowest_level = false;
+        } else {
+          s << "  edge [color=transparent];\n";
+          s << "  l" << map_k << ":0 -> l" << (isForRelations()? map_k-1: map_k-2) << ":0;\n";
+          s << "  edge [color=black];\n";
+        }
+        s << "  {rank=same; l" << map_k << " ";
+        do_once = false;
+      }
+      s << "s" << list[i] << " ";
+    }
+    if (!do_once) {
+      s << ";}\n";
+
+      // write label info for all nodes at this level
+      for (long i=0; list[i]; i++) {
+        if (getNodeLevel(list[i]) != k) continue;
+
+        s << " s" << list[i] << " [label=\"";
+        unpacked_node* un = unpacked_node::newFromNode(this, list[i], unpacked_node::SPARSE_NODE);
+
+        // print index pointers
+        MEDDLY_DCASSERT(isMultiTerminal());
+        bool first_index = true;
+        for (int j = 0; j < un->getNNZs(); j++) {
+          if (first_index) first_index=false; else s << "|";
+          s << "<" << j << ">";
+          s << un->i(j);
+          if (-1 == un->d(j)) s <<":T";
+        }
+        s << "\"];\n";
+
+        // print down pointers
+        for (int j = 0; j < un->getNNZs(); j++) {
+          if (-1 == un->d(j)) continue;
+          s << "  edge [color=" << blue /*((un->i(j) % 2 == 0)? black: blue)*/ << "];\n";
+          s << "  s" << list[i] << ":" << j;
+          s << " -> s" << un->d(j);
+          s << ":0 [samehead = true];\n";
+        }
+
+        unpacked_node::recycle(un);
+      }
+    }
+    
+    // next level
+    if (isForRelations()) {
+      k = (k >= 0)? -(k+1): -k;
+    } else {
+      k++;
+    }
+  } // for k
+
+  s << "}\n";
+
+  free(list);
+  s.close();
+
+  // convert dot file to extension
+  std::stringstream cmd;
+  cmd << "dot -T" << ext << " -o" << filename << "." << ext << " " << dot_fn;
+  if (system(cmd.str().c_str())) {
+    std::cerr << __func__ << ": Error executing DOT command: ";
+    std::cerr << cmd.str().c_str() << "\n";
+    exit(1);
+  }
 }
 
 void MEDDLY::expert_forest
@@ -1612,35 +1767,6 @@ void MEDDLY::expert_forest::reorderVariables(const int* level2var)
 // '                                                                '
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-void MEDDLY::expert_forest::handleNewOrphanNode(node_handle p)
-{
-  MEDDLY_DCASSERT(!isPessimistic() || !isZombieNode(p));
-  MEDDLY_DCASSERT(isActiveNode(p));
-  MEDDLY_DCASSERT(!isTerminalNode(p));
-  MEDDLY_DCASSERT(getNodeInCount(p) == 0);
-
-  // insted of orphan_nodes++ here; do it only when the orphan is not going
-  // to get deleted or converted into a zombie
-
-  // Two possible scenarios:
-  // (1) a reduced node, or
-  // (2) a temporary node ready to be deleted.
-  // MEDDLY_DCASSERT(isReducedNode(p) || getNodeCacheCount(p) == 0);
-
-  if (getNodeCacheCount(p) == 0) {
-    // delete node
-    // this should take care of the temporary nodes also
-    deleteNode(p);
-  }
-  else if (isPessimistic()) {
-    // zombify node
-    zombifyNode(p);
-  }
-  else {
-    stats.orphan_nodes++;
-  }
-
-}
 
 void MEDDLY::expert_forest::deleteNode(node_handle p)
 {
@@ -1684,18 +1810,10 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
   fflush(stdout);
 #endif
 
-  MEDDLY_DCASSERT(address[p].cache_count == 0);
+  MEDDLY_DCASSERT(0==getNodeInCount(p));
 
   // unlink children and recycle node memory
   nodeMan->unlinkDownAndRecycle(getNodeAddress(p));
-
-  // recycle the index
-  //
-  stats.decActive(1);
-  if (theLogger && theLogger->recordingNodeCounts()) {
-    theLogger->addToActiveNodeCount(this, getNodeLevel(p), -1);
-  }
-  recycleNodeHandle(p);
 
   // if (nodeMan.compactLevel) nodeMan.compact(false);
 
@@ -1708,202 +1826,10 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 
 }
 
-void MEDDLY::expert_forest::zombifyNode(node_handle p)
-{
-#ifdef TRACK_DELETIONS
-  for (int i=0; i<delete_depth; i++) printf(" ");
-  printf("Zombifying node ");
-  showNode(stdout, p, SHOW_INDEX | SHOW_DETAILS);
-  printf("\n");
-  fflush(stdout);
-#endif
-#ifdef VALIDATE_INCOUNTS_ON_DELETE
-  delete_depth++;
-#endif
-
-  MEDDLY_DCASSERT(isActiveNode(p));
-  MEDDLY_DCASSERT(!isTerminalNode(p));
-  MEDDLY_DCASSERT(getNodeCacheCount(p) > 0);  // otherwise this node should be deleted
-  MEDDLY_DCASSERT(getNodeInCount(p) == 0);
-  MEDDLY_DCASSERT(address[p].cache_count > 0);
-
-  stats.zombie_nodes++;
-  stats.decActive(1);
-  if (theLogger && theLogger->recordingNodeCounts()) {
-    theLogger->addToActiveNodeCount(this, getNodeLevel(p), -1);
-  }
-
-  unsigned h = hashNode(p);
-#ifdef DEVELOPMENT_CODE 
-  unpacked_node* key = unpacked_node::newFromNode(this, p, false);
-  key->computeHash();
-  MEDDLY_DCASSERT(key->hash() == h);
-  if (unique->find(*key, getVarByLevel(key->getLevel())) != p) {
-    fprintf(stderr, "Fail: can't find reduced node %ld; got %ld\n",
-      static_cast<long>(p), static_cast<long>(unique->find(*key, getVarByLevel(key->getLevel()))));
-    FILE_output myerr(stderr);
-    dumpInternal(myerr);
-    MEDDLY_DCASSERT(false);
-  }
-  node_handle x = unique->remove(h, p);
-  MEDDLY_DCASSERT(x==p);
-  unpacked_node::recycle(key);
-#else
-  unique->remove(h, p);
-#endif
-
-  // node_address addr = getNode(p).offset;
-
-  // unlink children and recycle node memory
-  nodeMan->unlinkDownAndRecycle(getNodeAddress(p));
-
-  // mark node as zombie
-  address[p].makeZombie();
-
-#ifdef VALIDATE_INCOUNTS_ON_DELETE
-  delete_depth--;
-  if (0==delete_depth) {
-    validateIncounts(false);
-  }
-#endif
-}
-
-
-#ifdef DEBUG_HANDLE_FREELIST
-void print_sequence(long a)
-{
-  static bool printed;
-  static long first = 0;
-  static long last = -1;
-  if (a<=0) {
-    if (first>last) return;
-    if (printed) printf(", "); 
-    printed = false;
-    if (first < last) {
-      if (first+1<last) {
-        printf("%ld ... %ld", first, last);
-      } else {
-        printf("%ld, %ld", first, last);
-      }
-    } else {
-      printf("%ld", first);
-    }
-    first = 0;
-    last = -1;
-    return;
-  }
-  // a > 0
-  if (0==first) {
-    first = last = a;
-    return;
-  }
-  if (last+1 == a) {
-    last++;
-    return;
-  }
-  // break in the sequence, we need to print
-  if (printed) printf(", "); else printed = true;
-  if (first < last) {
-    if (first+1<last) {
-      printf("%ld ... %ld", first, last);
-    } else {
-      printf("%ld, %ld", first, last);
-    }
-  } else {
-    printf("%ld", first);
-  }
-  first = last = a;
-}
-
-inline void dump_handle_info(const MEDDLY::node_header* A, long size)
-{
-  printf("Used handles:  ");
-  print_sequence(0);
-  for (long i=1; i<size; i++) if (!A[i].isDeleted()) {
-    print_sequence(i);
-  }
-  print_sequence(0);
-  printf("\nFree handles:  ");
-  for (long i=1; i<size; i++) if (A[i].isDeleted()) {
-    print_sequence(i);
-  }
-  print_sequence(0);
-  printf("\n");
-}
-#endif
-
-MEDDLY::node_handle MEDDLY::expert_forest::getFreeNodeHandle() 
-{
-  MEDDLY_DCASSERT(address);
-  stats.incMemUsed(sizeof(node_header));
-  node_handle found = 0;
-  for (int i=a_lowest_index; i<8; i++) {
-    // try the various lists
-    while (a_unused[i] > a_last) {
-      a_unused[i] = address[a_unused[i]].getNextDeleted();
-    }
-    if (a_unused[i]) {  // get a recycled one from list i
-      found = a_unused[i];
-      a_unused[i] = address[a_unused[i]].getNextDeleted();
-      break;
-    } else {
-      if (i == a_lowest_index) a_lowest_index++;
-    }
-  }
-  if (found) {  
-    MEDDLY_DCASSERT(address[found].isDeleted());
-#ifdef DEBUG_HANDLE_FREELIST
-    address[found].setNotDeleted();
-    dump_handle_info(address, a_last+1);
-#endif
-    return found;
-  }
-  a_last++;
-  if (a_last >= a_size) {
-    expandHandleList();
-  }
-  MEDDLY_DCASSERT(a_last < a_size);
-#ifdef DEBUG_HANDLE_FREELIST
-  address[a_last].setNotDeleted();
-  dump_handle_info(address, a_last+1);
-#endif
-  return a_last;
-}
-
-
-void MEDDLY::expert_forest::recycleNodeHandle(node_handle p) 
-{
-  MEDDLY_DCASSERT(address);
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(0==address[p].cache_count);
-  stats.decMemUsed(sizeof(node_header));
-  address[p].setDeleted();
-
-  // Determine which list to add this into
-  int i = bytesRequiredForDown(p) -1;
-  address[p].setNextDeleted(a_unused[i]);
-  a_unused[i] = p;
-  a_lowest_index = MIN(a_lowest_index, (char)i);
-
-  // if this was the last node, collapse nodes into the
-  // "not yet allocated" pile.  But, we don't remove them
-  // from the free list(s); we simply discard any too-large
-  // ones when we pull from the free list(s).
-  if (p == a_last) {
-    while (a_last && address[a_last].isDeleted()) {
-      a_last--;
-    }
-
-    if (a_last < a_next_shrink) shrinkHandleList();
-  }
-#ifdef DEBUG_HANDLE_FREELIST
-  dump_handle_info(address, a_last+1);
-#endif
-}
 
 
 MEDDLY::node_handle MEDDLY::expert_forest
-::createReducedHelper(int in, const unpacked_node &nb)
+::createReducedHelper(int in, unpacked_node &nb)
 {
 #ifdef DEVELOPMENT_CODE
   validateDownPointers(nb);
@@ -1911,7 +1837,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
   // check is the node is written in order,
   // if not rearrange it in ascending order of indices.
-  if (nb.isSparse()) sort();
+  if (nb.isSparse()) nb.sort();
 
   if (nb.isExtensible()) return createReducedExtensibleNodeHelper(in, nb);
 
@@ -2015,17 +1941,19 @@ MEDDLY::node_handle MEDDLY::expert_forest
 #endif
 
   // Grab a new node
-  node_handle p = getFreeNodeHandle();
-  address[p].level = nb.getLevel();
-  MEDDLY_DCASSERT(0 == address[p].cache_count);
+  node_handle p = nodeHeaders.getFreeNodeHandle();
+  nodeHeaders.setNodeLevel(p, nb.getLevel());
+  MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(p));
+  MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
 
   stats.incActive(1);
   if (theLogger && theLogger->recordingNodeCounts()) {
-    theLogger->addToActiveNodeCount(this, address[p].level, 1);
+    theLogger->addToActiveNodeCount(this, nb.getLevel(), 1);
   }
 
   // All of the work is in nodeMan now :^)
-  address[p].offset = nodeMan->makeNode(p, nb, getNodeStorage());
+  nodeHeaders.setNodeAddress(p, nodeMan->makeNode(p, nb, getNodeStorage()));
+  linkNode(p);
 
   // add to UT
   unique->add(nb.hash(), p);
@@ -2049,14 +1977,14 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
 
 MEDDLY::node_handle MEDDLY::expert_forest
-::createReducedExtensibleNodeHelper(int in, const unpacked_node &nb)
+::createReducedExtensibleNodeHelper(int in, unpacked_node &nb)
 {
 #ifdef DEVELOPMENT_CODE
   validateDownPointers(nb);
 #endif
   MEDDLY_DCASSERT(nb.isExtensible());
 
-  trim();
+  nb.trim();
 
   // NOTE: Identity reduction not possible for nodes marked as extensible.
   //       Fully-Identity reduction is still possible when
@@ -2119,17 +2047,20 @@ MEDDLY::node_handle MEDDLY::expert_forest
 #endif
 
   // Grab a new node
-  node_handle p = getFreeNodeHandle();
-  address[p].level = nb.getLevel();
-  MEDDLY_DCASSERT(0 == address[p].cache_count);
+  node_handle p = nodeHeaders.getFreeNodeHandle();
+  nodeHeaders.setNodeLevel(p, nb.getLevel());
+  MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(p));
+  MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
 
   stats.incActive(1);
   if (theLogger && theLogger->recordingNodeCounts()) {
-    theLogger->addToActiveNodeCount(this, address[p].level, 1);
+    theLogger->addToActiveNodeCount(this, nb.getLevel(), 1);
   }
 
   // All of the work is in nodeMan now :^)
-  address[p].offset = nodeMan->makeNode(p, nb, getNodeStorage());
+  nodeHeaders.setNodeAddress(p, nodeMan->makeNode(p, nb, getNodeStorage()));
+  // TODO: need to link?
+  linkNode(p);
 
   // add to UT
   unique->add(nb.hash(), p);
@@ -2156,17 +2087,7 @@ void MEDDLY::expert_forest::swapNodes(node_handle p, node_handle q)
   unique->remove(hashNode(p), p);
   unique->remove(hashNode(q), q);
 
-  int pCount = getNodeInCount(p);
-  int qCount = getNodeInCount(q);
-
-  // Swap
-  node_header temp = address[p];
-  address[p] = address[q];
-  address[q] = temp;
-
-  // Do not change inCount
-  nodeMan->setCountOf(address[p].offset, pCount);
-  nodeMan->setCountOf(address[q].offset, qCount);
+  nodeHeaders.swapNodes(p, q, false);
 
   unique->add(hashNode(p), p);
   unique->add(hashNode(q), q);
@@ -2174,17 +2095,15 @@ void MEDDLY::expert_forest::swapNodes(node_handle p, node_handle q)
 
 MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(unpacked_node* un, node_handle p)
 {
-  int count = getNodeInCount(p);
-
   unique->remove(hashNode(p), p);
-  nodeMan->unlinkDownAndRecycle(address[p].offset);
+  nodeMan->unlinkDownAndRecycle(nodeHeaders.getNodeAddress(p));
 
   un->computeHash();
 
-  address[p].level = un->getLevel();
-  address[p].offset = nodeMan->makeNode(p, *un, getNodeStorage());
-
-  nodeMan->setCountOf(address[p].offset, count);
+  nodeHeaders.setNodeLevel(p, un->getLevel());
+  node_address addr = nodeMan->makeNode(p, *un, getNodeStorage());
+  nodeHeaders.setNodeAddress(p, addr);
+  // incoming count, cache count remains unchanged
 
   unique->add(un->hash(), p);
 
@@ -2250,78 +2169,6 @@ void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
 }
 
 
-void MEDDLY::expert_forest::expandHandleList()
-{
-  // increase size by 50%
-  int delta = a_size / 2;
-  MEDDLY_DCASSERT(delta>=0);
-  address = (node_header*) realloc(address, (a_size+delta) * sizeof(node_header));
-  if (0==address) {
-    fprintf(stderr, "Error in allocating array of size %lu at %s, line %d\n",
-        (a_size+delta) * sizeof(node_header), __FILE__, __LINE__);
-    throw error(error::INSUFFICIENT_MEMORY);
-  }
-  stats.incMemAlloc(delta * sizeof(node_header));
-  memset(address + a_size, 0, delta * sizeof(node_header));
-  a_size += delta;
-  a_next_shrink = a_size / 2;
-#ifdef DEBUG_ADDRESS_RESIZE
-  printf("Enlarged address array, new size %d\n", a_size);
-#endif
-}
-
-void MEDDLY::expert_forest::shrinkHandleList()
-{
-  // Determine new size
-  int new_size = a_min_size;
-  while (a_last >= new_size) new_size += new_size/2;
-  int delta = a_size - new_size;
-  if (0==delta) {
-    a_next_shrink = 0;
-    return;
-  }
-
-  // clean out free lists, because we're about
-  // to trash memory beyond new_size.
-  for (int i=0; i<8; i++) {
-    //
-    // clean list i
-    //
-    node_handle prev = 0;
-    node_handle curr;
-    for (curr = a_unused[i]; curr; curr=address[curr].getNextDeleted()) 
-    {
-      if (curr > a_last) continue;  // don't add to the list
-      if (prev) {
-        address[prev].setNextDeleted(curr);
-      } else {
-        a_unused[i] = curr;
-      }
-    } 
-    if (prev) {
-      address[prev].setNextDeleted(0);
-    } else {
-      a_unused[i] = 0;
-    }
-  } // for i
-
-  // shrink the array
-  MEDDLY_DCASSERT(delta>=0);
-  MEDDLY_DCASSERT(a_size-delta>=a_min_size);
-  address = (node_header*) realloc(address, new_size * sizeof(node_header));
-  if (0==address) {
-    fprintf(stderr, "Error in allocating array of size %lu at %s, line %d\n",
-        new_size*sizeof(node_header), __FILE__, __LINE__);
-    throw error(error::INSUFFICIENT_MEMORY);
-  }
-  stats.decMemAlloc(delta * sizeof(node_header));
-  a_size -= delta;
-  a_next_shrink = a_size / 2;
-  MEDDLY_DCASSERT(a_last < a_size);
-#ifdef DEBUG_ADDRESS_RESIZE
-  printf("Shrank address array, new size %d\n", a_size);
-#endif
-}
 
 // ******************************************************************
 // *                                                                *
