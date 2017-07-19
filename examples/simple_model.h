@@ -68,5 +68,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
 void explicitReachset(const char* const* events, int nEvents, 
   MEDDLY::forest* f, MEDDLY::dd_edge &init, MEDDLY::dd_edge &e, int batchsize);
 
+int* buildImplicitRelation(const char* const* events, int nEvents,int nPlaces,MEDDLY::satimpl_opname::implicit_relation* T);
+
 #endif
 

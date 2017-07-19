@@ -363,3 +363,67 @@ void explicitReachset(const char* const* events, int nEvents,
   delete[] minterms;
 }
 
+/**************************/
+unsigned long makeSignature(std::string s)
+{
+  long result = 0;
+  for (int i = 0; i < s.length(); i++)
+    result += (unsigned long)pow(27, s.length()- i - 1)*(1 + s.at(i) - '+');
+  return result;
+}
+
+int* buildImplicitRelation(const char* const* events, int nEvents,int nPlaces,MEDDLY::satimpl_opname::implicit_relation* T)
+{
+  
+  int node_count = 0;
+  int* tops_of_events = (int*)malloc(nEvents*sizeof(int));
+  
+  for(int e = 0;e < nEvents; e++)
+    {
+     bool done = false;
+     for( int p = 1; p <= nPlaces; p++)
+      {
+      if(events[e][p]!='.') node_count +=1;
+      if((events[e][nPlaces-p+1]!='.')&&(!done))
+        {
+          tops_of_events[e] = nPlaces-p+1;
+          done = true;
+        }
+      }
+    }
+  
+  
+  MEDDLY::satimpl_opname::relation_node** rNode = (MEDDLY::satimpl_opname::relation_node**)malloc(node_count*sizeof(MEDDLY::satimpl_opname::relation_node*));
+  
+  // Add/Subtract Tokens
+  int* nxtList = (int*)malloc((node_count+2)*sizeof(int));
+  nxtList[0] = 0;
+  nxtList[1] = 0;
+  
+  unsigned long sign;
+  int rctr = 0;
+  for(int e = 0;e < nEvents; e++)
+    {
+    int lowest_place = nPlaces;
+    int previous_node_handle = 1;
+    std::string till_now;
+    for( int p = 1; p <= nPlaces; p++)
+      {
+        till_now+=(events[e][p]);
+        if(events[e][p]!='.')
+        {
+          if(p<lowest_place) lowest_place = p;
+        
+          sign =(unsigned long)makeSignature(till_now);
+          rNode[rctr] = new MEDDLY::satimpl_opname::relation_node(sign,p,previous_node_handle);
+          previous_node_handle = T->registerNode((tops_of_events[e]==p),rNode[rctr]);
+          rctr++;
+          nxtList[previous_node_handle] = (events[e][p] =='+')?1:-1;
+         }
+      }
+    }
+  
+  return nxtList;
+}
+
+

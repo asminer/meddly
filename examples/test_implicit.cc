@@ -36,10 +36,23 @@
 
 char** sample_model;
 int p1_position;
-int PLACES = 16;
-int TRANS = 16;
+int PLACES = 9;
+int TRANS = 7;
+int BOUNDS = 1000;
 int N = -1;
+int* nxtArray = (int*) malloc(TRANS * PLACES * sizeof(int));
 
+
+const char* kanban[] = {
+  "X-+......-",  // Tin1 TA
+  "X.-+....-.",  // Tin1 TA
+  "X..-+....+",  // Tin1 TA
+  "X...-+...-",  // Tin1 TA
+  "X....-+.+.",  // Tin1 TA
+  "X.....-+.+",  // Tin1 TA
+  "X+.....-..",  // Tin1 TA
+  
+};
 
 using namespace MEDDLY;
 
@@ -127,7 +140,7 @@ int main(int argc, const char** argv)
     
     // Initialize domain
     int* sizes = new int[PLACES];
-    for (int i=PLACES-1; i>=0; i--) sizes[i] = N+1;
+    for (int i=PLACES-1; i>=0; i--) sizes[i] = BOUNDS;
     d = createDomainBottomUp(sizes, PLACES);
     delete[] sizes;
     forest::policies pr(true);
@@ -141,7 +154,7 @@ int main(int argc, const char** argv)
       {
       
       
-      /*KANBAN*/
+      /*KANBAN
       satimpl_opname::relation_node* TA1 = new satimpl_opname::relation_node(10,1,1); //- 2
       satimpl_opname::relation_node* TA2 = new satimpl_opname::relation_node(11,2,2); //+ 3
       
@@ -193,6 +206,7 @@ int main(int argc, const char** argv)
       satimpl_opname::relation_node* TO2 = new satimpl_opname::relation_node(151,16,35);//- 36
     
       satimpl_opname::relation_node* TP2 = new satimpl_opname::relation_node(161,16,31);//+ 37
+      */
     
       
       /*ERATOSHENES
@@ -226,7 +240,7 @@ int main(int argc, const char** argv)
       int* initialState;
       initialState = new int[PLACES + 1];
       for(int g = 1;g <= PLACES;g++) initialState[g] = 0;
-      initialState[1]=initialState[5]=initialState[9]=initialState[13]=N;
+      initialState[7]=N*4; initialState[8]=N*3; initialState[9]=N*2;
       dd_edge first(inmdd);
       dd_edge reachable(outmdd);
       inmdd->createEdge(&initialState, 1, first);
@@ -236,8 +250,9 @@ int main(int argc, const char** argv)
       //CREATE RELATION
       satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,outmdd);
      
+      nxtArray = buildImplicitRelation(kanban, TRANS, PLACES, T);
       
-      /*KANBAN*/
+      /*KANBAN
       T->registerNode(false,TA1);T->registerNode(true,TA2);
       T->registerNode(false,TB1);T->registerNode(true,TB2);
       T->registerNode(false,TC1);T->registerNode(true,TC2);
@@ -253,7 +268,7 @@ int main(int argc, const char** argv)
       T->registerNode(false,TM1);T->registerNode(true,TM2);
       T->registerNode(false,TN1);T->registerNode(true,TN2);
       T->registerNode(false,TO1);T->registerNode(true,TO2);
-      T->registerNode(true,TP2);
+      T->registerNode(true,TP2);*/
       
       /*ERATOSTHENES
        T->registerNode(false,T11);T->registerNode(true,T12);
@@ -267,9 +282,6 @@ int main(int argc, const char** argv)
       */
       
  
-      
-      
-      
       specialized_operation* sat = 0;
       
       
@@ -313,8 +325,16 @@ int main(int argc, const char** argv)
   }
 }
 
+long MEDDLY::satimpl_opname::relation_node::nextOf(long i)
+{
+  long ans = i+nxtArray[this->getID()];
+  if((ans>=0)&&(ans<BOUNDS))
+    return  ans;
+  else
+    return -1;
+}
 
-/*KANBAN*/
+/*KANBAN
 long MEDDLY::satimpl_opname::relation_node::nextOf(long i)
 {
   
@@ -359,7 +379,7 @@ long MEDDLY::satimpl_opname::relation_node::nextOf(long i)
     default: return i;
   }
   
-}
+}*/
 
 
 

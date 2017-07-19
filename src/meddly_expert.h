@@ -2891,7 +2891,7 @@ class MEDDLY::satimpl_opname:public specialized_opname {
         /**
          Check if the relation node is unique
          */
-        bool isUniqueNode(relation_node* n);
+        rel_node_handle isUniqueNode(relation_node* n);
         
         /**
          Resize the node_array

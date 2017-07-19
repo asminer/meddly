@@ -1242,7 +1242,7 @@ MEDDLY::satimpl_opname::~satimpl_opname()
 }
 
 
-MEDDLY::satimpl_opname::relation_node::relation_node(unsigned long sign, int lvl, node_handle d)
+MEDDLY::satimpl_opname::relation_node::relation_node(unsigned long sign, int lvl, rel_node_handle d)
 {
   signature  = sign;
   level = lvl;
@@ -1253,11 +1253,11 @@ MEDDLY::satimpl_opname::relation_node::~relation_node()
 {
 }
 
-long MEDDLY::satimpl_opname::relation_node::nextOf(long i)
+/*long MEDDLY::satimpl_opname::relation_node::nextOf(long i)
 {
   //to be defined for the example you use & comment this definition
   throw error(error::NOT_IMPLEMENTED);
-}
+}*/
   
 bool MEDDLY::satimpl_opname::relation_node::equals(const relation_node* n) const
 {
@@ -1322,7 +1322,6 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
   node_array[1] = *Terminal;
   last_in_node_array = 1;
   
-  
 }
 
 void
@@ -1368,19 +1367,18 @@ MEDDLY::satimpl_opname::implicit_relation::~implicit_relation()
 }
 
 
-bool MEDDLY::satimpl_opname::implicit_relation::isUniqueNode(relation_node* n)
+rel_node_handle MEDDLY::satimpl_opname::implicit_relation::isUniqueNode(relation_node* n)
 {
   bool is_unique_node = true;
   std::unordered_map<rel_node_handle, relation_node*>::iterator it = impl_unique.begin();
   while(it != impl_unique.end())
     {
     is_unique_node = !((it->second)->equals(n));
-    
     if(is_unique_node==false)
-      return is_unique_node;
+      return (it->second)->getID();
     ++it;
     }
-  return is_unique_node;
+  return 0;
 }
 
 rel_node_handle MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_event_top, relation_node* n)
@@ -1393,19 +1391,20 @@ rel_node_handle MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_
   
   
   MEDDLY_DCASSERT( ( ( downNode!=NULL ) && ( nLevel > downLevel ) ) || ( downLevel == 0 ) );
-  MEDDLY_DCASSERT(isUniqueNode(n));
-  
-  
-  node_handle n_ID  = last_in_node_array + 1;
-  std::pair<rel_node_handle, relation_node*> add_node(n_ID,n);
-  impl_unique.insert(add_node);
-  if(impl_unique.find(n_ID) != impl_unique.end())
+  rel_node_handle n_ID = isUniqueNode(n);
+  if(n_ID==0) // Add new node
+   {
+    n_ID  = last_in_node_array + 1;
+    std::pair<rel_node_handle, relation_node*> add_node(n_ID,n);
+    impl_unique.insert(add_node);
+    if(impl_unique.find(n_ID) != impl_unique.end())
     {
-    last_in_node_array = n_ID;
-    n->setID(n_ID);
-    resizeNodeArray(n_ID);
-    node_array[n_ID] = *n;
+      last_in_node_array = n_ID;
+      n->setID(n_ID);
+      resizeNodeArray(n_ID);
+      node_array[n_ID] = *n;
     }
+  }
   
   if(is_event_top)
     {
@@ -1413,7 +1412,7 @@ rel_node_handle MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_
     event_list[nLevel][event_added[nLevel] - 1] = n_ID;
     }
   
-  return n->getID();
+  return n_ID;
 }
 
 
