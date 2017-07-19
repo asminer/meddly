@@ -745,9 +745,9 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
 MEDDLY::transitive_closure_evplus::transitive_closure_evplus(transitive_closure_forwd_dfs* p,
   expert_forest* cons, expert_forest* tc, expert_forest* res)
   : specialized_operation(nullptr,
-      (tc->isFullyReduced()
-          ? (2 * (sizeof(long) + sizeof(node_handle)) + sizeof(int)) / sizeof(node_handle)
-          : 2 * (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle)),
+      ((tc->isFullyReduced() || tc->isIdentityReduced())
+          ? (sizeof(long) + 2 * sizeof(node_handle) + sizeof(int)) / sizeof(node_handle)
+          : (sizeof(long) + 2 * sizeof(node_handle)) / sizeof(node_handle)),
       (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle))
 {
   MEDDLY_DCASSERT(cons->isEVPlus() && !cons->isForRelations());
@@ -765,16 +765,16 @@ MEDDLY::transitive_closure_evplus::transitive_closure_evplus(transitive_closure_
 
   setAnswerForest(resF);
 
-  if (tcF->isFullyReduced()) {
+  if (tcF->isFullyReduced() || tcF->isIdentityReduced()) {
     NODE_INDICES_IN_KEY[0] = sizeof(long) / sizeof(node_handle);
-    NODE_INDICES_IN_KEY[1] = (2 * sizeof(long) + sizeof(node_handle)) / sizeof(node_handle);
-    // Store level in key for fully-reduced forest
-    NODE_INDICES_IN_KEY[2] = (3 * sizeof(long) + 2 * sizeof(node_handle) + sizeof(int)) / sizeof(node_handle);
+    NODE_INDICES_IN_KEY[1] = (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle);
+    // Store level in key for fully-reduced or identity-reduced forest
+    NODE_INDICES_IN_KEY[2] = (2 * (sizeof(long) + sizeof(node_handle)) + sizeof(int)) / sizeof(node_handle);
   }
   else {
     NODE_INDICES_IN_KEY[0] = sizeof(long) / sizeof(node_handle);
-    NODE_INDICES_IN_KEY[1] = (2 * sizeof(long) + sizeof(node_handle)) / sizeof(node_handle);
-    NODE_INDICES_IN_KEY[2] = (3 * sizeof(long) + 2 * sizeof(node_handle)) / sizeof(node_handle);
+    NODE_INDICES_IN_KEY[1] = (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle);
+    NODE_INDICES_IN_KEY[2] = 2 * (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle);
   }
 }
 
@@ -818,17 +818,23 @@ MEDDLY::compute_table::search_key* MEDDLY::transitive_closure_evplus::findResult
   key->reset();
   key->write(aev);
   key->writeNH(a);
-  key->write(bev);
   key->writeNH(b);
-  if(tcF->isFullyReduced()) {
-    // Level is part of key for fully-reduced forest
+  if(tcF->isFullyReduced() || tcF->isIdentityReduced()) {
+    // Level is part of key for fully-reduced or identity-reduced forest
     key->write(level);
   }
 
   compute_table::search_result &cacheFind = CT->find(key);
   if (!cacheFind) return key;
+
   cacheFind.read(cev);
   c = resF->linkNode(cacheFind.readNH());
+  if (c != 0) {
+    cev += bev;
+  }
+  else {
+    MEDDLY_DCASSERT(cev == Inf<long>());
+  }
   doneCTkey(key);
   return 0;
 }
@@ -839,7 +845,13 @@ void MEDDLY::transitive_closure_evplus::saveResult(compute_table::search_key* ke
   consF->cacheNode(a);
   tcF->cacheNode(b);
   compute_table::entry_builder &entry = CT->startNewEntry(key);
-  entry.writeResult(cev);
+  if (c == 0) {
+    entry.writeResult(Inf<long>());
+  }
+  else {
+    MEDDLY_DCASSERT(cev - bev >= 0);
+    entry.writeResult(cev - bev);
+  }
   entry.writeResultNH(resF->cacheNode(c));
   CT->addEntry();
 }
@@ -874,11 +886,12 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
 
 void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev, node_handle b, int level, long& cev, node_handle& c)
 {
-//  if (level == 0 && b == -1) {
+//  if (level == 0 && a == -1 && b == -1) {
 //    cev = bev;
 //    c = -1;
 //    return;
 //  }
+
   if (checkTerminals(aev, a, bev, b, cev, c)) {
     return;
   }
