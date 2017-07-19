@@ -5,6 +5,7 @@ build_expression
 dining_phils
 graphs_to_mdds
 kanban
+kan1_batch
 libinfo
 life
 nqueens
@@ -24,6 +25,8 @@ test_mtmdd
 test_mtmxd
 test_reorder_evmdd
 test_reorder_mtmxd
+test_temporary_nodes
 test_union_mdd
 test_union_mxd
+test_user_operation
 testmddlib
