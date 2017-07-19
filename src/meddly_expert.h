@@ -2779,7 +2779,7 @@ class MEDDLY::satimpl_opname:public specialized_opname {
          functions (using a hash table where the signature
          is taken as the hash value).
          */
-        unsigned long getSignature() const;
+         unsigned long getSignature() const;
         
         /**
          The state variable affected by this part of the relation.
@@ -2810,6 +2810,7 @@ class MEDDLY::satimpl_opname:public specialized_opname {
          */
         virtual long nextOf(long i);
         
+        
         /**
          Determine if this node is equal to another one.
          */
@@ -2820,6 +2821,7 @@ class MEDDLY::satimpl_opname:public specialized_opname {
         int level;
         rel_node_handle down;
         rel_node_handle ID;
+        char* expr;
         
         // used by the hash table in implicit_relation
         

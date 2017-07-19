@@ -29,6 +29,7 @@
 #include <set>
 // #include "compute_table.h"
 
+   #define NOT_IMPLICIT_EXAMPLE 0
 // #define DEBUG_CLEANUP
 // #define DEBUG_FINALIZE
 // #define DEBUG_FINALIZE_SPLIT
@@ -1258,7 +1259,7 @@ long MEDDLY::satimpl_opname::relation_node::nextOf(long i)
   //to be defined for the example you use & comment this definition
   throw error(error::NOT_IMPLEMENTED);
 }
-  
+
 bool MEDDLY::satimpl_opname::relation_node::equals(const relation_node* n) const
 {
   if((signature == n->getSignature()) && (level == n->getLevel()) && (down == n->getDown()))

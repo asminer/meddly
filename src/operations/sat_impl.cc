@@ -434,32 +434,32 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     // Initialize mxd readers, note we might skip the unprimed level
     
     // loop over mxd "rows"
-    for (int iz=0; iz<rSize; iz++) {
-      int i = iz; // relation_node enabling condition
-      if (0==A->d(i))   continue;
-      
-      
-      // loop over mxd "columns"
-      int j = relNode->nextOf(i);
-      if(j==-1) continue;
-      // ok, there is an i->j "edge".
-      // determine new states to be added (recursively)
-      // and add them
-      
-      node_handle newstates = recFire(A->d(i), relNode->getDown());
-      if (0==newstates) continue;
-      if (0==nb->d(j)) {
-        nb->d_ref(j) = newstates;
-        continue;
-      }
-      // there's new states and existing states; union them.
-      int oldj = nb->d(j);
-      nb->d_ref(j) = mddUnion->compute(newstates, oldj);
-      resF->unlinkNode(oldj);
-      resF->unlinkNode(newstates);
-      
-      
-    } // for i
+        for (int iz=0; iz<rSize; iz++) {
+          int i = iz; // relation_node enabling condition
+          if (0==A->d(i))   continue;
+          
+          // loop over mxd "columns"
+          int j = relNode->nextOf(i);
+          if(j==-1) continue;
+          // ok, there is an i->j "edge".
+          // determine new states to be added (recursively)
+          // and add them
+          
+          node_handle newstates = recFire(A->d(i), relNode->getDown());
+          if (0==newstates) continue;
+          if (0==nb->d(j)) {
+            nb->d_ref(j) = newstates;
+            continue;
+          }
+          // there's new states and existing states; union them.
+          int oldj = nb->d(j);
+          nb->d_ref(j) = mddUnion->compute(newstates, oldj);
+          resF->unlinkNode(oldj);
+          resF->unlinkNode(newstates);
+          
+          
+        } // for i
+
     
   } // else
   
