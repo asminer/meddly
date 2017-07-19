@@ -22,6 +22,7 @@
 // TODO: Testing
 
 #include <fstream>
+#include <sstream>
 #include "defines.h"
 #include "unique_table.h"
 #include "hash_stream.h"
@@ -1120,44 +1121,52 @@ void MEDDLY::expert_forest
   if (filename == NULL || ext == NULL || p == NULL) return;
   if (!isMultiTerminal()) {
     fprintf(stderr,
-        "%s: Error. Only implemented for Multi-Terminal MDDs open file\n",
+        "%s: Error. Only implemented for Multi-Terminal MDDs\n",
         __func__);
     return;
   }
   node_handle* list = markNodesInSubgraph(p, n, true);
   if (0==list) return;
 
-  const char dot_ext[] = ".dot";
-  const int dot_fn_len = strlen(filename) + strlen(dot_ext) + 1;
-  char *dot_fn = (char *) malloc(dot_fn_len * sizeof(char));
-  snprintf(dot_fn, dot_fn_len, "%s%s", filename, dot_ext);
-  std::ofstream s(dot_fn);
+  std::string dot_fn(filename);
+  dot_fn += ".dot";
+  std::ofstream s(dot_fn.c_str());
 
   if (!s.is_open()) {
-    fprintf(stderr, "%s: Error open file %s\n", __func__, dot_fn);
+    std::cerr << __func__ << ": Error opening file " << dot_fn << "\n";
     exit(1);
   }
   
   // initialize the dot file
   s << "digraph structs {\n";
   // s << "  rankdir=LR;\n";
-  s << "  size=\"10,10\";\n";
-  s << "  node [shape=record];\n";
+  s << "  size=\"5,5\";\n";
+  s << "  node [shape=record, height=0.25, width=0.25];\n";
   
   const char blue[] = "blue";
   const char black[] = "black";
-  // const char white[] = "white";
+  // const char white[] = "transparent";
 
   // Print by levels
-  s << "  l0 [label=\"<0>level 0 \"];\n";
-  s << "  {rank=same; l0 s0;}\n";
-  s << "  s0 [label=\"<0>1\"];\n";
-  for (int k = (isForRelations()? -1: 1); ABS(k) < getNumVariables(); ) {
+  // s << "  l0 [label=\"<0>level 0 \"];\n";
+  // s << "  {rank=same; l0 s0;}\n";
+  // s << "  s0 [label=\"<0>1\"];\n";
+  bool lowest_level = true;
+  for (int k = (isForRelations()? -1: 1); ABS(k) <= getNumVariables(); ) {
     int map_k = ((k < 0)? (-k)*2 - 1: k*2);
 
     // write the level node (to identify the height at which the rest of the nodes
     // are to be displayed)
-    s << "  l" << map_k << " [label=\"<0>level " << k << "\"];\n";
+    s << "  l" << map_k << " [label=\"<0>level: ";
+    
+    const variable* v = getDomain()->getVar(getVarByLevel(ABS(k)));
+    if (v->getName()) {
+      s << v->getName();
+    } else {
+      s << ABS(k);
+    }
+    if (k < 0) s << "' ";
+    s << "\"];\n";
     
     MEDDLY_DCASSERT(map_k > 0);
     bool do_once = true;
@@ -1166,9 +1175,13 @@ void MEDDLY::expert_forest
     for (long i=0; list[i]; i++) {
       if (getNodeLevel(list[i]) != k) continue;
       if (do_once) {
-        s << "  edge [color=white];\n";
-        s << "  l" << map_k << ":0 -> l" << (isForRelations()? map_k-1: map_k-2) << ":0;\n";
-        s << "  edge [color=black];\n";
+        if (lowest_level) {
+          lowest_level = false;
+        } else {
+          s << "  edge [color=transparent];\n";
+          s << "  l" << map_k << ":0 -> l" << (isForRelations()? map_k-1: map_k-2) << ":0;\n";
+          s << "  edge [color=black];\n";
+        }
         s << "  {rank=same; l" << map_k << " ";
         do_once = false;
       }
@@ -1182,22 +1195,26 @@ void MEDDLY::expert_forest
         if (getNodeLevel(list[i]) != k) continue;
 
         s << " s" << list[i] << " [label=\"";
-        unpacked_node* un = unpacked_node::newFromNode(this, list[i], unpacked_node::FULL_NODE);
+        unpacked_node* un = unpacked_node::newFromNode(this, list[i], unpacked_node::SPARSE_NODE);
 
         // print index pointers
         MEDDLY_DCASSERT(isMultiTerminal());
-        s << "<0>0";
-        for (int j = 1; j < un->getSize(); j++) {
-          s << "|<" << j << ">" << j;
+        bool first_index = true;
+        for (int j = 0; j < un->getNNZs(); j++) {
+          if (first_index) first_index=false; else s << "|";
+          s << "<" << j << ">";
+          s << un->i(j);
+          if (-1 == un->d(j)) s <<":T";
         }
         s << "\"];\n";
 
         // print down pointers
-        for (int j = 0; j < un->getSize(); j++) {
-          if (0 == un->d(j)) continue;
-          s << "  edge [color=" << ((j % 2 == 0)? black: blue) << "];\n";
+        for (int j = 0; j < un->getNNZs(); j++) {
+          if (-1 == un->d(j)) continue;
+          s << "  edge [color=" << blue /*((un->i(j) % 2 == 0)? black: blue)*/ << "];\n";
           s << "  s" << list[i] << ":" << j;
-          s << " -> s" << (un->d(j) == -1? 0: un->d(j)) << ":0;\n";
+          s << " -> s" << un->d(j);
+          s << ":0 [samehead = true];\n";
         }
 
         unpacked_node::recycle(un);
@@ -1218,11 +1235,13 @@ void MEDDLY::expert_forest
   s.close();
 
   // convert dot file to extension
-  char cmd[100];
-  snprintf(cmd, 100, "dot -T%s -o", ext);
-  assert(strlen(cmd) + strlen(filename) + strlen(ext) + strlen(dot_fn) < 100);
-  snprintf(cmd, 100, "%s %s.%s %s\n", cmd, filename, ext, dot_fn);
-  assert(-1 != system(cmd));
+  std::stringstream cmd;
+  cmd << "dot -T" << ext << " -o" << filename << "." << ext << " " << dot_fn;
+  if (system(cmd.str().c_str())) {
+    std::cerr << __func__ << ": Error executing DOT command: ";
+    std::cerr << cmd.str().c_str() << "\n";
+    exit(1);
+  }
 }
 
 void MEDDLY::expert_forest
