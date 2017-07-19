@@ -1253,11 +1253,11 @@ MEDDLY::satimpl_opname::relation_node::~relation_node()
 {
 }
 
-/*long MEDDLY::satimpl_opname::relation_node::nextOf(long i)
+long MEDDLY::satimpl_opname::relation_node::nextOf(long i)
 {
   //to be defined for the example you use & comment this definition
   throw error(error::NOT_IMPLEMENTED);
-}*/
+}
   
 bool MEDDLY::satimpl_opname::relation_node::equals(const relation_node* n) const
 {
