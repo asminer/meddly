@@ -1,4 +1,3 @@
-## $Id$
 
 ## Makefile.am -- Process this file with automake to produce Makefile.in
 
@@ -12,20 +11,12 @@
 
 lib_LTLIBRARIES = libmeddly.la
 
-_revision:
-	./BuildRevNo
-
-revision.h:
-	./BuildRevNo
-
-BUILT_SOURCES = _revision revision.h 
-CLEANFILES = revision.h
-
 libmeddly_la_SOURCES = \
-  defines.h hash_stream.h heap.h timer.h unique_table.h \
+  defines.h revision.h hash_stream.h heap.h timer.h unique_table.h \
   meddly.h meddly.hh meddly.cc \
   meddly_expert.h meddly_expert.hh \
   io.cc \
+  node_headers.cc \
   node_wrappers.cc \
   ops.cc \
   dd_edge.cc \
@@ -113,7 +104,5 @@ libmeddly_la_SOURCES = \
 ## compile apps
 
 include_HEADERS = meddly.h meddly_expert.h meddly.hh meddly_expert.hh
-
-EXTRA_DIST = BuildRevNo revision.h
 
 AM_CXXFLAGS = -Wall
