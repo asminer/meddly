@@ -1419,10 +1419,14 @@ void
 MEDDLY::satimpl_opname::implicit_relation::show()
 {
   rel_node_handle** event_list_copy = (rel_node_handle**)malloc(num_levels*sizeof(rel_node_handle*));
-  event_list;
+  if (0==event_list_copy) throw error(error::INSUFFICIENT_MEMORY);
   long total_events = 0;
   for(int i = 0;i<num_levels;i++) total_events +=event_added[i];
-  for(int i = 0;i<num_levels;i++) event_list_copy[i] = (rel_node_handle*)malloc(total_events*sizeof(rel_node_handle));
+  for(int i = 0;i<num_levels;i++)
+    {
+     event_list_copy[i] = (rel_node_handle*)malloc(total_events*sizeof(rel_node_handle));
+     if (0==event_list_copy[i]) throw error(error::INSUFFICIENT_MEMORY);
+    }
 
   for(int i = num_levels-1;i>=0;i--)
     for(int j=0;j<total_events;j++)
@@ -1458,8 +1462,6 @@ MEDDLY::satimpl_opname::implicit_relation::show()
       for(int s=0;s<spc_aft;s++) std::cout<<" ";
       if(j!=total_events-1)
           std::cout<<"|";
-      
-      
       }
      std::cout<<"]";
     }
