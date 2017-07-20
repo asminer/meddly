@@ -1415,7 +1415,59 @@ rel_node_handle MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_
   
   return n_ID;
 }
+void
+MEDDLY::satimpl_opname::implicit_relation::show()
+{
+  rel_node_handle** event_list_copy = (rel_node_handle**)malloc(num_levels*sizeof(rel_node_handle*));
+  event_list;
+  long total_events = 0;
+  for(int i = 0;i<num_levels;i++) total_events +=event_added[i];
+  for(int i = 0;i<num_levels;i++) event_list_copy[i] = (rel_node_handle*)malloc(total_events*sizeof(rel_node_handle));
 
+  for(int i = num_levels-1;i>=0;i--)
+    for(int j=0;j<total_events;j++)
+      event_list_copy[i][j]=0;
+  
+  
+  int eid = 0;
+  for(int i = num_levels-1;i>=0;i--)
+    {
+     int k = 0;
+     std::cout<<"\n [";
+     for(int j=0;j<total_events;j++)
+      {
+      
+        if((event_list_copy[i][eid]==0)&&(k<event_added[i]))
+          {
+            event_list_copy[i][eid] = event_list[i][k];
+            relation_node* hold_it = nodeExists(event_list[i][k]);
+            relation_node* hold_down = nodeExists(hold_it->getDown());
+            event_list_copy[hold_down->getLevel()][eid] = hold_down->getID();
+          k++;eid++;
+          }
+      
+      
+      int dig_ctr = event_list_copy[i][j]>1000?4:(event_list_copy[i][j]>100?3:(event_list_copy[i][j]>10?2:1));
+      
+      int spc_bef =(6 - dig_ctr)/2;
+      int spc_aft = 6 - dig_ctr - spc_bef;
+      
+      for(int s=0;s<spc_bef;s++) std::cout<<" ";
+      if(event_list_copy[i][j] != 0) std::cout<<event_list_copy[i][j];
+      else std::cout<<"_";
+      for(int s=0;s<spc_aft;s++) std::cout<<" ";
+      if(j!=total_events-1)
+          std::cout<<"|";
+      
+      
+      }
+     std::cout<<"]";
+    }
+  
+  for(int i = 0;i<num_levels;i++) delete event_list_copy[i];
+  delete[] event_list_copy;
+  
+}
 
 // ******************************************************************
 // *                       operation  methods                       *

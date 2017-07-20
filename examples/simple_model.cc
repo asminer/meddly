@@ -442,6 +442,8 @@ void buildImplicitRelation(const char* const* events, int nEvents,int nPlaces, i
          }
       }
     }
+  std::cout<<"\n The implicit relation\n";
+  T->show();
   
 }
 

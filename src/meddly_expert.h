@@ -2976,6 +2976,12 @@ class MEDDLY::satimpl_opname:public specialized_opname {
          */
         rel_node_handle* arrayForLevel(int level) const;
         
+      public:
+        /*
+          Prints the implicit relation
+         */
+        void show();
+        
       };  // class implicit_relation
 
 
