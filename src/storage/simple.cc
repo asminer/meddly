@@ -407,7 +407,6 @@ void MEDDLY::simple_storage::unlinkDownAndRecycle(node_address addr)
   holeManager->recycleChunk(addr, activeNodeActualSlots(addr));
 }
 
-// TODO: add extensible edge
 bool MEDDLY::simple_storage
 ::areDuplicates(node_address addr, const unpacked_node &n) const
 {
@@ -546,7 +545,6 @@ bool MEDDLY::simple_storage
 }
 
 
-// TODO: add extensible edge
 void MEDDLY::simple_storage
 ::fillUnpacked(unpacked_node &nr, node_address addr, unpacked_node::storage_style st2) const
 {
@@ -595,7 +593,7 @@ void MEDDLY::simple_storage
     const node_handle* index = SI(addr);
 
     if (nr.isFull()) {
-      nr.resize(index[nnz-1]+1);
+      // nr.resize(index[nnz-1]+1);
 
       for (int i=0; i<nr.getSize(); i++) {
         nr.d_ref(i) = tv;

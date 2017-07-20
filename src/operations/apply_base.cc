@@ -341,6 +341,7 @@ MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle 
   } else {
     A->initIdentity(arg1F, k, in, a, true);
   }
+  MEDDLY_DCASSERT(A->getSize() == C->getSize());
 
   if (bLevel == k) {
     B->initFromNode(arg2F, b, true);
@@ -349,6 +350,7 @@ MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle 
   } else {
     B->initIdentity(arg2F, k, in, b, true);
   }
+  MEDDLY_DCASSERT(B->getSize() == C->getSize());
 
   // Do computation
   for (int j=0; j<resultSize; j++) {

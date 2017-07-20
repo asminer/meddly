@@ -634,16 +634,16 @@ class MEDDLY::unpacked_node {
     //
     // Note: Only nodes that belong to an extensible level can be extensible.
     // 
-    // Extensible node  : {Regular part, Extensible part).
+    // Extensible node  : (Regular part, Extensible part).
     // Regular Part     : same as non-extensible nodes.
-    // Extensible Part  : a single edge, i.e. a tuple {index, node, edge-value},
+    // Extensible Part  : a single edge, i.e. a tuple <index, node, edge-value>,
     //                    for all indices in [extensible_index, +infinity].
     // 
     // Example:
     // The node
     //    [0:n0:ev0, 1:n1:ev1, 2:n2:ev2, 3:n2:ev2, ..., +infinity:n2:ev2]
     // is represented as the following extensible node:
-    //    {[0:n0:ev0, 1:n1:ev1], Extensible: [2:n2:ev2]}
+    //    ([0:n0:ev0, 1:n1:ev1], Extensible: [2:n2:ev2])
     // with,
     //    size of node           : 2
     //    extensible index       : 2
