@@ -117,7 +117,8 @@ printcount()
 
 update()
 {
-  printf "\n\nSource code for $version:\n" 
+  printf "\n\nSource code for $version (branch: $branch):\n" 
+  printf "\tReleased $revdate\n"
   printcount $numfiles "files"
   printcount $numlines "lines"
   printcount $numchars "chars"
@@ -140,8 +141,7 @@ update()
 updatehtml()
 {
   printf "<tr>\n    <td>$revdate</td>\n"
-  majmin=`awk '/AC_INIT/{print $2}' configure.ac | tr -d '[],'`
-  printf "    <td>$majmin.$revno</td>\n"
+  printf "    <td>$version</td>\n"
   printf "    <td>"
   printcount $numfiles "</td>"
   printf "    <td>"
@@ -207,10 +207,9 @@ trap ctrl_c INT
 
 # Grab file stats
 
-wd=$(basename `pwd`)
-revno=$(awk '/REVISION_NUMBER/{print $5}' src/revision.h)
-revdate=$(awk '/REVISION_DATE/{print $5}' src/revision.h | tr -d '";')
-version="$wd (revision $revno)"
+version=$(examples/libinfo | awk '{print $3}')
+revdate=$(examples/libinfo 5)
+branch=$(git status | head -n 1 | awk '{print $3}')
 numfiles=$(ls src/*.h src/*.cc src/*/*.h src/*/*.cc | wc -l)
 numlines=$(wc -l src/*.h src/*.cc src/*/*.h src/*/*.cc | tail -1 | awk '{print $1}')
 numchars=$(wc -c src/*.h src/*.cc src/*/*.h src/*/*.cc | tail -1 | awk '{print $1}')
