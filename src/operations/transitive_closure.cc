@@ -214,21 +214,20 @@ MEDDLY::specialized_operation* MEDDLY::transitive_closure_dfs_opname::buildOpera
 
 // ******************************************************************
 // *                                                                *
-// *                transitive_closure_forwd_dfs                    *
+// *                  transitive_closure_dfs                        *
 // *                                                                *
 // ******************************************************************
 
-const int MEDDLY::transitive_closure_forwd_dfs::NODE_INDICES_IN_KEY[4] = {
+const int MEDDLY::transitive_closure_dfs::NODE_INDICES_IN_KEY[4] = {
   sizeof(long) / sizeof(node_handle),
   (sizeof(node_handle) + sizeof(long)) / sizeof(node_handle),
   (2 * sizeof(node_handle) + sizeof(long)) / sizeof(node_handle),
   (3 * sizeof(node_handle) + 2 * sizeof(long)) / sizeof(node_handle)
 };
 
-MEDDLY::transitive_closure_forwd_dfs::transitive_closure_forwd_dfs(const minimum_witness_opname* code,
+MEDDLY::transitive_closure_dfs::transitive_closure_dfs(const minimum_witness_opname* code,
   expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res)
   : common_transitive_closure(code,
-//      3 * (sizeof(node_handle)) / sizeof(node_handle),
       (3 * sizeof(node_handle) + sizeof(long)) / sizeof(node_handle),
       (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle),
       cons, tc, trans, res)
@@ -240,7 +239,7 @@ MEDDLY::transitive_closure_forwd_dfs::transitive_closure_forwd_dfs(const minimum
   splits = nullptr;
 }
 
-bool MEDDLY::transitive_closure_forwd_dfs::checkTerminals(int aev, node_handle a, int bev, node_handle b, node_handle c,
+bool MEDDLY::transitive_closure_dfs::checkTerminals(int aev, node_handle a, int bev, node_handle b, node_handle c,
   long& dev, node_handle& d)
 {
   if (a == -1 && b == -1 && c == -1) {
@@ -258,7 +257,7 @@ bool MEDDLY::transitive_closure_forwd_dfs::checkTerminals(int aev, node_handle a
   return false;
 }
 
-MEDDLY::compute_table::search_key* MEDDLY::transitive_closure_forwd_dfs::findResult(long aev, node_handle a,
+MEDDLY::compute_table::search_key* MEDDLY::transitive_closure_dfs::findResult(long aev, node_handle a,
     long bev, node_handle b, node_handle c, long& dev, node_handle &d)
 {
   compute_table::search_key* key = useCTkey();
@@ -289,7 +288,7 @@ MEDDLY::compute_table::search_key* MEDDLY::transitive_closure_forwd_dfs::findRes
   return 0;
 }
 
-void MEDDLY::transitive_closure_forwd_dfs::saveResult(compute_table::search_key* key,
+void MEDDLY::transitive_closure_dfs::saveResult(compute_table::search_key* key,
   long aev, node_handle a, long bev, node_handle b, node_handle c, long dev, node_handle d)
 {
   consF->cacheNode(a);
@@ -300,8 +299,6 @@ void MEDDLY::transitive_closure_forwd_dfs::saveResult(compute_table::search_key*
     entry.writeResult(Inf<long>());
   }
   else {
-//    MEDDLY_DCASSERT(dev - aev - bev >= 0);
-//    entry.writeResult(dev - aev - bev);
     MEDDLY_DCASSERT(dev - bev >= 0);
     entry.writeResult(dev - bev);
   }
@@ -309,7 +306,7 @@ void MEDDLY::transitive_closure_forwd_dfs::saveResult(compute_table::search_key*
   CT->addEntry();
 }
 
-bool MEDDLY::transitive_closure_forwd_dfs::isStaleEntry(const node_handle* data)
+bool MEDDLY::transitive_closure_dfs::isStaleEntry(const node_handle* data)
 {
   return consF->isStale(data[NODE_INDICES_IN_KEY[0]])
     || tcF->isStale(data[NODE_INDICES_IN_KEY[1]])
@@ -317,7 +314,7 @@ bool MEDDLY::transitive_closure_forwd_dfs::isStaleEntry(const node_handle* data)
     || resF->isStale(data[NODE_INDICES_IN_KEY[3]]);
 }
 
-void MEDDLY::transitive_closure_forwd_dfs::discardEntry(const node_handle* data)
+void MEDDLY::transitive_closure_dfs::discardEntry(const node_handle* data)
 {
   consF->uncacheNode(data[NODE_INDICES_IN_KEY[0]]);
   tcF->uncacheNode(data[NODE_INDICES_IN_KEY[1]]);
@@ -325,7 +322,7 @@ void MEDDLY::transitive_closure_forwd_dfs::discardEntry(const node_handle* data)
   resF->uncacheNode(data[NODE_INDICES_IN_KEY[3]]);
 }
 
-void MEDDLY::transitive_closure_forwd_dfs::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::transitive_closure_dfs::showEntry(output &strm, const node_handle* data) const
 {
   strm << "[" << getName()
     << "(" << long(data[NODE_INDICES_IN_KEY[0]])
@@ -336,7 +333,7 @@ void MEDDLY::transitive_closure_forwd_dfs::showEntry(output &strm, const node_ha
 }
 
 // Partition the nsf based on "top level"
-void MEDDLY::transitive_closure_forwd_dfs::splitMxd(node_handle mxd)
+void MEDDLY::transitive_closure_dfs::splitMxd(node_handle mxd)
 {
   MEDDLY_DCASSERT(transF);
   MEDDLY_DCASSERT(splits == nullptr);
@@ -408,7 +405,7 @@ void MEDDLY::transitive_closure_forwd_dfs::splitMxd(node_handle mxd)
 #endif
 }
 
-MEDDLY::dd_edge MEDDLY::transitive_closure_forwd_dfs::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r)
+MEDDLY::dd_edge MEDDLY::transitive_closure_dfs::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r)
 {
   dd_edge res(resF);
   long cev = Inf<long>();
@@ -422,7 +419,7 @@ MEDDLY::dd_edge MEDDLY::transitive_closure_forwd_dfs::compute(const dd_edge& a, 
   return res;
 }
 
-void MEDDLY::transitive_closure_forwd_dfs::compute(int aev, node_handle a, int bev, node_handle b, node_handle r,
+void MEDDLY::transitive_closure_dfs::compute(int aev, node_handle a, int bev, node_handle b, node_handle r,
   long& cev, node_handle& c)
 {
   // Partition NSF by levels
@@ -439,6 +436,18 @@ void MEDDLY::transitive_closure_forwd_dfs::compute(int aev, node_handle a, int b
   }
   delete[] splits;
   splits = nullptr;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                transitive_closure_forwd_dfs                    *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::transitive_closure_forwd_dfs::transitive_closure_forwd_dfs(const minimum_witness_opname* code,
+  expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res)
+  : transitive_closure_dfs(code, cons, tc, trans, res)
+{
 }
 
 void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle a, unpacked_node& nb)
@@ -742,7 +751,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::transitive_closure_evplus::transitive_closure_evplus(transitive_closure_forwd_dfs* p,
+MEDDLY::transitive_closure_evplus::transitive_closure_evplus(transitive_closure_dfs* p,
   expert_forest* cons, expert_forest* tc, expert_forest* res)
   : specialized_operation(nullptr,
       ((tc->isFullyReduced() || tc->isIdentityReduced())

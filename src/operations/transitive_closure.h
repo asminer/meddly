@@ -31,6 +31,7 @@ namespace MEDDLY {
   class transitive_closure_forwd_bfs;
 
   class transitive_closure_dfs_opname;
+  class transitive_closure_dfs;
   class transitive_closure_forwd_dfs;
 
 //  class transitive_closure_opname;
@@ -103,7 +104,7 @@ public:
   }
 };
 
-class MEDDLY::transitive_closure_forwd_dfs: public common_transitive_closure
+class MEDDLY::transitive_closure_dfs: public common_transitive_closure
 {
 protected:
   static const int NODE_INDICES_IN_KEY[4];
@@ -122,20 +123,32 @@ protected:
     long aev, node_handle a, long bev, node_handle b, node_handle c, long dev, node_handle d);
 
   void splitMxd(node_handle mxd);
-  void recFire(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c);
+  virtual void recFire(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c) = 0;
 
   virtual bool isStaleEntry(const node_handle* data);
   virtual void discardEntry(const node_handle* data);
   virtual void showEntry(output &strm, const node_handle *data) const;
 
 public:
-  transitive_closure_forwd_dfs(const minimum_witness_opname* code,
+  transitive_closure_dfs(const minimum_witness_opname* code,
     expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res);
 
   virtual dd_edge compute(const dd_edge& a, const dd_edge& b, const dd_edge& r);
   void compute(int aev, node_handle a, int bev, node_handle b, node_handle r, long& cev, node_handle& c);
 
-  void saturateHelper(long aev, node_handle a, unpacked_node& nb);
+  virtual void saturateHelper(long aev, node_handle a, unpacked_node& nb) = 0;
+};
+
+class MEDDLY::transitive_closure_forwd_dfs: public transitive_closure_dfs
+{
+protected:
+  virtual void recFire(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c);
+
+public:
+  transitive_closure_forwd_dfs(const minimum_witness_opname* code,
+    expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res);
+
+  virtual void saturateHelper(long aev, node_handle a, unpacked_node& nb);
 };
 
 //class MEDDLY::transitive_closure_opname : public minimum_witness_opname {
@@ -156,7 +169,7 @@ class MEDDLY::transitive_closure_evplus: public specialized_operation
 protected:
   int NODE_INDICES_IN_KEY[3];
 
-  transitive_closure_forwd_dfs* parent;
+  transitive_closure_dfs* parent;
 
   expert_forest* tcF;
   expert_forest* consF;
@@ -179,7 +192,7 @@ protected:
   virtual void showEntry(output &strm, const node_handle *data) const;
 
 public:
-  transitive_closure_evplus(transitive_closure_forwd_dfs* p,
+  transitive_closure_evplus(transitive_closure_dfs* p,
     expert_forest* cons, expert_forest* tc, expert_forest* res);
 
   bool matches(const expert_forest* arg1, const expert_forest* arg2,
