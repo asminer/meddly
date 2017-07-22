@@ -1120,9 +1120,9 @@ class MEDDLY::memory_manager {
                                 node has been deleted, but we cannot recycle the
                                 node handle yet (probably because it might be
                                 contained in a compute table somewhere).
-      integer       cache_count Optional (i.e., can be turned on/off for all nodes).
+      natural       cache_count Optional (i.e., can be turned on/off for all nodes).
                                 Number of compute table references to this handle.
-      integer       incoming    Optional (i.e., can be turned on/off for all nodes).
+      natural       incoming    Optional (i.e., can be turned on/off for all nodes).
                                 Number of incoming edges to the node referred to
                                 by this handle.
 
@@ -1236,7 +1236,7 @@ class MEDDLY::node_headers {
     bool trackingCacheCounts() const;
 
     /// Get the cache count for node p.
-    long getNodeCacheCount(node_handle p) const;
+    unsigned long getNodeCacheCount(node_handle p) const;
 
     /// Increment the cache count for node p and return p.
     node_handle cacheNode(node_handle p);
@@ -1250,7 +1250,7 @@ class MEDDLY::node_headers {
     bool trackingIncomingCounts() const;
 
     /// Get the incoming count for node p.
-    long getIncomingCount(node_handle p) const;
+    unsigned long getIncomingCount(node_handle p) const;
 
     /// Increment the incoming count for node p and return p.
     node_handle linkNode(node_handle p);
@@ -1301,12 +1301,12 @@ class MEDDLY::node_headers {
               The number of cache entries that refer to this node (excl. unique
               table). 
           */
-          int cache_count;
+          unsigned int cache_count;
 
           /** Incoming count
               The number of incoming edges to this node.
           */
-          int incoming_count;
+          unsigned int incoming_count;
 
           /// Is node marked.  This is pretty horrible, but is only temporary
           // bool marked;
@@ -1844,8 +1844,7 @@ class MEDDLY::expert_forest: public forest
     bool trackingInCounts() const;
 
     /// Returns the in-count for a node.
-    // long readInCount(node_handle p) const;
-    int getNodeInCount(node_handle p) const;
+    unsigned long getNodeInCount(node_handle p) const;
 
     /** Increase the link count to this node. Call this when another node is
         made to point to this node.
@@ -2404,15 +2403,6 @@ class MEDDLY::expert_forest: public forest
   // inlined helpers for this class
 
     bool isTimeToGc() const;
-
-    /// Increment and return the in-count for a node
-    // long incInCount(node_handle p);
-    /// Decrement and return the in-count for a node
-    // long decInCount(node_handle p);
-    /// Returns the (modifiable) cache-count for a node
-    // int& cacheCount(node_handle p);
-    /// Returns the cache-count for a node
-    // int getCacheCount(node_handle p) const;
 
     /** Change the location of a node.
         Used by node_storage during compaction.
