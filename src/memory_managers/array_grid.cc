@@ -493,7 +493,7 @@ template <class INT>
 void MEDDLY::array_plus_grid<INT>
 ::reportStats(output &s, const char* pad, bool human, bool details) const
 {
-  s << pad << "Report for original_grid memory manager:\n";
+  s << pad << "Report for array_plus_grid memory manager:\n";
   s << pad << "  largest request: " << long(max_request) << " slots\n";
   long total_holes = num_small_holes + num_grid_holes 
     + num_huge_holes + num_medium_holes[0];
