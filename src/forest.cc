@@ -72,6 +72,7 @@ const unsigned char MEDDLY::forest::policies::ALLOW_SPARSE_STORAGE  = 0x02;
 
 MEDDLY::forest::policies::policies()
 {
+  nodemm = 0;   // 
   nodestor = 0; // should cause an exception later
 }
 
@@ -93,12 +94,13 @@ void MEDDLY::forest::policies::useDefaults(bool rel)
   compactAfterGC = false;
   compactBeforeExpand = true;
 
-  // nodestor = CLASSIC_STORAGE;
-  nodestor = SIMPLE_GRID;
-  // nodestor = SIMPLE_ARRAY;
-  // nodestor = SIMPLE_HEAP;
-  // nodestor = SIMPLE_NONE;
-  // nodestor = COMPACT_GRID;
+  // nodemm = ORIGINAL_GRID;
+  nodemm = ARRAY_PLUS_GRID;
+  // nodemm = MALLOC_MANAGER;
+  // nodemm = HEAP_MANAGER;
+
+  nodestor = SIMPLE_STORAGE;
+
   reorder = reordering_type::SINK_DOWN;
   swap = variable_swap_type::VAR;
 }
@@ -784,7 +786,7 @@ void MEDDLY::expert_forest::initializeForest()
   //
   // Initialize node storage
   //
-  nodeMan = deflt.nodestor->createForForest(this);
+  nodeMan = deflt.nodestor->createForForest(this, deflt.nodemm);
 
 }
 
@@ -810,9 +812,9 @@ void MEDDLY::expert_forest::dumpInternal(output &s) const
 
   nodeHeaders.dumpInternal(s);
 
-  nodeMan->dumpInternal(s, 0x03);
+  nodeMan->dumpInternal(s, 0x03); 
  
-  unique->show(s);
+  // unique->show(s);
   s.flush();
 }
 
@@ -1064,7 +1066,7 @@ bool MEDDLY::expert_forest
     }
     s.put( (getNodeLevel(p) < 0) ? '\'' : ' ' );
     s << " in: " << getNodeInCount(p);
-    s << " cc: " << getNodeCacheCount(p);
+    s << " cc: " << nodeHeaders.getNodeCacheCount(p);
   } else {
     s << "node: " << long(p);
   }
@@ -1647,12 +1649,6 @@ void MEDDLY::expert_forest::showInfo(output &s, int verb)
 // '    virtual methods to be overridden by some derived classes    '
 // '                                                                '
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-bool MEDDLY::expert_forest
-::areEdgeValuesEqual(const void* eva, const void* evb) const
-{
-  throw error(error::TYPE_MISMATCH);
-}
 
 MEDDLY::enumerator::iterator* MEDDLY::expert_forest::makeFixedRowIter() const
 {

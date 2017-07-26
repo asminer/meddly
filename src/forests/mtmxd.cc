@@ -60,7 +60,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
   int hvar = getVarByLevel(level+1);
   int lvar = getVarByLevel(level);
   int hsize = getVariableSize(hvar);
-  int lsize = getVariableSize(lvar);
+  // int lsize = getVariableSize(lvar);
 
   // Renumber the level of nodes for VarHigh
   int hnum = unique->getNumEntries(hvar);
@@ -507,7 +507,9 @@ void MEDDLY::mtmxd_forest::sifting(int var, int top, int bottom)
 
   MEDDLY_DCASSERT(level <= top && level >= bottom);
 
+#ifdef DEVELOPMENT_CODE
   int num = getCurrentNumNodes();
+#endif
   if(level <= (top + bottom) / 2) {
     // Move to the bottom
     while(level > bottom) {

@@ -40,6 +40,24 @@ MEDDLY::mt_forest::mt_forest(int dsl, domain *d, bool rel,
 {
 }
 
+bool MEDDLY::mt_forest
+::isTransparentEdge(node_handle p, const void* v) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+void MEDDLY::mt_forest
+::getTransparentEdge(node_handle &p, void* v) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
+bool MEDDLY::mt_forest
+::areEdgeValuesEqual(const void* eva, const void* evb) const
+{
+  throw error(error::TYPE_MISMATCH);
+}
+
 bool MEDDLY::mt_forest::isRedundant(const unpacked_node &nb) const
 {
   if (isQuasiReduced()) return false;

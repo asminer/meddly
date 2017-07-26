@@ -3,7 +3,7 @@
 
 ## compile library
 
-check_PROGRAMS = \
+noinst_PROGRAMS = \
   enctest \
   bug_00 \
   bug_01 \

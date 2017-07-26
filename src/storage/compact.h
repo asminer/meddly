@@ -113,17 +113,11 @@ namespace MEDDLY {
 class MEDDLY::compact_storage : public node_storage {
   // required interface
   public:
-    compact_storage(expert_forest* f, holeman* hm, const char* sN);
+    compact_storage(const char* n, expert_forest* f, holeman* hm);
     virtual ~compact_storage();
 
     virtual void collectGarbage(bool shrink);
     virtual void reportStats(output &s, const char* pad, unsigned flags) const;
-
-    /*
-    virtual void showNode(output &s, node_address addr, bool verb) const;
-    virtual void writeNode(output &s, node_address addr, const node_handle* map)
-    const;
-    */
 
     virtual node_address makeNode(node_handle p, const unpacked_node &nb, 
         node_storage_flags opt);
@@ -144,6 +138,7 @@ class MEDDLY::compact_storage : public node_storage {
     virtual void updateData(node_handle* d);
     virtual int smallestNode() const;
     virtual void dumpInternalInfo(output &) const;
+    virtual node_address firstNodeAddress() const;
     virtual node_address 
     dumpInternalNode(output &, node_address addr, unsigned flags) const;
     virtual void dumpInternalTail(output &) const;
@@ -1327,7 +1322,7 @@ class MEDDLY::compact_storage : public node_storage {
       static const int extraSlots = 3;
   private:
     /// what we are, for display purposes
-    const char* storageName;
+    // const char* storageName;
 
     /// the data array
     node_handle* data;
@@ -1361,9 +1356,10 @@ class MEDDLY::compact_storage : public node_storage {
 
 class MEDDLY::compact_grid_style : public node_storage_style {
   public:
-    compact_grid_style();
+    compact_grid_style(const char* n);
     virtual ~compact_grid_style();
-    virtual node_storage* createForForest(expert_forest* f) const;
+    virtual node_storage* createForForest(expert_forest* f, 
+        const memory_manager_style* mst) const;
 };
 
 

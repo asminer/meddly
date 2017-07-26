@@ -17,32 +17,21 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-#include "../defines.h"
-#include "init_storage.h"
-
-#include "simple.h"
-
 namespace MEDDLY {
-  const node_storage_style* SIMPLE_STORAGE = 0;
+  class memman_initializer;
 };
 
-MEDDLY::storage_initializer::storage_initializer(initializer_list *p)
- : initializer_list(p)
-{
-  simple = 0;
-}
+class MEDDLY::memman_initializer : public initializer_list {
 
-void MEDDLY::storage_initializer::setup()
-{
-  SIMPLE_STORAGE = (simple = new simple_separated_style("SIMPLE_STORAGE")); 
-}
+    memory_manager_style* original_grid;
+    memory_manager_style* array_plus_grid;
+    memory_manager_style* malloc_manager;
+    memory_manager_style* heap_manager;
 
-void MEDDLY::storage_initializer::cleanup()
-{
-  delete simple;
-  SIMPLE_STORAGE = (simple = 0);
-}
+  public:
+    memman_initializer(initializer_list *p);
+  protected:
+    virtual void setup();
+    virtual void cleanup();
+};
 

@@ -17,35 +17,36 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SIMPLE_H
-#define SIMPLE_H
-
-#include "../defines.h"
-
-namespace MEDDLY {
-  class simple_separated_style;
-};
+#include "defines.h"
 
 // ******************************************************************
 // *                                                                *
-// *                                                                *
-// *                  simple_separated_style class                  *
-// *                                                                *
+// *                  memory_manager_style methods                  *
 // *                                                                *
 // ******************************************************************
 
-/** Simple storage mechanism. 
-    Memory management is completely separated out.
-*/
+MEDDLY::memory_manager_style::memory_manager_style(const char* n)
+{
+  name = n;
+}
 
-class MEDDLY::simple_separated_style : public node_storage_style {
-  public:
-    simple_separated_style(const char* n);
-    virtual ~simple_separated_style();
-    virtual node_storage* createForForest(expert_forest* f,
-        const memory_manager_style* mst) const;
-};
+MEDDLY::memory_manager_style::~memory_manager_style()
+{
+}
 
+// ******************************************************************
+// *                                                                *
+// *                     memory_manager methods                     *
+// *                                                                *
+// ******************************************************************
 
-#endif
+MEDDLY::memory_manager::memory_manager(const char* n, forest::statset &stats)
+ : my_mem(stats)
+{
+  style_name = n;
+}
+
+MEDDLY::memory_manager::~memory_manager()
+{
+}
 

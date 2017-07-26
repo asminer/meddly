@@ -167,25 +167,31 @@ inline void MEDDLY::forest::statset::incActive(long b) {
   active_nodes += b;
   if (active_nodes > peak_active) 
     peak_active = active_nodes;
+  MEDDLY_DCASSERT(active_nodes >= 0);
 }
 inline void MEDDLY::forest::statset::decActive(long b) {
   active_nodes -= b;
+  MEDDLY_DCASSERT(active_nodes >= 0);
 }
 inline void MEDDLY::forest::statset::incMemUsed(long b) {
   memory_used += b;
   if (memory_used > peak_memory_used) 
     peak_memory_used = memory_used;
+  MEDDLY_DCASSERT(memory_used >= 0);
 }
 inline void MEDDLY::forest::statset::decMemUsed(long b) {
   memory_used -= b;
+  MEDDLY_DCASSERT(memory_used >= 0);
 }
 inline void MEDDLY::forest::statset::incMemAlloc(long b) {
   memory_alloc += b;
   if (memory_alloc > peak_memory_alloc) 
     peak_memory_alloc = memory_alloc;
+  MEDDLY_DCASSERT(memory_alloc >= 0);
 }
 inline void MEDDLY::forest::statset::decMemAlloc(long b) {
   memory_alloc -= b;
+  MEDDLY_DCASSERT(memory_alloc >= 0);
 }
 inline void MEDDLY::forest::statset::sawUTchain(int c) {
   if (c > max_UT_chain)

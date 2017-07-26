@@ -17,32 +17,30 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-#include "../defines.h"
-#include "init_storage.h"
 
-#include "simple.h"
+#ifndef MALLOC_STYLE_H
+#define MALLOC_STYLE_H
 
 namespace MEDDLY {
-  const node_storage_style* SIMPLE_STORAGE = 0;
+  class malloc_style;
 };
 
-MEDDLY::storage_initializer::storage_initializer(initializer_list *p)
- : initializer_list(p)
-{
-  simple = 0;
-}
+/**
+    Factory for a memory manager based on malloc / free.
 
-void MEDDLY::storage_initializer::setup()
-{
-  SIMPLE_STORAGE = (simple = new simple_separated_style("SIMPLE_STORAGE")); 
-}
+    All details, including the actual memory manager constructed,
+    are hidden in implementation file :^)
 
-void MEDDLY::storage_initializer::cleanup()
-{
-  delete simple;
-  SIMPLE_STORAGE = (simple = 0);
-}
+*/
+
+class MEDDLY::malloc_style : public memory_manager_style {
+  public:
+    malloc_style(const char* n);
+    virtual ~malloc_style();
+
+    virtual memory_manager* initManager(unsigned char granularity,
+      unsigned char minsize, forest::statset &stats) const;
+};
+
+#endif
 

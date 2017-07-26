@@ -49,6 +49,33 @@
 #include <memory>
 #include <cassert>
 
+// Flags for development version only. Significant reduction in performance.
+#ifdef DEVELOPMENT_CODE
+#define RANGE_CHECK_ON
+#define DCASSERTS_ON
+#endif
+
+
+// #define TRACK_DELETIONS
+// #define TRACK_CACHECOUNT
+
+// Use this for assertions that will fail only when your
+// code is wrong.  Handy for debugging.
+#ifdef DCASSERTS_ON
+#define MEDDLY_DCASSERT(X) assert(X)
+#else
+#define MEDDLY_DCASSERT(X)
+#endif
+
+// Use this for range checking assertions that should succeed.
+#ifdef RANGE_CHECK_ON
+#define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX) { assert(VALUE < MAX); assert(VALUE >= MIN); }
+#else
+#define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX)
+#endif
+
+
+
 namespace MEDDLY {
   /** Special value for minterms: don't care what this variable does.
       I.e., do the same thing for all possible assignments for a variable.
@@ -81,7 +108,7 @@ namespace MEDDLY {
       The typedef is given simply to clarify the code
       (hopefully :^)
   */
-  typedef long node_address;
+  typedef unsigned long node_address;
 
   // Classes
 
@@ -97,6 +124,7 @@ namespace MEDDLY {
   class expert_forest;
   class unpacked_node;
 
+  class memory_manager_style;
   class node_storage_style;
 
   class variable;
@@ -132,8 +160,30 @@ namespace MEDDLY {
 #endif
 
   // ******************************************************************
+  // *                    Memory management schemes                   *
+  // ******************************************************************
+
+  extern const memory_manager_style* ORIGINAL_GRID;
+  extern const memory_manager_style* ARRAY_PLUS_GRID;
+  extern const memory_manager_style* MALLOC_MANAGER;
+  extern const memory_manager_style* HEAP_MANAGER;
+
+  // ******************************************************************
   // *                     Node storage mechanisms                    *
   // ******************************************************************
+
+  /**
+    New, "simple" style with memory manager removed.
+    This node storage mechanism relies on the 
+    memory_manager_style for memory management.
+  */
+  extern const node_storage_style* SIMPLE_STORAGE;
+
+
+  // 
+  // From here are "old" mechanisms for node storage,
+  // with built-in memory managers.
+  //
 
   /** "Classic" node storage mechanism.
       The node storage mechanism from early versions of this library.
@@ -724,6 +774,14 @@ class MEDDLY::output {
     virtual void put(long x, int w=0) = 0;
 
     /**
+        Write an unsigned, decimal integer to the output stream.
+          @param  x   Integer to write
+          @param  w   Width for formatting
+          @throws     An appropriate error
+    */
+    virtual void put(unsigned long x, int w=0) = 0;
+
+    /**
         Write hex digits to the output stream.
           @param  x   Value to write
           @param  w   Width for formatting
@@ -774,11 +832,12 @@ class MEDDLY::output {
   These will let us do C++ style output, with our class.
 */
 
-inline  MEDDLY::output& operator<< (MEDDLY::output &s, char x)        { s.put(x); return s; }
-inline  MEDDLY::output& operator<< (MEDDLY::output &s, const char* x) { s.put(x); return s; }
-inline  MEDDLY::output& operator<< (MEDDLY::output &s, int x)         { s.put(long(x)); return s; }
-inline  MEDDLY::output& operator<< (MEDDLY::output &s, long x)        { s.put(x); return s; }
-inline  MEDDLY::output& operator<< (MEDDLY::output &s, double x)      { s.put(x); return s; }
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, char x)            { s.put(x); return s; }
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, const char* x)     { s.put(x); return s; }
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, int x)             { s.put(long(x)); return s; }
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, long x)            { s.put(x); return s; }
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, unsigned long x)   { s.put(x); return s; }
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, double x)          { s.put(x); return s; }
 
 
 // ******************************************************************
@@ -802,6 +861,7 @@ class MEDDLY::FILE_output : public MEDDLY::output {
     virtual void put(char x);
     virtual void put(const char*, int w);
     virtual void put(long x, int w);
+    virtual void put(unsigned long x, int w);
     virtual void put_hex(unsigned long x, int w);
     virtual void put(double x, int w, int p, char f);
     virtual int write(int bytes, const unsigned char* buffer);
@@ -834,6 +894,7 @@ class MEDDLY::ostream_output : public MEDDLY::output {
     virtual void put(char x);
     virtual void put(const char*, int w);
     virtual void put(long x, int w);
+    virtual void put(unsigned long x, int w);
     virtual void put_hex(unsigned long x, int w);
     virtual void put(double x, int w, int p, char f);
     virtual int write(int bytes, const unsigned char* buffer);
@@ -984,6 +1045,9 @@ class MEDDLY::forest {
       reordering_type reorder;
       // Default variable swap strategy.
       variable_swap_type swap;
+
+      /// Backend memory management mechanism for nodes.
+      const memory_manager_style* nodemm;
 
       /// Backend storage mechanism for nodes.
       const node_storage_style* nodestor;

@@ -429,8 +429,9 @@ void MEDDLY::unpacked_node::computeHash()
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::node_storage_style::node_storage_style()
+MEDDLY::node_storage_style::node_storage_style(const char* n)
 {
+  name = n;
 }
 
 MEDDLY::node_storage_style::~node_storage_style()
@@ -445,15 +446,10 @@ MEDDLY::node_storage_style::~node_storage_style()
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::node_storage::node_storage(expert_forest* f)
+MEDDLY::node_storage::node_storage(const char* n, expert_forest* f)
 {
-#ifdef OLD_NODE_HEADERS
-  counts = 0;
-#endif
-  nexts = 0;
-
+  style_name = n;
   parent = f;
-  stats = &parent->changeStats();
 }
 
 MEDDLY::node_storage::~node_storage()
@@ -461,66 +457,11 @@ MEDDLY::node_storage::~node_storage()
   // nothing, derived classes must handle everything
 }
 
-
-#ifndef INLINED_COUNT
-MEDDLY::node_handle
-MEDDLY::node_storage::getCountOf(node_address addr) const
-{
-  MEDDLY_DCASSERT(counts);
-  MEDDLY_DCASSERT(addr > 0);
-  return counts[addr];
-}
-
-void
-MEDDLY::node_storage::setCountOf(node_address addr, MEDDLY::node_handle c)
-{
-  MEDDLY_DCASSERT(counts);
-  MEDDLY_DCASSERT(addr > 0);
-  counts[addr] = c;
-}
-
-MEDDLY::node_handle
-MEDDLY::node_storage::incCountOf(node_address addr)
-{
-  MEDDLY_DCASSERT(counts);
-  MEDDLY_DCASSERT(addr > 0);
-  return ++counts[addr];
-}
-;
-
-MEDDLY::node_handle
-MEDDLY::node_storage::decCountOf(node_address addr)
-{
-  MEDDLY_DCASSERT(counts);
-  MEDDLY_DCASSERT(addr > 0);
-  return --counts[addr];
-}
-#endif
-
-#ifndef INLINED_NEXT
-MEDDLY::node_handle
-MEDDLY::node_storage::getNextOf(node_address addr) const
-{
-  MEDDLY_DCASSERT(nexts);
-  MEDDLY_DCASSERT(addr > 0);
-  return nexts[addr];
-}
-
-void
-MEDDLY::node_storage::setNextOf(node_address addr, MEDDLY::node_handle n)
-{
-  MEDDLY_DCASSERT(nexts);
-  MEDDLY_DCASSERT(addr > 0);
-  nexts[addr] = n;
-}
-#endif
-
-
 void MEDDLY::node_storage::dumpInternal(output &s, unsigned flags) const
 {
   dumpInternalInfo(s);
   s << "Data array by record:\n";
-  for (node_address a=1; a > 0; ) {
+  for (node_address a=firstNodeAddress(); a > 0; ) {
     s.flush();
     a = dumpInternalNode(s, a, flags);
   } // for a
@@ -528,9 +469,3 @@ void MEDDLY::node_storage::dumpInternal(output &s, unsigned flags) const
   s.flush();
 }
 
-/*
-void MEDDLY::node_storage::localInitForForest(const expert_forest* f)
-{
-  // default - do nothing
-}
-*/
