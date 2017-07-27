@@ -31,7 +31,11 @@ test_reorder_mtmxd \
 test_reorder_evmdd \
 rubiks_cube_phase \
 slot_phase \
-test_memory
+test_memory \
+test_implicit_kanban \
+test_implicit_pool \
+test_implicit_smallos
+
 
 # test_user_operation 
 
@@ -116,6 +120,15 @@ rubiks_cube_phase_LDADD = ../src/libmeddly.la
 
 slot_phase_SOURCES = slot_phase.cc simple_model.h simple_model.cc
 slot_phase_LDADD = ../src/libmeddly.la
+
+test_implicit_kanban_SOURCES = test_implicit_kanban.cc simple_model.h simple_model.cc
+test_implicit_kanban_LDADD = ../src/libmeddly.la
+
+test_implicit_pool_SOURCES = test_implicit_pool.cc simple_model.h simple_model.cc
+test_implicit_pool_LDADD = ../src/libmeddly.la
+
+test_implicit_smallos_SOURCES = test_implicit_smallos.cc simple_model.h simple_model.cc
+test_implicit_smallos_LDADD = ../src/libmeddly.la
 
 # test_user_operation_SOURCES = test_user_operation.cc
 # test_user_operation_LDADD = ../src/libmeddly.la

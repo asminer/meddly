@@ -95,6 +95,7 @@ libmeddly_la_SOURCES = \
   operations/vect_matr.h      operations/vect_matr.cc    \
   operations/mm_mult.h        operations/mm_mult.cc      \
   operations/init_builtin.h   operations/init_builtin.cc \
+  operations/sat_impl.h        operations/sat_impl.cc      \
   \
   storage/bytepack.h  \
   storage/simple.h          storage/simple.cc \
