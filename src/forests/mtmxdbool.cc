@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -22,8 +20,8 @@
 
 #include "mtmxdbool.h"
 
-MEDDLY::mt_mxd_bool::mt_mxd_bool(int dsl, domain *d, const policies &p, bool tv)
-: mtmxd_forest(dsl, d, BOOLEAN, p)
+MEDDLY::mt_mxd_bool::mt_mxd_bool(int dsl, domain *d, const policies &p,int* level_reduction_rule, bool tv)
+: mtmxd_forest(dsl, d, BOOLEAN, p,level_reduction_rule)
 { 
   initializeForest();
 

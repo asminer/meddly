@@ -1,6 +1,4 @@
 
-// $Id$
-
 // Reachable states for kanban, n=3
 
 const char* kanban_rs3[] = {

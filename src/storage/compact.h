@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -121,9 +119,11 @@ class MEDDLY::compact_storage : public node_storage {
     virtual void collectGarbage(bool shrink);
     virtual void reportStats(output &s, const char* pad, unsigned flags) const;
 
+    /*
     virtual void showNode(output &s, node_address addr, bool verb) const;
     virtual void writeNode(output &s, node_address addr, const node_handle* map)
     const;
+    */
 
     virtual node_address makeNode(node_handle p, const unpacked_node &nb, 
         node_storage_flags opt);
@@ -131,7 +131,7 @@ class MEDDLY::compact_storage : public node_storage {
     virtual void unlinkDownAndRecycle(node_address addr);
 
     virtual bool areDuplicates(node_address addr, const unpacked_node &nr) const;
-    virtual void fillUnpacked(unpacked_node &nr, node_address addr) const;
+    virtual void fillUnpacked(unpacked_node &nr, node_address addr, unpacked_node::storage_style) const;
     virtual unsigned hashNode(int level, node_address addr) const;
     virtual int getSingletonIndex(node_address addr, node_handle &down) const;
     virtual node_handle getDownPtr(node_address addr, int index) const;
@@ -814,7 +814,7 @@ class MEDDLY::compact_storage : public node_storage {
       //--------------------------------------------------------------
       template <int pbytes>
       inline void 
-      readFullFromFull(node_address addr, int size, unpacked_node &nr) const
+      readFullFromFull(node_address addr, int size, unpacked_node &nr, bool shrink) const
       {
         MEDDLY_DCASSERT(nr.isFull());
         MEDDLY_DCASSERT(sizeOf(addr) >= 0);
@@ -831,26 +831,30 @@ class MEDDLY::compact_storage : public node_storage {
             edge += edgeBytes;
           }
         } 
-        for (; i<nr.getSize(); i++) {
-          nr.d_ref(i) = 0;
-          if (edgeBytes) {
-            memset(nr.eptr_write(i), 0, edgeBytes);
+        if (shrink) {
+          nr.shrinkFull(size);
+        } else {
+          for (; i<nr.getSize(); i++) {
+            nr.d_ref(i) = 0;
+            if (edgeBytes) {
+              memset(nr.eptr_write(i), 0, edgeBytes);
+            }
           }
         }
       }
 
       inline void readFullFromFull(int pbytes, node_address addr, int size, 
-        unpacked_node &nr) const
+        unpacked_node &nr, bool shrink) const
       {
           switch (pbytes) {
-              case 1:   return readFullFromFull<1>(addr, size, nr);
-              case 2:   return readFullFromFull<2>(addr, size, nr);
-              case 3:   return readFullFromFull<3>(addr, size, nr);
-              case 4:   return readFullFromFull<4>(addr, size, nr);
-              case 5:   return readFullFromFull<5>(addr, size, nr);
-              case 6:   return readFullFromFull<6>(addr, size, nr);
-              case 7:   return readFullFromFull<7>(addr, size, nr);
-              case 8:   return readFullFromFull<8>(addr, size, nr);
+              case 1:   return readFullFromFull<1>(addr, size, nr, shrink);
+              case 2:   return readFullFromFull<2>(addr, size, nr, shrink);
+              case 3:   return readFullFromFull<3>(addr, size, nr, shrink);
+              case 4:   return readFullFromFull<4>(addr, size, nr, shrink);
+              case 5:   return readFullFromFull<5>(addr, size, nr, shrink);
+              case 6:   return readFullFromFull<6>(addr, size, nr, shrink);
+              case 7:   return readFullFromFull<7>(addr, size, nr, shrink);
+              case 8:   return readFullFromFull<8>(addr, size, nr, shrink);
               default:
                   MEDDLY_DCASSERT(0);
                   throw error(error::MISCELLANEOUS);

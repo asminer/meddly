@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -36,7 +34,7 @@ namespace MEDDLY {
 class MEDDLY::mt_mxd_int : public mtmxd_forest {
   public:
 
-    mt_mxd_int(int dsl, domain *d, const policies &p, int tv=0);
+    mt_mxd_int(int dsl, domain *d, const policies &p,int* level_reduction_rule=NULL, int tv=0);
     ~mt_mxd_int();
 
     void createEdge(int val, dd_edge &e);

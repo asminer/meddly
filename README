@@ -1,18 +1,19 @@
 
-$Id$
-
-To create a branch or a tag: copy the entire "trunk" subdirectory to
-an appropriately-named subdirectory at the same level.
-
 Subdirectories:
 ---------------
 
+developers/   Documentation and scripts useful to Meddly developers
 docs/         Generated docs from source code, for users (include files only)
 docs-devel/   Generated docs from source code, for developers (all source files)
 examples/     Stand-alone applications that use the library
+include/      Include files installed here, unless prefix is changed
+lib/          Compiled library installed here, unless prefix is changed
+m4/           Directory of configuration helper scripts
+manual/       User manual source files
 src/          Library source code
 tests/        Test applications used by "make check"
 visual/       Visualization utilities that work with the library.
+www/          Web page sources
 
 Building the library:
 ---------------------

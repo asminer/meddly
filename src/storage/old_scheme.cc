@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -266,6 +264,7 @@ void MEDDLY::old_node_storage
   s << pad << "    End of Hole Chains\n";
 }
 
+/*
 void MEDDLY::old_node_storage::showNode(output &s, node_address addr, bool verb) const
 {
   if (sizeOf(addr) < 0) {
@@ -393,6 +392,7 @@ void MEDDLY::old_node_storage
   }
 
 }
+*/
 
 
 MEDDLY::node_address MEDDLY::old_node_storage
@@ -595,7 +595,8 @@ bool MEDDLY::old_node_storage
 }
 
 // void MEDDLY::old_node_storage::fillReader(node_address addr, node_reader &nr) const
-void MEDDLY::old_node_storage::fillUnpacked(unpacked_node &nr, node_address addr) const
+void MEDDLY::old_node_storage
+::fillUnpacked(unpacked_node &nr, node_address addr, unpacked_node::storage_style st2) const
 {
   // Copy extra headers
 
@@ -610,6 +611,18 @@ void MEDDLY::old_node_storage::fillUnpacked(unpacked_node &nr, node_address addr
   // Copy everything else
 
   const int size = sizeOf(addr);
+
+  /*
+      Set the unpacked node storage style based on settings
+  */
+  switch (st2) {
+      case unpacked_node::FULL_NODE:     nr.bind_as_full(true);    break;
+      case unpacked_node::SPARSE_NODE:   nr.bind_as_full(false);   break;
+      case unpacked_node::AS_STORED:     nr.bind_as_full(size>=0); break;
+
+      default:            assert(0);
+  };
+
   if (size < 0) {
     //
     // Node is sparse
@@ -658,10 +671,14 @@ void MEDDLY::old_node_storage::fillUnpacked(unpacked_node &nr, node_address addr
         memcpy(nr.eptr_write(i), FEP(addr, i), nr.edgeBytes());
       }
     } 
-    for (; i<nr.getSize(); i++) {
-      nr.d_ref(i) = 0;
-      if (nr.hasEdges()) {
-        memset(nr.eptr_write(i), 0, nr.edgeBytes());
+    if (unpacked_node::AS_STORED == st2) {
+      nr.shrinkFull(size);
+    } else {
+      for (; i<nr.getSize(); i++) {
+        nr.d_ref(i) = 0;
+        if (nr.hasEdges()) {
+          memset(nr.eptr_write(i), 0, nr.edgeBytes());
+        }
       }
     }
     return;
@@ -951,7 +968,6 @@ MEDDLY::node_handle MEDDLY::old_node_storage
 ::makeFullNode(node_handle p, int size, const unpacked_node &nb)
 {
   node_address addr = allocNode(size, p, false);
-  MEDDLY_DCASSERT(1==getCountOf(addr));
   node_handle* down = FD(addr);
   if (edgeSlots) {
       MEDDLY_DCASSERT(nb.hasEdges());
@@ -991,7 +1007,6 @@ MEDDLY::node_handle MEDDLY::old_node_storage
 ::makeSparseNode(node_handle p, int size, const unpacked_node &nb)
 {
   node_address addr = allocNode(-size, p, false);
-  MEDDLY_DCASSERT(1==getCountOf(addr));
   node_handle* index = SI(addr);
   node_handle* down  = SD(addr);
   if (nb.hasEdges()) {
@@ -1482,7 +1497,6 @@ void MEDDLY::old_node_storage::resize(node_handle new_size)
   if (data != new_data) {
     // update pointers
     data = new_data;
-    updateCountArray(data + count_index);
     updateNextArray(data + next_index);
   }
 }
@@ -1499,7 +1513,9 @@ MEDDLY::old_node_storage::allocNode(int sz, node_handle tail, bool clear)
   incMemUsed(got * sizeof(node_handle));
   MEDDLY_DCASSERT(got >= slots);
   if (clear) memset(data+off, 0, slots*sizeof(node_handle));
-  setCountOf(off, 1);                     // #incoming
+
+  data[off + count_index] = 0;            // make the slot non-negative
+
   setNextOf(off, temp_node_value);        // mark as a temp node
   setSizeOf(off, sz);                     // size
   data[off+slots-1] = slots - got;        // negative padding

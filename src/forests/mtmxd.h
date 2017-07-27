@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -30,7 +28,7 @@ namespace MEDDLY {
 
 class MEDDLY::mtmxd_forest : public mt_forest {
   public:
-    mtmxd_forest(int dsl, domain* d, range_type t, const policies &p);
+    mtmxd_forest(int dsl, domain* d, range_type t, const policies &p,int* level_reduction_rule=NULL);
 
     virtual void swapAdjacentVariables(int level);
     virtual void moveDownVariable(int high, int low);

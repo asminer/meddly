@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -32,6 +30,7 @@
 // #define DEBUG_CLEANUP
 // #define DEBUG_FINALIZE
 // #define DEBUG_FINALIZE_SPLIT
+// #define DEBUG_EVENT_MASK
 
 namespace MEDDLY {
 
@@ -266,7 +265,7 @@ MEDDLY::satpregen_opname::pregen_relation
 ::~pregen_relation()
 {
   if (events && mxdF) {
-    for (int k=0; k<=K; k++) if(events[k]) mxdF->unlinkNode(events[k]);
+    for (int k=0; k<=last_event; k++) if(events[k]) mxdF->unlinkNode(events[k]);
   }
   delete[] events;
   delete[] next;
@@ -596,9 +595,9 @@ MEDDLY::satotf_opname::~satotf_opname()
 
 // ============================================================
 
-MEDDLY::satotf_opname::subevent::subevent(forest* f, int* v, int nv)
-: vars(0), num_vars(nv), root(dd_edge(f)), top(0), f(static_cast<expert_forest*>(f))
-
+MEDDLY::satotf_opname::subevent::subevent(forest* f, int* v, int nv, bool firing)
+: vars(0), num_vars(nv), root(dd_edge(f)), top(0),
+  f(static_cast<expert_forest*>(f)), is_firing(firing)
 {
   MEDDLY_DCASSERT(f != 0);
   MEDDLY_DCASSERT(v != 0);
@@ -760,11 +759,25 @@ MEDDLY::satotf_opname::event::event(subevent** p, int np)
   // Not efficient. p[i] is a sorted list of integers.
   // Should be able to insert in O(n) time
   // where n is the sum(p[i]->getNumVars).
+  bool all_enabling_subevents = true;
+  bool all_firing_subevents = true;
   std::set<int> sVars;
+  std::set<int> firingVars;
+
   for (int i = 0; i < np; i++) {
     const int* subeventVars = p[i]->getVars();
     sVars.insert(subeventVars, subeventVars+p[i]->getNumVars());
+    if (p[i]->isFiring()) {
+      all_enabling_subevents = false;
+      firingVars.insert(subeventVars, subeventVars+p[i]->getNumVars());
+    } else {
+      all_firing_subevents = false;
+    }
   }
+
+  MEDDLY_DCASSERT(all_enabling_subevents || !firingVars.empty());
+
+  is_disabled = (all_enabling_subevents || all_firing_subevents);
 
   num_vars = sVars.size();
   vars = new int[num_vars];
@@ -773,19 +786,62 @@ MEDDLY::satotf_opname::event::event(subevent** p, int np)
     *curr++ = *it++;
   }
 
+  num_firing_vars = firingVars.size();
+  firing_vars = new int[num_firing_vars];
+  curr = &firing_vars[0];
+  for (std::set<int>::iterator it=firingVars.begin(); it!=firingVars.end(); ) {
+    *curr++ = *it++;
+  }
+
   root = dd_edge(f);
-  needs_rebuilding = true;
+  event_mask = dd_edge(f);
+  event_mask_from_minterm = 0;
+  event_mask_to_minterm = 0;
+  needs_rebuilding = is_disabled? false: true;
 }
 
 MEDDLY::satotf_opname::event::~event()
 {
   for (int i=0; i<num_subevents; i++) delete subevents[i];
   delete[] subevents;
+  delete[] vars;
+  delete[] firing_vars;
+  delete[] event_mask_from_minterm;
+  delete[] event_mask_to_minterm;
+}
+
+void MEDDLY::satotf_opname::event::buildEventMask()
+{
+  MEDDLY_DCASSERT(num_subevents > 0);
+  MEDDLY_DCASSERT(f);
+
+  if (0 == event_mask_from_minterm) {
+    const size_t minterm_size = f->getNumVariables()+1;
+    event_mask_from_minterm = new int[minterm_size];
+    event_mask_to_minterm = new int[minterm_size];
+
+    for (unsigned i = 0; i < minterm_size; i++) {
+      event_mask_from_minterm[i] = MEDDLY::DONT_CARE;
+      event_mask_to_minterm[i] = MEDDLY::DONT_CHANGE;
+    }
+
+    for (int i = 0; i < num_firing_vars; i++) {
+      event_mask_to_minterm[firing_vars[i]] = MEDDLY::DONT_CARE;
+    }
+  }
+
+  f->createEdge(&event_mask_from_minterm, &event_mask_to_minterm, 1, event_mask);
+#ifdef DEBUG_EVENT_MASK
+  printf("event_mask: %d\n" , event_mask.getNode());
+  ostream_output out(std::cout);
+  event_mask.show(out, 2);
+#endif
 }
 
 bool MEDDLY::satotf_opname::event::rebuild()
 {
   MEDDLY_DCASSERT(num_subevents > 0);
+  if (is_disabled) return false;
   if (!needs_rebuilding) return false;
   needs_rebuilding = false;
 
@@ -793,9 +849,10 @@ bool MEDDLY::satotf_opname::event::rebuild()
   for (int i = 0; i < num_subevents; i++) {
     subevents[i]->buildRoot();
   }
+  buildEventMask();
 
-  dd_edge e = subevents[0]->getRoot();
-  for (int i = 1; i < num_subevents; i++) {
+  dd_edge e = event_mask;
+  for (int i = 0; i < num_subevents; i++) {
     e *= subevents[i]->getRoot();
   }
 
@@ -803,6 +860,8 @@ bool MEDDLY::satotf_opname::event::rebuild()
   if (e.getNode() == 0) {
     ostream_output out(std::cout);
     f->useDomain()->showInfo(out);
+    out << "subevent: " << event_mask.getNode() << "\n";
+    event_mask.show(out, 2);
     for (int i = 0; i < num_subevents; i++) {
       out << "subevent: " << subevents[i]->getRoot().getNode() << "\n";
       subevents[i]->getRoot().show(out, 2);
@@ -892,6 +951,7 @@ MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd,
 
   // (1) Determine the number of events per level
   for (int i = 0; i < ne; i++) {
+    if (E[i]->isDisabled()) continue;
     int nVars = E[i]->getNumVars();
     const int* vars = E[i]->getVars();
     for (int j = 0; j < nVars; j++) {
@@ -914,6 +974,7 @@ MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd,
 
   // (3) Store events by level
   for (int i = 0; i < ne; i++) {
+    if (E[i]->isDisabled()) continue;
     int nVars = E[i]->getNumVars();
     const int* vars = E[i]->getVars();
     for (int j = 0; j < nVars; j++) {
@@ -932,6 +993,7 @@ MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd,
 
   // (1) Determine the number of subevents per level
   for (int i = 0; i < ne; i++) {
+    if (E[i]->isDisabled()) continue;
     int nse = E[i]->getNumOfSubevents();
     subevent** se = E[i]->getSubevents();
     for (int j = 0; j < nse; j++) {
@@ -953,6 +1015,7 @@ MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd,
 
   // (3) Store subevents by level
   for (int i = 0; i < ne; i++) {
+    if (E[i]->isDisabled()) continue;
     int nse = E[i]->getNumOfSubevents();
     subevent** se = E[i]->getSubevents();
     for (int j = 0; j < nse; j++) {

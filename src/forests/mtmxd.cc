@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -26,8 +24,8 @@
 #include "../unique_table.h"
 
 MEDDLY::mtmxd_forest
-::mtmxd_forest(int dsl, domain* d, range_type t, const policies &p)
- : mt_forest(dsl, d, true, t, p)
+::mtmxd_forest(int dsl, domain* d, range_type t, const policies &p,int* level_reduction_rule)
+ : mt_forest(dsl, d, true, t, p,level_reduction_rule)
 {
   // anything to construct?
 }

@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -39,7 +37,7 @@ int main(int argc, const char** argv)
       long N = atol(argv[i]);
       const char* info = getLibraryInfo(N);
       if (info) {
-        cout << getLibraryInfo(N) << "\n";
+        cout << info << "\n";
       } else {
         cout << "(null string)\n";
       }

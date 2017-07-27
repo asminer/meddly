@@ -1,0 +1,212 @@
+
+/*** basic text styles ***/
+
+body {
+  font-family: "Helvetica", sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: normal;
+  color: #000;
+  background-color: #fff;
+}
+h1 {
+  font-size: 24px;
+  font-weight: bold;
+}
+h2 {
+  font-size: 18px;
+  font-weight: bold;
+}
+p, li, td, dt, dd {
+  font-size: 14px;
+}
+p, ul {
+  margin-top: 0.7em;
+  margin-bottom: 0.7em;
+}
+dd {
+  margin-bottom: 0.7em;
+}
+li {
+  margin-bottom: 0.2em;
+}
+p#copyright {
+  font-size: 12px;
+}
+a:link, a:visited, a:hover {
+  color: #00aa00;
+}
+a:hover {
+  background-color: #f0f0f0;
+}
+a:active {
+  color: #00dd00;
+  background-color: #fff;
+}
+img {
+  border: 0;
+  padding: 0;
+  vertical-align: top;
+}
+code {
+  background-color: #ddd;
+  margin: 1em;
+  padding: 0 1em 0;
+}
+
+/*** basic layout ***/
+
+body {
+  background-color: #fff;
+  margin: 0;
+  padding: 0;
+}
+div {
+  margin: 0;
+  padding: 0;
+}
+#sidebar {
+  width: 160px;
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background-color: #ddd;
+}
+#content {
+  padding: 1em 2em 0;
+  margin-left: 168px;
+  background-color: #fff;
+  min-width: 20em;
+  max-width: 50em;
+}
+
+/*** content area styles ***/
+
+#trail {
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-top: 0;
+  margin-bottom: 4pt;
+}
+#content h1 {
+  padding: 0 2em 0 0;
+  margin-top: 0;
+  text-align: center;
+}
+#content h1#hometitle {
+  margin-top: 0.5em;
+}
+#content h2 {
+  margin-left: -8pt;
+  margin-right: -8pt;
+  padding-left: 0.2em;
+  padding-right: 8pt;
+  border-bottom: 1px solid #bbb;
+  clear: both;
+}
+#content pre {
+  margin-left: 6pt;
+  margin-right: 6pt;
+}
+#content table {
+  margin: 1em 6pt;
+  padding: 0;
+  border: none;
+  border-collapse: collapse;
+}
+#content table td, #content table th {
+  border: 1px solid #999;
+  margin: 0;
+  padding: 2px 0.5em 2px;
+  vertical-align: top;
+}
+#content td.stable {
+  text-align: center;
+  background-color: #0ff;
+}
+#content td.unstable {
+  text-align: center;
+  background-color: #0f0;
+}
+#content td.devel {
+  text-align: center;
+  background-color: #ff0;
+}
+#content td.planned {
+  text-align: center;
+  background-color: #f80;
+}
+#content td.blank {
+  text-align: center;
+  background-color: #f00;
+}
+p.picture {
+  text-align: center;
+}
+p.picture img {
+  margin: 4px;
+}
+
+#footer {
+  margin: 1.5em -8pt 0;
+  padding: 0.7em 8pt 1em;
+  border-top: 1px solid #bbb;
+}
+p#copyright {
+  text-align: center;
+  margin: 0;
+}
+
+/*** sidebar styles ***/
+
+#sflogo, #sfnavhead {
+  margin: 0;
+  background-color: #ddd;
+  border-bottom: 1px solid #fff;
+}
+#sflogo {
+  padding: 4px 0px;
+  text-align: center;
+}
+#sflogo img {
+  margin: 0px;
+}
+#sflogo a {
+  background-color: #ddd;
+}
+#sfnavhead {
+  padding: 4px 8px;
+}
+.navlist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.navlist li {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+.navlist a {
+  display: block;
+  margin: 0;
+  padding: 3px 8px;
+  border-bottom: 1px solid #fff;
+  text-decoration: none;
+}
+.navlist a:link, .navlist a:visited {
+  background-color: #ddd;
+}
+.navlist a:hover {
+  color: #00aa00;
+  background-color: #eee;
+}
+.navlist a:active {
+  color: #00dd00;
+  background-color: #fff;
+}
+.navlist a.current {
+  background-color: #fff;
+}
+
+/* EOF */

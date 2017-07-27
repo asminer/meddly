@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -127,9 +125,11 @@ class MEDDLY::simple_storage : public node_storage {
     virtual void collectGarbage(bool shrink);
     virtual void reportStats(output &s, const char* pad, unsigned flags) const;
 
+    /*
     virtual void showNode(output &s, node_address addr, bool verb) const;
     virtual void writeNode(output &s, node_address addr, const node_handle* map)
     const;
+    */
 
     virtual node_address makeNode(node_handle p, const unpacked_node &nb, 
         node_storage_flags opt);
@@ -137,7 +137,7 @@ class MEDDLY::simple_storage : public node_storage {
     virtual void unlinkDownAndRecycle(node_address addr);
 
     virtual bool areDuplicates(node_address addr, const unpacked_node &nr) const;
-    virtual void fillUnpacked(unpacked_node &nr, node_address addr) const;
+    virtual void fillUnpacked(unpacked_node &nr, node_address addr, unpacked_node::storage_style) const;
     virtual unsigned hashNode(int level, node_address addr) const;
     virtual int getSingletonIndex(node_address addr, node_handle &down) const;
     virtual node_handle getDownPtr(node_address addr, int index) const;

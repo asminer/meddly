@@ -1,5 +1,3 @@
-  
-// $Id$
 
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
@@ -885,6 +883,8 @@ class MEDDLY::ostream_output : public MEDDLY::output {
 */
 class MEDDLY::forest {
   public:
+    int *level_reduction_rule;
+    
     /** Types of values that we can currently store in forests.
         I.e., if every node in a forest is a function,
         these are the possible ranges for a function.
@@ -929,7 +929,9 @@ class MEDDLY::forest {
           /// Nodes are quasi-reduced.
           QUASI_REDUCED,
           /// Nodes are identity-reduced.
-          IDENTITY_REDUCED
+          IDENTITY_REDUCED,
+	 /// Nodes are user-defined reduced
+	  USER_DEFINED
       };
 
       // Supported node storage meachanisms.
@@ -1027,6 +1029,7 @@ class MEDDLY::forest {
       void setFullyReduced();
       void setQuasiReduced();
       void setIdentityReduced();
+      void setUserDefinedReduced();
       void setNeverDelete();
       void setOptimistic();
       void setPessimistic();
@@ -1184,7 +1187,7 @@ class MEDDLY::forest {
       @param  p       Polcies for reduction, storage, deletion.
     */
     forest(int dslot, domain* d, bool rel, range_type t, edge_labeling ev, 
-      const policies &p);
+      const policies &p,int* level_reduction_rule);
 
     /// Destructor.
     virtual ~forest();  
@@ -1285,6 +1288,22 @@ class MEDDLY::forest {
 
     /// Returns true if the forest is identity reduced.
     bool isIdentityReduced() const;
+    
+     /// Returns true if the forest is user_defined reduced.
+    bool isUserDefinedReduced() const;
+
+    /// Returns true if the level is fully reduced.
+    bool isFullyReduced(int k) const;
+    
+    /// Returns true if the level is quasi reduced.
+    bool isQuasiReduced(int k) const;
+    
+    /// Returns true if the level is identity reduced.
+    bool isIdentityReduced(int k) const;
+    
+    int* getLevelReductionRule() const;
+
+    
 
     inline bool isVarSwap() const {
     	return deflt.swap == policies::variable_swap_type::VAR;
@@ -2071,7 +2090,7 @@ class MEDDLY::domain {
         @return 0       if an error occurs, a new forest otherwise.
     */
     forest* createForest(bool rel, forest::range_type t,
-      forest::edge_labeling ev, const forest::policies &p, int tv=0);
+      forest::edge_labeling ev, const forest::policies &p,int* level_reduction_rule=NULL, int tv=0);
 
     /// Create a forest using the library default policies.
     forest* createForest(bool rel, forest::range_type t,
@@ -2134,7 +2153,7 @@ class MEDDLY::domain {
     int nVars;
 
     // var_orders[0] is reserved to store the default variable order
-    std::vector<std::shared_ptr<const variable_order>> var_orders;
+    std::vector< std::shared_ptr<const variable_order> > var_orders;
     std::shared_ptr<const variable_order> default_var_order;
 
   private:
@@ -2300,7 +2319,7 @@ class MEDDLY::dd_edge {
         @param  value   value of edge coming into the node (only useful
                         for edge-valued MDDs)
     */
-//    void set(node_handle node, int value);
+    void set(node_handle node, int value);
     void set(node_handle node, long value);
 
     /** Modifies the dd_edge fields.
@@ -2393,6 +2412,12 @@ class MEDDLY::dd_edge {
                           3: default + cardinality + graph.
     */
     void show(output &s, int verbosity = 0) const;
+
+    /** Draws a pictographical representation of the graph with this node as the root.
+        @param  filename  Name of output file (without extension)
+        @param  extension File extension (without "."). E.g. "pdf", "ps"
+    */
+    void writePicture(const char* filename, const char* extension) const;
 
     /// Write to a file
     void write(output &s, const node_handle* map) const;

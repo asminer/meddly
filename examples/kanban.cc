@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2011, Iowa State University Research Foundation, Inc.
@@ -74,6 +72,7 @@ int usage(const char* who)
   printf("\t-exp: use explicit (very slow)\n\n");
   printf("\t--batch b: specify explicit batch size\n\n");
   printf("\t -l lfile: Write logging information to specified file\n\n");
+  printf("\t-pdf: write the MDD representing the reachable states to Kanban.pdf\n\n");
   return 1;
 }
 
@@ -95,6 +94,7 @@ int main(int argc, const char** argv)
   char method = 'm';
   int batchsize = 256;
   const char* lfile = 0;
+  bool build_pdf = false;
 
   for (int i=1; i<argc; i++) {
     if (strcmp("-bfs", argv[i])==0) {
@@ -129,6 +129,10 @@ int main(int argc, const char** argv)
     if (strcmp("--batch", argv[i])==0) {
       i++;
       if (argv[i]) batchsize = atoi(argv[i]);
+      continue;
+    }
+    if (strcmp("-pdf", argv[i])==0) {
+      build_pdf = true;
       continue;
     }
     N = atoi(argv[i]);
@@ -282,6 +286,11 @@ int main(int argc, const char** argv)
     operation::showAllComputeTables(meddlyout, 3);
 
     printf("Approx. %g reachable states\n", c);
+
+    if (build_pdf) {
+      reachable.writePicture("kanban", "pdf");
+      if ('m' == method) nsf.writePicture("kanban-nsf", "pdf");
+    }
 
     // cleanup
     if (LOG) {

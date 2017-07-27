@@ -1,7 +1,4 @@
 
-
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -201,8 +198,9 @@ void MEDDLY::builtin_initializer::setup()
   initP(MEDDLY::SATURATION_OTF_FORWARD,   SATURATION_OTF_FORWARD,   initOtfSaturationForward()  );
   initP(MEDDLY::CONSGTRAINT_BACKWARD_DFS,   CONSGTRAINT_BACKWARD_DFS,   initConstraintDFSBackward()  );
 
-
+#ifdef HAVE_LIBGMP
   mpz_object::initBuffer();
+#endif
 }
 
 
@@ -264,6 +262,8 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(MM_MULTIPLY,    MEDDLY::MM_MULTIPLY);
 
 
+#ifdef HAVE_LIBGMP
   mpz_object::clearBuffer();
+#endif
 }
 

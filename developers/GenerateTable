@@ -1,0 +1,147 @@
+#!/bin/bash
+#
+# Builds a table of run times for various versions of Meddly.
+# The different versions are obtained from the git repository.
+# Compiles each version, runs the benchmark script, and
+# collects the results.
+# 
+
+if [ $# -ne "1" ]; then
+  echo "Usage: $0 <file.html>"
+  exit 1
+fi
+
+if [ ! -f autogen.sh ]; then
+  echo "Are you running this in the Meddly root directory?"
+  exit 1
+fi
+
+OUT="`pwd`/$1"
+echo "Writing to $OUT"
+
+#
+# Copy RunBenchmarks to working directory
+# because when we switch to other versions, it may get clobbered
+#
+
+cp developers/RunBenchmarks .
+
+#
+# Run everything and generate table
+#
+
+cat > $OUT <<EOF
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+table {
+  border-collapse:collapse;
+}
+th {
+  padding-top:2px;
+  padding-bottom:2px;
+  padding-left:5px;
+  padding-right:5px;
+}
+td {
+  text-align:right;
+  padding-top:2px;
+  padding-bottom:2px;
+  padding-left:5px;
+  padding-right:5px;
+}
+</style>
+</head>
+
+<body>
+<p>
+Gigantic table of MEDDLY stats,
+primarily for tracking performance changes over time.
+Tested on 
+EOF
+date +"%d %B %Y." >> $OUT
+echo "Executables built using" >> $OUT
+g++ --version 2> /dev/null | head -n 1 >> $OUT
+
+cat >> $OUT <<EOF
+</p>
+<table border=1>
+<tr>
+  <th rowspan=2>Release Date</th>
+  <th rowspan=2>Version</th>
+  <th colspan=3>Source size</th>
+  <th colspan=2>Logical operations</th>
+  <th colspan=3>BFS reachability</th>
+  <th colspan=3>DFS reachability (saturation)</th>
+  <th colspan=2>Explicit reach</th>
+</tr>
+<tr>
+  <th>files</th>
+  <th>lines</th>
+  <th>chars</th>
+  <th>nqueens 14</th>
+  <th>qcover 12</th>
+  <th>phils 800</th>
+  <th>kanban 75</th>
+  <th>slot 20</th>
+  <th>phils 10k</th>
+  <th>kanban 200</th>
+  <th>slot 100</th>
+  <th>kanban 6</th>
+  <th>slot 7</th>
+</tr>
+<!-- Data here -->
+EOF
+
+#
+# Old releases - are branches
+#
+
+for oldrel in v0.02 v0.03 v0.04 v0.05 v0.06 v0.07 v0.08 v0.09 v0.10 v0.11 v0.12 v0.13 v0.14; do
+  if git checkout releases/$oldrel; then
+    echo "Checkout of $oldrel succeeded"
+  else
+    echo "Checkout of $oldrel failed"
+    exit 1
+  fi
+  ./autogen.sh
+  if make clean all check; then
+    echo "Build of version $oldrel succeeded"
+  else
+    echo "Build of version $oldrel failed"
+    exit 1
+  fi
+  ./RunBenchmarks -h $OUT
+done
+
+#
+# New releases 
+#
+
+for newrel in master; do
+  if git checkout $newrel; then
+    echo "Checkout of $newrel succeeded"
+  else
+    echo "Checkout of $newrel failed"
+    exit 1
+  fi
+  ./autogen.sh
+  if make clean all check; then
+    echo "Build of version $newrel succeeded"
+  else
+    echo "Build of version $newrel failed"
+    exit 1
+  fi
+  ./RunBenchmarks -h $OUT
+done
+
+
+rm RunBenchmarks
+
+cat >> $OUT <<EOF
+<!-- Done data -->
+</table>
+</body>
+</html>
+EOF

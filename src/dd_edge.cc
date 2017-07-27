@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -182,14 +180,10 @@ void MEDDLY::dd_edge::set(node_handle n)
   unlinkNode(parent, old);
 }
 
-//void MEDDLY::dd_edge::set(node_handle n, int v)
-//{
-//  MEDDLY_DCASSERT(parent);
-//  MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
-//  MEDDLY_DCASSERT(forest::INTEGER == parent->getRangeType());
-//  set(n);
-//  expert_forest::EVencoder<int>::writeValue(&raw_value, v);
-//}
+void MEDDLY::dd_edge::set(node_handle n, int v)
+{
+  set(n, (long)v);
+}
 
 void MEDDLY::dd_edge::set(node_handle n, long v)
 {
@@ -285,6 +279,7 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator/=(const dd_edge& e)
 void MEDDLY::dd_edge::show(output &strm, int verbosity) const
 {
   expert_forest* eParent = smart_cast<expert_forest*>(parent);
+
   strm << "(Forest Addr: ";
   strm.put_hex(long(parent));
   strm << ", ";
@@ -391,3 +386,11 @@ void MEDDLY::dd_edge::read(forest* p, input &s, const node_handle* map)
   MEDDLY_DCASSERT(index != -1);
 }
 
+
+void MEDDLY::dd_edge::writePicture(const char* filename, const char* extension) const
+{
+  if (parent) {
+    expert_forest* eParent = smart_cast<expert_forest*>(parent);
+    eParent->writeNodeGraphPicture(filename, extension, &node, 1);
+  }
+}

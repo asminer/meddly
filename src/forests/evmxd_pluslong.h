@@ -59,7 +59,7 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
     };
 
   public:
-    evmxd_pluslong(int dsl, domain *d, const policies &p);
+    evmxd_pluslong(int dsl, domain *d, const policies &p, int* level_reduction_rule);
     ~evmxd_pluslong();
 
     virtual void createEdge(long val, dd_edge &e);

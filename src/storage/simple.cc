@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -181,6 +179,7 @@ void MEDDLY::simple_storage
 #endif
 }
 
+/*
 void MEDDLY::simple_storage::showNode(output &s, node_address addr, bool verb) const
 {
   if (sizeOf(addr) < 0) {
@@ -306,7 +305,7 @@ void MEDDLY::simple_storage
   }
 
 }
-
+*/
 
 
 
@@ -539,7 +538,8 @@ bool MEDDLY::simple_storage
   }
 }
 
-void MEDDLY::simple_storage::fillUnpacked(unpacked_node &nr, node_address addr) const
+void MEDDLY::simple_storage
+::fillUnpacked(unpacked_node &nr, node_address addr, unpacked_node::storage_style st2) const
 {
 #ifdef DEBUG_ENCODING
   printf("simple_storage filling reader\n    internal: ");
@@ -563,6 +563,18 @@ void MEDDLY::simple_storage::fillUnpacked(unpacked_node &nr, node_address addr) 
   // Copy everything else
 
   int size = sizeOf(addr);
+
+  /*
+      Set the unpacked node storage style based on settings
+  */
+  switch (st2) {
+      case unpacked_node::FULL_NODE:     nr.bind_as_full(true);    break;
+      case unpacked_node::SPARSE_NODE:   nr.bind_as_full(false);   break;
+      case unpacked_node::AS_STORED:     nr.bind_as_full(size>=0); break;
+
+      default:            assert(0);
+  };
+
   if (size < 0) {
     //
     // Node is sparse
@@ -623,10 +635,14 @@ void MEDDLY::simple_storage::fillUnpacked(unpacked_node &nr, node_address addr) 
         memcpy(nr.eptr_write(i), FEP(addr, i), nr.edgeBytes());
       }
     } 
-    for (; i<nr.getSize(); i++) {
-      nr.d_ref(i) = tv;
-      if (nr.hasEdges()) {
-        memset(nr.eptr_write(i), 0, nr.edgeBytes());
+    if (unpacked_node::AS_STORED == st2) {
+      nr.shrinkFull(size);
+    } else {
+      for (; i<nr.getSize(); i++) {
+        nr.d_ref(i) = tv;
+        if (nr.hasEdges()) {
+          memset(nr.eptr_write(i), 0, nr.edgeBytes());
+        }
       }
     }
 #ifdef DEBUG_ENCODING
@@ -845,7 +861,6 @@ const void* MEDDLY::simple_storage
 void MEDDLY::simple_storage::updateData(node_handle* d)
 {
   data = d;
-  updateCountArray(data + count_index);
   updateNextArray(data + next_index);
 }
 
@@ -958,7 +973,6 @@ MEDDLY::node_handle MEDDLY::simple_storage
   }
 #else
   node_address addr = allocNode(size, p, true);
-  MEDDLY_DCASSERT(1==getCountOf(addr));
   node_handle* down = FD(addr);
   if (edgeSlots) {
       MEDDLY_DCASSERT(nb.hasEdges());
@@ -1002,49 +1016,60 @@ MEDDLY::node_handle MEDDLY::simple_storage
 ::makeSparseNode(node_handle p, int size, const unpacked_node &nb)
 {
   node_address addr = allocNode(-size, p, false);
-  MEDDLY_DCASSERT(1==getCountOf(addr));
   node_handle* index = SI(addr);
   node_handle* down  = SD(addr);
   if (nb.hasEdges()) {
-      MEDDLY_DCASSERT(nb.hasEdges());
-      char* edge = (char*) SE(addr);
-      int edge_bytes = edgeSlots * sizeof(node_handle);
-      if (nb.isSparse()) {
-        for (int z=0; z<size; z++) {
-          down[z] = nb.d(z);
-          index[z] = nb.i(z);
-        }
-        // kinda hacky
-        memcpy(edge, nb.eptr(0), size * edge_bytes);
-      } else {
-        int z = 0;
-        for (int i=0; i<nb.getSize(); i++) if (nb.d(i)) {
+    MEDDLY_DCASSERT(nb.hasEdges());
+    char* edge = (char*) SE(addr);
+    int edge_bytes = edgeSlots * sizeof(node_handle);
+    if (nb.isSparse()) {
+      for (int z=0; z<size; z++) {
+        down[z] = nb.d(z);
+        index[z] = nb.i(z);
+      }
+      // kinda hacky
+      memcpy(edge, nb.eptr(0), size * edge_bytes);
+#ifdef DEVELOPMENT_CODE
+      // check if the sparse node is sorted
+      for (int z=1; z<size; z++) {
+        MEDDLY_DCASSERT(index[z-1] < index[z]);
+      }
+#endif
+    } else {
+      int z = 0;
+      for (int i=0; i<nb.getSize(); i++) if (nb.d(i)) {
+        MEDDLY_CHECK_RANGE(0, z, size);
+        down[z] = nb.d(i);
+        index[z] = i;
+        memcpy(edge + z * edge_bytes, nb.eptr(i), edge_bytes);
+        z++;
+      }
+    }
+  } else {
+    MEDDLY_DCASSERT(!nb.hasEdges());
+    if (nb.isSparse()) {
+      for (int z=0; z<size; z++) {
+        down[z] = nb.d(z);
+        index[z] = nb.i(z);
+      }
+#ifdef DEVELOPMENT_CODE
+      // check if the sparse node is sorted
+      for (int z=1; z<size; z++) {
+        MEDDLY_DCASSERT(index[z-1] < index[z]);
+      }
+#endif
+    } else {
+      int z = 0;
+      node_handle tv = getParent()->getTransparentNode();
+      for (int i=0; i<nb.getSize(); i++) {
+        if (nb.d(i)!=tv) {
           MEDDLY_CHECK_RANGE(0, z, size);
           down[z] = nb.d(i);
           index[z] = i;
-          memcpy(edge + z * edge_bytes, nb.eptr(i), edge_bytes);
           z++;
         }
       }
-  } else {
-      MEDDLY_DCASSERT(!nb.hasEdges());
-      if (nb.isSparse()) {
-        for (int z=0; z<size; z++) {
-          down[z] = nb.d(z);
-          index[z] = nb.i(z);
-        }
-      } else {
-        int z = 0;
-        node_handle tv = getParent()->getTransparentNode();
-        for (int i=0; i<nb.getSize(); i++) {
-          if (nb.d(i)!=tv) {
-            MEDDLY_CHECK_RANGE(0, z, size);
-            down[z] = nb.d(i);
-            index[z] = i;
-            z++;
-          }
-        }
-      }
+    }
   }
   copyExtraHeader(addr, nb);
 #ifdef DEBUG_ENCODING
@@ -1083,12 +1108,14 @@ MEDDLY::simple_storage::allocNode(int sz, node_handle tail, bool clear)
   MEDDLY_DCASSERT(got >= slots);
   if (clear) {
 //	memset(data+off, 0, slots*sizeof(node_handle));
-	node_handle tv = getParent()->getTransparentNode();
-	for(int i=0; i<slots; i++){
-		data[off+i]=tv;
-	}
+	  node_handle tv = getParent()->getTransparentNode();
+	  for(int i=0; i<slots; i++){
+		  data[off+i]=tv;
+	  }
   }
-  setCountOf(off, 1);                     // #incoming
+  // Need the slot to be non-negative for now...
+  data[off + count_index] = 0;
+
   setNextOf(off, temp_node_value);        // mark as a temp node
   setSizeOf(off, sz);                     // size
   data[off+slots-1] = slots - got;        // negative padding

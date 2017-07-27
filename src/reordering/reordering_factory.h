@@ -1,4 +1,3 @@
-// $Id$
 
 #ifndef REORDERING_FACTORY_H
 #define REORDERING_FACTORY_H

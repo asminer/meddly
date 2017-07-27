@@ -1,6 +1,4 @@
 
-// $Id: test_mtmdd.cc 653 2016-02-17 00:00:51Z cjiang1209 $
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -27,6 +25,7 @@
  * Rebuild a mdd forest with a different variable ordr.
  */
 
+#include <stdlib.h>
 #include <iostream>
 #include <string.h>
 #include "meddly.h"

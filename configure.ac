@@ -1,12 +1,12 @@
-# $Id$
-
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
 ## AC_PREREQ(2.60)
 AC_PREREQ(2.59)
-AC_INIT([MEDDLY], [0.14], [asminer@iastate.edu], meddly, [http://meddly.sourceforge.net])
-AM_INIT_AUTOMAKE([-Wall foreign color-tests subdir-objects])
+AC_INIT([MEDDLY], [0.15.0], [asminer@iastate.edu], meddly, [http://meddly.sourceforge.net])
+AM_INIT_AUTOMAKE([-Wall foreign parallel-tests color-tests subdir-objects])
+# Allow silent builds, and make it the default, if we can:
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_SRCDIR([src/meddly.h])
 AC_CONFIG_MACRO_DIR([m4])
@@ -14,8 +14,10 @@ AC_PREFIX_DEFAULT([$PWD])
 
 # Checks for programs.
 AC_PROG_CXX
+AX_CXX_COMPILE_STDCXX(11)
 AC_PROG_CC
-AM_PROG_AR
+# Add AM_PROG_AR, if we can...
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AM_PROG_LIBTOOL
 
 # Checks for libraries.
