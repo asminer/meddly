@@ -42,10 +42,10 @@ int N = -1;
 
 
 /*SmallOS*/
-int PLACES = 9;
-int TRANS = 8;
+const int PLACES = 9;
+const int TRANS = 8;
 int BOUNDS = 7000;
-char** model;
+int** model;
 
 using namespace MEDDLY;
 
@@ -53,15 +53,15 @@ FILE_output meddlyout(stdout);
 
 void buildModel(const char* order)
 {
-  const char* modelTest[] = {
-    "X+.......-",  // freeMem
-    "X-+-.-....",  // loadMem
-    "X..+-+...+",  // endUnload
-    "X..-+--...",  // startUnload
-    "X.-+.+...+",  // endLoad
-    "X.....--+.",  // startNext
-    "X.....++-.",  // suspend
-    "X......-+-",  // starFirst
+  const int modelTest[TRANS][PLACES+1] = {
+    {0,1,0,0,0,0,0,0,0,-1},  // freeMem
+    {0,-1,1,-1,0,-1,0,0,0,0},  // loadMem
+    {0,0,0,1,-1,1,0,0,0,1},  // endUnload
+    {0,0,0,-1,1,-1,-1,0,0,0},  // startUnload
+    {0,0,-1,1,0,1,0,0,0,1},  // endLoad
+    {0,0,0,0,0,0,-1,-1,1,0},  // startNext
+    {0,0,0,0,0,0,1,1,-1,0},  // suspend
+    {0,0,0,0,0,0,0,-1,1,-1},  // starFirst
   };
   
   p1_position = 1;
@@ -81,16 +81,15 @@ void buildModel(const char* order)
       p7_position = i+1;
     }
   
-  model = (char**) malloc(TRANS * sizeof(char*));
+  model = (int**) malloc(TRANS * sizeof(int*));
   
   for(int i=0;i<TRANS;i++)
     {
-    model[i] = (char*) malloc((PLACES+2) * sizeof(char));
+    model[i] = (int*) malloc((PLACES+2) * sizeof(int));
     for(int j=1;j<(PLACES+1);j++)
       {
       model[i][j]=modelTest[i][order[j-1]-'0'];
       }
-    model[i][PLACES+1] = '\0';
     }
   
 }
@@ -103,9 +102,9 @@ const char* name = who;
 for (const char* ptr=who; *ptr; ptr++) {
 if ('/' == *ptr) name = ptr+1;
 }
-printf("\nUsage: %s MT DC -O <order>\n\n", name);
-printf("\tMT: number of MT tokens\n");
-printf("\tDC: number of DC tokens\n");
+  printf("\nUsage: %s nnnn <-O> order\n\n", name);
+  printf("\tnnnn: number of initial tokens\n");
+  printf("\torder: the order of variables:123456789\n");
 return 1;
 }
 
@@ -142,7 +141,8 @@ for (int i=1; i<argc; i++)
       }
   }
 }
-
+  
+if (argc<5) return usage(argv[0]);
 if (MT<0) return usage(argv[0]);
 if (DC<0) return usage(argv[0]);
 BOUNDS = MT+1;
@@ -178,63 +178,6 @@ initialState[p1_position]=initialState[p3_position]=MT;initialState[p5_position]
 
 N = 2*DC>MT?(2*DC):MT;
   
-method = 'm';
-  std::cout<<"\n********************";
-  std::cout<<"\n       esat";
-  std::cout<<"\n********************";
-if('e' == method)
-  {
-  forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
-  forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL,pr);
-  
-  
-  dd_edge init_state(mdd);
-  mdd->createEdge(&initialState, 1, init_state);
-  
-  
-  dd_edge nsf(mxd);
-  satpregen_opname::pregen_relation* ensf = 0;
-  specialized_operation* sat = 0;
-  
-  ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd, 16);
-  if (ensf) {
-    start.note_time();
-    buildNextStateFunction(model, TRANS, ensf, 4);
-    start.note_time();
-  } else {
-    start.note_time();
-    buildNextStateFunction(model, TRANS, mxd, nsf, 4);
-    start.note_time();
-  }
-  printf("Next-state function construction took %.4e seconds\n",
-         start.get_last_interval() / 1000000.0);
-  printStats("MxD", mxd);
-  dd_edge reachable(mdd);
-  start.note_time();
-  printf("\nBuilding reachability set using saturation, relation");
-  
-  fflush(stdout);
-  if (0==SATURATION_FORWARD) {
-    throw error(error::UNKNOWN_OPERATION);
-  }
-  sat = SATURATION_FORWARD->buildOperation(ensf);
-  if (0==sat) {
-    throw error(error::INVALID_OPERATION);
-  }
-  sat->compute(init_state, reachable);
-  start.note_time();
-  printf("\nReachability set construction took %.4e seconds\n",
-         start.get_last_interval() / 1000000.0);
-  
-  printStats("MDD", mdd);
-  fflush(stdout);
-  double c;
-  apply(CARDINALITY, reachable, c);
-  operation::showAllComputeTables(meddlyout, 3);
-  
-  printf("Approx. %g reachable states\n", c);
-  
-  }
 method ='i';
   std::cout<<"\n********************";
   std::cout<<"\n     implicit";

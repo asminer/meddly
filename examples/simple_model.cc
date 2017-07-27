@@ -381,15 +381,17 @@ public:
   }
 };
 
-unsigned long makeSignature(std::string s)
+/*unsigned long makeSignature(std::string s)
 {
   long result = 0;
-  for (int i = 0; i < s.length(); i++)
-    result += (unsigned long)pow(27, s.length()- i - 1)*(1 + s.at(i) - '+');
+  for (int i = 0; i < s.length(); i++){
+    int val = ((s.at(i)>='0') && (s.at(i)<='9'))?(s.at(i) - '0'):(10 + s.at(i) - '+');
+    result += (unsigned long)pow(14, s.length()- i - 1)*val;
+  }
   return result;
-}
+}*/
 
-void buildImplicitRelation(const char* const* events, int nEvents,int nPlaces, int bounds, MEDDLY::satimpl_opname::implicit_relation* T)
+void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, int bounds, MEDDLY::satimpl_opname::implicit_relation* T)
 {
   
   int node_count = 0;
@@ -401,8 +403,8 @@ void buildImplicitRelation(const char* const* events, int nEvents,int nPlaces, i
     bool done = false;
     for( int p = 1; p <= nPlaces; p++)
       {
-      if(events[e][p]!='.') node_count +=1;
-      if((events[e][nPlaces-p+1]!='.')&&(!done))
+      if(events[e][p]!='0') node_count +=1;
+      if((events[e][nPlaces-p+1]!=0)&&(!done))
         {
         tops_of_events[e] = nPlaces-p+1;
         done = true;
@@ -418,33 +420,25 @@ void buildImplicitRelation(const char* const* events, int nEvents,int nPlaces, i
   nxtList[0] = 0;
   nxtList[1] = 0;
   
-  unsigned long sign;
   int rctr = 0;
   for(int e = 0;e < nEvents; e++)
     {
+    unsigned long sign = 0;
     int lowest_place = nPlaces;
     int previous_node_handle = 1;
-    std::string till_now;
     for( int p = 1; p <= nPlaces; p++)
       {
-      till_now+=(events[e][p]);
-      if(events[e][p]!='.')
+       sign = events[e][p]>=0?(sign*10)+events[e][p]:(sign*100)+events[e][p];
+        if(events[e][p]!=0)
         {
-        if(p<lowest_place) lowest_place = p;
-        char expr[2];
-        expr[0] = events[e][p];
-        expr[1]='1';
-        sign =(unsigned long)makeSignature(till_now);
-        rNode[rctr] = new derRelNode(sign,p,previous_node_handle);
-        previous_node_handle = T->registerNode((tops_of_events[e]==p),rNode[rctr]);
+          if(p<lowest_place) lowest_place = p;
+          rNode[rctr] = new derRelNode(sign,p,previous_node_handle);
+          previous_node_handle = T->registerNode((tops_of_events[e]==p),rNode[rctr]);
         rctr++;
-        nxtList[previous_node_handle] = (events[e][p] =='+')?1:-1;
+        nxtList[previous_node_handle] = events[e][p];
         }
       }
     }
-  //std::cout<<"\n The implicit relation\n";
-  //T->show();
-  
 }
 
 //************************************************************

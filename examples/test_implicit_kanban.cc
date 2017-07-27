@@ -34,13 +34,13 @@
 // #define DUMP_REACHABLE
 
 
-char** model;
+int** model;
 int p1_position=1,p13_position=13,p5_position=5,p9_position=9;
 int N = -1;
 
 /*Kanban*/
- int PLACES = 16;
- int TRANS = 16;
+ const int PLACES = 16;
+ const int TRANS = 16;
  int BOUNDS = -1;//N+1
 
 
@@ -51,23 +51,24 @@ FILE_output meddlyout(stdout);
 
 void buildModel(const char* order)
 {
-  const char* modelTest[] = {
-    "X-+..............",  // Tin1 TA
-    "X.-+.............",  // Tr1 TB
-    "X.+-.............",  // Tb1 TC
-    "X.-.+............",  // Tg1 TD
-    "X.....-+.........",  // Tr2 TE
-    "X.....+-.........",  // Tb2 TF
-    "X.....-.+........",  // Tg2 TG
-    "X+..--+..-+......",  // Ts1_23 TH
-    "X.........-+.....",  // Tr3 TI
-    "X.........+-.....",  // Tb3 TJ
-    "X.........-.+....",  // Tg3 TK
-    "X....+..-+..--+..",  // Ts23_4 TL
-    "X.............-+.",  // Tr4 TM
-    "X.............+-.",  // Tb4 TN
-    "X............+..-",  // Tout4 TO
-    "X.............-.+"   // Tg4 TP
+  
+  int const modelTest[TRANS][PLACES+1] = {
+    {0,-1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0},  // Tin1 TA
+    {0,0,-1,1,0,0,0,0,0,0,0,0,0,0,0,0,0},  // Tr1 TB
+    {0,0,1,-1,0,0,0,0,0,0,0,0,0,0,0,0,0},  // Tb1 TC
+    {0,0,-1,0,1,0,0,0,0,0,0,0,0,0,0,0,0},  // Tg1 TD
+    {0,0,0,0,0,0,-1,1,0,0,0,0,0,0,0,0,0},  // Tr2 TE
+    {0,0,0,0,0,0,1,-1,0,0,0,0,0,0,0,0,0},  // Tb2 TF
+    {0,0,0,0,0,0,-1,0,1,0,0,0,0,0,0,0,0},  // Tg2 TG
+    {0,1,0,0,-1,-1,1,0,0,-1,1,0,0,0,0,0,0},  // Ts1_23 TH
+    {0,0,0,0,0,0,0,0,0,0,-1,1,0,0,0,0,0},  // Tr3 TI
+    {0,0,0,0,0,0,0,0,0,0,1,-1,0,0,0,0,0},  // Tb3 TJ
+    {0,0,0,0,0,0,0,0,0,0,-1,0,1,0,0,0,0},  // Tg3 TK
+    {0,0,0,0,0,1,0,0,-1,1,0,0,-1,-1,1,0,0},  // Ts23_4 TL
+    {0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,1,0},  // Tr4 TM
+    {0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,-1,0},  // Tb4 TN
+    {0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,-1},  // Tout4 TO
+    {0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0,1}   // Tg4 TP
   };
 
   
@@ -87,11 +88,11 @@ void buildModel(const char* order)
       p9_position = i+1;
     }
   
-  model = (char**) malloc(TRANS * sizeof(char*));
+  model = (int**) malloc(TRANS * sizeof(int*));
   
   for(int i=0;i<TRANS;i++)
     {
-    model[i] = (char*) malloc((PLACES+2) * sizeof(char));
+    model[i] = (int*) malloc((PLACES+2) * sizeof(int));
     for(int j=1;j<(PLACES+1);j++)
       {
       if((order[j-1]>'0')&&(order[j-1]<='9'))
@@ -100,7 +101,6 @@ void buildModel(const char* order)
         model[i][j]=modelTest[i][order[j-1]-'7'];
         
       }
-    model[i][PLACES+1] = '\0';
     }
   
 }
@@ -113,8 +113,9 @@ int usage(const char* who)
   for (const char* ptr=who; *ptr; ptr++) {
     if ('/' == *ptr) name = ptr+1;
   }
-  printf("\nUsage: %s nnnn \n\n", name);
+  printf("\nUsage: %s nnnn <-O> order\n\n", name);
   printf("\tnnnn: number of initial tokens\n");
+  printf("\torder: the order of variables:123456789ABCDEFG \n");
   return 1;
 }
 
@@ -152,6 +153,7 @@ int main(int argc, const char** argv)
     }
   BOUNDS=1;
   
+  if (argc<4) return usage(argv[0]);
   if (N<0) return usage(argv[0]);
   
   domain* d = 0;
@@ -183,70 +185,6 @@ int main(int argc, const char** argv)
     for(int g = 1;g <= PLACES;g++) initialState[g] = 0;
     initialState[p1_position]=initialState[p13_position]=initialState[p5_position]=initialState[p9_position]=N;
     
-    method = 'm';
-    std::cout<<"\n********************";
-    std::cout<<"\n       esat";
-    std::cout<<"\n********************";
-    
-    if('e' == method)
-      {
-      forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
-      forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL,pr);
-      
-      
-      
-      dd_edge init_state(mdd);
-      mdd->createEdge(&initialState, 1, init_state);
-      
-      
-      dd_edge nsf(mxd);
-      satpregen_opname::pregen_relation* ensf = 0;
-      specialized_operation* sat = 0;
-      
-      ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd, 16);
-      if (ensf) {
-        start.note_time();
-        buildNextStateFunction(model, TRANS, ensf, 4);
-        start.note_time();
-      } else {
-        start.note_time();
-        buildNextStateFunction(model, TRANS, mxd, nsf, 4);
-        start.note_time();
-      }
-      printf("Next-state function construction took %.4e seconds\n",
-             start.get_last_interval() / 1000000.0);
-      printStats("MxD", mxd);
-      dd_edge reachable(mdd);
-      start.note_time();
-      printf("\nBuilding reachability set using saturation, relation");
-      
-      fflush(stdout);
-      if (0==SATURATION_FORWARD) {
-        throw error(error::UNKNOWN_OPERATION);
-      }
-      sat = SATURATION_FORWARD->buildOperation(ensf);
-      if (0==sat) {
-        throw error(error::INVALID_OPERATION);
-      }
-      sat->compute(init_state, reachable);
-      start.note_time();
-      printf("\nReachability set construction took %.4e seconds\n",
-             start.get_last_interval() / 1000000.0);
-      
-      #ifdef DUMP_REACHABLE
-      printf("Reachable states:\n");
-      reachable.show(meddlyout, 2);
-      #endif
-      
-      printStats("MDD", mdd);
-      fflush(stdout);
-      double c;
-      apply(CARDINALITY, reachable, c);
-      operation::showAllComputeTables(meddlyout, 3);
-      
-      printf("Approx. %g reachable states\n", c);
-      
-      }
     method ='i';
     std::cout<<"\n********************";
     std::cout<<"\n     Implicit";
