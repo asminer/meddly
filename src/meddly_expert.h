@@ -2821,7 +2821,6 @@ class MEDDLY::satimpl_opname:public specialized_opname {
         int level;
         rel_node_handle down;
         rel_node_handle ID;
-        char* expr;
         
         // used by the hash table in implicit_relation
         

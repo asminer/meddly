@@ -34,32 +34,66 @@ along with this library.  If not, see <http://www.gnu.org/licenses/>.
 // #define DUMP_REACHABLE
 
 
-char** sample_model;
-int p1_position;
+int p1_position=1,p3_position=3,p5_position=5,p7_position=7;
 int MT = -1;
 int DC = -1;
+int N = -1;
 
 
 
 /*SmallOS*/
 int PLACES = 9;
 int TRANS = 8;
-int BOUNDS = 100;
-const char* model[] = {
-"X+.......-",  // freeMem
-"X-+-.-....",  // loadMem
-"X..+-+...+",  // endUnload
-"X..-+--...",  // startUnload
-"X.-+.+...+",  // endLoad
-"X.....--+.",  // startNext
-"X.....++-.",  // suspend
-"X......-+-",  // starFirst
-};
-
+int BOUNDS = 7000;
+char** model;
 
 using namespace MEDDLY;
 
 FILE_output meddlyout(stdout);
+
+void buildModel(const char* order)
+{
+  const char* modelTest[] = {
+    "X+.......-",  // freeMem
+    "X-+-.-....",  // loadMem
+    "X..+-+...+",  // endUnload
+    "X..-+--...",  // startUnload
+    "X.-+.+...+",  // endLoad
+    "X.....--+.",  // startNext
+    "X.....++-.",  // suspend
+    "X......-+-",  // starFirst
+  };
+  
+  p1_position = 1;
+  p3_position = 3;
+  p5_position = 5;
+  p7_position = 7;
+  
+  for (int i=0; i<PLACES; i++)
+    {
+    if (order[i]=='1')
+      p1_position = i+1;
+    if (order[i]=='3')
+      p3_position = i+1;
+    if (order[i]=='5')
+      p5_position = i+1;
+    if (order[i]=='7')
+      p7_position = i+1;
+    }
+  
+  model = (char**) malloc(TRANS * sizeof(char*));
+  
+  for(int i=0;i<TRANS;i++)
+    {
+    model[i] = (char*) malloc((PLACES+2) * sizeof(char));
+    for(int j=1;j<(PLACES+1);j++)
+      {
+      model[i][j]=modelTest[i][order[j-1]-'0'];
+      }
+    model[i][PLACES+1] = '\0';
+    }
+  
+}
 
 
 int usage(const char* who)
@@ -69,7 +103,7 @@ const char* name = who;
 for (const char* ptr=who; *ptr; ptr++) {
 if ('/' == *ptr) name = ptr+1;
 }
-printf("\nUsage: %s MT DC \n\n", name);
+printf("\nUsage: %s MT DC -O <order>\n\n", name);
 printf("\tMT: number of MT tokens\n");
 printf("\tDC: number of DC tokens\n");
 return 1;
@@ -93,14 +127,27 @@ char method ;
 int batchsize = 256;
 const char* lfile = 0;
 
-if(argc<3) return usage(argv[0]);
-MT = atoi(argv[1]);
-DC = atoi(argv[2]);
+for (int i=1; i<argc; i++)
+{
+  if(i==1)
+    MT = atoi(argv[i]);
+  else if(i==2)
+    DC = atoi(argv[i]);
+  
+  if (strcmp("-O", argv[i])==0) {
+    if(i+1 < argc)
+      {
+      buildModel(argv[i+1]);
+      i++;
+      }
+  }
+}
 
 if (MT<0) return usage(argv[0]);
 if (DC<0) return usage(argv[0]);
-
+BOUNDS = MT+1;
 domain* d = 0;
+
 try {
 
 MEDDLY::initialize();
@@ -109,7 +156,7 @@ timer start;
 
 
 printf("+----------------------------------------------------+\n");
-printf("|     Initializing sample_model with %-4d %-4d        |\n", MT,DC);
+printf("|         Initializing smallOS with %-4d %-4d        |\n", MT,DC);
 printf("+----------------------------------------------------+\n");
 fflush(stdout);
 
@@ -119,73 +166,75 @@ for (int i=PLACES-1; i>=0; i--) sizes[i] = BOUNDS;
 d = createDomainBottomUp(sizes, PLACES);
 delete[] sizes;
 forest::policies pr(true);
-pr.setPessimistic();
+  pr.setPessimistic();
 forest::policies p(false);
-p.setPessimistic();
+  p.setPessimistic();
 
 //INITIAL STATE
 int* initialState;
 initialState = new int[PLACES + 1];
 for(int g = 1;g <= PLACES;g++) initialState[g] = 0;
-initialState[1]=initialState[3]=MT;initialState[5]=DC;initialState[7]=2*DC;
+initialState[p1_position]=initialState[p3_position]=MT;initialState[p5_position]=DC;initialState[p7_position]=2*DC;
 
-
-method = 'k';
+N = 2*DC>MT?(2*DC):MT;
+  
+method = 'm';
   std::cout<<"\n********************";
-  std::cout<<"\n       ksat";
+  std::cout<<"\n       esat";
   std::cout<<"\n********************";
-if('k' == method)
-{
-forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
-forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
-
-
-dd_edge init_state(mdd);
-mdd->createEdge(&initialState, 1, init_state);
-
-
-dd_edge nsf(mxd);
-satpregen_opname::pregen_relation* ensf = 0;
-specialized_operation* sat = 0;
-
-ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd);
-if (ensf) {
-start.note_time();
-buildNextStateFunction(model, TRANS, ensf, 4);
-start.note_time();
-} else {
-start.note_time();
-buildNextStateFunction(model, TRANS, mxd, nsf, 4);
-start.note_time();
-}
-printf("Next-state function construction took %.4e seconds\n",
-start.get_last_interval() / 1000000.0);
-printStats("MxD", mxd);
-dd_edge reachable(mdd);
-start.note_time();
-printf("\nBuilding reachability set using saturation, relation");
-
-fflush(stdout);
-if (0==SATURATION_FORWARD) {
-throw error(error::UNKNOWN_OPERATION);
-}
-sat = SATURATION_FORWARD->buildOperation(ensf);
-if (0==sat) {
-throw error(error::INVALID_OPERATION);
-}
-sat->compute(init_state, reachable);
-start.note_time();
-printf("\nReachability set construction took %.4e seconds\n",
-start.get_last_interval() / 1000000.0);
-printStats("MDD", mdd);
-fflush(stdout);
-double c;
-apply(CARDINALITY, reachable, c);
-operation::showAllComputeTables(meddlyout, 3);
-
-printf("Approx. %g reachable states\n", c);
-
-}
+if('e' == method)
+  {
+  forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
+  forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL,pr);
+  
+  
+  dd_edge init_state(mdd);
+  mdd->createEdge(&initialState, 1, init_state);
+  
+  
+  dd_edge nsf(mxd);
+  satpregen_opname::pregen_relation* ensf = 0;
+  specialized_operation* sat = 0;
+  
+  ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd, 16);
+  if (ensf) {
+    start.note_time();
+    buildNextStateFunction(model, TRANS, ensf, 4);
+    start.note_time();
+  } else {
+    start.note_time();
+    buildNextStateFunction(model, TRANS, mxd, nsf, 4);
+    start.note_time();
+  }
+  printf("Next-state function construction took %.4e seconds\n",
+         start.get_last_interval() / 1000000.0);
+  printStats("MxD", mxd);
+  dd_edge reachable(mdd);
+  start.note_time();
+  printf("\nBuilding reachability set using saturation, relation");
+  
+  fflush(stdout);
+  if (0==SATURATION_FORWARD) {
+    throw error(error::UNKNOWN_OPERATION);
+  }
+  sat = SATURATION_FORWARD->buildOperation(ensf);
+  if (0==sat) {
+    throw error(error::INVALID_OPERATION);
+  }
+  sat->compute(init_state, reachable);
+  start.note_time();
+  printf("\nReachability set construction took %.4e seconds\n",
+         start.get_last_interval() / 1000000.0);
+  
+  printStats("MDD", mdd);
+  fflush(stdout);
+  double c;
+  apply(CARDINALITY, reachable, c);
+  operation::showAllComputeTables(meddlyout, 3);
+  
+  printf("Approx. %g reachable states\n", c);
+  
+  }
 method ='i';
   std::cout<<"\n********************";
   std::cout<<"\n     implicit";
@@ -195,17 +244,22 @@ if('i' == method)
 
 //CREATE FORESTS
 forest* inmdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
-forest* outmdd = inmdd;
-
+  expert_domain* dm = static_cast<expert_domain*>(inmdd->useDomain());
+  if(N>=BOUNDS)
+    {
+    for (int i=PLACES; i>0; i--)
+      dm->enlargeVariableBound(i, false, N+1);
+    BOUNDS=N+1;
+    }
 //ADD INITIAL STATE
 dd_edge first(inmdd);
-dd_edge reachable(outmdd);
+dd_edge reachable(inmdd);
 inmdd->createEdge(&initialState, 1, first);
-outmdd->createEdge(&initialState, 1, reachable);
+  //outmdd->createEdge(&initialState, 1, reachable);
 
 
 //CREATE RELATION
-satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,outmdd);
+satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,inmdd);
 
 start.note_time();
 buildImplicitRelation(model, TRANS, PLACES, BOUNDS, T);
@@ -235,7 +289,7 @@ printf("Reachable states:\n");
 reachable.show(meddlyout, 2);
 #endif
 
-printStats("MDD", outmdd);
+printStats("MDD", inmdd);
 fflush(stdout);
 
 double c;

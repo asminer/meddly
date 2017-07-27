@@ -34,8 +34,8 @@
 // #define DUMP_REACHABLE
 
 
-char** sample_model;
-int p1_position;
+
+int p7_position=7,p8_position=8,p9_position=9;
 int N = -1;
 
 
@@ -43,21 +43,51 @@ int N = -1;
  int PLACES = 9;
  int TRANS = 7;
  int BOUNDS = -1;
- const char* model[] = {
- "X-+......-",  // GetK
- "X.-+....-.",  // GetB
- "X..-+....+",  // RelK
- "X...-+...-",  // GetK2
- "X....-+.+.",  // RBag
- "X.....-+.+",  // RKey
- "X+.....-..",  // Enter
- };
-
-
+ char** model;
 
 using namespace MEDDLY;
 
 FILE_output meddlyout(stdout);
+
+void buildModel(const char* order)
+{
+  const char* modelTest[] = {
+    "X-+......-",  // GetK
+    "X.-+....-.",  // GetB
+    "X..-+....+",  // RelK
+    "X...-+...-",  // GetK2
+    "X....-+.+.",  // RBag
+    "X.....-+.+",  // RKey
+    "X+.....-..",  // Enter
+  };
+  
+  p7_position = 7;
+  p8_position = 8;
+  p9_position = 9;
+  for (int i=0; i<PLACES; i++)
+    {
+    if (order[i]=='7')
+      p7_position = i+1;
+    if (order[i]=='8')
+      p8_position = i+1;
+    if (order[i]=='9')
+      p9_position = i+1;
+    }
+  
+  model = (char**) malloc(TRANS * sizeof(char*));
+  
+  for(int i=0;i<TRANS;i++)
+    {
+    model[i] = (char*) malloc((PLACES+2) * sizeof(char));
+    for(int j=1;j<(PLACES+1);j++)
+      {
+      model[i][j]=modelTest[i][order[j-1]-'0'];
+      }
+    model[i][PLACES+1] = '\0';
+    }
+  
+}
+
 
 int usage(const char* who)
 {
@@ -89,10 +119,19 @@ int main(int argc, const char** argv)
   int batchsize = 256;
   const char* lfile = 0;
   
-  for (int i=1; i<argc; i++) {
-    N = atoi(argv[i]);
-  }
-  BOUNDS=20*N + 1;
+  for (int i=1; i<argc; i++)
+    {
+    if(i==1)
+      N = atoi(argv[i]);
+    if (strcmp("-O", argv[i])==0) {
+      if(i+1 < argc)
+        {
+        buildModel(argv[i+1]);
+        i++;
+        }
+    }
+    }
+  BOUNDS= 1;
   
   if (N<0) return usage(argv[0]);
   
@@ -105,7 +144,7 @@ int main(int argc, const char** argv)
     
     
     printf("+----------------------------------------------------+\n");
-    printf("|         Initializing sample_model with %-4d        |\n", N);
+    printf("|        Initializing swimming pool with %-4d        |\n", N);
     printf("+----------------------------------------------------+\n");
     fflush(stdout);
     
@@ -123,16 +162,16 @@ int main(int argc, const char** argv)
     int* initialState;
     initialState = new int[PLACES + 1];
     for(int g = 1;g <= PLACES;g++) initialState[g] = 0;
-    initialState[7]=20*N; initialState[8]=15*N;initialState[9]=10*N;
+    initialState[p7_position]=20*N; initialState[p8_position]=15*N;initialState[p9_position]=10*N;
     
-    method = 'k';
+     method = 'm';
     std::cout<<"\n********************";
-    std::cout<<"\n       ksat";
+    std::cout<<"\n       esat";
     std::cout<<"\n********************";
-    if('k' == method)
+    if('e' == method)
       {
-      forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
-      forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
+      forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
+      forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL,pr);
       
       
       dd_edge init_state(mdd);
@@ -143,7 +182,7 @@ int main(int argc, const char** argv)
       satpregen_opname::pregen_relation* ensf = 0;
       specialized_operation* sat = 0;
       
-      ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd);
+      ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd, 16);
       if (ensf) {
         start.note_time();
         buildNextStateFunction(model, TRANS, ensf, 4);
@@ -172,6 +211,7 @@ int main(int argc, const char** argv)
       start.note_time();
       printf("\nReachability set construction took %.4e seconds\n",
              start.get_last_interval() / 1000000.0);
+      
       printStats("MDD", mdd);
       fflush(stdout);
       double c;
@@ -190,17 +230,23 @@ int main(int argc, const char** argv)
       
       //CREATE FORESTS
       forest* inmdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
-      forest* outmdd = inmdd;
+      expert_domain* dm = static_cast<expert_domain*>(inmdd->useDomain());
+      if(20*N>=BOUNDS)
+        {
+        for (int i=PLACES; i>0; i--)
+          dm->enlargeVariableBound(i, false, 20*N+1);
+        BOUNDS=20*N+1;
+        }
       
       //ADD INITIAL STATE
       dd_edge first(inmdd);
-      dd_edge reachable(outmdd);
+      dd_edge reachable(inmdd);
       inmdd->createEdge(&initialState, 1, first);
-      outmdd->createEdge(&initialState, 1, reachable);
+      //outmdd->createEdge(&initialState, 1, reachable);
       
       
       //CREATE RELATION
-      satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,outmdd);
+      satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,inmdd);
       
       start.note_time();
       buildImplicitRelation(model, TRANS, PLACES, BOUNDS, T);
@@ -230,7 +276,7 @@ int main(int argc, const char** argv)
       reachable.show(meddlyout, 2);
 #endif
       
-      printStats("MDD", outmdd);
+      printStats("MDD", inmdd);
       fflush(stdout);
       
       double c;

@@ -141,9 +141,7 @@ protected:
   inline node_handle saveResult(compute_table::search_key* Key,
                                 node_handle a, rel_node_handle b, node_handle c)
   {
-  
   arg1F->cacheNode(a);
-  //arg2F->cacheNode(b);
   compute_table::entry_builder &entry = CT->startNewEntry(Key);
   entry.writeResultNH(resF->cacheNode(c));
   CT->addEntry();
@@ -278,7 +276,7 @@ public:
 protected:
   virtual void saturateHelper(unpacked_node& mdd);
   node_handle recFire(MEDDLY::node_handle mdd, rel_node_handle mxd);
-};
+ };
 
 MEDDLY::forwd_impl_dfs_by_events_mt::forwd_impl_dfs_by_events_mt(
                                                                  const satimpl_opname* opcode,
@@ -303,6 +301,8 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
     MEDDLY_DCASSERT(ABS(eventLevel) == nb.getLevel());
   }
   
+  expert_domain* dm = static_cast<expert_domain*>(resF->useDomain());
+  
   // indexes to explore
   indexq* queue = useIndexQueue(nb.getSize());
   for (int i = 0; i < nb.getSize(); i++) {
@@ -319,11 +319,18 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       
       int j = Ru[ei]->nextOf(i);
       if(j==-1) continue;
+      if(j>=dm->getVariableBound(nb.getLevel(),false))
+        {
+        std::cout<<"\n Previous:"<<dm->getVariableBound(nb.getLevel(),false)<<" New Bound:"<<j+1<<" Event:"<<Ru[ei]->getID()<<" at level:"<<nb.getLevel();
+        dm->enlargeVariableBound(nb.getLevel(), false, j+1);
+        }
       if (-1==nb.d(j)) continue;  // nothing can be added to this set
       
       
       
-      node_handle rec = recFire(nb.d(i), Ru[ei]->getDown());
+      node_handle rec;
+      rec = recFire(nb.d(i), Ru[ei]->getDown());
+      
       
       if (rec == 0) continue;
       if (rec == nb.d(j)) {
@@ -390,21 +397,22 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   compute_table::search_key* Key = findResult(mdd, mxd, result);
   if (0==Key) return result;
   
-#ifdef TRACE_RECFIRE
+  #ifdef TRACE_RECFIRE
   printf("computing recFire(%d, %d)\n", mdd, mxd);
   printf("  node %3d ", mdd);
   arg1F->showNode(stdout, mdd, 1);
   printf("\n  node %3d ", mxd);
   arg2F->showNode(stdout, mxd, 1);
   printf("\n");
-#endif
+  #endif
   
   // check if mxd and mdd are at the same level
   const int mddLevel = arg1F->getNodeLevel(mdd);
   const int mxdLevel = relNode->getLevel();
   const int rLevel = MAX(mxdLevel, mddLevel);
-  const int rSize = resF->getLevelSize(rLevel);
+   int rSize = resF->getLevelSize(rLevel);
   unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
+  expert_domain* dm = static_cast<expert_domain*>(resF->useDomain());
   
   // Initialize mdd reader
   unpacked_node *A = unpacked_node::useUnpackedNode();
@@ -441,6 +449,11 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
           // loop over mxd "columns"
           int j = relNode->nextOf(i);
           if(j==-1) continue;
+          if(j>=dm->getVariableBound(rLevel,false))
+            {std::cout<<"\n *Previous:"<<dm->getVariableBound(rLevel,false)<<" New j:"<<j;
+              dm->enlargeVariableBound(rLevel, false, j+1);
+              rSize = resF->getLevelSize(rLevel);
+            }
           // ok, there is an i->j "edge".
           // determine new states to be added (recursively)
           // and add them
@@ -470,9 +483,9 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   saturateHelper(*nb);
   result = resF->createReducedNode(-1, nb);
   
-#ifdef TRACE_ALL_OPS
+  #ifdef TRACE_ALL_OPS
   printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);
-#endif
+  #endif
 #ifdef TRACE_RECFIRE
   printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);
   printf("  node %3d ", result);
@@ -480,13 +493,19 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   printf("\n");
 #endif
   
+  //saveResult(Key, mdd, mxd, result);
+  
+  //node_handle resultTest = 0;
+  // findResult(mdd,mxd,resultTest);
+  
+  
+  
   return saveResult(Key, mdd, mxd, result);
 }
 
-
 // ******************************************************************
 // *                                                                *
-// *           common_impl_dfs_by_events_mt  methods                     *
+// *             common_impl_dfs_by_events_mt  methods              *
 // *                                                                *
 // ******************************************************************
 
@@ -552,10 +571,10 @@ void MEDDLY::common_impl_dfs_by_events_mt
    mxdDifference = getOperation(DIFFERENCE, arg2F, arg2F, arg2F);
    MEDDLY_DCASSERT(mxdDifference);*/
   
-#ifdef DEBUG_INITIAL
+  #ifdef DEBUG_INITIAL
   printf("Calling saturate for states:\n");
   a.show(stdout, 2);
-#endif
+  #endif
 #ifdef DEBUG_NSF
   printf("Calling saturate for NSF:\n");
   // b.show(stdout, 2);
@@ -572,7 +591,6 @@ void MEDDLY::common_impl_dfs_by_events_mt
   saturation_impl_by_events_op* so = new saturation_impl_by_events_op(this, arg1F, resF);
   node_handle cnode = so->saturate(a.getNode());
   c.set(cnode);
-  
   // Cleanup
   while (freeqs) {
     indexq* t = freeqs;
@@ -695,9 +713,10 @@ MEDDLY::saturation_impl_by_events_op::saturate(node_handle mdd, int k)
   printf("mdd: %d, k: %d\n", mdd, k);
 #endif
   
+  
   // terminal condition for recursion
   if (argF->isTerminalNode(mdd)) return mdd;
-  
+ 
   // search compute table
   node_handle n = 0;
   compute_table::search_key* Key = findSaturateResult(mdd, k, n);
@@ -706,10 +725,10 @@ MEDDLY::saturation_impl_by_events_op::saturate(node_handle mdd, int k)
   const int sz = argF->getLevelSize(k);               // size
   const int mdd_level = argF->getNodeLevel(mdd);      // mdd level
   
-#ifdef DEBUG_DFS
-  printf("mdd: %d, level: %d, size: %d, mdd_level: %d\n",
+   #ifdef DEBUG_DFS
+   printf("mdd: %d, level: %d, size: %d, mdd_level: %d\n",
          mdd, k, sz, mdd_level);
-#endif
+   #endif
   
   unpacked_node* nb = unpacked_node::newFull(resF, k, sz);
   // Initialize mdd reader
@@ -723,21 +742,19 @@ MEDDLY::saturation_impl_by_events_op::saturate(node_handle mdd, int k)
   // Do computation
   for (int i=0; i<sz; i++) {
     nb->d_ref(i) = mddDptrs->d(i) ? saturate(mddDptrs->d(i), k-1) : 0;
-  }
+    }
   
   // Cleanup
   unpacked_node::recycle(mddDptrs);
-  
   parent->saturateHelper(*nb);
   n = resF->createReducedNode(-1, nb);
   
   // save in compute table
   saveSaturateResult(Key, mdd, n);
   
-#ifdef DEBUG_DFS
+  #ifdef DEBUG_DFS
   resF->showNodeGraph(stdout, n);
-#endif
-  
+  #endif
   
   return n;
 }

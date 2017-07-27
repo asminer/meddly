@@ -1640,7 +1640,6 @@ MEDDLY::satimpl_opname::relation_node::getID() const
   return ID;
 }
 
-
 inline void
 MEDDLY::satimpl_opname::relation_node::setID(rel_node_handle n_ID)
 {
@@ -1679,7 +1678,7 @@ MEDDLY::satimpl_opname::implicit_relation::getOutForest() const
   return outsetF;
 }
 
-// ******************************************************************
+// ***********************************************************************
 
 inline long
 MEDDLY::satimpl_opname::implicit_relation::lengthForLevel(int level) const

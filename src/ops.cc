@@ -1260,7 +1260,8 @@ long MEDDLY::satimpl_opname::relation_node::nextOf(long i)
   throw error(error::NOT_IMPLEMENTED);
 }
 
-bool MEDDLY::satimpl_opname::relation_node::equals(const relation_node* n) const
+bool
+MEDDLY::satimpl_opname::relation_node::equals(const relation_node* n) const
 {
   if((signature == n->getSignature()) && (level == n->getLevel()) && (down == n->getDown()))
     return true;
@@ -1313,6 +1314,7 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
     event_list_alloc[i] = 8;
     event_added[i] = 0;
     }
+  
   
   //create the terminal node
   relation_node *Terminal = new relation_node(0,0,1);
@@ -1368,7 +1370,8 @@ MEDDLY::satimpl_opname::implicit_relation::~implicit_relation()
 }
 
 
-rel_node_handle MEDDLY::satimpl_opname::implicit_relation::isUniqueNode(relation_node* n)
+rel_node_handle
+MEDDLY::satimpl_opname::implicit_relation::isUniqueNode(relation_node* n)
 {
   bool is_unique_node = true;
   std::unordered_map<rel_node_handle, relation_node*>::iterator it = impl_unique.begin();
@@ -1382,7 +1385,8 @@ rel_node_handle MEDDLY::satimpl_opname::implicit_relation::isUniqueNode(relation
   return 0;
 }
 
-rel_node_handle MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_event_top, relation_node* n)
+rel_node_handle
+MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_event_top, relation_node* n)
 {
   
   rel_node_handle nLevel = n->getLevel();
@@ -1415,6 +1419,7 @@ rel_node_handle MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_
   
   return n_ID;
 }
+
 void
 MEDDLY::satimpl_opname::implicit_relation::show()
 {
