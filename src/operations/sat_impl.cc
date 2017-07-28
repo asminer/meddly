@@ -321,7 +321,6 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       if(j==-1) continue;
       if(j>=dm->getVariableBound(nb.getLevel(),false))
         {
-        std::cout<<"\n Previous:"<<dm->getVariableBound(nb.getLevel(),false)<<" New Bound:"<<j+1<<" Event:"<<Ru[ei]->getID()<<" at level:"<<nb.getLevel();
         dm->enlargeVariableBound(nb.getLevel(), false, j+1);
         }
       if (-1==nb.d(j)) continue;  // nothing can be added to this set
@@ -450,8 +449,8 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
           int j = relNode->nextOf(i);
           if(j==-1) continue;
           if(j>=dm->getVariableBound(rLevel,false))
-            {std::cout<<"\n *Previous:"<<dm->getVariableBound(rLevel,false)<<" New j:"<<j;
-              dm->enlargeVariableBound(rLevel, false, j+1);
+            {
+	      dm->enlargeVariableBound(rLevel, false, j+1);
               rSize = resF->getLevelSize(rLevel);
             }
           // ok, there is an i->j "edge".
