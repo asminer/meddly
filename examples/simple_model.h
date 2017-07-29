@@ -52,6 +52,26 @@ void buildNextStateFunction(const char* const* events, int nEvents,
 void buildNextStateFunction(const char* const* events, int nEvents, 
   MEDDLY::satpregen_opname::pregen_relation* pnsf, int verb);
 
+/** Build a partitioned next-state on-the-fly function for the given model.
+      @param  events    Array of dimension \a nEvents.
+                        Each entry is a string where
+                        str[j] tells how this event affects variable j:
+                        '+' means the event increases the variable by one
+                            (unless this would violate the bound)
+                        '-' means the event decreases the variable by one
+                            (unless the value is already zero)
+                        '.' means no change.
+      @param  nEvents   Size of events array.
+      @param  mdd       Forest to store set-of-states.
+      @param  mxd       Forest to store the on-the-fly relation.
+      @param  verb      Verbosity level.
+      @return           The on-the-fly relation.
+*/
+MEDDLY::satotf_opname::otf_relation*
+buildNextStateFunction(const char* const* events, int nEvents,
+    MEDDLY::forest* mdd, MEDDLY::forest* mxd, int verb);
+
+
 /** Use explicit search to build the reachability set.
       @param  events    Array of dimension \a nEvents.
                         Same format as buildNextStateFunction().

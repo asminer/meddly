@@ -31,6 +31,7 @@
 
 // #define DUMP_NSF
 // #define DUMP_REACHABLE
+//
 
 const char* kanban[] = {
   "X-+..............",  // Tin1
@@ -69,6 +70,7 @@ int usage(const char* who)
   printf("\t-esat: use saturation by events\n");
   printf("\t-ksat: use saturation by levels\n");
   printf("\t-msat: use monolithic saturation (default)\n\n");
+  printf("\t-otfsat: use on-the-fly saturation\n\n");
   printf("\t-exp: use explicit (very slow)\n\n");
   printf("\t--batch b: specify explicit batch size\n\n");
   printf("\t -l lfile: Write logging information to specified file\n\n");
@@ -113,6 +115,10 @@ int main(int argc, const char** argv)
       method = 'k';
       continue;
     }
+    if (strcmp("-otfsat", argv[i])==0) {
+      method = 'o';
+      continue;
+    }
     if (strcmp("-msat", argv[i])==0) {
       method = 'm';
       continue;
@@ -154,12 +160,18 @@ int main(int argc, const char** argv)
 
     // Initialize domain
     int* sizes = new int[16];
-    for (int i=15; i>=0; i--) sizes[i] = N+1;
+    if ('o' == method) {
+      for (int i=15; i>=0; i--) sizes[i] = 1;
+    } else {
+      for (int i=15; i>=0; i--) sizes[i] = N+1;
+    }
     d = createDomainBottomUp(sizes, 16);
     delete[] sizes;
 
     // Initialize forests
-    forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
+    MEDDLY::forest::policies p(false);
+    p.setQuasiReduced();
+    forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL, p);
     forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
 
     // associate loggers
@@ -183,9 +195,10 @@ int main(int argc, const char** argv)
 
     // Build initial state
     if (LOG) LOG->newPhase(mdd, "Building initial state");
-    int* initial = new int[17];
-    for (int i=16; i; i--) initial[i] = 0;
+    int* initial = new int[17]();
     initial[1] = initial[5] = initial[9] = initial[13] = N;
+    // for (int i = 0; i < 17; i++) initial[i] = 0;
+    // initial[1] = N;
     dd_edge init_state(mdd);
     mdd->createEdge(&initial, 1, init_state);
     delete[] initial;
@@ -195,6 +208,7 @@ int main(int argc, const char** argv)
     if (LOG) LOG->newPhase(mxd, "Building next-state function");
     dd_edge nsf(mxd);
     satpregen_opname::pregen_relation* ensf = 0;
+    satotf_opname::otf_relation* otff = 0;
     specialized_operation* sat = 0;
 
     if ('s' == method) {
@@ -205,10 +219,20 @@ int main(int argc, const char** argv)
     }
 
     if ('e' != method) {
-
       if (ensf) {
         start.note_time();
         buildNextStateFunction(kanban, 16, ensf, 4);
+        start.note_time();
+      } else if ('o' == method) {
+        start.note_time();
+        otff = buildNextStateFunction(kanban, 16, mdd, mxd, 4);
+        assert(otff);
+        otff->confirm(init_state);
+        for (int k = d->getNumVariables(); k > 0; k--) {
+          for (int i = otff->getNumOfEvents(k) - 1; i >= 0; i--) {
+            otff->rebuildEvent(k, i);
+          }
+        }
         start.note_time();
       } else {
         start.note_time();
@@ -263,6 +287,20 @@ int main(int argc, const char** argv)
         sat->compute(init_state, reachable);
         break;
 
+      case 'o':
+        assert(otff);
+        if (0 == SATURATION_OTF_FORWARD) {
+          throw error(error::UNKNOWN_OPERATION);
+        }
+        sat = SATURATION_OTF_FORWARD->buildOperation(otff);
+        if (0==sat) {
+          throw error(error::INVALID_OPERATION);
+        }
+        printf("Building reachability set using saturation, on-the-fly relation\n");
+        fflush(stdout);
+        sat->compute(init_state, reachable);
+        break;
+
       default:
         printf("Error - unknown method\n");
         exit(2);
@@ -288,6 +326,7 @@ int main(int argc, const char** argv)
     printf("Approx. %g reachable states\n", c);
 
     if (build_pdf) {
+      init_state.writePicture("kanban-init", "pdf");
       reachable.writePicture("kanban", "pdf");
       if ('m' == method) nsf.writePicture("kanban-nsf", "pdf");
     }

@@ -31,6 +31,8 @@
 
 // #define SAME_FOREST_OPERATIONS
 
+// #define DEBUG_OTF_SUBEVENTS
+
 inline int MAX(int a, int b) {
   return (a>b) ? a : b;
 }
@@ -261,6 +263,149 @@ void buildNextStateFunction(const char* const* events, int nEvents,
 }
 
 
+class firing_subevent : public MEDDLY::satotf_opname::subevent {
+  public:
+  firing_subevent(MEDDLY::forest *f, int vh, char effect)
+  : subevent(f, &vh, 1, true),
+  effect(effect), unpminterm(0), pminterm(0), highest_confirmed_index(-1)
+  {
+    const MEDDLY::domain* d = f->getDomain();
+    unpminterm = new int[d->getNumVariables() + 1]();
+    pminterm = new int[d->getNumVariables() + 1]();
+    for (int i = d->getNumVariables(); i > 0; i--) {
+      unpminterm[i] = MEDDLY::DONT_CARE;
+      pminterm[i] = MEDDLY::DONT_CARE;
+    }
+  }
+
+  virtual ~firing_subevent()
+  {
+    delete [] unpminterm;
+    delete [] pminterm;
+  }
+
+  virtual void confirm(MEDDLY::satotf_opname::otf_relation &rel, int v, int index) {
+    for (int i = highest_confirmed_index+1; i <= index; i++) {
+      // add minterm
+      unpminterm[v] = i;
+      pminterm[v] = i + ((effect == '+')? 1: (effect == '-')? -1: 0);
+      if (pminterm[v] >= 0) {
+        addMinterm(unpminterm, pminterm);
+        // printf("Confirming Var: %3d, State: %3d, NextState: %3d\n", v, i, pminterm[v]);
+      }
+    }
+    highest_confirmed_index = index;
+#ifdef DEBUG_OTF_SUBEVENTS
+    MEDDLY::FILE_output meddlyout(stdout);
+    showInfo(meddlyout);
+#endif
+  }
+
+  protected:
+  char effect;
+  int* unpminterm;
+  int* pminterm;
+  int highest_confirmed_index;
+};
+
+
+class enabling_subevent : public MEDDLY::satotf_opname::subevent {
+  public:
+  enabling_subevent(MEDDLY::forest *f, int vh, char effect)
+  : subevent(f, &vh, 1, false),
+  effect(effect), unpminterm(0), pminterm(0), highest_confirmed_index(-1)
+  {
+    const MEDDLY::domain* d = f->getDomain();
+    unpminterm = new int[d->getNumVariables() + 1]();
+    pminterm = new int[d->getNumVariables() + 1]();
+    for (int i = d->getNumVariables(); i > 0; i--) {
+      unpminterm[i] = MEDDLY::DONT_CARE;
+      pminterm[i] = MEDDLY::DONT_CARE;
+    }
+  }
+
+  virtual ~enabling_subevent()
+  {
+    delete [] unpminterm;
+    delete [] pminterm;
+  }
+
+  virtual void confirm(MEDDLY::satotf_opname::otf_relation &rel, int v, int index) {
+    MEDDLY_DCASSERT(effect != '.');
+    for (int i = highest_confirmed_index+1; i <= index; i++) {
+      // add minterm
+      if (effect == '-' && i == 0) continue;
+      unpminterm[v] = i;
+      addMinterm(unpminterm, pminterm);
+      // printf("Confirming Var: %3d, State: %3d, Enabling\n", v, i);
+    }
+    highest_confirmed_index = index;
+#ifdef DEBUG_OTF_SUBEVENTS
+    MEDDLY::FILE_output meddlyout(stdout);
+    showInfo(meddlyout);
+#endif
+  }
+
+  protected:
+  char effect;
+  int* unpminterm;
+  int* pminterm;
+  int highest_confirmed_index;
+};
+
+
+MEDDLY::satotf_opname::otf_relation*
+buildNextStateFunction(const char* const* events, int nEvents,
+    MEDDLY::forest* mdd, MEDDLY::forest* mxd, int verb)
+{
+  using namespace MEDDLY;
+  if (verb) fprintf(stderr, "Building next-state function\n");
+
+  //
+  // Initialize subevents for each event
+  //
+  std::vector<MEDDLY::satotf_opname::event*> otf_events;
+  for (int e=0; e<nEvents; e++) {
+    const char* ev = events[e];
+    if (2==verb) fprintf(stderr, "%5d", e);
+    if (verb>2) fprintf(stderr, "Event %5d : ", e);
+
+    std::vector<MEDDLY::satotf_opname::subevent*> subevents;
+
+    //
+    // build subevents for this event
+    //
+    const domain* d = mxd->getDomain();
+    int nVars = d->getNumVariables();
+    for (int i=1; i<=nVars; i++) {
+      if (verb>2) fputc(ev[i], stderr);
+      if (ev[i] != '.') {
+        firing_subevent* fse = new firing_subevent(mxd, i, ev[i]);
+        enabling_subevent* ese = new enabling_subevent(mxd, i, ev[i]);
+        subevents.push_back(fse);
+        subevents.push_back(ese);
+      }
+    }
+
+    if (subevents.size() == 0) continue;
+
+    //
+    // build the event
+    //
+    MEDDLY::satotf_opname::event* otf_e = new MEDDLY::satotf_opname::event(subevents.data(), subevents.size());
+
+    otf_events.push_back(otf_e);
+
+    if (verb>2) fputc('\n', stderr);
+  } // for e
+  if (verb==2) fputc('\n', stderr);
+
+  satotf_opname::otf_relation* otff =
+    new satotf_opname::otf_relation(mdd, mxd, mdd, otf_events.data(), otf_events.size());
+
+  assert(otff);
+  return otff;
+}
 
 
 //
