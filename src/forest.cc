@@ -1168,6 +1168,14 @@ void MEDDLY::expert_forest
     if (k < 0) s << "' ";
     s << "\"];\n";
     
+    if (lowest_level) {
+      lowest_level = false;
+    } else {
+      s << "  edge [color=transparent];\n";
+      s << "  l" << map_k << ":0 -> l" << (isForRelations()? map_k-1: map_k-2) << ":0;\n";
+      s << "  edge [color=black];\n";
+    }
+
     MEDDLY_DCASSERT(map_k > 0);
     bool do_once = true;
 
@@ -1175,13 +1183,6 @@ void MEDDLY::expert_forest
     for (long i=0; list[i]; i++) {
       if (getNodeLevel(list[i]) != k) continue;
       if (do_once) {
-        if (lowest_level) {
-          lowest_level = false;
-        } else {
-          s << "  edge [color=transparent];\n";
-          s << "  l" << map_k << ":0 -> l" << (isForRelations()? map_k-1: map_k-2) << ":0;\n";
-          s << "  edge [color=black];\n";
-        }
         s << "  {rank=same; l" << map_k << " ";
         do_once = false;
       }
