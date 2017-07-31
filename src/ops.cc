@@ -741,7 +741,6 @@ long MEDDLY::satotf_opname::subevent::mintermMemoryUsage() const {
 // ============================================================
 
 MEDDLY::satotf_opname::event::event(subevent** p, int np)
-: subevents(p), num_subevents(np) 
 {
   if (p == 0 || np <= 0 || p[0]->getForest() == 0)
     throw MEDDLY::error::INVALID_ARGUMENT;
@@ -749,6 +748,10 @@ MEDDLY::satotf_opname::event::event(subevent** p, int np)
   for (int i=1; i<np; i++) {
     if (p[i]->getForest() != f) throw MEDDLY::error::INVALID_ARGUMENT;
   }
+
+  num_subevents = np;
+  subevents = new subevent*[np];
+  for (int i = 0; i < np; i++) subevents[i] = p[i];
 
   top = p[0]->getTop();
   for (int i = 1; i < np; i++) {
@@ -868,10 +871,17 @@ bool MEDDLY::satotf_opname::event::rebuild()
       subevents[i]->getRoot().show(out, 2);
     }
   }
+  ostream_output out(std::cout);
+  for (int i = 0; i < num_subevents; i++) {
+    out << "subevent: " << subevents[i]->getRoot().getNode() << "\n";
+    subevents[i]->getRoot().show(out, 2);
+  }
+  e.show(out, 2);
   */
 
   if (e == root) return false;
-  root += e;
+  // root += e;
+  root = e;
   return true;
 }
 
@@ -1119,7 +1129,6 @@ void findConfirmedStates(MEDDLY::satotf_opname::otf_relation* rel,
     std::set<MEDDLY::node_handle>& visited) {
   if (level == 0) return;
   if (visited.find(mdd) != visited.end()) return;
-  visited.insert(mdd);
 
   MEDDLY::expert_forest* insetF = rel->getInForest();
   int mdd_level = insetF->getNodeLevel(mdd);
@@ -1136,6 +1145,7 @@ void findConfirmedStates(MEDDLY::satotf_opname::otf_relation* rel,
   } else {
     if (MEDDLY::isLevelAbove(mdd_level, level)) throw MEDDLY::error::INVALID_VARIABLE;
     // mdd_level == level
+    visited.insert(mdd);
     MEDDLY::unpacked_node *nr = MEDDLY::unpacked_node::newFromNode(insetF, mdd, false);
     for (int i = 0; i < nr->getNNZs(); i++) {
       if (!confirmed[level][nr->i(i)]) {
