@@ -510,8 +510,6 @@ class MEDDLY::image_op_evplus : public binary_operation {
     inline compute_table::search_key*
     findResult(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle &resEvmdd)
     {
-      MEDDLY_DCASSERT(ev != Inf<long>());
-
       compute_table::search_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
@@ -520,22 +518,20 @@ class MEDDLY::image_op_evplus : public binary_operation {
       compute_table::search_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       cacheFind.read(resEv);
-      if (resEv != Inf<long>()) {
+      resEvmdd = resF->linkNode(cacheFind.readNH());
+      if (resEvmdd != 0) {
         resEv += ev;
       }
-      resEvmdd = resF->linkNode(cacheFind.readNH());
       doneCTkey(CTsrch);
       return 0;
     }
     inline void saveResult(compute_table::search_key* Key,
       long ev, node_handle evmdd, node_handle mxd, long resEv, node_handle resEvmdd)
     {
-      MEDDLY_DCASSERT(ev != Inf<long>());
-
       argV->cacheNode(evmdd);
       argM->cacheNode(mxd);
       compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResult(resEv == Inf<long>() ? resEv : resEv - ev);
+      entry.writeResult(resEvmdd == 0 ? 0L : resEv - ev);
       entry.writeResultNH(resF->cacheNode(resEvmdd));
       CT->addEntry();
     }
@@ -649,7 +645,7 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
 {
   // termination conditions
   if (mxd == 0 || evmdd == 0) {
-    resEv = Inf<long>();
+    resEv = 0;
     resEvmdd = 0;
     return;
   }
@@ -696,7 +692,7 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
       node_handle newstates = 0;
       compute_rec(A->ei(i), A->d(i), mxd, nev, newstates);
 
-      C->setEdge(i, newstates == 0 ? Inf<long>() : ev + nev);
+      C->setEdge(i, newstates == 0 ? 0L : ev + nev);
       C->d_ref(i) = newstates;
     }
   } else {
@@ -706,7 +702,7 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
 
     // clear out result (important!)
     for (int i=0; i<rSize; i++) {
-      C->setEdge(i, Inf<long>());
+      C->setEdge(i, 0L);
       C->d_ref(i) = 0;
     }
 
@@ -739,7 +735,6 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
         node_handle newstates = 0;
         compute_rec(A->ei(j), A->d(j), Rp->d(jz), nev, newstates);
         if (0==newstates) continue;
-        MEDDLY_DCASSERT(nev != Inf<long>());
         nev += ev;
         if (0==C->d(i)) {
           C->setEdge(i, nev);
@@ -804,7 +799,7 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
 {
   // termination conditions
   if (mxd == 0 || evmdd == 0) {
-    resEv = Inf<long>();
+    resEv = 0;
     resEvmdd = 0;
     return;
   }
@@ -851,7 +846,7 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
       node_handle newstates = 0;
       compute_rec(A->ei(i), A->d(i), mxd, nev, newstates);
 
-      C->setEdge(i, newstates == 0 ? Inf<long>() : ev + nev);
+      C->setEdge(i, newstates == 0 ? 0L : ev + nev);
       C->d_ref(i) = newstates;
     }
   } else {
@@ -861,7 +856,7 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
 
     // clear out result (important!)
     for (int i=0; i<rSize; i++) {
-      C->setEdge(i, Inf<long>());
+      C->setEdge(i, 0L);
       C->d_ref(i) = 0;
     }
 
@@ -894,7 +889,6 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
         node_handle newstates = 0;
         compute_rec(A->ei(i), A->d(i), Rp->d(jz), nev, newstates);
         if (0==newstates) continue;
-        MEDDLY_DCASSERT(nev != Inf<long>());
         nev += ev;
         if (0==C->d(j)) {
           C->setEdge(j, nev);
@@ -1031,7 +1025,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
 {
   // termination conditions
   if (mxd == 0 || evmxd == 0) {
-    resEv = Inf<long>();
+    resEv = 0;
     resEvmdd = 0;
     return;
   }
@@ -1082,7 +1076,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
         node_handle newstates = 0;
         compute_rec(A->ei(i) + B->ei(j), B->d(j), mxd, nev, newstates);
 
-        D->setEdge(j, newstates == 0 ? Inf<long>() : ev + nev);
+        D->setEdge(j, newstates == 0 ? 0L : ev + nev);
         D->d_ref(j) = newstates;
       }
     }
@@ -1093,7 +1087,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
 
       // clear out result (important!)
       for (int j = 0; j < rSize; j++) {
-        D->setEdge(j, Inf<long>());
+        D->setEdge(j, 0L);
         D->d_ref(j) = 0;
       }
 
@@ -1131,7 +1125,6 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
           if (0==newstates) {
             continue;
           }
-          MEDDLY_DCASSERT(nev != Inf<long>());
           nev += ev;
           if (0 == D->d(jp)) {
             D->setEdge(jp, nev);

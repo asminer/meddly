@@ -239,10 +239,9 @@ bool MEDDLY::constraint_bckwd_dfs::checkTerminals(int aev, node_handle a, int be
     return true;
   }
   if (a == 0 || b == 0 || c == 0) {
-    MEDDLY_DCASSERT(aev == Inf<long>() || bev == Inf<long>() || c == 0);
+    MEDDLY_DCASSERT(aev == 0 || bev == 0 || c == 0);
     d = 0;
-    // XXX: 0 or infinity???
-    dev = Inf<long>();
+    dev = 0;
     return true;
   }
   return false;
@@ -267,11 +266,10 @@ MEDDLY::compute_table::search_key* MEDDLY::constraint_bckwd_dfs::findResult(long
   cacheFind.read(dev);
   d = resF->linkNode(cacheFind.readNH());
   if (d != 0) {
-//    dev += aev + bev;
     dev += bev;
   }
   else {
-    MEDDLY_DCASSERT(dev == Inf<long>());
+    MEDDLY_DCASSERT(dev == 0);
   }
 
   doneCTkey(key);
@@ -286,10 +284,10 @@ void MEDDLY::constraint_bckwd_dfs::saveResult(compute_table::search_key* key,
   transF->cacheNode(c);
   compute_table::entry_builder& entry = CT->startNewEntry(key);
   if (d == 0) {
-    entry.writeResult(Inf<long>());
+    // Write long
+    entry.writeResult(0L);
   }
   else {
-//    entry.writeResult(dev - aev - bev);
     entry.writeResult(dev - bev);
   }
   entry.writeResultNH(resF->cacheNode(d));
@@ -455,7 +453,6 @@ void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpac
   std::vector<bool> waiting(nb.getSize(), false);
   for (int j = 0; j < nb.getSize(); j++) {
     if (nb.d(j) != 0) {
-      MEDDLY_DCASSERT(nb.ei(j) != Inf<long>());
       queue.push_back(j);
       waiting[j] = true;
     }
@@ -472,7 +469,7 @@ void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpac
     for (int iz = 0; iz < Ru->getNNZs(); iz++) {
       const int i = Ru->i(iz);
       if (A->d(i) == 0) {
-        MEDDLY_DCASSERT(A->ei(i) == Inf<long>() || A->ei(i) == 0);
+        MEDDLY_DCASSERT(A->ei(i) == 0);
         continue;
       }
 
@@ -481,17 +478,16 @@ void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpac
         ? unpacked_node::newFromNode(transF, Ru->d(iz), true)
         : unpacked_node::newIdentity(transF, -nb.getLevel(), i, Ru->d(iz), true);
       if (Rp->d(j) != 0) {
-        long recev = Inf<long>();
+        long recev = 0;
         node_handle rec = 0;
         recFire(aev + A->ei(i), A->d(i), nb.ei(j), nb.d(j), Rp->d(j), recev, rec);
         MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
         if (rec == 0) {
-          MEDDLY_DCASSERT(recev == Inf<long>());
+          MEDDLY_DCASSERT(recev == 0);
           continue;
         }
 
-        MEDDLY_DCASSERT(recev != Inf<long>());
         // Increase the distance
         plusOp->compute(recev, rec, aev + A->ei(i), A->d(i), recev, rec);
         MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
@@ -508,7 +504,7 @@ void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpac
         bool updated = true;
 
         if (nb.d(i) == 0) {
-          MEDDLY_DCASSERT(nb.ei(i) == Inf<long>());
+          MEDDLY_DCASSERT(nb.ei(i) == 0);
           nb.setEdge(i, recev);
           nb.d_ref(i) = rec;
         }
@@ -536,7 +532,6 @@ void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpac
           }
           else {
             if (!waiting[i]) {
-              MEDDLY_DCASSERT(A->ei(i) != Inf<long>());
               queue.push_back(i);
               waiting[i] = true;
             }
@@ -556,7 +551,7 @@ void MEDDLY::constraint_bckwd_dfs::recFire(long aev, node_handle a, long bev, no
 {
   // termination conditions
   if (a == 0 || b == 0 || r == 0) {
-    cev = Inf<long>();
+    cev = 0;
     c = 0;
     return;
   }
@@ -595,7 +590,7 @@ void MEDDLY::constraint_bckwd_dfs::recFire(long aev, node_handle a, long bev, no
     // that's an important special case that we can handle quickly.
 
     for (int i = 0; i < size; i++) {
-      long tev = Inf<long>();
+      long tev = 0;
       node_handle t = 0;
       recFire(aev + A->ei(i), A->d(i), bev + B->ei(i), B->d(i), r, tev, t);
       T->setEdge(i, tev);
@@ -608,7 +603,7 @@ void MEDDLY::constraint_bckwd_dfs::recFire(long aev, node_handle a, long bev, no
 
     // clear out result (important!)
     for (int i = 0; i < size; i++) {
-      T->setEdge(i, Inf<long>());
+      T->setEdge(i, 0L);
       T->d_ref(i) = 0;
     }
 
@@ -621,7 +616,7 @@ void MEDDLY::constraint_bckwd_dfs::recFire(long aev, node_handle a, long bev, no
     for (int iz = 0; iz < Ru->getNNZs(); iz++) {
       const int i = Ru->i(iz);
       if (A->d(i) == 0) {
-        MEDDLY_DCASSERT(A->ei(i) == Inf<long>() || A->ei(i) == 0);
+        MEDDLY_DCASSERT(A->ei(i) == 0);
         continue;
       }
 
@@ -636,17 +631,17 @@ void MEDDLY::constraint_bckwd_dfs::recFire(long aev, node_handle a, long bev, no
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
         // and add them
-        long nev = Inf<long>();
+        long nev = 0;
         node_handle n = 0;
         recFire(aev + A->ei(i), A->d(i), bev + B->ei(j), B->d(j), Rp->d(jz), nev, n);
 
         if (n == 0) {
-          MEDDLY_DCASSERT(nev == Inf<long>());
+          MEDDLY_DCASSERT(nev == 0);
           continue;
         }
 
         if (T->d(i) == 0) {
-          MEDDLY_DCASSERT(T->ei(i) == Inf<long>());
+          MEDDLY_DCASSERT(T->ei(i) == 0);
           T->setEdge(i, nev);
           T->d_ref(i) = n;
           continue;
@@ -748,8 +743,7 @@ bool MEDDLY::constraint_saturation::checkTerminals(int aev, node_handle a, int b
   }
   if (a == 0 || b == 0) {
     c = 0;
-    // XXX: 0 or infinity???
-    cev = Inf<long>();
+    cev = 0;
     return true;
   }
   return false;
@@ -778,7 +772,7 @@ MEDDLY::compute_table::search_key* MEDDLY::constraint_saturation::findResult(lon
     cev += bev;
   }
   else {
-    MEDDLY_DCASSERT(cev == Inf<long>());
+    MEDDLY_DCASSERT(cev == 0);
   }
 
   doneCTkey(key);
@@ -792,7 +786,8 @@ void MEDDLY::constraint_saturation::saveResult(compute_table::search_key* key,
   argF->cacheNode(b);
   compute_table::entry_builder &entry = CT->startNewEntry(key);
   if (c == 0) {
-    entry.writeResult(Inf<long>());
+    // Write long
+    entry.writeResult(0L);
   }
   else {
     MEDDLY_DCASSERT(cev - bev >= 0);

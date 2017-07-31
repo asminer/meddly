@@ -163,7 +163,7 @@ bool MEDDLY::inter_max_evplus::checkTerminals(long aev, node_handle a, long bev,
     long& cev, node_handle& c)
 {
   if (a == 0 || b == 0) {
-    cev = Inf<long>();
+    cev = 0;
     c = 0;
     return true;
   }

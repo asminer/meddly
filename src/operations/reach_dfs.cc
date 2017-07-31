@@ -340,8 +340,6 @@ class MEDDLY::common_dfs_evplus : public binary_operation {
     inline compute_table::search_key*
     findResult(long aev, node_handle a, node_handle b, long& cev, node_handle& c)
     {
-      MEDDLY_DCASSERT(aev != Inf<long>());
-
       compute_table::search_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
@@ -351,22 +349,21 @@ class MEDDLY::common_dfs_evplus : public binary_operation {
       compute_table::search_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       cacheFind.read(cev);
-      if (cev != Inf<long>()) {
+      c = resF->linkNode(cacheFind.readNH());
+      if (c != 0) {
         cev += aev;
       }
-      c = resF->linkNode(cacheFind.readNH());
       doneCTkey(CTsrch);
       return 0;
     }
     inline void saveResult(compute_table::search_key* Key,
       long aev, node_handle a, node_handle b, long cev, node_handle c)
     {
-      MEDDLY_DCASSERT(aev != Inf<long>());
-
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
       compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResult(cev == Inf<long>() ? cev : cev - aev);
+      // Write long
+      entry.writeResult(c == 0 ? 0L : cev - aev);
       entry.writeResultNH(resF->cacheNode(c));
       CT->addEntry();
     }
@@ -1659,7 +1656,6 @@ void MEDDLY::forwd_dfs_evplus::saturateHelper(unpacked_node &nb)
 
       if (rec == 0) continue;
 
-      MEDDLY_DCASSERT(recev != Inf<long>());
       // Increase the distance
       recev++;
 
@@ -1719,7 +1715,7 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
 {
   // termination conditions
   if (mxd == 0 || evmdd == 0) {
-    resEv = Inf<long>();
+    resEv = 0;
     resEvmdd = 0;
     return;
   }
@@ -1786,7 +1782,7 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
 
     // clear out result (important!)
     for (int i=0; i<rSize; i++) {
-      nb->setEdge(i, Inf<long>());
+      nb->setEdge(i, 0L);
       nb->d_ref(i) = 0;
     }
 

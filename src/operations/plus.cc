@@ -162,15 +162,13 @@ bool MEDDLY::plus_evplus::checkTerminals(long aev, node_handle a, long bev, node
 {
   if (a == -1 && b == -1) {
     c = -1;
-    MEDDLY_DCASSERT(aev != Inf<long>());
-    MEDDLY_DCASSERT(bev != Inf<long>());
     cev = aev + bev;
     MEDDLY_DCASSERT(cev >= 0);
     return true;
   }
   if (a == 0 || b == 0) {
     c = 0;
-    cev = Inf<long>();
+    cev = 0;
     return true;
   }
   return false;

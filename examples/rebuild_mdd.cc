@@ -54,7 +54,7 @@ using namespace MEDDLY;
 
 
 // verbose: 0: minimum, 2: maximum
-const int verbose = 1;
+const int verbose = 0;
 
 #if 0
 // Given a forest and an op_code returns the corresponding op_info.
@@ -189,16 +189,36 @@ void reorderVariablesByRebuilding(dd_edge &e)
 	target->reorderVariables(level2var);
 	delete[] level2var;
 
-	global_rebuilder gr(f, target);
+	dd_edge e2(target);
 
-	timer start;
-	start.note_time();
-	dd_edge ne = gr.rebuild(e);
-	start.note_time();
-	printf("Time interval: %.4e seconds\n", start.get_last_interval()/1000000.0);
+	{
+	  global_rebuilder gr(f, target);
 
-	printf("Source: %ld\n", f->getCurrentNumNodes());
-	printf("Final: %ld\n", target->getCurrentNumNodes());
+	  timer start;
+	  start.note_time();
+	  e2 = gr.rebuild(e);
+	  start.note_time();
+	  printf("Time interval: %.4e seconds\n", start.get_last_interval()/1000000.0);
+
+	  printf("Source: %d\n", e.getNodeCount());
+	  printf("Final: %d\n", e2.getNodeCount());
+	}
+
+	f->createEdge(0, e);
+	printf("Source Discarded: %d\n", e.getNodeCount());
+
+	{
+	  global_rebuilder gr(target, f);
+
+	  timer start;
+	  start.note_time();
+	  e = gr.rebuild(e2);
+	  start.note_time();
+	  printf("Time interval: %.4e seconds\n", start.get_last_interval()/1000000.0);
+
+	  printf("Final: %d\n", e2.getNodeCount());
+	  printf("Source: %d\n", e.getNodeCount());
+	}
 }
 
 int main(int argc, char *argv[])
@@ -208,7 +228,7 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  srand(5u);
+  srand(time(NULL));
 
   // initialize number of variables, their bounds and the number of elements
   // to create

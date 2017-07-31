@@ -65,15 +65,13 @@ bool MEDDLY::prepostplus_evplus::checkTerminals(long aev, node_handle a, long be
 {
   if (a == -1 && b == -1) {
     c = -1;
-    MEDDLY_DCASSERT(aev != Inf<long>());
-    MEDDLY_DCASSERT(bev != Inf<long>());
     cev = aev + bev;
     MEDDLY_DCASSERT(cev >= 0);
     return true;
   }
   if (a == 0 || b == 0) {
     c = 0;
-    cev = Inf<long>();
+    cev = 0;
     return true;
   }
   return false;
@@ -135,7 +133,7 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
   for (int i = 0; i < resultSize; i++) {
     if (A->d(i) == 0 || B->d(i) == 0) {
       nb->d_ref(i) = 0;
-      nb->setEdge(i, Inf<long>());
+      nb->setEdge(i, 0L);
       continue;
     }
 
@@ -149,7 +147,7 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
     for (int j = 0; j < resultSize; j++) {
       if (D->d(j) == 0) {
         nb2->d_ref(j) = 0;
-        nb2->setEdge(j, Inf<long>());
+        nb2->setEdge(j, 0L);
         continue;
       }
 
@@ -242,7 +240,7 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
   for (int i = 0; i < resultSize; i++) {
     if (A->d(i) == 0) {
       nb->d_ref(i) = 0;
-      nb->setEdge(i, Inf<long>());
+      nb->setEdge(i, 0L);
       continue;
     }
 
@@ -256,7 +254,7 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
     for (int j = 0; j < resultSize; j++) {
       if (D->d(j) == 0 || B->d(j) == 0) {
         nb2->d_ref(j) = 0;
-        nb2->setEdge(j, Inf<long>());
+        nb2->setEdge(j, 0L);
         continue;
       }
 

@@ -247,10 +247,8 @@ bool MEDDLY::transitive_closure_dfs::checkTerminals(int aev, node_handle a, int 
     return true;
   }
   if (a == 0 || b == 0 || c == 0) {
-    MEDDLY_DCASSERT(aev == Inf<long>() || bev == Inf<long>() || c == 0);
     d = 0;
-    // XXX: 0 or infinity???
-    dev = Inf<long>();
+    dev = 0;
     return true;
   }
   return false;
@@ -275,11 +273,10 @@ MEDDLY::compute_table::search_key* MEDDLY::transitive_closure_dfs::findResult(lo
   cacheFind.read(dev);
   d = resF->linkNode(cacheFind.readNH());
   if (d != 0) {
-//    dev += aev + bev;
     dev += bev;
   }
   else {
-    MEDDLY_DCASSERT(dev == Inf<long>());
+    MEDDLY_DCASSERT(dev == 0);
   }
   MEDDLY_DCASSERT(dev >= 0);
 
@@ -295,7 +292,8 @@ void MEDDLY::transitive_closure_dfs::saveResult(compute_table::search_key* key,
   transF->cacheNode(c);
   compute_table::entry_builder& entry = CT->startNewEntry(key);
   if (d == 0) {
-    entry.writeResult(Inf<long>());
+    // Write long
+    entry.writeResult(0L);
   }
   else {
     MEDDLY_DCASSERT(dev - bev >= 0);
@@ -515,21 +513,20 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
       for (int jpz = 0; jpz < Rp->getNNZs(); jpz++) {
         const int jp = Rp->i(jpz);
         if (A->d(jp) == 0) {
-          MEDDLY_DCASSERT(A->ei(jp) == Inf<long>() || A->ei(jp) == 0);
+          MEDDLY_DCASSERT(A->ei(jp) == 0);
           continue;
         }
 
-        long recev = Inf<long>();
+        long recev = 0;
         node_handle rec = 0;
         recFire(aev + A->ei(jp), A->d(jp), D->ei(ip), D->d(ip), Rp->d(jpz), recev, rec);
         MEDDLY_DCASSERT(isLevelAbove(D->getLevel(), resF->getNodeLevel(rec)));
 
         if (rec == 0) {
-          MEDDLY_DCASSERT(recev == Inf<long>());
+          MEDDLY_DCASSERT(recev == 0);
           continue;
         }
 
-        MEDDLY_DCASSERT(recev != Inf<long>());
         MEDDLY_DCASSERT(isLevelAbove(D->getLevel(), resF->getNodeLevel(rec)));
 
         if (rec == D->d(jp)) {
@@ -544,7 +541,7 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
         bool updated = true;
 
         if (D->d(jp) == 0) {
-          MEDDLY_DCASSERT(D->ei(jp) == 0 || D->ei(jp) == Inf<long>());
+          MEDDLY_DCASSERT(D->ei(jp) == 0);
           D->setEdge(jp, recev);
           D->d_ref(jp) = rec;
         }
@@ -602,7 +599,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
 {
   // termination conditions
   if (a == 0 || b == 0 || r == 0) {
-    cev = Inf<long>();
+    cev = 0;
     c = 0;
     return;
   }
@@ -649,7 +646,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
       // Assume identity reduction
       MEDDLY_DCASSERT(transF->isIdentityReduced());
       for (int ip = 0; ip < size; ip++) {
-        long tev = Inf<long>();
+        long tev = 0;
         node_handle t = 0;
         recFire(aev + A->ei(ip), A->d(ip), bev + B->ei(i) + D->ei(ip), D->d(ip), r, tev, t);
         Tp->setEdge(ip, tev);
@@ -664,7 +661,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
 
       // clear out result (important!)
       for (int ip = 0; ip < size; ip++) {
-        Tp->setEdge(ip, Inf<long>());
+        Tp->setEdge(ip, 0L);
         Tp->d_ref(ip) = 0;
       }
 
@@ -685,24 +682,24 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
         for (int jpz = 0; jpz < Rp->getNNZs(); jpz++) {
           const int jp = Rp->i(jpz);
           if (A->d(jp) == 0) {
-            MEDDLY_DCASSERT(A->ei(jp) == Inf<long>() || A->ei(jp) == 0);
+            MEDDLY_DCASSERT(A->ei(jp) == 0);
             continue;
           }
 
           // ok, there is an ip->jp "edge".
           // determine new states to be added (recursively)
           // and add them
-          long nev = Inf<long>();
+          long nev = 0;
           node_handle n = 0;
           recFire(aev + A->ei(jp), A->d(jp), bev + B->ei(i) + D->ei(ip), D->d(ip), Rp->d(jpz), nev, n);
 
           if (n == 0) {
-            MEDDLY_DCASSERT(nev == Inf<long>());
+            MEDDLY_DCASSERT(nev == 0);
             continue;
           }
 
           if (Tp->d(jp) == 0) {
-            MEDDLY_DCASSERT(Tp->ei(jp) == Inf<long>());
+            MEDDLY_DCASSERT(Tp->ei(jp) == 0);
             Tp->setEdge(jp, nev);
             Tp->d_ref(jp) = n;
             continue;
@@ -811,8 +808,7 @@ bool MEDDLY::transitive_closure_evplus::checkTerminals(int aev, node_handle a, i
   }
   if (a == 0 || b == 0) {
     c = 0;
-    // XXX: 0 or infinity???
-    cev = Inf<long>();
+    cev = 0;
     return true;
   }
   return false;
@@ -841,7 +837,7 @@ MEDDLY::compute_table::search_key* MEDDLY::transitive_closure_evplus::findResult
     cev += bev;
   }
   else {
-    MEDDLY_DCASSERT(cev == Inf<long>());
+    MEDDLY_DCASSERT(cev == 0);
   }
   doneCTkey(key);
   return 0;
@@ -854,7 +850,8 @@ void MEDDLY::transitive_closure_evplus::saveResult(compute_table::search_key* ke
   tcF->cacheNode(b);
   compute_table::entry_builder &entry = CT->startNewEntry(key);
   if (c == 0) {
-    entry.writeResult(Inf<long>());
+    // Write long
+    entry.writeResult(0L);
   }
   else {
     MEDDLY_DCASSERT(cev - bev >= 0);
@@ -927,7 +924,7 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
   for (int i = 0; i < sz; i++) {
     if (B->d(i) == 0) {
       MEDDLY_DCASSERT(resF == tcF);
-      T->setEdge(i, Inf<long>());
+      T->setEdge(i, 0L);
       T->d_ref(i) = 0;
     }
     else {
@@ -938,7 +935,7 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
       unpacked_node* Tp = unpacked_node::newFull(resF, -level, sz);
       for (int j = 0; j < sz; j++) {
         if (A->d(j) == 0 || D->d(j) == 0) {
-          Tp->setEdge(j, Inf<long>());
+          Tp->setEdge(j, 0L);
           Tp->d_ref(j) = 0;
         }
         else {

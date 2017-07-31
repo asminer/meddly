@@ -216,7 +216,7 @@ bool MEDDLY::multiply_evplus::checkTerminals(long aev, node_handle a, long bev, 
   long& cev, node_handle& c)
 {
   if (a == 0 || b == 0) {
-    c = 0; cev = Inf<long>();
+    c = 0; cev = 0;
     return true;
   }
   if (a == -1 && b == -1) {
