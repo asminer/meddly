@@ -319,9 +319,13 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       
       int j = Ru[ei]->nextOf(i);
       if(j==-1) continue;
-      if(j>=dm->getVariableBound(nb.getLevel(),false))
+      if(j>=nb.getSize())
         {
         dm->enlargeVariableBound(nb.getLevel(), false, j+1);
+        int oldSize = nb.getSize();
+        nb.resize(j+1);
+        while(oldSize < nb.getSize()) { nb.d_ref(oldSize++) = 0; }
+        queue->resize(nb.getSize());
         }
       if (-1==nb.d(j)) continue;  // nothing can be added to this set
       
@@ -448,11 +452,12 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
           // loop over mxd "columns"
           int j = relNode->nextOf(i);
           if(j==-1) continue;
-          if(j>=dm->getVariableBound(rLevel,false))
-            {
-	      dm->enlargeVariableBound(rLevel, false, j+1);
-              rSize = resF->getLevelSize(rLevel);
-            }
+          if (j >= nb->getSize()) {
+            dm->enlargeVariableBound(nb->getLevel(), false, j+1);
+            int oldSize = nb->getSize();
+            nb->resize(j+1);
+            while(oldSize < nb->getSize()) { nb->d_ref(oldSize++) = 0; }
+          }
           // ok, there is an i->j "edge".
           // determine new states to be added (recursively)
           // and add them

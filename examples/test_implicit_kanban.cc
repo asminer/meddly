@@ -151,7 +151,7 @@ int main(int argc, const char** argv)
         }
     }
     }
-  BOUNDS=1;
+  BOUNDS = 2;
   
   if (argc<4) return usage(argv[0]);
   if (N<0) return usage(argv[0]);
@@ -197,14 +197,14 @@ int main(int argc, const char** argv)
       forest* inmdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
       
       expert_domain* dm = static_cast<expert_domain*>(inmdd->useDomain());
-       if(N>=BOUNDS)
-        {
-         for (int i=PLACES; i>0; i--)
-           dm->enlargeVariableBound(i, false, N+1);
-         BOUNDS=N+1;
-        }
+
+      dm->enlargeVariableBound(p1_position, false, N+1);
+      dm->enlargeVariableBound(p13_position, false, N+1);
+      dm->enlargeVariableBound(p5_position, false, N+1);
+      dm->enlargeVariableBound(p9_position, false, N+1);
+    
       
-      std::cout<<"\n Get new bounds::"<<dm->getVariableBound(1,false);
+      
       //ADD INITIAL STATE
       dd_edge first(inmdd);
       dd_edge reachable(inmdd);

@@ -145,7 +145,7 @@ for (int i=1; i<argc; i++)
 if (argc<5) return usage(argv[0]);
 if (MT<0) return usage(argv[0]);
 if (DC<0) return usage(argv[0]);
-BOUNDS = MT+1;
+BOUNDS = 2;
 domain* d = 0;
 
 try {
@@ -186,60 +186,61 @@ if('i' == method)
 {
 
 //CREATE FORESTS
-forest* inmdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
+  forest* inmdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
+
   expert_domain* dm = static_cast<expert_domain*>(inmdd->useDomain());
-  if(N>=BOUNDS)
-    {
-    for (int i=PLACES; i>0; i--)
-      dm->enlargeVariableBound(i, false, N+1);
-    BOUNDS=N+1;
-    }
-//ADD INITIAL STATE
-dd_edge first(inmdd);
-dd_edge reachable(inmdd);
-inmdd->createEdge(&initialState, 1, first);
-  //outmdd->createEdge(&initialState, 1, reachable);
+  dm->enlargeVariableBound(p1_position, false, MT+1);
+  dm->enlargeVariableBound(p3_position, false, MT+1);
+  dm->enlargeVariableBound(p5_position, false, DC+1);
+  dm->enlargeVariableBound(p7_position, false, 2*DC+1);
+  
+    
+  //ADD INITIAL STATE
+  dd_edge first(inmdd);
+  dd_edge reachable(inmdd);
+  inmdd->createEdge(&initialState, 1, first);
+    //outmdd->createEdge(&initialState, 1, reachable);
 
 
-//CREATE RELATION
-satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,inmdd);
+  //CREATE RELATION
+  satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,inmdd);
 
-start.note_time();
-buildImplicitRelation(model, TRANS, PLACES, BOUNDS, T);
-printf("\nNext-state function construction took %.4e seconds\n",
-start.get_last_interval() / 1000000.0);
-specialized_operation* sat = 0;
+  start.note_time();
+  buildImplicitRelation(model, TRANS, PLACES, BOUNDS, T);
+  printf("\nNext-state function construction took %.4e seconds\n",
+  start.get_last_interval() / 1000000.0);
+  specialized_operation* sat = 0;
 
 
-printf("\nBuilding reachability set using saturation implicit relation");
-if (0==SATURATION_IMPL_FORWARD) {
-throw error(error::UNKNOWN_OPERATION);
-}
-sat = SATURATION_IMPL_FORWARD->buildOperation(T);
+  printf("\nBuilding reachability set using saturation implicit relation");
+  if (0==SATURATION_IMPL_FORWARD) {
+  throw error(error::UNKNOWN_OPERATION);
+  }
+  sat = SATURATION_IMPL_FORWARD->buildOperation(T);
 
-if (0==sat) {
-throw error(error::INVALID_OPERATION);
-}
-sat->compute(first, reachable);
+  if (0==sat) {
+  throw error(error::INVALID_OPERATION);
+  }
+  sat->compute(first, reachable);
 
-start.note_time();
-printf("\nReachability set construction took %.4e seconds\n",
-start.get_last_interval() / 1000000.0);
-fflush(stdout);
+  start.note_time();
+  printf("\nReachability set construction took %.4e seconds\n",
+  start.get_last_interval() / 1000000.0);
+  fflush(stdout);
 
-#ifdef DUMP_REACHABLE
-printf("Reachable states:\n");
-reachable.show(meddlyout, 2);
-#endif
+  #ifdef DUMP_REACHABLE
+  printf("Reachable states:\n");
+  reachable.show(meddlyout, 2);
+  #endif
 
-printStats("MDD", inmdd);
-fflush(stdout);
+  printStats("MDD", inmdd);
+  fflush(stdout);
 
-double c;
-apply(CARDINALITY, reachable, c);
-operation::showAllComputeTables(meddlyout, 3);
+  double c;
+  apply(CARDINALITY, reachable, c);
+  operation::showAllComputeTables(meddlyout, 3);
 
-printf("Approx. %g reachable states\n", c);
+  printf("Approx. %g reachable states\n", c);
 
 }
 
