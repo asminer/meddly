@@ -20,8 +20,8 @@
 
 #include "mtmddint.h"
 
-MEDDLY::mt_mdd_int::mt_mdd_int(int dsl, domain *d, const policies &p,int* level_reduction_rule, int tv)
-: mtmdd_forest(dsl, d, INTEGER, p,level_reduction_rule)
+MEDDLY::mt_mdd_int::mt_mdd_int(int dsl, domain *d, const policies &p, int* level_reduction_rule, int tv)
+: mtmdd_forest(dsl, d, INTEGER, p, level_reduction_rule)
 { 
   initializeForest();
 

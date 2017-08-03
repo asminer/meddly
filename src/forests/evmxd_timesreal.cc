@@ -27,8 +27,8 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::evmxd_timesreal::evmxd_timesreal(int dsl, domain *d, const policies &p,int* level_reduction_rule)
- : evmxd_forest(dsl, d, REAL, EVTIMES, p,level_reduction_rule)
+MEDDLY::evmxd_timesreal::evmxd_timesreal(int dsl, domain *d, const policies &p, int* level_reduction_rule)
+ : evmxd_forest(dsl, d, REAL, EVTIMES, p, level_reduction_rule)
 {
   // Edge's are floats and are NOT hashed.
   setEdgeSize(sizeof(float), false);

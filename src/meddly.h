@@ -1239,9 +1239,10 @@ class MEDDLY::forest {
       @param  t       the range of the functions represented in this forest.
       @param  ev      edge annotation.
       @param  p       Polcies for reduction, storage, deletion.
+      @param  level_reduction_rule       Rules for reduction on different levels.
     */
     forest(int dslot, domain* d, bool rel, range_type t, edge_labeling ev, 
-      const policies &p,int* level_reduction_rule);
+      const policies &p, int* level_reduction_rule);
 
     /// Destructor.
     virtual ~forest();  
@@ -2137,10 +2138,11 @@ class MEDDLY::domain {
                         edge-valued with plus/times decision diagram forest.
         @param  p       Policies to use within the forest.
         @param  tv      Transparent value.
+        @param  level_reduction_rule       Rules for reduction on different levels.
         @return 0       if an error occurs, a new forest otherwise.
     */
     forest* createForest(bool rel, forest::range_type t,
-      forest::edge_labeling ev, const forest::policies &p,int* level_reduction_rule=NULL, int tv=0);
+      forest::edge_labeling ev, const forest::policies &p, int* level_reduction_rule=NULL, int tv=0);
 
     /// Create a forest using the library default policies.
     forest* createForest(bool rel, forest::range_type t,

@@ -31,8 +31,8 @@
 
 
 MEDDLY::evmdd_plusint
- ::evmdd_plusint(int dsl, domain *d, const policies &p,int* level_reduction_rule, bool index_set)
- : evmdd_forest(dsl, d, INTEGER, index_set ? INDEX_SET : EVPLUS, p,level_reduction_rule)
+ ::evmdd_plusint(int dsl, domain *d, const policies &p, int* level_reduction_rule, bool index_set)
+ : evmdd_forest(dsl, d, INTEGER, index_set ? INDEX_SET : EVPLUS, p, level_reduction_rule)
 {
   setEdgeSize(sizeof(node_handle), true);
   if (index_set) setUnhashedSize(sizeof(node_handle));

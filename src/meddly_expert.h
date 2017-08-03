@@ -1741,9 +1741,10 @@ class MEDDLY::expert_forest: public forest
       @param  t       the range of the functions represented in this forest.
       @param  ev      edge annotation.
       @param  p       Polcies for reduction, storage, deletion.
+      @param  level_reduction_rule       Rules for reduction on different levels.
     */
     expert_forest(int dslot, domain *d, bool rel, range_type t,
-                  edge_labeling ev, const policies &p,int* level_reduction_rule);
+                  edge_labeling ev, const policies &p, int* level_reduction_rule);
 
   // ------------------------------------------------------------
   // inlined helpers.

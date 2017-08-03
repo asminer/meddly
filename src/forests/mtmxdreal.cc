@@ -20,8 +20,8 @@
 
 #include "mtmxdreal.h"
 
-MEDDLY::mt_mxd_real::mt_mxd_real(int dsl, domain *d, const policies &p,int* level_reduction_rule, float tv)
-: mtmxd_forest(dsl, d, REAL, p,level_reduction_rule)
+MEDDLY::mt_mxd_real::mt_mxd_real(int dsl, domain *d, const policies &p, int* level_reduction_rule, float tv)
+: mtmxd_forest(dsl, d, REAL, p, level_reduction_rule)
 { 
   initializeForest();
 

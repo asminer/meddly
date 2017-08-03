@@ -308,7 +308,7 @@ void MEDDLY::domain::deleteDomList()
 }
 
 MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t, 
-    forest::edge_labeling e, const forest::policies &p,int* level_reduction_rule, int tv)
+    forest::edge_labeling e, const forest::policies &p, int* level_reduction_rule, int tv)
 {
   int slot = findEmptyForestSlot();
 

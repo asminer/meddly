@@ -29,7 +29,7 @@ namespace MEDDLY {
 class MEDDLY::evmdd_forest : public ev_forest {
   public:
     evmdd_forest(int dsl, domain* d, range_type t, edge_labeling ev, 
-      const policies &p,int* level_reduction_rule=NULL);
+      const policies &p, int* level_reduction_rule=NULL);
 
     virtual void swapAdjacentVariables(int level);
     virtual void moveDownVariable(int high, int low);

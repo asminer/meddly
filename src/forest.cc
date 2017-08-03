@@ -729,8 +729,8 @@ const unsigned int MEDDLY::expert_forest::SHOW_TERMINALS  = 0x01;
 
 
 MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
-  edge_labeling ev, const policies &p,int* level_reduction_rule)
-: forest(ds, d, rel, t, ev, p,level_reduction_rule), nodeHeaders(*this)
+  edge_labeling ev, const policies &p, int* level_reduction_rule)
+: forest(ds, d, rel, t, ev, p, level_reduction_rule), nodeHeaders(*this)
 {
   nodeHeaders.setPessimistic(isPessimistic());
 

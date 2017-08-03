@@ -25,8 +25,8 @@
 #include "../unique_table.h"
 
 MEDDLY::mtmdd_forest
-::mtmdd_forest(int dsl, domain* d, range_type t, const policies &p,int* level_reduction_rule)
- : mt_forest(dsl, d, false, t, p,level_reduction_rule)
+::mtmdd_forest(int dsl, domain* d, range_type t, const policies &p, int* level_reduction_rule)
+ : mt_forest(dsl, d, false, t, p, level_reduction_rule)
 {
   // anything to construct?
 }
