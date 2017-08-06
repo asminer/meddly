@@ -28,6 +28,7 @@
 #include "complement.h"
 #include "maxmin_range.h"
 #include "mdd2index.h"
+#include "cycle.h"
 
 #include "union.h"
 #include "intersection.h"
@@ -75,6 +76,7 @@ namespace MEDDLY {
   const unary_opname* MAX_RANGE = 0;
   const unary_opname* MIN_RANGE = 0;
   const unary_opname* CONVERT_TO_INDEX_SET = 0;
+  const unary_opname* CYCLE = 0;
 
   // binary operation "codes"
 
@@ -153,6 +155,7 @@ void MEDDLY::builtin_initializer::setup()
   initP(MEDDLY::MAX_RANGE,            MAXRANGE,   initializeMaxRange()      );
   initP(MEDDLY::MIN_RANGE,            MINRANGE,   initializeMaxRange()      );
   initP(MEDDLY::CONVERT_TO_INDEX_SET, MDD2INDEX,  initializeMDD2INDEX()     );
+  initP(MEDDLY::CYCLE,                CYCLE,      initializeCycle()         );
 
   initP(MEDDLY::UNION,                UNION,      initializeUnion()         );
   initP(MEDDLY::INTERSECTION,         INTERSECT,  initializeIntersection()  );
@@ -220,6 +223,7 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(MAXRANGE,       MEDDLY::MAX_RANGE);
   cleanPair(MINRANGE,       MEDDLY::MIN_RANGE);
   cleanPair(MDD2INDEX,      MEDDLY::CONVERT_TO_INDEX_SET);
+  cleanPair(CYCLE,          MEDDLY::CYCLE);
 
   cleanPair(UNION,          MEDDLY::UNION);
   cleanPair(INTERSECT,      MEDDLY::INTERSECTION);

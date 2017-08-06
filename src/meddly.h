@@ -192,6 +192,9 @@ namespace MEDDLY {
   /// Convert MDD to EV+MDD index set.  A special case of COPY, really.
   extern const unary_opname* CONVERT_TO_INDEX_SET;
 
+  /// Extract cycles (EV+MDD) from transitive closure (EV+MxD)
+  extern const unary_opname* CYCLE;
+
   // ******************************************************************
   // *                    Named  binary operations                    *
   // ******************************************************************

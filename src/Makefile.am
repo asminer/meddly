@@ -91,6 +91,7 @@ libmeddly_la_SOURCES = \
   operations/init_builtin.h   operations/init_builtin.cc \
   operations/minimum_witness.h      operations/minimum_witness.cc \
   operations/transitive_closure.h   operations/transitive_closure.cc \
+  operations/cycle.h          operations/cycle.cc \
   \
   storage/bytepack.h  \
   storage/holeman.h         storage/holeman.cc \
