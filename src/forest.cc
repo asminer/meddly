@@ -1799,6 +1799,8 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
   unique->remove(h, p);
 #endif
 
+  stats.decActive(1);
+
 #ifdef TRACK_DELETIONS
   // start at one, because we have incremented the depth
   for (int i=1; i<delete_depth; i++) printf(" "); 
