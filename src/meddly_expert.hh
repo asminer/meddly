@@ -1760,6 +1760,31 @@ MEDDLY::satimpl_opname::relation_node::setID(rel_node_handle n_ID)
   ID=n_ID;
 }
 
+inline long
+MEDDLY::satimpl_opname::relation_node::getPieceSize() const
+{
+  return piece_size;
+}
+
+inline void
+MEDDLY::satimpl_opname::relation_node::setPieceSize(long pS)
+{
+  piece_size=pS;
+}
+
+inline long*
+MEDDLY::satimpl_opname::relation_node::getTokenUpdate() const
+{
+  return token_update;
+}
+
+inline
+void
+MEDDLY::satimpl_opname::relation_node::setTokenUpdate(long* n_token_update)
+{
+  token_update = n_token_update;
+}
+
 //************************************************************************
 
 inline MEDDLY::satimpl_opname::relation_node*

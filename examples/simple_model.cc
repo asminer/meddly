@@ -372,10 +372,15 @@ public:
   {}
   long nextOf(long i) override
   {
-    long result = i+nxtList[getID()];
   
-    if((result>=0)) return result;
-    else return -1;
+     if(i>=getPieceSize()) //Array needs to be allocated
+      expandTokenUpdate(i);
+  
+      long result = i+nxtList[getID()];
+      long val = result>=0?result:-1;
+      setTokenUpdateAtIndex(i,val);
+
+     return getTokenUpdate()[i];
   }
 };
 

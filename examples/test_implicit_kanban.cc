@@ -248,8 +248,8 @@ int main(int argc, const char** argv)
       double c;
       apply(CARDINALITY, reachable, c);
       operation::showAllComputeTables(meddlyout, 3);
-      
-      printf("Approx. %g reachable states\n", c);
+      long long int ci = (long long int) c;
+      std::cout<<"Approx."<<ci<<" reachable states\n";
       
       }
     

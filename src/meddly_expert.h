@@ -3114,11 +3114,9 @@ class MEDDLY::satimpl_opname:public specialized_opname {
          @param  signature   Hash for this node, such that
          two equal nodes must have the same
          signature.
-         @param  add_token   true, if adding tokens; else false
-         @param  tokens      Change in number of tokens
-         @param  level       Level affected.
-         @param  down        Handle to a relation node below us.
-         */
+         @param  level          Level affected.
+         @param  down           Handle to a relation node below us. 
+	*/
         relation_node(unsigned long signature, int level, rel_node_handle down);
         virtual ~relation_node();
         
@@ -3152,6 +3150,37 @@ class MEDDLY::satimpl_opname:public specialized_opname {
          */
         void setID(rel_node_handle ID);
         
+        /**
+         The token_update array for this piece.
+         */
+        long* getTokenUpdate() const;
+        
+        /**
+         Set the token_update array for this piece.
+         */
+        void setTokenUpdate(long* token_update);
+        
+        /**
+         The size of token_update array for this piece.
+         */
+        long getPieceSize() const;
+        
+        /**
+         Set the size of token_update array for this piece.
+         */
+        void setPieceSize(long pS);
+        
+        /**
+         Expand the tokenUpdate array as the variable increases
+         */
+        void expandTokenUpdate(long i);
+        
+        /**
+         Set the tokenUpdate array at location i to val
+         */
+        void setTokenUpdateAtIndex(long i,long val);
+        
+ 
         
         // the following must be provided in derived classes.
         
@@ -3172,7 +3201,8 @@ class MEDDLY::satimpl_opname:public specialized_opname {
         int level;
         rel_node_handle down;
         rel_node_handle ID;
-        
+	long* token_update;
+        long piece_size;        
         // used by the hash table in implicit_relation
         
         relation_node* hash_chain;
