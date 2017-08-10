@@ -889,7 +889,7 @@ MEDDLY::expert_forest::bool_Tencoder::handle2value(MEDDLY::node_handle h)
     return true;
   if (0 == h)
     return false;
-  throw error(error::MISCELLANEOUS);
+  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
 }
 
 inline MEDDLY::node_handle
@@ -898,7 +898,7 @@ MEDDLY::expert_forest::int_Tencoder::value2handle(int v)
   MEDDLY_DCASSERT(4 == sizeof(MEDDLY::node_handle));
   if (v < -1073741824 || v > 1073741823) {
     // Can't fit in 31 bits (signed)
-    throw error(error::VALUE_OVERFLOW);
+    throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
   }
   if (v)
     v |= 0x80000000; // sets the sign bit
@@ -982,7 +982,7 @@ template<typename T>
       case REAL:
         return float_Tencoder::value2handle(v);
       default:
-        throw error(error::MISCELLANEOUS);
+        throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
     }
   }
 
@@ -1002,7 +1002,7 @@ template<typename T>
         v = float_Tencoder::handle2value(n);
         return;
       default:
-        throw error(error::MISCELLANEOUS);
+        throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
     }
   }
 
@@ -1018,7 +1018,7 @@ MEDDLY::expert_forest::getBooleanFromHandle(MEDDLY::node_handle n) const
     case REAL:
       return float_Tencoder::handle2value(n);
     default:
-      throw error(error::MISCELLANEOUS);
+      throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   }
 }
 
@@ -1034,7 +1034,7 @@ MEDDLY::expert_forest::getIntegerFromHandle(MEDDLY::node_handle n) const
     case REAL:
       return float_Tencoder::handle2value(n);
     default:
-      throw error(error::MISCELLANEOUS);
+      throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   }
 }
 
@@ -1050,7 +1050,7 @@ MEDDLY::expert_forest::getRealFromHandle(MEDDLY::node_handle n) const
     case REAL:
       return float_Tencoder::handle2value(n);
     default:
-      throw error(error::MISCELLANEOUS);
+      throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   }
 }
 
@@ -1684,7 +1684,7 @@ MEDDLY::satotf_opname::otf_relation::isConfirmed(int level, int i) const
   if (level < num_levels &&  i >= 0) {
     return (i < insetF->getLevelSize(level) && confirmed[level][i]);
   }
-  throw MEDDLY::error::INVALID_ARGUMENT;
+  throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
 }
 
 inline int
@@ -2028,7 +2028,7 @@ inline void
 MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
 {
   if (!checkForestCompatibility()) {
-    throw error(error::INVALID_OPERATION);
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
   }
   computeDDEdge(arg, res);
 }
@@ -2066,7 +2066,7 @@ inline void
 MEDDLY::binary_operation::compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res)
 {
   if (!checkForestCompatibility()) {
-    throw error(error::INVALID_OPERATION);
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
   }
   computeDDEdge(ar1, ar2, res);
 }

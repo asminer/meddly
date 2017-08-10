@@ -127,7 +127,7 @@ MEDDLY::morethan_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getDomain() != r->getDomain()) || 
     (a2->getDomain() != r->getDomain()) 
   )
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (
     (a1->isForRelations() != r->isForRelations()) ||
@@ -135,7 +135,7 @@ MEDDLY::morethan_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
     (a2->getEdgeLabeling() != r->getEdgeLabeling())
   )
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   bool use_reals = (
     a1->getRangeType() == forest::REAL || a2->getRangeType() == forest::REAL 
@@ -154,7 +154,7 @@ MEDDLY::morethan_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     }
   }
 
-  throw error(error::NOT_IMPLEMENTED);
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 // ******************************************************************

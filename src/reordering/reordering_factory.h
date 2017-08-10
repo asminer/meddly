@@ -48,7 +48,7 @@ inline std::unique_ptr<reordering_base> reordering_factory::create(forest::polic
   case forest::policies::reordering_type::LARC:
     return std::unique_ptr<reordering_base>(new larc_reordering());
   default:
-    throw error(error::INVALID_ARGUMENT);
+    throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
   }
 }
 

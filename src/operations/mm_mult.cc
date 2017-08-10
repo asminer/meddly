@@ -98,7 +98,7 @@ MEDDLY::mm_mult_op::mm_mult_op(const binary_opname* oc, expert_forest* a1,
   accumulateOp = acc;
 
   if (!a1->isForRelations() || !a2->isForRelations())
-    throw error(error::MISCELLANEOUS);
+    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
 }
 
 bool MEDDLY::mm_mult_op::isStaleEntry(const node_handle* data)
@@ -408,7 +408,7 @@ MEDDLY::mm_mult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getDomain() != r->getDomain()) || 
     (a2->getDomain() != r->getDomain()) 
   )
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (
     (a1->getRangeType() == forest::BOOLEAN) ||
@@ -421,7 +421,7 @@ MEDDLY::mm_mult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
     (r->getEdgeLabeling()  != forest::MULTI_TERMINAL) 
   )
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   binary_operation* acc = getOperation(PLUS, r, r, r);
 
@@ -433,7 +433,7 @@ MEDDLY::mm_mult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
       return new mm_mult_mt<float>(this, a1, a2, r, acc);
       
     default:
-      throw error(error::TYPE_MISMATCH);
+      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   }
 }
 

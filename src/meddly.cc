@@ -87,9 +87,9 @@ MEDDLY::unary_operation* MEDDLY::getOperation(const unary_opname* code,
   expert_forest* arg, expert_forest* res)
 {
   if (!libraryRunning) 
-    throw error(error::UNINITIALIZED);
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (code->getIndex()<0 || code->getIndex()>=op_cache_size)
-    throw error(error::INVALID_OPERATION);
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
 
   operation* curr;
   operation* prev = 0;
@@ -120,9 +120,9 @@ MEDDLY::unary_operation* MEDDLY::getOperation(const unary_opname* code,
   expert_forest* arg, opnd_type res)
 {
   if (!libraryRunning) 
-    throw error(error::UNINITIALIZED);
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (code->getIndex()<0 || code->getIndex()>=op_cache_size)
-    throw error(error::INVALID_OPERATION);
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
 
   operation* curr;
   operation* prev = 0;
@@ -153,9 +153,9 @@ MEDDLY::binary_operation* MEDDLY::getOperation(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
 {
   if (!libraryRunning) 
-    throw error(error::UNINITIALIZED);
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (code->getIndex()<0 || code->getIndex()>=op_cache_size)
-    throw error(error::INVALID_OPERATION);
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
 
   operation* curr;
   operation* prev = 0;
@@ -186,7 +186,7 @@ void MEDDLY::removeOperationFromCache(operation* op)
 {
   if (0==op || 0==op_cache) return;
   if (!libraryRunning) 
-    throw error(error::UNINITIALIZED);
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   const opname* code = op->getOpName();
 
   operation* curr;
@@ -208,9 +208,9 @@ void MEDDLY::removeOperationFromCache(operation* op)
 void MEDDLY::apply(const unary_opname* code, const dd_edge &a, dd_edge &c)
 {
   if (!libraryRunning) 
-    throw error(error::UNINITIALIZED);
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (0==code)  
-    throw error(error::UNKNOWN_OPERATION);
+    throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
   unary_operation* op = getOperation(code, a, c);
   op->compute(a, c);
 }
@@ -218,9 +218,9 @@ void MEDDLY::apply(const unary_opname* code, const dd_edge &a, dd_edge &c)
 void MEDDLY::apply(const unary_opname* code, const dd_edge &a, long &c)
 {
   if (!libraryRunning) 
-    throw error(error::UNINITIALIZED);
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (0==code)
-    throw error(error::UNKNOWN_OPERATION);
+    throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
   unary_operation* op = getOperation(code, a, INTEGER);
   op->compute(a, c);
 }
@@ -228,9 +228,9 @@ void MEDDLY::apply(const unary_opname* code, const dd_edge &a, long &c)
 void MEDDLY::apply(const unary_opname* code, const dd_edge &a, double &c)
 {
   if (!libraryRunning) 
-    throw error(error::UNINITIALIZED);
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (0==code)
-    throw error(error::UNKNOWN_OPERATION);
+    throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
   unary_operation* op = getOperation(code, a, REAL);
   op->compute(a, c);
 }
@@ -239,9 +239,9 @@ void MEDDLY::apply(const unary_opname* code, const dd_edge &a, opnd_type cr,
   ct_object &c)
 {
   if (!libraryRunning) 
-    throw error(error::UNINITIALIZED);
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (0==code)
-    throw error(error::UNKNOWN_OPERATION);
+    throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
   unary_operation* op = getOperation(code, a, cr);
   op->compute(a, c);
 }
@@ -250,9 +250,9 @@ void MEDDLY::apply(const binary_opname* code, const dd_edge &a,
   const dd_edge &b, dd_edge &c)
 {
   if (!libraryRunning) 
-    throw error(error::UNINITIALIZED);
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (0==code)
-    throw error(error::UNKNOWN_OPERATION);
+    throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
   binary_operation* op = getOperation(code, a, b, c);
   op->compute(a, b, c);
 }
@@ -263,19 +263,19 @@ void MEDDLY::apply(const binary_opname* code, const dd_edge &a,
 
 MEDDLY::variable* MEDDLY::createVariable(int bound, char* name)
 {
-  if (!libraryRunning) throw error(error::UNINITIALIZED);
+  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   return new expert_variable(bound, name);
 }
 
 MEDDLY::domain* MEDDLY::createDomain(variable** vars, int N)
 {
-  if (!libraryRunning) throw error(error::UNINITIALIZED);
+  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   return new expert_domain(vars, N);
 }
 
 MEDDLY::domain* MEDDLY::createDomainBottomUp(const int* bounds, int N)
 {
-  if (!libraryRunning) throw error(error::UNINITIALIZED);
+  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   domain* d = new expert_domain(0, 0);
   d->createVariablesBottomUp(bounds, N);
   return d;
@@ -284,7 +284,7 @@ MEDDLY::domain* MEDDLY::createDomainBottomUp(const int* bounds, int N)
 void MEDDLY::destroyDomain(MEDDLY::domain* &d)
 {
   if (0==d) return;
-  if (!libraryRunning) throw error(error::UNINITIALIZED);
+  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   d->markForDeletion();
   purgeMarkedOperations();
   delete d;
@@ -294,7 +294,7 @@ void MEDDLY::destroyDomain(MEDDLY::domain* &d)
 void MEDDLY::destroyForest(MEDDLY::forest* &f)
 {
   if (0==f) return;
-  if (!libraryRunning) throw error(error::UNINITIALIZED);
+  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   f->markForDeletion();
   purgeMarkedOperations();
   delete f;
@@ -316,7 +316,7 @@ void MEDDLY::purgeMarkedOperations()
 inline void MEDDLY::destroyOpInternal(MEDDLY::operation* op)
 {
   if (0==op) return;
-  if (!libraryRunning) throw error(error::UNINITIALIZED);
+  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   removeOperationFromCache(op);
   if (!op->isMarkedForDeletion()) {
     op->markForDeletion();
@@ -364,7 +364,7 @@ MEDDLY::initializer_list* MEDDLY::defaultInitializerList(initializer_list* prev)
 // void MEDDLY::initialize(const settings &s, initializer_list* L)
 void MEDDLY::initialize(initializer_list* L)
 {
-  if (libraryRunning) throw error(error::ALREADY_INITIALIZED);
+  if (libraryRunning) throw error(error::ALREADY_INITIALIZED, __FILE__, __LINE__);
 
   opname::next_index = 0;
 
@@ -388,7 +388,7 @@ void MEDDLY::initialize()
 
 void MEDDLY::cleanup()
 {
-  if (!libraryRunning) throw error(error::UNINITIALIZED);
+  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
 
 #ifdef STATS_ON_DESTROY
   if (operation::Monolithic_CT) {

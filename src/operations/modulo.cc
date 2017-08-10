@@ -57,7 +57,7 @@ bool modulo_mdd<REAL>
     REAL av, bv;
     arg1F->getValueFromHandle(a, av);
     arg2F->getValueFromHandle(b, bv);
-    if (0 == bv) throw error(error::DIVIDE_BY_ZERO);
+    if (0 == bv) throw error(error::DIVIDE_BY_ZERO, __FILE__, __LINE__);
     c = resF->handleForValue( av % bv );
     return true;
   }
@@ -94,7 +94,7 @@ bool modulo_mxd<REAL>
     REAL av, bv;
     arg1F->getValueFromHandle(a, av);
     arg2F->getValueFromHandle(b, bv);
-    if (0 == bv) throw error(error::DIVIDE_BY_ZERO);
+    if (0 == bv) throw error(error::DIVIDE_BY_ZERO, __FILE__, __LINE__);
     c = resF->handleForValue( av / bv );
     return true;
   }
@@ -131,7 +131,7 @@ MEDDLY::modulo_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getDomain() != r->getDomain()) || 
     (a2->getDomain() != r->getDomain()) 
   )
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (
     (a1->isForRelations() != r->isForRelations()) ||
@@ -139,7 +139,7 @@ MEDDLY::modulo_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
     (a2->getEdgeLabeling() != r->getEdgeLabeling()) 
   )
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   if (r->getEdgeLabeling() == forest::MULTI_TERMINAL) {
     switch (r->getRangeType()) {
@@ -151,12 +151,12 @@ MEDDLY::modulo_opname::buildOperation(expert_forest* a1, expert_forest* a2,
             return new modulo_mdd<int>(this, a1, a2, r);
 
       default:
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
     
   }
 
-  throw error(error::NOT_IMPLEMENTED);
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 // ******************************************************************

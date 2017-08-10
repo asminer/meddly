@@ -222,7 +222,7 @@ MEDDLY::cross_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getDomain() != r->getDomain()) || 
     (a2->getDomain() != r->getDomain()) 
   )
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (
     a1->isForRelations()  ||
@@ -235,7 +235,7 @@ MEDDLY::cross_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (r->getRangeType() != forest::BOOLEAN) ||
     (r->getEdgeLabeling() != forest::MULTI_TERMINAL)
   )
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   return new cross_bool(this, a1, a2, r);
 }

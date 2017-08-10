@@ -183,7 +183,7 @@ void MEDDLY::evmdd_timesreal::evtrmdd_iterator::getValue(float &tv) const
 bool MEDDLY::evmdd_timesreal::evtrmdd_iterator::start(const dd_edge &e)
 {
   if (F != e.getForest()) {
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
 
   MEDDLY_DCASSERT(acc_evs);

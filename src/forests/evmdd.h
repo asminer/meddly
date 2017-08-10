@@ -39,8 +39,8 @@ class MEDDLY::evmdd_forest : public ev_forest {
     template <class OPERATION, typename TYPE>
     inline void evaluateT(const dd_edge &f, const int* vlist, TYPE &val) const 
     {
-      if (f.getForest() != this) throw error(error::INVALID_OPERATION);
-      if (vlist == 0) throw error(error::INVALID_VARIABLE);
+      if (f.getForest() != this) throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+      if (vlist == 0) throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
 
       // assumption: vlist does not contain any special values (-1, -2, etc).
       // vlist contains a single element.
@@ -250,7 +250,7 @@ namespace MEDDLY {
           node_handle total_ptr;
           if (dc_ptr && these_ptr) {
             if (0==unionOp) {
-              throw error(error::NOT_IMPLEMENTED);
+              throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
             }
             MEDDLY_DCASSERT(unionOp);
             unionOp->compute(dc_val, dc_ptr, these_val, these_ptr, 

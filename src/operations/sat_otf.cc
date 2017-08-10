@@ -495,7 +495,7 @@ void MEDDLY::common_otf_dfs_by_events_mt::indexq::resize(int sz)
   if (sz <= size) return;
   data = (int*) realloc(data, sz * sizeof(int));
   if (0==data)
-    throw error(error::INSUFFICIENT_MEMORY);
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
 
   for (; size < sz; size++) data[size] = NOTINQ;
 }
@@ -520,7 +520,7 @@ void MEDDLY::common_otf_dfs_by_events_mt::charbuf::resize(int sz)
   if (sz <= size) return;
   data = (char*) realloc(data, sz * sizeof(char));
   if (0==data)
-    throw error(error::INSUFFICIENT_MEMORY);
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
 }
 
 // ******************************************************************
@@ -864,7 +864,7 @@ MEDDLY::specialized_operation*
 MEDDLY::fb_otf_saturation_opname::buildOperation(arguments* a) const
 {
   otf_relation* rel = dynamic_cast<otf_relation*>(a);
-  if (0==rel) throw error(error::INVALID_ARGUMENT);
+  if (0==rel) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
 
   //
   // No sanity checks needed here; we did them already when constructing a.
@@ -874,7 +874,7 @@ MEDDLY::fb_otf_saturation_opname::buildOperation(arguments* a) const
   if (forward)
     op = new forwd_otf_dfs_by_events_mt(this, rel);
   else {
-    throw MEDDLY::error::NOT_IMPLEMENTED;
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
     // op = new bckwd_otf_dfs_by_events_mt(this, rel);
   }
 

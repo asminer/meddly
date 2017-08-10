@@ -2259,7 +2259,7 @@ class MEDDLY::expert_forest: public forest
     virtual void moveUpVariable(int low, int high) = 0;
 
     virtual void dynamicReorderVariables(int top, int bottom) {
-    	throw error(error::NOT_IMPLEMENTED);
+    	throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
     }
 
     /** Show a terminal node.

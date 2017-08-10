@@ -110,19 +110,19 @@ MEDDLY::common_bfs_mt::common_bfs_mt(const binary_opname* oc, expert_forest* a1,
 
 bool MEDDLY::common_bfs_mt::isStaleEntry(const node_handle* entryData)
 {
-  throw error(error::MISCELLANEOUS);
+  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   // this operation won't add any CT entries.
 }
 
 void MEDDLY::common_bfs_mt::discardEntry(const node_handle* entryData)
 {
-  throw error(error::MISCELLANEOUS);
+  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   // this operation won't add any CT entries.
 }
 
 void MEDDLY::common_bfs_mt::showEntry(output &strm, const node_handle* entryData) const
 {
-  throw error(error::MISCELLANEOUS);
+  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   // this operation won't add any CT entries.
 }
 
@@ -225,7 +225,7 @@ MEDDLY::forwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getDomain() != r->getDomain()) || 
     (a2->getDomain() != r->getDomain()) 
   )
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (
     a1->isForRelations()    ||
@@ -237,7 +237,7 @@ MEDDLY::forwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
     (r->getEdgeLabeling() != forest::MULTI_TERMINAL)
   )
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   return new forwd_bfs_mt(this, a1, a2, r);
 }
@@ -270,10 +270,10 @@ MEDDLY::bckwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getDomain() != r->getDomain()) || 
     (a2->getDomain() != r->getDomain()) 
   )
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (a1 != r)
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
 
   if (
     a1->isForRelations()    ||
@@ -282,7 +282,7 @@ MEDDLY::bckwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
     (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) 
   )
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   return new bckwd_bfs_mt(this, a1, a2, r);
 }

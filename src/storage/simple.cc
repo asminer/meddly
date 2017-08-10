@@ -833,7 +833,7 @@ MEDDLY::node_handle
 MEDDLY::simple_separated
 ::getDownPtr(node_address addr, int index) const
 {
-  if (index<0) throw error(error::INVALID_VARIABLE);
+  if (index<0) throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
 
   MEDDLY_DCASSERT(MM);
   const node_handle* chunk = (node_handle*) MM->getChunkAddress(addr);
@@ -859,7 +859,7 @@ MEDDLY::simple_separated
 void MEDDLY::simple_separated
 ::getDownPtr(node_address addr, int index, int& ev, node_handle& dn) const
 {
-  if (index<0) throw error(error::INVALID_VARIABLE);
+  if (index<0) throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
 
   MEDDLY_DCASSERT(MM);
   const node_handle* chunk = (node_handle*) MM->getChunkAddress(addr);
@@ -897,7 +897,7 @@ void MEDDLY::simple_separated
 void MEDDLY::simple_separated
 ::getDownPtr(node_address addr, int index, float& ev, node_handle& dn) const
 {
-  if (index<0) throw error(error::INVALID_VARIABLE);
+  if (index<0) throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
 
   MEDDLY_DCASSERT(MM);
   const node_handle* chunk = (node_handle*) MM->getChunkAddress(addr);
@@ -1191,7 +1191,7 @@ MEDDLY::node_address MEDDLY::simple_separated
   MEDDLY_DCASSERT(MM);
   node_address addr = MM->requestChunk(slots_given);
   if (0==addr) {
-    throw error(error::INSUFFICIENT_MEMORY);
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
   MEDDLY_DCASSERT(slots_given >= slots_req);
 
@@ -1309,7 +1309,7 @@ MEDDLY::node_address MEDDLY::simple_separated
   size_t slots_given = slots_req;
   node_address addr = MM->requestChunk(slots_given);
   if (0==addr) {
-    throw error(error::INSUFFICIENT_MEMORY);
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
   MEDDLY_DCASSERT(slots_given >= slots_req);
 
