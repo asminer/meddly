@@ -376,9 +376,12 @@ public:
      if(i>=getPieceSize()) //Array needs to be allocated
       expandTokenUpdate(i);
   
-      long result = i+nxtList[getID()];
-      long val = result>=0?result:-1;
-      setTokenUpdateAtIndex(i,val);
+      if(getTokenUpdate()[i]==-2)
+      {	
+      	long result = i+nxtList[getID()];
+      	long val = result>=0?result:-1;
+      	setTokenUpdateAtIndex(i,val);
+      }
 
      return getTokenUpdate()[i];
   }
