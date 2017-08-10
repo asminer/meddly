@@ -154,7 +154,7 @@ void MEDDLY::expert_variable::addToList(domain* d)
   if (dl_used >= dl_alloc) {
     int ns = dl_alloc+8;
     domain** dl = (domain**) realloc(domlist, ns * sizeof(void*));
-    if (0==dl) throw error(error::INSUFFICIENT_MEMORY);
+    if (0==dl) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     dl_alloc = ns;
     domlist = dl;
   }
@@ -187,7 +187,7 @@ void MEDDLY::expert_variable::enlargeBound(bool prime, int b)
 
 void MEDDLY::expert_variable::shrinkBound(int b, bool force)
 {
-  throw error(error::NOT_IMPLEMENTED);
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 // ----------------------------------------------------------------------
@@ -273,10 +273,10 @@ void MEDDLY::domain::expandDomList()
 {
   int ndls = dom_list_size + 16;
   domain** tmp_dl = (domain**) realloc(dom_list, ndls * sizeof(domain*));
-  if (0==tmp_dl) throw error(error::INSUFFICIENT_MEMORY);
+  if (0==tmp_dl) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   dom_list = tmp_dl;
   int* tmp_df = (int*) realloc(dom_free, ndls * sizeof(int));
-  if (0==tmp_df) throw error(error::INSUFFICIENT_MEMORY);
+  if (0==tmp_df) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   dom_free = tmp_df;
   for (int i=dom_list_size; i<ndls; i++) {
     dom_list[i] = 0;
@@ -333,18 +333,18 @@ MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t,
                 break;
 
             default:
-                throw error(error::TYPE_MISMATCH);
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
         }; // range type switch
         break;
 
     case forest::EVPLUS:
-      if (forest::INTEGER != t) throw error(error::TYPE_MISMATCH);
-      if (rel)  throw error(error::NOT_IMPLEMENTED);
+      if (forest::INTEGER != t) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+      if (rel)  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
       else      f = new evmdd_plusint(slot, this, p); 
       break;
 
     case forest::INDEX_SET:
-      if (forest::INTEGER != t || rel) throw error(error::TYPE_MISMATCH);
+      if (forest::INTEGER != t || rel) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
       f = new evmdd_index_set(slot, this, p); 
       break;
 
@@ -352,16 +352,16 @@ MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t,
 #if 0
       if (forest::REAL != t || !rel ||
         p.reduction != forest::policies::IDENTITY_REDUCED)
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 #else
       if (forest::REAL != t || !rel)
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 #endif
       f = new evmxd_timesreal(slot, this, p);
       break;
 
     default:
-      throw error(error::TYPE_MISMATCH);
+      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   } // edge label switch
 
   MEDDLY_DCASSERT(f);
@@ -403,7 +403,7 @@ void MEDDLY::domain::showInfo(output &strm)
 void MEDDLY::domain::unlinkForest(forest* f, int slot)
 {
   if (forests[slot] != f)
-    throw error(error::MISCELLANEOUS);
+    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   forests[slot] = 0;
 }
 
@@ -423,7 +423,7 @@ int MEDDLY::domain::findEmptyForestSlot()
   forest** temp = (forest **) realloc(
     forests, newSize * sizeof (expert_forest *)
   );
-  if (0 == temp) throw error(error::INSUFFICIENT_MEMORY);
+  if (0 == temp) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   forests = temp;
   memset(forests + szForests, 0,
       (newSize - szForests) * sizeof(expert_forest*));
@@ -506,10 +506,10 @@ void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
 {
   // domain must be empty -- no variables defined so far
   if (hasForests() || nVars != 0)
-    throw error(error::DOMAIN_NOT_EMPTY);
+    throw error(error::DOMAIN_NOT_EMPTY, __FILE__, __LINE__);
 
   vars = (variable**) malloc((1+N) * sizeof(void*));
-  if (0==vars) throw error(error::INSUFFICIENT_MEMORY);
+  if (0==vars) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   nVars = N;
 
   vars[0] = 0;
@@ -535,10 +535,10 @@ void MEDDLY::expert_domain::createVariablesTopDown(const int* bounds, int N)
 {
   // domain must be empty -- no variables defined so far
   if (hasForests() || nVars != 0)
-    throw error(error::DOMAIN_NOT_EMPTY);
+    throw error(error::DOMAIN_NOT_EMPTY, __FILE__, __LINE__);
 
   vars = (variable**) malloc((1+N) * sizeof(void*));
-  if (0==vars) throw error(error::INSUFFICIENT_MEMORY);
+  if (0==vars) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   nVars = N;
 
   vars[0] = 0;
@@ -561,12 +561,12 @@ void MEDDLY::expert_domain::createVariablesTopDown(const int* bounds, int N)
 
 void MEDDLY::expert_domain::insertVariableAboveLevel(int lev, variable* v)
 {
-  throw error(error::NOT_IMPLEMENTED);
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 void MEDDLY::expert_domain::removeVariableAtLevel(int lev)
 {
-  throw error(error::NOT_IMPLEMENTED);
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 int MEDDLY::expert_domain::findLevelOfVariable(const variable *v) const
@@ -582,7 +582,7 @@ int MEDDLY::expert_domain::findLevelOfVariable(const variable *v) const
 // TODO: not implemented
 void MEDDLY::expert_domain::swapOrderOfVariables(int vh1, int vh2)
 {
-  throw error(error::NOT_IMPLEMENTED);
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 // TODO: not implemented
@@ -608,7 +608,7 @@ void MEDDLY::expert_domain::read(input &s)
 {
   // domain must be empty -- no variables defined so far
   if (hasForests() || nVars != 0)
-    throw error(error::DOMAIN_NOT_EMPTY);
+    throw error(error::DOMAIN_NOT_EMPTY, __FILE__, __LINE__);
 
   s.stripWS();
   s.consumeKeyword("dom");
@@ -616,7 +616,7 @@ void MEDDLY::expert_domain::read(input &s)
   nVars = s.get_integer();
   if (nVars) {
     vars = (variable**) malloc((1+nVars) * sizeof(void*));
-    if (0==vars) throw error(error::INSUFFICIENT_MEMORY);
+    if (0==vars) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   } else {
     vars = 0;
   }

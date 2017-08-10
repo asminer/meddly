@@ -302,14 +302,14 @@ MEDDLY::compl_opname
   if (0==arg || 0==res) return 0;
 
   if (arg->getDomain() != res->getDomain())
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (arg->getRangeType() != forest::BOOLEAN ||
       arg->getEdgeLabeling() != forest::MULTI_TERMINAL ||
       res->getRangeType() != forest::BOOLEAN ||
       res->getEdgeLabeling() != forest::MULTI_TERMINAL ||
       arg->isForRelations() != res->isForRelations()
-  ) throw error(error::TYPE_MISMATCH);
+  ) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   if (arg->isForRelations())
     return new compl_mxd(this,  arg,  res);

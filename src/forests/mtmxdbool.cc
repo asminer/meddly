@@ -52,11 +52,11 @@ void MEDDLY::mt_mxd_bool
   // Create vlist and vplist following the mapping between variable and level
   int** ordered_vlist=static_cast<int**>(malloc(N*sizeof(int*)+(num_vars+1)*N*sizeof(int)));
   if(ordered_vlist==0){
-	  throw error(error::INSUFFICIENT_MEMORY);
+	  throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
   int** ordered_vplist=static_cast<int**>(malloc(N*sizeof(int*)+(num_vars+1)*N*sizeof(int)));
   if(ordered_vplist==0){
-	  throw error(error::INSUFFICIENT_MEMORY);
+	  throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
 
   ordered_vlist[0]=reinterpret_cast<int*>(&ordered_vlist[N]);

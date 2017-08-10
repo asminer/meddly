@@ -44,36 +44,9 @@ inline void MEDDLY::apply(const unary_opname* op, const dd_edge &a, mpz_t &c) {
 
 // error::
 
-inline MEDDLY::error::error(MEDDLY::error::code c) { errcode = c; }
 inline MEDDLY::error::code MEDDLY::error::getCode() const { return errcode; }
-inline const char* MEDDLY::error::getName() const {
-  switch (errcode) {
-      case  MEDDLY::error::UNINITIALIZED:        return "Uninitialized";
-      case  MEDDLY::error::ALREADY_INITIALIZED:  return "Already initialized";
-      case  MEDDLY::error::NOT_IMPLEMENTED:      return "Not implemented";
-      case  MEDDLY::error::INSUFFICIENT_MEMORY:  return "Insufficient memory";
-      case  MEDDLY::error::INVALID_OPERATION:    return "Invalid operation";
-      case  MEDDLY::error::INVALID_VARIABLE:     return "Invalid variable";
-      case  MEDDLY::error::INVALID_LEVEL:        return "Invalid level";
-      case  MEDDLY::error::INVALID_BOUND:        return "Invalid bound";
-      case  MEDDLY::error::DOMAIN_NOT_EMPTY:     return "Domain not empty";
-      case  MEDDLY::error::UNKNOWN_OPERATION:    return "Unknown operation";
-      case  MEDDLY::error::DOMAIN_MISMATCH:      return "Domain mismatch";
-      case  MEDDLY::error::FOREST_MISMATCH:      return "Forest mismatch";
-      case  MEDDLY::error::TYPE_MISMATCH:        return "Type mismatch";
-      case  MEDDLY::error::WRONG_NUMBER:         return "Wrong number";
-      case  MEDDLY::error::VALUE_OVERFLOW:       return "Overflow";
-      case  MEDDLY::error::DIVIDE_BY_ZERO:       return "Divide by zero";
-      case  MEDDLY::error::INVALID_POLICY:       return "Invalid policy";
-      case  MEDDLY::error::INVALID_ASSIGNMENT:   return "Invalid assignment";
-      case  MEDDLY::error::INVALID_ARGUMENT:     return "Invalid argument";
-      case  MEDDLY::error::INVALID_FILE:         return "Invalid file";
-      case  MEDDLY::error::COULDNT_WRITE:        return "Couldn't write to file";
-      case  MEDDLY::error::COULDNT_READ:         return "Couldn't read from file";
-      case  MEDDLY::error::MISCELLANEOUS:        return "Miscellaneous";
-      default:                           return "Unknown error";
-  }
-}
+inline const char* MEDDLY::error::getFile() const { return fname; }
+inline int MEDDLY::error::getLine() const { return lineno; }
 
 // ******************************************************************
 // *                                                                *
@@ -421,7 +394,7 @@ inline void MEDDLY::forest::createEdgeForVar(int vh, bool pr, dd_edge& a) {
     case BOOLEAN:   createEdgeForVar(vh, pr, (bool*)  0, a);  break;
     case INTEGER:   createEdgeForVar(vh, pr, (int*)   0, a);  break;
     case REAL:      createEdgeForVar(vh, pr, (float*) 0, a);  break;
-    default:        throw error(error::MISCELLANEOUS);
+    default:        throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   }
 };
 

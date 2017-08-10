@@ -15,6 +15,7 @@ libmeddly_la_SOURCES = \
   defines.h revision.h hash_stream.h heap.h timer.h unique_table.h \
   meddly.h meddly.hh meddly.cc \
   meddly_expert.h meddly_expert.hh \
+  error.cc \
   io.cc \
   node_headers.cc \
   node_wrappers.cc \

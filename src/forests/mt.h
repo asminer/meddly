@@ -84,11 +84,11 @@ class MEDDLY::mt_forest : public expert_forest {
           Sanity checks
       */
       if (vh < 0 || vh > getNumVariables())
-          throw error(error::INVALID_VARIABLE);
+          throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
       if (result.getForest() != this) 
-          throw error(error::INVALID_OPERATION);
+          throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
       if (!isForRelations() && pr) 
-          throw error(error::INVALID_ASSIGNMENT);
+          throw error(error::INVALID_ASSIGNMENT, __FILE__, __LINE__);
 
       /*
           Get info for node we're building
@@ -123,7 +123,7 @@ class MEDDLY::mt_forest : public expert_forest {
 
     template <class ENCODER, class T>
     inline void createEdgeTempl(T term, dd_edge& e) {
-      if (e.getForest() != this) throw error(error::INVALID_OPERATION);
+      if (e.getForest() != this) throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
       e.set(makeNodeAtTop(ENCODER::value2handle(term)));
     }
 

@@ -342,7 +342,7 @@ MEDDLY::node_handle MEDDLY::mtmxd_forest::swapAdjacentVariablesOf(node_handle no
     }
   }
   else {
-    throw error(error::NOT_IMPLEMENTED);
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
   }
 
   return createReducedNode(-1, hnb);
@@ -359,7 +359,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByLevelSwap(int level)
   MEDDLY_DCASSERT(level < getNumVariables());
 
   if(!isFullyReduced() && !isQuasiReduced()){
-    throw error(error::INVALID_OPERATION);
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
   }
 
   // x > x' > y > y'
@@ -375,7 +375,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByLevelSwap(int level)
 
 void MEDDLY::mtmxd_forest::swapAdjacentLevels(int level)
 {
-  throw error(error::NOT_IMPLEMENTED);
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 
 //  MEDDLY_DCASSERT(ABS(level) >= 1);
 //  MEDDLY_DCASSERT(ABS(level) <= getNumVariables());
@@ -586,12 +586,12 @@ void MEDDLY::mtmxd_forest::sifting(int var, int top, int bottom)
 
 void MEDDLY::mtmxd_forest::moveDownVariable(int high, int low)
 {
-  throw error(error::NOT_IMPLEMENTED);
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 void MEDDLY::mtmxd_forest::moveUpVariable(int low, int high)
 {
-  throw error(error::NOT_IMPLEMENTED);
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 MEDDLY::mtmxd_forest::mtmxd_iterator::~mtmxd_iterator()
@@ -601,7 +601,7 @@ MEDDLY::mtmxd_forest::mtmxd_iterator::~mtmxd_iterator()
 bool MEDDLY::mtmxd_forest::mtmxd_iterator::start(const dd_edge &e)
 {
   if (F != e.getForest()) {
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
   return first(maxLevel, e.getNode());
 }
@@ -694,7 +694,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter
 ::start(const dd_edge &e, const int* minterm)
 {
   if (F != e.getForest()) {
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
   for (int k=1; k<=maxLevel; k++) {
     index[k] = minterm[k];
@@ -809,7 +809,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter
 ::start(const dd_edge &e, const int* minterm)
 {
   if (F != e.getForest()) {
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
   
   for (int k=1; k<=maxLevel; k++) {

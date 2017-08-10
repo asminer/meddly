@@ -28,20 +28,20 @@ MEDDLY::evmxd_forest
 
 void MEDDLY::evmxd_forest::reorderVariables(const int* level2var)
 {
-	throw error(error::NOT_IMPLEMENTED);
+	throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 void MEDDLY::evmxd_forest::swapAdjacentVariables(int level)
 {
-	throw error(error::NOT_IMPLEMENTED);
+	throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 void MEDDLY::evmxd_forest::moveDownVariable(int high, int low)
 {
-	throw error(error::NOT_IMPLEMENTED);
+	throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 void MEDDLY::evmxd_forest::moveUpVariable(int low, int high)
 {
-	throw error(error::NOT_IMPLEMENTED);
+	throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }

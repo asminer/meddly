@@ -74,11 +74,11 @@ public:
 protected:
   static inline void overflow_acc(long &a, long x) {
     a += x;
-    if (a < x) throw error(error::VALUE_OVERFLOW);
+    if (a < x) throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
   }
   static inline long overflow_mult(long a, long x) {
     a *= x;
-    if (a < x) throw error(error::VALUE_OVERFLOW);
+    if (a < x) throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
     return a;
   }
 };
@@ -708,7 +708,7 @@ MEDDLY::card_opname::buildOperation(expert_forest* arg, opnd_type res) const
 #endif
 
     default:
-      throw error(error::TYPE_MISMATCH);
+      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   }
 }
 

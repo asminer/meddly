@@ -324,7 +324,7 @@ MEDDLY::mtmdd_forest::mtmdd_iterator::~mtmdd_iterator()
 bool MEDDLY::mtmdd_forest::mtmdd_iterator::start(const dd_edge &e)
 {
   if (F != e.getForest()) {
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
   return first(maxLevel, e.getNode());
 }

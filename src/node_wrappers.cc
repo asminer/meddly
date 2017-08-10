@@ -315,9 +315,9 @@ void MEDDLY::unpacked_node
     MEDDLY_DCASSERT(nalloc>0);
     MEDDLY_DCASSERT(nalloc>alloc);
     down = (node_handle*) realloc(down, nalloc*sizeof(node_handle));
-    if (0==down) throw error(error::INSUFFICIENT_MEMORY);
+    if (0==down) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     index = (int*) realloc(index, nalloc*sizeof(int));
-    if (0==index) throw error(error::INSUFFICIENT_MEMORY);
+    if (0==index) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     alloc = nalloc;
   }
   if (edge_bytes * size > ealloc) {
@@ -325,7 +325,7 @@ void MEDDLY::unpacked_node
     MEDDLY_DCASSERT(nalloc>0);
     MEDDLY_DCASSERT(nalloc>ealloc);
     edge = realloc(edge, nalloc);
-    if (0==edge) throw error(error::INSUFFICIENT_MEMORY);
+    if (0==edge) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     ealloc = nalloc;
   }
 }
@@ -345,7 +345,7 @@ void MEDDLY::unpacked_node::bind_to_forest(const expert_forest* f, int k, int ns
     MEDDLY_DCASSERT(ext_h_alloc > ext_h_size);
     MEDDLY_DCASSERT(ext_h_alloc>0);
     extra_hashed =  realloc(extra_hashed, ext_h_alloc);
-    if (0==extra_hashed) throw error(error::INSUFFICIENT_MEMORY);
+    if (0==extra_hashed) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
 
   ext_uh_size = parent->unhashedHeaderBytes();
@@ -354,7 +354,7 @@ void MEDDLY::unpacked_node::bind_to_forest(const expert_forest* f, int k, int ns
     MEDDLY_DCASSERT(ext_uh_alloc > ext_uh_size);
     MEDDLY_DCASSERT(ext_uh_alloc>0);
     extra_unhashed =  realloc(extra_unhashed, ext_uh_alloc);
-    if (0==extra_unhashed) throw error(error::INSUFFICIENT_MEMORY);
+    if (0==extra_unhashed) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
 }
 
@@ -369,7 +369,7 @@ void MEDDLY::unpacked_node
     MEDDLY_DCASSERT(ext_h_alloc > ext_h_size);
     MEDDLY_DCASSERT(ext_h_alloc>0);
     extra_hashed =  realloc(extra_hashed, ext_h_alloc);
-    if (0==extra_hashed) throw error(error::INSUFFICIENT_MEMORY);
+    if (0==extra_hashed) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
 }
 */

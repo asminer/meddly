@@ -55,13 +55,13 @@ class MEDDLY::base_evplus_mt : public specialized_operation {
       node_handle x_ind, node_handle A) = 0;
 
     virtual bool isStaleEntry(const node_handle*) {
-      throw error(error::MISCELLANEOUS);
+      throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
     }
     virtual void discardEntry(const node_handle*) {
-      throw error(error::MISCELLANEOUS);
+      throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
     }
     virtual void showEntry(output &, const node_handle*) const {
-      throw error(error::MISCELLANEOUS);
+      throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
     }
 
   protected:
@@ -105,7 +105,7 @@ MEDDLY::base_evplus_mt::~base_evplus_mt()
 void MEDDLY::base_evplus_mt::compute(double* y, const double* x)
 {
   if (!checkForestCompatibility()) {
-    throw error(error::INVALID_OPERATION);
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
   }
   compute_r(L, y, y_root, x, x_root, A_root);
 }
@@ -486,7 +486,7 @@ MEDDLY::specialized_operation*
 MEDDLY::VM_opname::buildOperation(arguments* a) const
 {
   numerical_args* na = dynamic_cast<numerical_args*>(a);
-  if (0==na) throw error(error::INVALID_ARGUMENT);
+  if (0==na) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
 
   const expert_forest* fx = (const expert_forest*) na->x_ind.getForest();
   const expert_forest* fA = (const expert_forest*) na->A.getForest();
@@ -496,7 +496,7 @@ MEDDLY::VM_opname::buildOperation(arguments* a) const
   if (      (fx->getDomain() != fy->getDomain()) 
         ||  (fx->getDomain() != fA->getDomain())  )
   {
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
   }
 
   // Check edge types
@@ -509,17 +509,17 @@ MEDDLY::VM_opname::buildOperation(arguments* a) const
         || (!fA->isForRelations())
       ) 
   {
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   }
 
   // A can't be fully reduced.
   if (fA->isFullyReduced()) {
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   }
 
   // For now, fy and fx must be Indexed sets or EVPLUS forests.
   if ( !isEvPlusStyle(fy) || !isEvPlusStyle(fx) ) {
-    throw error(error::NOT_IMPLEMENTED);
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
   }
 
   switch (fA->getEdgeLabeling()) {
@@ -527,10 +527,10 @@ MEDDLY::VM_opname::buildOperation(arguments* a) const
       return new VM_evplus_mt(this, na->x_ind, na->A, na->y_ind);
 
     case forest::EVTIMES:
-      throw error(error::NOT_IMPLEMENTED);
+      throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 
     default:
-      throw error(error::TYPE_MISMATCH);
+      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   };
 
   if (na->autoDestroy()) delete na;
@@ -556,7 +556,7 @@ MEDDLY::specialized_operation*
 MEDDLY::MV_opname::buildOperation(arguments* a) const
 {
   numerical_args* na = dynamic_cast<numerical_args*>(a);
-  if (0==na) throw error(error::INVALID_ARGUMENT);
+  if (0==na) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
 
   const expert_forest* fx = (const expert_forest*) na->x_ind.getForest();
   const expert_forest* fA = (const expert_forest*) na->A.getForest();
@@ -567,7 +567,7 @@ MEDDLY::MV_opname::buildOperation(arguments* a) const
   if (      (fx->getDomain() != fy->getDomain()) 
         ||  (fx->getDomain() != fA->getDomain())  )
   {
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
   }
 
   // Check edge types
@@ -580,17 +580,17 @@ MEDDLY::MV_opname::buildOperation(arguments* a) const
         || (!fA->isForRelations())
       ) 
   {
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   }
 
   // A can't be fully reduced.
   if (fA->isFullyReduced()) {
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   }
 
   // For now, fy and fx must be Indexed sets or EVPLUS forests.
   if ( !isEvPlusStyle(fy) || !isEvPlusStyle(fx) ) {
-    throw error(error::NOT_IMPLEMENTED);
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
   }
 
   switch (fA->getEdgeLabeling()) {
@@ -598,10 +598,10 @@ MEDDLY::MV_opname::buildOperation(arguments* a) const
       return new MV_evplus_mt(this, na->x_ind, na->A, na->y_ind);
 
     case forest::EVTIMES:
-      throw error(error::NOT_IMPLEMENTED);
+      throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 
     default:
-      throw error(error::TYPE_MISMATCH);
+      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   };
 
   if (na->autoDestroy()) delete na;

@@ -58,7 +58,7 @@ MEDDLY::node_handle MEDDLY::ev_forest::readTerminal(input &s)
   if ('t' == c) {
     return -s.get_integer();
   }
-  throw error(error::INVALID_FILE);
+  throw error(error::INVALID_FILE, __FILE__, __LINE__);
 }
 
 // statics
@@ -77,7 +77,7 @@ void MEDDLY::ev_forest::enlargeStatics(int n)
     //terminals = (node_handle*) realloc(terminals, n*sizeof(node_handle));
     //if (0==order || 0==terminals) {
     if (0==order) {
-      throw error(error::INSUFFICIENT_MEMORY);
+      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     }
     order_size = n;
   }
