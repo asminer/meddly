@@ -568,6 +568,7 @@ class MEDDLY::error {
       MISCELLANEOUS
     };
   public:
+    error(code c);
     error(code c, const char* fn, int ln);
     code getCode() const;
     const char* getName() const;

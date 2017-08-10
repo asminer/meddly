@@ -27,6 +27,13 @@
 
 */
 
+MEDDLY::error::error(MEDDLY::error::code c)
+{ 
+  errcode = c; 
+  fname = 0;
+  lineno = 0;
+}
+
 MEDDLY::error::error(MEDDLY::error::code c, const char* fn, int ln)
 { 
   errcode = c; 
