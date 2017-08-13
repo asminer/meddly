@@ -195,6 +195,9 @@ namespace MEDDLY {
   /// Extract cycles (EV+MDD) from transitive closure (EV+MxD)
   extern const unary_opname* CYCLE;
 
+  /// Randomly select one state from a set of states
+  extern const unary_opname* SELECT;
+
   // ******************************************************************
   // *                    Named  binary operations                    *
   // ******************************************************************

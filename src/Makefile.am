@@ -92,6 +92,7 @@ libmeddly_la_SOURCES = \
   operations/minimum_witness.h      operations/minimum_witness.cc \
   operations/transitive_closure.h   operations/transitive_closure.cc \
   operations/cycle.h          operations/cycle.cc \
+  operations/select.h         operations/select.cc \
   \
   storage/bytepack.h  \
   storage/holeman.h         storage/holeman.cc \
