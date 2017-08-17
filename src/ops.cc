@@ -27,8 +27,10 @@
 #include <set>
 // #include "compute_table.h"
 
-   #define NOT_IMPLICIT_EXAMPLE 0
+   #define OUT_OF_BOUNDS -1
    #define NOT_KNOWN -2
+   #define TERMINAL_NODE 1
+
 // #define DEBUG_CLEANUP
 // #define DEBUG_FINALIZE
 // #define DEBUG_FINALIZE_SPLIT
@@ -1345,13 +1347,13 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
   
   
   //create the terminal node
-  relation_node *Terminal = new relation_node(0,0,1);
-  Terminal->setID(1);
-  std::pair<rel_node_handle, relation_node*> TerminalNode(1,Terminal);
+  relation_node *Terminal = new relation_node(0,0,TERMINAL_NODE);
+  Terminal->setID(TERMINAL_NODE);
+  std::pair<rel_node_handle, relation_node*> TerminalNode(TERMINAL_NODE,Terminal);
   impl_unique.insert(TerminalNode);
   resizeNodeArray(1);
   node_array[1] = *Terminal;
-  last_in_node_array = 1;
+  last_in_node_array = TERMINAL_NODE;
   
 }
 
@@ -1438,6 +1440,10 @@ MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_event_top, relat
       node_array[n_ID] = *n;
     }
   }
+  else //Delete the node
+    {
+     delete n;
+    }
   
   if(is_event_top)
     {

@@ -3201,10 +3201,10 @@ class MEDDLY::satimpl_opname:public specialized_opname {
         int level;
         rel_node_handle down;
         rel_node_handle ID;
-	long* token_update;
+        long* token_update;
         long piece_size;        
-        // used by the hash table in implicit_relation
         
+        // used by the hash table in implicit_relation
         relation_node* hash_chain;
         
         friend class implicit_relation;
@@ -3272,6 +3272,9 @@ class MEDDLY::satimpl_opname:public specialized_opname {
         
         /**
          Check if the relation node is unique
+         @param n  The relation node.
+         @return   If unique, 0
+                   Else, existing node handle
          */
         rel_node_handle isUniqueNode(relation_node* n);
         
