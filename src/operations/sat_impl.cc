@@ -20,7 +20,7 @@
 #include "../defines.h"
 #include "sat_impl.h"
 #include <typeinfo> // for "bad_cast" exception
-
+#include <set>
 namespace MEDDLY {
   class saturation_impl_by_events_opname;
   class saturation_impl_by_events_op;
@@ -303,76 +303,97 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   
   expert_domain* dm = static_cast<expert_domain*>(resF->useDomain());
   
-  // indexes to explore
-  indexq* queue = useIndexQueue(nb.getSize());
-  for (int i = 0; i < nb.getSize(); i++) {
-    if (nb.d(i)) queue->add(i);
-  }
+  std::set<int> index_holder;
+  std::set<int>::iterator it;
+  std::set<int>::reverse_iterator rit;
   
-  // explore indexes
-  while (!queue->isEmpty()) {
-    int i = queue->remove();
-    
-    MEDDLY_DCASSERT(nb.d(i));
-    
-    for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
-      
-      int j = Ru[ei]->nextOf(i);
-      if(j==-1) continue;
-      if(j>=nb.getSize())
-        {
-        dm->enlargeVariableBound(nb.getLevel(), false, j+1);
-        int oldSize = nb.getSize();
-        nb.resize(j+1);
-        while(oldSize < nb.getSize()) { nb.d_ref(oldSize++) = 0; }
-        queue->resize(nb.getSize());
-        }
-      if (-1==nb.d(j)) continue;  // nothing can be added to this set
-      
-      
-      
-      node_handle rec;
-      rec = recFire(nb.d(i), Ru[ei]->getDown());
-      
-      
-      if (rec == 0) continue;
-      if (rec == nb.d(j)) {
-        resF->unlinkNode(rec);
-        continue;
-      }
-      
-      bool updated = true;
-      
-      if (0 == nb.d(j)) {
-        nb.d_ref(j) = rec;
-      }
-      else if (rec == -1) {
-        resF->unlinkNode(nb.d(j));
-        nb.d_ref(j) = -1;
-      }
-      else {
-        node_handle acc = mddUnion->compute(nb.d(j), rec);
-        resF->unlinkNode(rec);
-        if (acc != nb.d(j)) {
-          resF->unlinkNode(nb.d(j));
-          nb.d_ref(j) = acc;
-        } else {
-          resF->unlinkNode(acc);
-          updated = false;
-        }
-        
-      }
-      
-      if (updated) queue->add(j);
-      
-    } // for all events, ei
-    
-    
-  } // while there are indexes to explore
   
-  // cleanup
+   // indexes to explore
+   for (int i = 0; i < nb.getSize(); i++) {
+   if (nb.d(i)) index_holder.insert(i);
+   }
+   
+  
+   bool changed;
+   do{
+   changed = false;
+  
+   // fire events
+   for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
+   
+   indexq* queue = useIndexQueue(nb.getSize());
+   
+   if(Ru[ei]->nextOf(0)>0)
+   for(it = index_holder.begin();it != index_holder.end();it++)
+   queue->add(*it);
+   else
+   for(rit = index_holder.rbegin();rit != index_holder.rend();rit++)
+   queue->add(*rit);
+   
+   // explore indexes
+   while (!queue->isEmpty()) {
+   int i = queue->remove();
+   
+   MEDDLY_DCASSERT(nb.d(i));
+   
+   
+   int j = Ru[ei]->nextOf(i);
+   if(j==-1) continue;
+   if(j>=nb.getSize())
+   {
+   dm->enlargeVariableBound(nb.getLevel(), false, j+1);
+   int oldSize = nb.getSize();
+   nb.resize(j+1);
+   while(oldSize < nb.getSize()) { nb.d_ref(oldSize++) = 0; }
+   queue->resize(nb.getSize());
+   }
+   if (-1==nb.d(j)) continue;  // nothing can be added to this set
+   
+   node_handle rec;
+   rec = recFire(nb.d(i), Ru[ei]->getDown());
+   
+   if (rec == 0) continue;
+   if (rec == nb.d(j)) {
+   resF->unlinkNode(rec);
+   continue;
+   }
+   
+   bool updated = true;
+   
+   if (0 == nb.d(j)) {
+   nb.d_ref(j) = rec;
+   }
+   else if (rec == -1) {
+   resF->unlinkNode(nb.d(j));
+   nb.d_ref(j) = -1;
+   }
+   else {
+   node_handle acc = mddUnion->compute(nb.d(j), rec);
+   resF->unlinkNode(rec);
+   if (acc != nb.d(j)) {
+   changed = true;
+   resF->unlinkNode(nb.d(j));
+   nb.d_ref(j) = acc;
+   } else {
+   resF->unlinkNode(acc);
+   updated = false;
+   }
+   
+   }
+   
+   if (updated) {
+	queue->add(j);
+	index_holder.insert(j);
+	}
+   
+   } // for all events, ei
+   
+   recycle(queue);
+   } // while there are indexes to explore
+   
+   }while(changed);
+
   delete[] Ru;
-  recycle(queue);
 }
 
 
