@@ -1143,7 +1143,7 @@ void MEDDLY::expert_forest
   s << "digraph structs {\n";
   // s << "  rankdir=LR;\n";
   s << "  size=\"5,5\";\n";
-  s << "  node [shape=record, height=0.25, width=0.25];\n";
+  s << "  node [shape=record, height=0.5, width=0.5];\n";
   
   const char blue[] = "blue";
   const char black[] = "black";
@@ -1238,11 +1238,11 @@ void MEDDLY::expert_forest
 
   // convert dot file to extension
   std::stringstream cmd;
-  cmd << "dot -T" << ext << " -o" << filename << "." << ext << " " << dot_fn;
+  cmd << "dot -T" << ext << " -o \"" << filename << "." << ext << "\" \"" << dot_fn << "\"";
   if (system(cmd.str().c_str())) {
     std::cerr << __func__ << ": Error executing DOT command: ";
     std::cerr << cmd.str().c_str() << "\n";
-    exit(1);
+    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   }
 }
 
