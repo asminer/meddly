@@ -67,7 +67,11 @@ public:
   card_int(const unary_opname* oc, expert_forest* arg);
 
   // common
+#if 0
   virtual bool isStaleEntry(const node_handle* entryData);
+#else
+  virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* data);
+#endif
   virtual void discardEntry(const node_handle* entryData);
   virtual void showEntry(output &strm, const node_handle* entryData) const;
 
@@ -88,10 +92,25 @@ MEDDLY::card_int::card_int(const unary_opname* oc, expert_forest* arg)
 {
 }
 
+#if 0
 bool MEDDLY::card_int::isStaleEntry(const node_handle* data)
 {
   return argF->isStale(data[0]);
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::card_int::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
+
+  if (a == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 void MEDDLY::card_int::discardEntry(const node_handle* data)
 {
@@ -259,7 +278,11 @@ public:
   card_real(const unary_opname* oc, expert_forest* arg);
 
   // common
-  virtual bool isStaleEntry(const node_handle* entryData);
+#if 0
+    virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
+#endif
   virtual void discardEntry(const node_handle* entryData);
   virtual void showEntry(output &strm, const node_handle* entryData) const;
 };
@@ -269,10 +292,25 @@ MEDDLY::card_real::card_real(const unary_opname* oc, expert_forest* arg)
 {
 }
 
+#if 0
 bool MEDDLY::card_real::isStaleEntry(const node_handle* data)
 {
   return argF->isStale(data[0]);
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::card_real::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
+
+  if (a == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 void MEDDLY::card_real::discardEntry(const node_handle* data)
 {
@@ -447,7 +485,11 @@ public:
   card_mpz(const unary_opname* oc, expert_forest* arg);
 
   // common
+#if 0
   virtual bool isStaleEntry(const node_handle* entryData);
+#else
+  virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
+#endif
   virtual void discardEntry(const node_handle* entryData);
   virtual void showEntry(output &strm, const node_handle* entryData) const;
 };
@@ -457,10 +499,25 @@ MEDDLY::card_mpz::card_mpz(const unary_opname* oc, expert_forest* arg)
 {
 }
 
+#if 0
 bool MEDDLY::card_mpz::isStaleEntry(const node_handle* data)
 {
   return argF->isStale(data[0]);
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::card_mpz::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
+
+  if (a == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 void MEDDLY::card_mpz::discardEntry(const node_handle* data)
 {

@@ -740,7 +740,11 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   //
   // Initialize misc. protected data
   //
+#if 0
   terminalNodesAreStale = false;
+#else
+  terminalNodesStatus = MEDDLY::forest::ACTIVE;
+#endif
 
   //
   // Initialize misc. private data

@@ -47,7 +47,11 @@ class MEDDLY::common_bfs_mt : public binary_operation {
     common_bfs_mt(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
+#if 0
     virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
+#endif
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
@@ -108,11 +112,20 @@ MEDDLY::common_bfs_mt::common_bfs_mt(const binary_opname* oc, expert_forest* a1,
   imageOp = 0;
 }
 
+#if 0
 bool MEDDLY::common_bfs_mt::isStaleEntry(const node_handle* entryData)
 {
   throw error(error::MISCELLANEOUS);
   // this operation won't add any CT entries.
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::common_bfs_mt::getStatusOfEntry(const node_handle* data)
+{
+  throw error(error::MISCELLANEOUS);
+  // this operation won't add any CT entries.
+}
+#endif
 
 void MEDDLY::common_bfs_mt::discardEntry(const node_handle* entryData)
 {

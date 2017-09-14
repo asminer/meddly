@@ -1323,6 +1323,7 @@ MEDDLY::expert_forest::hash(MEDDLY::node_handle p) const
   return hashNode(p);
 }
 
+#if 0
 inline bool
 MEDDLY::expert_forest::isStale(MEDDLY::node_handle node) const
 {
@@ -1340,6 +1341,27 @@ MEDDLY::expert_forest::isStale(MEDDLY::node_handle node) const
       : isPessimistic() ? isZombieNode(node) : (getNodeInCount(node) == 0));
   */
 }
+#else
+inline MEDDLY::forest::node_status
+MEDDLY::expert_forest::getNodeStatus(MEDDLY::node_handle node) const
+{
+  if (isMarkedForDeletion()) {
+    return MEDDLY::forest::DEAD;
+  }
+  if (isTerminalNode(node)) {
+    return terminalNodesStatus;
+  }
+  if (0==getNodeAddress(node)) {
+    // zombie nodes
+    return MEDDLY::forest::DEAD;
+  }
+  if (getNodeInCount(node) == 0) {
+    // orphan nodes
+    return MEDDLY::forest::RECOVERABLE;
+  }
+  return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 inline unsigned
 MEDDLY::expert_forest::hashNode(MEDDLY::node_handle p) const
@@ -1971,11 +1993,22 @@ MEDDLY::operation::getCacheEntryLength() const
   return key_length + ans_length;
 }
 
+#if 0
 inline bool
 MEDDLY::operation::isEntryStale(const MEDDLY::node_handle* data)
 {
   return (is_marked_for_deletion || isStaleEntry(data));
 }
+#else
+inline MEDDLY::forest::node_status
+MEDDLY::operation::getEntryStatus(const MEDDLY::node_handle* data)
+{
+  if (is_marked_for_deletion)
+    return MEDDLY::forest::DEAD;
+  else
+    return getStatusOfEntry(data);
+}
+#endif
 
 inline void
 MEDDLY::operation::doneCTkey(compute_table::search_key* K)

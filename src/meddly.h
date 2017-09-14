@@ -962,6 +962,19 @@ class MEDDLY::forest {
       // TBD: there may be others in the future :^)
     };
 
+    /// Status indicators for nodes.
+    enum node_status {
+      /// Node is active: it can be used without issue.
+      ACTIVE,
+      /// Node is recoverable: it has been marked for garbage collection
+      /// but it can still be used without issue.
+      RECOVERABLE,
+      /// Node is not-recoverable: it has been marked for garbage collection
+      /// and it cannot be used.
+      DEAD
+    };
+
+
     /// Collection of forest policies.
     struct policies {
 

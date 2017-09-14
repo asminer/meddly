@@ -42,12 +42,34 @@ MEDDLY::generic_binary_mdd::~generic_binary_mdd()
 {
 }
 
+#if 0
 bool MEDDLY::generic_binary_mdd::isStaleEntry(const node_handle* data)
 {
   return arg1F->isStale(data[0]) ||
          arg2F->isStale(data[1]) ||
          resF->isStale(data[2]);
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::generic_binary_mdd::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = arg1F->getNodeStatus(data[0]);
+  MEDDLY::forest::node_status b = arg2F->getNodeStatus(data[1]);
+  MEDDLY::forest::node_status c = resF->getNodeStatus(data[2]);
+
+  if (a == MEDDLY::forest::DEAD ||
+      b == MEDDLY::forest::DEAD ||
+      c == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE ||
+      b == MEDDLY::forest::RECOVERABLE ||
+      c == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
+
 
 void MEDDLY::generic_binary_mdd::discardEntry(const node_handle* data)
 {
@@ -148,12 +170,33 @@ MEDDLY::generic_binary_mxd::~generic_binary_mxd()
 {
 }
 
+#if 0
 bool MEDDLY::generic_binary_mxd::isStaleEntry(const node_handle* data)
 {
   return arg1F->isStale(data[0]) ||
          arg2F->isStale(data[1]) ||
          resF->isStale(data[2]);
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::generic_binary_mxd::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = arg1F->getNodeStatus(data[0]);
+  MEDDLY::forest::node_status b = arg2F->getNodeStatus(data[1]);
+  MEDDLY::forest::node_status c = resF->getNodeStatus(data[2]);
+
+  if (a == MEDDLY::forest::DEAD ||
+      b == MEDDLY::forest::DEAD ||
+      c == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE ||
+      b == MEDDLY::forest::RECOVERABLE ||
+      c == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 void MEDDLY::generic_binary_mxd::discardEntry(const node_handle* data)
 {
@@ -324,12 +367,33 @@ MEDDLY::generic_binbylevel_mxd::~generic_binbylevel_mxd()
 {
 }
 
+#if 0
 bool MEDDLY::generic_binbylevel_mxd::isStaleEntry(const node_handle* data)
 {
   return arg1F->isStale(data[1]) ||
          arg2F->isStale(data[2]) ||
          resF->isStale(data[3]);
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::generic_binbylevel_mxd::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = arg1F->getNodeStatus(data[1]);
+  MEDDLY::forest::node_status b = arg2F->getNodeStatus(data[2]);
+  MEDDLY::forest::node_status c = resF->getNodeStatus(data[3]);
+
+  if (a == MEDDLY::forest::DEAD ||
+      b == MEDDLY::forest::DEAD ||
+      c == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE ||
+      b == MEDDLY::forest::RECOVERABLE ||
+      c == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 void MEDDLY::generic_binbylevel_mxd::discardEntry(const node_handle* data)
 {
@@ -459,11 +523,23 @@ MEDDLY::generic_binary_ev::~generic_binary_ev()
 {
 }
 
-bool MEDDLY::generic_binary_ev::isStaleEntry(const node_handle* data)
+MEDDLY::forest::node_status
+MEDDLY::generic_binary_ev::getStatusOfEntry(const node_handle* data)
 {
-  return arg1F->isStale(data[1]) ||
-         arg2F->isStale(data[3]) ||
-         resF->isStale(data[5]);
+  MEDDLY::forest::node_status a = arg1F->getNodeStatus(data[1]);
+  MEDDLY::forest::node_status b = arg2F->getNodeStatus(data[3]);
+  MEDDLY::forest::node_status c = resF->getNodeStatus(data[5]);
+
+  if (a == MEDDLY::forest::DEAD ||
+      b == MEDDLY::forest::DEAD ||
+      c == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE ||
+      b == MEDDLY::forest::RECOVERABLE ||
+      c == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
 }
 
 void MEDDLY::generic_binary_ev::discardEntry(const node_handle* data)

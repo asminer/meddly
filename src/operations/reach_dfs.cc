@@ -89,7 +89,11 @@ class MEDDLY::saturation_op : public unary_operation {
     node_handle saturate(node_handle mdd);
     node_handle saturate(node_handle mdd, int level);
 
+#if 0
     virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
+#endif
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
 
@@ -129,7 +133,11 @@ class MEDDLY::common_dfs_mt : public binary_operation {
     common_dfs_mt(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
+#if 0
     virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
+#endif
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
@@ -343,12 +351,31 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
   return n;
 }
 
+#if 0
 bool MEDDLY::saturation_op::isStaleEntry(const node_handle* data)
 {
   return (argF->isFullyReduced()
   ? (argF->isStale(data[0]) || resF->isStale(data[2]))
   : (argF->isStale(data[0]) || resF->isStale(data[1])));
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::saturation_op::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
+  MEDDLY::forest::node_status c =
+    resF->getNodeStatus(data[ (argF->isFullyReduced()? 2: 1) ]);
+
+  if (a == MEDDLY::forest::DEAD ||
+      c == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE ||
+      c == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 void MEDDLY::saturation_op::discardEntry(const node_handle* data)
 {
@@ -389,12 +416,33 @@ MEDDLY::common_dfs_mt::common_dfs_mt(const binary_opname* oc, expert_forest* a1,
   freebufs = 0;
 }
 
+#if 0
 bool MEDDLY::common_dfs_mt::isStaleEntry(const node_handle* data)
 {
   return arg1F->isStale(data[0]) ||
          arg2F->isStale(data[1]) ||
          resF->isStale(data[2]);
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::common_dfs_mt::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = arg1F->getNodeStatus(data[0]);
+  MEDDLY::forest::node_status b = arg2F->getNodeStatus(data[1]);
+  MEDDLY::forest::node_status c = resF->getNodeStatus(data[2]);
+
+  if (a == MEDDLY::forest::DEAD ||
+      b == MEDDLY::forest::DEAD ||
+      c == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE ||
+      b == MEDDLY::forest::RECOVERABLE ||
+      c == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 void MEDDLY::common_dfs_mt::discardEntry(const node_handle* data)
 {

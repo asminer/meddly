@@ -54,9 +54,16 @@ class MEDDLY::base_evplus_mt : public specialized_operation {
     virtual void compute_r(int ht, double* y, node_handle y_ind, const double* x, 
       node_handle x_ind, node_handle A) = 0;
 
+#if 0
     virtual bool isStaleEntry(const node_handle*) {
       throw error(error::MISCELLANEOUS);
     }
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*) {
+      throw error(error::MISCELLANEOUS);
+    }
+#endif
+
     virtual void discardEntry(const node_handle*) {
       throw error(error::MISCELLANEOUS);
     }

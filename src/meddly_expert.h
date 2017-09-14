@@ -1923,7 +1923,11 @@ class MEDDLY::expert_forest: public forest
     ///   in-count and cache-count are zero.
     /// Pessimistic deletion: A node is said to be stale when the in-count
     ///  is zero regardless of the cache-count.
+#if 0
     bool isStale(node_handle node) const;
+#else
+    MEDDLY::forest::node_status getNodeStatus(node_handle node) const;
+#endif
 
   // ------------------------------------------------------------
   // non-virtual, handy methods for debugging or logging.
@@ -2462,7 +2466,11 @@ class MEDDLY::expert_forest: public forest
 
     /// Should a terminal node be considered a stale entry in the compute table.
     /// per-forest policy, derived classes may change as appropriate.
+#if 0
     bool terminalNodesAreStale;
+#else
+    MEDDLY::forest::node_status terminalNodesStatus;
+#endif
 
     /// Class that stores nodes.
     node_storage* nodeMan;
@@ -3680,7 +3688,11 @@ class MEDDLY::operation {
     void markForDeletion();
     void registerInForest(forest* f);
     void unregisterInForest(forest* f);
+#if 0
     virtual bool isStaleEntry(const node_handle* entry) = 0;
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entry) = 0;
+#endif
     compute_table::search_key* useCTkey();
     void allocEntryForests(int nf);
     void addEntryForest(int index, expert_forest* f);
@@ -3743,8 +3755,13 @@ class MEDDLY::operation {
     /// Number of ints that make up the entire record (key + answer)
     int getCacheEntryLength() const;
 
+#if 0
     /// Checks if the cache entry (in entryData[]) is stale.
     bool isEntryStale(const node_handle* data);
+#else
+    /// Returns the status of the compute table entry
+    MEDDLY::forest::node_status getEntryStatus(const node_handle* data);
+#endif
 
     void doneCTkey(compute_table::search_key* K);
 

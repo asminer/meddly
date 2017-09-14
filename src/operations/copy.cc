@@ -42,7 +42,12 @@ class MEDDLY::copy_MT : public unary_operation {
   public:
     copy_MT(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
+#if 0
     virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
+#endif
+
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
@@ -80,12 +85,30 @@ MEDDLY::copy_MT
   // mtres = res;
 }
 
+#if 0
 bool MEDDLY::copy_MT::isStaleEntry(const node_handle* entryData)
 {
   return 
     argF->isStale(entryData[0]) ||
     resF->isStale(entryData[1]);
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::copy_MT::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
+  MEDDLY::forest::node_status c = resF->getNodeStatus(data[1]);
+
+  if (a == MEDDLY::forest::DEAD ||
+      c == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE ||
+      c == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 void MEDDLY::copy_MT::discardEntry(const node_handle* entryData)
 {
@@ -262,11 +285,30 @@ namespace MEDDLY {
         // entry[2]: EV node (output)
       }
 
+#if 0
       virtual bool isStaleEntry(const node_handle* entryData) {
         return 
           argF->isStale(entryData[0]) ||
           resF->isStale(entryData[2]);
       }
+#else
+      virtual MEDDLY::forest::node_status
+      getStatusOfEntry(const node_handle* data)
+      {
+        MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
+        MEDDLY::forest::node_status c = resF->getNodeStatus(data[2]);
+
+        if (a == MEDDLY::forest::DEAD ||
+            c == MEDDLY::forest::DEAD)
+          return MEDDLY::forest::DEAD;
+        else if (a == MEDDLY::forest::RECOVERABLE ||
+            c == MEDDLY::forest::RECOVERABLE)
+          return MEDDLY::forest::RECOVERABLE;
+        else
+          return MEDDLY::forest::ACTIVE;
+      }
+#endif
+
       virtual void discardEntry(const node_handle* entryData) {
         argF->uncacheNode(entryData[0]);
         resF->uncacheNode(entryData[2]);
@@ -448,11 +490,27 @@ namespace MEDDLY {
         // entry[2]: mt node (output)
       }
 
+#if 0
       virtual bool isStaleEntry(const node_handle* entryData) {
         return 
           argF->isStale(entryData[1]) ||
           resF->isStale(entryData[2]);
       }
+#else
+      virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* data) {
+        MEDDLY::forest::node_status a = argF->getNodeStatus(data[1]);
+        MEDDLY::forest::node_status c = resF->getNodeStatus(data[2]);
+
+        if (a == MEDDLY::forest::DEAD ||
+            c == MEDDLY::forest::DEAD)
+          return MEDDLY::forest::DEAD;
+        else if (a == MEDDLY::forest::RECOVERABLE ||
+            c == MEDDLY::forest::RECOVERABLE)
+          return MEDDLY::forest::RECOVERABLE;
+        else
+          return MEDDLY::forest::ACTIVE;
+      }
+#endif
       virtual void discardEntry(const node_handle* entryData) {
         argF->uncacheNode(entryData[1]);
         resF->uncacheNode(entryData[2]);
@@ -638,11 +696,27 @@ namespace MEDDLY {
         // entry[0]: EV node
         // entry[1]: EV node 
       }
+#if 0
       virtual bool isStaleEntry(const node_handle* entryData) {
         return 
           argF->isStale(entryData[0]) ||
           resF->isStale(entryData[1]);
       }
+#else
+      virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* data) {
+        MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
+        MEDDLY::forest::node_status c = resF->getNodeStatus(data[1]);
+
+        if (a == MEDDLY::forest::DEAD ||
+            c == MEDDLY::forest::DEAD)
+          return MEDDLY::forest::DEAD;
+        else if (a == MEDDLY::forest::RECOVERABLE ||
+            c == MEDDLY::forest::RECOVERABLE)
+          return MEDDLY::forest::RECOVERABLE;
+        else
+          return MEDDLY::forest::ACTIVE;
+      }
+#endif
       virtual void discardEntry(const node_handle* entryData) {
         argF->uncacheNode(entryData[0]);
         resF->uncacheNode(entryData[1]);
@@ -758,11 +832,27 @@ namespace MEDDLY {
         // entry[3]: EV node 
       }
 
+#if 0
       virtual bool isStaleEntry(const node_handle* entryData) {
         return 
           argF->isStale(entryData[1]) ||
           resF->isStale(entryData[3]);
       }
+#else
+      virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* data) {
+        MEDDLY::forest::node_status a = argF->getNodeStatus(data[1]);
+        MEDDLY::forest::node_status c = resF->getNodeStatus(data[3]);
+
+        if (a == MEDDLY::forest::DEAD ||
+            c == MEDDLY::forest::DEAD)
+          return MEDDLY::forest::DEAD;
+        else if (a == MEDDLY::forest::RECOVERABLE ||
+            c == MEDDLY::forest::RECOVERABLE)
+          return MEDDLY::forest::RECOVERABLE;
+        else
+          return MEDDLY::forest::ACTIVE;
+      }
+#endif
       virtual void discardEntry(const node_handle* entryData) {
         argF->uncacheNode(entryData[1]);
         resF->uncacheNode(entryData[3]);
