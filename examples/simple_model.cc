@@ -22,6 +22,10 @@
 #include "simple_model.h"
 
 #define VERBOSE
+#define NOT_KNOWN     -2
+#define OUT_OF_BOUNDS -1
+
+
 
 // #define DEBUG_GENERATE
 // #define DEBUG_EVENTS
@@ -364,7 +368,6 @@ void explicitReachset(const char* const* events, int nEvents,
 
 /*************************************************************/
 int* nxtList;
-int BOUNDS_Rel;
 class derRelNode : public MEDDLY::satimpl_opname::relation_node
 {
 public:
@@ -372,28 +375,26 @@ public:
   {}
   long nextOf(long i) override
   {
-    long result = i+nxtList[getID()];
   
-    if((result>=0)) return result;
-    else return -1;
+     if(i>=getPieceSize()) //Array needs to be allocated
+      expandTokenUpdate(i);
+  
+      if(getTokenUpdate()[i]==NOT_KNOWN) //Array needs to be updated
+      {	
+      	long result = i+nxtList[getID()];
+      	long val = result>=0?result:OUT_OF_BOUNDS;
+      	setTokenUpdateAtIndex(i,val);
+      }
+
+     return getTokenUpdate()[i];
   }
 };
 
-/*unsigned long makeSignature(std::string s)
-{
-  long result = 0;
-  for (int i = 0; i < s.length(); i++){
-    int val = ((s.at(i)>='0') && (s.at(i)<='9'))?(s.at(i) - '0'):(10 + s.at(i) - '+');
-    result += (unsigned long)pow(14, s.length()- i - 1)*val;
-  }
-  return result;
-}*/
 
 void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, int bounds, MEDDLY::satimpl_opname::implicit_relation* T)
 {
   
   int node_count = 0;
-  BOUNDS_Rel = bounds;
   int* tops_of_events = (int*)malloc(nEvents*sizeof(int));
   
   for(int e = 0;e < nEvents; e++)
@@ -422,99 +423,20 @@ void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, in
   for(int e = 0;e < nEvents; e++)
     {
     unsigned long sign = 0;
-    int lowest_place = nPlaces;
     int previous_node_handle = 1;
     for( int p = 1; p <= nPlaces; p++)
       {
        sign = events[e][p]>=0?(sign*10)+events[e][p]:(sign*100)+events[e][p];
         if(events[e][p]!=0)
         {
-          if(p<lowest_place) lowest_place = p;
           rNode[rctr] = new derRelNode(sign,p,previous_node_handle);
           previous_node_handle = T->registerNode((tops_of_events[e]==p),rNode[rctr]);
-        rctr++;
-        nxtList[previous_node_handle] = events[e][p];
-        }
-      }
-    }
-}
-
-//************************************************************
-/*
-int BOUNDS_Rel;
-
-
-unsigned long makeSignature(std::string s)
-{
-  long result = 0;
-  for (int i = 0; i < s.length(); i++)
-    result += (unsigned long)pow(27, s.length()- i - 1)*(1 + s.at(i) - '+');
-  return result;
-}
-
-void buildImplicitRelation(const char* const* events, int nEvents,int nPlaces, int bounds, MEDDLY::satimpl_opname::implicit_relation* T)
-{
-  
-  int node_count = 0;
-  BOUNDS_Rel = bounds;
-  int* tops_of_events = (int*)malloc(nEvents*sizeof(int));
-  
-  for(int e = 0;e < nEvents; e++)
-    {
-     bool done = false;
-     for( int p = 1; p <= nPlaces; p++)
-      {
-      if(events[e][p]!='.') node_count +=1;
-      if((events[e][nPlaces-p+1]!='.')&&(!done))
-        {
-          tops_of_events[e] = nPlaces-p+1;
-          done = true;
-        }
-      }
-    }
-  
-  
-  MEDDLY::satimpl_opname::relation_node** rNode = (MEDDLY::satimpl_opname::relation_node**)malloc(node_count*sizeof(MEDDLY::satimpl_opname::relation_node*));
-  
-  // Add/Subtract Tokens
-  
-
-  
-  unsigned long sign;
-  int rctr = 0;
-  for(int e = 0;e < nEvents; e++)
-    {
-    int lowest_place = nPlaces;
-    int previous_node_handle = 1;
-    std::string till_now;
-    for( int p = 1; p <= nPlaces; p++)
-      {
-        till_now+=(events[e][p]);
-        if(events[e][p]!='.')
-        {
-          if(p<lowest_place) lowest_place = p;
-        
-          sign =(unsigned long)makeSignature(till_now);
-          int* nxtList = (int*)malloc(bounds*sizeof(int));
-          for(int nn=0;nn<bounds;nn++)
-            {
-             int result = events[e][p]=='-'?nn-1:nn+1;
-            
-              if((result>=0)&&(result<bounds))
-              nxtList[nn] = result;
-              else nxtList[nn] = -1;
-            
-            }
-          rNode[rctr] = new MEDDLY::satimpl_opname::relation_node(sign,p,previous_node_handle,nxtList);
-        
-          previous_node_handle = T->registerNode((tops_of_events[e]==p),rNode[rctr]);
           rctr++;
-        //nxtList[previous_node_handle] = (events[e][p] =='+')?1:-1;
-         }
+          nxtList[previous_node_handle] = events[e][p];
+        }
       }
     }
-  std::cout<<"\n The implicit relation\n";
-  //T->show();
-}*/
+}
+
 
 

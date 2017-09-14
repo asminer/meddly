@@ -391,7 +391,7 @@ MEDDLY::base_table::base_table(const ct_initializer::settings &s)
   entries = (int*) malloc(entriesAlloc * sizeof(int));
   entriesSize = 1;
   // entries[0] is never, ever, used.
-  if (0==entries) throw error(error::INSUFFICIENT_MEMORY);
+  if (0==entries) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   // for recycling entries
   freeList = new int[1+maxEntrySize];
   for (int i=0; i<=maxEntrySize; i++) freeList[i] = 0;
@@ -411,7 +411,7 @@ int MEDDLY::base_table::newEntry(int size)
   // check free list
   if (size > maxEntrySize) {
     fprintf(stderr, "MEDDLY error: request for compute table entry larger than max size\n");
-    throw error(error::MISCELLANEOUS);  // best we can do
+    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);  // best we can do
   }
   if (size<1) return 0;
   perf.numEntries++;
@@ -431,7 +431,7 @@ int MEDDLY::base_table::newEntry(int size)
       fprintf(stderr,
           "Error in allocating array of size %lu at %s, line %d\n",
           neA * sizeof(int), __FILE__, __LINE__);
-      throw error(error::INSUFFICIENT_MEMORY);
+      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     }
     currMemory += (neA - entriesAlloc) * sizeof(int);
     if (currMemory > peakMemory) peakMemory = currMemory;
@@ -585,7 +585,7 @@ MEDDLY::base_hash::base_hash(const ct_initializer::settings &s,
   tableExpand = initTex;
   tableShrink = 0;
   table = (int*) malloc(tableSize * sizeof(int));
-  if (0==table) throw error(error::INSUFFICIENT_MEMORY);
+  if (0==table) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   for (unsigned i=0; i<tableSize; i++) table[i] = 0;
 
   currMemory += tableSize * sizeof(int);
@@ -734,7 +734,7 @@ void MEDDLY::base_chained::addEntry()
     fprintf(stderr,
         "Error in allocating array of size %lu at %s, line %d\n",
         newsize * sizeof(int), __FILE__, __LINE__);
-    throw error(error::INSUFFICIENT_MEMORY);
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
 
   for (unsigned i=tableSize; i<newsize; i++) newt[i] = 0;
@@ -774,7 +774,7 @@ void MEDDLY::base_chained::removeStales()
       fprintf(stderr,
           "Error in allocating array of size %lu at %s, line %d\n",
           newsize * sizeof(int), __FILE__, __LINE__);
-      throw error(error::INSUFFICIENT_MEMORY); 
+      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__); 
     }
 
     currMemory -= (tableSize - newsize) * sizeof(int);  
@@ -1290,7 +1290,7 @@ MEDDLY::compute_table::search_key*
 MEDDLY::operation_chained::initializeSearchKey(operation* op)
 {
   if (op != global_op)
-    throw error(error::UNKNOWN_OPERATION);
+    throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
   return init(op, 0);
 }
 
@@ -1299,7 +1299,7 @@ MEDDLY::operation_chained::startNewEntry(search_key *key)
 {
   MEDDLY_DCASSERT(key);
   if (key->getOp() != global_op)
-    throw error(error::UNKNOWN_OPERATION);
+    throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
   startIndexedEntry(smart_cast<old_search_key*>(key), 1, 0);
   return currEntry;
 }
@@ -1698,7 +1698,7 @@ class MEDDLY::base_unchained : public base_hash {
         fprintf(stderr,
             "Error in allocating array of size %lu at %s, line %d\n",
             newsize * sizeof(int), __FILE__, __LINE__);
-        throw error(error::INSUFFICIENT_MEMORY);
+        throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
       }
       for (unsigned i=0; i<newsize; i++) table[i] = 0;
 
@@ -1746,7 +1746,7 @@ class MEDDLY::base_unchained : public base_hash {
             fprintf(stderr,
                 "Error in allocating array of size %lu at %s, line %d\n",
                 newsize * sizeof(int), __FILE__, __LINE__);
-            throw error(error::INSUFFICIENT_MEMORY);
+            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
           }
           for (unsigned i=0; i<newsize; i++) table[i] = 0;
           currMemory += newsize * sizeof(int);
@@ -2051,7 +2051,7 @@ MEDDLY::compute_table::search_key*
 MEDDLY::operation_unchained::initializeSearchKey(operation* op)
 {
   if (op != global_op)
-    throw error(error::UNKNOWN_OPERATION);
+    throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
   return init(op, 0);
 }
 
@@ -2273,7 +2273,7 @@ MEDDLY::compute_table::search_key*
 MEDDLY::base_map::initializeSearchKey(operation* op)
 {
   if (op != global_op)
-    throw error(error::UNKNOWN_OPERATION);
+    throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
   return init(op, 0);
 }
 
@@ -2282,7 +2282,7 @@ MEDDLY::base_map::startNewEntry(search_key *key)
 {
   MEDDLY_DCASSERT(key);
   if (key->getOp() != global_op)
-    throw error(error::UNKNOWN_OPERATION);
+    throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
   current = startPtrEntry(smart_cast<old_search_key*>(key), 0, 0);
   return currEntry;
 }

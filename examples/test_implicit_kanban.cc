@@ -223,12 +223,12 @@ int main(int argc, const char** argv)
       
       printf("\nBuilding reachability set using saturation implicit relation");
       if (0==SATURATION_IMPL_FORWARD) {
-        throw error(error::UNKNOWN_OPERATION);
+        throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
       }
       sat = SATURATION_IMPL_FORWARD->buildOperation(T);
       
       if (0==sat) {
-        throw error(error::INVALID_OPERATION);
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
       }
       sat->compute(first, reachable);
       
@@ -248,8 +248,8 @@ int main(int argc, const char** argv)
       double c;
       apply(CARDINALITY, reachable, c);
       operation::showAllComputeTables(meddlyout, 3);
-      
       printf("Approx. %g reachable states\n", c);
+
       
       }
     

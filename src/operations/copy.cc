@@ -1026,10 +1026,10 @@ MEDDLY::copy_opname
   if (0==arg || 0==res) return 0;
 
   if (arg->getDomain() != res->getDomain())
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (arg->isForRelations() != res->isForRelations())
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   if (arg->isMultiTerminal() && res->isMultiTerminal())
   {
@@ -1048,7 +1048,7 @@ MEDDLY::copy_opname
 
 
       default:  // any other types?
-        throw error(error::NOT_IMPLEMENTED);
+        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
     };
   }
 
@@ -1070,7 +1070,7 @@ MEDDLY::copy_opname
         return new copy_MT2EV<float>(this, arg, res);
 
       default:
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     };
   }
 
@@ -1087,7 +1087,7 @@ MEDDLY::copy_opname
         return new copy_EV2MT<float,PLUS>(this, arg, res);
 
       default:
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     };
   }
 
@@ -1104,7 +1104,7 @@ MEDDLY::copy_opname
         return new copy_EV2MT<float,TIMES>(this, arg, res);
 
       default:
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     };
   }
 
@@ -1112,7 +1112,7 @@ MEDDLY::copy_opname
   // That's it for any MT arguments
   //
   if (res->isMultiTerminal() || arg->isMultiTerminal()) {
-    throw error(error::NOT_IMPLEMENTED);
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
   }
 
   //
@@ -1132,7 +1132,7 @@ MEDDLY::copy_opname
                 case forest::REAL:
                     return new copy_EV2EV_fast<int,float>(this, arg, res);
                 default:
-                    throw error(error::TYPE_MISMATCH);
+                    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
             };
             break;    // in case anything falls through
 
@@ -1143,12 +1143,12 @@ MEDDLY::copy_opname
                 case forest::REAL:
                     return new copy_EV2EV_fast<float,float>(this, arg, res);
                 default:
-                    throw error(error::TYPE_MISMATCH);
+                    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
             };
             break;    // things may fall through
 
         default:
-            throw error(error::TYPE_MISMATCH);
+            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
       };
     }
 
@@ -1168,7 +1168,7 @@ MEDDLY::copy_opname
             case forest::REAL:
                 return new copy_EV2EV_slow<int,PLUS,float>(this, arg, res);
             default:
-                throw error(error::TYPE_MISMATCH);
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
           };
         
       case forest::REAL:
@@ -1178,11 +1178,11 @@ MEDDLY::copy_opname
             case forest::REAL:
                 return new copy_EV2EV_slow<float,PLUS,float>(this, arg, res);
             default:
-                throw error(error::TYPE_MISMATCH);
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
           };
 
       default:
-          throw error(error::TYPE_MISMATCH);
+          throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
   }
 
@@ -1200,7 +1200,7 @@ MEDDLY::copy_opname
             case forest::REAL:
                 return new copy_EV2EV_slow<int,TIMES,float>(this, arg, res);
             default:
-                throw error(error::TYPE_MISMATCH);
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
           };
         
       case forest::REAL:
@@ -1210,18 +1210,18 @@ MEDDLY::copy_opname
             case forest::REAL:
                 return new copy_EV2EV_slow<float,TIMES,float>(this, arg, res);
             default:
-                throw error(error::TYPE_MISMATCH);
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
           };
 
       default:
-          throw error(error::TYPE_MISMATCH);
+          throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
   }
 
   //
   // Catch all for any other cases
   //
-  throw error(error::NOT_IMPLEMENTED);
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 
 }
 

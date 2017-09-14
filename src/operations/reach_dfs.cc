@@ -604,7 +604,7 @@ void MEDDLY::common_dfs_mt::indexq::resize(int sz)
   if (sz <= size) return;
   data = (int*) realloc(data, sz * sizeof(int));
   if (0==data)
-    throw error(error::INSUFFICIENT_MEMORY);
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
 
   for (; size < sz; size++) data[size] = NOTINQ;
 }
@@ -629,7 +629,7 @@ void MEDDLY::common_dfs_mt::charbuf::resize(int sz)
   if (sz <= size) return;
   data = (char*) realloc(data, sz * sizeof(char));
   if (0==data)
-    throw error(error::INSUFFICIENT_MEMORY);
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
 }
 
 // ******************************************************************
@@ -1107,7 +1107,7 @@ MEDDLY::forwd_dfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getDomain() != r->getDomain()) || 
     (a2->getDomain() != r->getDomain()) 
   )
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (
     a1->isForRelations()    ||
@@ -1117,7 +1117,7 @@ MEDDLY::forwd_dfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
     (r->getEdgeLabeling() != forest::MULTI_TERMINAL)
   )
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   return new forwd_dfs_mt(this, a1, a2, r);
 }
@@ -1152,10 +1152,10 @@ MEDDLY::bckwd_dfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getDomain() != r->getDomain()) || 
     (a2->getDomain() != r->getDomain()) 
   )
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (a1 != r)
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
 
   if (
     a1->isForRelations()    ||
@@ -1163,7 +1163,7 @@ MEDDLY::bckwd_dfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
     (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) 
   )
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   return new bckwd_dfs_mt(this, a1, a2, r);
 }

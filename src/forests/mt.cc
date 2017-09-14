@@ -43,19 +43,19 @@ MEDDLY::mt_forest::mt_forest(int dsl, domain *d, bool rel,
 bool MEDDLY::mt_forest
 ::isTransparentEdge(node_handle p, const void* v) const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::mt_forest
 ::getTransparentEdge(node_handle &p, void* v) const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 bool MEDDLY::mt_forest
 ::areEdgeValuesEqual(const void* eva, const void* evb) const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 bool MEDDLY::mt_forest::isRedundant(const unpacked_node &nb) const
@@ -131,7 +131,7 @@ void MEDDLY::mt_forest::enlargeStatics(int n)
     //terminals = (node_handle*) realloc(terminals, n*sizeof(node_handle));
     //if (0==order || 0==terminals) {
     if (0==order) {
-      throw error(error::INSUFFICIENT_MEMORY);
+      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     }
     order_size = n;
   }

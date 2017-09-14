@@ -60,7 +60,7 @@ void MEDDLY::evmdd_plusint
   // Create vlist following the mapping between variable and level
   int** ordered_vlist=static_cast<int**>(malloc(N*sizeof(int*)+(num_vars+1)*N*sizeof(int)));
   if(ordered_vlist==0){
-	  throw error(error::INSUFFICIENT_MEMORY);
+	  throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
 
   ordered_vlist[0]=reinterpret_cast<int*>(&ordered_vlist[N]);
@@ -353,7 +353,7 @@ void MEDDLY::evmdd_plusint::evpimdd_iterator::getValue(int &tv) const
 bool MEDDLY::evmdd_plusint::evpimdd_iterator::start(const dd_edge &e)
 {
   if (F != e.getForest()) {
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
 
   int ev;
@@ -440,7 +440,7 @@ MEDDLY::evmdd_index_set::~evmdd_index_set()
 
 void MEDDLY::evmdd_index_set::getElement(const dd_edge &a, int index, int* e)
 {
-  if (e == 0) throw error(error::INVALID_VARIABLE);
+  if (e == 0) throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
   if (index < 0) {
     e[0] = 0;
     return;

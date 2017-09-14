@@ -112,11 +112,11 @@ MEDDLY::image_op::image_op(const binary_opname* oc, expert_forest* a1,
   if (a1->isForRelations()) {
     argM = a1;
     argV = a2;
-    if (a2->isForRelations()) throw error(error::MISCELLANEOUS);
+    if (a2->isForRelations()) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   } else {
     argM = a2;
     argV = a1;
-    if (!a2->isForRelations()) throw error(error::MISCELLANEOUS);
+    if (!a2->isForRelations()) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   }
 }
 
@@ -549,7 +549,7 @@ MEDDLY::preimage_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getDomain() != r->getDomain()) || 
     (a2->getDomain() != r->getDomain()) 
   )
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (
     a1->isForRelations()    ||
@@ -561,7 +561,7 @@ MEDDLY::preimage_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
     (r->getEdgeLabeling() != forest::MULTI_TERMINAL)
   )
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   binary_operation* acc = 0;
   if (r->getRangeType() == forest::BOOLEAN) {
@@ -602,7 +602,7 @@ MEDDLY::postimage_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getDomain() != r->getDomain()) || 
     (a2->getDomain() != r->getDomain()) 
   )
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (
     a1->isForRelations()    ||
@@ -612,7 +612,7 @@ MEDDLY::postimage_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
     (r->getEdgeLabeling() != forest::MULTI_TERMINAL)
   )
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   binary_operation* acc = 0;
   if (r->getRangeType() == forest::BOOLEAN) {
@@ -653,7 +653,7 @@ MEDDLY::VMmult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getDomain() != r->getDomain()) || 
     (a2->getDomain() != r->getDomain()) 
   )
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (
     (a1->getRangeType() == forest::BOOLEAN) ||
@@ -666,7 +666,7 @@ MEDDLY::VMmult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
     (r->getEdgeLabeling() != forest::MULTI_TERMINAL) 
   )
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   binary_operation* acc = getOperation(PLUS, r, r, r);
 
@@ -678,7 +678,7 @@ MEDDLY::VMmult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
       return new mtvect_mtmatr<float>(this, a1, a2, r, acc);
       
     default:
-      throw error(error::TYPE_MISMATCH);
+      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   }
 }
 
@@ -711,7 +711,7 @@ MEDDLY::MVmult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getDomain() != r->getDomain()) || 
     (a2->getDomain() != r->getDomain()) 
   )
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (
     (a1->getRangeType() == forest::BOOLEAN) ||
@@ -724,7 +724,7 @@ MEDDLY::MVmult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
     (r->getEdgeLabeling() != forest::MULTI_TERMINAL) 
   )
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   binary_operation* acc = getOperation(PLUS, r, r, r);
 
@@ -740,7 +740,7 @@ MEDDLY::MVmult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
       return new mtmatr_mtvect<float>(this, a2, a1, r, acc);
       
     default:
-      throw error(error::TYPE_MISMATCH);
+      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   }
 }
 

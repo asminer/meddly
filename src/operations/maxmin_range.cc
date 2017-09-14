@@ -407,24 +407,24 @@ MEDDLY::maxrange_opname::buildOperation(expert_forest* ar, opnd_type res) const
   if (0==ar) return 0;
 
   if (ar->getEdgeLabeling() != forest::MULTI_TERMINAL)
-    throw error(error::NOT_IMPLEMENTED);
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 
   switch (res) {
     case INTEGER:
       if (forest::INTEGER != ar->getRangeType())
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
       return new maxrange_int(this,  ar);
 
     case REAL:
       if (forest::REAL != ar->getRangeType())
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
       return new maxrange_real(this,  ar);
 
     default:
-      throw error(error::TYPE_MISMATCH);
+      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   } // switch
 
-  throw error(error::MISCELLANEOUS);
+  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
 }
 
 // ******************************************************************
@@ -450,24 +450,24 @@ MEDDLY::minrange_opname::buildOperation(expert_forest* ar, opnd_type res) const
   if (0==ar) return 0;
 
   if (ar->getEdgeLabeling() != forest::MULTI_TERMINAL)
-    throw error(error::NOT_IMPLEMENTED);
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 
   switch (res) {
     case INTEGER:
       if (forest::INTEGER != ar->getRangeType())
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
       return new minrange_int(this,  ar);
 
     case REAL:
       if (forest::REAL != ar->getRangeType())
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
       return new minrange_real(this,  ar);
 
     default:
-      throw error(error::TYPE_MISMATCH);
+      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   } // switch
 
-  throw error(error::MISCELLANEOUS);
+  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
 }
 
 

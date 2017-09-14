@@ -41,9 +41,9 @@ class MEDDLY::evmxd_forest : public ev_forest {
     inline void evaluateT(const dd_edge &f, const int* vlist,
       const int* vplist, TYPE &val) const 
     {
-      if (f.getForest() != this) throw error(error::INVALID_OPERATION);
-      if (vlist == 0) throw error(error::INVALID_VARIABLE);
-      if (vplist == 0) throw error(error::INVALID_VARIABLE);
+      if (f.getForest() != this) throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+      if (vlist == 0) throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
+      if (vplist == 0) throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
 
       // Assumptions:
       // (1) vlist and vplist do not contain special values (-1, -2, etc).

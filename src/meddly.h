@@ -569,10 +569,15 @@ class MEDDLY::error {
     };
   public:
     error(code c);
+    error(code c, const char* fn, int ln);
     code getCode() const;
     const char* getName() const;
+    const char* getFile() const;
+    int getLine() const;
   private:
     code errcode;
+    const char* fname;
+    int lineno;
 };
 
 

@@ -45,7 +45,7 @@ void MEDDLY::input::stripWS()
   bool comment = false;
   for (;;) {
     int c = get_char();
-    if (EOF == c) throw error(error::INVALID_FILE);
+    if (EOF == c) throw error(error::INVALID_FILE, __FILE__, __LINE__);
     if ('\n'== c) {
       comment = false;
       continue;
@@ -68,7 +68,7 @@ void MEDDLY::input::consumeKeyword(const char* keyword)
 {
     for ( ; *keyword; keyword++) {
       int c = get_char();
-      if (c != *keyword) throw error(error::INVALID_FILE);
+      if (c != *keyword) throw error(error::INVALID_FILE, __FILE__, __LINE__);
     }
 }
 
@@ -102,7 +102,7 @@ int MEDDLY::FILE_input::get_char()
 void MEDDLY::FILE_input::unget(char x)
 {
   if (EOF==ungetc(x, inf)) {
-    throw error(error::COULDNT_READ); 
+    throw error(error::COULDNT_READ, __FILE__, __LINE__);
     // probably not the most descriptive error message,
     // but it was in fact an error on file input
   }
@@ -112,7 +112,7 @@ long MEDDLY::FILE_input::get_integer()
 {
   long data;
   if (fscanf(inf, "%ld", &data) != 1) {
-    throw error(error::INVALID_FILE);
+    throw error(error::INVALID_FILE, __FILE__, __LINE__);
   }
   return data;
 }
@@ -121,7 +121,7 @@ double MEDDLY::FILE_input::get_real()
 {
   double data;
   if (fscanf(inf, "%lf", &data) != 1) {
-    throw error(error::INVALID_FILE);
+    throw error(error::INVALID_FILE, __FILE__, __LINE__);
   }
   return data;
 }
@@ -249,35 +249,35 @@ MEDDLY::FILE_output::~FILE_output()
 void MEDDLY::FILE_output::put(char x)
 {
   if (EOF == fputc(x, outf)) {
-    throw error(error::COULDNT_WRITE);
+    throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
   }
 }
 
 void MEDDLY::FILE_output::put(const char* x, int w)
 {
   if (fprintf(outf, "%*s", w, x)<1) {
-    throw error(error::COULDNT_WRITE);
+    throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
   }
 }
 
 void MEDDLY::FILE_output::put(long x, int w)
 {
   if (fprintf(outf, "%*ld", w, x)<1) {
-    throw error(error::COULDNT_WRITE);
+    throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
   }
 }
 
 void MEDDLY::FILE_output::put(unsigned long x, int w)
 {
   if (fprintf(outf, "%*lu", w, x)<1) {
-    throw error(error::COULDNT_WRITE);
+    throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
   }
 }
 
 void MEDDLY::FILE_output::put_hex(unsigned long x, int w)
 {
   if (fprintf(outf, "%*lx", w, x)<1) {
-    throw error(error::COULDNT_WRITE);
+    throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
   }
 }
 
@@ -297,7 +297,7 @@ void MEDDLY::FILE_output::put(double x, int w, int p, char f)
               break;
   }
   if (out < 1) {
-    throw error(error::COULDNT_WRITE);
+    throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
   }
 }
 

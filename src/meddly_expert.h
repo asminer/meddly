@@ -2263,7 +2263,7 @@ class MEDDLY::expert_forest: public forest
     virtual void moveUpVariable(int low, int high) = 0;
 
     virtual void dynamicReorderVariables(int top, int bottom) {
-    	throw error(error::NOT_IMPLEMENTED);
+    	throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
     }
 
     /** Show a terminal node.
@@ -3122,11 +3122,9 @@ class MEDDLY::satimpl_opname:public specialized_opname {
          @param  signature   Hash for this node, such that
          two equal nodes must have the same
          signature.
-         @param  add_token   true, if adding tokens; else false
-         @param  tokens      Change in number of tokens
-         @param  level       Level affected.
-         @param  down        Handle to a relation node below us.
-         */
+         @param  level          Level affected.
+         @param  down           Handle to a relation node below us. 
+	*/
         relation_node(unsigned long signature, int level, rel_node_handle down);
         virtual ~relation_node();
         
@@ -3160,6 +3158,37 @@ class MEDDLY::satimpl_opname:public specialized_opname {
          */
         void setID(rel_node_handle ID);
         
+        /**
+         The token_update array for this piece.
+         */
+        long* getTokenUpdate() const;
+        
+        /**
+         Set the token_update array for this piece.
+         */
+        void setTokenUpdate(long* token_update);
+        
+        /**
+         The size of token_update array for this piece.
+         */
+        long getPieceSize() const;
+        
+        /**
+         Set the size of token_update array for this piece.
+         */
+        void setPieceSize(long pS);
+        
+        /**
+         Expand the tokenUpdate array as the variable increases
+         */
+        void expandTokenUpdate(long i);
+        
+        /**
+         Set the tokenUpdate array at location i to val
+         */
+        void setTokenUpdateAtIndex(long i,long val);
+        
+ 
         
         // the following must be provided in derived classes.
         
@@ -3180,9 +3209,10 @@ class MEDDLY::satimpl_opname:public specialized_opname {
         int level;
         rel_node_handle down;
         rel_node_handle ID;
+        long* token_update;
+        long piece_size;        
         
         // used by the hash table in implicit_relation
-        
         relation_node* hash_chain;
         
         friend class implicit_relation;
@@ -3250,6 +3280,9 @@ class MEDDLY::satimpl_opname:public specialized_opname {
         
         /**
          Check if the relation node is unique
+         @param n  The relation node.
+         @return   If unique, 0
+                   Else, existing node handle
          */
         rel_node_handle isUniqueNode(relation_node* n);
         
