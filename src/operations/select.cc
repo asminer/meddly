@@ -185,11 +185,12 @@ void MEDDLY::select_EVPlus::compute(long aev, node_handle a, int level, long& be
   node_handle t = 0;
   compute(aev + A->ei(nz), A->d(nz), level - 1, tev, t);
   nb->d_ref(0) = t;
+  nb->setEdge(0, tev);
 
   // Cleanup
   unpacked_node::recycle(A);
 
-  resF->createReducedNode(tev, nb, bev, b);
+  resF->createReducedNode(-1, nb, bev, b);
 }
 
 

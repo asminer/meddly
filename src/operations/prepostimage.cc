@@ -676,12 +676,9 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
   unpacked_node* C = unpacked_node::newFull(resF, rLevel, rSize);
 
   // Initialize evmdd reader
-  unpacked_node *A = unpacked_node::useUnpackedNode();
-  if (evmddLevel < rLevel) {
-    A->initRedundant(argV, rLevel, evmdd, true);
-  } else {
-    A->initFromNode(argV, evmdd, true);
-  }
+  unpacked_node *A = (evmddLevel < rLevel)
+    ? unpacked_node::newRedundant(argV, rLevel, 0L, evmdd, true)
+    : unpacked_node::newFromNode(argV, evmdd, true);
 
   if (evmddLevel > ABS(mxdLevel)) {
     //
@@ -830,12 +827,9 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
   unpacked_node* C = unpacked_node::newFull(resF, rLevel, rSize);
 
   // Initialize evmdd reader
-  unpacked_node *A = unpacked_node::useUnpackedNode();
-  if (evmddLevel < rLevel) {
-    A->initRedundant(argV, rLevel, evmdd, true);
-  } else {
-    A->initFromNode(argV, evmdd, true);
-  }
+  unpacked_node *A = (evmddLevel < rLevel)
+    ? unpacked_node::newRedundant(argV, rLevel, 0L, evmdd, true)
+    : unpacked_node::newFromNode(argV, evmdd, true);
 
   if (evmddLevel > ABS(mxdLevel)) {
     //
