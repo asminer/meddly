@@ -83,15 +83,19 @@ MEDDLY::constraint_bfs_opname::constraint_bfs_opname(bool fwd)
   forward = fwd;
 }
 
-MEDDLY::specialized_operation* MEDDLY::constraint_bfs_opname::buildOperation(
-  expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res) const
+MEDDLY::specialized_operation* MEDDLY::constraint_bfs_opname::buildOperation(arguments* a) const
 {
+  minimum_witness_opname::minimum_witness_args* args = dynamic_cast<minimum_witness_opname::minimum_witness_args*>(a);
   specialized_operation* op = 0;
   if (forward) {
     throw error(error::NOT_IMPLEMENTED);
   }
   else {
-    op = new constraint_bckwd_bfs(this, cons, arg, trans, res);
+    op = new constraint_bckwd_bfs(this,
+      static_cast<expert_forest*>(args->consForest),
+      static_cast<expert_forest*>(args->inForest),
+      static_cast<expert_forest*>(args->relForest),
+      static_cast<expert_forest*>(args->outForest));
   }
   return op;
 }
@@ -115,8 +119,10 @@ MEDDLY::constraint_bckwd_bfs::constraint_bckwd_bfs(const minimum_witness_opname*
   imageOp = getOperation(PRE_IMAGE, argF, transF, resF);
 }
 
-MEDDLY::dd_edge MEDDLY::constraint_bckwd_bfs::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r)
+void MEDDLY::constraint_bckwd_bfs::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res)
 {
+  MEDDLY_DCASSERT(res.getForest() == resF);
+
   if (resF->getRangeType() == forest::INTEGER) {
     plusOp = getOperation(PLUS, resF, consF, resF);
     minOp = getOperation(UNION, resF, resF, resF);
@@ -133,9 +139,7 @@ MEDDLY::dd_edge MEDDLY::constraint_bckwd_bfs::compute(const dd_edge& a, const dd
   node_handle cnode = 0;
   iterate(aev, a.getNode(), bev, b.getNode(), r.getNode(), cev, cnode);
 
-  dd_edge c(resF);
-  c.set(cnode, cev);
-  return c;
+  res.set(cnode, cev);
 }
 
 void MEDDLY::constraint_bckwd_bfs::iterate(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c)
@@ -189,15 +193,19 @@ MEDDLY::constraint_dfs_opname::constraint_dfs_opname(bool fwd)
   forward = fwd;
 }
 
-MEDDLY::specialized_operation* MEDDLY::constraint_dfs_opname::buildOperation(
-  expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res) const
+MEDDLY::specialized_operation* MEDDLY::constraint_dfs_opname::buildOperation(arguments* a) const
 {
+  minimum_witness_opname::minimum_witness_args* args = dynamic_cast<minimum_witness_opname::minimum_witness_args*>(a);
   specialized_operation* op = 0;
   if (forward) {
     throw error(error::NOT_IMPLEMENTED);
   }
   else {
-    op = new constraint_bckwd_dfs(this, cons, arg, trans, res);
+    op = new constraint_bckwd_dfs(this,
+      static_cast<expert_forest*>(args->consForest),
+      static_cast<expert_forest*>(args->inForest),
+      static_cast<expert_forest*>(args->relForest),
+      static_cast<expert_forest*>(args->outForest));
   }
   return op;
 }
@@ -393,9 +401,10 @@ void MEDDLY::constraint_bckwd_dfs::splitMxd(node_handle mxd)
 #endif
 }
 
-MEDDLY::dd_edge MEDDLY::constraint_bckwd_dfs::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r)
+void MEDDLY::constraint_bckwd_dfs::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res)
 {
-  dd_edge res(resF);
+  MEDDLY_DCASSERT(res.getForest() == resF);
+
   long cev = Inf<long>();
   node_handle c = 0;
   long aev;
@@ -403,8 +412,8 @@ MEDDLY::dd_edge MEDDLY::constraint_bckwd_dfs::compute(const dd_edge& a, const dd
   long bev;
   b.getEdgeValue(bev);
   compute(aev, a.getNode(), bev, b.getNode(), r.getNode(), cev, c);
+
   res.set(c, cev);
-  return res;
 }
 
 void MEDDLY::constraint_bckwd_dfs::compute(int aev, node_handle a, int bev, node_handle b, node_handle r,

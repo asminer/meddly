@@ -1549,3 +1549,9 @@ void MEDDLY::specialized_operation::compute(double* y, const double* x)
 {
   throw error(error::TYPE_MISMATCH);
 }
+
+void MEDDLY::specialized_operation::compute(const dd_edge &ar1,
+  const dd_edge &ar2, const dd_edge &ar3, dd_edge &res)
+{
+  throw error(error::TYPE_MISMATCH);
+}

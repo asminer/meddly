@@ -53,21 +53,16 @@ public:
   common_constraint(const minimum_witness_opname* code, int kl, int al,
     expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
   ~common_constraint();
-
-  virtual dd_edge compute(const dd_edge& a, const dd_edge& b, const dd_edge& r) = 0;
 };
 
 class MEDDLY::constraint_bfs_opname : public minimum_witness_opname {
 protected:
   bool forward;
+
 public:
   constraint_bfs_opname(bool fwd);
-  virtual specialized_operation* buildOperation(expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res) const;
 
-  virtual specialized_operation* buildOperation(arguments* a) const
-  {
-    throw error::NOT_IMPLEMENTED;
-  }
+  virtual specialized_operation* buildOperation(arguments* a) const;
 };
 
 class MEDDLY::constraint_bckwd_bfs: public common_constraint
@@ -87,20 +82,17 @@ public:
   constraint_bckwd_bfs(const minimum_witness_opname* code,
     expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
 
-  virtual dd_edge compute(const dd_edge& a, const dd_edge& b, const dd_edge& r);
+  virtual void compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res);
 };
 
 class MEDDLY::constraint_dfs_opname : public minimum_witness_opname {
 protected:
   bool forward;
+
 public:
   constraint_dfs_opname(bool fwd);
-  virtual specialized_operation* buildOperation(expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res) const;
 
-  virtual specialized_operation* buildOperation(arguments* a) const
-  {
-    throw error::NOT_IMPLEMENTED;
-  }
+  virtual specialized_operation* buildOperation(arguments* a) const;
 };
 
 class MEDDLY::constraint_bckwd_dfs: public common_constraint
@@ -133,7 +125,7 @@ public:
   constraint_bckwd_dfs(const minimum_witness_opname* code,
     expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
 
-  virtual dd_edge compute(const dd_edge& a, const dd_edge& b, const dd_edge& r);
+  virtual void compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res);
   void compute(int aev, node_handle a, int bev, node_handle b, node_handle r, long& cev, node_handle& c);
 
   void saturateHelper(long aev, node_handle a, unpacked_node& nb);

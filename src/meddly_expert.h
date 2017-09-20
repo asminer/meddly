@@ -2875,7 +2875,19 @@ class MEDDLY::satotf_opname : public specialized_opname {
 class MEDDLY::minimum_witness_opname : public specialized_opname {
 public:
 	minimum_witness_opname(const char* n);
-    //virtual specialized_operation* buildOperation(arguments* a) const = 0;
+
+	class minimum_witness_args : public specialized_opname::arguments {
+	public:
+	  forest* consForest;
+	  forest* inForest;
+	  forest* relForest;
+	  forest* outForest;
+
+	  minimum_witness_args(forest* consF, forest* inF, forest* relF, forest* outF)
+	    : consForest(consF), inForest(inF), relForest(relF), outForest(outF)
+	  {
+	  }
+	};
 };
 
 // ******************************************************************
@@ -3434,6 +3446,12 @@ class MEDDLY::specialized_operation : public operation {
         Default behavior is to throw an exception.
     */
     virtual void compute(double* y, const double* x);
+
+    /** For tenary (like) operations.
+        Note that there could be other "built in" operands.
+        Default behavior is to throw an exception.
+    */
+    virtual void compute(const dd_edge &ar1, const dd_edge &ar2, const dd_edge &ar3, dd_edge &res);
 };
 
 // ******************************************************************
