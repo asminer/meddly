@@ -54,7 +54,7 @@ class MEDDLY::base_evplus_mt : public specialized_operation {
     virtual void compute_r(int ht, double* y, node_handle y_ind, const double* x, 
       node_handle x_ind, node_handle A) = 0;
 
-#if 0
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle*) {
       throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
     }

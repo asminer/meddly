@@ -42,7 +42,7 @@ class MEDDLY::copy_MT : public unary_operation {
   public:
     copy_MT(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
-#if 0
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
@@ -85,7 +85,7 @@ MEDDLY::copy_MT
   // mtres = res;
 }
 
-#if 0
+#ifndef USE_NODE_STATUS
 bool MEDDLY::copy_MT::isStaleEntry(const node_handle* entryData)
 {
   return 
@@ -285,7 +285,7 @@ namespace MEDDLY {
         // entry[2]: EV node (output)
       }
 
-#if 0
+#ifndef USE_NODE_STATUS
       virtual bool isStaleEntry(const node_handle* entryData) {
         return 
           argF->isStale(entryData[0]) ||
@@ -490,7 +490,7 @@ namespace MEDDLY {
         // entry[2]: mt node (output)
       }
 
-#if 0
+#ifndef USE_NODE_STATUS
       virtual bool isStaleEntry(const node_handle* entryData) {
         return 
           argF->isStale(entryData[1]) ||
@@ -696,7 +696,7 @@ namespace MEDDLY {
         // entry[0]: EV node
         // entry[1]: EV node 
       }
-#if 0
+#ifndef USE_NODE_STATUS
       virtual bool isStaleEntry(const node_handle* entryData) {
         return 
           argF->isStale(entryData[0]) ||
@@ -832,7 +832,7 @@ namespace MEDDLY {
         // entry[3]: EV node 
       }
 
-#if 0
+#ifndef USE_NODE_STATUS
       virtual bool isStaleEntry(const node_handle* entryData) {
         return 
           argF->isStale(entryData[1]) ||

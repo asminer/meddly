@@ -75,7 +75,7 @@ public:
   node_handle saturate(node_handle mdd);
   node_handle saturate(node_handle mdd, int level);
   
-#if 0
+#ifndef USE_NODE_STATUS
   virtual bool isStaleEntry(const node_handle* entryData);
 #else
   virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
@@ -121,7 +121,7 @@ public:
                                satimpl_opname::implicit_relation* rel);
   virtual ~common_impl_dfs_by_events_mt();
   
-#if 0
+#ifndef USE_NODE_STATUS
   virtual bool isStaleEntry(const node_handle* entryData);
 #else
   virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
@@ -571,7 +571,7 @@ MEDDLY::common_impl_dfs_by_events_mt::~common_impl_dfs_by_events_mt()
   unregisterInForest(resF);
 }
 
-#if 0
+#ifndef USE_NODE_STATUS
 bool MEDDLY::common_impl_dfs_by_events_mt::isStaleEntry(const node_handle* data)
 {
   return arg1F->isStale(data[0]) ||
@@ -810,7 +810,7 @@ MEDDLY::saturation_impl_by_events_op::saturate(node_handle mdd, int k)
   return n;
 }
 
-#if 0
+#ifndef USE_NODE_STATUS
 bool MEDDLY::saturation_impl_by_events_op::isStaleEntry(const node_handle* data)
 {
   return (argF->isFullyReduced()

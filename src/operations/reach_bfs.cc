@@ -47,7 +47,7 @@ class MEDDLY::common_bfs_mt : public binary_operation {
     common_bfs_mt(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
-#if 0
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
@@ -112,7 +112,7 @@ MEDDLY::common_bfs_mt::common_bfs_mt(const binary_opname* oc, expert_forest* a1,
   imageOp = 0;
 }
 
-#if 0
+#ifndef USE_NODE_STATUS
 bool MEDDLY::common_bfs_mt::isStaleEntry(const node_handle* entryData)
 {
   throw error(error::MISCELLANEOUS, __FILE__, __LINE__);

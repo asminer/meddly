@@ -1923,7 +1923,7 @@ class MEDDLY::expert_forest: public forest
     ///   in-count and cache-count are zero.
     /// Pessimistic deletion: A node is said to be stale when the in-count
     ///  is zero regardless of the cache-count.
-#if 0
+#ifndef USE_NODE_STATUS
     bool isStale(node_handle node) const;
 #else
     MEDDLY::forest::node_status getNodeStatus(node_handle node) const;
@@ -2466,7 +2466,7 @@ class MEDDLY::expert_forest: public forest
 
     /// Should a terminal node be considered a stale entry in the compute table.
     /// per-forest policy, derived classes may change as appropriate.
-#if 0
+#ifndef USE_NODE_STATUS
     bool terminalNodesAreStale;
 #else
     MEDDLY::forest::node_status terminalNodesStatus;
@@ -3721,7 +3721,7 @@ class MEDDLY::operation {
     void markForDeletion();
     void registerInForest(forest* f);
     void unregisterInForest(forest* f);
-#if 0
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entry) = 0;
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entry) = 0;
@@ -3788,7 +3788,7 @@ class MEDDLY::operation {
     /// Number of ints that make up the entire record (key + answer)
     int getCacheEntryLength() const;
 
-#if 0
+#ifndef USE_NODE_STATUS
     /// Checks if the cache entry (in entryData[]) is stale.
     bool isEntryStale(const node_handle* data);
 #else

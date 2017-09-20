@@ -89,7 +89,7 @@ class MEDDLY::saturation_op : public unary_operation {
     node_handle saturate(node_handle mdd);
     node_handle saturate(node_handle mdd, int level);
 
-#if 0
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
@@ -133,7 +133,7 @@ class MEDDLY::common_dfs_mt : public binary_operation {
     common_dfs_mt(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
-#if 0
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
@@ -351,7 +351,7 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
   return n;
 }
 
-#if 0
+#ifndef USE_NODE_STATUS
 bool MEDDLY::saturation_op::isStaleEntry(const node_handle* data)
 {
   return (argF->isFullyReduced()
@@ -416,7 +416,7 @@ MEDDLY::common_dfs_mt::common_dfs_mt(const binary_opname* oc, expert_forest* a1,
   freebufs = 0;
 }
 
-#if 0
+#ifndef USE_NODE_STATUS
 bool MEDDLY::common_dfs_mt::isStaleEntry(const node_handle* data)
 {
   return arg1F->isStale(data[0]) ||

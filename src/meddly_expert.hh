@@ -1323,7 +1323,7 @@ MEDDLY::expert_forest::hash(MEDDLY::node_handle p) const
   return hashNode(p);
 }
 
-#if 0
+#ifndef USE_NODE_STATUS
 inline bool
 MEDDLY::expert_forest::isStale(MEDDLY::node_handle node) const
 {
@@ -2018,7 +2018,7 @@ MEDDLY::operation::getCacheEntryLength() const
   return key_length + ans_length;
 }
 
-#if 0
+#ifndef USE_NODE_STATUS
 inline bool
 MEDDLY::operation::isEntryStale(const MEDDLY::node_handle* data)
 {

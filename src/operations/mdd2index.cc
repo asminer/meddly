@@ -41,7 +41,7 @@ class MEDDLY::mdd2index_operation : public unary_operation {
     mdd2index_operation(const unary_opname* oc, expert_forest* arg, 
       expert_forest* res);
 
-#if 0
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
@@ -62,7 +62,7 @@ MEDDLY::mdd2index_operation::mdd2index_operation(const unary_opname* oc,
   // answer[1] : cardinality
 }
 
-#if 0
+#ifndef USE_NODE_STATUS
 bool 
 MEDDLY::mdd2index_operation
 ::isStaleEntry(const node_handle* entryData)

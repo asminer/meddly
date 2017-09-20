@@ -42,7 +42,7 @@ class MEDDLY::compl_mdd : public unary_operation {
   public:
     compl_mdd(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
-#if 0
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
@@ -87,7 +87,7 @@ MEDDLY::compl_mdd
   // ct entry 1: output node
 }
 
-#if 0
+#ifndef USE_NODE_STATUS
 bool MEDDLY::compl_mdd::isStaleEntry(const node_handle* data)
 {
   return argF->isStale(data[0]) || resF->isStale(data[1]);
@@ -178,7 +178,7 @@ class MEDDLY::compl_mxd : public unary_operation {
   public:
     compl_mxd(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
-#if 0
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
@@ -199,7 +199,7 @@ MEDDLY::compl_mxd
   // ct entry 2: output node
 }
 
-#if 0
+#ifndef USE_NODE_STATUS
 bool MEDDLY::compl_mxd::isStaleEntry(const node_handle* data)
 {
   return argF->isStale(data[1]) || resF->isStale(data[2]);

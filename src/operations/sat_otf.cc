@@ -81,7 +81,7 @@ class MEDDLY::otfsat_by_events_op : public unary_operation {
     node_handle saturate(node_handle mdd);
     node_handle saturate(node_handle mdd, int level);
 
-#if 0
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
@@ -127,7 +127,7 @@ class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
       satotf_opname::otf_relation* rel);
     virtual ~common_otf_dfs_by_events_mt();
 
-#if 0
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
@@ -357,7 +357,7 @@ MEDDLY::otfsat_by_events_op::saturate(node_handle mdd, int k)
   return n;
 }
 
-#if 0
+#ifndef USE_NODE_STATUS
 bool MEDDLY::otfsat_by_events_op::isStaleEntry(const node_handle* data)
 {
   return (argF->isFullyReduced()
@@ -440,7 +440,7 @@ MEDDLY::common_otf_dfs_by_events_mt::~common_otf_dfs_by_events_mt()
   unregisterInForest(resF);
 }
 
-#if 0
+#ifndef USE_NODE_STATUS
 bool MEDDLY::common_otf_dfs_by_events_mt::isStaleEntry(const node_handle* data)
 {
   return arg1F->isStale(data[0]) ||

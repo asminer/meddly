@@ -46,7 +46,7 @@ class MEDDLY::cross_bool : public binary_operation {
     cross_bool(const binary_opname* oc, expert_forest* a1,
       expert_forest* a2, expert_forest* res);
 
-#if 0
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle*);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
@@ -69,7 +69,7 @@ MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
   // data[RESLT_INDEX] : c
 }
 
-#if 0
+#ifndef USE_NODE_STATUS
 bool MEDDLY::cross_bool::isStaleEntry(const node_handle* data)
 {
   // data[0] is the level number

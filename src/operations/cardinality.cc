@@ -67,7 +67,7 @@ public:
   card_int(const unary_opname* oc, expert_forest* arg);
 
   // common
-#if 0
+#ifndef USE_NODE_STATUS
   virtual bool isStaleEntry(const node_handle* entryData);
 #else
   virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* data);
@@ -92,7 +92,7 @@ MEDDLY::card_int::card_int(const unary_opname* oc, expert_forest* arg)
 {
 }
 
-#if 0
+#ifndef USE_NODE_STATUS
 bool MEDDLY::card_int::isStaleEntry(const node_handle* data)
 {
   return argF->isStale(data[0]);
@@ -278,7 +278,7 @@ public:
   card_real(const unary_opname* oc, expert_forest* arg);
 
   // common
-#if 0
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
@@ -292,7 +292,7 @@ MEDDLY::card_real::card_real(const unary_opname* oc, expert_forest* arg)
 {
 }
 
-#if 0
+#ifndef USE_NODE_STATUS
 bool MEDDLY::card_real::isStaleEntry(const node_handle* data)
 {
   return argF->isStale(data[0]);
@@ -485,7 +485,7 @@ public:
   card_mpz(const unary_opname* oc, expert_forest* arg);
 
   // common
-#if 0
+#ifndef USE_NODE_STATUS
   virtual bool isStaleEntry(const node_handle* entryData);
 #else
   virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
@@ -499,7 +499,7 @@ MEDDLY::card_mpz::card_mpz(const unary_opname* oc, expert_forest* arg)
 {
 }
 
-#if 0
+#ifndef USE_NODE_STATUS
 bool MEDDLY::card_mpz::isStaleEntry(const node_handle* data)
 {
   return argF->isStale(data[0]);

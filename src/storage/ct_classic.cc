@@ -876,7 +876,7 @@ class MEDDLY::monolithic_chained : public base_chained {
     //       Otherwise,
     //          If it is a hit, use it.
     //          Otherwise, if it is marked RECOVERABLE, delete it.
-#if 0
+#ifndef USE_NODE_STATUS
     inline bool checkStale(unsigned h, int prev, int &curr) {
         operation* currop = operation::getOpWithIndex(entries[curr+1]);
         MEDDLY_DCASSERT(currop);
@@ -965,7 +965,7 @@ MEDDLY::monolithic_chained::find(search_key *k)
     // Check for match
     //
 
-#if 0
+#ifndef USE_NODE_STATUS
 
     if (equal_sw(entries+curr+1, key->rawData(), key->dataLength())) {
       if (key->getOp()->shouldStaleCacheHitsBeDiscarded()) {
@@ -1120,7 +1120,7 @@ int MEDDLY::monolithic_chained::convertToList(bool removeStales)
         //
         // Check for stale
         //
-#if 0
+#ifndef USE_NODE_STATUS
         if (currop->isEntryStale(entry)) {
 #else
         if (currop->getEntryStatus(entry)) {
@@ -1225,7 +1225,7 @@ class MEDDLY::operation_chained : public base_chained {
       global_op->showEntry(s, entries + h + 1);
     }
 
-#if 0
+#ifndef USE_NODE_STATUS
     inline bool checkStale(unsigned h, int prev, int &curr) {
         if (global_op->isEntryStale(entries+curr+1)) {
           global_op->discardEntry(entries+curr+1);
@@ -1344,7 +1344,7 @@ int MEDDLY::operation_chained::convertToList(bool removeStales)
         //
         // Check for stale
         //
-#if 0
+#ifndef USE_NODE_STATUS
         if (global_op->isEntryStale(entry)) {
 #else
         if (global_op->getEntryStatus(entry) != MEDDLY::forest::node_status::ACTIVE) {
@@ -1421,7 +1421,7 @@ MEDDLY::operation_chained_fast<N>::find(search_key *k)
     //
     // Check for match
     //
-#if 0
+#ifndef USE_NODE_STATUS
     if (equal_sw(entries+curr+1, key->rawData(), N)) {
       if (global_op->shouldStaleCacheHitsBeDiscarded()) {
         if (checkStale(h, prev, curr)) {
@@ -1577,7 +1577,7 @@ class MEDDLY::base_unchained : public base_hash {
       table[h] = curr;
     }
 
-#if 0
+#ifndef USE_NODE_STATUS
     template <int M>
     inline bool checkStale(unsigned h, int curr) {
         operation* currop = M 
@@ -1628,7 +1628,7 @@ class MEDDLY::base_unchained : public base_hash {
     inline void scanForStales() {
       for (unsigned i=0; i<tableSize; i++) {
         if (0==table[i]) continue;
-#if 0
+#ifndef USE_NODE_STATUS
         checkStale<M>(i, table[i]);
 #else
         if (MEDDLY::forest::node_status::ACTIVE != getEntryStatus<M>(i)) {
@@ -1913,7 +1913,7 @@ MEDDLY::monolithic_unchained::find(search_key *k)
     //
     if (equal_sw(entries+curr, key->rawData(), key->dataLength())) {
       if (key->getOp()->shouldStaleCacheHitsBeDiscarded()) {
-#if 0
+#ifndef USE_NODE_STATUS
         if (checkStale<1>(hcurr, curr)) {
           // The match is stale.
           // Since there can NEVER be more than one match
@@ -1945,7 +1945,7 @@ MEDDLY::monolithic_unchained::find(search_key *k)
     // No match; maybe check stale
     //
     if (checkStalesOnFind) {
-#if 0
+#ifndef USE_NODE_STATUS
       checkStale<1>(hcurr, curr);
 #else
       if (getEntryStatus<1>(hcurr) != MEDDLY::forest::node_status::ACTIVE) {
@@ -2141,7 +2141,7 @@ MEDDLY::operation_unchained_fast<N>::find(search_key *k)
     //
     if (equal_sw(entries+curr, key->rawData(), N)) {
       if (key->getOp()->shouldStaleCacheHitsBeDiscarded()) {
-#if 0
+#ifndef USE_NODE_STATUS
         if (checkStale<0>(hcurr, curr)) {
           // The match is stale.
           // Since there can NEVER be more than one match
@@ -2173,7 +2173,7 @@ MEDDLY::operation_unchained_fast<N>::find(search_key *k)
     // No match; maybe check stale
     //
     if (checkStalesOnFind) {
-#if 0
+#ifndef USE_NODE_STATUS
       checkStale<0>(hcurr, curr);
 #else
       if (MEDDLY::forest::node_status::ACTIVE != getEntryStatus<0>(hcurr)) {
@@ -2231,7 +2231,7 @@ class MEDDLY::base_map : public base_table {
     inline void showEntry(output &s, int* h) const {
       global_op->showEntry(s, h);
     }
-#if 0
+#ifndef USE_NODE_STATUS
     inline bool isStale(const int* entry) {
       return global_op->isEntryStale(entry);
     }
@@ -2353,7 +2353,7 @@ MEDDLY::operation_map<K>::find(search_key *k)
   }
   int* h = ans->second;
   if (global_op->shouldStaleCacheHitsBeDiscarded()) {
-#if 0
+#ifndef USE_NODE_STATUS
     if (isStale(h)) {
 #else
     if (MEDDLY::forest::node_status::DEAD == getEntryStatus(h)) {
@@ -2408,7 +2408,7 @@ void MEDDLY::operation_map<K>::removeStales()
   typename std::map<int*, int*, less<K> >::iterator end = ct.end();
   while (curr != end) {
     int* h = curr->second;
-#if 0
+#ifndef USE_NODE_STATUS
     if (isStale(h)) {
 #else
     if (MEDDLY::forest::node_status::ACTIVE != getEntryStatus(h)) {

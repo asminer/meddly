@@ -61,7 +61,7 @@ class MEDDLY::image_op : public binary_operation {
     image_op(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res, binary_operation* acc);
 
-#if 0
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
@@ -120,7 +120,7 @@ MEDDLY::image_op::image_op(const binary_opname* oc, expert_forest* a1,
   }
 }
 
-#if 0
+#ifndef USE_NODE_STATUS
 bool MEDDLY::image_op::isStaleEntry(const node_handle* data)
 {
   return argV->isStale(data[0]) ||

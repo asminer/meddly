@@ -56,7 +56,7 @@ class MEDDLY::mm_mult_op : public binary_operation {
     mm_mult_op(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res, binary_operation* acc);
 
-#if 0
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
@@ -105,7 +105,7 @@ MEDDLY::mm_mult_op::mm_mult_op(const binary_opname* oc, expert_forest* a1,
     throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
 }
 
-#if 0
+#ifndef USE_NODE_STATUS
 bool MEDDLY::mm_mult_op::isStaleEntry(const node_handle* data)
 {
   return arg1F->isStale(data[0]) ||
