@@ -2337,6 +2337,14 @@ class MEDDLY::dd_edge {
     */
     void set(node_handle node, float value);
 
+    /** Modifies the edge value only.
+        @param  value  value of edge coming into the node (only useful
+                       for edge-valued MDDs)
+     */
+    void setEdgeValue(int value);
+    void setEdgeValue(long value);
+    void setEdgeValue(float value);
+
     /** Check for equality.
         @return true    iff this edge has the same parent and refers to
                         the same edge as \a e.

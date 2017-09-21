@@ -187,22 +187,36 @@ void MEDDLY::dd_edge::set(node_handle n, int v)
 
 void MEDDLY::dd_edge::set(node_handle n, long v)
 {
-  MEDDLY_DCASSERT(parent);
-  MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
-  MEDDLY_DCASSERT(forest::INTEGER == parent->getRangeType());
   set(n);
-  expert_forest::EVencoder<long>::writeValue(&raw_value, v);
+  setEdgeValue(v);
 }
 
 void MEDDLY::dd_edge::set(node_handle n, float v)
 {
+  set(n);
+  setEdgeValue(v);
+}
+
+void MEDDLY::dd_edge::setEdgeValue(int value)
+{
+  setEdgeValue((long)value);
+}
+
+void MEDDLY::dd_edge::setEdgeValue(long value)
+{
+  MEDDLY_DCASSERT(parent);
+  MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
+  MEDDLY_DCASSERT(forest::INTEGER == parent->getRangeType());
+  expert_forest::EVencoder<long>::writeValue(&raw_value, value);
+}
+
+void MEDDLY::dd_edge::setEdgeValue(float value)
+{
   MEDDLY_DCASSERT(parent);
   MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
   MEDDLY_DCASSERT(forest::REAL == parent->getRangeType());
-  set(n);
-  expert_forest::EVencoder<float>::writeValue(&raw_value, v);
+  expert_forest::EVencoder<float>::writeValue(&raw_value, value);
 }
-
 
 unsigned MEDDLY::dd_edge::getNodeCount() const
 {
