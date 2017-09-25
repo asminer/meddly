@@ -142,6 +142,9 @@ MEDDLY::transitive_closure_forwd_bfs::transitive_closure_forwd_bfs(const minimum
 
 void MEDDLY::transitive_closure_forwd_bfs::compute(const dd_edge &a, const dd_edge &b, const dd_edge &r, dd_edge &res)
 {
+  MEDDLY_DCASSERT(consF == a.getForest());
+  MEDDLY_DCASSERT(tcF == b.getForest());
+  MEDDLY_DCASSERT(transF == r.getForest());
   MEDDLY_DCASSERT(resF == res.getForest());
 
   long aev = Inf<long>();
@@ -408,11 +411,14 @@ void MEDDLY::transitive_closure_dfs::splitMxd(node_handle mxd)
 
 void MEDDLY::transitive_closure_dfs::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res)
 {
+  MEDDLY_DCASSERT(consF == a.getForest());
+  MEDDLY_DCASSERT(tcF == b.getForest());
+  MEDDLY_DCASSERT(transF == r.getForest());
   MEDDLY_DCASSERT(resF == res.getForest());
 
-  long aev;
+  long aev = Inf<long>();
   a.getEdgeValue(aev);
-  long bev;
+  long bev = Inf<long>();
   b.getEdgeValue(bev);
   long cev = Inf<long>();
   node_handle c = 0;

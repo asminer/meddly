@@ -124,8 +124,14 @@ void MEDDLY::cycle_EV2EV::computeDDEdge(const dd_edge &arg, dd_edge &res)
 void MEDDLY::cycle_EV2EV::compute_r(long aev, node_handle a, long& bev, node_handle& b)
 {
   if (argF->isTerminalNode(a)) {
-    bev = aev;
-    b = a;
+    if (a == 0) {
+      bev = 0;
+      b = 0;
+    }
+    else {
+      bev = aev;
+      b = a;
+    }
     return;
   }
 

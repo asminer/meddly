@@ -279,6 +279,7 @@ void MEDDLY::evmdd_pluslong::normalize(unpacked_node &nb, long& ev) const
   }
   if (minindex < 0) {
     // this node will eventually be reduced to "0"
+    ev = 0;
     return;
   }
   ev = nb.ei(minindex);
