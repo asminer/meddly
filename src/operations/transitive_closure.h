@@ -36,7 +36,7 @@ namespace MEDDLY {
 //  class transitive_closure_opname;
   class transitive_closure_evplus;
 
-  minimum_witness_opname* initConstraintDFSBackward();
+  minimum_witness_opname* initTransitiveClosureDFS();
 
   void printAssignmentsDEBUG(const dd_edge& res);
 }
@@ -56,8 +56,6 @@ public:
   common_transitive_closure(const minimum_witness_opname* code, int kl, int al,
     expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res);
   ~common_transitive_closure();
-
-  virtual dd_edge compute(const dd_edge& a, const dd_edge& b, const dd_edge& r) = 0;
 };
 
 class MEDDLY::transitive_closure_bfs_opname : public minimum_witness_opname {
@@ -89,18 +87,14 @@ public:
   transitive_closure_forwd_bfs(const minimum_witness_opname* code,
     expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res);
 
-  virtual dd_edge compute(const dd_edge& a, const dd_edge& b, const dd_edge& r);
+  virtual void compute(const dd_edge &a, const dd_edge &b, const dd_edge &r, dd_edge &res);
 };
 
 class MEDDLY::transitive_closure_dfs_opname : public minimum_witness_opname {
 public:
   transitive_closure_dfs_opname();
-  virtual specialized_operation* buildOperation(expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res) const;
 
-  virtual specialized_operation* buildOperation(arguments* a) const
-  {
-    throw error::NOT_IMPLEMENTED;
-  }
+  virtual specialized_operation* buildOperation(arguments* a) const;
 };
 
 class MEDDLY::transitive_closure_dfs: public common_transitive_closure
@@ -132,7 +126,7 @@ public:
   transitive_closure_dfs(const minimum_witness_opname* code,
     expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res);
 
-  virtual dd_edge compute(const dd_edge& a, const dd_edge& b, const dd_edge& r);
+  virtual void compute(const dd_edge &a, const dd_edge &b, const dd_edge &r, dd_edge &res);
   void compute(int aev, node_handle a, int bev, node_handle b, node_handle r, long& cev, node_handle& c);
 
   virtual void saturateHelper(long aev, node_handle a, unpacked_node& nb) = 0;

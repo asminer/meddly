@@ -131,6 +131,7 @@ namespace MEDDLY {
 
   // minimum witness operation "codes"
   const minimum_witness_opname* CONSGTRAINT_BACKWARD_DFS = 0;
+  const minimum_witness_opname* TRANSITIVE_CLOSURE_DFS = 0;
 };
 
 
@@ -203,6 +204,7 @@ void MEDDLY::builtin_initializer::setup()
   initP(MEDDLY::SATURATION_BACKWARD,  SATURATION_BACKWARD,  initSaturationBackward()  );
   initP(MEDDLY::SATURATION_OTF_FORWARD,   SATURATION_OTF_FORWARD,   initOtfSaturationForward()  );
   initP(MEDDLY::CONSGTRAINT_BACKWARD_DFS,   CONSGTRAINT_BACKWARD_DFS,   initConstraintDFSBackward()  );
+  initP(MEDDLY::TRANSITIVE_CLOSURE_DFS,   TRANSITIVE_CLOSURE_DFS,   initTransitiveClosureDFS()  );
 
 #ifdef HAVE_LIBGMP
   mpz_object::initBuffer();

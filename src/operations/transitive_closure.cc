@@ -140,8 +140,10 @@ MEDDLY::transitive_closure_forwd_bfs::transitive_closure_forwd_bfs(const minimum
   imageOp = getOperation(TC_POST_IMAGE, tcF, transF, resF);
 }
 
-MEDDLY::dd_edge MEDDLY::transitive_closure_forwd_bfs::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r)
+void MEDDLY::transitive_closure_forwd_bfs::compute(const dd_edge &a, const dd_edge &b, const dd_edge &r, dd_edge &res)
 {
+  MEDDLY_DCASSERT(resF == res.getForest());
+
   long aev = Inf<long>();
   a.getEdgeValue(aev);
   long bev = Inf<long>();
@@ -150,9 +152,7 @@ MEDDLY::dd_edge MEDDLY::transitive_closure_forwd_bfs::compute(const dd_edge& a, 
   node_handle cnode = 0;
   iterate(aev, a.getNode(), bev, b.getNode(), r.getNode(), cev, cnode);
 
-  dd_edge c(resF);
-  c.set(cnode, cev);
-  return c;
+  res.set(cnode, cev);
 }
 
 void MEDDLY::transitive_closure_forwd_bfs::iterate(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c)
@@ -205,10 +205,14 @@ MEDDLY::transitive_closure_dfs_opname::transitive_closure_dfs_opname()
 {
 }
 
-MEDDLY::specialized_operation* MEDDLY::transitive_closure_dfs_opname::buildOperation(
-  expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res) const
+MEDDLY::specialized_operation* MEDDLY::transitive_closure_dfs_opname::buildOperation(arguments* a) const
 {
-  return new transitive_closure_forwd_dfs(this, cons, tc, trans, res);
+  minimum_witness_opname::minimum_witness_args* args = dynamic_cast<minimum_witness_opname::minimum_witness_args*>(a);
+  return new transitive_closure_forwd_dfs(this,
+    static_cast<expert_forest*>(args->consForest),
+    static_cast<expert_forest*>(args->inForest),
+    static_cast<expert_forest*>(args->relForest),
+    static_cast<expert_forest*>(args->outForest));
 }
 
 // ******************************************************************
@@ -402,18 +406,19 @@ void MEDDLY::transitive_closure_dfs::splitMxd(node_handle mxd)
 #endif
 }
 
-MEDDLY::dd_edge MEDDLY::transitive_closure_dfs::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r)
+void MEDDLY::transitive_closure_dfs::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res)
 {
-  dd_edge res(resF);
-  long cev = Inf<long>();
-  node_handle c = 0;
+  MEDDLY_DCASSERT(resF == res.getForest());
+
   long aev;
   a.getEdgeValue(aev);
   long bev;
   b.getEdgeValue(bev);
+  long cev = Inf<long>();
+  node_handle c = 0;
   compute(aev, a.getNode(), bev, b.getNode(), r.getNode(), cev, c);
+
   res.set(c, cev);
-  return res;
 }
 
 void MEDDLY::transitive_closure_dfs::compute(int aev, node_handle a, int bev, node_handle b, node_handle r,
@@ -965,4 +970,15 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
 
   // save in compute table
   saveResult(key, aev, a, bev, b, level, cev, c);
+}
+
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::minimum_witness_opname* MEDDLY::initTransitiveClosureDFS()
+{
+  return new transitive_closure_dfs_opname();
 }
