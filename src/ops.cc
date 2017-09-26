@@ -707,7 +707,7 @@ void MEDDLY::satotf_opname::subevent::buildRoot() {
     out << " ]\n";
   }
   */
-#if 0
+#ifdef USE_XDDS
   dd_edge sum(root);
   f->createEdge(unpminterms, pminterms, num_minterms, sum);
   num_minterms = 0;

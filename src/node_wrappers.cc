@@ -349,7 +349,7 @@ void MEDDLY::unpacked_node::bind_to_forest(const expert_forest* f,
   parent = f;
   level = k;
   is_full = full;
-  is_extensible = false;
+  markAsNotExtensible();
   edge_bytes = f->edgeBytes();
   resize(ns);
 
@@ -429,7 +429,6 @@ void MEDDLY::unpacked_node::computeHash()
     }
   }
 
-  if (isExtensible()) s.push(0u); else s.push(1u);
   h = s.finish();
 
 #ifdef DEVELOPMENT_CODE

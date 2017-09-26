@@ -536,6 +536,8 @@ class MEDDLY::forwd_otf_dfs_by_events_mt : public common_otf_dfs_by_events_mt {
   protected:
     virtual void saturateHelper(unpacked_node& mdd);
     node_handle recFire(node_handle mdd, node_handle mxd);
+    void recFireHelper(const int, const int, const node_handle, const node_handle,
+        unpacked_node*, unpacked_node*);
 };
 
 MEDDLY::forwd_otf_dfs_by_events_mt::forwd_otf_dfs_by_events_mt(
@@ -617,65 +619,62 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         }
       }
       // check if row i of the event ei is empty
-      if (0 == Ru[ei] || i >= Ru[ei]->getSize() || 0 == Ru[ei]->d(i)) continue;
+      if (0 == Ru[ei]) continue;
+#ifndef USE_XDDS
+      node_handle ei_i = (i < Ru[ei]->getSize())
+                        ? Ru[ei]->d(i)
+                        : 0;
+#else
+      node_handle ei_i = (i < Ru[ei]->getSize())
+                        ? Ru[ei]->d(i)
+                        : (Ru[ei]->isExtensible() ? Ru[ei]->ext_d() : 0);
+#endif
+      if (0 == ei_i) continue;
 
       // grab column (TBD: build these ahead of time?)
-      const int dlevel = arg2F->getNodeLevel(Ru[ei]->d(i));
+      const int dlevel = arg2F->getNodeLevel(ei_i);
 
       if (dlevel == -level) {
-        Rp->initFromNode(arg2F, Ru[ei]->d(i), false);
+        Rp->initFromNode(arg2F, ei_i, false);
       } else {
-        Rp->initIdentity(arg2F, -level, i, Ru[ei]->d(i), false);
+        Rp->initIdentity(arg2F, -level, i, ei_i, false);
       }
+
+#ifdef USE_XDDS
+      MEDDLY_DCASSERT(!Rp->isExtensible());
+#endif
 
       for (int jz=0; jz<Rp->getNNZs(); jz++) {
         const int j = Rp->i(jz);
         if (j < nb.getSize() && -1==nb.d(j)) continue;  // nothing can be added to this set
 
-        node_handle rec = recFire(nb.d(i), Rp->d(jz));
+        node_handle newstates = recFire(nb.d(i), Rp->d(jz));
+        if (newstates == 0) continue;
 
-        if (rec == 0) continue;
+        // Confirm local state
+        rel->confirm(level, j);
 
-        if (rel->confirm(level, j)) {
-          // Newly confirmed local state
-          // Node builder must expand to accomodate j
-          if (j >= nb.getSize()) {
-            int oldSize = nb.getSize();
-            // resize the node builder, and clear out the new entries
-            nb.resize(j+1);
-            while(oldSize < nb.getSize()) { nb.d_ref(oldSize++) = 0; }
-            // resize the queue, and clear out the new entries
-            queue->resize(nb.getSize());
-          }
+        if (j >= nb.getSize()) {
+          int oldSize = nb.getSize();
+          // resize the node builder, and clear out the new entries
+          nb.resize(j+1);
+          while(oldSize < nb.getSize()) { nb.d_ref(oldSize++) = 0; }
+          // resize the queue, and clear out the new entries
+          queue->resize(nb.getSize());
         }
-
-        if (rec == nb.d(j)) { 
-          resF->unlinkNode(rec); 
-          continue; 
-        }
-
-        bool updated = true;
 
         if (0 == nb.d(j)) {
-          nb.d_ref(j) = rec;
-        }
-        else if (rec == -1) {
-          resF->unlinkNode(nb.d(j));
-          nb.d_ref(j) = -1;
-        }
-        else {
-          node_handle acc = mddUnion->compute(nb.d(j), rec);
-          resF->unlinkNode(rec);
-          if (acc != nb.d(j)) {
-            resF->unlinkNode(nb.d(j));
-            nb.d_ref(j) = acc;
-          } else {
-            resF->unlinkNode(acc);
-            updated = false;
-          }
+          nb.d_ref(j) = newstates;
+          queue->add(j);
+        } else {
+          // there's new states and existing states; union them.
+          const node_handle oldj = nb.d_ref(j);
+          nb.d_ref(j) = mddUnion->compute(nb.d(j), newstates);
+          if (oldj != nb.d(j)) queue->add(j);
+          resF->unlinkNode(oldj);
+          resF->unlinkNode(newstates); 
         }
 
-        if (updated) queue->add(j);
       } // for j
     } // for all events, ei
   } // while there are indexes to explore
@@ -772,14 +771,16 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
       Ru->initFromNode(arg2F, mxd, false);
     }
 
+#if 0
     // loop over mxd "rows"
     for (int iz=0; iz<Ru->getNNZs(); iz++) {
       const int i = Ru->i(iz);
-      if (0==A->d(i))   continue; 
-      if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz)))) {
-        Rp->initIdentity(arg2F, rLevel, i, Ru->d(iz), false);
+      if (0==A->d(i)) continue; 
+      const node_handle pnode = Ru->d(iz);
+      if (isLevelAbove(-rLevel, arg2F->getNodeLevel(pnode))) {
+        Rp->initIdentity(arg2F, rLevel, i, pnode, false);
       } else {
-        Rp->initFromNode(arg2F, Ru->d(iz), false);
+        Rp->initFromNode(arg2F, pnode, false);
       }
 
       // loop over mxd "columns"
@@ -812,8 +813,25 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
         resF->unlinkNode(oldj);
         resF->unlinkNode(newstates);
       } // for j
-  
     } // for i
+#else
+    // loop over mxd "rows"
+    for (int iz=0; iz<Ru->getNNZs(); iz++) {
+      const int i = Ru->i(iz);
+      if (0==A->d(i)) continue; 
+      recFireHelper(i, rLevel, Ru->d(iz), A->d(i), Rp, nb);
+    }
+#ifdef USE_XDDS
+    // loop over the extensible portion of mxd (if any)
+    if (Ru->isExtensible()) {
+      const node_handle pnode = Ru->ext_d();
+      for (int i = Ru->ext_i()+1; i < A->getSize(); i++) {
+        if (0 == A->d(i)) continue;
+        recFireHelper(i, rLevel, pnode, A->d(i), Rp, nb);
+      }
+    }
+#endif
+#endif
 
     unpacked_node::recycle(Rp);
     unpacked_node::recycle(Ru);
@@ -837,7 +855,54 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
 }
 
 
+void MEDDLY::forwd_otf_dfs_by_events_mt::recFireHelper(
+  const int i,
+  const int rLevel,
+  const node_handle Ru_i,
+  const node_handle A_i,
+  unpacked_node *Rp,
+  unpacked_node* nb)
+{
+  if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru_i))) {
+    Rp->initIdentity(arg2F, rLevel, i, Ru_i, false);
+  } else {
+    Rp->initFromNode(arg2F, Ru_i, false);
+  }
 
+#ifdef USE_XDDS
+  MEDDLY_DCASSERT(!Rp->isExtensible());
+#endif
+
+  // loop over mxd "columns"
+  for (int jz=0; jz<Rp->getNNZs(); jz++) {
+    const int j = Rp->i(jz);
+    // ok, there is an i->j "edge".
+    // determine new states to be added (recursively)
+    // and add them
+    node_handle newstates = recFire(A_i, Rp->d(jz));
+    if (0==newstates) continue;
+
+    // Confirm local state
+    rel->confirm(rLevel, j);
+
+    if (j >= nb->getSize()) {
+      int oldSize = nb->getSize();
+      // resize the node builder, and clear out the new entries
+      nb->resize(j+1);
+      while(oldSize < nb->getSize()) { nb->d_ref(oldSize++) = 0; }
+    }
+
+    if (0==nb->d(j)) {
+      nb->d_ref(j) = newstates;
+    } else {
+      // there's new states and existing states; union them.
+      const node_handle oldj = nb->d(j);
+      nb->d_ref(j) = mddUnion->compute(oldj, newstates);
+      resF->unlinkNode(oldj);
+      resF->unlinkNode(newstates);
+    }
+  } // for j
+}
 
 
 

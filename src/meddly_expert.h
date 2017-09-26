@@ -664,20 +664,6 @@ class MEDDLY::unpacked_node {
     int ext_ei() const;
     float ext_ef() const;
 
-    /// Get the extensible edge.
-    void getExtensibleEdge(int& i, node_handle& n) const;
-    /// Get the extensible edge for EVMDDs with integer edge-values.
-    void getExtensibleEdge(int& i, node_handle& n, int& ev) const;
-    /// Get the extensible edge for EVMDDs with floating-point edge-values.
-    void getExtensibleEdge(int& i, node_handle& n, float& ev) const;
-
-    /// Set the extensible edge.
-    void setExtensibleEdge(int i, node_handle n) const;
-    /// Set the extensible edge for EVMDDs with integer edge-values.
-    void setExtensibleEdge(int i, node_handle n, int ev) const;
-    /// Set the extensible edge for EVMDDs with floating-point edge-values.
-    void setExtensibleEdge(int i, node_handle n, float ev) const;
-
     // -------------------- End of extensible portion --------------------------
 
     /// Get the level number of this node.

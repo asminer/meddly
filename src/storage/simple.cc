@@ -584,6 +584,9 @@ void MEDDLY::simple_storage
 
   if (isExtensible(addr)) nr.markAsExtensible(); else nr.markAsNotExtensible();
 
+  // Make sure that when an extensible node is unpacked that the trailing edges
+  // are filled correctly (regardless of the storage scheme of the unpacked node)
+
   if (isSparse(addr)) {
     //
     // Node is sparse
@@ -595,17 +598,30 @@ void MEDDLY::simple_storage
     if (nr.isFull()) {
       // nr.resize(index[nnz-1]+1);
 
-      for (int i=0; i<nr.getSize(); i++) {
+      const int ext_i = index[nnz-1];
+      const int ext_d = isExtensible(addr)? down[nnz-1]: tv;
+      const void* ext_ptr = isExtensible(addr)? SEP(addr, nnz-1): 0;
+
+      // Clear locations [0, ext_i]
+      for (int i=0; i<=ext_i; i++) {
         nr.d_ref(i) = tv;
         if (nr.hasEdges()) {
           memset(nr.eptr_write(i), 0, nr.edgeBytes());
         }
       }
+      // Write the sparse edges
       for (int z=0; z<nnz; z++) {
         int i = index[z];
         nr.d_ref(i) = down[z];
         if (nr.hasEdges()) {
           memcpy(nr.eptr_write(i), SEP(addr, z), nr.edgeBytes());
+        }
+      }
+      // Write the extensible edge to the rest (trailing locations)
+      for (int i=ext_i+1; i<nr.getSize(); i++) {
+        nr.d_ref(i) = ext_d;
+        if (nr.hasEdges()) {
+          memcpy(nr.eptr_write(i), ext_ptr, nr.edgeBytes());
         }
       }
 #ifdef DEBUG_ENCODING
@@ -650,10 +666,15 @@ void MEDDLY::simple_storage
     if (unpacked_node::AS_STORED == st2) {
       nr.shrinkFull(size);
     } else {
+      const int ext_d = isExtensible(addr)? down[i]: tv;
+      const void* ext_ptr = isExtensible(addr)? FEP(addr, i): 0;
       for (; i<nr.getSize(); i++) {
-        nr.d_ref(i) = tv;
+        nr.d_ref(i) = ext_d;
         if (nr.hasEdges()) {
-          memset(nr.eptr_write(i), 0, nr.edgeBytes());
+          if (ext_ptr)
+            memcpy(nr.eptr_write(i), ext_ptr, nr.edgeBytes());
+          else
+            memset(nr.eptr_write(i), 0, nr.edgeBytes());
         }
       }
     }
