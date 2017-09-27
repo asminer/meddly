@@ -45,7 +45,7 @@ class MEDDLY::cycle_EV2EV : public unary_operation {
   protected:
     static const int NODE_INDICES_IN_KEY[2];
 
-    virtual void compute_r(long aev, node_handle a, long& bev, node_handle& b);
+    virtual void compute_r(long aev, node_handle a, int k, long& bev, node_handle& b);
 
     inline compute_table::search_key*
     findResult(long aev, node_handle a, long& bev, node_handle &b)
@@ -117,13 +117,13 @@ void MEDDLY::cycle_EV2EV::computeDDEdge(const dd_edge &arg, dd_edge &res)
   arg.getEdgeValue(aev);
   long bev = Inf<long>();
   node_handle b = 0;
-  compute_r(aev, arg.getNode(), bev, b);
+  compute_r(aev, arg.getNode(), argF->getNumVariables(), bev, b);
   res.set(b, bev);
 }
 
-void MEDDLY::cycle_EV2EV::compute_r(long aev, node_handle a, long& bev, node_handle& b)
+void MEDDLY::cycle_EV2EV::compute_r(long aev, node_handle a, int k, long& bev, node_handle& b)
 {
-  if (argF->isTerminalNode(a)) {
+  if ((!resF->isQuasiReduced() || k == 0) && argF->isTerminalNode(a)) {
     if (a == 0) {
       bev = 0;
       b = 0;
@@ -132,6 +132,21 @@ void MEDDLY::cycle_EV2EV::compute_r(long aev, node_handle a, long& bev, node_han
       bev = aev;
       b = a;
     }
+    return;
+  }
+
+  if (resF->isQuasiReduced() && ABS(argF->getNodeLevel(a)) < k) {
+    int size = resF->getLevelSize(k);
+    unpacked_node* T = unpacked_node::newFull(resF, k, size);
+    long tev = Inf<long>();
+    node_handle t = 0;
+    compute_r(aev, a, k - 1, tev, t);
+    for (int i = 0; i < size; i++) {
+      T->setEdge(i, tev);
+      T->d_ref(i) = resF->linkNode(t);
+    }
+    resF->unlinkNode(t);
+    resF->createReducedNode(-1, T, bev, b);
     return;
   }
 
@@ -158,7 +173,7 @@ void MEDDLY::cycle_EV2EV::compute_r(long aev, node_handle a, long& bev, node_han
 
     long tev = Inf<long>();
     node_handle t = 0;
-    compute_r(aev + A->ei(i) + B->ei(i), B->d(i), tev, t);
+    compute_r(aev + A->ei(i) + B->ei(i), B->d(i), level - 1, tev, t);
     T->setEdge(i, tev);
     T->d_ref(i) = t;
 
