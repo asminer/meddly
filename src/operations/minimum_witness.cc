@@ -891,6 +891,11 @@ void MEDDLY::constraint_saturation::saturate(int aev, node_handle a, int bev, no
 // *                                                                *
 // ******************************************************************
 
+MEDDLY::minimum_witness_opname* MEDDLY::initConstraintBFSBackward()
+{
+  return new constraint_bfs_opname(false);
+}
+
 MEDDLY::minimum_witness_opname* MEDDLY::initConstraintDFSBackward()
 {
   return new constraint_dfs_opname(false);

@@ -35,6 +35,7 @@ namespace MEDDLY {
   class constraint_sat_opname;
   class constraint_saturation;
 
+  minimum_witness_opname* initConstraintBFSBackward();
   minimum_witness_opname* initConstraintDFSBackward();
 }
 

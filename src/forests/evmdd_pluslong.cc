@@ -44,6 +44,11 @@ MEDDLY::evmdd_pluslong
 MEDDLY::evmdd_pluslong::~evmdd_pluslong()
 { }
 
+void MEDDLY::evmdd_pluslong::createEdge(int val, dd_edge &e)
+{
+  createEdge((long)val, e);
+}
+
 void MEDDLY::evmdd_pluslong::createEdge(long val, dd_edge &e)
 {
   createEdgeTempl<OP, long>(val, e);
