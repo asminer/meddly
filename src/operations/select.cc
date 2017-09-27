@@ -188,10 +188,9 @@ void MEDDLY::select_EVPlus::compute(long aev, node_handle a, int level, long& be
       sz++;
     }
   }
-
-  int nz = rand() % sz;
-  nb->i_ref(0) = A->i(izz[nz]);
+  int nz = izz[rand() % sz];
   delete[] izz;
+  nb->i_ref(0) = A->i(nz);
 
   long tev = 0;
   node_handle t = 0;
