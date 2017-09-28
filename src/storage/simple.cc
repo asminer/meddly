@@ -621,7 +621,10 @@ void MEDDLY::simple_storage
       for (int i=ext_i+1; i<nr.getSize(); i++) {
         nr.d_ref(i) = ext_d;
         if (nr.hasEdges()) {
-          memcpy(nr.eptr_write(i), ext_ptr, nr.edgeBytes());
+          if (ext_ptr)
+            memcpy(nr.eptr_write(i), ext_ptr, nr.edgeBytes());
+          else
+            memset(nr.eptr_write(i), 0, nr.edgeBytes());
         }
       }
 #ifdef DEBUG_ENCODING
@@ -752,8 +755,6 @@ unsigned MEDDLY::simple_storage::hashNode(int level, node_address addr) const
       } // for z
     }
   }
-
-  if (isExtensible(addr)) s.push(0u); else s.push(1u);
 
   return s.finish();
 }

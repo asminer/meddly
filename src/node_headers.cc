@@ -273,6 +273,12 @@ void MEDDLY::node_headers::dumpInternal(output &s) const
     s.put(long(address[p].offset), awidth);
   }
   s << "]\n";
+  s << "\n   Incount : [";
+  for (node_handle p=1; p<=a_last; p++) {
+    if (p>1) s.put('|');
+    s.put(long(address[p].incoming_count), awidth);
+  }
+  s << "]\n";
   s << "\n    Cache  : [";
   for (node_handle p=1; p<=a_last; p++) {
     if (p>1) s.put('|');
