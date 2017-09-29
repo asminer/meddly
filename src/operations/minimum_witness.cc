@@ -429,6 +429,7 @@ void MEDDLY::constraint_bckwd_dfs::compute(int aev, node_handle a, int bev, node
   // Cleanup
   bckwdSatOp->removeAllComputeTableEntries();
   //delete bckwdSatOp;
+  removeAllComputeTableEntries();
   for (int i = transF->getNumVariables(); i > 0; i--) {
     transF->unlinkNode(splits[i]);
   }
@@ -452,6 +453,7 @@ void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpac
   unpacked_node* Ru = (mxdLevel < 0)
     ? unpacked_node::newRedundant(transF, nb.getLevel(), mxd, false)
     : unpacked_node::newFromNode(transF, mxd, false);
+  unpacked_node* Rp = unpacked_node::useUnpackedNode();
 
   unpacked_node* A = isLevelAbove(nb.getLevel(), consF->getNodeLevel(a))
     ? unpacked_node::newRedundant(consF, nb.getLevel(), 0L, a, true)
@@ -482,10 +484,13 @@ void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpac
         continue;
       }
 
-      const int dlevel = transF->getNodeLevel(Ru->d(iz));
-      unpacked_node* Rp = (dlevel == -nb.getLevel())
-        ? unpacked_node::newFromNode(transF, Ru->d(iz), true)
-        : unpacked_node::newIdentity(transF, -nb.getLevel(), i, Ru->d(iz), true);
+      if (transF->getNodeLevel(Ru->d(iz)) == -nb.getLevel()) {
+        Rp->initFromNode(transF, Ru->d(iz), true);
+      }
+      else {
+        Rp->initIdentity(transF, -nb.getLevel(), i, Ru->d(iz), true);
+      }
+
       if (Rp->d(j) != 0) {
         long recev = 0;
         node_handle rec = 0;
@@ -547,12 +552,11 @@ void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpac
           }
         }
       }
-
-      unpacked_node::recycle(Rp);
     }
   }
 
   unpacked_node::recycle(Ru);
+  unpacked_node::recycle(Rp);
   unpacked_node::recycle(A);
 }
 
