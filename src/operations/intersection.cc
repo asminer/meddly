@@ -148,6 +148,11 @@ class MEDDLY::inter_max_evplus : public generic_binary_evplus {
       expert_forest* arg2, expert_forest* res);
 
   protected:
+    virtual compute_table::search_key* findResult(long aev, node_handle a,
+      long bev, node_handle b, long& cev, node_handle &c);
+    virtual void saveResult(compute_table::search_key* key,
+      long aev, node_handle a, long bev, node_handle b, long cev, node_handle c);
+
     virtual bool checkTerminals(long aev, node_handle a, long bev, node_handle b,
         long& cev, node_handle& c);
 };
@@ -157,6 +162,53 @@ MEDDLY::inter_max_evplus::inter_max_evplus(const binary_opname* opcode,
   : generic_binary_evplus(opcode, arg1, arg2, res)
 {
   operationCommutes();
+}
+
+MEDDLY::compute_table::search_key* MEDDLY::inter_max_evplus::findResult(long aev, node_handle a,
+  long bev, node_handle b, long& cev, node_handle &c)
+{
+  compute_table::search_key* CTsrch = useCTkey();
+  MEDDLY_DCASSERT(CTsrch);
+  CTsrch->reset();
+  if (can_commute && a > b) {
+    CTsrch->write(0L);
+    CTsrch->writeNH(b);
+    CTsrch->write(aev - bev);
+    CTsrch->writeNH(a);
+  } else {
+    CTsrch->write(0L);
+    CTsrch->writeNH(a);
+    CTsrch->write(bev - aev);
+    CTsrch->writeNH(b);
+  }
+  compute_table::search_result &cacheFind = CT->find(CTsrch);
+  if (!cacheFind) return CTsrch;
+  cacheFind.read(cev);
+  c = resF->linkNode(cacheFind.readNH());
+  if (c != 0) {
+    cev += (a > b ? bev : aev);
+  }
+  else {
+    MEDDLY_DCASSERT(cev == 0);
+  }
+  doneCTkey(CTsrch);
+  return 0;
+}
+
+void MEDDLY::inter_max_evplus::saveResult(compute_table::search_key* key,
+  long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
+{
+  arg1F->cacheNode(a);
+  arg2F->cacheNode(b);
+  compute_table::entry_builder &entry = CT->startNewEntry(key);
+  if (c == 0) {
+    entry.writeResult(0L);
+  }
+  else {
+    entry.writeResult(cev - (a > b ? bev : aev));
+  }
+  entry.writeResultNH(resF->cacheNode(c));
+  CT->addEntry();
 }
 
 bool MEDDLY::inter_max_evplus::checkTerminals(long aev, node_handle a, long bev, node_handle b,

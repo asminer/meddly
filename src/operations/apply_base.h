@@ -244,7 +244,7 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
     virtual void compute(long aev, node_handle a, long bev, node_handle b, long& cev, node_handle &c);
 
   protected:
-    inline compute_table::search_key* findResult(long aev, node_handle a,
+    virtual compute_table::search_key* findResult(long aev, node_handle a,
       long bev, node_handle b, long& cev, node_handle &c)
     {
       compute_table::search_key* CTsrch = useCTkey();
@@ -269,7 +269,7 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
       return 0;
     }
 
-    inline void saveResult(compute_table::search_key* Key, 
+    virtual void saveResult(compute_table::search_key* Key,
       long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
     {
       arg1F->cacheNode(a);
