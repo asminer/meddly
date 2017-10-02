@@ -199,12 +199,7 @@ void MEDDLY::plus_evplus::saveResult(compute_table::search_key* key,
   arg1F->cacheNode(a);
   arg2F->cacheNode(b);
   compute_table::entry_builder &entry = CT->startNewEntry(key);
-  if (c == 0) {
-    entry.writeResult(0L);
-  }
-  else {
-    entry.writeResult(cev - aev - bev);
-  }
+  entry.writeResult(c == 0 ? 0L : cev - aev - bev);
   entry.writeResultNH(resF->cacheNode(c));
   CT->addEntry();
 }
