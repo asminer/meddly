@@ -156,8 +156,10 @@ void MEDDLY::constraint_bckwd_bfs::iterate(long aev, node_handle a, long bev, no
     node_handle t = 0;
     imageOp->compute(cev, c, r, tev, t);
     // tev was increased by one step
-    plusOp->compute(tev - 1, t, aev, a, tev, t);
+    node_handle oldt = t;
+    plusOp->compute(tev - 1, oldt, aev, a, tev, t);
     minOp->compute(cev, c, tev, t, cev, c);
+    resF->unlinkNode(oldt);
     resF->unlinkNode(t);
   }
   resF->unlinkNode(prev);
@@ -236,23 +238,6 @@ MEDDLY::constraint_bckwd_dfs::constraint_bckwd_dfs(const minimum_witness_opname*
   minOp = getOperation(UNION, resF, resF, resF);
 
   splits = nullptr;
-}
-
-bool MEDDLY::constraint_bckwd_dfs::checkTerminals(int aev, node_handle a, int bev, node_handle b, node_handle c,
-  long& dev, node_handle& d)
-{
-  if (a == -1 && b == -1 && c == -1) {
-    d = -1;
-    dev = bev;
-    return true;
-  }
-  if (a == 0 || b == 0 || c == 0) {
-    MEDDLY_DCASSERT(aev == 0 || bev == 0 || c == 0);
-    d = 0;
-    dev = 0;
-    return true;
-  }
-  return false;
 }
 
 MEDDLY::compute_table::search_key* MEDDLY::constraint_bckwd_dfs::findResult(long aev, node_handle a,
@@ -405,12 +390,12 @@ void MEDDLY::constraint_bckwd_dfs::compute(const dd_edge& a, const dd_edge& b, c
 {
   MEDDLY_DCASSERT(res.getForest() == resF);
 
+  long aev = Inf<long>();
+  a.getEdgeValue(aev);
+  long bev = Inf<long>();
+  b.getEdgeValue(bev);
   long cev = Inf<long>();
   node_handle c = 0;
-  long aev;
-  a.getEdgeValue(aev);
-  long bev;
-  b.getEdgeValue(bev);
   compute(aev, a.getNode(), bev, b.getNode(), r.getNode(), cev, c);
 
   res.set(c, cev);
@@ -453,7 +438,6 @@ void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpac
   unpacked_node* Ru = (mxdLevel < 0)
     ? unpacked_node::newRedundant(transF, nb.getLevel(), mxd, false)
     : unpacked_node::newFromNode(transF, mxd, false);
-  unpacked_node* Rp = unpacked_node::useUnpackedNode();
 
   unpacked_node* A = isLevelAbove(nb.getLevel(), consF->getNodeLevel(a))
     ? unpacked_node::newRedundant(consF, nb.getLevel(), 0L, a, true)
@@ -466,6 +450,19 @@ void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpac
     if (nb.d(j) != 0) {
       queue.push_back(j);
       waiting[j] = true;
+    }
+  }
+
+  unpacked_node** Rps = new unpacked_node*[Ru->getNNZs()];
+  for (int iz = 0; iz < Ru->getNNZs(); iz++) {
+    const int i = Ru->i(iz);
+    if (A->d(i) == 0) {
+      Rps[iz] = nullptr;
+    }
+    else {
+      Rps[iz] = (transF->getNodeLevel(Ru->d(iz)) == -nb.getLevel())
+        ? unpacked_node::newFromNode(transF, Ru->d(iz), true)
+        : unpacked_node::newIdentity(transF, -nb.getLevel(), i, Ru->d(iz), true);
     }
   }
 
@@ -484,17 +481,12 @@ void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpac
         continue;
       }
 
-      if (transF->getNodeLevel(Ru->d(iz)) == -nb.getLevel()) {
-        Rp->initFromNode(transF, Ru->d(iz), true);
-      }
-      else {
-        Rp->initIdentity(transF, -nb.getLevel(), i, Ru->d(iz), true);
-      }
+      MEDDLY_DCASSERT(Rps[iz] != nullptr);
 
-      if (Rp->d(j) != 0) {
+      if (Rps[iz]->d(j) != 0) {
         long recev = 0;
         node_handle rec = 0;
-        recFire(aev + A->ei(i), A->d(i), nb.ei(j), nb.d(j), Rp->d(j), recev, rec);
+        recFire(aev + A->ei(i), A->d(i), nb.ei(j), nb.d(j), Rps[iz]->d(j), recev, rec);
         MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
         if (rec == 0) {
@@ -503,7 +495,9 @@ void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpac
         }
 
         // Increase the distance
-        plusOp->compute(recev, rec, aev + A->ei(i), A->d(i), recev, rec);
+        node_handle oldrec = rec;
+        plusOp->compute(recev, oldrec, aev + A->ei(i), A->d(i), recev, rec);
+        resF->unlinkNode(oldrec);
         MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
         if (rec == nb.d(i)) {
@@ -556,7 +550,10 @@ void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpac
   }
 
   unpacked_node::recycle(Ru);
-  unpacked_node::recycle(Rp);
+  for (int iz = 0; iz < Ru->getNNZs(); iz++) {
+    unpacked_node::recycle(Rps[iz]);
+  }
+  delete[] Rps;
   unpacked_node::recycle(A);
 }
 

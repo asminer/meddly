@@ -241,7 +241,7 @@ bool MEDDLY::inter_max_evplus::checkTerminals(long aev, node_handle a, long bev,
   }
   if (a == b) {
     if (arg1F == arg2F && arg2F == resF) {
-      cev = (aev > bev ? aev : bev);
+      cev = MAX(aev, bev);
       c = resF->linkNode(a);
       return true;
     }

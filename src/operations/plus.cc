@@ -218,6 +218,11 @@ bool MEDDLY::plus_evplus::checkTerminals(long aev, node_handle a, long bev, node
     cev = 0;
     return true;
   }
+  if (a == b && arg1F == arg2F && arg2F == resF) {
+    c = resF->linkNode(a);
+    cev = aev + bev;
+    return true;
+  }
   return false;
 }
 

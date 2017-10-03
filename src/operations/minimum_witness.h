@@ -108,8 +108,6 @@ protected:
 
   node_handle* splits;
 
-  bool checkTerminals(int aev, node_handle a, int bev, node_handle b, node_handle c, long& dev, node_handle& d);
-
   compute_table::search_key* findResult(long aev, node_handle a,
     long bev, node_handle b, node_handle c, long& dev, node_handle& d);
   void saveResult(compute_table::search_key* key,

@@ -525,7 +525,7 @@ void MEDDLY::generic_binary_evplus
   const int aLevel = arg1F->getNodeLevel(a);
   const int bLevel = arg2F->getNodeLevel(b);
 
-  const int resultLevel = aLevel > bLevel? aLevel: bLevel;
+  const int resultLevel = MAX(aLevel, bLevel);
   const int resultSize = resF->getLevelSize(resultLevel);
 
   // Initialize result
@@ -546,7 +546,7 @@ void MEDDLY::generic_binary_evplus
   // do computation
   for (int i=0; i<resultSize; i++) {
     long ev = 0;
-    node_handle ed;
+    node_handle ed = 0;
     compute(aev + A->ei(i), A->d(i),
             bev + B->ei(i), B->d(i),
             ev, ed);
@@ -559,9 +559,7 @@ void MEDDLY::generic_binary_evplus
   unpacked_node::recycle(A);
 
   // Reduce
-  node_handle cl;
-  resF->createReducedNode(-1, nb, cev, cl);
-  c = cl;
+  resF->createReducedNode(-1, nb, cev, c);
 
   // Add to CT
   saveResult(Key, aev, a, bev, b, cev, c);
