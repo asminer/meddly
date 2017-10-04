@@ -74,8 +74,8 @@ class MEDDLY::builtin_initializer : public initializer_list {
   satpregen_opname* SATURATION_BACKWARD;
   satotf_opname* SATURATION_OTF_FORWARD;
 
-  minimum_witness_opname* CONSGTRAINT_BACKWARD_BFS;
-  minimum_witness_opname* CONSGTRAINT_BACKWARD_DFS;
+  minimum_witness_opname* CONSTRAINT_BACKWARD_BFS;
+  minimum_witness_opname* CONSTRAINT_BACKWARD_DFS;
   minimum_witness_opname* TRANSITIVE_CLOSURE_DFS;
 
 public:

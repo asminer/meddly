@@ -103,7 +103,6 @@ protected:
 
   binary_operation* mxdDifferenceOp;
   binary_operation* mxdIntersectionOp;
-  binary_operation* plusOp;
   binary_operation* minOp;
 
   node_handle* splits;

@@ -234,7 +234,6 @@ MEDDLY::constraint_bckwd_dfs::constraint_bckwd_dfs(const minimum_witness_opname*
 {
   mxdIntersectionOp = getOperation(INTERSECTION, transF, transF, transF);
   mxdDifferenceOp = getOperation(DIFFERENCE, transF, transF, transF);
-  plusOp = getOperation(PLUS, resF, consF, resF);
   minOp = getOperation(UNION, resF, resF, resF);
 
   splits = nullptr;
@@ -494,10 +493,6 @@ void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpac
           continue;
         }
 
-        // Increase the distance
-        node_handle oldrec = rec;
-        plusOp->compute(recev, oldrec, aev + A->ei(i), A->d(i), recev, rec);
-        resF->unlinkNode(oldrec);
         MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
         if (rec == nb.d(i)) {
@@ -566,7 +561,7 @@ void MEDDLY::constraint_bckwd_dfs::recFire(long aev, node_handle a, long bev, no
     return;
   }
   if ((a == -1 || a == b) && r == -1) {
-    cev = bev;
+    cev = aev + bev;
     c = resF->linkNode(b);
     return;
   }

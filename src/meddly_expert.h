@@ -178,8 +178,8 @@ namespace MEDDLY {
   */
   extern const satotf_opname* SATURATION_OTF_FORWARD;
 
-  extern const minimum_witness_opname* CONSGTRAINT_BACKWARD_BFS;
-  extern const minimum_witness_opname* CONSGTRAINT_BACKWARD_DFS;
+  extern const minimum_witness_opname* CONSTRAINT_BACKWARD_BFS;
+  extern const minimum_witness_opname* CONSTRAINT_BACKWARD_DFS;
   extern const minimum_witness_opname* TRANSITIVE_CLOSURE_DFS;
 
   // ******************************************************************
