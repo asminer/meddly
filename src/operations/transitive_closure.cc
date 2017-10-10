@@ -460,151 +460,128 @@ MEDDLY::transitive_closure_forwd_dfs::transitive_closure_forwd_dfs(const minimum
 {
 }
 
-void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle a, unpacked_node& nb)
+void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle a, int in, unpacked_node& nb)
 {
   MEDDLY_DCASSERT(a != 0);
-  MEDDLY_DCASSERT(nb.getLevel() > 0);
+  // nb is at a primed level
+  MEDDLY_DCASSERT(nb.getLevel() < 0);
 
-  node_handle mxd = splits[nb.getLevel()];
+  node_handle mxd = splits[-nb.getLevel()];
   if (mxd == 0) {
     return;
   }
 
   const int mxdLevel = transF->getNodeLevel(mxd);
-  MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
+  MEDDLY_DCASSERT(ABS(mxdLevel) == -nb.getLevel());
 
   // Initialize mxd readers, note we might skip the unprimed level
   unpacked_node* Ru = (mxdLevel < 0)
-    ? unpacked_node::newRedundant(transF, nb.getLevel(), mxd, true)
+    ? unpacked_node::newRedundant(transF, -nb.getLevel(), mxd, true)
     : unpacked_node::newFromNode(transF, mxd, true);
+  unpacked_node* Rp = unpacked_node::useUnpackedNode();
 
-  unpacked_node* A = isLevelAbove(nb.getLevel(), consF->getNodeLevel(a))
-    ? unpacked_node::newRedundant(consF, nb.getLevel(), 0L, a, true)
+  unpacked_node* A = isLevelAbove(-nb.getLevel(), consF->getNodeLevel(a))
+    ? unpacked_node::newRedundant(consF, -nb.getLevel(), 0L, a, true)
     : unpacked_node::newFromNode(consF, a, true);
 
+  // indices to explore
   int size = nb.getSize();
-  for (int i = 0; i < size; i++) {
-    if (nb.d(i) == 0) {
-      continue;
+  std::deque<int> queue;
+  std::vector<bool> waiting(size, false);
+  for (int ip = 0; ip < size; ip++) {
+    if (nb.d(ip) != 0 && Ru->d(ip) != 0) {
+      queue.push_back(ip);
+      waiting[ip] = true;
+    }
+  }
+
+  // explore indexes
+  while (!queue.empty()) {
+    const int ip = queue.front();
+    queue.pop_front();
+    waiting[ip] = false;
+
+    MEDDLY_DCASSERT(nb.d(ip) != 0);
+    MEDDLY_DCASSERT(Ru->d(ip) != 0);
+
+    const int dlevel = transF->getNodeLevel(Ru->d(ip));
+    if (dlevel == -Ru->getLevel()) {
+      Rp->initFromNode(transF, Ru->d(ip), false);
+    }
+    else {
+      Rp->initIdentity(transF, -Ru->getLevel(), ip, Ru->d(ip), false);
     }
 
-    unpacked_node* Tp = isLevelAbove(Ru->getLevel(), ABS(resF->getNodeLevel(nb.d(i))))
-      ? unpacked_node::newIdentity(resF, -nb.getLevel(), i, 0L, nb.d(i), true)
-      : unpacked_node::newFromNode(resF, nb.d(i), true);
-
-    // indices to explore
-    std::deque<int> queue;
-    std::vector<bool> waiting(size, false);
-    for (int ip = 0; ip < size; ip++) {
-      // Must link the node because D will be updated and reduced to a new node
-      resF->linkNode(Tp->d(ip));
-
-      if (Tp->d(ip) != 0) {
-        Tp->setEdge(ip, nb.ei(i) + Tp->ei(ip));
-
-        if (Ru->d(ip) != 0) {
-          queue.push_back(ip);
-          waiting[ip] = true;
-        }
+    for (int jpz = 0; jpz < Rp->getNNZs(); jpz++) {
+      const int jp = Rp->i(jpz);
+      if (A->d(jp) == 0) {
+        MEDDLY_DCASSERT(A->ei(jp) == 0);
+        continue;
       }
-    }
 
-    // explore indexes
-    while (!queue.empty()) {
-      const int ip = queue.front();
-      queue.pop_front();
-      waiting[ip] = false;
+      long recev = 0;
+      node_handle rec = 0;
+      recFire(aev + A->ei(jp), A->d(jp), nb.ei(ip), nb.d(ip), Rp->d(jpz), recev, rec);
+      MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
-      MEDDLY_DCASSERT(Tp->d(ip) != 0);
-      MEDDLY_DCASSERT(Ru->d(ip) != 0);
+      if (rec == 0) {
+        MEDDLY_DCASSERT(recev == 0);
+        continue;
+      }
 
-      const int dlevel = transF->getNodeLevel(Ru->d(ip));
-      unpacked_node* Rp = (dlevel == -Ru->getLevel())
-        ? unpacked_node::newFromNode(transF, Ru->d(ip), false)
-        : unpacked_node::newIdentity(transF, -Ru->getLevel(), ip, Ru->d(ip), false);
-
-      for (int jpz = 0; jpz < Rp->getNNZs(); jpz++) {
-        const int jp = Rp->i(jpz);
-        if (A->d(jp) == 0) {
-          MEDDLY_DCASSERT(A->ei(jp) == 0);
-          continue;
+      if (rec == nb.d(jp)) {
+        // Compute the minimum
+        if (recev < nb.ei(jp)) {
+          nb.setEdge(jp, recev);
         }
+        resF->unlinkNode(rec);
+        continue;
+      }
 
-        long recev = 0;
-        node_handle rec = 0;
-        recFire(aev + A->ei(jp), A->d(jp), Tp->ei(ip), Tp->d(ip), Rp->d(jpz), recev, rec);
-        MEDDLY_DCASSERT(isLevelAbove(Tp->getLevel(), resF->getNodeLevel(rec)));
+      bool updated = true;
 
-        if (rec == 0) {
-          MEDDLY_DCASSERT(recev == 0);
-          continue;
-        }
+      if (nb.d(jp) == 0) {
+        MEDDLY_DCASSERT(nb.ei(jp) == 0);
+        nb.setEdge(jp, recev);
+        nb.d_ref(jp) = rec;
+      }
+      else {
+        long accev = Inf<long>();
+        node_handle acc = 0;
+        minOp->compute(nb.ei(jp), nb.d(jp), recev, rec, accev, acc);
 
-        MEDDLY_DCASSERT(isLevelAbove(Tp->getLevel(), resF->getNodeLevel(rec)));
-
-        if (rec == Tp->d(jp)) {
-          // Compute the minimum
-          if (recev < Tp->ei(jp)) {
-            Tp->setEdge(jp, recev);
-          }
-          resF->unlinkNode(rec);
-          continue;
-        }
-
-        bool updated = true;
-
-        if (Tp->d(jp) == 0) {
-          MEDDLY_DCASSERT(Tp->ei(jp) == 0);
-          Tp->setEdge(jp, recev);
-          Tp->d_ref(jp) = rec;
+        MEDDLY_DCASSERT(acc != 0);
+        resF->unlinkNode(rec);
+        if (acc != nb.d(jp)) {
+          resF->unlinkNode(nb.d(jp));
+          nb.setEdge(jp, accev);
+          nb.d_ref(jp) = acc;
         }
         else {
-          long accev = Inf<long>();
-          node_handle acc = 0;
-          minOp->compute(Tp->ei(jp), Tp->d(jp), recev, rec, accev, acc);
-
-          MEDDLY_DCASSERT(acc != 0);
-          resF->unlinkNode(rec);
-          if (acc != Tp->d(jp)) {
-            resF->unlinkNode(Tp->d(jp));
-            Tp->setEdge(jp, accev);
-            Tp->d_ref(jp) = acc;
-          }
-          else {
-            MEDDLY_DCASSERT(accev == Tp->ei(jp));
-            resF->unlinkNode(acc);
-            updated = false;
-          }
-        }
-
-        if (updated) {
-          if (jp == ip) {
-            // Restart inner for-loop.
-            jpz = -1;
-          }
-          else {
-            if (!waiting[jp] && Ru->d(jp) != 0) {
-              MEDDLY_DCASSERT(A->d(jp) != 0);
-              queue.push_back(jp);
-              waiting[jp] = true;
-            }
-          }
+          MEDDLY_DCASSERT(accev == nb.ei(jp));
+          resF->unlinkNode(acc);
+          updated = false;
         }
       }
 
-      unpacked_node::recycle(Rp);
+      if (updated) {
+        if (jp == ip) {
+          // Restart inner for-loop.
+          jpz = -1;
+        }
+        else {
+          if (!waiting[jp] && Ru->d(jp) != 0) {
+            MEDDLY_DCASSERT(A->d(jp) != 0);
+            queue.push_back(jp);
+            waiting[jp] = true;
+          }
+        }
+      }
     }
-
-    long tpev = Inf<long>();
-    node_handle tp = 0;
-    resF->createReducedNode(i, Tp, tpev, tp);
-
-    resF->unlinkNode(nb.d(i));
-    nb.setEdge(i, tpev);
-    nb.d_ref(i) = tp;
   }
 
   unpacked_node::recycle(Ru);
+  unpacked_node::recycle(Rp);
   unpacked_node::recycle(A);
 }
 
@@ -616,7 +593,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
     c = 0;
     return;
   }
-  if (a == -1 && r == -1) {
+  if (a == -1 && r == -1 && tcF == resF) {
     cev = aev + bev;
     c = resF->linkNode(b);
     return;
@@ -643,19 +620,24 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
     : unpacked_node::newFromNode(consF, a, true);
   // Initialize evmxd reader
   unpacked_node* B = isLevelAbove(level, bLevel)
-    ? unpacked_node::newRedundant(resF, level, 0L, b, true)
-    : unpacked_node::newFromNode(resF, b, true);
-
+    ? unpacked_node::newRedundant(tcF, level, 0L, b, true)
+    : unpacked_node::newFromNode(tcF, b, true);
   unpacked_node* D = unpacked_node::useUnpackedNode();
 
   unpacked_node* T = unpacked_node::newFull(resF, level, size);
 
   for (int i = 0; i < size; i++) {
-    if (isLevelAbove(-level, resF->getNodeLevel(B->d(i)))) {
-      D->initIdentity(resF, -level, i, 0L, B->d(i), true);
+    if (B->d(i) == 0) {
+      T->setEdge(i, 0L);
+      T->d_ref(i) = 0;
+      continue;
+    }
+
+    if (isLevelAbove(-level, tcF->getNodeLevel(B->d(i)))) {
+      D->initIdentity(tcF, -level, i, 0L, B->d(i), true);
     }
     else {
-      D->initFromNode(resF, B->d(i), true);
+      D->initFromNode(tcF, B->d(i), true);
     }
 
     unpacked_node* Tp = unpacked_node::newFull(resF, -level, size);
@@ -687,14 +669,21 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
       unpacked_node* Ru = (rLevel < 0)
         ? unpacked_node::newRedundant(transF, level, r, false)
         : unpacked_node::newFromNode(transF, r, false);
+      unpacked_node* Rp = unpacked_node::useUnpackedNode();
 
       // loop over mxd "rows"
       for (int ipz = 0; ipz < Ru->getNNZs(); ipz++) {
         const int ip = Ru->i(ipz);
+        if (D->d(ip) == 0) {
+          continue;
+        }
 
-        unpacked_node* Rp = isLevelAbove(-level, transF->getNodeLevel(Ru->d(ipz)))
-          ? unpacked_node::newIdentity(transF, -level, ip, Ru->d(ipz), false)
-          : unpacked_node::newFromNode(transF, Ru->d(ipz), false);
+        if (isLevelAbove(-level, transF->getNodeLevel(Ru->d(ipz)))) {
+          Rp->initIdentity(transF, -level, ip, Ru->d(ipz), false);
+        }
+        else {
+          Rp->initFromNode(transF, Ru->d(ipz), false);
+        }
 
         // loop over mxd "columns"
         for (int jpz = 0; jpz < Rp->getNNZs(); jpz++) {
@@ -734,12 +723,13 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
           resF->unlinkNode(oldjp);
           resF->unlinkNode(n);
         } // for j
-
-        unpacked_node::recycle(Rp);
       } // for i
 
       unpacked_node::recycle(Ru);
+      unpacked_node::recycle(Rp);
     }
+
+    saturateHelper(aev, a, i, *Tp);
 
     long tpev = Inf<long>();
     node_handle tp = 0;
@@ -751,10 +741,8 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
   // cleanup mdd reader
   unpacked_node::recycle(A);
   unpacked_node::recycle(B);
-
   unpacked_node::recycle(D);
 
-  saturateHelper(aev, a, *T);
   resF->createReducedNode(-1, T, cev, c);
   MEDDLY_DCASSERT(cev >= 0);
 
@@ -911,11 +899,7 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
 
 void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev, node_handle b, int level, long& cev, node_handle& c)
 {
-//  if (level == 0 && a == -1 && b == -1) {
-//    cev = bev;
-//    c = -1;
-//    return;
-//  }
+  MEDDLY_DCASSERT(level >= 0);
 
   if (checkTerminals(aev, a, bev, b, cev, c)) {
     return;
@@ -948,8 +932,7 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
       T->d_ref(i) = 0;
     }
     else {
-      int dLevel = tcF->getNodeLevel(B->d(i));
-      unpacked_node* D = isLevelAbove(level, ABS(dLevel))
+      unpacked_node* D = isLevelAbove(-level, tcF->getNodeLevel(B->d(i)))
         ? unpacked_node::newIdentity(tcF, -level, i, 0L, B->d(i), true)
         : unpacked_node::newFromNode(tcF, B->d(i), true);
       unpacked_node* Tp = unpacked_node::newFull(resF, -level, sz);
@@ -968,6 +951,8 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
       }
       unpacked_node::recycle(D);
 
+      parent->saturateHelper(aev, a, i, *Tp);
+
       long tev = Inf<long>();
       node_handle t = 0;
       resF->createReducedNode(i, Tp, tev, t);
@@ -980,7 +965,6 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
   unpacked_node::recycle(A);
   unpacked_node::recycle(B);
 
-  parent->saturateHelper(aev, a, *T);
   resF->createReducedNode(-1, T, cev, c);
 
   // save in compute table
