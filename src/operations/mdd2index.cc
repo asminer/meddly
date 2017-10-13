@@ -41,7 +41,11 @@ class MEDDLY::mdd2index_operation : public unary_operation {
     mdd2index_operation(const unary_opname* oc, expert_forest* arg, 
       expert_forest* res);
 
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
+#endif
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
 
@@ -58,6 +62,7 @@ MEDDLY::mdd2index_operation::mdd2index_operation(const unary_opname* oc,
   // answer[1] : cardinality
 }
 
+#ifndef USE_NODE_STATUS
 bool 
 MEDDLY::mdd2index_operation
 ::isStaleEntry(const node_handle* entryData)
@@ -66,6 +71,23 @@ MEDDLY::mdd2index_operation
     argF->isStale(entryData[0]) ||
     resF->isStale(entryData[1]);
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::mdd2index_operation::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
+  MEDDLY::forest::node_status c = resF->getNodeStatus(data[1]);
+
+  if (a == MEDDLY::forest::DEAD ||
+      c == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE ||
+      c == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 void 
 MEDDLY::mdd2index_operation
@@ -214,7 +236,7 @@ MEDDLY::mdd2index_opname
   if (0==arg || 0==res) return 0;
 
   if (arg->getDomain() != res->getDomain())
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (arg->isForRelations() || 
       arg->getRangeType() != forest::BOOLEAN ||
@@ -222,7 +244,7 @@ MEDDLY::mdd2index_opname
       res->isForRelations() ||
       res->getRangeType() != forest::INTEGER ||
       res->getEdgeLabeling() != forest::INDEX_SET
-  ) throw error(error::TYPE_MISMATCH);
+  ) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   return new mdd2index_operation(this, arg, res);
 }

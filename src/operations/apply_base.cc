@@ -42,12 +42,34 @@ MEDDLY::generic_binary_mdd::~generic_binary_mdd()
 {
 }
 
+#ifndef USE_NODE_STATUS
 bool MEDDLY::generic_binary_mdd::isStaleEntry(const node_handle* data)
 {
   return arg1F->isStale(data[0]) ||
          arg2F->isStale(data[1]) ||
          resF->isStale(data[2]);
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::generic_binary_mdd::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = arg1F->getNodeStatus(data[0]);
+  MEDDLY::forest::node_status b = arg2F->getNodeStatus(data[1]);
+  MEDDLY::forest::node_status c = resF->getNodeStatus(data[2]);
+
+  if (a == MEDDLY::forest::DEAD ||
+      b == MEDDLY::forest::DEAD ||
+      c == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE ||
+      b == MEDDLY::forest::RECOVERABLE ||
+      c == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
+
 
 void MEDDLY::generic_binary_mdd::discardEntry(const node_handle* data)
 {
@@ -127,6 +149,7 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(%d, %d) = %d\n", getName(), a, b, result);
+  fflush(stdout);
 #endif
   return result;
 }
@@ -152,12 +175,33 @@ MEDDLY::generic_binary_mxd::~generic_binary_mxd()
 {
 }
 
+#ifndef USE_NODE_STATUS
 bool MEDDLY::generic_binary_mxd::isStaleEntry(const node_handle* data)
 {
   return arg1F->isStale(data[0]) ||
          arg2F->isStale(data[1]) ||
          resF->isStale(data[2]);
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::generic_binary_mxd::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = arg1F->getNodeStatus(data[0]);
+  MEDDLY::forest::node_status b = arg2F->getNodeStatus(data[1]);
+  MEDDLY::forest::node_status c = resF->getNodeStatus(data[2]);
+
+  if (a == MEDDLY::forest::DEAD ||
+      b == MEDDLY::forest::DEAD ||
+      c == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE ||
+      b == MEDDLY::forest::RECOVERABLE ||
+      c == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 void MEDDLY::generic_binary_mxd::discardEntry(const node_handle* data)
 {
@@ -236,6 +280,7 @@ MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b)
   */
 #ifdef TRACE_ALL_OPS
   printf("computed %s(%d, %d) = %d\n", getName(), a, b, result);
+  fflush(stdout);
 #endif
 
   return result;
@@ -504,6 +549,7 @@ MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle 
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
+  fflush(stdout);
 #endif
 
   return result;
@@ -529,12 +575,33 @@ MEDDLY::generic_binbylevel_mxd::~generic_binbylevel_mxd()
 {
 }
 
+#ifndef USE_NODE_STATUS
 bool MEDDLY::generic_binbylevel_mxd::isStaleEntry(const node_handle* data)
 {
   return arg1F->isStale(data[1]) ||
          arg2F->isStale(data[2]) ||
          resF->isStale(data[3]);
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::generic_binbylevel_mxd::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = arg1F->getNodeStatus(data[1]);
+  MEDDLY::forest::node_status b = arg2F->getNodeStatus(data[2]);
+  MEDDLY::forest::node_status c = resF->getNodeStatus(data[3]);
+
+  if (a == MEDDLY::forest::DEAD ||
+      b == MEDDLY::forest::DEAD ||
+      c == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE ||
+      b == MEDDLY::forest::RECOVERABLE ||
+      c == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 void MEDDLY::generic_binbylevel_mxd::discardEntry(const node_handle* data)
 {
@@ -644,6 +711,7 @@ MEDDLY::generic_binbylevel_mxd
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
+  fflush(stdout);
 #endif
 
   return result;
@@ -667,12 +735,37 @@ MEDDLY::generic_binary_ev::~generic_binary_ev()
 {
 }
 
+#ifndef USE_NODE_STATUS
 bool MEDDLY::generic_binary_ev::isStaleEntry(const node_handle* data)
 {
-  return arg1F->isStale(data[1]) ||
-         arg2F->isStale(data[3]) ||
-         resF->isStale(data[5]);
+  bool a = arg1F->isStale(data[1]);
+  bool b = arg2F->isStale(data[3]);
+  bool c = resF->isStale(data[5]);
+
+  return (a | b | c);
 }
+
+#else
+
+MEDDLY::forest::node_status
+MEDDLY::generic_binary_ev::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = arg1F->getNodeStatus(data[1]);
+  MEDDLY::forest::node_status b = arg2F->getNodeStatus(data[3]);
+  MEDDLY::forest::node_status c = resF->getNodeStatus(data[5]);
+
+  if (a == MEDDLY::forest::DEAD ||
+      b == MEDDLY::forest::DEAD ||
+      c == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE ||
+      b == MEDDLY::forest::RECOVERABLE ||
+      c == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 void MEDDLY::generic_binary_ev::discardEntry(const node_handle* data)
 {
@@ -844,6 +937,7 @@ void MEDDLY::generic_binary_evtimes
 
   // Initialize result
   const int resultLevel = ABS(topLevel(aLevel, bLevel));
+  MEDDLY_DCASSERT(resultLevel>0);
   const int resultSize = resF->getLevelSize(resultLevel);
   unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
 

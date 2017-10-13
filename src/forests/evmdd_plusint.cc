@@ -31,8 +31,8 @@
 
 
 MEDDLY::evmdd_plusint
- ::evmdd_plusint(int dsl, domain *d, const policies &p,int* level_reduction_rule, bool index_set)
- : evmdd_forest(dsl, d, INTEGER, index_set ? INDEX_SET : EVPLUS, p,level_reduction_rule)
+ ::evmdd_plusint(int dsl, domain *d, const policies &p, int* level_reduction_rule, bool index_set)
+ : evmdd_forest(dsl, d, INTEGER, index_set ? INDEX_SET : EVPLUS, p, level_reduction_rule)
 {
   setEdgeSize(sizeof(node_handle), true);
   if (index_set) setUnhashedSize(sizeof(node_handle));
@@ -60,7 +60,7 @@ void MEDDLY::evmdd_plusint
   // Create vlist following the mapping between variable and level
   int** ordered_vlist=static_cast<int**>(malloc(N*sizeof(int*)+(num_vars+1)*N*sizeof(int)));
   if(ordered_vlist==0){
-	  throw error(error::INSUFFICIENT_MEMORY);
+	  throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
 
   ordered_vlist[0]=reinterpret_cast<int*>(&ordered_vlist[N]);
@@ -95,6 +95,20 @@ void MEDDLY::evmdd_plusint
 ::evaluate(const dd_edge &f, const int* vlist, int &term) const
 {
   evaluateT<OP, int>(f, vlist, term);
+}
+
+bool MEDDLY::evmdd_plusint
+::isTransparentEdge(node_handle ep, const void* ev) const
+{
+  if (ep) return false;
+  return OP::isTransparentEdge(ev);
+}
+
+void MEDDLY::evmdd_plusint
+::getTransparentEdge(node_handle &ep, void* ev) const
+{
+  ep = 0;
+  OP::setEdge(ev, OP::getRedundantEdge());
 }
 
 bool MEDDLY::evmdd_plusint
@@ -339,7 +353,7 @@ void MEDDLY::evmdd_plusint::evpimdd_iterator::getValue(int &tv) const
 bool MEDDLY::evmdd_plusint::evpimdd_iterator::start(const dd_edge &e)
 {
   if (F != e.getForest()) {
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
 
   int ev;
@@ -426,7 +440,7 @@ MEDDLY::evmdd_index_set::~evmdd_index_set()
 
 void MEDDLY::evmdd_index_set::getElement(const dd_edge &a, int index, int* e)
 {
-  if (e == 0) throw error(error::INVALID_VARIABLE);
+  if (e == 0) throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
   if (index < 0) {
     e[0] = 0;
     return;

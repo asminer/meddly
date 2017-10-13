@@ -25,8 +25,8 @@
 #include "../unique_table.h"
 
 MEDDLY::mtmdd_forest
-::mtmdd_forest(int dsl, domain* d, range_type t, const policies &p,int* level_reduction_rule)
- : mt_forest(dsl, d, false, t, p,level_reduction_rule)
+::mtmdd_forest(int dsl, domain* d, range_type t, const policies &p, int* level_reduction_rule)
+ : mt_forest(dsl, d, false, t, p, level_reduction_rule)
 {
   // anything to construct?
 }
@@ -324,7 +324,7 @@ MEDDLY::mtmdd_forest::mtmdd_iterator::~mtmdd_iterator()
 bool MEDDLY::mtmdd_forest::mtmdd_iterator::start(const dd_edge &e)
 {
   if (F != e.getForest()) {
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
   return first(maxLevel, e.getNode());
 }

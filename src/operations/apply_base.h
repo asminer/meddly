@@ -51,7 +51,11 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
     virtual node_handle compute(node_handle a, node_handle b);
 
   protected:
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
+#endif
 
     inline compute_table::search_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
@@ -111,7 +115,11 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
     node_handle compute_r(int i, int k, node_handle a, node_handle b);
 
   protected:
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
+#endif
 
     inline compute_table::search_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
@@ -167,7 +175,11 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
     virtual node_handle compute(int level, node_handle a, node_handle b);
 
   protected:
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
+#endif
 
     inline compute_table::search_key* 
     findResult(int k, node_handle a, node_handle b, node_handle &c) 
@@ -223,7 +235,11 @@ class MEDDLY::generic_binary_ev : public binary_operation {
     virtual void discardEntry(const node_handle* entryData);
 
   protected:
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
+#endif
 };
 
 // ******************************************************************

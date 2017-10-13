@@ -385,7 +385,8 @@ void printStats(const char* who, timer& watch, const dd_edge &node)
     expert_forest::BASIC_STATS | 
     expert_forest::EXTRA_STATS |
     expert_forest::STORAGE_STATS | 
-    expert_forest::HOLE_MANAGER_STATS
+    expert_forest::HOLE_MANAGER_STATS |
+    expert_forest::HOLE_MANAGER_DETAILED
   );
 }
 

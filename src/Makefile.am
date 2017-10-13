@@ -15,6 +15,7 @@ libmeddly_la_SOURCES = \
   defines.h revision.h hash_stream.h heap.h timer.h unique_table.h \
   meddly.h meddly.hh meddly.cc \
   meddly_expert.h meddly_expert.hh \
+  error.cc \
   io.cc \
   node_headers.cc \
   node_wrappers.cc \
@@ -56,6 +57,14 @@ libmeddly_la_SOURCES = \
   forests/evmxd_timesreal.h   forests/evmxd_timesreal.cc \
   forests/init_forests.h      forests/init_forests.cc \
   \
+  memory_managers/base_manager.cc \
+  memory_managers/init_managers.h     memory_managers/init_managers.cc  \
+  memory_managers/hole_base.h         \
+  memory_managers/array_grid.h        memory_managers/array_grid.cc  \
+  memory_managers/orig_grid.h         memory_managers/orig_grid.cc  \
+  memory_managers/malloc_style.h      memory_managers/malloc_style.cc  \
+  memory_managers/heap_manager.h      memory_managers/heap_manager.cc  \
+  \
   operations/apply_base.h     operations/apply_base.cc   \
   operations/mpz_object.h     operations/mpz_object.cc   \
   operations/copy.h           operations/copy.cc         \
@@ -87,16 +96,10 @@ libmeddly_la_SOURCES = \
   operations/vect_matr.h      operations/vect_matr.cc    \
   operations/mm_mult.h        operations/mm_mult.cc      \
   operations/init_builtin.h   operations/init_builtin.cc \
+  operations/sat_impl.h        operations/sat_impl.cc      \
   \
   storage/bytepack.h  \
-  storage/holeman.h         storage/holeman.cc \
-  storage/hm_array.h        storage/hm_array.cc \
-  storage/hm_grid.h         storage/hm_grid.cc \
-  storage/hm_heap.h         storage/hm_heap.cc \
-  storage/hm_none.h         storage/hm_none.cc \
-  storage/old_scheme.h      storage/old_scheme.cc \
   storage/simple.h          storage/simple.cc \
-  storage/compact.h         storage/compact.cc \
   storage/ct_classic.h      storage/ct_classic.cc \
   storage/init_storage.h    storage/init_storage.cc
 

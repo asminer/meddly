@@ -37,7 +37,7 @@ namespace MEDDLY {
 class MEDDLY::ev_forest : public expert_forest {
   protected:
     ev_forest(int dsl, domain *d, bool rel, range_type t, edge_labeling ev,
-      const policies &p,int* level_reduction_rule=NULL);
+      const policies &p, int* level_reduction_rule=NULL);
 
   protected:
     virtual void showTerminal(output &s, node_handle tnode) const;
@@ -113,11 +113,11 @@ class MEDDLY::ev_forest : public expert_forest {
           Sanity checks
       */
       if (vh < 0 || vh > getNumVariables())
-        throw error(error::INVALID_VARIABLE);
+        throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
       if (result.getForest() != this) 
-        throw error(error::INVALID_OPERATION);
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
       if (!isForRelations() && pr) 
-        throw error(error::INVALID_ASSIGNMENT);
+        throw error(error::INVALID_ASSIGNMENT, __FILE__, __LINE__);
 
       /*
           Get info for node we're building
@@ -156,7 +156,7 @@ class MEDDLY::ev_forest : public expert_forest {
 
     template <class OPERATION, class T>
     inline void createEdgeTempl(T term, dd_edge& e) {
-      if (e.getForest() != this) throw error(error::INVALID_OPERATION);
+      if (e.getForest() != this) throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
       node_handle ed = bool_Tencoder::value2handle(true);
       makeNodeAtTop<OPERATION, T>(term, ed);
       e.set(ed, term);

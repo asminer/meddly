@@ -53,6 +53,7 @@
 #include "reach_dfs.h"
 #include "sat_pregen.h"
 #include "sat_otf.h"
+#include "sat_impl.h"
 
 #include "vect_matr.h"
 
@@ -116,6 +117,7 @@ namespace MEDDLY {
   const satpregen_opname* SATURATION_FORWARD = 0;
   const satpregen_opname* SATURATION_BACKWARD = 0;
   const satotf_opname* SATURATION_OTF_FORWARD = 0;
+  const satimpl_opname* SATURATION_IMPL_FORWARD = 0;
 };
 
 
@@ -181,6 +183,7 @@ void MEDDLY::builtin_initializer::setup()
   initP(MEDDLY::SATURATION_FORWARD,   SATURATION_FORWARD,   initSaturationForward()   );
   initP(MEDDLY::SATURATION_BACKWARD,  SATURATION_BACKWARD,  initSaturationBackward()  );
   initP(MEDDLY::SATURATION_OTF_FORWARD,   SATURATION_OTF_FORWARD,   initOtfSaturationForward()  );
+  initP(MEDDLY::SATURATION_IMPL_FORWARD, SATURATION_IMPL_FORWARD, initImplSaturationForward()  );
 
 #ifdef HAVE_LIBGMP
   mpz_object::initBuffer();
@@ -235,6 +238,7 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(SATURATION_BACKWARD,      MEDDLY::SATURATION_BACKWARD );
   cleanPair(SATURATION_FORWARD,       MEDDLY::SATURATION_FORWARD  );
   cleanPair(SATURATION_OTF_FORWARD,   MEDDLY::SATURATION_OTF_FORWARD  );
+  cleanPair(SATURATION_IMPL_FORWARD,   MEDDLY::SATURATION_IMPL_FORWARD  );
 
   cleanPair(EXPLVECT_MATR_MULT, MEDDLY::EXPLVECT_MATR_MULT);
   cleanPair(MATR_EXPLVECT_MULT, MEDDLY::MATR_EXPLVECT_MULT);
