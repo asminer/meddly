@@ -222,6 +222,8 @@ void MEDDLY::generic_binary_mxd::computeDDEdge(const dd_edge &a, const dd_edge &
 #endif
 }
 
+#ifndef USE_XDDS
+
 MEDDLY::node_handle 
 MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b) 
 {
@@ -343,11 +345,210 @@ MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle 
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
+#endif
+
+  return result;
+}
+
+#else
+
+MEDDLY::node_handle 
+MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b) 
+{
+  //  Compute for the unprimed levels.
+  //
+  node_handle result = 0;
+  if (checkTerminals(a, b, result))
+    return result;
+
+  compute_table::search_key* Key = findResult(a, b, result);
+  if (0==Key) return result;
+
+  // Get level information
+  const int aLevel = arg1F->getNodeLevel(a);
+  const int bLevel = arg2F->getNodeLevel(b);
+  int resultLevel = ABS(topLevel(aLevel, bLevel));
+  const int dwnLevel = resF->downLevel(resultLevel);
+
+  // Initialize readers
+  unpacked_node *A = (aLevel < resultLevel) 
+    ? unpacked_node::newRedundant(arg1F, resultLevel, a, false)
+    : unpacked_node::newFromNode(arg1F, a, false)
+    ;
+
+  unpacked_node *B = (bLevel < resultLevel)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, b, false)
+    : unpacked_node::newFromNode(arg2F, b, false)
+    ;
+
+  const int A_last_index = A->i(A->getNNZs()-1);
+  const int B_last_index = B->i(B->getNNZs()-1);
+  const int min_a_b_last_index = MIN(A_last_index, B_last_index);
+  const int max_a_b_last_index = MAX(A_last_index, B_last_index);
+  int resultSize = max_a_b_last_index + 1;
+
+  //
+  // Three loops to reduce the amount of checking needed:
+  //
+  // Loop 1: deal with indices in
+  //         [0,min(a_last_index,b_last_index)]
+  // Loop 2: deal with indices in
+  //         [min(a_last_index,b_last_index)+1, max(a_last_index,b_last_index)]
+  // 
+  // If A or B is extensible,
+  // the above loops will compute the extensible result,
+  // except in the case where a_last_index == b_last_index, *and*
+  // only one of the two nodes is extensible.
+  // The last step is to handle this special case.
+  // Note: the special case results in a node that is 1 size larger.
+  //
+
+  //
+  // Identify special case (to be dealt with later),
+  //
+  if ((A_last_index == B_last_index) &&
+      ((A->isExtensible() && !B->isExtensible()) ||
+       (!A->isExtensible() && B->isExtensible()))) {
+    resultSize++;
+  }
+  unpacked_node* C = unpacked_node::newFull(resF, resultLevel, resultSize);
+
+  //
+  // Loop 1: [0, min(a_last_index,b_last_index)]
+  //
+  int A_curr_index = 0;
+  int B_curr_index = 0;
+  int j = 0;
+  for ( ; j <= min_a_b_last_index; j++) {
+    const int a_d = ((j == A->i(A_curr_index))? A->d(A_curr_index++): 0);
+    const int b_d = ((j == B->i(B_curr_index))? B->d(B_curr_index++): 0);
+    C->d_ref(j) = compute_r(j, dwnLevel, a_d, b_d);
+  }
+
+  //
+  // At most one of the next two loops will execute
+  // Loop 2: [min(a_last_index,b_last_index)+1, max(a_last_index,b_last_index)]
+  //
+  for ( ; j <= A_last_index; j++) {
+    const int a_d = ((j == A->i(A_curr_index))? A->d(A_curr_index++): 0);
+    C->d_ref(j) = compute_r(j, dwnLevel, a_d, 0);
+  }
+  for ( ; j <= B_last_index; j++) {
+    const int b_d = ((j == B->i(B_curr_index))? B->d(B_curr_index++): 0);
+    C->d_ref(j) = compute_r(j, dwnLevel, 0, b_d);
+  }
+  MEDDLY_DCASSERT(j == max_a_b_last_index+1);
+
+  //
+  // Handle special case
+  //
+  if (j != resultSize) {
+    MEDDLY_DCASSERT(
+        (A->isExtensible() && !B->isExtensible()) ||
+        (!A->isExtensible() && B->isExtensible())
+        );
+    C->d_ref(j) =
+      A->isExtensible()
+      ? compute_r(j, dwnLevel, A->ext_d(), 0)
+      : compute_r(j, dwnLevel, 0, B->ext_d())
+      ;
+  }
+
+  // cleanup
+  unpacked_node::recycle(B);
+  unpacked_node::recycle(A);
+
+  // reduce and save result
+  result = resF->createReducedNode(-1, C);
+  saveResult(Key, a, b, result);
+
+  /*
+     printf("Saving %s un (%d, %d) = %d\n", getName(), a, b, result);
+     printf("\tLevels %d and %d\n", aLevel, bLevel);
+     */
+#ifdef TRACE_ALL_OPS
+  printf("computed %s(%d, %d) = %d\n", getName(), a, b, result);
+#endif
+
+  return result;
+}
+
+MEDDLY::node_handle 
+MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle b)
+{
+  //  Compute for the primed levels.
+  //
+  MEDDLY_DCASSERT(k<0);
+
+  node_handle result;
+  /*
+  //
+  // Note - we cache the primed levels, but only when "safe"
+  //
+  compute_table::search_key* Key = findResult(a, b, result);
+  if (0==Key) {
+    printf("Found %s pr (%d, %d) = %d\n", getName(), a, b, result);
+    printf("\tat level %d\n", k);
+    return result;
+  }
+  */
+
+  // bool canSaveResult = true;
+
+  // Get level information
+  const int aLevel = arg1F->getNodeLevel(a);
+  const int bLevel = arg2F->getNodeLevel(b);
+
+  const int resultSize = resF->getLevelSize(k);
+
+  unpacked_node* C = unpacked_node::newFull(resF, k, resultSize);
+
+  // Initialize readers
+  unpacked_node *A = unpacked_node::useUnpackedNode();
+  unpacked_node *B = unpacked_node::useUnpackedNode();
+
+  if (aLevel == k) {
+    A->initFromNode(arg1F, a, true);
+  } else if (arg1F->isFullyReduced()) {
+    A->initRedundant(arg1F, k, a, true);
+  } else {
+    A->initIdentity(arg1F, k, in, a, true);
+  }
+  MEDDLY_DCASSERT(A->getSize() == C->getSize());
+
+  if (bLevel == k) {
+    B->initFromNode(arg2F, b, true);
+  } else if (arg2F->isFullyReduced()) {
+    B->initRedundant(arg2F, k, b, true);
+  } else {
+    B->initIdentity(arg2F, k, in, b, true);
+  }
+  MEDDLY_DCASSERT(B->getSize() == C->getSize());
+
+  MEDDLY_DCASSERT(!A->isExtensible());
+  MEDDLY_DCASSERT(!B->isExtensible());
+
+  // Do computation
+  for (int j=0; j<resultSize; j++) {
+    C->d_ref(j) = compute(A->d(j), B->d(j));
+  }
+
+  // cleanup
+  unpacked_node::recycle(B);
+  unpacked_node::recycle(A);
+
+  // reduce 
+  result = resF->createReducedNode(in, C);
+
+#ifdef TRACE_ALL_OPS
+  printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
   fflush(stdout);
 #endif
 
   return result;
 }
+
+#endif
 
 // ******************************************************************
 // *                                                                *
@@ -467,6 +668,8 @@ MEDDLY::generic_binbylevel_mxd
     canSaveResult = false;
   }
 
+  MEDDLY_DCASSERT(!A->isExtensible());
+
   if (bLevel == resultLevel) {
     B->initFromNode(arg2F, b, true);
   } else if (resultLevel>0 || arg2F->isFullyReduced()) {
@@ -475,6 +678,8 @@ MEDDLY::generic_binbylevel_mxd
     B->initIdentity(arg2F, resultLevel, in, b, true);
     canSaveResult = false;
   }
+
+  MEDDLY_DCASSERT(!B->isExtensible());
 
   // Do computation
   int nextLevel = resF->downLevel(resultLevel);
@@ -631,6 +836,8 @@ void MEDDLY::generic_binary_evplus
     : unpacked_node::newFromNode(arg2F, b, true)
   ;
 
+  MEDDLY_DCASSERT(!A->isExtensible() && !B->isExtensible());
+
 
   // do computation
   for (int i=0; i<resultSize; i++) {
@@ -738,6 +945,8 @@ void MEDDLY::generic_binary_evtimes
     : unpacked_node::newFromNode(arg2F, b, true)
   ;
 
+  MEDDLY_DCASSERT(!A->isExtensible() && !B->isExtensible());
+
   // do computation
   for (int i=0; i<resultSize; i++) {
     float ev;
@@ -807,6 +1016,8 @@ void MEDDLY::generic_binary_evtimes
   } else {
     B->initIdentity(arg2F, resultLevel, in, 1.0f, b, true);
   }
+
+  MEDDLY_DCASSERT(!A->isExtensible() && !B->isExtensible());
 
   // do computation
   for (int i=0; i<resultSize; i++) {

@@ -335,6 +335,7 @@ void MEDDLY::unpacked_node::bind_to_forest(const expert_forest* f, int k, int ns
   parent = f;
   level = k;
   is_full = full;
+  markAsNotExtensible();
   edge_bytes = f->edgeBytes();
   resize(ns);
 
@@ -414,10 +415,124 @@ void MEDDLY::unpacked_node::computeHash()
       }
     }
   }
+
   h = s.finish();
 #ifdef DEVELOPMENT_CODE
   has_hash = true;
 #endif
+}
+
+
+// check is the node is written in order,
+// if not rearrange it in ascending order of indices.
+void MEDDLY::unpacked_node::sort()
+{
+  if (!isSparse()) return;
+
+  int k = 1;
+  for (k = 1; k < getNNZs() && i(k-1) < i(k) ; k++);
+  if (k == getNNZs()) return; // already sorted
+  
+  // sort from (k-1) to (nnz-1)
+  --k;
+  std::map<int, int> sorter;
+  for (int m = k; m < getNNZs(); m++) {
+    sorter[i(m)] = m;
+  }
+
+  // allocate new arrays for index, node handles and edge-values
+  node_handle* old_down = down;
+  int* old_index = index;
+  void* old_edge = edge;
+  int old_nnzs = nnzs;
+
+  down = 0;
+  index = 0;
+  edge = 0;
+  size = 0;
+  nnzs = 0;
+  alloc = 0;
+  ealloc = 0;
+  resize(old_nnzs);
+
+  // copy into new arrays
+  memcpy(down, old_down, sizeof(node_handle) * k);
+  memcpy(index, old_index, sizeof(int) * k);
+  memcpy(edge, old_edge, edge_bytes * k);
+
+  for (std::map<int, int>::iterator s_iter = sorter.begin();
+    s_iter != sorter.end(); s_iter++, k++) {
+    int old_location = s_iter->second;
+    index[k] = old_index[old_location];
+    down[k] = old_down[old_location];
+    memcpy((char*)edge + (k * edge_bytes),
+        (char*)old_edge + (old_location * edge_bytes), edge_bytes);
+  }
+
+  free(old_down);
+  free(old_index);
+  free(old_edge);
+}
+
+// remove all edges starting at the given index
+void MEDDLY::unpacked_node::trim()
+{
+  if (!isExtensible()) return;
+
+  // If extensible edge is transparent, mark the node as not-extensible and return
+  if (d((isSparse()? getNNZs() : getSize()) - 1) == parent->getTransparentNode()) {
+    markAsNotExtensible();
+    return;
+  }
+
+  MEDDLY_DCASSERT(isExtensible() && !isTrim());
+
+  if (isSparse()) {
+    int z = getNNZs()-1;
+    while (z > 0 && (i(z-1)+1) == i(z) && d(z-1) == d(z)) {
+      const_cast<expert_forest*>(parent)->unlinkNode(d(z));
+      z--;
+    }
+    if (z != (getNNZs() - 1)) {
+      // node is smaller than before, shrink it to the correct size.
+      shrinkSparse(z+1);
+    }
+  } else {
+    int z = getSize()-1;
+    while (z > 0 && d(z-1) == d(z)) {
+      const_cast<expert_forest*>(parent)->unlinkNode(d(z));
+      z--;
+    }
+    if (z != (getSize()-1)) {
+      shrinkFull(z+1);
+    }
+  }
+}
+
+// checks if the node is has no trailing redundant edges
+bool MEDDLY::unpacked_node::isTrim() const
+{
+  if (!isExtensible()) return true;
+
+  if (isSparse()) {
+    int nnz = getNNZs();
+    return (nnz < 2 || i(nnz-1) != (i(nnz-2)+1) || d(nnz-1) != d(nnz-2));
+  } else {
+    int size = getSize();
+    return (size < 2 || d(size-1) != d(size-2));
+  }
+}
+
+// checks if the node indices are in ascending order
+bool MEDDLY::unpacked_node::isSorted() const
+{
+  if (!isSparse()) return true;
+
+  for (int z = 1; z < getNNZs(); z++) {
+    if (i(z-1) >= i(z)) return false;
+  }
+
+  return true;
 }
 
 

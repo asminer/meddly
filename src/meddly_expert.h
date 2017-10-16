@@ -600,6 +600,43 @@ class MEDDLY::unpacked_node {
     /// Get the edge value, as a float.
     float ef(int i) const;
 
+    // -------------------------------------------------------------------------
+    // Methods to access the extensible portion of the node
+    //
+    // Note: Only nodes that belong to an extensible level can be extensible.
+    // 
+    // Extensible node  : (Regular part, Extensible part).
+    // Regular Part     : same as non-extensible nodes.
+    // Extensible Part  : a single edge, i.e. a tuple <index, node, edge-value>,
+    //                    for all indices in [extensible_index, +infinity].
+    // 
+    // Example:
+    // The node
+    //    [0:n0:ev0, 1:n1:ev1, 2:n2:ev2, 3:n2:ev2, ..., +infinity:n2:ev2]
+    // is represented as the following extensible node:
+    //    ([0:n0:ev0, 1:n1:ev1], Extensible: [2:n2:ev2])
+    // with,
+    //    size of node           : 2
+    //    extensible index       : 2
+    //    extensible node_handle : n2
+    //    extensible edge-value  : ev2
+    // -------------------------------------------------------------------------
+
+    /// Does this reader store an extensible edge?
+    /// Note: in an extensible node, all edges starting from
+    ///       index to +infinity refer to the same edge, i.e. (node, edge-value).
+    bool isExtensible() const;
+
+    void markAsExtensible();
+    void markAsNotExtensible();
+
+    int ext_d() const;
+    int ext_i() const;
+    int ext_ei() const;
+    float ext_ef() const;
+
+    // -------------------- End of extensible portion --------------------------
+
     /// Get the level number of this node.
     int getLevel() const;
 
@@ -1484,6 +1521,13 @@ class MEDDLY::node_storage {
           @param  addr  Address of the node of interest
     */
     virtual unsigned hashNode(int level, node_address addr) const = 0;
+
+    /** Determine if this is an extensible node.
+          @param  addr    Node Address
+          @return         True if the node stores an extensible edge,
+                          False otherwise.
+    */
+    virtual bool isExtensible(node_address addr) const = 0;
 
     /** Determine if this is a singleton node.
         Used for identity reductions.

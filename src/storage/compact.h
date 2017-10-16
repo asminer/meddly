@@ -127,6 +127,7 @@ class MEDDLY::compact_storage : public node_storage {
     virtual bool areDuplicates(node_address addr, const unpacked_node &nr) const;
     virtual void fillUnpacked(unpacked_node &nr, node_address addr, unpacked_node::storage_style) const;
     virtual unsigned hashNode(int level, node_address addr) const;
+    virtual bool isExtensible(node_address addr) const { assert(false); return false; }
     virtual int getSingletonIndex(node_address addr, node_handle &down) const;
     virtual node_handle getDownPtr(node_address addr, int index) const;
     virtual void getDownPtr(node_address addr, int ind, int& ev, node_handle& dn) const;
