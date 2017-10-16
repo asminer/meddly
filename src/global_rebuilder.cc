@@ -152,7 +152,7 @@ MEDDLY::node_handle MEDDLY::global_rebuilder::transform(node_handle p,
 //  FILE_output output(stdout);
 //  _source->showNodeGraph(output, &p, 1);
 
-  int level = target_level;
+  // int level = target_level;
   int top_var = check_dependency(p, target_level);
   target_level = _target->getLevelByVar(top_var);
 

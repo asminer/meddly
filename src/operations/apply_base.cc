@@ -130,6 +130,10 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
     : unpacked_node::newFromNode(arg2F, b, true)
   ;
 
+  MEDDLY_DCASSERT(A->isFull() && resultSize == A->getSize());
+  MEDDLY_DCASSERT(B->isFull() && resultSize == B->getSize());
+  MEDDLY_DCASSERT(C->isFull() && resultSize == C->getSize());
+
   // do computation
   for (int i=0; i<resultSize; i++) {
     C->d_ref(i) = compute(A->d(i), B->d(i));
@@ -149,6 +153,7 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
 #endif
   return result;
 }
+
 
 
 // ******************************************************************
@@ -322,6 +327,7 @@ MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle 
   } else {
     A->initIdentity(arg1F, k, in, a, true);
   }
+  MEDDLY_DCASSERT(A->getSize() == C->getSize());
 
   if (bLevel == k) {
     B->initFromNode(arg2F, b, true);
@@ -330,6 +336,7 @@ MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle 
   } else {
     B->initIdentity(arg2F, k, in, b, true);
   }
+  MEDDLY_DCASSERT(B->getSize() == C->getSize());
 
   // Do computation
   for (int j=0; j<resultSize; j++) {

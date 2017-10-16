@@ -52,10 +52,11 @@
 // ----------------------------------------------------------------------
 
 MEDDLY::variable::variable(int b, char* n)
+: is_extensible(false), name(n)
 {
+  if (b < 0) { is_extensible = true; b = -b; }
   un_bound = b;
   pr_bound = b;
-  name = n;
 }
 
 MEDDLY::variable::~variable()
@@ -177,11 +178,14 @@ void MEDDLY::expert_variable::removeFromList(const domain* d)
 
 void MEDDLY::expert_variable::enlargeBound(bool prime, int b)
 {
+  if (b < 1) { is_extensible = true; b = -b; }
   if (prime) {
-    if (pr_bound < b) pr_bound = b;
+    // set prime bound
+    if (b > pr_bound) pr_bound = b;
   } else {
-    if (un_bound < b) un_bound = b;
-    if (pr_bound < b) pr_bound = b;
+    // set prime and unprime bound
+    if (b > un_bound) un_bound = b;
+    if (b > pr_bound) pr_bound = b;
   }
 }
 
@@ -383,12 +387,14 @@ void MEDDLY::domain::showInfo(output &strm)
   strm << "Domain info:\n";
   strm << "  #variables: " << nVars << "\n";
   strm << "  Variables listed in height-order (ascending):\n";
-  strm << "    height\t\tname\t\tbound\t\tprime-bound\n";
+  strm << "    height\t\tname\t\textensible\t\tbound\t\tprime-bound\n";
   for (int i = 1; i < nVars + 1; ++i) {
     const char* name = vars[i]->getName();
     if (0==name) name = "null";
-    strm  << "    " << i << "\t\t" << name << "\t\t" << vars[i]->getBound(0)
-          << "\t\t" << vars[i]->getBound(1) << "\n";
+    strm  << "    " << i << "\t\t" << name
+          << "\t\t" << (vars[i]->isExtensible()? "yes": "no")
+          << "\t\t" << vars[i]->getBound(false)
+          << "\t\t" << vars[i]->getBound(true) << "\n";
   }
 
 #if 0

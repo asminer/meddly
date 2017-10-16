@@ -21,6 +21,7 @@
 
 // TODO: Testing
 
+#include <map>
 #include "defines.h"
 #include "hash_stream.h"
 
@@ -44,6 +45,7 @@ MEDDLY::unpacked_node::unpacked_node()
   down = 0;
   index = 0;
   edge = 0;
+  is_extensible = false;
   alloc = 0;
   ealloc = 0;
   size = 0;
@@ -69,6 +71,7 @@ void MEDDLY::unpacked_node::clear()
   down = 0;
   index = 0;
   edge = 0;
+  is_extensible = false;
   alloc = 0;
   ealloc = 0;
   size = 0;
@@ -78,6 +81,14 @@ void MEDDLY::unpacked_node::clear()
 
 /*
   Initializers 
+
+  Extensible nodes
+        + Every node at level k, where level k represents an extensible
+          variable, is represented by an extensible node.
+        + Whether a node is extensible or not is determined by querying
+          the corresponding level's property.
+        + The last downpointer in an extensible node is considered to
+          repeat for all indices till +infinity.
 */
 
 void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k, 
@@ -85,7 +96,7 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
 {
   MEDDLY_DCASSERT(f);
   MEDDLY_DCASSERT(0==f->edgeBytes());
-  int nsize = f->getLevelSize(k);
+  int nsize = f->isExtensibleLevel(k) ? 1 : f->getLevelSize(k);
   bind_to_forest(f, k, nsize, full);
   for (int i=0; i<nsize; i++) {
     down[i] = node;
@@ -94,6 +105,7 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
     for (int i=0; i<nsize; i++) index[i] = i;
     nnzs = nsize;
   }
+  if (f->isExtensibleLevel(k)) markAsExtensible();
 }
 
 void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k, 
@@ -198,11 +210,11 @@ void MEDDLY::unpacked_node::show(output &s, bool details) const
 {
   int stop;
   if (isSparse()) {
-    if (details) s << "nnzs: " << long(nnzs) << " ";
+    if (details) s << "nnzs: " << long(nnzs) << (isExtensible()? "*": "") << " ";
     s << "down: (";
     stop = nnzs;
   } else {
-    if (details) s << "size: " << long(size) << " ";
+    if (details) s << "size: " << long(size) << (isExtensible()? "*": "") << " ";
     s << "down: [";
     stop = size;
   }
@@ -330,7 +342,8 @@ void MEDDLY::unpacked_node
   }
 }
 
-void MEDDLY::unpacked_node::bind_to_forest(const expert_forest* f, int k, int ns, bool full)
+void MEDDLY::unpacked_node::bind_to_forest(const expert_forest* f,
+    int k, int ns, bool full)
 {
   parent = f;
   level = k;
@@ -377,10 +390,9 @@ void MEDDLY::unpacked_node
 
 void MEDDLY::unpacked_node::computeHash()
 {
-#ifdef DEVELOPMENT_CODE
   MEDDLY_DCASSERT(!has_hash);
-#endif
-  
+  trim();
+
   hash_stream s;
   s.start(0);
 

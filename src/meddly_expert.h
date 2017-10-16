@@ -305,6 +305,9 @@ class MEDDLY::expert_variable : public variable {
                       the primed and unprimed are enlarged.
       @param  b       New bound, if less than the current bound
                       an error is thrown.
+                      If bound<=0, the variable is marked as extensible,
+                      with initial bound as abs(bound).
+                      Note: an extensible variable has a range [1 .. +infinity].
     */
     void enlargeBound(bool prime, int b);
 
@@ -346,6 +349,9 @@ class MEDDLY::expert_domain : public domain {
                       bounds[0] gives the bound for the top-most variable,
                       and bounds[N-1] gives the bound for the bottom-most
                       variable.
+                      If bound<=0, the variable is marked as extensible,
+                      with initial bound as abs(bound).
+                      Note: an extensible variable has a range [1 .. +infinity].
       @param  N       Number of variables.
     */
     void createVariablesTopDown(const int* bounds, int N);
@@ -408,6 +414,9 @@ class MEDDLY::expert_domain : public domain {
                       the primed and unprimed are enlarged.
       @param  b       New bound, if less than the current bound
                       an error code is returned.
+                      If bound<=0, the variable is marked as extensible,
+                      with initial bound as abs(bound).
+                      Note: an extensible variable has a range [1 .. +infinity].
     */
     void enlargeVariableBound(int vh, bool prime, int b);
 
@@ -668,6 +677,21 @@ class MEDDLY::unpacked_node {
 
     void computeHash();
 
+    /// Removes redundant trailing edges.
+    /// If the unpacked node is sparse, it assumes its indices to be in ascending order.
+    void trim();
+
+    /// If the unpacked node is sparse, it is sorted so that the
+    /// indices are in ascending order.
+    void sort();
+
+    /// Checks if the node is has no trailing redundant edges
+    bool isTrim() const;
+
+    // checks if the node indices are in ascending order
+    bool isSorted() const;
+
+
   public:
 
     /// Change the size of a node
@@ -720,6 +744,7 @@ class MEDDLY::unpacked_node {
     node_handle* down;
     int* index;
     void* edge;
+    bool is_extensible;
     int alloc;
     int ealloc;
     int size;
@@ -1878,6 +1903,7 @@ class MEDDLY::expert_forest: public forest
     // returns 0 or -K 
     int getMinLevelIndex() const;
     bool isValidLevel(int k) const;
+    bool isExtensibleLevel(int k) const;
 
     /// The maximum size (number of indices) a node at this level can have
     int getLevelSize(int lh) const;
@@ -1947,6 +1973,15 @@ class MEDDLY::expert_forest: public forest
     bool isValidNodeIndex(node_handle p) const;
     node_handle getLastNode() const;
 
+    // --------------------------------------------------
+    // Extensible Node Information:
+    // --------------------------------------------------
+    /// Is this an extensible node
+    bool isExtensible(node_handle p) const;
+    /// If \a p is an extensible node, this returns an index
+    /// that can be used by getDownPtr(...) to access the
+    /// extensible portion of this node.
+    int getExtensibleIndex(node_handle p) const;
 
   public:
 
@@ -2493,7 +2528,16 @@ class MEDDLY::expert_forest: public forest
           @param  un    Unpacked node.
           @return       Handle to a node that encodes the same thing.
     */
-    node_handle createReducedHelper(int in, const unpacked_node &nb);
+    node_handle createReducedHelper(int in, unpacked_node &nb);
+
+    /** Apply reduction rule to the temporary extensible node and finalize it. 
+        Once a node is reduced, its contents cannot be modified.
+          @param  in    Incoming index, used only for identity reduction;
+                        Or -1.
+          @param  un    Unpacked extensible node. Must be sorted by indices if sparse.
+          @return       Handle to a node that encodes the same thing.
+    */
+    node_handle createReducedExtensibleNodeHelper(int in, unpacked_node &nb);
 
     // Sanity check; used in development code.
     void validateDownPointers(const unpacked_node &nb) const;
@@ -4100,3 +4144,4 @@ public:
 
 #include "meddly_expert.hh"
 #endif
+
