@@ -543,8 +543,6 @@ bool MEDDLY::unpacked_node::isSorted() const
   if (!isSparse()) return true;
 
   int nnz = getNNZs();
-  return (nnz < 2 || i(nnz-1) != (i(nnz-2)+1) || d(nnz-1) != d(nnz-2));
-
   for (int z = 1; z < getNNZs(); z++) {
     if (i(z-1) >= i(z)) return false;
   }

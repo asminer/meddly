@@ -1548,11 +1548,11 @@ class MEDDLY::node_storage {
     virtual unsigned hashNode(int level, node_address addr) const = 0;
 
     /** Determine if this is an extensible node.
-          @param  p       Node handle
+          @param  addr    Node Address
           @return         True if the node stores an extensible edge,
                           False otherwise.
     */
-    virtual bool isExtensible(node_handle p) const = 0;
+    virtual bool isExtensible(node_address addr) const = 0;
 
     /** Determine if this is a singleton node.
         Used for identity reductions.

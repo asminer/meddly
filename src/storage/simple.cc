@@ -167,20 +167,27 @@ class MEDDLY::simple_separated : public node_storage {
         MEDDLY_DCASSERT(MM);
         return (node_handle*) MM->getChunkAddress(addr);
       }
-      inline static unsigned int getRawSize(const node_handle* chunk) const {
+      inline static unsigned int getRawSize(const node_handle* chunk) {
         return chunk[size_slot];
       }
-      inline static unsigned int getRawSize(int size, bool sparse, bool extensible) const {
+      inline static unsigned int getRawSize(int size, bool sparse, bool extensible) {
         return (((unsigned int)(size) << 2) | (sparse? 2U: 0) | (extensible? 1U: 0));
       }
-      inline static unsigned int getSize(int raw_size) const { 
+      inline static unsigned int getSize(unsigned int raw_size) { 
         return ((unsigned int)raw_size) >> 2;
       }
-      inline static bool isSparse(int raw_size) const {
+      inline static bool isSparse(unsigned int raw_size) {
         return ((raw_size & 2U) != 0);
       }
-      inline static bool isExtensible(int raw_size) const {
+      inline static bool isExtensible(unsigned int raw_size) {
         return ((raw_size & 1U) != 0);
+      }
+      virtual bool isExtensible(node_address addr) const {
+        MEDDLY_DCASSERT(MM);
+        const node_handle* chunk = getChunkAddress(addr);
+        MEDDLY_DCASSERT(chunk);
+        const unsigned int raw_size = getRawSize(chunk);
+        return isExtensible(raw_size);
       }
 
       //
@@ -199,11 +206,11 @@ class MEDDLY::simple_separated : public node_storage {
         return -1;
       }
       // binary search for an index
-      inline static int findSparseIndex(int i, const node_handle* chunk) const {
-        const int raw_size = getRawSize(chunk);
+      inline int findSparseIndex(int i, const node_handle* chunk) const {
+        const unsigned int raw_size = getRawSize(chunk);
         MEDDLY_DCASSERT(isSparse(raw_size));
         int nnz = getSize(raw_size);
-        node_handle* index = chunk + down_start + nnz;
+        const node_handle* index = chunk + down_start + nnz;
         if (isExtensible(raw_size) && i >= index[nnz-1]) return nnz-1;
         return findSparseIndex(i, index, nnz);
       }
@@ -417,9 +424,9 @@ void MEDDLY::simple_separated::unlinkDownAndRecycle(node_address addr)
   const node_handle* chunk = getChunkAddress(addr);
   MEDDLY_DCASSERT(chunk);
   
-  const int raw_size = getRawSize(chunk);
-  const int size = getSize(raw_size);
-  const int is_sparse = isSorted(raw_size);
+  const unsigned int raw_size = getRawSize(chunk);
+  const unsigned int size = getSize(raw_size);
+  const unsigned int is_sparse = isSparse(raw_size);
 
   //
   // Unlink down pointers
@@ -474,7 +481,7 @@ bool MEDDLY::simple_separated
   // Compare edges
   //
 
-  const int raw_size = getRawSize(chunk);
+  const unsigned int raw_size = getRawSize(chunk);
   const bool is_extensible = isExtensible(raw_size);
 
   if (n.isExtensible()) {
@@ -483,7 +490,7 @@ bool MEDDLY::simple_separated
     if (is_extensible) return false;
   }
 
-  const int size = getSize(raw_size);
+  const unsigned int size = getSize(raw_size);
   const bool is_sparse = isSparse(raw_size);
   const node_handle tv = getParent()->getTransparentNode();
   const node_handle* down = chunk + down_start;
@@ -492,7 +499,7 @@ bool MEDDLY::simple_separated
     //
     // Node is stored sparsely
     //
-    const int nnz = size;
+    const unsigned int nnz = size;
     const node_handle* index = down + nnz;
     const node_handle* edge = slots_per_edge ? (index + nnz) : 0;
 
@@ -642,8 +649,8 @@ void MEDDLY::simple_separated
   // Copy everything else
   //
 
-  const int raw_size = getRawSize(chunk);
-  const int size = getSize(raw_size);
+  const unsigned int raw_size = getRawSize(chunk);
+  const unsigned int size = getSize(raw_size);
   const bool is_sparse = isSparse(raw_size);
   const bool is_extensible = isExtensible(raw_size);
   const node_handle* down = chunk + down_start;
@@ -812,8 +819,8 @@ unsigned MEDDLY::simple_separated::hashNode(int level, node_address addr) const
   // Hash the node itself
   //
   
-  const int raw_size = getRawSize(chunk);
-  const int size = getSize(raw_size);
+  const unsigned int raw_size = getRawSize(chunk);
+  const unsigned int size = getSize(raw_size);
   const bool is_sparse = isSparse(raw_size);
   const node_handle* down = chunk + down_start;
 
@@ -868,10 +875,10 @@ int MEDDLY::simple_separated
   const node_handle* chunk = getChunkAddress(addr);
   MEDDLY_DCASSERT(chunk);
 
-  const int raw_size = getRawSize(chunk);
+  const unsigned int raw_size = getRawSize(chunk);
   if (isExtensible(raw_size)) return -1;
 
-  const int size = getSize(raw_size);
+  const unsigned int size = getSize(raw_size);
   const bool is_sparse = isSparse(raw_size);
 
   if (is_sparse) {
@@ -905,7 +912,7 @@ MEDDLY::simple_separated
 {
   const node_handle* chunk = getChunkAddress(addr);
   MEDDLY_DCASSERT(chunk);
-  const int raw_size = getRawSize(chunk);
+  const unsigned int raw_size = getRawSize(chunk);
   if (!isExtensible(raw_size)) return -1;
   int sz = getSize(raw_size);
   const node_handle* down = chunk + down_start;
@@ -930,13 +937,13 @@ MEDDLY::simple_separated
   MEDDLY_DCASSERT(chunk);
 
   const unsigned int raw_size = getRawSize(chunk);
-  const int size = getSize(raw_size);
+  const unsigned int size = getSize(raw_size);
   const node_handle* down = chunk + down_start;
 
   int z = i;
 
   if (isSparse(raw_size)) {
-    node_handle* index = down + size;
+    const node_handle* index = down + size;
     z =
       (isExtensible(raw_size) && i >= index[size-1])
       ? (size - 1)
@@ -965,7 +972,7 @@ MEDDLY::simple_separated
   MEDDLY_DCASSERT(slots_per_edge>0);
 
   const unsigned int raw_size = getRawSize(chunk);
-  const int size = getSize(raw_size);
+  const unsigned int size = getSize(raw_size);
   const bool is_sparse = isSparse(raw_size);
   const node_handle* down = chunk + down_start;
 
@@ -1005,7 +1012,7 @@ MEDDLY::simple_separated
   MEDDLY_DCASSERT(slots_per_edge>0);
 
   const unsigned int raw_size = getRawSize(chunk);
-  const int size = getSize(raw_size);
+  const unsigned int size = getSize(raw_size);
   const bool is_sparse = isSparse(raw_size);
   const node_handle* down = chunk + down_start;
 
@@ -1140,8 +1147,8 @@ MEDDLY::simple_separated
     s.put(long(a), awidth);
     s << " : [";
   }
-  const node_handle raw_size = chunk[size_slot];
-  const node_handle size = getSize(raw_size);
+  const unsigned int raw_size = chunk[size_slot];
+  const unsigned int size = getSize(raw_size);
 
   //
   // common header
@@ -1189,7 +1196,7 @@ MEDDLY::simple_separated
   //
   end += down_start;
   const node_handle* down = end;
-  const int dnlen = size;
+  const unsigned int dnlen = size;
 
   if (show_node) {
     s.put(" down ");
