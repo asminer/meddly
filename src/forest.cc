@@ -1891,7 +1891,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
     // Check for identity nodes
     if (1==nnz) {
-      if (isIdentityEdge(nb, in)) {
+      if (in < nb.getSize() && isIdentityEdge(nb, in)) {
 #ifdef DEBUG_CREATE_REDUCED
         printf("Identity node ");
         showNode(stdout, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
@@ -1984,8 +1984,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
   validateDownPointers(nb);
 #endif
   MEDDLY_DCASSERT(nb.isExtensible());
-
-  nb.trim();
+  MEDDLY_DCASSERT(nb.isTrim());
 
   // NOTE: Identity reduction not possible for nodes marked as extensible.
   //       Fully-Identity reduction is still possible when
@@ -2003,7 +2002,6 @@ MEDDLY::node_handle MEDDLY::expert_forest
 #endif
   } else {
     // Reductions for full nodes
-    MEDDLY_DCASSERT(nb.getSize() <= getLevelSize(nb.getLevel()));
     nnz = 0;
     for (int i=0; i<nb.getSize(); i++) {
       if (nb.d(i)!=getTransparentNode()) nnz++;

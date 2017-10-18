@@ -490,6 +490,7 @@ void MEDDLY::unpacked_node::sort()
 void MEDDLY::unpacked_node::trim()
 {
   if (!isExtensible()) return;
+  if (isTrim()) return;
 
   // If extensible edge is transparent, mark the node as not-extensible and return
   if (d((isSparse()? getNNZs() : getSize()) - 1) == parent->getTransparentNode()) {
