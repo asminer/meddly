@@ -100,22 +100,44 @@ MEDDLY::node_handle MEDDLY::mt_forest::makeNodeAtLevel(int k, node_handle d)
     else up = isForRelations() ? -(dk+1) : dk+1;
 
     // make node at level "up"
-    int sz = getLevelSize(up);
-    unpacked_node* nb = unpacked_node::newFull(this, up, sz);
+    unpacked_node* nb = 0;
 
     if (isIdentityReduced() && (dk<0)) {
+      //
       // make identity reductions below as necessary
+
       node_handle sd;
       int si = isTerminalNode(d) ? -1 : getSingletonIndex(d, sd);
+      int sz = getLevelSize(up);
+      MEDDLY_DCASSERT(si < sz);
+      const bool add_edge = (si+1 == sz && isExtensibleLevel(up));
+      nb = unpacked_node::newFull(this, up, (add_edge? 1+sz: sz));
+
       for (int i=0; i<sz; i++) {
         nb->d_ref(i) = linkNode( (i==si) ? sd : d );
       }
+      if (isExtensibleLevel(up)) {
+        nb->markAsExtensible();
+        if (add_edge) nb->d_ref(sz) = linkNode(d);
+      }
     } else {
+      //
       // don't worry about identity reductions
-      for (int i=0; i<sz; i++) {
-        nb->d_ref(i) = linkNode(d);
+
+      if (isExtensibleLevel(up)) {
+        nb = unpacked_node::newFull(this, up, 1);
+        nb->resize(1);
+        nb->d_ref(0) = linkNode(d);
+        nb->markAsExtensible();
+      } else {
+        int sz = getLevelSize(up);
+        nb = unpacked_node::newFull(this, up, sz);
+        for (int i=0; i<sz; i++) {
+          nb->d_ref(i) = linkNode(d);
+        }
       }
     }
+
     unlinkNode(d);
     d = createReducedNode(-1, nb);
     dk = up;

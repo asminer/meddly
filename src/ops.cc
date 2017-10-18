@@ -898,7 +898,11 @@ void MEDDLY::satotf_opname::event::enlargeVariables()
     int unprimedSize = f->getLevelSize(unprimed);
     int primedSize = f->getLevelSize(primed);
     if (unprimedSize < primedSize) {
-      ed->enlargeVariableBound(unprimed, false, primedSize);
+      expert_variable* vh = ed->getExpertVar(unprimed);
+      if (vh->isExtensible())
+        vh->enlargeBound(false, -primedSize);
+      else
+        vh->enlargeBound(false, primedSize);
     }
     MEDDLY_DCASSERT(f->getLevelSize(unprimed) == f->getLevelSize(primed));
   }
