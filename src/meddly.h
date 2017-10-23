@@ -1004,8 +1004,8 @@ class MEDDLY::forest {
           QUASI_REDUCED,
           /// Nodes are identity-reduced.
           IDENTITY_REDUCED,
-	 /// Nodes are user-defined reduced
-	  USER_DEFINED
+          /// Nodes are user-defined reduced
+          USER_DEFINED
       };
 
       // Supported node storage meachanisms.

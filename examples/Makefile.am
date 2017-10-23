@@ -12,6 +12,8 @@ test_union_mxd \
 test_mtmdd \
 test_mtmxd \
 test_evmdd \
+test_xdds \
+test_otf_sat \
 build_expression \
 dining_phils \
 rubiks_cube \
@@ -60,6 +62,12 @@ test_mtmdd_LDADD = ../src/libmeddly.la
 
 test_mtmxd_SOURCES = test_mtmxd.cc
 test_mtmxd_LDADD = ../src/libmeddly.la
+
+test_xdds_SOURCES = test_xdds.cc
+test_xdds_LDADD = ../src/libmeddly.la
+
+test_otf_sat_SOURCES = test_otf_sat.cc
+test_otf_sat_LDADD = ../src/libmeddly.la
 
 build_expression_SOURCES = build_expression.cc
 build_expression_LDADD = ../src/libmeddly.la

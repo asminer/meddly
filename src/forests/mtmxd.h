@@ -470,12 +470,20 @@ namespace MEDDLY {
               nextpr = next;
             } else {
               // build redundant node
-              int sz = F->getLevelSize(-i);
-              unpacked_node* nb = unpacked_node::newFull(F, -i, sz);
-              for (int v=0; v<sz; v++) {
-                nb->d_ref(v) = F->linkNode(next);
+              unpacked_node* nb = 0;
+              if (F->isExtensibleLevel(i)) {
+                nb = unpacked_node::newFull(F, -i, 1);
+                nb->d_ref(0) = next;
+                // link count should be unchanged
+                nb->markAsExtensible();
+              } else {
+                int sz = F->getLevelSize(-i);
+                nb = unpacked_node::newFull(F, -i, sz);
+                for (int v=0; v<sz; v++) {
+                  nb->d_ref(v) = F->linkNode(next);
+                }
+                F->unlinkNode(next);
               }
-              F->unlinkNode(next);
               nextpr = F->createReducedNode(-1, nb);
             }
           }
@@ -547,19 +555,33 @@ namespace MEDDLY {
               continue;
             }
             // build redundant node
-            int sz = F->getLevelSize(i);
-            unpacked_node* nb = unpacked_node::newFull(F, i, sz);
+            unpacked_node* nb = 0;
             if (F->isIdentityReduced()) {
               // Below is likely a singleton, so check for identity reduction
               // on the appropriate v value
+              int sz = F->getLevelSize(i);
+              bool add_edge = (F->isExtensibleLevel(i) && (vplist[i]+1) == sz);
+              nb = unpacked_node::newFull(F, i, add_edge? (1+sz): sz);
               for (int v=0; v<sz; v++) {
-                //                  node_handle dpr = (v == vplist[i]) ? next : nextpr;
                 nb->d_ref(v) = F->linkNode(v == vplist[i] ? next : nextpr);
+              }
+              if (F->isExtensibleLevel(i)) {
+                nb->markAsExtensible();
+                if (add_edge) nb->d_ref(sz) = F->linkNode(nextpr);
               }
             } else {
               // Doesn't matter what happened below
-              for (int v=0; v<sz; v++) {
-                nb->d_ref(v) = F->linkNode(nextpr);
+
+              if (F->isExtensibleLevel(i)) {
+                nb = unpacked_node::newFull(F, i, 1);
+                nb->d_ref(0) = F->linkNode(nextpr);
+                nb->markAsExtensible();
+              } else {
+                int sz = F->getLevelSize(i);
+                nb = unpacked_node::newFull(F, i, sz);
+                for (int v=0; v<sz; v++) {
+                  nb->d_ref(v) = F->linkNode(nextpr);
+                }
               }
             }
             F->unlinkNode(nextpr);

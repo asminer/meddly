@@ -1868,7 +1868,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
     }
 
     // Check for redundant nodes
-    if (nnz == getLevelSize(nb.getLevel())) {
+    if (nnz == getLevelSize(nb.getLevel()) && !isExtensibleLevel(nb.getLevel())) {
       if (isRedundant(nb)) {
         // unlink downward pointers, except the one we're returning.
         for (int i = 1; i<nnz; i++)  unlinkNode(nb.d(i));  
@@ -1902,7 +1902,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
     }
 
     // Check for redundant nodes
-    if (nnz == getLevelSize(nb.getLevel())) {
+    if (nnz == getLevelSize(nb.getLevel()) && !isExtensibleLevel(nb.getLevel())) {
       if (isRedundant(nb)) {
         // unlink downward pointers, except the one we're returning.
         for (int i = 1; i<nb.getSize(); i++)  unlinkNode(nb.d(i));
@@ -2044,6 +2044,12 @@ MEDDLY::node_handle MEDDLY::expert_forest
 #ifndef GC_OFF
   if (isTimeToGc()) garbageCollect();
 #endif
+
+  // Expand level size
+  const int nb_ext_i = nb.ext_i();
+  if (nb_ext_i >= getLevelSize(nb.getLevel())) {
+    useExpertDomain()->enlargeVariableBound(nb.getLevel(), false, nb_ext_i+1);
+  }
 
   // Grab a new node
   node_handle p = nodeHeaders.getFreeNodeHandle();

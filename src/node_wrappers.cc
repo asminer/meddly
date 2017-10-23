@@ -239,6 +239,8 @@ void MEDDLY::unpacked_node::show(output &s, bool details) const
     if (parent->edgeBytes()) s.put('>');
   }
 
+  if (isExtensible()) s.put('*');
+
   if (isSparse()) {
     s.put(')');
   } else {

@@ -484,7 +484,6 @@ MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle 
     ? unpacked_node::newRedundant(arg1F, k, a, false)
     : unpacked_node::newIdentity(arg1F, k, in, a, false)
     ;
-  MEDDLY_DCASSERT(!A->isExtensible());
   const node_handle A_ext_d = A->isExtensible()? A->ext_d(): 0;
 
   unpacked_node *B =
@@ -494,7 +493,6 @@ MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle 
     ? unpacked_node::newRedundant(arg2F, k, b, false)
     : unpacked_node::newIdentity(arg2F, k, in, b, false)
     ;
-  MEDDLY_DCASSERT(!B->isExtensible());
   const node_handle B_ext_d = B->isExtensible()? B->ext_d(): 0;
 
   const int A_last_index = A->i(A->getNNZs()-1);
