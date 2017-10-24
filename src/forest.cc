@@ -1992,20 +1992,16 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
   // get sparse, truncated full sizes and check
   // for redundant / identity reductions.
-  int nnz;
-  if (nb.isSparse()) {
-    nnz = nb.getNNZs();
-#ifdef DEVELOPMENT_CODE
-    for (int z=0; z<nnz; z++) {
-      MEDDLY_DCASSERT(nb.d(z)!=getTransparentNode());
-    } // for z
-#endif
-  } else {
-    // Reductions for full nodes
-    nnz = 0;
-    for (int i=0; i<nb.getSize(); i++) {
-      if (nb.d(i)!=getTransparentNode()) nnz++;
-    } // for i
+  int nnz = 0;
+  const int rawsize = nb.isSparse()? nb.getNNZs(): nb.getSize();
+  for (int i=0; i<rawsize; i++) {
+    if (nb.d(i)!=getTransparentNode()) nnz++;
+  } // for i
+
+  // Is this a transparent node?
+  if (0==nnz) {
+    // no need to unlink
+    return getTransparentNode();
   }
 
   // Check for redundant nodes
@@ -2019,17 +2015,10 @@ MEDDLY::node_handle MEDDLY::expert_forest
     return nb.ext_d();
   }
 
-  // Is this a transparent node?
-  if (0==nnz) {
-    // no need to unlink
-    return getTransparentNode();
-  }
-
   // check for duplicates in unique table
   node_handle q = unique->find(nb, getVarByLevel(nb.getLevel()));
   if (q) {
     // unlink all downward pointers
-    int rawsize = nb.isSparse() ? nb.getNNZs() : nb.getSize();
     for (int i = 0; i<rawsize; i++)  unlinkNode(nb.d(i));
     return linkNode(q);
   }

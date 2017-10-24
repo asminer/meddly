@@ -668,6 +668,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       }
       // check if row i of the event ei is empty
       if (0 == Ru[ei]) continue;
+      MEDDLY_DCASSERT(!Ru[ei]->isExtensible());
 #ifndef USE_XDDS
       node_handle ei_i = (i < Ru[ei]->getSize())
                         ? Ru[ei]->d(i)
@@ -871,6 +872,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
     }
 #ifdef USE_XDDS
     // loop over the extensible portion of mxd (if any)
+    MEDDLY_DCASSERT(!Ru->isExtensible());
     if (Ru->isExtensible()) {
       const node_handle pnode = Ru->ext_d();
       for (int i = Ru->ext_i()+1; i < A->getSize(); i++) {

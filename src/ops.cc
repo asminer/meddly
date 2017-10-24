@@ -739,7 +739,11 @@ void MEDDLY::satotf_opname::subevent::showInfo(output& out) const {
 }
 
 long MEDDLY::satotf_opname::subevent::mintermMemoryUsage() const {
-  return long(num_minterms * 2) * long(f->getDomain()->getNumVariables()) * sizeof(int);
+  long n_minterms = 0L;
+  for (int i = 0; i < size_minterms; i++) {
+    if (unpminterms[i] != 0) n_minterms++;
+  }
+  return long(n_minterms * 2) * long(f->getDomain()->getNumVariables()) * sizeof(int);
 }
 
 // ============================================================
@@ -859,7 +863,7 @@ bool MEDDLY::satotf_opname::event::rebuild()
   }
   buildEventMask();
 
-  dd_edge e = event_mask;
+  dd_edge e(event_mask);
   for (int i = 0; i < num_subevents; i++) {
     e *= subevents[i]->getRoot();
   }
@@ -871,20 +875,18 @@ bool MEDDLY::satotf_opname::event::rebuild()
     out << "subevent: " << event_mask.getNode() << "\n";
     event_mask.show(out, 2);
     for (int i = 0; i < num_subevents; i++) {
-      out << "subevent: " << subevents[i]->getRoot().getNode() << "\n";
-      subevents[i]->getRoot().show(out, 2);
+    out << "subevent: " << subevents[i]->getRoot().getNode() << "\n";
+    subevents[i]->getRoot().show(out, 2);
     }
   }
   ostream_output out(std::cout);
   for (int i = 0; i < num_subevents; i++) {
-    out << "subevent: " << subevents[i]->getRoot().getNode() << "\n";
-    subevents[i]->getRoot().show(out, 2);
+  out << "subevent: " << subevents[i]->getRoot().getNode() << "\n";
+  subevents[i]->getRoot().show(out, 2);
   }
   e.show(out, 2);
   */
-
   if (e == root) return false;
-  // root += e;
   root = e;
   return true;
 }

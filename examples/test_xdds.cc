@@ -25,7 +25,7 @@ using namespace MEDDLY;
 
 int main(int argc, char* argv[]) {
   MEDDLY::initialize();
-  int bounds[] = {-3, -3, -3};
+  int bounds[] = {-1, -1, -1};
   const int n_vars = 3;
   domain* d = createDomainBottomUp(bounds, n_vars);
   assert(d);
@@ -36,15 +36,19 @@ int main(int argc, char* argv[]) {
   int* unp_minterm_2 = new int[n_vars+1];
   int* p_minterm_1 = new int[n_vars+1];
   int* p_minterm_2 = new int[n_vars+1];
+  int* unp_minterms[] = {unp_minterm_1, unp_minterm_2};
+  int* p_minterms[] = {p_minterm_1, p_minterm_2};
 
   for (int i = 0; i <= n_vars; i++) {
     unp_minterm_1[i] = DONT_CARE;
-    unp_minterm_2[i] = DONT_CARE;
     p_minterm_1[i] = DONT_CARE;
+    unp_minterm_2[i] = DONT_CARE;
     p_minterm_2[i] = DONT_CARE;
   }
-  p_minterm_1[2] = DONT_CHANGE;
-  p_minterm_2[3] = 1;
+  unp_minterm_1[2] = 0;
+  p_minterm_1[2] = 1;
+  unp_minterm_2[2] = 1;
+  p_minterm_2[2] = 2;
 
   dd_edge with_dont_change(mxd);
   dd_edge only_dont_cares(mxd);
@@ -53,11 +57,14 @@ int main(int argc, char* argv[]) {
   mxd->createEdge((int**)(&unp_minterm_2), (int**)(&p_minterm_2), 1, only_dont_cares);
 
   dd_edge result = with_dont_change;
-  result *= only_dont_cares;
+  result += only_dont_cares;
 
   ostream_output s(std::cout);
   with_dont_change.show(s, 2);
   only_dont_cares.show(s, 2);
+  result.show(s, 2);
+
+  mxd->createEdge((int**)(&unp_minterms[0]), (int**)(&p_minterms[0]), 2, result);
   result.show(s, 2);
 
   delete [] unp_minterm_1;

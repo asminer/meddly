@@ -595,6 +595,7 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
 
   // Initialize node reader
   unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+  MEDDLY_DCASSERT(!A->isExtensible());
 
   // Recurse
   mpz_object tmp;
