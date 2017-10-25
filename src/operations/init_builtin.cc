@@ -62,7 +62,7 @@
 
 #include "mm_mult.h"
 
-#include "minimum_witness.h"
+#include "constrained.h"
 #include "transitive_closure.h"
 
 #include "mpz_object.h"
@@ -130,9 +130,9 @@ namespace MEDDLY {
   const satotf_opname* SATURATION_OTF_FORWARD = 0;
 
   // minimum witness operation "codes"
-  const minimum_witness_opname* CONSTRAINT_BACKWARD_BFS = 0;
-  const minimum_witness_opname* CONSTRAINT_BACKWARD_DFS = 0;
-  const minimum_witness_opname* TRANSITIVE_CLOSURE_DFS = 0;
+  const constrained_opname* CONSTRAINED_BACKWARD_BFS = 0;
+  const constrained_opname* CONSTRAINED_BACKWARD_DFS = 0;
+  const constrained_opname* TRANSITIVE_CLOSURE_DFS = 0;
 };
 
 
@@ -204,8 +204,8 @@ void MEDDLY::builtin_initializer::setup()
   initP(MEDDLY::SATURATION_FORWARD,   SATURATION_FORWARD,   initSaturationForward()   );
   initP(MEDDLY::SATURATION_BACKWARD,  SATURATION_BACKWARD,  initSaturationBackward()  );
   initP(MEDDLY::SATURATION_OTF_FORWARD,   SATURATION_OTF_FORWARD,   initOtfSaturationForward()  );
-  initP(MEDDLY::CONSTRAINT_BACKWARD_BFS,   CONSTRAINT_BACKWARD_BFS,   initConstraintBFSBackward()  );
-  initP(MEDDLY::CONSTRAINT_BACKWARD_DFS,   CONSTRAINT_BACKWARD_DFS,   initConstraintDFSBackward()  );
+  initP(MEDDLY::CONSTRAINED_BACKWARD_BFS,   CONSTRAINED_BACKWARD_BFS,   initConstrainedBFSBackward()  );
+  initP(MEDDLY::CONSTRAINED_BACKWARD_DFS,   CONSTRAINED_BACKWARD_DFS,   initConstrainedDFSBackward()  );
   initP(MEDDLY::TRANSITIVE_CLOSURE_DFS,   TRANSITIVE_CLOSURE_DFS,   initTransitiveClosureDFS()  );
 
 #ifdef HAVE_LIBGMP

@@ -1226,7 +1226,7 @@ long MEDDLY::satotf_opname::otf_relation::mintermMemoryUsage() const {
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::minimum_witness_opname::minimum_witness_opname(const char* n)
+MEDDLY::constrained_opname::constrained_opname(const char* n)
   : specialized_opname(n)
 {
 }

@@ -23,63 +23,13 @@
 #include "defines.h"
 #include "transitive_closure.h"
 
-// XXX: DEBUG
-void MEDDLY::printAssignmentsDEBUG(const dd_edge& res)
-{
-  int numVariables = ((expert_forest*)res.getForest())->getNumVariables();
-  if (res.getForest()->isForRelations()) {
-    unsigned counter = 0;
-    for (enumerator iter(res); iter; ++iter, ++counter)
-    {
-      const int* element = iter.getAssignments();
-      const int* curr = element + numVariables;
-      const int* end = element;
-      printf("%d: [%d", counter, *curr--);
-      while (curr != end) {
-        printf(" %d", *curr--);
-      }
-      printf("] -> [");
-      element = iter.getPrimedAssignments();
-      curr = element + numVariables;
-      end = element;
-      while (curr != end) {
-        printf(" %d", *curr--);
-      }
-      long ev = Inf<long>();
-      iter.getValue(ev);
-      printf("]: %ld\n", ev);
-    }
-  }
-  else {
-    unsigned counter = 0;
-    for (enumerator iter(res); iter; ++iter, ++counter)
-    {
-      const int* element = iter.getAssignments();
-      const int* curr = element + numVariables;
-      const int* end = element;
-      printf("%d: [%d", counter, *curr--);
-      while (curr != end) {
-        printf(" %d", *curr--);
-      }
-      long ev = Inf<long>();
-      iter.getValue(ev);
-      printf("]: %ld\n", ev);
-    }
-  }
-}
-
-
-
-
-
-
 // ******************************************************************
 // *                                                                *
 // *                       common_constraint                        *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::common_transitive_closure::common_transitive_closure(const minimum_witness_opname* code,
+MEDDLY::common_transitive_closure::common_transitive_closure(const constrained_opname* code,
   int kl, int al,
   expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res)
   : specialized_operation(code, kl, al)
@@ -127,7 +77,7 @@ bool MEDDLY::common_transitive_closure::checkForestCompatibility() const
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::transitive_closure_forwd_bfs::transitive_closure_forwd_bfs(const minimum_witness_opname* code,
+MEDDLY::transitive_closure_forwd_bfs::transitive_closure_forwd_bfs(const constrained_opname* code,
   expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res)
   : common_transitive_closure(code, 0, 0, cons, tc, trans, res)
 {
@@ -204,13 +154,13 @@ void MEDDLY::transitive_closure_forwd_bfs::showEntry(output &strm, const node_ha
 // ******************************************************************
 
 MEDDLY::transitive_closure_dfs_opname::transitive_closure_dfs_opname()
- : minimum_witness_opname("Transitive Closure")
+ : constrained_opname("Transitive Closure")
 {
 }
 
 MEDDLY::specialized_operation* MEDDLY::transitive_closure_dfs_opname::buildOperation(arguments* a) const
 {
-  minimum_witness_opname::minimum_witness_args* args = dynamic_cast<minimum_witness_opname::minimum_witness_args*>(a);
+  constrained_opname::constrained_args* args = dynamic_cast<constrained_opname::constrained_args*>(a);
   return new transitive_closure_forwd_dfs(this,
     static_cast<expert_forest*>(args->consForest),
     static_cast<expert_forest*>(args->inForest),
@@ -231,7 +181,7 @@ const int MEDDLY::transitive_closure_dfs::NODE_INDICES_IN_KEY[4] = {
   (3 * sizeof(node_handle) + 2 * sizeof(long)) / sizeof(node_handle)
 };
 
-MEDDLY::transitive_closure_dfs::transitive_closure_dfs(const minimum_witness_opname* code,
+MEDDLY::transitive_closure_dfs::transitive_closure_dfs(const constrained_opname* code,
   expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res)
   : common_transitive_closure(code,
       (3 * sizeof(node_handle) + sizeof(long)) / sizeof(node_handle),
@@ -438,9 +388,11 @@ void MEDDLY::transitive_closure_dfs::compute(int aev, node_handle a, int bev, no
   tcSatOp->saturate(aev, a, bev, b, cev, c);
 
   // Cleanup
-  tcSatOp->removeAllComputeTableEntries();
+  //tcSatOp->removeAllComputeTableEntries();
   // delete tcSatOp;
-  removeAllComputeTableEntries();
+  //minOp->removeAllComputeTableEntries();
+  //removeAllComputeTableEntries();
+
   for (int i = transF->getNumVariables(); i > 0; i--) {
     transF->unlinkNode(splits[i]);
   }
@@ -454,7 +406,7 @@ void MEDDLY::transitive_closure_dfs::compute(int aev, node_handle a, int bev, no
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::transitive_closure_forwd_dfs::transitive_closure_forwd_dfs(const minimum_witness_opname* code,
+MEDDLY::transitive_closure_forwd_dfs::transitive_closure_forwd_dfs(const constrained_opname* code,
   expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res)
   : transitive_closure_dfs(code, cons, tc, trans, res)
 {
@@ -977,7 +929,7 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::minimum_witness_opname* MEDDLY::initTransitiveClosureDFS()
+MEDDLY::constrained_opname* MEDDLY::initTransitiveClosureDFS()
 {
   return new transitive_closure_dfs_opname();
 }

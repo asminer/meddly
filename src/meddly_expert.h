@@ -115,7 +115,7 @@ namespace MEDDLY {
   class numerical_opname;
   class satpregen_opname;
   class satotf_opname;
-  class minimum_witness_opname;
+  class constrained_opname;
 
   class ct_initializer;
   class compute_table_style;
@@ -178,9 +178,9 @@ namespace MEDDLY {
   */
   extern const satotf_opname* SATURATION_OTF_FORWARD;
 
-  extern const minimum_witness_opname* CONSTRAINT_BACKWARD_BFS;
-  extern const minimum_witness_opname* CONSTRAINT_BACKWARD_DFS;
-  extern const minimum_witness_opname* TRANSITIVE_CLOSURE_DFS;
+  extern const constrained_opname* CONSTRAINED_BACKWARD_BFS;
+  extern const constrained_opname* CONSTRAINED_BACKWARD_DFS;
+  extern const constrained_opname* TRANSITIVE_CLOSURE_DFS;
 
   // ******************************************************************
   // *                                                                *
@@ -2874,18 +2874,18 @@ class MEDDLY::satotf_opname : public specialized_opname {
 
 };  // end of class satotf_opname
 
-class MEDDLY::minimum_witness_opname : public specialized_opname {
+class MEDDLY::constrained_opname : public specialized_opname {
 public:
-	minimum_witness_opname(const char* n);
+	constrained_opname(const char* n);
 
-	class minimum_witness_args : public specialized_opname::arguments {
+	class constrained_args : public specialized_opname::arguments {
 	public:
 	  forest* consForest;
 	  forest* inForest;
 	  forest* relForest;
 	  forest* outForest;
 
-	  minimum_witness_args(forest* consF, forest* inF, forest* relF, forest* outF)
+	  constrained_args(forest* consF, forest* inF, forest* relF, forest* outF)
 	    : consForest(consF), inForest(inF), relForest(relF), outForest(outF)
 	  {
 	  }

@@ -33,12 +33,9 @@ namespace MEDDLY {
   class transitive_closure_dfs;
   class transitive_closure_forwd_dfs;
 
-//  class transitive_closure_opname;
   class transitive_closure_evplus;
 
-  minimum_witness_opname* initTransitiveClosureDFS();
-
-  void printAssignmentsDEBUG(const dd_edge& res);
+  constrained_opname* initTransitiveClosureDFS();
 }
 
 class MEDDLY::common_transitive_closure: public specialized_operation
@@ -53,12 +50,12 @@ protected:
   virtual bool checkForestCompatibility() const;
 
 public:
-  common_transitive_closure(const minimum_witness_opname* code, int kl, int al,
+  common_transitive_closure(const constrained_opname* code, int kl, int al,
     expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res);
   ~common_transitive_closure();
 };
 
-class MEDDLY::transitive_closure_bfs_opname : public minimum_witness_opname {
+class MEDDLY::transitive_closure_bfs_opname : public constrained_opname {
 public:
   transitive_closure_bfs_opname();
   virtual specialized_operation* buildOperation(expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res) const;
@@ -84,13 +81,13 @@ protected:
   virtual void showEntry(output &strm, const node_handle* entryData) const;
 
 public:
-  transitive_closure_forwd_bfs(const minimum_witness_opname* code,
+  transitive_closure_forwd_bfs(const constrained_opname* code,
     expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res);
 
   virtual void compute(const dd_edge &a, const dd_edge &b, const dd_edge &r, dd_edge &res);
 };
 
-class MEDDLY::transitive_closure_dfs_opname : public minimum_witness_opname {
+class MEDDLY::transitive_closure_dfs_opname : public constrained_opname {
 public:
   transitive_closure_dfs_opname();
 
@@ -123,7 +120,7 @@ protected:
   virtual void showEntry(output &strm, const node_handle *data) const;
 
 public:
-  transitive_closure_dfs(const minimum_witness_opname* code,
+  transitive_closure_dfs(const constrained_opname* code,
     expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res);
 
   virtual void compute(const dd_edge &a, const dd_edge &b, const dd_edge &r, dd_edge &res);
@@ -138,24 +135,11 @@ protected:
   virtual void recFire(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c);
 
 public:
-  transitive_closure_forwd_dfs(const minimum_witness_opname* code,
+  transitive_closure_forwd_dfs(const constrained_opname* code,
     expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res);
 
   virtual void saturateHelper(long aev, node_handle a, int in, unpacked_node& nb);
 };
-
-//class MEDDLY::transitive_closure_opname : public minimum_witness_opname {
-//protected:
-//  bool forward;
-//public:
-//  transitive_closure_opname(bool fwd);
-//  virtual specialized_operation* buildOperation(expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res) const;
-//
-//  virtual specialized_operation* buildOperation(arguments* a) const
-//  {
-//    throw error::NOT_IMPLEMENTED;
-//  }
-//};
 
 class MEDDLY::transitive_closure_evplus: public specialized_operation
 {

@@ -20,8 +20,8 @@
 #include <deque>
 #include <vector>
 
+#include "constrained.h"
 #include "defines.h"
-#include "minimum_witness.h"
 
 // ******************************************************************
 // *                                                                *
@@ -29,7 +29,7 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::common_constraint::common_constraint(const minimum_witness_opname* code,
+MEDDLY::common_constrained::common_constrained(const constrained_opname* code,
   int kl, int al,
   expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
   : specialized_operation(code, kl, al)
@@ -52,7 +52,7 @@ MEDDLY::common_constraint::common_constraint(const minimum_witness_opname* code,
   setAnswerForest(resF);
 }
 
-MEDDLY::common_constraint::~common_constraint()
+MEDDLY::common_constrained::~common_constrained()
 {
   unregisterInForest(consF);
   unregisterInForest(argF);
@@ -60,7 +60,7 @@ MEDDLY::common_constraint::~common_constraint()
   unregisterInForest(resF);
 }
 
-bool MEDDLY::common_constraint::checkForestCompatibility() const
+bool MEDDLY::common_constrained::checkForestCompatibility() const
 {
   auto o1 = consF->variableOrder();
   auto o2 = argF->variableOrder();
@@ -77,21 +77,21 @@ bool MEDDLY::common_constraint::checkForestCompatibility() const
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::constraint_bfs_opname::constraint_bfs_opname(bool fwd)
- : minimum_witness_opname(fwd ? "PostImage" : "PreImage")
+MEDDLY::constrained_bfs_opname::constrained_bfs_opname(bool fwd)
+ : constrained_opname(fwd ? "PostImage" : "PreImage")
 {
   forward = fwd;
 }
 
-MEDDLY::specialized_operation* MEDDLY::constraint_bfs_opname::buildOperation(arguments* a) const
+MEDDLY::specialized_operation* MEDDLY::constrained_bfs_opname::buildOperation(arguments* a) const
 {
-  minimum_witness_opname::minimum_witness_args* args = dynamic_cast<minimum_witness_opname::minimum_witness_args*>(a);
+  constrained_opname::constrained_args* args = dynamic_cast<constrained_opname::constrained_args*>(a);
   specialized_operation* op = 0;
   if (forward) {
     throw error(error::NOT_IMPLEMENTED);
   }
   else {
-    op = new constraint_bckwd_bfs(this,
+    op = new constrained_bckwd_bfs(this,
       static_cast<expert_forest*>(args->consForest),
       static_cast<expert_forest*>(args->inForest),
       static_cast<expert_forest*>(args->relForest),
@@ -106,9 +106,9 @@ MEDDLY::specialized_operation* MEDDLY::constraint_bfs_opname::buildOperation(arg
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::constraint_bckwd_bfs::constraint_bckwd_bfs(const minimum_witness_opname* code,
+MEDDLY::constrained_bckwd_bfs::constrained_bckwd_bfs(const constrained_opname* code,
   expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
-  : common_constraint(code, 0, 0, cons, arg, trans, res)
+  : common_constrained(code, 0, 0, cons, arg, trans, res)
 {
   if (resF->getRangeType() == forest::INTEGER) {
     plusOp = getOperation(PLUS, resF, consF, resF);
@@ -119,7 +119,7 @@ MEDDLY::constraint_bckwd_bfs::constraint_bckwd_bfs(const minimum_witness_opname*
   imageOp = getOperation(PRE_IMAGE, argF, transF, resF);
 }
 
-void MEDDLY::constraint_bckwd_bfs::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res)
+void MEDDLY::constrained_bckwd_bfs::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res)
 {
   MEDDLY_DCASSERT(res.getForest() == resF);
 
@@ -142,7 +142,7 @@ void MEDDLY::constraint_bckwd_bfs::compute(const dd_edge& a, const dd_edge& b, c
   res.set(cnode, cev);
 }
 
-void MEDDLY::constraint_bckwd_bfs::iterate(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c)
+void MEDDLY::constrained_bckwd_bfs::iterate(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c)
 {
   cev = bev;
   MEDDLY_DCASSERT(argF == resF);
@@ -165,19 +165,19 @@ void MEDDLY::constraint_bckwd_bfs::iterate(long aev, node_handle a, long bev, no
   resF->unlinkNode(prev);
 }
 
-bool MEDDLY::constraint_bckwd_bfs::isStaleEntry(const node_handle* entryData)
+bool MEDDLY::constrained_bckwd_bfs::isStaleEntry(const node_handle* entryData)
 {
   throw error(error::MISCELLANEOUS);
   // this operation won't add any CT entries.
 }
 
-void MEDDLY::constraint_bckwd_bfs::discardEntry(const node_handle* entryData)
+void MEDDLY::constrained_bckwd_bfs::discardEntry(const node_handle* entryData)
 {
   throw error(error::MISCELLANEOUS);
   // this operation won't add any CT entries.
 }
 
-void MEDDLY::constraint_bckwd_bfs::showEntry(output &strm, const node_handle* entryData) const
+void MEDDLY::constrained_bckwd_bfs::showEntry(output &strm, const node_handle* entryData) const
 {
   throw error(error::MISCELLANEOUS);
   // this operation won't add any CT entries.
@@ -189,21 +189,21 @@ void MEDDLY::constraint_bckwd_bfs::showEntry(output &strm, const node_handle* en
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::constraint_dfs_opname::constraint_dfs_opname(bool fwd)
- : minimum_witness_opname(fwd ? "PostImage" : "PreImage")
+MEDDLY::constrained_dfs_opname::constrained_dfs_opname(bool fwd)
+ : constrained_opname(fwd ? "PostImage" : "PreImage")
 {
   forward = fwd;
 }
 
-MEDDLY::specialized_operation* MEDDLY::constraint_dfs_opname::buildOperation(arguments* a) const
+MEDDLY::specialized_operation* MEDDLY::constrained_dfs_opname::buildOperation(arguments* a) const
 {
-  minimum_witness_opname::minimum_witness_args* args = dynamic_cast<minimum_witness_opname::minimum_witness_args*>(a);
+  constrained_opname::constrained_args* args = dynamic_cast<constrained_opname::constrained_args*>(a);
   specialized_operation* op = 0;
   if (forward) {
     throw error(error::NOT_IMPLEMENTED);
   }
   else {
-    op = new constraint_bckwd_dfs(this,
+    op = new constrained_bckwd_dfs(this,
       static_cast<expert_forest*>(args->consForest),
       static_cast<expert_forest*>(args->inForest),
       static_cast<expert_forest*>(args->relForest),
@@ -218,16 +218,16 @@ MEDDLY::specialized_operation* MEDDLY::constraint_dfs_opname::buildOperation(arg
 // *                                                                *
 // ******************************************************************
 
-const int MEDDLY::constraint_bckwd_dfs::NODE_INDICES_IN_KEY[4] = {
+const int MEDDLY::constrained_bckwd_dfs::NODE_INDICES_IN_KEY[4] = {
   sizeof(long) / sizeof(node_handle),
   (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle),
   (sizeof(long) + 2 * sizeof(node_handle)) / sizeof(node_handle),
   (3 * sizeof(node_handle) + 2 * sizeof(long)) / sizeof(node_handle)
 };
 
-MEDDLY::constraint_bckwd_dfs::constraint_bckwd_dfs(const minimum_witness_opname* code,
+MEDDLY::constrained_bckwd_dfs::constrained_bckwd_dfs(const constrained_opname* code,
   expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
-  : common_constraint(code,
+  : common_constrained(code,
       (sizeof(long) + 3 * sizeof(node_handle)) / sizeof(node_handle),
       (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle),
       cons, arg, trans, res)
@@ -239,7 +239,7 @@ MEDDLY::constraint_bckwd_dfs::constraint_bckwd_dfs(const minimum_witness_opname*
   splits = nullptr;
 }
 
-MEDDLY::compute_table::search_key* MEDDLY::constraint_bckwd_dfs::findResult(long aev, node_handle a,
+MEDDLY::compute_table::search_key* MEDDLY::constrained_bckwd_dfs::findResult(long aev, node_handle a,
     long bev, node_handle b, node_handle c, long& dev, node_handle &d)
 {
   compute_table::search_key* key = useCTkey();
@@ -268,7 +268,7 @@ MEDDLY::compute_table::search_key* MEDDLY::constraint_bckwd_dfs::findResult(long
   return 0;
 }
 
-void MEDDLY::constraint_bckwd_dfs::saveResult(compute_table::search_key* key,
+void MEDDLY::constrained_bckwd_dfs::saveResult(compute_table::search_key* key,
   long aev, node_handle a, long bev, node_handle b, node_handle c, long dev, node_handle d)
 {
   consF->cacheNode(a);
@@ -286,7 +286,7 @@ void MEDDLY::constraint_bckwd_dfs::saveResult(compute_table::search_key* key,
   CT->addEntry();
 }
 
-bool MEDDLY::constraint_bckwd_dfs::isStaleEntry(const node_handle* data)
+bool MEDDLY::constrained_bckwd_dfs::isStaleEntry(const node_handle* data)
 {
   return consF->isStale(data[NODE_INDICES_IN_KEY[0]])
     || argF->isStale(data[NODE_INDICES_IN_KEY[1]])
@@ -294,7 +294,7 @@ bool MEDDLY::constraint_bckwd_dfs::isStaleEntry(const node_handle* data)
     || resF->isStale(data[NODE_INDICES_IN_KEY[3]]);
 }
 
-void MEDDLY::constraint_bckwd_dfs::discardEntry(const node_handle* data)
+void MEDDLY::constrained_bckwd_dfs::discardEntry(const node_handle* data)
 {
   consF->uncacheNode(data[NODE_INDICES_IN_KEY[0]]);
   argF->uncacheNode(data[NODE_INDICES_IN_KEY[1]]);
@@ -302,7 +302,7 @@ void MEDDLY::constraint_bckwd_dfs::discardEntry(const node_handle* data)
   resF->uncacheNode(data[NODE_INDICES_IN_KEY[3]]);
 }
 
-void MEDDLY::constraint_bckwd_dfs::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::constrained_bckwd_dfs::showEntry(output &strm, const node_handle* data) const
 {
   strm << "[" << getName()
     << "(" << long(data[NODE_INDICES_IN_KEY[0]])
@@ -313,7 +313,7 @@ void MEDDLY::constraint_bckwd_dfs::showEntry(output &strm, const node_handle* da
 }
 
 // Partition the nsf based on "top level"
-void MEDDLY::constraint_bckwd_dfs::splitMxd(node_handle mxd)
+void MEDDLY::constrained_bckwd_dfs::splitMxd(node_handle mxd)
 {
   MEDDLY_DCASSERT(transF);
   MEDDLY_DCASSERT(splits == nullptr);
@@ -385,7 +385,7 @@ void MEDDLY::constraint_bckwd_dfs::splitMxd(node_handle mxd)
 #endif
 }
 
-void MEDDLY::constraint_bckwd_dfs::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res)
+void MEDDLY::constrained_bckwd_dfs::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res)
 {
   MEDDLY_DCASSERT(res.getForest() == resF);
 
@@ -400,20 +400,20 @@ void MEDDLY::constraint_bckwd_dfs::compute(const dd_edge& a, const dd_edge& b, c
   res.set(c, cev);
 }
 
-void MEDDLY::constraint_bckwd_dfs::compute(int aev, node_handle a, int bev, node_handle b, node_handle r,
+void MEDDLY::constrained_bckwd_dfs::compute(int aev, node_handle a, int bev, node_handle b, node_handle r,
   long& cev, node_handle& c)
 {
   // Partition NSF by levels
   splitMxd(r);
 
   // Execute saturation operation
-  constraint_saturation* bckwdSatOp = new constraint_saturation(this, consF, argF, resF);
+  constrained_saturation* bckwdSatOp = new constrained_saturation(this, consF, argF, resF);
   bckwdSatOp->saturate(aev, a, bev, b, cev, c);
 
   // Cleanup
-  bckwdSatOp->removeAllComputeTableEntries();
+//  bckwdSatOp->removeAllComputeTableEntries();
   //delete bckwdSatOp;
-  removeAllComputeTableEntries();
+//  removeAllComputeTableEntries();
   for (int i = transF->getNumVariables(); i > 0; i--) {
     transF->unlinkNode(splits[i]);
   }
@@ -421,7 +421,7 @@ void MEDDLY::constraint_bckwd_dfs::compute(int aev, node_handle a, int bev, node
   splits = nullptr;
 }
 
-void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpacked_node& nb)
+void MEDDLY::constrained_bckwd_dfs::saturateHelper(long aev, node_handle a, unpacked_node& nb)
 {
   MEDDLY_DCASSERT(a != 0);
 
@@ -552,7 +552,7 @@ void MEDDLY::constraint_bckwd_dfs::saturateHelper(long aev, node_handle a, unpac
   unpacked_node::recycle(A);
 }
 
-void MEDDLY::constraint_bckwd_dfs::recFire(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c)
+void MEDDLY::constrained_bckwd_dfs::recFire(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c)
 {
   // termination conditions
   if (a == 0 || b == 0 || r == 0) {
@@ -687,7 +687,7 @@ void MEDDLY::constraint_bckwd_dfs::recFire(long aev, node_handle a, long bev, no
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::constraint_saturation::constraint_saturation(constraint_bckwd_dfs* p,
+MEDDLY::constrained_saturation::constrained_saturation(constrained_bckwd_dfs* p,
   expert_forest* cons, expert_forest* arg, expert_forest* res)
   : specialized_operation(nullptr,
       (arg->isFullyReduced()
@@ -723,14 +723,14 @@ MEDDLY::constraint_saturation::constraint_saturation(constraint_bckwd_dfs* p,
   }
 }
 
-MEDDLY::constraint_saturation::~constraint_saturation()
+MEDDLY::constrained_saturation::~constrained_saturation()
 {
   unregisterInForest(consF);
   unregisterInForest(argF);
   unregisterInForest(resF);
 }
 
-bool MEDDLY::constraint_saturation::checkForestCompatibility() const
+bool MEDDLY::constrained_saturation::checkForestCompatibility() const
 {
   auto o1 = consF->variableOrder();
   auto o2 = argF->variableOrder();
@@ -739,7 +739,7 @@ bool MEDDLY::constraint_saturation::checkForestCompatibility() const
     && o1->is_compatible_with(*o3);
 }
 
-bool MEDDLY::constraint_saturation::checkTerminals(int aev, node_handle a, int bev, node_handle b, long& cev, node_handle& c)
+bool MEDDLY::constrained_saturation::checkTerminals(int aev, node_handle a, int bev, node_handle b, long& cev, node_handle& c)
 {
   if (a == -1 && b == -1) {
     c = -1;
@@ -754,7 +754,7 @@ bool MEDDLY::constraint_saturation::checkTerminals(int aev, node_handle a, int b
   return false;
 }
 
-MEDDLY::compute_table::search_key* MEDDLY::constraint_saturation::findResult(long aev, node_handle a,
+MEDDLY::compute_table::search_key* MEDDLY::constrained_saturation::findResult(long aev, node_handle a,
     long bev, node_handle b, int level, long& cev, node_handle &c)
 {
   compute_table::search_key* key = useCTkey();
@@ -784,7 +784,7 @@ MEDDLY::compute_table::search_key* MEDDLY::constraint_saturation::findResult(lon
   return 0;
 }
 
-void MEDDLY::constraint_saturation::saveResult(compute_table::search_key* key,
+void MEDDLY::constrained_saturation::saveResult(compute_table::search_key* key,
   long aev, node_handle a, long bev, node_handle b, int level, long cev, node_handle c)
 {
   consF->cacheNode(a);
@@ -802,21 +802,21 @@ void MEDDLY::constraint_saturation::saveResult(compute_table::search_key* key,
   CT->addEntry();
 }
 
-bool MEDDLY::constraint_saturation::isStaleEntry(const node_handle* data)
+bool MEDDLY::constrained_saturation::isStaleEntry(const node_handle* data)
 {
   return consF->isStale(data[NODE_INDICES_IN_KEY[0]])
     || argF->isStale(data[NODE_INDICES_IN_KEY[1]])
     || resF->isStale(data[NODE_INDICES_IN_KEY[2]]);
 }
 
-void MEDDLY::constraint_saturation::discardEntry(const node_handle* data)
+void MEDDLY::constrained_saturation::discardEntry(const node_handle* data)
 {
   consF->uncacheNode(data[NODE_INDICES_IN_KEY[0]]);
   argF->uncacheNode(data[NODE_INDICES_IN_KEY[1]]);
   resF->uncacheNode(data[NODE_INDICES_IN_KEY[2]]);
 }
 
-void MEDDLY::constraint_saturation::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::constrained_saturation::showEntry(output &strm, const node_handle* data) const
 {
   strm << "[" << getName()
     << "(" << long(data[NODE_INDICES_IN_KEY[0]])
@@ -825,12 +825,12 @@ void MEDDLY::constraint_saturation::showEntry(output &strm, const node_handle* d
     << "]";
 }
 
-void MEDDLY::constraint_saturation::saturate(int aev, node_handle a, int bev, node_handle b, long& cev, node_handle& c)
+void MEDDLY::constrained_saturation::saturate(int aev, node_handle a, int bev, node_handle b, long& cev, node_handle& c)
 {
   saturate(aev, a, bev, b, argF->getNumVariables(), cev, c);
 }
 
-void MEDDLY::constraint_saturation::saturate(int aev, node_handle a, int bev, node_handle b, int level, long& cev, node_handle& c)
+void MEDDLY::constrained_saturation::saturate(int aev, node_handle a, int bev, node_handle b, int level, long& cev, node_handle& c)
 {
   if (checkTerminals(aev, a, bev, b, cev, c)) {
     return;
@@ -887,12 +887,12 @@ void MEDDLY::constraint_saturation::saturate(int aev, node_handle a, int bev, no
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::minimum_witness_opname* MEDDLY::initConstraintBFSBackward()
+MEDDLY::constrained_opname* MEDDLY::initConstrainedBFSBackward()
 {
-  return new constraint_bfs_opname(false);
+  return new constrained_bfs_opname(false);
 }
 
-MEDDLY::minimum_witness_opname* MEDDLY::initConstraintDFSBackward()
+MEDDLY::constrained_opname* MEDDLY::initConstrainedDFSBackward()
 {
-  return new constraint_dfs_opname(false);
+  return new constrained_dfs_opname(false);
 }

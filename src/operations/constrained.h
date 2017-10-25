@@ -17,29 +17,29 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MINIMUM_WITNESS_H
-#define MINIMUM_WITNESS_H
+#ifndef SAT_CONSTRAINED_H
+#define SAT_CONSTRAINED_H
 
 #include "meddly.h"
 #include "meddly_expert.h"
 
 namespace MEDDLY {
-  class common_constraint;
+  class common_constrained;
 
-  class constraint_bfs_opname;
-  class constraint_bckwd_bfs;
+  class constrained_bfs_opname;
+  class constrained_bckwd_bfs;
 
-  class constraint_dfs_opname;
-  class constraint_bckwd_dfs;
+  class constrained_dfs_opname;
+  class constrained_bckwd_dfs;
 
-  class constraint_sat_opname;
-  class constraint_saturation;
+  //class constraint_sat_opname;
+  class constrained_saturation;
 
-  minimum_witness_opname* initConstraintBFSBackward();
-  minimum_witness_opname* initConstraintDFSBackward();
+  constrained_opname* initConstrainedBFSBackward();
+  constrained_opname* initConstrainedDFSBackward();
 }
 
-class MEDDLY::common_constraint: public specialized_operation
+class MEDDLY::common_constrained: public specialized_operation
 {
 protected:
   expert_forest* consF;
@@ -51,22 +51,22 @@ protected:
   virtual bool checkForestCompatibility() const;
 
 public:
-  common_constraint(const minimum_witness_opname* code, int kl, int al,
+  common_constrained(const constrained_opname* code, int kl, int al,
     expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
-  ~common_constraint();
+  ~common_constrained();
 };
 
-class MEDDLY::constraint_bfs_opname : public minimum_witness_opname {
+class MEDDLY::constrained_bfs_opname : public constrained_opname {
 protected:
   bool forward;
 
 public:
-  constraint_bfs_opname(bool fwd);
+  constrained_bfs_opname(bool fwd);
 
   virtual specialized_operation* buildOperation(arguments* a) const;
 };
 
-class MEDDLY::constraint_bckwd_bfs: public common_constraint
+class MEDDLY::constrained_bckwd_bfs: public common_constrained
 {
 protected:
   binary_operation* imageOp;
@@ -80,23 +80,23 @@ protected:
   virtual void showEntry(output &strm, const node_handle* entryData) const;
 
 public:
-  constraint_bckwd_bfs(const minimum_witness_opname* code,
+  constrained_bckwd_bfs(const constrained_opname* code,
     expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
 
   virtual void compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res);
 };
 
-class MEDDLY::constraint_dfs_opname : public minimum_witness_opname {
+class MEDDLY::constrained_dfs_opname : public constrained_opname {
 protected:
   bool forward;
 
 public:
-  constraint_dfs_opname(bool fwd);
+  constrained_dfs_opname(bool fwd);
 
   virtual specialized_operation* buildOperation(arguments* a) const;
 };
 
-class MEDDLY::constraint_bckwd_dfs: public common_constraint
+class MEDDLY::constrained_bckwd_dfs: public common_constrained
 {
 protected:
   static const int NODE_INDICES_IN_KEY[4];
@@ -120,7 +120,7 @@ protected:
   virtual void showEntry(output &strm, const node_handle *data) const;
 
 public:
-  constraint_bckwd_dfs(const minimum_witness_opname* code,
+  constrained_bckwd_dfs(const constrained_opname* code,
     expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
 
   virtual void compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res);
@@ -129,18 +129,18 @@ public:
   void saturateHelper(long aev, node_handle a, unpacked_node& nb);
 };
 
-class MEDDLY::constraint_saturation: public specialized_operation
+class MEDDLY::constrained_saturation: public specialized_operation
 {
 protected:
   int NODE_INDICES_IN_KEY[3];
 
-  constraint_bckwd_dfs* parent;
+  constrained_bckwd_dfs* parent;
 
   expert_forest* consF;
   expert_forest* argF;
   expert_forest* resF;
 
-  virtual ~constraint_saturation();
+  virtual ~constrained_saturation();
 
   // Check if the variables orders of relevant forests are compatible
   virtual bool checkForestCompatibility() const;
@@ -157,7 +157,7 @@ protected:
   virtual void showEntry(output &strm, const node_handle *data) const;
 
 public:
-  constraint_saturation(constraint_bckwd_dfs* p,
+  constrained_saturation(constrained_bckwd_dfs* p,
     expert_forest* cons, expert_forest* arg, expert_forest* res);
 
   bool matches(const expert_forest* arg1, const expert_forest* arg2,

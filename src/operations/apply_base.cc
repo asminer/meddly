@@ -655,9 +655,7 @@ void MEDDLY::generic_binary_evplus_mxd
   unpacked_node::recycle(A);
 
   // Reduce
-  node_handle cl;
-  resF->createReducedNode(-1, nb, cev, cl);
-  c = cl;
+  resF->createReducedNode(-1, nb, cev, c);
 
   // Add to CT
   saveResult(Key, aev, a, bev, b, cev, c);
