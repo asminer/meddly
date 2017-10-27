@@ -21,22 +21,22 @@
 
 MEDDLY::evmdd_forest
 ::evmdd_forest(int dsl, domain* d, range_type t, edge_labeling ev, 
-  const policies &p,int* level_reduction_rule) : ev_forest(dsl, d, false, t, ev, p,level_reduction_rule)
+  const policies &p, int* level_reduction_rule) : ev_forest(dsl, d, false, t, ev, p, level_reduction_rule)
 {
   // anything to construct?
 }
 
 void MEDDLY::evmdd_forest::swapAdjacentVariables(int level)
 {
-	throw error(error::NOT_IMPLEMENTED);
+	throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 void MEDDLY::evmdd_forest::moveDownVariable(int high, int low)
 {
-	throw error(error::NOT_IMPLEMENTED);
+	throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 void MEDDLY::evmdd_forest::moveUpVariable(int low, int high)
 {
-	throw error(error::NOT_IMPLEMENTED);
+	throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }

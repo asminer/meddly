@@ -56,7 +56,11 @@ class MEDDLY::mm_mult_op : public binary_operation {
     mm_mult_op(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res, binary_operation* acc);
 
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
+#endif
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
 
@@ -98,15 +102,36 @@ MEDDLY::mm_mult_op::mm_mult_op(const binary_opname* oc, expert_forest* a1,
   accumulateOp = acc;
 
   if (!a1->isForRelations() || !a2->isForRelations())
-    throw error(error::MISCELLANEOUS);
+    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
 }
 
+#ifndef USE_NODE_STATUS
 bool MEDDLY::mm_mult_op::isStaleEntry(const node_handle* data)
 {
   return arg1F->isStale(data[0]) ||
          arg2F->isStale(data[1]) ||
          resF->isStale(data[2]);
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::mm_mult_op::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = arg1F->getNodeStatus(data[0]);
+  MEDDLY::forest::node_status b = arg2F->getNodeStatus(data[1]);
+  MEDDLY::forest::node_status c = resF->getNodeStatus(data[2]);
+
+  if (a == MEDDLY::forest::DEAD ||
+      b == MEDDLY::forest::DEAD ||
+      c == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE ||
+      b == MEDDLY::forest::RECOVERABLE ||
+      c == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 void MEDDLY::mm_mult_op::discardEntry(const node_handle* data)
 {
@@ -408,7 +433,7 @@ MEDDLY::mm_mult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getDomain() != r->getDomain()) || 
     (a2->getDomain() != r->getDomain()) 
   )
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (
     (a1->getRangeType() == forest::BOOLEAN) ||
@@ -421,7 +446,7 @@ MEDDLY::mm_mult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
     (r->getEdgeLabeling()  != forest::MULTI_TERMINAL) 
   )
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   binary_operation* acc = getOperation(PLUS, r, r, r);
 
@@ -433,7 +458,7 @@ MEDDLY::mm_mult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
       return new mm_mult_mt<float>(this, a1, a2, r, acc);
       
     default:
-      throw error(error::TYPE_MISMATCH);
+      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   }
 }
 

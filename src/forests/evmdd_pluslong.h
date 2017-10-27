@@ -42,6 +42,9 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
           readValue(p, ev);
           return (0 == ev);
         }
+        static inline bool isTransparentEdge(const void* p) {
+          return isIdentityEdge(p);
+        }
         static inline long getRedundantEdge() {
           return 0;
         }
@@ -69,6 +72,8 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
     virtual void createEdgeForVar(int vh, bool vp, const int* terms, dd_edge& a);
     virtual void evaluate(const dd_edge &f, const int* vlist, long &term) const;
 
+    virtual bool isTransparentEdge(node_handle p, const void* v) const;
+    virtual void getTransparentEdge(node_handle &p, void* v) const;
     virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const;
     virtual bool isRedundant(const unpacked_node &nb) const;
     virtual bool isIdentityEdge(const unpacked_node &nb, int i) const;

@@ -298,7 +298,10 @@ int main()
       fflush(stdout);
       long c = writeReachset(s, n);
       printf("%12ld states\n", c);
-      if (c !=expected[n]) throw 1;
+      if (c !=expected[n]) {
+        printf("Wrong number of states!\n");
+        throw 1;
+      }
     }
     fclose(s);
 

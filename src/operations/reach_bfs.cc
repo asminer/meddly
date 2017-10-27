@@ -51,7 +51,11 @@ class MEDDLY::common_bfs_mt : public binary_operation {
     common_bfs_mt(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
+#endif
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
@@ -112,21 +116,30 @@ MEDDLY::common_bfs_mt::common_bfs_mt(const binary_opname* oc, expert_forest* a1,
   imageOp = 0;
 }
 
+#ifndef USE_NODE_STATUS
 bool MEDDLY::common_bfs_mt::isStaleEntry(const node_handle* entryData)
+{
+  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+  // this operation won't add any CT entries.
+}
+#else
+MEDDLY::forest::node_status
+MEDDLY::common_bfs_mt::getStatusOfEntry(const node_handle* data)
 {
   throw error(error::MISCELLANEOUS);
   // this operation won't add any CT entries.
 }
+#endif
 
 void MEDDLY::common_bfs_mt::discardEntry(const node_handle* entryData)
 {
-  throw error(error::MISCELLANEOUS);
+  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   // this operation won't add any CT entries.
 }
 
 void MEDDLY::common_bfs_mt::showEntry(output &strm, const node_handle* entryData) const
 {
-  throw error(error::MISCELLANEOUS);
+  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   // this operation won't add any CT entries.
 }
 
@@ -394,7 +407,7 @@ MEDDLY::forwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getDomain() != r->getDomain()) || 
     (a2->getDomain() != r->getDomain()) 
   )
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (
     a1->isForRelations()    ||
@@ -404,7 +417,7 @@ MEDDLY::forwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
     (a2->getEdgeLabeling() != forest::MULTI_TERMINAL)
   )
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   if (a1->getEdgeLabeling() == forest::MULTI_TERMINAL) {
     return new forwd_bfs_mt(this, a1, a2, r);
@@ -445,10 +458,10 @@ MEDDLY::bckwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getDomain() != r->getDomain()) || 
     (a2->getDomain() != r->getDomain()) 
   )
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (a1 != r)
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
 
   if (
     a1->isForRelations()    ||
@@ -458,7 +471,7 @@ MEDDLY::bckwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
     (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) 
   )
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   if (a1->getEdgeLabeling() == forest::MULTI_TERMINAL) {
     return new bckwd_bfs_mt(this, a1, a2, r);

@@ -67,7 +67,7 @@ void MEDDLY::evmdd_pluslong
   // Create vlist following the mapping between variable and level
   int** ordered_vlist = static_cast<int**>(malloc(N * sizeof(int*) + (num_vars + 1) * N * sizeof(int)));
   if (ordered_vlist == nullptr) {
-	  throw error(error::INSUFFICIENT_MEMORY);
+	  throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
 
   ordered_vlist[0] = reinterpret_cast<int*>(&ordered_vlist[N]);
@@ -120,6 +120,21 @@ void MEDDLY::evmdd_pluslong
 }
 
 bool MEDDLY::evmdd_pluslong
+::isTransparentEdge(node_handle ep, const void* ev) const
+{
+  MEDDLY_DCASSERT(ep != 0 || OP::isTransparentEdge(ev));
+  if (ep != getTransparentNode()) return false;
+  return OP::isTransparentEdge(ev);
+}
+
+void MEDDLY::evmdd_pluslong
+::getTransparentEdge(node_handle &ep, void* ev) const
+{
+  ep = 0;
+  OP::setEdge(ev, OP::getRedundantEdge());
+}
+
+bool MEDDLY::evmdd_pluslong
 ::areEdgeValuesEqual(const void* eva, const void* evb) const
 {
   long val1, val2;
@@ -135,7 +150,7 @@ bool MEDDLY::evmdd_pluslong::isRedundant(const unpacked_node &nb) const
 
 bool MEDDLY::evmdd_pluslong::isIdentityEdge(const unpacked_node &nb, int i) const
 {
-  return isIdentityEdgeTempl<OP>(nb, i); 
+  return isIdentityEdgeTempl<OP>(nb, i);
 }
 
 void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
@@ -369,7 +384,7 @@ void MEDDLY::evmdd_pluslong::evpimdd_iterator::getValue(long &tv) const
 bool MEDDLY::evmdd_pluslong::evpimdd_iterator::start(const dd_edge &e)
 {
   if (F != e.getForest()) {
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
 
   long ev = Inf<long>();
@@ -457,7 +472,7 @@ MEDDLY::evmdd_index_set_long::~evmdd_index_set_long()
 void MEDDLY::evmdd_index_set_long::getElement(const dd_edge &a, long index, int* e)
 {
   if (e == nullptr) {
-    throw error(error::INVALID_VARIABLE);
+    throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
   }
   if (index < 0) {
     e[0] = 0;

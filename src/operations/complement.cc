@@ -42,7 +42,12 @@ class MEDDLY::compl_mdd : public unary_operation {
   public:
     compl_mdd(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
+#endif
+
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
     virtual void computeDDEdge(const dd_edge& a, dd_edge& b);
@@ -82,10 +87,28 @@ MEDDLY::compl_mdd
   // ct entry 1: output node
 }
 
+#ifndef USE_NODE_STATUS
 bool MEDDLY::compl_mdd::isStaleEntry(const node_handle* data)
 {
   return argF->isStale(data[0]) || resF->isStale(data[1]);
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::compl_mdd::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
+  MEDDLY::forest::node_status c = resF->getNodeStatus(data[1]);
+
+  if (a == MEDDLY::forest::DEAD ||
+      c == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE ||
+      c == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 void MEDDLY::compl_mdd::discardEntry(const node_handle* data)
 {
@@ -155,7 +178,11 @@ class MEDDLY::compl_mxd : public unary_operation {
   public:
     compl_mxd(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
+#endif
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
     virtual void computeDDEdge(const dd_edge& a, dd_edge& b);
@@ -172,10 +199,28 @@ MEDDLY::compl_mxd
   // ct entry 2: output node
 }
 
+#ifndef USE_NODE_STATUS
 bool MEDDLY::compl_mxd::isStaleEntry(const node_handle* data)
 {
   return argF->isStale(data[1]) || resF->isStale(data[2]);
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::compl_mxd::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = argF->getNodeStatus(data[1]);
+  MEDDLY::forest::node_status c = resF->getNodeStatus(data[2]);
+
+  if (a == MEDDLY::forest::DEAD ||
+      c == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE ||
+      c == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 void MEDDLY::compl_mxd::discardEntry(const node_handle* data)
 {
@@ -302,14 +347,14 @@ MEDDLY::compl_opname
   if (0==arg || 0==res) return 0;
 
   if (arg->getDomain() != res->getDomain())
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (arg->getRangeType() != forest::BOOLEAN ||
       arg->getEdgeLabeling() != forest::MULTI_TERMINAL ||
       res->getRangeType() != forest::BOOLEAN ||
       res->getEdgeLabeling() != forest::MULTI_TERMINAL ||
       arg->isForRelations() != res->isForRelations()
-  ) throw error(error::TYPE_MISMATCH);
+  ) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   if (arg->isForRelations())
     return new compl_mxd(this,  arg,  res);

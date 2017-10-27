@@ -22,6 +22,10 @@
 #include "simple_model.h"
 
 #define VERBOSE
+#define NOT_KNOWN     -2
+#define OUT_OF_BOUNDS -1
+
+
 
 // #define DEBUG_GENERATE
 // #define DEBUG_EVENTS
@@ -360,4 +364,79 @@ void explicitReachset(const char* const* events, int nEvents,
   }
   delete[] minterms;
 }
+
+
+/*************************************************************/
+int* nxtList;
+class derRelNode : public MEDDLY::satimpl_opname::relation_node
+{
+public:
+  derRelNode(unsigned long signature, int level, rel_node_handle down):relation_node(signature, level, down)
+  {}
+  long nextOf(long i) override
+  {
+  
+     if(i>=getPieceSize()) //Array needs to be allocated
+      expandTokenUpdate(i);
+  
+      if(getTokenUpdate()[i]==NOT_KNOWN) //Array needs to be updated
+      {	
+      	long result = i+nxtList[getID()];
+      	long val = result>=0?result:OUT_OF_BOUNDS;
+      	setTokenUpdateAtIndex(i,val);
+      }
+
+     return getTokenUpdate()[i];
+  }
+};
+
+
+void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, int bounds, MEDDLY::satimpl_opname::implicit_relation* T)
+{
+  
+  int node_count = 0;
+  int* tops_of_events = (int*)malloc(nEvents*sizeof(int));
+  
+  for(int e = 0;e < nEvents; e++)
+    {
+    bool done = false;
+    for( int p = 1; p <= nPlaces; p++)
+      {
+      if(events[e][p]!='0') node_count +=1;
+      if((events[e][nPlaces-p+1]!=0)&&(!done))
+        {
+        tops_of_events[e] = nPlaces-p+1;
+        done = true;
+        }
+      }
+    }
+  
+  
+  derRelNode** rNode = (derRelNode**)malloc(node_count*sizeof(derRelNode*));
+  
+  // Add/Subtract Tokens
+  nxtList = (int*)malloc((node_count+2)*sizeof(int));
+  nxtList[0] = 0;
+  nxtList[1] = 0;
+  
+  int rctr = 0;
+  for(int e = 0;e < nEvents; e++)
+    {
+    unsigned long sign = 0;
+    int previous_node_handle = 1;
+    for( int p = 1; p <= nPlaces; p++)
+      {
+       sign = events[e][p]>=0?(sign*10)+events[e][p]:(sign*100)+events[e][p];
+        if(events[e][p]!=0)
+        {
+          rNode[rctr] = new derRelNode(sign,p,previous_node_handle);
+          previous_node_handle = T->registerNode((tops_of_events[e]==p),rNode[rctr]);
+          rctr++;
+          nxtList[previous_node_handle] = events[e][p];
+        }
+      }
+    }
+}
+
+
 

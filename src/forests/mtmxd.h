@@ -28,7 +28,7 @@ namespace MEDDLY {
 
 class MEDDLY::mtmxd_forest : public mt_forest {
   public:
-    mtmxd_forest(int dsl, domain* d, range_type t, const policies &p,int* level_reduction_rule=NULL);
+    mtmxd_forest(int dsl, domain* d, range_type t, const policies &p, int* level_reduction_rule=NULL);
 
     virtual void swapAdjacentVariables(int level);
     virtual void moveDownVariable(int high, int low);
@@ -357,8 +357,14 @@ namespace MEDDLY {
         //
         // Start new node at level k
         //
+#ifndef USE_XDDS
         unpacked_node* nb = unpacked_node::newSparse(F, k, lastV);
         int z = 0; // number of nonzero edges in our sparse node
+#else
+        bool add_extensible_edge = (F->isExtensibleLevel(k) && dontcares);
+        int z = 0; // number of nonzero edges in our sparse node
+        unpacked_node* nb = unpacked_node::newSparse(F, k, lastV + (add_extensible_edge? 1: 0));
+#endif
 
         //
         // For each value v, 
@@ -417,6 +423,17 @@ namespace MEDDLY {
           }
         } // for v
 
+#ifdef USE_XDDS
+        if (add_extensible_edge) {
+          nb->i_ref(z) = ((z > 0)? nb->i(z-1)+1: 0);
+          nb->d_ref(z) = F->linkNode(dontcares);
+          z++;
+          nb->markAsExtensible();
+        } else {
+          nb->markAsNotExtensible();
+        }
+#endif
+
         //
         // Cleanup
         //
@@ -436,6 +453,7 @@ namespace MEDDLY {
 //        if(p==F->getTransparentNode()){
 //        	return p;
 //        }
+        MEDDLY_DCASSERT(!(F->getExpertDomain()->getExpertVar(k)->isExtensible()));
         // build an identity node by hand
         int lastV = F->getLevelSize(k);
         unpacked_node* nb = unpacked_node::newFull(F, k, lastV);
@@ -452,142 +470,164 @@ namespace MEDDLY {
       /// Special case for createEdge(), with only one minterm.
       node_handle createEdgePath(int k, const int* vlist, const int* vplist, node_handle next)
       {
-          MEDDLY_DCASSERT(F->isForRelations());
+        MEDDLY_DCASSERT(F->isForRelations());
 
-          if (0==next && (!F->isQuasiReduced() || F->getTransparentNode()==ENCODER::value2handle(0))) {
-        	return next;
-          }
+        if (0==next && (!F->isQuasiReduced() || F->getTransparentNode()==ENCODER::value2handle(0))) {
+          return next;
+        }
 
-          for (int i=1; i<=k; i++) {
-            //
-            // process primed level
-            //
-            node_handle nextpr;
-            if (DONT_CARE == vplist[i]) {
-              if (F->isFullyReduced()) {
-                // DO NOTHING
-                nextpr = next;
+        for (int i=1; i<=k; i++) {
+          //
+          // process primed level
+          //
+          node_handle nextpr;
+          if (DONT_CARE == vplist[i]) {
+            if (F->isFullyReduced()) {
+              // DO NOTHING
+              nextpr = next;
+            } else {
+              // build redundant node
+              unpacked_node* nb = 0;
+              if (F->isExtensibleLevel(i)) {
+                nb = unpacked_node::newFull(F, -i, 1);
+                nb->d_ref(0) = next;
+                // link count should be unchanged
+                nb->markAsExtensible();
               } else {
-                // build redundant node
                 int sz = F->getLevelSize(-i);
-                unpacked_node* nb = unpacked_node::newFull(F, -i, sz);
+                nb = unpacked_node::newFull(F, -i, sz);
                 for (int v=0; v<sz; v++) {
                   nb->d_ref(v) = F->linkNode(next);
                 }
                 F->unlinkNode(next);
-                nextpr = F->createReducedNode(-1, nb);
               }
+              nextpr = F->createReducedNode(-1, nb);
             }
-            else if (DONT_CHANGE == vplist[i]) {
-                //
-                // Identity node
-                //
-                if(DONT_CARE == vlist[i]){
-                  if (F->isIdentityReduced()) continue;
-                	next = makeIdentityEdgeForDontCareDontChange(i, next);
-                	continue;
-                }
+          }
+          else if (DONT_CHANGE == vplist[i]) {
+            //
+            // Identity node
+            //
+            if(DONT_CARE == vlist[i]){
+              if (F->isIdentityReduced()) continue;
+              next = makeIdentityEdgeForDontCareDontChange(i, next);
+              continue;
+            }
 
-                MEDDLY_DCASSERT(vlist[i]>=0);
+            MEDDLY_DCASSERT(vlist[i]>=0);
 
-                if (F->isIdentityReduced()) {
-                	// DO NOTHING
-                	nextpr = next;
-                }
-                else if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
-                	int sz = F->getLevelSize(-i);
-                  unpacked_node* nbp = unpacked_node::newFull(F, -i, sz);
-					        node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
-					        for(int v=0; v<sz; v++){
-					          nbp->d_ref(v)=(v==vlist[i] ? F->linkNode(next) : F->linkNode(zero));
-					        }
-					        F->unlinkNode(zero);
+            if (F->isIdentityReduced()) {
+              // DO NOTHING
+              nextpr = next;
+            }
+            else if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
+              int sz = F->getLevelSize(-i);
+              unpacked_node* nbp = unpacked_node::newFull(F, -i, sz);
+              node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
+              for(int v=0; v<sz; v++){
+                nbp->d_ref(v)=(v==vlist[i] ? F->linkNode(next) : F->linkNode(zero));
+              }
+              F->unlinkNode(zero);
 
-					        nextpr = F->createReducedNode(vlist[i], nbp);
-                }
-                else {
-                  unpacked_node* nbp = unpacked_node::newSparse(F, -i, 1);
-                	nbp->i_ref(0) = vlist[i];
-                	nbp->d_ref(0) = next;
-                  // link count should be unchanged
-
-                	nextpr = F->createReducedNode(vlist[i], nbp);
-                }
+              nextpr = F->createReducedNode(vlist[i], nbp);
             }
             else {
-              // sane value
-              if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
-            	int sz = F->getLevelSize(-i);
-                unpacked_node* nbp = unpacked_node::newFull(F, -i, sz);
-                node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
-                for(int v=0; v<sz; v++){
-                  nbp->d_ref(v)=(v==vplist[i] ? F->linkNode(next) : F->linkNode(zero));
-                }
-                F->unlinkNode(zero);
+              unpacked_node* nbp = unpacked_node::newSparse(F, -i, 1);
+              nbp->i_ref(0) = vlist[i];
+              nbp->d_ref(0) = next;
+              // link count should be unchanged
 
-                nextpr = F->createReducedNode(vlist[i], nbp);
-              }
-              else {
-                unpacked_node* nbp = unpacked_node::newSparse(F, -i, 1);
-                nbp->i_ref(0) = vplist[i];
-                nbp->d_ref(0) = next;
-                // link count should be unchanged
-
-                nextpr = F->createReducedNode(vlist[i], nbp);
-              }
+              nextpr = F->createReducedNode(vlist[i], nbp);
             }
-
-            //
-            // process unprimed level
-            //
-            if (DONT_CARE == vlist[i]) {
-              if (F->isFullyReduced()) {
-            	  next=nextpr;
-            	  continue;
+          }
+          else {
+            // sane value
+            if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
+              int sz = F->getLevelSize(-i);
+              unpacked_node* nbp = unpacked_node::newFull(F, -i, sz);
+              node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
+              for(int v=0; v<sz; v++){
+                nbp->d_ref(v)=(v==vplist[i] ? F->linkNode(next) : F->linkNode(zero));
               }
-              // build redundant node
+              F->unlinkNode(zero);
+
+              nextpr = F->createReducedNode(vlist[i], nbp);
+            }
+            else {
+              unpacked_node* nbp = unpacked_node::newSparse(F, -i, 1);
+              nbp->i_ref(0) = vplist[i];
+              nbp->d_ref(0) = next;
+              // link count should be unchanged
+
+              nextpr = F->createReducedNode(vlist[i], nbp);
+            }
+          }
+
+          //
+          // process unprimed level
+          //
+          if (DONT_CARE == vlist[i]) {
+            if (F->isFullyReduced()) { 
+              next=nextpr;
+              continue;
+            }
+            // build redundant node
+            unpacked_node* nb = 0;
+            if (F->isIdentityReduced()) {
+              // Below is likely a singleton, so check for identity reduction
+              // on the appropriate v value
               int sz = F->getLevelSize(i);
-              unpacked_node* nb = unpacked_node::newFull(F, i, sz);
-              if (F->isIdentityReduced()) {
-                // Below is likely a singleton, so check for identity reduction
-                // on the appropriate v value
-                for (int v=0; v<sz; v++) {
-//                  node_handle dpr = (v == vplist[i]) ? next : nextpr;
-                  nb->d_ref(v) = F->linkNode(v == vplist[i] ? next : nextpr);
-                }
+              bool add_edge = (F->isExtensibleLevel(i) && (vplist[i]+1) == sz);
+              nb = unpacked_node::newFull(F, i, add_edge? (1+sz): sz);
+              for (int v=0; v<sz; v++) {
+                nb->d_ref(v) = F->linkNode(v == vplist[i] ? next : nextpr);
+              }
+              if (F->isExtensibleLevel(i)) {
+                nb->markAsExtensible();
+                if (add_edge) nb->d_ref(sz) = F->linkNode(nextpr);
+              }
+            } else {
+              // Doesn't matter what happened below
+
+              if (F->isExtensibleLevel(i)) {
+                nb = unpacked_node::newFull(F, i, 1);
+                nb->d_ref(0) = F->linkNode(nextpr);
+                nb->markAsExtensible();
               } else {
-                // Doesn't matter what happened below
+                int sz = F->getLevelSize(i);
+                nb = unpacked_node::newFull(F, i, sz);
                 for (int v=0; v<sz; v++) {
                   nb->d_ref(v) = F->linkNode(nextpr);
                 }
               }
-              F->unlinkNode(nextpr);
-              next = F->createReducedNode(-1, nb);
-            } else {
-              // sane value
-              if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
-            	int sz=F->getLevelSize(i);
+            }
+            F->unlinkNode(nextpr);
+            next = F->createReducedNode(-1, nb);
+          } else {
+            // sane value
+            if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
+              int sz=F->getLevelSize(i);
               unpacked_node* nb = unpacked_node::newFull(F, i, sz);
-            	node_handle zero = makeOpaqueZeroNodeAtLevel(-i);
-            	for(int v=0; v<sz; v++){
-            	  nb->d_ref(v) = F->linkNode(v==vlist[i] ? nextpr : zero);
-            	}
-            	F->unlinkNode(zero);
-
-            	next = F->createReducedNode(-1, nb);
+              node_handle zero = makeOpaqueZeroNodeAtLevel(-i);
+              for(int v=0; v<sz; v++){
+                nb->d_ref(v) = F->linkNode(v==vlist[i] ? nextpr : zero);
               }
-              else {
-                unpacked_node* nb = unpacked_node::newSparse(F, i, 1);
-                nb->i_ref(0) = vlist[i];
-                nb->d_ref(0) = nextpr;
-                // link count should be unchanged
+              F->unlinkNode(zero);
 
-                next = F->createReducedNode(-1, nb);
-              }
+              next = F->createReducedNode(-1, nb);
+            }
+            else {
+              unpacked_node* nb = unpacked_node::newSparse(F, i, 1);
+              nb->i_ref(0) = vlist[i];
+              nb->d_ref(0) = nextpr;
+              // link count should be unchanged
+
+              next = F->createReducedNode(-1, nb);
             }
           }
+        }
 
-          return next;
+        return next;
       }
 
       // Make zero nodes recursively when:

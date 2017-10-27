@@ -27,6 +27,10 @@
 #include <set>
 // #include "compute_table.h"
 
+   #define OUT_OF_BOUNDS -1
+   #define NOT_KNOWN -2
+   #define TERMINAL_NODE 1
+
 // #define DEBUG_CLEANUP
 // #define DEBUG_FINALIZE
 // #define DEBUG_FINALIZE_SPLIT
@@ -104,13 +108,13 @@ MEDDLY::unary_opname::~unary_opname()
 MEDDLY::unary_operation* 
 MEDDLY::unary_opname::buildOperation(expert_forest* ar, expert_forest* rs) const
 {
-  throw error(error::TYPE_MISMATCH);  
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);  
 }
 
 MEDDLY::unary_operation* 
 MEDDLY::unary_opname::buildOperation(expert_forest* ar, opnd_type res) const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 
@@ -195,18 +199,18 @@ MEDDLY::satpregen_opname::pregen_relation
   insetF = inf;
   outsetF = outf;
   mxdF = smart_cast <MEDDLY::expert_forest*>(mxd);
-  if (0==insetF || 0==outsetF || 0==mxdF) throw error(error::MISCELLANEOUS);
+  if (0==insetF || 0==outsetF || 0==mxdF) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
 
   // Check for same domain
   if (  
     (insetF->getDomain() != mxdF->getDomain()) || 
     (outsetF->getDomain() != mxdF->getDomain()) 
   )
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   // for now, anyway, inset and outset must be same forest
   if (insetF != outsetF)
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
 
   // Check forest types
   if (
@@ -220,7 +224,7 @@ MEDDLY::satpregen_opname::pregen_relation
     (mxdF->getEdgeLabeling() != forest::MULTI_TERMINAL)     ||
     (outsetF->getEdgeLabeling() != forest::MULTI_TERMINAL)
   )
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   // Forests are good; set number of variables
   K = mxdF->getDomain()->getNumVariables();
@@ -278,7 +282,7 @@ MEDDLY::satpregen_opname::pregen_relation
 {
   MEDDLY_DCASSERT(mxdF);
 
-  if (r.getForest() != mxdF)  throw error(error::FOREST_MISMATCH);
+  if (r.getForest() != mxdF)  throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
 
   int k = r.getLevel(); 
   if (0==k) return;
@@ -301,8 +305,8 @@ MEDDLY::satpregen_opname::pregen_relation
   } else {
     // relation is "by events"
 
-    if (isFinalized())              throw error(error::MISCELLANEOUS);
-    if (last_event+1 >= num_events) throw error(error::VALUE_OVERFLOW);
+    if (isFinalized())              throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+    if (last_event+1 >= num_events) throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
 
     last_event++;
 
@@ -641,7 +645,7 @@ void MEDDLY::satotf_opname::subevent::clearMinterms()
 
 
 void MEDDLY::satotf_opname::subevent::confirm(otf_relation& rel, int v, int i) {
-  throw MEDDLY::error::NOT_IMPLEMENTED;
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 
@@ -706,7 +710,7 @@ void MEDDLY::satotf_opname::subevent::buildRoot() {
     out << " ]\n";
   }
   */
-#if 0
+#ifdef USE_XDDS
   dd_edge sum(root);
   f->createEdge(unpminterms, pminterms, num_minterms, sum);
   num_minterms = 0;
@@ -734,20 +738,27 @@ void MEDDLY::satotf_opname::subevent::showInfo(output& out) const {
 }
 
 long MEDDLY::satotf_opname::subevent::mintermMemoryUsage() const {
-  return long(num_minterms * 2) * long(f->getDomain()->getNumVariables()) * sizeof(int);
+  long n_minterms = 0L;
+  for (int i = 0; i < size_minterms; i++) {
+    if (unpminterms[i] != 0) n_minterms++;
+  }
+  return long(n_minterms * 2) * long(f->getDomain()->getNumVariables()) * sizeof(int);
 }
 
 // ============================================================
 
 MEDDLY::satotf_opname::event::event(subevent** p, int np)
-: subevents(p), num_subevents(np) 
 {
   if (p == 0 || np <= 0 || p[0]->getForest() == 0)
-    throw MEDDLY::error::INVALID_ARGUMENT;
+    throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
   f = p[0]->getForest();
   for (int i=1; i<np; i++) {
-    if (p[i]->getForest() != f) throw MEDDLY::error::INVALID_ARGUMENT;
+    if (p[i]->getForest() != f) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
   }
+
+  num_subevents = np;
+  subevents = new subevent*[np];
+  for (int i = 0; i < np; i++) subevents[i] = p[i];
 
   top = p[0]->getTop();
   for (int i = 1; i < np; i++) {
@@ -851,7 +862,7 @@ bool MEDDLY::satotf_opname::event::rebuild()
   }
   buildEventMask();
 
-  dd_edge e = event_mask;
+  dd_edge e(event_mask);
   for (int i = 0; i < num_subevents; i++) {
     e *= subevents[i]->getRoot();
   }
@@ -863,14 +874,19 @@ bool MEDDLY::satotf_opname::event::rebuild()
     out << "subevent: " << event_mask.getNode() << "\n";
     event_mask.show(out, 2);
     for (int i = 0; i < num_subevents; i++) {
-      out << "subevent: " << subevents[i]->getRoot().getNode() << "\n";
-      subevents[i]->getRoot().show(out, 2);
+    out << "subevent: " << subevents[i]->getRoot().getNode() << "\n";
+    subevents[i]->getRoot().show(out, 2);
     }
   }
+  ostream_output out(std::cout);
+  for (int i = 0; i < num_subevents; i++) {
+  out << "subevent: " << subevents[i]->getRoot().getNode() << "\n";
+  subevents[i]->getRoot().show(out, 2);
+  }
+  e.show(out, 2);
   */
-
   if (e == root) return false;
-  root += e;
+  root = e;
   return true;
 }
 
@@ -883,7 +899,11 @@ void MEDDLY::satotf_opname::event::enlargeVariables()
     int unprimedSize = f->getLevelSize(unprimed);
     int primedSize = f->getLevelSize(primed);
     if (unprimedSize < primedSize) {
-      ed->enlargeVariableBound(unprimed, false, primedSize);
+      expert_variable* vh = ed->getExpertVar(unprimed);
+      if (vh->isExtensible())
+        vh->enlargeBound(false, -primedSize);
+      else
+        vh->enlargeBound(false, primedSize);
     }
     MEDDLY_DCASSERT(f->getLevelSize(unprimed) == f->getLevelSize(primed));
   }
@@ -913,18 +933,18 @@ MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd,
   mxdF(static_cast<expert_forest*>(mxd)),
   outsetF(static_cast<expert_forest*>(outmdd))
 {
-  if (0==insetF || 0==outsetF || 0==mxdF) throw error(error::MISCELLANEOUS);
+  if (0==insetF || 0==outsetF || 0==mxdF) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
 
   // Check for same domain
   if (  
     (insetF->getDomain() != mxdF->getDomain()) || 
     (outsetF->getDomain() != mxdF->getDomain()) 
   )
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   // for now, anyway, inset and outset must be same forest
   if (insetF != outsetF)
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
 
   // Check forest types
   if (
@@ -937,7 +957,7 @@ MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd,
     (mxdF->getEdgeLabeling() != forest::MULTI_TERMINAL)     ||
     (outsetF->getEdgeLabeling() != forest::MULTI_TERMINAL)
   )
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   // Forests are good; set number of variables
   num_levels = mxdF->getDomain()->getNumVariables() + 1;
@@ -1118,7 +1138,6 @@ void findConfirmedStates(MEDDLY::satotf_opname::otf_relation* rel,
     std::set<MEDDLY::node_handle>& visited) {
   if (level == 0) return;
   if (visited.find(mdd) != visited.end()) return;
-  visited.insert(mdd);
 
   MEDDLY::expert_forest* insetF = rel->getInForest();
   int mdd_level = insetF->getNodeLevel(mdd);
@@ -1133,8 +1152,11 @@ void findConfirmedStates(MEDDLY::satotf_opname::otf_relation* rel,
     }
     findConfirmedStates(rel, confirmed, num_confirmed, mdd, level-1, visited);
   } else {
-    if (MEDDLY::isLevelAbove(mdd_level, level)) throw MEDDLY::error::INVALID_VARIABLE;
+    if (MEDDLY::isLevelAbove(mdd_level, level)) {
+      throw MEDDLY::error(MEDDLY::error::INVALID_VARIABLE, __FILE__, __LINE__);
+    }
     // mdd_level == level
+    visited.insert(mdd);
     MEDDLY::unpacked_node *nr = MEDDLY::unpacked_node::newFromNode(insetF, mdd, false);
     for (int i = 0; i < nr->getNNZs(); i++) {
       if (!confirmed[level][nr->i(i)]) {
@@ -1179,7 +1201,7 @@ void MEDDLY::satotf_opname::otf_relation::enlargeConfirmedArrays(int level, int 
   if (sz <= size_confirmed[level]) return;
   sz = MAX( sz , size_confirmed[level]*2 );
   confirmed[level] = (bool*) realloc(confirmed[level], sz * sizeof(bool));
-  if (confirmed[level] == 0) throw error::INSUFFICIENT_MEMORY;
+  if (confirmed[level] == 0) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   for (int i = size_confirmed[level]; i < sz; i++) confirmed[level][i] = false;
   size_confirmed[level] = sz;
 #endif
@@ -1232,6 +1254,288 @@ MEDDLY::constrained_opname::constrained_opname(const char* n)
 }
 
 // ******************************************************************
+// *                                                                *
+// *                     satimpl_opname  methods                    *
+// *                                                                *
+// ******************************************************************
+
+
+
+MEDDLY::satimpl_opname::satimpl_opname(const char* n)
+: specialized_opname(n)
+{
+}
+
+MEDDLY::satimpl_opname::~satimpl_opname()
+{
+}
+
+
+MEDDLY::satimpl_opname::relation_node::relation_node(unsigned long sign, int lvl, rel_node_handle d)
+{
+  signature  = sign;
+  level = lvl;
+  down = d;
+  piece_size = 0;
+  token_update = NULL;
+}
+
+MEDDLY::satimpl_opname::relation_node::~relation_node()
+{
+}
+
+long MEDDLY::satimpl_opname::relation_node::nextOf(long i)
+{
+  //to be defined for the example you use & comment this definition
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+bool
+MEDDLY::satimpl_opname::relation_node::equals(const relation_node* n) const
+{
+  if((signature == n->getSignature()) && (level == n->getLevel()) && (down == n->getDown()))
+    return true;
+  else
+    return false;
+}
+
+void
+MEDDLY::satimpl_opname::relation_node::expandTokenUpdate(long i)
+{
+  if(getPieceSize()==0)
+  {
+    token_update = (long*)malloc(1*sizeof(long));
+    piece_size = 1;
+    token_update[0]=NOT_KNOWN;
+  }
+  if(i>0)
+  {
+    token_update = (long*)realloc(token_update,(i+1)*sizeof(long));
+    for(int j = piece_size;j<=i;j++)
+      token_update[j]=NOT_KNOWN;
+    piece_size = i+1;
+  }
+}
+
+void
+MEDDLY::satimpl_opname::relation_node::setTokenUpdateAtIndex(long i,long val)
+{
+  MEDDLY_DCASSERT(i<getPieceSize());
+  token_update[i] = val;
+}
+
+// ******************************************************************
+
+MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
+                                                             forest* outmdd)
+: insetF(static_cast<expert_forest*>(inmdd)),outsetF(static_cast<expert_forest*>(outmdd))
+{
+  
+  if (0==insetF || 0==outsetF) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+  
+  // Check for same domain
+  if (insetF->getDomain() != outsetF->getDomain())
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+  
+  // for now, anyway, inset and outset must be same forest
+  if (insetF != outsetF)
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+  
+  // Check forest types
+  if (
+      insetF->isForRelations()    ||
+      outsetF->isForRelations()   ||
+      (insetF->getEdgeLabeling() != forest::MULTI_TERMINAL)   ||
+      (outsetF->getEdgeLabeling() != forest::MULTI_TERMINAL)
+      )
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+  
+  // Forests are good; set number of variables
+  num_levels = insetF->getDomain()->getNumVariables() + 1;
+  
+  //Allocate node_array
+  node_array = (relation_node*) malloc(8*sizeof(relation_node));
+  node_array_alloc = 8;
+  
+  
+  //Allocate event_list
+  event_list = (rel_node_handle**)malloc(num_levels*sizeof(rel_node_handle*));
+  event_list_alloc = (long*)malloc(num_levels*sizeof(long));
+  event_added = (long*)malloc(num_levels*sizeof(long));
+  
+  for(int i = 1;i < num_levels;i++)
+    {
+    event_list[i] = (rel_node_handle*)malloc(8*sizeof(rel_node_handle));
+    event_list_alloc[i] = 8;
+    event_added[i] = 0;
+    }
+  
+  
+  //create the terminal node
+  relation_node *Terminal = new relation_node(0,0,TERMINAL_NODE);
+  Terminal->setID(TERMINAL_NODE);
+  std::pair<rel_node_handle, relation_node*> TerminalNode(TERMINAL_NODE,Terminal);
+  impl_unique.insert(TerminalNode);
+  resizeNodeArray(1);
+  node_array[1] = *Terminal;
+  last_in_node_array = TERMINAL_NODE;
+  
+}
+
+void
+MEDDLY::satimpl_opname::implicit_relation::resizeNodeArray(int nh)
+{
+  last_in_node_array = nh;
+  if (last_in_node_array >= node_array_alloc) {
+    int nalloc = ((nh/8)+1)*8;
+    MEDDLY_DCASSERT(nalloc > nh);
+    MEDDLY_DCASSERT(nalloc > 0);
+    MEDDLY_DCASSERT(nalloc > node_array_alloc);
+    node_array = (relation_node*) realloc(node_array, nalloc*sizeof(relation_node));
+    if (0==node_array) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+    node_array_alloc = nalloc;
+  }
+}
+
+void
+MEDDLY::satimpl_opname::implicit_relation::resizeEventArray(int level)
+{
+  event_added[level] += 1;
+  if (event_added[level] > event_list_alloc[level]) {
+    int nalloc = ((event_added[level]/8)+1)*8;
+    MEDDLY_DCASSERT(nalloc > 0);
+    MEDDLY_DCASSERT(nalloc > event_added[level]);
+    MEDDLY_DCASSERT(nalloc > event_list_alloc[level]);
+    event_list[level] = (rel_node_handle*) realloc(event_list[level], nalloc*sizeof(rel_node_handle));
+    if (0==event_list[level]) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+    event_list_alloc[level] = nalloc;
+  }
+}
+
+
+MEDDLY::satimpl_opname::implicit_relation::~implicit_relation()
+{
+  last_in_node_array = 0;
+  impl_unique.clear();
+  
+  for(int i = 0; i < num_levels; i++) delete[] event_list[i];
+  delete[] event_list;
+  delete[] event_added;
+  delete[] event_list_alloc;
+}
+
+
+rel_node_handle
+MEDDLY::satimpl_opname::implicit_relation::isUniqueNode(relation_node* n)
+{
+  bool is_unique_node = true;
+  std::unordered_map<rel_node_handle, relation_node*>::iterator it = impl_unique.begin();
+  while(it != impl_unique.end())
+    {
+    is_unique_node = !((it->second)->equals(n));
+    if(is_unique_node==false)
+      return (it->second)->getID();
+    ++it;
+    }
+  return 0;
+}
+
+rel_node_handle
+MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_event_top, relation_node* n)
+{
+  
+  rel_node_handle nLevel = n->getLevel();
+  rel_node_handle downHandle = n->getDown();
+  relation_node* downNode = nodeExists(downHandle);
+  rel_node_handle downLevel = downNode->getLevel();
+  
+  
+  MEDDLY_DCASSERT( ( ( downNode!=NULL ) && ( nLevel > downLevel ) ) || ( downLevel == 0 ) );
+  rel_node_handle n_ID = isUniqueNode(n);
+  if(n_ID==0) // Add new node
+   {
+    n_ID  = last_in_node_array + 1;
+    std::pair<rel_node_handle, relation_node*> add_node(n_ID,n);
+    impl_unique.insert(add_node);
+    if(impl_unique.find(n_ID) != impl_unique.end())
+    {
+      last_in_node_array = n_ID;
+      n->setID(n_ID);
+      resizeNodeArray(n_ID);
+      node_array[n_ID] = *n;
+    }
+  }
+  else //Delete the node
+    {
+     delete n;
+    }
+  
+  if(is_event_top)
+    {
+    resizeEventArray(nLevel);
+    event_list[nLevel][event_added[nLevel] - 1] = n_ID;
+    }
+  
+  return n_ID;
+}
+
+void
+MEDDLY::satimpl_opname::implicit_relation::show()
+{
+  rel_node_handle** event_list_copy = (rel_node_handle**)malloc(num_levels*sizeof(rel_node_handle*));
+  if (0==event_list_copy) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+  long total_events = 0;
+  for(int i = 0;i<num_levels;i++) total_events +=event_added[i];
+  for(int i = 0;i<num_levels;i++)
+    {
+     event_list_copy[i] = (rel_node_handle*)malloc(total_events*sizeof(rel_node_handle));
+     if (0==event_list_copy[i]) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+    }
+
+  for(int i = num_levels-1;i>=0;i--)
+    for(int j=0;j<total_events;j++)
+      event_list_copy[i][j]=0;
+  
+  
+  int eid = 0;
+  for(int i = num_levels-1;i>=0;i--)
+    {
+     int k = 0;
+     std::cout<<"\n [";
+     for(int j=0;j<total_events;j++)
+      {
+      
+        if((event_list_copy[i][eid]==0)&&(k<event_added[i]))
+          {
+            event_list_copy[i][eid] = event_list[i][k];
+            relation_node* hold_it = nodeExists(event_list[i][k]);
+            relation_node* hold_down = nodeExists(hold_it->getDown());
+            event_list_copy[hold_down->getLevel()][eid] = hold_down->getID();
+          k++;eid++;
+          }
+      
+      
+      int dig_ctr = event_list_copy[i][j]>1000?4:(event_list_copy[i][j]>100?3:(event_list_copy[i][j]>10?2:1));
+      
+      int spc_bef =(6 - dig_ctr)/2;
+      int spc_aft = 6 - dig_ctr - spc_bef;
+      
+      for(int s=0;s<spc_bef;s++) std::cout<<" ";
+      if(event_list_copy[i][j] != 0) std::cout<<event_list_copy[i][j];
+      else std::cout<<"_";
+      for(int s=0;s<spc_aft;s++) std::cout<<" ";
+      if(j!=total_events-1)
+          std::cout<<"|";
+      }
+     std::cout<<"]";
+    }
+  
+  for(int i = 0;i<num_levels;i++) delete event_list_copy[i];
+  delete[] event_list_copy;
+  
+}
+
+// ******************************************************************
 // *                       operation  methods                       *
 // ******************************************************************
 
@@ -1261,7 +1565,7 @@ MEDDLY::operation::operation(const opname* n, int kl, int al)
       int nla = list_alloc + 256;
       op_list = (operation**) realloc(op_list, nla * sizeof(void*));
       op_holes = (int*) realloc(op_holes, nla * sizeof(int));
-      if (0==op_list || 0==op_holes) throw error(error::INSUFFICIENT_MEMORY);
+      if (0==op_list || 0==op_holes) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
       for (int i=list_size; i<list_alloc; i++) {
         op_list[i] = 0;
         op_holes[i] = -1;
@@ -1438,22 +1742,22 @@ MEDDLY::unary_operation::~unary_operation()
 
 void MEDDLY::unary_operation::computeDDEdge(const dd_edge &arg, dd_edge &res)
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::unary_operation::compute(const dd_edge &arg, long &res)
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::unary_operation::compute(const dd_edge &arg, double &res)
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::unary_operation::compute(const dd_edge &arg, ct_object &c)
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 // ******************************************************************
@@ -1486,19 +1790,19 @@ MEDDLY::binary_operation::~binary_operation()
 MEDDLY::node_handle 
 MEDDLY::binary_operation::compute(node_handle a, node_handle b)
 {
-  throw error(error::WRONG_NUMBER);
+  throw error(error::WRONG_NUMBER, __FILE__, __LINE__);
 }
 
 MEDDLY::node_handle 
 MEDDLY::binary_operation::compute(int k, node_handle a, node_handle b)
 {
-  throw error(error::WRONG_NUMBER);
+  throw error(error::WRONG_NUMBER, __FILE__, __LINE__);
 }
 
 void MEDDLY::binary_operation::compute(int av, node_handle ap,
   int bv, node_handle bp, int &cv, node_handle &cp)
 {
-  throw error(error::WRONG_NUMBER);
+  throw error(error::WRONG_NUMBER, __FILE__, __LINE__);
 }
 
 void MEDDLY::binary_operation::compute(long av, node_handle ap,
@@ -1516,7 +1820,7 @@ void MEDDLY::binary_operation::compute(long av, node_handle ap,
 void MEDDLY::binary_operation::compute(float av, node_handle ap,
   float bv, node_handle bp, float &cv, node_handle &cp)
 {
-  throw error(error::WRONG_NUMBER);
+  throw error(error::WRONG_NUMBER, __FILE__, __LINE__);
 }
 
 // ******************************************************************
@@ -1536,18 +1840,18 @@ MEDDLY::specialized_operation::~specialized_operation()
 
 void MEDDLY::specialized_operation::compute(const dd_edge &arg, dd_edge &res)
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::specialized_operation::compute(const dd_edge &ar1, 
   const dd_edge &ar2, dd_edge &res)
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::specialized_operation::compute(double* y, const double* x)
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::specialized_operation::compute(const dd_edge &ar1,

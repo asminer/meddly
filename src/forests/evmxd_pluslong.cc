@@ -89,6 +89,20 @@ void MEDDLY::evmxd_pluslong
 }
 
 bool MEDDLY::evmxd_pluslong
+::isTransparentEdge(node_handle ep, const void* ev) const
+{
+  if (ep) return false;
+  return OP::isTransparentEdge(ev);
+}
+
+void MEDDLY::evmxd_pluslong
+::getTransparentEdge(node_handle &ep, void* ev) const
+{
+  ep = 0;
+  OP::setEdge(ev, OP::getRedundantEdge());
+}
+
+bool MEDDLY::evmxd_pluslong
 ::areEdgeValuesEqual(const void* eva, const void* evb) const
 {
   long val1, val2;
@@ -194,7 +208,7 @@ void MEDDLY::evmxd_pluslong::evtrmxd_baseiter::getValue(long &tv) const
 bool MEDDLY::evmxd_pluslong::evtrmxd_iterator::start(const dd_edge &e)
 {
   if (F != e.getForest()) {
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
 
   MEDDLY_DCASSERT(acc_evs);
@@ -289,7 +303,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedrow_iter
 ::start(const dd_edge &e, const int* minterm)
 {
   if (F != e.getForest()) {
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
 
   MEDDLY_DCASSERT(acc_evs);
@@ -415,7 +429,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedcol_iter
 ::start(const dd_edge &e, const int* minterm)
 {
   if (F != e.getForest()) {
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
 
   MEDDLY_DCASSERT(acc_evs);
