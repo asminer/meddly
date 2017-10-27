@@ -447,7 +447,7 @@ void MEDDLY::forest
 
 void MEDDLY::forest::getElement(const dd_edge& a, int index, int* e)
 {
-  throw error(error::INVALID_OPERATION);
+  throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest::getElement(const dd_edge& a, long index, int* e)

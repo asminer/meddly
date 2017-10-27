@@ -114,6 +114,15 @@ void MEDDLY::evmdd_pluslong
 }
 
 void MEDDLY::evmdd_pluslong
+::evaluate(const dd_edge &f, const int* vlist, int &term) const
+{
+  // TODO: Redesign interface
+  long lterm = Inf<long>();
+  evaluate(f, vlist, lterm);
+  term = lterm;
+}
+
+void MEDDLY::evmdd_pluslong
 ::evaluate(const dd_edge &f, const int* vlist, long &term) const
 {
   evaluateT<OP, long>(f, vlist, term);
@@ -468,6 +477,12 @@ MEDDLY::evmdd_index_set_long::evmdd_index_set_long(int dsl, domain *d, const pol
 
 MEDDLY::evmdd_index_set_long::~evmdd_index_set_long()
 { }
+
+void MEDDLY::evmdd_index_set_long::getElement(const dd_edge &a, int index, int* e)
+{
+  // TODO: Redesign interface
+  getElement(a, (long)index, e);
+}
 
 void MEDDLY::evmdd_index_set_long::getElement(const dd_edge &a, long index, int* e)
 {
