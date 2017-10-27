@@ -155,9 +155,8 @@ void MEDDLY::constrained_bckwd_bfs::iterate(long aev, node_handle a, long bev, n
     long tev = Inf<long>();
     node_handle t = 0;
     imageOp->compute(cev, c, r, tev, t);
-    // tev was increased by one step
     node_handle oldt = t;
-    plusOp->compute(tev - 1, oldt, aev, a, tev, t);
+    plusOp->compute(tev, oldt, aev, a, tev, t);
     minOp->compute(cev, c, tev, t, cev, c);
     resF->unlinkNode(oldt);
     resF->unlinkNode(t);

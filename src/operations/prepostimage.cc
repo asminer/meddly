@@ -636,8 +636,6 @@ void MEDDLY::image_op_evplus::compute(long ev, node_handle evmdd, node_handle mx
 {
   MEDDLY_DCASSERT(accumulateOp);
   compute_rec(ev, evmdd, mxd, resEv, resEvmdd);
-  // Increase the distance
-  resEv++;
 }
 
 // ******************************************************************
