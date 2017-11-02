@@ -103,7 +103,7 @@ class MEDDLY::union_mxd : public generic_binary_mxd {
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 #ifdef USE_XDDS
-  virtual MEDDLY::node_handle compute(node_handle a, node_handle b);
+    virtual MEDDLY::node_handle compute(node_handle a, node_handle b);
 #endif
 };
 
@@ -178,6 +178,7 @@ MEDDLY::union_mxd::compute(node_handle a, node_handle b)
   const node_handle A_ext_d = A->isExtensible()? A->ext_d(): 0;
   int last_nz = A->getNNZs()-1;
   for ( ; last_nz >= 0 && A->d(last_nz) == 0; last_nz--);
+  const int A_nnzs = last_nz + 1;
   const int A_last_index = last_nz >= 0? A->i(last_nz): -1;
 
   unpacked_node *B = (bLevel < resultLevel)
@@ -187,6 +188,7 @@ MEDDLY::union_mxd::compute(node_handle a, node_handle b)
   const node_handle B_ext_d = B->isExtensible()? B->ext_d(): 0;
   last_nz = B->getNNZs()-1;
   for ( ; last_nz >= 0 && B->d(last_nz) == 0; last_nz--);
+  const int B_nnzs = last_nz + 1;
   const int B_last_index = last_nz >= 0? B->i(last_nz): -1;
 
   const int max_a_b_last_index = MAX(A_last_index, B_last_index);
@@ -197,7 +199,7 @@ MEDDLY::union_mxd::compute(node_handle a, node_handle b)
   int nnz = 0;
   int A_curr_index = 0;
   int B_curr_index = 0;
-  for ( ; A_curr_index < A->getNNZs() && B_curr_index < B->getNNZs(); ) {
+  for ( ; A_curr_index < A_nnzs && B_curr_index < B_nnzs; ) {
     // get a_i, a_d, b_i, b_d
     int a_i, a_d, b_i, b_d;
     a_i = A->i(A_curr_index);
@@ -228,7 +230,7 @@ MEDDLY::union_mxd::compute(node_handle a, node_handle b)
       nnz++;
     }
   }
-  for ( ; A_curr_index < A->getNNZs(); A_curr_index++) {
+  for ( ; A_curr_index < A_nnzs; A_curr_index++) {
     // do union(a_i, b_ext_i)
     int index = A->i(A_curr_index);
     node_handle down = compute_r(index, dwnLevel, A->d(A_curr_index), B_ext_d);
@@ -238,7 +240,7 @@ MEDDLY::union_mxd::compute(node_handle a, node_handle b)
       nnz++;
     }
   }
-  for ( ; B_curr_index < B->getNNZs(); B_curr_index++) {
+  for ( ; B_curr_index < B_nnzs; B_curr_index++) {
     // do union(a_ext_i, b_i)
     int index = B->i(B_curr_index);
     node_handle down = compute_r(index, dwnLevel, A_ext_d, B->d(B_curr_index));
