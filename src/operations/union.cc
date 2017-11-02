@@ -102,6 +102,9 @@ class MEDDLY::union_mxd : public generic_binary_mxd {
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
+#ifdef USE_XDDS
+  virtual MEDDLY::node_handle compute(node_handle a, node_handle b);
+#endif
 };
 
 MEDDLY::union_mxd::union_mxd(const binary_opname* opcode, 
@@ -109,11 +112,6 @@ MEDDLY::union_mxd::union_mxd(const binary_opname* opcode,
   : generic_binary_mxd(opcode, arg1, arg2, res)
 {
   operationCommutes();
-#if 0
-#ifdef USE_XDDS
-  virtual MEDDLY::node_handle compute(node_handle a, node_handle b);
-#endif
-#endif
 }
 
 bool MEDDLY::union_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
@@ -153,7 +151,6 @@ bool MEDDLY::union_mxd::checkTerminals(node_handle a, node_handle b, node_handle
   return false;
 }
 
-#if 0
 #ifdef USE_XDDS
 MEDDLY::node_handle 
 MEDDLY::union_mxd::compute(node_handle a, node_handle b) 
@@ -203,8 +200,8 @@ MEDDLY::union_mxd::compute(node_handle a, node_handle b)
   for ( ; A_curr_index < A->getNNZs() && B_curr_index < B->getNNZs(); ) {
     // get a_i, a_d, b_i, b_d
     int a_i, a_d, b_i, b_d;
-    int a_i = A->i(A_curr_index);
-    int b_i = B->i(B_curr_index);
+    a_i = A->i(A_curr_index);
+    b_i = B->i(B_curr_index);
     if (a_i <= b_i) {
       a_d = A->d(A_curr_index);
       A_curr_index++;
@@ -253,7 +250,7 @@ MEDDLY::union_mxd::compute(node_handle a, node_handle b)
   }
   if (A->isExtensible() || B->isExtensible()) {
     int index = max_a_b_last_index+1;
-    int down = compute_r(index, dwnLevel, A_ext_d, B_ext_d)
+    int down = compute_r(index, dwnLevel, A_ext_d, B_ext_d);
     if (down) {
       C->i_ref(nnz) = index;
       C->d_ref(nnz) = down;
@@ -279,7 +276,6 @@ MEDDLY::union_mxd::compute(node_handle a, node_handle b)
 
   return result;
 }
-#endif
 #endif
 
 // ******************************************************************
