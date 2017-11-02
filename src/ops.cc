@@ -617,6 +617,16 @@ MEDDLY::satotf_opname::subevent::subevent(forest* f, int* v, int nv, bool firing
     if (isLevelAbove(top, vars[i])) top = vars[i];
   }
 
+  uses_extensible_variables = false;
+#ifdef USE_XDDS
+  for (int i = 0; i < num_vars; i++) {
+    if (this->f->isExtensibleLevel(vars[i])) {
+      uses_extensible_variables = true;
+      break;
+    }
+  }
+#endif
+
   unpminterms = pminterms = 0;
   num_minterms = size_minterms = 0;
 }
@@ -696,8 +706,6 @@ bool MEDDLY::satotf_opname::subevent::addMinterm(const int* from, const int* to)
   return true;
 }
 
-
-
 void MEDDLY::satotf_opname::subevent::buildRoot() {
   if (0 == num_minterms) return;
   /*
@@ -711,18 +719,17 @@ void MEDDLY::satotf_opname::subevent::buildRoot() {
     out << " ]\n";
   }
   */
-#ifdef USE_XDDS
-  dd_edge sum(root);
-  f->createEdge(unpminterms, pminterms, num_minterms, sum);
-  num_minterms = 0;
-  root += sum;
+  if (usesExtensibleVariables()) {
+    dd_edge sum(root);
+    f->createEdge(unpminterms, pminterms, num_minterms, sum);
+    num_minterms = 0;
+    root += sum;
+  } else {
+    f->createEdge(unpminterms, pminterms, num_minterms, root);
+  }
   // out << "Equivalent event: " << root.getNode() << "\n";
-  // root.show(out, 2);
-#else
-  f->createEdge(unpminterms, pminterms, num_minterms, root);
   // out << "Result: ";
   // root.show(out, 2);
-#endif
 }
 
 

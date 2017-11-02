@@ -2942,6 +2942,7 @@ class MEDDLY::satotf_opname : public specialized_opname {
 
       protected:
         bool addMinterm(const int* from, const int* to);
+        bool usesExtensibleVariables() const;
 
         int* vars;
         int num_vars;
@@ -2953,6 +2954,7 @@ class MEDDLY::satotf_opname : public specialized_opname {
         int num_minterms;
         int size_minterms;
         bool is_firing;
+        bool uses_extensible_variables;
 
     };  // end of class subevent
 
