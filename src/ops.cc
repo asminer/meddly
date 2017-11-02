@@ -1535,12 +1535,29 @@ MEDDLY::satimpl_opname::implicit_relation::show()
 }
 
 long
-MEDDLY::satimpl_opname::implicit_relation::getAllArcCounts()
+MEDDLY::satimpl_opname::implicit_relation::getAllArcCounts(int level)
 {
   int all_arc_count = 0;
-  for(int r = 0; i<piece_size; i++)
-    if(token_update[i]!=NOT_KNOWN) arc_count +=1;
-  return arc_count;
+  for(int l = level;l>=1;l--)
+    {
+     //get the events tops this level
+     for(int r_num = 0; r_num<lengthForLevel(l); r_num++)
+       {
+       //for each event, travel down till terminal
+        relation_node* r = nodeExists(event_list[l][r_num]);
+        while(r->getID()!=1)
+          {
+            all_arc_count+=r->getArcCounts();
+            rel_node_handle next = r->getDown();
+            r = nodeExists(next);
+          }
+       }
+
+    
+    }
+ 
+ 
+  return all_arc_count;
 }
 
 // ******************************************************************

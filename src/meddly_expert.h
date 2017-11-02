@@ -3453,7 +3453,7 @@ class MEDDLY::satimpl_opname:public specialized_opname {
         long lengthForLevel(int level) const;
         
         /*
-         Returns the number of events that have this level as top
+         Returns the array of events that have this level as top
          */
         rel_node_handle* arrayForLevel(int level) const;
         
@@ -3465,7 +3465,7 @@ class MEDDLY::satimpl_opname:public specialized_opname {
         /*
          Gets the arc counts from all implicit nodes
          */
-        long getAllArcCounts();
+        long getAllArcCounts(int level);
         
       };  // class implicit_relation
 
