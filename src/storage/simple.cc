@@ -136,6 +136,7 @@ class MEDDLY::simple_separated : public node_storage {
     virtual int getSingletonIndex(node_address addr, node_handle &down) const;
     virtual node_handle getDownPtr(node_address addr, int index) const;
     virtual void getDownPtr(node_address addr, int ind, int& ev, node_handle& dn) const;
+    virtual void getDownPtr(node_address addr, int ind, long& ev, node_handle& dn) const;
     virtual void getDownPtr(node_address addr, int ind, float& ev, node_handle& dn) const;
     virtual int getExtensibleIndex(node_address addr) const;
     virtual const void* getUnhashedHeaderOf(node_address addr) const;
@@ -998,7 +999,6 @@ MEDDLY::simple_separated
   }
 }
 
-
 void
 MEDDLY::simple_separated
 ::getDownPtr(node_address addr, int i, int& ev, node_handle& dn) const
@@ -1035,6 +1035,44 @@ MEDDLY::simple_separated
     const node_handle* edge = down + (is_sparse? 2*size: size);
     dn = down[z];
     ev = ((int*) (edge + z*slots_per_edge)) [0];
+  }
+}
+
+void MEDDLY::simple_separated
+::getDownPtr(node_address addr, int i, long& ev, node_handle& dn) const
+{
+  if (i<0) throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
+
+  const node_handle* chunk = getChunkAddress(addr);
+  MEDDLY_DCASSERT(chunk);
+  MEDDLY_DCASSERT(slots_per_edge>0);
+
+  const unsigned int raw_size = getRawSize(chunk);
+  const unsigned int size = getSize(raw_size);
+  const bool is_sparse = isSparse(raw_size);
+  const node_handle* down = chunk + down_start;
+
+  int z = i;
+
+  if (is_sparse) {
+    const node_handle* index = down + size;
+    z =
+      (isExtensible(raw_size) && i >= index[size-1])
+      ? (size - 1)
+      : findSparseIndex(i, index, size);
+  } else {
+    if (i >= size) {
+      z = isExtensible(raw_size) ? size - 1 : -1;
+    }
+  }
+
+  if (z < 0) {
+    dn = 0;
+    ev = 0;
+  } else {
+    const node_handle* edge = down + (is_sparse? 2*size: size);
+    dn = down[z];
+    ev = ((long*) (edge + z*slots_per_edge)) [0];
   }
 }
 

@@ -96,6 +96,11 @@ class MEDDLY::base_table : public compute_table {
           MEDDLY_CHECK_RANGE(0, currslot, keyLength);
           key_data[currslot++] = i;
         }
+        virtual void write(long i) {
+          MEDDLY_CHECK_RANGE(0, currslot, keyLength);
+          memcpy(&key_data[currslot], &i, sizeof(long));
+          currslot += sizeof(long) / sizeof(node_handle);
+        }
         virtual void write(float f) {
           MEDDLY_CHECK_RANGE(0, currslot, keyLength);
           float* x = (float*) (key_data+currslot);

@@ -4,7 +4,6 @@
 
 #include <time.h>
 #include <vector>
-#include <time.h>
 
 namespace MEDDLY{
 

@@ -374,8 +374,7 @@ void printStats(const char* who, const forest* f)
   ef->reportStats(mout, "\t",
     expert_forest::HUMAN_READABLE_MEMORY  |
     expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
-    expert_forest::STORAGE_STATS | 
-    expert_forest::HOLE_MANAGER_STATS | expert_forest::HOLE_MANAGER_DETAILED
+    expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
   );
 }
 
@@ -615,11 +614,11 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
         else                printf(" by events\n");
         fflush(stdout);
         if (0==SATURATION_FORWARD) {
-          throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
+          throw error(error::UNKNOWN_OPERATION);
         }
         sat = SATURATION_FORWARD->buildOperation(ensf);
         if (0==sat) {
-          throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+          throw error(error::INVALID_OPERATION);
         }
         sat->compute(initialStates, reachableStates);
         break;

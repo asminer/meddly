@@ -1109,7 +1109,11 @@ MEDDLY::generic_binbylevel_mxd
 
 MEDDLY::generic_binary_ev::generic_binary_ev(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-  : binary_operation(code, 4, 2, arg1, arg2, res)
+  : binary_operation(code,
+      // XXX: Cause problem in case of EV*
+      (arg1->edgeBytes() + sizeof(node_handle) + arg2->edgeBytes() + sizeof(node_handle)) / sizeof(node_handle),
+      (res->edgeBytes() + sizeof(node_handle)) / sizeof(node_handle),
+      arg1, arg2, res)
 {
   can_commute = false;
 }
@@ -1121,9 +1125,9 @@ MEDDLY::generic_binary_ev::~generic_binary_ev()
 #ifndef USE_NODE_STATUS
 bool MEDDLY::generic_binary_ev::isStaleEntry(const node_handle* data)
 {
-  bool a = arg1F->isStale(data[1]);
-  bool b = arg2F->isStale(data[3]);
-  bool c = resF->isStale(data[5]);
+  bool a = arg1F->isStale(data[arg1F->edgeBytes() / sizeof(node_handle)]);
+  bool b = arg2F->isStale(data[(arg1F->edgeBytes() + sizeof(node_handle) + arg2F->edgeBytes()) / sizeof(node_handle)]);
+  bool c = resF->isStale(data[(arg1F->edgeBytes() + sizeof(node_handle) + arg2F->edgeBytes() + sizeof(node_handle) + resF->edgeBytes()) / sizeof(node_handle)]);
 
   return (a | b | c);
 }
@@ -1152,9 +1156,9 @@ MEDDLY::generic_binary_ev::getStatusOfEntry(const node_handle* data)
 
 void MEDDLY::generic_binary_ev::discardEntry(const node_handle* data)
 {
-  arg1F->uncacheNode(data[1]);
-  arg2F->uncacheNode(data[3]);
-  resF->uncacheNode(data[5]);
+  arg1F->uncacheNode(data[arg1F->edgeBytes() / sizeof(node_handle)]);
+  arg2F->uncacheNode(data[(arg1F->edgeBytes() + sizeof(node_handle) + arg2F->edgeBytes()) / sizeof(node_handle)]);
+  resF->uncacheNode(data[(arg1F->edgeBytes() + sizeof(node_handle) + arg2F->edgeBytes() + sizeof(node_handle) + resF->edgeBytes()) / sizeof(node_handle)]);
 }
 
 // ******************************************************************
@@ -1185,7 +1189,7 @@ void MEDDLY::generic_binary_evplus
 ::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
 {
   node_handle result;
-  int ev, aev, bev;
+  long ev = Inf<long>(), aev = Inf<long>(), bev = Inf<long>();
   a.getEdgeValue(aev);
   b.getEdgeValue(bev);
   compute(aev, a.getNode(), bev, b.getNode(), ev, result);
@@ -1196,8 +1200,8 @@ void MEDDLY::generic_binary_evplus
 }
 
 void MEDDLY::generic_binary_evplus
-::compute(int aev, node_handle a, int bev, node_handle b, 
-  int& cev, node_handle& c)
+::compute(long aev, node_handle a, long bev, node_handle b,
+  long& cev, node_handle& c)
 {
   if (checkTerminals(aev, a, bev, b, cev, c))
     return;
@@ -1209,20 +1213,20 @@ void MEDDLY::generic_binary_evplus
   const int aLevel = arg1F->getNodeLevel(a);
   const int bLevel = arg2F->getNodeLevel(b);
 
-  const int resultLevel = aLevel > bLevel? aLevel: bLevel;
+  const int resultLevel = MAX(aLevel, bLevel);
   const int resultSize = resF->getLevelSize(resultLevel);
 
   // Initialize result
   unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
 
   // Initialize readers
-  unpacked_node *A = (aLevel < resultLevel) 
-    ? unpacked_node::newRedundant(arg1F, resultLevel, 0, a, true)
+  unpacked_node *A = (aLevel < resultLevel)
+    ? unpacked_node::newRedundant(arg1F, resultLevel, 0L, a, true)
     : unpacked_node::newFromNode(arg1F, a, true)
   ;
 
   unpacked_node *B = (bLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg2F, resultLevel, 0, b, true)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, 0L, b, true)
     : unpacked_node::newFromNode(arg2F, b, true)
   ;
 
@@ -1231,11 +1235,12 @@ void MEDDLY::generic_binary_evplus
 
   // do computation
   for (int i=0; i<resultSize; i++) {
-    int ev;
-    node_handle ed;
-    compute(aev + A->ei(i), A->d(i), 
-            bev + B->ei(i), B->d(i), 
+    long ev = 0;
+    node_handle ed = 0;
+    compute(aev + A->ei(i), A->d(i),
+            bev + B->ei(i), B->d(i),
             ev, ed);
+    MEDDLY_DCASSERT(ed != 0 || ev == 0);
     nb->d_ref(i) = ed;
     nb->setEdge(i, ev);
   }
@@ -1245,14 +1250,166 @@ void MEDDLY::generic_binary_evplus
   unpacked_node::recycle(A);
 
   // Reduce
-  node_handle cl;
-  resF->createReducedNode(-1, nb, cev, cl);
-  c = cl;
+  resF->createReducedNode(-1, nb, cev, c);
 
   // Add to CT
   saveResult(Key, aev, a, bev, b, cev, c);
 }
 
+// ******************************************************************
+// *                                                                *
+// *               generic_binary_evplus_mxd methods                *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::generic_binary_evplus_mxd::generic_binary_evplus_mxd(const binary_opname* code,
+  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+  : generic_binary_ev(code, arg1, arg2, res)
+{
+  if (!arg1->isForRelations() || !arg2->isForRelations() || !res->isForRelations()) {
+    throw error::TYPE_MISMATCH;
+  }
+}
+
+MEDDLY::generic_binary_evplus_mxd::~generic_binary_evplus_mxd()
+{
+}
+
+void MEDDLY::generic_binary_evplus_mxd
+::showEntry(output &strm, const node_handle *data) const
+{
+  strm << "[" << getName() << "(<" << long(data[0]) << ":" << long(data[1])
+       << ">, <" << long(data[2]) << ":" << long(data[3]) << ">): <"
+       << long(data[4]) << ":" << long(data[5]) << ">]";
+}
+
+void MEDDLY::generic_binary_evplus_mxd
+::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
+{
+  node_handle result;
+  long ev = Inf<long>(), aev = Inf<long>(), bev = Inf<long>();
+  a.getEdgeValue(aev);
+  b.getEdgeValue(bev);
+  compute(aev, a.getNode(), bev, b.getNode(), ev, result);
+  c.set(result, ev);
+#ifdef DEVELOPMENT_CODE
+  resF->validateIncounts(true);
+#endif
+}
+
+void MEDDLY::generic_binary_evplus_mxd
+::compute(long aev, node_handle a, long bev, node_handle b,
+  long& cev, node_handle& c)
+{
+  if (checkTerminals(aev, a, bev, b, cev, c)) {
+    return;
+  }
+
+  compute_table::search_key* Key = findResult(aev, a, bev, b, cev, c);
+  if (0 == Key) {
+    return;
+  }
+
+  // Get level information
+  const int aLevel = arg1F->getNodeLevel(a);
+  const int bLevel = arg2F->getNodeLevel(b);
+
+  const int resultLevel = ABS(isLevelAbove(aLevel, bLevel) ? aLevel: bLevel);
+  const int resultSize = resF->getLevelSize(resultLevel);
+
+  // Initialize result
+  unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
+
+  // Initialize readers
+  unpacked_node *A = isLevelAbove(resultLevel, aLevel)
+    ? unpacked_node::newRedundant(arg1F, resultLevel, 0L, a, true)
+    : unpacked_node::newFromNode(arg1F, a, true);
+
+  unpacked_node *B = isLevelAbove(resultLevel, bLevel)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, 0L, b, true)
+    : unpacked_node::newFromNode(arg2F, b, true);
+
+  // do computation
+  for (int i = 0; i < resultSize; i++) {
+//    long ev = Inf<long>();
+    long ev = 0;
+    node_handle ed = 0;
+    compute_r(i, resF->downLevel(resultLevel),
+      aev + A->ei(i), A->d(i),
+      bev + B->ei(i), B->d(i),
+      ev, ed);
+    MEDDLY_DCASSERT(ed != 0 || ev == 0);
+    nb->d_ref(i) = ed;
+    nb->setEdge(i, ev);
+  }
+
+  // cleanup
+  unpacked_node::recycle(B);
+  unpacked_node::recycle(A);
+
+  // Reduce
+  resF->createReducedNode(-1, nb, cev, c);
+
+  // Add to CT
+  saveResult(Key, aev, a, bev, b, cev, c);
+}
+
+void MEDDLY::generic_binary_evplus_mxd
+::compute_r(int in, int level, long aev, node_handle a, long bev, node_handle b, long& cev, node_handle &c)
+{
+  //  Compute for the primed levels.
+  //
+  MEDDLY_DCASSERT(level < 0);
+
+  // Get level information
+  const int aLevel = arg1F->getNodeLevel(a);
+  const int bLevel = arg2F->getNodeLevel(b);
+
+  const int resultSize = resF->getLevelSize(level);
+
+  unpacked_node* C = unpacked_node::newFull(resF, level, resultSize);
+
+  // Initialize readers
+  unpacked_node *A = unpacked_node::useUnpackedNode();
+  unpacked_node *B = unpacked_node::useUnpackedNode();
+
+  if (aLevel == level) {
+    A->initFromNode(arg1F, a, true);
+  } else if (arg1F->isFullyReduced()) {
+    A->initRedundant(arg1F, level, 0L, a, true);
+  } else {
+    A->initIdentity(arg1F, level, in, 0L, a, true);
+  }
+
+  if (bLevel == level) {
+    B->initFromNode(arg2F, b, true);
+  } else if (arg2F->isFullyReduced()) {
+    B->initRedundant(arg2F, level, 0L, b, true);
+  } else {
+    B->initIdentity(arg2F, level, in, 0L, b, true);
+  }
+
+  // Do computation
+  for (int i = 0; i < resultSize; i++) {
+    long ev = 0;
+    node_handle e = 0;
+    compute(aev + A->ei(i), A->d(i), bev + B->ei(i), B->d(i), ev, e);
+    MEDDLY_DCASSERT(e != 0 || ev == 0);
+    C->setEdge(i, ev);
+    C->d_ref(i) = e;
+  }
+
+  // cleanup
+  unpacked_node::recycle(B);
+  unpacked_node::recycle(A);
+
+  // reduce
+  resF->createReducedNode(in, C, cev, c);
+
+#ifdef TRACE_ALL_OPS
+  printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
+#endif
+}
 
 // ******************************************************************
 // *                                                                *

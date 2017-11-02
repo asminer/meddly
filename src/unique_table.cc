@@ -231,6 +231,7 @@ MEDDLY::node_handle MEDDLY::unique_table::subtable::remove(unsigned hash, node_h
     }
     prev = ptr;
   }
+  MEDDLY_DCASSERT(false);
   return 0;
 }
 

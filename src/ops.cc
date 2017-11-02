@@ -192,7 +192,6 @@ MEDDLY::satpregen_opname::~satpregen_opname()
 {
 }
 
-
 void
 MEDDLY::satpregen_opname::pregen_relation
 ::setForests(forest* inf, forest* mxd, forest* outf)
@@ -1250,6 +1249,16 @@ long MEDDLY::satotf_opname::otf_relation::mintermMemoryUsage() const {
   return usage;
 }
 
+// ******************************************************************
+// *                                                                *
+// *                 minimum_witness_opname methods                 *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::constrained_opname::constrained_opname(const char* n)
+  : specialized_opname(n)
+{
+}
 
 // ******************************************************************
 // *                                                                *
@@ -1837,6 +1846,18 @@ void MEDDLY::binary_operation::compute(int av, node_handle ap,
   throw error(error::WRONG_NUMBER, __FILE__, __LINE__);
 }
 
+void MEDDLY::binary_operation::compute(long av, node_handle ap,
+  long bv, node_handle bp, long &cv, node_handle &cp)
+{
+  throw error(error::WRONG_NUMBER);
+}
+
+void MEDDLY::binary_operation::compute(long av, node_handle ap,
+  node_handle bp, long &cv, node_handle &cp)
+{
+  throw error(error::WRONG_NUMBER);
+}
+
 void MEDDLY::binary_operation::compute(float av, node_handle ap,
   float bv, node_handle bp, float &cv, node_handle &cp)
 {
@@ -1874,4 +1895,8 @@ void MEDDLY::specialized_operation::compute(double* y, const double* x)
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-
+void MEDDLY::specialized_operation::compute(const dd_edge &ar1,
+  const dd_edge &ar2, const dd_edge &ar3, dd_edge &res)
+{
+  throw error(error::TYPE_MISMATCH);
+}

@@ -38,9 +38,10 @@
 #include "forests/mtmxdint.h"
 #include "forests/mtmxdreal.h"
 
-#include "forests/evmdd_plusint.h"
+#include "forests/evmdd_pluslong.h"
 #include "forests/evmdd_timesreal.h"
 
+#include "forests/evmxd_pluslong.h"
 #include "forests/evmxd_timesreal.h"
 #endif
 
@@ -343,13 +344,13 @@ MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t,
 
     case forest::EVPLUS:
       if (forest::INTEGER != t) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-      if (rel)  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-      else      f = new evmdd_plusint(slot, this, p); 
+      if (rel)  f = new evmxd_pluslong(slot, this, p, level_reduction_rule);
+      else      f = new evmdd_pluslong(slot, this, p, level_reduction_rule);
       break;
 
     case forest::INDEX_SET:
       if (forest::INTEGER != t || rel) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-      f = new evmdd_index_set(slot, this, p); 
+      f = new evmdd_index_set_long(slot, this, p, level_reduction_rule);
       break;
 
     case forest::EVTIMES:

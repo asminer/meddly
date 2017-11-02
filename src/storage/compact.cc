@@ -494,6 +494,36 @@ void MEDDLY::compact_storage
 // ******************************************************************
 
 void MEDDLY::compact_storage
+::getDownPtr(node_address addr, int index, long& ev, node_handle& dn) const
+{
+  if (index<0) throw error(error::INVALID_VARIABLE);
+  int size = sizeOf(addr);
+  if (size<0) {
+    int pbytes, ibytes;
+    getStyleOf(addr, pbytes, ibytes);
+    int z = findSparseIndex(ibytes, addr, -size, index);
+    if (z<0) {
+      dn = 0;
+      ev = 0;
+    } else {
+      dataToDown(sparseDown(addr) + z*pbytes, pbytes, dn);
+      ev = ((long*)(sparseEdge(addr) + z*edgeBytes))[0];
+    }
+  } else {
+    if (index < size) {
+      int pbytes = pointerBytesOf(addr);
+      dataToDown(fullDown(addr) + index*pbytes, pbytes, dn);
+      ev = ((long*)(fullEdge(addr) + index*edgeBytes))[0];
+    } else {
+      dn = 0;
+      ev = 0;
+    }
+  }
+}
+
+// ******************************************************************
+
+void MEDDLY::compact_storage
 ::getDownPtr(node_address addr, int index, float& ev, node_handle& dn) const
 {
   if (index<0) throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);

@@ -111,7 +111,7 @@ MEDDLY::unpacked_node::newFromNode(const expert_forest *f, node_handle node, sto
   return U;
 }
 
-inline MEDDLY::unpacked_node* 
+inline MEDDLY::unpacked_node*
 MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, node_handle node, bool full)
 {
   unpacked_node* U = useUnpackedNode();
@@ -120,8 +120,17 @@ MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, node_handle n
   return U;
 }
 
+//inline MEDDLY::unpacked_node*
+//MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, int ev, node_handle node, bool full)
+//{
+//  unpacked_node* U = useUnpackedNode();
+//  MEDDLY_DCASSERT(U);
+//  U->initRedundant(f, k, ev, node, full);
+//  return U;
+//}
+
 inline MEDDLY::unpacked_node* 
-MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, int ev, node_handle node, bool full)
+MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, long ev, node_handle node, bool full)
 {
   unpacked_node* U = useUnpackedNode();
   MEDDLY_DCASSERT(U);
@@ -148,13 +157,22 @@ MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, int i, node_ha
 }
 
 inline MEDDLY::unpacked_node* 
-MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, int i, int ev, node_handle node, bool full)
+MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, int i, long ev, node_handle node, bool full)
 {
   unpacked_node* U = useUnpackedNode();
   MEDDLY_DCASSERT(U);
   U->initIdentity(f, k, i, ev, node, full);
   return U;
 }
+
+//inline MEDDLY::unpacked_node*
+//MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, int i, int ev, node_handle node, bool full)
+//{
+//  unpacked_node* U = useUnpackedNode();
+//  MEDDLY_DCASSERT(U);
+//  U->initIdentity(f, k, i, ev, node, full);
+//  return U;
+//}
 
 inline MEDDLY::unpacked_node* 
 MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, int i, float ev, node_handle node, bool full)
@@ -277,39 +295,50 @@ MEDDLY::unpacked_node::eptr_write(int i)
 }
 
 
+//inline void
+//MEDDLY::unpacked_node::getEdge(int n, int &val) const
+//{
+//  MEDDLY_DCASSERT(sizeof(int) == edge_bytes);
+//  MEDDLY::expert_forest::EVencoder<int>::readValue(eptr(n), val);
+//}
+
 inline void
-MEDDLY::unpacked_node::getEdge(int n, int &val) const
+MEDDLY::unpacked_node::getEdge(int n, long &val) const
 {
-  MEDDLY_DCASSERT(sizeof(int) == edge_bytes);
-  MEDDLY::expert_forest::int_EVencoder::readValue(eptr(n), val);
+  MEDDLY_DCASSERT(sizeof(long) == edge_bytes);
+  MEDDLY::expert_forest::EVencoder<long>::readValue(eptr(n), val);
 }
 
 inline void
 MEDDLY::unpacked_node::getEdge(int n, float &val) const
 {
   MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
-  MEDDLY::expert_forest::float_EVencoder::readValue(eptr(n), val);
+  MEDDLY::expert_forest::EVencoder<float>::readValue(eptr(n), val);
 }
 
 inline void
-MEDDLY::unpacked_node::setEdge(int n, int ev)
+MEDDLY::unpacked_node::setEdge(int n, long ev)
 {
-  MEDDLY_DCASSERT(sizeof(int) == edge_bytes);
-  MEDDLY::expert_forest::int_EVencoder::writeValue(eptr_write(n), ev);
+  MEDDLY_DCASSERT(sizeof(long) == edge_bytes);
+  MEDDLY::expert_forest::EVencoder<long>::writeValue(eptr_write(n), ev);
+
+  long test_ev = 256;
+  getEdge(n, test_ev);
+  MEDDLY_DCASSERT(test_ev == ev);
 }
+
 
 inline void
 MEDDLY::unpacked_node::setEdge(int n, float ev)
 {
   MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
-  MEDDLY::expert_forest::float_EVencoder::writeValue(eptr_write(n), ev);
+  MEDDLY::expert_forest::EVencoder<float>::writeValue(eptr_write(n), ev);
 }
 
-
-inline int
+inline long
 MEDDLY::unpacked_node::ei(int i) const
 {
-  int ev;
+  long ev;
   getEdge(i, ev);
   return ev;
 }
@@ -991,36 +1020,91 @@ MEDDLY::expert_forest::float_Tencoder::handle2value(MEDDLY::node_handle h)
   return x.real;
 }
 
+template<typename T>
 inline size_t
-MEDDLY::expert_forest::int_EVencoder::edgeBytes()
+MEDDLY::expert_forest::EVencoder<T>::edgeBytes()
 {
-  return sizeof(int);
+  return sizeof(T);
 }
+template<typename T>
 inline void
-MEDDLY::expert_forest::int_EVencoder::writeValue(void* ptr, int val)
+MEDDLY::expert_forest::EVencoder<T>::writeValue(void* ptr, T val)
 {
-  memcpy(ptr, &val, sizeof(int));
+  memcpy(ptr, &val, sizeof(T));
 }
+template<typename T>
 inline void
-MEDDLY::expert_forest::int_EVencoder::readValue(const void* ptr, int &val)
+MEDDLY::expert_forest::EVencoder<T>::readValue(const void* ptr, T &val)
 {
-  memcpy(&val, ptr, sizeof(int));
+  memcpy(&val, ptr, sizeof(T));
 }
 
-inline size_t
-MEDDLY::expert_forest::float_EVencoder::edgeBytes()
+template<typename T>
+inline void MEDDLY::expert_forest::EVencoder<T>::show(output &s, const void* ptr)
 {
-  return sizeof(float);
+  T val;
+  readValue(ptr, val);
+  s << val;
 }
-inline void
-MEDDLY::expert_forest::float_EVencoder::writeValue(void* ptr, float val)
+
+namespace MEDDLY {
+
+template<>
+inline void expert_forest::EVencoder<int>::write(output &s, const void* ptr)
 {
-  memcpy(ptr, &val, sizeof(float));
+  int val;
+  readValue(ptr, val);
+  s << val;
 }
-inline void
-MEDDLY::expert_forest::float_EVencoder::readValue(const void* ptr, float &val)
+
+template<>
+inline void expert_forest::EVencoder<long>::write(output &s, const void* ptr)
 {
-  memcpy(&val, ptr, sizeof(float));
+  long val;
+  readValue(ptr, val);
+  s << val;
+}
+
+template<>
+inline void expert_forest::EVencoder<float>::write(output &s, const void* ptr)
+{
+  float val;
+  readValue(ptr, val);
+  s.put(val, 8, 8, 'e');
+}
+
+template<>
+inline void expert_forest::EVencoder<double>::write(output &s, const void* ptr)
+{
+  double val;
+  readValue(ptr, val);
+  s.put(val, 8, 8, 'e');
+}
+
+template<>
+inline void expert_forest::EVencoder<int>::read(input &s, void* ptr)
+{
+  writeValue(ptr, int(s.get_integer()));
+}
+
+template<>
+inline void expert_forest::EVencoder<long>::read(input &s, void* ptr)
+{
+  writeValue(ptr, long(s.get_integer()));
+}
+
+template<>
+inline void expert_forest::EVencoder<float>::read(input &s, void* ptr)
+{
+  writeValue(ptr, float(s.get_real()));
+}
+
+template<>
+inline void expert_forest::EVencoder<double>::read(input &s, void* ptr)
+{
+  writeValue(ptr, double(s.get_real()));
+}
+
 }
 
 template<typename T>
@@ -1464,6 +1548,13 @@ MEDDLY::expert_forest::getDownPtr(MEDDLY::node_handle p, int index, int& ev,
 }
 
 inline void
+MEDDLY::expert_forest::getDownPtr(MEDDLY::node_handle p, int index, long& ev,
+    MEDDLY::node_handle& dn) const
+{
+  nodeMan->getDownPtr(getNodeAddress(p), index, ev, dn);
+}
+
+inline void
 MEDDLY::expert_forest::getDownPtr(MEDDLY::node_handle p, int index, float& ev,
     MEDDLY::node_handle& dn) const
 {
@@ -1505,6 +1596,7 @@ MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un, T& e
 {
   MEDDLY_DCASSERT(un);
   normalize(*un, ev);
+  MEDDLY_DCASSERT(ev >= 0);
   un->computeHash();
   node = createReducedHelper(in, *un);
 #ifdef TRACK_DELETIONS
@@ -1960,6 +2052,12 @@ inline void
 MEDDLY::compute_table::readEV(const MEDDLY::node_handle* p, int &ev)
 {
   ev = p[0];
+}
+inline void
+MEDDLY::compute_table::readEV(const MEDDLY::node_handle* p, long &ev)
+{
+  long* l = (long*) p;
+  ev = l[0];
 }
 inline void
 MEDDLY::compute_table::readEV(const MEDDLY::node_handle* p, float &ev)

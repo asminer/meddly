@@ -1,4 +1,6 @@
 
+// $Id$
+
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -17,72 +19,59 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef EVMXD_TIMESREAL_H
-#define EVMXD_TIMESREAL_H
+#ifndef EVMXD_PLUSLONG_H
+#define EVMXD_PLUSLONG_H
 
 #include "evmxd.h"
 
 namespace MEDDLY {
-  class evmxd_timesreal;
+  class evmxd_pluslong;
 };
 
 
-class MEDDLY::evmxd_timesreal : public evmxd_forest {
+class MEDDLY::evmxd_pluslong : public evmxd_forest {
   public:
-    class OP : public EVencoder<float> {
+    class OP : public EVencoder<long> {
       public:
-        static inline void setEdge(void* ptr, float v) {
+        static inline void setEdge(void* ptr, long v) {
           writeValue(ptr, v);
         }
         static inline bool isIdentityEdge(const void* p) {
-          float ev;
+          long ev;
           readValue(p, ev);
-          return !notClose(ev, 1.0);
+          return (0 == ev);
         }
         static inline bool isTransparentEdge(const void* p) {
-          float ev;
-          readValue(p, ev);
-          return (0.0 == ev);
+          return isIdentityEdge(p);
         }
-        static inline double getRedundantEdge() {
-          return 1.0f;
+        static inline long getRedundantEdge() {
+          return 0;
         }
-        static inline double apply(double a, double b) {
-          return a*b;
+        static inline long apply(double a, double b) {
+          return a + b;
         }
-        static inline void makeEmptyEdge(float &ev, node_handle &ep) {
+        static inline void makeEmptyEdge(long &ev, node_handle &ep) {
           ev = 0;
           ep = 0;
         }
-        static inline void makeEmptyEdge(node_handle &ep, void* ev) {
-          ep = 0;
-          writeValue(ev, 0);
-        }
-        static inline void unionEq(float &a, float b) {
-          a += b;
-        }
-        // bonus
-        static inline bool notClose(float a, float b) {
-          if (a) {
-            double diff = a-b;
-            return ABS(diff/a) > 1e-6;
-          } else {
-            return ABS(b) > 1e-10;
+        static inline void unionEq(long &a, long b) {
+          if (b < a) {
+            a = b;
           }
         }
     };
 
   public:
-    evmxd_timesreal(int dsl, domain *d, const policies &p, int* level_reduction_rule=NULL);
-    ~evmxd_timesreal();
+    evmxd_pluslong(int dsl, domain *d, const policies &p, int* level_reduction_rule);
+    ~evmxd_pluslong();
 
-    virtual void createEdge(float val, dd_edge &e);
+    virtual void createEdge(long val, dd_edge &e);
     virtual void createEdge(const int* const* vlist, const int* const* vplist,
-      const float* terms, int N, dd_edge &e);
-    virtual void createEdgeForVar(int vh, bool vp, const float* terms,
+      const long* terms, int N, dd_edge &e);
+    virtual void createEdgeForVar(int vh, bool vp, const long* terms,
       dd_edge& a);
     virtual void evaluate(const dd_edge &f, const int* vlist,
-      const int* vplist, float &term) const;
+      const int* vplist, long &term) const;
 
     virtual bool isTransparentEdge(node_handle p, const void* v) const;
     virtual void getTransparentEdge(node_handle &p, void* v) const;
@@ -106,7 +95,7 @@ class MEDDLY::evmxd_timesreal : public evmxd_forest {
 
 
   protected:
-    virtual void normalize(unpacked_node &nb, float& ev) const;
+    virtual void normalize(unpacked_node &nb, long& ev) const;
     virtual void showEdgeValue(output &s, const void* edge) const;
     virtual void writeEdgeValue(output &s, const void* edge) const;
     virtual void readEdgeValue(input &s, void* edge);
@@ -117,11 +106,11 @@ class MEDDLY::evmxd_timesreal : public evmxd_forest {
       public:
         evtrmxd_baseiter(const expert_forest* F);
         virtual ~evtrmxd_baseiter();
-        virtual void getValue(float &termVal) const;
+        virtual void getValue(long &termVal) const;
       protected:
-        double* acc_evs;  // for accumulating edge values
+        long* acc_evs;  // for accumulating edge values
       private:
-        double* raw_acc_evs;  
+        long* raw_acc_evs;
     };
 
     class evtrmxd_iterator : public evtrmxd_baseiter {

@@ -201,8 +201,8 @@ class MEDDLY::multiply_evplus : public generic_binary_evplus {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(int aev, node_handle a, int bev, node_handle b, 
-      int& cev, node_handle& c);
+    virtual bool checkTerminals(long aev, node_handle a, long bev, node_handle b,
+      long& cev, node_handle& c);
 };
 
 MEDDLY::multiply_evplus::multiply_evplus(const binary_opname* opcode, 
@@ -212,11 +212,11 @@ MEDDLY::multiply_evplus::multiply_evplus(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::multiply_evplus::checkTerminals(int aev, node_handle a, int bev, node_handle b,
-  int& cev, node_handle& c)
+bool MEDDLY::multiply_evplus::checkTerminals(long aev, node_handle a, long bev, node_handle b,
+  long& cev, node_handle& c)
 {
   if (a == 0 || b == 0) {
-    c = 0; cev = Inf();
+    c = 0; cev = 0;
     return true;
   }
   if (a == -1 && b == -1) {

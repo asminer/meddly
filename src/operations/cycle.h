@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -17,27 +17,14 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PREPOSTIMAGE_H
-#define PREPOSTIMAGE_H
+#ifndef CYCLE_H
+#define CYCLE_H
 
 namespace MEDDLY {
-  class binary_opname;
+  class unary_opname;
 
-  /// Set up a binary_opname for the "preimage" operation.
-  binary_opname* initializePreImage();
-
-  /// Set up a binary_opname for the "postimage" operation.
-  binary_opname* initializePostImage();
-
-  /// Set up a binary_opname for the "transitive closure postimage" operation.
-  binary_opname* initializeTCPostImage();
-
-  /// Set up a binary_opname for vector matrix multiplication.
-  binary_opname* initializeVMmult();
-
-  /// Set up a binary_opname for matrix vector multiplication.
-  binary_opname* initializeMVmult();
+  /// Set up a cycle_opname for the "cycle" operation.
+  unary_opname* initializeCycle();
 }
 
 #endif
-

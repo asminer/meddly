@@ -241,6 +241,12 @@ namespace MEDDLY {
   /// Convert MDD to EV+MDD index set.  A special case of COPY, really.
   extern const unary_opname* CONVERT_TO_INDEX_SET;
 
+  /// Extract cycles (EV+MDD) from transitive closure (EV+MxD)
+  extern const unary_opname* CYCLE;
+
+  /// Randomly select one state from a set of states
+  extern const unary_opname* SELECT;
+
   // ******************************************************************
   // *                    Named  binary operations                    *
   // ******************************************************************
@@ -303,17 +309,27 @@ namespace MEDDLY {
   /// belong to the same forest.
   extern const binary_opname* GREATER_THAN_EQUAL;
 
+  /** Plus operation used to compute transitive closure and further
+      minimum witness. The first operand must be an EV+MxD and the second
+      operand must be an EV+MDD. The result is an EV+MxD.
+   */
+  extern const binary_opname* PRE_PLUS;
+  extern const binary_opname* POST_PLUS;
+
   /** Image operations on a set-of-states with a transition function.
       The first operand must be the set-of-states and the second operand
       must be the transition function. The result is a set-of-states that
       must be stored in the same forest as the first operand.
       
       Applies to:
-      PRE_IMAGE, POST_IMAGE, REACHABLE_STATES_DFS, REACHABLE_STATES_BFS,
+      PRE_IMAGE, POST_IMAGE,
+      TC_POST_IMAGE,
+      REACHABLE_STATES_DFS, REACHABLE_STATES_BFS,
       REVERSE_REACHABLE_DFS, REVERSE_REACHABLE_BFS.
   */
   extern const binary_opname* PRE_IMAGE;
   extern const binary_opname* POST_IMAGE;
+  extern const binary_opname* TC_POST_IMAGE;
   extern const binary_opname* REACHABLE_STATES_DFS;
   extern const binary_opname* REACHABLE_STATES_BFS;
   extern const binary_opname* REVERSE_REACHABLE_DFS;
@@ -1757,6 +1773,7 @@ class MEDDLY::forest {
                         the range type of the forest is not BOOLEAN.
     */
     virtual void createEdge(int val, dd_edge &e);
+    virtual void createEdge(long val, dd_edge &e);
 
     /** Create an edge for an integer constant.
         @param  val   Requested constant.
@@ -1847,6 +1864,8 @@ class MEDDLY::forest {
     */
     virtual void evaluate(const dd_edge& f, const int* vlist,
       const int* vplist, int &term) const;
+    virtual void evaluate(const dd_edge& f, const int* vlist,
+      const int* vplist, long &term) const;
 
     /** Evaluate the function encoded by an edge.
         @param  f       Edge (function) to evaluate.
@@ -1877,6 +1896,7 @@ class MEDDLY::forest {
         @throws       INVALID_OPERATION, if this is not an Index Set EV+MDD.
     */
     virtual void getElement(const dd_edge& a, int index, int* e);
+    virtual void getElement(const dd_edge& a, long index, int* e);
 
   // ------------------------------------------------------------
   // abstract virtual.
@@ -2349,7 +2369,8 @@ class MEDDLY::dd_edge {
     node_handle getNode() const;
 
     /// Get this dd_edge's edge value (only valid for edge-valued MDDs).
-    void getEdgeValue(int& ev) const;
+//    void getEdgeValue(int& ev) const;
+    void getEdgeValue(long& ev) const;
 
     /// Get this dd_edge's edge value (only valid for edge-valued MDDs).
     void getEdgeValue(float& ev) const;
@@ -2398,6 +2419,7 @@ class MEDDLY::dd_edge {
                         for edge-valued MDDs)
     */
     void set(node_handle node, int value);
+    void set(node_handle node, long value);
 
     /** Modifies the dd_edge fields.
         The dd_edge is cleared (it will still belong to the same forest),
@@ -2407,6 +2429,14 @@ class MEDDLY::dd_edge {
                         for edge-valued MDDs)
     */
     void set(node_handle node, float value);
+
+    /** Modifies the edge value only.
+        @param  value  value of edge coming into the node (only useful
+                       for edge-valued MDDs)
+     */
+    void setEdgeValue(int value);
+    void setEdgeValue(long value);
+    void setEdgeValue(float value);
 
     /** Check for equality.
         @return true    iff this edge has the same parent and refers to
@@ -2512,7 +2542,7 @@ class MEDDLY::dd_edge {
     int index;  //  our slot number in the parent forest's list
 
     node_handle node;
-    node_handle raw_value;
+    long raw_value;
 
     binary_operation* opPlus;
     binary_operation* opStar;
@@ -2568,6 +2598,9 @@ class MEDDLY::enumerator {
 
         /// For integer-ranged edges, get the current non-zero value.
         virtual void getValue(int& edgeValue) const;
+
+        /// For integer-ranged edges, get the current non-zero value.
+        virtual void getValue(long& edgeValue) const;
     
         /// For real-ranged edges, get the current non-zero value.
         virtual void getValue(float& edgeValue) const;
@@ -2666,6 +2699,7 @@ class MEDDLY::enumerator {
     const int* getPrimedAssignments() const;
 
     void getValue(int &v) const;
+    void getValue(long &v) const;
     void getValue(float &v) const;
 
     int levelChanged() const;

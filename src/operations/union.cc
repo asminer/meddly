@@ -28,6 +28,9 @@ namespace MEDDLY {
   class union_mdd;
   class union_mxd;
 
+  class union_min_evplus;
+  class union_min_evplus_mxd;
+
   class union_opname;
 };
 
@@ -282,6 +285,266 @@ MEDDLY::union_mxd::compute(node_handle a, node_handle b)
 
 // ******************************************************************
 // *                                                                *
+// *                    union_min_evplus  class                     *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::union_min_evplus : public generic_binary_evplus {
+  public:
+    union_min_evplus(const binary_opname* opcode, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res);
+
+  protected:
+    virtual compute_table::search_key* findResult(long aev, node_handle a,
+      long bev, node_handle b, long& cev, node_handle &c);
+    virtual void saveResult(compute_table::search_key* key,
+      long aev, node_handle a, long bev, node_handle b, long cev, node_handle c);
+
+    virtual bool checkTerminals(long aev, node_handle a, long bev, node_handle b,
+      long& cev, node_handle& c);
+};
+
+MEDDLY::union_min_evplus::union_min_evplus(const binary_opname* opcode,
+  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+  : generic_binary_evplus(opcode, arg1, arg2, res)
+{
+  operationCommutes();
+}
+
+MEDDLY::compute_table::search_key* MEDDLY::union_min_evplus::findResult(long aev, node_handle a,
+  long bev, node_handle b, long& cev, node_handle &c)
+{
+  compute_table::search_key* CTsrch = useCTkey();
+  MEDDLY_DCASSERT(CTsrch);
+  CTsrch->reset();
+  if (can_commute && a > b) {
+    CTsrch->write(0L);
+    CTsrch->writeNH(b);
+    CTsrch->write(aev - bev);
+    CTsrch->writeNH(a);
+  } else {
+    CTsrch->write(0L);
+    CTsrch->writeNH(a);
+    CTsrch->write(bev - aev);
+    CTsrch->writeNH(b);
+  }
+  compute_table::search_result &cacheFind = CT->find(CTsrch);
+  if (!cacheFind) return CTsrch;
+  cacheFind.read(cev);
+  MEDDLY_DCASSERT(cev == 0);
+  c = resF->linkNode(cacheFind.readNH());
+  if (c != 0) {
+    cev = MIN(aev, bev);
+  }
+  doneCTkey(CTsrch);
+  return 0;
+}
+
+void MEDDLY::union_min_evplus::saveResult(compute_table::search_key* key,
+  long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
+{
+  arg1F->cacheNode(a);
+  arg2F->cacheNode(b);
+  compute_table::entry_builder &entry = CT->startNewEntry(key);
+  MEDDLY_DCASSERT(c == 0 || cev == MIN(aev, bev));
+  entry.writeResult(0L);
+  entry.writeResultNH(resF->cacheNode(c));
+  CT->addEntry();
+}
+
+bool MEDDLY::union_min_evplus::checkTerminals(long aev, node_handle a, long bev, node_handle b,
+  long& cev, node_handle& c)
+{
+  if (a == 0) {
+    if (b == 0) {
+      cev = 0;
+      c = 0;
+      return true;
+    }
+    else if (arg2F == resF) {
+      cev = bev;
+      c = resF->linkNode(b);
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  if (b == 0) {
+    if (arg1F == resF) {
+      cev = aev;
+      c = resF->linkNode(a);
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  if (arg1F->isTerminalNode(a) && aev <= bev) {
+    if (arg1F == resF) {
+      cev = aev;
+      c = resF->linkNode(a);
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  if (arg2F->isTerminalNode(b) && bev <= aev) {
+    if (arg2F == resF) {
+      cev = bev;
+      c = resF->linkNode(b);
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  if (a == b) {
+    if (arg1F == arg2F && arg2F == resF) {
+      cev = MIN(aev, bev);
+      c = resF->linkNode(a);
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  return false;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                  union_min_evplus_mxd  class                   *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::union_min_evplus_mxd : public generic_binary_evplus_mxd {
+  public:
+    union_min_evplus_mxd(const binary_opname* opcode, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res);
+
+  protected:
+    virtual compute_table::search_key* findResult(long aev, node_handle a,
+      long bev, node_handle b, long& cev, node_handle &c);
+    virtual void saveResult(compute_table::search_key* key,
+      long aev, node_handle a, long bev, node_handle b, long cev, node_handle c);
+
+    virtual bool checkTerminals(long aev, node_handle a, long bev, node_handle b,
+      long& cev, node_handle& c);
+};
+
+MEDDLY::union_min_evplus_mxd::union_min_evplus_mxd(const binary_opname* opcode,
+  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+  : generic_binary_evplus_mxd(opcode, arg1, arg2, res)
+{
+  operationCommutes();
+}
+
+MEDDLY::compute_table::search_key* MEDDLY::union_min_evplus_mxd::findResult(long aev, node_handle a,
+  long bev, node_handle b, long& cev, node_handle &c)
+{
+  compute_table::search_key* CTsrch = useCTkey();
+  MEDDLY_DCASSERT(CTsrch);
+  CTsrch->reset();
+  if (can_commute && a > b) {
+    CTsrch->write(0L);
+    CTsrch->writeNH(b);
+    CTsrch->write(aev - bev);
+    CTsrch->writeNH(a);
+  } else {
+    CTsrch->write(0L);
+    CTsrch->writeNH(a);
+    CTsrch->write(bev - aev);
+    CTsrch->writeNH(b);
+  }
+  compute_table::search_result &cacheFind = CT->find(CTsrch);
+  if (!cacheFind) return CTsrch;
+  cacheFind.read(cev);
+  MEDDLY_DCASSERT(cev == 0);
+  c = resF->linkNode(cacheFind.readNH());
+  if (c != 0) {
+    cev = MIN(aev, bev);
+  }
+  doneCTkey(CTsrch);
+  return 0;
+}
+
+void MEDDLY::union_min_evplus_mxd::saveResult(compute_table::search_key* key,
+  long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
+{
+  arg1F->cacheNode(a);
+  arg2F->cacheNode(b);
+  compute_table::entry_builder &entry = CT->startNewEntry(key);
+  MEDDLY_DCASSERT(c == 0 || cev == MIN(aev, bev));
+  entry.writeResult(0L);
+  entry.writeResultNH(resF->cacheNode(c));
+  CT->addEntry();
+}
+
+bool MEDDLY::union_min_evplus_mxd::checkTerminals(long aev, node_handle a, long bev, node_handle b,
+  long& cev, node_handle& c)
+{
+  if (a == 0) {
+    if (b == 0) {
+      cev = 0;
+      b = 0;
+      return true;
+    }
+    else if (arg2F == resF) {
+      cev = bev;
+      c = resF->linkNode(b);
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  if (b == 0) {
+    if (arg1F == resF) {
+      cev = aev;
+      c = resF->linkNode(a);
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  if (arg1F->isTerminalNode(a) && aev <= bev) {
+    if (arg1F == resF) {
+      cev = aev;
+      c = resF->linkNode(a);
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  if (arg2F->isTerminalNode(b) && bev <= aev) {
+    if (arg2F == resF) {
+      cev = bev;
+      c = resF->linkNode(b);
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  if (a == b) {
+    if (arg1F == arg2F && arg2F == resF) {
+      cev = MIN(aev, bev);
+      c = resF->linkNode(a);
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  return false;
+}
+
+// ******************************************************************
+// *                                                                *
 // *                       union_opname class                       *
 // *                                                                *
 // ******************************************************************
@@ -323,6 +586,15 @@ MEDDLY::union_opname::buildOperation(expert_forest* a1, expert_forest* a2,
       return new union_mxd(this, a1, a2, r);
     else
       return new union_mdd(this, a1, a2, r);
+  }
+
+  if (r->getEdgeLabeling() == forest::EVPLUS) {
+    if (r->isForRelations()) {
+      return new union_min_evplus_mxd(this, a1, a2, r);
+    }
+    else {
+      return new union_min_evplus(this, a1, a2, r);
+    }
   }
 
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);

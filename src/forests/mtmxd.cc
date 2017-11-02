@@ -285,7 +285,7 @@ MEDDLY::node_handle MEDDLY::mtmxd_forest::swapAdjacentVariablesOf(node_handle no
 
   // Unprimed high node builder
   unpacked_node* hnb = unpacked_node::newFull(this, level + 1, lsize);
-  if (isFullyReduced() || isQuasiReduced()) { 
+  if (isFullyReduced() || isQuasiReduced()) {
     for (int m = 0; m < lsize; m++) {
       // Primed high node builder
       unpacked_node* phnb = unpacked_node::newFull(this, -(level + 1), lsize);
@@ -308,7 +308,7 @@ MEDDLY::node_handle MEDDLY::mtmxd_forest::swapAdjacentVariablesOf(node_handle no
       hnb->d_ref(m) = createReducedNode(m, phnb);
     }
   }
-  else if (isIdentityReduced()) { 
+  else if (isIdentityReduced()) {
     for (int m = 0; m < lsize; m++) {
       // Primed high node builder
       unpacked_node* phnb = unpacked_node::newFull(this, -(level + 1), lsize);

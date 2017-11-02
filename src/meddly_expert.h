@@ -90,6 +90,7 @@ namespace MEDDLY {
   class satpregen_opname;
   class satotf_opname;
   class satimpl_opname;
+  class constrained_opname;
 
   class ct_initializer;
   class compute_table_style;
@@ -156,6 +157,12 @@ namespace MEDDLY {
       Transition relation is specified implicitly.
   */
   extern const satimpl_opname* SATURATION_IMPL_FORWARD;
+
+  /** Minimum-witness operations.
+  */
+  extern const constrained_opname* CONSTRAINED_BACKWARD_BFS;
+  extern const constrained_opname* CONSTRAINED_BACKWARD_DFS;
+  extern const constrained_opname* TRANSITIVE_CLOSURE_DFS;
 
   // ******************************************************************
   // *                                                                *
@@ -493,10 +500,12 @@ class MEDDLY::unpacked_node {
 
     void initRedundant(const expert_forest *f, int k, node_handle node, bool full);
     void initRedundant(const expert_forest *f, int k, int ev, node_handle node, bool full);
+    void initRedundant(const expert_forest *f, int k, long ev, node_handle node, bool full);
     void initRedundant(const expert_forest *f, int k, float ev, node_handle node, bool full);
 
     void initIdentity(const expert_forest *f, int k, int i, node_handle node, bool full);
     void initIdentity(const expert_forest *f, int k, int i, int ev, node_handle node, bool full);
+    void initIdentity(const expert_forest *f, int k, int i, long ev, node_handle node, bool full);
     void initIdentity(const expert_forest *f, int k, int i, float ev, node_handle node, bool full);
 
   /* Create blank node, primarily for writing */
@@ -511,11 +520,13 @@ class MEDDLY::unpacked_node {
     static unpacked_node* newFromNode(const expert_forest *f, node_handle node, storage_style st2);
 
     static unpacked_node* newRedundant(const expert_forest *f, int k, node_handle node, bool full);
-    static unpacked_node* newRedundant(const expert_forest *f, int k, int ev, node_handle node, bool full);
+//    static unpacked_node* newRedundant(const expert_forest *f, int k, int ev, node_handle node, bool full);
+    static unpacked_node* newRedundant(const expert_forest *f, int k, long ev, node_handle node, bool full);
     static unpacked_node* newRedundant(const expert_forest *f, int k, float ev, node_handle node, bool full);
 
     static unpacked_node* newIdentity(const expert_forest *f, int k, int i, node_handle node, bool full);
-    static unpacked_node* newIdentity(const expert_forest *f, int k, int i, int ev, node_handle node, bool full);
+    static unpacked_node* newIdentity(const expert_forest *f, int k, int i, long ev, node_handle node, bool full);
+//    static unpacked_node* newIdentity(const expert_forest *f, int k, int i, int ev, node_handle node, bool full);
     static unpacked_node* newIdentity(const expert_forest *f, int k, int i, float ev, node_handle node, bool full);
 
     static unpacked_node* newFull(const expert_forest *f, int level, int tsz);
@@ -592,19 +603,20 @@ class MEDDLY::unpacked_node {
     void* eptr_write(int i);
 
     /// Get the edge value, as an integer.
-    void getEdge(int i, int& ev) const;
+//    void getEdge(int i, int& ev) const;
+    void getEdge(int i, long& ev) const;
 
     /// Get the edge value, as a float.
     void getEdge(int i, float& ev) const;
 
     /// Set the edge value, as an integer.
-    void setEdge(int i, int ev);
+    void setEdge(int i, long ev);
 
     /// Set the edge value, as a float.
     void setEdge(int i, float ev);
 
     /// Get the edge value, as an integer.
-    int ei(int i) const;
+    long ei(int i) const;
 
     /// Get the edge value, as a float.
     float ef(int i) const;
@@ -1333,6 +1345,8 @@ class MEDDLY::node_headers {
     void dumpInternal(output &s) const;
 
   private:  // helper methods
+//    virtual void getDownPtr(node_address addr, int ind, long& ev,
+//                            node_handle& dn) const = 0;
 
     /// Increase the number of node handles.
     void expandHandleList();
@@ -1587,6 +1601,8 @@ class MEDDLY::node_storage {
     */
     virtual void getDownPtr(node_address addr, int ind, int& ev,
           node_handle& dn) const = 0;
+    virtual void getDownPtr(node_address addr, int ind, long& ev,
+              node_handle& dn) const = 0;
 
     /** Get the specified outgoing edge for a node.
         Fast if we just want one.
@@ -1779,22 +1795,12 @@ class MEDDLY::expert_forest: public forest
     };
     // preferred way to encode and decode edge values
     // (classes so we can use them in template functions)
-    /** Encoding for ints into (edge value) node handles */
-    class int_EVencoder {
+    template<typename T>
+    class EVencoder {
       public:
         static size_t edgeBytes();
-        static void writeValue(void* ptr, int val);
-        static void readValue(const void* ptr, int &val);
-        static void show(output &s, const void* ptr);
-        static void write(output &s, const void* ptr);
-        static void read(input &s, void* ptr);
-    };
-    /** Encoding for floats into (edge value) node handles */
-    class float_EVencoder {
-      public:
-        static size_t edgeBytes();
-        static void writeValue(void* ptr, float val);
-        static void readValue(const void* ptr, float &val);
+        static void writeValue(void* ptr, T val);
+        static void readValue(const void* ptr, T &val);
         static void show(output &s, const void* ptr);
         static void write(output &s, const void* ptr);
         static void read(input &s, void* ptr);
@@ -1928,6 +1934,7 @@ class MEDDLY::expert_forest: public forest
           @return p, for convenience.
     */
     node_handle linkNode(node_handle p);
+    void getDownPtr(node_handle p, int index, long& ev, node_handle& dn) const;
 
     /** Decrease the link count to this node. If link count reduces to 0, this
         node may get marked for deletion. Call this when another node releases
@@ -2261,6 +2268,7 @@ class MEDDLY::expert_forest: public forest
     */
     virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const = 0;
 
+    virtual void normalize(unpacked_node &nb, long& ev) const;
 
     /** Discover duplicate nodes.
         Right now, used for sanity checks only.
@@ -3474,6 +3482,24 @@ class MEDDLY::satimpl_opname:public specialized_opname {
 
 
       };
+class MEDDLY::constrained_opname : public specialized_opname {
+public:
+	constrained_opname(const char* n);
+
+	class constrained_args : public specialized_opname::arguments {
+	public:
+	  forest* consForest;
+	  forest* inForest;
+	  forest* relForest;
+	  forest* outForest;
+
+	  constrained_args(forest* consF, forest* inF, forest* relF, forest* outF)
+	    : consForest(consF), inForest(inF), relForest(relF), outForest(outF)
+	  {
+	  }
+	};
+};
+
 // ******************************************************************
 // *                                                                *
 // *                         ct_object class                        *
@@ -3662,6 +3688,7 @@ class MEDDLY::compute_table {
           virtual void reset() = 0;
           virtual void writeNH(node_handle nh) = 0;
           virtual void write(int i) = 0;
+          virtual void write(long i) = 0;
           virtual void write(float f) = 0;
       };
 
@@ -3708,6 +3735,7 @@ class MEDDLY::compute_table {
 
       // convenience methods, for grabbing edge values
       static void readEV(const node_handle* p, int &ev);
+      static void readEV(const node_handle* p, long &ev);
       static void readEV(const node_handle* p, float &ev);
 
       /// Constructor
@@ -3994,6 +4022,10 @@ class MEDDLY::binary_operation : public operation {
     /// Low-level compute on EV edges (av, ap) and (bv, bp), return result.
     virtual void compute(int av, node_handle ap, int bv, node_handle bp,
       int &cv, node_handle &cp);
+    virtual void compute(long av, node_handle ap, long bv, node_handle bp,
+      long &cv, node_handle &cp);
+    virtual void compute(long av, node_handle ap, node_handle bp,
+      long &cv, node_handle &cp);
 
     /// Low-level compute on EV edges (av, ap) and (bv, bp), return result.
     virtual void compute(float av, node_handle ap, float bv, node_handle bp,
@@ -4033,6 +4065,12 @@ class MEDDLY::specialized_operation : public operation {
         Default behavior is to throw an exception.
     */
     virtual void compute(double* y, const double* x);
+
+    /** For tenary (like) operations.
+        Note that there could be other "built in" operands.
+        Default behavior is to throw an exception.
+    */
+    virtual void compute(const dd_edge &ar1, const dd_edge &ar2, const dd_edge &ar3, dd_edge &res);
 };
 
 // ******************************************************************

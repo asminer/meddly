@@ -51,8 +51,9 @@ libmeddly_la_SOURCES = \
   forests/mtmxdreal.h         forests/mtmxdreal.cc \
   forests/ev.h                forests/ev.cc \
   forests/evmdd.h             forests/evmdd.cc \
-  forests/evmdd_plusint.h     forests/evmdd_plusint.cc \
   forests/evmxd.h             forests/evmxd.cc \
+  forests/evmdd_pluslong.h    forests/evmdd_pluslong.cc \
+  forests/evmxd_pluslong.h    forests/evmxd_pluslong.cc \
   forests/evmdd_timesreal.h   \
   forests/evmxd_timesreal.h   forests/evmxd_timesreal.cc \
   forests/init_forests.h      forests/init_forests.cc \
@@ -88,6 +89,7 @@ libmeddly_la_SOURCES = \
   operations/comp_le.h        operations/comp_le.cc      \
   operations/comp_gt.h        operations/comp_gt.cc      \
   operations/comp_ge.h        operations/comp_ge.cc      \
+  operations/prepostplus.h    operations/prepostplus.cc  \
   operations/prepostimage.h   operations/prepostimage.cc \
   operations/reach_bfs.h      operations/reach_bfs.cc    \
   operations/reach_dfs.h      operations/reach_dfs.cc    \
@@ -96,7 +98,11 @@ libmeddly_la_SOURCES = \
   operations/vect_matr.h      operations/vect_matr.cc    \
   operations/mm_mult.h        operations/mm_mult.cc      \
   operations/init_builtin.h   operations/init_builtin.cc \
-  operations/sat_impl.h        operations/sat_impl.cc      \
+  operations/sat_impl.h        operations/sat_impl.cc    \
+  operations/constrained.h      operations/constrained.cc \
+  operations/transitive_closure.h   operations/transitive_closure.cc \
+  operations/cycle.h          operations/cycle.cc        \
+  operations/select.h         operations/select.cc       \
   \
   storage/bytepack.h  \
   storage/simple.h          storage/simple.cc \
