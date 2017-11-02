@@ -2950,6 +2950,7 @@ class MEDDLY::satotf_opname : public specialized_opname {
 
       protected:
         bool addMinterm(const int* from, const int* to);
+        bool usesExtensibleVariables() const;
 
         int* vars;
         int num_vars;
@@ -2961,6 +2962,7 @@ class MEDDLY::satotf_opname : public specialized_opname {
         int num_minterms;
         int size_minterms;
         bool is_firing;
+        bool uses_extensible_variables;
 
     };  // end of class subevent
 
@@ -3283,8 +3285,10 @@ class MEDDLY::satimpl_opname:public specialized_opname {
          Set the tokenUpdate array at location i to val
          */
         void setTokenUpdateAtIndex(long i,long val);
-        
- 
+        /**
+         Get arc count
+         */
+        long getArcCounts();
         
         // the following must be provided in derived classes.
         
@@ -3459,7 +3463,7 @@ class MEDDLY::satimpl_opname:public specialized_opname {
         long lengthForLevel(int level) const;
         
         /*
-         Returns the number of events that have this level as top
+         Returns the array of events that have this level as top
          */
         rel_node_handle* arrayForLevel(int level) const;
         
@@ -3468,6 +3472,10 @@ class MEDDLY::satimpl_opname:public specialized_opname {
           Prints the implicit relation
          */
         void show();
+        /*
+         Gets the arc counts from all implicit nodes
+         */
+        long getAllArcCounts(int level);
         
       };  // class implicit_relation
 

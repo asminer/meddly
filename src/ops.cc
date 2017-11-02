@@ -616,6 +616,16 @@ MEDDLY::satotf_opname::subevent::subevent(forest* f, int* v, int nv, bool firing
     if (isLevelAbove(top, vars[i])) top = vars[i];
   }
 
+  uses_extensible_variables = false;
+#ifdef USE_XDDS
+  for (int i = 0; i < num_vars; i++) {
+    if (this->f->isExtensibleLevel(vars[i])) {
+      uses_extensible_variables = true;
+      break;
+    }
+  }
+#endif
+
   unpminterms = pminterms = 0;
   num_minterms = size_minterms = 0;
 }
@@ -695,8 +705,6 @@ bool MEDDLY::satotf_opname::subevent::addMinterm(const int* from, const int* to)
   return true;
 }
 
-
-
 void MEDDLY::satotf_opname::subevent::buildRoot() {
   if (0 == num_minterms) return;
   /*
@@ -710,18 +718,17 @@ void MEDDLY::satotf_opname::subevent::buildRoot() {
     out << " ]\n";
   }
   */
-#ifdef USE_XDDS
-  dd_edge sum(root);
-  f->createEdge(unpminterms, pminterms, num_minterms, sum);
-  num_minterms = 0;
-  root += sum;
+  if (usesExtensibleVariables()) {
+    dd_edge sum(root);
+    f->createEdge(unpminterms, pminterms, num_minterms, sum);
+    num_minterms = 0;
+    root += sum;
+  } else {
+    f->createEdge(unpminterms, pminterms, num_minterms, root);
+  }
   // out << "Equivalent event: " << root.getNode() << "\n";
-  // root.show(out, 2);
-#else
-  f->createEdge(unpminterms, pminterms, num_minterms, root);
   // out << "Result: ";
   // root.show(out, 2);
-#endif
 }
 
 
@@ -1324,6 +1331,14 @@ MEDDLY::satimpl_opname::relation_node::setTokenUpdateAtIndex(long i,long val)
   token_update[i] = val;
 }
 
+long
+MEDDLY::satimpl_opname::relation_node::getArcCounts()
+{
+  int arc_count = 0;
+  for(int i = 0; i<piece_size; i++)
+    if(token_update[i]!=NOT_KNOWN) arc_count +=1;
+  return arc_count;
+}
 // ******************************************************************
 
 MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
@@ -1533,6 +1548,32 @@ MEDDLY::satimpl_opname::implicit_relation::show()
   for(int i = 0;i<num_levels;i++) delete event_list_copy[i];
   delete[] event_list_copy;
   
+}
+
+long
+MEDDLY::satimpl_opname::implicit_relation::getAllArcCounts(int level)
+{
+  int all_arc_count = 0;
+  for(int l = level;l>=1;l--)
+    {
+     //get the events tops this level
+     for(int r_num = 0; r_num<lengthForLevel(l); r_num++)
+       {
+       //for each event, travel down till terminal
+        relation_node* r = nodeExists(event_list[l][r_num]);
+        while(r->getID()!=1)
+          {
+            all_arc_count+=r->getArcCounts();
+            rel_node_handle next = r->getDown();
+            r = nodeExists(next);
+          }
+       }
+
+    
+    }
+ 
+ 
+  return all_arc_count;
 }
 
 // ******************************************************************

@@ -1839,6 +1839,11 @@ MEDDLY::satotf_opname::subevent::setRoot(const MEDDLY::dd_edge& dd) {
 }
 #endif
 
+inline bool
+MEDDLY::satotf_opname::subevent::usesExtensibleVariables() const {
+  return uses_extensible_variables;
+}
+
 // ****************************************************************************
 
 inline MEDDLY::expert_forest*
