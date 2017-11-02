@@ -26,8 +26,10 @@
 #include "../defines.h"
 #include "orig_grid.h"
 
+#if 0
 #ifdef HAVE_MALLOC_GOOD_SIZE
 #include <malloc/malloc.h>
+#endif
 #endif
 
 
@@ -302,10 +304,13 @@ bool MEDDLY::hole_manager<INT>::resize(long new_alloc)
 {
   MEDDLY_DCASSERT(new_alloc >= 0);
 
+#if 0
 #ifdef HAVE_MALLOC_GOOD_SIZE
   size_t good_bytes = malloc_good_size(new_alloc * sizeof(INT));
   new_alloc = good_bytes / sizeof(INT);
 #endif
+#endif
+
 #ifdef TRACE_REALLOCS
   if (new_alloc > data_alloc) printf("enlarging"); else printf("shrinking");
   printf(" data %lx, new size %ld\n", (unsigned long)data, new_alloc);
