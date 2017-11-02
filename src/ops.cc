@@ -1315,6 +1315,14 @@ MEDDLY::satimpl_opname::relation_node::setTokenUpdateAtIndex(long i,long val)
   token_update[i] = val;
 }
 
+long
+MEDDLY::satimpl_opname::relation_node::getArcCounts()
+{
+  int arc_count = 0;
+  for(int i = 0; i<piece_size; i++)
+    if(token_update[i]!=NOT_KNOWN) arc_count +=1;
+  return arc_count;
+}
 // ******************************************************************
 
 MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
@@ -1524,6 +1532,15 @@ MEDDLY::satimpl_opname::implicit_relation::show()
   for(int i = 0;i<num_levels;i++) delete event_list_copy[i];
   delete[] event_list_copy;
   
+}
+
+long
+MEDDLY::satimpl_opname::implicit_relation::getAllArcCounts()
+{
+  int all_arc_count = 0;
+  for(int r = 0; i<piece_size; i++)
+    if(token_update[i]!=NOT_KNOWN) arc_count +=1;
+  return arc_count;
 }
 
 // ******************************************************************
