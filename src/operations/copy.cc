@@ -813,7 +813,7 @@ MEDDLY::copy_EV2EV_fast<INTYPE,OUTTYPE>::computeSkip(int in, node_handle a)
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
-    return expert_forest::bool_Tencoder::value2handle(true);
+    return expert_forest::bool_Tencoder::value2handle(a != 0);
   }
 
   // Check compute table
@@ -920,8 +920,14 @@ namespace MEDDLY {
         OUTTYPE bv;
         arg.getEdgeValue(av);
         an = arg.getNode();
-        // need to visit every level...
-        computeAll(-1, resF->getNumVariables(), av, an, bv, bn);
+
+        if (argF->isTransparentEdge(an, &av) && argF->getTransparentNode() == resF->getTransparentNode()) {
+          resF->getTransparentEdge(bn, &bv);
+        }
+        else {
+          // need to visit every level...
+          computeAll(-1, resF->getNumVariables(), av, an, bv, bn);
+        }
         res.set(bn, bv);
       }
       void computeAll(int in, int k, INTYPE av, node_handle an,
@@ -972,7 +978,7 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
   // Check terminals
   if (0==k) {
     bv = av;
-    bn = expert_forest::bool_Tencoder::value2handle(true);
+    bn = expert_forest::bool_Tencoder::value2handle(an != 0);
     return;
   }
 

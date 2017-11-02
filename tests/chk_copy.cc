@@ -444,9 +444,22 @@ int main(int argc, const char** argv)
   dlen = makeIntegerMDDforests(myd, dests);
   addRealMDDforests(dlen, myd, dests); 
 
-  for (int i=0; i<slen; i++)
-    for (int j=0; j<dlen; j++)
+  for (int i=0; i<slen; i++) {
+    for (int j=0; j<dlen; j++) {
+      if (srcs[i]->isEVPlus() != dests[j]->isEVPlus()) {
+        // Do not compare EV+MDD with others
+        // Check the semantics of PLUS operation with EV+MDD
+        printf("\tDo not compare ");
+        writeType(srcs[i]);
+        printf(" and ");
+        writeType(dests[j]);
+        printf("\n");
+        fflush(stdout);
+        continue;
+      }
       testCopy(srcs[i], dests[j]);
+    }
+  }
 
   clearForests(srcs, slen);
   clearForests(dests, dlen);
