@@ -225,7 +225,7 @@ pn::~pn() {
   // delete the domain
 
   // delete the otf relation
-  delete otf_rel;
+  // delete otf_rel;
 
   // delete the events
   delete T_AB;
